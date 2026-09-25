@@ -3125,6 +3125,88 @@
       V2.toast('Excel téléchargé');
     });
   }
+  // ── 25/09/2026 — grossistes et génériqueurs PROBABLES (demande de Will : « le remplir avec ce qui
+  // est sûrement le cas, avec les données qu'on a à dispo et les probabilités »). Une case vide
+  // prend la valeur la plus fréquente chez les officines du même groupement, sinon du même
+  // département. Jamais tiré des ventes Intégral : testé le 01/09, juste 1 fois sur 10.
+  // obs : [{ id, grp, dep, gros1, gros2, gen1, gen2 }] — toutes les officines connues de l'app.
+  // Rend { id: { gros1: { nom, pct, ou, k, n }, ... } } pour les cases VIDES seulement.
+  // pct = taux de réussite MESURÉ à l'aveugle sur les officines dont on connaît la réponse
+  // (on cache leur valeur, on devine, on compare), par niveau (groupement / département) et
+  // par tranche de majorité, plafonné par la part majoritaire elle-même — la part seule surestime
+  // (mesuré le 25/09 : « 94 % du groupement » = juste 85 fois sur 100).
+  function deduitProbables(obs) {
+    function sans(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase(); }
+    function famGros(v) {
+      var u = sans(v);
+      if (!u || /INTEGRAL|AUTRE|TOUS|GIPHAR|^\?/.test(u)) return '';
+      if (/ALLIANCE/.test(u)) return 'ALLIANCE'; if (/CERP/.test(u)) return 'CERP'; if (/OCP/.test(u)) return 'OCP';
+      if (/PHOENIX/.test(u)) return 'PHOENIX'; if (/CEDP/.test(u)) return 'CEDP'; if (/SAGITTA/.test(u)) return 'SAGITTA';
+      return u.replace(/[^A-Z0-9]/g, '');
+    }
+    function famGen(v) {
+      var u = sans(v);
+      if (!u || /AUTRE|TOUS|^\?/.test(u)) return '';
+      if (/VIATRIS|MYLAN/.test(u)) return 'VIATRIS'; if (/BIOGARAN/.test(u)) return 'BIOGARAN'; if (/TEVA/.test(u)) return 'TEVA';
+      if (/SANDOZ/.test(u)) return 'SANDOZ'; if (/ZENTIVA/.test(u)) return 'ZENTIVA'; if (/ARROW/.test(u)) return 'ARROW';
+      if (/^EG\b/.test(u)) return 'EG'; if (/CRISTERS/.test(u)) return 'CRISTERS';
+      return u.replace(/[^A-Z0-9]/g, '');
+    }
+    var CH = [['gros1', '', famGros], ['gros2', 'gros1', famGros], ['gen1', '', famGen], ['gen2', 'gen1', famGen]];
+    var parGrp = {}, parDep = {};
+    obs.forEach(function (o) {
+      if (o.grp) (parGrp[o.grp] || (parGrp[o.grp] = [])).push(o);
+      if (o.dep) (parDep[o.dep] || (parDep[o.dep] = [])).push(o);
+    });
+    function top(lot, champ, fam, soi, exclu) {
+      var n = 0, c = {}, lib = {};
+      lot.forEach(function (o) {
+        if (o === soi) return; var f = fam(o[champ]); if (!f || f === exclu) return;
+        n++; c[f] = (c[f] || 0) + 1; var l = lib[f] || (lib[f] = {}); l[o[champ]] = (l[o[champ]] || 0) + 1;
+      });
+      var best = ''; Object.keys(c).forEach(function (f) { if (!best || c[f] > c[best]) best = f; });
+      if (!best) return null;
+      var l = lib[best], nom = ''; Object.keys(l).forEach(function (k) { if (!nom || l[k] > l[nom]) nom = k; });
+      return { nom: nom, fam: best, k: c[best], n: n };
+    }
+    // devine un champ pour une officine : son groupement (≥ 3 officines connues), sinon son département (≥ 5)
+    function devine(o, ch, prec) {
+      var exclu = ch[1] ? ch[2](prec) : '', t = null, ou = '';
+      if (o.grp && parGrp[o.grp]) { t = top(parGrp[o.grp], ch[0], ch[2], o, exclu); ou = 'groupement'; if (t && t.n < 3) t = null; }
+      if (!t && o.dep && parDep[o.dep]) { t = top(parDep[o.dep], ch[0], ch[2], o, exclu); ou = 'département'; if (t && t.n < 5) t = null; }
+      if (!t) return null;
+      var p = t.k / t.n; t.ou = ou; t.tranche = ou + (p >= 0.8 ? 3 : p >= 0.6 ? 2 : 1);
+      return t;
+    }
+    // étalonnage à l'aveugle, champ par champ et tranche par tranche
+    var eta = {};
+    CH.forEach(function (ch) {
+      var m = eta[ch[0]] = {};
+      obs.forEach(function (o) {
+        if (!ch[2](o[ch[0]])) return;
+        var t = devine(o, ch, ch[1] ? o[ch[1]] : ''); if (!t) return;
+        var s = m[t.tranche] || (m[t.tranche] = { n: 0, ok: 0 }); s.n++; if (t.fam === ch[2](o[ch[0]])) s.ok++;
+      });
+    });
+    var res = {};
+    obs.forEach(function (o) {
+      var r = {};
+      CH.forEach(function (ch) {
+        if (o[ch[0]]) return;
+        var prec = ch[1] ? (o[ch[1]] || (r[ch[1]] || {}).nom) : '';
+        var t = devine(o, ch, prec); if (!t) return;
+        var s = eta[ch[0]][t.tranche];
+        if (!s || s.n < 10) return;                     // tranche jamais vérifiée : on ne devine pas
+        // le plus prudent des deux : le taux mesuré de la tranche, ou la part réelle (« 3 sur 8 » ne s'affiche jamais « 80 % »)
+        var pct = Math.min(Math.round(100 * s.ok / s.n), Math.round(100 * t.k / t.n));
+        if (pct < 40) return;                           // moins de 4 chances sur 10 : case laissée vide
+        r[ch[0]] = { nom: t.nom, pct: pct, ou: t.ou, k: t.k, n: t.n };
+      });
+      if (Object.keys(r).length) res[o.id] = r;
+    });
+    res._etalonnage = eta;
+    return res;
+  }
   // ── 25/09/2026 — « Mes clients » en Excel (demande de Will : Karine doit pouvoir extraire
   // son fichier clients elle-même). Mêmes officines que la liste à l'écran (filtre commercial +
   // recherche), mêmes colonnes que le fichier fait à la main le 25/09, sans SIREN ni clé PharmaML.
@@ -3184,6 +3266,17 @@
       ensureXLSX(function (ok) {
         if (!ok || !window.XLSX) { V2.toast('Export Excel indisponible (hors ligne ?)', 'error'); return; }
         var CA = (window.CLIENTS_ACTIFS || {}).d || {}, OI = window.OFFICINES_INFOS || {};
+        // Toutes les officines connues (base clients + fiches saisies) nourrissent les probables
+        function cleGrp(v) { return String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+        var connues = {};
+        Object.keys(CA).forEach(function (id) { connues[id] = 1; });
+        Object.keys(prof).forEach(function (id) { connues[id] = 1; });
+        var probables = deduitProbables(Object.keys(connues).map(function (id) {
+          var b = CA[id] || [], pr = prof[id] || {}, ov = over[id] || {};
+          var gs = String(b[10] || '').split('/').map(function (g) { return g.trim(); }).filter(Boolean);
+          return { id: id, grp: cleGrp(pr.groupement || ov.groupement || b[6]), dep: String(pr.cp || b[12] || '').slice(0, 2),
+            gros1: pr.gros1 || b[18] || '', gros2: pr.gros2 || '', gen1: pr.gen1 || gs[0] || '', gen2: pr.gen2 || gs[1] || '' };
+        }));
         var MN = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
         var moisVus = {}, an = 2026;
         (V2.sales || []).forEach(function (s) { if (s.month) { moisVus[s.month] = 1; if (s.year) an = s.year; } });
@@ -3193,7 +3286,8 @@
         var head = ['CIP', 'Pharmacie', 'Nom commercial (annuaire)', 'Adresse', 'CP', 'Ville', 'UGA', 'Téléphone',
           'Portable / tél. perso', 'Fax', 'Mail', 'Titulaire (contact)', 'Fonction', 'Dirigeant(s) déclaré(s)',
           'Pharmaciens RPPS (titulaires / adjoints)', 'Ouverture ou reprise', 'Groupement', 'Livrée par', 'LGO', 'Robot',
-          'Grossiste 1', 'Grossiste 2', 'Grossiste 3 / autre', 'Génériqueur 1', 'Génériqueur 2', 'Génériqueur 3', 'Biosimilaires']
+          'Grossiste 1', 'Grossiste 2', 'Grossiste 3 / autre', 'Génériqueur 1', 'Génériqueur 2', 'Génériqueur 3', 'Biosimilaires',
+          'Grossistes / génériqueurs probables : d\'où ça vient']
           .concat(mois.map(function (m) { return 'CA HT ' + MN[m - 1] + ' ' + an; }))
           .concat(['CA HT ' + an + (periode ? ' (' + periode + ')' : ''), 'Nb de produits différents',
             'À savoir', 'Vente du fonds (BODACC)', 'Procédure collective (BODACC)', 'Dernière note', 'Notes de l\'équipe (plus récente en premier)']);
@@ -3210,34 +3304,43 @@
           if (o[11]) { var a = String(o[11]).split('|'); vf = (a[0] === 'A' ? 'Rachat' : 'Vente') + ' du fonds le ' + fr(a[1]) + (/^\d+$/.test(a[2] || '') ? ' pour ' + Number(a[2]).toLocaleString('fr-FR').replace(/\s/g, ' ') + ' €' : ''); }
           if (o[12]) { var e = String(o[12]).split('|'); pc = fr(e[0]) + ' — ' + (e[1] || ''); }
           if (o[13]) { var r = String(o[13]).split('|'); rp = r[0] + ' / ' + (r[1] || ''); }
+          // case vide → valeur probable, écrite « CERP Rouen (probable à 86 %) », et d'où elle vient
+          var pb = probables[id] || {}, pourquoi = [];
+          function ou(champ, lib, sure) {
+            if (sure) return sure;
+            var d = pb[champ]; if (!d) return '';
+            pourquoi.push(lib + ' : ' + d.k + ' officine' + (d.k > 1 ? 's' : '') + ' sur ' + d.n + ' du même ' + d.ou);
+            return d.nom + ' (probable à ' + d.pct + ' %)';
+          }
           var ns = (notes[id] || []).slice().sort(function (x, y) { return String(y.created_at).localeCompare(String(x.created_at)); });
           return [id, ov.nom || p.name || o[8] || '', o[8] || '', pr.adresse || b[11] || o[0] || '', pr.cp || b[12] || p.cp || '', pr.ville || b[13] || p.ville || '',
             b[8] || '', pr.tel || b[0] || o[1] || p.tel || '', pr.tel_perso || b[1] || '', b[15] || o[2] || '', pr.email || b[2] || '',
             pr.titulaire || ov.titulaire || b[3] || '', b[4] || '', o[6] !== 'C' ? (o[5] || '') : '', rp, fr(o[4]),
             pr.groupement || ov.groupement || b[6] || p.groupement || '', b[16] || '', pr.lgo || b[5] || '', pr.robot || '',
-            pr.gros1 || b[18] || '', pr.gros2 || '', [pr.gros3, pr.gros4].filter(Boolean).join(' / '),
-            pr.gen1 || gens[0] || '', pr.gen2 || gens[1] || '', pr.gen3 || gens.slice(2).join(' / '), pr.biosim || '']
+            ou('gros1', 'Grossiste 1', pr.gros1 || b[18]), ou('gros2', 'Grossiste 2', pr.gros2), [pr.gros3, pr.gros4].filter(Boolean).join(' / '),
+            ou('gen1', 'Génériqueur 1', pr.gen1 || gens[0]), ou('gen2', 'Génériqueur 2', pr.gen2 || gens[1]), pr.gen3 || gens.slice(2).join(' / '), pr.biosim || '',
+            pourquoi.join('\n')]
             .concat(mois.map(function (m) { return parMois[m] ? Math.round(parMois[m] * 100) / 100 : 0; }))
             .concat([Math.round(tot * 100) / 100, Object.keys(refs).length, savoir.join('\n'), vf, pc,
               ns.length ? fr(ns[0].created_at) : '',
               ns.map(function (n) { return fr(n.created_at) + ' · ' + (n.author_name || '—') + ' : ' + String(n.body || '').trim(); }).join('\n')]);
         });
-        var iTot = 27 + mois.length;
+        var iTot = 28 + mois.length;
         rows.sort(function (x, y) { return (y[iTot] || 0) - (x[iTot] || 0); });
         var qui = V2.commFilter || (V2.mesComms ? V2.mesComms()[0] : '') || '';
         var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
         var titre = 'Mes clients' + (qui ? ' · ' + qui : '') + ' · ' + rows.length + ' officine' + (rows.length > 1 ? 's' : '') +
           ' · extraction du ' + dateStr + ' · classées par chiffre d\'affaires' + (periode ? ' · ventes ' + periode + ' ' + an : '');
-        var totaux = ['', 'TOTAL'].concat(new Array(25).fill('')).concat(mois.map(function (m, j) {
-          return Math.round(rows.reduce(function (s, r) { return s + (r[27 + j] || 0); }, 0) * 100) / 100;
+        var totaux = ['', 'TOTAL'].concat(new Array(26).fill('')).concat(mois.map(function (m, j) {
+          return Math.round(rows.reduce(function (s, r) { return s + (r[28 + j] || 0); }, 0) * 100) / 100;
         })).concat([Math.round(rows.reduce(function (s, r) { return s + (r[iTot] || 0); }, 0) * 100) / 100]);
         var ws = window.XLSX.utils.aoa_to_sheet([[titre], head].concat(rows).concat([totaux]));
-        var larg = [9, 30, 24, 30, 7, 20, 8, 14, 14, 14, 30, 26, 11, 28, 12, 12, 18, 10, 16, 12, 14, 14, 16, 14, 14, 14, 14]
+        var larg = [9, 30, 24, 30, 7, 20, 8, 14, 14, 14, 30, 26, 11, 28, 12, 12, 18, 10, 16, 12, 14, 14, 16, 14, 14, 14, 14, 40]
           .concat(mois.map(function () { return 11; })).concat([13, 10, 34, 26, 26, 12, 80]);
         ws['!cols'] = larg.map(function (w) { return { wch: w }; });
         ws['!autofilter'] = { ref: window.XLSX.utils.encode_range({ s: { r: 1, c: 0 }, e: { r: rows.length + 1, c: head.length - 1 } }) };
         ws['!freeze'] = { xSplit: 2, ySplit: 2 };
-        for (var ri = 2; ri <= rows.length + 2; ri++) for (var ci = 27; ci <= iTot; ci++) {
+        for (var ri = 2; ri <= rows.length + 2; ri++) for (var ci = 28; ci <= iTot; ci++) {
           var cell = ws[window.XLSX.utils.encode_cell({ r: ri, c: ci })]; if (cell && cell.t === 'n') cell.z = '# ##0 €';
         }
         var wb = window.XLSX.utils.book_new();
