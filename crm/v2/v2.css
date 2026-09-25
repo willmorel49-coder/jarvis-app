@@ -39,7 +39,11 @@
 :root{
   /* Palette signature IP */
   --ip-blue:#0050E6; --ip-blue-d:#0034A0; --ip-ink:#10131C; --ip-ink-2:#2A2F3C;
-  --muted:#737A8C; --muted-2:#8A91A4;
+  /* 25/09/2026 — assombris de 2 crans (Δ contraste) : #737A8C/#8A91A4 mesuraient
+     4,29:1 / 3,15:1 sur fond blanc (rendu réel, WebKit) — sous le seuil AA 4,5:1 du
+     texte courant. Nouvelles valeurs : 5,31:1 / 4,80:1. Même teinte, aucun autre
+     changement (voir lot-1.md, Lot 0 — socle). */
+  --muted:#646B80; --muted-2:#6B7286;
   --paper:#FBFCFE; --card:#FFFFFF; --card-2:#F7F9FC;
   --line:rgba(16,19,28,.07); --line-2:rgba(16,19,28,.04); --line-strong:rgba(16,19,28,.12);
   --halo:#E9F0FF;
@@ -140,13 +144,13 @@ border-bottom:1px solid var(--line)}
   box-shadow:0 4px 12px rgba(0,80,230,.28),0 1px 0 rgba(255,255,255,.25) inset;
   display:flex;align-items:center;justify-content:center}
 .v2-brand-t{font-weight:800;font-size:15.5px;letter-spacing:-.02em;line-height:1}
-.v2-brand-s{font-size:11px;color:var(--muted);margin-top:2px;font-weight:450}
+.v2-brand-s{font-size:12px;color:var(--muted);margin-top:2px;font-weight:450}
 .v2-top-search{margin-left:auto;display:flex;align-items:center;gap:9px;background:var(--card);
   border:1px solid var(--line);border-radius:12px;padding:8px 13px;font-size:13px;color:var(--muted);
   cursor:pointer;box-shadow:var(--sh-1);transition:.18s var(--ease);min-width:200px}
 .v2-top-search:hover{border-color:color-mix(in srgb,var(--ip-blue) 30%,var(--line));box-shadow:0 0 0 3px color-mix(in srgb,var(--ip-blue) 12%,transparent),var(--sh-1)}
 .v2-top-search svg{color:var(--ip-blue)}
-.v2-top-search kbd{margin-left:auto;font-family:var(--mono);font-size:10px;background:#F1F3F8;
+.v2-top-search kbd{margin-left:auto;font-family:var(--mono);font-size:12px;background:#F1F3F8;
   padding:3px 7px;border-radius:6px;color:var(--ip-ink-2);font-weight:500}
 .v2-av{width:36px;height:36px;border-radius:50%;flex-shrink:0;cursor:pointer;
   background:linear-gradient(150deg,#FFB347,#FF7A45);
@@ -170,7 +174,7 @@ border-bottom:1px solid var(--line)}
 .v2-um-mail{font-size:12px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* Mention de la mesure d'usage (24/08/2026). Discrète et factuelle : une
    information, pas un avertissement. Elle doit être lisible sans inquiéter. */
-.v2-um-note{padding:10px 16px 12px;font-size:11px;line-height:1.45;color:var(--muted);border-top:1px solid var(--line)}
+.v2-um-note{padding:10px 16px 12px;font-size:12px;line-height:1.45;color:var(--muted);border-top:1px solid var(--line)}
 .v2-um-item{display:flex;align-items:center;gap:10px;width:100%;border:none;background:none;cursor:pointer;
   padding:12px 16px;font-family:var(--font);font-size:13.5px;font-weight:600;color:var(--ip-ink-2);transition:background .14s}
 .v2-um-item:hover{background:var(--card-2);color:var(--c-rose)}
@@ -286,7 +290,7 @@ border-bottom:1px solid var(--line)}
   box-shadow:var(--sh-2);position:relative;overflow:hidden}
 .v2-kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent,var(--ip-blue))}
 .v2-kpi.k1{--accent:var(--c-fiche)} .v2-kpi.k2{--accent:var(--c-mint)} .v2-kpi.k3{--accent:var(--c-amber)} .v2-kpi.k4{--accent:var(--c-cat)}
-.v2-kpi-l{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.v2-kpi-l{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
 .v2-kpi-v{font-family:var(--mono);font-size:27px;font-weight:700;letter-spacing:-.03em;margin-top:7px}
 .v2-kpi-d{font-size:12px;font-weight:600;margin-top:5px}
 .v2-kpi-d.up{color:var(--c-mint)} .v2-kpi-d.dn{color:var(--c-rose)}
@@ -298,12 +302,12 @@ border-bottom:1px solid var(--line)}
 .v2-row:hover{background:var(--card-2)}
 .v2-row-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
 .v2-row-name{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.v2-row-meta{color:var(--muted);font-size:11.5px}
+.v2-row-meta{color:var(--muted);font-size:12px}
 .v2-row-val{font-family:var(--mono);font-weight:700}
 .v2-row-chev{color:var(--muted-2);flex-shrink:0}
 
 /* ─── Chips/badges ─── */
-.v2-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:var(--r-pill);font-size:11px;font-weight:700;
+.v2-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:var(--r-pill);font-size:12px;font-weight:700;
   letter-spacing:.005em;box-shadow:0 0 0 1px rgba(16,19,28,.03) inset}
 .v2-chip.g{background:color-mix(in srgb,var(--c-mint) 13%,#fff);color:var(--c-mint-txt);box-shadow:0 0 0 1px color-mix(in srgb,var(--c-mint) 22%,transparent) inset}
 .v2-chip.a{background:color-mix(in srgb,var(--c-amber) 15%,#fff);color:var(--c-amber-txt);box-shadow:0 0 0 1px color-mix(in srgb,var(--c-amber) 24%,transparent) inset}
@@ -346,11 +350,11 @@ border-bottom:1px solid var(--line)}
   transition:transform .18s var(--ease),border-color .18s var(--ease-soft),background .18s var(--ease-soft),box-shadow .2s var(--ease);box-shadow:var(--sh-1)}
 .v2-seg:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var(--sc,var(--ip-blue)) 40%,var(--line));box-shadow:var(--sh-2)}
 .v2-seg.on{background:var(--sc,var(--ip-blue));color:#fff;border-color:transparent;box-shadow:0 3px 10px color-mix(in srgb,var(--sc,var(--ip-blue)) 28%,transparent)}
-.v2-seg .cnt{font-family:var(--mono);font-size:11px;opacity:.8}
+.v2-seg .cnt{font-family:var(--mono);font-size:12px;opacity:.8}
 
 /* ─── Table ─── */
 .v2-table{width:100%;border-collapse:collapse;font-family:var(--font)}
-.v2-table thead th{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700;
+.v2-table thead th{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700;
   text-align:left;padding:11px 14px;background:var(--card-2);border-bottom:1px solid var(--line);position:sticky;top:0}
 .v2-table thead th.num{text-align:right}
 .v2-table thead th:first-child{padding-left:20px}
@@ -386,13 +390,13 @@ border-bottom:1px solid var(--line)}
 .v2-cmdk-search svg{color:var(--ip-blue)}
 .v2-cmdk-search input{border:none;outline:none;background:none;font-family:var(--font);font-size:17px;flex:1;color:var(--ip-ink)}
 .v2-cmdk-results{overflow-y:auto;padding:8px}
-.v2-cmdk-grp{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700;padding:9px 12px 4px}
+.v2-cmdk-grp{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700;padding:9px 12px 4px}
 .v2-cmdk-item{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:10px;cursor:pointer;font-size:14px;color:var(--ip-ink)}
 .v2-cmdk-item.sel,.v2-cmdk-item:hover{background:var(--halo)}
 .v2-cmdk-item .ico{width:30px;height:30px;border-radius:8px;background:var(--card-2);display:flex;align-items:center;justify-content:center;color:var(--ip-blue);flex-shrink:0}
 .v2-cmdk-item .lbl{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.v2-cmdk-item .meta{font-size:11px;color:var(--muted);font-family:var(--mono)}
-.v2-cmdk-foot{padding:9px 16px;border-top:1px solid var(--line);background:var(--card-2);font-size:11px;color:var(--muted);
+.v2-cmdk-item .meta{font-size:12px;color:var(--muted);font-family:var(--mono)}
+.v2-cmdk-foot{padding:9px 16px;border-top:1px solid var(--line);background:var(--card-2);font-size:12px;color:var(--muted);
   font-family:var(--mono);display:flex;gap:14px}
 
 /* ─── Toast ─── */
@@ -442,9 +446,19 @@ border-bottom:1px solid var(--line)}
   .v2-top-search{font-size:0;padding:9px 11px;gap:0}
   .v2-top-search kbd{display:none}
   .v2-brand-t{font-size:14px}
-  .v2-brand-s{font-size:10.5px}
+  .v2-brand-s{font-size:12px}
   .v2-av{width:34px;height:34px}
   .v2-back{padding:7px 11px;font-size:12.5px}
+  /* cible tactile ≥44px SANS grossir le glyphe (avatar, logo compact retour-accueil,
+     idée, bascule d'espace) — même principe que la liste --tap-min ci-dessous,
+     étendu aux éléments de la topbar qui en manquaient. Zone additive invisible,
+     centrée, ne change aucun pixel visible. */
+  .v2-av,.v2-idea,.v2-brand-compact,.v2-spacesw{position:relative}
+  .v2-av::after,.v2-idea::after,.v2-brand-compact::after,.v2-spacesw::after{
+    content:"";position:absolute;top:50%;left:50%;
+    width:var(--tap-min);height:var(--tap-min);
+    transform:translate(-50%,-50%);
+  }
 
   /* contenu : marges réduites, titres plus petits */
   .v2-wrap{padding:18px 14px 64px;margin-right:0 !important}
