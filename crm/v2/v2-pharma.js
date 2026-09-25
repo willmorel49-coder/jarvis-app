@@ -2385,8 +2385,10 @@
     var f = r.f, pr = f === 'pr_low' || f === 'pr_mid' || f === 'pr_high';
     var net = (r.net > 0 && pp > 0 && r.net <= pp) ? r.net
       : ((pr || f === 'biosim') && pp > 0 && V2.abandonBareme) ? Math.round((pp - V2.abandonBareme(pp)) * 100) / 100 : pp;
+    // Générique d'un labo partenaire (EG · Zentiva · Zydus · Teva, confirmé par Will le 04/08) → « Génériques partenaires ».
+    var genp = f === 'gen' && /^(EG|ZENTIVA|ZYDUS|TEVA)\b/i.test(r.labo || '');
     return { cip13: cip, designation: r.d, prix_ht: pp, prix_ip: net > 0 ? net : null, has_ameli: f !== 'nr',
-             artnature: f === 'gen' ? 'generique' : (f === 'biosim' ? 'biosimilaire' : ''),
+             artnature: genp ? 'generique_partenaire' : (f === 'gen' ? 'generique' : (f === 'biosim' ? 'biosimilaire' : '')),
              categorie: pr ? (pp <= 4.33 ? 'pp' : (pp <= 468 ? 'mi' : 'ch')) : '' };
   }
   // Le catalogue complet (1,3 Mo) arrive sans bloquer l'écran ; la liste se redessine à son arrivée.
@@ -3023,10 +3025,11 @@
       veil.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:2147483600;display:flex;align-items:center;justify-content:center;font:600 14px Satoshi,system-ui,sans-serif;color:#737A8C';
       veil.textContent = 'Génération du PDF…';
       document.body.appendChild(veil);
+      // A4 en pt « arrondi » (794 × 1123 px) : en mm, html2pdf évite les coupures sur 1122 px mais découpe à 1121,5 → lignes coupées vers la p.10
       var worker = window.html2pdf().from(wrap.firstChild).set({
         filename: fn, margin: [0, 0, 0, 0], image: { type: 'jpeg', quality: 0.95 },
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr'] }
+        jsPDF: { unit: 'pt', format: [595.5, 842.25], orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr'] }
       });
       function cleanup() { if (wrap.parentNode) document.body.removeChild(wrap); if (veil.parentNode) document.body.removeChild(veil); }
       if (mode === 'blob') {
@@ -3058,7 +3061,7 @@
       var worker = window.html2pdf().from(inner).set({
         filename: fn, margin: [0, 0, 0, 0], image: { type: 'jpeg', quality: 0.95 },
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr'] }
+        jsPDF: { unit: 'pt', format: [595.5, 842.25], orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'], avoid: ['tr'] }
       });
       function done(msg) { sheet.style.transform = prevT; V2.toast(msg); }
       if (mode === 'share' && V2.shareOrSaveBlob) {
