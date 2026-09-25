@@ -199,6 +199,7 @@
       '.v2-rem-seg{display:inline-flex;gap:2px;padding:3px;background:var(--card-2);border:1px solid var(--line);border-radius:10px}',
       '.v2-rem-seg button{border:none;background:none;padding:6px 12px;border-radius:7px;font:inherit;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer}',
       '.v2-rem-seg button.on{background:var(--card);color:var(--ip-ink);box-shadow:var(--sh-1)}',
+      '@media(max-width:640px){.v2-rem-seg button{min-height:44px}}',
       '.v2-rem-list{display:flex;flex-direction:column;gap:10px}',
       '.v2-rem-empty{padding:40px 20px;text-align:center;color:var(--muted);font-size:14px;background:var(--card-2);border:1px dashed var(--line-strong);border-radius:var(--r-md)}',
       '.v2-rem-item{display:flex;gap:13px;padding:14px 16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--sh-1)}',

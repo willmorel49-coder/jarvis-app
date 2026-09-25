@@ -61,7 +61,7 @@
       '.gnq-val{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--ip-ink);white-space:nowrap}' +
       '.gnq-val small{color:var(--muted);font-weight:600;margin-left:4px}' +
       '.gnq-empty{font-size:13px;color:var(--muted);padding:6px 0}' +
-      '@media(max-width:520px){.gnq-row{grid-template-columns:88px 1fr auto}.gnq-lab{font-size:11.5px}}';
+      '@media(max-width:520px){.gnq-row{grid-template-columns:88px 1fr auto}.gnq-lab{font-size:12px}}';
     document.head.appendChild(st);
   }
 

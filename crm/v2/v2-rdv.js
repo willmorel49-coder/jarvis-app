@@ -365,7 +365,8 @@
       '.v2-sem-j .pt.on{background:var(--ip-blue);width:22px}',
       '.v2-sem-j[aria-current="true"]{background:var(--ip-blue);border-color:var(--ip-blue);',
       '  box-shadow:0 1px 0 rgba(255,255,255,.3) inset,0 10px 22px -10px rgba(0,80,230,.7)}',
-      '.v2-sem-j[aria-current="true"] .d{color:rgba(255,255,255,.72)}',
+      // Mesuré sur le rendu (blanc à 72% sur le bleu plein) : 4,02:1, sous 4,5:1. Remonté à .85.
+      '.v2-sem-j[aria-current="true"] .d{color:rgba(255,255,255,.85)}',
       '.v2-sem-j[aria-current="true"] .n{color:#fff}',
       '.v2-sem-j[aria-current="true"] .pt,.v2-sem-j[aria-current="true"] .pt.on{background:#fff}',
 

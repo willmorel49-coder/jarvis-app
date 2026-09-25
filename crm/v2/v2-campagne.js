@@ -44,6 +44,9 @@
       '.v2-camp-box select,.v2-camp-box textarea,.v2-camp-box input{width:100%;font:inherit;font-size:16px;',
       '  min-height:44px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;',
       '  background:var(--card-2);color:var(--ip-ink)}',
+      // Safari ignore min-height sur un <select> natif non stylé (appearance auto) : sans
+      // height explicite, le menu déroulant reste à ~27px — sous la cible tactile minimale.
+      '.v2-camp-box select{height:44px}',
       '.v2-camp-box input.court{width:110px}',
       '.v2-camp-duo{display:flex;flex-wrap:wrap;gap:16px}',
       '.v2-camp-cpt{font-size:15px;font-weight:800;margin:0 0 4px}',

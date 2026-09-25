@@ -287,7 +287,7 @@
       '.cg-rk-search svg{color:var(--ip-blue);flex-shrink:0}' +
       '.cg-rk-search input{border:none;outline:none;background:none;font-family:var(--font);font-size:16px;color:var(--ip-ink);flex:1;min-width:0}' +
       '.cg-rk-search input::placeholder{color:var(--muted)}' +
-      '.cg-rk-sorts{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px}.cg-rk-sorts>span{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-right:2px}' +
+      '.cg-rk-sorts{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px}.cg-rk-sorts>span{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-right:2px}' +
       '.cg-rk-sb{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:5px 12px;font-family:var(--font);font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;transition:all .15s}' +
       '.cg-rk-sb:hover{color:var(--ip-ink)}.cg-rk-sb.on{background:var(--ip-blue);color:#fff;border-color:var(--ip-blue)}' +
       '.cg-rk-exp{flex:none;border:1px solid var(--line);background:var(--card);border-radius:9px;padding:7px 12px;font-family:var(--font);font-size:12px;font-weight:700;color:var(--ip-blue);cursor:pointer;white-space:nowrap}.cg-rk-exp:hover{border-color:var(--ip-blue);background:var(--halo)}' +
@@ -296,9 +296,13 @@
       '.cg-rk-row:hover{background:var(--card-2)}' +
       '.cg-rk-n{flex:none;width:26px;height:26px;border-radius:50%;background:var(--card-2);border:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}' +
       '.cg-rk-main{flex:1;min-width:0}.cg-rk-nm{font-size:13.5px;font-weight:700;color:var(--ip-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
-      '.cg-rk-meta{font-size:11.5px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cg-rk-meta b{color:var(--ip-ink);font-weight:800}' +
+      '.cg-rk-meta{font-size:12px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cg-rk-meta b{color:var(--ip-ink);font-weight:800}' +
       '.cg-rk-pen{flex:none;font-size:13px;font-weight:800;color:var(--ip-blue);font-variant-numeric:tabular-nums;min-width:38px;text-align:right}' +
-      '@media(max-width:820px){.cg-split{flex-direction:column;height:auto}.cg-map{height:52vh;min-height:320px}.cg-list{width:auto;max-width:none;border-left:none;border-top:1px solid var(--line);max-height:none}}';
+      '@media(max-width:820px){.cg-split{flex-direction:column;height:auto}.cg-map{height:52vh;min-height:320px}.cg-list{width:auto;max-width:none;border-left:none;border-top:1px solid var(--line);max-height:none}}' +
+      // Cibles tactiles ≥44px au doigt (mobile seulement — la souris n'a pas ce besoin) :
+      // boutons de tri, bouton Export, sélecteur de groupement.
+      // Safari ignore min-height sur un <select> natif non stylé : height explicite requis.
+      '@media(max-width:640px){.cg-rk-sb{min-height:44px;display:inline-flex;align-items:center}.cg-rk-exp{min-height:44px;display:inline-flex;align-items:center;justify-content:center}.cg-sel{height:44px}}';
     document.head.appendChild(st);
   }
 
@@ -594,7 +598,11 @@
         ensureLeaflet(function (e2) {
           var mp = document.getElementById('cg-map');
           if (e2) { if (mp) mp.innerHTML = '<div class="cg-empty">Carte indisponible.</div>'; return; }
-          if (mp) mp.innerHTML = '';
+          // Si l'utilisateur a déjà changé d'écran pendant ce chargement asynchrone,
+          // #cg-map n'existe plus : construire la carte plantait alors avec
+          // « Map container not found », visible sur l'écran suivant.
+          if (!mp) return;
+          mp.innerHTML = '';
           map = window.L.map('cg-map', { zoomControl: true, attributionControl: false }).setView([46.6, 2.4], 6);
           window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, subdomains: 'abcd' }).addTo(map);
           draw();

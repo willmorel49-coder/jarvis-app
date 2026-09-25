@@ -269,7 +269,7 @@
       '  color:var(--muted);font:inherit;cursor:pointer;display:flex;flex-direction:column;',
       '  align-items:center;justify-content:center;gap:1px;padding:4px 2px}',
       '.agp-ap-c.agp-ap-vide{border-style:dashed;opacity:.35;cursor:default}',
-      '.agp-ap-j{font-size:10.5px;letter-spacing:.02em}',
+      '.agp-ap-j{font-size:12px;letter-spacing:.02em}',
       '.agp-ap-d{font-size:13px;font-weight:700;line-height:1.15;text-align:center;word-break:break-all}',
       /* Il Y SERA : plein, c est un fait. SOUHAITÉ : encadré, c est une intention. */
       '.agp-ap-c.agp-ap-sur{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
@@ -285,7 +285,7 @@
       '.agp-sect-a button{min-height:44px;padding:0 12px;border-radius:9px;',
       '  border:1px solid var(--ip-blue);background:transparent;color:var(--ip-blue);',
       '  font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;text-align:left}',
-      '.agp-ap-leg{font-size:11.5px;color:var(--muted);margin:8px 0 0;line-height:1.5}',
+      '.agp-ap-leg{font-size:12px;color:var(--muted);margin:8px 0 0;line-height:1.5}',
       '.agp-ap-leg b{background:var(--ip-blue);color:#fff;padding:1px 5px;border-radius:4px}',
       '.agp-ap-voulu-l{border:1px dashed var(--ip-blue);color:var(--ip-blue);padding:0 5px;border-radius:4px}',
       '.agp-jt{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin:0 0 9px}',
@@ -294,7 +294,7 @@
       '.agp-jt b{font-size:15px;font-weight:800;display:inline-block}',
       '.agp-jt b::first-letter{text-transform:uppercase}',
       '.agp-jt .agp-resume{color:var(--muted);font-size:12.5px;margin-left:auto;text-align:right}',
-      '.agp-auj{background:#0050E6;color:#fff;font-size:11px;font-weight:800;border-radius:6px;padding:2px 7px;',
+      '.agp-auj{background:#0050E6;color:#fff;font-size:12px;font-weight:800;border-radius:6px;padding:2px 7px;',
       '  text-transform:uppercase;letter-spacing:.04em}',
       /* la barre de la journée */
       '.agp-bar{position:relative;height:26px;border-radius:8px;background:#DCE7FA;border:1px solid #B9CDF2;overflow:hidden}',
@@ -302,7 +302,7 @@
       '.agp-seg{position:absolute;top:0;bottom:0}',
       '.agp-s-rdv{background:#0050E6}.agp-s-occ{background:#8B93A1}.agp-s-blo{background:#C7791A}',
       '.agp-s-hors{background:var(--card-2)}',
-      '.agp-ech{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);',
+      '.agp-ech{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);',
       '  margin:4px 2px 0;font-variant-numeric:tabular-nums}',
       /* le détail sous la barre */
       '.agp-l{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:9px 0 0;font-size:14px}',
@@ -316,7 +316,7 @@
       '.agp-vide-jour{margin:11px 0 0;padding:11px 0 0;border-top:1px solid var(--line-2,#EEF1F6)}',
       /* une officine reconnue dans l'agenda, et son étiquette */
       '.agp-l.agp-doute{border-left:3px solid #C7791A;padding-left:9px}',
-      '.agp-eti{font-size:11px;font-weight:800;border-radius:6px;padding:2px 7px;',
+      '.agp-eti{font-size:12px;font-weight:800;border-radius:6px;padding:2px 7px;',
       '  text-transform:uppercase;letter-spacing:.04em}',
       '.agp-cli{background:#DCE7FA;color:#0050E6}',
       '.agp-pro{background:#F3EAD8;color:#8A5A12}',
