@@ -783,6 +783,7 @@
         '<div class="v2-page-sub">' + phs.length + ' pharmacie' + (phs.length > 1 ? 's' : '') +
           ' · clique pour voir les opportunités</div>' +
         pharmaTabs('officines') +
+        (!isOpso() && secteurTab === 'clients' ? '<div style="display:flex;justify-content:flex-end;margin:-4px 0 12px"><button class="v2-btn v2-btn-ghost" onclick="V2.pharmaClientsXlsx()">' + ICO('download', 16) + 'Mes clients en Excel</button></div>' : '') +
         commBar +
         secteurBar +
         opsoFilterBar +
@@ -3124,6 +3125,128 @@
       V2.toast('Excel téléchargé');
     });
   }
+  // ── 25/09/2026 — « Mes clients » en Excel (demande de Will : Karine doit pouvoir extraire
+  // son fichier clients elle-même). Mêmes officines que la liste à l'écran (filtre commercial +
+  // recherche), mêmes colonnes que le fichier fait à la main le 25/09, sans SIREN ni clé PharmaML.
+  // Ventes : celles que la session voit déjà (V2.voitVentesDe), mois lus dans les données.
+  V2.pharmaClientsXlsx = function () {
+    var q = searchQuery.trim().toLowerCase();
+    var noms = V2.commFilter ? [V2.commFilter] : (V2.ventesRestreintes && V2.ventesRestreintes() ? V2.mesComms() : []);
+    var c = V2.sb && V2.sb();
+    V2.toast('Préparation de l\'Excel…');
+    var socle = Promise.all([
+      V2.loadFiles ? V2.loadFiles(['clientsactifs', 'officinesinfos']).catch(function () {}) : null,
+      V2.profil ? V2.profil.loadScope('client') : [],
+      V2.profil ? V2.profil.loadScope('override') : []
+    ]);
+    var phs = [];
+    socle.then(function (res) {
+      // Qui suit l'officine : la base clients fait foi (colonne commercial, en code : KV, ALH…).
+      // L'app nomme les commerciaux par leur prénom : le code d'un prénom est celui qu'il porte
+      // le plus souvent dans la base. Sans base pour l'officine → son commercial dans les ventes.
+      var CA = (window.CLIENTS_ACTIFS || {}).d || {}, compte = {};
+      (V2.pharmacies || []).forEach(function (p) {
+        var cd = (CA[String(p.id)] || [])[7]; if (!cd) return;
+        (p.comms || []).forEach(function (n) { var m = compte[n] || (compte[n] = {}); m[cd] = (m[cd] || 0) + 1; });
+      });
+      var codes = {};
+      noms.forEach(function (n) { var m = compte[n] || {}, best = ''; Object.keys(m).forEach(function (k) { if (!best || m[k] > m[best]) best = k; }); if (best) codes[best] = 1; });
+      var vu = {};
+      function garde(id, p) {
+        if (/EX/.test(id)) return false;   // ancien code d'une officine : ses ventes sont rattachées plus bas
+        var cd = (CA[id] || [])[7];
+        if (noms.length) { if (cd ? !codes[cd] : !(p && (p.comms || []).some(function (n) { return noms.indexOf(n) >= 0; }))) return false; }
+        return true;
+      }
+      (V2.pharmacies || []).forEach(function (p) { var id = String(p.id); if (!vu[id] && garde(id, p)) { vu[id] = 1; phs.push(p); } });
+      // officines de la base sans vente cette année (absentes de la liste des ventes)
+      // (nom lu dans l'annuaire national de la carte, p[13] = CIP, p[6] = nom)
+      var nomFr = {};
+      if (noms.length && window.PHARMA_FR && PHARMA_FR.p) PHARMA_FR.p.forEach(function (x) { if (x[13]) nomFr[String(x[13]).replace(/[^0-9]/g, '')] = x[6]; });
+      if (noms.length) Object.keys(codes).length && Object.keys(CA).forEach(function (id) {
+        if (!vu[id] && codes[CA[id][7]]) { vu[id] = 1; phs.push({ id: id, name: nomFr[id] || '', comms: [], cp: CA[id][12] || '', ville: CA[id][13] || '' }); }
+      });
+      if (q) phs = phs.filter(function (p) { return (p.name || '').toLowerCase().indexOf(q) >= 0; });
+      var ids = phs.map(function (p) { return String(p.id); });
+      if (!c || !ids.length) return res.concat([[]]);
+      var out = [], lots = [];
+      for (var i = 0; i < ids.length; i += 150) lots.push(ids.slice(i, i + 150));
+      return Promise.all(lots.map(function (lot) {
+        return c.from('notes').select('scope_id,author_name,body,created_at').eq('scope_type', 'client').in('scope_id', lot)
+          .then(function (r) { if (!r.error && r.data) out = out.concat(r.data); });
+      })).then(function () { return res.concat([out]); }).catch(function () { return res.concat([out]); });
+    }).then(function (res) {
+      if (!phs.length) { V2.toast('Aucune officine à extraire', 'warn'); return; }
+      var prof = {}, over = {}, notes = {};
+      (res[1] || []).forEach(function (x) { prof[x.sid] = x.data || {}; });
+      (res[2] || []).forEach(function (x) { over[x.sid] = x.data || {}; });
+      (res[3] || []).forEach(function (n) { (notes[n.scope_id] || (notes[n.scope_id] = [])).push(n); });
+      ensureXLSX(function (ok) {
+        if (!ok || !window.XLSX) { V2.toast('Export Excel indisponible (hors ligne ?)', 'error'); return; }
+        var CA = (window.CLIENTS_ACTIFS || {}).d || {}, OI = window.OFFICINES_INFOS || {};
+        var MN = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+        var moisVus = {}, an = 2026;
+        (V2.sales || []).forEach(function (s) { if (s.month) { moisVus[s.month] = 1; if (s.year) an = s.year; } });
+        var mois = Object.keys(moisVus).map(Number).sort(function (a, b) { return a - b; });
+        var periode = mois.length ? MN[mois[0] - 1] + '-' + MN[mois[mois.length - 1] - 1] : '';
+        function fr(d) { d = String(d || ''); var m = d.match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '/' + m[2] + '/' + m[1] : d; }
+        var head = ['CIP', 'Pharmacie', 'Nom commercial (annuaire)', 'Adresse', 'CP', 'Ville', 'UGA', 'Téléphone',
+          'Portable / tél. perso', 'Fax', 'Mail', 'Titulaire (contact)', 'Fonction', 'Dirigeant(s) déclaré(s)',
+          'Pharmaciens RPPS (titulaires / adjoints)', 'Ouverture ou reprise', 'Groupement', 'Livrée par', 'LGO', 'Robot',
+          'Grossiste 1', 'Grossiste 2', 'Grossiste 3 / autre', 'Génériqueur 1', 'Génériqueur 2', 'Génériqueur 3', 'Biosimilaires']
+          .concat(mois.map(function (m) { return 'CA HT ' + MN[m - 1] + ' ' + an; }))
+          .concat(['CA HT ' + an + (periode ? ' (' + periode + ')' : ''), 'Nb de produits différents',
+            'À savoir', 'Vente du fonds (BODACC)', 'Procédure collective (BODACC)', 'Dernière note', 'Notes de l\'équipe (plus récente en premier)']);
+        var rows = phs.map(function (p) {
+          var id = String(p.id), b = CA[id] || [], o = OI[id] || [], pr = prof[id] || {}, ov = over[id] || {};
+          var gens = String(b[10] || '').split('/').map(function (g) { return g.trim(); }).filter(Boolean);
+          var parMois = {}, refs = {}, tot = 0;
+          pharmaSales(id).concat(pharmaSales('EX' + id), pharmaSales(id + 'EX')).forEach(function (s) { parMois[s.month] = (parMois[s.month] || 0) + (s.mntNetHt || 0); tot += s.mntNetHt || 0; if (s.artCode) refs[s.artCode] = 1; });
+          var savoir = [];
+          if (o[6] === 'C') savoir.push('Société déclarée cessée' + (o[7] ? ' le ' + fr(o[7]) : '') + ' — reprise probable ou à vérifier');
+          if (o[9] === 'R') savoir.push('Un dirigeant a 62 ans ou plus (départ en retraite possible)');
+          if (o[10]) savoir.push('Dirige aussi : ' + String(o[10]).split(',').map(function (x) { return x.trim(); }).join(', '));
+          var vf = '', pc = '', rp = '';
+          if (o[11]) { var a = String(o[11]).split('|'); vf = (a[0] === 'A' ? 'Rachat' : 'Vente') + ' du fonds le ' + fr(a[1]) + (/^\d+$/.test(a[2] || '') ? ' pour ' + Number(a[2]).toLocaleString('fr-FR').replace(/\s/g, ' ') + ' €' : ''); }
+          if (o[12]) { var e = String(o[12]).split('|'); pc = fr(e[0]) + ' — ' + (e[1] || ''); }
+          if (o[13]) { var r = String(o[13]).split('|'); rp = r[0] + ' / ' + (r[1] || ''); }
+          var ns = (notes[id] || []).slice().sort(function (x, y) { return String(y.created_at).localeCompare(String(x.created_at)); });
+          return [id, ov.nom || p.name || o[8] || '', o[8] || '', pr.adresse || b[11] || o[0] || '', pr.cp || b[12] || p.cp || '', pr.ville || b[13] || p.ville || '',
+            b[8] || '', pr.tel || b[0] || o[1] || p.tel || '', pr.tel_perso || b[1] || '', b[15] || o[2] || '', pr.email || b[2] || '',
+            pr.titulaire || ov.titulaire || b[3] || '', b[4] || '', o[6] !== 'C' ? (o[5] || '') : '', rp, fr(o[4]),
+            pr.groupement || ov.groupement || b[6] || p.groupement || '', b[16] || '', pr.lgo || b[5] || '', pr.robot || '',
+            pr.gros1 || b[18] || '', pr.gros2 || '', [pr.gros3, pr.gros4].filter(Boolean).join(' / '),
+            pr.gen1 || gens[0] || '', pr.gen2 || gens[1] || '', pr.gen3 || gens.slice(2).join(' / '), pr.biosim || '']
+            .concat(mois.map(function (m) { return parMois[m] ? Math.round(parMois[m] * 100) / 100 : 0; }))
+            .concat([Math.round(tot * 100) / 100, Object.keys(refs).length, savoir.join('\n'), vf, pc,
+              ns.length ? fr(ns[0].created_at) : '',
+              ns.map(function (n) { return fr(n.created_at) + ' · ' + (n.author_name || '—') + ' : ' + String(n.body || '').trim(); }).join('\n')]);
+        });
+        var iTot = 27 + mois.length;
+        rows.sort(function (x, y) { return (y[iTot] || 0) - (x[iTot] || 0); });
+        var qui = V2.commFilter || (V2.mesComms ? V2.mesComms()[0] : '') || '';
+        var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+        var titre = 'Mes clients' + (qui ? ' · ' + qui : '') + ' · ' + rows.length + ' officine' + (rows.length > 1 ? 's' : '') +
+          ' · extraction du ' + dateStr + ' · classées par chiffre d\'affaires' + (periode ? ' · ventes ' + periode + ' ' + an : '');
+        var totaux = ['', 'TOTAL'].concat(new Array(25).fill('')).concat(mois.map(function (m, j) {
+          return Math.round(rows.reduce(function (s, r) { return s + (r[27 + j] || 0); }, 0) * 100) / 100;
+        })).concat([Math.round(rows.reduce(function (s, r) { return s + (r[iTot] || 0); }, 0) * 100) / 100]);
+        var ws = window.XLSX.utils.aoa_to_sheet([[titre], head].concat(rows).concat([totaux]));
+        var larg = [9, 30, 24, 30, 7, 20, 8, 14, 14, 14, 30, 26, 11, 28, 12, 12, 18, 10, 16, 12, 14, 14, 16, 14, 14, 14, 14]
+          .concat(mois.map(function () { return 11; })).concat([13, 10, 34, 26, 26, 12, 80]);
+        ws['!cols'] = larg.map(function (w) { return { wch: w }; });
+        ws['!autofilter'] = { ref: window.XLSX.utils.encode_range({ s: { r: 1, c: 0 }, e: { r: rows.length + 1, c: head.length - 1 } }) };
+        ws['!freeze'] = { xSplit: 2, ySplit: 2 };
+        for (var ri = 2; ri <= rows.length + 2; ri++) for (var ci = 27; ci <= iTot; ci++) {
+          var cell = ws[window.XLSX.utils.encode_cell({ r: ri, c: ci })]; if (cell && cell.t === 'n') cell.z = '# ##0 €';
+        }
+        var wb = window.XLSX.utils.book_new();
+        window.XLSX.utils.book_append_sheet(wb, ws, 'Mes clients');
+        window.XLSX.writeFile(wb, 'Mes-clients' + (qui ? '-' + String(qui).replace(/[^A-Za-z0-9-]/g, '_') : '') + '-' + new Date().toISOString().slice(0, 10) + '.xlsx');
+        V2.toast('Excel téléchargé · ' + rows.length + ' officine' + (rows.length > 1 ? 's' : ''));
+      });
+    });
+  };
   V2.grpDownloadXlsx = function (enc) {
     var grpName; try { grpName = decodeURIComponent(enc); } catch (e) { grpName = enc; }
     achatsXlsx(grpName, groupementProducts(grpName), !!(selCips && selCips.size && selPid === 'GRP:' + grpName));
