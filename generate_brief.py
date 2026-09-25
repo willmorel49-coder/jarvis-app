@@ -919,6 +919,7 @@ THEME_POIDS = {
 # Le robot « veille concurrents » étiquette déjà ses articles : un article
 # tagué OCP ou CERP est un article sur un concurrent direct, quel que soit son titre.
 TAG_THEME = {'ocp': 'concurrence', 'cerp-rouen': 'concurrence', 'cerp-rrm': 'concurrence',
+             'cerp': 'concurrence', 'cerp-ba': 'concurrence',
              'sagitta': 'concurrence', 'groupement': 'concurrence',
              'marge': 'marge', 'generique': 'generique', 'biosimilaire': 'generique'}
 

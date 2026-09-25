@@ -63,7 +63,7 @@
       return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' });
     } catch (e) { return (iso || '').slice(0, 10); }
   }
-  var TAGNAME = { '': 'Secteur', 'ocp': 'Phoenix OCP', 'cerp-rouen': 'CERP Rouen', 'cerp-rrm': 'CERP RRM', 'alliance': 'Alliance Healthcare', 'phoenix': 'Phoenix', 'sagitta': 'Sagitta', 'cophana': 'Cophana', 'welcoop': 'Welcoop', 'giphar': 'Giphar', 'drapier': 'Groupe Drapier', 'aredis': 'Aredis', 'rbp': 'RBP Pharma' };
+  var TAGNAME = { '': 'Secteur', 'ocp': 'Phoenix OCP', 'cerp-rouen': 'CERP Rouen', 'cerp-rrm': 'CERP RRM', 'alliance': 'Alliance Healthcare', 'phoenix': 'Phoenix OCP', 'cerp': 'CERP', 'cerp-ba': 'CERP Bretagne Atlantique', 'sagitta': 'Sagitta', 'cophana': 'Cophana', 'welcoop': 'Welcoop', 'giphar': 'Giphar', 'drapier': 'Groupe Drapier', 'aredis': 'Aredis', 'rbp': 'RBP Pharma' };
 
   // ── ANNUAIRE PAR GROUPE (niveau 0 marché → 1 groupes → 2 membres/mère) ──
   function groupes() { var d = DATA(); return (d && d.groupes) || []; }
@@ -314,6 +314,11 @@
         else body.innerHTML = annuaireHtml();
       });
     }
+  };
+  // Mêmes fichiers (actualités + faits vérifiés), pour la phrase du jour et la
+  // carte du secteur d'« Infos du jour » (v2-infos-concurrents.js).
+  V2.grossistesActuDonnees = function (cb) {
+    ensureActu(function () { cb((ACTU && ACTU.items) || [], (VERIF && VERIF.items) || []); });
   };
   // Chiffres vivants des portes de l'accueil « Concurrents » : même compte
   // d'acteurs que la liste, articles des 7 derniers jours, fraîcheur du robot.

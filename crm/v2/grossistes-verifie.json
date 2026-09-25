@@ -8,14 +8,16 @@
       "titre": "Cédric Drapier crée Alvernia en Auvergne",
       "texte": "Société créée le 30/07/2026 à Cournon-d'Auvergne (63), présidée par Cédric Drapier (fondateur de R3S et Pharmasmile, revendus à Sagitta, puis de Médiane et Mezegel). Immatriculée sans activité : pas encore de répartition. Une reprise par Aredis ou RBP Pharma est évoquée par la veille terrain ; rien de public à ce jour.",
       "source": "BODACC, annonce de création du 07/08/2026",
-      "url": "https://annuaire-entreprises.data.gouv.fr/entreprise/108299611"
+      "url": "https://annuaire-entreprises.data.gouv.fr/entreprise/108299611",
+      "acteur": "drapier"
     },
     {
       "date": "2026-05-29",
       "titre": "Medisca : un nouveau grossiste Drapier près de Dijon",
       "texte": "Grossiste en produits pharmaceutiques à Couchey (21), créé le 22/11/2025, en activité depuis le 30/03/2026. Présidé par la holding Triorose, directeur général Cédric Drapier. Même équipe que Médiane et Mezegel.",
       "source": "BODACC, modification du 29/05/2026",
-      "url": "https://annuaire-entreprises.data.gouv.fr/entreprise/994320257"
+      "url": "https://annuaire-entreprises.data.gouv.fr/entreprise/994320257",
+      "acteur": "drapier"
     },
     {
       "date": "2026-08-11",
@@ -29,7 +31,8 @@
       "titre": "Phoenix OCP : Cyprien Duplay directeur général",
       "texte": "Nommé avec effet au 01/07/2026, aux côtés de Véronique Jung. Comptes 2025 déposés : 9,64 Md€ de chiffre d'affaires, 25,4 M€ de résultat net.",
       "source": "Annonce légale et comptes déposés (RNE)",
-      "url": "https://www.pappers.fr/entreprise/phoenix-ocp-582137436"
+      "url": "https://www.pappers.fr/entreprise/phoenix-ocp-582137436",
+      "acteur": "phoenix"
     },
     {
       "date": "2026-07-08",
@@ -43,14 +46,17 @@
       "titre": "ANSM : Aredis sanctionné de 905 134 €",
       "texte": "Sanction financière pour avoir privilégié l'export au détriment de ses obligations de service public.",
       "source": "ANSM, décision du 06/07/2026",
-      "url": "https://ansm.sante.fr/actualites/decision-du-06-07-2026-portant-sanction-financiere-a-lencontre-de-la-societe-aredis-sas"
+      "url": "https://ansm.sante.fr/actualites/decision-du-06-07-2026-portant-sanction-financiere-a-lencontre-de-la-societe-aredis-sas",
+      "acteur": "aredis",
+      "angle": "Si ton pharmacien manque de produits, rappelle que tout grossiste-répartiteur doit pouvoir livrer sous 24 h : c'est une obligation de service public, et c'est précisément ce qu'Aredis n'a pas tenu."
     },
     {
       "date": "2026-07-02",
       "titre": "Oxypharm : Astera et CERP Rhin Rhône Méditerranée réunissent leur santé à domicile",
       "texte": "Astera 66 %, CERP RRM 34 %, depuis le 01/07/2026 : 1 000 salariés, 60 agences, siège à Montpellier.",
       "source": "Le Journal des Entreprises, 02/07/2026",
-      "url": "https://www.lejournaldesentreprises.com/article/oxypharm-ce-nouveau-groupe-qui-reunit-1-000-salaries-dans-la-sante-domicile-2145985"
+      "url": "https://www.lejournaldesentreprises.com/article/oxypharm-ce-nouveau-groupe-qui-reunit-1-000-salaries-dans-la-sante-domicile-2145985",
+      "acteur": "cerp"
     },
     {
       "date": "2026-06-19",
@@ -64,7 +70,8 @@
       "titre": "Giphar : 9 jeunes marques retenues par l'incubateur GipharLab",
       "texte": "Plus de 90 candidatures ; 6 mois d'accompagnement dans des officines du réseau.",
       "source": "Pharma365, 19/06/2026",
-      "url": "https://www.pharma365.fr/je-m-informe/actualites-2/gipharlab-2026-neuf-jeunes-marques-selectionnees-pour-accelerer-leur-developpement-en-pharmacie/"
+      "url": "https://www.pharma365.fr/je-m-informe/actualites-2/gipharlab-2026-neuf-jeunes-marques-selectionnees-pour-accelerer-leur-developpement-en-pharmacie/",
+      "acteur": "giphar"
     },
     {
       "date": "2026-06-18",
@@ -86,7 +93,9 @@
       "titre": "Sagitta rachèterait Médiane Répartition et Mezegel Répartition",
       "texte": "Rumeur : rien d'officiel au 23/09/2026, ni presse ni annonce légale. Le robot surveille les annonces BODACC des deux sociétés.",
       "source": "Registre des entreprises",
-      "url": "https://www.pappers.fr/entreprise/mediane-repartition-977768548"
+      "url": "https://www.pappers.fr/entreprise/mediane-repartition-977768548",
+      "acteur": "sagitta"
     }
-  ]
+  ],
+  "note_acteur": "« acteur » = clé du concurrent dans concurrents-implantations.json ; « angle » = phrase de rendez-vous écrite à la main. Les deux sont facultatifs."
 }

@@ -28,11 +28,16 @@ QUERIES = [
     {'tag': '', 'q': '"répartition pharmaceutique" France'},
     {'tag': '', 'q': '"grossiste répartiteur" pharmacie'},
     {'tag': '', 'q': 'CSRP répartiteurs pharmacie'},
+    # 25/09/2026 — un seul nom par concurrent (décision Will) : Phoenix OCP = 'ocp'
+    # (l'ancien tag 'phoenix' y est fondu), CERP Rouen + CERP RRM = 'cerp' (fusion
+    # du 01/07/2024 : la presse ne dit plus que « CERP », d'où la requête courte).
     {'tag': 'ocp', 'q': '"OCP" répartition pharmaceutique'},
-    {'tag': 'cerp-rouen', 'q': '"CERP Rouen" OR Astera pharmacie'},
-    {'tag': 'cerp-rrm', 'q': '"CERP RRM" pharmacie'},
+    {'tag': 'ocp', 'q': '"Phoenix OCP"'},
+    {'tag': 'cerp', 'q': '"CERP Rouen" OR Astera pharmacie'},
+    {'tag': 'cerp', 'q': '"CERP RRM" pharmacie'},
+    {'tag': 'cerp', 'q': '"CERP" répartition pharmaceutique'},
     {'tag': 'alliance', 'q': '"Alliance Healthcare" France pharmacie'},
-    {'tag': 'phoenix', 'q': '"Phoenix Pharma" France répartition'},
+    {'tag': 'ocp', 'q': '"Phoenix Pharma" France répartition'},
     {'tag': 'sagitta', 'q': 'Sagitta répartiteur pharmacie'},
     {'tag': 'cophana', 'q': 'Cophana grossiste pharmacie'},
     {'tag': 'welcoop', 'q': 'Welcoop pharmacie répartition'},
@@ -97,7 +102,37 @@ FEEDS = [
     {'src': 'FSPF', 'url': 'https://www.fspf.fr/feed/', 'libre': True},
     {'src': 'ANSM · Actualités', 'url': 'https://ansm.sante.fr/rss/actualites?produitsSante=medicaments', 'libre': True},
     {'src': 'ANSM · Disponibilité', 'url': 'https://ansm.sante.fr/rss/disponibilite_produits_sante?produitsSante=medicaments', 'libre': True},
+    # 25/09/2026 — testés en vrai le 24/09 (HTTP 200, articles du jour) : les
+    # alertes de sécurité et rappels de l'ANSM, et Le Moniteur (en partie payant).
+    {'src': 'ANSM · Sécurité', 'url': 'https://ansm.sante.fr/rss/informations_securite?produitsSante=medicaments', 'libre': True},
+    {'src': 'Le Moniteur des pharmacies', 'url': 'https://www.lemoniteurdespharmacies.fr/feed/', 'libre': False},
 ]
+
+# 25/09/2026 — un article venu d'un flux direct ou d'une requête « secteur » n'a pas
+# de tag, même quand il nomme un concurrent : seuls 11 articles sur 119 en portaient
+# un. On le reconnaît à son nom dans le titre ou le résumé. Ordre = du plus précis
+# au plus large (« CERP Bretagne Atlantique » avant « CERP »).
+NOMS = [
+    ('cerp-ba', re.compile(r'CERP Bretagne', re.I)),
+    ('cerp', re.compile(r'\bCERP\b|\bAstera\b')),
+    ('ocp', re.compile(r'Phoenix (OCP|Pharma)|\bOCP\b')),
+    ('alliance', re.compile(r'Alliance Healthcare', re.I)),
+    ('giphar', re.compile(r'\b(So)?giphar\b', re.I)),
+    ('drapier', re.compile(r'\bMedisca\b|\bAlvernia\b|C[ée]dric Drapier', re.I)),
+    ('sagitta', re.compile(r'\bSagitta\b|M[ée]diane R[ée]partition|\bMezegel\b', re.I)),
+    ('aredis', re.compile(r'\bAredis\b', re.I)),
+    ('rbp', re.compile(r'\bRBP Pharma\b', re.I)),
+    ('cophana', re.compile(r'\bCophana\b', re.I)),
+    ('welcoop', re.compile(r'\bWelcoop\b', re.I)),
+]
+
+
+def tag_par_nom(row):
+    txt = row.get('titre', '') + ' ' + row.get('resume', '')
+    for tag, rx in NOMS:
+        if rx.search(txt):
+            return tag
+    return ''
 # Sources connues PAYANTES (mur d'abonnement) — on tague pour prévenir l'utilisateur.
 PAYWALL = re.compile(r'moniteur des pharmacies|quotidien du pharmacien|apmnews|les echos|le figaro|mediapart|whatsupdoc|pharmaceutiques\b|l\'?usine|challenges', re.I)
 
@@ -203,7 +238,7 @@ def parse_direct(feed):
         d = parse_date(it.findtext('pubDate') or it.findtext('{http://purl.org/dc/elements/1.1/}date') or '')
         out.append({'titre': titre, 'url': link, 'source': feed['src'],
                     'date': (d.astimezone(timezone.utc).isoformat() if d else ''),
-                    'tag': '', 'resume': resume, 'libre': True})
+                    'tag': '', 'resume': resume, 'libre': feed.get('libre', True)})
         if len(out) >= 15:
             break
     return out
@@ -261,6 +296,9 @@ def main():
                 continue
             seen[k] = row
             items.append(row)
+    for row in items:
+        if not row.get('tag'):
+            row['tag'] = tag_par_nom(row)
     # tri par date décroissante (sans date -> en bas)
     items.sort(key=lambda x: x.get('date') or '', reverse=True)
     items = items[:120]
