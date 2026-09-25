@@ -29,13 +29,13 @@
   function mo(o) { return (o / 1048576).toFixed(o < 10485760 ? 1 : 0).replace('.', ',') + ' Mo'; }
   function dateFr(iso) { var p = String(iso || '').split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : ''; }
 
-  // Lignes du fichier protégé : [ean, marque, nom, rayon, tarif, prix]
+  // Lignes du fichier protégé : [ean, marque, nom, rayon, tarif, prix, rang ventes Offilog|null, top vente du marché 0/1]
   function lignes() {
     var C = window.OFFILOG_CATALOGUE;
     if (!C || !C.lignes) return [];
     if (!C._obj) {
       C._obj = C.lignes.map(function (l) {
-        return { ean: l[0], marque: l[1], nom: l[2], rayon: l[3], tarif: l[4], prix: l[5], ecart: (1 - l[5] / l[4]) * 100 };
+        return { ean: l[0], marque: l[1], nom: l[2], rayon: l[3], tarif: l[4], prix: l[5], ecart: (1 - l[5] / l[4]) * 100, rang: l[6] || null, topm: !!l[7] };
       });
     }
     return C._obj;
@@ -177,14 +177,14 @@
       var titre = [F.rayon, F.marque, F.min ? 'écart ≥ ' + F.min + ' %' : ''].filter(Boolean).join(' · ') || 'Tout le catalogue';
       var aoa = [
         ['Catalogue Offilog — ' + titre],
-        ['Prix HT, hors promotions, susceptibles d\'évoluer · tarif laboratoire 2026 · prix Offilog relevés le ' + dateFr(C.maj)],
+        ['Prix HT, hors promotions, susceptibles d\'évoluer · tarif laboratoire 2026 · prix Offilog relevés le ' + dateFr(C.maj) + (C.ventes ? ' · rang = classement des meilleures ventes Offilog au ' + dateFr(C.ventes) : '')],
         [],
-        ['Rayon', 'Marque', 'Produit', 'EAN', 'Tarif labo HT (€)', 'Écart vs tarif labo (%)', 'Prix Offilog HT (€)']
+        ['Rayon', 'Marque', 'Produit', 'EAN', 'Tarif labo HT (€)', 'Écart vs tarif labo (%)', 'Prix Offilog HT (€)', 'Rang ventes Offilog', 'Top vente du marché']
       ];
-      L.forEach(function (x) { aoa.push([x.rayon, x.marque, x.nom, x.ean, x.tarif, Math.round(x.ecart), x.prix]); });
+      L.forEach(function (x) { aoa.push([x.rayon, x.marque, x.nom, x.ean, x.tarif, Math.round(x.ecart), x.prix, x.rang || '', x.topm ? 'Oui' : '']); });
       var ws = XLSX.utils.aoa_to_sheet(aoa);
-      ws['!cols'] = [{ wch: 24 }, { wch: 22 }, { wch: 60 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 17 }];
-      ws['!autofilter'] = { ref: 'A4:G' + (L.length + 4) };
+      ws['!cols'] = [{ wch: 24 }, { wch: 22 }, { wch: 60 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 17 }, { wch: 18 }, { wch: 19 }];
+      ws['!autofilter'] = { ref: 'A4:I' + (L.length + 4) };
       var wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Catalogue Offilog');
       var bout = [F.rayon, F.marque].filter(Boolean).join('-').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50);
