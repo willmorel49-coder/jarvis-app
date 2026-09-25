@@ -224,7 +224,6 @@ SOURCES = [
     ('Céline', 'DC'),        # Céline Descomps
     ('Caroline', 'CSM'),     # Caroline Simon
     ('Ingrid L.', 'ILE'),    # Ingrid Lefebure
-    ('Ingrid M.', 'IMM'),    # Ingrid Mazerm
     ('Pauline A.', 'PA'),    # Pauline Attali
     ('Pascale P.', 'PPO'),   # Pascale Prieto — réintégrée le 23/09/2026 (demande de Will)
     ('Pascal G.', 'PG'),     # Pascal Gracia — réintégré le 23/09/2026 ; « Pascale G. » corrigé le 24/09/2026 (Pascale Prieto)
@@ -241,7 +240,8 @@ SOURCES = [
 # vivent dans STATS/hors-perimetre/ ; le robot les y range tout seul s'ils
 # réapparaissent à la racine de STATS.
 EXCLUS = ['ADC', 'VM', 'AM', 'SEP', 'GL', 'AUL', 'SV', 'LP',
-          'SOP', 'MSP', 'CPR', 'NR', 'REP', 'COMMERCIAL_INCONNU']
+          'SOP', 'MSP', 'CPR', 'NR', 'REP', 'COMMERCIAL_INCONNU',
+          'IMM']   # Ingrid Mazerm : retirée du CRM (Will, 25/09/2026)
 # Escale écrit ses avoirs (PCVNUM « AC_… ») en POSITIF = montant rendu à l'officine,
 # là où les exports Intégral les écrivent déjà en négatif. Un avoir Escale est le
 # plus souvent une correction de prix : +24 × 127 € (recrédité) et −24 × 122,90 €
