@@ -3204,6 +3204,16 @@
         .map(function (f) { return { name: f.name, size: (f.metadata || {}).size || 0 }; });
     }).catch(function () { tx.docs = []; tx.docsErr = 'Bibliothèque partagée injoignable — réessaie dans un instant.'; });
   }
+  // 25/09/2026 — documents FAITS dans l'app (fiches Marketing de l'équipe, fiches biosimilaires
+  // « pharmacien », catalogue par catégorie) : générés ou lus au moment de préparer le mail.
+  var TX_PROTEGES = ['biosimSynthesePharma', 'biosimDetailPharma'];   // jamais les versions « interne »
+  var txFiches = null;
+  function txLoadFiches() {
+    if (!V2.mkt || !V2.mkt.fichesPourMail) { txFiches = []; return Promise.resolve(); }
+    return V2.mkt.fichesPourMail().then(function (a) { txFiches = a || []; }, function () { txFiches = []; });
+  }
+  V2.pharmaTxFiches = function () { return txFiches ? Promise.resolve() : txLoadFiches(); };
+  function txProtegeTitre(c) { var d = (V2.docsProteges || {})[c]; return d ? d.titre : c; }
   function txIsClient(pid) { return (V2.pharmacies || []).some(function (p) { return String(p.id) === String(pid); }); }
   function txCount(pid, scope) { return buildRecoCats(pid, scope).cats.reduce(function (s, o) { return s + o.rows.length; }, 0); }
   function txItems(pid) {
@@ -3227,6 +3237,11 @@
     }
     // Documents à l'en-tête Intégral : pas dans les espaces Escale ni OPSO (deux marques distinctes).
     if (!isEscale() && !isOpso()) TX_APP_DOCS.forEach(function (d) { its.push({ k: 'S:' + d.f, grp: 'app', label: d.label, meta: 'PDF' }); });
+    if (!isEscale() && !isOpso()) {
+      (txFiches || []).forEach(function (f) { its.push({ k: 'M:' + f.id, grp: 'fab', label: f.titre, meta: 'Fiche ' + f.type.toLowerCase() + ' · ' + f.n + ' produit' + (f.n > 1 ? 's' : '') + ' · PDF généré' }); });
+      if (V2.mkt && V2.mkt.catalogueCategoriesFichier) its.push({ k: 'C:categories', grp: 'fab', label: 'Catalogue par catégorie', meta: 'Princeps par tranche de prix et non remboursables · PDF généré' });
+      if (V2.docProtegeFichier) TX_PROTEGES.forEach(function (c) { its.push({ k: 'P:' + c, grp: 'fab', label: txProtegeTitre(c), meta: 'PDF' }); });
+    }
     (tx.docs || []).forEach(function (d) {
       its.push({ k: 'D:' + d.name, grp: 'lib', label: txPretty(d.name), meta: (txIsXls(d.name) ? 'Excel' : 'PDF') + ' · ' + txSize(d.size), xls: txIsXls(d.name) });
     });
@@ -3281,6 +3296,8 @@
               : group('Listings produits', 'les plus commandés' + (tx.grp ? ' · son groupement : ' + esc(tx.grp) : ''), of('listing'),
                   (window.BENCHMARK ? '' : '<div class="tx-empty">Chargement du catalogue…</div>') + txStyleHtml(of('listing')))) +
       group('Documents Intégral Pharma', '', of('app')) +
+      group('Faits dans l\'app', 'fiches Marketing de l\'équipe, biosimilaires, catalogue', of('fab'),
+        txFiches === null && !isEscale() && !isOpso() ? '<div class="tx-empty">Chargement des fiches Marketing…</div>' : '') +
       group('Bibliothèque de l\'équipe', 'déposés par chacun, visibles par tous', lib, libMsg + upl);
     body.scrollTop = keepY;
 
@@ -3347,12 +3364,16 @@
     bd.classList.add('open');
     txRender();
     txLoadDocs().then(txRender);
+    txLoadFiches().then(txRender);
   };
   // Nom lisible d'une pièce jointe à partir de sa clé (S: document de l'app, D: bibliothèque, L: listing généré).
   V2.pharmaTxLabel = function (k) {
     k = String(k || '');
     if (k.indexOf('S:') === 0) { var d = TX_APP_DOCS.find(function (x) { return x.f === k.slice(2); }); return d ? d.label : k.slice(2); }
     if (k.indexOf('D:') === 0) return txPretty(k.slice(2));
+    if (k.indexOf('P:') === 0) return txProtegeTitre(k.slice(2));
+    if (k === 'C:categories') return 'Catalogue par catégorie';
+    if (k.indexOf('M:') === 0) { var f = (txFiches || []).filter(function (x) { return x.id === k.slice(2); })[0]; return f ? f.titre : 'Fiche Marketing'; }
     if (k === 'L:reseau') return 'Listing produits (réseau)';
     if (k === 'L:groupement') return 'Listing produits (groupement)';
     return k;
@@ -3380,6 +3401,9 @@
   };
   function txFetch(pid, k) {
     if (k.indexOf('L:') === 0) return Promise.resolve(V2.pharmaListPdf(pid, k.slice(2), 'blob'));
+    if (k.indexOf('M:') === 0) return V2.mkt && V2.mkt.fichePdfFichier ? V2.mkt.fichePdfFichier(k.slice(2)) : Promise.resolve(null);
+    if (k === 'C:categories') return V2.mkt && V2.mkt.catalogueCategoriesFichier ? V2.mkt.catalogueCategoriesFichier() : Promise.resolve(null);
+    if (k.indexOf('P:') === 0) return TX_PROTEGES.indexOf(k.slice(2)) >= 0 && V2.docProtegeFichier ? V2.docProtegeFichier(k.slice(2)) : Promise.resolve(null);
     if (k.indexOf('S:') === 0) {
       return fetch(k.slice(2)).then(function (r) { return r.ok ? r.blob() : null; })
         .then(function (b) { return b ? new File([b], k.slice(2), { type: 'application/pdf' }) : null; });
