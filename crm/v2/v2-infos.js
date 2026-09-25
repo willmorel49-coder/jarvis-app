@@ -30,12 +30,15 @@
    sur les officines de ses départements, avec étiquette client/prospect
    calculée ici (jamais publiée) et bascule de secteur réservée à la direction.
 
-   25/09/2026 (soir) — choix de Will : « v4 · Le brief en 5 cartes » (maquette
-   ~/maquette-infos-du-jour/v4.html). Au-dessus de tout, cinq cartes plein
-   écran (secteur, prix, ruptures, à la une, concurrents), calculées depuis
-   les mêmes données déjà chargées ici. Tout ce qui existait avant (tête,
-   secteur, alertes, une, essentiel, concurrents, mur, archives, pied) reste
-   intact, replié sous « Tout le reste » (V2.infosReste / #inf-reste).
+   25/09/2026 (soir) — choix de Will : « v4 · Le brief en 5 cartes », remplacé la
+   même nuit par la page ENTIÈRE refaite (« c'est toute la page entière qu'on doit
+   refaire ») : choix de Will « m1 · Le poste de pilotage » (maquette
+   ~/maquette-infos-page-entiere/m1.html). Un tableau de bord de neuf tuiles vivantes
+   (Ton secteur, À ne pas manquer, Ruptures, À la une, Le radar du jour, L'essentiel
+   en 30 s, Concurrents, Rappels de lot, Le mur), chacune avec son chiffre et son
+   visuel ; toucher une tuile ouvre toute sa matière dans un panneau avec une pile
+   (« Revenir »). Plus de « Tout le reste » : tout l'inventaire est à un ou deux
+   touchers. Les cinq cartes et le repli « Tout le reste » sont retirés.
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   // 03/09/2026 — un lien de flux scrapé ne doit jamais porter un schéma
@@ -55,53 +58,13 @@
 
   var BRIEF = null, ARCHIVE = null, LOADED = false, FAILED = false;
   var SECTEUR = null;   // bodacc-secteur.json — jamais obligatoire, jamais bloquant
-  var CONTOURS = null;  // departements-contours.json — jamais obligatoire : sert la mini-carte de la carte 1 du brief
-  var TOUS = [];        // tous les articles à plat : le panneau de lecture s'y réfère par rang
-  var OUVERT = -1;      // l'article actuellement ouvert dans le panneau (-1 = aucun)
+  var CONTOURS = null;  // departements-contours.json — jamais obligatoire : sert la carte du secteur (tuile et panneau)
 
-  /* ── accent visuel par thème : une couleur veut toujours dire la même chose ── */
-  var THEME_ACC = {
-    marge: 'amber', remboursement: 'blue', generique: 'green', rupture: 'rose',
-    securite: 'rose', concurrence: 'violet', officine: 'blue', industrie: 'muted',
-    sante: 'teal', autre: 'muted'
-  };
-  var THEME_ICO = {
-    marge: 'euro', remboursement: 'euro', generique: 'pill', rupture: 'alert',
-    securite: 'alert', concurrence: 'opp', officine: 'pharma', industrie: 'cat',
-    sante: 'pill', autre: 'list'
-  };
-
-  /* filtre de thème + recherche sur le fil (mémorisé lui aussi) */
+  /* thème choisi au mur (mémorisé) */
   var TH_KEY = 'jarvis_brief_theme_v1';
   var THEME_SEL = (function () { try { return localStorage.getItem(TH_KEY) || ''; } catch (e) { return ''; } })();
-  var QUERY = '';
-  V2.briefTheme = function (t) {
-    THEME_SEL = (THEME_SEL === t) ? '' : t;
-    try { localStorage.setItem(TH_KEY, THEME_SEL); } catch (e) {}
-    if (V2.route && V2.route.name === 'infos') V2.render();
-  };
-  V2.briefSearch = function (el) {
-    QUERY = el.value || '';
-    var q = norm(QUERY.trim());
-    var rows = document.querySelectorAll('#brief-fil .tu');
-    var vus = 0;
-    for (var i = 0; i < rows.length; i++) {
-      var ok = !q || norm(rows[i].getAttribute('data-q') || '').indexOf(q) >= 0;
-      rows[i].style.display = ok ? '' : 'none';
-      if (ok) vus++;
-    }
-    var vide = document.getElementById('brief-fil-vide');
-    if (vide) vide.style.display = vus ? 'none' : '';
-    var cpt = document.getElementById('brief-fil-cpt');
-    if (cpt) cpt.textContent = vus + (vus > 1 ? ' articles' : ' article');
-  };
 
   var COPY_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
-
-  /* ── « nouveau depuis ta dernière visite » ── */
-  var SEEN_KEY = 'jarvis_infos_seen', seenBaseline = null;
-  function seenBase() { if (seenBaseline === null) { try { seenBaseline = localStorage.getItem(SEEN_KEY) || ''; } catch (e) { seenBaseline = ''; } } return seenBaseline; }
-  function markSeen() { try { localStorage.setItem(SEEN_KEY, new Date().toISOString().slice(0, 10)); } catch (e) {} }
 
   /* ════════════════ chargement ════════════════ */
   function load(cb) {
@@ -237,7 +200,6 @@
     dirigeant: { l: 'Nouveaux dirigeants', l1: 'Nouveau dirigeant', c: '--c-cat', ct: '--c-cat',
       ico: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>' }
   };
-  var SCT_ORDRE = ['cession', 'procedure', 'creation', 'fermeture', 'dirigeant'];
   var SCT_TAG_L = { client: 'Ton client', prospect: 'Ton prospect', hors: 'Hors fichier' };
   // table INSEE des départements — pour ÉTIQUETER un secteur par noms, jamais par
   // le prénom d'un membre de l'équipe (règle ferme, cf. AGENTS.md).
@@ -276,9 +238,7 @@
   var SCT_LU = (function () { try { return JSON.parse(localStorage.getItem(SCT_LU_KEY) || '{}'); } catch (e) { return {}; } })();
   function sctSaveLu() { try { localStorage.setItem(SCT_LU_KEY, JSON.stringify(SCT_LU)); } catch (e) {} }
 
-  var SCT_S = { scope: null, autre: -1, per: 30, off: {}, cap: 12 };
-  var SCT_TOUS = [];     // liste à plat affichée, pour retrouver un item par id au clic
-  var SCT_OUVERT = null; // id de l'annonce ouverte dans le panneau (null = fermé)
+  var SCT_S = { scope: null, autre: -1, per: 90 };
 
   function sctEstDirection() { return !!(V2.user && V2.user.voitTousReel); }
 
@@ -409,579 +369,692 @@
   // la phrase du jour et la carte des concurrents suivent la MÊME portée que ce bloc
   V2.infosSecteur = function () { return { deps: sctDeps(), noms: SCT_DEPNOMS }; };
 
-  function sctBase() {
-    var d = sctDeps(), ev = (SECTEUR && SECTEUR.ev) || [];
-    return ev.filter(function (e) { return (!d || d.indexOf(e.dep) >= 0) && sctJours(e.d) < SCT_S.per; });
-  }
+  /* ════════════════ LE POSTE DE PILOTAGE (25/09/2026, choix de Will · m1) ════════════════
+     Maquette : ~/maquette-infos-page-entiere/m1.html. Toute l'édition sur un seul tableau
+     de bord : neuf tuiles, chacune avec SON chiffre et SON visuel ; toucher une tuile ouvre
+     toute sa matière dans un panneau (plein écran sur téléphone, volet droit au bureau),
+     avec une pile et « Revenir » pour lire un article sans perdre la liste.
+     Tout est calculé ICI, à chaque rendu, depuis les fichiers déjà chargés (BRIEF, SECTEUR,
+     CONTOURS, ARCHIVE) et ceux des modules concurrents — rien en dur. Une donnée absente
+     se dit sobrement dans sa tuile, jamais un trou ni un faux chiffre.
+     ⚠️ Les annonces Bodacc n'ont PAS de coordonnées (code postal et ville seulement) :
+        la carte du secteur place chaque annonce dans SON département (grappe de points
+        rangée au centre du département), jamais à une position inventée. Les agences
+        concurrentes, elles, ont une vraie latitude/longitude : elles sont à leur place. */
 
-  V2.secteurScope = function (s) {
-    SCT_S.scope = s; SCT_S.autre = -1; SCT_S.cap = 12;
-    if (V2.route && V2.route.name === 'infos') V2.render();
+  /* couleurs de la maquette : une famille, une couleur, partout */
+  var PP_FC = { dirigeant: '#0050E6', cession: '#1E9E6A', creation: '#00B5D8', fermeture: '#E0556E', procedure: '#C7791A' };
+  var PP_TH = { marge: '#C7791A', remboursement: '#0050E6', generique: '#1E9E6A', rupture: '#E0556E', securite: '#BE3450',
+    concurrence: '#6D4FC4', officine: '#0A7F99', industrie: '#465066', sante: '#157A51', autre: '#5E677A' };
+  var PP_TON = { rose: '#E0556E', green: '#1E9E6A', blue: '#0050E6', amber: '#C7791A' };
+  var PP_ORDRE_F = ['cession', 'dirigeant', 'creation', 'fermeture', 'procedure'];
+  var PP_COURT = { cession: 'Ventes', dirigeant: 'Dirigeants', creation: 'Créations', fermeture: 'Fermetures', procedure: 'Difficultés' };   // libellés courts de la maquette
+  var PP_MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  var PP_JS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+  function ppDc(d) { var p = String(d || '').slice(0, 10).split('-'); if (p.length < 3) return ''; return (+p[2] === 1 ? '1er' : +p[2]) + ' ' + PP_MOIS[+p[1] - 1]; }
+  function ppDl(d) { var c = ppDc(d); return c ? c + ' ' + String(d).slice(0, 4) : ''; }
+  function ppPl(n, s, p) { return n + ' ' + (n > 1 ? (p || s + 's') : s); }
+  function ppJ(d) { return sctJours(String(d || '').slice(0, 10)); }   // jours écoulés depuis d (négatif = à venir)
+
+  var PP_IC = {
+    dirigeant: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',
+    cession: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2 2"/>',
+    creation: '<path d="M12 5v14M5 12h14"/>',
+    fermeture: '<path d="M4 21V5a2 2 0 0 1 2-2h8l6 6v12"/><path d="M9 13l6 6M15 13l-6 6"/>',
+    procedure: '<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>',
+    prix: '<path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+    rupture: '<rect x="3" y="8" width="18" height="8" rx="4"/><path d="M12 8v8"/>',
+    rappel: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M12 9v4M12 16h.01"/>',
+    concurrent: '<path d="M3 21h18M5 21V9l7-5 7 5v12"/><path d="M9 21v-6h6v6"/>',
+    journal: '<path d="M4 4h12v16H6a2 2 0 0 1-2-2z"/><path d="M16 8h4v10a2 2 0 0 1-4 0M8 8h4M8 12h4M8 16h2"/>',
+    chercher: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
+    suite: '<path d="M7 17L17 7M9 7h8v8"/>',
+    lien: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+    horloge: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    europe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+    loi: '<path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0zM17 7l-3 7a3 3 0 0 0 6 0z"/>',
+    bas: '<path d="M6 9l6 6 6-6"/>',
+    sante: '<path d="M12 21s-8-4.5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.5-8 11-8 11z"/>',
+    fiche: '<path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/>',
+    copier: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/>',
+    retour: '<path d="M15 5l-7 7 7 7"/>',
+    fermer: '<path d="M6 6l12 12M18 6L6 18"/>'
   };
-  V2.secteurAutre = function (sel) {
-    if (sel.value === '') return;
-    SCT_S.scope = 'autre'; SCT_S.autre = +sel.value; SCT_S.cap = 12;
-    if (V2.route && V2.route.name === 'infos') V2.render();
-  };
-  V2.secteurPeriode = function (n) {
-    SCT_S.per = +n; SCT_S.cap = 12;
-    if (V2.route && V2.route.name === 'infos') V2.render();
-  };
-  V2.secteurFam = function (f) {
-    SCT_S.off[f] = !SCT_S.off[f]; SCT_S.cap = 12;
-    if (V2.route && V2.route.name === 'infos') V2.render();
-  };
-  V2.secteurPlus = function () {
-    SCT_S.cap += 20;
-    if (V2.route && V2.route.name === 'infos') V2.render();
-  };
-  V2.secteurFicheOfficine = function (id) {
-    if (!id) return;
-    SCT_OUVERT = null; sctPanneau();
-    V2.go('pharma', id);
-  };
-  V2.secteurOuvrir = function (id) {
-    SCT_OUVERT = id; SCT_LU[id] = 1; sctSaveLu(); sctPanneau();
-  };
-  V2.secteurNonLu = function (id) {
-    delete SCT_LU[id]; sctSaveLu(); SCT_OUVERT = null; sctPanneau();
-    if (V2.route && V2.route.name === 'infos') V2.render();
-  };
-  V2.secteurFermer = function () {
-    SCT_OUVERT = null; sctPanneau();
-    if (V2.route && V2.route.name === 'infos') V2.render();
-  };
-  if (!V2._sctEchap) {
-    V2._sctEchap = true;
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && SCT_OUVERT !== null) V2.secteurFermer(); });
-  }
+  function ppIco(n, s) { return sctSvg(PP_IC[n] || PP_IC.journal, s || 18); }
 
-  function sctPanneau() {
-    var vieux = document.getElementById('sct-panneau');
-    if (vieux) vieux.parentNode.removeChild(vieux);
-    if (SCT_OUVERT === null) return;
-    var ev = (SECTEUR && SECTEUR.ev) || [];
-    var e = null; for (var i = 0; i < ev.length; i++) if (ev[i].id === SCT_OUVERT) { e = ev[i]; break; }
-    if (!e) return;
-    var fam = SCT_FAM[e.f] || SCT_FAM.dirigeant;
-    var tag = sctTag(e);
-    var h = '<div class="sct-fond" onclick="V2.secteurFermer()"></div>' +
-      '<aside class="sct-pan" role="dialog" aria-modal="true" aria-label="' + esc(sctJoli(e.nom)) + '" style="--c:var(' + fam.c + ');--ct:var(' + fam.ct + ')">' +
-        '<button class="sct-x" onclick="V2.secteurFermer()" aria-label="Fermer">' + sctSvg('<path d="M6 6l12 12M18 6L6 18"/>', 18) + '</button>' +
-        '<div class="sct-pan-top">' +
-          '<span class="sct-pan-f">' + sctSvg(fam.ico, 15) + esc(fam.l1) + '</span>' +
-          '<h2>' + esc(sctJoli(e.nom)) + '</h2>' +
-          '<div class="sct-pan-v">' + esc(e.ville) + (e.depNom ? ' · ' + esc(e.depNom) : '') + (e.dep ? ' (' + esc(e.dep) + ')' : '') + '</div>' +
-        '</div>' +
-        '<div class="sct-pan-b">' +
-          '<dl class="sct-kv"><dt>Ce qui s’est passé</dt><dd>' + esc(e.detail) + '</dd>' +
-            '<dt>Publié le</dt><dd>' + sctDateLongue(e.d) + '</dd>' +
-            (SCT_TAG_L[tag.t] ? '<dt>Dans ton fichier</dt><dd><span class="sct-tag ' + tag.t + '">' + SCT_TAG_L[tag.t] + '</span></dd>' : '') + '</dl>' +
-          '<div class="sct-do"><small>Ce que tu peux en faire</small><p>' + esc(sctGeste(e, tag.t)) + '</p></div>' +
-          '<div class="sct-act">' +
-            (tag.ficheId ? '<button type="button" class="sct-btn pri" onclick="V2.secteurFicheOfficine(\'' + esc(tag.ficheId) + '\')">' + sctSvg('<path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/>', 18) + 'Ouvrir la fiche officine</button>' : '') +
-            '<a class="sct-btn sec" href="' + esc(urlSure(e.url)) + '" target="_blank" rel="noopener">' + sctSvg('<path d="M14 3h7v7"/><path d="M10 14L21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/>', 17) + 'Lire l’annonce officielle</a>' +
-            '<button type="button" class="sct-btn ghost" onclick="V2.secteurNonLu(\'' + esc(e.id) + '\')">Marquer comme non lue</button>' +
-          '</div>' +
-        '</div>' +
-      '</aside>';
-    var d = document.createElement('div');
-    d.id = 'sct-panneau';
-    d.innerHTML = h;
-    document.body.appendChild(d);
-    var x = d.querySelector('.sct-x'); if (x) x.focus();
-  }
-
-  /* Le bloc entier, en HTML. Rend '' (rien) si le fichier manque, est vide, ou
-     si le secteur calculé est vide pour un commercial qui ne peut pas basculer
-     sur « Toute la France » — jamais de carte qui crie dans le vide. */
-  function secteurBlocHtml() {
-    var ev = (SECTEUR && SECTEUR.ev) || [];
-    if (!ev.length) return '';
-    var direction = sctEstDirection();
-    if (SCT_S.scope === null) {
-      var moi0 = sctMonSecteur();
-      SCT_S.scope = (direction && !moi0) ? 'fr' : 'moi';
-    }
-    if (!direction) SCT_S.scope = 'moi';   // la bascule est réservée à la direction
-    var deps = sctDeps();
-    if (!direction && !deps) return '';    // rien à montrer, et pas de bascule possible : on se tait
-
-    var autres = direction ? sctAutresSecteurs() : [];
-    var base = sctBase();
-    var cnt = {}; base.forEach(function (e) { cnt[e.f] = (cnt[e.f] || 0) + 1; });
-    var vis = base.filter(function (e) { return !SCT_S.off[e.f]; });
-    var nonLus = vis.filter(function (e) { return !SCT_LU[e.id]; }).length;
-
-    var rang = { client: 0, prospect: 1, hors: 2, reste: 2 };
-    var withTag = vis.map(function (e) { var t = sctTag(e); return { e: e, t: t.t, ficheId: t.ficheId }; });
-    withTag.sort(function (x, y) { return (deps ? rang[x.t] - rang[y.t] : 0) || y.e.d.localeCompare(x.e.d); });
-    SCT_TOUS = withTag.map(function (x) { return x.e.id; });
-
-    var whyHtml;
-    if (!deps) {
-      var nDeps = {}; ev.forEach(function (e) { if (e.dep) nDeps[e.dep] = 1; });
-      whyHtml = '<span class="sct-why-l">Toute la France :</span><span class="sct-dep"><b>' + Object.keys(nDeps).length + '</b>départements</span>';
-    } else {
-      whyHtml = '<span class="sct-why-l">' + (SCT_S.scope === 'moi' ? 'Pourquoi ces départements ? Tes officines y sont :' : 'Ce secteur couvre :') + '</span>' +
-        deps.map(function (d) { return '<span class="sct-dep"><b>' + esc(d) + '</b>' + esc(SCT_DEPNOMS[d] || '') + '</span>'; }).join('');
-    }
-
-    var famsHtml = SCT_ORDRE.map(function (f) {
-      var on = !SCT_S.off[f], n = cnt[f] || 0, def = SCT_FAM[f];
-      return '<button type="button" class="sct-fam' + (on ? '' : ' off') + (n ? '' : ' zero') + '" style="--c:var(' + def.c + ')" onclick="V2.secteurFam(\'' + f + '\')" aria-pressed="' + on + '" title="' + (on ? 'Masquer' : 'Afficher') + '">' +
-        '<span class="sct-fi">' + sctSvg(def.ico, 17) + '</span><span class="sct-fn">' + n + '</span><span class="sct-fl">' + esc(def.l) + '</span>' +
-        '<span class="sct-ck">' + sctSvg('<path d="M5 12l5 5L20 7"/>', 12) + '</span></button>';
-    }).join('');
-
-    var listHtml = '';
-    if (!withTag.length) {
-      listHtml = '<div class="sct-grp">Rien de neuf</div><div class="sct-empty">Aucune annonce sur cette période. Élargir à 30 jours ou 3 mois.</div>';
-    } else {
-      var shown = withTag.slice(0, SCT_S.cap), last = null, rows = '';
-      shown.forEach(function (x, i) {
-        var e = x.e, def = SCT_FAM[e.f] || SCT_FAM.dirigeant;
-        var g = !deps ? 'Les plus récentes' : (x.t === 'client' ? 'Chez tes clients' : 'Dans le reste de ton secteur');
-        if (g !== last) { rows += (last ? '</div>' : '') + '<div class="sct-grp">' + esc(g) + '</div><div class="sct-list">'; last = g; }
-        rows += '<button type="button" class="sct-row' + (SCT_LU[e.id] ? ' lu' : '') + '" onclick="V2.secteurOuvrir(\'' + esc(e.id) + '\')" style="--c:var(' + def.c + ');--ct:var(' + def.ct + ');--i:' + i + '">' +
-          '<span class="sct-new" aria-hidden="true"></span>' +
-          '<span class="sct-ri">' + sctSvg(def.ico, 18) + '</span>' +
-          '<span class="sct-rb"><span class="sct-rn">' + esc(sctJoli(e.nom)) + '</span>' +
-            '<span class="sct-rm"><span class="k">' + esc(e.detail) + '</span> · ' + esc(e.ville) + ' (' + esc(e.dep) + ')</span>' +
-            '<span class="sct-rg">' + sctSvg('<path d="M5 12h14M13 6l6 6-6 6"/>', 14) + '<span>' + esc(sctGeste(e, x.t)) + '</span></span></span>' +
-          '<span class="sct-rt">' + (SCT_TAG_L[x.t] ? '<span class="sct-tag ' + x.t + '">' + SCT_TAG_L[x.t] + '</span>' : '') + '<span class="sct-when">' + sctQuand(e.d) + '</span></span>' +
-        '</button>';
-      });
-      rows += '</div>';
-      if (withTag.length > SCT_S.cap) rows += '<button type="button" class="sct-more" onclick="V2.secteurPlus()">Voir les ' + (withTag.length - SCT_S.cap) + ' autres</button>';
-      listHtml = rows;
-    }
-
-    var scopeHtml = '';
-    if (direction) {
-      scopeHtml = '<div style="display:flex;flex-direction:column;align-items:flex-end">' +
-        '<div class="sct-scope" role="group" aria-label="Portée">' +
-          '<button type="button" onclick="V2.secteurScope(\'moi\')" aria-pressed="' + (SCT_S.scope === 'moi') + '">Mon secteur</button>' +
-          '<button type="button" onclick="V2.secteurScope(\'fr\')" aria-pressed="' + (SCT_S.scope === 'fr') + '">Toute la France</button>' +
-          (autres.length ? '<select aria-label="Voir un autre secteur" onchange="V2.secteurAutre(this)">' +
-            '<option value="">Un autre secteur</option>' +
-            autres.map(function (a, i) { return '<option value="' + i + '"' + (SCT_S.scope === 'autre' && SCT_S.autre === i ? ' selected' : '') + '>' + esc(a.l) + '</option>'; }).join('') +
-          '</select>' : '') +
-        '</div><div class="sct-scope-note">Réservé à la direction</div></div>';
-    }
-
-    return '<section class="sct" aria-labelledby="sct-t">' +
-      '<div class="sct-head">' +
-        '<span class="sct-ic" aria-hidden="true">' + sctSvg('<path d="M12 21s-7-5.6-7-11a7 7 0 0 1 14 0c0 5.4-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/>', 22) + '</span>' +
-        '<div class="sct-meta">' +
-          '<h2 class="sct-t" id="sct-t">Dans ton secteur</h2>' +
-          '<div class="sct-s">Ventes, redressements, fermetures, nouveaux dirigeants : tout ce que publie le journal officiel des annonces légales sur les pharmacies de tes départements.</div>' +
-        '</div>' +
-        scopeHtml +
-      '</div>' +
-      '<div class="sct-why">' + whyHtml + '</div>' +
-      '<div class="sct-bar">' +
-        '<div class="sct-bar-t">' + vis.length + ' annonce' + (vis.length > 1 ? 's' : '') + ' <span>· ' + nonLus + ' non lue' + (nonLus > 1 ? 's' : '') + '</span></div>' +
-        '<div class="sct-per" role="group" aria-label="Période">' +
-          [7, 30, 90].map(function (n) { return '<button type="button" onclick="V2.secteurPeriode(' + n + ')" aria-pressed="' + (SCT_S.per === n) + '">' + (n === 90 ? '3 mois' : n + ' jours') + '</button>'; }).join('') +
-        '</div>' +
-      '</div>' +
-      '<div class="sct-fams">' + famsHtml + '</div>' +
-      listHtml +
-      '<div class="sct-src">Source : Bodacc, mis à jour chaque matin. Toucher une ligne pour la détailler.</div>' +
-    '</section>';
-  }
-
-  /* ════════════════ LE PANNEAU DE LECTURE ════════════════
-     Will (02/09/2026) : « apporter de la lisibilité et de l'information directement
-     sur la plateforme, que ça puisse synthétiser l'info importante rapidement ».
-     Toucher une tuile n'envoie plus sur le site : ça ouvre ici l'essentiel de
-     l'article — son chapeau, les trois phrases qui portent l'information, les
-     chiffres, les sources. Le lien vers le site reste, en bas, pour lire en entier.
-     ⚠️ On cite trois phrases, on ne republie pas : l'article reste chez son éditeur. */
-  V2.infosLire = function (ev, n) {
-    // ⌘/Ctrl-clic, clic du milieu, nouvel onglet : on laisse partir vers la source
-    if (ev && (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button === 1)) return true;
-    if (ev && ev.preventDefault) ev.preventDefault();
-    OUVERT = n;
-    panneau();
-    return false;
-  };
-  V2.infosFermer = function () { OUVERT = -1; panneau(); };
-
-  function panneau() {
-    var vieux = document.getElementById('inf-panneau');
-    if (vieux) vieux.parentNode.removeChild(vieux);
-    document.documentElement.classList.toggle('inf-fige', OUVERT >= 0);
-    if (OUVERT < 0) return;
-    var a = TOUS[OUVERT];
-    if (!a) return;
-    var acc = THEME_ACC[a.theme] || 'muted';
-    var pts = (a.points || []).filter(Boolean);
-    var chf = (a.chiffres || []).filter(Boolean);
-    var srcs = (a.srcs && a.srcs.length) ? a.srcs : [a.s];
-
-    var h = '<div class="inf-pan-fond" onclick="V2.infosFermer()"></div>' +
-      '<aside class="inf-pan a-' + acc + '" role="dialog" aria-modal="true" aria-label="' + esc(a.t) + '">' +
-        '<button class="inf-pan-x" onclick="V2.infosFermer()" aria-label="Fermer">' + ICO('close', 18, 2.2) + '</button>' +
-        (a.img ? '<div class="inf-pan-img">' + couverture(a, 'r-16x9') + '</div>' : '') +
-        '<div class="inf-pan-b">' +
-          '<div class="inf-pan-top"><span class="cat">' + esc(a.theme_l) + '</span>' +
-            (a.entier ? '<span class="inf-pan-ok">✓ lisible en entier</span>' : '') +
-            (a.mn ? '<span class="inf-pan-mn">' + esc(a.mn) + ' min</span>' : '') + '</div>' +
-          '<h2>' + esc(a.t) + '</h2>' +
-          (a.r ? '<p class="inf-pan-chap">' + esc(a.r) + '</p>' : '') +
-          (pts.length ? '<div class="inf-pan-sec"><span class="inf-pan-l">L\'essentiel</span><ul>' +
-            pts.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>' : '') +
-          (chf.length ? '<div class="inf-pan-sec"><span class="inf-pan-l">Les chiffres</span>' +
-            '<div class="inf-pan-chf">' + chf.map(function (c) {
-              return '<div class="chf"><b>' + esc(c.v) + '</b><span>' + esc(c.c) + '</span></div>';
-            }).join('') + '</div></div>' : '') +
-          (a.pour_toi ? '<div class="inf-pan-pour"><b>Pour toi</b>' + esc(a.pour_toi) + '</div>' : '') +
-          '<div class="inf-pan-src">' + esc(srcs.join(' · ')) + ' · ' + esc(ilYA(a.d)) +
-            (a.n_src > 1 ? ' · <b>' + a.n_src + ' sources en parlent</b>' : '') + '</div>' +
-          (a.u ? '<a class="inf-pan-go" href="' + esc(urlSure(a.u)) + '" target="_blank" rel="noopener">' +
-                 'Lire l\'article en entier sur ' + esc((srcs[0] || 'le site')) + ' ' + ICO('chev', 15, 2.4) + '</a>' : '') +
-        '</div>' +
-      '</aside>';
-    var d = document.createElement('div');
-    d.id = 'inf-panneau';
-    d.innerHTML = h;
-    document.body.appendChild(d);
-    var f = d.querySelector('.inf-pan-x');
-    if (f) f.focus();
-  }
-  // Échap ferme le panneau — posé une seule fois
-  if (!V2._infosEchap) {
-    V2._infosEchap = true;
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && OUVERT >= 0) V2.infosFermer();
-    });
-  }
-
-  /* dépliage de l'archive */
-  /* Le bandeau montre les six plus importants ; les autres sont à un geste.
-     ⚠️ On ne RETIRE rien : « ne pas passer à côté » interdit de cacher pour de bon. */
-  var ALERTES_TOUT = false;
-  V2.infosAlertes = function () { ALERTES_TOUT = !ALERTES_TOUT; if (V2.route && V2.route.name === 'infos') V2.render(); };
-
-  var ARCH_OPEN = false;
-  V2.briefArchive = function () { ARCH_OPEN = !ARCH_OPEN; if (V2.route && V2.route.name === 'infos') V2.render(); };
-
-  /* ════════════════ « TOUT LE RESTE » (25/09/2026, v4) ════════════════
-     Le brief en 5 cartes est au-dessus ; tout ce qui existait avant reste
-     intact, mais replié dans #inf-reste. Mémorisé (localStorage), jamais
-     bloquant : une lecture ratée retombe simplement replié. */
-  var RESTE_KEY = 'jarvis_infos_reste_v1';
-  var RESTE_OPEN = (function () { try { return localStorage.getItem(RESTE_KEY) === '1'; } catch (e) { return false; } })();
-  var RESTE_ANCRE = null;   // sélecteur à faire défiler juste après le prochain rendu
-  V2.infosReste = function (ancre) {
-    RESTE_OPEN = true;
-    try { localStorage.setItem(RESTE_KEY, '1'); } catch (e) {}
-    RESTE_ANCRE = ancre || '#inf-reste';
-    if (V2.route && V2.route.name === 'infos') V2.render();
-  };
-  V2.infosResteFermer = function () {
-    RESTE_OPEN = false;
-    try { localStorage.setItem(RESTE_KEY, '0'); } catch (e) {}
-    if (V2.route && V2.route.name === 'infos') V2.render();
-  };
-  V2.infosResteBascule = function () { if (RESTE_OPEN) V2.infosResteFermer(); else V2.infosReste(); };
-
-  /* ════════════════ panneau « Les ruptures » (carte 3 du brief) ════════════════
-     Simple liste, même gabarit visuel que le panneau de lecture (inf-pan). */
-  var RUPT_OUVERT = false;
-  V2.rupturesOuvrir = function () { RUPT_OUVERT = true; rupturesPanneau(); };
-  V2.rupturesFermer = function () { RUPT_OUVERT = false; rupturesPanneau(); };
-  if (!V2._ruptEchap) {
-    V2._ruptEchap = true;
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && RUPT_OUVERT) V2.rupturesFermer(); });
-  }
-  function rupturesPanneau() {
-    var vieux = document.getElementById('rupt-panneau');
-    if (vieux) vieux.parentNode.removeChild(vieux);
-    if (!RUPT_OUVERT || !BRIEF) return;
-    var liste = BRIEF.ruptures_neuves || [];
-    var h = '<div class="inf-pan-fond" onclick="V2.rupturesFermer()"></div>' +
-      '<aside class="inf-pan a-rose" role="dialog" aria-modal="true" aria-label="Les ruptures">' +
-        '<button class="inf-pan-x" onclick="V2.rupturesFermer()" aria-label="Fermer">' + ICO('close', 18, 2.2) + '</button>' +
-        '<div class="inf-pan-b">' +
-          '<div class="inf-pan-top"><span class="cat">Ruptures · ANSM</span></div>' +
-          '<h2>' + liste.length + ' nouvelle' + (liste.length > 1 ? 's' : '') + ' alerte' + (liste.length > 1 ? 's' : '') + ' de disponibilité</h2>' +
-          '<div class="inf-pan-sec">' + liste.map(function (r) {
-            return '<div class="ligne" style="border-top:1px solid var(--line,rgba(16,19,28,.08));padding:10px 0">' +
-              '<span class="txt"><span class="t" style="font-weight:700;font-size:15px">' + esc((r.spec || '').split(/ – | - /)[0]) + '</span>' +
-              '<span class="s" style="display:block;color:var(--muted,#5E6679);font-size:13px;margin-top:2px">' + esc(r.st) + (r.dom ? ' · ' + esc(r.dom) : '') + (r.retour ? ' · retour ' + esc(r.retour) : '') + '</span></span></div>';
-          }).join('') + '</div>' +
-        '</div>' +
-      '</aside>';
-    var d = document.createElement('div');
-    d.id = 'rupt-panneau';
-    d.innerHTML = h;
-    document.body.appendChild(d);
-    var f = d.querySelector('.inf-pan-x');
-    if (f) f.focus();
-  }
-
-  /* ════════════════ LE BRIEF EN 5 CARTES (25/09/2026, choix de Will · v4) ════════════════
-     Maquette : ~/maquette-infos-du-jour/v4.html. Cinq cartes plein écran, calculées ICI à
-     partir des mêmes données déjà en mémoire (BRIEF, SECTEUR, CONTOURS) — rien en dur.
-     Fenêtre « Ton secteur » : 7 derniers jours glissants (plus simple et toujours non-vide
-     qu'un « depuis lundi », qui retombe à zéro chaque lundi matin). */
-  var BRF5_CUR = 0;
-
-  function brf5Svg(p, s) { return '<svg width="' + (s || 18) + '" height="' + (s || 18) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>'; }
-
-  /* bbox d'un chemin SVG « d », par lecture brute des nombres — même technique que
-     la carte concurrents (v2-infos-concurrents.js, fonction boite()). */
-  function brf5Bbox(d) {
-    var n = (d || '').match(/-?\d+(?:\.\d+)?/g) || [], b = [1e9, 1e9, -1e9, -1e9];
-    for (var i = 0; i + 1 < n.length; i += 2) {
-      var x = +n[i], y = +n[i + 1];
-      if (x < b[0]) b[0] = x; if (y < b[1]) b[1] = y; if (x > b[2]) b[2] = x; if (y > b[3]) b[3] = y;
-    }
-    return b;
-  }
-
-  /* mini-carte choroplèthe du secteur : un département = une teinte + un chiffre,
-     jamais un point (les annonces Bodacc n'ont pas de coordonnées). */
-  function brf5Map(deps, evWeek) {
-    if (!CONTOURS || !CONTOURS.deps) return '';
-    var cnt = {}; evWeek.forEach(function (e) { if (e.dep) cnt[e.dep] = (cnt[e.dep] || 0) + 1; });
-    var codes = (deps && deps.length) ? deps.slice() : Object.keys(cnt);
-    codes = codes.filter(function (c) { return CONTOURS.deps[c]; });
-    if (!codes.length) return '';
+  /* ── géométrie : la projection de departements-contours.json ── */
+  function ppBox(codes) {
     var B = [1e9, 1e9, -1e9, -1e9];
-    codes.forEach(function (c) { var b = brf5Bbox(CONTOURS.deps[c].d); if (b[2] < b[0]) return; B = [Math.min(B[0], b[0]), Math.min(B[1], b[1]), Math.max(B[2], b[2]), Math.max(B[3], b[3])]; });
-    if (B[2] < B[0]) return '';
-    var m = Math.max(B[2] - B[0], B[3] - B[1]) * 0.08;
-    B = [B[0] - m, B[1] - m, B[2] + m, B[3] + m];
-    var u = Math.max(B[2] - B[0], B[3] - B[1]) / 900;
-    var max = 1; codes.forEach(function (c) { if (cnt[c] > max) max = cnt[c]; });
-    var sv = '<svg class="brf5-map" viewBox="' + [B[0], B[1], B[2] - B[0], B[3] - B[1]].map(Math.round).join(' ') + '" role="img" aria-label="Nombre d\'annonces par département dans ton secteur cette semaine">';
     codes.forEach(function (c) {
-      var n = cnt[c] || 0, op = n ? Math.min(.82, .16 + (n / max) * .58) : .05;
-      sv += '<path d="' + CONTOURS.deps[c].d + '" fill="rgba(0,80,230,' + op.toFixed(2) + ')" stroke="#fff" stroke-width="' + (2 * u).toFixed(2) + '"/>';
+      var d = CONTOURS && CONTOURS.deps[c]; if (!d) return;
+      var n = d.d.match(/-?\d+(?:\.\d+)?/g) || [];
+      for (var i = 0; i + 1 < n.length; i += 2) {
+        var x = +n[i], y = +n[i + 1];
+        if (x < B[0]) B[0] = x; if (y < B[1]) B[1] = y; if (x > B[2]) B[2] = x; if (y > B[3]) B[3] = y;
+      }
+    });
+    return B[2] < B[0] ? null : { x: B[0], y: B[1], w: B[2] - B[0], h: B[3] - B[1] };
+  }
+  var PP_CENTRES = {};
+  function ppCentre(c) {   // moyenne des sommets : tombe à l'intérieur du département
+    if (PP_CENTRES[c]) return PP_CENTRES[c];
+    var n = ((CONTOURS && CONTOURS.deps[c]) || {}).d; n = (n || '').match(/-?\d+(?:\.\d+)?/g) || [];
+    var sx = 0, sy = 0, k = 0;
+    for (var i = 0; i + 1 < n.length; i += 2) { sx += +n[i]; sy += +n[i + 1]; k++; }
+    return (PP_CENTRES[c] = k ? [sx / k, sy / k] : null);
+  }
+  function ppProj(lat, lon) { return [(lon - CONTOURS.lon0) * CONTOURS.c * CONTOURS.k, (CONTOURS.lat0 - lat) * CONTOURS.k]; }
+  function ppCodesFrance() { return Object.keys((CONTOURS && CONTOURS.deps) || {}); }
+
+  /* La carte : départements du secteur (teinte = nombre d'annonces), voisins en gris,
+     et une grappe de points par département, rangée en grille (un point = une annonce,
+     couleur = famille, pulsation = moins de 7 jours). En « Toute la France » : teinte seule. */
+  var PP_PTS = [];   // points dessinés sur la carte du panneau : [x, y, annonce]
+  function ppCarte(deps, evs, o) {
+    if (!CONTOURS || !CONTOURS.deps) return '';
+    var codes = (deps || ppCodesFrance()).filter(function (c) { return CONTOURS.deps[c]; });
+    var B = ppBox(codes); if (!B) return '';
+    var m = Math.max(B.w, B.h) * (deps ? 0.06 : 0.02);
+    var V = { x: B.x - m, y: B.y - m, w: B.w + 2 * m, h: B.h + 2 * m };
+    var u = Math.max(V.w, V.h) / (o.px || 360);
+    var SS = {}; codes.forEach(function (c) { SS[c] = 1; });
+    var cnt = {}, parDep = {}, max = 1;
+    evs.forEach(function (e) { cnt[e.dep] = (cnt[e.dep] || 0) + 1; (parDep[e.dep] = parDep[e.dep] || []).push(e); });
+    codes.forEach(function (c) { if (cnt[c] > max) max = cnt[c]; });
+    var h = '<svg viewBox="' + [V.x, V.y, V.w, V.h].map(function (v) { return v.toFixed(0); }).join(' ') + '" preserveAspectRatio="xMidYMid meet"' + (o.attrs || ' aria-hidden="true"') + '>';
+    if (deps) ppCodesFrance().forEach(function (c) {
+      if (SS[c]) return;
+      var b = ppBox([c]); if (!b || b.x > V.x + V.w || b.x + b.w < V.x || b.y > V.y + V.h || b.y + b.h < V.y) return;
+      h += '<path class="pp-voisin" d="' + CONTOURS.deps[c].d + '"/>';
     });
     codes.forEach(function (c) {
-      var b = brf5Bbox(CONTOURS.deps[c].d); if (b[2] < b[0]) return;
-      var n = cnt[c] || 0;
-      sv += '<text x="' + Math.round((b[0] + b[2]) / 2) + '" y="' + Math.round((b[1] + b[3]) / 2 + 8 * u) + '" font-size="' + Math.round(22 * u) + '" font-weight="800" fill="' + (n ? '#0034A0' : 'rgba(16,19,28,.28)') + '" text-anchor="middle">' + (n || c) + '</text>';
+      var n = cnt[c] || 0, a = deps ? (n ? 0.05 + 0.13 * n / max : 0) : (n ? 0.08 + 0.62 * n / max : 0.02);
+      h += '<path class="pp-dep" data-dep="' + esc(c) + '" d="' + CONTOURS.deps[c].d + '" style="fill:' + (a ? 'rgba(0,80,230,' + a.toFixed(2) + ')' : '#FFFFFF') + '"><title>' + esc((SCT_DEPNOMS[c] || c) + ' · ' + ppPl(n, 'annonce')) + '</title></path>';
     });
-    sv += '</svg>';
-    return sv;
-  }
-
-  /* ruptures neuves regroupées par molécule — même principe que la maquette */
-  function brf5RuptChips(liste) {
-    var g = {}, o = [];
-    (liste || []).forEach(function (r) {
-      var n = (r.dci || r.spec || '').split(',')[0].slice(0, 40), c = n + '|' + r.st;
-      if (!g[c]) { g[c] = { n: n, k: 0, st: r.st }; o.push(g[c]); }
-      g[c].k++;
+    if (o.agences) o.agences.forEach(function (g) {
+      if (g.lat == null || g.lon == null) return;
+      var p = ppProj(g.lat, g.lon), s = 6 * u;
+      h += '<rect x="' + (p[0] - s).toFixed(1) + '" y="' + (p[1] - s).toFixed(1) + '" width="' + (2 * s).toFixed(1) + '" height="' + (2 * s).toFixed(1) + '" rx="' + (1.5 * u).toFixed(1) + '" fill="' + (g.coul || '#6D4FC4') + '" stroke="#fff" stroke-width="' + (2.6 * u).toFixed(1) + '" transform="rotate(45 ' + p[0].toFixed(1) + ' ' + p[1].toFixed(1) + ')"/>';
     });
-    return o.slice(0, 6).map(function (x) { return '<span>' + esc(cap(x.n)) + (x.k > 1 ? ' ×' + x.k : '') + ' · ' + esc(x.st) + '</span>'; }).join('');
+    if (o.pts) PP_PTS = [];
+    if (deps) codes.forEach(function (c) {
+      var L = parDep[c]; if (!L || !L.length) return;
+      var ctr = ppCentre(c); if (!ctr) return;
+      var col = Math.ceil(Math.sqrt(L.length)), lig = Math.ceil(L.length / col), bd = ppBox([c]);
+      // la grappe reste dans son département : le pas se resserre si la grille est plus large que 55 % du département
+      var pas = Math.min((o.r || 7) * u * 2.75, bd ? 0.55 * Math.min(bd.w / col, bd.h / lig) : 1e9), r = Math.min((o.r || 7) * u, pas / 2.4);
+      L.forEach(function (e, i) {
+        var cx = ctr[0] + ((i % col) - (col - 1) / 2) * pas, cy = ctr[1] + (Math.floor(i / col) - (lig - 1) / 2) * pas;
+        var f = PP_FC[e.f] || PP_FC.dirigeant;
+        if (ppJ(e.d) <= 7) h += '<circle class="pp-halo" cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + (r * 1.6).toFixed(1) + '" fill="' + f + '"/>';
+        h += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + r.toFixed(1) + '" fill="' + f + '" stroke="#fff" stroke-width="' + (r * 0.42).toFixed(1) + '"/>';
+        if (o.pts) PP_PTS.push([cx, cy, e]);
+      });
+    });
+    if (!deps && o.pts) codes.forEach(function (c) {   // France : le chiffre posé sur chaque département qui bouge
+      var n = cnt[c]; if (!n || n / max < 0.34) return; var ctr = ppCentre(c); if (!ctr) return;
+      h += '<text x="' + ctr[0].toFixed(0) + '" y="' + (ctr[1] + 5 * u).toFixed(0) + '" font-size="' + (13 * u).toFixed(0) + '" class="pp-carte-n">' + n + '</text>';
+    });
+    return h + '</svg>';
   }
 
-  /* la carte « prix » : le premier épinglé qui parle vraiment de prix/marge */
-  function brf5EpinglePrix(epingles) {
-    for (var i = 0; i < epingles.length; i++) {
-      var e = epingles[i];
-      if (e.motif === 'echeance' && (e.theme === 'remboursement' || e.theme === 'marge')) return e;
-    }
-    return null;
+  /* ── portée du secteur : même règle que le bloc Bodacc d'avant ── */
+  function ppScope() {
+    var dir = sctEstDirection();
+    if (SCT_S.scope === null) SCT_S.scope = (dir && !sctMonSecteur()) ? 'fr' : 'moi';
+    if (!dir) SCT_S.scope = 'moi';   // la bascule est réservée à la direction
+    return { dir: dir, deps: sctDeps() };
+  }
+  function ppAnnonces(deps) {
+    var ev = (SECTEUR && SECTEUR.ev) || [];
+    return ev.filter(function (e) { return (!deps || deps.indexOf(e.dep) >= 0) && ppJ(e.d) <= 92; })
+      .sort(function (a, b) { return a.d < b.d ? 1 : a.d > b.d ? -1 : 0; });
   }
 
-  /* barres « agences par concurrent », mêmes données que v2-infos-concurrents.js */
-  function brf5Barres(presents, coul) {
-    if (!presents || !presents.length) return '';
-    var top = presents.slice(0, 4), max = 1; top.forEach(function (a) { if (a.chez.length > max) max = a.chez.length; });
-    return '<div class="brf5-mini brf5-bars"><span class="brf5-mini-t">' + presents.reduce(function (s, a) { return s + a.chez.length; }, 0) + ' agences concurrentes dans ton secteur</span>' +
-      top.map(function (a) {
-        return '<div class="brf5-bar-row"><span class="brf5-bar-l">' + esc(a.nom) + '</span>' +
-          '<i class="brf5-bar" style="width:' + Math.round(6 + (a.chez.length / max) * 100) + '%;background:' + (coul[a.cle] || '#465063') + '"></i>' +
-          '<b>' + a.chez.length + '</b></div>';
-      }).join('') + '</div>';
+  /* ── données du tableau de bord, recalculées à chaque rendu ── */
+  function ppDonnees() {
+    var B = BRIEF || {}, D = {};
+    D.rad = {}; (B.radar || []).forEach(function (r) { D.rad[r.k] = r; });
+    D.ep = (B.epingles || []).map(function (e) { var o = {}; for (var k in e) o[k] = e[k]; o.j = e.effet ? -ppJ(e.effet) : null; return o; });
+    D.avenir = D.ep.filter(function (e) { return e.j != null && e.j >= 0; }).sort(function (a, b) { return a.j - b.j; });
+    D.passe = D.ep.filter(function (e) { return e.j != null && e.j < 0; }).sort(function (a, b) { return b.j - a.j; });
+    D.signaux = D.ep.filter(function (e) { return e.j == null; });
+    D.marge = D.ep.filter(function (e) { return e.theme === 'marge' && e.j > 0; })[0] || D.avenir[D.avenir.length - 1] || null;
+    D.lots = B.rappels_lots || []; D.para = B.rappels_para || [];
+    D.rappels = D.lots.length + D.para.length;
+    D.fil = B.fil || [];
+    D.filNeuf = D.fil.filter(function (f) { return f.neuf; }).length;
+    D.parTh = {}; D.fil.forEach(function (f) { D.parTh[f.theme] = (D.parTh[f.theme] || 0) + 1; });
+    D.amont = B.amont || []; D.ema = B.ema || []; D.jo = B.jo || []; D.rupt = B.ruptures_neuves || [];
+    D.cinq = B.cinq || []; D.une = B.une || null;
+    D.C = B.compte || {};
+    return D;
   }
 
-  /* remplissage différé de la carte 5 (concurrents) — V2.concurrentsResume() vient
-     de v2-infos-concurrents.js : même phrase du jour, même carte que le bloc du
-     dessous, jamais recalculée deux fois. Si les fichiers manquent ou échouent :
-     phrase de repli, jamais un trou (spec du 25/09/2026). */
-  function brf5ConcHtml(r) {
-    var inner;
-    if (!r) {
-      inner = '<p class="brf5-p">Les concurrents de ton secteur ne sont pas disponibles pour l\'instant.</p>';
-    } else if (!r.p) {
-      inner = '<p class="brf5-p">Rien de neuf cette semaine chez les concurrents installés ' + (r.deps ? 'dans ton secteur' : 'en France') + '.</p>' + brf5Barres(r.presents, r.coul);
-    } else {
-      inner = '<p class="brf5-p" style="font-weight:700">' + esc(r.p.titre) + '</p>' +
-        (r.p.texte ? '<p class="brf5-p">' + esc(r.p.texte) + '</p>' : '') +
-        brf5Barres(r.presents, r.coul) +
-        (r.p.angle ? '<div class="brf5-quote"><b>L\'angle en rendez-vous</b>' + esc(r.p.angle) + '</div>' : '');
-    }
-    return '<div id="brf5-conc-host">' + inner + '</div>';
+  /* ── les neuf tuiles ── */
+  function ppTete(lab, c) {
+    return '<span class="pp-t-tete"><span class="pp-t-pastille" style="background:' + c + '"></span><span class="pp-t-lab">' + lab + '</span>' +
+      '<span class="pp-t-fleche" aria-hidden="true">' + ppIco('suite', 16) + '</span></span>';
+  }
+  function ppTuile(cls, vue, aria, corps) {
+    return '<button type="button" class="pp-tuile ' + cls + '" onclick="V2.ppOuvrir(\'' + vue + '\')" aria-label="' + esc(aria) + '">' + corps + '</button>';
+  }
+  function ppTuiles(D) {
+    var T = [], S = ppScope(), evs = ppAnnonces(S.deps);
+    /* 1 · Ton secteur */
+    (function () {
+      var corps;
+      if (!SECTEUR || !(SECTEUR.ev || []).length) corps = '<span class="pp-vide-t">Les annonces du Bodacc ne sont pas disponibles pour l’instant.</span>';
+      else if (!S.deps && !S.dir) corps = '<span class="pp-vide-t">Ton secteur n’est pas encore connu : il se calcule à partir des officines de ton fichier.</span>';
+      else {
+        var sem = evs.filter(function (e) { return ppJ(e.d) <= 7; }).length, parF = {};
+        evs.forEach(function (e) { parF[e.f] = (parF[e.f] || 0) + 1; });
+        var leg = PP_ORDRE_F.filter(function (f) { return parF[f]; }).map(function (f) { return '<li><i style="background:' + PP_FC[f] + '"></i>' + PP_COURT[f] + ' <b>' + parF[f] + '</b></li>'; }).join('');
+        var carte = ppCarte(S.deps, evs, { r: 7, px: 330 });
+        corps = '<span class="pp-corps">' + (carte ? '<span class="pp-sect-carte">' + carte + '</span>' : '') +
+          '<span class="pp-sect-chiffres"><span class="pp-gros">' + evs.length + '</span><span class="pp-leg"><b>officine' + (evs.length > 1 ? 's qui bougent' : ' qui bouge') + '</b> en 3 mois' + (S.deps ? '' : ' en France') + '<br>dont <b>' + sem + ' cette semaine</b>' + (S.deps && sem ? ' (points qui pulsent)' : '') + '</span></span>' +
+          '<ul class="pp-legende">' + leg + '</ul></span>';
+      }
+      T.push(ppTuile('pp-t-sect', 'secteur', 'Ton secteur : ' + evs.length + ' annonces Bodacc, ouvrir la carte', ppTete('Ton secteur · Bodacc', '#0050E6') + corps));
+    })();
+    /* 2 · À ne pas manquer */
+    (function () {
+      var m = D.marge, corps;
+      if (!D.ep.length) corps = '<span class="pp-vide-t">Aucune échéance ni signal aujourd’hui.</span>';
+      else if (!m) corps = '<span class="pp-sect-chiffres" style="margin-top:14px"><span class="pp-gros">' + D.ep.length + '</span><span class="pp-leg"><b>signaux</b><br>aucune échéance à venir</span></span>';
+      else {
+        var tot = Math.max(1, m.j + ppJ(m.d)), fr = Math.max(0.04, Math.min(1, ppJ(m.d) / tot)), R = 52, L = 2 * Math.PI * R;
+        var ring = '<svg width="118" height="118" viewBox="0 0 118 118" aria-hidden="true"><circle cx="59" cy="59" r="' + R + '" fill="none" stroke="#F3E8D8" stroke-width="9"/><circle cx="59" cy="59" r="' + R + '" fill="none" stroke="#C7791A" stroke-width="9" stroke-linecap="round" stroke-dasharray="' + (L * fr).toFixed(1) + ' ' + L.toFixed(1) + '" transform="rotate(-90 59 59)"/><circle cx="59" cy="59" r="40" fill="#FFF8EE"/></svg>';
+        var estMarge = m.theme === 'marge';
+        corps = '<span class="pp-eche-anneau">' + ring + '<span class="pp-dedans"><b>' + (m.j === 0 ? 'J' : 'J-' + m.j) + '</b><span>' + (estMarge ? 'grossiste' : 'échéance') + '</span></span></span>' +
+          '<span class="pp-leg pp-eche-leg">' + (estMarge ? '<b>Nouvelle marge</b>' : '<b class="pp-clamp2">' + esc(m.t) + '</b>') + '<br>le ' + esc(ppDc(m.effet)) + '</span>';
+      }
+      corps += '<span class="pp-rupt-sous" style="margin-top:auto;padding-top:12px"><span><b>' + D.ep.length + '</b>échéances</span><span style="text-align:right"><b>' + D.avenir.length + '</b>à venir</span></span>';
+      T.push(ppTuile('pp-t-eche', 'echeances', 'À ne pas manquer : ' + D.ep.length + ' échéances et signaux', ppTete('À ne pas manquer', '#C7791A') + corps));
+    })();
+    /* 3 · Ruptures */
+    (function () {
+      var r = D.rad.ruptures, corps;
+      if (!r) corps = '<span class="pp-vide-t">Le relevé des ruptures n’est pas disponible ce matin.</span><span class="pp-rupt-sous" style="margin-top:auto"><span><b>' + D.rupt.length + '</b>alertes neuves</span><span style="text-align:right"><b>' + D.amont.length + '</b>chez les voisins</span></span>';
+      else {
+        var fm = /(\d+) en rupture franche/.exec(r.sub || ''), franches = fm ? +fm[1] : null, L = Math.PI * 70;
+        var rf = franches != null && r.v ? franches / r.v : 0;
+        corps = '<svg class="pp-jauge" viewBox="0 0 180 100" aria-hidden="true"><path d="M20 86 A70 70 0 0 1 160 86" fill="none" stroke="#F5DDB8" stroke-width="14" stroke-linecap="round"/>' +
+          (rf ? '<path d="M20 86 A70 70 0 0 1 160 86" fill="none" stroke="#E0556E" stroke-width="14" stroke-linecap="round" stroke-dasharray="' + (L * rf).toFixed(1) + ' ' + L.toFixed(1) + '"/>' : '') + '</svg>' +
+          '<span class="pp-jauge-n"><span class="pp-gros" style="font-size:34px">' + r.v + '</span><span class="pp-leg" style="display:block">en rupture ou tension' + (franches != null ? ', <b>' + franches + '</b> franches' : '') + '</span></span>' +
+          '<span class="pp-rupt-sous" style="margin-top:12px"><span><b>' + D.rupt.length + '</b>alertes neuves</span><span style="text-align:right"><b>' + D.amont.length + '</b>chez les voisins</span></span>';
+      }
+      T.push(ppTuile('pp-t-rupt', 'ruptures', 'Ruptures : ' + (r ? r.v + ' produits en rupture ou tension' : 'relevé indisponible'), ppTete('Ruptures', '#E0556E') + corps));
+    })();
+    /* 4 · À la une */
+    (function () {
+      var u = D.une, corps;
+      if (!u) { T.push(ppTuile('pp-t-une', 'une', 'À la une', ppTete('À la une', '#0050E6') + '<span class="pp-vide-t">Pas encore de une ce matin.</span>')); return; }
+      var ch = (u.chiffres || [])[0];
+      corps = '<span class="pp-une-t pp-clamp3">' + esc(u.t) + '</span>' +
+        '<span class="pp-une-bas">' + (ch ? '<span class="pp-une-chiffre">' + esc(ch.v) + '<span>' + esc(ch.c) + '</span></span>' : '<span class="pp-leg">' + esc(u.theme_l || '') + '</span>') +
+        '<span class="pp-minuteur">' + (u.mn || 1) + ' min</span></span>';
+      T.push(ppTuile('pp-t-une', 'une', 'À la une : ' + u.t, ppTete('À la une · ' + esc(u.s || ''), '#0050E6') + corps));
+    })();
+    /* 5 · Le radar du jour */
+    (function () {
+      var lab = { ruptures: 'ruptures ou tensions', substituables: 'avec une alternative', retours: 'retours sous 60 j', prix: 'changements de prix', jo: 'avant l’échéance JO', demande: 'grippe et IRA', rappels: 'rappels de lot' };
+      var R = (BRIEF.radar || []);
+      var h = R.map(function (r) {
+        return '<span class="pp-radar-c" style="--c:' + (PP_TON[r.ton] || '#0050E6') + '"><b>' + (r.k === 'demande' && r.v > 0 ? '+' : '') + esc(r.v) + (r.unite ? '<small>' + (r.unite === 'j' ? ' j' : ' ' + esc(r.unite)) + '</small>' : '') + '</b><span>' + esc(lab[r.k] || r.l) + '</span></span>';
+      }).join('');
+      T.push(ppTuile('pp-t-radar', 'radar', 'Le radar du jour : ' + R.length + ' compteurs', ppTete('Le radar du jour · ' + ppPl(R.length, 'compteur'), '#00B5D8') +
+        (R.length ? '<span class="pp-radar-g">' + h + '</span>' : '<span class="pp-vide-t">Aucun compteur relevé ce matin.</span>')));
+    })();
+    /* 6 · L'essentiel en 30 s */
+    (function () {
+      var h = D.cinq.map(function (c, i) { return '<li><span class="pp-n">' + (i + 1) + '</span><span class="pp-x pp-clamp2">' + esc(c.t) + '</span></li>'; }).join('');
+      T.push(ppTuile('pp-t-cinq', 'cinq', 'L’essentiel en 30 secondes : ' + D.cinq.length + ' sujets', ppTete('L’essentiel en 30 s', '#6D4FC4') + '<ol class="pp-cinq-l">' + h + '</ol>'));
+    })();
+    /* 7 · Concurrents — rempli après coup (V2.concurrentsResume, v2-infos-concurrents.js) */
+    T.push(ppTuile('pp-t-conc', 'concurrents', 'Les concurrents : faits vérifiés, agences et presse', ppTete('Concurrents', '#6D4FC4') +
+      '<span class="pp-radar-rond" aria-hidden="true"><span class="pp-balai"></span><span data-pp-conc-pts></span></span>' +
+      '<span class="pp-conc-bas"><span><b data-pp-conc-v>…</b>faits vérifiés</span><span style="text-align:right"><b data-pp-conc-a>…</b>agences</span></span>'));
+    /* 8 · Rappels de lot */
+    (function () {
+      var a = D.lots.length, b = D.para.length, n = D.rappels;
+      T.push(ppTuile('pp-t-rapp', 'rappels', 'Rappels : ' + n + ' rappels de lot', ppTete('Rappels de lot', '#BE3450') +
+        '<span class="pp-bouclier"><span style="color:#BE3450">' + ppIco('rappel', 40) + '</span><span class="pp-gros">' + n + '</span></span>' +
+        '<span class="pp-leg" style="margin:8px 0 12px"><b>' + a + '</b> médicaments et dispositifs · <b>' + b + '</b> parapharmacie</span>' +
+        (n ? '<span class="pp-barre" aria-hidden="true"><i style="width:' + (a / n * 100).toFixed(1) + '%;background:#BE3450"></i><i style="width:' + (b / n * 100).toFixed(1) + '%;background:#F0A4B2"></i></span>' : '')));
+    })();
+    /* 9 · Le mur */
+    (function () {
+      var ks = Object.keys(D.parTh).sort(function (a, b) { return D.parTh[b] - D.parTh[a]; }), mx = ks.length ? D.parTh[ks[0]] : 1;
+      var h = ks.map(function (k) { return '<span style="font-size:' + (14 + Math.round(D.parTh[k] / mx * 10)) + 'px;color:' + (PP_TH[k] || '#5E677A') + '">' + esc((BRIEF.themes_l && BRIEF.themes_l[k]) || k) + '</span>'; }).join('');
+      T.push(ppTuile('pp-t-mur', 'mur', 'Le mur : ' + D.fil.length + ' articles', ppTete('Le mur · toute l’actualité', '#0A7F99') +
+        (D.fil.length ? '<span class="pp-nuage">' + h + '</span>' : '<span class="pp-vide-t">Aucun article au mur ce matin.</span>') +
+        '<span class="pp-mur-bas"><span><b class="pp-mono" style="color:var(--pp-encre)">' + D.fil.length + '</b> articles, dont <b style="color:var(--pp-encre)">' + D.filNeuf + ' nouveau' + (D.filNeuf > 1 ? 'x' : '') + '</b></span></span>'));
+    })();
+    return T.join('');
   }
 
-  function brf5Html(une, epingles) {
-    var deps = sctDeps();
-    var evAll = (SECTEUR && SECTEUR.ev) || [];
-    var evWeek = evAll.filter(function (e) { return (!deps || deps.indexOf(e.dep) >= 0) && sctJours(e.d) <= 6; })
-      .sort(function (a, b) { return b.d < a.d ? -1 : 1; });
+  /* remplissage différé de la tuile Concurrents : mêmes présences que le panneau */
+  function ppConcRemplir() {
+    var host = document.querySelector('[data-pp-conc-pts]'); if (!host) return;
+    var fin = function (html, v, a) {
+      var h = document.querySelector('[data-pp-conc-pts]'); if (!h) return;
+      h.innerHTML = html;
+      var bv = document.querySelector('[data-pp-conc-v]'), ba = document.querySelector('[data-pp-conc-a]');
+      if (bv) bv.textContent = v; if (ba) ba.textContent = a;
+    };
+    var nV = null, res = null, attente = 2;
+    var fini = function () {
+      if (--attente) return;
+      if (!res) { fin('', nV == null ? '—' : nV, '—'); return; }
+      var ag = []; res.presents.forEach(function (a) { a.chez.forEach(function (g) { ag.push({ lat: g.lat, lon: g.lon, c: res.coul[a.cle] }); }); });
+      var B = CONTOURS ? ppBox(res.deps || ppCodesFrance()) : null, pts = '';
+      if (B) {
+        var cx = B.x + B.w / 2, cy = B.y + B.h / 2, s = Math.max(B.w, B.h) / 2;
+        pts = ag.map(function (g) {
+          if (g.lat == null) return '';
+          var p = ppProj(g.lat, g.lon), x = 50 + (p[0] - cx) / s * 40, y = 50 + (p[1] - cy) / s * 40;
+          return '<i style="left:' + x.toFixed(1) + '%;top:' + y.toFixed(1) + '%;background:' + (g.c || '#465066') + '"></i>';
+        }).join('');
+      }
+      fin(pts, nV == null ? '—' : nV, ag.length);
+    };
+    if (V2.grossistesActuDonnees) V2.grossistesActuDonnees(function (a, v) { nV = (v || []).filter(function (x) { return !x.nonConfirme; }).length; fini(); }); else fini();
+    if (V2.concurrentsResume) V2.concurrentsResume(function (r) { res = r; fini(); }); else fini();
+  }
 
-    var radarByK = {}; (BRIEF.radar || []).forEach(function (r) { radarByK[r.k] = r; });
-    var prixEp = brf5EpinglePrix(epingles);
-    var rangPrix = prixEp ? epingles.indexOf(prixEp) : -1;
-    var margeAVenir = (BRIEF.jo || []).filter(function (j) { return j.a_venir; })[0];
-    var radarJo = radarByK.jo;
-    var radarPrix = radarByK.prix;
-    var radarRupt = radarByK.ruptures;
-    var radarRetours = radarByK.retours;
-    var nAmont = (BRIEF.amont || []).length;
-    var nRuptNeuves = (BRIEF.ruptures_neuves || []).length;
-    var rangUne = une ? TOUS.indexOf(une) : -1;
-
-    /* carte 1 · Ton secteur */
-    var c1Body, c1Cta;
-    if (!evAll.length) {
-      c1Body = '<p class="brf5-p" style="margin-top:16px">Les annonces de ton secteur ne sont pas disponibles pour l\'instant.</p>';
-      c1Cta = '';
-    } else if (!evWeek.length) {
-      c1Body = '<p class="brf5-p" style="margin-top:16px">Rien de neuf dans ton secteur cette semaine.</p>';
-      c1Cta = '<button type="button" class="brf5-cta" onclick="V2.infosReste(\'.sct\')">Voir ton secteur</button>';
-    } else {
-      var map1 = brf5Map(deps, evWeek);
-      c1Body = '<div class="brf5-t">' + evWeek.length + ' officine' + (evWeek.length > 1 ? 's' : '') + ' bouge' + (evWeek.length > 1 ? 'nt' : '') + ' ces 7 derniers jours</div>' +
-        (map1 || '') + '<div class="brf5-fill"></div>' +
-        '<div class="brf5-list">' + evWeek.slice(0, 8).map(function (e) {
-          var fam = SCT_FAM[e.f] || SCT_FAM.dirigeant, tag = sctTag(e);
-          return '<span class="brf5-list-row"><i style="background:var(' + fam.c + ')"></i>' + esc(sctJoli(e.nom)) + ' · ' + esc(String(fam.l1 || '').toLowerCase()) +
-            (SCT_TAG_L[tag.t] ? ' · <b class="brf5-tag">' + SCT_TAG_L[tag.t] + '</b>' : '') + '</span>';
-        }).join('') + '</div>';
-      c1Cta = '<button type="button" class="brf5-cta" onclick="V2.infosReste(\'.sct\')">Voir ' + (evWeek.length > 1 ? 'les ' + evWeek.length + ' fiches' : 'la fiche') + '</button>';
-    }
-
-    /* carte 2 · Les prix */
-    var chips2 = '';
-    if (prixEp && prixEp.points && prixEp.points.length > 1) {
-      chips2 = prixEp.points[prixEp.points.length - 1].split(',').map(function (s) { return s.trim(); }).filter(Boolean)
-        .slice(0, 4).map(function (s) { return '<span>' + esc(s) + '</span>'; }).join('');
-    }
-    var c2Body = (radarPrix ? '<div class="brf5-num a-amber">' + radarPrix.v + '</div><div class="brf5-t">' + esc(radarPrix.l) + '</div>' : '<div class="brf5-t" style="margin-top:16px">Aucun changement de prix publié pour l\'instant</div>') +
-      (chips2 ? '<div class="brf5-chips">' + chips2 + '</div>' : '') +
-      '<div class="brf5-fill"></div>' +
-      (margeAVenir ? '<div class="brf5-mini"><b class="a-amber">J-' + (radarJo ? radarJo.v : '?') + '</b><span>' + esc(margeAVenir.resume || margeAVenir.titre) + '</span></div>' : '');
-    var c2Cta = prixEp ? '<button type="button" class="brf5-cta" onclick="return V2.infosLire(event,' + rangPrix + ')">Lire le détail</button>' : '';
-
-    /* carte 3 · Les ruptures */
-    var c3Body = (nRuptNeuves ? '<div class="brf5-num a-rose">' + nRuptNeuves + '</div><div class="brf5-t">nouvelle' + (nRuptNeuves > 1 ? 's alertes' : ' alerte') + ' de disponibilité à l\'ANSM</div>' : radarRupt ? '<div class="brf5-num a-rose">' + radarRupt.v + '</div><div class="brf5-t">' + esc(radarRupt.l) + '</div>' : '<div class="brf5-t" style="margin-top:16px">' + nRuptNeuves + ' nouvelles alertes de disponibilité</div>') +
-      (nRuptNeuves ? '<div class="brf5-chips">' + brf5RuptChips(BRIEF.ruptures_neuves) + '</div>' : '') +
-      '<div class="brf5-fill"></div>' +
-      '<div class="brf5-mini"><b class="a-rose">' + nAmont + '</b><span>molécule' + (nAmont > 1 ? 's' : '') + ' en rupture chez nos voisins, pas encore en France</span></div>' +
-      (radarRetours ? '<div class="brf5-mini"><b class="a-green">' + radarRetours.v + '</b><span>retours de stock annoncés sous 60 jours</span></div>' : '');
-    var c3Cta = nRuptNeuves ? '<button type="button" class="brf5-cta" onclick="V2.rupturesOuvrir()">Voir les ' + nRuptNeuves + ' produits</button>' : '';
-
-    /* carte 4 · À la une */
-    var c4Body = une ? ('<div class="brf5-t" style="font-size:24px;margin-top:16px">' + esc(une.t) + '</div>' +
-      (une.r ? '<p class="brf5-p">' + esc(une.r) + '</p>' : '') + '<div class="brf5-fill"></div>' +
-      '<p class="brf5-p" style="font-size:13px;color:var(--muted,#5E6679)">' + esc(une.s || '') + (une.mn ? ' · ' + une.mn + ' min de lecture' : '') + '</p>') : '<div class="brf5-t" style="margin-top:16px">Pas encore de une aujourd\'hui</div>';
-    var c4Cta = (une && rangUne >= 0) ? '<button type="button" class="brf5-cta" onclick="return V2.infosLire(event,' + rangUne + ')">Lire l\'article</button>' : '';
-
-    /* carte 5 · Les concurrents — remplie après coup par V2.concurrentsResume() */
-    var c5Body = '<div class="brf5-t" style="margin-top:16px">Les concurrents dans ton secteur</div><div class="brf5-conc-wait" id="brf5-conc-host">Composition en cours…</div>';
-    var c5Cta = '<button type="button" class="brf5-cta" onclick="V2.infosReste(\'#infos-concurrents\')">Voir le détail</button>';
-
-    var CARTES = [
-      { ico: 'pharma', acc: 'blue', sur: '1 · Ton secteur', body: c1Body, cta: c1Cta },
-      { ico: 'euro', acc: 'amber', sur: '2 · Les prix', body: c2Body, cta: c2Cta },
-      { ico: 'alert', acc: 'rose', sur: '3 · Les ruptures', body: c3Body, cta: c3Cta },
-      { ico: 'spark', acc: 'blue', sur: '4 · À la une', body: c4Body, cta: c4Cta },
-      { ico: 'opp', acc: 'muted', sur: '5 · Les concurrents', body: c5Body, cta: c5Cta }
-    ];
-
-    var jourTxt = topDate();
-    var progres = CARTES.map(function () { return '<i></i>'; }).join('');
-    var cartesHtml = CARTES.map(function (c, i) {
-      return '<article class="brf5-c a-' + c.acc + '" aria-label="Carte ' + (i + 1) + ' sur 5">' +
-        '<span class="brf5-lum" aria-hidden="true"></span>' +
-        '<div class="brf5-sur"><span class="brf5-ico">' + ICO(c.ico, 16, 2.1) + '</span>' + esc(c.sur) + '</div>' +
-        c.body +
-        (c.cta ? '<div class="brf5-cta-wrap">' + c.cta + '</div>' : '') +
-      '</article>';
-    }).join('');
-
-    return '<section class="brf5" aria-label="Le brief du matin">' +
-      '<div class="brf5-head">' +
-        '<div class="brf5-prog" data-brf5-prog aria-hidden="true">' + progres + '</div>' +
-        '<div class="brf5-l">' +
-          '<h1>Le brief du matin<span>' + esc(jourTxt) + '</span></h1>' +
-          '<button type="button" class="brf5-reste" onclick="V2.infosResteBascule()">' + (RESTE_OPEN ? 'Replier' : 'Tout le reste') + '</button>' +
+  /* ════════════════ LE PANNEAU, AVEC SA PILE ════════════════ */
+  var PP_PILE = [], PP_REG = [], PP_FOCUS = null, PP_CONC_AUTO = false;
+  function ppPan() {
+    var pan = document.getElementById('pp-pan');
+    if (pan) return pan;
+    var w = document.createElement('div');
+    w.innerHTML = '<div class="pp-voile" id="pp-voile"></div>' +
+      '<section class="pp-pan" id="pp-pan" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Détail">' +
+        '<div class="pp-p-tete">' +
+          '<button type="button" class="pp-rond" data-pp-retour aria-label="Revenir" hidden>' + ppIco('retour', 20) + '</button>' +
+          '<span class="pp-p-sur" data-pp-sur></span>' +
+          '<button type="button" class="pp-rond" data-pp-fermer aria-label="Fermer">' + ppIco('fermer', 20) + '</button>' +
         '</div>' +
-      '</div>' +
-      '<div class="brf5-rail" data-brf5-rail tabindex="0" role="group" aria-roledescription="carrousel" aria-label="Cinq cartes, faire glisser ou utiliser les flèches">' + cartesHtml + '</div>' +
-      '<nav class="brf5-nav" aria-label="Navigation des cartes">' +
-        '<button type="button" class="brf5-rond" data-brf5-prec aria-label="Carte précédente" onclick="V2.brf5Aller(-1)">' + brf5Svg('<path d="M15 5l-7 7 7 7"/>', 18) + '</button>' +
-        '<span class="brf5-ou" data-brf5-ou>1 sur 5</span>' +
-        '<button type="button" class="brf5-suiv" data-brf5-suiv onclick="V2.brf5Suivant()">Suivante ' + brf5Svg('<path d="M9 5l7 7-7 7"/>', 16) + '</button>' +
-      '</nav>' +
-    '</section>';
+        '<div class="pp-p-corps" data-pp-corps></div>' +
+      '</section>';
+    while (w.firstChild) document.body.appendChild(w.firstChild);
+    pan = document.getElementById('pp-pan');
+    document.getElementById('pp-voile').addEventListener('click', ppFermer);
+    pan.querySelector('[data-pp-fermer]').addEventListener('click', ppFermer);
+    pan.querySelector('[data-pp-retour]').addEventListener('click', ppRetour);
+    pan.querySelector('[data-pp-corps]').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-pp-i]'); if (b) { ppLire(PP_REG[+b.getAttribute('data-pp-i')]); return; }
+      var v = e.target.closest('[data-pp-vers]'); if (v) { ppOuvrirVue(v.getAttribute('data-pp-vers')); return; }
+      var p = e.target.closest('[data-pp-plus]'); if (p) { var box = p.previousElementSibling; if (box) box.hidden = false; p.parentNode.removeChild(p); return; }
+      if (e.target.closest('[data-pp-retour-bas]')) ppRetour();
+    });
+    return pan;
   }
-
-  /* navigation du rail — DOM pur, comme le reste de l'app (pas de framework) */
-  function brf5Els() {
-    var rail = document.querySelector('[data-brf5-rail]');
-    if (!rail) return null;
-    return { rail: rail, cartes: rail.querySelectorAll('.brf5-c'), barres: document.querySelectorAll('[data-brf5-prog] i'),
-      ou: document.querySelector('[data-brf5-ou]'), prec: document.querySelector('[data-brf5-prec]'), suiv: document.querySelector('[data-brf5-suiv]') };
+  function ppAfficher(v) {
+    var pan = ppPan(), corps = pan.querySelector('[data-pp-corps]');
+    pan.querySelector('[data-pp-sur]').textContent = v.sur || '';
+    corps.innerHTML = v.html; corps.scrollTop = v.scroll || 0;
+    pan.querySelector('[data-pp-retour]').hidden = PP_PILE.length < 2;
+    if (v.apres) v.apres(corps);
   }
-  function brf5Maj() {
-    var E = brf5Els(); if (!E) return;
-    var w = E.cartes[0] ? E.cartes[0].getBoundingClientRect().width + 12 : 1;
-    BRF5_CUR = Math.max(0, Math.min(4, Math.round(E.rail.scrollLeft / w)));
-    E.barres.forEach(function (b, i) { b.classList.toggle('vu', i <= BRF5_CUR); });
-    if (E.ou) E.ou.textContent = (BRF5_CUR + 1) + ' sur 5';
-    if (E.prec) E.prec.disabled = BRF5_CUR === 0;
-    if (E.suiv) E.suiv.innerHTML = BRF5_CUR === 4 ? 'Voir tout le reste ' + brf5Svg('<path d="M9 5l7 7-7 7"/>', 16) : 'Suivante ' + brf5Svg('<path d="M9 5l7 7-7 7"/>', 16);
+  function ppOuvrirPan(v) {
+    var pan = ppPan(), corps = pan.querySelector('[data-pp-corps]');
+    // PP_REG n'est PAS vidé ici : la vue vient d'y inscrire ses lignes ; ppFermer() le vide
+    if (!pan.classList.contains('ouvert')) { PP_PILE = []; PP_FOCUS = document.activeElement; }
+    else if (PP_PILE.length) PP_PILE[PP_PILE.length - 1].scroll = corps.scrollTop;
+    PP_PILE.push(v); ppAfficher(v);
+    pan.classList.add('ouvert'); document.getElementById('pp-voile').classList.add('ouvert');
+    pan.setAttribute('aria-hidden', 'false'); document.documentElement.classList.add('pp-fige');
+    setTimeout(function () { var f = pan.querySelector('[data-pp-fermer]'); if (f) try { f.focus({ preventScroll: true }); } catch (e) {} }, 60);
   }
-  V2.brf5Aller = function (delta) {
-    var E = brf5Els(); if (!E) return;
-    var i = Math.max(0, Math.min(4, BRF5_CUR + delta));
-    var w = E.cartes[0] ? E.cartes[0].getBoundingClientRect().width + 12 : 0;
-    E.rail.scrollTo({ left: i * w, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
-  };
-  V2.brf5Suivant = function () { if (BRF5_CUR === 4) V2.infosReste(); else V2.brf5Aller(1); };
-  var BRF5_SCROLL_T = null;
-  function brf5Init() {
-    var E = brf5Els(); if (!E) return;
-    BRF5_CUR = 0;
-    E.rail.addEventListener('scroll', function () { clearTimeout(BRF5_SCROLL_T); BRF5_SCROLL_T = setTimeout(brf5Maj, 60); });
-    brf5Maj();
+  function ppFermer() {
+    var pan = document.getElementById('pp-pan'); if (!pan) return;
+    pan.classList.remove('ouvert'); document.getElementById('pp-voile').classList.remove('ouvert');
+    pan.setAttribute('aria-hidden', 'true'); document.documentElement.classList.remove('pp-fige');
+    PP_PILE = []; PP_REG = [];
+    if (PP_FOCUS && PP_FOCUS.focus && PP_FOCUS.isConnected) try { PP_FOCUS.focus({ preventScroll: true }); } catch (e) {}
   }
-  // flèches clavier ← → : seulement sur la page Infos, et seulement si aucun panneau n'est ouvert
-  if (!V2._brf5Keys) {
-    V2._brf5Keys = true;
-    document.addEventListener('keydown', function (e) {
-      if (!V2.route || V2.route.name !== 'infos') return;
-      if (document.querySelector('.panneau.ouvert, #inf-panneau, #sct-panneau, #rupt-panneau')) return;
-      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-      if (!brf5Els()) return;
-      e.preventDefault();
-      V2.brf5Aller(e.key === 'ArrowRight' ? 1 : -1);
+  function ppRetour() { if (PP_PILE.length < 2) { ppFermer(); return; } PP_PILE.pop(); ppAfficher(PP_PILE[PP_PILE.length - 1]); }
+  function ppOuvert() { var p = document.getElementById('pp-pan'); return !!(p && p.classList.contains('ouvert')); }
+  if (!V2._ppEchap) {
+    V2._ppEchap = true;
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && ppOuvert()) ppFermer(); });
+    // quitter la page (lien, bouton Retour du navigateur) referme le panneau
+    window.addEventListener('hashchange', function () {
+      if (!V2.route || V2.route.name !== 'infos') { ppFermer(); PP_CONC_AUTO = false; }
     });
   }
 
-  /* ════════════════════════════ RENDU ════════════════════════════ */  /* ════════════════════════════ RENDU · « LE MUR » ════════════════════════════
-     Direction choisie par Will le 01/09/2026 parmi quatre maquettes.
-     Le parti pris : l'IMAGE D'ABORD. Aucune carte blanche dans le fil — chaque
-     article EST une tuile d'image, de taille variable, avec son titre posé dessus.
-     Les articles sans photo deviennent des affiches de couleur, donc le mur reste
-     entièrement visuel, sans trou.
-     Will, 02/09/2026 : « vire de "ce qui touche tes marges" à "à retirer des rayons" ».
-     Six blocs retirés d'un coup — Journal officiel, radar chiffré, filtres de rubriques,
-     opportunités catalogue, alertes de stock, rappels. La page ne garde que ce qui se
-     REGARDE : la une, puis le mur (filtrable par rubrique, cherchable).
-     ⚠️ Les données de ces six blocs sont toujours dans brief-jour.json : les remettre
-        ou les déplacer ailleurs ne coûte que du gabarit, rien à recalculer. */
+  /* ── lignes de liste ── */
+  function ppReg(o) { PP_REG.push(o); return PP_REG.length - 1; }
+  function ppLigne(o) {
+    var i = ppReg(o.item);
+    return '<button type="button" class="pp-ligne' + (o.lu ? ' lu' : '') + '" data-pp-i="' + i + '"><span class="pp-ico" style="--c:' + o.c + '">' + ppIco(o.ico, 18) + '</span>' +
+      '<span class="pp-txt"><span class="pp-lt">' + o.t + '</span>' + (o.s ? '<span class="pp-ls">' + o.s + '</span>' : '') + '</span>' +
+      (o.d ? '<span class="pp-ld' + (o.dc ? ' ' + o.dc : '') + '">' + o.d + '</span>' : '') + '</button>';
+  }
+  function ppListe(L, n, fn) {
+    if (!L.length) return '<div class="pp-bloc"><div class="pp-vide">Rien sur cette sélection.</div></div>';
+    var a = L.slice(0, n).map(fn).join(''), b = L.slice(n);
+    return '<div class="pp-bloc">' + a + (b.length ? '<div hidden>' + b.map(function (x, k) { return fn(x, k + n); }).join('') + '</div><button type="button" class="pp-plus" data-pp-plus>Voir les ' + b.length + ' autres ' + ppIco('bas', 18) + '</button>' : '') + '</div>';
+  }
+
+  /* ── la lecture d'un élément ── */
+  function ppLire(it) {
+    if (it && it.paresseux) it = ppArtBod(it.paresseux);   // une annonce se marque « lue » à l'ouverture
+    if (it) ppOuvrirPan({ sur: it.sur, html: ppLecture(it), apres: it.apres });
+  }
+  function ppLecture(it) {
+    var h = '<h2>' + esc(it.t) + '</h2>';
+    if (it.meta) h += '<div class="pp-meta">' + esc(it.meta) + '</div>';
+    if (it.badges) h += '<div style="margin-top:10px">' + it.badges + '</div>';
+    if (it.chiffres && it.chiffres.length) h += '<div class="pp-chiffres">' + it.chiffres.map(function (c) { return '<div><b>' + esc(c.v) + '</b><span>' + esc(c.c) + '</span></div>'; }).join('') + '</div>';
+    (it.paras || []).forEach(function (p) { if (p) h += '<p>' + esc(p) + '</p>'; });
+    if (it.html) h += it.html;
+    if (it.geste) h += '<div class="pp-geste"><b>' + (it.gesteT || 'Pour toi') + '</b>' + esc(it.geste) + '</div>';
+    h += '<div class="pp-actions">';
+    if (it.url && urlSure(it.url) !== '#') h += '<a class="pp-btn pp-btn-bleu" href="' + esc(urlSure(it.url)) + '" target="_blank" rel="noopener">' + esc(it.lien || 'Lire la source') + ' ' + ppIco('lien', 18) + '</a>';
+    if (it.boutons) h += it.boutons;
+    if (PP_PILE.length) h += '<button type="button" class="pp-btn pp-btn-blanc" data-pp-retour-bas>Revenir</button>';
+    return h + '</div>';
+  }
+  function ppArt(a, sur) {
+    var srcs = (a.srcs && a.srcs.length) ? a.srcs : [a.s];
+    return { sur: sur || a.theme_l || 'Article', t: a.t,
+      meta: [srcs.filter(Boolean).slice(0, 3).join(' · '), a.d ? ilYA(a.d) : '', a.mn ? a.mn + ' min de lecture' : '', a.n_src > 1 ? a.n_src + ' sources en parlent' : ''].filter(Boolean).join(' · '),
+      paras: [a.r].concat(a.points || []), chiffres: a.chiffres, geste: a.pour_toi || '', url: a.u,
+      lien: 'Lire l’article en entier sur ' + (srcs[0] || 'le site'),
+      badges: (a.neuf ? '<span class="pp-badge vert">Nouveau</span>' : '') + (a.entier ? '<span class="pp-badge">Lisible en entier</span>' : '') };
+  }
+  function ppArtEp(e) {
+    var q = e.effet ? (e.j > 0 ? 'Applicable dans ' + ppPl(e.j, 'jour') + ' (' + ppDl(e.effet) + ')' : e.j === 0 ? 'Applicable aujourd’hui' : 'En vigueur depuis le ' + ppDl(e.effet)) : '';
+    var cl = (['difficulte', 'cession', 'ferme', 'titulaire'].indexOf(e.motif) >= 0) ? clientTouche(e.societe, e.ville) : null;
+    return { sur: 'À ne pas manquer · ' + (e.s || ''), t: e.t, meta: [q, e.d ? 'publié le ' + ppDl(e.d) : ''].filter(Boolean).join(' · '),
+      paras: [e.r].concat(e.points || []), geste: e.pour_toi, url: e.u,
+      html: cl ? '<div class="pp-geste pp-alerte"><b>C’est un de tes clients</b>' + esc(cl.name) + (cl.code ? ' · CIP ' + esc(cl.code) : '') +
+        ({ cession: ' : le titulaire change, compte à reprendre.', titulaire: ' : le titulaire a changé, compte à reprendre.', ferme: ' : ce client ferme, encours à solder.' }[e.motif] || ' : encours à vérifier.') + '</div>' : '' };
+  }
+  function ppArtBod(e) {
+    var fam = SCT_FAM[e.f] || SCT_FAM.dirigeant, tag = sctTag(e);
+    SCT_LU[e.id] = 1; sctSaveLu();
+    return { sur: fam.l1 + ' · ' + (e.depNom || SCT_DEPNOMS[e.dep] || '') + ' (' + e.dep + ')', t: sctJoli(e.nom),
+      meta: [e.detail, sctJoli(e.ville), 'publié ' + sctQuand(e.d) + ' au Bodacc'].filter(Boolean).join(' · '),
+      badges: SCT_TAG_L[tag.t] ? '<span class="pp-badge' + (tag.t === 'client' ? ' vert' : tag.t === 'prospect' ? '' : ' gris') + '">' + SCT_TAG_L[tag.t] + '</span>' : '',
+      paras: ['Publié le ' + sctDateLongue(e.d) + '.'],
+      geste: sctGeste(e, tag.t), gesteT: 'Le geste', url: e.url, lien: 'Lire l’annonce officielle',
+      boutons: (tag.ficheId ? '<button type="button" class="pp-btn pp-btn-blanc" onclick="V2.ppFiche(\'' + esc(tag.ficheId) + '\')">' + ppIco('fiche', 18) + 'Ouvrir la fiche officine</button>' : '') +
+        '<button type="button" class="pp-btn pp-btn-blanc" onclick="V2.ppNonLu(\'' + esc(e.id) + '\',this)">Marquer comme non lue</button>' };
+  }
+  V2.ppFiche = function (id) { if (!id) return; ppFermer(); V2.go('pharma', id); };
+  V2.ppNonLu = function (id, b) { delete SCT_LU[id]; sctSaveLu(); if (b) { b.textContent = 'Marquée comme non lue'; b.disabled = true; } };
+  function ppArtRupt(r) {
+    var nom = String(r.spec || '').split(/ – | - /)[0];
+    return { sur: 'Ruptures · ANSM', t: nom || r.dci, meta: [r.st, r.dom, r.since ? 'signalé le ' + ppDl(r.since) : ''].filter(Boolean).join(' · '),
+      paras: [r.dci ? 'Molécule : ' + r.dci + '.' : '', r.retour ? 'Retour prévu : ' + r.retour : 'Pas de date de retour annoncée.', r.subst ? 'Une alternative existe : c’est une conversation à avoir au comptoir.' : 'Pas d’alternative signalée par l’ANSM.'],
+      url: 'https://ansm.sante.fr/disponibilites-des-produits-de-sante/medicaments', lien: 'Voir la liste de l’ANSM' };
+  }
+  function ppMolCourte(m) { m = String(m || ''); return m.length > 90 ? m.split(';')[0] + ' (solution composée)' : m; }
+  function ppArtAmont(a) {
+    return { sur: 'Ruptures chez les voisins · ' + a.pays, t: ppMolCourte(a.mol), meta: ['Déclarée en ' + a.pays + ' le ' + ppDl(a.depuis), a.atc ? 'classe ' + a.atc : ''].filter(Boolean).join(' · '),
+      paras: [a.produit ? 'Produit concerné : ' + a.produit + '.' : '', 'Pas encore signalée par l’ANSM en France.'], geste: 'Une molécule qui manque au comptoir, c’est une commande à sécuriser.' };
+  }
+  function ppArtEma(m) {
+    return { sur: 'En approche européenne · EMA', t: m.name + (m.inn ? ' (' + m.inn + ')' : ''), meta: [m.type, m.atc ? 'classe ' + m.atc : '', m.opinion ? 'avis du ' + ppDl(m.opinion) : ''].filter(Boolean).join(' · '),
+      paras: ['Statut : ' + (m.status === 'Opinion' ? 'avis favorable rendu, autorisation européenne en cours' : m.status) + '.', 'Un ' + m.type + ' de plus sur le marché, c’est une référence de plus à proposer quand il arrivera en officine.'],
+      url: 'https://www.ema.europa.eu/en/medicines', lien: 'Voir le site de l’EMA' };
+  }
+  function ppArtLot(r) { return { sur: 'Rappel de lot · ANSM', t: r.t, meta: [r.lab, r.d ? 'publié ' + ilYA(r.d) : ''].filter(Boolean).join(' · '), paras: [r.motif, r.niv], url: r.url, lien: 'Voir le rappel à l’ANSM' }; }
+  function ppArtPara(r) {
+    return { sur: 'Rappel · Rappel Conso', t: sctJoli(r.titre) + (r.marque ? ' · ' + sctJoli(r.marque) : ''), meta: r.date ? 'publié le ' + ppDl(r.date) : '',
+      paras: [r.motif ? 'Motif : ' + r.motif : '', r.risque ? 'Risque : ' + String(r.risque).replace(/\|/g, ', ') + '.' : '', r.conduite ? 'Conduite à tenir : ' + r.conduite + '.' : ''], url: r.url, lien: 'Voir la fiche du rappel' };
+  }
+  function ppArtVer(v) { return { sur: 'Concurrents · fait vérifié', t: v.titre, meta: [v.source, v.date ? ppDl(v.date) : ''].filter(Boolean).join(' · '), paras: [v.texte], geste: v.angle || '', gesteT: 'À dire en rendez-vous', url: v.url }; }
+  function ppArtJo(o) {
+    return { sur: 'Journal officiel', t: o.titre, meta: ['Publié au JO du ' + ppDl(o.jo), o.signe_le ? 'signé le ' + ppDl(o.signe_le) : '', o.date_effet ? 'effet le ' + ppDl(o.date_effet) : ''].filter(Boolean).join(' · '),
+      paras: [o.resume || '', (o.motifs || []).length ? 'Pourquoi il est suivi : ' + o.motifs.join(' ; ') + '.' : ''], url: o.url, lien: 'Lire sur Légifrance' };
+  }
+
+  /* ════════════════ LES VUES DU PANNEAU ════════════════ */
+  var PP_VUES = {};
+  function ppOuvrirVue(n) { if (PP_VUES[n]) PP_VUES[n](); }
+  V2.ppOuvrir = function (n) { ppOuvrirVue(n); };
+
+  PP_VUES.secteur = function () {
+    var etat = { f: 'tout', ag: false }, AG = null, BOX = null;
+    if (V2.concurrentsResume) V2.concurrentsResume(function (r) {
+      AG = []; if (r) r.presents.forEach(function (a) { a.chez.forEach(function (g) { AG.push({ lat: g.lat, lon: g.lon, coul: r.coul[a.cle] }); }); });
+      if (BOX && BOX.isConnected && AG.length) rendre(BOX);   // la puce « Agences » apparaît dès que les agences sont là
+    });
+    function rendre(c) {
+      var S = ppScope(), tout = ppAnnonces(S.deps), per = SCT_S.per;
+      var dansPer = tout.filter(function (e) { return ppJ(e.d) <= per; });
+      var V = dansPer.filter(function (e) { return etat.f === 'tout' || e.f === etat.f; });
+      var cpt = {}; dansPer.forEach(function (e) { cpt[e.f] = (cpt[e.f] || 0) + 1; });
+      var h = '<h2>Ton secteur</h2><div class="pp-chapo">' + (S.deps ? 'Les officines qui bougent au Bodacc dans ' + (S.deps.length > 1 ? 'tes ' + S.deps.length + ' départements' : 'ton département') : 'Les officines qui bougent au Bodacc dans toute la France') + ', et le geste à faire pour chacune.</div>';
+      if (!SECTEUR || !(SECTEUR.ev || []).length) { c.innerHTML = h + '<div class="pp-bloc" style="margin-top:14px"><div class="pp-vide">Les annonces du Bodacc ne sont pas disponibles pour l’instant.</div></div>'; return; }
+      if (!S.deps && !S.dir) { c.innerHTML = h + '<div class="pp-bloc" style="margin-top:14px"><div class="pp-vide">Ton secteur n’est pas encore connu : il se calcule à partir des officines de ton fichier (au moins 3 par département).</div></div>'; return; }
+      if (S.dir) {
+        var autres = sctAutresSecteurs(), nFr = (SECTEUR.ev || []).filter(function (e) { return ppJ(e.d) <= 92; }).length;
+        h += '<div class="pp-bascule" role="group" aria-label="Étendue">' +
+          '<button type="button" data-pp-scope="moi" aria-pressed="' + (SCT_S.scope === 'moi') + '">Mon secteur</button>' +
+          '<button type="button" data-pp-scope="fr" aria-pressed="' + (SCT_S.scope === 'fr') + '">Toute la France · ' + nFr + '</button></div>' +
+          (autres.length ? '<select class="pp-select" data-pp-autre aria-label="Voir un autre secteur"><option value="">Un autre secteur</option>' +
+            autres.map(function (a, i) { return '<option value="' + i + '"' + (SCT_S.scope === 'autre' && SCT_S.autre === i ? ' selected' : '') + '>' + esc(a.l) + '</option>'; }).join('') + '</select>' : '') +
+          '<div class="pp-note">Bascule réservée à la direction.</div>';
+      }
+      var carte = ppCarte(S.deps, V, { r: 9, px: 360, pts: true, agences: etat.ag && S.deps ? AG : null, attrs: ' data-pp-carte role="img" aria-label="Carte, ' + V.length + ' annonces"' });
+      if (carte) h += '<div class="pp-carte-p">' + carte + '<span class="pp-carte-aide">' + (S.deps ? 'Touchez un point' : 'Touchez un département') + '</span></div>';
+      var parDep = {}; V.forEach(function (e) { parDep[e.dep] = (parDep[e.dep] || 0) + 1; });
+      var depsL = S.deps ? S.deps.slice().sort() : Object.keys(parDep).sort(function (a, b) { return parDep[b] - parDep[a]; }).slice(0, 8);
+      h += '<ul class="pp-legende" style="margin-top:10px">' + depsL.map(function (k) { return '<li>' + esc(SCT_DEPNOMS[k] || k) + ' <b>' + (parDep[k] || 0) + '</b></li>'; }).join('') + '</ul>';
+      h += '<div class="pp-bascule" role="group" aria-label="Période">' + [7, 30, 90].map(function (n) { return '<button type="button" data-pp-per="' + n + '" aria-pressed="' + (per === n) + '">' + (n === 90 ? '3 mois' : n + ' jours') + '</button>'; }).join('') + '</div>';
+      h += '<div class="pp-puces" role="group" aria-label="Familles"><button type="button" class="pp-puce" data-pp-f="tout" aria-pressed="' + (etat.f === 'tout') + '">Tout <span class="pp-n">' + dansPer.length + '</span></button>' +
+        PP_ORDRE_F.map(function (f) { return '<button type="button" class="pp-puce" data-pp-f="' + f + '" aria-pressed="' + (etat.f === f) + '"><i style="background:' + PP_FC[f] + '"></i>' + PP_COURT[f] + ' <span class="pp-n">' + (cpt[f] || 0) + '</span></button>'; }).join('') +
+        (S.deps && AG && AG.length ? '<button type="button" class="pp-puce" data-pp-ag aria-pressed="' + etat.ag + '"><i style="background:#6D4FC4;border-radius:2px"></i>Agences concurrentes <span class="pp-n">' + AG.length + '</span></button>' : '') + '</div>';
+      var nonLus = V.filter(function (e) { return !SCT_LU[e.id]; }).length;
+      h += '<h3>Les annonces <b>· ' + V.length + '</b>' + (V.length ? ' <span class="pp-h3-s">' + nonLus + ' non lue' + (nonLus > 1 ? 's' : '') + '</span>' : '') + '</h3>';
+      var rang = { client: 0, prospect: 1, hors: 2, reste: 2 };
+      var L = V.map(function (e) { return { e: e, t: sctTag(e).t }; });
+      if (S.deps) L.sort(function (x, y) { return (rang[x.t] - rang[y.t]) || (x.e.d < y.e.d ? 1 : x.e.d > y.e.d ? -1 : 0); });
+      h += ppListe(L, 8, function (x) {
+        var e = x.e, fam = SCT_FAM[e.f] || SCT_FAM.dirigeant;
+        return ppLigne({ item: ppArtBodPret(e), c: PP_FC[e.f] || PP_FC.dirigeant, ico: e.f, lu: SCT_LU[e.id],
+          t: esc(sctJoli(e.nom)) + (SCT_TAG_L[x.t] && x.t !== 'hors' ? ' <span class="pp-badge' + (x.t === 'client' ? ' vert' : '') + '">' + SCT_TAG_L[x.t] + '</span>' : ''),
+          s: esc(fam.l1) + ' · ' + esc(sctJoli(e.ville)) + ' (' + esc(e.dep) + ')<br>' + esc(sctGeste(e, x.t)), d: sctQuand(e.d), dc: ppJ(e.d) <= 7 ? 'chaud' : '' });
+      });
+      h += '<div class="pp-note" style="margin-top:12px">Source : Bodacc, relevé du ' + esc(ppDc(SECTEUR.maj)) + '. Les étiquettes « client » et « prospect » sont calculées sur ton appareil, jamais publiées.</div>';
+      c.innerHTML = h;
+    }
+    function brancher(c) {
+      c.addEventListener('click', function (e) {
+        var b;
+        if ((b = e.target.closest('[data-pp-scope]'))) { SCT_S.scope = b.getAttribute('data-pp-scope'); SCT_S.autre = -1; etat.f = 'tout'; rendre(c); ppRafraichirPage(); return; }
+        if ((b = e.target.closest('[data-pp-per]'))) { SCT_S.per = +b.getAttribute('data-pp-per'); etat.f = 'tout'; rendre(c); return; }
+        if ((b = e.target.closest('[data-pp-f]'))) { etat.f = b.getAttribute('data-pp-f'); rendre(c); return; }
+        if ((b = e.target.closest('[data-pp-ag]'))) { etat.ag = !etat.ag; rendre(c); return; }
+        var svg = e.target.closest('[data-pp-carte]'); if (!svg) return;
+        var m = svg.getScreenCTM(); if (!m) return;
+        var pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; var p = pt.matrixTransform(m.inverse()), sc = m.a;
+        var best = null, bd = 1e9;
+        PP_PTS.forEach(function (q) { var dx = (q[0] - p.x) * sc, dy = (q[1] - p.y) * sc, d2 = dx * dx + dy * dy; if (d2 < bd) { bd = d2; best = q[2]; } });
+        if (best && bd <= 26 * 26) { ppLire(ppArtBod(best)); return; }
+        var dp = e.target.closest('[data-dep]'); if (!dp) return;
+        var code = dp.getAttribute('data-dep'), S = ppScope();
+        var L = ppAnnonces(S.deps).filter(function (x) { return x.dep === code && ppJ(x.d) <= SCT_S.per && (etat.f === 'tout' || x.f === etat.f); });
+        ppOuvrirPan({ sur: 'Ton secteur · ' + (SCT_DEPNOMS[code] || code), html: '<h2>' + esc(SCT_DEPNOMS[code] || code) + ' (' + esc(code) + ')</h2><div class="pp-chapo">' + ppPl(L.length, 'annonce') + ' sur la période choisie.</div><h3>Choisir une annonce</h3>' +
+          ppListe(L, 20, function (x) { return ppLigne({ item: ppArtBodPret(x), c: PP_FC[x.f] || PP_FC.dirigeant, ico: x.f, t: esc(sctJoli(x.nom)), s: esc((SCT_FAM[x.f] || SCT_FAM.dirigeant).l1) + ' · ' + esc(sctJoli(x.ville)), d: sctQuand(x.d) }); }) });
+      });
+      c.addEventListener('change', function (e) {
+        if (!e.target.matches('[data-pp-autre]') || e.target.value === '') return;
+        SCT_S.scope = 'autre'; SCT_S.autre = +e.target.value; etat.f = 'tout'; rendre(c); ppRafraichirPage();
+      });
+    }
+    ppOuvrirPan({ sur: 'Ton secteur · Bodacc', html: '<div data-pp-sect></div>', apres: function (cc) { BOX = cc.querySelector('[data-pp-sect]'); rendre(BOX); brancher(BOX); } });
+  };
+  // l'annonce se marque « lue » au moment où on l'OUVRE, pas quand la liste s'affiche
+  function ppArtBodPret(e) { return { paresseux: e }; }
+
+  /* un changement de portée recalcule aussi les tuiles, sans fermer le panneau */
+  function ppRafraichirPage() { if (V2.route && V2.route.name === 'infos') V2.render(); }
+
+  PP_VUES.echeances = function () {
+    var D = ppDonnees(), m = D.marge;
+    var h = '<h2>À ne pas manquer</h2><div class="pp-chapo">Les échéances réglementaires et les signaux du jour, classés par compte à rebours.</div>';
+    h += '<div class="pp-chiffres">' + (m ? '<div><b style="color:var(--pp-ambre-f)">J-' + m.j + '</b><span>' + (m.theme === 'marge' ? 'nouvelle marge grossiste' : esc(m.t)) + ', le ' + esc(ppDl(m.effet)) + '</span></div>' : '') +
+      '<div><b>' + D.avenir.length + '</b><span>' + (D.avenir.length > 1 ? 'échéances à venir' : 'échéance à venir') + ', ' + D.passe.length + ' déjà en vigueur</span></div></div>';
+    function fe(e) {
+      return ppLigne({ item: ppArtEp(e), c: e.theme === 'marge' ? '#C7791A' : e.motif === 'ferme' ? '#E0556E' : '#0050E6', ico: e.theme === 'marge' ? 'loi' : e.motif === 'ferme' ? 'fermeture' : 'prix',
+        t: esc(e.t), s: esc(e.s) + (e.pour_toi ? ' · ' + esc(e.pour_toi) : ''), d: e.j === 0 ? 'aujourd’hui' : e.j > 0 ? 'J-' + e.j : 'en vigueur', dc: e.j != null && e.j >= 0 && e.j <= 7 ? 'urgent' : e.j > 0 ? 'chaud' : '' });
+    }
+    var IC = { amont: 'europe', titulaire: 'dirigeant', difficulte: 'procedure', cession: 'cession', ferme: 'fermeture' }, CO = { amont: '#E0556E', titulaire: '#0050E6', difficulte: '#C7791A', cession: '#1E9E6A' };
+    h += '<h3>À venir <b>· ' + D.avenir.length + '</b></h3>' + ppListe(D.avenir, 10, fe);
+    h += '<h3>Déjà en vigueur <b>· ' + D.passe.length + '</b></h3>' + ppListe(D.passe, 10, fe);
+    h += '<h3>Signaux du jour <b>· ' + D.signaux.length + '</b></h3>' + ppListe(D.signaux, 4, function (e) { return ppLigne({ item: ppArtEp(e), c: CO[e.motif] || '#465066', ico: IC[e.motif] || 'journal', t: esc(e.t), s: esc(e.s), d: e.d ? ilYA(e.d) : '' }); });
+    h += '<h3>Journal officiel <b>· ' + ppPl(D.jo.length, 'texte suivi', 'textes suivis') + '</b></h3>' + ppListe(D.jo, 5, function (o) {
+      return ppLigne({ item: ppArtJo(o), c: '#465066', ico: 'loi', t: esc(o.titre), s: (o.resume ? esc(o.resume) + ' · ' : '') + (o.date_effet ? (o.a_venir ? 'effet le ' : 'en vigueur depuis le ') + esc(ppDc(o.date_effet)) : ''), d: o.jo ? 'JO ' + esc(ppDc(o.jo)) : '' });
+    });
+    ppOuvrirPan({ sur: 'À ne pas manquer · ' + ppPl(D.ep.length, 'échéance'), html: h });
+  };
+
+  PP_VUES.ruptures = function () {
+    var D = ppDonnees(), R = D.rad, r = R.ruptures;
+    var h = '<h2>Ruptures</h2><div class="pp-chapo">' + (r ? r.v + ' produits en rupture ou tension selon l’ANSM' + (r.sub ? ' ; ' + esc(r.sub) : '') + '.' : 'Le relevé chiffré des ruptures n’est pas disponible ce matin.') + '</div>';
+    h += '<div class="pp-chiffres">' + (r ? '<div><b style="color:var(--pp-rose-f)">' + r.v + '</b><span>en rupture ou tension</span></div>' : '') +
+      (R.substituables ? '<div><b style="color:var(--pp-vert-f)">' + R.substituables.v + '</b><span>ont une alternative possible</span></div>' : '') +
+      (R.retours ? '<div><b style="color:var(--pp-bleu)">' + R.retours.v + '</b><span>retours annoncés sous 60 jours</span></div>' : '') +
+      '<div><b>' + D.amont.length + '</b><span>molécules en rupture chez les voisins européens</span></div></div>';
+    h += '<h3>Nouvelles alertes ANSM <b>· ' + D.rupt.length + '</b></h3>' + ppListe(D.rupt, 7, function (x) {
+      var st = x.st || '', co = /Rupture/i.test(st) ? '#E0556E' : /Tension/i.test(st) ? '#C7791A' : /Arr[eê]t/i.test(st) ? '#465066' : '#1E9E6A';
+      return ppLigne({ item: ppArtRupt(x), c: co, ico: 'rupture', t: esc(String(x.spec || x.dci || '').split(/ – | - /)[0]),
+        s: '<span class="pp-badge ' + (co === '#E0556E' ? 'rose' : co === '#C7791A' ? 'ambre' : co === '#1E9E6A' ? 'vert' : 'gris') + '">' + esc(st) + '</span>' + esc(x.dom || '') + (x.retour ? ' · retour ' + esc(String(x.retour).replace(/\.$/, '')) : '') });
+    });
+    h += '<h3>Chez les voisins, pas encore en France <b>· ' + D.amont.length + '</b></h3>' + ppListe(D.amont, 6, function (a) {
+      return ppLigne({ item: ppArtAmont(a), c: '#E0556E', ico: 'europe', t: esc(ppMolCourte(a.mol).length > 60 ? String(a.mol).split(';')[0] + ' (solution composée)' : ppMolCourte(a.mol)), s: esc(a.produit || '') + ' · ' + esc(a.pays || ''), d: esc(ppDc(a.depuis)) });
+    });
+    h += '<h3>En approche au niveau européen <b>· ' + D.ema.length + '</b></h3>' + ppListe(D.ema, 5, function (m) { return ppLigne({ item: ppArtEma(m), c: '#1E9E6A', ico: 'europe', t: esc(m.name) + (m.inn ? ' · ' + esc(m.inn) : ''), s: esc(m.type || '') + (m.opinion ? ' · avis rendu le ' + esc(ppDc(m.opinion)) : '') }); });
+    h += '<h3>Et les rappels de lot</h3><div class="pp-bloc"><button type="button" class="pp-ligne" data-pp-vers="rappels"><span class="pp-ico" style="--c:#BE3450">' + ppIco('rappel', 18) + '</span><span class="pp-txt"><span class="pp-lt">' + ppPl(D.rappels, 'rappel en cours', 'rappels en cours') + '</span><span class="pp-ls">' + D.lots.length + ' médicaments et dispositifs · ' + D.para.length + ' parapharmacie</span></span></button></div>';
+    ppOuvrirPan({ sur: 'Ruptures · ANSM et voisins européens', html: h });
+  };
+
+  PP_VUES.rappels = function () {
+    var D = ppDonnees();
+    var h = '<h2>Rappels de lot</h2><div class="pp-chapo">Les produits retirés ou rappelés, à vérifier en stock et à signaler à l’officine.</div>';
+    h += '<h3>Médicaments et dispositifs · ANSM <b>· ' + D.lots.length + '</b></h3>' + ppListe(D.lots, 5, function (r) { return ppLigne({ item: ppArtLot(r), c: '#BE3450', ico: 'rappel', t: esc(r.t), s: esc(r.lab || r.niv || ''), d: r.d ? ilYA(r.d) : '' }); });
+    h += '<h3>Parapharmacie · Rappel Conso <b>· ' + D.para.length + '</b></h3>' + ppListe(D.para, 6, function (r) { return ppLigne({ item: ppArtPara(r), c: '#F07F95', ico: 'rappel', t: esc(sctJoli(r.titre)), s: esc(sctJoli(r.marque || '')) + (r.risque ? ' · ' + esc(String(r.risque).replace(/\|/g, ', ')) : ''), d: esc(ppDc(r.date)) }); });
+    ppOuvrirPan({ sur: 'Rappels · ' + D.rappels + ' en cours', html: h });
+  };
+
+  PP_VUES.une = function () { if (BRIEF && BRIEF.une) ppLire(ppArt(BRIEF.une, 'À la une · ' + (BRIEF.une.theme_l || ''))); };
+
+  PP_VUES.cinq = function () {
+    var D = ppDonnees();
+    var h = '<h2>L’essentiel en 30 secondes</h2><div class="pp-chapo">Les cinq sujets à connaître avant la première visite.</div><h3>Les ' + D.cinq.length + ' sujets</h3>' +
+      ppListe(D.cinq, 5, function (c) { return ppLigne({ item: ppArt(c), c: PP_TH[c.theme] || '#0050E6', ico: c.theme === 'securite' ? 'rappel' : c.theme === 'marge' ? 'prix' : 'journal', t: esc(c.t), s: esc(c.theme_l || '') + ' · ' + esc(c.s || '') + ' · ' + (c.mn || 1) + ' min' }); });
+    ppOuvrirPan({ sur: 'L’essentiel · ' + ppPl(D.cinq.length, 'sujet'), html: h });
+  };
+
+  PP_VUES.radar = function () {
+    var vers = { ruptures: 'ruptures', substituables: 'ruptures', retours: 'ruptures', prix: 'echeances', jo: 'echeances', demande: 'mur', rappels: 'rappels' };
+    var R = (BRIEF && BRIEF.radar) || [];
+    var h = '<h2>Le radar du jour</h2><div class="pp-chapo">' + ppPl(R.length, 'compteur relevé', 'compteurs relevés') + ' ce matin. Toucher un compteur ouvre la rubrique qui l’explique.</div><h3>Les ' + ppPl(R.length, 'compteur') + '</h3><div class="pp-bloc">' +
+      R.map(function (r) {
+        return '<button type="button" class="pp-ligne" data-pp-vers="' + (vers[r.k] || 'mur') + '"><span class="pp-ico pp-ico-n" style="--c:' + (PP_TON[r.ton] || '#0050E6') + '">' + (r.k === 'demande' && r.v > 0 ? '+' : '') + esc(r.v) + (r.unite === 'j' ? ' j' : r.unite ? ' ' + esc(r.unite) : '') + '</span>' +
+          '<span class="pp-txt"><span class="pp-lt">' + esc(r.l) + '</span><span class="pp-ls">' + esc(r.sub || '') + (r.src ? ' · ' + esc(r.src) : '') + '</span></span></button>';
+      }).join('') + '</div>';
+    ppOuvrirPan({ sur: 'Le radar du jour', html: h });
+  };
+
+  /* Concurrents : faits vérifiés (avec l'angle en rendez-vous), agences (le bloc de
+     v2-infos-concurrents.js, monté ici) et presse (le bloc de v2-grossistes.js). */
+  PP_VUES.concurrents = function () {
+    var tab = 'verifie', VER = null, nAg = null, nActu = null;
+    function rendre(c) {
+      var h = '<h2>Les concurrents</h2><div class="pp-chapo">Ce qui est vérifié, où ils sont implantés, et ce que la presse en dit.</div>' +
+        '<div class="pp-onglets" role="tablist">' +
+          '<button type="button" role="tab" data-pp-tab="verifie" aria-selected="' + (tab === 'verifie') + '">Faits vérifiés' + (VER ? ' · ' + VER.length : '') + '</button>' +
+          '<button type="button" role="tab" data-pp-tab="agences" aria-selected="' + (tab === 'agences') + '">Agences' + (nAg != null ? ' · ' + nAg : '') + '</button>' +
+          '<button type="button" role="tab" data-pp-tab="presse" aria-selected="' + (tab === 'presse') + '">Presse' + (nActu != null ? ' · ' + nActu : '') + '</button></div>' +
+        '<div data-pp-conc-corps></div>';
+      c.innerHTML = h;
+      var corps = c.querySelector('[data-pp-conc-corps]');
+      if (tab === 'verifie') {
+        if (!VER) { corps.innerHTML = '<div class="pp-bloc" style="margin-top:14px"><div class="pp-vide">Chargement des faits vérifiés…</div></div>'; return; }
+        var L = VER.slice().sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });
+        corps.innerHTML = '<h3>Faits vérifiés, du plus récent <b>· ' + L.length + '</b></h3>' + ppListe(L, 6, function (v) {
+          return ppLigne({ item: ppArtVer(v), c: '#6D4FC4', ico: 'concurrent', t: esc(v.titre), s: v.angle ? '<span class="pp-badge">Angle en rendez-vous</span>' + esc(v.angle) : esc(v.source || ''), d: esc(ppDc(v.date)) });
+        });
+      } else if (tab === 'agences') {
+        if (V2.concurrentsSecteur) V2.concurrentsSecteur(corps); else corps.innerHTML = '<div class="pp-bloc"><div class="pp-vide">La carte des agences n’est pas disponible.</div></div>';
+      } else if (V2.grossistesCorps) V2.grossistesCorps(corps, 'actu');
+      else corps.innerHTML = '<div class="pp-bloc"><div class="pp-vide">La revue de presse n’est pas disponible.</div></div>';
+    }
+    ppOuvrirPan({ sur: 'Concurrents', html: '<div data-pp-conc></div>', apres: function (cc) {
+      var c = cc.querySelector('[data-pp-conc]'); rendre(c);
+      c.addEventListener('click', function (e) { var b = e.target.closest('[data-pp-tab]'); if (b) { tab = b.getAttribute('data-pp-tab'); rendre(c); } });
+      if (V2.grossistesActuDonnees) V2.grossistesActuDonnees(function (a, v) {
+        VER = (v || []).filter(function (x) { return !x.nonConfirme; }); nActu = (a || []).length;
+        if (c.isConnected && tab === 'verifie') rendre(c); else if (c.isConnected) { var t = c.querySelector('[data-pp-tab="verifie"]'); if (t) t.textContent = 'Faits vérifiés · ' + VER.length; t = c.querySelector('[data-pp-tab="presse"]'); if (t) t.textContent = 'Presse · ' + nActu; }
+      }); else { VER = []; rendre(c); }
+      if (V2.concurrentsResume) V2.concurrentsResume(function (r) {
+        nAg = r ? r.presents.reduce(function (s, a) { return s + a.chez.length; }, 0) : null;
+        var t = c.isConnected && c.querySelector('[data-pp-tab="agences"]'); if (t && nAg != null) t.textContent = 'Agences · ' + nAg;
+      });
+    } });
+  };
+
+  PP_VUES.mur = function () {
+    var D = ppDonnees(), th = THEME_SEL && D.parTh[THEME_SEL] ? THEME_SEL : 'tous', q = '';
+    var ks = Object.keys(D.parTh).sort(function (a, b) { return D.parTh[b] - D.parTh[a]; });
+    function res(c) {
+      var qq = norm(q.trim());
+      var L = D.fil.filter(function (a) { return (th === 'tous' || a.theme === th) && (!qq || norm(a.t + ' ' + (a.r || '') + ' ' + (a.s || '')).indexOf(qq) >= 0); });
+      c.querySelector('[data-pp-res]').innerHTML = '<h3>Articles <b>· ' + L.length + '</b></h3>' + ppListe(L, 12, function (a) {
+        return ppLigne({ item: ppArt(a), c: PP_TH[a.theme] || '#0050E6', ico: a.theme === 'rupture' ? 'rupture' : a.theme === 'securite' ? 'rappel' : a.theme === 'sante' ? 'sante' : 'journal',
+          t: (a.neuf ? '<span class="pp-badge vert">Nouveau</span>' : '') + esc(a.t), s: esc(a.theme_l || '') + ' · ' + esc(a.s || '') + ' · ' + (a.mn || 1) + ' min', d: a.d ? ilYA(a.d) : '' });
+      });
+    }
+    var h = '<h2>Le mur</h2><div class="pp-chapo">Toute l’actualité lue ce matin, ' + ppPl(D.fil.length, 'article') + ' dont ' + D.filNeuf + ' nouveau' + (D.filNeuf > 1 ? 'x' : '') + '.</div>' +
+      '<div class="pp-champ-wrap">' + ppIco('chercher', 18) + '<input class="pp-champ" type="search" placeholder="Chercher dans les ' + D.fil.length + ' articles" aria-label="Chercher un article" data-pp-q></div>' +
+      '<div class="pp-puces"><button type="button" class="pp-puce" data-pp-th="tous" aria-pressed="' + (th === 'tous') + '">Tous <span class="pp-n">' + D.fil.length + '</span></button>' +
+      ks.map(function (k) { return '<button type="button" class="pp-puce" data-pp-th="' + esc(k) + '" aria-pressed="' + (th === k) + '"><i style="background:' + (PP_TH[k] || '#5E677A') + '"></i>' + esc((BRIEF.themes_l && BRIEF.themes_l[k]) || k) + ' <span class="pp-n">' + D.parTh[k] + '</span></button>'; }).join('') + '</div><div data-pp-res></div>';
+    ppOuvrirPan({ sur: 'Le mur · ' + ppPl(D.fil.length, 'article'), html: '<div data-pp-mur>' + h + '</div>', apres: function (cc) {
+      var c = cc.querySelector('[data-pp-mur]'); res(c);
+      c.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-pp-th]'); if (!b) return;
+        th = b.getAttribute('data-pp-th');
+        THEME_SEL = th === 'tous' ? '' : th; try { localStorage.setItem(TH_KEY, THEME_SEL); } catch (x) {}
+        c.querySelectorAll('[data-pp-th]').forEach(function (x) { x.setAttribute('aria-pressed', x === b); }); res(c);
+      });
+      c.addEventListener('input', function (e) { if (e.target.matches('[data-pp-q]')) { q = e.target.value; res(c); } });
+    } });
+  };
+
+  /* « Les matins d'avant » : la vraie archive des éditions (brief-archive.json) */
+  PP_VUES.archive = function () {
+    var J = (ARCHIVE && ARCHIVE.jours) || [];
+    var h = '<h2>Les matins d’avant</h2><div class="pp-chapo">' + (J.length ? ppPl(ARCHIVE.n || J.length, 'édition archivée', 'éditions archivées') + ' : la une de chaque matin et ses titres.' : 'L’archive des éditions n’est pas disponible pour l’instant.') + '</div>';
+    J.forEach(function (j) {
+      var dd = new Date(j.d + 'T12:00:00'), T = j.titres || [];
+      h += '<h3>' + PP_JS[dd.getDay()] + ' ' + esc(ppDl(j.d)) + ' <b>· ' + ppPl(T.length, 'titre') + '</b></h3>' + ppListe(T, 3, function (t, k) {
+        return ppLigne({ item: { sur: 'Les matins d’avant · ' + ppDc(j.d), t: t.t, meta: [t.s, 'édition du ' + ppDl(j.d)].filter(Boolean).join(' · '), url: t.u },
+          c: PP_TH[t.theme] || '#0050E6', ico: t.theme === 'securite' ? 'rappel' : t.theme === 'rupture' ? 'rupture' : 'journal', t: (k === 0 && t.t === j.une ? '<span class="pp-badge">La une</span>' : '') + esc(t.t), s: esc(t.s || '') });
+      });
+    });
+    ppOuvrirPan({ sur: 'Les matins d’avant · ' + ppPl(J.length, 'édition'), html: h });
+  };
+
+  PP_VUES.sources = function () {
+    var C = (BRIEF && BRIEF.compte) || {}, F = C.fraicheur || [], S = C.sources_lues || [];
+    var h = '<h2>La fraîcheur des sources</h2><div class="pp-chapo">' + [C.fichiers != null ? C.fichiers + ' fichiers relus' : '', C.entrees != null ? C.entrees + ' articles lus' : '', C.sujets != null ? C.sujets + ' sujets' : '', C.retenues != null ? C.retenues + ' retenus' : ''].filter(Boolean).join(', ') + '.</div>';
+    h += '<h3>Les relevés automatiques <b>· ' + F.length + '</b></h3><div class="pp-bloc">' + (F.map(function (f) {
+      return '<div class="pp-ligne"><span class="pp-ico" style="--c:' + (f.ok ? '#1E9E6A' : '#E0556E') + '">' + ppIco(f.ok ? 'horloge' : 'procedure', 18) + '</span><span class="pp-txt"><span class="pp-lt">' + esc(String(f.f || '').replace('.json', '')) + '</span><span class="pp-ls">relevé du ' + esc(ppDc(f.date)) + ' · ' + (f.ok ? 'à jour' : 'en retard') + ' (tolérance ' + esc(f.max) + ' j)</span></span><span class="pp-ld">' + (f.age === 0 ? 'du jour' : esc(f.age) + ' j') + '</span></div>';
+    }).join('') || '<div class="pp-vide">Aucun relevé.</div>') + '</div>';
+    h += '<h3>Toutes les sources lues <b>· ' + S.length + '</b></h3><div class="pp-bloc"><div class="pp-vide" style="color:var(--pp-encre);font-size:15px;line-height:1.7">' + (S.map(function (s) { return esc(String(s).replace('.json', '')); }).join(' · ') || 'Aucune.') + '</div></div>';
+    ppOuvrirPan({ sur: 'Sources de l’édition', html: h });
+  };
+
+  /* ════════════════════════════ RENDU ════════════════════════════ */
   V2.pages.infos = {
     needs: [],   // audité 11/09/2026 : aucune lecture du catalogue
     render: function (root) {
@@ -1005,423 +1078,55 @@
         return;
       }
 
-      var cinq = BRIEF.cinq || [], une = cinq[0];
-      /* Dans « Le Mur », il n'y a plus « les 5 » d'un côté et « le fil » de l'autre :
-         il y a UNE tuile de tête et LE MUR. Les 4 autres du top rejoignent le mur en
-         tête, à leur rang — c'est le classement qui les distingue, pas une section. */
-      var mur = cinq.slice(1).concat(BRIEF.fil || []);
-      var epingles = BRIEF.epingles || [];
-      // index plat : les épinglés, la une, puis le mur — c'est ce rang que le panneau ouvre
-      TOUS = epingles.concat(une ? [une] : [], mur);
-      var base = seenBase();
-      var nbNew = base ? mur.filter(function (i) { return i.d && i.d > base; }).length : 0;
-      var nIll = mur.filter(function (i) { return i.img; }).length + (une && une.img ? 1 : 0);
+      var D = ppDonnees(), C = D.C, nSrc = (C.sources_lues || []).length || C.fichiers || 0;
+      var jour = /^\d{4}-\d{2}-\d{2}$/.test(BRIEF.jour || '') ? BRIEF.jour : new Date().toISOString().slice(0, 10);
+      var gen = '';
+      try {
+        var g = new Date(BRIEF.genere);
+        gen = 'Édition composée le ' + g.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' }).replace(/^1 /, '1er ') + ' à ' + g.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }).replace(':', ' h ') +
+          ' à partir de <b>' + ppPl(nSrc, 'source') + '</b>' + (SECTEUR && SECTEUR.maj ? ' · Bodacc à jour du ' + esc(ppDc(SECTEUR.maj)) : '') + '.';
+      } catch (e) {}
+      var J = (ARCHIVE && ARCHIVE.jours) || [];
 
-      // venu de « Concurrents » : ouvrir « Tout le reste » et descendre au bloc,
-      // comme avant le 25/09/2026 — juste porté par le mécanisme RESTE_ANCRE.
-      if (V2.route && V2.route.param === 'concurrents' && !RESTE_OPEN) { RESTE_OPEN = true; RESTE_ANCRE = '#infos-concurrents'; }
+      root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
+        '<div class="v2-wrap inf2 pp">' +
+          '<span class="pp-ciel" aria-hidden="true"></span>' +
+          '<header class="pp-tete">' +
+            '<div class="pp-tete-ligne"><span class="pp-vivant" aria-hidden="true"></span><span>Infos du jour · ' + PP_JS[new Date(jour + 'T12:00:00').getDay()] + ' ' + esc(ppDc(jour)) + '</span></div>' +
+            '<h1>Le poste de pilotage</h1>' +
+            '<div class="pp-horizon" aria-hidden="true"></div>' +
+            '<ul class="pp-compteurs">' +
+              (C.entrees != null ? '<li><b>' + C.entrees + '</b>articles lus</li>' : '') +
+              (nSrc ? '<li><b>' + nSrc + '</b>sources</li>' : '') +
+              (C.retenues != null ? '<li><b>' + C.retenues + '</b>retenus pour vous</li>' : '') +
+            '</ul>' +
+            '<div class="pp-tete-actions">' +
+              '<button type="button" class="pp-btn pp-btn-bleu" data-lbl="Copier le brief" onclick="V2.infosCopyBrief(this)">' + ppIco('copier', 18) + 'Copier le brief</button>' +
+              (J.length ? '<button type="button" class="pp-btn pp-btn-blanc" onclick="V2.ppOuvrir(\'archive\')">' + ppIco('horloge', 18) + 'Les matins d’avant</button>' : '') +
+            '</div>' +
+          '</header>' +
+          '<section class="pp-mosaique" aria-label="Les neuf instruments du jour">' + ppTuiles(D) + '</section>' +
+          '<footer class="pp-pied"><span>' + gen + '</span>' +
+            '<button type="button" class="pp-btn pp-btn-blanc" onclick="V2.ppOuvrir(\'sources\')">Voir la fraîcheur des sources</button></footer>' +
+        '</div>';
 
-      var html = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
-        '<div class="v2-wrap inf2">';
+      /* reflet qui suit le pointeur (souris seulement) */
+      Array.prototype.forEach.call(root.querySelectorAll('.pp-tuile'), function (t) {
+        t.addEventListener('pointermove', function (e) { if (e.pointerType !== 'mouse') return; var r = t.getBoundingClientRect(); t.style.setProperty('--mx', (e.clientX - r.left) + 'px'); t.style.setProperty('--my', (e.clientY - r.top) + 'px'); });
+        t.addEventListener('pointerleave', function () { t.style.removeProperty('--mx'); t.style.removeProperty('--my'); });
+      });
+      ppConcRemplir();
 
-      /* ──────────── LE BRIEF EN 5 CARTES ────────────
-         25/09/2026, choix de Will : ça, toujours visible ; tout le reste se replie
-         dessous (#inf-reste). */
-      html += brf5Html(une, epingles);
-
-      var resteHtml = '';
-
-      /* ──────────── TÊTE COMPACTE ────────────
-         Le mur commence tout de suite : pas de grand bandeau qui mange un écran. */
-      resteHtml += '<header class="mur-tete">' +
-        '<span class="mur-halo" aria-hidden="true"></span>' +
-        '<div class="mur-tete-g">' +
-          '<span class="mur-d"><i></i>Édition du jour · ' + esc(topDate()) +
-            (nbNew ? ' · <b>' + nbNew + ' nouveau' + (nbNew > 1 ? 'x' : '') + '</b>' : '') + '</span>' +
-          '<h1>L\'édition du matin</h1>' +
-        '</div>' +
-        '<div class="mur-tete-d">' +
-          '<span><b>' + esc(mur.length + 1) + '</b> articles</span>' +
-          '<span><b>' + esc(nIll) + '</b> illustrés</span>' +
-          '<span><b>' + esc(BRIEF.compte.fichiers) + '</b> sources gratuites</span>' +
-        '</div>' +
-        '<div class="mur-act">' +
-          '<button class="inf-copy" data-lbl="Copier le brief" onclick="V2.infosCopyBrief(this)">' + COPY_SVG + 'Copier le brief</button>' +
-          (ARCHIVE && ARCHIVE.n > 1 ? '<button class="inf-ghost" onclick="V2.briefArchive()">' + ICO('cal', 14, 2) + 'Les matins d\'avant</button>' : '') +
-        '</div>' +
-      '</header>';
-
-      /* ════════════════ DANS TON SECTEUR (Bodacc) ════════════════
-       25/09/2026 — juste après la tête, avant « À ne pas manquer ». */
-      resteHtml += secteurBlocHtml();
-
-      /* ════════════════ À NE PAS MANQUER ════════════════
-         Will, 02/09/2026 : « on doit absolument pas passer à côté d'infos comme
-         celle-là ». Deux familles d'information ne se noient jamais dans le fil :
-         les ÉCHÉANCES qui changent l'argent d'Intégral (elles restent jusqu'à leur
-         entrée en vigueur, avec le compte à rebours) et les MOUVEMENTS de concurrents.
-         Ce bandeau n'est ni filtrable, ni repliable, ni soumis à la fenêtre de 21 jours. */
-      if (epingles.length) {
-        resteHtml += '<section class="alerte">' +
-          '<div class="alerte-h">' + ICO('alert', 16, 2.2) + 'À ne pas manquer' +
-            '<span>échéances réglementaires & mouvements de concurrents</span></div>' +
-          '<div class="al-grille">' + (ALERTES_TOUT ? epingles : epingles.slice(0, 6)).map(function (e, i) {
-            var ech = e.motif === 'echeance' || (e.motif === 'ferme' && e.jours !== null);
-            var j = e.jours;
-            /* Cinq natures d'alerte, cinq pastilles. Une couleur veut toujours dire
-               la même chose : ambre = une date arrive · rose = une sanction ou une
-               défaillance · violet = un concurrent bouge. */
-            var ETIQ = {
-              sanction:   { c: 'sanc', l: 'Sanction', i: 'alert' },
-              societe:    { c: 'soc',  l: 'Répartiteur · registre', i: 'fiche' },
-              cession:    { c: 'cess', l: 'Officine vendue', i: 'pharma' },
-              demande:    { c: 'dem',  l: 'Ça va se vendre', i: 'cart' },
-              ferme:      { c: 'fer',  l: 'Ferme bientôt', i: 'alert' },
-              titulaire:  { c: 'tit',  l: 'Change de main', i: 'pharma' },
-              amont:      { c: 'amo',  l: "Avant l'ANSM", i: 'opp' },
-              difficulte: { c: 'diff', l: 'En difficulté', i: 'alert' },
-              concurrent: { c: 'conc', l: 'Concurrent', i: 'opp' }
-            };
-            var et = ETIQ[e.motif] || ETIQ.concurrent;
-            var pastille = ech
-              ? (j !== null && j >= 0
-                  ? '<span class="al-cd' + (j <= 60 ? ' urgent' : '') + '">' +
-                    (j === 0 ? "aujourd'hui" : 'dans ' + j + ' jour' + (j > 1 ? 's' : '')) + '</span>'
-                  : '<span class="al-cd fait">déjà applicable</span>')
-              : '<span class="al-cd ' + et.c + '">' + ICO(et.i, 12, 2.4) + et.l + '</span>';
-            return '<article class="al-i ' + (ech ? 'ech' : esc(e.motif)) + '">' +
-              '<div class="al-top">' + pastille +
-                '<span class="al-d">' + (ech && e.effet ? 'à partir du ' + esc(joDateFr(e.effet)) : esc(ilYA(e.d))) + '</span>' +
-                (e.paywall ? '<span class="al-ab">accès abonné</span>' : '') + '</div>' +
-              '<h3>' + esc(e.t) + '</h3>' +
-              (e.r ? '<p>' + esc(e.r) + '</p>' : '') +
-              (function () {
-                if (['difficulte','cession','ferme','titulaire'].indexOf(e.motif) < 0) return '';
-                var cl = clientTouche(e.societe, e.ville);
-                return cl ? '<div class="al-client">' + ICO('alert', 14, 2.4) +
-                  '<b>C\'est un de tes clients</b><span>' + esc(cl.name) +
-                  (cl.code ? ' · CIP ' + esc(cl.code) : '') +
-                  ({ cession: ' — le titulaire change, compte à reprendre',
-                     titulaire: ' — le titulaire a changé, compte à reprendre',
-                     ferme: ' — ce client ferme, encours à solder'
-                   }[e.motif] || ' — encours à vérifier') + '</span></div>' : '';
-              })() +
-              '<div class="al-f">' + esc((e.srcs && e.srcs.length ? e.srcs : [e.s]).slice(0, 3).join(' · ')) + '</div>' +
-              '<a class="tout" href="' + esc(urlSure(e.u)) + '" onclick="return V2.infosLire(event,' + i + ')" aria-label="' + esc(e.t) + '"></a>' +
-            '</article>';
-          }).join('') + '</div>' +
-          (epingles.length > 6
-            ? '<button class="al-plus" onclick="V2.infosAlertes()">' +
-              (ALERTES_TOUT ? 'Replier' : 'Voir les ' + (epingles.length - 6) + ' autres') +
-              '</button>' : '') +
-        '</section>';
-      }
-
-      /* ──────────── LA TUILE DE TÊTE ──────────── */
-      if (une) resteHtml += tuileUne(une);
-
-      /* Will, 02/09/2026 : « vire de “ce qui touche tes marges” à “à retirer
-         des rayons” ». Six blocs retirés d'un coup — Journal officiel, radar,
-         filtres de rubriques, opportunités catalogue, alertes de stock, rappels.
-         La page ne garde que ce qui se REGARDE : la une, puis le mur. */
-
-      /* ──────────── L'ESSENTIEL EN 30 SECONDES ────────────
-         Le mur se regarde ; ça, ça se lit. Les cinq sujets que le robot a classés
-         en tête, chacun réduit à sa phrase la plus porteuse — de quoi savoir ce
-         qui compte aujourd'hui sans ouvrir un seul article. */
-      if (cinq.length > 1) {
-        resteHtml += '<section class="ess">' +
-          '<div class="ess-h"><b>L\'essentiel en 30 secondes</b>' +
-            '<span>' + (cinq.length) + ' sujets · ' + esc(BRIEF.compte.fichiers) + ' sources relues ce matin</span></div>' +
-          '<ol class="ess-l">' + cinq.map(function (c, i) {
-            var cle = (c.points && c.points.length) ? c.points[0] : (c.r || '');
-            var rang = TOUS.indexOf(c);
-            return '<li class="ess-i a-' + (THEME_ACC[c.theme] || 'muted') + '">' +
-              '<span class="ess-n">' + (i + 1) + '</span>' +
-              '<span class="ess-b">' +
-                '<span class="ess-cat">' + esc(c.theme_l) + '</span>' +
-                '<b>' + esc(c.t) + '</b>' +
-                (cle ? '<span class="ess-p">' + esc(cle) + '</span>' : '') +
-                '<span class="ess-f">' + esc((c.srcs || [c.s]).slice(0, 2).join(' · ')) +
-                  (c.n_src > 1 ? ' · <em>' + c.n_src + ' sources</em>' : '') +
-                  (c.mn ? ' · ' + esc(c.mn) + ' min' : '') + '</span>' +
-              '</span>' +
-              (rang >= 0 ? '<a class="tout" href="' + esc(c.u || '#') + '" onclick="return V2.infosLire(event,' + rang + ')" aria-label="' + esc(c.t) + '"></a>' : '') +
-            '</li>';
-          }).join('') + '</ol></section>';
-      }
-
-      /* ──────────── LES CONCURRENTS ────────────
-         Will, 24/09/2026 : les infos concurrents, jusque-là dans la feature
-         « Concurrents », se lisent ici. Même bloc (v2-grossistes.js) : faits
-         vérifiés, annonces officielles, presse — rempli après le rendu. */
-      resteHtml += '<section class="inf-conc" id="infos-concurrents">' +
-        '<div class="mur-rub"><b>Les concurrents</b><span>faits vérifiés, annonces officielles et presse</span></div>' +
-        '<div id="inf-cnc-host"></div><div id="inf-conc-host"></div></section>';
-
-      /* ════════════════ LE MUR ════════════════ */
-      if (mur.length) {
-        var compte = {};
-        mur.forEach(function (i) { compte[i.theme] = (compte[i.theme] || 0) + 1; });
-        // ⚠️ ordre MÉTIER, jamais par volume : trier par volume met « Autre » en tête.
-        var ordre = (BRIEF.themes_ordre || Object.keys(compte)).filter(function (t) { return compte[t]; });
-        var visibles = THEME_SEL ? mur.filter(function (i) { return i.theme === THEME_SEL; }) : mur;
-
-        var chips = '<button type="button" class="brf-chip' + (THEME_SEL ? '' : ' on') + '" onclick="V2.briefTheme(\'\')">Tout <i>' + mur.length + '</i></button>' +
-          ordre.map(function (t) {
-            return '<button type="button" class="brf-chip a-' + (THEME_ACC[t] || 'muted') + (THEME_SEL === t ? ' on' : '') + '" onclick="V2.briefTheme(\'' + esc(t) + '\')">' +
-              '<i class="pt"></i>' + esc((BRIEF.themes_l && BRIEF.themes_l[t]) || t) + ' <i>' + compte[t] + '</i></button>';
-          }).join('');
-
-        // rythme des hauteurs : c'est ce qui fait un MUR et pas une grille
-        var RYTHME = ['', 'h', 'l', '', 'xl', 'l', 'h', ''];
-        var HAUT = { '': 1.25, h: 1.333, l: 1, xl: 1.5 };   // hauteur relative de chaque format
-        var nCol = colonnes(root); COLS_VUE = nCol; surveilleLargeur();
-        var cols = [], charge = [];
-        for (var k = 0; k < nCol; k++) { cols.push(''); charge.push(0); }
-        visibles.forEach(function (i, n) {
-          var fmt = RYTHME[n % RYTHME.length];
-          // on dépose toujours dans la colonne la plus courte : c'est ce qui donne
-          // le décalage du mur sans laisser un pied de page en escalier
-          var min = 0;
-          for (var k = 1; k < nCol; k++) if (charge[k] < charge[min]) min = k;
-          var q = norm((i.t || '') + ' ' + (i.r || '') + ' ' + (i.s || '') + ' ' + ((BRIEF.themes_l && BRIEF.themes_l[i.theme]) || ''));
-          cols[min] += tuile(i, fmt, q, TOUS.indexOf(i));
-          charge[min] += HAUT[fmt] + 0.06;
-        });
-        var tuiles = cols.map(function (c) { return '<div class="mur-col">' + c + '</div>'; }).join('');
-
-        resteHtml += '<section class="mur-sec" id="brief-fil">' +
-          '<div class="mur-rub"><b>Le mur</b>' +
-            '<span id="brief-fil-cpt">' + visibles.length + (visibles.length > 1 ? ' articles' : ' article') + '</span></div>' +
-          '<div class="brf-chips">' + chips + '</div>' +
-          '<div class="brf-search">' + ICO('search', 16, 2) +
-            '<input type="search" placeholder="Chercher au mur (molécule, mot-clé, source)…" oninput="V2.briefSearch(this)" value="' + esc(QUERY) + '">' +
-          '</div>' +
-          '<div class="mur">' + tuiles + '</div>' +
-          '<div class="inf-allhidden" id="brief-fil-vide" style="display:none">Aucun article ne correspond à cette recherche.</div>' +
-        '</section>';
-      }
-
-      /* ── LES MATINS D'AVANT ── */
-      if (ARCH_OPEN && ARCHIVE && (ARCHIVE.jours || []).length) {
-        resteHtml += '<section class="inf-sec a-violet">' +
-          rubrique('Les matins d\'avant', ARCHIVE.n + ' édition' + (ARCHIVE.n > 1 ? 's' : '') + ' archivée' + (ARCHIVE.n > 1 ? 's' : '') + ' — la une de chaque jour et ses cinq titres.') +
-          '<div class="brf-arch">' + ARCHIVE.jours.slice(0, 30).map(function (j) {
-            return '<div class="brf-day"><div class="brf-day-d">' + esc(joDateFr(j.d)) + '</div>' +
-              '<div class="brf-day-l">' + (j.titres || []).map(function (t) {
-                return '<a' + (t.u ? ' href="' + esc(t.u) + '" target="_blank" rel="noopener"' : '') + '>' +
-                  '<i class="a-' + (THEME_ACC[t.theme] || 'muted') + '"></i>' + esc(t.t) + '</a>';
-              }).join('') + '</div></div>';
-          }).join('') + '</div>' +
-          (epingles.length > 6
-            ? '<button class="al-plus" onclick="V2.infosAlertes()">' +
-              (ALERTES_TOUT ? 'Replier' : 'Voir les ' + (epingles.length - 6) + ' autres') +
-              '</button>' : '') +
-        '</section>';
-      }
-
-      /* ── pied de page : la traçabilité ── */
-      var maj = '';
-      try { maj = new Date(BRIEF.genere).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }); } catch (e) {}
-      resteHtml += '<div class="brf-foot">Édition composée le ' + esc(maj) + ' à partir de ' +
-        esc(BRIEF.compte.fichiers) + ' sources gratuites, toutes lisibles en entier.<br>' +
-        esc(BRIEF.compte.entrees) + ' informations lues, ' + esc(BRIEF.compte.sujets) +
-        ' sujets après regroupement des doublons.</div>';
-
-      html += '<div id="inf-reste"' + (RESTE_OPEN ? '' : ' style="display:none"') + '>' + resteHtml + '</div>';
-      html += '</div>';
-      root.innerHTML = html;
-      markSeen();
-      brf5Init();
-      var brf5ConcHost = document.getElementById('brf5-conc-host');
-      if (brf5ConcHost && V2.concurrentsResume) {
-        V2.concurrentsResume(function (r) {
-          if (!brf5ConcHost.isConnected) return;
-          brf5ConcHost.outerHTML = brf5ConcHtml(r);
-        });
-      }
-      if (RESTE_ANCRE) {
-        var brf5Ancre = RESTE_ANCRE; RESTE_ANCRE = null;
-        setTimeout(function () {
-          var elA = document.querySelector(brf5Ancre);
-          if (elA) elA.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
-        }, 140);
-      }
-      var cncHost = document.getElementById('inf-cnc-host');
-      if (cncHost && V2.concurrentsSecteur) V2.concurrentsSecteur(cncHost);
-      var concHost = document.getElementById('inf-conc-host');
-      if (concHost && V2.grossistesCorps) V2.grossistesCorps(concHost, 'actu');
-
-      if (QUERY) {
-        var inp = root.querySelector('.brf-search input');
-        if (inp) V2.briefSearch(inp);
-      }
-
-      /* ── Motion (vanilla, respecte prefers-reduced-motion via l'API) ── */
-      var mo = V2.motion;
-      if (mo) {
-        var u = root.querySelector('.mur-une');
-        if (u) mo.inView(u, function (el) { mo.stagger([el], { step: 0, y: 12 }); });
-        var m = root.querySelector('.mur');
-        if (m) mo.inView(m, function (el) { mo.stagger(el.querySelectorAll('.tu'), { step: 32, cap: 12, y: 12 }); });
-      }
+      // venu de l'ancienne feature « Concurrents » (#infos/concurrents) : ouvrir directement son panneau
+      if (V2.route && V2.route.param === 'concurrents' && !PP_CONC_AUTO) { PP_CONC_AUTO = true; if (!ppOuvert()) PP_VUES.concurrents(); }
     }
   };
-
-  /* Combien de colonnes ? Décidé ici plutôt qu'en CSS, puisque c'est nous qui
-     répartissons les tuiles. Les paliers reprennent ceux du reste de l'app. */
-  function colonnes(root) {
-    var w = (root && root.clientWidth) || (window.innerWidth || 1200);
-    return w >= 1120 ? 4 : w >= 820 ? 3 : 2;
-  }
-  // un changement de palier doit redistribuer le mur — sinon la page garde
-  // 4 colonnes serrées sur un téléphone tourné.
-  var COLS_VUE = 0, RESIZE_POSE = false;
-  function surveilleLargeur() {
-    if (RESIZE_POSE) return;
-    RESIZE_POSE = true;
-    var t = null;
-    window.addEventListener('resize', function () {
-      clearTimeout(t);
-      t = setTimeout(function () {
-        if (!V2.route || V2.route.name !== 'infos') return;
-        var el = document.querySelector('.inf2');
-        if (el && colonnes(el) !== COLS_VUE) V2.render();
-      }, 180);
-    });
-  }
-
-  /* ════════════════ briques du mur ════════════════ */
-
-  /* La couverture. La photo que le site déclare lui-même, posée sur une planche
-     dessinée aux couleurs du thème. Deux garde-fous :
-     — la moitié des sources métier n'ont AUCUNE image : la planche prend le relais
-       et l'article reste une tuile pleine, jamais un trou dans le mur ;
-     — si le serveur refuse d'être appelé depuis ailleurs, `onerror` retire la photo
-       et la planche réapparaît toute seule. */
-  var ANGLES = { marge: 118, remboursement: 152, generique: 196, rupture: 138,
-                 securite: 172, concurrence: 210, officine: 128, industrie: 160,
-                 sante: 184, autre: 145 };
-  function couverture(c, ratio) {
-    var ang = ANGLES[c.theme] || 152;
-    return '<span class="mq-cov ' + (ratio || 'r-4x5') + '">' +
-      '<span class="mq-plaque a-' + (THEME_ACC[c.theme] || 'muted') + '" style="--ang:' + ang + 'deg"></span>' +
-      (c.img ? '<img src="' + esc(urlSure(c.img)) + '" alt="" loading="lazy" decoding="async" ' +
-               'referrerpolicy="no-referrer" onerror="this.remove()">' +
-               '<span class="mq-teinte" aria-hidden="true"></span>' : '') + '</span>';
-  }
-  function sourcesLine(c) {
-    var s = (c.srcs && c.srcs.length) ? c.srcs : [c.s];
-    return esc(s.slice(0, 3).join(' · ')) + (s.length > 3 ? ' <b>+' + (s.length - 3) + '</b>' : '');
-  }
-
-  /* LA TUILE DE TÊTE — large, avec le chapeau et l'angle métier */
-  function tuileUne(c) {
-    return '<article class="mur-une a-' + (THEME_ACC[c.theme] || 'blue') + '">' +
-      couverture(c, 'r-21x9') + '<span class="veil"></span>' +
-      '<div class="b">' +
-        '<span class="cat">À la une · ' + esc(c.theme_l) + '</span>' +
-        '<h2>' + esc(c.t) + '</h2>' +
-        (c.r ? '<p>' + esc(c.r) + '</p>' : '') +
-        '<div class="pour"><b>Pour toi</b>' + esc(c.pour_toi) + '</div>' +
-        '<div class="f">' + sourcesLine(c) + ' · ' + esc(ilYA(c.d)) +
-          (c.mn ? ' · ' + esc(c.mn) + ' min' : '') +
-          (c.entier ? ' · <span class="ok">✓ lisible en entier</span>' : '') + '</div>' +
-      '</div>' +
-      '<a class="tout" href="' + esc(c.u || '#') + '" onclick="return V2.infosLire(event,' + TOUS.indexOf(c) + ')" aria-label="' + esc(c.t) + '"></a>' +
-    '</article>';
-  }
-
-  /* UNE TUILE DU MUR */
-  function tuile(a, taille, q, rang) {
-    var RATIO = { '': 'r-4x5', h: 'r-3x4', l: 'r-1x1', xl: 'r-4x6' };
-    return '<article class="tu ' + taille + ' a-' + (THEME_ACC[a.theme] || 'muted') + '" data-q="' + esc(q) + '">' +
-      couverture(a, RATIO[taille] || 'r-4x5') + '<span class="veil"></span>' +
-      '<div class="b">' +
-        '<span class="cat">' + esc(a.theme_l) + '</span>' +
-        '<h3>' + esc(a.t) + '</h3>' +
-        (a.r ? '<p class="tu-p">' + esc(a.r) + '</p>' : '') +
-        '<div class="f">' + esc(a.s) +
-          (a.n_src > 1 ? ' <b>+' + (a.n_src - 1) + '</b>' : '') + ' · ' + esc(ilYA(a.d)) +
-          (a.mn ? ' · ' + esc(a.mn) + ' min' : '') +
-          (a.neuf ? ' · <span class="neuf">nouveau</span>' : '') +
-          (a.entier ? '<br><span class="ok">✓ lisible en entier</span>' : '') + '</div>' +
-      '</div>' +
-      '<a class="tout" href="' + esc(urlSure(a.u)) + '" onclick="return V2.infosLire(event,' + rang + ')" aria-label="' + esc(a.t) + '"></a>' +
-    '</article>';
-  }
-
-  /* un titre de rubrique */
-  function rubrique(titre, sous) {
-    return '<div class="mur-rub"><b>' + titre + '</b>' + (sous ? '<span>' + sous + '</span>' : '') + '</div>';
-  }
 
   function injectStyles() {
     if (document.getElementById('v2-infos-css')) return;
     var st = document.createElement('style'); st.id = 'v2-infos-css';
     st.textContent = [
-      /* ══════════ TYPOGRAPHIE DE PRESSE ══════════
-         Newsreader (SIL OFL, 132 Ko, déjà sur le disque) UNIQUEMENT pour les titres
-         d'articles : c'est le geste qui fait la différence entre une liste de liens
-         et un journal. Le reste du CRM ne bouge pas, il reste en Inter.
-         ⚠️ Une police citée dans une pile sans @font-face retombe en SILENCE sur la
-            police système. Elle est donc déclarée ici, et la sonde MESURE la largeur
-            d'un texte témoin pour prouver qu'elle s'affiche vraiment. */
-      "@font-face{font-family:'Newsreader';src:url('fonts/newsreader.woff2') format('woff2');" +
-        "font-weight:200 800;font-style:normal;font-display:swap}",
-      "@font-face{font-family:'Newsreader';src:url('fonts/newsreader-italic.woff2') format('woff2');" +
-        "font-weight:200 800;font-style:italic;font-display:swap}",
-      ".inf2{--serif:'Newsreader',Georgia,'Times New Roman',serif}",
-      /* le magazine respire : cet écran est plus large que le reste du CRM */
-      '.v2-wrap.inf2{max-width:1360px}',
-
-      /* accents locaux (mappés sur les tokens de v2.css) */
-      '.inf2 .a-rose{--acc:var(--c-rose);--acc-t:var(--c-rose-txt)}',
-      '.inf2 .a-amber{--acc:var(--c-amber);--acc-t:var(--c-amber-txt)}',
-      '.inf2 .a-blue{--acc:var(--ip-blue);--acc-t:var(--ip-blue)}',
-      '.inf2 .a-green{--acc:var(--c-opp);--acc-t:var(--c-mint-txt)}',
-      '.inf2 .a-violet{--acc:var(--c-cat);--acc-t:var(--c-cat)}',
-      '.inf2 .a-muted{--acc:var(--muted);--acc-t:var(--muted)}',
-      '.inf2 .a-teal{--acc:var(--c-froid);--acc-t:#006F80}',
-
-
-      /* ── « Ce qui touche tes marges » (Journal officiel) ──
-         Éclairé, pas encadré de rouge : c'est important, pas alarmant. */
-
-      /* ── filtres rapides ── */
-
-      /* ── sections ── */
-      '.inf2 .inf-sec{margin-bottom:var(--section-gap)}',
-
-      /* ── listes ── */
-
-      /* ── fil : chips + recherche ── */
-      '.inf2 .brf-chips{display:flex;gap:var(--gap-tight);flex-wrap:wrap;margin-bottom:var(--sp-3)}',
-      '.inf2 .brf-chip{display:inline-flex;align-items:center;gap:6px;min-height:var(--tap-min);padding:0 14px;border-radius:var(--r-pill);border:1px solid var(--line-strong);background:var(--card);font-size:12.5px;font-weight:650;color:var(--ip-ink-2);cursor:pointer;transition:all .18s var(--ease-soft)}',
-      '.inf2 .brf-chip i{font:700 12px/1 var(--mono);font-style:normal;color:var(--muted-2)}',
-      '.inf2 .brf-chip:hover{border-color:var(--acc,var(--ip-blue))}',
-      '.inf2 .brf-chip.on{background:var(--acc,var(--ip-blue));border-color:var(--acc,var(--ip-blue));color:#fff}',
-      '.inf2 .brf-chip.on i{color:rgba(255,255,255,.75)}',
-      '.inf2 .brf-search{display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--line-strong);border-radius:var(--r-control);padding:0 var(--sp-3);margin-bottom:var(--sp-3);color:var(--muted-2)}',
-      /* 16px minimum : en dessous, iOS zoome sur le champ au focus */
-      '.inf2 .brf-search input{flex:1 1 auto;min-width:0;border:0;outline:0;background:transparent;font:400 16px/1 var(--font);color:var(--ip-ink);min-height:var(--tap-min);padding:0}',
-      '.inf2 .brf-search input::placeholder{color:var(--muted-2)}',
-
-      /* ── opportunités Intégral ── */
-
-      /* ── archive ── */
-      '.inf2 .brf-arch{display:flex;flex-direction:column;gap:var(--sp-3)}',
-      '.inf2 .brf-day{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--sp-4);box-shadow:var(--sh-1)}',
-      '.inf2 .brf-day-d{font:700 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted-2);margin-bottom:10px}',
-      '.inf2 .brf-day-l{display:flex;flex-direction:column;gap:7px}',
-      '.inf2 .brf-day-l a{display:flex;align-items:flex-start;gap:9px;font-size:13.5px;line-height:1.4;color:var(--ip-ink-2);text-decoration:none;min-height:28px}',
-      '.inf2 .brf-day-l a:hover{color:var(--ip-blue)}',
-      '.inf2 .brf-day-l i{flex:0 0 auto;width:6px;height:6px;border-radius:50%;background:var(--acc);margin-top:6px}',
-
-      /* ── divers ── */
-      '.inf2 .brf-foot{font-size:12px;line-height:1.6;color:var(--muted-2);text-align:center;padding:var(--sp-5) 0 var(--sp-2);border-top:1px solid var(--line-2)}',
-      '.inf2 .inf-allhidden{text-align:center;font-size:13.5px;color:var(--muted);padding:var(--sp-5);background:var(--card-2);border-radius:var(--r-md)}',
+      /* ── attente et édition absente ── */
       '.inf2 .inf-load{display:flex;align-items:center;justify-content:center;gap:12px;padding:var(--sp-8) var(--sp-4);color:var(--muted);font-size:14px}',
       '.inf2 .inf-spin{width:20px;height:20px;border-radius:50%;border:2.4px solid var(--line-strong);border-top-color:var(--ip-blue);animation:infspin .8s linear infinite}',
       '@keyframes infspin{to{transform:rotate(360deg)}}',
@@ -1431,501 +1136,228 @@
       '.inf2 .inf-empty-t{font-size:16.5px;font-weight:700;color:var(--ip-ink);margin-bottom:7px}',
       '.inf2 .inf-empty-d{font-size:13.5px;color:var(--muted);max-width:38ch;margin:0 auto;line-height:1.5}',
 
-      /* ══════════ TÊTE COMPACTE ══════════
-         « Le Mur » ne s'ouvre pas sur un grand bandeau : le mur commence tout de
-         suite. La tête tient sur une ligne, titre à gauche, chiffres à droite. */
-      '.inf2 .mur-tete{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--sp-5);flex-wrap:wrap;padding:var(--sp-5) 0 var(--sp-5)}',
-      '.inf2 .mur-d{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;font:600 12px/1 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:11px}',
-      '.inf2 .mur-d i{width:7px;height:7px;border-radius:50%;background:var(--c-rose);display:inline-block}',
-      '.inf2 .mur-d b{color:var(--c-mint-txt)}',
-      '.inf2 .mur-tete h1{font-family:var(--serif);font-weight:500;font-size:clamp(34px,5.4vw,60px);line-height:.95;letter-spacing:-.033em;margin:0;color:var(--ip-ink)}',
-      '.inf2 .mur-tete-d{display:flex;gap:var(--sp-5);flex-wrap:wrap;font:600 12px/1 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--muted-2);padding-bottom:6px}',
-      '.inf2 .mur-tete-d b{display:block;font-size:19px;color:var(--ip-ink);letter-spacing:-.02em;margin-bottom:5px;font-variant-numeric:tabular-nums}',
-      '.inf2 .mur-act{display:flex;gap:var(--sp-2);flex-wrap:wrap;width:100%}',
-      '.inf2 .inf-copy,.inf2 .inf-ghost{display:inline-flex;align-items:center;gap:8px;min-height:var(--tap-min);padding:0 18px;border-radius:var(--r-btn);font-size:14px;font-weight:650;cursor:pointer;transition:transform .2s var(--ease),box-shadow .2s var(--ease)}',
-      '.inf2 .inf-copy{border:0;background:var(--ip-blue);color:#fff;box-shadow:var(--sh-blue)}',
-      '.inf2 .inf-copy:hover{transform:translateY(var(--mo-lift));box-shadow:var(--sh-blue-h)}',
-      '.inf2 .inf-ghost{border:1px solid var(--line-strong);background:var(--card);color:var(--ip-ink);box-shadow:var(--sh-1)}',
-      '.inf2 .inf-ghost:hover{transform:translateY(var(--mo-lift));box-shadow:var(--sh-2)}',
+      /* ══════════ LE POSTE DE PILOTAGE (m1) ══════════
+         Maquette ~/maquette-infos-page-entiere/m1.html, reprise telle quelle sous le préfixe .pp.
+         Lumière : halo blanc en haut à gauche, contre-jour bleu en haut à droite, liseré sur
+         l'arête de chaque tuile, reflet qui suit la souris, horizon lumineux sous le titre.
+         Onest pour le texte, Martian Mono pour les chiffres (chargées dans index.html).
+         Aucune des propriétés qui font figer Safari : que des dégradés, des ombres et une rotation. */
+      '.pp,#pp-pan,#pp-voile{--pp-fond:#DFE4EC;--pp-encre:#0F1420;--pp-encre2:#465066;--pp-encre3:#5E677A;--pp-bleu:#0050E6;--pp-bleu-f:#003FB8;--pp-halo:#E9F0FF;' +
+        '--pp-vert:#1E9E6A;--pp-vert-f:#157A51;--pp-ambre:#C7791A;--pp-ambre-f:#9A5A0C;--pp-rose:#E0556E;--pp-rose-f:#BE3450;--pp-violet:#6D4FC4;--pp-cyan:#00B5D8;' +
+        '--pp-r:26px;--pp-mono:"Martian Mono",ui-monospace,Menlo,monospace;--pp-sans:"Onest",-apple-system,"Helvetica Neue",Arial,sans-serif;' +
+        '--pp-ombre:0 1px 0 rgba(255,255,255,.95) inset,0 -1px 0 rgba(15,20,32,.035) inset,0 1px 2px rgba(15,20,32,.06),0 22px 40px -22px rgba(0,48,140,.32)}',
+      '.v2-wrap.inf2.pp{position:relative;max-width:1272px;padding:0 16px 8px;color:var(--pp-encre);font:400 15px/1.45 var(--pp-sans);font-feature-settings:"tnum" 1}',
+      '.pp *,#pp-pan *{box-sizing:border-box}',
+      '.pp button,#pp-pan button,#pp-pan select{font-family:inherit;cursor:pointer}',
+      '#pp-pan .pp-onglets button{color:var(--pp-encre)}',
+      '.pp-ciel{position:fixed;inset:0;z-index:-1;pointer-events:none;' +
+        'background:radial-gradient(900px 620px at 8% -8%,rgba(255,255,255,.98),rgba(255,255,255,0) 62%),' +
+        'radial-gradient(700px 520px at 100% 0%,rgba(0,80,230,.13),rgba(0,80,230,0) 64%),' +
+        'radial-gradient(900px 700px at 50% 110%,rgba(0,181,216,.10),rgba(0,181,216,0) 60%),' +
+        'linear-gradient(180deg,#E8ECF3 0%,#DFE4EC 38%,#D7DDE8 100%)}',
+      '.pp .pp-mono{font-family:var(--pp-mono);font-feature-settings:"tnum" 1,"zero" 1}',
 
-      /* ══════════ TITRE DE RUBRIQUE ══════════ */
-      '.inf2 .mur-rub{display:flex;align-items:baseline;gap:var(--sp-3);flex-wrap:wrap;padding-bottom:var(--sp-3);border-bottom:1.5px solid var(--ip-ink);margin-bottom:var(--sp-4)}',
-      '.inf2 .mur-rub b{font-family:var(--serif);font-weight:600;font-size:24px;letter-spacing:-.02em;color:var(--ip-ink)}',
-      '.inf2 .mur-rub span{font:600 12px/1 var(--mono);letter-spacing:.11em;text-transform:uppercase;color:var(--muted-2)}',
-      // bloc « Les concurrents » : le fil est long (jusqu'à 120 articles) → boîte à défilement, le mur reste visible dessous
-      '.inf2 .inf-conc{margin:var(--sp-6) 0;scroll-margin-top:72px}',
-      '.inf2 .inf-conc .gr-wrap{padding:0}',
-      '.inf2 .inf-conc .gr-actulist{max-height:480px;overflow-y:auto;overscroll-behavior:contain}',
-      '.inf2 .mur-sec{margin-bottom:var(--section-gap)}',
+      /* en-tête du jour */
+      '.pp .pp-tete{position:relative;padding:22px 0 18px}',
+      '.pp .pp-tete-ligne{display:flex;align-items:center;gap:8px;font:650 13px/1.2 var(--pp-sans);text-transform:uppercase;color:var(--pp-encre2);letter-spacing:.06em}',
+      '.pp .pp-vivant{flex:none;width:9px;height:9px;border-radius:50%;background:var(--pp-vert);box-shadow:0 0 0 0 rgba(30,158,106,.5);animation:pp-pouls 2.4s infinite}',
+      '@keyframes pp-pouls{0%{box-shadow:0 0 0 0 rgba(30,158,106,.45)}70%{box-shadow:0 0 0 9px rgba(30,158,106,0)}100%{box-shadow:0 0 0 0 rgba(30,158,106,0)}}',
+      '.pp h1{margin:10px 0 0;font:800 clamp(34px,8.6vw,56px)/1 var(--pp-sans);letter-spacing:-.035em;color:var(--pp-encre)}',
+      '.pp .pp-horizon{position:relative;height:2px;margin:18px 0 16px;border-radius:2px;background:linear-gradient(90deg,rgba(0,80,230,0),rgba(0,80,230,.55) 22%,rgba(0,181,216,.5) 60%,rgba(0,181,216,0))}',
+      '.pp .pp-horizon::after{content:"";position:absolute;left:22%;top:-5px;width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px rgba(0,80,230,.25),0 0 18px 6px rgba(0,80,230,.25);transform:translateX(-50%)}',
+      '.pp .pp-compteurs{display:flex;flex-wrap:wrap;gap:6px 18px;margin:0;padding:0;list-style:none}',
+      '.pp .pp-compteurs li{display:flex;align-items:baseline;gap:6px;font-size:14px;color:var(--pp-encre2)}',
+      '.pp .pp-compteurs b{font:600 20px/1 var(--pp-mono);color:var(--pp-encre);letter-spacing:-.02em}',
+      '.pp .pp-tete-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}',
+      '.pp-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 18px;border-radius:14px;border:1px solid transparent;font:600 15px/1.2 var(--pp-sans);text-decoration:none;white-space:nowrap}',
+      '.pp-btn-bleu{background:linear-gradient(180deg,#1E66F0,#0050E6 55%,#0047CC);color:#fff!important;box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 8px 18px -8px rgba(0,80,230,.7)}',
+      '.pp-btn-blanc{background:linear-gradient(180deg,#fff,#F5F7FB);border-color:#E3E8F1;color:var(--pp-encre);box-shadow:0 1px 0 #fff inset,0 2px 6px -2px rgba(15,20,32,.12)}',
+      '.pp-btn:active{transform:translateY(1px)}',
+      '.pp-btn svg{flex:none}',
+      '.pp .pp-tete-actions .pp-btn{flex:1 1 0;min-width:0;padding:0 12px}',
+      '@media (min-width:720px){.pp .pp-tete-actions .pp-btn{flex:none;padding:0 18px}}',
 
-      /* ══════════ COUVERTURE ══════════ */
-      '.inf2 .mq-cov{position:relative;display:block;overflow:hidden;background:var(--surf-sunken)}',
-      '.inf2 .mq-cov.r-4x5{aspect-ratio:4/5}.inf2 .mq-cov.r-3x4{aspect-ratio:3/4}',
-      '.inf2 .mq-cov.r-1x1{aspect-ratio:1/1}.inf2 .mq-cov.r-4x6{aspect-ratio:4/6}',
-      '.inf2 .mq-cov.r-21x9{aspect-ratio:21/9}',
-      '.inf2 .mq-cov img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;transition:transform .6s var(--ease)}',
-      /* la planche dessinée, TOUJOURS sous la photo : si la photo ne charge pas, elle
-         réapparaît seule. Jamais de trou dans le mur, jamais de rectangle gris. */
-      '.inf2 .mq-plaque{position:absolute;inset:0;background:linear-gradient(var(--ang,152deg),color-mix(in srgb,var(--acc) 92%,#0B1020) 0%,color-mix(in srgb,var(--acc) 64%,#fff) 48%,color-mix(in srgb,var(--acc) 34%,#fff) 100%)}',
-      '.inf2 .mq-plaque::before{content:"";position:absolute;inset:0;background:radial-gradient(62% 74% at 24% 8%,rgba(255,255,255,.48),transparent 60%),radial-gradient(52% 62% at 88% 98%,rgba(11,16,32,.26),transparent 62%)}',
-      '.inf2 .mq-plaque::after{content:"";position:absolute;inset:0;opacity:.55;background:repeating-linear-gradient(58deg,rgba(255,255,255,.16) 0 1px,transparent 1px 12px)}',
-      '.inf2 .veil{position:absolute;inset:0;z-index:2;background:linear-gradient(0deg,rgba(8,11,20,.94) 0%,rgba(8,11,20,.62) 40%,rgba(8,11,20,.04) 78%)}',
+      /* la mosaïque */
+      '.pp .pp-mosaique{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding-bottom:8px;' +
+        'grid-template-areas:"sect sect" "eche rupt" "une une" "radar radar" "cinq cinq" "conc rapp" "mur mur"}',
+      '@media (min-width:720px){.pp .pp-mosaique{grid-template-columns:repeat(4,1fr);gap:16px;grid-auto-rows:minmax(190px,auto);' +
+        'grid-template-areas:"sect sect eche rupt" "sect sect une une" "radar radar cinq conc" "mur mur cinq rapp"}}',
+      '.pp .pp-tuile{position:relative;display:flex;flex-direction:column;min-width:0;width:100%;margin:0;padding:16px 16px 14px;border-radius:var(--pp-r);border:1px solid rgba(255,255,255,.8);' +
+        'background:linear-gradient(180deg,#FFFFFF 0%,#FAFBFD 70%,#F3F6FB 100%);box-shadow:var(--pp-ombre);text-align:left;overflow:hidden;font:inherit;color:var(--pp-encre);' +
+        'transition:transform .18s ease,box-shadow .18s ease;-webkit-tap-highlight-color:transparent;-webkit-appearance:none;appearance:none}',
+      '.pp .pp-tuile::before{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;' +
+        'background:radial-gradient(380px 260px at var(--mx,18%) var(--my,-10%),rgba(233,240,255,.95),rgba(233,240,255,0) 62%)}',
+      '.pp .pp-tuile::after{content:"";position:absolute;left:18px;right:18px;top:0;height:1px;background:linear-gradient(90deg,rgba(255,255,255,0),#fff 30%,#fff 70%,rgba(255,255,255,0));pointer-events:none}',
+      '.pp .pp-tuile>*{position:relative;z-index:1}',
+      '.pp .pp-tuile:hover{box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(15,20,32,.06),0 28px 48px -22px rgba(0,48,140,.42)}',
+      '.pp .pp-tuile:active{transform:scale(.985)}',
+      '.pp .pp-tuile:focus-visible{outline:3px solid rgba(0,80,230,.45);outline-offset:3px}',
+      '.pp .pp-t-sect{grid-area:sect}.pp .pp-t-eche{grid-area:eche}.pp .pp-t-rupt{grid-area:rupt}.pp .pp-t-une{grid-area:une}.pp .pp-t-radar{grid-area:radar}' +
+        '.pp .pp-t-cinq{grid-area:cinq}.pp .pp-t-conc{grid-area:conc}.pp .pp-t-rapp{grid-area:rapp}.pp .pp-t-mur{grid-area:mur}',
+      '.pp .pp-t-tete{display:flex;align-items:center;gap:8px;min-height:24px}',
+      '.pp .pp-t-lab{font:650 13px/1.2 var(--pp-sans);letter-spacing:.04em;text-transform:uppercase;color:var(--pp-encre2);flex:1;min-width:0;overflow-wrap:anywhere;-webkit-hyphens:auto;hyphens:auto}',
+      '.pp .pp-t-pastille{width:10px;height:10px;border-radius:3px;flex:none}',
+      '.pp .pp-t-fleche{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:var(--pp-bleu);background:var(--pp-halo);box-shadow:0 1px 0 #fff inset}',
+      '.pp .pp-gros{font:600 44px/1 var(--pp-mono);letter-spacing:-.05em;color:var(--pp-encre)}',
+      '.pp .pp-leg{font-size:14px;line-height:1.35;color:var(--pp-encre2)}',
+      '.pp .pp-leg b{color:var(--pp-encre);font-weight:600}',
+      '.pp .pp-vide-t{display:block;margin-top:14px;font-size:14px;line-height:1.45;color:var(--pp-encre2)}',
+      '.pp-clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
+      '.pp-clamp3{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}',
 
-      /* ══════════ LA TUILE DE TÊTE ══════════ */
-      '.inf2 .mur-une{position:relative;border-radius:var(--r-card);overflow:hidden;background:#10131C;margin-bottom:var(--section-gap);box-shadow:var(--sh-3)}',
-      '.inf2 .mur-une:hover .mq-cov img{transform:scale(1.035)}',
-      '.inf2 .mur-une .b{position:absolute;left:0;right:0;bottom:0;z-index:3;padding:var(--sp-7) var(--sp-7) var(--sp-6);max-width:900px}',
-      '.inf2 .mur-une .cat,.inf2 .tu .cat{display:inline-block;font:700 12px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:#fff;background:color-mix(in srgb,var(--acc) 70%,black);padding:7px 12px;border-radius:var(--r-pill);margin-bottom:12px}',
-      '.inf2 .mur-une h2{font-family:var(--serif);font-weight:600;font-size:clamp(25px,3.6vw,46px);line-height:1.06;letter-spacing:-.026em;color:#fff;margin:0 0 12px;text-wrap:balance}',
-      '.inf2 .mur-une p{font-size:15.5px;line-height:1.55;color:rgba(255,255,255,.82);margin:0 0 13px;max-width:64ch}',
-      '.inf2 .pour{display:inline-flex;gap:10px;align-items:center;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);border-radius:var(--r-pill);padding:9px 16px;color:#fff;font-size:13.5px;font-weight:600;margin-bottom:12px}',
-      '.inf2 .pour b{font:700 12px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:#8FB4FF}',
-      '.inf2 .mur-une .f,.inf2 .tu .f{font:600 12px/1.6 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.66)}',
-      '.inf2 .f .ok{color:#7BE0AF}.inf2 .f b{color:#fff}',
-      '.inf2 .f .neuf{color:#7BE0AF;font-weight:700}',
-      /* le lien couvre toute la tuile : une seule cible, très grande */
-      '.inf2 .tout{position:absolute;inset:0;z-index:4}',
+      /* secteur */
+      '.pp .pp-t-sect .pp-corps{display:flex;flex-direction:column;gap:10px;flex:1}',
+      '.pp .pp-sect-carte{display:block;position:relative;margin:4px -6px 0;border-radius:18px;background:radial-gradient(120% 90% at 30% 10%,#F4F8FF 0%,#EAF0F9 60%,#E2E9F4 100%);box-shadow:0 1px 0 #fff inset,0 0 0 1px rgba(15,20,32,.04) inset;overflow:hidden}',
+      '.pp .pp-sect-carte svg{display:block;width:100%;height:210px}',
+      '@media (min-width:720px){.pp .pp-sect-carte svg{height:300px}}',
+      '.pp .pp-sect-chiffres{display:flex;align-items:flex-end;gap:14px}',
+      '.pp-legende{display:flex;flex-wrap:wrap;gap:4px 12px;margin:0;padding:0;list-style:none}',
+      '.pp-legende li{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--pp-encre2)}',
+      '.pp-legende i{width:9px;height:9px;border-radius:50%;display:block}',
+      '.pp-legende b{font:600 13px var(--pp-mono);color:var(--pp-encre)}',
+      '.pp-dep{stroke:#B9C6DB;stroke-width:1.4;vector-effect:non-scaling-stroke;stroke-linejoin:round}',
+      '.pp-voisin{fill:#E4EAF3;stroke:#CFD8E6;stroke-width:1;vector-effect:non-scaling-stroke;stroke-linejoin:round}',
+      '.pp-halo{transform-box:fill-box;transform-origin:center;animation:pp-onde 2.6s ease-out infinite}',
+      '@keyframes pp-onde{0%{transform:scale(.6);opacity:.7}100%{transform:scale(2.6);opacity:0}}',
+      '.pp-carte-n{font-family:var(--pp-mono);font-weight:600;fill:#0034A0;text-anchor:middle;pointer-events:none}',
 
-      /* ══════════ UNIFIER LE PATCHWORK ══════════
-         Trente sources = trente photographes, trente lumières, trente balances de
-         blanc. Sans traitement, le mur ressemble à un panneau d'affichage. Ce voile
-         teinté à la rubrique, très léger, leur donne une direction commune — c'est
-         ce que fait un magazine avec ses images. Pas de mix-blend-mode : Safari y
-         est capricieux, un simple dégradé en rgba suffit et ne casse rien. */
-      '.inf2 .mq-teinte{position:absolute;inset:0;z-index:2;pointer-events:none;' +
-        'background:linear-gradient(var(--ang,152deg),color-mix(in srgb,var(--acc) 30%,transparent) 0%,' +
-        'color-mix(in srgb,var(--acc) 9%,transparent) 45%,transparent 78%),' +
-        'linear-gradient(0deg,rgba(11,16,32,.30) 0%,transparent 52%);' +
-        'transition:opacity .45s var(--ease)}',
-      '.inf2 .tu:hover .mq-teinte,.inf2 .mur-une:hover .mq-teinte{opacity:.55}',
+      /* échéances */
+      '.pp .pp-eche-anneau{display:block;position:relative;width:118px;height:118px;margin:12px auto 0}',
+      '.pp .pp-eche-anneau svg{position:absolute;inset:0}',
+      '.pp .pp-dedans{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}',
+      '.pp .pp-dedans b{font:600 22px/1 var(--pp-mono);letter-spacing:-.05em}',
+      '.pp .pp-dedans span{font-size:13px;color:var(--pp-ambre-f);font-weight:600;margin-top:3px}',
+      '.pp .pp-eche-leg{margin-top:10px;text-align:center}',
 
-      /* ══════════ LA PLANCHE DEVIENT UNE COMPOSITION ══════════
-         Un dégradé seul se répète et lasse. On y pose des anneaux concentriques
-         décalés selon la rubrique : la planche devient un objet dessiné, pas un
-         fond de secours. */
-      '.inf2 .mq-plaque{--ox:26%;--oy:22%}',
-      '.inf2 .a-rose .mq-plaque{--ox:74%;--oy:18%}.inf2 .a-amber .mq-plaque{--ox:18%;--oy:74%}',
-      '.inf2 .a-green .mq-plaque{--ox:82%;--oy:70%}.inf2 .a-violet .mq-plaque{--ox:50%;--oy:14%}',
-      '.inf2 .a-teal .mq-plaque{--ox:30%;--oy:62%}.inf2 .a-muted .mq-plaque{--ox:66%;--oy:40%}',
-      '.inf2 .mq-plaque::after{content:"";position:absolute;inset:0;opacity:.55;' +
-        'background:repeating-linear-gradient(var(--ang,58deg),rgba(255,255,255,.16) 0 1px,transparent 1px 12px),' +
-        'repeating-radial-gradient(circle at var(--ox) var(--oy),' +
-          'rgba(255,255,255,.13) 0 1px,transparent 1px 26px)}',
+      /* ruptures */
+      '.pp .pp-jauge{display:block;margin:8px auto 0;width:100%;max-width:190px}',
+      '.pp .pp-jauge-n{display:block;text-align:center;margin-top:-34px}',
+      '.pp .pp-rupt-sous{display:flex;justify-content:space-between;gap:6px;margin-top:auto;font-size:13px;color:var(--pp-encre2)}',
+      '.pp .pp-rupt-sous b{display:block;font:600 18px/1.1 var(--pp-mono);color:var(--pp-encre)}',
 
-      /* ══════════ LE SURVOL DEVIENT UN GESTE ══════════ */
-      '.inf2 .tu .b,.inf2 .mur-une .b{transition:transform .38s var(--ease)}',
-      '.inf2 .tu:hover .b{transform:translateY(-3px)}',
-      '.inf2 .tu h3,.inf2 .mur-une h2{transition:color .25s var(--ease-soft)}',
+      /* à la une */
+      '.pp .pp-t-une{background:radial-gradient(520px 300px at 100% 0%,rgba(0,80,230,.12),rgba(0,80,230,0) 60%),linear-gradient(180deg,#FFFFFF,#F4F7FD)}',
+      '.pp .pp-une-t{display:block;font-weight:700;font-size:19px;line-height:1.22;letter-spacing:-.015em;margin:10px 0 0}',
+      '.pp .pp-une-bas{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:auto;padding-top:12px}',
+      '.pp .pp-une-chiffre{font:600 26px/1 var(--pp-mono);letter-spacing:-.04em;color:var(--pp-bleu)}',
+      '.pp .pp-une-chiffre span{display:block;font:400 13px/1.3 var(--pp-sans);letter-spacing:0;color:var(--pp-encre2);margin-top:4px;max-width:210px}',
+      '.pp .pp-minuteur{flex:none;font:500 13px var(--pp-mono);color:var(--pp-encre2)}',
 
-      /* ══════════ LA UNE PREND SA PLACE ══════════ */
-      '.inf2 .mur-une h2{font-size:clamp(27px,4vw,52px);line-height:1.02;letter-spacing:-.03em;' +
-        'text-shadow:0 2px 24px rgba(8,11,20,.4)}',
-      '.inf2 .mur-une p{font-size:16.5px;text-shadow:0 1px 12px rgba(8,11,20,.35)}',
-      '.inf2 .mur-une .cat{letter-spacing:.18em;padding:8px 14px}',
+      /* radar du jour */
+      '.pp .pp-radar-g{display:grid;grid-template-columns:repeat(3,1fr);gap:12px 10px;margin-top:12px}',
+      '.pp .pp-radar-c{display:block;min-width:0;padding-top:10px;border-top:2px solid var(--c)}',
+      '.pp .pp-radar-c b{display:block;font:600 24px/1 var(--pp-mono);letter-spacing:-.04em}',
+      '.pp .pp-radar-c b small{font-size:14px}',
+      '.pp .pp-radar-c span{display:block;font-size:13px;line-height:1.25;color:var(--pp-encre2);margin-top:4px}',
 
-      /* ══════════ LA LUMIÈRE ══════════
-         Le clair ne pardonne pas la platitude : un aplat crème sans source de
-         lumière est plus mort qu'un noir. Ce halo est ce qui empêche la page
-         d'être un fond uni. Pas de flou : Safari y laisse des images fantômes. */
-      '.inf2 .mur-tete{position:relative;isolation:isolate;overflow:hidden}',
-      '.inf2 .mur-halo{position:absolute;left:0;right:0;top:-140px;height:520px;' +
-        'pointer-events:none;z-index:-1;' +
-        'background:radial-gradient(46% 54% at 32% 52%,color-mix(in srgb,var(--ip-blue) 15%,transparent) 0%,transparent 70%),' +
-        'radial-gradient(38% 46% at 76% 40%,color-mix(in srgb,var(--c-amber) 11%,transparent) 0%,transparent 72%),' +
-        'radial-gradient(30% 38% at 54% 78%,color-mix(in srgb,var(--c-cat) 8%,transparent) 0%,transparent 74%)}',
-      /* un filet de lumière sous la tête, qui sépare sans trancher */
-      '.inf2 .mur-tete::after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:1px;' +
-        'background:linear-gradient(90deg,transparent,var(--line-strong) 18%,var(--line-strong) 82%,transparent)}',
+      /* essentiel */
+      '.pp .pp-cinq-l{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}',
+      '.pp .pp-cinq-l li{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.3}',
+      '.pp .pp-cinq-l .pp-n{flex:none;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font:600 13px var(--pp-mono);background:var(--pp-halo);color:var(--pp-bleu-f)}',
+      '.pp .pp-cinq-l .pp-x{padding-top:3px}',
 
-      /* ══════════ LA MATIÈRE DES TUILES ══════════
-         Ombres en trois couches (ambiante + portée + liseré haut-lumière interne) :
-         c'est le liseré blanc en haut qui donne l'impression d'un objet posé,
-         pas d'un rectangle peint. */
-      '.inf2 .tu,.inf2 .mur-une{box-shadow:0 1px 2px rgba(16,19,28,.06),0 6px 16px rgba(16,19,28,.07),' +
-        '0 18px 40px rgba(16,19,28,.09),0 1px 0 rgba(255,255,255,.14) inset}',
-      '.inf2 .tu:hover{box-shadow:0 2px 4px rgba(16,19,28,.08),0 12px 28px rgba(16,19,28,.14),' +
-        '0 30px 64px rgba(16,19,28,.16),0 1px 0 rgba(255,255,255,.22) inset}',
-      '.inf2 .mur-une{box-shadow:0 2px 6px rgba(16,19,28,.07),0 16px 40px rgba(16,19,28,.12),' +
-        '0 40px 90px rgba(16,19,28,.14),0 1px 0 rgba(255,255,255,.16) inset}',
-      /* le survol : la tuile monte ET l\'image respire */
-      '.inf2 .tu:hover .mq-cov img{transform:scale(1.08)}',
-      '.inf2 .mur-une:hover .mq-cov img{transform:scale(1.045)}',
+      /* concurrents : radar à balayage */
+      '.pp .pp-radar-rond{display:block;position:relative;width:128px;height:128px;margin:8px auto 4px;border-radius:50%;' +
+        'background:radial-gradient(circle,#F3F7FF 0 30%,#E9F0FB 31% 31.6%,#F3F7FF 32% 62%,#E3EAF6 63% 63.6%,#EEF3FB 64%);box-shadow:0 0 0 1px #DCE4F1 inset,0 1px 0 #fff}',
+      '.pp .pp-balai{display:block;position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(109,79,196,0) 0deg,rgba(109,79,196,0) 290deg,rgba(109,79,196,.28) 360deg);animation:pp-tour 5s linear infinite}',
+      '@keyframes pp-tour{to{transform:rotate(360deg)}}',
+      '.pp .pp-radar-rond i{position:absolute;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(15,20,32,.25)}',
+      '.pp .pp-conc-bas{display:flex;justify-content:space-between;gap:8px;margin-top:auto;font-size:13px;color:var(--pp-encre2);line-height:1.25}',
+      '.pp .pp-conc-bas b{display:block;font:600 18px/1.1 var(--pp-mono);color:var(--pp-encre)}',
 
-      /* ══════════ LE BANDEAU PREND DE LA MATIÈRE ══════════ */
-      '.inf2 .alerte{background:linear-gradient(168deg,color-mix(in srgb,var(--c-amber) 7%,var(--card)) 0%,var(--card) 46%);' +
-        'box-shadow:0 1px 2px rgba(16,19,28,.05),0 10px 26px rgba(16,19,28,.07),0 1px 0 rgba(255,255,255,.8) inset}',
+      /* rappels */
+      '.pp .pp-bouclier{display:flex;align-items:center;gap:12px;margin-top:12px}',
+      '.pp .pp-barre{display:flex;height:10px;border-radius:6px;overflow:hidden;margin-top:auto;background:#EEF1F6}',
+      '.pp .pp-barre i{display:block;height:100%}',
 
-      /* ══════════ L\'ESSENTIEL RESPIRE ══════════ */
-      '.inf2 .ess{background:linear-gradient(172deg,color-mix(in srgb,var(--ip-blue) 4%,var(--card)) 0%,var(--card) 40%);' +
-        'box-shadow:0 1px 2px rgba(16,19,28,.05),0 10px 26px rgba(16,19,28,.07),0 1px 0 rgba(255,255,255,.8) inset}',
+      /* mur : nuage */
+      '.pp .pp-nuage{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin-top:12px}',
+      '.pp .pp-nuage span{font-weight:700;letter-spacing:-.02em;line-height:1.05}',
+      '.pp .pp-mur-bas{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:auto;padding-top:12px;font-size:14px;color:var(--pp-encre2)}',
 
-      /* ══════════ À NE PAS MANQUER ══════════
-         Le seul bloc qui ne se filtre pas et ne se replie pas. Éclairé, pas alarmant :
-         une seule teinte ambre, réservée au compte à rebours quand l'échéance approche. */
-      '.inf2 .alerte{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--c-amber);' +
-        'border-radius:var(--r-md);padding:var(--sp-5) var(--sp-5) var(--sp-3);margin-bottom:var(--section-gap);box-shadow:var(--sh-2)}',
-      '.inf2 .alerte-h{display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-weight:800;font-size:15px;' +
-        'letter-spacing:-.02em;color:var(--ip-ink);margin-bottom:var(--sp-4)}',
-      '.inf2 .alerte-h svg{color:var(--c-amber);flex:0 0 auto}',
-      '.inf2 .alerte-h span{margin-left:auto;font:600 12px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted-2)}',
-      '.inf2 .al-grille{display:grid;grid-template-columns:1fr 1fr;gap:0 var(--sp-6)}',
-      '@media(max-width:900px){.inf2 .al-grille{grid-template-columns:1fr}}',
-      '.inf2 .al-i{position:relative;padding:var(--sp-3) 0;border-top:1px solid var(--line-2)}',
-      '.inf2 .al-grille>.al-i:nth-child(-n+2){border-top:0;padding-top:0}',
-      '@media(max-width:900px){.inf2 .al-grille>.al-i:nth-child(2){border-top:1px solid var(--line-2);padding-top:var(--sp-3)}}',
+      /* pied */
+      '.pp .pp-pied{display:flex;flex-direction:column;gap:12px;align-items:flex-start;padding:22px 0 40px;font-size:14px;color:var(--pp-encre2)}',
+      '@media (min-width:720px){.pp .pp-pied{flex-direction:row;align-items:center;justify-content:space-between}}',
 
-      '.inf2 .al-i:hover h3{color:var(--ip-blue)}',
-      '.inf2 .al-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}',
-      '.inf2 .al-cd{display:inline-flex;align-items:center;gap:6px;font:700 12px/1 var(--mono);font-variant-numeric:tabular-nums;' +
-        'padding:6px 11px;border-radius:var(--r-pill);background:color-mix(in srgb,var(--c-amber) 12%,transparent);' +
-        'color:var(--c-amber-txt);border:1px solid color-mix(in srgb,var(--c-amber) 26%,transparent)}',
-      '.inf2 .al-cd.urgent{background:color-mix(in srgb,var(--c-rose) 12%,transparent);color:var(--c-rose-txt);' +
-        'border-color:color-mix(in srgb,var(--c-rose) 28%,transparent)}',
-      '.inf2 .al-cd.fait{background:var(--card-2);color:var(--muted);border-color:var(--line)}',
-      '.inf2 .al-cd.conc,.inf2 .al-cd.soc{background:color-mix(in srgb,var(--c-cat) 11%,transparent);color:var(--c-cat);' +
-        'border-color:color-mix(in srgb,var(--c-cat) 26%,transparent)}',
-      '.inf2 .al-cd.amo{background:color-mix(in srgb,var(--ip-blue) 12%,transparent);color:var(--ip-blue);' +
-        'border-color:color-mix(in srgb,var(--ip-blue) 30%,transparent)}',
-      '.inf2 .al-cd.fer{background:color-mix(in srgb,var(--c-rose) 14%,transparent);color:var(--c-rose-txt);' +
-        'border-color:color-mix(in srgb,var(--c-rose) 32%,transparent);font-weight:800}',
-      '.inf2 .al-cd.tit{background:color-mix(in srgb,var(--c-opp) 12%,transparent);color:var(--c-mint-txt);' +
-        'border-color:color-mix(in srgb,var(--c-opp) 28%,transparent)}',
-      '.inf2 .al-cd.dem{background:color-mix(in srgb,var(--c-froid) 13%,transparent);color:#006F80;' +
-        'border-color:color-mix(in srgb,var(--c-froid) 30%,transparent)}',
-      '.inf2 .al-cd.cess{background:color-mix(in srgb,var(--c-opp) 12%,transparent);color:var(--c-mint-txt);' +
-        'border-color:color-mix(in srgb,var(--c-opp) 28%,transparent)}',
-      '.inf2 .al-cd.sanc,.inf2 .al-cd.diff{background:color-mix(in srgb,var(--c-rose) 12%,transparent);' +
-        'color:var(--c-rose-txt);border-color:color-mix(in srgb,var(--c-rose) 28%,transparent)}',
-      '.inf2 .al-d{font-size:12.5px;color:var(--muted)}',
-      '.inf2 .al-ab{font:600 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted-2);' +
-        'background:var(--surf-sunken);padding:5px 9px;border-radius:var(--r-pill)}',
-      '.inf2 .al-i h3{font-family:var(--serif);font-weight:600;font-size:17.5px;line-height:1.28;letter-spacing:-.016em;' +
-        'margin:0 0 7px;color:var(--ip-ink)}',
-      '.inf2 .al-i p{font-size:14px;font-weight:600;line-height:1.45;color:var(--ip-ink-2);margin:0 0 6px}',
-      '.inf2 .al-client{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:8px 0 9px;padding:9px 13px;' +
-        'border-radius:var(--r-sm);background:color-mix(in srgb,var(--c-rose) 11%,transparent);' +
-        'border:1px solid color-mix(in srgb,var(--c-rose) 28%,transparent)}',
-      '.inf2 .al-client svg{color:var(--c-rose);flex:0 0 auto}',
-      '.inf2 .al-client b{font:800 12px/1 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--c-rose-txt)}',
-      '.inf2 .al-client span{font-size:13.5px;font-weight:600;color:var(--ip-ink)}',
-      '.inf2 .al-plus{display:inline-flex;align-items:center;justify-content:center;min-height:var(--tap-min);' +
-        'padding:0 18px;margin-top:var(--sp-3);border-radius:var(--r-btn);border:1px solid var(--line-strong);' +
-        'background:var(--card);color:var(--ip-ink);font-size:13.5px;font-weight:650;cursor:pointer}',
-      '.inf2 .al-plus:hover{border-color:var(--c-amber);color:var(--c-amber-txt)}',
-      '.inf2 .al-f{font:600 12px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-2)}',
-
-      /* ══════════ L'ESSENTIEL EN 30 SECONDES ══════════
-         Le seul bloc de la page qui se LIT au lieu de se regarder. Fond clair,
-         filets fins, aucune image : c'est un sommaire, pas une vitrine. */
-      '.inf2 .ess{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:var(--sp-5) var(--sp-6) var(--sp-4);margin-bottom:var(--section-gap);box-shadow:var(--sh-2)}',
-      '.inf2 .ess-h{display:flex;align-items:baseline;gap:var(--sp-3);flex-wrap:wrap;padding-bottom:var(--sp-3);border-bottom:1.5px solid var(--ip-ink);margin-bottom:var(--sp-2)}',
-      '.inf2 .ess-h b{font-family:var(--serif);font-weight:600;font-size:23px;letter-spacing:-.02em;color:var(--ip-ink)}',
-      '.inf2 .ess-h span{font:600 12px/1 var(--mono);letter-spacing:.11em;text-transform:uppercase;color:var(--muted-2)}',
-      '.inf2 .ess-l{list-style:none;margin:0;padding:0}',
-      '.inf2 .ess-i{position:relative;display:flex;gap:var(--sp-4);padding:var(--sp-4) 0;border-top:1px solid var(--line-2)}',
-      '.inf2 .ess-i:first-child{border-top:0}',
-      '.inf2 .ess-i:hover{background:var(--card-2)}',
-      '.inf2 .ess-n{flex:0 0 auto;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;' +
-        "font:800 12.5px/1 var(--mono);color:#fff;background:color-mix(in srgb,var(--acc) 70%,black)}",
-      '.inf2 .ess-b{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:5px}',
-      '.inf2 .ess-cat{font:700 12px/1 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--acc-t)}',
-      '.inf2 .ess-b b{font-family:var(--serif);font-weight:600;font-size:19px;line-height:1.25;letter-spacing:-.016em;color:var(--ip-ink)}',
-      '.inf2 .ess-i:hover .ess-b b{color:var(--ip-blue)}',
-      '.inf2 .ess-p{font-size:14.5px;line-height:1.55;color:var(--ip-ink-2)}',
-      '.inf2 .ess-f{font:600 12px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted-2)}',
-      '.inf2 .ess-f em{color:var(--ip-blue);font-style:normal;font-weight:700}',
-
-      /* le chapeau sur la tuile : on comprend le sujet sans même ouvrir */
-      '.inf2 .tu-p{font-size:13px;line-height:1.45;color:rgba(255,255,255,.78);margin:0 0 9px;' +
-        'display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
-
-      /* ══════════ LE PANNEAU DE LECTURE ══════════
-         Pas de flou d'arrière-plan : Safari y laisse des images fantômes. Un voile
-         plein et une ombre franche font le même travail, sans risque. */
-      '.inf-fige{overflow:hidden}',
-      // le panneau vit hors de .inf2 : il lui faut ses propres variables
-      "#inf-panneau{--serif:'Newsreader',Georgia,'Times New Roman',serif}",
-      '#inf-panneau .a-rose{--acc:var(--c-rose);--acc-t:var(--c-rose-txt)}',
-      '#inf-panneau .a-amber{--acc:var(--c-amber);--acc-t:var(--c-amber-txt)}',
-      '#inf-panneau .a-blue{--acc:var(--ip-blue);--acc-t:var(--ip-blue)}',
-      '#inf-panneau .a-green{--acc:var(--c-opp);--acc-t:var(--c-mint-txt)}',
-      '#inf-panneau .a-violet{--acc:var(--c-cat);--acc-t:var(--c-cat)}',
-      '#inf-panneau .a-teal{--acc:var(--c-froid);--acc-t:#006F80}',
-      '#inf-panneau .a-muted{--acc:var(--muted);--acc-t:var(--muted)}',
-      '#inf-panneau .inf-pan-fond{position:fixed;inset:0;z-index:200;background:rgba(10,13,22,.52);animation:inf-fondu .22s ease both}',
-      '@keyframes inf-fondu{from{opacity:0}to{opacity:1}}',
-      '#inf-panneau .inf-pan{position:fixed;top:0;right:0;bottom:0;z-index:201;width:min(520px,100%);overflow-y:auto;' +
-        '-webkit-overflow-scrolling:touch;background:var(--card);box-shadow:var(--sh-pop);animation:inf-entre .3s var(--ease) both}',
-      '@keyframes inf-entre{from{transform:translateX(28px);opacity:0}to{transform:none;opacity:1}}',
-      '@media(prefers-reduced-motion:reduce){#inf-panneau .inf-pan,#inf-panneau .inf-pan-fond{animation-duration:.01ms}}',
-      '#inf-panneau .inf-pan-x{position:absolute;right:14px;top:14px;z-index:3;width:var(--tap-min);height:var(--tap-min);' +
-        'border-radius:50%;border:1px solid var(--line-strong);background:var(--card);color:var(--ip-ink);' +
-        'display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--sh-1)}',
-      '#inf-panneau .inf-pan-img .mq-cov{border-radius:0}',
-      '#inf-panneau .inf-pan-b{padding:var(--sp-6)}',
-      '#inf-panneau .inf-pan:not(:has(.inf-pan-img)) .inf-pan-b{padding-top:var(--sp-8)}',
-      '#inf-panneau .inf-pan-top{display:flex;align-items:center;gap:var(--gap-tight);flex-wrap:wrap;margin-bottom:var(--sp-3)}',
-      "#inf-panneau .cat{display:inline-block;font:700 12px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:#fff;background:color-mix(in srgb,var(--acc) 70%,black);padding:7px 12px;border-radius:var(--r-pill)}",
-      '#inf-panneau .inf-pan-ok{font:700 12px/1 var(--mono);color:var(--c-mint-txt);background:color-mix(in srgb,var(--c-opp) 12%,transparent);padding:6px 10px;border-radius:var(--r-pill)}',
-      '#inf-panneau .inf-pan-mn{font:600 12px/1 var(--mono);color:var(--muted-2)}',
-      '#inf-panneau h2{font-family:var(--serif);font-weight:600;font-size:26px;line-height:1.16;letter-spacing:-.022em;margin:0 0 var(--sp-3);color:var(--ip-ink)}',
-      '#inf-panneau .inf-pan-chap{font-size:16px;line-height:1.62;color:var(--ip-ink-2);margin:0 0 var(--sp-5)}',
-      '#inf-panneau .inf-pan-sec{margin-bottom:var(--sp-5)}',
-      '#inf-panneau .inf-pan-l{display:block;font:700 12px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--acc-t);margin-bottom:var(--sp-3)}',
-      '#inf-panneau .inf-pan-sec ul{margin:0;padding:0;list-style:none}',
-      '#inf-panneau .inf-pan-sec li{position:relative;padding:0 0 var(--sp-3) 20px;font-size:15px;line-height:1.6;color:var(--ip-ink)}',
-      '#inf-panneau .inf-pan-sec li::before{content:"";position:absolute;left:2px;top:9px;width:7px;height:7px;border-radius:50%;background:var(--acc)}',
-      '#inf-panneau .inf-pan-chf{display:flex;flex-direction:column;gap:var(--sp-2)}',
-      '#inf-panneau .chf{background:var(--surf-sunken);border-radius:var(--r-sm);padding:var(--sp-3) var(--sp-4)}',
-      '#inf-panneau .chf b{display:block;font:800 21px/1 var(--mono);font-variant-numeric:tabular-nums;color:var(--acc-t);letter-spacing:-.02em}',
-      '#inf-panneau .chf span{display:block;font-size:13px;line-height:1.45;color:var(--muted);margin-top:6px}',
-      '#inf-panneau .inf-pan-pour{background:color-mix(in srgb,var(--acc) 8%,transparent);border-left:3px solid var(--acc);' +
-        'border-radius:0 var(--r-sm) var(--r-sm) 0;padding:var(--sp-3) var(--sp-4);font-size:14.5px;font-weight:600;line-height:1.5;color:var(--ip-ink);margin-bottom:var(--sp-5)}',
-      '#inf-panneau .inf-pan-pour b{display:block;font:700 12px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--acc-t);margin-bottom:5px}',
-      '#inf-panneau .inf-pan-src{font:600 12px/1.6 var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted-2);margin-bottom:var(--sp-4)}',
-      '#inf-panneau .inf-pan-src b{color:var(--ip-blue)}',
-      '#inf-panneau .inf-pan-go{display:inline-flex;align-items:center;gap:8px;min-height:var(--tap-min);padding:0 20px;border-radius:var(--r-btn);' +
-        'background:var(--ip-blue);color:#fff;font-size:14px;font-weight:650;text-decoration:none;box-shadow:var(--sh-blue)}',
-      '#inf-panneau .inf-pan-go:hover{transform:translateY(var(--mo-lift));box-shadow:var(--sh-blue-h)}',
-      '@media(max-width:640px){',
-      '#inf-panneau .inf-pan{top:auto;left:0;width:100%;max-height:92vh;border-radius:var(--r-card) var(--r-card) 0 0;' +
-        'animation:inf-monte .3s var(--ease) both}',
-      '@keyframes inf-monte{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}',
-      '#inf-panneau .inf-pan-b{padding:var(--sp-5) var(--sp-4) var(--sp-7)}',
-      '#inf-panneau h2{font-size:22px}',
-      '}',
-
-      /* ══════════ « DANS TON SECTEUR » (Bodacc) — 25/09/2026 ══════════
-         Sa propre lumière, comme la carte de tête : deux halos radiaux discrets,
-         SANS backdrop-filter ni blur (interdits Safari). */
-      '.inf2 .sct{position:relative;background:linear-gradient(180deg,var(--card) 0%,var(--card-2) 100%);' +
-        'border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2);' +
-        'padding:var(--sp-6) var(--sp-6) var(--sp-5);overflow:hidden;isolation:isolate;margin-bottom:var(--section-gap)}',
-      '.inf2 .sct::before{content:"";position:absolute;inset:-1px;z-index:-1;pointer-events:none;' +
-        'background:radial-gradient(520px 260px at 0% 0%,color-mix(in srgb,var(--ip-blue) 10%,transparent),transparent 70%),' +
-                   'radial-gradient(420px 240px at 100% 0%,color-mix(in srgb,var(--c-cat) 8%,transparent),transparent 70%)}',
-      '.inf2 .sct-head{display:flex;align-items:flex-start;gap:var(--sp-4);flex-wrap:wrap}',
-      '.inf2 .sct-ic{width:46px;height:46px;flex:none;border-radius:14px;display:flex;align-items:center;justify-content:center;color:#fff;' +
-        'background:linear-gradient(145deg,#2F74FF 0%,var(--ip-blue) 55%,#0034A0 100%);box-shadow:var(--sh-blue)}',
-      '.inf2 .sct-meta{flex:1;min-width:220px}',
-      '.inf2 .sct-t{font-family:var(--serif);font-weight:600;font-size:21px;letter-spacing:-.02em;line-height:1.1;margin:2px 0 4px;color:var(--ip-ink)}',
-      '.inf2 .sct-s{font-size:13.5px;color:var(--muted);line-height:1.4;font-weight:500}',
-      '.inf2 .sct-scope{display:flex;gap:4px;padding:4px;background:var(--surf-sunken);border-radius:var(--r-pill);flex-wrap:wrap}',
-      '.inf2 .sct-scope button,.inf2 .sct-scope select{border:0;background:transparent;padding:8px 13px;border-radius:var(--r-pill);' +
-        'font-size:13px;font-weight:700;color:var(--ip-ink-2);cursor:pointer;min-height:var(--tap-min);font-family:inherit}',
-      '.inf2 .sct-scope button[aria-pressed="true"]{background:var(--card);color:var(--ip-blue);box-shadow:var(--sh-1)}',
-      '.inf2 .sct-scope select{max-width:190px;text-overflow:ellipsis;-webkit-appearance:none;appearance:none;padding-right:26px;font-size:16px}',
-      '.inf2 .sct-scope-note{font-size:12px;color:var(--muted);font-weight:600;margin:8px 2px 0;text-align:right;width:100%}',
-      '.inf2 .sct-why{margin-top:var(--sp-4);display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
-      '.inf2 .sct-why-l{font-size:12.5px;font-weight:700;color:var(--ip-ink-2);margin-right:2px}',
-      '.inf2 .sct-dep{display:inline-flex;align-items:center;gap:7px;padding:5px 11px 5px 5px;background:var(--card);' +
-        'border:1px solid var(--line);border-radius:var(--r-pill);font-size:12.5px;font-weight:600;color:var(--ip-ink-2);box-shadow:var(--sh-1)}',
-      '.inf2 .sct-dep b{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;padding:0 6px;' +
-        'border-radius:var(--r-pill);background:color-mix(in srgb,var(--ip-blue) 12%,transparent);color:var(--ip-blue);font-size:12px;font-weight:800}',
-      '.inf2 .sct-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:var(--sp-5) 0 var(--sp-3)}',
-      '.inf2 .sct-bar-t{font-size:13px;font-weight:700;color:var(--ip-ink-2)}',
-      '.inf2 .sct-bar-t span{font-weight:500;color:var(--muted)}',
-      '.inf2 .sct-per{display:flex;gap:4px;padding:3px;background:var(--surf-sunken);border-radius:12px}',
-      '.inf2 .sct-per button{border:0;background:transparent;padding:7px 12px;border-radius:9px;font-size:12.5px;font-weight:700;' +
-        'color:var(--ip-ink-2);cursor:pointer;min-height:34px;font-family:inherit}',
-      '.inf2 .sct-per button[aria-pressed="true"]{background:var(--card);color:var(--ip-ink);box-shadow:var(--sh-1)}',
-      '.inf2 .sct-fams{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}',
-      '@media(max-width:760px){.inf2 .sct-fams{grid-template-columns:repeat(2,1fr)}.inf2 .sct-fams .sct-fam:last-child{grid-column:span 2}}',
-      '.inf2 .sct-fam{--c:var(--ip-blue);position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:7px;' +
-        'padding:12px 12px 11px;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:var(--r-sm);' +
-        'box-shadow:var(--sh-1);cursor:pointer;overflow:hidden;min-height:var(--tap-min);' +
-        'transition:transform .22s var(--ease),box-shadow .22s var(--ease)}',
-      '.inf2 .sct-fam::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--c);opacity:.9}',
-      '.inf2 .sct-fam:hover{transform:translateY(-2px);box-shadow:var(--sh-2)}',
-      '.inf2 .sct-fam:focus-visible{outline:2px solid var(--c);outline-offset:2px}',
-      '.inf2 .sct-fi{width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--c);' +
-        'background:color-mix(in srgb,var(--c) 11%,var(--card))}',
-      '.inf2 .sct-fn{font-size:24px;font-weight:800;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;color:var(--ip-ink)}',
-      '.inf2 .sct-fl{font-size:12px;font-weight:600;color:var(--ip-ink-2);line-height:1.25}',
-      '.inf2 .sct-ck{position:absolute;top:9px;right:9px;width:17px;height:17px;border-radius:6px;background:var(--c);color:#fff;' +
-        'display:flex;align-items:center;justify-content:center}',
-      '.inf2 .sct-fam.off{background:var(--card-2)}',
-      '.inf2 .sct-fam.off .sct-fn,.inf2 .sct-fam.off .sct-fl{color:var(--muted-2)}',
-      '.inf2 .sct-fam.off .sct-fi{background:var(--surf-sunken);color:var(--muted-2)}',
-      '.inf2 .sct-fam.off::before{background:var(--line-strong)}',
-      '.inf2 .sct-fam.off .sct-ck{background:transparent;border:1.5px solid var(--line-strong);color:transparent}',
-      '.inf2 .sct-fam.zero .sct-fn{color:var(--muted-2)}',
-      '.inf2 .sct-grp{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);' +
-        'margin:var(--sp-5) 2px var(--sp-3);display:flex;align-items:center;gap:10px}',
-      '.inf2 .sct-grp::after{content:"";flex:1;height:1px;background:var(--line)}',
-      '.inf2 .sct-list{display:flex;flex-direction:column;gap:9px}',
-      '.inf2 .sct-row{--c:var(--ip-blue);--ct:var(--ip-blue);position:relative;display:flex;align-items:flex-start;gap:13px;' +
-        'width:100%;text-align:left;padding:14px 16px 14px 14px;background:var(--card);border:1px solid var(--line);' +
-        'border-radius:var(--r-sm);box-shadow:var(--sh-1);cursor:pointer;font-family:inherit;' +
-        'transition:transform .22s var(--ease),box-shadow .22s var(--ease),border-color .22s var(--ease)}',
-      '.inf2 .sct-row:hover{transform:translateY(-2px);box-shadow:var(--sh-2);border-color:color-mix(in srgb,var(--c) 32%,var(--line))}',
-      '.inf2 .sct-row:focus-visible{outline:2px solid var(--c);outline-offset:2px}',
-      '.inf2 .sct-ri{width:38px;height:38px;flex:none;border-radius:11px;display:flex;align-items:center;justify-content:center;color:var(--c);' +
-        'background:color-mix(in srgb,var(--c) 11%,var(--card));border:1px solid color-mix(in srgb,var(--c) 18%,var(--line))}',
-      '.inf2 .sct-rb{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}',
-      '.inf2 .sct-rn{font-size:15px;font-weight:700;letter-spacing:-.01em;line-height:1.25;color:var(--ip-ink)}',
-      '.inf2 .sct-rm{font-size:12.5px;color:var(--muted);font-weight:500;line-height:1.35}',
-      '.inf2 .sct-rm .k{color:var(--ct);font-weight:700}',
-      '.inf2 .sct-rg{font-size:13px;font-weight:600;color:var(--ip-ink-2);line-height:1.35;margin-top:3px;display:flex;gap:6px}',
-      '.inf2 .sct-rg svg{flex:none;margin-top:2px;color:var(--ct)}',
-      '.inf2 .sct-rt{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:8px}',
-      '.inf2 .sct-tag{font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:4px 9px;' +
-        'border-radius:var(--r-pill);white-space:nowrap}',
-      '.inf2 .sct-tag.client{background:var(--ip-blue);color:#fff}',
-      '.inf2 .sct-tag.prospect{background:color-mix(in srgb,var(--ip-blue) 12%,var(--card));color:var(--ip-blue)}',
-      '.inf2 .sct-tag.hors{background:var(--surf-sunken);color:var(--ip-ink-2)}',
-      '.inf2 .sct-when{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap}',
-      '.inf2 .sct-new{position:absolute;left:-4px;top:18px;width:8px;height:8px;border-radius:50%;background:var(--ip-blue);' +
-        'box-shadow:0 0 0 3px var(--card)}',
-      '.inf2 .sct-row.lu{background:var(--card-2);box-shadow:none}',
-      '.inf2 .sct-row.lu .sct-rn{color:var(--ip-ink-2);font-weight:600}',
-      '.inf2 .sct-row.lu .sct-ri{background:var(--surf-sunken);color:var(--muted-2);border-color:var(--line)}',
-      '.inf2 .sct-row.lu .sct-new{display:none}',
-      '@media(max-width:560px){.inf2 .sct-row{flex-wrap:wrap}.inf2 .sct-row .sct-rt{flex-direction:row;align-items:center;width:100%;' +
-        'padding-left:51px;justify-content:space-between}}',
-      '.inf2 .sct-empty{padding:26px 18px;text-align:center;color:var(--muted);font-size:14px;background:var(--card-2);' +
-        'border:1px dashed var(--line-strong);border-radius:var(--r-sm)}',
-      '.inf2 .sct-more{display:block;margin:14px auto 0;border:1px solid var(--line);background:var(--card);border-radius:var(--r-pill);' +
-        'padding:9px 18px;font-size:13px;font-weight:700;color:var(--ip-blue);cursor:pointer;box-shadow:var(--sh-1);min-height:40px;font-family:inherit}',
-      '.inf2 .sct-src{margin-top:var(--sp-4);font-size:12px;color:var(--muted);line-height:1.5;text-align:center}',
-      /* ── panneau de détail (préfixé sct-, à part de #inf-panneau) ── */
-      '#sct-panneau{--serif:var(--serif,Georgia,serif)}',
-      '#sct-panneau .sct-fond{position:fixed;inset:0;z-index:200;background:rgba(10,13,22,.52);animation:inf-fondu .22s ease both}',
-      '#sct-panneau .sct-pan{position:fixed;top:0;right:0;bottom:0;z-index:201;width:min(440px,100%);overflow-y:auto;' +
-        'background:var(--card);box-shadow:-20px 0 60px rgba(16,19,28,.16);animation:sct-glisse .32s var(--ease) both}',
-      '@keyframes sct-glisse{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}',
-      '@media(prefers-reduced-motion:reduce){#sct-panneau .sct-pan,#sct-panneau .sct-fond{animation-duration:.01ms}}',
-      '#sct-panneau .sct-x{position:absolute;right:14px;top:14px;z-index:3;width:var(--tap-min);height:var(--tap-min);' +
-        'border-radius:12px;border:1px solid var(--line);background:var(--card);cursor:pointer;display:flex;align-items:center;' +
-        'justify-content:center;color:var(--ip-ink-2)}',
-      '#sct-panneau .sct-pan-top{--c:var(--ip-blue);position:relative;padding:22px 22px 18px;border-bottom:1px solid var(--line);' +
-        'background:radial-gradient(360px 180px at 0% 0%,color-mix(in srgb,var(--c) 14%,transparent),transparent 72%)}',
-      '#sct-panneau .sct-pan-f{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:800;letter-spacing:.04em;' +
-        'text-transform:uppercase;color:var(--ct)}',
-      '#sct-panneau h2{font-family:var(--serif);font-weight:600;font-size:22px;letter-spacing:-.02em;line-height:1.15;' +
-        'margin:10px 50px 6px 0;color:var(--ip-ink)}',
-      '#sct-panneau .sct-pan-v{font-size:14px;color:var(--muted);font-weight:600}',
-      '#sct-panneau .sct-pan-b{padding:20px 22px;display:flex;flex-direction:column;gap:16px}',
-      '#sct-panneau .sct-kv{display:grid;grid-template-columns:auto 1fr;gap:9px 16px;font-size:14px;margin:0}',
-      '#sct-panneau .sct-kv dt{color:var(--muted);font-weight:600}',
-      '#sct-panneau .sct-kv dd{margin:0;font-weight:700;color:var(--ip-ink)}',
-      '#sct-panneau .sct-do{border-radius:var(--r-sm);padding:14px 15px;background:color-mix(in srgb,var(--c) 8%,var(--card));' +
-        'border:1px solid color-mix(in srgb,var(--c) 20%,var(--line))}',
-      '#sct-panneau .sct-do small{display:block;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;' +
-        'color:var(--ct);margin-bottom:5px}',
-      '#sct-panneau .sct-do p{margin:0;font-size:15px;font-weight:700;line-height:1.4;color:var(--ip-ink)}',
-      '#sct-panneau .sct-act{display:flex;flex-direction:column;gap:9px;margin-top:2px}',
-      '#sct-panneau .sct-btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:var(--tap-min);' +
-        'border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;text-decoration:none;border:1px solid var(--line);font-family:inherit}',
-      '#sct-panneau .sct-btn.pri{background:linear-gradient(180deg,#1A63F0,var(--ip-blue));color:#fff;border-color:transparent;box-shadow:var(--sh-blue)}',
-      '#sct-panneau .sct-btn.sec{background:var(--card);color:var(--ip-ink)}',
-      '#sct-panneau .sct-btn.ghost{background:transparent;border-color:transparent;color:var(--muted);font-size:13.5px;min-height:40px}',
-      '@media(max-width:560px){#sct-panneau .sct-pan{top:auto;left:0;width:100%;max-height:88vh;' +
-        'border-radius:var(--r-card) var(--r-card) 0 0;animation:sct-monte .32s var(--ease) both}}',
-      '@keyframes sct-monte{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}',
-
-      /* ══════════ LE MUR ══════════ */
-'.inf2 .mur{display:flex;align-items:flex-start;gap:var(--sp-3)}',
-      '.inf2 .mur-col{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:var(--sp-3)}',
-      '.inf2 .tu{position:relative;margin:0 0 var(--sp-3);border-radius:var(--r-md);overflow:hidden;background:#10131C;box-shadow:var(--sh-1);transition:transform .3s var(--ease),box-shadow .3s var(--ease)}',
-      
-      '.inf2 .tu:hover{transform:translateY(var(--mo-lift));box-shadow:var(--sh-2)}',
-      '.inf2 .tu:hover .mq-cov img{transform:scale(1.06)}',
-      '.inf2 .tu .b{position:absolute;left:0;right:0;bottom:0;z-index:3;padding:var(--sp-4) 17px 16px}',
-      '.inf2 .tu h3{font-family:var(--serif);font-weight:600;font-size:19px;line-height:1.2;letter-spacing:-.014em;color:#fff;margin:0 0 9px;text-wrap:balance}',
-      '.inf2 .tu.xl h3{font-size:23px}',
-
-      /* ══════════ LE RADAR, EN JETONS ══════════ */
-
-      /* ══════════ PASTILLES DE RUBRIQUE ══════════ */
-      '.inf2 .brf-chips{display:flex;gap:var(--gap-tight);flex-wrap:wrap;margin-bottom:var(--sp-3)}',
-      '.inf2 .brf-chip{display:inline-flex;align-items:center;gap:7px;min-height:var(--tap-min);padding:0 15px;border-radius:var(--r-pill);border:1.5px solid var(--line-strong);background:var(--card);font-size:12.5px;font-weight:650;color:var(--ip-ink-2);cursor:pointer;transition:all .18s var(--ease-soft)}',
-      '.inf2 .brf-chip .pt{width:8px;height:8px;border-radius:50%;background:var(--acc,var(--muted));display:inline-block}',
-      '.inf2 .brf-chip i{font:700 12px/1 var(--mono);font-style:normal;color:var(--muted-2)}',
-      '.inf2 .brf-chip:hover{border-color:var(--acc,var(--ip-blue))}',
-      '.inf2 .brf-chip.on{background:var(--ip-ink);border-color:var(--ip-ink);color:#fff}',
-      '.inf2 .brf-chip.on i{color:rgba(255,255,255,.7)}',
-      '.inf2 .brf-search{display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--line-strong);border-radius:var(--r-control);padding:0 var(--sp-3);margin-bottom:var(--sp-4);color:var(--muted-2)}',
-      /* 16px minimum : en dessous, iOS zoome sur le champ au focus */
-      '.inf2 .brf-search input{flex:1 1 auto;min-width:0;border:0;outline:0;background:transparent;font:400 16px/1 var(--font);color:var(--ip-ink);min-height:var(--tap-min);padding:0}',
-      '.inf2 .brf-search input::placeholder{color:var(--muted-2)}',
-      /* ── téléphone ── */
-      '@media(max-width:640px){',
-      '.inf2 .mq-cov.r-21x9{aspect-ratio:4/5}',
-      '.inf2 .mur-une{border-radius:var(--r-md)}',
-      '.inf2 .mur-une .b{padding:var(--sp-5) var(--sp-4) var(--sp-4)}',
-      '.inf2 .mur-tete{padding:var(--sp-4) 0}',
-      '.inf2 .alerte{padding:var(--sp-4) var(--sp-4) var(--sp-2)}.inf2 .al-i h3{font-size:17px}.inf2 .al-i p{font-size:14px}',
-      '.inf2 .ess{padding:var(--sp-4)}.inf2 .ess-b b{font-size:17px}.inf2 .ess-p{font-size:13.5px}',
-      '.inf2 .ess-i{gap:var(--sp-3)}.inf2 .ess-n{width:22px;height:22px;font-size:12px}',
-      '.inf2 .mur-tete-d{gap:var(--sp-4);font-size:12px}',
-      '.inf2 .mur-tete-d b{font-size:16px}',
-      '.inf2 .tu h3{font-size:15.5px;line-height:1.24}.inf2 .tu.xl h3{font-size:18px}',
-      '.inf2 .tu .b{padding:var(--sp-3) 13px 12px}',
-      '.inf2 .tu .cat{font-size:12px;padding:5px 9px;margin-bottom:9px}',
-      '.inf2 .tu .f{font-size:12px;line-height:1.5}',
-      '}',
-
-      /* ══════════ LE BRIEF EN 5 CARTES (25/09/2026, choix de Will · v4) ══════════
-         Safari : pas de backdrop-filter, pas de filter:blur, pas de background-clip
-         sur du texte — la « lumière » est un simple radial-gradient posé en ::before. */
-      '.inf2 .brf5{max-width:520px;margin:0 auto 28px}',
-      '.inf2 .brf5-head{padding:2px 4px 0}',
-      '.inf2 .brf5-prog{display:flex;gap:5px}',
-      '.inf2 .brf5-prog i{flex:1;height:5px;border-radius:9px;background:rgba(16,19,28,.1);overflow:hidden;position:relative}',
-      '.inf2 .brf5-prog i::after{content:"";position:absolute;inset:0;background:var(--ip-blue,#0050E6);border-radius:9px;transform:scaleX(0);transform-origin:left;transition:transform .35s ease}',
-      '.inf2 .brf5-prog i.vu::after{transform:scaleX(1)}',
-      '.inf2 .brf5-l{display:flex;align-items:center;gap:10px;margin-top:9px}',
-      '.inf2 .brf5-l h1{flex:1;min-width:0;font-size:19px;font-weight:800;letter-spacing:-.02em;line-height:1.15;margin:0}',
-      '.inf2 .brf5-l h1 span{display:block;font-size:12.5px;font-weight:600;color:var(--muted,#5E6679);letter-spacing:0;margin-top:2px}',
-      '.inf2 .brf5-reste{flex:none;min-height:40px;padding:0 14px;border-radius:12px;background:var(--card,#fff);border:1px solid var(--line,rgba(16,19,28,.08));font:inherit;font-size:13.5px;font-weight:700;color:var(--ip-ink,#10131C);cursor:pointer}',
-      '.inf2 .brf5-rail{margin-top:10px;height:clamp(420px,64vh,560px);display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-padding-inline:0;scrollbar-width:none;overscroll-behavior-x:contain}',
-      '.inf2 .brf5-rail::-webkit-scrollbar{display:none}',
-      '.inf2 .brf5-rail:focus-visible{outline:3px solid rgba(0,80,230,.4);outline-offset:2px;border-radius:22px}',
-      '.inf2 .brf5-c{flex:0 0 100%;width:100%;scroll-snap-align:start;scroll-snap-stop:always;position:relative;isolation:isolate;overflow:hidden;' +
-        'display:flex;flex-direction:column;padding:20px 20px 16px;border-radius:22px;background:linear-gradient(180deg,#FFFFFF 0%,#FAFBFE 100%);' +
-        'border:1px solid var(--line,rgba(16,19,28,.08));box-shadow:0 1px 2px rgba(16,19,28,.05),0 16px 36px -18px rgba(16,19,28,.22);overflow-y:auto}',
-      '.inf2 .brf5-lum{position:absolute;z-index:-1;width:320px;height:320px;border-radius:50%;right:-140px;top:-150px;pointer-events:none;' +
-        'background:radial-gradient(circle,color-mix(in srgb,var(--acc,#0050E6) 22%,transparent) 0%,rgba(255,255,255,0) 68%)}',
-      '.inf2 .brf5-sur{display:flex;align-items:center;gap:8px;font:800 12.5px/1 inherit;letter-spacing:.06em;text-transform:uppercase;color:var(--muted,#5E6679)}',
-      '.inf2 .brf5-ico{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:10px;flex:none;color:var(--acc-t,#0050E6);background:color-mix(in srgb,var(--acc,#0050E6) 14%,#fff)}',
-      '.inf2 .brf5-num{font-size:clamp(48px,11vw,72px);font-weight:800;letter-spacing:-.04em;line-height:.9;margin-top:14px;font-variant-numeric:tabular-nums;color:var(--acc-t,#0050E6)}',
-      '.inf2 .brf5-t{font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.18;margin-top:6px;color:var(--ip-ink,#10131C)}',
-      '.inf2 .brf5-p{font-size:14.5px;color:var(--ip-ink-2,#2A2F3C);line-height:1.5;margin-top:8px}',
-      '.inf2 .brf5-fill{flex:1;min-height:6px}',
-      '.inf2 .brf5-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}',
-      '.inf2 .brf5-chips span{font-size:12.5px;font-weight:600;padding:6px 10px;border-radius:10px;background:#F1F4F9;color:var(--ip-ink-2,#2A2F3C)}',
-      '.inf2 .brf5-mini{margin-top:10px;display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:14px;background:#F5F7FB}',
-      '.inf2 .brf5-mini b{font-size:22px;font-weight:800;letter-spacing:-.02em;flex:none;font-variant-numeric:tabular-nums;color:var(--acc-t,var(--ip-ink,#10131C))}',
-      '.inf2 .brf5-mini span{font-size:13px;color:var(--ip-ink-2,#2A2F3C);line-height:1.32}',
-      '.inf2 .brf5-map{display:block;width:100%;max-height:30vh;margin-top:8px}',
-      '.inf2 .brf5-map path{stroke-linejoin:round}',
-      '.inf2 .brf5-list{margin-top:8px;display:grid;gap:5px;max-height:132px;overflow-y:auto}',
-      '.inf2 .brf5-list-row{display:flex;align-items:center;font-size:13.5px;color:var(--ip-ink-2,#2A2F3C);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
-      '.inf2 .brf5-list-row i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;flex:none}',
-      '.inf2 .brf5-tag{font-weight:700;color:var(--ip-blue,#0050E6)}',
-      '.inf2 .brf5-quote{margin-top:12px;padding:13px;border-radius:16px;background:var(--halo,#E9F0FF);color:#0A2F7A;font-size:14px;line-height:1.45}',
-      '.inf2 .brf5-quote b{display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ip-blue,#0050E6);margin-bottom:3px}',
-      '.inf2 .brf5-bars{display:block}',
-      '.inf2 .brf5-mini-t{display:block;font-size:12.5px;font-weight:700;color:var(--muted,#5E6679);margin-bottom:8px}',
-      '.inf2 .brf5-bar-row{display:flex;align-items:center;gap:8px;margin-top:5px}',
-      '.inf2 .brf5-bar-l{width:112px;flex:none;font-size:12.5px;color:var(--ip-ink-2,#2A2F3C);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
-      '.inf2 .brf5-bar{display:block;height:9px;border-radius:6px;min-width:6px}',
-      '.inf2 .brf5-bar-row b{font-size:13px}',
-      '.inf2 .brf5-conc-wait{font-size:13.5px;color:var(--muted,#5E6679);margin-top:14px}',
-      '.inf2 .brf5-cta-wrap{margin-top:14px}',
-      '.inf2 .brf5-cta{width:100%;min-height:44px;padding:0 16px;border-radius:14px;background:#fff;border:1px solid var(--line,rgba(16,19,28,.08));' +
-        'box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 6px 16px -10px rgba(16,19,28,.22);font:inherit;font-size:14.5px;font-weight:700;color:var(--ip-ink,#10131C);cursor:pointer}',
-      '.inf2 .brf5-nav{display:flex;align-items:center;gap:10px;padding:10px 4px 0}',
-      '.inf2 .brf5-rond{flex:none;display:inline-grid;place-items:center;width:44px;height:44px;border-radius:14px;background:var(--card,#fff);' +
-        'border:1px solid var(--line,rgba(16,19,28,.08));color:var(--ip-ink-2,#2A2F3C);cursor:pointer}',
-      '.inf2 .brf5-rond[disabled]{opacity:.4;cursor:default}',
-      '.inf2 .brf5-ou{flex:1;text-align:center;font-size:13.5px;font-weight:700;color:var(--ip-ink-2,#2A2F3C);font-variant-numeric:tabular-nums}',
-      '.inf2 .brf5-suiv{flex:none;min-width:150px;min-height:44px;padding:0 18px;border-radius:14px;display:inline-flex;align-items:center;justify-content:center;gap:6px;' +
-        'background:linear-gradient(180deg,#1463F5 0%,#0050E6 55%,#0046CC 100%);color:#fff;font:inherit;font-size:14.5px;font-weight:700;' +
-        'box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 10px 22px -10px rgba(0,80,230,.65);cursor:pointer;white-space:nowrap}',
-      '@media (max-height:760px){.inf2 .brf5-num{font-size:clamp(38px,9vw,54px);margin-top:8px}.inf2 .brf5-map{max-height:22vh}}',
-      '@media (max-width:420px){.inf2 .brf5-bar-l{width:88px}}'
+      /* ── le panneau ── */
+      '#pp-voile{position:fixed;inset:0;background:rgba(15,20,32,.38);opacity:0;pointer-events:none;transition:opacity .25s;z-index:9440}',
+      '#pp-voile.ouvert{opacity:1;pointer-events:auto}',
+      '#pp-pan{position:fixed;z-index:9450;left:0;right:0;bottom:0;top:0;display:flex;flex-direction:column;background:#F4F6FA;color:var(--pp-encre);font:400 15px/1.45 var(--pp-sans);' +
+        'transform:translateY(102%);transition:transform .34s cubic-bezier(.2,.8,.2,1);visibility:hidden}',
+      '#pp-pan.ouvert{transform:none;visibility:visible}',
+      '@media (min-width:900px){#pp-pan{left:auto;width:600px;border-radius:28px 0 0 28px;transform:translateX(102%);box-shadow:-30px 0 60px -30px rgba(0,30,90,.4)}}',
+      '#pp-pan .pp-p-tete{position:relative;flex:none;display:flex;align-items:center;gap:8px;padding:10px 12px;padding-top:max(10px,env(safe-area-inset-top));' +
+        'background:linear-gradient(180deg,#FFFFFF,#F7F9FC);border-bottom:1px solid #E3E8F0}',
+      '@media (min-width:900px){#pp-pan .pp-p-tete{border-radius:28px 0 0 0}}',
+      '#pp-pan .pp-rond{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid #E1E6EF;background:linear-gradient(180deg,#fff,#F3F5F9);display:grid;place-items:center;color:var(--pp-encre);padding:0}',
+      '#pp-pan .pp-rond[hidden]{display:none}',
+      '#pp-pan .pp-p-sur{flex:1;min-width:0;font:650 13px/1.2 var(--pp-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--pp-encre2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '#pp-pan .pp-p-corps{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:18px 16px 40px}',
+      '#pp-pan h2{margin:0;font:800 25px/1.15 var(--pp-sans);letter-spacing:-.025em;color:var(--pp-encre)}',
+      '#pp-pan h3{margin:26px 0 10px;font:650 13px/1.2 var(--pp-sans);text-transform:uppercase;color:var(--pp-encre2);letter-spacing:.06em;display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
+      '#pp-pan h3 b{font-weight:600;color:var(--pp-encre)}',
+      '#pp-pan .pp-h3-s{text-transform:none;letter-spacing:0;font-weight:500;color:var(--pp-encre3);font-size:13px}',
+      '#pp-pan p{margin:10px 0 0;font-size:16px;line-height:1.55}',
+      '#pp-pan .pp-meta{margin-top:8px;font-size:14px;color:var(--pp-encre2)}',
+      '#pp-pan .pp-chapo{font-size:16px;color:var(--pp-encre2);margin-top:8px}',
+      '#pp-pan .pp-note{font-size:13px;color:var(--pp-encre3);margin-top:6px;line-height:1.45}',
+      '#pp-pan .pp-geste{margin-top:18px;padding:14px 16px;border-radius:18px;background:linear-gradient(135deg,#F4F8FF,var(--pp-halo));border:1px solid #D6E3FF;font-size:15px;line-height:1.45}',
+      '#pp-pan .pp-geste b{display:block;font:650 13px var(--pp-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--pp-bleu-f);margin-bottom:4px}',
+      '#pp-pan .pp-geste.pp-alerte{background:linear-gradient(135deg,#FFF6F7,#FCE8EC);border-color:#F6C6D0}',
+      '#pp-pan .pp-geste.pp-alerte b{color:var(--pp-rose-f)}',
+      '#pp-pan .pp-bloc{background:#fff;border-radius:20px;box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(15,20,32,.05),0 10px 24px -18px rgba(0,48,140,.3);overflow:hidden}',
+      '#pp-pan .pp-ligne{display:flex;align-items:flex-start;gap:12px;width:100%;min-height:56px;margin:0;padding:12px 14px;border:0;border-top:1px solid #EDF0F5;background:none;text-align:left;font:inherit;color:var(--pp-encre)}',
+      '#pp-pan .pp-bloc>.pp-ligne:first-child,#pp-pan .pp-bloc>div[hidden]+.pp-ligne{border-top:0}',
+      '#pp-pan button.pp-ligne:hover{background:#F7F9FD}',
+      '#pp-pan .pp-ligne.lu .pp-lt{font-weight:500;color:var(--pp-encre2)}',
+      '#pp-pan .pp-ico{flex:none;width:34px;height:34px;border-radius:11px;display:grid;place-items:center;color:#fff;background:var(--c,var(--pp-bleu));box-shadow:0 1px 0 rgba(255,255,255,.3) inset}',
+      '#pp-pan .pp-ico-n{width:auto;min-width:64px;padding:0 8px;font:600 16px var(--pp-mono)}',
+      '#pp-pan .pp-txt{flex:1;min-width:0}',
+      '#pp-pan .pp-lt{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-weight:600;font-size:15px;line-height:1.3}',
+      '#pp-pan .pp-ls{display:block;font-size:13px;color:var(--pp-encre2);margin-top:3px;line-height:1.35}',
+      '#pp-pan .pp-ld{flex:none;max-width:92px;font:500 13px/1.3 var(--pp-mono);color:var(--pp-encre2);padding-top:2px;text-align:right}',
+      '#pp-pan .pp-ld.chaud{color:var(--pp-ambre-f)}',
+      '#pp-pan .pp-ld.urgent{color:var(--pp-rose-f)}',
+      '#pp-pan .pp-badge{display:inline-block;font:600 13px/1 var(--pp-sans);padding:4px 7px;border-radius:7px;background:var(--pp-halo);color:var(--pp-bleu-f);vertical-align:1px;margin-right:4px}',
+      '#pp-pan .pp-badge.vert{background:#E2F4EC;color:var(--pp-vert-f)}',
+      '#pp-pan .pp-badge.rose{background:#FCE8EC;color:var(--pp-rose-f)}',
+      '#pp-pan .pp-badge.ambre{background:#FBF0E1;color:var(--pp-ambre-f)}',
+      '#pp-pan .pp-badge.gris{background:#EEF1F6;color:var(--pp-encre2)}',
+      '#pp-pan .pp-plus{display:flex;width:100%;align-items:center;justify-content:center;gap:6px;min-height:52px;border:0;border-top:1px solid #EDF0F5;background:#FBFCFE;color:var(--pp-bleu);font-weight:600;font-size:15px}',
+      '#pp-pan .pp-puces{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}',
+      '#pp-pan .pp-puce{display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:0 14px;border-radius:22px;border:1px solid #DCE3EE;background:#fff;font-size:14px;font-weight:600;color:var(--pp-encre)}',
+      '#pp-pan .pp-puce i{width:9px;height:9px;border-radius:50%}',
+      '#pp-pan .pp-puce .pp-n{font:500 13px var(--pp-mono);color:var(--pp-encre2)}',
+      '#pp-pan .pp-puce[aria-pressed="true"]{background:var(--pp-encre);border-color:var(--pp-encre);color:#fff}',
+      '#pp-pan .pp-puce[aria-pressed="true"] .pp-n{color:#C9D2E3}',
+      '#pp-pan .pp-bascule{display:flex;gap:4px;padding:4px;border-radius:16px;background:#E6EBF3;box-shadow:0 1px 2px rgba(15,20,32,.06) inset;margin-top:14px}',
+      '#pp-pan .pp-bascule button{flex:1;min-height:44px;border:0;border-radius:12px;background:none;font-weight:600;font-size:14px;color:var(--pp-encre2)}',
+      '#pp-pan .pp-bascule button[aria-pressed="true"]{background:#fff;color:var(--pp-encre);box-shadow:0 1px 3px rgba(15,20,32,.14)}',
+      '#pp-pan .pp-select{display:block;width:100%;min-height:46px;margin-top:10px;padding:0 12px;border-radius:14px;border:1px solid #D6DDE8;background:#fff;font:500 16px var(--pp-sans);color:var(--pp-encre)}',
+      '#pp-pan .pp-carte-p{position:relative;margin-top:14px;border-radius:22px;background:radial-gradient(120% 90% at 25% 0%,#FAFCFF,#EAF0F9 70%);box-shadow:0 1px 0 #fff inset,0 0 0 1px #DCE4F0 inset;overflow:hidden}',
+      '#pp-pan .pp-carte-p svg{display:block;width:100%;height:340px;touch-action:manipulation;cursor:pointer}',
+      '#pp-pan .pp-carte-aide{position:absolute;right:12px;top:10px;pointer-events:none;font-size:13px;color:var(--pp-encre2);background:rgba(255,255,255,.88);padding:4px 9px;border-radius:9px}',
+      '#pp-pan .pp-champ-wrap{position:relative;margin-top:14px}',
+      '#pp-pan .pp-champ-wrap svg{position:absolute;left:14px;top:15px;color:var(--pp-encre2)}',
+      '#pp-pan .pp-champ{width:100%;min-height:48px;padding:0 14px 0 42px;border-radius:14px;border:1px solid #D6DDE8;background:#fff;font:400 16px var(--pp-sans);color:var(--pp-encre)}',
+      '#pp-pan .pp-champ:focus{outline:3px solid rgba(0,80,230,.25);border-color:var(--pp-bleu)}',
+      '#pp-pan .pp-onglets{display:flex;gap:6px;overflow-x:auto;margin:14px -16px 0;padding:0 16px 2px;scrollbar-width:none}',
+      '#pp-pan .pp-onglets::-webkit-scrollbar{display:none}',
+      '#pp-pan .pp-onglets button{flex:none;min-height:44px;padding:0 16px;border-radius:14px;border:1px solid #DCE3EE;background:#fff;font-weight:600;font-size:14px}',
+      '#pp-pan .pp-onglets button[aria-selected="true"]{background:var(--pp-bleu);border-color:var(--pp-bleu);color:#fff;box-shadow:0 8px 16px -10px rgba(0,80,230,.8)}',
+      '#pp-pan [data-pp-conc-corps]>.cnc,#pp-pan [data-pp-conc-corps]>.gr-wrap{margin-top:16px}',
+      /* blocs des modules concurrents montés dans le panneau : rien sous 13 px */
+      '#pp-pan .cnc-angle b,#pp-pan .gr-vf-k,#pp-pan .gr-vf-m,#pp-pan .gr-vf-d,#pp-pan .gr-vf-t,#pp-pan .gr-vf-s,#pp-pan .gr-vf-nc,#pp-pan .gr-vf-plus summary,#pp-pan .gr-vf-rien,' +
+        '#pp-pan .gr-actutag,#pp-pan .gr-actumaj,#pp-pan .gr-actu-meta,#pp-pan .gr-actu-res,#pp-pan .gr-actu-acc{font-size:13px}',
+      '#pp-pan .pp-chiffres{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}',
+      '#pp-pan .pp-chiffres div{background:#fff;border-radius:18px;padding:14px;box-shadow:0 1px 2px rgba(15,20,32,.05)}',
+      '#pp-pan .pp-chiffres b{display:block;font:600 26px/1 var(--pp-mono);letter-spacing:-.04em}',
+      '#pp-pan .pp-chiffres span{display:block;font-size:13px;color:var(--pp-encre2);margin-top:6px;line-height:1.3}',
+      '#pp-pan .pp-actions{display:flex;flex-direction:column;gap:10px;margin-top:22px}',
+      '#pp-pan .pp-actions .pp-btn{width:100%;white-space:normal;text-align:center}',
+      '#pp-pan .pp-vide{padding:18px 14px;font-size:14px;color:var(--pp-encre2)}',
+      'html.pp-fige{overflow:hidden}',
+      '@media (prefers-reduced-motion:reduce){.pp *,.pp *::before,.pp *::after,#pp-pan,#pp-pan *,#pp-voile{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}'
     ].join('\n');
     document.head.appendChild(st);
   }
