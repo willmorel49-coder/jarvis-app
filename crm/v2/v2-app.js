@@ -656,7 +656,7 @@
       // ── Hero : bleu profond, halos doux, titre plein blanc (jamais clip-text — Safari)
       '.pres-hero{position:relative;text-align:center;padding:46px 28px 36px;border-radius:var(--r-card);overflow:hidden;color:#fff;background:radial-gradient(120% 90% at 85% -10%,rgba(255,255,255,.16),transparent 55%),radial-gradient(80% 70% at 8% 110%,rgba(122,168,255,.20),transparent 62%),linear-gradient(160deg,#0050E6,#0034A0);box-shadow:0 1px 0 rgba(255,255,255,.22) inset,0 18px 44px rgba(0,52,160,.28)}',
       '.pres-logo{width:64px;height:64px;border-radius:18px;margin:0 auto 16px;background:rgba(255,255,255,.94);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 0 rgba(255,255,255,.4) inset,0 8px 20px rgba(0,30,90,.22)}',
-      '.pres-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;text-transform:uppercase;letter-spacing:.16em;font-weight:800;color:rgba(255,255,255,.88);background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);border-radius:var(--r-pill);padding:6px 13px;margin-bottom:14px}',
+      '.pres-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12px;text-transform:uppercase;letter-spacing:.16em;font-weight:800;color:rgba(255,255,255,.88);background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);border-radius:var(--r-pill);padding:6px 13px;margin-bottom:14px}',
       '.pres-h1{font-size:30px;font-weight:900;letter-spacing:-.03em;line-height:1.05;color:#fff;margin:0}',
       // CTA hero « Ouvrir un compte » : pastille blanche qui claque sur le bleu
       '.pres-hero-cta{margin-top:22px}',
@@ -672,7 +672,7 @@
       '.pres-kpi.mid .pres-kpi-v{color:var(--ip-blue);font-size:29px}',
       '.pres-kpi.mid .pres-kpi-l{color:var(--ip-ink-2)}',
       '.pres-kpi-v{font-family:var(--mono);font-size:23px;font-weight:700;letter-spacing:-.02em;line-height:1.15}',
-      '.pres-kpi-l{font-size:11.5px;opacity:.88;font-weight:600;margin-top:4px;line-height:1.35}',
+      '.pres-kpi-l{font-size:12px;opacity:.88;font-weight:600;margin-top:4px;line-height:1.35}',
       '.pres-reassure{display:flex;justify-content:center;flex-wrap:wrap;gap:10px 12px;margin:18px 0 6px}',
       '.pres-reassure-i{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-pill);padding:10px 16px;font-size:13.5px;font-weight:700;color:var(--ip-ink);box-shadow:var(--sh-1)}',
       '.pres-reassure-i svg{color:var(--c-mint);flex-shrink:0}',
@@ -703,11 +703,14 @@
       '.pres-tiers{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}',
       '.pres-tier{flex:1;min-width:150px;position:relative;overflow:hidden;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:15px 17px 14px 19px;box-shadow:var(--sh-1)}',
       '.pres-tier::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--ip-blue),color-mix(in srgb,var(--ip-blue) 25%,transparent))}',
-      '.pres-tier-r{display:inline-block;font-family:var(--mono);font-size:11.5px;font-weight:700;color:var(--ip-blue);background:var(--halo);border-radius:6px;padding:3px 8px}',
+      '.pres-tier-r{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--ip-blue);background:var(--halo);border-radius:6px;padding:3px 8px}',
       '.pres-tier-v{font-family:var(--mono);font-size:19px;font-weight:700;margin-top:9px;letter-spacing:-.02em}',
       '.pres-tier-l{font-size:12px;color:var(--muted);margin-top:3px}',
-      '.pres-cta-line{display:inline-flex;align-items:center;gap:6px;margin-top:16px;font-size:14px;font-weight:700;color:var(--ip-blue);text-decoration:none;cursor:pointer}',
+      // Cible tactile : ligne CTA isolée (mène à « Ouvrir un compte ») — padding vertical
+      // ajouté sans changer la couleur ni la taille du texte, juste la zone cliquable.
+      '.pres-cta-line{display:inline-flex;align-items:center;gap:6px;margin-top:16px;padding:13px 0;font-size:14px;font-weight:700;color:var(--ip-blue);text-decoration:none;cursor:pointer}',
       '.pres-cta-line:hover{text-decoration:underline}',
+      '.pres-cta-line:focus-visible{outline:2px solid var(--ip-blue);outline-offset:3px;border-radius:4px}',
       // ── Étapes : timeline verticale (pastilles reliées par un filet)
       '.pres-steps{position:relative}',
       '.pres-steps::before{content:"";position:absolute;left:15px;top:24px;bottom:24px;width:2px;background:var(--line)}',
@@ -756,7 +759,7 @@
       '.pres-contact-foot a{color:#fff;text-decoration:none}',
       // ── Zone « côté commercial » : neutre + pointillés pour la distinguer du pitch client
       '.pres-send{position:relative;background:var(--card-2);border:1px dashed color-mix(in srgb,var(--ip-blue) 32%,var(--line))}',
-      '.pres-send-badge{display:inline-block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:var(--r-pill);padding:3px 9px;margin-bottom:10px}',
+      '.pres-send-badge{display:inline-block;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:var(--r-pill);padding:3px 9px;margin-bottom:10px}',
       // Cibles tactiles confortables (≥44px) sur tous les CTA de la page
       '.pres-contact-act .v2-btn,.pres-step-cta .v2-btn,.pres-send-row .v2-btn,.pres-hero-btn{min-height:44px}',
       // ── Impression : rien de masqué, états finaux posés, .noprint identique
@@ -782,7 +785,9 @@
         '.pres-proof-v{font-size:24px}.pres-proof-h.lead .pres-proof-v{font-size:27px}' +
         '.pres-tier{min-width:100%;flex-basis:100%}' +
         '.pres-step-cta{margin-left:0}' +
-        '.pres-sim-in{width:100%}.pres-sim-inwrap{display:flex}' +
+        // 100% forçait l'unité « € / mois » à se compresser et passer sur 2 lignes
+        // (mesuré sur le rendu, capture mobile) — flex:1 laisse l'unité sur une ligne.
+        '.pres-sim-in{width:auto;flex:1;min-width:0}.pres-sim-inwrap{display:flex}.pres-sim-unit{white-space:nowrap;flex:none}' +
         '.pres-contact-act{margin-left:0;justify-content:stretch}.pres-contact-act .v2-btn{flex:1}' +
         '.pres-send-row{flex-direction:column}.pres-send-in{width:100%;font-size:16px}.pres-send-row .v2-btn{width:100%}' +
       '}',
@@ -951,7 +956,7 @@
             '</div>' +
           '</div>' +
 
-          '<div style="text-align:center;font-size:11px;color:var(--muted);margin-top:18px">Document commercial Intégral Pharma — sous réserve des conditions générales.</div>' +
+          '<div style="text-align:center;font-size:12px;color:var(--muted);margin-top:18px">Document commercial Intégral Pharma — sous réserve des conditions générales.</div>' +
           '<div style="height:30px"></div>' +
         '</main>';
       // ── Motion (RM-safe via V2.motion, print intact : états finaux toujours posés) ──
