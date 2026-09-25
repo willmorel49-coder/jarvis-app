@@ -3420,8 +3420,9 @@
   tx.lgo = { pid: null, s: '', n: 300, auto: false, touched: false };
   function txLgoNom(s) { var l = TX_LGO.filter(function (x) { return x.s === s; })[0]; return l ? l.nom : s; }
   // « LGPI / Offilog » → lgpi : on prend le premier morceau qui désigne un logiciel connu.
+  // 25/09 : aussi « Winpharma, bascule vers LGPI » → winpharma (le premier cité, pas le premier du tableau).
   function txLgoSlug(v) {
-    var parts = String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().split('/');
+    var parts = String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().split(/[\/,;+]|\bet\b|\bpuis\b|\bvers\b/);
     for (var i = 0; i < parts.length; i++) {
       var l = TX_LGO.filter(function (x) { return x.re.test(parts[i]); })[0];
       if (l) return l.s;
@@ -3439,6 +3440,22 @@
     return txLgoSlug(saisi && saisi.lgo) || txLgoSlug(ri && ri.logiciel) || txLgoSlug(ca && ca[5]);
   }
   function txLgoLabel(s, n) { return 'Catalogue TOP ' + n + ' · ' + txLgoNom(s); }
+  // 25/09 — sans mail type, le texte dit ce qu'est chaque pièce jointe ; avec le catalogue
+  // pour son logiciel, l'objet et l'introduction le nomment.
+  function txTexteDefaut(files) {
+    var g = Object.keys(tx.sel).filter(function (k) { return tx.sel[k] && k.indexOf('G:') === 0; })[0];
+    var nom = g ? txLgoNom(g.split(':')[1]) : '';
+    var lignes = files.map(function (f) {
+      var n = f.name;
+      return '- ' + n + (/^mode-emploi-import-/.test(n) ? ' : à ouvrir en premier, il détaille chaque étape'
+        : /^integral-top\d+-.*\.csv$/.test(n) ? ' : le fichier à importer dans ' + nom
+        : /^integral-top\d+-.*\.xlsx$/.test(n) ? ' : le même contenu au format Excel, pour le consulter' : '');
+    }).join('\n');
+    if (!g) return { objet: 'Documents pour votre officine', corps: 'Bonjour,\n\nVeuillez trouver ci-joint :\n' + lignes + '\n\nJe reste à votre disposition pour en parler.\n\nBien cordialement,' };
+    return { objet: 'Catalogue Intégral Pharma pour ' + nom + ' : mode d\'emploi et fichier à importer',
+      corps: 'Bonjour,\n\nVoici le catalogue des ' + g.split(':')[2] + ' produits les plus commandés par les pharmacies du réseau Intégral Pharma, avec son mode d\'emploi pour ' + nom + ' :\n' + lignes +
+        '\n\nSi l\'import bloque, appelez-moi : nous le faisons ensemble.\n\nBien cordialement,' };
+  }
   var txMail = {};
   function txSb() { return (V2.sb && V2.sb()) || null; }
   function txPretty(n) { n = String(n || ''); var i = n.indexOf('__'); return i >= 0 ? n.slice(i + 2) : n; }
@@ -3537,7 +3554,7 @@
     if (!isEscale() && !isOpso()) {
       var dis = tx.busy ? ' disabled' : '';
       lgoHtml = '<div class="tx-g"><div class="tx-gh"><span class="pha-kl">Catalogue pour son logiciel</span><span class="tx-gs">' +
-          (tx.lgo.auto && !tx.lgo.touched ? 'logiciel repris de sa fiche' : tx.lgo.s ? 'produits les plus commandés du réseau, hors génériques' : 'logiciel inconnu : à choisir') + '</span></div>' +
+          (tx.lgo.auto && !tx.lgo.touched ? 'logiciel repris de sa fiche' : tx.lgo.s ? 'produits les plus commandés du réseau, hors génériques' : tx.lgo.brut ? 'saisi « ' + esc(tx.lgo.brut) + ' » : pas encore de mode d\'emploi pour ce logiciel' : 'logiciel inconnu : à choisir') + '</span></div>' +
         '<div class="tx-lgo"><select class="tx-lgo-s" aria-label="Logiciel de l\'officine" onchange="V2.pharmaTxLgo(this.value)"' + dis + '>' +
           '<option value="">Choisir le logiciel…</option>' +
           TX_LGO.map(function (l) { return '<option value="' + l.s + '"' + (l.s === tx.lgo.s ? ' selected' : '') + '>' + esc(l.nom) + '</option>'; }).join('') +
@@ -3579,11 +3596,11 @@
       var tot = tx.files.reduce(function (s, f) { return s + (f.size || 0); }, 0);
       var canSh = false;
       try { canSh = !!(navigator.share && navigator.canShare && navigator.canShare({ files: tx.files })); } catch (e) {}
-      var names = tx.files.map(function (f) { return '- ' + f.name; }).join('\n');
-      var href = 'mailto:' + encodeURIComponent(mail) + '?subject=' + encodeURIComponent(tx.texte ? tx.texte.objet : 'Documents pour votre officine') +
-        '&body=' + encodeURIComponent(tx.texte ? tx.texte.corps : 'Bonjour,\n\nVeuillez trouver ci-joint :\n' + names + '\n\nJe reste à votre disposition pour en parler.\n\nBien cordialement,');
+      var tt = tx.texte || txTexteDefaut(tx.files);
+      var href = 'mailto:' + encodeURIComponent(mail) + '?subject=' + encodeURIComponent(tt.objet) + '&body=' + encodeURIComponent(tt.corps);
       foot = '<div class="tx-state"><b>' + tx.files.length + ' fichier' + (tx.files.length > 1 ? 's' : '') + ' prêt' + (tx.files.length > 1 ? 's' : '') + '</b> · ' + txSize(tot) +
-          (tot > 20 * 1048576 ? '<span class="tx-warn">Plus de 20 Mo : de nombreuses messageries refusent un mail aussi lourd.</span>' : '') + '</div>' +
+          (tot > 20 * 1048576 ? '<span class="tx-warn">Plus de 20 Mo : de nombreuses messageries refusent un mail aussi lourd.</span>' : '') +
+          (!canSh ? '<span class="tx-hint">Les fichiers arrivent dans Téléchargements : glisse-les dans le mail avant de l\'envoyer.</span>' : '') + '</div>' +
         '<button class="v2-btn v2-btn-ghost" onclick="V2.pharmaTxReset()">Modifier</button>' +
         (!canSh && (mail || tx.modele) ? '<a class="v2-btn v2-btn-ghost" href="' + esc(href) + '">Ouvrir le mail</a>' : '') +
         '<button class="v2-btn v2-btn-primary" onclick="V2.pharmaTxSend()">' + ICO(canSh ? 'spark' : 'download', 16) + (canSh ? 'Envoyer' : 'Télécharger les fichiers') + '</button>';
@@ -3617,6 +3634,8 @@
       // La saisie de l'équipe (Infos officine) passe avant la base clients : lue en différé.
       if (!modele && V2.profil && V2.profil.charger) V2.profil.charger('client', pid).then(function (d) {
         var s1 = txLgoDetect(pid, d);
+        var brut = d && String(d.lgo || '').trim() && !s1 ? String(d.lgo).trim() : '';
+        if (tx.lgo.pid === pid && brut !== (tx.lgo.brut || '')) { tx.lgo.brut = brut; if (s1 === tx.lgo.s) txRender(); }
         if (tx.lgo.pid === pid && !tx.lgo.touched && s1 !== tx.lgo.s) {
           var k0 = 'G:' + tx.lgo.s + ':' + tx.lgo.n;   // case déjà cochée : elle suit le logiciel
           if (tx.sel[k0]) { delete tx.sel[k0]; if (s1) tx.sel['G:' + s1 + ':' + tx.lgo.n] = true; if (tx.surChoix) tx.surChoix(Object.keys(tx.sel)); }
@@ -3779,7 +3798,8 @@
     if (!files || !files.length) return;
     try {
       if (navigator.share && navigator.canShare && navigator.canShare({ files: files })) {
-        var sh = tx.texte ? { files: files, title: tx.texte.objet, text: tx.texte.corps } : { files: files, title: 'Documents pour votre officine' };
+        var tt = tx.texte || txTexteDefaut(files);
+        var sh = { files: files, title: tt.objet, text: tt.corps };
         navigator.share(sh)
           .then(function () { txTrace(pid, files); })
           .catch(function (e) { if (!e || e.name !== 'AbortError') { txDownloadAll(files); txTrace(pid, files); } });
@@ -4490,9 +4510,10 @@
       '.tx-ic-x{background:#1E7A45}',
       '.tx-ic-g{background:var(--ip-blue)}',
       '.tx-lgo{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px}',
-      '.tx-lgo-s{min-height:40px;border:1px solid var(--line-strong);border-radius:10px;padding:8px 11px;font:inherit;font-size:14px;color:var(--ip-ink);background:var(--card-2);cursor:pointer}',
+      '.tx-lgo-s{min-height:44px;border:1px solid var(--line-strong);border-radius:10px;padding:8px 11px;font:inherit;font-size:16px;color:var(--ip-ink);background:var(--card-2);cursor:pointer}',
       '.tx-lgo .tx-lgo-n{width:auto}',
-      '.tx-lgo-pas{font-size:13px;font-weight:700;color:var(--info,#0050E6);cursor:pointer;min-height:40px;display:inline-flex;align-items:center;text-decoration:underline;text-underline-offset:3px}',
+      '.tx-lgo-pas{font-size:13px;font-weight:700;color:var(--info,#0050E6);cursor:pointer;min-height:44px;display:inline-flex;align-items:center;text-decoration:underline;text-underline-offset:3px}',
+      '.tx-hint{display:block;margin-top:3px;font-size:13px;font-weight:600;color:var(--ip-ink)}',
       '.tx-lgo .v2-seg{padding:6px 11px;font-size:12px;font-weight:700;cursor:pointer}',
       '.tx-lgo .v2-seg[disabled],.tx-lgo-s[disabled]{opacity:.45;pointer-events:none}',
       '.tx-l{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}',
