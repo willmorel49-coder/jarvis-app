@@ -135,6 +135,9 @@
       '.gp-pop-tel svg{flex:none}' +
       // Sagitta mobile : carte d'abord, barre de filtres qui passe à la ligne
       '@media(max-width:820px){.sag-map{order:-1}.ps-bar{flex-wrap:wrap}.ps-dept{flex:1 1 100%;max-width:none}}' +
+      // Safari ignore min-height sur un <select> natif non stylé : height explicite requis
+      // pour atteindre la cible tactile minimale au doigt.
+      '@media(max-width:640px){.ps-dept{height:44px}}' +
       // Mobile ≤640 : onglets qui se replient (fini le débordement latéral) + bandeaux moins gourmands en marge
       '@media(max-width:640px){.grp-tabs{display:flex;flex-wrap:wrap;max-width:100%}.grp-tab{flex:0 0 auto}' +
         '.grp-hd,.ps-bar,.grp-bar,.grp-sub{padding-left:14px;padding-right:14px}.gc-head,.gc-tools{padding-left:12px;padding-right:12px}}';

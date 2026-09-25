@@ -1363,7 +1363,7 @@
       '.cn-fb-clear{border:none;background:none;color:var(--muted);font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;text-decoration:underline;padding:3px 4px}',
       '.cn-fb-clear:hover{color:var(--ip-blue,#0057FF)}',
       // Téléphone : titre et compteur laissent toute la place à la recherche ; les boutons d'action gardent leur icône seule.
-      '@media(max-width:760px){.cn-fb{padding:8px 12px}.cn-h1{display:none}.cn-fbcount{display:none}.cn-searchwrap{max-width:none}.cn-fbacts{margin-left:auto;gap:6px}.cn-fbrow{gap:6px}.cn-fb-btn{min-height:44px}.cn-statut button{min-height:40px;padding:6px 10px;font-size:12.5px}.cn-fb-more{padding:7px 10px}.cn-fb-act span{display:none}.cn-fb-act{padding:7px 12px}.cn-fb-menu{min-width:200px;max-width:min(300px,80vw);right:auto}.cn-fb-sel{max-width:170px}.cn-tourbar button{min-height:40px}}',
+      '@media(max-width:760px){.cn-fb{padding:8px 12px}.cn-h1{display:none}.cn-fbcount{display:none}.cn-searchwrap{max-width:none}.cn-fbacts{margin-left:auto;gap:6px}.cn-fbrow{gap:6px}.cn-fb-btn{min-height:44px}.cn-statut button{min-height:44px;padding:6px 10px;font-size:12.5px}.cn-fb-more{padding:7px 10px}.cn-fb-act span{display:none}.cn-fb-act{padding:7px 12px}.cn-fb-menu{min-width:200px;max-width:min(300px,80vw);right:auto}.cn-fb-sel{max-width:170px;height:44px}.cn-tourbar button{min-height:40px}}',
       '@media(prefers-reduced-motion:reduce){.cn-fb-btn{transition:none}}',
       // Bulle de survol enrichie (multi-lignes)
       '.cn-tip{padding:7px 10px!important;border:none!important;border-radius:9px!important;box-shadow:0 6px 20px rgba(11,19,28,.22)!important;max-width:230px!important}',
@@ -1416,17 +1416,17 @@
       // Légende : flotte en bas à gauche de la carte, éclairée comme une carte Verrière
       '.cn-legend{position:absolute;left:12px;bottom:26px;z-index:600;display:flex;flex-wrap:wrap;gap:5px 12px;max-width:min(360px,calc(100% - 24px));padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.94);box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 6px 18px -8px rgba(11,31,77,.35);pointer-events:none}',
       '.cn-legend:empty{display:none}',
-      '.cn-lg{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--ip-ink-2,#2A2F3C)}',
+      '.cn-lg{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--ip-ink-2,#2A2F3C)}',
       '.cn-lg i{width:11px;height:11px;border-radius:50%;display:inline-block}',
       '.cn-lg-txt{font-size:12px;color:var(--muted);font-weight:600}',
       '.cn-maparea{position:relative;flex:1 1 auto;min-height:0}',
       '#carte-map{position:absolute;inset:0;background:#F2F3F5}',
-      '.leaflet-container .leaflet-control-attribution{font-size:9.5px;color:#6b7280;background:rgba(255,255,255,.7)}',
+      '.leaflet-container .leaflet-control-attribution{font-size:12px;color:#6b7280;background:rgba(255,255,255,.7)}',
       // Paquets : blanc, filet Intégral, compte en encre — un seul style quelle que soit la taille
       '.cn-clw{background:none;border:none}',
-      '.cn-cl{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.94);border:1.5px solid var(--ip-blue,#0050E6);color:var(--ip-blue-d,#0034A0);font:800 11.5px/1 var(--font,system-ui);font-variant-numeric:tabular-nums;box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 5px 14px -6px rgba(0,52,160,.45)}',
+      '.cn-cl{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.94);border:1.5px solid var(--ip-blue,#0050E6);color:var(--ip-blue-d,#0034A0);font:800 12px/1 var(--font,system-ui);font-variant-numeric:tabular-nums;box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 5px 14px -6px rgba(0,52,160,.45)}',
       '.cn-cl.big{background:var(--ip-blue,#0050E6);color:#fff}',
-      '@media(max-width:760px){.cn-legend{bottom:20px;left:8px;gap:4px 9px;padding:6px 9px;max-width:calc(100% - 16px)}.cn-lg{font-size:11px}}',
+      '@media(max-width:760px){.cn-legend{bottom:20px;left:8px;gap:4px 9px;padding:6px 9px;max-width:calc(100% - 16px)}.cn-lg{font-size:12px}.cn-fb-act{padding:7px 14px}}',
       '.cn-load{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:var(--muted);z-index:5;background:var(--card)}',
       '.leaflet-popup-content{margin:12px 14px}',
       '.cn-pop{font-family:var(--font,system-ui);min-width:200px;max-width:250px}',
@@ -1465,7 +1465,7 @@
       '.cn-tourbar b{font-weight:700;font-size:13.5px}',
       '.cn-tourbar button{border:none;background:rgba(255,255,255,.14);color:#fff;font:inherit;font-weight:800;font-size:13px;min-height:36px;padding:0 14px;border-radius:999px;cursor:pointer}',
       '.cn-tourbar button.cn-tourbar-gps{background:var(--ip-blue,#0050E6)}',
-      '@media(max-width:760px){.cn-tourbar{bottom:20px;padding-left:12px}.cn-tourbar b{font-size:12.5px}.cn-tourbar button{min-height:40px}}',
+      '@media(max-width:760px){.cn-tourbar{bottom:20px;padding-left:12px}.cn-tourbar b{font-size:12.5px}.cn-tourbar button{min-height:44px}}',
       // panneau tournée
       '.cn-panel{position:fixed;inset:0;z-index:3000;background:rgba(16,19,28,.48);display:flex;align-items:flex-end;justify-content:center}',
       // Bloc éditable (Infos officine + notes) dans le panneau fiche
@@ -1633,8 +1633,13 @@
       drawTourLine(); if (document.getElementById('cn-tourpanel')) renderTourPanel();
       if (V2.toast) V2.toast('Dépôt défini');
     });
-    setTimeout(function () { map.invalidateSize(); rebuild(); updateTourBar(); drawTourLine(); homeView(); }, 60);
-    setTimeout(function () { if (map) map.invalidateSize(); }, 420);
+    // Garde route+conteneur : si on a déjà quitté « La carte » quand ce délai se déclenche
+    // (navigation rapide), `map` pointe encore vers une instance Leaflet dont le conteneur
+    // DOM a été retiré par le routeur — l'appeler faisait planter la console de l'écran
+    // suivant avec « Map container not found » (constaté par le lot 0, cause non identifiée
+    // alors). Même garde que le écouteur resize juste en dessous.
+    setTimeout(function () { if (map && V2.route && V2.route.name === 'carte' && document.getElementById('carte-map')) { map.invalidateSize(); rebuild(); updateTourBar(); drawTourLine(); homeView(); } }, 60);
+    setTimeout(function () { if (map && V2.route && V2.route.name === 'carte' && document.getElementById('carte-map')) map.invalidateSize(); }, 420);
     if (!V2._carteResize) { V2._carteResize = true; window.addEventListener('resize', function () { if (map && V2.route && V2.route.name === 'carte') { map.invalidateSize(); renderFbRow(); } }); }
   }
   // Fond de carte. CARTO (light_all) exige une clé d'API depuis août 2026 : chaque

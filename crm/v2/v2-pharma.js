@@ -1702,7 +1702,7 @@
       var grps = {}; (V2.pharmacies || []).forEach(function (p) { var gg = String(p.groupement || '').trim(); if (gg && gg !== '—') grps[gg] = 1; });
       var gopts = Object.keys(grps).sort(function (x, y) { return x.localeCompare(y, 'fr'); });
       var cur = String(pharma.groupement || '').trim();
-      var grpEdit = '<label class="v2-profil-f v2-profil-f-wide" style="display:block;margin-bottom:12px"><span style="display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px">Groupement</span>' +
+      var grpEdit = '<label class="v2-profil-f v2-profil-f-wide" style="display:block;margin-bottom:12px"><span style="display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px">Groupement</span>' +
         '<select style="width:100%;box-sizing:border-box;border:1px solid var(--line-strong);border-radius:10px;padding:9px 11px;font:inherit;font-size:13.5px;color:var(--ip-ink);background:var(--card-2);cursor:pointer" onchange="V2.setPharmaGroupement(\'' + esc(String(pid)) + '\', this)">' +
           '<option value="">—</option>' +
           gopts.map(function (gg) { return '<option' + (gg === cur ? ' selected' : '') + '>' + esc(gg) + '</option>'; }).join('') +
@@ -2024,10 +2024,10 @@
       var rows = o.rows.map(function (r, i) {
         return '<tr>' +
           '<td style="padding:4px 6px;text-align:center;color:#9AA1B2;font-size:9px">' + (i + 1) + '</td>' +
-          '<td style="padding:4px 6px;font-size:10px;font-weight:600;color:#10131C">' + esc((r.designation || '').slice(0, 52)) + '</td>' +
+          '<td style="padding:4px 6px;font-size:12px;font-weight:600;color:#10131C">' + esc((r.designation || '').slice(0, 52)) + '</td>' +
           '<td style="padding:4px 6px;font-family:monospace;font-size:9px;color:#737A8C">' + esc(r.cip) + '</td>' +
-          '<td style="padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;font-weight:700;color:#0050E6">' + (r.prix_ip ? r.prix_ip.toFixed(2) + ' €' : '—') + '</td>' +
-          '<td style="padding:4px 6px;text-align:right;font-family:monospace;font-size:10px;font-weight:700;color:#1E9E6A">' + V2.fmtNum(r.marketQte) + '</td>' +
+          '<td style="padding:4px 6px;text-align:right;font-family:monospace;font-size:12px;font-weight:700;color:#0050E6">' + (r.prix_ip ? r.prix_ip.toFixed(2) + ' €' : '—') + '</td>' +
+          '<td style="padding:4px 6px;text-align:right;font-family:monospace;font-size:12px;font-weight:700;color:#1E9E6A">' + V2.fmtNum(r.marketQte) + '</td>' +
           '</tr>';
       }).join('');
       return '<div style="margin-bottom:13px;page-break-inside:avoid">' +
@@ -2091,7 +2091,7 @@
       return '<div style="border:1px solid #E5E9F2;border-radius:9px;overflow:hidden;page-break-inside:avoid">' +
         '<div style="display:flex;align-items:center;gap:7px;padding:6px 9px;background:linear-gradient(90deg,' + o.cat.color + '18,transparent)">' +
           '<span style="width:7px;height:7px;border-radius:50%;background:' + o.cat.color + '"></span>' +
-          '<span style="font-size:10px;font-weight:800;color:#10131C;flex:1">' + esc(o.cat.label) + '</span>' +
+          '<span style="font-size:12px;font-weight:800;color:#10131C;flex:1">' + esc(o.cat.label) + '</span>' +
           '<span style="font-size:8px;color:#737A8C;font-family:monospace">' + V2.fmtNum(o.total) + ' réf.</span></div>' +
         rws + '</div>';
     }).join('');
@@ -2108,12 +2108,12 @@
             '<div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(150deg,#0050E6,#0034A0);position:relative;flex-shrink:0"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 4.2v15.6M4.2 12h15.6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></div></div>' +
             '<div><div style="font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.1em;font-weight:800">Préparation rendez-vous · Intégral Pharma</div>' +
               '<div style="font-size:21px;font-weight:800;letter-spacing:-.02em;line-height:1.1">' + esc(pharma.name) + '</div>' +
-              (ident ? '<div style="font-size:10.5px;color:#737A8C;margin-top:3px">' + ident + '</div>' : '') + '</div>' +
+              (ident ? '<div style="font-size:12px;color:#737A8C;margin-top:3px">' + ident + '</div>' : '') + '</div>' +
           '</div>' +
           '<div style="text-align:right;flex-shrink:0">' +
             (pharma.groupement ? '<div style="display:inline-block;font-size:9px;font-weight:800;color:#0050E6;background:#EAF0FF;border-radius:6px;padding:3px 8px">' + esc(pharma.groupement) + '</div>' : '') +
-            (pot ? '<div style="font-size:10px;color:#737A8C;margin-top:5px;font-weight:700">' + pot + '</div>' : '') +
-            '<div style="font-size:10px;color:#9AA1B2;margin-top:5px;font-family:monospace">' + today + '</div>' +
+            (pot ? '<div style="font-size:12px;color:#737A8C;margin-top:5px;font-weight:700">' + pot + '</div>' : '') +
+            '<div style="font-size:12px;color:#9AA1B2;margin-top:5px;font-family:monospace">' + today + '</div>' +
           '</div>' +
         '</div>' +
         // KPI
@@ -2126,17 +2126,17 @@
         // Portrait 2 colonnes
         '<div style="display:grid;grid-template-columns:1fr 1.15fr;gap:12px;margin-bottom:18px;page-break-inside:avoid">' +
           '<div style="border:1px solid #E5E9F2;border-radius:11px;padding:12px 14px">' +
-            '<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#737A8C;margin-bottom:10px">CA par mois</div>' +
-            '<div style="display:flex;align-items:flex-end;gap:7px">' + (monthBars || '<div style="font-size:10px;color:#9AA1B2">—</div>') + '</div>' +
+            '<div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#737A8C;margin-bottom:10px">CA par mois</div>' +
+            '<div style="display:flex;align-items:flex-end;gap:7px">' + (monthBars || '<div style="font-size:12px;color:#9AA1B2">—</div>') + '</div>' +
           '</div>' +
           '<div style="border:1px solid #E5E9F2;border-radius:11px;padding:12px 14px">' +
-            '<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#737A8C;margin-bottom:8px">Ce qu\'elle commande · par tranche</div>' +
+            '<div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#737A8C;margin-bottom:8px">Ce qu\'elle commande · par tranche</div>' +
             (trRows ? '<table style="width:100%;border-collapse:collapse"><thead><tr>' +
               '<th style="text-align:left;font-size:7.5px;text-transform:uppercase;letter-spacing:.04em;color:#9AA1B2;padding:0 7px 4px">Tranche</th>' +
               '<th style="text-align:right;font-size:7.5px;text-transform:uppercase;letter-spacing:.04em;color:#9AA1B2;padding:0 7px 4px">Réfs</th>' +
               '<th style="text-align:right;font-size:7.5px;text-transform:uppercase;letter-spacing:.04em;color:#9AA1B2;padding:0 7px 4px">CA</th>' +
               '<th style="text-align:right;font-size:7.5px;text-transform:uppercase;letter-spacing:.04em;color:#9AA1B2;padding:0 7px 4px">Marge nette</th>' +
-              '</tr></thead><tbody>' + trRows + '</tbody></table>' : '<div style="font-size:10px;color:#9AA1B2">Aucune commande identifiée.</div>') +
+              '</tr></thead><tbody>' + trRows + '</tbody></table>' : '<div style="font-size:12px;color:#9AA1B2">Aucune commande identifiée.</div>') +
           '</div>' +
         '</div>' +
         // Top 5 commandé par catégorie
@@ -2148,7 +2148,7 @@
         catSections +
         // Notes
         '<div style="margin-top:16px;page-break-inside:avoid">' +
-          '<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#737A8C;margin-bottom:7px">Notes du rendez-vous</div>' +
+          '<div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#737A8C;margin-bottom:7px">Notes du rendez-vous</div>' +
           '<div style="border:1px solid #E5E9F2;border-radius:10px;height:96px;background:repeating-linear-gradient(#fff,#fff 23px,#EEF1F6 23px,#EEF1F6 24px)"></div>' +
         '</div>' +
         // Footer
@@ -2752,9 +2752,9 @@
       .filter(function (r) { return r.refs > 0; }).sort(function (a, b) { return b.ca - a.ca; })
       .map(function (r, i) {
         return '<tr' + (i ? ' style="border-top:1px solid #F1F4F9"' : '') + '>' +
-          '<td style="padding:3px 0;font-size:10px;font-weight:600;color:#10131C"><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:' + r.c.color + ';margin-right:6px;vertical-align:middle"></span>' + esc(r.c.label) + '</td>' +
-          '<td style="padding:3px 0;text-align:right;font-size:10px;font-family:' + MONO + ';color:#737A8C">' + V2.fmtNum(r.refs) + ' réfs</td>' +
-          '<td style="padding:3px 0;text-align:right;font-size:10px;font-family:' + MONO + ';font-weight:700;color:#10131C">' + V2.fmtEur(r.ca) + '</td>' +
+          '<td style="padding:3px 0;font-size:12px;font-weight:600;color:#10131C"><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:' + r.c.color + ';margin-right:6px;vertical-align:middle"></span>' + esc(r.c.label) + '</td>' +
+          '<td style="padding:3px 0;text-align:right;font-size:12px;font-family:' + MONO + ';color:#737A8C">' + V2.fmtNum(r.refs) + ' réfs</td>' +
+          '<td style="padding:3px 0;text-align:right;font-size:12px;font-family:' + MONO + ';font-weight:700;color:#10131C">' + V2.fmtEur(r.ca) + '</td>' +
         '</tr>';
       }).join('');
     // CA/mois : barres verticales (hauteur), le mois max mis en avant en bleu (design « Tableau dense pro »)
@@ -2786,11 +2786,11 @@
       '<div style="display:flex;gap:8px">' +
         '<div style="flex:0 0 230px;border:1px solid #E7EBF2;border-radius:8px;padding:10px 12px">' +
           '<div style="font-size:8.5px;font-weight:800;letter-spacing:.8px;color:#737A8C;text-transform:uppercase;margin-bottom:9px">CA par mois</div>' +
-          '<div style="display:flex;align-items:flex-end;gap:9px;height:74px">' + (colBars || '<div style="font-size:10px;color:#9AA1B2">—</div>') + '</div>' +
+          '<div style="display:flex;align-items:flex-end;gap:9px;height:74px">' + (colBars || '<div style="font-size:12px;color:#9AA1B2">—</div>') + '</div>' +
         '</div>' +
         '<div style="flex:1;border:1px solid #E7EBF2;border-radius:8px;padding:10px 12px">' +
           '<div style="font-size:8.5px;font-weight:800;letter-spacing:.8px;color:#737A8C;text-transform:uppercase;margin-bottom:8px">Ce qu\'elle commande déjà · par tranche</div>' +
-          (trRows ? '<table style="width:100%;border-collapse:collapse;table-layout:fixed"><colgroup><col style="width:44%"><col style="width:28%"><col style="width:28%"></colgroup><tbody>' + trRows + '</tbody></table>' : '<div style="font-size:10px;color:#9AA1B2">Aucune commande identifiée.</div>') +
+          (trRows ? '<table style="width:100%;border-collapse:collapse;table-layout:fixed"><colgroup><col style="width:44%"><col style="width:28%"><col style="width:28%"></colgroup><tbody>' + trRows + '</tbody></table>' : '<div style="font-size:12px;color:#9AA1B2">Aucune commande identifiée.</div>') +
         '</div>' +
       '</div>' +
     '</div>';
@@ -2832,16 +2832,16 @@
       var c = r.cat;
       return '<tr style="page-break-inside:avoid;background:' + (i % 2 ? '#F7F9FC' : '#FFFFFF') + ';border-bottom:1px solid #F1F4F9">' +
         '<td style="padding:6px 8px;font-family:' + MONO + ';font-size:9px;color:#9AA1B2">' + (i + 1) + '</td>' +
-        '<td style="padding:6px 8px;font-size:10px;font-weight:700;color:#10131C">' + esc(String(r.designation).slice(0, 52)) + '</td>' +
+        '<td style="padding:6px 8px;font-size:12px;font-weight:700;color:#10131C">' + esc(String(r.designation).slice(0, 52)) + '</td>' +
         '<td style="padding:6px 8px;font-size:9px;color:#4A5163;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:' + (c ? c.color : '#C9CFDA') + ';margin-right:5px;vertical-align:middle"></span>' + esc(c ? c.label : 'Autres') + '</td>' +
         '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:9.5px;color:#10131C">' + V2.fmtNum(r.qte) + '</td>' +
-        '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:10.5px;font-weight:800;color:#10131C;white-space:nowrap">' + V2.fmtEur(r.ca) + '</td>' +
+        '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:12px;font-weight:800;color:#10131C;white-space:nowrap">' + V2.fmtEur(r.ca) + '</td>' +
         '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:9px;color:#737A8C">' + (caTot > 0 ? (r.ca / caTot * 100).toFixed(1).replace('.', ',') + ' %' : '—') + '</td>' +
       '</tr>';
     }).join('');
     return '<div style="margin-bottom:16px">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;border-top:2px solid #10131C;padding-top:9px;margin-bottom:9px;page-break-after:avoid">' +
-        '<div style="font-size:12px;font-weight:800;color:#10131C">Ce qu\'elle commande <span style="color:#737A8C;font-weight:600;font-size:10px">— ses ' + rows.length + ' premiers produits, toutes familles</span></div>' +
+        '<div style="font-size:12px;font-weight:800;color:#10131C">Ce qu\'elle commande <span style="color:#737A8C;font-weight:600;font-size:12px">— ses ' + rows.length + ' premiers produits, toutes familles</span></div>' +
         '<div style="font-size:9px;color:#737A8C">' + (caTot > 0 ? Math.round(caTop / caTot * 100) + ' % de son CA · ' : '') + V2.fmtNum(all.length) + ' réf. commandées</div>' +
       '</div>' +
       '<table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #E7EBF2">' + COLS +
@@ -2900,16 +2900,16 @@
         var badge = (r.froid ? ' <span style="font-size:7px;font-weight:800;color:#0086A3;background:#E3F7FB;padding:1px 5px;border-radius:4px;vertical-align:middle">FROID</span>' : '') +
           (r.offre ? ' <span style="font-size:7px;font-weight:800;color:#1E9E6A;background:#E6F6EE;padding:1px 5px;border-radius:4px;vertical-align:middle">OFFRE</span>' : '');
         return '<tr style="page-break-inside:avoid;background:' + bg + ';border-bottom:1px solid #F1F4F9">' +
-          '<td style="padding:6px 8px;font-size:10px;font-weight:700;color:#10131C">' + esc((r.designation || '').slice(0, 52)) + badge + '</td>' +
+          '<td style="padding:6px 8px;font-size:12px;font-weight:700;color:#10131C">' + esc((r.designation || '').slice(0, 52)) + badge + '</td>' +
           '<td style="padding:6px 8px;font-family:' + MONO + ';font-size:9px;color:#737A8C">' + esc(r.cip) + '</td>' +
           '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:9.5px;color:#B6BFCE;white-space:nowrap">' + (r.prix_ht > 0 ? (r.prix_ip > 0 && r.prix_ip < r.prix_ht ? '<span style="text-decoration:line-through">' + e2(r.prix_ht) + '</span>' : e2(r.prix_ht)) : '—') + '</td>' +
-          '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:10.5px;font-weight:800;color:#0050E6;white-space:nowrap">' + (r.prix_ip ? e2(r.prix_ip) : '—') + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:12px;font-weight:800;color:#0050E6;white-space:nowrap">' + (r.prix_ip ? e2(r.prix_ip) : '—') + '</td>' +
           '<td style="padding:6px 8px;text-align:center;font-family:' + MONO + ';font-size:9.5px;color:#10131C">' + r.sortie + '<span style="color:#A8AFBE">/' + panel + '</span></td>' +
           '</tr>';
       }).join('');
       return '<div style="page-break-after:avoid;page-break-inside:avoid;margin-top:11px">' +
         '<div style="background:' + o.cat.color + ';display:flex;align-items:center;justify-content:space-between;padding:4px 10px;border-radius:5px 5px 0 0">' +
-          '<span style="color:#FFFFFF;font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase">' + esc(o.cat.label) + (o.cat.sub ? ' <span style="font-weight:600;color:rgba(255,255,255,.8)">· ' + esc(o.cat.sub) + '</span>' : '') + '</span>' +
+          '<span style="color:#FFFFFF;font-size:12px;font-weight:800;letter-spacing:.4px;text-transform:uppercase">' + esc(o.cat.label) + (o.cat.sub ? ' <span style="font-weight:600;color:rgba(255,255,255,.8)">· ' + esc(o.cat.sub) + '</span>' : '') + '</span>' +
           '<span style="color:rgba(255,255,255,.85);font-size:9px;font-weight:700">' + o.rows.length + ' produit' + (o.rows.length > 1 ? 's' : '') + '</span>' +
         '</div></div>' +
         '<table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #E7EBF2;border-top:none">' + COLS6 +
@@ -2918,18 +2918,18 @@
 
     var thd = function (h, al, light) { return '<th style="text-align:' + al + ';padding:6px 8px;font-size:8.5px;font-weight:800;letter-spacing:.6px;color:' + (light ? '#C7D2E6' : '#FFFFFF') + ';text-transform:uppercase">' + h + '</th>'; };
 
-    var html = '<div style="width:794px;background:#FFFFFF;color:#10131C;font-family:Satoshi,Inter,system-ui,sans-serif;font-size:11px;line-height:1.35">' +
+    var html = '<div style="width:794px;background:#FFFFFF;color:#10131C;font-family:Satoshi,Inter,system-ui,sans-serif;font-size:12px;line-height:1.35">' +
       // Bandeau en-tête
       '<div style="background:linear-gradient(90deg,#0034A0,#0050E6);padding:14px 22px;display:flex;align-items:center;justify-content:space-between;page-break-inside:avoid">' +
         '<div style="display:flex;align-items:center;gap:13px">' +
           '<div style="width:34px;height:34px;border-radius:8px;background:#FFFFFF;display:flex;align-items:center;justify-content:center;font-weight:800;color:#0050E6;font-size:17px;letter-spacing:-1px">IP</div>' +
           '<div><div style="color:#FFFFFF;font-size:15px;font-weight:800;line-height:1.1">Intégral Pharma</div>' +
-            '<div style="color:#A9C2F5;font-size:10px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;margin-top:2px">' + (pharma ? 'Ses achats · ses opportunités' : 'Liste d\'achats recommandée') + '</div></div>' +
+            '<div style="color:#A9C2F5;font-size:12px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;margin-top:2px">' + (pharma ? 'Ses achats · ses opportunités' : 'Liste d\'achats recommandée') + '</div></div>' +
         '</div>' +
         '<div style="text-align:right;color:#FFFFFF">' +
-          '<div style="font-size:11px;font-weight:700">' + esc(headName) + '</div>' +
-          '<div style="font-size:10px;color:#A9C2F5;margin-top:1px">' + esc(headSub) + '</div>' +
-          '<div style="font-size:10px;color:#A9C2F5;margin-top:1px">Édité le ' + dateStr + ' · <span style="color:#FFFFFF;font-weight:700">' + totalProd + (prospectNom ? ' produits' : ' produits à pousser') + '</span></div>' +
+          '<div style="font-size:12px;font-weight:700">' + esc(headName) + '</div>' +
+          '<div style="font-size:12px;color:#A9C2F5;margin-top:1px">' + esc(headSub) + '</div>' +
+          '<div style="font-size:12px;color:#A9C2F5;margin-top:1px">Édité le ' + dateStr + ' · <span style="color:#FFFFFF;font-weight:700">' + totalProd + (prospectNom ? ' produits' : ' produits à pousser') + '</span></div>' +
         '</div>' +
       '</div>' +
       // Sous-bandeau référence
@@ -2940,7 +2940,7 @@
         (portraitPid ? recapPdfHtml(portraitPid) + topVentesPdfHtml(portraitPid) : '') +
         // Titre liste + en-tête colonnes global (sombre)
         '<div style="display:flex;align-items:center;justify-content:space-between;border-top:2px solid #10131C;padding-top:9px;margin-bottom:9px;page-break-after:avoid">' +
-          '<div style="font-size:12px;font-weight:800;color:#10131C">' + (prospectNom ? 'Meilleures rotations' : pharma ? 'Ses opportunités d\'achat' : 'Liste à pousser') + ' <span style="color:#737A8C;font-weight:600;font-size:10px">— ' + totalProd + ' produits, par famille</span></div>' +
+          '<div style="font-size:12px;font-weight:800;color:#10131C">' + (prospectNom ? 'Meilleures rotations' : pharma ? 'Ses opportunités d\'achat' : 'Liste à pousser') + ' <span style="color:#737A8C;font-weight:600;font-size:12px">— ' + totalProd + ' produits, par famille</span></div>' +
           '<div style="font-size:9px;color:#737A8C">Nbr pharma = pharmacies qui commandent / ' + panel + '</div>' +
         '</div>' +
         '<table style="width:100%;border-collapse:collapse;table-layout:fixed;page-break-after:avoid">' + COLS6 +
@@ -3787,13 +3787,13 @@
       '.v2-prospect-n{font-size:18px;font-weight:800;letter-spacing:-.01em;line-height:1.2}',
       '.v2-prospect-a{color:var(--muted);font-size:13px;margin-top:2px}',
       '.v2-prospect-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}',
-      '.v2-prospect-extra{margin-top:6px;font-size:11.5px;color:var(--muted);overflow-wrap:anywhere}',
+      '.v2-prospect-extra{margin-top:6px;font-size:12px;color:var(--muted);overflow-wrap:anywhere}',
       '.v2-prospect-extra a{color:inherit;text-decoration:underline}',
       '.v2-prospect-extra.v2-cessee{color:var(--c-rose-txt);font-weight:700}',
       '.v2-prospect-extra.v2-retraite{color:var(--c-amber-txt);font-weight:700}',
       // Estimation « probable » (grossiste/génériqueur, jamais une donnée connue) :
       // italique, teinte ambre distincte du reste de la fiche.
-      '.v2-prospect-probable{margin-top:8px;font-size:11.5px;font-style:italic;color:var(--c-amber-txt);display:flex;flex-direction:column;gap:2px}',
+      '.v2-prospect-probable{margin-top:8px;font-size:12px;font-style:italic;color:var(--c-amber-txt);display:flex;flex-direction:column;gap:2px}',
       '.v2-prospect-probable span{font-weight:700;font-style:normal}',
       '.v2-prospect-probable b{font-weight:600}',
       '.v2-chip.pr{background:color-mix(in srgb,var(--ip-blue) 12%,#fff);color:var(--ip-blue);box-shadow:0 0 0 1px color-mix(in srgb,var(--ip-blue) 22%,transparent) inset}',
@@ -3806,7 +3806,7 @@
       '.v2-pharma-stat:nth-child(-n+4){border-top:none}',
       '.v2-pharma-stat:nth-child(4n){border-right:none}',
       '@media(max-width:720px){.v2-pharma-stat:nth-child(2n){border-right:none}.v2-pharma-stat:nth-child(2){border-top:none}}',
-      '.v2-pharma-stat-l{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}',
+      '.v2-pharma-stat-l{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}',
       '.v2-pharma-stat-v{font-size:22px;font-weight:700;letter-spacing:-.03em;margin-top:6px;color:var(--sc,var(--ip-ink))}',
       '.v2-cat{margin-bottom:13px;transition:box-shadow .2s var(--ease)}',
       '.v2-cat.open{box-shadow:var(--sh-3)}',
@@ -3815,8 +3815,8 @@
       '.v2-cat-accent{width:5px;align-self:stretch;border-radius:3px;flex-shrink:0;min-height:34px}',
       '.v2-cat-titles{flex:1;min-width:0}',
       '.v2-cat-t{font-size:15px;font-weight:800;letter-spacing:-.02em;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}',
-      '.v2-cat-sub{font-size:11.5px;font-weight:600;color:var(--muted);font-family:var(--mono)}',
-      '.v2-cat-meta{font-size:11.5px;color:var(--muted);margin-top:3px}',
+      '.v2-cat-sub{font-size:12px;font-weight:600;color:var(--muted);font-family:var(--mono)}',
+      '.v2-cat-meta{font-size:12px;color:var(--muted);margin-top:3px}',
       '.v2-cat-chev{color:var(--muted-2);flex-shrink:0;transition:transform .25s var(--ease)}',
       '.v2-cat-chev.open{transform:rotate(90deg)}',
       '.v2-cat-table-wrap{overflow-x:auto;border-top:1px solid var(--line)}',
@@ -3827,13 +3827,13 @@
       '@media(max-width:960px){.ph-act-grid{grid-template-columns:1fr}}',
       '.ph-dash-chart{padding:18px 20px 16px;display:flex;flex-direction:column}',
       '.ph-dash-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}',
-      '.ph-dash-period{font-size:11px;color:var(--muted);font-weight:600;white-space:nowrap}',
+      '.ph-dash-period{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap}',
       '.ph-mchart{display:flex;align-items:flex-end;gap:10px;height:168px;flex:1}',
       '.ph-mbar{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;min-width:0}',
-      '.ph-mbar-v{font-size:10.5px;font-weight:700;color:var(--muted)}',
+      '.ph-mbar-v{font-size:12px;font-weight:700;color:var(--muted)}',
       '.ph-mbar-track{flex:1;width:100%;max-width:44px;display:flex;align-items:flex-end;background:var(--line-2);border-radius:8px 8px 3px 3px;overflow:hidden}',
       '.ph-mbar-fill{display:block;width:100%;border-radius:8px 8px 3px 3px;background:linear-gradient(180deg,color-mix(in srgb,var(--ip-blue) 46%,#fff),color-mix(in srgb,var(--ip-blue) 78%,#fff));transform-origin:50% 100%}',
-      '.ph-mbar-l{font-size:11px;color:var(--muted);font-weight:600}',
+      '.ph-mbar-l{font-size:12px;color:var(--muted);font-weight:600}',
       /* Mois record : seul accent fort du graphe (hiérarchie calme façon Launcher) */
       '.ph-mbar-hot .ph-mbar-fill{background:linear-gradient(180deg,var(--ip-blue),var(--ip-blue-d));box-shadow:0 2px 8px color-mix(in srgb,var(--ip-blue) 32%,transparent)}',
       '.ph-mbar-hot .ph-mbar-v{color:var(--ip-blue);font-weight:800}',
@@ -3841,12 +3841,12 @@
       /* Repères dérivés sous le graphe (moyenne · meilleur mois · mois actifs) */
       '.ph-dash-kfs{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}',
       '.ph-dash-kf{flex:1;min-width:104px;background:var(--card-2);border:1px solid var(--line);border-radius:var(--r-md);padding:9px 12px}',
-      '.ph-dash-kf-l{display:block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);white-space:nowrap}',
+      '.ph-dash-kf-l{display:block;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);white-space:nowrap}',
       '.ph-dash-kf-v{display:block;font-size:14.5px;font-weight:800;letter-spacing:-.01em;margin-top:3px;color:var(--ip-ink)}',
-      '.ph-dash-kf-v small{font-size:10.5px;color:var(--muted);font-weight:600}',
+      '.ph-dash-kf-v small{font-size:12px;color:var(--muted);font-weight:600}',
       '.ph-tr-cat{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13.5px}',
       '.ph-tr-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}',
-      '.ph-tr-sub{font-size:11px;color:var(--muted);font-family:var(--mono);font-weight:500;margin-left:2px}',
+      '.ph-tr-sub{font-size:12px;color:var(--muted);font-family:var(--mono);font-weight:500;margin-left:2px}',
       '.ph-tr-bar{height:4px;border-radius:999px;background:var(--line);overflow:hidden;margin-top:6px}',
       '.ph-tr-bar span{display:block;height:100%;border-radius:999px}',
       // ── Top 5 par catégorie ──
@@ -3856,33 +3856,33 @@
       '.ph-mcat-table{border-collapse:collapse;width:100%;font-size:12.5px}',
       '.ph-mcat-table th,.ph-mcat-table td{padding:7px 11px;white-space:nowrap;border-bottom:1px solid var(--line-2,var(--line))}',
       '.ph-mcat-table tbody tr:last-child td,.ph-mcat-table tbody tr:last-child th{border-bottom:none}',
-      '.ph-mcat-corner{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}',
-      '.ph-mcat-mth{text-align:right;font-size:11px;font-weight:700;color:var(--muted);text-transform:capitalize}',
+      '.ph-mcat-corner{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}',
+      '.ph-mcat-mth{text-align:right;font-size:12px;font-weight:700;color:var(--muted);text-transform:capitalize}',
       '.ph-mcat-rh{text-align:left;font-weight:600;color:var(--ip-ink);position:sticky;left:0;background:var(--card);z-index:1}',
       '.ph-mcat-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle}',
       '.ph-mcat-c{text-align:right;font-variant-numeric:tabular-nums;color:var(--ip-ink);font-weight:600}',
       '.ph-mcat-z{color:var(--muted-2)}',
       '.ph-mcat-tot{text-align:right;font-variant-numeric:tabular-nums;font-weight:800;color:var(--ip-blue);background:var(--card-2)}',
-      '.ph-mcat-ev-h{text-align:right;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}',
-      '.ph-mcat-ev{text-align:right;font-size:11px;font-weight:800;white-space:nowrap;color:var(--muted-2)}',
+      '.ph-mcat-ev-h{text-align:right;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}',
+      '.ph-mcat-ev{text-align:right;font-size:12px;font-weight:800;white-space:nowrap;color:var(--muted-2)}',
       '.ph-mcat-ev.up{color:var(--c-mint-txt)}.ph-mcat-ev.dn{color:var(--c-rose)}',
       // bandeau KPI de la fiche = mêmes cartes que Pilotage, juste resserré
       '.ph-kpis{margin-bottom:14px}',
       '.ph-act-below{margin-top:16px}',
       '.ph-kpis .v2-kpi{padding:13px 15px}',
       '.ph-kpis .v2-kpi-v{font-size:21px;margin-top:5px;white-space:nowrap}',
-      '.ph-kpis .v2-kpi-v small{font-size:11px;font-weight:600;color:var(--muted)}',
-      '.ph-kpis .v2-kpi-d{font-size:11.5px;line-height:1.3}',
+      '.ph-kpis .v2-kpi-v small{font-size:12px;font-weight:600;color:var(--muted)}',
+      '.ph-kpis .v2-kpi-d{font-size:12px;line-height:1.3}',
       '.ph-mcat-trow th,.ph-mcat-trow td{font-weight:800;background:var(--card-2);color:var(--ip-ink);border-top:1px solid var(--line)}',
       '.ph-top-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}',
       '.ph-top-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);overflow:hidden}',
       '.ph-top-head{display:flex;align-items:center;gap:9px;padding:12px 15px;border-bottom:1px solid var(--line)}',
       '.ph-top-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}',
       '.ph-top-t{font-weight:800;font-size:13.5px;letter-spacing:-.01em;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      '.ph-top-n{font-size:11px;color:var(--muted);flex-shrink:0}',
+      '.ph-top-n{font-size:12px;color:var(--muted);flex-shrink:0}',
       '.ph-top-row{display:flex;align-items:center;gap:10px;padding:8px 15px;border-bottom:1px solid var(--line-2)}',
       '.ph-top-row:last-child{border-bottom:none}',
-      '.ph-top-rank{font-size:11px;color:var(--muted-2);width:14px;flex-shrink:0;text-align:right}',
+      '.ph-top-rank{font-size:12px;color:var(--muted-2);width:14px;flex-shrink:0;text-align:right}',
       '.ph-top-name{flex:1;min-width:0;font-size:12.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.ph-top-val{font-size:12px;font-weight:700;color:var(--ip-ink-2);flex-shrink:0}',
       '.ph-top-q{color:var(--muted);font-weight:500}',
@@ -3909,7 +3909,7 @@
       '.pl-rename{border:none;background:transparent;color:var(--muted-2);cursor:pointer;padding:2px;vertical-align:middle;border-radius:6px;transition:.15s var(--ease)}',
       '.pl-rename:hover{color:var(--ip-blue);background:var(--halo)}',
       '.pl-mem{cursor:pointer}',
-      '.pl-mem-grp{font-size:10.5px;font-weight:700;color:var(--muted-2);background:var(--card-2);border:1px solid var(--line);border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:middle}',
+      '.pl-mem-grp{font-size:12px;font-weight:700;color:var(--muted-2);background:var(--card-2);border:1px solid var(--line);border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:middle}',
       '.pl-rm{flex-shrink:0;width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--muted-2);cursor:pointer;display:flex;align-items:center;justify-content:center;margin-left:8px;transition:.15s var(--ease)}',
       '.pl-rm:hover{color:var(--c-rose);border-color:color-mix(in srgb,var(--c-rose) 35%,var(--line));background:color-mix(in srgb,var(--c-rose) 8%,#fff)}',
       '.pl-del{color:var(--c-rose) !important}',
@@ -3928,14 +3928,14 @@
       '.pl-pick-chk{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--line-strong);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;transition:.12s var(--ease)}',
       '.pl-pick-chk.on{background:var(--ip-blue);border-color:var(--ip-blue)}',
       '.pl-pick-n{font-size:13.5px;font-weight:700;letter-spacing:-.01em}',
-      '.pl-pick-a{font-size:11.5px;color:var(--muted);margin-top:1px}',
-      '.pl-pick-tag{font-size:10px;font-weight:700;color:var(--muted-2);background:var(--card-2);border:1px solid var(--line);border-radius:999px;padding:2px 8px;flex-shrink:0}',
+      '.pl-pick-a{font-size:12px;color:var(--muted);margin-top:1px}',
+      '.pl-pick-tag{font-size:12px;font-weight:700;color:var(--muted-2);background:var(--card-2);border:1px solid var(--line);border-radius:999px;padding:2px 8px;flex-shrink:0}',
       '.pl-pick-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-top:1px solid var(--line);background:var(--card-2)}',
       // carte de secteur
       '.sec-mapwrap{position:relative;border-radius:var(--r-card);overflow:hidden;border:1px solid var(--line);box-shadow:var(--sh-1)}',
       '.sec-map{width:100%;height:calc(100vh - 280px);min-height:420px;background:#EAEEF3}',
-      '.sec-legend{position:absolute;right:14px;bottom:14px;z-index:500;background:rgba(255,255,255,0.96);border:1px solid var(--line);border-radius:12px;padding:11px 13px;box-shadow:var(--sh-2);font-size:11.5px}',
-      '.sec-legend-t{font-weight:800;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:7px}',
+      '.sec-legend{position:absolute;right:14px;bottom:14px;z-index:500;background:rgba(255,255,255,0.96);border:1px solid var(--line);border-radius:12px;padding:11px 13px;box-shadow:var(--sh-2);font-size:12px}',
+      '.sec-legend-t{font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:7px}',
       '.sec-legend-row{display:flex;align-items:center;gap:8px;color:var(--ip-ink-2);margin-bottom:4px;font-weight:600}',
       '.sec-dot{display:inline-block;border-radius:50%;border:1.5px solid;flex-shrink:0}',
       '.sec-map .leaflet-popup-content{font:13px/1.45 var(--font,sans-serif);margin:10px 12px}',
@@ -3960,7 +3960,7 @@
       '.prepa-sheet{width:794px;transform-origin:top left;background:#fff}',
       '@media(max-width:560px){.prepa-top{flex-wrap:wrap}.prepa-top .v2-btn{order:3;width:100%}}',
       // Badge "opportunités" dans la liste des officines
-      '.v2-row-opp{flex-shrink:0;font-size:11.5px;font-weight:700;color:var(--c-opp);background:color-mix(in srgb,var(--c-opp) 12%,transparent);border:1px solid color-mix(in srgb,var(--c-opp) 26%,transparent);border-radius:999px;padding:3px 10px;letter-spacing:-.01em}',
+      '.v2-row-opp{flex-shrink:0;font-size:12px;font-weight:700;color:var(--c-opp);background:color-mix(in srgb,var(--c-opp) 12%,transparent);border:1px solid color-mix(in srgb,var(--c-opp) 26%,transparent);border-radius:999px;padding:3px 10px;letter-spacing:-.01em}',
       '.v2-row-opp-pending{color:var(--muted-2);background:var(--card-2);border-color:var(--line);font-weight:600}',
       // Bouton + de sélection produit (devient ✓ vert une fois coché)
       '.opp-add{width:28px;height:28px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--muted);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .14s var(--ease);flex-shrink:0}',
@@ -3979,7 +3979,7 @@
       '.phf-rail{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);overflow:hidden;position:sticky;top:74px}',
       '.phf-offhead{padding:20px;background:linear-gradient(150deg,var(--ip-blue),var(--ip-blue-d));color:#fff;position:relative;overflow:hidden}',
       '.phf-offhead::after{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08)}',
-      '.phf-code{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.04em;background:rgba(255,255,255,.16);color:#fff;padding:4px 9px;border-radius:var(--r-pill);margin-bottom:11px}',
+      '.phf-code{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.04em;background:rgba(255,255,255,.16);color:#fff;padding:4px 9px;border-radius:var(--r-pill);margin-bottom:11px}',
       '.phf-offname{font-size:19px;font-weight:800;line-height:1.15;letter-spacing:-.01em;margin:0;position:relative;z-index:1}',
       '.phf-offloc{font-size:13px;font-weight:500;opacity:.85;margin-top:5px;display:flex;align-items:center;gap:5px;position:relative;z-index:1}',
       '.phf-offloc svg{opacity:.9}',
@@ -3993,7 +3993,7 @@
       '.phf-kpi-v{font-size:16px;font-weight:800;letter-spacing:-.01em}',
       '.phf-kpi-v.phf-pos{color:var(--c-opp)}',
       '.phf-kpi-v.phf-push{color:var(--ip-blue)}',
-      '.phf-fam-title{padding:15px 20px 8px;font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted-2)}',
+      '.phf-fam-title{padding:15px 20px 8px;font-size:12px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted-2)}',
       '.phf-famlist{padding:0 12px 6px;display:flex;flex-direction:column;gap:3px}',
       '.phf-fam{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:11px 12px;border:1px solid transparent;border-radius:var(--r-md);background:none;cursor:pointer;font:inherit;color:var(--ip-ink);transition:background .14s,border-color .14s}',
       '.phf-fam:hover{background:var(--surf-sunken)}',
@@ -4004,7 +4004,7 @@
       '.phf-fam-ct{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--muted);background:var(--surf-sunken);border-radius:var(--r-pill);padding:2px 9px;min-width:28px;text-align:center}',
       '.phf-fam.on .phf-fam-ct{background:var(--ip-blue);color:#fff}',
       '.phf-refbox{margin:10px 12px 14px;padding:13px;background:var(--surf-sunken);border:1px solid var(--line);border-radius:var(--r-md)}',
-      '.phf-ref-h{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-2);margin-bottom:9px}',
+      '.phf-ref-h{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-2);margin-bottom:9px}',
       '.phf-ref{display:flex;align-items:flex-start;gap:10px;width:100%;text-align:left;padding:10px 11px;border-radius:var(--r-sm);border:1.5px solid var(--line);background:var(--card);cursor:pointer;margin-bottom:7px;font:inherit;color:var(--ip-ink);transition:border-color .15s,box-shadow .15s}',
       '.phf-ref:last-child{margin-bottom:0}',
       '.phf-ref.on{border-color:var(--ip-blue);box-shadow:0 0 0 3px rgba(0,80,230,.10)}',
@@ -4012,7 +4012,7 @@
       '.phf-ref.on .phf-radio{border-color:var(--ip-blue)}',
       '.phf-ref.on .phf-radio::after{content:"";position:absolute;inset:2px;border-radius:50%;background:var(--ip-blue)}',
       '.phf-ref-t{font-size:13px;font-weight:700;line-height:1.2;display:block}',
-      '.phf-ref-s{font-size:11.5px;color:var(--muted);font-weight:500;margin-top:2px;display:block}',
+      '.phf-ref-s{font-size:12px;color:var(--muted);font-weight:500;margin-top:2px;display:block}',
       '.phf-segref{display:flex;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-btn);padding:4px}',
       '.phf-segref-b{flex:1;padding:9px 8px;border:0;border-radius:9px;background:transparent;font:inherit;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .15s,color .15s}',
       '.phf-segref-b:hover{color:var(--ip-ink)}',
@@ -4024,8 +4024,8 @@
       '.phf-hname{font-size:21px;font-weight:800;letter-spacing:-.025em;line-height:1.12;display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
       '.phf-htit{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);font-weight:600;margin-top:4px}',
       '.phf-htit span{color:var(--ip-ink)}',
-      '.phf-reprise{font-size:11px;font-weight:800;letter-spacing:.01em;color:#8a4b00;background:#FFF1DB;border:1px solid #F0C98A;border-radius:999px;padding:3px 9px;white-space:nowrap}',
-      '.phf-nmedit-l{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px}',
+      '.phf-reprise{font-size:12px;font-weight:800;letter-spacing:.01em;color:#8a4b00;background:#FFF1DB;border:1px solid #F0C98A;border-radius:999px;padding:3px 9px;white-space:nowrap}',
+      '.phf-nmedit-l{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px}',
       '.phf-nmedit-row{display:flex;gap:8px;align-items:center}',
       '.phf-nmedit-in{flex:1;min-width:0;border:1px solid var(--line-strong);border-radius:10px;padding:9px 11px;font:inherit;font-size:13.5px;color:var(--ip-ink);background:var(--card-2)}',
       '.phf-nmedit-btn{flex:none;border:none;border-radius:10px;padding:9px 16px;font:inherit;font-weight:800;font-size:13px;color:#fff;background:var(--ip-blue);cursor:pointer;min-height:40px}',
@@ -4036,7 +4036,7 @@
       '.phf-hkpi::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--line-strong);opacity:0;transition:opacity .18s var(--ease)}',
       '.phf-hkpi:hover{transform:translateY(-2px);box-shadow:var(--sh-2);border-color:var(--line-strong)}',
       '.phf-hkpi:hover::before{opacity:1}',
-      '.phf-hkpi-l{display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}',
+      '.phf-hkpi-l{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}',
       '.phf-hkpi-v{display:block;font-size:18px;font-weight:800;letter-spacing:-.02em;margin-top:4px;line-height:1}',
       '.phf-hkpi-v.phf-pos{color:var(--c-opp)}',
       '.phf-hkpi-v.phf-push{color:var(--c-amber);font-size:22px}',
@@ -4050,7 +4050,7 @@
       '.phf-cbtn2:hover{background:#fff;border-color:var(--ip-blue)}',
       // Boutons compacts « Listes à proposer » (en haut de la fiche)
       '.phf-actions{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin:14px 0 2px}',
-      '.phf-actions-l{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-right:2px}',
+      '.phf-actions-l{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-right:2px}',
       '.phf-actbtn{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#fff;background:var(--ip-blue);border:1px solid var(--ip-blue);border-radius:var(--r-btn,11px);padding:9px 14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,80,230,.22);transition:transform .15s var(--ease),box-shadow .15s var(--ease)}',
       '.phf-actbtn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,80,230,.28)}',
       '.phf-actbtn b{font-weight:800;background:rgba(255,255,255,.22);padding:1px 7px;border-radius:999px;font-size:12px}',
@@ -4095,7 +4095,7 @@
       '.pha-id a{color:inherit;text-decoration:underline}',
       '.pha-id::before{content:"";position:absolute;width:420px;height:420px;border-radius:50%;left:-120px;top:-260px;background:radial-gradient(closest-side,rgba(120,170,255,.55),rgba(120,170,255,0))}',
       '.pha-id>*{position:relative}',
-      '.pha-code{font-size:11.5px;opacity:.75;font-weight:700;letter-spacing:.04em}',
+      '.pha-code{font-size:12px;opacity:.75;font-weight:700;letter-spacing:.04em}',
       '.pha-name{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.1;margin:6px 0 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
       '.pha-kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:13px}',
       '.pha-kv span:nth-child(odd){color:rgba(255,255,255,.62);font-weight:600}',
@@ -4136,7 +4136,7 @@
       '.tx-ic-x{background:#1E7A45}',
       '.tx-l{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}',
       '.tx-l b{font-size:13.5px;color:var(--ip-ink);overflow-wrap:anywhere}',
-      '.tx-l small{font-size:11.5px;color:var(--muted)}',
+      '.tx-l small{font-size:12px;color:var(--muted)}',
       '.tx-empty{font-size:12.5px;color:var(--muted);padding:6px 2px 10px}',
       '.tx-style{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:6px 0 4px}',
       '.tx-style-b{display:flex;flex-wrap:wrap;gap:6px;width:100%}',
@@ -4156,7 +4156,7 @@
       '.pha-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}',
       '.pha-kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);padding:14px 16px;position:relative;overflow:hidden;min-width:0}',
       '.pha-kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--a,var(--ip-blue))}',
-      '.pha-kl{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800}',
+      '.pha-kl{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800}',
       '.pha-kval{font-size:24px;font-weight:800;letter-spacing:-.03em;margin-top:5px;line-height:1.1;color:var(--ip-ink)}',
       '.pha-kval small{font-size:13px;color:var(--muted);font-weight:700}',
       '.pha-kd{font-size:12px;font-weight:700;margin-top:3px}',
@@ -4180,8 +4180,8 @@
       '.pha-part-t{font-size:12.5px;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.pha-part-t .ph-tr-dot{margin-right:7px}',
       '.pha-part-v{font-size:18px;font-weight:800;letter-spacing:-.02em;white-space:nowrap}',
-      '.pha-part-v small{font-size:11px;color:var(--muted);font-weight:700}',
-      '.pha-part-sub{font-size:11.5px;font-weight:700;margin:1px 0 6px}',
+      '.pha-part-v small{font-size:12px;color:var(--muted);font-weight:700}',
+      '.pha-part-sub{font-size:12px;font-weight:700;margin:1px 0 6px}',
       '.pha-part-ch{width:100%;height:auto;display:block}',
       '.pha-net-dash{display:inline-block;width:16px;height:0;border-top:2px dashed #7A8299;vertical-align:middle}',
       '.pha-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}',
@@ -4229,11 +4229,11 @@
       '.phf-prop-t{font-size:16px;font-weight:800;letter-spacing:-.01em}',
       '.phf-prop-s{font-size:12.5px;color:var(--muted);font-weight:500;margin-top:2px}',
       '.phf-prop-n{font-size:24px;font-weight:800;color:var(--pc,var(--ip-blue));text-align:center;line-height:1;letter-spacing:-.03em}',
-      '.phf-prop-n small{display:block;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-top:4px}',
+      '.phf-prop-n small{display:block;font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-top:4px}',
       '.phf-prop-acts{display:flex;gap:8px;flex-wrap:wrap}',
       '.phf-rf-off{opacity:.45;cursor:default}',
       '@media(max-width:640px){.phf-prop{flex-direction:column;align-items:stretch}.phf-prop-acts{width:100%;gap:8px}.phf-prop-acts .phf-pdf{flex:1;justify-content:center}}',
-      '.phf-mk{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:.02em;padding:4px 10px;border-radius:var(--r-pill);white-space:nowrap}',
+      '.phf-mk{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:800;letter-spacing:.02em;padding:4px 10px;border-radius:var(--r-pill);white-space:nowrap}',
       '.phf-mk-own{color:var(--c-mint-txt);background:color-mix(in srgb,var(--c-opp) 13%,transparent)}',
       '.phf-mk-gap{color:var(--c-amber-txt);background:color-mix(in srgb,var(--c-amber) 16%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c-amber) 24%,transparent)}',
       '.phf-r-gap td{background:color-mix(in srgb,var(--c-amber) 5%,transparent)}',
@@ -4244,7 +4244,7 @@
       '.phf-fambar{display:none}',
       '.phf-tablewrap{overflow-x:auto}',
       '.phf-tbl{width:100%;border-collapse:collapse;font-size:13px}',
-      '.phf-tbl thead th{position:sticky;top:0;z-index:2;background:var(--card-2);font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);text-align:right;padding:12px;border-bottom:1px solid var(--line-strong);white-space:nowrap}',
+      '.phf-tbl thead th{position:sticky;top:0;z-index:2;background:var(--card-2);font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);text-align:right;padding:12px;border-bottom:1px solid var(--line-strong);white-space:nowrap}',
       '.phf-tbl thead th.phf-tl{text-align:left}',
       '.phf-tbl thead th.phf-tc{text-align:center}',
       '.phf-tbl tbody td{padding:12px;border-bottom:1px solid var(--line);text-align:right;vertical-align:middle}',
@@ -4257,7 +4257,7 @@
       '.phf-tbl tbody tr.phf-r-gap:hover{background:color-mix(in srgb,var(--c-amber) 7%,transparent)}',
       '.phf-td-l{text-align:left}',
       '.phf-desig{font-weight:700;line-height:1.25}',
-      '.phf-cip{font-family:var(--mono);font-size:11px;color:var(--muted-2);font-weight:500;margin-top:2px}',
+      '.phf-cip{font-family:var(--mono);font-size:12px;color:var(--muted-2);font-weight:500;margin-top:2px}',
       '.phf-price{font-family:var(--mono);font-weight:700;font-size:13.5px}',
       '.phf-rem{font-family:var(--mono);font-weight:700;color:var(--c-opp)}',
       '.phf-rem.phf-none{color:var(--muted-2);font-weight:500}',
@@ -4275,7 +4275,7 @@
       '.phf-check:hover{border-color:var(--ip-blue);color:var(--ip-blue)}',
       '.phf-check.on{background:var(--c-opp);border-color:var(--c-opp);color:#fff}',
       '.phf-th-check,.phf-td-check{text-align:center;width:50px}',
-      '.phf-foot{padding:13px 22px;background:var(--card-2);border-top:1px solid var(--line);font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:7px}',
+      '.phf-foot{padding:13px 22px;background:var(--card-2);border-top:1px solid var(--line);font-size:12px;color:var(--muted);display:flex;align-items:center;gap:7px}',
       '.phf-empty{padding:48px 24px;text-align:center;color:var(--muted);font-size:14px}',
       '@media(max-width:900px){.phf-shell{grid-template-columns:1fr}.phf-rail{position:static}.phf-fam-title,.phf-famlist{display:none}' +
         '.phf-fambar{display:flex;gap:8px;overflow-x:auto;padding:12px 16px;border-bottom:1px solid var(--line);-webkit-overflow-scrolling:touch;position:sticky;top:0;background:var(--card);z-index:6}' +
@@ -4286,9 +4286,9 @@
       '.ipv-rank{flex-shrink:0;width:44px;font-size:12px;font-weight:700;color:var(--ip-blue);font-variant-numeric:tabular-nums}',
       '.ipv-name{flex:1;min-width:0;font-size:13.5px;font-weight:500;color:var(--ip-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.ipv-vol{flex-shrink:0;font-size:13px;font-weight:700;color:var(--ip-ink);font-variant-numeric:tabular-nums}',
-      '.ipv-vol small{font-weight:500;color:var(--muted-2);font-size:11px}',
+      '.ipv-vol small{font-weight:500;color:var(--muted-2);font-size:12px}',
       // ── Badges OPSO (clientes / prospects) — uniquement en mode OPSO ──
-      '.opso-badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:.01em;flex-shrink:0;vertical-align:middle}',
+      '.opso-badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.01em;flex-shrink:0;vertical-align:middle}',
       '.opso-badge-cliente{color:#0d8530;background:color-mix(in srgb,#11a63c 13%,transparent);border:1px solid color-mix(in srgb,#11a63c 28%,transparent)}',
       '.opso-badge-prospect{color:var(--muted);background:var(--card-2);border:1px solid var(--line)}',
       // Ligne cliente légèrement mise en relief

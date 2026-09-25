@@ -95,17 +95,20 @@
       '.mis-sim-hd{display:flex;gap:11px;align-items:flex-start;padding:2px 2px 12px}' +
       '.mis-sim-hd b{display:block;font-size:14px;color:var(--ip-ink)}.mis-sim-hd small{color:var(--muted);font-size:12px}' +
       '.mis-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}' +
-      '.mis-f{display:flex;flex-direction:column;gap:5px}.mis-f span{font-size:12px;font-weight:600;color:var(--ip-ink)}.mis-f small{color:var(--muted);font-weight:500}' +
+      '.mis-f{display:flex;flex-direction:column;gap:5px}.mis-f span{font-size:12px;font-weight:600;color:var(--ip-ink)}.mis-f small{color:var(--muted);font-weight:500;font-size:12px}' +
       '.mis-f input{border:1px solid var(--line-strong);border-radius:10px;padding:10px 12px;font:inherit;font-size:15px;color:var(--ip-ink);background:var(--card-2);width:100%;box-sizing:border-box}' +
       '.mis-tot{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:14px;padding:14px 16px;border-radius:14px;background:linear-gradient(135deg,#0B2E1E,#1E9E6A);color:#fff;flex-wrap:wrap}' +
       '.mis-tot span{display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;opacity:.85}' +
       '.mis-tot b{font-size:30px;font-weight:800;line-height:1.05}.mis-tot small{display:block;font-size:13px;opacity:.9;font-weight:700}' +
-      '.mis-tot-note{font-size:11px;opacity:.85}' +
-      '.mis-cat-hd{display:flex;align-items:center;gap:8px;padding:13px 18px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--line)}' +
+      '.mis-tot-note{font-size:12px;opacity:.85}' +
+      '.mis-cat-hd{display:flex;align-items:center;gap:8px;padding:13px 18px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--line)}' +
       '.mis-row{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:11px 18px;border-top:1px solid var(--line)}.mis-row:first-of-type{border-top:0}' +
-      '.mis-acte{min-width:0;flex:1}.mis-acte b{display:block;font-size:13.5px;font-weight:700;color:var(--ip-ink)}.mis-acte span{display:block;font-size:11.5px;color:var(--muted);margin-top:1px}' +
-      '.mis-tarif{flex:none;font-size:13px;font-weight:800;color:var(--c-opp);text-align:right;white-space:nowrap;max-width:44%}' +
-      '.mis-foot{font-size:11px;color:var(--muted);margin-top:14px;line-height:1.5}' +
+      '.mis-acte{min-width:0;flex:1}.mis-acte b{display:block;font-size:13.5px;font-weight:700;color:var(--ip-ink)}.mis-acte span{display:block;font-size:12px;color:var(--muted);margin-top:1px}' +
+      // color:var(--c-opp) (#1E9E6A) en texte donnait 3,41:1 sur blanc — sous 4,5:1 (mesuré sur
+      // le rendu). Assombri pour ce seul usage texte ; le token --c-opp n'est pas touché (utilisé
+      // ailleurs en décoratif/pilule, où le seuil est 3:1 et déjà respecté).
+      '.mis-tarif{flex:none;font-size:13px;font-weight:800;color:#0C7048;text-align:right;white-space:nowrap;max-width:44%}' +
+      '.mis-foot{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.5}' +
       '@media(max-width:560px){.mis-grid{grid-template-columns:1fr}.mis-tarif{max-width:40%;white-space:normal}}';
     document.head.appendChild(st);
   }

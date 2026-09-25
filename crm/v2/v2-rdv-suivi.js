@@ -295,7 +295,8 @@
       '.sv-env-h b{font-size:14.5px;font-weight:800}',
       '.sv-env-h small{color:var(--muted);font-size:13px}',
       '.sv-env-r{margin:7px 0 0;font-size:13.5px;line-height:1.5}',
-      '.sv-env-r .g{color:#0E9E6A;font-weight:700}',
+      // #0E9E6A en texte mesurait 3,43:1 sur blanc — sous 4,5:1. Assombri.
+      '.sv-env-r .g{color:#0C7048;font-weight:700}',
       '.sv-dl{list-style:none;margin:9px 0 0;padding:0;max-height:220px;overflow-y:auto;',
       '  border:1px solid var(--line);border-radius:10px}',
       '.sv-dl li{display:flex;gap:8px;align-items:baseline;padding:8px 11px;font-size:13px;',
@@ -304,7 +305,7 @@
       '.sv-dl b{flex:1 1 auto;min-width:0;font-weight:600;overflow:hidden;',
       '  text-overflow:ellipsis;white-space:nowrap}',
       '.sv-dl span{flex:0 0 auto;font-size:12px;font-weight:700}',
-      '.sv-dl span.g{color:#0E9E6A}',
+      '.sv-dl span.g{color:#0C7048}',
       '.sv-dl span.m{color:var(--muted);font-weight:600}',
       '.sv-dl span.s{color:#B03A2E;font-weight:700}',
       // Le bouton STOP : discret mais atteignable au doigt (44 px de haut,
