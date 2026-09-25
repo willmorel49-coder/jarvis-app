@@ -727,7 +727,8 @@
       return waitImages(wrap, 12000).then(function () {
         var fn = 'Fiche-marketing-' + (title.replace(/[^A-Za-z0-9-]/g, '_')).slice(0, 40) + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
         return window.html2pdf().from(wrap.firstChild).set({
-          filename: fn, margin: [8, 8, 10, 8], image: { type: 'jpeg', quality: 0.95 },
+          // margin 0 : la fiche fait 794 px et porte son padding ; des marges en plus la rognaient à droite (mesuré 25/09/2026, WebKit).
+          filename: fn, margin: 0, image: { type: 'jpeg', quality: 0.95 },
           html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', logging: false },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
           pagebreak: { mode: ['css', 'legacy'] }
