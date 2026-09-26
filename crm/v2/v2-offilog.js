@@ -188,6 +188,80 @@
     '</svg>';
   }
 
+  // ── LE MARCHÉ PAR MARQUE ───────────────────────────────────
+  // 26/09/2026. Une part de RÉFÉRENCES, jamais de volume — Offilog publie un ordre,
+  // pas des quantités. « 22 références sur 263 » = 8,4 % du rayon : exact. Appeler ça
+  // une « part de marché » serait faux, et le libellé à l'écran le dit.
+  // ⚠️ Les vraies parts de marché chiffrées sont IMPOSSIBLES ici : mesuré le 26/09/2026,
+  // le catalogue Offilog (6 648 EAN, 100 % parapharmacie) ne recoupe national.json /
+  // openmedic.json (remboursés) sur AUCUN code. Ne pas rouvrir cette piste.
+  function marqueRayon(it) {
+    var marque = (it.brand || '').trim();
+    if (!it.sousRayon || !marque) return null;
+    var rayon = items.filter(function (x) { return x.sousRayon === it.sousRayon; });
+    // Un rayon de 5 références ne dit rien d'une marque : 20 % du rayon pour une seule
+    // référence ferait un chiffre spectaculaire et vide.
+    if (rayon.length < 8) return null;
+    var par = {}, ordre = [], i;
+    rayon.forEach(function (x) {
+      var m = (x.brand || '').trim();
+      if (!m) return;                        // « sans marque » n'est pas une marque
+      if (!par[m]) { par[m] = { m: m, n: 0, best: 0, som: 0, nmv: 0 }; ordre.push(par[m]); }
+      var s = par[m];
+      s.n++;
+      if (x.rank > 0 && (s.best === 0 || x.rank < s.best)) s.best = x.rank;
+      if (x.mkt && x.mkt.prec > 0 && x.mkt.rang > 0) { s.som += (x.mkt.prec - x.mkt.rang); s.nmv++; }
+    });
+    if (!par[marque] || ordre.length < 2) return null;
+    ordre.sort(function (a, b) { return (b.n - a.n) || (a.best - b.best); });
+    var place = 0;
+    for (i = 0; i < ordre.length; i++) { if (ordre[i].m === marque) { place = i + 1; break; } }
+    return {
+      rayon: it.sousRayon, marque: marque, total: rayon.length, marques: ordre.length,
+      place: place, moi: par[marque], tete: ordre.slice(0, 5),
+      mvt: par[marque].nmv ? Math.round(par[marque].som / par[marque].nmv) : null
+    };
+  }
+
+  function marqueBlock(it, datePrec) {
+    var q = marqueRayon(it);
+    if (!q) return '';
+    var pctRef = q.moi.n / q.total * 100;
+    var pctTxt = (pctRef < 10 ? pctRef.toFixed(1) : String(Math.round(pctRef))).replace('.', ',');
+    var t = '<div class="off-mkt-t"><span>Part du rayon</span><b class="mono">' + pctTxt + ' %</b>' +
+      '<i>' + q.moi.n + ' r\u00e9f\u00e9rence' + (q.moi.n > 1 ? 's' : '') + ' sur ' + q.total + '</i></div>';
+    t += '<div class="off-mkt-t"><span>Poids de la marque</span><b class="mono">n\u00b0' + q.place + '</b>' +
+      '<i>sur ' + q.marques + ' marque' + (q.marques > 1 ? 's' : '') + ' du rayon</i></div>';
+    if (q.moi.best) {
+      t += '<div class="off-mkt-t"><span>Sa meilleure vente</span><b class="mono">n\u00b0' + q.moi.best + '</b>' +
+        '<i>tous rayons confondus</i></div>';
+    }
+    if (q.mvt !== null && datePrec) {
+      var cls = q.mvt > 0 ? ' up' : (q.mvt < 0 ? ' down' : '');
+      var fl = q.mvt > 0 ? '\u25b2 ' : (q.mvt < 0 ? '\u25bc ' : '');
+      t += '<div class="off-mkt-t' + cls + '"><span>Depuis le ' + jourMois(datePrec) + '</span>' +
+        '<b class="mono">' + fl + (q.mvt === 0 ? 'stable' : Math.abs(q.mvt) + ' place' + (Math.abs(q.mvt) > 1 ? 's' : '')) + '</b>' +
+        '<i>en moyenne sur ' + q.moi.nmv + ' r\u00e9f\u00e9rence' + (q.moi.nmv > 1 ? 's' : '') + '</i></div>';
+    }
+    var mx = q.tete[0].n || 1;
+    var bars = q.tete.map(function (s) {
+      var w = Math.max(4, Math.round(s.n / mx * 100));
+      return '<div class="off-mkt-mqr' + (s.m === q.marque ? ' moi' : '') + '">' +
+        '<span class="off-mkt-mqn">' + esc(s.m) + '</span>' +
+        '<span class="off-mkt-mqb"><i style="width:' + w + '%"></i></span>' +
+        '<span class="off-mkt-mqv mono">' + s.n + '</span>' +
+      '</div>';
+    }).join('');
+    return '<div class="off-mkt-mq">' +
+      '<div class="off-mkt-mq-l">' + esc(q.marque) + ' dans le rayon ' + esc(q.rayon) + '</div>' +
+      '<div class="off-mkt-grid">' + t + '</div>' +
+      '<div class="off-mkt-mq-bars"><div class="off-mkt-mq-bl">Les marques qui tiennent le rayon</div>' + bars + '</div>' +
+      '<div class="off-mkt-note">Une part de <b>r\u00e9f\u00e9rences</b> dans ce rayon, pas un pourcentage de ventes : ' +
+        'Offilog publie un classement, jamais des quantit\u00e9s. Un mouvement moyen peut aussi refl\u00e9ter la ' +
+        '<b>saison</b> \u2014 un rayon solaire recule en bloc \u00e0 l\u0027automne.</div>' +
+    '</div>';
+  }
+
   function marcheBlock(it) {
     var m = it.mkt;
     if (!m) return '';
@@ -238,7 +312,7 @@
       '<div class="off-mkt-h"><span class="off-mkt-l">Le marché</span>' +
         (spark ? '<span class="off-mkt-sp">' + spark + '</span>' : '') + '</div>' +
       '<div class="off-mkt-grid">' + tuiles + '</div>' +
-      podHtml + top + sorti +
+      podHtml + marqueBlock(it, m.datePrec) + top + sorti +
       '<div class="off-mkt-note">Ventes réelles du réseau de pharmacies clientes d\'Offilog, relevé le ' +
         jourMois(m.dateRang) + '. Ce n\'est pas la France entière, et Offilog ne publie aucun volume : ' +
         'l\'écran donne des rangs et des écarts de rang, jamais un pourcentage de part de marché.</div>' +
@@ -1130,6 +1204,22 @@
       '.off-mkt-pod-t{grid-area:t;font-size:13px;color:var(--ip-ink);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.off-mkt-pod-g{grid-area:g;font-size:12.5px;color:var(--ip-ink-2);font-weight:700}',
       '.off-mkt-pod-r.moi .off-mkt-pod-t{font-weight:800}',
+      // Le marché par marque : même grille de tuiles que le bloc parent, plus des barres
+      // de poids. Largeur en % d'un parent en grid — pas de position:absolute, qui
+      // pousserait la page (piège déjà payé).
+      '.off-mkt-mq{margin-top:11px;padding:12px;border:1px solid var(--line);border-radius:11px;background:var(--card)}',
+      '.off-mkt-mq-l{font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:color-mix(in srgb,var(--pil-froid) 78%,black);font-weight:800;margin-bottom:10px}',
+      '.off-mkt-mq-bars{margin-top:11px;display:flex;flex-direction:column;gap:6px}',
+      '.off-mkt-mq-bl{font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;margin-bottom:2px}',
+      '.off-mkt-mqr{display:grid;grid-template-columns:minmax(0,1fr) 34% auto;align-items:center;gap:10px}',
+      '@media(max-width:420px){.off-mkt-mqr{grid-template-columns:minmax(0,1fr) 26% auto;gap:8px}}',
+      '.off-mkt-mqn{font-size:12.5px;font-weight:700;color:var(--ip-ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.off-mkt-mqb{display:block;height:8px;border-radius:5px;background:color-mix(in srgb,var(--pil-froid) 12%,transparent);overflow:hidden}',
+      '.off-mkt-mqb i{display:block;height:100%;border-radius:5px;background:color-mix(in srgb,var(--pil-froid) 52%,transparent)}',
+      '.off-mkt-mqv{font-size:12.5px;font-weight:700;color:var(--ip-ink-2);min-width:22px;text-align:right}',
+      '.off-mkt-mqr.moi .off-mkt-mqn{color:var(--ip-ink);font-weight:800}',
+      '.off-mkt-mqr.moi .off-mkt-mqb i{background:color-mix(in srgb,var(--pil-froid) 86%,transparent)}',
+      '.off-mkt-mqr.moi .off-mkt-mqv{color:var(--ip-ink)}',
       '.off-mkt-top{display:flex;align-items:flex-start;gap:8px;margin-top:11px;padding:10px 12px;border-radius:11px;background:color-mix(in srgb,var(--ok) 10%,#fff);border:1px solid color-mix(in srgb,var(--ok) 32%,transparent);font-size:12.5px;color:var(--ip-ink);font-weight:600;line-height:1.45}',
       '.off-mkt-top svg{color:var(--ok);flex-shrink:0;margin-top:2px}',
       '.off-mkt-top b{color:color-mix(in srgb,var(--ok) 72%,black)}',
