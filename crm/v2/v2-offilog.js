@@ -119,6 +119,126 @@
     return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : String(d);
   }
 
+  // ── LE MARCHÉ ───────────────────────────────────────────────
+  // offilog-marche-data.js : pour chaque EAN, un rang par relevé mensuel, dans l'ordre
+  // de `releves`. null = le produit n'était pas au classement ce mois-là.
+  // ⚠️ Offilog ne publie AUCUN volume, seulement un ordre : pas de part de marché en
+  // pourcentage ici, jamais. Des rangs, des places, des écarts de rang.
+  function marcheDe(ean) {
+    var M = window.OFFILOG_MARCHE;
+    if (!M || !M.rangs || !ean) return null;
+    var serie = M.rangs[String(ean)];
+    if (!serie || !serie.length) return null;
+    var rang = 0, prec = 0, iDer = -1;
+    for (var i = serie.length - 1; i >= 0; i--) {
+      if (serie[i] > 0) { if (!rang) { rang = serie[i]; iDer = i; } else { prec = serie[i]; break; } }
+    }
+    if (!rang) return null;
+    var dates = M.releves || [];
+    return {
+      serie: serie, dates: dates, rang: rang, prec: prec,
+      dateRang: dates[iDer] || '', datePrec: (prec && iDer > 0) ? dates[iDer - 1] : '',
+      sorti: iDer !== serie.length - 1,            // absent du dernier relevé : on le DIT
+      n: M.n || 0, top: !!(M.top && M.top.indexOf(String(ean)) >= 0)
+    };
+  }
+
+  // Le podium du rayon fin du produit + sa place dans ce rayon. Calculé sur le rang du
+  // dernier relevé, donc sur les mêmes chiffres que le reste de l'écran.
+  function podiumRayon(it) {
+    if (!it.sousRayon) return null;
+    var l = items.filter(function (x) { return x.sousRayon === it.sousRayon && x.rank > 0; });
+    if (l.length < 2) return null;
+    l.sort(function (a, b) { return a.rank - b.rank; });
+    var place = 0;
+    for (var i = 0; i < l.length; i++) { if (l[i].id === it.id) { place = i + 1; break; } }
+    return { rayon: it.sousRayon, total: l.length, place: place, trois: l.slice(0, 3) };
+  }
+
+  function jourMois(d) {
+    if (!d || d.length < 10) return '';
+    var MOIS = ['janv.', 'févr.', 'mars', 'avril', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+    return String(+d.slice(8, 10)) + ' ' + (MOIS[+d.slice(5, 7) - 1] || '');
+  }
+
+  // Courbe du rang, axe INVERSÉ : le rang 1 est en haut. Sans cette inversion, une
+  // montée dans le classement descendrait sur le dessin.
+  function courbeRang(serie) {
+    var pts = [], i;
+    for (i = 0; i < serie.length; i++) if (serie[i] > 0) pts.push([i, serie[i]]);
+    if (pts.length < 3) return '';
+    var W = 132, H = 34, mn = pts[0][1], mx = pts[0][1];
+    for (i = 1; i < pts.length; i++) { if (pts[i][1] < mn) mn = pts[i][1]; if (pts[i][1] > mx) mx = pts[i][1]; }
+    var amp = (mx - mn) || 1, nx = serie.length - 1 || 1, d = '';
+    for (i = 0; i < pts.length; i++) {
+      var x = 2 + (pts[i][0] / nx) * (W - 4);
+      var y = 3 + ((pts[i][1] - mn) / amp) * (H - 6);   // rang faible = haut
+      d += (i ? ' L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1);
+    }
+    var der = pts[pts.length - 1];
+    return '<svg class="off-mkt-spark" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" aria-hidden="true">' +
+      '<path d="' + d + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+      '<circle cx="' + (2 + (der[0] / nx) * (W - 4)).toFixed(1) + '" cy="' + (3 + ((der[1] - mn) / amp) * (H - 6)).toFixed(1) + '" r="2.8" fill="currentColor"/>' +
+    '</svg>';
+  }
+
+  function marcheBlock(it) {
+    var m = it.mkt;
+    if (!m) return '';
+    var pod = podiumRayon(it);
+    // Percentile : mesuré (rang / nombre de produits classés), pas estimé.
+    var pct = m.n > 0 ? Math.max(1, Math.round(m.rang / m.n * 100)) : 0;
+    var tuiles = '<div class="off-mkt-t"><span>Rang de vente</span><b class="mono">n°' + m.rang + '</b>' +
+      (m.n ? '<i>sur ' + V2.fmtNum(m.n) + ' produits</i>' : '') + '</div>';
+    if (pod && pod.place) {
+      tuiles += '<div class="off-mkt-t"><span>Dans son rayon</span><b class="mono">n°' + pod.place + '</b>' +
+        '<i>' + esc(pod.rayon) + ' · ' + pod.total + ' produits</i></div>';
+    }
+    if (m.prec) {
+      var d = m.prec - m.rang;                       // > 0 = il MONTE (rang plus petit)
+      var cls = d > 0 ? ' up' : (d < 0 ? ' down' : '');
+      var fl = d > 0 ? '▲ ' : (d < 0 ? '▼ ' : '');
+      tuiles += '<div class="off-mkt-t' + cls + '"><span>Depuis le ' + jourMois(m.datePrec) + '</span>' +
+        '<b class="mono">' + fl + (d === 0 ? 'stable' : Math.abs(d) + ' place' + (Math.abs(d) > 1 ? 's' : '')) + '</b>' +
+        '<i>n°' + m.prec + ' → n°' + m.rang + '</i></div>';
+    }
+    if (pct) {
+      tuiles += '<div class="off-mkt-t"><span>Position</span><b class="mono">top ' + pct + ' %</b>' +
+        '<i>du classement des ventes</i></div>';
+    }
+    var podHtml = '';
+    if (pod && pod.trois.length >= 2) {
+      podHtml = '<div class="off-mkt-pod"><div class="off-mkt-pod-l">Podium du rayon ' + esc(pod.rayon) + '</div>' +
+        pod.trois.map(function (p, i) {
+          var moi = p.id === it.id;
+          return '<div class="off-mkt-pod-r' + (moi ? ' moi' : '') + '"' +
+            (moi ? '' : ' onclick="V2.offSelect(\'' + esc(p.id) + '\')"') + '>' +
+            '<span class="off-mkt-pod-n">n°' + (i + 1) + '</span>' +
+            '<span class="off-mkt-pod-b">' + esc(p.brand || '—') + '</span>' +
+            '<span class="off-mkt-pod-t">' + esc(p.name) + '</span>' +
+            '<span class="off-mkt-pod-g mono">n°' + p.rank + '</span>' +
+          '</div>';
+        }).join('') +
+      '</div>';
+    }
+    var spark = courbeRang(m.serie);
+    var top = m.top
+      ? '<div class="off-mkt-top">' + ICO('check', 14, 2.4) + ' <b>Top vente du marché</b> — ce produit est aussi repéré comme meilleure vente sur un tarif laboratoire, source indépendante du classement Offilog.</div>'
+      : '';
+    var sorti = m.sorti
+      ? '<div class="off-mkt-note">Absent du relevé du ' + jourMois(m.dates[m.dates.length - 1]) + ' — dernier rang connu le ' + jourMois(m.dateRang) + '.</div>'
+      : '';
+    return '<div class="off-mkt">' +
+      '<div class="off-mkt-h"><span class="off-mkt-l">Le marché</span>' +
+        (spark ? '<span class="off-mkt-sp">' + spark + '</span>' : '') + '</div>' +
+      '<div class="off-mkt-grid">' + tuiles + '</div>' +
+      podHtml + top + sorti +
+      '<div class="off-mkt-note">Ventes réelles du réseau de pharmacies clientes d\'Offilog, relevé le ' +
+        jourMois(m.dateRang) + '. Ce n\'est pas la France entière, et Offilog ne publie aucun volume : ' +
+        'l\'écran donne des rangs et des écarts de rang, jamais un pourcentage de part de marché.</div>' +
+    '</div>';
+  }
+
   function buildIndex() {
     if (idxBuilt) return;
     var offByEan = offIndex();
@@ -152,9 +272,13 @@
       var leclerc = (lp && lp[0] > 0) ? lp[0] : 0;
       if (leclerc > 0) { if (mc === 0 || leclerc < mc) mc = leclerc; hasC = true; }
       var sousRayon = (window.OFFILOG_CATS && b.id != null) ? (window.OFFILOG_CATS[String(b.id)] || '') : '';
+      // LE MARCHÉ : rang de vente relevé mois par mois (offilog-marche-data.js).
+      // Le dernier relevé fait foi partout — carte, tri, bloc marché — sinon l'écran
+      // afficherait deux rangs différents pour le même produit.
+      var mkt = marcheDe(b.ean);
       var alert = achat > 0 && mc > 0 && mc < achat;
       return {
-        rank: b.rank, id: b.id, name: b.name, brand: b.brand || '',
+        rank: (mkt && mkt.rang) ? mkt.rang : b.rank, mkt: mkt, id: b.id, name: b.name, brand: b.brand || '',
         price: price, ean: b.ean || '', img: b.img || '', cat: b.cat || '',
         url: b.url || '', univers: o ? (o.univers || '') : '',
         achat: achat, conc: conc, hasConc: hasC, minConc: mc, alert: alert, matched: !!o,
@@ -471,10 +595,11 @@
         '<div class="off-badges">' + badges + '</div>' +
         '<div class="off-kpi-grid">' +
           kpi('Prix Offilog', it.price > 0 ? V2.fmtEur(it.price) : '—', 'color-mix(in srgb,var(--pil-froid) 70%,black)') +
-          kpi('Rang ventes', '#' + it.rank) +
+          kpi('Rayon', it.sousRayon ? esc(it.sousRayon) : '—') +
           kpi('Achat IP (HT)', it.achat > 0 ? V2.fmtEur(it.achat) : '—', it.achat > 0 ? 'var(--ok)' : 'var(--muted-2)') +
           kpi('Concurrent mini', it.minConc > 0 ? V2.fmtEur(it.minConc) : '—', '') +
         '</div>' +
+        marcheBlock(it) +
         pzBlock +
         '<div class="off-cmp"><div class="off-cmp-l">Prix public concurrents <span>(TTC)</span></div>' + priceCmpRows(it) + '</div>' +
         '<div class="off-insp-cta">' +
@@ -927,6 +1052,36 @@
       '.off-pz-cell.win b{color:var(--ip-blue-d)}',
       '.off-pz-note{font-size:12.5px;color:var(--ip-ink-2);margin-top:10px;font-weight:600}',
       '.off-pz-note b{color:var(--ip-blue-d)}',
+      // ── LE MARCHÉ : rang de vente, podium du rayon, évolution ──
+      // Même famille visuelle que le comparatif d'achat, un ton plus chaud pour
+      // qu'on distingue « ce que vaut le produit » de « où l'acheter ».
+      '.off-mkt{margin-top:18px;padding:15px;background:linear-gradient(180deg,color-mix(in srgb,var(--pil-froid) 7%,#fff),#fff);border:1px solid color-mix(in srgb,var(--pil-froid) 26%,transparent);border-radius:13px}',
+      '.off-mkt-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:11px}',
+      '.off-mkt-l{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:color-mix(in srgb,var(--pil-froid) 78%,black);font-weight:800}',
+      '.off-mkt-sp{color:color-mix(in srgb,var(--pil-froid) 72%,black);display:flex;align-items:center}',
+      '.off-mkt-spark{display:block}',
+      '.off-mkt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px}',
+      '.off-mkt-t{border:1px solid var(--line);border-radius:11px;padding:10px 12px;background:var(--card);display:flex;flex-direction:column;gap:2px}',
+      '.off-mkt-t span{font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700}',
+      '.off-mkt-t b{font-size:19px;color:var(--ip-ink);line-height:1.15}',
+      '.off-mkt-t i{font-size:12px;font-style:normal;color:var(--ip-ink-2);font-weight:600}',
+      '.off-mkt-t.up b{color:var(--ok)}',
+      '.off-mkt-t.down b{color:var(--ip-red,#C0392B)}',
+      '.off-mkt-pod{margin-top:11px;border:1px solid var(--line);border-radius:11px;background:var(--card);overflow:hidden}',
+      '.off-mkt-pod-l{font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;padding:10px 12px 8px}',
+      '.off-mkt-pod-r{display:grid;grid-template-columns:38px 1fr auto;grid-template-areas:"n b g" "n t g";align-items:center;gap:0 10px;padding:9px 12px;border-top:1px solid var(--line);cursor:pointer}',
+      '.off-mkt-pod-r:hover{background:color-mix(in srgb,var(--pil-froid) 6%,#fff)}',
+      '.off-mkt-pod-r.moi{background:color-mix(in srgb,var(--pil-froid) 12%,#fff);cursor:default}',
+      '.off-mkt-pod-n{grid-area:n;font-size:13px;font-weight:800;color:color-mix(in srgb,var(--pil-froid) 78%,black)}',
+      '.off-mkt-pod-b{grid-area:b;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.off-mkt-pod-t{grid-area:t;font-size:13px;color:var(--ip-ink);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.off-mkt-pod-g{grid-area:g;font-size:12.5px;color:var(--ip-ink-2);font-weight:700}',
+      '.off-mkt-pod-r.moi .off-mkt-pod-t{font-weight:800}',
+      '.off-mkt-top{display:flex;align-items:flex-start;gap:8px;margin-top:11px;padding:10px 12px;border-radius:11px;background:color-mix(in srgb,var(--ok) 10%,#fff);border:1px solid color-mix(in srgb,var(--ok) 32%,transparent);font-size:12.5px;color:var(--ip-ink);font-weight:600;line-height:1.45}',
+      '.off-mkt-top svg{color:var(--ok);flex-shrink:0;margin-top:2px}',
+      '.off-mkt-top b{color:color-mix(in srgb,var(--ok) 72%,black)}',
+      '.off-mkt-note{font-size:12px;color:var(--ip-ink-2);margin-top:10px;font-weight:600;line-height:1.5}',
+      '@media(max-width:430px){.off-mkt-grid{grid-template-columns:1fr 1fr;gap:8px}.off-mkt-t b{font-size:17px}}',
       '.off-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 0 0;flex-wrap:wrap}',
       '.off-pg{padding:8px 14px;font-size:13px}',
       '.off-pg-info{font-size:12px;color:var(--muted)}',
@@ -1107,7 +1262,7 @@
       // Prix publics Leclerc + rayons fins : publics, légers, en tâche de fond
       if (!window.LECLERC_PUB && !lecTried) {
         lecTried = true;
-        V2.loadFiles(['leclercpub', 'offilogcats']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); });
+        V2.loadFiles(['leclercpub', 'offilogcats', 'offilogmarche']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); });
       }
       // Prix Pharmazon (comparaison achat) : chargés UNE SEULE FOIS en tâche de fond
       if (!window.PHARMAZON && !pzTried) {
