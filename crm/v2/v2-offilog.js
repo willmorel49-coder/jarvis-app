@@ -1011,7 +1011,9 @@
       '.off-adv-segs{margin-bottom:16px}',
       '.off-adv-segs .v2-seg .sw{width:9px;height:9px;border-radius:50%;background:var(--sc,var(--muted-2));flex-shrink:0}',
       '.off-adv-segs .v2-seg.on .sw{background:#fff}',
-      '.off-adv .off-sort{display:inline-flex;gap:3px;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:3px;box-shadow:var(--sh-1)}',
+      '.off-adv .off-sort{display:inline-flex;flex-wrap:wrap;max-width:100%;gap:3px;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:3px;box-shadow:var(--sh-1)}',
+      // flex-wrap : la rangée est passée de 3 à 5 tris, elle débordait de l'écran
+      // à 390 px (mesuré en prod le 26/09/2026 : page à 502 px pour 390 visibles).
       '.off-sortbtn{border:none;background:transparent;border-radius:8px;padding:6px 11px;font-family:var(--font);font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;transition:.16s var(--ease);white-space:nowrap}',
       '.off-sortbtn:hover:not(.on){color:var(--ip-ink);background:var(--card-2)}',
       '.off-sortbtn:active{transform:scale(.97)}',
