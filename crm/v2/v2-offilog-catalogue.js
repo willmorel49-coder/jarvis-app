@@ -73,7 +73,10 @@
     var complet = pdfs.filter(function (d) { return !d.p.rayon; })[0];
     // 26/09 : « Meilleures ventes » n'est pas un rayon (nos meilleures ventes + top ventes du marché + index des marques)
     var ventes = pdfs.filter(function (d) { return /meilleures-ventes/.test(d.p.fichier); })[0];
-    var rayons = pdfs.filter(function (d) { return d.p.rayon && d !== ventes; });
+    // 26/09 : éditions saisonnières (meilleures ventes de la saison) et catalogue court de prospection
+    var prospect = pdfs.filter(function (d) { return /prospection/.test(d.p.fichier); })[0];
+    var saisons = pdfs.filter(function (d) { return /-saison-/.test(d.p.fichier); });
+    var rayons = pdfs.filter(function (d) { return d.p.rayon && d !== ventes && d !== prospect && saisons.indexOf(d) < 0; });
     function actions(d) {
       return '<button class="v2-btn v2-btn-ghost" onclick="V2.ouvrirDocProtege(\'' + d.cle + '\')">' + ICO('fiche', 15, 2) + ' Voir</button>' +
         '<button class="v2-btn v2-btn-primary" onclick="V2.offCatEnvoyer(\'' + d.cle + '\')">' + ICO('spark', 15, 2) + ' Envoyer</button>';
@@ -95,6 +98,14 @@
       (ventes ? '<div class="offcat-hero"><div><div class="offcat-h">Nos meilleures ventes</div>' +
         '<div class="offcat-d">' + V2.fmtNum(ventes.p.produits) + ' produits · top ventes du marché signalés · toutes nos marques · ' + ventes.p.pages + ' pages · ' + mo(ventes.p.octets) + '</div></div>' +
         '<div class="offcat-act">' + actions(ventes) + '</div></div>' : '') +
+      (prospect ? '<div class="offcat-hero"><div><div class="offcat-h">Pour un prospect</div>' +
+        '<div class="offcat-d">Catalogue court à laisser en visite · ' + V2.fmtNum(prospect.p.produits) + ' produits · ' + prospect.p.pages + ' pages · ' + mo(prospect.p.octets) + '</div></div>' +
+        '<div class="offcat-act">' + actions(prospect) + '</div></div>' : '') +
+      (saisons.length ? '<div class="offcat-l">Une saison</div><div class="offcat-rayons">' + saisons.map(function (d) {
+        return '<div class="offcat-rayon"><div class="offcat-rn">' + esc(d.p.rayon) + '</div>' +
+          '<div class="offcat-d">' + V2.fmtNum(d.p.produits) + ' produits · ' + d.p.pages + ' pages · ' + mo(d.p.octets) + '</div>' +
+          '<div class="offcat-act">' + actions(d) + '</div></div>';
+      }).join('') + '</div>' : '') +
       (rayons.length ? '<div class="offcat-l">Un rayon seulement</div><div class="offcat-rayons">' + rayons.map(function (d) {
         return '<div class="offcat-rayon"><div class="offcat-rn">' + esc(d.p.rayon) + '</div>' +
           '<div class="offcat-d">' + V2.fmtNum(d.p.produits) + ' produits · ' + mo(d.p.octets) + '</div>' +
