@@ -26,6 +26,9 @@
   var SANS_OCP = !!(window.V2_BRAND && window.V2_BRAND.opso);
 
   var S = { chip: 'all', q: '', page: 0, sel: null, sort: 'ventes', adv: false, sous: '' };
+  // Plancher du mouvement de rang, en places. Voir buildIndex : le seuil relatif
+  // (20 %) ne suffit pas tout en haut du classement, où une place vaut 25 %.
+  var SEUIL_PLACES = 5;
   var firstPaint = true; // cascade d'entrée réservée au 1er affichage de la grille
   var PER_PAGE = 60;
 
@@ -40,6 +43,9 @@
     { k: 'sgcheaper',   label: 'Moins cher chez Sagitta', sc: 'var(--ip-blue-d)' },
     { k: 'ocpcheaper',  label: 'Moins cher chez OCP', sc: 'var(--ip-blue-d)' },
     { k: 'leclercpub',  label: 'Vendu chez E.Leclerc', sc: '#0066B3' },
+    // LE MARCHÉ : seuil RELATIF, voir `mvtPct` dans buildIndex. L'ambre du logo
+    // Offilog, seule couleur d'accent de l'écran.
+    { k: 'monte',       label: 'Ça monte fort',  sc: '#F8A808' },
     { k: 'sante',       label: 'Santé',          sc: '#1E9E6A' },
     { k: 'beaute-et-soins', label: 'Beauté & soins', sc: '#6D4FC4' },
     { k: 'hygiene',     label: 'Hygiène',        sc: 'var(--c-froid)' },
@@ -276,13 +282,30 @@
       // Le dernier relevé fait foi partout — carte, tri, bloc marché — sinon l'écran
       // afficherait deux rangs différents pour le même produit.
       var mkt = marcheDe(b.ean);
+      // MOUVEMENT du rang depuis le relevé précédent. Le seuil est RELATIF (part du
+      // rang précédent) : 10 places ne veulent rien dire au rang 6 000 et tout dire
+      // au rang 20. Mesuré le 26/09/2026 sur les 2 relevés réels : 183 produits
+      // gagnent 20 % ou plus de leur rang, 2 en perdent autant.
+      // ⚠️ Pas de repère « nouveau au classement » : le catalogue lui-même est daté
+      // du premier relevé, donc ce compteur vaudrait 0 (vérifié, 0 cas sur 6 648).
+      // Les deux conditions ensemble : sans le plancher en places, « n°4 vers n°5 »
+      // passait pour un mouvement fort (25 % pour une seule place).
+      var mvt = 0, mvtPct = 0;
+      if (mkt && mkt.rang > 0 && mkt.prec > 0) {
+        mvt = mkt.prec - mkt.rang;                    // > 0 = il MONTE
+        mvtPct = Math.round(mvt / mkt.prec * 100);
+      }
       var alert = achat > 0 && mc > 0 && mc < achat;
+      // ÉCART de l'alerte : de combien le concurrent public passe SOUS ton achat.
+      // Sert le tri « Écart concurrent » — l'alerte la plus grave d'abord.
+      var ecart = alert ? (achat - mc) : 0;
       return {
         rank: (mkt && mkt.rang) ? mkt.rang : b.rank, mkt: mkt, id: b.id, name: b.name, brand: b.brand || '',
         price: price, ean: b.ean || '', img: b.img || '', cat: b.cat || '',
         url: b.url || '', univers: o ? (o.univers || '') : '',
         achat: achat, conc: conc, hasConc: hasC, minConc: mc, alert: alert, matched: !!o,
-        pz: pz || null, pzCheaper: pzCheaper, sg: sg, sgCheaper: sgCheaper, ocp: ocp, ocpCheaper: ocpCheaper, leclerc: leclerc, sousRayon: sousRayon
+        pz: pz || null, pzCheaper: pzCheaper, sg: sg, sgCheaper: sgCheaper, ocp: ocp, ocpCheaper: ocpCheaper, leclerc: leclerc, sousRayon: sousRayon,
+        mvt: mvt, mvtPct: mvtPct, monte: mvtPct >= 20 && mvt >= SEUIL_PLACES, ecart: ecart
       };
     });
     byEan = new Map();
@@ -298,6 +321,7 @@
     if (k === 'sgcheaper') return it.sgCheaper;
     if (k === 'ocpcheaper') return it.ocpCheaper;
     if (k === 'leclercpub') return it.leclerc > 0;
+    if (k === 'monte') return it.monte;
     return it.cat === k;
   }
   function filteredBase() {
@@ -308,15 +332,24 @@
     });
     return base;
   }
+  function kMvt(it) { return (it.mkt && it.mkt.prec > 0) ? it.mvt : -1e9; }
   function sorted(list) {
     var a = list.slice();
     if (S.sort === 'prix_asc') a.sort(function (x, y) { return (x.price || 1e9) - (y.price || 1e9); });
     else if (S.sort === 'prix_desc') a.sort(function (x, y) { return (y.price || 0) - (x.price || 0); });
+    // Progression : le plus fort gain d'abord, compté en PLACES — c'est ce que la
+    // pastille de la carte affiche. Trier sur le pourcentage donnait une grille qui
+    // semblait mal triée (4 333 places au-dessus de 1 524, puis 3 318). Un produit sans relevé
+    // précédent n'a PAS un mouvement de 0 — il n'en a pas : il part en fin de liste
+    // au lieu de se mêler aux produits réellement stables.
+    else if (S.sort === 'mvt') a.sort(function (x, y) { return kMvt(y) - kMvt(x) || x.rank - y.rank; });
+    // Écart concurrent : l'alerte la plus grave d'abord (en euros sous ton achat).
+    else if (S.sort === 'ecart') a.sort(function (x, y) { return (y.ecart || 0) - (x.ecart || 0) || x.rank - y.rank; });
     else a.sort(function (x, y) { return x.rank - y.rank; }); // ventes
     return a;
   }
   function counts(base) {
-    var c = { all: base.length, alerte: 0, pzcheaper: 0, sgcheaper: 0, ocpcheaper: 0, leclercpub: 0 };
+    var c = { all: base.length, alerte: 0, pzcheaper: 0, sgcheaper: 0, ocpcheaper: 0, leclercpub: 0, monte: 0 };
     CHIPS.forEach(function (ch) { if (c[ch.k] == null) c[ch.k] = 0; });
     for (var i = 0; i < base.length; i++) {
       var it = base[i];
@@ -325,6 +358,7 @@
       if (it.sgCheaper) c.sgcheaper++;
       if (it.ocpCheaper) c.ocpcheaper++;
       if (it.leclerc > 0) c.leclercpub++;
+      if (it.monte) c.monte++;
       if (c[it.cat] != null) c[it.cat]++;
     }
     return c;
@@ -497,13 +531,22 @@
     var alertCls = it.alert ? ' alert' : '';
     // alerte prix (rouge SACRÉ) : un concurrent public passe SOUS ton prix d'achat IP.
     // pastille dédiée dans le coin média + rappel chiffré sous le prix.
+    // Mouvement visible dans la grille, au même seuil relatif que le filtre.
+    var mvtFlag = '';
+    if (Math.abs(it.mvt) >= SEUIL_PLACES && (it.mvtPct >= 20 || it.mvtPct <= -20)) {
+      var up = it.mvtPct > 0, nb = Math.abs(it.mvt);
+      mvtFlag = '<span class="off-mvt' + (up ? ' up' : ' down') + ' mono" title="' +
+        (up ? 'Gagne ' : 'Perd ') + nb + ' place' + (nb > 1 ? 's' : '') +
+        ' au classement des ventes depuis le relevé précédent (n°' + it.mkt.prec + ' vers n°' + it.rank + ')">' +
+        (up ? '\u25B2' : '\u25BC') + ' ' + V2.fmtNum(nb) + '</span>';
+    }
     var alertFlag = it.alert
       ? '<span class="off-card-flag" title="Un concurrent est moins cher que ton prix d\'achat">' + ICO('alert', 13, 2.2) + ' Alerte prix</span>' : '';
     var concBelow = it.alert && it.minConc > 0
       ? '<span class="off-card-conc mono" title="Un concurrent public passe sous ton prix d\'achat Intégral">conc. ' + V2.fmtEur(it.minConc) + (it.achat > 0 ? ' &lt; achat ' + V2.fmtEur(it.achat) : '') + '</span>' : '';
     return '<div class="off-card' + sel + alertCls + '" data-id="' + esc(it.id) + '" onclick="V2.offSelect(\'' + esc(it.id) + '\')">' +
       '<div class="off-card-media">' +
-        '<span class="off-rank mono">#' + it.rank + '</span>' +
+        '<span class="off-rankrow"><span class="off-rank mono">#' + it.rank + '</span>' + mvtFlag + '</span>' +
         '<button class="off-mkt-add' + (onMkt ? ' on' : '') + '" onclick="event.stopPropagation();V2.offMktToggle(\'' + esc(it.id) + '\',this)" title="Ajouter à la fiche marketing">' + ICO(onMkt ? 'check' : 'plus', 15) + '</button>' +
         img +
         alertFlag +
@@ -1000,6 +1043,13 @@
       '.off-sk-line{height:10px;border-radius:var(--r-control)}',
       '.off-sk-price{height:16px;width:52px;border-radius:var(--r-control);margin-top:4px}',
       '.off-rank{position:absolute;top:8px;left:8px;background:rgba(16,19,28,0.66);color:#fff;font-size:12px;font-weight:700;padding:3px 8px;border-radius:8px;}',
+      // rang + mouvement côte à côte : le rang repasse en flux DANS la rangée,
+      // sinon les deux pastilles se superposent au même coin.
+      '.off-rankrow{position:absolute;top:8px;left:8px;display:flex;gap:4px;align-items:center;z-index:2}',
+      '.off-rankrow .off-rank{position:static;top:auto;left:auto}',
+      '.off-mvt{font-size:11px;font-weight:700;padding:3px 7px;border-radius:8px;color:#fff;background:rgba(16,19,28,0.6)}',
+      '.off-mvt.up{background:color-mix(in srgb,var(--ok) 84%,black)}',
+      '.off-mvt.down{background:rgba(16,19,28,0.5);color:rgba(255,255,255,.82)}',
       '.off-card-alert{position:absolute;bottom:8px;left:8px;width:24px;height:24px;border-radius:8px;background:var(--c-rose);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px color-mix(in srgb,var(--c-rose) 45%,transparent)}',
       '.off-mkt-add{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.94);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--sh-1);transition:transform .14s var(--ease),color .14s var(--ease),border-color .14s var(--ease),background .14s var(--ease);z-index:2}',
       '.off-mkt-add:hover{color:var(--c-opp);border-color:var(--c-opp)}',
@@ -1039,7 +1089,8 @@
       '.off-card-name{font-size:12.5px;font-weight:600;line-height:1.35;color:var(--ip-ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:34px}',
       '.off-card-price{font-size:16px;font-weight:800;color:color-mix(in srgb,var(--pil-froid) 70%,black);margin-top:5px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}',
       '.off-card-pz{font-size:12px;font-weight:700;color:var(--muted);background:var(--card-2);border:1px solid var(--line);border-radius:7px;padding:1px 6px;font-variant-numeric:tabular-nums}',
-      '@media(max-width:640px){.off-grid{grid-template-columns:repeat(2,1fr);gap:10px}.off-card-media{height:118px}.off-card-name{font-size:12px}}',
+      '@media(max-width:640px){.off-grid{grid-template-columns:repeat(2,1fr);gap:10px}.off-card-media{height:118px}.off-card-name{font-size:12px}' +
+        '.off-rankrow{top:6px;left:6px;gap:3px}.off-rank{font-size:11px;padding:2px 6px}.off-mvt{font-size:10px;padding:2px 5px}}',
       '.off-card-pz.win{color:var(--ip-blue-d);background:color-mix(in srgb,var(--ip-blue-d) 10%,#fff);border-color:color-mix(in srgb,var(--ip-blue-d) 28%,transparent)}',
       // comparatif Offilog vs Pharmazon (inspecteur)
       '.off-pz{margin-top:18px;padding:15px;background:color-mix(in srgb,var(--ip-blue-d) 5%,#fff);border:1px solid color-mix(in srgb,var(--ip-blue-d) 22%,transparent);border-radius:13px}',
@@ -1313,6 +1364,7 @@
       // bande du haut ; le raccourci Pharmazon reste ici, discret.
       var advChips = CHIPS.map(function (f) {
         if (f.k === 'alerte') return '';   // porté par la tuile-verdict rouge
+        if (f.k === 'monte') return '';    // porté par le groupe « Le marché »
         if (f.k === 'all') return '';      // porté par « Tout le rayon »
         if (RAYON_K[f.k]) return '';       // porté par la bande des rayons
         var n = c[f.k] || 0;
@@ -1323,6 +1375,17 @@
         return '<button class="v2-seg' + on + '" style="--sc:' + f.sc + '" onclick="V2.offFilter(\'' + f.k + '\')">' +
           (f.k === 'all' ? '' : '<span class="sw"></span>') + esc(f.label) + '<span class="cnt">' + V2.fmtNum(n) + '</span></button>';
       }).join('');
+
+      // Groupe « Le marché » : n'apparaît que si le relevé porte vraiment un
+      // mouvement. Un bouton à 0 produit ferait croire à une panne de données.
+      var mktChips = '';
+      if ((c.monte || 0) > 0) {
+        var mOn = S.chip === 'monte' ? ' on' : '';
+        mktChips = '<button class="v2-seg' + mOn + '" style="--sc:' + CHIP_BY_KEY.monte.sc + '" ' +
+          'title="Produits qui gagnent au moins 20 % de leur rang depuis le relevé précédent" ' +
+          'onclick="V2.offFilter(\'monte\')"><span class="sw"></span>' + esc(CHIP_BY_KEY.monte.label) +
+          '<span class="cnt">' + V2.fmtNum(c.monte) + '</span></button>';
+      }
 
       var insHtml = '';
       if (S.sel != null) {
@@ -1349,14 +1412,17 @@
       var advOpen = S.adv;
       var advBtn = '<button type="button" class="off-advbtn' + (advOpen ? ' open' : '') + '" onclick="V2.offToggleAdv()">' +
           ICO('grid', 15, 2) + ' Filtres' +
-          (S.chip === 'pzcheaper' || S.chip === 'sgcheaper' || S.chip === 'ocpcheaper' ? '<span class="off-advbtn-tag">' + esc(CHIP_BY_KEY[S.chip].label) + '</span>' : '') +
+          (S.chip === 'pzcheaper' || S.chip === 'sgcheaper' || S.chip === 'ocpcheaper' || S.chip === 'monte' ? '<span class="off-advbtn-tag">' + esc(CHIP_BY_KEY[S.chip].label) + '</span>' : '') +
           '<span class="off-advbtn-chev">' + ICO('chev', 14, 2.2) + '</span></button>';
       var advPanel = advOpen
         ? '<div class="off-adv">' +
             (advChips ? '<div class="off-adv-l">Repères concurrence</div>' +
               '<div class="v2-segs off-adv-segs">' + advChips + '</div>' : '') +
+            (mktChips ? '<div class="off-adv-l">Le marché</div>' +
+              '<div class="v2-segs off-adv-segs">' + mktChips + '</div>' : '') +
             '<div class="off-adv-l">Trier</div>' +
-            '<div class="off-sort">' + sortBtn('ventes', 'Meilleures ventes') + sortBtn('prix_asc', 'Prix ↑') + sortBtn('prix_desc', 'Prix ↓') + '</div>' +
+            '<div class="off-sort">' + sortBtn('ventes', 'Meilleures ventes') + sortBtn('mvt', 'Progression') +
+              sortBtn('ecart', 'Écart concurrent') + sortBtn('prix_asc', 'Prix ↑') + sortBtn('prix_desc', 'Prix ↓') + '</div>' +
           '</div>'
         : '';
 
