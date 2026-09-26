@@ -520,6 +520,9 @@
     // Prix PUBLICS E.Leclerc (TTC) et rayons fins Offilog : données publiques.
     leclercpub: 'v2/leclerc-pub-data.js',
     offilogcats: 'v2/offilog-cats-data.js',
+    // 26/09/2026 — bloc « Le marché » de l'écran Offilog : rang de vente relevé
+    // chaque mois (robot ~/offilog-marche/) + repère top vente. Aucun prix : public.
+    offilogmarche: 'v2/offilog-marche-data.js',
     // 03/09/2026 — la grande passe « conditions commerciales » : les colonnes
     // sensibles (prix nets, remises, CA) vivent sur Supabase et sont RECOLLÉES
     // en mémoire après connexion. Les fichiers publics gardent l'identité.
@@ -1006,7 +1009,7 @@
   V2.chargerScripts = function (urls) {
     urls = urls || [];
     if (!urls.length) return Promise.resolve();
-    var V = '?v=20260926f' + (window.V2_VER || '20260915g');
+    var V = '?v=20260926g' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1136,6 +1139,7 @@
     concfarmaline: 'CONCURRENTS_FARMALINE',
     leclercpub: 'LECLERC_PUB',
     offilogcats: 'OFFILOG_CATS',
+    offilogmarche: 'OFFILOG_MARCHE',
     benchcond: 'BENCH_COND',
     prodstatscond: 'PROD_COND',
     pharmafrca: 'PHARMA_FR_CA',
@@ -1434,7 +1438,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260926f';
+    var V = '?v=20260926g';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
