@@ -219,6 +219,10 @@
     return {
       rayon: it.sousRayon, marque: marque, total: rayon.length, marques: ordre.length,
       place: place, moi: par[marque], tete: ordre.slice(0, 5),
+      // HORS TOP 5 : 48,4 % des fiches (2 888 sur 5 973, mesuré le 27/09/2026) — sans
+      // ça, une fiche sur deux n'a aucune barre en surbrillance. On la sort à part
+      // plutôt que de l'allonger dans `tete` : la 6e ligne n'est PAS la 6e place.
+      hors: place > 5 ? par[marque] : null,
       mvt: par[marque].nmv ? Math.round(par[marque].som / par[marque].nmv) : null
     };
   }
@@ -252,6 +256,16 @@
         '<span class="off-mkt-mqv mono">' + s.n + '</span>' +
       '</div>';
     }).join('');
+    if (q.hors) {
+      var wh = Math.max(4, Math.round(q.hors.n / mx * 100));
+      bars += '<div class="off-mkt-mqsep" aria-hidden="true"></div>' +
+        '<div class="off-mkt-mqr moi">' +
+          '<span class="off-mkt-mqn">' + esc(q.hors.m) +
+            ' <b class="off-mkt-mqp mono">n\u00b0' + q.place + '</b></span>' +
+          '<span class="off-mkt-mqb"><i style="width:' + wh + '%"></i></span>' +
+          '<span class="off-mkt-mqv mono">' + q.hors.n + '</span>' +
+        '</div>';
+    }
     return '<div class="off-mkt-mq">' +
       '<div class="off-mkt-mq-l">' + esc(q.marque) + ' dans le rayon ' + esc(q.rayon) + '</div>' +
       '<div class="off-mkt-grid">' + t + '</div>' +
@@ -360,8 +374,10 @@
       // rang précédent) : 10 places ne veulent rien dire au rang 6 000 et tout dire
       // au rang 20. Mesuré le 26/09/2026 sur les 2 relevés réels : 183 produits
       // gagnent 20 % ou plus de leur rang, 2 en perdent autant.
-      // ⚠️ Pas de repère « nouveau au classement » : le catalogue lui-même est daté
-      // du premier relevé, donc ce compteur vaudrait 0 (vérifié, 0 cas sur 6 648).
+      // ⚠️ Pas de repère « nouveau au classement », mais le cas EXISTE : au 26/09/2026,
+      // 192 EAN sont classés au dernier relevé et absents du précédent (et 6 l'inverse),
+      // sur 6 839 EAN suivis. Ces produits n'ont pas de `prec`, donc aucun mouvement ne
+      // leur est affiché — volontaire : arriver dans un relevé n'est pas monter.
       // Les deux conditions ensemble : sans le plancher en places, « n°4 vers n°5 »
       // passait pour un mouvement fort (25 % pour une seule place).
       var mvt = 0, mvtPct = 0;
@@ -1220,6 +1236,12 @@
       '.off-mkt-mqr.moi .off-mkt-mqn{color:var(--ip-ink);font-weight:800}',
       '.off-mkt-mqr.moi .off-mkt-mqb i{background:color-mix(in srgb,var(--pil-froid) 86%,transparent)}',
       '.off-mkt-mqr.moi .off-mkt-mqv{color:var(--ip-ink)}',
+      // Séparateur avant la marque hors top 5 : elle est dans le graphique sans faire
+      // croire qu'elle suit le n°5. Bordure en pointillés — aucun filtre, aucun blur.
+      // --line (7 % d'encre) était INVISIBLE à l'œil sur la capture du 27/09/2026 alors
+      // que la sonde le voyait bien : dessiné ≠ vu. Trait franc + respiration.
+      '.off-mkt-mqsep{height:0;border-top:1px dashed color-mix(in srgb,var(--pil-froid) 55%,transparent);margin:7px 0 5px}',
+      '.off-mkt-mqp{font-size:11.5px;font-weight:800;color:color-mix(in srgb,var(--pil-froid) 78%,black)}',
       '.off-mkt-top{display:flex;align-items:flex-start;gap:8px;margin-top:11px;padding:10px 12px;border-radius:11px;background:color-mix(in srgb,var(--ok) 10%,#fff);border:1px solid color-mix(in srgb,var(--ok) 32%,transparent);font-size:12.5px;color:var(--ip-ink);font-weight:600;line-height:1.45}',
       '.off-mkt-top svg{color:var(--ok);flex-shrink:0;margin-top:2px}',
       '.off-mkt-top b{color:color-mix(in srgb,var(--ok) 72%,black)}',
