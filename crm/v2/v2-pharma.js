@@ -1155,6 +1155,10 @@
           '<p class="v2-prospect-note">Officine non cliente — complète ses coordonnées, infos et notes pour la suivre comme un futur client. Tout est sauvegardé.</p>' +
         '</div>' +
         '<div class="v2-card" style="padding:12px 16px 14px">' + nameEditor(pid, p[6] || '') + '</div>' +
+        // 27/09/2026 — le potentiel sur un PROSPECT : c'est ici qu'il sert le plus, puisque
+        // aucune vente n'existe encore. Découvert en le testant : la fiche prospect suit une
+        // branche à part, où la colonne « chiffres » n'existe pas — le bloc y manquait.
+        (V2.potentielBloc ? V2.potentielBloc({ cp: cp, ville: ville }) : '') +
         (V2.profil ? V2.profil.coordSection(pid, seed) : '') +
         (V2.profil ? V2.profil.section('client', pid) : '') +
         (V2.notes ? V2.notes.section('client', pid) : '') +
@@ -1764,6 +1768,11 @@
     // ni « déjà commandé / à pousser » (ça dirait ce qu'elle achète), ni audit de marge.
     var voitVentes = V2.voitVentesDe(pid);
     if (!voitVentes) chiffres = '<div class="v2-card pha-card"><div class="pha-sub" style="padding:16px 18px">Les chiffres de vente de cette officine sont réservés à son commercial' + (pharma.comms && pharma.comms.length ? ' (' + esc(pharma.comms.join(', ')) + ')' : '') + '.</div></div>';
+    // 27/09/2026 — « Ce que cette officine devrait vendre » (v2-potentiel.js). Construit
+    // sur des données PUBLIQUES (Assurance Maladie, INSEE, FINESS) : il s'affiche donc
+    // AUSSI pour l'officine d'un collègue, après le message de restriction — il ne dit
+    // rien de ce qu'elle achète, seulement ce que sa population laisse attendre.
+    if (V2.potentielBloc) chiffres += V2.potentielBloc(pharma);
 
     // Best rotations du groupement / réseau : détail produit par produit, replié (inchangé)
     var rot = grpBestRotations(pid, 60);
