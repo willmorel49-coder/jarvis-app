@@ -221,3 +221,4 @@ crm/v2/clients-actifs.js
 
 # L'Argument : barème IP + fourchettes — espace protégé uniquement
 crm/v2/argument-data.js
+.cache-potentiel/
