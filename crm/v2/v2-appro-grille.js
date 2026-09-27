@@ -142,6 +142,7 @@
 
   function eur(v) { return V2.fmtEur ? V2.fmtEur(v) : String(Math.round(v || 0)); }
 
+
   /* ═══ LA GRILLE ═══════════════════════════════════════════════════════════ */
   function corpsHtml() {
     var C = V2.approCtx, M = V2.approM, L = listes()[_vue] || [], arb = arbTous();
@@ -273,8 +274,18 @@
         '<button class="g5-btn" data-act="x" data-cip="' + C.esc(o.c) + '">Classer sans commande</button></div>' +
         (q > 0 && !labOk ? '<div class="g5-alerte"><b>Commander est impossible depuis cet écran : le laboratoire de cette référence n’est pas identifié.</b> ' +
           'Un grossiste commande par fournisseur, pas par produit. ' + C.fmt(q) + ' unités seraient à commander (' + eur(q * (o.ppht || 0)) +
-          '), mais il n’y a personne à qui les commander tant que <code>labo-cip.json</code> ne couvre pas ce CIP. ' +
-          '264 références du catalogue (7,6 %) sont dans ce cas.</div>' : '');
+          '), mais il n’y a personne à qui les commander tant qu’aucune de nos deux sources de ' +
+          'fournisseurs (<code>labo-cip.json</code>, <code>appro-source.json</code>) ne couvre ce CIP. ' +
+          (function () {
+            // ⚠️ Ce chiffre était écrit en dur (« 264 références, 7,6 % »). Il est
+            // maintenant MESURÉ sur l'index du jour : il bouge dès qu'une source de
+            // fournisseurs est régénérée, et un chiffre faux annoncé à Will est une faute.
+            var sl = C.sansLabo ? C.sansLabo() : null;
+            if (!sl || !sl.n) return '';
+            return C.fmt(sl.n) + ' référence' + (sl.n > 1 ? 's' : '') + ' mouvante' + (sl.n > 1 ? 's' : '') +
+              ' sur ' + C.fmt(sl.tot) + ' (' + String(sl.pct).replace('.', ',') + ' %) ' +
+              (sl.n > 1 ? 'sont' : 'est') + ' dans ce cas.';
+          })() + '</div>' : '');
     }
 
     return '<p class="g5-labo">' + (labOk ? C.esc(C.labo(o.c)) : '<u class="g5-nolab">laboratoire non identifié</u>') +
