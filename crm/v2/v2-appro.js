@@ -1686,18 +1686,78 @@
 
   // ═══ VUE CALENDRIER (synthèse experts) : calendrier d'ACTIONS groupé FOURNISSEUR ═══
   var _laboState = 0, _laboMap = null;
+  /* ── appro-source.json (generate_appro_source.py) ────────────────────────
+     Deux colonnes des exports de stock des établissements que personne ne lisait :
+       · contmode / contqte → un CONTINGENTEMENT, chargé mais PAS ENCORE AFFICHÉ
+       · artcollection      → le LABORATOIRE, y compris pour les références que la
+                              BDPM ne couvre pas (para, DM) et qui restaient donc
+                              « sans fournisseur » — donc non commandables ici.
+     Il COMPLÈTE labo-cip.json, il ne le corrige pas : le générateur écarte à la
+     source tout CIP dont le fournisseur est déjà connu. */
+  var _apsMap = null, _apsQuota = null, _apsAsof = '';
   function ensureLabo() {
     if (_laboMap || _laboState) return;
     _laboState = 1;
-    try {
-      var day = new Date().toISOString().slice(0, 10);
-      fetch('labo-cip.json?d=' + day, { cache: 'no-store' })
+    var day = new Date().toISOString().slice(0, 10);
+    function lire(f) {
+      return fetch(f + '?d=' + day, { cache: 'no-store' })
         .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (j) { _laboMap = (j && j.data) || {}; _laboState = 2; approRerender(); })
-        .catch(function () { _laboMap = {}; _laboState = 2; });
-    } catch (e) { _laboMap = {}; _laboState = 2; }
+        .catch(function () { return null; });
+    }
+    function pose(a, b) {
+      _laboMap = (a && a.data) || {};
+      _apsMap = (b && b.labo) || {};
+      _apsQuota = (b && b.quota) || {};
+      _apsAsof = (b && b.asof) || '';
+      _sansLabo = null;
+      _laboState = 2;
+      approRerender();
+    }
+    try {
+      Promise.all([lire('labo-cip.json'), lire('appro-source.json')])
+        .then(function (j) { pose(j[0], j[1]); })
+        .catch(function () { pose(null, null); });
+    } catch (e) { pose(null, null); }
   }
-  function laboOf(c) { if (_laboMap && _laboMap[c]) return _laboMap[c]; var G = window.GENERIQUEURS; if (G && G[c]) return G[c]; return 'Divers'; }
+  function laboOf(c) {
+    if (_laboMap && _laboMap[c]) return _laboMap[c];
+    if (_apsMap && _apsMap[c]) return _apsMap[c];
+    var G = window.GENERIQUEURS; if (G && G[c]) return G[c]; return 'Divers';
+  }
+  /* ⚠️ SENS DE LA COLONNE NON TRANCHÉ — ne rien afficher avec ça sans réponse.
+     Lu d'abord comme « le laboratoire nous limite », cette lecture est DÉMENTIE par
+     les données : plusieurs de ces références ont 7 000 unités en commande chez nous
+     alors que le « quota » vaut 1 à 5, et la liste (Gardasil 9, Repevax, Vaxelis,
+     Eliquis, Slinda, Quviviq) est celle des produits qu'un grossiste rationne à ses
+     OFFICINES. La lecture probable est donc l'inverse : ce que chaque pharmacie peut
+     nous commander par période. Question posée à Will le 27/09/2026 ; tant qu'elle
+     n'a pas de réponse, la donnée est chargée mais aucun écran ne l'affiche.
+     `dispo` et `asof` datent de l'export : c'est une photographie, pas du temps réel. */
+  function quotaDe(c) {
+    var q = _apsQuota && _apsQuota[String(c)];
+    return q ? { mode: q[0], qte: q[1], dispo: q[2], nom: q[3], asof: _apsAsof } : null;
+  }
+  /* Combien de références mouvantes restent sans fournisseur — MESURÉ, jamais écrit
+     en dur : c'est ce chiffre que la fiche annonce à Will quand elle refuse de
+     commander, et il bouge à chaque régénération des sources. */
+  var _sansLabo = null;
+  function sansLaboStat() {
+    if (_sansLabo) return _sansLabo;
+    var idx = cipIndex(), n = 0, tot = 0;
+    Object.keys(idx).forEach(function (k) {
+      var o = idx[k];
+      if (!o || o.vM < MINVEL) return;
+      tot++;
+      if (!laboConnu(o.c)) n++;
+    });
+    _sansLabo = { n: n, tot: tot, pct: tot ? Math.round(n / tot * 1000) / 10 : 0 };
+    return _sansLabo;
+  }
+  function laboConnu(c) {
+    c = String(c);
+    return !!((_laboMap && _laboMap[c]) || (_apsMap && _apsMap[c]) ||
+              (window.GENERIQUEURS && window.GENERIQUEURS[c]));
+  }
   var _calSub = 'today';
   V2.approCal = function (s) { _calSub = s; if (V2.render) V2.render(); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {} };
   // audit UX : depuis le hero, ouvrir directement la liste filtrée sur un verdict (ex. « à sécuriser »).
@@ -2217,7 +2277,9 @@
     idx: cipIndex,
     dpm: demandeParMois,
     labo: laboOf,
-    laboConnu: function (c) { return !!((_laboMap && _laboMap[String(c)]) || (window.GENERIQUEURS && window.GENERIQUEURS[String(c)])); },
+    laboConnu: laboConnu,
+    sansLabo: sansLaboStat,
+    quota: quotaDe,   // ⚠️ voir l'avertissement sur quotaDe : sens non tranché, non affiché
     ensureLabo: ensureLabo,
     ansmItem: ansmItem, ansmStatut: ansmStatut, enTension: enTension,
     isMitm: isMitm, froid: estFroidCip, aVendu: aVendu,
