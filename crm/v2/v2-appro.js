@@ -429,56 +429,27 @@
     if (i < 0 || !EP.vendu) return null;
     return !!((EP.vendu[cip] || 0) & (1 << i));
   }
-  function rebalance() {
-    var EP = window.ETAB_PRICES; if (!EP || !EP.prices) return [];
-    var PS = window.PROD_STATS || [], etabs = EP.etabs.map(function (e) { return e.code; }), out = [];
-    for (var k = 0; k < PS.length; k++) {
-      var c = String(PS[k].c), per = {}, tot = 0, nz = 0, mx = 0, mxE = null;
-      for (var j = 0; j < etabs.length; j++) {
-        // site sans ligne pour ce produit = non communiqué (POS en sept. 2026), pas 0
-        var e = etabs[j], v = (EP.prices[e] && EP.prices[e][c]) ? Math.max(0, EP.prices[e][c][1]) : undefined;
-        per[e] = v; if (v > 0) { tot += v; nz++; } if (v > mx) { mx = v; mxE = e; }
-      }
-      if (tot < 20 || nz < 2) continue;
-      var conc = mx / tot, zeros = etabs.filter(function (e) { return per[e] === 0; }).length;
-      if (conc > 0.55 && zeros >= 1) out.push({ c: c, d: PS[k].d, per: per, tot: tot, mxE: mxE, conc: conc, zeros: zeros });
-    }
-    out.sort(function (a, b) { return b.tot - a.tot; });
-    return out.slice(0, 10);
-  }
   function etabSection() {
     if (!window.ETAB_PRICES) {
       return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:#0E7C86">▤</div><div><h3>Stock par établissement</h3><div class="ap-sub">chargement des stocks des 7 sites…</div></div></div></div>';
     }
-    var ss = siteStock(), reb = rebalance(), etabs = window.ETAB_PRICES.etabs.map(function (e) { return e.code; });
+    var ss = siteStock();
     var mx = 0; ss.sites.forEach(function (s) { if (s.stock > mx) mx = s.stock; });
     var strip = ss.sites.map(function (s) {
       return '<div class="site"><div class="code">' + s.code + '</div><div class="qt mono">' + fmt(s.stock) + '</div>' +
         '<div class="pct">' + (ss.total ? Math.round(s.stock / ss.total * 100) : 0) + ' %</div><div class="sbar"><i style="width:' + (mx ? Math.round(s.stock / mx * 100) : 0) + '%"></i></div></div>';
     }).join('');
-    var rows = reb.map(function (p) {
-      var m = 0; etabs.forEach(function (e) { if (p.per[e] > m) m = p.per[e]; });
-      var bars = etabs.map(function (e) {
-        var v = p.per[e], hpx = !(v > 0) ? 2 : Math.round(4 + v / m * 32);
-        if (v === undefined) return '<div class="col" title="' + e + ' : non communiqué"><em class="q">—</em><div class="b" style="height:2px;opacity:.35"></div><small>' + e + '</small></div>';
-        return '<div class="col"><em class="q' + (v === 0 ? ' z' : '') + '">' + fmt(v) + '</em><div class="b ' + (v === 0 ? 'zero' : v === m ? 'hot' : '') + '" style="height:' + hpx + 'px"></div><small>' + e + '</small></div>';
-      }).join('');
-      return '<div class="imb"><div class="imn">' + esc(cap(p.d)) + '</div>' +
-        '<div class="imm">' + fmt(p.tot) + ' u · <b>' + Math.round(p.conc * 100) + ' % sur ' + p.mxE + '</b> · ' + p.zeros + ' site' + (p.zeros > 1 ? 's' : '') + ' à 0</div>' +
-        '<div class="imbar">' + bars + '</div>' +
-        '<div class="imfix">→ <b>transférer</b> de ' + p.mxE + ' vers ' + etabs.filter(function (e) { return p.per[e] === 0; }).map(function (e) {
-          return aVendu(p.c, e) === false ? e + ' <span class="imnv">(aucune vente relevée sur ce site)</span>' : e;
-        }).join(', ') + ' — plutôt que commander</div></div>';
-    }).join('') || '<div class="ap-empty">Stock équilibré sur les sites.</div>';
     // Les sites ne sont pas tous extraits le même jour : on le dit, regroupé par date.
     var SD = window.ETAB_PRICES.siteDates || {}, parDate = {}, ordre = [];
-    etabs.forEach(function (e) { var d = SD[e]; if (!d) return; if (!parDate[d]) { parDate[d] = []; ordre.push(d); } parDate[d].push(e); });
+    window.ETAB_PRICES.etabs.forEach(function (x) { var e = x.code, d = SD[e]; if (!d) return; if (!parDate[d]) { parDate[d] = []; ordre.push(d); } parDate[d].push(e); });
     ordre.sort();
     var datesHtml = ordre.length ? '<div class="ap-foot" style="padding:0 16px 12px;margin:0">Stock relevé ' + ordre.map(function (d) { return 'le ' + fdate(d) + ' (' + parDate[d].join(', ') + ')'; }).join(' · ') + '.</div>' : '';
     return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:#0E7C86">▤</div><div><h3>Stock par établissement</h3>' +
       '<div class="ap-sub">' + fmt(ss.total) + ' unités sur 7 sites — un produit concentré sur un site, à 0 ailleurs = à rééquilibrer, pas à racheter</div></div></div>' +
-      '<div class="sites">' + strip + '</div>' + datesHtml +
-      '<div class="imbhd">Rééquilibrage inter-sites <span>' + reb.length + '</span></div>' + rows + '</div>';
+      '<div class="sites">' + strip + '</div>' + datesHtml + '</div>' +
+      // 27/09/2026 — le rééquilibrage « par concentration » (un site à 55 % du stock, un autre à 0)
+      // est remplacé par N2 : un arbitrage par référence fondé sur la COUVERTURE de chaque site.
+      septSitesCard();
   }
 
   // ═══ VEILLE GÉNÉRIQUES (BDPM, robot mensuel) : bascules princeps→Gx + nouveaux groupes ═══
@@ -2197,6 +2168,328 @@
       '<div class="ap-foot" style="padding:10px 2px 0">Futures baisses de prix = avis CEPS au Journal Officiel (4-20 j d\'avance). Génériques = nouveaux groupes BDPM + princeps que le réseau achète. Demande = épidémie + urgences.</div>';
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DIRECTIONS MÉTIER N2 + N4 (arbitrage du 27/09/2026)
+  // Intégrées dans les espaces EXISTANTS, sans en ajouter un :
+  //   N4 « Le front »      → en tête de l'espace ANTICIPER (ce qui manque déjà et ce qui va manquer)
+  //   N2 « Les sept sites » → dans STOCK & SITES, à la place du rééquilibrage par concentration
+  // Formules reprises des maquettes ~/jarvis-preuves/appro-nouvelles-directions/socle.js
+  // ═══════════════════════════════════════════════════════════════════════════
+  var PLANCHER = 14;    // art. R.5124-59 CSP : obligation de service public, stock ≥ deux semaines
+  var DORMANT = 180;    // au-delà, le stock ne tourne plus — c'est un donneur potentiel
+
+  // ── Statut ANSM par CIP13 : ansm-dispo.json donne le statut par spécialité + ses CIP ──
+  var _ansmByCip = null, _ansmByCipRef = null;
+  function ansmItem(cip) {
+    if (!_ansmData) return null;
+    if (_ansmByCipRef !== _ansmData) {
+      _ansmByCipRef = _ansmData; _ansmByCip = {};
+      (_ansmData.items || []).forEach(function (i) {
+        (i.cips || []).forEach(function (c) { _ansmByCip[String(c)] = i; });
+      });
+    }
+    return _ansmByCip[String(cip)] || null;
+  }
+  function ansmStatut(cip) { var i = ansmItem(cip); return i ? String(i.st || '') : ''; }
+  function enTension(cip) { return /Rupture|Tension/.test(ansmStatut(cip)); }
+
+  // ── Chaîne du froid 2-8 °C : même source que Pilotage (froid-data.js, sous-famille grossiste) ──
+  var _froidSet = null, _froidRef = null;
+  function estFroidCip(cip) {
+    var F = window.FROID_CIPS; if (!F) return false;
+    if (_froidRef !== F) { _froidRef = F; _froidSet = {}; F.forEach(function (c) { _froidSet[String(c).replace(/\D/g, '')] = 1; }); }
+    return !!_froidSet[String(cip)];
+  }
+
+  // ── Répartition d'une référence entre les 7 sites + couverture par site ──
+  // ⚠️ Un site SANS LIGNE pour ce produit est « non communiqué » (POS en sept. 2026), PAS un
+  // site à zéro — même piège que le drapeau `unk` du carnet : absent ≠ inventorié à zéro.
+  // ⚠️ HYPOTHÈSE ASSUMÉE, écrite à l'écran : faute de ventes par établissement, la demande est
+  // supposée répartie à parts égales entre les sept sites. La couverture par site est donc un
+  // ordre de grandeur, pas une mesure. C'est le premier chiffre à remplacer par la vraie donnée.
+  function parSite(cip, vM) {
+    var EP = window.ETAB_PRICES; if (!EP || !EP.prices || !EP.etabs) return null;
+    var codes = EP.etabs.map(function (e) { return e.code; });
+    var vD = (vM || 0) / 30 / codes.length, out = [], tot = 0, nc = 0;
+    codes.forEach(function (e) {
+      var row = EP.prices[e] && EP.prices[e][cip];
+      if (!row) { nc++; out.push({ site: e, st: null, cov: null }); return; }
+      var st = Math.max(0, row[1] || 0);
+      tot += st;
+      out.push({ site: e, st: st, cov: vD > 0 ? st / vD : (st > 0 ? 9999 : 0) });
+    });
+    return { sites: out, tot: tot, nc: nc, n: codes.length };
+  }
+  // Transférer entre sites ne sort pas un euro de marchandise : on le propose AVANT la commande labo.
+  function transferts(cip, vM) {
+    var p = parSite(cip, vM); if (!p) return [];
+    var don = [], rec = [], mv = [], i;
+    p.sites.forEach(function (x) {
+      if (x.st == null) return;                       // non communiqué : on n'y touche pas
+      if (x.cov >= 9999) { if (x.st > 1) don.push({ site: x.site, st: x.st }); return; }
+      if (x.cov > DORMANT && x.st > 1) don.push({ site: x.site, st: x.st });
+      else if (x.cov < PLANCHER) rec.push({ site: x.site, st: x.st, cov: x.cov });
+    });
+    don.sort(function (a, b) { return b.st - a.st; });
+    rec.sort(function (a, b) { return a.cov - b.cov; });
+    var di = 0;
+    for (i = 0; i < rec.length && di < don.length; i++) {
+      var besoin = Math.max(1, Math.round((vM || 0) / 30 / p.n * CIBLE - rec[i].st));
+      var dispo = Math.max(0, don[di].st - 1);
+      var q = Math.min(besoin, dispo);
+      if (q > 0) { mv.push({ de: don[di].site, vers: rec[i].site, q: q }); don[di].st -= q; }
+      if (don[di].st <= 1) di++;
+    }
+    return mv;
+  }
+
+  // ═══ N4 · LE FRONT — ce qui manque déjà, et ce qui va manquer ═══
+  var _frontVue = 'expose', _frontN = 25;
+  var _frontCache = null, _frontIdxRef = null, _frontAnsmRef = null, _frontMitmRef = null;
+  function frontListes() {
+    var idx = cipIndex();
+    if (_frontCache && _frontIdxRef === idx && _frontAnsmRef === _ansmData && _frontMitmRef === _mitmSet) return _frontCache;
+    var expose = [], rupt = [], mitmFrag = [], hors = [], froid = [];
+    Object.keys(idx).forEach(function (k) {
+      var o = idx[k];
+      if (o.vM < MINVEL) return;            // même seuil de bruit que le reste de l'écran
+      var t = enTension(o.c), st = ansmStatut(o.c), m = isMitm(o.c);
+      if (/Rupture/.test(st)) rupt.push(o);
+      if (o.unk) return;                    // jamais inventorié : pas de couverture mesurée
+      if (t && o.cov < PLANCHER) expose.push(o);
+      if (m && !t && o.cov < PLANCHER) mitmFrag.push(o);
+      if (o.cov < PLANCHER) hors.push(o);
+      if (estFroidCip(o.c) && o.cov < CIBLE) froid.push(o);
+    });
+    _frontCache = { expose: expose, rupt: rupt, mitm: mitmFrag, hors: hors, froid: froid };
+    _frontIdxRef = idx; _frontAnsmRef = _ansmData; _frontMitmRef = _mitmSet;
+    return _frontCache;
+  }
+  function frontVues() {
+    var L = frontListes();
+    return [
+      { k: 'expose', on: 'Le front', dft: 'tens', t: 'Le front — tension déclarée et couverture trop courte',
+        s: 'Croisement du statut ANSM et de notre couverture. Une rupture déclarée chez le laboratoire signifie que la commande de réassort ne sera pas servie en entier : il faut arbitrer entre officines, pas espérer.', l: L.expose },
+      { k: 'rupt', on: 'Ruptures ANSM', dft: 'rupt', t: 'Ruptures déclarées à l’ANSM',
+        s: 'Statut « rupture de stock » publié par l’ANSM sur des références que le réseau vend. Le stock du groupe est ce qui reste avant l’arrêt.', l: L.rupt },
+      { k: 'mitm', on: 'MITM courts', dft: 'mitm', t: 'MITM dont la couverture est déjà courte',
+        s: 'Aucun signalement ANSM pour l’instant, mais ce sont des médicaments d’intérêt thérapeutique majeur et nous tenons moins de deux semaines. C’est la décision d’anticipation.', l: L.mitm },
+      { k: 'hors', on: 'Sous le plancher', t: 'Sous le plancher légal, toutes causes',
+        s: 'Moins de deux semaines de couverture, que le laboratoire soit en tension ou non (article R.5124-59).', l: L.hors },
+      { k: 'froid', on: 'Chaîne du froid', dft: 'cible', t: 'Chaîne du froid sous la cible',
+        s: 'Produits 2-8 °C sous 21 jours de couverture. Ils ne se rattrapent pas par un stock tampon : la capacité frigorifique des sept sites est limitée et un transfert coûte plus cher.', l: L.froid }
+    ];
+  }
+  function frontJauge(o) {
+    var pct = Math.min(100, Math.round(Math.min(o.cov, 60) / 60 * 100));
+    var pl = Math.round(PLANCHER / 60 * 100), ci = Math.round((o.rupt ? CIBLE_TENSION : CIBLE) / 60 * 100);
+    return '<div class="fr-cb"><i style="width:' + pct + '%"></i><u style="left:' + pl + '%" title="plancher légal 14 j"></u><u style="left:' + ci + '%" title="cible interne"></u></div>';
+  }
+  function frontCard() {
+    ensureAnsm(); ensureMitm();
+    if (!_ansmData) return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:#D5573B">!</div><div><h3>Le front</h3><div class="ap-sub">chargement des signalements ANSM…</div></div></div></div>';
+    var L = frontListes(), V = frontVues(), nMitm = 0;
+    if (_mitmSet) { var idx = cipIndex(); Object.keys(idx).forEach(function (k) { if (isMitm(k)) nMitm++; }); }
+    var jauges = '<div class="fr-front">' +
+      '<div class="fr-j r"><b>' + fmt(L.expose.length) + '</b><h4>Tension ANSM <em>et</em> sous les deux semaines</h4>' +
+        '<p>Le laboratoire est déjà en difficulté et notre couverture est sous le plancher légal. C’est ici que ça casse d’abord.</p></div>' +
+      '<div class="fr-j a"><b>' + fmt(L.mitm.length) + '</b><h4>MITM à sécuriser</h4>' +
+        '<p>Médicaments d’intérêt thérapeutique majeur, pas encore signalés, mais dont notre couverture est déjà trop courte.</p></div>' +
+      '<div class="fr-j v"><b>' + fmt(nMitm) + '</b><h4>MITM suivis au total</h4>' +
+        '<p>Sur ces références le laboratoire doit tenir 2 mois de stock de sécurité, 4 si l’ANSM l’exige (décret 2021-349).</p></div></div>';
+    var tabs = '<div class="fr-tabs">' + V.map(function (v) {
+      return '<button class="fr-tab' + (v.k === _frontVue ? ' on' : '') + '" onclick="V2.approFront(\'' + v.k + '\')">' +
+        v.on + ' <span>' + fmt(v.l.length) + '</span></button>';
+    }).join('') + '</div>';
+    var vue = V.filter(function (x) { return x.k === _frontVue; })[0] || V[0];
+    var Ls = vue.l.slice().sort(function (a, b) { return a.cov - b.cov || (b.vM * b.ppht) - (a.vM * a.ppht); });
+    var rows = Ls.slice(0, _frontN).map(function (o) {
+      var it = ansmItem(o.c), st = it ? it.st : '', t = enTension(o.c), m = isMitm(o.c), f = estFroidCip(o.c);
+      var crit = t && o.cov < PLANCHER, q = o.qcmd, cible = t ? CIBLE_TENSION : CIBLE;
+      var b = '';
+      if (st) b += '<span class="fr-b r">ANSM · ' + esc(st) + '</span>';
+      if (m) b += '<span class="fr-b a">MITM</span>';
+      if (f) b += '<span class="fr-b f">froid 2-8 °C</span>';
+      b += '<span class="fr-b">classe ' + (o.abc || 'C') + '</span>';
+      // La raison n'est écrite sur la ligne que si elle DIFFÈRE du cadrage de l'onglet,
+      // déjà posé au-dessus : sinon la même phrase se répétait à l'identique sur chaque ligne.
+      var rk = t ? (/Rupture/.test(st) ? 'rupt' : 'tens') : (m ? 'mitm' : 'cible');
+      var WHY = {
+        rupt: 'Rupture déclarée chez le laboratoire, pas une simple tension : la commande de réassort ne sera pas servie en entier. Il faut arbitrer entre officines, pas espérer.',
+        tens: 'Le laboratoire est en tension déclarée. Commander plus ne garantit pas de recevoir plus — la cible est relevée à ' + CIBLE_TENSION + ' jours et la répartition entre officines devient une décision.',
+        mitm: 'Médicament d’intérêt thérapeutique majeur. Le laboratoire doit tenir un stock de sécurité, mais notre propre couverture est déjà sous les deux semaines légales.',
+        cible: 'Couverture sous la cible interne de ' + CIBLE + ' jours.'
+      };
+      var why = (rk === vue.dft) ? '' : WHY[rk];
+      return '<div class="fr-row' + (crit ? ' crit' : '') + '"><div class="fr-t">' +
+          '<b>' + esc(cap(o.d)) + '</b>' +
+          '<span class="fr-cip">CIP ' + esc(o.c) + (it && it.dci ? ' · ' + esc(it.dci) : '') + '</span>' +
+          b + (why ? '<span class="fr-why">' + why + '</span>' : '') + frontJauge(o) + '</div>' +
+        '<div class="fr-g ' + (o.cov < PLANCHER ? 'r' : o.cov < cible ? 'a' : 'v') + '"><b>' + (o.cov >= 9999 ? 'aucune vente' : Math.round(o.cov) + ' j') + '</b>' +
+          '<span>couverture · ' + fmt(o.st) + ' bts en stock</span></div>' +
+        '<div class="fr-g ' + (q > 0 ? 'a' : 'v') + '"><b>' + (q > 0 ? fmt(q) + ' bts' : '—') + '</b>' +
+          '<span>' + (q > 0 ? 'à commander · ' + (V2.fmtEur ? V2.fmtEur(q * (o.ppht || 0)) : fmt(q * (o.ppht || 0))) : 'rien à commander') + ' · cible ' + cible + ' j</span></div></div>';
+    }).join('') || '<div class="fr-row"><div class="fr-t"><b>Aucune référence dans cette zone</b>' +
+      '<span class="fr-why">C’est une bonne nouvelle, pas un écran vide : rien ne relève de cette décision aujourd’hui.</span></div></div>';
+    var more = Ls.length > _frontN
+      ? '<button class="fr-more" onclick="V2.approFrontMore()">Voir ' + Math.min(25, Ls.length - _frontN) + ' de plus (' + fmt(Ls.length - _frontN) + ' restantes)</button>' : '';
+    var gen = (_ansmData.meta && _ansmData.generated) || _ansmData.generated || '';
+    return '<div class="v2-card ap-card fr-card">' +
+      '<div class="ap-hd"><div class="ap-ic" style="background:#D5573B">!</div><div><h3>Le front — ce qui manque déjà, et ce qui va manquer</h3>' +
+        '<div class="ap-sub">la tension ne commence pas chez le grossiste, elle commence chez le laboratoire et descend</div></div></div>' +
+      '<div class="fr-body">' + jauges + tabs +
+        '<div class="fr-ttl">' + esc(vue.t) + '</div>' +
+        '<div class="fr-sub">' + vue.s + ' — ' + fmt(vue.l.length) + ' références.</div>' +
+        '<div class="fr-rows">' + rows + '</div>' + more +
+        '<div class="ap-foot" style="margin-top:14px">Statuts ANSM : <code>ansm-dispo.json</code>' + (gen ? ', généré le ' + esc(gen) : '') +
+          '. Liste MITM : <code>mitm.json</code> (source ANSM/BDPM). Chaîne du froid : <code>froid-data.js</code>. ' +
+          'Couverture = stock des sept établissements ÷ vitesse du réseau sur les mois complets. La cible passe de ' + CIBLE + ' à ' + CIBLE_TENSION +
+          ' jours dès qu’une tension est déclarée, et un creux saisonnier ne réduit jamais la commande d’un produit en tension. ' +
+          'Seules les références vendues au moins ' + MINVEL + ' bts/mois par le réseau sont comptées. ' +
+          '<b>Ce qui manque :</b> le contingentement réel du laboratoire — combien il nous alloue — n’est dans aucune base. ' +
+          'Sans lui, « à commander » reste un besoin, pas une promesse de livraison.</div>' +
+      '</div></div>';
+  }
+  V2.approFront = function (k) { _frontVue = k; _frontN = 25; if (V2.render) V2.render(); };
+  V2.approFrontMore = function () { _frontN += 25; if (V2.render) V2.render(); };
+
+  // ═══ N2 · LES SEPT SITES — le stock est là, il n'est pas au bon endroit ═══
+  var _n2i = 0, _n2hist = [], _n2stats = { t: 0, c: 0, p: 0, eur: 0 };
+  var _n2Queue = null, _n2IdxRef = null, _n2EpRef = null, _n2Keys = 0;
+  function n2Queue() {
+    var idx = cipIndex(), EP = window.ETAB_PRICES;
+    if (_n2Queue && _n2IdxRef === idx && _n2EpRef === EP) return _n2Queue;
+    var out = [];
+    Object.keys(idx).forEach(function (k) {
+      var o = idx[k];
+      if (o.unk || o.vM < MINVEL) return;
+      var mv = transferts(o.c, o.vM);
+      if (!mv.length) return;
+      var q = 0; mv.forEach(function (m) { q += m.q; });
+      out.push({ o: o, mv: mv, q: q });
+    });
+    out.sort(function (a, b) { return (b.q * (b.o.ppht || 0)) - (a.q * (a.o.ppht || 0)); });
+    _n2Queue = out; _n2IdxRef = idx; _n2EpRef = EP;
+    if (_n2i > out.length) { _n2i = 0; _n2hist = []; }
+    return out;
+  }
+  function n2Silo(x, maxSt, cip) {
+    if (x.st == null) {
+      return '<div class="n2-silo"><div class="n2-tube nc" style="height:3px"><em></em></div>' +
+        '<div class="n2-cap"><b>' + x.site + '</b><span>—</span><i>non communiqué</i></div></div>';
+    }
+    // Vu à l'œil : à l'échelle linéaire, un site à 20 bts face à un site à 540 rendait un filet
+    // de 6 px — plus fin que le tube d'un site à ZÉRO. Un site qui a du stock a un plancher visible.
+    var h = x.st === 0 ? 3 : (maxSt > 0 ? Math.max(10, Math.round(x.st / maxSt * 150)) : 10);
+    var cl = x.cov < PLANCHER ? 'bas' : (x.cov > DORMANT ? 'dor' : '');
+    var lab = x.cov >= 9999 ? 'dormant' : (x.cov >= 400 ? Math.round(x.cov / 30) + ' mois' : Math.round(x.cov) + ' j');
+    var nv = (x.st === 0 && aVendu(cip, x.site) === false) ? '<u title="aucune vente relevée sur ce site">jamais vendu ici</u>' : '';
+    return '<div class="n2-silo"><div class="n2-tube ' + cl + '" style="height:' + h + 'px"><em></em></div>' +
+      '<div class="n2-cap"><b>' + x.site + '</b><span>' + fmt(x.st) + ' bts</span><i class="' + cl + '">' + lab + '</i>' + nv + '</div></div>';
+  }
+  function septSitesCard() {
+    if (!window.ETAB_PRICES) {
+      return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:#0E7C86">▤</div><div><h3>Les sept sites</h3><div class="ap-sub">chargement des stocks des 7 sites…</div></div></div></div>';
+    }
+    n2Keys();
+    var file = n2Queue(), S = _n2stats;
+    var head = '<div class="ap-hd"><div class="ap-ic" style="background:#0E7C86">▤</div><div>' +
+      '<h3>Les sept sites — le stock est là, il n’est pas au bon endroit</h3>' +
+      '<div class="ap-sub">avant de commander à un laboratoire : est-ce qu’un autre de mes sites ne l’a pas déjà en trop ? — <b>' + fmt(file.length) + '</b> références à arbitrer</div></div></div>';
+    var EP = window.ETAB_PRICES;
+    var SD = EP.siteDates || {}, parDate = {}, ordre = [];
+    EP.etabs.forEach(function (e) { var d = SD[e.code]; if (!d) return; if (!parDate[d]) { parDate[d] = []; ordre.push(d); } parDate[d].push(e.code); });
+    ordre.sort();
+    var foot = '<div class="ap-foot" style="margin-top:14px">Sept établissements : ' + EP.etabs.map(function (e) { return e.code; }).join(' · ') +
+      (ordre.length ? ', stock relevé ' + ordre.map(function (d) { return 'le ' + fdate(d) + ' (' + parDate[d].join(', ') + ')'; }).join(' · ') : '') +
+      '. Le stock par site vient de <code>etab-prices-data.js</code> ; la vitesse de vente est celle du réseau entier sur les mois complets. ' +
+      '<b>Hypothèse assumée :</b> faute de ventes par établissement, la demande est supposée répartie à parts égales entre les sept sites — la couverture par site est donc un ordre de grandeur, pas une mesure. ' +
+      'C’est le premier chiffre à remplacer par la vraie donnée. Un site sans ligne pour un produit est <b>non communiqué</b>, pas à zéro : il n’est ni donneur ni receveur.</div>';
+
+    if (!file.length) {
+      return '<div class="v2-card ap-card n2-card">' + head +
+        '<div class="n2-body"><div class="ap-empty" style="padding:0">Aucun transfert interne à proposer : sur les références mouvantes, aucun site ne dort au-dessus de ' +
+        DORMANT + ' jours pendant qu’un autre passe sous les ' + PLANCHER + ' jours légaux.</div>' + foot + '</div></div>';
+    }
+    if (_n2i >= file.length) {
+      return '<div class="v2-card ap-card n2-card">' + head +
+        '<div class="n2-body"><div class="n2-done"><b>Séance terminée.</b> ' + S.t + ' transfert' + (S.t > 1 ? 's' : '') + ' décidé' + (S.t > 1 ? 's' : '') + ', ' + S.c +
+          ' commande' + (S.c > 1 ? 's' : '') + ' préférée' + (S.c > 1 ? 's' : '') + ', ' + S.p + ' référence' + (S.p > 1 ? 's' : '') + ' passée' + (S.p > 1 ? 's' : '') +
+          '. Valeur remise en mouvement sans achat : <b>' + (V2.fmtEur ? V2.fmtEur(S.eur) : fmt(S.eur)) + '</b>.</div>' +
+        '<div class="n2-act"><button class="n2-b" onclick="V2.approSite(\'reset\')">Recommencer une séance</button></div>' + foot + '</div></div>';
+    }
+    var it = file[_n2i], o = it.o, p = parSite(o.c, o.vM);
+    var maxSt = 0; p.sites.forEach(function (x) { if (x.st != null && x.st > maxSt) maxSt = x.st; });
+    var st = ansmStatut(o.c);
+    var badges = '<span class="fr-b">' + fmt(o.vM) + ' bts/mois réseau</span>' +
+      '<span class="fr-b">' + fmt(o.st) + ' bts en stock groupe</span>' +
+      '<span class="fr-b">couverture groupe ' + (o.cov >= 9999 ? 'aucune vente' : Math.round(o.cov) + ' j') + '</span>' +
+      '<span class="fr-b">' + (V2.fmtEur ? V2.fmtEur(o.st * (o.ppht || 0)) : fmt(o.st * (o.ppht || 0))) + ' immobilisés</span>' +
+      (st ? '<span class="fr-b r">ANSM · ' + esc(st) + '</span>' : '') +
+      (isMitm(o.c) ? '<span class="fr-b a">MITM · stock de sécurité labo</span>' : '') +
+      (estFroidCip(o.c) ? '<span class="fr-b f">chaîne du froid 2-8 °C</span>' : '');
+    var mvHtml = it.mv.map(function (m) {
+      var nv = aVendu(o.c, m.vers) === false ? ' <u>(aucune vente relevée sur ce site)</u>' : '';
+      return '<li><span>' + m.de + ' <b>→</b> ' + m.vers + nv + '</span><span>' + fmt(m.q) + ' bts</span></li>';
+    }).join('');
+    var eurQ = it.q * (o.ppht || 0), eurTxt = (V2.fmtEur ? V2.fmtEur(eurQ) : fmt(eurQ));
+    return '<div class="v2-card ap-card n2-card">' + head + '<div class="n2-body">' +
+      '<div class="n2-scene">' +
+        '<div class="n2-ref"><h4>' + esc(cap(o.d)) + '</h4><span class="n2-meta">CIP ' + esc(o.c) + ' · classe ' + (o.abc || 'C') + '</span></div>' +
+        '<div class="n2-badges">' + badges + '</div>' +
+        '<div class="n2-silos">' + p.sites.map(function (x) { return n2Silo(x, maxSt, o.c); }).join('') + '</div>' +
+      '</div>' +
+      '<div class="n2-verdict">' +
+        '<div class="n2-vc reco"><h5>Le geste conseillé</h5>' +
+          '<div class="n2-gros">' + fmt(it.q) + ' boîtes à déplacer, ' + it.mv.length + ' mouvement' + (it.mv.length > 1 ? 's' : '') + '</div>' +
+          '<p>Ces sites tiennent plus de six mois pendant que d’autres sont sous les deux semaines légales. Le transfert interne ne coûte pas de marchandise : il remet la couverture d’aplomb sans sortir un euro.</p>' +
+          '<ul class="n2-mv">' + mvHtml + '</ul></div>' +
+        '<div class="n2-vc"><h5>Si on commandait au lieu de transférer</h5>' +
+          '<div class="n2-gros">' + eurTxt + ' de marchandise en plus</div>' +
+          '<p>Commander ces ' + fmt(it.q) + ' boîtes au laboratoire alourdirait le stock du groupe de ' + eurTxt +
+          ' alors que la quantité existe déjà en interne. Le groupe détient ' + fmt(o.st) + ' boîtes pour une vente de ' + fmt(o.vM) + ' par mois.</p></div>' +
+      '</div>' +
+      '<div class="n2-act">' +
+        '<button class="n2-b go" onclick="V2.approSite(\'t\')">Transférer<kbd>T</kbd></button>' +
+        '<button class="n2-b" onclick="V2.approSite(\'c\')">Commander plutôt<kbd>C</kbd></button>' +
+        '<button class="n2-b" onclick="V2.approSite(\'p\')">Passer<kbd>→</kbd></button>' +
+        '<button class="n2-b" onclick="V2.approSite(\'undo\')"' + (_n2hist.length ? '' : ' disabled') + '>Annuler<kbd>←</kbd></button>' +
+        '<span class="n2-pos">' + (_n2i + 1) + ' / ' + fmt(file.length) + ' · ' + S.t + ' transferts, ' + S.c + ' commandes, ' + S.p + ' passées</span>' +
+      '</div>' + foot + '</div></div>';
+  }
+  V2.approSite = function (a) {
+    var file = n2Queue();
+    if (a === 'reset') { _n2i = 0; _n2hist = []; _n2stats = { t: 0, c: 0, p: 0, eur: 0 }; if (V2.render) V2.render(); return; }
+    if (a === 'undo') {
+      var h = _n2hist.pop(); if (!h) return;
+      _n2i = h.i; _n2stats.eur = h.e;
+      if (h.a === 't') _n2stats.t--; else if (h.a === 'c') _n2stats.c--; else _n2stats.p--;
+      if (V2.render) V2.render(); return;
+    }
+    if (_n2i >= file.length) return;
+    _n2hist.push({ i: _n2i, a: a, e: _n2stats.eur });
+    if (a === 't') { _n2stats.t++; _n2stats.eur += file[_n2i].q * (file[_n2i].o.ppht || 0); }
+    else if (a === 'c') _n2stats.c++; else _n2stats.p++;
+    _n2i++;
+    if (V2.render) V2.render();
+  };
+  // Raccourcis clavier — posés une seule fois, et inertes hors de l'espace « Stock & sites »
+  // (sinon une frappe dans un champ de recherche déclencherait un transfert).
+  function n2Keys() {
+    if (_n2Keys) return; _n2Keys = 1;
+    document.addEventListener('keydown', function (e) {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (!(V2.route && V2.route.name === 'appro') || _section !== 'stock') return;
+      var t = e.target, tag = t && t.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
+      var k = String(e.key || '').toLowerCase();
+      if (k === 't') { V2.approSite('t'); e.preventDefault(); }
+      else if (k === 'c') { V2.approSite('c'); e.preventDefault(); }
+      else if (e.key === 'ArrowRight') { V2.approSite('p'); e.preventDefault(); }
+      else if (e.key === 'ArrowLeft') { V2.approSite('undo'); e.preventDefault(); }
+    });
+  }
+
   V2.pages.appro = {
     render: function (root) {
       ensureCss();
@@ -2364,7 +2657,10 @@
         try { cockpit = anticiperCockpit(); } catch (e) { cockpit = ''; }
         var ecartH = '';
         try { ecartH = ecartNational(); } catch (e) { ecartH = ''; }
-        content = cockpit +
+        var frontH = '';
+        try { frontH = frontCard(); } catch (e) { frontH = ''; }
+        content = (frontH ? secHead('Ce qui manque déjà, et ce qui va manquer', 'la tension commence chez le laboratoire et descend — ANSM × notre couverture × médicaments d’intérêt thérapeutique majeur') + frontH : '') +
+          cockpit +
           (prevH ? secHead('Comment — combien, et quand', 'une prévision est une fourchette, jamais un chiffre nu : on pré-achète sur la borne basse, on sécurise sur la haute') + prevH : '') +
           (causesH ? secHead('Et pourquoi ça casse', 'la cause n° 1 est une demande qui monte — donc annoncée par la courbe ci-dessus') + causesH : '') +
           (ecartH ? secHead('Écart au marché France', 'calculé sur le marché national, indépendamment de la fraîcheur de vos données') + ecartH : '') +
@@ -2586,17 +2882,97 @@
       '.site{background:var(--card-2,#F6F8FB);border:1px solid var(--line);border-radius:11px;padding:9px 8px;text-align:center}' +
       '.site .code{font-size:12px;font-weight:800}.site .qt{font-size:16px;font-weight:800;margin:2px 0}.site .pct{font-size:12px;color:var(--muted);font-weight:700}' +
       '.site .sbar{height:5px;border-radius:3px;background:#E4E8EF;margin-top:7px;overflow:hidden}.site .sbar i{display:block;height:100%;background:#0E7C86;border-radius:3px}' +
-      '.imbhd{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ip-ink);padding:6px 16px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:center}' +
-      '.imbhd span{background:var(--card-2,#F6F8FB);border:1px solid var(--line);border-radius:999px;padding:0 8px;font-size:12px;color:var(--muted)}' +
-      '.imb{padding:12px 16px;border-top:1px solid var(--line)}' +
-      '.imb .imn{font-size:13px;font-weight:800;color:var(--ip-ink)}' +
-      '.imb .imm{font-size:12px;color:var(--muted);margin:2px 0 8px}.imb .imm b{color:var(--ip-ink)}' +
-      '.imbar{display:flex;align-items:flex-end;gap:6px;height:58px}' +
-      '.imbar .col .q{font:700 10.5px/1 Inter,sans-serif;font-style:normal;color:var(--ip-ink);white-space:nowrap}.imbar .col .q.z{color:#B42318}' +
-      '.imbar .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}' +
-      '.imbar .col .b{width:100%;max-width:32px;border-radius:3px 3px 0 0;background:#C6D0DE;min-height:2px}.imbar .col .b.hot{background:var(--c-amber)}.imbar .col .b.zero{background:#EAEDF2}' +
-      '.imbar .col small{font-size:12px;color:var(--muted);font-weight:700}' +
-      '.imb .imfix{font-size:12px;font-weight:800;color:#0E7C86;margin-top:8px}.imb .imfix b{color:var(--ip-ink)}.imb .imnv{font-weight:700;color:#9A5B00}' +
+      /* ── N4 · LE FRONT ─────────────────────────────────────────────── */
+      '.fr-body{padding:16px 18px 18px}' +
+      '.fr-front{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}' +
+      '.fr-j{padding:15px 16px;border:1px solid var(--line);border-radius:14px;background:var(--card-2,#F6F8FB)}' +
+      '.fr-j.r{border-color:#F3B0A0;background:radial-gradient(240px 120px at 18% -30%,#FFE2DA 0%,rgba(255,226,218,0) 72%),#FFF5F2}' +
+      '.fr-j.a{border-color:#F0C98A;background:radial-gradient(240px 120px at 18% -30%,#FFEFD3 0%,rgba(255,239,211,0) 72%),#FFFAF1}' +
+      '.fr-j.v{border-color:#BFE6CF;background:radial-gradient(240px 120px at 18% -30%,#DFF3E7 0%,rgba(223,243,231,0) 72%),#F5FCF8}' +
+      '.fr-j b{display:block;font-family:var(--mono);font-size:30px;font-weight:800;line-height:1;letter-spacing:-.02em}' +
+      '.fr-j.r b{color:#C0561A}.fr-j.a b{color:#9A5B12}.fr-j.v b{color:#0F7A52}' +
+      '.fr-j h4{margin:7px 0 3px;font-size:13px;font-weight:800;color:var(--ip-ink)}.fr-j h4 em{font-style:normal;color:var(--muted)}' +
+      '.fr-j p{margin:0;font-size:12px;color:var(--muted);line-height:1.45;font-weight:500}' +
+      '.fr-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:18px 0 14px}' +
+      '.fr-tab{min-height:36px;padding:0 13px;border-radius:9px;border:1px solid var(--line);background:var(--card);' +
+        'font-size:12.5px;font-weight:800;color:var(--muted);cursor:pointer}' +
+      '.fr-tab span{font-family:var(--mono);opacity:.75;margin-left:3px}' +
+      '.fr-tab.on{border-color:#F3B0A0;color:#C0561A;background:#FFF1EE}' +
+      '.fr-ttl{font-size:15px;font-weight:800;color:var(--ip-ink)}' +
+      '.fr-sub{font-size:12.5px;color:var(--muted);line-height:1.5;margin:3px 0 14px;max-width:80ch;font-weight:500}' +
+      '.fr-rows{display:grid;gap:9px}' +
+      '.fr-row{display:grid;grid-template-columns:1fr 150px 150px;gap:14px;align-items:center;' +
+        'padding:13px 15px;border:1px solid var(--line);border-radius:12px;background:var(--card)}' +
+      '.fr-row.crit{border-color:#F3B0A0;background:radial-gradient(420px 160px at 0% 0%,#FFF1EC 0%,rgba(255,241,236,0) 70%),var(--card)}' +
+      '.fr-t{min-width:0}' +
+      '.fr-t>b{display:block;font-size:13.5px;font-weight:800;line-height:1.3;color:var(--ip-ink)}' +
+      '.fr-cip{display:block;margin-top:3px;font-family:var(--mono);font-size:12px;color:var(--muted)}' +
+      '.fr-why{display:block;margin-top:6px;font-size:12px;color:var(--muted);line-height:1.45;font-weight:500}' +
+      '.fr-b{display:inline-block;margin:6px 5px 0 0;padding:2px 8px;border-radius:6px;font-family:var(--mono);' +
+        'font-size:12px;font-weight:700;border:1px solid var(--line);color:var(--muted);background:var(--card-2,#F6F8FB)}' +
+      '.fr-b.r{border-color:#F3B0A0;color:#C0561A;background:#FFF1EE}' +
+      '.fr-b.a{border-color:#F0C98A;color:#9A5B12;background:#FFF8EC}' +
+      '.fr-b.f{border-color:#A8D4E0;color:#0E6F80;background:#EDF8FB}' +
+      '.fr-cb{margin-top:8px;height:6px;border-radius:3px;background:#E9EDF3;overflow:hidden;position:relative}' +
+      '.fr-cb i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#D5573B,#C7791A)}' +
+      '.fr-cb u{position:absolute;top:-3px;bottom:-3px;width:1.5px;background:var(--muted);text-decoration:none;opacity:.55}' +
+      '.fr-g{text-align:right}' +
+      '.fr-g b{display:block;font-family:var(--mono);font-size:17px;font-weight:800;line-height:1.15;color:var(--ip-ink)}' +
+      '.fr-g span{display:block;margin-top:2px;font-size:12px;color:var(--muted);font-weight:500}' +
+      '.fr-g.r b{color:#C0561A}.fr-g.a b{color:#9A5B12}.fr-g.v b{color:#0F7A52}' +
+      '.fr-more{display:block;width:100%;margin-top:12px;min-height:44px;padding:12px;border:1px solid var(--line);' +
+        'border-radius:10px;background:var(--card-2,#F6F8FB);font-size:13.5px;font-weight:800;color:var(--ip-ink);cursor:pointer}' +
+      '.fr-more:hover{background:#EEF2F8}' +
+      /* ── N2 · LES SEPT SITES ───────────────────────────────────────── */
+      '.n2-body{padding:16px 18px 18px}' +
+      '.n2-scene{padding:18px 18px 12px;border:1px solid var(--line);border-radius:15px;' +
+        'background:radial-gradient(520px 230px at 50% -25%,#EEF4FB 0%,rgba(238,244,251,0) 72%),var(--card-2,#F6F8FB)}' +
+      '.n2-ref{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline}' +
+      '.n2-ref h4{margin:0;font-size:18px;font-weight:800;letter-spacing:-.01em;color:var(--ip-ink)}' +
+      '.n2-meta{font-family:var(--mono);font-size:12px;color:var(--muted)}' +
+      '.n2-badges{margin:6px 0 14px}' +
+      '.n2-silos{display:grid;grid-template-columns:repeat(7,1fr);gap:9px;align-items:end}' +
+      '.n2-silo{display:flex;flex-direction:column;justify-content:flex-end;min-height:190px}' +
+      '.n2-tube{position:relative;border-radius:7px 7px 3px 3px;overflow:hidden;border:1px solid var(--line);' +
+        'border-bottom:0;background:#EDF1F7;min-height:3px}' +
+      '.n2-tube em{position:absolute;inset:0;display:block;border-radius:6px 6px 0 0;' +
+        'background:linear-gradient(180deg,#E0A340,rgba(224,163,64,.45))}' +
+      '.n2-tube.bas em{background:linear-gradient(180deg,#D5573B,rgba(213,87,59,.45))}' +
+      '.n2-tube.dor em{background:linear-gradient(180deg,#1E9E6A,rgba(30,158,106,.35))}' +
+      '.n2-tube.nc{background:repeating-linear-gradient(45deg,#E4E8EF,#E4E8EF 3px,#F2F5F9 3px,#F2F5F9 6px)}' +
+      '.n2-tube.nc em{display:none}' +
+      '.n2-cap{margin-top:7px;padding-top:6px;border-top:1px solid var(--line);text-align:center}' +
+      '.n2-cap b{display:block;font-family:var(--mono);font-size:12px;font-weight:800;color:var(--ip-ink)}' +
+      '.n2-cap span{display:block;font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:1px}' +
+      '.n2-cap i{display:block;font-style:normal;font-size:12px;margin-top:2px;color:var(--muted);font-weight:700}' +
+      '.n2-cap i.bas{color:#C0561A}.n2-cap i.dor{color:#0F7A52}' +
+      '.n2-cap u{display:block;text-decoration:none;font-size:12px;margin-top:2px;color:#9A5B12;font-weight:700;line-height:1.2}' +
+      '.n2-verdict{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px}' +
+      '.n2-vc{padding:15px 17px;border:1px solid var(--line);border-radius:13px;background:var(--card)}' +
+      '.n2-vc.reco{border-color:#F0C98A;background:radial-gradient(360px 160px at 10% -20%,#FFF3DE 0%,rgba(255,243,222,0) 72%),#FFFCF6}' +
+      '.n2-vc h5{margin:0 0 5px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:800}' +
+      '.n2-gros{font-family:var(--mono);font-size:19px;font-weight:800;line-height:1.2;color:var(--ip-ink);letter-spacing:-.02em}' +
+      '.n2-vc.reco .n2-gros{color:#9A5B12}' +
+      '.n2-vc p{margin:7px 0 0;font-size:12.5px;color:var(--muted);line-height:1.5;font-weight:500}' +
+      '.n2-mv{margin:10px 0 0;padding:0;list-style:none;font-family:var(--mono);font-size:12.5px}' +
+      '.n2-mv li{padding:6px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;color:var(--ip-ink);font-weight:700}' +
+      '.n2-mv li:last-child{border-bottom:0}.n2-mv b{color:#9A5B12}' +
+      '.n2-mv u{text-decoration:none;color:#9A5B12;font-weight:700}' +
+      '.n2-act{margin-top:14px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}' +
+      '.n2-b{min-height:44px;padding:0 17px;border-radius:10px;border:1px solid var(--line);background:var(--card);' +
+        'font-size:13.5px;font-weight:800;color:var(--ip-ink);cursor:pointer}' +
+      '.n2-b:hover{background:var(--card-2,#F6F8FB)}' +
+      '.n2-b[disabled]{opacity:.45;cursor:default}' +
+      '.n2-b.go{border-color:#F0C98A;background:linear-gradient(180deg,#FFF3DE,#FFE8C4);color:#7A4708}' +
+      '.n2-b kbd{display:inline-block;margin-left:7px;padding:1px 6px;border:1px solid var(--line);border-radius:4px;' +
+        'font-family:var(--mono);font-size:12px;color:var(--muted);font-weight:700}' +
+      '.n2-pos{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--muted);font-weight:700}' +
+      '.n2-done{padding:16px 18px;border:1px solid #BFE6CF;border-radius:13px;background:#F5FCF8;font-size:13.5px;color:var(--muted);font-weight:500;line-height:1.55}' +
+      '.n2-done b{color:#0F7A52;font-weight:800}' +
+      '@media(max-width:860px){.fr-front{grid-template-columns:1fr}.fr-row{grid-template-columns:1fr;gap:9px}' +
+        '.fr-g{text-align:left;display:flex;gap:9px;align-items:baseline}.fr-g b{font-size:15px}' +
+        '.n2-verdict{grid-template-columns:1fr}.n2-silos{gap:4px}.n2-silo{min-height:158px}' +
+        '.n2-pos{margin-left:0;width:100%}}' +
       /* négo labo chiffrée */
       '.neg-row{padding:12px 16px;border-top:1px solid var(--line)}.neg-row:first-of-type{border-top:0}' +
       '.neg-top{display:flex;align-items:center;gap:9px}' +
