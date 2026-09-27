@@ -212,7 +212,33 @@
       '.mfr-l b{font-family:var(--mono);font-weight:700;letter-spacing:-.02em}',
       '.mfr-note{background:var(--card-2);border:1px solid var(--line);border-radius:var(--r-md);',
       ' padding:var(--sp-4);font-size:12.5px;color:var(--muted);line-height:1.65;margin-top:var(--gap-grid)}',
-      '.mfr-note b{color:var(--ip-ink-2)}'
+      '.mfr-note b{color:var(--ip-ink-2)}',
+      // ── Second bloc « Au-delà du médicament » ─────────────────────────
+      '.mfr-h2{font-size:19px;font-weight:800;letter-spacing:-.025em;margin:var(--sp-8) 0 0;',
+      ' padding-top:var(--sp-6);border-top:1px solid var(--line-2)}',
+      // Un libellé LPP fait jusqu'à 70 caractères : c'est lui qui prend la
+      // place, pas une colonne fixe de 150 px qui le couperait au tiers.
+      '.mfr-b.lpp{grid-template-columns:minmax(0,1fr) 72px 104px}',
+      '@media(max-width:640px){.mfr-b.lpp{grid-template-columns:minmax(0,1fr) 48px 76px}}',
+      // Un libellé LPP coupé au tiers n'apprend rien : il passe à la ligne.
+      '.mfr-b.lpp span:first-child{white-space:normal;text-overflow:clip;line-height:1.35}',
+      // « 13,8 % » ne tient pas dans les 54 px de la pastille d'indice : elle
+      // se coupait en deux lignes et doublait la hauteur de chaque ligne.
+      '.mfr-b.dmr{grid-template-columns:150px 1fr 104px 62px}',
+      '.mfr-b.dmr i{white-space:nowrap}',
+      '@media(max-width:640px){.mfr-b.dmr{grid-template-columns:78px 1fr 72px 56px}}',
+      '.mfr-sigs{display:grid;gap:var(--sp-3);margin-top:var(--sp-4)}',
+      '.mfr-sig{padding:var(--sp-3) 0;border-bottom:1px solid var(--line-2)}',
+      '.mfr-sigs .mfr-sig:last-child{border-bottom:none;padding-bottom:0}',
+      '.mfr-sig-t{display:grid;grid-template-columns:1fr auto;gap:var(--sp-3);align-items:center}',
+      '.mfr-sig-t b{font-size:14.5px;font-weight:700;letter-spacing:-.01em}',
+      '.mfr-sig-t i{font-style:normal;font-family:var(--mono);font-size:12.5px;',
+      ' padding:2px 7px;border-radius:var(--r-pill);white-space:nowrap}',
+      '.mfr-sig-t i.up{background:#E6F6EF;color:var(--c-mint-txt)}',
+      '.mfr-sig-t i.dn{background:#FDECEF;color:var(--c-rose-txt)}',
+      '.mfr-sig-t i.eq{background:#EFF1F6;color:var(--muted)}',
+      '.mfr-sig-d{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.5}',
+      '.mfr-sig-r{font-size:12.5px;color:var(--ip-blue);font-weight:650;margin-top:3px}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -350,6 +376,235 @@
       'la région sur le fichier qui porte les euros.</div></section></div>';
   }
 
+
+  // ══════════════════════════════════════════════════════════════════════
+  // SECOND BLOC · « Au-delà du médicament »
+  // Choix de Will le 28/09/2026 : les dispositifs médicaux et les signaux
+  // des urgences n'ont AUCUNE entrée par référence — les DM portent un code
+  // LPP que nos produits n'ont pas, les signaux sont des pathologies. Ils
+  // vivent donc SOUS la fiche, dans un bloc à part, jamais dans la barre de
+  // recherche : y chercher un CIP ne rendrait jamais rien.
+  // Les deux lectures sont indépendantes et facultatives : si l'une échoue,
+  // l'autre s'affiche quand même, et l'écran du haut n'est jamais touché.
+  // ══════════════════════════════════════════════════════════════════════
+  var DM = null, ODI = null, DMS = null;
+  var _plusEnCours = false, _plusFini = false, _echecDm = null, _echecOdi = null;
+
+  // La Corse est éclatée en 2A/2B dans les fichiers par département, et en
+  // « 20 » dans le nôtre : sans ce repli, ses officines ne seraient comptées
+  // sur aucun signal.
+  function depNorm(d) {
+    d = String(d == null ? '' : d).trim().toUpperCase();
+    if (d === '2A' || d === '2B') return '20';
+    if (/^\d$/.test(d)) return '0' + d;
+    return d;
+  }
+  // Nos officines par département, calculé une fois.
+  var _offDep = null;
+  function offParDep() {
+    if (_offDep) return _offDep;
+    _offDep = {};
+    (V2.pharmacies || []).forEach(function (p) {
+      var d = depDeCp(p.cp); if (d) _offDep[d] = (_offDep[d] || 0) + 1;
+    });
+    return _offDep;
+  }
+
+  function socleDm() {
+    if (DMS || !DM) return DMS;
+    var REG = DM.regions, NR = REG.length, AG = DM.ages || [], i;
+    var totE = [], totQ = [], totA = [];
+    for (i = 0; i < NR; i++) { totE[i] = 0; totQ[i] = 0; }
+    for (i = 0; i < AG.length; i++) totA[i] = 0;
+
+    var codes = [];
+    Object.keys(DM.data).forEach(function (code) {
+      var v = DM.data[code], e = v.e || [], qq = v.q || [], se = 0, sq = 0;
+      for (var k = 0; k < NR; k++) {
+        totE[k] += e[k] || 0; totQ[k] += qq[k] || 0;
+        se += e[k] || 0; sq += qq[k] || 0;
+      }
+      if (v.a) for (var j = 0; j < AG.length; j++) totA[j] += v.a[j] || 0;
+      codes.push({ code: code, l: v.l || '', e: se, q: sq });
+    });
+    codes.sort(function (a, b) { return b.e - a.e; });
+
+    var tE = 0, tQ = 0;
+    for (i = 0; i < NR; i++) { tE += totE[i]; tQ += totQ[i]; }
+    DMS = { REG: REG, NR: NR, AG: AG, codes: codes, totE: totE, totQ: totQ, totA: totA, tE: tE, tQ: tQ };
+    return DMS;
+  }
+
+  // ── La carte des dispositifs médicaux ────────────────────────────────
+  function carteDm() {
+    if (_echecDm) {
+      return '<section class="v2-card"><h2>Les dispositifs médicaux</h2>' +
+        '<div class="mfr-note" style="margin-top:var(--sp-4)"><b>Lecture en échec : ' +
+        esc(_echecDm) + '.</b><br>C\'est le chargement qui a raté, pas la donnée. ' +
+        'Recharge l\'écran.</div></section>';
+    }
+    var D = socleDm();
+    if (!D) return '<section class="v2-card"><h2>Les dispositifs médicaux</h2>' +
+      '<p class="mfr-sub">Chargement du marché LPP…</p></section>';
+
+    var C = DM.couverture || {};
+    var maxR = Math.max.apply(null, D.totE);
+    var maxC = D.codes.length ? D.codes[0].e : 0;
+    var HAUT = D.codes.slice(0, 8);
+    var partHaut = D.tE ? HAUT.reduce(function (a, c) { return a + c.e; }, 0) / D.tE : 0;
+    var maxA = D.totA.length ? Math.max.apply(null, D.totA) : 0;
+
+    return '<section class="v2-card"><h2>Les dispositifs médicaux</h2>' +
+      '<p class="mfr-sub">' + esc(DM.source) + ', année ' + esc(DM.annee) + '. ' +
+      'Le marché se voit par <b>code LPP</b> : nos références n\'en portent pas, ' +
+      'la barre de recherche du haut ne peut donc pas y mener.</p>' +
+
+      '<div class="mfr-lignes">' +
+      [['Marché remboursé', eur(D.tE)],
+       ['Quantités remboursées', uni(D.tQ)],
+       ['Codes LPP retenus', nb(C.codes_retenus || D.codes.length) +
+         (C.codes_total ? ' sur ' + nb(C.codes_total) : '')],
+       ['Part des euros couverte', C.part_euros != null ? pct(C.part_euros) : '—'],
+       ['Poids des 8 premiers codes', pct(partHaut * 100)]
+      ].map(function (l) { return '<div class="mfr-l"><span>' + l[0] + '</span><b>' + l[1] + '</b></div>'; }).join('') +
+      '</div>' +
+
+      '<p class="mfr-st" style="margin-top:var(--sp-6)">Les ' + nb(HAUT.length) +
+      ' plus gros codes LPP</p><div class="mfr-bars">' +
+      HAUT.map(function (c) {
+        return '<div class="mfr-b lpp"><span title="' + esc(c.l) + '">' + esc(c.l) + '</span>' +
+          jauge(maxC ? c.e / maxC : 0) + '<em>' + eur(c.e) + '</em></div>';
+      }).join('') + '</div>' +
+
+      '<p class="mfr-st" style="margin-top:var(--sp-6)">Les ' + nb(D.NR) +
+      ' régions, en euros remboursés</p><div class="mfr-bars">' +
+      D.REG.map(function (r, i) {
+        return '<div class="mfr-b dmr"><span>' + esc(r.n) + '</span>' +
+          jauge(maxR ? D.totE[i] / maxR : 0) + '<em>' + eur(D.totE[i]) + '</em>' +
+          '<i class="eq">' + pct(D.tE ? D.totE[i] / D.tE * 100 : 0, 1) + '</i></div>';
+      }).join('') + '</div>' +
+
+      (maxA ? '<p class="mfr-st" style="margin-top:var(--sp-6)">Par tranche d\'âge, ' +
+        'au national</p><div class="mfr-bars">' +
+        D.AG.map(function (a, j) {
+          return '<div class="mfr-b age"><span>' + esc(ageNom(a)) + '</span>' +
+            jauge(D.totA[j] / maxA, 'v') + '<em>' + uni(D.totA[j]) + '</em></div>';
+        }).join('') + '</div>' : '') +
+
+      // L'avertissement et la licence se LISENT dans le fichier : ce sont eux
+      // qui disent ce que ce total n'est pas. Les réécrire ici, c'est se
+      // condamner à mentir le jour où la source change.
+      '<div class="mfr-note"><b>Ce que ce total n\'est pas.</b><br>' +
+      esc(DM.avertissement) +
+      (DM.licence ? '<br><b>Licence.</b> ' + esc(DM.licence) : '') +
+      '</div></section>';
+  }
+
+  // ── La carte des signaux des urgences ────────────────────────────────
+  function carteOdisse() {
+    if (_echecOdi) {
+      return '<section class="v2-card"><h2>Les signaux du terrain</h2>' +
+        '<div class="mfr-note" style="margin-top:var(--sp-4)"><b>Lecture en échec : ' +
+        esc(_echecOdi) + '.</b><br>C\'est le chargement qui a raté, pas la donnée. ' +
+        'Recharge l\'écran.</div></section>';
+    }
+    var P = ODI && ODI.pathologies;
+    if (!P) return '<section class="v2-card"><h2>Les signaux du terrain</h2>' +
+      '<p class="mfr-sub">Chargement de la veille des urgences…</p></section>';
+
+    var OD = offParDep();
+    // Trié par tendance décroissante : ce qui monte le plus se lit en premier.
+    var L = P.slice().sort(function (a, b) { return (b.trend || 0) - (a.trend || 0); });
+    var sem = String(ODI.week || '').replace(/^(\d{4})-S(\d+)$/, 'semaine $2 de $1');
+
+    return '<section class="v2-card"><h2>Les signaux du terrain</h2>' +
+      '<p class="mfr-sub">' + esc(ODI.source) + (sem ? ', ' + esc(sem) : '') + '. ' +
+      'Ce sont des <b>pathologies</b>, pas des références : elles disent quel rayon ' +
+      'va bouger, jamais quelle boîte.</p>' +
+
+      '<div class="mfr-sigs">' + L.map(function (p) {
+        var t = p.trend, cls = t == null ? 'eq' : t >= 5 ? 'up' : t <= -5 ? 'dn' : 'eq';
+        var badge = t == null ? '—' : (t > 0 ? '+' : '') + nb(t) + ' %';
+        var hot = (p.hotDeps || []).slice(0, 3);
+        // Nos officines dans les départements les plus touchés : c'est le seul
+        // pont honnête entre ce signal et nous.
+        var nOff = 0, dedup = {};
+        (p.hotDeps || []).forEach(function (h) {
+          var d = depNorm(h.dep);
+          if (dedup[d]) return; dedup[d] = 1; nOff += OD[d] || 0;
+        });
+        return '<div class="mfr-sig"><div class="mfr-sig-t">' +
+          '<b>' + esc(p.label) + '</b><i class="' + cls + '">' + badge + '</i></div>' +
+          '<div class="mfr-sig-d">' +
+          (p.moyennePct != null ? pct(p.moyennePct) + ' des passages aux urgences' : '') +
+          (p.age ? ' · ' + esc(p.age) : '') + '</div>' +
+          (hot.length ? '<div class="mfr-sig-d">Le plus fort : ' +
+            hot.map(function (h) { return esc(h.n) + ' (' + pct(h.pct) + ')'; }).join(', ') +
+            '</div>' : '') +
+          (p.rayons ? '<div class="mfr-sig-r">' + esc(p.rayons) + '</div>' : '') +
+          // Zéro officine concernée s'écrit en clair : c'est une information,
+          // pas un vide. Mais on ne l'écrit que si on sait compter.
+          (S.nOff ? '<div class="mfr-sig-d">' + (nOff
+            ? nb(nOff) + (nOff > 1 ? ' de nos officines sont' : ' de nos officines est') +
+              ' dans ces départements'
+            : 'Aucune de nos officines dans ces départements') + '</div>' : '') +
+          '</div>';
+      }).join('') + '</div>' +
+
+      (ODI.note ? '<div class="mfr-note"><b>Comment lire ces taux.</b><br>' +
+        esc(ODI.note) + '</div>' : '') +
+      ((ODI.manquantes && ODI.manquantes.length)
+        ? '<div class="mfr-note"><b>Départements sans relevé cette semaine.</b><br>' +
+          esc(ODI.manquantes.join(', ')) + '</div>' : '') +
+      '</section>';
+  }
+
+  function blocPlusHtml() {
+    return '<h2 class="mfr-h2">Au-delà du médicament</h2>' +
+      '<p class="mfr-sub" style="margin-bottom:0">Deux marchés que la fiche du haut ne ' +
+      'peut pas montrer, parce qu\'ils n\'ont pas d\'entrée par référence. Ils sont ici, ' +
+      'sous la fiche, et se lisent seuls.</p>' +
+      '<div class="mfr-cols">' + carteDm() + carteOdisse() + '</div>';
+  }
+
+  function chargerPlus() {
+    if (_plusEnCours || _plusFini) return;
+    _plusEnCours = true;
+    var base = (window.V2_DATA_BASE || '../') + 'v2/';
+    var V = V2.versionDonnees || '';
+    // marche-dm.json suit le déploiement : il prend le jeton de cache.
+    var pDm = fetch(base + 'marche-dm.json' + V, V ? undefined : { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (j) {
+        if (!j || !j.regions || !j.regions.length || !j.data) throw new Error('marche-dm.json vide ou illisible');
+        DM = j; DMS = null;
+      })
+      .catch(function (e) { _echecDm = String(e && e.message || e); console.warn('[V2 marché · DM] ' + _echecDm); });
+    // odisse.json est réécrit chaque jour par un robot : il se datte au jour,
+    // comme partout ailleurs dans l'app, sinon on servirait la semaine passée.
+    var pOdi = fetch(base + 'odisse.json?d=' + new Date().toISOString().slice(0, 10), { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (j) {
+        if (!j || !j.pathologies || !j.pathologies.length) throw new Error('odisse.json sans pathologie');
+        ODI = j;
+      })
+      .catch(function (e) { _echecOdi = String(e && e.message || e); console.warn('[V2 marché · signaux] ' + _echecOdi); });
+
+    Promise.all([pDm, pOdi]).then(function () {
+      _plusEnCours = false; _plusFini = true;
+      var el = document.getElementById('mfr-plus');
+      // Repeindre le seul bloc : un V2.render() complet remettrait la recherche
+      // à zéro et perdrait la référence que Will venait de choisir.
+      if (el) {
+        el.innerHTML = blocPlusHtml();
+        // Les cartes fabriquées APRÈS le rendu de la page n'ont jamais vu la
+        // passe d'apparition : sans ce rappel, elles arrivent d'un coup, et
+        // surtout leur sort dépend d'une course avec la passe précédente.
+        if (V2.motion && V2.motion.pass) try { V2.motion.pass(); } catch (e) {}
+      }
+    });
+  }
+
   function peindre(root) {
     var el = root.querySelector('#mfr-res'); if (el) el.innerHTML = listeHtml();
     var f = root.querySelector('#mfr-fiche'); if (f) f.innerHTML = ficheHtml();
@@ -444,8 +699,12 @@
         ICO('search', 16, 2) + ' Chercher</button></div>' +
         '<ul class="mfr-res" id="mfr-res">' + listeHtml() + '</ul>' +
         '<div id="mfr-fiche">' + ficheHtml() + '</div>' +
+        '<div id="mfr-plus">' + blocPlusHtml() + '</div>' +
         provenance() + '</div>';
       brancher(root);
+      // Le second bloc se charge APRÈS coup : l'écran du haut ne l'attend pas,
+      // et un échec de sa lecture ne l'empêche pas de s'afficher.
+      chargerPlus();
     }
   };
 })();
