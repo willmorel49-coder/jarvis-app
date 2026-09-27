@@ -52,6 +52,11 @@ CACHE = os.path.join(HERE, ".cache-potentiel")
 INSEE_ZIP = "https://www.insee.fr/fr/statistiques/fichier/8647014/base-ic-evol-struct-pop-2022_csv.zip"
 INSEE_CSV = "base-ic-evol-struct-pop-2022.CSV"
 FINESS_CSV = "https://data-pipeline-open.s3.sbg.io.cloud.ovh.net/finess/finess_etablissements.csv"
+# La Poste — la seule table officielle qui relie code postal et code INSEE. Sans elle,
+# impossible de rattacher une officine (qui n'a qu'un code postal et une ville) à sa
+# commune. Un code postal peut couvrir PLUSIEURS communes : on garde la liste, et c'est
+# le nom de la ville qui tranche côté app.
+CP_CSV = "https://data.laposte.fr/data-fair/api/v1/datasets/laposte-hexasmal/raw"
 UA = {"User-Agent": "Mozilla/5.0"}
 
 # Les 14 classes ATC1 réellement présentes dans le catalogue, en clair.
@@ -147,6 +152,23 @@ def officines_par_commune():
     return compte
 
 
+def codes_postaux():
+    """Rend {code_insee: (nom, [codes postaux])}."""
+    chemin = telecharger(CP_CSV, "cp.csv")
+    out = {}
+    with io.open(chemin, encoding="latin-1", errors="ignore", newline="") as f:
+        for row in csv.DictReader(f, delimiter=";"):
+            insee = (row.get("#Code_commune_INSEE") or "").strip()
+            nom = (row.get("Nom_de_la_commune") or "").strip()
+            cp = (row.get("Code_postal") or "").strip()
+            if not insee or not cp:
+                continue
+            e = out.setdefault(insee, [nom, []])
+            if cp not in e[1]:
+                e[1].append(cp)
+    return out
+
+
 def main():
     conso, diag = conso_par_age()
     print("consommation : %d produits retenus, %d sans ATC, %d sans âge"
@@ -162,6 +184,8 @@ def main():
 
     offi = officines_par_commune()
     print("FINESS : %d officines dans %d communes" % (sum(offi.values()), len(offi)))
+    cp = codes_postaux()
+    print("La Poste : %d communes avec code postal" % len(cp))
 
     # Taux de consommation : boîtes par habitant et par an, pour chaque classe et
     # chaque tranche d'âge. C'est le cœur du modèle.
@@ -205,16 +229,19 @@ def main():
         for a in ORDRE:
             boites = sum(taux[a][i] * p[i] for i in range(3))
             attendu.append(round(boites / nb))       # par officine de la commune
+        ident = cp.get(code)
         data[code] = {"p": [round(x) for x in p], "o": nb, "a": attendu,
-                      "pc": [round(x) for x in p0]}   # pc = population de la commune seule
+                      "pc": [round(x) for x in p0],   # pc = population de la commune seule
+                      "n": ident[0] if ident else "", "cp": ident[1] if ident else []}
 
     sortie = {
         "generated": datetime.date.today().isoformat(),
-        "sources": "Open Medic (âge) + INSEE population 2022 + FINESS",
+        "sources": "Open Medic (âge) + INSEE population 2022 + FINESS + codes postaux La Poste",
         "classes": [{"c": a, "n": ATC1[a]} for a in ORDRE],
         "bandes": BANDES,
         "champs": {"p": "population desservie (commune + part des communes sans officine du département)",
                    "pc": "population de la commune seule", "o": "officines de la commune",
+                   "n": "nom de la commune", "cp": "codes postaux de la commune",
                    "a": "boîtes/an attendues pour UNE officine, par classe ATC1"},
         "avertissement": ("Estimation calibrée sur des taux nationaux, jamais une mesure du "
                           "marché réel d'une officine : la clientèle déborde la commune, les "
@@ -230,6 +257,8 @@ def main():
     print("écrit %s — %d communes, %.2f Mo" % (OUT, len(data), os.path.getsize(OUT) / 1e6))
     print("communes avec officine mais sans population INSEE : %d" % sans_pop)
     print("population redistribuée depuis les communes sans officine : %.1f M" % (ajoute / 1e6))
+    sans_nom = sum(1 for d in data.values() if not d["n"])
+    print("communes sans nom ni code postal (non rattachables) : %d" % sans_nom)
 
 
 if __name__ == "__main__":
