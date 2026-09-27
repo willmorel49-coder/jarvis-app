@@ -102,8 +102,11 @@
   }
 
   // ═══ COCKPIT RÉASSORT : croise WML_SALES (vitesse réseau) × STOCK_IP (couverture) ═══
-  var MINVEL = 5;      // seuil de bruit : au moins 5 bts/mois réseau pour être « mouvant »
-  var CIBLE = 21, CIBLE_TENSION = 30;   // couverture cible en jours (réappro inclus) — relevée si tension/hausse
+  // Les seuils métier vivent dans v2-appro-moteur.js — ici on ne fait que les relire,
+  // pour qu'un plancher légal ou une cible ne puisse pas diverger entre deux écrans.
+  var AM = V2.approM;
+  var MINVEL = AM.MINVEL;                  // seuil de bruit : ≥ 5 bts/mois réseau = produit « mouvant »
+  var CIBLE = AM.CIBLE, CIBLE_TENSION = AM.CIBLE_TENSION;   // couverture cible en jours (réappro inclus)
   // ═══ MÉMOIRE DES COMMANDES DÉJÀ PASSÉES ═══
   // Sans elle, l'outil repropose le lendemain les lignes exportées la veille → double commande.
   // 100 % local au navigateur (aucun serveur), oubli automatique après un cycle d'achat.
@@ -2175,8 +2178,8 @@
   //   N2 « Les sept sites » → dans STOCK & SITES, à la place du rééquilibrage par concentration
   // Formules reprises des maquettes ~/jarvis-preuves/appro-nouvelles-directions/socle.js
   // ═══════════════════════════════════════════════════════════════════════════
-  var PLANCHER = 14;    // art. R.5124-59 CSP : obligation de service public, stock ≥ deux semaines
-  var DORMANT = 180;    // au-delà, le stock ne tourne plus — c'est un donneur potentiel
+  var PLANCHER = AM.PLANCHER;   // art. R.5124-59 CSP : stock ≥ deux semaines (moteur)
+  var DORMANT = AM.DORMANT;     // au-delà, le stock ne tourne plus — donneur potentiel (moteur)
 
   // ── Statut ANSM par CIP13 : ansm-dispo.json donne le statut par spécialité + ses CIP ──
   var _ansmByCip = null, _ansmByCipRef = null;
@@ -2207,41 +2210,10 @@
   // ⚠️ HYPOTHÈSE ASSUMÉE, écrite à l'écran : faute de ventes par établissement, la demande est
   // supposée répartie à parts égales entre les sept sites. La couverture par site est donc un
   // ordre de grandeur, pas une mesure. C'est le premier chiffre à remplacer par la vraie donnée.
-  function parSite(cip, vM) {
-    var EP = window.ETAB_PRICES; if (!EP || !EP.prices || !EP.etabs) return null;
-    var codes = EP.etabs.map(function (e) { return e.code; });
-    var vD = (vM || 0) / 30 / codes.length, out = [], tot = 0, nc = 0;
-    codes.forEach(function (e) {
-      var row = EP.prices[e] && EP.prices[e][cip];
-      if (!row) { nc++; out.push({ site: e, st: null, cov: null }); return; }
-      var st = Math.max(0, row[1] || 0);
-      tot += st;
-      out.push({ site: e, st: st, cov: vD > 0 ? st / vD : (st > 0 ? 9999 : 0) });
-    });
-    return { sites: out, tot: tot, nc: nc, n: codes.length };
-  }
+  function parSite(cip, vM) { return AM.parSite(cip, vM); }
+
   // Transférer entre sites ne sort pas un euro de marchandise : on le propose AVANT la commande labo.
-  function transferts(cip, vM) {
-    var p = parSite(cip, vM); if (!p) return [];
-    var don = [], rec = [], mv = [], i;
-    p.sites.forEach(function (x) {
-      if (x.st == null) return;                       // non communiqué : on n'y touche pas
-      if (x.cov >= 9999) { if (x.st > 1) don.push({ site: x.site, st: x.st }); return; }
-      if (x.cov > DORMANT && x.st > 1) don.push({ site: x.site, st: x.st });
-      else if (x.cov < PLANCHER) rec.push({ site: x.site, st: x.st, cov: x.cov });
-    });
-    don.sort(function (a, b) { return b.st - a.st; });
-    rec.sort(function (a, b) { return a.cov - b.cov; });
-    var di = 0;
-    for (i = 0; i < rec.length && di < don.length; i++) {
-      var besoin = Math.max(1, Math.round((vM || 0) / 30 / p.n * CIBLE - rec[i].st));
-      var dispo = Math.max(0, don[di].st - 1);
-      var q = Math.min(besoin, dispo);
-      if (q > 0) { mv.push({ de: don[di].site, vers: rec[i].site, q: q }); don[di].st -= q; }
-      if (don[di].st <= 1) di++;
-    }
-    return mv;
-  }
+  function transferts(cip, vM) { return AM.transferts(cip, vM); }
 
   // ═══ N4 · LE FRONT — ce qui manque déjà, et ce qui va manquer ═══
   var _frontVue = 'expose', _frontN = 25;
