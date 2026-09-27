@@ -44,15 +44,27 @@ CATALOGUE = os.path.join(HERE, "crm", "v2", "catalogue-complet-data.js")
 BASE = "https://open-data-assurance-maladie.ameli.fr/medicaments/"
 UA = {"User-Agent": "Mozilla/5.0"}
 
-# Codes BEN_REG réellement présents dans les fichiers. 5 regroupe les DOM,
-# 99 = région inconnue (on la garde : l'exclure fausserait les totaux France).
+# Codes BEN_REG réellement présents dans les fichiers. 5 regroupe les DOM.
+#
+# ⚠️ LA CORSE N'A PAS DE CODE. Le code INSEE « 94 » n'existe pas dans cette source :
+# la nomenclature officielle de la CNAM (feuille BEN_REG du « descriptif des variables
+# de la série Open Medic », assurance-maladie.ameli.fr/content/descriptif-des-variables-
+# de-la-serie-open-medic) énonce 13 codes, dont « 93 = Provence-Alpes-Côte d'Azur ET
+# CORSE ». Attendre un code 94 fabriquait une région à 0 € qui se lisait comme un
+# marché vide. Recoupé le 27/09/2026 : la somme des 14 codes présents reconstitue le
+# fichier national à 0,0001 % près — aucune région ne manque, la Corse est dans 93.
+#
+# 0 et 99 valent tous deux « inconnu » d'après la même nomenclature ; le fichier LPP
+# émet réellement des lignes en « 0 ». On les replie sur 99, sinon elles sont jetées.
 REGIONS = {
     "11": "Île-de-France", "24": "Centre-Val de Loire", "27": "Bourgogne-Franche-Comté",
     "28": "Normandie", "32": "Hauts-de-France", "44": "Grand Est",
     "52": "Pays de la Loire", "53": "Bretagne", "75": "Nouvelle-Aquitaine",
-    "76": "Occitanie", "84": "Auvergne-Rhône-Alpes", "93": "Provence-Alpes-Côte d'Azur",
-    "94": "Corse", "5": "Outre-mer", "99": "Région inconnue",
+    "76": "Occitanie", "84": "Auvergne-Rhône-Alpes",
+    "93": "Provence-Alpes-Côte d'Azur et Corse",
+    "5": "Outre-mer", "99": "Région inconnue",
 }
+INCONNU = {"0", "99"}   # deux écritures du même « inconnu »
 # Tranches d'âge réelles du fichier : 0 → 0-19 ans, 20 → 20-59, 60 → 60 et plus,
 # 99 → âge inconnu. Il n'y en a pas d'autres : vérifié sur le fichier 2025.
 AGES = {"0": "0-19", "20": "20-59", "60": "60+", "99": "inconnu"}
@@ -153,6 +165,8 @@ def main():
         if cip not in cat:
             continue
         reg = ligne[2].strip()
+        if reg in INCONNU:
+            reg = "99"       # « 0 » et « 99 » sont le même « inconnu » (nomenclature CNAM)
         if reg not in iReg:
             continue
         e = par_cip.setdefault(cip, {"b": [0] * len(ordre), "e": [0.0] * len(ordre)})
