@@ -582,7 +582,17 @@
     grippe: { fam: 'antipyrétiques · ORL · antitussifs', kw: /PARAC[EÉ]TAMOL|IBUPROF|DOLIPRANE|EFFERALGAN|DAFALGAN|TOUX|RHUME|GORGE|NASAL|S[EÉ]RUM PHY|OSCILLO|HUMEX|FERVEX|ACTIFED|RHINO|STREPSIL/i },
     gastro: { fam: 'antidiarrhéiques · réhydratation · antispasmodiques', kw: /DIARRH|SMECTA|IMODIUM|TIORFAN|LOP[EÉ]RAMIDE|R[EÉ]HYDRAT|ULTRALEVURE|SPASFON|PHLORO|ARESTAL|BIOGAIA/i },
     varicelle: { fam: 'antihistaminiques · antiseptiques cutanés', kw: /C[EÉ]TIRIZIN|LORATADIN|POLARAMINE|ANTIHIST|CHLORHEXIDINE|SEPTIVON|BISEPTINE|CICALFATE|DERMASPRAID|CALADRYL|DIPROSONE/i },
-    bronchiolite: { fam: 'sérum physiologique · mouche-bébé · désobstruction nourrisson', kw: /S[EÉ]RUM PHY|PHYSIO(DOSE|MER|LOGIQUE)|STERIMAR|MOUCHE|RHINO.*B[EÉ]B|D[EÉ]SOBSTRUCT|PROSPAN|HELICIDINE|BALSAMIQUE|PRORHINEL/i }
+    bronchiolite: { fam: 'sérum physiologique · mouche-bébé · désobstruction nourrisson', kw: /S[EÉ]RUM PHY|PHYSIO(DOSE|MER|LOGIQUE)|STERIMAR|MOUCHE|RHINO.*B[EÉ]B|D[EÉ]SOBSTRUCT|PROSPAN|HELICIDINE|BALSAMIQUE|PRORHINEL/i },
+    // 27/09/2026 — le robot est passé de 3 à 11 pathologies : sans ces entrées, les
+    // 7 nouvelles s'affichaient sans famille de produits ni comptage de références.
+    ira: { fam: 'ORL · rhume · gorge', kw: /TOUX|RHUME|GORGE|NASAL|S[EÉ]RUM PHY|HUMEX|FERVEX|ACTIFED|RHINO|STREPSIL|DRILL|LYSOPA[IÏ]NE|MAXILASE/i },
+    allergie: { fam: 'antihistaminiques · yeux · sérum physiologique', kw: /C[EÉ]TIRIZIN|LORATADIN|DESLORATADIN|POLARAMINE|ANTIHIST|AERIUS|HUMEX ALLER|S[EÉ]RUM PHY|STERIMAR|COLLYRE|OPHTA|CROMOGLIC/i },
+    asthme: { fam: 'respiratoire · chambres d\'inhalation', kw: /VENTOLIN|SALBUTAMOL|CHAMBRE.*INHAL|A[EÉ]ROCHAMBRE|BABYHALER|TERBUTALINE|SPACER/i },
+    bronchite: { fam: 'toux · respiratoire', kw: /TOUX|SIROP|CARBOCIST[EÉ]INE|AMBROXOL|PROSPAN|HELICIDINE|MUCO|EXPECTOR|BRONCH/i },
+    pneumopathie: { fam: 'respiratoire', kw: /BRONCH|MUCO|EXPECTOR|RESPIR|SATUROM[EÈ]TRE|OXYM[EÈ]TRE/i },
+    orl: { fam: 'ORL · gorge · oreilles', kw: /GORGE|STREPSIL|DRILL|LYSOPA[IÏ]NE|MAXILASE|OREILL|AURIC|OTIPAX|CERUM|NASAL|RHINO/i },
+    covid: { fam: 'tests · masques · ORL', kw: /AUTOTEST|ANTIG[EÉ]NIQUE|MASQUE|FFP2|CHIRURGICAL|HYDROALCOOL|THERMOM[EÈ]TRE|OXYM[EÈ]TRE/i },
+    traumatisme: { fam: 'premiers soins · pansements · contention', kw: /PANSEMENT|COMPRESSE|BANDE|STRAPP|CONTENTION|ATTELLE|ANTISEPT|CHLORHEXIDINE|BISEPTINE|HEMOCLAR|ARNICA|GLACE|CRYO/i }
   };
   // Odissé / SurSaUD (urgences par département, Santé publique France) — plus fin que Sentinelles
   var _odiState = 0, _odisseData = null;
@@ -633,7 +643,7 @@
         var deps = (p.hotDeps || []).slice(0, 3).map(function (d) { return esc(d.n || d.dep || ''); }).filter(Boolean).join(' · ');
         return '<div class="ap-row"><div class="ap-nm">' + esc(p.label) +
           '<small>' + (deps ? 'foyers actifs : ' + deps : '') + (mp.fam ? ' · à renforcer : ' + mp.fam : '') + '</small></div>' +
-          '<div class="ap-mini">' + (p.passages != null ? p.passages + ' passages' : '') + (nref ? ' · ' + nref + ' réfs' : '') + '</div>' +
+          '<div class="ap-mini">' + (p.moyennePct != null ? String(p.moyennePct).replace('.', ',') + ' % des passages' : '') + (nref ? ' · ' + nref + ' réfs' : '') + '</div>' +
           '<div class="ap-g">' + pctHtml(p.trend) + '</div></div>';
       }).join('');
       odiHtml = '<div class="ap-foot" style="padding:11px 16px 4px;margin:0;font-weight:600;color:var(--ink)">Où ça chauffe — urgences par département' +
