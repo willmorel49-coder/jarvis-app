@@ -213,6 +213,65 @@ def biosimilaires():
            s[:m.start()] + 'window.BIOSIMILAIRES = ' + json.dumps(d, ensure_ascii=False) + ';\n')
     fait.append('biosimilaires')
 
+def parc_officines():
+    """Le petit extrait que lit l'écran APPRO — 28/09/2026.
+
+    `crm/v2/parc-officines.json` est fabriqué par build_pharma_fr.py AVANT ce
+    script : il portait donc encore `parSegment`, soit la répartition A/B/C
+    (448 A / 498 B / 1 277 C…) que la passe du 28/09 venait justement de sortir
+    du dépôt public. Personne ne la lit : elle part.
+
+    Et son `clients` valait 2 223, compté sur la segmentation BRUTE — celle que
+    le code lui-même appelle « gonflée ». Or c'est un chiffre AFFICHÉ :
+    v2-appro.js écrit « N officines clientes sur 19 700 en France » et en tire
+    le « 1 boîte sur N ». On le recalcule donc sur ce que l'app tient pour vrai :
+    un client = une officine de la base nationale présente dans WML_OFFICINES
+    (même règle que V2.reconcilePharma). Les deux sources sont PUBLIQUES, donc
+    ce chiffre se régénère sans la table protégée.
+
+    ⚠️ Numérateur et dénominateur doivent sortir de la MÊME base : les clients
+    WML absents de la base nationale (84 au 28/09) ne comptent pas ici, sans
+    quoi « X sur 19 700 » additionnerait des pommes et des poires.
+    """
+    pp = os.path.join(BASE, 'crm/v2/pharma-fr-data.js')
+    s = io.open(pp, encoding='utf-8').read()
+    m = re.search(r'window\.PHARMA_FR=(\{.*\});?\s*$', s, re.S)
+    d = json.loads(m.group(1))
+    pts = d.get('p') or []
+
+    sw = io.open(os.path.join(BASE, 'crm/v2/wml-officines-data.js'), encoding='utf-8').read()
+    offs = json.loads(re.search(r'const WML_OFFICINES = (\[.*?\]);', sw, re.S).group(1))
+    ids = {re.sub(r'[^0-9]', '', str(o.get('id'))) for o in offs if o.get('id')}
+    ids.discard('')
+
+    n = len(pts)
+    clients = sum(1 for pt in pts
+                  if len(pt) > 13 and re.sub(r'[^0-9]', '', str(pt[13] or '')) in ids)
+
+    ecrire('crm/v2/parc-officines.json', json.dumps(
+        {'generated': J, 'source': d.get('meta', {}).get('source', ''),
+         'n': n, 'clients': clients,
+         'note': "officines de France métropolitaine et nombre d'entre elles qui sont "
+                 "clientes (présentes dans WML_OFFICINES, même règle que "
+                 "V2.reconcilePharma). Extrait de pharma-fr-data.js pour éviter d'en "
+                 "charger 2,8 Mo. La répartition A/B/C n'y figure plus : c'est de "
+                 "l'intelligence commerciale, et personne ne la lisait."},
+        ensure_ascii=False, separators=(',', ':')))
+
+    # Le même compte traîne dans `meta.clients` du fichier public : c'est le
+    # dernier résidu de la segmentation sortie le 28/09. v2-appro.js s'en sert
+    # en repli quand parc-officines.json n'a pas encore été chargé.
+    if d.get('meta', {}).get('clients') != clients:
+        d['meta']['clients'] = clients
+        ecrire('crm/v2/pharma-fr-data.js',
+               s[:m.start()] + 'window.PHARMA_FR=' +
+               json.dumps(d, ensure_ascii=False, separators=(',', ':')) + ';\n')
+        # Surtout PAS dans `fait` : rien n'est parti sur Supabase ici, et `fait`
+        # déclenche le rappel « DÉPOSER les tables ». Une alerte qui crie pour
+        # rien apprend à ne plus lire les alertes.
+        print('   parc-officines : clients recalculés à %d, parSegment retiré' % clients)
+
+
 def controle_final():
     """Se relire : la seule preuve qui compte."""
     fautes = []
@@ -236,6 +295,16 @@ def controle_final():
         fautes.append('pharma-fr-data.js porte encore le commercial affecté')
     if [l for l in d.get('comm', []) if l]:
         fautes.append('pharma-fr-data.js porte encore les prénoms des commerciaux')
+    parc = json.loads(io.open(os.path.join(BASE, 'crm/v2/parc-officines.json'),
+                               encoding='utf-8').read())
+    if 'parSegment' in parc:
+        fautes.append('parc-officines.json porte encore la répartition A/B/C')
+    if parc.get('clients') != d.get('meta', {}).get('clients'):
+        fautes.append('parc-officines.json (%s) et pharma-fr meta.clients (%s) divergent'
+                      % (parc.get('clients'), d.get('meta', {}).get('clients')))
+    if not parc.get('clients') or parc['clients'] >= parc.get('n', 0):
+        fautes.append('parc-officines.json : clients=%s incohérent avec n=%s'
+                      % (parc.get('clients'), parc.get('n')))
     s = io.open(os.path.join(BASE, 'crm/marketing-offers.js'), encoding='utf-8').read()
     if re.search(r',\s*ip:\s*-?[0-9.]+', s):
         fautes.append('marketing-offers.js porte encore des prix nets IP')
@@ -249,7 +318,7 @@ def controle_final():
 
 if __name__ == '__main__':
     for fn in (benchmark, prod_stats, pharma_fr, wml_officines, biosimilaires,
-               marketing_offers):
+               marketing_offers, parc_officines):
         fn()
     controle_final()
     if fait:
