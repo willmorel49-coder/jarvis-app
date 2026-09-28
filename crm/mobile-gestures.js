@@ -13,7 +13,7 @@
  * NE PAS toucher :
  *   - Hamburger / sidebar drawer → mobile-shell.js
  *   - Sheet "Plus" → native-shell.js (déjà gère son propre swipe-down)
- *   - Modales marketing → marketing.js
+ *   - Modales marketing → supprimé le 28/09/2026 (crm/marketing.js, plus chargé)
  * ═══════════════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';

@@ -5,10 +5,12 @@
    Chaque mois = pitch pharma pro (headline, accroche, argumentaire
    expert pharmacien, CTA, citation, preset & sticker recommandés).
 
-   Consommé par marketing.js dans :
-     · renderMarketingGrossiste (hero du mois courant)
-     · cards du planning 12 mois
-     · mkPickerCreateSheet (pré-remplit titre / footer / accroche)
+   ⚠️ 28/09/2026 — son consommateur, crm/marketing.js, a été supprimé : plus
+   aucune page ne le chargeait. L'ancien CRM redirige vers /crm/v2/ depuis le
+   10/06/2026, et le crm/index-legacy.html qu'il annonçait n'existe pas.
+   Ce fichier-ci n'est plus atteint non plus : son seul chargeur, perf-boot.js
+   (lot « marketing »), n'est lui-même chargé par aucune page. Conservé tel
+   quel — c'est du code mort ANTÉRIEUR, pas à moi de le trancher.
 
    Conforme charte 2026 : sérieux + peps dynamique, pas de criard.
    Vocabulaire pharma précis (ATC, principes actifs) mais accessible.
@@ -242,7 +244,7 @@
     return getMonthlyPitch(new Date().getMonth() + 1);
   }
 
-  // Expose globaux pour marketing.js
+  // Expose ses globaux (voir l'en-tête : le consommateur d'origine a disparu)
   window.MONTHLY_PITCH = MONTHLY_PITCH;
   window.getMonthlyPitch = getMonthlyPitch;
   window.getCurrentMonthlyPitch = getCurrentMonthlyPitch;

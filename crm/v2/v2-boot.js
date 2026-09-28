@@ -1178,8 +1178,8 @@
 
   // ── Les conditions commerciales reviennent sur le catalogue ──────────────
   // Elles vivent dans un fichier séparé et protégé, mais l'app entière lit
-  // `o.prix_offilog` depuis toujours — dans v2-offilog.js comme dans
-  // marketing.js (que charge OPSO), une quinzaine d'endroits. Plutôt que de
+  // `o.prix_offilog` depuis toujours — dans v2-offilog.js et une quinzaine
+  // d'autres endroits. Plutôt que de
   // réécrire chacun, on RECOLLE les trois champs sur les objets en mémoire :
   // tout ce qui marchait continue de marcher, sans une ligne de plus ailleurs.
   var _condFaites = false;
