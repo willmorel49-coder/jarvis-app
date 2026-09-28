@@ -192,6 +192,61 @@
   // Partagé avec l'écran Produits (v2-comptoir.js) : mêmes mois complets, même part moyenne.
   V2.approMoisRetenus = moisRetenus;
 
+  /* ═══ LA DEMANDE PAR ÉTABLISSEMENT ════════════════════════════════════════
+     Remplace l'hypothèse « parts égales entre les sept sites » par la vraie demande
+     du secteur de chaque dépôt. La vente porte l'officine, l'officine porte son code
+     postal, et le découpage par département (V2.approM.ZONES, donné par Will le
+     28/09/2026) dit quel établissement la livre.
+     Mesuré sur nos ventes le 28/09/2026 : CPR 38,1 % · OPS 37,7 % · POS 9,5 % ·
+     zone HP/MSP/SEP 7,2 % · SOP 0,1 % · non rattaché 7,3 %.
+     Trois cas distincts, et aucun n'est maquillé en un autre :
+       · un seul dépôt sur le département → demande MESURÉE ;
+       · zone HP/MSP/SEP (les trois couvrent les mêmes sept départements) → tiers
+         chacun, et ces trois sites-là seulement sont marqués « estimé » ;
+       · département hors liste, ou officine sans code postal → NON RATTACHÉ. On ne
+         devine pas : le total est affiché à l'écran pour que le trou soit visible. */
+  var _dsIdx = null, _dsRef = null;
+  function demandeParSiteIdx() {
+    var S = window.WML_SALES, OFF = window.WML_OFFICINES;
+    if (!S || !OFF) return null;
+    if (_dsIdx && _dsRef === S) return _dsIdx;
+    var cp = {}, i, j;
+    for (i = 0; i < OFF.length; i++) cp[String(OFF[i].id)] = OFF[i].cp;
+    var MR = moisRetenus(S), garde = {}, nMois = MR.length;
+    for (i = 0; i < MR.length; i++) garde[MR[i]] = 1;
+    var out = {}, zcache = {};
+    for (i = 0; i < S.length; i++) {
+      var r = S[i], q = r[4] || 0;
+      if (q <= 0 || !garde[r[1]]) continue;
+      var c = String(r[3]), o = out[c] || (out[c] = { _est: {}, _hors: 0, _nr: 0 });
+      var pid = String(r[0]), z = zcache.hasOwnProperty(pid) ? zcache[pid] : (zcache[pid] = AM.zoneDe(cp[pid]));
+      if (!z) { o._nr += q; continue; }                       // département hors liste
+      if (!z.sites.length) { o._hors += q; continue; }        // Escale Pharma, Pharmest
+      if (z.sites.length === 1) { o[z.sites[0]] = (o[z.sites[0]] || 0) + q; continue; }
+      var part = q / z.sites.length;
+      for (j = 0; j < z.sites.length; j++) {
+        o[z.sites[j]] = (o[z.sites[j]] || 0) + part;
+        o._est[z.sites[j]] = 1;                               // partage, donc estimé — ici seulement
+      }
+    }
+    // Tout passe en unités PAR MOIS, la maille de vM dans tout l'écran.
+    Object.keys(out).forEach(function (c) {
+      var o = out[c], k;
+      for (k in o) if (o.hasOwnProperty(k) && k.charAt(0) !== '_') o[k] = o[k] / nMois;
+      o._hors = o._hors / nMois; o._nr = o._nr / nMois;
+    });
+    _dsIdx = out; _dsRef = S;
+    return out;
+  }
+  function demandeSiteDe(cip) {
+    var d = demandeParSiteIdx();
+    return d ? (d[String(cip)] || null) : null;
+  }
+  // On branche la source sur le moteur, et l'ancien drapeau global tombe : la couverture
+  // par site n'est plus « estimée partout », elle est mesurée sauf sur la zone partagée.
+  AM.demandeSite = demandeSiteDe;
+  if (typeof window !== 'undefined') AM.estime = false;
+
   var _cipIdx = null, _cipIdxRef = null, _cipIdxSai = null;
 
   // Indice saisonnier du mois qu'on est en train de couvrir (saison-cip.json, robot mensuel).
@@ -236,16 +291,29 @@
     // Le dernier stock disponible est traité comme « courant » (Will : l'outil doit marcher comme si les
     // stocks étaient à jour ; le vrai correctif = réimporter le stock régulièrement, pas dégrader l'outil).
     // P1 (audit) : inclure aussi les fast-movers EN RUPTURE plateforme (vendus mais stock 0 = absents de STOCK_IP).
+    // ⚠️ 28/09/2026 — LE FILTRE DES 5 BOÎTES PAR MOIS NE DÉCIDE PLUS QUI ENTRE DANS L'INDEX.
+    // Mesuré sur nos ventes réelles : il écartait 4 762 références sur 7 674 (62,1 %), soit
+    // 4,19 M€ de demande annuelle (8,1 % du total), dont 202 références classées A ou B par la
+    // valeur et 3 880 qui ont du stock chez nous. En pharma la majorité des références sont des
+    // « slow movers » : les jeter n'est pas filtrer du bruit, c'est perdre la moitié du métier.
+    // Elles entrent donc toutes, et c'est Croston/SBA qui prévoit leur demande (M.vitesse).
+    // MINVEL reste utilisé par les écrans comme étiquette « produit mouvant », plus comme porte.
     var keys = {};
     Object.keys(stk).forEach(function (c) { keys[c] = 1; });
-    Object.keys(dem).forEach(function (c) { if (somme(dem[c]) / nMois >= MINVEL) keys[c] = 1; });
+    Object.keys(dem).forEach(function (c) { keys[c] = 1; });
     Object.keys(keys).forEach(function (c) {
       var a = dem[c], tot = a ? somme(a) : 0;
-      var vM = tot / nMois, st = Math.max(0, stk[c] || 0), vD = vM / 30;   // stock borné à 0 (jamais de couverture négative)
+      // La SÉRIE mensuelle, un point par mois retenu, ZÉROS COMPRIS : les mois sans vente sont
+      // l'information principale sur une demande intermittente. Les retirer transformerait une
+      // référence vendue un mois sur six en référence régulière.
+      var serie = [], mi;
+      for (mi = 0; mi < MR.length; mi++) serie.push((a && a[MR[mi]]) || 0);
+      var st = Math.max(0, stk[c] || 0);   // stock borné à 0 (jamais de couverture négative)
+      // La vitesse retenue : moyenne sur une demande régulière, Croston/SBA si intermittente.
+      var vM = AM.vitesse(serie), vD = vM / 30;
       var cov = vD > 0 ? st / vD : (st > 0 ? 9999 : 0);
       var p = ps[c];
       var isRupt = !!rupt(c), tg = tend(c);
-      var cibleJ = (isRupt || (tg != null && tg > 0)) ? CIBLE_TENSION : CIBLE;
       // La saison entre ICI, et seulement ici. La couverture `cov` ci-dessus reste sur la
       // vitesse moyenne : c'est une mesure factuelle (stock ÷ vitesse), affichée partout et
       // comparable d'un produit à l'autre. Ce qu'on saisonnalise, c'est la CIBLE : combien
@@ -257,14 +325,30 @@
       // Izalgi (tension ANSM) tombait de 8 907 à 7 620 unités à cause d'un août à 0,91.
       // Un pic, lui, continue de faire monter.
       if (isRupt) sais = Math.max(1, sais);
-      var qcmd = Math.max(0, Math.round(cibleJ * vD * sais - st));
-      idx[c] = { c: c, d: p ? p.d : c, vM: vM, st: st, cov: cov, qcmd: qcmd, nMois: nMois, sais: sais,
+      // La cible n'est plus un chiffre unique : elle vaut délai de réappro + périodicité de revue
+      // + le stock de sécurité de la case ABC×XYZ de CETTE référence (v2-appro-moteur.js).
+      // L'objet doit donc porter sa classe et son coussin AVANT qu'on lui demande sa quantité.
+      var o = { c: c, d: p ? p.d : c, vM: vM, st: st, cov: cov, nMois: nMois, sais: sais,
+        serie: serie, tension: (isRupt || (tg != null && tg > 0)) ? 1 : 0,
+        xyz: AM.xyz(serie), adi: AM.adi(serie), inter: AM.intermittent(serie) ? 1 : 0,
         // audit 01/08 : absent de l'inventaire ≠ inventorié à zéro. 791 produits (28 %) sont
         // dans ce cas et passaient pour « déjà à sec » → fausses urgences + € gonflé.
         unk: (stk[c] == null) ? 1 : 0,
         ppht: p ? (p.ppht || 0) : 0, stale: p ? p.stale : 0, rupt: isRupt, f: p ? p.f : '' };
+      idx[c] = o;
     });
+    // L'ordre compte : ABC pose la classe de valeur, le stock de sécurité a besoin de la case
+    // ABC×XYZ complète, et la quantité a besoin de la cible qui en découle. Trois passes, pas une.
     abcPareto(idx);
+    Object.keys(idx).forEach(function (c) {
+      var o = idx[c];
+      o.ssJ = AM.ssJours(o, o.serie);
+      o.cible = AM.cible(o);
+      o.qcmd = AM.qte(o, o.sais);
+      o.eurRisque = AM.euroRisque(o);
+      o.eurDormant = AM.euroDormant(o);
+      o.eurCmd = o.qcmd * (o.ppht || 0);
+    });
     _cipIdx = idx; _cipIdxRef = S; _cipIdxSai = _saiCip;
     return idx;
   }
@@ -326,11 +410,15 @@
     return { tension: t, acmd: a, ross: r, cap: cap, ncmd: ncmd };
   }
 
-  // Réassort recommandé : produits mouvants à recommander, triés par urgence (couverture croissante).
+  // Réassort recommandé, trié par EUROS DE VENTES À RISQUE (28/09/2026).
+  // Avant : tri par couverture croissante seule. Une boîte à 1,20 € dont il reste 3 jours
+  // passait donc devant une boîte à 900 € dont il reste 10 jours — l'ordre de la liste ne
+  // disait pas par quelle ligne commencer. Le seuil des 5 boîtes/mois ne ferme plus la porte :
+  // une référence rare mais chère peut valoir plus qu'un fast-mover à bas prix.
   function reassort() {
     var idx = cipIndex(), out = [];
-    Object.keys(idx).forEach(function (k) { var o = idx[k]; if (o.vM >= MINVEL && o.qcmd > 0 && o.cov <= 90) out.push(o); });
-    out.sort(function (a, b) { return a.cov - b.cov; });
+    Object.keys(idx).forEach(function (k) { var o = idx[k]; if (o.qcmd > 0 && o.cov <= 90) out.push(o); });
+    out.sort(function (a, b) { return (b.eurRisque || 0) - (a.eurRisque || 0) || a.cov - b.cov; });
     return out.slice(0, 24);
   }
 
@@ -2301,6 +2389,12 @@
     isMitm: isMitm, froid: estFroidCip, aVendu: aVendu,
     ansmRef: function () { return _ansmData; }, mitmRef: function () { return _mitmSet; },
     marquerCommande: marquerCommande, oublierCommande: oublierCommande, commandeDe: commandeDe,
+    demandeSite: demandeSiteDe,
+    service: function () {                    // indicateurs de service (§A.10), calcul dans le moteur
+      var idx = cipIndex(), ks = Object.keys(idx), l = [], i;
+      for (i = 0; i < ks.length; i++) l.push(idx[ks[i]]);
+      return AM.service(l);
+    },
     fmt: fmt, esc: esc, cap: cap, fdate: fdate, MINVEL: MINVEL
   };
 
@@ -2377,7 +2471,7 @@
               '<div class="ap-cmd">commander<b>~' + fmt(o.qcmd) + '</b></div></div>';
           }).join('') || '<div class="ap-empty">Rien d\'urgent à réassortir.</div>';
           reaCard = '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:var(--c-amber)">' + ICO('alert', 15, 2) + '</div>' +
-            '<div><h3>À commander — réassort recommandé</h3><div class="ap-sub">couverture en jours (stock plateforme ÷ vitesse réseau) + quantité conseillée — ' + fmt(h.ncmd) + ' réfs à passer à partir de ' + MINVEL + ' boîtes/mois, top 24 par urgence</div></div></div>' +
+            '<div><h3>À commander — réassort recommandé</h3><div class="ap-sub">couverture en jours (stock plateforme ÷ vitesse réseau) + quantité conseillée — ' + fmt(h.ncmd) + ' réfs à passer, les 24 premières par euros de ventes à risque avant la prochaine livraison (' + (AM.DELAI + AM.REVUE) + ' jours)</div></div></div>' +
             reaRows +
             '<div class="ap-foot" style="padding:10px 18px 12px;margin:0">Vitesse = ventes réseau/mois (WML, mois complets uniquement). Cible ' + CIBLE + ' j, portée à ' + CIBLE_TENSION + ' j si tension ANSM ou marché en hausse. Sur la base du dernier stock importé' + (window.STOCK_IP && window.STOCK_IP.meta && window.STOCK_IP.meta.gen ? ' (' + fdate(window.STOCK_IP.meta.gen) + ')' : '') + '.</div></div>';
 

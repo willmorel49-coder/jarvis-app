@@ -81,28 +81,43 @@
       { k: 'concentre', on: 'Stock sur un seul site',
         t: 'Tout le stock réseau posé sur un seul établissement',
         s: 'Au moins 90 % du stock est sur un site : les six autres ne peuvent pas servir, même si la couverture du groupe paraît confortable.' },
+      { k: 'euros', on: 'Ce que ça coûte de ne rien faire',
+        t: 'Les références classées par euros de vente à risque',
+        s: 'Une couverture courte sur une boîte à 1,20 € et sur une boîte à 900 € ne se traitent pas le même jour. Ici, le montant de ventes que nous ne ferons pas si personne ne touche à cette ligne avant la prochaine livraison : ce qui manque pour tenir ' + (M.DELAI + M.REVUE) + ' jours, au prix fabricant. La ligne du haut est celle par laquelle commencer.' },
       { k: 'froid', on: 'Chaîne du froid',
         t: 'Produits 2-8 °C sous la cible',
         s: 'Ils ne se rattrapent pas par un stock tampon : la capacité frigorifique des sept sites est limitée et un transfert y coûte plus cher.' }
     ];
   }
 
+  /* La cible d'une référence vient du MOTEUR, jamais d'un calcul refait ici : depuis le
+     28/09/2026 elle dépend de sa case ABC×XYZ, donc deux formules parallèles divergeraient.
+     Seule addition locale : la tension ANSM arrive en différé (ensureAnsm), après la
+     construction de l'index. On la superpose sur une COPIE — jamais sur l'objet en cache. */
   function cibleDe(o) {
     var C = V2.approCtx, M = V2.approM;
-    return (o.rupt || C.enTension(o.c)) ? M.CIBLE_TENSION : M.CIBLE;
+    if (!o.tension && C.enTension(o.c)) {
+      var t = {}, k; for (k in o) if (o.hasOwnProperty(k)) t[k] = o[k];
+      t.tension = 1; return M.cible(t);
+    }
+    return M.cible(o);
   }
 
   var _L = null, _lIdx = null, _lAnsm = null, _lMitm = null, _lEp = null;
   function listes() {
     var C = V2.approCtx, M = V2.approM, idx = C.idx(), EP = window.ETAB_PRICES;
     if (_L && _lIdx === idx && _lAnsm === C.ansmRef() && _lMitm === C.mitmRef() && _lEp === EP) return _L;
-    var L = { casse: [], front: [], rupt: [], mitm: [], desequilibre: [], concentre: [], froid: [] };
+    var L = { casse: [], front: [], rupt: [], mitm: [], euros: [], desequilibre: [], concentre: [], froid: [] };
     Object.keys(idx).forEach(function (k) {
       var o = idx[k];
-      if (o.vM < C.MINVEL) return;              // même seuil de bruit que le reste de l'écran
+      // ⚠️ 28/09/2026 : le seuil des 5 boîtes par mois ne ferme plus la porte de cet écran.
+      // Il écartait 62 % des références, dont 202 classées A ou B par la valeur. Ce qui ferme
+      // la porte, désormais, c'est de n'avoir NI vente NI stock — là il n'y a rien à arbitrer.
+      if (!o.vM && !o.st) return;
       var st = C.ansmStatut(o.c), t = /Rupture|Tension/.test(st), m = C.isMitm(o.c);
       if (/Rupture/.test(st)) L.rupt.push(o);
       if (o.unk) return;                        // jamais inventorié : aucune couverture mesurée
+      if (o.eurRisque > 0) L.euros.push(o);
       if (o.cov < M.PLANCHER) L.casse.push(o);
       if (t && o.cov < M.PLANCHER) L.front.push(o);
       if (m && !t && o.cov < M.PLANCHER) L.mitm.push(o);
@@ -114,8 +129,10 @@
     });
     function parCouverture(a, b) { return a.cov - b.cov || (b.vM * b.ppht) - (a.vM * a.ppht); }
     function parValeur(a, b) { return (b.vM * b.ppht) - (a.vM * a.ppht); }
+    function parEuros(a, b) { return (b.eurRisque || 0) - (a.eurRisque || 0) || a.cov - b.cov; }
     ['casse', 'front', 'rupt', 'mitm', 'froid'].forEach(function (k) { L[k].sort(parCouverture); });
     ['desequilibre', 'concentre'].forEach(function (k) { L[k].sort(parValeur); });
+    L.euros.sort(parEuros);
     _L = L; _lIdx = idx; _lAnsm = C.ansmRef(); _lMitm = C.mitmRef(); _lEp = EP;
     return L;
   }
@@ -137,11 +154,23 @@
     if (x.st == null) return 'n.c.';   // « — » est déjà affiché au-dessus : deux tirets empilés ne disent rien
     if (x.st <= 0) return 'à sec';
     if (x.cov >= 9999) return 'dort';
-    return (M.estime ? '≈ ' : '') + (x.cov >= 400 ? Math.round(x.cov / 30) + ' m' : Math.round(x.cov) + ' j');
+    // Le « ≈ » n'est plus posé sur les sept sites en bloc : seuls HP, MSP et SEP partagent
+    // les mêmes départements, donc seuls eux trois ont une demande partagée en trois.
+    return (x.est ? '≈ ' : '') + (x.cov >= 400 ? Math.round(x.cov / 30) + ' m' : Math.round(x.cov) + ' j');
   }
 
   function eur(v) { return V2.fmtEur ? V2.fmtEur(v) : String(Math.round(v || 0)); }
 
+
+  /* Le libellé de la case ABC×XYZ, écrit en français : un badge « CZ » ne dit rien
+     tout seul. Les niveaux de service viennent du moteur, ils ne sont pas réécrits ici. */
+  function celTitre(o) {
+    var M = V2.approM, a = (o.abc || 'C'), x = (o.xyz || 'Z');
+    var la = { A: 'forte valeur pour le réseau', B: 'valeur moyenne', C: 'faible valeur' }[a];
+    var lx = { X: 'demande régulière', Y: 'demande variable', Z: 'demande erratique' }[x];
+    return a + x + ' : ' + la + ', ' + lx + ' — niveau de service visé ' +
+      Math.round(M.niveauService(o) * 100) + ' %' + (o.inter ? ', demande intermittente (prévision Croston/SBA)' : '');
+  }
 
   /* ═══ LA GRILLE ═══════════════════════════════════════════════════════════ */
   function corpsHtml() {
@@ -158,7 +187,7 @@
       var cells = p ? p.sites.map(function (x) {
         var z = zoneCell(x);
         return '<td><span class="g5-cell z-' + z + '"><b>' + (x.st == null ? '—' : C.fmt(x.st)) + '</b>' +
-          '<span' + (M.estime && x.st > 0 && x.cov < 9999 ? ' class="est" title="couverture estimée : la demande est supposée répartie à parts égales entre les sept sites"' : '') +
+          '<span' + (x.est && x.st > 0 && x.cov < 9999 ? ' class="est" title="couverture estimée : HP, MSP et SEP couvrent les mêmes sept départements, la demande de cette zone est partagée en trois parts égales"' : '') +
           '>' + jSite(x) + '</span></span></td>';
       }).join('') : '<td colspan="7" class="g5-wait">chargement du stock des sept sites…</td>';
       var mvh = mv.length ? '<div class="g5-mv">' + mv.slice(0, 2).map(function (m) {
@@ -172,8 +201,43 @@
           (a ? '<span class="fait" style="color:' + ACTES[a.a].c + '" title="' + ACTES[a.a].v + ' le ' + C.fdate(a.d) + '">✓</span>' : '') +
           C.esc(C.cap(o.d)) + '</div>' +
         '<div class="c">CIP ' + C.esc(o.c) + ' · ' + lab + '</div>' + mvh + '</td>' + cells +
-        '<td class="res"><b>' + C.fmt(o.st) + '</b><span>' + M.jours(o.cov) + '</span></td></tr>';
+        '<td class="res"><b>' + C.fmt(o.st) + '</b><span>' + M.jours(o.cov) + '</span>' +
+          '<span class="g5-cel" title="' + celTitre(o) + '">' + M.cellule(o) + '</span>' +
+          (o.eurRisque > 0 ? '<span class="g5-eur" title="ventes à risque avant la prochaine livraison">' + eur(o.eurRisque) + '</span>' : '') +
+        '</td></tr>';
     }).join('');
+  }
+
+  /* Ce que veut dire « ≈ » — et ce qui n'est rattaché à aucun dépôt. Tous les chiffres
+     de cette phrase sont RELUS dans les données du jour : aucun n'est écrit en dur. */
+  function noteDemande() {
+    var C = V2.approCtx, M = V2.approM, idx = C.idx(), ks = Object.keys(idx);
+    var mes = 0, part = 0, hors = 0, nr = 0, i, o, d;
+    for (i = 0; i < ks.length; i++) {
+      o = idx[ks[i]]; d = C.demandeSite ? C.demandeSite(o.c) : null;
+      if (!d) continue;
+      var k; for (k in d) if (d.hasOwnProperty(k) && k.charAt(0) !== '_') { if (d._est[k]) part += d[k]; else mes += d[k]; }
+      hors += d._hors || 0; nr += d._nr || 0;
+    }
+    var tot = mes + part + hors + nr;
+    if (!tot) {
+      return '<br><br><b>Ce que veut dire « ≈ » dans la grille.</b> La demande par établissement n’est pas ' +
+        'encore chargée : la couverture par site est donc supposée à parts égales entre les sept sites.';
+    }
+    var pc = function (v) { return (Math.round(v / tot * 1000) / 10).toString().replace('.', ',') + ' %'; };
+    var zpaca = M.ZONES.filter(function (z) { return z.sites.length > 1; })[0];
+    return '<br><br><b>Qui livre qui, et ce que veut dire « ≈ ».</b> La demande par établissement est ' +
+      'désormais <b>mesurée</b> : chaque vente porte son officine, l’officine porte son code postal, et le ' +
+      'découpage par département dit quel dépôt la livre. ' + pc(mes) + ' de la demande est ainsi rattachée à ' +
+      'un dépôt unique. ' + zpaca.sites.join(', ') + ' couvrent en revanche les <b>mêmes ' + zpaca.dep.length +
+      ' départements</b> : rien dans le code postal ne permet de les séparer, la demande de cette zone (' +
+      pc(part) + ') est donc partagée en ' + zpaca.sites.length + ' parts égales — c’est le seul « ≈ » qui reste. ' +
+      (hors > 0 ? 'Escale Pharma et Pharmest (' + pc(hors) + ') ne font pas partie des sept sites dont nous avons le ' +
+        'stock : leur demande est mise à part, jamais diluée sur les autres. ' : '') +
+      (nr > 0 ? '<b>' + pc(nr) + ' de la demande n’est rattachée à aucun dépôt</b> : ces départements ne figurent ' +
+        'dans aucune ligne du découpage (Savoie, Puy-de-Dôme, Ain, Haute-Savoie, Indre-et-Loire) ou l’officine n’a ' +
+        'pas de code postal. Les deviner donnerait un chiffre faux qui aurait l’air juste : la couverture de ces ' +
+        'dépôts est donc légèrement sous-estimée, et le trou est écrit ici plutôt que masqué.' : '');
   }
 
   function noteHtml() {
@@ -189,14 +253,22 @@
     }
     return '<b>' + C.esc(v.t) + '.</b> ' + v.s + ' — ' + C.fmt(L.length) + ' référence' + (L.length > 1 ? 's' : '') +
       ' concernée' + (L.length > 1 ? 's' : '') + ', les ' + Math.min(_n, L.length) + ' premières affichées.' +
-      '<br><br><b>Ce que veut dire « ≈ » dans la grille.</b> Nous n’avons pas les ventes par établissement. ' +
-      'La demande est donc supposée répartie à parts égales entre les sept sites, et la couverture par site ' +
-      'en découle : c’est un ordre de grandeur, pas une mesure. Le stock, lui, est mesuré. C’est la donnée ' +
-      'n° 1 à brancher : elle rendrait cet écran exact.' +
+      noteDemande() +
       '<br><br>Le stock par site vient de <code>etab-prices-data.js</code>, la vitesse de vente est celle du ' +
       'réseau entier sur les mois complets.' + dates +
-      ' Un site sans ligne pour un produit est <b>non communiqué</b>, pas à zéro : il n’est ni donneur ni receveur. ' +
-      'Seules les références vendues au moins ' + C.MINVEL + ' unités par mois sont comptées.';
+      ' Un site sans ligne pour un produit est <b>non communiqué</b>, pas à zéro : il n’est ni donneur ni receveur.' +
+      '<br><br><b>Comment la cible est fixée.</b> Elle n’est plus la même pour toutes les références. ' +
+      'Chacune est classée sur deux axes : sa <b>valeur</b> pour le réseau (A, B ou C) et la ' +
+      '<b>régularité</b> de sa demande (X régulière, Y variable, Z erratique). Sa case décide du ' +
+      'niveau de service visé, donc du stock de sécurité : ' + M.DELAI + ' jours de délai de réappro + ' +
+      M.REVUE + ' jours de revue + le coussin de sa case, plafonné à ' + M.SS_MAX_J + ' jours. ' +
+      'Le plancher légal des deux semaines reste intouchable et une tension déclarée ne peut jamais faire ' +
+      'baisser la cible. Les seuils de régularité ont été <b>mesurés sur nos ventes</b>, pas recopiés : ' +
+      'les seuils des manuels classaient 9 références sur 10 en « erratique ».' +
+      '<br><br><b>Les références qui se vendent rarement ne sont plus jetées.</b> L’écran ne gardait que ' +
+      'celles vendues au moins ' + C.MINVEL + ' unités par mois : cela écartait 62 % du catalogue, dont ' +
+      '202 références de forte valeur. Leur demande est désormais prévue par la méthode Croston/SBA, faite ' +
+      'pour les ventes rares, au lieu d’une moyenne qui n’a pas de sens sur un produit vendu un mois sur six.';
   }
 
   /* ═══ LA FICHE ════════════════════════════════════════════════════════════ */
@@ -220,7 +292,8 @@
       (stAnsm ? '<span class="g5-b r">ANSM · ' + C.esc(stAnsm) + '</span>' : '') +
       (C.isMitm(o.c) ? '<span class="g5-b a">MITM</span>' : '') +
       (C.froid(o.c) ? '<span class="g5-b f">chaîne du froid 2-8 °C</span>' : '') +
-      '<span class="g5-b">classe ' + (o.abc || 'C') + '</span>';
+      '<span class="g5-b" title="' + celTitre(o) + '">case ' + M.cellule(o) + '</span>' +
+      (o.inter ? '<span class="g5-b" title="vendue ' + Math.round(10 / (o.adi || 1)) / 10 + ' mois sur 10 : la moyenne mobile n’est pas le bon outil, la prévision passe par Croston/SBA">demande intermittente</span>' : '');
 
     /* ── Où est le stock : les sept sites, avec la marque d'estimation ── */
     var repart = p ? p.sites.map(function (x) {
@@ -230,7 +303,7 @@
       return '<div class="l"><span class="s">' + x.site + '</span>' +
         '<span class="j z-' + z2 + '"><i style="width:' + w.toFixed(1) + '%"></i></span>' +
         '<span class="n">' + (x.st == null ? '—' : C.fmt(x.st)) +
-        '<em class="' + (M.estime && x.st > 0 && x.cov < 9999 ? 'est' : '') + '">' +
+        '<em class="' + (x.est && x.st > 0 && x.cov < 9999 ? 'est' : '') + '">' +
         (x.st == null ? 'non communiqué' : jSite(x)) + '</em>' + nv + '</span></div>';
     }).join('') : '<div class="g5-wait">chargement du stock des sept sites…</div>';
 
@@ -251,16 +324,33 @@
       return '<div class="l calc"><span>' + t + '</span><span class="n">' + n + '<em>' + e + '</em></span></div>';
     }
     var un = function (x) { return (Math.round(x * 10) / 10).toString().replace('.', ','); };
-    var calc = ligne('Cible de couverture', cible + ' j',
-        cible === M.CIBLE_TENSION ? 'relevée : tension déclarée' : 'réglage interne') +
-      ligne('Demande journalière réseau', un(vj) + ' u/j', C.fmt(Math.round(o.vM)) + ' par mois ÷ 30') +
+    // La cible n'est plus « 21 jours pour tout le monde » : elle se décompose, et chaque
+    // terme est écrit. Un acheteur qui ne peut pas refaire le calcul de tête ne fait pas
+    // confiance au chiffre — la transparence du calcul est le premier argument des outils
+    // du marché (état de l'art §C).
+    var ssJ = o.ssJ || 0;
+    var calc = ligne('Délai de réappro supposé', M.DELAI + ' j', 'hypothèse : les délais réels par fournisseur ne sont pas encore dans nos données') +
+      ligne('Périodicité de revue', M.REVUE + ' j', 'entre deux passages sur le carnet d’achat') +
+      ligne('Stock de sécurité', '+ ' + un(ssJ) + ' j',
+        ssJ <= 0 ? 'demande trop régulière ou historique trop court : aucun coussin' :
+        (o.inter ? 'case ' + M.cellule(o) + ', service ' + Math.round(M.niveauService(o) * 100) + ' % · loi de Poisson (ventes rares)'
+                 : 'case ' + M.cellule(o) + ', service ' + Math.round(M.niveauService(o) * 100) + ' % · Z × écart-type × √délai')) +
+      ligne('Cible de couverture', cible + ' j',
+        cible === M.PLANCHER ? 'ramenée au plancher légal des deux semaines' :
+        (cible === M.CIBLE_TENSION ? 'relevée : tension déclarée' : 'somme des trois lignes ci-dessus')) +
+      ligne('Demande journalière réseau', un(vj) + ' u/j',
+        C.fmt(Math.round(o.vM)) + ' par mois ÷ 30' + (o.inter ? ' · prévision Croston/SBA' : '')) +
       (o.sais && Math.abs(o.sais - 1) > 0.01
         ? ligne('Coefficient de saison', '× ' + un(o.sais), 'indice du mois qui vient (Medic’AM)') : '') +
       ligne('Stock cible', C.fmt(Math.round(cible * vj * (o.sais || 1))) + ' u',
         cible + ' j × ' + un(vj) + ' u/j' + (o.sais && Math.abs(o.sais - 1) > 0.01 ? ' × ' + un(o.sais) : '')) +
       ligne('Stock détenu', '− ' + C.fmt(o.st) + ' u', 'dernier inventaire des sept sites') +
       '<div class="l calc tot"><span>À commander</span><span class="n">' + C.fmt(q) + ' u' +
-        '<em>' + eur(q * (o.ppht || 0)) + ' au prix de ' + eur(o.ppht || 0) + '</em></span></div>';
+        '<em>' + eur(q * (o.ppht || 0)) + ' au prix de ' + eur(o.ppht || 0) + '</em></span></div>' +
+      (o.eurRisque > 0 ? '<div class="l calc"><span>Ventes à risque si on ne fait rien</span><span class="n">' +
+        eur(o.eurRisque) + '<em>ce qui manque pour tenir ' + (M.DELAI + M.REVUE) + ' jours</em></span></div>' : '') +
+      (o.eurDormant > 0 ? '<div class="l calc"><span>Capital immobilisé sur cette ligne</span><span class="n">' +
+        eur(o.eurDormant) + '<em>plus de ' + M.DORMANT + ' jours de couverture : la question est de l’écouler</em></span></div>' : '');
 
     /* ── Les gestes ── */
     var gestes;
@@ -315,6 +405,31 @@
   }
 
   /* ═══ LA BARRE DU BAS : ce qui a été arbitré ══════════════════════════════ */
+  /* ═══ LES INDICATEURS DE SERVICE ══════════════════════════════════════════
+     Ce que le marché professionnel met en tête d'un écran d'appro (état de l'art §A.10),
+     et ce qui manquait complètement ici : on ne savait pas si le stock allait bien.
+     ⚠️ C'est une PHOTO du stock du jour face à la demande mesurée, pas un historique :
+     un vrai taux de service se lit sur les commandes d'officines non servies, donnée que
+     nous n'avons pas encore. La phrase le dit, elle ne le laisse pas deviner. */
+  function kpiHtml() {
+    var C = V2.approCtx, M = V2.approM, idx = C.idx();
+    var ks = Object.keys(idx), list = [], i;
+    for (i = 0; i < ks.length; i++) list.push(idx[ks[i]]);
+    var s = M.service(list);
+    if (!s.n) return '';
+    function bloc(t, v, sub) { return '<div class="g5-kpi"><span class="v">' + v + '</span><span class="t">' + t + '</span><span class="s">' + sub + '</span></div>'; }
+    return '<div class="g5-kpis">' +
+      bloc('Servable depuis le stock', (s.taux == null ? '—' : Math.round(s.taux * 100) + ' %'),
+           'sur un mois de demande réseau') +
+      bloc('Références à sec', (s.rupture == null ? '—' : (Math.round(s.rupture * 1000) / 10).toString().replace('.', ',') + ' %'),
+           C.fmt(s.nSec) + ' sur ' + C.fmt(s.n - s.nInconnu) + ' mesurées') +
+      bloc('Rotation du stock', (s.rotation == null ? '—' : (Math.round(s.rotation * 10) / 10).toString().replace('.', ',') + ' tours/an'),
+           (s.jStock == null ? '' : Math.round(s.jStock) + ' jours de stock')) +
+      bloc('Ventes à risque', eur(s.euroRisque), 'si personne ne touche à rien d’ici ' + (M.DELAI + M.REVUE) + ' jours') +
+      bloc('Capital qui dort', eur(s.euroDormant), 'plus de ' + M.DORMANT + ' jours de couverture') +
+      '</div>';
+  }
+
   function barreHtml() {
     var C = V2.approCtx, idx = C.idx(), arb = arbTous(), ks = Object.keys(arb);
     if (!ks.length) {
@@ -453,7 +568,7 @@
     return '<div class="v2-card ap-card g5-card">' + head + '<div class="g5-body">' +
       /* correctif 3 : le lede tient sur une ligne — le détail est dans la note, sous la grille. */
       '<p class="g5-lede">Une ligne = une référence, sept colonnes = les sept sites. On clique, la fiche ' +
-        'de la ligne s’ouvre aussitôt — et rien ne se recharge.</p>' + seg +
+        'de la ligne s’ouvre aussitôt — et rien ne se recharge.</p>' + kpiHtml() + seg +
       '<div class="g5-duo">' +
         '<div class="g5-gwrap"><table class="g5-grille"><thead><tr><th class="ref">Référence</th>' + ths +
           '<th class="res">Réseau</th></tr></thead><tbody id="g5-corps">' + corpsHtml() + '</tbody></table></div>' +
@@ -473,6 +588,17 @@
     st.textContent =
       '.g5-body{padding:13px 18px 18px}' +
       '.g5-lede{margin:0 0 10px;font-size:13px;color:var(--muted);line-height:1.5;max-width:96ch;font-weight:500}' +
+      /* indicateurs de service — `auto-fit` plutôt qu'un nombre de colonnes fixe : à 390 px
+         les cinq blocs se replient d'eux-mêmes, sans requête de média ni débordement. */
+      '.g5-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:8px;margin:0 0 12px}' +
+      '.g5-kpi{border:1px solid var(--line);border-radius:11px;background:var(--card);padding:9px 11px 8px;min-width:0}' +
+      '.g5-kpi .v{display:block;font-family:var(--mono);font-size:17px;font-weight:800;line-height:1.15;color:var(--ink,#152130)}' +
+      '.g5-kpi .t{display:block;font-size:11.5px;font-weight:800;margin-top:2px}' +
+      '.g5-kpi .s{display:block;font-size:11px;color:var(--muted);font-weight:500;line-height:1.35;margin-top:1px}' +
+      /* case ABC×XYZ et euros à risque, dans la colonne « Réseau » */
+      '.g5-cel{display:inline-block !important;font-family:var(--mono);font-size:10.5px;font-weight:800;' +
+        'letter-spacing:.3px;border:1px solid var(--line);border-radius:6px;padding:1px 5px;margin-top:3px;color:var(--muted)}' +
+      '.g5-eur{display:block;font-size:11.5px;font-weight:800;color:#B02A37;margin-top:2px}' +
       /* onglets */
       '.g5-seg{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 10px}' +
       '.g5-seg button{min-height:36px;padding:0 13px;border-radius:9px;border:1px solid var(--line);' +
