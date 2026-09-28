@@ -75,6 +75,29 @@ if os.path.exists(ETAB_JS):
     print('tarif NR du %s : %d prix mis à jour, %d NR ajoutés, %d écarts refusés'
           % (etab.get('tarifDate'), maj, ajout, refus))
 
+# ── Tarifs corrigés après la date du fichier source ─────────────────────
+# Le fichier « stock et prix » le plus récent date du 22/06/2026, et les GLP-1
+# ont baissé depuis. Tant qu'un « stock et prix » plus récent n'est pas déposé
+# dans STATS/, ces tarifs écrasent celui de juin.
+# Mesuré deux fois : sur les stocks du 17/09 et du 21/09 (d'accord entre eux),
+# et sur le prix facturé (PLVPUBRUT) de plus de 10 000 lignes de ventes de
+# juillet-août 2026 — une seule valeur pour chaque référence.
+# À SUPPRIMER le jour où un fichier « stock et prix » postérieur au 17/09/2026
+# arrive : il portera ces tarifs lui-même.
+TARIFS_MAJ = {
+    '3400930258637': 136.50,   # WEGOVY 0,5MG FLEX 1,5 ML   (était 189,90)
+    '3400930317815': 136.50,   # WEGOVY 0,5MG FLEX 3 ML     (était 189,90)
+    '3400930258644': 136.50,   # WEGOVY 1MG FLEX            (était 189,90)
+    '3400930260241': 157.37,   # WEGOVY 1,7MG FLEX          (était 201,66)
+    '3400930258668': 181.48,   # WEGOVY 2,4MG FLEX          (était 246,57)
+    '3400930292914': 221.32,   # MOUNJARO 5MG KWIKPEN       (était 225,18)
+    '3400930292938': 313.27,   # MOUNJARO 7,5MG KWIKPEN     (était 315,00)
+}
+for _cip, _p in TARIFS_MAJ.items():
+    if _cip in allp and allp[_cip] != _p:
+        print('  tarif mis a jour: %s %.2f -> %.2f' % (_cip, allp[_cip], _p))
+    allp[_cip] = _p
+
 with open(OUT, 'w', encoding='utf-8') as f:
     f.write('// Prix PPHT (tarif grossiste HT) par CIP13 — TOUS produits + set NR — generate_ppht.py\n')
     f.write('window.PPHT = ' + json.dumps(allp, ensure_ascii=False, separators=(',', ':')) + ';\n')
