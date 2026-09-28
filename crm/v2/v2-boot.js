@@ -535,6 +535,10 @@
     // pharma-fr-data.js : sur un dépôt PUBLIC, elle disait qui sont nos clients
     // et à quel palier. 32 Ko, recollée par id dans fusionsProtegees().
     pharmafrseg: 'pharma-fr-seg.js',
+    // 28/09/2026 — le COMMERCIAL AFFECTÉ (indice 5 de chaque point) : 604
+    // officines nommées avec le prénom de qui les suit. Sur un dépôt public,
+    // c'est notre couverture terrain lisible département par département.
+    pharmafrcomm: 'pharma-fr-comm.js',
     // 28/09/2026 — les 154 prix nets IP des 8 offres marketing officielles.
     mktipprix: 'mkt-ip-prix.js',
     mktnr: 'v2/mkt-nr-data.js',
@@ -618,6 +622,7 @@
     wmlca: 'wml-officines-ca.js',
     biosimcomplet: 'biosimilaires-complet.js',
     pharmafrseg: 'pharma-fr-seg.js',
+    pharmafrcomm: 'pharma-fr-comm.js',
     mktipprix: 'mkt-ip-prix.js',
     mktnr: 'mkt-nr-data.js',
     opsostats: 'opso-stats-data.js',
@@ -1017,7 +1022,7 @@
   V2.chargerScripts = function (urls) {
     urls = urls || [];
     if (!urls.length) return Promise.resolve();
-    var V = '?v=20260928i' + (window.V2_VER || '20260915g');
+    var V = '?v=20260928j' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1152,6 +1157,7 @@
     prodstatscond: 'PROD_COND',
     pharmafrca: 'PHARMA_FR_CA',
     pharmafrseg: 'PHARMA_FR_SEG',
+    pharmafrcomm: 'PHARMA_FR_COMM',
     mktipprix: 'MKT_IP_PRIX',
     wmlca: 'WML_OFF_CA',
     biosimcomplet: 'BIOSIMILAIRES_COMPLET',
@@ -1307,6 +1313,29 @@
       _fusionsFaites.pharmafrseg = true;
       if (nS < PS.n) console.warn('[V2] segmentation : ' + nS + ' points rattachés pour ' + PS.n + ' officines protégées');
     }
+    // 28/09/2026 — le commercial affecté revient sur la base nationale. Le
+    // fichier public n'a plus qu'un libellé vide : un id ABSENT de la table
+    // protégée vaut « aucun commercial », donc l'indice 0.
+    if (!_fusionsFaites.pharmafrcomm && window.PHARMA_FR && window.PHARMA_FR.p && window.PHARMA_FR_COMM) {
+      var Dc = window.PHARMA_FR, PC = window.PHARMA_FR_COMM, memoC = {};
+      if (!Dc.comm || !Dc.comm.length) Dc.comm = [''];
+      var idxCom = function (lib) {
+        if (memoC[lib] == null) {
+          var kc = Dc.comm.indexOf(lib);
+          if (kc < 0) { Dc.comm.push(lib); kc = Dc.comm.length - 1; }
+          memoC[lib] = kc;
+        }
+        return memoC[lib];
+      };
+      var pC = Dc.p, nC = 0;
+      for (var ci = 0; ci < pC.length; ci++) {
+        var vc = PC.m[String(pC[ci][13])];
+        if (vc == null) pC[ci][5] = 0;
+        else { pC[ci][5] = idxCom(PC.l[vc]); nC++; }
+      }
+      _fusionsFaites.pharmafrcomm = true;
+      if (nC < PC.n) console.warn('[V2] commerciaux : ' + nC + ' points rattachés pour ' + PC.n + ' officines protégées');
+    }
     // Les prix nets des offres marketing : le tableau MARKETING_IP_OFFERS a été
     // construit au chargement de marketing-offers.js, avant cette table.
     if (!_fusionsFaites.mktipprix && window.MKT_IP_PRIX && window.MARKETING_IP_APPLY_PRIX) {
@@ -1364,7 +1393,7 @@
     // base nationale se recalculent (V2.reconcilePharma, la seule règle), et La carte, si elle est
     // ouverte, se recale. Vu en vraie session : une carte ouverte avant eux restait à 0 CA. Même filet
     // que REPRISES en tête de fichier. Une seule fois par arrivée (_etatCarte), pas à chaque bridge().
-    var etat = (window.WML_OFFICINES ? 'w' : '') + (_fusionsFaites.wmlca ? 'c' : '') + (_fusionsFaites.pharmafr ? 'p' : '') + (_fusionsFaites.pharmafrseg ? 's' : '') + (_fusionsFaites.clientsactifs ? 'a' : '');
+    var etat = (window.WML_OFFICINES ? 'w' : '') + (_fusionsFaites.wmlca ? 'c' : '') + (_fusionsFaites.pharmafr ? 'p' : '') + (_fusionsFaites.pharmafrseg ? 's' : '') + (_fusionsFaites.pharmafrcomm ? 'm' : '') + (_fusionsFaites.clientsactifs ? 'a' : '');
     if (etat !== _etatCarte) {
       _etatCarte = etat;
       if (window.PHARMA_FR) {
@@ -1481,7 +1510,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260928i';
+    var V = '?v=20260928j';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];

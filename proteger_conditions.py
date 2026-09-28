@@ -91,11 +91,31 @@ def pharma_fr():
     seg = {} if deja_propre else {
         str(pt[13]): ord_g[lab[pt[4]]]
         for pt in pts if len(pt) > 13 and lab[pt[4]] != 'Prospect'}
-    if not ca and not seg:
+    # 28/09/2026 — le COMMERCIAL AFFECTÉ (indice 5) : 604 officines nommées avec
+    # le prénom de qui les suit. Ce n'est pas nos clients qu'il trahit — les 604
+    # sont toutes « Non défini » côté segmentation — c'est NOTRE COUVERTURE
+    # TERRAIN, département par département, prénom par prénom, sur un dépôt
+    # public. Le protégé ne porte QUE les affectés : l'absence VAUT « pas de
+    # commercial ». Le fichier public ne garde qu'un libellé vide, donc plus
+    # aucun prénom de l'équipe.
+    lcom = d.get('comm') or []
+    gardes_c = [l for l in lcom if l]
+    ord_c = {l: i for i, l in enumerate(gardes_c)}
+    # ⚠️ Même garde-fou que la segmentation : le fichier DÉJÀ découpé n'a plus
+    # que des libellés vides ; sans ce test une 2ᵉ passe écraserait la vraie
+    # table par du vide. Ici la comprehension rend {} d'elle-même, le `if comm`
+    # plus bas refuse alors d'écrire — mais on le dit, pour qui relira.
+    comm = {str(pt[13]): ord_c[lcom[pt[5]]]
+            for pt in pts if len(pt) > 13 and lcom[pt[5]]}
+    if not ca and not seg and not comm:
         return
     for pt in pts:
         if len(pt) > 12: pt[12] = 0
         if len(pt) > 4: pt[4] = i_nd
+        if len(pt) > 5: pt[5] = 0
+    # Le libellé vide reste en tête pour que `comm[0]` rende '' chez les lecteurs
+    # (v2-carte.js, v2-tournee.js, v2-carte-groupements.js) ; les prénoms partent.
+    d['comm'] = ['']
     ecrire('crm/v2/pharma-fr-data.js',
            s[:m.start()] + 'window.PHARMA_FR=' + json.dumps(d, ensure_ascii=False, separators=(',', ':')) + ';\n')
     # ⚠️ N'écrire QUE la table qu'on vient réellement de découper. Le CA est
@@ -111,7 +131,13 @@ def pharma_fr():
                '// `l` = libellés, `m` = id -> indice dans `l`. Un id ABSENT = Prospect.\n'
                'window.PHARMA_FR_SEG = {n:%d, l:%s, m:%s};\n'
                % (J, AV, len(seg), json.dumps(gardes, ensure_ascii=False), json.dumps(seg)))
-    fait.append('pharma-fr (%d CA, %d segments)' % (len(ca), len(seg)))
+    if comm:
+        ecrire('pharma-fr-comm.js',
+               '// Intégral Pharma — commercial affecté par officine — %s\n%s'
+               '// `l` = prénoms, `m` = id -> indice dans `l`. Un id ABSENT = aucun commercial.\n'
+               'window.PHARMA_FR_COMM = {n:%d, l:%s, m:%s};\n'
+               % (J, AV, len(comm), json.dumps(gardes_c, ensure_ascii=False), json.dumps(comm)))
+    fait.append('pharma-fr (%d CA, %d segments, %d commerciaux)' % (len(ca), len(seg), len(comm)))
 
 def wml_officines():
     p = os.path.join(BASE, 'crm/v2/wml-officines-data.js')
@@ -206,6 +232,10 @@ def controle_final():
         fautes.append('pharma-fr-data.js porte encore des CA')
     if any(len(pt) > 4 and d['seg'][pt[4]] != 'Non défini' for pt in d.get('p', [])):
         fautes.append('pharma-fr-data.js porte encore la segmentation commerciale')
+    if any(len(pt) > 5 and d['comm'][pt[5]] for pt in d.get('p', [])):
+        fautes.append('pharma-fr-data.js porte encore le commercial affecté')
+    if [l for l in d.get('comm', []) if l]:
+        fautes.append('pharma-fr-data.js porte encore les prénoms des commerciaux')
     s = io.open(os.path.join(BASE, 'crm/marketing-offers.js'), encoding='utf-8').read()
     if re.search(r',\s*ip:\s*-?[0-9.]+', s):
         fautes.append('marketing-offers.js porte encore des prix nets IP')

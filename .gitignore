@@ -215,6 +215,8 @@ pharma-fr-ca.js
 # marketing-offers.js, servis par adresse signée.
 pharma-fr-seg.js
 mkt-ip-prix.js
+# 28/09/2026 — le commercial affecté (604 officines) : notre couverture terrain.
+pharma-fr-comm.js
 wml-officines-ca.js
 biosimilaires-complet.js
 opso/opso-stats-data.js

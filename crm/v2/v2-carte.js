@@ -89,7 +89,7 @@
     if (window.PHARMA_FR) { cb(); return; }
     V2.ensurePharmaFr(function () {
       var suite = function () { cb(window.PHARMA_FR ? null : 'err'); };
-      var pr = (window.PHARMA_FR && V2.loadFiles) ? V2.loadFiles(['pharmafrca', 'pharmafrseg']) : null;   // CA ET segmentation protégés, attendus avant de dessiner
+      var pr = (window.PHARMA_FR && V2.loadFiles) ? V2.loadFiles(['pharmafrca', 'pharmafrseg', 'pharmafrcomm']) : null;   // CA ET segmentation protégés, attendus avant de dessiner
       if (pr && pr.then) pr.then(suite, suite); else suite();
     });
   }
@@ -1037,7 +1037,7 @@
     if (V2.toast) V2.toast('Préparation du fichier Excel…');
     // Le CA et les vrais clients arrivent par des fichiers protégés, parfois APRÈS l'ouverture de la
     // carte (vu en vraie session : fichier sorti sans aucun CA). On les attend, on recale, puis on écrit.
-    var pret = (V2.loadFiles ? V2.loadFiles(['wml', 'pharmafrca', 'pharmafrseg']) : null);
+    var pret = (V2.loadFiles ? V2.loadFiles(['wml', 'pharmafrca', 'pharmafrseg', 'pharmafrcomm']) : null);
     if (!pret || !pret.then) pret = { then: function (f) { f(); } };
     var suite = function () {
       recaler(); applyFilters();

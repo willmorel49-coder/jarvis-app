@@ -478,7 +478,7 @@
   // rejoignent le jeu attendu par tout écran, comme le CA (`pharmafrca`). Sans la
   // segmentation, la base nationale ne dit plus qui est client — les filtres de La
   // carte et la cible des campagnes rendraient vide.
-  V2.NEEDS_DEFAUT = ['bench', 'sagitta', 'prodstatscond', 'pharmafrca', 'pharmafrseg', 'mktipprix', 'wmlca', 'biosimcomplet'];
+  V2.NEEDS_DEFAUT = ['bench', 'sagitta', 'prodstatscond', 'pharmafrca', 'pharmafrseg', 'pharmafrcomm', 'mktipprix', 'wmlca', 'biosimcomplet'];
   // ── RENDER (routeur) ──────────────────────────
   V2.render = function () {
     var root = $app(); if (!root) return;
@@ -1767,7 +1767,7 @@
     s.onload = s.onerror = function () {
       V2._pfrLoading = false;
       // la colonne CA protégée se recolle dès que la carte publique est là
-      if (window.PHARMA_FR && V2.loadFiles) { try { V2.loadFiles(['pharmafrca', 'pharmafrseg']); } catch (e) {} }
+      if (window.PHARMA_FR && V2.loadFiles) { try { V2.loadFiles(['pharmafrca', 'pharmafrseg', 'pharmafrcomm']); } catch (e) {} }
       try { V2.reconcilePharma(); } catch (e) {}
       var cbs = V2._pfrCbs || []; V2._pfrCbs = [];
       cbs.forEach(function (f) { try { f(); } catch (e) {} });
