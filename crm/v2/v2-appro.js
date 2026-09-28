@@ -1798,6 +1798,178 @@
     el.innerHTML = html; el.style.display = 'flex';
   };
 
+  /* ═══ L'AXE DES TRENTE JOURS — l'écran d'accueil d'APPRO ════════════════════
+     Choix de Will le 28/09/2026, parmi quatre organisations (maquettes dans
+     ~/jarvis-preuves/appro-organisations-2026-09-28/) : « O3, il remplace l'écran
+     d'accueil d'APPRO ». Le carnet d'achat n'est pas supprimé — il reste dessous.
+
+     Le principe : un seul axe, d'aujourd'hui à J+30. Chaque référence se range à la
+     date où elle tombera en rupture (sa couverture actuelle), et les DEUX délais du
+     circuit d'achat sont DESSINÉS sur l'axe. On ne décide pas au jour de la rupture :
+     on décide M.DELAI + M.REVUE jours avant, sinon il est déjà trop tard.
+
+     ⚠️ Les deux délais sont des HYPOTHÈSES portées par le moteur (v2-appro-moteur.js
+     l. 215-219). Ils se LISENT ici, ils ne se réécrivent pas : le 19/08/2026, une durée
+     écrite en dur dans un mail promettait quinze minutes pendant que l'agenda en
+     bloquait quarante-cinq. */
+  var _axeJour = 0;
+  V2.approJour = function (j) {
+    j = parseInt(j, 10); if (isNaN(j)) j = 0;
+    _axeJour = Math.max(0, Math.min(AXE_N, j));
+    if (V2.render) V2.render();
+  };
+  var AXE_N = 30;
+
+  // Une référence n'entre sur l'axe que si elle a une DATE. Deux cas sortent, et on les
+  // compte au lieu de les taire : jamais inventoriée (stock inconnu, pas un stock à zéro)
+  // et sans vente retenue (aucune vitesse, donc aucune date de rupture calculable).
+  function axeBuckets() {
+    var idx = cipIndex(), b = [], i;
+    for (i = 0; i <= AXE_N; i++) b.push({ j: i, refs: [], eur: 0 });
+    var hors = { inconnu: 0, sansVente: 0, auDela: 0, auDelaEur: 0 };
+    Object.keys(idx).forEach(function (k) {
+      var o = idx[k];
+      if (o.unk) { hors.inconnu++; return; }
+      if (!(o.vM > 0)) { hors.sansVente++; return; }
+      if (o.cov > AXE_N) { hors.auDela++; hors.auDelaEur += o.eurDormant || 0; return; }
+      var j = Math.max(0, Math.min(AXE_N, Math.round(o.cov)));
+      b[j].refs.push(o); b[j].eur += o.eurCmd || 0;
+    });
+    for (i = 0; i <= AXE_N; i++)
+      b[i].refs.sort(function (x, y) { return (y.eurCmd || 0) - (x.eurCmd || 0); });
+    return { b: b, hors: hors };
+  }
+
+  // La bande d'un jour. Les bornes viennent du moteur : réappro express seul (M.DELAI),
+  // puis circuit normal complet (M.REVUE + M.DELAI).
+  function axeBande(j) {
+    if (j < AM.DELAI) return 'r';
+    if (j < AM.REVUE + AM.DELAI) return 'a';
+    return 'n';
+  }
+
+  function axeTrenteJours() {
+    var A, idxOk = true;
+    try { A = axeBuckets(); } catch (e) { idxOk = false; }
+    if (!idxOk || !A) {
+      return '<div class="v2-card" style="padding:22px;text-align:center;color:var(--muted)">' +
+        'Chargement de l’axe des trente jours…</div>';
+    }
+    var b = A.b, hors = A.hors, i, o;
+    var EUR = function (v) { return V2.fmtEur ? V2.fmtEur(v) : fmt(v); };
+
+    // ── Les quatre compteurs, tous LUS dans les mêmes seaux que l'axe ──────────
+    var nRouge = 0, eurRouge = 0, nAmbre = 0, eurAmbre = 0, nBleu = 0, eurBleu = 0;
+    for (i = 0; i <= AXE_N; i++) {
+      var z = axeBande(i);
+      if (z === 'r') { nRouge += b[i].refs.length; eurRouge += b[i].eur; }
+      else if (z === 'a') { nAmbre += b[i].refs.length; eurAmbre += b[i].eur; }
+      else { nBleu += b[i].refs.length; eurBleu += b[i].eur; }
+    }
+    function tuile(n, t, s, col) {
+      return '<div class="axk" style="--k:' + col + '"><div class="axk-n">' + n + '</div>' +
+        '<div class="axk-t">' + t + '</div><div class="axk-s">' + s + '</div></div>';
+    }
+    var kpis = '<div class="axkpis">' +
+      tuile(fmt(nRouge), 'ruptures sous ' + AM.DELAI + ' jours',
+        'même un réappro express de ' + AM.DELAI + ' j n’arrive plus à temps — ' + EUR(eurRouge) + ' en jeu', '#D5573B') +
+      tuile(fmt(nAmbre), 'ruptures entre ' + AM.DELAI + ' et ' + (AM.REVUE + AM.DELAI - 1) + ' jours',
+        'le circuit normal (' + (AM.REVUE + AM.DELAI) + ' j) n’a plus le temps — ' + EUR(eurAmbre) + ' en jeu', '#C98A1A') +
+      tuile(fmt(nBleu), 'ruptures couvertes par le délai',
+        'entre J+' + (AM.REVUE + AM.DELAI) + ' et J+' + AXE_N + ', le circuit normal suffit — ' + EUR(eurBleu) + ' à engager', 'var(--ip-blue)') +
+      tuile(fmt(hors.auDela + hors.inconnu + hors.sansVente), 'hors de cette vue à ' + AXE_N + ' jours',
+        fmt(hors.auDela) + ' au-delà de J+' + AXE_N + ' · ' + fmt(hors.sansVente) + ' sans vente retenue · ' +
+        fmt(hors.inconnu) + ' jamais inventoriées', 'var(--muted)') +
+      '</div>';
+
+    // ── La frise. Hauteur = euros à engager ce jour-là, pas le nombre de lignes :
+    //    une ligne à 600 k€ ne pèse pas comme une ligne à 80 €. ──────────────────
+    var maxE = 0;
+    for (i = 0; i <= AXE_N; i++) if (b[i].eur > maxE) maxE = b[i].eur;
+    var barres = '', labels = '';
+    for (i = 0; i <= AXE_N; i++) {
+      var h = maxE > 0 ? Math.max(3, Math.round(b[i].eur / maxE * 100)) : 3;
+      var lib = (i === 0 ? 'départ de l’axe' : 'J+' + i) + ' — ' + fmt(b[i].refs.length) +
+        ' référence' + (b[i].refs.length > 1 ? 's' : '') + ', ' + EUR(b[i].eur) + ' à engager';
+      barres += '<button class="axb z-' + axeBande(i) + (i === _axeJour ? ' on' : '') + '" ' +
+        'onclick="V2.approJour(' + i + ')" aria-pressed="' + (i === _axeJour ? 'true' : 'false') + '">' +
+        '<span class="axb-i" style="height:' + h + '%"></span>' +
+        '<span class="axb-vh">' + esc(lib) + '</span></button>';
+      labels += '<span' + (i === 0 ? ' class="axl0"' : '') + '>' +
+        (i === 0 ? 'J 0' : (i % 7 === 0 ? '+' + i : '')) + '</span>';
+    }
+    var frise = '<div class="axsec">Ce qui casse, jour par jour — la hauteur est l’argent à engager, pas le nombre de lignes</div>' +
+      '<div class="axshell"><div class="axzones">' +
+        '<i class="z-r" style="flex:' + AM.DELAI + '"></i>' +
+        '<i class="z-a" style="flex:' + AM.REVUE + '"></i>' +
+        '<i class="z-n" style="flex:' + (AXE_N + 1 - AM.DELAI - AM.REVUE) + '"></i></div>' +
+      '<div class="axdefile"><div class="axfrise">' + barres + '</div>' +
+      '<div class="axlabels">' + labels + '</div></div>' +
+      '<div class="axastuce">Faites glisser la frise pour parcourir les ' + AXE_N + ' jours.</div></div>';
+
+    var legende = '<div class="axleg">' +
+      '<span class="l-r">0 à ' + (AM.DELAI - 1) + ' j — un réappro express (' + AM.DELAI + ' j) n’arriverait déjà plus à temps</span>' +
+      '<span class="l-a">' + AM.DELAI + ' à ' + (AM.REVUE + AM.DELAI - 1) + ' j — le circuit normal (revue ' + AM.REVUE + ' j + réappro ' + AM.DELAI + ' j) n’a plus le temps</span>' +
+      '<span class="l-n">' + (AM.REVUE + AM.DELAI) + ' j et plus — le circuit normal a le temps de se dérouler</span>' +
+      '</div>';
+
+    // ── Le jour choisi ────────────────────────────────────────────────────────
+    var jb = b[_axeJour], bz = axeBande(_axeJour);
+    var msg = bz === 'r'
+      ? 'Zone rouge : même un réappro express de ' + AM.DELAI + ' jours n’arriverait plus à temps.'
+      : bz === 'a'
+      ? 'Zone ambre : le circuit normal (revue ' + AM.REVUE + ' j + réappro ' + AM.DELAI + ' j) n’a plus le temps ; il faut passer en réappro direct.'
+      : 'Zone bleue : commandées aujourd’hui, ces lignes arrivent avant la rupture.';
+    var nav = '<div class="axnav">' +
+      '<button class="axpas" onclick="V2.approJour(' + (_axeJour - 1) + ')" aria-label="Jour précédent"' +
+        (_axeJour <= 0 ? ' disabled' : '') + '>‹</button>' +
+      '<div><div class="axnav-t">' + (_axeJour === 0 ? 'Départ de l’axe' : 'Jour ' + _axeJour + ' de l’axe') + '</div>' +
+      '<div class="axnav-s">' + esc(msg) + '</div></div>' +
+      '<button class="axpas" onclick="V2.approJour(' + (_axeJour + 1) + ')" aria-label="Jour suivant"' +
+        (_axeJour >= AXE_N ? ' disabled' : '') + '>›</button>' +
+      '<button class="v2-btn axret" onclick="V2.approJour(0)">Revenir au départ</button></div>';
+
+    var lignes = jb.refs.slice(0, 40).map(function (x) {
+      /* ⚠️ `o.f` de cipIndex n'est PAS la chaîne du froid : c'est le segment de prix de
+         PROD_STATS (« pr_low »…), donc vrai pour presque tout. Le 28/09/2026 l'écran a
+         étiqueté « froid » les 22 lignes du jour 0, paracétamol compris. La chaîne du
+         froid se demande à estFroidCip, et le MITM à isMitm — les mêmes sources que
+         Pilotage et que l'écran « La grille et la fiche ». */
+      var tags = (x.tension ? '<span class="axtag t-tens">tension</span>' : '') +
+                 (isMitm(x.c) ? '<span class="axtag t-mitm">MITM</span>' : '') +
+                 (estFroidCip(x.c) ? '<span class="axtag t-froid">froid</span>' : '');
+      return '<tr><td><div class="axr-d">' + esc(cap((x.d || '').toLowerCase())) + '</div>' +
+        '<div class="axr-c">CIP ' + esc(x.c) + '</div></td>' +
+        '<td class="axnum">' + Math.round(x.cov) + ' j</td>' +
+        '<td class="axnum">' + fmt(x.st) + '</td>' +
+        '<td class="axnum">' + fmt(x.qcmd) + ' u · ' + EUR(x.eurCmd) + '</td>' +
+        '<td>' + (tags || '<span class="axr-c">—</span>') + '</td></tr>';
+    }).join('');
+    var tableau = '<div class="v2-card axcard">' +
+      '<h3 class="axh">' + fmt(jb.refs.length) + ' référence' + (jb.refs.length > 1 ? 's' : '') + ' à ce stade</h3>' +
+      '<p class="axsub">' + EUR(jb.eur) + ' à engager pour tenir la date, triées par montant.' +
+      (jb.refs.length > 40 ? ' Les 40 plus grosses sont affichées.' : '') + '</p>' +
+      (jb.refs.length
+        ? '<div class="axtblw"><table class="axtbl"><thead><tr><th>Référence</th><th class="axnum">Couverture</th>' +
+          '<th class="axnum">Stock</th><th class="axnum">À commander</th><th>État</th></tr></thead><tbody>' +
+          lignes + '</tbody></table></div>' +
+          '<span class="axastuce-t">Faites glisser le tableau pour voir le stock et le montant.</span>'
+        : '<p class="axvide">Rien ne tombe en rupture ce jour-là. C’est une bonne nouvelle, pas un écran vide.</p>') +
+      '</div>';
+
+    var note = '<div class="v2-card axnote"><b>Ce que cet axe ne montre pas.</b> Chaque référence est ' +
+      'placée à sa date de rupture déduite de sa couverture actuelle — stock ÷ vitesse de vente du ' +
+      'réseau, à consommation constante. Ce n’est pas une prévision : un pic de commandes ou une ' +
+      'rupture déclarée demain décale la vraie date sans bouger la barre. ' +
+      fmt(hors.inconnu) + ' références jamais inventoriées et ' + fmt(hors.sansVente) +
+      ' sans vente retenue n’ont aucune date à placer : elles sortent de cet écran, et c’est ' +
+      'pour ça qu’elles sont comptées ci-dessus plutôt que tues. Les deux délais dessinés ' +
+      '(revue ' + AM.REVUE + ' j, réappro ' + AM.DELAI + ' j) sont des hypothèses de travail, pas des ' +
+      'délais mesurés fournisseur par fournisseur.</div>';
+
+    return '<div class="axe30">' + kpis + frise + legende + nav + tableau + note + '</div>';
+  }
+
   // ═══ VUE CALENDRIER (synthèse experts) : calendrier d'ACTIONS groupé FOURNISSEUR ═══
   var _laboState = 0, _laboMap = null;
   /* ── appro-source.json (generate_appro_source.py) ────────────────────────
@@ -2579,7 +2751,13 @@
       function secHead(t, s) { return '<div class="ap-sec">' + t + '</div>' + (s ? '<div class="ap-secsub">' + s + '</div>' : ''); }
       var content = '';
       if (_section === 'today') {
-        content = calendarView(carnetHtml || '<div class="v2-card" style="padding:22px;text-align:center;color:var(--muted)">Chargement du carnet…</div>');
+        // 28/09/2026 — l'axe des trente jours est devenu l'écran d'accueil (choix de Will).
+        // Le carnet d'achat reste dessous : c'est l'outil de travail, il n'a pas été supprimé.
+        var axeH = '';
+        try { axeH = axeTrenteJours(); } catch (e) { axeH = ''; }
+        content = axeH +
+          secHead('Et le carnet d’achat', 'ce qu’il y a à commander, groupé par fournisseur — l’axe dit QUAND, le carnet dit À QUI') +
+          calendarView(carnetHtml || '<div class="v2-card" style="padding:22px;text-align:center;color:var(--muted)">Chargement du carnet…</div>');
       } else if (_section === 'actu') {
         content = actuView();
       } else if (_section === 'anticiper') {
@@ -2751,6 +2929,79 @@
       '.ap-navb{flex:1;min-width:120px;font-size:13.5px;font-weight:800;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:11px;padding:10px 8px;cursor:pointer;transition:.15s}' +
       '.ap-navb:hover{border-color:#C9D2E0}.ap-navb.on{background:var(--ip-blue);color:#fff;border-color:var(--ip-blue)}' +
       '@media(max-width:640px){.ap-hero{grid-template-columns:1fr 1fr}.ap-navb{min-width:0;font-size:12.5px;padding:9px 4px}}' +
+      /* ── L'AXE DES TRENTE JOURS (écran d'accueil d'APPRO depuis le 28/09/2026) ──
+         Aucun backdrop-filter, aucun filter:blur, aucun background-clip:text : le Mac
+         de Will fige sous Safari, et un hook refuse l'écriture de ces quatre effets. */
+      '.axe30{margin-bottom:18px}' +
+      '.axkpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}' +
+      '.axk{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--k);' +
+        'border-radius:14px;padding:13px 15px}' +
+      '.axk-n{font-size:27px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.1}' +
+      '.axk-t{font-size:13px;font-weight:700;color:var(--ip-ink);margin-top:2px}' +
+      '.axk-s{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.4}' +
+      '.axsec{font-size:12.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}' +
+      '.axshell{position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 14px 8px}' +
+      '.axzones{position:absolute;left:14px;right:14px;top:14px;bottom:36px;display:flex;' +
+        'border-radius:8px;overflow:hidden;pointer-events:none}' +
+      '.axzones i{display:block;height:100%}' +
+      '.axzones .z-r{background:rgba(213,87,59,.10)}.axzones .z-a{background:rgba(201,138,26,.09)}' +
+      '.axzones .z-n{background:rgba(0,80,230,.045)}' +
+      '.axfrise{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:3px;align-items:end;height:124px;z-index:1}' +
+      '.axb{position:relative;display:flex;flex-direction:column;justify-content:flex-end;align-items:stretch;' +
+        'background:none;border:0;padding:0;margin:0;cursor:pointer;min-width:0;height:100%}' +
+      '.axb-i{display:block;width:100%;min-height:3px;border-radius:4px 4px 2px 2px;background:var(--ip-blue)}' +
+      '.axb.z-r .axb-i{background:#D5573B}.axb.z-a .axb-i{background:#C98A1A}' +
+      '.axb.on .axb-i{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--ip-ink)}' +
+      /* le libelle complet de chaque barre, pour les lecteurs d'ecran : invisible a l'oeil */
+      '.axb-vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}' +
+      '.axlabels{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:3px;' +
+        'margin-top:6px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:center;height:18px}' +
+      '.axlabels .axl0{color:var(--ip-blue);font-weight:700}' +
+      '.axastuce,.axastuce-t{display:none}' +
+      '.axleg{display:flex;flex-wrap:wrap;gap:14px;margin:12px 0 0;font-size:13px;color:var(--muted)}' +
+      '.axleg span::before{content:"";display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}' +
+      '.axleg .l-r::before{background:#D5573B}.axleg .l-a::before{background:#C98A1A}.axleg .l-n::before{background:var(--ip-blue)}' +
+      '.axnav{display:flex;align-items:center;gap:12px;margin:18px 0 12px;flex-wrap:wrap}' +
+      '.axpas{min-height:44px;min-width:44px;border-radius:10px;border:1px solid var(--line-strong);' +
+        'background:var(--card);font-size:19px;line-height:1;color:var(--ip-ink);cursor:pointer}' +
+      '.axpas[disabled]{opacity:.4;cursor:default}' +
+      '.axnav-t{font-size:17px;font-weight:800;letter-spacing:-.02em}' +
+      '.axnav-s{font-size:13px;color:var(--muted)}' +
+      '.axret{margin-left:auto;min-height:44px}' +
+      '.axcard{padding:18px 20px}' +
+      '.axh{margin:0;font-size:18px;font-weight:800;letter-spacing:-.01em}' +
+      '.axsub{margin:4px 0 14px;font-size:13px;color:var(--muted)}' +
+      '.axvide{margin:0;font-size:14px;color:var(--muted)}' +
+      '.axtblw{overflow-x:auto}' +
+      '.axtbl{width:100%;border-collapse:collapse;font-size:13.5px}' +
+      '.axtbl th{text-align:left;font-size:12.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;' +
+        'color:var(--muted);padding:0 10px 8px 0;border-bottom:1px solid var(--line)}' +
+      '.axtbl td{padding:9px 10px 9px 0;border-bottom:1px solid var(--line-2);vertical-align:top}' +
+      '.axtbl .axnum{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}' +
+      '.axr-d{font-weight:700;color:var(--ip-ink)}' +
+      '.axr-c{font-size:12.5px;color:var(--muted)}' +
+      '.axtag{display:inline-block;font-size:12.5px;padding:2px 8px;border-radius:999px;margin-right:5px}' +
+      '.axtag.t-tens{background:rgba(213,87,59,.10);color:#B23C22}' +
+      '.axtag.t-froid{background:rgba(0,181,216,.12);color:#0A7C91}' +
+      '.axtag.t-mitm{background:rgba(109,79,196,.10);color:#5B3FB0}' +
+      '.axnote{padding:16px 20px;margin-top:14px;font-size:13px;line-height:1.55;color:var(--muted)}' +
+      '.axnote b{color:var(--ip-ink)}' +
+      /* Telephone : 31 jours sur 390 px donnent des barres de 8 px, intapables. La frise
+         devient une bande qui DEFILE, 44 px par jour. Les etiquettes defilent AVEC les
+         barres (meme conteneur) : un axe fixe au-dessus d'une bande qui bouge designe le
+         mauvais jour. overflow-x:auto ici, jamais clip : on veut justement faire defiler. */
+      '@media(max-width:760px){' +
+        '.axkpis{grid-template-columns:1fr}' +
+        '.axshell{padding-left:0;padding-right:0}' +
+        '.axzones{display:none}' +
+        '.axdefile{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding:0 14px}' +
+        '.axdefile .axfrise,.axdefile .axlabels{grid-auto-columns:44px;min-width:max-content}' +
+        '.axastuce{display:block;padding:8px 14px 0;font-size:13px;color:var(--muted)}' +
+        '.axastuce-t{display:block;margin-top:8px;font-size:13px;color:var(--muted)}' +
+        '.axnav{display:grid;grid-template-columns:44px 1fr 44px;gap:8px 12px}' +
+        '.axnav>div{grid-column:2}' +
+        '.axret{grid-column:1 / -1;margin-left:0;width:100%}' +
+      '}' +
       /* vue calendrier (groupée fournisseur) */
       '.cl-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}' +
       '.cl-tab{flex:1;min-width:88px;font-size:12.5px;font-weight:800;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 6px;cursor:pointer}.cl-tab.on{background:var(--ip-ink);color:#fff;border-color:var(--ip-ink)}' +
