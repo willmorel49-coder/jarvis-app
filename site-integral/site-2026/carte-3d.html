@@ -99,15 +99,18 @@ body{
 .pt--part .pt__n{color:#BCCDEA}
 .pt:hover .pt__n,.pt:focus-visible .pt__n{color:#FFFFFF}
 .pt.is-sel .pt__n{color:#FFFFFF;font-weight:700}
-.pt__tag{font-size:8.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+.pt__tag{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
   color:#FFC46B;border:1px solid rgba(243,154,27,.5);border-radius:99px;padding:2px 7px}
 .pt--part .pt__tag{color:#A7ACB6;border-color:rgba(255,255,255,.18)}
 .pt:focus-visible{outline:2px solid #FFC46B;outline-offset:2px}
 
 .carte__badge{position:absolute;left:14px;top:12px;display:flex;align-items:center;gap:8px;
-  font-size:10.5px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:#A7ACB6;
+  font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:#A7ACB6;
   background:rgba(11,18,32,.6);border:1px solid rgba(255,255,255,.10);border-radius:999px;padding:6px 12px;z-index:5}
 .carte__badge .dot{width:6px;height:6px;border-radius:50%;background:#F39A1B}
+/* une phrase entière en capitales ne se lit plus : on ne garde les capitales
+   que sur l'étiquette courte qui ouvre la ligne. */
+.badge-full,.liste__cap i{text-transform:none;letter-spacing:0;font-style:normal;font-size:12px}
 
 /* ═════ LA FICHE — inchangée dans son usage, validée le 18/09 ════════════════ */
 .info{position:absolute;overflow:hidden;left:14px;bottom:14px;z-index:6;width:min(340px,calc(100% - 28px));
@@ -117,7 +120,7 @@ body{
 .info.on{opacity:1;transform:none;pointer-events:auto}
 .mi__photo{display:block;width:calc(100% + 30px);margin:-13px -15px 12px;aspect-ratio:16/9;object-fit:cover;border-radius:13px 13px 0 0}
 .mi__photo[hidden]{display:none}
-.mi__type{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.05em;
+.mi__type{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.05em;
   text-transform:uppercase;color:#0A1430;background:#5C97FF;border-radius:999px;padding:3px 9px;margin-bottom:9px}
 .info.siege .mi__type{background:linear-gradient(180deg,#FFC673,#F39A1B);color:#241200}
 .info.part .mi__type{background:transparent;border:1px dashed #9FB4D8;color:#C9D6EE}
@@ -149,7 +152,7 @@ body{
 .zone > .carte{flex:1 1 auto}
 .liste{flex:0 0 clamp(220px,27%,300px);display:flex;flex-direction:column;gap:8px}
 .liste__cap{font-size:11px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:#7C89AC}
-.liste__cap b{color:#FFC46B;font-weight:600}
+.liste__cap i{color:#FFC46B;font-weight:500}
 .liste__l{flex:1 1 auto;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:7px;padding-right:4px}
 .estab{display:flex;align-items:center;gap:11px;width:100%;border:1px solid rgba(255,255,255,.10);border-radius:12px;
   padding:9px 12px;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015));
@@ -162,7 +165,7 @@ body{
 .estab__b{min-width:0;flex:1;display:flex;flex-direction:column;line-height:1.2}
 .estab__n{font-weight:600;font-size:14px;color:#FFFFFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .estab__c{font-size:13px;color:#A7ACB6}
-.estab__tag{flex:0 0 auto;font-size:8.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+.estab__tag{flex:0 0 auto;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
   color:#FFC46B;border:1px solid rgba(243,154,27,.4);border-radius:999px;padding:3px 8px}
 .estab--siege{border-color:rgba(243,154,27,.42);background:linear-gradient(180deg,rgba(243,154,27,.12),rgba(255,255,255,.02))}
 .estab--siege .estab__sig{color:#241300;font-weight:700;border-color:transparent;background:linear-gradient(180deg,#FFC673,#F39A1B)}
@@ -245,7 +248,7 @@ body{
       </div>
     </div>
     <aside class="liste" aria-label="Liste des agences">
-      <div class="liste__cap" id="listeCap">Nos agences <b>— cliquez pour les coordonnées</b></div>
+      <div class="liste__cap" id="listeCap">Nos agences <i>— cliquez pour les coordonnées</i></div>
       <div class="liste__l" aria-label="Annuaire des agences">
         <button type="button" class="estab estab--siege" data-i="0"><span class="estab__sig">HP</span><span class="estab__b"><span class="estab__n">Hyères Pharma</span><span class="estab__c">Hyères · 83</span></span><span class="estab__tag">Siège</span></button>
         <button type="button" class="estab" data-i="1"><span class="estab__sig">OPS</span><span class="estab__b"><span class="estab__n">Ouest Pharma Services</span><span class="estab__c">Saint-Étienne-de-Montluc · 44</span></span></button>
@@ -565,7 +568,7 @@ body{
 
   if(COARSE){
     var cap=document.getElementById('listeCap');
-    if(cap) cap.innerHTML='Nos agences <b>— touchez pour les coordonnées</b>';
+    if(cap) cap.innerHTML='Nos agences <i>— touchez pour les coordonnées</i>';
     var hi=document.getElementById('pptHint');
     if(hi) hi.textContent='Touchez une agence pour afficher son mail et son téléphone';
   }
