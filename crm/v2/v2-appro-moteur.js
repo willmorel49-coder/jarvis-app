@@ -80,15 +80,17 @@
        · trois établissements sur la même zone (HP, MSP et SEP couvrent tous les trois
          04-05-06-13-30-83-84) → aucun département ne permet de les séparer. La demande
          de la zone est partagée en trois parts égales, et CES TROIS SITES SEULEMENT
-         portent la marque « estimé ». C'est une estimation sur 7,2 % de la demande,
-         là où l'ancienne règle en estimait 100 % ;
+         portent la marque « estimé ». Sur le réseau complet, cette zone partagée pèse
+         37,6 % de la demande (12,5 % attribués à chacun des trois) — mesuré le
+         28/09/2026 ; les 7,2 % annoncés d'abord étaient un chiffre de banc. L'ancienne
+         règle, elle, estimait 100 % ;
        · Escale Pharma et Pharmest ne font pas partie des sept sites dont nous avons le
          stock. Leur demande existe, mais elle n'est PAS à servir depuis les sept :
          elle est mise à part (`hors`), jamais diluée sur les autres. */
   M.ZONES = [
-    { sites: ['CPR'], dep: ['01', '07', '26', '38', '42', '63', '69', '73', '74'] },
+    { sites: ['CPR'], dep: ['01', '07', '26', '38', '42', '43', '63', '69', '73', '74'] },
     { sites: ['OPS'], dep: ['14', '16', '17', '22', '29', '35', '37', '44', '49', '50', '53', '56', '72', '79', '85', '86'] },
-    { sites: ['SOP'], dep: ['19', '24', '31', '32', '33', '46', '47', '82'] },
+    { sites: ['SOP'], dep: ['19', '23', '24', '31', '32', '33', '40', '46', '47', '64', '65', '82', '87'] },
     { sites: ['POS'], dep: ['09', '11', '12', '34', '48', '66', '81'] },
     { sites: ['HP', 'MSP', 'SEP'], dep: ['04', '05', '06', '13', '30', '83', '84'] },
     { sites: [], hors: 'Escale Pharma', dep: ['02', '18', '27', '28', '41', '45', '58', '59', '60', '61', '62', '75', '76', '77', '78', '80', '89', '91', '92', '93', '94', '95'] },
@@ -113,13 +115,16 @@
   };
 
   /* ⚠️ Un département ABSENT de la liste ne se rattache PAS au site le plus proche.
-     Mesuré le 28/09/2026 sur les ventes réelles : six zones vendaient sans figurer dans
-     la liste — 73 Savoie, 63 Puy-de-Dôme, 01 Ain, 74 Haute-Savoie, 37 Indre-et-Loire,
-     et 30 officines sans code postal — soit 199 307 unités, 7,3 % de la demande.
-     Will a tranché le 28/09/2026 : 01, 63, 73 et 74 sont livrés par CPR, 37 par OPS.
-     Restent les 30 officines SANS code postal (46 267 u, 1,7 %) : là, il n'y a rien à
-     lire, donc rien à rattacher. Les deviner produirait un chiffre faux qui aurait
-     l'air juste. On s'abstient, et l'écran affiche la demande non rattachée. */
+     Onze départements vendaient sans figurer dans la liste. Will les a tranchés sur la
+     CARTE DES SECTEURS, en deux fois le 28/09/2026 — ce ne sont pas des déductions :
+       · 01, 63, 73, 74 et 43 → CPR ;
+       · 37 → OPS ;
+       · 87 (203 888 u, 32 officines), 40, 65, 23 et 64 → SOP.
+     Après quoi il ne reste PLUS AUCUN département non rattaché. Le seul trou restant,
+     mesuré sur le réseau complet : 39 officines SANS code postal qui achètent, 0,8 % de
+     la demande (le parc en compte 79 sans CP). Là, il n'y a rien à lire, donc rien à
+     rattacher. Les deviner produirait un chiffre faux qui aurait l'air juste. On
+     s'abstient, et l'écran affiche la demande non rattachée. */
   M.zoneDe = function (cp) {
     var d = M.depDe(cp);
     if (!d) return null;
@@ -172,7 +177,7 @@
     for (i = 0; i < rec.length && di < don.length; i++) {
       // Le besoin du receveur se calcule sur SA demande (secteur de son dépôt), plus sur
       // « la demande réseau divisée par sept » : un transfert vers OPS n'a rien à voir avec
-      // la moyenne des sept quand OPS pèse 38,2 % de la demande et SOP 0,1 %.
+      // la moyenne des sept quand OPS pèse 14,2 % de la demande réseau et POS 3,7 %.
       var vMr = (rec[i].vM != null) ? rec[i].vM : (vM || 0) / p.n;
       var besoin = Math.max(1, Math.round(vMr / 30 * M.CIBLE - rec[i].st));
       var dispo = Math.max(0, don[di].st - 1);

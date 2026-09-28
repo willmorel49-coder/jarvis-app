@@ -208,6 +208,26 @@
     }).join('');
   }
 
+  /* La cause du trou, LUE dans les données — jamais écrite en dur. Le 28/09/2026 cette
+     phrase citait encore « Savoie, Puy-de-Dôme, Ain, Haute-Savoie, Indre-et-Loire » comme
+     non rattachés, le jour même où Will venait de les rattacher : une liste en dur devient
+     fausse dès que le découpage change, et personne ne pense à la relire. */
+  function causeNonRattache() {
+    var M = V2.approM, det = M && M.nonRattacheDetail ? M.nonRattacheDetail() : null;
+    if (!det) return 'ces départements ne figurent dans aucune ligne du découpage, ou l’officine n’a pas de code postal.';
+    var noms = {};
+    try {
+      var F = window.DEPARTEMENTS_GEO && window.DEPARTEMENTS_GEO.features;
+      if (F) for (var i = 0; i < F.length; i++) noms[F[i].properties.code] = F[i].properties.nom;
+    } catch (e) {}
+    var deps = Object.keys(det.deps).sort(function (a, b) { return det.deps[b] - det.deps[a]; });
+    var bouts = [];
+    if (deps.length) bouts.push(deps.length + (deps.length > 1 ? ' départements ne figurent' : ' département ne figure') +
+      ' dans aucune ligne du découpage (' + deps.map(function (d) { return noms[d] || d; }).join(', ') + ')');
+    if (det.sansCp > 0) bouts.push(det.nOffSansCp + (det.nOffSansCp > 1 ? ' officines n’ont' : ' officine n’a') + ' pas de code postal');
+    return bouts.length ? bouts.join(', et ') + '.' : 'la cause n’est pas identifiable dans les données chargées.';
+  }
+
   /* Ce que veut dire « ≈ » — et ce qui n'est rattaché à aucun dépôt. Tous les chiffres
      de cette phrase sont RELUS dans les données du jour : aucun n'est écrit en dur. */
   function noteDemande() {
@@ -234,9 +254,8 @@
       pc(part) + ') est donc partagée en ' + zpaca.sites.length + ' parts égales — c’est le seul « ≈ » qui reste. ' +
       (hors > 0 ? 'Escale Pharma et Pharmest (' + pc(hors) + ') ne font pas partie des sept sites dont nous avons le ' +
         'stock : leur demande est mise à part, jamais diluée sur les autres. ' : '') +
-      (nr > 0 ? '<b>' + pc(nr) + ' de la demande n’est rattachée à aucun dépôt</b> : ces départements ne figurent ' +
-        'dans aucune ligne du découpage (Savoie, Puy-de-Dôme, Ain, Haute-Savoie, Indre-et-Loire) ou l’officine n’a ' +
-        'pas de code postal. Les deviner donnerait un chiffre faux qui aurait l’air juste : la couverture de ces ' +
+      (nr > 0 ? '<b>' + pc(nr) + ' de la demande n’est rattachée à aucun dépôt</b> : ' + causeNonRattache() +
+        ' Les deviner donnerait un chiffre faux qui aurait l’air juste : la couverture de ces ' +
         'dépôts est donc légèrement sous-estimée, et le trou est écrit ici plutôt que masqué.' : '');
   }
 

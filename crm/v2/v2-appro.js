@@ -197,21 +197,35 @@
      du secteur de chaque dépôt. La vente porte l'officine, l'officine porte son code
      postal, et le découpage par département (V2.approM.ZONES, donné par Will le
      28/09/2026) dit quel établissement la livre.
-     Mesuré sur nos ventes le 28/09/2026, après l'arbitrage de Will sur les six zones
-     qui manquaient au découpage (01/63/73/74 → CPR, 37 → OPS) : CPR 43,3 % ·
-     OPS 38,2 % · POS 9,5 % · zone HP/MSP/SEP 7,2 % · SOP 0,1 % · non rattaché 1,7 %.
-     Avant cet arbitrage : CPR 38,1 % · OPS 37,7 % · non rattaché 7,3 %.
+     ⚠️ Mesuré le 28/09/2026 sur le RÉSEAU COMPLET — 2 037 officines, les 40 fichiers
+     wml-ventes-NN.js, mois complets 1-5, après l'arbitrage complet de Will :
+     Escale Pharma 21,9 % · OPS 14,2 % · CPR 14,1 % · HP / MSP / SEP 12,5 % chacun
+     (zone partagée) · SOP 7,8 % · POS 3,7 % · non rattaché 0,8 %.
+     Les chiffres annoncés d'abord — « CPR 43,3 %, OPS 38,2 %, SOP 0,1 % » — étaient
+     ceux du BANC, qui ne lit que le portefeuille d'un seul commercial : son secteur ne
+     couvre pas le Sud-Ouest, d'où un SOP à 0,1 % qui n'a jamais existé. SOP pèse 7,8 %
+     de la demande réseau, avec 212 officines dans sa zone, et elles achètent toutes.
+     Sonde rejouable : ~/tests-appro/sop-anomalie.mjs → sop-anomalie-2026-09-28.md
      Trois cas distincts, et aucun n'est maquillé en un autre :
        · un seul dépôt sur le département → demande MESURÉE ;
        · zone HP/MSP/SEP (les trois couvrent les mêmes sept départements) → tiers
          chacun, et ces trois sites-là seulement sont marqués « estimé » ;
-       · officine sans code postal → NON RATTACHÉ (1,7 %, 30 officines). On ne devine
-         pas : le total est affiché à l'écran pour que le trou reste visible. */
-  var _dsIdx = null, _dsRef = null;
+       · officine sans code postal → NON RATTACHÉ. Depuis l'arbitrage complet du
+         28/09/2026, c'est le SEUL trou qui reste : 0,8 % de la demande, 39 officines qui
+         achètent. Le parc en compte 79 sans CP (le « 30 » annoncé d'abord venait du
+         banc). On ne devine pas : le total est affiché à l'écran pour que le trou reste
+         visible. */
+  var _dsIdx = null, _dsRef = null, _dsNR = null;
   function demandeParSiteIdx() {
     var S = window.WML_SALES, OFF = window.WML_OFFICINES;
     if (!S || !OFF) return null;
     if (_dsIdx && _dsRef === S) return _dsIdx;
+    // Le détail du trou, pour que l'écran le NOMME au lieu de l'écrire en dur : quels
+    // départements ne figurent dans aucune ligne du découpage, et combien d'officines
+    // n'ont pas de code postal. Le 28/09/2026, l'écran citait encore « Savoie,
+    // Puy-de-Dôme, Ain, Haute-Savoie, Indre-et-Loire » alors que Will venait de les
+    // rattacher : une phrase en dur devient fausse le jour où le réglage change.
+    var nr = { deps: {}, sansCp: 0, offSansCp: {} };
     var cp = {}, i, j;
     for (i = 0; i < OFF.length; i++) cp[String(OFF[i].id)] = OFF[i].cp;
     var MR = moisRetenus(S), garde = {}, nMois = MR.length;
@@ -222,7 +236,13 @@
       if (q <= 0 || !garde[r[1]]) continue;
       var c = String(r[3]), o = out[c] || (out[c] = { _est: {}, _hors: 0, _nr: 0 });
       var pid = String(r[0]), z = zcache.hasOwnProperty(pid) ? zcache[pid] : (zcache[pid] = AM.zoneDe(cp[pid]));
-      if (!z) { o._nr += q; continue; }                       // département hors liste
+      if (!z) {                                               // département hors liste, ou CP absent
+        o._nr += q;
+        var dd = AM.depDe ? AM.depDe(cp[pid]) : null;
+        if (dd) nr.deps[dd] = (nr.deps[dd] || 0) + q;
+        else { nr.sansCp += q; nr.offSansCp[pid] = 1; }
+        continue;
+      }
       if (!z.sites.length) { o._hors += q; continue; }        // Escale Pharma, Pharmest
       if (z.sites.length === 1) { o[z.sites[0]] = (o[z.sites[0]] || 0) + q; continue; }
       var part = q / z.sites.length;
@@ -237,6 +257,8 @@
       for (k in o) if (o.hasOwnProperty(k) && k.charAt(0) !== '_') o[k] = o[k] / nMois;
       o._hors = o._hors / nMois; o._nr = o._nr / nMois;
     });
+    nr.nOffSansCp = Object.keys(nr.offSansCp).length; delete nr.offSansCp;
+    _dsNR = nr;
     _dsIdx = out; _dsRef = S;
     return out;
   }
@@ -247,6 +269,8 @@
   // On branche la source sur le moteur, et l'ancien drapeau global tombe : la couverture
   // par site n'est plus « estimée partout », elle est mesurée sauf sur la zone partagée.
   AM.demandeSite = demandeSiteDe;
+  // { deps: { '87': unités, … }, sansCp: unités, nOffSansCp: n } — lu par l'écran.
+  AM.nonRattacheDetail = function () { demandeParSiteIdx(); return _dsNR; };
   if (typeof window !== 'undefined') AM.estime = false;
 
   var _cipIdx = null, _cipIdxRef = null, _cipIdxSai = null;
@@ -2392,6 +2416,7 @@
     ansmRef: function () { return _ansmData; }, mitmRef: function () { return _mitmSet; },
     marquerCommande: marquerCommande, oublierCommande: oublierCommande, commandeDe: commandeDe,
     demandeSite: demandeSiteDe,
+    nonRattacheDetail: AM.nonRattacheDetail,
     service: function () {                    // indicateurs de service (§A.10), calcul dans le moteur
       var idx = cipIndex(), ks = Object.keys(idx), l = [], i;
       for (i = 0; i < ks.length; i++) l.push(idx[ks[i]]);
