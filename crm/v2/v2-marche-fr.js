@@ -224,9 +224,46 @@
       '.mfr-b.lpp span:first-child{white-space:normal;text-overflow:clip;line-height:1.35}',
       // « 13,8 % » ne tient pas dans les 54 px de la pastille d'indice : elle
       // se coupait en deux lignes et doublait la hauteur de chaque ligne.
-      '.mfr-b.dmr{grid-template-columns:150px 1fr 104px 62px}',
+      // 5e colonne : nos officines. Étroite et en chiffres, elle ne vole pas
+      // la place du nom de région — c'est la jauge qui absorbe la différence.
+      // Le nom de région garde ses 150 px : à 132, « Bourgogne-Franche-Comté »
+      // et « Auvergne-Rhône-Alpes » se coupaient. C'est la jauge qui cède.
+      '.mfr-b.dmr{grid-template-columns:150px 1fr 92px 58px 38px}',
       '.mfr-b.dmr i{white-space:nowrap}',
-      '@media(max-width:640px){.mfr-b.dmr{grid-template-columns:78px 1fr 72px 56px}}',
+      '.mfr-b.dmr u{text-decoration:none;font-family:var(--mono);font-size:12.5px;',
+      ' text-align:right;font-weight:700;color:var(--ip-blue)}',
+      // Région sans aucune de nos officines : présente, lisible, mais en
+      // retrait. On ne la SUPPRIME pas — « Outre-mer » reste du marché réel.
+      // ⚠️ Le retrait ne touche QUE la jauge et la pastille, jamais le texte :
+      // un `opacity:.55` sur la ligne entière faisait tomber le nom de région
+      // à 2,23:1 (mesuré sous WebKit le 28/09 — le piège d'`opacity` du 15/08,
+      // repris tel quel). Le texte garde son contraste, la couleur dit le reste.
+      '.mfr-b.dmr.hors .mfr-j{opacity:.4}',
+      '.mfr-b.dmr.hors .mfr-j i{background:var(--muted)}',
+      '.mfr-b.dmr.hors i.eq{background:transparent;padding-left:0;padding-right:0}',
+      '.mfr-b.dmr.hors u{color:var(--muted);font-weight:400}',
+      // À 390 px la jauge de cette ligne ne sert plus à rien : 5 colonnes ne
+      // tiennent pas. Elle disparaît, les 4 chiffres restent.
+      '@media(max-width:640px){.mfr-b.dmr{grid-template-columns:1fr 78px 54px 34px;gap:var(--sp-2)}',
+      ' .mfr-b.dmr .mfr-j{display:none}}',
+      '.mfr-leg{font-size:12px;color:var(--muted);line-height:1.5;margin-top:var(--sp-3)}',
+      '.mfr-leg b{color:var(--ip-ink-2);font-weight:700}',
+      // Le filtre des codes LPP. font-size 16px : en dessous, iOS zoome au focus.
+      '.mfr-lppq{margin-top:var(--sp-5)}',
+      '.mfr-lppq input{min-height:var(--tap-min);width:100%;box-sizing:border-box;',
+      ' font-family:var(--font);font-size:16px;padding:0 var(--sp-3);color:var(--ip-ink);',
+      ' border:1px solid var(--line-strong);border-radius:var(--r-btn);background:var(--card)}',
+      '.mfr-lppq input:focus{outline:2px solid var(--ip-blue);outline-offset:1px}',
+      // ⚠️ pas de `all:unset` : WebKit le déplie en backdrop-filter (faux
+      // positif « effet interdit Safari ») et casse box-sizing.
+      '.mfr-plusbtn{-webkit-appearance:none;appearance:none;margin:var(--sp-3) 0 0;',
+      ' font:inherit;font-size:13px;font-weight:650;cursor:pointer;width:100%;',
+      ' box-sizing:border-box;min-height:var(--tap-min);padding:0 var(--sp-4);',
+      ' background:var(--card-2);color:var(--ip-blue);border:1px solid var(--line);',
+      ' border-radius:var(--r-btn)}',
+      '.mfr-plusbtn:hover{background:var(--surf-sunken)}',
+      '.mfr-plusbtn:focus-visible{outline:2px solid var(--ip-blue);outline-offset:1px}',
+      '.mfr-plusbtn span{color:var(--muted);font-weight:400}',
       '.mfr-sigs{display:grid;gap:var(--sp-3);margin-top:var(--sp-4)}',
       '.mfr-sig{padding:var(--sp-3) 0;border-bottom:1px solid var(--line-2)}',
       '.mfr-sigs .mfr-sig:last-child{border-bottom:none;padding-bottom:0}',
@@ -389,6 +426,13 @@
   // ══════════════════════════════════════════════════════════════════════
   var DM = null, ODI = null, DMS = null;
   var _plusEnCours = false, _plusFini = false, _echecDm = null, _echecOdi = null;
+  // Exploration des codes LPP : la carte en montre un premier paquet, et on
+  // en déplie un de plus à chaque clic. `qLpp` filtre sur le libellé.
+  // ⚠️ Ce filtre vit DANS la carte : la recherche du haut reste interdite aux
+  // dispositifs médicaux (décision de Will du 28/09 — nos références ne
+  // portent pas de code LPP, elles ne peuvent donc pas y mener).
+  var LPP_PAS = 8;
+  var qLpp = '', lppN = LPP_PAS;
 
   // La Corse est éclatée en 2A/2B dans les fichiers par département, et en
   // « 20 » dans le nôtre : sans ce repli, ses officines ne seraient comptées
@@ -431,8 +475,67 @@
 
     var tE = 0, tQ = 0;
     for (i = 0; i < NR; i++) { tE += totE[i]; tQ += totQ[i]; }
-    DMS = { REG: REG, NR: NR, AG: AG, codes: codes, totE: totE, totQ: totQ, totA: totA, tE: tE, tQ: tQ };
+
+    // ── Nos officines, région par région ─────────────────────────────────
+    // Le seul pont honnête entre ce marché national et nous. Les codes de
+    // région du fichier LPP sont ceux de la CNAM, exactement ceux que DEP_REG
+    // rend : le rapprochement se fait par code, jamais par nom (le libellé de
+    // « 93 » a déjà changé le 27/09 quand « et Corse » a été ajouté).
+    var phs = V2.pharmacies || [], offReg = {}, offHors = 0;
+    phs.forEach(function (ph) {
+      var r = DEP_REG[depDeCp(ph.cp)];
+      if (r) offReg[r] = (offReg[r] || 0) + 1; else offHors++;
+    });
+
+    DMS = { REG: REG, NR: NR, AG: AG, codes: codes, totE: totE, totQ: totQ, totA: totA,
+      tE: tE, tQ: tQ, offReg: offReg, offHors: offHors, nOff: phs.length };
     return DMS;
+  }
+
+  // ── Les codes LPP : filtrer et déplier ───────────────────────────────
+  // Les 2 000 codes sont TOUS déjà en mémoire : n'en montrer que 8 revenait à
+  // charger 515 Ko pour en afficher 0,4 %. On ne recharge rien, on déplie.
+  function lppRetenus() {
+    var D = socleDm(); if (!D) return [];
+    var f = qLpp.trim().toLowerCase();
+    if (!f) return D.codes;
+    return D.codes.filter(function (c) {
+      return (c.l || '').toLowerCase().indexOf(f) >= 0 ||
+             String(c.code).toLowerCase().indexOf(f) >= 0;
+    });
+  }
+
+  function lppZoneHtml() {
+    var D = socleDm(); if (!D) return '';
+    var L = lppRetenus();
+    var vus = L.slice(0, lppN);
+    // L'échelle suit ce qu'on REGARDE : rapportée au plus gros code de la
+    // sélection, sinon un filtre sur de petits codes rendrait 14 traits vides.
+    var maxV = vus.length ? vus[0].e : 0;
+    var reste = L.length - vus.length;
+
+    var titre = qLpp.trim()
+      ? (L.length ? nb(L.length) + (L.length > 1 ? ' codes LPP trouvés' : ' code LPP trouvé') +
+          (reste > 0 ? ', les ' + nb(vus.length) + ' plus gros' : '')
+        : 'Aucun code LPP ne porte ces mots')
+      : 'Les ' + nb(vus.length) + ' plus gros codes LPP' +
+        (reste > 0 ? ', sur ' + nb(L.length) : '');
+
+    return '<p class="mfr-st" style="margin-top:var(--sp-6)">' + esc(titre) + '</p>' +
+      '<div class="mfr-bars" id="mfr-lppbars">' +
+      vus.map(function (c) {
+        return '<div class="mfr-b lpp"><span title="' + esc(c.code + ' · ' + c.l) + '">' +
+          esc(c.l) + '</span>' + jauge(maxV ? c.e / maxV : 0) +
+          '<em>' + eur(c.e) + '</em></div>';
+      }).join('') + '</div>' +
+      (reste > 0
+        ? '<button type="button" class="mfr-plusbtn" data-lpp-plus="1">' +
+          'Voir ' + nb(Math.min(reste, LPP_PAS)) + ' code' +
+          (Math.min(reste, LPP_PAS) > 1 ? 's' : '') + ' de plus' +
+          ' <span>(' + nb(reste) + ' restant' + (reste > 1 ? 's' : '') + ')</span></button>'
+        : (lppN > LPP_PAS
+          ? '<button type="button" class="mfr-plusbtn" data-lpp-plus="0">Replier la liste</button>'
+          : ''));
   }
 
   // ── La carte des dispositifs médicaux ────────────────────────────────
@@ -449,8 +552,7 @@
 
     var C = DM.couverture || {};
     var maxR = Math.max.apply(null, D.totE);
-    var maxC = D.codes.length ? D.codes[0].e : 0;
-    var HAUT = D.codes.slice(0, 8);
+    var HAUT = D.codes.slice(0, LPP_PAS);
     var partHaut = D.tE ? HAUT.reduce(function (a, c) { return a + c.e; }, 0) / D.tE : 0;
     var maxA = D.totA.length ? Math.max.apply(null, D.totA) : 0;
 
@@ -465,24 +567,35 @@
        ['Codes LPP retenus', nb(C.codes_retenus || D.codes.length) +
          (C.codes_total ? ' sur ' + nb(C.codes_total) : '')],
        ['Part des euros couverte', C.part_euros != null ? pct(C.part_euros) : '—'],
-       ['Poids des 8 premiers codes', pct(partHaut * 100)]
+       ['Poids des ' + nb(HAUT.length) + ' premiers codes', pct(partHaut * 100)]
       ].map(function (l) { return '<div class="mfr-l"><span>' + l[0] + '</span><b>' + l[1] + '</b></div>'; }).join('') +
       '</div>' +
 
-      '<p class="mfr-st" style="margin-top:var(--sp-6)">Les ' + nb(HAUT.length) +
-      ' plus gros codes LPP</p><div class="mfr-bars">' +
-      HAUT.map(function (c) {
-        return '<div class="mfr-b lpp"><span title="' + esc(c.l) + '">' + esc(c.l) + '</span>' +
-          jauge(maxC ? c.e / maxC : 0) + '<em>' + eur(c.e) + '</em></div>';
-      }).join('') + '</div>' +
+      '<div class="mfr-lppq"><input id="mfr-lppq" type="search" ' +
+      'placeholder="Filtrer les ' + nb(D.codes.length) + ' codes LPP (pansement, orthèse, perfusion…)" ' +
+      'autocomplete="off" aria-label="Filtrer les codes LPP" value="' + esc(qLpp) + '"></div>' +
+      '<div id="mfr-lppzone">' + lppZoneHtml() + '</div>' +
 
       '<p class="mfr-st" style="margin-top:var(--sp-6)">Les ' + nb(D.NR) +
       ' régions, en euros remboursés</p><div class="mfr-bars">' +
       D.REG.map(function (r, i) {
-        return '<div class="mfr-b dmr"><span>' + esc(r.n) + '</span>' +
+        var n = D.offReg[r.c] || 0;
+        // Une région où nous n'avons AUCUNE officine passe en retrait : ce
+        // n'est pas notre terrain. La règle se lit dans nos données, elle
+        // n'est écrite en dur pour aucune région — le jour où une officine
+        // ouvre en Outre-mer, la ligne se rallume toute seule.
+        return '<div class="mfr-b dmr' + (n ? '' : ' hors') + '"><span>' + esc(r.n) + '</span>' +
           jauge(maxR ? D.totE[i] / maxR : 0) + '<em>' + eur(D.totE[i]) + '</em>' +
-          '<i class="eq">' + pct(D.tE ? D.totE[i] / D.tE * 100 : 0, 1) + '</i></div>';
+          '<i class="eq">' + pct(D.tE ? D.totE[i] / D.tE * 100 : 0, 1) + '</i>' +
+          '<u title="Nos officines dans cette région">' + (n ? nb(n) : '—') + '</u></div>';
       }).join('') + '</div>' +
+      // Ce que la colonne de droite compte, dit en clair sous les barres :
+      // un nombre sans légende se lit comme n'importe quoi.
+      (D.nOff ? '<p class="mfr-leg">La colonne de droite compte <b>nos ' + nb(D.nOff) +
+        ' officines</b> dans chaque région. Les régions où nous n\'en avons aucune ' +
+        'sont en retrait.' + (D.offHors ? ' ' + nb(D.offHors) + ' officine' +
+        (D.offHors > 1 ? 's ont un code postal qui ne tombe dans aucune région' :
+        ' a un code postal qui ne tombe dans aucune région') + '.' : '') + '</p>' : '') +
 
       (maxA ? '<p class="mfr-st" style="margin-top:var(--sp-6)">Par tranche d\'âge, ' +
         'au national</p><div class="mfr-bars">' +
@@ -605,6 +718,14 @@
     });
   }
 
+  // On ne repeint QUE la liste des codes : refaire toute la carte rendrait le
+  // champ de filtre au navigateur, qui lui reprendrait le curseur au premier
+  // caractère tapé.
+  function repeindreLpp() {
+    var z = document.getElementById('mfr-lppzone');
+    if (z) z.innerHTML = lppZoneHtml();
+  }
+
   function peindre(root) {
     var el = root.querySelector('#mfr-res'); if (el) el.innerHTML = listeHtml();
     var f = root.querySelector('#mfr-fiche'); if (f) f.innerHTML = ficheHtml();
@@ -617,6 +738,24 @@
       // La touche Entrée ne recharge pas la page : la liste est déjà à jour.
       inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') e.preventDefault(); });
     }
+    // Le second bloc est repeint APRÈS coup par chargerPlus() : on écoute sur
+    // #mfr-plus, qui lui SURVIT (seul son contenu est remplacé). Brancher sur
+    // le champ lui-même le perdrait au premier repeint.
+    var plus = root.querySelector('#mfr-plus');
+    if (plus) {
+      plus.addEventListener('input', function (e) {
+        if (!e.target || e.target.id !== 'mfr-lppq') return;
+        qLpp = e.target.value; lppN = LPP_PAS;
+        repeindreLpp();
+      });
+      plus.addEventListener('click', function (e) {
+        var b = e.target.closest ? e.target.closest('[data-lpp-plus]') : null;
+        if (!b) return;
+        lppN = b.getAttribute('data-lpp-plus') === '0' ? LPP_PAS : lppN + LPP_PAS;
+        repeindreLpp();
+      });
+    }
+
     var res = root.querySelector('#mfr-res');
     if (res) res.addEventListener('click', function (e) {
       var b = e.target.closest('[data-cip]'); if (!b) return;
