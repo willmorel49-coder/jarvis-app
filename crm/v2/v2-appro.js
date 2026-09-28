@@ -587,7 +587,7 @@
         '<div class="ap-mini">' + fmt(o.q) + ' u/' + nMoisCouverts() + ' mois</div><div class="ap-st ok">bascule Gx</div></div>';
     }).join('');
     return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:#6D5AE6">G</div><div><h3>Bascules génériques à faire</h3>' +
-      '<div class="ap-sub">' + (_generData.meta ? _generData.meta.nAvecGenerique : '') + ' groupes avec générique (BDPM) — les princeps que TU achètes encore et qui ont un générique dispo, top 12 par volume</div></div></div>' + rows + '</div>';
+      '<div class="ap-sub">' + (_generData.meta ? _generData.meta.nAvecGenerique : '') + ' groupes avec générique (BDPM) — les princeps que vous achetez encore et qui ont un générique dispo, top 12 par volume</div></div></div>' + rows + '</div>';
   }
 
   // ═══ VEILLE ANSM DISPONIBILITÉS (robot quotidien) : ruptures/tensions + DATE DE RETOUR ═══
@@ -1249,7 +1249,7 @@
     if (x.o && x.o.abc) chips += ' <span class="ap-tag" title="poids dans la valeur réseau : A = cœur de gamme, C = traîne" style="color:#0E7C86;background:#E5F4F5;border:1px solid #B8E0E3">' + x.o.abc + '</span>';
     if (x.o && x.o.unk) chips += ' <span class="ap-tag" title="cette référence n\'a jamais été inventoriée : la quantité proposée est une estimation" style="color:#6B7280;background:var(--card-2,#F6F8FB);border:1px dashed var(--line)">stock inconnu</span>';
     var dejaCmd = commandeDe(x.c, new Date().toISOString().slice(0, 10));
-    if (dejaCmd) chips += ' <span class="ap-tag" title="déjà exporté dans une commande — vérifie avant de recommander" style="color:#0E7C86;background:#E5F4F5;border:1px solid #B8E0E3">déjà commandé ' + fdate(dejaCmd) + '</span>';
+    if (dejaCmd) chips += ' <span class="ap-tag" title="déjà exporté dans une commande — vérifiez avant de recommander" style="color:#0E7C86;background:#E5F4F5;border:1px solid #B8E0E3">déjà commandé ' + fdate(dejaCmd) + '</span>';
     if (x.mitm) { chips += estCritique(x) ? ' <span class="ap-tag" style="color:#B02A37;background:#FDE7EA;border:1px solid #F3B0BC">critique</span>' : ' <span class="ap-tag" style="color:#6B7280;background:var(--card-2,#F6F8FB);border:1px solid var(--line)">surveillé ANSM</span>'; }   // audit P3 : « critique » réservé au croisement avec l'état de stock — même règle partout (estCritique)
     if (x.rupt) chips += ' <span class="ap-tag ru">ANSM</span>';
     if (x.season) chips += ' <span class="ap-tag" style="color:#6D5AE6;background:#EFEBFB;border:1px solid #D3C9F5">saison</span>';
@@ -1331,7 +1331,7 @@
     var corps = grHtml;
     if (haut.length) corps += titre('Ça va monter') + haut.map(ligneHtml).join('');
     if (bas.length)  corps += titre('Ça va baisser') + bas.map(ligneHtml).join('');
-    if (!corps) corps = '<div class="ap-empty">Marché stable sur ton périmètre : aucun mouvement marqué à 3 mois.</div>';
+    if (!corps) corps = '<div class="ap-empty">Marché stable sur votre périmètre : aucun mouvement marqué à 3 mois.</div>';
     var basc = lignes.filter(function (l) { return l.bascule >= 200 || l.bascule <= 50; })
                      .sort(function (a, b) { return b.vM - a.vM; }).slice(0, 5);
     if (basc.length) {
@@ -1345,8 +1345,8 @@
     var maj = esc(_prevData.dernier_mois_reel || '');
     return '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:#6D5AE6">' +
       ICO('spark', 15, 2) + '</div><div><h3>La courbe — ce que le marché va faire</h3>' +
-      '<div class="ap-sub">marché France sur ton périmètre · dernier mois réel ' + maj +
-      ' · l\'évolution s\'applique à ta vitesse réseau, jamais un volume national</div></div></div>' + corps +
+      '<div class="ap-sub">marché France sur votre périmètre · dernier mois réel ' + maj +
+      ' · l\'évolution s\'applique à votre vitesse réseau, jamais un volume national</div></div></div>' + corps +
       '<div class="ap-foot" style="padding:10px 18px 12px;margin:0">Prévision Chronos-2 (Amazon, libre) ' +
       'sur Medic\'AM — boîtes remboursées France, 2021 à ' + maj + '. ' + fmt(_prevData.n || 0) +
       ' produits couverts. Choisi par test à futur caché : il fait 9 % d\'erreur en moins qu\'une moyenne ' +
@@ -2198,7 +2198,7 @@
     var rapH = rappelsCard();   // audit m2 : calculer une seule fois (évite le double scan)
     var rlH = rappelsLotsCard();
     return '<div class="ap-sec">Prédictif — ce qui arrive</div>' +
-      '<div class="ap-secsub">calculé chaque jour sur ta donnée réseau + les sources publiques gratuites</div>' +
+      '<div class="ap-secsub">calculé chaque jour sur votre donnée réseau + les sources publiques gratuites</div>' +
       '<div class="v2-card ap-card" style="padding:6px 4px">' + predHtml + '</div>' +
       (rlH ? '<div class="ap-sec">Lots rappelés — médicaments</div>' +
         '<div class="ap-secsub">décisions de rappel de l’ANSM croisées avec le stock plateforme et le catalogue réseau</div>' + rlH : '') +
@@ -2336,7 +2336,7 @@
       laneCard('sw', '②', 'BASCULER — génériques qui arrivent', bas.length, basRows, 'Aucun générique en approche détecté.') +
       laneCard('cut', '③', 'ALLÉGER AVANT — futures baisses de prix', algF.length, algRows, (_pfData ? 'Aucune baisse annoncée au JO pour l\'instant.' : 'Chargement des avis de prix…')) +
       laneCard('flush', '④', 'ÉCOULER — péremptions courtes', 0, perRows,
-        'Module prêt : ajoute la <b>date de péremption</b> (+ n° de lot, quantité) à ton export stock et tes lots à écouler apparaîtront ici, triés par € à risque.') +
+        'Module prêt : ajoutez la <b>date de péremption</b> (+ n° de lot, quantité) à votre export stock et vos lots à écouler apparaîtront ici, triés par € à risque.') +
       '<div class="ap-foot" style="padding:10px 2px 0">Futures baisses de prix = avis CEPS au Journal Officiel (4-20 j d\'avance). Génériques = nouveaux groupes BDPM + princeps que le réseau achète. Demande = épidémie + urgences.</div>';
   }
 
@@ -2440,7 +2440,7 @@
             var shown = _bookTab === 'all' ? acts : acts.filter(function (a) { return a.cls === _bookTab; });
             var rowsHtml = shown.slice(0, 24).map(carnetRow).join('') || '<div class="ap-empty">Rien dans cette catégorie.</div>';
             carnetHtml = '<div class="v2-card cb-card"><div class="cb-hd"><div><h3>Carnet d\'achat du jour</h3>' +
-              '<div class="cb-sub">' + acts.length + ' positions — clique une ligne pour le détail, exporte la commande</div></div>' +
+              '<div class="cb-sub">' + acts.length + ' positions — cliquez une ligne pour le détail, exportez la commande</div></div>' +
               '<div class="cb-tot"><b>' + (V2.fmtEur ? V2.fmtEur(C.eur) : fmt(C.eur)) + '</b><small>à engager</small></div>' +
               '<button class="cb-exp" onclick="V2.approExport()">⤓ Exporter</button></div>' +
               '<div class="cb-tabs">' + tabBar + '</div>' +
@@ -2598,7 +2598,7 @@
           '</div>' +
           card('cat', 'Nouveautés à référencer', 'AMM récentes (BDPM)', nouvRows, 'var(--ip-blue)') +
           (function () { try { return secteursCard(); } catch (e) { return ''; } })() +
-          card('pilo', 'Négo labos — ton levier', 'vrai volume réseau par génériqueur', negRows, '#0E7C86') +
+          card('pilo', 'Négo labos — votre levier', 'vrai volume réseau par génériqueur', negRows, '#0E7C86') +
           whiteSpaceCard() +
           prixCard() +
           '<div class="ap-foot">Négo = vrai sell-in réseau (WML) par génériqueur. Génériques : pas d\'abandon de marge Intégral. « Ça monte » / saison = Medic\'AM / BDPM.</div>';
@@ -2610,7 +2610,7 @@
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="v2-wrap">' +
           '<div class="v2-page-title">Appro Intégral</div>' +
-          '<div class="v2-page-sub">Ta vue du jour en un coup d\'œil — clique un chiffre ou un espace pour agir.</div>' +
+          '<div class="v2-page-sub">Votre vue du jour en un coup d\'œil — cliquez un chiffre ou un espace pour agir.</div>' +
           recallBanner +
           (function () { try { return rubanHtml(); } catch (e) { return ''; } })() +
           hero + nav + content + freshnessBar() +
