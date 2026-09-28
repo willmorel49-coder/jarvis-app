@@ -45,7 +45,7 @@
     if (window.PHARMA_FR) { cb(); return; }
     var done = false, fin = function (e) { if (!done) { done = true; cb(e); } };
     V2.ensurePharmaFr(function () {
-      var pr = (window.PHARMA_FR && V2.loadFiles) ? V2.loadFiles(['pharmafrca']) : null;   // colonne CA protégée
+      var pr = (window.PHARMA_FR && V2.loadFiles) ? V2.loadFiles(['pharmafrca', 'pharmafrseg']) : null;   // CA et segmentation protégés
       var suite = function () { fin(window.PHARMA_FR ? null : 'err'); };
       if (pr && pr.then) pr.then(suite, suite); else suite();
     });

@@ -473,7 +473,12 @@
 
   // Ce que le boot attendait AVANT la phase 2, pour tout écran : c'est le jeu
   // reçu par tout écran qui ne déclare pas `needs`. (wmlca est déjà attaché à wml.)
-  V2.NEEDS_DEFAUT = ['bench', 'sagitta', 'prodstatscond', 'pharmafrca', 'wmlca', 'biosimcomplet'];
+  // 28/09/2026 — `pharmafrseg` (segmentation Client A/B/C, 32 Ko) et `mktipprix`
+  // (154 prix nets des offres marketing, 3,6 Ko) ont quitté le dépôt public : ils
+  // rejoignent le jeu attendu par tout écran, comme le CA (`pharmafrca`). Sans la
+  // segmentation, la base nationale ne dit plus qui est client — les filtres de La
+  // carte et la cible des campagnes rendraient vide.
+  V2.NEEDS_DEFAUT = ['bench', 'sagitta', 'prodstatscond', 'pharmafrca', 'pharmafrseg', 'mktipprix', 'wmlca', 'biosimcomplet'];
   // ── RENDER (routeur) ──────────────────────────
   V2.render = function () {
     var root = $app(); if (!root) return;
@@ -1762,7 +1767,7 @@
     s.onload = s.onerror = function () {
       V2._pfrLoading = false;
       // la colonne CA protégée se recolle dès que la carte publique est là
-      if (window.PHARMA_FR && V2.loadFiles) { try { V2.loadFiles(['pharmafrca']); } catch (e) {} }
+      if (window.PHARMA_FR && V2.loadFiles) { try { V2.loadFiles(['pharmafrca', 'pharmafrseg']); } catch (e) {} }
       try { V2.reconcilePharma(); } catch (e) {}
       var cbs = V2._pfrCbs || []; V2._pfrCbs = [];
       cbs.forEach(function (f) { try { f(); } catch (e) {} });

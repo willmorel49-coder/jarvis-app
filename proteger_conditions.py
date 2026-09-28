@@ -72,16 +72,46 @@ def pharma_fr():
     d = json.loads(m.group(1))
     pts = d.get('p') or []
     ca = {str(pt[13]): pt[12] for pt in pts if len(pt) > 13 and pt[12]}
-    if not ca:
+    # 28/09/2026 — la SEGMENTATION commerciale (indice 4 : Client A/B/C, Non
+    # défini, Prospect) dit qui sont nos clients et à quel palier. C'est de
+    # l'intelligence commerciale, pas de l'open data : elle sort aussi.
+    # Le fichier public met TOUS les points sur « Non défini » — mettre
+    # « Prospect » serait affirmer quelque chose de faux sur 2 304 officines.
+    # Le protégé ne porte QUE les non-prospects : l'absence VAUT « Prospect ».
+    lab = d.get('seg') or []
+    i_nd = lab.index('Non défini') if 'Non défini' in lab else None
+    if i_nd is None:
+        lab.append('Non défini'); i_nd = len(lab) - 1
+    gardes = [l for l in lab if l != 'Prospect']
+    ord_g = {l: i for i, l in enumerate(gardes)}
+    # ⚠️ Le fichier DÉJÀ découpé porte « Non défini » partout : sans ce test, une
+    # 2ᵉ passe prendrait ces 19 700 « Non défini » pour la segmentation à sortir
+    # et écraserait la vraie table par du vide de sens. Mesuré le 28/09/2026.
+    deja_propre = all(lab[pt[4]] == 'Non défini' for pt in pts if len(pt) > 4)
+    seg = {} if deja_propre else {
+        str(pt[13]): ord_g[lab[pt[4]]]
+        for pt in pts if len(pt) > 13 and lab[pt[4]] != 'Prospect'}
+    if not ca and not seg:
         return
     for pt in pts:
         if len(pt) > 12: pt[12] = 0
+        if len(pt) > 4: pt[4] = i_nd
     ecrire('crm/v2/pharma-fr-data.js',
            s[:m.start()] + 'window.PHARMA_FR=' + json.dumps(d, ensure_ascii=False, separators=(',', ':')) + ';\n')
-    ecrire('pharma-fr-ca.js',
-           '// Intégral Pharma — CA par pharmacie cliente — %s\n%s'
-           'window.PHARMA_FR_CA = {n:%d, m:%s};\n' % (J, AV, len(ca), json.dumps(ca)))
-    fait.append('pharma-fr (%d CA)' % len(ca))
+    # ⚠️ N'écrire QUE la table qu'on vient réellement de découper. Le CA est
+    # sorti depuis le 03/09 : réécrire pharma-fr-ca.js ici l'écraserait par du
+    # vide alors que la prod lit l'ancienne — la panne que ce script évite.
+    if ca:
+        ecrire('pharma-fr-ca.js',
+               '// Intégral Pharma — CA par pharmacie cliente — %s\n%s'
+               'window.PHARMA_FR_CA = {n:%d, m:%s};\n' % (J, AV, len(ca), json.dumps(ca)))
+    if seg:
+        ecrire('pharma-fr-seg.js',
+               '// Intégral Pharma — segmentation commerciale par officine — %s\n%s'
+               '// `l` = libellés, `m` = id -> indice dans `l`. Un id ABSENT = Prospect.\n'
+               'window.PHARMA_FR_SEG = {n:%d, l:%s, m:%s};\n'
+               % (J, AV, len(seg), json.dumps(gardes, ensure_ascii=False), json.dumps(seg)))
+    fait.append('pharma-fr (%d CA, %d segments)' % (len(ca), len(seg)))
 
 def wml_officines():
     p = os.path.join(BASE, 'crm/v2/wml-officines-data.js')
@@ -100,6 +130,40 @@ def wml_officines():
            '// Intégral Pharma — CA + potentiel par officine WML — %s\n%s'
            'window.WML_OFF_CA = {n:%d, m:%s};\n' % (J, AV, len(mca), json.dumps(mca)))
     fait.append('wml-officines (%d)' % len(mca))
+
+def marketing_offers():
+    """Les 154 prix nets IP des 8 offres marketing officielles (28/09/2026).
+
+    Le fichier portait `ip:` (notre prix facturé) à côté du `ppht` public, et
+    `remisePct()` juste au-dessus : l'abandon de marge se lisait sans effort.
+    Seul `ip` sort — le PPHT reste public (décision de Will).
+    """
+    p = os.path.join(BASE, 'crm/marketing-offers.js')
+    s = io.open(p, encoding='utf-8').read()
+    CH = re.compile(r",\s*ip:\s*(-?[0-9.]+)")
+    if not CH.search(s):
+        return
+    prix = {}
+    for ln in s.split('\n'):
+        m = CH.search(ln)
+        if not m:
+            continue
+        k = re.search(r"cip13:\s*'([0-9]+)'", ln)
+        if k:
+            cle = k.group(1)
+        else:
+            k7 = re.search(r"cip7:\s*'([0-9]+)'", ln)
+            if not k7:
+                sys.exit('ARRET : prix IP sans CIP dans marketing-offers.js : ' + ln.strip())
+            c = k7.group(1)
+            # même règle que cip7to13() dans le fichier : préfixe 3400 + suffixe 0
+            cle = c if len(c) == 13 else ('3400' + c + '0' if len(c) == 7 else c)
+        prix[cle] = float(m.group(1))
+    ecrire('crm/marketing-offers.js', CH.sub('', s))
+    ecrire('mkt-ip-prix.js',
+           '// Intégral Pharma — prix nets IP des offres marketing — %s\n%s'
+           'window.MKT_IP_PRIX = {n:%d, m:%s};\n' % (J, AV, len(prix), json.dumps(prix)))
+    fait.append('marketing-offers (%d prix)' % len(prix))
 
 def biosimilaires():
     p = os.path.join(BASE, 'crm/v2/biosimilaires-data.js')
@@ -140,6 +204,11 @@ def controle_final():
     d = json.loads(re.search(r'window\.PHARMA_FR=(\{.*\});?\s*$', s, re.S).group(1))
     if any(pt[12] for pt in d.get('p', []) if len(pt) > 12):
         fautes.append('pharma-fr-data.js porte encore des CA')
+    if any(len(pt) > 4 and d['seg'][pt[4]] != 'Non défini' for pt in d.get('p', [])):
+        fautes.append('pharma-fr-data.js porte encore la segmentation commerciale')
+    s = io.open(os.path.join(BASE, 'crm/marketing-offers.js'), encoding='utf-8').read()
+    if re.search(r',\s*ip:\s*-?[0-9.]+', s):
+        fautes.append('marketing-offers.js porte encore des prix nets IP')
     s = io.open(os.path.join(BASE, 'crm/v2/wml-officines-data.js'), encoding='utf-8').read()
     offs = json.loads(re.search(r'const WML_OFFICINES = (\[.*?\]);', s, re.S).group(1))
     if any(o.get('ca') for o in offs):
@@ -149,11 +218,12 @@ def controle_final():
         sys.exit('ARRÊT : des conditions commerciales subsistent dans un fichier PUBLIC.')
 
 if __name__ == '__main__':
-    for fn in (benchmark, prod_stats, pharma_fr, wml_officines, biosimilaires):
+    for fn in (benchmark, prod_stats, pharma_fr, wml_officines, biosimilaires,
+               marketing_offers):
         fn()
     controle_final()
     if fait:
         print('découpé : ' + ' · '.join(fait))
         print('⚠️ DÉPOSER les tables sur Supabase (donnees-protegees) et bumper le jeton V de v2-boot.js.')
     else:
-        print('✓ les cinq fichiers publics sont propres — rien à découper.')
+        print('✓ les six fichiers publics sont propres — rien à découper.')

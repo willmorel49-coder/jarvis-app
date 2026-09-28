@@ -531,6 +531,12 @@
     pharmafrca: 'pharma-fr-ca.js',
     wmlca: 'wml-officines-ca.js',
     biosimcomplet: 'biosimilaires-complet.js',
+    // 28/09/2026 — la SEGMENTATION commerciale (Client A/B/C) a quitté
+    // pharma-fr-data.js : sur un dépôt PUBLIC, elle disait qui sont nos clients
+    // et à quel palier. 32 Ko, recollée par id dans fusionsProtegees().
+    pharmafrseg: 'pharma-fr-seg.js',
+    // 28/09/2026 — les 154 prix nets IP des 8 offres marketing officielles.
+    mktipprix: 'mkt-ip-prix.js',
     mktnr: 'v2/mkt-nr-data.js',
     // Achats par officine OPSO (prix nets facturés + CA) : protégé.
     opsostats: 'opso-stats-data.js',
@@ -611,6 +617,8 @@
     pharmafrca: 'pharma-fr-ca.js',
     wmlca: 'wml-officines-ca.js',
     biosimcomplet: 'biosimilaires-complet.js',
+    pharmafrseg: 'pharma-fr-seg.js',
+    mktipprix: 'mkt-ip-prix.js',
     mktnr: 'mkt-nr-data.js',
     opsostats: 'opso-stats-data.js',
     establishments: 'establishments-aggregate.js',
@@ -1009,7 +1017,7 @@
   V2.chargerScripts = function (urls) {
     urls = urls || [];
     if (!urls.length) return Promise.resolve();
-    var V = '?v=20260928h' + (window.V2_VER || '20260915g');
+    var V = '?v=20260928i' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1143,6 +1151,8 @@
     benchcond: 'BENCH_COND',
     prodstatscond: 'PROD_COND',
     pharmafrca: 'PHARMA_FR_CA',
+    pharmafrseg: 'PHARMA_FR_SEG',
+    mktipprix: 'MKT_IP_PRIX',
     wmlca: 'WML_OFF_CA',
     biosimcomplet: 'BIOSIMILAIRES_COMPLET',
     mktnr: 'MKT_NR',
@@ -1271,6 +1281,39 @@
       for (var i = 0; i < pts.length; i++) { var v = mca[String(pts[i][13])]; if (v) pts[i][12] = v; }
       _fusionsFaites.pharmafr = true;
     }
+    // 28/09/2026 — la segmentation commerciale revient sur la base nationale.
+    // Le fichier public met TOUS les points sur « Non défini » ; dans la table
+    // protégée, un id ABSENT vaut « Prospect ». On pose donc les deux, sinon les
+    // 17 396 prospects resteraient « Non défini » et les filtres rendraient vide.
+    if (!_fusionsFaites.pharmafrseg && window.PHARMA_FR && window.PHARMA_FR.p && window.PHARMA_FR_SEG) {
+      var Dp = window.PHARMA_FR, PS = window.PHARMA_FR_SEG, memo = {};
+      var idxDe = function (lib) {
+        if (memo[lib] == null) {
+          var k = Dp.seg.indexOf(lib);
+          if (k < 0) { Dp.seg.push(lib); k = Dp.seg.length - 1; }
+          memo[lib] = k;
+        }
+        return memo[lib];
+      };
+      var iPro = idxDe('Prospect'), pS = Dp.p, nS = 0;
+      for (var si = 0; si < pS.length; si++) {
+        var vs = PS.m[String(pS[si][13])];
+        if (vs == null) pS[si][4] = iPro;
+        else { pS[si][4] = idxDe(PS.l[vs]); nS++; }
+      }
+      // La réconciliation WML (V2.reconcilePharma) est bâtie sur ce champ et
+      // se garde de repasser : elle DOIT repasser maintenant.
+      Dp._wmlRecon = false;
+      _fusionsFaites.pharmafrseg = true;
+      if (nS < PS.n) console.warn('[V2] segmentation : ' + nS + ' points rattachés pour ' + PS.n + ' officines protégées');
+    }
+    // Les prix nets des offres marketing : le tableau MARKETING_IP_OFFERS a été
+    // construit au chargement de marketing-offers.js, avant cette table.
+    if (!_fusionsFaites.mktipprix && window.MKT_IP_PRIX && window.MARKETING_IP_APPLY_PRIX) {
+      var nMk = window.MARKETING_IP_APPLY_PRIX();
+      _fusionsFaites.mktipprix = true;
+      if (nMk !== window.MKT_IP_PRIX.n) console.warn('[V2] prix IP marketing : ' + nMk + ' recollés pour ' + window.MKT_IP_PRIX.n + ' attendus');
+    }
     if (!_fusionsFaites.wmlca && window.WML_OFFICINES && window.WML_OFF_CA) {
       var mo = window.WML_OFF_CA.m;
       for (var w = 0; w < window.WML_OFFICINES.length; w++) {
@@ -1321,7 +1364,7 @@
     // base nationale se recalculent (V2.reconcilePharma, la seule règle), et La carte, si elle est
     // ouverte, se recale. Vu en vraie session : une carte ouverte avant eux restait à 0 CA. Même filet
     // que REPRISES en tête de fichier. Une seule fois par arrivée (_etatCarte), pas à chaque bridge().
-    var etat = (window.WML_OFFICINES ? 'w' : '') + (_fusionsFaites.wmlca ? 'c' : '') + (_fusionsFaites.pharmafr ? 'p' : '') + (_fusionsFaites.clientsactifs ? 'a' : '');
+    var etat = (window.WML_OFFICINES ? 'w' : '') + (_fusionsFaites.wmlca ? 'c' : '') + (_fusionsFaites.pharmafr ? 'p' : '') + (_fusionsFaites.pharmafrseg ? 's' : '') + (_fusionsFaites.clientsactifs ? 'a' : '');
     if (etat !== _etatCarte) {
       _etatCarte = etat;
       if (window.PHARMA_FR) {
@@ -1438,7 +1481,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260928h';
+    var V = '?v=20260928i';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];

@@ -210,6 +210,11 @@ biosimilaires-export.json
 bench-conditions.js
 prod-stats-conditions.js
 pharma-fr-ca.js
+# 28/09/2026 — segmentation commerciale (Client A/B/C par officine) et prix
+# nets IP des offres marketing : sortis de pharma-fr-data.js et de
+# marketing-offers.js, servis par adresse signée.
+pharma-fr-seg.js
+mkt-ip-prix.js
 wml-officines-ca.js
 biosimilaires-complet.js
 opso/opso-stats-data.js
