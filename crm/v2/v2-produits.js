@@ -533,13 +533,29 @@
     return '<div class="v2-empty"><div class="v2-empty-t">' + esc(t) + '</div>' +
       '<div class="v2-empty-d">' + esc(d) + '</div></div>';
   }
+  /* CONTINGENTEMENT DE VENTE (appro-source.json, colonnes contmode/contqte).
+     Ce que CHAQUE officine peut nous commander par période — pas un plafond
+     d'achat (sens tranché par Will le 28/09/2026, voir quotaDe dans v2-appro.js).
+     Sur 72 références seulement : Gardasil 9, Shingrix, Eliquis, Trulicity…
+     Il est ici pour qu'un commercial ne promette pas une quantité qu'on ne
+     servira pas. Le flux arrive en différé : tant qu'il n'est pas là, rien ne
+     s'affiche (jamais « 0 », qui se lirait comme « interdit à la vente »). */
+  var PERIODE = { Semaine: 'semaine', Quinzaine: 'quinzaine', Mois: 'mois' };
+  function badgeCont(cip) {
+    var C = V2.approCtx, q = C && C.quota ? C.quota(cip) : null;
+    if (!q || !(+q.qte > 0)) return '';
+    var per = PERIODE[q.mode] || String(q.mode || '').toLowerCase();
+    return '<span class="pr-cont" title="Contingenté : chaque officine peut en commander ' +
+      esc(q.qte + ' par ' + per) + ' (relevé du ' + esc(C.fdate ? C.fdate(q.asof) : q.asof) +
+      ')">' + esc(q.qte + ' / ' + per + ' par officine') + '</span>';
+  }
   function enTeteProduit(l) {
     var f = fiche(l.cip);
     var lib = f && f.d ? f.d : ('CIP ' + l.cip);
     var fam = f && FAM[f.f] ? FAM[f.f] : null;
     return '<div class="pr-lib">' + esc(lib) +
       (fam ? '<span class="pr-fam" style="--fc:' + fam.c + '">' + esc(fam.l) + '</span>' : '') +
-      (enRupture(l.cip) ? '<span class="pr-rupt">rupture ANSM</span>' : '') +
+      (enRupture(l.cip) ? '<span class="pr-rupt">rupture ANSM</span>' : '') + badgeCont(l.cip) +
       '</div>';
   }
   function boutonSel(cip) {
@@ -768,7 +784,7 @@
     return '<tr class="' + (l.statut === 'pousser' ? 'pr-t-gap' : '') + '">' +
       '<td class="pr-t-l">' +
         '<div class="pr-t-d">' + esc(lib) +
-          (enRupture(l.cip) ? '<span class="pr-rupt">rupture ANSM</span>' : '') + '</div>' +
+          (enRupture(l.cip) ? '<span class="pr-rupt">rupture ANSM</span>' : '') + badgeCont(l.cip) + '</div>' +
         '<div class="pr-t-cip">' + esc(l.cip) +
           (l.statut === 'pousser' ? '<span class="pr-t-mini">À pousser</span>' : '') + '</div>' +
       '</td>' +
@@ -880,7 +896,7 @@
     return '<div class="pr-row">' +
       '<div class="pr-lib">' + esc((fiche(l.cip) || {}).d || ('CIP ' + l.cip)) +
         (fam ? '<span class="pr-fam" style="--fc:' + fam.c + '">' + esc(fam.l) + '</span>' : '') +
-        (l.rupture ? '<span class="pr-rupt">rupture ANSM</span>' : '') +
+        (l.rupture ? '<span class="pr-rupt">rupture ANSM</span>' : '') + badgeCont(l.cip) +
       '</div>' +
       '<div class="pr-arg">' +
         (l.n >= SEUIL_PREUVE
@@ -1031,7 +1047,7 @@
           (fam ? '<span class="pr-fam" style="--fc:' + fam.c + '">' +
             esc(FAM_COURT[o.f] || fam.l) + '</span>' : '') +
           (o.mitm ? '<span class="pr-t-mitm" title="Médicament d\'intérêt thérapeutique majeur">MITM</span>' : '') +
-          (enRupture(o.cip) ? '<span class="pr-rupt">rupture ANSM</span>' : '') + '</div>' +
+          (enRupture(o.cip) ? '<span class="pr-rupt">rupture ANSM</span>' : '') + badgeCont(o.cip) + '</div>' +
         '<div class="pr-t-cip">' + esc(o.cip) + (sous ? ' · ' + esc(sous) : '') + '</div>' +
       '</td>' +
       '<td class="n pr-t-prix">' + (o.net > 0 ? eur(o.net) : '—') + '</td>' +
@@ -1559,6 +1575,13 @@
     render: function (root, param) {
       if (param) { S.ph = String(param); S.mode = 'client'; }
       injectStyles();
+      // Le contingentement vient d'appro-source.json, chargé à la demande : sans
+      // ce réveil l'écran resterait figé sans badge jusqu'au prochain rendu.
+      if (V2.approCtx && V2.approCtx.quotaPret) {
+        V2.approCtx.quotaPret(function () {
+          if (V2.route && V2.route.name === 'produits' && V2.render) V2.render();
+        });
+      }
       // Anciens noms de mode encore en mémoire d'une version précédente.
       if (S.mode === 'vendeur') S.mode = 'client';
       if (S.mode === 'surmesure') S.mode = 'prospect';
@@ -1652,6 +1675,7 @@
       '.pr-lib{font:700 15px/1.35 Satoshi,Inter,sans-serif;color:var(--ip-ink)}',
       '.pr-fam{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;font:600 11px/1.6 Inter,sans-serif;color:var(--fc);border:1px solid var(--fc)}',
       '.pr-rupt{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:var(--c-rose);color:#fff;font:600 11px/1.6 Inter,sans-serif}',
+      '.pr-cont{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;background:var(--c-amber);color:#1a1205;font:600 11px/1.6 Inter,sans-serif}',
       // Largeur libre : la plupart des logos de groupements sont horizontaux et
       // deviennent illisibles dans un carre.
       '.pr-logo{display:inline-flex;align-items:center;justify-content:center;min-width:22px;max-width:52px;height:22px;padding:0 3px;margin-right:6px;border-radius:5px;background:#fff;border:1px solid var(--line);overflow:hidden;vertical-align:-6px;flex:none}',

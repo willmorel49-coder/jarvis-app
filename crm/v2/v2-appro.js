@@ -1688,13 +1688,26 @@
   var _laboState = 0, _laboMap = null;
   /* ── appro-source.json (generate_appro_source.py) ────────────────────────
      Deux colonnes des exports de stock des établissements que personne ne lisait :
-       · contmode / contqte → un CONTINGENTEMENT, chargé mais PAS ENCORE AFFICHÉ
+       · contmode / contqte → le CONTINGENTEMENT DE VENTE : ce que chaque officine
+                              peut nous commander par période (tranché par Will le
+                              28/09/2026). Affiché côté commercial (v2-produits.js),
+                              JAMAIS comme plafond d'achat ici.
        · artcollection      → le LABORATOIRE, y compris pour les références que la
                               BDPM ne couvre pas (para, DM) et qui restaient donc
                               « sans fournisseur » — donc non commandables ici.
      Il COMPLÈTE labo-cip.json, il ne le corrige pas : le générateur écarte à la
      source tout CIP dont le fournisseur est déjà connu. */
   var _apsMap = null, _apsQuota = null, _apsAsof = '';
+  /* approRerender() ne redessine QUE la page appro. Les écrans commerciaux qui
+     lisent le contingentement s'inscrivent ici pour être prévenus à l'arrivée du
+     flux — sans quoi ils restent figés sur l'état d'avant (aucun badge). */
+  var _laboWaiters = [];
+  function quotaPret(cb) {
+    if (typeof cb !== 'function') return;
+    if (_laboState === 2) { cb(); return; }
+    _laboWaiters.push(cb);
+    ensureLabo();
+  }
   function ensureLabo() {
     if (_laboMap || _laboState) return;
     _laboState = 1;
@@ -1712,6 +1725,8 @@
       _sansLabo = null;
       _laboState = 2;
       approRerender();
+      var w = _laboWaiters; _laboWaiters = [];
+      w.forEach(function (cb) { try { cb(); } catch (e) {} });
     }
     try {
       Promise.all([lire('labo-cip.json'), lire('appro-source.json')])
@@ -1724,14 +1739,14 @@
     if (_apsMap && _apsMap[c]) return _apsMap[c];
     var G = window.GENERIQUEURS; if (G && G[c]) return G[c]; return 'Divers';
   }
-  /* ⚠️ SENS DE LA COLONNE NON TRANCHÉ — ne rien afficher avec ça sans réponse.
-     Lu d'abord comme « le laboratoire nous limite », cette lecture est DÉMENTIE par
-     les données : plusieurs de ces références ont 7 000 unités en commande chez nous
+  /* CONTINGENTEMENT DE VENTE — tranché par Will le 28/09/2026.
+     Lu d'abord comme « le laboratoire nous limite ». Les données démentaient cette
+     lecture : plusieurs de ces références ont 7 000 unités en commande chez nous
      alors que le « quota » vaut 1 à 5, et la liste (Gardasil 9, Repevax, Vaxelis,
      Eliquis, Slinda, Quviviq) est celle des produits qu'un grossiste rationne à ses
-     OFFICINES. La lecture probable est donc l'inverse : ce que chaque pharmacie peut
-     nous commander par période. Question posée à Will le 27/09/2026 ; tant qu'elle
-     n'a pas de réponse, la donnée est chargée mais aucun écran ne l'affiche.
+     OFFICINES. C'est bien l'inverse : ce que CHAQUE PHARMACIE peut nous commander
+     par période. Donc à montrer au commercial, pour qu'il ne promette pas une
+     quantité qu'on ne servira pas — et jamais comme plafond d'achat dans APPRO.
      `dispo` et `asof` datent de l'export : c'est une photographie, pas du temps réel. */
   function quotaDe(c) {
     var q = _apsQuota && _apsQuota[String(c)];
@@ -2279,7 +2294,8 @@
     labo: laboOf,
     laboConnu: laboConnu,
     sansLabo: sansLaboStat,
-    quota: quotaDe,   // ⚠️ voir l'avertissement sur quotaDe : sens non tranché, non affiché
+    quota: quotaDe,       // contingentement de VENTE par officine (voir quotaDe)
+    quotaPret: quotaPret, // prévient un écran non-appro quand le flux est arrivé
     ensureLabo: ensureLabo,
     ansmItem: ansmItem, ansmStatut: ansmStatut, enTension: enTension,
     isMitm: isMitm, froid: estFroidCip, aVendu: aVendu,
