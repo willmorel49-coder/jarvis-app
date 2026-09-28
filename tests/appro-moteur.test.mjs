@@ -185,9 +185,15 @@ test('rattachement au dépôt : mesuré, partagé, hors des sept, ou abstention'
   assert.deepEqual(M.zoneDe('75001').sites, []);                  // Escale Pharma : hors des sept
   assert.equal(M.zoneDe('75001').hors, 'Escale Pharma');
   assert.equal(M.zoneDe('57000').hors, 'Pharmest');
-  // ⚠️ un département hors liste ne se rattache PAS au dépôt le plus proche
-  for (const cp of ['73000', '63000', '01000', '74000', '37000'])
-    assert.equal(M.zoneDe(cp), null, cp + ' ne doit pas être deviné');
+  // Arbitrage de Will, 28/09/2026 : les cinq départements qui manquaient au découpage
+  // sont désormais rattachés — 01, 63, 73 et 74 à CPR, 37 à OPS.
+  for (const cp of ['73000', '63000', '01000', '74000'])
+    assert.deepEqual(M.zoneDe(cp).sites, ['CPR'], cp + ' → CPR');
+  assert.deepEqual(M.zoneDe('37000').sites, ['OPS']);
+  // ⚠️ ce qui reste hors liste ne se rattache toujours PAS au dépôt le plus proche :
+  // une officine sans code postal, la Corse et l'outre-mer restent une abstention.
+  for (const cp of ['', null, '20000', '97400'])
+    assert.equal(M.zoneDe(cp), null, String(cp) + ' ne doit pas être deviné');
 });
 
 test('parSite : demande mesurée par site, et le « ≈ » posé seulement là où il faut', () => {

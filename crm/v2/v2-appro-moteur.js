@@ -86,8 +86,8 @@
          stock. Leur demande existe, mais elle n'est PAS à servir depuis les sept :
          elle est mise à part (`hors`), jamais diluée sur les autres. */
   M.ZONES = [
-    { sites: ['CPR'], dep: ['07', '26', '38', '42', '69'] },
-    { sites: ['OPS'], dep: ['14', '16', '17', '22', '29', '35', '44', '49', '50', '53', '56', '72', '79', '85', '86'] },
+    { sites: ['CPR'], dep: ['01', '07', '26', '38', '42', '63', '69', '73', '74'] },
+    { sites: ['OPS'], dep: ['14', '16', '17', '22', '29', '35', '37', '44', '49', '50', '53', '56', '72', '79', '85', '86'] },
     { sites: ['SOP'], dep: ['19', '24', '31', '32', '33', '46', '47', '82'] },
     { sites: ['POS'], dep: ['09', '11', '12', '34', '48', '66', '81'] },
     { sites: ['HP', 'MSP', 'SEP'], dep: ['04', '05', '06', '13', '30', '83', '84'] },
@@ -113,11 +113,13 @@
   };
 
   /* ⚠️ Un département ABSENT de la liste ne se rattache PAS au site le plus proche.
-     Mesuré le 28/09/2026 sur les ventes réelles : six zones vendent sans figurer dans
+     Mesuré le 28/09/2026 sur les ventes réelles : six zones vendaient sans figurer dans
      la liste — 73 Savoie, 63 Puy-de-Dôme, 01 Ain, 74 Haute-Savoie, 37 Indre-et-Loire,
      et 30 officines sans code postal — soit 199 307 unités, 7,3 % de la demande.
-     Les deviner produirait un chiffre faux qui aurait l'air juste. On s'abstient, et
-     l'écran affiche combien de demande n'est pas rattachée. Question posée à Will. */
+     Will a tranché le 28/09/2026 : 01, 63, 73 et 74 sont livrés par CPR, 37 par OPS.
+     Restent les 30 officines SANS code postal (46 267 u, 1,7 %) : là, il n'y a rien à
+     lire, donc rien à rattacher. Les deviner produirait un chiffre faux qui aurait
+     l'air juste. On s'abstient, et l'écran affiche la demande non rattachée. */
   M.zoneDe = function (cp) {
     var d = M.depDe(cp);
     if (!d) return null;
@@ -170,7 +172,7 @@
     for (i = 0; i < rec.length && di < don.length; i++) {
       // Le besoin du receveur se calcule sur SA demande (secteur de son dépôt), plus sur
       // « la demande réseau divisée par sept » : un transfert vers OPS n'a rien à voir avec
-      // la moyenne des sept quand OPS pèse 37,7 % de la demande et SOP 0,1 %.
+      // la moyenne des sept quand OPS pèse 38,2 % de la demande et SOP 0,1 %.
       var vMr = (rec[i].vM != null) ? rec[i].vM : (vM || 0) / p.n;
       var besoin = Math.max(1, Math.round(vMr / 30 * M.CIBLE - rec[i].st));
       var dispo = Math.max(0, don[di].st - 1);

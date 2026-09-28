@@ -197,14 +197,16 @@
      du secteur de chaque dépôt. La vente porte l'officine, l'officine porte son code
      postal, et le découpage par département (V2.approM.ZONES, donné par Will le
      28/09/2026) dit quel établissement la livre.
-     Mesuré sur nos ventes le 28/09/2026 : CPR 38,1 % · OPS 37,7 % · POS 9,5 % ·
-     zone HP/MSP/SEP 7,2 % · SOP 0,1 % · non rattaché 7,3 %.
+     Mesuré sur nos ventes le 28/09/2026, après l'arbitrage de Will sur les six zones
+     qui manquaient au découpage (01/63/73/74 → CPR, 37 → OPS) : CPR 43,3 % ·
+     OPS 38,2 % · POS 9,5 % · zone HP/MSP/SEP 7,2 % · SOP 0,1 % · non rattaché 1,7 %.
+     Avant cet arbitrage : CPR 38,1 % · OPS 37,7 % · non rattaché 7,3 %.
      Trois cas distincts, et aucun n'est maquillé en un autre :
        · un seul dépôt sur le département → demande MESURÉE ;
        · zone HP/MSP/SEP (les trois couvrent les mêmes sept départements) → tiers
          chacun, et ces trois sites-là seulement sont marqués « estimé » ;
-       · département hors liste, ou officine sans code postal → NON RATTACHÉ. On ne
-         devine pas : le total est affiché à l'écran pour que le trou soit visible. */
+       · officine sans code postal → NON RATTACHÉ (1,7 %, 30 officines). On ne devine
+         pas : le total est affiché à l'écran pour que le trou reste visible. */
   var _dsIdx = null, _dsRef = null;
   function demandeParSiteIdx() {
     var S = window.WML_SALES, OFF = window.WML_OFFICINES;
