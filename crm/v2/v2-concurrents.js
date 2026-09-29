@@ -838,13 +838,13 @@
         var cls = (x.ip && !x.exclu) ? (v < x.ip - 0.004 ? ' lo' : (v > x.ip + 0.004 ? ' hi' : '')) : '';
         return '<td class="num mono cmp-p' + cls + (k === x.qui && x.v !== 'win' ? ' best' : '') + '" data-label="' + esc(COURT[k]) + '">' + eur(v) + '</td>';
       }).join('');
-      var ver = x.v === 'win' ? '<span class="cc-v win">Intégral, ' + eur(x.ec) + ' de moins</span>'
-        : x.v === 'lose' ? '<span class="cc-v lose">' + esc(COURT[x.qui]) + ', ' + eur(-x.ec) + ' de moins</span>'
+      var ver = x.v === 'win' ? '<span class="cc-v win" title="Intégral est le moins cher, ' + esc(eur(x.ec)) + ' sous le meilleur concurrent">Intégral −' + eur(x.ec) + '</span>'
+        : x.v === 'lose' ? '<span class="cc-v lose" title="' + esc(COURT[x.qui]) + ' est moins cher que nous de ' + esc(eur(-x.ec)) + '">' + esc(COURT[x.qui]) + ' −' + eur(-x.ec) + '</span>'
         : x.v === 'egal' ? '<span class="cc-v egal">Même prix</span>'
         : (x.exclu && x.nb ? '<span class="cc-mute" title="Générique ou biosimilaire : remises en direct labo, pas comparables">hors verdict</span>' : '<span class="cc-mute">—</span>');
       return '<tr class="cc-p' + (x.v ? ' cc-' + x.v : '') + '" onclick="V2.ccOuvrir(\'' + safeArg(x.c) + '\')" title="Tous les prix de ce produit">' +
         '<td class="num mono cmp-rg" data-label="Rang">' + rangs[x.c] + '</td>' +
-        '<td class="cc-name" data-label="Produit"><div class="cmp-d">' + esc(x.d) + '</div><div class="cmp-c mono">' + esc(x.c) + (FAM_TAG[x.f] ? ' · ' + esc(FAM_TAG[x.f]) : '') + '</div></td>' +
+        '<td class="cc-name" data-label="Produit"><div class="cmp-d">' + esc(x.d) + '</div><div class="cmp-c">' + esc(x.c) + (FAM_TAG[x.f] ? ' · ' + esc(FAM_TAG[x.f]) : '') + '</div></td>' +
         '<td class="num" data-label="Pharmacies"><div class="cmp-n"><b>' + num(x.n) + '</b><span class="cmp-bar"><i style="width:' + Math.max(2, Math.round(x.n / maxN * 100)) + '%"></i></span></div></td>' +
         '<td class="num mono cmp-nous" data-label="Intégral">' + (x.ip ? eur(x.ip) : '<span class="cc-mute">—</span>') + '</td>' +
         cells + '<td data-label="Le moins cher">' + ver + '</td></tr>';
@@ -973,7 +973,7 @@
         : (espace !== 'prix' ? '<div id="cc-gr-host"></div>'
         : (tel ? tabsHtml(src) + liensHtml() + ficheHtml(src) : tabsHtml(src) + liensHtml() + '<div class="cc-cbar-holder">' + comptoirBar(false) + '<div id="cc-cres" class="cc-cres"></div></div>' + ficheHtml(src)));
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
-        '<div class="v2-wrap cc-wrap' + (tel ? ' tel' : '') + '">' + kickerHtml(espace) + corps + '</div>';
+        '<div class="v2-wrap cc-wrap' + (tel ? ' tel' : '') + (espace === 'comparateur' ? ' cmp-w' : '') + '">' + kickerHtml(espace) + corps + '</div>';
       var host = document.getElementById('cc-gr-host');
       if (host) {
         if (V2.grossistesCorps) V2.grossistesCorps(host, espace);
@@ -1157,10 +1157,12 @@
       'html.cc-lock,html.cc-lock body{overflow:hidden}',
       /* le comparateur */
       '.cmp-opts{margin-top:-4px}',
+      '.cc-wrap.cmp-w{max-width:1400px}',
+      '.cmp-t th{padding:12px 10px}.cmp-t td{padding:9px 10px}.cmp-t .cc-v{white-space:nowrap}',
       '.cmp-t th small{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:none;letter-spacing:0}',
       '.cmp-t th.cmp-src,.cmp-t th.cmp-nous{cursor:default}.cmp-t th.cmp-nous,.cmp-t td.cmp-nous{background:rgba(0,80,230,.05);color:var(--ip-blue-d);font-weight:700}',
       '.cmp-t td{vertical-align:middle}.cmp-rg{color:var(--muted-2)}',
-      '.cmp-d{font-weight:600;color:var(--ip-ink);max-width:340px}.cmp-c{font-size:12px;color:var(--muted);margin-top:2px}',
+      '.cmp-d{font-weight:600;color:var(--ip-ink);min-width:220px;max-width:320px}.cmp-c{font-size:12px;color:var(--muted);margin-top:2px}',
       '.cmp-n{display:flex;flex-direction:column;align-items:flex-end;gap:4px}.cmp-n b{font-size:14px}.cmp-bar{display:block;width:64px;height:4px;border-radius:2px;background:var(--line);overflow:hidden}.cmp-bar i{display:block;height:100%;background:var(--ip-blue);border-radius:2px}',
       '.cmp-p.lo{color:#9E2A46;font-weight:700}.cmp-p.hi{color:#0B6B45}.cmp-p.best{box-shadow:inset 0 -2px 0 #C8385A}',
       '.cmp-att{color:var(--muted);font-size:12.5px}',
