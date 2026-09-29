@@ -834,9 +834,9 @@
     var body = vus.map(function (x) {
       var cells = CMP.map(function (k) {
         var v = x.px[k];
-        if (!(v > 0)) return '<td class="num mono cmp-p" data-label="' + esc(COURT[k]) + '"><span class="cc-mute">—</span></td>';
+        if (!(v > 0)) return '<td class="num mono cmp-p vide" data-label="' + esc(COURT[k]) + '"><span class="cc-mute">—</span></td>';
         var cls = (x.ip && !x.exclu) ? (v < x.ip - 0.004 ? ' lo' : (v > x.ip + 0.004 ? ' hi' : '')) : '';
-        return '<td class="num mono cmp-p' + cls + (k === x.qui && x.v !== 'win' ? ' best' : '') + '" data-label="' + esc(COURT[k]) + '">' + eur(v) + '</td>';
+        return '<td class="num mono cmp-p' + cls + (k === x.qui && x.v === 'lose' ? ' best' : '') + '" data-label="' + esc(COURT[k]) + '">' + eur(v) + '</td>';
       }).join('');
       var ver = x.v === 'win' ? '<span class="cc-v win" title="Intégral est le moins cher, ' + esc(eur(x.ec)) + ' sous le meilleur concurrent">Intégral −' + eur(x.ec) + '</span>'
         : x.v === 'lose' ? '<span class="cc-v lose" title="' + esc(COURT[x.qui]) + ' est moins cher que nous de ' + esc(eur(-x.ec)) + '">' + esc(COURT[x.qui]) + ' −' + eur(-x.ec) + '</span>'
@@ -1167,6 +1167,10 @@
       '.cmp-p.lo{color:#9E2A46;font-weight:700}.cmp-p.hi{color:#0B6B45}.cmp-p.best{box-shadow:inset 0 -2px 0 #C8385A}',
       '.cmp-att{color:var(--muted);font-size:12.5px}',
       '.cmp-plus{display:block;margin:14px auto 0}',
+      '@media (max-width:700px){.cc-wrap.cmp-w .cc-tablewrap{overflow:visible}.cmp-t,.cmp-t tbody{display:block;width:100%}.cmp-t tr{padding:10px 6px}',
+      '.cmp-t td{align-items:center;padding:5px 8px}.cmp-t td:before{text-align:left}.cmp-t td.vide,.cmp-t td.cmp-rg{display:none}',
+      '.cmp-t td.cc-name{display:block}.cmp-t td.cc-name:before{display:none}.cmp-d{min-width:0;max-width:none;font-size:15px}',
+      '.cmp-n{flex-direction:row;align-items:center;gap:8px}.cmp-t td.cmp-nous{background:rgba(0,80,230,.05);border-radius:8px}}',
       '@media (prefers-reduced-motion:reduce){.cc-fiche,.cc-ray .rb i,.cc-veil,.cc-panel,.cc-face,.cc-cres{animation:none !important}.cc-wrap *,.cc-panel *,.cc-face *{transition:none !important}}',
       /* téléphone */
       '@media (max-width:700px){',
