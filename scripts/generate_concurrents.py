@@ -61,6 +61,12 @@ OUT_COOP = ROOT / "crm" / "v2" / "concurrents-cooper-data.js"
 COOPER_TXT = Path.home() / "recherche-concurrents-2026-09-11" / "recoltes" / "03-cooper-preparatoire-2023" / "catalogue-preparatoire-2023-texte.txt"
 OUT_FARMA = ROOT / "crm" / "v2" / "concurrents-farmaline-data.js"
 FARMA_JSONL = Path.home() / "recherche-concurrents-2026-09-11" / "recoltes" / "08-farmaline" / "algolia-hits.jsonl"
+# 29/09/2026 — eTradi (catalogue OCP juil.-déc. 2026) et shortlist Alliance Healthcare (févr.-avr. 2025),
+# lus et contrôlés par ~/DPGS-documents/outils/etradi.py et alliance.py (net = formule imprimée dans le document).
+OUT_ETRADI = ROOT / "crm" / "v2" / "concurrents-etradi-data.js"
+ETRADI_CSV = Path.home() / "DPGS-documents" / "analyse" / "ETRADI-2026-09-27.csv"
+OUT_ALLI = ROOT / "crm" / "v2" / "concurrents-alliance-data.js"
+ALLI_CSV = Path.home() / "DPGS-documents" / "analyse" / "ALLIANCE-2026-09-27.csv"
 # fichiers où l'on lit les codes 13 que JARVIS connaît (publics ou protégés, présents en local)
 FARMA_UNIVERS = ["crm/v2/prod-stats-data.js", "crm/offilog-data.js", "crm/v2/pharmazon-data.js",
                  "crm/v2/concurrents-sagitta-data.js", "crm/v2/concurrents-ocp-data.js"]
@@ -389,6 +395,53 @@ def farmaline():
     return COLS, data, date_de(FARMA_JSONL), n, len(univers)
 
 
+# ── eTradi / Alliance : une ligne par palier → une ligne par produit ─────
+# net = le MEILLEUR net parmi les paliers dont le calcul reproduit le document
+# (contrôle « exacte… » ou « tranche désignée… ») ; les autres paliers restent
+# visibles dans « paliers » mais ne font pas le verdict. remise = (ppht − net) / ppht,
+# comme OCP. paliers / qtes : nets et quantités dans l'ordre des quantités.
+def par_palier(path, fam_col, facture):
+    if not path.exists():
+        print("ERREUR : fichier introuvable :", path)
+        sys.exit(1)
+    COLS = ["code13", "libelle", "famille", "pfht", "ppht", "net"] + (["facture"] if facture else []) + ["remise", "paliers", "qtes", "page", "controle"]
+    prod, ordre, n = {}, [], 0
+    with open(path, encoding="utf-8-sig", newline="") as fh:
+        for r in csv.DictReader(fh):
+            n += 1
+            code = (r.get("code_produit") or "").strip()
+            net = fnum(r.get("prix_net"))
+            if len(code) != 13 or net is None:
+                continue
+            q = fnum(r.get("quantite_a_commander") if facture else r.get("palier")) or 1
+            if code not in prod:
+                prod[code] = {"r": r, "p": [], "pages": []}
+                ordre.append(code)
+            ctl = (r.get("controle") or "").strip()
+            pg = (r.get("page") or "").strip()
+            if pg and pg not in prod[code]["pages"]:
+                prod[code]["pages"].append(pg)
+            t = (q, net, ctl.startswith("exacte") or ctl.startswith("tranche désignée"), ctl, fnum(r.get("prix_facture")) if facture else None)
+            if t not in prod[code]["p"]:   # même produit imprimé sur plusieurs pages
+                prod[code]["p"].append(t)
+    data, n_sans = [], 0
+    for code in ordre:
+        r, ps = prod[code]["r"], sorted(prod[code]["p"], key=lambda x: (x[0], -x[1]))
+        bons = [x[1] for x in ps if x[2]]
+        net = min(bons) if bons else None
+        if net is None:
+            n_sans += 1
+        ppht = fnum(r.get("prix"))
+        ligne = [code, (r.get("nom") or "").strip(), (r.get(fam_col) or "").strip(), fnum(r.get("pfht")), ppht, net]
+        if facture:
+            ligne.append(ps[0][4])
+        ligne += [round((ppht - net) / ppht * 100, 2) if (net is not None and ppht) else None,
+                  "|".join("%g" % x[1] for x in ps), " · ".join("dès %g" % x[0] for x in ps),
+                  " et ".join(prod[code]["pages"]), "; ".join(sorted({x[3] for x in ps if x[3] != "exacte"}))]
+        data.append(ligne)
+    return COLS, data, n, n_sans
+
+
 def coop_doublons(data, n_ean):
     # nombre de lignes EAN du texte qui ne sont pas dans la sortie = doublons retirés
     return n_ean - len(data)
@@ -463,6 +516,23 @@ def main():
           % (nf, nu, len(fdata), fmaj, OUT_FARMA.stat().st_size, "OK" if ok else "ÉCART !"))
     if not ok:
         sys.exit(1)
+
+    dpgs()
+
+
+def dpgs():
+    for nom, out, var, src, fam, fac, maj, per, ent in (
+        ("eTradi", OUT_ETRADI, "CONCURRENTS_ETRADI", ETRADI_CSV, "section", False, "2026-07-01", "juillet-décembre 2026",
+         "eTradi — catalogue OCP juillet-décembre 2026, tous paliers, net recalculé selon la page 41 du document"),
+        ("Alliance", OUT_ALLI, "CONCURRENTS_ALLIANCE", ALLI_CSV, "famille", True, "2025-02-01", "février-avril 2025",
+         "Alliance Healthcare — shortlist février-avril 2025, tous paliers, net : PPHT moins taux × PFHT")):
+        c, d, n, n_sans = par_palier(src, fam, fac)
+        o = {"maj": maj, "periode": per, "cols": c, "rows": d}
+        relu, ok = ecrire(out, var, o, ent, lambda x: len(x["rows"]) == len(d))
+        print("%-9s: %d paliers lus -> %d produits (%d sans net contrôlé), %d octets, relecture %s"
+              % (nom, n, len(d), n_sans, out.stat().st_size, "OK" if ok else "ÉCART !"))
+        if not ok:
+            sys.exit(1)
 
 
 if __name__ == "__main__":

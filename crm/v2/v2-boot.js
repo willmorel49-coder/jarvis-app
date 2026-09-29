@@ -517,6 +517,10 @@
     conccooper: 'v2/concurrents-cooper-data.js',
     // 12/09/2026 — onglet « Farmaline » : prix publics belges sur les EAN connus + codes FR.
     concfarmaline: 'v2/concurrents-farmaline-data.js',
+    // 29/09/2026 — onglets « eTradi » (catalogue OCP juil.-déc. 2026) et « Alliance »
+    // (shortlist févr.-avr. 2025) : documents DPGS, même traitement.
+    concetradi: 'v2/concurrents-etradi-data.js',
+    concalliance: 'v2/concurrents-alliance-data.js',
     // Prix PUBLICS E.Leclerc (TTC) et rayons fins Offilog : données publiques.
     leclercpub: 'v2/leclerc-pub-data.js',
     offilogcats: 'v2/offilog-cats-data.js',
@@ -613,6 +617,8 @@
     concetudes: 'concurrents-etudes-data.js',
     conccooper: 'concurrents-cooper-data.js',
     concfarmaline: 'concurrents-farmaline-data.js',
+    concetradi: 'concurrents-etradi-data.js',
+    concalliance: 'concurrents-alliance-data.js',
     // La grande passe du 03/09/2026. Le POIDS, cause de la panne du 15/08,
     // est traité par le rangement local (texteProtege) : téléchargé une fois
     // par version, servi depuis l'appareil ensuite.
@@ -1022,7 +1028,7 @@
   V2.chargerScripts = function (urls) {
     urls = urls || [];
     if (!urls.length) return Promise.resolve();
-    var V = '?v=20260929b' + (window.V2_VER || '20260915g');
+    var V = '?v=20260929c' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1150,6 +1156,8 @@
     concetudes: 'CONCURRENTS_ETUDES',
     conccooper: 'CONCURRENTS_COOPER',
     concfarmaline: 'CONCURRENTS_FARMALINE',
+    concetradi: 'CONCURRENTS_ETRADI',
+    concalliance: 'CONCURRENTS_ALLIANCE',
     leclercpub: 'LECLERC_PUB',
     offilogcats: 'OFFILOG_CATS',
     offilogmarche: 'OFFILOG_MARCHE',
@@ -1510,7 +1518,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260929b';
+    var V = '?v=20260929c';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];

@@ -104,6 +104,30 @@
       affiche: [['ean13', 'EAN', ''], ['libelle', 'Produit', ''], ['labo', 'Laboratoire', ''], ['tarif', 'Prix catalogue', 'eur'], ['remise', 'Remise', 'pct'], ['net', 'Net Pharmazon', 'eur']],
       cherche: ['libelle', 'labo', 'ean13']
     },
+    etradi: {
+      nom: 'eTradi · catalogue OCP', tag: 'Juil.-déc. 2026', accent: '#A4561B', cles: ['concetradi'],
+      quoi: 'Le catalogue eTradi d\'OCP pour juillet à décembre 2026 (document DPGS) : chaque produit avec tous ses paliers. Le net est recalculé selon la page 41 du catalogue : pourcentage sur le PFHT retiré du PPHT pour les remboursables, sur le PPHT pour le reste.',
+      charge: function () { return !!window.CONCURRENTS_ETRADI; },
+      maj: function () { return window.CONCURRENTS_ETRADI && CONCURRENTS_ETRADI.maj; },
+      rows: function () { return window.CONCURRENTS_ETRADI ? CONCURRENTS_ETRADI.rows : []; },
+      cols: function () { return window.CONCURRENTS_ETRADI ? CONCURRENTS_ETRADI.cols : []; },
+      code: 'code13', net: 'net',
+      chipCol: 'famille', chipLabel: {},
+      affiche: [['code13', 'Code 13', ''], ['libelle', 'Produit', ''], ['famille', 'Section', ''], ['pfht', 'PFHT', 'eur'], ['ppht', 'PPHT', 'eur'], ['net', 'Meilleur net', 'eur'], ['remise', 'Remise', 'pct'], ['paliers', 'Paliers (net)', 'paliers'], ['qtes', 'Quantités', ''], ['page', 'Page', '']],
+      cherche: ['libelle', 'famille', 'code13']
+    },
+    alliance: {
+      nom: 'Alliance Healthcare · shortlist', tag: 'Févr.-avr. 2025', accent: '#1F6FA8', cles: ['concalliance'],
+      quoi: 'La shortlist Alliance Healthcare de février à avril 2025 (document DPGS) : net par palier (PPHT moins le taux sur le PFHT) et prix facturé. Attention : des prix de 2025, comparés à notre net d\'aujourd\'hui.',
+      charge: function () { return !!window.CONCURRENTS_ALLIANCE; },
+      maj: function () { return window.CONCURRENTS_ALLIANCE && CONCURRENTS_ALLIANCE.maj; },
+      rows: function () { return window.CONCURRENTS_ALLIANCE ? CONCURRENTS_ALLIANCE.rows : []; },
+      cols: function () { return window.CONCURRENTS_ALLIANCE ? CONCURRENTS_ALLIANCE.cols : []; },
+      code: 'code13', net: 'net',
+      chipCol: 'famille', chipLabel: {},
+      affiche: [['code13', 'Code 13', ''], ['libelle', 'Produit', ''], ['famille', 'Famille', ''], ['pfht', 'PFHT', 'eur'], ['ppht', 'PPHT', 'eur'], ['net', 'Meilleur net', 'eur'], ['facture', 'Facturé', 'eur'], ['remise', 'Remise', 'pct'], ['paliers', 'Paliers (net)', 'paliers'], ['qtes', 'Quantités', ''], ['page', 'Page', '']],
+      cherche: ['libelle', 'famille', 'code13']
+    },
     etudes: {
       nom: 'Études · avantages observés', tag: 'Recherche sept. 2026', accent: '#8A6D1F', cles: ['concetudes'],
       quoi: 'Ce que les sources publiques disent des avantages consentis aux officines : décisions, rapports, thèses, factures, CGV. Chaque ligne cite sa source, son extrait et un indice de confiance de 1 à 5.',
@@ -148,14 +172,14 @@
       cherche: ['libelle', 'marque', 'labo', 'rayon', 'ean13']
     }
   };
-  var ORDRE = ['sagitta', 'ocp', 'mc', 'pharmazon', 'cooper', 'farmaline', 'etudes'];
+  var ORDRE = ['sagitta', 'ocp', 'mc', 'etradi', 'alliance', 'pharmazon', 'cooper', 'farmaline', 'etudes'];
   // Nom court (onglets, puces, classement), circuit, poids du fichier (annoncé
   // avant de télécharger : jamais tout d'office), colonne des points forts.
-  var COURT = { sagitta: 'Sagitta', ocp: 'OCP Incontournables', mc: 'OCP Marque Conseil', pharmazon: 'Pharmazon', cooper: 'Cooper', farmaline: 'Farmaline', etudes: 'Études' };
-  var CIRCUIT = { sagitta: 'Grossiste-répartiteur généraliste', ocp: 'Grossiste-répartiteur · catalogue promotionnel', mc: 'Marque distributeur du grossiste', pharmazon: 'Plateforme d\'achat direct laboratoires', cooper: 'Vente directe laboratoire · préparatoire', farmaline: 'Pharmacie en ligne belge · prix consommateur', etudes: 'Sources publiques : décisions, rapports, thèses, factures, CGV' };
-  var POIDS = { sagitta: '2 Mo', ocp: '130 Ko', mc: '130 Ko', pharmazon: '1,3 Mo', cooper: '120 Ko', farmaline: '2 Mo', etudes: '500 Ko' };
-  var FORTS = { sagitta: 'gamme', ocp: 'section', pharmazon: 'labo', cooper: 'famille' };
-  var CLASSEMENT = ['sagitta', 'ocp', 'pharmazon', 'cooper'];   // seules sources à prix d'achat
+  var COURT = { sagitta: 'Sagitta', ocp: 'OCP Incontournables', mc: 'OCP Marque Conseil', etradi: 'eTradi', alliance: 'Alliance', pharmazon: 'Pharmazon', cooper: 'Cooper', farmaline: 'Farmaline', etudes: 'Études' };
+  var CIRCUIT = { sagitta: 'Grossiste-répartiteur généraliste', ocp: 'Grossiste-répartiteur · catalogue promotionnel', mc: 'Marque distributeur du grossiste', etradi: 'Plateforme d\'achat du grossiste OCP', alliance: 'Grossiste-répartiteur · shortlist trimestrielle', pharmazon: 'Plateforme d\'achat direct laboratoires', cooper: 'Vente directe laboratoire · préparatoire', farmaline: 'Pharmacie en ligne belge · prix consommateur', etudes: 'Sources publiques : décisions, rapports, thèses, factures, CGV' };
+  var POIDS = { sagitta: '2 Mo', ocp: '130 Ko', mc: '130 Ko', etradi: '115 Ko', alliance: '130 Ko', pharmazon: '1,3 Mo', cooper: '120 Ko', farmaline: '2 Mo', etudes: '500 Ko' };
+  var FORTS = { sagitta: 'gamme', ocp: 'section', etradi: 'famille', alliance: 'famille', pharmazon: 'labo', cooper: 'famille' };
+  var CLASSEMENT = ['sagitta', 'ocp', 'etradi', 'alliance', 'pharmazon', 'cooper'];   // seules sources à prix d'achat
   var QUI = { sagitta: 'sagitta', ocp: 'ocp', mc: 'ocp' };       // source → fiche du grossiste (grossistes-data.js)
 
   // ── Notre prix (V2.bestPrice = seule source de vérité) ───────────────
@@ -446,11 +470,12 @@
   // ── Le comptoir : chercher dans toutes les sources chargées ─────────
   // Une ligne par code 13, qui regroupe les sources où le code apparaît.
   // Les Études ne sont pas des produits : elles restent hors comptoir.
-  var COMPTOIR = ['sagitta', 'ocp', 'mc', 'pharmazon', 'cooper', 'farmaline'];
+  var COMPTOIR = ['sagitta', 'ocp', 'mc', 'etradi', 'alliance', 'pharmazon', 'cooper', 'farmaline'];
   function condLigne(k, r, ci) {
     var s = SRC[k];
     if (k === 'sagitta') return (s.chipLabel[r[ci.cat]] || 'Catalogue') + (r[ci.remise] > 0 ? ' · abandon de marge ' + String(Math.round(r[ci.remise] * 10) / 10).replace('.', ',') + ' %' : '') + (r[ci.qtemin] > 1 ? ' · minimum ' + num(r[ci.qtemin]) : '');
     if (k === 'ocp') return (s.chipLabel[r[ci.section]] || 'Promo') + (r[ci.condition] ? ' · ' + cap(r[ci.condition], 44) : '') + (r[ci.paliers] ? ' · paliers ' + fmt(r[ci.paliers], 'paliers').replace(/<[^>]+>/g, '') : '');
+    if (k === 'etradi' || k === 'alliance') return (k === 'etradi' ? 'Catalogue juil.-déc. 2026' : 'Shortlist févr.-avr. 2025') + (r[ci.qtes] ? ' · paliers ' + r[ci.qtes] : '') + (r[ci.remise] > 0 ? ' · abandon de marge ' + String(Math.round(r[ci.remise] * 10) / 10).replace('.', ',') + ' %' : '');
     if (k === 'pharmazon') return 'Plateforme labos · prix négocié' + (r[ci.remise] > 0 ? ' · abandon de marge ' + String(Math.round(r[ci.remise] * 10) / 10).replace('.', ',') + ' %' : '');
     if (k === 'cooper') return 'Vente directe · tarif 2023' + (r[ci.division] ? ' · ' + r[ci.division] : '') + (r[ci.statut] ? ' · ' + r[ci.statut] : '');
     return '';
