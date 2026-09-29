@@ -298,8 +298,10 @@
   // ── Analyse d'une source (cartouches + points forts) ────────────────
   // Calculée sur TOUTES les lignes, mise en cache tant que les données ne
   // bougent pas. Pour les sources à prix d'achat : références communes (hors
-  // génériques et biosimilaires), gagnées, perdues, écart moyen (notre net
-  // face au net concurrent, en % du net concurrent : négatif = en notre faveur),
+  // génériques et biosimilaires), gagnées, perdues, écart médian (notre net
+  // face au net concurrent, en % du net concurrent : négatif = en notre faveur ;
+  // médiane et non moyenne, pour qu'une poignée d'écarts à +100 % ne tire pas
+  // le chiffre de toute la source),
   // et le détail par valeur de la colonne FORTS (gamme, section, labo, famille).
   var AN = {};
   function analyse(k) {
@@ -308,21 +310,23 @@
     var ci = colIdx(s), a = { key: key, refs: rows.length, groupes: {}, communes: 0, win: 0, lose: 0, egal: 0, exclus: 0, ecart: null };
     if (s.net) {
       var codeI = ci[s.code], altI = s.codeAlt ? ci[s.codeAlt] : -1, netI = ci[s.net];
-      var gcol = FORTS[k] || s.chipCol, gI = gcol ? ci[gcol] : -1, somme = 0;
+      var gcol = FORTS[k] || s.chipCol, gI = gcol ? ci[gcol] : -1, ecarts = [];
       rows.forEach(function (r) {
         var n = nous(r[codeI]) || (altI >= 0 ? nous(r[altI]) : null);
         if (!n) return;
         if (n.exclu) { a.exclus++; return; }
         var v = verdict(r[netI], n); if (!v) return;
         a.communes++; if (v === 'win') a.win++; else if (v === 'lose') a.lose++; else a.egal++;
-        somme += (n.ip - r[netI]) / r[netI];
+        ecarts.push((n.ip - r[netI]) / r[netI]);
         if (gI >= 0) {
           var g = String(r[gI] || '') || '—';
           var o = a.groupes[g] || (a.groupes[g] = { n: 0, win: 0, lose: 0 });
           o.n++; if (v === 'win') o.win++; else if (v === 'lose') o.lose++;
         }
       });
-      a.ecart = a.communes ? somme / a.communes * 100 : null;
+      ecarts.sort(function (x, y) { return x - y; });
+      var m = ecarts.length >> 1;
+      a.ecart = ecarts.length ? (ecarts.length % 2 ? ecarts[m] : (ecarts[m - 1] + ecarts[m]) / 2) * 100 : null;
     } else {
       // comptages descriptifs : valeurs distinctes des colonnes utiles
       var cnt = function (col) { var i = ci[col], m = {}; if (i == null) return m; rows.forEach(function (r) { var v = String(r[i] || '').trim(); if (v) m[v] = (m[v] || 0) + 1; }); return m; };
@@ -363,7 +367,7 @@
         '<div class="cc-c"><div class="l">Aussi chez nous</div><div class="v num">' + (t ? num(t) : '—') + '</div>' + barre + '<div class="s">' + (sansNet ? 'notre net n\'est pas chargé' : 'hors génériques et biosimilaires' + (a.exclus ? ' (' + num(a.exclus) + ' écartés)' : '')) + '</div></div>' +
         cart('Intégral moins cher', t ? num(a.win) + '<small>' + po + ' %</small>' : '—', 'références gagnées', 'ok') +
         cart(esc(c) + ' moins cher', t ? num(a.lose) + '<small>' + pb + ' %</small>' : '—', 'références perdues', 'bad') +
-        cart('Écart moyen sur les communes', a.ecart == null ? '—' : pct1(a.ecart, true), a.ecart == null ? 'aucune référence commune' : (a.ecart < 0 ? 'en notre faveur' : (a.ecart > 0 ? 'en notre défaveur' : 'à égalité')) + ', prix net à prix net', a.ecart == null ? '' : (a.ecart < 0 ? 'ok' : (a.ecart > 0 ? 'bad' : 'eq'))) +
+        cart('Écart typique sur les communes', a.ecart == null ? '—' : pct1(a.ecart, true), a.ecart == null ? 'aucune référence commune' : (a.ecart < 0 ? 'en notre faveur' : (a.ecart > 0 ? 'en notre défaveur' : 'à égalité')) + ', médiane prix net à prix net', a.ecart == null ? '' : (a.ecart < 0 ? 'ok' : (a.ecart > 0 ? 'bad' : 'eq'))) +
       '</div>';
     }
     if (k === 'mc') {
