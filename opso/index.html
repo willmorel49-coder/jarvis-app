@@ -2,6 +2,13 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<script>
+// L'ancienne app renvoie vers v2 (un seul chiffre possible), sauf pour un lien
+// de mot de passe Supabase (#access_token… / #error…) que seule cette app traite.
+if (!/access_token|type=recovery|error/.test(location.hash)) {
+  location.replace(location.pathname.replace(/\/(index\.html)?$/, '') + '/v2/' + location.search + location.hash);
+}
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
