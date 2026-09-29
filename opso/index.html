@@ -5,7 +5,14 @@
 <script>
 // L'ancienne app renvoie vers v2 (un seul chiffre possible), sauf pour un lien
 // de mot de passe Supabase (#access_token… / #error…) que seule cette app traite.
-if (!/access_token|type=recovery|error/.test(location.hash)) {
+// Le cas est retenu pour l'onglet : app.js efface le hash, et le service worker
+// recharge la page à sa première installation.
+var opsoRestePourMdp = /access_token|type=recovery|error/.test(location.hash);
+try {
+  if (opsoRestePourMdp) sessionStorage.setItem('opso-mdp', '1');
+  else opsoRestePourMdp = sessionStorage.getItem('opso-mdp') === '1';
+} catch (e) {}
+if (!opsoRestePourMdp) {
   location.replace(location.pathname.replace(/\/(index\.html)?$/, '') + '/v2/' + location.search + location.hash);
 }
 </script>
