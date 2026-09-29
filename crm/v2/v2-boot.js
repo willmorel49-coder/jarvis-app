@@ -524,6 +524,14 @@
     // Prix PUBLICS E.Leclerc (TTC) et rayons fins Offilog : données publiques.
     leclercpub: 'v2/leclerc-pub-data.js',
     offilogcats: 'v2/offilog-cats-data.js',
+    // 29/09/2026 — catalogue COMPLET Offilog (8 498 produits, opso/), pour l'écran
+    // OPSO « tout le catalogue » (union avec les meilleures ventes par EAN).
+    // Fichier PUBLIC (aucun prix B2B) : vit hors de crm/, chemin relatif à crm/.
+    offiloglive: '../opso/offilog-live-data.js',
+    // Prix B2B du catalogue complet : conditions Intégral, protégé (Supabase).
+    offiloglivprix: 'v2/offilog-live-prix.js',
+    // Prix PUBLICS Pharmacie des Drakkars (TTC), léger — voir generate_drakkars_pub.js.
+    drakkarspub: 'v2/drakkars-pub-data.js',
     // 26/09/2026 — bloc « Le marché » de l'écran Offilog : rang de vente relevé
     // chaque mois (robot ~/offilog-marche/) + repère top vente. Aucun prix : public.
     offilogmarche: 'v2/offilog-marche-data.js',
@@ -619,6 +627,9 @@
     concfarmaline: 'concurrents-farmaline-data.js',
     concetradi: 'concurrents-etradi-data.js',
     concalliance: 'concurrents-alliance-data.js',
+    // 29/09/2026 — prix B2B du catalogue Offilog complet (id: prix), conditions
+    // Intégral : protégé, comme offilogbestprix.
+    offiloglivprix: 'offilog-live-prix.js',
     // La grande passe du 03/09/2026. Le POIDS, cause de la panne du 15/08,
     // est traité par le rangement local (texteProtege) : téléchargé une fois
     // par version, servi depuis l'appareil ensuite.
@@ -1028,7 +1039,10 @@
   V2.chargerScripts = function (urls) {
     urls = urls || [];
     if (!urls.length) return Promise.resolve();
-    var V = '?v=20260929g' + (window.V2_VER || '20260915g');
+    // Bumpé 29/09/2026 : v2-offilog.js change (union catalogue OPSO, retrait
+    // Pharmazon/achat côté OPSO) — sans ce bump, un appareil ayant déjà l'app
+    // ouverte continuerait de servir l'ancien fichier depuis le cache.
+    var V = '?v=20260929k' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1160,6 +1174,9 @@
     concalliance: 'CONCURRENTS_ALLIANCE',
     leclercpub: 'LECLERC_PUB',
     offilogcats: 'OFFILOG_CATS',
+    offiloglive: 'OFFILOG_LIVE',
+    offiloglivprix: 'OFFILOG_LIVE_PRIX',
+    drakkarspub: 'DRAKKARS_PUB',
     offilogmarche: 'OFFILOG_MARCHE',
     benchcond: 'BENCH_COND',
     prodstatscond: 'PROD_COND',
@@ -1422,6 +1439,10 @@
     try { if (typeof PHARMAZON !== 'undefined') window.PHARMAZON = PHARMAZON; } catch (e) {}
     try { if (typeof LECLERC_PUB !== 'undefined') window.LECLERC_PUB = LECLERC_PUB; } catch (e) {}
     try { if (typeof OFFILOG_CATS !== 'undefined') window.OFFILOG_CATS = OFFILOG_CATS; } catch (e) {}
+    try { if (typeof OFFILOG_LIVE !== 'undefined') window.OFFILOG_LIVE = OFFILOG_LIVE; } catch (e) {}
+    try { if (typeof OFFILOG_LIVE_PRIX !== 'undefined') window.OFFILOG_LIVE_PRIX = OFFILOG_LIVE_PRIX; } catch (e) {}
+    try { if (typeof DRAKKARS_PUB !== 'undefined') window.DRAKKARS_PUB = DRAKKARS_PUB; } catch (e) {}
+    try { if (typeof DRAKKARS_PUB_MAJ !== 'undefined') window.DRAKKARS_PUB_MAJ = DRAKKARS_PUB_MAJ; } catch (e) {}
     fusionnerPrixPharmazon();
     try { if (typeof OFFILOG_BEST !== 'undefined') window.OFFILOG_BEST = OFFILOG_BEST; } catch (e) {}
     fusionnerPrixBest();
@@ -1473,7 +1494,10 @@
     // Le catalogue Offilog et ses conditions commerciales ne se demandent
     // jamais l'un sans l'autre : sinon un écran afficherait un catalogue
     // complet avec des prix d'achat vides, sans que personne comprenne.
-    if (keys && keys.indexOf('offilog') >= 0 && keys.indexOf('offilogcond') < 0) {
+    // ⚠️ 29/09/2026 — SAUF côté OPSO : `offilog-conditions.js` porte notre prix
+    // d'achat interne (condition Intégral). Le coupler ici le faisait partir
+    // en mémoire même pour l'app OPSO, qui ne doit jamais le voir (§8 CLAUDE.md).
+    if (keys && keys.indexOf('offilog') >= 0 && keys.indexOf('offilogcond') < 0 && !(window.V2_BRAND && window.V2_BRAND.opso)) {
       keys = keys.concat(['offilogcond']);
     }
     // Même règle pour la grande passe : un catalogue sans ses conditions

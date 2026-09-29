@@ -19,11 +19,18 @@
     return '';
   })();
 
+  // Côté OPSO : jamais nos conditions internes, jamais un prix concurrent
+  // moins cher que nous — brief Will du 29/09/2026 (« Il faut aussi les mêmes
+  // stats avancées mais absolument pas les prix qui sont moins cher que nous »).
+  var OPSO = !!(window.V2_BRAND && window.V2_BRAND.opso);
   // Le tarif Sagitta (conditions d'un tiers, réservé à l'interne Intégral) ne
   // se montre PAS dans l'app OPSO — décision Will du 04/09/2026.
-  var SANS_SAGITTA = !!(window.V2_BRAND && window.V2_BRAND.opso);
+  var SANS_SAGITTA = OPSO;
   // Même règle pour le catalogue OCP « Les Incontournables » (10/09/2026).
-  var SANS_OCP = !!(window.V2_BRAND && window.V2_BRAND.opso);
+  var SANS_OCP = OPSO;
+  // Même règle pour Pharmazon : conditions négociées d'un TIERS, jamais côté
+  // OPSO — brief Will du 29/09/2026 (« pharmazon tu vire ça »).
+  var SANS_PHARMAZON = OPSO;
 
   var S = { chip: 'all', q: '', page: 0, sel: null, sort: 'ventes', adv: false, sous: '' };
   // Plancher du mouvement de rang, en places. Voir buildIndex : le seuil relatif
@@ -85,10 +92,29 @@
     { k: 'veterinaire',     label: 'Vétérinaire',    sub: 'Chien, chat, antiparasitaire' },
   ];
 
+  // Table de correspondance rayon du catalogue COMPLET (opso/offilog-live-data.js,
+  // `cat` en clair) → clé de rayon des meilleures ventes (RAYONS/CHIPS ci-dessus).
+  // Mesurée le 29/09/2026 sur les 7 valeurs réelles de OFFILOG_LIVE. « Coffrets &
+  // Cadeaux » n'a pas d'équivalent : reste hors rayon (compté dans « Tout le rayon »).
+  var LIVE_CAT_MAP = {
+    'Santé': 'sante', 'Beauté & Soins': 'beaute-et-soins', 'Hygiène': 'hygiene',
+    'Bébé': 'bebe', 'Vétérinaire': 'veterinaire', 'Solaire': 'solaires',
+    'Coffrets & Cadeaux': ''
+  };
+
   // ── Index ─────────────────────────────────────
   var idxBuilt = false, items = null, byEan = null, itemsById = null;
   function norm(s) { return String(s == null ? '' : s).toLowerCase(); }
   function numOr0(v) { return (typeof v === 'number' && isFinite(v) && v > 0) ? v : 0; }
+  // EAN normalisé sur 13 chiffres (UPC-A à 12 chiffres → préfixé d'un 0) pour
+  // rapprocher le catalogue Drakkars, dont les EAN ne sont pas tous à 13
+  // chiffres (brief 29/09/2026).
+  function ean13(v) {
+    var s = String(v == null ? '' : v).replace(/\D/g, '');
+    if (!s) return '';
+    if (s.length === 12) s = '0' + s;
+    return s.length === 13 ? s : '';
+  }
 
   function offIndex() {
     var m = new Map();
@@ -105,8 +131,10 @@
   }
 
   // index Pharmazon par EAN (prix d'achat sur l'autre plateforme)
+  // — jamais côté OPSO : conditions négociées d'un tiers (SANS_PHARMAZON).
   function pzIndex() {
     var m = new Map();
+    if (SANS_PHARMAZON) return m;
     (window.PHARMAZON || []).forEach(function (p) {
       if (p.ean && p.prix_final != null) {
         var e = String(p.ean);
@@ -337,17 +365,36 @@
     if (idxBuilt) return;
     var offByEan = offIndex();
     var pzByEan = pzIndex();
-    items = (window.OFFILOG_BEST || []).map(function (b) {
+    // Prix Offilog (id → prix) du catalogue COMPLET — même nature que
+    // OFFILOG_BEST_PRIX (le tarif de la plateforme, pas une condition
+    // Intégral) : protégé côté chargement (connexion Offilog requise), mais
+    // affiché aux deux marques, comme b.price pour les meilleures ventes.
+    var livePrix = window.OFFILOG_LIVE_PRIX || null;
+
+    function mapItem(b) {
       var o = b.ean ? offByEan.get(String(b.ean)) : null;
-      var achat = o ? numOr0(o.prix_offilog) : 0;
+      // Prix d'achat Intégral (condition interne) : JAMAIS côté OPSO — brief
+      // Will 29/09/2026. `offilogcond` n'est même plus demandé pour OPSO
+      // (v2-boot.js loadFiles), donc `o.prix_offilog` y est de toute façon
+      // absent ; ce garde-fou est la seconde ligne de défense.
+      var achat = (!OPSO && o) ? numOr0(o.prix_offilog) : 0;
+      var price = numOr0(b.price);
       var conc = {};
       var mc = 0, hasC = false;
       if (o) {
-        CONC.forEach(function (c) { var v = numOr0(o[c.key]); conc[c.key] = v; if (v > 0) { hasC = true; if (mc === 0 || v < mc) mc = v; } });
+        CONC.forEach(function (c) {
+          var v = numOr0(o[c.key]);
+          if (v <= 0) return;
+          // Côté OPSO : un concurrent ne s'affiche QUE s'il n'est pas moins
+          // cher que le prix Offilog payé par le pharmacien (`price`). Prix
+          // Offilog inconnu → on ne montre pas le concurrent (brief §4).
+          if (OPSO && !(price > 0 && v >= price)) return;
+          conc[c.key] = v; hasC = true; if (mc === 0 || v < mc) mc = v;
+        });
       }
-      var price = numOr0(b.price);
       var pz = b.ean ? pzByEan.get(String(b.ean)) : null;
-      // comparaison achat Offilog vs Pharmazon
+      // comparaison achat Offilog vs Pharmazon — pz est toujours null côté
+      // OPSO (pzIndex() retourne une Map vide quand SANS_PHARMAZON).
       var pzCheaper = !!(pz && pz.price > 0 && price > 0 && pz.price < price);
       // tarif d'achat Sagitta (grossiste) par EAN : {ean: [net] ou [net, tarif, remise %]}
       // — fichier protégé (conditions d'un tiers), chargé par adresse signée.
@@ -363,8 +410,15 @@
       // catalogue — bien plus large que l'ancien prix_leclerc porté par
       // OFFILOG (918 réf. contre 3 754).
       var lp = (window.LECLERC_PUB && b.ean) ? window.LECLERC_PUB[String(b.ean)] : null;
-      var leclerc = (lp && lp[0] > 0) ? lp[0] : 0;
+      var leclercRaw = (lp && lp[0] > 0) ? lp[0] : 0;
+      var leclerc = (OPSO && !(price > 0 && leclercRaw >= price)) ? 0 : leclercRaw;
       if (leclerc > 0) { if (mc === 0 || leclerc < mc) mc = leclerc; hasC = true; }
+      // Prix PUBLIC Pharmacie des Drakkars (TTC), même règle « jamais moins
+      // cher que nous » côté OPSO — brief 29/09/2026.
+      var e13 = ean13(b.ean);
+      var dkRaw = (window.DRAKKARS_PUB && e13 && window.DRAKKARS_PUB[e13] > 0) ? window.DRAKKARS_PUB[e13] : 0;
+      var drakkars = (OPSO && !(price > 0 && dkRaw >= price)) ? 0 : dkRaw;
+      if (drakkars > 0) { if (mc === 0 || drakkars < mc) mc = drakkars; hasC = true; }
       var sousRayon = (window.OFFILOG_CATS && b.id != null) ? (window.OFFILOG_CATS[String(b.id)] || '') : '';
       // LE MARCHÉ : rang de vente relevé mois par mois (offilog-marche-data.js).
       // Le dernier relevé fait foi partout — carte, tri, bloc marché — sinon l'écran
@@ -385,19 +439,48 @@
         mvt = mkt.prec - mkt.rang;                    // > 0 = il MONTE
         mvtPct = Math.round(mvt / mkt.prec * 100);
       }
+      // Alerte / écart : concept CRM (« un concurrent passe sous NOTRE achat »)
+      // — toujours faux côté OPSO puisque `achat` y vaut 0 (brief §4 : chip,
+      // tri et badge rouge disparaissent). Zéro se propage tout seul.
       var alert = achat > 0 && mc > 0 && mc < achat;
-      // ÉCART de l'alerte : de combien le concurrent public passe SOUS ton achat.
-      // Sert le tri « Écart concurrent » — l'alerte la plus grave d'abord.
       var ecart = alert ? (achat - mc) : 0;
+      // rang de vente réel : 0 = ce produit n'a AUCUN rang connu (produit du
+      // catalogue complet, absent des meilleures ventes ET du marché) —
+      // l'écran ne doit alors afficher ni « n°0 » ni « n°undefined ».
+      var rank = (mkt && mkt.rang) ? mkt.rang : numOr0(b.rank);
       return {
-        rank: (mkt && mkt.rang) ? mkt.rang : b.rank, mkt: mkt, id: b.id, name: b.name, brand: b.brand || '',
+        rank: rank, hasRank: rank > 0, mkt: mkt, id: b.id, name: b.name, brand: b.brand || '',
         price: price, ean: b.ean || '', img: b.img || '', cat: b.cat || '',
         url: b.url || '', univers: o ? (o.univers || '') : '',
         achat: achat, conc: conc, hasConc: hasC, minConc: mc, alert: alert, matched: !!o,
-        pz: pz || null, pzCheaper: pzCheaper, sg: sg, sgCheaper: sgCheaper, ocp: ocp, ocpCheaper: ocpCheaper, leclerc: leclerc, sousRayon: sousRayon,
+        pz: pz || null, pzCheaper: pzCheaper, sg: sg, sgCheaper: sgCheaper, ocp: ocp, ocpCheaper: ocpCheaper,
+        leclerc: leclerc, drakkars: drakkars, sousRayon: sousRayon,
         mvt: mvt, mvtPct: mvtPct, monte: mvtPct >= 20 && mvt >= SEUIL_PLACES, ecart: ecart
       };
-    });
+    }
+
+    items = (window.OFFILOG_BEST || []).map(mapItem);
+
+    // ── Tout le catalogue (OPSO uniquement, brief 29/09/2026) ──────────────
+    // Union avec OFFILOG_LIVE (8 498 produits) : on ajoute les EAN absents des
+    // meilleures ventes, avec leur prix live, leur rayon (table LIVE_CAT_MAP),
+    // leur photo, leur marque. Sans rang de vente → en fin de tri « ventes ».
+    if (OPSO && window.OFFILOG_LIVE && window.OFFILOG_LIVE.length) {
+      var bestEans = new Set();
+      items.forEach(function (it) { if (it.ean) bestEans.add(String(it.ean)); });
+      var extra = [];
+      window.OFFILOG_LIVE.forEach(function (p) {
+        if (p.ean && bestEans.has(String(p.ean))) return; // déjà dans les meilleures ventes
+        var b2 = {
+          id: 'live-' + p.id, name: p.nom, brand: p.marque, ean: p.ean, img: p.img,
+          cat: LIVE_CAT_MAP[p.cat] != null ? LIVE_CAT_MAP[p.cat] : '', url: p.url,
+          price: livePrix ? numOr0(livePrix[p.id]) : 0, rank: 0
+        };
+        extra.push(mapItem(b2));
+      });
+      items = items.concat(extra);
+    }
+
     byEan = new Map();
     itemsById = new Map();
     items.forEach(function (it) { if (it.ean) byEan.set(String(it.ean), it); itemsById.set(String(it.id), it); });
@@ -406,8 +489,8 @@
 
   function matchChip(it, k) {
     if (k === 'all') return true;
-    if (k === 'alerte') return it.alert;
-    if (k === 'pzcheaper') return it.pzCheaper;
+    if (k === 'alerte') return !OPSO && it.alert;         // chip retirée côté OPSO
+    if (k === 'pzcheaper') return !SANS_PHARMAZON && it.pzCheaper;
     if (k === 'sgcheaper') return it.sgCheaper;
     if (k === 'ocpcheaper') return it.ocpCheaper;
     if (k === 'leclercpub') return it.leclerc > 0;
@@ -432,10 +515,13 @@
     // semblait mal triée (4 333 places au-dessus de 1 524, puis 3 318). Un produit sans relevé
     // précédent n'a PAS un mouvement de 0 — il n'en a pas : il part en fin de liste
     // au lieu de se mêler aux produits réellement stables.
-    else if (S.sort === 'mvt') a.sort(function (x, y) { return kMvt(y) - kMvt(x) || x.rank - y.rank; });
+    else if (S.sort === 'mvt') a.sort(function (x, y) { return kMvt(y) - kMvt(x) || (x.rank || 1e9) - (y.rank || 1e9); });
     // Écart concurrent : l'alerte la plus grave d'abord (en euros sous ton achat).
-    else if (S.sort === 'ecart') a.sort(function (x, y) { return (y.ecart || 0) - (x.ecart || 0) || x.rank - y.rank; });
-    else a.sort(function (x, y) { return x.rank - y.rank; }); // ventes
+    // Jamais côté OPSO — la chip/tri/badge disparaissent avec elle (brief §4).
+    else if (!OPSO && S.sort === 'ecart') a.sort(function (x, y) { return (y.ecart || 0) - (x.ecart || 0) || x.rank - y.rank; });
+    // ventes : sans rang connu (catalogue complet OPSO, brief §1), le produit
+    // passe APRÈS les classés — jamais « avant le n°1 » comme le ferait un rang 0.
+    else a.sort(function (x, y) { return (x.rank || 1e9) - (y.rank || 1e9); });
     return a;
   }
   function counts(base) {
@@ -443,8 +529,12 @@
     CHIPS.forEach(function (ch) { if (c[ch.k] == null) c[ch.k] = 0; });
     for (var i = 0; i < base.length; i++) {
       var it = base[i];
-      if (it.alert) c.alerte++;
-      if (it.pzCheaper) c.pzcheaper++;
+      // Compteurs de chips : ne comptent que ce qui est réellement affiché —
+      // it.leclerc/it.drakkars sont déjà à 0 côté OPSO quand le prix ne
+      // qualifie pas (voir buildIndex), et pzCheaper/alert n'existent pas
+      // côté OPSO (SANS_PHARMAZON, achat toujours à 0).
+      if (!OPSO && it.alert) c.alerte++;
+      if (!SANS_PHARMAZON && it.pzCheaper) c.pzcheaper++;
       if (it.sgCheaper) c.sgcheaper++;
       if (it.ocpCheaper) c.ocpcheaper++;
       if (it.leclerc > 0) c.leclercpub++;
@@ -460,14 +550,15 @@
   // se retrouver en comptant les objets à l'écran.
   function brandStats() {
     var marques = Object.create(null), nm = 0;
-    var nOff = 0, nPhoto = 0;
+    var nOff = 0, nPhoto = 0, nPrix = 0;
     for (var i = 0; i < items.length; i++) {
       var it = items[i];
       if (it.brand && !marques[it.brand]) { marques[it.brand] = 1; nm++; }
       if (it.achat > 0) nOff++;
+      if (it.price > 0) nPrix++;
       if (it.img) nPhoto++;
     }
-    return { nProd: items.length, nMarques: nm, nOff: nOff, nPhoto: nPhoto };
+    return { nProd: items.length, nMarques: nm, nOff: nOff, nPrix: nPrix, nPhoto: nPhoto };
   }
 
   // La tête de marque : le logo, le dégradé relevé dessus, et ce que la
@@ -478,11 +569,19 @@
   function condKO() {
     try {
       var ko = V2.donneesProtegeesKO ? V2.donneesProtegeesKO() : [];
+      if (OPSO) return ko.indexOf('offilogbestprix') >= 0 || ko.indexOf('offiloglivprix') >= 0;
       return ko.indexOf('offilogcond') >= 0 || ko.indexOf('offilogbestprix') >= 0;
     } catch (e) { return false; }
   }
   function bandeauCond() {
     if (!condKO()) return '';
+    // Côté OPSO il n'existe pas de « prix d'achat » : le message parle du
+    // prix Offilog lui-même, pas d'une condition Intégral.
+    if (OPSO) {
+      return '<div class="off-cond-ko">' + ICO('alert', 18, 2) +
+        '<span><b>Les prix Offilog ne sont pas chargés.</b> Le catalogue et son rayon ' +
+        's\'affichent, mais les prix sont indisponibles pour l\'instant. Reconnectez-vous si ça persiste.</span></div>';
+    }
     return '<div class="off-cond-ko">' + ICO('alert', 18, 2) +
       '<span><b>Tes prix d\'achat ne sont pas chargés.</b> Le catalogue et les prix ' +
       'publics s\'affichent, mais la comparaison avec ton prix Offilog est indisponible ' +
@@ -504,8 +603,12 @@
             '<div class="offb-bl">La centrale parapharmacie d\'Intégral</div>' +
           '</div>' +
           '<div class="offb-ns">' +
-            n(st.nProd, 'produits suivis', 'les meilleures ventes') +
-            n(st.nOff, 'à ton prix d\'achat', 'prix Offilog connu') +
+            (OPSO
+              ? n(st.nProd, 'produits', 'catalogue complet')
+              : n(st.nProd, 'produits suivis', 'les meilleures ventes')) +
+            (OPSO
+              ? n(st.nPrix, 'à prix Offilog connu', 'prix affiché')
+              : n(st.nOff, 'à ton prix d\'achat', 'prix Offilog connu')) +
             n(st.nMarques, 'marques', 'dans la sélection') +
           '</div>' +
         '</div>' +
@@ -634,9 +737,12 @@
       ? '<span class="off-card-flag" title="Un concurrent est moins cher que ton prix d\'achat">' + ICO('alert', 13, 2.2) + ' Alerte prix</span>' : '';
     var concBelow = it.alert && it.minConc > 0
       ? '<span class="off-card-conc mono" title="Un concurrent public passe sous ton prix d\'achat Intégral">conc. ' + V2.fmtEur(it.minConc) + (it.achat > 0 ? ' &lt; achat ' + V2.fmtEur(it.achat) : '') + '</span>' : '';
+    // Pas de rang de vente (catalogue complet OPSO, brief §1) : aucune pastille
+    // « #0 » — la ligne rang/mouvement reste vide plutôt que fausse.
+    var rankHtml = it.hasRank ? '<span class="off-rank mono">#' + it.rank + '</span>' : '';
     return '<div class="off-card' + sel + alertCls + '" data-id="' + esc(it.id) + '" onclick="V2.offSelect(\'' + esc(it.id) + '\')">' +
       '<div class="off-card-media">' +
-        '<span class="off-rankrow"><span class="off-rank mono">#' + it.rank + '</span>' + mvtFlag + '</span>' +
+        (rankHtml || mvtFlag ? '<span class="off-rankrow">' + rankHtml + mvtFlag + '</span>' : '') +
         '<button class="off-mkt-add' + (onMkt ? ' on' : '') + '" onclick="event.stopPropagation();V2.offMktToggle(\'' + esc(it.id) + '\',this)" title="Ajouter à la fiche marketing">' + ICO(onMkt ? 'check' : 'plus', 15) + '</button>' +
         img +
         alertFlag +
@@ -649,6 +755,7 @@
           (it.sg && it.sg.price > 0 ? '<span class="off-card-pz' + (it.sgCheaper ? ' win' : '') + '" title="Tarif d\'achat Sagitta (HT)">Sagitta ' + V2.fmtEur(it.sg.price) + '</span>' : '') +
           (it.ocp && it.ocp.price > 0 ? '<span class="off-card-pz' + (it.ocpCheaper ? ' win' : '') + '" title="Prix net OCP, catalogue Les Incontournables (HT)">OCP ' + V2.fmtEur(it.ocp.price) + '</span>' : '') +
           (it.leclerc > 0 ? '<span class="off-card-lec' + (it.achat > 0 && it.leclerc < it.achat ? ' bad' : '') + '" title="Prix de vente au public chez E.Leclerc (TTC)">Leclerc ' + V2.fmtEur(it.leclerc) + '</span>' : '') +
+          (it.drakkars > 0 ? '<span class="off-card-drk" title="Prix de vente au public chez Pharmacie des Drakkars (TTC) · relevé du ' + esc(majLabel(window.DRAKKARS_PUB_MAJ)) + '">Drakkars ' + V2.fmtEur(it.drakkars) + '</span>' : '') +
           concBelow + '</div>' +
       '</div>' +
     '</div>';
@@ -687,7 +794,20 @@
         (it.achat > 0 ? '<span class="off-cmp-delta ' + (below ? 'bad' : 'ok') + '">' + (d >= 0 ? '+' : '') + V2.fmtEur(d) + '</span>' : '<span class="off-cmp-delta"></span>') +
       '</div>';
     }
-    return ref + rows + lec;
+    // Pharmacie des Drakkars (public TTC), avec la date du relevé — brief §2.
+    var drk = '';
+    if (it.drakkars > 0) {
+      var belowD = it.achat > 0 && it.drakkars < it.achat;
+      var dD = it.achat > 0 ? (it.drakkars - it.achat) : 0;
+      var majD = majLabel(window.DRAKKARS_PUB_MAJ);
+      drk = '<div class="off-cmp-row' + (belowD ? ' below' : '') + '">' +
+        '<span class="off-cmp-src"><span class="dot" style="background:#5E6673"></span>Pharmacie des Drakkars (public TTC)' +
+          (majD ? ' <i style="opacity:.65;font-weight:500">· relevé du ' + esc(majD) + '</i>' : '') + '</span>' +
+        '<span class="off-cmp-price ' + (belowD ? 'bad' : '') + ' mono">' + V2.fmtEur(it.drakkars) + '</span>' +
+        (it.achat > 0 ? '<span class="off-cmp-delta ' + (belowD ? 'bad' : 'ok') + '">' + (dD >= 0 ? '+' : '') + V2.fmtEur(dD) + '</span>' : '<span class="off-cmp-delta"></span>') +
+      '</div>';
+    }
+    return ref + rows + lec + drk;
   }
   function inspector(it) {
     var img = it.img ? '<div class="off-insp-img"><img data-imgprod src="' + esc(it.img) + '" loading="lazy" alt=""></div>' : '';
@@ -713,7 +833,7 @@
               : (avecPrix.length >= 2 ? '<div class="off-pz-note">Même prix sur les plateformes comparées</div>' : '')) +
       '</div>';
     }
-    var badges = '<span class="off-badge" style="--bc:var(--pil-froid)">#' + it.rank + ' ventes</span>' +
+    var badges = (it.hasRank ? '<span class="off-badge" style="--bc:var(--pil-froid)">#' + it.rank + ' ventes</span>' : '') +
       (it.cat && CHIP_BY_KEY[it.cat] ? '<span class="off-badge" style="--bc:' + CHIP_BY_KEY[it.cat].sc + '">' + esc(CHIP_BY_KEY[it.cat].label) + '</span>' : '') +
       (it.univers && it.univers !== 'Non classé' ? '<span class="off-badge" style="--bc:#6D4FC4">' + esc(it.univers) + '</span>' : '');
     return '<div class="off-insp' + (S.sel != null ? ' open' : '') + '">' +
@@ -729,7 +849,8 @@
         '<div class="off-kpi-grid">' +
           kpi('Prix Offilog', it.price > 0 ? V2.fmtEur(it.price) : '—', 'color-mix(in srgb,var(--pil-froid) 70%,black)') +
           kpi('Rayon', it.sousRayon ? esc(it.sousRayon) : '—') +
-          kpi('Achat IP (HT)', it.achat > 0 ? V2.fmtEur(it.achat) : '—', it.achat > 0 ? 'var(--ok)' : 'var(--muted-2)') +
+          // « Achat IP » = notre condition interne : jamais côté OPSO (brief §4).
+          (OPSO ? '' : kpi('Achat IP (HT)', it.achat > 0 ? V2.fmtEur(it.achat) : '—', it.achat > 0 ? 'var(--ok)' : 'var(--muted-2)')) +
           kpi('Concurrent mini', it.minConc > 0 ? V2.fmtEur(it.minConc) : '—', '') +
         '</div>' +
         marcheBlock(it) +
@@ -1014,6 +1135,8 @@
 
   // ── Chargement du fichier best-sellers (lazy, dans crm/v2/) ──
   var bestLoading = false, bestFail = false, offTried = false, pzTried = false, sgTried = false, ocpTried = false;
+  // Catalogue complet + prix Drakkars (OPSO uniquement) — 29/09/2026.
+  var liveTried = false, dkPubTried = false;
   function ensureBest(cb) {
     if (window.OFFILOG_BEST) { cb(); return; }
     if (bestLoading) return;
@@ -1346,6 +1469,7 @@
 
       '.off-card-lec{font-size:12px;font-weight:700;color:#0066B3;background:color-mix(in srgb,#0066B3 8%,#fff);border:1px solid color-mix(in srgb,#0066B3 24%,transparent);border-radius:7px;padding:1px 6px;font-variant-numeric:tabular-nums}',
       '.off-card-lec.bad{color:var(--c-rose-txt,#C2263F);background:color-mix(in srgb,#C2263F 8%,#fff);border-color:color-mix(in srgb,#C2263F 26%,transparent)}',
+      '.off-card-drk{font-size:12px;font-weight:700;color:#5E6673;background:color-mix(in srgb,#5E6673 8%,#fff);border:1px solid color-mix(in srgb,#5E6673 24%,transparent);border-radius:7px;padding:1px 6px;font-variant-numeric:tabular-nums}',
 
       // ══════════ LA CARTE, REGISTRE PARA ══════════
       // La photo prend la moitié de la carte et vit sur du blanc franc : un
@@ -1430,7 +1554,8 @@
         V2.loadFiles(['leclercpub', 'offilogcats', 'offilogmarche']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); });
       }
       // Prix Pharmazon (comparaison achat) : chargés UNE SEULE FOIS en tâche de fond
-      if (!window.PHARMAZON && !pzTried) {
+      // — jamais côté OPSO (SANS_PHARMAZON, conditions d'un tiers, brief 29/09/2026).
+      if (!SANS_PHARMAZON && !window.PHARMAZON && !pzTried) {
         pzTried = true;
         ensurePz(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); });
       }
@@ -1444,10 +1569,22 @@
         ocpTried = true;
         if (V2.loadFiles) { try { V2.loadFiles(['ocpprix']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); }); } catch (e) {} }
       }
+      // ── Tout le catalogue (OPSO uniquement) : catalogue complet (8 498 réf.,
+      // public) + son prix Offilog (protégé), en tâche de fond — brief 29/09/2026.
+      if (OPSO && !window.OFFILOG_LIVE && !liveTried) {
+        liveTried = true;
+        if (V2.loadFiles) { try { V2.loadFiles(['offiloglive', 'offiloglivprix']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; V2.render(); }); } catch (e) {} }
+      }
+      // Prix publics Pharmacie des Drakkars (léger, généré) — jamais côté CRM
+      // (Drakkars n'a de sens que pour la comparaison OPSO « jamais moins cher »).
+      if (OPSO && !window.DRAKKARS_PUB && !dkPubTried) {
+        dkPubTried = true;
+        if (V2.loadFiles) { try { V2.loadFiles(['drakkarspub']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; V2.render(); }); } catch (e) {} }
+      }
       // les deux morceaux (catalogue, prix protégés) arrivent dans un ordre
       // quelconque : on retente la fusion à chaque rendu, c'est idempotent.
       if (V2.fusionnerPrixBest) { try { V2.fusionnerPrixBest(); } catch (e) {} }
-      if (V2.fusionnerPrixPharmazon) { try { V2.fusionnerPrixPharmazon(); } catch (e) {} }
+      if (!SANS_PHARMAZON && V2.fusionnerPrixPharmazon) { try { V2.fusionnerPrixPharmazon(); } catch (e) {} }
       buildIndex();
 
       var base = filteredBase();
@@ -1482,6 +1619,7 @@
         if (f.k === 'all') return '';      // porté par « Tout le rayon »
         if (RAYON_K[f.k]) return '';       // porté par la bande des rayons
         var n = c[f.k] || 0;
+        if (f.k === 'pzcheaper' && SANS_PHARMAZON) return '';
         if (f.k === 'sgcheaper' && SANS_SAGITTA) return '';
         if (f.k === 'ocpcheaper' && SANS_OCP) return '';
         if (f.k !== 'pzcheaper' && f.k !== 'sgcheaper' && f.k !== 'ocpcheaper' && n === 0) return '';
@@ -1535,8 +1673,11 @@
             (mktChips ? '<div class="off-adv-l">Le marché</div>' +
               '<div class="v2-segs off-adv-segs">' + mktChips + '</div>' : '') +
             '<div class="off-adv-l">Trier</div>' +
+            // « Écart concurrent » disparaît côté OPSO avec la chip et le badge
+            // rouge qu'il sert (brief §4) — la comparaison à « notre achat » n'y
+            // a pas de sens.
             '<div class="off-sort">' + sortBtn('ventes', 'Meilleures ventes') + sortBtn('mvt', 'Progression') +
-              sortBtn('ecart', 'Écart concurrent') + sortBtn('prix_asc', 'Prix ↑') + sortBtn('prix_desc', 'Prix ↓') + '</div>' +
+              (OPSO ? '' : sortBtn('ecart', 'Écart concurrent')) + sortBtn('prix_asc', 'Prix ↑') + sortBtn('prix_desc', 'Prix ↓') + '</div>' +
           '</div>'
         : '';
 
@@ -1548,7 +1689,9 @@
           (RAYON_K[S.chip] ? sousRayons(sousDispo) : '') +
           '<div class="off-search">' + ICO('search', 19, 2) +
             '<input id="off-search-input" autocomplete="off" placeholder="Rechercher par produit, marque ou EAN…" value="' + qVal + '" oninput="V2.offSearch(this.value)">' + clrBtn + '</div>' +
-          verdictBand(filtered) +
+          // La bande verdict (alerte/bien placé) compare au prix d'achat Intégral :
+          // aucun sens côté OPSO, où ce prix n'existe pas — brief §4.
+          (OPSO ? '' : verdictBand(filtered)) +
           '<div class="off-toolbar">' +
             '<div class="off-count"><b class="mono">' + V2.fmtNum(total) + '</b> produit' + (total > 1 ? 's' : '') + ' · ' + ctxLabel + '</div>' +
             (V2.offCatalogue ? '<button type="button" class="v2-btn v2-btn-primary" onclick="V2.offCatalogue()">' + ICO('download', 15, 2) + ' Catalogue client</button>' : '') +
