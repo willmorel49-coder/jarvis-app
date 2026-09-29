@@ -724,7 +724,7 @@
   // grossistes et actualité arrivent de v2-grossistes.js (150 + 76 Ko).
   var CHIFFRES = null;
   function chiffrePorte(k) {
-    if (k === 'comparateur') return '<b class="num">' + CMP.length + '</b> concurrents sur une seule ligne';
+    if (k === 'comparateur') return '<b class="num">' + CMP_COL.length + '</b> concurrents sur une seule ligne';
     if (k === 'prix') { var n = ORDRE.filter(function (x) { return x !== 'etudes'; }).length; return '<b class="num">' + n + '</b> catalogues de concurrents'; }
     if (!CHIFFRES) return '&nbsp;';
     if (k === 'acteurs') return '<b class="num">' + CHIFFRES.acteurs + '</b> acteurs · <b class="num">' + CHIFFRES.groupes + '</b> groupes';
@@ -775,9 +775,18 @@
   // Seules les sources à prix d'achat ; Cooper (préparatoire) n'y croise
   // aucun de nos produits vendus, il reste dans son onglet.
   var CMP = ['sagitta', 'ocp', 'etradi', 'alliance', 'pharmazon'];
+  // 29/09/2026 (soir) — décision de Will : OCP Incontournables n'est plus un
+  // concurrent à part, ses prix entrent dans eTradi (qui appartient à OCP).
+  // CMP reste la liste des sources à TÉLÉCHARGER ; CMP_COL est celle des
+  // COLONNES : « OCP » = le moins cher des deux catalogues.
+  // Variante retenue : « V1 mixé avec V4 » — tableau trié au clic, écart en %
+  // de NOTRE net, couleur de case proportionnelle à l'écart, colonne Enjeu,
+  // export Excel de ce qui est à l'écran.
+  var CMP_COL = ['sagitta', 'ocp', 'alliance', 'pharmazon'];
+  var COL_NOM = { sagitta: 'Sagitta', ocp: 'OCP', alliance: 'Alliance', pharmazon: 'Pharmazon' };
   var CMP_PAS = 100;
   var CMP_FAM = [['all', 'Toutes familles'], ['pr', 'Princeps remboursables'], ['nr', 'Non remboursables'], ['gen', 'Génériques'], ['biosim', 'Biosimilaires']];
-  S.cmp = { q: '', fam: 'all', perdus: false, tous: false, vus: CMP_PAS };
+  S.cmp = { q: '', fam: 'all', perdus: false, tous: false, vus: CMP_PAS, tri: null };
   var CMPC = null;
   function cmpNet(k, code) {
     if (!SRC[k].charge()) return null;
@@ -793,72 +802,104 @@
     var l = [];
     ps.forEach(function (r) {
       if (!r || !r.c || !(r.n > 0)) return;
-      var c = String(r.c), px = {}, nb = 0, min = null, qui = '';
-      CMP.forEach(function (k) { var v = cmpNet(k, c); if (v > 0) { px[k] = v; nb++; if (min == null || v < min) { min = v; qui = k; } } });
+      var c = String(r.c), px = {}, nb = 0, min = null, qui = '', srcOcp = '';
+      var io = cmpNet('ocp', c), ie = cmpNet('etradi', c);
+      if (io > 0 || ie > 0) { if (io > 0 && !(ie > 0 && ie <= io)) { px.ocp = io; srcOcp = 'Incontournables'; } else { px.ocp = ie; srcOcp = 'eTradi'; } }
+      ['sagitta', 'alliance', 'pharmazon'].forEach(function (k) { var v = cmpNet(k, c); if (v > 0) px[k] = v; });
+      CMP_COL.forEach(function (k) { var v = px[k]; if (v > 0) { nb++; if (min == null || v < min) { min = v; qui = k; } } });
       var n = nous(c), ip = n && n.ip > 0 ? n.ip : null, v = '';
       if (ip && nb && !n.exclu) v = Math.abs(min - ip) < 0.005 ? 'egal' : (ip < min ? 'win' : 'lose');
-      l.push({ c: c, d: r.d || ('CIP ' + c), n: r.n, f: r.f || '', ip: ip, exclu: !!(n && n.exclu), px: px, nb: nb, min: min, qui: qui, v: v, ec: (ip && nb) ? Math.round((min - ip) * 100) / 100 : null });
+      var ec = (ip && nb) ? Math.round((min - ip) * 100) / 100 : null;
+      l.push({ c: c, d: r.d || ('CIP ' + c), n: r.n, f: r.f || '', ip: ip, exclu: !!(n && n.exclu), px: px, srcOcp: srcOcp, nb: nb, min: min, qui: qui, v: v, ec: ec,
+        // écart en % de NOTRE net (même base que la médiane) ; enjeu = écart × pharmacies, seulement quand on perd
+        ecp: (ip && nb) ? Math.round((min - ip) / ip * 1000) / 10 : null, enjeu: v === 'lose' ? Math.round(-ec * r.n * 100) / 100 : 0 });
     });
     l.sort(function (a, b) { return b.n - a.n; });
+    l.forEach(function (x, i) { x.rang = i + 1; });
     CMPC = { cle: cle, l: l };
     return l;
   }
   function cmpFiltre(l) {
     var o = S.cmp, q = norm(o.q.trim()), mots = q ? q.split(/\s+/) : [];
-    return l.filter(function (x) {
+    l = l.filter(function (x) {
       if (!o.tous && !x.nb) return false;
       if (o.fam === 'pr' ? x.f.indexOf('pr_') !== 0 : (o.fam !== 'all' && x.f !== o.fam)) return false;
       if (o.perdus && x.v !== 'lose') return false;
       if (mots.length) { var h = norm(x.d) + ' ' + x.c; for (var i = 0; i < mots.length; i++) if (h.indexOf(mots[i]) < 0) return false; }
       return true;
     });
+    var t = o.tri;
+    if (t) {
+      var val = function (x) { return t.k === 'n' ? x.n : t.k === 'ip' ? x.ip : t.k === 'ecp' ? x.ecp : t.k === 'enjeu' ? x.enjeu : x.px[t.k]; };
+      l = l.slice().sort(function (a, b) {
+        var va = val(a), vb = val(b), na = !(va != null && va === va), nb = !(vb != null && vb === vb);
+        if (na || nb) return na - nb;
+        return t.desc ? vb - va : va - vb;
+      });
+    }
+    return l;
   }
   var FAM_TAG = { pr_low: 'Princeps < 4,33 €', pr_mid: 'Princeps', pr_high: 'Princeps > 468 €', nr: 'Non remboursable', gen: 'Générique', biosim: 'Biosimilaire' };
-  function cmpEnTete(k) {
-    var etat = SRC[k].charge() ? '<small>' + (k === 'alliance' ? 'prix 2025' : 'net') + '</small>'
-      : (echec(k) ? '<small><button type="button" class="cc-lien" onclick="event.stopPropagation();V2.ccRetry(\'' + k + '\')">réessayer</button></small>' : '<small aria-busy="true">chargement…</small>');
-    return '<th class="num cmp-src">' + esc(COURT[k]) + etat + '</th>';
+  function cmpTh(k, t, small, cls) {
+    var tr = S.cmp.tri, on = tr && tr.k === k;
+    return '<th class="num cmp-tri' + (cls ? ' ' + cls : '') + '" onclick="V2.ccCmpTri(\'' + k + '\')" title="Trier"' + (on ? ' aria-sort="' + (tr.desc ? 'descending' : 'ascending') + '"' : '') + '>' +
+      t + (on ? '<span class="cmp-fl" aria-hidden="true">' + (tr.desc ? '↓' : '↑') + '</span>' : '') + (small ? '<small>' + small + '</small>' : '') + '</th>';
   }
+  function cmpEnTete(k) {
+    var ks = k === 'ocp' ? ['ocp', 'etradi'] : [k], rate = ks.filter(echec)[0], pret = ks.every(function (x) { return SRC[x].charge(); });
+    if (!pret) return '<th class="num cmp-src">' + esc(COL_NOM[k]) + (rate ? '<small><button type="button" class="cc-lien" onclick="event.stopPropagation();V2.ccRetry(\'' + rate + '\')">réessayer</button></small>' : '<small aria-busy="true">chargement…</small>') + '</th>';
+    return cmpTh(k, esc(COL_NOM[k]), k === 'alliance' ? 'prix 2025' : (k === 'ocp' ? 'eTradi + Incont.' : 'net'), 'cmp-src');
+  }
+  function cmpChaleur(p, ip) {
+    var pc = Math.min(20, Math.abs((p - ip) / ip * 100)), a = 0.07 + pc / 20 * 0.33;
+    return p < ip ? 'background:rgba(224,85,110,' + a.toFixed(3) + ')' : 'background:rgba(30,158,106,' + (a * 0.8).toFixed(3) + ')';
+  }
+  function cmpPct(v) { return (v < 0 ? '−' : v > 0 ? '+' : '') + String(Math.abs(Math.round(v * 10) / 10)).replace('.', ',') + ' %'; }
   function cmpCorps() {
     var tout = cmpLignes(), l = cmpFiltre(tout), vus = l.slice(0, S.cmp.vus);
     var maxN = tout.length ? tout[0].n : 1, g = 0, p = 0, e = 0, hv = 0;
     l.forEach(function (x) { if (x.v === 'win') g++; else if (x.v === 'lose') p++; else if (x.v === 'egal') e++; else if (x.exclu && x.nb) hv++; });
     var manque = CMP.filter(function (k) { return !SRC[k].charge(); });
-    var bilan = '<div class="cc-bilan"><b>' + num(l.length) + '</b> produit' + (l.length > 1 ? 's' : '') + (S.cmp.tous ? '' : ' vendus chez nous et relevés chez au moins un concurrent') +
+    var bilan = '<div class="cc-bilan cmp-bilan"><div><b>' + num(l.length) + '</b> produit' + (l.length > 1 ? 's' : '') + (S.cmp.tous ? '' : ' vendus chez nous et relevés chez au moins un concurrent') +
       ' · <span class="win">' + num(g) + ' où Intégral est le moins cher</span> · <span class="lose">' + num(p) + ' où un concurrent est moins cher</span> · ' + num(e) + ' à égalité' +
       (hv ? ' · ' + num(hv) + ' génériques ou biosimilaires hors verdict' : '') +
-      (manque.length ? '<br><span class="cmp-att">En attente : ' + manque.map(function (k) { return esc(COURT[k]); }).join(', ') + ' — les chiffres bougeront à leur arrivée.</span>' : '') + '</div>';
-    var head = '<tr><th class="num">#</th><th>Produit</th><th class="num">Pharmacies<small>qui commandent</small></th><th class="num cmp-nous">Intégral<small>notre net</small></th>' +
-      CMP.map(cmpEnTete).join('') + '<th>Le moins cher</th></tr>';
-    var rangs = {}; tout.forEach(function (x, i) { rangs[x.c] = i + 1; });
+      (manque.length ? '<br><span class="cmp-att">En attente : ' + manque.map(function (k) { return esc(COURT[k]); }).join(', ') + ' — les chiffres bougeront à leur arrivée.</span>' : '') + '</div>' +
+      (l.length ? '<button type="button" class="cc-btn prim cmp-exp" onclick="V2.ccCmpExporter()">' + ICO('download', 18, 2.2) + 'Exporter ces ' + num(l.length) + ' produits (Excel)</button>' : '') + '</div>';
+    var head = '<tr><th class="num">#</th><th>Produit</th>' + cmpTh('n', 'Pharmacies', 'qui commandent') + cmpTh('ip', 'Intégral', 'notre net', 'cmp-nous') +
+      CMP_COL.map(cmpEnTete).join('') + cmpTh('ecp', 'Le moins cher', 'écart €, %') + cmpTh('enjeu', 'Enjeu', 'écart × pharmacies') + '</tr>';
     var body = vus.map(function (x) {
-      var cells = CMP.map(function (k) {
+      var cells = CMP_COL.map(function (k) {
         var v = x.px[k];
-        if (!(v > 0)) return '<td class="num mono cmp-p vide" data-label="' + esc(COURT[k]) + '"><span class="cc-mute">—</span></td>';
-        var cls = (x.ip && !x.exclu) ? (v < x.ip - 0.004 ? ' lo' : (v > x.ip + 0.004 ? ' hi' : '')) : '';
-        return '<td class="num mono cmp-p' + cls + (k === x.qui && x.v === 'lose' ? ' best' : '') + '" data-label="' + esc(COURT[k]) + '">' + eur(v) + '</td>';
+        if (!(v > 0)) return '<td class="num mono cmp-p vide" data-label="' + esc(COL_NOM[k]) + '"><span class="cc-mute">—</span></td>';
+        var cmp = x.ip && !x.exclu, cls = cmp ? (v < x.ip - 0.004 ? ' lo' : (v > x.ip + 0.004 ? ' hi' : '')) : '';
+        var chaud = cmp && cls ? ' style="' + cmpChaleur(v, x.ip) + '"' : '';
+        return '<td class="num mono cmp-p' + cls + (k === x.qui && x.v === 'lose' ? ' best' : '') + '" data-label="' + esc(COL_NOM[k]) + '"' + chaud + '>' + eur(v) +
+          (chaud ? '<span class="cmp-pc">' + cmpPct((v - x.ip) / x.ip * 100) + '</span>' : '') +
+          (k === 'ocp' && x.srcOcp === 'Incontournables' ? '<span class="cmp-src-o">Incontournables</span>' : '') + '</td>';
       }).join('');
-      var ver = x.v === 'win' ? '<span class="cc-v win" title="Intégral est le moins cher, ' + esc(eur(x.ec)) + ' sous le meilleur concurrent">Intégral −' + eur(x.ec) + '</span>'
-        : x.v === 'lose' ? '<span class="cc-v lose" title="' + esc(COURT[x.qui]) + ' est moins cher que nous de ' + esc(eur(-x.ec)) + '">' + esc(COURT[x.qui]) + ' −' + eur(-x.ec) + '</span>'
+      var ver = x.v === 'win' ? '<span class="cc-v win" title="Intégral est le moins cher, ' + esc(eur(x.ec)) + ' sous le meilleur concurrent">Intégral −' + eur(x.ec) + ' · ' + cmpPct(-x.ecp) + '</span>'
+        : x.v === 'lose' ? '<span class="cc-v lose" title="' + esc(COL_NOM[x.qui]) + ' est moins cher que nous de ' + esc(eur(-x.ec)) + '">' + esc(COL_NOM[x.qui]) + ' −' + eur(-x.ec) + ' · ' + cmpPct(x.ecp) + '</span>'
         : x.v === 'egal' ? '<span class="cc-v egal">Même prix</span>'
         : (x.exclu && x.nb ? '<span class="cc-mute" title="Générique ou biosimilaire : remises en direct labo, pas comparables">hors verdict</span>' : '<span class="cc-mute">—</span>');
       return '<tr class="cc-p' + (x.v ? ' cc-' + x.v : '') + '" onclick="V2.ccOuvrir(\'' + safeArg(x.c) + '\')" title="Tous les prix de ce produit">' +
-        '<td class="num mono cmp-rg" data-label="Rang">' + rangs[x.c] + '</td>' +
+        '<td class="num mono cmp-rg" data-label="Rang">' + x.rang + '</td>' +
         '<td class="cc-name" data-label="Produit"><div class="cmp-d">' + esc(x.d) + '</div><div class="cmp-c">' + esc(x.c) + (FAM_TAG[x.f] ? ' · ' + esc(FAM_TAG[x.f]) : '') + '</div></td>' +
         '<td class="num" data-label="Pharmacies"><div class="cmp-n"><b>' + num(x.n) + '</b><span class="cmp-bar"><i style="width:' + Math.max(2, Math.round(x.n / maxN * 100)) + '%"></i></span></div></td>' +
         '<td class="num mono cmp-nous" data-label="Intégral">' + (x.ip ? eur(x.ip) : '<span class="cc-mute">—</span>') + '</td>' +
-        cells + '<td data-label="Le moins cher">' + ver + '</td></tr>';
+        cells + '<td data-label="Le moins cher">' + ver + '</td>' +
+        '<td class="num mono cmp-enj' + (x.enjeu ? '' : ' vide') + '" data-label="Enjeu">' + (x.enjeu ? eur(x.enjeu) : '<span class="cc-mute">—</span>') + '</td></tr>';
     }).join('');
-    if (!vus.length) body = '<tr><td colspan="' + (CMP.length + 5) + '" style="padding:26px;text-align:center;color:var(--muted)">' + (tout.length ? 'Aucun produit avec ces filtres.' : 'Nos ventes réseau ne sont pas encore chargées.') + '</td></tr>';
+    if (!vus.length) body = '<tr><td colspan="' + (CMP_COL.length + 6) + '" style="padding:26px;text-align:center;color:var(--muted)">' + (tout.length ? 'Aucun produit avec ces filtres.' : 'Nos ventes réseau ne sont pas encore chargées.') + '</td></tr>';
     var plus = l.length > vus.length ? '<button type="button" class="v2-btn cmp-plus" onclick="V2.ccCmpPlus()">Voir ' + Math.min(CMP_PAS, l.length - vus.length) + ' produits de plus <span class="cc-mute">(' + num(vus.length) + ' sur ' + num(l.length) + ')</span></button>' : '';
-    return bilan + '<div class="cc-tablewrap"><table class="v2-table cc-table cmp-t"><thead>' + head + '</thead><tbody>' + body + '</tbody></table></div>' + plus;
+    var leg = '<p class="cmp-leg">Écarts en % de notre net. La couleur d\'une case s\'intensifie avec l\'écart, jusqu\'à 20 %. Enjeu : écart multiplié par le nombre de pharmacies qui commandent le produit chez nous (une boîte chacune) — un ordre de grandeur pour savoir par où commencer, pas un chiffre d\'affaires. Un titre de colonne se clique pour trier.</p>';
+    return bilan + '<div class="cc-tablewrap"><table class="v2-table cc-table cmp-t"><thead>' + head + '</thead><tbody>' + body + '</tbody></table></div>' + plus + leg;
   }
   function comparateurHtml() {
     var o = S.cmp, puce = function (on, fn, t) { return '<button type="button" class="v2-seg' + (on ? ' on' : '') + '" onclick="' + fn + '">' + t + '</button>'; };
     return '<section class="cc-fiche cmp">' +
       '<div class="cc-head"><div><span class="cc-eyebrow"><i class="dot"></i>Tous les concurrents côte à côte</span><h1 class="v2-page-title">Le comparateur de prix</h1>' +
       '<p class="v2-page-sub">Nos produits les plus commandés en tête (nombre de pharmacies clientes qui les prennent), notre net en face du net de chaque concurrent. En rouge, un concurrent moins cher que nous ; en vert, plus cher. Une ligne s\'ouvre en carte « tous les prix ».</p></div>' +
-      '<div class="cc-meta"><span>Sources <b>' + CMP.map(function (k) { return esc(COURT[k]); }).join(' · ') + '</b></span><span>Alliance : shortlist <b>févr.-avr. 2025</b></span></div></div>' +
+      '<div class="cc-meta"><span>Sources <b>' + CMP_COL.map(function (k) { return esc(COL_NOM[k]); }).join(' · ') + '</b></span><span>OCP = eTradi + Incontournables, le moins cher des deux</span><span>Alliance : shortlist <b>févr.-avr. 2025</b></span></div></div>' +
       '<div class="cc-tools"><div class="cc-search">' + ICO('search', 15, 2) + '<input id="cc-cmpq" type="search" placeholder="Produit ou code…" value="' + esc(o.q) + '" oninput="V2.ccCmpQ(this.value)" autocomplete="off"></div></div>' +
       '<div class="v2-segs">' + CMP_FAM.map(function (f) { return puce(o.fam === f[0], 'V2.ccCmp(\'fam\',\'' + f[0] + '\')', esc(f[1])); }).join('') + '</div>' +
       '<div class="v2-segs cmp-opts">' + puce(o.perdus, 'V2.ccCmp(\'perdus\')', 'Seulement où un concurrent est moins cher') + puce(o.tous, 'V2.ccCmp(\'tous\')', 'Montrer aussi les produits sans prix concurrent') + '</div>' +
@@ -869,6 +910,26 @@
   V2.ccCmpQ = function (v) { S.cmp.q = v; S.cmp.vus = CMP_PAS; clearTimeout(cmpTimer); cmpTimer = setTimeout(rerenderCmp, 160); };
   V2.ccCmp = function (k, v) { if (k === 'fam') S.cmp.fam = v; else S.cmp[k] = !S.cmp[k]; S.cmp.vus = CMP_PAS; V2.render(); };
   V2.ccCmpPlus = function () { S.cmp.vus += CMP_PAS; rerenderCmp(); };
+  // 1er clic : décroissant ; 2e : croissant ; 3e : retour au classement par pharmacies
+  V2.ccCmpTri = function (k) { var t = S.cmp.tri; S.cmp.tri = t && t.k === k ? (t.desc ? { k: k, desc: false } : null) : { k: k, desc: true }; S.cmp.vus = CMP_PAS; rerenderCmp(); };
+  // Export : ce qui est à l'écran (filtres + tri), ouvert tel quel par Excel (séparateur ;, BOM UTF-8, virgule décimale).
+  // INTERNE : conditions de tiers, jamais dans un document remis à une officine.
+  V2.ccCmpExporter = function () {
+    var l = cmpFiltre(cmpLignes()), f = function (v) { return v == null ? '' : String(v).replace('.', ','); };
+    var q = function (s) { s = String(s == null ? '' : s); return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    var tete = ['Rang', 'CIP 13', 'Produit', 'Famille', 'Pharmacies qui commandent', 'Net Intégral'].concat(CMP_COL.map(function (k) { return 'Net ' + COL_NOM[k]; }),
+      ['Catalogue OCP', 'Le moins cher', 'Écart € (+ = nous plus cher)', 'Écart % de notre net', 'Enjeu € (écart × pharmacies)']);
+    var lignes = l.map(function (x) {
+      return [x.rang, x.c, x.d, FAM_TAG[x.f] || '', x.n, f(x.ip)].concat(CMP_COL.map(function (k) { return f(x.px[k]); }),
+        [x.srcOcp, x.v === 'win' ? 'Intégral' : x.v === 'egal' ? 'Égalité' : x.v === 'lose' ? COL_NOM[x.qui] : (x.exclu && x.nb ? 'Hors verdict' : ''),
+          f(x.ec == null ? null : -x.ec), f(x.ecp == null ? null : -x.ecp), f(x.enjeu || '')]).map(q).join(';');
+    });
+    var o = S.cmp, nom = 'comparateur' + (o.perdus ? '-perdus' : '') + (o.fam !== 'all' ? '-' + o.fam : '') + (o.q.trim() ? '-' + norm(o.q.trim()).replace(/[^a-z0-9]+/g, '-') : '');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['﻿' + tete.map(q).join(';') + '\n' + lignes.join('\n') + '\n'], { type: 'text/csv;charset=utf-8' }));
+    a.download = nom.replace(/-+$/, '') + '.csv';
+    document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  };
 
   // ── Actions ──────────────────────────────────────────────────────────
   var qTimer = null, cqTimer = null;
@@ -1166,9 +1227,15 @@
       '.cmp-n{display:flex;flex-direction:column;align-items:flex-end;gap:4px}.cmp-n b{font-size:14px}.cmp-bar{display:block;width:64px;height:4px;border-radius:2px;background:var(--line);overflow:hidden}.cmp-bar i{display:block;height:100%;background:var(--ip-blue);border-radius:2px}',
       '.cmp-p.lo{color:#9E2A46;font-weight:700}.cmp-p.hi{color:#0B6B45}.cmp-p.best{box-shadow:inset 0 -2px 0 #C8385A}',
       '.cmp-att{color:var(--muted);font-size:12.5px}',
+      '.cmp-t th.cmp-tri{cursor:pointer;user-select:none}.cmp-t th.cmp-tri:hover{color:var(--ip-ink)}.cmp-fl{color:var(--ip-blue);margin-left:3px}',
+      '.cmp-pc{display:block;font-size:11.5px;font-weight:600;margin-top:1px}.cmp-src-o{display:block;font-family:var(--font);font-size:11px;font-weight:550;color:var(--muted)}',
+      '.cmp-enj{color:#9E2A46;font-weight:700;white-space:nowrap}',
+      '.cmp-bilan{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.cmp-exp{white-space:nowrap}',
+      '.cmp-leg{margin:12px 0 0;font-size:12.5px;line-height:1.5;color:var(--muted)}',
       '.cmp-plus{display:block;margin:14px auto 0}',
       '@media (max-width:700px){.cc-wrap.cmp-w .cc-tablewrap{overflow:visible}.cmp-t,.cmp-t tbody{display:block;width:100%}.cmp-t tr{padding:10px 6px}',
       '.cmp-t td{align-items:center;padding:5px 8px}.cmp-t td:before{text-align:left}.cmp-t td.vide,.cmp-t td.cmp-rg{display:none}',
+      '.cmp-exp{width:100%;justify-content:center}.cmp-pc{display:inline;margin-left:6px}',
       '.cmp-t td.cc-name{display:block}.cmp-t td.cc-name:before{display:none}.cmp-d{min-width:0;max-width:none;font-size:15px}',
       '.cmp-n{flex-direction:row;align-items:center;gap:8px}.cmp-t td.cmp-nous{background:rgba(0,80,230,.05);border-radius:8px}}',
       '@media (prefers-reduced-motion:reduce){.cc-fiche,.cc-ray .rb i,.cc-veil,.cc-panel,.cc-face,.cc-cres{animation:none !important}.cc-wrap *,.cc-panel *,.cc-face *{transition:none !important}}',
