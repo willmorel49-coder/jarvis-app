@@ -138,7 +138,8 @@
 
     function row(r) {
       var deltaTxt = '';
-      if (r.prevCa > 0) deltaTxt = '<span class="v2-row-meta">' + pct1((r.lastCa - r.prevCa) / r.prevCa * 100) + ' vs mois préc.</span>';
+      // Un écart arrondi à 0 % n'apprend rien (lignes réparties à parts égales) : on le tait.
+      if (r.prevCa > 0 && Math.round((r.lastCa - r.prevCa) / r.prevCa * 1000)) deltaTxt = '<span class="v2-row-meta">' + pct1((r.lastCa - r.prevCa) / r.prevCa * 100) + ' vs mois préc.</span>';
       else if (r.lastCa > 0) deltaTxt = '<span class="v2-row-meta">nouveau ce mois-ci</span>';
       return '<a class="v2-row" onclick="V2.go(\'opsopharmacies\',\'' + esc(r.p.id) + '\')">' +
         '<span class="v2-row-dot" style="background:' + esc(r.p.color || '#11a63c') + '"></span>' +
@@ -330,22 +331,68 @@
         return '<button class="v2-tab' + (achTab === k ? ' on' : '') + '" onclick="V2.opsoAchTab(\'' + k + '\')">' + esc(CAT_LABELS[k]) + ' (' + D.byCat[k] + ')</button>';
       }).join('') : '');
 
-    function gaugeRow(it, idx2) {
-      var pct = NB.pharmaClientes ? Math.min(100, Math.round(it.n / NB.pharmaClientes * 100)) : 0;
-      var evo = '';
-      if (it.prevCa > 0) evo = '<span class="opf-evo ' + (it.lastCa >= it.prevCa ? 'up' : 'dn') + '">' + pct1((it.lastCa - it.prevCa) / it.prevCa * 100) + '</span>';
-      return '<div class="v2-row" style="cursor:default">' +
-        '<span class="mono" style="color:var(--muted);width:22px;flex:none">' + (idx2 + 1) + '</span>' +
-        '<div style="flex:1;min-width:0">' +
-          '<div class="v2-row-name">' + esc(it.d) + '</div>' +
-          '<div class="opf-gauge-row"><span class="opf-gauge"><span class="opf-gauge-fill" style="width:' + pct + '%"></span></span>' +
-          '<span class="v2-row-meta">' + it.n + ' / ' + NB.pharmaClientes + ' pharmacies</span>' + evo + '</div>' +
-        '</div>' +
-        '<div style="text-align:right"><span class="v2-row-val">' + euros(it.ca) + '</span><div class="v2-row-meta">' + it.boites + ' boîte' + (it.boites > 1 ? 's' : '') + '</div></div>' +
+    // 2ᵉ passe (29/09/2026) : plus de badge d'évolution — sur ces données il
+    // valait « 0 % » presque partout (lignes injectées réparties à parts égales
+    // sur les mois, cf. opso-groupement.js), du bruit sur chaque ligne.
+    var NC = NB.pharmaClientes || 0;
+    function nPh(n) { return n + ' pharmacie' + (n > 1 ? 's' : ''); }
+    // Une pastille par pharmacie cliente (pleine = elle commande ce produit) —
+    // se lit d'un coup d'œil ; au-delà de 24 clientes, une jauge.
+    function partage(n) {
+      if (NC > 0 && NC <= 24) {
+        var s = '';
+        for (var i = 0; i < NC; i++) s += '<i' + (i < n ? ' class="on"' : '') + '></i>';
+        return '<span class="opf-dots" aria-hidden="true">' + s + '</span>';
+      }
+      var pct = NC ? Math.min(100, Math.round(n / NC * 100)) : 0;
+      return '<span class="opf-gauge" aria-hidden="true"><span class="opf-gauge-fill" style="width:' + pct + '%"></span></span>';
+    }
+    function vignette(it, cls) {
+      var src = photoDe(it.code);
+      var ini = esc((it.d || '?').replace(/[^A-Za-zÀ-ÿ0-9]/g, '').slice(0, 2).toUpperCase());
+      return '<span class="' + cls + '">' +
+        (src ? '<img src="' + esc(src) + '" loading="lazy" alt="" onerror="this.remove()">' : '') +
+        '<b>' + ini + '</b></span>';
+    }
+    function carte(it, i) {
+      return '<div class="opf-pod">' +
+        '<span class="opf-pod-rk mono">' + (i + 1) + '</span>' +
+        vignette(it, 'opf-pod-img') +
+        '<div class="opf-pod-name">' + esc(it.d) + '</div>' +
+        '<div class="opf-pod-n"><span class="mono">' + it.n + '</span><span> sur ' + NC + ' pharmacies</span></div>' +
+        partage(it.n) +
+        '<div class="opf-pod-foot"><span class="mono">' + euros(it.ca) + '</span><span>' + it.boites + ' boîte' + (it.boites > 1 ? 's' : '') + '</span></div>' +
       '</div>';
     }
+    function ligne(it, rk) {
+      return '<div class="v2-row opf-li" style="cursor:default">' +
+        '<span class="mono opf-li-rk">' + rk + '</span>' +
+        vignette(it, 'opf-thumb') +
+        '<div style="flex:1;min-width:0">' +
+          '<div class="v2-row-name">' + esc(it.d) + '</div>' +
+          '<div class="opf-gauge-row">' + partage(it.n) + '<span class="v2-row-meta">' + it.n + ' / ' + NC + '</span></div>' +
+        '</div>' +
+        '<div style="text-align:right;flex:none"><span class="v2-row-val">' + euros(it.ca) + '</span><div class="v2-row-meta">' + it.boites + ' boîte' + (it.boites > 1 ? 's' : '') + '</div></div>' +
+      '</div>';
+    }
+    // Podium = les 6 premiers de la liste filtrée ; le reste est regroupé par
+    // nombre de pharmacies (« commandé par 5 pharmacies »…), pas une liste plate.
+    var nPod = achSearch ? 0 : Math.min(6, shown.length);
+    var podium = shown.slice(0, nPod), reste = shown.slice(nPod);
+    var groupes = '', curN = null, buf = '';
+    reste.forEach(function (it, j) {
+      if (it.n !== curN) {
+        if (buf) groupes += buf + '</div>';
+        curN = it.n;
+        var nb = list.filter(function (x) { return x.n === curN; }).length;
+        buf = '<div class="v2-card opf-grp"><div class="v2-card-head"><span class="v2-card-t">Commandé' + (nb > 1 ? 's' : '') + ' par ' + nPh(curN) + '</span><span class="v2-row-meta">' + nb + ' produit' + (nb > 1 ? 's' : '') + '</span></div>';
+      }
+      buf += ligne(it, nPod + j + 1);
+    });
+    if (buf) groupes += buf + '</div>';
 
     injectAchStyle();
+    ensurePhotos();
     root.innerHTML = V2.topbar({ back: true }) +
       '<div class="v2-wrap opf-page">' +
         '<div class="v2-page-title">Meilleurs achats</div>' +
@@ -356,9 +403,9 @@
           '<button class="v2-btn" onclick="V2.opsoAchExport()">' + ICO('download', 16) + ' Exporter (CSV)</button>' +
         '</div>' +
         '<div class="v2-tabs" style="overflow-x:auto;margin-bottom:14px">' + tabsHtml + '</div>' +
-        '<div class="v2-card"><div class="v2-card-head"><span class="v2-card-t">' + list.length + ' référence' + (list.length > 1 ? 's' : '') + '</span></div>' +
-          (shown.length ? shown.map(gaugeRow).join('') : '<div class="v2-empty"><div class="v2-empty-t">Aucun résultat</div></div>') +
-        '</div>' +
+        '<div class="opf-count v2-row-meta">' + list.length + ' référence' + (list.length > 1 ? 's' : '') + '</div>' +
+        (podium.length ? '<div class="opf-pod-t">Le socle du réseau · les produits commandés par le plus de pharmacies</div><div class="opf-pods">' + podium.map(carte).join('') + '</div>' : '') +
+        (shown.length ? groupes : '<div class="v2-card"><div class="v2-empty"><div class="v2-empty-t">Aucun résultat</div></div></div>') +
         (list.length > shown.length ? '<div style="text-align:center;margin-top:16px"><button class="v2-btn" onclick="V2.opsoAchMore()">Voir plus (' + (list.length - shown.length) + ' de plus)</button></div>' : '') +
       '</div>';
 
@@ -374,6 +421,50 @@
     }
   }
 
+  // ── Photos produit : fiches Offilog (EAN) + MKT_IMG (CIP13), les mêmes que
+  // l'écran Offilog et les supports Marketing. Chargées APRÈS le premier
+  // affichage (2,3 Mo) ; la liste se redessine quand elles arrivent. Sans
+  // photo : les initiales du produit.
+  var _photoIdx = null, _photoLoading = false;
+  function cip13(code) {
+    var c = String(code == null ? '' : code).replace(/\D/g, '');
+    if (c.length !== 7) return c;
+    var b = '34009' + c, s = 0;
+    for (var i = 0; i < 12; i++) s += (+b[i]) * (i % 2 ? 3 : 1);
+    return b + ((10 - s % 10) % 10);
+  }
+  function photoDe(code) {
+    if (!_photoIdx) {
+      if (!window.OFFILOG_BEST && !window.MKT_IMG) return '';
+      _photoIdx = {};
+      (window.OFFILOG_BEST || []).forEach(function (b) { if (b && b.ean && b.img) _photoIdx[normCip(b.ean)] = b.img; });
+      var M = window.MKT_IMG || {};
+      Object.keys(M).forEach(function (k) { if (M[k] && !_photoIdx[normCip(k)]) _photoIdx[normCip(k)] = M[k]; });
+    }
+    return _photoIdx[normCip(cip13(code))] || _photoIdx[normCip(code)] || '';
+  }
+  function ensurePhotos() {
+    if (_photoLoading || (window.OFFILOG_BEST && window.MKT_IMG)) return;
+    _photoLoading = true;
+    var files = [];
+    // v2-offilog.js peut avoir déjà injecté le fichier : ne pas le recharger
+    // (il déclare un `const` global, un 2ᵉ chargement lèverait une erreur).
+    if (!window.OFFILOG_BEST && !document.querySelector('script[src*="offilog-bestsellers-data.js"]')) files.push('../../crm/v2/offilog-bestsellers-data.js?v=20260903b');
+    if (!window.MKT_IMG && !document.querySelector('script[src*="mkt-images-data.js"]')) files.push('../../crm/v2/mkt-images-data.js?v=20260929k');
+    var restants = files.length;
+    if (!restants) return;
+    files.forEach(function (src) {
+      var sc = document.createElement('script');
+      sc.src = src;
+      sc.onload = sc.onerror = function () {
+        if (--restants) return;
+        _photoIdx = null;
+        if (V2.route && V2.route.name === 'opsoachats') renderAchats(root$());
+      };
+      document.head.appendChild(sc);
+    });
+  }
+
   V2.opsoAchSearch = function (val) { achSearch = val || ''; achShown = 60; var r = root$(); if (r) renderAchats(r); };
   V2.opsoAchTab = function (k) { achTab = k; achShown = 60; var r = root$(); if (r) renderAchats(r); };
   V2.opsoAchMore = function () { achShown += 60; var r = root$(); if (r) renderAchats(r); };
@@ -387,9 +478,35 @@
       + '.opf-gauge-row{display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap}'
       + '.opf-gauge{flex:0 1 130px;height:5px;background:var(--surf-sunken,#F4F6FB);border-radius:999px;overflow:hidden}'
       + '.opf-gauge-fill{display:block;height:100%;background:var(--ip-blue,#11a63c);border-radius:999px}'
-      + '.opf-evo{font-size:13px;font-weight:600}'
-      + '.opf-evo.up{color:var(--c-mint,#0d8530)}'
-      + '.opf-evo.dn{color:var(--muted,#646B80)}'
+      // Pastilles de partage (une par pharmacie cliente)
+      + '.opf-dots{display:inline-flex;flex-wrap:wrap;gap:3px;max-width:100%}'
+      + '.opf-dots i{width:8px;height:8px;border-radius:50%;background:var(--line,#E4E8F0)}'
+      + '.opf-dots i.on{background:var(--ip-blue,#11a63c)}'
+      // Vignette produit : photo sur un fond éclairé par le haut, initiales dessous
+      + '.opf-thumb,.opf-pod-img{position:relative;flex:none;display:grid;place-items:center;overflow:hidden;background:radial-gradient(120% 90% at 50% 0%,#fff 0%,var(--surf-sunken,#F4F6FB) 100%);border:1px solid var(--line,#E4E8F0)}'
+      + '.opf-thumb{width:44px;height:44px;border-radius:12px}'
+      + '.opf-thumb b,.opf-pod-img b{font-weight:700;color:var(--ip-blue-d,#0d8530);letter-spacing:.02em}'
+      + '.opf-thumb b{font-size:13px}'
+      + '.opf-thumb img,.opf-pod-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;padding:4px}'
+      + '.opf-li{gap:12px}'
+      + '.opf-li-rk{color:var(--muted);width:26px;flex:none;font-size:13px}'
+      + '.opf-count{margin:0 0 10px}'
+      + '.opf-grp{margin-bottom:14px}'
+      + '.opf-grp .v2-card-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}'
+      // Podium « le socle du réseau »
+      + '.opf-pod-t{font-weight:650;font-size:15px;margin:4px 0 12px;color:var(--ip-ink,#0B1633)}'
+      + '.opf-pods{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin-bottom:22px}'
+      + '.opf-pod{position:relative;display:flex;flex-direction:column;gap:9px;padding:16px;border-radius:var(--r-card,18px);border:1px solid var(--line,#E4E8F0);background:linear-gradient(180deg,#fff 0%,var(--card-2,#FAFBFD) 100%);box-shadow:var(--sh-2)}'
+      + '.opf-pod:first-child{background:radial-gradient(140% 80% at 50% 0%,var(--halo,#E6F7EC) 0%,#fff 62%);border-color:color-mix(in srgb,var(--ip-blue,#11a63c) 30%,var(--line,#E4E8F0))}'
+      + '.opf-pod-rk{position:absolute;top:12px;left:14px;font-size:13px;font-weight:700;color:var(--muted)}'
+      + '.opf-pod-img{width:100%;height:112px;border-radius:14px}'
+      + '.opf-pod-img b{font-size:26px}'
+      + '.opf-pod-name{font-weight:650;font-size:14px;line-height:1.3;min-height:2.6em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}'
+      + '.opf-pod-n{display:flex;align-items:baseline;gap:4px;font-size:13px;color:var(--muted)}'
+      + '.opf-pod-n .mono{font-size:26px;font-weight:700;color:var(--ip-blue-d,#0d8530);line-height:1}'
+      + '.opf-pod-foot{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);border-top:1px solid var(--line,#E4E8F0);padding-top:8px;margin-top:auto}'
+      + '.opf-pod-foot .mono{color:var(--ip-ink,#0B1633);font-weight:600}'
+      + '@media (max-width:520px){.opf-pods{grid-template-columns:1fr 1fr;gap:10px}.opf-pod{padding:12px}.opf-pod-img{height:84px}.opf-pod-n .mono{font-size:22px}}'
       // 29/09/2026 — règle du brief « aucun texte < 13 px » : .v2-row-meta et
       // .v2-kpi-l/.v2-kpi-d (classes GÉNÉRIQUES de v2.css, à 12px partout dans
       // l'appli, sur des dizaines d'écrans déjà en ligne) ne sont PAS touchées
