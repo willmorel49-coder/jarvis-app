@@ -450,7 +450,9 @@
     catalogue: 'var(--pil-cat)', pilotage: 'var(--pil-pilo)', offilog: 'var(--pil-froid)',
     groupements: 'var(--pil-fiche)', molecules: '#7C3AED', presentation: 'var(--c-opp)',
     infos: 'var(--c-amber)', marketing: 'var(--c-rose)', audit: '#10915E', sagitta: 'var(--pil-froid)',
-    produits: 'var(--ip-blue)'
+    produits: 'var(--ip-blue)',
+    // 29/09/2026 — écrans OPSO « Pharmacies » et « Meilleurs achats » (opso-pharmacies.js)
+    opsopharmacies: 'var(--pil-opp)', opsoachats: 'var(--pil-cat)'
   };
   function accentFor(name) {
     if (name === 'marketing') return (window.V2_BRAND && window.V2_BRAND.opso) ? 'var(--pil-fiche)' : 'var(--pil-rose)';
@@ -1395,6 +1397,14 @@
           pil.tag = V2.opsoGroupement ? '' : (V2.fmtK(caTotal) + ' €');
           P.unshift(pil);
         }
+        // 29/09/2026 — deux nouveaux écrans OPSO (opso-pharmacies.js) : l'évolution
+        // par pharmacie, et la liste produits classée par nombre de pharmacies.
+        if (V2.pages.opsopharmacies) {
+          P.push({ k: 'opsopharmacies', cls: 'p1', accent: 'var(--pil-opp)', ico: 'pharma', tag: 'Par officine', t: 'Pharmacies', d: 'Chaque officine du réseau OPSO Santé : son évolution d\'achats mois par mois chez Intégral Pharma, ses produits phares, et les adhérentes sans achat à relancer.', go: 'Voir les pharmacies' });
+        }
+        if (V2.pages.opsoachats) {
+          P.push({ k: 'opsoachats', cls: 'p3', accent: 'var(--pil-cat)', ico: 'cat', tag: 'Classement', t: 'Meilleurs achats', d: 'Les produits que les pharmacies OPSO commandent chez nous, classés par nombre de pharmacies clientes — la liste de référence à montrer aux adhérents.', go: 'Voir les meilleurs achats' });
+        }
       }
       // 11/09/2026 — espace ESCALE PHARMA. 24/09/2026 — Will : « features communes,
       // pas de distinctions » : même accueil, mêmes portes que le CRM ; seules les
@@ -1610,6 +1620,9 @@
     // fiches commerciales chez elle (v2-fiches n'y est plus chargé).
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Fiches marketing OPSO', 'fiche']);
     else if (V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Marketing', 'spark']);
+    // 29/09/2026 — écrans OPSO Pharmacies / Meilleurs achats, atteignables au clavier.
+    if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsopharmacies) PAGES.push(['opsopharmacies', 'Pharmacies · évolution par officine', 'pharma']);
+    if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsoachats) PAGES.push(['opsoachats', 'Meilleurs achats · classement par nombre de pharmacies', 'cat']);
     // Une seule entrée « La carte » (l'entrée « Copilote » en doublon est retirée le 27/08/2026).
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.carte) PAGES.splice(1, 0, ['carte', 'La carte · officines, clients, prospects, tournée', 'pharma']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.infos) PAGES.splice(1, 0, ['infos', 'Infos du matin', 'spark']);
