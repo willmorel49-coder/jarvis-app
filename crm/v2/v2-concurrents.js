@@ -162,16 +162,32 @@
   // Index PROD_STATS par CIP13. Génériques et biosimilaires EXCLUS du verdict
   // (leurs remises passent en direct labo → pharmacie, invisibles dans notre
   // net ; en facture chez le grossiste — le face-à-face serait faux).
-  var idxNous = null;
+  // 29/09/2026 — le prix vient du BENCHMARK (abandon de marge actuel, après applyPPHT et
+  // les conditions protégées), comme partout ailleurs dans le CRM. PROD_STATS.net est le
+  // net historique moyen réellement payé : plus cher que le net actuel sur 1 342 princeps
+  // sur 2 605, il gonflait les « moins cher chez le concurrent ». Hors BENCHMARK : même
+  // rattrapage que horsBenchmark (v2-pharma) — barème pour un princeps, jamais > PPHT.
+  var idxNous = null, idxBench = null;
   function nous(code) {
     if (!idxNous) {
       idxNous = {};
       (window.PROD_STATS || []).forEach(function (r) { if (r && r.c) idxNous[String(r.c)] = r; });
     }
+    if (!idxBench && window.BENCHMARK) {
+      idxBench = {};
+      window.BENCHMARK.forEach(function (b) { if (b && b.cip13) idxBench[String(b.cip13)] = b; });
+    }
     var r = code ? idxNous[String(code)] : null;
     if (!r) return null;
-    var bp = V2.bestPrice ? V2.bestPrice({ prix_ht: r.ppht, prix_ip: r.net }) : { ip: r.net > 0 ? r.net : null, remise: 0 };
-    return { ip: bp.ip, f: r.f, exclu: (r.f === 'gen' || r.f === 'biosim'), d: r.d || '', ppht: r.ppht > 0 ? r.ppht : null, remise: bp.remise || 0, c: String(r.c) };
+    var b = idxBench && idxBench[String(r.c)], bp;
+    if (b) bp = V2.bestPrice(b);
+    else {
+      var pp = (window.PPHT && window.PPHT[r.c] > 0) ? window.PPHT[r.c] : (r.ppht > 0 ? r.ppht : 0);
+      var net = (r.net > 0 && (!pp || r.net <= pp)) ? r.net : pp;
+      if ((r.f && r.f.indexOf('pr_') === 0 || r.f === 'biosim') && pp > 0 && V2.abandonBareme) net = Math.min(net || pp, Math.round((pp - V2.abandonBareme(pp)) * 100) / 100);
+      bp = V2.bestPrice({ prix_ht: pp, prix_ip: net });
+    }
+    return { ip: bp.ip, f: r.f, exclu: (r.f === 'gen' || r.f === 'biosim'), d: r.d || '', ppht: bp.ht || (r.ppht > 0 ? r.ppht : null), remise: bp.remise || 0, c: String(r.c) };
   }
   function verdict(net, n) {
     if (!n || !(n.ip > 0) || n.exclu || !(net > 0)) return '';
