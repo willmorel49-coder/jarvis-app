@@ -1389,7 +1389,10 @@
           pil.t = 'Suivi groupement';
           pil.d = 'Le tableau de bord OPSO Santé : taux d\'activation des adhérents, CA du groupement, répartition par périmètre et détail par officine.';
           pil.go = 'Voir le suivi';
-          pil.tag = V2.fmtK(caTotal) + ' €';
+          // 29/09/2026 — le bloc « le cap » (V2.opsoGroupement) affiche déjà ce
+          // même cumul HT en gros au-dessus des tuiles : le tag CA de cette
+          // tuile ferait doublon visuel. Retiré uniquement quand ce bloc existe.
+          pil.tag = V2.opsoGroupement ? '' : (V2.fmtK(caTotal) + ' €');
           P.unshift(pil);
         }
       }
@@ -1404,7 +1407,7 @@
       function tile(p) {
         var nav = p.route ? ('V2.go(\'' + p.route.name + '\'' + (p.route.param ? ',\'' + p.route.param + '\'' : '') + ')') : ('V2.go(\'' + p.k + '\')');
         return '<a class="v2-pil ' + p.cls + '"' + (p.accent ? ' style="--accent:' + p.accent + '"' : '') + ' onmousemove="V2.homeSpot(event,this)" onclick="' + nav + '">' +
-          '<div class="v2-pil-head"><div class="v2-pil-ico">' + ICO(p.ico, 26) + '</div><span class="v2-pil-num">' + p.tag + '</span></div>' +
+          '<div class="v2-pil-head"><div class="v2-pil-ico">' + ICO(p.ico, 26) + '</div>' + (p.tag ? '<span class="v2-pil-num">' + p.tag + '</span>' : '') + '</div>' +
           '<div class="v2-pil-t">' + p.t + '</div><div class="v2-pil-d">' + p.d + '</div>' +
           '<div class="v2-pil-go">' + p.go + ' <span class="arrow">→</span></div></a>';
       }
@@ -1415,6 +1418,13 @@
       var pilHtml, todoTuile = false;
       if (window.V2_BRAND && window.V2_BRAND.opso) {
         pilHtml = '<div class="v2-piliers">' + P.map(tile).join('') + '</div>';
+        // 29/09/2026 — maquette 5 choisie par Will (« le cap + le mois ») : le
+        // suivi groupement (cap, mois, produits, trajectoire) passe AVANT les
+        // tuiles, qui deviennent « Vos espaces ». V2.opsoGroupement.mount() est
+        // appelé juste après l'insertion du HTML dans le DOM, plus bas.
+        if (V2.opsoGroupement) {
+          pilHtml = V2.opsoGroupement.html() + '<h2 class="og-block-title" style="margin:22px 4px 10px">Vos espaces</h2>' + pilHtml;
+        }
       } else {
         var pmap = {}; P.forEach(function (p) { pmap[p.k] = p; });
         // Libellés courts pour l'accueil ; les pages restent atteignables via ⌘K.
@@ -1582,6 +1592,7 @@
           (V2.todo && !todoTuile ? V2.todo.cardHtml() : '') +
           pilHtml +
         '</div>';
+      if (window.V2_BRAND && window.V2_BRAND.opso && V2.opsoGroupement) { V2.opsoGroupement.mount(root); }
       if (jouerAnim) hvReveler(root);
     }
   };
