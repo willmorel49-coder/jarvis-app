@@ -338,8 +338,8 @@
     function nPh(n) { return n + ' pharmacie' + (n > 1 ? 's' : ''); }
     // Une pastille par pharmacie cliente (pleine = elle commande ce produit) —
     // se lit d'un coup d'œil ; au-delà de 24 clientes, une jauge.
-    function partage(n) {
-      if (NC > 0 && NC <= 24) {
+    function partage(n, jauge) {
+      if (!jauge && NC > 0 && NC <= 24) {
         var s = '';
         for (var i = 0; i < NC; i++) s += '<i' + (i < n ? ' class="on"' : '') + '></i>';
         return '<span class="opf-dots" aria-hidden="true">' + s + '</span>';
@@ -370,7 +370,7 @@
         vignette(it, 'opf-thumb') +
         '<div style="flex:1;min-width:0">' +
           '<div class="v2-row-name">' + esc(it.d) + '</div>' +
-          '<div class="opf-gauge-row">' + partage(it.n) + '<span class="v2-row-meta">' + it.n + ' / ' + NC + '</span></div>' +
+          '<div class="opf-gauge-row">' + partage(it.n, true) + '<span class="v2-row-meta">' + it.n + ' / ' + NC + '</span></div>' +
         '</div>' +
         '<div style="text-align:right;flex:none"><span class="v2-row-val">' + euros(it.ca) + '</span><div class="v2-row-meta">' + it.boites + ' boîte' + (it.boites > 1 ? 's' : '') + '</div></div>' +
       '</div>';
@@ -498,7 +498,7 @@
       + '.opf-pods{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin-bottom:22px}'
       + '.opf-pod{position:relative;display:flex;flex-direction:column;gap:9px;padding:16px;border-radius:var(--r-card,18px);border:1px solid var(--line,#E4E8F0);background:linear-gradient(180deg,#fff 0%,var(--card-2,#FAFBFD) 100%);box-shadow:var(--sh-2)}'
       + '.opf-pod:first-child{background:radial-gradient(140% 80% at 50% 0%,var(--halo,#E6F7EC) 0%,#fff 62%);border-color:color-mix(in srgb,var(--ip-blue,#11a63c) 30%,var(--line,#E4E8F0))}'
-      + '.opf-pod-rk{position:absolute;top:12px;left:14px;font-size:13px;font-weight:700;color:var(--muted)}'
+      + '.opf-pod-rk{position:absolute;top:24px;left:26px;z-index:1;min-width:26px;height:26px;padding:0 7px;display:grid;place-items:center;border-radius:999px;background:#fff;border:1px solid var(--line,#E4E8F0);box-shadow:var(--sh-1);font-size:13px;font-weight:700;color:var(--ip-ink,#0B1633)}'
       + '.opf-pod-img{width:100%;height:112px;border-radius:14px}'
       + '.opf-pod-img b{font-size:26px}'
       + '.opf-pod-name{font-weight:650;font-size:14px;line-height:1.3;min-height:2.6em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}'
@@ -506,7 +506,7 @@
       + '.opf-pod-n .mono{font-size:26px;font-weight:700;color:var(--ip-blue-d,#0d8530);line-height:1}'
       + '.opf-pod-foot{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);border-top:1px solid var(--line,#E4E8F0);padding-top:8px;margin-top:auto}'
       + '.opf-pod-foot .mono{color:var(--ip-ink,#0B1633);font-weight:600}'
-      + '@media (max-width:520px){.opf-pods{grid-template-columns:1fr 1fr;gap:10px}.opf-pod{padding:12px}.opf-pod-img{height:84px}.opf-pod-n .mono{font-size:22px}}'
+      + '@media (max-width:520px){.opf-pods{grid-template-columns:1fr 1fr;gap:10px}.opf-pod{padding:12px}.opf-pod-img{height:84px}.opf-pod-n .mono{font-size:22px}.opf-pod .opf-dots{gap:2px}.opf-pod .opf-dots i{width:5px;height:5px}.opf-pod-rk{top:18px;left:18px}}'
       // 29/09/2026 — règle du brief « aucun texte < 13 px » : .v2-row-meta et
       // .v2-kpi-l/.v2-kpi-d (classes GÉNÉRIQUES de v2.css, à 12px partout dans
       // l'appli, sur des dizaines d'écrans déjà en ligne) ne sont PAS touchées
