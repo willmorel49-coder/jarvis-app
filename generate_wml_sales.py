@@ -279,6 +279,12 @@ for relpath, sheet2cip in AGG_SOURCES:
         if cip not in OPSO_CIPS or sheet not in wb.sheetnames:
             print('  [skip guy] %s -> %s (hors listing OPSO ou feuille absente)' % (sheet, cip))
             continue
+        # Depuis le 11/09/2026, les tableurs mensuels GUY_0X_2026 portent déjà ces
+        # officines : ajouter l'agrégat comptait leurs achats DEUX FOIS (L'Étoile
+        # 171 580 € au lieu de 147 382 €, Cuzon 120 761 € au lieu de 69 069 €).
+        if cip in agg:
+            print('  [skip guy] %s -> %s (déjà dans les tableurs mensuels)' % (sheet, cip))
+            continue
         ws = wb[sheet]
         it = ws.iter_rows(values_only=True)
         next(it)  # entête
@@ -375,7 +381,7 @@ def obj_num_map(d):
 order = sorted(agg.keys(), key=lambda c: -agg[c]['ca'])
 dlines = [
     '// WML Commandes — app OPSO Santé (généré par generate_wml_sales.py)',
-    '// %d officines · %d mois (%s → %s) · William + Karine' % (len(agg), len(MONTHS), WML_MONTHS[0], WML_MONTHS[-1]),
+    '// %d officines · %d mois (%s → %s) · tous commerciaux' % (len(agg), len(MONTHS), WML_MONTHS[0], WML_MONTHS[-1]),
     '// Champs : tc nom ca mg qt ca_m/mg_m/qt_m[%d]  afm{code:[ca,mg,qt]}  sf{sf:[ca,mg,qt]}  pr[[nom,ca,mg,qt,ean]]  tr{t1..t4:[n,ca,mg]}' % len(MONTHS),
     'const WML_MONTHS = %s;' % json.dumps(WML_MONTHS),
     'const WML_DATA = [',

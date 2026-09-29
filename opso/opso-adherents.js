@@ -2,9 +2,9 @@
 // 18 pharmacies actives (William + Karine…)
 const OPSO_ADHERENTS = [
   {cip:"2038359",nom:"PHARMACIE DE L'ETOILE",cp:"76 500",ville:"ELBEUF",uga:"76"},
-  {cip:"2000531",nom:"PHARMACIE CUZON",cp:"27370",ville:"AMFREVILLE-SAINT-AMAND",uga:"27"},
   {cip:"2144411",nom:"PHARMACIE DE KERFONTAINE",cp:"56400",ville:"PLUNERET",uga:"56PLU"},
   {cip:"2000462",nom:"PHARMACIE DE FEREL",cp:"56130",ville:"FEREL",uga:"44LBA"},
+  {cip:"2000531",nom:"PHARMACIE CUZON",cp:"27370",ville:"AMFREVILLE-SAINT-AMAND",uga:"27"},
   {cip:"2143156",nom:"PHARMACIE DE L'ESTRAN",cp:"56750",ville:"DAMGAN",uga:"56QUE"},
   {cip:"2136311",nom:"PHARMACIE HAUTEMANIERE",cp:"50700",ville:"VALOGNES",uga:"50VAL"},
   {cip:"2075385",nom:"PHARMACIE DU LONG COURS",cp:"14111",ville:"LOUVIGNY",uga:"14FAL"},
