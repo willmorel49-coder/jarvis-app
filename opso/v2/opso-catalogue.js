@@ -103,7 +103,9 @@
     var m = String(nom || '').replace(/[^A-Za-zÀ-ÿ]/g, '');
     return esc(m.slice(0, 2)).toUpperCase();
   }
-  function ligneHtml(it, rang, max, deux) {
+  // Réseau Intégral en POURCENTAGE seulement (règle Will 01/10) ; seul le nombre OPSO s'écrit en clair.
+  function pct(n, tot) { var p = n / tot * 100; return p < 1 ? '< 1\u202f%' : Math.round(p) + '\u202f%'; }
+  function ligneHtml(it, rang, max, deux, tot) {
     var ph = photoDe(it.cip);
     var vign = '<span class="oc-vign"><span class="oc-mono">' + monogramme(it.nom) + '</span>' +
       (ph ? '<img src="' + esc(ph) + '" alt="" onerror="this.remove()">' : '') + '</span>';
@@ -115,7 +117,7 @@
       '<span class="oc-rang">' + rang + '</span>' + vign +
       '<span class="oc-nom">' + esc(it.nom) + '</span>' +
       '<span class="oc-jauge"><span class="oc-barre"><i style="width:' + w + '%"></i></span>' +
-        '<b>' + ent(it.n) + '</b>' + (it.opso ? '<em>dont ' + it.opso + ' OPSO</em>' : '') + '</span>' +
+        '<b>' + pct(it.n, tot) + '</b>' + (it.opso ? '<em>' + it.opso + (it.opso > 1 ? ' adhérentes' : ' adhérente') + ' OPSO</em>' : '') + '</span>' +
       '<span class="oc-prix' + (deux ? ' deux' : '') + '">' + prix + '</span></div>';
   }
   function piedHtml(d, num, total) {
@@ -132,13 +134,13 @@
       '<header class="oc-couv-haut"><div class="oc-halo"></div>' +
         '<div class="oc-lockup"><img class="l-ip" src="' + LOGO_IP + '" alt="Intégral Pharma"><span class="by">by</span><img class="l-opso" src="' + esc(logoOpso()) + '" alt="OPSO Santé"></div>' +
         '<h1>Le catalogue</h1>' +
-        '<p class="oc-accroche">Les produits que les pharmacies du réseau Intégral commandent le plus, classés par nombre de pharmacies.</p>' +
-        '<p class="oc-chiffre"><b>' + ent(d.R.officines) + '</b> pharmacies du réseau · dont <b>' + d.opsoPharmas + '</b> adhérentes OPSO Santé</p>' +
+        '<p class="oc-accroche">Les produits les plus commandés dans le réseau Intégral, et ceux que les adhérentes d’OPSO Santé commandent déjà.</p>' +
+        '<p class="oc-chiffre"><b>' + d.opsoPharmas + '</b> adhérentes OPSO Santé commandent chez Intégral Pharma</p>' +
       '</header>' +
       '<div class="oc-couv-bas"><h2>Au sommaire</h2><ol class="oc-tuiles">' + tuiles + '</ol>' +
         (ex ? '<div class="oc-lire"><h2>Comment lire une ligne</h2>' +
-          '<p>La barre et le chiffre donnent le nombre de pharmacies du réseau qui ont commandé le produit (' + esc(periodeTexte(d.R.periode)) + '). ' +
-          '« dont N OPSO » : combien d’entre elles sont adhérentes d’OPSO Santé.</p>' +
+          '<p>La barre et le pourcentage donnent la part des pharmacies du réseau Intégral qui ont commandé le produit (' + esc(periodeTexte(d.R.periode)) + '). ' +
+          '« N adhérentes OPSO » : combien de pharmacies d’OPSO Santé le commandent.</p>' +
           '<p>PPHT : prix pharmacien hors taxes. Prix net : prix HT facturé par Intégral Pharma, abandon de marge déduit. Génériques et non remboursables : prix net seul.</p></div>' : '') +
       '</div>' + piedHtml(d, 1, total) + '</section>';
   }
@@ -155,10 +157,10 @@
       var max = x.items[0].n;   // barres à l'échelle du rayon (le 1er du rayon = barre pleine)
       html += '<section class="oc-page oc-rayon r-' + x.r.k + '">' +
         '<header class="oc-r-haut"><h2>' + esc(x.r.label) + (suite ? ' <small>(suite)</small>' : '') + '</h2>' +
-          '<span class="oc-r-sous">classés par nombre de pharmacies du réseau</span></header>' +
-        '<div class="oc-entete"><span></span><span></span><span>Produit</span><span>Commandé par (pharmacies)</span>' +
+          '<span class="oc-r-sous">classés par part des pharmacies du réseau</span></header>' +
+        '<div class="oc-entete"><span></span><span></span><span>Produit</span><span>Commandé par</span>' +
           '<span class="oc-prix' + (x.r.deux ? ' deux' : '') + '">' + (x.r.deux ? '<span>PPHT</span><span>Prix net</span>' : '<span>Prix net</span>') + '</span></div>' +
-        lot.map(function (it, i) { return ligneHtml(it, pg.de + i + 1, max, x.r.deux); }).join('') +
+        lot.map(function (it, i) { return ligneHtml(it, pg.de + i + 1, max, x.r.deux, d.R.officines); }).join('') +
         piedHtml(d, k + 2, total) + '</section>';
     });
     return html;
@@ -250,7 +252,7 @@
     }
     var nb = 0; d.rayons.forEach(function (x) { nb += x.items.length; });
     root.innerHTML = page('<div class="oc-barre-outils"><div><h1 class="v2-h1" style="margin:0 0 4px">Le catalogue</h1>' +
-      '<p>' + nb + ' produits parmi les plus commandés par les ' + ent(d.R.officines) + ' pharmacies du réseau Intégral (' + esc(periodeTexte(d.R.periode)) + '), avec le nombre d’adhérentes OPSO Santé qui les commandent.</p></div>' +
+      '<p>' + nb + ' produits parmi les plus commandés dans le réseau Intégral (' + esc(periodeTexte(d.R.periode)) + '), avec le nombre d’adhérentes OPSO Santé qui les commandent.</p></div>' +
       '<button class="v2-btn primary" onclick="V2.opsoCatalogue.imprimer()">Imprimer / enregistrer en PDF</button></div>' +
       '<div class="oc-apercu">' + pagesHtml(d).replace(/<section class="oc-page/g, '<div class="oc-cadre"><section class="oc-page').replace(/<\/section>/g, '</section></div>') + '</div>');
     ajusterApercu(root);
