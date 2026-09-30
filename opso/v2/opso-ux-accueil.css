@@ -23,7 +23,7 @@
 .oa, .oa button, .oa .og-num, .oa small, .oa b, .oa em { font-family: var(--oa-font); }
 
 /* ═══ La page : l'accueil utilise la largeur ═══════════════════════ */
-#v2-root .v2-wrap.oa-page, #v2-root .v2-wrap.v2-home-x:has(> .og-wrap) { max-width: 1240px; }
+#v2-root .v2-wrap.oa-page { max-width: 1240px; }
 @media (min-width: 1000px) {
   #v2-root .v2-wrap.oa-page { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 440px); column-gap: 28px; align-items: center; }
   #v2-root .v2-wrap.oa-page > * { grid-column: 1 / -1; }
@@ -466,24 +466,24 @@
 .oa-traj .og-chart text { font-family: var(--oa-font); }
 @media (max-width: 720px) { #v2-root .oa-traj { padding: 20px 16px 14px; } }
 
-/* ═══ Vos espaces : tuiles avec un aperçu chiffré ou une forme ════ */
-#v2-root .og-wrap ~ .v2-piliers { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
-@media (min-width: 1000px) { #v2-root .oa-page .og-wrap ~ .v2-piliers { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
-#v2-root .og-wrap ~ .v2-piliers .v2-pil {
+/* ═══ L'accueil = les espaces (01/10/2026) : tuiles avec un aperçu chiffré ou une forme ════ */
+#v2-root .oa-espaces { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+@media (min-width: 1000px) { #v2-root .oa-page .oa-espaces { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; } }
+#v2-root .oa-espaces .v2-pil {
   --accent: #4e9f70 !important;
-  display: flex; flex-direction: column; gap: 4px; padding: 18px 18px 14px; min-height: 0; border-radius: 22px;
+  display: flex; flex-direction: column; gap: 6px; padding: 22px 22px 16px; min-height: 196px; border-radius: 24px;
   border: 1px solid rgba(33,57,43,.07);
   background: linear-gradient(200deg, #f0f6f3 0%, #ffffff 42%, #fbfbfb 100%);
   box-shadow: 0 1px 0 #fff inset, 0 14px 30px -24px rgba(33,57,43,.35);
 }
-#v2-root .og-wrap ~ .v2-piliers .v2-pil::before { display: none; }
-#v2-root .og-wrap ~ .v2-piliers .v2-pil-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 12px; min-height: 44px; }
-#v2-root .og-wrap ~ .v2-piliers .v2-pil-ico { width: 44px; height: 44px; border-radius: 14px; }
-#v2-root .og-wrap ~ .v2-piliers .v2-pil-num { display: none; }
-#v2-root .og-wrap ~ .v2-piliers .v2-pil-t { font-size: 16px; margin: 0; }
-#v2-root .og-wrap ~ .v2-piliers .v2-pil-d { font-size: 13px; line-height: 1.35; margin: 0; color: var(--muted, #5d6577); }
-#v2-root .og-wrap ~ .v2-piliers .v2-pil-go { margin: auto 0 0; padding-top: 6px; min-height: 0; gap: 0; color: var(--oa-green, #4e9f70); justify-content: flex-end; }
-#v2-root .og-wrap ~ .v2-piliers .v2-pil-go .arrow { font-size: 18px; }
+#v2-root .oa-espaces .v2-pil::before { display: none; }
+#v2-root .oa-espaces .v2-pil-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 12px; min-height: 44px; }
+#v2-root .oa-espaces .v2-pil-ico { width: 44px; height: 44px; border-radius: 14px; }
+#v2-root .oa-espaces .v2-pil-num { display: none; }
+#v2-root .oa-espaces .v2-pil-t { font-size: 18px; margin: 0; }
+#v2-root .oa-espaces .v2-pil-d { font-size: 14px; line-height: 1.4; margin: 0; color: var(--muted, #5d6577); }
+#v2-root .oa-espaces .v2-pil-go { margin: auto 0 0; padding-top: 6px; min-height: 0; gap: 0; color: var(--oa-green, #4e9f70); justify-content: flex-end; }
+#v2-root .oa-espaces .v2-pil-go .arrow { font-size: 18px; }
 .oa-pv { display: inline-flex; align-items: baseline; gap: 3px; color: var(--oa-green-d, #3e7f59); }
 .oa-pv b { font-family: 'Varela Round', sans-serif; font-weight: 400; font-size: 28px; line-height: 1; letter-spacing: -.03em; }
 .oa-pv small { font-size: 13px; color: var(--oa-muted, #5d6577); }
@@ -500,9 +500,9 @@
 .oa-pv-shape--o i:nth-child(2) { left: 18px; height: 30px; }
 .oa-pv-shape--o i:nth-child(3) { left: 32px; height: 21px; opacity: .8; }
 @media (max-width: 640px) {
-  #v2-root .og-wrap ~ .v2-piliers { grid-template-columns: 1fr 1fr; gap: 10px; }
-  #v2-root .og-wrap ~ .v2-piliers .v2-pil { padding: 14px 14px 10px; }
-  #v2-root .og-wrap ~ .v2-piliers .v2-pil-ico { width: 40px; height: 40px; }
+  #v2-root .oa-espaces { grid-template-columns: 1fr 1fr; gap: 10px; }
+  #v2-root .oa-espaces .v2-pil { padding: 16px 14px 12px; min-height: 164px; }
+  #v2-root .oa-espaces .v2-pil-ico { width: 40px; height: 40px; }
   .oa-pv b { font-size: 22px; }
 }
 

@@ -452,7 +452,7 @@
     infos: 'var(--c-amber)', marketing: 'var(--c-rose)', audit: '#10915E', sagitta: 'var(--pil-froid)',
     produits: 'var(--ip-blue)',
     // 29/09/2026 — écrans OPSO « Pharmacies » et « Meilleurs achats » (opso-pharmacies.js)
-    opsopharmacies: 'var(--pil-opp)', opsoachats: 'var(--pil-cat)'
+    opsopharmacies: 'var(--pil-opp)', opsoachats: 'var(--pil-cat)', opsobord: 'var(--pil-pilo)'
   };
   function accentFor(name) {
     if (name === 'marketing') return (window.V2_BRAND && window.V2_BRAND.opso) ? 'var(--pil-fiche)' : 'var(--pil-rose)';
@@ -1401,6 +1401,11 @@
           pil.tag = V2.opsoGroupement ? '' : (V2.fmtK(caTotal) + ' €');
           P.unshift(pil);
         }
+        // 01/10/2026 — le tableau de bord OPSO (V2.opsoGroupement) n'est plus
+        // posé sur l'accueil : il devient une porte, la première.
+        if (V2.pages.opsobord) {
+          P.unshift({ k: 'opsobord', cls: 'p1', accent: 'var(--pil-pilo)', ico: 'grid', tag: '', t: 'Tableau de bord', d: 'Le chiffre du groupement, le mois, la rémunération, ce que les adhérentes achètent et la trajectoire de l\'année.', go: 'Voir le tableau de bord' });
+        }
         // 29/09/2026 — deux nouveaux écrans OPSO (opso-pharmacies.js) : l'évolution
         // par pharmacie, et la liste produits classée par nombre de pharmacies.
         if (V2.pages.opsopharmacies) {
@@ -1431,14 +1436,10 @@
       // Accueil regroupé "par moment d'usage" (hors OPSO qui garde son ordre suivi-groupement)
       var pilHtml, todoTuile = false;
       if (window.V2_BRAND && window.V2_BRAND.opso) {
-        pilHtml = '<div class="v2-piliers">' + P.map(tile).join('') + '</div>';
-        // 29/09/2026 — maquette 5 choisie par Will (« le cap + le mois ») : le
-        // suivi groupement (cap, mois, produits, trajectoire) passe AVANT les
-        // tuiles, qui deviennent « Vos espaces ». V2.opsoGroupement.mount() est
-        // appelé juste après l'insertion du HTML dans le DOM, plus bas.
-        if (V2.opsoGroupement) {
-          pilHtml = V2.opsoGroupement.html() + '<h2 class="og-block-title" style="margin:22px 4px 10px">Vos espaces</h2>' + pilHtml;
-        }
+        // 01/10/2026 — Will : « l'accueil doit être les différentes features,
+        // pas directement le pilotage » → l'accueil ne montre plus que les
+        // espaces ; le tableau de bord est l'écran « opsobord ».
+        pilHtml = '<div class="v2-piliers oa-espaces">' + P.map(tile).join('') + '</div>';
       } else {
         var pmap = {}; P.forEach(function (p) { pmap[p.k] = p; });
         // Libellés courts pour l'accueil ; les pages restent atteignables via ⌘K.
@@ -1606,7 +1607,7 @@
           (V2.todo && !todoTuile ? V2.todo.cardHtml() : '') +
           pilHtml +
         '</div>';
-      if (window.V2_BRAND && window.V2_BRAND.opso && V2.opsoGroupement) { V2.opsoGroupement.mount(root); }
+      if (window.V2_BRAND && window.V2_BRAND.opso && V2.opsoGroupement) { V2.opsoGroupement.espaces(root); }
       if (jouerAnim) hvReveler(root);
     }
   };
@@ -1625,6 +1626,7 @@
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Fiches marketing OPSO', 'fiche']);
     else if (V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Marketing', 'spark']);
     // 29/09/2026 — écrans OPSO Pharmacies / Meilleurs achats, atteignables au clavier.
+    if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsobord) PAGES.push(['opsobord', 'Tableau de bord · chiffre, rémunération, trajectoire', 'grid']);
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsopharmacies) PAGES.push(['opsopharmacies', 'Pharmacies · évolution par officine', 'pharma']);
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsoachats) PAGES.push(['opsoachats', 'Meilleurs achats · classement par nombre de pharmacies', 'cat']);
     // Une seule entrée « La carte » (l'entrée « Copilote » en doublon est retirée le 27/08/2026).

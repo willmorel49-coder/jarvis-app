@@ -512,6 +512,7 @@
 
   // Tuiles « Vos espaces » (rendues par le socle) : une ligne chacune au lieu d'un paragraphe.
   var ESPACES = {
+    opsobord: 'Le chiffre, la rémunération, la trajectoire',
     pilotage: 'Activation, CA et détail par officine',
     marketing: 'Le catalogue du mois, prêt à imprimer',
     offilog: 'La parapharmacie, rayon par rayon',
@@ -520,6 +521,7 @@
   };
   // Mini-aperçu de chaque espace : un chiffre réel ou une forme, jamais une phrase.
   function apercu(k, DATA) {
+    if (k === 'opsobord') return '<b class="og-num">' + fmtEUR.format(Math.round(DATA.total / 1000)) + '</b><small>k€</small>';
     if (k === 'pilotage') return '<b class="og-num">' + DATA.pharmaClientes + '</b><small class="og-num">/' + DATA.adherentes + '</small>';
     if (k === 'opsoachats') return '<b class="og-num">' + fmtEUR.format(DATA.refsVendues) + '</b><small>réf.</small>';
     if (k === 'opsopharmacies') {
@@ -534,7 +536,7 @@
     return '';
   }
   function compacterEspaces(scope, DATA) {
-    var list = scope.querySelectorAll ? scope.querySelectorAll('.og-wrap ~ .v2-piliers .v2-pil') : [];
+    var list = scope.querySelectorAll ? scope.querySelectorAll('.oa-espaces .v2-pil') : [];
     Array.prototype.forEach.call(list, function (a) {
       var m = /V2\.go\('([a-z]+)'/.exec(a.getAttribute('onclick') || '');
       var d = a.querySelector('.v2-pil-d');
@@ -951,5 +953,25 @@
     render();
   }
 
-  V2.opsoGroupement = { html: html, mount: mount, computeData: computeData };
+  // 01/10/2026 — Will : « l'accueil doit être les différentes features, pas
+  // directement le pilotage ». L'accueil ne montre plus que les espaces ; le
+  // tableau de bord (cap, mois, rémunération, produits, trajectoire) devient
+  // l'écran « Tableau de bord », première tuile de l'accueil.
+  function espaces(root) {
+    var scope = root || document, DATA = computeData();
+    // Même mise en page que l'ancien accueil (salutation à gauche, recherche à droite, pleine largeur).
+    var pageEl = scope.querySelector && scope.querySelector('.v2-home-x'); if (pageEl) pageEl.classList.add('oa-page');
+    compacterEspaces(scope, DATA);
+  }
+  V2.pages = V2.pages || {};
+  V2.pages.opsobord = {
+    needs: [],
+    render: function (root) {
+      root.innerHTML = V2.topbar({ back: true }) +
+        '<div class="v2-wrap oa-bord"><div class="opx-head"><div class="v2-page-title">Tableau de bord</div></div>' + html() + '</div>';
+      mount(root);
+    }
+  };
+
+  V2.opsoGroupement = { html: html, mount: mount, computeData: computeData, espaces: espaces };
 })();
