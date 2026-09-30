@@ -142,9 +142,11 @@
       var debut = new Date(annee, q.de - 1, 1), fin = new Date(annee, q.a, 0, 23, 59, 59);
       var statut = today > fin ? 'clos' : (today >= debut ? 'encours' : 'avenir');
       var eche = echeance(C, annee, q.a);
+      // Période entièrement antérieure à l'accord (réglage `effet`, mois de départ) : montant indicatif, hors total.
+      var indicatif = !!(C.effet && q.a < C.effet);
       return {
         de: q.de, a: q.a, periode: MOIS_ABREV[q.de - 1] + '–' + MOIS_ABREV[q.a - 1] + ' ' + annee,
-        nMois: nMois, nPrevus: nPrevus, statut: statut, echeance: eche,
+        nMois: nMois, nPrevus: nPrevus, statut: statut, echeance: eche, indicatif: indicatif,
         total: r.total, retenu: r.retenu, exclu: r.total - r.retenu, remu: r.remu,
         exclParMotif: r.exclParMotif, caParMotif: q.ca
       };
@@ -153,7 +155,7 @@
     function appliquer(Cc, q) { return appliquerTranches(Cc, q.total, q.ca); }
 
     var tot = { total: 0, retenu: 0, exclu: 0, remu: 0 };
-    lignes.forEach(function (l) { tot.total += l.total; tot.retenu += l.retenu; tot.exclu += l.exclu; tot.remu += l.remu; });
+    lignes.forEach(function (l) { if (l.indicatif) return; tot.total += l.total; tot.retenu += l.retenu; tot.exclu += l.exclu; tot.remu += l.remu; });
     return { annee: annee, lignes: lignes, totalAnnee: tot, C: C };
   }
 
@@ -210,7 +212,11 @@
     return parts.length ? 'Part exclue, par motif\u00a0: ' + parts.join(' ') : 'Aucune vente exclue sur cette période.';
   }
 
+  var MOIS_LONG = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+  function moisEffet(D) { return MOIS_LONG[D.C.effet - 1] + ' ' + D.annee; }
+
   function badge(l) {
+    if (l.indicatif) return '<span class="opr-badge">À titre indicatif</span>';
     if (l.statut === 'clos') {
       return l.nMois < l.nPrevus
         ? '<span class="opr-badge opr-badge--encours">Clos · ventes de ' + l.nMois + ' mois sur ' + l.nPrevus + '</span>'
@@ -230,12 +236,14 @@
         + '<header class="opr-qh"><h3 class="opr-per">' + esc(l.periode) + '</h3>' + badge(l) + '</header>'
         + faits(l, vide)
         + '<p class="opr-det">' + (vide ? 'Aucune vente enregistrée pour l’instant.' : detailExclusions(D, l)) + '</p>'
-        + '<p class="opr-pay">' + (l.statut === 'clos' ? 'Échéance de paiement prévue' : 'Échéance de paiement prévue au plus tôt')
-        + ' : <strong>' + esc(fmtDate.format(l.echeance)) + '</strong></p>'
+        + (l.indicatif
+          ? '<p class="opr-pay">Période antérieure à l’accord, évoqué à partir de ' + esc(moisEffet(D)) + '\u00a0: montant donné à titre indicatif, non compté dans le total.</p>'
+          : '<p class="opr-pay">' + (l.statut === 'clos' ? 'Échéance de paiement prévue' : 'Échéance de paiement prévue au plus tôt')
+        + ' : <strong>' + esc(fmtDate.format(l.echeance)) + '</strong></p>')
         + '</article>';
     });
     out += '<div class="opr-q opr-tot" data-opr-total="1">'
-      + '<h3 class="opr-per">Total ' + D.annee + ' à ce jour</h3>'
+      + '<h3 class="opr-per">' + (D.C.effet ? 'Total depuis ' + esc(moisEffet(D)) : 'Total ' + D.annee) + ' à ce jour</h3>'
       + faits(D.totalAnnee, false)
       + '</div>'
       + '<div class="opr-note">'
