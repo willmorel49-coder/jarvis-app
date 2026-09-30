@@ -198,7 +198,7 @@
   // Anneau de proportion (arc dessiné une fois à l'entrée).
   function anneau(frac, cls, clair) {
     var f = Math.max(0, Math.min(1, frac || 0));
-    var c0 = clair ? '#ffffff' : '#4cc76c', c1 = clair ? '#9ff0b8' : '#0d8530';
+    var c0 = clair ? '#ffffff' : '#92b9a2', c1 = clair ? '#cbe4d6' : '#3e7f59';
     return '<svg class="opx-ring ' + (cls || '') + '" viewBox="0 0 120 120" aria-hidden="true">' +
       '<defs><linearGradient id="opxg' + (cls || 'r') + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + c0 + '"/><stop offset="1" stop-color="' + c1 + '"/></linearGradient></defs>' +
       '<circle class="t" cx="60" cy="60" r="50"/>' +
@@ -354,7 +354,7 @@
       moy: moy,
       html: '<div class="opx-ch" style="--n:' + n + '">' +
         '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' +
-          '<defs><linearGradient id="opxarea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#11a63c" stop-opacity=".22"/><stop offset="1" stop-color="#11a63c" stop-opacity="0"/></linearGradient></defs>' +
+          '<defs><linearGradient id="opxarea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4e9f70" stop-opacity=".22"/><stop offset="1" stop-color="#4e9f70" stop-opacity="0"/></linearGradient></defs>' +
           '<path class="a" d="' + a + '"/><line class="m" x1="0" x2="' + W + '" y1="' + yMoy.toFixed(1) + '" y2="' + yMoy.toFixed(1) + '"/><path class="l" d="' + d + '"/></svg>' +
         '<div class="opx-ch-cols">' + cols + '</div></div>'
     };
@@ -785,7 +785,7 @@
       // Vignette produit : photo sur un fond éclairé par le haut, initiales dessous
       + '.opf-thumb,.opx-pod-img{position:relative;flex:none;display:grid;place-items:center;overflow:hidden;background:radial-gradient(120% 90% at 50% 0%,#fff 0%,var(--surf-sunken,#F4F6FB) 100%);border:1px solid var(--line,#E4E8F0)}'
       + '.opf-thumb{width:44px;height:44px;border-radius:12px}'
-      + '.opf-thumb b,.opx-pod-img b{font-weight:700;color:var(--ip-blue-d,#0d8530);letter-spacing:.02em}'
+      + '.opf-thumb b,.opx-pod-img b{font-weight:700;color:var(--ip-blue-d,#3e7f59);letter-spacing:.02em}'
       + '.opf-thumb b{font-size:13px}'
       + '.opf-thumb img,.opx-pod-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;padding:4px}'
       // 29/09/2026 — règle du brief « aucun texte < 13 px » : .v2-row-meta et

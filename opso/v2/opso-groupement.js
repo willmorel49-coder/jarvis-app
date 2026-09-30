@@ -155,7 +155,7 @@
   };
   var CAT_ORDER = ['pr_low', 'pr_mid', 'pr_high', 'tch', 'gen', 'biosim', 'nr', 'x'];
   // Une seule famille de couleur (le vert OPSO), du plus profond au plus pâle : une teinte par catégorie.
-  var SEG_TONES = { all: '#11a63c', pr_low: '#0a6727', pr_mid: '#11a63c', pr_high: '#52cd78', tch: '#9fe3b4', gen: '#2f8f5a', biosim: '#7fbf98', nr: '#bcdcc7', x: '#dfe9e2' };
+  var SEG_TONES = { all: '#4e9f70', pr_low: '#306345', pr_mid: '#4e9f70', pr_high: '#99bfa9', tch: '#c3d9cc', gen: '#598870', biosim: '#9fb7aa', nr: '#ccd7d1', x: '#dfe9e2' };
 
   function periodeLabel(moisArr) {
     if (!moisArr.length) return '';
@@ -314,18 +314,18 @@
     + ".og-ring-center .og-frac small{font-size:1rem;color:var(--muted,#646B80);font-family:var(--font,system-ui),sans-serif}"
     + ".og-ring-center .og-lbl{font-size:.8125rem;color:var(--muted,#646B80);max-width:150px;margin-top:2px}"
     + ".og-hero-stats{display:flex;flex-direction:column;gap:10px;width:100%}"
-    + ".og-pill{display:inline-flex;align-items:center;gap:6px;background:var(--halo,#E6F7EC);color:var(--ip-blue-d,#0d8530);border-radius:999px;padding:5px 12px;font-size:.8125rem;align-self:center}"
+    + ".og-pill{display:inline-flex;align-items:center;gap:6px;background:var(--halo,#EFF4F1);color:var(--ip-blue-d,#3e7f59);border-radius:999px;padding:5px 12px;font-size:.8125rem;align-self:center}"
     + "@media(min-width:720px){.og-pill{align-self:flex-start}}"
-    + ".og-pill .og-dot{width:7px;height:7px;border-radius:50%;background:var(--ip-blue,#11a63c)}"
+    + ".og-pill .og-dot{width:7px;height:7px;border-radius:50%;background:var(--ip-blue,#4e9f70)}"
     + ".og-cumul{background:var(--surf-sunken,#F4F6FB);border-radius:var(--r-md,14px);padding:16px 18px;display:flex;flex-direction:column;gap:2px}"
-    + ".og-cumul .og-amount{font-size:1.8rem;color:var(--ip-blue-d,#0d8530);font-family:'Varela Round',sans-serif}"
+    + ".og-cumul .og-amount{font-size:1.8rem;color:var(--ip-blue-d,#3e7f59);font-family:'Varela Round',sans-serif}"
     + ".og-cumul .og-period{font-size:.8125rem;color:var(--muted,#646B80)}"
     // Le mois
     + ".og-months{display:flex;gap:8px;overflow-x:auto;padding:2px 0 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}"
     + ".og-months::-webkit-scrollbar{display:none}"
     + ".og-month-pill{flex:0 0 auto;border:none;background:var(--surf-sunken,#F4F6FB);color:var(--ip-ink-2,#2A2F3C);font:inherit;font-size:.8125rem;padding:10px 16px;border-radius:999px;cursor:pointer;min-height:44px;white-space:nowrap;transition:background .18s ease,color .18s ease}"
     + ".og-month-pill:hover{background:var(--card-2,#E9ECF4)}"
-    + ".og-month-pill[aria-pressed=true]{background:var(--ip-blue,#11a63c);color:#fff}"
+    + ".og-month-pill[aria-pressed=true]{background:var(--ip-blue,#4e9f70);color:#fff}"
     + ".og-month-pill[disabled]{background:transparent;color:#AFB4C2;cursor:default}"
     + ".og-mois-inner{transition:opacity .22s ease,transform .22s ease}"
     + ".og-mois-inner.is-changing{opacity:.35;transform:translateY(6px)}"
@@ -337,18 +337,18 @@
     + ".og-fact .og-flabel{display:block;font-size:.8125rem;color:var(--muted,#646B80);margin-bottom:6px;line-height:1.3}"
     + ".og-fact .og-fnum{display:block;font-family:'Varela Round';font-size:1.1rem;color:var(--ip-ink,#10131C)}"
     + ".og-fact .og-fdelta{display:block;margin-top:4px;font-size:.8125rem;color:var(--muted,#646B80)}"
-    + ".og-fact .og-fdelta.up{color:var(--ip-blue-d,#0F7A52)}"
+    + ".og-fact .og-fdelta.up{color:var(--ip-blue-d,#3B755B)}"
     + ".og-provenance{font-size:.8125rem;color:var(--muted,#646B80);margin-top:10px}"
     // Produits
     + ".og-tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 0 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin-bottom:2px}"
     + ".og-tabs::-webkit-scrollbar{display:none}"
     + ".og-tab{flex:0 0 auto;border:none;background:var(--surf-sunken,#F4F6FB);color:var(--ip-ink-2,#2A2F3C);font:inherit;font-size:.8125rem;padding:9px 14px;border-radius:999px;cursor:pointer;min-height:44px;white-space:nowrap;transition:background .18s ease,color .18s ease}"
     + ".og-tab:hover{background:var(--card-2,#E9ECF4)}"
-    + ".og-tab[aria-pressed=true]{background:var(--ip-blue,#11a63c);color:#fff}"
+    + ".og-tab[aria-pressed=true]{background:var(--ip-blue,#4e9f70);color:#fff}"
     + ".og-bornes{font-size:.8125rem;color:var(--muted,#646B80);margin:6px 0 10px}"
     + ".og-recap{font-size:.8125rem;color:var(--muted,#646B80);margin:2px 0 0}"
     + ".og-phead{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:baseline;background:var(--surf-sunken,#F4F6FB);border-radius:var(--r-md,14px);padding:12px 14px;margin-bottom:10px}"
-    + ".og-phead .og-pamount{font-family:'Varela Round';font-size:1.15rem;color:var(--ip-blue-d,#0d8530)}"
+    + ".og-phead .og-pamount{font-family:'Varela Round';font-size:1.15rem;color:var(--ip-blue-d,#3e7f59)}"
     + ".og-phead .og-pmeta{font-size:.8125rem;color:var(--muted,#646B80)}"
     + ".og-list{list-style:none;margin:0;padding:0;transition:opacity .22s ease,transform .22s ease}"
     + ".og-list.is-changing{opacity:.35;transform:translateY(6px)}"
@@ -359,7 +359,7 @@
     + ".og-pname{font-size:.8125rem;color:var(--ip-ink-2,#2A2F3C);line-height:1.3}"
     + ".og-gauge-row{display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap}"
     + ".og-gauge{flex:0 1 130px;height:5px;background:var(--surf-sunken,#F4F6FB);border-radius:999px;overflow:hidden}"
-    + ".og-gauge-fill{height:100%;background:var(--ip-blue,#11a63c);border-radius:999px}"
+    + ".og-gauge-fill{height:100%;background:var(--ip-blue,#4e9f70);border-radius:999px}"
     + ".og-pnb{font-size:.8125rem;color:var(--muted,#646B80);white-space:nowrap}"
     + ".og-right{flex:0 0 auto;text-align:right;padding-top:1px}"
     + ".og-boites{display:block;font-size:.8125rem;color:var(--muted,#646B80);white-space:nowrap}"
@@ -372,15 +372,15 @@
     + ".og-legend::-webkit-scrollbar{display:none}"
     + ".og-legend .og-litem{display:flex;align-items:center;gap:6px;flex:0 0 auto;white-space:nowrap}"
     + ".og-legend .og-swatch{width:16px;height:3px;border-radius:2px;display:inline-block}"
-    + ".og-legend .og-swatch.full{background:var(--ip-blue-d,#0d8530)}"
+    + ".og-legend .og-swatch.full{background:var(--ip-blue-d,#3e7f59)}"
     + ".og-legend .og-swatch.dash{background:repeating-linear-gradient(90deg,var(--muted,#8a91a3) 0 5px,transparent 5px 9px)}"
-    + ".og-legend .og-swatch.dash2{background:repeating-linear-gradient(90deg,var(--ip-blue,#11a63c) 0 5px,transparent 5px 9px)}"
+    + ".og-legend .og-swatch.dash2{background:repeating-linear-gradient(90deg,var(--ip-blue,#4e9f70) 0 5px,transparent 5px 9px)}"
     + ".og-sept{font-size:.8125rem;color:#9A5B12;margin-top:6px}"
     + ".og-sim{margin-top:14px;background:var(--surf-sunken,#F4F6FB);border-radius:var(--r-md,14px);padding:14px 16px}"
     + ".og-sim-label{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}"
     + ".og-sim-label span:first-child{font-size:.9375rem;color:var(--ip-ink-2,#2A2F3C)}"
-    + ".og-sim-value{font-size:1.05rem;color:var(--ip-blue-d,#0d8530);font-family:'Varela Round',sans-serif}"
-    + ".og-sim input[type=range]{width:100%;margin:14px 0 6px;accent-color:var(--ip-blue,#11a63c);height:28px}"
+    + ".og-sim-value{font-size:1.05rem;color:var(--ip-blue-d,#3e7f59);font-family:'Varela Round',sans-serif}"
+    + ".og-sim input[type=range]{width:100%;margin:14px 0 6px;accent-color:var(--ip-blue,#4e9f70);height:28px}"
     + ".og-sim-hint{font-size:.8125rem;color:var(--muted,#646B80);margin:0}"
     + ".og-sim-detail{margin-top:10px}"
     + ".og-sim-detail summary{font-size:.8125rem;color:var(--muted,#646B80);cursor:pointer;min-height:44px;display:flex;align-items:center;text-decoration:underline;text-underline-offset:2px}"
@@ -664,7 +664,7 @@
       var tabButtons = [], segParts = [];
       tabsDef.forEach(function (t, i) {
         var part = DATA.total ? (t.ca / DATA.total) * 100 : 0;
-        var tone = SEG_TONES[t.k] || '#11a63c';
+        var tone = SEG_TONES[t.k] || '#4e9f70';
         var b = document.createElement('button');
         b.className = 'oa-cat'; b.type = 'button'; b.setAttribute('aria-pressed', 'false');
         b.style.setProperty('--tone', tone);
@@ -838,8 +838,8 @@
         chart.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
         var defs = el('defs', {});
         var grad = el('linearGradient', { id: 'og-aire', x1: '0', y1: '0', x2: '0', y2: '1' });
-        grad.appendChild(el('stop', { offset: '0%', 'stop-color': '#11a63c', 'stop-opacity': '0.32' }));
-        grad.appendChild(el('stop', { offset: '100%', 'stop-color': '#11a63c', 'stop-opacity': '0' }));
+        grad.appendChild(el('stop', { offset: '0%', 'stop-color': '#4e9f70', 'stop-opacity': '0.32' }));
+        grad.appendChild(el('stop', { offset: '100%', 'stop-color': '#4e9f70', 'stop-opacity': '0' }));
         defs.appendChild(grad); chart.appendChild(defs);
         yTicks.forEach(function (t) {
           var y = yAt(t);
@@ -859,15 +859,15 @@
         if (realPts.length) {
           var areaD = smoothPath(realPts) + ' L' + realPts[realPts.length - 1][0].toFixed(1) + ',' + yAt(0).toFixed(1) + ' L' + realPts[0][0].toFixed(1) + ',' + yAt(0).toFixed(1) + ' Z';
           chart.appendChild(el('path', { d: areaD, fill: 'url(#og-aire)', stroke: 'none', 'class': 'og-aire' }));
-          chart.appendChild(el('path', { d: smoothPath(realPts), fill: 'none', stroke: '#0d8530', 'stroke-width': 3.5, pathLength: 1, 'class': 'og-line' }));
+          chart.appendChild(el('path', { d: smoothPath(realPts), fill: 'none', stroke: '#3e7f59', 'stroke-width': 3.5, pathLength: 1, 'class': 'og-line' }));
           realPts.forEach(function (p, pi) {
             var last = pi === realPts.length - 1;
-            if (last) chart.appendChild(el('circle', { cx: p[0], cy: p[1], r: 9, fill: 'rgba(17,166,60,.16)', 'class': 'og-pt' }));
-            chart.appendChild(el('circle', { cx: p[0], cy: p[1], r: last ? 5 : 3.5, fill: '#fff', stroke: '#0d8530', 'stroke-width': 2.2, 'class': 'og-pt' }));
+            if (last) chart.appendChild(el('circle', { cx: p[0], cy: p[1], r: 9, fill: 'rgba(78,159,112,.16)', 'class': 'og-pt' }));
+            chart.appendChild(el('circle', { cx: p[0], cy: p[1], r: last ? 5 : 3.5, fill: '#fff', stroke: '#3e7f59', 'stroke-width': 2.2, 'class': 'og-pt' }));
           });
           // Étiquette du dernier point réel : le cumul atteint, lisible sans légende.
           var lp = realPts[realPts.length - 1];
-          var tl = el('text', { x: lp[0] - 12, y: lp[1] - 14, 'text-anchor': 'end', 'font-size': 14, 'font-weight': 700, fill: '#0d8530', 'class': 'og-pt oa-endlbl' });
+          var tl = el('text', { x: lp[0] - 12, y: lp[1] - 14, 'text-anchor': 'end', 'font-size': 14, 'font-weight': 700, fill: '#3e7f59', 'class': 'og-pt oa-endlbl' });
           tl.textContent = fmtK(arrBase[nReal - 1]); chart.appendChild(tl);
         }
         if (nSlots > nReal) {
@@ -875,9 +875,9 @@
           chart.appendChild(el('path', { d: pathFromPoints(basePts), fill: 'none', stroke: '#8a91a3', 'stroke-width': 2, 'stroke-dasharray': '5 5', 'class': 'og-pt' }));
           if (n > 0) {
             var simPts = []; for (var si = nReal - 1; si < nSlots; si++) simPts.push([xAt(si), yAt(arrSim[si])]);
-            chart.appendChild(el('path', { d: pathFromPoints(simPts), fill: 'none', stroke: '#11a63c', 'stroke-width': 2.5, 'stroke-dasharray': '5 5', 'class': 'og-pt' }));
+            chart.appendChild(el('path', { d: pathFromPoints(simPts), fill: 'none', stroke: '#4e9f70', 'stroke-width': 2.5, 'stroke-dasharray': '5 5', 'class': 'og-pt' }));
             var lastSim = simPts[simPts.length - 1];
-            chart.appendChild(el('circle', { cx: lastSim[0], cy: lastSim[1], r: 3.5, fill: '#11a63c' }));
+            chart.appendChild(el('circle', { cx: lastSim[0], cy: lastSim[1], r: 3.5, fill: '#4e9f70' }));
           }
           var lastBase = basePts[basePts.length - 1];
           chart.appendChild(el('circle', { cx: lastBase[0], cy: lastBase[1], r: 3.5, fill: '#8a91a3' }));
