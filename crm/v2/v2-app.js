@@ -1042,118 +1042,161 @@
       '.v2-home-x .v2-hero-sub b{color:var(--ip-ink);font-weight:600}',
       '.v2-home-x .v2-search{height:62px;border-radius:16px}',
       '.v2-home-x .v2-search input{font-size:16px}',
-      '.v2-home-x .v2-recent{justify-content:center}',
-      // ── « Les objets bien rangés » (24/09/2026, maquette v5, « go » de Will) ──
-      // Objets en volume (SVG inline, lumière en haut à gauche, un seul bleu
-      // décliné), rangés : « Tous les jours » en grand, les rayons en lignes
-      // (objet + nom + phrase + chevron), « En cours de développement » en bas.
-      // Mouvement : transform et opacity seulement, rien ne boucle.
-      '.v2-home-x .hv-titre{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--ip-ink-3,#5B6273);margin:22px 4px 10px}',
-      '.v2-home-x .hv-titre::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(16,19,28,.12),rgba(16,19,28,0))}',
-      '.v2-home-x .hv-obj{display:block;flex:none;overflow:visible}',
-      '.v2-home-x .hv-obj g,.v2-home-x .hv-obj rect,.v2-home-x .hv-obj path,.v2-home-x .hv-obj circle,.v2-home-x .hv-obj ellipse,.v2-home-x .hv-obj line{transform-box:fill-box;transform-origin:50% 50%}',
-      '.v2-home-x .hv-obj .o-corps{transform-origin:50% 100%}',
-      '.v2-home-x .hv-obj .o-leve{transition:transform 420ms cubic-bezier(.3,.7,.4,1.2)}',
-      '.v2-home-x .hv-obj .o-sol{transition:transform 420ms cubic-bezier(.3,.7,.4,1.2),opacity 420ms cubic-bezier(.2,.8,.2,1)}',
-      '.v2-home-x .hv-porte:hover .o-leve,.v2-home-x .hv-porte.joue .o-leve{transform:translateY(-5px)}',
-      '.v2-home-x .hv-porte:hover .o-sol,.v2-home-x .hv-porte.joue .o-sol{transform:scale(.8);opacity:.6}',
-      '.v2-home-x .hv-porte{position:relative;display:flex;cursor:pointer;color:var(--ip-ink);text-decoration:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}',
-      '.v2-home-x .hv-porte:focus-visible{outline:3px solid var(--ip-blue,#0050E6);outline-offset:3px}',
-      '.v2-home-x .hv-txt{display:block;min-width:0}',
-      '.v2-home-x .hv-nom{display:block;font-weight:800;letter-spacing:-.01em;line-height:1.2}',
-      '.v2-home-x .hv-phrase{display:block;font-size:13px;color:var(--ip-ink-3,#5B6273);line-height:1.35;margin-top:3px}',
-      '.v2-home-x .hv-fleche{flex:none;display:flex;align-self:center;margin-left:auto;color:var(--ip-ink-3,#5B6273);transition:transform 300ms cubic-bezier(.3,.7,.4,1.2)}',
-      '.v2-home-x .hv-porte:hover .hv-fleche,.v2-home-x .hv-porte.joue .hv-fleche{transform:translateX(3px);color:var(--ip-blue,#0050E6)}',
-      // Tous les jours : To do list pleine largeur, puis la grille 2×2.
-      '.v2-home-x .hv-todo,.v2-home-x .hv-grand{overflow:hidden;background:radial-gradient(180px 130px at 22% 18%,var(--card,#fff) 0%,color-mix(in srgb,var(--ip-blue,#0050E6) 5%,var(--card,#fff)) 100%);border:1px solid var(--line);border-radius:22px;box-shadow:0 1px 2px rgba(16,19,28,.05),0 4px 10px rgba(16,19,28,.05),0 12px 24px rgba(16,19,28,.05);min-height:44px;transition:transform 300ms cubic-bezier(.3,.7,.4,1.2)}',
-      '.v2-home-x .hv-todo::before,.v2-home-x .hv-grand::before{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(135deg,rgba(255,255,255,.9) 0%,rgba(255,255,255,0) 38%)}',
-      '.v2-home-x .hv-todo>*,.v2-home-x .hv-grand>*{position:relative}',
-      '.v2-home-x .hv-todo:hover,.v2-home-x .hv-grand:hover{box-shadow:0 3px 6px rgba(0,52,160,.08),0 10px 22px rgba(0,52,160,.08),0 20px 36px rgba(0,52,160,.08);transform:translateY(-2px)}',
-      '.v2-home-x .hv-todo:active,.v2-home-x .hv-grand:active,.v2-home-x .hv-ligne:active{transform:scale(.98)}',
-      '.v2-home-x .hv-todo{align-items:center;gap:14px;padding:10px 18px 10px 10px;margin-bottom:10px}',
-      '.v2-home-x .hv-todo .hv-obj{width:78px;height:78px}',
-      '.v2-home-x .hv-todo .hv-nom{font-size:18px}',
-      '.v2-home-x .hv-grille{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}',
-      '.v2-home-x .hv-grand{flex-direction:column;align-items:flex-start;padding:8px 14px 16px}',
-      '.v2-home-x .hv-grand .hv-obj{width:88px;height:88px;margin:0 0 4px -6px}',
-      '.v2-home-x .hv-grand .hv-nom{font-size:17px}',
-      // 24/09 — le rond « + » flottant (.v2-fab, 58 px à 16 px du bord droit) couvrait
-      // « CA, marge et objectifs » à 390 px : le texte de la colonne de droite s'arrête avant lui.
-      '@media (max-width:760px){body:has(.v2-fab:not([hidden])) .v2-home-x .hv-grand:nth-child(2n) .hv-txt{padding-right:50px}}',
-      // Les rayons
-      '.v2-home-x .hv-rayons{display:grid;gap:12px}',
-      '.v2-home-x .hv-rayon{position:relative;overflow:hidden;background:var(--card,#fff);border:1px solid var(--line);border-radius:22px;box-shadow:0 1px 2px rgba(16,19,28,.05),0 4px 10px rgba(16,19,28,.05),0 12px 24px rgba(16,19,28,.05);padding:12px}',
-      '.v2-home-x .hv-rayon::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(135deg,rgba(255,255,255,.7) 0%,rgba(255,255,255,0) 34%)}',
-      '.v2-home-x .hv-rayon>*{position:relative}',
-      '.v2-home-x .hv-rayon-tete{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:2px 6px 8px;flex-wrap:wrap}',
-      '.v2-home-x .hv-rayon-nom{margin:0;font-size:16px;font-weight:800;line-height:1.3;letter-spacing:-.01em;color:var(--ip-blue,#0050E6)}',
-      '.v2-home-x .hv-rayon-rappel{font-size:13px;color:var(--ip-ink-3,#5B6273)}',
-      '.v2-home-x .hv-lignes{display:grid;gap:8px}',
-      '.v2-home-x .hv-ligne{align-items:center;gap:10px;background:color-mix(in srgb,var(--ip-blue,#0050E6) 5%,var(--card,#fff));border-radius:16px;padding:5px 14px 5px 5px;min-height:72px;transition:transform 250ms cubic-bezier(.3,.7,.4,1.2)}',
-      '.v2-home-x .hv-ligne:hover{background:color-mix(in srgb,var(--ip-blue,#0050E6) 12%,var(--card,#fff))}',
-      '.v2-home-x .hv-ligne .hv-obj{width:58px;height:58px}',
-      '.v2-home-x .hv-ligne .hv-nom{font-size:15px}',
-      '.v2-home-x .hv-ligne .hv-txt{flex:1}',
-      '@media(min-width:640px){.v2-home-x .hv-lignes{grid-template-columns:1fr 1fr}}',
-      '@media(min-width:860px){.v2-home-x .hv-rayons{grid-template-columns:1fr 1fr;align-items:start;gap:14px}.v2-home-x .hv-lignes{grid-template-columns:1fr}}',
-      // « En cours de développement » : en retrait (filet pointillé, gris), même pastille pour tous.
-      '.v2-home-x .v2-enc-chip{display:inline-flex;align-items:center;font-size:13px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;color:var(--ip-ink-3,#5B6273);background:color-mix(in srgb,var(--ip-blue,#0050E6) 6%,var(--card,#fff));border-radius:999px;padding:6px 13px;margin:26px 0 12px 4px}',
-      '.v2-home-x .v2-enc{position:relative;background:var(--card,#fff);border:1.5px dashed rgba(16,19,28,.16);border-radius:20px;padding:16px 18px;margin-bottom:16px}',
-      '.v2-home-x .v2-enc-liens{display:flex;flex-wrap:wrap;gap:10px}',
-      '.v2-home-x .v2-enc-l{min-height:46px;display:inline-flex;align-items:center;gap:8px;background:color-mix(in srgb,var(--ip-blue,#0050E6) 6%,var(--card,#fff));border-radius:12px;padding:10px 14px;font-size:14px;font-weight:700;color:var(--ip-ink-3,#5B6273);text-decoration:none;cursor:pointer;transition:transform .25s cubic-bezier(.3,.7,.4,1.2)}',
-      '.v2-home-x .v2-enc-l:hover{background:color-mix(in srgb,var(--ip-blue,#0050E6) 12%,var(--card,#fff));transform:translateY(-3px)}',
-      '.v2-home-x .v2-enc-l:focus-visible{outline:3px solid var(--ip-blue,#0050E6);outline-offset:3px}',
-      '.v2-home-x .v2-enc-l svg{color:inherit;flex:none}.v2-home-x .v2-enc-l .fl{font-weight:800}',
-      // 13 px : cette ligne dit COMMENT obtenir l'accès, une information utile ne se met pas en petit.
-      '.v2-home-x .v2-enc-n{margin:12px 0 0;font-size:13px;line-height:1.5;color:var(--ip-ink-3,#6B7280)}',
-      // Arrivée : masquage posé par le script (classe js-anim, UNE fois par session),
-      // chaque bloc se révèle en entrant à l'écran ; l'objet se pose, son ombre se resserre.
-      '.v2-home-x.js-anim .hv-anim:not(.vu){opacity:0;transform:translateY(14px) scale(.97)}',
-      '.v2-home-x.js-anim .hv-anim.vu:not(.fin){animation:hvArriver 560ms cubic-bezier(.3,.7,.4,1.2) both;animation-delay:calc(var(--i,0) * 55ms)}',
-      '@keyframes hvArriver{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}',
-      '.v2-home-x.js-anim .hv-anim:not(.vu) .o-corps{opacity:0}',
-      '.v2-home-x.js-anim .hv-anim.vu .o-corps{animation:hvPoser 820ms cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--d,0) * 70ms + 180ms)}',
-      '.v2-home-x.js-anim .hv-anim.vu .o-ombre{animation:hvOmbre 820ms cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--d,0) * 70ms + 180ms)}',
-      '@keyframes hvPoser{0%{opacity:0;transform:translateY(-18px)}42%{opacity:1;transform:translateY(0) scale(1.04,.94)}62%{transform:translateY(-5px) scale(.99,1.02)}82%{transform:translateY(0) scale(1.01,.99)}100%{opacity:1;transform:none}}',
-      '@keyframes hvOmbre{0%{opacity:.2;transform:scale(1.5,1.3)}42%{opacity:1;transform:scale(.92,1)}100%{opacity:1;transform:none}}',
-      // Au survol ou à l'appui, le détail propre à chaque objet bouge, une fois par geste.
-      '.v2-home-x .hv-porte:hover .d-pop,.v2-home-x .hv-porte.joue .d-pop{animation:hvPop 560ms cubic-bezier(.3,.7,.4,1.2) both;animation-delay:calc(var(--r,0) * 90ms)}',
-      '.v2-home-x .hv-porte:hover .d-pulse,.v2-home-x .hv-porte.joue .d-pulse{animation:hvPulse 620ms cubic-bezier(.3,.7,.4,1.2)}',
-      '.v2-home-x .hv-porte:hover .d-saut,.v2-home-x .hv-porte.joue .d-saut{animation:hvSaut 760ms cubic-bezier(.2,.8,.2,1)}',
-      '.v2-home-x .hv-porte:hover .d-leve,.v2-home-x .hv-porte.joue .d-leve{animation:hvLeve 700ms cubic-bezier(.3,.7,.4,1.2)}',
-      '.v2-home-x .hv-porte:hover .d-monte,.v2-home-x .hv-porte.joue .d-monte{animation:hvMonte 620ms cubic-bezier(.3,.7,.4,1.2) both;animation-delay:calc(var(--r,0) * 90ms)}',
-      '.v2-home-x .hv-porte:hover .d-fleche,.v2-home-x .hv-porte.joue .d-fleche{animation:hvFleche 620ms cubic-bezier(.3,.7,.4,1.2) 200ms both}',
-      '.v2-home-x .hv-porte:hover .d-orbite,.v2-home-x .hv-porte.joue .d-orbite{animation:hvOrbite 900ms cubic-bezier(.3,.7,.4,1.2)}',
-      '.v2-home-x .hv-porte:hover .d-balance,.v2-home-x .hv-porte.joue .d-balance{animation:hvBalance 820ms ease-out}',
-      '.v2-home-x .hv-porte:hover .d-balance2,.v2-home-x .hv-porte.joue .d-balance2{animation:hvBalance2 820ms ease-out 80ms}',
-      '.v2-home-x .hv-porte:hover .d-presse,.v2-home-x .hv-porte.joue .d-presse{animation:hvPresse 420ms ease-in-out}',
-      '.v2-home-x .hv-porte:hover .d-jauge,.v2-home-x .hv-porte.joue .d-jauge{animation:hvJauge 760ms cubic-bezier(.3,.7,.4,1.2) both}',
-      '.v2-home-x .hv-porte:hover .d-soleil,.v2-home-x .hv-porte.joue .d-soleil{animation:hvSoleil 820ms cubic-bezier(.2,.8,.2,1) both}',
-      '.v2-home-x .hv-porte:hover .d-tourne,.v2-home-x .hv-porte.joue .d-tourne{animation:hvTourne 1100ms ease-in-out}',
-      '.v2-home-x .hv-porte:hover .d-note,.v2-home-x .hv-porte.joue .d-note{animation:hvNote 700ms cubic-bezier(.3,.7,.4,1.2)}',
-      '.v2-home-x .hv-porte:hover .d-ondes,.v2-home-x .hv-porte.joue .d-ondes{animation:hvOndes 560ms cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--r,0) * 110ms)}',
-      '.v2-home-x .hv-obj .d-monte{transform-origin:50% 100%}',
-      '.v2-home-x .hv-obj .d-jauge{transform-origin:0% 50%}',
-      '.v2-home-x .hv-obj .d-balance,.v2-home-x .hv-obj .d-balance2{transform-origin:50% 100%}',
-      '.v2-home-x .hv-obj .d-orbite{transform-box:view-box;transform-origin:48px 46px}',
-      '.v2-home-x .hv-obj .d-tourne{transform-box:view-box;transform-origin:48px 42px}',
-      '@keyframes hvPop{0%{transform:scale(0)}60%{transform:scale(1.22)}100%{transform:scale(1)}}',
-      '@keyframes hvPulse{0%{transform:scale(1)}35%{transform:scale(.86)}70%{transform:scale(1.14)}100%{transform:scale(1)}}',
-      '@keyframes hvSaut{0%{transform:translateY(0)}28%{transform:translateY(-12px)}52%{transform:translateY(0) scale(1.06,.92)}70%{transform:translateY(-4px)}86%{transform:translateY(0)}100%{transform:none}}',
-      '@keyframes hvLeve{0%{transform:none}40%{transform:translate(1px,-8px) rotate(-4deg)}100%{transform:none}}',
-      '@keyframes hvMonte{0%{transform:scaleY(.2)}70%{transform:scaleY(1.08)}100%{transform:none}}',
-      '@keyframes hvFleche{0%{opacity:0;transform:translate(-6px,6px)}100%{opacity:1;transform:none}}',
-      '@keyframes hvOrbite{0%{transform:none}45%{transform:rotate(14deg)}100%{transform:none}}',
-      '@keyframes hvBalance{0%{transform:none}25%{transform:rotate(-9deg)}55%{transform:rotate(5deg)}80%{transform:rotate(-2deg)}100%{transform:none}}',
-      '@keyframes hvBalance2{0%{transform:none}25%{transform:rotate(9deg)}55%{transform:rotate(-5deg)}80%{transform:rotate(2deg)}100%{transform:none}}',
-      '@keyframes hvPresse{0%{transform:none}45%{transform:translateY(4px)}100%{transform:none}}',
-      '@keyframes hvJauge{0%{transform:scaleX(.15)}75%{transform:scaleX(1.06)}100%{transform:none}}',
-      '@keyframes hvSoleil{0%{opacity:.3;transform:translateY(16px)}100%{opacity:1;transform:none}}',
-      '@keyframes hvTourne{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}',
-      '@keyframes hvNote{0%{transform:none}35%{transform:translateY(-6px) rotate(-10deg) scale(1.08)}70%{transform:rotate(3deg)}100%{transform:none}}',
-      '@keyframes hvOndes{0%{opacity:0;transform:translateX(-7px) scale(.6)}100%{opacity:1;transform:none}}',
-      '@media(prefers-reduced-motion:reduce){.v2-home-x .hv-anim,.v2-home-x .hv-obj .o-corps,.v2-home-x .hv-obj .o-ombre{opacity:1!important;transform:none!important;animation:none!important}.v2-home-x .hv-obj *{animation:none!important;transition:none!important}.v2-home-x .hv-porte,.v2-home-x .hv-fleche,.v2-home-x .v2-enc-l{transition:none!important;animation:none!important}.v2-home-x .hv-porte:hover,.v2-home-x .hv-porte:hover .hv-fleche,.v2-home-x .v2-enc-l:hover{transform:none!important}}'
+      '.v2-home-x .v2-recent{justify-content:center}'
     ].join('');
+    document.head.appendChild(st);
+  }
+  // ── Accueil g4 : styles (tout sous .g4) ──
+  function injectG4Styles() {
+    if (document.getElementById('v2-g4-style')) return;
+    var st = document.createElement('style'); st.id = 'v2-g4-style';
+    st.textContent = [
+      '@font-face{font-family:\'Archivo\';src:url(\'fonts/archivo.woff2\') format(\'woff2\');font-weight:100 900;font-display:swap}',
+      '.v2-wrap.g4{max-width:1240px}',
+      '.g4{--g-nuit:#0B1530;--g-encre:#0F1420;--g-gris:#4A5163;--g-bleu:#0050E6;--g-clair:#3D82FF;--g-halo:#E9F0FF;--g-rose:#E0556E;--g-rosef:#C7283D;--g-filet:rgba(15,20,32,.1);--g-ressort:cubic-bezier(.2,.8,.2,1.15);--g-arrivee:cubic-bezier(.2,.8,.2,1);--g-tit:\'Archivo\',-apple-system,BlinkMacSystemFont,system-ui,sans-serif}',
+      '.g4 *,.g4 *::before,.g4 *::after{box-sizing:border-box}',
+      '.g4 a{text-decoration:none;color:inherit}',
+      '.g4 :focus-visible{outline:3px solid var(--g-bleu);outline-offset:3px;border-radius:12px}',
+      '.g4-board :focus-visible{box-shadow:0 0 0 2px rgba(255,255,255,.95)}',
+      '.g4-ico{width:22px;height:22px;stroke:currentColor;stroke-width:1.75;fill:none;stroke-linecap:round;stroke-linejoin:round;display:block;flex:none}',
+      '.g4-vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}',
+      '.g4-board{position:relative;background:var(--g-nuit);color:#fff;overflow:hidden;border-radius:28px;padding:26px 16px 64px;isolation:isolate}',
+      '.g4-ciel{position:absolute;inset:0;z-index:-3;background:radial-gradient(620px 420px at 100% 0%,rgba(0,80,230,.55) 0%,rgba(0,80,230,0) 70%),radial-gradient(520px 320px at 0% 100%,rgba(30,60,140,.5) 0%,rgba(30,60,140,0) 70%)}',
+      '.g4-rues{position:absolute;inset:0;z-index:-2;opacity:.9;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:46px 46px;background-position:-10px -6px;-webkit-mask-image:radial-gradient(ellipse 80% 90% at 70% 60%,#000 0%,transparent 75%);mask-image:radial-gradient(ellipse 80% 90% at 70% 60%,#000 0%,transparent 75%)}',
+      '.g4-lueur{position:absolute;right:-140px;top:-170px;width:440px;height:440px;border-radius:50%;pointer-events:none;z-index:-1;background:radial-gradient(closest-side,rgba(61,130,255,.5),rgba(61,130,255,.16) 55%,rgba(61,130,255,0) 100%)}',
+      '.g4-lueur2{position:absolute;left:0;top:0;width:520px;height:520px;margin:-260px 0 0 -260px;border-radius:50%;pointer-events:none;z-index:-1;will-change:transform;opacity:0;background:radial-gradient(closest-side,rgba(255,255,255,.10),rgba(255,255,255,0) 100%)}',
+      '.g4-cols{display:block}',
+      '.g4-hello{padding:0 0 4px}',
+      '.g4 .g4-hello h1{margin:0;padding:0;font-family:var(--g-tit);font-weight:800;font-size:40px;line-height:1;letter-spacing:-.03em;color:#fff;background:none}',
+      '.g4 .g4-hello h1 em{font-style:normal;color:#8DB4FF}',
+      '.g4-date{margin-top:8px;font-size:15px;color:rgba(255,255,255,.78)}',
+      '.g4-date b{color:#fff;font-weight:700}',
+      '.g4-solde{display:flex;align-items:baseline;gap:12px;margin-top:10px;flex-wrap:wrap}',
+      '.g4-nb{font-family:var(--g-tit);font-weight:800;font-size:72px;line-height:1.05;letter-spacing:-.04em;font-variant-numeric:tabular-nums;display:inline-flex;height:1.05em;overflow:hidden;position:relative}',
+      '.g4-od-c{display:block;height:1.05em;overflow:hidden}',
+      '.g4-od-s{display:block;will-change:transform}',
+      '.g4-od-s span{display:block;height:1.05em;line-height:1.05}',
+      '.g4-solde-l{font-size:15px;color:rgba(255,255,255,.82)}',
+      '.g4-etat{font-size:18px;font-weight:600;color:rgba(255,255,255,.9)}',
+      '.g4-etat b{font-weight:800}',
+      '.g4-rel{margin-top:18px}',
+      '.g4-rel-t{display:flex;align-items:center;min-height:44px}',
+      '.g4-rel-t h2{margin:0;font-family:var(--g-tit);font-weight:700;font-size:18px;letter-spacing:-.01em;display:flex;align-items:center;gap:10px;color:#fff}',
+      '.g4-badge-l{min-width:26px;height:26px;padding:0 6px;border-radius:13px;background:var(--g-clair);color:var(--g-nuit);font-family:var(--g-tit);font-weight:800;font-size:14px;display:grid;place-items:center}',
+      '.g4-billet{position:relative;cursor:pointer;margin-top:6px;display:grid;grid-template-columns:minmax(0,1fr) auto;background:#F3F5F9;color:var(--g-encre);border-radius:20px;min-height:116px;--stub:118px;transition:transform .4s var(--g-ressort)}',
+      '.g4-billet:hover{transform:translateY(-2px)}',
+      '.g4-billet:active{transform:scale(.985)}',
+      '.g4-billet::before,.g4-billet::after{content:"";position:absolute;width:18px;height:18px;border-radius:50%;background:var(--g-nuit);right:calc(var(--stub) - 9px)}',
+      '.g4-billet::before{top:-9px}',
+      '.g4-billet::after{bottom:-9px}',
+      '.g4-b-corps{padding:14px 18px;min-width:0}',
+      '.g4-b-eye{display:block;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--g-gris)}',
+      '.g4-b-quand{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--g-bleu);margin-top:4px}',
+      '.g4-b-quand i{width:8px;height:8px;border-radius:50%;background:var(--g-bleu)}',
+      '.g4-b-quand.g4-retard{color:var(--g-rosef)}',
+      '.g4-b-quand.g4-retard i{background:var(--g-rose)}',
+      '.g4-b-ville{color:var(--g-encre);font-family:var(--g-tit);font-weight:800;font-size:26px;letter-spacing:-.025em;line-height:1.1;margin-top:4px;overflow-wrap:anywhere}',
+      '.g4-b-nom{font-size:14px;color:var(--g-gris);margin-top:3px;overflow-wrap:anywhere}',
+      '.g4-b-stub{width:var(--stub);border-left:2px dashed rgba(15,20,32,.22);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--g-bleu);font-weight:700;font-size:14px;text-align:center;line-height:1.2;padding:10px 8px;border-radius:0 20px 20px 0;transition:background .25s}',
+      '.g4-b-stub .g4-ico{transition:transform .4s var(--g-ressort)}',
+      '.g4-billet:hover .g4-b-stub{background:rgba(0,80,230,.07)}',
+      '.g4-billet:hover .g4-b-stub .g4-ico{transform:translateX(5px)}',
+      '.g4-rel-l{list-style:none;margin:8px 0 0;padding:0}',
+      '.g4-rel-l a{display:flex;align-items:center;gap:12px;min-height:48px;padding:4px 2px;cursor:pointer;border-top:1px solid rgba(255,255,255,.14);color:#fff}',
+      '.g4-rel-l a:hover .g4-rl-nom{text-decoration:underline}',
+      '.g4-rl-nom{flex:1;min-width:0;font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.g4-rl-q{flex:none;font-size:13px;font-weight:700;color:rgba(255,255,255,.78)}',
+      '.g4-rl-q.g4-retard{color:#FF8FA3}',
+      '.g4-rech{position:relative;z-index:2;display:flex;align-items:center;gap:12px;min-height:56px;margin:-28px 14px 0;padding:0 14px 0 18px;border-radius:999px;background:#fff;border:1px solid var(--g-filet);box-shadow:0 1px 2px rgba(15,20,32,.05),0 8px 22px -8px rgba(0,52,160,.25);transition:transform .35s var(--g-ressort),box-shadow .3s;cursor:pointer;color:var(--g-encre)}',
+      '.g4-rech:hover{transform:translateY(-2px);box-shadow:0 1px 2px rgba(15,20,32,.05),0 14px 28px -8px rgba(0,52,160,.32)}',
+      '.g4-rech .g4-ico{color:var(--g-bleu);width:20px;height:20px}',
+      '.g4-rech-t{flex:1;min-width:0;font-size:16px;color:var(--g-gris);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.g4-kbd{display:none;font-size:13px;font-weight:700;color:var(--g-gris);background:#F3F5F9;border:1px solid var(--g-filet);border-radius:8px;padding:4px 9px}',
+      '.g4-outils{margin-top:0}',
+      '.g4-sommaire{margin:30px 0 0;font-family:var(--g-tit);font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--g-gris);display:flex;align-items:center;gap:12px}',
+      '.g4-sommaire::after{content:"";flex:1;height:1px;background:var(--g-filet)}',
+      '.g4-outils>.g4-sommaire:first-child{margin-top:26px}',
+      '.g4-etage{margin-top:14px}',
+      '.g4-etage+.g4-sommaire{margin-top:34px}',
+      '.g4-tool{position:relative;cursor:pointer;display:flex;align-items:center;gap:14px;min-height:76px;padding:8px 10px 8px 6px;border-radius:18px;color:var(--g-encre);-webkit-tap-highlight-color:transparent;transition:background .25s,transform .4s var(--g-ressort)}',
+      '.g4-tool:hover{background:rgba(0,80,230,.06);transform:translateX(4px)}',
+      '.g4-tool:active{transform:scale(.985)}',
+      '.g4-rond{position:relative;flex:none;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;color:var(--g-bleu);background:radial-gradient(circle at 32% 26%,#fff 0%,#F0F5FF 60%,#E4ECFC 100%);border:2px solid var(--g-bleu);box-shadow:0 0 0 5px var(--paper,#FBFCFE),inset 0 -3px 6px rgba(0,80,230,.08);transition:transform .45s var(--g-ressort),background .25s,color .25s}',
+      '.g4-tool:hover .g4-rond,.g4-tool:focus-visible .g4-rond{background:var(--g-bleu);color:#fff}',
+      '.g4-tx{display:flex;flex-direction:column;min-width:0;flex:1}',
+      '.g4-tx b{font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.2}',
+      '.g4-tx span{font-size:14px;color:var(--g-gris);line-height:1.35;margin-top:2px}',
+      '.g4-chev{flex:none;width:20px;height:20px;color:var(--g-bleu);transition:transform .4s var(--g-ressort)}',
+      '.g4-tool:hover .g4-chev{transform:translateX(5px)}',
+      '.g4-rg{flex:none;min-width:26px;text-align:center;font-family:var(--g-tit);font-weight:800;font-size:15px;color:var(--g-gris);font-variant-numeric:tabular-nums}',
+      '.g4-t1{--g1:radial-gradient(120% 160% at 92% -20%,#4C88FF 0%,#0050E6 42%,#0B2C8F 100%);overflow:hidden;gap:18px;min-height:128px;padding:22px 20px;border-radius:28px;color:#fff;background:var(--g1);box-shadow:0 26px 44px -24px rgba(0,52,160,.8),inset 0 1px 0 rgba(255,255,255,.28)}',
+      '.g4-t1::after{content:"";position:absolute;inset:0;background:linear-gradient(112deg,transparent 30%,rgba(255,255,255,.2) 46%,transparent 60%);transform:translateX(-110%);pointer-events:none}',
+      '.g4-anim .g4-t1::after{animation:g4balaye 1.6s var(--g-arrivee) 1.1s forwards}',
+      '@keyframes g4balaye{to{transform:translateX(110%)}}',
+      '.g4-t1:hover{background:var(--g1);transform:translateY(-3px)}',
+      '.g4-t1 .g4-rond{width:72px;height:72px;color:#fff;background:rgba(255,255,255,.14);box-shadow:inset 0 0 0 1px rgba(255,255,255,.34)}',
+      '.g4-t1 .g4-rond .g4-ico{width:34px;height:34px}',
+      '.g4-t1:hover .g4-rond,.g4-t1:focus-visible .g4-rond{background:#fff;color:var(--g-bleu)}',
+      '.g4-t1 .g4-tx b{color:#fff;font-family:var(--g-tit);font-weight:800;font-size:32px;letter-spacing:-.035em;line-height:1.05}',
+      '.g4-t1 .g4-tx span{color:rgba(255,255,255,.9);font-size:15px;margin-top:4px}',
+      '.g4-t1 .g4-tx .g4-eye{font-style:normal;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.82);margin:0 0 6px}',
+      '.g4-t1 .g4-chev{color:#fff;width:30px;height:30px}',
+      '.g4-e2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}',
+      '.g4-t2{flex-direction:column;align-items:flex-start;gap:12px;min-height:168px;padding:16px 14px;border-radius:24px;background:linear-gradient(165deg,#FFFFFF 0%,#EEF3FF 100%);box-shadow:inset 0 0 0 1px rgba(0,80,230,.12),inset 0 1px 0 #fff}',
+      '.g4-t2:hover{background:linear-gradient(165deg,#FFFFFF 0%,#E3ECFF 100%);transform:translateY(-3px)}',
+      '.g4-t2 .g4-rond{width:52px;height:52px;box-shadow:none}',
+      '.g4-t2 .g4-tx b{font-family:var(--g-tit);font-weight:800;font-size:18px;letter-spacing:-.02em}',
+      '.g4-t2 .g4-chev{position:absolute;top:18px;right:14px}',
+      '.g4-t2 .g4-rg{position:absolute;top:16px;right:44px;min-width:0;font-size:24px;letter-spacing:-.03em;color:rgba(0,80,230,.32)}',
+      '.g4-t3g{display:grid;grid-template-columns:minmax(0,1fr);gap:2px 36px}',
+      '.g4-t3{min-height:58px;gap:12px;padding:6px 8px 6px 4px;border-radius:14px}',
+      '.g4-t3 .g4-rond{width:40px;height:40px;box-shadow:0 0 0 4px var(--paper,#FBFCFE)}',
+      '.g4-t3 .g4-rond .g4-ico{width:19px;height:19px}',
+      '.g4-t3 .g4-tx b{font-size:15px}',
+      '.g4-t3 .g4-tx span{font-size:13px}',
+      '.g4-t3 .g4-chev{width:18px;height:18px}',
+      '.g4-note{margin:22px 4px 0;font-size:13px;line-height:1.5;color:var(--g-gris);max-width:70ch}',
+      '@keyframes g4arr{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}',
+      '.g4-anim .g4-a{animation:g4arr .7s var(--g-ressort) backwards;animation-delay:calc(var(--i,0) * 70ms + 40ms)}',
+      '.g4-anim .g4-t1,.g4-anim .g4-t2{animation:g4arr .7s var(--g-ressort) backwards;animation-delay:calc(var(--i,0) * 70ms + 40ms)}',
+      '.g4-anim .g4-billet{animation:g4arr .6s var(--g-ressort) 500ms backwards}',
+      '.g4-anim .g4-lueur{animation:g4lu 1s ease .3s backwards}',
+      '@keyframes g4lu{from{opacity:0}to{opacity:1}}',
+      '.g4-anim .g4-fixe .g4-a,.g4-anim .g4-fixe .g4-t1,.g4-anim .g4-fixe .g4-t2,.g4-anim .g4-fixe .g4-t1::after{animation:none}',
+      '@media (min-width:700px){',
+      '  .g4-board{padding:30px 28px 72px}',
+      '  .g4-e2{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}',
+      '  .g4-t3g{grid-template-columns:repeat(2,minmax(0,1fr))}',
+      '}',
+      '@media (min-width:1000px){',
+      '  .g4-board{border-radius:32px;padding:34px 44px 84px}',
+      '  .g4-cols.g4-avec{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:56px;align-items:start}',
+      '  .g4 .g4-hello h1{font-size:60px}',
+      '  .g4-hello{padding-top:10px}',
+      '  .g4-nb{font-size:120px}',
+      '  .g4-solde{flex-direction:column;align-items:flex-start;gap:0;margin-top:14px}',
+      '  .g4-rel{margin-top:4px}',
+      '  .g4-rel-t h2{font-size:20px}',
+      '  .g4-b-ville{font-size:32px}',
+      '  .g4-billet{--stub:150px;min-height:124px}',
+      '  .g4-rech{margin-left:44px;margin-right:44px}',
+      '  .g4-kbd{display:inline-block}',
+      '  .g4-outils{margin-left:44px;margin-right:44px}',
+      '  .g4-note{margin-left:48px}',
+      '  .g4-t1{min-height:150px;padding:26px 30px}',
+      '  .g4-t1 .g4-rond{width:84px;height:84px}',
+      '  .g4-t1 .g4-tx b{font-size:44px}',
+      '  .g4-t1 .g4-tx span{font-size:17px}',
+      '  .g4-t2{min-height:178px;padding:20px 18px}',
+      '  .g4-t2 .g4-tx b{font-size:20px}',
+      '  .g4-t3g{grid-template-columns:repeat(3,minmax(0,1fr))}',
+      '}',
+      '@media (max-width:389px){.g4 .g4-hello h1{font-size:34px}.g4-nb{font-size:64px}}',
+      '@media (prefers-reduced-motion:reduce){',
+      '  .g4 *,.g4 *::before,.g4 *::after{animation:none !important;transition:none !important}',
+      '  .g4-lueur2{display:none}',
+      '}'
+    ].join('\n');
     document.head.appendChild(st);
   }
   // Relances dues (demande Manon, 10/09/2026) : date saisie fiche par fiche
@@ -1192,7 +1235,7 @@
         if (!relanceEstAMoi(o, ph)) return;
         var dt = new Date(d + 'T00:00:00'); if (isNaN(dt.getTime())) return;
         var diff = Math.round((dt - today0) / 86400000);
-        out.push({ pid: o.sid, name: ph.name || '', diff: diff });
+        out.push({ pid: o.sid, name: ph.name || '', ville: ph.ville || '', diff: diff });
       });
       out.sort(function (a, b) { return a.diff - b.diff; });
       _relances = out;
@@ -1218,42 +1261,219 @@
       }).join('') +
       '</div>';
   }
-  // Accueil v5 (24/09/2026) : chaque bloc .hv-anim se révèle en entrant à
-  // l'écran, une seule fois. Filets : ce qui est déjà à l'écran est révélé tout
-  // de suite, et au bout de 8 s plus rien ne reste masqué.
-  function hvReveler(root) {
-    var blocs = [].slice.call(root.querySelectorAll('.hv-anim'));
-    if (!blocs.length) return;
-    function montrer(el) { el.classList.add('vu'); }
-    function aLEcran(el) { var r = el.getBoundingClientRect(); return r.top < window.innerHeight && r.bottom > 0; }
-    function verifier() { blocs.forEach(function (el) { if (!el.classList.contains('vu') && aLEcran(el)) montrer(el); }); }
-    if ('IntersectionObserver' in window) {
-      var io = new IntersectionObserver(function (entrees) {
-        entrees.forEach(function (en) { if (en.isIntersecting) { montrer(en.target); io.unobserve(en.target); } });
-      }, { rootMargin: '0px 0px -6% 0px', threshold: 0 });
-      blocs.forEach(function (el) { io.observe(el); });
-    }
-    verifier();
-    setTimeout(verifier, 1200);
-    setTimeout(function () { blocs.forEach(montrer); }, 8000);
-    var enAttente = false;
-    window.addEventListener('scroll', function () {
-      if (enAttente) return; enAttente = true;
-      requestAnimationFrame(function () { enAttente = false; verifier(); });
-    }, { passive: true, capture: true });
+  // ════════════════════════════════════════════
+  // ACCUEIL « g4 » (validé par Will le 30/09/2026)
+  // Même accueil pour tous : les outils sont rangés selon le nombre total
+  // d'ouvertures de l'équipe (table usage_ecran, lue par la fonction Supabase
+  // accueil_ouvertures, qui ne rend que des totaux). Le RANG seul est affiché :
+  // jamais de chiffre d'ouvertures ni de nom de personne. Le rang 1 en grande
+  // porte, 2 à 9 en tuiles, le reste en une liste. Hors OPSO uniquement.
+  // ════════════════════════════════════════════
+  // Ordre de repli (mesure du 30/09/2026), utilisé tant que le vrai classement n'est pas là.
+  var G4_REPLI = ['pharma', 'produits', 'pilotage', 'marketing', 'infos', 'rdv', 'carte', 'appro', 'todo', 'biosimilaires', 'offilog', 'concurrents', 'remontees', 'marchefr', 'carteGrp', 'presentation', 'lgo', 'fiches', 'argument', 'audit', 'groupements', 'reforme2027'];
+  // k = nom de la route mesurée par V2.mesurer (= `ecran` côté base) ; page = écran qui doit exister.
+  var G4_PORTES = {
+    pharma: { ico: 'officines', nom: 'Officines', ph: 'La fiche de chaque client et prospect', page: 'pharma' },
+    produits: { ico: 'catalogue', nom: 'Catalogue produits', ph: 'Prix et stock des 7 établissements', page: 'produits' },
+    pilotage: { ico: 'pilotage', nom: 'Pilotage', ph: 'CA, marge et objectifs', page: 'pilotage' },
+    marketing: { ico: 'marketing', nom: 'Marketing', ph: 'Supports, sélections, LinkedIn', page: 'marketing' },
+    infos: { ico: 'infos', nom: 'Infos du matin', ph: 'Le brief du jour', page: 'infos' },
+    rdv: { ico: 'rdv', nom: 'Rendez-vous', ph: 'Demander et suivre vos rendez-vous', page: 'rdv' },
+    carte: { ico: 'carte', nom: 'La carte', ph: 'Clients, prospects et votre tournée', page: 'carte' },
+    appro: { ico: 'appro', nom: 'Appro Intégral', ph: 'Couverture de stock et ruptures', page: 'appro' },
+    todo: { ico: 'todo', nom: 'To do list', ph: 'Rendez-vous à demander, remerciements, ouvertures', page: 'todo' },
+    biosimilaires: { ico: 'biosim', nom: 'Biosimilaires', ph: 'Les biosimilaires et leurs références', page: 'biosimilaires' },
+    offilog: { ico: 'offilog', nom: 'Offilog', ph: 'La centrale parapharmacie', page: 'offilog' },
+    concurrents: { ico: 'concurrents', nom: 'Concurrents', ph: 'Ce que font les autres', page: 'concurrents' },
+    remontees: { ico: 'remontees', nom: 'Remontées', ph: 'Le mur d\'idées de l\'équipe', page: 'remontees' },
+    marchefr: { ico: 'marche', nom: 'Le marché', ph: 'Le marché français d\'une référence, région par région', page: 'marchefr' },
+    carteGrp: { ico: 'carte-grp', nom: 'Carte des groupements', ph: 'Où sont les adhérents de chaque groupement', page: 'carteGrp' },
+    presentation: { ico: 'presentation', nom: 'Présentation Intégral', ph: 'Le groupe de grossistes-répartiteurs en quelques écrans', page: 'presentation' },
+    lgo: { ico: 'lgo', nom: 'Logiciels officine', ph: 'Importer le catalogue dans chaque logiciel', page: 'lgo' },
+    fiches: { ico: 'fiches', nom: 'Fiches PDF', ph: 'Les fiches à laisser en officine', page: 'fiches' },
+    argument: { ico: 'argument', nom: 'L\'Argument', ph: 'Quoi répondre, objection par objection', page: 'argument' },
+    audit: { ico: 'audit', nom: 'Audit marge', ph: 'La marge d\'une officine, calculée avec elle', page: 'audit' },
+    // Groupements : pas d'écran à part, c'est l'onglet « groupements » des officines.
+    groupements: { ico: 'groupements', nom: 'Groupements', ph: 'Les listes et listings d\'achats', page: 'pharma', js: 'V2.go(\'pharma\',\'groupements\')' },
+    // Réforme 2027 : document privé, adresse signée valable 1 h, jamais servi par le dépôt public.
+    reforme2027: { ico: 'reforme', nom: 'Réforme 2027', ph: 'Ce qui change pour la marge officinale', page: 'pilotage', js: 'V2.ouvrirDocProtege(\'reforme2027\')' }
+  };
+  var G4_SPRITE = '<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><symbol id="g4-i-todo" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l3 3 5-6"/></symbol><symbol id="g4-i-officines" viewBox="0 0 24 24"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/></symbol><symbol id="g4-i-carte" viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><line x1="9" y1="4" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="20"/></symbol><symbol id="g4-i-pilotage" viewBox="0 0 24 24"><line x1="4" y1="20" x2="20" y2="20"/><path d="M5 16l5-5 3 3 6-7"/><path d="M15 7h4v4"/></symbol><symbol id="g4-i-catalogue" viewBox="0 0 24 24"><path d="M12 3 20 7v10l-8 4-8-4V7z"/><path d="M4 7l8 4 8-4"/><line x1="12" y1="11" x2="12" y2="21"/></symbol><symbol id="g4-i-biosim" viewBox="0 0 24 24"><circle cx="7" cy="7" r="3"/><circle cx="17" cy="17" r="3"/><circle cx="17" cy="7" r="3"/><line x1="10" y1="7" x2="14" y2="7"/><line x1="17" y1="10" x2="17" y2="14"/></symbol><symbol id="g4-i-offilog" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></symbol><symbol id="g4-i-appro" viewBox="0 0 24 24"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></symbol><symbol id="g4-i-infos" viewBox="0 0 24 24"><circle cx="12" cy="14" r="4"/><line x1="12" y1="3" x2="12" y2="6"/><line x1="4.5" y1="7.5" x2="6.5" y2="9.5"/><line x1="19.5" y1="7.5" x2="17.5" y2="9.5"/><line x1="3" y1="20" x2="21" y2="20"/></symbol><symbol id="g4-i-concurrents" viewBox="0 0 24 24"><circle cx="7" cy="15" r="4"/><circle cx="17" cy="15" r="4"/><path d="M11 15h2"/><path d="M5 11l2-6h2"/><path d="M19 11l-2-6h-2"/></symbol><symbol id="g4-i-groupements" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><path d="M15 14.5c3 0 6 2 6 5.5"/></symbol><symbol id="g4-i-carte-grp" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></symbol><symbol id="g4-i-marketing" viewBox="0 0 24 24"><path d="M4 10v4h3l7 4V6L7 10z"/><path d="M18 9a4 4 0 0 1 0 6"/></symbol><symbol id="g4-i-fiches" viewBox="0 0 24 24"><path d="M6 3h7l5 5v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M13 3v5h5"/><line x1="8" y1="13" x2="15" y2="13"/><line x1="8" y1="16" x2="12" y2="16"/></symbol><symbol id="g4-i-argument" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="12" x2="13" y2="12"/></symbol><symbol id="g4-i-presentation" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><line x1="12" y1="16" x2="12" y2="20"/><line x1="8" y1="20" x2="16" y2="20"/><path d="M8 12l3-3 2 2 3-3"/></symbol><symbol id="g4-i-audit" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><line x1="20" y1="20" x2="15.5" y2="15.5"/><path d="M9 12.5l1.5-2 1.5 1.2 1.5-2.2"/></symbol><symbol id="g4-i-reforme" viewBox="0 0 24 24"><rect x="4" y="3" width="12" height="17" rx="1.5"/><line x1="7" y1="8" x2="13" y2="8"/><line x1="7" y1="12" x2="11" y2="12"/><circle cx="17" cy="17" r="4"/><path d="M15.3 17l1.1 1.1 2.1-2.3"/></symbol><symbol id="g4-i-marche" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z"/></symbol><symbol id="g4-i-lgo" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><line x1="12" y1="16" x2="12" y2="20"/><line x1="8" y1="20" x2="16" y2="20"/><path d="M12 7v6"/><path d="M9.5 10.5 12 13l2.5-2.5"/></symbol><symbol id="g4-i-remontees" viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></symbol><symbol id="g4-i-academy" viewBox="0 0 24 24"><path d="M2 9 12 4l10 5-10 5-10-5z"/><path d="M6 11.5V17c0 1.5 3 3 6 3s6-1.5 6-3v-5.5"/></symbol><symbol id="g4-i-rdv" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></symbol><symbol id="g4-i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></symbol><symbol id="g4-i-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol><symbol id="g4-i-chevron" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol><symbol id="g4-i-sortie" viewBox="0 0 24 24"><path d="M7 17 17 7"/><path d="M9 7h8v8"/></symbol><symbol id="g4-i-proposer" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3" stroke-dasharray="3 3"/><line x1="12" y1="8.5" x2="12" y2="15.5"/><line x1="8.5" y1="12" x2="15.5" y2="12"/></symbol></svg>';
+  var G4_CLE_ORDRE = 'jarvis_accueil_ordre';
+  var _g4Ordre = null;        // [{e, o, p}] : écran, ouvertures, personnes (jamais affichés)
+  var _g4Demande = false;     // un seul appel réseau par chargement de page
+  var _g4NbJoue = false;      // le compteur à rouleaux ne joue qu'une fois par session
+  var _g4Esc = {};            // textes Escale des portes Officines et Pilotage
+  function g4Ico(nom, cls) {
+    return '<svg class="' + cls + '" aria-hidden="true" focusable="false"><use href="#g4-i-' + nom + '"/></svg>';
   }
-  // Une fois l'arrivée jouée, le bloc rend la main (le survol peut le soulever) ;
-  // à l'appui sur téléphone, le détail de l'objet joue une fois (classe joue).
-  document.addEventListener('animationend', function (e) {
-    var t = e.target;
-    if (e.animationName === 'hvArriver' && t.classList && t.classList.contains('hv-anim')) t.classList.add('fin');
-  });
-  document.addEventListener('pointerdown', function (e) {
-    var p = e.target && e.target.closest ? e.target.closest('.v2-home-x .hv-porte') : null;
-    if (!p) return;
-    p.classList.remove('joue'); void p.offsetWidth; p.classList.add('joue');
-    clearTimeout(p._hvT); p._hvT = setTimeout(function () { p.classList.remove('joue'); }, 1200);
-  });
+  function g4OrdreNormalise(rows) {
+    var out = [];
+    (rows || []).forEach(function (r) {
+      if (r && r.ecran && r.ecran !== 'home') out.push({ e: String(r.ecran), o: Number(r.ouvertures) || 0, p: Number(r.personnes) || 0 });
+    });
+    return out;
+  }
+  // Le classement vient d'abord du cache de la session ; sinon l'ordre de repli
+  // s'affiche tout de suite et la demande part sans bloquer. Toute erreur reste
+  // silencieuse : l'accueil n'est jamais vide et n'affiche jamais d'erreur.
+  function g4ChargerOrdre() {
+    if (_g4Ordre) return;
+    try {
+      var c = sessionStorage.getItem(G4_CLE_ORDRE);
+      if (c) { var a = JSON.parse(c); if (a && a.length) { _g4Ordre = a; return; } }
+    } catch (e) {}
+    if (_g4Demande || !V2.user) return;
+    _g4Demande = true;
+    try {
+      var sb = V2.sb && V2.sb();
+      if (!sb || !sb.rpc) return;
+      sb.rpc('accueil_ouvertures').then(function (r) {
+        try {
+          var rows = g4OrdreNormalise(r && r.data);
+          if (!rows.length) return;
+          _g4Ordre = rows;
+          try { sessionStorage.setItem(G4_CLE_ORDRE, JSON.stringify(rows)); } catch (e) {}
+          g4Rafraichir();
+        } catch (e) {}
+      }, function () {});
+    } catch (e) {}
+  }
+  // Nombre d'ouvertures décroissant, puis nombre de personnes ; une porte absente
+  // du classement passe après celles qui y sont, dans l'ordre de repli.
+  function g4Classer(cles) {
+    var info = {};
+    (_g4Ordre || []).forEach(function (r) { info[r.e] = r; });
+    return cles.slice().sort(function (a, b) {
+      var ia = info[a], ib = info[b];
+      if (ia && ib) {
+        if (ib.o !== ia.o) return ib.o - ia.o;
+        if (ib.p !== ia.p) return ib.p - ia.p;
+      } else if (ia) { return -1; } else if (ib) { return 1; }
+      return G4_REPLI.indexOf(a) - G4_REPLI.indexOf(b);
+    });
+  }
+  function g4Outil(cls, i, k, nom, ph, ico, rang, opt) {
+    opt = opt || {};
+    var att = opt.href
+      ? ' href="' + opt.href + '" target="_blank" rel="noopener"'
+      : ' role="link" tabindex="0" onclick="' + opt.js + '" onkeydown="if(event.key===\'Enter\')this.click()"';
+    return '<a class="g4-tool ' + cls + '" style="--k:' + i + (opt.anim ? ';--i:' + (opt.anim) : '') + '"' + att + '>' +
+      (rang != null ? '<span class="g4-rg" aria-hidden="true">' + rang + '</span>' : '') +
+      '<span class="g4-rond">' + g4Ico(ico, 'g4-ico') + '</span>' +
+      '<span class="g4-tx">' + (opt.eye ? '<em class="g4-eye">' + opt.eye + '</em>' : '') + '<b>' + esc(nom) + '</b><span>' + esc(ph) + '</span></span>' +
+      g4Ico(opt.href ? 'sortie' : 'chevron', 'g4-chev g4-ico') + '</a>';
+  }
+  // Tout ce qui est sous « Vos outils ». Filtre : une porte sans son écran ne s'affiche pas.
+  function g4OutilsHtml() {
+    var escale = !!(window.V2_BRAND && window.V2_BRAND.escale);
+    var cles = G4_REPLI.filter(function (k) {
+      var d = G4_PORTES[k];
+      if (!d || !V2.pages[d.page]) return false;
+      if (k === 'lgo' && escale) return false;
+      return true;
+    });
+    var rang = g4Classer(cles);
+    function ph(k) { return (escale && _g4Esc[k]) ? _g4Esc[k] : G4_PORTES[k].ph; }
+    function porte(cls, i, k, r, opt) {
+      var d = G4_PORTES[k];
+      opt = opt || {};
+      opt.js = d.js || ('V2.go(\'' + k + '\')');
+      return g4Outil(cls, i, k, d.nom, ph(k), d.ico, r, opt);
+    }
+    var h = '<div class="g4-sommaire g4-a" style="--i:8">Vos outils</div>';
+    if (rang.length) {
+      h += '<div class="g4-etage g4-e1">' + porte('g4-t1', 0, rang[0], null, { anim: 9, eye: 'N° 1 · le plus ouvert par l\'équipe' }) + '</div>';
+    }
+    var t2 = rang.slice(1, 9), t3 = rang.slice(9);
+    if (t2.length) {
+      h += '<div class="g4-sommaire g4-a" style="--i:10">Les plus ouverts ensuite, de 2 à ' + (1 + t2.length) + '</div>' +
+        '<div class="g4-etage g4-e2">' + t2.map(function (k, j) { return porte('g4-t2', j, k, j + 2, { anim: 10 + j }); }).join('') + '</div>';
+    }
+    // Portes hors classement, à la fin de la liste : Escale, Academy (hors du CRM), Proposer un outil.
+    var fin = [];
+    var bscE = V2.basculeEspace();
+    if (bscE && bscE.to === 'escale') {
+      fin.push(g4Outil('g4-t3', 0, 'escale', 'Espace Escale Pharma', 'Le suivi Escale et ses officines clientes', 'pilotage', '·', { js: 'V2.goSpace(\'escale\')' }));
+    }
+    // ⚠️ CE DÉPÔT EST PUBLIC : aucun code d'accès n'est écrit ici (voir la note plus bas).
+    fin.push(g4Outil('g4-t3', 0, 'academy', 'JARVIS Academy', 'Se former, à son rythme', 'academy', '·', { href: 'https://jarvis-academy-fr.vercel.app/' }));
+    if (V2.pages.remontees) {
+      fin.push(g4Outil('g4-t3', 0, 'proposer', 'Proposer un outil', 'Une idée d\'outil : elle rejoint les Remontées', 'proposer', '·', { js: 'V2.go(\'remontees\')' }));
+    }
+    var liste = t3.map(function (k, j) { return porte('g4-t3', j, k, j + 10); }).concat(fin);
+    h += '<div class="g4-sommaire g4-a" style="--i:' + (t2.length ? 18 : 10) + '">' + (t2.length ? 'Tous les autres, du plus au moins ouvert' : 'Les autres outils') + '</div>' +
+      '<div class="g4-etage g4-e3"><div class="g4-t3g">' + liste.join('') + '</div></div>' +
+      '<p class="g4-note">Le code d\'accès de JARVIS Academy se demande à Will — il n\'est écrit nulle part.</p>';
+    return h;
+  }
+  // Le classement arrive après le premier dessin : on ne remplace que la zone des
+  // outils (pas de re-rendu complet, pas de cascade rejouée).
+  function g4Rafraichir() {
+    var box = document.getElementById('g4-outils');
+    if (!box || !V2.route || V2.route.name !== 'home') return;
+    box.classList.add('g4-fixe');
+    box.innerHTML = g4OutilsHtml();
+  }
+  function g4Quand(diff) {
+    if (diff < 0) return { t: diff === -1 ? 'Retard : hier' : 'Retard : J' + diff, retard: true };
+    if (diff === 0) return { t: 'Aujourd\'hui', retard: false };
+    return { t: 'Dans ' + diff + 'j', retard: false };
+  }
+  // Le relevé « À relancer » : vraies relances de la personne (mêmes données que relancesCardHtml).
+  function g4ReleveHtml() {
+    if (_relances == null) { loadRelances(); return ''; }
+    var dus = _relances.filter(function (r) { return r.diff <= 2; }).slice(0, 8);
+    if (!dus.length) return '';
+    function ouvrir(r) { return 'onclick="V2.go(\'pharma\',\'' + esc(String(r.pid)) + '\')" onkeydown="if(event.key===\'Enter\')this.click()"'; }
+    var q0 = g4Quand(dus[0].diff), r0 = dus[0];
+    return '<section class="g4-rel" aria-label="À relancer">' +
+      '<div class="g4-rel-t g4-a" style="--i:4"><h2><span class="g4-badge-l" aria-hidden="true">' + dus.length + '</span>À relancer</h2></div>' +
+      '<a class="g4-billet" role="link" tabindex="0" ' + ouvrir(r0) + '>' +
+        '<div class="g4-b-corps"><span class="g4-b-eye">Prochaine relance</span>' +
+        '<span class="g4-b-quand' + (q0.retard ? ' g4-retard' : '') + '"><i></i><span>' + q0.t + '</span></span>' +
+        '<div class="g4-b-ville">' + esc(r0.ville || r0.name) + '</div>' +
+        (r0.ville ? '<div class="g4-b-nom">' + esc(r0.name) + '</div>' : '') + '</div>' +
+        '<span class="g4-b-stub">Ouvrir la fiche' + g4Ico('chevron', 'g4-ico') + '</span></a>' +
+      (dus.length > 1 ? '<ul class="g4-rel-l">' + dus.slice(1).map(function (r) {
+        var q = g4Quand(r.diff);
+        return '<li><a role="link" tabindex="0" ' + ouvrir(r) + '><span class="g4-rl-nom">' + esc(r.name) + '</span><span class="g4-rl-q' + (q.retard ? ' g4-retard' : '') + '">' + q.t + '</span></a></li>';
+      }).join('') + '</ul>' : '') +
+    '</section>';
+  }
+  // Compteur à rouleaux : chaque chiffre roule de 0 à sa valeur (transform seul).
+  function g4Odo(el, n) {
+    var t = String(n), cols = [], i, j;
+    for (i = 0; i < t.length; i++) {
+      var s = ''; for (j = 0; j < 20; j++) s += '<span>' + (j % 10) + '</span>';
+      cols.push({ ei: +t[i], html: '<span class="g4-od-c" aria-hidden="true"><span class="g4-od-s" style="transform:translateY(0)">' + s + '</span></span>' });
+    }
+    el.innerHTML = '<span class="g4-vh">' + t + '</span>' + cols.map(function (c) { return c.html; }).join('');
+    var strips = el.querySelectorAll('.g4-od-s');
+    requestAnimationFrame(function () { requestAnimationFrame(function () {
+      [].forEach.call(strips, function (st, k) {
+        st.style.transition = 'transform ' + (950 + k * 230) + 'ms cubic-bezier(.16,.84,.24,1)';
+        st.style.transform = 'translateY(-' + (cols[k].ei * 1.05) + 'em)';
+      });
+    }); });
+  }
+  // Après le dessin : compteur (une fois), lueur qui suit le pointeur (souris seulement).
+  function g4Apres(root, n) {
+    var reduit = false;
+    try { reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+    var nb = root.querySelector('#g4-nb');
+    if (nb && !_g4NbJoue) { _g4NbJoue = true; if (!reduit) g4Odo(nb, n); }
+    var board = root.querySelector('#g4-board'), l2 = root.querySelector('#g4-lueur2');
+    if (board && l2 && !reduit) {
+      board.addEventListener('pointermove', function (e) {
+        if (e.pointerType === 'touch') return;
+        var b = board.getBoundingClientRect();
+        l2.style.opacity = '1';
+        l2.style.transform = 'translate3d(' + (e.clientX - b.left) + 'px,' + (e.clientY - b.top) + 'px,0)';
+      });
+    }
+  }
+
   // Spotlight : la souris met à jour --mx/--my sur la tuile survolée
   V2.homeSpot = function (e, el) {
     try {
@@ -1434,147 +1654,22 @@
       // optionnel absent) ne s'affiche pas : un clic vers rien n'existe pas.
       P = P.filter(function (p) { return p.route ? !!V2.pages[p.route.name] : !!V2.pages[p.k]; });
       // Accueil regroupé "par moment d'usage" (hors OPSO qui garde son ordre suivi-groupement)
-      var pilHtml, todoTuile = false;
+      var pilHtml, todoTuile = false, g4Mode = false;
       if (window.V2_BRAND && window.V2_BRAND.opso) {
         // 01/10/2026 — Will : « l'accueil doit être les différentes features,
         // pas directement le pilotage » → l'accueil ne montre plus que les
         // espaces ; le tableau de bord est l'écran « opsobord ».
         pilHtml = '<div class="v2-piliers oa-espaces">' + P.map(tile).join('') + '</div>';
       } else {
-        var pmap = {}; P.forEach(function (p) { pmap[p.k] = p; });
-        // Libellés courts pour l'accueil ; les pages restent atteignables via ⌘K.
-        if (pmap.molecules) { pmap.molecules.t = 'Catalogue & prix'; }
-        if (pmap.presentation) { pmap.presentation.t = 'Présentation'; }
-        // 03/09/2026 — la tuile s'appelle OFFILOG, pas « Concurrents » : c'est la
-        // centrale parapharmacie du groupe, la veille concurrente n'en est qu'un
-        // usage. Demande de Will, mot pour mot : « ça devient une feature Offilog
-        // identifiée avec le logo ».
-        if (pmap.offilog) { pmap.offilog.t = 'Offilog'; }
-
-        // ── « Les objets bien rangés » (24/09/2026, maquette v5, « go » de Will) ──
-        // Will : « le 1 mais bien rangé comme le 4 ». Le quotidien en grand
-        // (To do list, puis Officines · La carte · Catalogue produits · Pilotage),
-        // les rayons en lignes objet + nom + phrase + chevron, et tout en bas
-        // « En cours de développement ». Une porte = une page, plus de dépli.
-        // Missions rémunérées n'est plus sur l'accueil (sa page reste, ⌘K aussi).
-        // Une porte dont l'écran n'est pas chargé ne s'affiche pas.
-        // Objets en volume de la maquette v5 (24/09/2026), repris tels quels ; dégradés préfixés hv.
-        var HV_DEFS = '<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><linearGradient id="hvB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7FA6FF"/><stop offset=".5" stop-color="#0050E6"/><stop offset="1" stop-color="#0034A0"/></linearGradient><linearGradient id="hvBm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#CFDEFF"/><stop offset=".55" stop-color="#6C9BFF"/><stop offset="1" stop-color="#2F6BEF"/></linearGradient><linearGradient id="hvF" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0050E6"/><stop offset="1" stop-color="#002C8A"/></linearGradient><linearGradient id="hvP" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".6" stop-color="#F3F7FF"/><stop offset="1" stop-color="#D6E2F8"/></linearGradient><linearGradient id="hvC" x1="0" y1="0" x2=".7" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".5" stop-color="#E1EBFF"/><stop offset="1" stop-color="#BFD3FF"/></linearGradient><radialGradient id="hvS" cx=".36" cy=".3" r=".75"><stop offset="0" stop-color="#DCE7FF"/><stop offset=".45" stop-color="#4C82F5"/><stop offset="1" stop-color="#0034A0"/></radialGradient><radialGradient id="hvO" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#0034A0" stop-opacity=".36"/><stop offset=".55" stop-color="#0034A0" stop-opacity=".12"/><stop offset="1" stop-color="#0034A0" stop-opacity="0"/></radialGradient></defs></svg>';
-        var HV_OBJ = {
-          todo: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="48" cy="87" rx="29" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><rect x="20" y="17" width="56" height="67" rx="13" fill="url(#hvB)"/><rect x="25" y="24" width="46" height="54" rx="8" fill="url(#hvP)"/><rect x="36" y="11" width="24" height="12" rx="6" fill="url(#hvBm)"/><ellipse cx="43" cy="14" rx="5" ry="1.5" fill="#fff" opacity=".7"/><rect x="31" y="33" width="13" height="13" rx="4" fill="#E1EBFF"/><g class="d-pop"><rect x="31" y="33" width="13" height="13" rx="4" fill="url(#hvB)"/><path d="M34.2 39.8l2.6 2.6 4.6-5.2" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g><rect x="48" y="37" width="18" height="5" rx="2.5" fill="#BFD3FF"/><rect x="31" y="54" width="13" height="13" rx="4" fill="#E1EBFF"/><rect x="48" y="58" width="13" height="5" rx="2.5" fill="#D6E2F8"/><path d="M23.5 27 q1-6 8-7.5" stroke="#fff" stroke-opacity=".6" stroke-width="2.5" stroke-linecap="round" fill="none"/></g></g></svg>',
-          officines: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="48" cy="86" rx="32" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><rect x="14" y="27" width="68" height="54" rx="12" fill="#BFD3FF"/><rect x="14" y="22" width="68" height="54" rx="12" fill="url(#hvP)"/><g class="d-pulse"><rect x="22" y="31" width="27" height="27" rx="8" fill="url(#hvB)"/><path d="M33 36h5v6h6v5h-6v6h-5v-6h-6v-5h6z" fill="#fff"/></g><rect x="55" y="34" width="19" height="5" rx="2.5" fill="#BFD3FF"/><rect x="55" y="44" width="13" height="5" rx="2.5" fill="#D6E2F8"/><rect x="22" y="64" width="52" height="5" rx="2.5" fill="#E1EBFF"/><path d="M21 27h24" stroke="#fff" stroke-width="3" stroke-linecap="round"/></g></g></svg>',
-          carte: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="48" cy="87" rx="36" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><path d="M12 32 L34 25 L34 76 L12 83Z" fill="url(#hvC)"/><path d="M34 25 L60 32 L60 83 L34 76Z" fill="#BFD3FF"/><path d="M60 32 L84 25 L84 76 L60 83Z" fill="url(#hvC)"/><path d="M18 72 C26 64 32 72 40 64 S54 54 60 58 S72 52 78 44" fill="none" stroke="#0050E6" stroke-width="2.8" stroke-linecap="round" stroke-dasharray="0.1 5.5"/><ellipse cx="47" cy="58" rx="5" ry="1.8" fill="#0034A0" opacity=".3"/><g class="d-saut"><path d="M47 57 C41 49 37 44 37 38 A10 10 0 1 1 57 38 C57 44 53 49 47 57Z" fill="url(#hvB)"/><circle cx="47" cy="38" r="4" fill="#fff"/><ellipse cx="42.5" cy="32.5" rx="3" ry="2" fill="#fff" opacity=".55"/></g><path d="M15 36 L31 31" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".85"/></g></g></svg>',
-          catalogue: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="46" cy="86" rx="32" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><path d="M16 54 L26 44 L72 44 L62 54Z" fill="#9BC0FF"/><path d="M62 54 L72 44 L72 72 L62 82Z" fill="url(#hvF)"/><rect x="16" y="54" width="46" height="28" rx="3" fill="url(#hvB)"/><rect x="35" y="54" width="8" height="28" fill="#fff" opacity=".26"/><path d="M35 54 L45 44 L53 44 L43 54Z" fill="#fff" opacity=".35"/><path d="M19.5 58 v12" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".5"/><g class="d-leve"><path d="M24 34 L31 27 L61 27 L54 34Z" fill="#E1EBFF"/><path d="M54 34 L61 27 L61 45 L54 52Z" fill="#4C82F5"/><rect x="24" y="34" width="30" height="18" rx="2.5" fill="url(#hvBm)"/><path d="M37 38.5h4v3.5h3.5v4h-3.5v3.5h-4v-3.5h-3.5v-4h3.5z" fill="#fff"/></g></g></g></svg>',
-          pilotage: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="48" cy="87" rx="36" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><rect x="12" y="24" width="72" height="58" rx="14" fill="#BFD3FF"/><rect x="12" y="19" width="72" height="58" rx="14" fill="url(#hvP)"/><rect x="22" y="66" width="52" height="3" rx="1.5" fill="#E1EBFF"/><rect class="d-monte" style="--r:0" x="26" y="52" width="11" height="14" rx="3" fill="url(#hvBm)"/><rect class="d-monte" style="--r:1" x="42.5" y="43" width="11" height="23" rx="3" fill="url(#hvBm)"/><rect class="d-monte" style="--r:2" x="59" y="32" width="11" height="34" rx="3" fill="url(#hvB)"/><g class="d-fleche"><path d="M24 44 L39 34 L50 38 L67 23" fill="none" stroke="#0034A0" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M61 20.5 L71 19 L69.5 29Z" fill="#0034A0" stroke="#0034A0" stroke-width="1.5" stroke-linejoin="round"/></g><path d="M19 24h22" stroke="#fff" stroke-width="3" stroke-linecap="round"/></g></g></svg>',
-          groupements: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="48" cy="85" rx="30" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><g class="d-orbite"><g stroke="#BFD3FF" stroke-width="3.5" stroke-linecap="round"><line x1="48" y1="46" x2="21" y2="27"/><line x1="48" y1="46" x2="76" y2="26"/><line x1="48" y1="46" x2="19" y2="66"/><line x1="48" y1="46" x2="77" y2="64"/><line x1="21" y1="27" x2="76" y2="26"/></g><circle cx="21" cy="27" r="8" fill="url(#hvS)"/><circle cx="76" cy="26" r="8" fill="url(#hvS)"/><circle cx="19" cy="66" r="8" fill="url(#hvS)"/><circle cx="77" cy="64" r="8" fill="url(#hvS)"/></g><g class="d-pulse"><circle cx="48" cy="46" r="14" fill="url(#hvS)"/><ellipse cx="43" cy="40" rx="4.5" ry="2.8" fill="#fff" opacity=".6"/></g></g></g></svg>',
-          carteGrp: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="48" cy="87" rx="36" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><path d="M12 32 L34 25 L34 76 L12 83Z" fill="url(#hvC)"/><path d="M34 25 L60 32 L60 83 L34 76Z" fill="#BFD3FF"/><path d="M60 32 L84 25 L84 76 L60 83Z" fill="url(#hvC)"/><g stroke="#0050E6" stroke-width="2.6" stroke-linecap="round" opacity=".5"><line x1="25" y1="48" x2="47" y2="62"/><line x1="47" y1="62" x2="71" y2="42"/><line x1="25" y1="48" x2="71" y2="42"/></g><circle class="d-pop" style="--r:0" cx="25" cy="48" r="7.5" fill="url(#hvS)"/><circle class="d-pop" style="--r:1" cx="47" cy="62" r="7.5" fill="url(#hvS)"/><circle class="d-pop" style="--r:2" cx="71" cy="42" r="7.5" fill="url(#hvS)"/><path d="M15 36 L31 31" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".85"/></g></g></svg>',
-          biosimilaires: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="48" cy="86" rx="32" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><g class="d-balance"><rect x="17" y="34" width="27" height="48" rx="8" fill="url(#hvP)"/><path d="M17 56 H44 V74 A8 8 0 0 1 36 82 H25 A8 8 0 0 1 17 74Z" fill="url(#hvBm)"/><rect x="22.5" y="28" width="16" height="8" rx="2" fill="#D6E2F8"/><rect x="20.5" y="18" width="20" height="12" rx="3.5" fill="url(#hvB)"/><rect x="21" y="39" width="4" height="34" rx="2" fill="#fff" opacity=".8"/></g><g class="d-balance2"><rect x="52" y="34" width="27" height="48" rx="8" fill="url(#hvP)"/><path d="M52 52 H79 V74 A8 8 0 0 1 71 82 H60 A8 8 0 0 1 52 74Z" fill="url(#hvB)"/><rect x="57.5" y="28" width="16" height="8" rx="2" fill="#D6E2F8"/><rect x="55.5" y="18" width="20" height="12" rx="3.5" fill="url(#hvB)"/><rect x="56" y="39" width="4" height="34" rx="2" fill="#fff" opacity=".8"/></g></g></g></svg>',
-          offilog: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="50" cy="86" rx="33" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><g class="d-presse"><rect x="31" y="19" width="6" height="12" rx="1.5" fill="#0034A0"/><rect x="31" y="15" width="20" height="6" rx="3" fill="#0034A0"/></g><rect x="27" y="30" width="14" height="9" rx="2.5" fill="url(#hvBm)"/><rect x="18" y="38" width="32" height="44" rx="10" fill="url(#hvB)"/><rect x="23" y="51" width="22" height="17" rx="4" fill="#fff" opacity=".92"/><rect x="27" y="56" width="14" height="3" rx="1.5" fill="#BFD3FF"/><rect x="27" y="62" width="9" height="3" rx="1.5" fill="#BFD3FF"/><rect x="21" y="42" width="3.5" height="30" rx="1.75" fill="#fff" opacity=".35"/><g class="d-balance2"><path d="M54 32 H80 L76 70 H58Z" fill="url(#hvC)"/><rect x="52" y="27" width="30" height="6" rx="2" fill="#BFD3FF"/><rect x="60" y="70" width="14" height="12" rx="3" fill="url(#hvB)"/><rect x="59" y="42" width="16" height="10" rx="3" fill="url(#hvBm)"/></g></g></g></svg>',
-          marchefr: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="48" cy="87" rx="32" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><path d="M48 13 L74 25 L78 53 L58 79 L37 79 L18 55 L22 27Z" fill="url(#hvC)"/><path d="M48 13 L74 25 L78 53 L58 79 L37 79 L18 55 L22 27Z" fill="none" stroke="#9BC0FF" stroke-width="1.5"/><rect class="d-monte" style="--r:0" x="30" y="50" width="9" height="16" rx="2.5" fill="url(#hvBm)"/><rect class="d-monte" style="--r:1" x="43" y="41" width="9" height="25" rx="2.5" fill="url(#hvBm)"/><rect class="d-monte" style="--r:2" x="56" y="31" width="9" height="35" rx="2.5" fill="url(#hvB)"/><rect x="26" y="66" width="44" height="3" rx="1.5" fill="#BFD3FF"/><g class="d-pulse"><circle cx="63" cy="27" r="12" fill="#fff" fill-opacity=".55" stroke="#0050E6" stroke-width="3"/><path d="M71.5 35.5 L79 43" stroke="#0034A0" stroke-width="4" stroke-linecap="round"/><ellipse cx="58.5" cy="22.5" rx="4" ry="2.4" fill="#fff" opacity=".8"/></g><path d="M24 30 L34 21" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".8"/></g></g></svg>',
-          appro: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="48" cy="89" rx="34" ry="4.5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><rect x="14" y="14" width="68" height="58" rx="11" fill="url(#hvP)"/><rect x="20" y="20" width="56" height="46" rx="6" fill="#E1EBFF"/><rect x="20" y="41" width="56" height="4" fill="#BFD3FF"/><rect x="24" y="27" width="12" height="14" rx="2.5" fill="url(#hvB)"/><rect x="38" y="31" width="10" height="10" rx="2.5" fill="url(#hvBm)"/><rect x="50" y="25" width="14" height="16" rx="2.5" fill="url(#hvB)"/><rect x="66" y="31" width="7" height="10" rx="2" fill="url(#hvBm)"/><rect x="24" y="50" width="14" height="16" rx="2.5" fill="url(#hvBm)"/><rect x="40" y="54" width="10" height="12" rx="2.5" fill="url(#hvB)"/><path d="M20 19h22" stroke="#fff" stroke-width="3" stroke-linecap="round"/><rect x="14" y="76" width="68" height="9" rx="4.5" fill="#E1EBFF"/><rect class="d-jauge" x="14" y="76" width="44" height="9" rx="4.5" fill="url(#hvB)"/></g></g></svg>',
-          infos: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="46" cy="87" rx="32" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><g class="d-soleil"><circle cx="64" cy="28" r="19" fill="#E1EBFF"/><circle cx="64" cy="28" r="11.5" fill="url(#hvS)"/></g><rect x="20" y="32" width="58" height="48" rx="6" fill="#BFD3FF"/><rect x="14" y="36" width="58" height="46" rx="6" fill="url(#hvP)"/><rect x="20" y="43" width="36" height="6" rx="3" fill="url(#hvB)"/><rect x="20" y="54" width="18" height="21" rx="3" fill="url(#hvBm)"/><rect x="42" y="55" width="24" height="4" rx="2" fill="#BFD3FF"/><rect x="42" y="63" width="20" height="4" rx="2" fill="#BFD3FF"/><rect x="42" y="71" width="24" height="4" rx="2" fill="#D6E2F8"/><path d="M19 40.5h16" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></g></g></svg>',
-          concurrents: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="48" cy="87" rx="28" ry="4.5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><rect x="42" y="70" width="12" height="12" rx="3" fill="#0034A0"/><rect x="31" y="80" width="34" height="5" rx="2.5" fill="url(#hvBm)"/><circle cx="48" cy="42" r="32" fill="url(#hvC)"/><circle cx="48" cy="42" r="27" fill="url(#hvB)"/><circle cx="48" cy="42" r="18" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="1.5"/><circle cx="48" cy="42" r="9" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="1.5"/><line x1="21" y1="42" x2="75" y2="42" stroke="#fff" stroke-opacity=".2" stroke-width="1.2"/><line x1="48" y1="15" x2="48" y2="69" stroke="#fff" stroke-opacity=".2" stroke-width="1.2"/><g class="d-tourne"><path d="M48 42 L48 15 A27 27 0 0 1 71.4 28.5Z" fill="#fff" opacity=".3"/></g><circle cx="61" cy="33" r="3.2" fill="#E1EBFF"/><circle cx="37" cy="54" r="2.6" fill="#E1EBFF" opacity=".85"/><ellipse cx="34" cy="24" rx="9" ry="4" fill="#fff" opacity=".22" transform="rotate(-32 34 24)"/></g></g></svg>',
-          remontees: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="48" cy="86" rx="34" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><rect x="12" y="20" width="72" height="62" rx="11" fill="#BFD3FF"/><rect x="12" y="16" width="72" height="62" rx="11" fill="url(#hvP)"/><rect x="19" y="24" width="25" height="22" rx="3.5" fill="#E1EBFF" transform="rotate(-5 31.5 35)"/><rect x="24" y="33" width="14" height="3" rx="1.5" fill="#BFD3FF" transform="rotate(-5 31.5 35)"/><circle cx="31" cy="26" r="2.6" fill="#0034A0"/><rect x="20" y="51" width="25" height="22" rx="3.5" fill="url(#hvBm)" transform="rotate(3 32.5 62)"/><circle cx="32" cy="53" r="2.6" fill="#0034A0"/><rect x="51" y="51" width="25" height="21" rx="3.5" fill="#D6E2F8" transform="rotate(-3 63.5 61.5)"/><circle cx="63" cy="53" r="2.6" fill="#0034A0"/><g class="d-note"><rect x="50" y="22" width="26" height="24" rx="3.5" fill="url(#hvB)" transform="rotate(5 63 34)"/><rect x="55" y="32" width="15" height="3" rx="1.5" fill="#fff" opacity=".7" transform="rotate(5 63 34)"/><rect x="55" y="38" width="10" height="3" rx="1.5" fill="#fff" opacity=".5" transform="rotate(5 63 34)"/><circle cx="63" cy="24" r="2.6" fill="#E1EBFF"/></g><path d="M18 21h24" stroke="#fff" stroke-width="3" stroke-linecap="round"/></g></g></svg>',
-          lgo: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="48" cy="87" rx="32" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><rect x="40" y="66" width="16" height="12" fill="#9BC0FF"/><rect x="28" y="77" width="40" height="6" rx="3" fill="url(#hvBm)"/><rect x="12" y="22" width="72" height="48" rx="9" fill="url(#hvB)"/><rect x="17" y="27" width="62" height="38" rx="5" fill="url(#hvP)"/><rect x="23" y="48" width="50" height="4" rx="2" fill="#E1EBFF"/><rect x="23" y="56" width="34" height="4" rx="2" fill="#E1EBFF"/><g class="d-leve"><rect x="37" y="12" width="22" height="28" rx="4" fill="#fff" stroke="#9BC0FF" stroke-width="1.5"/><rect x="41" y="19" width="14" height="3" rx="1.5" fill="#BFD3FF"/><rect x="41" y="25" width="10" height="3" rx="1.5" fill="#BFD3FF"/><path d="M48 30 v10 m-4.5 -4.5 L48 40 l4.5 -4.5" fill="none" stroke="#0050E6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></g><path d="M18 26h20" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".7"/></g></g></svg>',
-          marketing: '<svg class="hv-obj" focusable="false" viewBox="0 0 96 96" aria-hidden="true"><g class="o-sol"><ellipse class="o-ombre" cx="46" cy="84" rx="30" ry="5" fill="url(#hvO)"/></g><g class="o-leve"><g class="o-corps"><path d="M34 55 L39 72 Q40 76 44 75 L47 74 L43 58Z" fill="#0034A0"/><rect x="15" y="38" width="17" height="18" rx="5" fill="url(#hvBm)"/><path d="M28 40 L62 22 Q70 18 70 27 V65 Q70 74 62 70 L28 54Z" fill="url(#hvB)"/><ellipse cx="68" cy="46" rx="6" ry="24" fill="#0034A0"/><ellipse cx="69" cy="46" rx="3.8" ry="19" fill="#9BC0FF"/><path d="M32 42 L59 28" stroke="#fff" stroke-opacity=".55" stroke-width="3" stroke-linecap="round"/><path class="d-ondes" style="--r:0" d="M79 37 Q84 46 79 55" fill="none" stroke="#0050E6" stroke-width="3.5" stroke-linecap="round"/><path class="d-ondes" style="--r:1" d="M85.5 30 Q93 46 85.5 62" fill="none" stroke="#6C9BFF" stroke-width="3.5" stroke-linecap="round"/></g></g></svg>'
-        };
-        var hvI = 0;
-        function goJs(k, param) { return 'V2.go(\'' + k + '\'' + (param ? ',\'' + param + '\'' : '') + ')'; }
-        // cls : hv-todo | hv-grand | hv-ligne ; d : rang de l'objet dans son bloc (délai de pose).
-        function porte(cls, k, obj, nom, phrase, d, js, fleche, i) {
-          if (k && !V2.pages[k]) return '';
-          return '<a class="hv-porte ' + cls + '" role="link" tabindex="0" style="--d:' + d + (i != null ? ';--i:' + i : '') + '" onclick="' + (js || goJs(k)) + '" onkeydown="if(event.key===\'Enter\')this.click()">' +
-            HV_OBJ[obj] +
-            '<span class="hv-txt"><span class="hv-nom">' + esc(nom) + '</span><span class="hv-phrase">' + esc(phrase) + '</span></span>' +
-            (fleche ? '<span class="hv-fleche" aria-hidden="true">' + ICO('chev', 18) + '</span>' : '') + '</a>';
-        }
-        function ligne(k, obj, nom, phrase, d, js) { return porte('hv-ligne', k, obj, nom, phrase, d, js, true); }
-        function rayon(nom, label, rappel, lignes) {
-          var l = lignes.join(''); if (!l) return '';
-          return '<section class="hv-rayon hv-anim" style="--i:' + (hvI++) + '" aria-label="' + label + '">' +
-            '<div class="hv-rayon-tete"><h2 class="hv-rayon-nom">' + nom + '</h2>' +
-            (rappel ? '<span class="hv-rayon-rappel">' + rappel + '</span>' : '') + '</div>' +
-            '<div class="hv-lignes">' + l + '</div></section>';
-        }
-        var terrain = [
-          ligne('pharma', 'groupements', 'Groupements', 'Les listes et listings d\'achats', 0, goJs('pharma', 'groupements')),
-          ligne('carteGrp', 'carteGrp', 'Carte des groupements', 'Où sont les adhérents de chaque groupement', 1)
-        ];
-        // 14/09/2026 — le responsable d'Escale Pharma a l'accès total ET garde son
-        // espace Escale (demande de Will). 24/09 : les commerciaux Escale aussi.
-        var bscE = V2.basculeEspace();
-        if (bscE && bscE.to === 'escale') {
-          terrain.push(ligne('', 'pilotage', 'Espace Escale Pharma', 'Le suivi Escale et ses officines clientes', 2, 'V2.goSpace(\'escale\')'));
-        }
-        var grille = [
-          porte('hv-grand', 'pharma', 'officines', 'Officines', 'La fiche de chaque client et prospect', 1),
-          // La tournée se compose DANS la carte (« Ajouter à ma tournée ») : la page
-          // autonome v2-tournee.js n'est plus chargée depuis le 11/09 (redondante).
-          porte('hv-grand', 'carte', 'carte', 'La carte', 'Clients, prospects et ta tournée', 2),
-          porte('hv-grand', 'produits', 'catalogue', 'Catalogue produits', 'Prix et stock des 7 établissements', 3),
-          porte('hv-grand', 'pilotage', 'pilotage', 'Pilotage', 'CA, marge et objectifs', 4)
-        ].join('');
+        // Accueil g4 (30/09/2026, validé par Will) : voir G4_PORTES / g4OutilsHtml plus haut.
+        // La To do list a sa propre porte : la petite carte V2.todo.cardHtml() ferait doublon.
+        g4Mode = true;
         todoTuile = !!V2.pages.todo;
-        pilHtml = HV_DEFS + '<div class="hv-titre hv-anim" style="--i:' + (hvI++) + '">Tous les jours</div>' +
-          porte('hv-todo hv-anim', 'todo', 'todo', 'To do list', 'Tes rendez-vous à demander, remerciements, ouvertures', 0, '', true, hvI++) +
-          (grille ? '<div class="hv-grille hv-anim" style="--i:' + (hvI++) + '">' + grille + '</div>' : '') +
-          '<div class="hv-titre hv-anim" style="--i:0">Les rayons</div>' +
-          '<div class="hv-rayons">' +
-            rayon('Le terrain', 'Le terrain', 'et 3 objets plus haut', terrain) +
-            rayon('Les produits', 'Les produits', 'et le Catalogue plus haut', [
-              ligne('biosimilaires', 'biosimilaires', 'Biosimilaires', 'Les biosimilaires et leurs références', 0),
-              ligne('offilog', 'offilog', 'Offilog', 'La centrale parapharmacie', 1),
-              ligne('appro', 'appro', 'Appro Intégral', 'Couverture de stock et ruptures', 2),
-              ligne('marchefr', 'marchefr', 'Le marché', 'Le marché français d\'une référence, région par région', 3)
-            ]) +
-            rayon('Piloter &amp; informer', 'Piloter et informer', 'et le Pilotage plus haut', [
-              ligne('infos', 'infos', 'Infos du matin', 'Le brief du jour', 0),
-              ligne('concurrents', 'concurrents', 'Concurrents', 'Ce que font les autres', 1),
-              ligne('remontees', 'remontees', 'Remontées', 'Le mur d\'idées de l\'équipe', 2)
-            ]) +
-            rayon('Vendre &amp; convaincre', 'Vendre et convaincre', '', [
-              ligne('marketing', 'marketing', 'Marketing', 'Supports, sélections, LinkedIn', 0),
-              (window.V2_BRAND && window.V2_BRAND.escale) ? '' : ligne('lgo', 'lgo', 'Logiciels officine', 'Importer le catalogue dans chaque logiciel', 1)
-            ]) +
-          '</div>';
-
-        // ── En cours de développement ─────────────────────────────────────
-        // Ce qui n'est pas fini ou sert rarement descend ici, en retrait, même
-        // pastille pour tous (Will, 23 et 24/09/2026) : Rendez-vous, JARVIS
-        // Academy, puis Réforme 2027, Fiches PDF, L'Argument, Audit marge et
-        // Présentation Intégral. JARVIS Design n'a plus sa place sur le CRM.
-        // ⚠️ CE DÉPÔT EST PUBLIC : aucun code d'accès n'est écrit ici. JARVIS
-        // Academy est protégée par un code partagé qui se demande de vive voix.
-        // Outil INTERNE Intégral (bêta) : jamais montré au groupement — le
-        // 04/09/2026, Will : « ils n'ont pas accès à jarvis academy ni jarvis design ! »
-        function pic(d) { return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + d + '</svg>'; }
-        var PIC = {
-          cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/>',
-          cap: '<path d="M2 9 12 4l10 5-10 5-10-5z"/><path d="M6 11.5V17c0 1.5 3 3 6 3s6-1.5 6-3v-5.5"/><line x1="22" y1="9" x2="22" y2="15"/>',
-          reforme: '<rect x="5" y="3" width="12" height="17" rx="1.5"/><line x1="8" y1="8" x2="14" y2="8"/><line x1="8" y1="12" x2="14" y2="12"/><circle cx="17" cy="17" r="4"/><path d="M15.3 17l1.1 1.1 2.1-2.3"/>',
-          fiche: '<path d="M6 3h7l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M13 3v4a1 1 0 0 0 1 1h4"/><line x1="8" y1="13" x2="15" y2="13"/><line x1="8" y1="16" x2="12" y2="16"/>',
-          argument: '<line x1="4" y1="20" x2="20" y2="20"/><rect x="6" y="14" width="3" height="6" rx="0.5"/><rect x="11" y="10" width="3" height="10" rx="0.5"/><rect x="16" y="6" width="3" height="14" rx="0.5"/>',
-          audit: '<circle cx="10" cy="10" r="6"/><line x1="7.5" y1="12.5" x2="12.5" y2="7.5"/><line x1="14.3" y1="14.3" x2="20" y2="20"/><circle cx="8" cy="8" r="0.9" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="0.9" fill="currentColor" stroke="none"/>',
-          presentation: '<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M7 12l3-3 2 2 4-4"/><line x1="12" y1="16" x2="12" y2="20"/><line x1="8" y1="20" x2="16" y2="20"/>'
-        };
-        function enc(k, ico, nom, js) {
-          if (!V2.pages[k]) return '';
-          return '<a class="v2-enc-l" role="link" tabindex="0" onclick="' + (js || goJs(k)) + '" onkeydown="if(event.key===\'Enter\')this.click()">' + pic(PIC[ico]) + esc(nom) + '</a>';
+        // Textes propres à l'espace Escale (24/09/2026) : ils remplacent ceux de ces deux portes.
+        _g4Esc = {};
+        if (window.V2_BRAND && window.V2_BRAND.escale) {
+          P.forEach(function (x) { if (x.k === 'pharma' || x.k === 'pilotage') _g4Esc[x.k] = x.d; });
         }
-        pilHtml +=
-          '<div class="v2-enc-chip hv-anim" style="--i:0">En cours de développement</div>' +
-          '<div class="v2-enc hv-anim" style="--i:1"><div class="v2-enc-liens">' +
-            enc('rdv', 'cal', 'Rendez-vous') +
-            '<a class="v2-enc-l" href="https://jarvis-academy-fr.vercel.app/" target="_blank" rel="noopener">' + pic(PIC.cap) + 'JARVIS Academy <span class="fl">↗</span></a>' +
-            // Réforme 2027 : document privé, adresse signée valable 1 h, jamais servi
-            // par le dépôt public. Le fichier porte du CA réseau, il reste dans Supabase.
-            enc('pilotage', 'reforme', 'Réforme 2027', 'V2.ouvrirDocProtege(\'reforme2027\')') +
-            enc('fiches', 'fiche', 'Fiches PDF') +
-            enc('argument', 'argument', 'L\'Argument') +
-            enc('audit', 'audit', 'Audit marge') +
-            enc('presentation', 'presentation', 'Présentation Intégral') +
-          '</div>' +
-          '<p class="v2-enc-n">Le code d\'accès de JARVIS Academy se demande à Will — il n\'est écrit nulle part.</p></div>';
       }
 
       var firstName = (V2.user && V2.user.name ? V2.user.name.split(' ')[0] : 'Will');
@@ -1592,6 +1687,33 @@
       _homeAnimJoue = true; // posée dès le tout premier rendu : jamais rejouée ensuite (relances, ventes)
       var homeAnimCls = jouerAnim ? 'js-anim' : 'v2-home-still';
 
+      if (g4Mode) {
+        injectG4Styles();
+        g4ChargerOrdre();
+        root.innerHTML = topbar() +
+          '<div class="v2-wrap v2-home-x g4 ' + (jouerAnim ? 'g4-anim' : 'g4-still') + '">' + G4_SPRITE +
+            '<header class="g4-board" id="g4-board">' +
+              '<div class="g4-ciel"></div><div class="g4-rues"></div><div class="g4-lueur"></div><div class="g4-lueur2" id="g4-lueur2"></div>' +
+              (function () {
+                var rel = g4ReleveHtml();
+                return '<div class="g4-cols' + (rel ? ' g4-avec' : '') + '">' +
+                  '<div class="g4-hello">' +
+                    '<h1 class="g4-a" style="--i:1">' + salut + ' <em>' + esc(firstName) + '</em></h1>' +
+                    '<div class="g4-date g4-a" style="--i:2">' + cap(today) + tiennesTxt + '</div>' +
+                    '<div class="g4-solde g4-a" style="--i:3">' + (partiel
+                      ? '<span class="g4-etat" id="v2-ventes-etat">Chargement des ventes… <b>' + ((V2.ventesProgres && V2.ventesProgres.n) || 0) + '</b> / ' + ((V2.ventesProgres && V2.ventesProgres.total) || '?') + '</span>'
+                      : '<span class="g4-nb" id="g4-nb">' + nbPharma + '</span><span class="g4-solde-l">officines actives</span>') + '</div>' +
+                  '</div>' + rel + '</div>';
+              })() +
+            '</header>' +
+            '<div class="g4-rech g4-a" style="--i:7" role="button" tabindex="0" aria-label="Rechercher une pharmacie, un produit, un outil" onclick="V2.onTopSearch()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();V2.onTopSearch()}">' +
+              g4Ico('search', 'g4-ico') + '<span class="g4-rech-t">Officine, produit, outil…</span><span class="g4-kbd" aria-hidden="true">' + MOD + 'K</span></div>' +
+            (V2.todo && !todoTuile ? V2.todo.cardHtml() : '') +
+            '<div class="g4-outils" id="g4-outils">' + g4OutilsHtml() + '</div>' +
+          '</div>';
+        g4Apres(root, nbPharma);
+        return;
+      }
       root.innerHTML = topbar() +
         '<div class="v2-wrap narrow v2-home-x ' + homeAnimCls + '">' +
           '<div class="v2-hero">' +
@@ -1608,7 +1730,6 @@
           pilHtml +
         '</div>';
       if (window.V2_BRAND && window.V2_BRAND.opso && V2.opsoGroupement) { V2.opsoGroupement.espaces(root); }
-      if (jouerAnim) hvReveler(root);
     }
   };
 
