@@ -32,6 +32,8 @@
   // Pas de colonne dédiée dans user_profiles (pas de DDL possible) : un compte
   // Escale se reconnaît à `commercial` ∈ cette liste, ou = 'Escale' (Alexandre).
   V2.ESCALE_COMMS = ['Guy', 'Tiffany', 'Philippe', 'Germain'];
+  // 30/09/2026 — seuls comptes admis dans l'espace OPSO (opso/v2). claude-test = compte des preuves.
+  V2.OPSO_ACCES = ['emmanuel.noblanc@normandiepharma.fr', 'william.morel@me.com', 'claude-test@integralpharma.fr'];
   V2.estCommEscale = function (c) { c = String(c || ''); return c === 'Escale' || V2.ESCALE_COMMS.indexOf(c) >= 0; };
   // ventes du commercial filtré (ou toutes)
   // 11/09/2026 — perf : mémorisé sur (V2.sales, V2.commFilter). Le Pilotage
@@ -177,8 +179,18 @@
       if (pr.error || !pr.data) { await c.auth.signOut(); return false; }
       // Utilisateur « OPSO seulement » (ex. Normandie Pharma) : n'a pas accès au CRM Intégral.
       // S'il ouvre l'app Intégral (brand non-opso), on le renvoie vers son espace OPSO.
-      if (pr.data.opso_only && !(window.V2_BRAND && window.V2_BRAND.opso)) {
+      // 30/09/2026 — la colonne `opso_only` n'existe pas en base : c'est le rôle
+      // 'opso' (Emmanuel Noblanc) qui dit « OPSO seulement ».
+      var opsoSeul = pr.data.opso_only || pr.data.role === 'opso';
+      if (opsoSeul && !(window.V2_BRAND && window.V2_BRAND.opso)) {
         try { location.replace('../../opso/v2/index.html'); } catch (e) {}
+        return false;
+      }
+      // 30/09/2026 — Will : l'espace OPSO, « il doit y avoir que Emmanuel Noblanc
+      // et moi qui y ont accès ». Les autres comptes repartent vers le CRM.
+      // Même liste côté Supabase : jarvis_acces_opso() (_sql/opso-acces-restreint.sql).
+      if (window.V2_BRAND && window.V2_BRAND.opso && V2.OPSO_ACCES.indexOf(String(user.email || '').toLowerCase()) < 0) {
+        try { location.replace('../../crm/v2/index.html'); } catch (e) {}
         return false;
       }
       // 11/09/2026 — Escale Pharma : un commercial NON Escale qui ouvre l'espace Escale
@@ -208,7 +220,7 @@
       // « moi » (campagnes, RDV, carte), les suivants sont des collègues dont il voit aussi
       // le Pilotage (pas de colonne dédiée : l'API de gestion Supabase ne répond plus).
       var commParts = String(pr.data.commercial || '').split('+').map(function (s) { return s.trim(); }).filter(Boolean);
-      V2.user = { id: user.id, email: user.email, name: pr.data.name, role: pr.data.role, pharmacyIds: pr.data.pharmacy_ids, commercial: commParts[0] || '', voitAussi: commParts.slice(1), opsoOnly: !!pr.data.opso_only, voitTous: pr.data.voit_tous_commerciaux === true };
+      V2.user = { id: user.id, email: user.email, name: pr.data.name, role: pr.data.role, pharmacyIds: pr.data.pharmacy_ids, commercial: commParts[0] || '', voitAussi: commParts.slice(1), opsoOnly: !!opsoSeul, voitTous: pr.data.voit_tous_commerciaux === true };
       // 15/09/2026 — bascule Intégral ↔ Escale (topbar) : `voitTous` est écrasé
       // juste en dessous pour le cas « Escale » (voir commentaire suivant), donc
       // il ne dit plus « accès total au CRM ». `voitTousReel` garde la valeur
