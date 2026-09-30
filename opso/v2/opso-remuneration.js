@@ -215,78 +215,108 @@
   }
 
   // ── Rendu ──
-  function faits(l, vide) {
-    function dd(v) { return vide ? '<span class="mono">—</span>' : '<span class="mono">' + euros(v) + '</span>'; }
-    return '<dl class="opr-facts">'
-      + '<div class="opr-f"><dt>CA HT net</dt><dd>' + dd(l.total) + '</dd></div>'
-      + '<div class="opr-f"><dt>CA retenu</dt><dd>' + dd(l.retenu) + '</dd></div>'
-      + '<div class="opr-f"><dt>Part exclue</dt><dd>' + dd(l.exclu) + '</dd></div>'
-      + '<div class="opr-f opr-f--remu"><dt>Rémunération estimée</dt><dd>' + dd(l.remu) + '</dd></div>'
-      + '</dl>';
+  // Refonte UX 2 (30/09/2026) : une frise de trois périodes (jauge des mois, barre
+  // empilée retenu / exclu, rémunération en grand), le total en tête ; les phrases
+  // (motifs d'exclusion, noms des nouvelles pharmacies, notes) passent dans des
+  // dépliants « Détail » / « i » (attribut hidden, rien n'est retiré).
+  // Styles : opso-ux-accueil.css (classes oa-), boutons ouverts par opso-groupement.js.
+  var fmtDateC = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+  function eur(v, count) {
+    return '<span class="og-num"' + (count ? ' data-count="' + Math.round(v || 0) + '" data-fmt="eur"' : '') + '>' + euros(v) + '</span>';
   }
 
   function detailExclusions(D, l) {
     var C = D.C, parts = [];
     C.ordre.forEach(function (k) {
       var v = l.exclParMotif[k];
-      if (C.motifs[k] && v && Math.abs(v) >= 0.5) parts.push('<span class="opr-mot">' + esc(C.motifs[k].label) + '\u00a0: ' + euros(v) + '</span>');
+      if (C.motifs[k] && v && Math.abs(v) >= 0.5) parts.push('<li><span>' + esc(C.motifs[k].label) + '</span><b class="og-num">' + euros(v) + '</b></li>');
     });
-    return parts.length ? 'Part exclue, par motif\u00a0: ' + parts.join(' ') : 'Aucune vente exclue sur cette période.';
+    return parts.length ? '<p class="oa-dt">Part exclue, par motif</p><ul class="oa-dl">' + parts.join('') + '</ul>' : '<p class="oa-dt">Aucune vente exclue sur cette période.</p>';
   }
 
   var MOIS_LONG = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
   function moisEffet(D) { return MOIS_LONG[D.C.effet - 1] + ' ' + D.annee; }
 
-  function lignePrimes(D, l) {
-    if (!D.P || D.P.depuis > l.a) return '';
+  function detailPrimes(D, l) {
+    if (!D.P || D.P.depuis > l.a || !l.nouvelles.length) return '';
     var n = l.nouvelles.length, pl = n > 1 ? 's' : '';
-    if (!n) return '<p class="opr-det">Nouvelles pharmacies clientes\u00a0: aucune sur cette période.</p>';
-    var noms = l.nouvelles.map(function (x) { return '<span class="opr-mot">' + esc(x.nom) + ' (' + MOIS_ABREV[x.mois - 1] + ')</span>'; }).join(' ');
-    return '<p class="opr-det"><strong>' + n + ' nouvelle' + pl + ' pharmacie' + pl + ' cliente' + pl + '\u00a0: ' + euros(l.primes) + '</strong> ('
-      + euros(D.P.montant) + ' chacune' + (l.indicatif ? ', comptés dans le total' : '') + ')\u00a0: ' + noms + '</p>';
+    return '<p class="oa-dt">' + n + ' nouvelle' + pl + ' pharmacie' + pl + ' cliente' + pl + ' · ' + euros(D.P.montant) + ' chacune' + (l.indicatif ? ', comptés dans le total' : '') + '</p>'
+      + '<ul class="oa-dl">' + l.nouvelles.map(function (x) { return '<li><span>' + esc(x.nom) + '</span><b>' + MOIS_ABREV[x.mois - 1] + '</b></li>'; }).join('') + '</ul>';
   }
 
   function badge(l) {
-    if (l.indicatif) return '<span class="opr-badge">À titre indicatif</span>';
-    if (l.statut === 'clos') {
-      return l.nMois < l.nPrevus
-        ? '<span class="opr-badge opr-badge--encours">Clos · ventes de ' + l.nMois + ' mois sur ' + l.nPrevus + '</span>'
-        : '<span class="opr-badge opr-badge--clos">Clos</span>';
-    }
-    if (l.statut === 'encours') return '<span class="opr-badge opr-badge--encours">En cours · ' + l.nMois + ' mois sur ' + l.nPrevus + '</span>';
-    return '<span class="opr-badge">À venir</span>';
+    if (l.indicatif) return '<span class="oa-badge">Indicatif</span>';
+    if (l.statut === 'clos') return '<span class="oa-badge oa-badge--ok">Clos</span>';
+    if (l.statut === 'encours') return '<span class="oa-badge oa-badge--run">En cours</span>';
+    return '<span class="oa-badge">À venir</span>';
+  }
+
+  // Jauge des mois : un segment par mois de la période, plein si des ventes y sont enregistrées.
+  function jaugeMois(l) {
+    var out = '<span class="oa-qm" role="img" aria-label="Ventes de ' + l.nMois + ' mois sur ' + l.nPrevus + '">';
+    for (var m = 0; m < l.nPrevus; m++) out += '<i class="' + (m < l.nMois ? 'on' : '') + '" style="--k:' + m + '"></i>';
+    return out + '</span>';
+  }
+
+  function carte(D, l, maxTotal, idx) {
+    var vide = l.nMois === 0, id = 'oa-q-' + l.de + '-' + l.a;
+    var wT = maxTotal > 0 ? Math.max(0, l.total) / maxTotal : 0;
+    var wR = l.total > 0 ? Math.max(0, l.retenu) / l.total : 0;
+    var primes = (D.P && D.P.depuis <= l.a && !vide)
+      ? '<span class="oa-qchip">' + (l.nouvelles.length ? '+ ' + l.nouvelles.length + ' nouvelle' + (l.nouvelles.length > 1 ? 's' : '') + ' · ' + euros(l.primes) : '0 nouvelle') + '</span>' : '';
+    var echeance = l.indicatif ? '' : '<span class="oa-qchip oa-qchip--cal" title="' + (l.statut === 'clos' ? 'Échéance de paiement prévue' : 'Échéance de paiement prévue au plus tôt') + '">'
+      + '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="2" y="3" width="12" height="11" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M2 6.5h12M5.5 1.8v2.6M10.5 1.8v2.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>'
+      + (l.statut === 'clos' ? '' : 'au plus tôt ') + esc(fmtDateC.format(l.echeance)) + '</span>';
+    var detail = vide ? '' : '<dl class="oa-qn"><div><dt>CA HT net</dt><dd class="og-num">' + euros(l.total) + '</dd></div><div class="r"><dt>Retenu</dt><dd class="og-num">' + euros(l.retenu) + '</dd></div><div class="x"><dt>Exclu</dt><dd class="og-num">' + euros(l.exclu) + '</dd></div></dl>'
+      + detailExclusions(D, l) + detailPrimes(D, l)
+      + (l.indicatif ? '<p class="oa-dt">Période antérieure à l’accord, évoqué à partir de ' + esc(moisEffet(D)) + ' : montant donné à titre indicatif, non compté dans le total.</p>'
+                     : '<p class="oa-dt">' + (l.statut === 'clos' ? 'Échéance de paiement prévue' : 'Échéance de paiement prévue au plus tôt') + ' : ' + esc(fmtDate.format(l.echeance)) + '</p>');
+    return '<article class="oa-q oa-q--' + (l.indicatif ? 'ind' : l.statut) + (vide ? ' oa-q--vide' : '') + '" data-opr-q="' + l.de + '-' + l.a + '" style="--k:' + idx + '">'
+      + '<span class="oa-qnode" aria-hidden="true"></span>'
+      + '<header class="oa-qh"><h3 class="oa-qp">' + esc(l.periode) + '</h3>' + badge(l) + '</header>'
+      + jaugeMois(l)
+      + '<div class="oa-qr">' + (vide ? '<b class="og-num" aria-label="Pas encore de ventes">—</b>' : '<b>' + eur(l.remu, true) + '</b><span>estimée</span>') + '</div>'
+      + (vide ? '' :
+        '<div class="oa-stack" role="img" aria-label="CA retenu ' + euros(l.retenu) + ', part exclue ' + euros(l.exclu) + '" title="Retenu ' + euros(l.retenu) + ' · exclu ' + euros(l.exclu) + '"><span style="--w:' + wT.toFixed(4) + '"><i class="r" style="--w:' + wR.toFixed(4) + '"></i><i class="x"></i></span></div>'
+        + '<span class="oa-qca og-num">sur ' + euros(l.total) + ' HT</span>')
+      + ((primes || echeance) ? '<div class="oa-qchips">' + primes + echeance + '</div>' : '')
+      + (detail ? '<button type="button" class="oa-more" aria-expanded="false" aria-controls="' + id + '">Détail</button><div class="oa-qd" id="' + id + '" hidden>' + detail + '</div>' : '')
+      + '</article>';
+  }
+
+  // Avancement de la frise : jusqu'au milieu de la période en cours, ou jusqu'au bout si tout est clos.
+  function friseRemplie(D) {
+    var n = D.lignes.length, i;
+    for (i = 0; i < n; i++) if (D.lignes[i].statut !== 'clos') break;
+    if (i >= n) return 1;
+    return Math.min(1, (i + (D.lignes[i].statut === 'encours' ? 0.3 : 0)) / n);
   }
 
   function html(D) {
-    var out = '<section class="v2-card opr-wrap" aria-labelledby="opr-titre">'
-      + '<h2 class="opr-title" id="opr-titre">Partenariat Intégral Pharma — rémunération du groupement</h2>'
-      + '<p class="opr-sub">Rémunération prévue au contrat de référencement, calculée par quadrimestre sur les achats des adhérentes chez Intégral Pharma, groupe de grossistes-répartiteurs. Année ' + D.annee + '.</p>';
-    D.lignes.forEach(function (l) {
-      var vide = l.nMois === 0;
-      out += '<article class="opr-q" data-opr-q="' + l.de + '-' + l.a + '">'
-        + '<header class="opr-qh"><h3 class="opr-per">' + esc(l.periode) + '</h3>' + badge(l) + '</header>'
-        + faits(l, vide)
-        + '<p class="opr-det">' + (vide ? 'Aucune vente enregistrée pour l’instant.' : detailExclusions(D, l)) + '</p>'
-        + lignePrimes(D, l)
-        + (l.indicatif
-          ? '<p class="opr-pay">Période antérieure à l’accord, évoqué à partir de ' + esc(moisEffet(D)) + '\u00a0: montant donné à titre indicatif, non compté dans le total.</p>'
-          : '<p class="opr-pay">' + (l.statut === 'clos' ? 'Échéance de paiement prévue' : 'Échéance de paiement prévue au plus tôt')
-        + ' : <strong>' + esc(fmtDate.format(l.echeance)) + '</strong></p>')
-        + '</article>';
-    });
-    out += '<div class="opr-q opr-tot" data-opr-total="1">'
-      + '<h3 class="opr-per">' + (D.C.effet ? 'Total depuis ' + esc(moisEffet(D)) : 'Total ' + D.annee) + ' à ce jour</h3>'
-      + faits(D.totalAnnee, false)
-      + (D.P ? '<p class="opr-det">Dont <strong>' + euros(D.totalAnnee.remuCA) + '</strong> sur le chiffre d’affaires et <strong>' + euros(D.totalAnnee.primes) + '</strong> pour '
-        + D.totalAnnee.nNouvelles + ' nouvelle' + (D.totalAnnee.nNouvelles > 1 ? 's pharmacies clientes' : ' pharmacie cliente')
-        + ' depuis ' + esc(MOIS_LONG[(D.P.depuis || 1) - 1]) + '.</p>' : '')
+    var T = D.totalAnnee;
+    var maxTotal = D.lignes.reduce(function (m, l) { return Math.max(m, l.total || 0); }, 0);
+    var wCA = T.remu > 0 ? T.remuCA / T.remu : 1;
+    var titreTotal = (D.C.effet ? 'Total depuis ' + esc(moisEffet(D)) : 'Total ' + D.annee) + ' à ce jour';
+    var out = '<section class="v2-card og-block oa-remu opr-wrap" aria-labelledby="opr-titre">'
+      + '<header class="oa-head"><h2 class="oa-h" id="opr-titre">Rémunération du groupement</h2><span class="oa-chip">' + D.annee + '</span>'
+      + '<button type="button" class="oa-ib" aria-expanded="false" aria-controls="oa-remu-note" aria-label="Comment elle est calculée"><span aria-hidden="true">i</span></button></header>'
+      + '<div class="oa-note" id="oa-remu-note" hidden>'
+        + '<p>Partenariat Intégral Pharma : rémunération prévue au contrat de référencement, calculée par quadrimestre sur les achats des adhérentes chez Intégral Pharma, groupe de grossistes-répartiteurs. Année ' + D.annee + '.</p>'
+        + '<p>Estimation à partir des ventes enregistrées ; le montant facturé fait foi.</p>'
+        + (D.P ? '<p>Nouvelle pharmacie cliente : adhérente dont le premier achat de l’année chez Intégral Pharma tombe à partir de ' + esc(MOIS_LONG[(D.P.depuis || 1) - 1]) + '. Les pharmacies suivies seulement par des statistiques globales, non datées au mois, ne sont pas comptées.</p>' : '')
+        + '<p>Échéance : fin de la période, plus ' + ((D.C.paiement && D.C.paiement.jours) || 0) + ' jours' + ((D.C.paiement && D.C.paiement.finDeMois) ? ', ramenés à la fin du mois' : '') + '.</p>'
       + '</div>'
-      + '<div class="opr-note">'
-      + '<p>Estimation à partir des ventes enregistrées ; le montant facturé fait foi.</p>'
-      + (D.P ? '<p>Nouvelle pharmacie cliente\u00a0: adhérente dont le premier achat de l’année chez Intégral Pharma tombe à partir de ' + esc(MOIS_LONG[(D.P.depuis || 1) - 1]) + '. Les pharmacies suivies seulement par des statistiques globales, non datées au mois, ne sont pas comptées.</p>' : '')
-      + '<p>Échéance : fin de la période, plus ' + ((D.C.paiement && D.C.paiement.jours) || 0) + ' jours' + ((D.C.paiement && D.C.paiement.finDeMois) ? ', ramenés à la fin du mois' : '') + '.</p>'
+      // Total en tête : le chiffre qui compte, sa composition en une barre.
+      + '<div class="oa-rtot" data-opr-total="1">'
+        + '<div class="oa-rtot-a"><span class="oa-mname">' + titreTotal + '</span><b class="oa-big">' + eur(T.remu, true) + '</b></div>'
+        + (D.P ? '<div class="oa-split"><div class="oa-split-bar" role="img" aria-label="' + euros(T.remuCA) + ' sur le chiffre d’affaires, ' + euros(T.primes) + ' de primes"><i class="ca" style="--w:' + wCA.toFixed(4) + '"></i><i class="pr"></i></div>'
+          + '<div class="oa-split-l"><span><i class="ca"></i><b class="og-num">' + euros(T.remuCA) + '</b> sur le CA</span><span><i class="pr"></i><b class="og-num">' + euros(T.primes) + '</b> · ' + T.nNouvelles + ' nouvelle' + (T.nNouvelles > 1 ? 's' : '') + ' depuis ' + esc(MOIS_ABREV[(D.P.depuis || 1) - 1]) + '</span></div></div>' : '')
+        + '<button type="button" class="oa-more oa-rtot-more" aria-expanded="false" aria-controls="oa-rtot-d">Détail</button>'
+        + '<dl class="oa-qn oa-qn--tot" id="oa-rtot-d" hidden><div><dt>CA HT net</dt><dd class="og-num">' + euros(T.total) + '</dd></div><div class="r"><dt>Retenu</dt><dd class="og-num">' + euros(T.retenu) + '</dd></div><div class="x"><dt>Exclu</dt><dd class="og-num">' + euros(T.exclu) + '</dd></div></dl>'
       + '</div>'
-      + '</section>';
+      + '<div class="oa-frise" style="--fill:' + friseRemplie(D).toFixed(4) + '">';
+    D.lignes.forEach(function (l, i) { out += carte(D, l, maxTotal, i); });
+    out += '</div></section>';
     return out;
   }
 

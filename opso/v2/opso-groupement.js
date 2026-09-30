@@ -154,6 +154,8 @@
     x: { label: 'Autres références', bornes: null }
   };
   var CAT_ORDER = ['pr_low', 'pr_mid', 'pr_high', 'tch', 'gen', 'biosim', 'nr', 'x'];
+  // Une seule famille de couleur (le vert OPSO), du plus profond au plus pâle : une teinte par catégorie.
+  var SEG_TONES = { all: '#11a63c', pr_low: '#0a6727', pr_mid: '#11a63c', pr_high: '#52cd78', tch: '#9fe3b4', gen: '#2f8f5a', biosim: '#7fbf98', nr: '#bcdcc7', x: '#dfe9e2' };
 
   function periodeLabel(moisArr) {
     if (!moisArr.length) return '';
@@ -392,64 +394,72 @@
   }
 
   // ── Rendu HTML (structure statique, contenus dynamiques posés par mount()) ──
+  // Refonte UX 2 (30/09/2026) : chaque bloc se lit par l'image — un grand chiffre,
+  // une forme, au plus une ligne. Les phrases explicatives sont repliées derrière
+  // un bouton « i » (attribut hidden : rien n'est retiré, tout reste lisible).
+  // Styles : opso-ux-accueil.css (classes oa-).
+  function infoBtn(id, label) {
+    return '<button type="button" class="oa-ib" aria-expanded="false" aria-controls="' + id + '" aria-label="' + esc(label) + '"><span aria-hidden="true">i</span></button>';
+  }
   function html() {
     injectStyle();
-    return '<div class="og-wrap og-skel">'
-      + '<div class="v2-card og-block og-hero-card">'
-        + '<div class="og-hero">'
-          + '<div class="og-ring-box">'
-            + '<svg viewBox="0 0 200 200" role="img" aria-label="Adhérentes qui achètent chez Intégral Pharma" id="og-ring-svg">'
-              + '<defs><linearGradient id="og-ring-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#43d068"/><stop offset="100%" stop-color="#0d8530"/></linearGradient></defs>'
-              + '<circle cx="100" cy="100" r="93" fill="none" stroke="rgba(17,166,60,.22)" stroke-width="1.5" stroke-dasharray="1.5 6" stroke-linecap="round"/>'
-              + '<circle cx="100" cy="100" r="80" fill="none" stroke="var(--surf-sunken,#EEF2EF)" stroke-width="16"/>'
-              + '<circle id="og-ring-progress" cx="100" cy="100" r="80" fill="none" stroke="url(#og-ring-g)" stroke-width="16" stroke-linecap="round" transform="rotate(-90 100 100)"/>'
-            + '</svg>'
-            + '<div class="og-ring-center"><span class="og-frac og-num" id="og-ring-frac"></span><span class="og-lbl">adhérentes achètent chez Intégral Pharma</span></div>'
-          + '</div>'
-          + '<div class="og-hero-stats">'
-            + '<span class="og-pill" id="og-pill-periode"><span class="og-dot"></span></span>'
-            + '<div class="og-cumul"><span class="og-amount og-num" id="og-hero-amount"></span><span class="og-period">Cumul HT, achats des adhérentes chez Intégral Pharma — groupe de grossistes-répartiteurs.</span></div>'
-          + '</div>'
+    return '<div class="og-wrap og-skel oa">'
+      // ── Héros : l'anneau du cap et le cumul fusionnés ──
+      + '<section class="v2-card og-block oa-hero" aria-label="Le cap">'
+        + '<span class="oa-hero-light" aria-hidden="true"></span>'
+        + '<div class="oa-hero-main">'
+          + '<span class="oa-kick oa-st" style="--k:0" id="og-pill-periode"></span>'
+          + '<div class="oa-amount og-num oa-st" style="--k:1" id="og-hero-amount"></div>'
+          + '<div class="oa-capline oa-st" style="--k:2"><span>Achats HT chez Intégral Pharma</span>' + infoBtn('og-provenance', 'D\'où viennent ces chiffres') + '</div>'
+          + '<p class="oa-note" id="og-provenance" hidden></p>'
         + '</div>'
-      + '</div>'
-      + '<div class="v2-card og-block">'
-        + '<h2 class="og-block-title">Le mois</h2>'
-        + '<p class="og-block-sub">Choisissez un mois pour voir son détail.</p>'
-        + '<nav class="og-months" id="og-months" aria-label="Choisir le mois"></nav>'
-        + '<div class="og-mois-inner" id="og-mois-inner">'
-          + '<p class="og-mois-lead" id="og-mois-lead"></p>'
-          + '<div class="og-facts">'
-            + '<div class="og-fact"><span class="og-flabel">Montant du mois</span><span class="og-fnum og-num" id="og-mf-montant"></span></div>'
-            + '<div class="og-fact"><span class="og-flabel">Écart avec le mois précédent</span><span class="og-fnum og-num" id="og-mf-ecart"></span><span class="og-fdelta" id="og-mf-ecart-txt"></span></div>'
-            + '<div class="og-fact"><span class="og-flabel">Pharmacies actives</span><span class="og-fnum og-num" id="og-mf-actives"></span></div>'
-            + '<div class="og-fact"><span class="og-flabel">Montant moyen par pharmacie active</span><span class="og-fnum og-num" id="og-mf-moyenne"></span></div>'
-          + '</div>'
+        + '<div class="oa-field">'
+          + '<div class="oa-field-h"><span class="oa-frac og-num" id="og-ring-frac"></span><span class="oa-field-l">adhérentes<br>clientes</span></div>'
+          + '<div class="oa-dots" id="og-dots" role="img" aria-label="Adhérentes qui achètent chez Intégral Pharma"></div>'
         + '</div>'
-        + '<p class="og-provenance" id="og-provenance"></p>'
-      + '</div>'
+      + '</section>'
+      // ── Le mois : histogramme vivant ──
+      + '<section class="v2-card og-block oa-mois" aria-labelledby="oa-mois-t">'
+        + '<header class="oa-head"><h2 class="oa-h" id="oa-mois-t">Le mois</h2><span class="oa-chip oa-chip--wait" id="oa-wait" hidden></span></header>'
+        + '<div class="oa-mgrid">'
+          + '<div class="oa-month" id="og-mois-inner" aria-live="polite">'
+            + '<span class="oa-mname" id="oa-m-nom"></span>'
+            + '<b class="oa-big og-num" id="og-mf-montant"></b>'
+            + '<span class="oa-delta" id="og-mf-ecart"></span>'
+            + '<div class="oa-kpis">'
+              + '<div class="oa-kpi"><b class="og-num" id="og-mf-actives"></b><span>pharmacies actives</span></div>'
+              + '<div class="oa-kpi"><b class="og-num" id="og-mf-moyenne"></b><span>par pharmacie active</span></div>'
+            + '</div>'
+          + '</div>'
+          + '<div class="oa-hist" id="og-months" role="group" aria-label="Choisir le mois"></div>'
+        + '</div>'
+      + '</section>'
       // Emplacement du bloc « suivi de la rémunération » (rendu par opso-remuneration.js) : sans style tant qu'il est vide.
       + '<div data-opso-slot="remuneration"></div>'
-      + '<div class="v2-card og-block">'
-        + '<h2 class="og-block-title">Ce que les adhérentes achètent</h2>'
-        + '<p class="og-block-sub">Classement par nombre de pharmacies qui commandent chaque référence, en euros HT.</p>'
-        + '<div class="og-tabs" id="og-tabs" role="tablist" aria-label="Choisir une catégorie de produits"></div>'
-        + '<p class="og-bornes" id="og-bornes"></p>'
-        + '<div class="og-phead"><span class="og-pamount og-num" id="og-ph-amount"></span><span class="og-pmeta og-num" id="og-ph-meta"></span></div>'
-        + '<ul class="og-list" id="og-prod-list"></ul>'
-        + '<p class="og-recap og-num" id="og-prod-recap"></p>'
-      + '</div>'
-      + '<div class="v2-card og-block">'
-        + '<h2 class="og-block-title">La trajectoire</h2>'
-        + '<p class="og-block-sub" id="og-traj-sub">Cumul mensuel des achats des adhérentes chez Intégral Pharma.</p>'
+      // ── Produits : barres horizontales ──
+      + '<section class="v2-card og-block oa-prod" aria-labelledby="oa-prod-t">'
+        + '<header class="oa-head"><h2 class="oa-h" id="oa-prod-t">Ce que les adhérentes achètent</h2></header>'
+        + '<div class="oa-seg" id="og-seg" aria-hidden="true"></div>'
+        + '<div class="oa-cats" id="og-tabs" role="group" aria-label="Choisir une catégorie de produits"></div>'
+        + '<div class="oa-phead"><b class="oa-pamount og-num" id="og-ph-amount"></b><span class="oa-pmeta og-num" id="og-ph-meta"></span><span class="oa-chip" id="og-bornes" hidden></span></div>'
+        + '<div class="oa-pcols" aria-hidden="true"><span>Référence</span><span>Pharmacies</span><span>€ HT · boîtes</span></div>'
+        + '<ol class="oa-rows" id="og-prod-list"></ol>'
+        + '<div class="oa-pfoot"><button type="button" class="oa-more oa-tog" id="og-prod-all" aria-expanded="false" aria-controls="og-prod-list">Top 10</button>'
+          + (V2.pages && V2.pages.opsoachats ? '<a class="oa-link" href="javascript:void 0" onclick="V2.go(\'opsoachats\')">Meilleurs achats <span aria-hidden="true">→</span></a>' : '')
+        + '</div>'
+      + '</section>'
+      // ── Trajectoire ──
+      + '<section class="v2-card og-block oa-traj" aria-labelledby="oa-traj-t">'
+        + '<header class="oa-head"><h2 class="oa-h" id="oa-traj-t">La trajectoire</h2><span class="oa-chip" id="og-traj-sub"></span>' + infoBtn('og-sept-note', 'À propos de la courbe') + '</header>'
+        + '<p class="oa-note" id="og-sept-note" hidden></p>'
         + '<div class="og-traj-wrap"><svg class="og-chart" id="og-traj-svg" viewBox="0 0 720 340" role="img" aria-label="Courbe du cumul mensuel et prolongement hypothétique"></svg></div>'
-        + '<p class="og-sept" id="og-sept-note"></p>'
-        + '<div class="og-legend">'
-          + '<span class="og-litem"><span class="og-swatch full"></span>Réalisé</span>'
-          + '<span class="og-litem"><span class="og-swatch dash"></span>Au rythme actuel — hypothèse, pas un engagement</span>'
-          + '<span class="og-litem"><span class="og-swatch dash2"></span>Simulation avec adhérentes en plus</span>'
+        + '<div class="oa-legend">'
+          + '<span><i class="oa-sw"></i>Réalisé</span>'
+          + '<span><i class="oa-sw oa-sw--d"></i>Au rythme actuel</span>'
+          + '<span><i class="oa-sw oa-sw--s"></i>Simulation</span>'
         + '</div>'
         + '<div class="og-sim is-rest" id="og-sim">'
-          + '<label for="og-sim-range"><div class="og-sim-label"><span id="og-sim-q">Simulez l\'arrivée d\'adhérentes supplémentaires chez Intégral</span><span class="og-sim-value og-num" id="og-sim-value">Déplacez le curseur</span></div></label>'
+          + '<label for="og-sim-range"><div class="og-sim-label"><span id="og-sim-q">Et si d\'autres adhérentes achetaient chez Intégral ?</span><span class="og-sim-value og-num" id="og-sim-value"></span></div></label>'
           + '<input type="range" id="og-sim-range" min="0" max="20" step="1" value="0" aria-label="Nombre d\'adhérentes supplémentaires simulées">'
           + '<div class="og-sim-presets" role="group" aria-label="Préréglages"><button type="button" data-n="0">Aucune</button><button type="button" data-n="5">+ 5</button><button type="button" data-n="10">+ 10</button><button type="button" data-n="20">+ 20</button></div>'
           + '<details class="og-sim-detail"><summary>Comment c\'est calculé ?</summary>'
@@ -457,8 +467,88 @@
             + '<p class="og-sim-hint og-num" id="og-sim-basis"></p>'
           + '</details>'
         + '</div>'
-      + '</div>'
+      + '</section>'
     + '</div>';
+  }
+
+  // Bouton « i » / « Détail » : ouvre ou replie le paragraphe qu'il désigne (délégation, vaut aussi pour la rémunération).
+  if (!V2._oaIbBound) {
+    V2._oaIbBound = true;
+    document.addEventListener('click', function (e) {
+      var b = e.target && e.target.closest && e.target.closest('.oa-ib,.oa-more');
+      if (!b || b.classList.contains('oa-tog')) return;
+      var t = document.getElementById(b.getAttribute('aria-controls'));
+      if (!t) return;
+      var open = b.getAttribute('aria-expanded') !== 'true';
+      b.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) { t.hidden = false; if (!reduceMotion) { t.classList.remove('oa-open'); void t.offsetWidth; t.classList.add('oa-open'); } }
+      else t.hidden = true;
+    });
+  }
+
+  // Chiffre qui roule d'une valeur à l'autre (changement de mois, d'onglet) : jamais de clignotement.
+  function rollTo(el, from, to, fmt) {
+    var tok = (el._rollTok || 0) + 1; el._rollTok = tok;
+    if (reduceMotion || from === to) { el.textContent = fmt(to); return; }
+    var t0 = null, dur = 520;
+    function step(ts) {
+      if (el._rollTok !== tok) return;
+      if (t0 === null) t0 = ts;
+      var p = Math.min(1, (ts - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = fmt(from + (to - from) * e);
+      if (p < 1) requestAnimationFrame(step); else el.textContent = fmt(to);
+    }
+    requestAnimationFrame(step);
+    setTimeout(function () { if (el._rollTok === tok) el.textContent = fmt(to); }, dur + 400); // filet : onglet en arrière-plan
+  }
+  UX.rollTo = rollTo;
+
+  // Vignette d'un produit : deux lettres de sa désignation (aucune photo de médicament disponible).
+  function vignette(d) {
+    var w = String(d || '').replace(/^CIP\s*/, '').split(/[\s\/\-]+/).filter(function (x) { return /[A-Za-zÀ-ÿ]/.test(x); });
+    var a = (w[0] || '?').replace(/[^A-Za-zÀ-ÿ]/g, '');
+    return (a.slice(0, 2) || '?').toUpperCase();
+  }
+
+  // Tuiles « Vos espaces » (rendues par le socle) : une ligne chacune au lieu d'un paragraphe.
+  var ESPACES = {
+    pilotage: 'Activation, CA et détail par officine',
+    marketing: 'Le catalogue du mois, prêt à imprimer',
+    offilog: 'La parapharmacie, rayon par rayon',
+    opsopharmacies: 'L\'évolution de chaque officine',
+    opsoachats: 'Les références les plus commandées'
+  };
+  // Mini-aperçu de chaque espace : un chiffre réel ou une forme, jamais une phrase.
+  function apercu(k, DATA) {
+    if (k === 'pilotage') return '<b class="og-num">' + DATA.pharmaClientes + '</b><small class="og-num">/' + DATA.adherentes + '</small>';
+    if (k === 'opsoachats') return '<b class="og-num">' + fmtEUR.format(DATA.refsVendues) + '</b><small>réf.</small>';
+    if (k === 'opsopharmacies') {
+      var mx = DATA.mois.reduce(function (m, mo) { return Math.max(m, mo.pharmaActives); }, 1);
+      return '<span class="oa-pv-bars">' + DATA.mois.map(function (mo) { return '<i style="--h:' + (mo.pharmaActives / mx).toFixed(3) + '"></i>'; }).join('') + '</span>';
+    }
+    if (k === 'offilog') {
+      var n = window.OFFILOG_LIVE && window.OFFILOG_LIVE.length;
+      return n ? '<b class="og-num">' + fmtEUR.format(n) + '</b><small>réf.</small>' : '<span class="oa-pv-shape oa-pv-shape--o"><i></i><i></i><i></i></span>';
+    }
+    if (k === 'marketing') return '<span class="oa-pv-shape oa-pv-shape--m"><i></i><i></i><i></i></span>';
+    return '';
+  }
+  function compacterEspaces(scope, DATA) {
+    var list = scope.querySelectorAll ? scope.querySelectorAll('.og-wrap ~ .v2-piliers .v2-pil') : [];
+    Array.prototype.forEach.call(list, function (a) {
+      var m = /V2\.go\('([a-z]+)'/.exec(a.getAttribute('onclick') || '');
+      var d = a.querySelector('.v2-pil-d');
+      if (m && d && ESPACES[m[1]]) { if (!d.title) d.title = d.textContent; d.textContent = ESPACES[m[1]]; }
+      var head = a.querySelector('.v2-pil-head');
+      if (m && head && DATA) {
+        var pv = head.querySelector('.oa-pv');
+        if (!pv) { pv = document.createElement('span'); pv.className = 'oa-pv'; pv.setAttribute('aria-hidden', 'true'); head.appendChild(pv); }
+        pv.innerHTML = apercu(m[1], DATA);
+      }
+      // Le libellé « Voir … → » double le titre : seule la flèche reste (la tuile entière est cliquable).
+      var go = a.querySelector('.v2-pil-go');
+      if (go) Array.prototype.slice.call(go.childNodes).forEach(function (n) { if (n.nodeType === 3) go.removeChild(n); });
+    });
   }
 
   // ── Montage : câblage JS sur le DOM inséré par html() ──
@@ -472,144 +562,183 @@
       var DATA = computeData();
       if (!DATA.mois.length) return; // ventes pas encore chargées : on attend le prochain V2.render()
       var wrapEl = scope.querySelector ? scope.querySelector('.og-wrap') : null;
-      if (wrapEl) wrapEl.classList.remove('og-skel');
+      if (wrapEl) {
+        wrapEl.classList.remove('og-skel');
+        // La page d'accueil OPSO passe en grille de tableau de bord (largeur utilisée, voir opso-ux-accueil.css).
+        var pageEl = wrapEl.closest('.v2-wrap'); if (pageEl) pageEl.classList.add('oa-page');
+      }
 
       // ---- Le cap ----
-      var ring = byId('og-ring-progress');
-      var radius = 80, circumference = 2 * Math.PI * radius;
-      var fraction = DATA.adherentes ? (DATA.pharmaClientes / DATA.adherentes) : 0;
-      ring.style.strokeDasharray = circumference.toFixed(2);
-      byId('og-ring-svg').setAttribute('aria-label', DATA.pharmaClientes + ' adhérentes sur ' + DATA.adherentes + ' achètent chez Intégral Pharma');
+      // Le champ des adhérentes : une pastille par adhérente, allumée si elle achète chez Intégral Pharma.
+      var dotsEl = byId('og-dots');
+      dotsEl.setAttribute('aria-label', DATA.pharmaClientes + ' adhérentes sur ' + DATA.adherentes + ' achètent chez Intégral Pharma');
       var fracEl = byId('og-ring-frac'), fracKey = DATA.pharmaClientes + '/' + DATA.adherentes;
       if (fracEl._k !== fracKey) { // pas de nouveau compteur si le même chiffre est re-rendu
         fracEl._k = fracKey;
         fracEl.innerHTML = '<span data-count="' + DATA.pharmaClientes + '">' + DATA.pharmaClientes + '</span><small>/' + DATA.adherentes + '</small>';
+        var dh = '';
+        for (var di = 0; di < DATA.adherentes; di++) dh += di < DATA.pharmaClientes ? '<i class="on" style="--k:' + di + '"></i>' : '<i></i>';
+        dotsEl.innerHTML = dh;
       }
       var amtEl = byId('og-hero-amount');
       amtEl.textContent = euros(DATA.total);
       amtEl.setAttribute('data-count', Math.round(DATA.total)); amtEl.setAttribute('data-fmt', 'eur');
-      byId('og-pill-periode').innerHTML = '<span class="og-dot"></span>' + esc(cap1(DATA.periode));
-      if (reduceMotion) {
-        ring.style.strokeDashoffset = (circumference * (1 - fraction)).toFixed(2);
-      } else {
-        ring.style.strokeDashoffset = circumference.toFixed(2);
-        ring.style.transition = 'stroke-dashoffset 1.5s cubic-bezier(.16,1,.3,1)';
-        requestAnimationFrame(function () { requestAnimationFrame(function () {
-          ring.style.strokeDashoffset = (circumference * (1 - fraction)).toFixed(2);
-        }); });
-      }
+      byId('og-pill-periode').innerHTML = '<span class="oa-dot"></span>' + esc(cap1(DATA.periode));
+      byId('og-provenance').textContent = 'Ventes Intégral Pharma (groupe de grossistes-répartiteurs) aux ' + DATA.pharmaClientes + ' adhérentes clientes, ' + DATA.periode
+        + ', avoirs déduits (' + DATA.lignesAvoirs + ' ligne' + (DATA.lignesAvoirs > 1 ? 's' : '') + ').'
+        + (DATA.nextAbrev ? ' ' + cap1(DATA.nextAbrev) + ' en attente.' : '');
 
-      // ---- Le mois ----
+      // ---- Le mois : histogramme, une colonne cliquable par mois ----
       var monthsNav = byId('og-months');
       monthsNav.innerHTML = '';
       var monthPills = [];
+      var maxCa = DATA.mois.reduce(function (m, mo) { return Math.max(m, mo.ca); }, 1);
       DATA.mois.forEach(function (mo, i) {
         var b = document.createElement('button');
-        b.className = 'og-month-pill'; b.type = 'button';
-        b.textContent = MOIS_ABREV[mo.m - 1];
+        b.className = 'oa-col'; b.type = 'button';
+        b.setAttribute('data-mois', i);
         b.setAttribute('aria-pressed', 'false');
+        b.setAttribute('aria-label', MOIS_PLEIN[mo.m - 1] + ' : ' + euros(mo.ca));
+        b.title = cap1(MOIS_PLEIN[mo.m - 1]) + ' · ' + euros(mo.ca);
+        b.style.setProperty('--k', i);
+        b.innerHTML = '<span class="oa-bar" style="--h:' + Math.max(0.04, mo.ca / maxCa).toFixed(4) + '"><i></i><b class="oa-val og-num" aria-hidden="true">' + Math.round(mo.ca / 1000) + ' k€</b></span><span class="oa-lab">' + MOIS_ABREV[mo.m - 1] + '</span>';
         b.addEventListener('click', function () { selectMonth(i); });
         monthsNav.appendChild(b); monthPills.push(b);
       });
+      var waitChip = byId('oa-wait');
       if (DATA.nextAbrev) {
-        var septPill = document.createElement('button');
-        septPill.className = 'og-month-pill'; septPill.type = 'button';
-        septPill.textContent = DATA.nextAbrev + ' — en attente';
-        septPill.disabled = true;
-        monthsNav.appendChild(septPill);
-      }
+        var ghost = document.createElement('span');
+        ghost.className = 'oa-col oa-col--wait'; ghost.setAttribute('aria-hidden', 'true');
+        ghost.style.setProperty('--k', DATA.mois.length);
+        ghost.innerHTML = '<span class="oa-bar"><i></i></span><span class="oa-lab">' + DATA.nextAbrev + '</span>';
+        monthsNav.appendChild(ghost);
+        waitChip.textContent = cap1(DATA.nextAbrev) + ' en attente'; waitChip.hidden = false;
+      } else waitChip.hidden = true;
 
-      var moisInner = byId('og-mois-inner'), moisLead = byId('og-mois-lead');
-      var mfMontant = byId('og-mf-montant'), mfEcart = byId('og-mf-ecart'), mfEcartTxt = byId('og-mf-ecart-txt');
+      var moisNom = byId('oa-m-nom'), mfMontant = byId('og-mf-montant'), mfEcart = byId('og-mf-ecart');
       var mfActives = byId('og-mf-actives'), mfMoyenne = byId('og-mf-moyenne');
       var currentMonth = null;
+      function nb(v) { return fmtEUR.format(Math.round(v)); }
 
-      function renderMonth(i) {
-        var mo = DATA.mois[i];
-        moisLead.innerHTML = 'En ' + MOIS_PLEIN[mo.m - 1] + ', les adhérentes ont acheté <b>' + euros(mo.ca) + '</b> chez Intégral Pharma.';
-        mfMontant.textContent = euros(mo.ca);
+      function renderMonth(i, anim) {
+        var mo = DATA.mois[i], old = currentMonth == null ? null : DATA.mois[currentMonth];
+        moisNom.textContent = cap1(MOIS_PLEIN[mo.m - 1]) + ' ' + mo.y;
+        if (anim && old) {
+          rollTo(mfMontant, old.ca, mo.ca, euros);
+          rollTo(mfActives, old.pharmaActives, mo.pharmaActives, nb);
+          rollTo(mfMoyenne, old.moyenne, mo.moyenne, euros);
+        } else {
+          mfMontant.textContent = euros(mo.ca); mfActives.textContent = mo.pharmaActives; mfMoyenne.textContent = euros(mo.moyenne);
+        }
         if (i === 0) {
-          mfEcart.textContent = '—';
-          mfEcartTxt.textContent = 'Premier mois du suivi';
-          mfEcartTxt.className = 'og-fdelta';
+          mfEcart.textContent = '1er mois suivi';
+          mfEcart.className = 'oa-delta';
         } else {
           var prev = DATA.mois[i - 1];
           var diff = mo.ca - prev.ca;
           var diffPct = prev.ca ? (diff / prev.ca) * 100 : 0;
-          var sign = diff >= 0 ? '+ ' : '− ';
-          mfEcart.textContent = sign + pct1(Math.abs(diffPct));
-          mfEcartTxt.textContent = 'par rapport à ' + MOIS_PLEIN[prev.m - 1];
-          mfEcartTxt.className = 'og-fdelta ' + (diff >= 0 ? 'up' : 'dn');
+          mfEcart.innerHTML = (diff >= 0 ? '+ ' : '− ') + esc(pct1(Math.abs(diffPct))) + ' <small>vs ' + esc(MOIS_ABREV[prev.m - 1]) + '</small>';
+          mfEcart.className = 'oa-delta ' + (diff >= 0 ? 'up' : 'dn');
         }
-        mfActives.textContent = mo.pharmaActives;
-        mfMoyenne.textContent = euros(mo.moyenne);
         monthPills.forEach(function (p, k) { p.setAttribute('aria-pressed', k === i ? 'true' : 'false'); });
         currentMonth = i;
       }
       function selectMonth(i) {
         if (i === currentMonth) return;
-        if (reduceMotion) { renderMonth(i); return; }
-        moisInner.classList.add('is-changing');
-        setTimeout(function () { renderMonth(i); moisInner.classList.remove('is-changing'); }, 200);
+        renderMonth(i, true);
+        var inner = byId('og-mois-inner');
+        if (!reduceMotion && inner) { inner.classList.remove('oa-swap'); void inner.offsetWidth; inner.classList.add('oa-swap'); }
       }
-      renderMonth(DATA.mois.length - 1);
+      currentMonth = null;
+      renderMonth(DATA.mois.length - 1, false);
 
-      byId('og-provenance').textContent = 'Ventes Intégral Pharma aux ' + DATA.pharmaClientes + ' adhérentes clientes, ' + DATA.periode
-        + ', avoirs déduits (' + DATA.lignesAvoirs + ' ligne' + (DATA.lignesAvoirs > 1 ? 's' : '') + ').'
-        + (DATA.nextAbrev ? ' ' + cap1(DATA.nextAbrev) + ' en attente.' : '');
-
-      // ---- Produits ----
+      // ---- Produits : puces-catégories avec leur part, barres horizontales ----
       var tabsDef = [{ k: 'all', label: 'Tous', bornes: null, ca: DATA.total, refs: DATA.refsVendues, top: DATA.top20 }];
       if (DATA.categories) {
         DATA.categories.forEach(function (c) { tabsDef.push({ k: c.k, label: c.label, bornes: c.bornes, ca: c.ca, refs: c.refs, top: c.top }); });
       }
       var prodTabsEl = byId('og-tabs'), prodBornesEl = byId('og-bornes'), phAmountEl = byId('og-ph-amount'),
-          phMetaEl = byId('og-ph-meta'), prodListEl = byId('og-prod-list'), prodRecapEl = byId('og-prod-recap');
+          phMetaEl = byId('og-ph-meta'), prodListEl = byId('og-prod-list');
       prodTabsEl.innerHTML = '';
-      var tabButtons = [];
+      var segEl = byId('og-seg'); segEl.innerHTML = '';
+      var tabButtons = [], segParts = [];
       tabsDef.forEach(function (t, i) {
+        var part = DATA.total ? (t.ca / DATA.total) * 100 : 0;
+        var tone = SEG_TONES[t.k] || '#11a63c';
         var b = document.createElement('button');
-        b.className = 'og-tab'; b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-pressed', 'false');
-        b.textContent = t.label;
+        b.className = 'oa-cat'; b.type = 'button'; b.setAttribute('aria-pressed', 'false');
+        b.style.setProperty('--tone', tone);
+        b.innerHTML = '<i class="oa-cat-dot" aria-hidden="true"></i><span class="oa-cat-l">' + esc(t.label) + '</span><em class="og-num">' + esc(pct1(part)) + '</em>';
         b.addEventListener('click', function () { selectTab(i); });
         prodTabsEl.appendChild(b); tabButtons.push(b);
+        // Une seule barre segmentée : chaque catégorie à sa part du total, cliquable comme sa puce.
+        if (t.k !== 'all' && t.ca > 0) {
+          var sg = document.createElement('span');
+          sg.className = 'oa-seg-p'; sg.style.setProperty('--tone', tone); sg.style.setProperty('--k', segParts.length);
+          sg.style.flexGrow = String(Math.max(0.004, t.ca / DATA.total));
+          sg.title = t.label + ' · ' + pct1(part);
+          sg.addEventListener('click', function () { selectTab(i); });
+          segEl.appendChild(sg); segParts.push({ el: sg, i: i });
+        }
       });
-      var currentTab = null;
-      function renderTab(i) {
-        var t = tabsDef[i];
-        prodBornesEl.textContent = t.bornes ? ('Tranche : ' + t.bornes) : '';
-        phAmountEl.textContent = euros(t.ca);
-        var partPct = DATA.total ? (t.ca / DATA.total) * 100 : 0;
-        phMetaEl.textContent = pct1(partPct) + ' du total · ' + t.refs + ' référence' + (t.refs > 1 ? 's' : '') + ' vendue' + (t.refs > 1 ? 's' : '');
-        prodListEl.innerHTML = '';
-        (t.top || []).slice(0, 10).forEach(function (p, idx) {
-          var li = document.createElement('li'); li.className = 'og-row';
-          var gaugePct = DATA.pharmaClientes ? Math.min(100, Math.round((p.n / DATA.pharmaClientes) * 100)) : 0;
-          li.innerHTML =
-            '<span class="og-rank og-num">' + (idx + 1) + '</span>'
-            + '<div class="og-main"><div class="og-pname">' + esc(p.d) + '</div>'
-              + '<div class="og-gauge-row"><span class="og-gauge"><span class="og-gauge-fill" style="width:' + gaugePct + '%;--i:' + idx + '"></span></span>'
-              + '<span class="og-pnb og-num">' + p.n + ' pharmacie' + (p.n > 1 ? 's' : '') + ' sur ' + DATA.pharmaClientes + '</span></div></div>'
-            + '<div class="og-right"><span class="og-boites og-num">' + fmtEUR.format(p.boites) + ' boîtes</span><span class="og-pamount2 og-num">' + euros(p.ca) + '</span></div>';
-          prodListEl.appendChild(li);
+      var allBtn = byId('og-prod-all');
+      if (allBtn && !allBtn._ogBound) {
+        allBtn._ogBound = true;
+        allBtn.addEventListener('click', function () {
+          var open = allBtn.getAttribute('aria-expanded') !== 'true';
+          allBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+          prodListEl.classList.toggle('is-all', open);
+          if (open && !reduceMotion) { prodListEl.classList.remove('oa-swap'); void prodListEl.offsetWidth; prodListEl.classList.add('oa-swap'); }
         });
+      }
+      var currentTab = null, rowEls = [];
+      function rowHtml() {
+        return '<span class="oa-rk og-num"></span><span class="oa-vig" aria-hidden="true"></span>'
+          + '<div class="oa-pm"><span class="oa-pn"></span><span class="oa-pbar"><i></i></span></div>'
+          + '<span class="oa-pn-n og-num"></span>'
+          + '<div class="oa-pr"><b class="og-num"></b><span class="og-num"></span></div>';
+      }
+      function renderTab(i, anim) {
+        var t = tabsDef[i], old = currentTab == null ? null : tabsDef[currentTab];
+        if (t.bornes) { prodBornesEl.textContent = t.bornes; prodBornesEl.hidden = false; } else prodBornesEl.hidden = true;
+        if (anim && old) rollTo(phAmountEl, old.ca, t.ca, euros); else phAmountEl.textContent = euros(t.ca);
+        phMetaEl.textContent = fmtEUR.format(t.refs) + ' référence' + (t.refs > 1 ? 's' : '');
+        var top = (t.top || []).slice(0, 10);
+        top.forEach(function (p, idx) {
+          var li = rowEls[idx];
+          if (!li) { li = document.createElement('li'); li.className = 'oa-row'; li.innerHTML = rowHtml(); li.style.setProperty('--k', idx); prodListEl.appendChild(li); rowEls[idx] = li; }
+          li.hidden = false;
+          var w = DATA.pharmaClientes ? Math.min(1, p.n / DATA.pharmaClientes) : 0;
+          li.querySelector('.oa-rk').textContent = idx + 1;
+          li.querySelector('.oa-vig').textContent = vignette(p.d);
+          li.querySelector('.oa-pn').textContent = p.d;
+          li.querySelector('.oa-pbar i').style.setProperty('--w', Math.max(0.02, w).toFixed(4));
+          var nn = li.querySelector('.oa-pn-n');
+          nn.innerHTML = p.n + '<small>/' + DATA.pharmaClientes + '</small>';
+          nn.setAttribute('aria-label', p.n + ' pharmacie' + (p.n > 1 ? 's' : '') + ' sur ' + DATA.pharmaClientes);
+          li.querySelector('.oa-pr b').textContent = euros(p.ca);
+          li.querySelector('.oa-pr span').textContent = fmtEUR.format(p.boites);
+          li.querySelector('.oa-pr span').setAttribute('title', fmtEUR.format(p.boites) + ' boîtes');
+        });
+        for (var r = top.length; r < rowEls.length; r++) rowEls[r].hidden = true;
+        if (anim && !reduceMotion) { prodListEl.classList.remove('oa-swap'); void prodListEl.offsetWidth; prodListEl.classList.add('oa-swap'); }
         tabButtons.forEach(function (b, k) { b.setAttribute('aria-pressed', k === i ? 'true' : 'false'); });
+        segEl.classList.toggle('has-sel', t.k !== 'all');
+        segParts.forEach(function (sp) { sp.el.classList.toggle('on', sp.i === i); });
+        if (allBtn) allBtn.hidden = top.length <= 5;
         currentTab = i;
       }
       function selectTab(i) {
         if (i === currentTab) return;
-        if (reduceMotion) { renderTab(i); return; }
-        prodListEl.classList.add('is-changing');
-        setTimeout(function () { renderTab(i); prodListEl.classList.remove('is-changing'); }, 180);
+        renderTab(i, true);
       }
-      renderTab(0);
+      prodListEl.innerHTML = ''; rowEls = [];
+      renderTab(0, false);
 
       if (DATA.categories) {
         var sumCategories = DATA.categories.reduce(function (s, c) { return s + c.ca; }, 0);
         console.assert(Math.abs(sumCategories - DATA.total) < 1, 'OPSO groupement : somme des catégories ≠ total (écart ' + (sumCategories - DATA.total) + ' €)');
-        prodRecapEl.textContent = DATA.categories.length + ' catégories · total ' + euros(DATA.total) + ' HT';
       } else {
-        prodRecapEl.textContent = '';
         // PROD_STATS pas encore en mémoire : re-tente le classement par tranche
         // toutes les 700 ms (10 essais max), sans erreur ni zéro affiché entre-temps.
         var tries = 0;
@@ -621,6 +750,7 @@
           if (tries < 12) pollTimer = setTimeout(poll, 700);
         })();
       }
+      compacterEspaces(scope, DATA);
 
       // ---- Trajectoire ----
       renderTrajectoire(DATA);
@@ -649,9 +779,10 @@
       var perAdherentPerMonth = (DATA.pharmaClientes && nReal) ? (DATA.total / DATA.pharmaClientes / nReal) : 0;
       var basisEl = byId('og-sim-basis');
       if (basisEl) basisEl.textContent = euros(DATA.total) + ' ÷ ' + DATA.pharmaClientes + ' ÷ ' + nReal + ' = ' + euros(perAdherentPerMonth) + ' en moyenne par adhérente cliente et par mois (calculé).';
-      var sub = byId('og-traj-sub'); if (sub) sub.textContent = 'Cumul mensuel des achats des adhérentes chez Intégral Pharma, ' + DATA.periode + '.';
+      var sub = byId('og-traj-sub'); if (sub) sub.textContent = cap1(DATA.periode);
       var septNote = byId('og-sept-note');
-      if (septNote) septNote.textContent = DATA.nextAbrev ? (cap1(DATA.nextAbrev) + ' : données en attente — non incluses dans le cumul.') : '';
+      if (septNote) septNote.textContent = 'Cumul mensuel des achats des adhérentes chez Intégral Pharma, ' + DATA.periode + '. Pointillés : au rythme actuel — hypothèse, pas un engagement.'
+        + (DATA.nextAbrev ? ' ' + cap1(DATA.nextAbrev) + ' : données en attente — non incluses dans le cumul.' : '');
 
       function cumulSim(n) {
         var arr = cumulBase.slice(0, nReal);
@@ -734,6 +865,10 @@
             if (last) chart.appendChild(el('circle', { cx: p[0], cy: p[1], r: 9, fill: 'rgba(17,166,60,.16)', 'class': 'og-pt' }));
             chart.appendChild(el('circle', { cx: p[0], cy: p[1], r: last ? 5 : 3.5, fill: '#fff', stroke: '#0d8530', 'stroke-width': 2.2, 'class': 'og-pt' }));
           });
+          // Étiquette du dernier point réel : le cumul atteint, lisible sans légende.
+          var lp = realPts[realPts.length - 1];
+          var tl = el('text', { x: lp[0] - 12, y: lp[1] - 14, 'text-anchor': 'end', 'font-size': 14, 'font-weight': 700, fill: '#0d8530', 'class': 'og-pt oa-endlbl' });
+          tl.textContent = fmtK(arrBase[nReal - 1]); chart.appendChild(tl);
         }
         if (nSlots > nReal) {
           var basePts = []; for (var bi = nReal - 1; bi < nSlots; bi++) basePts.push([xAt(bi), yAt(arrBase[bi])]);
@@ -781,8 +916,8 @@
         range.style.setProperty('--p', (currentN / (parseInt(range.max, 10) || 20) * 100) + '%');
         if (!currentN) {
           // Au repos : une invite, pas un « + 0 € » sans intérêt.
-          simQ.textContent = 'Simulez l\'arrivée d\'adhérentes supplémentaires chez Intégral';
-          simValue.textContent = 'Déplacez le curseur';
+          simQ.textContent = 'Et si d\'autres adhérentes achetaient chez Intégral ?';
+          simValue.textContent = '';
           if (simBox) simBox.classList.add('is-rest');
         } else {
           var arrBase = cumulSim(0), arrSim = cumulSim(currentN);
