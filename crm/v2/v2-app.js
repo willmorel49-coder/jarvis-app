@@ -1601,7 +1601,7 @@
               : '<b>' + nbPharma + '</b> officines actives') + tiennesTxt + '</p>' +
           '</div>' +
           '<div class="v2-search" role="button" tabindex="0" aria-label="Rechercher une pharmacie, un produit" onclick="V2.onTopSearch()"><span class="srch-ic">' + ICO('search', 18, 2) + '</span>' +
-            '<input readonly aria-hidden="true" tabindex="-1" placeholder="Cherche une pharmacie, un produit…" style="cursor:pointer"><kbd>' + MOD + 'K</kbd></div>' +
+            '<input readonly aria-hidden="true" tabindex="-1" placeholder="' + ((window.V2_BRAND && window.V2_BRAND.opso) ? 'Chercher' : 'Cherche') + ' une pharmacie, un produit…" style="cursor:pointer"><kbd>' + MOD + 'K</kbd></div>' +
           relancesCardHtml() +
           // Accueil « objets bien rangés » : la grande tuile To do list suffit, la petite carte faisait doublon.
           (V2.todo && !todoTuile ? V2.todo.cardHtml() : '') +

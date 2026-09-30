@@ -21,9 +21,10 @@
   var ent = function (v) { return Number(v).toLocaleString('fr-FR'); };
 
   // Rayons = tranches PROD_STATS.f. `deux` : PPHT + prix net ; sinon le net seul.
+  // 'gen' hors répertoire ANSM (OPSO_NONGEN : Spagulax, Permixon…) → rangé en remboursable ('pr').
   var PAR_PAGE = 22;
   var RAYONS = [
-    { k: 'remb', label: 'Médicaments remboursables', f: { pr_low: 1, pr_mid: 1, pr_high: 1 }, pages: 2, deux: true },
+    { k: 'remb', label: 'Médicaments remboursables', f: { pr_low: 1, pr_mid: 1, pr_high: 1, pr: 1 }, pages: 2, deux: true },
     { k: 'gen', label: 'Génériques', f: { gen: 1 }, pages: 1, deux: false },
     { k: 'biosim', label: 'Biosimilaires', f: { biosim: 1 }, pages: 1, deux: true },
     { k: 'nr', label: 'Non remboursables', f: { nr: 1 }, pages: 2, deux: false }
@@ -38,6 +39,7 @@
 
   // ── Données ──
   var SRC_RESEAU = '../../crm/v2/prod-reseau-data.js?v=20260930a';
+  var SRC_NONGEN = 'opso-nongen-data.js?v=20261001a';
   function chargerScript(src, temoin) {
     if (window[temoin] || document.querySelector('script[src^="' + src.split('?')[0] + '"]')) return Promise.resolve();
     return new Promise(function (ok) { var s = document.createElement('script'); s.src = src; s.onload = s.onerror = function () { ok(); }; document.head.appendChild(s); });
@@ -64,7 +66,8 @@
   function construire() {
     var R = window.PROD_RESEAU, PS = window.PROD_STATS, B = window.BENCHMARK;
     if (!R || !PS || !B) return null;
-    var cle = [R.empreinte, PS.length, B.length, (V2.sales || []).length].join('|');
+    var nonGen = {}; (window.OPSO_NONGEN || []).forEach(function (c) { nonGen[normCip(c)] = 1; });
+    var cle = [R.empreinte, PS.length, B.length, (V2.sales || []).length, (window.OPSO_NONGEN || []).length].join('|');
     if (_cache && _cache.cle === cle) return _cache;
     var ps = {}; PS.forEach(function (r) { var c = normCip(r.c); if (c && !ps[c]) ps[c] = r; });
     var bench = {}; B.forEach(function (r) { var c = normCip(r && r.cip13); if (c && !bench[c]) bench[c] = r; });
@@ -76,7 +79,8 @@
     var rayons = RAYONS.map(function (r) { return { r: r, items: [], sansPrix: 0 }; });
     Object.keys(R.n).forEach(function (cip) {
       var c = normCip(cip), p = ps[c]; if (!p) return;
-      var ray = rayons.filter(function (x) { return x.r.f[p.f]; })[0]; if (!ray) return;
+      var f = p.f === 'gen' && nonGen[c] ? 'pr' : p.f;
+      var ray = rayons.filter(function (x) { return x.r.f[f]; })[0]; if (!ray) return;
       if (ray.items.length >= ray.r.pages * PAR_PAGE) return;       // R.n est déjà trié par nombre décroissant
       var bp = V2.bestPrice(bench[c]);
       if (bp.ip && !(bp.ht > bp.ip) && p.ppht > bp.ip && !p.stale) bp.ht = p.ppht;   // PPHT absent du benchmark : celui du catalogue
@@ -238,7 +242,7 @@
     var d = construire();
     if (!d) {
       root.innerHTML = page('<div class="v2-empty" style="padding:40px;text-align:center;color:var(--muted)">Chargement du catalogue…</div>');
-      Promise.all([chargerScript(SRC_RESEAU, 'PROD_RESEAU'), V2.loadFiles ? V2.loadFiles(['bench']) : 0]).then(function () {
+      Promise.all([chargerScript(SRC_RESEAU, 'PROD_RESEAU'), chargerScript(SRC_NONGEN, 'OPSO_NONGEN'), V2.loadFiles ? V2.loadFiles(['bench']) : 0]).then(function () {
         if (V2.route && V2.route.name === 'marketing' && construire()) render(root);
         else if (V2.route && V2.route.name === 'marketing') root.innerHTML = page('<div class="v2-empty" style="padding:40px;text-align:center;color:var(--muted)">Le catalogue n’a pas pu se charger. Rechargez la page.</div>');
       });
