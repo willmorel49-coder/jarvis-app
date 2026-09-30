@@ -1309,9 +1309,10 @@
   }
   function g4OrdreNormalise(rows) {
     // Anciens noms d'un même écran : « marche » avant « marchefr », « grossistes »
-    // redirige vers Concurrents. Ouvertures additionnées ; personnes = le plus
+    // redirige vers Concurrents, « molecules » (Catalogue & prix par produit,
+    // sans porte) compte pour Catalogue produits. Ouvertures additionnées ; personnes = le plus
     // grand des deux (deux listes de personnes ne s'additionnent pas).
-    var ALIAS = { marche: 'marchefr', grossistes: 'concurrents' };
+    var ALIAS = { marche: 'marchefr', grossistes: 'concurrents', molecules: 'produits' };
     var par = {}, out = [];
     (rows || []).forEach(function (r) {
       if (!r || !r.ecran || r.ecran === 'home') return;
