@@ -1,0 +1,701 @@
+<meta charset="utf-8">
+<title>Essentiels Pharma — Pilotage du groupement</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600;700&family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F8F2;
+    --bg2:#F5F8F2;
+    --surface:#FFFFFF;
+    --surface2:#EEF4E9;
+    --line:#E3EADD;
+    --line-strong:#57AE31;
+    --white:#FFFFFF;
+    --text:#17210F;
+    --text2:#5B6656;
+    --text3:#7C8A76;
+    --green:#57AE31;
+    --lime:#8FD45F;
+    --lime2:#96CD40;
+    --green-text:#2E7D14;
+    --amber:#E8B94A;
+    --dark:#0B0F0C;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{background:var(--bg);}
+  body{
+    background:
+      radial-gradient(60% 40% at 15% 0%, rgba(87,174,49,.05), transparent 60%),
+      radial-gradient(50% 35% at 90% 10%, rgba(150,205,64,.05), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Montserrat',sans-serif;
+    font-weight:400;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    padding-bottom:60px;
+  }
+  h1,h2,h3,.disp{font-family:'Comfortaa',cursive; font-weight:700;}
+  ::selection{background:var(--green); color:#0E1310;}
+  a{color:inherit;}
+  button{font-family:inherit;}
+
+  /* ===== HEADER ===== */
+  .topbar{
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+    padding:18px 20px;
+    background:rgba(10,15,12,.85);
+    backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:50;
+    color:#FFFFFF;
+  }
+  .brand-co{ display:flex; align-items:center; gap:12px; flex:none; }
+  .logo-pill{
+    background:#FFFFFF; border-radius:14px; padding:6px 10px;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 6px 18px -6px rgba(0,0,0,.5);
+  }
+  .logo-pill img{ display:block; height:26px; width:auto; }
+  .brand-x{ color:rgba(255,255,255,.55); font-size:1.1rem; font-weight:300; }
+  .logo-ess{ display:flex; align-items:center; }
+  .logo-ess svg{ height:24px; width:auto; display:block; }
+  .title-block{ display:flex; flex-direction:column; gap:2px; }
+  .title-block h1{ font-size:1.05rem; letter-spacing:-.01em; color:#FFFFFF; }
+  .title-block .baseline{ font-size:.72rem; color:var(--lime); text-transform:uppercase; letter-spacing:.12em; font-weight:600; }
+  .topbar .spacer{ flex:1; }
+
+  /* ===== TABS ===== */
+  .tabs{ display:flex; gap:8px; flex-wrap:wrap; }
+  .main-tabs{ padding:18px 20px 0; }
+  .tab-btn{
+    border:1px solid var(--line); background:var(--surface); color:var(--text2);
+    padding:11px 22px; border-radius:100px; cursor:pointer;
+    font-weight:700; font-size:.86rem; transition:all .2s ease;
+  }
+  .tab-btn:hover{ color:var(--green-text); border-color:var(--green); }
+  .tab-btn.active{
+    background:linear-gradient(120deg,var(--green),var(--lime2)); color:#FFFFFF; border-color:transparent;
+    box-shadow:0 8px 22px -8px rgba(87,174,49,.6);
+  }
+  .sub-tabs{ padding:0; margin-bottom:18px; }
+  .sub-tabs .tab-btn{ padding:8px 16px; font-size:.76rem; }
+
+  .tab-panel{ display:none; padding:22px 20px 10px; max-width:1180px; margin:0 auto; }
+  .tab-panel.active{ display:block; }
+
+  /* ===== KPI BAND ===== */
+  .kpi-band{
+    display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:22px;
+  }
+  @media (max-width:900px){ .kpi-band{ grid-template-columns:repeat(2,1fr); } }
+  .kpi{
+    background:var(--surface); border:1px solid var(--line); border-radius:18px;
+    padding:18px 16px; box-shadow:0 6px 20px -12px rgba(20,40,20,.15);
+  }
+  .kpi .v{ font-family:'Comfortaa',cursive; font-weight:700; font-size:1.5rem; color:var(--green-text); line-height:1.1; }
+  .kpi .l{ font-size:.68rem; color:var(--text2); text-transform:uppercase; letter-spacing:.06em; font-weight:600; margin-top:6px; }
+  .kpi.hl{ background:linear-gradient(135deg,var(--green),#3E8A1F); border-color:transparent; }
+  .kpi.hl .v, .kpi.hl .l{ color:#0B140A; }
+  .kpi.hl .l{ color:rgba(11,20,10,.75); }
+
+  /* ===== TABLE ===== */
+  .table-wrap{ overflow-x:auto; border:1px solid var(--line); border-radius:18px; background:var(--surface); box-shadow:0 6px 20px -12px rgba(20,40,20,.15); }
+  table{ border-collapse:collapse; width:100%; min-width:640px; font-size:.84rem; }
+  thead th{
+    text-align:left; padding:12px 14px; font-size:.68rem; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--text2); font-weight:700; border-bottom:1px solid var(--line); white-space:nowrap;
+    background:var(--surface2);
+    position:sticky; top:0;
+  }
+  tbody td{ padding:12px 14px; border-bottom:1px solid var(--line); vertical-align:middle; white-space:nowrap; }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr:hover{ background:rgba(87,174,49,.06); }
+  td.wrap, th.wrap{ white-space:normal; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; }
+
+  .badge{
+    display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:100px;
+    font-size:.7rem; font-weight:700; white-space:nowrap;
+  }
+  .badge-client{ background:rgba(87,174,49,.14); color:var(--green-text); border:1px solid rgba(87,174,49,.45); }
+  .badge-prospect{ background:rgba(91,102,86,.10); color:var(--text2); border:1px solid var(--line); }
+  .badge-n{
+    display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:22px; padding:0 8px;
+    border-radius:100px; background:var(--surface2); border:1px solid var(--line); color:var(--green-text);
+    font-weight:700; font-size:.72rem;
+  }
+
+  .rfa-name{ font-weight:600; }
+  .rfa-sub{ font-size:.72rem; color:var(--text3); }
+  .palier{ font-size:.76rem; color:var(--text2); }
+  .rfa-val{ font-weight:700; color:var(--green-text); font-family:'Comfortaa',cursive; }
+  .dash{ color:var(--text3); }
+
+  .prog-track{ width:110px; height:7px; border-radius:100px; background:var(--surface2); border:1px solid var(--line); overflow:hidden; }
+  .prog-fill{ height:100%; background:linear-gradient(90deg,var(--green),var(--lime2)); border-radius:100px; }
+  .prog-lbl{ font-size:.64rem; color:var(--text3); margin-top:4px; }
+
+  .legend-box{
+    margin-top:16px; padding:14px 18px; background:var(--surface); border:1px solid var(--line); border-radius:16px;
+    font-size:.78rem; color:var(--text2); display:flex; gap:18px; flex-wrap:wrap; align-items:center;
+    box-shadow:0 6px 20px -12px rgba(20,40,20,.15);
+  }
+  .legend-box b{ color:var(--text); }
+  .legend-chip{
+    background:var(--surface2); border:1px solid var(--line); border-radius:100px; padding:5px 12px; font-size:.72rem;
+  }
+  .note{ margin-top:12px; font-size:.74rem; color:var(--text3); font-style:italic; }
+
+  .sec-title{ font-size:1.3rem; margin-bottom:4px; }
+  .sec-sub{ color:var(--text2); font-size:.86rem; margin-bottom:18px; }
+
+  /* ===== PRODUITS ACTIONS ===== */
+  .prod-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:16px; }
+  .prod-info h3{ font-size:1.05rem; }
+  .prod-info p{ font-size:.78rem; color:var(--text2); margin-top:4px; max-width:520px; }
+  .prod-actions{ display:flex; gap:10px; flex-wrap:wrap; }
+  .btn{
+    font-weight:700; font-size:.8rem; padding:11px 20px; border-radius:100px; border:none; cursor:pointer;
+    display:inline-flex; align-items:center; gap:8px; transition:transform .2s ease, box-shadow .2s ease;
+  }
+  .btn-primary{ background:linear-gradient(120deg,var(--green),var(--lime2)); color:#FFFFFF; box-shadow:0 8px 22px -8px rgba(87,174,49,.6); }
+  .btn-primary:hover{ transform:translateY(-2px); }
+  .btn-ghost{ background:var(--surface); color:var(--text); border:1px solid var(--line); }
+  .btn-ghost:hover{ border-color:var(--green); color:var(--green-text); }
+
+  .cell-prod .d{ font-weight:600; font-size:.83rem; }
+  .cell-prod .cip{ font-size:.68rem; color:var(--text3); margin-top:2px; }
+  .gen-tag{ font-size:.66rem; color:var(--text3); }
+
+  .prod-info h3{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+  .prod-count{ font-size:.72rem; color:var(--text2); font-weight:600; }
+
+  .prod-toolbar{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
+  .prod-search{
+    flex:1; min-width:220px; max-width:380px; background:var(--surface); border:1px solid var(--line); color:var(--text);
+    padding:10px 18px; border-radius:100px; font-size:.82rem; font-family:inherit;
+  }
+  .prod-search:focus{ outline:none; border-color:var(--green); }
+  .prod-search::placeholder{ color:var(--text3); }
+
+  .cat-pill{
+    display:inline-flex; align-items:center; padding:3px 10px; border-radius:100px; margin:2px 4px 2px 0;
+    background:rgba(87,174,49,.12); color:var(--green-text); border:1px solid rgba(87,174,49,.35);
+    font-size:.66rem; font-weight:700; white-space:nowrap;
+  }
+  .net-price{ color:var(--green-text) !important; font-weight:800; }
+  tbody tr:nth-child(even){ background:rgba(87,174,49,.03); }
+
+  footer.app-foot{ text-align:center; color:var(--text3); font-size:.74rem; padding:30px 20px 10px; }
+</style>
+
+<script src="essentiels-officines.js?v=20260930a"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  #ess-login{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;
+    background:radial-gradient(60% 45% at 70% 8%,rgba(87,174,49,.16),transparent 60%),radial-gradient(50% 40% at 8% 95%,rgba(150,205,64,.10),transparent 60%),linear-gradient(160deg,#0E1310,#12180F 55%,#0E1310);}
+  #ess-login .card{width:100%;max-width:400px;background:#161C15;border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:40px 34px;box-shadow:0 24px 64px rgba(0,0,0,.5);border-top:4px solid #57AE31;}
+  #ess-login .co{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+  #ess-login .co .pill{background:#fff;border-radius:12px;padding:5px 8px;display:flex}
+  #ess-login .co .pill img{height:22px;display:block}
+  #ess-login h2{font-family:'Comfortaa',cursive;color:#fff;font-size:1.25rem;margin:4px 0 2px}
+  #ess-login .base{color:#8FD45F;font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;font-weight:600;margin-bottom:18px}
+  #ess-login label{display:block;color:#A9B4A3;font-size:.74rem;font-weight:600;margin:14px 0 6px;text-transform:uppercase;letter-spacing:.04em}
+  #ess-login input{width:100%;padding:13px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:#0E1310;color:#fff;font-family:'Montserrat',sans-serif;font-size:.95rem}
+  #ess-login input:focus{outline:none;border-color:#57AE31}
+  #ess-login .go{width:100%;margin-top:22px;padding:14px;border-radius:100px;border:none;cursor:pointer;font-family:'Comfortaa',cursive;font-weight:600;font-size:.95rem;background:#57AE31;color:#fff}
+  #ess-login .go:hover{background:#4C9A28}
+  #ess-login .err{color:#F06C6C;font-size:.82rem;margin-top:12px;min-height:18px;text-align:center}
+  #ess-login .foot{text-align:center;color:#71806B;font-size:.72rem;margin-top:16px}
+  #ess-logout{background:transparent;border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.85);border-radius:100px;padding:7px 14px;font-size:.74rem;font-weight:600;cursor:pointer;white-space:nowrap}
+  #ess-logout:hover{border-color:#8FD45F;color:#8FD45F}
+  body.locked{overflow:hidden}
+</style>
+<div id="ess-login">
+  <div class="card">
+    <div class="co">
+      <span class="pill"><img src="_brand/assets/logo-integral.png" alt="Intégral Pharma"></span>
+      <span style="color:#A9B4A3">×</span>
+      <svg viewBox="0 0 100 100" width="30" height="30" aria-hidden="true"><g fill="none" stroke-width="9" stroke-linecap="round"><path d="M50 46 C50 30 38 24 32 30 C26 36 34 48 50 48" stroke="#3E8A1F"/><path d="M54 50 C70 50 76 38 70 32 C64 26 52 34 52 50" stroke="#B5F257"/><path d="M50 54 C50 70 62 76 68 70 C74 64 66 52 50 52" stroke="#00A85C"/><path d="M46 50 C30 50 24 62 30 68 C36 74 48 66 48 50" stroke="#66F282"/></g></svg>
+    </div>
+    <h2>Pilotage groupement</h2>
+    <div class="base">Essentiels Pharma × Intégral Pharma</div>
+    <form id="ess-login-form" autocomplete="on">
+      <label for="ess-email">Email</label>
+      <input id="ess-email" type="email" placeholder="prenom.nom@integralpharma.fr" autocomplete="username" required>
+      <label for="ess-pass">Mot de passe</label>
+      <input id="ess-pass" type="password" placeholder="••••••••" autocomplete="current-password" required>
+      <button type="submit" class="go">Se connecter →</button>
+      <div class="err" id="ess-err"></div>
+    </form>
+    <div class="foot">Accès réservé · vos identifiants Jarvis habituels</div>
+  </div>
+</div>
+<script>
+(function(){
+  var SB_URL='https://iyvavhnlhxksokkerkos.supabase.co';
+  var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5dmF2aG5saHhrc29ra2Vya29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjU2NTYsImV4cCI6MjA5MzE0MTY1Nn0.eMdW6vUdoyVpZbqKXp6FNYTajwKEf4x-Xyj5zj1igO4';
+  var sb=null, tries=0;
+  try{ document.body && document.body.classList.add('locked'); }catch(e){}
+  document.addEventListener('DOMContentLoaded',function(){ document.body.classList.add('locked'); });
+  function ready(cb){ if(window.supabase&&window.supabase.createClient){cb();} else if(tries++<150){setTimeout(function(){ready(cb);},60);} }
+  function unlock(){
+    var o=document.getElementById('ess-login'); if(o)o.remove(); document.body.classList.remove('locked');
+    // 03/09/2026 — les recos portent nos prix IP : fichier protégé, chargé par
+    // adresse signée APRÈS l'ouverture de session, puis la page se redessine.
+    if(!window.ESSENTIELS_RECO){
+      sb.storage.from('donnees-protegees').createSignedUrl('essentiels-reco-data.js',3600).then(function(r){
+        var url=r&&r.data&&r.data.signedUrl; if(!url) return;
+        var sc=document.createElement('script'); sc.src=url;
+        sc.onload=function(){ try{ if(typeof renderProdTable==='function') renderProdTable(); }catch(e){} };
+        document.head.appendChild(sc);
+      });
+    }
+  }
+  ready(function(){
+    sb=window.supabase.createClient(SB_URL,SB_KEY);
+    sb.auth.getSession().then(function(r){ if(r&&r.data&&r.data.session) unlock(); });
+    var f=document.getElementById('ess-login-form');
+    if(f) f.addEventListener('submit',function(e){
+      e.preventDefault();
+      var err=document.getElementById('ess-err'); err.textContent='';
+      var btn=f.querySelector('button'); btn.textContent='Connexion…'; btn.disabled=true;
+      sb.auth.signInWithPassword({email:document.getElementById('ess-email').value.trim(),password:document.getElementById('ess-pass').value})
+        .then(function(res){ btn.textContent='Se connecter →'; btn.disabled=false;
+          if(res.error){ err.textContent='Identifiants incorrects.'; } else { unlock(); } })
+        .catch(function(){ btn.textContent='Se connecter →'; btn.disabled=false; err.textContent='Erreur de connexion.'; });
+    });
+  });
+  window.essLogout=function(){ if(sb) sb.auth.signOut().then(function(){location.reload();}); else location.reload(); };
+})();
+</script>
+
+<header class="topbar">
+  <div class="brand-co">
+    <div class="logo-pill">
+      <img src="_brand/assets/logo-integral.png" alt="Intégral Pharma">
+    </div>
+    <span class="brand-x">×</span>
+    <div class="logo-ess">
+      <svg viewBox="0 3 161 43" xmlns="http://www.w3.org/2000/svg" fill="none"><g><path d="M27.3094 31.175C26.8648 30.9853 26.3568 30.8588 25.9122 30.6059L25.4676 30.3529H25.4041C25.9757 31.8706 26.2297 33.2618 26.1027 34.4C25.5946 40.0912 21.0854 40.5338 19.6881 40.5338C18.2909 40.5338 13.7816 40.0912 13.2735 34.4C13.1465 33.2618 13.4005 31.8706 13.9721 30.3529H14.0357L13.5911 30.6059C13.1465 30.7956 12.6384 30.9853 12.1938 31.175H12.1303L11.7493 31.3015C11.4317 32.3132 11.3047 33.3882 11.3047 34.3368C11.3047 37.0559 12.1303 39.2059 13.6546 40.7235C15.8775 42.8103 18.8625 42.9368 19.6246 42.9368C19.6881 42.9368 19.7516 42.9368 19.8151 42.9368C19.8151 42.9368 19.8787 42.9368 20.0057 42.9368C20.7678 42.9368 23.7528 42.8103 25.9757 40.7235C27.5635 39.2059 28.3256 37.0559 28.3256 34.3368C28.3256 33.325 28.1986 32.3132 27.881 31.3015L27.5 31.175H27.3094Z" fill="#00A85C"/><path d="M17.8465 23.9029L17.656 23.7764L17.529 23.65L17.4655 23.5867L17.3384 23.4603L17.1479 23.3338C15.7507 24.5985 13.9724 26.5588 12.7021 28.9617H12.7657C13.4008 28.7088 14.0359 28.3926 14.7345 28.0764C14.925 27.95 15.1156 27.8867 15.3061 27.7603C16.1952 26.2426 17.0844 24.8514 17.8465 23.9029Z" fill="#00A85C"/><path d="M18.2277 23.2073C18.2277 23.2706 18.2913 23.2706 18.2913 23.2706C18.5453 22.9544 18.7358 22.7014 18.9264 22.4485L18.5453 22.1323C18.3548 22.322 18.1007 22.5117 17.8467 22.7647C17.9102 22.8279 17.9102 22.8911 17.9737 22.8911L18.2277 23.2073Z" fill="#00A85C"/><path d="M20.9587 22.1323L20.5776 22.5117C20.7682 22.7014 20.9587 23.0176 21.2127 23.3338L21.2763 23.2706L21.5938 22.8911C21.5938 22.8279 21.6573 22.8279 21.6573 22.7647C21.4033 22.4485 21.1492 22.2588 20.9587 22.1323Z" fill="#00A85C"/><path d="M22.3558 23.3338L22.2288 23.4603L22.1018 23.5867L22.0383 23.65L21.9112 23.7764L21.7207 23.9029C22.4193 24.8514 23.372 26.1794 24.1976 27.697C24.3882 27.8235 24.5787 27.8867 24.7692 28.0132C25.4678 28.3926 26.103 28.6456 26.7381 28.8985H26.8016C25.5949 26.5588 23.7531 24.5985 22.3558 23.3338Z" fill="#00A85C"/><path d="M19.1805 21.3735L19.3075 21.247L19.4345 21.1206L19.498 21.0573L19.5615 20.9941L19.6251 20.9309L19.7521 20.8044C18.4819 19.4132 16.513 17.6426 14.0996 16.3779V16.4412C14.3537 17.0735 14.6712 17.7059 14.9888 18.4015C15.1158 18.5912 15.1793 18.7809 15.3063 18.9706C16.8306 19.7294 18.2278 20.6779 19.1805 21.3735Z" fill="#66F282"/><path d="M20.9587 22.0691C20.7682 21.8794 20.5776 21.6265 20.3236 21.3735C20.2601 21.3735 20.2601 21.4368 20.1966 21.4368L19.6885 21.8162C20.006 22.0691 20.2601 22.2588 20.5141 22.4485L20.9587 22.0691C20.9587 22.1324 20.9587 22.1324 20.9587 22.0691Z" fill="#66F282"/><path d="M19.6886 24.8515L19.7521 24.7882C19.4346 24.5353 19.117 24.2824 18.9265 24.1559L18.863 24.0294C18.9265 24.0927 18.9265 24.0927 18.9265 24.1559L18.5454 24.5353C18.7359 24.725 18.9265 24.9779 19.1805 25.2309C19.1805 25.2309 19.244 25.2309 19.244 25.1677L19.6886 24.8515Z" fill="#B5F257"/><path d="M37.2809 17.2C35.7567 15.6191 33.5973 14.8603 30.8664 14.8603C29.8502 14.8603 28.834 14.9868 27.8178 15.3029L27.6908 15.6823V15.7456C27.5638 16.1882 27.3097 16.6941 27.1192 17.1368L26.8652 17.5794L26.8017 17.6426C28.3259 17.0735 29.7232 16.8206 30.8664 16.9471C36.5823 17.4529 37.0269 21.9426 37.0269 23.3338C37.0269 24.725 36.5823 29.2147 30.8664 29.7206C29.7232 29.7838 28.3259 29.5941 26.8017 29.025H26.7381C26.103 28.7721 25.4679 28.4559 24.7693 28.1397C24.5788 28.0132 24.3882 27.95 24.1977 27.8235C22.6735 27.0015 21.3397 26.0529 20.3871 25.3573L20.26 25.5471L20.133 25.6735L20.0695 25.7368L20.006 25.8C20.006 25.8 20.006 25.8 19.9425 25.8632L19.752 25.9265C21.0222 27.3176 22.991 29.0882 25.4044 30.3529L25.4679 30.4162L25.9125 30.6691C26.3571 30.8588 26.8652 31.0485 27.3097 31.2382H27.3733L27.7543 31.3647C28.7705 31.6809 29.8502 31.8073 30.8028 31.8073C33.5338 31.8073 35.6932 30.9853 37.2174 29.4676C39.5673 27.0015 39.4403 23.5868 39.4403 23.3338C39.5038 23.0809 39.6308 19.6662 37.2809 17.2Z" fill="#B5F257"/><path d="M19.7521 20.7412L19.6251 20.8676L19.5616 20.9309L19.4981 20.9941L19.4346 21.0573L19.3075 21.1838L19.1805 21.3103C18.9265 21.5632 18.7359 21.8162 18.5454 22.0059L18.9265 22.3853C19.117 22.1956 19.4346 22.0059 19.7521 21.7529L20.2602 21.3735C20.3237 21.3735 20.3237 21.3103 20.3872 21.3103C21.3399 20.6147 22.6736 19.6662 24.1979 18.8441C24.3249 18.6544 24.3884 18.4647 24.5154 18.275C24.8965 17.5794 25.1505 16.9471 25.4046 16.3147V16.2515C22.9912 17.5162 21.0223 19.35 19.7521 20.7412Z" fill="#B5F257"/><path d="M20.9588 24.5353L20.5142 24.1559C20.3237 24.3456 20.0061 24.5353 19.6886 24.7882L19.6251 24.8515L19.117 25.2309C19.117 25.2309 19.0535 25.2309 19.0535 25.2941C18.1008 25.9897 16.7671 26.9382 15.2428 27.7603C15.0523 27.8868 14.8618 27.95 14.6712 28.0765C13.9726 28.4559 13.3375 28.7088 12.7024 28.9618H12.6389C11.1146 29.5309 9.71739 29.7838 8.5742 29.6573C2.85822 29.1515 2.41364 24.6618 2.41364 23.2706C2.41364 21.8794 2.85822 17.3897 8.5742 16.8838C9.71739 16.7573 11.1146 17.0103 12.6389 17.5794H12.7024L12.4484 17.1368C12.2578 16.6941 12.0038 16.1882 11.8768 15.7456V15.6823L11.7497 15.3029C10.7336 14.9868 9.65388 14.8603 8.70122 14.8603C5.97025 14.8603 3.81088 15.6823 2.28662 17.2C-0.126789 19.6662 0.000232449 23.0809 0.000232449 23.3338C0.000232449 23.5235 -0.126789 27.0015 2.22311 29.4676C3.74737 31.0485 5.90674 31.8073 8.63771 31.8073C9.65388 31.8073 10.6701 31.6809 11.6862 31.3647L12.0673 31.2382H12.1308C12.5754 31.1118 13.0835 30.9221 13.528 30.6691L13.9726 30.4162L14.0361 30.3529C16.4495 29.0882 18.4184 27.3176 19.6886 25.9265L19.8156 25.8C19.8156 25.8 19.8156 25.8 19.8791 25.7368L19.9426 25.6735L20.0061 25.6103L20.1332 25.4838L20.2602 25.2941C20.6413 24.9779 20.8318 24.725 20.9588 24.5353Z" fill="#66F282"/><path d="M28.2621 12.2676C28.2621 9.54853 27.4365 7.39853 25.9122 5.88088C23.4353 3.54118 20.0057 3.66765 19.7517 3.66765C19.5611 3.66765 16.068 3.54118 13.5911 5.88088C12.0033 7.39853 11.2412 9.54853 11.2412 12.2676C11.2412 13.2794 11.4317 14.2912 11.7493 15.3029L11.8763 15.6824V15.7456C12.0033 16.1882 12.2574 16.6941 12.4479 17.1368L12.702 17.5794L12.7655 17.6426C14.0357 20.0456 15.814 22.0059 17.2112 23.2706L17.3383 23.3971L17.4653 23.5235L17.5288 23.5868L17.6558 23.7132L17.7828 23.8397C18.0369 24.0926 18.2909 24.2824 18.4814 24.4721L18.8625 24.0926C18.8625 24.0926 18.799 24.0294 18.799 23.9662C18.6085 23.7765 18.4814 23.5235 18.2274 23.2706L18.1639 23.2074L17.9099 22.8279C17.8463 22.7647 17.8463 22.7015 17.7828 22.7015C17.0842 21.7529 16.1315 20.425 15.3059 18.9074C15.1789 18.7176 15.1154 18.5279 14.9884 18.3382C14.6073 17.6426 14.3532 17.0103 14.0992 16.3779V16.3147C13.5276 14.7971 13.2736 13.4059 13.4006 12.2676C13.9087 6.57647 18.4179 6.13382 19.8152 6.13382C21.2124 6.13382 25.7217 6.57647 26.2298 12.2676C26.3568 13.4059 26.1027 14.7971 25.5312 16.3147V16.3779C25.2771 17.0103 24.9596 17.6426 24.642 18.3382C24.515 18.5279 24.4515 18.7176 24.3244 18.9074C23.4988 20.425 22.5461 21.7529 21.8475 22.7015C21.8475 22.7647 21.784 22.7647 21.784 22.8279L21.4665 23.2074L21.4029 23.2706C21.1489 23.5868 20.8949 23.9029 20.7043 24.0926L21.1489 24.4721C21.3394 24.2824 21.5935 24.0926 21.8475 23.9029L22.0381 23.7765L22.1651 23.65L22.2286 23.5868L22.3556 23.4603L22.4826 23.3338C23.8799 22.0691 25.6582 20.1088 26.9284 17.7059L26.9919 17.6426L27.2459 17.2C27.4365 16.7574 27.6905 16.2515 27.8175 15.8088V15.7456L27.9446 15.3662C28.0716 14.2912 28.2621 13.2794 28.2621 12.2676Z" fill="white"/></g></svg>
+    </div>
+  </div>
+  <div class="title-block">
+    <h1>Pilotage groupement</h1>
+    <div class="baseline">Le réflexe santé</div>
+  </div>
+  <div class="spacer"></div>
+  <button id="ess-logout" onclick="essLogout()">Déconnexion</button>
+</header>
+
+<nav class="tabs main-tabs">
+  <button class="tab-btn active" data-tab="pilotage">📊 Pilotage</button>
+  <button class="tab-btn" data-tab="produits">📦 Produits</button>
+</nav>
+
+<!-- ===================== TAB 1 — PILOTAGE ===================== -->
+<section id="tab-pilotage" class="tab-panel active">
+  <h2 class="sec-title">Le groupement, vu par Intégral Pharma</h2>
+  <p class="sec-sub">Suivi de conquête et projection RFA — Essentiels Pharma × Intégral Pharma.</p>
+
+  <div class="kpi-band" id="kpiBand"></div>
+
+  <div class="table-wrap">
+    <table id="officinesTable">
+      <thead>
+        <tr>
+          <th class="wrap">Officine</th>
+          <th>Ville</th>
+          <th>Statut</th>
+          <th class="num">CA annuel Intégral</th>
+          <th class="num">RFA (0,3 %)</th>
+        </tr>
+      </thead>
+      <tbody id="officinesBody"></tbody>
+    </table>
+  </div>
+
+  <div class="legend-box">
+    <b>RFA = 0,3 % du chiffre d'affaires généré</b> (à ajuster).
+  </div>
+  <p class="note">CA &amp; commandes complets à l'intégration des ventes Intégral.</p>
+</section>
+
+<!-- ===================== TAB 2 — PRODUITS ===================== -->
+<section id="tab-produits" class="tab-panel">
+  <h2 class="sec-title">Sélections produits</h2>
+  <p class="sec-sub">Listes prêtes à l'emploi — export Excel ou fiche imprimable à remettre en pharmacie.</p>
+
+  <nav class="tabs sub-tabs" id="prodTabs"></nav>
+
+  <div class="prod-head">
+    <div class="prod-info">
+      <h3><span id="prodTitle">—</span> <span class="prod-count" id="prodCount"></span></h3>
+      <p id="prodNote">—</p>
+    </div>
+    <div class="prod-actions">
+      <button class="btn btn-ghost" id="btnExcel">⬇ Export Excel</button>
+      <button class="btn btn-primary" id="btnFiche">🖨 Générer la fiche</button>
+    </div>
+  </div>
+
+  <div class="prod-toolbar">
+    <input type="search" id="prodSearch" class="prod-search" placeholder="🔍 Rechercher un produit ou un CIP…">
+  </div>
+
+  <div class="table-wrap">
+    <table id="prodTable">
+      <thead id="prodTableHead"></thead>
+      <tbody id="prodBody"></tbody>
+    </table>
+  </div>
+</section>
+
+<footer class="app-foot">Essentiels Pharma — Le réflexe santé · Pilotage Intégral Pharma × Essentiels Pharma</footer>
+
+<script>
+/* ===================== HELPERS ===================== */
+function fmtEUR(v){ if(v===null||v===undefined||isNaN(v)) return null; return v.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €'; }
+function fmtInt(v){ return v.toLocaleString('fr-FR'); }
+
+/* ===================== TAUX RFA (flat) ===================== */
+const RFA_TAUX = 0.003; // 0,3 % du CA
+function computeRFA(ca){
+  if(ca===null || ca===undefined) return null;
+  return ca * RFA_TAUX;
+}
+
+/* ===================== TAB 1 — PILOTAGE ===================== */
+(function buildPilotage(){
+  const officines = (window.ESSENTIELS_OFFICINES || []).slice();
+  const grp = window.ESSENTIELS_GRP || {};
+  const total = officines.length;
+  const clientes = officines.filter(o=>o.client).length;
+  const prospects = total - clientes;
+
+  let rfaSum = 0;
+  officines.forEach(o=>{
+    if(o.client && o.ca!==null && o.ca!==undefined){
+      rfaSum += computeRFA(o.ca);
+    }
+  });
+
+  const kpis = [
+    { v: total, l:'Officines' },
+    { v: clientes, l:'Déjà clientes', hl:true },
+    { v: prospects, l:'À conquérir' },
+    { v: grp.reseau ? grp.reseau.caReseau : '45 M€/an', l:'CA réseau / an' },
+    { v: fmtEUR(rfaSum) || '—', l:'RFA projetée' }
+  ];
+  document.getElementById('kpiBand').innerHTML = kpis.map(k=>`
+    <div class="kpi ${k.hl?'hl':''}">
+      <div class="v">${k.v}</div>
+      <div class="l">${k.l}</div>
+    </div>
+  `).join('');
+
+  // tri : clientes d'abord, puis CA décroissant (null en dernier dans chaque groupe)
+  officines.sort((a,b)=>{
+    if(!!b.client !== !!a.client) return (b.client?1:0) - (a.client?1:0);
+    const ca = v => (v===null||v===undefined) ? -1 : v;
+    return ca(b.ca) - ca(a.ca);
+  });
+
+  const rows = officines.map(o=>{
+    const statutBadge = o.client
+      ? `<span class="badge badge-client">✓ Client Intégral</span>`
+      : `<span class="badge badge-prospect">À conquérir</span>`;
+
+    let caCell, rfaCell;
+    if(o.ca===null || o.ca===undefined){
+      caCell = `<span class="dash">— à intégrer</span>`;
+      rfaCell = `<span class="dash">— à intégrer</span>`;
+    } else {
+      caCell = fmtEUR(o.ca);
+      rfaCell = `<span class="rfa-val">${fmtEUR(computeRFA(o.ca))}</span>`;
+    }
+
+    return `<tr>
+      <td class="rfa-name">${o.nom}</td>
+      <td>${o.ville}${o.cp ? ' ('+o.cp+')' : ''}</td>
+      <td>${statutBadge}</td>
+      <td class="num">${caCell}</td>
+      <td class="num">${rfaCell}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('officinesBody').innerHTML = rows;
+})();
+
+/* ===================== TAB 2 — PRODUITS ===================== */
+const PROD_LISTS = [
+  { key:'all',          label:'⭐ Tous les produits', isAll:true },
+  { key:'remise47',     label:'Remise > 4,7 %' },
+  { key:'exclu_gen',    label:'Exclusivités génériques', noPct:true },
+  { key:'generiques',   label:'Générique Zentiva/Teva/EG', noPct:true },
+  { key:'nr',           label:'NR', noPct:true },
+  { key:'sanofi_upsa',  label:'Sanofi/UPSA' },
+  { key:'glp1_offre',   label:'GLP-1' },
+  { key:'chers',        label:'> 468 €' }
+];
+let currentListKey = PROD_LISTS[0].key;
+let prodSearchTerm = '';
+
+function abandonPct(row, noPct){
+  if(noPct) return null;
+  if(row.ppht===null || row.ppht===undefined || row.ppht<=0) return null;
+  if(row.net===null || row.net===undefined) return null;
+  const pct = (row.ppht - row.net) / row.ppht * 100;
+  return pct;
+}
+
+/* Fusion de toutes les listes ESSENTIELS_RECO, dédoublonnée par CIP, avec la/les catégorie(s) d'origine */
+function buildAllProductsRows(){
+  const RECO = window.ESSENTIELS_RECO || {};
+  const merged = new Map();
+  PROD_LISTS.filter(l=>!l.isAll).forEach(conf=>{
+    const data = RECO[conf.key];
+    if(!data || !Array.isArray(data.rows)) return;
+    data.rows.forEach(r=>{
+      const key = r.cip || r.d;
+      if(!key) return;
+      if(!merged.has(key)){
+        merged.set(key, { d:r.d, cip:r.cip, gen:r.gen, n:r.n, ppht:r.ppht, net:r.net, cats:[] });
+      }
+      const m = merged.get(key);
+      if(!m.cats.includes(conf.label)) m.cats.push(conf.label);
+      if((m.n===undefined || m.n===null) && r.n!==undefined && r.n!==null) m.n = r.n;
+      if((m.ppht===undefined || m.ppht===null) && r.ppht!==undefined && r.ppht!==null) m.ppht = r.ppht;
+      if((m.net===undefined || m.net===null) && r.net!==undefined && r.net!==null) m.net = r.net;
+      if(!m.gen && r.gen) m.gen = r.gen;
+      if(!m.d && r.d) m.d = r.d;
+    });
+  });
+  const rows = Array.from(merged.values()).map(m=>({
+    d:m.d, cip:m.cip, gen:m.gen, n:m.n, ppht:m.ppht, net:m.net, cat:m.cats.join(' · ')
+  }));
+  rows.sort((a,b)=> (b.n||0) - (a.n||0));
+  return rows;
+}
+
+/* Point d'accès unique aux données d'une liste, quel que soit son type (RECO directe ou fusion "Tous les produits") */
+function getListData(key){
+  const RECO = window.ESSENTIELS_RECO || {};
+  const conf = PROD_LISTS.find(l=>l.key===key);
+  if(conf && conf.isAll){
+    return {
+      titre: '⭐ Tous les produits',
+      note: 'Fusion synchronisée de toutes les listes de sélection, dédoublonnée par CIP.',
+      rows: buildAllProductsRows(),
+      isAll: true
+    };
+  }
+  const data = RECO[key] || { rows:[] };
+  return { titre: data.titre || (conf ? conf.label : key), note: data.note || '', rows: data.rows || [] };
+}
+
+function buildProdTabs(){
+  const nav = document.getElementById('prodTabs');
+  nav.innerHTML = PROD_LISTS.map(l=>`<button class="tab-btn ${l.key===currentListKey?'active':''}" data-list="${l.key}">${l.label}</button>`).join('');
+  nav.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      currentListKey = btn.dataset.list;
+      nav.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b===btn));
+      renderProdTable();
+    });
+  });
+}
+
+function buildProdHead(isAll){
+  const thead = document.getElementById('prodTableHead');
+  thead.innerHTML = isAll
+    ? `<tr>
+        <th>#</th>
+        <th class="wrap">Produit</th>
+        <th class="wrap">Catégorie(s)</th>
+        <th>Pharmas</th>
+        <th class="num">PPHT</th>
+        <th class="num">Prix net IP</th>
+      </tr>`
+    : `<tr>
+        <th>#</th>
+        <th class="wrap">Produit</th>
+        <th>Pharmas</th>
+        <th class="num">PPHT</th>
+        <th class="num">Prix net IP</th>
+        <th class="num">Abandon</th>
+      </tr>`;
+}
+
+function renderProdTable(){
+  const conf = PROD_LISTS.find(l=>l.key===currentListKey);
+  const data = getListData(currentListKey);
+  document.getElementById('prodTitle').textContent = data.titre || conf.label;
+  document.getElementById('prodNote').textContent = data.note || '';
+
+  buildProdHead(!!conf.isAll);
+
+  let rowsData = data.rows || [];
+  if(prodSearchTerm){
+    const q = prodSearchTerm.toLowerCase();
+    rowsData = rowsData.filter(r => (r.d||'').toLowerCase().includes(q) || (r.cip||'').toLowerCase().includes(q));
+  }
+
+  const countEl = document.getElementById('prodCount');
+  countEl.textContent = `· ${rowsData.length} produit${rowsData.length>1?'s':''}`;
+
+  const colspan = conf.isAll ? 6 : 6;
+  const rows = rowsData.map((r,i)=>{
+    if(conf.isAll){
+      const pills = (r.cat||'').split(' · ').filter(Boolean).map(c=>`<span class="cat-pill">${c}</span>`).join('');
+      return `<tr>
+        <td>${i+1}</td>
+        <td class="cell-prod">
+          <div class="d">${r.d}</div>
+          <div class="cip">CIP ${r.cip || '—'}${r.gen ? ' · <span class="gen-tag">'+r.gen+'</span>' : ''}</div>
+        </td>
+        <td class="wrap">${pills}</td>
+        <td><span class="badge-n">${r.n!==undefined && r.n!==null ? r.n : '—'}</span></td>
+        <td class="num">${fmtEUR(r.ppht) || '<span class="dash">—</span>'}</td>
+        <td class="num net-price">${fmtEUR(r.net) || '<span class="dash">—</span>'}</td>
+      </tr>`;
+    }
+    const pct = abandonPct(r, conf.noPct);
+    return `<tr>
+      <td>${i+1}</td>
+      <td class="cell-prod">
+        <div class="d">${r.d}</div>
+        <div class="cip">CIP ${r.cip || '—'}${r.gen ? ' · <span class="gen-tag">'+r.gen+'</span>' : ''}</div>
+      </td>
+      <td><span class="badge-n">${r.n!==undefined && r.n!==null ? r.n : '—'}</span></td>
+      <td class="num">${fmtEUR(r.ppht) || '<span class="dash">—</span>'}</td>
+      <td class="num net-price">${fmtEUR(r.net) || '<span class="dash">—</span>'}</td>
+      <td class="num">${pct!==null ? pct.toFixed(1).replace('.',',') + ' %' : '<span class="dash">—</span>'}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('prodBody').innerHTML = rows || `<tr><td colspan="${colspan}" class="dash" style="padding:20px;">Aucun produit ne correspond.</td></tr>`;
+}
+
+document.getElementById('prodSearch').addEventListener('input', (e)=>{
+  prodSearchTerm = e.target.value.trim();
+  renderProdTable();
+});
+
+buildProdTabs();
+renderProdTable();
+
+/* ===================== EXPORT EXCEL ===================== */
+document.getElementById('btnExcel').addEventListener('click', ()=>{
+  const conf = PROD_LISTS.find(l=>l.key===currentListKey);
+  const data = getListData(currentListKey);
+  const rows = (data.rows || []).map(r=>{
+    const row = {
+      'CIP': r.cip || '',
+      'Désignation': r.d || ''
+    };
+    if(conf.isAll) row['Catégorie(s)'] = r.cat || '';
+    row['Nb pharmacies'] = r.n !== undefined && r.n !== null ? r.n : '';
+    row['PPHT'] = r.ppht !== undefined && r.ppht !== null ? r.ppht : '';
+    row['Prix net IP'] = r.net !== undefined && r.net !== null ? r.net : '';
+    if(!conf.isAll){
+      const pct = abandonPct(r, conf.noPct);
+      row['Abandon'] = pct !== null ? Math.round(pct*10)/10 : '';
+    }
+    return row;
+  });
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = conf.isAll
+    ? [{wch:16},{wch:44},{wch:36},{wch:14},{wch:10},{wch:12}]
+    : [{wch:16},{wch:44},{wch:14},{wch:10},{wch:12},{wch:10}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Sélection');
+  const safeName = (data.titre || currentListKey).replace(/[^\wàâäéèêëïîôöùûüç \-]/gi,'').trim().slice(0,40);
+  XLSX.writeFile(wb, `Selection_${safeName || currentListKey}_Essentiels.xlsx`);
+});
+
+/* ===================== GENERER LA FICHE ===================== */
+document.getElementById('btnFiche').addEventListener('click', ()=>{
+  const conf = PROD_LISTS.find(l=>l.key===currentListKey);
+  const data = getListData(currentListKey);
+  const base = document.baseURI;
+
+  const rowsHtml = (data.rows || []).map((r,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td>${r.d || ''}</td>
+      <td>${r.cip || ''}</td>
+      ${conf.isAll ? `<td>${r.cat || ''}</td>` : ''}
+      <td class="num">${fmtEUR(r.ppht) || '—'}</td>
+      <td class="num">${fmtEUR(r.net) || '—'}</td>
+    </tr>
+  `).join('');
+
+  const theadHtml = conf.isAll
+    ? `<tr><th>#</th><th>Désignation</th><th>CIP</th><th>Catégorie(s)</th><th class="num">PPHT</th><th class="num">Prix net IP</th></tr>`
+    : `<tr><th>#</th><th>Désignation</th><th>CIP</th><th class="num">PPHT</th><th class="num">Prix net IP</th></tr>`;
+
+  const html = `<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<base href="${base}">
+<title>Sélection Intégral Pharma by Essentiels Pharma — ${data.titre || conf.label}</title>
+<style>
+  @page{ size:A4; margin:16mm; }
+  *{ box-sizing:border-box; }
+  body{ font-family:'Helvetica Neue',Arial,sans-serif; color:#0E1310; margin:0; padding:0; background:#fff; }
+  header{ display:flex; align-items:center; gap:16px; border-bottom:3px solid #57AE31; padding-bottom:14px; margin-bottom:20px; }
+  header img.integral{ height:34px; }
+  header .x{ font-size:1.2rem; color:#888; }
+  header svg{ height:30px; }
+  h1{ font-size:1.3rem; margin:0 0 4px; }
+  .sub{ font-size:.95rem; color:#4a5a44; margin:0; }
+  table{ width:100%; border-collapse:collapse; margin-top:12px; font-size:.86rem; }
+  th{ text-align:left; background:#EEF5E9; color:#2c3a26; padding:8px 10px; border-bottom:2px solid #57AE31; font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; }
+  td{ padding:7px 10px; border-bottom:1px solid #e3e8df; }
+  td.num, th.num{ text-align:right; font-variant-numeric:tabular-nums; }
+  tr:nth-child(even) td{ background:#F7FAF5; }
+  footer{ margin-top:26px; text-align:center; color:#71806B; font-size:.78rem; border-top:1px solid #e3e8df; padding-top:12px; }
+  @media print{ .noprint{ display:none; } }
+  .noprint{ text-align:center; margin-bottom:16px; }
+  .noprint button{ font-family:inherit; font-weight:700; padding:10px 22px; border-radius:100px; border:none; background:#57AE31; color:#fff; cursor:pointer; }
+</style>
+</head>
+<body>
+  <div class="noprint"><button onclick="window.print()">🖨 Imprimer / Enregistrer en PDF</button></div>
+  <header>
+    <img class="integral" src="_brand/assets/logo-integral.png" alt="Intégral Pharma">
+    <span class="x">×</span>
+    <svg viewBox="0 3 161 43" xmlns="http://www.w3.org/2000/svg"><g><path d="M27.3094 31.175C26.8648 30.9853 26.3568 30.8588 25.9122 30.6059L25.4676 30.3529H25.4041C25.9757 31.8706 26.2297 33.2618 26.1027 34.4C25.5946 40.0912 21.0854 40.5338 19.6881 40.5338C18.2909 40.5338 13.7816 40.0912 13.2735 34.4C13.1465 33.2618 13.4005 31.8706 13.9721 30.3529H14.0357L13.5911 30.6059C13.1465 30.7956 12.6384 30.9853 12.1938 31.175H12.1303L11.7493 31.3015C11.4317 32.3132 11.3047 33.3882 11.3047 34.3368C11.3047 37.0559 12.1303 39.2059 13.6546 40.7235C15.8775 42.8103 18.8625 42.9368 19.6246 42.9368C19.6881 42.9368 19.7516 42.9368 19.8151 42.9368C19.8151 42.9368 19.8787 42.9368 20.0057 42.9368C20.7678 42.9368 23.7528 42.8103 25.9757 40.7235C27.5635 39.2059 28.3256 37.0559 28.3256 34.3368C28.3256 33.325 28.1986 32.3132 27.881 31.3015L27.5 31.175H27.3094Z" fill="#00A85C"/><path d="M37.2809 17.2C35.7567 15.6191 33.5973 14.8603 30.8664 14.8603C29.8502 14.8603 28.834 14.9868 27.8178 15.3029L27.6908 15.6823V15.7456C27.5638 16.1882 27.3097 16.6941 27.1192 17.1368L26.8652 17.5794L26.8017 17.6426C28.3259 17.0735 29.7232 16.8206 30.8664 16.9471C36.5823 17.4529 37.0269 21.9426 37.0269 23.3338C37.0269 24.725 36.5823 29.2147 30.8664 29.7206C29.7232 29.7838 28.3259 29.5941 26.8017 29.025H26.7381C26.103 28.7721 25.4679 28.4559 24.7693 28.1397C24.5788 28.0132 24.3882 27.95 24.1977 27.8235C22.6735 27.0015 21.3397 26.0529 20.3871 25.3573L20.26 25.5471L20.133 25.6735L20.0695 25.7368L20.006 25.8C20.006 25.8 20.006 25.8 19.9425 25.8632L19.752 25.9265C21.0222 27.3176 22.991 29.0882 25.4044 30.3529L25.4679 30.4162L25.9125 30.6691C26.3571 30.8588 26.8652 31.0485 27.3097 31.2382H27.3733L27.7543 31.3647C28.7705 31.6809 29.8502 31.8073 30.8028 31.8073C33.5338 31.8073 35.6932 30.9853 37.2174 29.4676C39.5673 27.0015 39.4403 23.5868 39.4403 23.3338C39.5038 23.0809 39.6308 19.6662 37.2809 17.2Z" fill="#B5F257"/><path d="M2.28662 17.2C-0.126789 19.6662 0.000232449 23.0809 0.000232449 23.3338C0.000232449 23.5235 -0.126789 27.0015 2.22311 29.4676C3.74737 31.0485 5.90674 31.8073 8.63771 31.8073C9.65388 31.8073 10.6701 31.6809 11.6862 31.3647L12.0673 31.2382H12.1308C12.5754 31.1118 13.0835 30.9221 13.528 30.6691L13.9726 30.4162L14.0361 30.3529C16.4495 29.0882 18.4184 27.3176 19.6886 25.9265C11.1146 29.5309 9.71739 29.7838 8.5742 29.6573C2.85822 29.1515 2.41364 24.6618 2.41364 23.2706C2.41364 21.8794 2.85822 17.3897 8.5742 16.8838C9.71739 16.7573 11.1146 17.0103 12.6389 17.5794C10.7336 14.9868 9.65388 14.8603 8.70122 14.8603C5.97025 14.8603 3.81088 15.6823 2.28662 17.2Z" fill="#66F282"/><path d="M28.2621 12.2676C28.2621 9.54853 27.4365 7.39853 25.9122 5.88088C23.4353 3.54118 20.0057 3.66765 19.7517 3.66765C19.5611 3.66765 16.068 3.54118 13.5911 5.88088C12.0033 7.39853 11.2412 9.54853 11.2412 12.2676C11.2412 13.2794 11.4317 14.2912 11.7493 15.3029C13.9087 6.57647 18.4179 6.13382 19.8152 6.13382C21.2124 6.13382 25.7217 6.57647 26.2298 12.2676C26.3568 13.4059 26.1027 14.7971 25.5312 16.3147C27.4365 16.7574 27.6905 16.2515 27.8175 15.8088C28.0716 14.2912 28.2621 13.2794 28.2621 12.2676Z" fill="#3E8A1F"/></g></svg>
+    <div>
+      <h1>Sélection Intégral Pharma by Essentiels Pharma</h1>
+      <p class="sub">${data.titre || conf.label}</p>
+    </div>
+  </header>
+  <table>
+    <thead>${theadHtml}</thead>
+    <tbody>${rowsHtml}</tbody>
+  </table>
+  <footer>Le réflexe santé — Essentiels Pharma × Intégral Pharma</footer>
+</body>
+</html>`;
+
+  const w = window.open('', '_blank');
+  if(!w){ alert("Le navigateur a bloqué l'ouverture de la fiche (pop-up). Autorisez les pop-ups pour ce site."); return; }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+});
+
+/* ===================== TABS PRINCIPAUX ===================== */
+document.querySelectorAll('.main-tabs .tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.main-tabs .tab-btn').forEach(b=>b.classList.toggle('active', b===btn));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+</script>
