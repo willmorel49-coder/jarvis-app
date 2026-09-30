@@ -231,22 +231,24 @@
     var s = Math.min(1, (ap.clientWidth - 28) / (210 * MM));
     ap.style.setProperty('--s', s.toFixed(4));
   }
+  // Même enveloppe que les autres écrans : barre du haut (retour à l'accueil) + marges de page.
+  function page(html) { return V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) + '<div class="v2-wrap">' + html + '</div>'; }
   function render(root) {
     injectStyles();
     var d = construire();
     if (!d) {
-      root.innerHTML = '<div class="v2-empty" style="padding:40px;text-align:center;color:var(--muted)">Chargement du catalogue…</div>';
+      root.innerHTML = page('<div class="v2-empty" style="padding:40px;text-align:center;color:var(--muted)">Chargement du catalogue…</div>');
       Promise.all([chargerScript(SRC_RESEAU, 'PROD_RESEAU'), V2.loadFiles ? V2.loadFiles(['bench']) : 0]).then(function () {
         if (V2.route && V2.route.name === 'marketing' && construire()) render(root);
-        else if (V2.route && V2.route.name === 'marketing') root.innerHTML = '<div class="v2-empty" style="padding:40px;text-align:center;color:var(--muted)">Le catalogue n’a pas pu se charger. Rechargez la page.</div>';
+        else if (V2.route && V2.route.name === 'marketing') root.innerHTML = page('<div class="v2-empty" style="padding:40px;text-align:center;color:var(--muted)">Le catalogue n’a pas pu se charger. Rechargez la page.</div>');
       });
       return;
     }
     var nb = 0; d.rayons.forEach(function (x) { nb += x.items.length; });
-    root.innerHTML = '<div class="oc-barre-outils"><div><h1 class="v2-h1" style="margin:0 0 4px">Le catalogue</h1>' +
+    root.innerHTML = page('<div class="oc-barre-outils"><div><h1 class="v2-h1" style="margin:0 0 4px">Le catalogue</h1>' +
       '<p>' + nb + ' produits parmi les plus commandés par les ' + ent(d.R.officines) + ' pharmacies du réseau Intégral (' + esc(periodeTexte(d.R.periode)) + '), avec le nombre d’adhérentes OPSO Santé qui les commandent.</p></div>' +
       '<button class="v2-btn primary" onclick="V2.opsoCatalogue.imprimer()">Imprimer / enregistrer en PDF</button></div>' +
-      '<div class="oc-apercu">' + pagesHtml(d).replace(/<section class="oc-page/g, '<div class="oc-cadre"><section class="oc-page').replace(/<\/section>/g, '</section></div>') + '</div>';
+      '<div class="oc-apercu">' + pagesHtml(d).replace(/<section class="oc-page/g, '<div class="oc-cadre"><section class="oc-page').replace(/<\/section>/g, '</section></div>') + '</div>');
     ajusterApercu(root);
     if (!window.OFFILOG_BEST || !window.MKT_IMG) chargerPhotos().then(function () { _photos = null; if (V2.route && V2.route.name === 'marketing') render(root); });
   }
