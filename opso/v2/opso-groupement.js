@@ -514,7 +514,7 @@
   var ESPACES = {
     opsobord: 'Le chiffre, la rémunération, la trajectoire',
     pilotage: 'Activation, CA et détail par officine',
-    marketing: 'Le catalogue du mois, prêt à imprimer',
+    marketing: 'Les produits classés par nombre de pharmacies',
     offilog: 'La parapharmacie, rayon par rayon',
     opsopharmacies: 'L\'évolution de chaque officine',
     opsoachats: 'Les références les plus commandées'

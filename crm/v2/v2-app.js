@@ -1377,7 +1377,7 @@
       }
       // Pilier marketing : uniquement en mode OPSO (module v2-marketing chargé)
       if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.marketing) {
-        P.splice(2, 0, { k: 'marketing', cls: 'p2', ico: 'fiche', tag: 'A4', t: 'Fiches marketing OPSO', d: 'Compose le catalogue du mois : produits Offilog avec photo et prix HT, en charte OPSO Santé, prêt à imprimer pour tes adhérents.', go: 'Créer une sélection' });
+        P.splice(2, 0, { k: 'marketing', cls: 'p2', ico: 'fiche', tag: 'A4', t: 'Fiches marketing OPSO', d: 'Le catalogue : les produits classés par nombre de pharmacies qui les commandent, avec PPHT et prix net, prêt à imprimer.', go: 'Ouvrir le catalogue' });
       } else if (V2.pages.marketing) {
         // App JARVIS : espace Marketing de Pauline & Will (supports + sélections à pousser)
         P.splice(3, 0, { k: 'marketing', cls: 'p6', accent: '#E0556E', ico: 'spark', tag: 'Pauline & Will', t: 'Marketing', d: 'Fabriquez vos supports (flyers produits avec photos et prix) et vos sélections à pousser aux pharmacies. À deux, au même endroit.', go: 'Ouvrir le marketing' });
