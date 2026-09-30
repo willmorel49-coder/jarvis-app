@@ -201,15 +201,22 @@
     });
     return out;
   }
+  // Range les univers en lignes de 4 cartes ; chaque univers reçoit sa largeur sur 12 colonnes
+  // au prorata de ses cartes dans la ligne, pour qu'aucune ligne ne laisse de vide à droite.
+  function rangees(gs) {
+    var rows = [], row = null;
+    gs.forEach(function (g) {
+      var s = Math.min(4, g.items.length);
+      if (!row || row.lc + s > 4) { row = { lc: 0, gs: [] }; rows.push(row); }
+      row.lc += s; row.gs.push({ g: g, s: s, r: Math.ceil(g.items.length / s) });
+    });
+    rows.forEach(function (row) { row.gs.forEach(function (x) { x.span = 12 * x.s / row.lc; }); });
+    return rows;
+  }
   // Hauteur d'une carte : 53 mm tant que ça tient, réduite si un seul univers en porte beaucoup.
   function hauteurCarte(gs) {
-    var lignes = 0, lc = 0, R = 0, cur = 0;
-    gs.forEach(function (g) {
-      var s = Math.min(4, g.items.length), r = Math.ceil(g.items.length / s);
-      if (!lignes || lc + s > 4) { R += cur; lignes++; lc = 0; cur = 0; }
-      lc += s; cur = Math.max(cur, r);
-    });
-    R += cur;
+    var rows = rangees(gs), lignes = rows.length, R = 0;
+    rows.forEach(function (row) { R += Math.max.apply(null, row.gs.map(function (x) { return x.r; })); });
     if (!R) return 53;
     var h = (193 - lignes * 7 - (R - lignes) * 3 - Math.max(0, lignes - 1) * 3.5) / R;
     return Math.max(30, Math.min(53, h));
@@ -225,9 +232,11 @@
   function sheetHtml(sel) {
     var gid = 'mfa' + (++sheetN);
     var gs = groupes(sel), ch = hauteurCarte(gs), pl = Math.max(14, Math.min(22, ch - 31));
-    var blocs = gs.map(function (g, i) {
-      var s = Math.min(4, g.items.length);
-      return '<section class="mf-univ u' + i + '" style="grid-column:span ' + s + '">' +
+    var place = [];
+    rangees(gs).forEach(function (row) { place = place.concat(row.gs); });
+    var blocs = place.map(function (x, i) {
+      var g = x.g, s = x.s;
+      return '<section class="mf-univ u' + i + '" style="grid-column:span ' + x.span + '">' +
         '<h2><span class="mf-pin"></span><span>' + esc(g.u.label) + '</span></h2>' +
         '<div class="mf-cells" style="grid-template-columns:repeat(' + s + ',1fr)">' + g.items.map(carteHtml).join('') + '</div></section>';
     }).join('');
@@ -333,7 +342,7 @@
       '.mf-bandeau h1.long{font-size:22pt;line-height:1.05}',
       '.mf-sous{position:relative;font-size:11.5pt;margin-top:2mm;color:rgba(255,255,255,.95);max-width:150mm}',
       '.mf-sourire{position:absolute;left:0;right:0;bottom:-9mm;width:100%;height:10mm}',
-      '.mf-catalogue{position:absolute;left:9mm;right:9mm;top:77mm;display:grid;grid-template-columns:repeat(4,1fr);gap:3.5mm 3mm;align-content:start}',
+      '.mf-catalogue{position:absolute;left:9mm;right:9mm;top:77mm;display:grid;grid-template-columns:repeat(12,1fr);gap:3.5mm 3mm;align-content:start}',
       '.mf-univ h2{font-size:12.5pt;color:var(--anthra);display:flex;align-items:center;gap:2mm;margin:0 0 1.8mm 1mm;height:5mm}',
       '.mf-pin{display:inline-block;position:relative;flex:none;width:5mm;height:5mm;border-radius:50% 50% 50% 0;background:var(--vert)}',
       '.mf-pin::before,.mf-pin::after{content:"";position:absolute;background:#fff;border-radius:1px;left:50%;top:50%;transform:translate(-50%,-50%)}',
@@ -388,7 +397,7 @@
     if (!editing.products.length) msg = '';
     else if (sans && !window.OFFILOG_LIVE_PRIX) msg = 'Les prix Offilog ne sont pas chargés : saisissez chaque prix à la main (rien ne s\'affiche sur la fiche tant qu\'un prix est vide).';
     else if (sans) msg = sans + ' produit' + (sans > 1 ? 's' : '') + ' sans prix : saisissez le prix dans la liste. La fiche n\'affiche aucun prix pour ' + (sans > 1 ? 'eux' : 'lui') + ' tant qu\'il est vide.';
-    if (!msg && editing.products.length && hauteurCarte(groupes(editing)) < 40) msg = 'Beaucoup de produits dans un même univers : les cartes sont resserrées. Répartissez les produits entre univers pour une fiche plus aérée.';
+    if (!msg && hauteurCarte(groupes(editing)) < 40 && groupes(editing).some(function (g) { return g.items.length > 4; })) msg = 'Beaucoup de produits dans un même univers : les cartes sont resserrées. Répartissez les produits entre univers pour une fiche plus aérée.';
     el.style.display = msg ? '' : 'none';
     el.textContent = msg;
   }
