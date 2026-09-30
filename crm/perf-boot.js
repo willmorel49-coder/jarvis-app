@@ -56,7 +56,6 @@
       'establishments-aggregate.js',
       'offilog-data.js',
       'sagitta-shortlist-data.js',
-      'catalogues-marketing-data.js',
       'marketing-monthly-pitches.js'
     ],
     offilog: [
