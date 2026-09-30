@@ -156,25 +156,15 @@
    Tout respire, rien de brusque. Désactivé si "réduire les animations".
    ═══════════════════════════════════════════════════════════════════ */
 
-/* ── Tuiles de l'accueil : apparition en cascade ──────────────────── */
-@keyframes opso-pil-in {
-  from { opacity: 0; transform: translateY(14px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
+/* ── Tuiles de l'accueil ─────────────────────────────────────────
+   L'apparition en cascade est désormais pilotée au défilement par le script
+   (classes opso-rv / opso-in, voir plus bas) : une tuile sous la ligne de
+   flottaison se révèle quand elle arrive à l'écran, pas au chargement. */
 .v2-piliers .v2-pil {
-  animation: opso-pil-in .5s cubic-bezier(.22, .61, .36, 1) both;
   transition: transform .26s cubic-bezier(.22, .61, .36, 1),
               box-shadow .26s cubic-bezier(.22, .61, .36, 1),
               border-color .26s ease !important;
-  will-change: transform;
 }
-.v2-piliers .v2-pil:nth-child(1) { animation-delay: .03s; }
-.v2-piliers .v2-pil:nth-child(2) { animation-delay: .09s; }
-.v2-piliers .v2-pil:nth-child(3) { animation-delay: .15s; }
-.v2-piliers .v2-pil:nth-child(4) { animation-delay: .21s; }
-.v2-piliers .v2-pil:nth-child(5) { animation-delay: .27s; }
-.v2-piliers .v2-pil:nth-child(6) { animation-delay: .33s; }
-.v2-piliers .v2-pil:nth-child(7) { animation-delay: .39s; }
 
 /* Survol : léger soulèvement + ombre verte douce */
 .v2-piliers .v2-pil:hover {
@@ -242,4 +232,651 @@
     transition: none !important;
   }
   .v2-piliers .v2-pil:hover { transform: none !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PASSE UI / UX / MOTION — 30/09/2026
+   Même direction artistique (fond clair, vert OPSO, Satoshi + Varela Round
+   + Geist Mono) : on ajoute de la matière, une source de lumière, des
+   états d'interaction et du mouvement. Tout est surchargé ICI : rien n'est
+   modifié dans crm/ (partagé avec le CRM JARVIS).
+   Halo et lumière = dégradés radiaux + rgba + transform, jamais de flou.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --og-ease: cubic-bezier(.22, .61, .36, 1);
+  --og-ease-out: cubic-bezier(.16, 1, .3, 1);
+  --og-green: #11a63c;
+  --og-green-d: #0d8530;
+  --og-rose: #c7283d;
+  --og-lift: 0 1px 0 rgba(255,255,255,.95) inset, 0 1px 2px rgba(14,40,24,.05), 0 10px 28px -14px rgba(14,60,30,.18);
+  --og-lift-h: 0 1px 0 rgba(255,255,255,.95) inset, 0 2px 4px rgba(14,40,24,.06), 0 18px 38px -16px rgba(14,80,36,.28);
+  --og-card-line: rgba(14, 60, 30, .09);
+}
+
+/* ── Lumière de fond : trois foyers verts très pâles ─────────────── */
+.v2-halo {
+  background:
+    radial-gradient(60% 55% at 50% -10%, rgba(17,166,60,.13), transparent 70%),
+    radial-gradient(38% 42% at 90% 4%, rgba(118,214,150,.18), transparent 72%),
+    radial-gradient(34% 34% at 4% 26%, rgba(17,166,60,.06), transparent 70%) !important;
+}
+
+/* ── Barre du haut : une vraie ombre portée, cibles de 44 px ─────── */
+#v2-root .v2-top {
+  border-bottom-color: var(--og-card-line);
+  box-shadow: 0 12px 30px -24px rgba(14,60,30,.45);
+}
+#v2-root .v2-back,
+#v2-root .v2-top-search { min-height: 44px; }
+#v2-root .v2-back { padding-left: 14px; padding-right: 16px; }
+#v2-root .v2-logo, #v2-root .v2-brand { min-height: 44px; }
+#v2-root .v2-logo { width: 44px; height: 44px; }
+#v2-root .v2-av { width: 44px; height: 44px; }
+#v2-root .v2-top-search kbd, #v2-root .v2-search kbd { display: none; }
+@media (hover: hover) and (min-width: 900px) {
+  #v2-root .v2-top-search kbd, #v2-root .v2-search kbd { display: inline-block; }
+}
+
+/* ── Titres de page ──────────────────────────────────────────────── */
+#v2-root .v2-page-title {
+  font-size: clamp(28px, 4.4vw, 38px);
+  letter-spacing: -.035em;
+  line-height: 1.08;
+  color: var(--ip-ink);
+}
+#v2-root .v2-page-sub { max-width: 70ch; line-height: 1.55; font-size: 15px; }
+
+/* ── Matière : cartes, indicateurs ───────────────────────────────── */
+#v2-root .v2-card,
+#v2-root .v2-kpi {
+  background: linear-gradient(180deg, #fff 0%, #fcfdfe 100%);
+  border-color: var(--og-card-line);
+  box-shadow: var(--og-lift);
+}
+#v2-root .v2-kpi { transition: transform .28s var(--og-ease), box-shadow .28s var(--og-ease); }
+@media (hover: hover) {
+  #v2-root .v2-kpi:hover { transform: translateY(-2px); box-shadow: var(--og-lift-h); }
+}
+#v2-root .v2-kpi-v, #v2-root .v2-row-val, #v2-root .mono { font-variant-numeric: tabular-nums; }
+#v2-root .v2-kpi-l { letter-spacing: .05em; }
+
+/* ── Focus visible : anneau vert, partout ────────────────────────── */
+#v2-root a:focus-visible,
+#v2-root button:focus-visible,
+#v2-root summary:focus-visible,
+#v2-root [tabindex]:focus-visible,
+#v2-root [role="button"]:focus-visible {
+  outline: 2px solid var(--og-green);
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+#v2-root .v2-field { min-height: 48px; font-size: 16px; }
+#v2-root .v2-field:focus { border-color: var(--og-green); box-shadow: 0 0 0 4px rgba(17,166,60,.14); outline: none; }
+
+/* ── Boutons : le bouton secondaire ne ressemble plus à un bouton éteint ── */
+#v2-root .v2-btn:not(.v2-btn-primary) {
+  background: linear-gradient(180deg, #fff, #f8faf9);
+  color: var(--ip-ink);
+  border: 1px solid rgba(14,60,30,.14);
+  box-shadow: var(--og-lift);
+  min-height: 46px;
+  font-weight: 700;
+}
+#v2-root .v2-btn:not(.v2-btn-primary):hover {
+  border-color: rgba(17,166,60,.5);
+  color: var(--og-green-d);
+  transform: translateY(-1px);
+  box-shadow: var(--og-lift-h);
+}
+#v2-root .v2-btn:not(.v2-btn-primary):active { transform: translateY(0) scale(.985); transition-duration: .06s; }
+#v2-root .v2-btn svg { color: var(--og-green); }
+#v2-root .v2-btn-primary { min-height: 46px; }
+
+/* ── Onglets en pastilles ; l'indice de défilement est posé par le script ── */
+#v2-root .v2-tabs {
+  position: relative;
+  background: none; border: none; box-shadow: none;
+  padding: 2px 2px 8px; gap: 8px;
+  scrollbar-width: none;
+}
+#v2-root .v2-tabs::-webkit-scrollbar { display: none; }
+#v2-root .v2-tab {
+  min-height: 44px;
+  padding: 10px 16px;
+  background: #fff;
+  border: 1px solid rgba(14,60,30,.12);
+  border-radius: 999px;
+  box-shadow: 0 1px 2px rgba(14,40,24,.04);
+  transition: background .2s var(--og-ease), color .2s var(--og-ease), border-color .2s var(--og-ease), transform .2s var(--og-ease), box-shadow .2s var(--og-ease) !important;
+}
+#v2-root .v2-tab:hover { border-color: rgba(17,166,60,.45); color: var(--og-green-d); background: #f4fbf6; }
+#v2-root .v2-tab:active { transform: scale(.97); }
+#v2-root .v2-tab.on, #v2-root .v2-tab.on:hover {
+  color: #fff; border-color: transparent;
+  background: linear-gradient(150deg, #19b446, var(--og-green-d)) !important;
+  box-shadow: 0 6px 14px -6px rgba(17,166,60,.6), 0 1px 0 rgba(255,255,255,.25) inset !important;
+}
+#v2-root .v2-tab em { font-style: normal; font-variant-numeric: tabular-nums; opacity: .62; margin-left: 6px; font-weight: 600; }
+#v2-root .v2-tab.on em { opacity: .85; }
+#v2-root .ov-r { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 44px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 44px), transparent); }
+#v2-root .ov-l { -webkit-mask-image: linear-gradient(90deg, transparent, #000 44px); mask-image: linear-gradient(90deg, transparent, #000 44px); }
+#v2-root .ov-l.ov-r { -webkit-mask-image: linear-gradient(90deg, transparent, #000 44px, #000 calc(100% - 44px), transparent); mask-image: linear-gradient(90deg, transparent, #000 44px, #000 calc(100% - 44px), transparent); }
+
+/* ── Lignes de liste : survol lumineux, chevron qui avance ───────── */
+#v2-root .v2-row { min-height: 56px; transition: background .2s var(--og-ease); }
+#v2-root .v2-row:hover { background: linear-gradient(90deg, rgba(230,247,236,.7), rgba(230,247,236,0) 85%); }
+#v2-root .v2-row:active { background: rgba(230,247,236,.95); transition-duration: .05s; }
+#v2-root .v2-row-chev { transition: transform .22s var(--og-ease), color .22s ease; }
+#v2-root .v2-row:hover .v2-row-chev { transform: translateX(4px); color: var(--og-green); }
+
+/* ── Tuiles « Vos espaces » : lumière propre à chaque accent ─────── */
+#v2-root .v2-pil {
+  background: radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--accent) 8%, #fff) 0%, #fff 58%);
+  border-color: var(--og-card-line);
+}
+#v2-root .v2-pil-t { letter-spacing: -.02em; }
+#v2-root .v2-pil-go { min-height: 44px; margin-top: 8px; align-items: center; }
+@media (max-width: 640px) {
+  #v2-root .v2-piliers { gap: 12px; }
+  #v2-root .v2-pil {
+    padding: 16px 16px 8px;
+    display: grid;
+    grid-template-columns: 52px 1fr;
+    column-gap: 14px;
+    grid-template-areas: "ico num" "ico t" "ico d" "ico go";
+    align-items: start;
+  }
+  #v2-root .v2-pil-head { display: contents; }
+  #v2-root .v2-pil-ico { grid-area: ico; width: 52px; height: 52px; }
+  #v2-root .v2-pil-num { grid-area: num; justify-self: start; margin-bottom: 6px; }
+  #v2-root .v2-pil-t { grid-area: t; margin-bottom: 4px; font-size: 17px; }
+  #v2-root .v2-pil-d { grid-area: d; line-height: 1.45; }
+  #v2-root .v2-pil-go { grid-area: go; margin-top: 4px; }
+}
+
+/* ── Chargement : croix verte sur un halo, barre de progression ──── */
+#v2-root .v2-loading { position: relative; gap: 22px; }
+#v2-root .v2-loading::before {
+  content: ''; position: absolute; left: 50%; top: 50%;
+  width: 320px; height: 320px; margin: -190px 0 0 -160px;
+  background: radial-gradient(closest-side, rgba(17,166,60,.16), rgba(17,166,60,0));
+  pointer-events: none; z-index: -1;
+  animation: og-halo 2.4s ease-in-out infinite;
+}
+#v2-root .v2-loading::after {
+  content: ''; display: block; order: 3; width: 120px; height: 3px; border-radius: 3px;
+  background-color: rgba(17,166,60,.12);
+  background-image: linear-gradient(90deg, transparent 0, var(--og-green) 50%, transparent 100%);
+  background-size: 60% 100%; background-repeat: no-repeat;
+  animation: og-sweep 1.4s var(--og-ease) infinite;
+}
+@keyframes og-halo { 0%,100% { transform: scale(.92); opacity: .7; } 50% { transform: scale(1.08); opacity: 1; } }
+@keyframes og-sweep { 0% { background-position: -80% 0; } 100% { background-position: 180% 0; } }
+
+/* ═══ Mouvement piloté par le script (opso-groupement.js) ═══════════
+   Le masquage initial n'existe QUE sous html.opso-js, classe posée par le
+   script (jamais de masquage en CSS seul). Un bloc déjà visible au
+   chargement n'est jamais masqué ; un bloc révélé n'est jamais remasqué. */
+@keyframes opso-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes opso-enter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+html.opso-js .opso-rv { opacity: 0; transform: translateY(18px); }
+.opso-in { animation: opso-rise .62s var(--og-ease-out) var(--d, 0s) backwards; }
+.opso-enter { animation: opso-enter .4s var(--og-ease-out) backwards; }
+
+/* ── Anneau du cap : dégradé, éclat, point d'arrivée ─────────────── */
+.og-hero-card { position: relative; }
+.og-hero-card::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  background:
+    radial-gradient(60% 90% at 6% 0%, rgba(17,166,60,.10), transparent 65%),
+    radial-gradient(40% 60% at 100% 100%, rgba(118,214,150,.12), transparent 70%);
+}
+.og-hero-card > * { position: relative; }
+.og-ring-box::before {
+  content: ''; position: absolute; inset: 27px; border-radius: 50%;
+  background: radial-gradient(closest-side, #fff 62%, rgba(230,247,236,.9) 100%);
+  box-shadow: 0 1px 0 #fff inset, 0 14px 30px -16px rgba(17,166,60,.45);
+}
+.og-ring-box svg { position: relative; }
+.og-ring-center { z-index: 1; }
+.og-cumul {
+  position: relative; overflow: hidden;
+  background: linear-gradient(135deg, #f0faf3 0%, #ffffff 70%);
+  border: 1px solid rgba(17,166,60,.16);
+  box-shadow: 0 1px 0 #fff inset;
+}
+.og-cumul::after {
+  content: ''; position: absolute; right: -70px; top: -90px; width: 220px; height: 220px; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(17,166,60,.07), transparent);
+}
+.og-cumul .og-amount { font-size: clamp(1.9rem, 5vw, 2.5rem); letter-spacing: -.02em; }
+.og-pill { border: 1px solid rgba(17,166,60,.2); }
+.og-pill .og-dot { box-shadow: 0 0 0 0 rgba(17,166,60,.5); animation: og-pulse 2.2s ease-out infinite; }
+@keyframes og-pulse { 0% { box-shadow: 0 0 0 0 rgba(17,166,60,.45); } 70%,100% { box-shadow: 0 0 0 8px rgba(17,166,60,0); } }
+
+/* Les rangées défilantes sont le repère de position pour centrer l'élément actif */
+.og-wrap .og-months, .og-wrap .og-tabs { position: relative; }
+/* Légende de la courbe : elle passe à la ligne au lieu d'être coupée */
+.og-wrap .og-legend { flex-wrap: wrap; overflow: visible; gap: 8px 16px; }
+.og-wrap .og-legend .og-litem { white-space: normal; }
+
+/* ── Sections de l'accueil ───────────────────────────────────────── */
+.og-block-title { font-size: 1.3rem !important; letter-spacing: -.01em; margin-bottom: 6px !important; }
+.og-block-sub { font-size: .9375rem !important; margin-bottom: 14px !important; }
+.og-block { padding-top: 22px; padding-bottom: 22px; }
+.og-month-pill, .og-tab {
+  background: #fff; border: 1px solid rgba(14,60,30,.12); box-shadow: 0 1px 2px rgba(14,40,24,.04);
+  min-height: 44px; font-size: .875rem; font-weight: 600;
+  transition: background .2s var(--og-ease), color .2s var(--og-ease), border-color .2s var(--og-ease), transform .2s var(--og-ease), box-shadow .2s var(--og-ease);
+}
+.og-month-pill:hover, .og-tab:hover { background: #f4fbf6; border-color: rgba(17,166,60,.45); color: var(--og-green-d); }
+.og-month-pill:active, .og-tab:active { transform: scale(.96); }
+.og-month-pill[aria-pressed=true], .og-tab[aria-pressed=true] {
+  color: #fff; border-color: transparent;
+  background: linear-gradient(150deg, #19b446, var(--og-green-d));
+  box-shadow: 0 6px 14px -6px rgba(17,166,60,.6), 0 1px 0 rgba(255,255,255,.25) inset;
+}
+.og-month-pill[disabled] { background: transparent; border-style: dashed; color: #6b7286; box-shadow: none; }
+.og-months.ov-r, .og-tabs.ov-r { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 44px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 44px), transparent); }
+.og-months.ov-l, .og-tabs.ov-l { -webkit-mask-image: linear-gradient(90deg, transparent, #000 44px); mask-image: linear-gradient(90deg, transparent, #000 44px); }
+.og-months.ov-l.ov-r, .og-tabs.ov-l.ov-r { -webkit-mask-image: linear-gradient(90deg, transparent, #000 44px, #000 calc(100% - 44px), transparent); mask-image: linear-gradient(90deg, transparent, #000 44px, #000 calc(100% - 44px), transparent); }
+.og-facts { box-shadow: 0 1px 0 #fff inset; }
+.og-fact .og-fnum { font-size: 1.3rem; letter-spacing: -.01em; }
+.og-fact .og-fdelta.up::before { content: '▲ '; font-size: .7em; vertical-align: 1px; }
+.og-fact .og-fdelta.dn { color: var(--og-rose); }
+.og-fact .og-fdelta.dn::before { content: '▼ '; font-size: .7em; vertical-align: 1px; }
+.og-phead { background: linear-gradient(135deg, #f0faf3 0%, #fbfdfc 80%); border: 1px solid rgba(17,166,60,.14); }
+.og-phead .og-pamount { font-size: 1.5rem; letter-spacing: -.01em; }
+.og-row { padding: 10px 0; }
+.og-rank { font-variant-numeric: tabular-nums; }
+.og-row:nth-child(-n+3) .og-rank { color: var(--og-green-d); font-weight: 700; }
+.og-pname { font-size: .9375rem; font-weight: 600; color: var(--ip-ink); }
+.og-gauge { height: 6px; background: #eef2ef; }
+.og-gauge-fill {
+  display: block;
+  background: linear-gradient(90deg, #4cc76c, var(--og-green-d));
+  transform-origin: left center;
+  animation: og-grow .8s var(--og-ease-out) calc(var(--i, 0) * 45ms) backwards;
+}
+@keyframes og-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (max-width: 560px) {
+  .og-row { display: grid; grid-template-columns: 26px 1fr; column-gap: 8px; align-items: start; }
+  .og-right { grid-column: 2; width: 100%; display: flex; justify-content: space-between; align-items: baseline; text-align: left; padding-top: 2px; }
+  .og-boites, .og-pamount2 { display: inline; margin: 0; }
+  .og-gauge { flex: 1 1 90px; }
+  .og-hero-stats .og-cumul { padding: 14px 16px; }
+}
+
+/* ── Simulation : invite au repos, réglette lumineuse, préréglages ─ */
+.og-sim { background: linear-gradient(135deg, #f6fbf8, #fff 80%); border: 1px solid rgba(17,166,60,.14); }
+.og-sim.is-rest .og-sim-value { color: var(--muted); font-family: inherit; font-size: .9375rem; font-weight: 500; }
+.og-sim input[type=range] {
+  -webkit-appearance: none; appearance: none; background: transparent; height: 44px; margin: 6px 0 2px; cursor: pointer; --p: 0%;
+}
+.og-sim input[type=range]::-webkit-slider-runnable-track {
+  height: 8px; border-radius: 999px;
+  background: linear-gradient(90deg, #4cc76c, var(--og-green-d)) 0 / var(--p) 100% no-repeat, #dfe7e2;
+}
+.og-sim input[type=range]::-moz-range-track { height: 8px; border-radius: 999px; background: #dfe7e2; }
+.og-sim input[type=range]::-moz-range-progress { height: 8px; border-radius: 999px; background: var(--og-green); }
+.og-sim input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 28px; height: 28px; margin-top: -10px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #f1f5f3);
+  border: 2px solid var(--og-green);
+  box-shadow: 0 3px 8px rgba(14,60,30,.28), 0 0 0 5px rgba(17,166,60,.12);
+  transition: transform .18s var(--og-ease), box-shadow .18s var(--og-ease);
+}
+.og-sim input[type=range]::-moz-range-thumb {
+  width: 24px; height: 24px; border-radius: 50%; background: #fff; border: 2px solid var(--og-green);
+  box-shadow: 0 3px 8px rgba(14,60,30,.28), 0 0 0 5px rgba(17,166,60,.12);
+}
+.og-sim input[type=range]:active::-webkit-slider-thumb { transform: scale(1.12); box-shadow: 0 4px 10px rgba(14,60,30,.32), 0 0 0 9px rgba(17,166,60,.14); }
+.og-sim input[type=range]:focus-visible { outline: 2px solid var(--og-green); outline-offset: 4px; border-radius: 12px; }
+.og-sim-presets { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 2px; }
+.og-sim-presets button {
+  min-height: 44px; min-width: 56px; padding: 0 16px; border-radius: 999px; cursor: pointer;
+  border: 1px solid rgba(14,60,30,.14); background: #fff; color: var(--ip-ink-2);
+  font: inherit; font-size: .875rem; font-weight: 700; font-variant-numeric: tabular-nums;
+  transition: background .2s var(--og-ease), border-color .2s var(--og-ease), transform .2s var(--og-ease);
+}
+.og-sim-presets button:hover { border-color: rgba(17,166,60,.5); background: #f4fbf6; color: var(--og-green-d); }
+.og-sim-presets button:active { transform: scale(.95); }
+
+/* ── Squelette de chargement (accueil) : posé par le script, retiré au premier rendu ── */
+.og-skel .og-amount:empty, .og-skel .og-fnum:empty, .og-skel .og-frac:empty, .og-skel .og-mois-lead:empty {
+  display: block; min-height: 1.5em; width: 62%; border-radius: 10px;
+  background: linear-gradient(90deg, #eaf0ec 0%, #f6f9f7 45%, #eaf0ec 90%) 0 0 / 220% 100%;
+  animation: og-shimmer 1.4s linear infinite;
+}
+.og-skel .og-ring-box svg { opacity: .55; }
+@keyframes og-shimmer { from { background-position: 120% 0; } to { background-position: -100% 0; } }
+
+/* ── Trajectoire : la courbe se trace une fois, à l'arrivée à l'écran ── */
+.og-chart .og-line { stroke-linecap: round; stroke-linejoin: round; }
+.og-chart.og-pre .og-line { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.og-chart.og-pre .og-aire, .og-chart.og-pre .og-pt { opacity: 0; }
+.og-chart.og-go .og-line { stroke-dasharray: 1; animation: og-draw 1.3s var(--og-ease-out) .1s backwards; }
+.og-chart.og-go .og-aire { animation: og-fade .9s ease .5s backwards; }
+.og-chart.og-go .og-pt { animation: og-fade .5s ease 1s backwards; }
+@keyframes og-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes og-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* ═══ Écrans Pharmacies, fiche, Meilleurs achats ═════════════════════ */
+#v2-root .opf-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 0 0 20px; }
+#v2-root .opf-stat {
+  position: relative; overflow: hidden; padding: 16px 18px; border-radius: var(--r-card);
+  border: 1px solid var(--og-card-line); box-shadow: var(--og-lift);
+  background: radial-gradient(120% 120% at 0% 0%, #eefaf2 0%, #fff 62%);
+}
+#v2-root .opf-stat-l { font-size: 13px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+#v2-root .opf-stat-v { margin-top: 6px; font-family: 'Geist Mono', var(--mono), monospace; font-size: clamp(22px, 3.4vw, 30px); font-weight: 700; letter-spacing: -.03em; color: var(--ip-ink); font-variant-numeric: tabular-nums; }
+#v2-root .opf-stat-v small { font-size: 15px; font-weight: 500; color: var(--muted); margin-left: 2px; letter-spacing: 0; }
+#v2-root .opf-stat-n { margin-top: 2px; font-size: 13px; color: var(--muted); }
+@media (max-width: 640px) {
+  #v2-root .opf-stats { grid-template-columns: 1fr 1fr; gap: 10px; }
+  #v2-root .opf-stat:first-child { grid-column: 1 / -1; }
+}
+
+#v2-root .opso-search { position: relative; margin-bottom: 20px; }
+#v2-root .opso-search svg { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--og-green); pointer-events: none; }
+#v2-root .opso-search .v2-field { padding-left: 46px; margin: 0; background: #fff; border-radius: 16px; box-shadow: var(--og-lift); }
+
+#v2-root .opso-ph { position: relative; gap: 14px; padding: 12px 20px; min-height: 72px; }
+#v2-root .opso-ph-rk { width: 22px; flex: none; text-align: right; font-family: 'Geist Mono', var(--mono), monospace; font-size: 13px; color: var(--muted-2); font-variant-numeric: tabular-nums; }
+#v2-root .opso-av {
+  width: 44px; height: 44px; flex: none; display: grid; place-items: center; border-radius: 14px;
+  font-weight: 800; font-size: 14px; letter-spacing: .02em; color: var(--og-green-d);
+  background: radial-gradient(120% 100% at 30% 0%, #fff 0%, #e6f7ec 100%);
+  border: 1px solid rgba(17,166,60,.22);
+  box-shadow: 0 1px 0 #fff inset, 0 4px 10px -4px rgba(17,166,60,.4);
+  transition: transform .25s var(--og-ease);
+}
+#v2-root .opso-av.off { color: var(--muted-2); background: #f3f5f9; border-color: var(--line); box-shadow: none; }
+#v2-root .opso-av.lg { width: 64px; height: 64px; border-radius: 20px; font-size: 20px; }
+#v2-root .v2-row:hover .opso-av { transform: scale(1.06) rotate(-2deg); }
+#v2-root .opso-ph-main { flex: 1; min-width: 0; }
+#v2-root .opso-ph .v2-row-name { display: block; font-size: 15px; letter-spacing: -.005em; }
+#v2-root .opso-share { display: block; height: 4px; max-width: 240px; margin-top: 7px; border-radius: 999px; background: #eef2ef; overflow: hidden; }
+#v2-root .opso-share i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #4cc76c, var(--og-green-d)); transform-origin: left center; animation: og-grow .9s var(--og-ease-out) calc(var(--i, 0) * 30ms) backwards; }
+#v2-root .opso-spark { flex: none; width: 88px; height: 30px; display: none; }
+@media (min-width: 720px) { #v2-root .opso-spark { display: block; } }
+#v2-root .opso-spark .l { fill: none; stroke: var(--og-green-d); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 0; animation: og-draw 1.1s var(--og-ease-out) calc(var(--i, 0) * 30ms + .15s) backwards; }
+#v2-root .opso-spark .a { fill: rgba(17,166,60,.12); stroke: none; animation: og-fade .8s ease calc(var(--i, 0) * 30ms + .5s) backwards; }
+#v2-root .opso-spark .d { fill: var(--og-green-d); }
+#v2-root .opso-ph-r { flex: none; text-align: right; min-width: 128px; }
+#v2-root .opso-ph-r .v2-row-val { display: block; font-size: 15px; }
+#v2-root .opso-ph-d { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 4px; }
+#v2-root .opso-d { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 999px; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#v2-root .opso-d.up { color: #0b6b3a; background: rgba(17,166,60,.12); }
+#v2-root .opso-d.dn { color: var(--og-rose); background: rgba(199,40,61,.09); }
+#v2-root .opso-d.new { color: var(--og-green-d); background: rgba(17,166,60,.1); }
+#v2-root .opso-d-l { font-size: 13px; color: var(--muted); }
+#v2-root .opso-none { font-size: 13px; color: var(--muted); padding: 3px 10px; border-radius: 999px; background: #f3f5f9; white-space: nowrap; }
+@media (max-width: 719px) {
+  #v2-root .opso-ph { padding: 12px 14px; gap: 12px; }
+  #v2-root .opso-ph-rk { display: none; }
+  #v2-root .opso-av { width: 40px; height: 40px; border-radius: 12px; }
+  #v2-root .opso-ph .v2-row-name { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  #v2-root .opso-ph-r { min-width: 0; }
+  #v2-root .opso-d-l { display: none; }
+  #v2-root .opso-share { max-width: none; }
+}
+#v2-root .opso-card-note { font-size: 13px; color: var(--muted); font-weight: 500; }
+
+/* Fiche */
+#v2-root .opf-fhead { display: flex; align-items: center; gap: 18px; margin-bottom: 22px; }
+#v2-root .opf-fhead .v2-page-sub { margin-bottom: 0; }
+#v2-root .opf-fhead .v2-page-title { margin-bottom: 4px; }
+#v2-root .opf-fhead-t { flex: 1; min-width: 0; }
+#v2-root .opso-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--og-green-d); background: rgba(17,166,60,.1); border: 1px solid rgba(17,166,60,.2); white-space: nowrap; }
+#v2-root .opso-chip.off { color: var(--muted); background: #f3f5f9; border-color: var(--line); }
+#v2-root .opso-chip::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+#v2-root .opf-fhead .opso-chip { align-self: flex-start; margin-top: 6px; }
+@media (max-width: 640px) {
+  #v2-root .opf-fhead { flex-wrap: wrap; gap: 14px; }
+  #v2-root .opf-fhead .opso-av.lg { width: 52px; height: 52px; border-radius: 16px; font-size: 17px; }
+  #v2-root .opf-fhead .opso-chip { order: 3; margin-top: 0; }
+}
+#v2-root .opf-fiche-chart .pilo-chart-card { margin-bottom: 16px; }
+#v2-root .opso-prod .v2-row { cursor: default; }
+#v2-root .opso-prod .opso-share { max-width: 320px; margin-top: 6px; }
+#v2-root .opso-prod-rk { color: var(--muted-2); width: 22px; flex: none; text-align: right; font-size: 13px; }
+#v2-root .opso-prod .v2-row:nth-child(-n+3) .opso-prod-rk { color: var(--og-green-d); font-weight: 700; }
+
+/* Meilleurs achats */
+#v2-root .opf-tools { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+#v2-root .opf-tools .opso-search { flex: 1; min-width: 220px; margin: 0; }
+#v2-root .opf-export { flex: none; }
+#v2-root .opf-count { display: inline-flex; margin: 4px 0 14px; padding: 4px 12px; border-radius: 999px; background: rgba(17,166,60,.08); color: var(--og-green-d); font-weight: 600; }
+#v2-root .opf-pod-t { font-family: 'Varela Round', var(--font), sans-serif; font-weight: 400; font-size: 1.15rem; letter-spacing: -.005em; margin: 6px 0 14px; }
+#v2-root .opf-pod {
+  overflow: hidden;
+  background: linear-gradient(180deg, #fff 0%, #fbfdfc 100%);
+  border-color: var(--og-card-line);
+  box-shadow: var(--og-lift);
+  transition: transform .28s var(--og-ease), box-shadow .28s var(--og-ease), border-color .28s ease;
+}
+#v2-root .opf-pod::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 90px; pointer-events: none;
+  background: radial-gradient(90% 100% at 50% 0%, rgba(17,166,60,.10), transparent 75%);
+}
+#v2-root .opf-pod:first-child {
+  background: radial-gradient(140% 70% at 50% 0%, #dcf4e4 0%, #fff 64%);
+  border-color: rgba(17,166,60,.38);
+  box-shadow: 0 1px 0 #fff inset, 0 2px 4px rgba(14,40,24,.06), 0 22px 44px -18px rgba(17,166,60,.42);
+}
+#v2-root .opf-pod:first-child::after {
+  content: 'N° 1'; position: absolute; top: 24px; right: 26px; z-index: 1; padding: 3px 10px; border-radius: 999px;
+  font-size: 13px; font-weight: 800; letter-spacing: .04em; color: #fff;
+  background: linear-gradient(150deg, #19b446, var(--og-green-d)); box-shadow: 0 4px 10px -3px rgba(17,166,60,.6);
+}
+@media (hover: hover) {
+  #v2-root .opf-pod:hover { transform: translateY(-4px); box-shadow: var(--og-lift-h); border-color: rgba(17,166,60,.4); }
+}
+#v2-root .opf-pod-name { font-size: 15px; letter-spacing: -.005em; }
+#v2-root .opf-pod-n .mono { font-size: 32px; letter-spacing: -.03em; }
+#v2-root .opf-pod-img { background: radial-gradient(120% 90% at 50% 0%, #fff 0%, #f2f6f4 100%); }
+#v2-root .opf-dots { display: grid; grid-template-columns: repeat(var(--nc, 19), minmax(0, 1fr)); gap: 3px; width: 100%; max-width: 100%; }
+#v2-root .opf-dots i, #v2-root .opf-pod .opf-dots i { width: auto; height: auto; aspect-ratio: 1; max-width: 10px; }
+#v2-root .opf-dots i { transition: transform .2s var(--og-ease); }
+#v2-root .opf-dots i.on {
+  background: radial-gradient(circle at 35% 30%, #5fd57d, var(--og-green-d));
+  box-shadow: 0 0 0 2px rgba(17,166,60,.12);
+  animation: og-pop .5s var(--og-ease-out) calc(var(--k, 0) * 22ms + .25s) backwards;
+}
+@keyframes og-pop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+#v2-root .opf-grp .v2-card-head { padding: 14px 20px; background: linear-gradient(90deg, rgba(230,247,236,.55), rgba(230,247,236,0) 70%); }
+#v2-root .opf-grp .v2-card-head .v2-row-meta { padding: 2px 10px; border-radius: 999px; background: #f3f6f4; white-space: nowrap; }
+#v2-root .opf-li { padding-top: 10px; padding-bottom: 10px; }
+#v2-root .opf-gauge { height: 6px; background: #eef2ef; }
+#v2-root .opf-gauge-fill { background: linear-gradient(90deg, #4cc76c, var(--og-green-d)); transform-origin: left center; animation: og-grow .8s var(--og-ease-out) backwards; }
+#v2-root .opf-more { text-align: center; margin-top: 18px; }
+@media (max-width: 520px) {
+  #v2-root .opf-pod:first-child::after { top: 18px; right: 18px; padding: 2px 8px; }
+  #v2-root .opf-pod-n .mono { font-size: 26px; }
+  #v2-root .opf-tools .opf-export { flex: 1 1 100%; }
+}
+
+/* ── Offilog (module partagé, surchargé ici seulement) ───────────── */
+#v2-root .off-card { transition: transform .28s var(--og-ease), box-shadow .28s var(--og-ease), border-color .28s ease; }
+@media (hover: hover) {
+  #v2-root .off-card:hover { transform: translateY(-3px); box-shadow: var(--og-lift-h); }
+}
+#v2-root .off-sortbtn, #v2-root .offsr { min-height: 44px; }
+#v2-root .offr-s { white-space: normal; }
+#v2-root .off-card-brand, #v2-root .off-kpi-l { letter-spacing: .03em; }
+
+/* ── Fiche pharmacie : barres du graphique plus lisibles ─────────── */
+#v2-root .pilo-cbar-v, #v2-root .pilo-cbar-lbl, #v2-root .pilo-cbar-d { font-variant-numeric: tabular-nums; }
+#v2-root .pilo-cbar-fill { box-shadow: 0 -1px 0 rgba(255,255,255,.35) inset; }
+#v2-root .pilo-cbar-track { background: #f1f4f2; }
+@media (max-width: 520px) {
+  #v2-root .pilo-chart { gap: 4px; }
+  #v2-root .pilo-cbar-d { letter-spacing: -.03em; }
+  #v2-root .pilo-chart-head { flex-direction: column; align-items: flex-start; gap: 4px; }
+}
+#v2-root .pilo-chart-card { background: linear-gradient(180deg, #fff, #fbfdfc); }
+
+/* ── Réduire les animations : tout est posé dans son état final ──── */
+@media (prefers-reduced-motion: reduce) {
+  html.opso-js .opso-rv { opacity: 1 !important; transform: none !important; }
+  .opso-in, .opso-enter,
+  .og-gauge-fill, .opso-share i, .opso-spark .l, .opso-spark .a,
+  .opf-dots i.on, .opf-gauge-fill,
+  .og-pill .og-dot, .og-chart.og-go .og-line, .og-chart.og-go .og-aire, .og-chart.og-go .og-pt,
+  #v2-root .v2-loading::before, #v2-root .v2-loading::after, .og-skel * {
+    animation: none !important;
+  }
+  .og-chart.og-pre .og-line { stroke-dasharray: none; stroke-dashoffset: 0; }
+  .og-chart.og-pre .og-aire, .og-chart.og-pre .og-pt { opacity: 1; }
+  #v2-root .v2-row:hover .opso-av, #v2-root .opf-pod:hover, #v2-root .v2-kpi:hover, #v2-root .off-card:hover { transform: none; }
+  #v2-root .v2-tab, #v2-root .v2-row, #v2-root .v2-row-chev, #v2-root .opf-pod, #v2-root .v2-kpi { transition: none !important; }
+}
+
+/* ── Plancher 13 px : tout texte de l'espace OPSO (mesuré au rendu) ──
+   Liste générée depuis les règles à moins de 13 px de v2.css, v2-offilog.js,
+   v2-pilotage.js et v2-offilog-catalogue.js. Le préfixe #v2-root l'emporte sur
+   les styles injectés à l'exécution. Le CRM JARVIS n'est pas touché. */
+#v2-root .off-adv-l,
+#v2-root .off-advbtn-tag,
+#v2-root .off-badge,
+#v2-root .off-card-brand,
+#v2-root .off-card-conc,
+#v2-root .off-card-drk,
+#v2-root .off-card-flag,
+#v2-root .off-card-lec,
+#v2-root .off-card-name,
+#v2-root .off-card-pz,
+#v2-root .off-cmp-delta,
+#v2-root .off-cmp-l,
+#v2-root .off-cmp-na,
+#v2-root .off-insp-cip,
+#v2-root .off-insp-sub,
+#v2-root .off-kpi-l,
+#v2-root .off-mkt-l,
+#v2-root .off-mkt-mq-bl,
+#v2-root .off-mkt-mq-l,
+#v2-root .off-mkt-mqn,
+#v2-root .off-mkt-mqp,
+#v2-root .off-mkt-mqv,
+#v2-root .off-mkt-note,
+#v2-root .off-mkt-pod-b,
+#v2-root .off-mkt-pod-g,
+#v2-root .off-mkt-pod-l,
+#v2-root .off-mkt-t i,
+#v2-root .off-mkt-t span,
+#v2-root .off-mkt-top,
+#v2-root .off-mvt,
+#v2-root .off-pg-info,
+#v2-root .off-pz-cell span,
+#v2-root .off-pz-l,
+#v2-root .off-pz-note,
+#v2-root .off-rank,
+#v2-root .off-sortbtn,
+#v2-root .off-verdict-go,
+#v2-root .off-verdict-l,
+#v2-root .off-verdict-meta,
+#v2-root .offb-n em,
+#v2-root .offb-n span,
+#v2-root .offcat-f,
+#v2-root .offcat-l,
+#v2-root .offcat-tab td small,
+#v2-root .offcat-tab th,
+#v2-root .offr-s,
+#v2-root .offsr,
+#v2-root .offsr i,
+#v2-root .opso-chip-l,
+#v2-root .opso-new-tag,
+#v2-root .opso-perim-badge,
+#v2-root .opso-section-head,
+#v2-root .pilo-ameli-sub,
+#v2-root .pilo-axebtn,
+#v2-root .pilo-basebtn,
+#v2-root .pilo-cbar-d,
+#v2-root .pilo-cbar-lbl,
+#v2-root .pilo-cbar-v,
+#v2-root .pilo-chart-period,
+#v2-root .pilo-cmp-e,
+#v2-root .pilo-cmp-hs,
+#v2-root .pilo-cmp-hv,
+#v2-root .pilo-disc-hint,
+#v2-root .pilo-ecarte,
+#v2-root .pilo-fam-pct,
+#v2-root .pilo-gis-chip,
+#v2-root .pilo-gis-chipv,
+#v2-root .pilo-gis-note,
+#v2-root .pilo-hero-l,
+#v2-root .pilo-hero-trend-t,
+#v2-root .pilo-hint,
+#v2-root .pilo-kf-l,
+#v2-root .pilo-kf-v small,
+#v2-root .pilo-legende,
+#v2-root .pilo-marche small,
+#v2-root .pilo-marge-d,
+#v2-root .pilo-marge-partiel,
+#v2-root .pilo-marge-pct,
+#v2-root .pilo-marge-rows-t,
+#v2-root .pilo-marge-sub,
+#v2-root .pilo-mf-h small,
+#v2-root .pilo-mf-h-moi,
+#v2-root .pilo-mf-h-moi small,
+#v2-root .pilo-mf-meta,
+#v2-root .pilo-mf-moi b.zero,
+#v2-root .pilo-mf-moi small,
+#v2-root .pilo-mf-more>summary,
+#v2-root .pilo-mf-note,
+#v2-root .pilo-mf-pct,
+#v2-root .pilo-mf-src,
+#v2-root .pilo-mx-cl,
+#v2-root .pilo-mx-cs,
+#v2-root .pilo-part-btn,
+#v2-root .pilo-part-note,
+#v2-root .pilo-part-sub,
+#v2-root .pilo-part-t,
+#v2-root .pilo-part-v small,
+#v2-root .pilo-pr-meta,
+#v2-root .pilo-pr-n small,
+#v2-root .pilo-prod-lc,
+#v2-root .pilo-prod-raz,
+#v2-root .pilo-prod-reste,
+#v2-root .pilo-rank,
+#v2-root .pilo-ro-a,
+#v2-root .pilo-ro-d,
+#v2-root .pilo-tier-meta,
+#v2-root .pilo-tier-sub,
+#v2-root .pilo-tip,
+#v2-root .v2-av,
+#v2-root .v2-back,
+#v2-root .v2-card-link,
+#v2-root .v2-eyebrow,
+#v2-root .v2-kpi-d,
+#v2-root .v2-kpi-l,
+#v2-root .v2-moment-n,
+#v2-root .v2-pil-go,
+#v2-root .v2-pil-num,
+#v2-root .v2-row-meta,
+#v2-root .v2-search kbd,
+#v2-root .v2-seg .cnt,
+#v2-root .v2-table thead th,
+#v2-root .v2-top-search kbd{font-size:13px}
+#v2-root .v2-brand-s { font-size: 13px; }
+@media (max-width: 640px) {
+  #v2-root .opf-page .v2-card-head { flex-direction: column; align-items: flex-start; gap: 2px; }
+}
+@media (max-width: 520px) {
+  .og-sim-presets { flex-wrap: nowrap; }
+  .og-sim-presets button { flex: 1 1 0; min-width: 0; padding: 0 8px; }
+}
+
+/* ── Halo derrière « Bonjour » : la lumière se fond avant le bord de sa boîte ──
+   Le halo d'origine (crm/v2/v2-app.js, .v2-hero::before) utilisait des ellipses plus
+   larges que sa boîte de 620×210 px : elles s'arrêtaient net sur ses bords (un
+   rectangle plus clair). Ici, closest-side impose un dégradé nul AVANT chaque bord. */
+#v2-root .v2-home-x .v2-hero::before {
+  width: min(900px, 100%);
+  height: 280px;
+  top: -60px;
+  background:
+    radial-gradient(closest-side at 36% 48%, rgba(17,166,60,.13), rgba(17,166,60,0)),
+    radial-gradient(closest-side at 68% 42%, rgba(199,121,26,.07), rgba(199,121,26,0));
 }

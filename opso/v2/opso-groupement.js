@@ -18,6 +18,128 @@
   // CIP normalisé sans zéros de tête, comme le "norm" d'applyOpsoPerimeter (v2-boot.js).
   function normCip(c) { return String(c == null ? '' : c).replace(/\D/g, '').replace(/^0+/, ''); }
 
+  // ═══ Mouvement et finitions communs aux écrans OPSO (30/09/2026) ═══
+  // Ce module est chargé sur tous les écrans OPSO : il porte donc aussi la
+  // révélation au défilement, l'entrée d'écran, les compteurs et les indices de
+  // défilement horizontal. Le masquage initial n'est posé que par ce script
+  // (classe opso-js sur <html>) ; un bloc déjà visible n'est jamais masqué,
+  // un bloc révélé n'est jamais remasqué ; sans IntersectionObserver ou avec
+  // « réduire les animations », rien n'est masqué du tout.
+  var UX = V2.opsoUx = V2.opsoUx || {};
+  var canObs = ('IntersectionObserver' in window) && ('MutationObserver' in window);
+  if (canObs && !reduceMotion) document.documentElement.classList.add('opso-js');
+  var REVEAL = '.og-block,.v2-piliers .v2-pil,.opf-stat,.opf-page .v2-kpi,.opf-page .v2-card,.opf-page .opf-pod';
+  var lastRouteKey = null, revealIO = null, entreeBudget = true, compteurBudget = true;
+
+  function startCount(el) {
+    var to = parseFloat(el.getAttribute('data-count'));
+    if (!isFinite(to)) return;
+    var eur = el.getAttribute('data-fmt') === 'eur';
+    var orig = el.textContent, t0 = null, dur = Math.min(1200, 520 + Math.log10(Math.max(to, 10)) * 95);
+    function fmt(v) { return eur ? euros(v) : fmtEUR.format(Math.round(v)); }
+    function step(ts) {
+      if (t0 === null) t0 = ts;
+      var p = Math.min(1, (ts - t0) / dur), e = 1 - Math.pow(1 - p, 4);
+      if (p < 1) { el.textContent = fmt(to * e); requestAnimationFrame(step); } else el.textContent = orig;
+    }
+    el.textContent = fmt(0);
+    requestAnimationFrame(step);
+    setTimeout(function () { if (el.textContent !== orig) el.textContent = orig; }, dur + 600); // filet : onglet en arrière-plan
+  }
+  function revealNow(el, delay) {
+    if (delay) el.style.setProperty('--d', delay + 's');
+    el.classList.remove('opso-rv');
+    el.classList.add('opso-in');
+  }
+  function getIO() {
+    if (revealIO) return revealIO;
+    revealIO = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        var t = en.target; revealIO.unobserve(t);
+        if (t._cntPending) { t._cntPending = 0; startCount(t); } else revealNow(t, 0);
+      });
+    }, { rootMargin: '0px 0px -6% 0px', threshold: 0.05 });
+    return revealIO;
+  }
+  // Exécute fn une seule fois, quand el est réellement à l'écran.
+  UX.whenVisible = function (el, fn) {
+    if (!canObs || reduceMotion) { fn(); return; }
+    var o = new IntersectionObserver(function (es) { if (es[0].isIntersecting) { o.disconnect(); fn(); } }, { threshold: 0.25 });
+    o.observe(el);
+  };
+  function bindOverflow(el) {
+    if (!el._ovBound) {
+      el._ovBound = true;
+      var upd = function () {
+        var m = el.scrollWidth - el.clientWidth;
+        el.classList.toggle('ov-r', m > 4 && el.scrollLeft < m - 4);
+        el.classList.toggle('ov-l', el.scrollLeft > 4);
+      };
+      el.addEventListener('scroll', upd, { passive: true });
+      window.addEventListener('resize', upd);
+      requestAnimationFrame(upd); setTimeout(upd, 500);
+    }
+    if (!el._ovCentered) {
+      var on = el.querySelector('[aria-pressed="true"],.on');
+      if (on) {
+        el._ovCentered = true;
+        el.scrollLeft = Math.max(0, on.offsetLeft - (el.clientWidth - on.offsetWidth) / 2);
+      }
+    }
+  }
+  function enhance(root) {
+    var r = V2.route || {}, key = (r.name || '') + '|' + (r.param || ''), vh = window.innerHeight || 800, i;
+    var wrap = root.querySelector('.v2-wrap');
+    if (key !== lastRouteKey) {
+      lastRouteKey = key; entreeBudget = true; compteurBudget = true; // nouvel écran : l'entrée se rejoue une fois
+
+      if (!reduceMotion && wrap && r.name && r.name !== 'home') wrap.classList.add('opso-enter');
+    }
+    var sc = root.querySelectorAll('.og-months,.og-tabs,.v2-tabs');
+    for (i = 0; i < sc.length; i++) bindOverflow(sc[i]);
+    if (!canObs || reduceMotion) return;
+    var list = root.querySelectorAll(REVEAL), k = 0;
+    for (i = 0; i < list.length; i++) {
+      var el = list[i];
+      if (el._opsoSeen) continue;
+      el._opsoSeen = true;
+      if (el.getBoundingClientRect().top < vh * 0.96) {
+        // Re-rendu du même écran (saisie dans une recherche, changement d'onglet) : aucune animation rejouée.
+        if (entreeBudget) revealNow(el, Math.min(k++, 6) * 0.07);
+      } else { el.classList.add('opso-rv'); getIO().observe(el); }
+    }
+    if (k) entreeBudget = false;
+    var cn = root.querySelectorAll('[data-count]'), started = false;
+    for (i = 0; i < cn.length; i++) {
+      var c = cn[i];
+      if (c._cnt) continue;
+      c._cnt = true;
+      if (c.getBoundingClientRect().top < vh) { if (compteurBudget && c.textContent.trim()) { startCount(c); started = true; } }
+      else { c._cntPending = 1; getIO().observe(c); }
+    }
+    if (started) compteurBudget = false;
+  }
+  function installEnhancer() {
+    var root = document.getElementById('v2-root');
+    if (!root) return;
+    new MutationObserver(function (muts) {
+      // On ignore les mutations de texte (compteurs) et celles du dessin SVG (courbe, simulation).
+      for (var a = 0; a < muts.length; a++) {
+        var added = muts[a].addedNodes;
+        for (var b = 0; b < added.length; b++) {
+          var n = added[b];
+          if (n.nodeType === 1 && !(n.closest && n.closest('svg'))) { enhance(root); return; }
+        }
+      }
+    }).observe(root, { childList: true, subtree: true });
+    enhance(root);
+  }
+  if (canObs) {
+    if (document.getElementById('v2-root')) installEnhancer();
+    else document.addEventListener('DOMContentLoaded', installEnhancer);
+  }
+
   var MOIS_ABREV = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
   var MOIS_PLEIN = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 
@@ -272,13 +394,15 @@
   // ── Rendu HTML (structure statique, contenus dynamiques posés par mount()) ──
   function html() {
     injectStyle();
-    return '<div class="og-wrap">'
-      + '<div class="v2-card og-block">'
+    return '<div class="og-wrap og-skel">'
+      + '<div class="v2-card og-block og-hero-card">'
         + '<div class="og-hero">'
           + '<div class="og-ring-box">'
             + '<svg viewBox="0 0 200 200" role="img" aria-label="Adhérentes qui achètent chez Intégral Pharma" id="og-ring-svg">'
-              + '<circle cx="100" cy="100" r="80" fill="none" stroke="var(--surf-sunken,#F4F6FB)" stroke-width="16"/>'
-              + '<circle id="og-ring-progress" cx="100" cy="100" r="80" fill="none" stroke="#11a63c" stroke-width="16" stroke-linecap="round" transform="rotate(-90 100 100)"/>'
+              + '<defs><linearGradient id="og-ring-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#43d068"/><stop offset="100%" stop-color="#0d8530"/></linearGradient></defs>'
+              + '<circle cx="100" cy="100" r="93" fill="none" stroke="rgba(17,166,60,.22)" stroke-width="1.5" stroke-dasharray="1.5 6" stroke-linecap="round"/>'
+              + '<circle cx="100" cy="100" r="80" fill="none" stroke="var(--surf-sunken,#EEF2EF)" stroke-width="16"/>'
+              + '<circle id="og-ring-progress" cx="100" cy="100" r="80" fill="none" stroke="url(#og-ring-g)" stroke-width="16" stroke-linecap="round" transform="rotate(-90 100 100)"/>'
             + '</svg>'
             + '<div class="og-ring-center"><span class="og-frac og-num" id="og-ring-frac"></span><span class="og-lbl">adhérentes achètent chez Intégral Pharma</span></div>'
           + '</div>'
@@ -303,6 +427,8 @@
         + '</div>'
         + '<p class="og-provenance" id="og-provenance"></p>'
       + '</div>'
+      // Emplacement du bloc « suivi de la rémunération » (rendu par opso-remuneration.js) : sans style tant qu'il est vide.
+      + '<div data-opso-slot="remuneration"></div>'
       + '<div class="v2-card og-block">'
         + '<h2 class="og-block-title">Ce que les adhérentes achètent</h2>'
         + '<p class="og-block-sub">Classement par nombre de pharmacies qui commandent chaque référence, en euros HT.</p>'
@@ -322,9 +448,10 @@
           + '<span class="og-litem"><span class="og-swatch dash"></span>Au rythme actuel — hypothèse, pas un engagement</span>'
           + '<span class="og-litem"><span class="og-swatch dash2"></span>Simulation avec adhérentes en plus</span>'
         + '</div>'
-        + '<div class="og-sim">'
-          + '<label for="og-sim-range"><div class="og-sim-label"><span>Et si <strong id="og-sim-n">0</strong> adhérente(s) de plus achetaient chez Intégral ?</span><span class="og-sim-value og-num" id="og-sim-value">+ 0 €</span></div></label>'
+        + '<div class="og-sim is-rest" id="og-sim">'
+          + '<label for="og-sim-range"><div class="og-sim-label"><span id="og-sim-q">Simulez l\'arrivée d\'adhérentes supplémentaires chez Intégral</span><span class="og-sim-value og-num" id="og-sim-value">Déplacez le curseur</span></div></label>'
           + '<input type="range" id="og-sim-range" min="0" max="20" step="1" value="0" aria-label="Nombre d\'adhérentes supplémentaires simulées">'
+          + '<div class="og-sim-presets" role="group" aria-label="Préréglages"><button type="button" data-n="0">Aucune</button><button type="button" data-n="5">+ 5</button><button type="button" data-n="10">+ 10</button><button type="button" data-n="20">+ 20</button></div>'
           + '<details class="og-sim-detail"><summary>Comment c\'est calculé ?</summary>'
             + '<p class="og-sim-hint">Simulation fondée sur la moyenne actuelle : chaque adhérente ajoutée apporte, chaque mois, le montant moyen déjà observé par cliente.</p>'
             + '<p class="og-sim-hint og-num" id="og-sim-basis"></p>'
@@ -344,6 +471,8 @@
     function render() {
       var DATA = computeData();
       if (!DATA.mois.length) return; // ventes pas encore chargées : on attend le prochain V2.render()
+      var wrapEl = scope.querySelector ? scope.querySelector('.og-wrap') : null;
+      if (wrapEl) wrapEl.classList.remove('og-skel');
 
       // ---- Le cap ----
       var ring = byId('og-ring-progress');
@@ -351,14 +480,20 @@
       var fraction = DATA.adherentes ? (DATA.pharmaClientes / DATA.adherentes) : 0;
       ring.style.strokeDasharray = circumference.toFixed(2);
       byId('og-ring-svg').setAttribute('aria-label', DATA.pharmaClientes + ' adhérentes sur ' + DATA.adherentes + ' achètent chez Intégral Pharma');
-      byId('og-ring-frac').innerHTML = DATA.pharmaClientes + '<small>/' + DATA.adherentes + '</small>';
-      byId('og-hero-amount').textContent = euros(DATA.total);
+      var fracEl = byId('og-ring-frac'), fracKey = DATA.pharmaClientes + '/' + DATA.adherentes;
+      if (fracEl._k !== fracKey) { // pas de nouveau compteur si le même chiffre est re-rendu
+        fracEl._k = fracKey;
+        fracEl.innerHTML = '<span data-count="' + DATA.pharmaClientes + '">' + DATA.pharmaClientes + '</span><small>/' + DATA.adherentes + '</small>';
+      }
+      var amtEl = byId('og-hero-amount');
+      amtEl.textContent = euros(DATA.total);
+      amtEl.setAttribute('data-count', Math.round(DATA.total)); amtEl.setAttribute('data-fmt', 'eur');
       byId('og-pill-periode').innerHTML = '<span class="og-dot"></span>' + esc(cap1(DATA.periode));
       if (reduceMotion) {
         ring.style.strokeDashoffset = (circumference * (1 - fraction)).toFixed(2);
       } else {
         ring.style.strokeDashoffset = circumference.toFixed(2);
-        ring.style.transition = 'stroke-dashoffset 1.1s ease';
+        ring.style.transition = 'stroke-dashoffset 1.5s cubic-bezier(.16,1,.3,1)';
         requestAnimationFrame(function () { requestAnimationFrame(function () {
           ring.style.strokeDashoffset = (circumference * (1 - fraction)).toFixed(2);
         }); });
@@ -404,7 +539,7 @@
           var sign = diff >= 0 ? '+ ' : '− ';
           mfEcart.textContent = sign + pct1(Math.abs(diffPct));
           mfEcartTxt.textContent = 'par rapport à ' + MOIS_PLEIN[prev.m - 1];
-          mfEcartTxt.className = 'og-fdelta ' + (diff >= 0 ? 'up' : '');
+          mfEcartTxt.className = 'og-fdelta ' + (diff >= 0 ? 'up' : 'dn');
         }
         mfActives.textContent = mo.pharmaActives;
         mfMoyenne.textContent = euros(mo.moyenne);
@@ -453,7 +588,7 @@
           li.innerHTML =
             '<span class="og-rank og-num">' + (idx + 1) + '</span>'
             + '<div class="og-main"><div class="og-pname">' + esc(p.d) + '</div>'
-              + '<div class="og-gauge-row"><span class="og-gauge"><span class="og-gauge-fill" style="width:' + gaugePct + '%"></span></span>'
+              + '<div class="og-gauge-row"><span class="og-gauge"><span class="og-gauge-fill" style="width:' + gaugePct + '%;--i:' + idx + '"></span></span>'
               + '<span class="og-pnb og-num">' + p.n + ' pharmacie' + (p.n > 1 ? 's' : '') + ' sur ' + DATA.pharmaClientes + '</span></div></div>'
             + '<div class="og-right"><span class="og-boites og-num">' + fmtEUR.format(p.boites) + ' boîtes</span><span class="og-pamount2 og-num">' + euros(p.ca) + '</span></div>';
           prodListEl.appendChild(li);
@@ -530,6 +665,20 @@
       var svgNS = 'http://www.w3.org/2000/svg';
       var chart = byId('og-traj-svg');
       function el(tag, attrs) { var e = document.createElementNS(svgNS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); return e; }
+      // Courbe lissée sans dépassement : chaque tangente est bornée entre les deux ordonnées voisines.
+      function smoothPath(pts) {
+        if (pts.length < 3) return pathFromPoints(pts);
+        var d = 'M' + pts[0][0].toFixed(1) + ',' + pts[0][1].toFixed(1);
+        for (var q = 0; q < pts.length - 1; q++) {
+          var p0 = pts[q - 1] || pts[q], p1 = pts[q], p2 = pts[q + 1], p3 = pts[q + 2] || p2;
+          var c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6;
+          var c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
+          var lo = Math.min(p1[1], p2[1]), hi = Math.max(p1[1], p2[1]);
+          c1y = Math.min(hi, Math.max(lo, c1y)); c2y = Math.min(hi, Math.max(lo, c2y));
+          d += ' C' + c1x.toFixed(1) + ',' + c1y.toFixed(1) + ' ' + c2x.toFixed(1) + ',' + c2y.toFixed(1) + ' ' + p2[0].toFixed(1) + ',' + p2[1].toFixed(1);
+        }
+        return d;
+      }
       function pathFromPoints(pts) { return pts.map(function (p, i) { return (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' '); }
       function fmtK(v) { var k = Math.round(v / 1000); return String(k).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' k€'; }
       function niceStep(rough) { if (rough <= 0) return 100000; var exp = Math.floor(Math.log10(rough)); var mag = Math.pow(10, exp); var frac = rough / mag; var nf = frac < 1.5 ? 1 : frac < 3 ? 2 : frac < 7 ? 5 : 10; return nf * mag; }
@@ -577,17 +726,21 @@
         }
         var realPts = []; for (var ri = 0; ri < nReal; ri++) realPts.push([xAt(ri), yAt(arrBase[ri])]);
         if (realPts.length) {
-          var areaD = pathFromPoints(realPts) + ' L' + realPts[realPts.length - 1][0].toFixed(1) + ',' + yAt(0).toFixed(1) + ' L' + realPts[0][0].toFixed(1) + ',' + yAt(0).toFixed(1) + ' Z';
-          chart.appendChild(el('path', { d: areaD, fill: 'url(#og-aire)', stroke: 'none' }));
-          chart.appendChild(el('path', { d: pathFromPoints(realPts), fill: 'none', stroke: '#0d8530', 'stroke-width': 3 }));
-          realPts.forEach(function (p) { chart.appendChild(el('circle', { cx: p[0], cy: p[1], r: 3.5, fill: '#0d8530' })); });
+          var areaD = smoothPath(realPts) + ' L' + realPts[realPts.length - 1][0].toFixed(1) + ',' + yAt(0).toFixed(1) + ' L' + realPts[0][0].toFixed(1) + ',' + yAt(0).toFixed(1) + ' Z';
+          chart.appendChild(el('path', { d: areaD, fill: 'url(#og-aire)', stroke: 'none', 'class': 'og-aire' }));
+          chart.appendChild(el('path', { d: smoothPath(realPts), fill: 'none', stroke: '#0d8530', 'stroke-width': 3.5, pathLength: 1, 'class': 'og-line' }));
+          realPts.forEach(function (p, pi) {
+            var last = pi === realPts.length - 1;
+            if (last) chart.appendChild(el('circle', { cx: p[0], cy: p[1], r: 9, fill: 'rgba(17,166,60,.16)', 'class': 'og-pt' }));
+            chart.appendChild(el('circle', { cx: p[0], cy: p[1], r: last ? 5 : 3.5, fill: '#fff', stroke: '#0d8530', 'stroke-width': 2.2, 'class': 'og-pt' }));
+          });
         }
         if (nSlots > nReal) {
           var basePts = []; for (var bi = nReal - 1; bi < nSlots; bi++) basePts.push([xAt(bi), yAt(arrBase[bi])]);
-          chart.appendChild(el('path', { d: pathFromPoints(basePts), fill: 'none', stroke: '#8a91a3', 'stroke-width': 2, 'stroke-dasharray': '5 5' }));
+          chart.appendChild(el('path', { d: pathFromPoints(basePts), fill: 'none', stroke: '#8a91a3', 'stroke-width': 2, 'stroke-dasharray': '5 5', 'class': 'og-pt' }));
           if (n > 0) {
             var simPts = []; for (var si = nReal - 1; si < nSlots; si++) simPts.push([xAt(si), yAt(arrSim[si])]);
-            chart.appendChild(el('path', { d: pathFromPoints(simPts), fill: 'none', stroke: '#11a63c', 'stroke-width': 2.5, 'stroke-dasharray': '5 5' }));
+            chart.appendChild(el('path', { d: pathFromPoints(simPts), fill: 'none', stroke: '#11a63c', 'stroke-width': 2.5, 'stroke-dasharray': '5 5', 'class': 'og-pt' }));
             var lastSim = simPts[simPts.length - 1];
             chart.appendChild(el('circle', { cx: lastSim[0], cy: lastSim[1], r: 3.5, fill: '#11a63c' }));
           }
@@ -598,6 +751,14 @@
 
       function renderChart(n) {
         var target = calcTicks(n);
+        if (!chart._ogDrawn) { // 1er dessin : la courbe attend d'être à l'écran, puis se trace
+          chart._ogDrawn = true;
+          chart.classList.add('og-pre');
+          UX.whenVisible(chart, function () {
+            chart.classList.remove('og-pre'); chart.classList.add('og-go');
+            setTimeout(function () { chart.classList.remove('og-go'); }, 2000);
+          });
+        }
         if (yMaxAnimated === null || reduceMotion) { yMaxAnimated = target.yMax; drawChart(n, target, yMaxAnimated); return; }
         var start = yMaxAnimated, end = target.yMax;
         if (chartAnimFrame) { cancelAnimationFrame(chartAnimFrame); chartAnimFrame = null; }
@@ -614,16 +775,30 @@
         chartAnimFrame = requestAnimationFrame(step);
       }
 
-      var range = byId('og-sim-range'), simN = byId('og-sim-n'), simValue = byId('og-sim-value');
+      var range = byId('og-sim-range'), simQ = byId('og-sim-q'), simValue = byId('og-sim-value'), simBox = byId('og-sim');
       function updateSim() {
         currentN = parseInt(range.value, 10);
-        simN.textContent = currentN;
-        var arrBase = cumulSim(0), arrSim = cumulSim(currentN);
-        var deltaEnd = arrSim[nSlots - 1] - arrBase[nSlots - 1];
-        simValue.textContent = '+ ' + fmtEUR.format(Math.round(deltaEnd)) + ' € en ' + MOIS_PLEIN[(firstMonthIdx + nSlots - 1) % 12] + ' (hypothèse)';
+        range.style.setProperty('--p', (currentN / (parseInt(range.max, 10) || 20) * 100) + '%');
+        if (!currentN) {
+          // Au repos : une invite, pas un « + 0 € » sans intérêt.
+          simQ.textContent = 'Simulez l\'arrivée d\'adhérentes supplémentaires chez Intégral';
+          simValue.textContent = 'Déplacez le curseur';
+          if (simBox) simBox.classList.add('is-rest');
+        } else {
+          var arrBase = cumulSim(0), arrSim = cumulSim(currentN);
+          var deltaEnd = arrSim[nSlots - 1] - arrBase[nSlots - 1];
+          simQ.innerHTML = 'Et si <strong id="og-sim-n">' + currentN + '</strong> adhérente' + (currentN > 1 ? 's' : '') + ' de plus achetaient chez Intégral ?';
+          simValue.textContent = '+ ' + fmtEUR.format(Math.round(deltaEnd)) + ' € en ' + MOIS_PLEIN[(firstMonthIdx + nSlots - 1) % 12] + ' (hypothèse)';
+          if (simBox) simBox.classList.remove('is-rest');
+        }
         renderChart(currentN);
       }
-      if (range && !range._ogBound) { range._ogBound = true; range.addEventListener('input', updateSim); }
+      if (range && !range._ogBound) {
+        range._ogBound = true; range.addEventListener('input', updateSim);
+        Array.prototype.forEach.call(scope.querySelectorAll('.og-sim-presets button'), function (b) {
+          b.addEventListener('click', function () { range.value = b.getAttribute('data-n'); updateSim(); });
+        });
+      }
       yMaxAnimated = null;
       if (range) range.value = 0;
       updateSim();

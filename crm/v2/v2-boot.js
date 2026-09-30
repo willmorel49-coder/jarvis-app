@@ -647,7 +647,9 @@
     sagitta: 'sagitta-shortlist-data.js',
     clientscond: 'clients-cond.js',
     clientsactifs: 'clients-actifs.js',
-    argument: 'argument-data.js'
+    argument: 'argument-data.js',
+    // 30/09/2026 — réglage du suivi de rémunération OPSO (confidentiel) : chargé par opso/v2 seul.
+    opsocontrat: 'opso-contrat-data.js'
   };
   var SEAU_PROTEGE = 'donnees-protegees';   // sert encore aux DOCUMENTS privés
 

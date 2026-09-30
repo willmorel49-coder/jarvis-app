@@ -35,6 +35,46 @@
     catch (e) { return String(s == null ? '' : s).toLowerCase(); }
   }
 
+  // Noms d'officine : la base mêle MAJUSCULES et casse mixte. On affiche « Pharmacie de
+  // l'Etoile - Elbeuf » partout (les accents perdus dans la base ne se devinent pas).
+  var PETITS = { de: 1, du: 1, des: 1, la: 1, le: 1, les: 1, et: 1, en: 1, sur: 1, sous: 1, d: 1, l: 1, au: 1, aux: 1, 'à': 1 };
+  function beau(nom) {
+    var t = String(nom == null ? '' : nom).trim();
+    if (!t) return t;
+    try {
+      return t.toLowerCase().replace(/[\p{L}\d]+/gu, function (w, off) {
+        return (off > 0 && PETITS[w]) ? w : w.charAt(0).toUpperCase() + w.slice(1);
+      });
+    } catch (e) { return t; }
+  }
+  // Initiales de l'avatar : deux mots significatifs, sinon deux lettres du seul mot.
+  function initiales(nom) {
+    var mots = (String(nom == null ? '' : nom).toLowerCase().match(/[a-zà-ÿ]+/g) || []).filter(function (w) { return !PETITS[w] && w !== 'pharmacie' && w !== 'grande'; });
+    if (!mots.length) return 'PH';
+    return (mots.length > 1 ? mots[0].charAt(0) + mots[1].charAt(0) : mots[0].slice(0, 2)).toUpperCase();
+  }
+  // Mini-courbe des achats mensuels d'une officine (tracé posé par CSS, pathLength=1).
+  function spark(vals, i) {
+    if (!vals || vals.length < 2) return '';
+    var W = 88, H = 30, pad = 3, mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals);
+    if (mx === mn) mx = mn + 1;
+    var pts = vals.map(function (v, k) { return [pad + k * (W - 2 * pad) / (vals.length - 1), H - pad - (v - mn) / (mx - mn) * (H - 2 * pad)]; });
+    var d = pts.map(function (q, k) { return (k ? 'L' : 'M') + q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join('');
+    var a = d + 'L' + pts[pts.length - 1][0].toFixed(1) + ',' + H + 'L' + pts[0][0].toFixed(1) + ',' + H + 'Z';
+    var lp = pts[pts.length - 1];
+    return '<svg class="opso-spark" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true" style="--i:' + i + '"><path class="a" d="' + a + '"/><path class="l" pathLength="1" d="' + d + '"/><circle class="d" cx="' + lp[0].toFixed(1) + '" cy="' + lp[1].toFixed(1) + '" r="2.6"/></svg>';
+  }
+  // Une saisie relance le dessin de l'écran : on rend le focus (et le curseur) au champ de recherche.
+  function gardeFocus(root, fn) {
+    var a = document.activeElement, pos = 0, garde = !!(a && a.type === 'search' && root && root.contains(a));
+    if (garde) pos = a.selectionStart == null ? (a.value || '').length : a.selectionStart;
+    fn();
+    if (garde) {
+      var n = root.querySelector('input[type=search]');
+      if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} }
+    }
+  }
+
   var MOIS_ABREV = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
   var MOIS_PLEIN = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 
@@ -103,21 +143,23 @@
     var byPh = {};
     sales.forEach(function (s) {
       var id = String(s.pharmacyId);
-      if (!byPh[id]) byPh[id] = { total: 0, lastCa: 0, prevCa: 0, produits: {} };
+      if (!byPh[id]) byPh[id] = { total: 0, lastCa: 0, prevCa: 0, produits: {}, m: {} };
       var b = byPh[id];
       b.total += (s.mntNetHt || 0);
       if (s.artCode && ((s.mntNetHt || 0) > 0 || (s.qte || 0) > 0)) b.produits[s.artCode] = 1;
       if (s.year && s.month) {
         var k = s.year * 12 + s.month;
+        b.m[k] = (b.m[k] || 0) + (s.mntNetHt || 0);
         if (lastKey != null && k === lastKey) b.lastCa += (s.mntNetHt || 0);
         if (prevKey != null && k === prevKey) b.prevCa += (s.mntNetHt || 0);
       }
     });
 
     var rows = (V2.pharmacies || []).map(function (p) {
-      var b = byPh[String(p.id)] || { total: 0, lastCa: 0, prevCa: 0, produits: {} };
+      var b = byPh[String(p.id)] || { total: 0, lastCa: 0, prevCa: 0, produits: {}, m: {} };
       return {
         p: p, total: b.total, lastCa: b.lastCa, prevCa: b.prevCa,
+        serie: mois.map(function (mo) { return b.m[mo.y * 12 + mo.m] || 0; }),
         nbProduits: Object.keys(b.produits).length,
         cliente: b.total > 0
       };
@@ -136,29 +178,44 @@
     function match(r) { return !q || fold(r.p.name).indexOf(q) >= 0 || fold(r.p.ville).indexOf(q) >= 0; }
     var clientesF = clientes.filter(match), potentielF = potentiel.filter(match);
 
-    function row(r) {
+    var maxTotal = clientes.length ? Math.max(clientes[0].total, 1) : 1;
+    function row(r, idx) {
       var deltaTxt = '';
       // Un écart arrondi à 0 % n'apprend rien (lignes réparties à parts égales) : on le tait.
-      if (r.prevCa > 0 && Math.round((r.lastCa - r.prevCa) / r.prevCa * 1000)) deltaTxt = '<span class="v2-row-meta">' + pct1((r.lastCa - r.prevCa) / r.prevCa * 100) + ' vs mois préc.</span>';
-      else if (r.lastCa > 0) deltaTxt = '<span class="v2-row-meta">nouveau ce mois-ci</span>';
-      return '<a class="v2-row" onclick="V2.go(\'opsopharmacies\',\'' + esc(r.p.id) + '\')">' +
-        '<span class="v2-row-dot" style="background:' + esc(r.p.color || '#11a63c') + '"></span>' +
-        '<div style="flex:1;min-width:0">' +
-          '<div class="v2-row-name">' + esc(r.p.name) + '</div>' +
-          '<div class="v2-row-meta">' + esc(r.p.ville || '') + (r.p.code ? ' · CIP ' + esc(r.p.code) : '') + ' · ' + r.nbProduits + ' produit' + (r.nbProduits > 1 ? 's' : '') + '</div>' +
+      if (r.prevCa > 0 && Math.round((r.lastCa - r.prevCa) / r.prevCa * 1000)) {
+        var pc = (r.lastCa - r.prevCa) / r.prevCa * 100;
+        deltaTxt = '<span class="opso-d ' + (pc >= 0 ? 'up' : 'dn') + '">' + pct1(pc).replace('-', '−') + '</span><span class="opso-d-l">vs mois préc.</span>';
+      } else if (r.lastCa > 0) deltaTxt = '<span class="opso-d new">nouveau ce mois-ci</span>';
+      var nom = beau(r.p.name);
+      return '<a class="v2-row opso-ph" tabindex="0" role="link" onkeydown="if(event.key===\'Enter\')this.click()" onclick="V2.go(\'opsopharmacies\',\'' + esc(r.p.id) + '\')">' +
+        (r.cliente ? '<span class="opso-ph-rk">' + (clientes.indexOf(r) + 1) + '</span>' : '') +
+        '<span class="opso-av' + (r.cliente ? '' : ' off') + '" aria-hidden="true">' + esc(initiales(r.p.name)) + '</span>' +
+        '<div class="opso-ph-main">' +
+          '<div class="v2-row-name">' + esc(nom) + '</div>' +
+          '<div class="v2-row-meta">' + esc(beau(r.p.ville || '')) + (r.p.code ? ' · CIP ' + esc(r.p.code) : '') + ' · ' + r.nbProduits + ' produit' + (r.nbProduits > 1 ? 's' : '') + '</div>' +
+          (r.cliente ? '<span class="opso-share" aria-hidden="true"><i style="width:' + Math.max(3, Math.round(r.total / maxTotal * 100)) + '%;--i:' + idx + '"></i></span>' : '') +
         '</div>' +
-        (r.cliente ? '<div style="text-align:right">' + '<span class="v2-row-val">' + euros(r.total) + '</span>' + deltaTxt + '</div>' : '<span class="v2-row-meta">Sans achat — potentiel</span>') +
+        (r.cliente ? spark(r.serie, idx) : '') +
+        (r.cliente ? '<div class="opso-ph-r"><span class="v2-row-val">' + euros(r.total) + '</span><div class="opso-ph-d">' + deltaTxt + '</div></div>' : '<span class="opso-none">Sans achat — potentiel</span>') +
         '<span class="v2-row-chev">' + ICO('chev', 16) + '</span>' +
       '</a>';
     }
+
+    var dernier = NB.mois && NB.mois.length ? NB.mois[NB.mois.length - 1] : null;
+    var stats = '<div class="opf-stats">' +
+      '<div class="opf-stat"><div class="opf-stat-l">Clientes</div><div class="opf-stat-v"><span data-count="' + NB.pharmaClientes + '">' + NB.pharmaClientes + '</span><small>/' + NB.adherentes + '</small></div><div class="opf-stat-n">adhérentes qui achètent chez Intégral Pharma</div></div>' +
+      '<div class="opf-stat"><div class="opf-stat-l">Cumul HT</div><div class="opf-stat-v" data-count="' + Math.round(NB.total) + '" data-fmt="eur">' + euros(NB.total) + '</div><div class="opf-stat-n">' + esc(NB.periode) + '</div></div>' +
+      (dernier ? '<div class="opf-stat"><div class="opf-stat-l">Dernier mois</div><div class="opf-stat-v" data-count="' + Math.round(dernier.ca) + '" data-fmt="eur">' + euros(dernier.ca) + '</div><div class="opf-stat-n">' + MOIS_PLEIN[dernier.m - 1] + ' ' + dernier.y + '</div></div>' : '') +
+    '</div>';
 
     root.innerHTML = V2.topbar({ back: true }) +
       '<div class="v2-wrap opf-page">' +
         '<div class="v2-page-title">Pharmacies</div>' +
         '<div class="v2-page-sub">Les officines du réseau OPSO Santé et leur évolution d\'achats chez Intégral Pharma, mois par mois. ' +
           NB.pharmaClientes + ' clientes sur ' + NB.adherentes + ' adhérentes · ' + esc(periodeTxt(NB)) + '.</div>' +
-        '<input class="v2-field" type="search" placeholder="Chercher une pharmacie, une ville…" value="' + esc(phSearch) + '" oninput="V2.opsoPhSearch(this.value)" style="margin-bottom:18px">' +
-        '<div class="v2-card"><div class="v2-card-head"><span class="v2-card-t">Clientes · les plus gros acheteurs en tête (' + clientesF.length + ')</span></div>' +
+        stats +
+        '<div class="opso-search">' + ICO('search', 18, 2) + '<input class="v2-field" type="search" aria-label="Chercher une pharmacie ou une ville" placeholder="Chercher une pharmacie, une ville…" value="' + esc(phSearch) + '" oninput="V2.opsoPhSearch(this.value)"></div>' +
+        '<div class="v2-card"><div class="v2-card-head"><span class="v2-card-t">Clientes · les plus gros acheteurs en tête (' + clientesF.length + ')</span><span class="opso-card-note">Écart : dernier mois comparé au mois précédent</span></div>' +
           (clientesF.length ? clientesF.map(row).join('') : '<div class="v2-empty"><div class="v2-empty-t">Aucun résultat</div></div>') +
         '</div>' +
         (potentielF.length ? '<div class="v2-card" style="margin-top:16px"><div class="v2-card-head"><span class="v2-card-t">Adhérentes sans achat — potentiel (' + potentielF.length + ')</span></div>' +
@@ -205,25 +262,29 @@
 
     var deltaHtmlSafe = V2.deltaHtml ? V2.deltaHtml(lastCa, prevCa, mois.length > 1 ? MOIS_PLEIN[mois[mois.length - 2].m - 1] : 'préc.', prevKey != null) : '';
 
+    var maxProd = top5.length ? Math.max(top5[0].ca, 1) : 1;
     root.innerHTML = V2.topbar({ back: true }) +
       '<div class="v2-wrap opf-page">' +
-        '<div class="v2-page-title">' + esc(p.name) + '</div>' +
-        '<div class="v2-page-sub">' + esc(p.ville || '') + (p.cp ? ' (' + esc(p.cp) + ')' : '') + (p.code ? ' · CIP ' + esc(p.code) : '') + ' · Réseau OPSO Santé' + (cliente ? ' · cliente' : ' · adhérente sans achat (potentiel)') + '</div>' +
+        '<div class="opf-fhead">' +
+          '<span class="opso-av lg' + (cliente ? '' : ' off') + '" aria-hidden="true">' + esc(initiales(p.name)) + '</span>' +
+          '<div class="opf-fhead-t"><div class="v2-page-title">' + esc(beau(p.name)) + '</div>' +
+          '<div class="v2-page-sub">' + esc(beau(p.ville || '')) + (p.cp ? ' (' + esc(p.cp) + ')' : '') + (p.code ? ' · CIP ' + esc(p.code) : '') + ' · Réseau OPSO Santé' + (cliente ? ' · cliente' : ' · adhérente sans achat (potentiel)') + '</div></div>' +
+          '<span class="opso-chip' + (cliente ? '' : ' off') + '">' + (cliente ? 'Cliente' : 'Potentiel') + '</span>' +
+        '</div>' +
         '<div class="v2-kpis">' +
-          '<div class="v2-kpi k1"><div class="v2-kpi-l">Cumul chez Intégral Pharma</div><div class="v2-kpi-v mono">' + euros(total) + '</div><div class="v2-kpi-d" style="color:var(--muted)">' + esc(periodeTxt(NB)) + '</div></div>' +
-          '<div class="v2-kpi k2"><div class="v2-kpi-l">Dernier mois</div><div class="v2-kpi-v mono">' + euros(lastCa) + '</div>' + deltaHtmlSafe + '</div>' +
-          '<div class="v2-kpi k3"><div class="v2-kpi-l">Produits distincts commandés</div><div class="v2-kpi-v mono">' + Object.keys(produits).length + '</div></div>' +
+          '<div class="v2-kpi k1"><div class="v2-kpi-l">Cumul chez Intégral Pharma</div><div class="v2-kpi-v mono" data-count="' + Math.round(total) + '" data-fmt="eur">' + euros(total) + '</div><div class="v2-kpi-d" style="color:var(--muted)">' + esc(periodeTxt(NB)) + '</div></div>' +
+          '<div class="v2-kpi k2"><div class="v2-kpi-l">Dernier mois</div><div class="v2-kpi-v mono" data-count="' + Math.round(lastCa) + '" data-fmt="eur">' + euros(lastCa) + '</div>' + deltaHtmlSafe + '</div>' +
+          '<div class="v2-kpi k3"><div class="v2-kpi-l">Produits distincts commandés</div><div class="v2-kpi-v mono" data-count="' + Object.keys(produits).length + '">' + Object.keys(produits).length + '</div></div>' +
           '<div class="v2-kpi k4"><div class="v2-kpi-l">Statut</div><div class="v2-kpi-v" style="font-size:16px">' + (cliente ? 'Cliente' : 'Potentiel') + '</div></div>' +
         '</div>' +
-        '<div class="v2-card" style="padding:18px 20px 8px">' +
-          '<div class="v2-card-head" style="padding:0 0 8px"><span class="v2-card-t">Évolution mensuelle des achats</span></div>' +
-          (chart ? chart.html : '<div class="v2-empty"><div class="v2-empty-t">Aucun achat enregistré</div><div class="v2-empty-d">Cette officine n\'a pas encore commandé chez Intégral Pharma.</div></div>') +
-        '</div>' +
-        (top5.length ? '<div class="v2-card" style="margin-top:16px"><div class="v2-card-head"><span class="v2-card-t">Produits phares</span></div>' +
+        // Le graphique est déjà une carte : plus de carte dans la carte.
+        (chart ? '<div class="opf-fiche-chart">' + chart.html + '</div>' :
+          '<div class="v2-card" style="padding:18px 20px 8px"><div class="v2-card-head" style="padding:0 0 8px"><span class="v2-card-t">Évolution mensuelle des achats</span></div><div class="v2-empty"><div class="v2-empty-t">Aucun achat enregistré</div><div class="v2-empty-d">Cette officine n\'a pas encore commandé chez Intégral Pharma.</div></div></div>') +
+        (top5.length ? '<div class="v2-card opso-prod" style="margin-top:16px"><div class="v2-card-head"><span class="v2-card-t">Produits phares</span></div>' +
           top5.map(function (x, i) {
             return '<div class="v2-row" style="cursor:default">' +
-              '<span class="mono" style="color:var(--muted);width:18px;flex:none">' + (i + 1) + '</span>' +
-              '<div style="flex:1;min-width:0"><div class="v2-row-name">' + esc(nomProduit(x.c, x.d)) + '</div></div>' +
+              '<span class="mono opso-prod-rk">' + (i + 1) + '</span>' +
+              '<div style="flex:1;min-width:0"><div class="v2-row-name">' + esc(nomProduit(x.c, x.d)) + '</div><span class="opso-share" aria-hidden="true"><i style="width:' + Math.max(3, Math.round(x.ca / maxProd * 100)) + '%;--i:' + i + '"></i></span></div>' +
               '<div style="text-align:right"><span class="v2-row-val">' + euros(x.ca) + '</span><div class="v2-row-meta">' + Math.round(x.boites) + ' boîte' + (Math.round(x.boites) > 1 ? 's' : '') + '</div></div>' +
             '</div>';
           }).join('') +
@@ -234,7 +295,7 @@
 
   V2.opsoPhSearch = function (val) {
     phSearch = val || '';
-    var r = root$(); if (r && V2.route && V2.route.name === 'opsopharmacies' && !V2.route.param) renderPharmaciesList(r);
+    var r = root$(); if (r && V2.route && V2.route.name === 'opsopharmacies' && !V2.route.param) gardeFocus(r, function () { renderPharmaciesList(r); });
   };
 
   V2.pages.opsopharmacies = {
@@ -326,9 +387,9 @@
     var list = achFiltered(D);
     var shown = list.slice(0, achShown);
 
-    var tabsHtml = '<button class="v2-tab' + (achTab === 'all' ? ' on' : '') + '" onclick="V2.opsoAchTab(\'all\')">Tous (' + D.items.length + ')</button>' +
+    var tabsHtml = '<button class="v2-tab' + (achTab === 'all' ? ' on' : '') + '" onclick="V2.opsoAchTab(\'all\')">Tous<em>' + D.items.length + '</em></button>' +
       (D.hasCat ? CAT_ORDER.filter(function (k) { return D.byCat[k] > 0; }).map(function (k) {
-        return '<button class="v2-tab' + (achTab === k ? ' on' : '') + '" onclick="V2.opsoAchTab(\'' + k + '\')">' + esc(CAT_LABELS[k]) + ' (' + D.byCat[k] + ')</button>';
+        return '<button class="v2-tab' + (achTab === k ? ' on' : '') + '" onclick="V2.opsoAchTab(\'' + k + '\')">' + esc(CAT_LABELS[k]) + '<em>' + D.byCat[k] + '</em></button>';
       }).join('') : '');
 
     // 2ᵉ passe (29/09/2026) : plus de badge d'évolution — sur ces données il
@@ -341,8 +402,8 @@
     function partage(n, jauge) {
       if (!jauge && NC > 0 && NC <= 24) {
         var s = '';
-        for (var i = 0; i < NC; i++) s += '<i' + (i < n ? ' class="on"' : '') + '></i>';
-        return '<span class="opf-dots" aria-hidden="true">' + s + '</span>';
+        for (var i = 0; i < NC; i++) s += '<i' + (i < n ? ' class="on"' : '') + ' style="--k:' + i + '"></i>';
+        return '<span class="opf-dots" aria-hidden="true" style="--nc:' + NC + '">' + s + '</span>';
       }
       var pct = NC ? Math.min(100, Math.round(n / NC * 100)) : 0;
       return '<span class="opf-gauge" aria-hidden="true"><span class="opf-gauge-fill" style="width:' + pct + '%"></span></span>';
@@ -398,15 +459,15 @@
         '<div class="v2-page-title">Meilleurs achats</div>' +
         '<div class="v2-page-sub">Les produits que les pharmacies OPSO commandent chez Intégral Pharma, classés par NOMBRE DE PHARMACIES qui les commandent (puis par quantités et CA). ' +
           (D.hasCat ? '' : 'Catégories en cours de chargement… ') + esc(periodeTxt(NB)) + '.</div>' +
-        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">' +
-          '<input class="v2-field" style="flex:1;min-width:220px" type="search" placeholder="Chercher un produit, un CIP…" value="' + esc(achSearch) + '" oninput="V2.opsoAchSearch(this.value)">' +
-          '<button class="v2-btn" onclick="V2.opsoAchExport()">' + ICO('download', 16) + ' Exporter (CSV)</button>' +
+        '<div class="opf-tools">' +
+          '<div class="opso-search">' + ICO('search', 18, 2) + '<input class="v2-field" type="search" aria-label="Chercher un produit ou un CIP" placeholder="Chercher un produit, un CIP…" value="' + esc(achSearch) + '" oninput="V2.opsoAchSearch(this.value)"></div>' +
+          '<button class="v2-btn v2-btn-ghost opf-export" onclick="V2.opsoAchExport()">' + ICO('download', 16) + ' Exporter (CSV)</button>' +
         '</div>' +
-        '<div class="v2-tabs" style="overflow-x:auto;margin-bottom:14px">' + tabsHtml + '</div>' +
+        '<div class="v2-tabs" style="overflow-x:auto;margin-bottom:6px">' + tabsHtml + '</div>' +
         '<div class="opf-count v2-row-meta">' + list.length + ' référence' + (list.length > 1 ? 's' : '') + '</div>' +
         (podium.length ? '<div class="opf-pod-t">Le socle du réseau · les produits commandés par le plus de pharmacies</div><div class="opf-pods">' + podium.map(carte).join('') + '</div>' : '') +
         (shown.length ? groupes : '<div class="v2-card"><div class="v2-empty"><div class="v2-empty-t">Aucun résultat</div></div></div>') +
-        (list.length > shown.length ? '<div style="text-align:center;margin-top:16px"><button class="v2-btn" onclick="V2.opsoAchMore()">Voir plus (' + (list.length - shown.length) + ' de plus)</button></div>' : '') +
+        (list.length > shown.length ? '<div class="opf-more"><button class="v2-btn" onclick="V2.opsoAchMore()">Voir plus (' + (list.length - shown.length) + ' de plus)</button></div>' : '') +
       '</div>';
 
     // PROD_STATS pas encore en mémoire : re-tente la catégorisation (comme
@@ -465,7 +526,7 @@
     });
   }
 
-  V2.opsoAchSearch = function (val) { achSearch = val || ''; achShown = 60; var r = root$(); if (r) renderAchats(r); };
+  V2.opsoAchSearch = function (val) { achSearch = val || ''; achShown = 60; var r = root$(); if (r) gardeFocus(r, function () { renderAchats(r); }); };
   V2.opsoAchTab = function (k) { achTab = k; achShown = 60; var r = root$(); if (r) renderAchats(r); };
   V2.opsoAchMore = function () { achShown += 60; var r = root$(); if (r) renderAchats(r); };
 
