@@ -136,6 +136,23 @@
       if (k) q.ca[k] = (q.ca[k] || 0) + v;
     });
 
+    // Prime par nouvelle pharmacie (réglage `prime` : montant, mois de départ) : pharmacie dont le PREMIER achat
+    // réel de l'année tombe à partir de ce mois. Les lignes « stats officine » injectées (sans clé commercial,
+    // réparties à parts égales sur les mois) ne se datent pas : ces pharmacies ne sont jamais comptées nouvelles.
+    var P = (C.prime && C.prime.montant > 0) ? C.prime : null;
+    var premier = {}, nomDe = {};
+    (V2.pharmacies || []).forEach(function (ph) { nomDe[String(ph.id)] = ph.name || ''; });
+    if (P) sales.forEach(function (s) {
+      if (s.year !== annee || !s.month || typeof s.commercial === 'undefined' || !((s.mntNetHt || 0) > 0)) return;
+      var id = String(s.pharmacyId);
+      if (!premier[id] || s.month < premier[id]) premier[id] = s.month;
+    });
+    quads.forEach(function (q) { q.nouvelles = []; });
+    if (P) Object.keys(premier).forEach(function (id) {
+      var m = premier[id]; if (m < (P.depuis || 1)) return;
+      var qi = quadDeMois[m]; if (qi !== undefined) quads[qi].nouvelles.push({ id: id, nom: nomDe[id] || id, mois: m });
+    });
+
     var lignes = quads.map(function (q) {
       var r = appliquer(C, q);
       var nMois = Object.keys(q.mois).length, nPrevus = q.a - q.de + 1;
@@ -148,15 +165,20 @@
         de: q.de, a: q.a, periode: MOIS_ABREV[q.de - 1] + '–' + MOIS_ABREV[q.a - 1] + ' ' + annee,
         nMois: nMois, nPrevus: nPrevus, statut: statut, echeance: eche, indicatif: indicatif,
         total: r.total, retenu: r.retenu, exclu: r.total - r.retenu, remu: r.remu,
-        exclParMotif: r.exclParMotif, caParMotif: q.ca
+        exclParMotif: r.exclParMotif, caParMotif: q.ca,
+        nouvelles: q.nouvelles.sort(function (a, b) { return a.mois - b.mois || a.nom.localeCompare(b.nom, 'fr'); }),
+        primes: P ? q.nouvelles.length * P.montant : 0
       };
     });
 
     function appliquer(Cc, q) { return appliquerTranches(Cc, q.total, q.ca); }
 
-    var tot = { total: 0, retenu: 0, exclu: 0, remu: 0 };
-    lignes.forEach(function (l) { if (l.indicatif) return; tot.total += l.total; tot.retenu += l.retenu; tot.exclu += l.exclu; tot.remu += l.remu; });
-    return { annee: annee, lignes: lignes, totalAnnee: tot, C: C };
+    var tot = { total: 0, retenu: 0, exclu: 0, remu: 0, remuCA: 0, primes: 0, nNouvelles: 0 };
+    // Les primes comptent dès leur mois de départ, même sur une période indicative pour la part au pourcentage.
+    lignes.forEach(function (l) { tot.primes += l.primes; tot.nNouvelles += l.nouvelles.length; });
+    lignes.forEach(function (l) { if (l.indicatif) return; tot.total += l.total; tot.retenu += l.retenu; tot.exclu += l.exclu; tot.remuCA += l.remu; });
+    tot.remu = tot.remuCA + tot.primes;
+    return { annee: annee, lignes: lignes, totalAnnee: tot, C: C, P: P };
   }
 
   // ── Styles (injectés une fois) ──
@@ -215,6 +237,15 @@
   var MOIS_LONG = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
   function moisEffet(D) { return MOIS_LONG[D.C.effet - 1] + ' ' + D.annee; }
 
+  function lignePrimes(D, l) {
+    if (!D.P || D.P.depuis > l.a) return '';
+    var n = l.nouvelles.length, pl = n > 1 ? 's' : '';
+    if (!n) return '<p class="opr-det">Nouvelles pharmacies clientes\u00a0: aucune sur cette période.</p>';
+    var noms = l.nouvelles.map(function (x) { return '<span class="opr-mot">' + esc(x.nom) + ' (' + MOIS_ABREV[x.mois - 1] + ')</span>'; }).join(' ');
+    return '<p class="opr-det"><strong>' + n + ' nouvelle' + pl + ' pharmacie' + pl + ' cliente' + pl + '\u00a0: ' + euros(l.primes) + '</strong> ('
+      + euros(D.P.montant) + ' chacune' + (l.indicatif ? ', comptés dans le total' : '') + ')\u00a0: ' + noms + '</p>';
+  }
+
   function badge(l) {
     if (l.indicatif) return '<span class="opr-badge">À titre indicatif</span>';
     if (l.statut === 'clos') {
@@ -236,6 +267,7 @@
         + '<header class="opr-qh"><h3 class="opr-per">' + esc(l.periode) + '</h3>' + badge(l) + '</header>'
         + faits(l, vide)
         + '<p class="opr-det">' + (vide ? 'Aucune vente enregistrée pour l’instant.' : detailExclusions(D, l)) + '</p>'
+        + lignePrimes(D, l)
         + (l.indicatif
           ? '<p class="opr-pay">Période antérieure à l’accord, évoqué à partir de ' + esc(moisEffet(D)) + '\u00a0: montant donné à titre indicatif, non compté dans le total.</p>'
           : '<p class="opr-pay">' + (l.statut === 'clos' ? 'Échéance de paiement prévue' : 'Échéance de paiement prévue au plus tôt')
@@ -245,9 +277,13 @@
     out += '<div class="opr-q opr-tot" data-opr-total="1">'
       + '<h3 class="opr-per">' + (D.C.effet ? 'Total depuis ' + esc(moisEffet(D)) : 'Total ' + D.annee) + ' à ce jour</h3>'
       + faits(D.totalAnnee, false)
+      + (D.P ? '<p class="opr-det">Dont <strong>' + euros(D.totalAnnee.remuCA) + '</strong> sur le chiffre d’affaires et <strong>' + euros(D.totalAnnee.primes) + '</strong> pour '
+        + D.totalAnnee.nNouvelles + ' nouvelle' + (D.totalAnnee.nNouvelles > 1 ? 's pharmacies clientes' : ' pharmacie cliente')
+        + ' depuis ' + esc(MOIS_LONG[(D.P.depuis || 1) - 1]) + '.</p>' : '')
       + '</div>'
       + '<div class="opr-note">'
       + '<p>Estimation à partir des ventes enregistrées ; le montant facturé fait foi.</p>'
+      + (D.P ? '<p>Nouvelle pharmacie cliente\u00a0: adhérente dont le premier achat de l’année chez Intégral Pharma tombe à partir de ' + esc(MOIS_LONG[(D.P.depuis || 1) - 1]) + '. Les pharmacies suivies seulement par des statistiques globales, non datées au mois, ne sont pas comptées.</p>' : '')
       + '<p>Échéance : fin de la période, plus ' + ((D.C.paiement && D.C.paiement.jours) || 0) + ' jours' + ((D.C.paiement && D.C.paiement.finDeMois) ? ', ramenés à la fin du mois' : '') + '.</p>'
       + '</div>'
       + '</section>';
