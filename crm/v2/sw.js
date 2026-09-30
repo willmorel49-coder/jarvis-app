@@ -10,7 +10,7 @@
 
    ⚠️ Bumper VER à chaque déploiement (aligné sur le ?v= de index.html).
    ═══════════════════════════════════════════════════════════════════ */
-var VER = '20260929h';
+var VER = '20260930a';
 var CACHE = 'jarvis-' + VER;
 
 /* 11/09/2026 (perf, phase 3) — le SOCLE est rangé dès l'installation : les
@@ -51,8 +51,11 @@ self.addEventListener('activate', function (e) {
       // v2-boot.js) survit aux mises en ligne : il est versionné par le contenu
       // des tranches, pas par VER. v2-boot.js nettoie lui-même ses anciennes
       // versions, et la déconnexion le vide.
+      // 30/09/2026 — même règle pour le tiroir des autres fichiers protégés,
+      // rangés par empreinte (quota de trafic Supabase dépassé ce jour-là).
       return Promise.all(keys.map(function (k) {
-        if (k !== CACHE && k.indexOf('v2-protege-ventes-') !== 0) return caches.delete(k);
+        if (k !== CACHE && k.indexOf('v2-protege-ventes-') !== 0 &&
+            k !== 'v2-protege-empreintes') return caches.delete(k);
       }));
     }).then(function () { return self.clients.claim(); })
   );

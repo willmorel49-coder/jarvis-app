@@ -732,12 +732,54 @@
     } catch (e) {}
   }
 
+  // 30/09/2026 — Supabase coupé ce jour-là (quota de trafic sortant dépassé).
+  // Ces fichiers étaient rangés sous le jeton V, changé 118 fois en septembre,
+  // et le service worker vidait leur tiroir à chaque mise en ligne (290 en
+  // septembre) : chaque appareil retéléchargeait ~12 Mo après chaque commit.
+  // Désormais, comme les ventes : rangés sous l'EMPREINTE du fichier dans le
+  // seau (eTag, lue en UNE liste par dossier et par session), dans un tiroir
+  // que le service worker épargne. Empreinte illisible : repli sur le jeton.
+  var CACHE_EMPREINTES = CACHE_PROTEGE + 'empreintes';
+  var _empreintes = {};
+  function empreinteProtegee(fichier) {
+    var i = fichier.lastIndexOf('/');
+    var dossier = i < 0 ? '' : fichier.slice(0, i), nom = fichier.slice(i + 1);
+    var c = (V2.sb && V2.sb()) || null;
+    if (!c || !c.storage) return Promise.resolve(null);
+    if (!_empreintes[dossier]) {
+      _empreintes[dossier] = c.storage.from(SEAU_PROTEGE).list(dossier, { limit: 1000 })
+        .then(function (r) {
+          var m = {};
+          ((r && r.data) || []).forEach(function (o) {
+            var e = o && o.metadata && (o.metadata.eTag || o.updated_at);
+            if (o.name && e) m[o.name] = String(e).replace(/[^\w-]/g, '');
+          });
+          if (!Object.keys(m).length) delete _empreintes[dossier];   // réessayé au prochain fichier
+          return m;
+        }, function () { delete _empreintes[dossier]; return {}; });
+    }
+    return _empreintes[dossier].then(function (m) { return m[nom] || null; });
+  }
+
   // Rend le TEXTE du fichier protégé `fichier` (nom dans le seau), par le
   // rangement local d'abord, par adresse signée sinon. cb(texte) / ko().
   function texteProtege(fichier, version, cb, ko) {
     fichier = V2.cheminVentes(fichier);
-    var nomCache = CACHE_PROTEGE + version;
-    var cle = 'https://protege.local/' + fichier;   // clé synthétique STABLE
+    empreinteProtegee(fichier).then(function (e) {
+      texteProtegeRange(fichier, e ? 'e' + e : 'v' + version, cb, ko);
+    });
+  }
+  function texteProtegeRange(fichier, version, cb, ko) {
+    var nomCache = CACHE_EMPREINTES;
+    var base = 'https://protege.local/' + fichier + '?v=';   // « ? » et non « # » : le rangement ignore ce qui suit un #
+    var cle = base + version;   // clé synthétique STABLE tant que le fichier ne change pas
+    function oublierAnciennes(c) {
+      try {
+        c.keys().then(function (ks) {
+          ks.forEach(function (r) { if (r.url.indexOf(base) === 0 && r.url !== cle) c.delete(r); });
+        });
+      } catch (e) {}
+    }
     function telecharger(c) {
       adresseProtegee(fichier).then(function (url) {
         if (!url) { ko(); return; }
@@ -746,7 +788,7 @@
           return r.text();
         }).then(function (t) {
           if (!t || t.length < 10) throw new Error('réponse vide');
-          try { if (c) c.put(cle, new Response(t, { headers: { 'Content-Type': 'text/javascript' } })); } catch (e) {}
+          try { if (c) c.put(cle, new Response(t, { headers: { 'Content-Type': 'text/javascript' } })).then(function () { oublierAnciennes(c); }); } catch (e) {}
           cb(t);
         }).catch(function () { ko(); });
       });

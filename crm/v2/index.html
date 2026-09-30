@@ -12,7 +12,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
         var hadController = !!navigator.serviceWorker.controller;
-        navigator.serviceWorker.register('sw.js?v=20260929g').then(function (reg) {
+        navigator.serviceWorker.register('sw.js?v=20260930a').then(function (reg) {
           try { reg.update(); } catch (e) {}   // vérifie tout de suite au chargement          // pendant une longue session, re-vérifier périodiquement s'il y a une nouvelle version
           setInterval(function () { try { reg.update(); } catch (e) {} }, 5 * 60 * 1000);
           // dès qu'on revient sur l'appli (onglet réactivé) : re-check -> bannière « Actualiser » si nouvelle version
@@ -224,7 +224,7 @@
   <script src="v2-icons.js?v=20260929g"></script>
   <!-- Table d'alias groupements (canonicalisation) : fusionne les doublons partout -->
   <script src="groupement-alias.js?v=20260929g"></script>
-  <script src="v2-boot.js?v=20260929j"></script>
+  <script src="v2-boot.js?v=20260930a"></script>
   <!-- Profil commercial : lu DANS loadData (corrections manuelles de groupement) → avant les données -->
   <script src="v2-profil.js?v=20260929g"></script>
   <script>
