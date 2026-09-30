@@ -50,6 +50,7 @@ V2 = os.path.join(BASE, 'crm', 'v2')
 SORTIE = os.path.join(V2, 'ventes')
 TAILLE_TRANCHE = 1_500_000
 ESCALE_COMMS = ['Guy', 'Tiffany', 'Philippe', 'Germain']   # = V2.ESCALE_COMMS (v2-boot.js)
+OPSO = 'OPSO'   # valeur `commercial` du compte OPSO (Emmanuel Noblanc) : jeu à part, jeu_opso()
 PROJET = 'iyvavhnlhxksokkerkos'
 CLE = os.path.expanduser('~/.config/jarvis/service-role-key')
 
@@ -196,7 +197,9 @@ def main():
     rep_t = reperes(garde_t)
     rep_e = reperes(garde_e)
 
-    jeux = sorted(set(d_com) | set(profils_restreints()) | {'Escale'})
+    # 'OPSO' a sa propre branche (jeu_opso) : par le chemin générique il n'aurait aucune
+    # officine « à lui » (aucun prénom) et tout le réseau en totaux par produit.
+    jeux = sorted((set(d_com) | set(profils_restreints()) | {'Escale'}) - {OPSO})
     if os.path.isdir(SORTIE):
         shutil.rmtree(SORTIE)
 
@@ -268,7 +271,75 @@ def main():
         ecrire(os.path.join(rep, 'carte-detail.js'), tete_det + 'window.CARTE_DETAIL=' + compact(mes_det) + ';\n')
         print('  %-24s %s  %6d lignes à lui · %6d totaux réseau · %d tranche(s) · %d CA · %d fiches'
               % (commercial, dossier(commercial), len(detail), len(agreges), len(tr), len(mes_ca), len(mes_det)))
-    print('%d jeux écrits dans crm/v2/ventes/' % len(jeux))
+    jeu_opso(officines, d_off, ventes, off_ca, tete_ca, carte, tete_det)
+    print('%d jeux écrits dans crm/v2/ventes/' % (len(jeux) + 1))
+
+
+def jeu_opso(officines, d_off, ventes, off_ca, tete_ca, carte, tete_det):
+    """30/09/2026 — Will : « Emmanuel doit voir uniquement ce qui concerne OPSO ».
+    Le jeu du profil commercial='OPSO' : le détail des ventes des 129 adhérents
+    (opso/opso-listing-2026.js), tous commerciaux confondus, et RIEN d'autre —
+    aucun total du reste du réseau. Rapprochement = V2.applyOpsoPerimeter (v2-boot.js),
+    à l'identique : sinon des ventes affichées aujourd'hui disparaîtraient."""
+    txt = lire(os.path.join(BASE, 'opso', 'opso-listing-2026.js'))
+    m = re.search(r'const OPSO_LISTING_2026 = (\[.*\]);', txt, re.S)
+    listing = json.loads(m.group(1)) if m else sys.exit('ARRÊT : opso-listing-2026.js illisible')
+    norm = lambda c: re.sub(r'^0+', '', re.sub(r'\D', '', str('' if c is None else c)))
+    by_cip, by_nom = {}, {}
+    for o in officines:   # = V2.mapOfficines : premier arrivé gardé
+        c = norm(o.get('code') or o.get('id'))
+        if c and c not in by_cip:
+            by_cip[c] = o
+        n = (o.get('name') or '').strip().upper()
+        if n and n not in by_nom:
+            by_nom[n] = o
+    ids = set()
+    for a in listing:
+        db = by_cip.get(norm(a.get('cip') or a.get('code')))
+        if not db:   # repli par nom, seulement si la ville concorde
+            dn = by_nom.get((a.get('nom') or a.get('name') or '').strip().upper())
+            va, vn = (a.get('ville') or '').strip().upper(), ((dn or {}).get('ville') or '').strip().upper()
+            if dn and va and vn and va == vn:
+                db = dn
+        if db:
+            ids.add(str(db.get('id')))
+    rangs = {r for r, c in enumerate(d_off) if str(c) in ids}
+    lignes = [v for v in ventes if v[0] in rangs]
+    if not lignes:
+        sys.exit('ARRÊT : jeu OPSO vide (%d officines rapprochées)' % len(ids))
+    # applyOpsoPerimeter répartit les achats d'opso-stats sur les mois PRÉSENTS dans les
+    # ventes : il faut les mêmes mois qu'avec le fichier complet, sinon les chiffres bougent.
+    if {v[1] for v in lignes} != {v[1] for v in ventes}:
+        sys.exit('ARRÊT : jeu OPSO, mois %s au lieu de %s' % (sorted({v[1] for v in lignes}), sorted({v[1] for v in ventes})))
+
+    rep = os.path.join(SORTIE, dossier(OPSO))
+    tr = tranches(lignes)
+    emp = hashlib.sha1()
+    for i, t in enumerate(tr, 1):
+        emp.update(compact(t).encode('utf-8'))
+        ecrire(os.path.join(rep, 'wml-ventes-%02d.js' % i), (
+            '// WML · ventes {}/{} — {} lignes (jeu OPSO : ses adhérents seuls, 30/09/2026).\n'
+            '(function(){{var a=window.WML_SALES||(window.WML_SALES=[]);'
+            'var c={};for(var i=0;i<c.length;i++)a.push(c[i]);}})();\n'
+        ).format(i, len(tr), len(t), compact(t)))
+    # Repères comptés sur les adhérents OPSO seuls — jamais ceux du réseau.
+    act, ca = {}, {}
+    for v in lignes:
+        act.setdefault(v[1], set()).add(v[0])
+        ca[v[0]] = ca.get(v[0], 0) + v[6]
+    rang = sorted(ca, key=lambda r: -ca[r])
+    rep_o = {'act': {m: len(x) for m, x in act.items()}, 'nph': len(ca),
+             'rg': {d_off[r]: i + 1 for i, r in enumerate(rang)}, 'no': len(rang), 'rgg': {}}
+    ecrire(os.path.join(rep, 'wml-ventes-index.js'), 'window.WML_TRANCHES_JEU = %s;\n' % compact(
+        {'n': len(tr), 'e': emp.hexdigest()[:12], 'T': rep_o, 'E': rep_o}))
+    cles = {re.sub(r'[^0-9]', '', i) for i in ids}
+    mes_ca = {k: v for k, v in off_ca.items() if re.sub(r'[^0-9]', '', k) in cles}
+    ecrire(os.path.join(rep, 'wml-officines-ca.js'),
+           tete_ca + 'window.WML_OFF_CA = {n:%d, m:%s};\n' % (len(mes_ca), json.dumps(mes_ca)))
+    mes_det = {k: v for k, v in carte.items() if re.sub(r'[^0-9]', '', k) in cles}
+    ecrire(os.path.join(rep, 'carte-detail.js'), tete_det + 'window.CARTE_DETAIL=' + compact(mes_det) + ';\n')
+    print('  %-24s %s  %6d lignes OPSO · %d officines · 0 total réseau · %d tranche(s) · %d CA · %d fiches'
+          % (OPSO, dossier(OPSO), len(lignes), len(rangs), len(tr), len(mes_ca), len(mes_det)))
 
 
 if __name__ == '__main__':

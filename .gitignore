@@ -210,6 +210,8 @@ crm/catalogue-ip.js
 crm/sales-detail.js
 biosimilaires-export.json
 bench-conditions.js
+opso-bench-conditions.js
+opso-sagitta-cip.js
 prod-stats-conditions.js
 pharma-fr-ca.js
 # 28/09/2026 — segmentation commerciale (Client A/B/C par officine) et prix

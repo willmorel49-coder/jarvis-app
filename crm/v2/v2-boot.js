@@ -241,6 +241,10 @@
       // 'Escale' n'est le prénom d'aucun commercial : dans l'espace Escale, ce
       // compte voit tout le périmètre (les données y sont déjà bornées aux quatre).
       if (appEscale && commProfil === 'Escale') { V2.user.commercial = ''; V2.user.voitTous = true; }
+      // 30/09/2026 — compte OPSO (commercial='OPSO') : 'OPSO' ne sert qu'au dossier de son jeu de
+      // ventes (déjà borné aux adhérents). Ce n'est le prénom d'aucun commercial : gardé, il viderait
+      // le Pilotage et l'accueil (« 0 officines actives »). Dans l'espace OPSO il voit tout le périmètre.
+      if (window.V2_BRAND && window.V2_BRAND.opso) { V2.user.commercial = ''; V2.user.voitAussi = []; }
       // 24/08/2026 — l'écran de DÉPART ne passe pas par V2.go() : sans cette
       // ligne, l'accueil (l'écran le plus ouvert de tous) serait le seul
       // à n'être jamais mesuré.
@@ -668,6 +672,9 @@
     // 30/09/2026 — accès de test Offilog affiché sur l'écran Offilog d'OPSO (window.OPSO_OFFILOG_ACCES).
     opsooffilogacces: 'opso-offilog-acces.js'
   };
+  // 30/09/2026 — espace OPSO : versions réduites (prix IP sans nos ventes nationales ; CIP
+  // Sagitta sans prix). Ce sont les seules que le rôle opso peut lire (jarvis_peut_lire_protege).
+  if (window.V2_BRAND && window.V2_BRAND.opso) { PROTEGES.benchcond = 'opso-bench-conditions.js'; PROTEGES.sagitta = 'opso-sagitta-cip.js'; }
   var SEAU_PROTEGE = 'donnees-protegees';   // sert encore aux DOCUMENTS privés
 
   // Fichiers protégés dont l'adresse a été refusée pour de bon. Lu par l'écran
@@ -1592,7 +1599,8 @@
     if (keys && keys.indexOf('clients') >= 0 && keys.indexOf('clientscond') < 0) {
       keys = keys.concat(['clientscond']);
     }
-    if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('clientsactifs') < 0) {
+    // (pas côté OPSO : base clients Intégral, aucun écran OPSO ne l'affiche — 30/09/2026)
+    if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('clientsactifs') < 0 && !(window.V2_BRAND && window.V2_BRAND.opso)) {
       keys = keys.concat(['clientsactifs']);
     }
     // chemins relatifs au dossier parent crm/ (les data files sont dans crm/)
@@ -1603,7 +1611,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260930h';
+    var V = '?v=20260930j';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];

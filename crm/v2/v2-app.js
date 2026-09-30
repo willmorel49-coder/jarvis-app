@@ -481,6 +481,10 @@
   // segmentation, la base nationale ne dit plus qui est client — les filtres de La
   // carte et la cible des campagnes rendraient vide.
   V2.NEEDS_DEFAUT = ['bench', 'sagitta', 'prodstatscond', 'pharmafrca', 'pharmafrseg', 'pharmafrcomm', 'mktipprix', 'wmlca', 'biosimcomplet'];
+  // 30/09/2026 — Will : « Emmanuel doit voir uniquement ce qui concerne OPSO ». L'espace OPSO
+  // ne demande que ce que ses écrans lisent (carte-opso-donnees.md) ; le reste lui est refusé
+  // côté Supabase (jarvis_peut_lire_protege) : le demander afficherait « chiffres non téléchargés ».
+  if (window.V2_BRAND && window.V2_BRAND.opso) V2.NEEDS_DEFAUT = ['bench', 'sagitta', 'wmlca'];
   // ── RENDER (routeur) ──────────────────────────
   V2.render = function () {
     var root = $app(); if (!root) return;
@@ -1791,7 +1795,8 @@
     s.onload = s.onerror = function () {
       V2._pfrLoading = false;
       // la colonne CA protégée se recolle dès que la carte publique est là
-      if (window.PHARMA_FR && V2.loadFiles) { try { V2.loadFiles(['pharmafrca', 'pharmafrseg', 'pharmafrcomm']); } catch (e) {} }
+      // (jamais côté OPSO : segmentation et commercial affecté du réseau Intégral, 30/09/2026)
+      if (window.PHARMA_FR && V2.loadFiles && !(window.V2_BRAND && window.V2_BRAND.opso)) { try { V2.loadFiles(['pharmafrca', 'pharmafrseg', 'pharmafrcomm']); } catch (e) {} }
       try { V2.reconcilePharma(); } catch (e) {}
       var cbs = V2._pfrCbs || []; V2._pfrCbs = [];
       cbs.forEach(function (f) { try { f(); } catch (e) {} });
@@ -2064,7 +2069,7 @@
         ? (prealables.length ? V2.loadFiles(prealables) : Promise.resolve()).then(function () { return V2.loadFiles(V2.NEEDS_DEFAUT); })
         : Promise.resolve())
     ]);
-    V2.loadFiles(['establishments']);
+    if (!opso) V2.loadFiles(['establishments']);   // aucun écran OPSO ne le lit (30/09/2026)
     V2.invalidateCmdk();
     V2.route = parseHash();
     V2.render();

@@ -47,6 +47,12 @@ def benchmark():
     ecrire('bench-conditions.js',
            '// Intégral Pharma — benchmark, NOS CONDITIONS — %s\n%s'
            'window.BENCH_COND = {n:%d, rows:[%s]};\n' % (J, AV, n, ','.join(rows)))
+    # 30/09/2026 — espace OPSO : prix IP et offre seulement, jamais nos ventes nationales
+    # (ip_qty, ip_ca). Même index, même n. Seul fichier bench lisible par le rôle opso.
+    ecrire('opso-bench-conditions.js',
+           '// Intégral Pharma — benchmark, conditions pour l\'espace OPSO — %s\n%s'
+           'window.BENCH_COND = {n:%d, rows:[%s]};\n'
+           % (J, AV, n, ','.join(re.sub(r',[^,]*,[^,]*\]$', ',null,null]', r) for r in rows)))
     fait.append('benchmark (%d)' % n)
 
 def prod_stats():

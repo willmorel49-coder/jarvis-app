@@ -203,6 +203,13 @@ def main():
         f.write(json.dumps(products, ensure_ascii=False, separators=(",", ":")))
         f.write(";\n")
     print(f"-> {OUT}")
+    # 30/09/2026 — espace OPSO : les CIP13 seuls (drapeau « non remboursable » du Pilotage),
+    # aucun prix Sagitta. Protégé, déposé sur Supabase comme le fichier complet.
+    with open("opso-sagitta-cip.js", "w", encoding="utf-8") as f:
+        f.write("// SAGITTA - SHORT LIST NR - CIP13 seuls (espace OPSO)\n")
+        f.write("const SAGITTA_SHORTLIST = ")
+        f.write(json.dumps([{"cip13": x["cip13"]} for x in products], separators=(",", ":")))
+        f.write(";\n")
 
 
 if __name__ == "__main__":
