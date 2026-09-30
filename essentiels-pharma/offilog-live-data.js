@@ -8515,3 +8515,5 @@ const OFFILOG_LIVE = [
   {id:'43876',nom:'Klorane – bébé coffret bleu, 3 produits & 1 doudou',marque:'KLORANE',cat:'Coffrets & Cadeaux',ean:'2500000000027',prix_barre:null,promo:false,url:'https://offilog.fr/cadeaux/43876-klorane-bebe-coffret-bleu-3-produits-1-doudou-2500000000027.html',img:'https://offilog.fr/92289-large_default/klorane-bebe-coffret-bleu-3-produits-1-doudou.jpg'},
   {id:'43875',nom:'Klorane – bébé coffret rose, 3 produits & 1 doudou',marque:'KLORANE',cat:'Coffrets & Cadeaux',ean:'2500000000034',prix_barre:null,promo:false,url:'https://offilog.fr/cadeaux/43875-klorane-bebe-coffret-rose-3-produits-1-doudou-2500000000034.html',img:'https://offilog.fr/92288-large_default/klorane-bebe-coffret-rose-3-produits-1-doudou.jpg'}
 ];
+// Jour du relevé (produits ET prix protégés, écrits ensemble) — lu par la fiche marketing OPSO.
+const OFFILOG_LIVE_DATE = '2026-09-30';

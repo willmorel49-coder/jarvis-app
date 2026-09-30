@@ -102,7 +102,9 @@ const prix = t => { if(!t) return null;
     '// ' + items.length + ' produits · offilog.fr\n' +
     '// ⚠️ Les prix B2B vivent dans offilog-live-prix.js, hors dépôt, servi par\n' +
     '// adresse signée. Ce fichier-ci part dans un dépôt PUBLIC — ne rien y remettre.\n' +
-    'const OFFILOG_LIVE = [\n' + lignes.join(',\n') + '\n];\n';
+    'const OFFILOG_LIVE = [\n' + lignes.join(',\n') + '\n];\n' +
+    '// Jour du relevé (produits ET prix protégés, écrits ensemble) — lu par la fiche marketing OPSO.\n' +
+    "const OFFILOG_LIVE_DATE = '" + j + "';\n";
   for (const o of OUT) fs.writeFileSync(o, contenu);
   fs.writeFileSync(OUT_PRIX,
     '// Intégral Pharma — Offilog catalogue live, PRIX B2B\n// ' + Object.keys(tarif).length + ' prix — ' + j +

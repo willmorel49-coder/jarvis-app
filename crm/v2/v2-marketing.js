@@ -73,6 +73,12 @@
     var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); if (!m) return '';
     try { return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }); } catch (e) { return ''; }
   }
+  // Jour du relevé Offilog (écrit par le script de relevé dans offilog-live-data.js) ;
+  // à défaut, aujourd'hui.
+  function dateReleve() {
+    var d = (typeof OFFILOG_LIVE_DATE !== 'undefined') ? OFFILOG_LIVE_DATE : '';
+    return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : isoJour(new Date());
+  }
   var SOUS_TITRE = 'Une sélection de produits pour votre comptoir, à retrouver sur Offilog.';
 
   // ── Sélection : modèle + reprise des anciennes (avant la fiche « catalogue du mois ») ──
@@ -101,7 +107,7 @@
       title: s.title || 'Le catalogue du mois',
       subtitle: neuf ? (s.subtitle || '') : SOUS_TITRE,
       period: s.period || s.month || periodeDefaut(),
-      priceDate: s.priceDate || isoJour(new Date()),
+      priceDate: s.priceDate || dateReleve(),
       products: (s.products || []).map(normProd),
       created: s.created || Date.now()
     };
@@ -434,7 +440,7 @@
     if (editing.products.length >= MAX) { V2.toast('Maximum ' + MAX + ' produits sur la fiche', 'warn'); return; }
     var np = prodDepuisLive(p);
     editing.products.push(np);
-    if (np.prix !== '') editing.priceDate = isoJour(new Date());
+    if (np.prix !== '') editing.priceDate = dateReleve();
     saveOne(editing);
     renderEditorBody(); renderSelList(); refreshPreview();
     V2.toast(esc(np.nom) + ' ajouté');
@@ -488,7 +494,7 @@
               '<div class="mkt-field"><label for="mkt-f-sub">Sous-titre</label><input id="mkt-f-sub" value="' + esc(editing.subtitle) + '" oninput="V2.marketing.set(\'subtitle\',this.value)"></div>' +
               '<div class="mkt-field"><label for="mkt-f-period">Période</label><input id="mkt-f-period" value="' + esc(editing.period) + '" oninput="V2.marketing.set(\'period\',this.value)"></div>' +
               '<div class="mkt-field" style="margin-bottom:0"><label for="mkt-f-date">Date des prix</label><input id="mkt-f-date" type="date" value="' + esc(editing.priceDate) + '" oninput="V2.marketing.set(\'priceDate\',this.value)">' +
-              '<p class="mkt-note" style="margin-top:6px">La fiche indique « Votre prix : prix HT Offilog au … » avec cette date. Elle se met à jour quand un prix Offilog est repris.</p></div>' +
+              '<p class="mkt-note" style="margin-top:6px">La fiche indique « Votre prix : prix HT Offilog au … » avec cette date. Par défaut, le jour du relevé des prix Offilog.</p></div>' +
             '</div>' +
             '<div class="v2-card" style="padding:18px;margin-top:16px">' +
               '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">' +
