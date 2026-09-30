@@ -13,6 +13,25 @@
   var TABLE = 'notes', LS = 'jarvis_notes_v1';
   // Dictée vocale (SpeechRecognition natif) : état courant + détection + icône micro
   var _rec = null, _recBtn = null, _enCours = null;
+  // Colle le segment `b` après le texte `a` sans répéter ce que `a` contient déjà.
+  // Sur iPhone un segment reprend souvent tout le début de la phrase (« bonjour »,
+  // puis « bonjour madame ») : le recouvrement est retiré, on garde l'écriture de `b`.
+  // Un recouvrement d'UN seul mot ne compte que si `a` tient en un mot, pour ne pas
+  // manger un vrai mot répété (« très très »).
+  function fusionner(a, b) {
+    a = (a || '').trim(); b = (b || '').trim();
+    if (!a) return b; if (!b) return a;
+    var norme = function (m) { return m.toLowerCase().replace(/[^0-9a-zà-ÿœæ']/g, ''); };
+    var ma = a.split(/\s+/), mb = b.split(/\s+/);
+    var na = ma.map(norme), nb = mb.map(norme);
+    // `b` est déjà à la fin de `a` → rien à ajouter
+    if (nb.length <= na.length && na.slice(-nb.length).join(' ') === nb.join(' ')) return a;
+    for (var k = Math.min(na.length, nb.length); k >= 1; k--) {
+      if (k === 1 && na.length > 1) break;
+      if (na.slice(-k).join(' ') === nb.slice(0, k).join(' ')) return ma.slice(0, ma.length - k).concat(mb).join(' ');
+    }
+    return a + ' ' + b;
+  }
   function voiceSupported() { return !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
   var MIC_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21M8.5 21h7"/></svg>';
 
@@ -107,21 +126,27 @@
         };
 
         rec.onresult = function (e) {
+          // Une session déjà close ne doit plus écrire : son texte est dans `acquis`.
+          if (rec._fini) return;
           // On RECONSTRUIT le texte depuis l'ensemble des résultats à chaque événement
           // (idempotent) au lieu d'accumuler avec += : sur mobile, resultIndex est peu
           // fiable et l'accumulation répétait la même phrase 4-5 fois.
-          var fin = '', interim = '', dernierFin = '';
+          // ⚠️ 30/09/2026 (remontée Karine, « en double voire triple ») : sur iPhone,
+          // chaque segment répète TOUT le début de la phrase (« bonjour », « bonjour
+          // madame », « bonjour madame Dupont »). Coller les segments bout à bout
+          // écrivait la phrase 3 fois : `fusionner` ne garde que ce qui est nouveau.
+          var fin = '', interim = '';
           for (var i = 0; i < e.results.length; i++) {
-            var brut = e.results[i][0].transcript || '';
-            if (e.results[i].isFinal) {
-              var t = brut.trim();
-              // Safari ré-émet parfois le MÊME segment final plusieurs fois → on saute les doublons consécutifs.
-              if (t && t !== dernierFin) { fin += t + ' '; dernierFin = t; }
-            } else { interim += brut; }
+            var brut = (e.results[i][0].transcript || '').trim();
+            if (!brut) continue;
+            if (e.results[i].isFinal) fin = fusionner(fin, brut);
+            else interim = fusionner(interim, brut);
           }
+          // Le provisoire répète souvent la dernière phrase définitive : on ne la réécrit pas.
+          var enCours = interim ? fusionner(fin, interim) : fin;
           rec._fin = fin;
           rec._interim = interim;
-          ecrire(base + acquis + fin + interim, !!interim);
+          ecrire(base + fusionner(acquis, enCours) + (interim ? ' ' : ''), !!interim);
         };
 
         rec.onerror = function (ev) {
@@ -150,11 +175,10 @@
           // Ce qui vient d'être reconnu est acquis pour de bon.
           // ⚠️ Safari coupe souvent SANS avoir marqué la phrase « définitive » : dans ce
           // cas on garde le texte provisoire, sinon la phrase disparaît à la relance.
-          var capte = rec._fin || rec._interim || '';
-          // Deuxième filet : Safari peut re-livrer à la relance la fin de l'audio
-          // précédent. On n'ajoute pas ce qu'on vient tout juste d'ajouter.
-          var dejaLa = capte && acquis.replace(/\s+$/, '').slice(-capte.trim().length) === capte.trim();
-          if (capte && !dejaLa) { acquis = (acquis + capte.trim() + ' ').replace(/\s+/g, ' '); }
+          var capte = rec._interim ? fusionner(rec._fin || '', rec._interim) : (rec._fin || '');
+          // Deuxième filet : Safari peut re-livrer à la relance la fin (ou tout le début)
+          // de l'audio précédent. `fusionner` n'ajoute que ce qui est vraiment nouveau.
+          if (capte) { acquis = fusionner(acquis, capte) + ' '; }
 
           // Safari (Mac et iPhone) arrête l'écoute tout seul après chaque phrase.
           // Tant que Karine n'a pas re-touché le micro, on relance : c'est ce qui

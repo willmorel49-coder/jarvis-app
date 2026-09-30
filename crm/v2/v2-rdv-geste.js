@@ -159,6 +159,7 @@
     document.head.appendChild(s);
   }
 
+  var suitDefilement = false;   // écoute du défilement posée une seule fois
   var PLUS = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
              'stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
 
@@ -187,7 +188,20 @@
       // doublon — et pire, il recouvre le bas du contenu. Vérifié à l'écran :
       // sur le hub, il masquait la section « À venir ».
       var doublon = (route === 'rdvajout' || route === 'rdvplanning' || route === 'rdv');
-      b.hidden = occupe || doublon;
+      // 30/09/2026 — sur téléphone, en haut de l'accueil, le bouton tombait sur la
+      // flèche de la grande porte Officines (petit iPhone). Il n'y apparaît donc
+      // qu'une fois la page défilée ; ailleurs rien ne change.
+      var hautAccueil = route === 'home' && window.innerWidth <= 760 && (window.scrollY || 0) < 120;
+      b.hidden = occupe || doublon || hautAccueil;
+      if (!suitDefilement) {
+        suitDefilement = true;
+        var attente = false;
+        window.addEventListener('scroll', function () {
+          if (attente || !V2.route || V2.route.name !== 'home') return;
+          attente = true;
+          requestAnimationFrame(function () { attente = false; V2.rdvGeste.poser(); });
+        }, { passive: true });
+      }
     },
 
     ouvrir: function () {
