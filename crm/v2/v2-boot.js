@@ -575,6 +575,8 @@
     mktnr: 'v2/mkt-nr-data.js',
     // Achats par officine OPSO (prix nets facturés + CA) : protégé.
     opsostats: 'opso-stats-data.js',
+    // 30/09/2026 — liste des 129 adhérents OPSO (titulaire, e-mail, tél.) : sortie du dépôt public.
+    opsolisting: 'opso-listing-2026.js',
     // potentiel commercial + CA par pharmacie (fiches clients)
     clientscond: 'clients-cond.js',
     // 10/09/2026 — base clients (export « clients actifs ») : tel, mail, contact,
@@ -670,7 +672,9 @@
     // 30/09/2026 — réglage du suivi de rémunération OPSO (confidentiel) : chargé par opso/v2 seul.
     opsocontrat: 'opso-contrat-data.js',
     // 30/09/2026 — accès de test Offilog affiché sur l'écran Offilog d'OPSO (window.OPSO_OFFILOG_ACCES).
-    opsooffilogacces: 'opso-offilog-acces.js'
+    opsooffilogacces: 'opso-offilog-acces.js',
+    // 30/09/2026 — liste des 129 adhérents OPSO : lisible par les comptes de l'espace OPSO seuls.
+    opsolisting: 'opso-listing-2026.js'
   };
   // 30/09/2026 — espace OPSO : versions réduites (prix IP sans nos ventes nationales ; CIP
   // Sagitta sans prix). Ce sont les seules que le rôle opso peut lire (jarvis_peut_lire_protege).
@@ -1602,6 +1606,10 @@
     // (pas côté OPSO : base clients Intégral, aucun écran OPSO ne l'affiche — 30/09/2026)
     if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('clientsactifs') < 0 && !(window.V2_BRAND && window.V2_BRAND.opso)) {
       keys = keys.concat(['clientsactifs']);
+    }
+    // OPSO : le périmètre (129 adhérents) doit être en mémoire avant loadData (applyOpsoPerimeter)
+    if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('opsolisting') < 0 && window.V2_BRAND && window.V2_BRAND.opso) {
+      keys = keys.concat(['opsolisting']);
     }
     // chemins relatifs au dossier parent crm/ (les data files sont dans crm/)
     // Jeton PROPRE aux fichiers de données, distinct du ?v= global.

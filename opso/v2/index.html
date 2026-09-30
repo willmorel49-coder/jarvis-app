@@ -65,10 +65,10 @@
        `v2-app.js` — partagé par les deux apps — le demande au chargeur, qui
        n'obtient son adresse qu'avec une session valide. Cette balise faisait
        donc doublon en plus d'être une fuite. -->
-  <!-- Listing officiel OPSO Santé (129 adhérents) — définit le périmètre -->
-  <script src="../opso-listing-2026.js?v=20260922h"></script>
+  <!-- Listing officiel OPSO Santé (129 adhérents) : titulaire, e-mail, téléphone. Sorti du
+       dépôt public le 30/09/2026 — chargé après connexion (clé `opsolisting` de PROTEGES). -->
   <!-- Achats par officine (opso/STATISTIQUES) — alimente le suivi groupement -->
-  <script src="../../crm/v2/v2-boot.js?v=20260930j"></script>
+  <script src="../../crm/v2/v2-boot.js?v=20260930k"></script>
   <!-- Piliers -->
   <!-- 04/09/2026, décision Will : l'app OPSO est un VISU pour le groupement,
        pas un JARVIS complet. Retirés : v2-pharma (écran commercial interne),
@@ -88,6 +88,6 @@
   <!-- Suivi de la rémunération du contrat de référencement (30/09/2026) : réglage protégé, chargé après connexion -->
   <script src="opso-remuneration.js?v=20260930e"></script>
   <!-- App (boot en dernier) -->
-  <script src="../../crm/v2/v2-app.js?v=20260929i"></script>
+  <script src="../../crm/v2/v2-app.js?v=20260930k"></script>
 </body>
 </html>

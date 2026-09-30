@@ -2056,7 +2056,7 @@
       // CRM : loadData() sans WML_OFFICINES ne faisait que 3 requêtes Supabase de
       // repli (1 000 ventes tronquées) aussitôt écrasées par le vrai loadData()
       // du premier rendu — retirées le 11/09/2026.
-      (opso ? V2.loadFiles(['opsostats']).then(function () { return V2.loadData(); }) : Promise.resolve()),
+      (opso ? V2.loadFiles(['opsostats', 'opsolisting']).then(function () { return V2.loadData(); }) : Promise.resolve()),
       // le léger d'abord (bench public + colonnes protégées, petites tables) ;
       // establishments (4,3 Mo protégé) part EN FOND après le premier rendu :
       // l'attendre bloquerait la première connexion le temps du téléchargement.
