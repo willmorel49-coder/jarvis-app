@@ -378,7 +378,12 @@
       // (v2-boot.js loadFiles), donc `o.prix_offilog` y est de toute façon
       // absent ; ce garde-fou est la seconde ligne de défense.
       var achat = (!OPSO && o) ? numOr0(o.prix_offilog) : 0;
-      var price = numOr0(b.price);
+      // Côté OPSO, le prix du relevé COMPLET (même identifiant produit Offilog)
+      // passe avant celui des meilleures ventes : c'est le relevé le plus
+      // complet et le plus récent. Mesuré le 30/09/2026 : sans ça, les 6 715
+      // meilleures ventes restaient sans prix (2 214 prix affichés sur 8 933).
+      var lv = (OPSO && livePrix && b.id != null) ? numOr0(livePrix[String(b.id).replace(/^live-/, '')]) : 0;
+      var price = lv > 0 ? lv : numOr0(b.price);
       var conc = {};
       var mc = 0, hasC = false;
       if (o) {
@@ -468,9 +473,19 @@
     if (OPSO && window.OFFILOG_LIVE && window.OFFILOG_LIVE.length) {
       var bestEans = new Set();
       items.forEach(function (it) { if (it.ean) bestEans.add(String(it.ean)); });
+      // Une meilleure vente absente du relevé complet n'est plus vendue sur
+      // Offilog (767 au relevé du 30/09/2026) : on ne la montre pas à OPSO avec
+      // un prix d'un autre mois.
+      var liveIds = new Set();
+      window.OFFILOG_LIVE.forEach(function (p) { liveIds.add(String(p.id)); });
+      items = items.filter(function (it) { return liveIds.has(String(it.id)); });
+      bestEans = new Set();
+      var bestIds = new Set();
+      items.forEach(function (it) { if (it.ean) bestEans.add(String(it.ean)); bestIds.add(String(it.id)); });
       var extra = [];
       window.OFFILOG_LIVE.forEach(function (p) {
         if (p.ean && bestEans.has(String(p.ean))) return; // déjà dans les meilleures ventes
+        if (bestIds.has(String(p.id))) return;           // idem, EAN changé entre deux relevés
         var b2 = {
           id: 'live-' + p.id, name: p.nom, brand: p.marque, ean: p.ean, img: p.img,
           cat: LIVE_CAT_MAP[p.cat] != null ? LIVE_CAT_MAP[p.cat] : '', url: p.url,
@@ -587,6 +602,34 @@
       'publics s\'affichent, mais la comparaison avec ton prix Offilog est indisponible ' +
       'pour l\'instant. Reconnecte-toi si ça persiste.</span></div>';
   }
+
+  // Accès de TEST au site Offilog — côté OPSO seulement (V2_BRAND.opso).
+  // L'identifiant et le mot de passe vivent dans un réglage PROTÉGÉ
+  // (opso-offilog-acces.js, seau donnees-protegees, clé opsooffilogacces) :
+  // jamais dans le dépôt public, et lisibles seulement une fois connecté.
+  // Réglage absent ou refusé → le bloc ne s'affiche pas, sans erreur.
+  function accesTest() {
+    var A = OPSO ? window.OPSO_OFFILOG_ACCES : null;
+    if (!A || !A.url || !A.identifiant || !A.mdp) return '';
+    function ligne(k, l, v) {
+      return '<div class="offa-l"><span>' + l + '</span><b class="mono">' + esc(v) + '</b>' +
+        '<button type="button" class="offa-cp" onclick="V2.offCopieAcces(\'' + k + '\', this)">Copier</button></div>';
+    }
+    return '<div class="offa">' +
+      '<div class="offa-t"><b>Accès de test Offilog</b><span>Pour découvrir la plateforme avec ses vrais prix.</span></div>' +
+      ligne('identifiant', 'Identifiant', A.identifiant) +
+      ligne('mdp', 'Mot de passe', A.mdp) +
+      '<a class="offa-go" href="' + esc(A.url) + '" target="_blank" rel="noopener">Ouvrir Offilog ' + ICO('chev', 16, 2) + '</a>' +
+    '</div>';
+  }
+  V2.offCopieAcces = function (k, btn) {
+    var A = window.OPSO_OFFILOG_ACCES, v = A && A[k];
+    if (!v || !navigator.clipboard) return;
+    navigator.clipboard.writeText(String(v)).then(function () {
+      btn.textContent = 'Copié';
+      setTimeout(function () { btn.textContent = 'Copier'; }, 1600);
+    }, function () {});
+  };
 
   function brandHead() {
     var st = brandStats();
@@ -1136,7 +1179,7 @@
   // ── Chargement du fichier best-sellers (lazy, dans crm/v2/) ──
   var bestLoading = false, bestFail = false, offTried = false, pzTried = false, sgTried = false, ocpTried = false;
   // Catalogue complet + prix Drakkars (OPSO uniquement) — 29/09/2026.
-  var liveTried = false, dkPubTried = false;
+  var liveTried = false, dkPubTried = false, accesTried = false;
   function ensureBest(cb) {
     if (window.OFFILOG_BEST) { cb(); return; }
     if (bestLoading) return;
@@ -1151,7 +1194,9 @@
     // Les PRIX B2B ne sont plus dans ce fichier : ils viennent d'un fichier
     // protégé, en parallèle. Le catalogue s'affiche même s'ils manquent — mais
     // alors sans prix, et l'écran le dit (bandeauCond).
-    if (V2.loadFiles) { try { V2.loadFiles(['offilogbestprix']); } catch (e) {} }
+    // Arrivés APRÈS le dernier rendu, les prix n'entraient jamais dans l'index
+    // déjà construit : on redessine à leur arrivée.
+    if (V2.loadFiles) { try { V2.loadFiles(['offilogbestprix']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; V2.render(); }); } catch (e) {} }
     // 1) chemin du module (MOD_BASE) → 2) repli chemin relatif → 3) échec
     // ⚠️ jeton bumpé : le fichier a changé de forme (prix retirés). Sans ça,
     // un navigateur resservirait l'ancien, prix compris.
@@ -1438,6 +1483,16 @@
 
       '.off-cond-ko{display:flex;gap:12px;align-items:flex-start;background:var(--c-warm-bg,#FFF7E8);border:1px solid var(--c-warm,#E8A33D);border-radius:14px;padding:14px 16px;margin-bottom:var(--sp-4);font-size:13.5px;line-height:1.5;color:var(--ip-ink-2)}',
       '.off-cond-ko svg{color:#C7791A;flex-shrink:0;margin-top:1px}',
+      '.offa{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 20px;margin-bottom:var(--sp-5);box-shadow:var(--sh-1)}',
+      '.offa-t{flex:1 1 100%;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline}',
+      '.offa-t b{font-size:15px;font-weight:800;color:var(--ip-ink)}',
+      '.offa-t span{font-size:13px;color:var(--muted)}',
+      '.offa-l{display:flex;align-items:center;gap:10px;min-width:0}',
+      '.offa-l span{font-size:13px;font-weight:700;color:var(--ip-ink-2)}',
+      '.offa-l b{font-size:14px;color:var(--ip-ink);overflow-wrap:anywhere}',
+      '.offa-cp{min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:12px;background:var(--card-2);font:inherit;font-size:13px;font-weight:700;color:var(--ip-ink-2);cursor:pointer}',
+      '.offa-go{margin-left:auto;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 18px;border-radius:12px;background:#345DA0;color:#fff;font-size:14px;font-weight:800;text-decoration:none}',
+      '@media(max-width:720px){.offa{padding:14px 16px}.offa-go{margin-left:0;width:100%;justify-content:center}}',
 
       // ══════════ LES RAYONS ══════════
       // Une bande qui défile horizontalement plutôt qu'un menu replié : on entre
@@ -1575,6 +1630,11 @@
         liveTried = true;
         if (V2.loadFiles) { try { V2.loadFiles(['offiloglive', 'offiloglivprix']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; V2.render(); }); } catch (e) {} }
       }
+      // Accès de test Offilog (réglage protégé) : OPSO seul, une fois.
+      if (OPSO && !window.OPSO_OFFILOG_ACCES && !accesTried) {
+        accesTried = true;
+        if (V2.loadFiles) { try { V2.loadFiles(['opsooffilogacces']).then(function () { if (!window.OPSO_OFFILOG_ACCES) return; if (V2.route && V2.route.name !== 'offilog') return; V2.render(); }); } catch (e) {} }
+      }
       // Prix publics Pharmacie des Drakkars (léger, généré) — jamais côté CRM
       // (Drakkars n'a de sens que pour la comparaison OPSO « jamais moins cher »).
       if (OPSO && !window.DRAKKARS_PUB && !dkPubTried) {
@@ -1684,6 +1744,7 @@
       root.innerHTML = V2.topbar({ back: true }) +         '<div class="v2-wrap' + (S.sel != null ? ' v2-detail-shift" style="--detw:392px"' : '"') + '>' +
           (V2.priceTabs ? V2.priceTabs('offilog') : '') +
           brandHead() +
+          accesTest() +
           bandeauCond() +
           rayons(c) +
           (RAYON_K[S.chip] ? sousRayons(sousDispo) : '') +

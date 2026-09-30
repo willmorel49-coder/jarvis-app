@@ -530,6 +530,9 @@
     offiloglive: '../opso/offilog-live-data.js',
     // Prix B2B du catalogue complet : conditions Intégral, protégé (Supabase).
     offiloglivprix: 'v2/offilog-live-prix.js',
+    // 30/09/2026 — accès de test au site Offilog (identifiant + mot de passe), OPSO seul :
+    // réglage PROTÉGÉ, jamais dans le dépôt public (le chemin ici ne sert que de clé).
+    opsooffilogacces: 'v2/opso-offilog-acces.js',
     // Prix PUBLICS Pharmacie des Drakkars (TTC), léger — voir generate_drakkars_pub.js.
     drakkarspub: 'v2/drakkars-pub-data.js',
     // 26/09/2026 — bloc « Le marché » de l'écran Offilog : rang de vente relevé
@@ -649,7 +652,9 @@
     clientsactifs: 'clients-actifs.js',
     argument: 'argument-data.js',
     // 30/09/2026 — réglage du suivi de rémunération OPSO (confidentiel) : chargé par opso/v2 seul.
-    opsocontrat: 'opso-contrat-data.js'
+    opsocontrat: 'opso-contrat-data.js',
+    // 30/09/2026 — accès de test Offilog affiché sur l'écran Offilog d'OPSO (window.OPSO_OFFILOG_ACCES).
+    opsooffilogacces: 'opso-offilog-acces.js'
   };
   var SEAU_PROTEGE = 'donnees-protegees';   // sert encore aux DOCUMENTS privés
 
@@ -1086,7 +1091,7 @@
     // Bumpé 29/09/2026 : v2-offilog.js change (union catalogue OPSO, retrait
     // Pharmazon/achat côté OPSO) — sans ce bump, un appareil ayant déjà l'app
     // ouverte continuerait de servir l'ancien fichier depuis le cache.
-    var V = '?v=20260929k' + (window.V2_VER || '20260915g');
+    var V = '?v=20260930h' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1586,7 +1591,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20260929g';
+    var V = '?v=20260930h';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
