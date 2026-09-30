@@ -1018,7 +1018,12 @@
     CAT_SUGG.forEach(function (c) { if (!seen[c]) { seen[c] = 1; opts += '<option value="' + esc(c) + '">'; } });
     return '<datalist id="mkt-cats">' + opts + '</datalist>';
   }
-  function prodRow(p, i) {
+  function prodRow(p, i, all) {
+    var n = all ? all.length : 1;
+    var fl = function (d, lbl, off) {
+      return '<button type="button" class="mkt-prow-o' + (d < 0 ? ' mkt-prow-up' : '') + '"' + (off ? ' disabled' : '') + ' onclick="V2.mkt.moveProduct(' + i + ',' + d + ')" title="' + lbl + '" aria-label="' + lbl + ' : ' + esc(p.name || 'ce produit') + '">' + ICO('chev', 14, 2.2) + '</button>';
+    };
+    var ordre = n > 1 ? '<span class="mkt-prow-ord">' + fl(-1, 'Monter', i === 0) + fl(1, 'Descendre', i === n - 1) + '</span>' : '';
     var img = p.img
       ? '<span class="mkt-prow-img" style="background-image:url(' + esc(p.img) + ')"></span>'
       : '<span class="mkt-prow-img mkt-prow-pill">' + ICO('pill', 18, 1.6) + '</span>';
@@ -1033,6 +1038,7 @@
       '</div>' +
       '<label class="mkt-prow-f"><span>Prix €</span><input type="number" inputmode="decimal" step="0.01" min="0" value="' + (p.price != null && p.price !== 0 ? p.price : '') + '" aria-label="Prix" oninput="V2.mkt.setProd(' + i + ',\'price\',this.value)"></label>' +
       '<label class="mkt-prow-f"><span>Abandon %</span><input type="number" inputmode="decimal" step="0.1" min="0" value="' + (p.remise != null && p.remise !== 0 ? p.remise : '') + '" aria-label="Abandon de marge" oninput="V2.mkt.setProd(' + i + ',\'remise\',this.value)"></label>' +
+      ordre +
       '<button type="button" class="mkt-prow-x" onclick="V2.mkt.removeProduct(' + i + ')" title="Retirer" aria-label="Retirer ce produit de la feuille">' + ICO('close', 15, 2) + '</button>' +
     '</div>';
   }
@@ -1560,7 +1566,9 @@
             (showPrice ? thh('PPHT', 'right') : '') + (showRemise ? thh('Abandon', 'right') : '') + (showPrice ? thh('Net IP', 'right') : '') +
           '</tr></thead><tbody>' + rows + '</tbody></table>'
       : '<div style="text-align:center;color:#9AA1B2;font-size:13px;padding:40px">Aucun produit.</div>';
-    var footDefaut = 'Prix nets HT indicatifs · ' + dateStr;
+    // Pauline (remontée ea89d1f9) : moins d'informations en bas de page. Le type et la date sont déjà dans l'en-tête ;
+    // le pied ne garde que la mention utile, et disparaît s'il n'a rien à dire.
+    var footDefaut = showPrice ? 'Prix nets HT indicatifs' : '';
     var footer = (it.footer && it.footer.trim()) ? esc(it.footer.trim()) : esc(footDefaut);
     // ── En-tête selon le modèle : bandeau plein (band), filet de couleur (slim), sobre (plain) ──
     var ink = band ? '#fff' : '#10131C', mut = band ? 'rgba(255,255,255,.85)' : '#737A8C', accroCol = band ? 'rgba(255,255,255,.95)' : '#4A5164';
@@ -1586,8 +1594,10 @@
     return '<div style="font-family:Satoshi,Inter,Arial,sans-serif;width:794px;box-sizing:border-box;padding:36px 38px;background:' + bg + ';color:#10131C;position:relative">' +
         header +
         '<div>' + body + '</div>' +
-        '<div style="margin-top:26px;padding-top:14px;border-top:1px solid rgba(16,19,28,.1);display:flex;justify-content:space-between;gap:14px;font-size:9px;color:#737A8C;text-transform:uppercase;letter-spacing:.05em">' +
-          '<span>Intégral Pharma · ' + esc(t.plural) + '</span><span style="text-align:right;min-width:140px"' + zoneAttrs(edit, 'footer', 'Mentions', { ph: footDefaut }) + '>' + (edit ? esc((it.footer || '').trim()) : footer) + '</span></div>' +
+        (edit || footer
+          ? '<div style="margin-top:26px;padding-top:12px;border-top:1px solid rgba(16,19,28,.1);text-align:right;font-size:9px;color:#737A8C;letter-spacing:.02em">' +
+              '<span style="display:inline-block;min-width:140px"' + zoneAttrs(edit, 'footer', 'Mentions', { ph: footDefaut || 'Mention en pied (facultatif)' }) + '>' + (edit ? esc((it.footer || '').trim()) : footer) + '</span></div>'
+          : '') +
       '</div>';
   }
   // ── Onglet « Apparence » du panneau (lot 5) : de vrais interrupteurs bleu pâle, les couleurs de la FEUILLE rangées
@@ -2077,6 +2087,14 @@
       editing.products.push(p); refreshProducts(); renderPickList();
     },
     removeProduct: function (i) { if (editing) { editing.products.splice(i, 1); refreshProducts(); } },
+    // Pauline (remontée ea89d1f9) : « déplacer » = changer l'ordre des produits, une place à la fois.
+    moveProduct: function (i, d) {
+      if (!editing) return; var j = i + d, L = editing.products;
+      if (j < 0 || j >= L.length) return;
+      var x = L[i]; L[i] = L[j]; L[j] = x; refreshProducts();
+      var b = document.querySelectorAll('#mkt-prodlist .mkt-prow')[j]; b = b && b.querySelector(d < 0 ? '.mkt-prow-up' : '.mkt-prow-o:not(.mkt-prow-up)');
+      if (b && !b.disabled) b.focus();
+    },
     save: function () {
       if (!editing) return;
       if (!editing.title || !editing.title.trim()) { editing.title = (TYPES[editing.type] || TYPES.support).plural + ' du ' + new Date().toLocaleDateString('fr-FR'); }
@@ -3117,6 +3135,13 @@
       '.mkt-prow-cati::placeholder{color:var(--muted-2);font-weight:500}',
       '.mkt-prow-price{font-size:14px;font-weight:800;color:var(--ip-blue);flex-shrink:0}',
       '.mkt-prow-x{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--muted-2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.16s var(--ease)}',
+      '.mkt-prow-ord{display:flex;flex-direction:column;flex-shrink:0;width:36px;height:44px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--card)}',
+      '.mkt-prow-o{flex:1;display:flex;align-items:center;justify-content:center;padding:0;border:0;background:none;color:var(--muted-2);cursor:pointer}',
+      '.mkt-prow-o+.mkt-prow-o{border-top:1px solid var(--line)}',
+      '.mkt-prow-o svg{transform:rotate(90deg)}.mkt-prow-o.mkt-prow-up svg{transform:rotate(-90deg)}',
+      '.mkt-prow-o:hover:not(:disabled){color:var(--ip-blue,#0050E6);background:color-mix(in srgb,currentColor 8%,transparent)}',
+      '.mkt-prow-o:disabled{opacity:.3;cursor:default}',
+      '.mkt-prow-o:focus-visible{outline:2px solid var(--ip-blue,#0050E6);outline-offset:-2px}',
       '.mkt-prow-x:hover{color:var(--c-rose);border-color:color-mix(in srgb,var(--c-rose) 40%,var(--line))}',
       // Sélecteur = explorateur de catalogue : rail de facettes à gauche,
       // résultats seuls défilent, pied collant. Plein écran sous 640 px.
@@ -3439,7 +3464,8 @@
       '.mke .mkt-prow{flex-wrap:wrap;align-items:flex-start;gap:8px 12px;padding:8px 0;border-bottom:1px solid var(--mk-trait)}',
       '.mke .mkt-prow-img{width:44px;height:44px;border-radius:10px;border-color:var(--mk-trait)}',
       '.mke .mkt-prow-pill{color:var(--mk-encre2);background:var(--mk-groupe)}',
-      '.mke .mkt-prow-main{order:1;flex:1 1 calc(100% - 112px);min-width:0}',
+      '.mke .mkt-prow-main{order:1;flex:1 1 calc(100% - 172px);min-width:0}',
+      '.mke .mkt-prow-ord{order:2}',
       '.mke .mkt-prow-x{order:2;width:44px;height:44px;border:0;border-radius:12px;background:none;color:var(--mk-attenue)}',
       '.mke .mkt-prow-f{order:3;flex:1 1 40%;width:auto;display:none}',
       '.mke .mkt-prow-cati{display:none}',
