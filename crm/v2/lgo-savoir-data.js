@@ -250,7 +250,7 @@ window.LGO_SAVOIR = {
      "u": "https://intercom.help/smart-rx/fr/articles/13534347-la-liste-des-catalogues-des-accords-laboratoires",
      "k": "aide",
      "a": "Smart RX",
-     "d": "La liste des partenaires dont le catalogue est diffusé directement dans le logiciel."
+     "d": "La liste des partenaires dont le catalogue est diffusé directement dans le logiciel. Intégral Pharma y figure, sous le nom « INTEGRALPHARMAPC »."
     },
     {
      "t": "Intégrer un catalogue fournisseur à la main",
