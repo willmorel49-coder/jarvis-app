@@ -33,7 +33,8 @@
   // Escale se reconnaît à `commercial` ∈ cette liste, ou = 'Escale' (Alexandre).
   V2.ESCALE_COMMS = ['Guy', 'Tiffany', 'Philippe', 'Germain'];
   // 30/09/2026 — seuls comptes admis dans l'espace OPSO (opso/v2). claude-test = compte des preuves.
-  V2.OPSO_ACCES = ['emmanuel.noblanc@normandiepharma.fr', 'william.morel@me.com', 'claude-test@integralpharma.fr'];
+  // 01/10/2026 — Will : « Pascale Prieto doit avoir accès à l'app OPSO » (direction régionale).
+  V2.OPSO_ACCES = ['emmanuel.noblanc@normandiepharma.fr', 'william.morel@me.com', 'pascale.prieto@integralpharma.fr', 'claude-test@integralpharma.fr'];
   V2.estCommEscale = function (c) { c = String(c || ''); return c === 'Escale' || V2.ESCALE_COMMS.indexOf(c) >= 0; };
   // ventes du commercial filtré (ou toutes)
   // 11/09/2026 — perf : mémorisé sur (V2.sales, V2.commFilter). Le Pilotage

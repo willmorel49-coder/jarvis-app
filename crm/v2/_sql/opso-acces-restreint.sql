@@ -4,6 +4,7 @@
 -- test Offilog) ne se lisent plus qu'avec ces comptes. claude-test reste
 -- autorisé : c'est le compte des preuves, banni hors des contrôles.
 -- Même liste côté app : OPSO_ACCES dans crm/v2/v2-boot.js.
+-- 01/10/2026 — Will : « Pascale Prieto doit avoir accès à l'app OPSO ».
 create or replace function public.jarvis_acces_opso()
 returns boolean language sql stable security definer set search_path to 'public'
 as $$
@@ -12,6 +13,7 @@ as $$
     where u.id = auth.uid()
       and lower(u.email) in ('emmanuel.noblanc@normandiepharma.fr',
                              'william.morel@me.com',
+                             'pascale.prieto@integralpharma.fr',
                              'claude-test@integralpharma.fr'))
 $$;
 
