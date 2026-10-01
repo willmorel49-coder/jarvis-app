@@ -12,6 +12,8 @@
    onglets, « À compléter » comme entrée de la liste) d'après la maquette m4 choisie par Will.
    01/10/2026 : 4e onglet « Se former » — les ressources à ouvrir en premier pour maîtriser le logiciel
    (window.LGO_SAVOIR, lgo-savoir-data.js, généré par ~/lgo-savoir-2026-10-01/vers-app.py). Liens sortants.
+   01/10/2026 : entrée « PharmaML » en bas de la colonne de gauche — ce qui est commun à tous les logiciels
+   (détail sans onglets, comme « À compléter »). Route V2.go('lgo','pml').
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -114,11 +116,11 @@
 
   // La liste : ceux qui ont des pharmacies d'abord, du plus présent au moins présent ;
   // ceux qui n'en ont pas restent accessibles ; « À compléter » ferme la liste.
-  function liste(L, R, c, cur, acActif, bump) {
+  function liste(L, R, c, cur, spec, bump) {
     var max = Math.max.apply(null, L.map(function (l) { return c[l.s]; }).concat([1]));
     var avec = L.filter(function (l) { return c[l.s]; }), sansPh = L.filter(function (l) { return !c[l.s]; });
     var go = function (s) { return ' onclick="V2.go(\'lgo\',\'' + s + '\')"'; };
-    var on = function (s) { return ' aria-current="' + (!acActif && cur && cur.s === s) + '"'; };
+    var on = function (s) { return ' aria-current="' + (!spec && cur && cur.s === s) + '"'; };
     var h = avec.map(function (l, i) {
       var n = c[l.s];
       return '<button type="button" class="lgo-l" data-s="' + l.s + '"' + on(l.s) + go(l.s) + '>' +
@@ -136,12 +138,14 @@
       h += '<div class="lgo-sep"></div><div class="lgo-l ac att" role="status"><span class="lgo-l-n">À compléter</span>' +
         '<span class="lgo-l-e">Lecture des logiciels saisis par l\'équipe…</span></div>';
     } else if (R.sans.length) {
-      h += '<div class="lgo-sep"></div><button type="button" class="lgo-l ac" data-s="ac" aria-current="' + acActif + '"' + go('ac') + '>' +
+      h += '<div class="lgo-sep"></div><button type="button" class="lgo-l ac" data-s="ac" aria-current="' + (spec === 'ac') + '"' + go('ac') + '>' +
         '<span class="lgo-l-n">À compléter</span><span class="lgo-l-e">Logiciel inconnu, à renseigner</span>' +
         '<span class="lgo-l-c"><b class="' + bump('ac').trim() + '">' + nf(R.sans.length) + '</b><small>pharmacies</small></span>' +
         '<span class="lgo-l-b"><i style="width:' + Math.max(4, Math.round(R.sans.length * 100 / max)) + '%"></i></span>' +
         '<span class="lgo-chev">' + SVG.chev + '</span></button>';
     }
+    h += '<div class="lgo-grp">Commun à tous les logiciels</div><button type="button" class="lgo-l pml" data-s="pml" aria-current="' + (spec === 'pml') + '"' + go('pml') + '>' +
+      '<span class="lgo-l-n">PharmaML</span><span class="lgo-l-e">Le canal des commandes</span><span class="lgo-chev">' + SVG.chev + '</span></button>';
     return h;
   }
 
@@ -152,6 +156,7 @@
   var RETOUR = '<button type="button" class="lgo-backm" onclick="V2.go(\'lgo\')">' + SVG.retour + 'Logiciels</button>';
 
   function entete(cur, R, n) {
+    if (S.ctx && S.ctx.pml) return RETOUR + '<div class="lgo-mh"><div><h2>PharmaML</h2><p>Commun à tous les logiciels · le canal par lequel la pharmacie envoie ses commandes</p></div></div>';
     if (!cur) {
       var k = R.sans.length;
       return RETOUR + '<div class="lgo-mh"><div><h2>À compléter</h2><p>' + (S.saisie ? pl(k, 'pharmacie') + ' dont le logiciel est inconnu' + (R.total ? ' · ' + Math.round(k * 100 / R.total) + ' % ' + (R.miennes ? 'de votre secteur' : 'du réseau') : '') : 'Lecture des logiciels saisis par l\'équipe…') + '</p></div></div>';
@@ -259,8 +264,50 @@
       }).join('') + '<p class="lgo-vide" hidden>Aucune pharmacie ne correspond.</p></div>';
   }
 
+  // PharmaML : ce qui ne dépend pas du logiciel. Aucun code de grossiste ici, seulement le nom des éléments.
+  var PML = {
+    fournit: [
+      ['Le code du répartiteur', 'Il désigne le grossiste. Certains logiciels l\'appellent « code société ».'],
+      ['Le code de l\'établissement', 'Il désigne le site qui livre la pharmacie.'],
+      ['L\'identifiant de l\'officine', 'Il désigne la pharmacie : son code CIP, ou un numéro donné par le grossiste.'],
+      ['La clé de l\'officine', 'À saisir telle qu\'elle est fournie, majuscules et minuscules comprises.']
+    ],
+    ou: [
+      ['winpharma', 'Winpharma', 'Listes › Fournisseurs › fiche du fournisseur › onglet « 6.Pharma ML ».'],
+      ['smartrx', 'Smart RX', 'Roue crantée › Fournisseurs › fiche du fournisseur › cadre « Canal de transmission ».'],
+      ['leo', 'LEO', 'Référentiels › Fournisseurs › onglet « 2.Paramétrage transmission », puis « 8.PharmaML ».'],
+      ['lgpi', 'LGPI et id.', 'Aucune procédure publique trouvée.']
+    ],
+    liens: [
+      { k: 'aide', a: 'Site officiel de la norme', t: 'Qu\'est-ce que la norme PharmaML ?', u: 'https://www.pharma-ml.fr/index.php/qu-est-ce-que-la-norme-pharma-ml', d: 'La présentation de la norme, en une page.' },
+      { k: 'aide', a: 'Winpharma', t: 'Paramétrer PharmaML dans la fiche fournisseur', u: 'https://www.winpharma.com/parametrage-pharma-ml-fiche-fournisseur/', d: 'Chaque champ de l\'onglet, avec les autres noms qu\'il peut porter.' },
+      { k: 'aide', a: 'Smart RX', t: 'Modifier les paramètres PharmaML d\'un fournisseur', u: 'https://intercom.help/smart-rx/fr/articles/14284924-comment-modifier-les-parametres-pharma-ml-d-un-fournisseur', d: 'Le réglage dans le nouvel écran, et que faire quand un fournisseur manque dans la liste.' }
+    ]
+  };
+  function panelPml() {
+    var L = data().lgo || [], jour = jourLong((window.LGO_SAVOIR || {}).maj);
+    var titre = function (t) { return '<h3 class="lgo-sv-h">' + t + '</h3>'; };
+    return '<p class="lgo-pm-i">PharmaML est la norme d\'échange entre le logiciel de la pharmacie et ses fournisseurs : la commande part du logiciel, et la réponse y revient (disponibilité de chaque produit, bon de livraison). ' +
+        'Elle est la même dans tous les logiciels : seul l\'écran où elle se règle change.</p>' +
+      titre('Ce que le grossiste fournit') +
+      '<ul class="lgo-pm-l">' + PML.fournit.map(function (x) { return '<li><b>' + x[0] + '</b><span>' + x[1] + '</span></li>'; }).join('') + '</ul>' +
+      '<p class="lgo-mini">L\'adresse du serveur du grossiste n\'est pas à saisir : elle est fournie avec le logiciel.</p>' +
+      titre('Où cela se règle') +
+      '<ul class="lgo-pm-l">' + PML.ou.map(function (x) {
+        var l = L.filter(function (y) { return y.s === x[0]; })[0];
+        return '<li><b>' + x[1] + '</b><span>' + x[2] + (l && savoir(l) ? '<button type="button" class="lgo-pm-a" onclick="V2.lgoOuvrirSur=\'sav\';V2.go(\'lgo\',\'' + x[0] + '\')">Se former sur ' + esc(l.nom) + SVG.fleche + '</button>' : '') + '</span></li>';
+      }).join('') + '</ul>' +
+      titre('Si le grossiste n\'apparaît pas dans le logiciel') +
+      '<div class="lgo-note lgo-pm-n">Le pharmacien choisit son fournisseur dans une liste tenue par l\'éditeur du logiciel. Un grossiste absent de cette liste ne peut pas recevoir de commande. ' +
+        'Dans Smart RX, le pharmacien ne peut pas l\'ajouter lui-même : la demande se fait auprès de l\'assistance du logiciel.</div>' +
+      titre('Pour aller plus loin') +
+      '<div class="lgo-sv-l">' + PML.liens.map(ligneSav).join('') + '</div>' +
+      '<p class="lgo-mini">Chaque ligne ouvre un site extérieur, dans un nouvel onglet.' + (jour ? ' Liens ouverts et vérifiés le ' + jour + '.' : '') + '</p>';
+  }
+
   function panneau() {
     var x = S.ctx; if (!x) return '';
+    if (x.pml) return panelPml();
     if (!x.cur) return panelAc(x.R);
     return S.tab === 'pas' ? panelPas(x.cur) : S.tab === 'fic' ? panelFic(x.cur) : (S.tab === 'sav' && savoir(x.cur)) ? panelSav(x.cur) : panelPh(x.cur, x.R);
   }
@@ -424,6 +471,17 @@
       '.lgo-sv b{display:block;margin-top:6px;font-size:14.5px;font-weight:700;line-height:1.35;overflow-wrap:anywhere}',
       '.lgo-sv-d{display:block;margin-top:3px;font-size:13.5px;color:#475569;line-height:1.5}',
       '.lgo-sv>svg{position:absolute;right:14px;top:50%;margin-top:-7px;color:#0050E6;transition:transform .2s}.lgo-sv:hover>svg{transform:translateX(3px)}',
+      /* PharmaML, commun à tous */
+      '.lgo-l.pml{min-height:56px;grid-template-columns:minmax(0,1fr);grid-template-areas:"n" "e"}',
+      '.lgo-pm-i{margin:0;font-size:14.5px;line-height:1.6;color:#1b2430;max-width:70ch}',
+      '.lgo-pm-l{list-style:none;margin:0;padding:0;border:1px solid #DCE5F5;border-radius:14px;background:#fff}',
+      '.lgo-pm-l li{display:grid;grid-template-columns:190px minmax(0,1fr);gap:2px 16px;padding:11px 14px;font-size:14px;line-height:1.5;color:#475569}',
+      '.lgo-pm-l li+li{border-top:1px solid #EDF1F8}',
+      '.lgo-pm-l b{font-weight:700;color:#0B1B3A}',
+      '.lgo-pm-l span{min-width:0}',
+      '.lgo-pm-a{display:flex;align-items:center;gap:6px;min-height:44px;margin:2px 0 -8px;padding:0;border:0;background:none;font:inherit;font-size:13.5px;font-weight:700;color:#0034A0;cursor:pointer;border-radius:8px}',
+      '.lgo-pm-a svg{flex:none;color:#0050E6;transition:transform .2s}.lgo-pm-a:hover svg{transform:translateX(3px)}',
+      '.lgo-pm-n{margin-top:0}',
       '.lgo-shell :focus-visible{outline:2px solid #0050E6;outline-offset:2px}',
       '@keyframes lgo-pousse-barre{from{transform:scaleX(0)}to{transform:none}}',
       '.lgo-neuf .lgo-barre i{animation:lgo-pousse-barre .7s var(--ease,ease) both}',
@@ -438,6 +496,8 @@
       '.lgo-l{min-height:60px;grid-template-columns:minmax(0,1fr) auto 18px;grid-template-areas:"n c v" "e c v" "b b v"}',
       '.lgo-l.zero{grid-template-areas:"n c v" "e c v"}',
       '.lgo-l.att{grid-template-columns:minmax(0,1fr);grid-template-areas:"n" "e"}',
+      '.lgo-l.pml{min-height:60px;grid-template-columns:minmax(0,1fr) 18px;grid-template-areas:"n v" "e v"}',
+      '.lgo-pm-l li{grid-template-columns:minmax(0,1fr)}',
       '.lgo-chev{display:flex;grid-area:v;align-self:center;justify-self:end;color:#8693AD}',
       '.lgo-main-head{padding:12px 16px 0}',
       '.lgo-backm{display:inline-flex;align-items:center;gap:4px;min-height:44px;margin:0 0 2px -10px;padding:0 12px 0 6px;border:0;background:none;font:inherit;font-size:14.5px;font-weight:700;color:#0034A0;cursor:pointer;border-radius:10px}',
@@ -545,13 +605,13 @@
       if (!L0.length) { root.innerHTML = top + '<div class="v2-wrap"><div class="v2-empty"><div class="v2-empty-t">Données des logiciels indisponibles</div></div></div>'; return; }
       var R = repartition();
       var L = L0.slice().sort(function (a, b) { return (R.par[b.s] || []).length - (R.par[a.s] || []).length; });   // tri stable : le plus présent d'abord
-      var ac = param === 'ac';
+      var ac = param === 'ac', pml = param === 'pml', spec = ac ? 'ac' : pml ? 'pml' : '';
       var trouve = L.filter(function (l) { return l.s === param; })[0];
-      var cur = ac ? null : (trouve || L[0]);   // sans choix : le logiciel le plus présent (ordinateur)
-      var ecran = (ac || trouve) ? 'detail' : 'liste';   // téléphone : sans choix, on voit la liste
+      var cur = spec ? null : (trouve || L[0]);   // sans choix : le logiciel le plus présent (ordinateur)
+      var ecran = (spec || trouve) ? 'detail' : 'liste';   // téléphone : sans choix, on voit la liste
       var c = comptes(L, R), n = cur ? c[cur.s] : 0;
       // Le mouvement ne se joue que quand quelque chose change vraiment (pas à chaque redessin).
-      var cle = ac ? 'ac' : cur.s, neuf = !S.vu, change = S.vu !== cle, ecranChange = S.ecran !== null && S.ecran !== undefined && S.ecran !== ecran;
+      var cle = spec || cur.s, neuf = !S.vu, change = S.vu !== cle, ecranChange = S.ecran !== null && S.ecran !== undefined && S.ecran !== ecran;
       var bump = function (k) { return (S.nb && S.nbScope === R.miennes && S.nb[k] !== undefined && S.nb[k] !== c[k]) ? ' lgo-bump' : ''; };
       if (change) { S.tab = 'ph'; S.q = {}; }
       // Arrivée depuis « Voir le pas-à-pas » (Transmettre) : on ouvre l'onglet demandé, une seule fois.
@@ -559,13 +619,13 @@
       // Positions de défilement : la liste de gauche reste en place ; le contenu aussi tant que l'on reste sur le même logiciel.
       var oS = root.querySelector('.lgo-side-list'), oP = root.querySelector('.lgo-panel');
       var sv = { s: oS ? oS.scrollTop : 0, p: (oP && !change) ? oP.scrollTop : 0, w: (!change && !ecranChange && oP) ? window.scrollY : null };
-      S.ctx = { cur: cur, R: R };
+      S.ctx = { cur: cur, R: R, pml: pml };
       root.innerHTML = top + '<div class="v2-wrap lgo-shell' + (neuf ? ' lgo-neuf' : '') + '" data-ecran="' + ecran + '">' +
         '<section class="lgo-side' + (ecranChange && ecran === 'liste' ? ' lgo-revient' : '') + '" aria-label="Logiciels">' + tete(L, R, c, bump) +
-          '<nav class="lgo-side-list" aria-label="Choisir un logiciel">' + liste(L, R, c, cur, ac, bump) + '</nav></section>' +
+          '<nav class="lgo-side-list" aria-label="Choisir un logiciel">' + liste(L, R, c, cur, spec, bump) + '</nav></section>' +
         '<section class="lgo-main' + (ecranChange && ecran === 'detail' ? ' lgo-arrive' : '') + '" aria-label="Détail">' +
           '<div class="lgo-main-head">' + entete(cur, R, n) + '</div>' + (cur ? onglets(cur, n) : '') +
-          '<div class="lgo-panel' + (change ? ' lgo-in' : '') + '" id="lgo-panel" data-t="' + (cur ? S.tab : 'ac') + '"' + (cur ? ' role="tabpanel"' : '') + '>' + panneau() + '</div></section>' +
+          '<div class="lgo-panel' + (change ? ' lgo-in' : '') + '" id="lgo-panel" data-t="' + (cur ? S.tab : spec) + '"' + (cur ? ' role="tabpanel"' : '') + '>' + panneau() + '</div></section>' +
       '</div>';
       S.vu = cle; S.ecran = ecran; S.nb = c; S.nbScope = R.miennes;
       mesurerTop();
