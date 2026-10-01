@@ -3658,7 +3658,7 @@
           TX_LGO.map(function (l) { return '<option value="' + l.s + '"' + (l.s === tx.lgo.s ? ' selected' : '') + '>' + esc(l.nom) + '</option>'; }).join('') +
         '</select><div class="tx-style-b tx-lgo-n">' +
           TX_LGO_N.map(function (n) { return '<button type="button" class="v2-seg' + (n === tx.lgo.n ? ' on' : '') + '"' + dis + ' onclick="V2.pharmaTxLgoN(' + n + ')">' + n + ' produits</button>'; }).join('') +
-        '</div>' + (tx.lgo.s && !tx.modele ? '<a class="tx-lgo-pas" onclick="V2.pharmaTxClose();V2.go(\'lgo\',\'' + tx.lgo.s + '\')">Voir le pas-à-pas ' + esc(txLgoNom(tx.lgo.s)) + ' ›</a>' : '') +
+        '</div>' + (tx.lgo.s && !tx.modele ? '<a class="tx-lgo-pas" onclick="V2.pharmaTxClose();V2.lgoOuvrirSur=\'pas\';V2.go(\'lgo\',\'' + tx.lgo.s + '\')">Voir le pas-à-pas ' + esc(txLgoNom(tx.lgo.s)) + ' ›</a>' : '') +
         '</div>' + of('lgo').map(row).join('') + '</div>';
     }
     var lib = of('lib');

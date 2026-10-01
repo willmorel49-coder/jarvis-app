@@ -509,6 +509,8 @@
       var cle = ac ? 'ac' : cur.s, neuf = !S.vu, change = S.vu !== cle, ecranChange = S.ecran !== null && S.ecran !== undefined && S.ecran !== ecran;
       var bump = function (k) { return (S.nb && S.nbScope === R.miennes && S.nb[k] !== undefined && S.nb[k] !== c[k]) ? ' lgo-bump' : ''; };
       if (change) { S.tab = 'ph'; S.q = {}; }
+      // Arrivée depuis « Voir le pas-à-pas » (Transmettre) : on ouvre l'onglet demandé, une seule fois.
+      if (V2.lgoOuvrirSur) { if (cur && ONGLETS.indexOf(V2.lgoOuvrirSur) >= 0) S.tab = V2.lgoOuvrirSur; V2.lgoOuvrirSur = null; }
       // Positions de défilement : la liste de gauche reste en place ; le contenu aussi tant que l'on reste sur le même logiciel.
       var oS = root.querySelector('.lgo-side-list'), oP = root.querySelector('.lgo-panel');
       var sv = { s: oS ? oS.scrollTop : 0, p: (oP && !change) ? oP.scrollTop : 0, w: (!change && !ecranChange && oP) ? window.scrollY : null };
