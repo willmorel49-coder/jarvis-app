@@ -68,7 +68,7 @@
           '<a href="' + b + '.csv" download>CSV</a><a href="' + b + '.xlsx" download>Excel</a></div>';
       }).join('') + '</div>' +
       '<p class="lgo-mini">Produits les plus commandés du réseau (' + esc(data().periode || '') + '), hors génériques. ' +
-        'Le CSV s\'importe ; l\'Excel a les mêmes colonnes, pour consulter.</p>' +
+        'Le CSV est au format exact du logiciel (colonnes, ordre, décimales), au prix net ; l\'Excel a les mêmes colonnes avec une ligne de titre, pour consulter.</p>' +
       '<div class="lgo-envoi"><b>Pour l\'envoyer à une pharmacie</b>' +
         '<span>Sa fiche › « Choisir quoi lui transmettre » › <i>Catalogue pour son logiciel</i> : les trois pièces partent ensemble.</span></div>' +
     '</div>';
