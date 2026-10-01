@@ -10,6 +10,8 @@
    officine, qui fait foi), puis annuaire, puis base clients.
    01/10/2026 : écran refait en deux colonnes (liste des logiciels à gauche, détail à droite en trois
    onglets, « À compléter » comme entrée de la liste) d'après la maquette m4 choisie par Will.
+   01/10/2026 : 4e onglet « Se former » — les ressources à ouvrir en premier pour maîtriser le logiciel
+   (window.LGO_SAVOIR, lgo-savoir-data.js, généré par ~/lgo-savoir-2026-10-01/vers-app.py). Liens sortants.
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -79,7 +81,8 @@
   };
   // Une seule couleur : le bleu de la marque, du plus dense (logiciel le plus présent) au plus léger.
   var TEINTES = ['#0050E6', '#3E7DF0', '#7CA7F6', '#A9C6FA', '#CADBFC', '#DDE8FD', '#E7EEFD', '#EEF3FE'];
-  var ONGLETS = ['ph', 'pas', 'fic'];
+  var ONGLETS = ['ph', 'pas', 'fic', 'sav'];
+  function savoir(l) { var d = (window.LGO_SAVOIR || {}).lgo || {}; return (l && d[l.s] && d[l.s].r && d[l.s].r.length) ? d[l.s] : null; }
 
   // ── Colonne de gauche ──────────────────────────────────────────────
   // Nombres affichés à gauche : un seul calcul, pour la tête, la liste et le repérage des changements.
@@ -159,7 +162,8 @@
   function onglets(cur, n) {
     var nbFic = 1 + 2 * (data().tailles || [200, 300, 500]).length;
     var t = [['ph', 'Pharmacies', nf(n)], ['pas', 'Pas-à-pas', pl(cur.etapes.length, 'étape')], ['fic', 'Fichiers', String(nbFic)]];
-    return '<div class="lgo-tabs-w"><div class="lgo-tabs" role="tablist" aria-label="Contenu du logiciel" style="--i:' + Math.max(0, ONGLETS.indexOf(S.tab)) + '"><i class="lgo-tabs-i" aria-hidden="true"></i>' + t.map(function (x) {
+    var sav = savoir(cur); if (sav) t.push(['sav', 'Se former', String(sav.r.length)]);
+    return '<div class="lgo-tabs-w"><div class="lgo-tabs" role="tablist" aria-label="Contenu du logiciel" style="--n:' + t.length + ';--i:' + Math.max(0, ONGLETS.indexOf(S.tab)) + '"><i class="lgo-tabs-i" aria-hidden="true"></i>' + t.map(function (x) {
       return '<button type="button" class="lgo-tab" role="tab" data-t="' + x[0] + '" aria-selected="' + (S.tab === x[0]) + '" tabindex="' + (S.tab === x[0] ? 0 : -1) + '" onclick="V2.lgoOnglet(\'' + x[0] + '\')" onkeydown="V2.lgoOngletTouche(event)">' + x[1] + '<span class="lgo-n">' + x[2] + '</span></button>';
     }).join('') + '</div></div>';
   }
@@ -216,6 +220,29 @@
         'Le CSV est au format exact du logiciel (colonnes, ordre, décimales), au prix net ; l\'Excel a les mêmes colonnes avec une ligne de titre.</p>';
   }
 
+  // Se former : les ressources à ouvrir en premier pour ce logiciel. Chaque ligne ouvre un site extérieur.
+  var GENRE = { video: 'Vidéo', pdf: 'PDF', aide: 'Aide officielle', page: 'Page' };
+  function jourLong(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); if (!m) return '';
+    var d = new Date(+m[1], +m[2] - 1, +m[3]);
+    return (+m[3] === 1 ? '1er' : String(+m[3])) + ' ' + d.toLocaleDateString('fr-FR', { month: 'long' }) + ' ' + m[1];
+  }
+  function ligneSav(r) {
+    return '<a class="lgo-sv" data-k="' + esc(r.k) + '" href="' + esc(r.u) + '" target="_blank" rel="noopener noreferrer">' +
+      '<span class="lgo-sv-m"><span class="lgo-sv-k">' + (GENRE[r.k] || GENRE.page) + '</span>' + (r.x ? '<span class="lgo-sv-x">Accès réservé</span>' : '') + '<span class="lgo-sv-a">' + esc(r.a || '') + '</span></span>' +
+      '<b>' + esc(r.t) + '</b>' + (r.d ? '<span class="lgo-sv-d">' + esc(r.d) + '</span>' : '') + SVG.fleche + '</a>';
+  }
+  function panelSav(l) {
+    var sv = savoir(l); if (!sv) return '';
+    var lire = sv.r.filter(function (r) { return r.k !== 'video'; }), voir = sv.r.filter(function (r) { return r.k === 'video'; });
+    var bloc = function (titre, L) { return L.length ? '<h3 class="lgo-sv-h">' + titre + '<span class="lgo-n">' + L.length + '</span></h3><div class="lgo-sv-l">' + L.map(ligneSav).join('') + '</div>' : ''; };
+    var jour = jourLong((window.LGO_SAVOIR || {}).maj);
+    return '<p class="lgo-mini lgo-sv-t">Pour être à l\'aise sur ' + esc(l.nom) + ' devant le pharmacien : ' + (sv.r.length > 1 ? 'les ' + sv.r.length + ' ressources à ouvrir en premier' : 'la ressource à ouvrir en premier') + '.</p>' +
+      (sv.note ? '<div class="lgo-note lgo-sv-note">' + esc(sv.note) + '</div>' : '') +
+      bloc('À lire', lire) + bloc('À regarder', voir) +
+      '<p class="lgo-mini">Chaque ligne ouvre un site extérieur, dans un nouvel onglet.' + (jour ? ' Liens ouverts et vérifiés le ' + jour + '.' : '') + '</p>';
+  }
+
   // Pharmacies sans logiciel connu : on le renseigne ici, et c'est enregistré dans leur fiche
   // (Infos officine › Logiciel), comme si on l'avait saisi là-bas. Rien n'est deviné.
   function panelAc(R) {
@@ -235,7 +262,7 @@
   function panneau() {
     var x = S.ctx; if (!x) return '';
     if (!x.cur) return panelAc(x.R);
-    return S.tab === 'pas' ? panelPas(x.cur) : S.tab === 'fic' ? panelFic(x.cur) : panelPh(x.cur, x.R);
+    return S.tab === 'pas' ? panelPas(x.cur) : S.tab === 'fic' ? panelFic(x.cur) : (S.tab === 'sav' && savoir(x.cur)) ? panelSav(x.cur) : panelPh(x.cur, x.R);
   }
 
   function css() {
@@ -299,7 +326,7 @@
       '.lgo-cta{min-height:44px;flex:none;text-decoration:none}',
       '.lgo-tabs-w{flex:none;padding:14px 22px 0;background:#fff}',
       '.lgo-tabs{--i:0;position:relative;display:flex;gap:4px;padding:4px;background:#EEF3FC;border-radius:14px}',
-      '.lgo-tabs-i{position:absolute;top:4px;left:4px;height:calc(100% - 8px);width:calc((100% - 16px)/3);border-radius:10px;background:#fff;box-shadow:0 1px 3px rgba(0,52,160,.18),0 0 0 1px rgba(0,52,160,.05);transform:translateX(calc(var(--i)*(100% + 4px)));transition:transform .3s var(--ease,ease);pointer-events:none}',
+      '.lgo-tabs-i{position:absolute;top:4px;left:4px;height:calc(100% - 8px);width:calc((100% - 4px - var(--n,3)*4px)/var(--n,3));border-radius:10px;background:#fff;box-shadow:0 1px 3px rgba(0,52,160,.18),0 0 0 1px rgba(0,52,160,.05);transform:translateX(calc(var(--i)*(100% + 4px)));transition:transform .3s var(--ease,ease);pointer-events:none}',
       '.lgo-tab{position:relative;z-index:1;flex:1 1 0;min-width:0;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;background:none;border-radius:10px;padding:0 10px;font:inherit;font-size:14px;font-weight:600;color:#586377;cursor:pointer;white-space:nowrap;transition:color .2s}',
       '.lgo-tab:hover{color:#0B1B3A}',
       '.lgo-tab[aria-selected="true"]{color:#0034A0;font-weight:700}',
@@ -380,6 +407,23 @@
       '.lgo-fl a{min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:10px;background:#EEF3FC;color:#0034A0;font-weight:700;font-size:13.5px;text-decoration:none;transition:background .15s,transform .15s}',
       '.lgo-fl a:hover{background:#DCE7FF;transform:translateY(-1px)}',
       '.lgo-fl a.csv{background:#0050E6;color:#fff}.lgo-fl a.csv:hover{background:#0034A0}',
+      /* se former */
+      '.lgo-sv-t{margin:0}',
+      '.lgo-sv-note{margin-top:10px}',
+      '.lgo-sv-h{display:flex;align-items:center;gap:8px;margin:18px 0 8px;font-size:14.5px;font-weight:800;letter-spacing:-.01em;color:#0B1B3A}',
+      '.lgo-sv-l{display:grid;gap:8px}',
+      '.lgo-sv{position:relative;display:block;padding:11px 44px 12px 14px;border:1px solid #DCE5F5;border-radius:14px;background:#fff;text-decoration:none;color:#0B1B3A;min-height:64px;transition:border-color .15s,box-shadow .2s,background .15s}',
+      '.lgo-sv:hover{border-color:#9BC0FF;background:#FAFCFF;box-shadow:0 10px 22px -18px rgba(0,52,160,.6)}',
+      '.lgo-sv-m{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;font-size:13px;color:#586377;line-height:1.3}',
+      '.lgo-sv-k,.lgo-sv-x{flex:none;font-weight:700;border-radius:999px;padding:2px 9px}',
+      '.lgo-sv-k{color:#0034A0;background:#E1EBFF}',
+      '.lgo-sv[data-k="video"] .lgo-sv-k{color:#fff;background:#0050E6}',
+      '.lgo-sv[data-k="pdf"] .lgo-sv-k{color:#fff;background:#C8102E}',
+      '.lgo-sv-x{color:#7A4B00;background:#FFF1D6}',
+      '.lgo-sv-a{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.lgo-sv b{display:block;margin-top:6px;font-size:14.5px;font-weight:700;line-height:1.35;overflow-wrap:anywhere}',
+      '.lgo-sv-d{display:block;margin-top:3px;font-size:13.5px;color:#475569;line-height:1.5}',
+      '.lgo-sv>svg{position:absolute;right:14px;top:50%;margin-top:-7px;color:#0050E6;transition:transform .2s}.lgo-sv:hover>svg{transform:translateX(3px)}',
       '.lgo-shell :focus-visible{outline:2px solid #0050E6;outline-offset:2px}',
       '@keyframes lgo-pousse-barre{from{transform:scaleX(0)}to{transform:none}}',
       '.lgo-neuf .lgo-barre i{animation:lgo-pousse-barre .7s var(--ease,ease) both}',
@@ -406,7 +450,8 @@
       '.lgo-main.lgo-arrive{animation:lgo-arrive .3s var(--ease,ease)}',
       '.lgo-side.lgo-revient{animation:lgo-revient .26s var(--ease,ease)}',
       '}',
-      '@media (max-width:520px){.lgo-tab .lgo-n{display:none}}',
+      '@media (max-width:1100px){.lgo-tab .lgo-n{display:none}}',
+      '@media (max-width:420px){.lgo-tab{padding:0 2px;font-size:13px;gap:0}}',
       '@media (max-width:420px){.lgo-fh,.lgo-fl{grid-template-columns:minmax(0,1fr) 80px 80px}.lgo-send span{display:none}.lgo-send{width:44px;padding:0;justify-content:center}.lgo-acr select{width:136px}}',
       '@media (prefers-reduced-motion:reduce){.lgo-main.lgo-arrive,.lgo-side.lgo-revient,.lgo-panel.lgo-in>*,.lgo-bump,.lgo-neuf .lgo-barre i{animation:none}.lgo-tabs-i,.lgo-prog-b i,.lgo-acr{transition:none}}'
     ].join('\n');
