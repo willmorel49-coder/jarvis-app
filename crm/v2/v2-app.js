@@ -1112,6 +1112,13 @@
       '.g4-rech .g4-ico{color:var(--g-bleu);width:20px;height:20px}',
       '.g4-rech-t{flex:1;min-width:0;font-size:16px;color:var(--g-gris);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.g4-kbd{display:none;font-size:13px;font-weight:700;color:var(--g-gris);background:#F3F5F9;border:1px solid var(--g-filet);border-radius:8px;padding:4px 9px}',
+      '.g4-une{position:relative;overflow:hidden;cursor:pointer;display:flex;align-items:center;gap:14px;min-height:84px;margin:22px 0 0;padding:14px 14px 14px 12px;border-radius:24px;color:var(--g-encre);-webkit-tap-highlight-color:transparent;background:radial-gradient(120% 190% at 100% 0%,rgba(76,136,255,.26) 0%,rgba(76,136,255,0) 58%),linear-gradient(165deg,#FFFFFF 0%,#EEF3FF 100%);box-shadow:inset 0 0 0 1px rgba(0,80,230,.2),inset 0 1px 0 #fff,0 16px 30px -22px rgba(0,52,160,.5);transition:transform .4s var(--g-ressort),box-shadow .3s}',
+      '.g4-une:hover{transform:translateY(-3px);box-shadow:inset 0 0 0 1px rgba(0,80,230,.34),inset 0 1px 0 #fff,0 22px 34px -22px rgba(0,52,160,.6)}',
+      '.g4-une .g4-rond{width:52px;height:52px;box-shadow:none}',
+      '.g4-une:hover .g4-rond,.g4-une:focus-visible .g4-rond{background:var(--g-bleu);color:#fff}',
+      '.g4-une:hover .g4-chev{transform:translateX(5px)}',
+      '.g4-une .g4-tx b{font-family:var(--g-tit);font-weight:800;font-size:18px;letter-spacing:-.02em}',
+      '.g4-une .g4-tx .g4-une-eye{align-self:flex-start;font-style:normal;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#fff;background:var(--g-bleu);border-radius:999px;padding:2px 10px;margin:0 0 6px}',
       '.g4-outils{margin-top:0}',
       '.g4-sommaire{margin:30px 0 0;font-family:var(--g-tit);font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--g-gris);display:flex;align-items:center;gap:12px}',
       '.g4-sommaire::after{content:"";flex:1;height:1px;background:var(--g-filet)}',
@@ -1181,7 +1188,8 @@
       '  .g4-billet{--stub:150px;min-height:124px}',
       '  .g4-rech{margin-left:44px;margin-right:44px}',
       '  .g4-kbd{display:inline-block}',
-      '  .g4-outils{margin-left:44px;margin-right:44px}',
+      '  .g4-outils,.g4-une{margin-left:44px;margin-right:44px}',
+      '  .g4-une{padding:16px 22px 16px 18px}',
       '  .g4-note{margin-left:48px}',
       '  .g4-t1{min-height:150px;padding:26px 30px}',
       '  .g4-t1 .g4-rond{width:84px;height:84px}',
@@ -1415,6 +1423,21 @@
       '<div class="g4-etage g4-e3"><div class="g4-t3g">' + liste.join('') + '</div></div>' +
       '<p class="g4-note">Le code d\'accès de JARVIS Academy se demande à Will — il n\'est écrit nulle part.</p>';
     return h;
+  }
+  // 01/10/2026 — « À la une » : UNE nouveauté annoncée au-dessus de « Vos outils », hors
+  // classement (décision de Will). Temporaire : après `fin`, le bandeau disparaît tout seul
+  // et l'outil ne garde que son rang dans la liste. Jamais en Escale ni en OPSO.
+  var G4_UNE = { page: 'lgo', ico: 'lgo', fin: '2026-10-31',
+    nom: 'Le catalogue, au format de chaque logiciel',
+    ph: 'Winpharma, LGPI, Smart RX, LEO, Pharmaland… le fichier s\'importe tel quel, mode d\'emploi joint.' };
+  function g4UneHtml() {
+    var u = G4_UNE, b = window.V2_BRAND || {}, d = new Date();
+    var jour = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+    if (!u || b.escale || b.opso || !V2.pages[u.page] || jour > u.fin) return '';
+    return '<a class="g4-une g4-a" style="--i:8" role="link" tabindex="0" onclick="V2.go(\'' + u.page + '\')" onkeydown="if(event.key===\'Enter\')this.click()">' +
+      '<span class="g4-rond">' + g4Ico(u.ico, 'g4-ico') + '</span>' +
+      '<span class="g4-tx"><em class="g4-une-eye">Nouveau</em><b>' + esc(u.nom) + '</b><span>' + esc(u.ph) + '</span></span>' +
+      g4Ico('chevron', 'g4-chev g4-ico') + '</a>';
   }
   // Le classement arrive après le premier dessin : on ne remplace que la zone des
   // outils (pas de re-rendu complet, pas de cascade rejouée).
@@ -1718,6 +1741,7 @@
             '<div class="g4-rech g4-a" style="--i:7" role="button" tabindex="0" aria-label="Rechercher une pharmacie, un produit, un outil" onclick="V2.onTopSearch()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();V2.onTopSearch()}">' +
               g4Ico('search', 'g4-ico') + '<span class="g4-rech-t">Officine, produit, outil…</span><span class="g4-kbd" aria-hidden="true">' + MOD + 'K</span></div>' +
             (V2.todo && !todoTuile ? V2.todo.cardHtml() : '') +
+            g4UneHtml() +
             '<div class="g4-outils" id="g4-outils">' + g4OutilsHtml() + '</div>' +
           '</div>';
         g4Apres(root, nbPharma);

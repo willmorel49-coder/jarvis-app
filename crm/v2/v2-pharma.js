@@ -1719,6 +1719,19 @@
     txMail[String(pid)] = mail;
     var btnTx = '<button class="pha-btn pha-btn-w pha-btn-tx" onclick="V2.pharmaTransmettre(\'' + pidSafe + '\')" title="listings, catalogues, documents de l\'équipe — en pièces jointes">' +
       ICO('fiche', 15, 2) + 'Choisir quoi lui transmettre</button>';
+    // 01/10/2026 — le catalogue au format de SON logiciel, à un geste de la fiche : ouvre
+    // Transmettre, la case déjà cochée. Affiché seulement quand le logiciel est reconnu ;
+    // la saisie de l'équipe (lue en différé) fait foi, comme dans Transmettre.
+    var btnLgo = '';
+    if (!isEscale() && !isOpso()) {
+      btnLgo = '<span id="pha-lgo-btn" data-pid="' + pidSafe + '" style="display:contents">' + lgoBtnHtml(pid, txLgoDetect(pid, null)) + '</span>';
+      if (V2.profil && V2.profil.charger) V2.profil.charger('client', pid).then(function (d) {
+        setTimeout(function () {
+          var el = document.getElementById('pha-lgo-btn');
+          if (el && el.getAttribute('data-pid') === String(pid)) el.innerHTML = lgoBtnHtml(pid, txLgoDetect(pid, d));
+        }, 0);
+      }, function () {});
+    }
     // 23/09/2026 — Ma liste : demande de rendez-vous, suite de rendez-vous, ouverture de compte…
     var btnTodo = V2.todo ? '<button class="pha-btn pha-btn-w" onclick="V2.todo.menu(\'' + pidSafe + '\')" title="demande de rendez-vous, suite de rendez-vous, ouverture de compte…">' +
       ICO('check', 15, 2) + 'Ajouter à la to do list</button>' : '';
@@ -1728,6 +1741,7 @@
         btnTodo +
         (aDesPdf ? pdfBtn('reseau', reseauLbl(true), nReseau, '') : '') +
         (aDesPdf && hasGrp ? pdfBtn('groupement', esc(g.name), nGrp, 'pha-btn-grp') : '') +
+        btnLgo +
         btnTx +
       '</div>';
 
@@ -3518,6 +3532,12 @@
     return txLgoSlug(saisi && saisi.lgo) || txLgoSlug(ri && ri.logiciel) || txLgoSlug(ca && ca[5]);
   }
   function txLgoLabel(s, n) { return 'Catalogue TOP ' + n + ' · ' + txLgoNom(s); }
+  // Bouton de la fiche officine (« Listes à proposer ») : rien si le logiciel n'est pas reconnu.
+  function lgoBtnHtml(pid, s) {
+    if (!s) return '';
+    return '<button class="pha-btn pha-btn-w pha-btn-lgo" onclick="V2.pharmaTxCatalogue(\'' + esc(String(pid)) + '\',\'' + s + '\')" title="mode d\'emploi + fichier à importer, déjà cochés dans la fenêtre d\'envoi">' +
+      ICO('download', 15) + 'Catalogue pour ' + esc(txLgoNom(s)) + '</button>';
+  }
   // 25/09 — sans mail type, le texte dit ce qu'est chaque pièce jointe ; avec le catalogue
   // pour son logiciel, l'objet et l'introduction le nomment.
   function txTexteDefaut(files) {
@@ -3759,6 +3779,12 @@
     if (k === 'L:reseau') return 'Listing produits (réseau)';
     if (k === 'L:groupement') return 'Listing produits (groupement)';
     return k;
+  };
+  // Depuis le bouton de la fiche : Transmettre s'ouvre sur le catalogue de son logiciel, coché.
+  V2.pharmaTxCatalogue = function (pid, s) {
+    V2.pharmaTransmettre(pid);
+    if (tx.lgo.pid === String(pid) && !tx.lgo.touched && s && tx.lgo.s !== s && TX_LGO.some(function (l) { return l.s === s; })) { tx.lgo.s = s; tx.lgo.auto = true; }
+    if (tx.lgo.s) { tx.sel['G:' + tx.lgo.s + ':' + tx.lgo.n] = true; tx.files = null; txRender(); }
   };
   V2.pharmaTxClose = function () { var bd = document.getElementById('tx-modal'); if (bd) bd.classList.remove('open'); };
   V2.pharmaTxReset = function () { tx.files = null; txRender(); };
@@ -4573,6 +4599,7 @@
       '.pha-btn-grp b{background:color-mix(in srgb,var(--c-opp) 18%,transparent);color:var(--c-mint-txt)}',
       '.pha-lists .pha-kl{margin-bottom:2px}',
       '.pha-btn-tx{justify-content:center;background:var(--ip-ink);border-color:var(--ip-ink);color:#fff}',
+      '.pha-btn-lgo{justify-content:center}',
       '.tx-dialog{width:min(620px,96vw)}',
       '.tx-body{flex:1;min-height:0;overflow-y:auto;padding:14px 18px 6px;-webkit-overflow-scrolling:touch}',
       '.tx-to{font-size:13px;color:var(--muted);margin-bottom:12px;overflow-wrap:anywhere}',
