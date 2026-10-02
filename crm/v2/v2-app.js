@@ -287,6 +287,8 @@
       // sans jargon : on dit ce qui est enregistré et à quoi ça sert, rien de plus.
       '<div class="v2-um-note">Les écrans que vous ouvrez sont enregistrés (votre nom et l\'heure), pour savoir lesquels améliorer en priorité.</div>';
     document.body.appendChild(m);
+    // 02/10/2026 — « Rapport d'étonnement » : la ligne n'est posée que pour les comptes admis (v2-etonnement.js).
+    if (V2.etonnement && V2.etonnement.menu) V2.etonnement.menu(m);
     requestAnimationFrame(function () { m.classList.add('open'); });
     setTimeout(function () {
       function close(e) {
