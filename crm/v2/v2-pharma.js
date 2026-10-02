@@ -2251,10 +2251,10 @@
       return '<button type="button" role="tab" class="v2-tab' + (active === val ? ' on' : '') + '" aria-selected="' + (active === val) + '" onclick="V2.pharmaView(\'' + val + '\')">' + ICO(ico, 18, 2) + label + '</button>';
     };
     return '<div class="v2-tabs" role="tablist" aria-label="Vues des officines">' +
-      t('officines', 'pharma', 'Officines') + t('listes', 'fiche', 'Mes listes') + t('carte', 'grid', 'Carte secteur') +
+      t('officines', 'pharma', 'Officines') + t('groupements', 'opp', 'Groupements') + t('listes', 'fiche', 'Mes listes') + t('carte', 'grid', 'Carte secteur') +
     '</div>';
   }
-  // Titre d'écran commun aux trois vues (pièce .v2-tete) : un seul titre, un sous-titre, une action à droite.
+  // Titre d'écran commun aux quatre vues (pièce .v2-tete) : un seul titre, un sous-titre, une action à droite.
   function teteOfficines(sous, action) {
     return '<div class="v2-tete"><div><h1 class="v2-titre">Mes officines</h1><p class="v2-sous">' + sous + '</p></div>' + (action || '') + '</div>';
   }
@@ -2492,11 +2492,11 @@
         '<button type="button" id="v2-grp-search-x" class="v2-grp-search-x" aria-label="Effacer la recherche" onclick="V2.grpListSearchClear()"' +
           (grpListSearch ? '' : ' style="display:none"') + '>' + ICO('close', 16, 2) + '</button>' +
       '</div>';
-    root.innerHTML = V2.topbar({ back: true, backTo: 'groupements', backLabel: 'Groupements' }) +
-      '<div class="v2-wrap">' +
-        '<div class="v2-page-title">Groupements</div>' +
-        '<div class="v2-page-sub">Opportunités par groupement · ce que commandent les pharmacies adhérentes — liste d\'achats à pousser</div>' +
-        (V2.grpSpaceTabs ? V2.grpSpaceTabs('opp') : '') +
+    // 02/10/2026 — même tête et mêmes onglets que « Mes listes » et « Carte secteur » (la vue n'avait plus aucune porte depuis l'accueil à grandes portes)
+    root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
+      '<div class="v2-wrap v2-u">' +
+        teteOfficines('Opportunités par groupement · ce que commandent les pharmacies adhérentes — liste d\'achats à pousser.') +
+        pharmaTabs('groupements') +
         sortBar +
         searchBar +
         '<div class="v2-card" style="margin-top:16px" id="v2-grp-list-card">' + grpListBody() + '</div>' +
