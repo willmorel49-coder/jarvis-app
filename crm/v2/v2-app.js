@@ -203,7 +203,9 @@
       // (carré bleu à croix) se confondait avec le « + » de la barre. OPSO n'a pas de « + » et garde son logo.
       ((back && !(window.V2_BRAND && window.V2_BRAND.opso))
         ? '<span class="tp-accueil"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 11.2 12 4l8.5 7.2"/><path d="M5.8 9.6V19a1 1 0 0 0 1 1h3.4v-5.2h3.6V20h3.4a1 1 0 0 0 1-1V9.6"/></svg></span>'
-        : '<span class="v2-logo">' + ICO('logo', 22) + '</span>') +
+        : '<span class="v2-logo">' + ((V2.route && V2.route.name === 'home' && !(window.V2_BRAND && window.V2_BRAND.opso))
+          ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4h6v5h5v6h-5v5H9v-5H4V9h5z"/></svg>'
+          : ICO('logo', 22)) + '</span>') +
       (back ? '' : '<span><span class="v2-brand-t">' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '<span class="v2-brand-dot" aria-hidden="true"></span></span><br><span class="v2-brand-s">' + ((window.V2_BRAND && window.V2_BRAND.sub) || 'Espace commercial') + '</span></span>') +
       '</a>';
     // Nom de l'écran (02/10/2026) : donné par l'appelant, sinon lu dans la liste d'outils de
@@ -213,8 +215,8 @@
       var nm = opts.nom || nomEcran(V2.route && V2.route.name);
       if (nm) nom = '<div class="tp-nom">' + esc(nm) + '</div>';
     }
-    // La bascule Intégral ↔ Escale a quitté la barre : elle est une ligne du tableau « Tous vos outils »
-    // de l'accueil, dans les deux sens (qOutilsLiens, V2.basculeEspace).
+    // La bascule Intégral ↔ Escale a quitté la barre : elle est la rubrique « Espace » du rail de l'accueil
+    // (panneau « Mon espace » sous 1100 px), dans les deux sens (u2BlocEspace, V2.basculeEspace).
     var plus = plusItems().length
       ? '<button type="button" class="tp-plus" aria-label="Actions rapides" aria-haspopup="menu" aria-expanded="false" onclick="V2.plusMenu(this)">' + ICO('plus', 22, 2.2) + '</button>'
       : '';
@@ -222,7 +224,7 @@
       '<div class="v2-top">' +
         '<div class="tp-g">' + back + brand + nom + '</div>' +
         '<div class="tp-d">' +
-          ((V2.route && V2.route.name === 'home') ? '' : '<button type="button" class="v2-top-search" aria-label="Rechercher" aria-haspopup="dialog" onclick="V2.onTopSearch()">' + ICO('search', 18, 2) + '<span class="txt">Rechercher</span><kbd>' + MOD + 'K</kbd></button>') +
+          ((V2.route && V2.route.name === 'home' && window.V2_BRAND && window.V2_BRAND.opso) ? '' : '<button type="button" class="v2-top-search" aria-label="Rechercher" aria-haspopup="dialog" onclick="V2.onTopSearch()">' + ICO('search', 18, 2) + '<span class="txt">Rechercher</span><kbd>' + MOD + 'K</kbd></button>') +
           plus +
           '<button type="button" class="tp-avb" aria-label="Mon compte" aria-haspopup="menu" aria-expanded="false" title="' + esc(V2.user ? V2.user.name : '') + '" onclick="V2.userMenu(this)"><span class="v2-av">' + esc(initials) + '</span></button>' +
         '</div>' +
@@ -345,6 +347,7 @@
   };
 
   V2.userMenu = function (btn) {
+    if (u2PanneauAvatar(btn)) return;   // accueil u2 sous 1100 px : le panneau « Mon espace » remplace ce menu
     var installed = false;
     try { installed = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch (e) {}
     var m = menuBarre('v2-usermenu', btn && btn.getBoundingClientRect ? btn : null,
@@ -357,7 +360,7 @@
       // 24/08/2026 — information de l'équipe sur la mesure d'usage (obligation
       // CNIL dès lors qu'elle est nominative). Volontairement factuelle et
       // sans jargon : on dit ce qui est enregistré et à quoi ça sert, rien de plus.
-      '<div class="v2-um-note">Les écrans que vous ouvrez sont enregistrés (votre nom et l\'heure), pour savoir lesquels améliorer en priorité.</div>');
+      '<div class="v2-um-note">' + NOTE_USAGE + '</div>');
     // 02/10/2026 — « Rapport d'étonnement » : la ligne n'est posée que pour les comptes admis (v2-etonnement.js).
     if (m && V2.etonnement && V2.etonnement.menu) V2.etonnement.menu(m);
   };
@@ -1107,425 +1110,6 @@
     ].join('');
     document.head.appendChild(st);
   }
-  // ── Accueil q1 : feuille de style (maquette q1, classes préfixées q-) ──
-  var Q_CSS = `
-@font-face{font-family:'Hanken';src:url('polices/hanken.woff2') format('woff2');font-weight:100 900;font-display:swap}
-.q-page{
-  --encre:#0F1420;--gris:#4A5163;--bleu:#0050E6;--bleu-clair:#3D82FF;--halo:#E9F0FF;--nuit:#0B1530;
-  --retard:#C7283D;--vert:#1E9E6A;--vert-fonce:#157A52;--ambre:#C7791A;
-  --fond:#F3F5F9;--froid:#DFE4EC;--filet:#E3E7EF;--blanc:#fff;--main:#F7F8FC;
-  /* une seule main : trois rayons, un filet, une ombre de pose */
-  --r1:8px;--r2:12px;--r3:16px;--pose:0 1px 2px rgba(11,21,48,.04);
-  /* courbes CSS : arrivée, déplacement, sinus des boucles */
-  --arr:cubic-bezier(.2,.8,.2,1);--dep:cubic-bezier(.4,0,.2,1);--sin:cubic-bezier(.37,0,.63,1);
-  /* les quatre ressorts : le script les intègre (k, c) et remplace ces replis par leur courbe exacte */
-  --doux:cubic-bezier(.2,.8,.2,1);--tdoux:520ms;--vif:cubic-bezier(.2,.9,.3,1.25);--tvif:420ms;
-  --rebond:cubic-bezier(.3,1.7,.5,1);--trebond:620ms;--lourd:cubic-bezier(.2,.8,.2,1);--tlourd:950ms;
-}
-:where(.q-page) *{box-sizing:border-box;margin:0;padding:0}
-.q-page{-webkit-text-size-adjust:100%;font-family:'Hanken',-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;color:var(--encre);font-size:14px;line-height:1.35;
-  background:#D9E2F8 linear-gradient(158deg,#EEF2FF 0%,#DCE4F8 46%,#C9D6F5 100%);
-  min-height:100vh;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
-:where(.q-page) a{color:inherit;text-decoration:none}
-:where(.q-page) button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
-svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;overflow:visible}
-.q-vh{position:absolute!important;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-.q-page a:focus-visible,.q-page button:focus-visible{outline:2px solid var(--bleu);outline-offset:2px}
-.q-js a:focus-visible,.q-js button:focus-visible{outline:none}
-/* ---------- cadre ---------- */
-.q-app{max-width:1280px;margin:0 auto;padding:16px}
-.q-carte{background:var(--blanc);border-radius:28px;overflow:clip;display:grid;grid-template-columns:226px 1fr 318px;
-  box-shadow:0 30px 60px -30px rgba(11,21,48,.35),0 1px 0 rgba(255,255,255,.8) inset;min-height:868px;position:relative}
-/* ---------- barre latérale ---------- */
-.q-side{background:var(--blanc);padding:28px 0 24px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;min-height:868px;align-self:start}
-.q-logo{display:flex;align-items:center;gap:12px;padding:0 24px 24px;min-height:44px}
-.q-logo .q-rond{width:36px;height:36px;border-radius:50%;background:linear-gradient(145deg,#3D82FF,#0050E6 60%,#0040B8);display:grid;place-items:center;color:#fff;flex:none;box-shadow:0 6px 14px -6px rgba(0,80,230,.6)}
-.q-logo b{font-size:20px;font-weight:800;letter-spacing:-.01em;display:block;line-height:1.3}
-.q-logo small{font-size:13px;color:var(--gris);display:block;line-height:1.3}
-.q-nav{display:flex;flex-direction:column;position:relative;flex:1}
-.q-nav .q-barre{position:absolute;right:0;top:0;width:4px;height:100px;border-radius:3px 0 0 3px;background:var(--bleu);transform-origin:0 0;transform:scaleY(.69);will-change:transform}
-.q-nav .q-fond{position:absolute;left:0;right:0;top:0;height:100px;background:var(--halo);transform-origin:0 0;transform:scaleY(.69);will-change:transform;z-index:0}
-.q-nav a{position:relative;z-index:1;display:grid;grid-template-columns:22px 1fr;column-gap:12px;align-items:start;align-content:center;padding:8px 20px 8px 24px;min-height:52px;color:var(--gris)}
-.q-nav a .q-ico{width:22px;height:22px;display:grid;place-items:center;color:#7C8699;margin-top:-2px;transition:color .2s var(--dep)}
-.q-nav a b{display:block;font-weight:600;font-size:14.5px;color:var(--encre);line-height:1.3;transition:color .2s var(--dep)}
-.q-nav a .q-tx span{display:block;font-size:13px;color:var(--gris);line-height:1.3}
-.q-nav a.q-on .q-ico,.q-nav a:hover .q-ico{color:var(--bleu)}
-.q-nav a.q-on b{color:var(--bleu)}
-/* JARVIS Academy, en pied : la fleur tourne, respire, suit le pointeur et le défilement */
-.q-academy{position:relative;margin:16px 20px 0;padding-top:24px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px}
-.q-academy::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:var(--filet);transform-origin:0 50%}
-.q-fleur{width:84px;height:84px;position:relative;margin-bottom:8px}
-.q-fleur .q-suit,.q-fleur .q-ouvre{position:absolute;inset:0;display:block}
-.q-fleur .q-suit{will-change:transform}
-.q-fleur svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;display:block}
-.q-js .q-fleur .q-lobes{animation:q-tourne 26s linear infinite}
-.q-js .q-fleur .q-coeur{animation:q-respire-fleur 7s var(--sin) infinite}
-@keyframes q-tourne{to{transform:rotate(360deg)}}
-@keyframes q-respire-fleur{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
-.q-academy b{font-size:16px;font-weight:700;color:var(--encre);line-height:1.3}
-.q-academy .q-ph{font-size:13px;color:var(--gris);line-height:1.3}
-.q-academy .q-btn{margin-top:12px;background:var(--bleu);color:#fff;border-radius:var(--r1);min-height:44px;padding:0 16px;display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  font-weight:600;font-size:13.5px;width:100%;box-shadow:0 8px 16px -8px rgba(0,80,230,.6);transition:translate var(--tvif) var(--vif),scale var(--tvif) var(--vif)}
-.q-academy:hover .q-btn{translate:0 -2px}
-.q-academy:active .q-btn{scale:.97;transition-duration:90ms;transition-timing-function:var(--dep)}
-/* ---------- colonne centrale ---------- */
-.q-main{background:var(--main);border-left:1px solid var(--filet);padding:24px 32px 32px;min-width:0}
-.q-haut{display:flex;align-items:center;gap:16px;margin-bottom:24px;position:relative;z-index:5}
-.q-haut .q-logo{display:none}
-.q-rech{flex:1;max-width:360px;min-width:0;position:relative}
-.q-cherche{display:flex;align-items:center;gap:10px;background:var(--blanc);border:1px solid var(--filet);border-radius:var(--r2);height:44px;padding:0 14px;color:#7C8699;cursor:text;transition:border-color .2s var(--dep)}
-.q-cherche:focus-within{border-color:var(--bleu-clair)}
-.q-cherche input{flex:1;border:0;outline:0;font:inherit;font-size:14px;color:var(--encre);background:transparent;min-width:0;-webkit-appearance:none;appearance:none}
-.q-cherche input::-webkit-search-cancel-button,.q-cherche input::-webkit-search-decoration{-webkit-appearance:none;display:none}
-.q-cherche kbd{font:600 13px 'Hanken',sans-serif;color:var(--gris);border:1px solid var(--filet);border-radius:6px;padding:2px 8px}
-/* la liste naît du champ : elle n'existe que pendant la saisie */
-.q-res{position:absolute;left:0;right:0;top:52px;height:0;background:var(--blanc);border:1px solid var(--filet);border-radius:var(--r2);box-shadow:0 24px 48px -24px rgba(11,21,48,.4),var(--pose);overflow:hidden;z-index:20}
-.q-res-in{position:relative;padding:6px}
-.q-res-hl{position:absolute;left:6px;right:6px;top:0;height:100px;background:var(--halo);border-radius:var(--r1);transform-origin:0 0;will-change:transform}
-.q-r{position:relative;display:flex;align-items:center;gap:12px;min-height:48px;padding:6px 10px;border-radius:var(--r1)}
-.q-r .q-r-ic{width:32px;height:32px;border-radius:var(--r1);display:grid;place-items:center;background:var(--halo);color:var(--bleu);flex:none}
-.q-r b{display:block;font-size:14px;font-weight:600;line-height:1.3}
-.q-r .q-r-tx span{display:block;font-size:13px;color:var(--gris);line-height:1.3}
-.q-r mark{background:none;color:var(--bleu)}
-.q-res-vide{position:relative;padding:14px 10px;font-size:13.5px;color:var(--gris)}
-.q-bt{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 4px;margin-left:auto}
-.q-bt>span{display:inline-flex;align-items:center;gap:6px;background:var(--bleu);color:#fff;font-weight:600;font-size:13.5px;border-radius:var(--r1);padding:0 16px;height:36px;box-shadow:0 8px 16px -8px rgba(0,80,230,.6);transition:translate var(--tvif) var(--vif),scale var(--tvif) var(--vif)}
-.q-bt:hover>span{translate:0 -2px}
-.q-bt:active>span{scale:.97;transition-duration:90ms;transition-timing-function:var(--dep)}
-.q-bt.q-petit>span{height:28px;padding:0 12px;font-size:13px}
-/* ---------- bandeau bleu ---------- */
-.q-bandeau{position:relative;display:block;border-radius:var(--r3);background:linear-gradient(100deg,#0C4CDC 0%,#0046CC 55%,#063DB4 100%);color:#fff;padding:32px;min-height:164px;overflow:visible;
-  box-shadow:0 22px 40px -22px rgba(0,80,230,.7)}
-.q-bandeau .q-lum,.q-bandeau .q-rai{position:absolute;inset:0;border-radius:var(--r3);overflow:hidden;pointer-events:none}
-/* la seule lumière du bandeau vient du pointeur (et, dans le dessin, de la croix, des vitrines et de la porte) */
-.q-bandeau .q-lum i{position:absolute;left:-210px;top:-210px;width:420px;height:420px;background:radial-gradient(closest-side,rgba(255,255,255,.1),rgba(255,255,255,0));opacity:0;transition:opacity .3s var(--dep);will-change:transform}
-.q-bandeau.q-pres .q-lum i{opacity:var(--lo,1)}
-.q-bandeau .q-rai i{position:absolute;top:-40%;bottom:-40%;width:120px;left:0;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.06),rgba(255,255,255,0));transform:translateX(-240px) skewX(-18deg)}
-.q-js .q-bandeau .q-rai i{animation:q-rai 14s linear infinite}
-@keyframes q-rai{from{transform:translateX(-240px) skewX(-18deg)}to{transform:translateX(1100px) skewX(-18deg)}}
-.q-bandeau h1{font-size:24px;font-weight:700;letter-spacing:-.01em;line-height:1.1;position:relative}
-.q-bandeau .q-date{font-size:13.5px;color:#fff;margin-top:4px;position:relative}
-.q-bandeau p{font-size:14px;line-height:1.45;margin-top:12px;max-width:52%;color:#fff;position:relative}
-.q-bandeau p b{color:#fff;font-weight:700;font-size:16px}
-.q-bandeau .q-pill{display:inline-flex;align-items:center;min-height:44px;margin-top:8px;position:relative}
-.q-bandeau .q-pill>span{display:inline-flex;align-items:center;gap:6px;background:#fff;color:var(--bleu);font-weight:700;font-size:13px;border-radius:var(--r1);padding:0 12px;height:32px}
-.q-bandeau .q-pill svg{width:14px;height:14px;will-change:transform}
-/* ---------- l'officine dessinée : chaque pièce est une couche, pour que tout se compose sans repeindre ---------- */
-.q-illu{position:absolute;right:32px;bottom:0;width:280px;height:200px}
-.q-illu span,.q-illu i,.q-illu svg{position:absolute;inset:0;display:block}
-.q-illu svg{width:100%;height:100%;overflow:visible}
-.q-illu .q-terre{inset:-60% -20% 0 -20%}
-.q-illu .q-ter2{inset:37.5% 14.2857% 0 14.2857%}
-.q-illu .q-pl{will-change:transform}
-.q-illu .q-v1,.q-illu .q-v2,.q-illu .q-v3,.q-illu .q-fl{transform-origin:var(--o)}
-/* le vent : deux sinus de périodes premières entre elles, et une rafale qui traverse la scène de gauche à droite */
-.q-js .q-illu .q-v1{animation:q-vent-a 8s var(--sin) infinite;animation-delay:var(--a,0s)}
-.q-js .q-illu .q-v2{animation:q-vent-b 11s var(--sin) infinite;animation-delay:var(--b,0s)}
-.q-js .q-illu .q-v3{animation:q-rafale 17s var(--dep) infinite;animation-delay:var(--r,0s)}
-@keyframes q-vent-a{0%,100%{transform:rotate(-1.9deg)}50%{transform:rotate(2.1deg)}}
-@keyframes q-vent-b{0%,100%{transform:rotate(1.3deg)}50%{transform:rotate(-1.5deg)}}
-@keyframes q-rafale{0%,58%{transform:rotate(0deg)}62%{transform:rotate(5.5deg)}67%{transform:rotate(-2.4deg)}73%{transform:rotate(1.3deg)}80%{transform:rotate(-.6deg)}88%,100%{transform:rotate(0deg)}}
-/* la croix : un halo qui vient d'elle, un corps, des diodes */
-.q-illu .q-halo{inset:auto;left:5.333%;top:7.477%;width:30.667%;height:42.991%;border-radius:50%;background:radial-gradient(closest-side,rgba(92,240,168,.9),rgba(47,208,138,.35) 45%,rgba(30,158,106,0))}
-.q-illu .q-cx{transform-origin:20.667% 28.972%}
-.q-illu .q-k{fill:none;stroke:#F2FFF8;stroke-width:3.4;opacity:0}
-.q-illu .q-om,.q-illu .q-ba,.q-illu .q-br{opacity:0}
-@keyframes q-flic{0%{opacity:0}9%{opacity:1}30%{opacity:.1}47%{opacity:1}66%{opacity:.2}82%,100%{opacity:1}}
-@keyframes q-respire{0%,100%{opacity:1}50%{opacity:.35}}
-@keyframes q-battre{0%,100%{opacity:1}50%{opacity:.75}}
-@keyframes q-led{0%{opacity:0}35%{opacity:.95}100%{opacity:0}}
-@keyframes q-ombre{0%,100%{opacity:0}14%,82%{opacity:.5}}
-@keyframes q-balai{0%{transform:translateY(60px);opacity:.92}58%{transform:translateY(0);opacity:.92}100%{transform:translateY(0);opacity:0}}
-.q-js .q-illu.q-allume .q-halo{animation:q-flic .26s var(--dep) both,q-respire 6s var(--sin) .26s infinite}
-.q-js .q-illu.q-allume .q-cc{animation:q-flic .26s var(--dep) both,q-battre 6s var(--sin) .26s infinite}
-.q-illu.q-s1 .q-k{animation:q-led .34s var(--dep) both;animation-delay:calc(var(--i)*.18s)}
-.q-illu.q-s1 .q-om{animation:q-ombre .9s var(--dep) both}
-.q-illu.q-s2 .q-ba{animation:q-balai 1s var(--dep) both}
-.q-illu.q-s2 .q-om{animation:q-ombre 1s var(--dep) both}
-.q-illu.q-s3 .q-br{animation:q-led .28s var(--dep) both;animation-delay:calc(var(--i)*.19s)}
-.q-illu.q-s3 .q-k4{animation:q-led .34s var(--dep) .8s both}
-.q-illu.q-s3 .q-om{animation:q-ombre 1.14s var(--dep) both}
-/* la façade */
-.q-illu .q-nuit,.q-illu .q-ecl{inset:auto;border-radius:9.5%;opacity:0}
-.q-illu .q-nuit{background:var(--nuit)}.q-illu .q-ecl{background:#fff}.q-illu .q-po{border-radius:11.5%/4.3%}
-.q-illu .q-coffre{inset:52.103% 0 0 0;overflow:hidden}
-.q-illu .q-banne{inset:auto;left:0;top:-108.78%;width:100%;height:208.78%;transform-origin:51% 52.34%}
-.q-illu .q-fe{inset:auto;top:58.879%;width:5.333%;height:5.607%;transform-origin:50% 16.67%}
-.q-illu .q-fe path{fill:none;stroke:#1E62E8;stroke-width:2;stroke-linecap:round}
-@keyframes q-eclair{0%{opacity:0}30%{opacity:.5}100%{opacity:0}}
-/* titres de section */
-.q-sec{display:flex;align-items:center;justify-content:space-between;margin:24px 0 8px;min-height:44px}
-.q-sec h2{font-size:16px;font-weight:700;line-height:1.3}
-/* ---------- cinq tuiles ---------- */
-.q-tuiles{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
-.q-tuile{position:relative;background:var(--blanc);border:1px solid var(--filet);border-radius:var(--r2);padding:16px 8px 12px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;min-height:116px;box-shadow:var(--pose)}
-.q-tuile::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:0 14px 22px -14px rgba(11,21,48,.3);opacity:0;transition:opacity .2s var(--dep);pointer-events:none}
-.q-tuile:hover::after{opacity:1}
-.q-tuile .q-ico{width:44px;height:44px;border-radius:var(--r2);display:grid;place-items:center;color:#fff}
-.q-tuile b{font-size:13.5px;font-weight:700;display:block;line-height:1.3}
-.q-tuile .q-tx span{font-size:13px;color:var(--gris);display:block;line-height:1.3;text-wrap:balance}
-.q-t-bleu{background:linear-gradient(145deg,#3D82FF,#0050E6)}
-.q-t-vert{background:linear-gradient(145deg,#2FB983,#1E9E6A)}
-.q-t-ambre{background:linear-gradient(145deg,#E09434,#C7791A)}
-.q-t-clair{background:linear-gradient(145deg,#6FA3FF,#3D82FF)}
-.q-t-nuit{background:linear-gradient(145deg,#24335E,#0B1530)}
-/* ---------- les gestes des pictos : 400 ms, un par outil, dessinés de la même main que l'officine ---------- */
-.q-g .q-a-fe{animation:q-g-store .4s var(--dep)}.q-a-fe{transform-origin:12px 10px}
-.q-g .q-a-couv{animation:q-g-boite .4s var(--dep)}.q-a-couv{transform-origin:12px 7.5px}
-.q-g .q-a-aig{animation:q-g-aig .4s var(--dep)}.q-a-aig{transform-origin:12px 18px}
-.q-g .q-a-onde{animation:q-g-onde .4s var(--dep)}.q-a-onde{transform-origin:17px 12px}
-.q-g .q-a-ray{animation:q-g-soleil .4s var(--dep)}.q-a-ray{transform-origin:12px 12px}
-.q-g .q-a-page{animation:q-g-page .4s var(--dep)}.q-a-page{transform-origin:12px 10px}
-.q-g .q-a-pin{animation:q-g-pin .4s var(--dep)}.q-a-pin{transform-origin:12px 21px}
-.q-g .q-a-haut{animation:q-g-caisse .4s var(--dep)}.q-a-haut{transform-origin:12px 12px}
-.q-g .q-a-c{stroke-dasharray:1;animation:q-g-coche .24s var(--dep) both;animation-delay:calc(var(--i)*80ms)}
-.q-g .q-a-n{animation:q-g-noeud .24s var(--dep) both;animation-delay:calc(var(--i)*80ms)}.q-a-n{transform-box:fill-box;transform-origin:50% 50%}
-.q-g .q-a-chariot{animation:q-g-chariot .4s var(--dep)}.q-a-chariot{transform-origin:13px 20px}
-.q-g .q-a-oeil{animation:q-g-oeil .4s var(--dep)}.q-g .q-a-pup{animation:q-g-pup .4s var(--dep)}.q-a-oeil,.q-a-pup{transform-origin:12px 12px}
-@keyframes q-g-store{0%,100%{transform:scaleY(1)}30%{transform:scaleY(1.8)}62%{transform:scaleY(.7)}}
-@keyframes q-g-boite{0%,100%{transform:none}38%{transform:translateY(-3.2px) rotate(-7deg)}72%{transform:translateY(-.8px) rotate(2deg)}}
-@keyframes q-g-aig{0%,100%{transform:rotate(0deg)}32%{transform:rotate(-96deg)}74%{transform:rotate(13deg)}}
-@keyframes q-g-onde{0%{transform:none;opacity:1}46%{transform:translateX(3.6px) scale(1.5);opacity:0}47%{transform:translateX(-1.5px) scale(.6);opacity:0}100%{transform:none;opacity:1}}
-@keyframes q-g-soleil{0%{transform:rotate(0deg)}70%{transform:rotate(98deg)}100%{transform:rotate(90deg)}}
-@keyframes q-g-page{0%,100%{transform:scaleY(1)}46%{transform:scaleY(.08)}}
-@keyframes q-g-pin{0%,100%{transform:none}26%{transform:translateY(-6px)}56%{transform:translateY(0) scale(1.07,.9)}78%{transform:translateY(-1.8px)}}
-@keyframes q-g-caisse{0%,100%{transform:none}30%{transform:translateY(-4px)}60%{transform:translateY(0) scale(1.06,.9)}80%{transform:translateY(-1px)}}
-@keyframes q-g-coche{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
-@keyframes q-g-noeud{0%,100%{transform:scale(1)}45%{transform:scale(1.4)}}
-@keyframes q-g-chariot{0%,100%{transform:none}36%{transform:translateX(3px) rotate(-6deg)}72%{transform:translateX(-1px) rotate(1.5deg)}}
-@keyframes q-g-oeil{0%,36%,100%{transform:scaleY(1)}18%{transform:scaleY(.1)}}
-@keyframes q-g-pup{0%,36%,100%{transform:none}18%{transform:scaleY(.1)}62%{transform:translateX(-1.8px)}84%{transform:translateX(1.4px)}}
-/* ---------- tableau ---------- */
-.q-table{background:var(--blanc);border:1px solid var(--filet);border-radius:var(--r2);position:relative;box-shadow:var(--pose)}
-.q-table .q-tete,.q-table .q-lg{display:grid;grid-template-columns:1fr 2.1fr .75fr;align-items:center;padding:0 20px;gap:12px}
-.q-table .q-tete{min-height:40px;padding-top:10px;padding-bottom:10px;color:var(--gris);font-size:13px;border-bottom:1px solid var(--filet)}
-.q-table .q-corps{position:relative;padding:4px 0 8px}
-/* une seule teinte pâle, qui glisse d'une ligne à l'autre */
-.q-table .q-select{position:absolute;left:4px;right:4px;top:0;height:100px;border-radius:var(--r1);background:var(--halo);transform-origin:0 0;will-change:transform;z-index:0;opacity:0;transition:opacity .2s var(--dep)}
-.q-table .q-corps.q-survol .q-select{opacity:1}
-.q-table .q-lg{position:relative;z-index:1;min-height:44px;padding-top:8px;padding-bottom:8px;color:var(--encre)}
-.q-table .q-lg b{font-weight:600;font-size:14px;line-height:1.3}
-.q-table .q-lg>span{font-size:13.5px;color:var(--gris);line-height:1.3}
-.q-table .q-lg .q-st{display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 10px 0 5px;border:1px solid var(--filet);border-radius:999px;font-size:13px;font-weight:500;background:var(--blanc);color:var(--encre);justify-self:start;white-space:nowrap}
-.q-table .q-lg .q-st i{width:16px;height:16px;border-radius:50%;background:var(--ambre);flex:none;display:grid;place-items:center}
-.q-table .q-lg .q-st i::after{content:"";width:6px;height:6px;border-radius:50%;background:#fff}
-.q-table .q-lg .q-st.q-decouvrir i{background:var(--bleu-clair)}
-/* ---------- colonne droite ---------- */
-.q-droite{background:var(--blanc);border-left:1px solid var(--filet);padding:16px 16px 24px;min-width:0}
-.q-pan{background:#EEF1F6;border-radius:var(--r3);padding:24px 16px 16px;display:flex;flex-direction:column;gap:16px;margin-bottom:24px}
-.q-profil{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding-bottom:16px;position:relative}
-.q-profil::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:#DDE2EB;transform-origin:0 50%}
-.q-profil .q-avatar{width:72px;height:72px;border-radius:50%;color:#fff;font-size:30px;font-weight:700;display:grid;place-items:center;margin-bottom:8px;
-  background:linear-gradient(145deg,#3D82FF,#0050E6 60%,#0040B8);box-shadow:0 10px 24px -8px rgba(0,80,230,.45)}
-.q-profil b{font-size:16px;font-weight:700;line-height:1.3}
-.q-profil .q-role{font-size:13px;color:var(--gris);line-height:1.3}
-/* la pastille émet un anneau toutes les 3 s */
-.q-sec.q-d{margin:0;min-height:32px}
-.q-sec.q-d h2{font-size:15px}
-.q-mois{display:inline-flex;align-items:center;gap:6px;background:var(--blanc);border:1px solid var(--filet);color:var(--bleu);font-weight:600;font-size:13px;border-radius:var(--r1);padding:0 10px;height:32px}
-.q-jours{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:-4px}
-.q-jour{position:relative;isolation:isolate;border-radius:var(--r1);text-align:center;padding:8px 0}
-.q-jour small{display:block;font-size:13px;font-weight:500;color:var(--gris)}
-.q-jour b{display:block;font-size:14px;font-weight:700;margin-top:4px;color:var(--encre)}
-.q-jour.q-passe b{color:var(--gris)}
-/* aujourd'hui : un tampon nuit bleue, posé en dernier ; c'est lui qui imprime le jour (texte blanc) */
-.q-liste{display:flex;flex-direction:column;gap:8px}
-.q-rel{display:grid;grid-template-columns:20px 1fr 32px;column-gap:12px;align-items:start;align-content:center;min-height:64px;padding:12px;border-radius:var(--r2);background:var(--blanc);border:1px solid var(--filet);box-shadow:var(--pose)}
-.q-rel>.q-ic{color:var(--gris);margin-top:-1px}
-.q-rel .q-av{width:32px;height:32px;border-radius:50%;background:var(--halo);color:var(--bleu);font-weight:700;font-size:13px;display:grid;place-items:center;align-self:center}
-.q-rel .q-tx{min-width:0;line-height:1.3}
-.q-rel .q-tx b{display:block;font-size:14px;font-weight:600}
-.q-rel .q-tx span{display:block;font-size:13px;color:var(--gris)}
-.q-rel .q-tx em{font-style:normal;font-weight:600;color:var(--gris)}
-.q-rel .q-tx em.q-tard{color:var(--retard)}
-.q-rel .q-tx em.q-jour-j{color:var(--bleu)}
-.q-tout{display:flex;align-items:center;justify-content:center;min-height:48px;border:1px solid #CBD2DE;border-radius:var(--r2);font-weight:600;font-size:14px;color:var(--encre)}
-.q-note-ex{font-size:13px;color:var(--gris);line-height:1.35;padding:0 4px}
-.q-droite .q-sec.q-d.q-infos-t{margin:0 4px 12px}
-.q-infos{display:block;background:var(--blanc);border:1px solid var(--filet);border-radius:var(--r2);padding:12px;position:relative;box-shadow:var(--pose)}
-.q-infos .q-titre{font-size:13.5px;font-weight:600;line-height:1.3;margin-bottom:12px}
-.q-infos .q-trio{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.q-infos .q-v{background:var(--main);border:1px solid var(--filet);border-radius:var(--r1);text-align:center;padding:12px 4px 8px;display:flex;flex-direction:column;align-items:center}
-.q-infos .q-v b{display:block;font-size:22px;font-weight:800;line-height:1;color:var(--encre)}
-.q-infos .q-v span{display:block;font-size:13px;color:var(--gris);margin:4px 0 8px;line-height:1.3;text-wrap:balance}
-.q-infos .q-v em{display:inline-block;font-style:normal;background:var(--bleu);color:#fff;font-size:13px;font-weight:600;border-radius:6px;padding:3px 8px;margin-top:auto}
-.q-infos .q-v:nth-child(1) em{background:var(--vert-fonce)}
-.q-infos .q-lire{display:flex;align-items:center;gap:6px;color:var(--bleu);font-weight:700;font-size:13.5px;margin-top:12px}
-.q-infos .q-lire svg{width:15px;height:15px}
-.q-note{font-size:13px;color:var(--gris);padding:16px 20px 0}
-/* ---------- ce qui se touche s'enfonce (90 ms), et revient au ressort ---------- */
-.q-nav a,.q-tuile,.q-rel,.q-tout,.q-infos,.q-table .q-lg,.q-pill>span{transition:scale var(--tvif) var(--vif)}
-.q-nav a:active,.q-tuile:active,.q-rel:active,.q-tout:active,.q-infos:active,.q-table .q-lg:active,.q-bandeau:active .q-pill>span{scale:.97;transition:scale 90ms var(--dep)}
-.q-calme .q-bt:hover>span,.q-calme .q-academy:hover .q-btn{translate:none}
-.q-calme :active{scale:none!important}
-/* ---------- anneau de focus : un seul, il glisse d'un élément à l'autre ---------- */
-.q-anneau{position:fixed;left:0;top:0;width:10px;height:10px;border:2px solid var(--bleu);border-radius:12px;pointer-events:none;z-index:60;opacity:0;transition:opacity .15s var(--dep);will-change:transform}
-.q-anneau.q-vu{opacity:1}
-/* ---------- entrée : le masquage est posé par le script (classe js), jamais par la feuille seule ---------- */
-.q-js .q-in{opacity:0;translate:0 16px}
-.q-js .q-in.q-g{translate:-12px 0}
-.q-js .q-in.q-e{scale:.96}
-.q-js .q-lg.q-in{translate:0 10px}
-.q-js.q-go .q-in{opacity:1;translate:0 0;scale:1;transition:opacity .15s var(--dep) var(--d,0ms),translate var(--tdoux) var(--doux) var(--d,0ms),scale var(--tdoux) var(--doux) var(--d,0ms)}
-/* l'avatar se pose au ressort vif */
-.q-js.q-go .q-profil .q-avatar.q-in{transition:opacity .15s var(--dep) var(--d,0ms),translate var(--tvif) var(--vif) var(--d,0ms),scale var(--tvif) var(--vif) var(--d,0ms)}
-/* sous la ligne de flottaison : le bloc attend son tour, sans jamais être transparent */
-.q-js .q-in.q-arme,.q-js.q-go .q-in.q-arme{opacity:1;translate:0 20px;scale:1;transition:none}
-.q-js .q-lg.q-in.q-arme,.q-js.q-go .q-lg.q-in.q-arme{translate:0 8px}
-/* les textes montent de derrière un cache */
-.q-mo{display:inline-block;clip-path:inset(-.14em -.08em -.24em)}
-.q-mi,.q-mj{display:inline-block}
-.q-js .q-mi,.q-js .q-mj{translate:0 100%}
-.q-js.q-go .q-mi,.q-js .q-la .q-mj{translate:0 0;transition:translate var(--tdoux) var(--doux) var(--d,0ms)}
-/* le 690 : un tambour par chiffre */
-.q-tb{white-space:nowrap}
-.q-tb .q-col{display:inline-block;position:relative;clip-path:inset(.2em -1px)}
-.q-tb .q-ph{visibility:hidden}
-.q-tb .q-rb{position:absolute;left:0;top:.2em;display:block;line-height:1.05;will-change:transform}
-.q-tb .q-rb span{display:block;height:1.05em}
-.q-js.q-go .q-tb .q-rb{transform:translateY(var(--y));transition:transform var(--tdoux) var(--doux) var(--d)}
-/* le bouton du bandeau, puis sa flèche */
-.q-js .q-pill>span{opacity:0;translate:-10px 0;scale:.96}
-.q-js.q-go .q-pill>span{opacity:1;translate:0 0;scale:1;transition:opacity .15s var(--dep) .4s,translate var(--tvif) var(--vif) .4s,scale var(--tvif) var(--vif) .4s}
-.q-js .q-pill svg{translate:-7px 0}
-.q-js.q-go .q-pill svg{translate:0 0;transition:translate var(--tvif) var(--vif) .52s}
-/* les pictos se dessinent juste après la pose de leur élément */
-.q-js .q-dz .q-p{stroke-dasharray:1;stroke-dashoffset:1;opacity:0}
-.q-js.q-go .q-dz .q-p{stroke-dashoffset:0;opacity:1;transition:stroke-dashoffset .45s var(--dep) calc(var(--d,0ms) + 120ms),opacity .1s var(--dep) calc(var(--d,0ms) + 120ms)}
-.q-js .q-arme .q-dz .q-p,.q-js.q-go .q-arme .q-dz .q-p{stroke-dashoffset:1;opacity:0;transition:none}
-/* le repère de la barre latérale */
-.q-js .q-nav .q-barre,.q-js .q-nav .q-fond{opacity:0}
-.q-js.q-go .q-nav .q-barre,.q-js.q-go .q-nav .q-fond{opacity:1;transition:opacity .15s var(--dep) .12s}
-/* l'officine ouvre : feuillage, façade, plante, croix (éteinte), store, vitrines */
-.q-js .q-bandeau:not(.q-fini) .q-illu .q-terre{overflow:hidden}
-.q-js .q-illu .q-fl{transform:translateY(24px) rotate(var(--u,-9deg))}
-.q-js.q-go .q-illu .q-fl{transform:none;transition:transform var(--tlourd) var(--lourd) var(--d,0ms)}
-.q-js .q-illu .q-mt{opacity:0;translate:0 24px}
-.q-js.q-go .q-illu .q-mt{opacity:1;translate:0 0;transition:opacity .15s var(--dep) 60ms,translate var(--tdoux) var(--doux) 60ms}
-.q-js .q-illu .q-mp{opacity:0;translate:0 14px}
-.q-js.q-go .q-illu .q-mp{opacity:1;translate:0 0;transition:opacity .15s var(--dep) 180ms,translate var(--tvif) var(--vif) 180ms}
-.q-js .q-illu .q-pot{opacity:0}
-.q-js.q-go .q-illu .q-pot{opacity:1;transition:opacity .15s var(--dep) 140ms}
-.q-js .q-illu .q-cx{scale:0}
-.q-js.q-go .q-illu .q-cx{scale:1;transition:scale var(--trebond) var(--rebond) 160ms}
-.q-js .q-illu .q-halo,.q-js .q-illu .q-cc{opacity:0}
-.q-js .q-illu .q-banne{translate:0 -7.944%}
-.q-js.q-go .q-illu .q-banne{translate:0 0;transition:translate var(--tdoux) var(--doux) 280ms}
-.q-js .q-illu .q-fe{opacity:0;translate:0 -45%}
-.q-js.q-go .q-illu .q-fe{opacity:1;translate:0 0;transition:opacity .12s var(--dep) calc(400ms + var(--i)*30ms),translate var(--tvif) var(--vif) calc(400ms + var(--i)*30ms)}
-.q-js .q-illu .q-nuit{opacity:.42}
-.q-js.q-go .q-illu .q-nuit{opacity:0;transition:opacity .22s var(--dep) var(--d)}
-.q-js.q-go .q-illu .q-ecl{animation:q-eclair .5s var(--dep) var(--d) both}
-/* les deux filets se tracent de gauche à droite */
-.q-js .q-profil::after,.q-js .q-academy::before{scale:0 1}
-.q-js.q-go .q-profil::after{scale:1 1;transition:scale .5s var(--arr) .33s}
-.q-js.q-go .q-academy::before{scale:1 1;transition:scale .5s var(--arr) .44s}
-/* la fleur, le tampon du jour, la pastille */
-.q-js .q-fleur .q-ouvre{scale:0;rotate:-90deg}
-.q-js .q-fleur.q-la .q-ouvre{scale:1;rotate:0deg;transition:scale var(--tvif) var(--vif),rotate var(--tlourd) var(--lourd)}
-/* après l'entrée : plus aucune transition d'entrée ne traîne, le script pilote */
-.q-js .q-bandeau.q-fini .q-pill>span{transition:scale var(--tvif) var(--vif)}
-.q-js .q-bandeau.q-fini .q-pill svg,.q-js .q-bandeau.q-fini .q-illu .q-fl{transition:none}
-/* retour sur l'accueil (q-pose) et première arrivée pendant le chargement des ventes (q-leger) : les pictos sont déjà dessinés (un tracé n'est pas confié au compositeur) */
-.q-pose .q-dz .q-p,.q-leger .q-dz .q-p{stroke-dashoffset:0!important;opacity:1!important;transition:none!important}
-/* retour : ni éclair des vitrines ni allumage de la croix (elle est déjà allumée) ; elle respire, comme au repos */
-.q-js.q-go.q-pose .q-illu .q-ecl{animation:none}
-.q-js.q-pose .q-illu.q-allume .q-halo{animation:q-respire 6s var(--sin) infinite}
-.q-js.q-pose .q-illu.q-allume .q-cc{animation:q-battre 6s var(--sin) infinite}
-/* boucles suspendues : onglet caché, ou élément hors de l'écran */
-.q-pause *,.q-pause *::before,.q-pause *::after,.q-hors,.q-hors *,.q-hors *::before{animation-play-state:paused!important}
-/* ---------- 390 ---------- */
-@media (max-width:860px){
-  .q-app{padding:0}
-  .q-carte{grid-template-columns:1fr;border-radius:0;min-height:0;box-shadow:none;background:var(--main)}
-  .q-main,.q-side{display:contents}
-  .q-side .q-logo{display:none}
-  .q-haut{order:1;margin:16px 16px 12px;flex-wrap:wrap;gap:12px}
-  .q-haut .q-logo{display:flex;padding:0;width:100%;min-height:0}
-  .q-rech{max-width:none;flex:1 1 120px}
-  .q-res{right:auto;width:calc(100vw - 32px)}
-  .q-cherche input{font-size:16px}
-  .q-cherche kbd{display:none}
-  .q-bt.q-haut-bt{margin-left:0;flex:none}
-  .q-bandeau{order:2;margin:40px 16px 0;padding:24px 20px 16px;min-height:0}
-  .q-bandeau p{max-width:none}
-  .q-illu{right:-4px;width:150px;height:108px;bottom:auto;top:-48px}
-  .q-nav{order:3;background:var(--blanc);border:1px solid var(--filet);border-radius:var(--r2);margin:24px 16px 0;overflow:hidden}
-  .q-nav .q-barre{right:auto;left:0;border-radius:0 3px 3px 0}
-  .q-nav .q-barre,.q-nav .q-fond{transform:scaleY(.52)}
-  .q-nav a{padding:8px 16px 8px 20px}
-  .q-sec{margin:24px 16px 8px}
-  .q-sec.q-outils{order:4}
-  .q-tuiles{order:5;margin:0 16px;grid-template-columns:repeat(2,1fr)}
-  .q-tuile:last-child{grid-column:1/-1;flex-direction:row;text-align:left;gap:12px;min-height:0;padding:12px 16px}
-  .q-droite{order:6;border-left:0;padding:24px 16px 0;background:transparent}
-  .q-pan{padding:20px 16px 16px;border-radius:var(--r2);margin-bottom:24px}
-  .q-profil{display:none}
-  .q-droite .q-sec.q-d.q-infos-t{margin-left:0;margin-right:0}
-  .q-sec#q-tous{order:7}
-  .q-table{order:8;margin:0 16px}
-  .q-table .q-tete,.q-table .q-lg{grid-template-columns:1fr 1fr;padding-left:16px;padding-right:16px}
-  .q-table .q-lg>span:not(.q-st),.q-table .q-tete .q-c2{display:none}
-  .q-academy{order:9;margin:12px 16px 0;padding:20px 16px 16px;border:1px solid var(--filet);border-radius:var(--r2);background:var(--blanc)}
-  .q-academy::before{display:none}
-  .q-fleur{width:72px;height:72px}
-  .q-note{order:10;padding:16px 16px 20px}
-}
-@media (prefers-reduced-motion:reduce){
-  .q-page *,.q-page *::before,.q-page *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
-}
-/* ---------- ajouts de l'app : ce que la maquette n'a pas (branchements sur les vraies données) ---------- */
-/* avatar du profil : un bouton qui ouvre le menu du compte (déconnexion) ; sur téléphone, le même dans la ligne du logo */
-.q-profil .q-avatar{border:0;padding:0;cursor:pointer;font-family:inherit}
-.q-moi{display:none}
-/* « Nouveau » : une annonce hors classement, de la même main que le bloc Infos */
-.q-une{display:grid;grid-template-columns:44px minmax(0,1fr) 16px;column-gap:12px;align-items:center;min-height:72px;margin-top:16px;padding:12px 16px;border-radius:var(--r2);background:var(--blanc);border:1px solid var(--filet);box-shadow:var(--pose)}
-.q-une .q-ico{width:44px;height:44px;border-radius:var(--r2);display:grid;place-items:center;color:#fff;background:linear-gradient(145deg,#6FA3FF,#3D82FF)}
-.q-une .q-nv{display:inline-block;font-style:normal;background:var(--bleu);color:#fff;font-size:13px;font-weight:600;line-height:1.3;border-radius:6px;padding:2px 8px;margin-bottom:4px}
-.q-une .q-tx{min-width:0}
-.q-une b{display:block;font-size:14px;font-weight:700;line-height:1.3}
-.q-une .q-tx>span{display:block;font-size:13px;color:var(--gris);line-height:1.3}
-.q-une>svg.q-ic{width:16px;height:16px;color:var(--bleu)}
-.q-une,.q-une:active{transition:scale var(--tvif) var(--vif)}
-.q-une:active{scale:.97;transition:scale 90ms var(--dep)}
-.q-calme .q-une:active{scale:none}
-/* la semaine : un point sous les jours qui portent une relance ; ces jours sont des boutons de 44 px */
-.q-jour{padding-bottom:12px}
-.q-jour.q-rdv{margin:0 -6px;padding:8px 6px 12px;min-height:44px;cursor:pointer}
-.q-jour .q-pt{position:absolute;left:50%;bottom:4px;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:#7C8699}
-.q-jour .q-pt.q-tard{background:var(--retard)}
-.q-jour .q-pt.q-jour-j{background:var(--bleu)}
-.q-jours{position:relative}
-.q-jour{z-index:1}
-/* la pastille du jour : une forme qui glisse, et par-dessus elle une copie des sept jours en blanc, découpée à sa taille (le texte s'inverse exactement dessous) */
-.q-pil{position:absolute;left:0;top:0;bottom:0;width:34px;border-radius:var(--r1);background:var(--nuit);box-shadow:0 10px 18px -10px rgba(11,21,48,.7);pointer-events:none;z-index:0}
-.q-inv{position:absolute;inset:0;display:grid;grid-template-columns:repeat(7,1fr);gap:4px;background:var(--nuit);pointer-events:none;z-index:2}
-.q-inv .q-jour small,.q-inv .q-jour b{color:#fff}
-.q-inv .q-pt{background:#fff}
-.q-js .q-pil,.q-js .q-inv{opacity:0}
-.q-rel{z-index:0}
-.q-rel.q-porte{z-index:2}
-.q-tout[hidden],.q-vide[hidden]{display:none}
-.q-infos .q-v.q-vieux em{background:var(--bleu)}
-.q-vide{font-size:13px;color:var(--gris);line-height:1.35;padding:0 4px}
-/* un picto sans geste dessiné à la main joue un petit rebond d'ensemble */
-.q-g .q-gen{animation:q-g-gen .4s var(--dep);transform-origin:12px 12px}
-@keyframes q-g-gen{0%,100%{transform:none}35%{transform:scale(1.16) rotate(-4deg)}70%{transform:scale(.97)}}
-/* sans classement d'usage : la colonne « Usage » n'existe pas */
-.q-sans-usage .q-table .q-tete,.q-sans-usage .q-table .q-lg{grid-template-columns:1fr 2.1fr}
-.q-sans-usage .q-lg .q-st,.q-sans-usage .q-tete span:last-child{display:none}
-.q-table .q-lg.q-ext{cursor:pointer}
-/* l'ouverture d'un outil mène au vrai écran : le panneau n'est qu'une carte (icône et nom), sans texte ni bouton */
-@media (max-width:860px){
-  .q-haut .q-logo .q-moi{display:grid;margin-left:auto;width:44px;height:44px;border-radius:50%;place-items:center;color:#fff;font-weight:700;font-size:14px;font-family:inherit;border:0;padding:0;cursor:pointer;background:linear-gradient(145deg,#3D82FF,#0050E6 60%,#0040B8);box-shadow:0 6px 14px -6px rgba(0,80,230,.6)}
-  .q-une{order:2;margin:16px 16px 0}
-  .q-extra{order:2;margin:16px 16px 0}
-  .q-liste-plus{margin:0}
-}
-.q-rel[hidden]{display:none}
-.q-jour .q-pt{transition:transform .2s var(--dep)}
-.q-jour.q-vise .q-pt{transform:scale(1.8)}
-`;
   // Relances dues (demande Manon, 10/09/2026) : date saisie fiche par fiche
   // (« Prochaine relance », V2.profil scope 'client') — carte sur l'accueil
   // listant les officines en retard / à relancer aujourd'hui / bientôt.
@@ -1590,41 +1174,42 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
       '</div>';
   }
   // ════════════════════════════════════════════
-  // ACCUEIL « q1 · L'officine s'éveille » (choisi par Will le 02/10/2026 ; remplace g4, validé le 30/09/2026)
+  // ACCUEIL u2 « le rail » (choisi par Will le 02/10/2026 ; remplace q1, lui-même venu de g4 validé le 30/09/2026)
   // Même accueil pour tous : les outils sont rangés selon le nombre total
   // d'ouvertures de l'équipe (table usage_ecran, lue par la fonction Supabase
   // accueil_ouvertures, qui ne rend que des totaux). Le RANG seul est affiché :
-  // jamais de chiffre d'ouvertures ni de nom de personne. Répartition de la maquette q1 : Officines et six autres outils
-  // dans la barre, cinq tuiles, le reste dans le tableau. Hors OPSO uniquement.
+  // jamais de chiffre d'ouvertures ni de nom de personne. Hors OPSO uniquement.
   // ════════════════════════════════════════════
   // Ordre de repli (mesure du 30/09/2026), utilisé tant que le vrai classement n'est pas là.
-  var G4_REPLI = ['pharma', 'produits', 'pilotage', 'marketing', 'infos', 'rdv', 'carte', 'appro', 'todo', 'biosimilaires', 'offilog', 'concurrents', 'remontees', 'marchefr', 'carteGrp', 'presentation', 'lgo', 'fiches', 'argument', 'audit', 'groupements', 'reforme2027'];
+  var G4_REPLI = ['pharma', 'produits', 'pilotage', 'marketing', 'infos', 'rdv', 'carte', 'appro', 'todo', 'biosimilaires', 'offilog', 'concurrents', 'remontees', 'marchefr', 'carteGrp', 'presentation', 'lgo', 'fiches', 'argument', 'audit', 'groupements', 'reforme2027', 'academy'];
   // k = nom de la route mesurée par V2.mesurer (= `ecran` côté base) ; page = écran qui doit exister.
   var G4_PORTES = {
-    pharma: { ico: 'officines', nom: 'Officines', ph: 'La fiche de chaque client et prospect', page: 'pharma' },
-    produits: { ico: 'catalogue', nom: 'Catalogue produits', ph: 'Prix et stock des 7 établissements', page: 'produits' },
-    pilotage: { ico: 'pilotage', nom: 'Pilotage', ph: 'CA, marge et objectifs', page: 'pilotage' },
-    marketing: { ico: 'marketing', nom: 'Marketing', ph: 'Supports, sélections, LinkedIn', page: 'marketing' },
-    infos: { ico: 'infos', nom: 'Infos du matin', ph: 'Le brief du jour', page: 'infos' },
-    rdv: { ico: 'rdv', nom: 'Rendez-vous', ph: 'Demander et suivre vos rendez-vous', page: 'rdv' },
-    carte: { ico: 'carte', nom: 'La carte', ph: 'Clients, prospects et votre tournée', page: 'carte' },
-    appro: { ico: 'appro', nom: 'Appro Intégral', ph: 'Couverture de stock et ruptures', page: 'appro' },
-    todo: { ico: 'todo', nom: 'To do list', ph: 'Rendez-vous à demander, remerciements, ouvertures', page: 'todo' },
-    biosimilaires: { ico: 'biosim', nom: 'Biosimilaires', ph: 'Les biosimilaires et leurs références', page: 'biosimilaires' },
-    offilog: { ico: 'offilog', nom: 'Offilog', ph: 'La centrale parapharmacie', page: 'offilog' },
-    concurrents: { ico: 'concurrents', nom: 'Concurrents', ph: 'Ce que font les autres', page: 'concurrents' },
-    remontees: { ico: 'remontees', nom: 'Remontées', ph: 'Le mur d\'idées de l\'équipe', page: 'remontees' },
-    marchefr: { ico: 'marche', nom: 'Le marché', ph: 'Le marché français d\'une référence, région par région', page: 'marchefr' },
-    carteGrp: { ico: 'carte-grp', nom: 'Carte des groupements', ph: 'Où sont les adhérents de chaque groupement', page: 'carteGrp' },
-    presentation: { ico: 'presentation', nom: 'Présentation Intégral', ph: 'Le groupe de grossistes-répartiteurs en quelques écrans', page: 'presentation' },
-    lgo: { ico: 'lgo', nom: 'Logiciels officine', ph: 'Importer le catalogue dans chaque logiciel', page: 'lgo' },
-    fiches: { ico: 'fiches', nom: 'Fiches PDF', ph: 'Les fiches à laisser en officine', page: 'fiches' },
-    argument: { ico: 'argument', nom: 'L\'Argument', ph: 'Quoi répondre, objection par objection', page: 'argument' },
-    audit: { ico: 'audit', nom: 'Audit marge', ph: 'La marge d\'une officine, calculée avec elle', page: 'audit' },
+    pharma: { fam: 'clients', ico: 'officines', nom: 'Officines', ph: 'La fiche de chaque client et prospect', page: 'pharma' },
+    produits: { fam: 'produits', ico: 'catalogue', nom: 'Catalogue produits', ph: 'Prix et stock des 7 établissements', page: 'produits' },
+    pilotage: { fam: 'piloter', ico: 'pilotage', nom: 'Pilotage', ph: 'CA, marge et objectifs', page: 'pilotage' },
+    marketing: { fam: 'communiquer', ico: 'marketing', nom: 'Marketing', ph: 'Supports, sélections, LinkedIn', page: 'marketing' },
+    infos: { fam: 'veille', ico: 'infos', nom: 'Infos du matin', ph: 'Le brief du jour', page: 'infos' },
+    rdv: { fam: 'clients', ico: 'rdv', nom: 'Rendez-vous', ph: 'Demander et suivre vos rendez-vous', page: 'rdv' },
+    carte: { fam: 'clients', ico: 'carte', nom: 'La carte', ph: 'Clients, prospects et votre tournée', page: 'carte' },
+    appro: { fam: 'piloter', ico: 'appro', nom: 'Appro Intégral', ph: 'Couverture de stock et ruptures', page: 'appro' },
+    todo: { fam: 'clients', ico: 'todo', nom: 'To do list', ph: 'Rendez-vous à demander, remerciements, ouvertures', page: 'todo' },
+    biosimilaires: { fam: 'produits', ico: 'biosim', nom: 'Biosimilaires', ph: 'Les biosimilaires et leurs références', page: 'biosimilaires' },
+    offilog: { fam: 'produits', ico: 'offilog', nom: 'Offilog', ph: 'La centrale parapharmacie', page: 'offilog' },
+    concurrents: { fam: 'veille', ico: 'concurrents', nom: 'Concurrents', ph: 'Ce que font les autres', page: 'concurrents' },
+    remontees: { fam: 'aide', ico: 'remontees', nom: 'Remontées', ph: 'Le mur d\'idées de l\'équipe', page: 'remontees' },
+    marchefr: { fam: 'veille', ico: 'marche', nom: 'Le marché', ph: 'Le marché français d\'une référence, région par région', page: 'marchefr' },
+    carteGrp: { fam: 'veille', ico: 'carte-grp', nom: 'Carte des groupements', ph: 'Où sont les adhérents de chaque groupement', page: 'carteGrp' },
+    presentation: { fam: 'communiquer', ico: 'presentation', nom: 'Présentation Intégral', ph: 'Le groupe de grossistes-répartiteurs en quelques écrans', page: 'presentation' },
+    lgo: { fam: 'communiquer', ico: 'lgo', nom: 'Logiciels officine', ph: 'Importer le catalogue dans chaque logiciel', page: 'lgo' },
+    fiches: { fam: 'clients', ico: 'fiches', nom: 'Fiches PDF', ph: 'Les fiches à laisser en officine', page: 'fiches' },
+    argument: { fam: 'produits', ico: 'argument', nom: 'L\'Argument', ph: 'Quoi répondre, objection par objection', page: 'argument' },
+    audit: { fam: 'produits', ico: 'audit', nom: 'Audit marge', ph: 'La marge d\'une officine, calculée avec elle', page: 'audit' },
     // Groupements : pas d'écran à part, c'est l'onglet « groupements » des officines.
-    groupements: { ico: 'groupements', nom: 'Groupements', ph: 'Les listes et listings d\'achats', page: 'pharma', js: 'V2.go(\'pharma\',\'groupements\')' },
+    groupements: { fam: 'clients', ico: 'groupements', nom: 'Groupements', ph: 'Les listes et listings d\'achats', page: 'pharma', js: 'V2.go(\'pharma\',\'groupements\')' },
     // Réforme 2027 : document privé, adresse signée valable 1 h, jamais servi par le dépôt public.
-    reforme2027: { ico: 'reforme', nom: 'Réforme 2027', ph: 'Ce qui change pour la marge officinale', page: 'pilotage', js: 'V2.ouvrirDocProtege(\'reforme2027\')' }
+    reforme2027: { fam: 'produits', ico: 'reforme', nom: 'Réforme 2027', ph: 'Ce qui change pour la marge officinale', page: 'pilotage', js: 'V2.ouvrirDocProtege(\'reforme2027\')' },
+    // JARVIS Academy : lien externe (Q_ACADEMY), tuile de « Aide et idées » ; pas d'écran de l'app (page: null).
+    academy: { fam: 'aide', ico: 'academy', nom: 'JARVIS Academy', ph: 'Se former à l\'outil, pas à pas', page: null }
   };
   var G4_CLE_ORDRE = 'jarvis_accueil_ordre2';
   var _g4Ordre = null;        // [{e, o, p}] : écran, ouvertures, personnes (jamais affichés)
@@ -1692,83 +1277,54 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
     nom: 'Le catalogue, au format de chaque logiciel',
     ph: 'Winpharma, LGPI, Smart RX, LEO, Pharmaland… le fichier s\'importe tel quel, mode d\'emploi joint.' };
 
-  // ─────────────────────────────────────────────
-  // Q1 : données de l'accueil (rien n'est écrit en dur côté personne ni chiffre)
-  // ─────────────────────────────────────────────
-  // Pictos de la maquette : le trait se dessine (classe q-p). Douze avec leur geste dessiné à la main,
-  // les autres tirés des symboles de la maquette (ils jouent un rebond d'ensemble, classe q-gen).
-  var Q_PICTO = {"officines": "<path class=\"q-p\" pathLength=\"1\" d=\"M4 10 5 5h14l1 5\"/><path class=\"q-p\" pathLength=\"1\" d=\"M4 10v10h16V10\"/><path class=\"q-p q-a-fe\" pathLength=\"1\" d=\"M4 10c0 1.6 1.3 2.5 2.7 2.5S9.3 11.6 9.3 10c0 1.6 1.2 2.5 2.7 2.5s2.7-.9 2.7-2.5c0 1.6 1.2 2.5 2.6 2.5S20 11.6 20 10\"/><path class=\"q-p\" pathLength=\"1\" d=\"M10 20v-5h4v5\"/>", "catalogue": "<path class=\"q-p q-a-couv\" pathLength=\"1\" d=\"M4 7.5 12 4l8 3.5-8 3.5-8-3.5Z\"/><path class=\"q-p\" pathLength=\"1\" d=\"M4 7.5V16l8 4 8-4V7.5\"/><path class=\"q-p\" pathLength=\"1\" d=\"M12 11v9\"/>", "pilotage": "<path class=\"q-p\" pathLength=\"1\" d=\"M4 18a8 8 0 1 1 16 0\"/><path class=\"q-p q-a-aig\" pathLength=\"1\" d=\"M12 18l4-6\"/><path class=\"q-p\" pathLength=\"1\" d=\"M12 18h.01\"/>", "marketing": "<path class=\"q-p\" pathLength=\"1\" d=\"M4 10v4h3l7 4V6l-7 4H4Z\"/><path class=\"q-p q-a-onde\" pathLength=\"1\" d=\"M17 9.5a3.5 3.5 0 0 1 0 5\"/><path class=\"q-p\" pathLength=\"1\" d=\"M7 14l1 5h3\"/>", "infos": "<path class=\"q-p\" pathLength=\"1\" d=\"M16 12a4 4 0 1 1-8 0a4 4 0 1 1 8 0Z\"/><path class=\"q-p q-a-ray\" pathLength=\"1\" d=\"M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4\"/>", "rdv": "<path class=\"q-p\" pathLength=\"1\" d=\"M4 10V7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5V10\"/><path class=\"q-p\" pathLength=\"1\" d=\"M4 10h16M8 3v4M16 3v4\"/><g class=\"q-a-page\"><path class=\"q-p\" pathLength=\"1\" d=\"M4 10v7.5A2.5 2.5 0 0 0 6.5 20h11a2.5 2.5 0 0 0 2.5-2.5V10\"/><path class=\"q-p\" pathLength=\"1\" d=\"M9 15h2\"/></g>", "carte": "<g class=\"q-a-pin\"><path class=\"q-p\" pathLength=\"1\" d=\"M12 21s6-5.5 6-11a6 6 0 0 0-12 0c0 5.5 6 11 6 11Z\"/><path class=\"q-p\" pathLength=\"1\" d=\"M14.2 10a2.2 2.2 0 1 1-4.4 0a2.2 2.2 0 1 1 4.4 0Z\"/></g>", "appro": "<path class=\"q-p\" pathLength=\"1\" d=\"M4.5 12h5a1.5 1.5 0 0 1 1.5 1.5v5a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 3 18.5v-5A1.5 1.5 0 0 1 4.5 12Z\"/><path class=\"q-p\" pathLength=\"1\" d=\"M14.5 12h5a1.5 1.5 0 0 1 1.5 1.5v5a1.5 1.5 0 0 1-1.5 1.5h-5a1.5 1.5 0 0 1-1.5-1.5v-5a1.5 1.5 0 0 1 1.5-1.5Z\"/><path class=\"q-p q-a-haut\" pathLength=\"1\" d=\"M9.5 4h5A1.5 1.5 0 0 1 16 5.5v5a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 8 10.5v-5A1.5 1.5 0 0 1 9.5 4Z\"/>", "todo": "<path class=\"q-p q-a-c\" style=\"--i:0\" pathLength=\"1\" d=\"M4 7l2 2 3-3\"/><path class=\"q-p q-a-c\" style=\"--i:1\" pathLength=\"1\" d=\"M4 13l2 2 3-3\"/><path class=\"q-p q-a-c\" style=\"--i:2\" pathLength=\"1\" d=\"M4 19l2 2 3-3\"/><path class=\"q-p\" pathLength=\"1\" d=\"M12 7h8M12 13h8M12 19h8\"/>", "biosim": "<path class=\"q-p\" pathLength=\"1\" d=\"M9 8.5l5.5 .3M8 9.5l1.5 5M15.5 11l-4 4\"/><path class=\"q-p q-a-n\" style=\"--i:0\" pathLength=\"1\" d=\"M9.5 7a2.5 2.5 0 1 1-5 0a2.5 2.5 0 1 1 5 0Z\"/><path class=\"q-p q-a-n\" style=\"--i:1\" pathLength=\"1\" d=\"M19.5 9a2.5 2.5 0 1 1-5 0a2.5 2.5 0 1 1 5 0Z\"/><path class=\"q-p q-a-n\" style=\"--i:2\" pathLength=\"1\" d=\"M12.5 17a2.5 2.5 0 1 1-5 0a2.5 2.5 0 1 1 5 0Z\"/>", "offilog": "<g class=\"q-a-chariot\"><path class=\"q-p\" pathLength=\"1\" d=\"M3 5h2l2.5 11h11L21 8H6.3\"/><path class=\"q-p\" pathLength=\"1\" d=\"M10.3 20a1.3 1.3 0 1 1-2.6 0a1.3 1.3 0 1 1 2.6 0Z\"/><path class=\"q-p\" pathLength=\"1\" d=\"M18.3 20a1.3 1.3 0 1 1-2.6 0a1.3 1.3 0 1 1 2.6 0Z\"/></g>", "concurrents": "<path class=\"q-p q-a-oeil\" pathLength=\"1\" d=\"M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z\"/><path class=\"q-p q-a-pup\" pathLength=\"1\" d=\"M15 12a3 3 0 1 1-6 0a3 3 0 1 1 6 0Z\"/>", "remontees": "<path class=\"q-p\" pathLength=\"1\" d=\"M9 18h6M10 21h4M8.5 14.5a6 6 0 1 1 7 0c-.8.6-1.5 1.5-1.5 2.5h-4c0-1-.7-1.9-1.5-2.5Z\"/>", "marche": "<path class=\"q-p\" pathLength=\"1\" d=\"M20.5 12a8.5 8.5 0 1 1-17 0a8.5 8.5 0 1 1 17 0Z\"/><path class=\"q-p\" pathLength=\"1\" d=\"M3.5 12h17M12 3.5c3 3 3 14 0 17M12 3.5c-3 3-3 14 0 17\"/>", "carte-grp": "<path class=\"q-p\" pathLength=\"1\" d=\"M7 14s4-3.5 4-7a4 4 0 0 0-8 0c0 3.5 4 7 4 7ZM17 21s4-3.5 4-7a4 4 0 0 0-8 0c0 3.5 4 7 4 7Z\"/><path class=\"q-p\" pathLength=\"1\" d=\"M8.3 7a1.3 1.3 0 1 1-2.6 0a1.3 1.3 0 1 1 2.6 0Z\"/><path class=\"q-p\" pathLength=\"1\" d=\"M18.3 14a1.3 1.3 0 1 1-2.6 0a1.3 1.3 0 1 1 2.6 0Z\"/>", "presentation": "<path class=\"q-p\" pathLength=\"1\" d=\"M5 4h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-14a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z\"/><path class=\"q-p\" pathLength=\"1\" d=\"M12 16v4M8 20h8M8 12l3-3 2 2 3-4\"/>", "logiciels": "<path class=\"q-p\" pathLength=\"1\" d=\"M6 5h12a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-12a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z\"/><path class=\"q-p\" pathLength=\"1\" d=\"M2 19h20M9 10l-2 1.5L9 13M15 10l2 1.5L15 13\"/>", "pdf": "<path class=\"q-p\" pathLength=\"1\" d=\"M6 3h8l5 5v13H6V3ZM14 3v5h5M9 13h6M9 17h6\"/>", "argument": "<path class=\"q-p\" pathLength=\"1\" d=\"M4 5h16v10H9l-5 4V5Z\"/><path class=\"q-p\" pathLength=\"1\" d=\"M8 9h8M8 12h5\"/>", "audit": "<path class=\"q-p\" pathLength=\"1\" d=\"M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2v-14a2 2 0 0 1 2-2Z\"/><path class=\"q-p\" pathLength=\"1\" d=\"M8 7h8M8 11h2M12 11h2M16 11h0M8 15h2M12 15h2M16 15h0M8 18h2M12 18h4\"/>", "groupements": "<path class=\"q-p\" pathLength=\"1\" d=\"M12 8a3 3 0 1 1-6 0a3 3 0 1 1 6 0Z\"/><path class=\"q-p\" pathLength=\"1\" d=\"M19.5 9a2.5 2.5 0 1 1-5 0a2.5 2.5 0 1 1 5 0Z\"/><path class=\"q-p\" pathLength=\"1\" d=\"M3 19c0-3.5 2.7-5.5 6-5.5s6 2 6 5.5M15 14c3 0 5.5 1.8 5.5 4.5\"/>", "reforme": "<path class=\"q-p\" pathLength=\"1\" d=\"M12 4v16M5 20h14M12 6l6 1.5M12 6 6 7.5M4 13l2-5.5 2 5.5a2 2 0 0 1-4 0ZM16 13l2-5.5 2 5.5a2 2 0 0 1-4 0Z\"/>", "academy": "<path class=\"q-p\" pathLength=\"1\" d=\"M2.5 9 12 4.5 21.5 9 12 13.5 2.5 9ZM6 11v4.5c0 1.5 3 3 6 3s6-1.5 6-3V11M21.5 9v5\"/>", "plus": "<path class=\"q-p\" pathLength=\"1\" d=\"M12 5v14M5 12h14\"/>"};
-  var Q_SPRITE = "<svg width=\"0\" height=\"0\" style=\"position:absolute\" aria-hidden=\"true\"><defs><linearGradient id=\"q-gFeuille\" x1=\"0\" y1=\"1\" x2=\"1\" y2=\"0\"><stop offset=\"0\" stop-color=\"#8FB6FF\" stop-opacity=\".55\"/><stop offset=\"1\" stop-color=\"#DCE8FF\" stop-opacity=\".85\"/></linearGradient><linearGradient id=\"q-gFeuille2\" x1=\"0\" y1=\"1\" x2=\"1\" y2=\"0\"><stop offset=\"0\" stop-color=\"#3D82FF\" stop-opacity=\".55\"/><stop offset=\"1\" stop-color=\"#9DC0FF\" stop-opacity=\".75\"/></linearGradient><linearGradient id=\"q-gMur\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#FFFFFF\"/><stop offset=\"1\" stop-color=\"#E4ECFF\"/></linearGradient><linearGradient id=\"q-gVitre\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\"><stop offset=\"0\" stop-color=\"#CFE0FF\"/><stop offset=\"1\" stop-color=\"#7FA9FF\"/></linearGradient><linearGradient id=\"q-gPorte\" gradientUnits=\"userSpaceOnUse\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\" gradientTransform=\"translate(140 136) scale(26 70)\"><stop offset=\"0\" stop-color=\"#CFE0FF\"/><stop offset=\"1\" stop-color=\"#7FA9FF\"/></linearGradient><linearGradient id=\"q-gInt\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#FFFFFF\"/><stop offset=\"1\" stop-color=\"#DDE8FF\"/></linearGradient><linearGradient id=\"q-gStore\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"#3D82FF\"/><stop offset=\"1\" stop-color=\"#1E62E8\"/></linearGradient><radialGradient id=\"q-gl\" cx=\"35%\" cy=\"30%\" r=\"75%\"><stop offset=\"0\" stop-color=\"#7FB0FF\"/><stop offset=\".6\" stop-color=\"#0050E6\"/><stop offset=\"1\" stop-color=\"#003CB0\"/></radialGradient><radialGradient id=\"q-gc\" cx=\"40%\" cy=\"35%\" r=\"70%\"><stop offset=\"0\" stop-color=\"#fff\"/><stop offset=\"1\" stop-color=\"#D7E3F8\"/></radialGradient></defs><symbol id=\"q-i-officines\" viewBox=\"0 0 24 24\"><path d=\"M4 10 5 5h14l1 5M4 10v10h16V10M4 10c0 1.6 1.3 2.5 2.7 2.5S9.3 11.6 9.3 10c0 1.6 1.2 2.5 2.7 2.5s2.7-.9 2.7-2.5c0 1.6 1.2 2.5 2.6 2.5S20 11.6 20 10M10 20v-5h4v5\"/></symbol><symbol id=\"q-i-catalogue\" viewBox=\"0 0 24 24\"><path d=\"M4 7.5 12 4l8 3.5-8 3.5-8-3.5ZM4 7.5V16l8 4 8-4V7.5M12 11v9\"/></symbol><symbol id=\"q-i-pilotage\" viewBox=\"0 0 24 24\"><path d=\"M4 18a8 8 0 1 1 16 0M12 18l4-6M12 18h.01\"/></symbol><symbol id=\"q-i-marketing\" viewBox=\"0 0 24 24\"><path d=\"M4 10v4h3l7 4V6l-7 4H4ZM17 9.5a3.5 3.5 0 0 1 0 5M7 14l1 5h3\"/></symbol><symbol id=\"q-i-infos\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4\"/></symbol><symbol id=\"q-i-rdv\" viewBox=\"0 0 24 24\"><rect x=\"4\" y=\"5\" width=\"16\" height=\"15\" rx=\"2.5\"/><path d=\"M4 10h16M8 3v4M16 3v4M9 15h2\"/></symbol><symbol id=\"q-i-carte\" viewBox=\"0 0 24 24\"><path d=\"M12 21s6-5.5 6-11a6 6 0 0 0-12 0c0 5.5 6 11 6 11Z\"/><circle cx=\"12\" cy=\"10\" r=\"2.2\"/></symbol><symbol id=\"q-i-appro\" viewBox=\"0 0 24 24\"><rect x=\"3\" y=\"12\" width=\"8\" height=\"8\" rx=\"1.5\"/><rect x=\"13\" y=\"12\" width=\"8\" height=\"8\" rx=\"1.5\"/><rect x=\"8\" y=\"4\" width=\"8\" height=\"8\" rx=\"1.5\"/></symbol><symbol id=\"q-i-todo\" viewBox=\"0 0 24 24\"><path d=\"M4 7l2 2 3-3M4 13l2 2 3-3M4 19l2 2 3-3M12 7h8M12 13h8M12 19h8\"/></symbol><symbol id=\"q-i-biosim\" viewBox=\"0 0 24 24\"><circle cx=\"7\" cy=\"7\" r=\"2.5\"/><circle cx=\"17\" cy=\"9\" r=\"2.5\"/><circle cx=\"10\" cy=\"17\" r=\"2.5\"/><path d=\"M9 8.5l5.5 .3M8 9.5l1.5 5M15.5 11l-4 4\"/></symbol><symbol id=\"q-i-offilog\" viewBox=\"0 0 24 24\"><path d=\"M3 5h2l2.5 11h11L21 8H6.3\"/><circle cx=\"9\" cy=\"20\" r=\"1.3\"/><circle cx=\"17\" cy=\"20\" r=\"1.3\"/></symbol><symbol id=\"q-i-concurrents\" viewBox=\"0 0 24 24\"><path d=\"M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></symbol><symbol id=\"q-i-remontees\" viewBox=\"0 0 24 24\"><path d=\"M9 18h6M10 21h4M8.5 14.5a6 6 0 1 1 7 0c-.8.6-1.5 1.5-1.5 2.5h-4c0-1-.7-1.9-1.5-2.5Z\"/></symbol><symbol id=\"q-i-marche\" viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"8.5\"/><path d=\"M3.5 12h17M12 3.5c3 3 3 14 0 17M12 3.5c-3 3-3 14 0 17\"/></symbol><symbol id=\"q-i-carte-grp\" viewBox=\"0 0 24 24\"><path d=\"M7 14s4-3.5 4-7a4 4 0 0 0-8 0c0 3.5 4 7 4 7ZM17 21s4-3.5 4-7a4 4 0 0 0-8 0c0 3.5 4 7 4 7Z\"/><circle cx=\"7\" cy=\"7\" r=\"1.3\"/><circle cx=\"17\" cy=\"14\" r=\"1.3\"/></symbol><symbol id=\"q-i-presentation\" viewBox=\"0 0 24 24\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M12 16v4M8 20h8M8 12l3-3 2 2 3-4\"/></symbol><symbol id=\"q-i-logiciels\" viewBox=\"0 0 24 24\"><rect x=\"4\" y=\"5\" width=\"16\" height=\"11\" rx=\"2\"/><path d=\"M2 19h20M9 10l-2 1.5L9 13M15 10l2 1.5L15 13\"/></symbol><symbol id=\"q-i-pdf\" viewBox=\"0 0 24 24\"><path d=\"M6 3h8l5 5v13H6V3ZM14 3v5h5M9 13h6M9 17h6\"/></symbol><symbol id=\"q-i-argument\" viewBox=\"0 0 24 24\"><path d=\"M4 5h16v10H9l-5 4V5Z\"/><path d=\"M8 9h8M8 12h5\"/></symbol><symbol id=\"q-i-audit\" viewBox=\"0 0 24 24\"><rect x=\"5\" y=\"3\" width=\"14\" height=\"18\" rx=\"2\"/><path d=\"M8 7h8M8 11h2M12 11h2M16 11h0M8 15h2M12 15h2M16 15h0M8 18h2M12 18h4\"/></symbol><symbol id=\"q-i-groupements\" viewBox=\"0 0 24 24\"><circle cx=\"9\" cy=\"8\" r=\"3\"/><circle cx=\"17\" cy=\"9\" r=\"2.5\"/><path d=\"M3 19c0-3.5 2.7-5.5 6-5.5s6 2 6 5.5M15 14c3 0 5.5 1.8 5.5 4.5\"/></symbol><symbol id=\"q-i-reforme\" viewBox=\"0 0 24 24\"><path d=\"M12 4v16M5 20h14M12 6l6 1.5M12 6 6 7.5M4 13l2-5.5 2 5.5a2 2 0 0 1-4 0ZM16 13l2-5.5 2 5.5a2 2 0 0 1-4 0Z\"/></symbol><symbol id=\"q-i-academy\" viewBox=\"0 0 24 24\"><path d=\"M2.5 9 12 4.5 21.5 9 12 13.5 2.5 9ZM6 11v4.5c0 1.5 3 3 6 3s6-1.5 6-3V11M21.5 9v5\"/></symbol><symbol id=\"q-i-plus\" viewBox=\"0 0 24 24\"><path d=\"M12 5v14M5 12h14\"/></symbol><symbol id=\"q-i-loupe\" viewBox=\"0 0 24 24\"><circle cx=\"11\" cy=\"11\" r=\"6.5\"/><path d=\"m20 20-4.3-4.3\"/></symbol><symbol id=\"q-i-fleche\" viewBox=\"0 0 24 24\"><path d=\"M5 12h14M13 6l6 6-6 6\"/></symbol></svg>";
-  var Q_ILLU = "<span class=\"q-illu\" id=\"q-illu\" aria-hidden=\"true\"><span class=\"q-terre\"><span class=\"q-ter2\"><span class=\"q-pl\" data-depth=\"0.6\"><span class=\"q-v1\" style=\"--o:77.33% 100%;--r:-.25s\"><span class=\"q-v2\"><span class=\"q-v3\"><svg class=\"q-fl\" style=\"--d:50ms;--u:10deg\" viewBox=\"0 0 300 214\"><path d=\"M232 214 C 190 150, 196 70, 274 36 C 290 110, 272 170, 232 214 Z\" fill=\"url(#q-gFeuille)\"/></svg></span></span></span><span class=\"q-v1\" style=\"--o:20.67% 100%;--a:-3s;--b:-6s;--r:-.5s\"><span class=\"q-v2\"><span class=\"q-v3\"><svg class=\"q-fl\" style=\"--d:0ms;--u:-10deg\" viewBox=\"0 0 300 214\"><path d=\"M62 214 C 20 160, 10 100, 36 44 C 92 86, 96 160, 62 214 Z\" fill=\"url(#q-gFeuille2)\"/></svg></span></span></span></span><svg class=\"q-sol\" viewBox=\"0 0 300 214\"><ellipse cx=\"150\" cy=\"208\" rx=\"120\" ry=\"6\" fill=\"#0B1530\" opacity=\".18\"/></svg><span class=\"q-pl\" data-depth=\"0.3\"><span class=\"q-mt\"><svg class=\"q-facade\" viewBox=\"0 0 300 214\"><clipPath id=\"q-cpPorte\"><rect x=\"140\" y=\"136\" width=\"26\" height=\"70\" rx=\"3\"/></clipPath><rect x=\"78\" y=\"78\" width=\"150\" height=\"128\" rx=\"6\" fill=\"url(#q-gMur)\"/><rect x=\"78\" y=\"78\" width=\"150\" height=\"128\" rx=\"6\" fill=\"none\" stroke=\"#0B1530\" stroke-opacity=\".12\"/><rect x=\"86\" y=\"86\" width=\"134\" height=\"20\" rx=\"4\" fill=\"#0B1530\"/><rect x=\"96\" y=\"93\" width=\"52\" height=\"6\" rx=\"3\" fill=\"#fff\" opacity=\".9\"/><rect x=\"154\" y=\"93\" width=\"30\" height=\"6\" rx=\"3\" fill=\"#fff\" opacity=\".45\"/><rect x=\"90\" y=\"138\" width=\"42\" height=\"42\" rx=\"4\" fill=\"url(#q-gVitre)\"/><rect x=\"174\" y=\"138\" width=\"42\" height=\"42\" rx=\"4\" fill=\"url(#q-gVitre)\"/><path d=\"M94 160 h34 M94 170 h34 M178 160 h34 M178 170 h34\" stroke=\"#fff\" stroke-opacity=\".7\" stroke-width=\"2\"/><rect x=\"98\" y=\"150\" width=\"6\" height=\"8\" rx=\"1.5\" fill=\"#fff\" opacity=\".9\"/><rect x=\"108\" y=\"148\" width=\"6\" height=\"10\" rx=\"1.5\" fill=\"#1E9E6A\" opacity=\".9\"/><rect x=\"118\" y=\"151\" width=\"6\" height=\"7\" rx=\"1.5\" fill=\"#fff\" opacity=\".9\"/><rect x=\"182\" y=\"150\" width=\"6\" height=\"8\" rx=\"1.5\" fill=\"#fff\" opacity=\".9\"/><rect x=\"192\" y=\"149\" width=\"6\" height=\"9\" rx=\"1.5\" fill=\"#C7791A\" opacity=\".9\"/><rect x=\"202\" y=\"151\" width=\"6\" height=\"7\" rx=\"1.5\" fill=\"#fff\" opacity=\".9\"/><g clip-path=\"url(#q-cpPorte)\"><rect id=\"q-porteInt\" x=\"140\" y=\"136\" width=\"26\" height=\"70\" fill=\"url(#q-gInt)\"/><path d=\"M144 160h18M144 171h18\" stroke=\"#B7CBF7\" stroke-width=\"2\"/><rect x=\"145\" y=\"185\" width=\"16\" height=\"21\" rx=\"2\" fill=\"#B7CBF7\"/><g id=\"q-vg\"><rect x=\"140\" y=\"136\" width=\"13\" height=\"70\" fill=\"url(#q-gPorte)\"/><rect x=\"152.5\" y=\"140\" width=\".5\" height=\"62\" fill=\"#fff\" opacity=\".6\"/><circle cx=\"149\" cy=\"172\" r=\"1.8\" fill=\"#0B1530\" opacity=\".6\"/></g><g id=\"q-vd\"><rect x=\"153\" y=\"136\" width=\"13\" height=\"70\" fill=\"url(#q-gPorte)\"/><rect x=\"153\" y=\"140\" width=\".5\" height=\"62\" fill=\"#fff\" opacity=\".6\"/></g></g><rect x=\"140\" y=\"136\" width=\"26\" height=\"70\" rx=\"3\" fill=\"none\" stroke=\"#0B1530\" stroke-opacity=\".18\"/><rect x=\"134\" y=\"203\" width=\"38\" height=\"4\" rx=\"2\" fill=\"#0B1530\" opacity=\".25\"/><path id=\"q-seuil\" d=\"M140 206h26l9 8h-44Z\" fill=\"#fff\" opacity=\"0\"/></svg><i class=\"q-nuit\" style=\"--d:430ms;left:30%;top:64.486%;width:14%;height:19.626%\"></i><i class=\"q-ecl\" style=\"--d:430ms;left:30%;top:64.486%;width:14%;height:19.626%\"></i><i class=\"q-nuit\" style=\"--d:510ms;left:58%;top:64.486%;width:14%;height:19.626%\"></i><i class=\"q-ecl\" style=\"--d:510ms;left:58%;top:64.486%;width:14%;height:19.626%\"></i><i class=\"q-nuit q-po\" style=\"--d:590ms;left:46.667%;top:63.551%;width:8.667%;height:32.71%\"></i><i class=\"q-ecl q-po\" style=\"--d:590ms;left:46.667%;top:63.551%;width:8.667%;height:32.71%\"></i><span class=\"q-coffre\"><svg class=\"q-banne\" id=\"q-banne\" viewBox=\"0 0 300 214\"><path d=\"M80 112 H226 L222 128 H84 Z\" fill=\"url(#q-gStore)\"/><path d=\"M96 112 l-3 16 M120 112 l-2 16 M144 112 l-1 16 M168 112 l1 16 M192 112 l2 16 M216 112 l3 16\" stroke=\"#fff\" stroke-opacity=\".35\" stroke-width=\"3\"/></svg></span><svg class=\"q-fe\" style=\"--i:0;left:27.667%\" viewBox=\"83 126 16 12\"><path d=\"M84 128q7 8 14 0\"/></svg><svg class=\"q-fe\" style=\"--i:1;left:32.333%\" viewBox=\"97 126 16 12\"><path d=\"M98 128q7 8 14 0\"/></svg><svg class=\"q-fe\" style=\"--i:2;left:37.000%\" viewBox=\"111 126 16 12\"><path d=\"M112 128q7 8 14 0\"/></svg><svg class=\"q-fe\" style=\"--i:3;left:41.667%\" viewBox=\"125 126 16 12\"><path d=\"M126 128q7 8 14 0\"/></svg><svg class=\"q-fe\" style=\"--i:4;left:46.333%\" viewBox=\"139 126 16 12\"><path d=\"M140 128q7 8 14 0\"/></svg><svg class=\"q-fe\" style=\"--i:5;left:51.000%\" viewBox=\"153 126 16 12\"><path d=\"M154 128q7 8 14 0\"/></svg><svg class=\"q-fe\" style=\"--i:6;left:55.667%\" viewBox=\"167 126 16 12\"><path d=\"M168 128q7 8 14 0\"/></svg><svg class=\"q-fe\" style=\"--i:7;left:60.333%\" viewBox=\"181 126 16 12\"><path d=\"M182 128q7 8 14 0\"/></svg><svg class=\"q-fe\" style=\"--i:8;left:65.000%\" viewBox=\"195 126 16 12\"><path d=\"M196 128q7 8 14 0\"/></svg></span></span><span class=\"q-pl\" data-depth=\"0.15\"><i class=\"q-halo\"></i><svg class=\"q-pot\" viewBox=\"0 0 300 214\"><path d=\"M62 94 v12 h12\" stroke=\"#0B1530\" stroke-opacity=\".35\" stroke-width=\"3\" fill=\"none\" stroke-linecap=\"round\"/></svg><span class=\"q-cx\"><svg viewBox=\"0 0 300 214\"><rect x=\"52\" y=\"30\" width=\"20\" height=\"64\" rx=\"4\" fill=\"#1E9E6A\"/><rect x=\"30\" y=\"52\" width=\"64\" height=\"20\" rx=\"4\" fill=\"#1E9E6A\"/></svg><svg class=\"q-cc\" viewBox=\"0 0 300 214\"><rect x=\"56\" y=\"34\" width=\"12\" height=\"56\" rx=\"2\" fill=\"#6DF2B0\"/><rect x=\"34\" y=\"56\" width=\"56\" height=\"12\" rx=\"2\" fill=\"#6DF2B0\"/></svg><svg class=\"q-cl\" viewBox=\"0 0 300 214\"><clipPath id=\"q-cpCroix\"><rect x=\"56\" y=\"34\" width=\"12\" height=\"56\" rx=\"2\"/><rect x=\"34\" y=\"56\" width=\"56\" height=\"12\" rx=\"2\"/></clipPath><g clip-path=\"url(#q-cpCroix)\"><rect class=\"q-om\" x=\"30\" y=\"30\" width=\"64\" height=\"64\" fill=\"#1E9E6A\"/><rect class=\"q-k\" style=\"--i:0\" x=\"51\" y=\"51\" width=\"22\" height=\"22\"/><rect class=\"q-k\" style=\"--i:1\" x=\"45.5\" y=\"45.5\" width=\"33\" height=\"33\"/><rect class=\"q-k\" style=\"--i:2\" x=\"40\" y=\"40\" width=\"44\" height=\"44\"/><rect class=\"q-k q-k4\" style=\"--i:3\" x=\"35\" y=\"35\" width=\"54\" height=\"54\"/><rect class=\"q-ba\" x=\"30\" y=\"30\" width=\"64\" height=\"64\" fill=\"#D9FFEA\"/><rect class=\"q-br\" style=\"--i:0\" x=\"56\" y=\"34\" width=\"12\" height=\"22\" fill=\"#F2FFF8\"/><rect class=\"q-br\" style=\"--i:1\" x=\"68\" y=\"56\" width=\"22\" height=\"12\" fill=\"#F2FFF8\"/><rect class=\"q-br\" style=\"--i:2\" x=\"56\" y=\"68\" width=\"12\" height=\"22\" fill=\"#F2FFF8\"/><rect class=\"q-br\" style=\"--i:3\" x=\"34\" y=\"56\" width=\"22\" height=\"12\" fill=\"#F2FFF8\"/></g><rect x=\"60\" y=\"52\" width=\"4\" height=\"20\" fill=\"#fff\" opacity=\".9\"/><rect x=\"52\" y=\"60\" width=\"20\" height=\"4\" fill=\"#fff\" opacity=\".9\"/></svg></span></span><span class=\"q-pl\" data-depth=\"0.08\"><span class=\"q-mp\"><svg viewBox=\"0 0 300 214\"><path d=\"M246 206 h20 l-3-20 h-14 Z\" fill=\"#C7791A\"/></svg><span class=\"q-v1\" style=\"--o:85.33% 86.92%;--a:-5s;--b:-2s;--r:-.05s\"><span class=\"q-v2\"><span class=\"q-v3\"><svg class=\"q-fl\" style=\"--d:240ms;--u:-14deg\" viewBox=\"0 0 300 214\"><path d=\"M256 186 c-14-10 -16-28 -6-40 c10 10 12 26 6 40 Z M256 186 c 2-16 12-26 24-28 c-2 14 -12 24 -24 28 Z M256 186 c-8-14 -22-18 -32-14 c 6 12 20 16 32 14 Z\" fill=\"#1E9E6A\"/><path d=\"M256 186 v-30\" stroke=\"#13764E\" stroke-width=\"2\" stroke-linecap=\"round\"/></svg></span></span></span></span></span></span></span></span>";
-  // nom de porte (G4_PORTES) -> picto de la maquette
-  var Q_IC = { pharma: 'officines', produits: 'catalogue', pilotage: 'pilotage', marketing: 'marketing', infos: 'infos', rdv: 'rdv', carte: 'carte', appro: 'appro', todo: 'todo', biosimilaires: 'biosim', offilog: 'offilog', concurrents: 'concurrents', remontees: 'remontees', marchefr: 'marche', carteGrp: 'carte-grp', presentation: 'presentation', lgo: 'logiciels', fiches: 'pdf', argument: 'argument', audit: 'audit', groupements: 'groupements', reforme2027: 'reforme' };
-  // les cinq tuiles gardent leurs cinq teintes (par place, comme dans la maquette)
-  var Q_TEINTES = ['q-t-bleu', 'q-t-ambre', 'q-t-vert', 'q-t-clair', 'q-t-nuit'];
-  var Q_NAV = 7, Q_TUILES = 5;   // entrées de la barre latérale, tuiles : le reste va au tableau
+  // ── Accueil u2 : les pictos (une seule famille, trait 1,75, tirés de la maquette validée) ──
+  var U2_IC = {
+    officines: '<path d="M4 9l1.5-5h13L20 9"/><path d="M4 9a2.5 2.5 0 005 0 2.5 2.5 0 005 0 2.5 2.5 0 005 0"/><path d="M5 12v8h14v-8"/><path d="M10 20v-4h4v4"/>',
+    carte: '<path d="M12 21s7-6.2 7-11.5A7 7 0 005 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+    rdv: '<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/>',
+    todo: '<path d="M10 6h10M10 12h10M10 18h10"/><path d="M3.5 6l1.3 1.3L7 5M3.5 12l1.3 1.3L7 11M3.5 18l1.3 1.3L7 17"/>',
+    fiches: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/>',
+    groupements: '<circle cx="9" cy="8.5" r="3.2"/><path d="M3 19c0-3.2 2.7-5.5 6-5.5s6 2.3 6 5.5"/><path d="M16 5.6a3 3 0 010 5.8M18 14c1.8.7 3 2.3 3 5"/>',
+    produits: '<path d="M12 3l8 4.2v9.6L12 21l-8-4.2V7.2z"/><path d="M4 7.2l8 4.3 8-4.3M12 11.5V21"/>',
+    offilog: '<path d="M3 4h2.5l2 11h10l2-8H7"/><circle cx="9.5" cy="19" r="1.4"/><circle cx="16.5" cy="19" r="1.4"/>',
+    biosimilaires: '<circle cx="7" cy="7" r="3"/><circle cx="17" cy="9" r="3"/><circle cx="10" cy="17" r="3"/><path d="M9.8 7.6l4.4.8M8.6 9.8l.9 4.2M14.8 11.6l-3.2 3.4"/>',
+    audit: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5M8.5 11.5l2 2 3-4"/>',
+    argument: '<path d="M4 5h16v11H11l-4.5 4v-4H4z"/><path d="M8 9.5h8M8 12.5h5"/>',
+    reforme2027: '<path d="M3 9l9-5 9 5M5 9v9M9.5 9v9M14.5 9v9M19 9v9M3 20h18"/>',
+    pilotage: '<path d="M4.5 17a8.5 8.5 0 1115 0"/><path d="M12 14l3.5-4.5"/><circle cx="12" cy="14.2" r="1.2"/>',
+    appro: '<rect x="3.5" y="12" width="7" height="7" rx="1.5"/><rect x="13.5" y="12" width="7" height="7" rx="1.5"/><rect x="8.5" y="4" width="7" height="7" rx="1.5"/>',
+    infos: '<circle cx="12" cy="12" r="3.8"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"/>',
+    concurrents: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/>',
+    marchefr: '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.5 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.5-3.5-8.5s1-5.9 3.5-8.5z"/>',
+    carteGrp: '<path d="M9 4L3.5 6v14L9 18l6 2 5.5-2V4L15 6z"/><path d="M9 4v14M15 6v14"/>',
+    marketing: '<path d="M4 10v4h3l8 4V6L7 10z"/><path d="M18.5 9.5a3.5 3.5 0 010 5"/>',
+    presentation: '<rect x="3.5" y="4.5" width="17" height="11" rx="2"/><path d="M12 15.5V20M8 20h8"/>',
+    lgo: '<rect x="3.5" y="5" width="17" height="12" rx="2"/><path d="M8 21h8M12 17v4M9.5 10.5l2.5 2.5 2.5-2.5M12 8v5"/>',
+    remontees: '<path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"/>',
+    academy: '<path d="M2.5 9.5L12 5l9.5 4.5L12 14z"/><path d="M6.5 11.8V16c0 1.2 2.5 2.5 5.5 2.5s5.5-1.3 5.5-2.5v-4.2M21.5 9.5V14"/>',
+    chev: '<path d="M9 5l7 7-7 7"/>',
+    arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+    pin: '<path d="M12 16v5.5M8 3h8l-1 6 3 4.5H6L9 9z"/>',
+    up: '<path d="M6 15l6-6 6 6"/>',
+    down: '<path d="M6 9l6 6 6-6"/>',
+    user: '<circle cx="12" cy="8.5" r="3.7"/><path d="M4.5 20c0-4 3.3-6.3 7.5-6.3s7.5 2.3 7.5 6.3"/>',
+    download: '<path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 20h14"/>',
+    logout: '<path d="M9 4H5v16h4M16 8l4 4-4 4M20 12H9"/>',
+    espace: '<path d="M7 8h13l-3-3.5M17 16H4l3 3.5"/>',
+    grille: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/>',
+    widgets: '<rect x="4" y="4" width="16" height="7" rx="2"/><rect x="4" y="14" width="7" height="6" rx="2"/><rect x="14" y="14" width="6" height="6" rx="2"/>',
+    doc: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/>'
+  };
+  U2_IC.pharma = U2_IC.officines;
+  function u2Ic(n, s, cls) {
+    return '<svg class="u2-ic' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true" focusable="false"' + (s ? ' style="width:' + s + 'px;height:' + s + 'px"' : '') + '>' + (U2_IC[n] || U2_IC.doc) + '</svg>';
+  }
+  // Les six familles de la maquette, dans cet ordre. Le rattachement d'un outil est le champ `fam` de G4_PORTES.
+  var U2_FAMS = [['clients', 'Mes clients'], ['produits', 'Produits et prix'], ['piloter', 'Piloter'], ['veille', 'Veille'], ['communiquer', 'Communiquer'], ['aide', 'Aide et idées']];
+  var U2_WIDGETS = { infos: { nom: 'Infos du matin', page: 'infos' }, todo: { nom: 'To do list', page: 'todo' }, relance: { nom: 'À relancer', page: 'rdv' }, semaine: { nom: 'Ma semaine', page: 'rdv' } };
+  var U2_WORDRE = ['infos', 'todo', 'relance', 'semaine'];
   var Q_ACADEMY = 'https://jarvis-academy-fr.vercel.app/';
-  var _qInst = null;   // l'accueil monté (un seul à la fois)
-  var _qEntreeJouee = false;   // l'entrée chorégraphiée ne joue qu'une fois par chargement de page : tout retour sur l'accueil est posé d'emblée
-  function qSvg(ic) {
-    var p = Q_PICTO[ic] || Q_PICTO.officines;
-    return '<svg class="q-ic q-dz' + (/q-a-/.test(p) ? '' : ' q-gen') + '" viewBox="0 0 24 24" aria-hidden="true">' + p + '</svg>';
-  }
-  function qUse(ic, st) {
-    return '<svg class="q-ic" aria-hidden="true"' + (st ? ' style="' + st + '"' : '') + '><use href="#q-i-' + ic + '"/></svg>';
-  }
-  // Une porte (outil) : nom, phrase, picto, ce qu'elle fait au clic.
-  function qOutil(k, escale) {
-    var d = G4_PORTES[k], o = { k: k, nom: d.nom, ph: (escale && _g4Esc[k]) ? _g4Esc[k] : d.ph, ic: Q_IC[k] || 'officines' };
-    if (k === 'groupements') { o.act = 'go:pharma/groupements'; o.href = '#pharma/groupements'; }
-    // Réforme 2027 : document privé, ouvert dans un nouvel onglet — le navigateur n'accepte l'onglet que dans le geste du clic.
-    else if (k === 'reforme2027') { o.act = 'doc:reforme2027'; o.imm = true; }
-    else { o.act = 'go:' + k; o.href = '#' + k; }
-    return o;
-  }
-  function qAttr(o) {
-    var a = { tabindex: '0', 'data-outil': o.nom, 'data-ic': o.ic, 'data-k': o.k };
-    if (o.ext) { a.href = o.ext; a.target = '_blank'; a.rel = 'noopener'; }
-    else { a['data-act'] = o.act; if (o.href) a.href = o.href; else a.role = 'link'; if (o.imm) a['data-imm'] = '1'; }
-    return a;
-  }
-  function qAttrStr(a) { var s = ''; for (var k in a) s += ' ' + k + '="' + esc(a[k]) + '"'; return s; }
-  function qOutilsLiens(escale) {
-    var out = { academy: { k: 'academy', nom: 'JARVIS Academy', ph: 'Se former, à son rythme', ic: 'academy', ext: Q_ACADEMY } };
-    if (V2.pages.remontees) out.proposer = { k: 'proposer', nom: 'Proposer un outil', ph: 'Une idée d\'outil : elle rejoint les Remontées', ic: 'plus', act: 'go:remontees', href: '#remontees' };
-    var bsc = V2.basculeEspace && V2.basculeEspace();
-    if (bsc) {
-      // La barre du haut portait la bascule Intégral ↔ Escale ; l'accueil dessine son propre cadre : elle devient une ligne du tableau.
-      out.espace = bsc.to === 'escale'
-        ? { k: 'escale', nom: 'Espace Escale Pharma', ph: 'Le suivi Escale et ses officines clientes', ic: 'pilotage', act: 'space:escale', imm: false }
-        : { k: 'escale', nom: 'Espace Intégral Pharma', ph: 'Revenir au CRM d\'Intégral Pharma', ic: 'pilotage', act: 'space:crm', imm: false };
-    }
-    return out;
-  }
-  // Portes visibles (même filtre que l'ancien accueil : l'écran doit exister ; pas de « Logiciels officine » en Escale),
-  // rangées par l'ordre réel des ouvertures (rpc accueil_ouvertures, cache de session) ou, à défaut, l'ordre de repli.
-  // Répartition de la maquette : Officines en tête de la barre (c'est la grande porte du bandeau), 7 entrées de barre,
-  // 5 tuiles, le reste au tableau.
-  function qRepartition() {
-    var escale = !!(window.V2_BRAND && window.V2_BRAND.escale);
-    var cles = G4_REPLI.filter(function (k) {
-      var d = G4_PORTES[k];
-      if (!d || !V2.pages[d.page]) return false;
-      if (k === 'lgo' && escale) return false;
-      return true;
-    });
-    var rang = g4Classer(cles), reste = rang.slice(), nav = [], iP = reste.indexOf('pharma');
-    if (iP >= 0) { nav.push('pharma'); reste.splice(iP, 1); }
-    nav = nav.concat(reste.splice(0, Q_NAV - nav.length));
-    var tuiles = reste.splice(0, Q_TUILES);
-    var liens = qOutilsLiens(escale), table = reste.map(function (k) { return qOutil(k, escale); });
-    if (liens.espace) table.push(liens.espace);
-    return { nav: nav.map(function (k) { return qOutil(k, escale); }), tuiles: tuiles.map(function (k) { return qOutil(k, escale); }), table: table, academy: liens.academy, proposer: liens.proposer || null, sans: !_g4Ordre };
-  }
-  // « Usage » du tableau : se lit dans le classement réel (jamais un nombre) ; sans classement, pas de colonne.
-  function qUsage(k) {
-    if (!_g4Ordre || k === 'escale') return null;
-    for (var i = 0; i < _g4Ordre.length; i++) if (_g4Ordre[i].e === k) return _g4Ordre[i].o > 0 ? { t: 'Peu ouvert', d: false } : { t: 'À découvrir', d: true };
-    return { t: 'À découvrir', d: true };
-  }
+  var NOTE_USAGE = 'Les écrans que vous ouvrez sont enregistrés (votre nom et l\'heure), pour savoir lesquels améliorer en priorité.';
   // ── Dates ──
   function qDateTxt(d) {
     var s = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/\b1 /, '1er ');
@@ -1784,12 +1340,6 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
     if (diff < 0) return { t: diff === -1 ? 'Retard : hier' : 'Retard : ' + (-diff) + ' j', c: 'q-tard' };
     if (diff === 0) return { t: 'Aujourd\'hui', c: 'q-jour-j' };
     return { t: 'Dans ' + diff + ' j', c: '' };
-  }
-  function qInitiales(nom) {
-    var m = String(nom || '').replace(/[^A-Za-zÀ-ÿ0-9 '’-]/g, ' ').split(/[\s'’-]+/).filter(function (w) { return w && !/^(de|du|la|le|les|des|d|l)$/i.test(w); });
-    if (!m.length) return '';
-    if (m.length === 1) return m[0].slice(0, 2).toUpperCase();
-    return (m[0].charAt(0) + m[m.length - 1].charAt(0)).toUpperCase();
   }
   // Relances dues (mêmes données que l'ancien accueil : `_relances`, retard et jusqu'à J+2, huit au plus).
   function qRelances() {
@@ -1811,7 +1361,7 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
       _qInfos.enCours = false;
       if (j && typeof j === 'object') { _qInfos.data = j; _qInfos.t = Date.now(); }
       _qInfos.fini = true;
-      if (_qInst) _qInst.majInfos();
+      if (_u2.monte) u2MajWidgets();
     }
     try {
       var day = new Date().toISOString().slice(0, 10);
@@ -1843,136 +1393,447 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
     return { etat: 'ok', quand: quand, titre: titre, nb: nb, rupt: typeof d.ruptures_total === 'number' ? d.ruptures_total : null, rapp: Array.isArray(d.rappels) ? d.rappels.length : null,
       puce: quand === 'auj' ? 'Aujourd\'hui' : quand === 'hier' ? 'Hier' : qDateCourte(jour) };
   }
-  function qPlur(n, s, p) { return n + ' ' + (n > 1 ? p : s); }
-  // La phrase du bandeau : chaque morceau vient d'une donnée réelle, et se tait quand la donnée manque.
-  function qPhrase(m, rel, info) {
-    var h;
-    if (m.partiel) {
-      h = '<span id="v2-ventes-etat">Chargement des ventes… <b>' + ((V2.ventesProgres && V2.ventesProgres.n) || 0) + '</b> / ' + ((V2.ventesProgres && V2.ventesProgres.total) || '?') + '</span>';
-    } else {
-      h = 'Vous suivez <b id="q-n690">' + m.nb + '</b> ' + (m.nb > 1 ? 'officines actives' : 'officine active') +
-        (m.mes != null ? ', dont ' + qPlur(m.mes, 'est la vôtre', 'sont les vôtres') : '') + '.';
+
+  // ═════════════════════════════════════════════════════════════════
+  // ACCUEIL u2 « le rail » : les outils, les réglages gardés par personne, les quatre widgets.
+  // Trois zones : à gauche les réglages de son espace (rail + tiroir, jamais d'outil à ouvrir),
+  // au centre le seul choix de l'outil, à droite l'aperçu de la journée. Tout ce qui arrive en
+  // retard (relances, classement, brief, fin des ventes, réglages de la base) met à jour son
+  // morceau EN PLACE : l'accueil ne se redessine pas en entier et ne rejoue aucune entrée.
+  // Réglages : table `profils` (scope 'groupement', scope_id '__accueil_<id>__'), comme la To do list.
+  // ═════════════════════════════════════════════════════════════════
+  var _u2 = { S: null, id: null, dist: false, modifie: false, timer: 0, entree: false, onglet: 'ep', sec: null, ouvert: false, opener: null,
+    monte: false, mode: null, todoPret: false, lie: null, sig: {}, sigW: {} };
+
+  function u2Id() { return (V2.user && V2.user.id) || 'local'; }
+  function u2Cle() { return 'jarvis_accueil_u2_v1:' + u2Id(); }
+  function u2ScopeId() { return '__accueil_' + u2Id() + '__'; }
+  function u2Mode() { try { return window.matchMedia('(max-width:1099px)').matches; } catch (e) { return false; } }
+  function u2Escale() { return !!(window.V2_BRAND && window.V2_BRAND.escale); }
+  function u2Installee() { try { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch (e) { return false; } }
+  function u2Nb(n) { try { return (Number(n) || 0).toLocaleString('fr-FR'); } catch (e) { return String(n); } }
+
+  // ── Réglages : forme { v:1, epingles:[…]|null, ordre:{famille:[…]}, widgets:{…}, wordre:[…] } ──
+  // epingles null = « rien réglé » : les quatre premiers du classement réel. [] = tout désépinglé.
+  function u2Def() { return { v: 1, epingles: null, ordre: {}, widgets: { infos: true, todo: true, relance: true, semaine: true }, wordre: U2_WORDRE.slice() }; }
+  // Nettoyage à la lecture : clés inconnues ignorées, outils disparus retirés, doublons retirés.
+  function u2Net(raw) {
+    var S = u2Def();
+    if (!raw || typeof raw !== 'object') return S;
+    function connu(k, i, a) { return typeof k === 'string' && !!G4_PORTES[k] && a.indexOf(k) === i; }
+    if (Array.isArray(raw.epingles)) S.epingles = raw.epingles.filter(connu);
+    if (raw.ordre && typeof raw.ordre === 'object' && !Array.isArray(raw.ordre)) {
+      U2_FAMS.forEach(function (f) {
+        var o = raw.ordre[f[0]];
+        if (Array.isArray(o)) S.ordre[f[0]] = o.filter(function (k, i, a) { return connu(k, i, a) && G4_PORTES[k].fam === f[0]; });
+      });
     }
-    var morceaux = [];
-    if (m.partiel) return h;
-    if (info && info.etat === 'ok' && info.nb > 0 && (info.quand === 'auj' || info.quand === 'hier')) morceaux.push(qPlur(info.nb, 'nouvelle', 'nouvelles') + (info.quand === 'auj' ? ' aujourd\'hui' : ' hier'));
-    var dues = rel.l.filter(function (r) { return r.diff <= 0; }).length;
-    if (dues > 0) morceaux.push(qPlur(dues, 'relance', 'relances') + ' à faire');
-    if (morceaux.length) h += ' ' + morceaux.join(', ').replace(/^./, function (c) { return c.toUpperCase(); }) + (dues > 0 ? ' : la journée commence par vos fiches.' : '.');
-    return h;
+    if (raw.widgets && typeof raw.widgets === 'object') U2_WORDRE.forEach(function (k) { if (typeof raw.widgets[k] === 'boolean') S.widgets[k] = raw.widgets[k]; });
+    if (Array.isArray(raw.wordre) && raw.wordre.length === U2_WORDRE.length && raw.wordre.every(function (k, i, a) { return !!U2_WIDGETS[k] && a.indexOf(k) === i; })) S.wordre = raw.wordre.slice();
+    return S;
+  }
+  // Le navigateur d'abord (premier dessin immédiat), la ligne Supabase ensuite.
+  function u2S() {
+    if (!_u2.S || _u2.id !== u2Id()) {
+      _u2.id = u2Id(); _u2.dist = false; _u2.modifie = false;
+      var raw = null;
+      try { raw = JSON.parse(localStorage.getItem(u2Cle()) || 'null'); } catch (e) { raw = null; }
+      _u2.S = u2Net(raw);
+    }
+    return _u2.S;
+  }
+  // Écriture : navigateur tout de suite, base après 800 ms de calme (un seul envoi pour une rafale), échec silencieux.
+  function u2Garder() {
+    _u2.modifie = true;
+    try { localStorage.setItem(u2Cle(), JSON.stringify(_u2.S)); localStorage.setItem(u2Cle() + ':attente', '1'); } catch (e) {}
+    clearTimeout(_u2.timer); _u2.timer = setTimeout(u2Envoyer, 800);
+  }
+  function u2Envoyer() {
+    try {
+      var c = V2.sb && V2.sb(); if (!c || !V2.user) return;
+      var cle = u2Cle();
+      c.from('profils').upsert({ scope_type: 'groupement', scope_id: u2ScopeId(), data: _u2.S, updated_by: V2.user.id,
+        updated_by_name: V2.user.name || '', updated_at: new Date().toISOString() }, { onConflict: 'scope_type,scope_id' })
+        .then(function (u) { if (!(u && u.error)) { try { localStorage.removeItem(cle + ':attente'); } catch (e) {} } }, function () {});
+    } catch (e) {}
+  }
+  // La ligne de la base n'est lue qu'une fois par chargement de page ; si le navigateur a du neuf
+  // (changement fait avant la réponse, ou envoi resté en attente), c'est lui qui part vers la base.
+  function u2Distant() {
+    if (_u2.dist || !V2.user) return;
+    var c = V2.sb && V2.sb(); if (!c) return;
+    _u2.dist = true;
+    var id = u2Id();
+    try {
+      c.from('profils').select('data').eq('scope_type', 'groupement').eq('scope_id', u2ScopeId()).maybeSingle().then(function (r) {
+        if (u2Id() !== id || !r || r.error) return;
+        var attente = false; try { attente = localStorage.getItem(u2Cle() + ':attente') === '1'; } catch (e) {}
+        if (attente || _u2.modifie) { u2Envoyer(); return; }
+        if (!r.data || !r.data.data) return;
+        _u2.S = u2Net(r.data.data);
+        try { localStorage.setItem(u2Cle(), JSON.stringify(_u2.S)); } catch (e) {}
+        if (_u2.monte) u2Redessiner();
+      }, function () {});
+    } catch (e) {}
   }
 
-  // ─────────────────────────────────────────────
-  // Q1 : le HTML (mêmes blocs, mêmes classes que la maquette, préfixées q-)
-  // ─────────────────────────────────────────────
-  function qNavIn(o) { return '<span class="q-ico">' + qSvg(o.ic) + '</span><span class="q-tx"><b>' + esc(o.nom) + '</b><span data-ph>' + esc(o.ph) + '</span></span>'; }
-  function qTuileIn(o, i) { return '<span class="q-ico ' + Q_TEINTES[i % 5] + '">' + qSvg(o.ic) + '</span><span class="q-tx"><b>' + esc(o.nom) + '</b><span data-ph>' + esc(o.ph) + '</span></span>'; }
-  function qLigneIn(o) {
-    var u = o.ext ? null : qUsage(o.k);
-    return '<b>' + esc(o.nom) + '</b><span data-ph>' + esc(o.ph) + '</span>' + (u ? '<span class="q-st' + (u.d ? ' q-decouvrir' : '') + '"><i></i>' + u.t + '</span>' : '<span></span>');
+  // ── Les outils disponibles dans l'espace courant (mêmes filtres que l'ancien accueil), dans l'ordre réel des ouvertures ──
+  function u2Cles() {
+    var escale = u2Escale();
+    return g4Classer(G4_REPLI.filter(function (k) {
+      var d = G4_PORTES[k];
+      if (!d) return false;
+      if (k === 'lgo' && escale) return false;       // pas de « Logiciels officine » en Escale
+      return k === 'academy' || !!V2.pages[d.page];  // un outil dont l'écran n'est pas chargé n'apparaît pas
+    }));
   }
-  function qNavHtml(rep) {
-    return '<span class="q-fond" id="q-navFond" aria-hidden="true"></span><span class="q-barre" id="q-navBarre" aria-hidden="true"></span>' +
-      rep.nav.map(function (o, i) { return '<a class="' + (i === 0 ? 'q-on ' : '') + 'q-in q-g"' + qAttrStr(qAttr(o)) + '>' + qNavIn(o) + '</a>'; }).join('');
+  function u2Outil(k) {
+    var d = G4_PORTES[k];
+    var o = { k: k, nom: d.nom, ph: (u2Escale() && _g4Esc[k]) ? _g4Esc[k] : d.ph, act: 'go:' + k, href: '#' + k };
+    if (k === 'groupements') { o.act = 'go:pharma/groupements'; o.href = '#pharma/groupements'; }
+    else if (k === 'reforme2027') { o.act = 'doc:reforme2027'; o.href = '#pilotage'; }   // document privé : s'ouvre dans le geste du clic
+    else if (k === 'academy') { o.act = ''; o.href = Q_ACADEMY; o.ext = true; }
+    return o;
   }
-  function qTuilesHtml(rep) {
-    return rep.tuiles.map(function (o, i) { return '<a class="q-tuile q-in q-e"' + qAttrStr(qAttr(o)) + '>' + qTuileIn(o, i) + '</a>'; }).join('');
+  function u2Fam(f, cles) {
+    var l = cles.filter(function (k) { return G4_PORTES[k].fam === f; }), o = (u2S().ordre || {})[f] || [];
+    var tete = o.filter(function (k) { return l.indexOf(k) >= 0; });
+    return tete.concat(l.filter(function (k) { return tete.indexOf(k) < 0; }));
   }
-  function qTableHtml(rep) {
-    return '<span class="q-select" id="q-select" aria-hidden="true"></span>' +
-      rep.table.map(function (o) { return '<a class="q-lg q-in"' + qAttrStr(qAttr(o)) + '>' + qLigneIn(o) + '</a>'; }).join('');
+  function u2Epingles(cles) {
+    var l = u2S().epingles;
+    if (l === null) return cles.slice(0, 4);
+    return l.filter(function (k) { return cles.indexOf(k) >= 0; });
   }
-  function qCarteRel(r, i) {
-    var q = qQuand(r.diff), pid = encodeURIComponent(String(r.pid));
-    return '<a tabindex="0" class="q-rel q-in" href="#pharma/' + pid + '" data-outil="' + esc(r.name) + '" data-ic="officines" data-k="relance" data-act="rel:' + pid + '" data-i="' + i + '">' + qUse('officines') +
-      '<span class="q-tx"><b>' + esc(r.name) + '</b><span>' + (r.ville ? esc(r.ville) + ' · ' : '') + '<em' + (q.c ? ' class="' + q.c + '"' : '') + '>' + q.t + '</em></span></span><span class="q-av">' + esc(qInitiales(r.name)) + '</span></a>';
+  function u2Etat() {
+    var cles = u2Cles();
+    var fams = U2_FAMS.map(function (f) { return { k: f[0], nom: f[1], cles: u2Fam(f[0], cles) }; }).filter(function (f) { return f.cles.length; });
+    if (_u2.onglet !== 'ep' && !fams.some(function (f) { return f.k === _u2.onglet; })) _u2.onglet = 'ep';
+    return { cles: cles, fams: fams, ep: u2Epingles(cles) };
   }
-  // Un jour qui porte au moins une relance est un bouton, avec un point dessous.
-  function qJoursHtml(sem, rel, pj, copie) {
-    return sem.jours.map(function (j, k) {
-      var ids = pj[k], rdv = !copie && ids && ids.length, r0 = ids && rel.l[ids[0]], q = r0 && qQuand(r0.diff);
-      var lib = rdv ? j.lib.charAt(0).toUpperCase() + j.lib.slice(1) + ' : ' + (ids.length > 1 ? ids.length + ' relances, dont ' : '') + r0.name + ', ' + q.t : '';
-      return '<div class="q-jour' + (j.passe ? ' q-passe' : '') + (rdv ? ' q-rdv' : '') + (copie ? '' : ' q-in') + '"' +
-        (rdv ? ' role="button" tabindex="0" data-k="' + k + '" aria-pressed="' + (k === sem.dow ? 'true' : 'false') + '" aria-label="' + esc(lib) + '"' : '') + '>' +
-        '<small>' + j.n + '</small><b>' + j.j + '</b>' + (ids && ids.length ? '<i class="q-pt' + (qQuand(r0.diff).c ? ' ' + qQuand(r0.diff).c : '') + '"></i>' : '') + '</div>';
-    }).join('');
-  }
-  function qInfosIn(info) {
-    var titre = info.etat === 'ok' ? info.titre : info.etat === 'charge' ? 'Le brief du jour se charge…' : 'Le brief du jour n\'a pas pu se charger ici. Il s\'ouvre en entier dans l\'écran Infos.';
-    var cases = [];
-    if (info.etat === 'ok') {
-      if (info.nb != null) cases.push('<div class="q-v' + (info.quand === 'auj' ? '' : ' q-vieux') + '"><b>' + info.nb + '</b><span>' + (info.nb > 1 ? 'nouvelles' : 'nouvelle') + '</span><em>' + esc(info.puce) + '</em></div>');
-      if (info.rupt != null) cases.push('<div class="q-v"><b>' + info.rupt + '</b><span>' + (info.rupt > 1 ? 'ruptures en cours' : 'rupture en cours') + '</span><em>ANSM</em></div>');
-      if (info.rapp != null) cases.push('<div class="q-v"><b>' + info.rapp + '</b><span>' + (info.rapp > 1 ? 'rappels de produits' : 'rappel de produit') + '</span><em>DGCCRF</em></div>');
-    }
-    return '<div class="q-titre">' + esc(titre) + '</div>' +
-      (cases.length ? '<div class="q-trio" style="grid-template-columns:repeat(' + cases.length + ',1fr)">' + cases.join('') + '</div>' : '') +
-      '<div class="q-lire">Lire le brief du jour ' + qUse('fleche') + '</div>';
-  }
-  // « Nouveau » (G4_UNE) : jusqu'à la date de fin, jamais en Escale ni en OPSO.
-  function qUneHtml() {
+  // « Nouveau » (G4_UNE, décision de Will du 01/10) : lu dans G4_UNE, date de fin comprise ; jamais en Escale ni en OPSO.
+  function u2Nouveau(k) {
     var u = G4_UNE, b = window.V2_BRAND || {}, d = new Date();
     var jour = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
-    if (!u || b.escale || b.opso || !V2.pages[u.page] || jour > u.fin) return '';
-    return '<a tabindex="0" class="q-une q-in" href="#' + u.page + '" data-outil="' + esc(u.nom) + '" data-ic="' + (Q_IC[u.page] || 'officines') + '" data-k="une" data-act="go:' + u.page + '">' +
-      '<span class="q-ico q-t-clair">' + qSvg(Q_IC[u.page] || 'officines') + '</span>' +
-      '<span class="q-tx"><em class="q-nv">Nouveau</em><b>' + esc(u.nom) + '</b><span>' + esc(u.ph) + '</span></span>' + qUse('fleche') + '</a>';
-  }
-  function qIniPers(nom) {
-    var m = String(nom || '').split(/\s+/).filter(Boolean);
-    return (m.map(function (w) { return w.charAt(0); }).slice(0, 2).join('') || 'WM').toUpperCase();
-  }
-  function qPageHtml(m, calme, mode) {
-    var rep = qRepartition(), sem = qSemaine(), rel = qRelances(), info = qInfosModele(), u = V2.user || {}, br = window.V2_BRAND || {};
-    var pj = qParJour(rel.l, sem.dow), nom = u.name || '', ini = qIniPers(nom);
-    var phrase = qPhrase(m, rel, info);
-    var haut =
-      '<div class="q-haut">' +
-        '<div class="q-logo"><span class="q-rond">' + qUse('officines') + '</span><div><b>' + esc(br.name || 'Intégral Pharma') + '</b><small>' + esc(br.sub || 'Espace commercial') + '</small></div>' +
-          '<button type="button" class="q-moi" data-moi="1" aria-label="Menu du compte : ' + esc(nom) + '">' + esc(ini) + '</button></div>' +
-        '<div class="q-rech" id="q-rech"><label class="q-cherche">' + qUse('loupe') + '<input type="search" placeholder="Officine, produit, outil…" aria-label="Rechercher" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="q-res" aria-autocomplete="list"><kbd>' + MOD + 'K</kbd></label></div>' +
-        (rep.proposer ? '<a class="q-bt q-haut-bt"' + qAttrStr(qAttr(rep.proposer)) + '><span>' + qUse('plus', 'width:16px;height:16px') + 'Proposer un outil</span></a>' : '') +
-      '</div>';
-    var bandeau =
-      '<a tabindex="0" class="q-bandeau" href="#pharma" data-outil="Officines" data-ic="officines" data-k="pharma" data-act="go:pharma">' +
-        '<span class="q-lum" aria-hidden="true"><i></i></span><span class="q-rai" aria-hidden="true"><i></i></span>' +
-        '<h1>' + esc(m.salut) + ' ' + esc(m.prenom) + '</h1><div class="q-date">' + esc(qDateTxt(new Date())) + '</div><p>' + phrase + '</p>' +
-        '<span class="q-pill"><span>Ouvrir mes officines ' + qUse('fleche') + '</span></span>' + Q_ILLU + '</a>';
-    var outils = rep.tuiles.length
-      ? '<div class="q-sec q-outils q-in"><h2>Vos autres outils</h2><a tabindex="0" class="q-bt q-petit" href="#tous"><span>Tous vos outils</span></a></div><div class="q-tuiles">' + qTuilesHtml(rep) + '</div>' : '';
-    var tous = '<div class="q-sec q-in" id="q-tous"><h2>Tous vos outils</h2></div>' +
-      '<div class="q-table q-in"><div class="q-tete"><span>Outil</span><span class="q-c2">Ce qu\'il fait</span><span>Usage</span></div><div class="q-corps" id="q-corps">' + qTableHtml(rep) + '</div></div>';
-    var side =
-      '<aside class="q-side"><div class="q-logo"><span class="q-rond">' + qUse('officines') + '</span><div><b>' + esc(br.name || 'Intégral Pharma') + '</b><small>' + esc(br.sub || 'Espace commercial') + '</small></div></div>' +
-        '<nav class="q-nav" id="q-nav" aria-label="Vos outils les plus ouverts">' + qNavHtml(rep) + '</nav>' +
-        '<a class="q-academy"' + qAttrStr(qAttr(rep.academy)) + '>' +
-          '<div class="q-fleur" id="q-fleur" data-la="500" aria-hidden="true"><span class="q-suit" id="q-fleurSuit"><span class="q-ouvre">' +
-            '<svg class="q-lobes" viewBox="0 0 100 100"><g fill="url(#q-gl)"><ellipse cx="50" cy="26" rx="14" ry="22"/><ellipse cx="50" cy="74" rx="14" ry="22"/><ellipse cx="26" cy="50" rx="22" ry="14"/><ellipse cx="74" cy="50" rx="22" ry="14"/></g></svg>' +
-            '<svg class="q-coeur" viewBox="0 0 100 100"><circle cx="50" cy="50" r="15" fill="url(#q-gc)"/><circle cx="50" cy="50" r="6" fill="#0050E6"/></svg>' +
-          '</span></span></div>' +
-          '<b class="q-in" style="--d:540ms">JARVIS Academy</b><span class="q-ph q-in" style="--d:568ms" data-ph>Se former, à son rythme</span>' +
-          '<span class="q-btn q-in" style="--d:596ms">Ouvrir l\'Academy ' + qUse('fleche', 'width:14px;height:14px') + '</span></a></aside>';
-    var main = '<main class="q-main">' + haut + bandeau + qUneHtml() + ((V2.todo && !V2.pages.todo) ? '<div class="q-extra">' + V2.todo.cardHtml() + '</div>' : '') + outils + tous +
-      '<p class="q-note">Le code d\'accès de JARVIS Academy se demande à Will — il n\'est écrit nulle part.</p></main>';
-    var plus = rel.l.length > 3;
-    var droite = '<aside class="q-droite"><div class="q-pan">' +
-        '<div class="q-profil"><button type="button" class="q-avatar q-in q-e" data-moi="1" aria-label="Menu du compte : ' + esc(nom) + '">' + esc(ini) + '</button><b class="q-in">' + esc(nom) + '</b><span class="q-role q-in">' + esc(br.sub || 'Espace commercial') + '</span></div>' +
-        '<div class="q-sec q-d q-sem q-in"><h2>Votre semaine</h2><span class="q-mois" id="q-mois">' + esc(sem.mois) + '</span></div>' +
-        '<div class="q-jours" id="q-jours" aria-label="Cette semaine"><span class="q-pil" aria-hidden="true"></span>' + qJoursHtml(sem, rel, pj) + '<div class="q-inv" aria-hidden="true">' + qJoursHtml(sem, rel, pj, true) + '</div></div>' +
-        '<div class="q-sec q-d q-rl q-in"><h2>À relancer</h2></div>' +
-        '<div class="q-liste" id="q-liste">' + rel.l.map(qCarteRel).join('') + '</div>' +
-        '<div class="q-vide q-in" id="q-vide"' + (rel.pret && !rel.l.length ? '' : ' hidden') + '>Aucune relance à faire pour le moment.</div>' +
-        '<button type="button" class="q-tout q-in" id="q-tout"' + (plus ? '' : ' hidden') + ' aria-expanded="false">Tout afficher</button>' +
-      '</div>' +
-      (V2.pages.infos ? '<div class="q-sec q-d q-infos-t q-in"><h2>Infos du matin</h2></div><a tabindex="0" class="q-infos q-in" href="#infos" data-outil="Infos du matin" data-ic="infos" data-k="infos" data-act="go:infos">' + qInfosIn(info) + '</a>' : '') +
-      '</aside>';
-    return '<div class="q-page ' + (calme ? 'q-calme' : 'q-js' + (mode === 'pose' ? ' q-go q-pose' : mode === 'leger' ? ' q-leger' : '')) + (rep.sans ? ' q-sans-usage' : '') + '">' + Q_SPRITE + '<div class="q-app"><div class="q-carte">' + side + main + droite + '</div></div></div>';
+    return !!(u && u.page === k && !b.escale && !b.opso && V2.pages[u.page] && jour <= u.fin);
   }
 
-  // ─────────────────────────────────────────────
-  // Q1 : le mouvement et les gestes. Port de la maquette, monté et démonté proprement :
-  // une seule boucle d'images (elle s'arrête quand tout dort), des écouteurs tous retirés au départ.
-  // ─────────────────────────────────────────────
+  // ── Le centre ──
+  function u2Tuile(k, o) {
+    o = o || {};
+    var t = u2Outil(k);
+    return '<a class="v2-tuile u2-in" style="--i:' + (o.i || 0) + '" href="' + esc(t.href) + '"' +
+      (t.ext ? ' target="_blank" rel="noopener"' : ' data-u2-act="' + esc(t.act) + '"') + ' data-tool="' + esc(k) + '">' +
+      '<span class="v2-tuile-ico">' + u2Ic(k) + '</span>' +
+      '<span class="v2-tuile-tx">' + (u2Nouveau(k) ? '<span class="u2-nv">Nouveau</span>' : '') +
+        '<span class="v2-tuile-nm">' + esc(t.nom) + '</span><span class="v2-tuile-ds">' + esc(t.ph) + '</span></span>' +
+      (o.pin ? u2Ic('pin', 16, 'u2-epi') + '<span class="u2-sr">Épinglé</span>' : '') +
+      (t.ext ? '<span class="u2-sr">, s\'ouvre dans un nouvel onglet</span>' : '') +
+      u2Ic('chev', 20, 'v2-tuile-chev') + '</a>';
+  }
+  function u2OngletsHtml(etat) {
+    var tabs = [{ k: 'ep', nom: 'Épinglés' }].concat(etat.fams.map(function (f) { return { k: f.k, nom: f.nom }; }));
+    return tabs.map(function (t) {
+      var sel = _u2.onglet === t.k;
+      return '<button type="button" class="v2-tab" role="tab" id="u2-tab-' + t.k + '" aria-selected="' + sel + '" tabindex="' + (sel ? '0' : '-1') +
+        '" aria-controls="u2-panneau" data-u2-tab="' + t.k + '">' + esc(t.nom) + '</button>';
+    }).join('');
+  }
+  function u2PanneauHtml(etat) {
+    var l = etat.ep;
+    if (_u2.onglet !== 'ep') { var f = etat.fams.filter(function (x) { return x.k === _u2.onglet; })[0]; l = f ? f.cles : []; }
+    if (!l.length) {
+      return '<p class="u2-ep-vide">Aucun outil épinglé. ' + (u2Mode()
+        ? 'Ouvrez « Mon espace » avec votre avatar, en haut à droite, pour en épingler.'
+        : 'Ouvrez « Outils » dans le rail à gauche pour en épingler.') + '</p>';
+    }
+    var n = 2;
+    return '<div class="u2-tuiles">' + l.map(function (k) { return u2Tuile(k, { i: n++, pin: _u2.onglet !== 'ep' && etat.ep.indexOf(k) >= 0 }); }).join('') + '</div>';
+  }
+  function u2CompteHtml(m) {
+    if (m.partiel) return '<span id="v2-ventes-etat">Chargement des ventes… <b>' + ((V2.ventesProgres && V2.ventesProgres.n) || 0) + '</b> / ' + ((V2.ventesProgres && V2.ventesProgres.total) || '?') + '</span>';
+    return '<b>' + u2Nb(m.nb) + '</b> ' + (m.nb > 1 ? 'officines actives' : 'officine active') + (m.mes != null ? ' · vos officines : <b>' + u2Nb(m.mes) + '</b>' : '');
+  }
+  function u2Salut(m) { return m.salut + (m.prenom ? ' ' + m.prenom : ''); }
+  function u2CentreHtml(m, etat) {
+    var on = u2OngletsHtml(etat), pa = u2PanneauHtml(etat), co = u2CompteHtml(m);
+    _u2.sig.onglets = on; _u2.sig.panneau = pa; _u2.sig.compte = co;
+    return '<div class="u2-salut u2-in" style="--i:0"><h1 class="v2-titre" id="u2-salut">' + esc(u2Salut(m)) + '</h1>' +
+        '<p class="v2-sous">' + esc(qDateTxt(new Date())) + '</p><p class="v2-sous" id="u2-compte">' + co + '</p></div>' +
+      '<div class="v2-tabs u2-in" style="--i:1" role="tablist" aria-label="Familles d\'outils" id="u2-onglets">' + on + '</div>' +
+      '<div id="u2-panneau" role="tabpanel" aria-labelledby="u2-tab-' + _u2.onglet + '">' + pa + '</div>';
+  }
+
+  // ── La droite : quatre widgets, chacun sur de vraies données ──
+  function u2WInfos() {
+    var info = qInfosModele();
+    if (info.etat === 'charge') return '<p class="u2-vide">Chargement du brief du jour…</p>';
+    var cases = [];
+    if (info.etat === 'ok') {
+      if (info.nb != null) cases.push('<div><b>' + info.nb + '</b><span>' + (info.nb > 1 ? 'nouvelles' : 'nouvelle') + '</span>' + (info.quand === 'auj' ? '' : '<small>' + esc(info.puce) + '</small>') + '</div>');
+      if (info.rupt != null) cases.push('<div><b>' + info.rupt + '</b><span>' + (info.rupt > 1 ? 'ruptures en cours' : 'rupture en cours') + '</span></div>');
+      if (info.rapp != null) cases.push('<div><b>' + info.rapp + '</b><span>' + (info.rapp > 1 ? 'rappels de produits' : 'rappel de produit') + '</span></div>');
+    }
+    if (!cases.length) return '<p class="u2-vide">Le brief du jour n\'est pas encore arrivé.</p>';
+    return '<div class="u2-cpt" style="--n:' + cases.length + '">' + cases.join('') + '</div>' +
+      (V2.pages.infos ? '<a class="u2-lien" href="#infos" data-u2-act="go:infos">Lire le brief du jour' + u2Ic('arrow') + '</a>' : '');
+  }
+  function u2WTodo() {
+    if (!V2.todo || !V2.todo.ouverts) return '<p class="u2-vide">Rien à faire pour l\'instant.</p>';
+    if (!_u2.todoPret) return '<p class="u2-vide">Chargement de votre liste…</p>';
+    var tous = V2.todo.urgents ? V2.todo.urgents() : V2.todo.ouverts();
+    if (!tous.length) return '<p class="u2-vide">Rien à faire pour l\'instant.</p>';
+    var h = tous.slice(0, 3).map(function (it) {
+      return '<button type="button" class="u2-chk" role="checkbox" aria-checked="false" data-u2-a="todo" data-v="' + esc(it.id) + '">' +
+        '<span class="u2-bx"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span>' +
+        '<span class="u2-t">' + esc(V2.todo.libelle ? V2.todo.libelle(it) : (it.nom || it.note || '')) + '</span></button>';
+    }).join('');
+    if (tous.length > 3) h += '<a class="u2-lien" href="#todo" data-u2-act="go:todo">+ ' + (tous.length - 3) + (tous.length - 3 > 1 ? ' autres à faire' : ' autre à faire') + u2Ic('arrow') + '</a>';
+    return h;
+  }
+  function u2WRelance() {
+    var r = qRelances();
+    if (!r.pret) return '<p class="u2-vide">Chargement des relances…</p>';
+    if (!r.l.length) return '<p class="u2-vide">Aucune relance à faire.</p>';
+    var h = r.l.slice(0, 3).map(function (x) {
+      var q = qQuand(x.diff), pid = encodeURIComponent(String(x.pid));
+      return '<a class="u2-rel" href="#pharma/' + pid + '" data-u2-act="rel:' + pid + '"><span class="u2-pt2' + (x.diff < 0 ? ' u2-tard' : x.diff === 0 ? ' u2-jour' : '') + '"></span>' +
+        '<span class="u2-tx"><b>' + esc(x.name) + '</b><span class="' + (x.diff < 0 ? 'u2-tard-t' : '') + '">' + esc(q.t) + '</span></span></a>';
+    }).join('');
+    var tot = (_relances || []).filter(function (x) { return x.diff <= 2; }).length;   // le vrai nombre dû, pas seulement les huit gardés
+    if (tot > 3) h += '<p class="u2-reste">+ ' + (tot - 3) + (tot - 3 > 1 ? ' autres relances' : ' autre relance') + '</p>';
+    return h;
+  }
+  function u2WSemaine() {
+    qRelances();   // lance la lecture des relances si elle n'est pas faite (un point sous chaque jour qui en porte)
+    var sem = qSemaine(), pj = qParJour(_relances || [], sem.dow);
+    var h = '<div class="u2-sem-m">' + esc(sem.mois + ' ' + new Date().getFullYear()) + '</div><div class="u2-sem" role="list">';
+    sem.jours.forEach(function (j, k) {
+      var n = pj[k] ? pj[k].length : 0, auj = k === sem.dow;
+      var lib = j.lib.charAt(0).toUpperCase() + j.lib.slice(1) + (n ? ' : ' + n + (n > 1 ? ' relances' : ' relance') : '');
+      h += '<div role="listitem" class="' + (auj ? 'u2-auj' : '') + '" aria-label="' + esc(lib) + '"' + (auj ? ' aria-current="date"' : '') + '>' + j.n + '<b>' + j.j + '</b><i class="u2-pt' + (n ? ' u2-on' : '') + '"></i></div>';
+    });
+    return h + '</div>';
+  }
+  function u2WCorps(k) { return k === 'infos' ? u2WInfos() : k === 'todo' ? u2WTodo() : k === 'relance' ? u2WRelance() : u2WSemaine(); }
+  function u2DroiteHtml() {
+    var S = u2S(), n = 3, h = '';
+    _u2.sigW = {};
+    S.wordre.forEach(function (k) {
+      if (!S.widgets[k]) return;
+      var w = U2_WIDGETS[k], corps = u2WCorps(k);
+      _u2.sigW[k] = corps;
+      h += '<section class="u2-wid u2-in" data-u2-w="' + k + '" aria-labelledby="u2-wt-' + k + '" style="--i:' + (n++) + '"><div class="u2-wid-h"><h2 id="u2-wt-' + k + '">' + esc(w.nom) + '</h2>' +
+        (V2.pages[w.page] ? '<a class="u2-lien" href="#' + w.page + '" data-u2-act="go:' + w.page + '">Ouvrir' + u2Ic('arrow') + '</a>' : '') +
+        '</div><div class="u2-wid-c">' + corps + '</div></section>';
+    });
+    if (!h) h = '<div class="u2-wid u2-in" style="--i:3"><p class="u2-vide">Aucun widget affiché. Réactivez-en dans « Mon espace ».</p></div>';
+    _u2.sig.droite = S.wordre.map(function (k) { return k + (S.widgets[k] ? '1' : '0'); }).join(',');
+    return h;
+  }
+  // Remplace le contenu d'un morceau seulement s'il a changé ; le focus revient sur le même élément.
+  function u2Poser(id, h, cle) {
+    var el = document.getElementById(id);
+    if (!el || _u2.sig[cle] === h) return;
+    var a = document.activeElement, rep = null;
+    if (a && el.contains(a)) rep = a.getAttribute('data-tool') ? '[data-tool="' + a.getAttribute('data-tool') + '"]' : a.id ? '#' + a.id : a.getAttribute('data-u2-act') ? '[data-u2-act="' + a.getAttribute('data-u2-act') + '"]' : null;
+    el.innerHTML = h; _u2.sig[cle] = h;
+    if (rep) { var n = el.querySelector(rep); if (n) { try { n.focus(); } catch (e) {} } }
+  }
+  function u2MajWidgets() {
+    if (!_u2.monte) return;
+    var S = u2S(), dr = document.getElementById('u2-droite');
+    if (!dr) return;
+    var struct = S.wordre.map(function (k) { return k + (S.widgets[k] ? '1' : '0'); }).join(',');
+    if (struct !== _u2.sig.droite) { dr.innerHTML = u2DroiteHtml(); return; }
+    S.wordre.forEach(function (k) {
+      if (!S.widgets[k]) return;
+      var el = dr.querySelector('[data-u2-w="' + k + '"] .u2-wid-c'); if (!el) return;
+      var h = u2WCorps(k);
+      if (_u2.sigW[k] === h) return;
+      el.innerHTML = h; _u2.sigW[k] = h;
+    });
+  }
+  function u2MajOnglets() { u2Poser('u2-onglets', u2OngletsHtml(u2Etat()), 'onglets'); }
+  function u2MajPanneau() {
+    var etat = u2Etat(), p = document.getElementById('u2-panneau');
+    if (p) p.setAttribute('aria-labelledby', 'u2-tab-' + _u2.onglet);
+    u2Poser('u2-panneau', u2PanneauHtml(etat), 'panneau');
+  }
+  function u2Onglet(k, focus) {
+    var etat = u2Etat();
+    if (k !== 'ep' && !etat.fams.some(function (f) { return f.k === k; })) k = 'ep';
+    _u2.onglet = k;
+    [].slice.call(document.querySelectorAll('#u2-onglets [data-u2-tab]')).forEach(function (b) {
+      var s = b.getAttribute('data-u2-tab') === k;
+      b.setAttribute('aria-selected', String(s)); b.setAttribute('tabindex', s ? '0' : '-1');
+    });
+    _u2.sig.onglets = u2OngletsHtml(etat);
+    u2MajPanneau();
+    if (focus) { var b = document.getElementById('u2-tab-' + k); if (b) { try { b.focus(); } catch (e) {} } }
+  }
+
+  // ── Le rail (≥ 1100 px) et le tiroir : seulement des réglages ──
+  function u2Rubriques() {
+    var l = [];
+    if (V2.basculeEspace && V2.basculeEspace()) l.push(['espace', 'Espace', 'espace']);
+    l.push(['outils', 'Outils', 'grille'], ['widgets', 'Widgets', 'widgets'], ['compte', 'Compte', 'user']);
+    return l;
+  }
+  function u2RailHtml() {
+    return u2Rubriques().map(function (r) {
+      return '<button type="button" class="u2-rb" data-u2-rail="' + r[0] + '" aria-haspopup="dialog" aria-expanded="false" aria-controls="u2-volet">' + u2Ic(r[2]) + r[1] + '</button>';
+    }).join('');
+  }
+  function u2BlocEspace() {
+    if (!(V2.basculeEspace && V2.basculeEspace())) return '';
+    var e = u2Escale();
+    return '<section class="u2-mon-b"><h3>Espace</h3><div class="v2-tabs u2-plein" role="radiogroup" aria-label="Espace">' +
+      '<button type="button" class="v2-tab" role="radio" aria-checked="' + !e + '" data-u2-a="esp" data-v="integral">Intégral</button>' +
+      '<button type="button" class="v2-tab" role="radio" aria-checked="' + e + '" data-u2-a="esp" data-v="escale">Escale</button></div>' +
+      '<p class="u2-note">Vous travaillez dans l\'espace ' + (e ? 'Escale' : 'Intégral') + '.</p></section>';
+  }
+  function u2BtnMouv(a, k, nom, i, n) {
+    return '<button type="button" class="u2-pbtn" data-u2-a="' + a + 'up" data-v="' + k + '" aria-label="Monter ' + esc(nom) + '"' + (i === 0 ? ' disabled' : '') + '>' + u2Ic('up') + '</button>' +
+      '<button type="button" class="u2-pbtn" data-u2-a="' + a + 'dn" data-v="' + k + '" aria-label="Descendre ' + esc(nom) + '"' + (i === n - 1 ? ' disabled' : '') + '>' + u2Ic('down') + '</button>';
+  }
+  function u2BlocWidgets() {
+    var S = u2S();
+    return '<section class="u2-mon-b"><h3>Mes widgets</h3>' + S.wordre.map(function (k, i) {
+      var nm = U2_WIDGETS[k].nom, on = S.widgets[k];
+      return '<div class="u2-mon-ligne"><span class="u2-lb' + (on ? '' : ' u2-off') + '">' + esc(nm) + '</span><span class="u2-fl">' + u2BtnMouv('w', k, nm, i, S.wordre.length) + '</span>' +
+        '<button type="button" class="u2-sw" role="switch" aria-checked="' + on + '" aria-label="Afficher ' + esc(nm) + '" data-u2-a="wtog" data-v="' + k + '"><i></i></button></div>';
+    }).join('') + '</section>';
+  }
+  function u2BlocOutils() {
+    var etat = u2Etat(), pins = etat.ep;
+    var h = '<section class="u2-mon-b"><h3>Mes outils</h3>';
+    if (!pins.length) h += '<p class="u2-vide u2-vide-mini">Aucun outil épinglé. Choisissez-en un ci-dessous.</p>';
+    pins.forEach(function (k, i) {
+      var nm = G4_PORTES[k].nom;
+      h += '<div class="u2-mon-ligne"><span class="u2-lb">' + esc(nm) + '</span><span class="u2-fl">' + u2BtnMouv('p', k, nm, i, pins.length) +
+        '<button type="button" class="u2-pbtn" aria-pressed="true" data-u2-a="pin" data-v="' + k + '" aria-label="Désépingler ' + esc(nm) + '">' + u2Ic('pin') + '</button></span></div>';
+    });
+    h += '<div class="v2-select u2-mon-sel"><select data-u2-sel="pin" aria-label="Épingler un outil"><option value="">Épingler un outil…</option>';
+    etat.fams.forEach(function (f) {
+      var l = f.cles.filter(function (k) { return pins.indexOf(k) < 0; });
+      if (l.length) h += '<optgroup label="' + esc(f.nom) + '">' + l.map(function (k) { return '<option value="' + k + '">' + esc(G4_PORTES[k].nom) + '</option>'; }).join('') + '</optgroup>';
+    });
+    return h + '</select>' + u2Ic('down') + '</div></section>';
+  }
+  // Les mêmes gestes que le menu du compte de la barre (V2.userMenu), et seulement ceux qui existent sur cet appareil.
+  function u2BlocCompte() {
+    var nom = (V2.user && V2.user.name) || '', br = window.V2_BRAND || {};
+    var ini = nom ? nom.split(' ').map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase() : '';
+    return '<section class="u2-mon-b"><h3>Mon compte</h3><div class="u2-mon-compte"><span class="v2-av">' + esc(ini) + '</span><div><b>' + esc(nom || 'Utilisateur') + '</b><span>' + esc(br.sub || 'Espace commercial') + '</span></div></div>' +
+      (u2Installee() ? '' : '<button type="button" class="u2-mon-act" data-u2-a="install">' + u2Ic('download') + 'Installer l\'application</button>') +
+      '<div class="u2-eto" id="u2-eto"></div>' +
+      '<button type="button" class="u2-mon-act u2-danger" data-u2-a="logout">' + u2Ic('logout') + 'Se déconnecter</button>' +
+      '<p class="u2-note">' + esc(NOTE_USAGE) + '</p></section>';
+  }
+  function u2VoletRendre() {
+    var v = document.getElementById('u2-volet'); if (!v) return;
+    var t, h;
+    if (u2Mode()) { t = 'Mon espace'; h = u2BlocEspace() + u2BlocWidgets() + u2BlocOutils() + u2BlocCompte(); }
+    else {
+      var s = _u2.sec || 'outils';
+      if (s === 'espace' && !(V2.basculeEspace && V2.basculeEspace())) s = 'outils';
+      _u2.sec = s;
+      t = s === 'espace' ? 'Espace' : s === 'outils' ? 'Outils' : s === 'widgets' ? 'Widgets' : 'Compte';
+      h = s === 'espace' ? u2BlocEspace() : s === 'outils' ? u2BlocOutils() : s === 'widgets' ? u2BlocWidgets() : u2BlocCompte();
+    }
+    document.getElementById('u2-vt').textContent = t;
+    document.getElementById('u2-mon').innerHTML = h;
+    var e = document.getElementById('u2-eto');
+    if (e && V2.etonnement && V2.etonnement.menu) { try { V2.etonnement.menu(e); } catch (x) {} }
+  }
+  function u2Rail() {
+    var mode = u2Mode();
+    [].slice.call(document.querySelectorAll('[data-u2-rail]')).forEach(function (b) {
+      b.setAttribute('aria-expanded', String(!!(_u2.ouvert && !mode && _u2.sec === b.getAttribute('data-u2-rail'))));
+    });
+    var av = document.querySelector('.u2-page .tp-avb');
+    if (av) av.setAttribute('aria-expanded', String(!!(_u2.ouvert && mode)));
+  }
+  function u2Verrou(on) { try { document.body.style.overflow = on ? 'hidden' : ''; } catch (e) {} }
+  function u2PremierFocus() {
+    var v = document.getElementById('u2-volet'); if (!v) return;
+    var l = [].slice.call(v.querySelectorAll('button:not([disabled]),a[href],select')).filter(function (x) { return x.getClientRects().length; });
+    if (l[0]) { try { l[0].focus(); } catch (e) {} }
+  }
+  function u2Ouvrir(sec, btn) {
+    var v = document.getElementById('u2-volet'), f = document.getElementById('u2-fond');
+    if (!v) return;
+    var mode = u2Mode();
+    if (_u2.ouvert && (mode || sec === _u2.sec)) { u2Fermer(true); return; }
+    _u2.sec = mode ? null : sec; _u2.opener = btn || null;
+    _u2.ouvert = true;
+    u2VoletRendre();
+    // ni `visibility` ni transition de visibilité : WebKit laissait « hidden » sur une partie du contenu (le menu « Épingler un outil »)
+    clearTimeout(_u2.tFerme);
+    v.classList.add('u2-vu'); void v.offsetWidth; v.classList.add('on');
+    if (f) f.classList.add('on');
+    if (mode) u2Verrou(true);
+    u2Rail();
+    setTimeout(u2PremierFocus, 30);
+  }
+  function u2Fermer(rendre) {
+    if (!_u2.ouvert) return;
+    var v = document.getElementById('u2-volet'), f = document.getElementById('u2-fond');
+    _u2.ouvert = false;
+    if (v) { v.classList.remove('on'); clearTimeout(_u2.tFerme); _u2.tFerme = setTimeout(function () { if (!_u2.ouvert) v.classList.remove('u2-vu'); }, 320); }
+    if (f) f.classList.remove('on');
+    u2Verrou(false); u2Rail();
+    var o = _u2.opener; _u2.opener = null;
+    if (rendre !== false && o && document.contains(o)) { try { o.focus(); } catch (e) {} }
+  }
+  // Le bouton « avatar » de la barre : sous 1100 px il ouvre le panneau « Mon espace » (appelé par V2.userMenu).
+  function u2PanneauAvatar(btn) {
+    if (!_u2.monte || !(V2.route && V2.route.name === 'home') || !u2Mode() || !document.getElementById('u2-volet')) return false;
+    u2Ouvrir(null, btn);
+    return true;
+  }
+
+  // ── Les gestes des réglages : agir, garder, redessiner, rendre le focus ──
+  function u2Echange(tous, vis, k, d) {
+    var i = vis.indexOf(k), j = i + d;
+    if (i < 0 || j < 0 || j >= vis.length) return;
+    var a = tous.indexOf(k), b = tous.indexOf(vis[j]);
+    if (a < 0 || b < 0) return;
+    var t = tous[a]; tous[a] = tous[b]; tous[b] = t;
+  }
+  function u2Agir(a, v, el) {
+    var S = u2S(), cles = u2Cles();
+    if (a === 'install') { u2Fermer(false); V2.installApp(); return; }
+    if (a === 'logout') { u2Fermer(false); V2.signOut(); return; }
+    if (a === 'esp') { if ((v === 'escale') !== u2Escale()) V2.goSpace(v === 'escale' ? 'escale' : 'crm'); return; }
+    if (a === 'todo') {
+      var fait = el.getAttribute('aria-checked') !== 'true';
+      el.setAttribute('aria-checked', String(fait));
+      if (V2.todo && V2.todo.cocher) V2.todo.cocher(v, fait);
+      return;
+    }
+    if (a === 'wtog') S.widgets[v] = !S.widgets[v];
+    else if (a === 'wup' || a === 'wdn') u2Echange(S.wordre, S.wordre, v, a === 'wup' ? -1 : 1);
+    else if (a === 'pin' || a === 'pup' || a === 'pdn') {
+      if (S.epingles === null) S.epingles = u2Epingles(cles);
+      if (a === 'pin') { var i = S.epingles.indexOf(v); if (i < 0) S.epingles.push(v); else S.epingles.splice(i, 1); }
+      else u2Echange(S.epingles, u2Epingles(cles), v, a === 'pup' ? -1 : 1);
+    } else return;
+    u2Garder();
+    u2Redessiner(a, v);
+  }
+  function u2Redessiner(a, v) {
+    u2MajOnglets(); u2MajPanneau(); u2MajWidgets(); u2VoletRendre();
+    if (!a) return;
+    var vo = document.getElementById('u2-volet'); if (!vo) return;
+    var alt = { wup: 'wdn', wdn: 'wup', pup: 'pdn', pdn: 'pup' };
+    var n = vo.querySelector('[data-u2-a="' + a + '"][data-v="' + v + '"]');
+    if (n && n.disabled) n = alt[a] ? vo.querySelector('[data-u2-a="' + alt[a] + '"][data-v="' + v + '"]') : null;
+    if (!n || n.disabled) n = vo.querySelector('select') || vo.querySelector('button:not([disabled])');
+    if (n) { try { n.focus(); } catch (e) {} }
+  }
+
   function qAgir(act) {
     var i = act.indexOf(':'), t = act.slice(0, i), v = act.slice(i + 1);
     if (t === 'go') { var p = v.split('/'); if (p[1]) V2.go(p[0], p[1]); else V2.go(p[0]); }
@@ -1980,561 +1841,104 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
     else if (t === 'doc') V2.ouvrirDocProtege(v);
     else if (t === 'space') V2.goSpace(v);
   }
-  function qMonter(page, m, mode) {
-    var D = document, B = D.body, W = window, R = page;
-    var inst = { page: page, mort: false };
-    function $(s, c) { return (c || page).querySelector(s); }
-    function $$(s, c) { return [].slice.call((c || page).querySelectorAll(s)); }
-    var JS = R.classList.contains('q-js');
-    /* trois façons d'arriver : 'plein' (première arrivée, données là : l'entrée complète), 'leger' (première arrivée pendant le chargement des ventes : seuls des déplacements en transform/opacity, rien de piloté en JS) et 'pose' (tout retour : la page est posée d'emblée) */
-    var PLEIN = JS && mode === 'plein', POSE = JS && mode === 'pose';
-    var ecoutes = [], minuteurs = [], seqT = 0, essaiT = [];
-    function ec(cible, type, fn, opt) { cible.addEventListener(type, fn, opt); ecoutes.push([cible, type, fn, opt]); }
-    function to(f, ms) { var id = setTimeout(function () { if (!inst.mort) f(); }, ms); minuteurs.push(id); return id; }
-    function borne(x, a, b) { return x < a ? a : x > b ? b : x; }
-    function f2(x) { return Math.round(x * 100) / 100; }
 
-    /* ---------- la physique : quatre ressorts écrits à la main, masse 1, pas borné à 1/30 s, une seule boucle qui s'arrête ---------- */
-    var PRE = { doux: [120, 22], vif: [260, 22], rebond: [180, 12], lourd: [60, 16] };
-    var vivants = [], taches = [], enRoute = false, dernier = 0, cache = D.hidden, F = {}, tDefil = 0, rafId = 0;
-    function Ressort(type, fn, eps) { var p = PRE[type]; this.k = p[0]; this.c = p[1]; this.x = 0; this.t = 0; this.v = 0; this.fn = fn; this.e = eps || .001; this.a = false; }
-    Ressort.prototype.vers = function (t) { this.t = t; if (!this.a) { this.a = true; vivants.push(this); } reveil(); return this; };
-    Ressort.prototype.pose = function (x) { this.x = this.t = x; this.v = 0; this.fn(x); return this; };
-    Ressort.prototype.type = function (n) { var p = PRE[n]; this.k = p[0]; this.c = p[1]; return this; };
-    function image(t) {
-      rafId = 0;
-      if (inst.mort) return;
-      var dt = dernier ? Math.min(1 / 30, (t - dernier) / 1000) : 1 / 60, h = dt / 2, i, j, s; dernier = t;
-      for (i = 0; i < taches.length;) if (t >= taches[i][0]) { var f = taches[i][1]; taches.splice(i, 1); f(); } else i++;
-      for (i = vivants.length; i--;) {
-        s = vivants[i];
-        for (j = 0; j < 2; j++) { s.v += (-s.k * (s.x - s.t) - s.c * s.v) * h; s.x += s.v * h; }
-        if (Math.abs(s.x - s.t) < s.e && Math.abs(s.v) < s.e * 30) { s.x = s.t; s.v = 0; s.a = false; vivants.splice(i, 1); }
-        s.fn(s.x);
-      }
-      if (tDefil && t - tDefil > 110) { tDefil = 0; finDefil(); }
-      rendu(t);
-      if ((vivants.length || taches.length || tDefil) && !cache) rafId = requestAnimationFrame(image); else { enRoute = false; dernier = 0; }
+  // ── Les écouteurs : posés une fois sur la racine, ils ignorent tout ce qui n'est pas dans l'accueil ──
+  function u2Clic(e) {
+    var t = e.target; if (!t || !t.closest || !t.closest('.u2-page, .u2-hors')) return;
+    var b;
+    if ((b = t.closest('[data-u2-rail]'))) { u2Ouvrir(b.getAttribute('data-u2-rail'), b); return; }
+    if ((b = t.closest('[data-u2-tab]'))) { u2Onglet(b.getAttribute('data-u2-tab'), true); return; }
+    if (t.closest('[data-u2-fermer]') || t.closest('#u2-fond')) { u2Fermer(true); return; }
+    if ((b = t.closest('[data-u2-a]'))) { u2Agir(b.getAttribute('data-u2-a'), b.getAttribute('data-v'), b); return; }
+    if ((b = t.closest('[data-u2-act]'))) {
+      // un vrai lien : clic avec modificateur = nouvel onglet, laissé au navigateur ; sinon l'écran change tout de suite
+      if (e.defaultPrevented || e.button > 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault(); qAgir(b.getAttribute('data-u2-act')); return;
     }
-    function reveil() { if (!enRoute && !cache && !inst.mort) { enRoute = true; dernier = 0; rafId = requestAnimationFrame(image); } }
-    function dans(ms, f) { taches.push([performance.now() + ms, f]); reveil(); }
-    ec(D, 'visibilitychange', function () { cache = D.hidden; R.classList.toggle('q-pause', cache); if (!cache) reveil(); });
-    /* les mêmes ressorts, intégrés une fois et confiés au compositeur : l'entrée reste fluide même si le script est occupé */
-    function courbe(n) {
-      var p = PRE[n], k = p[0], c = p[1], x = 0, v = 0, h = 1 / 240, i = 0, pts = [];
-      for (; i < 600; i++) { v += (-k * (x - 1) - c * v) * h; x += v * h; if (i % 8 === 7) { pts.push(Math.round(x * 1e3) / 1e3); if (i > 48 && Math.abs(x - 1) < .003 && Math.abs(v) < .05) break; } }
-      pts[pts.length - 1] = 1; return ['linear(0,' + pts.join(',') + ')', Math.round((i + 1) / 240 * 1000) + 'ms'];
-    }
-    if (JS && W.CSS && CSS.supports && CSS.supports('transition-timing-function', 'linear(0,.5,1)')) for (var nom in PRE) { var cb = courbe(nom); R.style.setProperty('--' + nom, cb[0]); R.style.setProperty('--t' + nom, cb[1]); }
-
-    /* ---------- repères ---------- */
-    var illu = $('.q-illu'), bandeau = $('.q-bandeau'), pill = $('.q-pill'), pillB = pill.firstElementChild, fleche = $('svg', pill), lum = $('.q-lum i');
-    var nav = $('.q-nav'), navA = $$('.q-nav a'), navOn = $('.q-nav a.q-on') || navA[0], corps = $('.q-corps'), lignes = $$('.q-corps .q-lg');
-    var fleur = $('.q-fleur'), fleurSuit = $('.q-suit'), champ = $('.q-cherche input'), rech = $('.q-rech');
-    var couches = $$('.q-pl', illu).map(function (c) { return { el: c, d: +c.getAttribute('data-depth') }; });
-    var feuilles = $$('.q-fl', illu).map(function (f, i) { return { el: f, s: i === 1 ? -1 : 1 }; });
-    var fes = $$('.q-fe', illu), banne = $('#q-banne'), vg = $('#q-vg'), vd = $('#q-vd'), seuil = $('#q-seuil');
-    var clavier = false;
-    /* retour sur l'accueil : on retire les marques d'entrée AVANT toute lecture de mise en page. Une fois le premier style calculé, les retirer ferait partir une transition (scale 1 vers none) sur chaque élément */
-    if (POSE) { $$('.q-in').forEach(fin); $$('[data-la]').forEach(la); illu.classList.add('q-allume'); }
-
-    /* ---------- une seule forme qui glisse d'une ligne à l'autre : le bord de tête part vite, l'autre suit ---------- */
-    function Glisse(cont, els) {
-      var o = this; o.h = 0; o.b = 0; o.cont = cont; o.els = els;
-      o.sh = new Ressort('doux', function (x) { o.h = x; F.g = 1; }, .05); o.sb = new Ressort('doux', function (x) { o.b = x; F.g = 1; }, .05);
-    }
-    Glisse.prototype.vers = function (a, net) {
-      var o = this, r = a.getBoundingClientRect(), c = o.cont.getBoundingClientRect(), h = r.top - c.top, b = r.bottom - c.top;
-      if (net || !JS) { o.sh.pose(h); o.sb.pose(b); return; }
-      if (h > o.sh.t) { o.sb.vers(b); dans(28, function () { o.sh.vers(h); }); } else { o.sh.vers(h); dans(28, function () { o.sb.vers(b); }); }
-    };
-    Glisse.prototype.rend = function () { var t = 'translate3d(0,' + f2(this.h) + 'px,0) scaleY(' + (Math.max(6, this.b - this.h) / 100).toFixed(4) + ')'; for (var i = 0; i < this.els.length; i++) this.els[i].style.transform = t; };
-    var gNav = new Glisse(nav, [$('#q-navFond'), $('#q-navBarre')]), gSel = new Glisse(corps, [$('#q-select')]), gRes = null, navVise = navOn;
-    function reposer() { if (inst.mort) return; gNav.vers(navVise, true); gNav.rend(); rB = null; rF = null; if (cible) viser(cible, true); for (var i = 0; i < armes.length; i++) armes[i]._y = armes[i].getBoundingClientRect().top + W.scrollY; poserPil(); }
-    var armes = [];
-
-    /* ---------- valeurs pilotées par les ressorts, écrites une fois par image ---------- */
-    var px = 0, py = 0, sc = 0, porte = 0, vent = 0, ond = 0, lx = 0, ly = 0, fx = 0, fy = 0, fr = 0;
-    var sPx = new Ressort('lourd', function (x) { px = x; F.illu = 1; }), sPy = new Ressort('lourd', function (x) { py = x; F.illu = 1; }), sSc = new Ressort('lourd', function (x) { sc = x; F.illu = 1; });
-    var sPorte = new Ressort('doux', function (x) { porte = x; F.porte = 1; }), sVent = new Ressort('lourd', function (x) { vent = x; F.vent = 1; }), sOnd = new Ressort('vif', function (x) { ond = x; });
-    var sLx = new Ressort('lourd', function (x) { lx = x; F.lum = 1; }, .05), sLy = new Ressort('lourd', function (x) { ly = x; F.lum = 1; }, .05);
-    var sFx = new Ressort('lourd', function (x) { fx = x; F.fleur = 1; }, .02), sFy = new Ressort('lourd', function (x) { fy = x; F.fleur = 1; }, .02), sFr = new Ressort('lourd', function (x) { fr = x; F.fleur = 1; }, .05);
-    function rendu(t) {
-      var i;
-      if (F.illu) { F.illu = 0; for (i = 0; i < couches.length; i++) { var c = couches[i]; c.el.style.transform = 'translate3d(' + f2(px * c.d * 22) + 'px,' + f2(py * c.d * 12 - sc * c.d * 40) + 'px,0)'; } }
-      if (F.porte) { F.porte = 0; var o = borne(porte, 0, 1), dx = f2(o * 11); vg.setAttribute('transform', 'translate(-' + dx + ' 0)'); vd.setAttribute('transform', 'translate(' + dx + ' 0)'); seuil.setAttribute('opacity', f2(o * .6)); fleche.style.transform = 'translate3d(' + f2(o * 4) + 'px,0,0)'; }
-      if (F.vent) { F.vent = 0; for (i = 0; i < feuilles.length; i++) feuilles[i].el.style.transform = vent ? 'rotate(' + f2(vent * feuilles[i].s * 9) + 'deg) scaleY(' + (1 - Math.abs(vent) * .06).toFixed(3) + ')' : ''; }
-      if (ond > .004 || ond < -.004) { var ph = t / 1000 * 13; for (i = 0; i < fes.length; i++) fes[i].style.transform = 'scaleY(' + (1 + ond * .5 * Math.sin(ph + i * .9)).toFixed(3) + ')'; banne.style.transform = 'skewX(' + f2(ond * 5 * Math.sin(ph * .6)) + 'deg)'; F.store = 1; }
-      else if (F.store) { F.store = 0; for (i = 0; i < fes.length; i++) fes[i].style.transform = ''; banne.style.transform = ''; }
-      if (F.lum) { F.lum = 0; lum.style.transform = 'translate3d(' + f2(lx) + 'px,' + f2(ly) + 'px,0)'; }
-      if (F.fleur) { F.fleur = 0; fleurSuit.style.transform = 'translate3d(' + f2(fx) + 'px,' + f2(fy) + 'px,0) rotate(' + f2(fr) + 'deg)'; }
-      if (F.g) { F.g = 0; gNav.rend(); gSel.rend(); if (gRes) gRes.rend(); }
-      if (F.rev) { F.rev = 0; reveler(); }
-      if (F.anneau) { F.anneau = 0; anneau.style.transform = 'translate3d(' + f2(A.x) + 'px,' + f2(A.y) + 'px,0)'; anneau.style.width = f2(A.w) + 'px'; anneau.style.height = f2(A.h) + 'px'; }
-    }
-
-    /* ---------- la croix à diodes : trois séquences, une toutes les 18 à 25 s, ou quand on touche l'officine ---------- */
-    var seqN = 0, seqOn = false;
-    /* paramètres d'adresse de test, sans aucun contrôle à l'écran : ?croix=1, 2 ou 3 rejoue cette séquence toutes les 2 s ; ?geste=Nom d'un outil rejoue le geste de son picto */
-    var essai = /[?&]croix=([123])/.exec(location.search), essaiG = /[?&]geste=([^&]+)/.exec(location.search);
-    function sequence(n) { if (seqOn || !JS) return; seqOn = true; n = n || (seqN = seqN % 3 + 1); illu.classList.add('q-s' + n); to(function () { illu.classList.remove('q-s' + n); seqOn = false; }, 1250); }
-    function planSeq() { clearTimeout(seqT); seqT = setTimeout(function () { if (inst.mort) return; if (!cache && !illu.classList.contains('q-hors')) sequence(); planSeq(); }, 18000 + Math.random() * 7000); }
-    function ondeStore() { sOnd.vers(.75); dans(150, function () { sOnd.vers(0); }); }
-
-    /* ---------- porte, lumière, parallaxe : tout part de la position du pointeur ---------- */
-    var rB = null, rP = null, rF = null, rT = 0, approche = 0, foc = false, pres = false;
-    function mesurer() { rB = bandeau.getBoundingClientRect(); rP = pillB.getBoundingClientRect(); rT = $('.q-bandeau p').getBoundingClientRect().right; }
-    function majPorte() { sPorte.vers(Math.max(approche, foc ? 1 : 0)); }
-
-    /* ---------- anneau de focus : il se pose au ressort et glisse d'un élément au suivant ---------- */
-    var anneau = D.createElement('span'), cible = null, A = { x: 0, y: 0, w: 0, h: 0 }; anneau.className = 'q-anneau'; anneau.setAttribute('aria-hidden', 'true'); R.appendChild(anneau);
-    var sAx = new Ressort('vif', function (x) { A.x = x; F.anneau = 1; }, .05), sAy = new Ressort('vif', function (x) { A.y = x; F.anneau = 1; }, .05), sAw = new Ressort('vif', function (x) { A.w = x; F.anneau = 1; }, .05), sAh = new Ressort('vif', function (x) { A.h = x; F.anneau = 1; }, .05);
-    function viser(el, net) {
-      cible = el; var t = el === champ ? el.closest('.q-cherche') : el.classList.contains('q-bt') ? el.firstElementChild : el;
-      var r = t.getBoundingClientRect(), mg = 3, x = r.left - mg, y = r.top - mg, w = r.width + 2 * mg, h = r.height + 2 * mg, neuf = !anneau.classList.contains('q-vu');
-      anneau.style.borderRadius = Math.min(24, (parseFloat(getComputedStyle(t).borderTopLeftRadius) || 6) + mg) + 'px';
-      if (net || neuf) { var g = net ? 0 : 7; sAx.pose(x - g); sAy.pose(y - g); sAw.pose(w + 2 * g); sAh.pose(h + 2 * g); }
-      sAx.vers(x); sAy.vers(y); sAw.vers(w); sAh.vers(h); anneau.classList.add('q-vu');
-    }
-    function sansAnneau() { cible = null; anneau.classList.remove('q-vu'); }
-
-    /* ---------- recherche : elle cherche vraiment (les 24 outils, les officines de l'app) ---------- */
-    function norm(s) { return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
-    function indexOutils() {
-      var vus = {}, out = [];
-      $$('[data-outil]').forEach(function (a, i) {
-        var k = a.getAttribute('data-k'); if (k === 'relance' || k === 'une' || a === bandeau) return;
-        var n = a.getAttribute('data-outil'); if (vus[n]) return; vus[n] = 1;
-        var ext = a.target === '_blank', e = $('[data-ph]', a);
-        out.push({ n: n, ph: e ? e.textContent : '', ic: a.getAttribute('data-ic') || 'officines', href: ext ? a.getAttribute('href') : '', act: a.getAttribute('data-act') || '', imm: a.hasAttribute('data-imm'), o: i + (ext || a.classList.contains('q-bt') ? 2000 : 0) });
-      });
-      return out.sort(function (a, b) { return a.o - b.o; });
-    }
-    var GRP_OFF = { 'Pharmacies': 1, 'Officines (France entière)': 1, 'Fiches créées': 1 };
-    function chercher(q, brut) {
-      var res = [];
-      indexOutils().forEach(function (it) {
-        var n = norm(it.n), p = norm(it.ph), s = n.indexOf(q) === 0 ? 0 : (' ' + n.replace(/['-]/g, ' ')).indexOf(' ' + q) >= 0 ? 1 : n.indexOf(q) >= 0 ? 2 : (' ' + p.replace(/['-]/g, ' ')).indexOf(' ' + q) >= 0 ? 3 : p.indexOf(q) >= 0 ? 4 : -1;
-        if (s >= 0) res.push({ it: it, s: s });
-      });
-      res.sort(function (a, b) { return a.s - b.s || a.it.o - b.it.o; });
-      var out = res.slice(0, 5).map(function (x) { return x.it; });
-      /* les officines : la même recherche que la palette de l'app (clientes, base nationale, fiches créées à la main) */
-      try {
-        var pid = {}, vues = 0, byId = {}; (V2.pharmacies || []).forEach(function (p) { byId[String(p.id)] = p; });
-        cmdkSearch(brut).forEach(function (x) {
-          if (vues >= 3 || !GRP_OFF[x.grp] || x.pid == null || pid[x.pid]) return;
-          pid[x.pid] = 1; vues++;
-          var p = byId[String(x.pid)];
-          out.push({ n: x.label, ph: x.meta || (p ? [p.ville, p.cp].filter(Boolean).join(' · ') : ''), ic: 'officines', fn: x.action, href: '', act: '', imm: false, o: 3000 });
-        });
-      } catch (e) {}
-      return out;
-    }
-    function esq(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
-    function marque(t, q) { var i = norm(t).indexOf(q); return i < 0 ? esq(t) : esq(t.slice(0, i)) + '<mark>' + esq(t.slice(i, i + q.length)) + '</mark>' + esq(t.slice(i + q.length)); }
-    var res = null, resIn = null, choix = [], sel = 0, listeSort = false;
-    var sH = new Ressort('doux', function (x) { if (!res) return; if (listeSort && x < 2) { res.remove(); res = resIn = gRes = null; listeSort = false; return; } res.style.height = f2(Math.max(0, x)) + 'px'; }, .3);
-    function fermerListe(net) {
-      choix = []; champ.setAttribute('aria-expanded', 'false'); champ.removeAttribute('aria-activedescendant'); if (!res) return;
-      if (net || !JS) { res.remove(); res = resIn = gRes = null; listeSort = false; sH.pose(0); } else { listeSort = true; sH.type('vif').vers(0); }
-    }
-    function choisir(i) { var rows = $$('.q-r', resIn); if (!rows[i]) return; sel = i; rows.forEach(function (a, k) { a.setAttribute('aria-selected', k === i ? 'true' : 'false'); }); champ.setAttribute('aria-activedescendant', 'q-r' + i); if (gRes) gRes.vers(rows[i]); }
-    function valider(i, e) {
-      var it = choix[i], a = resIn && $$('.q-r', resIn)[i]; if (!it || !a) return;
-      if (it.href) { W.open(it.href, '_blank', 'noopener'); return; }
-      if (e && e.preventDefault) e.preventDefault();
-      var fn = it.fn || function () { qAgir(it.act); };
-      fn(); champ.value = ''; fermerListe(true);   /* l'écran s'ouvre tout de suite */
-    }
-    function lister() {
-      var brut = champ.value.trim(), q = norm(brut); if (!q) { fermerListe(); return; }
-      listeSort = false;
-      choix = chercher(q, brut);
-      if (!res) {
-        res = D.createElement('div'); res.className = 'q-res'; res.id = 'q-res'; res.setAttribute('role', 'listbox'); res.setAttribute('aria-label', 'Résultats');
-        resIn = D.createElement('div'); resIn.className = 'q-res-in'; res.appendChild(resIn); rech.appendChild(res); sH.pose(0);
-        res.addEventListener('mousedown', function (e) { e.preventDefault(); });
-      }
-      champ.setAttribute('aria-expanded', 'true');
-      resIn.innerHTML = choix.length ? '<span class="q-res-hl" aria-hidden="true"></span>' + choix.map(function (it, i) {
-        return '<a class="q-r" role="option" id="q-r' + i + '" href="' + (it.href ? esq(it.href) : '#') + '"' + (it.href ? ' target="_blank" rel="noopener"' : '') + ' data-ic="' + it.ic + '"><span class="q-r-ic">' + qUse(it.ic) + '</span><span class="q-r-tx"><b>' + marque(it.n, q) + '</b>' + (it.ph ? '<span>' + marque(it.ph, q) + '</span>' : '') + '</span></a>';
-      }).join('') : '<div class="q-res-vide">Aucun outil ni officine à ce nom.</div>';
-      var rows = $$('.q-r', resIn);
-      rows.forEach(function (a, i) { a.addEventListener('mouseenter', function () { choisir(i); }); if (!choix[i].href) a.addEventListener('click', function (e) { valider(i, e); }); });
-      gRes = rows.length ? new Glisse(resIn, [$('.q-res-hl', resIn)]) : null; sel = 0;
-      if (gRes) { gRes.vers(rows[0], true); gRes.rend(); rows[0].setAttribute('aria-selected', 'true'); champ.setAttribute('aria-activedescendant', 'q-r0'); } else champ.removeAttribute('aria-activedescendant');
-      var H = resIn.offsetHeight + 2; if (JS) sH.type('doux').vers(H); else res.style.height = H + 'px';
-    }
-    ec(champ, 'input', lister);
-    ec(champ, 'focus', function () {
-      /* la base nationale des officines (chargée à la demande) et les fiches créées à la main : comme la palette */
-      try { preloadPharmaFrForSearch(); V2.ensurePharmaFr(function () { if (!inst.mort && D.activeElement === champ && champ.value.trim()) lister(); }); } catch (e) {}
-      if (champ.value.trim()) lister();
-    });
-    ec(champ, 'blur', function () { to(function () { if (D.activeElement !== champ) fermerListe(); }, 140); });
-    ec(champ, 'keydown', function (e) {
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { if (res && choix.length) { e.preventDefault(); choisir(borne(sel + (e.key === 'ArrowDown' ? 1 : -1), 0, choix.length - 1)); } }
-      else if (e.key === 'Enter') { if (res && choix.length) { e.preventDefault(); valider(sel, e); } }
-      else if (e.key === 'Escape' && (res || champ.value)) { e.preventDefault(); champ.value = ''; fermerListe(); }
-    });
-    /* ⌘K / Ctrl K : le champ de l'accueil prend le focus (la palette de l'app ne s'ouvre pas par-dessus) */
-    ec(D, 'keydown', function (e) {
-      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); e.stopPropagation(); clavier = true; champ.focus(); champ.select(); }
-      else if (e.key === 'Tab') clavier = true;
-    }, true);
-
-    /* ---------- la phrase, le compteur à tambours, les mots qui montent de derrière un cache ---------- */
-    var h1 = $('.q-bandeau h1'), dateEl = $('.q-date'), para = $('.q-bandeau p'), n690 = $('#q-n690'), dateTxt = dateEl.textContent, orig = { h1: h1.innerHTML, p: para.innerHTML }, motsP = [], textesFinis = !PLEIN;
-    function mot(c, cl) { var o = D.createElement('span'), i = D.createElement('span'); o.className = 'q-mo'; i.className = cl || 'q-mi'; if (typeof c === 'string') i.textContent = c; else i.appendChild(c); o.appendChild(i); return o; }
-    function decoupe(el, cl) {
-      var out = []; [].slice.call(el.childNodes).forEach(function (nd) {
-        if (nd.nodeType === 3) { var fr = D.createDocumentFragment(); nd.textContent.split(/(\s+)/).forEach(function (w) { if (!w) return; if (/^\s+$/.test(w)) fr.appendChild(D.createTextNode(' ')); else { var mm = mot(w, cl); fr.appendChild(mm); out.push(mm); } }); el.replaceChild(fr, nd); }
-        else { var ph = D.createComment(''); el.replaceChild(ph, nd); var mm = mot(nd, cl); el.replaceChild(mm, ph); out.push(mm); }
-      });
-      return out;
-    }
-    function phrase() { var lig = -1, hautDer = null; motsP.forEach(function (mm) { var t = mm.offsetTop; if (hautDer === null || Math.abs(t - hautDer) > 7) { lig++; hautDer = t; } mm.firstChild.style.setProperty('--d', (lig * 60) + 'ms'); }); para.classList.add('q-la'); }
-    /* un tambour par chiffre : les unités font le plus de chemin ; l'état final et le texte caché = le nombre */
-    function tambours(n) {
-      var t = String(n), L = t.length, h = '<span class="q-vh">' + t + '</span><span class="q-tb" aria-hidden="true">', i;
-      for (i = 0; i < L; i++) {
-        var d = +t.charAt(i), p = L - 1 - i, s = p === 0 ? 10 : p === 1 ? 7 : 2, items = [], j;
-        for (j = 0; j <= s; j++) items.push(((d - s + j) % 10 + 10) % 10);
-        h += '<span class="q-col"><span class="q-ph">' + d + '</span><span class="q-rb" style="--y:-' + f2(s / (s + 1) * 100) + '%;--d:' + (240 + i * 120) + 'ms">' + items.map(function (x) { return '<span>' + x + '</span>'; }).join('') + '</span></span>';
-      }
-      return h + '</span>';
-    }
-    function roulerPlus(n) {   /* le compteur arrive après l'entrée (ventes chargées) : il roule une fois */
-      var el = $('#q-n690'), nb; if (!el) return;
-      el.innerHTML = tambours(n); nb = $$('.q-rb', el);
-      nb.forEach(function (r) { r.style.transition = 'none'; r.style.transform = 'none'; }); void el.offsetWidth;
-      nb.forEach(function (r) { r.style.transition = ''; r.style.transform = ''; });
-      to(function () { var e2 = $('#q-n690'); if (e2) e2.textContent = String(n); }, 1700);
-    }
-
-    /* ---------- la semaine : la pastille du jour glisse ; un jour qui porte une relance la fait remonter ---------- */
-    var jours = $('.q-jours'), cel = $$('.q-jours>.q-jour'), pil = $('.q-pil'), nuit = $('.q-inv'), liste = $('#q-liste'), toutBtn = $('#q-tout'), videEl = $('#q-vide');
-    var sem = qSemaine(), selJ = sem.dow, pA = 0, pB = 0, tamp = PLEIN ? 1.45 : 1, plie = true, relSig = '', parJour = {}, relDonnees = [];
-    var sTamp = new Ressort('rebond', function (x) { tamp = x; rendrePil(); }, .002);
-    var sPa = new Ressort('doux', function (x) { pA = x; rendrePil(); }, .05), sPb = new Ressort('doux', function (x) { pB = x; rendrePil(); }, .05);
-    function bords(k) { var w = jours.clientWidth, cw = (w - 24) / 7, a = k * (cw + 4); return [a, a + cw]; }
-    function rendrePil() {
-      var w = jours.clientWidth, s = tamp, cx = (pA + pB) / 2, l = Math.max(2, pB - pA) * s, c = 'inset(0 ' + (w - pB).toFixed(2) + 'px 0 ' + pA.toFixed(2) + 'px round 8px)';
-      nuit.style.webkitClipPath = c; nuit.style.clipPath = c;
-      nuit.style.transformOrigin = cx.toFixed(2) + 'px 50%'; nuit.style.transform = s !== 1 ? 'scale(' + s.toFixed(4) + ')' : '';
-      pil.style.width = l.toFixed(2) + 'px'; pil.style.transform = 'translate3d(' + (cx - l / 2).toFixed(2) + 'px,0,0)' + (s !== 1 ? ' scaleY(' + s.toFixed(4) + ')' : '');
-    }
-    function poserPil() { var b = bords(selJ); pA = b[0]; pB = b[1]; sPa.pose(pA); sPb.pose(pB); rendrePil(); }
-    function glissePil(a, b) {
-      if (!JS) { pA = a; pB = b; rendrePil(); return; }
-      if (a > sPa.t) { sPb.vers(b); dans(28, function () { sPa.vers(a); }); } else { sPa.vers(a); dans(28, function () { sPb.vers(b); }); }
-    }
-    function poserTampon() { pil.style.opacity = nuit.style.opacity = '1'; if (PLEIN) sTamp.vers(1); else { tamp = 1; rendrePil(); } }
-    function visibles() { var cartes = $$('.q-rel', liste); cartes.forEach(function (c, i) { c.hidden = plie && i >= 3; }); }
-    /* les cartes changent de place sans se téléporter : chacune garde sa position à l'écran, puis rejoint la nouvelle */
-    function ordonner(premiers) {
-      var cartes = $$('.q-rel', liste), cachees = cartes.map(function (c) { return c.hidden; }), y0 = cartes.map(function (c) { return c.offsetTop; }), prem = premiers.map(function (i) { return cartes.filter(function (c) { return +c.getAttribute('data-i') === i; })[0]; }).filter(Boolean);
-      var reste = cartes.filter(function (c) { return prem.indexOf(c) < 0; }).sort(function (a, b) { return +a.getAttribute('data-i') - +b.getAttribute('data-i'); });
-      prem.concat(reste).forEach(function (c) { liste.appendChild(c); });
-      cartes.forEach(function (c) { c.hidden = false; });
-      if (JS) cartes.forEach(function (c, i) {
-        var dy = y0[i] - c.offsetTop; if (!dy || cachees[i]) return;
-        var s = c._fl || (c._fl = new Ressort('doux', function (x) { c.style.translate = x ? '0 ' + f2(x) + 'px' : ''; }, .3));
-        s.type(prem.indexOf(c) >= 0 ? 'vif' : 'doux').pose(dy); s.vers(0);
-        if (prem.indexOf(c) >= 0) { c.classList.add('q-porte'); to(function () { c.classList.remove('q-porte'); }, 640); }
-      });
-      visibles();
-    }
-    function choisirJour(k) {
-      if (k === selJ) { if (JS) { sTamp.x = .94; sTamp.type('vif').vers(1); } return; }
-      selJ = k; var b = bords(k); glissePil(b[0], b[1]);
-      cel.forEach(function (c, i) { if (c.classList.contains('q-rdv')) c.setAttribute('aria-pressed', i === k ? 'true' : 'false'); });
-      if (parJour[k]) ordonner(parJour[k]);
-    }
-    function lierRel(c) {
-      var s = new Ressort('vif', function (x) { c.style.transform = x ? 'translate3d(0,' + f2(-x * 3) + 'px,0)' : ''; });
-      if (JS) { c.addEventListener('mouseenter', function () { s.vers(1); }); c.addEventListener('mouseleave', function () { s.vers(0); }); }
-      var i = +c.getAttribute('data-i'), cell = null;
-      c.addEventListener('pointerenter', function (ev) { if (ev.pointerType === 'mouse') { var k = relJour(i); if (k >= 0 && cel[k]) cel[k].classList.add('q-vise'); } });
-      c.addEventListener('pointerleave', function () { cel.forEach(function (x) { x.classList.remove('q-vise'); }); });
-    }
-    function relJour(i) { var r = relDonnees[i]; if (!r) return -1; var k = sem.dow + r.diff; return k >= 0 && k <= 6 ? k : -1; }
-    /* le point d'un jour : remplit les jours en place (sans changer les éléments, donc sans casser leur entrée) */
-    function majJours() {
-      var sm = qSemaine(); sem = sm; var dow = sm.dow;
-      var html = qJoursHtml(sm, { l: relDonnees }, parJour, false);
-      var tmp = D.createElement('div'); tmp.innerHTML = html; var neufs = [].slice.call(tmp.children);
-      cel.forEach(function (c, k) {
-        var n = neufs[k], tr = n.classList.contains('q-rdv');
-        c.classList.toggle('q-rdv', tr);
-        ['role', 'tabindex', 'aria-pressed', 'aria-label', 'data-k'].forEach(function (a) { if (n.hasAttribute(a)) c.setAttribute(a, n.getAttribute(a)); else c.removeAttribute(a); });
-        var pt = $('.q-pt', c); if (pt) pt.remove(); var np = $('.q-pt', n); if (np) c.appendChild(np);
-        if (tr) c.setAttribute('aria-pressed', k === selJ ? 'true' : 'false');
-      });
-      nuit.innerHTML = qJoursHtml(sm, { l: relDonnees }, parJour, true);
-    }
-    function relSignature(rel) { return rel.l.map(function (r) { return r.pid + ':' + r.diff + ':' + r.name; }).join('|') + (rel.pret ? '!' : ''); }
-    function majRelances(depart) {
-      var rel = qRelances(), sig = relSignature(rel); if (sig === relSig) return; relSig = sig;
-      relDonnees = rel.l; parJour = qParJour(rel.l, sem.dow);
-      if (!depart) {
-        liste.innerHTML = rel.l.map(qCarteRel).join('');
-        var cartes = $$('.q-rel', liste);
-        cartes.forEach(function (c, i) { lierRel(c); if (JS) { c.classList.add('q-arme'); } });
-        void liste.offsetWidth;
-        cartes.forEach(function (c, i) { c.style.setProperty('--d', (i * 60) + 'ms'); c.classList.remove('q-arme'); if (JS) to(function () { fin(c); }, i * 60 + 1300); else fin(c); });
-        plie = true; toutBtn.textContent = 'Tout afficher'; toutBtn.setAttribute('aria-expanded', 'false');
-        majJours();
-      } else { $$('.q-rel', liste).forEach(lierRel); }
-      toutBtn.hidden = rel.l.length <= 3; videEl.hidden = !(rel.pret && !rel.l.length); visibles();
-    }
-    function basculerTout() { plie = !plie; toutBtn.textContent = plie ? 'Tout afficher' : 'Afficher moins'; toutBtn.setAttribute('aria-expanded', plie ? 'false' : 'true'); visibles(); }
-
-    /* ---------- les données qui arrivent après le premier dessin : mises à jour en place, sans rejouer l'entrée ---------- */
-    var phraseCourante = para.innerHTML;
-    function majPhrase() {
-      var h = qPhrase(m, { l: relDonnees }, qInfosModele()); if (h === phraseCourante) return;
-      var aN = /id="q-n690"/.test(phraseCourante);
-      phraseCourante = h;
-      if (!textesFinis) { orig.p = h; return; }
-      para.innerHTML = h;
-      if (PLEIN && !aN && /id="q-n690"/.test(h)) roulerPlus(m.nb);   /* hors entrée complète, le compteur est posé à sa valeur */
-    }
-    function majInfos() {
-      if (inst.mort) return;
-      var el = $('.q-infos'); if (el) { var h = qInfosIn(qInfosModele()); if (el._h !== h) { el._h = h; el.innerHTML = h; } }
-      majPhrase();
-    }
-    function remplir(a, o, interne) {
-      ['href', 'role', 'target', 'rel', 'data-act', 'data-imm', 'data-outil', 'data-ic', 'data-k'].forEach(function (k) { a.removeAttribute(k); });
-      var at = qAttr(o); for (var k in at) a.setAttribute(k, at[k]);
-      a.innerHTML = interne;
-    }
-    var sigOutils = '';
-    function signature(rep) { return [rep.nav, rep.tuiles, rep.table].map(function (l) { return l.map(function (o) { return o.k + (o.ext ? '' : (qUsage(o.k) || {}).t); }).join(','); }).join('/') + (rep.sans ? '!' : ''); }
-    function majOutils(depart) {
-      var rep = qRepartition(), sig = signature(rep); if (depart) { sigOutils = sig; return true; }
-      if (sig === sigOutils) return true;
-      var tu = $$('.q-tuile'), ta = lignes;
-      if (navA.length !== rep.nav.length || tu.length !== rep.tuiles.length || ta.length !== rep.table.length) return false;
-      sigOutils = sig;
-      navA.forEach(function (a, i) { remplir(a, rep.nav[i], qNavIn(rep.nav[i])); });
-      tu.forEach(function (a, i) { remplir(a, rep.tuiles[i], qTuileIn(rep.tuiles[i], i)); });
-      ta.forEach(function (a, i) { remplir(a, rep.table[i], qLigneIn(rep.table[i])); });
-      R.classList.toggle('q-sans-usage', !!rep.sans);
-      return true;
-    }
-
-    /* ---------- entrée : toutes les écritures d'abord (tambours, caches, partition), pour qu'une seule mise en page suffise ---------- */
-    if (PLEIN) {
-      if (n690) n690.innerHTML = tambours(m.nb);
-      decoupe(h1).forEach(function (mm, i) { mm.firstChild.style.setProperty('--d', (i * 60) + 'ms'); });
-      var dm = mot(dateTxt); dateEl.textContent = ''; dateEl.appendChild(dm); dm.firstChild.style.setProperty('--d', '120ms');
-      motsP = decoupe(para, 'q-mj');
-    }
-    if (JS && !POSE) {
-      /* la partition : instant de départ, écart entre voisins */
-      [['.q-nav a', 120, 40], ['.q-sec.q-outils', 340, 0], ['.q-tuile', 380, 45], ['.q-une', 360, 0], ['.q-profil .q-avatar', 180, 0], ['.q-profil>b', 240, 0], ['.q-profil .q-role', 268, 0],
-        ['.q-sem', 380, 0], ['.q-jours>.q-jour', 405, 25], ['.q-rl', 480, 0], ['.q-rel', 520, 60], ['.q-vide', 520, 0], ['.q-tout', 700, 0], ['.q-infos-t', 660, 0], ['.q-infos', 700, 0],
-        ['#q-tous', 540, 0], ['.q-table', 570, 0], ['.q-table .q-lg', 600, 40]].forEach(function (q) { $$(q[0]).forEach(function (el, i) { el.style.setProperty('--d', (q[1] + i * q[2]) + 'ms'); }); });
-    }
-    gNav.vers(navOn, true); gNav.rend();
-    ec(W, 'resize', reposer);
-    if (D.fonts && D.fonts.ready) D.fonts.ready.then(reposer);
-    majOutils(true); majRelances(true); poserPil();
-    $$('.q-tuile,.q-tout,.q-infos,.q-une').forEach(function (t) {
-      var amp = t.classList.contains('q-tuile') ? 6 : 3, s = new Ressort('vif', function (x) { t.style.transform = x ? 'translate3d(0,' + f2(-x * amp) + 'px,0)' : ''; });
-      if (JS) { t.addEventListener('mouseenter', function () { s.vers(1); if (amp === 6) joue(t); }); t.addEventListener('mouseleave', function () { s.vers(0); }); }
-    });
-    $$('.q-rel', liste).forEach(lierRel); visibles();
-
-    /* ---------- les clics et le clavier : un seul écouteur sur la page ---------- */
-    var moiOuvert = false;
-    ec(page, 'pointerdown', function (e) { if (e.target.closest && e.target.closest('[data-moi]')) moiOuvert = !!D.getElementById('v2-usermenu'); }, true);
-    ec(page, 'click', function (e) {
-      if (e.defaultPrevented || e.button) return;
-      var t = e.target; if (!t || !t.closest) return;
-      if (t.closest('[data-moi]')) { e.preventDefault(); if (moiOuvert) { moiOuvert = false; return; } V2.userMenu(); return; }
-      if (t.closest('a[href="#tous"]')) { e.preventDefault(); $('#q-tous').scrollIntoView({ behavior: JS ? 'smooth' : 'auto', block: 'start' }); return; }
-      if (t.closest('#q-tout')) { basculerTout(); return; }
-      var j = t.closest('.q-jour.q-rdv'); if (j && !j.closest('.q-inv')) { choisirJour(+j.getAttribute('data-k')); return; }
-      var a = t.closest('[data-act]'); if (!a || !page.contains(a)) return;
-      if ((e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) && a.getAttribute('href')) return;   /* nouvel onglet : le navigateur s'en charge */
-      e.preventDefault();
-      var act = a.getAttribute('data-act');
-      qAgir(act);   /* l'écran s'ouvre tout de suite : aucune attente */
-    });
-    ec(page, 'keydown', function (e) {
-      var t = e.target; if (!t || !t.matches) return;
-      if ((e.key === 'Enter' || e.key === ' ') && t.matches('.q-jour.q-rdv')) { e.preventDefault(); t.click(); }
-      else if (e.key === 'Enter' && t.matches('a[role="link"]')) { e.preventDefault(); t.click(); }
-      else if (t.matches('[data-moi]') && (e.key === 'Enter' || e.key === ' ')) moiOuvert = !!D.getElementById('v2-usermenu');
-    }, true);
-
-    if (!JS) { R.classList.add('q-pret'); inst.maj = majFn; wrapInst(); return inst; }
-
-    /* ================= tout ce qui suit est du mouvement : absent si l'on a demandé moins d'animations ================= */
-    /* focus au clavier : l'anneau, le repère de la barre et la teinte du tableau suivent */
-    ec(D, 'mousedown', function () { clavier = false; sansAnneau(); }, true);
-    ec(D, 'touchstart', function () { clavier = false; sansAnneau(); }, { capture: true, passive: true });
-    ec(D, 'focusin', function (e) {
-      var el = e.target; if (!clavier || !el || el === B || !page.contains(el) || !el.getBoundingClientRect) return; viser(el);
-      if (el.parentNode === nav) { navVise = el; gNav.vers(el); }
-      if (el.parentNode === corps) { var prem = !corps.classList.contains('q-survol'); corps.classList.add('q-survol'); gSel.vers(el, prem); }
-      if (el === bandeau) { foc = true; majPorte(); }
-      if (el.classList.contains('q-tuile') || el.parentNode === nav) joue(el);
-    });
-    ec(D, 'focusout', function (e) {
-      var el = e.target; if (!e.relatedTarget) sansAnneau();
-      if (el.parentNode === nav) { navVise = navOn; gNav.vers(navOn); }
-      if (el.parentNode === corps) corps.classList.remove('q-survol');
-      if (el === bandeau) { foc = false; majPorte(); }
-    });
-    /* survol : le repère glisse, la teinte glisse, les tuiles se soulèvent, chaque picto joue son geste */
-    function joue(a) { a.classList.remove('q-g'); void a.offsetWidth; a.classList.add('q-g'); clearTimeout(a._g); a._g = setTimeout(function () { a.classList.remove('q-g'); }, 480); if (a === navOn) ondeStore(); }
-    navA.forEach(function (a) { a.addEventListener('mouseenter', function () { navVise = a; gNav.vers(a); joue(a); }); });
-    nav.addEventListener('mouseleave', function () { navVise = navOn; gNav.vers(navOn); });
-    lignes.forEach(function (l) { l.addEventListener('mouseenter', function () { var prem = !corps.classList.contains('q-survol'); corps.classList.add('q-survol'); gSel.vers(l, prem); }); });
-    corps.addEventListener('mouseleave', function () { corps.classList.remove('q-survol'); });
-
-    ec(W, 'mousemove', function (e) {
-      if (!rB) mesurer();
-      var x = e.clientX, y = e.clientY;
-      if (!illu.classList.contains('q-hors')) { sPx.vers(borne((x - (rB.left + rB.width * .75)) / (W.innerWidth * .5), -1, 1)); sPy.vers(borne((y - (rB.top + rB.height * .5)) / (W.innerHeight * .5), -1, 1)); }
-      var p = x > rB.left && x < rB.right && y > rB.top && y < rB.bottom;
-      if (p) { if (!pres) { sLx.pose(x - rB.left); sLy.pose(y - rB.top); F.lum = 1; } sLx.vers(x - rB.left); sLy.vers(y - rB.top); lum.style.setProperty('--lo', f2(.3 + .7 * borne((x - rT + 20) / 130, 0, 1))); }   /* au-dessus du texte, la lumière garde 30 % de sa force : le blanc reste lisible même quand le rai passe */
-      if (p !== pres) { pres = p; bandeau.classList.toggle('q-pres', p); }
-      var dx = Math.max(rP.left - x, 0, x - rP.right), dy = Math.max(rP.top - y, 0, y - rP.bottom); approche = borne(1 - (Math.sqrt(dx * dx + dy * dy) - 10) / 170, 0, 1); majPorte();
-      if (!rF) { var k = fleur.getBoundingClientRect(); rF = [k.left + k.width / 2 - fx, k.top + k.height / 2 - fy]; }
-      var kx = x - rF[0], ky = y - rF[1], kd = Math.sqrt(kx * kx + ky * ky) || 1, km = Math.min(10, kd / 40); sFx.vers(kx / kd * km); sFy.vers(ky / kd * km);
-    }, { passive: true });
-    ec(D, 'mouseleave', function () { sPx.vers(0); sPy.vers(0); approche = 0; majPorte(); sFx.vers(0); sFy.vers(0); if (pres) { pres = false; bandeau.classList.remove('q-pres'); } });
-    /* toucher l'officine fait jouer la croix */
-    ec(bandeau, 'pointerdown', function (e) { var r = illu.getBoundingClientRect(); if (e.clientX > r.left && e.clientX < r.right && e.clientY > r.top && e.clientY < r.bottom) sequence(); });
-
-    /* défilement : lu, jamais détourné. Il entraîne les couches et la fleur ; sa vitesse couche les feuilles et fait onduler le store */
-    var yDer = W.scrollY;
-    function finDefil() { sVent.vers(0); sOnd.vers(0); }
-    ec(W, 'scroll', function () {
-      var y = W.scrollY, t = performance.now();
-      if (tDefil) { var v = borne((y - yDer) / Math.max(8, t - tDefil) / 1.4, -1, 1); sVent.vers(v); sOnd.vers(Math.min(1, Math.abs(v) * 1.2)); }
-      yDer = y; tDefil = t; rB = null; rF = null;
-      sSc.vers(Math.min(1.5, y / 400)); sFr.vers(y * .22);
-      var k = fleur.getBoundingClientRect(); sFx.vers(0); sFy.vers(borne((W.innerHeight / 2 - (k.top + k.height / 2 - fy)) * .04, -14, 14));
-      F.rev = 1; if (cible) viser(cible, true); reveil();
-    }, { passive: true });
-
-    /* ce qui est sous la ligne de flottaison se pose en entrant dans l'écran (position lue au défilement, pas un simple signal) */
-    function la(el) { el.classList.add('q-la'); }
-    function fin(el) { el.classList.remove('q-in', 'q-g', 'q-e', 'q-arme'); el.style.removeProperty('--d'); $$('.q-dz', el).forEach(function (z) { z.classList.remove('q-dz'); }); }
-    function reveler() {
-      if (!armes.length) return; var lim = W.scrollY + W.innerHeight * .94, lot = [];
-      armes = armes.filter(function (el) { if (el._y < lim) { lot.push(el); return false; } return true; });
-      var k = 0; lot.forEach(function (el) {
-        var net = el._y < lim - 140, d = net ? 0 : Math.min(k++, 9) * 40; el.classList.remove('q-arme');   /* net : déjà bien dans l'écran après un saut de défilement, on pose sans rejouer l'entrée */
-        if (el.hasAttribute('data-la')) to(function () { la(el); }, net ? 0 : 120);
-        else if (net) fin(el);
-        else { el.style.setProperty('--d', d + 'ms'); to(function () { fin(el); }, d + 1200); }
-      });
-    }
-    if (!POSE) (function () { var H = W.innerHeight, y = W.scrollY; $$('.q-in,[data-la]').forEach(function (el) { var r = el.getBoundingClientRect(); if ((r.width || r.height) && r.top > H - 4) { el.classList.add('q-arme'); el._y = r.top + y; armes.push(el); } }); })();
-
-    R.classList.add('q-pret');
-    function finEntree() {
-      rB = null;
-      if (essai) essaiT.push(setInterval(function () { sequence(+essai[1]); }, 2000)); else planSeq();
-      if (essaiG) { var gn = decodeURIComponent(essaiG[1]), ge = $$('.q-nav a,.q-tuile').filter(function (a) { return a.getAttribute('data-outil') === gn; })[0]; if (ge) essaiT.push(setInterval(function () { joue(ge); }, 1300)); }
-      var file = $$('.q-in:not(.q-arme)');   /* le ménage est réparti sur plusieurs images, pour ne pas en allonger une */
-      (function lot() { for (var k = 0; k < 8 && file.length; k++) fin(file.pop()); if (file.length) dans(16, lot); else bandeau.classList.add('q-fini'); })();
-    }
-    /* les caches et les tambours partent dès que le compteur est posé, un texte par image : le texte redevient du texte */
-    function finTextes() {
-      var pas = 0; (function lot() {
-        pas++;
-        if (pas === 1) h1.innerHTML = orig.h1; else if (pas === 2) dateEl.textContent = dateTxt; else { para.innerHTML = orig.p; para.classList.remove('q-la'); phraseCourante = orig.p; textesFinis = true; return; }
-        dans(16, lot);
-      })();
-    }
-    if (POSE) {
-      /* retour sur l'accueil : tout est déjà dans son état final (la page est créée avec q-go) ; on retire les marques d'entrée et la vie au repos démarre */
-      poserTampon(); finEntree();
-    } else if (PLEIN) {
-      /* le départ : l'état masqué vient d'être calculé (lectures ci-dessus), on lance tout de suite, sans attendre une image */
-      void illu.offsetWidth; R.classList.add('q-go');
-      $$('[data-la]').forEach(function (el) { if (!el.classList.contains('q-arme')) dans(+el.getAttribute('data-la'), function () { la(el); }); });
-      dans(120, function () { var mm = (gNav.h + gNav.b) / 2, h = gNav.h, b = gNav.b; gNav.sh.pose(mm - 10); gNav.sb.pose(mm + 10); gNav.sh.vers(h); gNav.sb.vers(b); });
-      dans(200, phrase);
-      dans(300, function () { illu.classList.add('q-allume'); });
-      dans(500, function () { sequence(1); });
-      dans(700, poserTampon);
-      dans(1450, finTextes);
-      dans(1950, finEntree);
-    } else {
-      /* première arrivée pendant le chargement des ventes : le fil principal est pris par les données. Les textes sont visibles tout de suite, les pictos dessinés, le compteur posé, la barre et le tampon à leur place ; il ne reste que des déplacements en transform / opacity, confiés au compositeur, et de simples minuteries */
-      void illu.offsetWidth; R.classList.add('q-go');
-      $$('[data-la]').forEach(function (el) { if (!el.classList.contains('q-arme')) to(function () { la(el); }, +el.getAttribute('data-la')); });
-      to(function () { illu.classList.add('q-allume'); }, 300);
-      to(function () { sequence(1); }, 500);
-      poserTampon();
-      to(finEntree, 1950);
-    }
-    /* boucles suspendues hors écran */
-    var io = null;
-    if ('IntersectionObserver' in W) { io = new IntersectionObserver(function (es) { es.forEach(function (en) { en.target.classList.toggle('q-hors', !en.isIntersecting); }); }); [illu, fleur].forEach(function (el) { if (el) io.observe(el); }); }
-
-    inst.io = io;
-    return wrapInst();
-
-    /* ---------- l'instance : mise à jour des données, démontage ---------- */
-    function majFn(m2) { m = m2; if (!majOutils()) return false; majInfos(); majRelances(); majPhrase(); return true; }
-    function wrapInst() {
-      inst.maj = majFn; inst.majInfos = majInfos; inst.majOutils = majOutils;
-      inst.etat = function () { return { ecoutes: ecoutes.length, minuteurs: minuteurs.length, boucle: enRoute, ressorts: vivants.length, taches: taches.length, mort: inst.mort }; };
-      inst.detruire = function () {
-        if (inst.mort) return; inst.mort = true;
-        ecoutes.forEach(function (x) { x[0].removeEventListener(x[1], x[2], x[3]); });
-        minuteurs.forEach(clearTimeout); clearTimeout(seqT); essaiT.forEach(clearInterval);
-        if (rafId) cancelAnimationFrame(rafId);
-        if (inst.io) inst.io.disconnect();
-        vivants.length = 0; taches.length = 0; enRoute = false;
-      };
-      return inst;
-    }
+    if (t.closest('[data-u2-skip]')) { var c = document.getElementById('u2-centre'); if (c) c.focus(); }
+  }
+  function u2Change(e) {
+    var s = e.target && e.target.closest && e.target.closest('[data-u2-sel="pin"]');
+    if (!s || !s.value || !s.closest('.u2-page, .u2-hors')) return;
+    var k = s.value, S = u2S();
+    if (!G4_PORTES[k]) return;
+    if (S.epingles === null) S.epingles = u2Epingles(u2Cles());
+    if (S.epingles.indexOf(k) < 0) S.epingles.push(k);
+    u2Garder(); u2Redessiner('pin', k);
+    var n = document.querySelector('#u2-volet select'); if (n) { try { n.focus(); } catch (x) {} }
+  }
+  function u2Touche(e) {
+    var t = e.target; if (!t || !t.closest || !t.closest('.u2-page, .u2-hors')) return;
+    if (e.key === 'Escape' && _u2.ouvert) { e.preventDefault(); u2Fermer(true); return; }
+    var b = t.closest('[data-u2-tab]');
+    if (!b || ['ArrowRight', 'ArrowLeft', 'Home', 'End'].indexOf(e.key) < 0) return;
+    var tous = [].slice.call(document.querySelectorAll('#u2-onglets [data-u2-tab]')), i = tous.indexOf(b);
+    var k = e.key === 'Home' ? 0 : e.key === 'End' ? tous.length - 1 : (i + (e.key === 'ArrowRight' ? 1 : -1) + tous.length) % tous.length;
+    e.preventDefault(); u2Onglet(tous[k].getAttribute('data-u2-tab'), true);
+  }
+  function u2Redim() {
+    if (!_u2.monte) return;
+    var m = u2Mode(); if (m === _u2.mode) return;
+    _u2.mode = m;
+    if (_u2.ouvert) u2Fermer(false);
+    u2VoletRendre(); u2MajPanneau(); u2Rail();
+  }
+  function u2Lier(root) {
+    if (_u2.lie === root) return;
+    _u2.lie = root;
+    root.addEventListener('click', u2Clic);
+    root.addEventListener('change', u2Change);
+    root.addEventListener('keydown', u2Touche);
+    window.addEventListener('resize', u2Redim);
   }
 
-  // Le classement des ouvertures arrive après le premier dessin : l'accueil range les outils en place, sans rejouer l'entrée.
+  // Le classement des ouvertures arrive après le premier dessin : les outils se rangent en place, sans rejouer l'entrée.
   function g4Rafraichir() {
-    if (_qInst && V2.route && V2.route.name === 'home') _qInst.majOutils();
+    if (_u2.monte && V2.route && V2.route.name === 'home') { u2MajOnglets(); u2MajPanneau(); if (_u2.ouvert) u2VoletRendre(); }
   }
-  // Styles de l'accueil : tout sous .q-page.
-  function qStyles() {
-    if (document.getElementById('v2-q-style')) return;
-    var st = document.createElement('style'); st.id = 'v2-q-style';
-    st.textContent = Q_CSS;
-    document.head.appendChild(st);
+  function u2Demonter() {
+    if (_u2.ouvert) u2Fermer(false);
+    u2Verrou(false);
+    _u2.monte = false;
+    var h = document.getElementById('u2-hors'); if (h && h.parentNode) h.parentNode.removeChild(h);
   }
   // Monte l'accueil, ou met ses données à jour en place s'il est déjà à l'écran.
-  // V2.render() est rappelé quand les relances arrivent et quand les ventes finissent : l'entrée ne se rejoue pas.
-  function qAccueil(root, m) {
-    if (_qInst && _qInst.page.isConnected && root.contains(_qInst.page)) { if (_qInst.maj(m) !== false) return; }
-    if (_qInst) { _qInst.detruire(); _qInst = null; }
-    g4ChargerOrdre();
-    qInfosCharger();
-    qStyles();
-    var calme = false;
-    try { calme = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
-    // première arrivée : entrée complète (données là) ou allégée (ventes en cours) ; tout retour : page posée d'emblée
-    var mode = _qEntreeJouee ? 'pose' : (m.partiel ? 'leger' : 'plein');
-    _qEntreeJouee = true;
-    root.innerHTML = qPageHtml(m, calme, mode);
-    var page = root.querySelector('.q-page');
-    try { _qInst = qMonter(page, m, mode); }
-    catch (err) {
-      // un défaut de mouvement ne doit jamais laisser la page masquée
-      if (window.console) console.error('[accueil q1]', err);
-      page.classList.remove('q-js'); page.classList.add('q-calme', 'q-pret');
-    }
+  // V2.render() est rappelé quand les relances arrivent et quand les ventes finissent : rien ne se redessine en entier.
+  function u2Maj(m) {
+    var h = document.getElementById('u2-salut');
+    if (h && h.textContent !== u2Salut(m)) h.textContent = u2Salut(m);
+    u2Poser('u2-compte', u2CompteHtml(m), 'compte');
+    u2MajOnglets(); u2MajPanneau(); u2MajWidgets();
+  }
+  function u2Accueil(root, m) {
+    if (_u2.monte && root.querySelector('.u2-page')) { u2Maj(m); return; }
+    u2S(); g4ChargerOrdre(); qInfosCharger();
+    var cascade = !_u2.entree;   // la courte entrée ne joue qu'une fois par chargement de page
+    _u2.entree = true; _u2.ouvert = false; _u2.opener = null; _u2.sec = null; _u2.sig = {}; _u2.mode = u2Mode();
+    u2Verrou(false);
+    var etat = u2Etat();
+    root.innerHTML = '<div class="u2-page' + (cascade ? ' u2-cascade' : '') + '">' +
+      '<button type="button" class="u2-skip" data-u2-skip>Aller aux outils</button>' + topbar() +
+      '<div class="u2-grille">' +
+        '<nav class="u2-rail" aria-label="Mon espace" id="u2-rail">' + u2RailHtml() + '</nav>' +
+        '<main class="u2-centre" id="u2-centre" tabindex="-1">' + u2CentreHtml(m, etat) + '</main>' +
+        '<aside class="u2-droite" id="u2-droite" aria-label="Aperçu de la journée">' + u2DroiteHtml() + '</aside>' +
+      '</div>' +
+      '</div>';
+    // Le fond et le tiroir vivent sur <body> : la racine de l'app porte une transformation d'entrée (v2-motion.js, mo-view-in)
+    // qui ferait de chaque élément « fixed » un élément collé à la PAGE entière, et non à la fenêtre.
+    var vieux = document.getElementById('u2-hors'); if (vieux && vieux.parentNode) vieux.parentNode.removeChild(vieux);
+    var hors = document.createElement('div'); hors.id = 'u2-hors'; hors.className = 'u2-hors';
+    hors.innerHTML = '<div class="u2-fond" id="u2-fond"></div>' +
+      '<aside class="u2-volet" id="u2-volet" role="dialog" aria-labelledby="u2-vt"><div class="u2-volet-t"><h2 id="u2-vt">Mon espace</h2><button type="button" class="v2-btn v2-btn-ghost" data-u2-fermer>Fermer</button></div><div class="u2-mon" id="u2-mon"></div></aside>';
+    document.body.appendChild(hors);
+    hors.addEventListener('click', u2Clic); hors.addEventListener('change', u2Change); hors.addEventListener('keydown', u2Touche);
+    _u2.monte = true;
+    u2VoletRendre();
+    u2Lier(root);
+    if (cascade) setTimeout(function () { var p = document.querySelector('.u2-cascade'); if (p) p.classList.remove('u2-cascade'); }, 900);
+    u2Distant();
+    if (V2.todo && V2.todo.charger && !_u2.todoPret) V2.todo.charger().then(function () { _u2.todoPret = true; u2MajWidgets(); }, function () {});
   }
 
   // Spotlight : la souris met à jour --mx/--my sur la tuile survolée
@@ -2751,7 +2155,7 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
       var homeAnimCls = jouerAnim ? 'js-anim' : 'v2-home-still';
 
       if (g4Mode) {
-        qAccueil(root, { nb: nbPharma, partiel: partiel, mes: mesOfficines, salut: salut, prenom: firstName });
+        u2Accueil(root, { nb: nbPharma, partiel: partiel, mes: mesOfficines, salut: salut, prenom: String((V2.user && V2.user.name) || '').split(' ')[0] });
         return;
       }
       root.innerHTML = topbar() +
@@ -2772,7 +2176,7 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
       if (window.V2_BRAND && window.V2_BRAND.opso && V2.opsoGroupement) { V2.opsoGroupement.espaces(root); }
     },
     // appelé par V2.render() dès qu'on quitte l'accueil : boucles arrêtées, écouteurs retirés
-    quitter: function () { if (_qInst) { _qInst.detruire(); _qInst = null; } }
+    quitter: function () { u2Demonter(); }
   };
 
   // ════════════════════════════════════════════

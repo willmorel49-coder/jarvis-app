@@ -364,7 +364,7 @@
       if (V2.visite && V2.visite.load) { try { V2.visite.load(function () {}); } catch (e) {} }
       var homeSaved = '';
       try { homeSaved = localStorage.getItem(HOME_LS) || ''; } catch (e) {}
-      var top = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' });
+      var top = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil', nom: 'Composer la tournée' });
       root.innerHTML = top +
         '<div class="tp-form">' +
           '<div class="tp-fld g"><span class="tp-lab">Départ (chez toi)</span>' +

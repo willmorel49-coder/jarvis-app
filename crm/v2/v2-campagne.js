@@ -413,7 +413,7 @@
 
     afficherFile: function () {
       var r = root(); if (!r) return;
-      var top = V2.topbar ? V2.topbar({ back: true, backTo: 'rdv', backLabel: 'Rendez-vous' }) : '';
+      var top = V2.topbar ? V2.topbar({ back: true, backTo: 'rdv', backLabel: 'Rendez-vous', nom: 'Campagne de rendez-vous' }) : '';
       if (ETAT.i >= ETAT.file.length) {
         r.innerHTML = top + '<div class="v2-wrap narrow"><div class="v2-rdv-cap">' +
           '<h1>Campagne terminée</h1><p><b>' + ETAT.envoyes + '</b> mail(s) envoyé(s) sur ' +
@@ -472,7 +472,7 @@
       // serait absurde de faire rechoisir « groupé » à quelqu'un qui vient
       // de cliquer « relancer les 24 sans réponse » d'un envoi groupé.
       if (V2.campagneModeVoulu) { ETAT.mode = V2.campagneModeVoulu; V2.campagneModeVoulu = null; }
-      var top = V2.topbar ? V2.topbar({ back: true, backTo: 'rdv', backLabel: 'Rendez-vous' }) : '';
+      var top = V2.topbar ? V2.topbar({ back: true, backTo: 'rdv', backLabel: 'Rendez-vous', nom: 'Campagne de rendez-vous' }) : '';
       var mods = window.V2MOD.liste().map(function (m) {
         return '<option value="' + esc(m.cle) + '">' + esc(m.nom) + '</option>';
       }).join('');

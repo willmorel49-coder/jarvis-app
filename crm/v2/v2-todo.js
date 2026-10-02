@@ -259,6 +259,9 @@
   V2.todo = {
     charger: charger,
     ouverts: function () { return (st.items || []).filter(function (x) { return !x.fait; }); },
+    // Accueil (widget « To do list ») : les lignes à faire, les plus urgentes d'abord, et leur libellé (le même que la carte « À faire »).
+    urgents: function () { return trier(V2.todo.ouverts()); },
+    libelle: function (it) { return KINDS[it.k].l + (it.nom ? ' · ' + it.nom : (it.note ? ' · ' + it.note : '')); },
 
     // Petite fenêtre « Ajouter à ma liste » depuis une fiche officine (client ou prospect).
     // Sur une fiche prospect, le nom et l'e-mail sont ceux affichés à l'écran.

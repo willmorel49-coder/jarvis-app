@@ -22,7 +22,7 @@ var CACHE = 'jarvis-' + VER;
    ⚠️ Liste à tenir alignée sur les <script>/<link> du socle de index.html. */
 var SOCLE = [
   './index.html',
-  'v2.css', 'v2-pieces.css', 'v2-motion.css', 'v2-verriere.css',
+  'v2.css', 'v2-pieces.css', 'v2-accueil.css', 'v2-motion.css', 'v2-verriere.css',
   'vendor/leaflet/leaflet.css', 'vendor/leaflet/MarkerCluster.css', 'vendor/leaflet/MarkerCluster.Default.css',
   'vendor/supabase/supabase-2.112.2.min.js',
   'v2-icons.js', 'groupement-alias.js', 'v2-boot.js', 'v2-profil.js',
