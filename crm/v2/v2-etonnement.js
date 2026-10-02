@@ -25,6 +25,24 @@
   var TABLE = 'etonnement_entretiens';
   var LIBRE = '_libre';        // clé des notes hors questions
 
+  // ── Les améliorations (02/10/2026, Will : « vraiment du concret, que ça
+  // permette d'améliorer l'app ») ────────────────────────────────────
+  // Une réponse reste une parole ; une amélioration est une chose à changer
+  // dans l'app, rattachée à un écran. Elles sont rangées dans
+  // reponses[idQuestion].a = [{ id, c, t, e, k, g }] — aucune colonne ajoutée.
+  // `c` = clé de regroupement : deux collègues qui demandent la même chose
+  // portent la même clé, et le plan les compte ensemble. L'avancement de
+  // chaque amélioration vit dans la ligne « guide » (reponses.plan).
+  var ECRANS = [['app', 'Toute l\'application'], ['home', 'Accueil'], ['pharma', 'Officines'], ['produits', 'Produits'],
+    ['pilotage', 'Pilotage'], ['marketing', 'Marketing'], ['infos', 'Infos du matin'], ['rdv', 'Rendez-vous'],
+    ['carte', 'La carte'], ['appro', 'Appro'], ['todo', 'To do'], ['groupements', 'Groupements'],
+    ['biosimilaires', 'Biosimilaires'], ['offilog', 'Offilog'], ['concurrents', 'Concurrents'],
+    ['lgo', 'Logiciels officine'], ['nouveau', 'Un outil qui n\'existe pas encore'], ['autre', 'Autre']];
+  var NATURES = [['pb', 'Problème', 'r'], ['manque', 'Manque', 'a'], ['idee', 'Idée', 'b'], ['garder', 'À garder', 'g']];
+  var GENES = [[3, 'Bloquant'], [2, 'Gênant'], [1, 'Confort']];
+  var STATUTS = [['faire', 'À faire'], ['cours', 'En cours'], ['fait', 'Fait'], ['ecarte', 'Écarté']];
+  function libelle(liste, v) { for (var i = 0; i < liste.length; i++) if (liste[i][0] === v) return liste[i][1]; return ''; }
+
   // ── Le guide d'entretien ──────────────────────────────────────────
   // `r` = la relance à poser si la réponse reste courte. `note: true` = une
   // question qui se répond aussi par une note sur 10.
@@ -82,6 +100,9 @@
   var charge = false, horsLigne = false;
   var themeCourant = {};             // idEntretien -> index du thème affiché
   var filtreSynthese = 'tout';       // 'tout' | 'retenir'
+  var filtrePlan = 'faire';          // 'faire' (à faire + en cours) | 'tout'
+  var formAmelio = null;             // idQuestion dont le formulaire d'amélioration est ouvert
+  var brouillon = { t: '', e: '', k: 'pb', g: 2 };
   var voirArchives = false;
   var timers = {}, version = {};
   var dernierEtat = '';
@@ -135,6 +156,35 @@
   function nbRetenir(row) {
     var n = 0; Object.keys(row.reponses).forEach(function (k) { if (row.reponses[k] && row.reponses[k].imp) n++; }); return n;
   }
+
+  // ── Améliorations : lecture, regroupement, avancement ─────────────
+  function ameliosDe(row, qid) { var a = rep(row, qid).a; return Array.isArray(a) ? a : []; }
+  function nbAmelios(row) {
+    var n = 0; Object.keys(row.reponses).forEach(function (k) { n += ameliosDe(row, k).length; }); return n;
+  }
+  function statutDe(c) {
+    var g = guideRow(), p = g && g.reponses.plan, s = p && p[c] && p[c].s;
+    return libelle(STATUTS, s) ? s : 'faire';
+  }
+  // Le plan : une ligne par clé de regroupement, classée par nombre de
+  // collègues qui la demandent, puis par gêne la plus forte entendue.
+  function plan() {
+    var m = {}, out = [];
+    entretiens(false).forEach(function (row) {
+      Object.keys(row.reponses).forEach(function (qid) {
+        ameliosDe(row, qid).forEach(function (x) {
+          if (!x || !String(x.t || '').trim()) return;
+          var c = x.c || x.id, it = m[c];
+          if (!it) { it = m[c] = { c: c, t: String(x.t).trim(), e: x.e || 'autre', k: libelle(NATURES, x.k) ? x.k : 'pb', g: 0, ids: {}, qui: [] }; out.push(it); }
+          if (!it.ids[row.id]) { it.ids[row.id] = 1; it.qui.push(nomDe(row)); }
+          it.g = Math.max(it.g, x.g || 0);
+        });
+      });
+    });
+    out.forEach(function (it) { it.s = statutDe(it.c); });
+    return out.sort(function (a, b) { return b.qui.length - a.qui.length || b.g - a.g || a.t.localeCompare(b.t); });
+  }
+  function ouvert(it) { return it.s === 'faire' || it.s === 'cours'; }
 
   // ── Accès : c'est la base qui répond, pas une liste écrite ici ────
   function verifier() {
@@ -236,16 +286,19 @@
   function entete(actif) {
     return '<div class="eto-hero">' +
         '<div><div class="v2-page-title">Rapport d\'étonnement</div>' +
-        '<p class="eto-sub">Ce que vos collègues vous disent de JARVIS, consigné question par question. Vous seul voyez cet écran.</p></div>' +
+        '<p class="eto-sub">Ce que vos collègues vous disent de JARVIS, consigné question par question, puis transformé en améliorations classées par nombre de demandes. Vous seul voyez cet écran.</p></div>' +
       '</div>' +
       '<div class="eto-barre">' +
-        '<div class="eto-seg" role="tablist">' +
+        '<div class="eto-seg eto-seg-v" role="tablist">' +
           '<button role="tab" aria-selected="' + (actif === 'liste') + '" class="' + (actif === 'liste' ? 'on' : '') + '" data-act="vue" data-v="">Entretiens</button>' +
           '<button role="tab" aria-selected="' + (actif === 'synthese') + '" class="' + (actif === 'synthese' ? 'on' : '') + '" data-act="vue" data-v="synthese">Synthèse</button>' +
+          '<button role="tab" aria-selected="' + (actif === 'plan') + '" class="' + (actif === 'plan' ? 'on' : '') + '" data-act="vue" data-v="plan">Améliorations</button>' +
         '</div>' +
         '<span class="eto-etat" data-k="' + dernierEtat + '" aria-live="polite"></span>' +
         (actif === 'liste'
           ? '<button class="v2-btn v2-btn-primary" data-act="nouveau">' + ICO('plus', 16, 2) + 'Nouvel entretien</button>'
+          : actif === 'plan'
+          ? '<button class="v2-btn v2-btn-primary" data-act="copierplan">Copier le plan</button>'
           : '<button class="v2-btn v2-btn-ghost" data-act="copier">Copier le rapport</button>') +
       '</div>' +
       (horsLigne ? '<div class="eto-alerte">La liste n\'a pas pu être lue pour l\'instant. Seuls les entretiens en attente d\'envoi sur cet appareil sont affichés ; vous pouvez en commencer un nouveau, il sera envoyé au retour de la connexion.</div>' : '');
@@ -253,14 +306,15 @@
 
   // ── Vue 1 : la liste des entretiens ───────────────────────────────
   function carteEntretien(row, total) {
-    var n = nbRepondu(row), k = nbRetenir(row), pct = total ? Math.round(n * 100 / total) : 0;
+    var n = nbRepondu(row), k = nbRetenir(row), am = nbAmelios(row), pct = total ? Math.round(n * 100 / total) : 0;
     return '<div class="eto-card' + (row.archive ? ' eto-card-arch' : '') + '">' +
       '<button class="eto-card-b" data-act="ouvrir" data-id="' + esc(row.id) + '" aria-label="Ouvrir l\'entretien de ' + esc(nomDe(row)) + '">' +
         '<span class="eto-card-h"><b>' + esc(nomDe(row)) + '</b>' +
           '<span class="v2-chip ' + (row.statut === 'termine' ? 'g' : 'b') + '">' + (row.statut === 'termine' ? 'Terminé' : 'En cours') + '</span></span>' +
         '<span class="eto-card-m">' + esc([String(row.fonction || '').trim(), dateFr(row.date_entretien)].filter(Boolean).join(' · ') || 'Fonction et date à compléter') + '</span>' +
         '<span class="eto-jauge" aria-hidden="true"><i style="width:' + pct + '%"></i></span>' +
-        '<span class="eto-card-f"><span>' + n + ' / ' + total + ' questions</span>' + (k ? '<span class="eto-card-k">' + ETOILE + k + ' à retenir</span>' : '') + '</span>' +
+        '<span class="eto-card-f"><span>' + n + ' / ' + total + ' questions</span>' + (k ? '<span class="eto-card-k">' + ETOILE + k + ' à retenir</span>' : '') +
+          (am ? '<span class="eto-card-a">' + pluriel(am, 'amélioration') + '</span>' : '') + '</span>' +
       '</button>' +
       (row.archive ? '<button class="eto-lien" data-act="retablir" data-id="' + esc(row.id) + '">Rétablir</button>' : '') +
     '</div>';
@@ -293,6 +347,54 @@
   }
 
   // ── Vue 2 : un entretien ──────────────────────────────────────────
+  // Sous chaque réponse : les améliorations qu'elle appelle, et le moyen
+  // d'en ajouter une sans quitter la question.
+  function choix(liste, valeur, act, nom) {
+    return '<div class="eto-picks" role="group" aria-label="' + nom + '">' + liste.map(function (x) {
+      return '<button type="button" class="eto-pick' + (x[0] === valeur ? ' on' : '') + '" data-act="' + act + '" data-v="' + x[0] + '" aria-pressed="' + (x[0] === valeur) + '">' + esc(x[1]) + '</button>';
+    }).join('') + '</div>';
+  }
+  function sansAccent(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+  // Ce que d'autres collègues ont déjà demandé : un geste suffit pour le
+  // compter une fois de plus, au lieu de le retaper autrement.
+  function suggestionsHtml(row) {
+    var mot = sansAccent(brouillon.t).trim();
+    var a = plan().filter(function (it) {
+      if (it.ids[row.id]) return false;
+      if (mot.length >= 3) return sansAccent(it.t).indexOf(mot) >= 0;
+      return !brouillon.e || it.e === brouillon.e;
+    }).slice(0, 5);
+    if (!a.length) return '';
+    return '<div class="eto-am-st">Déjà demandé par un autre collègue — touchez pour l\'ajouter à son nom</div>' + a.map(function (it) {
+      return '<button type="button" class="eto-am-sg" data-act="ammeme" data-c="' + esc(it.c) + '"><b>' + esc(it.t) + '</b><span>' + esc(libelle(ECRANS, it.e)) + ' · ' + pluriel(it.qui.length, 'collègue') + '</span></button>';
+    }).join('');
+  }
+  function ameliosHtml(row, qid) {
+    var a = ameliosDe(row, qid);
+    var liste = a.map(function (x) {
+      var nat = null; NATURES.forEach(function (n) { if (n[0] === x.k) nat = n; }); nat = nat || NATURES[0];
+      return '<div class="eto-am-i"><span class="v2-chip ' + nat[2] + '">' + nat[1] + '</span>' +
+        '<span class="eto-am-t">' + esc(x.t) + '</span>' +
+        '<span class="eto-am-m">' + esc([libelle(ECRANS, x.e), x.k === 'garder' ? '' : libelle(GENES, x.g)].filter(Boolean).join(' · ')) + '</span>' +
+        '<button type="button" class="eto-lien" data-act="amretirer" data-q="' + esc(qid) + '" data-id="' + esc(x.id) + '">Retirer</button></div>';
+    }).join('');
+    if (formAmelio !== qid) {
+      return liste + '<button type="button" class="eto-am-plus" data-act="amouvrir" data-q="' + esc(qid) + '">' + ICO('plus', 15, 2) + 'Amélioration à faire</button>';
+    }
+    return liste + '<div class="eto-am-f">' +
+      '<label class="eto-am-l" for="eto-am-t">Ce qu\'il faut changer dans l\'application, en une phrase</label>' +
+      '<input type="text" class="eto-in" id="eto-am-t" data-am="t" maxlength="200" autocomplete="off" placeholder="Exemple : retrouver une officine par son code postal" value="' + esc(brouillon.t) + '">' +
+      '<label class="eto-am-l" for="eto-am-e">Écran concerné</label>' +
+      '<select class="eto-in eto-sel" id="eto-am-e" data-am="e"><option value="">Choisir l\'écran</option>' + ECRANS.map(function (x) {
+        return '<option value="' + x[0] + '"' + (x[0] === brouillon.e ? ' selected' : '') + '>' + esc(x[1]) + '</option>';
+      }).join('') + '</select>' +
+      '<div class="eto-am-l">De quoi s\'agit-il ?</div>' + choix(NATURES, brouillon.k, 'amnature', 'Nature') +
+      '<div class="eto-am-l">À quel point cela le gêne ?</div>' + choix(GENES, brouillon.g, 'amgene', 'Gêne') +
+      '<div class="eto-am-s" data-amsug>' + suggestionsHtml(row) + '</div>' +
+      '<div class="eto-am-b"><button type="button" class="v2-btn v2-btn-primary" data-act="amajouter" data-q="' + esc(qid) + '">Ajouter au plan</button>' +
+      '<button type="button" class="v2-btn v2-btn-ghost" data-act="amannuler" data-q="' + esc(qid) + '">Annuler</button></div>' +
+    '</div>';
+  }
   function questionHtml(row, q, num) {
     var r = rep(row, q.id), notes = '';
     if (q.note) {
@@ -310,6 +412,7 @@
       (q.r ? '<p class="eto-q-r">Relance : ' + esc(q.r) + '</p>' : '') +
       notes +
       '<textarea class="eto-ta" id="eto-ta-' + esc(q.id) + '" data-q="' + esc(q.id) + '" rows="3" maxlength="6000" placeholder="' + (q.note ? 'Ce qui explique cette note' : 'Ses mots, tels qu\'ils sont dits') + '">' + esc(r.t || '') + '</textarea>' +
+      '<div class="eto-am" data-ambox="' + esc(q.id) + '">' + ameliosHtml(row, q.id) + '</div>' +
     '</div>';
   }
   function themeHtml(row, idx) {
@@ -346,6 +449,7 @@
         '<div class="eto-fiche-b">' +
           '<span class="v2-chip ' + (row.statut === 'termine' ? 'g' : 'b') + '">' + (row.statut === 'termine' ? 'Terminé' : 'En cours') + '</span>' +
           '<span class="eto-prog"><b data-prog>' + nbRepondu(row) + '</b> / ' + totalQuestions() + ' questions</span>' +
+          '<span class="eto-prog" data-nbam>' + pluriel(nbAmelios(row), 'amélioration') + '</span>' +
           '<span class="eto-etat" data-k="' + dernierEtat + '" aria-live="polite"></span>' +
           '<button class="eto-lien" data-act="archiver">' + (row.archive ? 'Rétablir l\'entretien' : 'Archiver l\'entretien') + '</button>' +
         '</div>' +
@@ -432,17 +536,96 @@
     }
     return L.join('\n');
   }
-  function copier(txt) {
+  // ── Vue 4 : le plan d'amélioration ────────────────────────────────
+  // Ce que l'on fait des entretiens : la liste de ce qu'il faut changer,
+  // écran par écran, la demande la plus partagée en tête.
+  function parEcran(items) {
+    var g = {}, ordre = [];
+    items.forEach(function (it) { if (!g[it.e]) { g[it.e] = []; ordre.push(it.e); } g[it.e].push(it); });
+    return ordre.map(function (e) { return { e: e, items: g[e] }; });   // `items` est déjà classé : l'écran le plus demandé sort en premier
+  }
+  function ligneQui(it, total) {
+    return 'Demandé par ' + pluriel(it.qui.length, 'collègue') + ' sur ' + total + ' : ' + it.qui.join(', ');
+  }
+  function itemPlanHtml(it, total) {
+    var nat = null; NATURES.forEach(function (n) { if (n[0] === it.k) nat = n; });
+    return '<div class="eto-pl" data-plc="' + esc(it.c) + '" data-s="' + it.s + '">' +
+      '<div class="eto-pl-h"><span class="eto-pl-n">' + it.qui.length + '</span>' +
+        '<div class="eto-pl-c"><div class="eto-pl-t">' + esc(it.t) + '</div>' +
+        '<div class="eto-pl-m"><span class="v2-chip ' + nat[2] + '">' + nat[1] + '</span>' +
+          (it.g ? '<span class="eto-pl-g">' + libelle(GENES, it.g) + '</span>' : '') +
+          '<span>' + esc(ligneQui(it, total)) + '</span></div></div></div>' +
+      '<div class="eto-picks eto-pl-s" role="group" aria-label="Avancement">' + STATUTS.map(function (s) {
+        return '<button type="button" class="eto-pick' + (s[0] === it.s ? ' on' : '') + '" data-act="plstatut" data-c="' + esc(it.c) + '" data-s="' + s[0] + '" aria-pressed="' + (s[0] === it.s) + '">' + s[1] + '</button>';
+      }).join('') + '</div></div>';
+  }
+  function compteursPlan(p) {
+    var a = p.filter(function (it) { return it.k !== 'garder'; });
+    return { total: a.length, faire: a.filter(ouvert).length, fait: a.filter(function (it) { return it.s === 'fait'; }).length };
+  }
+  function vuePlan() {
+    var p = plan(), total = entretiens(false).length, k = compteursPlan(p);
+    var actions = p.filter(function (it) { return it.k !== 'garder' && (filtrePlan === 'tout' || ouvert(it)); });
+    var garder = p.filter(function (it) { return it.k === 'garder'; });
+    var blocs = parEcran(actions).map(function (g) {
+      return '<section class="eto-st"><h2>' + esc(libelle(ECRANS, g.e) || 'Autre') + '<em>' + pluriel(g.items.length, 'amélioration') + '</em></h2>' +
+        g.items.map(function (it) { return itemPlanHtml(it, total); }).join('') + '</section>';
+    });
+    if (garder.length) {
+      blocs.push('<section class="eto-st"><h2>À ne pas toucher<em>ce que vos collègues tiennent à garder</em></h2><div class="eto-sq"><ul>' + garder.map(function (it) {
+        return '<li><div class="eto-qui"><b>' + esc(it.t) + '</b><span>' + esc(libelle(ECRANS, it.e)) + '</span></div><p>' + esc(it.qui.join(', ')) + '</p></li>';
+      }).join('') + '</ul></div></section>');
+    }
+    return entete('plan') +
+      '<div class="eto-sbar"><div class="eto-kpi"><b data-plk="total">' + k.total + '</b><span>' + (k.total > 1 ? 'améliorations demandées' : 'amélioration demandée') + '</span></div>' +
+        '<div class="eto-kpi"><b data-plk="faire">' + k.faire + '</b><span>à faire</span></div>' +
+        '<div class="eto-kpi"><b data-plk="fait">' + k.fait + '</b><span>' + (k.fait > 1 ? 'faites' : 'faite') + '</span></div>' +
+        '<div class="eto-seg eto-seg-f" role="group" aria-label="Filtrer les améliorations">' +
+          '<button class="' + (filtrePlan === 'faire' ? 'on' : '') + '" aria-pressed="' + (filtrePlan === 'faire') + '" data-act="filtreplan" data-f="faire">À faire</button>' +
+          '<button class="' + (filtrePlan === 'tout' ? 'on' : '') + '" aria-pressed="' + (filtrePlan === 'tout') + '" data-act="filtreplan" data-f="tout">Tout</button>' +
+        '</div></div>' +
+      (blocs.length ? blocs.join('')
+        : '<div class="eto-vide"><b>' + (k.total ? 'Tout ce qui a été demandé est fait ou écarté' : 'Aucune amélioration pour l\'instant') + '</b>' +
+          '<p>' + (k.total ? 'Le filtre « Tout » montre aussi ce qui est fait et ce qui a été écarté.' : 'Pendant un entretien, sous chaque réponse, le bouton « Amélioration à faire » note ce qu\'il faut changer et sur quel écran. Tout se retrouve ici, classé par nombre de collègues qui le demandent.') + '</p></div>');
+  }
+  function planTexte() {
+    var p = plan(), total = entretiens(false).length, L = [];
+    function ligne(it, i) {
+      return '  ' + (i + 1) + '. [' + libelle(NATURES, it.k) + (it.g ? ' · ' + libelle(GENES, it.g) : '') + '] ' + it.t +
+        ' — ' + pluriel(it.qui.length, 'collègue') + ' sur ' + total + ' (' + it.qui.join(', ') + ')' + (it.s === 'cours' ? ' — en cours' : '');
+    }
+    L.push('PLAN D\'AMÉLIORATION DE JARVIS');
+    L.push('Tiré de ' + pluriel(total, 'entretien') + ' · ' + dateFr(aujourdhui()));
+    L.push('Classement : nombre de collègues qui le demandent, puis gêne exprimée.');
+    parEcran(p.filter(function (it) { return it.k !== 'garder' && ouvert(it); })).forEach(function (g) {
+      L.push(''); L.push((libelle(ECRANS, g.e) || 'Autre').toUpperCase());
+      g.items.forEach(function (it, i) { L.push(ligne(it, i)); });
+    });
+    var garder = p.filter(function (it) { return it.k === 'garder'; });
+    if (garder.length) {
+      L.push(''); L.push('À NE PAS TOUCHER');
+      garder.forEach(function (it) { L.push('  - ' + it.t + ' (' + libelle(ECRANS, it.e) + ') — ' + it.qui.join(', ')); });
+    }
+    [['fait', 'DÉJÀ FAIT'], ['ecarte', 'ÉCARTÉ']].forEach(function (s) {
+      var a = p.filter(function (it) { return it.k !== 'garder' && it.s === s[0]; });
+      if (!a.length) return;
+      L.push(''); L.push(s[1]);
+      a.forEach(function (it) { L.push('  - ' + it.t + ' (' + libelle(ECRANS, it.e) + ')'); });
+    });
+    return L.join('\n');
+  }
+  function copier(txt, quoi) {
+    quoi = quoi || 'Rapport';
     function repli() {
       var ta = document.createElement('textarea'); ta.value = txt; ta.setAttribute('readonly', '');
       ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;border:0;padding:0';
       document.body.appendChild(ta); ta.select();
       var ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
       document.body.removeChild(ta);
-      if (V2.toast) V2.toast(ok ? 'Rapport copié : collez-le où vous voulez' : 'La copie n\'a pas pu se faire sur ce navigateur');
+      if (V2.toast) V2.toast(ok ? quoi + ' copié : collez-le où vous voulez' : 'La copie n\'a pas pu se faire sur ce navigateur');
     }
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(txt).then(function () { if (V2.toast) V2.toast('Rapport copié : collez-le où vous voulez'); }).catch(repli);
+      navigator.clipboard.writeText(txt).then(function () { if (V2.toast) V2.toast(quoi + ' copié : collez-le où vous voulez'); }).catch(repli);
     } else repli();
   }
 
@@ -453,6 +636,11 @@
       var c = wrap.querySelector('[data-cpt="' + i + '"]'); if (c) c.textContent = nbRepondu(row, t) + '/' + questionsDe(t).length;
     });
     var l = wrap.querySelector('[data-cpt="libre"]'); if (l) l.textContent = String(rep(row, LIBRE).t || '').trim() ? '1' : '—';
+    var am = wrap.querySelector('[data-nbam]'); if (am) am.textContent = pluriel(nbAmelios(row), 'amélioration');
+  }
+  function majAmelio(row, qid, wrap) {
+    var bx = wrap.querySelectorAll('[data-ambox]');
+    for (var i = 0; i < bx.length; i++) if (bx[i].getAttribute('data-ambox') === qid) bx[i].innerHTML = ameliosHtml(row, qid);
   }
   function poser(row, qid, champ, val) {
     var r = row.reponses[qid]; if (!r || typeof r !== 'object') r = row.reponses[qid] = {};
@@ -461,16 +649,29 @@
     marquer(row);
   }
   function brancher(root, wrap) {
-    var row = (V2.route && V2.route.param && V2.route.param !== 'synthese') ? trouver(V2.route.param) : null;
+    var row = (V2.route && V2.route.param && V2.route.param !== 'synthese' && V2.route.param !== 'plan') ? trouver(V2.route.param) : null;
 
     wrap.addEventListener('input', function (e) {
       var t = e.target; if (!row) return;
       if (t.classList.contains('eto-ta')) { poser(row, t.getAttribute('data-q'), 't', t.value); grandir(t); majCompteurs(row, wrap); }
       else if (t.getAttribute('data-champ')) { row[t.getAttribute('data-champ')] = t.value; marquer(row); }
+      else if (t.getAttribute('data-am')) {
+        brouillon[t.getAttribute('data-am')] = t.value;
+        var sg = wrap.querySelector('[data-amsug]'); if (sg) sg.innerHTML = suggestionsHtml(row);
+      }
+    });
+    // Safari n'envoie pas toujours `input` pour une liste déroulante.
+    wrap.addEventListener('change', function (e) {
+      var t = e.target; if (!row || t.getAttribute('data-am') !== 'e') return;
+      brouillon.e = t.value;
+      var sg = wrap.querySelector('[data-amsug]'); if (sg) sg.innerHTML = suggestionsHtml(row);
     });
     wrap.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && e.target.matches && e.target.matches('.eto-g-add input')) {
         e.preventDefault(); var b = e.target.parentNode.querySelector('[data-act="ajouterq"]'); if (b) b.click();
+      }
+      if (e.key === 'Enter' && e.target.matches && e.target.matches('#eto-am-t')) {
+        e.preventDefault(); var b2 = wrap.querySelector('[data-act="amajouter"]'); if (b2) b2.click();
       }
     });
     wrap.addEventListener('click', function (e) {
@@ -482,6 +683,23 @@
       if (act === 'archives') { voirArchives = !voirArchives; V2.render(); return; }
       if (act === 'filtre') { filtreSynthese = b.getAttribute('data-f'); V2.render(); return; }
       if (act === 'copier') { copier(rapportTexte()); return; }
+      if (act === 'copierplan') { copier(planTexte(), 'Plan'); return; }
+      if (act === 'filtreplan') { filtrePlan = b.getAttribute('data-f'); V2.render(); return; }
+      if (act === 'plstatut') {
+        // Sur place : la ligne ne saute pas sous le doigt, elle sortira du filtre au prochain affichage.
+        var g2 = guideRow();
+        if (!g2) { g2 = norm({ id: uuid(), type: 'guide', personne: '', fonction: '', date_entretien: null, statut: 'en cours', reponses: { questions: [] }, archive: false, cree_le: new Date().toISOString() }); rows.push(g2); }
+        if (!g2.reponses.plan || typeof g2.reponses.plan !== 'object') g2.reponses.plan = {};
+        var st = b.getAttribute('data-s');
+        g2.reponses.plan[b.getAttribute('data-c')] = { s: st, le: aujourdhui() };
+        marquer(g2);
+        var boite = b.closest('.eto-pl'); if (boite) boite.setAttribute('data-s', st);
+        var fr2 = b.parentNode.querySelectorAll('.eto-pick');
+        for (var j2 = 0; j2 < fr2.length; j2++) { fr2[j2].classList.toggle('on', fr2[j2] === b); fr2[j2].setAttribute('aria-pressed', String(fr2[j2] === b)); }
+        var kp = compteursPlan(plan());
+        ['total', 'faire', 'fait'].forEach(function (n) { var el = wrap.querySelector('[data-plk="' + n + '"]'); if (el) el.textContent = kp[n]; });
+        return;
+      }
       if (act === 'nouveau') {
         var n = norm({ id: uuid(), type: 'entretien', personne: '', fonction: '', date_entretien: aujourdhui(), statut: 'en cours', reponses: {}, archive: false, cree_le: new Date().toISOString() });
         rows.push(n); marquer(n); V2.go('etonnement', n.id); return;
@@ -508,6 +726,7 @@
       }
       if (!row) return;
       if (act === 'theme') {
+        formAmelio = null;
         themeCourant[row.id] = Math.max(0, Math.min(THEMES.length, parseInt(b.getAttribute('data-i'), 10) || 0));
         var corps = wrap.querySelector('.eto-corps'), som = wrap.querySelector('.eto-som');
         if (corps) corps.innerHTML = themeHtml(row, themeCourant[row.id]);
@@ -517,6 +736,44 @@
         if (cols && cols.getBoundingClientRect().top < 0) cols.scrollIntoView({ block: 'start' });
         var on = som && som.querySelector('.eto-so.on');
         if (on && som.scrollWidth > som.clientWidth) som.scrollLeft = Math.max(0, on.offsetLeft - 16);
+        return;
+      }
+      if (act === 'amouvrir' || act === 'amannuler') {
+        var avant = formAmelio; formAmelio = act === 'amouvrir' ? b.getAttribute('data-q') : null;
+        brouillon = { t: '', e: '', k: 'pb', g: 2 };
+        if (avant) majAmelio(row, avant, wrap);
+        majAmelio(row, b.getAttribute('data-q'), wrap);
+        var ch = wrap.querySelector('#eto-am-t'); if (ch) ch.focus();
+        return;
+      }
+      if (act === 'amnature' || act === 'amgene') {
+        if (act === 'amnature') brouillon.k = b.getAttribute('data-v'); else brouillon.g = parseInt(b.getAttribute('data-v'), 10) || 2;
+        var fr3 = b.parentNode.querySelectorAll('.eto-pick');
+        for (var j3 = 0; j3 < fr3.length; j3++) { fr3[j3].classList.toggle('on', fr3[j3] === b); fr3[j3].setAttribute('aria-pressed', String(fr3[j3] === b)); }
+        return;
+      }
+      if (act === 'amajouter' || act === 'ammeme') {
+        var q3 = formAmelio, neuf = null;
+        if (!q3) return;
+        if (act === 'ammeme') {
+          plan().forEach(function (it) { if (it.c === b.getAttribute('data-c')) neuf = { id: uuid(), c: it.c, t: it.t, e: it.e, k: it.k, g: brouillon.g }; });
+        } else {
+          var titre = String(brouillon.t || '').trim().slice(0, 200), champT = wrap.querySelector('#eto-am-t'), champE = wrap.querySelector('#eto-am-e');
+          if (!titre) { if (champT) champT.focus(); if (V2.toast) V2.toast('Écrivez en une phrase ce qu\'il faut changer'); return; }
+          if (!brouillon.e) { if (champE) champE.focus(); if (V2.toast) V2.toast('Choisissez l\'écran concerné'); return; }
+          neuf = { id: uuid(), t: titre, e: brouillon.e, k: brouillon.k, g: brouillon.g };
+          neuf.c = neuf.id;
+        }
+        if (!neuf) return;
+        poser(row, q3, 'a', ameliosDe(row, q3).concat([neuf]));
+        formAmelio = null; brouillon = { t: '', e: '', k: 'pb', g: 2 };
+        majAmelio(row, q3, wrap); majCompteurs(row, wrap);
+        return;
+      }
+      if (act === 'amretirer') {
+        var q4 = b.getAttribute('data-q'), reste = ameliosDe(row, q4).filter(function (x) { return x.id !== b.getAttribute('data-id'); });
+        poser(row, q4, 'a', reste.length ? reste : null);
+        majAmelio(row, q4, wrap); majCompteurs(row, wrap);
         return;
       }
       if (act === 'retenir') {
@@ -545,6 +802,7 @@
   function dessiner(root) {
     var p = V2.route && V2.route.param, top = V2.topbar ? V2.topbar({ back: true }) : '', corps, row = null;
     if (p === 'synthese') corps = vueSynthese();
+    else if (p === 'plan') corps = vuePlan();
     else if (p && (row = trouver(p))) corps = '<button class="eto-retour" data-act="vue" data-v="">' + ICO('back', 15, 2) + 'Tous les entretiens</button>' + vueEntretien(row);
     else corps = vueListe();
     root.innerHTML = top + '<div class="v2-wrap eto-wrap">' + corps + '</div>';
@@ -716,6 +974,43 @@
       '.eto-qk{display:inline-flex;align-items:center;gap:4px;font-weight:700;color:var(--c-amber-txt)}',
       '.eto-qk svg{fill:currentColor;width:13px;height:13px}',
       '.eto-sq li p{margin:6px 0 0;font-size:14.5px;line-height:1.55;color:var(--ip-ink-2);white-space:pre-wrap;overflow-wrap:anywhere}',
+      // améliorations (dans l'entretien)
+      '.eto-am{margin-top:10px;display:grid;gap:8px}',
+      '.eto-am-i{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--halo);border:1px solid color-mix(in srgb,var(--ip-blue) 18%,transparent);border-radius:var(--r-sm);padding:4px 8px 4px 12px}',
+      '.eto-am-t{flex:1 1 220px;min-width:0;font-size:14.5px;font-weight:700;line-height:1.4;color:var(--ip-ink);overflow-wrap:anywhere}',
+      '.eto-am-m{font-size:13px;font-weight:600;color:var(--muted)}',
+      '.eto-am-plus{justify-self:start;display:inline-flex;align-items:center;gap:7px;border:1px dashed color-mix(in srgb,var(--ip-blue) 45%,transparent);background:none;border-radius:var(--r-pill);padding:0 16px;min-height:44px;font:inherit;font-size:13.5px;font-weight:700;color:var(--ip-blue);cursor:pointer}',
+      '.eto-am-plus:hover{background:var(--halo)}',
+      '.eto-am-f{display:grid;gap:8px;background:var(--card-2);border:1px solid var(--line-strong);border-radius:var(--r-md);padding:14px}',
+      '.eto-am-l{font-size:13px;font-weight:700;color:var(--muted);margin-top:4px}',
+      '.eto-sel{height:44px;padding-right:38px;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'8\' viewBox=\'0 0 12 8\' fill=\'none\' stroke=\'%2364748b\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'M1 1.5l5 5 5-5\'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}',
+      '.eto-picks{display:flex;flex-wrap:wrap;gap:6px}',
+      '.eto-pick{border:1px solid var(--line-strong);background:var(--card);border-radius:var(--r-pill);padding:0 15px;min-height:44px;min-width:44px;font:inherit;font-size:13.5px;font-weight:700;color:var(--ip-ink-2);cursor:pointer}',
+      '.eto-pick.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
+      '.eto-pick:focus-visible,.eto-am-plus:focus-visible,.eto-am-sg:focus-visible{outline:2px solid var(--ip-blue);outline-offset:2px}',
+      '.eto-am-s{display:grid;gap:6px}',
+      '.eto-am-s:empty{display:none}',
+      '.eto-am-st{font-size:13px;font-weight:700;color:var(--muted);margin-top:4px}',
+      '.eto-am-sg{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;text-align:left;border:1px solid var(--line);background:var(--card);border-radius:var(--r-sm);padding:6px 12px;min-height:44px;font:inherit;cursor:pointer;color:var(--ip-ink)}',
+      '.eto-am-sg b{font-size:14px;font-weight:700;min-width:0;overflow-wrap:anywhere}',
+      '.eto-am-sg span{font-size:13px;font-weight:600;color:var(--muted)}',
+      '.eto-am-b{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}',
+      '.eto-am-b .v2-btn{min-height:44px}',
+      '.eto-card-f{flex-wrap:wrap}',
+      '.eto-card-a{color:var(--ip-blue)}',
+      // plan d'amélioration
+      '.eto-st h2 em{font-style:normal;font-size:13px;font-weight:600;letter-spacing:0;color:var(--muted);margin-left:auto;text-align:right}',
+      '.eto-pl{border-top:1px solid var(--line);padding:16px 0 12px;margin-top:14px;display:grid;gap:12px}',
+      '.eto-pl-h{display:flex;align-items:flex-start;gap:14px}',
+      '.eto-pl-n{flex:none;min-width:40px;height:40px;padding:0 6px;border-radius:12px;display:grid;place-items:center;background:var(--ip-blue);color:#fff;font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}',
+      '.eto-pl-c{min-width:0;flex:1}',
+      '.eto-pl-t{font-size:16px;font-weight:800;letter-spacing:-.01em;line-height:1.35;color:var(--ip-ink);overflow-wrap:anywhere}',
+      '.eto-pl-m{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px;font-size:13px;line-height:1.5;color:var(--muted)}',
+      '.eto-pl-g{font-weight:800;color:var(--ip-ink-2)}',
+      '.eto-pl[data-s="fait"] .eto-pl-n,.eto-pl[data-s="ecarte"] .eto-pl-n{background:var(--surf-sunken);color:var(--muted)}',
+      '.eto-pl[data-s="fait"] .eto-pl-t,.eto-pl[data-s="ecarte"] .eto-pl-t{color:var(--muted);text-decoration:line-through}',
+      '@media(min-width:900px){.eto-pl{grid-template-columns:minmax(0,1fr) auto;align-items:center}}',
+      '@media(max-width:560px){.eto-seg-v{display:flex;width:100%}.eto-seg-v button{flex:1;padding:0 6px}.eto-st h2{flex-wrap:wrap}.eto-st h2 em{margin-left:0;text-align:left;width:100%}}',
       '@media(max-width:560px){.eto-barre .v2-btn{margin-left:0;width:100%}.eto-seg-f{margin-left:0}.eto-st{padding:16px}.eto-q{padding:14px}.eto-fiche-b .eto-lien{margin-left:0}}',
       '@media(prefers-reduced-motion:reduce){.eto-card,.eto-guide>summary::after{transition:none}.eto-card:hover{transform:none}}'
     ].join('');
