@@ -2250,7 +2250,7 @@
     var t = function (val, ico, label) {
       return '<button type="button" role="tab" class="v2-tab' + (active === val ? ' on' : '') + '" aria-selected="' + (active === val) + '" onclick="V2.pharmaView(\'' + val + '\')">' + ICO(ico, 18, 2) + label + '</button>';
     };
-    return '<div class="v2-tabs" role="tablist" aria-label="Vues des officines">' +
+    return '<div class="v2-tabs ph-v4" role="tablist" aria-label="Vues des officines">' +
       t('officines', 'pharma', 'Officines') + t('groupements', 'opp', 'Groupements') + t('listes', 'fiche', 'Mes listes') + t('carte', 'grid', 'Carte secteur') +
     '</div>';
   }
@@ -4313,6 +4313,8 @@
       '.ph-top-name{flex:1;min-width:0;font-size:12.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.ph-top-val{font-size:12px;font-weight:700;color:var(--ip-ink-2);flex-shrink:0}',
       '.ph-top-q{color:var(--muted);font-weight:500}',
+      // 02/10/2026 — quatre onglets : au téléphone ils se rangent deux par deux (sinon 413 px dans 360)
+      '@media (max-width:760px){.v2-tabs.ph-v4{display:grid;grid-template-columns:1fr 1fr;width:100%}.v2-tabs.ph-v4 .v2-tab{width:100%}}',
       // onglets Officines / Groupements
       '.ph-vtabs{display:flex;gap:6px;margin:6px 0 18px}',
       '.ph-vtab{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:9px 16px;font-family:var(--font);font-size:13.5px;font-weight:700;color:var(--muted);cursor:pointer;box-shadow:var(--sh-1);transition:.16s var(--ease)}',
