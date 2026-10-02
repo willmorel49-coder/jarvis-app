@@ -199,7 +199,11 @@
     // Le logo Intégral Pharma est TOUJOURS présent et cliquable → accueil (depuis n'importe où).
     // Sur une page interne, on l'affiche en version compacte (logo seul) à côté du bouton retour.
     var brand = '<a class="v2-brand' + (back ? ' v2-brand-compact' : '') + '" onclick="V2.go(\'home\')" title="Accueil" aria-label="Accueil">' +
-      '<span class="v2-logo">' + ICO('logo', 22) + '</span>' +
+      // 02/10/2026 — sur un écran interne, le chemin vers l'accueil est une maison sur fond blanc : le logo
+      // (carré bleu à croix) se confondait avec le « + » de la barre. OPSO n'a pas de « + » et garde son logo.
+      ((back && !(window.V2_BRAND && window.V2_BRAND.opso))
+        ? '<span class="tp-accueil"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 11.2 12 4l8.5 7.2"/><path d="M5.8 9.6V19a1 1 0 0 0 1 1h3.4v-5.2h3.6V20h3.4a1 1 0 0 0 1-1V9.6"/></svg></span>'
+        : '<span class="v2-logo">' + ICO('logo', 22) + '</span>') +
       (back ? '' : '<span><span class="v2-brand-t">' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '<span class="v2-brand-dot" aria-hidden="true"></span></span><br><span class="v2-brand-s">' + ((window.V2_BRAND && window.V2_BRAND.sub) || 'Espace commercial') + '</span></span>') +
       '</a>';
     // Nom de l'écran (02/10/2026) : donné par l'appelant, sinon lu dans la liste d'outils de

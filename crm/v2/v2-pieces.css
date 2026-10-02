@@ -35,6 +35,9 @@
 .v2-brand{min-height:44px;min-width:0;border-radius:var(--r-btn)}
 .v2-brand-compact{min-width:44px;justify-content:center}   /* logo seul : zone tactile de 44 px, le logo (40 px) centré dedans */
 .v2-logo{width:40px;height:40px;border-radius:12px}
+/* Accueil, sur un écran interne : une maison sur fond blanc, de la même famille que Retour (jamais un second carré bleu à côté du « + »). */
+.tp-accueil{width:44px;height:44px;border-radius:var(--r-btn);display:flex;align-items:center;justify-content:center;flex:none;background:var(--card);border:1px solid var(--line);box-shadow:var(--sh-1);color:var(--ip-ink-2);transition:border-color .18s var(--ease),color .18s var(--ease)}
+.v2-brand:hover .tp-accueil{border-color:color-mix(in srgb,var(--ip-blue) 32%,var(--line));color:var(--ip-blue)}
 .v2-logo svg{width:22px;height:22px}
 .tp-nom{font-weight:800;font-size:18px;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ip-ink)}
 
@@ -120,7 +123,7 @@
 @media (max-width:760px){
   .v2-top{padding:0 12px;gap:6px}
   .tp-g{gap:8px}
-  .tp-d{gap:2px}
+  .tp-d{gap:6px}
   .v2-brand-s{display:none}
   .v2-brand-t{font-size:16px}
   .tp-nom{display:none}
