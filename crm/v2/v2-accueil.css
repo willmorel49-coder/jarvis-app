@@ -109,6 +109,12 @@
 .u2-pas{flex:none;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(16,19,28,.25)}
 .u2-pas .u2-ic{width:22px;height:22px;stroke:#fff;stroke-width:2.6}
 .u2-co-nm{min-width:0;line-height:1.2}
+/* La teinte « Léopard » (v2-app.js, U2_TEINTES, champ m) : un motif, pas un aplat. --u2-leo = les taches seules (fond transparent), toutes plus
+   sombres que l'accent : posées sur un bouton plein, le texte blanc garde au moins le contraste de l'accent nu. --u2-motif vaut « none » ailleurs. */
+.u2-page,.u2-hors{--u2-leo:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cg fill='%235F370E' fill-opacity='.45' stroke='%232E1B0B' stroke-width='3' stroke-linecap='round'%3E%3Cellipse cx='16' cy='14' rx='7' ry='5.5' stroke-dasharray='8 6.5 6 7 5 7' transform='rotate(-20 16 14)'/%3E%3Cellipse cx='46' cy='11' rx='6' ry='7' stroke-dasharray='7 6 9 6.5 5 7' transform='rotate(25 46 11)'/%3E%3Cellipse cx='32' cy='34' rx='8' ry='6' stroke-dasharray='9 7 6 6.5 7 8' transform='rotate(10 32 34)'/%3E%3Cellipse cx='10' cy='44' rx='6' ry='5' stroke-dasharray='6 6 8 6.5 5 6' transform='rotate(40 10 44)'/%3E%3Cellipse cx='54' cy='40' rx='6.5' ry='5.5' stroke-dasharray='8 6 5 7 6 6.5' transform='rotate(-35 54 40)'/%3E%3Cellipse cx='29' cy='56' rx='5.5' ry='4.5' stroke-dasharray='6 6 7 6 4 6.5' transform='rotate(15 29 56)'/%3E%3C/g%3E%3Cg fill='%232E1B0B'%3E%3Ccircle cx='33' cy='12' r='1.6'/%3E%3Ccircle cx='22' cy='30' r='1.4'/%3E%3Ccircle cx='44' cy='24' r='1.7'/%3E%3Ccircle cx='5' cy='27' r='1.3'/%3E%3Ccircle cx='43' cy='52' r='1.6'/%3E%3Ccircle cx='60' cy='22' r='1.2'/%3E%3Ccircle cx='14' cy='59' r='1.3'/%3E%3Ccircle cx='58' cy='58' r='1.4'/%3E%3C/g%3E%3C/svg%3E")}
+.u2-pas-m{background:#D9A441 var(--u2-leo) center/40px}
+.u2-pas-m .u2-ic{width:16px;height:16px;padding:3px;box-sizing:content-box;border-radius:50%;background:#2E1B0B}
+.u2-rb[aria-expanded="true"],:is(.u2-page,.u2-hors) .v2-tab[aria-selected="true"],:is(.u2-page,.u2-hors) .v2-tab[aria-checked="true"]{background-image:var(--u2-motif,none);background-size:44px}
 .u2-rz .v2-btn{height:44px}
 .u2-mon-sel{height:46px}
 .u2-mon-sel select{height:44px;min-height:44px}

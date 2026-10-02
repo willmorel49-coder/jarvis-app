@@ -1334,16 +1334,18 @@
   var U2_FAMS = [['clients', 'Mes clients'], ['produits', 'Produits et prix'], ['piloter', 'Piloter'], ['veille', 'Veille'], ['communiquer', 'Communiquer'], ['aide', 'Aide et idées']];
   var U2_WIDGETS = { infos: { nom: 'Infos du matin', page: 'infos' }, todo: { nom: 'To do list', page: 'todo' }, relance: { nom: 'À relancer', page: 'rdv' }, semaine: { nom: 'Ma semaine', page: 'rdv' } };
   var U2_WORDRE = ['infos', 'todo', 'relance', 'semaine'];
-  // 02/10/2026 — Couleurs : six teintes d'accent, fond toujours clair. Chaque ligne est calculée une fois (ton foncé, halo clair, ombres) :
+  // 02/10/2026 — Couleurs : sept teintes d'accent, fond toujours clair. Chaque ligne est calculée une fois (ton foncé, halo clair, ombres) :
   // c = accent, d = ton foncé, h = halo, ci / cg / cd = les trois nappes de la lumière de tête (.v2-halo), o / ol = ombre portée forte / légère, sh / shh = ombres des boutons pleins.
   // Contrastes calculés : blanc sur c ≥ 5,3:1, d sur h ≥ 8:1, c sur h ≥ 4,7:1. La première est le bleu d'origine : sans réglage, rien ne change.
+  // m (facultatif) = un motif posé PAR-DESSUS l'accent sur les surfaces pleines (variable CSS de v2-accueil.css) : le léopard, taches plus sombres que c, donc le blanc y reste lisible.
   var U2_TEINTES = [
     { k: 'bleu', nom: 'Bleu JARVIS', c: '#0050E6', d: '#0034A0', ci: '#E4EDFC', cg: '#CFDFFC', cd: '#DCE7FC', h: '#E9F0FF', o: 'rgba(0,80,230,.28)', ol: 'rgba(0,80,230,.10)', sh: '0 4px 12px rgba(0,80,230,.26), 0 8px 24px rgba(0,52,160,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(0,80,230,.34), 0 14px 34px rgba(0,52,160,.20), 0 1px 0 rgba(255,255,255,.28) inset' },
     { k: 'indigo', nom: 'Indigo', c: '#4B3FD0', d: '#322A89', ci: '#EBEAFA', cg: '#DDDBF6', cd: '#E6E5F9', h: '#EFEEFB', o: 'rgba(75,63,208,.28)', ol: 'rgba(75,63,208,.10)', sh: '0 4px 12px rgba(75,63,208,.26), 0 8px 24px rgba(50,42,137,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(75,63,208,.34), 0 14px 34px rgba(50,42,137,.20), 0 1px 0 rgba(255,255,255,.28) inset' },
     { k: 'emeraude', nom: 'Émeraude', c: '#0A7A55', d: '#075138', ci: '#E4F0EC', cg: '#D0E6DF', cd: '#DDEDE8', h: '#E9F3F0', o: 'rgba(10,122,85,.28)', ol: 'rgba(10,122,85,.10)', sh: '0 4px 12px rgba(10,122,85,.26), 0 8px 24px rgba(7,81,56,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(10,122,85,.34), 0 14px 34px rgba(7,81,56,.20), 0 1px 0 rgba(255,255,255,.28) inset' },
     { k: 'corail', nom: 'Corail', c: '#BE3318', d: '#7D2210', ci: '#F8E9E6', cg: '#F3D8D3', cd: '#F6E3DF', h: '#F9EDEA', o: 'rgba(190,51,24,.28)', ol: 'rgba(190,51,24,.10)', sh: '0 4px 12px rgba(190,51,24,.26), 0 8px 24px rgba(125,34,16,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(190,51,24,.34), 0 14px 34px rgba(125,34,16,.20), 0 1px 0 rgba(255,255,255,.28) inset' },
     { k: 'ambre', nom: 'Ambre', c: '#9C5700', d: '#673900', ci: '#F4EDE3', cg: '#ECDFCF', cd: '#F1E8DC', h: '#F6F0E8', o: 'rgba(156,87,0,.28)', ol: 'rgba(156,87,0,.10)', sh: '0 4px 12px rgba(156,87,0,.26), 0 8px 24px rgba(103,57,0,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(156,87,0,.34), 0 14px 34px rgba(103,57,0,.20), 0 1px 0 rgba(255,255,255,.28) inset' },
-    { k: 'prune', nom: 'Prune', c: '#8E2A7A', d: '#5E1C51', ci: '#F3E8F0', cg: '#EAD7E6', cd: '#F0E2ED', h: '#F5ECF3', o: 'rgba(142,42,122,.28)', ol: 'rgba(142,42,122,.10)', sh: '0 4px 12px rgba(142,42,122,.26), 0 8px 24px rgba(94,28,81,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(142,42,122,.34), 0 14px 34px rgba(94,28,81,.20), 0 1px 0 rgba(255,255,255,.28) inset' }
+    { k: 'prune', nom: 'Prune', c: '#8E2A7A', d: '#5E1C51', ci: '#F3E8F0', cg: '#EAD7E6', cd: '#F0E2ED', h: '#F5ECF3', o: 'rgba(142,42,122,.28)', ol: 'rgba(142,42,122,.10)', sh: '0 4px 12px rgba(142,42,122,.26), 0 8px 24px rgba(94,28,81,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(142,42,122,.34), 0 14px 34px rgba(94,28,81,.20), 0 1px 0 rgba(255,255,255,.28) inset' },
+    { k: 'leopard', nom: 'Léopard', m: 'var(--u2-leo)', c: '#94561A', d: '#5F370E', ci: '#F6EEE2', cg: '#EFE2CE', cd: '#F3E9DB', h: '#F8F1E7', o: 'rgba(148,86,26,.28)', ol: 'rgba(148,86,26,.10)', sh: '0 4px 12px rgba(148,86,26,.26), 0 8px 24px rgba(95,55,14,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(148,86,26,.34), 0 14px 34px rgba(95,55,14,.20), 0 1px 0 rgba(255,255,255,.28) inset' }
   ];
   var U2_FAMILLES = U2_FAMS.map(function (f) { return f[0]; });
   var Q_ACADEMY = 'https://jarvis-academy-fr.vercel.app/';
@@ -1471,7 +1473,7 @@
     return U2_TEINTES.filter(function (t) { return t.k === k; })[0] || U2_TEINTES[0];
   }
   function u2Vars(t) {
-    return { '--ip-blue': t.c, '--ip-blue-d': t.d, '--halo': t.h, '--sh-blue': t.sh, '--sh-blue-h': t.shh, '--accent': t.c, '--u2-o': t.o, '--u2-ol': t.ol };
+    return { '--ip-blue': t.c, '--ip-blue-d': t.d, '--halo': t.h, '--sh-blue': t.sh, '--sh-blue-h': t.shh, '--accent': t.c, '--u2-o': t.o, '--u2-ol': t.ol, '--u2-motif': t.m || 'none' };
   }
   function u2StyleAttr() {
     var t = u2Teinte();
@@ -1812,14 +1814,14 @@
     });
     return h + '</section>';
   }
-  // Les six teintes : pastilles rondes de 48 px, nom écrit à côté, coche sur la teinte active (boutons radio, flèches du clavier).
+  // Les sept teintes : pastilles rondes de 48 px, nom écrit à côté, coche sur la teinte active (boutons radio, flèches du clavier).
   function u2BlocCouleurs() {
     if (u2Escale()) return '';
     var cur = u2Teinte().k;
     return '<section class="u2-mon-b"><h3>Teinte d\'accent</h3><div class="u2-coul" role="radiogroup" aria-label="Couleur d\'accent">' + U2_TEINTES.map(function (t) {
       var on = t.k === cur;
       return '<button type="button" class="u2-co" role="radio" aria-checked="' + on + '" tabindex="' + (on ? '0' : '-1') + '" data-u2-a="coul" data-v="' + t.k + '">' +
-        '<span class="u2-pas" style="background:' + t.c + '">' + (on ? u2Ic('check') : '') + '</span><span class="u2-co-nm">' + esc(t.nom) + '</span></button>';
+        '<span class="u2-pas' + (t.m ? ' u2-pas-m"' : '" style="background:' + t.c + '"') + '>' + (on ? u2Ic('check') : '') + '</span><span class="u2-co-nm">' + esc(t.nom) + '</span></button>';
     }).join('') + '</div><p class="u2-note">Le fond reste clair. La couleur s\'applique à votre accueil.</p></section>';
   }
   // Un seul retour aux réglages d'origine, avec confirmation dans le tiroir (jamais la boîte du navigateur).
