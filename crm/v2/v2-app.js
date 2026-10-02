@@ -783,7 +783,7 @@
   // jamais de chiffre d'ouvertures ni de nom de personne. Hors OPSO uniquement.
   // ════════════════════════════════════════════
   // Ordre de repli (mesure du 30/09/2026), utilisé tant que le vrai classement n'est pas là.
-  var G4_REPLI = ['pharma', 'produits', 'pilotage', 'marketing', 'infos', 'rdv', 'carte', 'appro', 'todo', 'biosimilaires', 'offilog', 'concurrents', 'remontees', 'marchefr', 'carteGrp', 'lgo', 'groupements', 'academy'];
+  var G4_REPLI = ['pharma', 'produits', 'pilotage', 'marketing', 'infos', 'rdv', 'carte', 'appro', 'todo', 'biosimilaires', 'offilog', 'concurrents', 'remontees', 'marchefr', 'carteGrp', 'lgo', 'academy'];
   // 02/10/2026 — Will : « supprimer audit, fiches pdf, l'argument, audit marge, réforme 2027, présentation intégral » : ces six outils
   // n'existent plus nulle part (ni porte, ni écran). Un réglage enregistré qui les cite encore est écarté par u2Net.
   // k = nom de la route mesurée par V2.mesurer (= `ecran` côté base) ; page = écran qui doit exister.
@@ -792,22 +792,20 @@
     produits: { fam: 'produits', ico: 'catalogue', nom: 'Catalogue produits', ph: 'Prix et stock des 7 établissements', page: 'produits' },
     pilotage: { fam: 'piloter', ico: 'pilotage', nom: 'Pilotage', ph: 'CA, marge et objectifs', page: 'pilotage' },
     marketing: { fam: 'communiquer', ico: 'marketing', nom: 'Marketing', ph: 'Supports, sélections, LinkedIn', page: 'marketing' },
-    infos: { fam: 'veille', ico: 'infos', nom: 'Infos du matin', ph: 'Le brief du jour', page: 'infos' },
+    infos: { fam: 'piloter', ico: 'infos', nom: 'Infos du matin', ph: 'Le brief du jour', page: 'infos' },
     rdv: { fam: 'clients', ico: 'rdv', nom: 'Rendez-vous', ph: 'Demander et suivre vos rendez-vous', page: 'rdv' },
     carte: { fam: 'clients', ico: 'carte', nom: 'La carte', ph: 'Clients, prospects et votre tournée', page: 'carte' },
-    appro: { fam: 'piloter', ico: 'appro', nom: 'Appro Intégral', ph: 'Couverture de stock et ruptures', page: 'appro' },
+    appro: { fam: 'produits', ico: 'appro', nom: 'Appro Intégral', ph: 'Couverture de stock et ruptures', page: 'appro' },
     todo: { fam: 'clients', ico: 'todo', nom: 'To do list', ph: 'Rendez-vous à demander, remerciements, ouvertures', page: 'todo' },
     biosimilaires: { fam: 'produits', ico: 'biosim', nom: 'Biosimilaires', ph: 'Les biosimilaires et leurs références', page: 'biosimilaires' },
     offilog: { fam: 'produits', ico: 'offilog', nom: 'Offilog', ph: 'La centrale parapharmacie', page: 'offilog' },
-    concurrents: { fam: 'veille', ico: 'concurrents', nom: 'Concurrents', ph: 'Ce que font les autres', page: 'concurrents' },
-    remontees: { fam: 'aide', ico: 'remontees', nom: 'Remontées', ph: 'Le mur d\'idées de l\'équipe', page: 'remontees' },
-    marchefr: { fam: 'veille', ico: 'marche', nom: 'Le marché', ph: 'Le marché français d\'une référence, région par région', page: 'marchefr' },
-    carteGrp: { fam: 'veille', ico: 'carte-grp', nom: 'Carte des groupements', ph: 'Où sont les adhérents de chaque groupement', page: 'carteGrp' },
+    concurrents: { fam: 'piloter', ico: 'concurrents', nom: 'Concurrents', ph: 'Ce que font les autres', page: 'concurrents' },
+    remontees: { fam: 'communiquer', ico: 'remontees', nom: 'Remontées', ph: 'Le mur d\'idées de l\'équipe', page: 'remontees' },
+    marchefr: { fam: 'piloter', ico: 'marche', nom: 'Le marché', ph: 'Le marché français d\'une référence, région par région', page: 'marchefr' },
+    carteGrp: { fam: 'piloter', ico: 'carte-grp', nom: 'Carte des groupements', ph: 'Où sont les adhérents de chaque groupement', page: 'carteGrp' },
     lgo: { fam: 'communiquer', ico: 'lgo', nom: 'Logiciels officine', ph: 'Importer le catalogue dans chaque logiciel', page: 'lgo' },
-    // Groupements : pas d'écran à part, c'est l'onglet « groupements » des officines.
-    groupements: { fam: 'clients', ico: 'groupements', nom: 'Groupements', ph: 'Les listes et listings d\'achats', page: 'pharma', js: 'V2.go(\'pharma\',\'groupements\')' },
-    // JARVIS Academy : lien externe (Q_ACADEMY), tuile de « Aide et idées » ; pas d'écran de l'app (page: null).
-    academy: { fam: 'aide', ico: 'academy', nom: 'JARVIS Academy', ph: 'Se former à l\'outil, pas à pas', page: null }
+    // JARVIS Academy : lien externe (Q_ACADEMY), dans « Communiquer et progresser » ; pas d'écran de l'app (page: null).
+    academy: { fam: 'communiquer', ico: 'academy', nom: 'JARVIS Academy', ph: 'Se former à l\'outil, pas à pas', page: null }
   };
   var G4_CLE_ORDRE = 'jarvis_accueil_ordre2';
   var _g4Ordre = null;        // [{e, o, p}] : écran, ouvertures, personnes (jamais affichés)
@@ -881,7 +879,7 @@
     carte: '<path d="M12 21s7-6.2 7-11.5A7 7 0 005 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
     rdv: '<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/>',
     todo: '<path d="M10 6h10M10 12h10M10 18h10"/><path d="M3.5 6l1.3 1.3L7 5M3.5 12l1.3 1.3L7 11M3.5 18l1.3 1.3L7 17"/>',
-    groupements: '<circle cx="9" cy="8.5" r="3.2"/><path d="M3 19c0-3.2 2.7-5.5 6-5.5s6 2.3 6 5.5"/><path d="M16 5.6a3 3 0 010 5.8M18 14c1.8.7 3 2.3 3 5"/>',
+    clients: '<circle cx="9" cy="8.5" r="3.2"/><path d="M3 19c0-3.2 2.7-5.5 6-5.5s6 2.3 6 5.5"/><path d="M16 5.6a3 3 0 010 5.8M18 14c1.8.7 3 2.3 3 5"/>',
     produits: '<path d="M12 3l8 4.2v9.6L12 21l-8-4.2V7.2z"/><path d="M4 7.2l8 4.3 8-4.3M12 11.5V21"/>',
     offilog: '<path d="M3 4h2.5l2 11h10l2-8H7"/><circle cx="9.5" cy="19" r="1.4"/><circle cx="16.5" cy="19" r="1.4"/>',
     biosimilaires: '<circle cx="7" cy="7" r="3"/><circle cx="17" cy="9" r="3"/><circle cx="10" cy="17" r="3"/><path d="M9.8 7.6l4.4.8M8.6 9.8l.9 4.2M14.8 11.6l-3.2 3.4"/>',
@@ -914,8 +912,12 @@
   function u2Ic(n, s, cls) {
     return '<svg class="u2-ic' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true" focusable="false"' + (s ? ' style="width:' + s + 'px;height:' + s + 'px"' : '') + '>' + (U2_IC[n] || U2_IC.doc) + '</svg>';
   }
-  // Les six familles de la maquette, dans cet ordre. Le rattachement d'un outil est le champ `fam` de G4_PORTES.
-  var U2_FAMS = [['clients', 'Mes clients'], ['produits', 'Produits et prix'], ['piloter', 'Piloter'], ['veille', 'Veille'], ['communiquer', 'Communiquer'], ['aide', 'Aide et idées']];
+  // Les quatre groupes de la maquette « les grandes portes » (02/10/2026), dans cet ordre : [clé, nom, picto]. Le rattachement d'un outil est le champ `fam` de G4_PORTES.
+  // Avant, six familles (clients, produits, piloter, veille, communiquer, aide) : U2_ANCIENNES sert à relire les réglages déjà enregistrés (voir u2Net).
+  var U2_FAMS = [['clients', 'Mes clients', 'clients'], ['produits', 'Produits et prix', 'produits'], ['piloter', 'Piloter et veiller', 'pilotage'], ['communiquer', 'Communiquer et progresser', 'marketing']];
+  var U2_ANCIENNES = ['clients', 'produits', 'piloter', 'veille', 'communiquer', 'aide'];
+  // L'outil principal de chaque groupe, mis en avant dans sa rangée.
+  var U2_LOURD = { pharma: 1, produits: 1, pilotage: 1, marketing: 1 };
   var U2_WIDGETS = { infos: { nom: 'Infos du matin', page: 'infos' }, todo: { nom: 'To do list', page: 'todo' }, relance: { nom: 'À relancer', page: 'rdv' }, semaine: { nom: 'Ma semaine', page: 'rdv' } };
   var U2_WORDRE = ['infos', 'todo', 'relance', 'semaine'];
   // 02/10/2026 — Couleurs : sept teintes d'accent, fond toujours clair. Chaque ligne est calculée une fois (ton foncé, halo clair, ombres) :
@@ -1011,7 +1013,7 @@
   // morceau EN PLACE : l'accueil ne se redessine pas en entier et ne rejoue aucune entrée.
   // Réglages : table `profils` (scope 'groupement', scope_id '__accueil_<id>__'), comme la To do list.
   // ═════════════════════════════════════════════════════════════════
-  var _u2 = { S: null, id: null, dist: false, modifie: false, timer: 0, entree: false, onglet: 'ep', sec: null, ouvert: false, opener: null,
+  var _u2 = { S: null, id: null, dist: false, modifie: false, timer: 0, entree: false, sec: null, ouvert: false, opener: null,
     monte: false, mode: null, todoPret: false, lie: null, sig: {}, sigW: {} };
 
   function u2Id() { return (V2.user && V2.user.id) || 'local'; }
@@ -1033,11 +1035,12 @@
     if (!raw || typeof raw !== 'object') return S;
     function connu(k, i, a) { return typeof k === 'string' && !!G4_PORTES[k] && a.indexOf(k) === i; }
     if (Array.isArray(raw.epingles)) S.epingles = raw.epingles.filter(connu);
+    // L'ordre des outils était rangé par ancienne famille : on lit les six listes l'une après l'autre (ordre de U2_ANCIENNES), puis chaque outil
+    // retrouve son nouveau groupe en gardant sa place relative. Un réglage déjà au format à quatre groupes se relit de la même façon.
     if (raw.ordre && typeof raw.ordre === 'object' && !Array.isArray(raw.ordre)) {
-      U2_FAMS.forEach(function (f) {
-        var o = raw.ordre[f[0]];
-        if (Array.isArray(o)) S.ordre[f[0]] = o.filter(function (k, i, a) { return connu(k, i, a) && G4_PORTES[k].fam === f[0]; });
-      });
+      var suite = [];
+      U2_ANCIENNES.forEach(function (fa) { if (Array.isArray(raw.ordre[fa])) raw.ordre[fa].forEach(function (k) { if (typeof k === 'string' && G4_PORTES[k] && suite.indexOf(k) < 0) suite.push(k); }); });
+      U2_FAMS.forEach(function (f) { var l = suite.filter(function (k) { return G4_PORTES[k].fam === f[0]; }); if (l.length) S.ordre[f[0]] = l; });
     }
     if (raw.widgets && typeof raw.widgets === 'object') U2_WORDRE.forEach(function (k) { if (typeof raw.widgets[k] === 'boolean') S.widgets[k] = raw.widgets[k]; });
     if (Array.isArray(raw.wordre) && raw.wordre.length === U2_WORDRE.length && raw.wordre.every(function (k, i, a) { return !!U2_WIDGETS[k] && a.indexOf(k) === i; })) S.wordre = raw.wordre.slice();
@@ -1045,7 +1048,7 @@
     if (Array.isArray(raw.masques)) S.masques = raw.masques.filter(connu);
     if (Array.isArray(raw.fordre)) {
       var fo = raw.fordre.filter(function (k, i, a) { return U2_FAMILLES.indexOf(k) >= 0 && a.indexOf(k) === i; });
-      S.fordre = fo.concat(U2_FAMILLES.filter(function (k) { return fo.indexOf(k) < 0; }));   // une famille oubliée se range à la fin
+      S.fordre = fo.concat(U2_FAMILLES.filter(function (k) { return fo.indexOf(k) < 0; }));   // les anciennes clés (veille, aide…) sont écartées ; un groupe oublié se range à la fin
     }
     return S;
   }
@@ -1136,8 +1139,7 @@
   function u2Outil(k) {
     var d = G4_PORTES[k];
     var o = { k: k, nom: d.nom, ph: (u2Escale() && _g4Esc[k]) ? _g4Esc[k] : d.ph, act: 'go:' + k, href: '#' + k };
-    if (k === 'groupements') { o.act = 'go:pharma/groupements'; o.href = '#pharma/groupements'; }
-    else if (k === 'academy') { o.act = ''; o.href = Q_ACADEMY; o.ext = true; }
+    if (k === 'academy') { o.act = ''; o.href = Q_ACADEMY; o.ext = true; }
     return o;
   }
   function u2Fam(f, cles) {
@@ -1158,9 +1160,8 @@
   }
   function u2Etat() {
     var cles = u2Cles(), vis = u2Vis();
-    var tous = u2FamsOrdre().map(function (f) { return { k: f[0], nom: f[1], cles: u2Fam(f[0], cles) }; }).filter(function (f) { return f.cles.length; });
+    var tous = u2FamsOrdre().map(function (f) { return { k: f[0], nom: f[1], ico: f[2], cles: u2Fam(f[0], cles) }; }).filter(function (f) { return f.cles.length; });
     var fams = tous.map(function (f) { return { k: f.k, nom: f.nom, cles: f.cles.filter(function (k) { return vis.indexOf(k) >= 0; }) }; }).filter(function (f) { return f.cles.length; });
-    if (_u2.onglet !== 'ep' && !fams.some(function (f) { return f.k === _u2.onglet; })) _u2.onglet = 'ep';
     return { cles: cles, vis: vis, tous: tous, fams: fams, ep: u2Epingles(vis) };
   }
   // « Nouveau » (G4_UNE, décision de Will du 01/10) : lu dans G4_UNE, date de fin comprise ; jamais en Escale ni en OPSO.
@@ -1170,42 +1171,47 @@
     return !!(u && u.page === k && !b.escale && !b.opso && V2.pages[u.page] && jour <= u.fin);
   }
 
-  // ── Le centre ──
-  function u2Tuile(k, o) {
-    o = o || {};
+  // ── Le centre : « les grandes portes » (maquette 2 choisie par Will, 02/10/2026) ──
+  // Les outils épinglés en grandes portes, puis une carte de quatre rangées (un groupe par rangée, chaque outil en pastille).
+  function u2LienAttr(t, k) {
+    return ' href="' + esc(t.href) + '"' + (t.ext ? ' target="_blank" rel="noopener"' : ' data-u2-act="' + esc(t.act) + '"') + ' data-tool="' + esc(k) + '"';
+  }
+  function u2PorteHtml(k, i) {
     var t = u2Outil(k);
-    return '<a class="v2-tuile u2-in" style="--i:' + (o.i || 0) + '" href="' + esc(t.href) + '"' +
-      (t.ext ? ' target="_blank" rel="noopener"' : ' data-u2-act="' + esc(t.act) + '"') + ' data-tool="' + esc(k) + '">' +
-      '<span class="v2-tuile-ico">' + u2Ic(k) + '</span>' +
-      '<span class="v2-tuile-tx">' + (u2Nouveau(k) ? '<span class="u2-nv">Nouveau</span>' : '') +
-        '<span class="v2-tuile-nm">' + esc(t.nom) + '</span><span class="v2-tuile-ds">' + esc(t.ph) + '</span></span>' +
-      (o.pin ? u2Ic('pin', 16, 'u2-epi') + '<span class="u2-sr">Épinglé</span>' : '') +
-      (t.ext ? '<span class="u2-sr">, s\'ouvre dans un nouvel onglet</span>' : '') +
-      u2Ic('chev', 20, 'v2-tuile-chev') + '</a>';
+    return '<a class="u2-porte u2-in" style="--i:' + i + '"' + u2LienAttr(t, k) + ' data-porte="' + esc(k) + '">' +
+      '<span class="u2-gl">' + u2Ic(k) + '</span>' + (u2Nouveau(k) ? '<span class="u2-nv">Nouveau</span>' : '') +
+      '<span class="u2-nm">' + esc(t.nom) + '</span><span class="u2-ds">' + esc(t.ph) + '</span>' +
+      '<span class="u2-go">' + u2Ic('arrow') + '</span>' +
+      (t.ext ? '<span class="u2-sr">, s\'ouvre dans un nouvel onglet</span>' : '') + '</a>';
   }
-  function u2OngletsHtml(etat) {
-    var tabs = [{ k: 'ep', nom: 'Épinglés' }].concat(etat.fams.map(function (f) { return { k: f.k, nom: f.nom }; }));
-    return tabs.map(function (t) {
-      var sel = _u2.onglet === t.k;
-      return '<button type="button" class="v2-tab" role="tab" id="u2-tab-' + t.k + '" aria-selected="' + sel + '" tabindex="' + (sel ? '0' : '-1') +
-        '" aria-controls="u2-panneau" data-u2-tab="' + t.k + '">' + esc(t.nom) + '</button>';
-    }).join('');
+  function u2PastilleHtml(k, ep) {
+    var t = u2Outil(k);
+    return '<a class="u2-chp' + (U2_LOURD[k] ? ' u2-chp--lourd' : '') + '"' + u2LienAttr(t, k) + ' title="' + esc(t.ph) + '">' + u2Ic(k) + esc(t.nom) +
+      (u2Nouveau(k) ? '<span class="u2-nv">Nouveau</span>' : '') +
+      (ep ? u2Ic('pin', 14, 'u2-chp-pin') + '<span class="u2-sr">Épinglé</span>' : '') +
+      (t.ext ? '<span class="u2-sr">, s\'ouvre dans un nouvel onglet</span>' : '') + '</a>';
   }
-  function u2PanneauHtml(etat) {
-    var l = etat.ep;
-    if (!etat.vis.length) {
-      return '<p class="u2-ep-vide">Tous vos outils sont masqués. ' + (u2Mode()
-        ? 'Ouvrez « Mon espace » avec votre avatar, en haut à droite, puis, dans « Tous les outils », allumez l\'interrupteur de chaque outil à réafficher, ou choisissez « Revenir aux réglages d\'origine ».'
-        : 'Ouvrez « Outils » dans le rail à gauche, puis, dans « Tous les outils », allumez l\'interrupteur de chaque outil à réafficher, ou choisissez « Revenir aux réglages d\'origine ».') + '</p>';
-    }
-    if (_u2.onglet !== 'ep') { var f = etat.fams.filter(function (x) { return x.k === _u2.onglet; })[0]; l = f ? f.cles : []; }
-    if (!l.length) {
+  function u2PortesHtml(etat) {
+    if (!etat.ep.length) {
       return '<p class="u2-ep-vide">Aucun outil épinglé. ' + (u2Mode()
         ? 'Ouvrez « Mon espace » avec votre avatar, en haut à droite, pour en épingler.'
         : 'Ouvrez « Outils » dans le rail à gauche pour en épingler.') + '</p>';
     }
     var n = 2;
-    return '<div class="u2-tuiles">' + l.map(function (k) { return u2Tuile(k, { i: n++, pin: _u2.onglet !== 'ep' && etat.ep.indexOf(k) >= 0 }); }).join('') + '</div>';
+    return '<div class="u2-portes">' + etat.ep.map(function (k) { return u2PorteHtml(k, n++); }).join('') + '</div>';
+  }
+  function u2RangsHtml(etat) {
+    if (!etat.vis.length) {
+      return '<p class="u2-rang-tout">Tous vos outils sont masqués. ' + (u2Mode()
+        ? 'Ouvrez « Mon espace » avec votre avatar, en haut à droite, puis, dans « Tous les outils », allumez l\'interrupteur de chaque outil à réafficher, ou choisissez « Revenir aux réglages d\'origine ».'
+        : 'Ouvrez « Outils » dans le rail à gauche, puis, dans « Tous les outils », allumez l\'interrupteur de chaque outil à réafficher, ou choisissez « Revenir aux réglages d\'origine ».') + '</p>';
+    }
+    var n = 2 + etat.ep.length;
+    return etat.tous.map(function (f) {
+      var l = f.cles.filter(function (k) { return etat.vis.indexOf(k) >= 0; });
+      return '<section class="u2-rang u2-in" style="--i:' + (n++) + '" aria-label="' + esc(f.nom) + '"><div class="u2-rang-h"><span class="u2-gi">' + u2Ic(f.ico) + '</span><h2>' + esc(f.nom) + '</h2></div><div class="u2-rang-t">' +
+        (l.length ? l.map(function (k) { return u2PastilleHtml(k, etat.ep.indexOf(k) >= 0); }).join('') : '<p class="u2-rang-vide">Tous les outils de ce groupe sont masqués.</p>') + '</div></section>';
+    }).join('');
   }
   function u2CompteHtml(m) {
     if (m.partiel) return '<span id="v2-ventes-etat">Chargement des ventes… <b>' + ((V2.ventesProgres && V2.ventesProgres.n) || 0) + '</b> / ' + ((V2.ventesProgres && V2.ventesProgres.total) || '?') + '</span>';
@@ -1213,12 +1219,12 @@
   }
   function u2Salut(m) { return m.salut + (m.prenom ? ' ' + m.prenom : ''); }
   function u2CentreHtml(m, etat) {
-    var on = u2OngletsHtml(etat), pa = u2PanneauHtml(etat), co = u2CompteHtml(m);
-    _u2.sig.onglets = on; _u2.sig.panneau = pa; _u2.sig.compte = co;
+    var po = u2PortesHtml(etat), ra = u2RangsHtml(etat), co = u2CompteHtml(m);
+    _u2.sig.portes = po; _u2.sig.rangs = ra; _u2.sig.compte = co;
     return '<div class="u2-salut u2-in" style="--i:0"><h1 class="v2-titre" id="u2-salut">' + esc(u2Salut(m)) + '</h1>' +
         '<p class="v2-sous">' + esc(qDateTxt(new Date())) + '</p><p class="v2-sous" id="u2-compte">' + co + '</p></div>' +
-      '<div class="v2-tabs u2-in" style="--i:1" role="tablist" aria-label="Familles d\'outils" id="u2-onglets">' + on + '</div>' +
-      '<div id="u2-panneau" role="tabpanel" aria-labelledby="u2-tab-' + _u2.onglet + '">' + pa + '</div>';
+      '<section aria-label="Mes épinglés"><h2 class="u2-sr">Mes épinglés</h2><div id="u2-portes">' + po + '</div></section>' +
+      '<div class="u2-rangs" id="u2-rangs">' + ra + '</div>';
   }
 
   // ── La droite : quatre widgets, chacun sur de vraies données ──
@@ -1311,23 +1317,10 @@
       el.innerHTML = h; _u2.sigW[k] = h;
     });
   }
-  function u2MajOnglets() { u2Poser('u2-onglets', u2OngletsHtml(u2Etat()), 'onglets'); }
-  function u2MajPanneau() {
-    var etat = u2Etat(), p = document.getElementById('u2-panneau');
-    if (p) p.setAttribute('aria-labelledby', 'u2-tab-' + _u2.onglet);
-    u2Poser('u2-panneau', u2PanneauHtml(etat), 'panneau');
-  }
-  function u2Onglet(k, focus) {
+  function u2MajCentre() {
     var etat = u2Etat();
-    if (k !== 'ep' && !etat.fams.some(function (f) { return f.k === k; })) k = 'ep';
-    _u2.onglet = k;
-    [].slice.call(document.querySelectorAll('#u2-onglets [data-u2-tab]')).forEach(function (b) {
-      var s = b.getAttribute('data-u2-tab') === k;
-      b.setAttribute('aria-selected', String(s)); b.setAttribute('tabindex', s ? '0' : '-1');
-    });
-    _u2.sig.onglets = u2OngletsHtml(etat);
-    u2MajPanneau();
-    if (focus) { var b = document.getElementById('u2-tab-' + k); if (b) { try { b.focus(); } catch (e) {} } }
+    u2Poser('u2-portes', u2PortesHtml(etat), 'portes');
+    u2Poser('u2-rangs', u2RangsHtml(etat), 'rangs');
   }
 
   // ── Le rail (≥ 1100 px) et le tiroir : seulement des réglages ──
@@ -1536,7 +1529,7 @@
     u2Redessiner(a, v);
   }
   function u2Redessiner(a, v) {
-    u2PoserTeinte(); u2MajOnglets(); u2MajPanneau(); u2MajWidgets(); u2VoletRendre();
+    u2PoserTeinte(); u2MajCentre(); u2MajWidgets(); u2VoletRendre();
     if (!a) return;
     var vo = document.getElementById('u2-volet'); if (!vo) return;
     var alt = { wup: 'wdn', wdn: 'wup', pup: 'pdn', pdn: 'pup', oup: 'odn', odn: 'oup', fup: 'fdn', fdn: 'fup' };
@@ -1559,7 +1552,6 @@
     var t = e.target; if (!t || !t.closest || !t.closest('.u2-page, .u2-hors')) return;
     var b;
     if ((b = t.closest('[data-u2-rail]'))) { u2Ouvrir(b.getAttribute('data-u2-rail'), b); return; }
-    if ((b = t.closest('[data-u2-tab]'))) { u2Onglet(b.getAttribute('data-u2-tab'), true); return; }
     if (t.closest('[data-u2-fermer]') || t.closest('#u2-fond')) { u2Fermer(true); return; }
     if ((b = t.closest('[data-u2-a]'))) { u2Agir(b.getAttribute('data-u2-a'), b.getAttribute('data-v'), b); return; }
     if ((b = t.closest('[data-u2-act]'))) {
@@ -1588,18 +1580,13 @@
       var nx = lc[(ic + (e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1) + lc.length) % lc.length];
       e.preventDefault(); u2Agir('coul', nx.getAttribute('data-v'), nx); return;
     }
-    var b = t.closest('[data-u2-tab]');
-    if (!b || ['ArrowRight', 'ArrowLeft', 'Home', 'End'].indexOf(e.key) < 0) return;
-    var tous = [].slice.call(document.querySelectorAll('#u2-onglets [data-u2-tab]')), i = tous.indexOf(b);
-    var k = e.key === 'Home' ? 0 : e.key === 'End' ? tous.length - 1 : (i + (e.key === 'ArrowRight' ? 1 : -1) + tous.length) % tous.length;
-    e.preventDefault(); u2Onglet(tous[k].getAttribute('data-u2-tab'), true);
   }
   function u2Redim() {
     if (!_u2.monte) return;
     var m = u2Mode(); if (m === _u2.mode) return;
     _u2.mode = m;
     if (_u2.ouvert) u2Fermer(false);
-    u2VoletRendre(); u2MajPanneau(); u2Rail();
+    u2VoletRendre(); u2MajCentre(); u2Rail();
   }
   function u2Lier(root) {
     if (_u2.lie === root) return;
@@ -1612,7 +1599,7 @@
 
   // Le classement des ouvertures arrive après le premier dessin : les outils se rangent en place, sans rejouer l'entrée.
   function g4Rafraichir() {
-    if (_u2.monte && V2.route && V2.route.name === 'home') { u2MajOnglets(); u2MajPanneau(); if (_u2.ouvert) u2VoletRendre(); }
+    if (_u2.monte && V2.route && V2.route.name === 'home') { u2MajCentre(); if (_u2.ouvert) u2VoletRendre(); }
   }
   function u2Demonter() {
     if (_u2.ouvert) u2Fermer(false);
@@ -1628,7 +1615,7 @@
     var h = document.getElementById('u2-salut');
     if (h && h.textContent !== u2Salut(m)) h.textContent = u2Salut(m);
     u2Poser('u2-compte', u2CompteHtml(m), 'compte');
-    u2MajOnglets(); u2MajPanneau(); u2MajWidgets();
+    u2MajCentre(); u2MajWidgets();
   }
   function u2Accueil(root, m) {
     if (_u2.monte && root.querySelector('.u2-page')) { u2Maj(m); return; }

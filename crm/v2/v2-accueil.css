@@ -1,9 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════════
    JARVIS · accueil « le rail » (u2) — « unifier toute l'app », 02/10/2026
    Portée de la maquette validée par Will (unifier-maquettes-2026-10-02/u2.html) : rail de 76 px, tiroir de 320 px,
-   centre = le choix de l'outil, droite = quatre widgets. Chargée juste APRÈS v2-pieces.css.
-   Toutes les classes nouvelles sont préfixées u2- ; la tuile, les onglets, le menu déroulant, les boutons et le titre
-   réemploient les pièces de v2-pieces.css (.v2-tuile, .v2-tabs, .v2-select, .v2-btn, .v2-titre, .v2-sous).
+   centre = le choix de l'outil (« les grandes portes », maquette 2 du 02/10/2026), droite = quatre widgets. Chargée juste APRÈS v2-pieces.css.
+   Toutes les classes nouvelles sont préfixées u2- ; les onglets du tiroir, le menu déroulant, les boutons et le titre
+   réemploient les pièces de v2-pieces.css (.v2-tabs, .v2-select, .v2-btn, .v2-titre, .v2-sous).
    Couleurs par variables (l'espace Escale a son thème). Aucun flou, aucune opacité sur du texte, aucun dégradé dans du texte.
    Mouvement : la courte cascade d'entrée (une fois par chargement de page), transform seul ; prefers-reduced-motion respecté.
    ═══════════════════════════════════════════════════════════════════ */
@@ -13,7 +13,6 @@
 .u2-page,.u2-hors{--u2-o:rgba(0,80,230,.28);--u2-ol:rgba(0,80,230,.10)}
 .u2-page{position:relative}
 .u2-page .v2-logo{box-shadow:0 4px 12px var(--u2-o),0 1px 0 rgba(255,255,255,.25) inset}
-.u2-page .v2-tuile-ico{box-shadow:0 1px 0 #fff inset,0 3px 8px var(--u2-ol)}
 :is(.u2-page,.u2-hors) :where(a){color:inherit;text-decoration:none}
 /* la barre reste en haut pendant que le rail et la page défilent (elle défile avec la page sur les autres écrans) */
 .u2-page .v2-top{position:sticky;top:0}
@@ -31,7 +30,9 @@
 .u2-grille{display:grid;grid-template-columns:76px minmax(0,1fr) 320px;gap:28px;padding:0 28px 64px 0;align-items:start}
 .u2-centre{min-width:0;padding-top:26px;outline:0}
 .u2-droite{display:flex;flex-direction:column;gap:14px;padding-top:26px}
-.u2-salut{margin-bottom:24px}
+.u2-salut{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 14px;margin-bottom:18px}
+.u2-salut .v2-sous{margin-top:0}
+.u2-salut #u2-compte{flex-basis:100%;margin-top:6px}
 .u2-page .v2-sous b{color:var(--ip-ink);font-weight:700}
 
 /* ─── Le rail : des boutons de 64 px (picto 24 + mot), jamais un outil à ouvrir ─── */
@@ -43,20 +44,57 @@
 .u2-rb:hover{background:var(--halo);color:var(--ip-blue-d);transform:translateY(-1px)}
 .u2-rb[aria-expanded="true"]{background:var(--ip-blue);color:#fff;box-shadow:var(--sh-blue)}
 
-/* ─── Familles : onglets (pièce .v2-tabs, aux mesures de la maquette : 44 px, 14/700) ─── */
+/* ─── Onglets (pièce .v2-tabs) : il n'en reste qu'un jeu, le choix « Espace » du tiroir ─── */
 :is(.u2-page,.u2-hors) .v2-tabs{gap:4px;margin:4px 0 20px;max-width:100%;width:fit-content;overflow-x:auto;scrollbar-width:none}
 :is(.u2-page,.u2-hors) .v2-tabs::-webkit-scrollbar{display:none}
 :is(.u2-page,.u2-hors) .v2-tab{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 16px;font-size:14px;font-weight:700;color:var(--muted-d)}
 :is(.u2-page,.u2-hors) .v2-tab:hover{color:var(--ip-ink);background:var(--card-2)}
-:is(.u2-page,.u2-hors) .v2-tab[aria-selected="true"],:is(.u2-page,.u2-hors) .v2-tab[aria-checked="true"]{background:var(--ip-blue);color:#fff;box-shadow:0 2px 8px var(--u2-o)}
+:is(.u2-page,.u2-hors) .v2-tab[aria-checked="true"]{background:var(--ip-blue);color:#fff;box-shadow:0 2px 8px var(--u2-o)}
 :is(.u2-page,.u2-hors) .v2-tabs.u2-plein{width:auto;display:flex}
 :is(.u2-page,.u2-hors) .v2-tabs.u2-plein .v2-tab{flex:1}
 :is(.u2-page,.u2-hors) .v2-tabs.u2-plein{margin:0}
 
-/* ─── Tuiles : un seul format (.v2-tuile), en grille ─── */
-.u2-tuiles{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(max(250px,calc((100% - 42px) / 4)),1fr))}
-.u2-epi{position:absolute;top:10px;right:12px;width:16px;height:16px;color:var(--ip-blue)}
-.u2-nv{display:inline-flex;align-items:center;height:22px;padding:0 9px;margin-bottom:5px;border-radius:var(--r-pill);font-size:12.5px;font-weight:700;background:var(--halo);color:var(--ip-blue-d)}
+/* ─── Les grandes portes (épinglés), puis une carte de quatre rangées (un groupe par rangée) ───
+   Mouvement : transform seul (survol, entrée) ; aucune opacité sur du texte ; la teinte vient de --ip-blue / --halo. */
+.u2-portes{display:grid;grid-template-columns:repeat(auto-fit,minmax(172px,1fr));gap:14px}
+.u2-porte{position:relative;display:flex;flex-direction:column;justify-content:flex-start;gap:5px;min-height:224px;padding:112px 18px 16px;border-radius:28px;
+  border:1px solid color-mix(in srgb,var(--ip-blue) 20%,var(--line));
+  background:radial-gradient(100% 75% at 14% 0%,var(--halo),#fff 72%);box-shadow:var(--sh-2);overflow:hidden;
+  transition:transform .26s var(--ease),box-shadow .3s var(--ease),border-color .2s}
+.u2-porte::before{content:"";position:absolute;right:-70px;top:-70px;width:220px;height:220px;border-radius:50%;pointer-events:none;
+  background:repeating-radial-gradient(circle at 50% 50%,transparent 0 17px,color-mix(in srgb,var(--ip-blue) 13%,#fff) 17px 18.5px)}
+.u2-gl{position:absolute;left:18px;top:18px;width:74px;height:74px;border-radius:24px;display:flex;align-items:center;justify-content:center;color:#fff;
+  background:var(--u2-motif,none) center/44px,radial-gradient(120% 120% at 25% 15%,color-mix(in srgb,var(--ip-blue) 62%,#fff),var(--ip-blue) 46%,var(--ip-blue-d));
+  box-shadow:0 10px 22px var(--u2-o),0 2px 0 rgba(255,255,255,.35) inset;transition:transform .32s var(--ease)}
+.u2-gl .u2-ic{width:36px;height:36px;stroke-width:1.6}
+.u2-porte:hover{transform:translateY(-5px);box-shadow:var(--sh-3);border-color:color-mix(in srgb,var(--ip-blue) 42%,var(--line))}
+.u2-porte:hover .u2-gl{transform:rotate(-7deg) scale(1.07)}
+.u2-nm{position:relative;display:block;font-size:19px;font-weight:800;letter-spacing:-.02em;line-height:1.12;color:var(--ip-ink)}
+.u2-ds{position:relative;display:block;font-size:13.5px;line-height:1.35;color:var(--muted-d);min-height:4.05em}
+.u2-go{position:absolute;right:14px;top:14px;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#fff;color:var(--ip-blue);
+  border:1px solid color-mix(in srgb,var(--ip-blue) 25%,var(--line));box-shadow:var(--sh-1);transition:transform .22s var(--ease),background .2s,color .2s}
+.u2-go .u2-ic{width:16px;height:16px}
+.u2-porte:hover .u2-go{transform:translateX(3px);background:var(--ip-blue);color:#fff;background-image:var(--u2-motif,none);background-size:44px}
+.u2-rangs{margin-top:26px;display:grid;gap:0;background:var(--card);border:1px solid var(--line);border-radius:26px;box-shadow:var(--sh-2);overflow:hidden}
+.u2-rang{display:grid;grid-template-columns:minmax(150px,200px) minmax(0,1fr);gap:18px;align-items:center;padding:14px 20px;border-top:1px solid var(--line)}
+.u2-rang:first-child{border-top:0}
+.u2-rang:nth-child(odd){background:linear-gradient(90deg,var(--halo),transparent 60%)}
+.u2-rang-h{display:flex;align-items:center;gap:12px;min-width:0}
+.u2-gi{flex:none;width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--ip-ink);color:#fff}
+.u2-gi .u2-ic{width:19px;height:19px}
+.u2-rang-h h2{font-size:15.5px;font-weight:800;letter-spacing:-.015em;line-height:1.15}
+.u2-rang-t{display:flex;flex-wrap:wrap;gap:8px}
+.u2-chp{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 15px 0 10px;border-radius:999px;background:#fff;border:1px solid var(--line-strong);font-size:14px;font-weight:700;color:var(--ip-ink-2);box-shadow:var(--sh-1);
+  transition:transform .18s var(--ease),border-color .16s,box-shadow .2s,background .16s,color .16s}
+.u2-chp .u2-ic{width:18px;height:18px;color:var(--ip-blue);transition:transform .2s var(--ease)}
+.u2-chp:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--ip-blue) 45%,var(--line));box-shadow:var(--sh-2);color:var(--ip-ink)}
+.u2-chp:hover .u2-ic{transform:scale(1.12)}
+.u2-chp--lourd{background:var(--halo);border-color:color-mix(in srgb,var(--ip-blue) 28%,var(--line));color:var(--ip-blue-d);font-weight:800}
+.u2-chp .u2-chp-pin{margin-left:2px}
+.u2-chp .u2-nv{margin:0;align-self:center}
+.u2-rang-vide{font-size:14px;color:var(--muted-d)}
+.u2-rang-tout{grid-column:1/-1;padding:20px;font-size:14.5px;color:var(--muted-d)}
+.u2-nv{display:inline-flex;align-items:center;align-self:flex-start;height:22px;padding:0 9px;margin-bottom:5px;border-radius:var(--r-pill);font-size:12.5px;font-weight:700;background:var(--halo);color:var(--ip-blue-d)}
 .u2-ep-vide{background:var(--card);border:1px dashed var(--line-strong);border-radius:var(--r-card);padding:20px;font-size:14.5px;color:var(--muted-d)}
 
 /* ─── Le tiroir (≥ 1100 px : glisse PAR-DESSUS le centre, qui ne bouge pas) ─── */
@@ -114,7 +152,7 @@
 .u2-page,.u2-hors{--u2-leo:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cg fill='%235F370E' fill-opacity='.45' stroke='%232E1B0B' stroke-width='3' stroke-linecap='round'%3E%3Cellipse cx='16' cy='14' rx='7' ry='5.5' stroke-dasharray='8 6.5 6 7 5 7' transform='rotate(-20 16 14)'/%3E%3Cellipse cx='46' cy='11' rx='6' ry='7' stroke-dasharray='7 6 9 6.5 5 7' transform='rotate(25 46 11)'/%3E%3Cellipse cx='32' cy='34' rx='8' ry='6' stroke-dasharray='9 7 6 6.5 7 8' transform='rotate(10 32 34)'/%3E%3Cellipse cx='10' cy='44' rx='6' ry='5' stroke-dasharray='6 6 8 6.5 5 6' transform='rotate(40 10 44)'/%3E%3Cellipse cx='54' cy='40' rx='6.5' ry='5.5' stroke-dasharray='8 6 5 7 6 6.5' transform='rotate(-35 54 40)'/%3E%3Cellipse cx='29' cy='56' rx='5.5' ry='4.5' stroke-dasharray='6 6 7 6 4 6.5' transform='rotate(15 29 56)'/%3E%3C/g%3E%3Cg fill='%232E1B0B'%3E%3Ccircle cx='33' cy='12' r='1.6'/%3E%3Ccircle cx='22' cy='30' r='1.4'/%3E%3Ccircle cx='44' cy='24' r='1.7'/%3E%3Ccircle cx='5' cy='27' r='1.3'/%3E%3Ccircle cx='43' cy='52' r='1.6'/%3E%3Ccircle cx='60' cy='22' r='1.2'/%3E%3Ccircle cx='14' cy='59' r='1.3'/%3E%3Ccircle cx='58' cy='58' r='1.4'/%3E%3C/g%3E%3C/svg%3E")}
 .u2-pas-m{background:#D9A441 var(--u2-leo) center/40px}
 .u2-pas-m .u2-ic{width:16px;height:16px;padding:3px;box-sizing:content-box;border-radius:50%;background:#2E1B0B}
-.u2-rb[aria-expanded="true"],:is(.u2-page,.u2-hors) .v2-tab[aria-selected="true"],:is(.u2-page,.u2-hors) .v2-tab[aria-checked="true"]{background-image:var(--u2-motif,none);background-size:44px}
+.u2-rb[aria-expanded="true"],:is(.u2-page,.u2-hors) .v2-tab[aria-checked="true"]{background-image:var(--u2-motif,none);background-size:44px}
 .u2-rz .v2-btn{height:44px}
 .u2-mon-sel{height:46px}
 .u2-mon-sel select{height:44px;min-height:44px}
@@ -183,10 +221,17 @@
   .u2-volet-t .v2-btn{display:inline-flex}
   .u2-volet-t h2{font-size:20px}
 }
+@media (max-width:1099px){.u2-portes{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}}
 @media (max-width:760px){
   .u2-droite{grid-template-columns:1fr}
   :is(.u2-page,.u2-hors) .v2-tabs{margin-bottom:16px}
-  .u2-tuiles{grid-template-columns:1fr}
+  .u2-portes{grid-template-columns:1fr 1fr;gap:10px}
+  .u2-porte{min-height:128px;padding:84px 14px 14px;border-radius:24px}
+  .u2-gl{left:14px;top:14px;width:58px;height:58px;border-radius:19px}
+  .u2-gl .u2-ic{width:28px;height:28px}
+  .u2-ds,.u2-go{display:none}
+  .u2-nm{font-size:16.5px}
+  .u2-rang{grid-template-columns:1fr;gap:10px;padding:14px 14px 16px}
   :is(.u2-page,.u2-hors) .v2-tab{padding:0 12px}
   :is(.u2-page,.u2-hors) .v2-tabs.u2-plein .v2-tab{padding:0 8px}
   .u2-pbtn{width:44px;height:44px}
