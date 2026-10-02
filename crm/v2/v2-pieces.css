@@ -142,12 +142,14 @@
   :where(.v2-u) .v2-tab svg{display:none}
   .v2-u .v2-tete .v2-btn{width:100%}
   .of-bar .v2-select{width:100%}
-  /* Liste des officines au téléphone : le nom sur sa ligne, les chiffres dessous (sinon le nom est écrasé à 0 px de large) */
+  /* Liste des officines au téléphone : nom + chiffre d'affaires sur la première ligne, opportunités et marge nette dessous
+     (sinon le nom est écrasé à 0 px de large). Un nom très long passe à la ligne au lieu d'être coupé. */
   .v2-u #v2-pharma-card .v2-row{flex-wrap:wrap;row-gap:6px}
-  .v2-u #v2-pharma-card .v2-row-name{flex:1 1 calc(100% - 24px)}
-  .v2-u #v2-pharma-card .v2-row-name + *{margin-left:20px}
+  .v2-u #v2-pharma-card .v2-row-name{flex:1 1 calc(100% - 124px);white-space:normal;overflow-wrap:anywhere}
+  .v2-u #v2-pharma-card .v2-row-val + .v2-row-val{order:1;margin-left:auto}
+  .v2-u #v2-pharma-card .v2-row-opp,.v2-u #v2-pharma-card .v2-row-meta,.v2-u #v2-pharma-card .v2-row-meta + .v2-row-val{order:2}
+  .v2-u #v2-pharma-card .v2-row-opp{margin-left:20px}
   .v2-u #v2-pharma-card .v2-row-meta,.v2-u #v2-pharma-card .v2-row-val{white-space:nowrap}
-  .v2-u #v2-pharma-card .v2-row-val + .v2-row-val{margin-left:auto}
   .v2-u #v2-pharma-card .v2-row-chev{display:none}
   .v2-top{padding:0 12px;gap:6px}
   .tp-g{gap:8px}
