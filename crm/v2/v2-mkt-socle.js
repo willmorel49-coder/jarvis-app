@@ -17,12 +17,13 @@
 
    Méthode : on ENVELOPPE `V2.topbar` (même procédé que v2-bg.js, qui
    enveloppe V2.render). Les modules Marketing continuent d'appeler
-   V2.topbar(...) sans rien savoir : dans l'espace Marketing ils reçoivent la
-   barre Marketing, ailleurs la barre de l'app, inchangée.
-   La même enveloppe pose/retire la classe `mk-dans` sur <body> (et `mk-bureau`
-   quand on est SUR le bureau, sans paramètre de route) : c'est elle qui
-   masque le rond « + » global (.v2-fab) le temps du Marketing, et qui évite
-   une marge basse inutile sur le bureau (qui n'a pas de barre basse).
+   V2.topbar(...) sans rien savoir. Depuis le 02/10/2026 (unification de l'app),
+   ils reçoivent la barre COMMUNE de l'app, posée sur le fond de l'espace ; seul
+   l'éditeur plein écran d'une fiche reçoit encore la barre Marketing décrite
+   ci-dessus. Les créations du menu « Nouveau » passent dans le « + » commun.
+   La même enveloppe pose/retire la classe `mk-dans` sur <body> (et `mk-editeur`
+   dans l'éditeur) : `mk-dans` masque le rond « + » global (.v2-fab) le temps du
+   Marketing, `mk-editeur` réserve la place de la barre basse.
    Aucun effet refusé par le garde-fou Safari ; on n'anime que transform/opacity.
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
@@ -76,7 +77,7 @@
 
   // ════════════════════════════════════════════
   // CSS — tout est porté par .mk-espace, sauf les règles `body.mk-dans` /
-  // `body.mk-bureau` qui règlent la cohabitation avec l'app (rond « + »,
+  // `body.mk-editeur` qui règlent la cohabitation avec l'app (rond « + »,
   // marges basses).
   // ════════════════════════════════════════════
   function injectCss() {
@@ -248,6 +249,13 @@
          figé sur une transformation : les éléments fixes de la coquille (fond, barre basse) seraient alors
          placés par rapport à la page entière et non à l'écran. */
       'body.mk-dans #v2-root.mo-view-in{animation:none}',
+      /* 02/10/2026 — hors de l'éditeur, le Marketing porte la barre commune (qui défile avec la page) :
+         les blocs collants remontent, les cadres pleins se calent sur sa hauteur, plus rien n'est réservé en bas. */
+      'body.mk-dans:not(.mk-editeur) .mk-espace{--mk-barre-h:0px}',
+      'body.mk-dans:not(.mk-editeur) .mkt-rail{top:20px}',
+      'body.mk-dans:not(.mk-editeur) .mkt-cadre{height:calc(100vh - var(--v2-top-h));height:calc(100dvh - var(--v2-top-h))}',
+      'body.mk-dans:not(.mk-editeur) #lis-root{top:var(--v2-top-h);bottom:0}',
+      'body.mk-dans:not(.mk-editeur) .mkc-pdf-loge{bottom:0;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}',
 
       /* ── largeurs intermédiaires : la barre ne déborde jamais ── */
       '@media (max-width:1240px){.mk-barre{padding:0 24px}.mk-espace .mk-cherche{width:44px;padding:0;justify-content:center}.mk-cherche span,.mk-cherche kbd{display:none}.mk-enreg{min-width:0}}',
@@ -267,9 +275,9 @@
       '.mk-onglets-bas .mk-btn.mk-plein{flex:1}',
       '.mk-onglets-bas .mk-btn:not(.mk-plein):only-child{flex:1}',
       /* les anciens écrans gardent leur dernier bouton visible au-dessus de la barre basse */
-      'body.mk-dans:not(.mk-bureau) #v2-root{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}',
-      'body.mk-dans .mkt-catbar{bottom:calc(78px + env(safe-area-inset-bottom,0px))}',
-      'body.mk-dans .v2-appbar{bottom:calc(84px + env(safe-area-inset-bottom,0px))}',
+      'body.mk-editeur #v2-root{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}',
+      'body.mk-editeur .mkt-catbar{bottom:calc(78px + env(safe-area-inset-bottom,0px))}',
+      'body.mk-editeur .v2-appbar{bottom:calc(84px + env(safe-area-inset-bottom,0px))}',
       '}'
     ].join('');
     document.head.appendChild(s);
@@ -279,6 +287,11 @@
   // Où est-on ? (fil d'Ariane et bouton Retour)
   // ════════════════════════════════════════════
   function dansMarketing() { return !!(V2.user && V2.route && V2.route.name === 'marketing'); }
+  // L'éditeur plein écran d'une fiche ou d'une sélection : le seul écran du Marketing qui garde sa propre barre.
+  function dansEditeur() {
+    var p = (V2.route && V2.route.param) || '';
+    return dansMarketing() && !!p && p !== 'linkedin' && !PORTES_FIL[p];
+  }
   function vueLinkedin() { return (V2.mktLinkedin && V2.mktLinkedin.vue) ? V2.mktLinkedin.vue() : 'plan'; }
   function surLinkedin() { return dansMarketing() && V2.route.param === 'linkedin'; }
   // Ouvre l'écran LinkedIn sur la vue demandée (`plan` = les posts, `veille`).
@@ -309,7 +322,12 @@
       return { strong: d.strong, sous: 'Marketing', retourLabel: d.retourLabel || 'Le bureau', retourAria: 'Retour au bureau', retour: function () { V2.go.apply(V2, to); } };
     }
     // Tout le reste = l'éditeur d'une fiche (le paramètre est son identifiant).
-    return { strong: 'Supports officine', sous: 'l’éditeur', retourLabel: 'Supports officine', retourAria: 'Retour aux supports', retour: function () { V2.go('marketing', 'fiches'); } };
+    return { strong: 'Supports officine', sous: 'l’éditeur', retourLabel: 'Supports officine', retourAria: 'Retour aux supports', retour: function () {
+      // Les autres écrans reviennent d'un pas dans l'historique : l'éditeur ne doit pas y laisser son entrée,
+      // sinon « Retour » sur la liste des supports ramènerait dans l'éditeur.
+      if (venuDe === 'marketing/fiches') return V2.goBack();
+      try { location.replace('#marketing/fiches'); } catch (e) { V2.go('marketing', 'fiches'); }
+    } };
   }
 
   // ════════════════════════════════════════════
@@ -318,6 +336,7 @@
   var etatEnreg = '';       // '' | 'cours' | 'ok'
   var tEnreg = null;
   var apres = [];           // actions à jouer une fois l'écran suivant rendu (ex. ouvrir l'éditeur de post)
+  var venuDe = '';          // l'écran précédent (sans le #), pour le Retour de l'éditeur
 
   function enregHtml() {
     if (etatEnreg === 'cours') return '<span>Enregistrement…</span>';
@@ -341,6 +360,14 @@
   // Même condition que la bascule Intégral ↔ Escale de V2.topbar (v2-app.js).
   function bascule() {
     return V2.basculeEspace ? V2.basculeEspace() : null;
+  }
+
+  // Les mêmes créations, pour le « + » de la barre commune (v2-app.js, plusItems) — hors de l'éditeur.
+  function plusItems() {
+    if (!dansMarketing() || dansEditeur()) return [];
+    function it(icone, titre, act) { return { svg: ic(icone, 18, 2), t: titre, f: function () { nouveau(act); } }; }
+    return [it('posts', 'Nouveau post', 'post'), it('fiches', 'Nouvelle fiche produit', 'fiche'),
+      it('selection', 'Nouvelle sélection', 'selection'), it('importer', 'Déposer un document', 'document')];
   }
 
   // La barre basse (< 860 px) : « Le bureau » (absent sur le bureau lui-même) + le geste de création du lieu où l'on est.
@@ -390,8 +417,7 @@
     var dedans = dansMarketing();
     try {
       if (dedans) document.body.classList.add('mk-dans'); else document.body.classList.remove('mk-dans');
-      var surBureau = dedans && !(V2.route && V2.route.param);
-      if (surBureau) document.body.classList.add('mk-bureau'); else document.body.classList.remove('mk-bureau');
+      if (dedans && dansEditeur()) document.body.classList.add('mk-editeur'); else document.body.classList.remove('mk-editeur');
     } catch (e) {}
     if (!dedans) { etatEnreg = ''; clearTimeout(tEnreg); apres = []; }
     return dedans;
@@ -411,6 +437,9 @@
         injectCss(); ecouter();
         var raf = window.requestAnimationFrame || function (f) { return setTimeout(f, 16); };
         raf(function () { raf(apresRendu); });
+        // 02/10/2026 — la barre commune partout dans le Marketing (le fond de l'espace reste) ;
+        // seul l'éditeur plein écran garde sa barre (Retour vers les supports, « Enregistré », barre basse).
+        if (!dansEditeur()) return '<div class="mk-espace mk-fond" aria-hidden="true"><div class="mk-verriere"></div><div class="mk-grain"></div></div>' + origine.apply(this, arguments);
         return barreHtml();
       } catch (e2) { return origine.apply(this, arguments); }   // la coquille ne doit jamais empêcher un écran de s'afficher
     };
@@ -452,10 +481,11 @@
       else if (e.key === 'Home') i = 0; else i = its.length - 1;
       e.preventDefault(); try { its[i].focus(); } catch (err) {}
     });
-    window.addEventListener('hashchange', function () {
+    window.addEventListener('hashchange', function (ev) {
+      venuDe = String((ev && ev.oldURL) || '').split('#')[1] || '';
       // Sortie du Marketing par le bouton « précédent » du navigateur : on retire la classe sans attendre le rendu.
       var h = (location.hash || '').replace(/^#/, '').split('/')[0];
-      if (h !== 'marketing') { try { document.body.classList.remove('mk-dans'); document.body.classList.remove('mk-bureau'); } catch (e) {} }
+      if (h !== 'marketing') { try { document.body.classList.remove('mk-dans'); document.body.classList.remove('mk-editeur'); } catch (e) {} }
     });
   }
 
@@ -506,6 +536,7 @@
   }
   function enregistre() {
     if (!dansMarketing()) return;
+    if (!document.getElementById('mk-enreg')) { if (V2.toast) V2.toast('Enregistré'); return; }
     etatEnreg = 'cours'; peindreEnreg();
     clearTimeout(tEnreg);
     tEnreg = setTimeout(function () { etatEnreg = 'ok'; peindreEnreg(); }, 380);
@@ -666,6 +697,7 @@
     retour: retour,
     menu: menu,
     nouveau: nouveau,
+    plusItems: plusItems,
     docsDeposer: docsDeposer,
     enregistre: enregistre,
     ic: ic

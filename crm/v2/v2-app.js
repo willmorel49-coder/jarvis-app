@@ -251,7 +251,8 @@
 
   // Le menu « + » de la barre : trois gestes, dans cet ordre, seulement si la fonction existe dans l'espace courant.
   function plusItems() {
-    var it = [];
+    // Dans le Marketing, les créations de l'espace passent en tête (v2-mkt-socle.js).
+    var it = (V2.mktSocle && V2.mktSocle.plusItems) ? V2.mktSocle.plusItems() : [];
     if (V2.rdvGeste && V2.rdvGeste.ouvrir) it.push({ ic: 'cal', t: 'Noter un rendez-vous', f: function () { V2.rdvGeste.ouvrir(); } });
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.remonteeOpen) it.push({ ic: 'spark', t: 'Proposer une amélioration', f: function () { V2.remonteeOpen(); } });
     if (V2.pages && V2.pages.remontees) it.push({ ic: 'plus', t: 'Proposer un outil', f: function () { V2.go('remontees'); } });
@@ -299,7 +300,7 @@
     if (!it.length) return;
     var m = menuBarre('v2-plusmenu', btn,
       it.map(function (x, i) {
-        return '<button type="button" class="v2-pm-it" role="menuitem" data-i="' + i + '">' + ICO(x.ic, 18, 2) + '<span>' + x.t + '</span></button>';
+        return '<button type="button" class="v2-pm-it" role="menuitem" data-i="' + i + '">' + (x.svg || ICO(x.ic, 18, 2)) + '<span>' + x.t + '</span></button>';
       }).join(''));
     if (!m) return;
     m.addEventListener('click', function (e) {

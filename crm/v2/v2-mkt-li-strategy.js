@@ -482,9 +482,9 @@
 
   // ── Handlers ──
   V2.lis = V2.lis || {};
-  V2.lis.open = function () { if (!LI()) { alert('Le module LinkedIn n’est pas chargé.'); return; } isOpen = true; step = 'quiz'; draw(); };
+  V2.lis.open = function () { if (!LI()) { alert('Le module LinkedIn n’est pas chargé.'); return; } isOpen = true; step = 'quiz'; try { window.scrollTo(0, 0); } catch (e) {} draw(); };
   V2.lis.close = function () { isOpen = false; draw(); };
-  document.addEventListener('click', function (e) { if (isOpen && e.target.closest && e.target.closest('.mk-barre,.mk-onglets-bas')) V2.lis.close(); }, true);
+  document.addEventListener('click', function (e) { if (isOpen && e.target.closest && e.target.closest('.mk-barre,.mk-onglets-bas,.v2-top')) V2.lis.close(); }, true);
   document.addEventListener('keydown', function (e) { if (isOpen && e.key === 'Escape') V2.lis.close(); });
   window.addEventListener('hashchange', function () { if (isOpen && !/^#marketing\/linkedin/.test(location.hash)) V2.lis.close(); });
   V2.lis.pick = function (field, val) {
