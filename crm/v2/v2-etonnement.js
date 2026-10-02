@@ -27,70 +27,77 @@
 
   // ── Les améliorations (02/10/2026, Will : « vraiment du concret, que ça
   // permette d'améliorer l'app ») ────────────────────────────────────
-  // Une réponse reste une parole ; une amélioration est une chose à changer
-  // dans l'app, rattachée à un écran. Elles sont rangées dans
+  // Une réponse reste une parole ; un besoin est ce que l'outil devra apporter,
+  // rattaché à un moment du travail (et non à un écran : l'entretien se mène
+  // comme si l'application n'existait pas). Ils sont rangés dans
   // reponses[idQuestion].a = [{ id, c, t, e, k, g }] — aucune colonne ajoutée.
   // `c` = clé de regroupement : deux collègues qui demandent la même chose
   // portent la même clé, et le plan les compte ensemble. L'avancement de
   // chaque amélioration vit dans la ligne « guide » (reponses.plan).
-  var ECRANS = [['app', 'Toute l\'application'], ['home', 'Accueil'], ['pharma', 'Officines'], ['produits', 'Produits'],
-    ['pilotage', 'Pilotage'], ['marketing', 'Marketing'], ['infos', 'Infos du matin'], ['rdv', 'Rendez-vous'],
-    ['carte', 'La carte'], ['appro', 'Appro'], ['todo', 'To do'], ['groupements', 'Groupements'],
-    ['biosimilaires', 'Biosimilaires'], ['offilog', 'Offilog'], ['concurrents', 'Concurrents'],
-    ['lgo', 'Logiciels officine'], ['nouveau', 'Un outil qui n\'existe pas encore'], ['autre', 'Autre']];
-  var NATURES = [['pb', 'Problème', 'r'], ['manque', 'Manque', 'a'], ['idee', 'Idée', 'b'], ['garder', 'À garder', 'g']];
+  var MOMENTS = [['organiser', 'Organiser sa semaine et ses tournées'], ['prospecter', 'Prospecter'],
+    ['avant', 'Préparer un rendez-vous'], ['pendant', 'Pendant le rendez-vous'], ['apres', 'Après le rendez-vous'],
+    ['suivre', 'Suivre ses officines'], ['produits', 'Produits, prix et disponibilité'], ['rendre', 'Rendre des comptes'],
+    ['equipe', 'Travailler avec l\'équipe et le siège'], ['autre', 'Autre']];
+  var NATURES = [['info', 'Information à avoir', 'b'], ['tache', 'Tâche à alléger', 'a'], ['pb', 'Problème', 'r'], ['idee', 'Idée', 'b'], ['garder', 'À garder', 'g']];
   var GENES = [[3, 'Bloquant'], [2, 'Gênant'], [1, 'Confort']];
-  var STATUTS = [['faire', 'À faire'], ['cours', 'En cours'], ['fait', 'Fait'], ['ecarte', 'Écarté']];
+  var STATUTS = [['faire', 'À couvrir'], ['cours', 'En cours'], ['fait', 'Couvert'], ['ecarte', 'Écarté']];
   function libelle(liste, v) { for (var i = 0; i < liste.length; i++) if (liste[i][0] === v) return liste[i][1]; return ''; }
 
   // ── Le guide d'entretien ──────────────────────────────────────────
   // `r` = la relance à poser si la réponse reste courte. `note: true` = une
   // question qui se répond aussi par une note sur 10.
+  // 02/10/2026, Will : « cibler leur travail, leur besoin concret, comme si on
+  // partait d'une page neuve […] comme si JARVIS n'existait pas ». Aucune
+  // question ne nomme l'application : on fait décrire le métier tel qu'il est.
   var THEMES = [
-    { id: 'usage', nom: 'Votre quotidien avec JARVIS', but: 'Comprendre quand, où et pour quoi l\'application est ouverte.', q: [
-      { id: 'u1', q: 'À quels moments ouvrez-vous JARVIS dans une journée ou une semaine type ?', r: 'Avant un rendez-vous, le soir, au bureau, en voiture…' },
-      { id: 'u2', q: 'Sur quel appareil l\'utilisez-vous le plus : téléphone, tablette, ordinateur ?', r: 'Pourquoi celui-là ? Qu\'est-ce qui ne passe pas sur les autres ?' },
-      { id: 'u3', q: 'Quelle est la première chose que vous y cherchez en l\'ouvrant ?', r: 'Et la trouvez-vous tout de suite ?' },
-      { id: 'u4', q: 'Racontez-moi la dernière fois où JARVIS vous a vraiment servi.', r: 'Quelle officine, quelle situation, quel résultat ?' }
+    { id: 'metier', nom: 'Votre métier et vos missions', but: 'Poser le cadre : ce dont la personne est responsable, et sur quoi elle est attendue.', q: [
+      { id: 'm1', q: 'Comment décririez-vous votre métier à quelqu\'un qui ne le connaît pas ?', r: 'Ce dont vous êtes responsable, du lundi au vendredi.' },
+      { id: 'm2', q: 'Quelles sont toutes vos missions, de la plus fréquente à la plus rare ?', r: 'Visites, prospection, suivi, administratif, remontées au siège…' },
+      { id: 'm3', q: 'Sur quoi êtes-vous attendu, et comment savez-vous que vous avez réussi ?', r: 'Les objectifs, les chiffres regardés, et par qui.' },
+      { id: 'm4', q: 'Combien d\'officines suivez-vous, et sur quel secteur ?', r: 'Clients, prospects, kilomètres parcourus.' },
+      { id: 'm5', q: 'Avec qui travaillez-vous au quotidien ?', r: 'Direction, collègues, logistique, service clients, titulaires, préparateurs.' }
     ] },
-    { id: 'etonne', nom: 'Ce qui vous a étonné', but: 'Recueillir le regard neuf : ce qui surprend, en bien comme en mal.', q: [
-      { id: 'e1', q: 'Qu\'est-ce qui vous a surpris en bien la première fois ?', r: 'Un écran, une information, une rapidité…' },
-      { id: 'e2', q: 'Qu\'est-ce qui vous a surpris en mal, ou déçu ?', r: 'Ce que vous attendiez et que vous n\'avez pas trouvé.' },
-      { id: 'e3', q: 'Y a-t-il un écran, un mot ou un chiffre que vous n\'avez pas compris ?', r: 'Lequel ? Qu\'avez-vous cru qu\'il voulait dire ?' },
-      { id: 'e4', q: 'Qu\'est-ce qui vous étonne encore aujourd\'hui ?', r: 'Ce à quoi vous ne vous êtes jamais habitué.' }
+    { id: 'semaine', nom: 'Une semaine sur le terrain', but: 'Voir le travail réel, jour par jour, plutôt que le travail prévu.', q: [
+      { id: 's1', q: 'Racontez-moi votre dernière semaine, jour par jour.', r: 'Où étiez-vous, combien de rendez-vous, combien de route ?' },
+      { id: 's2', q: 'Comment décidez-vous qui aller voir, et quand ?', r: 'Ce qui déclenche une visite ou un appel.' },
+      { id: 's3', q: 'Comment organisez-vous vos tournées ?', r: 'Avec quoi : agenda, carte, habitude, liste papier.' },
+      { id: 's4', q: 'Quelle part de votre temps passe en dehors des rendez-vous ?', r: 'Route, préparation, comptes rendus, courriels, téléphone.' }
     ] },
-    { id: 'marche', nom: 'Ce qui vous sert', but: 'Repérer ce qu\'il faut garder et ce qui n\'est jamais ouvert.', q: [
-      { id: 'm1', q: 'Quels outils utilisez-vous chaque semaine ?', r: 'Dans quel ordre, et pour quoi faire ?' },
-      { id: 'm2', q: 'S\'il ne fallait en garder qu\'un seul, lequel ?', r: 'Qu\'est-ce qu\'il vous apporte que rien d\'autre ne vous apporte ?' },
-      { id: 'm3', q: 'Quels outils n\'ouvrez-vous jamais ?', r: 'Inutile pour vous, trop compliqué, ou simplement inconnu ?' }
+    { id: 'avant', nom: 'Avant le rendez-vous', but: 'Les informations nécessaires pour entrer dans l\'officine, et où elles se trouvent aujourd\'hui.', q: [
+      { id: 'a1', q: 'Racontez-moi comment vous avez préparé votre dernier rendez-vous.', r: 'Pas à pas : où avez-vous cherché, dans quel ordre ?' },
+      { id: 'a2', q: 'De quelles informations avez-vous besoin avant d\'entrer dans l\'officine ?', r: 'Sur l\'officine, ses achats, son historique, le titulaire.' },
+      { id: 'a3', q: 'Où trouvez-vous chacune de ces informations aujourd\'hui ?', r: 'Fichier, logiciel, papier, mémoire, collègue.' },
+      { id: 'a4', q: 'Laquelle vous manque, ou vous arrive trop tard ?', r: 'Ce que vous feriez autrement si vous l\'aviez.' },
+      { id: 'a5', q: 'Combien de temps vous prend une préparation ?', r: 'Et combien de temps devrait-elle prendre ?' }
     ] },
-    { id: 'gene', nom: 'Ce qui vous gêne', but: 'Les critiques, sans filtre : ce qui ralentit, agace ou inquiète.', q: [
-      { id: 'g1', q: 'Qu\'est-ce qui vous fait perdre du temps ?', r: 'Un exemple précis, la dernière fois que c\'est arrivé.' },
-      { id: 'g2', q: 'Qu\'est-ce qui est trop compliqué, ou trop long à trouver ?', r: 'Combien d\'étapes ? Où vous attendiez-vous à le trouver ?' },
-      { id: 'g3', q: 'Y a-t-il des chiffres ou des informations auxquels vous ne faites pas confiance ?', r: 'Lesquels, et qu\'est-ce qui vous a fait douter ?' },
-      { id: 'g4', q: 'Que faites-vous encore ailleurs, faute de pouvoir le faire dans JARVIS ?', r: 'Tableur, papier, téléphone, courriel, autre logiciel…' },
-      { id: 'g5', q: 'Qu\'est-ce qui vous agace, même un détail ?', r: 'Les petits détails comptent : dites-les tous.' }
+    { id: 'pendant', nom: 'Pendant le rendez-vous', but: 'Ce qui se passe face au pharmacien, et ce qui manque à ce moment précis.', q: [
+      { id: 'p1', q: 'Comment se déroule un rendez-vous, du premier mot au dernier ?', r: 'Durée, interlocuteur, lieu : comptoir, bureau, réserve.' },
+      { id: 'p2', q: 'Que montrez-vous au pharmacien, et sur quel support ?', r: 'Téléphone, tablette, papier, rien du tout.' },
+      { id: 'p3', q: 'Quelles questions vous pose-t-on auxquelles vous ne pouvez pas répondre sur place ?', r: 'Que faites-vous alors ?' },
+      { id: 'p4', q: 'Qu\'est-ce qui fait qu\'un rendez-vous réussit, ou échoue ?', r: 'Le dernier exemple de chaque.' },
+      { id: 'p5', q: 'Que notez-vous pendant l\'échange, et où ?', r: 'Carnet, téléphone, mémoire.' }
     ] },
-    { id: 'ideal', nom: 'L\'outil idéal', but: 'Faire décrire l\'outil rêvé, sans se limiter à ce qui existe.', q: [
-      { id: 'i1', q: 'Avec une baguette magique, à quoi ressemble l\'outil idéal pour votre métier ?', r: 'Décrivez une journée avec lui, du matin au soir.' },
-      { id: 'i2', q: 'Avant un rendez-vous en officine, que devrait-il vous préparer ?', r: 'Ce que vous préparez aujourd\'hui à la main.' },
-      { id: 'i3', q: 'Pendant le rendez-vous, que devrait-il vous permettre de montrer ou de faire ?', r: 'Face au pharmacien, écran en main.' },
-      { id: 'i4', q: 'Après le rendez-vous, que devrait-il faire à votre place ?', r: 'Compte rendu, relance, suivi, envoi de documents…' },
-      { id: 'i5', q: 'Avez-vous vu ailleurs quelque chose que vous aimeriez retrouver ici ?', r: 'Une autre application, un autre métier, un ancien employeur.' }
+    { id: 'apres', nom: 'Après le rendez-vous', but: 'Le suivi : ce qu\'il faut faire, garder en mémoire et rendre comme comptes.', q: [
+      { id: 'r1', q: 'Que devez-vous faire une fois sorti de l\'officine ?', r: 'Compte rendu, relance, envoi de documents, commande.' },
+      { id: 'r2', q: 'Comment gardez-vous la trace de ce qui s\'est dit et de ce que vous avez promis ?', r: 'Et comment le retrouvez-vous trois mois plus tard ?' },
+      { id: 'r3', q: 'Comment suivez-vous une officine dans le temps ?', r: 'Ce qui vous alerte quand elle achète moins.' },
+      { id: 'r4', q: 'Quels comptes devez-vous rendre, à qui, et à quel rythme ?', r: 'Le temps que cela vous prend.' }
     ] },
-    { id: 'idees', nom: 'Les fonctions nécessaires et vos idées', but: 'Transformer l\'idéal en demandes concrètes, classées par priorité.', q: [
-      { id: 'f1', q: 'Quelles fonctions vous manquent aujourd\'hui ?', r: 'Dans quel ordre de priorité ?' },
-      { id: 'f2', q: 'Quelle information vous manque le plus sur une officine ou sur un produit ?', r: 'Qu\'est-ce que vous en feriez ?' },
-      { id: 'f3', q: 'Avez-vous une idée, même inaboutie, que vous n\'avez jamais proposée ?', r: 'Aucune idée n\'est trop petite ni trop grande.' },
-      { id: 'f4', q: 'Qu\'est-ce qui devrait être retiré ou simplifié ?', r: 'Ce qui encombre sans servir.' }
+    { id: 'contraintes', nom: 'Contraintes et difficultés', but: 'Ce qui ralentit, complique ou empêche, sans filtre.', q: [
+      { id: 'k1', q: 'Quelles sont les contraintes de votre terrain ?', r: 'Réseau, route, horaires des officines, matériel.' },
+      { id: 'k2', q: 'Qu\'est-ce qui vous fait perdre le plus de temps ?', r: 'Un exemple précis, la dernière fois que c\'est arrivé.' },
+      { id: 'k3', q: 'Quelles tâches refaites-vous plusieurs fois, ou à la main ?', r: 'Ressaisies, recopies, tableaux tenus à part.' },
+      { id: 'k4', q: 'Quelles informations recevez-vous fausses, incomplètes ou trop tard ?', r: 'Les conséquences face au pharmacien.' },
+      { id: 'k5', q: 'Qu\'est-ce qui vous met en difficulté face à un pharmacien ?', r: 'La dernière fois que vous n\'avez pas su quoi répondre.' },
+      { id: 'k6', q: 'À quoi avez-vous renoncé, faute de temps ou de moyens ?', r: 'Ce que vous feriez si vous aviez une heure de plus par jour.' }
     ] },
-    { id: 'fin', nom: 'Pour conclure', but: 'Hiérarchiser : l\'unique priorité, ce qu\'il ne faut pas toucher, la note.', q: [
-      { id: 'c1', q: 'Si je ne pouvais changer qu\'une seule chose demain, laquelle ?', r: 'Une seule : celle qui changerait le plus votre quotidien.' },
-      { id: 'c2', q: 'Qu\'est-ce qu\'il ne faut surtout pas toucher ?', r: 'Ce que vous seriez déçu de voir disparaître.' },
-      { id: 'c3', q: 'Quelle note sur 10 donnez-vous à JARVIS aujourd\'hui ?', r: 'Que faudrait-il pour gagner deux points ?', note: true },
-      { id: 'c4', q: 'Sur 10, à quel point est-il simple à utiliser ?', r: 'Qu\'est-ce qui le rendrait plus simple ?', note: true },
-      { id: 'c5', q: 'Le conseilleriez-vous à un nouveau collègue ? Que lui diriez-vous ?', r: 'Les mots exacts que vous emploieriez.' },
-      { id: 'c6', q: 'Y a-t-il un sujet que je n\'ai pas abordé et qui compte pour vous ?', r: '' }
+    { id: 'fin', nom: 'Pour conclure', but: 'Hiérarchiser : le premier besoin, ce qu\'il ne faut pas toucher, les deux notes.', q: [
+      { id: 'f1', q: 'Si vous aviez un assistant à plein temps, que lui confieriez-vous en premier ?', r: 'Puis en deuxième, puis en troisième.' },
+      { id: 'f2', q: 'S\'il ne fallait régler qu\'un seul problème dans votre travail, lequel ?', r: 'Un seul : celui qui changerait le plus votre quotidien.' },
+      { id: 'f3', q: 'Qu\'est-ce qui marche bien dans votre façon de travailler, et qu\'il ne faut surtout pas changer ?', r: 'Vos habitudes, vos supports, vos repères.' },
+      { id: 'f4', q: 'Sur 10, à quel point disposez-vous des informations dont vous avez besoin ?', r: 'Que faudrait-il pour gagner deux points ?', note: true },
+      { id: 'f5', q: 'Sur 10, à quel point vos outils actuels vous font-ils gagner du temps ?', r: 'Lesquels vous en font gagner, lesquels vous en font perdre ?', note: true },
+      { id: 'f6', q: 'Y a-t-il un sujet que je n\'ai pas abordé et qui compte pour vous ?', r: '' }
     ] }
   ];
 
@@ -102,7 +109,7 @@
   var filtreSynthese = 'tout';       // 'tout' | 'retenir'
   var filtrePlan = 'faire';          // 'faire' (à faire + en cours) | 'tout'
   var formAmelio = null;             // idQuestion dont le formulaire d'amélioration est ouvert
-  var brouillon = { t: '', e: '', k: 'pb', g: 2 };
+  var brouillon = { t: '', e: '', k: 'info', g: 2 };
   var voirArchives = false;
   var timers = {}, version = {};
   var dernierEtat = '';
@@ -202,11 +209,17 @@
 
   // ── Lecture ───────────────────────────────────────────────────────
   function valeurs(o) { return Object.keys(o).map(function (k) { return norm(o[k]); }); }
+  // Une seule lecture à la fois : l'écran peut être redessiné deux fois au
+  // démarrage, et une seconde lecture partie AVANT l'envoi de la copie locale
+  // revenait après lui, sans la réponse — elle remplaçait alors à l'écran ce
+  // qui venait d'être écrit hors connexion (vu le 02/10/2026).
+  var chargeP = null;
   function charger() {
     var c = sb();
     function repli() { horsLigne = true; rows = valeurs(lsLire()); }
     if (!c || !moi()) { repli(); return Promise.resolve(); }
-    return c.from(TABLE).select('*').order('cree_le', { ascending: true }).then(function (r) {
+    if (chargeP) return chargeP;
+    chargeP = c.from(TABLE).select('*').order('cree_le', { ascending: true }).then(function (r) {
       if (r.error || !r.data) { repli(); return; }
       horsLigne = false; charge = true;
       rows = r.data.map(norm);
@@ -218,7 +231,8 @@
         if (!vu) rows.push(l);
         envoyer(id);
       });
-    }).catch(repli);
+    }).catch(repli).then(function () { chargeP = null; });
+    return chargeP;
   }
 
   // ── Écriture : l'appareil d'abord, la base ensuite ────────────────
@@ -286,19 +300,19 @@
   function entete(actif) {
     return '<div class="eto-hero">' +
         '<div><div class="v2-page-title">Rapport d\'étonnement</div>' +
-        '<p class="eto-sub">Ce que vos collègues vous disent de JARVIS, consigné question par question, puis transformé en améliorations classées par nombre de demandes. Vous seul voyez cet écran.</p></div>' +
+        '<p class="eto-sub">Le travail de vos collègues tel qu\'il est, comme si l\'application n\'existait pas : leurs missions, leurs besoins d\'information, leurs contraintes. Consigné question par question, puis transformé en besoins classés. Vous seul voyez cet écran.</p></div>' +
       '</div>' +
       '<div class="eto-barre">' +
         '<div class="eto-seg eto-seg-v" role="tablist">' +
           '<button role="tab" aria-selected="' + (actif === 'liste') + '" class="' + (actif === 'liste' ? 'on' : '') + '" data-act="vue" data-v="">Entretiens</button>' +
           '<button role="tab" aria-selected="' + (actif === 'synthese') + '" class="' + (actif === 'synthese' ? 'on' : '') + '" data-act="vue" data-v="synthese">Synthèse</button>' +
-          '<button role="tab" aria-selected="' + (actif === 'plan') + '" class="' + (actif === 'plan' ? 'on' : '') + '" data-act="vue" data-v="plan">Améliorations</button>' +
+          '<button role="tab" aria-selected="' + (actif === 'plan') + '" class="' + (actif === 'plan' ? 'on' : '') + '" data-act="vue" data-v="plan">Besoins</button>' +
         '</div>' +
         '<span class="eto-etat" data-k="' + dernierEtat + '" aria-live="polite"></span>' +
         (actif === 'liste'
           ? '<button class="v2-btn v2-btn-primary" data-act="nouveau">' + ICO('plus', 16, 2) + 'Nouvel entretien</button>'
           : actif === 'plan'
-          ? '<button class="v2-btn v2-btn-primary" data-act="copierplan">Copier le plan</button>'
+          ? '<button class="v2-btn v2-btn-primary" data-act="copierplan">Copier les besoins</button>'
           : '<button class="v2-btn v2-btn-ghost" data-act="copier">Copier le rapport</button>') +
       '</div>' +
       (horsLigne ? '<div class="eto-alerte">La liste n\'a pas pu être lue pour l\'instant. Seuls les entretiens en attente d\'envoi sur cet appareil sont affichés ; vous pouvez en commencer un nouveau, il sera envoyé au retour de la connexion.</div>' : '');
@@ -314,7 +328,7 @@
         '<span class="eto-card-m">' + esc([String(row.fonction || '').trim(), dateFr(row.date_entretien)].filter(Boolean).join(' · ') || 'Fonction et date à compléter') + '</span>' +
         '<span class="eto-jauge" aria-hidden="true"><i style="width:' + pct + '%"></i></span>' +
         '<span class="eto-card-f"><span>' + n + ' / ' + total + ' questions</span>' + (k ? '<span class="eto-card-k">' + ETOILE + k + ' à retenir</span>' : '') +
-          (am ? '<span class="eto-card-a">' + pluriel(am, 'amélioration') + '</span>' : '') + '</span>' +
+          (am ? '<span class="eto-card-a">' + pluriel(am, 'besoin') + '</span>' : '') + '</span>' +
       '</button>' +
       (row.archive ? '<button class="eto-lien" data-act="retablir" data-id="' + esc(row.id) + '">Rétablir</button>' : '') +
     '</div>';
@@ -337,7 +351,7 @@
       (a.length
         ? '<div class="eto-grid">' + a.map(function (r) { return carteEntretien(r, total); }).join('') + '</div>'
         : '<div class="eto-vide"><b>Aucun entretien pour l\'instant</b>' +
-          '<p>Créez un entretien par collègue. Le guide vous donne les questions, thème après thème ; vous notez ses réponses au fil de la conversation, et la synthèse les regroupe par question.</p>' +
+          '<p>Créez un entretien par collègue. Le guide fait décrire son métier, thème après thème, sans jamais partir de l\'application ; vous notez ses réponses au fil de la conversation, la synthèse les regroupe par question et l\'onglet Besoins les classe.</p>' +
           '<button class="v2-btn v2-btn-primary" data-act="nouveau">' + ICO('plus', 16, 2) + 'Commencer le premier entretien</button></div>') +
       guideHtml() +
       (arch.length
@@ -365,8 +379,8 @@
       return !brouillon.e || it.e === brouillon.e;
     }).slice(0, 5);
     if (!a.length) return '';
-    return '<div class="eto-am-st">Déjà demandé par un autre collègue — touchez pour l\'ajouter à son nom</div>' + a.map(function (it) {
-      return '<button type="button" class="eto-am-sg" data-act="ammeme" data-c="' + esc(it.c) + '"><b>' + esc(it.t) + '</b><span>' + esc(libelle(ECRANS, it.e)) + ' · ' + pluriel(it.qui.length, 'collègue') + '</span></button>';
+    return '<div class="eto-am-st">Déjà exprimé par un autre collègue — touchez pour l\'ajouter à son nom</div>' + a.map(function (it) {
+      return '<button type="button" class="eto-am-sg" data-act="ammeme" data-c="' + esc(it.c) + '"><b>' + esc(it.t) + '</b><span>' + esc(libelle(MOMENTS, it.e)) + ' · ' + pluriel(it.qui.length, 'collègue') + '</span></button>';
     }).join('');
   }
   function ameliosHtml(row, qid) {
@@ -375,23 +389,23 @@
       var nat = null; NATURES.forEach(function (n) { if (n[0] === x.k) nat = n; }); nat = nat || NATURES[0];
       return '<div class="eto-am-i"><span class="v2-chip ' + nat[2] + '">' + nat[1] + '</span>' +
         '<span class="eto-am-t">' + esc(x.t) + '</span>' +
-        '<span class="eto-am-m">' + esc([libelle(ECRANS, x.e), x.k === 'garder' ? '' : libelle(GENES, x.g)].filter(Boolean).join(' · ')) + '</span>' +
+        '<span class="eto-am-m">' + esc([libelle(MOMENTS, x.e), x.k === 'garder' ? '' : libelle(GENES, x.g)].filter(Boolean).join(' · ')) + '</span>' +
         '<button type="button" class="eto-lien" data-act="amretirer" data-q="' + esc(qid) + '" data-id="' + esc(x.id) + '">Retirer</button></div>';
     }).join('');
     if (formAmelio !== qid) {
-      return liste + '<button type="button" class="eto-am-plus" data-act="amouvrir" data-q="' + esc(qid) + '">' + ICO('plus', 15, 2) + 'Amélioration à faire</button>';
+      return liste + '<button type="button" class="eto-am-plus" data-act="amouvrir" data-q="' + esc(qid) + '">' + ICO('plus', 15, 2) + 'Besoin à retenir</button>';
     }
     return liste + '<div class="eto-am-f">' +
-      '<label class="eto-am-l" for="eto-am-t">Ce qu\'il faut changer dans l\'application, en une phrase</label>' +
-      '<input type="text" class="eto-in" id="eto-am-t" data-am="t" maxlength="200" autocomplete="off" placeholder="Exemple : retrouver une officine par son code postal" value="' + esc(brouillon.t) + '">' +
-      '<label class="eto-am-l" for="eto-am-e">Écran concerné</label>' +
-      '<select class="eto-in eto-sel" id="eto-am-e" data-am="e"><option value="">Choisir l\'écran</option>' + ECRANS.map(function (x) {
+      '<label class="eto-am-l" for="eto-am-t">Le besoin, en une phrase</label>' +
+      '<input type="text" class="eto-in" id="eto-am-t" data-am="t" maxlength="200" autocomplete="off" placeholder="Exemple : connaître les derniers achats avant d\'entrer" value="' + esc(brouillon.t) + '">' +
+      '<label class="eto-am-l" for="eto-am-e">Moment du travail concerné</label>' +
+      '<select class="eto-in eto-sel" id="eto-am-e" data-am="e"><option value="">Choisir le moment</option>' + MOMENTS.map(function (x) {
         return '<option value="' + x[0] + '"' + (x[0] === brouillon.e ? ' selected' : '') + '>' + esc(x[1]) + '</option>';
       }).join('') + '</select>' +
       '<div class="eto-am-l">De quoi s\'agit-il ?</div>' + choix(NATURES, brouillon.k, 'amnature', 'Nature') +
-      '<div class="eto-am-l">À quel point cela le gêne ?</div>' + choix(GENES, brouillon.g, 'amgene', 'Gêne') +
+      '<div class="eto-am-l">À quel point cela pèse sur son travail ?</div>' + choix(GENES, brouillon.g, 'amgene', 'Gêne') +
       '<div class="eto-am-s" data-amsug>' + suggestionsHtml(row) + '</div>' +
-      '<div class="eto-am-b"><button type="button" class="v2-btn v2-btn-primary" data-act="amajouter" data-q="' + esc(qid) + '">Ajouter au plan</button>' +
+      '<div class="eto-am-b"><button type="button" class="v2-btn v2-btn-primary" data-act="amajouter" data-q="' + esc(qid) + '">Ajouter aux besoins</button>' +
       '<button type="button" class="v2-btn v2-btn-ghost" data-act="amannuler" data-q="' + esc(qid) + '">Annuler</button></div>' +
     '</div>';
   }
@@ -449,7 +463,7 @@
         '<div class="eto-fiche-b">' +
           '<span class="v2-chip ' + (row.statut === 'termine' ? 'g' : 'b') + '">' + (row.statut === 'termine' ? 'Terminé' : 'En cours') + '</span>' +
           '<span class="eto-prog"><b data-prog>' + nbRepondu(row) + '</b> / ' + totalQuestions() + ' questions</span>' +
-          '<span class="eto-prog" data-nbam>' + pluriel(nbAmelios(row), 'amélioration') + '</span>' +
+          '<span class="eto-prog" data-nbam>' + pluriel(nbAmelios(row), 'besoin') + '</span>' +
           '<span class="eto-etat" data-k="' + dernierEtat + '" aria-live="polite"></span>' +
           '<button class="eto-lien" data-act="archiver">' + (row.archive ? 'Rétablir l\'entretien' : 'Archiver l\'entretien') + '</button>' +
         '</div>' +
@@ -511,7 +525,7 @@
   }
   function rapportTexte() {
     var ent = entretiens(false), L = [];
-    L.push('RAPPORT D\'ÉTONNEMENT — JARVIS');
+    L.push('RAPPORT D\'ÉTONNEMENT — LE MÉTIER, VU DU TERRAIN');
     L.push(pluriel(ent.length, 'entretien') + ' · ' + dateFr(aujourdhui()));
     L.push('Personnes rencontrées : ' + ent.map(function (r) { return nomDe(r) + (String(r.fonction || '').trim() ? ' (' + String(r.fonction).trim() + ')' : ''); }).join(', '));
     var garde = filtreSynthese; filtreSynthese = 'tout';
@@ -545,7 +559,7 @@
     return ordre.map(function (e) { return { e: e, items: g[e] }; });   // `items` est déjà classé : l'écran le plus demandé sort en premier
   }
   function ligneQui(it, total) {
-    return 'Demandé par ' + pluriel(it.qui.length, 'collègue') + ' sur ' + total + ' : ' + it.qui.join(', ');
+    return 'Exprimé par ' + pluriel(it.qui.length, 'collègue') + ' sur ' + total + ' : ' + it.qui.join(', ');
   }
   function itemPlanHtml(it, total) {
     var nat = null; NATURES.forEach(function (n) { if (n[0] === it.k) nat = n; });
@@ -568,25 +582,25 @@
     var actions = p.filter(function (it) { return it.k !== 'garder' && (filtrePlan === 'tout' || ouvert(it)); });
     var garder = p.filter(function (it) { return it.k === 'garder'; });
     var blocs = parEcran(actions).map(function (g) {
-      return '<section class="eto-st"><h2>' + esc(libelle(ECRANS, g.e) || 'Autre') + '<em>' + pluriel(g.items.length, 'amélioration') + '</em></h2>' +
+      return '<section class="eto-st"><h2>' + esc(libelle(MOMENTS, g.e) || 'Autre') + '<em>' + pluriel(g.items.length, 'besoin') + '</em></h2>' +
         g.items.map(function (it) { return itemPlanHtml(it, total); }).join('') + '</section>';
     });
     if (garder.length) {
-      blocs.push('<section class="eto-st"><h2>À ne pas toucher<em>ce que vos collègues tiennent à garder</em></h2><div class="eto-sq"><ul>' + garder.map(function (it) {
-        return '<li><div class="eto-qui"><b>' + esc(it.t) + '</b><span>' + esc(libelle(ECRANS, it.e)) + '</span></div><p>' + esc(it.qui.join(', ')) + '</p></li>';
+      blocs.push('<section class="eto-st"><h2>À ne pas toucher<em>ce qui marche déjà dans leur façon de travailler</em></h2><div class="eto-sq"><ul>' + garder.map(function (it) {
+        return '<li><div class="eto-qui"><b>' + esc(it.t) + '</b><span>' + esc(libelle(MOMENTS, it.e)) + '</span></div><p>' + esc(it.qui.join(', ')) + '</p></li>';
       }).join('') + '</ul></div></section>');
     }
     return entete('plan') +
-      '<div class="eto-sbar"><div class="eto-kpi"><b data-plk="total">' + k.total + '</b><span>' + (k.total > 1 ? 'améliorations demandées' : 'amélioration demandée') + '</span></div>' +
-        '<div class="eto-kpi"><b data-plk="faire">' + k.faire + '</b><span>à faire</span></div>' +
-        '<div class="eto-kpi"><b data-plk="fait">' + k.fait + '</b><span>' + (k.fait > 1 ? 'faites' : 'faite') + '</span></div>' +
-        '<div class="eto-seg eto-seg-f" role="group" aria-label="Filtrer les améliorations">' +
-          '<button class="' + (filtrePlan === 'faire' ? 'on' : '') + '" aria-pressed="' + (filtrePlan === 'faire') + '" data-act="filtreplan" data-f="faire">À faire</button>' +
+      '<div class="eto-sbar"><div class="eto-kpi"><b data-plk="total">' + k.total + '</b><span>' + (k.total > 1 ? 'besoins exprimés' : 'besoin exprimé') + '</span></div>' +
+        '<div class="eto-kpi"><b data-plk="faire">' + k.faire + '</b><span>à couvrir</span></div>' +
+        '<div class="eto-kpi"><b data-plk="fait">' + k.fait + '</b><span>' + (k.fait > 1 ? 'couverts' : 'couvert') + '</span></div>' +
+        '<div class="eto-seg eto-seg-f" role="group" aria-label="Filtrer les besoins">' +
+          '<button class="' + (filtrePlan === 'faire' ? 'on' : '') + '" aria-pressed="' + (filtrePlan === 'faire') + '" data-act="filtreplan" data-f="faire">À couvrir</button>' +
           '<button class="' + (filtrePlan === 'tout' ? 'on' : '') + '" aria-pressed="' + (filtrePlan === 'tout') + '" data-act="filtreplan" data-f="tout">Tout</button>' +
         '</div></div>' +
       (blocs.length ? blocs.join('')
-        : '<div class="eto-vide"><b>' + (k.total ? 'Tout ce qui a été demandé est fait ou écarté' : 'Aucune amélioration pour l\'instant') + '</b>' +
-          '<p>' + (k.total ? 'Le filtre « Tout » montre aussi ce qui est fait et ce qui a été écarté.' : 'Pendant un entretien, sous chaque réponse, le bouton « Amélioration à faire » note ce qu\'il faut changer et sur quel écran. Tout se retrouve ici, classé par nombre de collègues qui le demandent.') + '</p></div>');
+        : '<div class="eto-vide"><b>' + (k.total ? 'Tous les besoins exprimés sont couverts ou écartés' : 'Aucun besoin noté pour l\'instant') + '</b>' +
+          '<p>' + (k.total ? 'Le filtre « Tout » montre aussi ce qui est couvert et ce qui a été écarté.' : 'Pendant un entretien, sous chaque réponse, le bouton « Besoin à retenir » note ce dont votre collègue a besoin et à quel moment de son travail. Tout se retrouve ici, classé par nombre de collègues qui l\'expriment.') + '</p></div>');
   }
   function planTexte() {
     var p = plan(), total = entretiens(false).length, L = [];
@@ -594,23 +608,24 @@
       return '  ' + (i + 1) + '. [' + libelle(NATURES, it.k) + (it.g ? ' · ' + libelle(GENES, it.g) : '') + '] ' + it.t +
         ' — ' + pluriel(it.qui.length, 'collègue') + ' sur ' + total + ' (' + it.qui.join(', ') + ')' + (it.s === 'cours' ? ' — en cours' : '');
     }
-    L.push('PLAN D\'AMÉLIORATION DE JARVIS');
+    L.push('CAHIER DES BESOINS DE L\'ÉQUIPE');
     L.push('Tiré de ' + pluriel(total, 'entretien') + ' · ' + dateFr(aujourdhui()));
-    L.push('Classement : nombre de collègues qui le demandent, puis gêne exprimée.');
+    L.push('Entretiens menés sur le métier, sans partir de l\'outil existant.');
+    L.push('Classement : nombre de collègues qui l\'expriment, puis poids sur leur travail.');
     parEcran(p.filter(function (it) { return it.k !== 'garder' && ouvert(it); })).forEach(function (g) {
-      L.push(''); L.push((libelle(ECRANS, g.e) || 'Autre').toUpperCase());
+      L.push(''); L.push((libelle(MOMENTS, g.e) || 'Autre').toUpperCase());
       g.items.forEach(function (it, i) { L.push(ligne(it, i)); });
     });
     var garder = p.filter(function (it) { return it.k === 'garder'; });
     if (garder.length) {
       L.push(''); L.push('À NE PAS TOUCHER');
-      garder.forEach(function (it) { L.push('  - ' + it.t + ' (' + libelle(ECRANS, it.e) + ') — ' + it.qui.join(', ')); });
+      garder.forEach(function (it) { L.push('  - ' + it.t + ' (' + libelle(MOMENTS, it.e) + ') — ' + it.qui.join(', ')); });
     }
-    [['fait', 'DÉJÀ FAIT'], ['ecarte', 'ÉCARTÉ']].forEach(function (s) {
+    [['fait', 'DÉJÀ COUVERT'], ['ecarte', 'ÉCARTÉ']].forEach(function (s) {
       var a = p.filter(function (it) { return it.k !== 'garder' && it.s === s[0]; });
       if (!a.length) return;
       L.push(''); L.push(s[1]);
-      a.forEach(function (it) { L.push('  - ' + it.t + ' (' + libelle(ECRANS, it.e) + ')'); });
+      a.forEach(function (it) { L.push('  - ' + it.t + ' (' + libelle(MOMENTS, it.e) + ')'); });
     });
     return L.join('\n');
   }
@@ -636,7 +651,7 @@
       var c = wrap.querySelector('[data-cpt="' + i + '"]'); if (c) c.textContent = nbRepondu(row, t) + '/' + questionsDe(t).length;
     });
     var l = wrap.querySelector('[data-cpt="libre"]'); if (l) l.textContent = String(rep(row, LIBRE).t || '').trim() ? '1' : '—';
-    var am = wrap.querySelector('[data-nbam]'); if (am) am.textContent = pluriel(nbAmelios(row), 'amélioration');
+    var am = wrap.querySelector('[data-nbam]'); if (am) am.textContent = pluriel(nbAmelios(row), 'besoin');
   }
   function majAmelio(row, qid, wrap) {
     var bx = wrap.querySelectorAll('[data-ambox]');
@@ -683,7 +698,7 @@
       if (act === 'archives') { voirArchives = !voirArchives; V2.render(); return; }
       if (act === 'filtre') { filtreSynthese = b.getAttribute('data-f'); V2.render(); return; }
       if (act === 'copier') { copier(rapportTexte()); return; }
-      if (act === 'copierplan') { copier(planTexte(), 'Plan'); return; }
+      if (act === 'copierplan') { copier(planTexte(), 'Cahier des besoins'); return; }
       if (act === 'filtreplan') { filtrePlan = b.getAttribute('data-f'); V2.render(); return; }
       if (act === 'plstatut') {
         // Sur place : la ligne ne saute pas sous le doigt, elle sortira du filtre au prochain affichage.
@@ -740,7 +755,7 @@
       }
       if (act === 'amouvrir' || act === 'amannuler') {
         var avant = formAmelio; formAmelio = act === 'amouvrir' ? b.getAttribute('data-q') : null;
-        brouillon = { t: '', e: '', k: 'pb', g: 2 };
+        brouillon = { t: '', e: '', k: 'info', g: 2 };
         if (avant) majAmelio(row, avant, wrap);
         majAmelio(row, b.getAttribute('data-q'), wrap);
         var ch = wrap.querySelector('#eto-am-t'); if (ch) ch.focus();
@@ -759,14 +774,14 @@
           plan().forEach(function (it) { if (it.c === b.getAttribute('data-c')) neuf = { id: uuid(), c: it.c, t: it.t, e: it.e, k: it.k, g: brouillon.g }; });
         } else {
           var titre = String(brouillon.t || '').trim().slice(0, 200), champT = wrap.querySelector('#eto-am-t'), champE = wrap.querySelector('#eto-am-e');
-          if (!titre) { if (champT) champT.focus(); if (V2.toast) V2.toast('Écrivez en une phrase ce qu\'il faut changer'); return; }
-          if (!brouillon.e) { if (champE) champE.focus(); if (V2.toast) V2.toast('Choisissez l\'écran concerné'); return; }
+          if (!titre) { if (champT) champT.focus(); if (V2.toast) V2.toast('Écrivez le besoin en une phrase'); return; }
+          if (!brouillon.e) { if (champE) champE.focus(); if (V2.toast) V2.toast('Choisissez le moment du travail concerné'); return; }
           neuf = { id: uuid(), t: titre, e: brouillon.e, k: brouillon.k, g: brouillon.g };
           neuf.c = neuf.id;
         }
         if (!neuf) return;
         poser(row, q3, 'a', ameliosDe(row, q3).concat([neuf]));
-        formAmelio = null; brouillon = { t: '', e: '', k: 'pb', g: 2 };
+        formAmelio = null; brouillon = { t: '', e: '', k: 'info', g: 2 };
         majAmelio(row, q3, wrap); majCompteurs(row, wrap);
         return;
       }
