@@ -735,18 +735,12 @@
       });
     }
 
-    // ── Barre commercial (Tous / Will / Pauline) — si plusieurs commerciaux ──
-    var commBar = '';
-    var comms = V2.commercials ? V2.commercials() : [];
-    if (comms.length > 1) {
-      var cseg = function (val, label) {
-        return '<button type="button" class="v2-seg' + (V2.commFilter === val ? ' on' : '') + '" style="--sc:var(--ip-blue)" onclick="V2.pharmaSetComm(\'' + val + '\')">' + label + '</button>';
-      };
-      commBar = '<div class="v2-segs" style="margin-bottom:14px">' + cseg('', 'Tous') +
-        comms.map(function (cm) { return cseg(cm, cm); }).join('') + '</div>';
-    }
+    var commBar = commSelect();
+    var nAff = '';   // « 128 officines » : le compte de ce qui est affiché, écrit par listBody()
+    var pl = function (n, mot) { return V2.fmtNum(n) + ' ' + mot + (n > 1 ? 's' : ''); };
 
     function cardHtml(filtered) {
+      nAff = pl(filtered.length, 'officine');
       return filtered.length
         ? filtered.map(listRowHtml).join('')
         : '<div class="v2-empty"><div class="v2-empty-t">Aucune officine</div><div class="v2-empty-d">' +
@@ -755,74 +749,73 @@
     }
 
     // ── Barre de filtres OPSO (segment clientes / prospects) ──
-    var opsoFilterBar = '';
+    var opsoFilterBar = '', counterHtml = '';
     if (isOpso()) {
       function segBtn(val, label, count) {
         var on = (opsoFilter === val) ? ' on' : '';
         var sc = val === 'cliente' ? 'var(--ip-blue)' : (val === 'prospect' ? 'var(--muted)' : 'var(--ip-blue)');
-        return '<button type="button" class="v2-seg' + on + '" style="--sc:' + sc + '" ' +
+        return '<button type="button" class="v2-seg' + on + '" aria-pressed="' + (opsoFilter === val) + '" style="--sc:' + sc + '" ' +
           'onclick="V2.pharmaOpsoFilter(\'' + val + '\')">' +
           label + '<span class="cnt">' + count + '</span></button>';
       }
       opsoFilterBar =
-        '<div class="v2-segs" style="margin-bottom:14px">' +
+        '<div class="v2-segs">' +
           segBtn('all',      'Toutes',    phs.length) +
           segBtn('cliente',  'Clientes',  nbClientes) +
           segBtn('prospect', 'Prospects', nbProspects) +
         '</div>';
 
-      var counterHtml =
+      counterHtml =
         '<div class="opso-counter">' +
           '<span class="opso-counter-item opso-counter-cliente">' + nbClientes + ' cliente' + (nbClientes > 1 ? 's' : '') + '</span>' +
           '<span class="opso-counter-sep">·</span>' +
           '<span class="opso-counter-item opso-counter-prospect">' + nbProspects + ' prospect' + (nbProspects > 1 ? 's' : '') + '</span>' +
         '</div>';
-
-      opsoFilterBar = counterHtml + opsoFilterBar;
     }
 
     // ── Bascule Clients / Prospects (JARVIS uniquement) ──
     var secteurBar = '';
     if (!isOpso()) {
       var sTab = function (val, label) {
-        return '<button type="button" class="v2-seg' + (secteurTab === val ? ' on' : '') + '" style="--sc:var(--ip-blue)" onclick="V2.pharmaSecteurTab(\'' + val + '\')">' + label + '</button>';
+        return '<button type="button" class="v2-seg' + (secteurTab === val ? ' on' : '') + '" aria-pressed="' + (secteurTab === val) + '" style="--sc:var(--ip-blue)" onclick="V2.pharmaSecteurTab(\'' + val + '\')">' + label + '</button>';
       };
-      secteurBar = '<div class="v2-segs" style="margin-bottom:14px">' + sTab('clients', 'Clients') + sTab('prospects', 'Prospects de mon secteur') + '</div>';
+      secteurBar = '<div class="v2-segs">' + sTab('clients', 'Clients') + sTab('prospects', 'Prospects de mon secteur') + '</div>';
     }
 
     // Contenu de la liste selon la bascule (Clients par défaut, sinon Prospects par UGA du commercial).
     function listBody() {
       try {
         if (!isOpso() && secteurTab === 'prospects') {
+          nAff = '';
           // 25/09/2026 — un commercial n'a pas de barre de choix (un seul nom dans ses ventes) : ses UGA d'office.
           var qui = V2.commFilter || (V2.mesComms ? V2.mesComms() : []);
-          if (!qui.length) return '<div class="v2-empty"><div class="v2-empty-t">Choisis un commercial</div><div class="v2-empty-d">Sélectionne un commercial au-dessus pour voir les prospects de son secteur (UGA).</div></div>';
+          if (!qui.length) return '<div class="v2-empty"><div class="v2-empty-t">Choisissez un commercial</div><div class="v2-empty-d">Sélectionnez un commercial dans le menu au-dessus pour voir les prospects de son secteur (UGA).</div></div>';
           if (!window.PHARMA_FR) return '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement des prospects…</div></div>';
           var pr = commercialProspects(qui, 300);
           var q = searchQuery.trim().toLowerCase();
           var rows = q ? pr.rows.filter(function (x) { return (x.p.name || '').toLowerCase().indexOf(q) >= 0; }) : pr.rows;
+          nAff = pr.total > pr.rows.length && !q ? pl(rows.length, 'prospect') + ' affichés sur ' + V2.fmtNum(pr.total) : pl(rows.length, 'prospect');
           if (!rows.length) return '<div class="v2-empty"><div class="v2-empty-t">Aucun prospect</div><div class="v2-empty-d">' + (q ? 'Aucun résultat.' : 'Aucun prospect dans les UGA de ce commercial.') + '</div></div>';
           var more = (pr.total > pr.rows.length) ? '<a class="v2-row" style="justify-content:center;color:var(--muted);cursor:pointer" onclick="V2.go(\'pharma\',\'carte\')">+ ' + (pr.total - pr.rows.length) + ' autres prospects · voir sur la carte</a>' : '';
           return rows.map(listRowHtml).join('') + more;
         }
-      } catch (e) { return '<div class="v2-empty"><div class="v2-empty-t">Prospects indisponibles</div><div class="v2-empty-d">Réessaie plus tard.</div></div>'; }
+      } catch (e) { return '<div class="v2-empty"><div class="v2-empty-t">Prospects indisponibles</div><div class="v2-empty-d">Réessayez plus tard.</div></div>'; }
       return cardHtml(applyFilters(phs));
     }
 
+    var corps = listBody();
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
-      '<div class="v2-wrap">' +
-        '<div class="v2-page-title">Mes officines</div>' +
-        '<div class="v2-page-sub">' + phs.length + ' pharmacie' + (phs.length > 1 ? 's' : '') +
-          ' · clique pour voir les opportunités</div>' +
+      '<div class="v2-wrap v2-u">' +
+        teteOfficines('Les officines de votre secteur et leurs opportunités.',
+          !isOpso() && secteurTab === 'clients' ? '<button type="button" class="v2-btn v2-btn-ghost" onclick="V2.pharmaClientsXlsx()">' + ICO('download', 18) + 'Mes clients en Excel</button>' : '') +
         pharmaTabs('officines') +
-        (!isOpso() && secteurTab === 'clients' ? '<div style="display:flex;justify-content:flex-end;margin:-4px 0 12px"><button class="v2-btn v2-btn-ghost" onclick="V2.pharmaClientsXlsx()">' + ICO('download', 16) + 'Mes clients en Excel</button></div>' : '') +
-        commBar +
-        secteurBar +
-        opsoFilterBar +
-        '<div class="v2-search" style="margin-bottom:20px;padding:14px 18px">' + ICO('search', 20, 2) +
-          '<input id="v2-pharma-search" placeholder="Rechercher une officine…" autocomplete="off" value="' +
-          V2.esc(searchQuery) + '"></div>' +
-        '<div class="v2-card" id="v2-pharma-card">' + listBody() + '</div>' +
+        counterHtml +
+        '<div class="of-bar">' + commBar + secteurBar + opsoFilterBar + '</div>' +
+        '<label class="v2-champ of-recherche">' + ICO('search', 20, 2) +
+          '<input id="v2-pharma-search" type="text" placeholder="Rechercher une officine…" aria-label="Rechercher une officine" autocomplete="off" value="' +
+          V2.esc(searchQuery) + '"></label>' +
+        '<p class="of-n" id="v2-pharma-n" aria-live="polite">' + nAff + '</p>' +
+        '<div class="v2-card" id="v2-pharma-card">' + corps + '</div>' +
       '</div>';
 
     // Recherche live : on ne re-render QUE la liste pour préserver le focus
@@ -833,6 +826,7 @@
         var card = document.getElementById('v2-pharma-card');
         if (!card) return;
         card.innerHTML = listBody();
+        var n = document.getElementById('v2-pharma-n'); if (n) n.textContent = nAff;
       });
     }
   }
@@ -2035,6 +2029,7 @@
   V2.pharmaSetComm = function (val) {
     V2.commFilter = val || '';
     V2.render();
+    var sel = document.getElementById('v2-pharma-comm'); if (sel) sel.focus();
   };
 
   function buildPrepaHtml(pid) {
@@ -2287,11 +2282,26 @@
   // (produits commandés, triés par nb de pharmacies qui commandent)
   // ═══════════════════════════════════════════════════════════════
   function pharmaTabs(active) {
-    return '<div class="ph-vtabs">' +
-      '<button class="ph-vtab' + (active === 'officines' ? ' on' : '') + '" onclick="V2.pharmaView(\'officines\')">' + ICO('pharma', 15, 2) + 'Officines</button>' +
-      '<button class="ph-vtab' + (active === 'listes' ? ' on' : '') + '" onclick="V2.pharmaView(\'listes\')">' + ICO('fiche', 15, 2) + 'Mes listes</button>' +
-      '<button class="ph-vtab' + (active === 'carte' ? ' on' : '') + '" onclick="V2.pharmaView(\'carte\')">' + ICO('grid', 15, 2) + 'Carte secteur</button>' +
+    // 02/10/2026 — pièce commune « onglets » (.v2-tabs), la même que sur les autres écrans alignés
+    var t = function (val, ico, label) {
+      return '<button type="button" role="tab" class="v2-tab' + (active === val ? ' on' : '') + '" aria-selected="' + (active === val) + '" onclick="V2.pharmaView(\'' + val + '\')">' + ICO(ico, 18, 2) + label + '</button>';
+    };
+    return '<div class="v2-tabs" role="tablist" aria-label="Vues des officines">' +
+      t('officines', 'pharma', 'Officines') + t('listes', 'fiche', 'Mes listes') + t('carte', 'grid', 'Carte secteur') +
     '</div>';
+  }
+  // Titre d'écran commun aux trois vues (pièce .v2-tete) : un seul titre, un sous-titre, une action à droite.
+  function teteOfficines(sous, action) {
+    return '<div class="v2-tete"><div><h1 class="v2-titre">Mes officines</h1><p class="v2-sous">' + sous + '</p></div>' + (action || '') + '</div>';
+  }
+  // Menu « Commercial » (pièce .v2-select) à la place d'une pastille par prénom — seulement s'il y a plusieurs commerciaux.
+  function commSelect() {
+    var comms = V2.commercials ? V2.commercials() : [];
+    if (comms.length < 2) return '';
+    return '<label class="v2-select"><select id="v2-pharma-comm" aria-label="Commercial" onchange="V2.pharmaSetComm(this.value)">' +
+      '<option value="">Commercial : Tous</option>' +
+      comms.map(function (c) { return '<option value="' + esc(c) + '"' + (V2.commFilter === c ? ' selected' : '') + '>Commercial : ' + esc(c) + '</option>'; }).join('') +
+      '</select><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></label>';
   }
   // 25/09/2026 — la table d'alias range fermées et statuts inconnus sous « — » : un 2e « sans
   // groupement » (9 officines) s'affichait comme un groupement à part. Un seul panier — et Intégral
@@ -3969,13 +3979,12 @@
       '</a>';
     }).join('');
     var empty = '<div class="v2-empty"><div class="v2-empty-t">Aucune liste pour l\'instant</div>' +
-      '<div class="v2-empty-d">Crée des listes sur-mesure (ex : Big pharma, Pharma PDA, Liste NR) en piochant des pharmacies dans n\'importe quel groupement. Tu retrouves leurs achats agrégés et l\'export PDF, exactement comme pour un groupement.</div></div>';
+      '<div class="v2-empty-d">Créez des listes sur mesure (ex : Big pharma, Pharma PDA, Liste NR) en piochant des pharmacies dans n\'importe quel groupement. Vous retrouvez leurs achats agrégés et l\'export PDF, exactement comme pour un groupement.</div></div>';
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
-      '<div class="v2-wrap">' +
-        '<div class="v2-page-title">Opportunités pharmacie</div>' +
-        '<div class="v2-page-sub">Mes listes sur-mesure · des pharmacies que tu regroupes toi-même</div>' +
+      '<div class="v2-wrap v2-u">' +
+        teteOfficines('Vos listes sur mesure : des pharmacies que vous regroupez vous-même.',
+          '<button type="button" class="v2-btn v2-btn-primary" onclick="V2.pharmaListNew()">' + ICO('plus', 18) + 'Nouvelle liste</button>') +
         pharmaTabs('listes') +
-        '<div style="display:flex;justify-content:flex-end;margin:2px 0 12px"><button class="v2-btn v2-btn-primary" onclick="V2.pharmaListNew()">' + ICO('plus', 16) + ' Nouvelle liste</button></div>' +
         (lists.length ? '<div class="v2-card">' + cards + '</div>' : empty) +
       '</div>';
   }
@@ -4122,21 +4131,15 @@
     return { r: 16, color: '#0034A0', fill: '#0034A0' };
   }
   function renderCarte(root) {
-    var comms = V2.commercials ? V2.commercials() : [];
-    var commBar = '';
-    if (comms.length > 1) {
-      var cb = function (val, lbl) { return '<button type="button" class="v2-seg' + (V2.commFilter === val ? ' on' : '') + '" style="--sc:var(--ip-blue)" onclick="V2.pharmaSetComm(\'' + val + '\')">' + lbl + '</button>'; };
-      commBar = '<div class="v2-segs" style="margin-bottom:12px">' + cb('', 'Tous') + comms.map(function (c) { return cb(c, c); }).join('') + '</div>';
-    }
+    var commBar = commSelect();
     var withGeo = (V2.pharmacies || []).filter(function (p) {
       if (V2.commFilter && (p.comms || []).indexOf(V2.commFilter) < 0) return false;
       return typeof p.lat === 'number' && typeof p.lng === 'number';
     });
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
-      '<div class="v2-wrap">' +
-        '<div class="v2-page-title">Opportunités pharmacie</div>' +
-        '<div class="v2-page-sub">Carte de mon secteur · ' + withGeo.length + ' officines localisées</div>' +
-        pharmaTabs('carte') + commBar +
+      '<div class="v2-wrap v2-u">' +
+        teteOfficines('La carte de votre secteur · ' + V2.fmtNum(withGeo.length) + ' officine' + (withGeo.length > 1 ? 's' : '') + ' localisée' + (withGeo.length > 1 ? 's' : '')) +
+        pharmaTabs('carte') + (commBar ? '<div class="of-bar">' + commBar + '</div>' : '') +
         '<div class="sec-mapwrap"><div class="sec-map" id="sec-map"></div>' +
           '<div class="sec-legend">' +
             '<div class="sec-legend-t">Chiffre d\'affaires</div>' +
@@ -4152,7 +4155,7 @@
   }
   function initSecteurMap(list) {
     var el = document.getElementById('sec-map'); if (!el) return;
-    if (!window.L) { el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted)">Carte indisponible — vérifie ta connexion internet.</div>'; return; }
+    if (!window.L) { el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted)">Carte indisponible — vérifiez votre connexion internet.</div>'; return; }
     if (_secMap) { try { _secMap.remove(); } catch (e) {} _secMap = null; }
     el.innerHTML = '';
     _secMap = window.L.map(el, { scrollWheelZoom: true, preferCanvas: true }).setView([46.7, 2.4], 6);

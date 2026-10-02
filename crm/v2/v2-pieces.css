@@ -119,8 +119,36 @@
 .v2-tuile-chev{flex:none;color:var(--muted-d);transition:transform .22s var(--ease),color .2s}
 .v2-tuile:hover .v2-tuile-chev{transform:translateX(3px);color:var(--ip-blue)}
 
+/* ─── 10. ÉCRAN ALIGNÉ (.v2-wrap.v2-u) : boutons, onglets et pastilles aux cotes de la maquette ───
+   Posé écran par écran (lot 3 : Officines). :where() garde le poids des règles de v2.css : .on et :hover restent maîtres. */
+:where(.v2-u) .v2-btn{height:44px;padding:0 18px;font-size:14.5px}
+:where(.v2-u) .v2-btn svg{width:18px;height:18px;flex:none}
+:where(.v2-u) .v2-tabs{width:fit-content;max-width:100%;margin-bottom:18px;scrollbar-width:none}
+:where(.v2-u) .v2-tabs::-webkit-scrollbar{display:none}
+:where(.v2-u) .v2-tab{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 16px;font-size:14px;font-weight:700;color:var(--muted-d)}
+:where(.v2-u) .v2-tab svg{width:18px;height:18px;flex:none}
+:where(.v2-u) .v2-segs{margin-bottom:0}
+:where(.v2-u) .v2-seg{height:40px;padding:0 16px;font-size:14px;font-weight:700;font-family:var(--font)}
+/* Officines : menu « Commercial » + pastilles sur une ligne, recherche, compte de ce qui est affiché */
+.of-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 14px}
+.of-bar:empty{display:none}
+.of-recherche{margin-bottom:14px}
+.of-n{font-size:14px;font-weight:600;color:var(--muted-d);margin:0 2px 12px;min-height:20px}
+
 /* ─── Téléphone ─── */
 @media (max-width:760px){
+  :where(.v2-u) .v2-seg{height:44px}
+  :where(.v2-u) .v2-tab{padding:0 12px}
+  :where(.v2-u) .v2-tab svg{display:none}
+  .v2-u .v2-tete .v2-btn{width:100%}
+  .of-bar .v2-select{width:100%}
+  /* Liste des officines au téléphone : le nom sur sa ligne, les chiffres dessous (sinon le nom est écrasé à 0 px de large) */
+  .v2-u #v2-pharma-card .v2-row{flex-wrap:wrap;row-gap:6px}
+  .v2-u #v2-pharma-card .v2-row-name{flex:1 1 calc(100% - 24px)}
+  .v2-u #v2-pharma-card .v2-row-name + *{margin-left:20px}
+  .v2-u #v2-pharma-card .v2-row-meta,.v2-u #v2-pharma-card .v2-row-val{white-space:nowrap}
+  .v2-u #v2-pharma-card .v2-row-val + .v2-row-val{margin-left:auto}
+  .v2-u #v2-pharma-card .v2-row-chev{display:none}
   .v2-top{padding:0 12px;gap:6px}
   .tp-g{gap:8px}
   .tp-d{gap:6px}
