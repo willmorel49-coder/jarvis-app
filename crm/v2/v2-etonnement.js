@@ -34,7 +34,7 @@
   // `c` = clé de regroupement : deux collègues qui demandent la même chose
   // portent la même clé, et le plan les compte ensemble. L'avancement de
   // chaque amélioration vit dans la ligne « guide » (reponses.plan).
-  var MOMENTS = [['organiser', 'Organiser sa semaine et ses tournées'], ['prospecter', 'Prospecter'],
+  var MOMENTS = [['secteur', 'Connaître son secteur et ses UGA'], ['organiser', 'Organiser sa semaine et ses tournées'], ['prospecter', 'Prospecter'],
     ['avant', 'Préparer un rendez-vous'], ['pendant', 'Pendant le rendez-vous'], ['apres', 'Après le rendez-vous'],
     ['suivre', 'Suivre ses officines'], ['produits', 'Produits, prix et disponibilité'], ['rendre', 'Rendre des comptes'],
     ['equipe', 'Travailler avec l\'équipe et le siège'], ['autre', 'Autre']];
@@ -50,18 +50,29 @@
   // partait d'une page neuve […] comme si JARVIS n'existait pas ». Aucune
   // question ne nomme l'application : on fait décrire le métier tel qu'il est.
   var THEMES = [
-    { id: 'metier', nom: 'Votre métier et vos missions', but: 'Poser le cadre : ce dont la personne est responsable, et sur quoi elle est attendue.', q: [
-      { id: 'm1', q: 'Comment décririez-vous votre métier à quelqu\'un qui ne le connaît pas ?', r: 'Ce dont vous êtes responsable, du lundi au vendredi.' },
-      { id: 'm2', q: 'Quelles sont toutes vos missions, de la plus fréquente à la plus rare ?', r: 'Visites, prospection, suivi, administratif, remontées au siège…' },
-      { id: 'm3', q: 'Sur quoi êtes-vous attendu, et comment savez-vous que vous avez réussi ?', r: 'Les objectifs, les chiffres regardés, et par qui.' },
-      { id: 'm4', q: 'Combien d\'officines suivez-vous, et sur quel secteur ?', r: 'Clients, prospects, kilomètres parcourus.' },
-      { id: 'm5', q: 'Avec qui travaillez-vous au quotidien ?', r: 'Direction, collègues, logistique, service clients, titulaires, préparateurs.' }
+    // 02/10/2026, Will : « ça doit être plus précis, je dois connaître les UGA […]
+    // je connais son métier en soi mais je dois savoir son organisation perso ».
+    // Les deux premiers thèmes ne font donc plus décrire le métier : ils relèvent
+    // le secteur et l'organisation propres à CE collègue, avec des faits.
+    { id: 'secteur', nom: 'Votre secteur', but: 'La photographie du terrain de ce collègue : ses UGA, ses officines, ses distances.', q: [
+      { id: 't1', q: 'Quelles UGA couvrez-vous ?', r: 'Leur nom ou leur numéro, et les départements concernés.' },
+      { id: 't2', q: 'Combien d\'officines suivez-vous, et combien sont clientes ?', r: 'Clients réguliers, clients occasionnels, prospects.' },
+      { id: 't3', q: 'Comment vos officines se répartissent-elles entre vos UGA ?', r: 'Les UGA les plus denses, celles où vous allez rarement.' },
+      { id: 't4', q: 'D\'où partez-vous le matin, et jusqu\'où va votre secteur ?', r: 'Kilomètres par semaine, temps de route, nuits à l\'extérieur.' },
+      { id: 't5', q: 'Quelles sont vos officines les plus importantes, et pourquoi celles-là ?', r: 'Chiffre, potentiel, relation avec le titulaire.' },
+      { id: 't6', q: 'Quels concurrents rencontrez-vous le plus, et dans quelles UGA ?', r: 'Auprès de quelles officines, sur quels produits.' }
     ] },
-    { id: 'semaine', nom: 'Une semaine sur le terrain', but: 'Voir le travail réel, jour par jour, plutôt que le travail prévu.', q: [
-      { id: 's1', q: 'Racontez-moi votre dernière semaine, jour par jour.', r: 'Où étiez-vous, combien de rendez-vous, combien de route ?' },
-      { id: 's2', q: 'Comment décidez-vous qui aller voir, et quand ?', r: 'Ce qui déclenche une visite ou un appel.' },
-      { id: 's3', q: 'Comment organisez-vous vos tournées ?', r: 'Avec quoi : agenda, carte, habitude, liste papier.' },
-      { id: 's4', q: 'Quelle part de votre temps passe en dehors des rendez-vous ?', r: 'Route, préparation, comptes rendus, courriels, téléphone.' }
+    { id: 'orga', nom: 'Votre organisation personnelle', but: 'Sa façon à lui de s\'organiser : rythme, règles, supports, habitudes.', q: [
+      { id: 'o1', q: 'À quoi ressemble votre semaine type, jour par jour ?', r: 'Jours de terrain, jours de bureau, horaires, temps de route.' },
+      { id: 'o2', q: 'Quand et comment préparez-vous votre semaine ?', r: 'Le vendredi, le dimanche soir, au jour le jour ; sur quel support.' },
+      { id: 'o3', q: 'Combien de rendez-vous faites-vous par jour, et combien de temps dure chacun ?', r: 'Une bonne journée, une journée ordinaire.' },
+      { id: 'o4', q: 'Comment décidez-vous qui aller voir cette semaine ?', r: 'Ce qui déclenche une visite ou un appel.' },
+      { id: 'o5', q: 'À quelle fréquence voyez-vous chaque officine ?', r: 'Vos règles : les plus importantes, les autres, les prospects.' },
+      { id: 'o6', q: 'Comment construisez-vous une tournée ?', r: 'Par UGA, par ville, autour d\'un rendez-vous fixe.' },
+      { id: 'o7', q: 'Comment prenez-vous vos rendez-vous ?', r: 'Téléphone, courriel, passage sans rendez-vous ; qui vous répond.' },
+      { id: 'o8', q: 'Où notez-vous ce que vous avez à faire et ce qui s\'est dit ?', r: 'Carnet, téléphone, tableur, mémoire.' },
+      { id: 'o9', q: 'Quels fichiers ou listes tenez-vous vous-même ?', r: 'Ce qu\'ils contiennent, et quand vous les mettez à jour.' },
+      { id: 'o10', q: 'Quels appareils et quels supports utilisez-vous dans une journée ?', r: 'En voiture, en officine, chez vous ; téléphone, tablette, ordinateur, papier.' }
     ] },
     { id: 'avant', nom: 'Avant le rendez-vous', but: 'Les informations nécessaires pour entrer dans l\'officine, et où elles se trouvent aujourd\'hui.', q: [
       { id: 'a1', q: 'Racontez-moi comment vous avez préparé votre dernier rendez-vous.', r: 'Pas à pas : où avez-vous cherché, dans quel ordre ?' },
@@ -300,7 +311,7 @@
   function entete(actif) {
     return '<div class="eto-hero">' +
         '<div><div class="v2-page-title">Rapport d\'étonnement</div>' +
-        '<p class="eto-sub">Le travail de vos collègues tel qu\'il est, comme si l\'application n\'existait pas : leurs missions, leurs besoins d\'information, leurs contraintes. Consigné question par question, puis transformé en besoins classés. Vous seul voyez cet écran.</p></div>' +
+        '<p class="eto-sub">Le terrain de chaque collègue tel qu\'il est, comme si l\'application n\'existait pas : ses UGA, son organisation personnelle, ses besoins d\'information, ses contraintes. Consigné question par question, puis transformé en besoins classés. Vous seul voyez cet écran.</p></div>' +
       '</div>' +
       '<div class="eto-barre">' +
         '<div class="eto-seg eto-seg-v" role="tablist">' +
@@ -351,7 +362,7 @@
       (a.length
         ? '<div class="eto-grid">' + a.map(function (r) { return carteEntretien(r, total); }).join('') + '</div>'
         : '<div class="eto-vide"><b>Aucun entretien pour l\'instant</b>' +
-          '<p>Créez un entretien par collègue. Le guide fait décrire son métier, thème après thème, sans jamais partir de l\'application ; vous notez ses réponses au fil de la conversation, la synthèse les regroupe par question et l\'onglet Besoins les classe.</p>' +
+          '<p>Créez un entretien par collègue. Le guide relève son secteur, ses UGA et son organisation personnelle, thème après thème, sans jamais partir de l\'application ; vous notez ses réponses au fil de la conversation, la synthèse les regroupe par question et l\'onglet Besoins les classe.</p>' +
           '<button class="v2-btn v2-btn-primary" data-act="nouveau">' + ICO('plus', 16, 2) + 'Commencer le premier entretien</button></div>') +
       guideHtml() +
       (arch.length
