@@ -81,7 +81,7 @@
       '  box-shadow:0 12px 26px -10px rgba(0,80,230,.65),0 2px 6px rgba(16,19,28,.18);',
       '  display:flex;align-items:center;justify-content:center;',
       '  transition:transform .22s cubic-bezier(.2,.8,.2,1),opacity .22s}',
-      '.v2-fab[hidden]{display:none}',
+      '.v2-fab[hidden],body:has(.v2-top .tp-plus) .v2-fab{display:none}',
       /* 14/09/2026 — le bouton passait AU-DESSUS des fenêtres (z 9400 contre 120) :
          sur téléphone il cachait le coin du bouton Télécharger de « Transmettre ».
          Fenêtre ouverte = bouton retiré. */
@@ -192,7 +192,10 @@
       // flèche de la grande porte Officines (petit iPhone). Il n'y apparaît donc
       // qu'une fois la page défilée ; ailleurs rien ne change.
       var hautAccueil = route === 'home' && window.innerWidth <= 760 && (window.scrollY || 0) < 120;
-      b.hidden = occupe || doublon || hautAccueil;
+      // 02/10/2026 — la barre commune porte désormais son propre « + » : le bouton rond ne se pose plus là.
+      // Il reste sur l'accueil, dans Marketing et sur L'Argument, qui n'ont pas encore cette barre.
+      var barrePlus = !!document.querySelector('.v2-top .tp-plus');
+      b.hidden = occupe || doublon || hautAccueil || barrePlus;
       if (!suitDefilement) {
         suitDefilement = true;
         var attente = false;

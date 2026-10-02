@@ -1,0 +1,136 @@
+/* ═══════════════════════════════════════════════════════════════════
+   JARVIS · feuille des pièces communes (« unifier toute l'app », 02/10/2026)
+   Portée de la maquette validée (unifier-maquettes-2026-10-02/pieces.css). Chargée juste APRÈS v2.css :
+   à valeur égale elle l'emporte. Aucune couleur de bleu en dur : tout passe par var(--ip-blue…) (thèmes OPSO et Escale).
+   Mouvement : transform seulement, jamais sur du texte seul ; prefers-reduced-motion respecté en bas de fichier.
+
+   RÈGLE D'EMPLOI, une phrase par pièce
+   · Barre du haut (.v2-top) : posée par V2.topbar(), jamais écrite à la main ; Retour · logo · nom de l'écran · recherche · « + » · avatar.
+   · Nom de l'écran (.tp-nom) : donné par opts.nom, sinon lu dans la liste d'outils de l'accueil (V2.nomEcran).
+   · « + » de la barre (.tp-plus) : un seul par écran, ouvre le menu des gestes rapides (V2.plusMenu) ; le bouton rond #v2-fab disparaît là où il est.
+   · Titre d'écran (.v2-tete > .v2-titre + .v2-sous) : un seul titre par écran, Satoshi 28/800, sous-titre d'une ligne en gris.
+   · Champ de recherche d'écran (.v2-champ) : 48 px, loupe bleue, texte 16 px ; pour chercher DANS un écran, pas pour la recherche générale de la barre.
+   · Menu déroulant (.v2-select) : un choix long qui ne tient pas en pastilles ; le <select> natif reste dedans (16 px, pas de zoom iOS).
+   · Carte cliquable (.v2-tuile) : un bloc blanc qui mène ailleurs, un seul clic pour tout le bloc, chevron à droite.
+
+   PIÈCES DÉJÀ DANS v2.css, ÉCART RELEVÉ MAIS NON APPLIQUÉ (à faire écran par écran, avec captures sur données réelles) :
+   · .v2-btn  CRM padding 11/18, 14 px      → maquette hauteur 44, 14,5 px      · .v2-tab  CRM 13/600, ~36 px → maquette 14/700, hauteur 44
+   · .v2-seg  CRM 13/600, ~34 px            → maquette 14/700, hauteur 40 (44 au téléphone)
+   · .v2-tabs CRM marge basse 22, sans masquage de défilement → maquette sans marge, barre de défilement masquée
+   · .v2-wrap CRM 1080 / 32 26 70           → maquette 1080 / 32 28 72
+   · .v2-search (CRM) est la GRANDE recherche de l'accueil, autre pièce : la pièce « champ d'écran » de la maquette s'appelle ici .v2-champ.
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root{
+  --v2-top-h:72px;
+  --muted-d:#4F566B;
+}
+@media (max-width:760px){ :root{ --v2-top-h:60px; } }
+
+/* ─── 1. BARRE DU HAUT : 72 px (60 au téléphone), la même partout ─── */
+.v2-top{height:var(--v2-top-h);display:flex;align-items:center;gap:16px;padding:0 28px;
+  box-shadow:0 1px 0 rgba(255,255,255,.8) inset,0 8px 20px -14px rgba(16,19,28,.14)}
+.tp-g{display:flex;align-items:center;gap:14px;min-width:0;flex:1;overflow:hidden;padding:2px}
+.tp-d{display:flex;align-items:center;gap:10px;flex:none}
+.v2-brand{min-height:44px;min-width:0;border-radius:var(--r-btn)}
+.v2-brand-compact{min-width:44px;justify-content:center}   /* logo seul : zone tactile de 44 px, le logo (40 px) centré dedans */
+.v2-logo{width:40px;height:40px;border-radius:12px}
+.v2-logo svg{width:22px;height:22px}
+.tp-nom{font-weight:800;font-size:18px;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ip-ink)}
+
+/* ─── 2. RETOUR : blanc, rayon 12, toujours à gauche de la barre ─── */
+.v2-back{display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 16px 0 10px;background:var(--card);
+  border:1px solid var(--line);border-radius:var(--r-btn);font-size:14px;font-weight:700;color:var(--ip-ink-2);cursor:pointer;
+  box-shadow:var(--sh-1);flex:none;white-space:nowrap}
+.v2-back svg{width:20px;height:20px}
+.v2-back:hover{box-shadow:var(--sh-2)}
+
+/* ─── 3. RECHERCHE GÉNÉRALE (dans la barre) : un vrai bouton ─── */
+.v2-top-search{display:flex;align-items:center;gap:10px;height:44px;min-width:300px;margin-left:0;padding:0 10px 0 14px;background:var(--card);
+  border:1px solid var(--line);border-radius:var(--r-btn);font-family:var(--font);font-size:14.5px;font-weight:500;color:var(--muted-d);
+  text-align:left;cursor:pointer;box-shadow:var(--sh-1)}
+.v2-top-search svg{width:18px;height:18px;flex:none}
+.v2-top-search kbd{margin-left:auto;font-size:12.5px;padding:3px 8px}
+@media (max-width:1000px) and (min-width:761px){ .v2-top-search{min-width:0;width:210px} }
+
+/* ─── 4. BOUTON « + » : dans la barre, carré bleu 44 px ─── */
+.tp-plus{width:44px;height:44px;border-radius:var(--r-btn);border:0;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none;color:#fff;
+  background:linear-gradient(150deg,color-mix(in srgb,var(--ip-blue) 92%,#fff),var(--ip-blue) 46%,var(--ip-blue-d));box-shadow:var(--sh-blue);
+  transition:transform .18s var(--ease),box-shadow .22s var(--ease)}
+.tp-plus svg{width:22px;height:22px;transition:transform .22s var(--ease)}
+.tp-plus:hover{transform:translateY(-1px);box-shadow:var(--sh-blue-h)}
+.tp-plus:active{transform:scale(.96)}
+.tp-plus[aria-expanded="true"] svg{transform:rotate(45deg)}
+
+/* ─── 5. AVATAR : orange, 40 px dans une zone de 44 ; initiales en encre (le blanc sur orange ne mesure que 1,78:1) ─── */
+.tp-avb{width:44px;height:44px;padding:0;border:0;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%;flex:none}
+.v2-av{width:40px;height:40px;font-size:14px;font-weight:800;color:var(--ip-ink);transition:transform .18s var(--ease);cursor:pointer}
+.tp-avb:hover .v2-av{transform:scale(1.06)}
+
+/* ─── Menus de la barre (« + » et compte) : même forme, recalés sous la barre par V2.userMenu / V2.plusMenu ─── */
+.v2-usermenu .v2-pm-it{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:0 16px;border:0;background:none;cursor:pointer;
+  font-family:var(--font);font-size:14.5px;font-weight:700;color:var(--ip-ink-2);text-align:left;transition:background .14s}
+.v2-usermenu .v2-pm-it svg{width:20px;height:20px;flex:none;color:var(--ip-blue)}
+.v2-usermenu .v2-pm-it:hover{background:var(--halo);color:var(--ip-ink)}
+#v2-plusmenu{min-width:260px}
+.v2-um-item{min-height:48px}
+
+/* Focus clavier visible sur chaque pièce de la barre et dans ses menus (v2.css pose un anneau en ombre que les ombres ci-dessus écrasent) */
+.v2-top :where(a,button):focus-visible,.v2-usermenu :focus-visible{outline:2px solid var(--ip-blue);outline-offset:2px}
+.v2-usermenu :focus-visible{outline-offset:-3px;border-radius:0}
+.tp-avb:focus-visible{border-radius:50%}
+
+/* ─── 6. TITRE D'ÉCRAN : 28 px / 800 / −0,02em + sous-titre 14 px gris ─── */
+.v2-titre{font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.15;color:var(--ip-ink)}
+.v2-sous{font-size:14px;color:var(--muted-d);margin-top:6px;line-height:1.45}
+.v2-tete{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+
+/* ─── 7. CHAMP DE RECHERCHE D'ÉCRAN : blanc, 48 px, loupe bleue, texte 16 px ─── */
+.v2-champ{display:flex;align-items:center;gap:12px;height:48px;padding:0 16px;background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r-md);box-shadow:var(--sh-1);transition:border-color .18s var(--ease-soft),box-shadow .2s var(--ease)}
+.v2-champ svg{color:var(--ip-blue);width:20px;height:20px;flex:none}
+.v2-champ input{flex:1;min-width:0;height:46px;border:0;outline:0;background:transparent;font-family:var(--font);font-size:16px;font-weight:500;color:var(--ip-ink)}
+.v2-champ input::placeholder{color:var(--muted-d)}
+.v2-champ:hover{border-color:color-mix(in srgb,var(--ip-blue) 30%,var(--line))}
+.v2-champ:focus-within{border-color:color-mix(in srgb,var(--ip-blue) 50%,var(--line));box-shadow:0 0 0 4px color-mix(in srgb,var(--ip-blue) 14%,transparent),var(--sh-1)}
+
+/* ─── 8. MENU DÉROULANT : un long choix ─── */
+.v2-select{position:relative;display:inline-flex;align-items:center;height:44px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-btn);box-shadow:var(--sh-1)}
+.v2-select select{appearance:none;-webkit-appearance:none;height:42px;min-height:42px;border:0;background:transparent;padding:0 40px 0 14px;
+  font-family:var(--font);font-size:16px;font-weight:700;color:var(--ip-ink-2);cursor:pointer;border-radius:var(--r-btn);width:100%}
+.v2-select svg{position:absolute;right:12px;width:18px;height:18px;pointer-events:none;color:var(--ip-blue)}
+.v2-select:hover{border-color:color-mix(in srgb,var(--ip-blue) 32%,var(--line))}
+.v2-select:focus-within{border-color:color-mix(in srgb,var(--ip-blue) 50%,var(--line));box-shadow:0 0 0 4px color-mix(in srgb,var(--ip-blue) 14%,transparent)}
+
+/* ─── 9. CARTE CLIQUABLE : blanche, rayon 20, ombre sh-2, −3 px au survol, chevron à droite ─── */
+.v2-tuile{position:relative;display:flex;align-items:center;gap:14px;padding:16px 16px 16px 18px;min-height:76px;width:100%;background:var(--card);
+  border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2);cursor:pointer;text-align:left;font-family:var(--font);color:inherit;
+  transition:transform .22s var(--ease),box-shadow .26s var(--ease),border-color .2s var(--ease-soft)}
+.v2-tuile:hover{transform:translateY(var(--mo-lift));box-shadow:var(--sh-3);border-color:color-mix(in srgb,var(--ip-blue) 26%,var(--line))}
+.v2-tuile:active{transform:translateY(-1px) scale(.992)}
+.v2-tuile-ico{width:46px;height:46px;border-radius:14px;flex:none;display:flex;align-items:center;justify-content:center;color:var(--ip-blue);
+  background:linear-gradient(160deg,#fff,var(--halo));border:1px solid color-mix(in srgb,var(--ip-blue) 14%,var(--line));box-shadow:0 1px 0 #fff inset,0 3px 8px rgba(0,80,230,.10)}
+.v2-tuile-tx{flex:1;min-width:0;display:block}
+.v2-tuile-nm{display:block;font-size:16px;font-weight:800;letter-spacing:-.015em;color:var(--ip-ink);line-height:1.2}
+.v2-tuile-ds{display:block;font-size:13.5px;color:var(--muted-d);margin-top:3px;line-height:1.35}
+.v2-tuile-chev{flex:none;color:var(--muted-d);transition:transform .22s var(--ease),color .2s}
+.v2-tuile:hover .v2-tuile-chev{transform:translateX(3px);color:var(--ip-blue)}
+
+/* ─── Téléphone ─── */
+@media (max-width:760px){
+  .v2-top{padding:0 12px;gap:6px}
+  .tp-g{gap:8px}
+  .tp-d{gap:2px}
+  .v2-brand-s{display:none}
+  .v2-brand-t{font-size:16px}
+  .tp-nom{display:none}
+  .v2-top-search{min-width:0;width:44px;padding:0;justify-content:center;border-color:transparent;box-shadow:none;background:transparent}
+  .v2-top-search .txt,.v2-top-search kbd{display:none}
+  .v2-top-search svg{width:22px;height:22px}
+  .v2-titre{font-size:22px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .tp-plus,.tp-plus svg,.v2-av,.v2-tuile,.v2-tuile-chev{transition:none}
+  .tp-plus:hover,.tp-avb:hover .v2-av,.v2-tuile:hover,.v2-tuile:hover .v2-tuile-chev{transform:none}
+}

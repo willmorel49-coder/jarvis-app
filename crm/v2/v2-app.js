@@ -202,32 +202,105 @@
       '<span class="v2-logo">' + ICO('logo', 22) + '</span>' +
       (back ? '' : '<span><span class="v2-brand-t">' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '<span class="v2-brand-dot" aria-hidden="true"></span></span><br><span class="v2-brand-s">' + ((window.V2_BRAND && window.V2_BRAND.sub) || 'Espace commercial') + '</span></span>') +
       '</a>';
-    // 15/09/2026 — bascule Intégral ↔ Escale, en haut à gauche. Réservée aux comptes
-    // ayant accès aux deux espaces (le compte Escale à accès total).
-    // Vers Escale (depuis le CRM) : même critère que la 7ᵉ carte d'accueil (14/09,
-    // ligne ~1326) — un compte @escalepharma.fr (et, depuis le 24/09, les quatre
-    // commerciaux Escale, qui ne sont plus renvoyés vers l'espace Escale).
-    // Vers Intégral (depuis Escale) : email @escalepharma.fr NE SUFFIT PAS — tous
-    // les commerciaux Escale l'ont aussi. Il faut en plus `voitTousReel` (posé dans
-    // v2-boot.js AVANT la bascule locale de commercial/voitTous propre à l'espace
-    // Escale) : seul le compte à accès total l'a à true, pas le compte générique (commercial='Escale').
-    // 24/09/2026 — les quatre commerciaux Escale (adresses @integralpharma.fr) l'ont
-    // aussi, dans les deux sens : même CRM, seul le périmètre change (V2.basculeEspace).
-    var spaceSw = '';
-    var bsc = V2.basculeEspace();
-    if (bsc) {
-      spaceSw = '<button class="v2-spacesw" title="Basculer vers l\'espace ' + bsc.label + '" aria-label="Basculer vers l\'espace ' + bsc.label + '" onclick="V2.goSpace(\'' + bsc.to + '\')">' +
-        '<span aria-hidden="true">⇄</span>' + bsc.label + '</button>';
+    // Nom de l'écran (02/10/2026) : donné par l'appelant, sinon lu dans la liste d'outils de
+    // l'accueil (G4_PORTES, une seule source). Route inconnue ou sous-écran : pas de nom.
+    var nom = '';
+    if (back) {
+      var nm = opts.nom || nomEcran(V2.route && V2.route.name);
+      if (nm) nom = '<div class="tp-nom">' + esc(nm) + '</div>';
     }
+    // La bascule Intégral ↔ Escale a quitté la barre : elle est une ligne du tableau « Tous vos outils »
+    // de l'accueil, dans les deux sens (qOutilsLiens, V2.basculeEspace).
+    var plus = plusItems().length
+      ? '<button type="button" class="tp-plus" aria-label="Actions rapides" aria-haspopup="menu" aria-expanded="false" onclick="V2.plusMenu(this)">' + ICO('plus', 22, 2.2) + '</button>'
+      : '';
     return '' +
       '<div class="v2-top">' +
-        back + brand + spaceSw +
-        ((V2.route && V2.route.name === 'home') ? '' : '<div class="v2-top-search" onclick="V2.onTopSearch()">' + ICO('search', 15, 2) + 'Rechercher<kbd>' + MOD + 'K</kbd></div>') +
-        ((!(window.V2_BRAND && window.V2_BRAND.opso) && V2.remonteeOpen) ? '<button class="v2-idea" title="Proposer une amélioration à l\'équipe" aria-label="Proposer une amélioration" onclick="V2.remonteeOpen()">' + ICO('spark', 16, 2) + '</button>' : '') +
-        '<div class="v2-av" title="' + (V2.user ? V2.user.name : '') + '" onclick="V2.userMenu()">' + initials + '</div>' +
+        '<div class="tp-g">' + back + brand + nom + '</div>' +
+        '<div class="tp-d">' +
+          ((V2.route && V2.route.name === 'home') ? '' : '<button type="button" class="v2-top-search" aria-label="Rechercher" aria-haspopup="dialog" onclick="V2.onTopSearch()">' + ICO('search', 18, 2) + '<span class="txt">Rechercher</span><kbd>' + MOD + 'K</kbd></button>') +
+          plus +
+          '<button type="button" class="tp-avb" aria-label="Mon compte" aria-haspopup="menu" aria-expanded="false" title="' + esc(V2.user ? V2.user.name : '') + '" onclick="V2.userMenu(this)"><span class="v2-av">' + esc(initials) + '</span></button>' +
+        '</div>' +
       '</div>';
   }
   V2.topbar = topbar;
+
+  // Nom de l'écran affiché dans la barre : on le lit dans G4_PORTES (la liste d'outils de l'accueil),
+  // jamais recopié ici. Les portes qui ne sont qu'un raccourci (champ `js`) ne nomment pas l'écran.
+  function nomEcran(route) {
+    if (!route) return '';
+    for (var k in G4_PORTES) {
+      var d = G4_PORTES[k];
+      if (d.page === route && !d.js) return d.nom;
+    }
+    return '';
+  }
+  V2.nomEcran = nomEcran;
+
+  // Le menu « + » de la barre : trois gestes, dans cet ordre, seulement si la fonction existe dans l'espace courant.
+  function plusItems() {
+    var it = [];
+    if (V2.rdvGeste && V2.rdvGeste.ouvrir) it.push({ ic: 'cal', t: 'Noter un rendez-vous', f: function () { V2.rdvGeste.ouvrir(); } });
+    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.remonteeOpen) it.push({ ic: 'spark', t: 'Proposer une amélioration', f: function () { V2.remonteeOpen(); } });
+    if (V2.pages && V2.pages.remontees) it.push({ ic: 'plus', t: 'Proposer un outil', f: function () { V2.go('remontees'); } });
+    return it;
+  }
+
+  // Menu flottant ancré sous un bouton de la barre : Échap et clic dehors le ferment, Échap rend le focus au bouton.
+  function menuBarre(id, btn, html) {
+    var ex = document.getElementById(id);
+    if (ex) { ex.parentNode.removeChild(ex); if (btn) btn.setAttribute('aria-expanded', 'false'); return null; }
+    var m = document.createElement('div');
+    m.id = id;
+    m.className = 'v2-usermenu';
+    m.setAttribute('role', 'menu');
+    m.innerHTML = html;
+    document.body.appendChild(m);
+    if (btn) {
+      var r = btn.getBoundingClientRect();
+      m.style.top = Math.round(r.bottom + 8) + 'px';
+      m.style.right = Math.max(12, Math.round(window.innerWidth - r.right)) + 'px';
+      btn.setAttribute('aria-expanded', 'true');
+      var f = m.querySelector('[role=menuitem]'); if (f) { try { f.focus(); } catch (e) {} }
+    }
+    requestAnimationFrame(function () { m.classList.add('open'); });
+    setTimeout(function () {
+      function close(e) {
+        if (e.type === 'keydown' && e.key !== 'Escape') return;
+        if (e.type === 'click' && (m.contains(e.target) || (btn && btn.contains(e.target)) || (e.target.closest && e.target.closest('.v2-av')))) return;
+        if (m.parentNode) m.parentNode.removeChild(m);
+        // le bouton a pu être redessiné pendant que le menu était ouvert (l'écran se repeint) : on rend le focus à son remplaçant
+        var cible = btn && (btn.isConnected ? btn : document.querySelector('.v2-top .' + String(btn.className).split(' ')[0]));
+        if (cible) { cible.setAttribute('aria-expanded', 'false'); if (e.type === 'keydown') { try { cible.focus(); } catch (x) {} } }
+        document.removeEventListener('click', close, true);
+        document.removeEventListener('keydown', close, true);
+      }
+      m._off = function () { document.removeEventListener('click', close, true); document.removeEventListener('keydown', close, true); };
+      document.addEventListener('click', close, true);
+      document.addEventListener('keydown', close, true);
+    }, 0);
+    return m;
+  }
+
+  V2.plusMenu = function (btn) {
+    var it = plusItems();
+    if (!it.length) return;
+    var m = menuBarre('v2-plusmenu', btn,
+      it.map(function (x, i) {
+        return '<button type="button" class="v2-pm-it" role="menuitem" data-i="' + i + '">' + ICO(x.ic, 18, 2) + '<span>' + x.t + '</span></button>';
+      }).join(''));
+    if (!m) return;
+    m.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('.v2-pm-it');
+      if (!b) return;
+      var x = it[+b.getAttribute('data-i')];
+      if (m._off) m._off();
+      if (m.parentNode) m.parentNode.removeChild(m);
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+      if (x) x.f();
+    });
+  };
 
   // Bascule Intégral ↔ Escale (bouton de la topbar, 15/09/2026). Le choix est
   // gardé (localStorage, en échec silencieux) pour un usage futur ; la navigation
@@ -267,41 +340,22 @@
     return '';
   };
 
-  V2.userMenu = function () {
-    var ex = document.getElementById('v2-usermenu');
-    if (ex) { ex.parentNode.removeChild(ex); return; }
-    var m = document.createElement('div');
-    m.id = 'v2-usermenu';
-    m.className = 'v2-usermenu';
+  V2.userMenu = function (btn) {
     var installed = false;
     try { installed = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch (e) {}
-    m.innerHTML =
+    var m = menuBarre('v2-usermenu', btn && btn.getBoundingClientRect ? btn : null,
       '<div class="v2-um-head">' +
         '<div class="v2-um-name">' + esc(V2.user ? V2.user.name : 'Utilisateur') + '</div>' +
         (V2.user && V2.user.email ? '<div class="v2-um-mail">' + esc(V2.user.email) + '</div>' : '') +
       '</div>' +
-      (installed ? '' : '<button class="v2-um-item" onclick="V2.installApp()">' + ICO('plus', 16, 2) + 'Installer l\'app</button>') +
-      '<button class="v2-um-item" onclick="V2.signOut()">' + ICO('logout', 16, 2) + 'Se déconnecter</button>' +
+      (installed ? '' : '<button class="v2-um-item" role="menuitem" onclick="V2.installApp()">' + ICO('plus', 16, 2) + 'Installer l\'app</button>') +
+      '<button class="v2-um-item" role="menuitem" onclick="V2.signOut()">' + ICO('logout', 16, 2) + 'Se déconnecter</button>' +
       // 24/08/2026 — information de l'équipe sur la mesure d'usage (obligation
       // CNIL dès lors qu'elle est nominative). Volontairement factuelle et
       // sans jargon : on dit ce qui est enregistré et à quoi ça sert, rien de plus.
-      '<div class="v2-um-note">Les écrans que vous ouvrez sont enregistrés (votre nom et l\'heure), pour savoir lesquels améliorer en priorité.</div>';
-    document.body.appendChild(m);
+      '<div class="v2-um-note">Les écrans que vous ouvrez sont enregistrés (votre nom et l\'heure), pour savoir lesquels améliorer en priorité.</div>');
     // 02/10/2026 — « Rapport d'étonnement » : la ligne n'est posée que pour les comptes admis (v2-etonnement.js).
-    if (V2.etonnement && V2.etonnement.menu) V2.etonnement.menu(m);
-    requestAnimationFrame(function () { m.classList.add('open'); });
-    setTimeout(function () {
-      function close(e) {
-        if (e.type === 'keydown' && e.key !== 'Escape') return;
-        // ignorer aussi le clic sur l'avatar → laisse le toggle de V2.userMenu refermer proprement
-        if (e.type === 'click' && (m.contains(e.target) || (e.target.closest && e.target.closest('.v2-av')))) return;
-        if (m.parentNode) m.parentNode.removeChild(m);
-        document.removeEventListener('click', close, true);
-        document.removeEventListener('keydown', close, true);
-      }
-      document.addEventListener('click', close, true);
-      document.addEventListener('keydown', close, true);
-    }, 0);
+    if (m && V2.etonnement && V2.etonnement.menu) V2.etonnement.menu(m);
   };
 
   // ── Partage d'un PDF (mail/WhatsApp sur mobile, sinon téléchargement) ──
@@ -3062,23 +3116,8 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
       '.v2-top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;pointer-events:none;' +
         'background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 34%,transparent),transparent 55%,' +
         'transparent 88%,color-mix(in srgb,var(--v2-spark) 22%,transparent))}' +
-      // Pastille recherche ⌘K : plus posée, kbd raffiné, hit-area terrain sous mobile.
-      '.v2-top-search{transition:border-color .18s var(--ease-soft),box-shadow .2s var(--ease),transform .18s var(--ease-soft)}' +
-      '.v2-top-search:hover{transform:translateY(-1px)}' +
+      // Pastille recherche ⌘K : kbd raffiné. La taille, l'avatar, « + » et les menus de la barre sont dans v2-pieces.css.
       '.v2-top-search kbd{border:1px solid var(--line);box-shadow:0 1px 0 rgba(16,19,28,.04)}' +
-      '@media(max-width:640px){.v2-top-search{min-width:var(--tap-min);min-height:var(--tap-min);' +
-        'justify-content:center}}' +
-      // Avatar : anneau discret pour un contour net sur fond clair.
-      '.v2-av{box-shadow:0 0 0 1px color-mix(in srgb,var(--info) 14%,transparent),0 2px 6px rgba(16,19,28,.12)}' +
-      '.v2-idea{flex:none;width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:color .16s,border-color .16s,background .16s,transform .16s}' +
-      '.v2-idea:hover{color:var(--ip-blue);border-color:var(--ip-blue);background:color-mix(in srgb,var(--ip-blue) 8%,var(--card));transform:translateY(-1px)}' +
-      // Bascule Intégral ↔ Escale (15/09/2026) : pastille discrète, juste après le logo.
-      '.v2-spacesw{flex:none;display:inline-flex;align-items:center;gap:5px;height:34px;padding:0 12px;' +
-        'border-radius:11px;border:1px solid var(--line);background:var(--card);color:var(--ip-ink-2);' +
-        'font-family:var(--font);font-size:12.5px;font-weight:600;cursor:pointer;' +
-        'transition:color .16s,border-color .16s,background .16s,transform .16s}' +
-      '.v2-spacesw:hover{color:var(--ip-blue);border-color:var(--ip-blue);background:color-mix(in srgb,var(--ip-blue) 8%,var(--card));transform:translateY(-1px)}' +
-      '@media(max-width:640px){.v2-spacesw{padding:0 9px;font-size:0}.v2-spacesw span{font-size:15px}}' +
 
       // ══ LOGIN — première impression de marque ════════════════════════
       // Scène : dégradé de marque sobre (double halo info) + trame de points

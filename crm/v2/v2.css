@@ -441,24 +441,7 @@ border-bottom:1px solid var(--line)}
   .v2-kpi-l,.v2-table thead th,.v2-cmdk-grp{color:var(--muted)}
   .v2-empty-ico{color:var(--muted)}
 
-  /* topbar compacte : recherche réduite à l'icône */
-  .v2-top{padding:10px 14px;gap:10px}
-  .v2-top-search{font-size:0;padding:9px 11px;gap:0}
-  .v2-top-search kbd{display:none}
-  .v2-brand-t{font-size:14px}
-  .v2-brand-s{font-size:12px}
-  .v2-av{width:34px;height:34px}
-  .v2-back{padding:7px 11px;font-size:12.5px}
-  /* cible tactile ≥44px SANS grossir le glyphe (avatar, logo compact retour-accueil,
-     idée, bascule d'espace) — même principe que la liste --tap-min ci-dessous,
-     étendu aux éléments de la topbar qui en manquaient. Zone additive invisible,
-     centrée, ne change aucun pixel visible. */
-  .v2-av,.v2-idea,.v2-brand-compact,.v2-spacesw{position:relative}
-  .v2-av::after,.v2-idea::after,.v2-brand-compact::after,.v2-spacesw::after{
-    content:"";position:absolute;top:50%;left:50%;
-    width:var(--tap-min);height:var(--tap-min);
-    transform:translate(-50%,-50%);
-  }
+  /* topbar : tailles, cibles tactiles et téléphone dans v2-pieces.css */
 
   /* contenu : marges réduites, titres plus petits */
   .v2-wrap{padding:18px 14px 64px;margin-right:0 !important}
