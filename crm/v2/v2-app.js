@@ -2276,8 +2276,8 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
     function visibles() { var cartes = $$('.q-rel', liste); cartes.forEach(function (c, i) { c.hidden = plie && i >= 3; }); }
     /* les cartes changent de place sans se téléporter : chacune garde sa position à l'écran, puis rejoint la nouvelle */
     function ordonner(premiers) {
-      var cartes = $$('.q-rel', liste), cachees = cartes.map(function (c) { return c.hidden; }), y0 = cartes.map(function (c) { return c.offsetTop; }), prem = premiers.map(function (i) { return relDonnees[i] && cartes[i]; }).filter(Boolean);
-      var reste = cartes.filter(function (c) { return prem.indexOf(c) < 0; });
+      var cartes = $$('.q-rel', liste), cachees = cartes.map(function (c) { return c.hidden; }), y0 = cartes.map(function (c) { return c.offsetTop; }), prem = premiers.map(function (i) { return cartes.filter(function (c) { return +c.getAttribute('data-i') === i; })[0]; }).filter(Boolean);
+      var reste = cartes.filter(function (c) { return prem.indexOf(c) < 0; }).sort(function (a, b) { return +a.getAttribute('data-i') - +b.getAttribute('data-i'); });
       prem.concat(reste).forEach(function (c) { liste.appendChild(c); });
       cartes.forEach(function (c) { c.hidden = false; });
       if (JS) cartes.forEach(function (c, i) {
