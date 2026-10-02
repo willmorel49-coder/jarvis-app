@@ -900,7 +900,6 @@
         pzBlock +
         '<div class="off-cmp"><div class="off-cmp-l">Prix public concurrents <span>(TTC)</span></div>' + priceCmpRows(it) + '</div>' +
         '<div class="off-insp-cta">' +
-          (V2.ficheCart ? '<button class="v2-btn v2-btn-primary" onclick="V2.offAddToFiche(\'' + esc(it.ean || it.id) + '\')">' + ICO('plus', 17) + ' Ajouter à une fiche commerciale</button>' : '') +
           (it.url ? '<a class="v2-btn v2-btn-ghost" href="' + esc(it.url) + '" target="_blank" rel="noopener" style="margin-top:8px">Voir sur Offilog</a>' : '') + '</div>' +
       '</div>' +
     '</div>';
@@ -951,19 +950,6 @@
     S.sel = (id == null || (S.sel != null && String(S.sel) === String(id))) ? null : id;
     V2.render();
   };
-  V2.offAddToFiche = function (key) {
-    var it = byEan.get(String(key)) || items.filter(function (x) { return String(x.id) === String(key); })[0];
-    if (!it) return;
-    if (!V2.ficheCart) { V2.toast('Module fiches indisponible', 'error'); return; }
-    if (V2.ficheCart.has(it.ean || it.id)) { V2.toast('Déjà dans la fiche en cours', 'warn'); return; }
-    var n = V2.ficheCart.add({
-      cip13: it.ean || it.id, designation: it.name,
-      prix_ip: it.achat || it.price || null, prix_ht: it.price || null,
-      remise_pct: null, is_froid: false, src: 'offilog'
-    });
-    V2.toast('Ajouté à la fiche en cours (' + n + ')');
-  };
-
   function rerenderKeepFocus() {
     V2.render();
     var inp = document.getElementById('off-search-input');

@@ -722,19 +722,11 @@
     }
   };
 
-  // Ce qu'on sait déjà de l'officine, sans rien recalculer : l'abandon de
-  // marge annuel vient de V2.audit (API publique), les ruptures de V2.rupture.
+  // Ce qu'on sait déjà de l'officine, sans rien recalculer : les ruptures viennent de V2.rupture.
   // Le vrai gain du commercial n'est pas le créneau, c'est d'arriver préparé.
   function prepa(cip) {
     if (!cip) return '';
     var bouts = [];
-    try {
-      var a = (V2.audit && window.WML_SALES && window.PROD_STATS) ? V2.audit.audit(cip) : null;
-      if (a && a.annAb > 0) {
-        bouts.push('<b>' + esc(V2.fmtEur ? V2.fmtEur(a.annAb) : Math.round(a.annAb) + ' €') +
-                   '/an</b> d’abandon de marge à lui rendre');
-      }
-    } catch (e) {}
     try {
       // Ruptures ANSM sur ce qu'elle achète, dont ce qu'Intégral a en stock :
       // c'est l'argument le plus concret à poser sur le comptoir. Le calcul

@@ -583,10 +583,6 @@
     // 10/09/2026 — base clients (export « clients actifs ») : tel, mail, contact,
     // logiciel, enseigne, commercial. Notre liste de clients → protégé.
     clientsactifs: 'v2/clients-actifs.js',
-    // Écran « L'Argument » (1er rendez-vous prospect) : barème IP + fourchettes
-    // de marché + preuves. ~4 Ko, protégé — le code de la page est public,
-    // AUCUN chiffre n'y vit (règle ROBOT.md §10 / CLAUDE.md §8).
-    argument: 'v2/argument-data.js',
     drakkars: 'drakkars-data.js',
     cap3000: 'cap3000-data.js',
     sagitta: 'sagitta-shortlist-data.js',
@@ -669,7 +665,6 @@
     sagitta: 'sagitta-shortlist-data.js',
     clientscond: 'clients-cond.js',
     clientsactifs: 'clients-actifs.js',
-    argument: 'argument-data.js',
     // 30/09/2026 — réglage du suivi de rémunération OPSO (confidentiel) : chargé par opso/v2 seul.
     opsocontrat: 'opso-contrat-data.js',
     // 30/09/2026 — accès de test Offilog affiché sur l'écran Offilog d'OPSO (window.OPSO_OFFILOG_ACCES).
@@ -988,10 +983,6 @@
   // Les mettre dans PROTEGES ferait tenter au chargeur d'exécuter du HTML.
   // Aucun chiffre ne vit dans ce dépôt : seulement le nom du fichier.
   var DOCS_PROTEGES = {
-    reforme2027: {
-      fichier: 'tranches-marge-grossiste-2027.html',
-      titre: 'Réforme 2027'
-    },
     // 28/08/2026 — fiches biosimilaires INTERNES (PPHT + net IP + abandon).
     // Elles ne passent jamais par le dépôt public (.gitignore) : seules les
     // versions « pharmacien », sans net IP, y sont. `type: 'pdf'` → on rend
@@ -1263,7 +1254,6 @@
     opsostats: 'OPSO_STATS_SALES',
     clientscond: 'CLIENTS_COND',
     clientsactifs: 'CLIENTS_ACTIFS',
-    argument: 'ARGUMENT',
     drakkars: 'DRAKKARS',
     cap3000: 'CAP3000',
     sagitta: 'SAGITTA_SHORTLIST',

@@ -184,9 +184,8 @@
     var h = (location.hash || '').replace(/^#/, '');
     if (!h) return { name: 'home', param: null };
     var parts = h.split('/');
-    // 02/10/2026 — L'Argument, la Présentation Intégral et l'Audit marge sont retirés (demande de Will) : leur ancienne adresse ramène à l'accueil.
-    // (Fiches PDF garde son adresse : « Commande recommandée » et la barre du panier y mènent encore. L'audit d'une officine vit dans sa fiche, sans cette route.)
-    if (parts[0] === 'argument' || parts[0] === 'presentation' || parts[0] === 'audit') {
+    // 02/10/2026 — L'Argument, la Présentation Intégral, l'Audit marge et Fiches PDF sont retirés (demande de Will) : leur ancienne adresse ramène à l'accueil.
+    if (parts[0] === 'argument' || parts[0] === 'presentation' || parts[0] === 'audit' || parts[0] === 'fiches') {
       try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
       return { name: 'home', param: null };
     }
@@ -347,11 +346,6 @@
     // Catalogue unifié = une seule page (pages.molecules) — plus d'onglets.
     return '';
   };
-  V2.docTabs = function (active) {
-    // Prospection = Présentation seule (les Fiches ne sont plus dans cet espace) → pas d'onglets.
-    return '';
-  };
-
   V2.userMenu = function (btn) {
     if (u2PanneauAvatar(btn)) return;   // accueil u2 sous 1100 px : le panneau « Mon espace » remplace ce menu
     var installed = false;
@@ -424,22 +418,6 @@
       '</div>';
     o.addEventListener('click', function (e) { if (e.target === o) o.remove(); });
     document.body.appendChild(o);
-  };
-
-  // ── Panier flottant (produits retenus pour une fiche) ─────────
-  V2.updateCartBar = function () {
-    var n = (V2.ficheCart && V2.ficheCart.count) ? V2.ficheCart.count() : 0;
-    var ex = document.getElementById('v2-cartbar');
-    var onFiches = V2.route && V2.route.name === 'fiches';
-    if (n <= 0 || onFiches) { if (ex) ex.classList.remove('show'); return; }
-    if (!ex) { ex = document.createElement('div'); ex.id = 'v2-cartbar'; ex.className = 'v2-cartbar'; document.body.appendChild(ex); }
-    ex.innerHTML =
-      '<div class="v2-cartbar-in">' +
-        '<span class="v2-cartbar-badge mono">' + n + '</span>' +
-        '<span class="v2-cartbar-lbl">produit' + (n > 1 ? 's' : '') + ' retenu' + (n > 1 ? 's' : '') + ' pour ta fiche</span>' +
-        '<button class="v2-btn v2-btn-primary v2-cartbar-go" onclick="V2.go(\'fiches\')">Voir la fiche ' + ICO('chev', 15) + '</button>' +
-      '</div>';
-    requestAnimationFrame(function () { ex.classList.add('show'); });
   };
 
   // ── Barres flottantes « app » : installation (PWA) + mise à jour dispo ──
@@ -515,10 +493,10 @@
   // Accent de PILIER courant : chaque écran a SA lumière (halo de tête + liserés).
   // Mappe la route vers le token var(--pil-*) correspondant ; défaut = bleu marque.
   var ROUTE_ACCENT = {
-    home: 'var(--accent)', pharma: 'var(--pil-opp)', fiches: 'var(--pil-fiche)',
+    home: 'var(--accent)', pharma: 'var(--pil-opp)',
     catalogue: 'var(--pil-cat)', pilotage: 'var(--pil-pilo)', offilog: 'var(--pil-froid)',
-    groupements: 'var(--pil-fiche)', molecules: '#7C3AED', presentation: 'var(--c-opp)',
-    infos: 'var(--c-amber)', marketing: 'var(--c-rose)', audit: '#10915E', sagitta: 'var(--pil-froid)',
+    groupements: 'var(--pil-fiche)', molecules: '#7C3AED',
+    infos: 'var(--c-amber)', marketing: 'var(--c-rose)', sagitta: 'var(--pil-froid)',
     produits: 'var(--ip-blue)',
     // 29/09/2026 — écrans OPSO « Pharmacies » et « Meilleurs achats » (opso-pharmacies.js)
     opsopharmacies: 'var(--pil-opp)', opsoachats: 'var(--pil-cat)', opsobord: 'var(--pil-pilo)'
@@ -667,7 +645,6 @@
       console.error('[V2 render ' + V2.route.name + ']', e);
       root.innerHTML = topbar({ back: true }) + '<div class="v2-wrap"><div class="v2-empty"><div class="v2-empty-t">Une erreur est survenue</div><div class="v2-empty-d">' + (e && e.message ? e.message : '') + '</div><button class="v2-btn v2-btn-primary" onclick="V2.go(\'home\')">Retour à l\'accueil</button></div></div>';
     }
-    if (V2.updateCartBar) V2.updateCartBar();
     if (V2.bandeauDonneesManquantes) V2.bandeauDonneesManquantes();
     if (V2.installBanner) V2.installBanner();
     // Le bouton « noter un rendez-vous » vit sur TOUS les écrans : on le
@@ -680,387 +657,6 @@
   // ════════════════════════════════════════════
   // PAGE HOME (accueil réel B-signature)
   // ════════════════════════════════════════════
-  // ── Envoi du kit prospect (lien public + email pré-rempli) ──
-  V2.prospectLink = function () {
-    var u = V2.user || {};
-    var base = location.origin + location.pathname.replace(/[^/]*$/, 'decouvrir.html');
-    var p = [];
-    if (u.name) p.push('rep=' + encodeURIComponent(u.name));
-    if (u.email) p.push('mail=' + encodeURIComponent(u.email));
-    return base + (p.length ? ('?' + p.join('&')) : '');
-  };
-  // message du kit prospect (réutilisé mailto / WhatsApp / SMS)
-  V2.prospectMsg = function () {
-    var u = V2.user || {}, link = V2.prospectLink();
-    return 'Bonjour,\n\nSuite à notre échange, voici une courte présentation d\'Intégral Pharma : qui nous sommes, ce que vous gagnez à travailler avec nous, comment ouvrir un compte, et nos meilleures ventes par catégorie.\n\n' +
-      link + '\n\nJe reste à votre disposition pour établir une proposition adaptée à votre officine.\n\nBien à vous,\n' +
-      (u.name || '') + (u.email ? '\n' + u.email : '') + '\nIntégral Pharma';
-  };
-  V2.prospectEmail = function () {
-    var inp = document.getElementById('prospect-mail');
-    var to = (inp && inp.value || '').trim();
-    // garde-fou : pas d'email → focus + message, pas de mailto fantôme
-    if (!to) { if (inp) { inp.focus(); } V2.toast('Saisis l\'email de la pharmacie', 'warn'); return; }
-    var subj = 'Intégral Pharma — faire connaissance';
-    window.location.href = 'mailto:' + to + '?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(V2.prospectMsg());
-    V2.toast('Email préparé');
-  };
-  V2.prospectCopy = function () {
-    var link = V2.prospectLink();
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(link).then(function () { V2.toast('Lien copié'); }, function () { window.prompt('Copie ce lien :', link); });
-    } else { window.prompt('Copie ce lien :', link); }
-  };
-  V2.prospectOpen = function () { window.open(V2.prospectLink(), '_blank'); };
-  // canaux terrain : WhatsApp / SMS — simples liens (app externe), zéro requête réseau
-  V2.prospectWhatsApp = function () { window.open('https://wa.me/?text=' + encodeURIComponent(V2.prospectMsg()), '_blank'); };
-  V2.prospectSMS = function () { window.location.href = 'sms:?&body=' + encodeURIComponent(V2.prospectMsg()); };
-  // simulateur de gain : traduit le 6–9 % en euros/mois (estimation, RM/print-safe)
-  V2.presSim = function () {
-    var inp = document.getElementById('pres-sim-in');
-    var v = inp ? parseFloat((inp.value || '').toString().replace(/[^\d.,]/g, '').replace(',', '.')) : 0;
-    if (!isFinite(v) || v < 0) v = 0;
-    var lo = document.getElementById('pres-sim-lo'), hi = document.getElementById('pres-sim-hi');
-    if (lo) lo.textContent = V2.fmtNum(Math.round(v * 0.06));
-    if (hi) hi.textContent = V2.fmtNum(Math.round(v * 0.09));
-  };
-  // Scroll vers la section « Ouvrir un compte » — PAS d'ancre #hash (collision avec le routeur hash de l'app)
-  V2.presScrollOpen = function () { var e = document.getElementById('pres-open'); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
-
-  // ════════════════════════════════════════════
-  // PAGE PRÉSENTATION — pitch prospect au comptoir
-  // ════════════════════════════════════════════
-  function injectPresStyles() {
-    if (document.getElementById('v2-pres-style')) return;
-    var st = document.createElement('style'); st.id = 'v2-pres-style';
-    st.textContent = [
-      // ── Hero : bleu profond, halos doux, titre plein blanc (jamais clip-text — Safari)
-      '.pres-hero{position:relative;text-align:center;padding:46px 28px 36px;border-radius:var(--r-card);overflow:hidden;color:#fff;background:radial-gradient(120% 90% at 85% -10%,rgba(255,255,255,.16),transparent 55%),radial-gradient(80% 70% at 8% 110%,rgba(122,168,255,.20),transparent 62%),linear-gradient(160deg,#0050E6,#0034A0);box-shadow:0 1px 0 rgba(255,255,255,.22) inset,0 18px 44px rgba(0,52,160,.28)}',
-      '.pres-logo{width:64px;height:64px;border-radius:18px;margin:0 auto 16px;background:rgba(255,255,255,.94);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 0 rgba(255,255,255,.4) inset,0 8px 20px rgba(0,30,90,.22)}',
-      '.pres-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12px;text-transform:uppercase;letter-spacing:.16em;font-weight:800;color:rgba(255,255,255,.88);background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);border-radius:var(--r-pill);padding:6px 13px;margin-bottom:14px}',
-      '.pres-h1{font-size:30px;font-weight:900;letter-spacing:-.03em;line-height:1.05;color:#fff;margin:0}',
-      // CTA hero « Ouvrir un compte » : pastille blanche qui claque sur le bleu
-      '.pres-hero-cta{margin-top:22px}',
-      '.pres-hero-btn{display:inline-flex;align-items:center;gap:9px;background:#fff;color:var(--ip-blue);font-weight:800;font-size:14.5px;padding:12px 22px;border-radius:var(--r-pill);text-decoration:none;box-shadow:0 10px 24px rgba(0,20,80,.28);transition:transform .22s var(--mo-ease-soft),box-shadow .22s var(--mo-ease-soft)}',
-      '.pres-hero-btn svg{color:var(--ip-blue)}',
-      '@media(hover:hover){.pres-hero-btn:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(0,20,80,.34)}}',
-      '.pres-lead{font-size:18px;font-weight:700;margin-top:12px;letter-spacing:-.01em}',
-      '.pres-tag{font-size:13.5px;font-weight:500;color:rgba(255,255,255,.84);margin-top:10px;max-width:560px;margin-left:auto;margin-right:auto;line-height:1.55}',
-      // KPI hero : cartes verre, la carte "mid" claque en blanc plein
-      '.pres-kpis{display:flex;justify-content:center;align-items:stretch;gap:12px;margin-top:28px;flex-wrap:wrap}',
-      '.pres-kpi{flex:1 1 150px;max-width:215px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);border-radius:16px;padding:16px 18px;box-shadow:0 1px 0 rgba(255,255,255,.12) inset}',
-      '.pres-kpi.mid{background:rgba(255,255,255,.96);border-color:rgba(255,255,255,.9);box-shadow:0 12px 28px rgba(0,20,80,.28)}',
-      '.pres-kpi.mid .pres-kpi-v{color:var(--ip-blue);font-size:29px}',
-      '.pres-kpi.mid .pres-kpi-l{color:var(--ip-ink-2)}',
-      '.pres-kpi-v{font-family:var(--mono);font-size:23px;font-weight:700;letter-spacing:-.02em;line-height:1.15}',
-      '.pres-kpi-l{font-size:12px;opacity:.88;font-weight:600;margin-top:4px;line-height:1.35}',
-      '.pres-reassure{display:flex;justify-content:center;flex-wrap:wrap;gap:10px 12px;margin:18px 0 6px}',
-      '.pres-reassure-i{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-pill);padding:10px 16px;font-size:13.5px;font-weight:700;color:var(--ip-ink);box-shadow:var(--sh-1)}',
-      '.pres-reassure-i svg{color:var(--c-mint);flex-shrink:0}',
-      // ── Titres de section : point bleu + filet, comme le reste de l'app
-      '.pres-sec-t{font-size:12px;text-transform:uppercase;letter-spacing:.09em;font-weight:800;color:var(--muted);margin:34px 2px 14px;display:flex;align-items:center;gap:10px}',
-      '.pres-sec-t::before{content:"";width:7px;height:7px;border-radius:2px;background:var(--ip-blue);flex-shrink:0}',
-      '.pres-sec-t::after{content:"";flex:1;height:1px;background:var(--line)}',
-      // ── Cartes : même langage que le Launcher (gradient card→card-2, spotlight --mx/--my)
-      '.pres-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}',
-      '@media(max-width:720px){.pres-grid{grid-template-columns:1fr}}',
-      '.pres-card{position:relative;background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);padding:22px 24px;overflow:hidden}',
-      '.pres-grid .pres-card{transition:transform .28s var(--mo-ease-soft),box-shadow .28s var(--mo-ease-soft),border-color .28s var(--mo-ease-soft)}',
-      '.pres-grid .pres-card::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .3s var(--mo-ease-soft);background:radial-gradient(240px circle at var(--mx,50%) var(--my,0%),color-mix(in srgb,var(--accent,var(--ip-blue)) 13%,transparent),transparent 62%)}',
-      '@media(hover:hover){.pres-grid .pres-card:hover{transform:translateY(-3px);box-shadow:var(--sh-2);border-color:color-mix(in srgb,var(--accent,var(--ip-blue)) 28%,var(--line))}.pres-grid .pres-card:hover::after{opacity:1}}',
-      '.pres-card-ic{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;background:color-mix(in srgb,var(--accent,var(--ip-blue)) 11%,#fff);color:var(--accent,var(--ip-blue));border:1px solid color-mix(in srgb,var(--accent,var(--ip-blue)) 20%,transparent)}',
-      '.pres-card-t{font-size:16px;font-weight:800;letter-spacing:-.01em;margin-bottom:6px}',
-      '.pres-card-d{font-size:13.5px;color:var(--ip-ink-2);line-height:1.55}',
-      // ── Preuve chiffrée : bannières bleues + barème en tuiles à liseré
-      '.pres-proof{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:14px}',
-      '.pres-proof-h{flex:1;min-width:220px;position:relative;overflow:hidden;background:radial-gradient(110% 100% at 88% -14%,rgba(255,255,255,.18),transparent 58%),linear-gradient(150deg,var(--ip-blue),var(--ip-blue-d));color:#fff;border-radius:var(--r-card);padding:22px 24px;box-shadow:0 14px 30px rgba(0,52,160,.22)}',
-      '.pres-proof-v{font-family:var(--mono);font-size:29px;font-weight:700;letter-spacing:-.02em;line-height:1.1}',
-      '.pres-proof-l{font-size:13px;font-weight:600;opacity:.9;margin-top:6px;line-height:1.4}',
-      // 6–9 % = bannière dominante (cœur du pitch), 27 % = secondaire liseré mint
-      '.pres-proof-h.lead{flex:1.5 1 260px}',
-      '.pres-proof-h.lead .pres-proof-v{font-size:34px}',
-      '.pres-proof-h.alt{box-shadow:0 10px 24px rgba(0,52,160,.16)}',
-      '.pres-proof-h.alt::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c-mint)}',
-      '.pres-tiers{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}',
-      '.pres-tier{flex:1;min-width:150px;position:relative;overflow:hidden;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:15px 17px 14px 19px;box-shadow:var(--sh-1)}',
-      '.pres-tier::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--ip-blue),color-mix(in srgb,var(--ip-blue) 25%,transparent))}',
-      '.pres-tier-r{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--ip-blue);background:var(--halo);border-radius:6px;padding:3px 8px}',
-      '.pres-tier-v{font-family:var(--mono);font-size:19px;font-weight:700;margin-top:9px;letter-spacing:-.02em}',
-      '.pres-tier-l{font-size:12px;color:var(--muted);margin-top:3px}',
-      // Cible tactile : ligne CTA isolée (mène à « Ouvrir un compte ») — padding vertical
-      // ajouté sans changer la couleur ni la taille du texte, juste la zone cliquable.
-      '.pres-cta-line{display:inline-flex;align-items:center;gap:6px;margin-top:16px;padding:13px 0;font-size:14px;font-weight:700;color:var(--ip-blue);text-decoration:none;cursor:pointer}',
-      '.pres-cta-line:hover{text-decoration:underline}',
-      '.pres-cta-line:focus-visible{outline:2px solid var(--ip-blue);outline-offset:3px;border-radius:4px}',
-      // ── Étapes : timeline verticale (pastilles reliées par un filet)
-      '.pres-steps{position:relative}',
-      '.pres-steps::before{content:"";position:absolute;left:15px;top:24px;bottom:24px;width:2px;background:var(--line)}',
-      '.pres-step{position:relative;display:flex;gap:16px;align-items:flex-start;padding:15px 0}',
-      '.pres-step-n{position:relative;width:32px;height:32px;border-radius:50%;background:var(--halo);color:var(--ip-blue);font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--mono);border:1px solid color-mix(in srgb,var(--ip-blue) 22%,transparent);box-shadow:0 0 0 4px var(--card)}',
-      '.pres-step-ok{position:relative;width:32px;height:32px;border-radius:50%;background:color-mix(in srgb,var(--c-mint) 13%,#fff);color:var(--c-mint);display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid color-mix(in srgb,var(--c-mint) 30%,transparent);box-shadow:0 0 0 4px var(--card)}',
-      '.pres-step-t{font-weight:700;font-size:14.5px}',
-      '.pres-step-d{font-size:13px;color:var(--muted);margin-top:2px}',
-      '.pres-step-cta{position:relative;margin:0 0 8px 48px}',
-      '.pres-dl{margin-top:2px}',
-      // ── Contact : carte encre avec halo bleu discret
-      '.pres-contact{position:relative;overflow:hidden;display:flex;align-items:center;gap:16px;background:radial-gradient(100% 140% at 92% -30%,rgba(0,80,230,.38),transparent 58%),var(--ip-ink);color:#fff;border-radius:var(--r-card);padding:22px 26px;flex-wrap:wrap;box-shadow:0 16px 36px rgba(16,19,28,.16)}',
-      '.pres-contact-n{font-size:17px;font-weight:800}',
-      '.pres-contact-r{font-size:13px;opacity:.85;margin-top:2px}',
-      '.pres-contact-c{margin-left:auto;text-align:right;font-family:var(--mono);font-size:13.5px;line-height:1.7}',
-      '.pres-contact-c a{color:#fff;text-decoration:none}',
-      '.pres-contact-act{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}',
-      '.pres-contact .v2-btn-ghost{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.28);color:#fff}',
-      '.pres-contact .v2-btn-ghost:hover{background:rgba(255,255,255,.2)}',
-      // ── Envoi du kit
-      '.pres-send{margin-top:18px;background:linear-gradient(180deg,color-mix(in srgb,var(--ip-blue) 5%,#fff),color-mix(in srgb,var(--ip-blue) 2%,#fff));border:1px solid color-mix(in srgb,var(--ip-blue) 18%,var(--line));border-radius:var(--r-card);padding:20px 22px}',
-      '.pres-send-t{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;letter-spacing:-.01em}',
-      '.pres-send-t svg{color:var(--ip-blue)}',
-      '.pres-send-d{font-size:13px;color:var(--ip-ink-2);margin:6px 0 12px;line-height:1.5}',
-      '.pres-send-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}',
-      '.pres-send-in{flex:1;min-width:200px;border:1px solid var(--line);border-radius:var(--r-control);padding:11px 13px;font-family:var(--font);font-size:14px;background:#fff;transition:border-color .18s,box-shadow .18s}',
-      '.pres-send-in{color:var(--ip-ink)}',
-      '.pres-send-in:focus{outline:none;border-color:color-mix(in srgb,var(--ip-blue) 45%,var(--line));box-shadow:0 0 0 3px color-mix(in srgb,var(--ip-blue) 13%,transparent)}',
-      // ── Chips catégories (top ventes) : réemploi du langage tuile-mono
-      '.pres-cats{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}',
-      '.pres-cat{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--ip-blue);background:var(--halo);border:1px solid color-mix(in srgb,var(--ip-blue) 16%,transparent);border-radius:var(--r-pill);padding:6px 12px}',
-      // ── Simulateur de gain : encart bleu léger, chiffre-résultat en gros mono
-      '.pres-sim{border-color:color-mix(in srgb,var(--ip-blue) 20%,var(--line))}',
-      '.pres-sim-lbl{display:block;font-size:13px;font-weight:600;color:var(--ip-ink-2);margin-bottom:10px}',
-      '.pres-sim-inwrap{display:inline-flex;align-items:center;gap:8px}',
-      '.pres-sim-in{width:150px;border:1px solid var(--line);border-radius:var(--r-control);padding:11px 13px;font-family:var(--mono);font-size:16px;font-weight:700;background:#fff;color:var(--ip-ink)}',
-      '.pres-sim-in:focus{outline:none;border-color:color-mix(in srgb,var(--ip-blue) 45%,var(--line));box-shadow:0 0 0 3px color-mix(in srgb,var(--ip-blue) 13%,transparent)}',
-      '.pres-sim-unit{font-size:13px;color:var(--muted);font-weight:600}',
-      '.pres-sim-out{margin-top:16px;font-size:15px;font-weight:600;color:var(--ip-ink)}',
-      '.pres-sim-out span{font-family:var(--mono);font-size:26px;font-weight:800;color:var(--ip-blue);letter-spacing:-.02em}',
-      '.pres-sim-note{font-size:12px;color:var(--ip-ink-2);margin-top:10px;line-height:1.45}',
-      // ── Contact : entête (identité + CTA) puis pied (mail + coordonnées) DANS la carte
-      '.pres-contact{flex-direction:column;align-items:stretch;gap:0}',
-      '.pres-contact-top{display:flex;align-items:center;gap:16px;flex-wrap:wrap}',
-      '.pres-contact-foot{margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.16);font-family:var(--mono);font-size:12.5px;line-height:1.6;color:rgba(255,255,255,.82)}',
-      '.pres-contact-foot a{color:#fff;text-decoration:none}',
-      // ── Zone « côté commercial » : neutre + pointillés pour la distinguer du pitch client
-      '.pres-send{position:relative;background:var(--card-2);border:1px dashed color-mix(in srgb,var(--ip-blue) 32%,var(--line))}',
-      '.pres-send-badge{display:inline-block;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:var(--r-pill);padding:3px 9px;margin-bottom:10px}',
-      // Cibles tactiles confortables (≥44px) sur tous les CTA de la page
-      '.pres-contact-act .v2-btn,.pres-step-cta .v2-btn,.pres-send-row .v2-btn,.pres-hero-btn{min-height:44px}',
-      // ── Impression : rien de masqué, états finaux posés, .noprint identique
-      '@media print{' +
-        '.noprint{display:none!important}' +
-        // états finaux posés (le motion ne laisse aucun bloc transparent au tirage)
-        '.pres-hero *,.pres-eyebrow,.pres-h1,.pres-lead,.pres-tag,.pres-kpis,.pres-reassure-i,.pres-card,.pres-proof-h,.pres-tier,.pres-step,.pres-contact{opacity:1!important;transform:none!important;animation:none!important}' +
-        // fonds colorés conservés → plus de texte blanc sur blanc (hero, bannières, contact, pastilles)
-        '.pres-hero,.pres-proof-h,.pres-contact,.pres-kpi,.pres-kpi.mid,.pres-step-n,.pres-step-ok,.pres-tier::before,.pres-cat{-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
-        // jamais de coupure au milieu du barème, des étapes, des cartes
-        '.pres-card,.pres-grid .pres-card,.pres-proof,.pres-proof-h,.pres-tiers,.pres-tier,.pres-steps,.pres-step,.pres-contact{break-inside:avoid;page-break-inside:avoid}' +
-        // titres de section collés à leur bloc + ombres supprimées (pas de gris sale)
-        '.pres-sec-t{break-after:avoid;page-break-after:avoid}' +
-        '.pres-hero,.pres-card,.pres-contact,.pres-proof-h{box-shadow:none!important}' +
-        // texte secondaire lisible en photocopie N&B
-        '.pres-card-d,.pres-tier-l,.pres-step-d,.pres-sim-note{color:#333!important}' +
-      '}',
-      '@media(max-width:480px){' +
-        '.pres-hero{padding:36px 18px 28px}' +
-        '.pres-h1{font-size:25px}.pres-lead{font-size:16px}.pres-tag{font-size:13px}' +
-        '.pres-kpi{max-width:none}.pres-kpi-v{font-size:21px}.pres-kpi.mid .pres-kpi-v{font-size:25px}' +
-        '.pres-reassure-i{font-size:13px;padding:8px 13px}' +
-        '.pres-proof-v{font-size:24px}.pres-proof-h.lead .pres-proof-v{font-size:27px}' +
-        '.pres-tier{min-width:100%;flex-basis:100%}' +
-        '.pres-step-cta{margin-left:0}' +
-        // 100% forçait l'unité « € / mois » à se compresser et passer sur 2 lignes
-        // (mesuré sur le rendu, capture mobile) — flex:1 laisse l'unité sur une ligne.
-        '.pres-sim-in{width:auto;flex:1;min-width:0}.pres-sim-inwrap{display:flex}.pres-sim-unit{white-space:nowrap;flex:none}' +
-        '.pres-contact-act{margin-left:0;justify-content:stretch}.pres-contact-act .v2-btn{flex:1}' +
-        '.pres-send-row{flex-direction:column}.pres-send-in{width:100%;font-size:16px}.pres-send-row .v2-btn{width:100%}' +
-      '}',
-      // ── Entrée du hero : écran uniquement (jamais en print) + RM-safe
-      '@media screen and (prefers-reduced-motion:no-preference){' +
-        '@keyframes presIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}' +
-        '@keyframes presLogoIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}' +
-        '.pres-hero .pres-logo{opacity:0;animation:presLogoIn .5s ease-out forwards}' +
-        '.pres-eyebrow,.pres-h1,.pres-lead,.pres-tag,.pres-kpis{opacity:0;animation:presIn .5s ease-out forwards}' +
-        '.pres-eyebrow{animation-delay:.06s}.pres-h1{animation-delay:.14s}.pres-lead{animation-delay:.22s}.pres-tag{animation-delay:.28s}.pres-kpis{animation-delay:.36s}' +
-      '}',
-      '@media(prefers-reduced-motion:reduce){.pres-grid .pres-card{transition:none}.pres-grid .pres-card::after{display:none}}'
-    ].join('');
-    document.head.appendChild(st);
-  }
-  V2.pages.presentation = {
-    render: function (root) {
-      injectPresStyles();
-      // charge le catalogue pour des chiffres réels (sinon valeurs de repli)
-      if (!window.BENCHMARK && V2.loadFiles && !V2._presBenchTried) {
-        V2._presBenchTried = true;   // une seule tentative → pas de boucle de rendu si le chargement échoue
-        root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
-          '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement…</div></div>';
-        V2.loadFiles(['bench']).then(function () { if (V2.route && V2.route.name !== 'presentation') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); });
-        return;
-      }
-      var B = window.BENCHMARK || [];   // repli si le benchmark n'a pas chargé (valeurs de repli plus bas)
-      var nf = function (n) { return V2.fmtNum(n); };
-      var nbRefN = B.length || 10500;
-      var nbRemb = 0, nbOffre = 0, nbFroid = 0, nbGx = 0, nbBio = 0;
-      B.forEach(function (b) {
-        if (b.has_ameli) nbRemb++;
-        if (V2.bestPrice(b).offre) nbOffre++;   // même règle que partout (vs PPHT), pas de seuil dupliqué
-        if (b.is_froid) nbFroid++;
-        if (b.artnature === 'generique' || b.artnature === 'generique_partenaire') nbGx++;
-        else if (b.artnature === 'biosimilaire') nbBio++;
-      });
-      var nbPara = (window.OFFILOG && window.OFFILOG.length) || (window.OFFILOG_BEST && window.OFFILOG_BEST.length) || 3520;
-      var nbRef = nf(nbRefN);
-      // Logo capsule "ip" inliné (zéro requête réseau, fiable à l'impression)
-      var capsule = function (w, h, deco) {
-        return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 48 28" ' + (deco ? 'aria-hidden="true" focusable="false"' : 'role="img" aria-label="Intégral Pharma"') + '>' +
-          '<rect x="2" y="1.5" width="9" height="5.5" rx="2.75" fill="#0B1F4D"/>' +
-          '<rect x="2" y="8.5" width="9" height="18" rx="4.5" fill="#0B1F4D"/>' +
-          '<rect x="14" y="6.5" width="11" height="12" rx="5.5" fill="#C9A961"/>' +
-          '<rect x="17" y="9.5" width="5" height="6" rx="2.5" fill="#FFFFFF"/>' +
-          '<rect x="14" y="6.5" width="4" height="21" rx="2" fill="#C9A961"/></svg>';
-      };
-      var logoSvg = capsule(40, 24);
-      var u = V2.user || {};
-      // E-mail d'ouverture : TOUJOURS vers le service client (le commercial en copie).
-      // (Avant, le fallback envoyait au commercial connecté → la demande n'arrivait pas chez Intégral.)
-      var openMail = 'serviceclient@ouestpharmaservices.fr';
-      var openCc = u.email ? '&cc=' + encodeURIComponent(u.email) : '';
-      var openSubj = 'Ouverture de compte Intégral Pharma';
-      var openBody = 'Bonjour,\n\nJe souhaite ouvrir un compte Intégral Pharma.\nJe joins à ce message : le formulaire d\'ouverture 2026 rempli et signé, mon RIB et mon Kbis (moins de 3 mois).\nMerci de me confirmer l\'ouverture de mon compte et mon code PharmaML.\n\nCordialement,';
-      var openHref = 'mailto:' + openMail + '?subject=' + encodeURIComponent(openSubj) + openCc + '&body=' + encodeURIComponent(openBody);
-      var ICODL = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 18.5h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-      var ICOCHK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M5 12.5l4.5 4.5L19 6.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-      // titre de section sémantique (h2) — restaure la hiérarchie pour lecteurs d'écran
-      var sect = function (t) { return '<h2 class="pres-sec-t">' + t + '</h2>'; };
-      var card = function (color, ico, t, d) {
-        return '<div class="pres-card" style="--accent:' + color + '" onmousemove="V2.homeSpot(event,this)"><div class="pres-card-ic">' + ICO(ico, 22) + '</div>' +
-          '<div class="pres-card-t">' + t + '</div><div class="pres-card-d">' + d + '</div></div>';
-      };
-      var step = function (n, t, d) {
-        return '<div class="pres-step"><div class="pres-step-n">' + n + '</div><div><div class="pres-step-t">' + t + '</div><div class="pres-step-d">' + d + '</div></div></div>';
-      };
-      root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
-        '<main class="v2-wrap" aria-label="Présentation Intégral Pharma">' +
-          (V2.docTabs ? V2.docTabs('presentation') : '') +
-          '<div class="pres-hero">' +
-            '<div class="pres-logo">' + logoSvg + '</div>' +
-            '<div class="pres-eyebrow">Grossiste-répartiteur · +20 ans</div>' +
-            '<h1 class="pres-h1">Intégral Pharma</h1>' +
-            '<div class="pres-lead">Plus de marge sur chaque boîte. Sans franco, sans engagement.</div>' +
-            '<div class="pres-tag">Un grossiste-répartiteur français indépendant, +20 ans. Vous commandez comme d\'habitude, vous gagnez plus sur chaque boîte.</div>' +
-            '<div class="pres-kpis">' +
-              '<div class="pres-kpi mid"><div class="pres-kpi-v">6–9 %</div><div class="pres-kpi-l">de marge, nets sur facture</div></div>' +
-              '<div class="pres-kpi"><div class="pres-kpi-v">0 €</div><div class="pres-kpi-l">franco à 0 € : commandez même 1 boîte</div></div>' +
-              '<div class="pres-kpi"><div class="pres-kpi-v">+14 000</div><div class="pres-kpi-l">réfs parapharma, sans adhésion</div></div>' +
-            '</div>' +
-            '<div class="pres-hero-cta noprint"><a class="pres-hero-btn" href="javascript:void(0)" onclick="V2.presScrollOpen();return false">' + ICODL + 'Ouvrir un compte</a></div>' +
-          '</div>' +
-
-          '<div class="pres-reassure">' +
-            '<div class="pres-reassure-i">' + ICOCHK + nf(nbRefN) + ' médicaments</div>' +
-            '<div class="pres-reassure-i">' + ICOCHK + 'Grossiste français · +20 ans</div>' +
-            '<div class="pres-reassure-i">' + ICOCHK + 'Livraison jusqu\'à 1×/jour selon secteur</div>' +
-          '</div>' +
-
-          sect('Ce que vous gagnez') +
-          '<div class="pres-grid">' +
-            card('var(--c-mint)', 'euro', 'Plus de marge, sur tout le catalogue', 'Plus de marge sur l\'intégralité du catalogue, des prix nets sur facture et une optimisation dès la première boîte. La transparence des conditions, pas les paliers cachés.') +
-            card('var(--ip-blue)', 'cat', 'Une centrale parapharmacie unique', 'Via Offilog : une très large collection de parapharmacie, +14 000 produits, +430 laboratoires, sans coût d\'adhésion et au meilleur prix à l\'unité, sans paliers.') +
-            card('var(--ip-blue)', 'pilo', 'Un accompagnement chiffré & de proximité', 'Votre commercial vient avec VOS chiffres : meilleures ventes du marché, opportunités de marge, commande déjà préparée. Service réactif et transparent.') +
-            card('var(--ip-blue)', 'check', 'Vous gardez votre grossiste principal', 'Intégral vient en complément, sans quota ni volume minimum. Vous testez à votre rythme, boîte par boîte — et vous ne payez la marge que sur ce que vous commandez. L\'objectif se fixe ensemble, jamais une contrainte.') +
-          '</div>' +
-
-          sect('Vos conditions — la preuve chiffrée') +
-          '<div class="pres-proof">' +
-            '<div class="pres-proof-h lead"><div class="pres-proof-v">6–9 %</div><div class="pres-proof-l">d\'abandon de marge constaté, net sur facture (PFHT)</div></div>' +
-            '<div class="pres-proof-h alt"><div class="pres-proof-v" data-count>jusqu\'à 27 %</div><div class="pres-proof-l">remise génériqueur, dès la 1ère boîte</div></div>' +
-          '</div>' +
-          '<div class="pres-card">' +
-            '<div class="pres-card-d" style="font-size:13px;color:var(--ip-ink-2)">Barème par tranche, en prix nets sur facture :</div>' +
-            '<div class="pres-tiers">' +
-              '<div class="pres-tier"><div class="pres-tier-r">&lt; 4,33 €</div><div class="pres-tier-v">4,5 – 30 %</div><div class="pres-tier-l">petits prix</div></div>' +
-              '<div class="pres-tier"><div class="pres-tier-r">4,33 – 468 €</div><div class="pres-tier-v" data-count>3,89 %</div><div class="pres-tier-l">intermédiaires</div></div>' +
-              '<div class="pres-tier"><div class="pres-tier-r">&gt; 468 €</div><div class="pres-tier-v" data-count>19,50 €</div><div class="pres-tier-l">forfait fixe</div></div>' +
-            '</div>' +
-            '<div class="pres-card-d" style="font-size:12.5px;color:var(--ip-ink-2);margin-top:12px">Génériques : jusqu\'à 27 % de remise génériqueur dès la 1ère boîte — <b>pas d\'abandon de marge additionnel</b> (l\'abandon 6–9 % concerne le princeps). Livraison jusqu\'à 1×/jour selon secteur. Ni franco ni engagement imposé — l\'objectif se fixe ensemble.</div>' +
-            '<div class="pres-card-d" style="font-size:12.5px;color:var(--ip-ink-2);margin-top:6px">Catalogue : ' + nf(nbRefN) + ' médicaments + 14 000 réfs parapharma · ' + nf(nbOffre) + ' références en offre en ce moment — programmes L\'Intégral, ITP, UPSA, Sanofi.</div>' +
-            '<a href="javascript:void(0)" onclick="V2.presScrollOpen();return false" class="pres-cta-line" style="margin-top:16px">' + ICODL + 'Ces conditions vous intéressent ? Ouvrez un compte</a>' +
-          '</div>' +
-
-          sect('Combien ça vous rapporte') +
-          '<div class="pres-card pres-sim">' +
-            '<label for="pres-sim-in" class="pres-sim-lbl">Vos achats mensuels chez votre grossiste (hors génériques déjà remisés)</label>' +
-            '<div class="pres-sim-inwrap noprint"><input id="pres-sim-in" type="number" inputmode="numeric" min="0" step="500" value="20000" class="pres-sim-in" oninput="V2.presSim()" aria-describedby="pres-sim-note" /><span class="pres-sim-unit">€ / mois</span></div>' +
-            '<div class="pres-sim-out"><span id="pres-sim-lo">1 200</span> à <span id="pres-sim-hi">1 800</span> € / mois de marge rendue</div>' +
-            '<div class="pres-sim-note" id="pres-sim-note">Estimation à 6–9 % net sur facture, sur vos achats hors génériques et hors offres labo. Le gain réel dépend de votre mix de produits.</div>' +
-          '</div>' +
-
-          '<h2 class="pres-sec-t" id="pres-open">Ouvrir un compte en 3 étapes</h2>' +
-          '<div class="pres-card" style="padding:8px 24px 18px"><div class="pres-steps">' +
-            step('1', 'Téléchargez et remplissez le formulaire 2026', 'Le formulaire d\'ouverture de compte Intégral Pharma 2026.') +
-            '<div class="pres-step-cta pres-dl"><a class="v2-btn v2-btn-primary noprint" href="ouverture-compte-integral-pharma-2026.pdf" download>' + ICODL + 'Télécharger le formulaire 2026</a></div>' +
-            step('2', 'Renvoyez-le par e-mail avec votre RIB et votre Kbis', 'Joignez le formulaire signé, votre RIB et votre Kbis (moins de 3 mois). Votre demande part à Ouest Pharma Services' + (u.name ? ' — ' + esc(u.name) + ' en copie' : '') + '.') +
-            '<div class="pres-step-cta"><a class="v2-btn v2-btn-ghost noprint" href="' + openHref + '">' + ICO('fiche', 16) + 'Ouvrir mon logiciel mail</a></div>' +
-            '<div class="pres-step"><div class="pres-step-ok">' + ICOCHK + '</div><div><div class="pres-step-t">Vous recevez votre code PharmaML</div><div class="pres-step-d">Votre compte est ouvert : vous pouvez commander.</div></div></div>' +
-          '</div></div>' +
-
-          sect('Vos meilleures ventes par catégorie') +
-          '<div class="pres-card"><div class="pres-card-d" style="font-size:13.5px">Demandez à votre commercial le <b>TOP des ventes de votre catégorie</b> : il arrive avec vos références à plus forte rotation, le prix net Intégral Pharma en face et la commande déjà préparée. Vous voyez la marge, produit par produit, avant de commander.</div>' +
-            '<div class="pres-cats">' + ['Antalgiques', 'Dermato', 'ORL', 'Digestion', 'Solaires', 'Vétérinaire'].map(function (c) { return '<span class="pres-cat">' + c + '</span>'; }).join('') + '</div></div>' +
-
-          sect('Votre contact') +
-          '<div class="pres-contact">' +
-            '<div class="pres-contact-top">' +
-              '<div class="pres-logo" style="width:46px;height:46px;border-radius:13px;margin:0">' + capsule(30, 18, true) + '</div>' +
-              '<div><div class="pres-contact-n">' + esc(u.name || 'Votre commercial Intégral Pharma') + '</div>' +
-                '<div class="pres-contact-r">Délégué pharmaceutique référent</div></div>' +
-              '<div class="pres-contact-act noprint">' +
-                '<a class="v2-btn v2-btn-primary" href="' + openHref + '">' + ICO('fiche', 16) + 'Demander l\'ouverture de mon compte</a>' +
-                '<a class="v2-btn v2-btn-ghost" href="tel:0249625055">Être rappelé</a>' +
-              '</div>' +
-            '</div>' +
-            '<div class="pres-contact-foot">' +
-              (u.email ? '<a href="mailto:' + esc(u.email) + '">' + esc(u.email) + '</a> · ' : '') +
-              'Ouest Pharma Services · Saint-Étienne-de-Montluc (44) — Service client 02 49 62 50 55 · serviceclient@ouestpharmaservices.fr' +
-            '</div>' +
-          '</div>' +
-
-          '<div class="pres-send noprint">' +
-            '<div class="pres-send-badge">Côté commercial</div>' +
-            '<div class="pres-send-t">' + ICO('spark', 16) + ' Envoyer le kit à un prospect</div>' +
-            '<div class="pres-send-d">Après ta visite : saisis l\'email de la pharmacie → on lui envoie un lien (qui on est, comment ouvrir un compte, ce qu\'elle gagne, tarifs, top ventes par catégorie). Le lien est déjà à ton nom.</div>' +
-            '<div class="pres-send-row">' +
-              '<input id="prospect-mail" type="email" inputmode="email" autocomplete="off" aria-label="Email de la pharmacie prospect" placeholder="email de la pharmacie" class="pres-send-in" />' +
-              '<button class="v2-btn v2-btn-primary" onclick="V2.prospectEmail()">' + ICO('fiche', 16) + 'Préparer l\'email</button>' +
-              '<button class="v2-btn v2-btn-ghost" onclick="V2.prospectWhatsApp()">WhatsApp</button>' +
-              '<button class="v2-btn v2-btn-ghost" onclick="V2.prospectSMS()">SMS</button>' +
-              '<button class="v2-btn v2-btn-ghost" onclick="V2.prospectCopy()">Copier le lien</button>' +
-              '<button class="v2-btn v2-btn-ghost" onclick="V2.prospectOpen()">Aperçu</button>' +
-            '</div>' +
-          '</div>' +
-
-          '<div style="text-align:center;font-size:12px;color:var(--muted);margin-top:18px">Document commercial Intégral Pharma — sous réserve des conditions générales.</div>' +
-          '<div style="height:30px"></div>' +
-        '</main>';
-      // ── Motion (RM-safe via V2.motion, print intact : états finaux toujours posés) ──
-      if (V2.motion) {
-        var mo = V2.motion;
-        // cascade douce : chips de réassurance après le hero, puis cartes « Ce que vous gagnez »
-        mo.stagger(root.querySelectorAll('.pres-reassure-i'), { step: 55, delay: 420, y: 6 });
-        mo.stagger(root.querySelectorAll('.pres-grid .pres-card'), { step: 60, y: 10 });
-        // reveal à l'écran : preuve chiffrée, barème, étapes, contact, envoi du kit
-        var rv = root.querySelectorAll('.pres-proof-h, .pres-tier, .pres-step, .pres-contact, .pres-send');
-        for (var ri = 0; ri < rv.length; ri++) (function (el, i) {
-          mo.inView(el, function () { mo.enter(el, { y: 8, delay: (i % 4) * 50 }); });
-        })(rv[ri], ri);
-        // count-up des chiffres-clés quand ils arrivent à l'écran (les libellés non
-        // numériques sont laissés tels quels par l'API — texte officiel jamais altéré)
-        var cts = root.querySelectorAll('[data-count]');
-        for (var ci = 0; ci < cts.length; ci++) (function (el) {
-          mo.inView(el, function () { mo.countUp(el); });
-        })(cts[ci]);
-      }
-    }
-  };
-
   // ── Accueil : styles premium injectés (bento + spotlight au survol) ──
   // Tout est portée sous .v2-home-x pour ne rien casser ailleurs (login, shell, OPSO).
   function injectHomeStyles() {
@@ -1188,9 +784,8 @@
   // ════════════════════════════════════════════
   // Ordre de repli (mesure du 30/09/2026), utilisé tant que le vrai classement n'est pas là.
   var G4_REPLI = ['pharma', 'produits', 'pilotage', 'marketing', 'infos', 'rdv', 'carte', 'appro', 'todo', 'biosimilaires', 'offilog', 'concurrents', 'remontees', 'marchefr', 'carteGrp', 'lgo', 'groupements', 'academy'];
-  // 02/10/2026 — Will : « supprimer audit, fiches pdf, l'argument, audit marge, réforme 2027, présentation intégral ». Les cinq portes
-  // portent `retire: true` : absentes de G4_REPLI donc de l'accueil, des menus et des réglages (u2Net les écarte). Elles restent
-  // décrites ici pour le nom d'écran de la barre (nomEcran) : audit et fiches ont encore des parcours internes.
+  // 02/10/2026 — Will : « supprimer audit, fiches pdf, l'argument, audit marge, réforme 2027, présentation intégral » : ces six outils
+  // n'existent plus nulle part (ni porte, ni écran). Un réglage enregistré qui les cite encore est écarté par u2Net.
   // k = nom de la route mesurée par V2.mesurer (= `ecran` côté base) ; page = écran qui doit exister.
   var G4_PORTES = {
     pharma: { fam: 'clients', ico: 'officines', nom: 'Officines', ph: 'La fiche de chaque client et prospect', page: 'pharma' },
@@ -1208,15 +803,9 @@
     remontees: { fam: 'aide', ico: 'remontees', nom: 'Remontées', ph: 'Le mur d\'idées de l\'équipe', page: 'remontees' },
     marchefr: { fam: 'veille', ico: 'marche', nom: 'Le marché', ph: 'Le marché français d\'une référence, région par région', page: 'marchefr' },
     carteGrp: { fam: 'veille', ico: 'carte-grp', nom: 'Carte des groupements', ph: 'Où sont les adhérents de chaque groupement', page: 'carteGrp' },
-    presentation: { retire: true, fam: 'communiquer', ico: 'presentation', nom: 'Présentation Intégral', ph: 'Le groupe de grossistes-répartiteurs en quelques écrans', page: 'presentation' },
     lgo: { fam: 'communiquer', ico: 'lgo', nom: 'Logiciels officine', ph: 'Importer le catalogue dans chaque logiciel', page: 'lgo' },
-    fiches: { retire: true, fam: 'clients', ico: 'fiches', nom: 'Fiches PDF', ph: 'Les fiches à laisser en officine', page: 'fiches' },
-    argument: { retire: true, fam: 'produits', ico: 'argument', nom: 'L\'Argument', ph: 'Quoi répondre, objection par objection', page: 'argument' },
-    audit: { retire: true, fam: 'produits', ico: 'audit', nom: 'Audit marge', ph: 'La marge d\'une officine, calculée avec elle', page: 'audit' },
     // Groupements : pas d'écran à part, c'est l'onglet « groupements » des officines.
     groupements: { fam: 'clients', ico: 'groupements', nom: 'Groupements', ph: 'Les listes et listings d\'achats', page: 'pharma', js: 'V2.go(\'pharma\',\'groupements\')' },
-    // Réforme 2027 : document privé, adresse signée valable 1 h, jamais servi par le dépôt public.
-    reforme2027: { retire: true, fam: 'produits', ico: 'reforme', nom: 'Réforme 2027', ph: 'Ce qui change pour la marge officinale', page: 'pilotage', js: 'V2.ouvrirDocProtege(\'reforme2027\')' },
     // JARVIS Academy : lien externe (Q_ACADEMY), tuile de « Aide et idées » ; pas d'écran de l'app (page: null).
     academy: { fam: 'aide', ico: 'academy', nom: 'JARVIS Academy', ph: 'Se former à l\'outil, pas à pas', page: null }
   };
@@ -1292,14 +881,10 @@
     carte: '<path d="M12 21s7-6.2 7-11.5A7 7 0 005 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
     rdv: '<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/>',
     todo: '<path d="M10 6h10M10 12h10M10 18h10"/><path d="M3.5 6l1.3 1.3L7 5M3.5 12l1.3 1.3L7 11M3.5 18l1.3 1.3L7 17"/>',
-    fiches: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/>',
     groupements: '<circle cx="9" cy="8.5" r="3.2"/><path d="M3 19c0-3.2 2.7-5.5 6-5.5s6 2.3 6 5.5"/><path d="M16 5.6a3 3 0 010 5.8M18 14c1.8.7 3 2.3 3 5"/>',
     produits: '<path d="M12 3l8 4.2v9.6L12 21l-8-4.2V7.2z"/><path d="M4 7.2l8 4.3 8-4.3M12 11.5V21"/>',
     offilog: '<path d="M3 4h2.5l2 11h10l2-8H7"/><circle cx="9.5" cy="19" r="1.4"/><circle cx="16.5" cy="19" r="1.4"/>',
     biosimilaires: '<circle cx="7" cy="7" r="3"/><circle cx="17" cy="9" r="3"/><circle cx="10" cy="17" r="3"/><path d="M9.8 7.6l4.4.8M8.6 9.8l.9 4.2M14.8 11.6l-3.2 3.4"/>',
-    audit: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5M8.5 11.5l2 2 3-4"/>',
-    argument: '<path d="M4 5h16v11H11l-4.5 4v-4H4z"/><path d="M8 9.5h8M8 12.5h5"/>',
-    reforme2027: '<path d="M3 9l9-5 9 5M5 9v9M9.5 9v9M14.5 9v9M19 9v9M3 20h18"/>',
     pilotage: '<path d="M4.5 17a8.5 8.5 0 1115 0"/><path d="M12 14l3.5-4.5"/><circle cx="12" cy="14.2" r="1.2"/>',
     appro: '<rect x="3.5" y="12" width="7" height="7" rx="1.5"/><rect x="13.5" y="12" width="7" height="7" rx="1.5"/><rect x="8.5" y="4" width="7" height="7" rx="1.5"/>',
     infos: '<circle cx="12" cy="12" r="3.8"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"/>',
@@ -1307,7 +892,6 @@
     marchefr: '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.5 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.5-3.5-8.5s1-5.9 3.5-8.5z"/>',
     carteGrp: '<path d="M9 4L3.5 6v14L9 18l6 2 5.5-2V4L15 6z"/><path d="M9 4v14M15 6v14"/>',
     marketing: '<path d="M4 10v4h3l8 4V6L7 10z"/><path d="M18.5 9.5a3.5 3.5 0 010 5"/>',
-    presentation: '<rect x="3.5" y="4.5" width="17" height="11" rx="2"/><path d="M12 15.5V20M8 20h8"/>',
     lgo: '<rect x="3.5" y="5" width="17" height="12" rx="2"/><path d="M8 21h8M12 17v4M9.5 10.5l2.5 2.5 2.5-2.5M12 8v5"/>',
     remontees: '<path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"/>',
     academy: '<path d="M2.5 9.5L12 5l9.5 4.5L12 14z"/><path d="M6.5 11.8V16c0 1.2 2.5 2.5 5.5 2.5s5.5-1.3 5.5-2.5v-4.2M21.5 9.5V14"/>',
@@ -1342,7 +926,7 @@
     { k: 'bleu', nom: 'Bleu JARVIS', c: '#0050E6', d: '#0034A0', ci: '#E4EDFC', cg: '#CFDFFC', cd: '#DCE7FC', h: '#E9F0FF', o: 'rgba(0,80,230,.28)', ol: 'rgba(0,80,230,.10)', sh: '0 4px 12px rgba(0,80,230,.26), 0 8px 24px rgba(0,52,160,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(0,80,230,.34), 0 14px 34px rgba(0,52,160,.20), 0 1px 0 rgba(255,255,255,.28) inset' },
     { k: 'indigo', nom: 'Indigo', c: '#4B3FD0', d: '#322A89', ci: '#EBEAFA', cg: '#DDDBF6', cd: '#E6E5F9', h: '#EFEEFB', o: 'rgba(75,63,208,.28)', ol: 'rgba(75,63,208,.10)', sh: '0 4px 12px rgba(75,63,208,.26), 0 8px 24px rgba(50,42,137,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(75,63,208,.34), 0 14px 34px rgba(50,42,137,.20), 0 1px 0 rgba(255,255,255,.28) inset' },
     { k: 'emeraude', nom: 'Émeraude', c: '#0A7A55', d: '#075138', ci: '#E4F0EC', cg: '#D0E6DF', cd: '#DDEDE8', h: '#E9F3F0', o: 'rgba(10,122,85,.28)', ol: 'rgba(10,122,85,.10)', sh: '0 4px 12px rgba(10,122,85,.26), 0 8px 24px rgba(7,81,56,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(10,122,85,.34), 0 14px 34px rgba(7,81,56,.20), 0 1px 0 rgba(255,255,255,.28) inset' },
-    { k: 'corail', nom: 'Corail', c: '#BE3318', d: '#7D2210', ci: '#F8E9E6', cg: '#F3D8D3', cd: '#F6E3DF', h: '#F9EDEA', o: 'rgba(190,51,24,.28)', ol: 'rgba(190,51,24,.10)', sh: '0 4px 12px rgba(190,51,24,.26), 0 8px 24px rgba(125,34,16,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(190,51,24,.34), 0 14px 34px rgba(125,34,16,.20), 0 1px 0 rgba(255,255,255,.28) inset' },
+    { k: 'canard', nom: 'Canard', c: '#0B7285', d: '#074C58', ci: '#E4EFF2', cg: '#D1E4E8', cd: '#DDEBEE', h: '#E9F2F4', o: 'rgba(11,114,133,.28)', ol: 'rgba(11,114,133,.10)', sh: '0 4px 12px rgba(11,114,133,.26), 0 8px 24px rgba(7,76,88,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(11,114,133,.34), 0 14px 34px rgba(7,76,88,.20), 0 1px 0 rgba(255,255,255,.28) inset' },
     { k: 'ambre', nom: 'Ambre', c: '#9C5700', d: '#673900', ci: '#F4EDE3', cg: '#ECDFCF', cd: '#F1E8DC', h: '#F6F0E8', o: 'rgba(156,87,0,.28)', ol: 'rgba(156,87,0,.10)', sh: '0 4px 12px rgba(156,87,0,.26), 0 8px 24px rgba(103,57,0,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(156,87,0,.34), 0 14px 34px rgba(103,57,0,.20), 0 1px 0 rgba(255,255,255,.28) inset' },
     { k: 'prune', nom: 'Prune', c: '#8E2A7A', d: '#5E1C51', ci: '#F3E8F0', cg: '#EAD7E6', cd: '#F0E2ED', h: '#F5ECF3', o: 'rgba(142,42,122,.28)', ol: 'rgba(142,42,122,.10)', sh: '0 4px 12px rgba(142,42,122,.26), 0 8px 24px rgba(94,28,81,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(142,42,122,.34), 0 14px 34px rgba(94,28,81,.20), 0 1px 0 rgba(255,255,255,.28) inset' },
     { k: 'leopard', nom: 'Léopard', m: 'var(--u2-leo)', c: '#94561A', d: '#5F370E', ci: '#F6EEE2', cg: '#EFE2CE', cd: '#F3E9DB', h: '#F8F1E7', o: 'rgba(148,86,26,.28)', ol: 'rgba(148,86,26,.10)', sh: '0 4px 12px rgba(148,86,26,.26), 0 8px 24px rgba(95,55,14,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(148,86,26,.34), 0 14px 34px rgba(95,55,14,.20), 0 1px 0 rgba(255,255,255,.28) inset' }
@@ -1447,7 +1031,7 @@
   function u2Net(raw) {
     var S = u2Def();
     if (!raw || typeof raw !== 'object') return S;
-    function connu(k, i, a) { return typeof k === 'string' && !!G4_PORTES[k] && !G4_PORTES[k].retire && a.indexOf(k) === i; }
+    function connu(k, i, a) { return typeof k === 'string' && !!G4_PORTES[k] && a.indexOf(k) === i; }
     if (Array.isArray(raw.epingles)) S.epingles = raw.epingles.filter(connu);
     if (raw.ordre && typeof raw.ordre === 'object' && !Array.isArray(raw.ordre)) {
       U2_FAMS.forEach(function (f) {
@@ -1553,7 +1137,6 @@
     var d = G4_PORTES[k];
     var o = { k: k, nom: d.nom, ph: (u2Escale() && _g4Esc[k]) ? _g4Esc[k] : d.ph, act: 'go:' + k, href: '#' + k };
     if (k === 'groupements') { o.act = 'go:pharma/groupements'; o.href = '#pharma/groupements'; }
-    else if (k === 'reforme2027') { o.act = 'doc:reforme2027'; o.href = '#pilotage'; }   // document privé : s'ouvre dans le geste du clic
     else if (k === 'academy') { o.act = ''; o.href = Q_ACADEMY; o.ext = true; }
     return o;
   }
@@ -1930,11 +1513,11 @@
     if (a === 'rzoui') { _u2.confirmer = false; _u2.S = u2Def(); }
     else if (a === 'coul') { if (!U2_TEINTES.some(function (t) { return t.k === v; })) return; S.couleur = v; }
     else if (a === 'mtog') {
-      if (!G4_PORTES[v] || G4_PORTES[v].retire) return;
+      if (!G4_PORTES[v]) return;
       var im = S.masques.indexOf(v); if (im < 0) S.masques.push(v); else S.masques.splice(im, 1);
     }
     else if (a === 'oup' || a === 'odn') {
-      if (!G4_PORTES[v] || G4_PORTES[v].retire) return;
+      if (!G4_PORTES[v]) return;
       var fa = G4_PORTES[v].fam, lo = u2Fam(fa, cles).slice();
       u2Echange(lo, lo, v, a === 'oup' ? -1 : 1); S.ordre[fa] = lo;
     }
@@ -1968,7 +1551,6 @@
     var i = act.indexOf(':'), t = act.slice(0, i), v = act.slice(i + 1);
     if (t === 'go') { var p = v.split('/'); if (p[1]) V2.go(p[0], p[1]); else V2.go(p[0]); }
     else if (t === 'rel') V2.go('pharma', decodeURIComponent(v));
-    else if (t === 'doc') V2.ouvrirDocProtege(v);
     else if (t === 'space') V2.goSpace(v);
   }
 
@@ -1991,7 +1573,7 @@
     var s = e.target && e.target.closest && e.target.closest('[data-u2-sel="pin"]');
     if (!s || !s.value || !s.closest('.u2-page, .u2-hors')) return;
     var k = s.value, S = u2S();
-    if (!G4_PORTES[k] || G4_PORTES[k].retire) return;
+    if (!G4_PORTES[k]) return;
     if (S.epingles === null) S.epingles = u2Epingles(u2Vis());
     if (S.epingles.indexOf(k) < 0) S.epingles.push(k);
     u2Garder(); u2Redessiner('pin', k);
@@ -2143,7 +1725,7 @@
       function hxNum(n) { try { return n.toLocaleString('fr-FR'); } catch (e) { return String(n); } }
 
       var P = [
-        { k: 'pharma', cls: 'p1', ico: 'opp', tag: 'RDV', t: 'Officines', d: 'Arrive sur une officine et vois direct quoi proposer : ses best, ce qu\'elle ne commande pas, son audit marge — classé par catégorie et tranche de prix.', go: 'Choisir une pharmacie' },
+        { k: 'pharma', cls: 'p1', ico: 'opp', tag: 'RDV', t: 'Officines', d: 'Arrive sur une officine et vois direct quoi proposer : ses best, ce qu\'elle ne commande pas — classé par catégorie et tranche de prix.', go: 'Choisir une pharmacie' },
         { k: 'produits', cls: 'p3', ico: 'cat', tag: 'Catalogue', t: 'Produits', d: 'Le catalogue des 7 établissements : stock de chaque site, nos ventes face à la France, et les officines à qui proposer chaque produit.', go: 'Ouvrir les produits' },
         // Entrée UNIQUE des produits (11/08/2026). Remplace la tuile Catalogue ;
         // les tuiles « Par molécule » et « Appro » sont retirées plus bas. Les
@@ -2166,16 +1748,11 @@
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.biosimilaires) {
         P.push({ k: 'biosimilaires', cls: 'p3', accent: '#6D4FC4', ico: 'cat', tag: 'Marché FR', t: 'Biosimilaires', d: 'La base complète des biosimilaires France : substituables en officine et labos partenaires (Zentiva, EG, Teva) en tête, croisés à tes ventes et stocks réseau.', go: 'Ouvrir la base' });
       }
-      // Missions rémunérées — app JARVIS (l'Audit marge n'a plus de tuile : retiré le 02/10/2026)
-      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.audit) {
-        P.push({ k: 'missions', cls: 'p4', accent: '#0E9E6A', ico: 'pilo', tag: 'Expert 360', t: 'Missions rémunérées', d: 'La rémunération de l\'officine au-delà du produit : vaccination, entretiens, BPM, TROD… les tarifs 2026 + un simulateur « combien elle peut gagner ». L\'argument d\'expert à montrer au pharmacien.', go: 'Ouvrir les missions' });
-      }
       // Appro Intégral : tuile retirée le 11/08/2026, rétablie le 02/09/2026 à la demande
       // de Will. Motif du retour : l'écran a reçu « La courbe » (prévision du marché à
       // 3/6/12 mois) et ⌘K seul ne suffit pas — une feature sans porte visible reste
       // introuvable, y compris pour le reste de l'équipe.
-      // ⚠️ Bloc à part, conditionné sur V2.pages.appro : placée dans le bloc « Audit
-      // marge », la tuile aurait disparu avec lui.
+      // ⚠️ Bloc à part, conditionné sur V2.pages.appro.
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.appro) {
         P.push({ k: 'appro', cls: 'p5', accent: '#6D5AE6', ico: 'spark', tag: 'Achats', t: 'Appro Intégral', d: 'Ce qu\'il faut acheter et quand : couverture de stock par référence, ruptures à sécuriser, et la courbe du marché à 3, 6 et 12 mois avec sa fourchette — pour pré-acheter au bon moment et négocier avec les laboratoires.', go: 'Ouvrir l\'appro' });
       }

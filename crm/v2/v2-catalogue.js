@@ -282,7 +282,6 @@
         '</div>' +
         perfHtml +
         potHtml +
-        '<div class="cat-insp-cta"><button class="v2-btn v2-btn-primary" onclick="V2.catAddToFiche(\'' + esc(b.cip13) + '\')">' + ICO('plus', 17) + ' Ajouter à une fiche commerciale</button></div>' +
       '</div>' +
     '</div>';
   }
@@ -366,19 +365,6 @@
     }
     S.page = 0;
     V2.render();
-  };
-
-  V2.catAddToFiche = function (cip) {
-    var b = benchByCip.get(String(cip));
-    if (!b) return;
-    if (!V2.ficheCart) { V2.toast('Module fiches indisponible', 'error'); return; }
-    if (V2.ficheCart.has(b.cip13)) { V2.toast('Déjà dans la fiche en cours', 'warn'); return; }
-    var bpc = V2.bestPrice(b);
-    var n = V2.ficheCart.add({
-      cip13: b.cip13, designation: b.designation, prix_ip: bpc.ip,
-      prix_ht: bpc.ht, remise_pct: bpc.remise, is_froid: b.is_froid, src: 'cat'
-    });
-    V2.toast('Ajouté à la fiche en cours (' + n + ')');
   };
 
   function rerenderKeepFocus() {
@@ -467,8 +453,6 @@
       '.cat-kpi{background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:13px 14px}',
       '.cat-kpi-l{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin-bottom:5px}',
       '.cat-kpi-v{font-family:var(--mono);font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}',
-      '.cat-insp-cta{margin-top:22px}',
-      '.cat-insp-cta .v2-btn{width:100%}',
       '@media(max-width:1100px){.cat-insp{width:340px}}',
       '@media(max-width:640px){.cat-insp{height:100dvh;padding-bottom:env(safe-area-inset-bottom)}}',
       // Mobile : masquer #, CIP13, CA IP, Vol Ameli, Rang → garder Produit/Famille/Prix HT/Prix IP/Remise/Vol IP lisibles sans scroller loin (la ligne reste cliquable pour le détail)

@@ -1843,26 +1843,16 @@
         '<div class="pha-rail">' + idCard + listes + infos + notes + '</div>' +
         '<div class="pha-main">' + chiffres + briefOff + listing + generiqueurSec + '</div>' +
       '</div>';
-    // ⚠️ window.ARGUMENT (part d'abandon, donnée protégée) est requis : sans lui le
-    // calcul rendrait des ZÉROS silencieux. On le charge et on re-rend, comme les ventes.
     if (!voitVentes) { listing = ''; generiqueurSec = ''; }
-    var auditTab = (voitVentes && V2.audit && window.WML_SALES && window.PROD_STATS && window.ARGUMENT)
-      ? '<div id="aud">' + V2.audit.sheetFor(pid) + V2.audit.importSection() + '</div>' : '';
-    if (V2.audit && window.WML_SALES && window.PROD_STATS && !window.ARGUMENT && V2.loadFiles) {
-      V2.loadFiles(['argument']).then(function () { if (V2.route && V2.route.name === 'pharma') V2.render(); });
-    }
-    var tabs = auditTab ? '<div class="ph-fiche-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 16px">' +
-      '<button class="ph-vtab on" id="phft-apercu" onclick="V2.phFicheTab(\'apercu\')">' + ICO('pharma', 15, 2) + 'Analyse</button>' +
-      '<button class="ph-vtab" id="phft-audit" onclick="V2.phFicheTab(\'audit\')">' + ICO('pilo', 15, 2) + 'Audit marge</button>' +
-      '</div>' : '';
-    // Bouton « Aujourd'hui · N » à droite des onglets — la ligne existe même sans onglet Audit.
+    // 02/10/2026 — l'onglet « Audit marge » est retiré (décision de Will) : plus d'onglets, la fiche n'a que l'analyse.
+    var tabs = '';
+    // Bouton « Aujourd'hui · N » : seule commande de la ligne, calée à droite.
     if (briefOff) tabs = '<div class="ph-fiche-line">' + tabs + '<span class="bo-spacer"></span>' + V2.briefOfficine.bouton() + '</div>';
 
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
       '<div class="v2-wrap ph-detail pha-wrap" style="--accent:var(--pil-opp)">' +
         tabs +
         '<div id="phft-c-apercu">' + apercu + '</div>' +
-        (auditTab ? '<div id="phft-c-audit" style="display:none">' + auditTab + '</div>' : '') +
       '</div>';
     if (V2.profil) V2.profil.hydrate();
     if (V2.notes) V2.notes.hydrate();
@@ -1881,18 +1871,6 @@
     if (V2.profil && V2.profil.saveOverride) V2.profil.saveOverride(pid, { groupement: v || '' });
     if (V2.toast) V2.toast(v ? 'Groupement : ' + v : 'Groupement retiré');
     V2.render();
-  };
-
-  V2.phFicheTab = function (t) {
-    ['apercu', 'audit'].forEach(function (x) {
-      var b = document.getElementById('phft-' + x), c = document.getElementById('phft-c-' + x);
-      if (b) b.classList.toggle('on', x === t);
-      if (c) {
-        var show = (x === t);
-        c.style.display = show ? '' : 'none';
-        if (show) { c.classList.remove('mo-view-in'); void c.offsetWidth; c.classList.add('mo-view-in'); }
-      }
-    });
   };
 
   // ── Barre d'action collante (pattern .v2-cartbar maison) ──────────
@@ -1954,7 +1932,7 @@
   }
 
   // Coche / décoche un produit (toggle ciblé, pas de re-render).
-  // Le ✓ sert au PDF RDV immédiat ET alimente la "fiche en cours" partagée.
+  // Le ✓ sert au PDF RDV immédiat et à la barre « Prépa RDV » (plus de panier de fiche depuis le 02/10/2026).
   V2.pharmaToggleSel = function (btn) {
     if (!selCips) selCips = new Set();
     var cip = btn.getAttribute('data-cip');
@@ -1962,25 +1940,11 @@
       selCips.delete(cip);
       btn.classList.remove('on');
       btn.innerHTML = ICO('plus', 15);
-      if (V2.ficheCart) V2.ficheCart.remove(cip);
     } else {
       selCips.add(cip);
       btn.classList.add('on');
       btn.innerHTML = ICO('check', 15);
-      if (V2.ficheCart) {
-        var b = benchIndex().get(String(cip));
-        var bp = V2.bestPrice(b);
-        V2.ficheCart.add({
-          cip13: cip,
-          designation: b ? b.designation : cip,
-          prix_ip: bp.ip,
-          prix_ht: bp.ht,
-          remise_pct: bp.remise,
-          is_froid: b ? b.is_froid : false,
-          src: 'opp'
-        });
-      }
-      V2.toast('Retenu — ajouté à la fiche en cours');
+      V2.toast('Retenu pour le rendez-vous');
     }
     // Surlignage de la ligne (fiche officine master-détail)
     var tr = btn.closest && btn.closest('tr.phf-picked, tr[data-cip]');
@@ -2663,24 +2627,6 @@
 
   // ── Handlers groupements ──
   V2.pharmaView = function (v) { pharmaView = v; selGroup = null; selList = null; V2.render(); };
-  // ── Commande recommandée : pré-remplit une fiche avec les meilleures opportunités ──
-  V2.pharmaRecoOrder = function (pid) {
-    if (!window.BENCHMARK) { V2.toast('Catalogue en cours de chargement…'); V2.loadFiles(['bench']).then(function () {}); return; }
-    if (!V2.fiches || !V2.fiches.createFrom) { V2.toast('Module fiches indisponible', 'error'); return; }
-    var cats = buildOpportunities(pid), rows = [];
-    cats.forEach(function (o) { (o.rows || []).forEach(function (r) { rows.push(r); }); });
-    rows.sort(function (a, b) { return b.marketQte - a.marketQte; });
-    rows = rows.slice(0, 20);
-    if (!rows.length) { V2.toast('Aucune opportunité à recommander pour cette officine', 'warn'); return; }
-    var bIdx = benchIndex();
-    var products = rows.map(function (r) {
-      var b = bIdx.get(r.cip), bp = b ? V2.bestPrice(b) : { ip: r.prix_ip, ht: null, remise: 0 };
-      return { cip13: r.cip, designation: r.designation, prix_ip: bp.ip, prix_ht: bp.ht, remise_pct: bp.remise, is_froid: b ? !!b.is_froid : false, qty: 1 };
-    });
-    var ph = (V2.pharmacies || []).filter(function (p) { return String(p.id) === String(pid); })[0];
-    V2.fiches.createFrom({ title: 'Commande recommandée — ' + (ph ? ph.name : ''), destId: String(pid), products: products });
-    V2.toast(rows.length + ' produits recommandés');
-  };
   V2.pharmaGroup = function (enc) {
     try { selGroup = decodeURIComponent(enc); } catch (e) { selGroup = enc; }
     // 19/09/2026 (Karine, aee2d602) — ouvrir un groupement ne changeait pas le hash :
@@ -4789,10 +4735,11 @@
       '.opso-counter-sep{color:var(--muted-2)}',
       '.opso-counter-cliente{color:#0d8530;font-weight:700}',
       '.opso-counter-prospect{color:var(--muted);font-weight:600}',
-      // ── Barre RDV collante du pilier : empilée AU-DESSUS de la barre fiche globale (#v2-cartbar) ──
-      // pharmaToggleSel alimente aussi V2.ficheCart → la barre globale est présente ;
-      // on décale la nôtre vers le haut pour éviter le chevauchement, lumière du pilier sur le badge.
-      '#ph-cartbar{bottom:calc(64px + env(safe-area-inset-bottom))}',
+      // ── Barre RDV collante du pilier : posée au-dessus du bas de l'écran (décalage de 64 px conservé) ──
+      // (02/10/2026 : la barre « fiche globale » #v2-cartbar n'existe plus ; seule reste celle-ci.) Lumière du pilier sur le badge.
+      // 02/10/2026 — #v2-root garde un transform (animation d'entrée) : une barre « fixed » placée dedans reste au bas de la PAGE, hors de l'écran.
+      // « sticky » la fait coller au bas de l'écran ; c'était la barre globale (retirée) qui était vue jusque-là.
+      '#ph-cartbar{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom))}',
       '#ph-cartbar .v2-cartbar-badge{background:var(--accent,var(--ip-blue))}',
       '#ph-cartbar .v2-cartbar-go:active{transform:scale(.97)}',
       // ── Lumière du pilier Opportunités : liseré 3px contextuel (grammaire d\'appartenance) ──
