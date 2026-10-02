@@ -1050,7 +1050,7 @@
   // ── Accueil q1 : feuille de style (maquette q1, classes préfixées q-) ──
   var Q_CSS = `
 @font-face{font-family:'Hanken';src:url('polices/hanken.woff2') format('woff2');font-weight:100 900;font-display:swap}
-.q-page,.q-portail{
+.q-page{
   --encre:#0F1420;--gris:#4A5163;--bleu:#0050E6;--bleu-clair:#3D82FF;--halo:#E9F0FF;--nuit:#0B1530;
   --retard:#C7283D;--vert:#1E9E6A;--vert-fonce:#157A52;--ambre:#C7791A;
   --fond:#F3F5F9;--froid:#DFE4EC;--filet:#E3E7EF;--blanc:#fff;--main:#F7F8FC;
@@ -1062,12 +1062,12 @@
   --doux:cubic-bezier(.2,.8,.2,1);--tdoux:520ms;--vif:cubic-bezier(.2,.9,.3,1.25);--tvif:420ms;
   --rebond:cubic-bezier(.3,1.7,.5,1);--trebond:620ms;--lourd:cubic-bezier(.2,.8,.2,1);--tlourd:950ms;
 }
-:where(.q-page,.q-portail) *{box-sizing:border-box;margin:0;padding:0}
+:where(.q-page) *{box-sizing:border-box;margin:0;padding:0}
 .q-page{-webkit-text-size-adjust:100%;font-family:'Hanken',-apple-system,BlinkMacSystemFont,'SF Pro Text',sans-serif;color:var(--encre);font-size:14px;line-height:1.35;
   background:#D9E2F8 linear-gradient(158deg,#EEF2FF 0%,#DCE4F8 46%,#C9D6F5 100%);
   min-height:100vh;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
-:where(.q-page,.q-portail) a{color:inherit;text-decoration:none}
-:where(.q-page,.q-portail) button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:where(.q-page) a{color:inherit;text-decoration:none}
+:where(.q-page) button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;overflow:visible}
 .q-vh{position:absolute!important;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .q-page a:focus-visible,.q-page button:focus-visible{outline:2px solid var(--bleu);outline-offset:2px}
@@ -1296,28 +1296,8 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
 /* ---------- ce qui se touche s'enfonce (90 ms), et revient au ressort ---------- */
 .q-nav a,.q-tuile,.q-rel,.q-tout,.q-infos,.q-table .q-lg,.q-pill>span{transition:scale var(--tvif) var(--vif)}
 .q-nav a:active,.q-tuile:active,.q-rel:active,.q-tout:active,.q-infos:active,.q-table .q-lg:active,.q-bandeau:active .q-pill>span{scale:.97;transition:scale 90ms var(--dep)}
-.q-parti{opacity:0!important}
-/* ---------- panneau « Vous ouvrez » : l'élément cliqué devient le panneau ---------- */
-.q-overlay{position:fixed;inset:0;background:rgba(11,21,48,.35);opacity:0;pointer-events:none;z-index:50}
-.q-overlay.q-open{pointer-events:auto}
-.q-page:not(.q-js) .q-overlay{transition:opacity .12s var(--dep)!important}
-.q-page:not(.q-js) .q-overlay.q-open{opacity:1}
-.q-page:not(.q-js) .q-panel{opacity:0;transition:opacity .12s var(--dep),visibility 0s .12s!important}
-.q-page:not(.q-js) .q-panel.q-open{opacity:1;transition:opacity .12s var(--dep)!important}
 .q-calme .q-bt:hover>span,.q-calme .q-academy:hover .q-btn{translate:none}
 .q-calme :active{scale:none!important}
-.q-panel{position:fixed;left:50%;top:50%;width:min(420px,calc(100vw - 32px));transform:translate(-50%,-50%);z-index:51;visibility:hidden}
-.q-panel.q-open{visibility:visible}
-.q-panel.q-sort{pointer-events:none}
-.q-p-ombre,.q-p-surf{position:absolute;inset:0;border-radius:var(--r3);transform-origin:0 0;will-change:transform}
-.q-p-ombre{box-shadow:0 40px 80px -30px rgba(11,21,48,.5)}
-.q-p-surf{background:#fff}
-.q-p-corps{position:relative;padding:24px 24px 20px}
-.q-p-tete{display:flex;align-items:center;gap:12px}
-.q-p-ico{position:relative;width:44px;height:44px;border-radius:var(--r2);display:grid;place-items:center;flex:none;color:var(--bleu);will-change:transform}
-.q-p-ico i{position:absolute;inset:0;border-radius:inherit;background:var(--halo)}
-.q-p-ico svg{position:relative}
-.q-panel-titre{font-size:18px;font-weight:700;color:var(--encre);line-height:1.3;will-change:transform}
 /* ---------- anneau de focus : un seul, il glisse d'un élément à l'autre ---------- */
 .q-anneau{position:fixed;left:0;top:0;width:10px;height:10px;border:2px solid var(--bleu);border-radius:12px;pointer-events:none;z-index:60;opacity:0;transition:opacity .15s var(--dep);will-change:transform}
 .q-anneau.q-vu{opacity:1}
@@ -1386,6 +1366,12 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
 /* après l'entrée : plus aucune transition d'entrée ne traîne, le script pilote */
 .q-js .q-bandeau.q-fini .q-pill>span{transition:scale var(--tvif) var(--vif)}
 .q-js .q-bandeau.q-fini .q-pill svg,.q-js .q-bandeau.q-fini .q-illu .q-fl{transition:none}
+/* retour sur l'accueil (q-pose) et première arrivée pendant le chargement des ventes (q-leger) : les pictos sont déjà dessinés (un tracé n'est pas confié au compositeur) */
+.q-pose .q-dz .q-p,.q-leger .q-dz .q-p{stroke-dashoffset:0!important;opacity:1!important;transition:none!important}
+/* retour : ni éclair des vitrines ni allumage de la croix (elle est déjà allumée) ; elle respire, comme au repos */
+.q-js.q-go.q-pose .q-illu .q-ecl{animation:none}
+.q-js.q-pose .q-illu.q-allume .q-halo{animation:q-respire 6s var(--sin) infinite}
+.q-js.q-pose .q-illu.q-allume .q-cc{animation:q-battre 6s var(--sin) infinite}
 /* boucles suspendues : onglet caché, ou élément hors de l'écran */
 .q-pause *,.q-pause *::before,.q-pause *::after,.q-hors,.q-hors *,.q-hors *::before{animation-play-state:paused!important}
 /* ---------- 390 ---------- */
@@ -1426,7 +1412,7 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
   .q-note{order:10;padding:16px 16px 20px}
 }
 @media (prefers-reduced-motion:reduce){
-  .q-page *,.q-page *::before,.q-page *::after,.q-portail *,.q-portail *::before,.q-portail *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  .q-page *,.q-page *::before,.q-page *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
 /* ---------- ajouts de l'app : ce que la maquette n'a pas (branchements sur les vraies données) ---------- */
 /* avatar du profil : un bouton qui ouvre le menu du compte (déconnexion) ; sur téléphone, le même dans la ligne du logo */
@@ -1461,7 +1447,6 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
 .q-rel.q-porte{z-index:2}
 .q-tout[hidden],.q-vide[hidden]{display:none}
 .q-infos .q-v.q-vieux em{background:var(--bleu)}
-.q-p-corps{padding:24px}
 .q-vide{font-size:13px;color:var(--gris);line-height:1.35;padding:0 4px}
 /* un picto sans geste dessiné à la main joue un petit rebond d'ensemble */
 .q-g .q-gen{animation:q-g-gen .4s var(--dep);transform-origin:12px 12px}
@@ -1471,9 +1456,6 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
 .q-sans-usage .q-lg .q-st,.q-sans-usage .q-tete span:last-child{display:none}
 .q-table .q-lg.q-ext{cursor:pointer}
 /* l'ouverture d'un outil mène au vrai écran : le panneau n'est qu'une carte (icône et nom), sans texte ni bouton */
-.q-portail{position:static}
-.q-portail.q-fond{transition:opacity .14s var(--dep)}
-.q-portail.q-fond.q-evanouit{opacity:0}
 @media (max-width:860px){
   .q-haut .q-logo .q-moi{display:grid;margin-left:auto;width:44px;height:44px;border-radius:50%;place-items:center;color:#fff;font-weight:700;font-size:14px;font-family:inherit;border:0;padding:0;cursor:pointer;background:linear-gradient(145deg,#3D82FF,#0050E6 60%,#0040B8);box-shadow:0 6px 14px -6px rgba(0,80,230,.6)}
   .q-une{order:2;margin:16px 16px 0}
@@ -1665,6 +1647,7 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
   var Q_NAV = 7, Q_TUILES = 5;   // entrées de la barre latérale, tuiles : le reste va au tableau
   var Q_ACADEMY = 'https://jarvis-academy-fr.vercel.app/';
   var _qInst = null;   // l'accueil monté (un seul à la fois)
+  var _qEntreeJouee = false;   // l'entrée chorégraphiée ne joue qu'une fois par chargement de page : tout retour sur l'accueil est posé d'emblée
   function qSvg(ic) {
     var p = Q_PICTO[ic] || Q_PICTO.officines;
     return '<svg class="q-ic q-dz' + (/q-a-/.test(p) ? '' : ' q-gen') + '" viewBox="0 0 24 24" aria-hidden="true">' + p + '</svg>';
@@ -1879,7 +1862,7 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
     var m = String(nom || '').split(/\s+/).filter(Boolean);
     return (m.map(function (w) { return w.charAt(0); }).slice(0, 2).join('') || 'WM').toUpperCase();
   }
-  function qPageHtml(m, calme) {
+  function qPageHtml(m, calme, mode) {
     var rep = qRepartition(), sem = qSemaine(), rel = qRelances(), info = qInfosModele(), u = V2.user || {}, br = window.V2_BRAND || {};
     var pj = qParJour(rel.l, sem.dow), nom = u.name || '', ini = qIniPers(nom);
     var phrase = qPhrase(m, rel, info);
@@ -1923,7 +1906,7 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
       '</div>' +
       (V2.pages.infos ? '<div class="q-sec q-d q-infos-t q-in"><h2>Infos du matin</h2></div><a tabindex="0" class="q-infos q-in" href="#infos" data-outil="Infos du matin" data-ic="infos" data-k="infos" data-act="go:infos">' + qInfosIn(info) + '</a>' : '') +
       '</aside>';
-    return '<div class="q-page ' + (calme ? 'q-calme' : 'q-js') + (rep.sans ? ' q-sans-usage' : '') + '">' + Q_SPRITE + '<div class="q-app"><div class="q-carte">' + side + main + droite + '</div></div></div>';
+    return '<div class="q-page ' + (calme ? 'q-calme' : 'q-js' + (mode === 'pose' ? ' q-go q-pose' : mode === 'leger' ? ' q-leger' : '')) + (rep.sans ? ' q-sans-usage' : '') + '">' + Q_SPRITE + '<div class="q-app"><div class="q-carte">' + side + main + droite + '</div></div></div>';
   }
 
   // ─────────────────────────────────────────────
@@ -1937,24 +1920,19 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
     else if (t === 'doc') V2.ouvrirDocProtege(v);
     else if (t === 'space') V2.goSpace(v);
   }
-  function qMonter(page, m) {
+  function qMonter(page, m, mode) {
     var D = document, B = D.body, W = window, R = page;
     var inst = { page: page, mort: false };
     function $(s, c) { return (c || page).querySelector(s); }
     function $$(s, c) { return [].slice.call((c || page).querySelectorAll(s)); }
     var JS = R.classList.contains('q-js');
+    /* trois façons d'arriver : 'plein' (première arrivée, données là : l'entrée complète), 'leger' (première arrivée pendant le chargement des ventes : seuls des déplacements en transform/opacity, rien de piloté en JS) et 'pose' (tout retour : la page est posée d'emblée) */
+    var PLEIN = JS && mode === 'plein', POSE = JS && mode === 'pose';
     var ecoutes = [], minuteurs = [], seqT = 0, essaiT = [];
     function ec(cible, type, fn, opt) { cible.addEventListener(type, fn, opt); ecoutes.push([cible, type, fn, opt]); }
     function to(f, ms) { var id = setTimeout(function () { if (!inst.mort) f(); }, ms); minuteurs.push(id); return id; }
     function borne(x, a, b) { return x < a ? a : x > b ? b : x; }
     function f2(x) { return Math.round(x * 100) / 100; }
-
-    /* ---------- le portail : voile, carte d'ouverture, anneau de focus (hors de la page, qui recule sous le voile) ---------- */
-    var portail = D.createElement('div');
-    portail.className = 'q-portail ' + (JS ? 'q-js q-go' : 'q-calme');
-    portail.innerHTML = '<div class="q-overlay"></div><div class="q-panel" aria-hidden="true"><span class="q-p-ombre"></span><span class="q-p-surf"></span>' +
-      '<div class="q-p-corps"><div class="q-p-tete"><span class="q-p-ico"><i></i><svg class="q-ic"><use href="#q-i-officines"/></svg></span><div class="q-p-tx"><div class="q-panel-titre"><span class="q-p-nom">—</span></div></div></div></div></div>';
-    B.appendChild(portail);
 
     /* ---------- la physique : quatre ressorts écrits à la main, masse 1, pas borné à 1/30 s, une seule boucle qui s'arrête ---------- */
     var PRE = { doux: [120, 22], vif: [260, 22], rebond: [180, 12], lourd: [60, 16] };
@@ -1992,11 +1970,13 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
     /* ---------- repères ---------- */
     var illu = $('.q-illu'), bandeau = $('.q-bandeau'), pill = $('.q-pill'), pillB = pill.firstElementChild, fleche = $('svg', pill), lum = $('.q-lum i');
     var nav = $('.q-nav'), navA = $$('.q-nav a'), navOn = $('.q-nav a.q-on') || navA[0], corps = $('.q-corps'), lignes = $$('.q-corps .q-lg');
-    var fleur = $('.q-fleur'), fleurSuit = $('.q-suit'), champ = $('.q-cherche input'), rech = $('.q-rech'), app = $('.q-app');
+    var fleur = $('.q-fleur'), fleurSuit = $('.q-suit'), champ = $('.q-cherche input'), rech = $('.q-rech');
     var couches = $$('.q-pl', illu).map(function (c) { return { el: c, d: +c.getAttribute('data-depth') }; });
     var feuilles = $$('.q-fl', illu).map(function (f, i) { return { el: f, s: i === 1 ? -1 : 1 }; });
     var fes = $$('.q-fe', illu), banne = $('#q-banne'), vg = $('#q-vg'), vd = $('#q-vd'), seuil = $('#q-seuil');
     var clavier = false;
+    /* retour sur l'accueil : on retire les marques d'entrée AVANT toute lecture de mise en page. Une fois le premier style calculé, les retirer ferait partir une transition (scale 1 vers none) sur chaque élément */
+    if (POSE) { $$('.q-in').forEach(fin); $$('[data-la]').forEach(la); illu.classList.add('q-allume'); }
 
     /* ---------- une seule forme qui glisse d'une ligne à l'autre : le bord de tête part vite, l'autre suit ---------- */
     function Glisse(cont, els) {
@@ -2030,7 +2010,6 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
       if (F.fleur) { F.fleur = 0; fleurSuit.style.transform = 'translate3d(' + f2(fx) + 'px,' + f2(fy) + 'px,0) rotate(' + f2(fr) + 'deg)'; }
       if (F.g) { F.g = 0; gNav.rend(); gSel.rend(); if (gRes) gRes.rend(); }
       if (F.rev) { F.rev = 0; reveler(); }
-      if (F.panel) { F.panel = 0; posePanel(); }
       if (F.anneau) { F.anneau = 0; anneau.style.transform = 'translate3d(' + f2(A.x) + 'px,' + f2(A.y) + 'px,0)'; anneau.style.width = f2(A.w) + 'px'; anneau.style.height = f2(A.h) + 'px'; }
     }
 
@@ -2043,92 +2022,12 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
     function ondeStore() { sOnd.vers(.75); dans(150, function () { sOnd.vers(0); }); }
 
     /* ---------- porte, lumière, parallaxe : tout part de la position du pointeur ---------- */
-    var rB = null, rP = null, rF = null, rT = 0, approche = 0, foc = false, entre = false, pres = false;
+    var rB = null, rP = null, rF = null, rT = 0, approche = 0, foc = false, pres = false;
     function mesurer() { rB = bandeau.getBoundingClientRect(); rP = pillB.getBoundingClientRect(); rT = $('.q-bandeau p').getBoundingClientRect().right; }
-    function majPorte() { sPorte.vers(Math.max(approche, foc ? 1 : 0, entre ? 1 : 0)); }
-
-    /* ---------- ouverture : l'élément cliqué grandit au ressort doux (la page recule sous un voile), puis l'écran s'ouvre ---------- */
-    var panel = $('.q-panel', portail), voile = $('.q-overlay', portail), surf = $('.q-p-surf', portail), ombre = $('.q-p-ombre', portail), pCorps = $('.q-p-corps', portail), pTx = $('.q-p-tx', portail), pIco = $('.q-p-ico', portail), pFond = $('i', pIco), pUse = $('use', pIco), titre = $('.q-panel-titre', portail), pNom = $('.q-p-nom', portail);
-    var P = { p: 0, on: false, nav: false, src: null, a: null, f: null, i0: null, t0: null, org: null };
-    var sP = new Ressort('doux', function (x) { P.p = x; F.panel = 1; }, .0006);
-    function mel(a, b, k) { return 'rgb(' + Math.round(a[0] + (b[0] - a[0]) * k) + ',' + Math.round(a[1] + (b[1] - a[1]) * k) + ',' + Math.round(a[2] + (b[2] - a[2]) * k) + ')'; }
-    function rgb(c) { var k = (c || '').match(/[\d.]+/g); return k && k.length >= 3 && (k.length < 4 || +k[3] > .5) ? [+k[0], +k[1], +k[2]] : null; }
-    function depuis(src) {
-      var el = src, porteS = src === bandeau, repli = false;
-      if (porteS) el = $('#q-porteInt'); else if (src.classList.contains('q-bt')) el = src.firstElementChild;
-      if (!el.isConnected) { el = $('.q-cherche'); repli = true; }
-      var r = el.getBoundingClientRect(), cs = getComputedStyle(el);
-      return { l: r.left, t: r.top, w: Math.max(6, r.width), h: Math.max(6, r.height), ray: porteS ? 2 : (parseFloat(cs.borderTopLeftRadius) || 0), c: (porteS ? null : rgb(cs.backgroundColor)) || [255, 255, 255], el: porteS || repli ? null : el };
-    }
-    function icoDepuis(src) {
-      if (src === bandeau || !src.isConnected) return null;
-      var bloc = $('.q-ico[class*="q-t-"],.q-r-ic', src), s = bloc || $('svg.q-ic', src); if (!s) return null;
-      var r = s.getBoundingClientRect(), cs = getComputedStyle(s);
-      return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, plein: !!bloc, teinte: bloc && bloc.classList.contains('q-ico') ? cs.backgroundImage : '', c: rgb(cs.color) || [0, 80, 230] };
-    }
-    function nomDepuis(src) {
-      if (src === bandeau || !src.isConnected) return null;
-      var b = $('b', src); if (!b || b.textContent.trim() !== pNom.textContent) return null;
-      var g = D.createRange(); g.selectNodeContents(b); var r = g.getBoundingClientRect(), cs = getComputedStyle(b); if (!r.width) return null;
-      return { l: r.left, t: r.top, px: parseFloat(cs.fontSize) || 14, c: rgb(cs.color) || [15, 20, 32] };
-    }
-    function mesurePanel() {
-      var tr = app.style.transform; app.style.transform = ''; surf.style.transform = ombre.style.transform = pIco.style.transform = titre.style.transform = '';
-      P.f = surf.getBoundingClientRect(); P.a = depuis(P.src);
-      var i = icoDepuis(P.src), k = pIco.getBoundingClientRect();
-      pFond.style.backgroundImage = i && i.teinte ? i.teinte : '';
-      P.i0 = i ? { dx: i.x - (k.left + k.width / 2), dy: i.y - (k.top + k.height / 2), s: i.w / (i.plein ? k.width : 20), plein: i.plein, c: i.c, c1: i.teinte ? [255, 255, 255] : [0, 80, 230] } : null;
-      if (!i) pIco.style.color = '';
-      var n = nomDepuis(P.src), rt = titre.getBoundingClientRect(), rn = pNom.getBoundingClientRect();
-      P.t0 = n ? { ox: f2(rn.left - rt.left), oy: f2(rn.top - rt.top), x1: rn.left, y1: rn.top, rx0: n.l - P.a.l, ry0: n.t - P.a.t, rx1: rn.left - P.f.left, ry1: rn.top - P.f.top, s: n.px / (parseFloat(getComputedStyle(titre).fontSize) || 18), c: n.c } : null;
-      P.kx = k.left + k.width / 2; P.kr = k.right;
-      app.style.transformOrigin = '50% ' + f2(W.scrollY + W.innerHeight / 2 - app.offsetTop) + 'px'; app.style.transform = tr;
-    }
-    function posePanel() {
-      var a = P.a, f = P.f; if (!a) return;
-      var q = borne(P.p, 0, 1), l = a.l + (f.left - a.l) * q, t = a.t + (f.top - a.t) * q, sx = (a.w + (f.width - a.w) * q) / f.width, sy = (a.h + (f.height - a.h) * q) / f.height, ray = a.ray + (16 - a.ray) * q;
-      var tr = 'translate3d(' + f2(l - f.left) + 'px,' + f2(t - f.top) + 'px,0) scale(' + sx.toFixed(4) + ',' + sy.toFixed(4) + ')';
-      surf.style.transform = tr; ombre.style.transform = tr;
-      surf.style.borderRadius = f2(ray / sx) + 'px/' + f2(ray / sy) + 'px';
-      surf.style.opacity = borne(q / .12, 0, 1);
-      surf.style.backgroundColor = mel(a.c, [255, 255, 255], borne(q * 2, 0, 1));
-      ombre.style.opacity = q; voile.style.opacity = q;
-      app.style.transform = q > .002 ? 'scale(' + (1 - .015 * q).toFixed(5) + ')' : '';
-      var w = sx * f.width, hh = sy * f.height, net = q > .998; pCorps.style.clipPath = net ? '' : 'inset(' + f2(t - f.top) + 'px ' + f2(f.right - l - w) + 'px ' + f2(f.bottom - t - hh) + 'px ' + f2(l - f.left) + 'px round ' + f2(ray) + 'px)';
-      /* le nom de l'élément voyage avec la carte : il passe d'abord sous le picto (vers la droite), puis monte à sa place */
-      var t0 = P.t0, i = P.i0, c = borne((q - .5) / .4, 0, 1);
-      if (t0) {
-        var ex = 1 - Math.pow(1 - q, 1.5), u = borne((q - .28) / .36, 0, 1), ey = u * u * (3 - 2 * u), st = t0.s + (1 - t0.s) * q, nx = l + t0.rx0 + (t0.rx1 - t0.rx0) * ex, ny = t + t0.ry0 + (t0.ry1 - t0.ry0) * ey;
-        titre.style.transformOrigin = t0.ox + 'px ' + t0.oy + 'px'; titre.style.transform = net ? '' : 'translate3d(' + f2(nx - t0.x1) + 'px,' + f2(ny - t0.y1) + 'px,0) scale(' + st.toFixed(4) + ')';
-        titre.style.opacity = q > .001 ? 1 : 0; pNom.style.color = mel(t0.c, [15, 20, 32], borne(q * 3, 0, 1));
-      } else { titre.style.transform = ''; titre.style.opacity = borne((q - .12) / .3, 0, 1); pNom.style.color = ''; }
-      if (i) { var s = i.s + (1 - i.s) * q, n = borne(q * 3, 0, 1); pIco.style.transform = 'translate3d(' + f2(i.dx * (1 - q)) + 'px,' + f2(i.dy * (1 - q)) + 'px,0) scale(' + s.toFixed(4) + ')'; pIco.style.opacity = q > .001 ? 1 : 0; pFond.style.opacity = i.plein ? 1 : borne(q * 2.5, 0, 1); pIco.style.color = mel(i.c, i.c1, n); }
-      else { pIco.style.opacity = c; pIco.style.transform = 'scale(' + (.96 + .04 * c).toFixed(4) + ')'; pFond.style.opacity = 1; }
-      if (a.el) a.el.classList.toggle('q-parti', q > .12);
-      if (!P.on && !sP.a) rangePanel();
-    }
-    function rangePanel() { panel.classList.remove('q-open', 'q-sort'); voile.classList.remove('q-open'); voile.style.opacity = ''; app.style.transform = ''; app.style.transformOrigin = ''; if (P.a && P.a.el) P.a.el.classList.remove('q-parti'); P.a = null; P.nav = false; }
-    /* Un second clic pendant l'ouverture ne fait rien. Sans animation (mouvement réduit), l'écran s'ouvre tout de suite. */
-    function ouvrir(src, nom, agir, ic) {
-      if (P.nav) return;
-      if (!JS) { agir(); return; }
-      P.nav = true;
-      pNom.textContent = nom; pUse.setAttribute('href', '#q-i-' + (ic || src.getAttribute('data-ic') || 'officines'));
-      P.org = D.activeElement && D.activeElement !== B ? D.activeElement : src;
-      P.src = src; P.on = true; panel.classList.remove('q-sort'); panel.classList.add('q-open'); voile.classList.add('q-open');
-      mesurePanel(); sP.type('doux').vers(1);
-      if (src === bandeau) { entre = true; majPorte(); }
-      to(function () { agir(); }, 250);   /* 250 ms : la carte est formée, l'écran suit */
-      to(retour, 1800);                    /* garde-fou : si l'écran ne s'est pas ouvert, la carte se referme */
-    }
-    function retour() {
-      if (!P.on) return;
-      P.on = false; voile.classList.remove('q-open'); panel.classList.add('q-sort'); mesurePanel(); sP.type('vif').vers(0); entre = false; majPorte();
-      if (P.org && P.org.isConnected && P.org.focus) P.org.focus({ preventScroll: true });
-    }
+    function majPorte() { sPorte.vers(Math.max(approche, foc ? 1 : 0)); }
 
     /* ---------- anneau de focus : il se pose au ressort et glisse d'un élément au suivant ---------- */
-    var anneau = D.createElement('span'), cible = null, A = { x: 0, y: 0, w: 0, h: 0 }; anneau.className = 'q-anneau'; anneau.setAttribute('aria-hidden', 'true'); portail.appendChild(anneau);
+    var anneau = D.createElement('span'), cible = null, A = { x: 0, y: 0, w: 0, h: 0 }; anneau.className = 'q-anneau'; anneau.setAttribute('aria-hidden', 'true'); R.appendChild(anneau);
     var sAx = new Ressort('vif', function (x) { A.x = x; F.anneau = 1; }, .05), sAy = new Ressort('vif', function (x) { A.y = x; F.anneau = 1; }, .05), sAw = new Ressort('vif', function (x) { A.w = x; F.anneau = 1; }, .05), sAh = new Ressort('vif', function (x) { A.h = x; F.anneau = 1; }, .05);
     function viser(el, net) {
       cible = el; var t = el === champ ? el.closest('.q-cherche') : el.classList.contains('q-bt') ? el.firstElementChild : el;
@@ -2186,8 +2085,7 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
       if (it.href) { W.open(it.href, '_blank', 'noopener'); return; }
       if (e && e.preventDefault) e.preventDefault();
       var fn = it.fn || function () { qAgir(it.act); };
-      if (it.imm) { fn(); champ.value = ''; fermerListe(true); return; }
-      ouvrir(a, it.n, fn, it.ic); champ.value = ''; fermerListe(true);
+      fn(); champ.value = ''; fermerListe(true);   /* l'écran s'ouvre tout de suite */
     }
     function lister() {
       var brut = champ.value.trim(), q = norm(brut); if (!q) { fermerListe(); return; }
@@ -2222,12 +2120,12 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
     });
     /* ⌘K / Ctrl K : le champ de l'accueil prend le focus (la palette de l'app ne s'ouvre pas par-dessus) */
     ec(D, 'keydown', function (e) {
-      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); e.stopPropagation(); if (P.on) return; clavier = true; champ.focus(); champ.select(); }
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); e.stopPropagation(); clavier = true; champ.focus(); champ.select(); }
       else if (e.key === 'Tab') clavier = true;
     }, true);
 
     /* ---------- la phrase, le compteur à tambours, les mots qui montent de derrière un cache ---------- */
-    var h1 = $('.q-bandeau h1'), dateEl = $('.q-date'), para = $('.q-bandeau p'), n690 = $('#q-n690'), dateTxt = dateEl.textContent, orig = { h1: h1.innerHTML, p: para.innerHTML }, motsP = [], textesFinis = !JS;
+    var h1 = $('.q-bandeau h1'), dateEl = $('.q-date'), para = $('.q-bandeau p'), n690 = $('#q-n690'), dateTxt = dateEl.textContent, orig = { h1: h1.innerHTML, p: para.innerHTML }, motsP = [], textesFinis = !PLEIN;
     function mot(c, cl) { var o = D.createElement('span'), i = D.createElement('span'); o.className = 'q-mo'; i.className = cl || 'q-mi'; if (typeof c === 'string') i.textContent = c; else i.appendChild(c); o.appendChild(i); return o; }
     function decoupe(el, cl) {
       var out = []; [].slice.call(el.childNodes).forEach(function (nd) {
@@ -2257,7 +2155,7 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
 
     /* ---------- la semaine : la pastille du jour glisse ; un jour qui porte une relance la fait remonter ---------- */
     var jours = $('.q-jours'), cel = $$('.q-jours>.q-jour'), pil = $('.q-pil'), nuit = $('.q-inv'), liste = $('#q-liste'), toutBtn = $('#q-tout'), videEl = $('#q-vide');
-    var sem = qSemaine(), selJ = sem.dow, pA = 0, pB = 0, tamp = JS ? 1.45 : 1, plie = true, relSig = '', parJour = {}, relDonnees = [];
+    var sem = qSemaine(), selJ = sem.dow, pA = 0, pB = 0, tamp = PLEIN ? 1.45 : 1, plie = true, relSig = '', parJour = {}, relDonnees = [];
     var sTamp = new Ressort('rebond', function (x) { tamp = x; rendrePil(); }, .002);
     var sPa = new Ressort('doux', function (x) { pA = x; rendrePil(); }, .05), sPb = new Ressort('doux', function (x) { pB = x; rendrePil(); }, .05);
     function bords(k) { var w = jours.clientWidth, cw = (w - 24) / 7, a = k * (cw + 4); return [a, a + cw]; }
@@ -2272,7 +2170,7 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
       if (!JS) { pA = a; pB = b; rendrePil(); return; }
       if (a > sPa.t) { sPb.vers(b); dans(28, function () { sPa.vers(a); }); } else { sPa.vers(a); dans(28, function () { sPb.vers(b); }); }
     }
-    function poserTampon() { pil.style.opacity = nuit.style.opacity = '1'; if (JS) sTamp.vers(1); else { tamp = 1; rendrePil(); } }
+    function poserTampon() { pil.style.opacity = nuit.style.opacity = '1'; if (PLEIN) sTamp.vers(1); else { tamp = 1; rendrePil(); } }
     function visibles() { var cartes = $$('.q-rel', liste); cartes.forEach(function (c, i) { c.hidden = plie && i >= 3; }); }
     /* les cartes changent de place sans se téléporter : chacune garde sa position à l'écran, puis rejoint la nouvelle */
     function ordonner(premiers) {
@@ -2341,7 +2239,7 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
       phraseCourante = h;
       if (!textesFinis) { orig.p = h; return; }
       para.innerHTML = h;
-      if (JS && !aN && /id="q-n690"/.test(h)) roulerPlus(m.nb);
+      if (PLEIN && !aN && /id="q-n690"/.test(h)) roulerPlus(m.nb);   /* hors entrée complète, le compteur est posé à sa valeur */
     }
     function majInfos() {
       if (inst.mort) return;
@@ -2369,11 +2267,13 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
     }
 
     /* ---------- entrée : toutes les écritures d'abord (tambours, caches, partition), pour qu'une seule mise en page suffise ---------- */
-    if (JS) {
+    if (PLEIN) {
       if (n690) n690.innerHTML = tambours(m.nb);
       decoupe(h1).forEach(function (mm, i) { mm.firstChild.style.setProperty('--d', (i * 60) + 'ms'); });
       var dm = mot(dateTxt); dateEl.textContent = ''; dateEl.appendChild(dm); dm.firstChild.style.setProperty('--d', '120ms');
       motsP = decoupe(para, 'q-mj');
+    }
+    if (JS && !POSE) {
       /* la partition : instant de départ, écart entre voisins */
       [['.q-nav a', 120, 40], ['.q-sec.q-outils', 340, 0], ['.q-tuile', 380, 45], ['.q-une', 360, 0], ['.q-profil .q-avatar', 180, 0], ['.q-profil>b', 240, 0], ['.q-profil .q-role', 268, 0],
         ['.q-sem', 380, 0], ['.q-jours>.q-jour', 405, 25], ['.q-rl', 480, 0], ['.q-rel', 520, 60], ['.q-vide', 520, 0], ['.q-tout', 700, 0], ['.q-infos-t', 660, 0], ['.q-infos', 700, 0],
@@ -2403,8 +2303,7 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
       if ((e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) && a.getAttribute('href')) return;   /* nouvel onglet : le navigateur s'en charge */
       e.preventDefault();
       var act = a.getAttribute('data-act');
-      if (a.hasAttribute('data-imm')) { qAgir(act); return; }
-      ouvrir(a, a.getAttribute('data-outil') || '', function () { qAgir(act); }, a.getAttribute('data-ic'));
+      qAgir(act);   /* l'écran s'ouvre tout de suite : aucune attente */
     });
     ec(page, 'keydown', function (e) {
       var t = e.target; if (!t || !t.matches) return;
@@ -2479,7 +2378,7 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
         else { el.style.setProperty('--d', d + 'ms'); to(function () { fin(el); }, d + 1200); }
       });
     }
-    (function () { var H = W.innerHeight, y = W.scrollY; $$('.q-in,[data-la]').forEach(function (el) { var r = el.getBoundingClientRect(); if ((r.width || r.height) && r.top > H - 4) { el.classList.add('q-arme'); el._y = r.top + y; armes.push(el); } }); })();
+    if (!POSE) (function () { var H = W.innerHeight, y = W.scrollY; $$('.q-in,[data-la]').forEach(function (el) { var r = el.getBoundingClientRect(); if ((r.width || r.height) && r.top > H - 4) { el.classList.add('q-arme'); el._y = r.top + y; armes.push(el); } }); })();
 
     R.classList.add('q-pret');
     function finEntree() {
@@ -2497,16 +2396,29 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
         dans(16, lot);
       })();
     }
-    /* le départ : l'état masqué vient d'être calculé (lectures ci-dessus), on lance tout de suite, sans attendre une image */
-    void illu.offsetWidth; R.classList.add('q-go');
-    $$('[data-la]').forEach(function (el) { if (!el.classList.contains('q-arme')) dans(+el.getAttribute('data-la'), function () { la(el); }); });
-    dans(120, function () { var mm = (gNav.h + gNav.b) / 2, h = gNav.h, b = gNav.b; gNav.sh.pose(mm - 10); gNav.sb.pose(mm + 10); gNav.sh.vers(h); gNav.sb.vers(b); });
-    dans(200, phrase);
-    dans(300, function () { illu.classList.add('q-allume'); });
-    dans(500, function () { sequence(1); });
-    dans(700, poserTampon);
-    dans(1450, finTextes);
-    dans(1950, finEntree);
+    if (POSE) {
+      /* retour sur l'accueil : tout est déjà dans son état final (la page est créée avec q-go) ; on retire les marques d'entrée et la vie au repos démarre */
+      poserTampon(); finEntree();
+    } else if (PLEIN) {
+      /* le départ : l'état masqué vient d'être calculé (lectures ci-dessus), on lance tout de suite, sans attendre une image */
+      void illu.offsetWidth; R.classList.add('q-go');
+      $$('[data-la]').forEach(function (el) { if (!el.classList.contains('q-arme')) dans(+el.getAttribute('data-la'), function () { la(el); }); });
+      dans(120, function () { var mm = (gNav.h + gNav.b) / 2, h = gNav.h, b = gNav.b; gNav.sh.pose(mm - 10); gNav.sb.pose(mm + 10); gNav.sh.vers(h); gNav.sb.vers(b); });
+      dans(200, phrase);
+      dans(300, function () { illu.classList.add('q-allume'); });
+      dans(500, function () { sequence(1); });
+      dans(700, poserTampon);
+      dans(1450, finTextes);
+      dans(1950, finEntree);
+    } else {
+      /* première arrivée pendant le chargement des ventes : le fil principal est pris par les données. Les textes sont visibles tout de suite, les pictos dessinés, le compteur posé, la barre et le tampon à leur place ; il ne reste que des déplacements en transform / opacity, confiés au compositeur, et de simples minuteries */
+      void illu.offsetWidth; R.classList.add('q-go');
+      $$('[data-la]').forEach(function (el) { if (!el.classList.contains('q-arme')) to(function () { la(el); }, +el.getAttribute('data-la')); });
+      to(function () { illu.classList.add('q-allume'); }, 300);
+      to(function () { sequence(1); }, 500);
+      poserTampon();
+      to(finEntree, 1950);
+    }
     /* boucles suspendues hors écran */
     var io = null;
     if ('IntersectionObserver' in W) { io = new IntersectionObserver(function (es) { es.forEach(function (en) { en.target.classList.toggle('q-hors', !en.isIntersecting); }); }); [illu, fleur].forEach(function (el) { if (el) io.observe(el); }); }
@@ -2518,7 +2430,7 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
     function majFn(m2) { m = m2; if (!majOutils()) return false; majInfos(); majRelances(); majPhrase(); return true; }
     function wrapInst() {
       inst.maj = majFn; inst.majInfos = majInfos; inst.majOutils = majOutils;
-      inst.etat = function () { return { ecoutes: ecoutes.length, minuteurs: minuteurs.length, boucle: enRoute, ressorts: vivants.length, taches: taches.length, portails: D.querySelectorAll('.q-portail').length, mort: inst.mort }; };
+      inst.etat = function () { return { ecoutes: ecoutes.length, minuteurs: minuteurs.length, boucle: enRoute, ressorts: vivants.length, taches: taches.length, mort: inst.mort }; };
       inst.detruire = function () {
         if (inst.mort) return; inst.mort = true;
         ecoutes.forEach(function (x) { x[0].removeEventListener(x[1], x[2], x[3]); });
@@ -2526,8 +2438,6 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
         if (rafId) cancelAnimationFrame(rafId);
         if (inst.io) inst.io.disconnect();
         vivants.length = 0; taches.length = 0; enRoute = false;
-        if (P.on) { portail.classList.add('q-fond'); setTimeout(function () { portail.classList.add('q-evanouit'); }, 16); setTimeout(function () { if (portail.parentNode) portail.parentNode.removeChild(portail); }, 220); }
-        else if (portail.parentNode) portail.parentNode.removeChild(portail);
       };
       return inst;
     }
@@ -2537,7 +2447,7 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
   function g4Rafraichir() {
     if (_qInst && V2.route && V2.route.name === 'home') _qInst.majOutils();
   }
-  // Styles de l'accueil : tout sous .q-page (la page) et .q-portail (le voile et la carte d'ouverture, posés sur <body>).
+  // Styles de l'accueil : tout sous .q-page.
   function qStyles() {
     if (document.getElementById('v2-q-style')) return;
     var st = document.createElement('style'); st.id = 'v2-q-style';
@@ -2554,9 +2464,12 @@ svg.q-ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;s
     qStyles();
     var calme = false;
     try { calme = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
-    root.innerHTML = qPageHtml(m, calme);
+    // première arrivée : entrée complète (données là) ou allégée (ventes en cours) ; tout retour : page posée d'emblée
+    var mode = _qEntreeJouee ? 'pose' : (m.partiel ? 'leger' : 'plein');
+    _qEntreeJouee = true;
+    root.innerHTML = qPageHtml(m, calme, mode);
     var page = root.querySelector('.q-page');
-    try { _qInst = qMonter(page, m); }
+    try { _qInst = qMonter(page, m, mode); }
     catch (err) {
       // un défaut de mouvement ne doit jamais laisser la page masquée
       if (window.console) console.error('[accueil q1]', err);
