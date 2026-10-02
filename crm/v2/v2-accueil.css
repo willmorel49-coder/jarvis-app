@@ -8,7 +8,12 @@
    Mouvement : la courte cascade d'entrée (une fois par chargement de page), transform seul ; prefers-reduced-motion respecté.
    ═══════════════════════════════════════════════════════════════════ */
 
+/* La couleur personnelle (v2-app.js, U2_TEINTES) surcharge --ip-blue, --ip-blue-d, --halo, --sh-blue, --sh-blue-h et --accent sur ces deux
+   conteneurs ; --u2-o / --u2-ol sont les deux ombres teintées. Valeurs ci-dessous = le bleu d'origine (aucun réglage : rien ne change). */
+.u2-page,.u2-hors{--u2-o:rgba(0,80,230,.28);--u2-ol:rgba(0,80,230,.10)}
 .u2-page{position:relative}
+.u2-page .v2-logo{box-shadow:0 4px 12px var(--u2-o),0 1px 0 rgba(255,255,255,.25) inset}
+.u2-page .v2-tuile-ico{box-shadow:0 1px 0 #fff inset,0 3px 8px var(--u2-ol)}
 :is(.u2-page,.u2-hors) :where(a){color:inherit;text-decoration:none}
 /* la barre reste en haut pendant que le rail et la page défilent (elle défile avec la page sur les autres écrans) */
 .u2-page .v2-top{position:sticky;top:0}
@@ -43,7 +48,7 @@
 :is(.u2-page,.u2-hors) .v2-tabs::-webkit-scrollbar{display:none}
 :is(.u2-page,.u2-hors) .v2-tab{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 16px;font-size:14px;font-weight:700;color:var(--muted-d)}
 :is(.u2-page,.u2-hors) .v2-tab:hover{color:var(--ip-ink);background:var(--card-2)}
-:is(.u2-page,.u2-hors) .v2-tab[aria-selected="true"],:is(.u2-page,.u2-hors) .v2-tab[aria-checked="true"]{background:var(--ip-blue);color:#fff;box-shadow:0 2px 8px rgba(0,80,230,.28)}
+:is(.u2-page,.u2-hors) .v2-tab[aria-selected="true"],:is(.u2-page,.u2-hors) .v2-tab[aria-checked="true"]{background:var(--ip-blue);color:#fff;box-shadow:0 2px 8px var(--u2-o)}
 :is(.u2-page,.u2-hors) .v2-tabs.u2-plein{width:auto;display:flex}
 :is(.u2-page,.u2-hors) .v2-tabs.u2-plein .v2-tab{flex:1}
 :is(.u2-page,.u2-hors) .v2-tabs.u2-plein{margin:0}
@@ -91,6 +96,25 @@
 .u2-pbtn:disabled{cursor:default;color:#6B7286;box-shadow:none;transform:none;background:var(--card-2)}
 .u2-pbtn[aria-pressed="true"]{background:var(--halo);color:var(--ip-blue);border-color:color-mix(in srgb,var(--ip-blue) 30%,var(--line))}
 .u2-pbtn[aria-pressed="true"] .u2-ic{fill:currentColor}
+
+/* ─── Réglages du tiroir : familles, couleurs, retour à l'origine ─── */
+.u2-note-h{margin:0 0 6px}
+.u2-fam{margin-top:10px}
+.u2-fam-h{display:flex;align-items:center;gap:8px;min-height:44px;border-bottom:1px solid var(--line-2);font-size:14px;font-weight:800;color:var(--ip-ink)}
+.u2-fam-h .u2-lb{flex:1;min-width:0}
+.u2-coul{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.u2-co{display:flex;align-items:center;gap:10px;min-height:60px;padding:6px 10px;border:1px solid var(--line);border-radius:var(--r-btn);background:var(--card);cursor:pointer;font-family:var(--font);font-size:14px;font-weight:700;color:var(--ip-ink-2);text-align:left;box-shadow:var(--sh-1)}
+.u2-co:hover{border-color:color-mix(in srgb,var(--ip-blue) 40%,var(--line))}
+.u2-co[aria-checked="true"]{border-color:var(--ip-blue);background:var(--halo);color:var(--ip-ink)}
+.u2-pas{flex:none;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(16,19,28,.25)}
+.u2-pas .u2-ic{width:22px;height:22px;stroke:#fff;stroke-width:2.6}
+.u2-co-nm{min-width:0;line-height:1.2}
+.u2-rz .v2-btn{height:44px}
+.u2-mon-sel{height:46px}
+.u2-mon-sel select{height:44px;min-height:44px}
+.u2-rz-go{width:100%}
+.u2-rz-b{display:flex;flex-direction:column;gap:8px}
+.u2-rz-b .v2-btn{width:100%}
 
 /* ─── Widgets de droite : titre, lien « Ouvrir », contenu ─── */
 .u2-wid{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2);padding:16px 18px 14px;position:relative}

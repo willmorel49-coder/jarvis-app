@@ -184,6 +184,12 @@
     var h = (location.hash || '').replace(/^#/, '');
     if (!h) return { name: 'home', param: null };
     var parts = h.split('/');
+    // 02/10/2026 — L'Argument, la Présentation Intégral et l'Audit marge sont retirés (demande de Will) : leur ancienne adresse ramène à l'accueil.
+    // (Fiches PDF garde son adresse : « Commande recommandée » et la barre du panier y mènent encore. L'audit d'une officine vit dans sa fiche, sans cette route.)
+    if (parts[0] === 'argument' || parts[0] === 'presentation' || parts[0] === 'audit') {
+      try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+      return { name: 'home', param: null };
+    }
     var param = null;
     if (parts[1]) { try { param = decodeURIComponent(parts[1]); } catch (e) { param = parts[1]; } }  // lien malformé → pas de crash/spinner figé
     return { name: parts[0] || 'home', param: param };
@@ -1181,7 +1187,10 @@
   // jamais de chiffre d'ouvertures ni de nom de personne. Hors OPSO uniquement.
   // ════════════════════════════════════════════
   // Ordre de repli (mesure du 30/09/2026), utilisé tant que le vrai classement n'est pas là.
-  var G4_REPLI = ['pharma', 'produits', 'pilotage', 'marketing', 'infos', 'rdv', 'carte', 'appro', 'todo', 'biosimilaires', 'offilog', 'concurrents', 'remontees', 'marchefr', 'carteGrp', 'presentation', 'lgo', 'fiches', 'argument', 'audit', 'groupements', 'reforme2027', 'academy'];
+  var G4_REPLI = ['pharma', 'produits', 'pilotage', 'marketing', 'infos', 'rdv', 'carte', 'appro', 'todo', 'biosimilaires', 'offilog', 'concurrents', 'remontees', 'marchefr', 'carteGrp', 'lgo', 'groupements', 'academy'];
+  // 02/10/2026 — Will : « supprimer audit, fiches pdf, l'argument, audit marge, réforme 2027, présentation intégral ». Les cinq portes
+  // portent `retire: true` : absentes de G4_REPLI donc de l'accueil, des menus et des réglages (u2Net les écarte). Elles restent
+  // décrites ici pour le nom d'écran de la barre (nomEcran) : audit et fiches ont encore des parcours internes.
   // k = nom de la route mesurée par V2.mesurer (= `ecran` côté base) ; page = écran qui doit exister.
   var G4_PORTES = {
     pharma: { fam: 'clients', ico: 'officines', nom: 'Officines', ph: 'La fiche de chaque client et prospect', page: 'pharma' },
@@ -1199,15 +1208,15 @@
     remontees: { fam: 'aide', ico: 'remontees', nom: 'Remontées', ph: 'Le mur d\'idées de l\'équipe', page: 'remontees' },
     marchefr: { fam: 'veille', ico: 'marche', nom: 'Le marché', ph: 'Le marché français d\'une référence, région par région', page: 'marchefr' },
     carteGrp: { fam: 'veille', ico: 'carte-grp', nom: 'Carte des groupements', ph: 'Où sont les adhérents de chaque groupement', page: 'carteGrp' },
-    presentation: { fam: 'communiquer', ico: 'presentation', nom: 'Présentation Intégral', ph: 'Le groupe de grossistes-répartiteurs en quelques écrans', page: 'presentation' },
+    presentation: { retire: true, fam: 'communiquer', ico: 'presentation', nom: 'Présentation Intégral', ph: 'Le groupe de grossistes-répartiteurs en quelques écrans', page: 'presentation' },
     lgo: { fam: 'communiquer', ico: 'lgo', nom: 'Logiciels officine', ph: 'Importer le catalogue dans chaque logiciel', page: 'lgo' },
-    fiches: { fam: 'clients', ico: 'fiches', nom: 'Fiches PDF', ph: 'Les fiches à laisser en officine', page: 'fiches' },
-    argument: { fam: 'produits', ico: 'argument', nom: 'L\'Argument', ph: 'Quoi répondre, objection par objection', page: 'argument' },
-    audit: { fam: 'produits', ico: 'audit', nom: 'Audit marge', ph: 'La marge d\'une officine, calculée avec elle', page: 'audit' },
+    fiches: { retire: true, fam: 'clients', ico: 'fiches', nom: 'Fiches PDF', ph: 'Les fiches à laisser en officine', page: 'fiches' },
+    argument: { retire: true, fam: 'produits', ico: 'argument', nom: 'L\'Argument', ph: 'Quoi répondre, objection par objection', page: 'argument' },
+    audit: { retire: true, fam: 'produits', ico: 'audit', nom: 'Audit marge', ph: 'La marge d\'une officine, calculée avec elle', page: 'audit' },
     // Groupements : pas d'écran à part, c'est l'onglet « groupements » des officines.
     groupements: { fam: 'clients', ico: 'groupements', nom: 'Groupements', ph: 'Les listes et listings d\'achats', page: 'pharma', js: 'V2.go(\'pharma\',\'groupements\')' },
     // Réforme 2027 : document privé, adresse signée valable 1 h, jamais servi par le dépôt public.
-    reforme2027: { fam: 'produits', ico: 'reforme', nom: 'Réforme 2027', ph: 'Ce qui change pour la marge officinale', page: 'pilotage', js: 'V2.ouvrirDocProtege(\'reforme2027\')' },
+    reforme2027: { retire: true, fam: 'produits', ico: 'reforme', nom: 'Réforme 2027', ph: 'Ce qui change pour la marge officinale', page: 'pilotage', js: 'V2.ouvrirDocProtege(\'reforme2027\')' },
     // JARVIS Academy : lien externe (Q_ACADEMY), tuile de « Aide et idées » ; pas d'écran de l'app (page: null).
     academy: { fam: 'aide', ico: 'academy', nom: 'JARVIS Academy', ph: 'Se former à l\'outil, pas à pas', page: null }
   };
@@ -1302,6 +1311,8 @@
     lgo: '<rect x="3.5" y="5" width="17" height="12" rx="2"/><path d="M8 21h8M12 17v4M9.5 10.5l2.5 2.5 2.5-2.5M12 8v5"/>',
     remontees: '<path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"/>',
     academy: '<path d="M2.5 9.5L12 5l9.5 4.5L12 14z"/><path d="M6.5 11.8V16c0 1.2 2.5 2.5 5.5 2.5s5.5-1.3 5.5-2.5v-4.2M21.5 9.5V14"/>',
+    palette: '<path d="M12 3.5a8.5 8.5 0 100 17c1.2 0 1.8-.8 1.8-1.7 0-1.5-1.3-1.6-1.3-2.9 0-.9.7-1.4 1.6-1.4H17a3.5 3.5 0 003.5-3.5C20.5 7 16.8 3.5 12 3.5z"/><circle cx="7.8" cy="11.5" r="1"/><circle cx="10.5" cy="7.7" r="1"/><circle cx="15.2" cy="8" r="1"/>',
+    check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
     chev: '<path d="M9 5l7 7-7 7"/>',
     arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
     pin: '<path d="M12 16v5.5M8 3h8l-1 6 3 4.5H6L9 9z"/>',
@@ -1323,6 +1334,18 @@
   var U2_FAMS = [['clients', 'Mes clients'], ['produits', 'Produits et prix'], ['piloter', 'Piloter'], ['veille', 'Veille'], ['communiquer', 'Communiquer'], ['aide', 'Aide et idées']];
   var U2_WIDGETS = { infos: { nom: 'Infos du matin', page: 'infos' }, todo: { nom: 'To do list', page: 'todo' }, relance: { nom: 'À relancer', page: 'rdv' }, semaine: { nom: 'Ma semaine', page: 'rdv' } };
   var U2_WORDRE = ['infos', 'todo', 'relance', 'semaine'];
+  // 02/10/2026 — Couleurs : six teintes d'accent, fond toujours clair. Chaque ligne est calculée une fois (ton foncé, halo clair, ombres) :
+  // c = accent, d = ton foncé, h = halo, ci / cg / cd = les trois nappes de la lumière de tête (.v2-halo), o / ol = ombre portée forte / légère, sh / shh = ombres des boutons pleins.
+  // Contrastes calculés : blanc sur c ≥ 5,3:1, d sur h ≥ 8:1, c sur h ≥ 4,7:1. La première est le bleu d'origine : sans réglage, rien ne change.
+  var U2_TEINTES = [
+    { k: 'bleu', nom: 'Bleu JARVIS', c: '#0050E6', d: '#0034A0', ci: '#E4EDFC', cg: '#CFDFFC', cd: '#DCE7FC', h: '#E9F0FF', o: 'rgba(0,80,230,.28)', ol: 'rgba(0,80,230,.10)', sh: '0 4px 12px rgba(0,80,230,.26), 0 8px 24px rgba(0,52,160,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(0,80,230,.34), 0 14px 34px rgba(0,52,160,.20), 0 1px 0 rgba(255,255,255,.28) inset' },
+    { k: 'indigo', nom: 'Indigo', c: '#4B3FD0', d: '#322A89', ci: '#EBEAFA', cg: '#DDDBF6', cd: '#E6E5F9', h: '#EFEEFB', o: 'rgba(75,63,208,.28)', ol: 'rgba(75,63,208,.10)', sh: '0 4px 12px rgba(75,63,208,.26), 0 8px 24px rgba(50,42,137,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(75,63,208,.34), 0 14px 34px rgba(50,42,137,.20), 0 1px 0 rgba(255,255,255,.28) inset' },
+    { k: 'emeraude', nom: 'Émeraude', c: '#0A7A55', d: '#075138', ci: '#E4F0EC', cg: '#D0E6DF', cd: '#DDEDE8', h: '#E9F3F0', o: 'rgba(10,122,85,.28)', ol: 'rgba(10,122,85,.10)', sh: '0 4px 12px rgba(10,122,85,.26), 0 8px 24px rgba(7,81,56,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(10,122,85,.34), 0 14px 34px rgba(7,81,56,.20), 0 1px 0 rgba(255,255,255,.28) inset' },
+    { k: 'corail', nom: 'Corail', c: '#BE3318', d: '#7D2210', ci: '#F8E9E6', cg: '#F3D8D3', cd: '#F6E3DF', h: '#F9EDEA', o: 'rgba(190,51,24,.28)', ol: 'rgba(190,51,24,.10)', sh: '0 4px 12px rgba(190,51,24,.26), 0 8px 24px rgba(125,34,16,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(190,51,24,.34), 0 14px 34px rgba(125,34,16,.20), 0 1px 0 rgba(255,255,255,.28) inset' },
+    { k: 'ambre', nom: 'Ambre', c: '#9C5700', d: '#673900', ci: '#F4EDE3', cg: '#ECDFCF', cd: '#F1E8DC', h: '#F6F0E8', o: 'rgba(156,87,0,.28)', ol: 'rgba(156,87,0,.10)', sh: '0 4px 12px rgba(156,87,0,.26), 0 8px 24px rgba(103,57,0,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(156,87,0,.34), 0 14px 34px rgba(103,57,0,.20), 0 1px 0 rgba(255,255,255,.28) inset' },
+    { k: 'prune', nom: 'Prune', c: '#8E2A7A', d: '#5E1C51', ci: '#F3E8F0', cg: '#EAD7E6', cd: '#F0E2ED', h: '#F5ECF3', o: 'rgba(142,42,122,.28)', ol: 'rgba(142,42,122,.10)', sh: '0 4px 12px rgba(142,42,122,.26), 0 8px 24px rgba(94,28,81,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(142,42,122,.34), 0 14px 34px rgba(94,28,81,.20), 0 1px 0 rgba(255,255,255,.28) inset' }
+  ];
+  var U2_FAMILLES = U2_FAMS.map(function (f) { return f[0]; });
   var Q_ACADEMY = 'https://jarvis-academy-fr.vercel.app/';
   var NOTE_USAGE = 'Les écrans que vous ouvrez sont enregistrés (votre nom et l\'heure), pour savoir lesquels améliorer en priorité.';
   // ── Dates ──
@@ -1413,14 +1436,16 @@
   function u2Installee() { try { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch (e) { return false; } }
   function u2Nb(n) { try { return (Number(n) || 0).toLocaleString('fr-FR'); } catch (e) { return String(n); } }
 
-  // ── Réglages : forme { v:1, epingles:[…]|null, ordre:{famille:[…]}, widgets:{…}, wordre:[…] } ──
+  // ── Réglages : forme { v:1, epingles:[…]|null, ordre:{famille:[…]}, widgets:{…}, wordre:[…], couleur:'bleu', masques:[…], fordre:[…] } ──
   // epingles null = « rien réglé » : les quatre premiers du classement réel. [] = tout désépinglé.
-  function u2Def() { return { v: 1, epingles: null, ordre: {}, widgets: { infos: true, todo: true, relance: true, semaine: true }, wordre: U2_WORDRE.slice() }; }
+  // couleur = clé d'une teinte de U2_TEINTES ; masques = outils cachés (restent dans les réglages) ; fordre = ordre des familles.
+  function u2Def() { return { v: 1, epingles: null, ordre: {}, widgets: { infos: true, todo: true, relance: true, semaine: true }, wordre: U2_WORDRE.slice(),
+    couleur: U2_TEINTES[0].k, masques: [], fordre: U2_FAMILLES.slice() }; }
   // Nettoyage à la lecture : clés inconnues ignorées, outils disparus retirés, doublons retirés.
   function u2Net(raw) {
     var S = u2Def();
     if (!raw || typeof raw !== 'object') return S;
-    function connu(k, i, a) { return typeof k === 'string' && !!G4_PORTES[k] && a.indexOf(k) === i; }
+    function connu(k, i, a) { return typeof k === 'string' && !!G4_PORTES[k] && !G4_PORTES[k].retire && a.indexOf(k) === i; }
     if (Array.isArray(raw.epingles)) S.epingles = raw.epingles.filter(connu);
     if (raw.ordre && typeof raw.ordre === 'object' && !Array.isArray(raw.ordre)) {
       U2_FAMS.forEach(function (f) {
@@ -1430,7 +1455,42 @@
     }
     if (raw.widgets && typeof raw.widgets === 'object') U2_WORDRE.forEach(function (k) { if (typeof raw.widgets[k] === 'boolean') S.widgets[k] = raw.widgets[k]; });
     if (Array.isArray(raw.wordre) && raw.wordre.length === U2_WORDRE.length && raw.wordre.every(function (k, i, a) { return !!U2_WIDGETS[k] && a.indexOf(k) === i; })) S.wordre = raw.wordre.slice();
+    if (typeof raw.couleur === 'string' && U2_TEINTES.some(function (t) { return t.k === raw.couleur; })) S.couleur = raw.couleur;
+    if (Array.isArray(raw.masques)) S.masques = raw.masques.filter(connu);
+    if (Array.isArray(raw.fordre)) {
+      var fo = raw.fordre.filter(function (k, i, a) { return U2_FAMILLES.indexOf(k) >= 0 && a.indexOf(k) === i; });
+      S.fordre = fo.concat(U2_FAMILLES.filter(function (k) { return fo.indexOf(k) < 0; }));   // une famille oubliée se range à la fin
+    }
     return S;
+  }
+  // ── La couleur : posée sur .u2-page et .u2-hors (le tiroir vit sur <body>), lue dans le navigateur AVANT le premier dessin ──
+  // Jamais en Escale (son thème impose ses couleurs) ; le bleu d'origine ne pose aucune surcharge.
+  function u2Teinte() {
+    if (u2Escale()) return U2_TEINTES[0];
+    var k = u2S().couleur;
+    return U2_TEINTES.filter(function (t) { return t.k === k; })[0] || U2_TEINTES[0];
+  }
+  function u2Vars(t) {
+    return { '--ip-blue': t.c, '--ip-blue-d': t.d, '--halo': t.h, '--sh-blue': t.sh, '--sh-blue-h': t.shh, '--accent': t.c, '--u2-o': t.o, '--u2-ol': t.ol };
+  }
+  function u2StyleAttr() {
+    var t = u2Teinte();
+    if (t === U2_TEINTES[0]) return '';
+    var v = u2Vars(t);
+    return ' style="' + Object.keys(v).map(function (n) { return n + ':' + v[n]; }).join(';') + '"';
+  }
+  function u2PoserTeinte() {
+    var t = u2Teinte(), v = u2Vars(t), d = t === U2_TEINTES[0];
+    [document.querySelector('.u2-page'), document.getElementById('u2-hors')].forEach(function (el) {
+      if (!el) return;
+      Object.keys(v).forEach(function (n) { if (d) el.style.removeProperty(n); else el.style.setProperty(n, v[n]); });
+    });
+    // le halo de tête (.v2-halo, frère de l'accueil, fixé sur la fenêtre) lit --accent et --halo : on les pose sur lui seul
+    var hl = document.querySelector('.v2-halo');
+    if (hl) {
+      var hv = { '--accent': t.c, '--halo': t.h, '--vr-ciel': t.ci, '--vr-ciel-g': t.cg, '--vr-ciel-d': t.cd };
+      Object.keys(hv).forEach(function (n) { if (d) hl.style.removeProperty(n); else hl.style.setProperty(n, hv[n]); });
+    }
   }
   // Le navigateur d'abord (premier dessin immédiat), la ligne Supabase ensuite.
   function u2S() {
@@ -1505,11 +1565,18 @@
     if (l === null) return cles.slice(0, 4);
     return l.filter(function (k) { return cles.indexOf(k) >= 0; });
   }
+  // Les outils réellement montrés : ceux de l'espace, moins ceux que la personne a masqués (ils restent dans ses réglages).
+  function u2Vis() { var m = u2S().masques || []; return u2Cles().filter(function (k) { return m.indexOf(k) < 0; }); }
+  function u2FamsOrdre() {
+    var o = u2S().fordre || U2_FAMILLES;
+    return o.map(function (k) { return U2_FAMS.filter(function (f) { return f[0] === k; })[0]; }).filter(Boolean);
+  }
   function u2Etat() {
-    var cles = u2Cles();
-    var fams = U2_FAMS.map(function (f) { return { k: f[0], nom: f[1], cles: u2Fam(f[0], cles) }; }).filter(function (f) { return f.cles.length; });
+    var cles = u2Cles(), vis = u2Vis();
+    var tous = u2FamsOrdre().map(function (f) { return { k: f[0], nom: f[1], cles: u2Fam(f[0], cles) }; }).filter(function (f) { return f.cles.length; });
+    var fams = tous.map(function (f) { return { k: f.k, nom: f.nom, cles: f.cles.filter(function (k) { return vis.indexOf(k) >= 0; }) }; }).filter(function (f) { return f.cles.length; });
     if (_u2.onglet !== 'ep' && !fams.some(function (f) { return f.k === _u2.onglet; })) _u2.onglet = 'ep';
-    return { cles: cles, fams: fams, ep: u2Epingles(cles) };
+    return { cles: cles, vis: vis, tous: tous, fams: fams, ep: u2Epingles(vis) };
   }
   // « Nouveau » (G4_UNE, décision de Will du 01/10) : lu dans G4_UNE, date de fin comprise ; jamais en Escale ni en OPSO.
   function u2Nouveau(k) {
@@ -1541,6 +1608,11 @@
   }
   function u2PanneauHtml(etat) {
     var l = etat.ep;
+    if (!etat.vis.length) {
+      return '<p class="u2-ep-vide">Tous vos outils sont masqués. ' + (u2Mode()
+        ? 'Ouvrez « Mon espace » avec votre avatar, en haut à droite, puis, dans « Tous les outils », allumez l\'interrupteur de chaque outil à réafficher, ou choisissez « Revenir aux réglages d\'origine ».'
+        : 'Ouvrez « Outils » dans le rail à gauche, puis, dans « Tous les outils », allumez l\'interrupteur de chaque outil à réafficher, ou choisissez « Revenir aux réglages d\'origine ».') + '</p>';
+    }
     if (_u2.onglet !== 'ep') { var f = etat.fams.filter(function (x) { return x.k === _u2.onglet; })[0]; l = f ? f.cles : []; }
     if (!l.length) {
       return '<p class="u2-ep-vide">Aucun outil épinglé. ' + (u2Mode()
@@ -1677,7 +1749,9 @@
   function u2Rubriques() {
     var l = [];
     if (V2.basculeEspace && V2.basculeEspace()) l.push(['espace', 'Espace', 'espace']);
-    l.push(['outils', 'Outils', 'grille'], ['widgets', 'Widgets', 'widgets'], ['compte', 'Compte', 'user']);
+    l.push(['outils', 'Outils', 'grille'], ['widgets', 'Widgets', 'widgets']);
+    if (!u2Escale()) l.push(['couleurs', 'Couleurs', 'palette']);   // Escale impose ses couleurs : pas de choix
+    l.push(['compte', 'Compte', 'user']);
     return l;
   }
   function u2RailHtml() {
@@ -1719,7 +1793,42 @@
       var l = f.cles.filter(function (k) { return pins.indexOf(k) < 0; });
       if (l.length) h += '<optgroup label="' + esc(f.nom) + '">' + l.map(function (k) { return '<option value="' + k + '">' + esc(G4_PORTES[k].nom) + '</option>'; }).join('') + '</optgroup>';
     });
-    return h + '</select>' + u2Ic('down') + '</div></section>';
+    h += '</select>' + u2Ic('down') + '</div></section>';
+    return h + u2BlocFamilles(etat);
+  }
+  // Tous les outils, famille par famille : afficher / masquer, monter / descendre, épingler. Les familles se déplacent aussi.
+  function u2BlocFamilles(etat) {
+    var S = u2S(), m = S.masques || [];
+    var h = '<section class="u2-mon-b"><h3>Tous les outils</h3><p class="u2-note u2-note-h">Un outil masqué disparaît de votre accueil, sans être perdu : vous le réaffichez ici.</p>';
+    etat.tous.forEach(function (f, fi) {
+      h += '<div class="u2-fam" role="group" aria-label="' + esc(f.nom) + '"><div class="u2-fam-h"><span class="u2-lb">' + esc(f.nom) + '</span><span class="u2-fl">' + u2BtnMouv('f', f.k, f.nom, fi, etat.tous.length) + '</span></div>';
+      f.cles.forEach(function (k, i) {
+        var nm = G4_PORTES[k].nom, on = m.indexOf(k) < 0, ep = etat.ep.indexOf(k) >= 0;
+        h += '<div class="u2-mon-ligne"><span class="u2-lb' + (on ? '' : ' u2-off') + '">' + esc(nm) + '</span><span class="u2-fl">' + u2BtnMouv('o', k, nm, i, f.cles.length) +
+          '<button type="button" class="u2-pbtn" aria-pressed="' + ep + '" data-u2-a="fpin" data-v="' + k + '" aria-label="' + (ep ? 'Désépingler ' : 'Épingler ') + esc(nm) + '"' + (on ? '' : ' disabled') + '>' + u2Ic('pin') + '</button></span>' +
+          '<button type="button" class="u2-sw" role="switch" aria-checked="' + on + '" aria-label="Afficher ' + esc(nm) + '" data-u2-a="mtog" data-v="' + k + '"><i></i></button></div>';
+      });
+      h += '</div>';
+    });
+    return h + '</section>';
+  }
+  // Les six teintes : pastilles rondes de 48 px, nom écrit à côté, coche sur la teinte active (boutons radio, flèches du clavier).
+  function u2BlocCouleurs() {
+    if (u2Escale()) return '';
+    var cur = u2Teinte().k;
+    return '<section class="u2-mon-b"><h3>Teinte d\'accent</h3><div class="u2-coul" role="radiogroup" aria-label="Couleur d\'accent">' + U2_TEINTES.map(function (t) {
+      var on = t.k === cur;
+      return '<button type="button" class="u2-co" role="radio" aria-checked="' + on + '" tabindex="' + (on ? '0' : '-1') + '" data-u2-a="coul" data-v="' + t.k + '">' +
+        '<span class="u2-pas" style="background:' + t.c + '">' + (on ? u2Ic('check') : '') + '</span><span class="u2-co-nm">' + esc(t.nom) + '</span></button>';
+    }).join('') + '</div><p class="u2-note">Le fond reste clair. La couleur s\'applique à votre accueil.</p></section>';
+  }
+  // Un seul retour aux réglages d'origine, avec confirmation dans le tiroir (jamais la boîte du navigateur).
+  function u2BlocReset() {
+    if (_u2.confirmer) {
+      return '<section class="u2-mon-b u2-rz" role="group" aria-label="Revenir aux réglages d\'origine"><p class="u2-note u2-note-h"><b>Tout remettre comme au départ ?</b> Vos couleurs, vos outils épinglés, masqués et rangés, et vos widgets reviennent aux réglages d\'origine.</p>' +
+        '<div class="u2-rz-b"><button type="button" class="v2-btn v2-btn-primary" data-u2-a="rzoui">Oui, tout remettre</button><button type="button" class="v2-btn v2-btn-ghost" data-u2-a="rznon">Annuler</button></div></section>';
+    }
+    return '<section class="u2-mon-b u2-rz"><button type="button" class="v2-btn v2-btn-ghost u2-rz-go" data-u2-a="rz">Revenir aux réglages d\'origine</button></section>';
   }
   // Les mêmes gestes que le menu du compte de la barre (V2.userMenu), et seulement ceux qui existent sur cet appareil.
   function u2BlocCompte() {
@@ -1734,13 +1843,14 @@
   function u2VoletRendre() {
     var v = document.getElementById('u2-volet'); if (!v) return;
     var t, h;
-    if (u2Mode()) { t = 'Mon espace'; h = u2BlocEspace() + u2BlocWidgets() + u2BlocOutils() + u2BlocCompte(); }
+    if (u2Mode()) { t = 'Mon espace'; h = u2BlocEspace() + u2BlocWidgets() + u2BlocCouleurs() + u2BlocOutils() + u2BlocReset() + u2BlocCompte(); }
     else {
       var s = _u2.sec || 'outils';
       if (s === 'espace' && !(V2.basculeEspace && V2.basculeEspace())) s = 'outils';
+      if (s === 'couleurs' && u2Escale()) s = 'outils';
       _u2.sec = s;
-      t = s === 'espace' ? 'Espace' : s === 'outils' ? 'Outils' : s === 'widgets' ? 'Widgets' : 'Compte';
-      h = s === 'espace' ? u2BlocEspace() : s === 'outils' ? u2BlocOutils() : s === 'widgets' ? u2BlocWidgets() : u2BlocCompte();
+      t = s === 'espace' ? 'Espace' : s === 'outils' ? 'Outils' : s === 'widgets' ? 'Widgets' : s === 'couleurs' ? 'Couleurs' : 'Compte';
+      h = s === 'espace' ? u2BlocEspace() : s === 'outils' ? u2BlocOutils() + u2BlocReset() : s === 'widgets' ? u2BlocWidgets() : s === 'couleurs' ? u2BlocCouleurs() + u2BlocReset() : u2BlocCompte();
     }
     document.getElementById('u2-vt').textContent = t;
     document.getElementById('u2-mon').innerHTML = h;
@@ -1767,7 +1877,7 @@
     var mode = u2Mode();
     if (_u2.ouvert && (mode || sec === _u2.sec)) { u2Fermer(true); return; }
     _u2.sec = mode ? null : sec; _u2.opener = btn || null;
-    _u2.ouvert = true;
+    _u2.ouvert = true; _u2.confirmer = false;
     u2VoletRendre();
     // ni `visibility` ni transition de visibilité : WebKit laissait « hidden » sur une partie du contenu (le menu « Épingler un outil »)
     clearTimeout(_u2.tFerme);
@@ -1780,7 +1890,7 @@
   function u2Fermer(rendre) {
     if (!_u2.ouvert) return;
     var v = document.getElementById('u2-volet'), f = document.getElementById('u2-fond');
-    _u2.ouvert = false;
+    _u2.ouvert = false; _u2.confirmer = false;
     if (v) { v.classList.remove('on'); clearTimeout(_u2.tFerme); _u2.tFerme = setTimeout(function () { if (!_u2.ouvert) v.classList.remove('u2-vu'); }, 320); }
     if (f) f.classList.remove('on');
     u2Verrou(false); u2Rail();
@@ -1803,7 +1913,7 @@
     var t = tous[a]; tous[a] = tous[b]; tous[b] = t;
   }
   function u2Agir(a, v, el) {
-    var S = u2S(), cles = u2Cles();
+    var S = u2S(), cles = u2Cles(), vis = u2Vis();
     if (a === 'install') { u2Fermer(false); V2.installApp(); return; }
     if (a === 'logout') { u2Fermer(false); V2.signOut(); return; }
     if (a === 'esp') { if ((v === 'escale') !== u2Escale()) V2.goSpace(v === 'escale' ? 'escale' : 'crm'); return; }
@@ -1813,22 +1923,40 @@
       if (V2.todo && V2.todo.cocher) V2.todo.cocher(v, fait);
       return;
     }
-    if (a === 'wtog') S.widgets[v] = !S.widgets[v];
+    if (a === 'rz') { _u2.confirmer = true; u2Redessiner(a, v); return; }
+    if (a === 'rznon') { _u2.confirmer = false; u2Redessiner(a, v); return; }
+    if (a === 'rzoui') { _u2.confirmer = false; _u2.S = u2Def(); }
+    else if (a === 'coul') { if (!U2_TEINTES.some(function (t) { return t.k === v; })) return; S.couleur = v; }
+    else if (a === 'mtog') {
+      if (!G4_PORTES[v] || G4_PORTES[v].retire) return;
+      var im = S.masques.indexOf(v); if (im < 0) S.masques.push(v); else S.masques.splice(im, 1);
+    }
+    else if (a === 'oup' || a === 'odn') {
+      if (!G4_PORTES[v] || G4_PORTES[v].retire) return;
+      var fa = G4_PORTES[v].fam, lo = u2Fam(fa, cles).slice();
+      u2Echange(lo, lo, v, a === 'oup' ? -1 : 1); S.ordre[fa] = lo;
+    }
+    else if (a === 'fup' || a === 'fdn') {
+      var te = u2Etat().tous.map(function (f) { return f.k; }), lf = S.fordre.filter(function (k) { return te.indexOf(k) >= 0; });
+      u2Echange(S.fordre, lf, v, a === 'fup' ? -1 : 1);
+    }
+    else if (a === 'wtog') S.widgets[v] = !S.widgets[v];
     else if (a === 'wup' || a === 'wdn') u2Echange(S.wordre, S.wordre, v, a === 'wup' ? -1 : 1);
-    else if (a === 'pin' || a === 'pup' || a === 'pdn') {
-      if (S.epingles === null) S.epingles = u2Epingles(cles);
-      if (a === 'pin') { var i = S.epingles.indexOf(v); if (i < 0) S.epingles.push(v); else S.epingles.splice(i, 1); }
-      else u2Echange(S.epingles, u2Epingles(cles), v, a === 'pup' ? -1 : 1);
+    else if (a === 'pin' || a === 'fpin' || a === 'pup' || a === 'pdn') {
+      if (S.epingles === null) S.epingles = u2Epingles(vis);
+      if (a === 'pin' || a === 'fpin') { var i = S.epingles.indexOf(v); if (i < 0) S.epingles.push(v); else S.epingles.splice(i, 1); }
+      else u2Echange(S.epingles, u2Epingles(vis), v, a === 'pup' ? -1 : 1);
     } else return;
     u2Garder();
     u2Redessiner(a, v);
   }
   function u2Redessiner(a, v) {
-    u2MajOnglets(); u2MajPanneau(); u2MajWidgets(); u2VoletRendre();
+    u2PoserTeinte(); u2MajOnglets(); u2MajPanneau(); u2MajWidgets(); u2VoletRendre();
     if (!a) return;
     var vo = document.getElementById('u2-volet'); if (!vo) return;
-    var alt = { wup: 'wdn', wdn: 'wup', pup: 'pdn', pdn: 'pup' };
-    var n = vo.querySelector('[data-u2-a="' + a + '"][data-v="' + v + '"]');
+    var alt = { wup: 'wdn', wdn: 'wup', pup: 'pdn', pdn: 'pup', oup: 'odn', odn: 'oup', fup: 'fdn', fdn: 'fup' };
+    var foc = { rz: 'rznon', rzoui: 'rz', rznon: 'rz' };   // la confirmation : le focus va au bouton « Annuler », puis revient sur « Revenir… »
+    var n = vo.querySelector('[data-u2-a="' + (foc[a] || a) + '"]' + (foc[a] ? '' : '[data-v="' + v + '"]'));
     if (n && n.disabled) n = alt[a] ? vo.querySelector('[data-u2-a="' + alt[a] + '"][data-v="' + v + '"]') : null;
     if (!n || n.disabled) n = vo.querySelector('select') || vo.querySelector('button:not([disabled])');
     if (n) { try { n.focus(); } catch (e) {} }
@@ -1861,8 +1989,8 @@
     var s = e.target && e.target.closest && e.target.closest('[data-u2-sel="pin"]');
     if (!s || !s.value || !s.closest('.u2-page, .u2-hors')) return;
     var k = s.value, S = u2S();
-    if (!G4_PORTES[k]) return;
-    if (S.epingles === null) S.epingles = u2Epingles(u2Cles());
+    if (!G4_PORTES[k] || G4_PORTES[k].retire) return;
+    if (S.epingles === null) S.epingles = u2Epingles(u2Vis());
     if (S.epingles.indexOf(k) < 0) S.epingles.push(k);
     u2Garder(); u2Redessiner('pin', k);
     var n = document.querySelector('#u2-volet select'); if (n) { try { n.focus(); } catch (x) {} }
@@ -1870,6 +1998,12 @@
   function u2Touche(e) {
     var t = e.target; if (!t || !t.closest || !t.closest('.u2-page, .u2-hors')) return;
     if (e.key === 'Escape' && _u2.ouvert) { e.preventDefault(); u2Fermer(true); return; }
+    var co = t.closest('[data-u2-a="coul"]');
+    if (co && ['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].indexOf(e.key) >= 0) {
+      var lc = [].slice.call(document.querySelectorAll('#u2-volet [data-u2-a="coul"]')), ic = lc.indexOf(co);
+      var nx = lc[(ic + (e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1) + lc.length) % lc.length];
+      e.preventDefault(); u2Agir('coul', nx.getAttribute('data-v'), nx); return;
+    }
     var b = t.closest('[data-u2-tab]');
     if (!b || ['ArrowRight', 'ArrowLeft', 'Home', 'End'].indexOf(e.key) < 0) return;
     var tous = [].slice.call(document.querySelectorAll('#u2-onglets [data-u2-tab]')), i = tous.indexOf(b);
@@ -1900,11 +2034,13 @@
     if (_u2.ouvert) u2Fermer(false);
     u2Verrou(false);
     _u2.monte = false;
+    var hl = document.querySelector('.v2-halo'); if (hl) hl.removeAttribute('style');   // le halo des autres écrans reprend ses valeurs
     var h = document.getElementById('u2-hors'); if (h && h.parentNode) h.parentNode.removeChild(h);
   }
   // Monte l'accueil, ou met ses données à jour en place s'il est déjà à l'écran.
   // V2.render() est rappelé quand les relances arrivent et quand les ventes finissent : rien ne se redessine en entier.
   function u2Maj(m) {
+    u2PoserTeinte();   // V2.render() remet --accent à la racine à chaque passage
     var h = document.getElementById('u2-salut');
     if (h && h.textContent !== u2Salut(m)) h.textContent = u2Salut(m);
     u2Poser('u2-compte', u2CompteHtml(m), 'compte');
@@ -1917,7 +2053,7 @@
     _u2.entree = true; _u2.ouvert = false; _u2.opener = null; _u2.sec = null; _u2.sig = {}; _u2.mode = u2Mode();
     u2Verrou(false);
     var etat = u2Etat();
-    root.innerHTML = '<div class="u2-page' + (cascade ? ' u2-cascade' : '') + '">' +
+    root.innerHTML = '<div class="u2-page' + (cascade ? ' u2-cascade' : '') + '"' + u2StyleAttr() + '>' +
       '<button type="button" class="u2-skip" data-u2-skip>Aller aux outils</button>' + topbar() +
       '<div class="u2-grille">' +
         '<nav class="u2-rail" aria-label="Mon espace" id="u2-rail">' + u2RailHtml() + '</nav>' +
@@ -1929,11 +2065,13 @@
     // qui ferait de chaque élément « fixed » un élément collé à la PAGE entière, et non à la fenêtre.
     var vieux = document.getElementById('u2-hors'); if (vieux && vieux.parentNode) vieux.parentNode.removeChild(vieux);
     var hors = document.createElement('div'); hors.id = 'u2-hors'; hors.className = 'u2-hors';
+    var sty = u2StyleAttr(); if (sty) hors.setAttribute('style', sty.replace(/^ style="|"$/g, ''));
     hors.innerHTML = '<div class="u2-fond" id="u2-fond"></div>' +
       '<aside class="u2-volet" id="u2-volet" role="dialog" aria-labelledby="u2-vt"><div class="u2-volet-t"><h2 id="u2-vt">Mon espace</h2><button type="button" class="v2-btn v2-btn-ghost" data-u2-fermer>Fermer</button></div><div class="u2-mon" id="u2-mon"></div></aside>';
     document.body.appendChild(hors);
     hors.addEventListener('click', u2Clic); hors.addEventListener('change', u2Change); hors.addEventListener('keydown', u2Touche);
     _u2.monte = true;
+    u2PoserTeinte();
     u2VoletRendre();
     u2Lier(root);
     if (cascade) setTimeout(function () { var p = document.querySelector('.u2-cascade'); if (p) p.classList.remove('u2-cascade'); }, 900);
@@ -2005,7 +2143,6 @@
       var P = [
         { k: 'pharma', cls: 'p1', ico: 'opp', tag: 'RDV', t: 'Officines', d: 'Arrive sur une officine et vois direct quoi proposer : ses best, ce qu\'elle ne commande pas, son audit marge — classé par catégorie et tranche de prix.', go: 'Choisir une pharmacie' },
         { k: 'produits', cls: 'p3', ico: 'cat', tag: 'Catalogue', t: 'Produits', d: 'Le catalogue des 7 établissements : stock de chaque site, nos ventes face à la France, et les officines à qui proposer chaque produit.', go: 'Ouvrir les produits' },
-        { k: 'fiches', cls: 'p2', ico: 'fiche', tag: 'PDF', t: 'Fiches commerciales', d: 'Crée une fiche produit sur-mesure et sors-la en PDF à montrer ou envoyer au pharmacien pendant le rendez-vous.', go: 'Créer une fiche' },
         // Entrée UNIQUE des produits (11/08/2026). Remplace la tuile Catalogue ;
         // les tuiles « Par molécule » et « Appro » sont retirées plus bas. Les
         // trois écrans restent atteignables depuis Produits et depuis ⌘K.
@@ -2027,17 +2164,9 @@
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.biosimilaires) {
         P.push({ k: 'biosimilaires', cls: 'p3', accent: '#6D4FC4', ico: 'cat', tag: 'Marché FR', t: 'Biosimilaires', d: 'La base complète des biosimilaires France : substituables en officine et labos partenaires (Zentiva, EG, Teva) en tête, croisés à tes ventes et stocks réseau.', go: 'Ouvrir la base' });
       }
-      // Audit Marge (abandon de marge par pharmacie) — app JARVIS
+      // Missions rémunérées — app JARVIS (l'Audit marge n'a plus de tuile : retiré le 02/10/2026)
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.audit) {
-        P.push({ k: 'audit', cls: 'p4', accent: '#10915E', ico: 'pilo', tag: 'Par pharmacie', t: 'Audit marge', d: 'Ce qu\'Intégral rend à chaque pharmacie via l\'abandon de marge — par tranche, vs son grossiste actuel, calculé sur ses vrais achats. Un audit offert, prêt en PDF.', go: 'Ouvrir l\'audit' });
         P.push({ k: 'missions', cls: 'p4', accent: '#0E9E6A', ico: 'pilo', tag: 'Expert 360', t: 'Missions rémunérées', d: 'La rémunération de l\'officine au-delà du produit : vaccination, entretiens, BPM, TROD… les tarifs 2026 + un simulateur « combien elle peut gagner ». L\'argument d\'expert à montrer au pharmacien.', go: 'Ouvrir les missions' });
-      }
-      // « L'Argument » (1er rendez-vous prospect, curseurs + preuves) — app JARVIS.
-      // Complément de l'Audit marge : l'Audit exige les achats d'une CLIENTE,
-      // l'Argument se règle devant un PROSPECT sans aucune donnée.
-      // ⚠️ Bloc à part, conditionné sur SA page (leçon de la tuile Appro).
-      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.argument) {
-        P.push({ k: 'argument', cls: 'p4', accent: 'var(--c-opp)', ico: 'opp', tag: '1er RDV', t: 'L’Argument', d: 'Le premier rendez-vous, chiffré : trois curseurs réglés devant le prospect — ce que son grossiste lui verse vraiment, ce qu\'Intégral met dans sa poche, le gain net par an. Avec les preuves sourcées et les réponses aux objections.', go: 'Ouvrir l’argument' });
       }
       // Appro Intégral : tuile retirée le 11/08/2026, rétablie le 02/09/2026 à la demande
       // de Will. Motif du retour : l'écran a reçu « La courbe » (prévision du marché à
@@ -2070,10 +2199,6 @@
         P.splice(3, 0, { k: 'marketing', cls: 'p6', accent: '#E0556E', ico: 'spark', tag: 'Pauline & Will', t: 'Marketing', d: 'Fabriquez vos supports (flyers produits avec photos et prix) et vos sélections à pousser aux pharmacies. À deux, au même endroit.', go: 'Ouvrir le marketing' });
       }
       // Groupements : fusionné dans le Copilote (carte unique + outils terrain). Plus de carte séparée.
-      // Mode prospection : pitch à montrer au comptoir
-      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.presentation) {
-        P.push({ k: 'presentation', cls: 'p1', accent: 'var(--c-opp)', ico: 'pharma', tag: 'Prospect', t: 'Présentation Intégral Pharma', d: 'Le pitch à montrer au comptoir : qui est Intégral Pharma et comment travailler avec nous. Pour convaincre un prospect en 2 minutes.', go: 'Lancer la présentation' });
-      }
       // Mode OPSO : le suivi groupement passe en tête (1ʳᵉ tuile de l'accueil)
       if (window.V2_BRAND && window.V2_BRAND.opso) {
         var piIdx = P.map(function (x) { return x.k; }).indexOf('pilotage');
@@ -2206,8 +2331,6 @@
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.appro) PAGES.push(['appro', 'Appro Intégral · vue achats détaillée', 'spark']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.marchefr) PAGES.push(['marchefr', 'Le marché · le marché français d’une référence, région par région', 'cat']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.biosimilaires) PAGES.splice(4, 0, ['biosimilaires', 'Base Biosimilaires (marché FR)', 'cat']);
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.audit) PAGES.push(['audit', 'Audit Marge (par pharmacie)', 'pilo']);
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.presentation) PAGES.push(['presentation', 'Présentation Intégral Pharma', 'pharma']);
     if (!(window.V2_BRAND && (window.V2_BRAND.opso || window.V2_BRAND.escale)) && V2.pages.lgo) PAGES.push(['lgo', 'Logiciels officine · importer le catalogue (LGPI, Winpharma, LEO…)', 'list']);
     // Le module Rendez-vous n'était atteignable que par sa tuile. Mis en avant
     // le 17/08, il doit aussi se trouver au clavier — c'est le chemin de ceux
