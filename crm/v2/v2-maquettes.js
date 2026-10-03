@@ -362,7 +362,9 @@
           '</div>';
         if (V2.motion) V2.motion.stagger(root.querySelectorAll('.mq-card'), { step: 35, y: 10 });
       }
-      if (charge) dessiner(); else { dessiner(); charger().then(dessiner); }
+      // les notes peuvent arriver après qu'on a quitté l'écran : sans ce garde-fou, elles redessinaient par-dessus l'écran suivant
+      var ici = function () { return !!(V2.route && V2.route.name === 'marketing' && V2.route.param === 'propositions'); };
+      if (charge) dessiner(); else { dessiner(); charger().then(function () { if (ici()) dessiner(); }); }
     }
   };
 
