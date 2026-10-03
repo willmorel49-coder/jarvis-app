@@ -603,8 +603,9 @@
           // « Map container not found », visible sur l'écran suivant.
           if (!mp) return;
           mp.innerHTML = '';
-          map = window.L.map('cg-map', { zoomControl: true, attributionControl: false }).setView([46.6, 2.4], 6);
-          window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, subdomains: 'abcd' }).addTo(map);
+          map = window.L.map('cg-map', { zoomControl: true, attributionControl: true }).setView([46.6, 2.4], 6);
+          try { map.attributionControl.setPrefix(false); } catch (e) {}
+          V2.fondCarte(map);
           draw();
         });
         });

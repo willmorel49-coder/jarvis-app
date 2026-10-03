@@ -26,6 +26,26 @@
     setTimeout(function () { t.classList.remove('show'); setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 350); }, 2800);
   };
 
+  // ── Fond de carte commun ──────────────────────
+  // CARTO (light_all) exige une clé d'API depuis août 2026 : chaque tuile affiche « API KEY REQUIRED ».
+  // Corrigé le 27/08/2026 sur la grande carte seule (v2-carte.js, addBaseLayer) ; le 03/10/2026 les quatre
+  // autres cartes (secteur, groupements ×2, carte des groupements) le portaient encore. Même fond ici :
+  // Esri « Light Gray » (gratuit, sans clé, attribution obligatoire), et si 3 tuiles échouent, le Plan IGN
+  // de la Géoplateforme (service public, sans clé).
+  V2.fondCarte = function (map) {
+    var E = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_';
+    var base = window.L.tileLayer(E + 'Base/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 16, maxZoom: 19, attribution: 'Fond : Esri, HERE, Garmin, © OpenStreetMap' }).addTo(map);
+    var ref = window.L.tileLayer(E + 'Reference/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 16, maxZoom: 19 }).addTo(map);
+    var fails = 0, swapped = false;
+    base.on('tileerror', function () {
+      if (swapped || ++fails < 3) return;
+      swapped = true;
+      try { map.removeLayer(base); map.removeLayer(ref); } catch (e) {}
+      window.L.tileLayer('https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png',
+        { maxNativeZoom: 18, maxZoom: 19, attribution: 'Fond : IGN — Géoplateforme' }).addTo(map);
+    });
+  };
+
   // ── Bandeau « des chiffres manquent » ─────────
   // ⚠️ 14/08/2026 — Will : « ya plus aucune données sur jarvis ».
   // Depuis le 13/08 les chiffres viennent d'un espace fermé. Quand un de ces

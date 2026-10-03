@@ -4105,8 +4105,7 @@
     if (_secMap) { try { _secMap.remove(); } catch (e) {} _secMap = null; }
     el.innerHTML = '';
     _secMap = window.L.map(el, { scrollWheelZoom: true, preferCanvas: true }).setView([46.7, 2.4], 6);
-    window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-      { attribution: '© OpenStreetMap, © CARTO', maxZoom: 19 }).addTo(_secMap);
+    V2.fondCarte(_secMap);
     var pts = [];
     list.forEach(function (p) {
       var ca = caOfPharma(p.id), st = secStyle(ca);

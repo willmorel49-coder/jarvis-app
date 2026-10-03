@@ -201,8 +201,7 @@
     var el = document.getElementById('gc-map'); if (!el || !window.L) return;
     if (gcMap) { try { gcMap.remove(); } catch (e) {} gcMap = null; }
     gcMap = window.L.map(el, { scrollWheelZoom: true, preferCanvas: true }).setView([46.6, 2.4], 6);
-    window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-      { maxZoom: 19, subdomains: 'abcd', attribution: '© OpenStreetMap © CARTO' }).addTo(gcMap);
+    V2.fondCarte(gcMap);
     gcCluster = window.L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 48, spiderfyOnMaxZoom: true });
     var canvas = window.L.canvas({ padding: 0.5 });
     gcMarkers = {};
@@ -359,8 +358,7 @@
     if (_map) { try { _map.remove(); } catch (e) {} _map = null; }
     el.innerHTML = '';
     _map = window.L.map(el, { scrollWheelZoom: true, preferCanvas: true }).setView([46.7, 2.4], 6);
-    window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-      { attribution: '© OpenStreetMap, © CARTO', maxZoom: 19 }).addTo(_map);
+    V2.fondCarte(_map);
     _cluster = window.L.markerClusterGroup({ chunkedLoading: true, spiderfyOnMaxZoom: true });
     _map.addLayer(_cluster);
     _deptLayer = window.L.layerGroup();
