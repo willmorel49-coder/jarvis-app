@@ -50,6 +50,12 @@ function monter(contenu) {
       createSignedUrls: (fichiers) => Promise.resolve({
         data: fichiers.map((f) => ({ path: f, signedUrl: 'https://exemple/signe/' + f })),
       }),
+      // 03/10/2026 : depuis le 30/09 (cache des fichiers proteges par empreinte,
+      // empreinteProtegee dans v2-boot.js), l'app liste d'abord le dossier du
+      // seau (`list`) pour lire l'eTag de chaque fichier. Sans ce stub : « list is
+      // not a function ». Liste vide = pas d'empreinte, l'app se replie sur le
+      // jeton de version (comportement prevu), ce qui laisse chaque scenario intact.
+      list: () => Promise.resolve({ data: [] }),
     }) },
     auth: { refreshSession: () => Promise.resolve({ data: {} }) }
   };
