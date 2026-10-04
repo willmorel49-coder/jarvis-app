@@ -450,7 +450,7 @@
     if (st.mods == null) chargerMods().then(rendre);
     // 25/09, Will : « chacun doit pouvoir avoir des modèles de base et pouvoir les modifier pour lui
     // et que pour lui » → mêmes 3 modèles au départ pour tous, « Ma version » rangée avec ses modèles.
-    return '<div class="v2-todo-mh"><h2>Les mails tout prêts</h2><p>Les mêmes pour toute l\'équipe au départ. Tu peux les modifier à ta façon : ta version ne vaut que pour toi.</p></div>' +
+    return '<div class="v2-todo-mh"><h2>Les mails tout prêts</h2><p>Les mêmes pour toute l\'équipe au départ. Vous pouvez les modifier à votre façon : votre version ne vaut que pour vous.</p></div>' +
       '<div class="v2-card v2-todo-list">' + MODELES.map(function (m) {
         var x = modele(m.k), mien = !!(st.bases || {})[m.k];
         return '<details class="v2-todo-mail"' + ((st.ouverts || {})[m.k] ? ' open' : '') + ' ontoggle="window.V2&&V2.todo.plier(\'' + m.k + '\',this.open)"><summary><span class="v2-todo-ico">' + ICO(KINDS[m.k].ico, 16, 2) + '</span>' +
@@ -467,7 +467,7 @@
   function mesModeles() {
     if (st.mods == null) { chargerMods().then(rendre); }
     var a = st.mods || [];
-    return '<div class="v2-todo-mh"><h2>Mes modèles</h2><p>Tes propres mails, avec leurs documents joints. Personnels : chacun a les siens.</p></div>' +
+    return '<div class="v2-todo-mh"><h2>Mes modèles</h2><p>Vos propres mails, avec leurs documents joints. Personnels : chacun a les siens.</p></div>' +
       '<div class="v2-card v2-todo-list">' +
         (st.mods == null ? '<div class="v2-todo-empty">Chargement…</div>'
           : a.length ? a.map(function (m) {
@@ -615,7 +615,7 @@
     var nDocs = c.docs.length;
     o.innerHTML = '<div class="v2-todo-pop v2-tc" role="dialog" aria-label="' + (enBase ? 'Ma version' : modele ? 'Mon modèle' : 'Préparer le mail') + '" onclick="event.stopPropagation()">' +
       '<div class="v2-todo-pop-h"><b>' + (enBase ? 'Ma version · ' + esc(c.nom) : modele ? (c.modId ? 'Modifier mon modèle' : 'Nouveau modèle') : 'Préparer le mail') + '</b>' +
-        '<span>' + esc(enBase ? 'Ne vaut que pour toi' : modele ? '' : (c.nom || '')) + '</span><button class="v2-todo-x" aria-label="Fermer" onclick="V2.todo.fermerComp()">&times;</button></div>' +
+        '<span>' + esc(enBase ? 'Ne vaut que pour vous' : modele ? '' : (c.nom || '')) + '</span><button class="v2-todo-x" aria-label="Fermer" onclick="V2.todo.fermerComp()">&times;</button></div>' +
       '<div class="v2-tc-b">' +
         (modele ? '<label><span>Nom du modèle</span><input id="v2-tc-nomMod" type="text" value="' + esc(c.nomMod) + '" placeholder="Ex. : Relance après salon"></label>' : '') +
         (enBase ? '' : '<label><span>' + (modele ? 'Partir d\'un mail existant' : 'Modèle') + '</span><select id="v2-tc-base" onchange="V2.todo.compBase(this.value)">' + opts + '</select></label>') +
@@ -661,7 +661,7 @@
   };
   V2.todo.baseOrigine = function (k) {
     var nom = (MODELES.filter(function (x) { return x.k === k; })[0] || {}).t || '';
-    if (!window.confirm('Revenir au modèle d\'origine « ' + nom + ' » ? Ta version sera effacée.')) return;
+    if (!window.confirm('Revenir au modèle d\'origine « ' + nom + ' » ? Votre version sera effacée.')) return;
     ecrireMods(null, function (b) { delete b[k]; return b; }).then(function (ok) {
       if (V2.toast) V2.toast(ok ? 'Modèle d\'origine rétabli' : 'Rétabli sur cet appareil seulement — la base n\'a pas répondu', ok ? '' : 'warn');
       if (st.comp && st.comp.mode === 'base') V2.todo.fermerComp();
@@ -689,13 +689,13 @@
     if (c.mode === 'base') {
       var v = { objet: reperer(String(c.objet || '').trim()), corps: reperer(c.corps || ''), docs: c.docs.filter(function (k) { return /^[SDMCP]:/.test(k); }) };
       ecrireMods(null, function (b) { b[c.baseK] = v; return b; }).then(function (ok) {
-        if (V2.toast) V2.toast(ok ? 'Ta version de « ' + c.nom + ' » est enregistrée' : 'Gardée sur cet appareil seulement — la base n\'a pas répondu', ok ? '' : 'warn');
+        if (V2.toast) V2.toast(ok ? 'Votre version de « ' + c.nom + ' » est enregistrée' : 'Gardée sur cet appareil seulement — la base n\'a pas répondu', ok ? '' : 'warn');
         V2.todo.fermerComp(); rendre();
       });
       return;
     }
     var nom = String(c.nomMod || '').trim();
-    if (!nom) { if (V2.toast) V2.toast('Donne un nom au modèle', 'warn'); var el = document.getElementById('v2-tc-nomMod'); if (el) el.focus(); return; }
+    if (!nom) { if (V2.toast) V2.toast('Donnez un nom au modèle', 'warn'); var el = document.getElementById('v2-tc-nomMod'); if (el) el.focus(); return; }
     var id = (c.mode === 'modele' && c.modId) || newId();
     var m = { id: id, nom: nom, objet: String(c.objet || '').trim(), corps: c.corps || '', docs: c.docs.filter(function (k) { return /^[SDMCP]:/.test(k); }) };
     ecrireMods(function (a) { return a.some(function (x) { return x.id === id; }) ? a.map(function (x) { return x.id === id ? m : x; }) : a.concat([m]); }).then(function (ok) {
@@ -721,8 +721,8 @@
   V2.todo.copierModele = function (k) {
     var x = modele(k), t = 'Objet : ' + x.objet + '\n\n' + x.corps;
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(t).then(function () { if (V2.toast) V2.toast('Texte copié'); }, function () { window.prompt('Copie ce texte :', t); });
-    } else window.prompt('Copie ce texte :', t);
+      navigator.clipboard.writeText(t).then(function () { if (V2.toast) V2.toast('Texte copié'); }, function () { window.prompt('Copiez ce texte :', t); });
+    } else window.prompt('Copiez ce texte :', t);
   };
 
   V2.pages.todo = {

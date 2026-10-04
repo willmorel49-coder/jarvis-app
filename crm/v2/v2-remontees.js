@@ -271,7 +271,7 @@
         var box = document.getElementById('v2-rem-list'); if (!box) return;
         var cnt = document.getElementById('v2-rem-count');
         if (cnt) cnt.textContent = list.length + (list.length > 1 ? ' remontées' : ' remontée') + (backend === 'local' ? ' · sur cet appareil' : '');
-        if (!list.length) { box.innerHTML = '<div class="v2-rem-empty">Aucune remontée pour l\'instant. Sois le premier à proposer une idée&nbsp;!</div>'; return; }
+        if (!list.length) { box.innerHTML = '<div class="v2-rem-empty">Aucune remontée pour l\'instant. Soyez le premier à proposer une idée&nbsp;!</div>'; return; }
         box.innerHTML = sortList(list).map(cardHtml).join('');
       });
     }

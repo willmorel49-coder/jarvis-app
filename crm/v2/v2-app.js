@@ -85,7 +85,7 @@
     V2.toast('Nouvelle tentative…');
     V2.loadFiles(ko).then(function () {
       var reste = (V2.donneesProtegeesKO && V2.donneesProtegeesKO()) || [];
-      if (reste.length) V2.toast('Toujours indisponible — vérifie ta connexion', 'error');
+      if (reste.length) V2.toast('Toujours indisponible — vérifiez votre connexion', 'error');
       else V2.toast('Chiffres récupérés');
       V2.render();
     });
@@ -418,15 +418,15 @@
     var isFirefox = /Firefox/i.test(ua);
     var steps;
     if (isIOS) {
-      steps = '1. Touche le bouton <b>Partager</b> (le carré avec une flèche ⬆) en bas de Safari<br>2. Choisis <b>« Sur l\'écran d\'accueil »</b><br>3. Valide avec <b>Ajouter</b>';
+      steps = '1. Touchez le bouton <b>Partager</b> (le carré avec une flèche ⬆) en bas de Safari<br>2. Choisissez <b>« Sur l\'écran d\'accueil »</b><br>3. Validez avec <b>Ajouter</b>';
     } else if (isFirefox) {
-      steps = 'Firefox n\'installe pas les applis web sur ordinateur. Ouvre le CRM dans <b>Microsoft Edge</b> ou <b>Google Chrome</b>, puis clique l\'icône d\'installation à droite de la barre d\'adresse.';
+      steps = 'Firefox n\'installe pas les applis web sur ordinateur. Ouvrez le CRM dans <b>Microsoft Edge</b> ou <b>Google Chrome</b>, puis cliquez sur l\'icône d\'installation à droite de la barre d\'adresse.';
     } else if (isWin && isEdge) {
-      steps = '1. Clique l\'icône <b>d\'installation</b> à droite de la barre d\'adresse (un écran avec une flèche)<br>2. <i>Ou</i> menu <b>···</b> (en haut à droite) → <b>Applications</b> → <b>Installer ce site en tant qu\'application</b><br>3. Confirme avec <b>Installer</b>';
+      steps = '1. Cliquez sur l\'icône <b>d\'installation</b> à droite de la barre d\'adresse (un écran avec une flèche)<br>2. <i>Ou</i> menu <b>···</b> (en haut à droite) → <b>Applications</b> → <b>Installer ce site en tant qu\'application</b><br>3. Confirmez avec <b>Installer</b>';
     } else if (isWin) {
-      steps = '1. Clique l\'icône <b>d\'installation</b> à droite de la barre d\'adresse (un écran avec une flèche ⬇)<br>2. <i>Ou</i> menu <b>⋮</b> (en haut à droite) → <b>Caster, enregistrer et partager</b> → <b>Installer la page en tant qu\'application…</b><br>3. Confirme avec <b>Installer</b>';
+      steps = '1. Cliquez sur l\'icône <b>d\'installation</b> à droite de la barre d\'adresse (un écran avec une flèche ⬇)<br>2. <i>Ou</i> menu <b>⋮</b> (en haut à droite) → <b>Caster, enregistrer et partager</b> → <b>Installer la page en tant qu\'application…</b><br>3. Confirmez avec <b>Installer</b>';
     } else {
-      steps = '1. Ouvre le menu du navigateur (<b>⋮</b> en haut à droite)<br>2. Choisis <b>« Installer l\'application »</b> ou <b>« Ajouter à l\'écran d\'accueil »</b>';
+      steps = '1. Ouvrez le menu du navigateur (<b>⋮</b> en haut à droite)<br>2. Choisissez <b>« Installer l\'application »</b> ou <b>« Ajouter à l\'écran d\'accueil »</b>';
     }
     var o = document.createElement('div');
     o.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(16,19,28,0.55);';
@@ -484,7 +484,7 @@
     ex.innerHTML =
       '<div class="v2-appbar-in">' +
         '<span class="v2-appbar-ic">' + ICO('plus', 17, 2.2) + '</span>' +
-        '<span class="v2-appbar-lbl">Installe JARVIS sur ton écran d\'accueil — comme une appli, accès direct</span>' +
+        '<span class="v2-appbar-lbl">Installez JARVIS sur votre écran d\'accueil — comme une appli, accès direct</span>' +
         '<button class="v2-btn v2-btn-primary v2-appbar-go" onclick="V2.installApp()">Installer</button>' +
         '<button class="v2-appbar-x" title="Plus tard" aria-label="Plus tard" onclick="V2.dismissInstall()">' + SVG_X + '</button>' +
       '</div>';
@@ -535,7 +535,7 @@
       '<div class="v2-wrap"><div class="v2-empty">' +
         '<div class="v2-empty-t">Données non chargées</div>' +
         '<div class="v2-empty-d">Les données du réseau n’ont pas pu être téléchargées ' +
-        '(17 Mo). Vérifie ta connexion — le Wi-Fi si tu peux — puis réessaie.</div>' +
+        '(17 Mo). Vérifiez votre connexion — le Wi-Fi si vous pouvez — puis réessayez.</div>' +
         '<button class="v2-btn v2-btn-primary" style="min-height:48px" ' +
           'onclick="V2.render()">Réessayer</button>' +
       '</div></div>';
@@ -1733,13 +1733,13 @@
       function hxNum(n) { try { return n.toLocaleString('fr-FR'); } catch (e) { return String(n); } }
 
       var P = [
-        { k: 'pharma', cls: 'p1', ico: 'opp', tag: 'RDV', t: 'Officines', d: 'Arrive sur une officine et vois direct quoi proposer : ses best, ce qu\'elle ne commande pas — classé par catégorie et tranche de prix.', go: 'Choisir une pharmacie' },
+        { k: 'pharma', cls: 'p1', ico: 'opp', tag: 'RDV', t: 'Officines', d: 'Arrivez sur une officine et voyez directement quoi proposer : ses best, ce qu\'elle ne commande pas — classé par catégorie et tranche de prix.', go: 'Choisir une pharmacie' },
         { k: 'produits', cls: 'p3', ico: 'cat', tag: 'Catalogue', t: 'Produits', d: 'Le catalogue des 7 établissements : stock de chaque site, nos ventes face à la France, et les officines à qui proposer chaque produit.', go: 'Ouvrir les produits' },
         // Entrée UNIQUE des produits (11/08/2026). Remplace la tuile Catalogue ;
         // les tuiles « Par molécule » et « Appro » sont retirées plus bas. Les
         // trois écrans restent atteignables depuis Produits et depuis ⌘K.
-        { k: 'offilog', cls: 'p5', accent: '#345DA0', ico: 'spark', tag: 'Parapharmacie', t: 'Offilog', d: 'La centrale parapharmacie d\'Intégral, rayon par rayon : ton prix d\'achat, la photo produit, et où un concurrent casse les prix.', go: 'Ouvrir Offilog' },
-        { k: 'pilotage', cls: 'p4', ico: 'pilo', tag: partiel ? '…' : V2.fmtK(caTotal) + ' €', t: 'Pilotage', d: 'Ton chiffre d\'affaires, ta marge pharmacien, tes objectifs et qui commande quoi. Le tableau de bord de ta tournée.', go: 'Voir mon pilotage' },
+        { k: 'offilog', cls: 'p5', accent: '#345DA0', ico: 'spark', tag: 'Parapharmacie', t: 'Offilog', d: 'La centrale parapharmacie d\'Intégral, rayon par rayon : votre prix d\'achat, la photo produit, et où un concurrent casse les prix.', go: 'Ouvrir Offilog' },
+        { k: 'pilotage', cls: 'p4', ico: 'pilo', tag: partiel ? '…' : V2.fmtK(caTotal) + ' €', t: 'Pilotage', d: 'Votre chiffre d\'affaires, votre marge pharmacien, vos objectifs et qui commande quoi. Le tableau de bord de votre tournée.', go: 'Voir mon pilotage' },
       ];
       // Infos du matin (brief quotidien) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.infos) {
@@ -1748,13 +1748,13 @@
       // LA CARTE (ex-« Copilote », renommée le 27/08/2026 à la demande de Will).
       // L'ancien nom reste une route valide (#copilote → carte) pour les favoris.
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.carte) {
-        P.push({ k: 'carte', cls: 'p1', accent: 'var(--ip-blue)', ico: 'pharma', tag: 'Terrain', t: 'La carte', d: 'Toutes les officines de France : tes clients, les prospects autour, un clic pour la fiche, un autre pour la tournée du jour.', go: 'Ouvrir la carte' });
+        P.push({ k: 'carte', cls: 'p1', accent: 'var(--ip-blue)', ico: 'pharma', tag: 'Terrain', t: 'La carte', d: 'Toutes les officines de France : vos clients, les prospects autour, un clic pour la fiche, un autre pour la tournée du jour.', go: 'Ouvrir la carte' });
       }
       // Tuile « Par molécule » retirée le 11/08/2026 : l'écran existe toujours,
       // il est atteignable depuis Produits (lien de bas de page) et depuis ⌘K.
       // Base Biosimilaires (marché FR × réseau IP) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.biosimilaires) {
-        P.push({ k: 'biosimilaires', cls: 'p3', accent: '#6D4FC4', ico: 'cat', tag: 'Marché FR', t: 'Biosimilaires', d: 'La base complète des biosimilaires France : substituables en officine et labos partenaires (Zentiva, EG, Teva) en tête, croisés à tes ventes et stocks réseau.', go: 'Ouvrir la base' });
+        P.push({ k: 'biosimilaires', cls: 'p3', accent: '#6D4FC4', ico: 'cat', tag: 'Marché FR', t: 'Biosimilaires', d: 'La base complète des biosimilaires France : substituables en officine et labos partenaires (Zentiva, EG, Teva) en tête, croisés à vos ventes et stocks réseau.', go: 'Ouvrir la base' });
       }
       // Appro Intégral : tuile retirée le 11/08/2026, rétablie le 02/09/2026 à la demande
       // de Will. Motif du retour : l'écran a reçu « La courbe » (prévision du marché à
@@ -1776,7 +1776,7 @@
       }
       // Prise de RDV par mailing — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.rdv) {
-        P.push({ k: 'rdv', cls: 'p1', accent: '#0050E6', ico: 'cal', tag: 'Terrain', t: 'Rendez-vous', d: 'Envoie un lien de réservation à une officine : elle choisit son créneau elle-même, calé sur la géographie de ta journée. L\'invitation part dans ton agenda.', go: 'Voir mes rendez-vous' });
+        P.push({ k: 'rdv', cls: 'p1', accent: '#0050E6', ico: 'cal', tag: 'Terrain', t: 'Rendez-vous', d: 'Envoyez un lien de réservation à une officine : elle choisit son créneau elle-même, calé sur la géographie de votre journée. L\'invitation part dans votre agenda.', go: 'Voir mes rendez-vous' });
       }
       // Pilier marketing : uniquement en mode OPSO (module v2-marketing chargé)
       if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.marketing) {
@@ -1855,7 +1855,7 @@
       // Salutation par moment de la journée : réservée à l'app JARVIS pour ne
       // rien changer au rendu OPSO/Escale (contrôle : « Bonjour » fixe).
       var salut = (!isBrandApart && new Date().getHours() >= 18) ? 'Bonsoir' : 'Bonjour';
-      var tiennesTxt = (!isBrandApart && mesOfficines != null) ? ' · <b>tes officines : ' + hxNum(mesOfficines) + '</b>' : '';
+      var tiennesTxt = (!isBrandApart && mesOfficines != null) ? ' · <b>vos officines : ' + hxNum(mesOfficines) + '</b>' : '';
 
 
       // La cascade d'entrée ne joue qu'une fois par session : V2.render() est
@@ -2304,7 +2304,7 @@
     if (V2.lancerModules) V2.lancerModules();
     var logged = await V2.loadUserProfile();
     if (!logged) { V2.renderLogin(); return; }
-    root.innerHTML = '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement de tes données…</div></div>';
+    root.innerHTML = '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement de vos données…</div></div>';
     var opso = !!(window.V2_BRAND && window.V2_BRAND.opso);
     // PPHT et PROD_STATS ne sont plus des balises d'index.html (CRM) : ils doivent
     // être en mémoire AVANT bench (applyPPHT, déclenché à l'arrivée de bench, en a
@@ -2382,7 +2382,7 @@
         if (r.ok) { V2.boot(); }
         else { err.textContent = r.msg || 'Identifiants incorrects'; btn.textContent = 'Se connecter'; btn.disabled = false; document.getElementById('v2-email').focus(); }
       }).catch(function () {
-        err.textContent = 'Connexion impossible — vérifie ta connexion internet.';
+        err.textContent = 'Connexion impossible — vérifiez votre connexion internet.';
         btn.textContent = 'Se connecter'; btn.disabled = false;
       });
     }
