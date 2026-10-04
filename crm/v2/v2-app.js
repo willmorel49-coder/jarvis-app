@@ -1035,7 +1035,7 @@
   // Réglages : table `profils` (scope 'groupement', scope_id '__accueil_<id>__'), comme la To do list.
   // ═════════════════════════════════════════════════════════════════
   var _u2 = { S: null, id: null, dist: false, modifie: false, timer: 0, entree: false, sec: null, ouvert: false, opener: null,
-    monte: false, mode: null, todoPret: false, lie: null, sig: {}, sigW: {} };
+    monte: false, mode: null, todoPret: false, lie: null, sig: {}, sigW: {}, m: null, cascade: false };
 
   function u2Id() { return (V2.user && V2.user.id) || 'local'; }
   function u2Cle() { return 'jarvis_accueil_u2_v1:' + u2Id(); }
@@ -1049,7 +1049,8 @@
   // epingles null = « rien réglé » : les quatre premiers du classement réel. [] = tout désépinglé.
   // couleur = clé d'une teinte de U2_TEINTES ; masques = outils cachés (restent dans les réglages) ; fordre = ordre des familles.
   function u2Def() { return { v: 1, epingles: null, ordre: {}, widgets: { infos: true, todo: true, relance: true, semaine: true }, wordre: U2_WORDRE.slice(),
-    couleur: U2_TEINTES[0].k, masques: [], fordre: U2_FAMILLES.slice() }; }
+    couleur: U2_TEINTES[0].k, masques: [], fordre: U2_FAMILLES.slice(),
+    wid: V2.accueilWidgets ? V2.accueilWidgets.defaut() : null }; }   // wid = les widgets posés dans l'atelier (v2-accueil-widgets.js) ; null = le module n'est pas chargé
   // Nettoyage à la lecture : clés inconnues ignorées, outils disparus retirés, doublons retirés.
   function u2Net(raw) {
     var S = u2Def();
@@ -1065,6 +1066,8 @@
     }
     if (raw.widgets && typeof raw.widgets === 'object') U2_WORDRE.forEach(function (k) { if (typeof raw.widgets[k] === 'boolean') S.widgets[k] = raw.widgets[k]; });
     if (Array.isArray(raw.wordre) && raw.wordre.length === U2_WORDRE.length && raw.wordre.every(function (k, i, a) { return !!U2_WIDGETS[k] && a.indexOf(k) === i; })) S.wordre = raw.wordre.slice();
+    // 04/10/2026 — atelier de widgets : le champ `wid` est lu et nettoyé par v2-accueil-widgets.js ; absent, il est CONVERTI depuis les anciennes cases cochées (widgets / wordre)
+    if (V2.accueilWidgets) S.wid = V2.accueilWidgets.net(raw);
     if (typeof raw.couleur === 'string' && U2_TEINTES.some(function (t) { return t.k === raw.couleur; })) S.couleur = raw.couleur;
     if (Array.isArray(raw.masques)) S.masques = raw.masques.filter(connu);
     if (Array.isArray(raw.fordre)) {
@@ -1240,6 +1243,13 @@
   }
   function u2Salut(m) { return m.salut + (m.prenom ? ' ' + m.prenom : ''); }
   function u2CentreHtml(m, etat) {
+    _u2.m = m;
+    // 04/10/2026 — le centre « cinq cartes » (v2-accueil-cinq.js) : bandeau Officines calme, quatre cartes animées, « Autres outils ».
+    // Le nombre d'officines et l'avancement des ventes sont dans le bandeau : la ligne « N officines actives » du titre disparaît (plus de doublon).
+    if (V2.accueilCinq && V2.accueilPont) {
+      return '<div class="u2-salut u2-in" style="--i:0"><h1 class="v2-titre" id="u2-salut">' + esc(u2Salut(m)) + '</h1>' +
+        '<p class="v2-sous">' + esc(qDateTxt(new Date())) + '</p></div>' + V2.accueilCinq.html(etat, _u2.cascade);
+    }
     var po = u2PortesHtml(etat), ra = u2RangsHtml(etat), co = u2CompteHtml(m);
     _u2.sig.portes = po; _u2.sig.rangs = ra; _u2.sig.compte = co;
     return '<div class="u2-salut u2-in" style="--i:0"><h1 class="v2-titre" id="u2-salut">' + esc(u2Salut(m)) + '</h1>' +
@@ -1301,6 +1311,7 @@
   }
   function u2WCorps(k) { return k === 'infos' ? u2WInfos() : k === 'todo' ? u2WTodo() : k === 'relance' ? u2WRelance() : u2WSemaine(); }
   function u2DroiteHtml() {
+    if (V2.accueilWidgets && V2.accueilPont) return V2.accueilWidgets.droiteHtml();   // 04/10/2026 : colonne et atelier de widgets (v2-accueil-widgets.js)
     var S = u2S(), n = 3, h = '';
     _u2.sigW = {};
     S.wordre.forEach(function (k) {
@@ -1326,6 +1337,7 @@
   }
   function u2MajWidgets() {
     if (!_u2.monte) return;
+    if (V2.accueilWidgets && V2.accueilPont) { V2.accueilWidgets.maj(); if (V2.accueilCinq) V2.accueilCinq.maj(); return; }
     var S = u2S(), dr = document.getElementById('u2-droite');
     if (!dr) return;
     var struct = S.wordre.map(function (k) { return k + (S.widgets[k] ? '1' : '0'); }).join(',');
@@ -1342,6 +1354,7 @@
     var etat = u2Etat();
     u2Poser('u2-portes', u2PortesHtml(etat), 'portes');
     u2Poser('u2-rangs', u2RangsHtml(etat), 'rangs');
+    if (V2.accueilCinq && V2.accueilPont) V2.accueilCinq.maj();   // les cartes : seules les zones de texte dont la donnée a changé sont remplacées
   }
 
   // ── Le rail (≥ 1100 px) et le tiroir : seulement des réglages ──
@@ -1371,6 +1384,10 @@
       '<button type="button" class="u2-pbtn" data-u2-a="' + a + 'dn" data-v="' + k + '" aria-label="Descendre ' + esc(nom) + '"' + (i === n - 1 ? ' disabled' : '') + '>' + u2Ic('down') + '</button>';
   }
   function u2BlocWidgets() {
+    if (V2.accueilWidgets && V2.accueilPont) {
+      return '<section class="u2-mon-b"><h3>Mes widgets</h3><p class="u2-note u2-note-h">Choisissez-les, réglez leur taille et leur contenu, puis ordonnez-les dans l\'atelier. C\'est gardé pour vous.</p>' +
+        '<button type="button" class="v2-btn v2-btn-primary aw-ouv" data-aw="atelier">' + u2Ic('widgets') + 'Ouvrir l\'atelier</button></section>';
+    }
     var S = u2S();
     return '<section class="u2-mon-b"><h3>Mes widgets</h3>' + S.wordre.map(function (k, i) {
       var nm = U2_WIDGETS[k].nom, on = S.widgets[k];
@@ -1572,7 +1589,11 @@
   function u2Clic(e) {
     var t = e.target; if (!t || !t.closest || !t.closest('.u2-page, .u2-hors')) return;
     var b;
-    if ((b = t.closest('[data-u2-rail]'))) { u2Ouvrir(b.getAttribute('data-u2-rail'), b); return; }
+    if ((b = t.closest('[data-u2-rail]'))) {
+      // le rail « Widgets » ouvre l'atelier plein écran (et non le tiroir)
+      if (b.getAttribute('data-u2-rail') === 'widgets' && V2.accueilWidgets && V2.accueilPont) { V2.accueilWidgets.ouvrir(b); return; }
+      u2Ouvrir(b.getAttribute('data-u2-rail'), b); return;
+    }
     if (t.closest('[data-u2-fermer]') || t.closest('#u2-fond')) { u2Fermer(true); return; }
     if ((b = t.closest('[data-u2-a]'))) { u2Agir(b.getAttribute('data-u2-a'), b.getAttribute('data-v'), b); return; }
     if ((b = t.closest('[data-u2-act]'))) {
@@ -1632,6 +1653,7 @@
   // Monte l'accueil, ou met ses données à jour en place s'il est déjà à l'écran.
   // V2.render() est rappelé quand les relances arrivent et quand les ventes finissent : rien ne se redessine en entier.
   function u2Maj(m) {
+    _u2.m = m;
     u2PoserTeinte();   // V2.render() remet --accent à la racine à chaque passage
     var h = document.getElementById('u2-salut');
     if (h && h.textContent !== u2Salut(m)) h.textContent = u2Salut(m);
@@ -1642,6 +1664,7 @@
     if (_u2.monte && root.querySelector('.u2-page')) { u2Maj(m); return; }
     u2S(); g4ChargerOrdre(); qInfosCharger();
     var cascade = !_u2.entree;   // la courte entrée ne joue qu'une fois par chargement de page
+    _u2.cascade = cascade;
     _u2.entree = true; _u2.ouvert = false; _u2.opener = null; _u2.sec = null; _u2.sig = {}; _u2.mode = u2Mode();
     u2Verrou(false);
     var etat = u2Etat();
@@ -1661,6 +1684,7 @@
     hors.innerHTML = '<div class="u2-fond" id="u2-fond"></div>' +
       '<aside class="u2-volet" id="u2-volet" role="dialog" aria-labelledby="u2-vt"><div class="u2-volet-t"><h2 id="u2-vt">Mon espace</h2><button type="button" class="v2-btn v2-btn-ghost" data-u2-fermer>Fermer</button></div><div class="u2-mon" id="u2-mon"></div></aside>';
     document.body.appendChild(hors);
+    if (V2.accueilCinq && V2.accueilPont) V2.accueilCinq.apres(cascade);
     hors.addEventListener('click', u2Clic); hors.addEventListener('change', u2Change); hors.addEventListener('keydown', u2Touche);
     _u2.monte = true;
     u2PoserTeinte();
@@ -1670,6 +1694,24 @@
     u2Distant();
     if (V2.todo && V2.todo.charger && !_u2.todoPret) V2.todo.charger().then(function () { _u2.todoPret = true; u2MajWidgets(); }, function () {});
   }
+
+  // 04/10/2026 — le PONT entre cet accueil et ses deux modules (v2-accueil-cinq.js : le centre ; v2-accueil-widgets.js : la colonne de droite et l'atelier).
+  // Les modules ne connaissent pas les internes de ce fichier : ils ne lisent que ce qui est listé ici (tout est déjà chargé, aucune requête nouvelle).
+  V2.accueilPont = {
+    userId: u2Id, m: function () { return _u2.m; }, etat: u2Etat, vis: u2Vis, cles: u2Cles,
+    outil: u2Outil, lien: u2LienAttr, ic: u2Ic, page: function (k) { return !!(V2.pages && V2.pages[k]); },
+    infos: qInfosModele, infosData: function () { return _qInfos.data; },
+    relances: qRelances, relancesAll: function () { return _relances || []; }, semaine: qSemaine, parJour: qParJour, quand: qQuand,
+    // la To do list : null tant qu'elle n'est pas chargée (jamais un « 0 » qui ressemblerait à un vrai zéro)
+    todoItems: function () {
+      if (!V2.todo || !V2.todo.ouverts) return [];
+      if (!_u2.todoPret) return null;
+      var t = V2.todo.urgents ? V2.todo.urgents() : V2.todo.ouverts();
+      return t.map(function (it) { return { id: it.id, lib: V2.todo.libelle ? V2.todo.libelle(it) : (it.nom || it.note || '') }; });
+    },
+    todo: function () { var l = V2.accueilPont.todoItems(); return l ? l.map(function (x) { return x.lib; }) : null; },
+    S: u2S, garder: u2Garder, vars: function () { return u2Vars(u2Teinte()); }, fermer: function () { u2Fermer(false); }
+  };
 
   // Spotlight : la souris met à jour --mx/--my sur la tuile survolée
   V2.homeSpot = function (e, el) {
