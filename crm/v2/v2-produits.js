@@ -1577,7 +1577,10 @@
       injectStyles();
       // Le contingentement vient d'appro-source.json, chargé à la demande : sans
       // ce réveil l'écran resterait figé sans badge jusqu'au prochain rendu.
-      if (V2.approCtx && V2.approCtx.quotaPret) {
+      // UNE seule inscription : quotaPret rappelle tout de suite quand le flux est
+      // déjà là, et ce rappel relance le rendu — sans drapeau, boucle sans fin.
+      if (V2.approCtx && V2.approCtx.quotaPret && !V2.produits._quotaDemande) {
+        V2.produits._quotaDemande = true;
         V2.approCtx.quotaPret(function () {
           if (V2.route && V2.route.name === 'produits' && V2.render) V2.render();
         });
