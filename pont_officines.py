@@ -7,10 +7,12 @@ C'est la MÊME pharmacie : ses ventes passées se rangent sous le code nu, et la
 l'identité du nouveau titulaire. Sans cette règle, le CRM montrait deux fiches et l'historique
 restait accroché à une fiche fantôme, sans ville ni code postal.
 
-Les autres marques (OLD, IN, INBIS) ne sont PAS traitées ici : leur sens n'est pas confirmé."""
+Les marques OLD, IN et INBIS suivent la même règle (arbitré le 05/10/2026) : mesuré sur les
+ventes, ce sont des comptes successifs de la même pharmacie — même nom, même commercial, les
+mois de l'un s'arrêtent là où ceux de l'autre commencent."""
 import re
 
-_REPRISE = re.compile(r'^(?:EX\s*(\d{7})|(\d{7})\s*EX)$', re.I)
+_REPRISE = re.compile(r'^(?:EX\s*(\d{7})|(\d{7})\s*(?:EX|OLD|INBIS|IN))$', re.I)
 
 
 def code_officine(code):

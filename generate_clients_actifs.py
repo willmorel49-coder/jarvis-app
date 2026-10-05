@@ -122,10 +122,12 @@ def lire_escale(d):
             sys.exit('fichier Escale : colonne manquante : ' + c)
     gdb = groupements_db()
     n, n_grp, n_comble, n_new, n_fusion = 0, 0, 0, 0, 0
+    reprises = []  # comptes d'avant reprise : gardés seulement si le code nu n'a aucune fiche
     for r in rows:
         code = s(r[H['tircode']])
         if not code or s(r[H.get('tiractivite', H['tircode'])]) not in ('Pharmacie', code):
             continue
+        code, ancien = code_officine(code)
         n += 1
         grp = s(r[H['tircible1']])
         if grp:
@@ -149,6 +151,9 @@ def lire_escale(d):
             s(r[H.get('tirsiren', -1)]) if 'tirsiren' in H else '',
             '', '', '',
         ]
+        if ancien:
+            reprises.append((code, ligne))
+            continue
         if code not in d:
             d[code] = ligne
             n_new += 1
@@ -158,6 +163,12 @@ def lire_escale(d):
             for i, v in enumerate(ligne):
                 if not cur[i] and v:
                     cur[i] = v
+    for code, ligne in reprises:
+        if code not in d:
+            d[code] = ligne
+            n_new += 1
+        else:
+            n_fusion += 1
     print('Escale   : %s — %d officines (groupement déclaré %d, comblé par la base groupements %d, sans %d) ; %d nouvelles, %d déjà connues'
           % (os.path.basename(src), n, n_grp, n_comble, n - n_grp - n_comble, n_new, n_fusion))
     return src
