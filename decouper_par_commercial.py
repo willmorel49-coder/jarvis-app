@@ -307,6 +307,11 @@ def main():
         for cle in ('T', 'E'):
             grp_jeu[cle] = {g: v for g, v in grp_tout[cle].items()
                             if sum(1 for r in grp_actifs[cle][g] if not (comms_rang[r] & mes)) >= GRP_AUTRES}
+        # Les deux espaces dans le même fichier se soustraient l'un de l'autre : la part Escale ne part
+        # que chez un commercial Escale, et seulement si ce qui reste hors Escale n'isole pas 1 ou 2 officines.
+        grp_jeu['E'] = {g: v for g, v in grp_jeu['E'].items()
+                        if mes & set(ESCALE_COMMS)
+                        and len(grp_actifs['T'].get(g, set()) - grp_actifs['E'][g]) not in (1, 2)}
         ecrire(os.path.join(rep, 'grp-agregats.js'), 'window.GRP_AGREGATS = %s;\n' % compact(grp_jeu))
         mes_ca = {k: v for k, v in off_ca.items() if comms_par_code.get(k, set()) & mes}
         # officines partagées avec un collègue : CA et fiche de carte recalculés sur SES lignes
