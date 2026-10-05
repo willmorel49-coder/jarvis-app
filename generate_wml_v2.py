@@ -314,7 +314,7 @@ def num(v):
 
 
 from pont_codes import canon, rekey  # un produit = un code (22/09/2026)
-from pont_officines import code_officine  # une pharmacie = une fiche (05/10/2026)
+from pont_officines import code_officine, codes_comptes  # une pharmacie = une fiche (05/10/2026)
 
 
 def cip13(v):
@@ -491,7 +491,12 @@ for i, code in enumerate(sorted(active.keys())):
     info = pharm.get(code, {})
     nm = info.get('name') or active[code] or ''
     # priorité : enseigne géoloc (officiel) > override scraping > scraping CIP/nom > WML_pharmacies
-    grp = enseignes.get(_cipkey(code)) or OVERRIDE.get(_cipkey(code)) or grp_cip.get(_cipkey(code)) or grp_name.get(_norm_name(nm)) or info.get('groupement', '') or ''
+    def _par_code(table, _code=code):   # compte neuf d'abord quand l'officine a changé de code
+        for _c in codes_comptes(_code):
+            if table.get(_cipkey(_c)):
+                return table[_cipkey(_c)]
+        return None
+    grp = _par_code(enseignes) or _par_code(OVERRIDE) or _par_code(grp_cip) or grp_name.get(_norm_name(nm)) or info.get('groupement', '') or ''
     if grp:
         nb_grp += 1
     officines.append({
