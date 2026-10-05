@@ -212,7 +212,8 @@
 
   // 05/10/2026 — les seules fiches prospect créées à la main (ids « px_… »), sans relire tout le scope 'client'.
   V2.profil.loadCrees = function () {
-    var garde = function (l) { return (l || []).filter(function (o) { return String(o.sid).indexOf('px_') === 0; }); };
+    // L'identifiant vient de la base et finit dans le clic de la ligne : seul le format attendu passe.
+    var garde = function (l) { return (l || []).filter(function (o) { return /^px_[A-Za-z0-9_-]+$/.test(String(o.sid)); }); };
     var c = sb();
     if (!c) return Promise.resolve(garde(localScopeList('client')));
     return c.from(TABLE).select('scope_id,data').eq('scope_type', 'client').like('scope_id', 'px_%')
