@@ -117,16 +117,41 @@
       cherche: ['libelle', 'famille', 'code13']
     },
     alliance: {
-      nom: 'Alliance Healthcare · shortlist', tag: 'Févr.-avr. 2025', accent: '#1F6FA8', cles: ['concalliance'],
-      quoi: 'La shortlist Alliance Healthcare de février à avril 2025 (document DPGS) : net par palier (PPHT moins le taux sur le PFHT) et prix facturé. Attention : des prix de 2025, comparés à notre net d\'aujourd\'hui.',
+      nom: 'Alliance Healthcare · shortlist', tag: 'Févr.-août 2025', accent: '#1F6FA8', cles: ['concalliance'],
+      quoi: 'Les shortlists Alliance Healthcare de 2025 : celle de mai à août, et celle de février à avril pour les produits qui n\'y sont plus. Net par palier (PPHT moins le taux sur le PFHT) et prix facturé. Attention : des prix de 2025, comparés à notre net d\'aujourd\'hui.',
       charge: function () { return !!window.CONCURRENTS_ALLIANCE; },
       maj: function () { return window.CONCURRENTS_ALLIANCE && CONCURRENTS_ALLIANCE.maj; },
       rows: function () { return window.CONCURRENTS_ALLIANCE ? CONCURRENTS_ALLIANCE.rows : []; },
       cols: function () { return window.CONCURRENTS_ALLIANCE ? CONCURRENTS_ALLIANCE.cols : []; },
       code: 'code13', net: 'net',
       chipCol: 'famille', chipLabel: {},
-      affiche: [['code13', 'Code 13', ''], ['libelle', 'Produit', ''], ['famille', 'Famille', ''], ['pfht', 'PFHT', 'eur'], ['ppht', 'PPHT', 'eur'], ['net', 'Meilleur net', 'eur'], ['facture', 'Facturé', 'eur'], ['remise', 'Remise', 'pct'], ['paliers', 'Paliers (net)', 'paliers'], ['qtes', 'Quantités', ''], ['page', 'Page', '']],
+      affiche: [['code13', 'Code 13', ''], ['libelle', 'Produit', ''], ['famille', 'Famille', ''], ['pfht', 'PFHT', 'eur'], ['ppht', 'PPHT', 'eur'], ['net', 'Meilleur net', 'eur'], ['facture', 'Facturé', 'eur'], ['remise', 'Remise', 'pct'], ['paliers', 'Paliers (net)', 'paliers'], ['qtes', 'Quantités', ''], ['periode', 'Shortlist', ''], ['page', 'Page', '']],
       cherche: ['libelle', 'famille', 'code13']
+    },
+    // 05/10/2026 — ce que les chasses documentaires ont rapporté (demande de Will).
+    pharmafit: {
+      nom: 'Pharmafit · boutique', tag: 'Juillet 2026', accent: '#B4472E', cles: ['concpharmafit'],
+      quoi: 'Le catalogue de la boutique Pharmafit relevé en juillet 2026 : le prix affiché à un visiteur sans compte, donc sans les conditions négociées par un client. Un prix de liste, à lire comme un plafond.',
+      charge: function () { return !!window.CONCURRENTS_PHARMAFIT; },
+      maj: function () { return window.CONCURRENTS_PHARMAFIT && CONCURRENTS_PHARMAFIT.maj; },
+      rows: function () { return window.CONCURRENTS_PHARMAFIT ? CONCURRENTS_PHARMAFIT.rows : []; },
+      cols: function () { return window.CONCURRENTS_PHARMAFIT ? CONCURRENTS_PHARMAFIT.cols : []; },
+      code: 'code13', net: 'net',
+      chipCol: 'dispo', chipLabel: {},
+      affiche: [['code13', 'Code 13', ''], ['libelle', 'Produit', ''], ['labo', 'Laboratoire', ''], ['tarif', 'Prix de liste', 'eur'], ['remise', 'Remise', 'pct'], ['net', 'Net Pharmafit', 'eur'], ['dispo', 'Disponibilité', '']],
+      cherche: ['libelle', 'labo', 'code13']
+    },
+    cerp: {
+      nom: 'Astera - CERP · Central Prom', tag: 'Promo du mois', accent: '#5B7A1F', cles: ['conccerp'],
+      quoi: 'Les catalogues promotionnels mensuels Central Prom d\'Astera - CERP, de janvier 2025 à mars 2026 : pour chaque produit, sa dernière offre connue, avec le mois du catalogue. Une promotion du mois, pas un tarif permanent.',
+      charge: function () { return !!window.CONCURRENTS_CERP; },
+      maj: function () { return window.CONCURRENTS_CERP && CONCURRENTS_CERP.maj; },
+      rows: function () { return window.CONCURRENTS_CERP ? CONCURRENTS_CERP.rows : []; },
+      cols: function () { return window.CONCURRENTS_CERP ? CONCURRENTS_CERP.cols : []; },
+      code: 'code13', net: 'net',
+      chipCol: 'periode', chipLabel: {},
+      affiche: [['code13', 'Code 13', ''], ['libelle', 'Produit', ''], ['ppht', 'Prix catalogue', 'eur'], ['net', 'Meilleur net', 'eur'], ['remise', 'Remise', 'pct'], ['paliers', 'Paliers (net)', 'paliers'], ['qtes', 'Quantités', ''], ['periode', 'Catalogue', ''], ['page', 'Page', '']],
+      cherche: ['libelle', 'code13']
     },
     etudes: {
       nom: 'Études · avantages observés', tag: 'Recherche sept. 2026', accent: '#8A6D1F', cles: ['concetudes'],
@@ -172,14 +197,14 @@
       cherche: ['libelle', 'marque', 'labo', 'rayon', 'ean13']
     }
   };
-  var ORDRE = ['sagitta', 'ocp', 'mc', 'etradi', 'alliance', 'pharmazon', 'cooper', 'farmaline', 'etudes'];
+  var ORDRE = ['sagitta', 'ocp', 'mc', 'etradi', 'alliance', 'pharmafit', 'cerp', 'pharmazon', 'cooper', 'farmaline', 'etudes'];
   // Nom court (onglets, puces, classement), circuit, poids du fichier (annoncé
   // avant de télécharger : jamais tout d'office), colonne des points forts.
-  var COURT = { sagitta: 'Sagitta', ocp: 'OCP Incontournables', mc: 'OCP Marque Conseil', etradi: 'eTradi', alliance: 'Alliance', pharmazon: 'Pharmazon', cooper: 'Cooper', farmaline: 'Farmaline', etudes: 'Études' };
-  var CIRCUIT = { sagitta: 'Grossiste-répartiteur généraliste', ocp: 'Grossiste-répartiteur · catalogue promotionnel', mc: 'Marque distributeur du grossiste', etradi: 'Plateforme d\'achat du grossiste OCP', alliance: 'Grossiste-répartiteur · shortlist trimestrielle', pharmazon: 'Plateforme d\'achat direct laboratoires', cooper: 'Vente directe laboratoire · préparatoire', farmaline: 'Pharmacie en ligne belge · prix consommateur', etudes: 'Sources publiques : décisions, rapports, thèses, factures, CGV' };
-  var POIDS = { sagitta: '2 Mo', ocp: '130 Ko', mc: '130 Ko', etradi: '115 Ko', alliance: '130 Ko', pharmazon: '1,3 Mo', cooper: '120 Ko', farmaline: '2 Mo', etudes: '500 Ko' };
-  var FORTS = { sagitta: 'gamme', ocp: 'section', etradi: 'famille', alliance: 'famille', pharmazon: 'labo', cooper: 'famille' };
-  var CLASSEMENT = ['sagitta', 'ocp', 'etradi', 'alliance', 'pharmazon', 'cooper'];   // seules sources à prix d'achat
+  var COURT = { sagitta: 'Sagitta', ocp: 'OCP Incontournables', mc: 'OCP Marque Conseil', etradi: 'eTradi', alliance: 'Alliance', pharmafit: 'Pharmafit', cerp: 'CERP Central Prom', pharmazon: 'Pharmazon', cooper: 'Cooper', farmaline: 'Farmaline', etudes: 'Études' };
+  var CIRCUIT = { sagitta: 'Grossiste-répartiteur généraliste', ocp: 'Grossiste-répartiteur · catalogue promotionnel', mc: 'Marque distributeur du grossiste', etradi: 'Plateforme d\'achat du grossiste OCP', alliance: 'Grossiste-répartiteur · shortlist trimestrielle', pharmafit: 'Grossiste indépendant · boutique en ligne', cerp: 'Grossiste-répartiteur · promotions mensuelles', pharmazon: 'Plateforme d\'achat direct laboratoires', cooper: 'Vente directe laboratoire · préparatoire', farmaline: 'Pharmacie en ligne belge · prix consommateur', etudes: 'Sources publiques : décisions, rapports, thèses, factures, CGV' };
+  var POIDS = { sagitta: '2 Mo', ocp: '130 Ko', mc: '130 Ko', etradi: '115 Ko', alliance: '210 Ko', pharmafit: '75 Ko', cerp: '490 Ko', pharmazon: '1,3 Mo', cooper: '120 Ko', farmaline: '2 Mo', etudes: '500 Ko' };
+  var FORTS = { sagitta: 'gamme', ocp: 'section', etradi: 'famille', alliance: 'famille', pharmafit: 'labo', cerp: 'periode', pharmazon: 'labo', cooper: 'famille' };
+  var CLASSEMENT = ['sagitta', 'ocp', 'etradi', 'alliance', 'pharmafit', 'cerp', 'pharmazon', 'cooper'];   // seules sources à prix d'achat
   var QUI = { sagitta: 'sagitta', ocp: 'ocp', mc: 'ocp' };       // source → fiche du grossiste (grossistes-data.js)
 
   // ── Notre prix (V2.bestPrice = seule source de vérité) ───────────────
@@ -470,12 +495,14 @@
   // ── Le comptoir : chercher dans toutes les sources chargées ─────────
   // Une ligne par code 13, qui regroupe les sources où le code apparaît.
   // Les Études ne sont pas des produits : elles restent hors comptoir.
-  var COMPTOIR = ['sagitta', 'ocp', 'mc', 'etradi', 'alliance', 'pharmazon', 'cooper', 'farmaline'];
+  var COMPTOIR = ['sagitta', 'ocp', 'mc', 'etradi', 'alliance', 'pharmafit', 'cerp', 'pharmazon', 'cooper', 'farmaline'];
   function condLigne(k, r, ci) {
     var s = SRC[k];
     if (k === 'sagitta') return (s.chipLabel[r[ci.cat]] || 'Catalogue') + (r[ci.remise] > 0 ? ' · abandon de marge ' + String(Math.round(r[ci.remise] * 10) / 10).replace('.', ',') + ' %' : '') + (r[ci.qtemin] > 1 ? ' · minimum ' + num(r[ci.qtemin]) : '');
     if (k === 'ocp') return (s.chipLabel[r[ci.section]] || 'Promo') + (r[ci.condition] ? ' · ' + cap(r[ci.condition], 44) : '') + (r[ci.paliers] ? ' · paliers ' + fmt(r[ci.paliers], 'paliers').replace(/<[^>]+>/g, '') : '');
-    if (k === 'etradi' || k === 'alliance') return (k === 'etradi' ? 'Catalogue juil.-déc. 2026' : 'Shortlist févr.-avr. 2025') + (r[ci.qtes] ? ' · paliers ' + r[ci.qtes] : '') + (r[ci.remise] > 0 ? ' · abandon de marge ' + String(Math.round(r[ci.remise] * 10) / 10).replace('.', ',') + ' %' : '');
+    if (k === 'etradi' || k === 'alliance') return (k === 'etradi' ? 'Catalogue juil.-déc. 2026' : 'Shortlist ' + (r[ci.periode] || '2025')) + (r[ci.qtes] ? ' · paliers ' + r[ci.qtes] : '') + (r[ci.remise] > 0 ? ' · abandon de marge ' + String(Math.round(r[ci.remise] * 10) / 10).replace('.', ',') + ' %' : '');
+    if (k === 'pharmafit') return 'Boutique, prix sans compte · ' + SRC.pharmafit.tag.toLowerCase() + (r[ci.dispo] ? ' · ' + r[ci.dispo] : '');
+    if (k === 'cerp') return 'Central Prom ' + (r[ci.periode] || '') + (r[ci.qtes] ? ' · paliers ' + r[ci.qtes] : '') + (r[ci.remise] > 0 ? ' · abandon de marge ' + String(Math.round(r[ci.remise] * 10) / 10).replace('.', ',') + ' %' : '');
     if (k === 'pharmazon') return 'Plateforme labos · prix négocié' + (r[ci.remise] > 0 ? ' · abandon de marge ' + String(Math.round(r[ci.remise] * 10) / 10).replace('.', ',') + ' %' : '');
     if (k === 'cooper') return 'Vente directe · tarif 2023' + (r[ci.division] ? ' · ' + r[ci.division] : '') + (r[ci.statut] ? ' · ' + r[ci.statut] : '');
     return '';
@@ -701,8 +728,8 @@
   // (ex-écran « Grossistes concurrents », v2-grossistes.js), leurs prix (ce
   // module) et l'actualité du secteur, derrière trois questions simples.
   var ESPACES = [
+    { k: 'comparateur', q: 'Qui est le moins cher ?', t: 'Le comparateur', d: 'Tous les concurrents côte à côte, produit par produit : nos références les plus commandées par les pharmacies en tête, notre net face au net de Sagitta, OCP, Alliance, Pharmafit, CERP et Pharmazon.', go: 'Ouvrir le comparateur' },
     { k: 'acteurs', q: 'Qui sont-ils ?', t: 'Les grossistes', d: 'Les grossistes-répartiteurs de France : leur poids sur le marché, leurs groupes, leurs enseignes, leurs forces et faiblesses — et tes remontées terrain.', go: 'Voir les grossistes' },
-    { k: 'comparateur', q: 'Qui est le moins cher ?', t: 'Le comparateur', d: 'Tous les concurrents côte à côte, produit par produit : nos références les plus commandées par les pharmacies en tête, notre net face au net de Sagitta, OCP, eTradi, Alliance et Pharmazon.', go: 'Ouvrir le comparateur' },
     { k: 'prix', q: 'À quel prix ?', t: 'Leurs prix', d: 'Leurs catalogues, référence par référence : Sagitta, OCP, Pharmazon, Cooper, Farmaline… avec notre net en face pour savoir qui est le moins cher.', go: 'Comparer les prix' },
     { k: 'actu', q: 'Quoi de neuf ?', t: 'L\'actualité', d: 'Ce que la presse et les annonces officielles disent des grossistes, mis à jour chaque jour. Se lit dans Infos du jour.', go: 'Lire dans Infos du jour' }
   ];
@@ -714,7 +741,7 @@
   }
   function kickerHtml(espace) {
     var nav = '<nav class="cc-espaces" aria-label="Concurrents">' +
-      '<button type="button" class="cc-esp-home' + (espace === 'accueil' ? ' on' : '') + '" onclick="V2.go(\'concurrents\')">Concurrents</button>' +
+      '<button type="button" class="cc-esp-home' + (espace === 'accueil' ? ' on' : '') + '" onclick="V2.go(\'concurrents\',\'sommaire\')">Sommaire</button>' +
       ESPACES.map(function (e) {
         return '<button type="button" class="cc-esp' + (espace === e.k ? ' on' : '') + '"' + (espace === e.k ? ' aria-current="page"' : '') + ' onclick="' + allerA(e.k) + '">' + esc(e.t) + '</button>';
       }).join('') + '</nav>';
@@ -774,7 +801,7 @@
   // en NOMBRE DE PHARMACIES qui commandent (PROD_STATS.n, jamais le CA).
   // Seules les sources à prix d'achat ; Cooper (préparatoire) n'y croise
   // aucun de nos produits vendus, il reste dans son onglet.
-  var CMP = ['sagitta', 'ocp', 'etradi', 'alliance', 'pharmazon'];
+  var CMP = ['sagitta', 'ocp', 'etradi', 'alliance', 'pharmafit', 'cerp', 'pharmazon'];
   // 29/09/2026 (soir) — décision de Will : OCP Incontournables n'est plus un
   // concurrent à part, ses prix entrent dans eTradi (qui appartient à OCP).
   // CMP reste la liste des sources à TÉLÉCHARGER ; CMP_COL est celle des
@@ -782,8 +809,9 @@
   // Variante retenue : « V1 mixé avec V4 » — tableau trié au clic, écart en %
   // de NOTRE net, couleur de case proportionnelle à l'écart, colonne Enjeu,
   // export Excel de ce qui est à l'écran.
-  var CMP_COL = ['sagitta', 'ocp', 'alliance', 'pharmazon'];
-  var COL_NOM = { sagitta: 'Sagitta', ocp: 'OCP', alliance: 'Alliance', pharmazon: 'Pharmazon' };
+  var CMP_COL = ['sagitta', 'ocp', 'alliance', 'pharmafit', 'cerp', 'pharmazon'];
+  var COL_NOM = { sagitta: 'Sagitta', ocp: 'OCP', alliance: 'Alliance', pharmafit: 'Pharmafit', cerp: 'CERP', pharmazon: 'Pharmazon' };
+  var COL_SOUS = { ocp: 'eTradi + Incont.', alliance: 'prix 2025', pharmafit: 'sans compte', cerp: 'promo du mois' };
   var CMP_PAS = 100;
   var CMP_FAM = [['all', 'Toutes familles'], ['pr', 'Princeps remboursables'], ['nr', 'Non remboursables'], ['gen', 'Génériques'], ['biosim', 'Biosimilaires']];
   S.cmp = { q: '', fam: 'all', perdus: false, tous: false, vus: CMP_PAS, tri: null };
@@ -805,7 +833,7 @@
       var c = String(r.c), px = {}, nb = 0, min = null, qui = '', srcOcp = '';
       var io = cmpNet('ocp', c), ie = cmpNet('etradi', c);
       if (io > 0 || ie > 0) { if (io > 0 && !(ie > 0 && ie <= io)) { px.ocp = io; srcOcp = 'Incontournables'; } else { px.ocp = ie; srcOcp = 'eTradi'; } }
-      ['sagitta', 'alliance', 'pharmazon'].forEach(function (k) { var v = cmpNet(k, c); if (v > 0) px[k] = v; });
+      ['sagitta', 'alliance', 'pharmafit', 'cerp', 'pharmazon'].forEach(function (k) { var v = cmpNet(k, c); if (v > 0) px[k] = v; });
       CMP_COL.forEach(function (k) { var v = px[k]; if (v > 0) { nb++; if (min == null || v < min) { min = v; qui = k; } } });
       var n = nous(c), ip = n && n.ip > 0 ? n.ip : null, v = '';
       if (ip && nb && !n.exclu) v = Math.abs(min - ip) < 0.005 ? 'egal' : (ip < min ? 'win' : 'lose');
@@ -848,7 +876,7 @@
   function cmpEnTete(k) {
     var ks = k === 'ocp' ? ['ocp', 'etradi'] : [k], rate = ks.filter(echec)[0], pret = ks.every(function (x) { return SRC[x].charge(); });
     if (!pret) return '<th class="num cmp-src">' + esc(COL_NOM[k]) + (rate ? '<small><button type="button" class="cc-lien" onclick="event.stopPropagation();V2.ccRetry(\'' + rate + '\')">réessayer</button></small>' : '<small aria-busy="true">chargement…</small>') + '</th>';
-    return cmpTh(k, esc(COL_NOM[k]), k === 'alliance' ? 'prix 2025' : (k === 'ocp' ? 'eTradi + Incont.' : 'net'), 'cmp-src');
+    return cmpTh(k, esc(COL_NOM[k]), COL_SOUS[k] || 'net', 'cmp-src');
   }
   function cmpChaleur(p, ip) {
     var pc = Math.min(20, Math.abs((p - ip) / ip * 100)), a = 0.07 + pc / 20 * 0.33;
@@ -899,7 +927,7 @@
     return '<section class="cc-fiche cmp">' +
       '<div class="cc-head"><div><span class="cc-eyebrow"><i class="dot"></i>Tous les concurrents côte à côte</span><h1 class="v2-page-title">Le comparateur de prix</h1>' +
       '<p class="v2-page-sub">Nos produits les plus commandés en tête (nombre de pharmacies clientes qui les prennent), notre net en face du net de chaque concurrent. En rouge, un concurrent moins cher que nous ; en vert, plus cher. Une ligne s\'ouvre en carte « tous les prix ».</p></div>' +
-      '<div class="cc-meta"><span>Sources <b>' + CMP_COL.map(function (k) { return esc(COL_NOM[k]); }).join(' · ') + '</b></span><span>OCP = eTradi + Incontournables, le moins cher des deux</span><span>Alliance : shortlist <b>févr.-avr. 2025</b></span></div></div>' +
+      '<div class="cc-meta"><span>Sources <b>' + CMP_COL.map(function (k) { return esc(COL_NOM[k]); }).join(' · ') + '</b></span><span>OCP = eTradi + Incontournables, le moins cher des deux</span><span>Alliance : shortlists <b>2025</b></span><span>Pharmafit : prix de la boutique <b>sans compte</b></span><span>CERP : dernière promo <b>Central Prom</b> connue</span></div></div>' +
       '<div class="cc-tools"><div class="cc-search">' + ICO('search', 15, 2) + '<input id="cc-cmpq" type="search" placeholder="Produit ou code…" value="' + esc(o.q) + '" oninput="V2.ccCmpQ(this.value)" autocomplete="off"></div></div>' +
       '<div class="v2-segs">' + CMP_FAM.map(function (f) { return puce(o.fam === f[0], 'V2.ccCmp(\'fam\',\'' + f[0] + '\')', esc(f[1])); }).join('') + '</div>' +
       '<div class="v2-segs cmp-opts">' + puce(o.perdus, 'V2.ccCmp(\'perdus\')', 'Seulement où un concurrent est moins cher') + puce(o.tous, 'V2.ccCmp(\'tous\')', 'Montrer aussi les produits sans prix concurrent') + '</div>' +
@@ -1022,7 +1050,9 @@
       var tel = phone(); dernierMode = tel;
       // Sans paramètre : l'accueil (trois portes + recherche produit).
       // acteurs / actu : v2-grossistes.js. Une source (ou « prix ») : son dossier.
-      var p = param || '';
+      // 05/10/2026 — demande de Will : le comparateur est la première chose qu'on voit
+      // en entrant dans Concurrents ; les portes passent derrière « Sommaire ».
+      var p = param || 'comparateur';
       // 24/09/2026 — l'actualité a rejoint « Infos du jour » : les anciens favoris y mènent.
       if (p === 'actu') { V2.route = { name: 'infos', param: 'concurrents' }; try { history.replaceState(null, '', '#infos/concurrents'); } catch (e) {} V2.render(); return; }
       var espace = (p === 'acteurs' || p === 'actu' || p === 'comparateur') ? p : ((SRC[p] || p === 'prix') ? 'prix' : 'accueil');
@@ -1049,7 +1079,7 @@
       // Le comparateur n'a de sens qu'avec TOUS les concurrents : il les demande
       // tous en entrant (≈ 3,7 Mo, en différé), et se redessine à chaque arrivée.
       if (espace === 'comparateur') CMP.forEach(function (k) {
-        if (!SRC[k].charge()) charger(k, function () { if (V2.route && V2.route.name === 'concurrents' && V2.route.param === 'comparateur') rerenderCmp(); });
+        if (!SRC[k].charge()) charger(k, function () { if (V2.route && V2.route.name === 'concurrents' && (V2.route.param || 'comparateur') === 'comparateur') rerenderCmp(); });
       });
       if (src && !SRC[src].charge()) {
         charger(src, function () { if (V2.route && V2.route.name === 'concurrents') V2.render(); });
@@ -1220,6 +1250,9 @@
       '.cmp-opts{margin-top:-4px}',
       '.cc-wrap.cmp-w{max-width:1400px}',
       '.cmp-t th{padding:12px 10px}.cmp-t td{padding:9px 10px}.cmp-t .cc-v{white-space:nowrap}',
+      /* 05/10/2026 — six concurrents : l\'en-tête passe sur toute la largeur, le tableau se resserre */
+      '.cmp .cc-head{display:block}.cmp .cc-head .cc-meta{margin-top:14px}',
+      '@media (min-width:701px){.v2-table.cc-table.cmp-t th,.v2-table.cc-table.cmp-t td{padding-left:8px;padding-right:8px}.v2-table.cc-table.cmp-t td.cc-name{min-width:170px}}',
       '.cmp-t th small{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:none;letter-spacing:0}',
       '.cmp-t th.cmp-src,.cmp-t th.cmp-nous{cursor:default}.cmp-t th.cmp-nous,.cmp-t td.cmp-nous{background:rgba(0,80,230,.05);color:var(--ip-blue-d);font-weight:700}',
       '.cmp-t td{vertical-align:middle}.cmp-rg{color:var(--muted-2)}',

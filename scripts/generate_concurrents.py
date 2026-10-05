@@ -67,6 +67,20 @@ OUT_ETRADI = ROOT / "crm" / "v2" / "concurrents-etradi-data.js"
 ETRADI_CSV = Path.home() / "DPGS-documents" / "analyse" / "ETRADI-2026-09-27.csv"
 OUT_ALLI = ROOT / "crm" / "v2" / "concurrents-alliance-data.js"
 ALLI_CSV = Path.home() / "DPGS-documents" / "analyse" / "ALLIANCE-2026-09-27.csv"
+# 05/10/2026 — ce que les chasses documentaires d'octobre ont rapporté (demande de Will : « alimenter le
+# comparateur avec toute la data récupérée ») : shortlist Alliance mai-août 2025 (elle remplace févr.-avr.
+# produit par produit), catalogue de la boutique Pharmafit (juillet 2026, prix d'un visiteur sans compte),
+# catalogues mensuels Central Prom d'Astera - CERP (dernière offre connue par produit, 2025-2026).
+CHASSES = Path.home() / "DPGS-documents" / "TARIFS-FRANCE-2026-09-30"
+ALLI2_REMB = CHASSES / "travail-chasse-13" / "lettres-liseuses" / "fichiers" / "Alliance-Healthcare__shortlist-specialites-remboursees-mai-aout__2025-05.csv"
+ALLI2_NR = CHASSES / "travail-chasse-13" / "lettres-liseuses" / "fichiers" / "Alliance-Healthcare__shortlist-specialites-non-remboursees-mai-aout__2025-05.csv"
+PFIT_CSV = [CHASSES / "travail-chasse-12" / "pharmafit" / "fichiers" / "pharmafit__catalogue-boutique-anonyme-fusionne__2026-07.csv",
+            CHASSES / "travail-chasse-13" / "archives-profondes" / "fichiers" / "pharmafit__boutique-gamme-mepilex-40-references-prix__2026-07.csv"]
+OUT_PFIT = ROOT / "crm" / "v2" / "concurrents-pharmafit-data.js"
+CPROM_CSV = Path.home() / "DPGS-documents" / "analyse" / "CENTRAL-PROM-2026-09-27.csv"
+OUT_CERP = ROOT / "crm" / "v2" / "concurrents-cerp-data.js"
+MOIS = ["JANVIER", "FEVRIER", "MARS", "AVRIL", "MAI", "JUIN", "JUILLET", "AOUT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DECEMBRE"]
+MOIS_FR = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
 # fichiers où l'on lit les codes 13 que JARVIS connaît (publics ou protégés, présents en local)
 FARMA_UNIVERS = ["crm/v2/prod-stats-data.js", "crm/offilog-data.js", "crm/v2/pharmazon-data.js",
                  "crm/v2/concurrents-sagitta-data.js", "crm/v2/concurrents-ocp-data.js"]
@@ -520,13 +534,123 @@ def main():
     dpgs()
 
 
+def alliance_mai_aout(cols, data):
+    """Shortlist mai-août 2025 : elle remplace la ligne févr.-avr. du même produit, et ajoute les siens."""
+    i = {c: n for n, c in enumerate(cols)}
+    par_code = {r[0]: r + ["février-avril 2025"] for r in data}
+    n_lu = n_rempl = 0
+    for path, remb in ((ALLI2_REMB, True), (ALLI2_NR, False)):
+        if not path.exists():
+            print("ERREUR : fichier introuvable :", path)
+            sys.exit(1)
+        with open(path, encoding="utf-8-sig", newline="") as fh:
+            for r in csv.DictReader(fh, delimiter=";"):
+                code = (r.get("CIP13") or "").strip()
+                ppht = fnum(r.get("PPHT"))
+                if remb:
+                    p1, p2, q = fnum(r.get("P1")), fnum(r.get("P2")), fnum(r.get("palier (unités)"))
+                    ps = [x for x in ((1, p1), (q or 1, p2)) if x[1]]
+                else:
+                    ps = [(fnum(r.get("minimum de commande à la ligne")) or 1, fnum(r.get("prix net")))]
+                    ps = [x for x in ps if x[1]]
+                if len(code) != 13 or not ps or (r.get("contrôle") or "").strip() != "ok":
+                    continue
+                n_lu += 1
+                n_rempl += code in par_code
+                net = min(x[1] for x in ps)
+                l = [None] * len(cols)
+                l[i["code13"]], l[i["libelle"]] = code, (r.get("libellé") or "").strip()
+                l[i["famille"]] = "spécialités remboursées" if remb else "spécialités non remboursées"
+                l[i["pfht"]], l[i["ppht"]], l[i["net"]] = fnum(r.get("PFHT")), ppht, net
+                l[i["facture"]] = fnum(r.get("prix unitaire facturé"))
+                l[i["remise"]] = round((ppht - net) / ppht * 100, 2) if ppht else None
+                l[i["paliers"]] = "|".join("%g" % x[1] for x in ps)
+                l[i["qtes"]] = " · ".join("dès %g" % x[0] for x in ps)
+                l[i["page"]], l[i["controle"]] = (r.get("page") or "").strip(), ""
+                par_code[code] = l + ["mai-août 2025"]
+    return cols + ["periode"], list(par_code.values()), n_lu, n_rempl
+
+
+def pharmafit():
+    cols, prod = ["code13", "libelle", "labo", "tarif", "remise", "net", "dispo"], {}
+    n = 0
+    for path in PFIT_CSV:
+        if not path.exists():
+            print("ERREUR : fichier introuvable :", path)
+            sys.exit(1)
+        with open(path, encoding="utf-8-sig", newline="") as fh:
+            for r in csv.DictReader(fh, delimiter=";"):
+                n += 1
+                code, net = (r.get("cip") or "").strip(), fnum(r.get("netPrice"))
+                if len(code) != 13 or not net or net <= 0:
+                    continue
+                labo = (r.get("lab") or "").strip()
+                prod[code] = [code, (r.get("name") or "").strip().lstrip("# ").strip(), "" if labo == "—" else labo,
+                              fnum(r.get("listPrice")), fnum(r.get("discountPct")) or 0, net, (r.get("statusLabel") or "").strip()]
+    return cols, list(prod.values()), n
+
+
+def central_prom():
+    """Une ligne par produit : son catalogue Central Prom le plus récent (2025-2026), meilleur palier contrôlé."""
+    cols = ["code13", "libelle", "ppht", "net", "remise", "qtes", "paliers", "periode", "page"]
+    if not CPROM_CSV.exists():
+        print("ERREUR : fichier introuvable :", CPROM_CSV)
+        sys.exit(1)
+    prod, n, sans_mois = {}, 0, set()
+    with open(CPROM_CSV, encoding="utf-8-sig", newline="") as fh:
+        for r in csv.DictReader(fh):
+            n += 1
+            code, net, an = (r.get("code_produit") or "").strip(), fnum(r.get("prix_net")), (r.get("annee") or "").strip()
+            if len(code) != 13 or not net or an not in ("2025", "2026") or not (r.get("controle") or "").startswith("exacte"):
+                continue
+            doc = (r.get("document") or "").upper()
+            m = [k for k, x in enumerate(MOIS) if x in doc]
+            if not m:
+                sans_mois.add(doc)
+                continue
+            quand = (int(an), max(m))
+            prod.setdefault(code, {}).setdefault(quand, []).append((fnum(r.get("quantite")) or 1, net, r))
+    if sans_mois:
+        print("ERREUR : mois illisible dans le nom de", sorted(sans_mois))
+        sys.exit(1)
+    data = []
+    for code, par in prod.items():
+        quand = max(par)
+        ps = sorted({(x[0], x[1]) for x in par[quand]}, key=lambda x: (x[0], -x[1]))
+        r = min(par[quand], key=lambda x: x[1])[2]
+        net, ppht = min(x[1] for x in ps), fnum(r.get("prix"))
+        data.append([code, (r.get("nom") or "").strip(), ppht, net, round((ppht - net) / ppht * 100, 2) if ppht else None,
+                     " · ".join("dès %g" % x[0] for x in ps), "|".join("%g" % x[1] for x in ps),
+                     MOIS_FR[quand[1]] + " " + str(quand[0]), (r.get("page") or "").strip()])
+    return cols, data, n
+
+
+def chasses():
+    c, d, n = pharmafit()
+    o = {"maj": "2026-07-25", "periode": "juillet 2026", "cols": c, "rows": d}
+    relu, ok = ecrire(OUT_PFIT, "CONCURRENTS_PHARMAFIT", o, "Pharmafit — catalogue de la boutique, juillet 2026, prix d'un visiteur sans compte", lambda x: len(x["rows"]) == len(d))
+    print("Pharmafit : %d lignes lues -> %d produits à prix, %d octets, relecture %s" % (n, len(d), OUT_PFIT.stat().st_size, "OK" if ok else "ÉCART !"))
+    if not ok:
+        sys.exit(1)
+    c, d, n = central_prom()
+    o = {"maj": "2026-03-01", "periode": "2025-2026", "cols": c, "rows": d}
+    relu, ok = ecrire(OUT_CERP, "CONCURRENTS_CERP", o, "Astera - CERP — catalogues mensuels Central Prom 2025-2026, dernière offre connue par produit", lambda x: len(x["rows"]) == len(d))
+    print("Central Prom : %d lignes lues -> %d produits, %d octets, relecture %s" % (n, len(d), OUT_CERP.stat().st_size, "OK" if ok else "ÉCART !"))
+    if not ok:
+        sys.exit(1)
+
+
 def dpgs():
     for nom, out, var, src, fam, fac, maj, per, ent in (
         ("eTradi", OUT_ETRADI, "CONCURRENTS_ETRADI", ETRADI_CSV, "section", False, "2026-07-01", "juillet-décembre 2026",
          "eTradi — catalogue OCP juillet-décembre 2026, tous paliers, net recalculé selon la page 41 du document"),
         ("Alliance", OUT_ALLI, "CONCURRENTS_ALLIANCE", ALLI_CSV, "famille", True, "2025-02-01", "février-avril 2025",
-         "Alliance Healthcare — shortlist février-avril 2025, tous paliers, net : PPHT moins taux × PFHT")):
+         "Alliance Healthcare — shortlists février-avril et mai-août 2025, tous paliers, net : PPHT moins taux × PFHT")):
         c, d, n, n_sans = par_palier(src, fam, fac)
+        if nom == "Alliance":
+            c, d, n2, n_rempl = alliance_mai_aout(c, d)
+            maj, per = "2025-05-01", "février-août 2025"
+            print("Alliance : shortlist mai-août 2025, %d produits lus dont %d remplacent leur ligne févr.-avr." % (n2, n_rempl))
         o = {"maj": maj, "periode": per, "cols": c, "rows": d}
         relu, ok = ecrire(out, var, o, ent, lambda x: len(x["rows"]) == len(d))
         print("%-9s: %d paliers lus -> %d produits (%d sans net contrôlé), %d octets, relecture %s"

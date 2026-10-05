@@ -194,6 +194,8 @@ crm/v2/concurrents-cooper-data.js
 crm/v2/concurrents-farmaline-data.js
 crm/v2/concurrents-etradi-data.js
 crm/v2/concurrents-alliance-data.js
+crm/v2/concurrents-pharmafit-data.js
+crm/v2/concurrents-cerp-data.js
 
 # 03/09/2026 — grande passe « conditions commerciales » : ces fichiers portent
 # nos prix nets, remises, CA par pharmacie ou par établissement. Ils vivent

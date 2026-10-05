@@ -538,6 +538,8 @@
     // (shortlist févr.-avr. 2025) : documents DPGS, même traitement.
     concetradi: 'v2/concurrents-etradi-data.js',
     concalliance: 'v2/concurrents-alliance-data.js',
+    concpharmafit: 'v2/concurrents-pharmafit-data.js',
+    conccerp: 'v2/concurrents-cerp-data.js',
     // Prix PUBLICS E.Leclerc (TTC) et rayons fins Offilog : données publiques.
     leclercpub: 'v2/leclerc-pub-data.js',
     offilogcats: 'v2/offilog-cats-data.js',
@@ -647,6 +649,8 @@
     concfarmaline: 'concurrents-farmaline-data.js',
     concetradi: 'concurrents-etradi-data.js',
     concalliance: 'concurrents-alliance-data.js',
+    concpharmafit: 'concurrents-pharmafit-data.js',
+    conccerp: 'concurrents-cerp-data.js',
     // 29/09/2026 — prix B2B du catalogue Offilog complet (id: prix), conditions
     // Intégral : protégé, comme offilogbestprix.
     offiloglivprix: 'offilog-live-prix.js',
@@ -1110,7 +1114,7 @@
     // Bumpé 29/09/2026 : v2-offilog.js change (union catalogue OPSO, retrait
     // Pharmazon/achat côté OPSO) — sans ce bump, un appareil ayant déjà l'app
     // ouverte continuerait de servir l'ancien fichier depuis le cache.
-    var V = '?v=20261005h' + (window.V2_VER || '20260915g');
+    var V = '?v=20261005i' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1240,6 +1244,8 @@
     concfarmaline: 'CONCURRENTS_FARMALINE',
     concetradi: 'CONCURRENTS_ETRADI',
     concalliance: 'CONCURRENTS_ALLIANCE',
+    concpharmafit: 'CONCURRENTS_PHARMAFIT',
+    conccerp: 'CONCURRENTS_CERP',
     leclercpub: 'LECLERC_PUB',
     offilogcats: 'OFFILOG_CATS',
     offiloglive: 'OFFILOG_LIVE',
@@ -1615,7 +1621,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20261005h';
+    var V = '?v=20261005i';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
