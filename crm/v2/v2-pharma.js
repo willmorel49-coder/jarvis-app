@@ -651,11 +651,15 @@
   // Un code saisi sans son zéro de tête (« 1000 » pour 01000) est remis sur 5 chiffres.
   function cpDe(p) { var c = String(p.cp == null ? '' : p.cp).trim(); return /^\d{4}$/.test(c) ? '0' + c : c; }
   // Recherche de la liste : le nom, ou le DÉBUT du code postal quand on ne tape que des chiffres
-  // (« 14 » = tout le Calvados, « 14000 » = Caen).
+  // (« 14 » = tout le Calvados, « 14000 » = Caen), ou la ville — sans tenir compte des accents ni
+  // des traits d'union (« saint lo » trouve Saint-Lô).
+  function villeCle(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[-'’]/g, ' ').replace(/\s+/g, ' ').trim(); }
   function correspond(p, q) {
     if ((p.name || '').toLowerCase().indexOf(q) >= 0) return true;
     var n = q.replace(/\s/g, '');
-    return /^\d+$/.test(n) && cpDe(p).indexOf(n) === 0;
+    if (/^\d+$/.test(n)) return cpDe(p).indexOf(n) === 0;
+    var v = villeCle(q);
+    return !!v && villeCle(p.ville).indexOf(v) >= 0;
   }
   function listRowHtml(x) {
     var color = x.p.color || 'var(--ip-blue)';
@@ -887,7 +891,7 @@
         counterHtml +
         '<div class="of-bar">' + commBar + secteurBar + opsoFilterBar + '</div>' +
         '<label class="v2-champ of-recherche">' + ICO('search', 20, 2) +
-          '<input id="v2-pharma-search" type="text" placeholder="Nom ou code postal…" aria-label="Rechercher une officine par son nom ou son code postal" autocomplete="off" value="' +
+          '<input id="v2-pharma-search" type="text" placeholder="Nom, ville ou code postal…" aria-label="Rechercher une officine par son nom, sa ville ou son code postal" autocomplete="off" value="' +
           V2.esc(searchQuery) + '"></label>' +
         '<p class="of-n" id="v2-pharma-n" aria-live="polite">' + nAff + '</p>' +
         '<div class="v2-card" id="v2-pharma-card">' + corps + '</div>' +
@@ -1095,18 +1099,39 @@
         (V2.profil ? V2.profil.newProspectSection(pid, seed) : '') +
         (V2.profil ? V2.profil.section('client', pid) : '') +
         (V2.notes ? V2.notes.section('client', pid) : '') +
-        '<div class="v2-card v2-prospect-acts">' + txProspectBtn(pid) + '</div>' +
+        '<div class="v2-card v2-prospect-acts">' + txProspectBtn(pid) +
+          '<button type="button" class="v2-btn v2-btn-ghost" id="of-archiver" onclick="V2.pharmaArchiverProspect(\'' + esc(String(pid).replace(/[^0-9A-Za-z_-]/g, '')) + '\')" title="La fiche sort des listes, rien n\'est effacé">Archiver cette fiche</button></div>' +
       '</div>';
     if (V2.profil) V2.profil.hydrate();
     if (V2.notes) V2.notes.hydrate();
     // Fiche déjà remplie : son nom en titre, pas « Nouvelle fiche prospect ».
     if (V2.profil && V2.profil.charger) V2.profil.charger('client', pid).then(function (d) {
-      if (!d.nom || !V2.route || String(V2.route.param) !== String(pid)) return;
+      if (!V2.route || String(V2.route.param) !== String(pid)) return;
+      var b = root.querySelector('#of-archiver');
+      if (b && d.archive) b.textContent = 'Rétablir cette fiche';
+      if (!d.nom) return;
       var n = root.querySelector('.v2-prospect-n'), a = root.querySelector('.v2-prospect-a');
       if (n) n.textContent = d.nom;
       if (a) a.textContent = [cpDe(d), d.ville].filter(function (x) { return x; }).join(' ') || 'Fiche créée à la main';
     });
   }
+  // 05/10/2026 — demande de Will : archiver une fiche prospect créée à la main (erreur, doublon).
+  // Rien n'est effacé : `archive` la sort de la liste et de la recherche générale, le même bouton la rétablit.
+  V2.pharmaArchiverProspect = function (pid) {
+    if (!/^px_[A-Za-z0-9_-]+$/.test(String(pid)) || !V2.profil || !V2.profil.charger || !V2.profil.poser) return;
+    V2.profil.charger('client', pid).then(function (d) {
+      var arch = !d.archive;
+      if (arch && !window.confirm('Archiver la fiche ' + (d.nom || 'de ce prospect') + ' ?\n\nElle sort de la liste des prospects et de la recherche, pour toute l\'équipe. Rien n\'est effacé : elle peut être rétablie.')) return;
+      return V2.profil.poser('client', pid, 'archive', arch).then(function () {
+        // L'enregistrement part en tâche de fond : les listes déjà chargées sont mises à jour tout de suite.
+        _crees.forEach(function (o) { if (String(o.sid) === String(pid)) { if (arch) o.data.archive = true; else delete o.data.archive; } });
+        _creesAt = arch ? Date.now() : 0;
+        if (arch && V2._newph) V2._newph = V2._newph.filter(function (o) { return String(o.sid) !== String(pid); });
+        if (V2.toast) V2.toast(arch ? 'Fiche archivée' : 'Fiche rétablie');
+        if (arch) { secteurTab = 'prospects'; V2.go('pharma'); } else V2.render();
+      });
+    }).catch(function () {});
+  };
   // 21/09/2026 — demande de Will : on transmet aussi des documents depuis une fiche prospect.
   function txProspectBtn(pid) {
     return '<button class="v2-btn v2-btn-ghost" onclick="V2.pharmaTransmettre(\'' + esc(String(pid)) + '\')" title="catalogues, documents de l\'équipe — en pièces jointes">' +
