@@ -659,7 +659,12 @@
     var n = q.replace(/\s/g, '');
     if (/^\d+$/.test(n)) return cpDe(p).indexOf(n) === 0;
     var v = villeCle(q);
-    return !!v && villeCle(p.ville).indexOf(v) >= 0;
+    if (!v) return false;
+    if (villeCle(p.ville).indexOf(v) >= 0) return true;
+    // 05/10/2026 — remontée de Karine (« ma phie Blin à Issé ») : l'équipe cherche aussi une officine
+    // par le nom de son titulaire (base clients, colonne contact).
+    var e = ((window.CLIENTS_ACTIFS || {}).d || {})[String(p.id)];
+    return !!(e && e[3] && villeCle(e[3]).indexOf(v) >= 0);
   }
   function listRowHtml(x) {
     var color = x.p.color || 'var(--ip-blue)';
@@ -675,6 +680,7 @@
       '<span class="v2-row-dot" style="background:' + V2.esc(color) + '"></span>' +
       '<span class="v2-row-name">' + V2.esc(x.p.name) + (cpDe(x.p) ? ' <span style="color:var(--muted);font-weight:500">· ' + V2.esc(cpDe(x.p)) + '</span>' : '') + '</span>' +
       badge + (x.p._cree ? '<span class="v2-row-meta">' + (x.p._archive ? 'archivée' : 'créé à la main') + '</span>' : '') +
+      (x.p._sansVente ? '<span class="v2-row-meta">aucune vente sur la période</span>' : '') +
       oppPill +
       '<span class="v2-row-meta">marge nette</span>' +
       // 24/09/2026 — officine d'un collègue : « — » plutôt qu'un faux « 0 € »
@@ -761,6 +767,32 @@
     return out;
   }
 
+  // 05/10/2026 — remontée de Karine (« je ne trouve pas ma phie Blin à Issé ») : la liste ne portait
+  // que les officines ayant une vente sur la période. Un client de la base clients sans vente
+  // (361 sur 2 341 ce jour-là) n'était ni dans Clients ni dans Prospects : introuvable.
+  // Il entre dans Clients, marqué « aucune vente sur la période ». Même règle de portefeuille que
+  // l'export « Mes clients » : la colonne commercial de la base (en code : KV, ALH…) fait foi, et le
+  // code d'un prénom est celui qu'il porte le plus souvent. Sans commercial choisi (direction) : tous.
+  // `deja` = lignes déjà dans la liste (ventes + promus), pour ne doubler personne.
+  function sansVenteRows(deja) {
+    var CA = (window.CLIENTS_ACTIFS || {}).d, D = window.PHARMA_FR; if (!CA || !D || !D.p) return [];
+    var noms = V2.commFilter ? [V2.commFilter] : (V2.ventesRestreintes && V2.ventesRestreintes() ? V2.mesComms() : []);
+    var vu = {}, compte = {}, codes = {}, out = [];
+    deja.forEach(function (x) { vu[String(x.p.id)] = 1; });
+    (V2.pharmacies || []).forEach(function (p) {
+      var cd = (CA[String(p.id)] || [])[7]; if (!cd) return;
+      (p.comms || []).forEach(function (n) { var m = compte[n] || (compte[n] = {}); m[cd] = (m[cd] || 0) + 1; });
+    });
+    noms.forEach(function (n) { var m = compte[n] || {}, best = ''; Object.keys(m).forEach(function (k) { if (!best || m[k] > m[best]) best = k; }); if (best) codes[best] = 1; });
+    D.p.forEach(function (p) {
+      var id = String(p[13] || ''), e = CA[id];
+      if (!e || vu[id] || (noms.length && !codes[e[7]])) return;
+      vu[id] = 1;
+      var x = prospectPseudoX(p); x.p._prospect = false; x.p._sansVente = true; out.push(x);
+    });
+    return out;
+  }
+
   function renderList(root) {
     var marketReady = !!window.OPS_AGGREGATE;
     var phs = (V2.pharmacies || []).map(function (p) {
@@ -775,6 +807,7 @@
       V2.ensurePharmaFr(function () { _ugaComm = null; if (V2.route && V2.route.name === 'pharma' && !V2.route.param) V2.render(); });
     }
     if (!isOpso() && window.PHARMA_FR) { try { phs = phs.concat(promotedRows()); } catch (e) {} }
+    if (!isOpso() && window.PHARMA_FR) { try { phs = phs.concat(sansVenteRows(phs)); } catch (e) {} }
     if (!isOpso()) chargerCrees();
 
     // ── Tri OPSO : clientes d'abord, puis par CA desc ──
@@ -807,7 +840,7 @@
     function applyFilters(list) {
       var q = searchQuery.trim().toLowerCase();
       return list.filter(function (x) {
-        if (V2.commFilter && !x.p._promu && (x.p.comms || []).indexOf(V2.commFilter) < 0) return false;
+        if (V2.commFilter && !x.p._promu && !x.p._sansVente && (x.p.comms || []).indexOf(V2.commFilter) < 0) return false;
         if (q && !correspond(x.p, q)) return false;
         if (isOpso() && opsoFilter === 'cliente' && !x.p.inDb) return false;
         if (isOpso() && opsoFilter === 'prospect' && x.p.inDb) return false;
@@ -905,7 +938,7 @@
         counterHtml +
         '<div class="of-bar">' + commBar + secteurBar + opsoFilterBar + '</div>' +
         '<label class="v2-champ of-recherche">' + ICO('search', 20, 2) +
-          '<input id="v2-pharma-search" type="text" placeholder="Nom, ville ou code postal…" aria-label="Rechercher une officine par son nom, sa ville ou son code postal" autocomplete="off" value="' +
+          '<input id="v2-pharma-search" type="text" placeholder="Nom, titulaire, ville ou code postal…" aria-label="Rechercher une officine par son nom, son titulaire, sa ville ou son code postal" autocomplete="off" value="' +
           V2.esc(searchQuery) + '"></label>' +
         '<p class="of-n" id="v2-pharma-n" aria-live="polite">' + nAff + '</p>' +
         '<div class="v2-card" id="v2-pharma-card">' + corps + '</div>' +
@@ -1112,12 +1145,14 @@
         '</div>' +
         (V2.profil ? V2.profil.newProspectSection(pid, seed) : '') +
         (V2.profil ? V2.profil.section('client', pid) : '') +
+        (V2.rdvPrepa ? V2.rdvPrepa.section(pid) : '') +
         (V2.notes ? V2.notes.section('client', pid) : '') +
         '<div class="v2-card v2-prospect-acts">' + txProspectBtn(pid) +
           '<button type="button" class="v2-btn v2-btn-ghost" id="of-archiver" onclick="V2.pharmaArchiverProspect(\'' + esc(String(pid).replace(/[^0-9A-Za-z_-]/g, '')) + '\')" title="La fiche sort des listes, rien n\'est effacé">Archiver cette fiche</button></div>' +
       '</div>';
     if (V2.profil) V2.profil.hydrate();
     if (V2.notes) V2.notes.hydrate();
+    if (V2.rdvPrepa) V2.rdvPrepa.hydrate();
     // Fiche déjà remplie : son nom en titre, pas « Nouvelle fiche prospect ».
     if (V2.profil && V2.profil.charger) V2.profil.charger('client', pid).then(function (d) {
       if (!V2.route || String(V2.route.param) !== String(pid)) return;
@@ -1234,7 +1269,10 @@
     }
     var oi = (window.OFFICINES_INFOS || {})[String(pid)] || null;
     var oiAdresse = oi ? (oi[0] || '') : '', oiTel = oi ? (oi[1] || '') : '', oiFax = oi ? (oi[2] || '') : '', oiSiren = oi ? (oi[3] || '') : '', oiDateouv = oi ? (oi[4] || '') : '';
-    var seed = { nom: p[6] || '', groupement: grp || '', titulaire: p[10] || dirigeantsDe(oi), tel: p[9] || oiTel, email: p[11] || '', adresse: oiAdresse };
+    // 05/10/2026 — client de la base sans vente sur la période (ouvert depuis la liste Clients) :
+    // son titulaire est celui de la base clients, l'annuaire national pouvant porter l'ancien.
+    var caSV = ((window.CLIENTS_ACTIFS || {}).d || {})[String(pid)] || null;
+    var seed = { nom: p[6] || '', groupement: grp || '', titulaire: (caSV && caSV[3]) || p[10] || dirigeantsDe(oi), tel: p[9] || oiTel, email: p[11] || '', adresse: oiAdresse };
     var secteurDe = (ugaCommMap()[p[2]] || []).join(', ');   // commerciaux présents dans son UGA
     var badge = function (t, cls) { return t ? '<span class="v2-chip' + (cls ? ' ' + cls : '') + '">' + esc(t) + '</span>' : ''; };
     // 23/09/2026 — un prospect n'a jamais de grossiste/génériqueur connu (base clients
@@ -1253,7 +1291,7 @@
             '<div style="flex:1;min-width:0">' +
               '<div class="v2-prospect-n">' + esc(nameOf(pid, p[6] || p[10]) || 'Pharmacie') + '</div>' +
               '<div class="v2-prospect-a">' + esc(ville) + (cp ? ' · ' + esc(cp) : '') + '</div>' +
-              '<div class="v2-prospect-badges">' + badge(seg, 'pr') + badge(grp) + badge(uga ? 'UGA ' + uga : '') + badge(secteurDe ? 'Secteur de ' + secteurDe : '') + '</div>' +
+              '<div class="v2-prospect-badges">' + badge(caSV ? 'Client' : seg, 'pr') + badge(grp) + badge(uga ? 'UGA ' + uga : '') + badge(secteurDe ? 'Secteur de ' + secteurDe : '') + '</div>' +
               ((oiSiren || oiFax || oiDateouv) ? '<div class="v2-prospect-extra">' +
                 (oiSiren ? '<a href="https://annuaire-entreprises.data.gouv.fr/entreprise/' + esc(oiSiren) + '" target="_blank" rel="noopener">SIREN ' + esc(oiSiren) + '</a>' : '') +
                 (oiFax ? (oiSiren ? ' · ' : '') + 'Fax ' + esc(oiFax) : '') +
@@ -1269,7 +1307,8 @@
               probableLignes +
             '</div>' +
           '</div>' +
-          '<p class="v2-prospect-note">Officine non cliente — complète ses coordonnées, infos et notes pour la suivre comme un futur client. Tout est sauvegardé.</p>' +
+          (caSV ? '<p class="v2-prospect-note">Cliente de la base clients' + (caSV[3] ? ' (' + esc(caSV[3]) + ')' : '') + ' — aucune vente sur la période. Ses coordonnées, infos et notes se complètent ici. Tout est sauvegardé.</p>'
+                : '<p class="v2-prospect-note">Officine non cliente — complète ses coordonnées, infos et notes pour la suivre comme un futur client. Tout est sauvegardé.</p>') +
         '</div>' +
         '<div class="v2-card" style="padding:12px 16px 14px">' + nameEditor(pid, p[6] || '') + '</div>' +
         // 27/09/2026 — le potentiel sur un PROSPECT : c'est ici qu'il sert le plus, puisque
@@ -1278,6 +1317,7 @@
         (V2.potentielBloc ? V2.potentielBloc({ cp: cp, ville: ville }) : '') +
         (V2.profil ? V2.profil.coordSection(pid, seed) : '') +
         (V2.profil ? V2.profil.section('client', pid) : '') +
+        (V2.rdvPrepa ? V2.rdvPrepa.section(pid) : '') +
         (V2.notes ? V2.notes.section('client', pid) : '') +
         '<div class="v2-card v2-prospect-acts">' +
           ((V2.promoted && V2.promoted[String(pid)])
@@ -1289,6 +1329,7 @@
       '</div>';
     if (V2.profil) V2.profil.hydrate();
     if (V2.notes) V2.notes.hydrate();
+    if (V2.rdvPrepa) V2.rdvPrepa.hydrate();
   }
 
   var _clientsAsked = false;   // évite de redemander clients-data.js à chaque rendu
@@ -1890,7 +1931,7 @@
           cle_crypto: (caBase && caBase[17]) || ''
         }) + '</div>';
     })() : '';
-    var notes = V2.notes ? '<div class="pha-notes">' + V2.notes.section('client', pid) + '</div>' : '';
+    var notes = V2.notes ? '<div class="pha-notes">' + (V2.rdvPrepa ? V2.rdvPrepa.section(pid) : '') + V2.notes.section('client', pid) + '</div>' : '';
 
     // ── Colonne « chiffres » ──
     var A = analyseData(pid, sales);
@@ -1979,6 +2020,7 @@
       '</div>';
     if (V2.profil) V2.profil.hydrate();
     if (V2.notes) V2.notes.hydrate();
+    if (V2.rdvPrepa) V2.rdvPrepa.hydrate();
     if (briefOff) V2.briefOfficine.hydrate(pid, pharmaSalesAll(pid));
   }
 
