@@ -53,16 +53,27 @@
   function localGet(st, sid) { return localMap()[key(st, sid)] || null; }
   function localSet(st, sid, rec) { var m = localMap(); m[key(st, sid)] = rec; try { localStorage.setItem(LS, JSON.stringify(m)); } catch (e) {} }
 
+  // 05/10/2026 — `echec` distingue « la lecture partagée a RATÉ » (réseau faible, base qui ne répond pas)
+  // de « cette fiche n'existe pas encore ». Dans les deux cas l'affichage retombe sur le navigateur,
+  // mais une écriture ne doit jamais repartir d'une lecture ratée : voir lectureSure().
   function load(st, sid) {
     var c = sb();
     if (c) {
       return c.from(TABLE).select('*').eq('scope_type', st).eq('scope_id', String(sid)).maybeSingle()
         .then(function (r) {
           if (!r.error && r.data) return { backend: 'supabase', rec: { data: r.data.data || {}, by: r.data.updated_by_name || '', at: r.data.updated_at ? +new Date(r.data.updated_at) : 0 } };
-          return { backend: 'local', rec: localGet(st, sid) };
-        }).catch(function () { return { backend: 'local', rec: localGet(st, sid) }; });
+          return { backend: 'local', rec: localGet(st, sid), echec: !!r.error };
+        }).catch(function () { return { backend: 'local', rec: localGet(st, sid), echec: true }; });
     }
     return Promise.resolve({ backend: 'local', rec: localGet(st, sid) });
+  }
+  // Une fiche est UN enregistrement partagé (coordonnées, logiciel, grossiste, points de rendez-vous…),
+  // réécrit en entier à chaque saisie. Si sa lecture a raté, on ne sait pas ce qu'elle contient :
+  // enregistrer repartirait d'une fiche vide et effacerait la vraie. On n'écrit donc rien, et on le dit.
+  function lectureSure(res) {
+    if (!(res && res.echec && V2.user)) return true;
+    if (V2.toast) V2.toast('Non enregistré : la fiche n\'a pas pu être relue. Réessayez dans un instant.', 'error');
+    return false;
   }
 
   function save(st, sid, data) {
@@ -152,6 +163,7 @@
       // Sauvegarde par FUSION : on préserve les champs des AUTRES sections du même scope
       // (ex. Coordonnées + Profil + Identité vivent dans le même enregistrement 'client').
       load(st, sid).then(function (res) {
+        if (!lectureSure(res)) return;
         var base = (res && res.rec && res.rec.data) || {};
         // 19/09/2026 — une relance est PERSONNELLE (demande de Will) : on retient qui a posé la date,
         // pour que l'accueil de chacun ne liste que les siennes (v2-app.js, loadRelances).
@@ -228,6 +240,7 @@
   V2.profil.LGO = LGO;
   V2.profil.poser = function (st, sid, k, v) {
     return load(st, String(sid)).then(function (res) {
+      if (!lectureSure(res)) throw new Error('lecture');
       var base = (res && res.rec && res.rec.data) || {};
       if (v) base[k] = v; else delete base[k];
       return save(st, String(sid), base);
@@ -237,6 +250,7 @@
   // ── Corrections par pharmacie (scope 'override') : ex. groupement corrigé à la main ──
   V2.profil.saveOverride = function (pid, patch, cb) {
     load('override', String(pid)).then(function (res) {
+      if (!lectureSure(res)) return;
       var data = (res && res.rec && res.rec.data) || {};
       for (var k in patch) { if (patch.hasOwnProperty(k)) data[k] = patch[k]; }
       save('override', String(pid), data);
