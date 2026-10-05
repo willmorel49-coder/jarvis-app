@@ -21,6 +21,10 @@ CE QU'IL Y A DANS UN JEU (crm/v2/ventes/<empreinte>/)
                         espace (T = Intégral, E = Escale) : officines actives par mois (act),
                         sur la période (nph), rang de SES officines au CA (rg) sur (no).
   wml-officines-ca.js   CA + potentiel de SES officines seulement
+  grp-agregats.js       par groupement d'au moins 5 officines : combien d'officines actives,
+                        et combien commandent chaque produit (aucun montant, aucune quantité,
+                        aucun produit commandé par une seule officine). Sans lui, « son
+                        groupement » se comptait sur SES officines seules (05/10/2026).
   carte-detail.js       fiche de la carte : SES officines seulement
 
 QUI A UN JEU
@@ -130,6 +134,51 @@ def tranches(lignes):
     return out
 
 
+GRP_MIN = 5   # = le seuil de productsForIds (v2-pharma.js) : en dessous, un total trahirait une officine
+
+
+def agregats_groupements(officines, d_off, d_pro, ventes, garde_t, garde_e):
+    """05/10/2026 — Will : sur la fiche d'une officine, « son groupement » ne comptait que
+    les officines du commercial connecté, son jeu ne détaillant que les siennes.
+    Par espace (T = Intégral, E = Escale) et par groupement CANONIQUE (groupement-alias.js,
+    comme V2.canonGrp) d'au moins GRP_MIN officines : [officines actives, [produit, nombre
+    d'officines qui le commandent, …]]. Produit = rang dans P (codes tels que dans les ventes).
+    Ni montant ni quantité ; un produit commandé par une seule officine n'y figure pas."""
+    m = re.search(r'window\.GRP_ALIAS = (\{.*?\});', lire(os.path.join(V2, 'groupement-alias.js')), re.S)
+    alias = json.loads(m.group(1)) if m else sys.exit('ARRÊT : groupement-alias.js illisible')
+    canon = lambda g: alias.get(re.sub(r'[^a-z0-9]', '', g.lower())) or g
+    rangs_p, codes_p = {}, []
+    out = {}
+    for cle, filtre in (('T', garde_t), ('E', garde_e)):
+        membres = {}
+        for o in officines:
+            g = str(o.get('groupement') or '').strip()
+            # espace Escale : ses officines seulement (applyEscalePerimeter)
+            if g and g != '—' and (cle == 'T' or set(o.get('comms') or []) & set(ESCALE_COMMS)):
+                membres.setdefault(canon(g), set()).add(str(o.get('id')))
+        grp_de = {c: g for g, ids in membres.items() if len(ids) >= GRP_MIN for c in ids}
+        grp_rang = [grp_de.get(str(c)) for c in d_off]
+        actives, par_produit = {}, {}
+        for v, ok in zip(ventes, filtre):
+            g = grp_rang[v[0]] if ok else None
+            if g is None or len(str(d_pro[v[3]])) < 7:   # même garde que computeStats (v2-pharma.js)
+                continue
+            actives.setdefault(g, set()).add(v[0])
+            par_produit.setdefault(g, {}).setdefault(v[3], set()).add(v[0])
+        esp = {}
+        for g in sorted(actives):
+            paires = []
+            for prod, phs in sorted(par_produit[g].items()):
+                if len(phs) >= 2:
+                    if prod not in rangs_p:
+                        rangs_p[prod] = len(codes_p); codes_p.append(str(d_pro[prod]))
+                    paires += [rangs_p[prod], len(phs)]
+            esp[g] = [len(actives[g]), paires]
+        out[cle] = esp
+    out['P'] = codes_p
+    return out
+
+
 def main():
     tete = lire(os.path.join(V2, 'wml-officines-data.js'))
     officines = declaration(tete, 'WML_OFFICINES')
@@ -196,6 +245,9 @@ def main():
     garde_t = [True] * len(ventes)
     rep_t = reperes(garde_t)
     rep_e = reperes(garde_e)
+    d_pro = declaration(tete, 'WML_D_PRODUITS')
+    grp_js = 'window.GRP_AGREGATS = %s;\n' % compact(
+        agregats_groupements(officines, d_off, d_pro, ventes, garde_t, garde_e))
 
     # 'OPSO' a sa propre branche (jeu_opso) : par le chemin générique il n'aurait aucune
     # officine « à lui » (aucun prénom) et tout le réseau en totaux par produit.
@@ -204,7 +256,6 @@ def main():
         shutil.rmtree(SORTIE)
 
     total_reseau = sum(v[6] for v in ventes)
-    d_pro = declaration(tete, 'WML_D_PRODUITS')
     nb_mois = len(next(iter(carte.values()))['m'])
     noms = noms_produits()
     for commercial in jeux:
@@ -248,6 +299,7 @@ def main():
                           'rg': {c: r for c, r in rp['rg'].items() if c in mes_codes},
                           'rgg': {c: r for c, r in rp['rgg'].items() if c in mes_codes}}
         ecrire(os.path.join(rep, 'wml-ventes-index.js'), 'window.WML_TRANCHES_JEU = %s;\n' % compact(index))
+        ecrire(os.path.join(rep, 'grp-agregats.js'), grp_js)
         mes_ca = {k: v for k, v in off_ca.items() if comms_par_code.get(k, set()) & mes}
         # officines partagées avec un collègue : CA et fiche de carte recalculés sur SES lignes
         a_lui = {}
@@ -332,6 +384,8 @@ def jeu_opso(officines, d_off, ventes, off_ca, tete_ca, carte, tete_det):
              'rg': {d_off[r]: i + 1 for i, r in enumerate(rang)}, 'no': len(rang), 'rgg': {}}
     ecrire(os.path.join(rep, 'wml-ventes-index.js'), 'window.WML_TRANCHES_JEU = %s;\n' % compact(
         {'n': len(tr), 'e': emp.hexdigest()[:12], 'T': rep_o, 'E': rep_o}))
+    # Rien du réseau dans ce jeu : il détaille déjà tous ses adhérents, l'écran les compte lui-même.
+    ecrire(os.path.join(rep, 'grp-agregats.js'), 'window.GRP_AGREGATS = {"P":[],"T":{},"E":{}};\n')
     cles = {re.sub(r'[^0-9]', '', i) for i in ids}
     mes_ca = {k: v for k, v in off_ca.items() if re.sub(r'[^0-9]', '', k) in cles}
     ecrire(os.path.join(rep, 'wml-officines-ca.js'),

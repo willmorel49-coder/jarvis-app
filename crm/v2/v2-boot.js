@@ -162,7 +162,7 @@
     } catch (e) { fini('indisponible'); return Promise.resolve(); }
   }
   V2._dossierVentesPret = Promise.resolve();
-  var FICHIERS_VENTES = { 'wml-officines-ca.js': 1, 'carte-detail.js': 1, 'wml-ventes-index.js': 1 };
+  var FICHIERS_VENTES = { 'wml-officines-ca.js': 1, 'carte-detail.js': 1, 'wml-ventes-index.js': 1, 'grp-agregats.js': 1 };
   // Nom dans le seau d'un fichier de ventes : celui du jeu du commercial s'il est restreint.
   V2.cheminVentes = function (nom) {
     return (V2._dossierVentes && (FICHIERS_VENTES[nom] || /^wml-ventes-\d+\.js$/.test(nom)))
@@ -562,6 +562,8 @@
     prodstatscond: 'prod-stats-conditions.js',
     pharmafrca: 'pharma-fr-ca.js',
     wmlca: 'wml-officines-ca.js',
+    // 05/10/2026 — totaux par groupement du jeu d'un commercial restreint (v2-pharma.js, agregatGroupement)
+    grpagregats: 'grp-agregats.js',
     biosimcomplet: 'biosimilaires-complet.js',
     // 28/09/2026 — la SEGMENTATION commerciale (Client A/B/C) a quitté
     // pharma-fr-data.js : sur un dépôt PUBLIC, elle disait qui sont nos clients
@@ -655,6 +657,8 @@
     prodstatscond: 'prod-stats-conditions.js',
     pharmafrca: 'pharma-fr-ca.js',
     wmlca: 'wml-officines-ca.js',
+    // 05/10/2026 — totaux par groupement du jeu d'un commercial restreint (v2-pharma.js, agregatGroupement)
+    grpagregats: 'grp-agregats.js',
     biosimcomplet: 'biosimilaires-complet.js',
     pharmafrseg: 'pharma-fr-seg.js',
     pharmafrcomm: 'pharma-fr-comm.js',
@@ -1106,7 +1110,7 @@
     // Bumpé 29/09/2026 : v2-offilog.js change (union catalogue OPSO, retrait
     // Pharmazon/achat côté OPSO) — sans ce bump, un appareil ayant déjà l'app
     // ouverte continuerait de servir l'ancien fichier depuis le cache.
-    var V = '?v=20261004a' + (window.V2_VER || '20260915g');
+    var V = '?v=20261005a' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1249,6 +1253,7 @@
     pharmafrcomm: 'PHARMA_FR_COMM',
     mktipprix: 'MKT_IP_PRIX',
     wmlca: 'WML_OFF_CA',
+    grpagregats: 'GRP_AGREGATS',
     biosimcomplet: 'BIOSIMILAIRES_COMPLET',
     mktnr: 'MKT_NR',
     opsostats: 'OPSO_STATS_SALES',
@@ -1610,7 +1615,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20261004a';
+    var V = '?v=20261005a';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];

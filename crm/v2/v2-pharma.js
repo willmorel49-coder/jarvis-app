@@ -377,8 +377,39 @@
   // Statistiques CIP → {ph:Set des pharmacies, qte}. Calculées sur tout le réseau,
   // ou restreintes à un sous-ensemble de pharmacies (pidSet) pour la vue groupement.
   var _statsCache = {};
+  // 05/10/2026 — Will, depuis la fiche d'une officine : « il y a que 4 pharmacies de
+  // référence alors qu'on en a bcp plus » dans son groupement. Le jeu d'un commercial restreint ne détaille que SES
+  // officines : « son groupement » se comptait donc sur les siennes seules. Les totaux par
+  // groupement d'au moins 5 officines (officines actives, nombre d'officines par produit —
+  // aucun montant) arrivent tout faits dans son jeu (decouper_par_commercial.py, grp-agregats.js).
+  // Rend { panel, nb:{cip:n} } ; null = accès total, groupement trop petit, ou fichier pas encore là.
+  var _grpAgDemande = false, _grpAgMemo = {};
+  function agregatGroupement(nom) {
+    if (!V2._dossierVentes || !V2.loadFiles) return null;
+    var A = window.GRP_AGREGATS;
+    if (!A) {
+      if (!_grpAgDemande) {
+        _grpAgDemande = true;
+        V2.loadFiles(['grpagregats']).then(function () {
+          if (!window.GRP_AGREGATS) return;
+          Object.keys(_statsCache).forEach(function (k) { if (k.indexOf('grp:') === 0) delete _statsCache[k]; });
+          if (V2.route && V2.route.name === 'pharma') V2.render();
+        });
+      }
+      return null;
+    }
+    var cle = (isEscale() ? 'E:' : 'T:') + nom;
+    if (_grpAgMemo[cle] !== undefined) return _grpAgMemo[cle];
+    var a = (isEscale() ? A.E : A.T) || {}, g = a[nom], out = null;
+    if (g) {
+      out = { panel: g[0], nb: {} };
+      for (var i = 0; i < g[1].length; i += 2) out.nb[A.P[g[1][i]]] = g[1][i + 1];
+    }
+    return (_grpAgMemo[cle] = out);
+  }
   function computeStats(key, pidSet) {
     if (_statsCache[key]) return _statsCache[key];
+    var ag = key.indexOf('grp:') === 0 ? agregatGroupement(key.slice(4)) : null;
     var m = new Map(), phies = {}, months = {};
     (V2.sales || []).forEach(function (s) {
       var pid = String(s.pharmacyId);
@@ -389,8 +420,18 @@
       var e = m.get(c); if (!e) { e = { ph: new Set(), qte: 0 }; m.set(c, e); }
       e.ph.add(pid); e.qte += (s.qte || 0);
     });
-    _statsCache[key] = { map: m, total: Object.keys(phies).length, months: Object.keys(months).length || 5 };
-    return _statsCache[key];
+    var st = { map: m, total: Object.keys(phies).length, months: Object.keys(months).length || 5 };
+    if (ag) {
+      // tout le groupement : le nombre d'officines vient du total, pas de ses seules officines
+      Object.keys(ag.nb).forEach(function (c) {
+        var e = m.get(c); if (!e) { e = { ph: null, qte: 0 }; m.set(c, e); }
+        e.ph = { size: ag.nb[c] };
+      });
+      st.total = ag.panel;
+    }
+    // total pas encore arrivé (commercial restreint) : on ne fige pas le compte partiel
+    if (ag || key.indexOf('grp:') !== 0 || !V2._dossierVentes || window.GRP_AGREGATS) _statsCache[key] = st;
+    return st;
   }
   var _netTotal = 0, _statsMonths = 5;
   function cipStats() {
@@ -2419,12 +2460,18 @@
       var e = byCip[cip] || (byCip[cip] = { ph: {}, qte: 0, ca: 0 });
       e.ph[String(s.pharmacyId)] = 1; e.qte += s.qte || 0; e.ca += s.mntNetHt || 0;
     });
+    // 05/10/2026 — commercial restreint : le groupement ENTIER, pas ses seules officines (agregatGroupement)
+    var ag = String(ovKey || '').indexOf('GRP:') === 0 ? agregatGroupement(String(ovKey).slice(4)) : null;
+    if (ag) Object.keys(ag.nb).forEach(function (cip) {
+      (byCip[cip] || (byCip[cip] = { ph: {}, qte: 0, ca: 0 })).n = ag.nb[cip];
+    });
+    var nbPh = function (e) { return e.n || Object.keys(e.ph).length; };
     var ov = ovKey ? overridesGet(ovKey) : { removed: {}, added: {} };
     // produits ajoutés manuellement et non commandés par le panel : entrée vide (sortie 0)
     Object.keys(ov.added).forEach(function (cip) { if (!byCip[cip]) byCip[cip] = { ph: {}, qte: 0, ca: 0, manual: true }; });
     // seuil de diffusion : un produit n'apparaît que s'il est commandé par >= 20% des pharmacies
     // (actives) du groupement (les produits ajoutés à la main passent toujours).
-    var panel0 = Object.keys(activeSet).length;
+    var panel0 = ag ? ag.panel : Object.keys(activeSet).length;
     var seuil = Math.max(1, Math.ceil(panel0 * 0.20));
     // Biosimilaires : peu de boîtes par officine et jamais les mêmes d'une officine à
     // l'autre → à 20 %, Leadersanté (80 phies) en montrait 1 sur 18 commandés.
@@ -2435,7 +2482,7 @@
       if (ov.removed[cip]) return;                       // produit retiré à la main
       var b = bIdx.get(cip) || biosimHorsCatalogue(cip) || horsBenchmark(cip); if (!b) return;
       var cat = classify(b, cip); if (!cat || !buckets[cat]) return;
-      if (!byCip[cip].manual && Object.keys(byCip[cip].ph).length < (cat === 'biosim' ? seuilBiosim : seuil)) return;   // < 20% des pharmacies (biosim : < 2) → masqué
+      if (!byCip[cip].manual && nbPh(byCip[cip]) < (cat === 'biosim' ? seuilBiosim : seuil)) return;   // < 20% des pharmacies (biosim : < 2) → masqué
       // Prix : toujours via V2.bestPrice() (gère offre labo + barème d'abandon) — cette
       // fonction recalculait son propre prix "à la main" sur b.prix_ht/prix_ip/offre_ip
       // bruts, donc ratait toutes les corrections faites dans applyPPHT()/fusionsProtegees()
@@ -2445,10 +2492,10 @@
       if (!bp.ht && !bp.ip) return;   // 25/09/2026 — ni PPHT ni prix net connus : jamais « 0 € » sur un document
       buckets[cat].push({ cip: cip, designation: b.designation, prix_ht: bp.ht || 0, prix_ip: bp.ip || 0,
                           offre: bp.offre, remise: bp.remise,
-                          froid: estFroid(b, cip), sortie: Object.keys(e.ph).length, qte: e.qte, manual: !!e.manual });
+                          froid: estFroid(b, cip), sortie: nbPh(e), qte: e.qte, manual: !!e.manual });
     });
     return {
-      panel: Object.keys(activeSet).length,
+      panel: panel0,
       members: Object.keys(ids).length,
       ovKey: ovKey || '',
       cats: CATS.map(function (c) {
