@@ -298,9 +298,19 @@
       var ok = function () { editLocal(st, sid, id, body); if (V2.toast) V2.toast('Note modifiée'); renderBox(box); };
       var fail = function () { btn.disabled = false; btn.textContent = 'Enregistrer'; if (V2.toast) V2.toast('Note non modifiée — réessaie', 'error'); };
       if (c && String(id).indexOf('n') !== 0) {
-        c.from(TABLE).update({ body: body }).eq('id', id)
-          .then(function (r) { if (r && r.error) fail(); else ok(); })
-          .catch(function () { fail(); });
+        // ⚠️ 05/10/2026 (remontée Matthieu, « la modification ne s'enregistre pas ») : la base
+        // n'autorise sur une note que la lecture, l'ajout et le retrait. Une modification y est
+        // refusée SANS erreur (0 ligne touchée) et l'écran annonçait quand même « Note modifiée ».
+        // La note est donc réécrite à sa date d'origine, puis l'ancienne est retirée ; si ce
+        // retrait échoue, la nouvelle repart pour ne pas laisser la note en double.
+        var une = function (p) { return p.then(function (r) { if (!r || r.error || !r.data || !r.data.length) throw new Error('refus'); return r.data[0]; }); };
+        une(c.from(TABLE).select('*').eq('id', id)).then(function (old) {
+          return une(c.from(TABLE).insert({ scope_type: old.scope_type, scope_id: old.scope_id, author_id: V2.user.id, author_name: old.author_name, body: body, created_at: old.created_at }).select('id')).then(function (neuve) {
+            return une(c.from(TABLE).delete().eq('id', id).select('id')).catch(function (e) {
+              return c.from(TABLE).delete().eq('id', neuve.id).then(function () { throw e; }, function () { throw e; });
+            });
+          });
+        }).then(ok, fail);
       } else {
         editLocal(st, sid, id, body); if (V2.toast) V2.toast('Note modifiée'); renderBox(box);
       }
