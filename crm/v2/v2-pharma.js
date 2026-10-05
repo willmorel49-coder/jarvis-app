@@ -665,12 +665,16 @@
     var color = x.p.color || 'var(--ip-blue)';
     var oppPill = (x.opp == null)
       ? '<span class="v2-row-opp v2-row-opp-pending mono">…</span>'
-      : '<span class="v2-row-opp mono">' + V2.fmtNum(x.opp) + ' opp</span>';
+      // 05/10/2026 — officine d'un collègue : ses ventes ne sont pas lues, le compteur affichait
+      // tout le catalogue sur chaque ligne. « — », comme la marge et le CA à côté.
+      : !V2.voitVentesDe(x.p.id)
+        ? '<span class="v2-row-opp mono" title="Compteur réservé à son commercial">—</span>'
+        : '<span class="v2-row-opp mono">' + V2.fmtNum(x.opp) + ' opp</span>';
     var badge = opsoBadge(x.p);
     return '<a class="v2-row' + (isOpso() && x.p.inDb ? ' opso-row-cliente' : '') + '" onclick="V2.go(\'pharma\',\'' + V2.esc(String(x.p.id)) + '\')">' +
       '<span class="v2-row-dot" style="background:' + V2.esc(color) + '"></span>' +
       '<span class="v2-row-name">' + V2.esc(x.p.name) + (cpDe(x.p) ? ' <span style="color:var(--muted);font-weight:500">· ' + V2.esc(cpDe(x.p)) + '</span>' : '') + '</span>' +
-      badge + (x.p._cree ? '<span class="v2-row-meta">créé à la main</span>' : '') +
+      badge + (x.p._cree ? '<span class="v2-row-meta">' + (x.p._archive ? 'archivée' : 'créé à la main') + '</span>' : '') +
       oppPill +
       '<span class="v2-row-meta">marge nette</span>' +
       // 24/09/2026 — officine d'un collègue : « — » plutôt qu'un faux « 0 € »
@@ -714,7 +718,8 @@
   // Fiches prospect créées à la main (ids « px_… », table `profils`) : elles n'existaient que dans
   // la recherche générale. 05/10/2026 — elles entrent dans l'onglet Prospects. Rien n'est jamais
   // supprimé : une fiche marquée `archive` est seulement masquée.
-  var _crees = [], _creesAt = 0;
+  // 05/10/2026 — `voirArchives` : la liste des fiches archivées, seul chemin pour en rétablir une sans son lien.
+  var _crees = [], _creesAt = 0, voirArchives = false;
   function chargerCrees() {
     if (!V2.profil || !V2.profil.loadCrees || Date.now() - _creesAt < 3000) return;
     _creesAt = Date.now();
@@ -723,9 +728,9 @@
       if (JSON.stringify(_crees) !== avant && secteurTab === 'prospects' && V2.route && V2.route.name === 'pharma' && !V2.route.param) V2.render();
     }).catch(function () {});
   }
-  function creesRows(q) {
-    return _crees.filter(function (o) { return o.data && o.data.nom && !o.data.archive; }).map(function (o) {
-      return { p: { id: o.sid, name: o.data.nom, cp: o.data.cp, ville: o.data.ville, color: '#9AA1B2', inDb: false, comms: [], _prospect: true, _cree: true }, ca: 0, marge: 0, opp: 0 };
+  function creesRows(q, arch) {
+    return _crees.filter(function (o) { return o.data && o.data.nom && !o.data.archive === !arch; }).map(function (o) {
+      return { p: { id: o.sid, name: o.data.nom, cp: o.data.cp, ville: o.data.ville, color: '#9AA1B2', inDb: false, comms: [], _prospect: true, _cree: true, _archive: !!arch }, ca: 0, marge: 0, opp: 0 };
     }).filter(function (x) { return !q || correspond(x.p, q); });
   }
   function isClientSeg(p) { var s = window.PHARMA_FR && window.PHARMA_FR.seg[p[4]]; return s && s.indexOf('Client') === 0; }
@@ -863,18 +868,27 @@
         if (!isOpso() && secteurTab === 'prospects') {
           nAff = '';
           var q = searchQuery.trim().toLowerCase();
+          var lienArch = function (txt, on) { return '<a class="v2-row" id="of-archives" style="justify-content:center;color:var(--muted);cursor:pointer" onclick="V2.pharmaVoirArchives(' + on + ')">' + txt + '</a>'; };
+          var archs = creesRows(voirArchives ? q : '', true);
+          if (voirArchives) {
+            nAff = pl(archs.length, 'fiche') + ' archivée' + (archs.length > 1 ? 's' : '');
+            return (archs.length ? archs.map(listRowHtml).join('')
+              : '<div class="v2-empty"><div class="v2-empty-t">Aucune fiche archivée</div><div class="v2-empty-d">' + (q ? 'Aucun résultat.' : 'Les fiches archivées apparaissent ici ; ouvrez-en une pour la rétablir.') + '</div></div>') +
+              lienArch('Revenir aux prospects', 'false');
+          }
+          var archLien = archs.length ? lienArch('Voir ' + (archs.length > 1 ? 'les ' + V2.fmtNum(archs.length) + ' fiches archivées' : 'la fiche archivée'), 'true') : '';
           var crees = creesRows(q), creesHtml = crees.map(listRowHtml).join('');
           if (crees.length) nAff = pl(crees.length, 'prospect');
           // 25/09/2026 — un commercial n'a pas de barre de choix (un seul nom dans ses ventes) : ses UGA d'office.
           var qui = V2.commFilter || (V2.mesComms ? V2.mesComms() : []);
-          if (!qui.length) return creesHtml + '<div class="v2-empty"><div class="v2-empty-t">Choisissez un commercial</div><div class="v2-empty-d">Sélectionnez un commercial dans le menu au-dessus pour voir les prospects de son secteur (UGA).</div></div>';
-          if (!window.PHARMA_FR) return creesHtml + '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement des prospects…</div></div>';
+          if (!qui.length) return creesHtml + '<div class="v2-empty"><div class="v2-empty-t">Choisissez un commercial</div><div class="v2-empty-d">Sélectionnez un commercial dans le menu au-dessus pour voir les prospects de son secteur (UGA).</div></div>' + archLien;
+          if (!window.PHARMA_FR) return creesHtml + '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement des prospects…</div></div>' + archLien;
           var pr = commercialProspects(qui, 300, q);
           var rows = crees.concat(pr.rows);
           nAff = pr.total > pr.rows.length ? pl(rows.length, 'prospect') + ' affichés sur ' + V2.fmtNum(pr.total + crees.length) : pl(rows.length, 'prospect');
-          if (!rows.length) return '<div class="v2-empty"><div class="v2-empty-t">Aucun prospect</div><div class="v2-empty-d">' + (q ? 'Aucun résultat.' : 'Aucun prospect dans les UGA de ce commercial.') + '</div></div>';
+          if (!rows.length) return '<div class="v2-empty"><div class="v2-empty-t">Aucun prospect</div><div class="v2-empty-d">' + (q ? 'Aucun résultat.' : 'Aucun prospect dans les UGA de ce commercial.') + '</div></div>' + archLien;
           var more = (pr.total > pr.rows.length) ? '<a class="v2-row" style="justify-content:center;color:var(--muted);cursor:pointer" onclick="V2.go(\'pharma\',\'carte\')">+ ' + (pr.total - pr.rows.length) + ' autres prospects · voir sur la carte</a>' : '';
-          return rows.map(listRowHtml).join('') + more;
+          return rows.map(listRowHtml).join('') + more + archLien;
         }
       } catch (e) { return '<div class="v2-empty"><div class="v2-empty-t">Prospects indisponibles</div><div class="v2-empty-d">Réessayez plus tard.</div></div>'; }
       return cardHtml(applyFilters(phs));
@@ -1128,7 +1142,7 @@
         _creesAt = arch ? Date.now() : 0;
         if (arch && V2._newph) V2._newph = V2._newph.filter(function (o) { return String(o.sid) !== String(pid); });
         if (V2.toast) V2.toast(arch ? 'Fiche archivée' : 'Fiche rétablie');
-        if (arch) { secteurTab = 'prospects'; V2.go('pharma'); } else V2.render();
+        if (arch) { secteurTab = 'prospects'; voirArchives = false; V2.go('pharma'); } else V2.render();
       });
     }).catch(function () {});
   };
@@ -2090,7 +2104,8 @@
     opsoFilter = val;
     V2.render();
   };
-  V2.pharmaSecteurTab = function (v) { secteurTab = v || 'clients'; V2.render(); };
+  V2.pharmaSecteurTab = function (v) { secteurTab = v || 'clients'; voirArchives = false; V2.render(); };
+  V2.pharmaVoirArchives = function (on) { voirArchives = !!on; V2.render(); };
   V2.promoteToClient = function (pid) {
     if (!V2.user) { if (V2.toast) V2.toast('Connecte-toi pour passer un prospect en client'); return; }
     V2.promoted = V2.promoted || {};
