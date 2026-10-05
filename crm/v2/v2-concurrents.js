@@ -153,6 +153,34 @@
       affiche: [['code13', 'Code 13', ''], ['libelle', 'Produit', ''], ['ppht', 'Prix catalogue', 'eur'], ['net', 'Meilleur net', 'eur'], ['remise', 'Remise', 'pct'], ['paliers', 'Paliers (net)', 'paliers'], ['qtes', 'Quantités', ''], ['periode', 'Catalogue', ''], ['page', 'Page', '']],
       cherche: ['libelle', 'code13']
     },
+    // 05/10/2026 (suite) — deux jeux laissés dehors le matin, ajoutés à la demande de Will.
+    // Ni l'un ni l'autre n'entre dans le classement ni dans le comparateur : aucun verdict (net: '').
+    epsilon: {
+      nom: 'Epsilon · factures de démonstration', tag: 'Démonstration', accent: '#7A5C8E', cles: ['concepsilon'],
+      quoi: 'Deux factures visibles dans les tutoriels publics de l\'espace client Epsilon, en juillet 2026 : elles sont émises pour un compte de démonstration et non pour une vraie pharmacie. Un repère, pas un tarif : aucun verdict face à notre net.',
+      placeholder: 'Produit, code…',
+      charge: function () { return !!window.CONCURRENTS_EPSILON; },
+      maj: function () { return window.CONCURRENTS_EPSILON && CONCURRENTS_EPSILON.maj; },
+      rows: function () { return window.CONCURRENTS_EPSILON ? CONCURRENTS_EPSILON.rows : []; },
+      cols: function () { return window.CONCURRENTS_EPSILON ? CONCURRENTS_EPSILON.cols : []; },
+      code: 'code13', net: '',
+      chipCol: 'facture', chipLabel: {},
+      affiche: [['code13', 'Code 13', ''], ['libelle', 'Produit', ''], ['tarif', 'Prix brut HT', 'eur'], ['remise', 'Remise', 'pct'], ['net', 'Net facturé HT', 'eur'], ['facture', 'Facture de démonstration', ''], ['note', 'Note', '']],
+      cherche: ['libelle', 'code13']
+    },
+    groupements: {
+      nom: 'Conditions des groupements', tag: 'Laboratoire → groupement', accent: '#8A4B62', cles: ['concgroupements'],
+      quoi: 'Ce que d\'autres groupements obtiennent en direct des laboratoires, lu dans leurs documents de 2025 et 2026 : prix, remise et net par produit. Ce ne sont pas des prix de grossiste : aucun verdict face à notre prix.',
+      unite: 'condition', placeholder: 'Produit, code…',
+      charge: function () { return !!window.CONCURRENTS_GROUPEMENTS; },
+      maj: function () { return window.CONCURRENTS_GROUPEMENTS && CONCURRENTS_GROUPEMENTS.maj; },
+      rows: function () { return window.CONCURRENTS_GROUPEMENTS ? CONCURRENTS_GROUPEMENTS.rows : []; },
+      cols: function () { return window.CONCURRENTS_GROUPEMENTS ? CONCURRENTS_GROUPEMENTS.cols : []; },
+      code: 'code', net: '',
+      chipCol: 'groupement', chipLabel: {},
+      affiche: [['code', 'Code', ''], ['libelle', 'Produit', ''], ['groupement', 'Groupement', ''], ['annee', 'Année', ''], ['prix', 'Prix HT', 'eur'], ['remise', 'Remise', 'pct'], ['net', 'Net HT', 'eur'], ['qte', 'Quantité', ''], ['periode', 'Période', ''], ['document', 'Document', '']],
+      cherche: ['libelle', 'code']
+    },
     etudes: {
       nom: 'Études · avantages observés', tag: 'Recherche sept. 2026', accent: '#8A6D1F', cles: ['concetudes'],
       quoi: 'Ce que les sources publiques disent des avantages consentis aux officines : décisions, rapports, thèses, factures, CGV. Chaque ligne cite sa source, son extrait et un indice de confiance de 1 à 5.',
@@ -197,13 +225,13 @@
       cherche: ['libelle', 'marque', 'labo', 'rayon', 'ean13']
     }
   };
-  var ORDRE = ['sagitta', 'ocp', 'mc', 'etradi', 'alliance', 'pharmafit', 'cerp', 'pharmazon', 'cooper', 'farmaline', 'etudes'];
+  var ORDRE = ['sagitta', 'ocp', 'mc', 'etradi', 'alliance', 'pharmafit', 'cerp', 'epsilon', 'pharmazon', 'cooper', 'farmaline', 'groupements', 'etudes'];
   // Nom court (onglets, puces, classement), circuit, poids du fichier (annoncé
   // avant de télécharger : jamais tout d'office), colonne des points forts.
-  var COURT = { sagitta: 'Sagitta', ocp: 'OCP Incontournables', mc: 'OCP Marque Conseil', etradi: 'eTradi', alliance: 'Alliance', pharmafit: 'Pharmafit', cerp: 'CERP Central Prom', pharmazon: 'Pharmazon', cooper: 'Cooper', farmaline: 'Farmaline', etudes: 'Études' };
-  var CIRCUIT = { sagitta: 'Grossiste-répartiteur généraliste', ocp: 'Grossiste-répartiteur · catalogue promotionnel', mc: 'Marque distributeur du grossiste', etradi: 'Plateforme d\'achat du grossiste OCP', alliance: 'Grossiste-répartiteur · shortlist trimestrielle', pharmafit: 'Grossiste indépendant · boutique en ligne', cerp: 'Grossiste-répartiteur · promotions mensuelles', pharmazon: 'Plateforme d\'achat direct laboratoires', cooper: 'Vente directe laboratoire · préparatoire', farmaline: 'Pharmacie en ligne belge · prix consommateur', etudes: 'Sources publiques : décisions, rapports, thèses, factures, CGV' };
-  var POIDS = { sagitta: '2 Mo', ocp: '130 Ko', mc: '130 Ko', etradi: '115 Ko', alliance: '210 Ko', pharmafit: '75 Ko', cerp: '490 Ko', pharmazon: '1,3 Mo', cooper: '120 Ko', farmaline: '2 Mo', etudes: '500 Ko' };
-  var FORTS = { sagitta: 'gamme', ocp: 'section', etradi: 'famille', alliance: 'famille', pharmafit: 'labo', cerp: 'periode', pharmazon: 'labo', cooper: 'famille' };
+  var COURT = { sagitta: 'Sagitta', ocp: 'OCP Incontournables', mc: 'OCP Marque Conseil', etradi: 'eTradi', alliance: 'Alliance', pharmafit: 'Pharmafit', cerp: 'CERP Central Prom', epsilon: 'Epsilon (démo)', pharmazon: 'Pharmazon', cooper: 'Cooper', farmaline: 'Farmaline', groupements: 'Groupements', etudes: 'Études' };
+  var CIRCUIT = { sagitta: 'Grossiste-répartiteur généraliste', ocp: 'Grossiste-répartiteur · catalogue promotionnel', mc: 'Marque distributeur du grossiste', etradi: 'Plateforme d\'achat du grossiste OCP', alliance: 'Grossiste-répartiteur · shortlist trimestrielle', pharmafit: 'Grossiste indépendant · boutique en ligne', cerp: 'Grossiste-répartiteur · promotions mensuelles', epsilon: 'Espace client en ligne · compte de démonstration', pharmazon: 'Plateforme d\'achat direct laboratoires', cooper: 'Vente directe laboratoire · préparatoire', farmaline: 'Pharmacie en ligne belge · prix consommateur', groupements: 'Laboratoires vers groupements d\'officines · documents 2025-2026', etudes: 'Sources publiques : décisions, rapports, thèses, factures, CGV' };
+  var POIDS = { sagitta: '2 Mo', ocp: '130 Ko', mc: '130 Ko', etradi: '115 Ko', alliance: '210 Ko', pharmafit: '75 Ko', cerp: '490 Ko', epsilon: '4 Ko', pharmazon: '1,3 Mo', cooper: '120 Ko', farmaline: '2 Mo', groupements: '1,1 Mo', etudes: '500 Ko' };
+  var FORTS = { sagitta: 'gamme', ocp: 'section', etradi: 'famille', alliance: 'famille', pharmafit: 'labo', cerp: 'periode', pharmazon: 'labo', cooper: 'famille', groupements: 'groupement' };
   var CLASSEMENT = ['sagitta', 'ocp', 'etradi', 'alliance', 'pharmafit', 'cerp', 'pharmazon', 'cooper'];   // seules sources à prix d'achat
   var QUI = { sagitta: 'sagitta', ocp: 'ocp', mc: 'ocp' };       // source → fiche du grossiste (grossistes-data.js)
 
@@ -392,6 +420,20 @@
         a.rayons = cnt('rayon');
         a.topBaisses = rows.filter(function (r) { return r[ci.remise] > 0 && r[ci.tarif] > 0; }).sort(function (x, y) { return y[ci.remise] - x[ci.remise]; }).slice(0, 5)
           .map(function (r) { return [String(r[ci.libelle] || ''), r[ci.remise], eur(r[ci.tarif]) + ' → ' + eur(r[ci.prix]) + ' TTC', String(r[ci.ean13] || '')]; });
+      } else if (k === 'epsilon') {
+        var rem = rows.map(function (r) { return r[ci.remise]; }).filter(function (v) { return v > 0; });
+        a.remiseMoy = rem.length ? rem.reduce(function (x, y) { return x + y; }, 0) / rem.length : null;
+        a.aVerifier = rows.filter(function (r) { return r[ci.note]; }).length;
+        a.communs = rows.filter(function (r) { return nous(r[ci.code13]); }).length;
+        a.factures = cnt('facture');
+        a.topRemises = rows.filter(function (r) { return r[ci.remise] > 0; }).sort(function (x, y) { return y[ci.remise] - x[ci.remise]; }).slice(0, 5)
+          .map(function (r) { return [String(r[ci.libelle] || ''), r[ci.remise], eur(r[ci.tarif]) + ' → ' + eur(r[ci.net]) + ' HT', String(r[ci.code13] || '')]; });
+      } else if (k === 'groupements') {
+        a.groupements = cnt('groupement'); a.documents = cnt('document'); a.produits = Object.keys(cnt('code')).length;
+        var parG = {};
+        rows.forEach(function (r) { var g = String(r[ci.groupement] || ''); if (g && r[ci.remise] > 0) (parG[g] = parG[g] || []).push(r[ci.remise]); });
+        a.medianes = {};
+        Object.keys(parG).forEach(function (g) { var v = parG[g].sort(function (x, y) { return x - y; }), m = v.length >> 1; a.medianes[g] = v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2; });
       } else if (k === 'etudes') {
         a.acteurs = cnt('acteur'); a.documents = cnt('document'); a.flux = cnt('flux');
         a.chiffres = rows.filter(function (r) { return (r[ci.taux] != null && r[ci.taux] !== '') || (r[ci.montant] != null && r[ci.montant] !== ''); }).length;
@@ -433,6 +475,22 @@
         cart('Connus de JARVIS', num(a.connus) + '<small>' + pct0(a.connus, a.refs) + '</small>', 'le reste : codes français hors catalogue') +
         cart('En stock chez Farmaline', num(a.stock) + '<small>' + pct0(a.stock, a.refs) + '</small>', 'au moment du relevé') +
         cart('Vendus sous le prix barré', num(a.baisses) + '<small>' + pct0(a.baisses, a.refs) + '</small>', 'prix consommateur, pas une condition d\'achat') +
+      '</div>';
+    }
+    if (k === 'epsilon') {
+      return '<div class="cc-cart four">' +
+        cart('Produits relevés', num(a.refs), 'deux factures de démonstration, relevé du ' + esc(maj)) +
+        cart('Abandon de marge moyen', a.remiseMoy == null ? '—' : pct1(a.remiseMoy), 'sur les lignes concernées') +
+        cart('Aussi chez nous', num(a.communs) + '<small>' + pct0(a.communs, a.refs) + '</small>', 'sans verdict : des prix de démonstration') +
+        cart('Codes à vérifier', num(a.aVerifier), 'clé de contrôle du code invalide') +
+      '</div>';
+    }
+    if (k === 'groupements') {
+      return '<div class="cc-cart four">' +
+        cart('Conditions relevées', num(a.refs), 'documents 2025-2026, relevé du ' + esc(maj)) +
+        cart('Groupements', num(Object.keys(a.groupements).length), 'chacun avec ses laboratoires') +
+        cart('Produits distincts', num(a.produits), 'un produit peut figurer chez plusieurs groupements') +
+        cart('Documents lus', num(Object.keys(a.documents).length), 'tarifs, bons de commande, accords') +
       '</div>';
     }
     return '<div class="cc-cart four">' +
@@ -485,6 +543,23 @@
           a.topBaisses.map(function (b) { return '<button type="button" class="cc-ray" onclick="V2.ccOuvrir(\'' + safeArg(b[3]) + '\')"><span class="rn">' + esc(cap(b[0], 48)) + '<small class="num">' + esc(b[2]) + '</small></span><span class="rp num">−' + Math.round(b[1]) + ' %</span><span class="rb"><i style="width:' + Math.max(2, b[1] / maxB * 100) + '%"></i></span></button>'; }).join('')) +
       '</div>';
     }
+    if (k === 'epsilon') {
+      var fac = topN(a.factures, 4), maxFa = fac.length ? fac[0][1] : 1, maxE = a.topRemises.length ? a.topRemises[0][1] : 1;
+      return '<div class="cc-forts">' +
+        carteBloc('neutre', 'Les factures', 'lignes par facture de démonstration', '', fac.map(function (f) { return fortLigne(k, 'facture', f[0], '', num(f[1]), f[1] / maxFa * 100); }).join('')) +
+        carteBloc('neutre', 'Les abandons de marge les plus forts', 'les cinq premières lignes', 'Un compte de démonstration : un repère, pas un tarif.',
+          a.topRemises.map(function (b) { return '<button type="button" class="cc-ray" onclick="V2.ccOuvrir(\'' + safeArg(b[3]) + '\')"><span class="rn">' + esc(cap(b[0], 48)) + '<small class="num">' + esc(b[2]) + '</small></span><span class="rp num">' + Math.round(b[1]) + ' %</span><span class="rb"><i style="width:' + Math.max(2, b[1] / maxE * 100) + '%"></i></span></button>'; }).join('')) +
+      '</div>';
+    }
+    if (k === 'groupements') {
+      var gr = topN(a.groupements, 8), maxG = gr.length ? gr[0][1] : 1, maxM = 1;
+      Object.keys(a.medianes).forEach(function (g) { if (a.medianes[g] > maxM) maxM = a.medianes[g]; });
+      return '<div class="cc-forts">' +
+        carteBloc('neutre', 'Les groupements', 'conditions relevées par groupement', '', gr.map(function (g) { return fortLigne(k, FORTS[k], g[0], '', num(g[1]), g[1] / maxG * 100); }).join('')) +
+        carteBloc('neutre', 'Abandon de marge médian par groupement', 'sur les lignes concernées', 'Un repère sur ce que les laboratoires leur consentent, pas une comparaison avec nos prix.',
+          Object.keys(a.medianes).sort(function (x, y) { return a.medianes[y] - a.medianes[x]; }).slice(0, 8).map(function (g) { var m = a.medianes[g]; return fortLigne(k, FORTS[k], g, '', pct1(m), m / maxM * 100); }).join('')) +
+      '</div>';
+    }
     var flux = topN(a.flux, 8), maxX = flux.length ? flux[0][1] : 1, act = topN(a.acteurs, 8), maxA = act.length ? act[0][1] : 1;
     return '<div class="cc-forts">' +
       carteBloc('neutre', 'Qui donne à qui', 'observations par flux', '', flux.map(function (f) { return fortLigne(k, 'flux', f[0], '', num(f[1]), f[1] / maxX * 100, s.chipLabel[f[0]] || f[0]); }).join('')) +
@@ -495,7 +570,7 @@
   // ── Le comptoir : chercher dans toutes les sources chargées ─────────
   // Une ligne par code 13, qui regroupe les sources où le code apparaît.
   // Les Études ne sont pas des produits : elles restent hors comptoir.
-  var COMPTOIR = ['sagitta', 'ocp', 'mc', 'etradi', 'alliance', 'pharmafit', 'cerp', 'pharmazon', 'cooper', 'farmaline'];
+  var COMPTOIR = ['sagitta', 'ocp', 'mc', 'etradi', 'alliance', 'pharmafit', 'cerp', 'epsilon', 'pharmazon', 'cooper', 'farmaline', 'groupements'];
   function condLigne(k, r, ci) {
     var s = SRC[k];
     if (k === 'sagitta') return (s.chipLabel[r[ci.cat]] || 'Catalogue') + (r[ci.remise] > 0 ? ' · abandon de marge ' + String(Math.round(r[ci.remise] * 10) / 10).replace('.', ',') + ' %' : '') + (r[ci.qtemin] > 1 ? ' · minimum ' + num(r[ci.qtemin]) : '');
@@ -548,6 +623,13 @@
     var ppht = (n && n.ppht) || (rows.ocp ? rows.ocp[colIdx(SRC.ocp).ppht] : null);
     if (ppht > 0) p.publics.push({ nom: 'PPHT', sub: 'prix public HT' + (n && n.d ? ' · ' + n.d : ''), val: eur(ppht) });
     if (rows.farmaline) { var cf = colIdx(SRC.farmaline), rf = rows.farmaline; if (rf[cf.prix] > 0) p.publics.push({ nom: 'Farmaline (BE) · prix consommateur', sub: (rf[cf.prix_ht] > 0 ? eur(rf[cf.prix_ht]) + ' HT' : '') + (rf[cf.tarif] > 0 ? ' · prix barré ' + eur(rf[cf.tarif]) : ''), val: eur(rf[cf.prix]) + ' TTC', lien: rf[cf.lien] }); }
+    // Repères hors classement : Epsilon (compte de démonstration) et les conditions des groupements (une ligne par groupement et par document).
+    if (rows.epsilon) { var ce = colIdx(SRC.epsilon), re = rows.epsilon; if (re[ce.net] > 0) p.publics.push({ nom: 'Epsilon · facture de démonstration', sub: 'compte de démonstration, pas une vraie pharmacie · ' + (re[ce.tarif] > 0 ? eur(re[ce.tarif]) + ' brut' : '') + (re[ce.remise] > 0 ? ' · abandon de marge ' + String(Math.round(re[ce.remise] * 10) / 10).replace('.', ',') + ' %' : '') + ' · ' + String(re[ce.facture] || ''), val: eur(re[ce.net]) + ' HT', hors: 1 }); }
+    if (rows.groupements) {
+      var cg = colIdx(SRC.groupements), lg = index('groupements')[code] || [];
+      lg.slice(0, 6).forEach(function (rg) { if (rg[cg.net] > 0) p.publics.push({ nom: String(rg[cg.groupement] || '') + ' · ' + cap(rg[cg.document], 40), sub: 'ce que le groupement obtient du laboratoire, ' + String(rg[cg.annee] || '') + (rg[cg.remise] > 0 ? ' · abandon de marge ' + String(Math.round(rg[cg.remise] * 10) / 10).replace('.', ',') + ' %' : '') + (rg[cg.prix] > 0 ? ' · prix ' + eur(rg[cg.prix]) : ''), val: eur(rg[cg.net]) + ' HT', hors: 1 }); });
+      if (lg.length > 6) p.publics.push({ nom: '+ ' + (lg.length - 6) + ' autres conditions de groupements', sub: 'voir l\'onglet Groupements', val: '', hors: 1 });
+    }
     if (rows.mc) { var cm = colIdx(SRC.mc), rm = rows.mc; if (rm[cm.pvc_ttc] > 0) p.publics.push({ nom: 'OCP Marque Conseil · PVC', sub: 'prix public conseillé' + (rm[cm.tarif_lppr_ttc] > 0 ? ' · LPPR ' + eur(rm[cm.tarif_lppr_ttc]) : ''), val: eur(rm[cm.pvc_ttc]) + ' TTC' }); }
     p.famille = n ? (n.f === 'nr' ? 'Prix libre' : (n.f === 'gen' ? 'Générique' : (n.f === 'biosim' ? 'Biosimilaire' : 'Remboursable'))) : '';
     return p;
@@ -603,7 +685,7 @@
     var q = S.cq, res = chercher(q);
     var pretes = COMPTOIR.filter(function (k) { return SRC[k].charge(); });
     if (res === null) {
-      return '<div class="cc-legende">' + (pretes.length ? 'Sources prêtes : ' + pretes.map(function (k) { return '<b>' + esc(COURT[k]) + '</b>'; }).join(', ') + '.' : 'Aucune source chargée pour l\'instant : le comptoir n\'en télécharge aucune sans qu\'on le lui demande.') + ' Le classement ne compare que des prix d\'achat ; les prix publics (Farmaline, PPHT, Marque Conseil) restent en repère sous la carte.</div>' + chargeursHtml();
+      return '<div class="cc-legende">' + (pretes.length ? 'Sources prêtes : ' + pretes.map(function (k) { return '<b>' + esc(COURT[k]) + '</b>'; }).join(', ') + '.' : 'Aucune source chargée pour l\'instant : le comptoir n\'en télécharge aucune sans qu\'on le lui demande.') + ' Le classement ne compare que des prix d\'achat ; les repères (prix publics de Farmaline, PPHT, Marque Conseil, factures de démonstration Epsilon, conditions des groupements) restent sous la carte.</div>' + chargeursHtml();
     }
     if (!res.length) return '<div class="cc-vide">Aucun produit pour « ' + esc(q) + ' » dans ' + (pretes.length ? pretes.map(function (k) { return COURT[k]; }).join(', ') : 'les sources chargées (aucune)') + '.</div>' + chargeursHtml();
     return '<h2 class="cc-res-h"><span>' + res.length + '</span> produit' + (res.length > 1 ? 's' : '') + ' pour « ' + esc(q) + ' »' + (res.length >= 40 ? ' · les 40 premiers' : '') + '</h2>' + res.map(resLigne).join('') + chargeursHtml();
@@ -629,7 +711,7 @@
     var ecV = p.ecart == null ? '—' : (p.ecart > 0 ? '−' : (p.ecart < 0 ? '+' : '')) + eur(Math.abs(p.ecart));
     var ecS = p.ecart == null ? '' : (p.ecart >= 0 ? 'sous le meilleur concurrent' : 'au-dessus du moins cher');
     var nbAchat = p.rangs.length;
-    var pub = p.publics.length ? '<div class="cc-public"><h3>Prix public, hors classement</h3>' + p.publics.map(function (x) {
+    var pub = p.publics.length ? '<div class="cc-public"><h3>' + (p.publics.some(function (x) { return x.hors; }) ? 'Repères, hors classement' : 'Prix public, hors classement') + '</h3>' + p.publics.map(function (x) {
       return '<div class="ligne"><span>' + esc(x.nom) + '<small>' + esc(x.sub) + (x.lien && /^https?:\/\//.test(x.lien) ? (x.sub ? ' · ' : '') + '<a href="' + esc(x.lien) + '" target="_blank" rel="noopener">voir la fiche</a>' : '') + '</small></span><b class="num">' + esc(x.val) + '</b></div>';
     }).join('') + '</div>' : '';
     var dans = p.sources.length ? p.sources.map(function (k) { return COURT[k]; }).join(' · ') : 'aucune source chargée';
@@ -730,7 +812,7 @@
   var ESPACES = [
     { k: 'comparateur', q: 'Qui est le moins cher ?', t: 'Le comparateur', d: 'Tous les concurrents côte à côte, produit par produit : nos références les plus commandées par les pharmacies en tête, notre net face au net de Sagitta, OCP, Alliance, Pharmafit, CERP et Pharmazon.', go: 'Ouvrir le comparateur' },
     { k: 'acteurs', q: 'Qui sont-ils ?', t: 'Les grossistes', d: 'Les grossistes-répartiteurs de France : leur poids sur le marché, leurs groupes, leurs enseignes, leurs forces et faiblesses — et tes remontées terrain.', go: 'Voir les grossistes' },
-    { k: 'prix', q: 'À quel prix ?', t: 'Leurs prix', d: 'Leurs catalogues, référence par référence : Sagitta, OCP, Pharmazon, Cooper, Farmaline… avec notre net en face pour savoir qui est le moins cher.', go: 'Comparer les prix' },
+    { k: 'prix', q: 'À quel prix ?', t: 'Leurs prix', d: 'Leurs catalogues, référence par référence : Sagitta, OCP, Pharmazon, Cooper, Farmaline… avec notre net en face pour savoir qui est le moins cher, plus les conditions que des groupements obtiennent des laboratoires.', go: 'Comparer les prix' },
     { k: 'actu', q: 'Quoi de neuf ?', t: 'L\'actualité', d: 'Ce que la presse et les annonces officielles disent des grossistes, mis à jour chaque jour. Se lit dans Infos du jour.', go: 'Lire dans Infos du jour' }
   ];
   // Aller vers un espace. « Les grossistes » ramène à la liste même depuis une fiche.
@@ -752,7 +834,7 @@
   var CHIFFRES = null;
   function chiffrePorte(k) {
     if (k === 'comparateur') return '<b class="num">' + CMP_COL.length + '</b> concurrents sur une seule ligne';
-    if (k === 'prix') { var n = ORDRE.filter(function (x) { return x !== 'etudes'; }).length; return '<b class="num">' + n + '</b> catalogues de concurrents'; }
+    if (k === 'prix') { var n = ORDRE.filter(function (x) { return x !== 'etudes'; }).length; return '<b class="num">' + n + '</b> catalogues, dont les conditions des groupements'; }
     if (!CHIFFRES) return '&nbsp;';
     if (k === 'acteurs') return '<b class="num">' + CHIFFRES.acteurs + '</b> acteurs · <b class="num">' + CHIFFRES.groupes + '</b> groupes';
     return (CHIFFRES.semaine ? '<b class="num">' + CHIFFRES.semaine + '</b> article' + (CHIFFRES.semaine > 1 ? 's' : '') + ' cette semaine' : 'Rien de neuf cette semaine') + (CHIFFRES.maj ? ' · mis à jour ' + esc(CHIFFRES.maj) : '');
@@ -789,7 +871,7 @@
       return entete + '<div class="cc-sk" aria-busy="true"><div class="cc-sk-l" style="width:38%"></div><div class="cc-sk-l" style="width:92%"></div><div class="cc-sk-l" style="width:84%"></div><div class="cc-sk-l" style="width:88%"></div><div class="cc-sk-l" style="width:70%"></div></div>';
     }
     return '<section class="cc-fiche">' + entete + cartouchesHtml(k) + fortsHtml(k) +
-      '<div class="cc-catalog"><div class="cc-cat-head"><h2>' + (k === 'etudes' ? 'Les observations' : 'Le catalogue ' + esc(COURT[k])) + '</h2></div>' +
+      '<div class="cc-catalog"><div class="cc-cat-head"><h2>' + (k === 'etudes' ? 'Les observations' : (k === 'groupements' ? 'Les conditions des groupements' : 'Le catalogue ' + esc(COURT[k]))) + '</h2></div>' +
       '<div class="cc-tools"><div class="cc-search">' + ICO('search', 15, 2) + '<input id="cc-q" type="search" placeholder="' + esc(s.placeholder || 'Produit, laboratoire, code…') + '" value="' + esc(S.q) + '" oninput="V2.ccQ(this.value, true)" autocomplete="off"></div>' +
       (S.q || S.chip ? '<button type="button" class="cc-lien" onclick="V2.ccReset()">' + ICO('close', 14, 2) + 'Tout afficher</button>' : '') + '</div>' +
       chips(s) + '<div id="cc-body">' + tableHtml(s) + '</div></div></section>';

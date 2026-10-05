@@ -79,6 +79,16 @@ PFIT_CSV = [CHASSES / "travail-chasse-12" / "pharmafit" / "fichiers" / "pharmafi
 OUT_PFIT = ROOT / "crm" / "v2" / "concurrents-pharmafit-data.js"
 CPROM_CSV = Path.home() / "DPGS-documents" / "analyse" / "CENTRAL-PROM-2026-09-27.csv"
 OUT_CERP = ROOT / "crm" / "v2" / "concurrents-cerp-data.js"
+# 05/10/2026 (suite) — factures Epsilon d'un compte de DÉMONSTRATION, et conditions que d'autres groupements
+# obtiennent des laboratoires (classeur consolidé, onglet « Conditions par produit », lu en lecture seule).
+EPS_CSV = CHASSES / "travail-chasse-13" / "archives-profondes" / "fichiers" / "epsilon__factures-espace-client-demo-lignes-transcrites__2026-07.csv"
+OUT_EPS = ROOT / "crm" / "v2" / "concurrents-epsilon-data.js"
+GRP_XLSX = Path.home() / "DPGS-documents" / "CONDITIONS-CONCURRENTS-CONSOLIDE-2026-09-28-PRIX-EGAL-TAUX.xlsx"
+GRP_CSV_DIR = Path.home() / "DPGS-documents" / "analyse"
+OUT_GRP = ROOT / "crm" / "v2" / "concurrents-groupements-data.js"
+# Dossier de tête du chemin « Document » -> nom lisible. Un dossier absent d'ici garde son nom tel quel (et est signalé).
+GRP_NOMS = {"paraph": "Paraph", "aptiphar": "Aptiphar", "solipharm": "Solipharm", "flexipluspharma": "Flexi Plus Pharma",
+            "DPGS": "DPGS", "alternativ-pharmaxv": "Alternativ PharmaXV"}
 MOIS = ["JANVIER", "FEVRIER", "MARS", "AVRIL", "MAI", "JUIN", "JUILLET", "AOUT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DECEMBRE"]
 MOIS_FR = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
 # fichiers où l'on lit les codes 13 que JARVIS connaît (publics ou protégés, présents en local)
@@ -532,6 +542,7 @@ def main():
         sys.exit(1)
 
     dpgs()
+    chasses()
 
 
 def alliance_mai_aout(cols, data):
@@ -638,6 +649,129 @@ def chasses():
     print("Central Prom : %d lignes lues -> %d produits, %d octets, relecture %s" % (n, len(d), OUT_CERP.stat().st_size, "OK" if ok else "ÉCART !"))
     if not ok:
         sys.exit(1)
+    c, d, n = epsilon()
+    o = {"maj": "2026-07-27", "periode": "juillet 2026", "cols": c, "rows": d}
+    relu, ok = ecrire(OUT_EPS, "CONCURRENTS_EPSILON", o, "Epsilon — deux factures d'un compte de DÉMONSTRATION (juillet 2026), un repère et non un tarif", lambda x: len(x["rows"]) == len(d))
+    print("Epsilon : %d lignes lues -> %d produits, %d octets, relecture %s" % (n, len(d), OUT_EPS.stat().st_size, "OK" if ok else "ÉCART !"))
+    if not ok:
+        sys.exit(1)
+    c, d, st = groupements()
+    o = {"maj": "2026-09-28", "periode": "2025-2026", "cols": c, "rows": d}
+    relu, ok = ecrire(OUT_GRP, "CONCURRENTS_GROUPEMENTS", o, "Conditions que des groupements obtiennent des laboratoires, documents 2025-2026", lambda x: len(x["rows"]) == len(d))
+    print("Groupements : %d lignes lues, hors 2025-2026 %d, cohérence non exacte %d, exclues %s, gardées %d (dont %d sans libellé), %d octets, relecture %s"
+          % (st["lues"], st["hors_millesime"], st["hors_coherence"], st["exclus"], st["gardees"], st["sans_libelle"], OUT_GRP.stat().st_size, "OK" if ok else "ÉCART !"))
+    if st["inconnus"]:
+        print("  dossiers gardés tels quels (nom lisible inconnu) :", st["inconnus"])
+    if not ok:
+        sys.exit(1)
+
+
+def epsilon():
+    """Une ligne par produit (la facture la plus récente l'emporte). Compte de DÉMONSTRATION : un repère, pas un tarif."""
+    cols = ["code13", "libelle", "tarif", "remise", "net", "facture", "note"]
+    if not EPS_CSV.exists():
+        print("ERREUR : fichier introuvable :", EPS_CSV)
+        sys.exit(1)
+    prod, n = {}, 0
+    with open(EPS_CSV, encoding="utf-8-sig", newline="") as fh:
+        for r in csv.DictReader(fh, delimiter=";"):
+            n += 1
+            code, net = (r.get("CIP13 lu sur l'image") or "").strip(), fnum(r.get("PU net HT"))
+            if len(code) != 13 or not code.isdigit() or not net or net <= 0:
+                print("ERREUR : ligne Epsilon inutilisable :", code, r.get("désignation"))
+                sys.exit(1)
+            d = (r.get("date facture") or "").strip()
+            quand = datetime.datetime.strptime(d, "%d/%m/%Y").date()
+            cle_ok = (r.get("clé CIP valide") or "").strip() == "oui"
+            ligne = [code, (r.get("désignation") or "").strip(), fnum(r.get("PU brut HT")), fnum(r.get("% remise")) or 0, net,
+                     "%s du %s" % ((r.get("facture") or "").strip(), d), "" if cle_ok else "code à vérifier"]
+            if code not in prod or quand >= prod[code][0]:
+                prod[code] = (quand, ligne)
+    return cols, [v[1] for v in sorted(prod.values(), key=lambda v: (v[0], v[1][1]))], n
+
+
+def groupements():
+    """Conditions par produit des groupements (2025-2026, cohérence « exacte »), hors grossistes déjà dans l'app."""
+    import openpyxl
+    if not GRP_XLSX.exists():
+        print("ERREUR : fichier introuvable :", GRP_XLSX)
+        sys.exit(1)
+    wb = openpyxl.load_workbook(str(GRP_XLSX), read_only=True)
+    junk = lambda t, code: len(t) < 3 or t == code or t.endswith(":") or t.replace(" ", "").isdigit()
+    lib_doc, lib_code = {}, {}
+
+    def noter(code, lib, doc):
+        code, lib = str(code or "").strip(), re.sub(r"\s+", " ", str(lib or "")).strip()
+        if not code or junk(lib, code):
+            return
+        lib = lib[:110]
+        lib_doc.setdefault((code, doc), lib)
+        lib_code.setdefault(code, lib)
+    for ws in wb.worksheets:
+        if not ws.title.endswith("détail"):
+            continue
+        it = ws.iter_rows(values_only=True)
+        tete = [str(h or "") for h in next(it)]
+        ic = next((k for k, h in enumerate(tete) if h.startswith("Code produit")), None)
+        il = next((k for k, h in enumerate(tete) if h.startswith("Libellé")), None)
+        idoc = tete.index("Document") if "Document" in tete else None
+        if ic is None or il is None or idoc is None:
+            print("  (onglet sans code/libellé/document, ignoré pour les libellés :", ws.title, ")")
+            continue
+        for r in it:
+            noter(r[ic], r[il], str(r[idoc] or ""))
+    for f in sorted(GRP_CSV_DIR.glob("*.csv")):
+        with open(f, encoding="utf-8-sig", newline="") as fh:
+            l1 = fh.readline()
+            fh.seek(0)
+            rd = csv.DictReader(fh, delimiter=";" if l1.count(";") > l1.count(",") else ",")
+            col = "nom" if "nom" in (rd.fieldnames or []) else ("presentation" if "presentation" in (rd.fieldnames or []) else None)
+            if col:
+                for r in rd:
+                    noter(r.get("code_produit"), r.get(col), r.get("document") or "")
+    cols = ["code", "libelle", "groupement", "annee", "prix", "remise", "net", "qte", "periode", "document"]
+    ws = wb["Conditions par produit"]
+    n, exclus, hors_millesime, hors_coherence, vus, data, inconnus, sans_lib = 0, {}, 0, 0, set(), [], {}, 0
+    fam_lues = {}
+    for r in ws.iter_rows(min_row=2, values_only=True):
+        code, mill, prix, rem, net, qte, per, coh, doc = (str(r[0] or "").strip(), str(r[1] or ""), r[3], r[4], r[5], r[6], r[7], str(r[8] or ""), str(r[10] or ""))
+        if not code:
+            continue
+        n += 1
+        dossier = doc.split("/")[0]
+        fam_lues[dossier] = fam_lues.get(dossier, 0) + 1
+        if mill not in ("2025", "2026"):
+            hors_millesime += 1
+            continue
+        if not coh.startswith("exacte"):
+            hors_coherence += 1
+            continue
+        low = doc.lower()
+        fam = ("Central Prom (Astera - CERP)" if ("central-prom" in low or "centralprom" in low) else
+               "eTradi / OCP" if (low.startswith("dpgs/plateformes-d-achat/") or "/ocp-" in low or low.startswith("ocp")) else
+               "Alliance Healthcare" if "alliance-healthcare" in low else "")
+        if fam:
+            exclus[fam] = exclus.get(fam, 0) + 1
+            continue
+        nom = GRP_NOMS.get(dossier)
+        if not nom:
+            nom = dossier
+            inconnus[dossier] = inconnus.get(dossier, 0) + 1
+        base = doc.rsplit("/", 1)[-1]
+        base = base.rsplit(".", 1)[0] if "." in base else base
+        lib = lib_doc.get((code, doc)) or lib_code.get(code) or ""
+        if not lib:
+            sans_lib += 1
+        ligne = [code, lib, nom, int(mill), prix, rem, net, qte if isinstance(qte, (int, float)) or qte is None else str(qte), per if per else "", base]
+        cle = json.dumps(ligne, ensure_ascii=False)
+        if cle in vus:
+            continue
+        vus.add(cle)
+        data.append(ligne)
+    data.sort(key=lambda l: (l[2], l[9], l[0]))
+    stats = {"lues": n, "hors_millesime": hors_millesime, "hors_coherence": hors_coherence, "exclus": exclus,
+             "gardees": len(data), "doublons": 0, "inconnus": inconnus, "sans_libelle": sum(1 for l in data if not l[1]), "dossiers_lus": fam_lues}
+    return cols, data, stats
 
 
 def dpgs():
