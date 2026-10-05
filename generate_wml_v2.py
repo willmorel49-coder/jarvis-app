@@ -269,6 +269,7 @@ def num(v):
 
 
 from pont_codes import canon, rekey  # un produit = un code (22/09/2026)
+from pont_officines import code_officine  # une pharmacie = une fiche (05/10/2026)
 
 
 def cip13(v):
@@ -283,6 +284,7 @@ def cip13(v):
 
 # ── 1. Master officines (tous les *_pharmacies.xlsx) : code CIP -> infos ──
 pharm = {}
+reprises = []  # fiches des comptes d'avant reprise (EX…) : ne servent que si le code nu n'a pas de fiche
 for pf in PHARM_FILES:
     wb = openpyxl.load_workbook(pf, read_only=True, data_only=True)
     ws = wb.active
@@ -303,6 +305,7 @@ for pf in PHARM_FILES:
             code = str(int(float(code)))
         except (TypeError, ValueError):
             pass
+        code, ancien = code_officine(code)
         rec = {
             'name': s(col(r, 'Nom abrégé')) or ('Officine ' + code),
             'ville': s(col(r, 'Ville')),
@@ -312,6 +315,9 @@ for pf in PHARM_FILES:
             'grossiste': s(col(r, 'Grossiste Principal')),
             'potentiel': col(r, 'Potentiel'),
         }
+        if ancien:
+            reprises.append((code, rec))
+            continue
         if code not in pharm:
             pharm[code] = rec
             added += 1
@@ -326,6 +332,9 @@ for pf in PHARM_FILES:
                 ex['name'] = rec['name']
     wb.close()
     print('  [master] %s : +%d officines (total %d)' % (os.path.basename(pf), added, len(pharm)))
+
+for code, rec in reprises:
+    pharm.setdefault(code, rec)
 
 # ── 1bis. Carte ARTCODE/PROCODE -> ARTCODEBARRE ──
 # Certains exports bruts (ex. Karine / KV) n'ont pas la colonne ARTCODEBARRE (EAN).
@@ -358,6 +367,7 @@ print('  [map] ARTCODE/PROCODE -> EAN : %d entrees' % len(ART2EAN))
 # ── 2. Ventes (tous commerciaux, 6 mois chacun) ──
 sales = []
 active = {}  # code -> nom (fallback)
+noms_repris = {}  # code -> nom du compte d'avant reprise, s'il est le seul à avoir vendu
 comms = {}   # code -> set des commerciaux
 for comm, prefix in SOURCES:
     for mois in MONTHS_NUM:
@@ -384,9 +394,12 @@ for comm, prefix in SOURCES:
                 code = str(int(float(tir)))
             except (TypeError, ValueError):
                 code = s(tir)
+            code, ancien = code_officine(code)
             if not code:
                 continue
-            if code not in active:
+            if ancien:
+                noms_repris.setdefault(code, s(c(r, 'TIRSOCIETE')))
+            elif code not in active:
                 active[code] = s(c(r, 'TIRSOCIETE'))
             comms.setdefault(code, set()).add(comm)
             # EAN : colonne ARTCODEBARRE si présente, sinon backfill via ARTCODE/PROCODE (exports bruts type KV)
@@ -406,6 +419,9 @@ for comm, prefix in SOURCES:
             n += 1
         wb.close()
         print('  {} ({}) : {} lignes'.format(os.path.basename(path), comm, n))
+
+for code, nm in noms_repris.items():
+    active.setdefault(code, nm)
 
 # ── 3. Officines actives (avec ventes), taguées commercial + groupement ──
 # Corrections manuelles (CIP -> groupement), trouvées dans le scraping par nom/ville

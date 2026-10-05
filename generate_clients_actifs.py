@@ -41,6 +41,7 @@ Usage : /usr/bin/python3 generate_clients_actifs.py [--out CHEMIN]
 """
 import argparse, glob, io, json, os, re, sys, datetime, sqlite3, unicodedata
 import openpyxl
+from pont_officines import code_officine  # une pharmacie = une fiche (05/10/2026)
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 STATS = '/Users/williammorel/JARVIS/APP/STATS/total ventes'
@@ -222,8 +223,9 @@ def main():
     # groupe qui la livre (colonne Structure). On FUSIONNE par code : première
     # valeur remplie pour chaque champ, logiciels réunis, commerciaux distincts.
     d, n_pharma, n_autres = {}, 0, 0
+    reprises = []  # comptes d'avant reprise (EX…) : contacts de l'ancien titulaire, gardés seulement faute de mieux
     for r in rows:
-        code = s(r[H['TIRCODE']])
+        code, ancien = code_officine(s(r[H['TIRCODE']]))
         if not code:
             continue
         if s(r[H['TIRACTIVITE']]) != 'Pharmacie':
@@ -252,6 +254,9 @@ def main():
             s(r[H['PMLCLE']]),                   # 17 clé PharmaML
             '',                                  # 18 grossiste principal — comblé après coup (STATS/*_pharmacies.xlsx)
         ]
+        if ancien:
+            reprises.append((code, ligne))
+            continue
         if code not in d:
             d[code] = ligne
             continue
@@ -261,6 +266,8 @@ def main():
                 cur[i] = cur[i] + [x for x in v if x not in cur[i]]
             elif not cur[i] and v:
                 cur[i] = v
+    for code, ligne in reprises:
+        d.setdefault(code, ligne)
     for v in d.values():
         v[5] = ' / '.join(v[5])
         v[7] = ' / '.join(v[7])
