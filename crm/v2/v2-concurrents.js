@@ -1253,6 +1253,7 @@
       /* 05/10/2026 — six concurrents : l\'en-tête passe sur toute la largeur, le tableau se resserre */
       '.cmp .cc-head{display:block}.cmp .cc-head .cc-meta{margin-top:14px}',
       '@media (min-width:701px){.v2-table.cc-table.cmp-t th,.v2-table.cc-table.cmp-t td{padding-left:8px;padding-right:8px}.v2-table.cc-table.cmp-t td.cc-name{min-width:170px}}',
+      '@media (min-width:701px) and (max-width:1420px){.v2-table.cc-table.cmp-t th,.v2-table.cc-table.cmp-t td{padding-left:5px;padding-right:5px}.v2-table.cc-table.cmp-t td.cc-name,.cmp-t .cmp-d{min-width:150px}}',
       '.cmp-t th small{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:none;letter-spacing:0}',
       '.cmp-t th.cmp-src,.cmp-t th.cmp-nous{cursor:default}.cmp-t th.cmp-nous,.cmp-t td.cmp-nous{background:rgba(0,80,230,.05);color:var(--ip-blue-d);font-weight:700}',
       '.cmp-t td{vertical-align:middle}.cmp-rg{color:var(--muted-2)}',
