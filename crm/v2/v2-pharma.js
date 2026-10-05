@@ -272,8 +272,17 @@
     });
     return (_mkClassified = out);
   }
+  // 05/10/2026 — le compteur portait sur tout le marché classé : 5 320 à 6 001 sur chaque ligne, donc
+  // aucun repère entre deux officines. Il porte sur les OPP_TOP meilleures ventes du secteur (en unités).
+  var OPP_TOP = 100, _mkTop = null;
+  function marketTop() {
+    if (_mkTop) return _mkTop;
+    var market = mergeMarket(), arr = Array.from(marketClassified());
+    arr.sort(function (a, b) { return market.get(b).qte - market.get(a).qte; });
+    return (_mkTop = new Set(arr.slice(0, OPP_TOP)));
+  }
   function oppCount(pid) {
-    var mk = marketClassified(), sales = pharmaSales(pid), seen = new Set(), n = mk.size;
+    var mk = marketTop(), sales = pharmaSales(pid), seen = new Set(), n = mk.size;
     for (var i = 0; i < sales.length; i++) {
       var c = String(sales[i].artCode || '');
       if (c.length >= 7 && mk.has(c) && !seen.has(c)) { seen.add(c); n--; }
@@ -674,7 +683,7 @@
       // tout le catalogue sur chaque ligne. « — », comme la marge et le CA à côté.
       : !V2.voitVentesDe(x.p.id)
         ? '<span class="v2-row-opp mono" title="Compteur réservé à son commercial">—</span>'
-        : '<span class="v2-row-opp mono">' + V2.fmtNum(x.opp) + ' opp</span>';
+        : '<span class="v2-row-opp mono" title="' + x.opp + ' des ' + marketTop().size + ' meilleures ventes du secteur ne sont pas commandées par cette officine">' + x.opp + ' / ' + marketTop().size + ' opp</span>';
     var badge = opsoBadge(x.p);
     return '<a class="v2-row' + (isOpso() && x.p.inDb ? ' opso-row-cliente' : '') + '" onclick="V2.go(\'pharma\',\'' + V2.esc(String(x.p.id)) + '\')">' +
       '<span class="v2-row-dot" style="background:' + V2.esc(color) + '"></span>' +
@@ -826,7 +835,7 @@
     // rafraîchit la liste pour afficher le compteur d'opportunités par officine.
     if (!marketReady) {
       V2.loadFiles(['establishments']).then(function () {
-        _marketCache = null; _mkClassified = null;
+        _marketCache = null; _mkClassified = null; _mkTop = null;
         if (V2.route && V2.route.name === 'pharma' && !V2.route.param) V2.render();
       });
     }
@@ -1715,7 +1724,7 @@
     if (!window.OPS_AGGREGATE || !window.BENCHMARK) {
       root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
         '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement du marché sectoriel…</div></div>';
-      V2.loadFiles(['establishments', 'bench']).then(function () { _marketCache = null; _mkClassified = null; if (V2.route && V2.route.name !== 'pharma') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); });
+      V2.loadFiles(['establishments', 'bench']).then(function () { _marketCache = null; _mkClassified = null; _mkTop = null; if (V2.route && V2.route.name !== 'pharma') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); });
       return;
     }
 
