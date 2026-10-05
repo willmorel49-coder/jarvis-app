@@ -107,6 +107,30 @@ def load_geoloc_addr():
     return m
 
 
+def load_clients_actifs_addr():
+    """TIRCODE -> {cp, ville} depuis le dernier export des clients actifs, en tout dernier recours :
+    une officine ouverte après le dernier fichier d'adresses n'est connue que là (Cholet, Sète,
+    Blagnac le 05/10/2026)."""
+    import glob
+    m = {}
+    files = sorted(glob.glob(os.path.join(STATS, 'total ventes', 'clients_actifs_*.xlsx')))
+    if not files:
+        print('  [actifs] aucun clients_actifs_*.xlsx')
+        return m
+    wb = openpyxl.load_workbook(files[-1], read_only=True, data_only=True); ws = wb.active
+    it = ws.iter_rows(values_only=True); h = next(it)
+    hi = {n: i for i, n in enumerate(h)}
+    ti, ci, vi = hi.get('TIRCODE'), hi.get('ADRCODEPOSTAL'), hi.get('ADRVILLE')
+    if None in (ti, ci, vi):
+        wb.close(); return m
+    for r in it:
+        if r[ti] and r[vi]:
+            m[_cipkey(r[ti])] = {'cp': _cpfmt(r[ci]), 'ville': str(r[vi]).strip()}
+    wb.close()
+    print('  [actifs] {} TIRCODE -> adresse (clients actifs)'.format(len(m)))
+    return m
+
+
 def load_base_france_addr():
     """ID officine -> {cp, ville} depuis la Base France : dernier recours quand ni le fichier
     des pharmacies ni les géoloc ne connaissent l'officine (63 fiches sans ville le 05/10/2026)."""
@@ -453,8 +477,9 @@ OVERRIDE = {
 }
 enseignes = load_enseignes()
 addr = load_geoloc_addr()
-for _k, _v in load_base_france_addr().items():
-    addr.setdefault(_k, _v)
+for _src in (load_base_france_addr(), load_clients_actifs_addr()):
+    for _k, _v in _src.items():
+        addr.setdefault(_k, _v)
 grp_cip, grp_name = load_groupements()
 # CA par officine (somme du montant net HT sur toute la période)
 ca_by_code = {}
