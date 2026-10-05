@@ -18,7 +18,27 @@
   var _brouillon = {};  // pid → compte rendu en cours de saisie (survit à un nouveau rendu de la fiche)
 
   function pret() { return !!(V2.profil && V2.profil.charger && V2.profil.poser && V2.notes && V2.notes.addAuto); }
-  function ecrire(pid) { return V2.profil.poser('client', pid, CLE, _pts[pid].length ? _pts[pid] : null); }
+  // ⚠️ La fiche d'une officine est UN enregistrement partagé (coordonnées, logiciel, grossiste…).
+  // Les points y sont lus et écrits directement, jamais par V2.profil.poser : celui-ci, si la lecture
+  // échoue (réseau faible en visite), repart d'une fiche vide et l'enregistre par-dessus la vraie.
+  // Ici, une lecture ratée arrête tout : rien n'est écrit, et l'écran le dit.
+  function base() { return (V2.sb && V2.sb() && V2.user) ? V2.sb() : null; }
+  function lireFiche(pid) {
+    var c = base();
+    if (!c) return V2.profil.charger('client', pid);   // sans base partagée : la fiche gardée sur l'appareil
+    return c.from('profils').select('data').eq('scope_type', 'client').eq('scope_id', pid).maybeSingle()
+      .then(function (r) { if (!r || r.error) throw new Error('lecture'); return (r.data && r.data.data) || {}; });
+  }
+  function ecrire(pid) {
+    var c = base(), pts = _pts[pid];
+    if (!c) return V2.profil.poser('client', pid, CLE, pts.length ? pts : null);
+    return lireFiche(pid).then(function (data) {
+      if (!pts.length && !(CLE in data)) return;   // rien à changer : on ne crée pas une fiche vide
+      if (pts.length) data[CLE] = pts; else delete data[CLE];
+      return c.from('profils').upsert({ scope_type: 'client', scope_id: pid, data: data, updated_by: V2.user.id, updated_by_name: V2.user.name || '', updated_at: new Date().toISOString() }, { onConflict: 'scope_type,scope_id' })
+        .then(function (r) { if (!r || r.error) throw new Error('écriture'); });
+    });
+  }
   function boite(el) { return el.closest('.v2-rp-box'); }
   function pidDe(el) { var b = boite(el); return b ? b.getAttribute('data-pid') : ''; }
 
@@ -73,7 +93,7 @@
       Array.prototype.forEach.call(boxes, function (box) {
         box.setAttribute('data-done', '1');
         var pid = box.getAttribute('data-pid');
-        V2.profil.charger('client', pid).then(function (d) {
+        lireFiche(pid).then(function (d) {
           _pts[pid] = (Array.isArray(d[CLE]) ? d[CLE] : []).filter(function (p) { return p && p.t; }).map(function (p) { return { t: String(p.t), ok: !!p.ok }; });
           dessiner(box);
         }).catch(function () {
