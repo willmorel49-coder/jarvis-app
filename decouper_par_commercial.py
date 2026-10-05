@@ -135,6 +135,10 @@ def tranches(lignes):
 
 
 GRP_MIN = 5   # = le seuil de productsForIds (v2-pharma.js) : en dessous, un total trahirait une officine
+# Et dans le jeu d'un commercial, un groupement n'est fourni que si au moins GRP_AUTRES officines
+# actives ne sont PAS les siennes : sinon, en retirant ses propres ventes du total, il lirait
+# ce que commande l'officine d'un collègue.
+GRP_AUTRES = 3
 
 
 def agregats_groupements(officines, d_off, d_pro, ventes, garde_t, garde_e):
@@ -148,7 +152,7 @@ def agregats_groupements(officines, d_off, d_pro, ventes, garde_t, garde_e):
     alias = json.loads(m.group(1)) if m else sys.exit('ARRÊT : groupement-alias.js illisible')
     canon = lambda g: alias.get(re.sub(r'[^a-z0-9]', '', g.lower())) or g
     rangs_p, codes_p = {}, []
-    out = {}
+    out, actifs = {}, {}
     for cle, filtre in (('T', garde_t), ('E', garde_e)):
         membres = {}
         for o in officines:
@@ -175,8 +179,9 @@ def agregats_groupements(officines, d_off, d_pro, ventes, garde_t, garde_e):
                     paires += [rangs_p[prod], len(phs)]
             esp[g] = [len(actives[g]), paires]
         out[cle] = esp
+        actifs[cle] = actives
     out['P'] = codes_p
-    return out
+    return out, actifs
 
 
 def main():
@@ -246,8 +251,7 @@ def main():
     rep_t = reperes(garde_t)
     rep_e = reperes(garde_e)
     d_pro = declaration(tete, 'WML_D_PRODUITS')
-    grp_js = 'window.GRP_AGREGATS = %s;\n' % compact(
-        agregats_groupements(officines, d_off, d_pro, ventes, garde_t, garde_e))
+    grp_tout, grp_actifs = agregats_groupements(officines, d_off, d_pro, ventes, garde_t, garde_e)
 
     # 'OPSO' a sa propre branche (jeu_opso) : par le chemin générique il n'aurait aucune
     # officine « à lui » (aucun prénom) et tout le réseau en totaux par produit.
@@ -299,7 +303,11 @@ def main():
                           'rg': {c: r for c, r in rp['rg'].items() if c in mes_codes},
                           'rgg': {c: r for c, r in rp['rgg'].items() if c in mes_codes}}
         ecrire(os.path.join(rep, 'wml-ventes-index.js'), 'window.WML_TRANCHES_JEU = %s;\n' % compact(index))
-        ecrire(os.path.join(rep, 'grp-agregats.js'), grp_js)
+        grp_jeu = {'P': grp_tout['P']}
+        for cle in ('T', 'E'):
+            grp_jeu[cle] = {g: v for g, v in grp_tout[cle].items()
+                            if sum(1 for r in grp_actifs[cle][g] if not (comms_rang[r] & mes)) >= GRP_AUTRES}
+        ecrire(os.path.join(rep, 'grp-agregats.js'), 'window.GRP_AGREGATS = %s;\n' % compact(grp_jeu))
         mes_ca = {k: v for k, v in off_ca.items() if comms_par_code.get(k, set()) & mes}
         # officines partagées avec un collègue : CA et fiche de carte recalculés sur SES lignes
         a_lui = {}
