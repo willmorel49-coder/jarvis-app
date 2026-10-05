@@ -5,6 +5,7 @@
 Nécessite pdftotext (les .txt sont régénérés ici). Python 3.9.
 """
 import re, json, os, subprocess, unicodedata, openpyxl
+from pont_officines import code_officine  # une pharmacie = une fiche (05/10/2026)
 
 
 def norm_name(s):
@@ -190,7 +191,9 @@ def load_sales_index():
             ai, pi = hi.get('AFMCODE'), hi.get('PLVPUNET')
             for r in it:
                 t = r[ti] if (ti is not None and ti < len(r)) else None
-                if t is not None: allph.add(str(t))
+                if t is not None:
+                    t = code_officine(t)[0]   # ancien compte et code nu = une seule officine
+                    allph.add(t)
                 q = (r[qi] or 0) if (qi is not None and qi < len(r)) else 0
                 afm = (r[ai] if (ai is not None and ai < len(r)) else None) or ''
                 punet = (r[pi] or 0) if (pi is not None and pi < len(r)) else 0

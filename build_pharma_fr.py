@@ -20,6 +20,8 @@ import datetime
 import unicodedata
 import urllib.request
 
+from pont_officines import code_officine  # une pharmacie = une fiche (05/10/2026)
+
 ROOT = os.path.dirname(__file__)
 SRC = os.path.join(ROOT, 'Base France Décembre 2024.xlsx')
 # Mapping national pharmacie -> groupement (100 groupements, ~17 500 officines),
@@ -203,6 +205,9 @@ def load_addresses():
         for r in it:
             code = g(r, 'TIRCODE')
             if not code:
+                continue
+            code, ancien = code_officine(code)
+            if ancien and code in out:   # le compte d'avant reprise ne remplace pas la fiche
                 continue
             rue = g(r, 'ADRL3') or g(r, 'ADRL2') or g(r, 'ADRL1')
             cp = g(r, 'ADRCODEPOSTAL').zfill(5) if g(r, 'ADRCODEPOSTAL') else ''

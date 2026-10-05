@@ -75,15 +75,14 @@ def _cpfmt(v):
 
 
 def load_geoloc_addr():
-    """CIP -> {cp, ville} depuis les fichiers géoloc (ADRCODEPOSTAL / ADRVILLE)."""
+    """CIP -> {cp, ville} depuis les fichiers géoloc (ADRCODEPOSTAL / ADRVILLE).
+    Du plus récent au plus ancien : une officine sortie du dernier export (code changé à la
+    reprise) garde l'adresse de l'export précédent au lieu d'une fiche sans ville."""
     import glob
     m = {}
-    files = {}
-    for p in glob.glob(os.path.join(STATS, '*_geolocalisation_*.xlsx')):
-        pref = os.path.basename(p).split('_geoloc')[0]
-        if pref not in files or p > files[pref]:
-            files[pref] = p
-    for p in files.values():
+    files = sorted(glob.glob(os.path.join(STATS, '*_geolocalisation_*.xlsx')),
+                   key=lambda p: os.path.basename(p).split('_geolocalisation_')[1], reverse=True)
+    for p in files:
         try:
             wb = openpyxl.load_workbook(p, read_only=True, data_only=True); ws = wb.active
             it = ws.iter_rows(values_only=True); h = next(it)
@@ -105,6 +104,28 @@ def load_geoloc_addr():
         except Exception as e:
             print('  [addr] err', p, e)
     print('  [addr] {} CIP -> adresse (géoloc)'.format(len(m)))
+    return m
+
+
+def load_base_france_addr():
+    """ID officine -> {cp, ville} depuis la Base France : dernier recours quand ni le fichier
+    des pharmacies ni les géoloc ne connaissent l'officine (63 fiches sans ville le 05/10/2026)."""
+    path = os.path.join(os.path.realpath(STATS), '..', 'Base France Décembre 2024.xlsx')
+    m = {}
+    if not os.path.exists(path):
+        print('  [base] absente :', path)
+        return m
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True); ws = wb.active
+    it = ws.iter_rows(values_only=True); h = next(it)
+    hi = {n: i for i, n in enumerate(h)}
+    ii, ci, vi = hi.get('ID'), hi.get('CP'), hi.get('Ville')
+    if None in (ii, ci, vi):
+        wb.close(); return m
+    for r in it:
+        if r[ii] and r[vi]:
+            m[_cipkey(r[ii])] = {'cp': _cpfmt(r[ci]), 'ville': str(r[vi]).strip()}
+    wb.close()
+    print('  [base] {} ID -> adresse (Base France)'.format(len(m)))
     return m
 
 
@@ -432,6 +453,8 @@ OVERRIDE = {
 }
 enseignes = load_enseignes()
 addr = load_geoloc_addr()
+for _k, _v in load_base_france_addr().items():
+    addr.setdefault(_k, _v)
 grp_cip, grp_name = load_groupements()
 # CA par officine (somme du montant net HT sur toute la période)
 ca_by_code = {}

@@ -21,6 +21,8 @@ import urllib.request
 
 import openpyxl
 
+from pont_officines import code_officine  # une pharmacie = une fiche (05/10/2026)
+
 ROOT = os.path.dirname(__file__)
 OUT = os.path.join(ROOT, "crm", "v2", "zone-data.js")
 API = "https://geo.api.gouv.fr/communes?codePostal=%s&fields=nom,population,codeDepartement,code&format=json"
@@ -50,6 +52,9 @@ def load_officines():
             code = str(r[ic]).strip() if r[ic] is not None else ""
             cp = re.sub(r"\D", "", str(r[icp] or ""))
             if not code or not cp:
+                continue
+            code, ancien = code_officine(code)
+            if ancien and code in officines:   # le compte d'avant reprise ne remplace pas la fiche
                 continue
             cp = cp.zfill(5)
             ville = str(r[iv] or "").strip() if iv is not None else ""
