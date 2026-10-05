@@ -647,6 +647,16 @@
 
   // VUE A — Liste des officines
   // ─────────────────────────────────────────────────────────────
+  // 05/10/2026 — demande de Will : le code postal s'affiche après le nom et se cherche.
+  // Un code saisi sans son zéro de tête (« 1000 » pour 01000) est remis sur 5 chiffres.
+  function cpDe(p) { var c = String(p.cp == null ? '' : p.cp).trim(); return /^\d{4}$/.test(c) ? '0' + c : c; }
+  // Recherche de la liste : le nom, ou le DÉBUT du code postal quand on ne tape que des chiffres
+  // (« 14 » = tout le Calvados, « 14000 » = Caen).
+  function correspond(p, q) {
+    if ((p.name || '').toLowerCase().indexOf(q) >= 0) return true;
+    var n = q.replace(/\s/g, '');
+    return /^\d+$/.test(n) && cpDe(p).indexOf(n) === 0;
+  }
   function listRowHtml(x) {
     var color = x.p.color || 'var(--ip-blue)';
     var oppPill = (x.opp == null)
@@ -655,8 +665,8 @@
     var badge = opsoBadge(x.p);
     return '<a class="v2-row' + (isOpso() && x.p.inDb ? ' opso-row-cliente' : '') + '" onclick="V2.go(\'pharma\',\'' + V2.esc(String(x.p.id)) + '\')">' +
       '<span class="v2-row-dot" style="background:' + V2.esc(color) + '"></span>' +
-      '<span class="v2-row-name">' + V2.esc(x.p.name) + '</span>' +
-      badge +
+      '<span class="v2-row-name">' + V2.esc(x.p.name) + (cpDe(x.p) ? ' <span style="color:var(--muted);font-weight:500">· ' + V2.esc(cpDe(x.p)) + '</span>' : '') + '</span>' +
+      badge + (x.p._cree ? '<span class="v2-row-meta">créé à la main</span>' : '') +
       oppPill +
       '<span class="v2-row-meta">marge nette</span>' +
       // 24/09/2026 — officine d'un collègue : « — » plutôt qu'un faux « 0 € »
@@ -695,11 +705,29 @@
   }
   // pseudo-ligne de liste pour un point PHARMA_FR (prospect ou promu) — réutilise listRowHtml
   function prospectPseudoX(p) {
-    return { p: { id: p[13], name: nameOf(p[13], p[6] || p[10] || 'Pharmacie'), color: '#9AA1B2', inDb: false, comms: [], _prospect: true }, ca: 0, marge: 0, opp: 0 };
+    return { p: { id: p[13], name: nameOf(p[13], p[6] || p[10] || 'Pharmacie'), color: '#9AA1B2', inDb: false, comms: [], _prospect: true, cp: p[8], ville: p[7] }, ca: 0, marge: 0, opp: 0 };
+  }
+  // Fiches prospect créées à la main (ids « px_… », table `profils`) : elles n'existaient que dans
+  // la recherche générale. 05/10/2026 — elles entrent dans l'onglet Prospects. Rien n'est jamais
+  // supprimé : une fiche marquée `archive` est seulement masquée.
+  var _crees = [], _creesAt = 0;
+  function chargerCrees() {
+    if (!V2.profil || !V2.profil.loadCrees || Date.now() - _creesAt < 3000) return;
+    _creesAt = Date.now();
+    V2.profil.loadCrees().then(function (l) {
+      var avant = JSON.stringify(_crees); _crees = l || [];
+      if (JSON.stringify(_crees) !== avant && secteurTab === 'prospects' && V2.route && V2.route.name === 'pharma' && !V2.route.param) V2.render();
+    }).catch(function () {});
+  }
+  function creesRows(q) {
+    return _crees.filter(function (o) { return o.data && o.data.nom && !o.data.archive; }).map(function (o) {
+      return { p: { id: o.sid, name: o.data.nom, cp: o.data.cp, ville: o.data.ville, color: '#9AA1B2', inDb: false, comms: [], _prospect: true, _cree: true }, ca: 0, marge: 0, opp: 0 };
+    }).filter(function (x) { return !q || correspond(x.p, q); });
   }
   function isClientSeg(p) { var s = window.PHARMA_FR && window.PHARMA_FR.seg[p[4]]; return s && s.indexOf('Client') === 0; }
   // Prospects (non-clients) des UGA d'un ou plusieurs commerciaux. Plafonné à `cap`.
-  function commercialProspects(comm, cap) {
+  // `q` : la recherche se fait AVANT le plafond, sinon un code postal hors des 300 premiers reste introuvable.
+  function commercialProspects(comm, cap, q) {
     var D = window.PHARMA_FR, cms = [].concat(comm || []); if (!D || !D.p || !cms.length) return { rows: [], total: 0 };
     var uc = ugaCommMap(), out = [];
     for (var i = 0; i < D.p.length; i++) {
@@ -707,6 +735,7 @@
       if (!(uc[p[2]] || []).some(function (c) { return cms.indexOf(c) >= 0; }) || isClientSeg(p) || (V2.promoted && V2.promoted[String(p[13])])) continue;
       out.push(p);
     }
+    if (q) { out = out.map(prospectPseudoX).filter(function (x) { return correspond(x.p, q); }); return { rows: out.slice(0, cap || 200), total: out.length }; }
     var total = out.length;
     return { rows: out.slice(0, cap || 200).map(prospectPseudoX), total: total };
   }
@@ -737,6 +766,7 @@
       V2.ensurePharmaFr(function () { _ugaComm = null; if (V2.route && V2.route.name === 'pharma' && !V2.route.param) V2.render(); });
     }
     if (!isOpso() && window.PHARMA_FR) { try { phs = phs.concat(promotedRows()); } catch (e) {} }
+    if (!isOpso()) chargerCrees();
 
     // ── Tri OPSO : clientes d'abord, puis par CA desc ──
     if (isOpso()) {
@@ -769,7 +799,7 @@
       var q = searchQuery.trim().toLowerCase();
       return list.filter(function (x) {
         if (V2.commFilter && !x.p._promu && (x.p.comms || []).indexOf(V2.commFilter) < 0) return false;
-        if (q && x.p.name.toLowerCase().indexOf(q) < 0) return false;
+        if (q && !correspond(x.p, q)) return false;
         if (isOpso() && opsoFilter === 'cliente' && !x.p.inDb) return false;
         if (isOpso() && opsoFilter === 'prospect' && x.p.inDb) return false;
         return true;
@@ -828,14 +858,16 @@
       try {
         if (!isOpso() && secteurTab === 'prospects') {
           nAff = '';
+          var q = searchQuery.trim().toLowerCase();
+          var crees = creesRows(q), creesHtml = crees.map(listRowHtml).join('');
+          if (crees.length) nAff = pl(crees.length, 'prospect');
           // 25/09/2026 — un commercial n'a pas de barre de choix (un seul nom dans ses ventes) : ses UGA d'office.
           var qui = V2.commFilter || (V2.mesComms ? V2.mesComms() : []);
-          if (!qui.length) return '<div class="v2-empty"><div class="v2-empty-t">Choisissez un commercial</div><div class="v2-empty-d">Sélectionnez un commercial dans le menu au-dessus pour voir les prospects de son secteur (UGA).</div></div>';
-          if (!window.PHARMA_FR) return '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement des prospects…</div></div>';
-          var pr = commercialProspects(qui, 300);
-          var q = searchQuery.trim().toLowerCase();
-          var rows = q ? pr.rows.filter(function (x) { return (x.p.name || '').toLowerCase().indexOf(q) >= 0; }) : pr.rows;
-          nAff = pr.total > pr.rows.length && !q ? pl(rows.length, 'prospect') + ' affichés sur ' + V2.fmtNum(pr.total) : pl(rows.length, 'prospect');
+          if (!qui.length) return creesHtml + '<div class="v2-empty"><div class="v2-empty-t">Choisissez un commercial</div><div class="v2-empty-d">Sélectionnez un commercial dans le menu au-dessus pour voir les prospects de son secteur (UGA).</div></div>';
+          if (!window.PHARMA_FR) return creesHtml + '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement des prospects…</div></div>';
+          var pr = commercialProspects(qui, 300, q);
+          var rows = crees.concat(pr.rows);
+          nAff = pr.total > pr.rows.length ? pl(rows.length, 'prospect') + ' affichés sur ' + V2.fmtNum(pr.total + crees.length) : pl(rows.length, 'prospect');
           if (!rows.length) return '<div class="v2-empty"><div class="v2-empty-t">Aucun prospect</div><div class="v2-empty-d">' + (q ? 'Aucun résultat.' : 'Aucun prospect dans les UGA de ce commercial.') + '</div></div>';
           var more = (pr.total > pr.rows.length) ? '<a class="v2-row" style="justify-content:center;color:var(--muted);cursor:pointer" onclick="V2.go(\'pharma\',\'carte\')">+ ' + (pr.total - pr.rows.length) + ' autres prospects · voir sur la carte</a>' : '';
           return rows.map(listRowHtml).join('') + more;
@@ -848,12 +880,14 @@
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
       '<div class="v2-wrap v2-u">' +
         teteOfficines('Les officines de votre secteur et leurs opportunités.',
-          !isOpso() && secteurTab === 'clients' ? '<button type="button" class="v2-btn v2-btn-ghost" onclick="V2.pharmaClientsXlsx()">' + ICO('download', 18) + 'Mes clients en Excel</button>' : '') +
+          isOpso() ? '' : '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+            (secteurTab === 'clients' ? '<button type="button" class="v2-btn v2-btn-ghost" onclick="V2.pharmaClientsXlsx()">' + ICO('download', 18) + 'Mes clients en Excel</button>' : '') +
+            '<button type="button" class="v2-btn v2-btn-ghost" id="of-creer" onclick="V2.pharmaCreerProspect()">' + ICO('plus', 18) + 'Créer un prospect</button></div>') +
         pharmaTabs('officines') +
         counterHtml +
         '<div class="of-bar">' + commBar + secteurBar + opsoFilterBar + '</div>' +
         '<label class="v2-champ of-recherche">' + ICO('search', 20, 2) +
-          '<input id="v2-pharma-search" type="text" placeholder="Rechercher une officine…" aria-label="Rechercher une officine" autocomplete="off" value="' +
+          '<input id="v2-pharma-search" type="text" placeholder="Nom ou code postal…" aria-label="Rechercher une officine par son nom ou son code postal" autocomplete="off" value="' +
           V2.esc(searchQuery) + '"></label>' +
         '<p class="of-n" id="v2-pharma-n" aria-live="polite">' + nAff + '</p>' +
         '<div class="v2-card" id="v2-pharma-card">' + corps + '</div>' +
@@ -1042,6 +1076,8 @@
     _newProspectSeed = { id: id, nom: name || '' };
     V2.go('pharma', id);
   };
+  // 05/10/2026 — bouton « Créer un prospect » de l'écran Officines : au retour, la liste s'ouvre sur les prospects.
+  V2.pharmaCreerProspect = function () { secteurTab = 'prospects'; V2.createProspect(''); };
   function renderCreatedProspect(root, pid) {
     var seed = (_newProspectSeed && _newProspectSeed.id === pid) ? { nom: _newProspectSeed.nom } : {};
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
@@ -1051,10 +1087,10 @@
             '<div class="v2-pharma-pin" style="background:linear-gradient(150deg,#00B37E,#00875A)">' + (V2.ICO ? V2.ICO('pharma', 22) : '') + '</div>' +
             '<div style="flex:1;min-width:0">' +
               '<div class="v2-prospect-n">Nouvelle fiche prospect</div>' +
-              '<div class="v2-prospect-a">Renseigne l\'identité et les coordonnées ci-dessous</div>' +
+              '<div class="v2-prospect-a">Renseignez l\'identité et les coordonnées ci-dessous</div>' +
             '</div>' +
           '</div>' +
-          '<p class="v2-prospect-note">Nouvelle officine — remplis son identité, ses coordonnées, infos et notes. Tout est sauvegardé et retrouvable dans la recherche.</p>' +
+          '<p class="v2-prospect-note">Nouvelle officine — indiquez son nom, son code postal, ses coordonnées, vos infos et vos notes. Chaque champ est enregistré dès que vous le quittez, partagé avec l\'équipe, et la fiche se retrouve dans Officines, onglet Prospects.</p>' +
         '</div>' +
         (V2.profil ? V2.profil.newProspectSection(pid, seed) : '') +
         (V2.profil ? V2.profil.section('client', pid) : '') +
@@ -1063,6 +1099,13 @@
       '</div>';
     if (V2.profil) V2.profil.hydrate();
     if (V2.notes) V2.notes.hydrate();
+    // Fiche déjà remplie : son nom en titre, pas « Nouvelle fiche prospect ».
+    if (V2.profil && V2.profil.charger) V2.profil.charger('client', pid).then(function (d) {
+      if (!d.nom || !V2.route || String(V2.route.param) !== String(pid)) return;
+      var n = root.querySelector('.v2-prospect-n'), a = root.querySelector('.v2-prospect-a');
+      if (n) n.textContent = d.nom;
+      if (a) a.textContent = [cpDe(d), d.ville].filter(function (x) { return x; }).join(' ') || 'Fiche créée à la main';
+    });
   }
   // 21/09/2026 — demande de Will : on transmet aussi des documents depuis une fiche prospect.
   function txProspectBtn(pid) {

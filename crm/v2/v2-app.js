@@ -2060,7 +2060,7 @@
     if (!V2.profil || !V2.profil.loadScope) return;
     // Les fiches créées à la main sont des enregistrements 'client' d'id « px_… » portant un nom.
     V2.profil.loadScope('client').then(function (all) {
-      V2._newph = (all || []).filter(function (o) { return String(o.sid).indexOf('px_') === 0 && o.data && o.data.nom; });
+      V2._newph = (all || []).filter(function (o) { return String(o.sid).indexOf('px_') === 0 && o.data && o.data.nom && !o.data.archive; });
       var bd = document.getElementById('v2-cmdk'), inp = document.getElementById('v2-cmdk-input');
       if (bd && bd.classList.contains('open') && inp && inp.value) { cmdkResults = cmdkSearch(inp.value); renderCmdkResults(); }
     }).catch(function () {});

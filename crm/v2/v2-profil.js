@@ -210,6 +210,18 @@
       .catch(function () { return localScopeList(st); });
   };
 
+  // 05/10/2026 — les seules fiches prospect créées à la main (ids « px_… »), sans relire tout le scope 'client'.
+  V2.profil.loadCrees = function () {
+    var garde = function (l) { return (l || []).filter(function (o) { return String(o.sid).indexOf('px_') === 0; }); };
+    var c = sb();
+    if (!c) return Promise.resolve(garde(localScopeList('client')));
+    return c.from(TABLE).select('scope_id,data').eq('scope_type', 'client').like('scope_id', 'px_%')
+      .then(function (r) {
+        if (r.error || !r.data) return garde(localScopeList('client'));
+        return garde(r.data.map(function (x) { return { sid: String(x.scope_id), data: x.data || {} }; }));
+      }).catch(function () { return garde(localScopeList('client')); });
+  };
+
   // 25/09/2026 — rubrique « Logiciels officine » : poser UN champ sans ouvrir la fiche,
   // par la même fusion que V2.profil.set (les autres champs de l'enregistrement sont gardés).
   V2.profil.LGO = LGO;
