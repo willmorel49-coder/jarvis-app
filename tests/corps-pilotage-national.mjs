@@ -676,9 +676,9 @@ test('le gisement se rend, et il est nomme pour ce qu il est', () => {
   const h = rendre(SECTEUR);
   assert.ok(/pilo-gis/.test(h), 'le bloc gisement ne se rend pas');
   // ⚠️ 15/09/2026 (b36db8d9) : la légende suit désormais la période affichée
-  // (« Ce que la France achète et que tes officines n'ont pas commandé sur
+  // (« Ce que la France achète et que vos officines n'ont pas commandé sur
   // <période> »), au lieu du libellé fixe d'avant cette date.
-  assert.ok(/Ce que la France achète et que tes officines n.ont pas commandé/.test(h),
+  assert.ok(/Ce que la France achète et que vos officines n.ont pas commandé/.test(h),
     'la carte ne dit pas ce qu elle montre');
 });
 
