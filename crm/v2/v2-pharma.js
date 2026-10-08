@@ -523,8 +523,8 @@
       ? 'À pousser : son groupement le prend, pas elle'
       : 'À pousser : tout le réseau le prend, pas elle';
     var soustitre = scope === 'groupement'
-      ? 'produits que le plus de pharmacies de ' + esc(g.name) + ' commandent et que cette officine n\'a pas — gain estimé = rotation moyenne × votre remise'
-      : 'produits que le plus de pharmacies du réseau commandent et que cette officine n\'a pas — gain estimé = rotation moyenne × votre remise';
+      ? 'produits que le plus de pharmacies de ' + esc(g.name) + ' commandent et que cette officine n\'a pas — gain estimé = rotation moyenne × votre abandon de marge'
+      : 'produits que le plus de pharmacies du réseau commandent et que cette officine n\'a pas — gain estimé = rotation moyenne × votre abandon de marge';
     var open = sectionOpen('netreco');
     if (!reco.length) {
       // groupement sélectionné mais trop peu de pharmacies / aucune reco → on garde le sélecteur
@@ -543,7 +543,7 @@
         '<span class="ipv-rank">#' + (i + 1) + '</span>' +
         '<span class="ipv-name">' + esc(cap((r.designation || '').toLowerCase())) + (r.froid ? ' <span class="ph-froid">FROID</span>' : '') +
           '<small style="display:block;color:var(--muted);font-family:var(--mono)">' + V2.fmtNum(r.nb) + '/' + V2.fmtNum(tot) + ' phies (' + pct + '%)' + (r.rota > 0 ? ' · rotation ~' + V2.fmtNum(r.rota) + '/an' : '') + (r.prix > 0 ? ' · ' + V2.fmtEur(r.prix) + (r.offre ? ' <span class="ph-offre">offre</span>' : '') : '') + '</small></span>' +
-        '<span class="ipv-vol" style="color:var(--c-opp);font-weight:800" title="rotation moyenne × remise PPHT→net">' + (r.gain > 0 ? '+' + V2.fmtEur(r.gain) + '<small>/an</small>' : '—') + '</span>' +
+        '<span class="ipv-vol" style="color:var(--c-opp);font-weight:800" title="rotation moyenne × abandon de marge PPHT→net">' + (r.gain > 0 ? '+' + V2.fmtEur(r.gain) + '<small>/an</small>' : '—') + '</span>' +
         '<button type="button" class="opp-add' + (on ? ' on' : '') + '" data-cip="' + esc(r.cip) +
           '" onclick="V2.pharmaToggleSel(this)" aria-label="Ajouter au PDF RDV">' + (on ? '✓' : '+') + '</button>' +
         '</div>';
@@ -640,7 +640,7 @@
       return '<div class="ipv-row">' +
         '<span class="ipv-rank">#' + (i + 1) + '</span>' +
         '<span class="ipv-name">' + esc(cap((r.d || '').toLowerCase())) +
-          '<small style="display:block;color:var(--muted);font-family:var(--mono)">rotation ~' + V2.fmtNum(r.rota) + '/an · ' + r.n + ' phies · votre remise ' + V2.fmtEur(r.remise) + '/an</small></span>' +
+          '<small style="display:block;white-space:normal;color:var(--muted);font-family:var(--mono)">rotation ~' + V2.fmtNum(r.rota) + '/an · ' + r.n + ' phies · votre abandon de marge ' + V2.fmtEur(r.remise) + '/an</small></span>' +
         '<span class="ipv-vol" style="color:var(--c-opp);font-weight:800" title="marge nette gagnée par l\'officine / an">' + V2.fmtEur(r.marge) + '<small>/an</small></span>' +
         '</div>';
     }).join('');
