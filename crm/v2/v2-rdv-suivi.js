@@ -93,27 +93,27 @@
       // C'est la clé de voûte : l'envoi groupé ne peut porter que lui.
       if (!lien || !url) {
         out.push({ cle: 'lien', ok: false, niveau: 'bloquant',
-          titre: 'Ton lien de réservation n’existe pas',
-          detail: 'Sans lui, aucun envoi groupé n’est possible et ta signature de mail ' +
+          titre: 'Votre lien de réservation n’existe pas',
+          detail: 'Sans lui, aucun envoi groupé n’est possible et votre signature de mail ' +
                   'ne mène nulle part.',
           action: ['Ouvrir mes dispos', 'rdvdispo'] });
       } else if (F && F.ok === false) {
         out.push({ cle: 'lien', ok: false, niveau: 'bloquant',
-          titre: F.raison === 'ferme' ? 'Ton lien de réservation est fermé'
-                                      : 'Ton lien de réservation n’est pas reconnu',
+          titre: F.raison === 'ferme' ? 'Votre lien de réservation est fermé'
+                                      : 'Votre lien de réservation n’est pas reconnu',
           detail: F.raison === 'ferme'
             ? 'Personne ne peut réserver avec pour l’instant.'
-            : 'Le serveur ne le retrouve pas. Regarde le bloc « Mon lien permanent ».',
+            : 'Le serveur ne le retrouve pas. Regardez le bloc « Mon lien permanent ».',
           action: ['Ouvrir mes dispos', 'rdvdispo'] });
       } else if (!F) {
         out.push({ cle: 'lien', ok: null, niveau: 'info',
           titre: 'Lien de réservation : pas pu vérifier',
           detail: 'Le serveur n’a pas répondu. C’est cette lecture qui a échoué — ' +
-                  'ça ne veut pas dire que le lien est cassé. Réessaie dans un instant.',
+                  'ça ne veut pas dire que le lien est cassé. Réessayez dans un instant.',
           action: null });
       } else {
         out.push({ cle: 'lien', ok: true, niveau: 'info',
-          titre: 'Ton lien de réservation est ouvert',
+          titre: 'Votre lien de réservation est ouvert',
           detail: url, action: ['Ouvrir mes dispos', 'rdvdispo'] });
       }
 
@@ -141,13 +141,13 @@
         if (jours === null) {
           out.push({ cle: 'creneaux', ok: null, niveau: 'info',
             titre: 'Créneaux : pas pu calculer',
-            detail: 'Le calcul n’a pas abouti ici. Ouvre ton lien toi-même pour voir ' +
+            detail: 'Le calcul n’a pas abouti ici. Ouvrez votre lien vous-même pour voir ' +
                     'ce que le pharmacien voit.', action: null });
         } else if (!jours.length) {
           out.push({ cle: 'creneaux', ok: false, niveau: 'bloquant',
-            titre: 'Ton lien n’ouvre aucun créneau',
+            titre: 'Votre lien n’ouvre aucun créneau',
             detail: 'Un pharmacien qui clique tombe sur une page vide — c’est pire ' +
-                    'que pas de mail du tout. Vérifie tes jours, tes horaires et tes ' +
+                    'que pas de mail du tout. Vérifiez vos jours, vos horaires et vos ' +
                     'demi-journées bloquées.',
             action: ['Ouvrir mes dispos', 'rdvdispo'] });
         } else {
@@ -164,7 +164,7 @@
       var tel = dispo && String(dispo.tel || '').trim();
       out.push(tel
         ? { cle: 'tel', ok: true, niveau: 'info',
-            titre: 'Ton numéro est donné au pharmacien', detail: tel, action: null }
+            titre: 'Votre numéro est donné au pharmacien', detail: tel, action: null }
         : { cle: 'tel', ok: false, niveau: 'avertissement',
             titre: 'Aucun numéro de repli',
             detail: 'Quand aucun créneau ne convient, la page publique propose d’appeler ' +
@@ -179,13 +179,13 @@
           titre: 'Agenda : pas pu vérifier', detail: '', action: null });
       } else if (ag.row) {
         out.push({ cle: 'agenda', ok: true, niveau: 'info',
-          titre: 'Ton agenda est relié',
-          detail: 'Les créneaux déjà occupés dans ton agenda ne sont pas proposés.',
+          titre: 'Votre agenda est relié',
+          detail: 'Les créneaux déjà occupés dans votre agenda ne sont pas proposés.',
           action: null });
       } else {
         out.push({ cle: 'agenda', ok: false, niveau: 'avertissement',
-          titre: 'Ton agenda n’est pas relié',
-          detail: 'Un pharmacien peut réserver sur une heure où tu as déjà autre chose. ' +
+          titre: 'Votre agenda n’est pas relié',
+          detail: 'Un pharmacien peut réserver sur une heure où vous avez déjà autre chose. ' +
                   'JARVIS ne lit aucun titre d’événement, seulement les heures occupées.',
           action: ['Ouvrir mes dispos', 'rdvdispo'] });
       }
@@ -368,7 +368,7 @@
       var c = sb(), u = uid();
       if (!c || !u) {
         root.innerHTML = top + '<div class="v2-wrap narrow"><div class="sv-cap">' +
-          '<h1>Suivi & contrôle</h1><p>Connecte-toi pour voir ton suivi.</p></div></div>';
+          '<h1>Suivi & contrôle</h1><p>Connectez-vous pour voir votre suivi.</p></div></div>';
         return;
       }
 
@@ -508,7 +508,7 @@
 
           '<div class="sv-sec">Mes envois groupés</div>' +
           (envHtml || '<p class="sv-vide">Aucun envoi groupé pour l’instant. ' +
-            'Depuis la campagne, choisis le mode « groupé en copie cachée » : ' +
+            'Depuis la campagne, choisissez le mode « groupé en copie cachée » : ' +
             'un seul mail part vers 25 officines à la fois.</p>') +
 
           '<div class="sv-acts">' +
@@ -518,7 +518,7 @@
           '</div>' +
 
           '<p class="sv-hon">Il n’y a ni pixel ni mouchard dans ces mails : JARVIS ne sait ' +
-          'pas si un mail a été ouvert, et ne le saura pas. « Sollicitée » est ce que tu as ' +
+          'pas si un mail a été ouvert, et ne le saura pas. « Sollicitée » est ce que vous avez ' +
           'coché comme envoyé, « a réservé » est un rendez-vous réellement posé en base après ' +
           'cet envoi.</p>' +
         '</div>';

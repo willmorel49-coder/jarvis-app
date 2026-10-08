@@ -106,13 +106,13 @@
     var q = val('rda-q');
     if (sansAccent(q).trim().length < 2) {
       e.innerHTML = '<li><span style="color:var(--muted);font-size:13.5px">' +
-        'Tape au moins deux lettres — nom d’officine, ville, ou début de CIP.</span></li>';
+        'Tapez au moins deux lettres — nom d’officine, ville, ou début de CIP.</span></li>';
       return;
     }
     var r = chercher(q);
     if (!r.length) {
       e.innerHTML = '<li><span style="color:var(--muted);font-size:13.5px">Aucune officine trouvée' +
-        (national ? '.' : ' dans ton portefeuille.') + '</span></li>' +
+        (national ? '.' : ' dans votre portefeuille.') + '</span></li>' +
         (national ? '' : '<li><button onclick="V2.rdvAjout.chargerNational()">' +
           'Chercher dans l’annuaire national (2,8 Mo à télécharger)</button></li>') +
         boutonALaMain();
@@ -188,7 +188,7 @@
     // — et l'agenda continuerait de mentir.
     aLaMain: function () {
       var nom = val('rda-q').trim();
-      if (nom.length < 2) { dire('Écris d’abord le nom de l’officine.', 'var(--rose,#E0556E)'); return; }
+      if (nom.length < 2) { dire('Écrivez d’abord le nom de l’officine.', 'var(--rose,#E0556E)'); return; }
       choisie = { cip: '', nom: nom, adresse: '', cp: '', ville: '', tel: '', contact: '',
                   lat: null, lon: null, aLaMain: true };
       V2.go('rdvajout');
@@ -205,13 +205,13 @@
     creer: function (o, q) {
       var c = sb(), u = uid();
       if (!c || !u) return Promise.resolve({ ok: false, raison: 'connexion',
-        message: 'Connecte-toi pour noter un rendez-vous.' });
+        message: 'Connectez-vous pour noter un rendez-vous.' });
       if (!o) return Promise.resolve({ ok: false, raison: 'officine',
-        message: 'Choisis d’abord une officine.' });
+        message: 'Choisissez d’abord une officine.' });
       if (!q || !q.date) return Promise.resolve({ ok: false, raison: 'date',
-        message: 'Indique la date.' });
+        message: 'Indiquez la date.' });
       if (!q.heure) return Promise.resolve({ ok: false, raison: 'heure',
-        message: 'Indique l’heure.' });
+        message: 'Indiquez l’heure.' });
       // Une date passée n'est pas une faute improbable : le champ date d'un
       // téléphone se manipule vite. On refuse plutôt que de créer un
       // rendez-vous invisible dans l'agenda, qui ne montre que l'à-venir.
@@ -251,7 +251,7 @@
           var m = String((r.error && r.error.message) || '');
           if (m.indexOf('chevauchement') !== -1 || r.error.code === '23P01') {
             return { ok: false, raison: 'chevauchement',
-              message: 'Tu as déjà un rendez-vous à ce moment-là. Change l’heure ou la durée.' };
+              message: 'Vous avez déjà un rendez-vous à ce moment-là. Changez l’heure ou la durée.' };
           }
           return { ok: false, raison: 'base', message: 'Enregistrement impossible.' };
         }
@@ -262,7 +262,7 @@
     },
 
     enregistrer: function () {
-      if (!choisie) { dire('Choisis d’abord une officine.', 'var(--rose,#E0556E)'); return; }
+      if (!choisie) { dire('Choisissez d’abord une officine.', 'var(--rose,#E0556E)'); return; }
       var b = document.getElementById('rda-go');
       if (b) { b.disabled = true; b.textContent = 'Enregistrement…'; }
       var rendre = function () { if (b) { b.disabled = false; b.textContent = 'Noter ce rendez-vous'; } };
@@ -307,7 +307,7 @@
       var c = sb(), u = uid();
       if (!c || !u) {
         root.innerHTML = top + '<div class="v2-wrap narrow"><div class="v2-rdv-cap">' +
-          '<h1>Noter un rendez-vous</h1><p>Connecte-toi d’abord.</p></div></div>';
+          '<h1>Noter un rendez-vous</h1><p>Connectez-vous d’abord.</p></div></div>';
         return;
       }
 
@@ -344,10 +344,10 @@
           // de faire en cliquant sur une officine.
           (V2.rdvPlanningCleEnCours
             ? '<div class="rda-box" style="border-left:3px solid #C7791A">' +
-                '<b>Tu corriges un rattachement</b><br>' +
-                '<span style="color:var(--muted);font-size:13.5px">Ton agenda dit ' +
-                '« ' + esc(V2.rdvPlanningCleEnCours) + ' ». Choisis la vraie officine : ' +
-                'JARVIS la retiendra, et ton agenda ne sera pas modifié.</span></div>'
+                '<b>Vous corrigez un rattachement</b><br>' +
+                '<span style="color:var(--muted);font-size:13.5px">Votre agenda dit ' +
+                '« ' + esc(V2.rdvPlanningCleEnCours) + ' ». Choisissez la vraie officine : ' +
+                'JARVIS la retiendra, et votre agenda ne sera pas modifié.</span></div>'
             : '') +
           '<div class="rda-sec">Quelle officine ?</div>' +
           '<div class="rda-box">' +

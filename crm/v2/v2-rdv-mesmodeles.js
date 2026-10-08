@@ -278,14 +278,14 @@
       c.from(TABLE).update({ archive: true }).eq('id', id).eq('user_id', u)
         .then(function (r) {
           if (r && r.error) { V2.toast('Archivage impossible.'); return; }
-          V2.toast('« ' + (nom || 'Modèle') + ' » retiré de tes motifs.');
+          V2.toast('« ' + (nom || 'Modèle') + ' » retiré de vos motifs.');
           V2.rdvModeles.charger(true).then(function () { V2.go('rdvmodeles'); });
         });
     },
 
     enregistrer: function () {
       var c = sb(), u = uid();
-      if (!c || !u) { V2.toast('Connecte-toi.'); return; }
+      if (!c || !u) { V2.toast('Connectez-vous.'); return; }
       var mod = { nom: v('mm-nom').trim(), objet: v('mm-objet').trim(), corps: v('mm-corps').trim() };
       var val = window.V2MOD.persoValider(mod);
       if (!val.ok) { V2.toast(val.erreurs[0]); apercu(); return; }
@@ -304,7 +304,7 @@
         if (!r || r.error || !r.data) { rate(); return; }
         EDIT = null;
         V2.rdvModeles.charger(true).then(function () {
-          V2.toast('Modèle enregistré. Il est dans la liste des motifs de ta campagne.');
+          V2.toast('Modèle enregistré. Il est dans la liste des motifs de votre campagne.');
           V2.go('rdvmodeles');
         });
       }, function () { rate(); });
@@ -324,7 +324,7 @@
 
     return '<div class="mm-sec">' + (e.id ? 'Modifier le modèle' : 'Nouveau modèle') + '</div>' +
       '<div class="mm-box">' +
-        '<label for="mm-nom">Le nom (pour toi seul)</label>' +
+        '<label for="mm-nom">Le nom (pour vous seul)</label>' +
         '<input id="mm-nom" maxlength="80" value="' + esc(e.nom) + '" ' +
           'oninput="V2.rdvModelesUI.saisie()" placeholder="Ex. Mon relationnel" />' +
 
@@ -336,8 +336,8 @@
         '<textarea id="mm-corps" rows="14" oninput="V2.rdvModelesUI.saisie()">' +
           esc(e.corps) + '</textarea>' +
         '<div class="mm-etiq">' + chips + '</div>' +
-        '<p class="mm-aide">Clique une étiquette pour l’insérer où est ton curseur.<br>' + tableau + '</p>' +
-        '<p class="mm-aide"><b>N’écris ni ta signature ni la mention STOP</b> : JARVIS les ' +
+        '<p class="mm-aide">Cliquez une étiquette pour l’insérer où est votre curseur.<br>' + tableau + '</p>' +
+        '<p class="mm-aide"><b>N’écrivez ni votre signature ni la mention STOP</b> : JARVIS les ' +
           'ajoute tout seul, à la fin, pour tous les modèles.</p>' +
         '<div id="mm-etat"></div>' +
         '<div class="mm-acts">' +
@@ -378,8 +378,8 @@
                   '\',\'' + esc(n) + '\')">Retirer</button>' +
               '</div></div>';
           }).join('')
-        : '<p class="mm-vide">Tu n’as pas encore de modèle à toi. Les trois motifs livrés ' +
-          'restent disponibles — commence par en retoucher un, c’est plus rapide que ' +
+        : '<p class="mm-vide">Vous n’avez pas encore de modèle à vous. Les trois motifs livrés ' +
+          'restent disponibles — commencez par en retoucher un, c’est plus rapide que ' +
           'd’écrire devant une page blanche.</p>') +
 
       '<div class="mm-sec">En écrire un</div>' +
@@ -394,9 +394,9 @@
       css();
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'rdv', backLabel: 'Rendez-vous' }) : '';
       var hero = '<div class="v2-rdv-cap"><h1>Mes modèles</h1>' +
-        '<p>Tes mots à toi. Les étiquettes entre accolades sont remplacées par les ' +
+        '<p>Vos mots à vous. Les étiquettes entre accolades sont remplacées par les ' +
         'informations de l’officine au moment de l’envoi : son nom, son titulaire, ' +
-        'ce qu’elle fait avec nous, depuis combien de temps tu ne l’as pas vue.</p></div>';
+        'ce qu’elle fait avec nous, depuis combien de temps vous ne l’avez pas vue.</p></div>';
 
       root.innerHTML = top + '<div class="v2-wrap narrow">' + hero +
         '<p class="mm-vide">Chargement…</p></div>';

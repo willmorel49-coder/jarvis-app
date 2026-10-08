@@ -476,7 +476,7 @@
       // s'arrêtent pas au même mois d'un secteur à l'autre.
       t += '<p class="rad-note">La baisse d’achats n’est <b>pas</b> calculée : il faut six mois ' +
            'complets de ventes pour comparer deux trimestres' +
-           (nbMois ? ', et ton fichier en couvre <b>' + nbMois + '</b>' : '') + '. ' +
+           (nbMois ? ', et votre fichier en couvre <b>' + nbMois + '</b>' : '') + '. ' +
            'Toutes les autres raisons, elles, sont bien là.</p>';
     } else if (per) {
       t += '<p class="rad-note">Baisse mesurée sur <b>' + esc(per.recent[0]) + ' – ' +
@@ -496,7 +496,7 @@
     if (!window.RUPTURES || !window.STOCK_IP) {
       t += '<p class="rad-note"><b>Les ruptures ne sont pas prises en compte ici</b> : ' +
            'le fichier des tensions ANSM ou celui du stock ne s’est pas chargé. ' +
-           'Recharge la page — les autres signaux, eux, sont bien calculés.</p>';
+           'Rechargez la page — les autres signaux, eux, sont bien calculés.</p>';
     }
     return t;
   }
@@ -507,24 +507,24 @@
       css();
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'rdv', backLabel: 'Rendez-vous' }) : '';
       var hero = '<div class="v2-rdv-cap"><h1>Qui inviter</h1>' +
-        '<p>La liste se compose toute seule : depuis quand tu ne l’as pas vue, si ses ' +
+        '<p>La liste se compose toute seule : depuis quand vous ne l’avez pas vue, si ses ' +
         'achats décrochent, et si elle achète des références aujourd’hui en tension ' +
         'dont nous avons du stock. Chaque ligne dit pourquoi elle est là.</p></div>';
 
       root.innerHTML = top + '<div class="v2-wrap narrow">' + hero +
-        '<p class="rad-vide">Lecture de ton portefeuille…</p></div>';
+        '<p class="rad-vide">Lecture de votre portefeuille…</p></div>';
 
       V2.rdvRadar.calculer().then(function (r) {
         var corps;
         if (r.sansCommercial) {
-          corps = '<p class="rad-vide">Ton compte n’est rattaché à aucun secteur. ' +
-            'Sans ça, JARVIS ne sait pas quelles officines sont les tiennes — et proposer ' +
+          corps = '<p class="rad-vide">Votre compte n’est rattaché à aucun secteur. ' +
+            'Sans ça, JARVIS ne sait pas quelles officines sont les vôtres — et proposer ' +
             'celles de toute l’équipe serait pire que ne rien proposer.</p>';
         } else if (r.panne) {
-          corps = '<p class="rad-vide">Lecture impossible pour le moment. Réessaie dans un instant.</p>';
+          corps = '<p class="rad-vide">Lecture impossible pour le moment. Réessayez dans un instant.</p>';
         } else if (!r.liste.length) {
           corps = '<p class="rad-vide">Aucune officine ne ressort aujourd’hui. C’est plutôt ' +
-            'bon signe : celles que tu n’as pas vues depuis longtemps ont déjà un rendez-vous ' +
+            'bon signe : celles que vous n’avez pas vues depuis longtemps ont déjà un rendez-vous ' +
             'ou un lien en cours.</p>' +
             ecartesTexte(r.ecartes || {}, r.comparable, r.periode, r.moisEcartes, r.moisComplets);
         } else {
@@ -536,16 +536,16 @@
           var manque = r.datesUtiles ? '' :
             '<p class="rad-note"><b>JARVIS ne connaît ' +
               (r.vues === 0
-                ? 'aucune de tes dates de visite'
+                ? 'aucune de vos dates de visite'
                 : r.vues === 1
-                  ? 'qu’une seule de tes dates de visite, sur ' + r.retenues + ' officines'
-                  : 'que ' + r.vues + ' de tes dates de visite, sur ' + r.retenues +
+                  ? 'qu’une seule de vos dates de visite, sur ' + r.retenues + ' officines'
+                  : 'que ' + r.vues + ' de vos dates de visite, sur ' + r.retenues +
                     ' officines') + '.</b> ' +
             'Le classement ci-dessous ne repose donc que sur les achats et le stock, ' +
-            'et « depuis quand tu ne l’as pas vue » n’y pèse rien. ' +
+            'et « depuis quand vous ne l’avez pas vue » n’y pèse rien. ' +
             'Deux gestes le remplissent : <b>« J’y suis allé »</b> après un rendez-vous, ' +
             'et ouvrir <a href="#" onclick="V2.go(\'rdvplanning\');return false">Mon agenda</a>, ' +
-            'qui reconnaît les officines dans les titres de ton agenda personnel.</p>';
+            'qui reconnaît les officines dans les titres de votre agenda personnel.</p>';
           var lot = r.liste.slice(0, LOT);
           var cips = lot.map(function (o) { return o.cip; });
           corps = manque +

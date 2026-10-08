@@ -75,7 +75,7 @@
      */
     noter: function (cip, nom, issue) {
       var c = sb(), u = uid();
-      if (!c || !u) { V2.toast('Connecte-toi.'); return; }
+      if (!c || !u) { V2.toast('Connectez-vous.'); return; }
       if (ETAT.encours[cip]) return;              // double tape sur mobile
       ETAT.encours[cip] = 1;
 
@@ -102,7 +102,7 @@
             .then(function () {}, function () {});
           V2.toast((nom || 'Cette officine') + ' ne sera plus sollicitée, par personne dans l’équipe.');
         } else if (issue === 'rdv') {
-          V2.toast('Note le rendez-vous pour qu’il bloque le créneau.');
+          V2.toast('Notez le rendez-vous pour qu’il bloque le créneau.');
         } else {
           V2.toast(issue === 'injoignable'
             ? 'Notée injoignable. Elle ne remontera pas avant trois semaines.'
@@ -152,7 +152,7 @@
       var reste = ETAT.r.appels.length;
       z.textContent = reste
         ? reste + ' officine' + (reste > 1 ? 's' : '') + ' encore à appeler.'
-        : 'Tu les as toutes passées. Reviens demain.';
+        : 'Vous les avez toutes passées. Revenez demain.';
     }
   }
 
@@ -237,12 +237,12 @@
       css();
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'rdv', backLabel: 'Rendez-vous' }) : '';
       var hero = '<div class="v2-rdv-cap"><h1>Qui appeler</h1>' +
-        '<p>Les officines de ton secteur qui n’ont pas d’adresse mail mais ont un ' +
+        '<p>Les officines de votre secteur qui n’ont pas d’adresse mail mais ont un ' +
         'téléphone. Même classement que « Qui inviter » — seul le canal change. ' +
         'Chaque ligne dit pourquoi elle est là.</p></div>';
 
       root.innerHTML = top + '<div class="v2-wrap narrow">' + hero +
-        '<p class="app-vide">Lecture de ton portefeuille…</p></div>';
+        '<p class="app-vide">Lecture de votre portefeuille…</p></div>';
 
       if (!V2.rdvRadar) {
         root.innerHTML = top + '<div class="v2-wrap narrow">' + hero +
@@ -255,14 +255,14 @@
         ETAT.r = r;
         var corps;
         if (r.sansCommercial) {
-          corps = '<p class="app-vide">Ton compte n’est rattaché à aucun secteur. ' +
-            'Sans ça, JARVIS ne sait pas quelles officines sont les tiennes.</p>';
+          corps = '<p class="app-vide">Votre compte n’est rattaché à aucun secteur. ' +
+            'Sans ça, JARVIS ne sait pas quelles officines sont les vôtres.</p>';
         } else if (r.panne) {
-          corps = '<p class="app-vide">Lecture impossible pour le moment. Réessaie dans un instant.</p>';
+          corps = '<p class="app-vide">Lecture impossible pour le moment. Réessayez dans un instant.</p>';
         } else if (!r.appels || !r.appels.length) {
           corps = '<p class="app-vide">Aucune officine ne porte de signal aujourd’hui. Soit elles ' +
             'ont toutes une adresse mail — et elles sont dans <a href="#" onclick="V2.go(\'rdvradar\');' +
-            'return false">Qui inviter</a> — soit tu les as déjà eues ces trois dernières semaines.</p>' +
+            'return false">Qui inviter</a> — soit vous les avez déjà eues ces trois dernières semaines.</p>' +
             resteTexte(r);
         } else {
           var lot = r.appels.slice(0, PORTION);
@@ -277,7 +277,7 @@
             resteTexte(r) +
             '<p class="app-note">⚠️ Une officine notée ne remontera pas avant <b>trois semaines</b> — ' +
               'un téléphone qui sonne deux fois dans la semaine, un pharmacien s’en souvient. ' +
-              'Et l’équipe entière voit tes appels : deux commerciaux sur le même département ' +
+              'Et l’équipe entière voit vos appels : deux commerciaux sur le même département ' +
               'ne l’appelleront pas le même jour.</p>';
         }
         root.innerHTML = top + '<div class="v2-wrap narrow">' + hero + corps + '</div>';

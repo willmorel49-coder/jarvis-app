@@ -214,7 +214,7 @@
   }
 
   function depuis(iso) {
-    if (!iso) return 'jamais vue dans ton agenda';
+    if (!iso) return 'jamais vue dans votre agenda';
     var j = Math.round((Date.now() - new Date(iso + 'T12:00:00').getTime()) / 86400000);
     if (j < 31) return 'vue il y a ' + j + ' j';
     if (j < 365) return 'vue il y a ' + Math.round(j / 30) + ' mois';
@@ -426,7 +426,7 @@
     // se voir autant qu'il porte.
     secteurEtendre: function (iso, portee) {
       var c = sb(), u = uid();
-      if (!c || !u) { V2.toast('Connecte-toi.'); return; }
+      if (!c || !u) { V2.toast('Connectez-vous.'); return; }
       var deps = ((V2.planningSecteurs || {})[iso] || []).slice();
       var cibles = [], i, d;
 
@@ -481,7 +481,7 @@
     // un département coché qui n'est pas en base serait pire que le refus.
     secteurBasculer: function (iso, dep) {
       var c = sb(), u = uid();
-      if (!c || !u) { V2.toast('Connecte-toi.'); return; }
+      if (!c || !u) { V2.toast('Connectez-vous.'); return; }
       var courant = ((V2.planningSecteurs || {})[iso] || []).slice();
       var i = courant.indexOf(dep);
       if (i >= 0) courant.splice(i, 1); else courant.push(dep);
@@ -522,7 +522,7 @@
     // d'une journée déjà orientée, en un clic au lieu de trois.
     secteurPoser: function (iso, liste) {
       var c = sb(), u = uid();
-      if (!c || !u) { V2.toast('Connecte-toi.'); return; }
+      if (!c || !u) { V2.toast('Connectez-vous.'); return; }
       var deps = String(liste || '').split(',').filter(Boolean).sort();
       if (!deps.length) return;
       c.from('rdv_secteur_jour')
@@ -542,7 +542,7 @@
       c.from('rdv_secteur_jour').delete().eq('user_id', u).eq('date', iso).then(function (r) {
         if (r && r.error) { V2.toast('Suppression impossible.'); return; }
         if (V2.planningSecteurs) delete V2.planningSecteurs[iso];
-        V2.toast('Ce jour redevient ouvert à tout ton portefeuille.');
+        V2.toast('Ce jour redevient ouvert à tout votre portefeuille.');
         rafraichirSecteurs();
       }, function () { V2.toast('Suppression impossible.'); });
     },
@@ -556,7 +556,7 @@
   function etatAgenda(a) {
     if (!a || !a.hote) {
       return '<span class="agp-pastille agp-off"></span>' +
-        '<span>Aucun agenda personnel connecté — seuls tes rendez-vous JARVIS apparaissent.</span>' +
+        '<span>Aucun agenda personnel connecté — seuls vos rendez-vous JARVIS apparaissent.</span>' +
         '<button class="v2-btn" onclick="V2.go(\'rdvdispo\')">Connecter</button>';
     }
     var h = a.dernier_ok
@@ -569,7 +569,7 @@
       return '<span class="agp-pastille agp-ko"></span>' +
         '<span><b>' + esc(a.hote) + '</b> — pas relu depuis ' +
         (h == null ? 'la connexion' : Math.floor(h / 60) + ' h') +
-        '. Tes heures occupées peuvent manquer.</span>' +
+        '. Vos heures occupées peuvent manquer.</span>' +
         '<button class="v2-btn" onclick="V2.go(\'rdvdispo\')">Vérifier</button>';
     }
     var quand = h == null ? 'jamais lu'
@@ -673,16 +673,16 @@
     var h = '<div class="agp-sect">';
 
     if (observe.length) {
-      h += '<span class="agp-sect-ou">Tu y seras : <b>' + esc(observe.join(' · ')) + '</b></span>';
+      h += '<span class="agp-sect-ou">Vous y serez : <b>' + esc(observe.join(' · ')) + '</b></span>';
     }
     if (deps.length) {
-      h += '<span class="agp-sect-ou">' + (vide ? 'Tu aimerais : ' : 'Réservable seulement depuis : ') +
+      h += '<span class="agp-sect-ou">' + (vide ? 'Vous aimeriez : ' : 'Réservable seulement depuis : ') +
         '<b>' + esc(deps.join(' · ')) + '</b></span>';
     }
 
     h += '<button class="agp-sect-b' + (deps.length ? ' on' : '') +
       '" onclick="V2.rdvPlanning.secteur(\'' + escArg(iso) + '\')">' +
-      (deps.length ? 'Changer le secteur' : (vide ? 'Dire où tu aimerais être' : 'Choisir le secteur')) +
+      (deps.length ? 'Changer le secteur' : (vide ? 'Dire où vous aimeriez être' : 'Choisir le secteur')) +
       '</button>';
 
     // Une journée déjà orientée par un rendez-vous mais non déclarée : le
@@ -774,10 +774,10 @@
     });
 
     return '<div class="agp-ap" id="agp-apercu">' +
-      '<p class="agp-ap-t">Où tu seras — touche un jour pour le régler</p>' + html +
-      '<p class="agp-ap-leg"><b>44</b> = tu y as des rendez-vous · ' +
-      '<span class="agp-ap-voulu-l">44</span> = tu l’as souhaité · ' +
-      '· = ouvert à tout ton portefeuille · — = tu ne travailles pas</p></div>';
+      '<p class="agp-ap-t">Où vous serez — touchez un jour pour le régler</p>' + html +
+      '<p class="agp-ap-leg"><b>44</b> = vous y avez des rendez-vous · ' +
+      '<span class="agp-ap-voulu-l">44</span> = vous l’avez souhaité · ' +
+      '· = ouvert à tout votre portefeuille · — = vous ne travaillez pas</p></div>';
   }
 
   // La ligne courante va du dernier début de ligne jusqu'à l'index k.
@@ -853,7 +853,7 @@
     for (var z = iso; isoDe(z, 7) <= borne; z = isoDe(z, 7)) nbJours++;
 
     return '<div class="agp-sect-p" id="agp-panneau">' +
-      '<p class="agp-sm" style="margin:0 0 9px"><b>' + esc(libelle(iso)) + '</b> — où seras-tu ? ' +
+      '<p class="agp-sm" style="margin:0 0 9px"><b>' + esc(libelle(iso)) + '</b> — où serez-vous ? ' +
         'Seules les officines de ces départements pourront réserver ce jour-là. ' +
         '<b>Ne rien cocher = aucune contrainte.</b></p>' +
       '<div class="agp-sect-c">' +
@@ -900,7 +900,7 @@
     if ((!plages || !plages.length) && !mesRdv.length) {
       return '<div class="agp-jour agp-off-jour"><div class="agp-jt"><b>' + esc(libelle(iso)) + '</b>' +
         (iso === auj ? ' <span class="agp-auj">aujourd’hui</span>' : '') +
-        '<span class="agp-resume">tu ne travailles pas</span></div></div>';
+        '<span class="agp-resume">vous ne travaillez pas</span></div></div>';
     }
     if (!plages || !plages.length) plages = [['08:00', '19:00']];
 
@@ -914,7 +914,7 @@
       pris.push({ deb: d, fin: f, cls: 'agp-s-blo' });
       lignes.push({ deb: d, html: '<div class="agp-l"><span class="agp-h">' +
         (b.moment === 'matin' ? 'matin' : b.moment === 'apres_midi' ? 'a-m' : 'jour') +
-        '</span><span class="agp-n">Tu t’es déclaré indisponible</span></div>' });
+        '</span><span class="agp-n">Vous vous êtes déclaré indisponible</span></div>' });
     });
 
     // Rendez-vous JARVIS.
@@ -954,7 +954,7 @@
         lignes.push({ deb: d, html: '<div class="agp-l">' +
           '<span class="agp-h">' + (o.jour_entier ? 'jour' : esc(hhmm(o.debut))) + '</span>' +
           '<span class="agp-sm">occupé' + (o.jour_entier ? ' toute la journée' :
-            ' jusqu’à ' + esc(hhmm(o.fin))) + ' — ton agenda personnel</span></div>' });
+            ' jusqu’à ' + esc(hhmm(o.fin))) + ' — votre agenda personnel</span></div>' });
         return;
       }
       var douteux = reco.etat === 'confirmer';
@@ -1038,7 +1038,7 @@
         'Proposer des créneaux à ' + lot.length + ' officines</button>' +
         '<p class="agp-sm" style="margin:8px 0 0">' + nCli + ' clientes · ' + nPro +
         ' prospects. Au total, ' + totCli + ' clientes et ' + totPro +
-        ' prospects de ton secteur n’ont aucun rendez-vous prévu.</p></div>';
+        ' prospects de votre secteur n’ont aucun rendez-vous prévu.</p></div>';
     }
 
     return '<div class="agp-jour" data-iso="' + escArg(iso) + '"><div class="agp-jt"><b>' +
@@ -1063,12 +1063,12 @@
       V2.rdvPlanningCleEnCours = null;
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'rdv', backLabel: 'Rendez-vous' }) : '';
       root.innerHTML = top + '<div class="v2-wrap narrow"><div class="v2-rdv-cap">' +
-        '<h1>Mon agenda</h1><p>Lecture de ton agenda…</p></div></div>';
+        '<h1>Mon agenda</h1><p>Lecture de votre agenda…</p></div></div>';
 
       var c = sb(), u = uid();
       if (!c || !u) {
         root.innerHTML = top + '<div class="v2-wrap narrow"><div class="v2-rdv-cap">' +
-          '<h1>Mon agenda</h1><p>Connecte-toi pour voir ton planning.</p></div></div>';
+          '<h1>Mon agenda</h1><p>Connectez-vous pour voir votre planning.</p></div></div>';
         return;
       }
 
@@ -1163,7 +1163,7 @@
               '<span class="agp-pastille agp-off"></span>' +
               '<span>' + sansNom + (sansNom > 1 ? ' créneaux occupés ne sont pas identifiés' :
                 ' créneau occupé n’est pas identifié') +
-              '. Tes officines <b>prospects</b> ne sont pas dans ton fichier clients.</span>' +
+              '. Vos officines <b>prospects</b> ne sont pas dans votre fichier clients.</span>' +
               '<button class="v2-btn" id="agp-annu" onclick="V2.rdvPlanning.annuaire()">' +
               'Chercher dans l’annuaire (2,8 Mo)</button></div>'
           : '';
@@ -1180,9 +1180,9 @@
 
         root.innerHTML = top + '<div class="v2-wrap narrow">' +
           '<div class="v2-rdv-cap"><h1>Mon agenda</h1>' +
-            '<p>Ton trimestre en haut : touche un jour pour dire où tu seras. ' +
-            'En dessous, tes quatre prochaines semaines heure par heure, exactement ' +
-            'comme le pharmacien les voit quand il ouvre ton lien — ce qui est en ' +
+            '<p>Votre trimestre en haut : touchez un jour pour dire où vous serez. ' +
+            'En dessous, vos quatre prochaines semaines heure par heure, exactement ' +
+            'comme le pharmacien les voit quand il ouvre votre lien — ce qui est en ' +
             'couleur ne peut plus être réservé.</p></div>' +
 
           '<div class="agp-etat">' + etatAgenda(ag) + '</div>' +
@@ -1194,7 +1194,7 @@
           '<div class="agp-leg">' +
             '<span><i class="agp-pot agp-p-rdv"></i>rendez-vous pharmacie</span>' +
             '<span><i class="agp-pot agp-p-occ"></i>autre occupation</span>' +
-            '<span><i class="agp-pot agp-p-blo"></i>tu t’es bloqué</span>' +
+            '<span><i class="agp-pot agp-p-blo"></i>vous vous êtes bloqué</span>' +
             '<span><i class="agp-pot agp-p-lib"></i>réservable</span>' +
           '</div>' +
 
@@ -1211,7 +1211,7 @@
           '</div></div>';
       }).catch(function () {
         root.innerHTML = top + '<div class="v2-wrap narrow"><div class="v2-rdv-cap">' +
-          '<h1>Mon agenda</h1><p>Ton planning n’a pas pu être chargé. Réessaie dans un instant.</p>' +
+          '<h1>Mon agenda</h1><p>Votre planning n’a pas pu être chargé. Réessayez dans un instant.</p>' +
           '</div></div>';
       });
     }

@@ -518,7 +518,7 @@
     preparerMail: function (pid, modele, texteLibre, cb) {
       var fini = cb || function () {};
       var c = sb(), u = uid();
-      if (!c || !u) { V2.toast('Connecte-toi pour proposer un rendez-vous.'); fini(false); return; }
+      if (!c || !u) { V2.toast('Connectez-vous pour proposer un rendez-vous.'); fini(false); return; }
       // ⚠️ Les modèles personnels doivent être en mémoire AVANT de composer :
       // sans le cache, un motif « perso:… » ne se résoudrait pas et le mail
       // partirait en « routine » sans que personne le remarque.
@@ -813,8 +813,8 @@
         // (point sourd), une journée réellement libre (point clair).
         var pastille = n ? ' on' : (nOcc ? ' perso' : '');
         var dit = n
-          ? n + ' visite' + (n > 1 ? 's' : '') + (nOcc ? ', et ' + nOcc + ' créneau' + (nOcc > 1 ? 'x' : '') + ' pris dans ton agenda' : '')
-          : (nOcc ? nOcc + ' créneau' + (nOcc > 1 ? 'x' : '') + ' pris dans ton agenda' : 'journée libre');
+          ? n + ' visite' + (n > 1 ? 's' : '') + (nOcc ? ', et ' + nOcc + ' créneau' + (nOcc > 1 ? 'x' : '') + ' pris dans votre agenda' : '')
+          : (nOcc ? nOcc + ' créneau' + (nOcc > 1 ? 'x' : '') + ' pris dans votre agenda' : 'journée libre');
         return '<button class="v2-sem-j" type="button"' +
           (d === choisi ? ' aria-current="true"' : '') +
           ' onclick="V2.rdv.jour(\'' + escArg(d) + '\')">' +
@@ -855,7 +855,7 @@
     return '<div class="v2-sem-occ">' +
       '<div class="h">' + esc(o.jour_entier ? '—' : hhmm(o.debut)) + '</div>' +
       '<div class="q">' + esc(o.jour_entier ? 'Toute la journée' : quand) +
-        ' · ton agenda</div></div>';
+        ' · votre agenda</div></div>';
   }
 
   function journeeHtml(date) {
@@ -890,7 +890,7 @@
     // La tournée n'a de sens qu'à partir de deux arrêts.
     if (liste.length > 1 && V2.carteTourFromIds) {
       h += '<button class="v2-sem-tour" type="button" onclick="V2.rdv.tourneeDuJour(\'' +
-        escArg(date) + '\')"><span><b>Ta tournée du jour</b>' +
+        escArg(date) + '\')"><span><b>Votre tournée du jour</b>' +
         '<small>' + esc(liste.length) + ' arrêts</small></span>' +
         '<span class="go">Ouvrir</span></button>';
     }
@@ -919,7 +919,7 @@
       }
     } else {
       h += '<div class="v2-sem-vide"><b>Rien de prévu ce jour-là</b>' +
-        'Ni visite, ni rendez-vous dans ton agenda. Les officines proches que tu n’as pas ' +
+        'Ni visite, ni rendez-vous dans votre agenda. Les officines proches que vous n’avez pas ' +
         'vues depuis longtemps sont les moins chères à aller voir.' +
         (V2.rdvRadar
           ? '<div style="margin-top:14px"><button class="v2-btn" type="button" onclick="V2.rdv.completer(\'' +
@@ -939,7 +939,7 @@
         ? entreeP('campagne', 'Envoi groupé', '25 officines en copie cachée', IC.groupe) : '') +
       (V2.pages.rdvradar ? entreeP('rdvradar', 'Qui inviter', 'la liste se fait toute seule', IC.radar) : '') +
       (V2.pages.rdvappels ? entreeP('rdvappels', 'Qui appeler', 'celles qui n’ont pas de mail', IC.tel) : '') +
-      (V2.pages.rdvmodeles ? entreeP('rdvmodeles', 'Mes modèles', 'écris tes propres mails', IC.plume) : '') +
+      (V2.pages.rdvmodeles ? entreeP('rdvmodeles', 'Mes modèles', 'écrivez vos propres mails', IC.plume) : '') +
       (V2.pages.rdvsuivi ? entreeP('rdvsuivi', 'Suivi & contrôle', 'qui a réservé, et si tout marche', IC.suivi) : '') +
       entreeP('rdvdispo', 'Mes dispos', 'jours, horaires, agenda', IC.dispos) +
       entreeP('rdvdispo', 'Mon lien permanent', 'à envoyer à la main — même écran, plus bas', IC.lien, true);
@@ -1019,10 +1019,10 @@
         '<div class="v2-rdv-sec">À rappeler</div>' + aRappeler +
         '<div class="v2-rdv-sec">Vus récemment</div>' + vus +
         '<p class="v2-sem-essai">Ce module est <b>en essai</b>. Tout y est réel — les mails ' +
-          'partent de ta boîte, les rendez-vous s’enregistrent — mais il bouge encore. ' +
+          'partent de votre boîte, les rendez-vous s’enregistrent — mais il bouge encore. ' +
           (V2.pages.remontees
-            ? 'Si quelque chose cloche, <a href="#" onclick="V2.go(\'remontees\');return false">dis-le dans les remontées</a>.'
-            : 'Si quelque chose cloche, dis-le à Will.') +
+            ? 'Si quelque chose cloche, <a href="#" onclick="V2.go(\'remontees\');return false">dites-le dans les remontées</a>.'
+            : 'Si quelque chose cloche, dites-le à Will.') +
         '</p>' +
       '</div></div>';
   }
@@ -1065,7 +1065,7 @@
       var c = sb(), u = uid();
       if (!c || !u) {
         root.innerHTML = top + '<div class="v2-wrap narrow"><div class="v2-rdv-hero">' +
-          '<h1>Rendez-vous</h1><p>Connecte-toi pour voir tes rendez-vous.</p></div></div>';
+          '<h1>Rendez-vous</h1><p>Connectez-vous pour voir vos rendez-vous.</p></div></div>';
         return;
       }
       var auj = new Date().toISOString().slice(0, 10);

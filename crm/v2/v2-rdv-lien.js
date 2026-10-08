@@ -87,13 +87,13 @@
       css();
       if (!l) {
         return '<div class="v2-lien-box"><p class="v2-lien-note">' +
-          'Ton lien de réservation n’a pas pu être chargé. Recharge la page.</p></div>';
+          'Votre lien de réservation n’a pas pu être chargé. Rechargez la page.</p></div>';
       }
       var url = l.slug ? joli(l.slug) : brut(l.token);
       return '<div class="v2-lien-box' + (l.actif ? '' : ' v2-lien-off') + '">' +
         '<p class="v2-lien-note" style="margin:0">' +
           (l.actif
-            ? 'Colle-le dans ta signature de mail. Une officine peut réserver sans que tu lui aies rien envoyé.'
+            ? 'Collez-le dans votre signature de mail. Une officine peut réserver sans que vous lui ayez rien envoyé.'
             : '<b>Ce lien est fermé</b> : personne ne peut réserver avec.') + '</p>' +
         '<input class="v2-lien-url" id="v2-lien-u" readonly value="' + esc(url) + '" ' +
           'onclick="this.select()" />' +
@@ -103,9 +103,9 @@
             (l.actif ? 'Fermer le lien' : 'Rouvrir le lien') + '</button>' +
           '<button class="v2-btn v2-btn-ghost" onclick="V2.rdvLien.remplacer()">Remplacer</button>' +
         '</div>' +
-        '<p class="v2-lien-note">Ce lien ne donne accès qu’à la prise de rendez-vous avec toi. ' +
-          'Pour l’arrêter, utilise <b>Fermer</b> : plus personne ne pourra réserver, et le lien ' +
-          'reste le même si tu le rouvres plus tard.</p>' +
+        '<p class="v2-lien-note">Ce lien ne donne accès qu’à la prise de rendez-vous avec vous. ' +
+          'Pour l’arrêter, utilisez <b>Fermer</b> : plus personne ne pourra réserver, et le lien ' +
+          'reste le même si vous le rouvrez plus tard.</p>' +
       '</div>';
     },
 
@@ -119,7 +119,7 @@
         navigator.clipboard.writeText(e.value).then(function () { V2.toast('Lien copié.'); });
         return;
       }
-      V2.toast(ok ? 'Lien copié.' : 'Sélectionne le lien et copie-le à la main.');
+      V2.toast(ok ? 'Lien copié.' : 'Sélectionnez le lien et copiez-le à la main.');
     },
 
     basculer: function (actif) {
@@ -133,7 +133,7 @@
     },
 
     remplacer: function () {
-      if (!window.confirm('Remplacer ton lien ? L’ancien cessera immédiatement de fonctionner, ' +
+      if (!window.confirm('Remplacer votre lien ? L’ancien cessera immédiatement de fonctionner, ' +
                           'y compris dans les mails déjà envoyés.')) return;
       var c = sb(), u = uid();
       if (!c || !u) return;

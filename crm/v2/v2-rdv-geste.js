@@ -432,7 +432,7 @@
 
     if (!propositions.length) {
       h += '<span class="v2-gl">Le jour</span>' +
-        '<p class="v2-gvide">Lecture de tes disponibilités…</p>';
+        '<p class="v2-gvide">Lecture de vos disponibilités…</p>';
       s.innerHTML = h;
       return;
     }
@@ -453,7 +453,7 @@
     h += '<button class="v2-gok" id="v2-gok"' + (pret ? '' : ' disabled') +
       ' onclick="V2.rdvGeste.valider()">' +
       (pret ? 'Noter — ' + esc(dlong(choixDate)) + ' à ' + esc(hhh(choixHeure))
-            : (choixDate ? 'Choisis une heure' : 'Choisis un jour')) + '</button>' +
+            : (choixDate ? 'Choisissez une heure' : 'Choisissez un jour')) + '</button>' +
       '<div class="v2-gmsg" id="v2-gmsg"></div>';
     s.innerHTML = h;
   }

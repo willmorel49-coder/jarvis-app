@@ -196,7 +196,7 @@
 
         var out = { objet: 'Passage dans votre secteur', corps: corps };
         if (M.texteRefuse(txt(ctx.texte_libre))) {
-          out.avertissement = 'Ton texte contenait un pourcentage : il a été retiré. ' +
+          out.avertissement = 'Votre texte contenait un pourcentage : il a été retiré. ' +
             'Les conditions commerciales ne s’écrivent pas dans un mail.';
         }
         return out;
@@ -262,7 +262,7 @@
             : '')
       };
       if (M.texteRefuse(txt(ctx.texte_libre))) {
-        out.avertissement = 'Ton texte contenait un pourcentage : il a été retiré. ' +
+        out.avertissement = 'Votre texte contenait un pourcentage : il a été retiré. ' +
           'Les conditions commerciales ne s’écrivent pas dans un mail.';
       }
       return out;
@@ -399,7 +399,7 @@
     var out = { objet: 'Merci pour votre accueil', corps: corps };
     if (txt(ctx.nom_officine)) out.objet = 'Merci pour votre accueil';
     if (refuse) {
-      out.avertissement = 'Ton mot contenait un pourcentage : il a été retiré. ' +
+      out.avertissement = 'Votre mot contenait un pourcentage : il a été retiré. ' +
         'Les conditions commerciales ne s’écrivent pas dans un mail.';
     }
     return out;
@@ -426,13 +426,13 @@
     { cle: 'officine', quoi: 'Le nom de l’officine',                     ex: 'Pharmacie du Marché' },
     { cle: 'contact',  quoi: 'Le nom du titulaire',                      ex: 'M. Dupont' },
     { cle: 'ville',    quoi: 'Sa ville',                                 ex: 'Angers' },
-    { cle: 'mois',     quoi: 'Le temps depuis ta dernière visite',       ex: '7 mois' },
+    { cle: 'mois',     quoi: 'Le temps depuis votre dernière visite',       ex: '7 mois' },
     { cle: 'ca',       quoi: 'Ce qu’elle fait avec nous cette année',    ex: '12 400 € cette année' },
     { cle: 'tension',  quoi: 'Ses références en tension, et notre stock', ex: '3 références que vous achetez sont en tension — nous en avons 2 en stock à ce jour' },
-    { cle: 'duree',    quoi: 'La durée que tu as réglée',               ex: '45 minutes' },
-    { cle: 'prenom',   quoi: 'Ton prénom',                               ex: 'William' },
-    { cle: 'tel',      quoi: 'Ton téléphone',                            ex: '06 12 34 56 78' },
-    { cle: 'lien',     quoi: 'Le lien de réservation (obligatoire)',     ex: 'le lien vers tes créneaux' }
+    { cle: 'duree',    quoi: 'La durée que vous avez réglée',               ex: '45 minutes' },
+    { cle: 'prenom',   quoi: 'Votre prénom',                               ex: 'William' },
+    { cle: 'tel',      quoi: 'Votre téléphone',                            ex: '06 12 34 56 78' },
+    { cle: 'lien',     quoi: 'Le lien de réservation (obligatoire)',     ex: 'le lien vers vos créneaux' }
   ];
   M.ETIQUETTES = ETIQUETTES;
   M.etiquetteNominative = function (cle) { return !!NOMINATIVES[cle]; };
@@ -501,11 +501,11 @@
     var nom = txt(mod.nom).trim();
     var objet = txt(mod.objet).trim();
     var corps = txt(mod.corps).trim();
-    if (nom.length < 2)   erreurs.push('Donne un nom à ton modèle.');
+    if (nom.length < 2)   erreurs.push('Donnez un nom à votre modèle.');
     if (objet.length < 3) erreurs.push('L’objet du mail est vide.');
     if (corps.length < 20) erreurs.push('Le message est trop court.');
     if (M.texteRefuse(objet) || M.texteRefuse(corps)) {
-      erreurs.push('Ton texte contient un pourcentage. Une condition commerciale ' +
+      erreurs.push('Votre texte contient un pourcentage. Une condition commerciale ' +
                    'chiffrée ne s’écrit pas dans un mail — elle se montre en rendez-vous.');
     }
     var connues = {}, i;
@@ -517,7 +517,7 @@
         (inconnues.length > 1 ? 's' : '') + ' : {{' + inconnues.join('}}, {{') + '}}.');
     }
     if (utilisees.indexOf('lien') === -1) {
-      avert.push('Tu n’as pas mis {{lien}} : je l’ajouterai à la fin, seul sur sa ligne.');
+      avert.push('Vous n’avez pas mis {{lien}} : je l’ajouterai à la fin, seul sur sa ligne.');
     }
     var nomin = utilisees.filter(function (e) { return NOMINATIVES[e]; });
     if (nomin.length) {
@@ -562,7 +562,7 @@
     if (M.texteRefuse(corps) || M.texteRefuse(objet)) {
       // Un modèle enregistré avant ce garde-fou, ou un chiffre arrivé par une
       // étiquette : on prévient, on n'envoie pas en silence.
-      out.avertissement = 'Ce mail contient un pourcentage. Retire-le avant d’envoyer : ' +
+      out.avertissement = 'Ce mail contient un pourcentage. Retirez-le avant d’envoyer : ' +
         'les conditions commerciales ne s’écrivent pas.';
     }
     return out;

@@ -159,10 +159,10 @@
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(t)
         .then(function () { V2.toast(quoi + ' copié.'); })
-        .catch(function () { V2.toast('Copie impossible — sélectionne le texte à la main.'); });
+        .catch(function () { V2.toast('Copie impossible — sélectionnez le texte à la main.'); });
       return;
     }
-    V2.toast('Copie impossible — sélectionne le texte à la main.');
+    V2.toast('Copie impossible — sélectionnez le texte à la main.');
   }
 
   // Copie MISE EN FORME : on sélectionne un bloc HTML réellement présent
@@ -182,8 +182,8 @@
     sel.removeAllRanges();
     document.body.removeChild(d);
     V2.toast(ok
-      ? 'Message mis en forme copié — colle-le dans Outlook.'
-      : 'Copie impossible. Utilise « Copier le message » (texte simple).');
+      ? 'Message mis en forme copié — collez-le dans Outlook.'
+      : 'Copie impossible. Utilisez « Copier le message » (texte simple).');
   }
 
   // ── Enregistrement ────────────────────────────────────────────
@@ -316,26 +316,26 @@
       var r = root(); if (!r) return;
       var T = {
         'lien-absent': {
-          t: 'Ton lien de réservation n’a pas pu être chargé',
+          t: 'Votre lien de réservation n’a pas pu être chargé',
           p: 'Le mail groupé repose entièrement sur ce lien : sans lui, les pharmaciens ' +
-             'recevraient un message sans moyen de réserver. Ouvre « Mes dispos », le lien ' +
-             'se crée tout seul à l’affichage, puis reviens.'
+             'recevraient un message sans moyen de réserver. Ouvrez « Mes dispos », le lien ' +
+             'se crée tout seul à l’affichage, puis revenez.'
         },
         'lien-ferme': {
-          t: 'Ton lien de réservation est fermé',
+          t: 'Votre lien de réservation est fermé',
           p: 'Personne ne peut réserver avec pour l’instant. Un envoi groupé partirait ' +
-             'vers un lien mort. Rouvre-le dans « Mes dispos », puis reviens.'
+             'vers un lien mort. Rouvrez-le dans « Mes dispos », puis revenez.'
         },
         'lien-invalide': {
-          t: 'Ton lien de réservation n’est pas reconnu',
-          p: 'Le serveur ne retrouve pas ce lien. Ouvre « Mes dispos » et regarde le bloc ' +
-             '« Mon lien permanent » : s’il s’affiche, remplace-le, puis reviens.'
+          t: 'Votre lien de réservation n’est pas reconnu',
+          p: 'Le serveur ne retrouve pas ce lien. Ouvrez « Mes dispos » et regardez le bloc ' +
+             '« Mon lien permanent » : s’il s’affiche, remplacez-le, puis revenez.'
         },
         'sans-creneau': {
-          t: 'Ton lien ne propose aucun créneau',
+          t: 'Votre lien ne propose aucun créneau',
           p: 'Un pharmacien qui cliquerait tomberait sur une page vide — c’est pire que ' +
-             'pas de mail du tout. Renseigne tes jours et tes horaires dans « Mes dispos », ' +
-             'puis reviens.'
+             'pas de mail du tout. Renseignez vos jours et vos horaires dans « Mes dispos », ' +
+             'puis revenez.'
         }
       };
       var x = T[raison] || T['lien-absent'];
@@ -385,7 +385,7 @@
           (E.passes ? ' · ' + esc(E.passes) + ' passé' + (E.passes > 1 ? 's' : '') : '') +
           ' · ' + esc(totalDest) + ' officines touchées.</p></div>' +
           '<p class="rg-note">Les réservations arriveront au fil de l’eau. Elles apparaissent ' +
-          'dans « À venir », et le suivi te dira lesquelles viennent de cet envoi.</p>' +
+          'dans « À venir », et le suivi vous dira lesquelles viennent de cet envoi.</p>' +
           '<div class="rg-acts">' +
             '<button class="v2-btn v2-btn-primary" onclick="V2.go(\'rdvsuivi\')">Voir le suivi</button>' +
             '<button class="v2-btn" onclick="V2.go(\'rdv\')">Mes rendez-vous</button>' +
@@ -411,10 +411,10 @@
         '<div class="rg-barre"><i style="width:' + pct + '%"></i></div>' +
 
         '<div class="rg-garde">' +
-          '<b>Colle les adresses dans le champ Cci</b> (copie cachée), jamais dans « À » ni ' +
+          '<b>Collez les adresses dans le champ Cci</b> (copie cachée), jamais dans « À » ni ' +
           '« Cc ». Dans le mauvais champ, les ' + esc(adr.length) + ' pharmacies verraient ' +
-          'l’adresse les unes des autres. Avant d’envoyer, vérifie que le champ « À » est vide ' +
-          'ou ne contient que ta propre adresse.' +
+          'l’adresse les unes des autres. Avant d’envoyer, vérifiez que le champ « À » est vide ' +
+          'ou ne contient que votre propre adresse.' +
         '</div>' +
 
         '<div class="rg-sec">1 · Les adresses</div>' +
@@ -461,14 +461,14 @@
           (brouillonOk
             ? '<p class="rg-note" style="margin:0 0 10px">Ce lot tient dans un brouillon ' +
               'automatique (' + esc(lg) + ' caractères sur ' + esc(BUDGET_URL) + ' possibles). ' +
-              'Les adresses arrivent directement en Cci — vérifie-le quand même avant d’envoyer.</p>' +
+              'Les adresses arrivent directement en Cci — vérifiez-le quand même avant d’envoyer.</p>' +
               '<div class="rg-acts" style="margin-top:0">' +
                 '<button class="v2-btn" onclick="V2.rdvGroupe.brouillon()">' +
                   'Ouvrir un brouillon tout prêt</button>' +
               '</div>'
             : '<p class="rg-note" style="margin:0">Ce lot est trop long pour un brouillon ' +
               'automatique (' + esc(lg) + ' caractères, la limite d’Outlook est à 2 048). ' +
-              'Un brouillon tronquerait les adresses sans le dire : passe par le copier-coller ' +
+              'Un brouillon tronquerait les adresses sans le dire : passez par le copier-coller ' +
               'ci-dessus, il n’a aucune limite.</p>') +
         '</div>' +
 
@@ -477,8 +477,8 @@
             'C’est envoyé ' + ICO('check', 15) + ' → lot suivant</button>' +
           '<button class="v2-btn v2-btn-ghost" onclick="V2.rdvGroupe.passer()">Passer ce lot</button>' +
         '</div>' +
-        '<p class="rg-note">JARVIS ne peut pas savoir si le mail est parti de ta boîte — ' +
-          'c’est toi qui coches. Le lot est alors enregistré, et le suivi saura qui a été ' +
+        '<p class="rg-note">JARVIS ne peut pas savoir si le mail est parti de votre boîte — ' +
+          'c’est vous qui cochez. Le lot est alors enregistré, et le suivi saura qui a été ' +
           'sollicité et qui a réservé ensuite.</p>' +
       '</div>';
     },
@@ -502,7 +502,7 @@
       var lot = E.lots[E.i], m = mail();
       var u = urlMailto(lot, m);
       if (u.length > BUDGET_URL) {
-        V2.toast('Lot trop long pour un brouillon — passe par le copier-coller.');
+        V2.toast('Lot trop long pour un brouillon — passez par le copier-coller.');
         return;
       }
       window.location.href = u;

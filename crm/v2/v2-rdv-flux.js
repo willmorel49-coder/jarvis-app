@@ -44,25 +44,25 @@
 
   var MODES = [
     { cle: 'iphone', nom: 'iPhone', pas: [
-      'Copie l’adresse ci-dessus',
+      'Copiez l’adresse ci-dessus',
       'Réglages → Applications → Calendrier → Comptes → Ajouter un compte',
-      'Choisis « Autre » → « Ajout d’un agenda avec abonnement »',
-      'Colle l’adresse, puis Suivant et Enregistrer'
-    ], note: 'Dans Réglages → Applications → Calendrier → Nouvelles données, choisis ' +
+      'Choisissez « Autre » → « Ajout d’un agenda avec abonnement »',
+      'Collez l’adresse, puis Suivant et Enregistrer'
+    ], note: 'Dans Réglages → Applications → Calendrier → Nouvelles données, choisissez ' +
              '« Toutes les 5 minutes » : c’est ce qui s’approche le plus du direct.' },
     { cle: 'google', nom: 'Google Agenda', pas: [
-      'Copie l’adresse ci-dessus',
-      'Ouvre Google Agenda sur un ordinateur',
+      'Copiez l’adresse ci-dessus',
+      'Ouvrez Google Agenda sur un ordinateur',
       'Colonne de gauche → « Autres agendas » → le + → « À partir de l’URL »',
-      'Colle l’adresse et valide'
+      'Collez l’adresse et validez'
     ], note: 'Google décide seul de la fréquence de mise à jour d’un agenda extérieur — ' +
-             'comptez souvent plusieurs heures. Pour être prévenu tout de suite, garde ' +
-             'les alertes sur ton téléphone.' },
+             'comptez souvent plusieurs heures. Pour être prévenu tout de suite, gardez ' +
+             'les alertes sur votre téléphone.' },
     { cle: 'outlook', nom: 'Outlook', pas: [
-      'Copie l’adresse ci-dessus',
-      'Ouvre Outlook dans un navigateur → Agenda',
+      'Copiez l’adresse ci-dessus',
+      'Ouvrez Outlook dans un navigateur → Agenda',
       '« Ajouter un calendrier » → « S’abonner à partir du web »',
-      'Colle l’adresse, donne-lui un nom, puis Importer'
+      'Collez l’adresse, donnez-lui un nom, puis Importer'
     ], note: 'Outlook relit en général toutes les quelques heures.' }
   ];
 
@@ -82,7 +82,7 @@
 
     creer: function () {
       var c = sb(), u = uid();
-      if (!c || !u) { V2.toast('Reconnecte-toi.'); return; }
+      if (!c || !u) { V2.toast('Reconnectez-vous.'); return; }
       c.from('rdv_flux').upsert({ user_id: u, actif: true }, { onConflict: 'user_id' })
         .then(function (r) {
           if (r.error) { V2.toast('Création impossible.'); return; }
@@ -104,7 +104,7 @@
           ok = true;
         } else { ok = document.execCommand('copy'); }
       } catch (err) { ok = false; }
-      dire(ok ? 'Adresse copiée.' : 'Copie impossible — sélectionne le texte et copie-le à la main.',
+      dire(ok ? 'Adresse copiée.' : 'Copie impossible — sélectionnez le texte et copiez-le à la main.',
            ok ? 'var(--mint,#1E9E6A)' : 'var(--rose,#E0556E)');
     },
 
@@ -137,7 +137,7 @@
       if (!f || !f.token) {
         return '<div class="v2-fx-box">' +
           '<p style="margin:0 0 10px;font-size:14px;line-height:1.55">Pour que chaque rendez-vous ' +
-          'pris par un pharmacien arrive tout seul dans ton agenda — sans que tu aies à cliquer.</p>' +
+          'pris par un pharmacien arrive tout seul dans votre agenda — sans que vous ayez à cliquer.</p>' +
           '<div class="v2-fx-acts"><button class="v2-btn v2-btn-primary" ' +
           'onclick="V2.rdvFlux.creer()">Créer mon adresse d’abonnement</button></div></div>';
       }
@@ -154,9 +154,9 @@
         '<div class="v2-fx-res" id="v2-fx-res"></div>' +
         '<div class="v2-fx-aide"><div class="v2-fx-onglets">' + onglets + '</div>' +
           '<div id="v2-fx-aide-corps"></div>' +
-          '<p style="margin:10px 0 0">Cette adresse donne à voir tous tes rendez-vous : ' +
-          'garde-la pour toi, comme un mot de passe.' +
-          (f.dernier_acces ? ' Ton agenda l’a lue pour la dernière fois le ' +
+          '<p style="margin:10px 0 0">Cette adresse donne à voir tous vos rendez-vous : ' +
+          'gardez-la pour vous, comme un mot de passe.' +
+          (f.dernier_acces ? ' Votre agenda l’a lue pour la dernière fois le ' +
             esc(String(f.dernier_acces).slice(0, 10).split('-').reverse().join('/')) + '.' : '') +
           '</p></div></div>';
     }

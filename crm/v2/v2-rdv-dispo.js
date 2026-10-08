@@ -126,7 +126,7 @@
 
     enregistrer: function () {
       var c = sb(), u = uid();
-      if (!c || !u) { V2.toast('Connecte-toi pour enregistrer tes disponibilités.'); return; }
+      if (!c || !u) { V2.toast('Connectez-vous pour enregistrer vos disponibilités.'); return; }
       var jours = {}, i, k, m1, m2, a1, a2, plages;
       for (i = 1; i <= 5; i++) {
         k = String(i);
@@ -139,7 +139,7 @@
         if (plages.length) jours[k] = plages;
       }
       if (!Object.keys(jours).length) {
-        V2.toast('Garde au moins un jour travaillé, sinon personne ne pourra réserver.');
+        V2.toast('Gardez au moins un jour travaillé, sinon personne ne pourra réserver.');
         return;
       }
       // Le point de départ est saisi en clair (« Nantes ») : on le convertit en
@@ -168,7 +168,7 @@
         }, { onConflict: 'user_id' }).then(function (r) {
           if (r.error) { V2.toast('Enregistrement impossible.'); return; }
           if (depart && (!g || g.lat == null)) {
-            V2.toast('Enregistré, mais « ' + depart + ' » est introuvable : le temps de route depuis chez toi ne sera pas compté.');
+            V2.toast('Enregistré, mais « ' + depart + ' » est introuvable : le temps de route depuis chez vous ne sera pas compté.');
           } else {
             V2.toast('Disponibilités enregistrées.');
           }
@@ -178,8 +178,8 @@
 
     bloquer: function (moment) {
       var c = sb(), u = uid(), date = val('rd-bl');
-      if (!c || !u) { V2.toast('Connecte-toi d’abord.'); return; }
-      if (!date) { V2.toast('Choisis une date.'); return; }
+      if (!c || !u) { V2.toast('Connectez-vous d’abord.'); return; }
+      if (!date) { V2.toast('Choisissez une date.'); return; }
       c.from('rdv_blocage').insert({ user_id: u, date: date, moment: moment }).then(function (r) {
         if (r.error) { V2.toast('Enregistrement impossible.'); return; }
         V2.toast('Indisponibilité enregistrée.');
@@ -248,7 +248,7 @@
     // échoue : une action ne recharge jamais l'écran.
     mode: function (actif) {
       var c = sb(), u = uid();
-      if (!c || !u) { V2.toast('Connecte-toi pour régler tes journées.'); return; }
+      if (!c || !u) { V2.toast('Connectez-vous pour régler vos journées.'); return; }
       var avant = JOURS_ETAT.mode;
       JOURS_ETAT.mode = !!actif;
       V2.rdvJours.repeindre();
@@ -257,8 +257,8 @@
         .then(function (r) {
           if (r && r.error) throw r.error;
           V2.toast(actif
-            ? 'Seules les journées que tu coches seront proposées.'
-            : 'Toutes tes journées redeviennent proposables.');
+            ? 'Seules les journées que vous cochez seront proposées.'
+            : 'Toutes vos journées redeviennent proposables.');
         })
         .catch(function () {
           JOURS_ETAT.mode = avant;
@@ -270,7 +270,7 @@
     // Coche / décoche UNE journée.
     basculer: function (iso) {
       var c = sb(), u = uid();
-      if (!c || !u) { V2.toast('Connecte-toi pour régler tes journées.'); return; }
+      if (!c || !u) { V2.toast('Connectez-vous pour régler vos journées.'); return; }
       var avant = JOURS_ETAT.avis[iso];
       // En mode « je choisis », on bascule entre ouvert et rien.
       // En mode normal, on bascule entre fermé et rien.
@@ -339,14 +339,14 @@
         }
       })();
       if (!total) {
-        return '<p class="v2-rdvj-compte">Renseigne d’abord tes journées de travail ' +
-          'ci-dessous — c’est parmi elles que tu choisiras.</p>';
+        return '<p class="v2-rdvj-compte">Renseignez d’abord vos journées de travail ' +
+          'ci-dessous — c’est parmi elles que vous choisirez.</p>';
       }
       return '<p class="v2-rdvj-compte"><b>' + ouvertes + '</b> journée' +
           (ouvertes > 1 ? 's' : '') + ' ouverte' + (ouvertes > 1 ? 's' : '') +
           ' sur les ' + total + ' prochaines' +
           (ouvertes === 0
-            ? ' — <b>aucun pharmacien ne peut réserver</b>. Coche au moins une journée.'
+            ? ' — <b>aucun pharmacien ne peut réserver</b>. Cochez au moins une journée.'
             : '') + '</p>' +
         '<div class="v2-rdvj-grille">' + cases + '</div>';
     }
@@ -389,8 +389,8 @@
 
         root.innerHTML = top + '<div class="v2-wrap narrow">' +
           '<div class="v2-rdv-cap"><h1>Mes disponibilités</h1>' +
-            '<p>Ce que les pharmaciens pourront réserver quand tu leur envoies un lien. ' +
-            'Décoche un jour pour qu’il n’apparaisse jamais.</p></div>' +
+            '<p>Ce que les pharmaciens pourront réserver quand vous leur envoyez un lien. ' +
+            'Décochez un jour pour qu’il n’apparaisse jamais.</p></div>' +
 
           '<div class="v2-rdvd-sec">Mon lien de réservation</div>' +
           (V2.rdvLien ? V2.rdvLien.bloc(lien) : '') +
@@ -410,7 +410,7 @@
           '<div class="v2-rdvd-num">' +
             '<div><b>Durée d’un rendez-vous</b><input type="number" id="rd-duree" min="15" max="180" step="15" value="' +
               esc(d.duree_min || 45) + '" /><small>minutes — ce chiffre est <b>annoncé</b> ' +
-              'dans tes mails et bloqué dans ton agenda</small></div>' +
+              'dans vos mails et bloqué dans votre agenda</small></div>' +
             '<div><b>Marge de route</b><input type="number" id="rd-marge" min="0" max="60" step="5" value="' +
               esc(d.marge_route_min || 15) + '" /><small>minutes entre deux RDV</small></div>' +
             '<div><b>Mon téléphone</b><input type="tel" id="rd-tel" value="' + esc(d.tel || '') +
@@ -418,14 +418,14 @@
             '<div><b>Ma fonction</b><input type="text" id="rd-fonction" maxlength="80" value="' +
               esc(d.fonction || '') + '" placeholder="Responsable de secteur" /><small>' +
               (d.fonction
-                ? 'apparaît sous ton nom dans la signature de tes mails'
-                : 'sans elle, ta signature n’affiche que ton nom — rien n’est inventé') +
+                ? 'apparaît sous votre nom dans la signature de vos mails'
+                : 'sans elle, votre signature n’affiche que votre nom — rien n’est inventé') +
               '</small></div>' +
             '<div><b>Je pars de</b><input type="text" id="rd-depart" value="' + esc(d.depart_label || '') +
               '" placeholder="Nantes" /><small>' +
               (d.depart_lat != null
-                ? 'le temps de route depuis chez toi est pris en compte'
-                : 'sans ça, on peut te proposer 9 h à 300 km') +
+                ? 'le temps de route depuis chez vous est pris en compte'
+                : 'sans ça, on peut vous proposer 9 h à 300 km') +
               '</small></div>' +
           '</div>' +
 
@@ -436,9 +436,9 @@
           '<div class="v2-rdvd-sec">Les journées que j’ouvre</div>' +
           '<div class="v2-rdvj-tete">' +
             '<span class="tx"><b>Je choisis moi-même mes journées</b>' +
-            '<small>Décoché, toutes tes journées de travail sont proposées aux ' +
-            'pharmaciens, sauf celles que tu fermes. Coché, seules celles que tu ' +
-            'coches le sont.</small></span>' +
+            '<small>Décoché, toutes vos journées de travail sont proposées aux ' +
+            'pharmaciens, sauf celles que vous fermez. Coché, seules celles que vous ' +
+            'cochez le sont.</small></span>' +
             '<label class="v2-rdvj-bascule"><input type="checkbox" id="v2-rdvj-mode" ' +
               (JOURS_ETAT.mode ? 'checked ' : '') +
               'onchange="V2.rdvJours.mode(this.checked)" /> Activer</label>' +

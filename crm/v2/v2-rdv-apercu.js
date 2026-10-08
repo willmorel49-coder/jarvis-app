@@ -103,7 +103,7 @@
           z.innerHTML = '<div class="v2-ap"><div class="v2-ap-corps">' +
             'Ce modèle nomme ou chiffre l’officine ({{' + esc(m.etiquettes.join('}}, {{')) +
             '}}). En envoi groupé, un seul texte part vers 25 officines : il serait ' +
-            'faux pour 24 d’entre elles.<br><br>Choisis un motif standard, ou passe ' +
+            'faux pour 24 d’entre elles.<br><br>Choisissez un motif standard, ou passez ' +
             'en envoi « un par un ».</div></div>';
           return;
         }
@@ -135,15 +135,15 @@
             // vrai envoi, lui, fabrique un jeton par officine : il aura
             // toujours son lien. On dit exactement ça.
             (lien
-              ? 'Le lien affiché est le tien, il fonctionne.'
-              : '<b>Tu n’as pas encore de lien permanent</b>, l’aperçu en est donc dépourvu. ' +
+              ? 'Le lien affiché est le vôtre, il fonctionne.'
+              : '<b>Vous n’avez pas encore de lien permanent</b>, l’aperçu en est donc dépourvu. ' +
                 'Les mails envoyés un par un porteront quand même leur lien — ' +
                 'il est créé pour chaque officine. Pour l’envoi groupé, en revanche, ' +
-                'crée-le dans « Mes dispos ».') +
+                'créez-le dans « Mes dispos ».') +
             (m.avertissement ? '<br><b>' + esc(m.avertissement) + '</b>' : '') + '</p>' +
-          '<p class="v2-ap-note"><b>Mis en forme</b> : ta messagerie n’accepte que du texte brut ' +
-            'quand JARVIS l’ouvre pour toi. Pour un mail avec un vrai bouton, clique ' +
-            '« Copier le mail mis en forme », puis colle dans Outlook.</p>';
+          '<p class="v2-ap-note"><b>Mis en forme</b> : votre messagerie n’accepte que du texte brut ' +
+            'quand JARVIS l’ouvre pour vous. Pour un mail avec un vrai bouton, cliquez ' +
+            '« Copier le mail mis en forme », puis collez dans Outlook.</p>';
       }).catch(function () {
         z.innerHTML = '<div class="v2-ap"><div class="v2-ap-corps">Aperçu indisponible.</div></div>';
       });
@@ -153,7 +153,7 @@
     // le HTML et le texte : si la messagerie n'accepte pas le premier, elle
     // colle le second au lieu de coller du code.
     copierHtml: function () {
-      if (!DERNIER) { V2.toast('Ouvre d’abord l’aperçu.'); return; }
+      if (!DERNIER) { V2.toast('Ouvrez d’abord l’aperçu.'); return; }
       var m = rendreHtml(DERNIER.modele, DERNIER.ctx, DERNIER.groupe);
       var brut = rendre(DERNIER.modele, DERNIER.ctx, DERNIER.groupe).corps;
       if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
@@ -161,7 +161,7 @@
           'text/html': new Blob([m.html], { type: 'text/html' }),
           'text/plain': new Blob([brut], { type: 'text/plain' })
         })]).then(function () {
-          V2.toast('Mail copié. Colle-le dans Outlook : la mise en forme suit.');
+          V2.toast('Mail copié. Collez-le dans Outlook : la mise en forme suit.');
         }).catch(function () { V2.toast('Copie refusée par le navigateur.'); });
         return;
       }
@@ -177,9 +177,9 @@
 
     // Le test part vraiment, vers l'adresse du commercial connecté.
     tester: function () {
-      if (!DERNIER) { V2.toast('Ouvre d’abord l’aperçu.'); return; }
+      if (!DERNIER) { V2.toast('Ouvrez d’abord l’aperçu.'); return; }
       var moi = (V2.user && V2.user.email) || '';
-      if (!moi) { V2.toast('Adresse inconnue pour ton compte.'); return; }
+      if (!moi) { V2.toast('Adresse inconnue pour votre compte.'); return; }
       var m = rendre(DERNIER.modele, DERNIER.ctx, DERNIER.groupe);
       V2.rdv._ouvrir('mailto:' + encodeURIComponent(moi) +
         '?subject=' + encodeURIComponent('[TEST] ' + m.objet) +

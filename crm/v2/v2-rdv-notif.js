@@ -88,7 +88,7 @@
     activer: function () {
       if (!supporte()) { dire('Ce navigateur ne sait pas recevoir de notifications.', 'var(--rose,#E0556E)'); return; }
       var c = sb(), u = uid();
-      if (!c || !u) { dire('Reconnecte-toi et réessaie.', 'var(--rose,#E0556E)'); return; }
+      if (!c || !u) { dire('Reconnectez-vous et réessayez.', 'var(--rose,#E0556E)'); return; }
       dire('Autorisation…');
       Notification.requestPermission().then(function (etat) {
         if (etat !== 'granted') {
@@ -126,7 +126,7 @@
         }).then(function (r) {
           if (r && r.error) { dire('Enregistrement impossible.', 'var(--rose,#E0556E)'); return; }
           V2.toast('Ce téléphone sera prévenu.');
-          dire('C’est activé. Envoie-toi un essai pour en être sûr.', 'var(--mint,#1E9E6A)');
+          dire('C’est activé. Envoyez-vous un essai pour en être sûr.', 'var(--mint,#1E9E6A)');
           if (V2.go) V2.go('rdvdispo');
         });
       }).catch(function () { dire('Activation impossible sur cet appareil.', 'var(--rose,#E0556E)'); });
@@ -138,7 +138,7 @@
       dire('Envoi…');
       c.auth.getSession().then(function (s) {
         var acces = (s && s.data && s.data.session && s.data.session.access_token) || null;
-        if (!acces) { dire('Reconnecte-toi et réessaie.', 'var(--rose,#E0556E)'); return; }
+        if (!acces) { dire('Reconnectez-vous et réessayez.', 'var(--rose,#E0556E)'); return; }
         return fetch(window.SUPABASE_URL + '/functions/v1/notifier', {
           method: 'POST',
           headers: {
@@ -150,7 +150,7 @@
         }).then(function (r) { return r.json(); }).then(function (r) {
           if (!r || !r.ok) { dire('Envoi impossible.', 'var(--rose,#E0556E)'); return; }
           if (!r.envoyes) {
-            dire('Aucun appareil n’a reçu l’essai. Réactive les notifications sur ce téléphone.',
+            dire('Aucun appareil n’a reçu l’essai. Réactivez les notifications sur ce téléphone.',
                  'var(--rose,#E0556E)');
             return;
           }
@@ -188,9 +188,9 @@
           '<div class="v2-nt-etat"><span class="v2-nt-pastille v2-nt-off"></span>' +
           'Sur iPhone, les alertes demandent d’ajouter JARVIS à l’écran d’accueil.</div>' +
           '<div class="v2-nt-aide"><ol>' +
-            '<li>Touche le bouton Partager, en bas de Safari</li>' +
-            '<li>Descends jusqu’à « Sur l’écran d’accueil »</li>' +
-            '<li>Ouvre JARVIS depuis cette nouvelle icône, puis reviens ici</li>' +
+            '<li>Touchez le bouton Partager, en bas de Safari</li>' +
+            '<li>Descendez jusqu’à « Sur l’écran d’accueil »</li>' +
+            '<li>Ouvrez JARVIS depuis cette nouvelle icône, puis revenez ici</li>' +
           '</ol><p style="margin:10px 0 0">Ce n’est pas un réglage caché : hors de l’écran ' +
           'd’accueil, iOS n’autorise aucune notification web.</p></div></div>';
       }
@@ -208,7 +208,7 @@
         ? '<span class="v2-nt-pastille v2-nt-ko"></span> Les notifications sont bloquées pour JARVIS. ' +
           'Réglages → Notifications → JARVIS pour les rouvrir.'
         : (actif
-            ? '<span class="v2-nt-pastille v2-nt-on"></span> Tu es prévenu sur ' +
+            ? '<span class="v2-nt-pastille v2-nt-on"></span> Vous êtes prévenu sur ' +
               esc(st.abonnes) + ' appareil(s) dès qu’un pharmacien réserve.'
             : '<span class="v2-nt-pastille v2-nt-off"></span> Personne n’est prévenu ' +
               'quand un pharmacien réserve.');
@@ -224,7 +224,7 @@
         '</div>' +
         '<div class="v2-nt-res" id="v2-nt-res"></div>' +
         '<div class="v2-nt-aide">L’alerte donne le jour, l’heure et l’officine. ' +
-        'La toucher ouvre ton agenda, où le rendez-vous s’ajoute au tien en un geste.</div>' +
+        'La toucher ouvre votre agenda, où le rendez-vous s’ajoute au vôtre en un geste.</div>' +
         '</div>';
     }
   };

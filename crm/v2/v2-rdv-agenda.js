@@ -22,23 +22,23 @@
   // trouve l'adresse — elle est enterrée à trois niveaux dans les réglages.
   var MODES = [
     { cle: 'google', nom: 'Google Agenda', pas: [
-      'Ouvre Google Agenda sur un ordinateur',
-      'Passe la souris sur ton agenda (colonne de gauche) → les trois points → « Paramètres et partage »',
-      'Descends jusqu’à « Intégrer l’agenda »',
-      'Copie « Adresse secrète au format iCal »'
-    ], piege: 'Si tu ne vois pas cette ligne, c’est que ton entreprise l’a désactivée : seul l’administrateur peut la rouvrir.' },
+      'Ouvrez Google Agenda sur un ordinateur',
+      'Passez la souris sur votre agenda (colonne de gauche) → les trois points → « Paramètres et partage »',
+      'Descendez jusqu’à « Intégrer l’agenda »',
+      'Copiez « Adresse secrète au format iCal »'
+    ], piege: 'Si vous ne voyez pas cette ligne, c’est que votre entreprise l’a désactivée : seul l’administrateur peut la rouvrir.' },
     { cle: 'outlook', nom: 'Outlook / Microsoft 365', pas: [
-      'Ouvre Outlook dans un navigateur → l’Agenda',
+      'Ouvrez Outlook dans un navigateur → l’Agenda',
       'Roue dentée (en haut à droite) → « Calendriers partagés »',
-      'Sous « Publier un calendrier », choisis ton agenda',
-      'Choisis « Peut voir quand je suis occupé » — surtout pas plus',
-      'Publie, puis copie le lien qui finit par .ics'
-    ], piege: 'Choisis bien « quand je suis occupé » : les autres options partageraient les titres de tes rendez-vous.' },
+      'Sous « Publier un calendrier », choisissez votre agenda',
+      'Choisissez « Peut voir quand je suis occupé » — surtout pas plus',
+      'Publiez, puis copiez le lien qui finit par .ics'
+    ], piege: 'Choisissez bien « quand je suis occupé » : les autres options partageraient les titres de vos rendez-vous.' },
     { cle: 'apple', nom: 'Agenda iPhone / iCloud', pas: [
-      'Sur iPhone : Calendrier → Calendriers → le (i) à côté du tien',
-      'Active « Calendrier public »',
-      'Touche « Partager le lien » → Copier'
-    ], piege: 'Le lien commence par webcal:// — colle-le tel quel, on s’occupe du reste.' }
+      'Sur iPhone : Calendrier → Calendriers → le (i) à côté du vôtre',
+      'Activez « Calendrier public »',
+      'Touchez « Partager le lien » → Copier'
+    ], piege: 'Le lien commence par webcal:// — collez-le tel quel, on s’occupe du reste.' }
   ];
 
   function css() {
@@ -108,11 +108,11 @@
     hebergeur_inconnu: 'Cette adresse ne vient pas d’un agenda Google, Outlook ou iCloud.',
     adresse_invalide: 'Cette adresse n’a pas l’air d’un lien.',
     https_obligatoire: 'Le lien doit commencer par https:// (ou webcal://).',
-    agenda_injoignable: 'Ton agenda n’a pas répondu. Vérifie que le lien est bien le lien « secret » et non l’adresse de la page.',
+    agenda_injoignable: 'Votre agenda n’a pas répondu. Vérifiez que le lien est bien le lien « secret » et non l’adresse de la page.',
     pas_un_agenda: 'Ce lien ne renvoie pas un agenda.',
     agenda_trop_gros: 'Cet agenda est trop volumineux.',
     lecture_impossible: 'Cet agenda n’a pas pu être lu.',
-    connexion_requise: 'Reconnecte-toi et réessaie.'
+    connexion_requise: 'Reconnectez-vous et réessayez.'
   };
   var msg = function (r) { return RAISONS[r] || 'Impossible pour l’instant.'; };
 
@@ -148,7 +148,7 @@
       return '<div class="v2-ag-box">' +
         '<div class="v2-ag-etat">' + etat + '</div>' +
         '<input type="url" id="v2-ag-url" inputmode="url" autocomplete="off" spellcheck="false" ' +
-          'placeholder="Colle ici l’adresse privée de ton agenda" />' +
+          'placeholder="Collez ici l’adresse privée de votre agenda" />' +
         '<div class="v2-ag-acts">' +
           '<button class="v2-btn" onclick="V2.rdvAgenda.tester()">Tester</button>' +
           '<button class="v2-btn v2-btn-primary" onclick="V2.rdvAgenda.brancher()">Connecter mon agenda</button>' +
@@ -161,8 +161,8 @@
           '<div id="v2-ag-aide-corps"></div>' +
           '<p style="margin:10px 0 0">Ce qui est lu se limite aux <b>heures occupées</b>. ' +
           'Aucun titre, aucun lieu, aucun participant n’est enregistré — il n’existe pas de ' +
-          'case pour les ranger. Et l’adresse que tu colles ne pourra plus jamais être ' +
-          'réaffichée, y compris à toi.</p>' +
+          'case pour les ranger. Et l’adresse que vous collez ne pourra plus jamais être ' +
+          'réaffichée, y compris à vous.</p>' +
         '</div></div>';
     },
 
@@ -179,8 +179,8 @@
 
     tester: function () {
       var e = document.getElementById('v2-ag-url'), u = e ? e.value.trim() : '';
-      if (!u) { dire('Colle d’abord l’adresse de ton agenda.'); return; }
-      dire('Lecture de ton agenda…');
+      if (!u) { dire('Collez d’abord l’adresse de votre agenda.'); return; }
+      dire('Lecture de votre agenda…');
       appeler({ action: 'tester', url: u }).then(function (r) {
         if (!r || !r.ok) { dire(esc(msg(r && r.raison)), 'var(--rose,#E5484D)'); return; }
         var ex = (r.exemple || []).map(function (p) {
@@ -188,14 +188,14 @@
         }).join(' · ');
         dire('Agenda lu : <b>' + esc(r.evenements_lus) + '</b> événement(s), <b>' +
              esc(r.plages_gardees) + '</b> plage(s) qui bloqueront un créneau.' +
-             (ex ? '<br><small>Par exemple : ' + ex + ' — reconnais-tu ton agenda ?</small>' : ''),
+             (ex ? '<br><small>Par exemple : ' + ex + ' — reconnaissez-vous votre agenda ?</small>' : ''),
              'var(--mint,#00A870)');
       }).catch(function () { dire('Impossible de joindre le serveur.', 'var(--rose,#E5484D)'); });
     },
 
     brancher: function () {
       var e = document.getElementById('v2-ag-url'), u = e ? e.value.trim() : '';
-      if (!u) { dire('Colle d’abord l’adresse de ton agenda.'); return; }
+      if (!u) { dire('Collez d’abord l’adresse de votre agenda.'); return; }
       dire('Connexion…');
       appeler({ action: 'brancher', url: u }).then(function (r) {
         if (!r || !r.ok) { dire(esc(msg(r && r.raison)), 'var(--rose,#E5484D)'); return; }
@@ -209,7 +209,7 @@
     },
 
     debrancher: function () {
-      if (!window.confirm('Débrancher ton agenda ? Les heures qui en venaient ne bloqueront plus rien.')) return;
+      if (!window.confirm('Débrancher votre agenda ? Les heures qui en venaient ne bloqueront plus rien.')) return;
       appeler({ action: 'debrancher' }).then(function () {
         V2.toast('Agenda débranché.');
         if (V2.go) V2.go('rdvdispo');
