@@ -12,7 +12,9 @@
      - produit habituel non commandé le dernier mois connu (ventes)
      - princeps encore acheté alors qu'un générique existe (generiques-bdpm.json)
      - échéances réglementaires proches (calendrier-officine.json, tenu à la main)
-   7 points maximum, triés par urgence puis volume. Aucun modèle de langue :
+   7 points maximum, ce qui est propre à CETTE officine d'abord (08/10/2026) :
+   rappels de lots, achats interrompus, prix qui changent, puis 3 ruptures au plus
+   (les autres repliées), puis les opportunités. Aucun modèle de langue :
    chaque ligne sort d'une règle écrite ici, avec sa source et sa date.
 
    V2.briefOfficine.calculer(entree) est une fonction PURE (testée dans
@@ -31,6 +33,11 @@
   var HABITUDE_MAX_LIGNES = 3;
   var RECENT_MOIS = 3;    // au-delà, la liste noie les vraies alertes
   var ECHEANCE_MAX_LIGNES = 2;
+  // 08/10/2026 — mesuré sur les 2 011 officines : 73 % des points affichés étaient des ruptures ou
+  // tensions NATIONALES, les mêmes d'une fiche à l'autre, et « Ses achats » finissait replié derrière.
+  // Donc : ce qui lui est propre d'abord, et 3 ruptures au plus (les siennes par volume), le reste replié.
+  var ORDRE = ['À retirer', 'Ses achats', 'Change bientôt', 'Va manquer', 'Revient', 'Opportunité'];
+  var RUPTURES_MAX = 3;
   var CALENDRIER_MAX_J = 120;     // fichier tenu à la main : à revérifier au moins tous les 4 mois
 
   var STATUTS = {
@@ -73,6 +80,21 @@
       if (a.dernier > r.dernier) r.dernier = a.dernier;
     }
     return r;
+  }
+
+  // Produits habituels absents du dernier mois connu (mc = mois couverts, triés).
+  // Le dernier mois est celui où TOUS les fichiers de ses commerciaux existent
+  // (sinon un fichier plus court inventerait une absence). Il faut aussi
+  // qu'elle ait commandé autre chose ce mois-là : sinon on ne sait rien.
+  // → { fin, avant:[6 mois précédents au plus], connu:bool, cips:[…par volume décroissant] }
+  function interrompus(idx, mc) {
+    var fin = mc[mc.length - 1] || '', avant = mc.slice(-7, -1), aCommandeFin = false;
+    Object.keys(idx).forEach(function (c) { if (idx[c].mois[fin]) aCommandeFin = true; });
+    var connu = !!fin && avant.length >= 4 && aCommandeFin;
+    return { fin: fin, avant: avant, connu: connu, cips: !connu ? [] : Object.keys(idx).filter(function (c) {
+      var a = idx[c];
+      return !a.mois[fin] && avant.filter(function (m) { return a.mois[m]; }).length >= 4;
+    }).sort(function (x, y) { return idx[y].qte - idx[x].qte; }) };
   }
 
   /* entree = {
@@ -164,31 +186,21 @@
       });
     });
 
-    // 4. Produit habituel absent du dernier mois connu.
-    // Le dernier mois est celui où TOUS les fichiers de ses commerciaux existent
-    // (sinon un fichier plus court inventerait une absence). Il faut aussi
-    // qu'elle ait commandé autre chose ce mois-là : sinon on ne sait rien.
-    var avant = mc.slice(-7, -1);
-    var aCommandeFin = false;
-    Object.keys(idx).forEach(function (c) { if (idx[c].mois[fin]) aCommandeFin = true; });
-    if (fin && avant.length >= 4 && aCommandeFin) {
-      Object.keys(idx).sort(function (x, y) { return idx[y].qte - idx[x].qte; }).filter(function (c) {
-        var a = idx[c];
-        return !a.mois[fin] && avant.filter(function (m) { return a.mois[m]; }).length >= 4 && nom(c);
-      }).slice(0, HABITUDE_MAX_LIGNES).forEach(function (c) {
-        var a = idx[c], n = nom(c);
-        var vus = avant.filter(function (m) { return a.mois[m]; }).length;
-        pts.push({
-          rubrique: 'Ses achats',
-          urgence: 1, volume: a.qte,
-          titre: 'Pas commandé en ' + moisFr(fin) + ' : ' + n,
-          detail: 'Commandé ' + vus + ' mois sur les ' + avant.length + ' précédents (' + pluriel(a.qte, 'boîte') + ' au total).',
-          action: 'Lui demander si elle l\'achète ailleurs.',
-          pourquoi: 'Habitude d\'achat interrompue.',
-          source: 'ventes', date: ''
-        });
+    // 4. Produit habituel absent du dernier mois connu (règle : interrompus()).
+    var inter = interrompus(idx, mc), avant = inter.avant;
+    inter.cips.filter(function (c) { return nom(c); }).slice(0, HABITUDE_MAX_LIGNES).forEach(function (c) {
+      var a = idx[c], n = nom(c);
+      var vus = avant.filter(function (m) { return a.mois[m]; }).length;
+      pts.push({
+        rubrique: 'Ses achats',
+        urgence: 1, volume: a.qte,
+        titre: 'Pas commandé en ' + moisFr(fin) + ' : ' + n,
+        detail: 'Commandé ' + vus + ' mois sur les ' + avant.length + ' précédents (' + pluriel(a.qte, 'boîte') + ' au total).',
+        action: 'Lui demander si elle l\'achète ailleurs.',
+        pourquoi: 'Habitude d\'achat interrompue.',
+        source: 'ventes', date: ''
       });
-    }
+    });
 
     // 5. Princeps encore acheté alors qu'un générique existe
     var princeps = {};
@@ -224,7 +236,14 @@
         };
       });
 
-    pts.sort(function (x, y) { return (y.urgence - x.urgence) || (y.volume - x.volume); });
+    // Ordre des rubriques (ORDRE) ; dans une rubrique, l'urgence puis SON volume — les ruptures, elles,
+    // par son volume seul : une tension sur 50 boîtes par mois la gêne plus qu'une rupture sur 2.
+    var rang = {}; ORDRE.forEach(function (r, i) { rang[r] = i; });
+    pts.sort(function (x, y) {
+      return (rang[x.rubrique] - rang[y.rubrique]) || (x.rubrique === 'Va manquer' ? 0 : y.urgence - x.urgence) || (y.volume - x.volume);
+    });
+    var tete = [], ruptRepliees = [], nbRupt = 0;
+    pts.forEach(function (p) { if (p.rubrique === 'Va manquer' && ++nbRupt > RUPTURES_MAX) ruptRepliees.push(p); else tete.push(p); });
 
     var sources = [
       { cle: 'ansm', nom: 'Ruptures ANSM', json: e.ansm, max: FRAIS_MAX_J },
@@ -239,8 +258,8 @@
     });
 
     return {
-      points: pts.slice(0, MAX_POINTS),
-      autres: pts.slice(MAX_POINTS),
+      points: tete.slice(0, MAX_POINTS),
+      autres: ruptRepliees.concat(tete.slice(MAX_POINTS)),
       echeances: echeances,
       sources: sources,
       achatsConnus: Object.keys(idx).length > 0,
@@ -300,11 +319,15 @@
     return q > 0 ? [{ site: 'nos sites', q: q }] : [];
   }
 
-  var _noms = null;
+  // Mémorisé seulement si le catalogue est là : mémoriser un catalogue pas encore arrivé (chargé en
+  // différé) viderait « Ses achats » et « Opportunité » pour toute la session (08/10/2026).
+  var _noms = null, _nomsDe = null;
   function nom(cip) {
-    if (!_noms) {
-      _noms = {};
-      (window.BENCHMARK || []).forEach(function (b) { if (b.cip13 && b.designation) _noms[String(b.cip13)] = b.designation; });
+    var B = window.BENCHMARK;
+    if (!B || !B.length) return '';
+    if (!_noms || _nomsDe !== B) {
+      _noms = {}; _nomsDe = B;
+      B.forEach(function (b) { if (b.cip13 && b.designation) _noms[String(b.cip13)] = b.designation; });
     }
     var n = _noms[cip] || '';
     return n ? n.charAt(0) + n.slice(1).toLowerCase() : '';
@@ -323,18 +346,20 @@
       '</div></li>';
   }
 
-  // Résumé en une ligne : « 1 rappel de lots · 6 ruptures ou tensions · 2 échéances ».
+  // Résumé en une ligne : « 1 rappel de lots · 3 achats interrompus · 6 ruptures ou tensions ».
+  // Les échéances réglementaires n'y sont plus (08/10/2026) : les mêmes sur toutes les fiches pendant des mois.
   // Le point rouge reste tant qu'il y a quelque chose « À retirer » (rappel de lots).
   function resume(r) {
     var tous = r.points.concat(r.autres);
     var rappels = tous.filter(function (p) { return p.rubrique === 'À retirer'; }).length;
     var ruptures = tous.filter(function (p) { return p.rubrique === 'Va manquer'; }).length;
-    var autres = tous.length - rappels - ruptures;
+    var achats = tous.filter(function (p) { return p.rubrique === 'Ses achats'; }).length;
+    var autres = tous.length - rappels - ruptures - achats;
     var morceaux = [];
     if (rappels) morceaux.push('<em>' + pluriel(rappels, 'rappel') + ' de lots</em>');
+    if (achats) morceaux.push(achats + (achats > 1 ? ' achats interrompus' : ' achat interrompu'));
     if (ruptures) morceaux.push(ruptures + (ruptures > 1 ? ' ruptures ou tensions' : ' rupture ou tension'));
     if (autres) morceaux.push(autres + (autres > 1 ? ' autres points' : ' autre point'));
-    if (r.echeances.length) morceaux.push(pluriel(r.echeances.length, 'échéance'));
     return { rappels: rappels, nb: r.points.length, rouge: rappels > 0,
       html: morceaux.length ? '<span class="bo-sum">' + morceaux.join('<span>·</span>') + '</span>' : '' };
   }
@@ -349,14 +374,21 @@
         ? 'Rien d\'urgent dans les sources lues. ' + pluriel(nonLues.length, 'source') + ' n\'' + (nonLues.length > 1 ? 'ont' : 'a') + ' pas pu être lue' + (nonLues.length > 1 ? 's' : '') + ' : à revoir plus tard.'
         : 'Rien d\'urgent aujourd\'hui pour cette officine.') + '</p>';
     } else {
+      var rupt = r.autres.filter(function (p) { return p.rubrique === 'Va manquer'; });
+      var reste = r.autres.filter(function (p) { return p.rubrique !== 'Va manquer'; });
+      var replie = function (liste, un, plusieurs) {
+        return liste.length ? '<details class="bo-plus"><summary>' + liste.length + (liste.length > 1 ? plusieurs : un) + '</summary><ol class="bo-liste">' + liste.map(ligneHtml).join('') + '</ol></details>' : '';
+      };
       corps = '<ol class="bo-liste">' + r.points.map(ligneHtml).join('') + '</ol>' +
-        (r.autres.length ? '<details class="bo-plus"><summary>' + r.autres.length + (r.autres.length > 1 ? ' autres points' : ' autre point') + '</summary><ol class="bo-liste">' + r.autres.map(ligneHtml).join('') + '</ol></details>' : '');
+        replie(rupt, ' autre rupture ou tension', ' autres ruptures ou tensions') +
+        replie(reste, ' autre point', ' autres points');
     }
+    // Replié : les mêmes échéances sur toutes les fiches (elles vivent dans l'écran Infos du jour).
     if (r.echeances.length) {
-      corps += '<div class="bo-agenda"><h4>À l\'agenda</h4><ul>' + r.echeances.map(function (x) {
+      corps += '<details class="bo-agenda"><summary>À l\'agenda · ' + pluriel(r.echeances.length, 'échéance') + ' réglementaire' + (r.echeances.length > 1 ? 's' : '') + '</summary><ul>' + r.echeances.map(function (x) {
         return '<li><b>' + esc(x.titre) + '</b><span>' + esc(x.detail) + '</span><span class="bo-act">→ ' + esc(x.action) + '</span>' +
           '<small>Source : ' + (/^https:\/\//.test(x.url) ? '<a href="' + esc(x.url) + '" target="_blank" rel="noopener">' + esc(x.source) + '</a>' : esc(x.source)) + '</small></li>';
-      }).join('') + '</ul></div>';
+      }).join('') + '</ul></details>';
     }
     var src = r.sources.map(function (s) {
       var etat = !s.lue ? 'non lue' : (s.aJour ? dateFr(s.date) : dateFr(s.date) + ', en retard');
@@ -411,8 +443,8 @@
     '.bo-vide{margin:8px 0 0;font-size:13.5px}' +
     '.bo-plus{margin-top:10px}.bo-plus summary{cursor:pointer;font-size:12.5px;font-weight:600}' +
     '.bo-agenda{margin-top:12px;padding-top:10px;border-top:1px solid var(--v2-line,#e2e8f0)}' +
-    '.bo-agenda h4{margin:0 0 6px;font-size:12px;font-weight:700;letter-spacing:.02em;color:#A16207}' +
-    '.bo-agenda ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}' +
+    '.bo-agenda summary{cursor:pointer;font-size:12.5px;font-weight:700;letter-spacing:.02em;color:#A16207}' +
+    '.bo-agenda ul{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px}' +
     '.bo-agenda li{display:grid;gap:2px;font-size:13px;line-height:1.4}.bo-agenda b{font-weight:600}' +
     '.bo-agenda small{color:var(--v2-muted,#64748b);font-size:12px}.bo-agenda a{color:inherit}' +
     '.bo-src{margin-top:12px;font-size:12px;color:var(--v2-muted,#64748b)}.bo-ko{color:#B45309;font-weight:600}' +
@@ -536,10 +568,20 @@
     });
   }
 
+  // Pour la vue « Ne commande plus » de la fiche (remontée de Florent, 07/10/2026) : la MÊME règle que
+  // la rubrique « Ses achats », sans la limite de 3 lignes. ventesOfficine = toutes ses ventes, tous commerciaux.
+  // → { fin, avant, connu, lignes:[{cip, qte, mois:{'AAAA-MM':1}, dernier}] }
+  function nePlusCommandes(ventesOfficine) {
+    var idx = indexAchats(ventesOfficine.map(function (s) { return { cip: String(s.artCode || ''), mois: cleMois(s), qte: s.qte || 0 }; }));
+    var r = interrompus(idx, moisCouverts(ventesOfficine));
+    return { fin: r.fin, avant: r.avant, connu: r.connu,
+      lignes: r.cips.map(function (c) { return { cip: c, qte: idx[c].qte, mois: idx[c].mois, dernier: idx[c].dernier }; }) };
+  }
+
   // HTML du bouton posé par la fiche à droite des onglets (rempli quand le brief est prêt).
   function bouton() {
     return '<button type="button" class="bo-open" id="bo-open" disabled onclick="V2.briefOfficine.ouvrir()">' + boutonHtml(null) + '</button>';
   }
 
-  V2.briefOfficine = { calculer: calculer, hydrate: hydrate, imprimer: imprimer, ouvrir: ouvrir, fermer: fermer, bouton: bouton };
+  V2.briefOfficine = { calculer: calculer, hydrate: hydrate, imprimer: imprimer, ouvrir: ouvrir, fermer: fermer, bouton: bouton, nePlusCommandes: nePlusCommandes, moisFr: moisFr };
 })();

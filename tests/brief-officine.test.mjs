@@ -149,18 +149,52 @@ test('princeps avec générique : 2 lignes au plus, les plus gros volumes, sous 
   assert.deepEqual(Array.from(r.points, (p) => p.titre.slice(-4)), [': P1', ': P2']);
 });
 
-test('7 points au plus, le reste dans « autres », tri par urgence puis volume', () => {
+test('ruptures : 3 au plus, les siennes par volume, les autres repliées', () => {
   const items = [], ventes = [];
   for (let i = 0; i < 10; i++) {
     const c = '34009000000' + String(10 + i);
-    items.push(rupture([c], { st: i < 3 ? "Tension d'approvisionnement" : 'Rupture de stock' }));
+    // les 3 plus gros volumes sont des TENSIONS : elles passent devant les ruptures plus petites
+    items.push(rupture([c], { st: i >= 7 ? "Tension d'approvisionnement" : 'Rupture de stock' }));
     ventes.push({ cip: c, mois: '2026-08', qte: i + 1 });
   }
   const r = calculer(base({ ventes, ansm: ansm(items) }));
+  assert.deepEqual(Array.from(r.points, (p) => p.volume), [10, 9, 8]);
+  assert.equal(r.autres.length, 7);
+  assert.ok(r.autres.every((p) => p.rubrique === 'Va manquer'));
+});
+
+test('ordre : rappel, ses achats, prix, ruptures, opportunité — ce qui lui est propre avant le national', () => {
+  const hab = ['2026-03', '2026-04', '2026-05', '2026-06', '2026-07'].map((m) => ({ cip: '3400900000001', mois: m, qte: 2 }));
+  const ventes = hab.concat([
+    { cip: '3400900000002', mois: '2026-08', qte: 500 },   // rupture, très gros volume
+    { cip: '3400900000003', mois: '2026-08', qte: 4 },     // rappel de lots
+    { cip: '3400900000004', mois: '2026-08', qte: 3 },     // prix qui change
+    { cip: '3400900000005', mois: '2026-08', qte: 40 },    // princeps avec générique
+  ]);
+  const r = calculer(base({
+    ventes, nom: (c) => 'P' + c.slice(-1),
+    ansm: ansm([rupture(['3400900000002'])]),
+    rappels: { generated: '2026-09-17', items: [{ d: '2026-09-10', t: 'Rappel', cips: ['3400900000003'], lots: [] }] },
+    prixFuturs: { generated: '2026-09-17', changes: [{ c: '3400900000004', d: 'PRIX', sens: 'baisse', date_effet: '2026-10-20', date_publi: '2026-09-16', ppttc: 5 }] },
+    generiques: { generated: '2026-09-17', princepsWithGeneric: ['3400900000005'] },
+  }));
+  assert.deepEqual(Array.from(r.points, (p) => p.rubrique), ['À retirer', 'Ses achats', 'Change bientôt', 'Va manquer', 'Opportunité']);
+});
+
+test('7 points au plus : ce qui dépasse part dans « autres », les ruptures repliées en premier', () => {
+  const items = [], ventes = [], rap = [];
+  for (let i = 0; i < 5; i++) {
+    const c = '34009000000' + String(10 + i);
+    items.push(rupture([c])); ventes.push({ cip: c, mois: '2026-08', qte: i + 1 });
+  }
+  for (let i = 0; i < 6; i++) {
+    const c = '34009000000' + String(30 + i);
+    rap.push({ d: '2026-09-10', t: 'R' + i, cips: [c], lots: [] }); ventes.push({ cip: c, mois: '2026-08', qte: i + 1 });
+  }
+  const r = calculer(base({ ventes, ansm: ansm(items), rappels: { generated: '2026-09-17', items: rap } }));
   assert.equal(r.points.length, 7);
-  assert.equal(r.autres.length, 3);
-  assert.equal(r.points[0].volume, 10);
-  assert.ok(r.points.slice(0, 7).every((p) => p.urgence === 3));
+  assert.deepEqual(Array.from(r.points, (p) => p.rubrique), ['À retirer', 'À retirer', 'À retirer', 'À retirer', 'À retirer', 'À retirer', 'Va manquer']);
+  assert.deepEqual(Array.from(r.autres, (p) => p.volume), [2, 1, 4, 3]);   // 2 ruptures repliées, puis les 2 qui dépassaient
 });
 
 test('sources : non lue, en retard, à jour', () => {
@@ -245,7 +279,8 @@ test('chemin réel : les vrais fichiers des robots arrivent jusqu\'à la carte',
     .find((it) => it.date >= auj && (Date.parse(it.date) - Date.parse(auj)) / 864e5 <= it.prevenir_j);
   if (attendue) {
     assert.ok(carte().includes(attendue.titre), 'l\'échéance du calendrier n\'arrive pas jusqu\'à la carte');
-    assert.match(carte(), /À l'agenda/);
+    assert.match(ov.innerHTML, /<details class="bo-agenda"><summary>À l'agenda/, 'l\'agenda doit être replié');
+    assert.ok(!/échéance/.test(el.innerHTML), 'les échéances ne doivent plus figurer dans le résumé de la fiche');
   }
   assert.match(el.innerHTML, /Aujourd'hui/);
   assert.match(el.innerHTML, /bo-dot|bo-sum/, 'la ligne de résumé (point + résumé) n\'est pas dans la fiche');
@@ -259,4 +294,48 @@ test('chemin réel : les vrais fichiers des robots arrivent jusqu\'à la carte',
   for (let i = 0; i < 20 && !carte(); i++) await new Promise((r) => setTimeout(r, 5));
   assert.ok(carte().length > 0);
   assert.ok(!carte().includes(cible.spec.split(' – [')[0].split(', ')[0]));
+});
+
+// Le catalogue (benchmark-data.js) arrive en différé : un premier brief calculé sans lui ne doit pas
+// priver les suivants des rubriques qui ont besoin des noms de produits.
+test('chemin réel : un brief calculé AVANT le catalogue ne vide pas « Ses achats » pour la suite', async () => {
+  const lireJson = (f) => JSON.parse(readFileSync(new URL(f, B), 'utf8'));
+  const rien = () => {};
+  const el = { innerHTML: '', getAttribute: (k) => (k === 'data-pid' ? '2000016' : null) };
+  const ov = { id: '', innerHTML: '', firstChild: null, addEventListener: rien, getAttribute: () => null, setAttribute: rien, classList: { add: rien, remove: rien, contains: () => false }, querySelector: () => null };
+  const sb = charger({
+    fetch: (url) => Promise.resolve({ ok: true, json: () => Promise.resolve(lireJson(url.split('?')[0])) }),
+    addEventListener: rien,
+    document: { getElementById: (id) => (id === 'brief-off' ? el : (id === 'bo-ov' && ov.id ? ov : null)), createElement: () => ov, addEventListener: rien, head: { appendChild() {} }, body: { appendChild() {}, style: {} } },
+  });
+  sb.ETAB_PRICES = { prices: {} };
+  const v = (cip, month) => ({ pharmacyId: '2000016', commercial: 'A', year: 2026, month, artCode: cip, qte: 2 });
+  sb.V2.sales = [3, 4, 5, 6, 7].map((m) => v('3400900000001', m)).concat([v('3400900000009', 8)]);
+  const attendre = async () => { el.innerHTML = ''; sb.V2.briefOfficine.hydrate('2000016', sb.V2.sales); for (let i = 0; i < 20 && !el.innerHTML; i++) await new Promise((r) => setTimeout(r, 5)); };
+  await attendre();
+  assert.ok(el.innerHTML.length > 0);
+  assert.ok(!/achat interrompu/.test(el.innerHTML), 'sans catalogue, aucun nom : la rubrique ne peut pas sortir');
+  sb.BENCHMARK = [{ cip13: '3400900000001', designation: 'DOLIPRANE 1000 MG' }];
+  await attendre();
+  assert.match(el.innerHTML, /1 achat interrompu/, 'le catalogue est arrivé : la rubrique doit revenir');
+  assert.match(ov.innerHTML, /Pas commandé en août 2026 : Doliprane 1000 mg/);
+});
+
+test('nePlusCommandes : même règle que « Ses achats », toutes les lignes, mois par mois', () => {
+  const sb = charger();
+  const v = (cip, month, qte = 2, commercial = 'A') => ({ commercial, year: 2026, month, artCode: cip, qte });
+  const ventes = [];
+  for (let k = 1; k <= 5; k++) [3, 4, 5, 6, 7].forEach((m) => ventes.push(v('340090000000' + k, m, k)));
+  [3, 4, 5].forEach((m) => ventes.push(v('3400900000006', m)));          // 3 mois sur 5 : pas une habitude
+  [3, 4, 5, 6, 7, 8].forEach((m) => ventes.push(v('3400900000007', m)));  // toujours commandé
+  sb.V2.sales = ventes;
+  const r = sb.V2.briefOfficine.nePlusCommandes(ventes);
+  assert.equal(r.connu, true);
+  assert.equal(r.fin, '2026-08');
+  assert.deepEqual(Array.from(r.lignes, (l) => l.cip.slice(-1)), ['5', '4', '3', '2', '1']);
+  assert.equal(r.lignes[0].dernier, '2026-07');
+  // contre-épreuve : le fichier d'un 2e commercial s'arrête en juillet → août n'est pas un mois complet, on ne dit rien
+  const court = ventes.concat([v('3400900000008', 7, 1, 'B')]);
+  sb.V2.sales = court;
+  assert.equal(sb.V2.briefOfficine.nePlusCommandes(court).lignes.length, 0);
 });

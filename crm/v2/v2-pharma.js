@@ -1712,6 +1712,62 @@
       '<div class="pha-sub" style="margin-top:6px">' + V2.fmtNum(cur.nbRefs) + ' référence' + (cur.nbRefs > 1 ? 's' : '') + ' commandée' + (cur.nbRefs > 1 ? 's' : '') + ' dans cette catégorie</div></div>';
   }
 
+  // ── « Ne commande plus » (remontée de Florent, 07/10/2026) : ce qu'elle commandait régulièrement et qui
+  // manque dans son dernier mois complet. La MÊME règle que la rubrique « Ses achats » du brief
+  // (V2.briefOfficine.nePlusCommandes), les mêmes catégories que le Top 10, toutes les lignes.
+  var nePlusCat = null;
+  V2.pharmaNePlusCat = function (key) { nePlusCat = key; V2.render(); };
+  function analyseNePlus(pid) {
+    if (!V2.briefOfficine || !V2.briefOfficine.nePlusCommandes) return '';
+    var ventes = pharmaSalesAll(pid);   // tous commerciaux : le fichier d'un seul inventerait des absences
+    if (!ventes.length) return '';
+    var np = V2.briefOfficine.nePlusCommandes(ventes), moisFr = V2.briefOfficine.moisFr;
+    var carte = function (sous, corps) {
+      return '<div class="v2-card pha-card pha-np"><div class="pha-ch"><h3>Ne commande plus</h3><span class="pha-sub">' + sous + '</span></div>' + corps + '</div>';
+    };
+    if (!np.connu) {
+      return carte('ses habitudes interrompues', '<div class="pha-sub">' + (np.avant.length < 4
+        ? 'Pas assez de mois de commandes connus pour repérer une habitude.'
+        : 'Aucune commande enregistrée en ' + esc(moisFr(np.fin)) + ' : impossible de distinguer un produit abandonné d\'un mois sans commande.') + '</div>');
+    }
+    var sous = 'commandé au moins 4 mois sur les ' + np.avant.length + ' précédents, absent en ' + esc(moisFr(np.fin));
+    var bIdx = benchIndex(), suivi = {}, ca = {}, q = {};
+    np.lignes.forEach(function (l) { suivi[l.cip] = 1; });
+    ventes.forEach(function (s) { var c = String(s.artCode || ''); if (suivi[c]) { ca[c] = (ca[c] || 0) + (s.mntNetHt || 0); q[c] = (q[c] || 0) + (s.qte || 0); } });
+    var parCat = {}, classees = 0;
+    np.lignes.forEach(function (l) {
+      var b = bIdx.get(l.cip), cat = b ? classify(b, l.cip) : null;
+      if (!cat) return;
+      var nb = Math.max(1, Object.keys(l.mois).length);
+      (parCat[cat] || (parCat[cat] = [])).push({ designation: b.designation || l.cip, mois: l.mois, dernier: l.dernier, caMois: (ca[l.cip] || 0) / nb, qMois: (q[l.cip] || 0) / nb });
+      classees++;
+    });
+    if (!classees) {
+      return carte(sous, '<div class="pha-sub">' + (np.lignes.length
+        ? V2.fmtNum(np.lignes.length) + ' référence' + (np.lignes.length > 1 ? 's interrompues' : ' interrompue') + ', hors des catégories suivies.'
+        : 'Tout ce qu\'elle commandait régulièrement a été recommandé en ' + esc(moisFr(np.fin)) + '.') + '</div>');
+    }
+    var somme = function (rows) { return rows.reduce(function (t, r) { return t + r.caMois; }, 0); };
+    var on = CATS.filter(function (c) { return parCat[c.key]; }).sort(function (x, y) { return somme(parCat[y.key]) - somme(parCat[x.key]); });
+    var cur = on.filter(function (c) { return c.key === nePlusCat; })[0] || on[0];
+    var rows = parCat[cur.key].sort(function (x, y) { return y.caMois - x.caMois; });
+    var frise = np.avant.concat([np.fin]);
+    var ligne = function (r, i) {
+      return '<div class="pha-r"><i>' + (i + 1) + '</i><span>' + esc(r.designation) +
+        '<span class="pha-np-s"><span class="pha-np-m" aria-hidden="true">' + frise.map(function (m) {
+          return '<span class="pha-np-d' + (m === np.fin ? ' fin' : (r.mois[m] ? ' on' : '')) + '" title="' + esc(moisFr(m)) + '"></span>';
+        }).join('') + '</span>dernière commande : ' + esc(moisFr(r.dernier)) + '</span></span>' +
+        '<b class="mono">' + V2.fmtEur(r.caMois) + ' <small>/ mois · ' + V2.fmtNum(Math.round(r.qMois)) + ' u</small></b></div>';
+    };
+    return carte(sous,
+      '<div class="pha-tabs">' + on.map(function (c) { return '<button class="pha-tab' + (c.key === cur.key ? ' on' : '') + '" onclick="V2.pharmaNePlusCat(\'' + c.key + '\')"><span class="ph-tr-dot" style="background:' + c.color + '"></span>' + esc(c.label.replace('Princeps · ', '')) + ' · ' + parCat[c.key].length + '</button>'; }).join('') + '</div>' +
+      rows.slice(0, 10).map(ligne).join('') +
+      (rows.length > 10 ? '<details class="pha-np-plus"><summary>Voir les ' + (rows.length - 10) + ' autres</summary>' + rows.slice(10).map(function (r, i) { return ligne(r, i + 10); }).join('') + '</details>' : '') +
+      '<div class="pha-sub" style="margin-top:6px">' + V2.fmtNum(rows.length) + ' référence' + (rows.length > 1 ? 's interrompues' : ' interrompue') + ' dans cette catégorie · environ ' + V2.fmtEur(somme(rows)) + ' par mois, moyenne des mois commandés' +
+        (np.lignes.length > classees ? ' · ' + V2.fmtNum(np.lignes.length - classees) + (np.lignes.length - classees > 1 ? ' autres références interrompues' : ' autre référence interrompue') + ' hors des catégories suivies' : '') +
+        ' · <span class="pha-np-m" aria-hidden="true"><span class="pha-np-d on"></span></span> commandé <span class="pha-np-m" aria-hidden="true"><span class="pha-np-d"></span></span> pas commandé <span class="pha-np-m" aria-hidden="true"><span class="pha-np-d fin"></span></span> ' + esc(moisFr(np.fin)) + '</div>');
+  }
+
   function renderDetail(root, pid) {
     var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); });
     if (!pharma) {
@@ -1944,7 +2000,7 @@
 
     // ── Colonne « chiffres » ──
     var A = analyseData(pid, sales);
-    var chiffres = analyseKpis(A, marge, nbRefs) + analyseChart(A) + analyseTranches(A) + analyseParts(A) + analyseTop5(A);
+    var chiffres = analyseKpis(A, marge, nbRefs) + analyseChart(A) + analyseTranches(A) + analyseParts(A) + analyseTop5(A) + analyseNePlus(pid);
     // 24/09/2026 — officine d'un collègue (commercial restreint) : aucun chiffre de vente,
     // ni « déjà commandé / à pousser » (ça dirait ce qu'elle achète), ni audit de marge.
     var voitVentes = V2.voitVentesDe(pid);
@@ -4808,6 +4864,13 @@
       '.pha-r{display:grid;grid-template-columns:20px 1fr auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:13.5px}',
       '.pha-r i{font-style:normal;font-family:var(--mono);font-weight:800;color:var(--muted)}',
       '.pha-r b{white-space:nowrap}.pha-r b small{color:var(--muted);font-weight:600}',
+      '.pha-np .pha-r>span{min-width:0}.pha-np .pha-r b small{font-size:12px}',
+      '.pha-np-s{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:3px;font-size:12px;color:var(--muted)}',
+      '.pha-np-m{display:inline-flex;gap:3px;vertical-align:middle}',
+      '.pha-np-d{width:9px;height:9px;border-radius:2px;background:var(--line-strong)}',
+      '.pha-np-d.on{background:var(--ip-blue,#0050E6)}',
+      '.pha-np-d.fin{background:transparent;box-shadow:inset 0 0 0 1.5px #C7283D}',
+      '.pha-np-plus summary{cursor:pointer;font-size:12.5px;font-weight:700;padding:10px 0;border-top:1px solid var(--line)}',
       '.pha-r1{grid-template-columns:1fr auto}',
       '.pha-det{border-top:1px solid var(--line)}',
       '.pha-det summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;min-height:46px;font-weight:800;font-size:13.5px;gap:8px}',
