@@ -45,8 +45,9 @@
    grande carte, quatre cartes compactes, « Tendances » numérotées, « Tout voir ». Une carte
    touchée s'agrandit en feuille de lecture (posée dans <body>). RIEN ne disparaît : les onze
    panneaux (secteur, échéances, ruptures, rappels, concurrents, radar, mur, archive, sources…)
-   et leur pile sont intacts ; on y entre par les pastilles « Rubriques », en bas de page, et
-   le pied garde « Copier le brief » et la fraîcheur des sources. Les faits concurrents vérifiés
+   et leur pile sont intacts ; on y entre par les pastilles « Rubriques », repliées en bas de
+   page derrière un seul bouton avec « Copier le brief » et la fraîcheur des sources (choix de
+   Will, 08/10/2026 : la page au téléphone était trop longue). Les faits concurrents vérifiés
    sont chargés pendant load() (4 s au plus, jamais bloquants).
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
@@ -610,8 +611,9 @@
     V2._ppEchap = true;
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && ppOuvert()) ppFermer(); });
     // quitter la page (lien, bouton Retour du navigateur) referme le panneau
+    // on lit l'adresse elle-même : cet écouteur passe AVANT celui du routeur (v2-app.js), V2.route date encore de l'écran quitté
     window.addEventListener('hashchange', function () {
-      if (!V2.route || V2.route.name !== 'infos') { ppFermer(); PP_CONC_AUTO = false; }
+      if ((location.hash || '').replace(/^#/, '').split('/')[0] !== 'infos') { ppFermer(); PP_CONC_AUTO = false; }
     });
   }
 
@@ -948,13 +950,13 @@
      « Tendances » numérotées, « Tout voir ». Une carte touchée s'agrandit en feuille de
      lecture (posée dans <body>, comme le panneau, pour qu'aucun parent animé ne casse son
      position:fixed). Les neuf instruments du poste de pilotage sont gardés tels quels dans
-     le panneau : on y entre par les pastilles « Rubriques », en bas de page.
+     le panneau : on y entre par les pastilles « Rubriques », repliées en bas de page.
      Tout est calculé ICI à chaque rendu depuis ppDonnees() ; les faits concurrents vérifiés
      sont chargés pendant load() (VERIFS) pour que la page se dessine une seule fois. */
   var X13_RUB = { regle: 'Prix et règles', rupture: 'Ruptures', rappel: 'Rappels de lot', officine: 'Officines', actu: 'Actualité', concurrent: 'Concurrents' };
   var X13_SRC = { regle: 'Journal officiel', rupture: 'Agence du médicament', rappel: 'Agence du médicament', officine: 'Annonces légales', actu: '', concurrent: '' };
   var X13_ICO = { regle: 'loi', rupture: 'rupture', rappel: 'rappel', officine: 'cession', concurrent: 'concurrent', actu: 'journal' };
-  var X13 = { liste: [], orig: null, fin: 0, tx: null };
+  var X13 = { liste: [], orig: null, fin: 0, tx: null, rub: false };
   function x13T(s) { return esc(String(s == null ? '' : s).replace(/\btes\b/g, 'vos').replace(/\bton\b/g, 'votre')); }
   function x13N2(t) { return norm(t).replace(/[^a-z0-9]+/g, ' ').trim(); }
   function x13NomRupt(r) { return String(r.spec || '').split(/ – | - /)[0] || String(r.dci || ''); }
@@ -1034,7 +1036,9 @@
     X13.liste[i] = e;
     return '<button type="button" class="x13-c" style="--i:' + d + '" data-x13-i="' + i + '"><span class="x13-ct"><span class="x13-rl"><span class="x13-ru x13-t-' + e.rub + '">' + esc(X13_RUB[e.rub]) + '</span>' + (x13Neuf(e) ? '<span class="x13-neuf">Nouveau</span>' : '') + '</span><span class="x13-t">' + x13T(e.t) + '</span>' + x13Ligne(e, true) + '</span>' + x13Couv(e, false) + '</button>';
   }
-  /* les pastilles « Rubriques » : l'accès à chacun des panneaux du poste de pilotage */
+  /* les pastilles « Rubriques » : l'accès à chacun des panneaux du poste de pilotage.
+     Repliées derrière un seul bouton, avec « Copier le brief » et la fraîcheur des sources ;
+     X13.rub garde l'état quand la page est redessinée sous un panneau ouvert. */
   function x13Rubriques(D, J) {
     var S = ppScope(), rad = D.rad.ruptures, nSec = null;
     if (SECTEUR && (SECTEUR.ev || []).length && (S.deps || S.dir)) nSec = ppAnnonces(S.deps).length;
@@ -1048,9 +1052,14 @@
       ['mur', 'Toute l’actualité', 'journal', D.fil.length]
     ];
     if (J.length) L.push(['archive', 'Les matins d’avant', 'horloge', J.length]);
-    return '<section class="x13-s-rub" aria-labelledby="x13-h-rub"><h2 class="x13-h" id="x13-h-rub">Rubriques</h2><div class="x13-rubs">' + L.map(function (r) {
+    return '<section class="x13-s-rub" aria-label="Rubriques et outils">' +
+      '<button type="button" class="x13-tout x13-plus" data-x13-rub aria-expanded="' + (X13.rub ? 'true' : 'false') + '" aria-controls="x13-rub-z"><span>Rubriques et outils</span><span class="x13-tout-f" aria-hidden="true">' + ppIco('bas', 18) + '</span></button>' +
+      '<div class="x13-rub-z" id="x13-rub-z"' + (X13.rub ? '' : ' hidden') + '><div class="x13-rubs">' + L.map(function (r) {
       return '<button type="button" class="x13-rb" onclick="V2.ppOuvrir(\'' + r[0] + '\')">' + ppIco(r[2], 18) + '<span>' + esc(r[1]) + '</span>' + (r[3] != null ? '<b>' + esc(r[3]) + '</b>' : '') + '</button>';
-    }).join('') + '</div></section>';
+    }).join('') + '</div><div class="pp-pied-btns">' +
+      '<button type="button" class="pp-btn pp-btn-blanc" data-lbl="Copier le brief" onclick="V2.infosCopyBrief(this)">' + ppIco('copier', 18) + 'Copier le brief</button>' +
+      '<button type="button" class="pp-btn pp-btn-blanc" onclick="V2.ppOuvrir(\'sources\')">Voir la fraîcheur des sources</button>' +
+      '</div></div></section>';
   }
   function x13Page(D, jour, J) {
     var P = x13Pile(D), u = P.une, i = 0, d = 1, une = '', cmp = '', tend = '';
@@ -1174,6 +1183,11 @@
       var p1 = z.querySelector('.x13-c'); if (p1) { try { p1.focus({ preventScroll: true }); } catch (er) {} }
       return;
     }
+    if ((t = e.target.closest('[data-x13-rub]'))) {
+      var zr = root.querySelector('.x13-rub-z'); X13.rub = zr.hidden; zr.hidden = !X13.rub; t.setAttribute('aria-expanded', X13.rub ? 'true' : 'false');
+      if (X13.rub) { try { zr.scrollIntoView({ block: 'nearest' }); } catch (er) {} }
+      return;
+    }
     if ((t = e.target.closest('.x13-c,.x13-une,.x13-tr'))) x13Ouvre(t);
   }
   if (!V2._x13Ecoute) {
@@ -1183,7 +1197,7 @@
     document.addEventListener('touchstart', x13Ecoute, { passive: true });
     document.addEventListener('touchend', x13Ecoute, { passive: true });
     // on lit l'adresse elle-même : cet écouteur passe AVANT celui du routeur (v2-app.js), V2.route date encore de l'écran quitté
-    window.addEventListener('hashchange', function () { if ((location.hash || '').replace(/^#/, '').split('/')[0] !== 'infos') x13Reset(); });
+    window.addEventListener('hashchange', function () { if ((location.hash || '').replace(/^#/, '').split('/')[0] !== 'infos') { x13Reset(); X13.rub = false; } });
   }
 
   /* ════════════════════════════ RENDU ════════════════════════════ */
@@ -1225,11 +1239,7 @@
         '<div class="v2-wrap inf2 pp">' +
           '<span class="pp-ciel" aria-hidden="true"></span>' +
           x13Page(D, jour, J) +
-          '<footer class="pp-pied"><span>' + gen + '</span>' +
-            '<span class="pp-pied-btns">' +
-              '<button type="button" class="pp-btn pp-btn-blanc" data-lbl="Copier le brief" onclick="V2.infosCopyBrief(this)">' + ppIco('copier', 18) + 'Copier le brief</button>' +
-              '<button type="button" class="pp-btn pp-btn-blanc" onclick="V2.ppOuvrir(\'sources\')">Voir la fraîcheur des sources</button>' +
-            '</span></footer>' +
+          '<footer class="pp-pied"><span>' + gen + '</span></footer>' +
         '</div>';
 
       // venu de l'ancienne feature « Concurrents » (#infos/concurrents) : ouvrir directement son panneau
@@ -1458,6 +1468,12 @@
       '.x13-rb svg{flex:none;color:var(--pp-bleu)}',
       '.x13-rb b{font:500 14px/1 var(--pp-sans);color:var(--pp-encre2);font-variant-numeric:tabular-nums}',
       '.x13-rb:active{transform:scale(.985)}',
+      '/* le bas de page replié : un seul bouton, les rubriques et les deux outils dessous */',
+      '.x13-rub-z{margin-top:12px;scroll-margin-bottom:88px}',
+      '.x13-rub-z:not([hidden]){animation:x13-in .4s cubic-bezier(.2,.8,.2,1) backwards}',
+      '.x13-rub-z .pp-pied-btns{margin-top:14px}',
+      '.x13-plus .x13-tout-f{transition:transform .25s ease}',
+      '.x13-plus[aria-expanded="true"] .x13-tout-f{transform:rotate(180deg)}',
       '.x13-sheet *{box-sizing:border-box}',
       '.x13-sheet button{font-family:inherit;cursor:pointer}',
       '.x13-s-corps p{margin:10px 0 0;font-size:16px;line-height:1.55}',
@@ -1496,6 +1512,7 @@
       '  .x13-tete{grid-area:tete;padding-bottom:10px}',
       '  .x13 h1{font-size:44px}',
       '  .x13>.x13-s-rub{grid-area:rub;margin-top:26px}',
+      '  .x13-plus{display:inline-flex;width:auto;min-width:320px;margin-top:0}',
       '  .x13-s-une{grid-area:une}.x13-s-cmp{grid-area:cmp;padding-top:8px;display:flex;flex-direction:column}',
       '  .x13-s-cmp>.x13-liste{flex:1}',
       '  .x13-s-cmp>.x13-liste>.x13-c{flex:1}.x13-s-tend{grid-area:tend;margin-top:18px}',
