@@ -408,7 +408,7 @@
     if (!actif) return '';
     return '<div class="pilo-legende">Le trait sur chaque barre, c\'est le réseau' +
       (label ? ' — ' + esc(label) : '') + '. ' +
-      'L\'euro indiqué, c\'est ce que la ligne pèserait en plus ou en moins si tu étais réparti comme lui, ' +
+      'L\'euro indiqué, c\'est ce que la ligne pèserait en plus ou en moins si vous étiez réparti comme lui, ' +
       'à chiffre d\'affaires identique.</div>';
   }
 
@@ -557,7 +557,7 @@
         '<span class="pilo-mf-moi mono">' +
           (l.ca > 0
             ? '<b>' + V2.fmtNum(l.ca) + ' €</b><small>' + l.nbOff + ' officine' + (l.nbOff > 1 ? 's' : '') + '</small>'
-            : '<b class="zero">tu n\'en vends pas</b><small>&nbsp;</small>') +
+            : '<b class="zero">vous n\'en vendez pas</b><small>&nbsp;</small>') +
         '</span>' +
       '</div>';
     }
@@ -567,7 +567,7 @@
       var vus = arr.slice(0, 8), reste = arr.slice(8, 25);
       return '<div class="pilo-mf-col">' +
         '<div class="pilo-mf-h ' + cls + '"><span>' + esc(titre) + '<small>' + esc(sousTitre) + '</small></span>' +
-          '<span class="pilo-mf-h-moi">toi<small>sur la période</small></span></div>' +
+          '<span class="pilo-mf-h-moi">vous<small>sur la période</small></span></div>' +
         vus.map(ligne).join('') +
         (reste.length
           ? '<details class="pilo-mf-more"><summary>Voir ' + reste.length + ' produit' + (reste.length > 1 ? 's' : '') + ' de plus</summary>' +
@@ -580,7 +580,7 @@
     var fenetre = moisLisibles(mT.mois);
     var expoTxt = monTotal > 0
       ? '<div class="pilo-mf-expo">' +
-          '<span><b class="up">' + (expoUp / monTotal * 100).toFixed(1).replace('.', ',') + ' %</b> de ton chiffre d\'affaires ' +
+          '<span><b class="up">' + (expoUp / monTotal * 100).toFixed(1).replace('.', ',') + ' %</b> de votre chiffre d\'affaires ' +
             'est sur des produits que la France achète de plus en plus</span>' +
           '<span><b class="dn">' + (expoDn / monTotal * 100).toFixed(1).replace('.', ',') + ' %</b> sur des produits en recul</span>' +
         '</div>'
@@ -903,12 +903,12 @@
     // sans son périmètre ne veut rien dire : le mode choisi dit ce qu'il compte,
     // en % du chiffre réel, et ce qu'il laisse dehors.
     var partRetenue = caTotal > 0 ? caRetenu / caTotal * 100 : 0;
-    var leCa = monSecteur ? 'ton chiffre d\'affaires' : 'le chiffre d\'affaires du réseau';
+    var leCa = monSecteur ? 'votre chiffre d\'affaires' : 'le chiffre d\'affaires du réseau';
     var nbLignes = lignes.length === 3 ? 'les trois lignes' : (lignes.length === 2 ? 'les deux lignes' : 'les lignes');
     var modeTxt = comparable
       ? '<b>« Comparable à la France »</b> : ' + nbLignes + ' comptent les <b>mêmes produits</b> — ' +
         'ceux que l\'Assurance Maladie suit (Medic\'AM), soit <b>' + partRetenue.toFixed(1).replace('.', ',') + ' %</b> ' +
-        (monSecteur ? 'de ton chiffre d\'affaires' : 'du chiffre d\'affaires du réseau') + ' sur cette fenêtre. Les non remboursés et la parapharmacie sont laissés dehors : ' +
+        (monSecteur ? 'de votre chiffre d\'affaires' : 'du chiffre d\'affaires du réseau') + ' sur cette fenêtre. Les non remboursés et la parapharmacie sont laissés dehors : ' +
         'la France ne les connaît pas, les compter d\'un seul côté fabriquerait un écart qui n\'existe pas. ' +
         'Chaque boîte remboursée côté France est valorisée à son tarif grossiste' +
         (fr.meta && fr.meta.periode ? ' (' + esc(String(fr.meta.periode).replace('→', ' → ')) + ')' : '') + '.'
@@ -1255,11 +1255,11 @@
         root.innerHTML = top +
           '<div class="v2-wrap">' +
             '<div class="v2-page-title">Pilotage</div>' +
-            '<div class="v2-page-sub">' + (opso ? 'Tableau de bord groupement OPSO Santé.' : 'Ton chiffre d\'affaires, ta marge pharmacien et tes familles produits.') + '</div>' +
+            '<div class="v2-page-sub">' + (opso ? 'Tableau de bord groupement OPSO Santé.' : 'Votre chiffre d\'affaires, votre marge pharmacien et vos familles produits.') + '</div>' +
             '<div class="v2-card"><div class="v2-empty">' +
               '<div class="v2-empty-ico">' + ICO('pilo', 64, 1.4) + '</div>' +
-              '<div class="v2-empty-t">Tes ventes ne sont pas encore disponibles</div>' +
-              '<div class="v2-empty-d">Tes données de ventes ne sont pas encore chargées sur ton périmètre. Contacte ton administrateur pour les activer.</div>' +
+              '<div class="v2-empty-t">Vos ventes ne sont pas encore disponibles</div>' +
+              '<div class="v2-empty-d">Vos données de ventes ne sont pas encore chargées sur votre périmètre. Contactez votre administrateur pour les activer.</div>' +
             '</div></div>' +
           '</div>';
         return;
@@ -1905,14 +1905,14 @@
               '<div class="pilo-vals"><div class="v2-row-val mono">' + V2.fmtEur(g.potentiel) + '</div>' +
                 '<div class="v2-row-meta mono">par an</div></div>' +
             '</div>';
-          }).join('') : '<div class="v2-empty"><div class="v2-empty-d">Aucun produit en stock Intégral ne manque à tes officines dans cette catégorie.</div></div>';
+          }).join('') : '<div class="v2-empty"><div class="v2-empty-d">Aucun produit en stock Intégral ne manque à vos officines dans cette catégorie.</div></div>';
 
           ameliCard =
             '<div class="v2-card pilo-gis" style="margin-bottom:14px">' +
               '<div class="v2-card-head"><div class="v2-card-t">' + ICO('pilo', 17) + 'Le gisement</div>' +
                 '<span class="v2-card-link" style="color:var(--muted);cursor:default">' +
                   V2.fmtNum(nOffTotal) + ' officines · ' + (pf ? esc(pf.label) : '') + '</span></div>' +
-              '<div class="pilo-legende">Ce que la France achète et que tes officines n\'ont pas commandé' + (pf ? ' sur ' + esc(pf.label) : '') + ' — ' +
+              '<div class="pilo-legende">Ce que la France achète et que vos officines n\'ont pas commandé' + (pf ? ' sur ' + esc(pf.label) : '') + ' — ' +
                 'uniquement ce qu\'Intégral a en stock. Classé par euros, pas par nombre de boîtes : ' +
                 'sinon les petits prix à gros volume écrasent tout et le gisement reste invisible.</div>' +
               chips +
@@ -1928,9 +1928,9 @@
               '<div class="pilo-gis-note">' +
                 (GIS_TIER == null ? 'Toutes catégories' : 'Catégorie ' + TIERS[GIS_TIER].label) + ' : ' +
                 '<b>' + V2.fmtNum(retenues.length) + '</b> référence' + (retenues.length > 1 ? 's' : '') +
-                ' en stock manquent à au moins une de tes officines. Les <b>' + vues.length + '</b> lignes ci-dessus ' +
+                ' en stock manquent à au moins une de vos officines. Les <b>' + vues.length + '</b> lignes ci-dessus ' +
                 'pèsent ensemble <b>' + V2.fmtEur(potVues) + '</b>. ' +
-                '⚠️ Ce montant est un CALCUL, pas une prévision : le nombre de tes officines qui n\'en prennent pas, ' +
+                '⚠️ Ce montant est un CALCUL, pas une prévision : le nombre de vos officines qui n\'en prennent pas, ' +
                 'multiplié par ce qu\'une pharmacie française moyenne en achète en un an, au prix net Intégral. ' +
                 'Rien ne dit qu\'elles achèteront, et ces montants ne s\'additionnent pas sur toute la liste — ' +
                 'c\'est un ordre de grandeur pour choisir par où commencer, pas un objectif.' +
@@ -2035,7 +2035,7 @@
         '<div class="pilo-head">' +
           '<div>' +
             '<div class="v2-page-title">Pilotage</div>' +
-            '<div class="v2-page-sub" style="margin-bottom:0">' + (pf ? esc(pf.label) : '') + (V2.commFilter ? ' · ' + esc(V2.commFilter) : (opso ? ' · Groupement OPSO Santé' : ' · ton tableau de bord commercial')) + '</div>' +
+            '<div class="v2-page-sub" style="margin-bottom:0">' + (pf ? esc(pf.label) : '') + (V2.commFilter ? ' · ' + esc(V2.commFilter) : (opso ? ' · Groupement OPSO Santé' : ' · votre tableau de bord commercial')) + '</div>' +
             // Un mois écarté doit se DIRE : sinon l'écran a l'air de couvrir
             // une période qu'il ne couvre pas.
             (PERIOD === 'custom'
@@ -2121,7 +2121,7 @@
 
       var marcheLink = (V2.pages && V2.pages.marche && !opso)
         ? '<a class="pilo-marche" onclick="V2.go(\'marche\')">' + ICO('spark', 17) +
-            '<span><b>Marché &amp; opportunités</b><small>Marché France × tes ventes réseau : où pousser quoi, princeps en stock Intégral.</small></span>' +
+            '<span><b>Marché &amp; opportunités</b><small>Marché France × vos ventes réseau : où pousser quoi, princeps en stock Intégral.</small></span>' +
             '<span class="pilo-marche-go">Ouvrir ' + ICO('chev', 16) + '</span></a>'
         : '';
       root.innerHTML = top +

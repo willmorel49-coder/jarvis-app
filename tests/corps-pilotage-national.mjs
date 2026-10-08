@@ -350,7 +350,7 @@ test('le classement suit le POIDS x l AMPLEUR, pas le pourcentage', () => {
   }
 });
 
-test('« toi : tu n en vends pas » ne s ecrit que si c est vrai', () => {
+test('« vous : vous n en vendez pas » ne s ecrit que si c est vrai', () => {
   const h = rendre(SECTEUR);
   const lignes = [...h.matchAll(/pilo-mf-nom">([^<]+)<[\s\S]*?pilo-mf-moi mono">([\s\S]*?)<\/span>/g)];
   const cipParNom = {}; for (const r of PS) cipParNom[r.d] = String(r.c);
@@ -360,7 +360,7 @@ test('« toi : tu n en vends pas » ne s ecrit que si c est vrai', () => {
   for (const v of VENTES) if (v.commercial === SECTEUR && v.month === sonDernier) vendu[v.artCode] = true;
   let verifiees = 0;
   for (const [, nom, bloc] of lignes) {
-    const dit = /tu n.en vends pas/.test(bloc);
+    const dit = /vous n.en vendez pas/.test(bloc);
     assert.equal(dit, !vendu[cipParNom[nom]], `« ${nom} » : l ecran dit le contraire des ventes`);
     verifiees++;
   }

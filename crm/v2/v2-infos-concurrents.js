@@ -94,18 +94,18 @@
         '<span class="cnc-m">' + esc(i.source || '') + ' · <i style="background:' + COUL[a.cle] + '"></i>' + esc(a.nom) + '</span></span></li>';
     }).join('');
     if (!p) {
-      return '<div class="cnc-calme">Rien de neuf ce mois-ci sur les concurrents installés ' + (deps ? 'dans ton secteur' : 'en France') + '.' +
+      return '<div class="cnc-calme">Rien de neuf ce mois-ci sur les concurrents installés ' + (deps ? 'dans votre secteur' : 'en France') + '.' +
         (liste.length ? '</div><ul class="cnc-fil">' + fil + '</ul>' : '</div>');
     }
     return '<div class="cnc-phrase">' +
-      '<small>' + (deps ? 'Chez toi' : 'En France') + ' · ' + esc(p.a.nom) + ', ' + (p.a.chez.length > 1 ? 'agences à ' : 'agence à ') + esc(villes(p.a, 3)) + '</small>' +
+      '<small>' + (deps ? 'Chez vous' : 'En France') + ' · ' + esc(p.a.nom) + ', ' + (p.a.chez.length > 1 ? 'agences à ' : 'agence à ') + esc(villes(p.a, 3)) + '</small>' +
       '<p>' + esc(p.titre) + '</p>' +
       (p.texte ? '<div class="cnc-txt">' + esc(p.texte) + '</div>' : '') +
       (p.angle ? '<div class="cnc-angle"><b>L’angle en rendez-vous</b>' + esc(p.angle) + '</div>' : '') +
       '<div class="cnc-src">' + (p.verifie ? 'Fait vérifié · ' : '') + esc(dcourt(p.date)) + ' · ' + esc(p.src || '') +
         (urlSure(p.url) !== '#' ? ' · <a href="' + esc(urlSure(p.url)) + '" target="_blank" rel="noopener">lire la source</a>' : '') + '</div>' +
       (liste.length ? '<button type="button" class="cnc-voir" aria-expanded="false" onclick="V2.cncAutres(this)">Voir ' +
-        (liste.length > 1 ? 'les ' + liste.length + ' autres nouvelles' : 'l’autre nouvelle') + ' de ' + (deps ? 'ton secteur' : 'ces concurrents') + '</button>' : '') +
+        (liste.length > 1 ? 'les ' + liste.length + ' autres nouvelles' : 'l’autre nouvelle') + ' de ' + (deps ? 'votre secteur' : 'ces concurrents') + '</button>' : '') +
     '</div>' + (liste.length ? '<ul class="cnc-fil cnc-autres" hidden>' + fil + '</ul>' : '');
   }
   V2.cncAutres = function (b) {
@@ -127,7 +127,7 @@
     B = [B[0] - m, B[1] - m, B[2] + m, B[3] + m];
     var W = B[2] - B[0], H = B[3] - B[1], u = Math.max(W, H) / 1000;   // 1 unité ≈ 1 px d'une carte de 1000 px
     var SS = {}; secteur.forEach(function (c) { SS[c] = 1; });
-    var sv = '<svg viewBox="' + [B[0], B[1], W, H].map(Math.round).join(' ') + '" role="img" aria-label="Carte des agences concurrentes ' + (deps ? 'dans ton secteur' : 'en France') + '" preserveAspectRatio="xMidYMid meet">';
+    var sv = '<svg viewBox="' + [B[0], B[1], W, H].map(Math.round).join(' ') + '" role="img" aria-label="Carte des agences concurrentes ' + (deps ? 'dans votre secteur' : 'en France') + '" preserveAspectRatio="xMidYMid meet">';
     codes.forEach(function (c) {   // voisins visibles dans le cadre : ils situent le secteur
       var b = boite(c); if (b[2] < B[0] || b[0] > B[2] || b[3] < B[1] || b[1] > B[3]) return;
       sv += '<path class="cnc-dp' + (deps && SS[c] ? ' s' : '') + '" d="' + CONT.deps[c].d + '" stroke-width="' + (1.6 * u).toFixed(2) + '"/>';
@@ -147,7 +147,7 @@
     sv += '</svg>';
     var n = presents.reduce(function (s, a) { return s + a.chez.length; }, 0);
     return '<div class="cnc-terrain">' +
-      '<div class="cnc-th"><b>' + (deps ? 'Ton terrain' : 'Toute la France') + '</b><span>' + presents.length + ' concurrent' + (presents.length > 1 ? 's' : '') + ' · ' + n + ' agence' + (n > 1 ? 's' : '') + '</span></div>' +
+      '<div class="cnc-th"><b>' + (deps ? 'Votre terrain' : 'Toute la France') + '</b><span>' + presents.length + ' concurrent' + (presents.length > 1 ? 's' : '') + ' · ' + n + ' agence' + (n > 1 ? 's' : '') + '</span></div>' +
       '<div class="cnc-wrap"><div class="cnc-carte">' + sv + '</div><div class="cnc-leg">' +
         presents.map(function (a) {
           return '<button type="button" aria-pressed="' + (CHOIX === a.cle) + '" onclick="V2.cncChoix(this,\'' + esc(a.cle) + '\')"><i style="background:' + COUL[a.cle] + '"></i>' + esc(a.nom) + '<span>' + a.chez.length + '</span></button>';
@@ -155,7 +155,7 @@
         '<div class="cnc-info" aria-live="polite">Touche un concurrent pour allumer ses agences.</div>' +
       '</div></div>' +
       '<div class="cnc-note">Agences actives au registre officiel des entreprises (lecture du ' + esc(dcourt(IMPL.maj)) + '). ' +
-        (deps ? 'Absents de ton secteur : ' + esc(IMPL.acteurs.filter(function (a) { return !IMPL_A[a.cle].chez.length; }).map(function (a) { return a.nom; }).join(', ') || 'aucun') + '.' : '') + '</div>' +
+        (deps ? 'Absents de votre secteur : ' + esc(IMPL.acteurs.filter(function (a) { return !IMPL_A[a.cle].chez.length; }).map(function (a) { return a.nom; }).join(', ') || 'aucun') + '.' : '') + '</div>' +
     '</div>';
   }
   V2.cncChoix = function (b, cle) {

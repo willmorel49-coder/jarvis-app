@@ -322,7 +322,7 @@
         '<div style="text-align:right;font-size:11px;font-weight:700;font-family:monospace">' + esc(dateStr) + '</div>' +
       '</div>' +
       (isInt ? '<div style="margin:10px 0;padding:7px 11px;background:#FFF1E8;border:1px solid #F6C9A8;border-radius:8px;font-size:10px;font-weight:800;color:#C2410C;text-transform:uppercase;letter-spacing:.04em">Usage interne — ne pas laisser au client</div>' : '') +
-      '<p style="font-size:11px;color:#737A8C;margin:10px 0 12px">Produits que le marché France consomme et que cette officine ne commande pas encore — tes arguments pour la visite.</p>' +
+      '<p style="font-size:11px;color:#737A8C;margin:10px 0 12px">Produits que le marché France consomme et que cette officine ne commande pas encore — vos arguments pour la visite.</p>' +
       '<table style="width:100%;border-collapse:collapse;table-layout:fixed"><thead><tr style="background:#F7F9FC">' +
         cols.map(function (h, k) { return '<th style="padding:6px 9px;font-size:8px;text-transform:uppercase;letter-spacing:.04em;color:#9AA1B2;text-align:' + (k === 1 || k === 2 ? 'left' : 'right') + '">' + h + '</th>'; }).join('') +
       '</tr></thead><tbody>' + (trs || '<tr><td colspan="' + cols.length + '" style="padding:20px;text-align:center;color:#9AA1B2">Cette officine commande déjà les gros marchés France.</td></tr>') + '</tbody></table>' +
@@ -330,7 +330,7 @@
     '</div>';
   }
   V2.copiloteVisite = function (mode, fmt) {
-    if (!selPid) { if (V2.toast) V2.toast('Choisis d\'abord une officine'); return; }
+    if (!selPid) { if (V2.toast) V2.toast('Choisissez d\'abord une officine'); return; }
     if (fmt === 'copy') {
       var txt = visiteText(mode); if (!txt) { if (V2.toast) V2.toast('Rien à exporter pour cette officine'); return; }
       var ok = function () { if (V2.toast) V2.toast('Fiche copiée ✅'); };
@@ -586,7 +586,7 @@
       '<p class="s">Une pharmacie moyenne en vend <b>~' + num(o.fr) + '</b>/an en France' +
         (o.eur > 0 ? ' — environ <b>' + eur(o.eur) + '</b> par an au prix net' : '') +
         (g != null && g >= 8 ? ' · marché <b class="up">+' + g + '%</b> sur un an' : '') +
-        ' · tu en as <b class="stk">' + num(s) + '</b> en stock Intégral.</p>' +
+        ' · vous en avez <b class="stk">' + num(s) + '</b> en stock Intégral.</p>' +
       sparkRow(r.c) +
       '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net</span>' : '') + abChip(r) + '</div>' +
       '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir la fiche</button>' +
@@ -597,7 +597,7 @@
     var r = o.r, s = stk(r.c);
     return '<div class="co-arg co-grow-card">' +
       '<div class="t"><span class="psh up">Marché en croissance</span>' + esc(cap(r.d)) + '<span class="co-grow up big">↑ +' + o.g + '%</span></div>' +
-      '<p class="s"><b class="up">+' + o.g + '%</b> sur un an en France · une pharmacie moyenne en vend <b>~' + num(o.fr) + '</b>/an · seulement <b>' + num(r.n || 0) + '</b> de tes officines le commandent · <b class="stk">' + num(s) + '</b> en stock.</p>' +
+      '<p class="s"><b class="up">+' + o.g + '%</b> sur un an en France · une pharmacie moyenne en vend <b>~' + num(o.fr) + '</b>/an · seulement <b>' + num(r.n || 0) + '</b> de vos officines le commandent · <b class="stk">' + num(s) + '</b> en stock.</p>' +
       sparkRow(r.c) +
       '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net</span>' : '') + abChip(r) + '</div>' +
       '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir la fiche</button>' +
@@ -680,7 +680,7 @@
     var r = o.r, s = stk(r.c), n = o.nv;
     return '<div class="co-arg co-new-card">' +
       '<div class="t"><span class="psh nw">Nouveau · AMM ' + esc(n.amm) + '</span>' + esc(cap(r.d)) + growthBadge(r.c) + '</div>' +
-      '<p class="s">' + (n.labo ? '<b>' + esc(cap(String(n.labo).toLowerCase())) + '</b> · ' : '') + (o.fr >= 20 ? 'la France en vend déjà <b>~' + num(o.fr) + '</b>/an · ' : 'marché qui démarre · ') + 'tu en as <b class="stk">' + num(s) + '</b> en stock — prends l\'avance.</p>' +
+      '<p class="s">' + (n.labo ? '<b>' + esc(cap(String(n.labo).toLowerCase())) + '</b> · ' : '') + (o.fr >= 20 ? 'la France en vend déjà <b>~' + num(o.fr) + '</b>/an · ' : 'marché qui démarre · ') + 'vous en avez <b class="stk">' + num(s) + '</b> en stock — prenez l\'avance.</p>' +
       sparkRow(r.c) +
       '<div class="co-prix">' + (r.net > 0 ? '<span class="co-net">' + eur(r.net) + ' net</span>' : '') + abChip(r) + '</div>' +
       '<button class="v2-btn v2-btn-ghost" onclick="V2.go(\'molecules\',\'' + esc(r.c) + '\')">Voir la fiche</button>' +
@@ -703,7 +703,7 @@
     return '<div class="co-mkt"><div class="id"><div class="p">' + esc(cap(r.d)) + '<span class="co-fam">' + (FAM[r.f] || r.f) + '</span>' + tensionBadge(r.c) + growthBadge(r.c) + '</div><div class="c">' + esc(r.c) + '</div></div>' +
       '<div class="ms">' +
       '<span class="m"><i>France</i><span>~' + num(o.fr) + '/an</span></span>' +
-      '<span class="m"><i>Ton réseau</i><span>' + num(r.n || 0) + ' off.</span></span>' +
+      '<span class="m"><i>Votre réseau</i><span>' + num(r.n || 0) + ' off.</span></span>' +
       '<span class="m"><i>Prix net</i><span class="blue">' + (r.net > 0 ? eur(r.net) : '—') + '</span></span>' +
       '<span class="m"><i>Stock IP</i><span class="grn">' + num(stk(r.c)) + '</span></span>' +
       '</div>' +
@@ -713,7 +713,7 @@
     var r = o.r, rp = o.rp;
     return '<div class="co-mkt"><div class="id"><div class="p">' + esc(cap(r.d)) + '<span class="co-fam co-fam-mol">' + esc(cap((rp.d || '—').toLowerCase())) + '</span></div><div class="c">' + esc(r.c) + (rp.dt ? ' · signalé le ' + esc(rp.dt) : '') + '</div></div>' +
       '<div class="ms">' +
-      '<span class="m"><i>Ton réseau</i><span>' + num(r.n || 0) + ' off.</span></span>' +
+      '<span class="m"><i>Votre réseau</i><span>' + num(r.n || 0) + ' off.</span></span>' +
       '<span class="m"><i>Prix net</i><span class="blue">' + (r.net > 0 ? eur(r.net) : '—') + '</span></span>' +
       '<span class="m"><i>Stock IP</i><span class="grn">' + num(stk(r.c)) + '</span></span>' +
       '</div>' +
@@ -787,8 +787,8 @@
           (tourMore.length ? '<details class="co-more"><summary>' + ICO('chev', 12) + 'Voir ' + tourMore.length + ' officines de plus</summary><div class="co-tour">' + tourMore.map(function (o) { return tourCard(o, nbTensChez(o.p.id)); }).join('') + '</div></details>' : '')
         : '<div class="co-card"><div class="co-empty">Aucune opportunité dans ce secteur.</div></div>';
       var tourSec = '<section class="co-sec">' +
-        '<div class="co-sec-h"><h2>Ta tournée</h2><span class="co-pill">' + tour.length + ' officines</span></div>' +
-        '<p class="co-sub">Classées par ce que tu as à y gagner. Touche une officine pour préparer ta visite.</p>' +
+        '<div class="co-sec-h"><h2>Votre tournée</h2><span class="co-pill">' + tour.length + ' officines</span></div>' +
+        '<p class="co-sub">Classées par ce que vous avez à y gagner. Touchez une officine pour préparer votre visite.</p>' +
         chips + tourGrid +
         '</section>';
 
@@ -820,8 +820,8 @@
         ? '<div class="co-secu"><h4>' + ICO('alert', 13) + 'À sécuriser — elle commande ces produits, signalés en tension ANSM</h4>' + secu.map(secuRow).join('') + '</div>'
         : '';
       var focusSec = '<section class="co-sec" id="co-focus">' +
-        '<div class="co-sec-h"><h2>Prépare ta visite</h2>' + (gaps.length ? '<span class="co-pill">' + gaps.length + ' arguments</span>' : '') + '</div>' +
-        '<p class="co-sub">Tes arguments pour <b>' + esc(selName) + '</b> : les gros marchés France qu\'elle ne commande pas encore.</p>' +
+        '<div class="co-sec-h"><h2>Préparez votre visite</h2>' + (gaps.length ? '<span class="co-pill">' + gaps.length + ' arguments</span>' : '') + '</div>' +
+        '<p class="co-sub">Vos arguments pour <b>' + esc(selName) + '</b> : les gros marchés France qu\'elle ne commande pas encore.</p>' +
         '<div class="co-card">' +
           '<div class="co-fhead">' +
             '<div class="fn"><h3>' + esc(selName) + '</h3>' + zoneLine + '</div>' +
@@ -848,7 +848,7 @@
       var topOpp = topOpportunities(8);
       var topSec = topOpp.length
         ? '<section class="co-sec co-sec-top"><div class="co-sec-h"><h2>Top opportunités du jour</h2><span class="co-pill co-pill-top">' + topOpp.length + '</span></div>' +
-          '<p class="co-sub">Les produits qui <b>cumulent le plus de signaux</b> — accélération, croissance, gros marché, tension — et que tu as <b>en stock</b>. À pousser en priorité aujourd\'hui.</p>' +
+          '<p class="co-sub">Les produits qui <b>cumulent le plus de signaux</b> — accélération, croissance, gros marché, tension — et que vous avez <b>en stock</b>. À pousser en priorité aujourd\'hui.</p>' +
           '<div class="co-args">' + topOpp.map(topCard).join('') + '</div></section>'
         : '';
 
@@ -856,7 +856,7 @@
       var grow = window.TENDANCE ? growingMarkets(12) : [];
       var growSec = grow.length
         ? '<section class="co-sec"><div class="co-sec-h"><h2>Marchés en croissance à saisir</h2><span class="co-pill co-pill-up">' + grow.length + '</span></div>' +
-          '<p class="co-sub">Marchés qui progressent en France sur un an (Medic\'AM) et que peu de tes officines commandent — la vague à prendre avant les autres.</p>' +
+          '<p class="co-sub">Marchés qui progressent en France sur un an (Medic\'AM) et que peu de vos officines commandent — la vague à prendre avant les autres.</p>' +
           '<div class="co-args">' + grow.map(growCard).join('') + '</div></section>'
         : '';
 
@@ -872,7 +872,7 @@
       var nv = window.NOUVEAUTES ? nouveautesList(12) : [];
       var nvSec = nv.length
         ? '<section class="co-sec"><div class="co-sec-h"><h2>Nouveautés à ne pas rater</h2><span class="co-pill co-pill-new">' + nv.length + '</span></div>' +
-          '<p class="co-sub">Produits récemment arrivés sur le marché (AMM des 3 dernières années, BDPM) que tu as déjà en stock — prends l\'avance avant les concurrents.</p>' +
+          '<p class="co-sub">Produits récemment arrivés sur le marché (AMM des 3 dernières années, BDPM) que vous avez déjà en stock — prenez l\'avance avant les concurrents.</p>' +
           '<div class="co-args">' + nv.map(newCard).join('') + '</div></section>'
         : '';
 
@@ -887,7 +887,7 @@
         var stop = sarr.slice(0, 8);
         if (stop.length) {
           saisonSec = '<section class="co-sec"><div class="co-sec-h"><h2>Ce mois-ci, ça monte</h2><span class="co-pill">' + moLabel + '</span></div>' +
-            '<p class="co-sub">Classes thérapeutiques au-dessus de leur moyenne annuelle en ' + moLabel + ' (Medic\'AM) — à glisser dans tes visites.</p>' +
+            '<p class="co-sub">Classes thérapeutiques au-dessus de leur moyenne annuelle en ' + moLabel + ' (Medic\'AM) — à glisser dans vos visites.</p>' +
             '<div class="co-card"><div class="co-saison">' +
             stop.map(function (s) { return '<div class="co-sais-i"><span class="co-sais-up">+' + (s.v - 100) + '%</span><span class="co-sais-l">' + esc(cap(s.l.toLowerCase())) + '</span></div>'; }).join('') +
             '</div><div class="co-foot">Indice mensuel Medic\'AM : 100 = moyenne annuelle. « +34 % » = la classe se vend 34 % au-dessus de sa moyenne ce mois-ci.</div></div></section>';
@@ -896,12 +896,12 @@
 
       // ── Vue marché — gros marchés France (dans « Explorer le marché ») ──
       var mktSec = '<section class="co-sec"><div class="co-sec-h"><h2>Gros marchés France' + (rupRes.length ? ' &amp; tensions réseau' : '') + '</h2><span class="co-pill">' + (big.length + rupRes.length) + '</span></div>' +
-        '<p class="co-sub">Les produits que la France consomme beaucoup mais que peu de tes officines commandent — pour creuser au calme, pas indispensable en visite.</p>' +
+        '<p class="co-sub">Les produits que la France consomme beaucoup mais que peu de vos officines commandent — pour creuser au calme, pas indispensable en visite.</p>' +
         big.map(mktLine).join('') +
         (rupRes.length
-          ? '<div class="co-mkth">Produits en tension dans ton réseau (' + rupRes.length + ') — anticipe le réassort, ou propose la molécule (DCI) en alternative</div>' + rupRes.map(rupLine).join('')
+          ? '<div class="co-mkth">Produits en tension dans votre réseau (' + rupRes.length + ') — anticipez le réassort, ou proposez la molécule (DCI) en alternative</div>' + rupRes.map(rupLine).join('')
           : '') +
-        '<div class="co-foot">« Ton réseau » = nombre de tes officines qui commandent déjà ce produit. Marché France Ameli, à titre indicatif · signalements ANSM (rupture / risque).</div>' +
+        '<div class="co-foot">« Votre réseau » = nombre de vos officines qui commandent déjà ce produit. Marché France Ameli, à titre indicatif · signalements ANSM (rupture / risque).</div>' +
         '</section>';
 
       // ── Tout le marché regroupé sous UN seul volet repliable (l'essentiel respire au-dessus) ──
@@ -917,7 +917,7 @@
         '<div class="v2-wrap">' +
           '<div class="co-hero">' +
             '<h1>Copilote<span class="ac">.</span></h1>' +
-            '<p>Le cerveau de ta tournée : quoi pousser, où décroche le réseau. On croise le <b>marché France</b> avec <b>tes ventes réseau</b> — uniquement des <b>princeps en stock Intégral</b>.</p>' +
+            '<p>Le cerveau de votre tournée : quoi pousser, où décroche le réseau. On croise le <b>marché France</b> avec <b>vos ventes réseau</b> — uniquement des <b>princeps en stock Intégral</b>.</p>' +
             feedStrip(nbTension) +
           '</div>' +
           '<a class="co-maplink" onclick="V2.go(\'carte\')">' +

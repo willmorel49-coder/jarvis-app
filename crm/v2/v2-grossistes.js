@@ -84,7 +84,7 @@
       '</div>' +
       (deptRows ? '<div class="gr-depts">' + deptRows + '</div>' : '') +
       '<div class="gr-maill-n">' + note + '</div>' +
-      '<div class="gr-maill-w">⚠ Allocation géographique automatique (département → dépôt le plus proche, plafond 170 km). À valider avec ta répartition officielle.</div></div>';
+      '<div class="gr-maill-w">⚠ Allocation géographique automatique (département → dépôt le plus proche, plafond 170 km). À valider avec votre répartition officielle.</div></div>';
   }
   function flagOf(g) { var t = (g.pays || '') + (g.mere || ''); return /allemagne/i.test(t) ? '🇩🇪' : (/usa|américain|amerisource|cencora/i.test(t) ? '🇺🇸' : (/japon|toyota/i.test(t) ? '🇯🇵' : '🇫🇷')); }
   function shortNom(s) { return String(s || '').split('(')[0].split('—')[0].split('/')[0].trim(); }
@@ -174,7 +174,7 @@
   function grpCaNum(g) { var mem = membersOf(g.id), s = 0, i; for (i = 0; i < mem.length; i++) s += kNum(mem[i].ca_eur); return s; }
   function annuaireHtml() {
     var gs = groupes();
-    if (!gs.length) return '<div class="gr-empty">Base concurrents en cours de constitution. Reviens dans un instant.</div>';
+    if (!gs.length) return '<div class="gr-empty">Base concurrents en cours de constitution. Revenez dans un instant.</div>';
     var nq = norm(q.trim());
     var shown = gs.filter(function (g) { return (!filt || g.statut === filt) && (nq.length < 2 || matchGroup(g, nq)); });
     if (sortBy === 'part') shown.sort(function (a, b) { return (b.pdm_num || 0) - (a.pdm_num || 0) || a.rang - b.rang; });

@@ -200,7 +200,7 @@
     dirigeant: { l: 'Nouveaux dirigeants', l1: 'Nouveau dirigeant', c: '--c-cat', ct: '--c-cat',
       ico: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>' }
   };
-  var SCT_TAG_L = { client: 'Ton client', prospect: 'Ton prospect', hors: 'Hors fichier' };
+  var SCT_TAG_L = { client: 'Votre client', prospect: 'Votre prospect', hors: 'Hors fichier' };
   // table INSEE des départements — pour ÉTIQUETER un secteur par noms, jamais par
   // le prénom d'un membre de l'équipe (règle ferme, cf. AGENTS.md).
   var SCT_DEPNOMS = (function () {
@@ -358,11 +358,11 @@
   }
   function sctGeste(e, t) {
     switch (e.f) {
-      case 'cession': return t === 'client' ? 'Ton client change de mains : rencontrer le repreneur avant la concurrence.' : 'Nouveau titulaire : prendre rendez-vous dans le mois, il choisit ses fournisseurs maintenant.';
+      case 'cession': return t === 'client' ? 'Votre client change de mains : rencontrer le repreneur avant la concurrence.' : 'Nouveau titulaire : prendre rendez-vous dans le mois, il choisit ses fournisseurs maintenant.';
       case 'procedure': return t === 'client' ? 'Prudence sur l’encours : faire le point avec la direction avant la prochaine commande.' : 'Officine fragilisée : ses voisines peuvent récupérer une partie de sa patientèle.';
       case 'creation': return /SPFPL|HOLDING/i.test(e.nom) ? 'Des pharmaciens montent une holding : un rachat se prépare dans le secteur.' : 'Nouvelle société d’officine : une reprise ou une ouverture se prépare, se présenter tôt.';
       case 'fermeture': return 'Ses patients vont se répartir chez les voisines : appeler les officines les plus proches.';
-      default: return t === 'client' ? 'Nouvel interlocuteur chez ton client : se présenter et reprendre le fil.' : 'Nouvel interlocuteur : bonne occasion de se présenter.';
+      default: return t === 'client' ? 'Nouvel interlocuteur chez votre client : se présenter et reprendre le fil.' : 'Nouvel interlocuteur : bonne occasion de se présenter.';
     }
   }
 
@@ -545,7 +545,7 @@
     (function () {
       var corps;
       if (!SECTEUR || !(SECTEUR.ev || []).length) corps = '<span class="pp-vide-t">Les annonces du Bodacc ne sont pas disponibles pour l’instant.</span>';
-      else if (!S.deps && !S.dir) corps = '<span class="pp-vide-t">Ton secteur n’est pas encore connu : il se calcule à partir des officines de ton fichier.</span>';
+      else if (!S.deps && !S.dir) corps = '<span class="pp-vide-t">Votre secteur n’est pas encore connu : il se calcule à partir des officines de votre fichier.</span>';
       else {
         var sem = evs.filter(function (e) { return ppJ(e.d) <= 7; }).length, parF = {};
         evs.forEach(function (e) { parF[e.f] = (parF[e.f] || 0) + 1; });
@@ -555,7 +555,7 @@
           '<span class="pp-sect-chiffres"><span class="pp-gros">' + evs.length + '</span><span class="pp-leg"><b>officine' + (evs.length > 1 ? 's qui bougent' : ' qui bouge') + '</b> en 3 mois' + (S.deps ? '' : ' en France') + '<br>dont <b>' + sem + ' cette semaine</b>' + (S.deps && sem ? ' (points qui pulsent)' : '') + '</span></span>' +
           '<ul class="pp-legende">' + leg + '</ul></span>';
       }
-      T.push(ppTuile('pp-t-sect', 'secteur', 'Ton secteur : ' + evs.length + ' annonces Bodacc, ouvrir la carte', ppTete('Ton secteur · Bodacc', '#0050E6') + corps));
+      T.push(ppTuile('pp-t-sect', 'secteur', 'Votre secteur : ' + evs.length + ' annonces Bodacc, ouvrir la carte', ppTete('Votre secteur · Bodacc', '#0050E6') + corps));
     })();
     /* 2 · À ne pas manquer */
     (function () {
@@ -752,7 +752,7 @@
     if (it.chiffres && it.chiffres.length) h += '<div class="pp-chiffres">' + it.chiffres.map(function (c) { return '<div><b>' + esc(c.v) + '</b><span>' + esc(c.c) + '</span></div>'; }).join('') + '</div>';
     (it.paras || []).forEach(function (p) { if (p) h += '<p>' + esc(p) + '</p>'; });
     if (it.html) h += it.html;
-    if (it.geste) h += '<div class="pp-geste"><b>' + (it.gesteT || 'Pour toi') + '</b>' + esc(it.geste) + '</div>';
+    if (it.geste) h += '<div class="pp-geste"><b>' + (it.gesteT || 'Pour vous') + '</b>' + esc(it.geste) + '</div>';
     h += '<div class="pp-actions">';
     if (it.url && urlSure(it.url) !== '#') h += '<a class="pp-btn pp-btn-bleu" href="' + esc(urlSure(it.url)) + '" target="_blank" rel="noopener">' + esc(it.lien || 'Lire la source') + ' ' + ppIco('lien', 18) + '</a>';
     if (it.boutons) h += it.boutons;
@@ -772,7 +772,7 @@
     var cl = (['difficulte', 'cession', 'ferme', 'titulaire'].indexOf(e.motif) >= 0) ? clientTouche(e.societe, e.ville) : null;
     return { sur: 'À ne pas manquer · ' + (e.s || ''), t: e.t, meta: [q, e.d ? 'publié le ' + ppDl(e.d) : ''].filter(Boolean).join(' · '),
       paras: [e.r].concat(e.points || []), geste: e.pour_toi, url: e.u,
-      html: cl ? '<div class="pp-geste pp-alerte"><b>C’est un de tes clients</b>' + esc(cl.name) + (cl.code ? ' · CIP ' + esc(cl.code) : '') +
+      html: cl ? '<div class="pp-geste pp-alerte"><b>C’est un de vos clients</b>' + esc(cl.name) + (cl.code ? ' · CIP ' + esc(cl.code) : '') +
         ({ cession: ' : le titulaire change, compte à reprendre.', titulaire: ' : le titulaire a changé, compte à reprendre.', ferme: ' : ce client ferme, encours à solder.' }[e.motif] || ' : encours à vérifier.') + '</div>' : '' };
   }
   function ppArtBod(e) {
@@ -831,9 +831,9 @@
       var dansPer = tout.filter(function (e) { return ppJ(e.d) <= per; });
       var V = dansPer.filter(function (e) { return etat.f === 'tout' || e.f === etat.f; });
       var cpt = {}; dansPer.forEach(function (e) { cpt[e.f] = (cpt[e.f] || 0) + 1; });
-      var h = '<h2>Ton secteur</h2><div class="pp-chapo">' + (S.deps ? 'Les officines qui bougent au Bodacc dans ' + (S.deps.length > 1 ? 'tes ' + S.deps.length + ' départements' : 'ton département') : 'Les officines qui bougent au Bodacc dans toute la France') + ', et le geste à faire pour chacune.</div>';
+      var h = '<h2>Votre secteur</h2><div class="pp-chapo">' + (S.deps ? 'Les officines qui bougent au Bodacc dans ' + (S.deps.length > 1 ? 'vos ' + S.deps.length + ' départements' : 'votre département') : 'Les officines qui bougent au Bodacc dans toute la France') + ', et le geste à faire pour chacune.</div>';
       if (!SECTEUR || !(SECTEUR.ev || []).length) { c.innerHTML = h + '<div class="pp-bloc" style="margin-top:14px"><div class="pp-vide">Les annonces du Bodacc ne sont pas disponibles pour l’instant.</div></div>'; return; }
-      if (!S.deps && !S.dir) { c.innerHTML = h + '<div class="pp-bloc" style="margin-top:14px"><div class="pp-vide">Ton secteur n’est pas encore connu : il se calcule à partir des officines de ton fichier (au moins 3 par département).</div></div>'; return; }
+      if (!S.deps && !S.dir) { c.innerHTML = h + '<div class="pp-bloc" style="margin-top:14px"><div class="pp-vide">Votre secteur n’est pas encore connu : il se calcule à partir des officines de votre fichier (au moins 3 par département).</div></div>'; return; }
       if (S.dir) {
         var autres = sctAutresSecteurs(), nFr = (SECTEUR.ev || []).filter(function (e) { return ppJ(e.d) <= 92; }).length;
         h += '<div class="pp-bascule" role="group" aria-label="Étendue">' +
@@ -863,7 +863,7 @@
           t: esc(sctJoli(e.nom)) + (SCT_TAG_L[x.t] && x.t !== 'hors' ? ' <span class="pp-badge' + (x.t === 'client' ? ' vert' : '') + '">' + SCT_TAG_L[x.t] + '</span>' : ''),
           s: esc(fam.l1) + ' · ' + esc(sctJoli(e.ville)) + ' (' + esc(e.dep) + ')<br>' + esc(sctGeste(e, x.t)), d: sctQuand(e.d), dc: ppJ(e.d) <= 7 ? 'chaud' : '' });
       });
-      h += '<div class="pp-note" style="margin-top:12px">Source : Bodacc, relevé du ' + esc(ppDc(SECTEUR.maj)) + '. Les étiquettes « client » et « prospect » sont calculées sur ton appareil, jamais publiées.</div>';
+      h += '<div class="pp-note" style="margin-top:12px">Source : Bodacc, relevé du ' + esc(ppDc(SECTEUR.maj)) + '. Les étiquettes « client » et « prospect » sont calculées sur votre appareil, jamais publiées.</div>';
       c.innerHTML = h;
     }
     function brancher(c) {
@@ -882,7 +882,7 @@
         var dp = e.target.closest('[data-dep]'); if (!dp) return;
         var code = dp.getAttribute('data-dep'), S = ppScope();
         var L = ppAnnonces(S.deps).filter(function (x) { return x.dep === code && ppJ(x.d) <= SCT_S.per && (etat.f === 'tout' || x.f === etat.f); });
-        ppOuvrirPan({ sur: 'Ton secteur · ' + (SCT_DEPNOMS[code] || code), html: '<h2>' + esc(SCT_DEPNOMS[code] || code) + ' (' + esc(code) + ')</h2><div class="pp-chapo">' + ppPl(L.length, 'annonce') + ' sur la période choisie.</div><h3>Choisir une annonce</h3>' +
+        ppOuvrirPan({ sur: 'Votre secteur · ' + (SCT_DEPNOMS[code] || code), html: '<h2>' + esc(SCT_DEPNOMS[code] || code) + ' (' + esc(code) + ')</h2><div class="pp-chapo">' + ppPl(L.length, 'annonce') + ' sur la période choisie.</div><h3>Choisir une annonce</h3>' +
           ppListe(L, 20, function (x) { return ppLigne({ item: ppArtBodPret(x), c: PP_FC[x.f] || PP_FC.dirigeant, ico: x.f, t: esc(sctJoli(x.nom)), s: esc((SCT_FAM[x.f] || SCT_FAM.dirigeant).l1) + ' · ' + esc(sctJoli(x.ville)), d: sctQuand(x.d) }); }) });
       });
       c.addEventListener('change', function (e) {
@@ -890,7 +890,7 @@
         SCT_S.scope = 'autre'; SCT_S.autre = +e.target.value; etat.f = 'tout'; rendre(c); ppRafraichirPage();
       });
     }
-    ppOuvrirPan({ sur: 'Ton secteur · Bodacc', html: '<div data-pp-sect></div>', apres: function (cc) { BOX = cc.querySelector('[data-pp-sect]'); rendre(BOX); brancher(BOX); } });
+    ppOuvrirPan({ sur: 'Votre secteur · Bodacc', html: '<div data-pp-sect></div>', apres: function (cc) { BOX = cc.querySelector('[data-pp-sect]'); rendre(BOX); brancher(BOX); } });
   };
   // l'annonce se marque « lue » au moment où on l'OUVRE, pas quand la liste s'affiche
   function ppArtBodPret(e) { return { paresseux: e }; }
@@ -1073,7 +1073,7 @@
           '<div class="v2-wrap inf2"><div class="inf-empty">' +
             '<div class="inf-empty-ic">' + ICO('spark', 26, 2) + '</div>' +
             '<div class="inf-empty-t">' + (FAILED ? "L'édition du matin n'a pas pu être chargée" : "Pas encore d'édition aujourd'hui") + '</div>' +
-            '<div class="inf-empty-d">' + (FAILED ? 'Vérifie ta connexion. L\'édition se compose chaque matin vers 9 h.' : 'L\'édition se compose automatiquement chaque matin vers 9 h.') + '</div>' +
+            '<div class="inf-empty-d">' + (FAILED ? 'Vérifiez votre connexion. L\'édition se compose chaque matin vers 9 h.' : 'L\'édition se compose automatiquement chaque matin vers 9 h.') + '</div>' +
           '</div></div>';
         return;
       }

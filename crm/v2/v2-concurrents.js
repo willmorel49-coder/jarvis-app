@@ -811,7 +811,7 @@
   // module) et l'actualité du secteur, derrière trois questions simples.
   var ESPACES = [
     { k: 'comparateur', q: 'Qui est le moins cher ?', t: 'Le comparateur', d: 'Tous les concurrents côte à côte, produit par produit : nos références les plus commandées par les pharmacies en tête, notre net face au net de Sagitta, OCP, Alliance, Pharmafit, CERP et Pharmazon.', go: 'Ouvrir le comparateur' },
-    { k: 'acteurs', q: 'Qui sont-ils ?', t: 'Les grossistes', d: 'Les grossistes-répartiteurs de France : leur poids sur le marché, leurs groupes, leurs enseignes, leurs forces et faiblesses — et tes remontées terrain.', go: 'Voir les grossistes' },
+    { k: 'acteurs', q: 'Qui sont-ils ?', t: 'Les grossistes', d: 'Les grossistes-répartiteurs de France : leur poids sur le marché, leurs groupes, leurs enseignes, leurs forces et faiblesses — et vos remontées terrain.', go: 'Voir les grossistes' },
     { k: 'prix', q: 'À quel prix ?', t: 'Leurs prix', d: 'Leurs catalogues, référence par référence : Sagitta, OCP, Pharmazon, Cooper, Farmaline… avec notre net en face pour savoir qui est le moins cher, plus les conditions que des groupements obtiennent des laboratoires.', go: 'Comparer les prix' },
     { k: 'actu', q: 'Quoi de neuf ?', t: 'L\'actualité', d: 'Ce que la presse et les annonces officielles disent des grossistes, mis à jour chaque jour. Se lit dans Infos du jour.', go: 'Lire dans Infos du jour' }
   ];
@@ -851,7 +851,7 @@
       '<div class="cc-portes">' + ESPACES.map(function (e, i) {
         return '<button type="button" class="cc-porte" onclick="' + allerA(e.k) + '"><span class="n num">' + (i + 1) + '</span><span class="q">' + esc(e.q) + '</span><span class="t">' + esc(e.t) + '</span><span class="d">' + esc(e.d) + '</span><span class="k" data-k="' + e.k + '">' + chiffrePorte(e.k) + '</span><span class="go">' + esc(e.go) + ' <span aria-hidden="true">→</span></span></button>';
       }).join('') + '</div>' +
-      '<div class="cc-comptoir"><h2 class="cc-acc-h">Ou cherche directement un produit</h2><p class="cc-acc-s">Un nom, un code : le prix de chaque concurrent, à côté du nôtre.</p>' +
+      '<div class="cc-comptoir"><h2 class="cc-acc-h">Ou cherchez directement un produit</h2><p class="cc-acc-s">Un nom, un code : le prix de chaque concurrent, à côté du nôtre.</p>' +
       comptoirBar(true) +
       '<div id="cc-cres" class="cc-cres">' + (S.cq.trim() ? resultatsHtml() : '') + '</div></div></section>';
   }
@@ -1150,7 +1150,7 @@
       var host = document.getElementById('cc-gr-host');
       if (host) {
         if (V2.grossistesCorps) V2.grossistesCorps(host, espace);
-        else host.innerHTML = '<div class="cc-vide">Cette partie n\'est pas chargée. Recharge la page.</div>';
+        else host.innerHTML = '<div class="cc-vide">Cette partie n\'est pas chargée. Rechargez la page.</div>';
       }
       if (espace === 'accueil') remplirChiffres();
       if (SANS) return;
