@@ -104,7 +104,7 @@
           '<button class="v2-btn v2-btn-ghost" onclick="V2.rdvLien.remplacer()">Remplacer</button>' +
         '</div>' +
         '<p class="v2-lien-note">Ce lien ne donne accès qu’à la prise de rendez-vous avec vous. ' +
-          'Pour l’arrêter, utilisez <b>Fermer</b> : plus personne ne pourra réserver, et le lien ' +
+          'Pour l’arrêter, utilisez <b>Fermer le lien</b> : plus personne ne pourra réserver, et le lien ' +
           'reste le même si vous le rouvrez plus tard.</p>' +
       '</div>';
     },

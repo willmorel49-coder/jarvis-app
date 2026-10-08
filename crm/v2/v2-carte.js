@@ -1638,9 +1638,9 @@
     // DOM a été retiré par le routeur — l'appeler faisait planter la console de l'écran
     // suivant avec « Map container not found » (constaté par le lot 0, cause non identifiée
     // alors). Même garde que le écouteur resize juste en dessous.
-    setTimeout(function () { if (map && V2.route && V2.route.name === 'carte' && document.getElementById('carte-map')) { map.invalidateSize(); rebuild(); updateTourBar(); drawTourLine(); homeView(); } }, 60);
-    setTimeout(function () { if (map && V2.route && V2.route.name === 'carte' && document.getElementById('carte-map')) map.invalidateSize(); }, 420);
-    if (!V2._carteResize) { V2._carteResize = true; window.addEventListener('resize', function () { if (map && V2.route && V2.route.name === 'carte') { map.invalidateSize(); renderFbRow(); } }); }
+    setTimeout(function () { if (map && surCarte() && document.getElementById('carte-map')) { map.invalidateSize(); rebuild(); updateTourBar(); drawTourLine(); homeView(); } }, 60);
+    setTimeout(function () { if (map && surCarte() && document.getElementById('carte-map')) map.invalidateSize(); }, 420);
+    if (!V2._carteResize) { V2._carteResize = true; window.addEventListener('resize', function () { if (map && surCarte()) { map.invalidateSize(); renderFbRow(); } }); }
   }
   // Fond de carte. CARTO (light_all) exige une clé d'API depuis août 2026 : chaque
   // tuile affichait « API KEY REQUIRED » en travers de la France (constaté le 27/08/2026).
@@ -1844,6 +1844,10 @@
     else if (key === 'search') { searchTerm = ''; var s = document.getElementById('cn-search'); if (s) s.value = ''; var s2 = document.getElementById('cn-search2'); if (s2) s2.value = ''; }
     applyFilters();
   };
+
+  // « groupements », « copilote » et « sagitta » sont d'anciennes adresses qui affichent cette même carte :
+  // tant que la garde ne connaissait que « carte », on y arrivait sur un fond sans aucun point (08/10/2026).
+  function surCarte() { var n = V2.route && V2.route.name; return n === 'carte' || n === 'groupements' || n === 'copilote' || n === 'sagitta'; }
 
   function segBtn(k, lbl) { return '<button id="cb-' + k + '"' + (colorMode === k ? ' class="on"' : '') + ' onclick="V2.carteColor(\'' + k + '\')">' + lbl + '</button>'; }
   function typeBtn(k, lbl) { return '<button id="ct-' + k + '"' + (typeFocus === k ? ' class="on"' : '') + ' onclick="V2.carteType(\'' + k + '\')">' + lbl + '</button>'; }

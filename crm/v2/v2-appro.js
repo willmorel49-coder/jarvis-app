@@ -2928,7 +2928,7 @@
       '@media(max-width:640px){.tk-nat{grid-template-columns:1fr}}' +
       '.ap-navb{flex:1;min-width:120px;font-size:13.5px;font-weight:800;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:11px;padding:10px 8px;cursor:pointer;transition:.15s}' +
       '.ap-navb:hover{border-color:#C9D2E0}.ap-navb.on{background:var(--ip-blue);color:#fff;border-color:var(--ip-blue)}' +
-      '@media(max-width:640px){.ap-hero{grid-template-columns:1fr 1fr}.ap-navb{min-width:0;font-size:12.5px;padding:9px 4px}}' +
+      '@media(max-width:640px){.ap-hero{grid-template-columns:1fr 1fr}.ap-navb{flex:1 1 30%;min-width:0;font-size:12.5px;padding:9px 4px}}' +
       /* ── L'AXE DES TRENTE JOURS (écran d'accueil d'APPRO depuis le 28/09/2026) ──
          Aucun backdrop-filter, aucun filter:blur, aucun background-clip:text : le Mac
          de Will fige sous Safari, et un hook refuse l'écriture de ces quatre effets. */

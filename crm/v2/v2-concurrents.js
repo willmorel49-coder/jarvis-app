@@ -970,7 +970,7 @@
     var maxN = tout.length ? tout[0].n : 1, g = 0, p = 0, e = 0, hv = 0;
     l.forEach(function (x) { if (x.v === 'win') g++; else if (x.v === 'lose') p++; else if (x.v === 'egal') e++; else if (x.exclu && x.nb) hv++; });
     var manque = CMP.filter(function (k) { return !SRC[k].charge(); });
-    var bilan = '<div class="cc-bilan cmp-bilan"><div><b>' + num(l.length) + '</b> produit' + (l.length > 1 ? 's' : '') + (S.cmp.tous ? '' : ' vendus chez nous et relevés chez au moins un concurrent') +
+    var bilan = '<div class="cc-bilan cmp-bilan"><div><b>' + num(l.length) + '</b> produit' + (l.length > 1 ? 's' : '') + (S.cmp.tous ? '' : (l.length > 1 ? ' vendus chez nous et relevés' : ' vendu chez nous et relevé') + ' chez au moins un concurrent') +
       ' · <span class="win">' + num(g) + ' où Intégral est le moins cher</span> · <span class="lose">' + num(p) + ' où un concurrent est moins cher</span> · ' + num(e) + ' à égalité' +
       (hv ? ' · ' + num(hv) + ' génériques ou biosimilaires hors verdict' : '') +
       (manque.length ? '<br><span class="cmp-att">En attente : ' + manque.map(function (k) { return esc(COURT[k]); }).join(', ') + ' — les chiffres bougeront à leur arrivée.</span>' : '') + '</div>' +
@@ -1204,8 +1204,8 @@
       /* plus spécifique que « .cc-wrap:not(.tel) .cc-cres » (liste déroulante masquée), écrite plus bas */
       '.cc-wrap .cc-accueil .cc-comptoir .cc-cres{position:relative;display:block;margin-top:8px;padding:0;background:none;border:0;box-shadow:none;max-height:none;overflow:visible}',
       '@media (max-width:700px){.cc-portes{grid-template-columns:1fr;gap:10px}.cc-porte{padding:18px 18px 16px}.cc-porte .t{font-size:20px}.cc-accueil .v2-page-title{font-size:28px}',
-      /* les quatre boutons tiennent dans la largeur : rien de caché hors écran */
-      '.cc-espaces{width:auto;gap:2px;padding:3px}.cc-esp,.cc-esp-home{padding:0 6px;font-size:13px}}',
+      /* les cinq boutons passent sur deux lignes : rien de caché hors écran */
+      '.cc-espaces{width:auto;gap:2px;padding:3px;flex-wrap:wrap;border-radius:22px}.cc-esp,.cc-esp-home{flex:1 1 auto;padding:0 6px;font-size:13px}}',
       /* onglets */
       '.cc-tabs{display:flex;gap:6px;padding:6px;margin:0 0 10px;border-radius:var(--r-md);background:#F3F6FB;border:1px solid var(--line);box-shadow:var(--sh-1);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}',
       '.cc-tabs::-webkit-scrollbar{display:none}',

@@ -954,7 +954,7 @@
           ' oninput="V2.comptoir.q(this.value)">' +
         '</div>' +
         '<div class="cp-chips">' + fams + '</div>' +
-        '<div class="cp-chips">' +
+        '<div class="cp-chips cp-chips-w">' +
           '<button class="cp-chip' + (C.opp ? ' on' : '') + '" onclick="V2.comptoir.opp()">Opportunités seulement</button>' +
           '<button class="cp-chip' + (C.stock ? ' on' : '') + '" onclick="V2.comptoir.stock()">En stock</button>' +
           '<select class="cp-sel" aria-label="Meilleures ventes France" onchange="V2.comptoir.top(this.value)">' + selTop + '</select>' +
@@ -1003,6 +1003,7 @@
       '.cp-chip{flex:none;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid rgba(16,19,28,.12);background:var(--card);font:650 13px/1 Inter,sans-serif;color:var(--ip-ink);cursor:pointer;white-space:nowrap}',
       '.cp-chip.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
       '.cp-sel{flex:none;min-height:36px;padding:0 10px;border-radius:999px;border:1px solid rgba(16,19,28,.12);background:var(--card);font:650 13px/1 Inter,sans-serif;color:var(--ip-ink)}',
+      '@media (max-width:640px){.cp-chips-w{flex-wrap:wrap;overflow-x:visible}.cp-chips-w .cp-sel{flex:1 1 100%;max-width:100%}}',
       '.cp-leg{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;font:400 13px/1.3 Inter,sans-serif;color:var(--cp-ink3)}',
       '.cp-leg span{display:inline-flex;align-items:center;gap:5px}',
       '.cp-leg-m{display:inline-block;width:2px;height:13px;background:var(--ip-ink)}',
