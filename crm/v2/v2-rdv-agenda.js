@@ -148,7 +148,7 @@
       return '<div class="v2-ag-box">' +
         '<div class="v2-ag-etat">' + etat + '</div>' +
         '<input type="url" id="v2-ag-url" inputmode="url" autocomplete="off" spellcheck="false" ' +
-          'placeholder="Collez ici l’adresse privée de votre agenda" />' +
+          'placeholder="Collez l’adresse privée de votre agenda" />' +
         '<div class="v2-ag-acts">' +
           '<button class="v2-btn" onclick="V2.rdvAgenda.tester()">Tester</button>' +
           '<button class="v2-btn v2-btn-primary" onclick="V2.rdvAgenda.brancher()">Connecter mon agenda</button>' +
