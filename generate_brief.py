@@ -903,7 +903,7 @@ THEME_ANGLE = {
     'rupture':      'Une molécule qui manque au comptoir, c\'est une commande à sécuriser.',
     'securite':     'À signaler aux officines avant qu\'elles ne l\'apprennent ailleurs.',
     'concurrence':  'Bouge le paysage de la répartition : à connaître avant un rendez-vous.',
-    'officine':     'Change le quotidien de tes clients — matière à conversation au comptoir.',
+    'officine':     'Change le quotidien de vos clients — matière à conversation au comptoir.',
     'industrie':    'Amont du circuit : ce qui arrivera en officine dans quelques mois.',
     'sante':        'De quoi parler au comptoir — la culture métier qui fait la différence.',
     'autre':        'Signalé par la veille du secteur.',
