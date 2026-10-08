@@ -1182,7 +1182,8 @@
     document.addEventListener('keydown', x13Ecoute);
     document.addEventListener('touchstart', x13Ecoute, { passive: true });
     document.addEventListener('touchend', x13Ecoute, { passive: true });
-    window.addEventListener('hashchange', function () { if (!V2.route || V2.route.name !== 'infos') x13Reset(); });
+    // on lit l'adresse elle-même : cet écouteur passe AVANT celui du routeur (v2-app.js), V2.route date encore de l'écran quitté
+    window.addEventListener('hashchange', function () { if ((location.hash || '').replace(/^#/, '').split('/')[0] !== 'infos') x13Reset(); });
   }
 
   /* ════════════════════════════ RENDU ════════════════════════════ */
