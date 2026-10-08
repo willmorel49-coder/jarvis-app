@@ -293,7 +293,7 @@ EXCLUS = ['ADC', 'VM', 'AM', 'SEP', 'GL', 'AUL', 'SV', 'LP',
 # (refacturé) = 98,40 € rendus. On inverse le signe (quantité et montant) de ces
 # lignes pour qu'elles se retirent du CA et de la marge (Will, 16/09/2026).
 AVOIRS_EN_POSITIF = {'GUY', 'TIF', 'PHI', 'GER'}
-MONTHS_NUM = [1, 2, 3, 4, 5, 6, 7, 8]
+MONTHS_NUM = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 NB_MOIS = len(MONTHS_NUM)
 MOIS_ABBR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil',
              'Août', 'Sep', 'Oct', 'Nov', 'Déc']
