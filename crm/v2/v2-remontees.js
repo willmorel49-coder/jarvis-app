@@ -260,7 +260,7 @@
       root.innerHTML = top +
         '<div class="v2-wrap narrow">' +
           '<div class="v2-rem-hero"><h1>Remontées de l\'équipe</h1>' +
-            '<p>Propose une amélioration, vote pour celles des autres, suis leur avancement.</p>' +
+            '<p>Proposez une amélioration, votez pour celles des autres, suivez leur avancement.</p>' +
             '<button class="v2-btn v2-btn-primary" onclick="V2.remonteeOpen()">' + (V2.ICO ? V2.ICO('plus', 15, 2) : '+') + ' Proposer une idée</button></div>' +
           '<div class="v2-rem-tools"><span class="v2-rem-count" id="v2-rem-count"></span>' +
             '<div class="v2-rem-seg"><button class="' + (sortBy === 'date' ? 'on' : '') + '" onclick="V2.remonteeSort(\'date\')">Récentes</button>' +

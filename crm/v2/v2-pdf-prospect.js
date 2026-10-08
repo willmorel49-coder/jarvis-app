@@ -472,7 +472,7 @@
     function lancer(mode) {
       if (!etat.pages) { V2.toast('Mise en page en cours…'); return; }
       V2.toast('Génération du PDF…');
-      fabriquer(etat.pages, fn, mode, titre).catch(function (e) { console.error(e); V2.toast('Module PDF indisponible — vérifie ta connexion', 'error'); });
+      fabriquer(etat.pages, fn, mode, titre).catch(function (e) { console.error(e); V2.toast('Module PDF indisponible — vérifiez votre connexion', 'error'); });
     }
     bd.querySelector('#pdfp-dl').onclick = function () { lancer('save'); };
     var sh = bd.querySelector('#pdfp-sh'); if (sh) sh.onclick = function () { lancer('share'); };

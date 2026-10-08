@@ -276,7 +276,7 @@
       cluster.on('click', openPop);
       cluster.on('clustermouseover', function (a) {   // survol d'un paquet : dire combien de pharmacies et comment les voir
         var n = a.layer.getChildCount();
-        a.layer.bindTooltip(n.toLocaleString('fr') + ' pharmacies — clique ou zoome pour les voir une par une', { direction: 'top', className: 'cn-tip', sticky: true }).openTooltip();
+        a.layer.bindTooltip(n.toLocaleString('fr') + ' pharmacies — cliquez ou zoomez pour les voir une par une', { direction: 'top', className: 'cn-tip', sticky: true }).openTooltip();
       });
     } else {
       cluster = window.L.layerGroup();
@@ -822,7 +822,7 @@
       if (zone) { var r = resolveStart(zone); if (!r) { if (V2.toast) V2.toast('« ' + zone + ' » introuvable (ville ou pharmacie)'); return; } villeCenter = r.center; zoneName = zone; }
       if (!originPt && !villeCenter && map) { var c = map.getCenter(); originPt = { n: 'centre de la carte', lat: c.lat, lng: c.lng }; }
       var origin = originPt || villeCenter, ville = villeCenter || origin;
-      if (!origin || !ville) { if (V2.toast) V2.toast('Indique une adresse, une ville ou une pharmacie'); return; }
+      if (!origin || !ville) { if (V2.toast) V2.toast('Indiquez une adresse, une ville ou une pharmacie'); return; }
       var pinned = tour.map(function (s) { var rm = parseHM(s.rdv);
         return { ref: { lat: s.lat, lng: s.lng }, id: (s.id != null ? s.id : s.k), seg: (s.sg != null ? s.sg : 3), grp: (s.gp != null ? s.gp : null),
           rdv: rm, rdvEnd: rm != null ? rm + 10 : null, pinned: true, rdvStr: s.rdv || '', name: s.n, ville: s.v, cp: s.c, tel: s.t }; });
@@ -832,7 +832,7 @@
         pinned: pinned, pinnedIds: pinnedIds, grpTargets: grpTargets, grpQuota: {}, segMode: incClients ? 'mixte' : 'prospection',
         nWanted: count, incClients: incClients, commFocus: commFocus.length === 1 ? commFocus[0] : '' };
       var res = tpPlan(plan), stops = res.seq.filter(function (s) { return !s.isOrigin; });
-      if (stops.length < 1) { if (V2.toast) V2.toast('Pas assez de pharmacies — élargis la zone ou change de ville'); return; }
+      if (stops.length < 1) { if (V2.toast) V2.toast('Pas assez de pharmacies — élargissez la zone ou changez de ville'); return; }
       tour = stops.map(function (s) { return { k: (s.name || '') + '|' + (s.cp || ''), n: s.name, v: s.ville, c: s.cp, t: s.tel, lat: s.ref.lat, lng: s.ref.lng, id: s.id, sg: s.seg, gp: s.grp, rdv: s.rdvStr || '' }; });
       depot = { n: (originPt ? (originPt.n || 'Mon départ') : ('Départ · ' + (zoneName || 'zone'))), lat: origin.lat, lng: origin.lng };
       try { localStorage.setItem('jarvis_depot_v1', JSON.stringify(depot)); } catch (e) {}
@@ -899,7 +899,7 @@
   }
   V2.carteProsRadius = function (v) { PROSPECT_RADIUS = parseInt(v, 10) || 8; renderProsPanel(); };
   V2.carteProspects = function () {
-    if (!tour.length) { if (V2.toast) V2.toast('Compose d\'abord une tournée'); return; }
+    if (!tour.length) { if (V2.toast) V2.toast('Composez d\'abord une tournée'); return; }
     if (!document.getElementById('cn-prospanel')) {
       var el = document.createElement('div'); el.id = 'cn-prospanel'; el.className = 'cn-panel';
       el.onclick = function (e) { if (e.target === el) V2.carteProsClose(); };
@@ -922,7 +922,7 @@
       return '<div class="cn-prow"><div class="cn-tmain"><b>' + esc(r.n) + '</b><span>' + esc(r.v) + ' · ' + esc(r.c) + ' · à ' + (Math.round(r.near * 10) / 10) + ' km du trajet</span></div>' +
         '<div class="cn-padd">+' + (Math.round(r.add * 10) / 10) + ' km</div>' +
         '<button class="v2-btn v2-btn-primary cn-paddbtn" onclick="V2.carteProsAdd(' + r.i + ')">+ Ajouter</button></div>';
-    }).join('') || '<div class="cn-tempty">Aucun prospect dans un rayon de ' + PROSPECT_RADIUS + ' km du trajet.<br>Élargis le rayon ci-dessus.</div>';
+    }).join('') || '<div class="cn-tempty">Aucun prospect dans un rayon de ' + PROSPECT_RADIUS + ' km du trajet.<br>Élargissez le rayon ci-dessus.</div>';
     el.innerHTML = '<div class="cn-pdialog" onclick="event.stopPropagation()">' +
       '<div class="cn-phead"><div><b>Prospects sur ma tournée</b><small>' + list.length + ' prospect' + (list.length > 1 ? 's' : '') + ' · classés par km ajoutés</small></div>' +
         '<button class="cn-px" onclick="V2.carteProsClose()">✕</button></div>' +
@@ -933,7 +933,7 @@
   // Dépôt : définir par clic sur la carte
   V2.carteDepotPick = function () {
     pickDepotMode = true;
-    if (V2.toast) V2.toast('Clique un point sur la carte pour définir le dépôt');
+    if (V2.toast) V2.toast('Cliquez sur un point de la carte pour définir le dépôt');
     var mp = document.getElementById('carte-map'); if (mp) mp.style.cursor = 'crosshair';
   };
   V2.carteDepotClear = function () { depot = null; try { localStorage.removeItem('jarvis_depot_v1'); } catch (e) {} drawTourLine(); renderTourPanel(); };
@@ -943,7 +943,7 @@
     var d = DEPOTS[i]; setDepot({ n: (d.s ? d.s + ' — ' : '') + d.city, lat: d.lat, lng: d.lng, di: i });
   };
   V2.carteDepotAuto = function () {
-    if (!tour.length) { if (V2.toast) V2.toast('Ajoute d\'abord des arrêts'); return; }
+    if (!tour.length) { if (V2.toast) V2.toast('Ajoutez d\'abord des arrêts'); return; }
     var cx = 0, cy = 0; tour.forEach(function (s) { cx += s.lat; cy += s.lng; }); cx /= tour.length; cy /= tour.length;
     var bi = 0, bd = Infinity;
     DEPOTS.forEach(function (d, i) { var dd = haversine({ lat: cx, lng: cy }, d); if (dd < bd) { bd = dd; bi = i; } });
@@ -1209,7 +1209,7 @@
         '<label class="cn-tgen-chk"><input type="checkbox" id="cn-tgen-cli" checked> Inclure mes clients</label>' +
       '</div>' +
       '<button class="v2-btn v2-btn-primary cn-tgen-go" onclick="V2.carteBuildTour()">Générer la tournée</button>' +
-      '<div class="cn-tgen-h"><b>Prospection sur ta zone de livraison :</b> on ne propose QUE des prospects à moins de ' + TP.DELIV_RADIUS + ' km d\'un client Intégral (là où tu livres déjà) — pour limiter les coûts de livraison. Les prospects isolés sont écartés. Optimise <b>sur les axes</b> et respecte les RDV. Astuce : « + Ajouter à ma tournée » sur une pharmacie → arrêt imposé.</div>' +
+      '<div class="cn-tgen-h"><b>Prospection sur votre zone de livraison :</b> on ne propose QUE des prospects à moins de ' + TP.DELIV_RADIUS + ' km d\'un client Intégral (là où vous livrez déjà) — pour limiter les coûts de livraison. Les prospects isolés sont écartés. Optimise <b>sur les axes</b> et respecte les RDV. Astuce : « + Ajouter à ma tournée » sur une pharmacie → arrêt imposé.</div>' +
     '</div>';
   }
   function renderTourPanel() {
@@ -1241,7 +1241,7 @@
     }).join('');
     var depHead = tour.length ? '<div class="cn-tldep"><span class="cn-tltime">' + esc(_startTime) + '</span><span class="cn-tldeplbl">Départ' + (depot && depot.n ? ' · ' + esc(depot.n) : '') + '</span></div>' : '';
     var rows = tour.length ? '<div class="cn-tl">' + depHead + timeline + '</div>'
-      : '<div class="cn-tempty">Ta tournée est vide.<br>Utilise « Composer ma tournée » ci-dessus, ou clique une pharmacie → « Partir d\'ici ».</div>';
+      : '<div class="cn-tempty">Votre tournée est vide.<br>Utilisez « Composer ma tournée » ci-dessus, ou cliquez sur une pharmacie → « Partir d\'ici ».</div>';
     var kmTot = Math.round(routeKm());
     var perStop = tour.length ? (Math.round(kmTot / tour.length * 10) / 10) : 0;
     var isReal = !!routeReal();   // temps/distances issus du vrai réseau routier OSRM ?
@@ -1983,7 +1983,7 @@
         '<button class="cn-lloc" onclick="V2.carteLocate(' + i + ')" title="Voir sur la carte">◎</button>' +
         '<button class="cn-ladd' + (inT ? ' in' : '') + '" onclick="V2.carteTour(' + i + ');V2.carteListRefreshRow(' + i + ')" title="Tournée">' + (inT ? '✓' : '+') + '</button>' +
       '</div>';
-    }).join('') || '<div class="cn-tempty">Aucune pharmacie ne correspond.<br>Change les filtres ou la recherche.</div>';
+    }).join('') || '<div class="cn-tempty">Aucune pharmacie ne correspond.<br>Changez les filtres ou la recherche.</div>';
     var more = remaining > 0 ? '<button class="cn-listmore" onclick="V2.carteListMore()">Afficher plus (' + remaining.toLocaleString('fr') + ' restantes)</button>' : '';
     return { total: total, shown: shown, remaining: remaining, rows: rows, more: more };
   }

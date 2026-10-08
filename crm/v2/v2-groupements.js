@@ -354,7 +354,7 @@
   };
   function initMap() {
     var el = document.getElementById('ps-map'); if (!el) return;
-    if (!window.L) { el.innerHTML = '<div class="grp-load">Carte indisponible — vérifie ta connexion internet.</div>'; return; }
+    if (!window.L) { el.innerHTML = '<div class="grp-load">Carte indisponible — vérifiez votre connexion internet.</div>'; return; }
     if (_map) { try { _map.remove(); } catch (e) {} _map = null; }
     el.innerHTML = '';
     _map = window.L.map(el, { scrollWheelZoom: true, preferCanvas: true }).setView([46.7, 2.4], 6);

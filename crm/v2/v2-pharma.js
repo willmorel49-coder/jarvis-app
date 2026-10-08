@@ -523,8 +523,8 @@
       ? 'À pousser : son groupement le prend, pas elle'
       : 'À pousser : tout le réseau le prend, pas elle';
     var soustitre = scope === 'groupement'
-      ? 'produits que le plus de pharmacies de ' + esc(g.name) + ' commandent et que cette officine n\'a pas — gain estimé = rotation moyenne × ta remise'
-      : 'produits que le plus de pharmacies du réseau commandent et que cette officine n\'a pas — gain estimé = rotation moyenne × ta remise';
+      ? 'produits que le plus de pharmacies de ' + esc(g.name) + ' commandent et que cette officine n\'a pas — gain estimé = rotation moyenne × votre remise'
+      : 'produits que le plus de pharmacies du réseau commandent et que cette officine n\'a pas — gain estimé = rotation moyenne × votre remise';
     var open = sectionOpen('netreco');
     if (!reco.length) {
       // groupement sélectionné mais trop peu de pharmacies / aucune reco → on garde le sélecteur
@@ -532,7 +532,7 @@
       return '<div class="ph-section">' +
         sectionHead(titre, soustitre, 'netreco', open) +
         (open ? '<div class="v2-card" style="padding:14px">' + toggle +
-          '<div style="color:var(--muted);font-size:13px;padding:8px 4px">Pas assez de pharmacies de ce groupement dans tes données pour comparer. Bascule sur « ' + reseauLbl() + ' ».</div></div>' : '') +
+          '<div style="color:var(--muted);font-size:13px;padding:8px 4px">Pas assez de pharmacies de ce groupement dans vos données pour comparer. Basculez sur « ' + reseauLbl() + ' ».</div></div>' : '') +
         '</div>';
     }
     var totalGain = reco.reduce(function (s, r) { return s + (r.gain || 0); }, 0);
@@ -640,7 +640,7 @@
       return '<div class="ipv-row">' +
         '<span class="ipv-rank">#' + (i + 1) + '</span>' +
         '<span class="ipv-name">' + esc(cap((r.d || '').toLowerCase())) +
-          '<small style="display:block;color:var(--muted);font-family:var(--mono)">rotation ~' + V2.fmtNum(r.rota) + '/an · ' + r.n + ' phies · ta remise ' + V2.fmtEur(r.remise) + '/an</small></span>' +
+          '<small style="display:block;color:var(--muted);font-family:var(--mono)">rotation ~' + V2.fmtNum(r.rota) + '/an · ' + r.n + ' phies · votre remise ' + V2.fmtEur(r.remise) + '/an</small></span>' +
         '<span class="ipv-vol" style="color:var(--c-opp);font-weight:800" title="marge nette gagnée par l\'officine / an">' + V2.fmtEur(r.marge) + '<small>/an</small></span>' +
         '</div>';
     }).join('');
@@ -1868,7 +1868,7 @@
         '<div class="pha-acts">' +
           (tel ? '<a class="pha-btn" href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) + '">' + ICO('phone', 15) + 'Appeler</a>' : '') +
           (mail ? '<a class="pha-btn" href="mailto:' + esc(mail) + '">' + ICO('mail', 15) + 'E-mail</a>' : '') +
-          (mail && V2.rdv ? '<button class="pha-btn pha-btn-pri" onclick="V2.rdv.proposer(\'' + pidSafe + '\')" title="Elle choisit son créneau, calé sur la géographie de ta journée">' + ICO('cal', 15) + 'Proposer un RDV</button>' : '') +
+          (mail && V2.rdv ? '<button class="pha-btn pha-btn-pri" onclick="V2.rdv.proposer(\'' + pidSafe + '\')" title="Elle choisit son créneau, calé sur la géographie de votre journée">' + ICO('cal', 15) + 'Proposer un RDV</button>' : '') +
           (!tel && !mail ? '<span class="pha-sub" style="color:rgba(255,255,255,.7)">Téléphone et e-mail à renseigner dans « Infos officine »</span>' : '') +
         '</div>' +
       '</div>';
@@ -2162,7 +2162,7 @@
     V2.promoted = V2.promoted || {};
     V2.promoted[String(pid)] = true;
     if (V2.profil && V2.profil.saveOverride) V2.profil.saveOverride(pid, { promu: true });
-    if (V2.toast) V2.toast('Passé en client ✓ — visible dans tes Clients');
+    if (V2.toast) V2.toast('Passé en client ✓ — visible dans vos Clients');
     V2.render();
   };
   V2.pharmaSetComm = function (val) {
@@ -2375,7 +2375,7 @@
       }).save().then(function () {
         cleanP(); V2.toast('PDF téléchargé');
       }).catch(function (e) { console.error(e); cleanP(); V2.toast('Erreur PDF', 'error'); });
-    }).catch(function (e) { console.error(e); V2.toast('Module PDF indisponible — vérifie ta connexion', 'error'); });
+    }).catch(function (e) { console.error(e); V2.toast('Module PDF indisponible — vérifiez votre connexion', 'error'); });
   };
 
   // Aperçu visuel (modal) de la prépa RDV avant téléchargement — WYSIWYG
@@ -2783,7 +2783,7 @@
       '<div class="v2-card" style="margin-bottom:22px">' +
         '<div class="v2-card-head"><div class="v2-card-t">' + ICO('pharma', 17) + 'Pharmacies du groupement</div>' +
           '<span class="v2-card-link" style="cursor:default;color:var(--muted)">' + members.length + ' · ' + data.panel + ' cliente' + (data.panel > 1 ? 's' : '') + '</span></div>' +
-        (memRows || '<div class="v2-empty"><div class="v2-empty-d">Aucune pharmacie de ce groupement dans tes données.</div></div>') +
+        (memRows || '<div class="v2-empty"><div class="v2-empty-d">Aucune pharmacie de ce groupement dans vos données.</div></div>') +
       '</div>';
     var catsHtml = data.cats.length
       ? data.cats.map(function (o, i) { return renderGrpCatCard(o, i, data.panel, data.ovKey); }).join('')
@@ -2922,7 +2922,7 @@
   function refreshProdList() {
     var box = document.getElementById('prod-pick-list'); if (!box) return;
     var B = window.BENCHMARK || [], ql = (prodPick.q || '').toLowerCase().trim();
-    if (ql.length < 2) { box.innerHTML = '<div style="padding:22px;text-align:center;color:var(--muted)">Tape au moins 2 lettres pour chercher un produit du catalogue.</div>'; return; }
+    if (ql.length < 2) { box.innerHTML = '<div style="padding:22px;text-align:center;color:var(--muted)">Tapez au moins 2 lettres pour chercher un produit du catalogue.</div>'; return; }
     var out = [], n = 0;
     for (var i = 0; i < B.length && n < 400; i++) {
       var b = B[i], hay = ((b.designation || '') + ' ' + (b.cip13 || '')).toLowerCase();
@@ -3209,7 +3209,7 @@
         worker.save().then(function () { cleanup(); V2.toast('PDF téléchargé'); })
           .catch(function (e) { console.error(e); cleanup(); V2.toast('Erreur PDF', 'error'); });
       }
-    }).catch(function (e) { console.error(e); V2.toast('Module PDF indisponible — vérifie ta connexion', 'error'); });
+    }).catch(function (e) { console.error(e); V2.toast('Module PDF indisponible — vérifiez votre connexion', 'error'); });
   }
 
   // Génère le PDF DEPUIS l'élément exact de l'aperçu (ce que l'utilisateur voit) -> rendu identique.
@@ -3235,7 +3235,7 @@
       } else {
         worker.save().then(function () { done('PDF téléchargé'); }).catch(function (e) { console.error(e); done('Erreur PDF'); });
       }
-    }).catch(function (e) { console.error(e); sheet.style.transform = prevT; V2.toast('Module PDF indisponible — vérifie ta connexion', 'error'); });
+    }).catch(function (e) { console.error(e); sheet.style.transform = prevT; V2.toast('Module PDF indisponible — vérifiez votre connexion', 'error'); });
   }
 
   // Aperçu avant impression — modal WYSIWYG (réutilise le style .prepa-*)
@@ -3811,7 +3811,7 @@
     var keepY = body ? body.scrollTop : 0;
     document.getElementById('tx-tt').innerHTML = ICO('fiche', 17, 2) + (tx.modele ? ' Documents à joindre au mail' : ' Transmettre à ' + esc(nom));
     body.innerHTML =
-      (tx.modele ? '<div class="tx-to">Mail : <b>' + esc(tx.texte.objet) + '</b><br>L\'adresse du pharmacien s\'ajoute ensuite dans ta messagerie.</div>'
+      (tx.modele ? '<div class="tx-to">Mail : <b>' + esc(tx.texte.objet) + '</b><br>L\'adresse du pharmacien s\'ajoute ensuite dans votre messagerie.</div>'
         : mail ? '<div class="tx-to">Destinataire : <b>' + esc(mail) + '</b></div>'
             : '<div class="tx-to tx-err">Pas d\'e-mail connu pour cette officine — à renseigner dans « Infos officine ».</div>') +
       (tx.modele ? '' : pharma ? group('Ses listings produits', 'ce qu\'elle n\'a pas encore', of('listing'), txStyleHtml(of('listing')))
@@ -3840,10 +3840,10 @@
         (!canSh && (mail || tx.modele) ? '<a class="v2-btn v2-btn-ghost" href="' + esc(href) + '">Ouvrir le mail</a>' : '') +
         '<button class="v2-btn v2-btn-primary" onclick="V2.pharmaTxSend()">' + ICO(canSh ? 'spark' : 'download', 16) + (canSh ? 'Envoyer' : 'Télécharger les fichiers') + '</button>';
     } else if (tx.choixSeul) {   // simple choix pour « Préparer le mail » : on revient à la fenêtre du mail
-      foot = '<div class="tx-state">' + (nSel ? '<b>' + nSel + '</b> document' + (nSel > 1 ? 's' : '') + ' choisi' + (nSel > 1 ? 's' : '') : 'Coche les documents à joindre') + '</div>' +
+      foot = '<div class="tx-state">' + (nSel ? '<b>' + nSel + '</b> document' + (nSel > 1 ? 's' : '') + ' choisi' + (nSel > 1 ? 's' : '') : 'Cochez les documents à joindre') + '</div>' +
         '<button class="v2-btn v2-btn-primary" onclick="V2.pharmaTxClose()">' + ICO('check', 16, 2) + 'Valider le choix</button>';
     } else {
-      foot = '<div class="tx-state">' + (nSel ? '<b>' + nSel + '</b> sélectionné' + (nSel > 1 ? 's' : '') : tx.modele ? 'Coche les documents à joindre' : 'Coche ce que tu veux lui transmettre') + '</div>' +
+      foot = '<div class="tx-state">' + (nSel ? '<b>' + nSel + '</b> sélectionné' + (nSel > 1 ? 's' : '') : tx.modele ? 'Cochez les documents à joindre' : 'Cochez ce que vous voulez lui transmettre') + '</div>' +
         '<button class="v2-btn v2-btn-primary"' + (nSel && !tx.busy ? '' : ' disabled') + ' onclick="V2.pharmaTxPrepare()">' + ICO('check', 16, 2) + 'Préparer les fichiers</button>';
     }
     document.getElementById('tx-foot').innerHTML = foot;
@@ -4053,7 +4053,7 @@
   V2.pharmaTxUpload = function (input) {
     var all = input && input.files ? [].slice.call(input.files) : [];
     var ok = all.filter(function (f) { return /\.(pdf|xlsx|xls)$/i.test(f.name); });
-    if (!ok.length) { V2.toast('Choisis un fichier PDF ou Excel.', 'warn'); return; }
+    if (!ok.length) { V2.toast('Choisissez un fichier PDF ou Excel.', 'warn'); return; }
     var c = txSb();
     if (!c || !c.storage) { V2.toast('Connexion requise pour ajouter un fichier.', 'error'); return; }
     tx.busy = 'upload'; txRender();
@@ -4165,7 +4165,7 @@
       '<div class="v2-card" style="margin-bottom:22px">' +
         '<div class="v2-card-head"><div class="v2-card-t">' + ICO('pharma', 17) + 'Pharmacies de la liste</div>' +
           '<span class="v2-card-link" onclick="V2.pharmaListAddOpen(\'' + esc(id) + '\')">+ Ajouter</span></div>' +
-        (memRows || '<div class="v2-empty"><div class="v2-empty-d">Liste vide. Clique « Ajouter des pharmacies » pour piocher des officines (filtre par groupement disponible).</div></div>') +
+        (memRows || '<div class="v2-empty"><div class="v2-empty-d">Liste vide. Cliquez sur « Ajouter des pharmacies » pour piocher des officines (filtre par groupement disponible).</div></div>') +
       '</div>';
     var catsHtml = data.cats.length
       ? data.cats.map(function (o, i) { return renderGrpCatCard(o, i, data.panel, data.ovKey); }).join('')

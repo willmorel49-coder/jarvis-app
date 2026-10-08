@@ -318,7 +318,7 @@
       }
     }
     var names = Object.keys(byNorm).map(function (k) { return byNorm[k]; }).sort(function (a, b) { return a.localeCompare(b, 'fr'); });
-    var o = '<option value="">— Choisis un groupement —</option>';
+    var o = '<option value="">— Choisissez un groupement —</option>';
     for (var j = 0; j < names.length; j++) {
       var g2 = names[j], e = GIDX[g2];
       var lbl = e ? (g2 + ' (' + e.c + ' client' + (e.c > 1 ? 's' : '') + ' · ' + e.pr + ' prospect' + (e.pr > 1 ? 's' : '') + ')') : (g2 + ' · fiche');
@@ -581,11 +581,11 @@
         '</div>' +
         '<div class="cg-split">' +
           '<div class="cg-map" id="cg-map"><div class="cg-load"><div class="v2-spinner"></div>Chargement de la carte…</div></div>' +
-          '<div class="cg-list" id="cg-list"><div class="cg-empty">Choisis un groupement dans le menu.</div></div>' +
+          '<div class="cg-list" id="cg-list"><div class="cg-empty">Choisissez un groupement dans le menu.</div></div>' +
         '</div>';
       if (param) sel = String(param);
       ensureData(function (e1) {
-        if (e1) { var mp = document.getElementById('cg-map'); if (mp) mp.innerHTML = '<div class="cg-empty">Données indisponibles. Réessaie.</div>'; return; }
+        if (e1) { var mp = document.getElementById('cg-map'); if (mp) mp.innerHTML = '<div class="cg-empty">Données indisponibles. Réessayez.</div>'; return; }
         D = window.PHARMA_FR; reconcile();
         ensureOverrides(function () {
         buildIndex();
