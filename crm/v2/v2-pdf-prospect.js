@@ -467,7 +467,7 @@
         etat.pages = pages;
         sc.innerHTML = pages.map(function (h) { return '<div class="pdfp-page">' + h + '</div>'; }).join('');
         ajuster();
-      }).catch(function (e) { console.error(e); sc.innerHTML = '<div class="pdfp-wait">Mise en page impossible — réessaie.</div>'; });
+      }).catch(function (e) { console.error(e); sc.innerHTML = '<div class="pdfp-wait">Mise en page impossible — réessayez.</div>'; });
     }
     function lancer(mode) {
       if (!etat.pages) { V2.toast('Mise en page en cours…'); return; }

@@ -986,7 +986,7 @@
       (byGrp[g] = byGrp[g] || []).push(p); nExp++;
     });
     if (!nExp) { if (V2.toast) V2.toast('Aucune officine dans le filtre courant'); return; }
-    if (nExp > 9000) { if (V2.toast) V2.toast('Trop d\'officines (' + nExp + ') pour Google My Maps — filtre d\'abord par commercial ou département'); return; }
+    if (nExp > 9000) { if (V2.toast) V2.toast('Trop d\'officines (' + nExp + ') pour Google My Maps — filtrez d\'abord par commercial ou département'); return; }
     var styles = '', folders = '', gi = 0;
     Object.keys(byGrp).forEach(function (g) {
       var gname = (D.grp[g] && D.grp[g] !== '—') ? D.grp[g] : 'Sans groupement';
@@ -1019,7 +1019,7 @@
       a.href = url; a.download = 'officines-integral-' + new Date().toISOString().slice(0, 10) + '.kml';
       document.body.appendChild(a); a.click();
       setTimeout(function () { if (a.parentNode) document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
-      if (V2.toast) V2.toast(nExp + ' officines exportées — importe le .kml dans Google My Maps');
+      if (V2.toast) V2.toast(nExp + ' officines exportées — importez le .kml dans Google My Maps');
     } catch (e) { if (V2.toast) V2.toast('Export impossible sur ce navigateur', 'error'); }
   };
   // Export Excel des officines du filtre courant (Will, 21/09/2026 : « quand on filtre sur la
@@ -1177,7 +1177,7 @@
         '<b>' + esc(t.name) + '</b>' +
         '<span class="cn-lsub">' + (t.tour || []).length + ' arrêt' + ((t.tour || []).length > 1 ? 's' : '') + ' · ~' + Math.round(km) + ' km' + (t.depot ? ' · ' + esc(t.depot.n || 'dépôt') : '') + '</span></div>' +
         '<button class="cn-trm" onclick="V2.carteTourDelete(\'' + t.id + '\')" title="Supprimer">✕</button></div>';
-    }).join('') || '<div class="cn-tempty">Aucune tournée enregistrée.<br>Compose une tournée puis « Enregistrer ».</div>';
+    }).join('') || '<div class="cn-tempty">Aucune tournée enregistrée.<br>Composez une tournée puis « Enregistrer ».</div>';
     el.innerHTML = '<div class="cn-pdialog" onclick="event.stopPropagation()">' +
       '<div class="cn-phead"><div><b>Mes tournées</b><small>' + all.length + ' enregistrée' + (all.length > 1 ? 's' : '') + '</small></div>' +
         '<button class="cn-px" onclick="V2.carteToursClose()">✕</button></div>' +

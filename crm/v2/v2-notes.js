@@ -197,7 +197,7 @@
           var texte = (base + acquis).trim() || affiche.trim() || ta.value.trim();
           ta.value = texte;
           if (texte) { ta.focus(); }
-          else if (V2.toast) V2.toast('Rien n\'a été entendu — vérifie le micro et réessaie', 'error');
+          else if (V2.toast) V2.toast('Rien n\'a été entendu — vérifiez le micro et réessayez', 'error');
         };
 
         rec.start();
@@ -226,7 +226,7 @@
       var done = function () { if (ta) ta.value = ''; if (V2.toast) V2.toast('Note ajoutée'); renderBox(box); };
       if (c) {
         // échec Supabase → NE PAS faire croire que c'est sauvé (avant : sauvé en local + « Note ajoutée » puis disparue au re-render qui relit Supabase)
-        var fail = function () { btn.disabled = false; btn.textContent = 'Ajouter'; if (V2.toast) V2.toast('Note non enregistrée — réessaie', 'error'); };
+        var fail = function () { btn.disabled = false; btn.textContent = 'Ajouter'; if (V2.toast) V2.toast('Note non enregistrée — réessayez', 'error'); };
         c.from(TABLE).insert({ scope_type: st, scope_id: String(sid), author_id: V2.user.id, author_name: V2.user.name || '', body: body })
           .then(function (r) { if (r.error) fail(); else done(); })
           .catch(function () { fail(); });
@@ -296,7 +296,7 @@
       btn.disabled = true; btn.textContent = 'Enregistrement…';
       var c = sb();
       var ok = function () { editLocal(st, sid, id, body); if (V2.toast) V2.toast('Note modifiée'); renderBox(box); };
-      var fail = function () { btn.disabled = false; btn.textContent = 'Enregistrer'; if (V2.toast) V2.toast('Note non modifiée — réessaie', 'error'); };
+      var fail = function () { btn.disabled = false; btn.textContent = 'Enregistrer'; if (V2.toast) V2.toast('Note non modifiée — réessayez', 'error'); };
       if (c && String(id).indexOf('n') !== 0) {
         // ⚠️ 05/10/2026 (remontée Matthieu, « la modification ne s'enregistre pas ») : la base
         // n'autorise sur une note que la lecture, l'ajout et le retrait. Une modification y est

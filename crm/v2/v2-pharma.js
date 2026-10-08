@@ -1317,7 +1317,7 @@
             '</div>' +
           '</div>' +
           (caSV ? '<p class="v2-prospect-note">Cliente de la base clients' + (caSV[3] ? ' (' + esc(caSV[3]) + ')' : '') + ' — aucune vente sur la période. Ses coordonnées, infos et notes se complètent ici. Tout est sauvegardé.</p>'
-                : '<p class="v2-prospect-note">Officine non cliente — complète ses coordonnées, infos et notes pour la suivre comme un futur client. Tout est sauvegardé.</p>') +
+                : '<p class="v2-prospect-note">Officine non cliente — complétez ses coordonnées, infos et notes pour la suivre comme un futur client. Tout est sauvegardé.</p>') +
         '</div>' +
         '<div class="v2-card" style="padding:12px 16px 14px">' + nameEditor(pid, p[6] || '') + '</div>' +
         // 27/09/2026 — le potentiel sur un PROSPECT : c'est ici qu'il sert le plus, puisque
@@ -3709,7 +3709,7 @@
       tx.docsErr = null;
       tx.docs = (r.data || []).filter(function (f) { return f.name && f.id && f.name !== '.emptyFolderPlaceholder'; })
         .map(function (f) { return { name: f.name, size: (f.metadata || {}).size || 0 }; });
-    }).catch(function () { tx.docs = []; tx.docsErr = 'Bibliothèque partagée injoignable — réessaie dans un instant.'; });
+    }).catch(function () { tx.docs = []; tx.docsErr = 'Bibliothèque partagée injoignable — réessayez dans un instant.'; });
   }
   // 25/09/2026 — documents FAITS dans l'app (fiches Marketing de l'équipe, fiches biosimilaires
   // « pharmacien », catalogue par catégorie) : générés ou lus au moment de préparer le mail.

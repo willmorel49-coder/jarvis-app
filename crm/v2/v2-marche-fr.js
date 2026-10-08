@@ -544,7 +544,7 @@
       return '<section class="v2-card"><h2>Les dispositifs médicaux</h2>' +
         '<div class="mfr-note" style="margin-top:var(--sp-4)"><b>Lecture en échec : ' +
         esc(_echecDm) + '.</b><br>C\'est le chargement qui a raté, pas la donnée. ' +
-        'Recharge l\'écran.</div></section>';
+        'Rechargez l\'écran.</div></section>';
     }
     var D = socleDm();
     if (!D) return '<section class="v2-card"><h2>Les dispositifs médicaux</h2>' +
@@ -619,7 +619,7 @@
       return '<section class="v2-card"><h2>Les signaux du terrain</h2>' +
         '<div class="mfr-note" style="margin-top:var(--sp-4)"><b>Lecture en échec : ' +
         esc(_echecOdi) + '.</b><br>C\'est le chargement qui a raté, pas la donnée. ' +
-        'Recharge l\'écran.</div></section>';
+        'Rechargez l\'écran.</div></section>';
     }
     var P = ODI && ODI.pathologies;
     if (!P) return '<section class="v2-card"><h2>Les signaux du terrain</h2>' +
@@ -815,7 +815,7 @@
         root.innerHTML = top + tete +
           '<p class="v2-page-sub">Les données du marché n\'ont pas pu être lues.</p>' +
           '<div class="mfr-note"><b>Lecture en échec : ' + esc(_echec) + '.</b><br>' +
-          'C\'est le chargement qui a raté, pas la donnée. Recharge l\'écran ; ' +
+          'C\'est le chargement qui a raté, pas la donnée. Rechargez l\'écran ; ' +
           'si ça persiste, le fichier <code>v2/marche-regional.json</code> n\'est pas servi.' +
           '</div></div>';
         return;
@@ -828,7 +828,7 @@
       }
 
       root.innerHTML = top + tete +
-        '<p class="v2-page-sub">Cherche une référence, et vois son marché français en euros, ' +
+        '<p class="v2-page-sub">Cherchez une référence, et voyez son marché français en euros, ' +
         'sa répartition région par région avec l\'indice de chacune, ses tranches d\'âge, et ' +
         'notre position dessus. L\'écran qu\'on ouvre avant un rendez-vous.</p>' +
         '<div class="mfr-rech">' +

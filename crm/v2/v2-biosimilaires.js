@@ -219,7 +219,7 @@
       var db = DB(), meta = db.meta || {};
       if (!db.molecules || !db.molecules.length) {
         root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
-          '<div class="v2-wrap"><div class="v2-empty"><div class="v2-empty-ico">' + ICO('pill', 64, 1.4) + '</div><div class="v2-empty-t">Base biosimilaires indisponible</div><div class="v2-empty-d">Les données ne sont pas encore chargées sur ton poste.</div></div></div>';
+          '<div class="v2-wrap"><div class="v2-empty"><div class="v2-empty-ico">' + ICO('pill', 64, 1.4) + '</div><div class="v2-empty-t">Base biosimilaires indisponible</div><div class="v2-empty-d">Les données ne sont pas encore chargées sur votre poste.</div></div></div>';
         return;
       }
       var aires = [];
@@ -258,7 +258,7 @@
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="v2-wrap bs-wrap">' +
           '<h1 style="font-size:26px;font-weight:800;color:' + NAVY + ';margin:8px 0 2px">Base Biosimilaires</h1>' +
-          '<p style="color:#646B80;font-size:14px;margin:0 0 4px">Tous les biosimilaires disponibles en France, croisés à tes ventes et stocks réseau. Les <b style="color:' + GREEN + '">substituables en officine</b> et les <b style="color:#E7712A">labos partenaires</b> en tête.</p>' +
+          '<p style="color:#646B80;font-size:14px;margin:0 0 4px">Tous les biosimilaires disponibles en France, croisés à vos ventes et stocks réseau. Les <b style="color:' + GREEN + '">substituables en officine</b> et les <b style="color:#E7712A">labos partenaires</b> en tête.</p>' +
           '<div class="bs-dls">' +
             // 29/08/2026 — l'Excel porte aussi les prix nets : espace protégé, comme les PDF.
             '<a class="bs-dl" onclick="V2.ouvrirDocProtege(\'biosimExcel\')">' + ICO('fiche', 15) + ' Excel complet</a>' +

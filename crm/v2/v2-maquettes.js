@@ -144,11 +144,11 @@
         note: n, archive: false, maj: new Date().toISOString()
       }, { onConflict: 'maquette,auteur_id' })
         .then(function (r) {
-          if (r && r.error) { if (V2.toast) V2.toast('Note non enregistrée — réessaie'); return; }
+          if (r && r.error) { if (V2.toast) V2.toast('Note non enregistrée — réessayez'); return; }
           if (V2.toast) V2.toast('Noté ' + n + '/10 — partagé avec l\'équipe');
           recharger();
         })
-        .catch(function () { if (V2.toast) V2.toast('Note non enregistrée — réessaie'); });
+        .catch(function () { if (V2.toast) V2.toast('Note non enregistrée — réessayez'); });
       return;
     }
     // Repli : la note reste sur cet appareil.
@@ -172,11 +172,11 @@
       if (n != null) ligne.note = n;
       c.from(TABLE).upsert(ligne, { onConflict: 'maquette,auteur_id' })
         .then(function (r) {
-          if (r && r.error) { if (V2.toast) V2.toast('Avis non enregistré — réessaie'); return; }
+          if (r && r.error) { if (V2.toast) V2.toast('Avis non enregistré — réessayez'); return; }
           if (V2.toast) V2.toast(t ? 'Avis partagé avec l\'équipe' : 'Avis retiré');
           recharger();
         })
-        .catch(function () { if (V2.toast) V2.toast('Avis non enregistré — réessaie'); });
+        .catch(function () { if (V2.toast) V2.toast('Avis non enregistré — réessayez'); });
       return;
     }
     var a = localAll(), vu = false;
@@ -239,7 +239,7 @@
              'aria-label="Noter ' + n + ' sur 10">' + n + '</button>');
     }
     return '<div class="mq-notes' + (compact ? ' mq-notes-c' : '') + '">' +
-             '<span class="mq-notes-l">' + (mienne ? 'Ta note · ' + mienne + '/10' : 'Ta note') + '</span>' +
+             '<span class="mq-notes-l">' + (mienne ? 'Votre note · ' + mienne + '/10' : 'Votre note') + '</span>' +
              '<div class="mq-nrow">' + b.join('') + '</div>' +
            '</div>';
   }
@@ -333,7 +333,7 @@
         var a = triees();
         var partage = backend === 'supabase'
           ? 'Les notes sont partagées : tout le monde voit la même moyenne.'
-          : 'Tes notes restent sur cet appareil (connecte-toi pour les partager).';
+          : 'Vos notes restent sur cet appareil (connectez-vous pour les partager).';
         root.innerHTML = top +
           '<div class="v2-wrap narrow mq-wrap">' +
             '<div class="mq-hero">' +
@@ -344,9 +344,9 @@
                   'n\'imitent personne — chacune part d\'un phénomène (un fluide, une lumière, une horlogerie) ' +
                   'qui devient la mécanique de toute la page.</p>'
                 : '<p>La version unique, retenue le 28/08/2026 : la base Cimaise et les morceaux préférés des autres ' +
-                  'directions. Ouvre-la en vrai : elle défile, la carte en relief ouvre la fiche de chaque agence, la page RSE suit le soleil. ' +
+                  'directions. Ouvrez-la en vrai : elle défile, la carte en relief ouvre la fiche de chaque agence, la page RSE suit le soleil. ' +
                   'Ce n\'est pas une image.</p>') +
-              '<p>Mets une note sur 10, et surtout <b>écris ce qui va ou ne va pas</b> : ' +
+              '<p>Mettez une note sur 10, et surtout <b>écrivez ce qui va ou ne va pas</b> : ' +
               'la note dit que le site plaît, elle ne dit jamais quoi corriger.</p>' +
               '<span class="mq-share">' + partage + '</span>' +
             '</div>' +

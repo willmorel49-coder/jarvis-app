@@ -154,7 +154,7 @@
         stockTd +
       '</tr>';
     }).join('');
-    if (total > LIMIT) rows += '<tr class="mol-more"><td colspan="' + ncol + '" style="padding:14px;text-align:center;color:var(--muted-2);font-size:12.5px">' + LIMIT + ' produits affichés sur ' + num(total) + ' — affine la recherche ou la catégorie pour voir les autres.</td></tr>';
+    if (total > LIMIT) rows += '<tr class="mol-more"><td colspan="' + ncol + '" style="padding:14px;text-align:center;color:var(--muted-2);font-size:12.5px">' + LIMIT + ' produits affichés sur ' + num(total) + ' — affinez la recherche ou la catégorie pour voir les autres.</td></tr>';
     return rows;
   }
 
@@ -195,7 +195,7 @@
     return '<div class="mol-sagband">' +
       '<div class="mol-sagband-l">Face à ' + t.nom + ' <span>· ' + t.src + majLabel(t.maj()) + ' · ' + num(tot) + ' références comparées · ' + num(eg) + ' au même prix · hors génériques et biosimilaires (leurs remises passent par les labos, pas par la facture grossiste)</span></div>' +
       '<div class="mol-sagband-row">' +
-        tuile('gagne', g, 'référence' + (g > 1 ? 's' : '') + ' où ton net Intégral est moins cher') +
+        tuile('gagne', g, 'référence' + (g > 1 ? 's' : '') + ' où votre net Intégral est moins cher') +
         tuile('perd', pd, 'où ' + t.nom + ' est moins cher') +
       '</div>' +
     '</div>';
@@ -322,7 +322,7 @@
     render: function (root, param) {
       if (param != null && param !== '') { S.q = String(param); S.chip = 'all'; }
       if (!window.PROD_STATS) {
-        root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) + '<div class="v2-wrap"><div class="v2-empty"><div class="v2-empty-ico">' + ICO('cat', 64, 1.4) + '</div><div class="v2-empty-t">Données produits indisponibles</div><div class="v2-empty-d">Les données ne sont pas encore chargées sur ton poste.</div></div></div>';
+        root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) + '<div class="v2-wrap"><div class="v2-empty"><div class="v2-empty-ico">' + ICO('cat', 64, 1.4) + '</div><div class="v2-empty-t">Données produits indisponibles</div><div class="v2-empty-d">Les données ne sont pas encore chargées sur votre poste.</div></div></div>';
         return;
       }
       if (!window.ETAB_PRICES) ensureEtab(function () { if (V2.route && V2.route.name === 'molecules') V2.render(); });
@@ -375,7 +375,7 @@
           '<summary><span class="mol-adv-t">Options du document</span><span class="mol-adv-hint">top ' + (S.perCat > 0 ? S.perCat : 'tous') + '/catégorie</span></summary>' +
           '<div class="mol-adv-body">' +
             '<div class="mol-adv-row"><span class="mol-field-l">Produits par catégorie</span><div class="mol-chips">' + perBtns + '</div></div>' +
-            '<p class="mol-note">Le PDF et l\'envoi Marketing couvrent <b>les 6 catégories</b> (top par catégorie). Le tableau ci-dessous suit, lui, tes filtres.</p>' +
+            '<p class="mol-note">Le PDF et l\'envoi Marketing couvrent <b>les 6 catégories</b> (top par catégorie). Le tableau ci-dessous suit, lui, vos filtres.</p>' +
             '<button class="v2-btn v2-btn-ghost mol-doc" onclick="V2.molList()">' + ICO('plus', 15) + 'Envoyer la sélection dans Marketing →</button>' +
           '</div>' +
         '</details>';
@@ -387,7 +387,7 @@
         '<div class="v2-wrap">' +
           '<div class="mol-head"><div class="mol-head-l">' +
             '<div class="v2-page-title">Catalogue &amp; prix</div>' +
-            '<div class="v2-page-sub">Tous les produits du réseau, classés par nb de pharmacies qui commandent. Pour chacun : ton <b>prix net</b> et l\'<b>abandon de marge</b> Intégral, plus la rotation et la marge pharmacien.</div>' +
+            '<div class="v2-page-sub">Tous les produits du réseau, classés par nb de pharmacies qui commandent. Pour chacun : votre <b>prix net</b> et l\'<b>abandon de marge</b> Intégral, plus la rotation et la marge pharmacien.</div>' +
           '</div>' + kfs + '</div>' +
           panel + advBar + sagBand() +
           '<div class="mol-tcard">' +
@@ -396,7 +396,7 @@
             '<th class="num">#</th><th>Produit</th><th>CIP13</th><th>Famille</th>' +
             '<th class="num mol-th' + (S.sort === 'n' ? ' on' : '') + '" data-k="n" onclick="V2.molSort(\'n\')" style="cursor:pointer">Pharmacies<small style="display:block;font-weight:500;color:var(--muted-2)">réseau ' + (S.sort === 'n' ? '↓' : '↕') + '</small></th>' +
             '<th class="num">PPHT<small style="display:block;font-weight:500;color:var(--muted-2)">tarif</small></th>' +
-            '<th class="num mol-key">Prix net<small style="display:block;font-weight:500;color:var(--muted-2)">ton prix</small></th>' +
+            '<th class="num mol-key">Prix net<small style="display:block;font-weight:500;color:var(--muted-2)">votre prix</small></th>' +
             '<th class="num mol-key">Abandon<small style="display:block;font-weight:500;color:var(--muted-2)">de marge</small></th>' +
             '<th class="num mol-fr" title="Moyenne indicative de boîtes remboursées par pharmacie en France (Ameli)">Moy. France<small style="display:block;font-weight:500;color:var(--muted-2)">boîtes/an · Ameli</small></th>' +
             COLS.map(th).join('') +

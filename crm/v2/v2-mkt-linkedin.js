@@ -612,7 +612,7 @@
     var total = 0; buckets.forEach(function (b) { total += b.posts.length; });
     var qhtml = '<div class="li-qhead"><h2>Votre file<span class="li-count">' + total + ' post' + (total > 1 ? 's' : '') + '</span></h2>' +
       '<button class="li-linkbtn" onclick="V2.li.setView(\'cal\')">Voir tout le mois →</button></div>';
-    if (!total) qhtml += '<div class="li-empty">Aucun post pour l’instant.<br>Clique sur « + Nouveau post » ou lance l’Assistant stratégie.</div>';
+    if (!total) qhtml += '<div class="li-empty">Aucun post pour l’instant.<br>Cliquez sur « + Nouveau post » ou lancez l’Assistant stratégie.</div>';
     else buckets.forEach(function (b) {
       if (!b.posts.length) return;
       qhtml += '<div class="li-qday"><div class="li-qlabel' + (b.overdue ? ' li-overdue' : '') + '">' +
@@ -857,7 +857,7 @@
     if (!editing) return;
     if (!V2.lis || !V2.lis.genFromBrief) { alert('Assistant stratégie non chargé — rechargez la page.'); return; }
     var brief = editing._brief || editing.title || '';
-    if (!brief) { alert('Écris d’abord ton idée en quelques mots.'); return; }
+    if (!brief) { alert('Écrivez d’abord votre idée en quelques mots.'); return; }
     editing._genv = (editing._genv == null) ? 0 : editing._genv + 1;
     editing.body = V2.lis.genFromBrief(editing.pillar || 'causes', brief, editing._genv);
     redrawEditor();

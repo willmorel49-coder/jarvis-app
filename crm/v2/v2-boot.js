@@ -262,7 +262,7 @@
       // parfois « rate limit »…) et on ne dit jamais si l'email existe.
       var m = /invalid|credential/i.test(r.error.message || '')
         ? 'Email ou mot de passe incorrect.'
-        : 'Connexion impossible — réessaie dans un instant.';
+        : 'Connexion impossible — réessayez dans un instant.';
       return { ok: false, msg: m };
     }
     var ok = await V2.loadUserProfile();

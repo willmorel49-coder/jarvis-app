@@ -883,7 +883,7 @@
       stockTxt = '<b>stock ' + (stk.sites ? 'des ' + stk.sites.length + ' établissements' : 'plateforme') + ' arrêté au ' + fdate(stk.gen) + '</b> (photographie, pas temps réel)';
       var age = null;
       try { age = Math.round((new Date().getTime() - new Date(stk.gen + 'T00:00:00').getTime()) / 864e5); } catch (e) {}
-      if (age != null && age > 35) warn = '<div class="ap-fresh-warn">🔄 Pense à réimporter le stock des établissements pour des chiffres au plus juste — dernier import il y a ' + age + ' jours.</div>';
+      if (age != null && age > 35) warn = '<div class="ap-fresh-warn">🔄 Pensez à réimporter le stock des établissements pour des chiffres au plus juste — dernier import il y a ' + age + ' jours.</div>';
     }
     if (muets.length) {
       warn += '<div class="ap-fresh-warn">⏸ Flux de marché à vérifier : ' + muets.join(' · ') + ' — le robot mensuel n’a peut-être pas tourné.</div>';

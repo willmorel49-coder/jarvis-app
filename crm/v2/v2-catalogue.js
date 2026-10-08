@@ -198,7 +198,7 @@
       var ecartAbs = ameli - vol;
       var potNote;
       if (part < 1) {
-        potNote = 'Fort potentiel — tu captes moins de 1 % du marché France.';
+        potNote = 'Fort potentiel — vous captez moins de 1 % du marché France.';
       } else if (part < 5) {
         potNote = 'Potentiel significatif — ' + fmtBig(ecartAbs) + ' btes restantes à conquérir.';
       } else if (part < 20) {
@@ -264,7 +264,7 @@
         kpi('Marge pharmacien / boîte', mdlBte, isRemb(b) ? 'var(--c-mint)' : 'var(--c-amber)') +
         kpi('Évol. Ameli (jan.)', yoyHtml) +
       '</div>' +
-      (mdlTot > 0 ? '<div class="cat-perf-note">Marge pharmacien générée par ton volume actuel : <b>' + V2.fmtEur(mdlTot) + '</b></div>' : '');
+      (mdlTot > 0 ? '<div class="cat-perf-note">Marge pharmacien générée par votre volume actuel : <b>' + V2.fmtEur(mdlTot) + '</b></div>' : '');
 
     return '<div class="cat-insp' + (S.sel != null ? ' open' : '') + '">' +
       '<div class="cat-insp-head">' +

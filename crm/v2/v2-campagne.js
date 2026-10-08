@@ -153,11 +153,11 @@
     return ETAT.mode === 'groupe'
       ? 'Un seul mail part vers 25 officines à la fois, toutes en copie cachée. ' +
         'Elles ne se voient pas entre elles. Le mail ne peut nommer personne ni ' +
-        'porter de chiffres : il contient ton lien permanent, et c’est le pharmacien ' +
+        'porter de chiffres : il contient votre lien permanent, et c’est le pharmacien ' +
         'qui déclare son officine avant de choisir son créneau. Beaucoup plus rapide, ' +
         'un peu moins personnel.'
       : 'Un mail par officine, avec son nom, ses chiffres, et un lien à usage unique. ' +
-        'Tu ouvres, tu relis, tu envoies, officine après officine. Le plus efficace, ' +
+        'Vous ouvrez, vous relisez, vous envoyez, officine après officine. Le plus efficace, ' +
         'mais compte 20 à 40 officines dans une session.';
   }
 
@@ -187,7 +187,7 @@
       if (!c || !u) { V2.toast('Connecte-toi pour préparer une campagne.'); return; }
       var z = document.getElementById('cp-liste');
       if (!ETAT.comm) {
-        if (z) z.innerHTML = '<p class="v2-camp-note">Choisis d’abord un commercial ci-dessus.</p>';
+        if (z) z.innerHTML = '<p class="v2-camp-note">Choisissez d’abord un commercial ci-dessus.</p>';
         return;
       }
       if (z) z.innerHTML = '<p class="v2-camp-note">Chargement des officines…</p>';
@@ -226,12 +226,12 @@
             V2.toast(trouvees + ' officine' + (trouvees > 1 ? 's' : '') + ' sur ' +
               demandes.length + ' — ' + perdues +
               (perdues > 1 ? ' ne sont plus' : ' n’est plus') +
-              ' dans ta liste (portefeuille, filtre commercial ou opposition).');
+              ' dans votre liste (portefeuille, filtre commercial ou opposition).');
           }
         }
         V2.campagne.rafraichir();
       }).catch(function () {
-        if (z) z.innerHTML = '<p class="v2-camp-note">Chargement impossible. Réessaie.</p>';
+        if (z) z.innerHTML = '<p class="v2-camp-note">Chargement impossible. Réessayez.</p>';
       });
     },
 
@@ -313,7 +313,7 @@
       var b = document.getElementById('cp-envoi');
       if (!b) return;
       b.disabled = !n;
-      if (!n) { b.textContent = 'Sélectionne des officines'; return; }
+      if (!n) { b.textContent = 'Sélectionnez des officines'; return; }
       if (ETAT.mode === 'groupe') {
         var lots = Math.ceil(n / 25);
         b.textContent = 'Préparer ' + lots + ' envoi' + (lots > 1 ? 's' : '') +
@@ -395,16 +395,16 @@
       ETAT.modele = val('cp-modele') || 'routine';
       ETAT.texte = val('cp-texte');
       if (window.V2MOD.texteRefuse(ETAT.texte)) {
-        V2.toast('Retire le pourcentage : les conditions commerciales ne s’écrivent pas dans un mail.');
+        V2.toast('Retirez le pourcentage : les conditions commerciales ne s’écrivent pas dans un mail.');
         return;
       }
       // On repart de TOUT le recensement, pas de l'affichage : une officine
       // cochée puis masquée par un filtre reste dans l'envoi.
       ETAT.file = ETAT.tous.filter(function (o) { return ETAT.choisis[o.cip]; });
       ETAT.i = 0; ETAT.envoyes = 0; ETAT.passes = 0;
-      if (!ETAT.file.length) { V2.toast('Coche au moins une officine.'); return; }
+      if (!ETAT.file.length) { V2.toast('Cochez au moins une officine.'); return; }
       if (ETAT.mode === 'groupe') {
-        if (!V2.rdvGroupe) { V2.toast('Envoi groupé indisponible — recharge la page.'); return; }
+        if (!V2.rdvGroupe) { V2.toast('Envoi groupé indisponible — rechargez la page.'); return; }
         V2.rdvGroupe.demarrer(ETAT.file, ETAT.modele, ETAT.texte);
         return;
       }
@@ -439,8 +439,8 @@
           '<button class="v2-btn v2-btn-primary" onclick="V2.campagne.marquerEnvoye()">Envoyé ' +
             ICO('check', 15) + ' → suivant</button>' +
         '</div>' +
-        '<p class="v2-camp-note">Ta messagerie s’ouvre avec le mail prêt. Relis, envoie, reviens ici. ' +
-          'JARVIS ne peut pas savoir si le mail est vraiment parti — c’est toi qui coches.</p>' +
+        '<p class="v2-camp-note">Votre messagerie s’ouvre avec le mail prêt. Relisez, envoyez, revenez ici. ' +
+          'JARVIS ne peut pas savoir si le mail est vraiment parti — c’est vous qui cochez.</p>' +
       '</div>';
     },
 
@@ -478,10 +478,10 @@
       }).join('');
       r.innerHTML = top + '<div class="v2-wrap narrow">' +
         '<div class="v2-rdv-cap"><h1>Campagne de rendez-vous</h1>' +
-          '<p>Le mail part de ta boîte, signé de ton nom. Tu relis, tu envoies. ' +
-          'JARVIS prépare, il n’envoie jamais à ta place.</p></div>' +
+          '<p>Le mail part de votre boîte, signé de votre nom. Vous relisez, vous envoyez. ' +
+          'JARVIS prépare, il n’envoie jamais à votre place.</p></div>' +
 
-        '<div class="v2-camp-sec">Comment tu envoies</div>' +
+        '<div class="v2-camp-sec">Comment vous envoyez</div>' +
         '<div class="v2-camp-box">' +
           '<div class="cp-type cp-mode">' +
             '<button data-m="un" class="' + (ETAT.mode === 'un' ? 'on' : '') +
@@ -500,7 +500,7 @@
           (V2.pages.rdvmodeles
             ? '<p style="margin:8px 0 0"><button class="v2-btn v2-btn-ghost" ' +
               'onclick="V2.go(\'rdvmodeles\')">Écrire mes propres modèles</button></p>' : '') +
-          '<label for="cp-texte" style="margin-top:14px">Ton mot d’introduction (facultatif)</label>' +
+          '<label for="cp-texte" style="margin-top:14px">Votre mot d’introduction (facultatif)</label>' +
           '<p>Deux lignes, réutilisées pour toute la liste — une nouveauté, un ' +
             'événement. Aucun pourcentage : les conditions commerciales ne ' +
             's’écrivent pas dans un mail.</p>' +
@@ -510,7 +510,7 @@
         '<div class="v2-camp-sec">Aperçu du mail</div>' +
         '<div id="cp-apercu"></div>' +
 
-        '<div class="v2-camp-sec">Qui tu vises</div>' +
+        '<div class="v2-camp-sec">Qui vous visez</div>' +
         '<div class="v2-camp-box">' +
           '<label>Commercial</label>' +
           '<p>On n’écrit qu’aux officines de ce commercial — clients comme prospects.</p>' +
@@ -537,13 +537,13 @@
         '</div>' +
 
         '<div class="v2-camp-sec">La liste</div>' +
-        '<div id="cp-liste"><p class="v2-camp-note">Clique sur « Voir les officines » : ' +
-          'tes clients et les prospects de ton secteur s’affichent, avec leur groupement. ' +
-          'Tu coches celles que tu veux.</p></div>' +
+        '<div id="cp-liste"><p class="v2-camp-note">Cliquez sur « Voir les officines » : ' +
+          'vos clients et les prospects de votre secteur s’affichent, avec leur groupement. ' +
+          'Vous cochez celles que vous voulez.</p></div>' +
 
         '<div class="v2-camp-acts" style="margin-top:16px">' +
           '<button class="v2-btn v2-btn-primary" id="cp-envoi" disabled ' +
-            'onclick="V2.campagne.lancer()">Sélectionne des officines</button>' +
+            'onclick="V2.campagne.lancer()">Sélectionnez des officines</button>' +
         '</div>' +
         '<p class="v2-camp-note">Les officines sans adresse mail et celles marquées ' +
           '« ne plus solliciter » sont écartées automatiquement.</p>' +

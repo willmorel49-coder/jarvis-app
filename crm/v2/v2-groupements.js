@@ -339,7 +339,7 @@
         (r[6] ? '<a class="sag-row-t mono" href="tel:' + esc(String(r[6]).replace(/[^\d+]/g, '')) + '" onclick="event.stopPropagation()">' + esc(r[6]) + '</a>' : '') +
         '</div>';
     }).join('');
-    if (rows.length > max) html += '<div class="sag-more">+ ' + (rows.length - max).toLocaleString('fr') + ' autres — affine la recherche</div>';
+    if (rows.length > max) html += '<div class="sag-more">+ ' + (rows.length - max).toLocaleString('fr') + ' autres — affinez la recherche</div>';
     box.innerHTML = html;
     box.scrollTop = 0;
     // cascade d'entrée sur les premières lignes visibles (conteneur UI, pas la carte)

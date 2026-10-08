@@ -598,8 +598,8 @@
         's\'affichent, mais les prix sont indisponibles pour l\'instant. Reconnectez-vous si ça persiste.</span></div>';
     }
     return '<div class="off-cond-ko">' + ICO('alert', 18, 2) +
-      '<span><b>Tes prix d\'achat ne sont pas chargés.</b> Le catalogue et les prix ' +
-      'publics s\'affichent, mais la comparaison avec ton prix Offilog est indisponible ' +
+      '<span><b>Vos prix d\'achat ne sont pas chargés.</b> Le catalogue et les prix ' +
+      'publics s\'affichent, mais la comparaison avec votre prix Offilog est indisponible ' +
       'pour l\'instant. Reconnecte-toi si ça persiste.</span></div>';
   }
 
@@ -651,7 +651,7 @@
               : n(st.nProd, 'produits suivis', 'les meilleures ventes')) +
             (OPSO
               ? n(st.nPrix, 'à prix Offilog connu', 'prix affiché')
-              : n(st.nOff, 'à ton prix d\'achat', 'prix Offilog connu')) +
+              : n(st.nOff, 'à votre prix d\'achat', 'prix Offilog connu')) +
             n(st.nMarques, 'marques', 'dans la sélection') +
           '</div>' +
         '</div>' +
@@ -712,11 +712,11 @@
     var alertActive = S.chip === 'alerte';
     var alertTile = '<button type="button" class="off-verdict off-verdict-bad' + (nAlert > 0 ? ' hot' : ' cold') + (alertActive ? ' active' : '') +
         '" onclick="V2.offFilter(\'' + (alertActive ? 'all' : 'alerte') + '\')" ' +
-        'title="Produits où un prix public concurrent passe sous ton prix d\'achat IP">' +
+        'title="Produits où un prix public concurrent passe sous votre prix d\'achat IP">' +
         '<span class="off-verdict-ic">' + ICO('alert', 20, 2) + '</span>' +
         '<span class="off-verdict-txt">' +
           '<span class="off-verdict-v mono" data-count>' + V2.fmtNum(nAlert) + '</span>' +
-          '<span class="off-verdict-l">' + (nAlert > 1 ? 'produits où un concurrent est moins cher que ton achat' : 'produit où un concurrent est moins cher que ton achat') + '</span>' +
+          '<span class="off-verdict-l">' + (nAlert > 1 ? 'produits où un concurrent est moins cher que votre achat' : 'produit où un concurrent est moins cher que votre achat') + '</span>' +
         '</span>' +
         '<span class="off-verdict-go">' + (alertActive ? 'Tout revoir' : 'Les voir') + ' ' + ICO('chev', 15, 2.2) + '</span>' +
       '</button>';
@@ -725,7 +725,7 @@
         '<span class="off-verdict-ic">' + ICO('check', 20, 2.4) + '</span>' +
         '<span class="off-verdict-txt">' +
           '<span class="off-verdict-v mono" data-count>' + V2.fmtNum(nGood) + '</span>' +
-          '<span class="off-verdict-l">produits où ton achat tient face aux prix publics</span>' +
+          '<span class="off-verdict-l">produits où votre achat tient face aux prix publics</span>' +
         '</span>' +
       '</div>';
     // Ligne secondaire discrète : total, prix moyen, réf. croisées.
@@ -777,9 +777,9 @@
         (up ? '\u25B2' : '\u25BC') + ' ' + V2.fmtNum(nb) + '</span>';
     }
     var alertFlag = it.alert
-      ? '<span class="off-card-flag" title="Un concurrent est moins cher que ton prix d\'achat">' + ICO('alert', 13, 2.2) + ' Alerte prix</span>' : '';
+      ? '<span class="off-card-flag" title="Un concurrent est moins cher que votre prix d\'achat">' + ICO('alert', 13, 2.2) + ' Alerte prix</span>' : '';
     var concBelow = it.alert && it.minConc > 0
-      ? '<span class="off-card-conc mono" title="Un concurrent public passe sous ton prix d\'achat Intégral">conc. ' + V2.fmtEur(it.minConc) + (it.achat > 0 ? ' &lt; achat ' + V2.fmtEur(it.achat) : '') + '</span>' : '';
+      ? '<span class="off-card-conc mono" title="Un concurrent public passe sous votre prix d\'achat Intégral">conc. ' + V2.fmtEur(it.minConc) + (it.achat > 0 ? ' &lt; achat ' + V2.fmtEur(it.achat) : '') + '</span>' : '';
     // Pas de rang de vente (catalogue complet OPSO, brief §1) : aucune pastille
     // « #0 » — la ligne rang/mouvement reste vide plutôt que fausse.
     var rankHtml = it.hasRank ? '<span class="off-rank mono">#' + it.rank + '</span>' : '';
@@ -811,7 +811,7 @@
     }
     // ligne de référence : le prix d'achat IP sert de seuil — tout ce qui passe dessous est en rouge
     var ref = it.achat > 0
-      ? '<div class="off-cmp-ref"><span class="off-cmp-src"><span class="dot" style="background:var(--ip-blue)"></span>Ton achat IP (HT)</span>' +
+      ? '<div class="off-cmp-ref"><span class="off-cmp-src"><span class="dot" style="background:var(--ip-blue)"></span>Votre achat IP (HT)</span>' +
           '<span class="off-cmp-price mono">' + V2.fmtEur(it.achat) + '</span><span class="off-cmp-delta"></span></div>' : '';
     var rows = CONC.map(function (src) {
       var v = numOr0(it.conc[src.key]);
@@ -1100,7 +1100,7 @@
     return bd;
   }
   V2.offMktPreview = function () {
-    if (!mktSel.size) { V2.toast('Sélectionne au moins un produit', 'warn'); return; }
+    if (!mktSel.size) { V2.toast('Sélectionnez au moins un produit', 'warn'); return; }
     ensureImg(function () {
       var bd = ensureMktModal();
       var sheet = bd.querySelector('#off-mkt-sheet');
@@ -1116,7 +1116,7 @@
   };
 
   V2.offMktGenerate = function () {
-    if (!mktSel.size) { V2.toast('Sélectionne au moins un produit', 'warn'); return; }
+    if (!mktSel.size) { V2.toast('Sélectionnez au moins un produit', 'warn'); return; }
     if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast('Module PDF indisponible', 'error'); return; }
     var title = mktTitleVal();
     V2.toast('Génération du PDF…');

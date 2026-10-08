@@ -68,7 +68,7 @@
     var bd = document.getElementById('offcat-modal'); if (!bd) return;
     var C = window.OFFILOG_CATALOGUE;
     var corps = bd.querySelector('.offcat-body');
-    if (!C) { corps.innerHTML = '<div class="offcat-wait">' + (V2._offcatKO ? 'Le catalogue n\'a pas pu être chargé. Vérifie la connexion puis rouvre-le.' : 'Chargement du catalogue…') + '</div>'; return; }
+    if (!C) { corps.innerHTML = '<div class="offcat-wait">' + (V2._offcatKO ? 'Le catalogue n\'a pas pu être chargé. Vérifiez la connexion puis rouvrez-le.' : 'Chargement du catalogue…') + '</div>'; return; }
     var pdfs = declarerPdfs();
     var complet = pdfs.filter(function (d) { return !d.p.rayon; })[0];
     // 26/09 : « Meilleures ventes » n'est pas un rayon (nos meilleures ventes + top ventes du marché + index des marques)

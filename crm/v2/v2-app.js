@@ -1814,7 +1814,7 @@
       }
       // Remontées équipe (mur d'idées interne) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.remontees) {
-        P.push({ k: 'remontees', cls: 'p6', accent: '#7C3AED', ico: 'spark', tag: 'Équipe', t: 'Remontées', d: 'Le mur d\'idées de l\'équipe : propose une amélioration de l\'appli, vote pour celles des autres, suis leur avancement.', go: 'Voir les remontées' });
+        P.push({ k: 'remontees', cls: 'p6', accent: '#7C3AED', ico: 'spark', tag: 'Équipe', t: 'Remontées', d: 'Le mur d\'idées de l\'équipe : proposez une amélioration de l\'appli, votez pour celles des autres, suivez leur avancement.', go: 'Voir les remontées' });
       }
       // Prise de RDV par mailing — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.rdv) {
@@ -1921,7 +1921,7 @@
               : '<b>' + nbPharma + '</b> officines actives') + tiennesTxt + '</p>' +
           '</div>' +
           '<div class="v2-search" role="button" tabindex="0" aria-label="Rechercher une pharmacie, un produit" onclick="V2.onTopSearch()"><span class="srch-ic">' + ICO('search', 18, 2) + '</span>' +
-            '<input readonly aria-hidden="true" tabindex="-1" placeholder="' + ((window.V2_BRAND && window.V2_BRAND.opso) ? 'Chercher' : 'Cherche') + ' une pharmacie, un produit…" style="cursor:pointer"><kbd>' + MOD + 'K</kbd></div>' +
+            '<input readonly aria-hidden="true" tabindex="-1" placeholder="' + ((window.V2_BRAND && window.V2_BRAND.opso) ? 'Chercher' : 'Cherchez') + ' une pharmacie, un produit…" style="cursor:pointer"><kbd>' + MOD + 'K</kbd></div>' +
           relancesCardHtml() +
           // Accueil « objets bien rangés » : la grande tuile To do list suffit, la petite carte faisait doublon.
           (V2.todo && !todoTuile ? V2.todo.cardHtml() : '') +

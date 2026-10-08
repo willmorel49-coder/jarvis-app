@@ -71,7 +71,7 @@
 
           '<div class="v2-card mis-simcard">' +
             '<div class="mis-sim-hd">' + ICO('pilo', 18, 2) + '<div><b>Simulateur — combien cette officine pourrait gagner</b>' +
-              '<small>Saisis quelques volumes, l\'estimation se met à jour. Aucune donnée patient, calcul indicatif.</small></div></div>' +
+              '<small>Saisissez quelques volumes, l\'estimation se met à jour. Aucune donnée patient, calcul indicatif.</small></div></div>' +
             '<div class="mis-grid">' + simInputs + '</div>' +
             '<div class="mis-tot"><div><span>Rémunération missions estimée</span><b class="mono" id="mis-total">0 €</b><small class="mono" id="mis-total-mois">0 €/mois</small></div>' +
               '<div class="mis-tot-note">hors ROSP et honoraires de dispensation · tarifs 2026</div></div>' +

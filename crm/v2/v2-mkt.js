@@ -1827,7 +1827,7 @@
     },
     catClear: function () { catSel = []; V2.render(); },
     catBuildFiche: function () {
-      if (!catSel.length) { V2.toast('Coche au moins un produit (+)', 'warn'); return; }
+      if (!catSel.length) { V2.toast('Cochez au moins un produit (+)', 'warn'); return; }
       editing = { id: newId(), type: 'selection', title: '', accroche: '', footer: '', status: 'brouillon',
                   products: catSel.map(function (p) { return Object.assign({}, p); }),
                   theme: defaultTheme('selection'), owner: (V2.user && V2.user.email) || '', _new: 'selection' };
@@ -1934,7 +1934,7 @@
               return '<th style="padding:4px 6px;font-size:8px;text-transform:uppercase;letter-spacing:.04em;color:#737A8C;text-align:' + (k < 3 ? 'left' : 'right') + '">' + h + '</th>';
             }).join('') + '</tr></thead><tbody>' + trs + '</tbody></table></div>';
       }).filter(Boolean).join('');
-      if (!secs) { V2.toast('Aucun produit à afficher (essaie sans « en stock »)', 'warn'); return; }
+      if (!secs) { V2.toast('Aucun produit à afficher (essayez sans « en stock »)', 'warn'); return; }
       var subt = 'Top ' + (perCat > 0 ? perCat + ' ' : '') + 'par catégorie · classé par ' + (byPharma ? 'nb de pharmacies qui commandent' : 'volume vendu (5 mois)') + (mktEtab ? ' · prix &amp; stock ' + esc(mktEtab) : ' · prix net indicatif');
       var html = '<div style="padding:18px 22px;font-family:Satoshi,Inter,system-ui,sans-serif;color:#10131C">' +
         '<div style="display:flex;align-items:center;gap:12px;border-bottom:2px solid #10131C;padding-bottom:12px;margin-bottom:14px">' +
@@ -2116,7 +2116,7 @@
       removeItem(editing.id).then(function () { V2.toast('Fiche supprimée'); editing = null; V2.go('marketing', 'fiches'); });
     },
     preview: function () {
-      if (!editing || !editing.products.length) { V2.toast('Ajoute au moins un produit', 'warn'); return; }
+      if (!editing || !editing.products.length) { V2.toast('Ajoutez au moins un produit', 'warn'); return; }
       ensureImg(function () {
         var bd = document.getElementById('mkt-modal'); if (!bd) return;
         bd.querySelector('#mkt-msheet').innerHTML = buildFlyerHtml(false);

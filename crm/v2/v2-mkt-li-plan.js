@@ -1516,7 +1516,7 @@
             '<p class="lpo-t5"><b>Oui</b> — ' + esc(REGLE_OUI) + '</p><p class="lpo-t5"><b>Non</b> — ' + esc(REGLE_NON) + '</p>') +
           '<section><div class="lpo-rang" style="margin-top:0"><button type="button" class="mk-btn mk-press" onclick="V2.lip.enregistrer()">Enregistrer sans retenir</button>' +
             '<span class="lpo-autres">' + autresHtml() + '</span></div>' +
-            '<p class="lpo-t5">Garde le sujet, le ton, le texte et le commentaire tels qu’ils sont ici, sans faire avancer le post.</p></section>' +
+            '<p class="lpo-t5">Gardez le sujet, le ton, le texte et le commentaire tels qu’ils sont ici, sans faire avancer le post.</p></section>' +
         '</div>' +
       '</div>' +
       '<div class="lpo-vp">' + piedHtml() + '</div></div>';

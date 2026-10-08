@@ -566,7 +566,7 @@
   }
   function liste(lignes, visibles, corps) {
     if (!lignes.length) {
-      return vide('Aucun produit avec ces filtres', 'Élargis la recherche ou change de catégorie.');
+      return vide('Aucun produit avec ces filtres', 'Élargissez la recherche ou changez de catégorie.');
     }
     return '<div class="pr-liste">' + corps + '</div>' +
       (visibles.length < lignes.length
@@ -885,7 +885,7 @@
         (visibles.length < lignes.length
           ? '<button class="v2-btn pr-plus" onclick="V2.produits.plus()">Voir 40 références de plus</button>'
           : '')
-        : vide('Aucune référence', 'Élargis la recherche ou change de filtre.')) +
+        : vide('Aucune référence', 'Élargissez la recherche ou changez de filtre.')) +
       panierHtml();
   }
 
@@ -1073,7 +1073,7 @@
       // Le fichier arrive à la demande : on le dit, et on rerend dès qu'il est là.
       if (V2.protegeEchec && V2.protegeEchec.catcomplet) {
         return vide('Le catalogue n\'a pas pu être chargé',
-          'Vérifie la connexion, puis reviens sur cet onglet.');
+          'Vérifiez la connexion, puis revenez sur cet onglet.');
       }
       if (!V2.produits._catEnCours && V2.loadFiles) {
         V2.produits._catEnCours = true;
@@ -1110,7 +1110,7 @@
         (visibles.length < lignes.length
           ? '<button class="v2-btn pr-plus" onclick="V2.produits.plus()">Voir ' +
             CAT_PAR_PAGE + ' produits de plus</button>' : '')
-      : vide('Aucune référence avec ces filtres', 'Élargis la recherche ou change de famille.');
+      : vide('Aucune référence avec ces filtres', 'Élargissez la recherche ou changez de famille.');
 
     return '<div class="pr-bandeau">' +
       '<div class="pr-cible">Tout le catalogue Intégral Pharma</div>' +
@@ -1538,7 +1538,7 @@
     if (!d) {
       return '<div class="pr-apx-bar">' +
         '<button class="v2-btn" onclick="V2.produits.apercu(false)">← Revenir à la liste</button></div>' +
-        vide('Le document est vide', 'Tu as retiré toutes les lignes. Reprends la liste pour repartir.') +
+        vide('Le document est vide', 'Vous avez retiré toutes les lignes. Reprenez la liste pour repartir.') +
         (nRet ? '<button class="v2-btn pr-plus" onclick="V2.produits.docReset()">Repartir de la liste</button>' : '');
     }
     return '' +
