@@ -1770,7 +1770,7 @@
   var NB = ' ';
   var MOIS_LONG = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
   // État de la fiche affichée. Remis à zéro quand on change d'officine (la vue pharmacien n'est PAS retenue).
-  var L1 = { pid: null, A: null, G: null, dataR: null, dataG: null, nom: '', b: 'reseau', lst: 'reseau', ouv: {}, vue: 'commercial', rub: 'resume', ecran: 'liste', tous: { neplus: false, meilleurs: false }, edit: false, plusFiche: false, k: 0, np: null, marge: 0, hasGrp: false, nR: 0, nG: 0, nFiche: 0 };
+  var L1 = { pid: null, A: null, G: null, dataR: null, dataG: null, nom: '', b: 'reseau', ouv: {}, vue: 'commercial', rub: 'resume', ecran: 'liste', tous: { neplus: false, meilleurs: false }, edit: false, k: 0, np: null, marge: 0, hasGrp: false, nR: 0, nG: 0 };
 
   function l1Nb(n) { return Math.round(n).toLocaleString('fr-FR').replace(/[   ]/g, NB); }
   function l1Eur(n) { return l1Nb(n) + NB + '€'; }
@@ -1916,9 +1916,9 @@
     mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
     rdv: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
     oeil: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
-    plus: '<circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/>',
     haut: '<path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/>', bas: '<path d="M12 5v14M5.5 12.5 12 19l6.5-6.5"/>',
-    pdf: '<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>', envoi: '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>', ecran: '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>'
+    pdf: '<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',
+    todo: '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>', joint: '<path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>', cata: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 18v-6M9 15l3 3 3-3"/>', envoi: '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>', ecran: '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>'
   };
   function l8Ic(k, s) { s = s || 20; return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + L8_IC[k] + '</svg>'; }
   // Les rubriques, dans l'ordre du menu. [clé, mot, interne ?]
@@ -1929,7 +1929,7 @@
   function l8Ecart(a, ref) {
     if (!(ref > 0)) return null;
     var r = a / ref;
-    if (r >= 2) return { t: r.toFixed(1).replace('.', ',') + NB + 'fois' + NB + 'plus', c: 'pha-up', e: (r - 1) * 100, f: 1 };
+    if (r >= 2) return { t: r.toFixed(1).replace('.', ',') + NB + '<span class="l8-fp">fois' + NB + 'plus</span>', c: 'pha-up', e: (r - 1) * 100, f: 1 };
     var p = Math.round((r - 1) * 100);
     if (p === 0) return { t: 'Égal', c: 'pha-flat', e: 0 };
     return { t: (p < 0 ? '−' : '+') + NB + Math.abs(p) + NB + '%', c: p < 0 ? 'pha-dn' : 'pha-up', e: p };
@@ -1984,28 +1984,31 @@
     return { mots: mots, sous: grp ? 'de son groupement' : 'du réseau', rang: 'Rang : <span class="mono">' + l1Rang(rang) + '</span> sur <span class="mono">' + l1Nb(tot) + '</span>' };
   }
 
-  // ── À proposer : la liste (réseau ou groupement d'achat), ses trois actions
+  // ── À proposer : les deux listes (réseau, groupement d'achat) côte à côte, chacune avec ses actions
   function l8Proposer() {
-    var A = L1.A, sc = (L1.lst === 'groupement' && L1.hasGrp) ? 'groupement' : 'reseau';
-    var data = sc === 'reseau' ? L1.dataR : L1.dataG, n = sc === 'reseau' ? L1.nR : L1.nG, pid = String(L1.pid).replace(/[^0-9A-Za-z_-]/g, '');
-    var seg = '';
-    if (L1.hasGrp) {
-      var b = function (k, txt) { return '<button type="button" class="l8-seg-b" aria-pressed="' + (sc === k ? 'true' : 'false') + '" onclick="V2.pharmaL.liste(\'' + k + '\')">' + esc(txt) + '</button>'; };
-      seg = '<div class="l8-seg" role="group" aria-label="Liste">' + b('reseau', 'Le réseau') + b('groupement', A.grpName) + '</div>';
-    }
-    var aide = 'Fondée sur ce que commandent ' + (sc === 'reseau' ? 'les officines du réseau' : 'les officines de ' + A.grpName) + ', ' + l1FenetreReseau(A) + '. Le pourcentage est la part des officines qui commandent le produit.';
-    var h = l8Tete('À proposer', seg, aide);
-    if (n <= 0) return h + l8Vide('Rien à lui proposer sur cette base.');
-    h += '<div class="l8-pcompte"><div class="l8-pn">' + l1Nb(n) + '<small>produits</small></div><div class="l8-pacts">' +
-      (V2.pages.produits ? '<button type="button" class="l8-btn l8-btn-pri" aria-label="Voir la liste à l’écran" onclick="V2.go(\'produits\', \'' + pid + '\')">' + l8Ic('ecran', 18) + 'Voir</button>' : '') +
-      '<button type="button" class="l8-btn l8-interne" aria-label="Télécharger la liste en PDF" onclick="V2.pharmaListPdf(\'' + pid + '\',\'' + sc + '\')">' + l8Ic('pdf', 18) + 'PDF</button>' +
-      '<button type="button" class="l8-btn l8-interne" aria-label="Envoyer la liste au pharmacien" onclick="V2.pharmaTransmettre(\'' + pid + '\',[\'L:' + sc + '\'])">' + l8Ic('envoi', 18) + 'Envoyer</button></div></div>';
-    h += '<div class="l8-ctete l8-ctete-d">Part des officines qui le commandent</div>';
-    l1Premiers(data).slice(0, 5).forEach(function (x) {
-      var p = l1PartDes(x.r, data.total);
-      h += '<div class="l8-lg"><span class="l8-ln">' + l1NomProduit(x.r) + '<small>' + esc(l1CatLabel(x.cat)) + '</small></span><span class="l8-pbar" aria-hidden="true"><i style="width:' + p + '%"></i></span><span class="l8-lm">' + l1Pct(p) + '</span></div>';
+    var A = L1.A, pid = String(L1.pid).replace(/[^0-9A-Za-z_-]/g, '');
+    var cols = [['reseau', 'Le réseau', L1.dataR, L1.nR]];
+    if (L1.hasGrp) cols.push(['groupement', A.grpName, L1.dataG, L1.nG]);
+    var aide = L1.hasGrp
+      ? 'Deux listes, chacune fondée sur ce que commandent les officines de sa base : celles du réseau, et celles de ' + A.grpName + ', ' + l1FenetreReseau(A) + '. Le pourcentage est la part des officines qui commandent le produit.'
+      : 'Fondée sur ce que commandent les officines du réseau, ' + l1FenetreReseau(A) + '. Le pourcentage est la part des officines qui commandent le produit.';
+    var voir = V2.pages.produits ? '<button type="button" class="l8-btn l8-btn-pri" aria-label="Voir la liste à l’écran" onclick="V2.go(\'produits\', \'' + pid + '\')">' + l8Ic('ecran', 18) + 'Voir</button>' : '';
+    var h = l8Tete('À proposer', voir, aide) + '<div class="l8-2l' + (cols.length > 1 ? ' l8-2l-deux' : '') + '">';
+    cols.forEach(function (c) {
+      var sc = c[0], data = c[2], n = c[3];
+      h += '<div class="l8-liste"><h3 class="l8-lnom">' + esc(c[1]) + '</h3>';
+      if (n <= 0) { h += l8Vide('Rien à lui proposer sur cette base.') + '</div>'; return; }
+      h += '<div class="l8-pcompte"><div class="l8-pn">' + l1Nb(n) + '<small>produits</small></div><div class="l8-pacts">' +
+        '<button type="button" class="l8-btn l8-interne" aria-label="Télécharger la liste en PDF : ' + esc(c[1]) + '" onclick="V2.pharmaListPdf(\'' + pid + '\',\'' + sc + '\')">' + l8Ic('pdf', 18) + 'PDF</button>' +
+        '<button type="button" class="l8-btn l8-interne" aria-label="Envoyer la liste au pharmacien : ' + esc(c[1]) + '" onclick="V2.pharmaTransmettre(\'' + pid + '\',[\'L:' + sc + '\'])">' + l8Ic('envoi', 18) + 'Envoyer</button></div></div>';
+      h += '<div class="l8-ctete l8-ctete-d">Part des officines qui le commandent</div>';
+      l1Premiers(data).slice(0, 5).forEach(function (x) {
+        var p = l1PartDes(x.r, data.total);
+        h += '<div class="l8-lg"><span class="l8-ln">' + l1NomProduit(x.r) + '<small>' + esc(l1CatLabel(x.cat)) + '</small></span><span class="l8-pbar" aria-hidden="true"><i style="width:' + p + '%"></i></span><span class="l8-lm">' + l1Pct(p) + '</span></div>';
+      });
+      h += '</div>';
     });
-    return h;
+    return h + '</div>';
   }
 
   // ── Commandes : mois par mois, ce qui bouge, répartition
@@ -2175,7 +2178,7 @@
     });
     if (pr.length) {
       h += '<div><h4>À lui proposer dans cette catégorie</h4>';
-      pr.forEach(function (q) { h += '<div class="l8-dp">' + q.n + '<span>' + q.m.join(' · ') + '</span></div>'; });
+      pr.forEach(function (q) { h += '<div class="l8-dp">' + q.n + '<span>' + q.m.map(function (m) { return '<i class="l8-cp">' + m + '</i>'; }).join('') + '</span></div>'; });
       h += '</div>';
     }
     return h;
@@ -2219,16 +2222,20 @@
     return '';
   }
 
-  // La rubrique Fiche, en lecture : 6 lignes clés, puis « Toute la fiche (n) ». Les formulaires existants (« Infos officine ») n'apparaissent qu'avec « Modifier ».
+  // La rubrique Fiche, en lecture : toutes les lignes d'emblée (les 6 clés d'abord). Les formulaires existants (« Infos officine ») n'apparaissent qu'avec « Modifier ».
   function l8FicheHtml(c) {
     var cles = ['Titulaire', 'Téléphone', 'E-mail', 'Adresse', 'Groupement d’achat', 'Prochaine relance'], cle = [], reste = [];
-    c.rows.forEach(function (r) { (cles.indexOf(r.l) >= 0 ? cle : reste).push(r); });
-    cle.sort(function (a, b) { return cles.indexOf(a.l) - cles.indexOf(b.l); });
-    var ligne = function (r) { return r.l ? '<div class="l8-fr"><dt>' + r.l + '</dt><dd' + (r.c ? ' class="' + r.c + '"' : '') + '>' + r.v + '</dd></div>' : '<p class="l8-fnote">' + r.v + '</p>'; };
+    // Une note sans libellé (la description du groupement d'achat) reste sous la ligne qu'elle complète.
+    var dern = null;
+    c.rows.forEach(function (r) {
+      if (!r.l && dern) { dern.n.push(r); return; }
+      dern = { r: r, n: [] }; (cles.indexOf(r.l) >= 0 ? cle : reste).push(dern);
+    });
+    cle.sort(function (a, b) { return cles.indexOf(a.r.l) - cles.indexOf(b.r.l); });
+    var note = function (r) { return '<p class="l8-fnote">' + r.v + '</p>'; };
+    var ligne = function (x) { var r = x.r; return (r.l ? '<div class="l8-fr"><dt>' + r.l + '</dt><dd' + (r.c ? ' class="' + r.c + '"' : '') + '>' + r.v + '</dd></div>' : note(r)) + x.n.map(note).join(''); };
     var h = l8Tete('Fiche', '<button type="button" class="l8-btn l8-interne" id="l8-modif" onclick="V2.pharmaL.modifier()">' + (L1.edit ? 'Terminer' : 'Modifier') + '</button>');
-    h += '<div class="l8-lect"><dl class="l8-fl-l">' + cle.map(ligne).join('') + '</dl>' +
-      '<div class="l8-fiche-plus"><dl class="l8-fl-l">' + reste.map(ligne).join('') + '</dl></div>' +
-      '<div class="l8-plus"><button type="button" class="l8-lien" id="l8-toute" onclick="V2.pharmaL.plusFiche()">' + (L1.plusFiche ? 'Réduire la fiche' : 'Toute la fiche (' + c.rows.length + ')') + '</button></div></div>';
+    h += '<div class="l8-lect"><dl class="l8-fl-l">' + cle.concat(reste).map(ligne).join('') + '</dl></div>';
     h += '<div class="l8-forms">' + c.infos + '</div>';
     return h;
   }
@@ -2239,6 +2246,9 @@
     var acts = (c.tel ? '<a class="l8-act" href="tel:' + esc(c.tel.replace(/[^+0-9]/g, '')) + '"><span class="l8-rond">' + l8Ic('tel', 22) + '</span>Appeler</a>' : '') +
       (c.mail ? '<a class="l8-act" href="mailto:' + esc(c.mail) + '"><span class="l8-rond">' + l8Ic('mail', 22) + '</span>E-mail</a>' : '') +
       (c.mail && V2.rdv ? '<button type="button" class="l8-act" onclick="V2.rdv.proposer(\'' + pid + '\')" title="Elle choisit son créneau, calé sur la géographie de votre journée"><span class="l8-rond">' + l8Ic('rdv', 22) + '</span>Rendez-vous</button>' : '');
+    // Deuxième rangée : les trois actions qui étaient derrière « Autres actions » (le catalogue n'existe que si le logiciel est reconnu : c.lgo)
+    var acts2 = (V2.todo ? '<button type="button" class="l8-act" title="Ajouter à la to do list" aria-label="Ajouter à la to do list" onclick="V2.todo.menu(\'' + pid + '\')"><span class="l8-rond">' + l8Ic('todo', 22) + '</span>To do list</button>' : '') +
+      '<button type="button" class="l8-act" title="Choisir quoi lui transmettre" aria-label="Choisir quoi lui transmettre" onclick="V2.pharmaTransmettre(\'' + pid + '\')"><span class="l8-rond">' + l8Ic('joint', 22) + '</span>Transmettre</button>' + (c.lgo || '');
     var menu = L8_RUB.map(function (m) {
       var k = m[0];
       return '<button type="button" class="l8-row' + (m[2] ? ' l8-interne' : '') + '" data-r="' + k + '"' + (k === L1.rub ? ' aria-current="page"' : '') + ' onclick="V2.pharmaL.go(\'' + k + '\')"><span class="l8-tuile">' + l8Ic(k, 18) + '</span><span class="l8-mot">' + m[1] + '</span><span class="l8-cpt" id="l8-cpt-' + k + '">' + l8Compte(k) + '</span><span class="l8-chev">' + l8Ic('chev', 18) + '</span></button>';
@@ -2246,17 +2256,16 @@
     var panneaux = L8_RUB.map(function (m) {
       var k = m[0], inner = '';
       if (k === 'fiche') inner = l8FicheHtml(c); else if (k === 'notes') inner = c.notes; else if (k === 'tout') inner = c.tout;
-      return '<section class="l8-vue" id="l8-v-' + k + '" data-k="' + k + '" aria-label="' + m[1] + '"' + (k === 'fiche' ? ' data-edit="' + (L1.edit ? '1' : '0') + '" data-plus="' + (L1.plusFiche ? '1' : '0') + '"' : '') + (k === L1.rub ? '' : ' hidden') + '>' + inner + '</section>';
+      return '<section class="l8-vue" id="l8-v-' + k + '" data-k="' + k + '" aria-label="' + m[1] + '"' + (k === 'fiche' ? ' data-edit="' + (L1.edit ? '1' : '0') + '"' : '') + (k === L1.rub ? '' : ' hidden') + '>' + inner + '</section>';
     }).join('');
     var A = L1.A;
     return '<div class="pha l8" data-ecran="' + L1.ecran + '" data-rub="' + L1.rub + '">' +
       '<div class="pha-rail l8-rail">' +
-        '<header class="l8-id"><h1 class="l8-nom">' + c.nom + '</h1><p class="l8-sous">' + esc(c.sous) + '</p>' + (acts ? '<div class="l8-acts l8-interne">' + acts + '</div>' : '') + '</header>' +
+        '<header class="l8-id"><h1 class="l8-nom">' + c.nom + '</h1><p class="l8-sous">' + esc(c.sous) + '</p>' + (acts ? '<div class="l8-acts l8-interne">' + acts + '</div>' : '') + '<div class="l8-acts l8-acts-2 l8-interne">' + acts2 + '</div></header>' +
         (A.nAct ? '<button type="button" class="l8-chiffre" onclick="V2.pharmaL.go(\'resume\')"><span class="l8-n">' + l1Nb(A.caMoy) + '<small>' + NB + '€</small></span><span class="l8-u">par mois</span></button>' : '') +
         '<nav class="l8-menu" aria-label="Rubriques">' + menu + '</nav>' +
         '<div class="l8-pied"><button type="button" class="l8-lien gris l8-interne" onclick="V2.pharmaL.vue()">' + l8Ic('oeil', 18) + '<span>À montrer au pharmacien</span></button>' +
-          '<button type="button" class="l8-lien l8-interne" id="l8-b-autres" aria-expanded="false" onclick="V2.pharmaL.autres()">' + l8Ic('plus', 18) + '<span>Autres actions</span></button></div>' +
-        '<div class="l8-autres l8-interne" id="l8-autres" hidden>' + c.listes + '</div>' +
+'</div>' +
       '</div>' +
       '<div class="pha-main l8-main">' +
         '<div class="l8-retourbar"><button type="button" class="l8-lien" onclick="V2.pharmaL.retour()">' + l8Ic('retour', 20) + '<span>Retour</span></button></div>' +
@@ -2268,11 +2277,10 @@
 
   // État de la fiche : remis à zéro quand on change d'officine (la vue pharmacien n'est PAS retenue)
   function l8Init(pid, A, o) {
-    if (String(L1.pid) !== String(pid)) { L1.b = 'reseau'; L1.lst = 'reseau'; L1.ouv = {}; L1.vue = 'commercial'; L1.rub = 'resume'; L1.ecran = 'liste'; L1.tous = { neplus: false, meilleurs: false }; L1.edit = false; L1.plusFiche = false; }
-    L1.pid = String(pid); L1.A = A; L1.marge = o.marge; L1.dataR = o.dataR; L1.dataG = o.dataG; L1.nR = o.nR; L1.nG = o.nG; L1.hasGrp = o.hasGrp; L1.nFiche = o.nFiche;
+    if (String(L1.pid) !== String(pid)) { L1.b = 'reseau'; L1.ouv = {}; L1.vue = 'commercial'; L1.rub = 'resume'; L1.ecran = 'liste'; L1.tous = { neplus: false, meilleurs: false }; L1.edit = false; }
+    L1.pid = String(pid); L1.A = A; L1.marge = o.marge; L1.dataR = o.dataR; L1.dataG = o.dataG; L1.nR = o.nR; L1.nG = o.nG; L1.hasGrp = o.hasGrp;
     L1.G = l1Groupe(pid, A);
     if (!L1.G) L1.b = 'reseau';
-    if (!L1.hasGrp) L1.lst = 'reseau';
     L1.np = l1NePlus(pid);
     L1.k = (L1.k || 0) + 1;       // un rendu complet invalide les rubriques construites à la demande
   }
@@ -2344,7 +2352,6 @@
     },
     retour: function () { L1.ecran = 'liste'; l8Afficher(); try { window.scrollTo(0, 0); } catch (e) {} },
     base: function (k) { if (k === 'groupement' && !L1.G) k = 'reseau'; L1.b = k; L1.k++; l8Afficher(); },
-    liste: function (k) { L1.lst = (k === 'groupement' && L1.hasGrp) ? 'groupement' : 'reseau'; L1.k++; l8Afficher(); },
     aide: function (btn) {
       var v = btn.closest ? btn.closest('.l8-vue') : null, t = v && v.querySelector('.l8-aide-txt'); if (!t) return;
       t.hidden = !t.hidden; btn.setAttribute('aria-expanded', t.hidden ? 'false' : 'true');
@@ -2357,11 +2364,6 @@
       if (ouv) l8Detail(key);
     },
     plus: function (w) { L1.tous[w] = !L1.tous[w]; L1.k++; l8Afficher(); },
-    plusFiche: function () {
-      L1.plusFiche = !L1.plusFiche;
-      var p = document.getElementById('l8-v-fiche'); if (p) p.setAttribute('data-plus', L1.plusFiche ? '1' : '0');
-      var b = document.getElementById('l8-toute'); if (b) b.textContent = L1.plusFiche ? 'Réduire la fiche' : 'Toute la fiche (' + L1.nFiche + ')';
-    },
     // « Modifier » : les formulaires existants remplacent la lecture ; « Terminer » les referme.
     modifier: function () {
       var p = document.getElementById('l8-v-fiche'); if (!p) return;
@@ -2377,10 +2379,6 @@
       });
       var neuf = Object.assign({}, _coordSaisie[pid] || {}, vals);
       if (JSON.stringify(neuf) !== avant) { _coordSaisie[pid] = neuf; V2.render(); }
-    },
-    autres: function () {
-      var a = document.getElementById('l8-autres'), b = document.getElementById('l8-b-autres'); if (!a) return;
-      a.hidden = !a.hidden; if (b) b.setAttribute('aria-expanded', a.hidden ? 'false' : 'true');
     },
     tout: function (ouvrir) {
       var b = document.getElementById('l8-tout-body'); if (!b) return;
@@ -2591,11 +2589,12 @@
     // la saisie de l'équipe (lue en différé) fait foi, comme dans Transmettre.
     var btnLgo = '';
     if (!isEscale() && !isOpso()) {
-      btnLgo = '<span id="pha-lgo-btn" data-pid="' + pidSafe + '" style="display:contents">' + lgoBtnHtml(pid, txLgoDetect(pid, null)) + '</span>';
+      var lgoHtml = voitVentes ? lgoRondHtml : lgoBtnHtml;   // fiche « menu » : bouton rond de la 2e rangée de la carte bleue
+      btnLgo = '<span id="pha-lgo-btn" data-pid="' + pidSafe + '" style="display:contents">' + lgoHtml(pid, txLgoDetect(pid, null)) + '</span>';
       if (V2.profil && V2.profil.charger) V2.profil.charger('client', pid).then(function (d) {
         setTimeout(function () {
           var el = document.getElementById('pha-lgo-btn');
-          if (el && el.getAttribute('data-pid') === String(pid)) el.innerHTML = lgoBtnHtml(pid, txLgoDetect(pid, d));
+          if (el && el.getAttribute('data-pid') === String(pid)) el.innerHTML = lgoHtml(pid, txLgoDetect(pid, d));
         }, 0);
       }, function () {});
     }
@@ -2650,7 +2649,7 @@
     var chiffres = '';
     // 09/10/2026 — maquette 8 « Le menu » (remplace la 1b, jugée « trop complexe ») : l'état de la fiche est posé ici,
     // la page est assemblée plus bas (carte d'identité courte, menu, une rubrique à la fois).
-    if (voitVentes) l8Init(pid, A, { marge: marge, dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp, nFiche: 0 });
+    if (voitVentes) l8Init(pid, A, { marge: marge, dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp });
     // 24/09/2026 — officine d'un collègue (commercial restreint) : aucun chiffre de vente,
     // ni « déjà commandé / à pousser » (ça dirait ce qu'elle achète), ni audit de marge.
     if (!voitVentes) chiffres = '<div class="v2-card pha-card"><div class="pha-sub" style="padding:16px 18px">Les chiffres de vente de cette officine sont réservés à son commercial' + (pharma.comms && pharma.comms.length ? ' (' + esc(pharma.comms.join(', ')) + ')' : '') + '.</div></div>';
@@ -2742,10 +2741,9 @@
       var apres = [{ l: 'Prochaine relance', v: rel || 'à compléter', c: rel ? '' : 'pha-empty' }];
       L8_PROFIL.forEach(function (p) { if (saisi[p[0]]) apres.push({ l: p[1], v: esc(String(saisi[p[0]])), c: '' }); });
       fRows = avant.concat(fRows, apres);
-      L1.nFiche = fRows.filter(function (r) { return r.l; }).length;
       var ctx = {
         pidSafe: pidSafe, nom: esc(nameOf(pid, pharma.name)), sous: [pharma.ville || (infoRdv && infoRdv.ville) || (caBase && caBase[13]) || '', (pharma.groupement && pharma.groupement !== '—') ? canonG(pharma.groupement) : ''].filter(function (x) { return x; }).join(' · '),
-        tel: tel, mail: mail, listes: listes, rows: fRows, infos: infos, notes: l8Tete('Notes', rel ? '<span class="l8-dr">Relance le ' + rel + '</span>' : '') + '<div class="l8-notes">' + notes + '</div>',
+        tel: tel, mail: mail, lgo: btnLgo, rows: fRows, infos: infos, notes: l8Tete('Notes', rel ? '<span class="l8-dr">Relance le ' + rel + '</span>' : '') + '<div class="l8-notes">' + notes + '</div>',
         tout: l8Tete('Tout le détail') + l1ToutSection(pid, A) + potentielHtml + briefOff + listing + generiqueurSec,
         vpid: '<p>' + esc([adresse, loc].filter(function (x) { return x; }).join(', ')) + '</p><p>Titulaire : ' + esc(titulaire || dirigeantsDe(oi) || '—') + '</p>' +
           '<p>Groupement d’achat : ' + esc((pharma.groupement && pharma.groupement !== '—') ? canonG(pharma.groupement) : '—') + '</p>'
@@ -4419,6 +4417,12 @@
     return '<button class="pha-btn pha-btn-w pha-btn-lgo" onclick="V2.pharmaTxCatalogue(\'' + esc(String(pid)) + '\',\'' + s + '\')" title="mode d\'emploi + fichier à importer, déjà cochés dans la fenêtre d\'envoi">' +
       ICO('download', 15) + 'Catalogue pour ' + esc(txLgoNom(s)) + '</button>';
   }
+  // Fiche « menu » : même bouton, en rond dans la carte bleue (libellé court dessous, libellé complet en title).
+  function lgoRondHtml(pid, s) {
+    if (!s) return '';
+    return '<button type="button" class="l8-act" title="Catalogue pour ' + esc(txLgoNom(s)) + ' : mode d\'emploi + fichier à importer, déjà cochés dans la fenêtre d\'envoi" aria-label="Catalogue pour ' + esc(txLgoNom(s)) + '" onclick="V2.pharmaTxCatalogue(\'' + esc(String(pid)) + '\',\'' + s + '\')">' +
+      '<span class="l8-rond">' + l8Ic('cata', 22) + '</span>Catalogue</button>';
+  }
   // 25/09 — sans mail type, le texte dit ce qu'est chaque pièce jointe ; avec le catalogue
   // pour son logiciel, l'objet et l'introduction le nomment.
   function txTexteDefaut(files) {
@@ -5586,13 +5590,14 @@
       '.l8-id{position:relative;border-radius:24px;padding:24px 24px 20px;color:#fff;background:radial-gradient(110% 80% at 10% -6%,#2A6AF0 0%,rgba(42,106,240,0) 62%),radial-gradient(90% 70% at 105% 108%,#002A86 0%,rgba(0,42,134,0) 66%),#0050E6;box-shadow:var(--sh-blue)}',
       '.l8-nom{margin:0;font-size:28px;font-weight:800;letter-spacing:-.025em;line-height:1.1;color:#fff;overflow-wrap:anywhere}',
       '.l8-sous{margin:6px 0 0;font-size:15px;font-weight:600;color:#fff}',
-      '.l8-acts{display:flex;justify-content:space-between;gap:8px;margin-top:22px}',
-      '.l8-act{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:0;border:0;background:transparent;color:#fff;font:inherit;font-size:13px;font-weight:700;cursor:pointer;min-height:var(--tap-min,44px);text-decoration:none;-webkit-tap-highlight-color:transparent}',
+      '.l8-acts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:22px}',
+      '.l8-acts-2{margin-top:14px}',
+      '.l8-act{display:flex;flex-direction:column;align-items:center;gap:6px;padding:0;border:0;background:transparent;color:#fff;font:inherit;font-size:13px;font-weight:700;cursor:pointer;min-height:var(--tap-min,44px);text-decoration:none;-webkit-tap-highlight-color:transparent}',
       '.l8-act:hover{color:#fff}',
       '.l8-rond{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;background:#1B58D6;box-shadow:0 1px 0 rgba(255,255,255,.28) inset,0 0 0 1px rgba(255,255,255,.18) inset;transition:transform .18s var(--ease),background .18s}',
       '.l8-act:hover .l8-rond{transform:translateY(-2px);background:#2A66E8}',
       '.l8-act:active .l8-rond{transform:scale(.94)}',
-      '.l8-act:first-child .l8-rond{background:#fff;color:var(--ip-blue);box-shadow:0 4px 12px rgba(0,30,110,.35)}',
+      '.l8-acts:not(.l8-acts-2) .l8-act:first-child .l8-rond{background:#fff;color:var(--ip-blue);box-shadow:0 4px 12px rgba(0,30,110,.35)}',
       '.l8-chiffre{display:none}',
       '.l8-menu{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2);padding:6px;display:flex;flex-direction:column}',
       '.l8-row{position:relative;display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:0 10px;border:0;background:transparent;border-radius:12px;color:var(--ip-ink);font:inherit;font-size:16px;font-weight:700;letter-spacing:-.01em;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .2s var(--ease)}',
@@ -5608,7 +5613,6 @@
       '.l8-lien{display:inline-flex;align-items:center;gap:8px;min-height:var(--tap-min,44px);padding:0;border:0;background:transparent;color:var(--ip-blue);font:inherit;font-size:14px;font-weight:800;cursor:pointer;letter-spacing:-.01em}',
       '.l8-lien:hover{color:var(--ip-blue-d)}',
       '.l8-lien.gris{color:var(--ip-ink-2)}',
-      '.l8-autres[hidden]{display:none}',
       '.l8-retourbar,.l8-vpbar,.l8-vpid{display:none}',
       '.l8-vue[hidden]{display:none}',
       '.l8-vue{animation:l8Entre .38s var(--ease)}',
@@ -5669,7 +5673,7 @@
       '.l8-mois:last-of-type{border-bottom:1px solid var(--line)}',
       '.l8-me{font-size:14px;font-weight:700;color:var(--muted)}',
       '.l8-mm,.l8-md{font-family:var(--mono);font-size:15px;font-weight:700;text-align:right;word-spacing:-.3em}',
-      '.l8-md{font-size:14px;white-space:nowrap}','.l8-mois>*{min-width:0}','.l8-mm{white-space:nowrap}',
+      '.l8-fp{font-family:var(--font);word-spacing:normal}','.l8-md{font-size:14px;white-space:nowrap}','.l8-mois>*{min-width:0}','.l8-mm{white-space:nowrap}',
       '.l8-dp.l8-dp3{display:grid;grid-template-columns:minmax(0,1fr) 84px 80px;align-items:baseline;gap:0 12px}.l8-dp3 .l8-dpn{font-size:14px;font-weight:700;color:var(--ip-ink);text-align:left}.l8-dp3 .mono{text-align:right;white-space:nowrap;word-spacing:-.3em;font-size:14px}.l8-dp3 .l8-dpq{text-align:right;white-space:nowrap}',
       '.l8-barre{position:relative;height:10px;border-radius:5px;background:var(--surf-sunken)}',
       '.l8-barre i{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:var(--ip-blue)}',
@@ -5702,9 +5706,14 @@
       '.l8-detail p{margin:0;font-size:14px;font-weight:600;line-height:1.4;color:var(--ip-ink-2)}.l8-detail p b{font-weight:800}',
       '.l8-detail .large{grid-column:1/-1}',
       '.l8-dp{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 12px;padding:8px 0;border-top:1px solid var(--line);font-size:14px;font-weight:700}',
+      '.l8-cp{display:block;text-align:left;font-style:normal;text-wrap:balance}',
       '.l8-dp span{font-size:13px;color:var(--muted);font-weight:600;text-align:right}.l8-dp span .mono{color:var(--ip-ink);font-weight:800}',
       '.l8-np{display:block;padding:8px 0;border-top:1px solid var(--line)}.l8-np b{display:block;font-size:14px;font-weight:800}.l8-np span{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-top:2px}',
       '.l8-piste-p{height:10px;margin-top:6px;border-radius:999px;background:var(--surf-sunken);overflow:hidden}.l8-piste-p i{display:block;height:100%;background:var(--ip-blue);border-radius:999px}',
+      '.l8-2l{display:grid;grid-template-columns:minmax(0,1fr);gap:36px}',
+      '.l8-liste{min-width:0;position:relative}',
+      '.l8-lnom{margin:0 0 10px;font-size:17px;font-weight:800;letter-spacing:-.01em;overflow-wrap:anywhere}',
+      '@media(min-width:900px){.l8-2l-deux{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 40px}.l8-2l-deux .l8-liste+.l8-liste::before{content:"";position:absolute;left:-20px;top:0;bottom:0;width:1px;background:var(--line)}.l8-2l-deux .l8-pn{font-size:clamp(44px,4.4vw,56px)}}',
       '.l8-pcompte{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px 24px;margin-bottom:8px}',
       '.l8-pn{font-family:var(--mono);font-weight:800;font-size:clamp(52px,7vw,80px);letter-spacing:-.05em;line-height:1;word-spacing:-.3em;color:var(--ip-blue)}',
       '.l8-pn small{font-family:var(--font);font-size:17px;font-weight:700;letter-spacing:0;color:var(--muted);margin-left:10px;word-spacing:normal}',
@@ -5714,6 +5723,7 @@
       '.l8-btn-pri{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff;box-shadow:var(--sh-blue)}',
       '.l8-btn-pri:hover{background:var(--ip-blue-d)}',
       '.l8-fl-l{margin:0}',
+      '@media(min-width:1100px){.l8-fl-l{column-count:2;column-gap:40px}.l8-fl-l>*{break-inside:avoid}}',
       '.l8-fr{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:52px;padding:6px 0;border-top:1px solid var(--line)}',
       'dl.l8-fl-l:last-of-type .l8-fr:last-child{border-bottom:1px solid var(--line)}',
       '.l8-fr dt{font-size:14px;font-weight:600;color:var(--muted);flex:none}',
@@ -5724,8 +5734,6 @@
       '.l8-fr dd.pha-cessee{color:var(--c-rose-txt)}.l8-fr dd.pha-retraite{color:#8A4B00}',
       '.l8-fnote{margin:0;padding:8px 0;font-size:14px;font-weight:600;color:var(--muted);border-top:1px solid var(--line)}',
       '.l8-fnote a{color:var(--ip-blue)}',
-      '.l8-fiche-plus{display:none}',
-      '#l8-v-fiche[data-plus="1"] .l8-fiche-plus{display:block}',
       '.l8-forms{display:none}',
       '#l8-v-fiche[data-edit="1"] .l8-forms{display:block}',
       '#l8-v-fiche[data-edit="1"] .l8-lect{display:none}',
@@ -5749,7 +5757,7 @@
       '.pha.l8[data-ecran="rubrique"]>.pha-rail{display:none}',
       '.l8-id{padding:20px 20px 16px}',
       '.l8-nom{font-size:26px}',
-      '.l8-acts{margin-top:16px}',
+      '.l8-acts{margin-top:16px}.l8-acts-2{margin-top:12px}',
       '.l8-chiffre{display:block;width:100%;padding:4px;border:0;background:transparent;text-align:left;font:inherit;color:inherit;cursor:pointer}',
       '.l8-chiffre .l8-n{display:block;font-size:56px}',
       '.l8-chiffre .l8-u{display:block;margin-top:4px;font-size:15px}',
@@ -5771,6 +5779,7 @@
       '.l8-cm{text-align:left}',
       '.l8-detail{grid-template-columns:1fr}',
       '.l8-fr{flex-wrap:wrap}',
+      '.l8-fnote a{padding:13px 0}',
       '.l8-pacts{width:100%}.l8-pacts .l8-btn{flex:1;justify-content:center;padding:0 8px}',
       '}',
       '#l8-tout-body[hidden]{display:none!important}',
