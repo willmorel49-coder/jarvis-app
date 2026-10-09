@@ -206,8 +206,10 @@
   }
   function csvVal(v) {
     if (v && v.n != null) return v.v.toFixed(v.n).replace('.', ',');
-    // Un libellé relevé sur un site tiers qui commencerait par = + - @ serait lu comme une formule par un tableur.
-    return String(v).replace(/^[\s=+\-@]+/, '').replace(/;/g, ',').replace(/[\r\n]+/g, ' ');
+    // Un texte relevé sur un site tiers ne doit jamais ouvrir une cellule par = + - @ : un tableur le lirait comme
+    // une formule. Vrai aussi pour un tableur qui couperait sur la virgule ou la tabulation, ou qui lirait des guillemets.
+    return String(v).replace(/[\r\n\t]+/g, ' ').replace(/"/g, '').replace(/;/g, ',')
+      .replace(/(^|,)[\s'=+\-@＝＋－＠]+/g, function (m, d) { return d ? ', ' : ''; });
   }
   // Le fichier, tel qu'il sera enregistré : { nom, titres, lignes } — lu aussi par la sonde de preuve.
   V2.offCatLgoDonnees = function () {
