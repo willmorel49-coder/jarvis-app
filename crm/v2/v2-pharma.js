@@ -1454,10 +1454,38 @@
   var top5Cat = null;   // catégorie ouverte dans « Top 10 par catégorie »
   V2.pharmaTop5Cat = function (key) { top5Cat = key; if (!l1MajTout()) V2.render(); };
 
+  // 09/10/2026 — règle de Will : « chaque officine est lue jusqu'au dernier mois chargé pour SON commercial ».
+  // Chaque secteur (fichier d'un commercial) s'arrête à son mois (cf. reference_dernier_mois_incomplet, même façon
+  // de faire que moisCouverts() du brief) ; l'officine s'arrête au PLUS PETIT des derniers mois de ses secteurs.
+  var _derCom = null, _derComRef = null;
+  function dernierMkParCommercial() {
+    if (_derCom && _derComRef === V2.sales) return _derCom;
+    _derCom = {}; var S = V2.sales || [];
+    for (var i = 0; i < S.length; i++) {
+      if (!S[i].month || !S[i].year) continue;
+      var c = S[i].commercial || '', mk = S[i].year * 12 + (S[i].month - 1);
+      if (_derCom[c] == null || mk > _derCom[c]) _derCom[c] = mk;
+    }
+    _derComRef = V2.sales; return _derCom;
+  }
+  function finOfficine(sales) {
+    var der = dernierMkParCommercial(), fin = null;
+    for (var i = 0; i < sales.length; i++) {
+      var s = sales[i]; if (!s.month || !s.year) continue;
+      var d = der[s.commercial || '']; if (d != null && (fin == null || d < fin)) fin = d;
+    }
+    return fin;
+  }
+
   // Tout ce que la fiche d'analyse calcule, en un seul objet (partagé ordinateur / téléphone).
   function analyseData(pid, sales) {
     var net = networkByCat();
     var netMonths = net.months;
+    var fin = finOfficine(sales);   // dernier mois de SON secteur : au-delà, on ne lit rien (ni mois, ni lignes, ni moyenne)
+    if (fin != null) {
+      netMonths = netMonths.filter(function (m) { return m.mk <= fin; });
+      sales = sales.filter(function (s) { return !s.month || !s.year || s.year * 12 + (s.month - 1) <= fin; });
+    }
     var byM = {}, cntM = {}; sales.forEach(function (s) { if (s.month && s.year) { var k = s.year * 12 + (s.month - 1); byM[k] = (byM[k] || 0) + (s.mntNetHt || 0); cntM[k] = (cntM[k] || 0) + 1; } });
     var pts = netMonths.map(function (m) { return { mk: m.mk, label: monthLabel(m), year: m.year, ca: byM[m.mk] || 0, net: m.avg }; });
     var n = pts.length, last = pts[n - 1] || null, prev = pts[n - 2] || null;
@@ -1762,7 +1790,8 @@
   }
   // « de janvier à août 2026 » : tous les mois chargés (base des listes à proposer)
   function l1FenetreReseau(A) {
-    var a = A.pts[0], b = A.last; if (!a || !b) return '';
+    // les listes se fondent sur TOUS les mois chargés du réseau, pas sur la fenêtre de cette officine
+    var tm = networkByCat().months, a = tm[0], b = tm[tm.length - 1]; if (!a || !b) return '';
     var ya = Math.floor(a.mk / 12), yb = Math.floor(b.mk / 12);
     return l1De(MOIS_LONG[a.mk % 12] + (ya !== yb ? ' ' + ya : '')) + ' à ' + MOIS_LONG[b.mk % 12] + ' ' + yb;
   }
@@ -1779,7 +1808,7 @@
     if (networkByCat().R || !A.nAct) return null;
     var g = groupementPids(pid); if (!g.set || g.set.size < 2) return null;
     if (_l1GrpMemo.ref !== V2.sales) _l1GrpMemo = { ref: V2.sales, par: {} };
-    var G = _l1GrpMemo.par[g.name];
+    var gcle = g.name + '|' + A.pts.length + '|' + (A.last ? A.last.mk : 0), G = _l1GrpMemo.par[gcle];
     if (!G) {
       var idx = salesIndex(), act = {}, tot = {};
       g.set.forEach(function (p) {
@@ -1797,7 +1826,7 @@
         var c = act[pt.mk] ? Object.keys(act[pt.mk]).length : 0;
         G.n[i] = c; G.avg[i] = c >= 2 ? tot[pt.mk] / c : null;
       });
-      _l1GrpMemo.par[g.name] = G;
+      _l1GrpMemo.par[gcle] = G;
     }
     for (var i = A.i0; i < A.n; i++) { if (!(G.n[i] >= 2)) return null; }
     return G;
@@ -2122,7 +2151,7 @@
       if (c.top && c.top.length) {
         var t5 = c.top.slice(0, 5);
         h += '<div><h4>' + (t5.length > 1 ? 'Ses ' + t5.length + ' meilleurs produits' : 'Son meilleur produit') + ', ' + l1PeriodeCumul(A) + '</h4>';
-        t5.forEach(function (t) { h += '<div class="l8-dp">' + esc(t.designation) + '<span><b class="mono">' + l1Eur(t.ca) + '</b> · ' + l1Nb(t.qte) + NB + 'boîte' + (t.qte > 1 ? 's' : '') + '</span></div>'; });
+        t5.forEach(function (t) { h += '<div class="l8-dp l8-dp3"><span class="l8-dpn">' + esc(t.designation) + '</span><b class="mono">' + l1Eur(t.ca) + '</b><span class="l8-dpq">' + l1Nb(t.qte) + NB + 'boîte' + (t.qte > 1 ? 's' : '') + '</span></div>'; });
         h += '</div>';
       }
     }
@@ -2187,7 +2216,6 @@
     if (k === 'categories') return String(A.cats.filter(function (c) { return c.ca > 0 || c.netMoy > 0; }).length);
     if (k === 'neplus') return (L1.np && L1.np.connu && L1.np.lignes.length) ? String(L1.np.lignes.length) : '';
     if (k === 'meilleurs') { var n = l8TopTous().length; return n ? String(n) : ''; }
-    if (k === 'fiche') return String(L1.nFiche);
     return '';
   }
 
@@ -2703,7 +2731,7 @@
       }
       fRows.forEach(function (r) {
         if (r.l === 'Téléphone' && tel) r.v = '<a href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) + '">' + r.v + '</a>';
-        if (r.l === 'E-mail' && mail) r.v = '<a href="mailto:' + esc(mail) + '">' + r.v + '</a>';
+        if (r.l === 'E-mail' && mail) { var mailAff = mail.replace(/[\s;,]+$/, ''); r.v = '<a href="mailto:' + esc(mailAff) + '">' + esc(mailAff) + '</a>'; }
       });
       var avant = [];
       if (pharma.code) avant.push({ l: 'CIP', v: '<span class="mono">' + esc(String(pharma.code)) + '</span>', c: '' });
@@ -5641,7 +5669,8 @@
       '.l8-mois:last-of-type{border-bottom:1px solid var(--line)}',
       '.l8-me{font-size:14px;font-weight:700;color:var(--muted)}',
       '.l8-mm,.l8-md{font-family:var(--mono);font-size:15px;font-weight:700;text-align:right;word-spacing:-.3em}',
-      '.l8-md{font-size:14px}',
+      '.l8-md{font-size:14px;white-space:nowrap}','.l8-mois>*{min-width:0}','.l8-mm{white-space:nowrap}',
+      '.l8-dp.l8-dp3{display:grid;grid-template-columns:minmax(0,1fr) 84px 80px;align-items:baseline;gap:0 12px}.l8-dp3 .l8-dpn{font-size:14px;font-weight:700;color:var(--ip-ink);text-align:left}.l8-dp3 .mono{text-align:right;white-space:nowrap;word-spacing:-.3em;font-size:14px}.l8-dp3 .l8-dpq{text-align:right;white-space:nowrap}',
       '.l8-barre{position:relative;height:10px;border-radius:5px;background:var(--surf-sunken)}',
       '.l8-barre i{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:var(--ip-blue)}',
       '.l8-barre u{position:absolute;top:-4px;bottom:-4px;width:3px;border-radius:2px;background:#8591AC;text-decoration:none}',
@@ -5656,7 +5685,7 @@
       '.l8-crow{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto 20px;align-items:center;gap:0 14px;min-height:56px;padding:6px 0;border:0;background:transparent;text-align:left;font:inherit;color:inherit;cursor:pointer}',
       '.l8-crow:hover .l8-cn{color:var(--ip-blue)}',
       '.l8-cn{font-size:16px;font-weight:700;letter-spacing:-.01em}',
-      '.l8-cinf{display:grid;grid-template-columns:96px 150px 108px;align-items:center;gap:0 14px}',
+      '.l8-cinf{display:grid;grid-template-columns:96px 150px 124px;align-items:center;gap:0 14px}',
       '.l8-cm{font-family:var(--mono);font-size:15px;font-weight:700;text-align:right;word-spacing:-.3em}',
       '.l8-ce{font-family:var(--mono);font-size:14px;font-weight:700;text-align:right;word-spacing:-.3em}',
       '.l8-cabs{font-size:14px;font-weight:700;color:var(--muted)}',
@@ -5735,10 +5764,10 @@
       '.l8-rv{margin:0;font-size:22px}',
       '.l8-rv-mots{font-size:19px}',
       '.l8-rt{margin:0;width:100%;text-align:right}',
-      '.l8-mois{grid-template-columns:44px minmax(0,1fr) 70px 78px;gap:0 8px}',
+      '.l8-mois{grid-template-columns:36px minmax(0,1fr) 70px 124px;gap:0 8px}',
       '.l8-crow{grid-template-columns:minmax(0,1fr) 20px;grid-template-areas:"n c" "x x";padding:10px 0;min-height:64px}',
       '.l8-cn{grid-area:n}.l8-cc{grid-area:c}',
-      '.l8-cinf{grid-area:x;grid-template-columns:76px minmax(0,1fr) 96px;gap:0 10px;margin-top:6px}',
+      '.l8-cinf{grid-area:x;grid-template-columns:76px minmax(0,1fr) 124px;gap:0 10px;margin-top:6px}',
       '.l8-cm{text-align:left}',
       '.l8-detail{grid-template-columns:1fr}',
       '.l8-fr{flex-wrap:wrap}',
