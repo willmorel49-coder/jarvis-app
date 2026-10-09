@@ -147,26 +147,47 @@
     { s: 'lgpi', nom: 'LGPI', t: ['CODE PRODUIT', 'DESIGNATION', 'PRIX NET HT'], f: function (x) { return [x.ean, x.lib, dec(x.prix)]; } },
     { s: 'smartrx', nom: 'Smart RX', t: ['CODE ARTICLE', 'CIP13', 'GAMME', '(fixe)', '(fixe)', '(fixe)', 'LIBELLE', 'PRIX NET HT', 'TVA', '', '', '', '(fixe)', '(fixe)', 'ABANDON DE MARGE'],
       f: function (x, g) { return ['', x.ean, g, 1, 1, 1, x.lib, dec(x.prix), '', '', '', '', 1, 99999, dec(0)]; } },
-    { s: 'leo', nom: 'LEO', titre: true, t: ['CIP7', 'CIP13', 'EAN', 'Libellé', 'Prix HT Catalogue', 'Prix HT Remisé', 'Gabarit', 'Mini de commande',
+    { s: 'leo', nom: 'LEO', titre: true, tl: true, t: ['CIP7', 'CIP13', 'EAN', 'Libellé', 'Prix HT Catalogue', 'Prix HT Remisé', 'Gabarit', 'Mini de commande',
       'Gamme', 'Sous Gamme', 'Seuil n° 1', 'Prix HT remisé 1', 'Seuil n° 2', 'Prix HT remisé 2', 'Seuil n° 3', 'Prix HT remisé 3'],
       f: function (x, g) { var cip = /^3400/.test(x.ean); return ['', cip ? x.ean : '', cip ? '' : x.ean, x.lib, dec(x.tarif), dec(x.prix), '', '', g, x.rayon, '', '', '', '', '', '']; } },
     { s: 'pharmaland', nom: 'Pharmaland', t: ['CODE ARTICLE', 'CIP13', 'GAMME', '(fixe)', '(fixe)', '(fixe)', 'LIBELLE', 'PRIX NET HT', 'TVA', 'ABANDON DE MARGE'],
       f: function (x, g) { return ['', x.ean, g, 1, 1, 1, x.lib, dec(x.prix), '', dec(0)]; } },
     { s: 'pharmony', nom: 'Pharmony', t: ['CIP13', 'DESIGNATION', 'PRIX ACHAT U HT', 'ABANDON DE MARGE'], f: function (x) { return [x.ean, x.lib, dec(x.prix), dec(0)]; } },
-    { s: 'pharmavitale', nom: 'Pharmavitale', t: LISIBLE, titre: true, f: lisible },
-    { s: 'visiopharm', nom: 'VisioPharm', t: LISIBLE, titre: true, f: lisible }
+    { s: 'pharmavitale', nom: 'Pharmavitale', t: LISIBLE, titre: true, tl: true, f: lisible },
+    { s: 'visiopharm', nom: 'VisioPharm', t: LISIBLE, titre: true, tl: true, f: lisible }
   ];
   // Les produits classés, la meilleure vente en tête. Sans rang, sans prix ou sans code à 13 chiffres : hors fichier.
+  // 09/10/2026 (suite) — on part de TOUTES les ventes classées, comme l'écran Offilog : le rang est celui du
+  // dernier relevé (offilog-marche-data.js), les produits sont ceux des meilleures ventes (OFFILOG_BEST, prix
+  // dans b.price). Avant, seuls les produits du catalogue client y étaient : « les 300 meilleures ventes »
+  // allait de la n° 1 à la n° 396. Un produit du catalogue client garde son prix et son tarif laboratoire
+  // (relevé plus récent) ; les autres n'ont pas de tarif laboratoire : la colonne reste vide, jamais devinée.
+  // Un produit absent du dernier relevé est hors fichier : la date annoncée sous les boutons vaut pour tous.
+  // Sans le relevé du marché en mémoire, on retombe sur le classement porté par le catalogue (C.ventes).
   function ventesClassees() {
     var C = window.OFFILOG_CATALOGUE;
     if (!C) return [];
-    if (!C._ventes) {
-      C._ventes = lignes().filter(function (x) { return x.rang > 0 && x.prix > 0 && /^\d{13}$/.test(String(x.ean)); })
-        .sort(function (a, b) { return a.rang - b.rang; })
-        .map(function (x) {
-          var m = String(x.marque || '').trim(), n = String(x.nom || '').trim();
-          return { ean: String(x.ean), lib: m && n.toLowerCase().indexOf(m.toLowerCase()) < 0 ? m + ' ' + n : n, tarif: x.tarif, prix: x.prix, rayon: x.rayon, rang: x.rang };
-        });
+    if (V2.fusionnerPrixBest) V2.fusionnerPrixBest();
+    var B = window.OFFILOG_BEST || [], M = window.OFFILOG_MARCHE, cats = window.OFFILOG_CATS || {};
+    var der = M && M.rangs && M.releves ? M.releves.length - 1 : -1;
+    var cle = B.length + '|' + (V2.offilogPrixBest || 0) + '|' + (der >= 0 ? M.releves[der] : '') + '|' + Object.keys(cats).length;
+    if (C._ventesCle !== cle) {
+      var vus = {}, out = [];
+      var pousser = function (ean, lib, tarif, prix, rayon, repli) {
+        var s = der >= 0 ? M.rangs[ean] : null, r = der >= 0 ? (s && s[der] > 0 ? s[der] : 0) : repli;
+        if (!(r > 0) || !(prix > 0) || !/^\d{13}$/.test(ean) || vus[ean]) return;
+        vus[ean] = 1; out.push({ ean: ean, lib: lib, tarif: tarif, prix: prix, rayon: rayon, rang: r });
+      };
+      lignes().forEach(function (x) {
+        var m = String(x.marque || '').trim(), n = String(x.nom || '').trim();
+        pousser(String(x.ean), m && n.toLowerCase().indexOf(m.toLowerCase()) < 0 ? m + ' ' + n : n, x.tarif, x.prix, x.rayon, x.rang);
+      });
+      if (der >= 0) B.forEach(function (b) {
+        if (b.ean) pousser(String(b.ean), String(b.name || '').trim(), null, +b.price, cats[String(b.id)] || 'Autres soins', 0);
+      });
+      C._ventes = out.sort(function (a, b) { return a.rang - b.rang; });
+      C._ventesDate = der >= 0 ? M.releves[der] : C.ventes;
+      C._ventesCle = cle;
     }
     return C._ventes;
   }
@@ -175,6 +196,8 @@
     var V = ventesClassees(); if (!V.length) return '';
     var n = Math.min(G.n || V.length, V.length), l = lgoChoisi();
     var tailles = [200, 300, 500].filter(function (t) { return t < V.length; });
+    // Les logiciels dont le fichier porte une colonne « tarif » : on dit combien de lignes l'ont, plutôt que de laisser découvrir des cases vides.
+    var avecTarif = l.tl ? V.slice(0, n).filter(function (x) { return x.tarif > 0; }).length : n;
     function bouton(type, lib, cls) {
       return '<div class="offcat-f"><span>&nbsp;</span><button class="v2-btn ' + cls + '" onclick="V2.offCatLgoFichier(\'' + type + '\')">' + ICO('download', 15, 2) + ' ' + lib + '</button></div>';
     }
@@ -188,8 +211,9 @@
         }).join('') + '<option value="0"' + (n === V.length ? ' selected' : '') + '>Toutes les ventes classées (' + V2.fmtNum(V.length) + ')</option></select></label>' +
         bouton('xlsx', 'Excel', 'v2-btn-primary') + bouton('csv', 'CSV', 'v2-btn-ghost') +
       '</div>' +
-      '<div class="offcat-kpi">Dans l\'ordre des ventes, de la <b class="mono">n° 1</b> à la <b class="mono">n° ' + V2.fmtNum(V[n - 1].rang) + '</b>' +
-        (C.ventes ? ' · classement Offilog du ' + dateFr(C.ventes) : '') + ' · colonnes de ' + l.nom +
+      '<div class="offcat-kpi">Dans l\'ordre des ventes, de la <b class="mono">n° ' + V2.fmtNum(V[0].rang) + '</b> à la <b class="mono">n° ' + V2.fmtNum(V[n - 1].rang) + '</b>' +
+        (C._ventesDate ? ' · classement Offilog du ' + dateFr(C._ventesDate) : '') + ' · colonnes de ' + l.nom +
+        (avecTarif < n ? ' · tarif laboratoire connu pour <b class="mono">' + V2.fmtNum(avecTarif) + '</b> des ' + V2.fmtNum(n) + ' produits' : '') +
         ' · le CSV s\'importe dans le logiciel, l\'Excel sert à le relire.</div>';
   }
   V2.offCatLgo = function (cle, v) { G[cle] = cle === 'n' ? +v : v; rendre(); };
@@ -278,6 +302,11 @@
         if (!window.OFFILOG_CATALOGUE) V2._offcatKO = true;
         rendre();
       }, function () { V2._offcatKO = true; rendre(); });
+    }
+    // Le bloc « meilleures ventes par logiciel » lit aussi le classement, les prix et les rayons des meilleures
+    // ventes. L'écran Offilog les a déjà demandés : s'ils arrivent après l'ouverture, on redessine.
+    if (V2.loadFiles && !(window.OFFILOG_MARCHE && window.OFFILOG_BEST_PRIX && window.OFFILOG_CATS)) {
+      V2.loadFiles(['offilogbestprix', 'offilogmarche', 'offilogcats']).then(rendre, function () {});
     }
   };
   V2.offCatFermer = function () { var bd = document.getElementById('offcat-modal'); if (bd) bd.classList.remove('open'); };
