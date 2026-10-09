@@ -98,6 +98,7 @@
       (ventes ? '<div class="offcat-hero"><div><div class="offcat-h">Nos meilleures ventes</div>' +
         '<div class="offcat-d">' + V2.fmtNum(ventes.p.produits) + ' produits · top ventes du marché signalés · toutes nos marques · ' + ventes.p.pages + ' pages · ' + mo(ventes.p.octets) + '</div></div>' +
         '<div class="offcat-act">' + actions(ventes) + '</div></div>' : '') +
+      blocLgo(C) +
       (prospect ? '<div class="offcat-hero"><div><div class="offcat-h">Pour un prospect</div>' +
         '<div class="offcat-d">Catalogue court à laisser en visite · ' + V2.fmtNum(prospect.p.produits) + ' produits · ' + prospect.p.pages + ' pages · ' + mo(prospect.p.octets) + '</div></div>' +
         '<div class="offcat-act">' + actions(prospect) + '</div></div>' : '') +
@@ -128,6 +129,116 @@
   }
 
   V2.offCatFiltre = function (cle, v) { F[cle] = cle === 'min' ? +v : v; rendre(); };
+
+  // ── Les meilleures ventes, au format d'import de chaque logiciel ──
+  // 09/10/2026 — mêmes colonnes, ligne de titre, encodage et décimales que les catalogues Intégral
+  // de l'écran Logiciels officine (fabriqués par ~/jarvis-catalogues-lgo/build.py). Offilog ne donne
+  // ni code article ni taux de TVA : ces deux colonnes restent vides. Le prix est le prix Offilog HT.
+  var G = { lgo: 'winpharma', n: 300 };
+  function dec(v, n) { return v == null ? '' : { v: v, n: n == null ? 2 : n }; }   // nombre à n décimales
+  var WIN = ['Commentaire', 'Code Labo', 'EAN13', 'EAN13_2', 'Libellé', 'TVA', 'Prix A HT', 'Remise1', 'Vignette', 'Code Acte',
+    'QteMin', 'Gabarit', 'Gammes', 'Labo', 'Labo adr1', 'Labo adr2', 'Labo cp', 'Labo ville', 'Labo tel', 'fou_fax',
+    'fou_web', 'QteMin2', 'RemQte2', 'QteMin3', 'RemQte3', 'QteMin4', 'RemQte4', 'Referencement', 'Conditions'];
+  var LISIBLE = ['EAN', 'LIBELLE', 'PRIX TARIF HT', 'PRIX NET HT', 'CATEGORIE'];
+  function lisible(x) { return [x.ean, x.lib, dec(x.tarif), dec(x.prix), x.rayon]; }
+  var LGO = [
+    { s: 'winpharma', nom: 'Winpharma', t: WIN, titre: true, utf8: true,
+      f: function (x) { var r = WIN.map(function () { return ''; }); r[2] = x.ean; r[4] = x.lib; r[6] = dec(x.prix, 5); r[7] = dec(0, 5); r[10] = 1; return r; } },
+    { s: 'lgpi', nom: 'LGPI', t: ['CODE PRODUIT', 'DESIGNATION', 'PRIX NET HT'], f: function (x) { return [x.ean, x.lib, dec(x.prix)]; } },
+    { s: 'smartrx', nom: 'Smart RX', t: ['CODE ARTICLE', 'CIP13', 'GAMME', '(fixe)', '(fixe)', '(fixe)', 'LIBELLE', 'PRIX NET HT', 'TVA', '', '', '', '(fixe)', '(fixe)', 'ABANDON DE MARGE'],
+      f: function (x, g) { return ['', x.ean, g, 1, 1, 1, x.lib, dec(x.prix), '', '', '', '', 1, 99999, dec(0)]; } },
+    { s: 'leo', nom: 'LEO', titre: true, t: ['CIP7', 'CIP13', 'EAN', 'Libellé', 'Prix HT Catalogue', 'Prix HT Remisé', 'Gabarit', 'Mini de commande',
+      'Gamme', 'Sous Gamme', 'Seuil n° 1', 'Prix HT remisé 1', 'Seuil n° 2', 'Prix HT remisé 2', 'Seuil n° 3', 'Prix HT remisé 3'],
+      f: function (x, g) { var cip = /^3400/.test(x.ean); return ['', cip ? x.ean : '', cip ? '' : x.ean, x.lib, dec(x.tarif), dec(x.prix), '', '', g, x.rayon, '', '', '', '', '', '']; } },
+    { s: 'pharmaland', nom: 'Pharmaland', t: ['CODE ARTICLE', 'CIP13', 'GAMME', '(fixe)', '(fixe)', '(fixe)', 'LIBELLE', 'PRIX NET HT', 'TVA', 'ABANDON DE MARGE'],
+      f: function (x, g) { return ['', x.ean, g, 1, 1, 1, x.lib, dec(x.prix), '', dec(0)]; } },
+    { s: 'pharmony', nom: 'Pharmony', t: ['CIP13', 'DESIGNATION', 'PRIX ACHAT U HT', 'ABANDON DE MARGE'], f: function (x) { return [x.ean, x.lib, dec(x.prix), dec(0)]; } },
+    { s: 'pharmavitale', nom: 'Pharmavitale', t: LISIBLE, titre: true, f: lisible },
+    { s: 'visiopharm', nom: 'VisioPharm', t: LISIBLE, titre: true, f: lisible }
+  ];
+  // Les produits classés, la meilleure vente en tête. Sans rang, sans prix ou sans code à 13 chiffres : hors fichier.
+  function ventesClassees() {
+    var C = window.OFFILOG_CATALOGUE;
+    if (!C) return [];
+    if (!C._ventes) {
+      C._ventes = lignes().filter(function (x) { return x.rang > 0 && x.prix > 0 && /^\d{13}$/.test(String(x.ean)); })
+        .sort(function (a, b) { return a.rang - b.rang; })
+        .map(function (x) {
+          var m = String(x.marque || '').trim(), n = String(x.nom || '').trim();
+          return { ean: String(x.ean), lib: m && n.toLowerCase().indexOf(m.toLowerCase()) < 0 ? m + ' ' + n : n, tarif: x.tarif, prix: x.prix, rayon: x.rayon, rang: x.rang };
+        });
+    }
+    return C._ventes;
+  }
+  function lgoChoisi() { return LGO.filter(function (l) { return l.s === G.lgo; })[0] || LGO[0]; }
+  function blocLgo(C) {
+    var V = ventesClassees(); if (!V.length) return '';
+    var n = Math.min(G.n || V.length, V.length), l = lgoChoisi();
+    var tailles = [200, 300, 500].filter(function (t) { return t < V.length; });
+    function bouton(type, lib, cls) {
+      return '<div class="offcat-f"><span>&nbsp;</span><button class="v2-btn ' + cls + '" onclick="V2.offCatLgoFichier(\'' + type + '\')">' + ICO('download', 15, 2) + ' ' + lib + '</button></div>';
+    }
+    return '<div class="offcat-l">Les meilleures ventes, pour son logiciel</div>' +
+      '<div class="offcat-filtres offcat-lgo">' +
+        '<label class="offcat-f"><span>Logiciel</span><select onchange="V2.offCatLgo(\'lgo\', this.value)">' + LGO.map(function (o) {
+          return '<option value="' + o.s + '"' + (o === l ? ' selected' : '') + '>' + o.nom + '</option>';
+        }).join('') + '</select></label>' +
+        '<label class="offcat-f"><span>Sélection</span><select onchange="V2.offCatLgo(\'n\', this.value)">' + tailles.map(function (t) {
+          return '<option value="' + t + '"' + (G.n === t ? ' selected' : '') + '>Les ' + t + ' meilleures ventes</option>';
+        }).join('') + '<option value="0"' + (n === V.length ? ' selected' : '') + '>Toutes les ventes classées (' + V2.fmtNum(V.length) + ')</option></select></label>' +
+        bouton('xlsx', 'Excel', 'v2-btn-primary') + bouton('csv', 'CSV', 'v2-btn-ghost') +
+      '</div>' +
+      '<div class="offcat-kpi">Dans l\'ordre des ventes, de la <b class="mono">n° 1</b> à la <b class="mono">n° ' + V2.fmtNum(V[n - 1].rang) + '</b>' +
+        (C.ventes ? ' · classement Offilog du ' + dateFr(C.ventes) : '') + ' · colonnes de ' + l.nom +
+        ' · le CSV s\'importe dans le logiciel, l\'Excel sert à le relire.</div>';
+  }
+  V2.offCatLgo = function (cle, v) { G[cle] = cle === 'n' ? +v : v; rendre(); };
+
+  // Windows-1252 : l'encodage attendu par tous les logiciels sauf Winpharma. Hors table → « ? ».
+  var CP1252 = '€\u0081‚ƒ„…†‡ˆ‰Š‹Œ\u008dŽ\u008f\u0090‘’“”•–—˜™š›œ\u009džŸ';   // octets 0x80 à 0x9F
+  function cp1252(s) {
+    var o = new Uint8Array(s.length);
+    for (var i = 0; i < s.length; i++) {
+      var c = s.charCodeAt(i), k = CP1252.indexOf(s.charAt(i));
+      o[i] = (c < 128 || (c > 159 && c < 256)) ? c : (k >= 0 ? 128 + k : 63);
+    }
+    return o;
+  }
+  function csvVal(v) {
+    if (v && v.n != null) return v.v.toFixed(v.n).replace('.', ',');
+    return String(v).replace(/;/g, ',').replace(/[\r\n]+/g, ' ');
+  }
+  // Le fichier, tel qu'il sera enregistré : { nom, titres, lignes } — lu aussi par la sonde de preuve.
+  V2.offCatLgoDonnees = function () {
+    var V = ventesClassees(), l = lgoChoisi(), n = Math.min(G.n || V.length, V.length);
+    var entier = n === V.length, gamme = 'OFFILOG' + (entier ? '' : ' TOP ' + n);
+    return { lgo: l, nom: 'offilog-' + (entier ? 'meilleures-ventes' : 'top' + n) + '-' + l.s, titres: l.t,
+      lignes: V.slice(0, n).map(function (x) { return l.f(x, gamme); }) };
+  };
+  V2.offCatLgoCsv = function () {
+    var d = V2.offCatLgoDonnees();
+    var txt = (d.lgo.titre ? d.titres.join(';') + '\r\n' : '') + d.lignes.map(function (r) { return r.map(csvVal).join(';') + '\r\n'; }).join('');
+    return d.lgo.utf8 ? new TextEncoder().encode(txt) : cp1252(txt);
+  };
+  V2.offCatLgoFichier = function (type) {
+    var d = V2.offCatLgoDonnees(); if (!d.lignes.length) return;
+    if (type === 'csv') {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([V2.offCatLgoCsv()], { type: 'text/csv' }));
+      a.download = d.nom + '.csv'; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+      return;
+    }
+    ensureXlsx().then(function () {
+      // Une seule feuille, les mêmes colonnes, rien d'autre : certains logiciels refusent le reste.
+      var aoa = [d.titres].concat(d.lignes.map(function (r) { return r.map(function (v) { return v && v.n != null ? v.v : v; }); }));
+      var ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws['!cols'] = d.titres.map(function (h) { return { wch: /^(LIB|DESIG)/i.test(h) ? 52 : Math.max(12, h.length + 2) }; });
+      var wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Catalogue');
+      XLSX.writeFile(wb, d.nom + '.xlsx');
+    }).catch(function () { V2.toast('Export Excel indisponible (hors ligne ?)', 'error'); });
+  };
 
   V2.offCatEnvoyer = function (cle) {
     if (!V2.docProtegeFichier) return;
@@ -224,6 +335,10 @@
       '.offcat-f{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}',
       '.offcat-f select{height:42px;border:1px solid var(--line);border-radius:12px;padding:0 12px;font:inherit;font-size:16px;text-transform:none;letter-spacing:0;font-weight:500;color:var(--ip-ink);background:var(--card);min-width:0}',
       '.offcat-f .v2-btn{height:42px}',
+      // 09/10 : bloc « meilleures ventes par logiciel » — colonnes qui laissent la place au texte du menu Sélection ; sur mobile les deux menus prennent la largeur, Excel et CSV côte à côte
+      '.offcat-filtres.offcat-lgo{grid-template-columns:minmax(0,1fr) minmax(0,1.5fr) minmax(0,.6fr) minmax(0,.6fr)}',
+      '.offcat-lgo .v2-btn{width:100%}',
+      '@media(max-width:700px){.offcat-filtres.offcat-lgo{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.offcat-lgo .offcat-f:nth-child(-n+2){grid-column:1/-1}}',
       '.offcat-kpi{font-size:14px;color:var(--ip-ink);margin-bottom:10px}',
       '.offcat-tab{border:1px solid var(--line);border-radius:14px;overflow-x:auto}',
       '.offcat-tab table{width:100%;border-collapse:collapse;font-size:14px}',
