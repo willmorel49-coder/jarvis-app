@@ -1918,6 +1918,7 @@
     oeil: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
     haut: '<path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/>', bas: '<path d="M12 5v14M5.5 12.5 12 19l6.5-6.5"/>',
     pdf: '<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',
+    excel: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16"/>',
     todo: '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>', joint: '<path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>', cata: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 18v-6M9 15l3 3 3-3"/>', envoi: '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>', ecran: '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>'
   };
   function l8Ic(k, s) { s = s || 20; return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + L8_IC[k] + '</svg>'; }
@@ -2000,6 +2001,7 @@
       if (n <= 0) { h += l8Vide('Rien à lui proposer sur cette base.') + '</div>'; return; }
       h += '<div class="l8-pcompte"><div class="l8-pn">' + l1Nb(n) + '<small>produits</small></div><div class="l8-pacts">' +
         '<button type="button" class="l8-btn l8-interne" aria-label="Télécharger la liste en PDF : ' + esc(c[1]) + '" onclick="V2.pharmaListPdf(\'' + pid + '\',\'' + sc + '\')">' + l8Ic('pdf', 18) + 'PDF</button>' +
+        '<button type="button" class="l8-btn l8-interne" aria-label="Télécharger la liste en Excel : ' + esc(c[1]) + '" onclick="V2.pharmaListXlsx(\'' + pid + '\',\'' + sc + '\')">' + l8Ic('excel', 18) + 'Excel</button>' +
         '<button type="button" class="l8-btn l8-interne" aria-label="Envoyer la liste au pharmacien : ' + esc(c[1]) + '" onclick="V2.pharmaTransmettre(\'' + pid + '\',[\'L:' + sc + '\'])">' + l8Ic('envoi', 18) + 'Envoyer</button></div></div>';
       h += '<div class="l8-ctete l8-ctete-d">Part des officines qui le commandent</div>';
       l1Premiers(data).slice(0, 5).forEach(function (x) {
@@ -2575,7 +2577,9 @@
     var pdfBtn = function (scope, label, n, cls) {
       if (n <= 0) return '';
       return '<button class="pha-btn pha-btn-w ' + (cls || '') + '" onclick="V2.pharmaListPdf(\'' + esc(String(pid)) + '\',\'' + scope + '\')" title="ce qu\'elle n\'a pas encore, prêt en PDF">' +
-        ICO('download', 15) + label + ' <b class="mono">' + V2.fmtNum(n) + '</b></button>';
+        ICO('download', 15) + label + ' <b class="mono">' + V2.fmtNum(n) + '</b></button>' +
+        '<button class="pha-btn pha-btn-w ' + (cls || '') + '" onclick="V2.pharmaListXlsx(\'' + esc(String(pid)) + '\',\'' + scope + '\')" title="la même liste, en Excel">' +
+        ICO('download', 15) + label + ' · Excel</button>';
     };
     var btnProduits = V2.pages.produits
       ? '<button class="pha-btn pha-btn-w pha-btn-opp" onclick="V2.go(\'produits\', \'' + pidSafe + '\')">' + ICO('cat', 14, 2) + ' Ce que ses confrères prennent</button>'
@@ -4050,16 +4054,17 @@
   }
   // Mêmes colonnes que le PDF (Produit, CIP13, PPHT, Prix net IP, Nbr pharma) :
   // pas de colonne « abandon » — le % ne figure jamais sur un document remis.
-  function achatsXlsx(title, data, useSel) {
+  // mode 'blob' : ne télécharge rien, rend une promesse de File (pour « Transmettre »).
+  function achatsXlsx(title, data, useSel, mode) {
     var sections = data.cats.map(function (o) {
       var rows = (useSel && selCips) ? o.rows.filter(function (r) { return selCips.has(r.cip); }) : o.rows;
       return { cat: o.cat, rows: rows };
     }).filter(function (o) { return o.rows.length; });
     var panel = (data.panel > 0) ? data.panel : 0;
-    if (!sections.length || !panel) { V2.toast('Aucun produit à proposer pour cette liste', 'warn'); return; }
+    if (!sections.length || !panel) { V2.toast('Aucun produit à proposer pour cette liste', 'warn'); return Promise.resolve(null); }
     V2.toast('Génération de l\'Excel…');
-    ensureXLSX(function (ok) {
-      if (!ok || !window.XLSX) { V2.toast('Export Excel indisponible (hors ligne ?)', 'error'); return; }
+    return new Promise(function (resolve) { ensureXLSX(function (ok) {
+      if (!ok || !window.XLSX) { V2.toast('Export Excel indisponible (hors ligne ?)', 'error'); resolve(null); return; }
       var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
       var used = {};
       function sheetName(name) {
@@ -4090,9 +4095,12 @@
         ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }, { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } }];
         window.XLSX.utils.book_append_sheet(wb, ws, sheetName(o.cat.label));
       });
-      window.XLSX.writeFile(wb, 'Liste-' + String(title).replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.xlsx');
+      var fn = 'Liste-' + String(title).replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.xlsx';
+      if (mode === 'blob') { resolve(new File([window.XLSX.write(wb, { bookType: 'xlsx', type: 'array' })], fn, { type: txMime(fn) })); return; }
+      window.XLSX.writeFile(wb, fn);
       V2.toast('Excel téléchargé');
-    });
+      resolve(null);
+    }); });
   }
   // ── 25/09/2026 — grossistes et génériqueurs PROBABLES (demande de Will : « le remplir avec ce qui
   // est sûrement le cas, avec les données qu'on a à dispo et les probabilités »). Une case vide
@@ -4362,6 +4370,18 @@
     if (!window.CATALOGUE_COMPLET && V2.loadFiles) return V2.loadFiles(['catcomplet']).then(faire, faire);
     return faire();
   };
+  // 09/10/2026 — le même listing en Excel (demande de Will) : mêmes produits que l'écran et le PDF,
+  // mêmes colonnes que l'Excel des groupements. Toute la liste, là où le PDF client s'arrête à 10 pages.
+  V2.pharmaListXlsx = function (pid, scope, mode) {
+    var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); });
+    var prospect = (!pharma && tx.pid === String(pid)) ? (tx.nom || 'Officine') : '';
+    if (!pharma && !prospect) { V2.toast('Pharmacie introuvable', 'error'); return Promise.resolve(null); }
+    if (!window.BENCHMARK) { V2.toast('Catalogue en cours de chargement…'); V2.loadFiles(['bench', 'sagitta']).then(function () {}); return Promise.resolve(null); }
+    var grp = (scope === 'groupement');
+    var data = prospect ? (grp ? groupementProducts(tx.grp) : buildRecoCats(pid, 'reseau')) : buildRecoCats(pid, grp ? 'groupement' : 'reseau');
+    var ref = grp ? (prospect ? tx.grp : (groupementPids(pid).name || 'Groupement')) : reseauLbl();
+    return achatsXlsx((prospect || pharma.name) + ' — ' + ref, data, false, mode);
+  };
 
   // ════════════════════════════════════════════
   // TRANSMETTRE À L'OFFICINE — demande Will, 14/09/2026
@@ -4480,15 +4500,18 @@
     // groupement s'il est connu. benchIndex() se fige s'il est lu avant l'arrivée du catalogue.
     var nR = pid && (cli || window.BENCHMARK) ? txCount(pid, 'reseau') : 0;
     if (nR > 0) its.push({ k: 'L:reseau', grp: 'listing', label: (cli ? 'Listing ' : 'Meilleures rotations · ') + reseauLbl(), meta: V2.fmtNum(nR) + ' produits · PDF généré' });
+    if (nR > 0) its.push({ k: 'X:reseau', grp: 'listing', xls: true, label: (cli ? 'Listing ' : 'Meilleures rotations · ') + reseauLbl() + ' · Excel', meta: V2.fmtNum(nR) + ' produits · Excel généré' });
     if (pid && !cli && tx.grp && window.BENCHMARK) {
       var gp = groupementProducts(tx.grp);
       var nP = gp.panel >= 2 ? gp.cats.reduce(function (s, o) { return s + o.rows.length; }, 0) : 0;
       if (nP > 0) its.push({ k: 'L:groupement', grp: 'listing', label: 'Listing ' + tx.grp, meta: V2.fmtNum(nP) + ' produits · ' + gp.panel + ' pharmacies du groupement · PDF généré' });
+      if (nP > 0) its.push({ k: 'X:groupement', grp: 'listing', xls: true, label: 'Listing ' + tx.grp + ' · Excel', meta: V2.fmtNum(nP) + ' produits · ' + gp.panel + ' pharmacies du groupement · Excel généré' });
     }
     var g = cli ? groupementPids(pid) : {};
     if (g.set && g.set.size >= 2) {
       var nG = txCount(pid, 'groupement');
       if (nG > 0) its.push({ k: 'L:groupement', grp: 'listing', label: 'Listing ' + (g.name || 'groupement'), meta: V2.fmtNum(nG) + ' produits · PDF généré' });
+      if (nG > 0) its.push({ k: 'X:groupement', grp: 'listing', xls: true, label: 'Listing ' + (g.name || 'groupement') + ' · Excel', meta: V2.fmtNum(nG) + ' produits · Excel généré' });
     }
     // Documents à l'en-tête Intégral : pas dans les espaces Escale ni OPSO (deux marques distinctes).
     if (!isEscale() && !isOpso()) TX_APP_DOCS.forEach(function (d) { its.push({ k: 'S:' + d.f, grp: 'app', label: d.label, meta: 'PDF' }); });
@@ -4663,6 +4686,8 @@
     if (k.indexOf('M:') === 0) { var f = (txFiches || []).filter(function (x) { return x.id === k.slice(2); })[0]; return f ? f.titre : 'Fiche Marketing'; }
     if (k === 'L:reseau') return 'Listing produits (réseau)';
     if (k === 'L:groupement') return 'Listing produits (groupement)';
+    if (k === 'X:reseau') return 'Listing produits (réseau) · Excel';
+    if (k === 'X:groupement') return 'Listing produits (groupement) · Excel';
     return k;
   };
   // Depuis le bouton de la fiche : Transmettre s'ouvre sur le catalogue de son logiciel, coché.
@@ -4676,7 +4701,7 @@
   V2.pharmaTxStyle = function (n) { if (!tx.busy && V2.prospectPdfStyle) V2.prospectPdfStyle(n); };
   V2.pharmaTxApercu = function () {
     if (tx.busy || !tx.pid) return;
-    var ls = txItems(tx.pid).filter(function (i) { return i.grp === 'listing'; });
+    var ls = txItems(tx.pid).filter(function (i) { return i.grp === 'listing' && i.k.indexOf('L:') === 0; });
     var pick = ls.filter(function (i) { return tx.sel[i.k]; })[0] || ls[0];
     if (pick) V2.pharmaListPdf(tx.pid, pick.k.slice(2));
   };
@@ -4705,6 +4730,7 @@
   };
   function txFetch(pid, k) {
     if (k.indexOf('L:') === 0) return Promise.resolve(V2.pharmaListPdf(pid, k.slice(2), 'blob'));
+    if (k.indexOf('X:') === 0) return V2.pharmaListXlsx(pid, k.slice(2), 'blob');
     if (k.indexOf('M:') === 0) return V2.mkt && V2.mkt.fichePdfFichier ? V2.mkt.fichePdfFichier(k.slice(2)) : Promise.resolve(null);
     if (k === 'C:categories') return V2.mkt && V2.mkt.catalogueCategoriesFichier ? V2.mkt.catalogueCategoriesFichier() : Promise.resolve(null);
     if (k.indexOf('P:') === 0) return TX_PROTEGES.indexOf(k.slice(2)) >= 0 && V2.docProtegeFichier ? V2.docProtegeFichier(k.slice(2)) : Promise.resolve(null);
