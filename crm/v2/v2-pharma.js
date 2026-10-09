@@ -1732,17 +1732,17 @@
   }
 
   // ══════════════════════════════════════════════════════════════════════════
-  // FICHE « LECTURE » — maquette 1b retenue par Will (08/10/2026)
-  // Colonne des chiffres : « À proposer » → les trois réponses → ce qui bouge → répartition →
-  // meilleurs produits → ce qu'elle ne commande plus → « Que lui proposer ? », puis, REPLIÉ,
-  // « Tous les chiffres en détail » (les blocs d'avant, contenu inchangé).
-  // Les dépliés, filtres et la vue « À montrer au pharmacien » se font SUR PLACE (innerHTML d'une
-  // zone, jamais V2.render) : la fiche ne se refait pas et la page ne remonte pas.
+  // FICHE « MENU » — maquette 8 retenue par Will (09/10/2026, remplace la 1b jugée « trop complexe »)
+  // À gauche : carte d'identité courte + menu de rubriques ; à droite : UNE rubrique à plat
+  // (Résumé, À proposer, Commandes, Catégories, Ne commande plus, Meilleurs produits, Fiche, Notes,
+  // puis, REPLIÉ, « Tout le détail » : les blocs d'avant, contenu inchangé).
+  // Changer de rubrique, de base de comparaison, déplier une catégorie ou passer en vue
+  // « À montrer au pharmacien » se fait SUR PLACE (jamais V2.render) : la page ne remonte pas.
   // ══════════════════════════════════════════════════════════════════════════
   var NB = ' ';
   var MOIS_LONG = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
   // État de la fiche affichée. Remis à zéro quand on change d'officine (la vue pharmacien n'est PAS retenue).
-  var L1 = { pid: null, A: null, G: null, dataR: null, dataG: null, nom: '', b1: 'reseau', b2: 'reseau', ouv: {}, top: 'tous', vue: 'commercial', plus: false, np: null, marge: 0, hasGrp: false, nR: 0, nG: 0 };
+  var L1 = { pid: null, A: null, G: null, dataR: null, dataG: null, nom: '', b: 'reseau', lst: 'reseau', ouv: {}, vue: 'commercial', rub: 'resume', ecran: 'liste', tous: { neplus: false, meilleurs: false }, edit: false, plusFiche: false, k: 0, np: null, marge: 0, hasGrp: false, nR: 0, nG: 0, nFiche: 0 };
 
   function l1Nb(n) { return Math.round(n).toLocaleString('fr-FR').replace(/[   ]/g, NB); }
   function l1Eur(n) { return l1Nb(n) + NB + '€'; }
@@ -1751,8 +1751,6 @@
   function l1MoisAn(mk) { return MOIS_LONG[mk % 12] + ' ' + Math.floor(mk / 12); }
   function l1Pl(n, un, plu) { return n + NB + (n > 1 ? plu : un); }
   function l1Rang(n) { return n === 1 ? '1er' : n + 'e'; }
-  function l1EcartTxt(e) { var a = Math.abs(Math.round(e)); return a === 0 ? 'au même niveau' : l1Pct(a) + ' de ' + (e < 0 ? 'moins' : 'plus'); }
-  function l1Cls(e) { return e == null ? 'pha-flat' : (e > 0 ? 'pha-up' : (e < 0 ? 'pha-dn' : 'pha-flat')); }
   // « 2026-05 » → « mai 2026 »
   function l1YmLong(ym) { var p = String(ym || '').split('-'); return p.length < 2 ? String(ym || '') : MOIS_LONG[+p[1] - 1] + ' ' + p[0]; }
   // « de juin à août 2026 », « d’avril à août 2026 » : la fenêtre sur laquelle la moyenne de l'officine est comptée
@@ -1841,13 +1839,6 @@
     };
   }
 
-  // ── Les mots de « Sa place » ──
-  function l1Place() {
-    var A = L1.A; if (!A.rank || !A.nOff) return '';
-    var t = A.rank / A.nOff;
-    return 'dans le ' + (t <= 1 / 3 ? 'premier' : (t <= 2 / 3 ? 'deuxième' : 'dernier')) + ' tiers du réseau';
-  }
-
   // ── Ce qu'elle ne commande plus : mêmes règles que « Ses achats » du brief et que le bloc replié ──
   function l1NePlus(pid) {
     if (!V2.briefOfficine || !V2.briefOfficine.nePlusCommandes) return null;
@@ -1878,146 +1869,223 @@
   function l1PartDes(r, total) { return total ? Math.min(100, Math.round(r.sortie / total * 100)) : 0; }
   function l1NomProduit(r) { return esc(cap((r.designation || '').toLowerCase())); }
 
-  // ═════════ Rendu des blocs ═════════
-  var L1_CHEV = '<svg class="l1b-chev" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6 8 10.5 12.5 6"/></svg>';
+  // ═════════ Rendu « menu » (maquette 8 retenue par Will, 09/10/2026) — préfixe l8- ═════════
+  // Une carte d'identité courte, un menu de rubriques à gauche, UNE rubrique à droite, à plat.
+  // Aucun calcul ne change : les fonctions de données (analyseData, l1Ref, l1NePlus, listes) servent telles quelles.
+  var L8_IC = {
+    resume: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+    proposer: '<circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>',
+    commandes: '<path d="M12 20V10M18 20V4M6 20v-4"/>',
+    categories: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>',
+    neplus: '<path d="m22 17-8.5-8.5-5 5L2 7"/><path d="M16 17h6v-6"/>',
+    meilleurs: '<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8-6.2-3.3-6.2 3.3L7 14.2 2 9.3l6.9-1z"/>',
+    fiche: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    notes: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/>',
+    tout: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+    chev: '<path d="m9 18 6-6-6-6"/>', retour: '<path d="m15 18-6-6 6-6"/>',
+    tel: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
+    mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+    rdv: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+    oeil: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+    plus: '<circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/>',
+    haut: '<path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/>', bas: '<path d="M12 5v14M5.5 12.5 12 19l6.5-6.5"/>',
+    pdf: '<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>', envoi: '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>', ecran: '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>'
+  };
+  function l8Ic(k, s) { s = s || 20; return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + L8_IC[k] + '</svg>'; }
+  // Les rubriques, dans l'ordre du menu. [clé, mot, interne ?]
+  var L8_RUB = [['resume', 'Résumé'], ['proposer', 'À proposer'], ['commandes', 'Commandes'], ['categories', 'Catégories'], ['neplus', 'Ne commande plus'], ['meilleurs', 'Meilleurs produits'], ['fiche', 'Fiche', 1], ['notes', 'Notes', 1], ['tout', 'Tout le détail', 1]];
+  var L8_PROFIL = [['gros1', 'Grossiste n°1'], ['gros2', 'Grossiste n°2'], ['gros3', 'Grossiste n°3'], ['gros4', 'Grossiste n°4'], ['gen1', 'Génériqueur n°1'], ['gen2', 'Génériqueur n°2'], ['gen3', 'Génériqueur n°3'], ['biosim', 'Partenaire biosimilaires'], ['lgo', 'Logiciel (LGO)'], ['robot', 'Robot / automate'], ['tel_perso', 'Tél perso (titulaire)'], ['cle_crypto', 'Clé de cryptage'], ['autre', 'Autre info']];
 
-  function l1Seg(num, cur) {
-    var A = L1.A;
-    if (!L1.G) return '<span class="l1b-ref-seule">L’officine moyenne du réseau</span>';
-    var b = function (k, txt) { return '<button type="button" class="l1b-seg-b" aria-pressed="' + (cur === k ? 'true' : 'false') + '" onclick="V2.pharmaL.base(' + num + ',\'' + k + '\')">' + esc(txt) + '</button>'; };
-    return '<div class="l1b-seg" role="group" aria-label="Comparer à">' + b('reseau', 'Le réseau') + (L1.G ? b('groupement', A.grpName) : '') + '</div>';
+  // Écart d'une valeur face à un repère (règle R7) : rapport ≥ 2 → « 6,3 fois plus » ; sinon « + 23 % » / « − 17 % ».
+  function l8Ecart(a, ref) {
+    if (!(ref > 0)) return null;
+    var r = a / ref;
+    if (r >= 2) return { t: r.toFixed(1).replace('.', ',') + NB + 'fois' + NB + 'plus', c: 'pha-up', e: (r - 1) * 100, f: 1 };
+    var p = Math.round((r - 1) * 100);
+    if (p === 0) return { t: 'Égal', c: 'pha-flat', e: 0 };
+    return { t: (p < 0 ? '−' : '+') + NB + Math.abs(p) + NB + '%', c: p < 0 ? 'pha-dn' : 'pha-up', e: p };
+  }
+  function l8Fleche(e) { return e && e.e !== 0 ? l8Ic(e.e < 0 ? 'bas' : 'haut', 16) : ''; }
+  function l8Vide(t) { return '<p class="l8-vide">' + t + '</p>'; }
+  function l8MoisCourt(mk) { return MOIS_LONG[mk % 12]; }
+
+  // Texte derrière le « ? » (jamais à l'écran en permanence)
+  function l8AideBase() {
+    var A = L1.A, R = l1Ref(L1.b), t = 'Les écarts se lisent face à ' + R.long + ', ' + l1Fenetre(A) + '.';
+    if (A.n >= 2) { var k = Math.min(4, A.n - 1), ex = A.pts[A.n - k]; t += ' Sa moyenne se compte depuis sa première commande : une officine arrivée en ' + MOIS_LONG[ex.mk % 12] + ' est comparée sur ses ' + k + ' mois, pas sur ' + A.n + '.'; }
+    return t + ' La moyenne des officines qui ont commandé ce mois-là, toutes régions confondues.';
+  }
+  function l8Tete(titre, droite, aide) {
+    return '<div class="l8-tete"><h2 class="l8-t">' + titre + '</h2><div class="l8-tete-d">' + (droite || '') +
+      (aide ? '<button type="button" class="l8-aide" aria-label="Qu’est-ce que c’est ?" aria-expanded="false" onclick="V2.pharmaL.aide(this)"><span aria-hidden="true">?</span></button>' : '') + '</div></div>' +
+      (aide ? '<p class="l8-aide-txt" hidden>' + esc(aide) + '</p>' : '');
+  }
+  // Sélecteur « Face à » : la comparaison se dit UNE fois, ici (R1)
+  function l8Face() {
+    if (!L1.G) return '<span class="l8-fl">Face à</span><b class="l8-ref">Le réseau</b>';
+    var b = function (k, txt) { return '<button type="button" class="l8-seg-b" aria-pressed="' + (L1.b === k ? 'true' : 'false') + '" onclick="V2.pharmaL.base(\'' + k + '\')">' + esc(txt) + '</button>'; };
+    return '<span class="l8-fl">Face à</span><div class="l8-seg" role="group" aria-label="Face à">' + b('reseau', 'Le réseau') + b('groupement', L1.A.grpName) + '</div>';
   }
 
-  // Entrée « À proposer » : les DEUX listes comptées
-  function l1Entree() {
-    var A = L1.A;
-    var h = '<span class="pha-kl l1b-e-et">À proposer</span>';
-    h += L1.nR > 0
-      ? '<p class="l1b-e-phrase"><b>' + l1Nb(L1.nR) + '</b> produits que le réseau commande et qu’elle n’a pas encore.</p>'
-      : '<p class="l1b-e-phrase">Rien à lui proposer d’après ce que commande le réseau.</p>';
+  // ── Résumé : un grand chiffre, la courbe, trois repères sans cadre
+  function l8Resume() {
+    var A = L1.A, R = l1Ref(L1.b), last = A.last, prev = A.prev, h = l8Tete('Résumé', l8Face(), l8AideBase());
+    if (A.nAct === 0) return h + l8Vide('Aucune commande enregistrée pour cette officine.');
+    var e = l8Ecart(A.caMoy, R.moy);
+    h += '<div class="l8-grand"><span class="l8-n">' + l1Nb(A.caMoy) + '<small>' + NB + '€</small></span><span class="l8-u">par mois</span>' +
+      (e ? '<span class="l8-puce ' + e.c + '">' + l8Fleche(e) + e.t + '</span>' : '') + '</div>';
+    h += '<div class="l8-graph" id="l8-graph"></div>';
+    var evo = (last && prev && prev.ca > 0) ? l8Ecart(last.ca, prev.ca) : null;
+    var place = l8Place();
+    h += '<div class="l8-reps">' +
+      '<div class="l8-rep"><div class="l8-rl">En ' + (last ? l8MoisCourt(last.mk) : '—') + '</div><div class="l8-rv">' + l1Eur(last ? last.ca : 0) + '</div>' +
+        '<div class="l8-rt ' + (evo ? evo.c : 'pha-flat') + '">' + (evo ? evo.t + NB + 'sur' + NB + l8MoisCourt(prev.mk) : (prev ? 'Pas de commande en ' + l8MoisCourt(prev.mk) : '')) + '</div></div>' +
+      '<div class="l8-rep"><div class="l8-rl">Cumul</div><div class="l8-rv">' + l1Eur(A.caTot) + '</div><div class="l8-rt pha-flat">sur ' + l1Pl(A.nAct, 'mois', 'mois') + '</div></div>' +
+      (place ? '<div class="l8-rep"><div class="l8-rl">Sa place</div><div class="l8-rv l8-rv-mots">' + place.mots + '</div><div class="l8-rt pha-flat">' + place.sous + '</div>' +
+        '<div class="l8-rt l8-interne">' + place.rang + '</div></div>' : '') +
+      '</div>';
+    return h;
+  }
+  // Sa place : en mots (tiers) ; le rang chiffré est interne
+  function l8Place() {
+    var A = L1.A, grp = (L1.b === 'groupement' && A.grpRank && A.nGrp > 1 && A.grpName);
+    var rang = grp ? A.grpRank : A.rank, tot = grp ? A.nGrp : A.nOff;
+    if (!rang || !tot) return null;
+    var t = rang / tot, mots = t <= 1 / 3 ? 'Premier tiers' : (t <= 2 / 3 ? 'Deuxième tiers' : 'Dernier tiers');
+    return { mots: mots, sous: grp ? 'de son groupement' : 'du réseau', rang: 'Rang : <span class="mono">' + l1Rang(rang) + '</span> sur <span class="mono">' + l1Nb(tot) + '</span>' };
+  }
+
+  // ── À proposer : la liste (réseau ou groupement d'achat), ses trois actions
+  function l8Proposer() {
+    var A = L1.A, sc = (L1.lst === 'groupement' && L1.hasGrp) ? 'groupement' : 'reseau';
+    var data = sc === 'reseau' ? L1.dataR : L1.dataG, n = sc === 'reseau' ? L1.nR : L1.nG, pid = String(L1.pid).replace(/[^0-9A-Za-z_-]/g, '');
+    var seg = '';
     if (L1.hasGrp) {
-      h += L1.nG > 0
-        ? '<p class="l1b-e-aussi"><b>' + l1Nb(L1.nG) + '</b> chez son groupement d’achat (' + esc(A.grpName) + ').</p>'
-        : '<p class="l1b-e-aussi">Rien de plus d’après son groupement d’achat (' + esc(A.grpName) + ').</p>';
+      var b = function (k, txt) { return '<button type="button" class="l8-seg-b" aria-pressed="' + (sc === k ? 'true' : 'false') + '" onclick="V2.pharmaL.liste(\'' + k + '\')">' + esc(txt) + '</button>'; };
+      seg = '<div class="l8-seg" role="group" aria-label="Liste">' + b('reseau', 'Le réseau') + b('groupement', A.grpName) + '</div>';
     }
-    h += '<button type="button" class="l1b-e-btn" onclick="V2.pharmaL.versListes()">Voir ' + (L1.hasGrp ? 'les deux listes' : 'la liste') + L1_CHEV + '</button>';
+    var aide = 'Fondée sur ce que commandent ' + (sc === 'reseau' ? 'les officines du réseau' : 'les officines de ' + A.grpName) + ', ' + l1FenetreReseau(A) + '. Le pourcentage est la part des officines qui commandent le produit.';
+    var h = l8Tete('À proposer', seg, aide);
+    if (n <= 0) return h + l8Vide('Rien à lui proposer sur cette base.');
+    h += '<div class="l8-pcompte"><div class="l8-pn">' + l1Nb(n) + '<small>produits</small></div><div class="l8-pacts">' +
+      (V2.pages.produits ? '<button type="button" class="l8-btn l8-btn-pri" aria-label="Voir la liste à l’écran" onclick="V2.go(\'produits\', \'' + pid + '\')">' + l8Ic('ecran', 18) + 'Voir</button>' : '') +
+      '<button type="button" class="l8-btn l8-interne" aria-label="Télécharger la liste en PDF" onclick="V2.pharmaListPdf(\'' + pid + '\',\'' + sc + '\')">' + l8Ic('pdf', 18) + 'PDF</button>' +
+      '<button type="button" class="l8-btn l8-interne" aria-label="Envoyer la liste au pharmacien" onclick="V2.pharmaTransmettre(\'' + pid + '\',[\'L:' + sc + '\'])">' + l8Ic('envoi', 18) + 'Envoyer</button></div></div>';
+    h += '<div class="l8-ctete l8-ctete-d">Part des officines qui le commandent</div>';
+    l1Premiers(data).slice(0, 5).forEach(function (x) {
+      var p = l1PartDes(x.r, data.total);
+      h += '<div class="l8-lg"><span class="l8-ln">' + l1NomProduit(x.r) + '<small>' + esc(l1CatLabel(x.cat)) + '</small></span><span class="l8-pbar" aria-hidden="true"><i style="width:' + p + '%"></i></span><span class="l8-lm">' + l1Pct(p) + '</span></div>';
+    });
     return h;
   }
 
-  function l1Reperes() {
-    var A = L1.A, last = A.last, prev = A.prev, h = '<div class="l1b-reperes">';
-    var evo;
-    if (last && prev && prev.ca > 0) { var e = (last.ca - prev.ca) / prev.ca * 100; evo = '<b class="' + l1Cls(e) + '">' + l1EcartTxt(e) + '</b> qu’en ' + l1MoisAn(prev.mk); }
-    else if (prev) evo = 'Pas de commande en ' + l1MoisAn(prev.mk);
-    else evo = '';
-    h += '<div class="l1b-rep"><p class="l1b-rep-p">' + cap('en ' + (last ? l1MoisAn(last.mk) : '—')) + '</p><p class="l1b-rep-v">' + l1Eur(last ? last.ca : 0) + '</p><p class="l1b-rep-t">' + evo + '</p></div>';
-    h += '<div class="l1b-rep"><p class="l1b-rep-p">' + cap(l1PeriodeCumul(A)) + '</p><p class="l1b-rep-v">' + l1Eur(A.caTot) + '</p><p class="l1b-rep-t">' + esc(l1Fenetre(A)) + '</p></div>';
-    var place = l1Place();
-    if (place) {
-      h += '<div class="l1b-rep l1b-rep-large"><p class="l1b-rep-p">Sa place</p><p class="l1b-rep-v l1b-rep-mots">' + cap(place) + '</p>' +
-        '<p class="l1b-rep-t l1b-interne">Rang : <span class="mono">' + l1Rang(A.rank) + '</span> sur <span class="mono">' + l1Nb(A.nOff) + '</span> officines.</p>' +
-        (A.grpRank && A.grpName ? '<p class="l1b-rep-t l1b-interne">Chez ' + esc(A.grpName) + ' : <b>' + l1Rang(A.grpRank) + ' sur ' + l1Nb(A.nGrp) + '</b>.</p>' : '') + '</div>';
-    }
-    h += '</div>';
-    h += '<p class="l1b-marge l1b-interne">Marge nette de l’officine sur ses princeps remboursés : <span class="mono">' + l1Eur(L1.marge) + '</span> ' + l1PeriodeCumul(A) + '.</p>';
-    return h;
-  }
-
-  function l1Carte1Corps() {
-    var A = L1.A, R = l1Ref(L1.b1), ec = pctOf(A.caMoy, R.moy);
-    var h = '<p class="l1b-periode">' + cap(l1PeriodeMoy(A)) + '</p>' +
-      '<p class="l1b-grand">' + l1Nb(A.caMoy) + '<small>' + NB + '€ par mois</small></p>' +
-      '<p class="l1b-phrase">' + (ec == null
-        ? 'Pas de repère de comparaison : ' + esc(R.long) + ' n’a rien commandé sur cette période.'
-        : '<b class="' + l1Cls(ec) + '">' + l1EcartTxt(ec) + '</b> que ' + esc(R.long) + ' (' + l1Eur(R.moy) + ' par mois).') + '</p>' +
-      l1Reperes() + '<div class="l1b-graph" id="l1b-graph"></div>';
-    return h;
-  }
-
-  // Légende hors du dessin : une ligne au-dessus (jamais d'étiquette posée sur les tracés)
-  function l1Legende(R, forme) {
-    return '<p class="l1b-leg"><span><i class="l1b-leg-a ' + forme + '"></i>Cette officine</span><span><i class="l1b-leg-b"></i>' + esc(R.etiq) + '</span></p>';
-  }
-  // Courbe : l'officine (trait plein) face à la base, sur sa fenêtre d'activité
-  function l1Courbe(W) {
-    var A = L1.A, R = l1Ref(L1.b1), i0 = A.i0, N = A.n - i0;
-    if (N < 2) return '<p class="pha-sub l1b-vide">Pas assez de mois depuis sa première commande pour tracer une courbe.</p>';
-    var ser = A.pts.slice(i0).map(function (p) { return p.ca; }), ref = R.serie.slice(i0).map(function (v) { return v == null ? 0 : v; });
-    var H = W > 460 ? 270 : 150, pl = 6, pr = 8, pt = 34, pb = 28;   // marge haute (34) : y logent l'étiquette du dernier point, hors de tout tracé
-    var max = Math.max.apply(null, ser.concat(ref)) * 1.04 || 1;
-    var X = function (i) { return pl + (W - pl - pr) * i / (N - 1); };
-    var Y = function (v) { return pt + (H - pt - pb) * (1 - v / max); };
-    var path = function (a) { return a.map(function (v, i) { return (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1); }).join(''); };
-    var aire = path(ser) + 'L' + X(N - 1).toFixed(1) + ' ' + (H - pb) + 'L' + X(0).toFixed(1) + ' ' + (H - pb) + 'Z';
-    // un mois sur deux seulement si la place manque ; on compte depuis le DERNIER mois, qui doit toujours être écrit
-    var pas = (W - pl - pr) / (N - 1) < 56 ? 2 : 1, lab = '';
-    for (var i = (N - 1) % pas; i < N; i += pas) lab += '<text x="' + X(i).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="' + (i === 0 ? 'start' : (i === N - 1 ? 'end' : 'middle')) + '" fill="#646B80">' + esc(A.pts[i0 + i].label) + '</text>';
-    var xl = X(N - 1), yl = Y(ser[N - 1]);
-    var dots = ser.map(function (v, i) { return i === N - 1 ? '' : '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(v).toFixed(1) + '" r="3" fill="#fff" stroke="#0050E6" stroke-width="2"/>'; }).join('');
-    return l1Legende(R, 'trait') + '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="Ce qu’elle commande chaque mois, face à ' + esc(R.long) + '">' +
-      '<path d="' + aire + '" fill="#E9F0FF"/>' +
-      '<path d="' + path(ref) + '" fill="none" stroke="#8591AC" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' +
-      '<path d="' + path(ser) + '" fill="none" stroke="#0050E6" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>' + dots +
-      '<circle cx="' + xl.toFixed(1) + '" cy="' + yl.toFixed(1) + '" r="5.5" fill="#0050E6" stroke="#fff" stroke-width="2"/>' +
-      '<text class="l1b-m" x="' + xl.toFixed(1) + '" y="15" text-anchor="end" fill="#0034A0">' + esc(A.pts[A.n - 1].label) + ' ' + l1Eur(ser[N - 1]) + '</text>' + lab + '</svg>';
-  }
-
-  function l1BougeHtml() {
-    var A = L1.A, last = A.last, prev = A.prev;
-    var h = '<h3 class="l1b-q" id="l1b-qb">Ce qui bouge en ' + (last ? esc(l1MoisAn(last.mk)) : '—') + '</h3>';
-    if (!last || !prev) return h + '<p class="pha-sub l1b-vide">Pas de mois précédent pour comparer.</p>';
-    h += '<p class="l1b-q-sous">Face à son mois précédent (' + esc(l1MoisAn(prev.mk)) + ')</p><div class="l1b-bouge">';
-    var lignes = [];
-    if (prev.ca > 0) lignes.push({ nom: 'Au total', a: last.ca, p: prev.ca });
-    var cats = A.cats.map(function (c) { return { nom: c.label, a: c.caByM[A.n - 1], p: c.caByM[A.n - 2] }; })
-      .filter(function (x) { return x.a > 0 && x.p > 0; })
-      .sort(function (x, y) { return Math.abs(y.a - y.p) - Math.abs(x.a - x.p); }).slice(0, 2);
-    lignes = lignes.concat(cats);
-    if (!lignes.length) return h + '<p class="pha-sub l1b-vide">Aucune commande en ' + esc(l1MoisAn(prev.mk)) + ' : rien à comparer.</p></div>';
-    lignes.forEach(function (x) {
-      var ev = (x.a - x.p) / x.p * 100, haut = ev >= 0;
-      var fl = haut ? '<path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/>' : '<path d="M12 5v14M5.5 12.5 12 19l6.5-6.5"/>';
-      h += '<div class="l1b-bg"><span class="l1b-fl ' + (haut ? 'haut' : 'bas') + '"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + fl + '</svg></span>' +
-        '<div class="l1b-bg-t">' + esc(x.nom) + ' : ' + l1EcartTxt(ev) + ' qu’en ' + esc(l1MoisAn(prev.mk)) + ' <span class="l1b-bg-d">(<span class="mono">' + l1Eur(x.a) + '</span> contre <span class="mono">' + l1Eur(x.p) + '</span>)</span></div></div>';
+  // ── Commandes : mois par mois, ce qui bouge, répartition
+  function l8Commandes() {
+    var A = L1.A, R = l1Ref(L1.b), h = l8Tete('Commandes', l8Face(), l8AideBase());
+    if (A.nAct === 0) return h + l8Vide('Aucune commande enregistrée pour cette officine.');
+    var mois = A.pts.slice(A.i0), ref = R.serie.slice(A.i0).map(function (v) { return v == null ? 0 : v; });
+    var max = Math.max.apply(null, mois.map(function (p) { return p.ca; }).concat(ref)) || 1;
+    h += '<div class="l8-ctete">Par mois</div>';
+    mois.forEach(function (p, i) {
+      var e = l8Ecart(p.ca, ref[i]);
+      h += '<div class="l8-mois"><span class="l8-me">' + esc(p.label) + '</span><span class="l8-barre" aria-hidden="true"><i style="width:' + (p.ca / max * 100).toFixed(1) + '%"></i>' + (ref[i] > 0 ? '<u style="left:' + (ref[i] / max * 100).toFixed(1) + '%"></u>' : '') + '</span>' +
+        '<span class="l8-mm">' + l1Eur(p.ca) + '</span><span class="l8-md ' + (e ? e.c : 'pha-flat') + '">' + (e ? e.t : '—') + '</span></div>';
     });
-    return h + '</div>';
-  }
-
-  function l1Carte2Corps() {
-    var A = L1.A, R = l1Ref(L1.b2), pres = [], abs = [];
-    A.cats.forEach(function (c) {
-      var ref = R.catMoy(c);
-      if (c.ca > 0) pres.push({ c: c, ref: ref, e: pctOf(c.moy, ref) });
-      else if (ref > 0) abs.push({ c: c, ref: ref });
-    });
-    pres.sort(function (x, y) { return (y.e == null ? -1e9 : y.e) - (x.e == null ? -1e9 : x.e); });
-    var ech = Math.max.apply(null, pres.map(function (x) { return x.e == null ? 0 : Math.abs(x.e); }).concat([20]));
-    var h = '<p class="l1b-q-sous">Écart avec ' + esc(R.long) + ', ' + esc(l1PeriodeMoy(A)) + '. Touchez une ligne pour la déplier.</p>' +
-      '<div class="l1b-axe-tete"><span class="g">en dessous</span><span class="c">' + esc(R.etiq) + '</span><span class="d">au-dessus</span></div>';
-    pres.forEach(function (x) {
-      var e = x.e, ouv = !!L1.ouv[x.c.key];
-      var w = e == null ? 0 : Math.max(2, Math.abs(e) / ech * 50);
-      h += '<div class="l1b-cat"><button type="button" class="l1b-ligne" data-k="' + x.c.key + '" aria-expanded="' + (ouv ? 'true' : 'false') + '" onclick="V2.pharmaL.cat(\'' + x.c.key + '\')">' +
-        '<span class="l1b-l-haut"><span class="l1b-nom"><span class="l1b-nom-b">' + esc(x.c.label) + '<span class="l1b-mt"><span class="mono">' + l1Eur(x.c.moy) + '</span> par mois</span></span>' + L1_CHEV + '</span>' +
-        '<span class="l1b-val ' + l1Cls(e) + '">' + (e == null ? 'pas de repère' : l1EcartTxt(e)) + '</span></span>' +
-        '<span class="l1b-piste"><span class="l1b-axe"></span>' + (e == null ? '' : '<span class="l1b-barre ' + (e < 0 ? 'moins' : 'plus') + '" style="width:' + w.toFixed(1) + '%"></span>') + '</span></button>' +
-        '<div class="l1b-detail" id="l1b-d-' + x.c.key + '"' + (ouv ? '' : ' hidden') + '></div></div>';
-    });
-    if (abs.length) {
-      h += '<p class="pha-kl l1b-abs-t">Absentes de ses commandes</p>';
-      abs.forEach(function (x) {
-        var ouv = !!L1.ouv[x.c.key];
-        h += '<div class="l1b-cat"><button type="button" class="l1b-absente" data-k="' + x.c.key + '" aria-expanded="' + (ouv ? 'true' : 'false') + '" onclick="V2.pharmaL.cat(\'' + x.c.key + '\')">' +
-          '<b>' + esc(x.c.label) + ' : absente</b><span>Elle n’en commande pas ; ' + esc(R.que) + ' en commande pour <span class="mono">' + l1Eur(x.ref) + '</span> par mois.</span>' + L1_CHEV + '</button>' +
-          '<div class="l1b-detail" id="l1b-d-' + x.c.key + '"' + (ouv ? '' : ' hidden') + '></div></div>';
+    var last = A.last, prev = A.prev;
+    if (last && prev) {
+      var lignes = [];
+      if (prev.ca > 0) lignes.push({ nom: 'Au total', a: last.ca, p: prev.ca });
+      lignes = lignes.concat(A.cats.map(function (c) { return { nom: c.label, a: c.caByM[A.n - 1], p: c.caByM[A.n - 2] }; })
+        .filter(function (x) { return x.a > 0 && x.p > 0; }).sort(function (x, y) { return Math.abs(y.a - y.p) - Math.abs(x.a - x.p); }).slice(0, 2));
+      h += '<div class="l8-sst"><h3>Ce qui bouge</h3><span>en ' + l8MoisCourt(last.mk) + ', face à ' + l8MoisCourt(prev.mk) + '</span></div>';
+      if (!lignes.length) h += l8Vide('Aucune commande en ' + esc(l1MoisAn(prev.mk)) + ' : rien à comparer.');
+      lignes.forEach(function (x) {
+        var e = l8Ecart(x.a, x.p), haut = x.a >= x.p;
+        h += '<div class="l8-bouge"><span class="l8-f ' + (haut ? 'h' : 'b') + '">' + l8Ic(haut ? 'haut' : 'bas', 18) + '</span><span class="l8-bn">' + esc(x.nom) + '</span><span class="l8-bv ' + e.c + '">' + e.t + '</span></div>';
       });
     }
+    if (A.caTot > 0) {
+      var tri = A.cats.filter(function (c) { return c.ca > 0; }).sort(function (a, b) { return b.ca - a.ca; });
+      var tete3 = tri.slice(0, 3), somme = tete3.reduce(function (s, c) { return s + c.ca; }, 0);
+      var rows = tete3.map(function (c) { return { n: c.label, v: c.ca }; });
+      if (A.caTot - somme > 0.5) rows.push({ n: 'Les autres', v: A.caTot - somme });
+      h += '<div class="l8-sst"><h3>Répartition</h3><span>' + esc(l1PeriodeCumul(A)) + '</span></div>';
+      rows.forEach(function (x) {
+        var p = Math.max(0, Math.min(100, Math.round(x.v / A.caTot * 100)));
+        h += '<div class="l8-lg"><span class="l8-ln">' + esc(x.n) + '</span><span class="l8-pbar" aria-hidden="true"><i style="width:' + p + '%"></i></span><span class="l8-lm">' + l1Pct(p) + '</span></div>';
+      });
+    }
+    h += '<div class="l8-lg l8-interne"><span class="l8-ln">Marge nette</span><span class="l8-lm">' + l1Eur(L1.marge) + '</span><span class="l8-lg-g">' + esc(l1PeriodeCumul(A)) + '</span></div>';
     return h;
   }
 
+  // ── Catégories : une ligne par catégorie (montant par mois, barre, écart) ; le détail se déplie sur place
+  function l8Categories() {
+    var A = L1.A, R = l1Ref(L1.b), pres = [], abs = [], h = l8Tete('Catégories', l8Face(), l8AideBase());
+    A.cats.forEach(function (c) {
+      var ref = R.catMoy(c);
+      if (c.ca > 0) pres.push({ c: c, ref: ref, e: l8Ecart(c.moy, ref) });
+      else if (ref > 0) abs.push({ c: c, ref: ref });
+    });
+    pres.sort(function (x, y) { return (y.e ? y.e.e : -1e9) - (x.e ? x.e.e : -1e9); });
+    var ech = Math.max.apply(null, pres.map(function (x) { return x.e ? Math.min(100, Math.abs(x.e.e)) : 0; }).concat([20]));
+    if (!pres.length && !abs.length) return h + l8Vide('Aucune commande enregistrée pour cette officine.');
+    h += '<div class="l8-ctete">Par mois</div>';
+    var ligne = function (x, absente) {
+      var k = x.c.key, ouv = !!L1.ouv[k], e = x.e;
+      var mil = absente ? '<span class="l8-cm">—</span><span class="l8-cabs">Absente</span><span class="l8-ce"></span>'
+        : '<span class="l8-cm">' + l1Eur(x.c.moy) + '</span>' + (e ? '<span class="l8-dv" aria-hidden="true"><i class="' + (e.e < 0 ? 'moins' : 'plus') + '" style="width:' + (Math.min(Math.abs(e.e), ech) / ech * 50).toFixed(1) + '%"></i></span>' : '<span class="l8-cabs">Sans repère</span>') +
+          '<span class="l8-ce ' + (e ? e.c : 'pha-flat') + '">' + (e ? e.t : '') + '</span>';
+      return '<div class="l8-cat"><button type="button" class="l8-crow" aria-expanded="' + (ouv ? 'true' : 'false') + '" onclick="V2.pharmaL.cat(\'' + k + '\')"><span class="l8-cn">' + esc(x.c.label) + '</span><span class="l8-cinf">' + mil + '</span><span class="l8-cc">' + l8Ic('chev', 18) + '</span></button>' +
+        '<div class="l8-detail" id="l8-d-' + k + '"' + (ouv ? '' : ' hidden') + '></div></div>';
+    };
+    pres.forEach(function (x) { h += ligne(x, false); });
+    abs.forEach(function (x) { h += ligne(x, true); });
+    return h;
+  }
+
+  // ── Ne commande plus
+  function l8NePlus() {
+    var np = L1.np, A = L1.A, n = (np && np.connu) ? np.lignes.length : 0;
+    var aide = n ? l1Pl(n, 'produit', 'produits') + ' commandé' + (n > 1 ? 's' : '') + ' au moins 4 mois sur les ' + np.avant + ' précédents, et absent' + (n > 1 ? 's' : '') + ' en ' + l1YmLong(np.fin) + '.' : '';
+    var h = l8Tete('Ne commande plus', n ? '<span class="l8-cnt">' + n + '</span>' : '', aide);
+    if (!np) return h + l8Vide('Pas de commandes connues pour repérer une habitude interrompue.');
+    if (!np.connu) return h + l8Vide(np.avant < 4 ? 'Pas assez de mois de commandes connus pour repérer une habitude.' : 'Aucune commande enregistrée en ' + esc(l1YmLong(np.fin)) + ' : impossible de distinguer un produit abandonné d’un mois sans commande.');
+    if (!n) return h + l8Vide('Tout ce qu’elle commandait régulièrement a été recommandé en ' + esc(l1YmLong(np.fin)) + '.');
+    h += '<div class="l8-ctete l8-ctete-d">Dernière commande</div>';
+    np.lignes.slice(0, L1.tous.neplus ? n : 6).forEach(function (q) {
+      h += '<div class="l8-lg"><span class="l8-ln">' + esc(q.nom) + '<small>' + esc(l1CatLabel(q.cat)) + '</small></span><span class="l8-lg-g">' + esc(l1YmLong(q.dernier)) + '</span></div>';
+    });
+    if (n > 6) h += '<div class="l8-plus"><button type="button" class="l8-lien" onclick="V2.pharmaL.plus(\'neplus\')">' + (L1.tous.neplus ? 'Réduire' : 'Voir les ' + n) + '</button></div>';
+    return h;
+  }
+
+  // ── Meilleurs produits : 5, puis « Voir les 10 »
+  function l8TopTous() {
+    var tous = [];
+    L1.A.cats.forEach(function (c) { (c.top || []).forEach(function (t) { tous.push({ nom: t.designation, ca: t.ca, qte: t.qte, label: c.label }); }); });
+    tous.sort(function (a, b) { return b.ca - a.ca; });
+    return tous.slice(0, 10);
+  }
+  function l8Top() {
+    var A = L1.A, tous = l8TopTous(), aide = cap(l1PeriodeCumul(A)) + ', ' + l1Fenetre(A) + '.';
+    var h = l8Tete('Meilleurs produits', '<span class="l8-dr">sur ' + l1Pl(A.nAct, 'mois', 'mois') + '</span>', aide);
+    if (!tous.length) return h + l8Vide('Aucun produit classé dans ses commandes.');
+    var max = tous[0].ca || 1;
+    tous.slice(0, L1.tous.meilleurs ? 10 : 5).forEach(function (t) {
+      h += '<div class="l8-lg"><span class="l8-ln">' + esc(t.nom) + '<small>' + esc(t.label) + ' · ' + l1Nb(t.qte) + NB + 'boîte' + (t.qte > 1 ? 's' : '') + '</small></span><span class="l8-pbar" aria-hidden="true"><i style="width:' + (t.ca / max * 100).toFixed(1) + '%"></i></span><span class="l8-lm l8-lm-l">' + l1Eur(t.ca) + '</span></div>';
+    });
+    if (tous.length > 5) h += '<div class="l8-plus"><button type="button" class="l8-lien" onclick="V2.pharmaL.plus(\'meilleurs\')">' + (L1.tous.meilleurs ? 'Réduire' : 'Voir les ' + tous.length) + '</button></div>';
+    return h;
+  }
+
+  // Les rubriques construites à la demande (les autres — Fiche, Notes, Tout le détail — portent des formulaires : construites une fois)
+  var L8_F = { resume: l8Resume, proposer: l8Proposer, commandes: l8Commandes, categories: l8Categories, neplus: l8NePlus, meilleurs: l8Top };
+
+  // Le détail d'une catégorie, sur place (mois par mois, sa part, meilleurs produits, ce qu'elle ne commande plus, à proposer)
   // Les 8 (ou moins) mois d'une catégorie, en barres, avec le trait du repère
   function l1MoisBarres(c, W) {
-    var A = L1.A, R = l1Ref(L1.b2), i0 = A.i0, N = A.n - i0;
+    var A = L1.A, R = l1Ref(L1.b), i0 = A.i0, N = A.n - i0;
     var ser = A.pts.slice(i0).map(function (p, i) { return c.caByM[i0 + i] || 0; });
     var ref = R.catSerie(c).slice(i0).map(function (v) { return v == null ? 0 : v; });
     var H = 128, pt = 26, pb = 26, max = Math.max.apply(null, ser.concat(ref)) * 1.05 || 1;
@@ -2037,32 +2105,32 @@
   }
 
   // Le dépli d'une catégorie (construit à l'ouverture)
-  function l1DetailHtml(key, W) {
-    var A = L1.A, R = l1Ref(L1.b2), c = null, i;
+  function l8DetailHtml(key, W) {
+    var A = L1.A, R = l1Ref(L1.b), c = null, i;
     for (i = 0; i < A.cats.length; i++) { if (A.cats[i].key === key) c = A.cats[i]; }
     if (!c) return '';
     var h = '';
     if (c.ca <= 0) {
-      h += '<p>Elle n’en commande pas. ' + esc(cap(R.que)) + ' en commande pour <b>' + l1Eur(R.catMoy(c)) + '</b> par mois (' + esc(l1PeriodeMoy(A)) + ').</p>';
+      h += '<p class="large">Elle n’en commande pas. ' + esc(cap(R.que)) + ' en commande pour <b>' + l1Eur(R.catMoy(c)) + '</b> par mois (' + esc(l1PeriodeMoy(A)) + ').</p>';
     } else {
       var p = A.caTot > 0 ? Math.round(c.ca / A.caTot * 100) : 0;
       var rv = R.catSerie(c)[A.n - 1];
-      h += '<div><h4>Ses ' + A.nAct + ' mois</h4><div class="l1b-dmois">' + l1MoisBarres(c, W) + '</div>' +
+      h += '<div><h4>Ses ' + A.nAct + ' mois</h4><div class="l8-dmois">' + l1MoisBarres(c, W) + '</div>' +
         '<p>' + cap(MOIS_LONG[A.last.mk % 12]) + ' : <b>' + l1Eur(c.caByM[A.n - 1] || 0) + '</b>, contre <b>' + l1Eur(rv || 0) + '</b> pour ' + esc(R.long) + '.</p></div>';
       h += '<div><h4>Sa part, ' + l1PeriodeCumul(A) + '</h4><p><b>' + l1Pct(p) + '</b> de ses commandes · <b>' + l1Nb(c.refs) + '</b> produit' + (c.refs > 1 ? 's' : '') + ' différent' + (c.refs > 1 ? 's' : '') + '.</p>' +
-        '<div class="l1b-piste-p"><i style="width:' + Math.max(0, Math.min(100, p)) + '%"></i></div></div>';
+        '<div class="l8-piste-p"><i style="width:' + Math.max(0, Math.min(100, p)) + '%"></i></div></div>';
       if (c.top && c.top.length) {
         var t5 = c.top.slice(0, 5);
         h += '<div><h4>' + (t5.length > 1 ? 'Ses ' + t5.length + ' meilleurs produits' : 'Son meilleur produit') + ', ' + l1PeriodeCumul(A) + '</h4>';
-        t5.forEach(function (t) { h += '<div class="l1b-dp">' + esc(t.designation) + '<span><b class="mono">' + l1Eur(t.ca) + '</b> · ' + l1Nb(t.qte) + NB + 'boîte' + (t.qte > 1 ? 's' : '') + '</span></div>'; });
+        t5.forEach(function (t) { h += '<div class="l8-dp">' + esc(t.designation) + '<span><b class="mono">' + l1Eur(t.ca) + '</b> · ' + l1Nb(t.qte) + NB + 'boîte' + (t.qte > 1 ? 's' : '') + '</span></div>'; });
         h += '</div>';
       }
     }
     var np = L1.np && L1.np.connu ? L1.np.lignes.filter(function (q) { return q.cat === key; }) : [];
     if (np.length) {
       h += '<div><h4>Elle ne commande plus</h4>';
-      np.slice(0, 5).forEach(function (q) { h += '<div class="l1b-np"><b>' + esc(q.nom) + '</b><span>dernière commande en ' + esc(l1YmLong(q.dernier)) + '</span></div>'; });
-      if (np.length > 5) h += '<p class="pha-sub l1b-interne">Et ' + (np.length - 5) + ' autre' + (np.length - 5 > 1 ? 's' : '') + ' : voir « Tous les chiffres en détail ».</p>';
+      np.slice(0, 5).forEach(function (q) { h += '<div class="l8-np"><b>' + esc(q.nom) + '</b><span>dernière commande en ' + esc(l1YmLong(q.dernier)) + '</span></div>'; });
+      if (np.length > 5) h += '<p class="pha-sub l8-interne">Et ' + (np.length - 5) + ' autre' + (np.length - 5 > 1 ? 's' : '') + ' : voir « Tout le détail ».</p>';
       h += '</div>';
     }
     var pr = [], vus = {};
@@ -2078,130 +2146,144 @@
     });
     if (pr.length) {
       h += '<div><h4>À lui proposer dans cette catégorie</h4>';
-      pr.forEach(function (q) { h += '<div class="l1b-dp">' + q.n + '<span>' + q.m.join(' · ') + '</span></div>'; });
+      pr.forEach(function (q) { h += '<div class="l8-dp">' + q.n + '<span>' + q.m.join(' · ') + '</span></div>'; });
       h += '</div>';
     }
     return h;
   }
 
-  function l1NePlusHtml() {
-    var np = L1.np, A = L1.A;
-    var h = '<h3 class="l1b-q" id="l1b-qn">Ce qu’elle ne commande plus</h3>';
-    if (!np) return h + '<p class="pha-sub l1b-vide">Pas de commandes connues pour repérer une habitude interrompue.</p>';
-    if (!np.connu) return h + '<p class="pha-sub l1b-vide">' + (np.avant < 4 ? 'Pas assez de mois de commandes connus pour repérer une habitude.' : 'Aucune commande enregistrée en ' + esc(l1YmLong(np.fin)) + ' : impossible de distinguer un produit abandonné d’un mois sans commande.') + '</p>';
-    var n = np.lignes.length;
-    if (!n) return h + '<p class="pha-sub l1b-vide">Tout ce qu’elle commandait régulièrement a été recommandé en ' + esc(l1YmLong(np.fin)) + '.</p>';
-    h += '<p class="l1b-q-sous">' + l1Pl(n, 'produit', 'produits') + ' commandé' + (n > 1 ? 's' : '') + ' au moins 4 mois sur les ' + np.avant + ' précédents, et absent' + (n > 1 ? 's' : '') + ' en ' + esc(l1YmLong(np.fin)) + '</p><div class="l1b-nps">';
-    np.lignes.slice(0, 6).forEach(function (q) {
-      h += '<div class="l1b-np"><b>' + esc(q.nom) + '</b><span>' + esc(l1CatLabel(q.cat)) + ' · dernière commande en ' + esc(l1YmLong(q.dernier)) + '</span></div>';
-    });
-    h += '</div>';
-    if (n > 6) h += '<button type="button" class="pha-btn l1b-btn-plein l1b-interne" onclick="V2.pharmaL.tout(true)">Voir les ' + n + ' dans « Tous les chiffres en détail »</button>';
-    return h;
+  // Légende hors du dessin : une ligne au-dessus (jamais d'étiquette posée sur les tracés)
+  function l1Legende(R, forme) {
+    return '<p class="l8-leg"><span><i class="l8-leg-a ' + forme + '"></i>Cette officine</span><span><i class="l8-leg-b"></i>' + esc(R.etiq) + '</span></p>';
+  }
+  // Courbe : l'officine (trait plein) face à la base, sur sa fenêtre d'activité
+  function l1Courbe(W) {
+    var A = L1.A, R = l1Ref(L1.b), i0 = A.i0, N = A.n - i0;
+    if (N < 2) return '<p class="pha-sub l8-vide">Pas assez de mois depuis sa première commande pour tracer une courbe.</p>';
+    var ser = A.pts.slice(i0).map(function (p) { return p.ca; }), ref = R.serie.slice(i0).map(function (v) { return v == null ? 0 : v; });
+    var H = W > 460 ? 270 : 150, pl = 6, pr = 8, pt = 34, pb = 28;   // marge haute (34) : y logent l'étiquette du dernier point, hors de tout tracé
+    var max = Math.max.apply(null, ser.concat(ref)) * 1.04 || 1;
+    var X = function (i) { return pl + (W - pl - pr) * i / (N - 1); };
+    var Y = function (v) { return pt + (H - pt - pb) * (1 - v / max); };
+    var path = function (a) { return a.map(function (v, i) { return (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1); }).join(''); };
+    var aire = path(ser) + 'L' + X(N - 1).toFixed(1) + ' ' + (H - pb) + 'L' + X(0).toFixed(1) + ' ' + (H - pb) + 'Z';
+    // un mois sur deux seulement si la place manque ; on compte depuis le DERNIER mois, qui doit toujours être écrit
+    var pas = (W - pl - pr) / (N - 1) < 56 ? 2 : 1, lab = '';
+    for (var i = (N - 1) % pas; i < N; i += pas) lab += '<text x="' + X(i).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="' + (i === 0 ? 'start' : (i === N - 1 ? 'end' : 'middle')) + '" fill="#646B80">' + esc(A.pts[i0 + i].label) + '</text>';
+    var xl = X(N - 1), yl = Y(ser[N - 1]);
+    var dots = ser.map(function (v, i) { return i === N - 1 ? '' : '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(v).toFixed(1) + '" r="3" fill="#fff" stroke="#0050E6" stroke-width="2"/>'; }).join('');
+    return l1Legende(R, 'trait') + '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="Ce qu’elle commande chaque mois, face à ' + esc(R.long) + '">' +
+      '<path d="' + aire + '" fill="#E9F0FF"/>' +
+      '<path d="' + path(ref) + '" fill="none" stroke="#8591AC" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<path d="' + path(ser) + '" fill="none" stroke="#0050E6" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>' + dots +
+      '<circle cx="' + xl.toFixed(1) + '" cy="' + yl.toFixed(1) + '" r="5.5" fill="#0050E6" stroke="#fff" stroke-width="2"/>' +
+      '<text class="l8-m" x="' + xl.toFixed(1) + '" y="15" text-anchor="end" fill="#0034A0">' + esc(A.pts[A.n - 1].label) + ' ' + l1Eur(ser[N - 1]) + '</text>' + lab + '</svg>';
   }
 
-  function l1TopHtml() {
-    var A = L1.A, tous = [], pills = [];
-    A.cats.forEach(function (c) {
-      if (!c.top || !c.top.length) return;
-      pills.push(c);
-      c.top.forEach(function (t) { tous.push({ nom: t.designation, ca: t.ca, qte: t.qte, cat: c.key, label: c.label }); });
-    });
-    var h = '<h3 class="l1b-q" id="l1b-qt">Ses meilleurs produits</h3><p class="l1b-q-sous">' + cap(l1PeriodeCumul(A)) + ', ' + esc(l1Fenetre(A)) + '</p>';
-    if (!tous.length) return h + '<p class="pha-sub l1b-vide">Aucun produit classé dans ses commandes.</p>';
-    tous.sort(function (a, b) { return b.ca - a.ca; });
-    h += '<div class="l1b-pills" role="group" aria-label="Catégorie"><button type="button" class="l1b-pill" aria-pressed="' + (L1.top === 'tous') + '" onclick="V2.pharmaL.top(\'tous\')">Toutes</button>';
-    pills.forEach(function (c) { h += '<button type="button" class="l1b-pill" aria-pressed="' + (L1.top === c.key) + '" onclick="V2.pharmaL.top(\'' + c.key + '\')">' + esc(c.label.replace('Princeps · ', '')) + '</button>'; });
-    h += '</div><div class="l1b-tps">';
-    tous.filter(function (t) { return L1.top === 'tous' || t.cat === L1.top; }).slice(0, 5).forEach(function (t, i) {
-      h += '<div class="l1b-tp"><span class="l1b-tp-r mono">' + (i + 1) + '</span><div><div class="l1b-tp-n">' + esc(t.nom) + '</div><div class="l1b-tp-c">' + esc(t.label) + '</div></div>' +
-        '<div class="l1b-tp-m"><span class="mono">' + l1Eur(t.ca) + '</span>' + l1Nb(t.qte) + NB + 'boîte' + (t.qte > 1 ? 's' : '') + '</div></div>';
-    });
-    return h + '</div>';
-  }
-
-  function l1CompoHtml() {
+  // Menu : les compteurs (mêmes sources que les rubriques)
+  function l8Compte(k) {
     var A = L1.A;
-    var h = '<h3 class="l1b-q" id="l1b-qc">De quoi sont faites ses commandes ?</h3><p class="l1b-q-sous">' + cap(l1PeriodeCumul(A)) + ', ' + esc(l1Fenetre(A)) + '</p>';
-    if (!(A.caTot > 0)) return h + '<p class="pha-sub l1b-vide">Aucune commande sur la période.</p>';
-    var tri = A.cats.filter(function (c) { return c.ca > 0; }).sort(function (a, b) { return b.ca - a.ca; });
-    var tete = tri.slice(0, 3), somme = tete.reduce(function (s, c) { return s + c.ca; }, 0);
-    var rows = tete.map(function (c) { return { n: c.label, v: c.ca }; });
-    if (A.caTot - somme > 0.5) rows.push({ n: 'Les autres', v: A.caTot - somme });
-    rows.forEach(function (x) {
-      var p = Math.max(0, Math.min(100, Math.round(x.v / A.caTot * 100)));
-      h += '<div class="l1b-part"><div class="l1b-part-h"><span>' + esc(x.n) + '</span><span><b>' + l1Pct(p) + '</b> de ses commandes</span></div><div class="l1b-piste-p"><i style="width:' + p + '%"></i></div></div>';
-    });
+    if (k === 'proposer') return '<b>' + l1Nb(L1.nR) + '</b>' + (L1.hasGrp ? NB + '·' + NB + '<b>' + l1Nb(L1.nG) + '</b>' : '');
+    if (k === 'categories') return String(A.cats.filter(function (c) { return c.ca > 0 || c.netMoy > 0; }).length);
+    if (k === 'neplus') return (L1.np && L1.np.connu && L1.np.lignes.length) ? String(L1.np.lignes.length) : '';
+    if (k === 'meilleurs') { var n = l8TopTous().length; return n ? String(n) : ''; }
+    if (k === 'fiche') return String(L1.nFiche);
+    return '';
+  }
+
+  // La rubrique Fiche, en lecture : 6 lignes clés, puis « Toute la fiche (n) ». Les formulaires existants (« Infos officine ») n'apparaissent qu'avec « Modifier ».
+  function l8FicheHtml(c) {
+    var cles = ['Titulaire', 'Téléphone', 'E-mail', 'Adresse', 'Groupement d’achat', 'Prochaine relance'], cle = [], reste = [];
+    c.rows.forEach(function (r) { (cles.indexOf(r.l) >= 0 ? cle : reste).push(r); });
+    cle.sort(function (a, b) { return cles.indexOf(a.l) - cles.indexOf(b.l); });
+    var ligne = function (r) { return r.l ? '<div class="l8-fr"><dt>' + r.l + '</dt><dd' + (r.c ? ' class="' + r.c + '"' : '') + '>' + r.v + '</dd></div>' : '<p class="l8-fnote">' + r.v + '</p>'; };
+    var h = l8Tete('Fiche', '<button type="button" class="l8-btn l8-interne" id="l8-modif" onclick="V2.pharmaL.modifier()">' + (L1.edit ? 'Terminer' : 'Modifier') + '</button>');
+    h += '<div class="l8-lect"><dl class="l8-fl-l">' + cle.map(ligne).join('') + '</dl>' +
+      '<div class="l8-fiche-plus"><dl class="l8-fl-l">' + reste.map(ligne).join('') + '</dl></div>' +
+      '<div class="l8-plus"><button type="button" class="l8-lien" id="l8-toute" onclick="V2.pharmaL.plusFiche()">' + (L1.plusFiche ? 'Réduire la fiche' : 'Toute la fiche (' + c.rows.length + ')') + '</button></div></div>';
+    h += '<div class="l8-forms">' + c.infos + '</div>';
     return h;
   }
 
-  // Une liste à proposer (réseau ou groupement d'achat)
-  function l1Tuile(scope) {
-    var A = L1.A, data = scope === 'reseau' ? L1.dataR : L1.dataG, n = scope === 'reseau' ? L1.nR : L1.nG;
-    var qui = scope === 'reseau' ? 'du réseau' : 'de ' + A.grpName;
-    var titre = scope === 'reseau' ? 'Ce que commande le réseau et qu’elle n’a pas' : 'Ce que commande son groupement d’achat (' + esc(A.grpName) + ') et qu’elle n’a pas';
-    var h = '<article class="l1b-tuile" id="l1b-t-' + scope + '"><h4 class="l1b-t-h">' + titre + ' — <b>' + l1Pl(n, 'produit', 'produits') + '</b></h4>' +
-      '<p class="l1b-fonde">Fondée sur ce que commandent ' + (scope === 'reseau' ? 'les officines du réseau' : 'les officines de ' + esc(A.grpName)) + ', ' + esc(l1FenetreReseau(A)) + '.</p>';
-    if (n <= 0) return h + '<p class="pha-sub l1b-vide">Rien à lui proposer sur cette base.</p></article>';
-    h += '<ul class="l1b-prods" aria-label="Premiers produits, avec la part des officines ' + esc(qui) + ' qui les commandent">';
-    l1Premiers(data).slice(0, 5).forEach(function (x) { h += '<li>' + l1NomProduit(x.r) + '<span>commandé par <b>' + l1Pct(l1PartDes(x.r, data.total)) + '</b> des officines</span></li>'; });
-    h += '</ul><div class="l1b-actions">' +
-      (V2.pages.produits ? '<button type="button" class="pha-btn pha-btn-opp" onclick="V2.go(\'produits\', \'' + esc(String(L1.pid).replace(/[^0-9A-Za-z_-]/g, '')) + '\')">Voir à l’écran</button>' : '') +
-      '<button type="button" class="pha-btn" onclick="V2.pharmaListPdf(\'' + String(L1.pid).replace(/[^0-9A-Za-z_-]/g, '') + '\',\'' + scope + '\')">' + ICO('download', 15) + 'Télécharger en PDF</button>' +
-      '<button type="button" class="pha-btn" onclick="V2.pharmaTransmettre(\'' + esc(String(L1.pid).replace(/[^0-9A-Za-z_-]/g, '')) + '\',[\'L:' + scope + '\'])">Envoyer au pharmacien</button></div></article>';
-    return h;
+  // Assemble la page : carte d'identité courte, menu, rubriques. c = ce que renderDetail a calculé.
+  function l8Page(c) {
+    var pid = esc(c.pidSafe);
+    var acts = (c.tel ? '<a class="l8-act" href="tel:' + esc(c.tel.replace(/[^+0-9]/g, '')) + '"><span class="l8-rond">' + l8Ic('tel', 22) + '</span>Appeler</a>' : '') +
+      (c.mail ? '<a class="l8-act" href="mailto:' + esc(c.mail) + '"><span class="l8-rond">' + l8Ic('mail', 22) + '</span>E-mail</a>' : '') +
+      (c.mail && V2.rdv ? '<button type="button" class="l8-act" onclick="V2.rdv.proposer(\'' + pid + '\')" title="Elle choisit son créneau, calé sur la géographie de votre journée"><span class="l8-rond">' + l8Ic('rdv', 22) + '</span>Rendez-vous</button>' : '');
+    var menu = L8_RUB.map(function (m) {
+      var k = m[0];
+      return '<button type="button" class="l8-row' + (m[2] ? ' l8-interne' : '') + '" data-r="' + k + '"' + (k === L1.rub ? ' aria-current="page"' : '') + ' onclick="V2.pharmaL.go(\'' + k + '\')"><span class="l8-tuile">' + l8Ic(k, 18) + '</span><span class="l8-mot">' + m[1] + '</span><span class="l8-cpt" id="l8-cpt-' + k + '">' + l8Compte(k) + '</span><span class="l8-chev">' + l8Ic('chev', 18) + '</span></button>';
+    }).join('');
+    var panneaux = L8_RUB.map(function (m) {
+      var k = m[0], inner = '';
+      if (k === 'fiche') inner = l8FicheHtml(c); else if (k === 'notes') inner = c.notes; else if (k === 'tout') inner = c.tout;
+      return '<section class="l8-vue" id="l8-v-' + k + '" data-k="' + k + '" aria-label="' + m[1] + '"' + (k === 'fiche' ? ' data-edit="' + (L1.edit ? '1' : '0') + '" data-plus="' + (L1.plusFiche ? '1' : '0') + '"' : '') + (k === L1.rub ? '' : ' hidden') + '>' + inner + '</section>';
+    }).join('');
+    var A = L1.A;
+    return '<div class="pha l8" data-ecran="' + L1.ecran + '" data-rub="' + L1.rub + '">' +
+      '<div class="pha-rail l8-rail">' +
+        '<header class="l8-id"><h1 class="l8-nom">' + c.nom + '</h1><p class="l8-sous">' + esc(c.sous) + '</p>' + (acts ? '<div class="l8-acts l8-interne">' + acts + '</div>' : '') + '</header>' +
+        (A.nAct ? '<button type="button" class="l8-chiffre" onclick="V2.pharmaL.go(\'resume\')"><span class="l8-n">' + l1Nb(A.caMoy) + '<small>' + NB + '€</small></span><span class="l8-u">par mois</span></button>' : '') +
+        '<nav class="l8-menu" aria-label="Rubriques">' + menu + '</nav>' +
+        '<div class="l8-pied"><button type="button" class="l8-lien gris l8-interne" onclick="V2.pharmaL.vue()">' + l8Ic('oeil', 18) + '<span>À montrer au pharmacien</span></button>' +
+          '<button type="button" class="l8-lien l8-interne" id="l8-b-autres" aria-expanded="false" onclick="V2.pharmaL.autres()">' + l8Ic('plus', 18) + '<span>Autres actions</span></button></div>' +
+        '<div class="l8-autres l8-interne" id="l8-autres" hidden>' + c.listes + '</div>' +
+      '</div>' +
+      '<div class="pha-main l8-main">' +
+        '<div class="l8-retourbar"><button type="button" class="l8-lien" onclick="V2.pharmaL.retour()">' + l8Ic('retour', 20) + '<span>Retour</span></button></div>' +
+        '<div class="l8-vpbar"><span>Vue à montrer au pharmacien</span><button type="button" class="l8-lien" onclick="V2.pharmaL.vue()">Revenir à ma vue</button></div>' +
+        '<div class="l8-vpid">' + c.vpid + '</div>' +
+        panneaux +
+      '</div></div>';
   }
 
-  // Assemble la colonne : renvoie { entree, blocs, vp } (HTML) et pose l'état L1
-  function ficheLecture(pid, A, o) {
-    var changee = String(L1.pid) !== String(pid);
-    if (changee) { L1.b1 = 'reseau'; L1.b2 = 'reseau'; L1.ouv = {}; L1.top = 'tous'; L1.vue = 'commercial'; L1.plus = false; }
-    L1.pid = String(pid); L1.A = A; L1.marge = o.marge; L1.dataR = o.dataR; L1.dataG = o.dataG; L1.nR = o.nR; L1.nG = o.nG; L1.hasGrp = o.hasGrp;
+  // État de la fiche : remis à zéro quand on change d'officine (la vue pharmacien n'est PAS retenue)
+  function l8Init(pid, A, o) {
+    if (String(L1.pid) !== String(pid)) { L1.b = 'reseau'; L1.lst = 'reseau'; L1.ouv = {}; L1.vue = 'commercial'; L1.rub = 'resume'; L1.ecran = 'liste'; L1.tous = { neplus: false, meilleurs: false }; L1.edit = false; L1.plusFiche = false; }
+    L1.pid = String(pid); L1.A = A; L1.marge = o.marge; L1.dataR = o.dataR; L1.dataG = o.dataG; L1.nR = o.nR; L1.nG = o.nG; L1.hasGrp = o.hasGrp; L1.nFiche = o.nFiche;
     L1.G = l1Groupe(pid, A);
-    if (!L1.G) { L1.b1 = 'reseau'; L1.b2 = 'reseau'; }
+    if (!L1.G) L1.b = 'reseau';
+    if (!L1.hasGrp) L1.lst = 'reseau';
     L1.np = l1NePlus(pid);
-    var q1 = '<h3 class="l1b-q" id="l1b-q1">Combien commande-t-elle ?</h3>';
-    var aide = A.n >= 2
-      ? (function () {
-        var k = Math.min(4, A.n - 1), ex = A.pts[A.n - k];
-        return 'La moyenne des officines qui ont commandé ce mois-là, toutes régions confondues. Sa moyenne se compte depuis sa première commande : une officine arrivée en ' + MOIS_LONG[ex.mk % 12] + ' est comparée sur ses ' + k + ' mois, pas sur ' + A.n + '.';
-      })()
-      : 'La moyenne des officines qui ont commandé ce mois-là, toutes régions confondues.';
-    var sc = A.nAct === 0;
-    var c1 = '<section class="v2-card pha-card l1b-ok l1b-carte l1b-z-c1" id="l1b-c1" aria-labelledby="l1b-q1">' + q1 +
-      '<div class="l1b-reglage"><span class="l1b-q-sous" style="margin:0">Comparer à</span><div id="l1b-seg1">' + l1Seg(1, L1.b1) + '</div>' +
-      '<button type="button" class="l1b-aide" aria-label="Que veut dire « l’officine moyenne du réseau » ?" aria-expanded="false" onclick="V2.pharmaL.aide()"><span aria-hidden="true">?</span></button></div>' +
-      '<p class="l1b-aide-txt" id="l1b-aide" hidden>' + esc(aide) + '</p>' +
-      '<div id="l1b-c1-corps">' + (sc ? '<p class="pha-sub l1b-vide">Aucune commande enregistrée pour cette officine.</p>' : l1Carte1Corps()) + '</div></section>';
-    var bouge = '<section class="v2-card pha-card l1b-ok l1b-carte l1b-z-bouge" id="l1b-bouge" aria-labelledby="l1b-qb">' + (sc ? '' : l1BougeHtml()) + '</section>';
-    var c2 = '<section class="v2-card pha-card l1b-ok l1b-carte l1b-z-c2" id="l1b-c2" aria-labelledby="l1b-q2"><h3 class="l1b-q" id="l1b-q2">Où est-elle au-dessus, où est-elle en dessous ?</h3>' +
-      '<div class="l1b-reglage"><span class="l1b-q-sous" style="margin:0">Comparer à</span><div id="l1b-seg2">' + l1Seg(2, L1.b2) + '</div></div>' +
-      '<div id="l1b-c2-corps">' + (sc ? '' : l1Carte2Corps()) + '</div></section>';
-    var nplus = '<section class="v2-card pha-card l1b-ok l1b-carte l1b-z-nplus" id="l1b-nplus" aria-labelledby="l1b-qn">' + l1NePlusHtml() + '</section>';
-    var top = '<section class="v2-card pha-card l1b-ok l1b-carte l1b-z-top" id="l1b-top" aria-labelledby="l1b-qt">' + (sc ? '' : l1TopHtml()) + '</section>';
-    var compo = '<section class="v2-card pha-card l1b-ok l1b-carte l1b-z-compo" id="l1b-compo" aria-labelledby="l1b-qc">' + (sc ? '' : l1CompoHtml()) + '</section>';
-    var c3 = '<section class="v2-card pha-card l1b-ok l1b-carte l1b-z-c3" id="l1b-c3" aria-labelledby="l1b-q3"><h3 class="l1b-q" id="l1b-q3">Que lui proposer ?</h3>' +
-      '<p class="l1b-q-sous">' + (L1.hasGrp ? 'Deux listes' : 'Une liste') + ' : ce que commandent d’autres officines et qu’elle n’a pas encore.</p>' +
-      '<div class="l1b-tuiles">' + l1Tuile('reseau') + (L1.hasGrp ? l1Tuile('groupement') : '') + '</div></section>';
-    var entree = '<section class="l1b-entree l1b-ok l1b-z-a" id="l1b-entree" aria-label="À proposer">' + l1Entree() + '</section>';
-    return { entree: entree, blocs: c1 + bouge + c2 + nplus + top + compo + c3 };
+    L1.k = (L1.k || 0) + 1;       // un rendu complet invalide les rubriques construites à la demande
   }
 
-  // Dessine ce qui dépend de la largeur réelle (courbe, barres des mois ouverts)
-  function l1Peindre() {
-    var g = document.getElementById('l1b-graph');
-    if (g && L1.A) g.innerHTML = l1Courbe(Math.max(260, Math.round(g.clientWidth || 320)));
-    Object.keys(L1.ouv).forEach(function (k) { if (L1.ouv[k]) l1Detail(k); });
+  // Montre la rubrique courante (et construit son contenu si besoin), sans jamais refaire la fiche
+  function l8Afficher() {
+    var p = document.querySelector('.pha.l8'); if (!p) return;
+    p.setAttribute('data-ecran', L1.ecran); p.setAttribute('data-rub', L1.rub);
+    Array.prototype.forEach.call(p.querySelectorAll('.l8-vue'), function (el) { el.hidden = el.getAttribute('data-k') !== L1.rub; });
+    Array.prototype.forEach.call(p.querySelectorAll('.l8-row'), function (b) { if (b.getAttribute('data-r') === L1.rub) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+    var el = document.getElementById('l8-v-' + L1.rub), f = L8_F[L1.rub];
+    if (el && f && el.getAttribute('data-ok') !== String(L1.k)) { el.innerHTML = f(); el.setAttribute('data-ok', String(L1.k)); }
+    l8Peindre();
   }
-  function l1Detail(key) {
-    var d = document.getElementById('l1b-d-' + key); if (!d || d.hidden) return;
-    d.innerHTML = l1DetailHtml(key, Math.max(240, Math.round(d.clientWidth - 28)) || 280);
+  // Ce qui dépend de la largeur réelle (courbe, barres des mois d'une catégorie ouverte)
+  function l8Peindre() {
+    var g = document.getElementById('l8-graph');
+    if (g && L1.A && !g.closest('[hidden]')) g.innerHTML = l1Courbe(Math.max(260, Math.round(g.clientWidth || 320)));
+    Object.keys(L1.ouv).forEach(function (k) { if (L1.ouv[k]) l8Detail(k); });
   }
-  var _l1T = null;
-  if (!window.__l1bResize) {
-    window.__l1bResize = true;
-    window.addEventListener('resize', function () { clearTimeout(_l1T); _l1T = setTimeout(function () { if (document.getElementById('l1b-c1')) l1Peindre(); }, 120); });
+  function l8Detail(key) {
+    var d = document.getElementById('l8-d-' + key); if (!d || d.hidden) return;
+    var w = d.clientWidth || 600;
+    d.innerHTML = l8DetailHtml(key, Math.max(240, Math.round(window.innerWidth > 900 ? (w - 40) / 2 : w)));
   }
+  var _l8T = null;
+  if (!window.__l8Resize) {
+    window.__l8Resize = true;
+    window.addEventListener('resize', function () { clearTimeout(_l8T); _l8T = setTimeout(function () { if (document.querySelector('.pha.l8')) l8Peindre(); }, 120); });
+  }
+  // « Notes (n) » : le compte se lit sur les notes réellement affichées (elles arrivent après coup)
+  var _l8Obs = null;
+  function l8SuivreNotes() {
+    var p = document.getElementById('l8-v-notes'), c = document.getElementById('l8-cpt-notes'); if (!p || !c || !window.MutationObserver) return;
+    if (_l8Obs) _l8Obs.disconnect();
+    var maj = function () { var n = p.querySelectorAll('.v2-note').length; c.textContent = n ? String(n) : ''; };
+    _l8Obs = new MutationObserver(maj); _l8Obs.observe(p, { childList: true, subtree: true }); maj();
+  }
+
 
   // « Tous les chiffres en détail » : les blocs d'avant, contenu inchangé, repliés
   function l1ToutHtml(pid, A) {
@@ -2209,15 +2291,15 @@
   }
   function l1ToutSection(pid, A) {
     var open = sectionOpen('tout');
-    return '<div class="ph-section l1b-tout" id="l1b-tout">' +
+    return '<div class="ph-section l8-tout" id="l8-tout">' +
       '<div class="v2-section-head ph-sh-toggle" data-sec="tout" role="button" tabindex="0" aria-expanded="' + (open ? 'true' : 'false') + '" onclick="V2.pharmaL.tout()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();V2.pharmaL.tout();}">' +
         '<h2 class="v2-sh-t">Tous les chiffres en détail</h2><span class="v2-sh-s">tableau par catégorie, graphes, meilleurs produits, frise de « Ne commande plus »</span>' +
         '<span class="v2-sh-end v2-section-chev' + (open ? ' open' : '') + '">' + ICO('chev', 16) + '</span></div>' +
-      '<div id="l1b-tout-body"' + (open ? '' : ' hidden') + '>' + (open ? l1ToutHtml(pid, A) : '') + '</div></div>';
+      '<div id="l8-tout-body"' + (open ? '' : ' hidden') + '>' + (open ? l1ToutHtml(pid, A) : '') + '</div></div>';
   }
   // Après un filtre interne au détail (unité des parts, onglets) : on ne refait que cette zone.
   function l1MajTout() {
-    var b = document.getElementById('l1b-tout-body');
+    var b = document.getElementById('l8-tout-body');
     if (!b || !L1.A || b.hidden) return false;
     b.innerHTML = l1ToutHtml(L1.pid, L1.A);
     if (V2.motion && V2.motion.pass) V2.motion.pass();
@@ -2225,58 +2307,76 @@
   }
 
   V2.pharmaL = {
-    base: function (num, k) {
-      if (k === 'groupement' && !L1.G) k = 'reseau';
-      if (num === 1) { L1.b1 = k; document.getElementById('l1b-seg1').innerHTML = l1Seg(1, k); document.getElementById('l1b-c1-corps').innerHTML = l1Carte1Corps(); l1Peindre(); }
-      else { L1.b2 = k; document.getElementById('l1b-seg2').innerHTML = l1Seg(2, k); document.getElementById('l1b-c2-corps').innerHTML = l1Carte2Corps(); l1Peindre(); }
+    // Changer de rubrique : on montre l'autre zone, jamais V2.render
+    go: function (r) {
+      if (!document.getElementById('l8-v-' + r)) return;
+      if (L1.vue === 'pharmacien' && (r === 'fiche' || r === 'notes' || r === 'tout')) return;
+      L1.rub = r; L1.ecran = 'rubrique'; l8Afficher();
+      if (window.innerWidth <= 900) { try { window.scrollTo(0, 0); } catch (e) {} }
     },
-    aide: function () {
-      var t = document.getElementById('l1b-aide'); if (!t) return;
-      t.hidden = !t.hidden;
-      var b = document.querySelector('#l1b-c1 .l1b-aide'); if (b) b.setAttribute('aria-expanded', t.hidden ? 'false' : 'true');
+    retour: function () { L1.ecran = 'liste'; l8Afficher(); try { window.scrollTo(0, 0); } catch (e) {} },
+    base: function (k) { if (k === 'groupement' && !L1.G) k = 'reseau'; L1.b = k; L1.k++; l8Afficher(); },
+    liste: function (k) { L1.lst = (k === 'groupement' && L1.hasGrp) ? 'groupement' : 'reseau'; L1.k++; l8Afficher(); },
+    aide: function (btn) {
+      var v = btn.closest ? btn.closest('.l8-vue') : null, t = v && v.querySelector('.l8-aide-txt'); if (!t) return;
+      t.hidden = !t.hidden; btn.setAttribute('aria-expanded', t.hidden ? 'false' : 'true');
     },
     cat: function (key) {
-      var d = document.getElementById('l1b-d-' + key); if (!d) return;
+      var d = document.getElementById('l8-d-' + key); if (!d) return;
       var ouv = d.hidden;                      // fermé → on l'ouvre
       d.hidden = !ouv; L1.ouv[key] = ouv;
       var b = d.previousElementSibling; if (b) b.setAttribute('aria-expanded', ouv ? 'true' : 'false');
-      if (ouv) l1Detail(key);
+      if (ouv) l8Detail(key);
     },
-    top: function (k) { L1.top = k; var s = document.getElementById('l1b-top'); if (s) s.innerHTML = l1TopHtml(); },
-    versListes: function () {
-      var c = document.getElementById('l1b-c3'); if (!c) return;
-      try { c.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { c.scrollIntoView(); }
-      c.classList.remove('l1b-flash'); void c.offsetWidth; c.classList.add('l1b-flash');
+    plus: function (w) { L1.tous[w] = !L1.tous[w]; L1.k++; l8Afficher(); },
+    plusFiche: function () {
+      L1.plusFiche = !L1.plusFiche;
+      var p = document.getElementById('l8-v-fiche'); if (p) p.setAttribute('data-plus', L1.plusFiche ? '1' : '0');
+      var b = document.getElementById('l8-toute'); if (b) b.textContent = L1.plusFiche ? 'Réduire la fiche' : 'Toute la fiche (' + L1.nFiche + ')';
+    },
+    // « Modifier » : les formulaires existants remplacent la lecture ; « Terminer » les referme.
+    modifier: function () {
+      var p = document.getElementById('l8-v-fiche'); if (!p) return;
+      L1.edit = !L1.edit; p.setAttribute('data-edit', L1.edit ? '1' : '0');
+      var b = document.getElementById('l8-modif'); if (b) b.textContent = L1.edit ? 'Terminer' : 'Modifier';
+      if (L1.edit) return;
+      // À la fermeture, la lecture reprend ce qui vient d'être saisi (les formulaires enregistrent comme avant)
+      var pid = L1.pid, vals = {}, avant = JSON.stringify(_coordSaisie[pid] || {});
+      Array.prototype.forEach.call(p.querySelectorAll('.v2-profil-box [data-fk]'), function (f) {
+        var k = f.getAttribute('data-fk'), v = (f.value || '').trim(), box = f.closest('.v2-profil-box'), seed = {};
+        try { seed = JSON.parse(box.getAttribute('data-seed') || '{}') || {}; } catch (e) {}
+        if (v && v !== '__add__' && (v !== seed[k] || (_coordSaisie[pid] || {})[k] != null || k === 'tel' || k === 'email' || k === 'adresse' || k === 'relance_date')) vals[k] = v;
+      });
+      var neuf = Object.assign({}, _coordSaisie[pid] || {}, vals);
+      if (JSON.stringify(neuf) !== avant) { _coordSaisie[pid] = neuf; V2.render(); }
+    },
+    autres: function () {
+      var a = document.getElementById('l8-autres'), b = document.getElementById('l8-b-autres'); if (!a) return;
+      a.hidden = !a.hidden; if (b) b.setAttribute('aria-expanded', a.hidden ? 'false' : 'true');
     },
     tout: function (ouvrir) {
-      var b = document.getElementById('l1b-tout-body'); if (!b) return;
+      var b = document.getElementById('l8-tout-body'); if (!b) return;
       var ouv = (ouvrir === true) ? true : b.hidden;
       if (ouv && !b.firstChild) { b.innerHTML = l1ToutHtml(L1.pid, L1.A); if (V2.motion && V2.motion.pass) V2.motion.pass(); }
       b.hidden = !ouv; sectionCollapsed.tout = !ouv;
-      var h = document.querySelector('#l1b-tout .v2-section-head'); if (h) h.setAttribute('aria-expanded', ouv ? 'true' : 'false');
-      var ch = document.querySelector('#l1b-tout .v2-section-chev'); if (ch) ch.classList.toggle('open', ouv);
-      if (ouvrir === true) { try { document.getElementById('l1b-tout').scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {} }
+      var h = document.querySelector('#l8-tout .v2-section-head'); if (h) h.setAttribute('aria-expanded', ouv ? 'true' : 'false');
+      var ch = document.querySelector('#l8-tout .v2-section-chev'); if (ch) ch.classList.toggle('open', ouv);
     },
-    // Vue « À montrer au pharmacien » : une liste blanche en CSS (.pha-wrap[data-vue]), pas de nouveau rendu.
+    // Vue « À montrer au pharmacien » : liste blanche en CSS (.pha-wrap[data-vue]), pas de nouveau rendu.
     vue: function (v) {
       L1.vue = v || (L1.vue === 'pharmacien' ? 'commercial' : 'pharmacien');
       var w = document.querySelector('.pha-wrap'); if (w) w.setAttribute('data-vue', L1.vue);
-      document.body.classList.toggle('l1b-vp', L1.vue === 'pharmacien');
-      Array.prototype.forEach.call(document.querySelectorAll('.l1b-vp-btn'), function (b) { b.setAttribute('aria-pressed', L1.vue === 'pharmacien' ? 'true' : 'false'); });
-      if (L1.vue === 'pharmacien') l1Peindre();
-    },
-    plus: function () {
-      L1.plus = !L1.plus;
-      var p = document.querySelector('.pha'); if (p) p.setAttribute('data-plus', L1.plus ? '1' : '0');
-      var b = document.getElementById('l1b-toute'); if (b) { b.setAttribute('aria-expanded', L1.plus ? 'true' : 'false'); var t = b.querySelector('span'); if (t) t.textContent = L1.plus ? 'Réduire la fiche' : 'Toute la fiche'; }
+      document.body.classList.toggle('l8-vp', L1.vue === 'pharmacien');
+      if (L1.vue === 'pharmacien' && (L1.rub === 'fiche' || L1.rub === 'notes' || L1.rub === 'tout')) L1.rub = 'resume';
+      l8Afficher();
     }
   };
   // Quand on quitte la fiche, la vue pharmacien ne reste pas collée au reste de l'application.
-  if (!window.__l1bHash) {
-    window.__l1bHash = true;
+  if (!window.__l8Hash) {
+    window.__l8Hash = true;
     window.addEventListener('hashchange', function () {
       var r = (location.hash || '').replace(/^#/, '').split('/')[0];
-      if (r !== 'pharma') document.body.classList.remove('l1b-vp');
+      if (r !== 'pharma') document.body.classList.remove('l8-vp');
     });
   }
 
@@ -2404,11 +2504,9 @@
     })();
     var kv = function (l, v, empty) { return '<span>' + l + '</span><span' + (v ? '' : ' class="pha-empty"') + '>' + (v ? v : (empty || 'à compléter')) + '</span>'; };
     var kvProbable = function (l, estim) { return '<span>' + l + '</span><span class="pha-probable">' + esc(V2.probableTexte(estim, probable && probable.groupement)) + '</span>'; };
-    var idCard =
-      '<div class="pha-id">' +
-        '<div class="pha-code mono">' + (pharma.code ? 'CIP ' + esc(String(pharma.code)) + ' · ' : '') + (isEscale() ? 'CLIENTE ESCALE' : 'CLIENTE INTÉGRAL') + (comms ? ' · ' + esc(comms.toUpperCase()) : '') + '</div>' +
-        '<div class="pha-name">' + esc(nameOf(pid, pharma.name)) + ficheBadge + repriseBadge + '</div>' +
-        '<div class="pha-kv">' +
+    // Les lignes de la carte (libellé → valeur), construites une seule fois : la carte d'avant les affiche telles quelles,
+    // la rubrique « Fiche » du menu les lit en lignes.
+    var kvHtml = '' +
           kv('Ville', esc(loc)) +
           (adresse ? kv('Adresse', esc(adresse)) : '') +
           kv('Titulaire', esc(titulaire || dirigeantsDe(oi))) +
@@ -2433,8 +2531,12 @@
           (generiqueur ? kv('Génériqueur', esc(generiqueur)) : (probable && probable.generiqueur ? kvProbable('Génériqueur probable', probable.generiqueur) : '')) +
           (grossiste ? kv('Grossiste principal', esc(grossiste)) : (probable && probable.grossiste ? kvProbable('Grossiste probable', probable.grossiste) : '')) +
           (livreePar ? kv('Livrée par', esc(livreePar)) : '') +
-          (potentiel ? kv('Potentiel', esc(potentiel)) : '') +
-        '</div>' +
+          (potentiel ? kv('Potentiel', esc(potentiel)) : '');
+    var idCard =
+      '<div class="pha-id">' +
+        '<div class="pha-code mono">' + (pharma.code ? 'CIP ' + esc(String(pharma.code)) + ' · ' : '') + (isEscale() ? 'CLIENTE ESCALE' : 'CLIENTE INTÉGRAL') + (comms ? ' · ' + esc(comms.toUpperCase()) : '') + '</div>' +
+        '<div class="pha-name">' + esc(nameOf(pid, pharma.name)) + ficheBadge + repriseBadge + '</div>' +
+        '<div class="pha-kv">' + kvHtml + '</div>' +
         '<div class="pha-acts">' +
           (tel ? '<a class="pha-btn" href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) + '">' + ICO('phone', 15) + 'Appeler</a>' : '') +
           (mail ? '<a class="pha-btn" href="mailto:' + esc(mail) + '">' + ICO('mail', 15) + 'E-mail</a>' : '') +
@@ -2517,12 +2619,10 @@
 
     // ── Colonne « chiffres » ──
     var A = analyseData(pid, sales);
-    var chiffres = '', lecture = null;
-    if (voitVentes) {
-      // 08/10/2026 — maquette 1b : bandeau « À proposer » + les blocs de lecture, puis, REPLIÉ, l'ancien détail.
-      lecture = ficheLecture(pid, A, { marge: marge, dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp });
-      chiffres = '<div class="l1b-lecture l1b-ok" id="l1b-lecture">' + lecture.entree + lecture.blocs + '</div>' + l1ToutSection(pid, A);
-    }
+    var chiffres = '';
+    // 09/10/2026 — maquette 8 « Le menu » (remplace la 1b, jugée « trop complexe ») : l'état de la fiche est posé ici,
+    // la page est assemblée plus bas (carte d'identité courte, menu, une rubrique à la fois).
+    if (voitVentes) l8Init(pid, A, { marge: marge, dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp, nFiche: 0 });
     // 24/09/2026 — officine d'un collègue (commercial restreint) : aucun chiffre de vente,
     // ni « déjà commandé / à pousser » (ça dirait ce qu'elle achète), ni audit de marge.
     if (!voitVentes) chiffres = '<div class="v2-card pha-card"><div class="pha-sub" style="padding:16px 18px">Les chiffres de vente de cette officine sont réservés à son commercial' + (pharma.comms && pharma.comms.length ? ' (' + esc(pharma.comms.join(', ')) + ')' : '') + '.</div></div>';
@@ -2530,7 +2630,8 @@
     // sur des données PUBLIQUES (Assurance Maladie, INSEE, FINESS) : il s'affiche donc
     // AUSSI pour l'officine d'un collègue, après le message de restriction — il ne dit
     // rien de ce qu'elle achète, seulement ce que sa population laisse attendre.
-    if (V2.potentielBloc) chiffres += V2.potentielBloc(pharma);
+    var potentielHtml = V2.potentielBloc ? V2.potentielBloc(pharma) : '';
+    if (!voitVentes) chiffres += potentielHtml;
 
     // Best rotations du groupement / réseau : détail produit par produit, replié (inchangé)
     var rot = grpBestRotations(pid, 60);
@@ -2588,26 +2689,47 @@
     // Brief du jour (v2-brief-officine.js) : rempli après coup, sans re-rendre la fiche.
     // Posé APRÈS les chiffres (demande de Will, 22/09/2026) : une ligne de résumé qui ouvre la fenêtre.
     var briefOff = V2.briefOfficine ? '<div class="v2-card pha-card" id="brief-off" data-pid="' + esc(pid) + '"><div class="pha-sub" style="padding:12px 18px">Brief du jour en préparation…</div></div>' : '';
-    // 08/10/2026 — vue « À montrer au pharmacien » : une liste blanche en CSS (voir .pha-wrap[data-vue]).
-    // Ne restent que son nom, son adresse, son titulaire, son groupement d'achat et les blocs de lecture.
+    // Vue « À montrer au pharmacien » (liste blanche en CSS, voir .pha-wrap[data-vue]) : son nom, son adresse,
+    // son titulaire, son groupement d'achat et les rubriques sans leurs éléments internes.
     var vue = voitVentes ? L1.vue : 'commercial';
-    var vpBar = voitVentes
-      ? '<div class="l1b-vp-bar l1b-ok"><span class="l1b-vp-etat"><span class="l1b-vp-c">Vue commerciale</span><span class="l1b-vp-p">Vue à montrer au pharmacien</span></span>' +
-        '<button type="button" class="pha-btn l1b-vp-btn" aria-pressed="' + (vue === 'pharmacien') + '" onclick="V2.pharmaL.vue()"><span class="l1b-vp-c">À montrer au pharmacien</span><span class="l1b-vp-p">Revenir à ma vue</span></button></div>' +
-        '<div class="l1b-vpid l1b-ok"><h2>' + esc(nameOf(pid, pharma.name)) + '</h2>' +
-          '<p>' + esc([adresse, loc].filter(function (x) { return x; }).join(', ')) + '</p>' +
-          '<p>Titulaire : ' + esc(titulaire || dirigeantsDe(oi) || '—') + '</p>' +
-          '<p>Groupement d’achat : ' + esc((pharma.groupement && pharma.groupement !== '—') ? canonG(pharma.groupement) : '—') + '</p></div>'
-      : '';
-    var railBas = voitVentes
-      ? '<button type="button" class="pha-btn l1b-toute" id="l1b-toute" aria-expanded="' + (L1.plus ? 'true' : 'false') + '" onclick="V2.pharmaL.plus()"><span>' + (L1.plus ? 'Réduire la fiche' : 'Toute la fiche') + '</span>' + L1_CHEV + '</button>' +
-        '<div class="pha-fiche-plus">' + listes + infos + notes + '</div>'
-      : listes + infos + notes;
-    var apercu =
-      '<div class="pha" data-plus="' + (voitVentes && L1.plus ? '1' : '0') + '">' +
-        '<div class="pha-rail">' + idCard + railBas + '</div>' +
-        '<div class="pha-main">' + vpBar + chiffres + briefOff + listing + generiqueurSec + '</div>' +
-      '</div>';
+    var apercu;
+    if (voitVentes) {
+      // La rubrique Fiche lit les lignes de la carte d'avant (mêmes valeurs, même ordre) ; « Modifier » ouvre les formulaires existants.
+      var fRows = [], tmpK = document.createElement('div');
+      tmpK.innerHTML = kvHtml;
+      for (var q = 0; q + 1 < tmpK.children.length; q += 2) {
+        var lab = tmpK.children[q].textContent, vs = tmpK.children[q + 1];
+        fRows.push({ l: lab === 'Groupement' ? 'Groupement d’achat' : lab, v: vs.innerHTML, c: vs.className });
+      }
+      fRows.forEach(function (r) {
+        if (r.l === 'Téléphone' && tel) r.v = '<a href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) + '">' + r.v + '</a>';
+        if (r.l === 'E-mail' && mail) r.v = '<a href="mailto:' + esc(mail) + '">' + r.v + '</a>';
+      });
+      var avant = [];
+      if (pharma.code) avant.push({ l: 'CIP', v: '<span class="mono">' + esc(String(pharma.code)) + '</span>', c: '' });
+      avant.push({ l: 'Statut', v: (isEscale() ? 'Cliente Escale' : 'Cliente Intégral') + ficheBadge, c: '' });
+      if (comms) avant.push({ l: 'Commercial', v: esc(comms), c: '' });
+      if (window.REPRISES && REPRISES[String(pid)]) avant.push({ l: 'Reprise récente', v: 'Le titulaire a changé récemment : moment clé pour (re)capter la relation', c: '' });
+      var rel = ''; try { if (saisi.relance_date) rel = new Date(saisi.relance_date + 'T12:00:00').toLocaleDateString('fr-FR'); } catch (e) {}
+      var apres = [{ l: 'Prochaine relance', v: rel || 'à compléter', c: rel ? '' : 'pha-empty' }];
+      L8_PROFIL.forEach(function (p) { if (saisi[p[0]]) apres.push({ l: p[1], v: esc(String(saisi[p[0]])), c: '' }); });
+      fRows = avant.concat(fRows, apres);
+      L1.nFiche = fRows.filter(function (r) { return r.l; }).length;
+      var ctx = {
+        pidSafe: pidSafe, nom: esc(nameOf(pid, pharma.name)), sous: [pharma.ville || (infoRdv && infoRdv.ville) || (caBase && caBase[13]) || '', (pharma.groupement && pharma.groupement !== '—') ? canonG(pharma.groupement) : ''].filter(function (x) { return x; }).join(' · '),
+        tel: tel, mail: mail, listes: listes, rows: fRows, infos: infos, notes: l8Tete('Notes', rel ? '<span class="l8-dr">Relance le ' + rel + '</span>' : '') + '<div class="l8-notes">' + notes + '</div>',
+        tout: l8Tete('Tout le détail') + l1ToutSection(pid, A) + potentielHtml + briefOff + listing + generiqueurSec,
+        vpid: '<p>' + esc([adresse, loc].filter(function (x) { return x; }).join(', ')) + '</p><p>Titulaire : ' + esc(titulaire || dirigeantsDe(oi) || '—') + '</p>' +
+          '<p>Groupement d’achat : ' + esc((pharma.groupement && pharma.groupement !== '—') ? canonG(pharma.groupement) : '—') + '</p>'
+      };
+      apercu = l8Page(ctx);
+    } else {
+      apercu =
+        '<div class="pha">' +
+          '<div class="pha-rail">' + idCard + listes + infos + notes + '</div>' +
+          '<div class="pha-main">' + chiffres + briefOff + listing + generiqueurSec + '</div>' +
+        '</div>';
+    }
     if (!voitVentes) { listing = ''; generiqueurSec = ''; }
     // 02/10/2026 — l'onglet « Audit marge » est retiré (décision de Will) : plus d'onglets, la fiche n'a que l'analyse.
     var tabs = '';
@@ -2619,8 +2741,8 @@
         tabs +
         '<div id="phft-c-apercu">' + apercu + '</div>' +
       '</div>';
-    document.body.classList.toggle('l1b-vp', vue === 'pharmacien');
-    if (voitVentes) l1Peindre();
+    document.body.classList.toggle('l8-vp', vue === 'pharmacien');
+    if (voitVentes) { l8Afficher(); l8SuivreNotes(); }
     if (V2.profil) V2.profil.hydrate();
     if (V2.notes) V2.notes.hydrate();
     if (V2.rdvPrepa) V2.rdvPrepa.hydrate();
@@ -5429,138 +5551,201 @@
       '  .pha-rail>*,.pha-main>*{min-width:0;align-self:stretch}',
       '  .pha-id{order:-3}.pha-lists{order:-2}.pha-notes{order:-1}',
       '  .pha-desk{display:none}.pha-mob{display:block}.pha-kpis{grid-template-columns:1fr 1fr}.pha-kval{font-size:20px}.pha-lists{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.pha-lists .pha-kl{width:100%}.pha-lists .pha-btn-w{width:auto;margin-top:0;flex:1 1 auto}}',
-      /* ══ Fiche « lecture » (maquette 1b, 08/10/2026) — préfixe l1b- ══ */
-      '.l1b-lecture{display:grid;gap:12px;grid-template-columns:minmax(0,1fr);align-items:start;grid-template-areas:"a" "c1" "bouge" "c2" "nplus" "top" "compo" "c3"}',
-      '.l1b-z-a{grid-area:a}.l1b-z-c1{grid-area:c1}.l1b-z-bouge{grid-area:bouge}.l1b-z-c2{grid-area:c2}.l1b-z-nplus{grid-area:nplus}.l1b-z-top{grid-area:top}.l1b-z-compo{grid-area:compo}.l1b-z-c3{grid-area:c3}',
-      '@media(min-width:1180px){.l1b-lecture{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;grid-template-areas:"a a" "c1 c1" "bouge compo" "c2 c2" "top nplus" "c3 c3"}}',
-      '.l1b-carte{min-width:0}',
-      '.l1b-q{margin:0;font-size:20px;font-weight:800;letter-spacing:-.025em;line-height:1.15}',
-      '.l1b-q-sous{margin:4px 0 0;font-size:13px;color:var(--muted);font-weight:600}',
-      '.l1b-carte .pha-sub,.l1b-detail .pha-sub{font-size:13px}',
-      '.l1b-vide{margin:10px 0 0}',
-      '.l1b-entree{display:grid;gap:8px;padding:16px 20px;border-radius:var(--r-card);color:#fff;background:radial-gradient(ellipse 70% 120% at 100% 0,#1F5FEA 0%,rgba(31,95,234,0) 70%),linear-gradient(160deg,#0043C8 0%,#0034A0 100%);box-shadow:var(--sh-blue)}',
-      '.l1b-e-et{color:#fff}.l1b-e-et,.l1b-abs-t{font-size:13px}',
-      '.l1b-e-phrase{margin:0;font-size:16px;font-weight:700;line-height:1.3;letter-spacing:-.01em}',
-      '.l1b-e-phrase b{font-family:var(--mono);font-size:28px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}',
-      '.l1b-e-aussi{margin:0;font-size:14px;font-weight:500}',
-      '.l1b-e-aussi b{font-family:var(--mono);font-weight:700;font-variant-numeric:tabular-nums}',
-      '.l1b-e-btn{justify-self:start;display:inline-flex;align-items:center;gap:8px;min-height:var(--tap-min,44px);padding:0 16px;border:0;border-radius:var(--r-btn,12px);background:#fff;color:var(--ip-blue-d);font:inherit;font-size:14px;font-weight:700;cursor:pointer}',
-      '.l1b-e-btn .l1b-chev{color:var(--ip-blue-d)}',
-      '.l1b-flash{animation:l1bFlash 1.2s var(--ease)}',
-      '@keyframes l1bFlash{0%{box-shadow:0 0 0 0 rgba(0,80,230,.55)}40%{box-shadow:0 0 0 6px rgba(0,80,230,.35)}100%{box-shadow:0 0 0 0 rgba(0,80,230,0)}}',
-      '.l1b-reglage{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;flex-wrap:wrap}',
-      '.l1b-seg{display:inline-flex;background:var(--surf-sunken);border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px;max-width:100%}',
-      '.l1b-ref-seule{font-size:14px;font-weight:700;color:var(--ip-ink-2)}',
-      '.l1b-seg-b{border:0;background:transparent;border-radius:9px;padding:0 14px;min-height:var(--tap-min,44px);font:inherit;font-size:14px;font-weight:700;color:var(--muted);cursor:pointer;white-space:normal;min-width:0}',
-      '.l1b-seg-b[aria-pressed="true"]{background:var(--card);color:var(--ip-ink);box-shadow:0 1px 3px rgba(16,19,28,.12)}',
-      '.l1b-aide{width:var(--tap-min,44px);height:var(--tap-min,44px);border:0;background:transparent;padding:0;display:inline-grid;place-items:center;cursor:pointer}',
-      '.l1b-aide span{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--muted);color:var(--muted);display:grid;place-items:center;font-weight:800;font-size:14px}',
-      '.l1b-aide-txt{margin:6px 0 0;padding:10px 12px;border-radius:var(--r-md);background:var(--card-2);border:1px solid var(--line);font-size:13px;line-height:1.45;font-weight:600;color:var(--ip-ink)}',
-      '.l1b-aide-txt[hidden],.l1b-detail[hidden],#l1b-tout-body[hidden]{display:none!important}',
-      '.l1b-periode{margin:12px 0 0;font-size:13px;font-weight:800;color:var(--muted)}',
-      '.l1b-grand{margin:0;font-family:var(--mono);font-weight:800;font-size:48px;line-height:1.05;letter-spacing:-.04em;font-variant-numeric:tabular-nums}',
-      '.l1b-grand small{font-size:16px;letter-spacing:-.01em;font-weight:700;color:var(--muted)}',
-      '.l1b-phrase{margin:6px 0 0;font-size:16px;font-weight:600;line-height:1.35;color:var(--ip-ink-2)}',
-      '.l1b-phrase b{font-weight:800}',
-      '.l1b-reperes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}',
-      '.l1b-rep{min-width:0;padding:12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--card-2)}',
-      '.l1b-rep-large{grid-column:1/-1}',
-      '@media(min-width:640px){.l1b-reperes{grid-template-columns:repeat(3,minmax(0,1fr))}.l1b-rep-large{grid-column:auto}}',
-      '.l1b-rep-p{margin:0;font-size:13px;font-weight:800;color:var(--muted)}',
-      '.l1b-rep-v{margin:2px 0 0;font-family:var(--mono);font-weight:800;font-size:22px;line-height:1.15;letter-spacing:-.03em;font-variant-numeric:tabular-nums}',
-      '.l1b-rep-mots{font-family:inherit;font-size:16px;letter-spacing:-.01em;line-height:1.25}',
-      '.l1b-rep-t{margin:4px 0 0;font-size:13px;font-weight:600;line-height:1.35;color:var(--ip-ink-2)}',
-      '.l1b-rep-t b{font-weight:800}',
-      '.l1b-marge{margin:12px 0 0;font-size:13px;font-weight:600;color:var(--muted);line-height:1.4}',
-      '.l1b-marge .mono{color:var(--ip-ink-2);font-weight:800}',
-      '.l1b-graph{margin-top:12px;width:100%}',
-      '.l1b-graph svg,.l1b-dmois svg{display:block;width:100%;height:auto;overflow:visible}',
-      '.l1b-graph text,.l1b-dmois text{font-family:var(--font);font-size:13px;font-weight:700;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}',
-      '.l1b-graph .l1b-m{font-family:var(--mono)}',
-      '.l1b-dmois text{stroke:#F7F9FC}',
-      '.l1b-lecture .mono,.l1b-grand,.l1b-rep-v,.l1b-e-phrase b,.l1b-e-aussi b{word-spacing:-.3em}',
-      '.l1b-grand small,.l1b-rep-mots{word-spacing:normal}',
-      '.l1b-leg{display:flex;flex-wrap:wrap;gap:4px 16px;margin:0 0 4px;font-size:13px;font-weight:700;color:var(--ip-ink-2)}',
-      '.l1b-leg i{display:inline-block;vertical-align:middle;margin-right:6px}',
-      '.l1b-leg-a.trait{width:18px;height:3px;border-radius:2px;background:#0050E6}.l1b-leg-a.barre{width:10px;height:10px;border-radius:2px;background:#0050E6}',
-      '.l1b-leg-b{width:18px;height:3px;border-radius:2px;background:#8591AC}',
-      '.l1b-bouge{display:grid;gap:6px;margin-top:8px}',
-      '.l1b-bg{display:flex;gap:12px;align-items:center;padding:8px 12px;border-radius:var(--r-md);background:var(--card-2);border:1px solid var(--line);min-height:56px}',
-      '.l1b-fl{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:#fff}',
-      '.l1b-fl.haut{background:var(--c-mint-txt)}.l1b-fl.bas{background:var(--c-rose-txt)}',
-      '.l1b-bg-t{font-size:14px;font-weight:700;line-height:1.3;min-width:0}',
-      '.l1b-bg-d{font-size:13px;color:var(--muted);font-weight:600}.l1b-bg-d .mono{color:var(--ip-ink-2)}',
-      '.l1b-axe-tete{margin-top:12px;display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:6px;font-size:13px;font-weight:700;color:var(--muted)}',
-      '.l1b-axe-tete .c{text-align:center;color:var(--ip-ink);max-width:150px;line-height:1.2}.l1b-axe-tete .g{text-align:left}.l1b-axe-tete .d{text-align:right}',
-      '.l1b-ligne{display:block;width:calc(100% + 24px);margin:0 -12px;text-align:left;background:transparent;border:0;border-top:1px solid var(--line);padding:10px 12px 12px;cursor:pointer;color:inherit;font:inherit;border-radius:var(--r-md)}',
-      '.l1b-ligne:hover{background:var(--card-2)}',
-      '.l1b-l-haut{display:flex;justify-content:space-between;align-items:baseline;gap:12px}',
-      '.l1b-nom{font-weight:800;font-size:14px;display:inline-flex;align-items:flex-start;gap:4px;min-width:0}',
-      '.l1b-nom-b{display:block;min-width:0}',
-      '.l1b-mt{display:block;margin-top:2px;font-size:13px;color:var(--muted);font-weight:600}.l1b-mt .mono{color:var(--ip-ink-2);font-weight:800}',
-      '.l1b-val{font-size:13px;font-weight:800;text-align:right;max-width:52%;line-height:1.25}',
-      '.l1b-chev{flex:none;transition:transform .18s var(--ease);color:var(--muted)}',
-      '.l1b-ligne[aria-expanded="true"] .l1b-chev,.l1b-absente[aria-expanded="true"] .l1b-chev{transform:rotate(180deg)}',
-      '.l1b-piste{display:block;position:relative;height:16px;margin-top:8px}',
-      '.l1b-piste::before{content:"";position:absolute;left:0;right:0;top:7px;height:2px;background:var(--line-strong)}',
-      '.l1b-axe{position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;margin-left:-1px;background:var(--ip-ink-2);z-index:2}',
-      '.l1b-barre{position:absolute;top:1px;height:14px}',
-      '.l1b-barre.plus{left:50%;background:var(--c-mint);border-radius:0 6px 6px 0}.l1b-barre.moins{right:50%;background:var(--c-rose);border-radius:6px 0 0 6px}',
-      '.l1b-abs-t{margin:12px 0 0;padding-top:8px;border-top:2px solid var(--line-strong)}',
-      '.l1b-absente{display:block;position:relative;width:100%;text-align:left;border:1px dashed var(--c-amber);background:color-mix(in srgb,var(--c-amber) 9%,#fff);border-radius:var(--r-md);padding:12px 40px 12px 14px;margin-top:8px;cursor:pointer;min-height:56px;color:var(--ip-ink);font:inherit}',
-      '.l1b-absente b{display:block;font-size:14px}.l1b-absente span{display:block;font-size:13px;font-weight:600;color:var(--ip-ink-2);margin-top:2px;line-height:1.35}',
-      '.l1b-absente .l1b-chev{position:absolute;right:14px;top:14px}',
-      '.l1b-detail{display:grid;gap:12px;margin:0 0 8px;padding:12px 14px 14px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--card-2)}',
-      '.l1b-detail h4{margin:0;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:800}',
-      '.l1b-detail p{margin:0;font-size:14px;font-weight:600;line-height:1.4;color:var(--ip-ink-2)}.l1b-detail p b{font-weight:800}',
-      '.l1b-dp{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 12px;padding:8px 0;border-top:1px solid var(--line);font-size:14px;font-weight:700}',
-      '.l1b-dp span{font-size:13px;color:var(--muted);font-weight:600;text-align:right}.l1b-dp span .mono{color:var(--ip-ink);font-weight:800}',
-      '.l1b-piste-p{height:12px;margin-top:6px;border-radius:999px;background:var(--line-strong);overflow:hidden}.l1b-piste-p i{display:block;height:100%;background:var(--ip-blue);border-radius:999px}',
-      '.l1b-part{margin-top:10px}.l1b-part-h{display:flex;justify-content:space-between;gap:12px;font-size:14px;font-weight:700}.l1b-part-h span:first-child{min-width:0}.l1b-part-h span:last-child{white-space:nowrap}',
-      '.l1b-np{display:block;padding:10px 0;border-top:1px solid var(--line)}.l1b-np b{display:block;font-size:14px;font-weight:800}.l1b-np span{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-top:2px}',
-      '.l1b-nps{margin-top:8px}',
-      '.l1b-btn-plein{width:100%;margin-top:12px;justify-content:center;white-space:normal;line-height:1.2}',
-      '.l1b-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}',
-      '.l1b-pill{min-height:var(--tap-min,44px);padding:0 14px;border-radius:999px;border:1px solid var(--line-strong);background:var(--card);color:var(--ip-ink-2);font:inherit;font-size:14px;font-weight:700;cursor:pointer}',
-      '.l1b-pill[aria-pressed="true"]{background:var(--halo);color:var(--ip-blue);border-color:var(--halo)}',
-      '.l1b-tps{margin-top:8px}',
-      '.l1b-tp{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:0 12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}',
-      '.l1b-tp-r{font-size:13px;font-weight:700;color:var(--muted)}',
-      '.l1b-tp-n{font-size:14px;font-weight:800;line-height:1.25}.l1b-tp-c{font-size:13px;font-weight:600;color:var(--muted);line-height:1.3}',
-      '.l1b-tp-m{text-align:right;font-size:13px;font-weight:600;color:var(--muted);line-height:1.3}.l1b-tp-m .mono{display:block;font-size:14px;font-weight:800;color:var(--ip-ink)}',
-      '.l1b-tuiles{display:grid;gap:14px;margin-top:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}',
-      '.l1b-tuile{border:1px solid var(--line-strong);border-radius:var(--r-card);padding:14px;background:var(--card-2);display:flex;flex-direction:column;gap:10px;min-width:0}',
-      '.l1b-t-h{margin:0;font-size:16px;font-weight:800;letter-spacing:-.02em;line-height:1.25}.l1b-t-h b{color:var(--ip-blue);font-family:var(--mono);letter-spacing:-.03em}',
-      '.l1b-fonde{margin:0;font-size:13px;color:var(--muted);font-weight:600;line-height:1.4}',
-      '.l1b-prods{margin:0;padding:0;list-style:none;border-top:1px solid var(--line)}',
-      '.l1b-prods li{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:6px 8px;border-bottom:1px solid var(--line);font-size:14px;font-weight:700}',
-      '.l1b-prods li span{font-size:13px;color:var(--muted);font-weight:600;text-align:right;flex:0 1 50%}.l1b-prods li span b{color:var(--c-mint-txt);font-weight:800}',
-      '.l1b-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}',
-      '.l1b-actions .pha-btn{width:100%;min-width:0;white-space:normal;line-height:1.2;justify-content:center;padding:0 8px}',
-      '.l1b-actions .pha-btn-opp{grid-column:1/-1}',
-      '.l1b-vp-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}',
-      '.l1b-vp-etat{font-size:13px;font-weight:700;color:var(--muted)}',
-      '.l1b-vp-p{display:none}.l1b-vpid{display:none}',
-      '.l1b-toute{display:none}',
-      '.l1b-toute[aria-expanded="true"] svg{transform:rotate(180deg)}',
-      '.pha-fiche-plus{display:contents}',
-      '.pha-wrap[data-vue="pharmacien"] .pha{display:block}',
-      '.pha-wrap[data-vue="pharmacien"] .pha-main{display:flex;flex-direction:column;gap:14px}',
-      '.pha-wrap[data-vue="pharmacien"] .pha-rail{display:none}',
-      '.pha-wrap[data-vue="pharmacien"] .pha-main>*:not(.l1b-ok){display:none!important}',
-      '.pha-wrap[data-vue="pharmacien"] .l1b-interne{display:none!important}',
+      /* ══ Fiche « menu » (maquette 8, 09/10/2026) — préfixe l8- ══ */
+      '.pha.l8{grid-template-columns:340px minmax(0,1fr);gap:56px;padding-top:4px}',
+      '.l8-rail{position:sticky;top:24px;gap:20px;align-self:start}',
+      '.l8-main{max-width:820px;min-height:560px}',
+      '.l8-id{position:relative;border-radius:24px;padding:24px 24px 20px;color:#fff;background:radial-gradient(110% 80% at 10% -6%,#2A6AF0 0%,rgba(42,106,240,0) 62%),radial-gradient(90% 70% at 105% 108%,#002A86 0%,rgba(0,42,134,0) 66%),#0050E6;box-shadow:var(--sh-blue)}',
+      '.l8-nom{margin:0;font-size:28px;font-weight:800;letter-spacing:-.025em;line-height:1.1;color:#fff;overflow-wrap:anywhere}',
+      '.l8-sous{margin:6px 0 0;font-size:15px;font-weight:600;color:#fff}',
+      '.l8-acts{display:flex;justify-content:space-between;gap:8px;margin-top:22px}',
+      '.l8-act{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;padding:0;border:0;background:transparent;color:#fff;font:inherit;font-size:13px;font-weight:700;cursor:pointer;min-height:var(--tap-min,44px);text-decoration:none;-webkit-tap-highlight-color:transparent}',
+      '.l8-act:hover{color:#fff}',
+      '.l8-rond{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;background:#1B58D6;box-shadow:0 1px 0 rgba(255,255,255,.28) inset,0 0 0 1px rgba(255,255,255,.18) inset;transition:transform .18s var(--ease),background .18s}',
+      '.l8-act:hover .l8-rond{transform:translateY(-2px);background:#2A66E8}',
+      '.l8-act:active .l8-rond{transform:scale(.94)}',
+      '.l8-act:first-child .l8-rond{background:#fff;color:var(--ip-blue);box-shadow:0 4px 12px rgba(0,30,110,.35)}',
+      '.l8-chiffre{display:none}',
+      '.l8-menu{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2);padding:6px;display:flex;flex-direction:column}',
+      '.l8-row{position:relative;display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:0 10px;border:0;background:transparent;border-radius:12px;color:var(--ip-ink);font:inherit;font-size:16px;font-weight:700;letter-spacing:-.01em;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .2s var(--ease)}',
+      '.l8-row+.l8-row::before{content:"";position:absolute;left:54px;right:10px;top:0;height:1px;background:var(--line)}',
+      '.l8-row:hover{background:var(--surf-sunken)}',
+      '.l8-tuile{width:32px;height:32px;flex:none;border-radius:9px;display:grid;place-items:center;background:var(--halo);color:var(--ip-blue);transition:background .2s var(--ease),color .2s var(--ease),transform .25s var(--ease)}',
+      '.l8-mot{flex:1;min-width:0}',
+      '.l8-cpt{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--muted);white-space:nowrap;word-spacing:-.3em}',
+      '.l8-cpt b{color:var(--ip-blue);font-weight:700}',
+      '.l8-chev{flex:none;color:#7C859B;display:flex}',
+      '@media(min-width:901px){.l8-row[aria-current="page"]{background:var(--halo)}.l8-row[aria-current="page"] .l8-tuile{background:var(--ip-blue);color:#fff;transform:scale(1.06)}.l8-row[aria-current="page"]+.l8-row::before,.l8-row[aria-current="page"]::before{display:none}.l8-row[aria-current="page"] .l8-chev{color:var(--ip-blue)}}',
+      '.l8-pied{display:flex;flex-wrap:wrap;gap:0 18px}',
+      '.l8-lien{display:inline-flex;align-items:center;gap:8px;min-height:var(--tap-min,44px);padding:0;border:0;background:transparent;color:var(--ip-blue);font:inherit;font-size:14px;font-weight:800;cursor:pointer;letter-spacing:-.01em}',
+      '.l8-lien:hover{color:var(--ip-blue-d)}',
+      '.l8-lien.gris{color:var(--ip-ink-2)}',
+      '.l8-autres[hidden]{display:none}',
+      '.l8-retourbar,.l8-vpbar,.l8-vpid{display:none}',
+      '.l8-vue[hidden]{display:none}',
+      '.l8-vue{animation:l8Entre .38s var(--ease)}',
+      '@keyframes l8Entre{from{transform:translateY(10px)}to{transform:none}}',
+      '.l8-tete{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 16px;margin-bottom:20px;min-height:48px}',
+      '.l8-t{margin:0;font-size:22px;font-weight:800;letter-spacing:-.025em;line-height:1.15}',
+      '.l8-tete-d{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}',
+      '.l8-fl{font-size:14px;font-weight:700;color:var(--muted)}',
+      '.l8-ref{font-size:14px;font-weight:800}',
+      '.l8-dr,.l8-cnt{font-size:14px;font-weight:600;color:var(--muted)}',
+      '.l8-cnt{font-family:var(--mono);font-size:22px;font-weight:800}',
+      '.l8-seg{display:inline-flex;background:var(--surf-sunken);border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px;max-width:100%}',
+      '.l8-seg-b{border:0;background:transparent;border-radius:9px;padding:0 14px;min-height:var(--tap-min,44px);font:inherit;font-size:14px;font-weight:700;color:var(--muted);cursor:pointer;min-width:0}',
+      '.l8-seg-b[aria-pressed="true"]{background:var(--card);color:var(--ip-ink);box-shadow:0 1px 3px rgba(16,19,28,.12)}',
+      '.l8-aide{width:var(--tap-min,44px);height:var(--tap-min,44px);border:0;background:transparent;padding:0;display:inline-grid;place-items:center;cursor:pointer;color:var(--muted)}',
+      '.l8-aide span{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--muted);display:grid;place-items:center;font-weight:800;font-size:14px;line-height:1}',
+      '.l8-aide:hover span{color:var(--ip-blue);border-color:var(--ip-blue)}',
+      '.l8-aide-txt{margin:-8px 0 16px;padding:10px 12px;border-radius:var(--r-md);background:var(--card-2);font-size:14px;line-height:1.45;font-weight:600;color:var(--ip-ink)}',
+      '.l8-aide-txt[hidden]{display:none}',
+      '.l8-vide{margin:10px 0;color:var(--muted);font-weight:600;font-size:15px}',
+      '.l8-grand{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 20px}',
+      '.l8-n{font-family:var(--mono);font-weight:800;font-size:clamp(56px,8vw,96px);letter-spacing:-.05em;line-height:1;word-spacing:-.32em;color:var(--ip-ink)}',
+      '.l8-n small{font-size:.38em;font-weight:700;letter-spacing:0;color:var(--muted);word-spacing:normal}',
+      '.l8-u{font-size:17px;font-weight:700;color:var(--muted)}',
+      '.l8-puce{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:17px;font-weight:700;padding:5px 12px 5px 9px;border-radius:999px;word-spacing:-.3em;background:var(--surf-sunken)}',
+      '.l8-puce.pha-up{background:color-mix(in srgb,var(--c-mint) 13%,#fff)}.l8-puce.pha-dn{background:color-mix(in srgb,var(--c-rose) 13%,#fff)}',
+      '.l8-graph{margin:24px 0 8px}',
+      '.l8-graph svg,.l8-dmois svg{display:block;width:100%;height:auto;overflow:visible}',
+      '.l8-graph text,.l8-dmois text{font-family:var(--font);font-size:13px;font-weight:700;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}',
+      '.l8-graph .l8-m{font-family:var(--mono)}',
+      '.l8-leg{display:flex;flex-wrap:wrap;gap:4px 16px;margin:0 0 4px;font-size:13px;font-weight:700;color:var(--ip-ink-2)}',
+      '.l8-leg i{display:inline-block;vertical-align:middle;margin-right:6px}',
+      '.l8-leg-a.trait{width:18px;height:3px;border-radius:2px;background:#0050E6}.l8-leg-a.barre{width:10px;height:10px;border-radius:2px;background:#0050E6}',
+      '.l8-leg-b{width:18px;height:3px;border-radius:2px;background:#8591AC}',
+      '.l8-reps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px;margin-top:24px}',
+      '.l8-rep{border-top:1px solid var(--line-strong);padding-top:12px}',
+      '.l8-rl{font-size:14px;font-weight:700;color:var(--muted)}',
+      '.l8-rv{margin-top:4px;font-family:var(--mono);font-size:26px;font-weight:800;letter-spacing:-.03em;word-spacing:-.3em;line-height:1.15}',
+      '.l8-rv-mots{font-family:var(--font);font-size:21px;letter-spacing:-.02em;word-spacing:normal;line-height:1.2}',
+      '.l8-rt{margin-top:2px;font-size:14px;font-weight:700}',
+      '.l8-rt .mono{word-spacing:-.3em}',
+      '.l8-ctete{font-size:14px;font-weight:700;color:var(--muted);margin-bottom:4px}',
+      '.l8-ctete-d{text-align:right}',
+      '.l8-lg{display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 0;border-top:1px solid var(--line)}',
+      '.l8-lg:last-child{border-bottom:1px solid var(--line)}',
+      '.l8-ln{flex:1;min-width:0;font-size:16px;font-weight:700;letter-spacing:-.01em}',
+      '.l8-ln small{display:block;font-size:13px;font-weight:600;color:var(--muted);letter-spacing:0}',
+      '.l8-lm{font-family:var(--mono);font-size:15px;font-weight:700;white-space:nowrap;word-spacing:-.3em;min-width:48px;text-align:right}',
+      '.l8-lm-l{min-width:76px}',
+      '.l8-lg-g{font-size:14px;font-weight:600;color:var(--muted);white-space:nowrap}',
+      '.l8-pbar{width:64px;height:8px;border-radius:4px;background:var(--surf-sunken);position:relative;flex:none}',
+      '.l8-pbar i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--ip-blue)}',
+      '.l8-plus{margin-top:4px}',
+      '.l8-sst{margin:28px 0 8px;display:flex;align-items:baseline;justify-content:space-between;gap:12px}',
+      '.l8-sst h3{margin:0;font-size:17px;font-weight:800;letter-spacing:-.02em}',
+      '.l8-sst span{font-size:14px;font-weight:600;color:var(--muted)}',
+      '.l8-mois{display:grid;grid-template-columns:52px minmax(0,1fr) 84px 124px;align-items:center;gap:0 12px;min-height:40px;border-top:1px solid var(--line)}',
+      '.l8-mois:last-of-type{border-bottom:1px solid var(--line)}',
+      '.l8-me{font-size:14px;font-weight:700;color:var(--muted)}',
+      '.l8-mm,.l8-md{font-family:var(--mono);font-size:15px;font-weight:700;text-align:right;word-spacing:-.3em}',
+      '.l8-md{font-size:14px}',
+      '.l8-barre{position:relative;height:10px;border-radius:5px;background:var(--surf-sunken)}',
+      '.l8-barre i{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:var(--ip-blue)}',
+      '.l8-barre u{position:absolute;top:-4px;bottom:-4px;width:3px;border-radius:2px;background:#8591AC;text-decoration:none}',
+      '.l8-bouge{display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid var(--line)}',
+      '.l8-bouge:last-child{border-bottom:1px solid var(--line)}',
+      '.l8-f{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;flex:none}',
+      '.l8-f.h{background:var(--c-mint-txt)}.l8-f.b{background:var(--c-rose-txt)}',
+      '.l8-bn{flex:1;font-weight:700}',
+      '.l8-bv{font-family:var(--mono);font-weight:700;word-spacing:-.3em}',
+      '.l8-cat{border-top:1px solid var(--line)}',
+      '.l8-cat:last-of-type{border-bottom:1px solid var(--line)}',
+      '.l8-crow{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto 20px;align-items:center;gap:0 14px;min-height:56px;padding:6px 0;border:0;background:transparent;text-align:left;font:inherit;color:inherit;cursor:pointer}',
+      '.l8-crow:hover .l8-cn{color:var(--ip-blue)}',
+      '.l8-cn{font-size:16px;font-weight:700;letter-spacing:-.01em}',
+      '.l8-cinf{display:grid;grid-template-columns:96px 150px 108px;align-items:center;gap:0 14px}',
+      '.l8-cm{font-family:var(--mono);font-size:15px;font-weight:700;text-align:right;word-spacing:-.3em}',
+      '.l8-ce{font-family:var(--mono);font-size:14px;font-weight:700;text-align:right;word-spacing:-.3em}',
+      '.l8-cabs{font-size:14px;font-weight:700;color:var(--muted)}',
+      '.l8-cc{display:flex;justify-content:flex-end;color:#7C859B;transition:transform .25s var(--ease)}',
+      '.l8-crow[aria-expanded="true"] .l8-cc{transform:rotate(90deg);color:var(--ip-blue)}',
+      '.l8-dv{position:relative;height:10px;border-radius:5px;background:var(--surf-sunken)}',
+      '.l8-dv::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:#8591AC;border-radius:1px}',
+      '.l8-dv i{position:absolute;top:0;bottom:0;border-radius:5px}',
+      '.l8-dv i.moins{right:50%;background:var(--c-rose)}.l8-dv i.plus{left:50%;background:var(--c-mint)}',
+      '.l8-detail{padding:4px 0 24px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 40px}',
+      '.l8-detail[hidden]{display:none}',
+      '.l8-detail>div{min-width:0}',
+      '.l8-detail h4{margin:14px 0 6px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}',
+      '.l8-detail p{margin:0;font-size:14px;font-weight:600;line-height:1.4;color:var(--ip-ink-2)}.l8-detail p b{font-weight:800}',
+      '.l8-detail .large{grid-column:1/-1}',
+      '.l8-dp{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 12px;padding:8px 0;border-top:1px solid var(--line);font-size:14px;font-weight:700}',
+      '.l8-dp span{font-size:13px;color:var(--muted);font-weight:600;text-align:right}.l8-dp span .mono{color:var(--ip-ink);font-weight:800}',
+      '.l8-np{display:block;padding:8px 0;border-top:1px solid var(--line)}.l8-np b{display:block;font-size:14px;font-weight:800}.l8-np span{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-top:2px}',
+      '.l8-piste-p{height:10px;margin-top:6px;border-radius:999px;background:var(--surf-sunken);overflow:hidden}.l8-piste-p i{display:block;height:100%;background:var(--ip-blue);border-radius:999px}',
+      '.l8-pcompte{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px 24px;margin-bottom:8px}',
+      '.l8-pn{font-family:var(--mono);font-weight:800;font-size:clamp(52px,7vw,80px);letter-spacing:-.05em;line-height:1;word-spacing:-.3em;color:var(--ip-blue)}',
+      '.l8-pn small{font-family:var(--font);font-size:17px;font-weight:700;letter-spacing:0;color:var(--muted);margin-left:10px;word-spacing:normal}',
+      '.l8-pacts{display:flex;gap:8px;flex-wrap:wrap}',
+      '.l8-btn{display:inline-flex;align-items:center;gap:8px;min-height:var(--tap-min,44px);padding:0 16px;border-radius:var(--r-btn);border:1px solid var(--line-strong);background:var(--card);color:var(--ip-ink);font:inherit;font-size:14px;font-weight:700;cursor:pointer;box-shadow:var(--sh-1)}',
+      '.l8-btn:hover{border-color:var(--ip-blue)}',
+      '.l8-btn-pri{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff;box-shadow:var(--sh-blue)}',
+      '.l8-btn-pri:hover{background:var(--ip-blue-d)}',
+      '.l8-fl-l{margin:0}',
+      '.l8-fr{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:52px;padding:6px 0;border-top:1px solid var(--line)}',
+      'dl.l8-fl-l:last-of-type .l8-fr:last-child{border-bottom:1px solid var(--line)}',
+      '.l8-fr dt{font-size:14px;font-weight:600;color:var(--muted);flex:none}',
+      '.l8-fr dd{margin:0;font-size:16px;font-weight:700;text-align:right;min-width:0;overflow-wrap:anywhere}',
+      '.l8-fr dd a{color:var(--ip-blue);text-decoration:none;display:inline-flex;align-items:center;min-height:var(--tap-min,44px)}',
+      '.l8-fr dd.pha-empty{color:var(--muted);font-weight:500}',
+      '.l8-fr dd.pha-probable{font-style:italic}',
+      '.l8-fr dd.pha-cessee{color:var(--c-rose-txt)}.l8-fr dd.pha-retraite{color:#8A4B00}',
+      '.l8-fnote{margin:0;padding:8px 0;font-size:14px;font-weight:600;color:var(--muted);border-top:1px solid var(--line)}',
+      '.l8-fnote a{color:var(--ip-blue)}',
+      '.l8-fiche-plus{display:none}',
+      '#l8-v-fiche[data-plus="1"] .l8-fiche-plus{display:block}',
+      '.l8-forms{display:none}',
+      '#l8-v-fiche[data-edit="1"] .l8-forms{display:block}',
+      '#l8-v-fiche[data-edit="1"] .l8-lect{display:none}',
+      '.l8-notes .v2-notes-box,.l8-notes .v2-rp-box{background:transparent;border:0;box-shadow:none;border-radius:0;padding:0;margin:0 0 28px}',
+      '.l8-notes .v2-note{background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;padding:12px 0}',
+      '.l8-notes .v2-notes-list{max-height:none}',
+      '.l8-notes .v2-notes-hd{font-size:17px;font-weight:800;color:var(--ip-ink)}',
+      '.l8-rattr{margin:0}',
+      /* vue « À montrer au pharmacien » : les éléments internes disparaissent, une liste blanche reste */
+      '.pha-wrap[data-vue="pharmacien"] .l8-interne{display:none!important}',
       '.pha-wrap[data-vue="pharmacien"] .ph-fiche-line{display:none}',
-      '.pha-wrap[data-vue="pharmacien"] .l1b-vp-c{display:none}',
-      '.pha-wrap[data-vue="pharmacien"] .l1b-vp-p{display:inline}',
-      '.pha-wrap[data-vue="pharmacien"] .l1b-vpid{display:block;padding:16px 20px;border-radius:var(--r-card);background:var(--card);border:1px solid var(--line);box-shadow:var(--sh-1)}',
-      '.l1b-vpid h2{margin:0;font-size:24px;font-weight:800;letter-spacing:-.02em}.l1b-vpid p{margin:4px 0 0;font-size:14px;font-weight:600;color:var(--ip-ink-2)}',
-      'body.l1b-vp .v2-top{display:none}',
+      '.pha-wrap[data-vue="pharmacien"] .l8-vpbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px;font-size:14px;font-weight:700;color:var(--muted)}',
+      '.pha-wrap[data-vue="pharmacien"] .l8-vpid{display:block;margin-bottom:20px}',
+      '.l8-vpid p{margin:2px 0 0;font-size:15px;font-weight:600;color:var(--ip-ink-2)}',
+      'body.l8-vp .v2-top{display:none}',
       '@media(max-width:900px){',
-      '.pha-fiche-plus{display:none}',
-      '.pha[data-plus="1"] .pha-fiche-plus{display:flex;flex-direction:column;gap:12px;order:-2;min-width:0;align-self:stretch}',
-      '.l1b-toute{display:flex;order:-3;width:100%;justify-content:center;align-self:stretch}',
-      '.l1b-grand{font-size:40px}',
+      '.pha.l8{display:block;padding-top:0}',
+      '.pha.l8>.pha-rail,.pha.l8>.pha-main{display:flex;flex-direction:column;gap:16px;min-width:0}',
+      '.l8-rail{position:static}',
+      '.pha.l8[data-ecran="liste"]>.pha-main{display:none}',
+      '.pha.l8[data-ecran="rubrique"]>.pha-rail{display:none}',
+      '.l8-id{padding:20px 20px 16px}',
+      '.l8-nom{font-size:26px}',
+      '.l8-acts{margin-top:16px}',
+      '.l8-chiffre{display:block;width:100%;padding:4px;border:0;background:transparent;text-align:left;font:inherit;color:inherit;cursor:pointer}',
+      '.l8-chiffre .l8-n{display:block;font-size:56px}',
+      '.l8-chiffre .l8-u{display:block;margin-top:4px;font-size:15px}',
+      '.l8-main{min-height:0}',
+      '.l8-retourbar{display:flex;position:sticky;top:0;z-index:5;align-items:center;min-height:52px;margin:0 -14px 8px;padding:0 14px;background:#E6EAF2;border-bottom:1px solid var(--line)}',
+      '.l8-retourbar .l8-lien{font-size:17px}',
+      '.l8-tete{flex-direction:column;align-items:flex-start;margin-bottom:12px}',
+      '.l8-t{font-size:28px}',
+      '.l8-n{font-size:60px}',
+      '.l8-reps{grid-template-columns:1fr;gap:0;margin-top:12px}',
+      '.l8-rep{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:0 12px;padding:12px 0}',
+      '.l8-rv{margin:0;font-size:22px}',
+      '.l8-rv-mots{font-size:19px}',
+      '.l8-rt{margin:0;width:100%;text-align:right}',
+      '.l8-mois{grid-template-columns:44px minmax(0,1fr) 70px 78px;gap:0 8px}',
+      '.l8-crow{grid-template-columns:minmax(0,1fr) 20px;grid-template-areas:"n c" "x x";padding:10px 0;min-height:64px}',
+      '.l8-cn{grid-area:n}.l8-cc{grid-area:c}',
+      '.l8-cinf{grid-area:x;grid-template-columns:76px minmax(0,1fr) 96px;gap:0 10px;margin-top:6px}',
+      '.l8-cm{text-align:left}',
+      '.l8-detail{grid-template-columns:1fr}',
+      '.l8-fr{flex-wrap:wrap}',
+      '.l8-pacts{width:100%}.l8-pacts .l8-btn{flex:1;justify-content:center;padding:0 8px}',
       '}',
+      '#l8-tout-body[hidden]{display:none!important}',
+      '@media(prefers-reduced-motion:reduce){.l8-vue{animation:none}}',
       '.phf-prange{color:var(--muted);font-weight:600;font-size:14px}',
       '.phf-psub{font-size:12.5px;color:var(--muted);font-weight:500;margin-top:5px;max-width:560px;line-height:1.4}',
       '.phf-pright{display:flex;align-items:center;gap:12px}',
