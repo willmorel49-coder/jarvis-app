@@ -287,6 +287,13 @@ SOURCES = [
 EXCLUS = ['ADC', 'VM', 'AM', 'SEP', 'GL', 'AUL', 'SV', 'LP',
           'SOP', 'MSP', 'CPR', 'NR', 'REP', 'COMMERCIAL_INCONNU',
           'IMM']   # Ingrid Mazerm : retirée du CRM (Will, 25/09/2026)
+# Officines suivies par un commercial du CRM mais rangées, dans l'outil de gestion, sous un
+# code hors périmètre : leurs lignes — et elles seules — sont lues dans le fichier de ce code
+# et comptées pour le commercial. Un cas à la fois, sur demande de Will.
+# code officine -> (commercial, code hors périmètre)
+RATTACHEES = {
+    '2273308': ('Will', 'ADC'),   # Pharmacie Ropars (Brest) : ADC de janv. à août 2026, WML depuis sept. (Will, 09/10/2026)
+}
 # Escale écrit ses avoirs (PCVNUM « AC_… ») en POSITIF = montant rendu à l'officine,
 # là où les exports Intégral les écrivent déjà en négatif. Un avoir Escale est le
 # plus souvent une correction de prix : +24 × 127 € (recrédité) et −24 × 122,90 €
@@ -414,9 +421,16 @@ sales = []
 active = {}  # code -> nom (fallback)
 noms_repris = {}  # code -> nom du compte d'avant reprise, s'il est le seul à avoir vendu
 comms = {}   # code -> set des commerciaux
-for comm, prefix in SOURCES:
+# (commercial, préfixe, dossier, officines à garder — None = tout le fichier)
+LECTURES = [(comm, prefix, STATS, None) for comm, prefix in SOURCES]
+for _comm, _prefix in sorted(set(RATTACHEES.values())):
+    LECTURES.append((_comm, _prefix, os.path.join(STATS, 'hors-perimetre'),
+                     {k for k, v in RATTACHEES.items() if v == (_comm, _prefix)}))
+for comm, prefix, dossier, garder in LECTURES:
     for mois in MONTHS_NUM:
-        path = os.path.join(STATS, '%s_%02d_2026.xlsx' % (prefix, mois))
+        path = os.path.join(dossier, '%s_%02d_2026.xlsx' % (prefix, mois))
+        if garder is not None and not os.path.exists(path):   # pas encore rangé par le robot
+            path = os.path.join(STATS, os.path.basename(path))
         if not os.path.exists(path):
             print('  [skip] absent :', path)
             continue
@@ -441,6 +455,8 @@ for comm, prefix in SOURCES:
                 code = s(tir)
             code, ancien = code_officine(code)
             if not code:
+                continue
+            if garder is not None and code not in garder:
                 continue
             if ancien:
                 noms_repris.setdefault(code, s(c(r, 'TIRSOCIETE')))
