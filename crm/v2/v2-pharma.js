@@ -1908,10 +1908,8 @@
     categories: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>',
     neplus: '<path d="m22 17-8.5-8.5-5 5L2 7"/><path d="M16 17h6v-6"/>',
     meilleurs: '<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8-6.2-3.3-6.2 3.3L7 14.2 2 9.3l6.9-1z"/>',
-    fiche: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
-    notes: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/>',
     tout: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
-    chev: '<path d="m9 18 6-6-6-6"/>', retour: '<path d="m15 18-6-6 6-6"/>',
+    chev: '<path d="m9 18 6-6-6-6"/>',
     tel: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
     mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
     rdv: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
@@ -1923,7 +1921,7 @@
   };
   function l8Ic(k, s) { s = s || 20; return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + L8_IC[k] + '</svg>'; }
   // Les rubriques, dans l'ordre du menu. [clé, mot, interne ?]
-  var L8_RUB = [['resume', 'Résumé'], ['proposer', 'À proposer'], ['commandes', 'Commandes'], ['categories', 'Catégories'], ['neplus', 'Ne commande plus'], ['meilleurs', 'Meilleurs produits'], ['fiche', 'Fiche', 1], ['notes', 'Notes', 1], ['tout', 'Tout le détail', 1]];
+  var L8_RUB = [['resume', 'Résumé'], ['proposer', 'À proposer'], ['commandes', 'Commandes'], ['categories', 'Catégories'], ['neplus', 'Ne commande plus'], ['meilleurs', 'Meilleurs produits'], ['tout', 'Tout le détail', 1]];
   var L8_PROFIL = [['gros1', 'Grossiste n°1'], ['gros2', 'Grossiste n°2'], ['gros3', 'Grossiste n°3'], ['gros4', 'Grossiste n°4'], ['gen1', 'Génériqueur n°1'], ['gen2', 'Génériqueur n°2'], ['gen3', 'Génériqueur n°3'], ['biosim', 'Partenaire biosimilaires'], ['lgo', 'Logiciel (LGO)'], ['robot', 'Robot / automate'], ['tel_perso', 'Tél perso (titulaire)'], ['cle_crypto', 'Clé de cryptage'], ['autre', 'Autre info']];
 
   // Écart d'une valeur face à un repère (règle R7) : rapport ≥ 2 → « 6,3 fois plus » ; sinon « + 23 % » / « − 17 % ».
@@ -1957,9 +1955,16 @@
     return '<span class="l8-fl">Face à</span><div class="l8-seg" role="group" aria-label="Face à">' + b('reseau', 'Le réseau') + b('groupement', L1.A.grpName) + '</div>';
   }
 
+  // Haut de la page « Stats » : le « Face à » et son « ? », écrits UNE fois pour toutes les rubriques
+  function l8TeteStats() {
+    return '<div class="l8-st-tete"><div class="l8-tete-d">' + l8Face() +
+      '<button type="button" class="l8-aide" aria-label="Qu’est-ce que c’est ?" aria-expanded="false" onclick="V2.pharmaL.aide(this)"><span aria-hidden="true">?</span></button></div>' +
+      '<p class="l8-aide-txt" hidden>' + esc(l8AideBase()) + '</p></div>';
+  }
+
   // ── Résumé : un grand chiffre, la courbe, trois repères sans cadre
   function l8Resume() {
-    var A = L1.A, R = l1Ref(L1.b), last = A.last, prev = A.prev, h = l8Tete('Résumé', l8Face(), l8AideBase());
+    var A = L1.A, R = l1Ref(L1.b), last = A.last, prev = A.prev, h = l8Tete('Résumé');
     if (A.nAct === 0) return h + l8Vide('Aucune commande enregistrée pour cette officine.');
     var e = l8Ecart(A.caMoy, R.moy);
     h += '<div class="l8-grand"><span class="l8-n">' + l1Nb(A.caMoy) + '<small>' + NB + '€</small></span><span class="l8-u">par mois</span>' +
@@ -2015,7 +2020,7 @@
 
   // ── Commandes : mois par mois, ce qui bouge, répartition
   function l8Commandes() {
-    var A = L1.A, R = l1Ref(L1.b), h = l8Tete('Commandes', l8Face(), l8AideBase());
+    var A = L1.A, R = l1Ref(L1.b), h = l8Tete('Commandes');
     if (A.nAct === 0) return h + l8Vide('Aucune commande enregistrée pour cette officine.');
     var mois = A.pts.slice(A.i0), ref = R.serie.slice(A.i0).map(function (v) { return v == null ? 0 : v; });
     var max = Math.max.apply(null, mois.map(function (p) { return p.ca; }).concat(ref)) || 1;
@@ -2055,7 +2060,7 @@
 
   // ── Catégories : une ligne par catégorie (montant par mois, barre, écart) ; le détail se déplie sur place
   function l8Categories() {
-    var A = L1.A, R = l1Ref(L1.b), pres = [], abs = [], h = l8Tete('Catégories', l8Face(), l8AideBase());
+    var A = L1.A, R = l1Ref(L1.b), pres = [], abs = [], h = l8Tete('Catégories');
     A.cats.forEach(function (c) {
       var ref = R.catMoy(c);
       if (c.ca > 0) pres.push({ c: c, ref: ref, e: l8Ecart(c.moy, ref) });
@@ -2224,21 +2229,26 @@
     return '';
   }
 
-  // La rubrique Fiche, en lecture : toutes les lignes d'emblée (les 6 clés d'abord). Les formulaires existants (« Infos officine ») n'apparaissent qu'avec « Modifier ».
-  function l8FicheHtml(c) {
-    var cles = ['Titulaire', 'Téléphone', 'E-mail', 'Adresse', 'Groupement d’achat', 'Prochaine relance'], cle = [], reste = [];
+  // L'onglet « Infos », en lecture : à gauche les coordonnées puis les notes, à droite le marché et le reste. Chaque ligne de la fiche paraît une fois.
+  // Les formulaires existants (« Infos officine ») n'apparaissent qu'avec « Modifier ».
+  function l8InfosHtml(c) {
+    var coord = ['Titulaire', 'Téléphone', 'E-mail', 'Adresse', 'Commercial', 'Prochaine relance'], g = [], marche = [], ga = null;
     // Une note sans libellé (la description du groupement d'achat) reste sous la ligne qu'elle complète.
     var dern = null;
     c.rows.forEach(function (r) {
       if (!r.l && dern) { dern.n.push(r); return; }
-      dern = { r: r, n: [] }; (cles.indexOf(r.l) >= 0 ? cle : reste).push(dern);
+      dern = { r: r, n: [] };
+      if (coord.indexOf(r.l) >= 0) g.push(dern); else if (r.l === 'Groupement d’achat' && !ga) ga = dern; else marche.push(dern);
     });
-    cle.sort(function (a, b) { return cles.indexOf(a.r.l) - cles.indexOf(b.r.l); });
+    g.sort(function (a, b) { return coord.indexOf(a.r.l) - coord.indexOf(b.r.l); });
+    if (ga) marche.unshift(ga);
     var note = function (r) { return '<p class="l8-fnote">' + r.v + '</p>'; };
     var ligne = function (x) { var r = x.r; return (r.l ? '<div class="l8-fr"><dt>' + r.l + '</dt><dd' + (r.c ? ' class="' + r.c + '"' : '') + '>' + r.v + '</dd></div>' : note(r)) + x.n.map(note).join(''); };
-    var h = l8Tete('Fiche', '<button type="button" class="l8-btn l8-interne" id="l8-modif" onclick="V2.pharmaL.modifier()">' + (L1.edit ? 'Terminer' : 'Modifier') + '</button>');
-    h += '<div class="l8-lect"><dl class="l8-fl-l">' + cle.concat(reste).map(ligne).join('') + '</dl></div>';
+    var h = l8Tete('Infos', '<button type="button" class="l8-btn l8-interne" id="l8-modif" onclick="V2.pharmaL.modifier()">' + (L1.edit ? 'Terminer' : 'Modifier') + '</button>');
     h += '<div class="l8-forms">' + c.infos + '</div>';
+    h += '<div class="l8-icols"><div class="l8-icol"><div class="l8-lect"><h3 class="l8-gt">Coordonnées</h3><dl class="l8-fl-l" data-n="' + g.length + '">' + g.map(ligne).join('') + '</dl></div>' +
+      '<h3 class="l8-gt l8-gt-suite" id="l8-notes-t">Notes de l’équipe</h3>' + c.notes + '</div>' +
+      '<div class="l8-icol l8-lect"><h3 class="l8-gt">Marché et autres</h3><dl class="l8-fl-l" data-n="' + marche.length + '">' + marche.map(ligne).join('') + '</dl></div></div>';
     return h;
   }
 
@@ -2255,31 +2265,32 @@
       var k = m[0];
       return '<button type="button" class="l8-row' + (m[2] ? ' l8-interne' : '') + '" data-r="' + k + '"' + (k === L1.rub ? ' aria-current="page"' : '') + ' onclick="V2.pharmaL.go(\'' + k + '\')"><span class="l8-tuile">' + l8Ic(k, 18) + '</span><span class="l8-mot">' + m[1] + '</span><span class="l8-cpt" id="l8-cpt-' + k + '">' + l8Compte(k) + '</span><span class="l8-chev">' + l8Ic('chev', 18) + '</span></button>';
     }).join('');
-    var panneaux = L8_RUB.map(function (m) {
+    // Les sept rubriques à la suite : les six de chiffres se construisent dans l8Afficher ; « Tout le détail » est repliée
+    var rubs = L8_RUB.map(function (m) {
       var k = m[0], inner = '';
-      if (k === 'fiche') inner = l8FicheHtml(c); else if (k === 'notes') inner = c.notes; else if (k === 'tout') inner = c.tout;
-      return '<section class="l8-vue" id="l8-v-' + k + '" data-k="' + k + '" aria-label="' + m[1] + '"' + (k === 'fiche' ? ' data-edit="' + (L1.edit ? '1' : '0') + '"' : '') + (k === L1.rub ? '' : ' hidden') + '>' + inner + '</section>';
+      if (k === 'tout') inner = '<button type="button" class="l8-lg-b" id="l8-tout-btn" aria-expanded="false" onclick="V2.pharmaL.detail()"><span class="l8-ln">Tout le détail<small>Brief du jour, détail produit par produit, CA par génériqueur</small></span><span class="l8-cc">' + l8Ic('chev', 18) + '</span></button><div id="l8-tout-corps" hidden>' + c.tout + '</div>';
+      return '<section class="l8-rub' + (m[2] ? ' l8-interne' : '') + '" id="l8-v-' + k + '" data-k="' + k + '" aria-label="' + m[1] + '">' + inner + '</section>';
     }).join('');
-    var A = L1.A;
-    return '<div class="pha l8" data-ecran="' + L1.ecran + '" data-rub="' + L1.rub + '">' +
+    var ong = function (k, mot) { var on = L1.ong === k; return '<button type="button" class="l8-ong" role="tab" id="l8-t-' + k + '" aria-controls="l8-p-' + k + '" data-ong="' + k + '" aria-selected="' + on + '" tabindex="' + (on ? '0' : '-1') + '" onclick="V2.pharmaL.onglet(\'' + k + '\')">' + mot + '</button>'; };
+    return '<div class="pha l8" data-ong="' + L1.ong + '">' +
       '<div class="pha-rail l8-rail">' +
         '<header class="l8-id"><h1 class="l8-nom">' + c.nom + '</h1><p class="l8-sous">' + esc(c.sous) + '</p>' + (acts ? '<div class="l8-acts l8-interne">' + acts + '</div>' : '') + '<div class="l8-acts l8-acts-2 l8-interne">' + acts2 + '</div></header>' +
-        (A.nAct ? '<button type="button" class="l8-chiffre" onclick="V2.pharmaL.go(\'resume\')"><span class="l8-n">' + l1Nb(A.caMoy) + '<small>' + NB + '€</small></span><span class="l8-u">par mois</span></button>' : '') +
+        '<div class="l8-ongs l8-interne" role="tablist" aria-label="Stats ou infos de l’officine" onkeydown="V2.pharmaL.touche(event)">' + ong('stats', 'Stats') + ong('infos', 'Infos') + '</div>' +
         '<nav class="l8-menu" aria-label="Rubriques">' + menu + '</nav>' +
         '<div class="l8-pied"><button type="button" class="l8-lien gris l8-interne" onclick="V2.pharmaL.vue()">' + l8Ic('oeil', 18) + '<span>À montrer au pharmacien</span></button>' +
 '</div>' +
       '</div>' +
       '<div class="pha-main l8-main">' +
-        '<div class="l8-retourbar"><button type="button" class="l8-lien" onclick="V2.pharmaL.retour()">' + l8Ic('retour', 20) + '<span>Retour</span></button></div>' +
         '<div class="l8-vpbar"><span>Vue à montrer au pharmacien</span><button type="button" class="l8-lien" onclick="V2.pharmaL.vue()">Revenir à ma vue</button></div>' +
         '<div class="l8-vpid">' + c.vpid + '</div>' +
-        panneaux +
+        '<div class="l8-pan" id="l8-p-stats" role="tabpanel" aria-labelledby="l8-t-stats"' + (L1.ong === 'stats' ? '' : ' hidden') + '><div id="l8-stat-tete">' + l8TeteStats() + '</div>' + rubs + '</div>' +
+        '<div class="l8-pan l8-interne" id="l8-p-infos" role="tabpanel" aria-labelledby="l8-t-infos" data-edit="' + (L1.edit ? '1' : '0') + '"' + (L1.ong === 'infos' ? '' : ' hidden') + '>' + l8InfosHtml(c) + '</div>' +
       '</div></div>';
   }
 
   // État de la fiche : remis à zéro quand on change d'officine (la vue pharmacien n'est PAS retenue)
   function l8Init(pid, A, o) {
-    if (String(L1.pid) !== String(pid)) { L1.b = 'reseau'; L1.ouv = {}; L1.vue = 'commercial'; L1.rub = 'resume'; L1.ecran = 'liste'; L1.tous = { neplus: false, meilleurs: false }; L1.edit = false; }
+    if (String(L1.pid) !== String(pid)) { L1.b = 'reseau'; L1.ouv = {}; L1.vue = 'commercial'; L1.rub = 'resume'; L1.ong = 'stats'; L1.tous = { neplus: false, meilleurs: false }; L1.edit = false; }
     L1.pid = String(pid); L1.A = A; L1.marge = o.marge; L1.dataR = o.dataR; L1.dataG = o.dataG; L1.nR = o.nR; L1.nG = o.nG; L1.hasGrp = o.hasGrp;
     L1.G = l1Groupe(pid, A);
     if (!L1.G) L1.b = 'reseau';
@@ -2287,18 +2298,20 @@
     L1.k = (L1.k || 0) + 1;       // un rendu complet invalide les rubriques construites à la demande
   }
 
-  // Montre la rubrique courante (et construit son contenu si besoin), sans jamais refaire la fiche
+  // Construit (ou reconstruit, après un changement de « Face à ») les six rubriques de chiffres, l'une sous l'autre, sans jamais refaire la fiche
   function l8Afficher() {
     var p = document.querySelector('.pha.l8'); if (!p) return;
-    p.setAttribute('data-ecran', L1.ecran); p.setAttribute('data-rub', L1.rub);
-    Array.prototype.forEach.call(p.querySelectorAll('.l8-vue'), function (el) { el.hidden = el.getAttribute('data-k') !== L1.rub; });
-    Array.prototype.forEach.call(p.querySelectorAll('.l8-row'), function (b) { if (b.getAttribute('data-r') === L1.rub) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
-    var el = document.getElementById('l8-v-' + L1.rub), f = L8_F[L1.rub];
-    if (el && f && el.getAttribute('data-ok') !== String(L1.k)) { el.innerHTML = f(); el.setAttribute('data-ok', String(L1.k)); }
-    l8Peindre();
+    p.setAttribute('data-ong', L1.ong);
+    var tt = document.getElementById('l8-stat-tete'); if (tt && tt.getAttribute('data-ok') !== String(L1.k)) { tt.innerHTML = l8TeteStats(); tt.setAttribute('data-ok', String(L1.k)); }
+    Object.keys(L8_F).forEach(function (k) {
+      var el = document.getElementById('l8-v-' + k);
+      if (el && el.getAttribute('data-ok') !== String(L1.k)) { el.innerHTML = L8_F[k](); el.setAttribute('data-ok', String(L1.k)); }
+    });
+    l8Peindre(); l8Sommaire();
   }
   // Ce qui dépend de la largeur réelle (courbe, barres des mois d'une catégorie ouverte)
   function l8Peindre() {
+    if (L1.ong !== 'stats') return;
     var g = document.getElementById('l8-graph');
     if (g && L1.A && !g.closest('[hidden]')) g.innerHTML = l1Courbe(Math.max(260, Math.round(g.clientWidth || 320)));
     Object.keys(L1.ouv).forEach(function (k) { if (L1.ouv[k]) l8Detail(k); });
@@ -2308,21 +2321,29 @@
     var w = d.clientWidth || 600;
     d.innerHTML = l8DetailHtml(key, Math.max(240, Math.round(window.innerWidth > 900 ? (w - 40) / 2 : w)));
   }
+  // Sommaire : la ligne de la rubrique à l'écran est marquée (la dernière rubrique dont le haut est passé sous la ligne des 140 px)
+  function l8Sommaire() {
+    var p = document.querySelector('.pha.l8'); if (!p || L1.ong !== 'stats') return;
+    var cur = L8_RUB[0][0];
+    if (L1.verrou) cur = L1.verrou;
+    else {
+      L8_RUB.forEach(function (m) { var s = document.getElementById('l8-v-' + m[0]); if (s && s.getBoundingClientRect().top <= 140) cur = m[0]; });
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) cur = L8_RUB[L8_RUB.length - 1][0];
+    }
+    L1.rub = cur;
+    Array.prototype.forEach.call(p.querySelectorAll('.l8-row'), function (b) { if (b.getAttribute('data-r') === cur) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+  }
+  if (!window.__l8Scroll) {
+    window.__l8Scroll = true;
+    var _l8Att = false;
+    window.addEventListener('scroll', function () { if (_l8Att) return; _l8Att = true; requestAnimationFrame(function () { _l8Att = false; if (document.querySelector('.pha.l8')) l8Sommaire(); }); }, { passive: true });
+    ['wheel', 'touchstart', 'keydown'].forEach(function (n) { window.addEventListener(n, function () { L1.verrou = null; }, { passive: true }); });
+  }
   var _l8T = null;
   if (!window.__l8Resize) {
     window.__l8Resize = true;
     window.addEventListener('resize', function () { clearTimeout(_l8T); _l8T = setTimeout(function () { if (document.querySelector('.pha.l8')) l8Peindre(); }, 120); });
   }
-  // « Notes (n) » : le compte se lit sur les notes réellement affichées (elles arrivent après coup)
-  var _l8Obs = null;
-  function l8SuivreNotes() {
-    var p = document.getElementById('l8-v-notes'), c = document.getElementById('l8-cpt-notes'); if (!p || !c || !window.MutationObserver) return;
-    if (_l8Obs) _l8Obs.disconnect();
-    var maj = function () { var n = p.querySelectorAll('.v2-note').length; c.textContent = n ? String(n) : ''; };
-    _l8Obs = new MutationObserver(maj); _l8Obs.observe(p, { childList: true, subtree: true }); maj();
-  }
-
-
   // « Tous les chiffres en détail » : les blocs d'avant, contenu inchangé, repliés
   function l1ToutHtml(pid, A) {
     return analyseTranches(A) + analyseParts(A) + analyseTop5(A) + analyseNePlus(pid);
@@ -2345,17 +2366,42 @@
   }
 
   V2.pharmaL = {
-    // Changer de rubrique : on montre l'autre zone, jamais V2.render
+    // Porte d'entrée : une rubrique de chiffres = onglet « Stats » et défilement jusqu'à elle ; « fiche » et « notes » = onglet « Infos » (« notes » défile jusqu'aux notes). Jamais V2.render.
     go: function (r) {
-      if (!document.getElementById('l8-v-' + r)) return;
-      if (L1.vue === 'pharmacien' && (r === 'fiche' || r === 'notes' || r === 'tout')) return;
-      L1.rub = r; L1.ecran = 'rubrique'; l8Afficher();
-      if (window.innerWidth <= 900) { try { window.scrollTo(0, 0); } catch (e) {} }
+      var infos = (r === 'fiche' || r === 'notes');
+      if (infos && L1.vue === 'pharmacien') return;
+      if (!infos && !document.getElementById('l8-v-' + r)) return;
+      if (r === 'tout' && L1.vue === 'pharmacien') return;
+      V2.pharmaL.onglet(infos ? 'infos' : 'stats', true);
+      var el = document.getElementById(infos ? (r === 'notes' ? 'l8-notes-t' : 'l8-p-infos') : 'l8-v-' + r); if (!el) return;
+      if (!infos) { L1.rub = r; L1.verrou = r; clearTimeout(L1.tv); L1.tv = setTimeout(function () { L1.verrou = null; l8Sommaire(); }, 1500); l8Sommaire(); }
+      var calme = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      try { el.scrollIntoView({ behavior: calme ? 'auto' : 'smooth', block: 'start' }); } catch (e) { el.scrollIntoView(true); }
     },
-    retour: function () { L1.ecran = 'liste'; l8Afficher(); try { window.scrollTo(0, 0); } catch (e) {} },
+    // Les deux onglets : on montre une zone, on cache l'autre
+    onglet: function (o, garder) {
+      if (o !== 'infos') o = 'stats';
+      if (o === 'infos' && L1.vue === 'pharmacien') return;
+      var change = L1.ong !== o; L1.ong = o;
+      var p = document.querySelector('.pha.l8'); if (!p) return;
+      p.setAttribute('data-ong', o);
+      ['stats', 'infos'].forEach(function (k) {
+        var b = document.getElementById('l8-t-' + k), z = document.getElementById('l8-p-' + k), on = k === o;
+        if (b) { b.setAttribute('aria-selected', on ? 'true' : 'false'); b.tabIndex = on ? 0 : -1; }
+        if (z) z.hidden = !on;
+      });
+      if (change) { l8Peindre(); if (!garder) { try { window.scrollTo(0, 0); } catch (e) {} } l8Sommaire(); }
+    },
+    // Flèches gauche / droite entre les deux onglets
+    touche: function (e) {
+      var k = e.key; if (k !== 'ArrowLeft' && k !== 'ArrowRight' && k !== 'Home' && k !== 'End') return;
+      e.preventDefault();
+      var o = (k === 'ArrowLeft' || k === 'Home') ? 'stats' : 'infos';
+      V2.pharmaL.onglet(o); var b = document.getElementById('l8-t-' + o); if (b) b.focus();
+    },
     base: function (k) { if (k === 'groupement' && !L1.G) k = 'reseau'; L1.b = k; L1.k++; l8Afficher(); },
     aide: function (btn) {
-      var v = btn.closest ? btn.closest('.l8-vue') : null, t = v && v.querySelector('.l8-aide-txt'); if (!t) return;
+      var v = btn.closest ? btn.closest('.l8-tete,.l8-st-tete') : null, t = v && v.nextElementSibling; if (!t || !t.classList.contains('l8-aide-txt')) t = v && v.querySelector('.l8-aide-txt'); if (!t) return;
       t.hidden = !t.hidden; btn.setAttribute('aria-expanded', t.hidden ? 'false' : 'true');
     },
     cat: function (key) {
@@ -2368,7 +2414,7 @@
     plus: function (w) { L1.tous[w] = !L1.tous[w]; L1.k++; l8Afficher(); },
     // « Modifier » : les formulaires existants remplacent la lecture ; « Terminer » les referme.
     modifier: function () {
-      var p = document.getElementById('l8-v-fiche'); if (!p) return;
+      var p = document.getElementById('l8-p-infos'); if (!p) return;
       L1.edit = !L1.edit; p.setAttribute('data-edit', L1.edit ? '1' : '0');
       var b = document.getElementById('l8-modif'); if (b) b.textContent = L1.edit ? 'Terminer' : 'Modifier';
       if (L1.edit) return;
@@ -2381,6 +2427,12 @@
       });
       var neuf = Object.assign({}, _coordSaisie[pid] || {}, vals);
       if (JSON.stringify(neuf) !== avant) { _coordSaisie[pid] = neuf; V2.render(); }
+    },
+    // « Tout le détail » : la dernière rubrique, repliée ; à l'ouverture elle ouvre aussi le tableau interne
+    detail: function () {
+      var b = document.getElementById('l8-tout-btn'), c = document.getElementById('l8-tout-corps'); if (!b || !c) return;
+      var ouv = c.hidden; c.hidden = !ouv; b.setAttribute('aria-expanded', ouv ? 'true' : 'false');
+      if (ouv) V2.pharmaL.tout(true);
     },
     tout: function (ouvrir) {
       var b = document.getElementById('l8-tout-body'); if (!b) return;
@@ -2395,8 +2447,8 @@
       L1.vue = v || (L1.vue === 'pharmacien' ? 'commercial' : 'pharmacien');
       var w = document.querySelector('.pha-wrap'); if (w) w.setAttribute('data-vue', L1.vue);
       document.body.classList.toggle('l8-vp', L1.vue === 'pharmacien');
-      if (L1.vue === 'pharmacien' && (L1.rub === 'fiche' || L1.rub === 'notes' || L1.rub === 'tout')) L1.rub = 'resume';
-      l8Afficher();
+      if (L1.vue === 'pharmacien') V2.pharmaL.onglet('stats', true);   // « Infos » est interne
+      l8Afficher(); l8Sommaire();
     }
   };
   // Quand on quitte la fiche, la vue pharmacien ne reste pas collée au reste de l'application.
@@ -2747,8 +2799,8 @@
       fRows = avant.concat(fRows, apres);
       var ctx = {
         pidSafe: pidSafe, nom: esc(nameOf(pid, pharma.name)), sous: [pharma.ville || (infoRdv && infoRdv.ville) || (caBase && caBase[13]) || '', (pharma.groupement && pharma.groupement !== '—') ? canonG(pharma.groupement) : ''].filter(function (x) { return x; }).join(' · '),
-        tel: tel, mail: mail, lgo: btnLgo, rows: fRows, infos: infos, notes: l8Tete('Notes', rel ? '<span class="l8-dr">Relance le ' + rel + '</span>' : '') + '<div class="l8-notes">' + notes + '</div>',
-        tout: l8Tete('Tout le détail') + l1ToutSection(pid, A) + potentielHtml + briefOff + listing + generiqueurSec,
+        tel: tel, mail: mail, lgo: btnLgo, rows: fRows, infos: infos, notes: '<div class="l8-notes">' + notes + '</div>',
+        tout: l1ToutSection(pid, A) + potentielHtml + briefOff + listing + generiqueurSec,
         vpid: '<p>' + esc([adresse, loc].filter(function (x) { return x; }).join(', ')) + '</p><p>Titulaire : ' + esc(titulaire || dirigeantsDe(oi) || '—') + '</p>' +
           '<p>Groupement d’achat : ' + esc((pharma.groupement && pharma.groupement !== '—') ? canonG(pharma.groupement) : '—') + '</p>'
       };
@@ -2772,7 +2824,7 @@
         '<div id="phft-c-apercu">' + apercu + '</div>' +
       '</div>';
     document.body.classList.toggle('l8-vp', vue === 'pharmacien');
-    if (voitVentes) { l8Afficher(); l8SuivreNotes(); }
+    if (voitVentes) l8Afficher();
     if (V2.profil) V2.profil.hydrate();
     if (V2.notes) V2.notes.hydrate();
     if (V2.rdvPrepa) V2.rdvPrepa.hydrate();
@@ -5611,8 +5663,9 @@
       '  .pha-desk{display:none}.pha-mob{display:block}.pha-kpis{grid-template-columns:1fr 1fr}.pha-kval{font-size:20px}.pha-lists{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.pha-lists .pha-kl{width:100%}.pha-lists .pha-btn-w{width:auto;margin-top:0;flex:1 1 auto}}',
       /* ══ Fiche « menu » (maquette 8, 09/10/2026) — préfixe l8- ══ */
       '.pha.l8{grid-template-columns:340px minmax(0,1fr);gap:56px;padding-top:4px}',
-      '.l8-rail{position:sticky;top:24px;gap:20px;align-self:start}',
-      '.l8-main{max-width:820px;min-height:560px}',
+      '.l8-rail{position:sticky;top:16px;gap:12px;align-self:start}',
+      '.l8-main{max-width:980px;min-height:560px}',
+      '.pha.l8[data-ong="infos"] .l8-main{max-width:1040px}',
       '.l8-id{position:relative;border-radius:24px;padding:24px 24px 20px;color:#fff;background:radial-gradient(110% 80% at 10% -6%,#2A6AF0 0%,rgba(42,106,240,0) 62%),radial-gradient(90% 70% at 105% 108%,#002A86 0%,rgba(0,42,134,0) 66%),#0050E6;box-shadow:var(--sh-blue)}',
       '.l8-nom{margin:0;font-size:28px;font-weight:800;letter-spacing:-.025em;line-height:1.1;color:#fff;overflow-wrap:anywhere}',
       '.l8-sous{margin:6px 0 0;font-size:15px;font-weight:600;color:#fff}',
@@ -5624,9 +5677,27 @@
       '.l8-act:hover .l8-rond{transform:translateY(-2px);background:#2A66E8}',
       '.l8-act:active .l8-rond{transform:scale(.94)}',
       '.l8-acts:not(.l8-acts-2) .l8-act:first-child .l8-rond{background:#fff;color:var(--ip-blue);box-shadow:0 4px 12px rgba(0,30,110,.35)}',
-      '.l8-chiffre{display:none}',
-      '.l8-menu{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2);padding:6px;display:flex;flex-direction:column}',
-      '.l8-row{position:relative;display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:0 10px;border:0;background:transparent;border-radius:12px;color:var(--ip-ink);font:inherit;font-size:16px;font-weight:700;letter-spacing:-.01em;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .2s var(--ease)}',
+      '.l8-ongs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:var(--surf-sunken);border:1px solid var(--line);border-radius:14px}',
+      '.l8-ong{min-height:var(--tap-min,44px);padding:0 12px;border:0;border-radius:10px;background:transparent;color:var(--ip-ink-2);font:inherit;font-size:16px;font-weight:800;letter-spacing:-.01em;cursor:pointer;-webkit-tap-highlight-color:transparent}',
+      '.l8-ong:hover{color:var(--ip-ink)}',
+      '.l8-ong[aria-selected="true"]{background:var(--ip-blue);color:#fff;box-shadow:0 2px 8px rgba(0,60,180,.28)}',
+      '.l8-ong:focus-visible{outline:3px solid color-mix(in srgb,var(--ip-blue) 40%,transparent);outline-offset:2px}',
+      '.pha.l8[data-ong="infos"] .l8-menu{display:none}',
+      '.l8-pan[hidden]{display:none}',
+      '.l8-st-tete{margin-bottom:28px}.l8-st-tete .l8-tete-d{justify-content:flex-start}.l8-st-tete .l8-aide-txt{margin:4px 0 0}',
+      '.l8-rub{scroll-margin-top:24px}',
+      '.l8-rub+.l8-rub{margin-top:52px;padding-top:40px;border-top:1px solid var(--line-strong)}',
+      '.l8-lg-b{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:6px 0;border:0;background:transparent;font:inherit;color:inherit;text-align:left;cursor:pointer}',
+      '.l8-lg-b:hover .l8-ln{color:var(--ip-blue)}',
+      '.l8-lg-b .l8-cc{display:flex;color:#7C859B;transition:transform .25s var(--ease)}',
+      '.l8-lg-b[aria-expanded="true"] .l8-cc{transform:rotate(90deg);color:var(--ip-blue)}',
+      '#l8-tout-corps[hidden]{display:none}',
+      '.l8-icols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 56px;align-items:start}',
+      '.l8-icol{min-width:0}',
+      '.l8-gt{margin:0 0 4px;font-size:17px;font-weight:800;letter-spacing:-.02em}',
+      '.l8-gt-suite{margin-top:40px;margin-bottom:12px}',
+      '.l8-menu{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2);padding:4px;display:flex;flex-direction:column}',
+      '.l8-row{position:relative;display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:0 10px;border:0;background:transparent;border-radius:12px;color:var(--ip-ink);font:inherit;font-size:16px;font-weight:700;letter-spacing:-.01em;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .2s var(--ease)}',
       '.l8-row+.l8-row::before{content:"";position:absolute;left:54px;right:10px;top:0;height:1px;background:var(--line)}',
       '.l8-row:hover{background:var(--surf-sunken)}',
       '.l8-tuile{width:32px;height:32px;flex:none;border-radius:9px;display:grid;place-items:center;background:var(--halo);color:var(--ip-blue);transition:background .2s var(--ease),color .2s var(--ease),transform .25s var(--ease)}',
@@ -5639,10 +5710,7 @@
       '.l8-lien{display:inline-flex;align-items:center;gap:8px;min-height:var(--tap-min,44px);padding:0;border:0;background:transparent;color:var(--ip-blue);font:inherit;font-size:14px;font-weight:800;cursor:pointer;letter-spacing:-.01em}',
       '.l8-lien:hover{color:var(--ip-blue-d)}',
       '.l8-lien.gris{color:var(--ip-ink-2)}',
-      '.l8-retourbar,.l8-vpbar,.l8-vpid{display:none}',
-      '.l8-vue[hidden]{display:none}',
-      '.l8-vue{animation:l8Entre .38s var(--ease)}',
-      '@keyframes l8Entre{from{transform:translateY(10px)}to{transform:none}}',
+      '.l8-vpbar,.l8-vpid{display:none}',
       '.l8-tete{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 16px;margin-bottom:20px;min-height:48px}',
       '.l8-t{margin:0;font-size:22px;font-weight:800;letter-spacing:-.025em;line-height:1.15}',
       '.l8-tete-d{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}',
@@ -5749,7 +5817,6 @@
       '.l8-btn-pri{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff;box-shadow:var(--sh-blue)}',
       '.l8-btn-pri:hover{background:var(--ip-blue-d)}',
       '.l8-fl-l{margin:0}',
-      '@media(min-width:1100px){.l8-fl-l{column-count:2;column-gap:40px}.l8-fl-l>*{break-inside:avoid}}',
       '.l8-fr{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:52px;padding:6px 0;border-top:1px solid var(--line)}',
       'dl.l8-fl-l:last-of-type .l8-fr:last-child{border-bottom:1px solid var(--line)}',
       '.l8-fr dt{font-size:14px;font-weight:600;color:var(--muted);flex:none}',
@@ -5761,8 +5828,8 @@
       '.l8-fnote{margin:0;padding:8px 0;font-size:14px;font-weight:600;color:var(--muted);border-top:1px solid var(--line)}',
       '.l8-fnote a{color:var(--ip-blue)}',
       '.l8-forms{display:none}',
-      '#l8-v-fiche[data-edit="1"] .l8-forms{display:block}',
-      '#l8-v-fiche[data-edit="1"] .l8-lect{display:none}',
+      '#l8-p-infos[data-edit="1"] .l8-forms{display:block;margin-bottom:28px}',
+      '#l8-p-infos[data-edit="1"] .l8-lect{display:none}',
       '.l8-notes .v2-notes-box,.l8-notes .v2-rp-box{background:transparent;border:0;box-shadow:none;border-radius:0;padding:0;margin:0 0 28px}',
       '.l8-notes .v2-note{background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;padding:12px 0}',
       '.l8-notes .v2-notes-list{max-height:none}',
@@ -5779,17 +5846,13 @@
       '.pha.l8{display:block;padding-top:0}',
       '.pha.l8>.pha-rail,.pha.l8>.pha-main{display:flex;flex-direction:column;gap:16px;min-width:0}',
       '.l8-rail{position:static}',
-      '.pha.l8[data-ecran="liste"]>.pha-main{display:none}',
-      '.pha.l8[data-ecran="rubrique"]>.pha-rail{display:none}',
+      '.pha.l8 .l8-menu{display:none}',
+      '.l8-icols{display:block}.l8-icol+.l8-icol{margin-top:40px}',
+      '.l8-rub+.l8-rub{margin-top:36px;padding-top:28px}',
       '.l8-id{padding:20px 20px 16px}',
       '.l8-nom{font-size:26px}',
       '.l8-acts{margin-top:16px}.l8-acts-2{margin-top:12px}',
-      '.l8-chiffre{display:block;width:100%;padding:4px;border:0;background:transparent;text-align:left;font:inherit;color:inherit;cursor:pointer}',
-      '.l8-chiffre .l8-n{display:block;font-size:56px}',
-      '.l8-chiffre .l8-u{display:block;margin-top:4px;font-size:15px}',
       '.l8-main{min-height:0}',
-      '.l8-retourbar{display:flex;position:sticky;top:0;z-index:5;align-items:center;min-height:52px;margin:0 -14px 8px;padding:0 14px;background:#E6EAF2;border-bottom:1px solid var(--line)}',
-      '.l8-retourbar .l8-lien{font-size:17px}',
       '.l8-tete{flex-direction:column;align-items:flex-start;margin-bottom:12px}',
       '.l8-t{font-size:28px}',
       '.l8-n{font-size:60px}',
@@ -5809,7 +5872,6 @@
       '.l8-pacts{width:100%}.l8-pacts .l8-btn{flex:1;justify-content:center;padding:0 8px}',
       '}',
       '#l8-tout-body[hidden]{display:none!important}',
-      '@media(prefers-reduced-motion:reduce){.l8-vue{animation:none}}',
       '.phf-prange{color:var(--muted);font-weight:600;font-size:14px}',
       '.phf-psub{font-size:12.5px;color:var(--muted);font-weight:500;margin-top:5px;max-width:560px;line-height:1.4}',
       '.phf-pright{display:flex;align-items:center;gap:12px}',
