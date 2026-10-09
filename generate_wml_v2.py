@@ -293,11 +293,8 @@ EXCLUS = ['ADC', 'VM', 'AM', 'SEP', 'GL', 'AUL', 'SV', 'LP',
 # code officine -> (commercial, code hors périmètre)
 RATTACHEES = {
     '2273308': ('Will', 'ADC'),   # Pharmacie Ropars (Brest) : ADC de janv. à août 2026, WML depuis sept. (Will, 09/10/2026)
-    # Les 6 autres officines du code ADC, chacune chez son commercial (Will, 09/10/2026)
-    '2272236': ('Will', 'ADC'),   # Pharmacie du Bien Être (Plabennec)
-    '2095768': ('Will', 'ADC'),   # Pharmacie de la Mer d'Iroise (Ploumoguer)
-    '2005964': ('Will', 'ADC'),   # Pharmacie de Guiclan
-    '2288089': ('Will', 'ADC'),   # Pharmacie Picard (Plouvorn)
+    # Les autres officines du code ADC attendent un futur commercial (Will, 09/10/2026) : seules
+    # celles que l'outil de gestion a déjà passées sous le code d'un commercial sont rattachées.
     '2013601': ('Arthur', 'ADC'), # Pharmacie de Lududu (Quimper) : ALH depuis sept.
     '2084981': ('Karine', 'ADC'), # Pharmacie de Penthièvre (Yffiniac) : KV depuis sept.
 }
