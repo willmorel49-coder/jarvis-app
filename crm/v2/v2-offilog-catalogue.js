@@ -383,7 +383,7 @@
       '.offcat-tab .fort{font-weight:800}',
       '.offcat-pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#FFC21A;color:#1d1300;font-weight:800;font-size:13px}',
       '.offcat-plus,.offcat-wait{padding:14px;text-align:center;color:var(--muted);font-size:14px}',
-      '@media(max-width:700px){.offcat-filtres{grid-template-columns:1fr 1fr}.offcat-hero .offcat-act{width:100%}.offcat-hero .v2-btn{flex:1;min-height:44px}}'
+      '@media(max-width:700px){.offcat-filtres{grid-template-columns:repeat(2,minmax(0,1fr))}.offcat-hero .offcat-act{width:100%}.offcat-hero .v2-btn{flex:1;min-height:44px}}'
     ].join('');
     document.head.appendChild(st);
   })();
