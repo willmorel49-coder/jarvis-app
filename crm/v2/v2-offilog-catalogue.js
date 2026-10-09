@@ -206,7 +206,8 @@
   }
   function csvVal(v) {
     if (v && v.n != null) return v.v.toFixed(v.n).replace('.', ',');
-    return String(v).replace(/;/g, ',').replace(/[\r\n]+/g, ' ');
+    // Un libellé relevé sur un site tiers qui commencerait par = + - @ serait lu comme une formule par un tableur.
+    return String(v).replace(/^[\s=+\-@]+/, '').replace(/;/g, ',').replace(/[\r\n]+/g, ' ');
   }
   // Le fichier, tel qu'il sera enregistré : { nom, titres, lignes } — lu aussi par la sonde de preuve.
   V2.offCatLgoDonnees = function () {
