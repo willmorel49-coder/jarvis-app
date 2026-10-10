@@ -1,8 +1,22 @@
 {
- "generated_at": "2026-10-09T13:26:29.223025+00:00",
+ "generated_at": "2026-10-10T12:41:47.594176+00:00",
  "source": "Journal officiel · open data DILA",
- "count": 2,
+ "count": 3,
  "items": [
+  {
+   "id": "JORFTEXT000054969604",
+   "titre": "Décision du 7 octobre 2026 relative à l'abrogation de tarifs forfaitaires de responsabilité pour des groupes génériques",
+   "url": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000054969604",
+   "jo": "2026-10-10",
+   "signe_le": "2026-10-07",
+   "motifs": [
+    "arrêté prix & marges (le texte de 1987 qui fixe la marge grossiste)",
+    "modification de l'arrêté fondateur de 1987"
+   ],
+   "resume": null,
+   "date_effet": "2026-10-20",
+   "a_venir": true
+  },
   {
    "id": "JORFTEXT000054673303",
    "titre": "Décision du 11 août 2026 relative à l'abrogation d'un tarif forfaitaire de responsabilité pour un groupe générique",
