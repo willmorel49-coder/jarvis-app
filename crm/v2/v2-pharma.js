@@ -1770,7 +1770,7 @@
   var NB = ' ';
   var MOIS_LONG = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
   // État de la fiche affichée. Remis à zéro quand on change d'officine (la vue pharmacien n'est PAS retenue).
-  var L1 = { pid: null, A: null, G: null, dataR: null, dataG: null, nom: '', b: 'reseau', ouv: {}, vue: 'commercial', rub: 'resume', ecran: 'liste', tous: { neplus: false, meilleurs: false }, edit: false, k: 0, np: null, marge: 0, hasGrp: false, nR: 0, nG: 0 };
+  var L1 = { pid: null, A: null, G: null, dataR: null, dataG: null, nom: '', b: 'reseau', ouv: {}, vu: {}, vue: 'commercial', rub: 'resume', ecran: 'liste', tous: { neplus: false, meilleurs: false }, edit: false, k: 0, np: null, marge: 0, hasGrp: false, nR: 0, nG: 0 };
 
   function l1Nb(n) { return Math.round(n).toLocaleString('fr-FR').replace(/[   ]/g, NB); }
   function l1Eur(n) { return l1Nb(n) + NB + '€'; }
@@ -1967,19 +1967,24 @@
     var A = L1.A, R = l1Ref(L1.b), last = A.last, prev = A.prev, h = l8Tete('Résumé');
     if (A.nAct === 0) return h + l8Vide('Aucune commande enregistrée pour cette officine.');
     var e = l8Ecart(A.caMoy, R.moy);
-    h += '<div class="l8-grand"><span class="l8-n">' + l1Nb(A.caMoy) + '<small>' + NB + '€</small></span><span class="l8-u">par mois</span>' +
-      (e ? '<span class="l8-puce ' + e.c + '">' + l8Fleche(e) + e.t + '</span>' : '') + '</div>';
+    // Le grand chiffre EST l'afficheur de la courbe : au repos la moyenne par mois ; au geste, le montant du mois lu
+    h += '<div class="l8-grand"><span class="l8-n"><span id="l8-gv" data-vers="' + Math.round(A.caMoy) + '" data-fmt="n" data-dl="100" data-du="800">' + l1Nb(A.caMoy) + '</span><small>' + NB + '€</small></span><span class="l8-u" id="l8-gu">par mois</span>' +
+      '<span class="l8-puce ' + (e ? e.c : 'pha-flat') + '" id="l8-gp"' + (e ? '' : ' hidden') + '>' + (e ? l8Fleche(e) + e.t : '') + '</span></div>';
     h += '<div class="l8-graph" id="l8-graph"></div>';
     var evo = (last && prev && prev.ca > 0) ? l8Ecart(last.ca, prev.ca) : null;
-    var place = l8Place();
     h += '<div class="l8-reps">' +
-      '<div class="l8-rep"><div class="l8-rl">En ' + (last ? l8MoisCourt(last.mk) : '—') + '</div><div class="l8-rv">' + l1Eur(last ? last.ca : 0) + '</div>' +
+      '<div class="l8-rep"><div class="l8-rl">En ' + (last ? l8MoisCourt(last.mk) : '—') + '</div><div class="l8-rv" data-vers="' + Math.round(last ? last.ca : 0) + '" data-dl="250" data-du="700">' + l1Eur(last ? last.ca : 0) + '</div>' +
         '<div class="l8-rt ' + (evo ? evo.c : 'pha-flat') + '">' + (evo ? evo.t + NB + 'sur' + NB + l8MoisCourt(prev.mk) : (prev ? 'Pas de commande en ' + l8MoisCourt(prev.mk) : '')) + '</div></div>' +
-      '<div class="l8-rep"><div class="l8-rl">Cumul</div><div class="l8-rv">' + l1Eur(A.caTot) + '</div><div class="l8-rt pha-flat">sur ' + l1Pl(A.nAct, 'mois', 'mois') + '</div></div>' +
-      (place ? '<div class="l8-rep"><div class="l8-rl">Sa place</div><div class="l8-rv l8-rv-mots">' + place.mots + '</div><div class="l8-rt pha-flat">' + place.sous + '</div>' +
-        '<div class="l8-rt l8-interne">' + place.rang + '</div></div>' : '') +
+      '<div class="l8-rep"><div class="l8-rl">Cumul</div><div class="l8-rv" data-vers="' + Math.round(A.caTot) + '" data-dl="340" data-du="700">' + l1Eur(A.caTot) + '</div><div class="l8-rt pha-flat">sur ' + l1Pl(A.nAct, 'mois', 'mois') + '</div></div>' +
+      '<div class="l8-rep" id="l8-rep-place">' + l8PlaceHtml() + '</div>' +
       '</div>';
     return h;
+  }
+  // Le bloc « Sa place » (se met à jour sur place quand « Face à » change)
+  function l8PlaceHtml() {
+    var place = l8Place();
+    return place ? '<div class="l8-rl">Sa place</div><div class="l8-rv l8-rv-mots">' + place.mots + '</div><div class="l8-rt pha-flat">' + place.sous + '</div>' +
+      '<div class="l8-rt l8-interne">' + place.rang + '</div>' : '';
   }
   // Sa place : en mots (tiers) ; le rang chiffré est interne
   function l8Place() {
@@ -2009,9 +2014,9 @@
         '<button type="button" class="l8-btn l8-interne" aria-label="Télécharger la liste en Excel : ' + esc(c[1]) + '" onclick="V2.pharmaListXlsx(\'' + pid + '\',\'' + sc + '\')">' + l8Ic('excel', 18) + 'Excel</button>' +
         '<button type="button" class="l8-btn l8-interne" aria-label="Envoyer la liste au pharmacien : ' + esc(c[1]) + '" onclick="V2.pharmaTransmettre(\'' + pid + '\',[\'L:' + sc + '\'])">' + l8Ic('envoi', 18) + 'Envoyer</button></div></div>';
       h += '<div class="l8-ctete l8-ctete-d">Part des officines qui le commandent</div>';
-      l1Premiers(data).slice(0, 5).forEach(function (x) {
+      l1Premiers(data).slice(0, 5).forEach(function (x, k) {
         var p = l1PartDes(x.r, data.total);
-        h += '<div class="l8-lg"><span class="l8-ln">' + l1NomProduit(x.r) + '<small>' + esc(l1CatLabel(x.cat)) + '</small></span><span class="l8-pbar" aria-hidden="true"><i style="width:' + p + '%"></i></span><span class="l8-lm">' + l1Pct(p) + '</span></div>';
+        h += '<div class="l8-lg"><span class="l8-ln">' + l1NomProduit(x.r) + '<small>' + esc(l1CatLabel(x.cat)) + '</small></span><span class="l8-pbar" aria-hidden="true"><i style="--w:' + l8Fin(p / 100) + ';--i:' + l8Cran(k) + '"></i></span><span class="l8-lm">' + l1Pct(p) + '</span></div>';
       });
       h += '</div>';
     });
@@ -2022,14 +2027,7 @@
   function l8Commandes() {
     var A = L1.A, R = l1Ref(L1.b), h = l8Tete('Commandes');
     if (A.nAct === 0) return h + l8Vide('Aucune commande enregistrée pour cette officine.');
-    var mois = A.pts.slice(A.i0), ref = R.serie.slice(A.i0).map(function (v) { return v == null ? 0 : v; });
-    var max = Math.max.apply(null, mois.map(function (p) { return p.ca; }).concat(ref)) || 1;
-    h += '<div class="l8-ctete">Par mois</div>';
-    mois.forEach(function (p, i) {
-      var e = l8Ecart(p.ca, ref[i]);
-      h += '<div class="l8-mois"><span class="l8-me">' + esc(p.label) + '</span><span class="l8-barre" aria-hidden="true"><i style="width:' + (p.ca / max * 100).toFixed(1) + '%"></i>' + (ref[i] > 0 ? '<u style="left:' + (ref[i] / max * 100).toFixed(1) + '%"></u>' : '') + '</span>' +
-        '<span class="l8-mm">' + l1Eur(p.ca) + '</span><span class="l8-md ' + (e ? e.c : 'pha-flat') + '">' + (e ? e.t : '—') + '</span></div>';
-    });
+    h += '<div class="l8-ctete l8-lu"><span>Par mois</span><span class="l8-lv" id="l8-lu" aria-hidden="true"></span></div><div class="l8-cmd" id="l8-cmd"></div>';
     var last = A.last, prev = A.prev;
     if (last && prev) {
       var lignes = [];
@@ -2049,9 +2047,9 @@
       var rows = tete3.map(function (c) { return { n: c.label, v: c.ca }; });
       if (A.caTot - somme > 0.5) rows.push({ n: 'Les autres', v: A.caTot - somme });
       h += '<div class="l8-sst"><h3>Répartition</h3><span>' + esc(l1PeriodeCumul(A)) + '</span></div>';
-      rows.forEach(function (x) {
+      rows.forEach(function (x, k) {
         var p = Math.max(0, Math.min(100, Math.round(x.v / A.caTot * 100)));
-        h += '<div class="l8-lg"><span class="l8-ln">' + esc(x.n) + '</span><span class="l8-pbar" aria-hidden="true"><i style="width:' + p + '%"></i></span><span class="l8-lm">' + l1Pct(p) + '</span></div>';
+        h += '<div class="l8-lg"><span class="l8-ln">' + esc(x.n) + '</span><span class="l8-pbar" aria-hidden="true"><i style="--w:' + l8Fin(p / 100) + ';--i:' + l8Cran(k) + '"></i></span><span class="l8-lm">' + l1Pct(p) + '</span></div>';
       });
     }
     h += '<div class="l8-lg l8-interne"><span class="l8-ln">Marge nette</span><span class="l8-lm">' + l1Eur(L1.marge) + '</span><span class="l8-lg-g">' + esc(l1PeriodeCumul(A)) + '</span></div>';
@@ -2067,14 +2065,13 @@
       else if (ref > 0) abs.push({ c: c, ref: ref });
     });
     pres.sort(function (x, y) { return (y.e ? y.e.e : -1e9) - (x.e ? x.e.e : -1e9); });
-    var ech = Math.max.apply(null, pres.map(function (x) { return x.e ? Math.min(100, Math.abs(x.e.e)) : 0; }).concat([20]));
     if (!pres.length && !abs.length) return h + l8Vide('Aucune commande enregistrée pour cette officine.');
     h += '<div class="l8-ctete">Par mois</div>';
+    var rang = 0;
     var ligne = function (x, absente) {
-      var k = x.c.key, ouv = !!L1.ouv[k], e = x.e;
-      var mil = absente ? '<span class="l8-cm">—</span><span class="l8-cabs">Absente</span><span class="l8-ce"></span>'
-        : '<span class="l8-cm">' + l1Eur(x.c.moy) + '</span>' + (e ? '<span class="l8-dv" aria-hidden="true"><i class="' + (e.e < 0 ? 'moins' : 'plus') + '" style="width:' + (Math.min(Math.abs(e.e), ech) / ech * 50).toFixed(1) + '%"></i></span>' : '<span class="l8-cabs">Sans repère</span>') +
-          '<span class="l8-ce ' + (e ? e.c : 'pha-flat') + '">' + (e ? e.t : '') + '</span>';
+      var k = x.c.key, ouv = !!L1.ouv[k], e = x.e, mini = '<span class="l8-mini' + (absente ? ' abs' : '') + '" data-mini="' + k + '" style="--i:' + l8Cran(rang++) + '"></span>';
+      var mil = absente ? '<span class="l8-cm l8-cabs">Absente</span>' + mini + '<span class="l8-ce"></span>'
+        : '<span class="l8-cm">' + l1Eur(x.c.moy) + '</span>' + mini + (e ? '<span class="l8-ce"><span class="l8-pastille ' + e.c + '">' + e.t + '</span></span>' : '<span class="l8-ce l8-cabs">Sans repère</span>');
       return '<div class="l8-cat"><button type="button" class="l8-crow" aria-expanded="' + (ouv ? 'true' : 'false') + '" onclick="V2.pharmaL.cat(\'' + k + '\')"><span class="l8-cn">' + esc(x.c.label) + '</span><span class="l8-cinf">' + mil + '</span><span class="l8-cc">' + l8Ic('chev', 18) + '</span></button>' +
         '<div class="l8-detail" id="l8-d-' + k + '"' + (ouv ? '' : ' hidden') + '></div></div>';
     };
@@ -2092,8 +2089,14 @@
     if (!np.connu) return h + l8Vide(np.avant < 4 ? 'Pas assez de mois de commandes connus pour repérer une habitude.' : 'Aucune commande enregistrée en ' + esc(l1YmLong(np.fin)) + ' : impossible de distinguer un produit abandonné d’un mois sans commande.');
     if (!n) return h + l8Vide('Tout ce qu’elle commandait régulièrement a été recommandé en ' + esc(l1YmLong(np.fin)) + '.');
     h += '<div class="l8-ctete l8-ctete-d">Dernière commande</div>';
-    np.lignes.slice(0, L1.tous.neplus ? n : 6).forEach(function (q) {
-      h += '<div class="l8-lg"><span class="l8-ln">' + esc(q.nom) + '<small>' + esc(l1CatLabel(q.cat)) + '</small></span><span class="l8-lg-g">' + esc(l1YmLong(q.dernier)) + '</span></div>';
+    // la frise couvre les mois de la période ; chaque produit y est posé au mois de son dernier achat (le texte « depuis… » reste)
+    var mois = l8Mois().pts, N = mois.length;
+    h += '<div class="l8-lg l8-fz l8-fzt" aria-hidden="true"><span class="l8-ln"></span><span class="l8-frz" data-lab="1"></span><span class="l8-lg-g"></span></div>';
+    np.lignes.slice(0, L1.tous.neplus ? n : 6).forEach(function (q, k) {
+      var ym = String(q.dernier).split('-'), mk = (+ym[0]) * 12 + (+ym[1] - 1), idx = -1;
+      mois.forEach(function (p, j) { if (p.mk === mk) idx = j; });
+      if (idx < 0) idx = mk < mois[0].mk ? 0 : N - 1;
+      h += '<div class="l8-lg l8-fz"><span class="l8-ln">' + esc(q.nom) + '<small>' + esc(l1CatLabel(q.cat)) + '</small></span><span class="l8-frz" data-mi="' + idx + '" style="--i:' + l8Cran(k) + '" role="img" aria-label="' + esc(q.nom) + ' : dernière commande en ' + esc(l1YmLong(q.dernier)) + '"></span><span class="l8-lg-g">' + esc(l1YmLong(q.dernier)) + '</span></div>';
     });
     if (n > 6) h += '<div class="l8-plus"><button type="button" class="l8-lien" onclick="V2.pharmaL.plus(\'neplus\')">' + (L1.tous.neplus ? 'Réduire' : 'Voir les ' + n) + '</button></div>';
     return h;
@@ -2111,40 +2114,445 @@
     var h = l8Tete('Meilleurs produits', '<span class="l8-dr">sur ' + l1Pl(A.nAct, 'mois', 'mois') + '</span>', aide);
     if (!tous.length) return h + l8Vide('Aucun produit classé dans ses commandes.');
     var max = tous[0].ca || 1;
-    tous.slice(0, L1.tous.meilleurs ? 10 : 5).forEach(function (t) {
-      h += '<div class="l8-lg"><span class="l8-ln">' + esc(t.nom) + '<small>' + esc(t.label) + ' · ' + l1Nb(t.qte) + NB + 'boîte' + (t.qte > 1 ? 's' : '') + '</small></span><span class="l8-pbar" aria-hidden="true"><i style="width:' + (t.ca / max * 100).toFixed(1) + '%"></i></span><span class="l8-lm l8-lm-l">' + l1Eur(t.ca) + '</span></div>';
+    tous.slice(0, L1.tous.meilleurs ? 10 : 5).forEach(function (t, k) {
+      h += '<div class="l8-lg"><span class="l8-ln">' + esc(t.nom) + '<small>' + esc(t.label) + ' · ' + l1Nb(t.qte) + NB + 'boîte' + (t.qte > 1 ? 's' : '') + '</small></span><span class="l8-pbar" aria-hidden="true"><i style="--w:' + l8Fin(Math.max(0, Math.min(1, t.ca / max))).toFixed(3) + ';--i:' + l8Cran(k) + '"></i></span><span class="l8-lm l8-lm-l">' + l1Eur(t.ca) + '</span></div>';
     });
     if (tous.length > 5) h += '<div class="l8-plus"><button type="button" class="l8-lien" onclick="V2.pharmaL.plus(\'meilleurs\')">' + (L1.tous.meilleurs ? 'Réduire' : 'Voir les ' + tous.length) + '</button></div>';
     return h;
+  }
+
+  // ═══ La courbe qu'on parcourt (maquette 10a retenue par Will, 10/10/2026) — préfixe l8- ═══
+  // Seul le DESSIN des chiffres change. Les séries sont celles que la fiche affiche déjà (A.pts à partir de A.i0, l1Ref).
+  // L'arrivée est écrite en @keyframes et pilotée par une horloge (L1.vu[rubrique] = instant d'entrée à l'écran) : la fiche
+  // est redessinée plusieurs fois après l'ouverture ; une rubrique déjà vue reprend là où elle en était (retard négatif --l8t).
+  var L8_CH = {};
+  var L8_DUREE = 1500;     // au-delà, une rubrique est construite à l'état final, sans classe
+  function l8Calme() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  function l8F1(v) { return String(Math.round(l8Fin(v) * 10) / 10); }
+  // Largeur réelle d'un conteneur, arrondie vers le bas : le dessin n'est jamais réduit, aucun texte ne passe sous 13 px à l'écran
+  function l8Larg(el, defaut) { var w = el ? Math.floor(el.getBoundingClientRect().width) : 0; return w > 0 ? w : defaut; }
+  function l8Fin(v) { v = Number(v); return isFinite(v) ? v : 0; }
+  function l8Cran(k) { return Math.min(k, 8); }          // cascade plafonnée à 8 crans
+  function l8Ease(t) { return 1 - Math.pow(1 - t, 3); }
+  // interpolation par requestAnimationFrame (mouvement réduit : état final tout de suite)
+  function l8Tween(dur, fn, fin) {
+    if (l8Calme() || dur <= 0) { fn(1); if (fin) fin(); return { stop: function () {} }; }
+    var stop = false, t0 = null;
+    function pas(ts) {
+      if (stop) return;
+      if (t0 === null) t0 = ts;
+      var t = (ts - t0) / dur;
+      if (t >= 1) { fn(1); if (fin) fin(); return; }
+      fn(l8Ease(t)); requestAnimationFrame(pas);
+    }
+    requestAnimationFrame(pas);
+    return { stop: function () { stop = true; } };
+  }
+  // Une série lisible : jamais de NaN, jamais de null
+  function l8Serie(a) { return (a || []).map(l8Fin); }
+  // courbe lissée, interpolation monotone (Fritsch-Carlson) : jamais de bosse inventée
+  function l8Lisse(P) {
+    var n = P.length, d = [], m = [], i;
+    if (!n) return '';
+    var p = 'M' + l8F1(P[0][0]) + ' ' + l8F1(P[0][1]);
+    if (n < 2) return p;
+    for (i = 0; i < n - 1; i++) d[i] = (P[i + 1][1] - P[i][1]) / (P[i + 1][0] - P[i][0]);
+    m[0] = d[0]; m[n - 1] = d[n - 2];
+    for (i = 1; i < n - 1; i++) m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2;
+    for (i = 0; i < n - 1; i++) {
+      if (d[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; }
+      var a = m[i] / d[i], b = m[i + 1] / d[i], s = a * a + b * b;
+      if (s > 9) { var t = 3 / Math.sqrt(s); m[i] = t * a * d[i]; m[i + 1] = t * b * d[i]; }
+    }
+    for (i = 0; i < n - 1; i++) {
+      var dx = (P[i + 1][0] - P[i][0]) / 3;
+      p += 'C' + l8F1(P[i][0] + dx) + ' ' + l8F1(P[i][1] + m[i] * dx) + ' ' + l8F1(P[i + 1][0] - dx) + ' ' + l8F1(P[i + 1][1] - m[i + 1] * dx) + ' ' + l8F1(P[i + 1][0]) + ' ' + l8F1(P[i + 1][1]);
+    }
+    return p;
+  }
+  // pas de graduation : des graduations rondes (1, 2, 2,5, 3, 4, 5 × 10^k), le plus près possible de trois sous la hauteur maximale
+  function l8Pas3(haut) {
+    var h = Math.max(haut, 1), p = Math.pow(10, Math.floor(Math.log(h / 3) / Math.LN10)), c = [1, 2, 2.5, 3, 4, 5, 10, 20, 25], best = null, dist = 9;
+    for (var i = 0; i < c.length; i++) {
+      var n = Math.floor(h / (c[i] * p)), d = Math.abs(n - 3);
+      if (n >= 1 && (!best || d < dist || (d === dist && n > best.n))) { best = { s: c[i] * p, n: n }; dist = d; }
+    }
+    return best ? Math.max(1, best.s) : h;
+  }
+  // texte sans balise (descriptions lisibles) : l'écart se dit « − 12 % », « 6,3 fois plus »
+  function l8Txt(e) { return e ? e.t.replace(/<[^>]+>/g, '') : ''; }
+  var l8FmtE = function (v) { return l1Eur(v); }, l8FmtN = function (v) { return l1Nb(v); };
+
+  // L'horloge des animations (celle de la page, figée pendant une longue tâche) : un retard calculé avec elle reste exact
+  // même si la fiche met un moment à se construire ; l'heure de l'ordinateur compterait deux fois ce temps.
+  function l8Now() { var t = document.timeline && document.timeline.currentTime; return t == null ? performance.now() : t; }
+  // ── L'horloge. Une rubrique pas encore vue reste à son état de départ (l8-av) ; vue depuis moins de 1,5 s elle reprend où elle
+  // en était (l8-lit + retard négatif) ; au-delà elle est à l'état final, sans classe. nu = état final, sans mouvement.
+  function l8Etat(k, nu) {
+    var s = document.getElementById('l8-v-' + k); if (!s) return null;
+    s.classList.remove('l8-av', 'l8-lit'); s.style.removeProperty('--l8t'); clearTimeout(s._ft);
+    if (l8Calme() || nu) return s;
+    var t0 = L1.vu[k];
+    if (t0 == null) { s.classList.add('l8-av'); return s; }
+    var dt = l8Now() - t0;
+    if (dt < L8_DUREE) {
+      s.classList.add('l8-lit'); s.style.setProperty('--l8t', (-Math.round(dt)) + 'ms');
+      s._ft = setTimeout(function () { s.classList.remove('l8-lit'); s.style.removeProperty('--l8t'); }, L8_DUREE - dt + 60);
+    }
+    return s;
+  }
+  // Un dessin refait dans une rubrique en cours de lecture : SEUL le nouvel élément reçoit son retard (le temps déjà écoulé).
+  // On ne change jamais le retard d'une animation qui tourne déjà : elle sauterait en avant du temps écoulé.
+  function l8Cadre(el, k) {
+    if (!el) return;
+    var s = document.getElementById('l8-v-' + k), t0 = L1.vu[k];
+    if (s && s.classList.contains('l8-lit') && t0 != null) el.style.setProperty('--l8t', (-Math.round(l8Now() - t0)) + 'ms'); else el.style.removeProperty('--l8t');
+  }
+  // un nombre qui compte vers sa valeur sur la même horloge (largeur figée avant de partir, chiffres tabulaires)
+  function l8Compteurs(k) {
+    var s = document.getElementById('l8-v-' + k); if (!s || l8Calme()) return;
+    Array.prototype.forEach.call(s.querySelectorAll('[data-vers]'), function (el) {
+      var vers = l8Fin(el.getAttribute('data-vers')), fmt = el.getAttribute('data-fmt') === 'n' ? l8FmtN : l8FmtE, fin = fmt(vers);
+      var dl = l8Fin(el.getAttribute('data-dl')), dur = l8Fin(el.getAttribute('data-du')) || 700, t0 = L1.vu[k];
+      if (t0 != null && l8Now() - t0 >= dl + dur) { el.textContent = fin; return; }
+      if (!el.style.minWidth) { if (getComputedStyle(el).display === 'inline') el.style.display = 'inline-block'; el.style.minWidth = el.offsetWidth + 'px'; }
+      el.textContent = fmt(0);
+      if (t0 == null) return;
+      (function pas() {
+        if (!el.isConnected || el._stop) return;
+        var t = (l8Now() - L1.vu[k] - dl) / dur;
+        if (t >= 1) { el.textContent = fin; return; }
+        el.textContent = fmt(Math.round(vers * l8Ease(Math.max(0, t)))); requestAnimationFrame(pas);
+      })();
+    });
+  }
+  // la rubrique entre à l'écran : l'horloge démarre (une seule fois par officine)
+  var _l8Obs = null;
+  function l8Lancer(k) {
+    if (L1.vu[k] != null) return;
+    L1.vu[k] = l8Now(); l8Etat(k); l8Compteurs(k);
+  }
+  function l8Observer() {
+    if (_l8Obs) { _l8Obs.disconnect(); _l8Obs = null; }
+    var ks = Object.keys(L8_F).filter(function (k) { return L1.vu[k] == null; });
+    if (!ks.length) return;
+    if (l8Calme() || !('IntersectionObserver' in window)) { ks.forEach(function (k) { L1.vu[k] = l8Now() - L8_DUREE; }); return; }
+    _l8Obs = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { _l8Obs.unobserve(e.target); l8Lancer(e.target.getAttribute('data-k')); } });
+    }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+    ks.forEach(function (k) { var s = document.getElementById('l8-v-' + k); if (s) _l8Obs.observe(s); });
+  }
+
+  // grand chiffre qui glisse d'une valeur à l'autre (lecture du mois survolé)
+  function l8Glisse(el, vers, dur) {
+    if (!el) return;
+    el._stop = 1;
+    var de = el._v == null ? vers : el._v; el._v = vers;
+    if (el._tw) el._tw.stop();
+    el._tw = l8Tween(dur, function (t) { el.textContent = l1Nb(de + (vers - de) * t); }, function () { el.textContent = l1Nb(vers); });
+  }
+
+  // ── axe vertical : 0 sur la ligne de base, puis trois graduations rondes en euros, dans la gouttière de gauche
+  function l8Axe(W, pl, pr, top, s, Y) {
+    var y0 = Y(0).toFixed(1), h = '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y0 + '" y2="' + y0 + '" stroke="rgba(16,19,28,.16)"/>' +
+      '<text class="l8-ax" x="' + (pl - 10) + '" y="' + (Y(0) + 4.5).toFixed(1) + '" text-anchor="end">0</text>';
+    for (var k = 1; k * s <= top; k++) {
+      var y = Y(k * s).toFixed(1);
+      h += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y + '" y2="' + y + '" stroke="rgba(16,19,28,.07)" stroke-dasharray="2 5"/>' +
+        '<text class="l8-ax" x="' + (pl - 10) + '" y="' + (Number(y) + 4.5).toFixed(1) + '" text-anchor="end">' + l1Eur(k * s) + '</text>';
+    }
+    return h;
+  }
+  // gouttières du dessin : à gauche de quoi écrire la plus grande graduation, à droite de quoi nommer le repère (jamais coupé)
+  function l8Marges(W, top, s, nom) {
+    var tx = ''; for (var k = 1; k * s <= top; k++) tx = l1Eur(k * s);
+    var pl = Math.max(W > 560 ? 64 : 54, Math.ceil(tx.length * 7.8) + 18), cap = W > 560 ? 150 : 112;
+    var long = nom ? Math.min(cap, Math.ceil(nom.length * 8) + 26) : 14;
+    return { pl: pl, pr: Math.max(W > 560 ? 96 : 76, long) };
+  }
+  function l8Court(nom, pr) { var m = Math.max(4, Math.floor((pr - 24) / 8)); return nom.length > m ? nom.slice(0, m - 1) + '…' : nom; }
+
+  // ── la courbe : o = { id, W, H, ser, ref, refTout, nom, desc, labs }. Échelle 1 : 1 (le SVG a la largeur réelle de son conteneur).
+  // Une seule valeur (1 mois) : un point, pas de ligne. Repère absent ou nul : pas de ligne de repère.
+  function l8Tracer(o) {
+    var W = o.W, H = o.H, ser = l8Serie(o.ser), ref = l8Serie(o.ref), N = ser.length, id = o.id;
+    var refOk = ref.some(function (v) { return v > 0; });
+    var mx = Math.max.apply(null, ser.concat(l8Serie(o.refTout), refOk ? ref : [], [1])), top = mx * 1.04, s = l8Pas3(top);
+    var mg = l8Marges(W, top, s, refOk ? (o.nomMax || o.nom) : ''), pl = mg.pl, pr = mg.pr, pt = 14, pb = 32;
+    var X = function (i) { return N > 1 ? pl + (W - pl - pr) * i / (N - 1) : pl + (W - pl - pr) / 2; }, Y = function (v) { return pt + (H - pt - pb) * (1 - v / top); };
+    var P = ser.map(function (v, i) { return [X(i), Y(v)]; }), R = ref.map(function (v, i) { return [X(i), Y(v)]; });
+    L8_CH[id] = { id: id, W: W, H: H, pl: pl, pr: pr, pt: pt, N: N, X: X, Y: Y, ser: ser, ref: ref.slice(), refOk: refOk, nom: o.nom, desc: o.desc, labs: o.labs, top: top };
+    var d = l8Lisse(P), yb = Y(0), pas = W < 540 ? 2 : 1, lab = '', i;
+    for (i = (N - 1) % pas; i < N; i += pas) lab += '<text class="l8-mo" data-i="' + i + '" x="' + X(i).toFixed(1) + '" y="' + (H - 8) + '" text-anchor="' + (N === 1 ? 'middle' : i === 0 ? 'start' : i === N - 1 ? 'end' : 'middle') + '">' + esc(o.labs[i]) + '</text>';
+    var aire = N > 1 ? '<path class="l8-aire" d="' + d + 'L' + X(N - 1).toFixed(1) + ' ' + yb.toFixed(1) + 'L' + X(0).toFixed(1) + ' ' + yb.toFixed(1) + 'Z" fill="url(#l8-ga-' + id + ')"/>' : '';
+    var trait = N > 1 ? '<path class="l8-halo" pathLength="1" d="' + d + '" fill="none" stroke="#0050E6" stroke-opacity=".10" stroke-width="10" stroke-linecap="round"/>' +
+      '<path class="l8-ligne" pathLength="1" d="' + d + '" fill="none" stroke="url(#l8-gl-' + id + ')" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>' : '';
+    var rp = refOk ? '<path class="l8-ref" d="' + (N > 1 ? l8Lisse(R) : 'M' + (X(0) - 10).toFixed(1) + ' ' + R[0][1].toFixed(1) + 'h20') + '" fill="none" stroke="#8591AC" stroke-width="2.5" stroke-linecap="round"/>' +
+      '<text class="l8-refnom" x="' + (X(N - 1) + (N > 1 ? 15 : 20)).toFixed(1) + '" y="' + (R[N - 1][1] + 4.5).toFixed(1) + '">' + esc(l8Court(o.nom, pr)) + '</text>' : '';
+    return '<svg class="l8-tr" id="l8-s-' + id + '" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" tabindex="0" aria-label="' + esc(o.desc) + '">' +
+      '<defs><linearGradient id="l8-ga-' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0050E6" stop-opacity=".30"/><stop offset=".55" stop-color="#2A6AF0" stop-opacity=".10"/><stop offset="1" stop-color="#2A6AF0" stop-opacity="0"/></linearGradient>' +
+      '<linearGradient id="l8-gl-' + id + '" gradientUnits="userSpaceOnUse" x1="' + pl + '" y1="0" x2="' + (W - pr) + '" y2="0"><stop offset="0" stop-color="#2A6AF0"/><stop offset=".6" stop-color="#0050E6"/><stop offset="1" stop-color="#0034A0"/></linearGradient></defs>' +
+      l8Axe(W, pl, pr, top, s, Y) + aire + rp + trait +
+      '<g class="l8-fin" transform="translate(' + X(N - 1).toFixed(1) + ' ' + P[N - 1][1].toFixed(1) + ')"><circle class="l8-puls" r="7" fill="#0050E6"/><circle class="l8-dot" r="6.5" fill="#0050E6" stroke="#fff" stroke-width="2.5"/></g>' +
+      '<g class="l8-curs"><line class="l8-rule" x1="0" x2="0" y1="' + pt + '" y2="' + yb.toFixed(1) + '" stroke="#0050E6" stroke-opacity=".35" stroke-width="1.5"/>' +
+      (refOk ? '<g class="l8-p2"><circle r="5" fill="#fff" stroke="#8591AC" stroke-width="2.5"/></g>' : '') +
+      '<g class="l8-p1"><circle r="14" fill="#0050E6" fill-opacity=".14"/><circle r="6.5" fill="#0050E6" stroke="#fff" stroke-width="3"/></g></g>' +
+      lab + '<rect class="l8-zone" x="0" y="0" width="' + W + '" height="' + H + '" fill="#fff" fill-opacity="0"/></svg>';
+  }
+
+  // ── le geste : survol, doigt ou flèches parcourent les mois ; cb = { actif(i), repos(), texte(i) }. Rend l'interface du graphique.
+  function l8Lier(id, cb) {
+    var svg = document.getElementById('l8-s-' + id), ch = L8_CH[id]; if (!svg || !ch) return null;
+    var zone = svg.querySelector('.l8-zone'), curs = svg.querySelector('.l8-curs'), rule = svg.querySelector('.l8-rule'), p1 = svg.querySelector('.l8-p1'), p2 = svg.querySelector('.l8-p2');
+    var labs = svg.querySelectorAll('.l8-mo'), refp = svg.querySelector('.l8-ref'), refn = svg.querySelector('.l8-refnom'), act = -1, tm = null, tr = null, N = ch.N;
+    var px = function (a, b) { return 'translate(' + a.toFixed(1) + 'px,' + b.toFixed(1) + 'px)'; };
+    function mettre(i) {
+      clearTimeout(tm);
+      var x = ch.X(i), neuf = act < 0;
+      if (neuf) curs.classList.add('nt');
+      rule.style.transform = px(x, 0); p1.style.transform = px(x, ch.Y(ch.ser[i])); if (p2) p2.style.transform = px(x, ch.Y(ch.ref[i]));
+      if (neuf) { void svg.getBoundingClientRect(); curs.classList.remove('nt'); curs.classList.add('on'); }
+      act = i;
+      Array.prototype.forEach.call(labs, function (t) { t.classList.toggle('on', Number(t.getAttribute('data-i')) === i); });
+      svg.setAttribute('aria-label', cb.texte(i));
+      cb.actif(i);
+    }
+    function repos() {
+      clearTimeout(tm); if (act < 0) return;
+      act = -1; curs.classList.remove('on');
+      Array.prototype.forEach.call(labs, function (t) { t.classList.remove('on'); });
+      svg.setAttribute('aria-label', ch.desc);
+      cb.repos();
+    }
+    function indice(e) {
+      var r = svg.getBoundingClientRect(), x = (e.clientX - r.left) * ch.W / (r.width || ch.W);
+      if (N < 2) return 0;
+      return Math.max(0, Math.min(N - 1, Math.round((x - ch.pl) / (ch.W - ch.pl - ch.pr) * (N - 1))));
+    }
+    zone.addEventListener('pointerdown', function (e) { mettre(indice(e)); });
+    zone.addEventListener('pointermove', function (e) { var i = indice(e); if (i !== act) mettre(i); });
+    zone.addEventListener('pointerleave', function (e) { if (e.pointerType !== 'touch') repos(); });
+    ['pointerup', 'pointercancel'].forEach(function (n) { zone.addEventListener(n, function (e) { if (e.pointerType === 'touch') { clearTimeout(tm); tm = setTimeout(repos, 1600); } }); });
+    svg.addEventListener('keydown', function (e) {
+      var k = e.key, i = act < 0 ? N - 1 : act;
+      if (k === 'ArrowLeft') i = Math.max(0, i - 1); else if (k === 'ArrowRight') i = Math.min(N - 1, i + 1);
+      else if (k === 'Home') i = 0; else if (k === 'End') i = N - 1;
+      else if (k === 'Escape') { repos(); return; } else return;
+      e.preventDefault(); mettre(i);
+    });
+    svg.addEventListener('blur', repos);
+    // « Face à » : le repère GLISSE vers sa nouvelle position en 350 ms (l'échelle verticale ne bouge pas)
+    ch.api = {
+      indice: function () { return act; },
+      aller: mettre,
+      setRef: function (neuf, nom, desc) {
+        var de = ch.ref.slice(); ch.desc = desc; if (act < 0) svg.setAttribute('aria-label', desc);
+        neuf = l8Serie(neuf);
+        if (refn) refn.textContent = l8Court(nom, ch.pr);
+        if (tr) tr.stop();
+        if (!refp) { ch.ref = neuf; return; }
+        tr = l8Tween(350, function (t) {
+          ch.ref = de.map(function (v, i) { return v + (neuf[i] - v) * t; });
+          var R = ch.ref.map(function (v, i) { return [ch.X(i), ch.Y(v)]; });
+          refp.setAttribute('d', N > 1 ? l8Lisse(R) : 'M' + (ch.X(0) - 10).toFixed(1) + ' ' + R[0][1].toFixed(1) + 'h20');
+          if (refn) refn.setAttribute('y', (R[N - 1][1] + 4.5).toFixed(1));
+          if (act >= 0 && p2) p2.style.transform = px(ch.X(act), ch.Y(ch.ref[act]));
+        });
+      }
+    };
+    return ch.api;
+  }
+
+  // ── Les séries de la période (celles de L1.A, rien n'est recalculé) et les deux repères
+  function l8Mois() {
+    var pts = L1.A.pts.slice(L1.A.i0);
+    return { pts: pts, N: pts.length, ser: pts.map(function (p) { return l8Fin(p.ca); }), labs: pts.map(function (p) { return p.label; }) };
+  }
+  function l8RefSerie(R) { return L1.A.pts.slice(L1.A.i0).map(function (p, i) { return l8Fin(R.serie[L1.A.i0 + i]); }); }
+  // L'échelle verticale est calée sur le maximum de l'officine ET des deux repères : « Face à » ne la fait pas bouger
+  function l8RefTout() {
+    var t = l8RefSerie(l1Ref('reseau'));
+    if (L1.G) t = t.concat(l8RefSerie(l1Ref('groupement')));
+    return t;
+  }
+  // La gouttière du nom du repère se calcule sur le plus long des deux noms : « Face à » ne la fait pas bouger, aucun nom n'est coupé en route
+  function l8NomMax() { var a = l1Ref('reseau').court, b = L1.G ? l1Ref('groupement').court : ''; return b.length > a.length ? b : a; }
+  function l8Desc(R, quoi) { return quoi + ', face à ' + R.long + '. Flèches gauche et droite pour parcourir les mois.'; }
+  function l8Puce(p, e) {
+    if (!p) return;
+    if (!e) { p.hidden = true; return; }
+    p.hidden = false; p.className = (p.className.indexOf('l8-cpuce') >= 0 ? 'l8-puce l8-cpuce ' : 'l8-puce ') + e.c; p.innerHTML = l8Fleche(e) + e.t;
+  }
+
+  // ── Résumé : le grand chiffre est l'afficheur, la courbe est la pièce maîtresse
+  function l8CourbeResume(W) {
+    var R = l1Ref(L1.b), m = l8Mois();
+    return l8Tracer({ id: 'cr', W: W, H: W > 560 ? 290 : 188, ser: m.ser, ref: l8RefSerie(R), refTout: l8RefTout(), nom: R.court, nomMax: l8NomMax(), labs: m.labs, desc: l8Desc(R, 'Ce qu’elle commande chaque mois') });
+  }
+  function l8LierResume() {
+    var gv = document.getElementById('l8-gv'), ch = L8_CH.cr; if (!gv || !ch) return;
+    gv._v = Math.round(L1.A.caMoy);
+    var u = document.getElementById('l8-gu'), p = document.getElementById('l8-gp'), m = l8Mois();
+    var ecartMois = function (i) { var R = l1Ref(L1.b); return l8Ecart(m.ser[i], l8Fin(R.serie[L1.A.i0 + i])); };
+    l8Lier('cr', {
+      texte: function (i) { var R = l1Ref(L1.b), e = ecartMois(i); return l1MoisAn(m.pts[i].mk) + ' : ' + l1Eur(m.ser[i]) + (e ? ', ' + l8Txt(e) + ' face à ' + R.long : ''); },
+      actif: function (i) { l8Glisse(gv, m.ser[i], 180); u.textContent = l1MoisAn(m.pts[i].mk); l8Puce(p, ecartMois(i)); },
+      repos: function () { l8Glisse(gv, Math.round(L1.A.caMoy), 240); u.textContent = 'par mois'; l8Puce(p, l8Ecart(L1.A.caMoy, l1Ref(L1.b).moy)); }
+    });
+  }
+  // « Face à » : le repère glisse, les pastilles et « Sa place » se mettent à jour sur place
+  function l8RebaseResume() {
+    var ch = L8_CH.cr, R = l1Ref(L1.b), ref = l8RefSerie(R);
+    if (!ch || !ch.api || !document.getElementById('l8-s-cr')) return;
+    if (ch.refOk !== ref.some(function (v) { return v > 0; })) { l8Peindre(['resume']); return; }
+    var rp = document.getElementById('l8-rep-place'); if (rp) rp.innerHTML = l8PlaceHtml();
+    ch.api.setRef(ref, R.court, l8Desc(R, 'Ce qu’elle commande chaque mois'));
+    var a = ch.api.indice();
+    if (a >= 0) ch.api.aller(a); else l8Puce(document.getElementById('l8-gp'), l8Ecart(L1.A.caMoy, R.moy));
+  }
+
+  // ── Commandes : colonnes par mois, le repère en trait d'escalier, même geste que la courbe
+  var l8Pastille = function (e) { return e ? '<span class="l8-pastille ' + e.c + '">' + e.t + '</span>' : ''; };
+  function l8Marche(ch, ref) {
+    var d = '';
+    ref.forEach(function (v, i) {
+      var y = ch.Y(v).toFixed(1), x0 = (ch.pl + ch.slot * i).toFixed(1), x1 = (ch.pl + ch.slot * (i + 1)).toFixed(1);
+      d += (i ? 'L' + x0 + ' ' + y : 'M' + x0 + ' ' + y) + 'L' + x1 + ' ' + y;
+    });
+    return d;
+  }
+  function l8Colonnes(W) {
+    var R = l1Ref(L1.b), m = l8Mois(), N = m.N, ref = l8RefSerie(R), refOk = ref.some(function (v) { return v > 0; }), H = W > 560 ? 260 : 178, pt = 26, pb = 32;
+    var mx = Math.max.apply(null, m.ser.concat(l8RefTout(), [1])), top = mx * 1.04, s = l8Pas3(top), mg = l8Marges(W, top, s, refOk ? l8NomMax() : ''), pl = mg.pl, pr = mg.pr;
+    var slot = (W - pl - pr) / N, bw = Math.min(slot * 0.58, 46), grand = slot >= 52, Y = function (v) { return pt + (H - pt - pb) * (1 - v / top); };
+    var desc = l8Desc(R, 'Ses commandes mois par mois');
+    var ch = L8_CH.cm = { id: 'cm', W: W, H: H, pl: pl, pr: pr, N: N, slot: slot, Y: Y, ref: ref.slice(), refOk: refOk, desc: desc };
+    var cols = '', vl = '', lab = '', yb = Y(0), pas = slot < 40 ? 2 : 1;
+    for (var i = 0; i < N; i++) {
+      var cx = pl + slot * (i + 0.5), x0 = cx - bw / 2, x1 = cx + bw / 2, yt = Y(m.ser[i]), r = Math.max(0, Math.min(6, bw / 2, (yb - yt) / 2));
+      cols += '<path class="l8-col" style="--i:' + l8Cran(i) + '" d="M' + l8F1(x0) + ' ' + l8F1(yb) + 'L' + l8F1(x0) + ' ' + l8F1(yt + r) + 'Q' + l8F1(x0) + ' ' + l8F1(yt) + ' ' + l8F1(x0 + r) + ' ' + l8F1(yt) + 'L' + l8F1(x1 - r) + ' ' + l8F1(yt) + 'Q' + l8F1(x1) + ' ' + l8F1(yt) + ' ' + l8F1(x1) + ' ' + l8F1(yt + r) + 'L' + l8F1(x1) + ' ' + l8F1(yb) + 'Z" fill="#0050E6"/>';
+      if (grand) vl += '<text class="l8-cvl" style="--i:' + l8Cran(i) + ';--dy:' + l8F1(yb - yt) + 'px" x="' + l8F1(cx) + '" y="' + l8F1(yt - 9) + '" text-anchor="middle">' + l1Nb(m.ser[i]) + '</text>';
+      if (i % pas === (N - 1) % pas) lab += '<text class="l8-mo" data-i="' + i + '" x="' + l8F1(cx) + '" y="' + (H - 8) + '" text-anchor="middle">' + esc(m.labs[i]) + '</text>';
+    }
+    return '<svg class="l8-tr l8-cols" id="l8-s-cm" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" tabindex="0" aria-label="' + esc(desc) + '">' +
+      l8Axe(W, pl, pr, top, s, Y) + cols +
+      (refOk ? '<path class="l8-marche" pathLength="1" d="' + l8Marche(ch, ref) + '" fill="none" stroke="#8591AC" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '<text class="l8-refnom" x="' + l8F1(W - pr + 15) + '" y="' + l8F1(Y(ref[N - 1]) + 4.5) + '">' + esc(l8Court(R.court, pr)) + '</text>' : '') + vl + lab +
+      '<rect class="l8-zone" x="0" y="0" width="' + W + '" height="' + H + '" fill="#fff" fill-opacity="0"/></svg>';
+  }
+  function l8LierCols() {
+    var svg = document.getElementById('l8-s-cm'), ch = L8_CH.cm; if (!svg || !ch) return;
+    var cols = svg.querySelectorAll('.l8-col'), labs = svg.querySelectorAll('.l8-mo'), lu = document.getElementById('l8-lu'), zone = svg.querySelector('.l8-zone');
+    var mp = svg.querySelector('.l8-marche'), rn = svg.querySelector('.l8-refnom'), act = -1, tm = null, tr = null, m = l8Mois(), N = ch.N;
+    function mettre(i) {
+      clearTimeout(tm); act = i; svg.classList.add('hov');
+      Array.prototype.forEach.call(cols, function (c, k) { c.classList.toggle('act', k === i); });
+      Array.prototype.forEach.call(labs, function (t) { t.classList.toggle('on', Number(t.getAttribute('data-i')) === i); });
+      var R = l1Ref(L1.b), e = l8Ecart(m.ser[i], l8Fin(R.serie[L1.A.i0 + i]));
+      if (lu) lu.innerHTML = l1MoisAn(m.pts[i].mk) + NB + '·' + NB + '<b>' + l1Eur(m.ser[i]) + '</b> ' + l8Pastille(e);
+      svg.setAttribute('aria-label', l1MoisAn(m.pts[i].mk) + ' : ' + l1Eur(m.ser[i]) + (e ? ', ' + l8Txt(e) + ' face à ' + R.long : ''));
+    }
+    function repos() {
+      clearTimeout(tm); act = -1; svg.classList.remove('hov'); if (lu) lu.innerHTML = ''; svg.setAttribute('aria-label', ch.desc);
+      Array.prototype.forEach.call(cols, function (c) { c.classList.remove('act'); });
+      Array.prototype.forEach.call(labs, function (t) { t.classList.remove('on'); });
+    }
+    var indice = function (e) { var r = svg.getBoundingClientRect(); return Math.max(0, Math.min(N - 1, Math.floor(((e.clientX - r.left) * ch.W / (r.width || ch.W) - ch.pl) / ch.slot))); };
+    zone.addEventListener('pointerdown', function (e) { mettre(indice(e)); });
+    zone.addEventListener('pointermove', function (e) { var i = indice(e); if (i !== act) mettre(i); });
+    zone.addEventListener('pointerleave', function (e) { if (e.pointerType !== 'touch') repos(); });
+    ['pointerup', 'pointercancel'].forEach(function (n) { zone.addEventListener(n, function (e) { if (e.pointerType === 'touch') { clearTimeout(tm); tm = setTimeout(repos, 1600); } }); });
+    svg.addEventListener('keydown', function (e) {
+      var k = e.key, i = act < 0 ? N - 1 : act;
+      if (k === 'ArrowLeft') i = Math.max(0, i - 1); else if (k === 'ArrowRight') i = Math.min(N - 1, i + 1); else if (k === 'Home') i = 0; else if (k === 'End') i = N - 1;
+      else if (k === 'Escape') { repos(); return; } else return;
+      e.preventDefault(); mettre(i);
+    });
+    svg.addEventListener('blur', repos);
+    ch.api = { indice: function () { return act; }, aller: mettre, setRef: function (neuf, nom) {
+      var de = ch.ref.slice(), R = l1Ref(L1.b); neuf = l8Serie(neuf); ch.desc = l8Desc(R, 'Ses commandes mois par mois');
+      if (rn) rn.textContent = l8Court(nom, ch.pr);
+      if (tr) tr.stop();
+      if (mp) tr = l8Tween(350, function (t) { ch.ref = de.map(function (v, i) { return v + (neuf[i] - v) * t; }); mp.setAttribute('d', l8Marche(ch, ch.ref)); if (rn) rn.setAttribute('y', l8F1(ch.Y(ch.ref[N - 1]) + 4.5)); });
+      else ch.ref = neuf;
+      if (act >= 0) mettre(act); else svg.setAttribute('aria-label', ch.desc);
+    } };
+  }
+  function l8RebaseCols() {
+    var ch = L8_CH.cm, R = l1Ref(L1.b), ref = l8RefSerie(R);
+    if (!ch || !ch.api || !document.getElementById('l8-s-cm')) return;
+    if (ch.refOk !== ref.some(function (v) { return v > 0; })) { l8Peindre(['commandes']); return; }
+    ch.api.setRef(ref, R.court);
+  }
+
+  // ── Catégories : une petite courbe sur la période par ligne ; un clic déplie SA courbe en grand (même geste)
+  function l8CatPar(key) { var a = L1.A.cats; for (var i = 0; i < a.length; i++) { if (a[i].key === key) return a[i]; } return null; }
+  function l8CatSerie(c) { var i0 = L1.A.i0; return l8Mois().pts.map(function (p, i) { return l8Fin(c.caByM[i0 + i]); }); }
+  function l8CatRef(c, R) { var i0 = L1.A.i0, ser = R.catSerie(c) || []; return l8Mois().pts.map(function (p, i) { return l8Fin(ser[i0 + i]); }); }
+  function l8Mini(ser, ref, W, absente) {
+    var N = ser.length, H = 38, mx = Math.max.apply(null, ser.concat(ref, [1]));
+    var X = function (i) { return N > 1 ? 4 + (W - 8) * i / (N - 1) : W / 2; }, Y = function (v) { return 5 + (H - 10) * (1 - v / mx); };
+    var pts = function (a) { return a.map(function (v, i) { return [X(i), Y(v)]; }); };
+    var refOk = ref.some(function (v) { return v > 0; });
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" aria-hidden="true">' +
+      (refOk ? '<path d="' + (N > 1 ? l8Lisse(pts(ref)) : 'M' + (X(0) - 8) + ' ' + l8F1(Y(ref[0])) + 'h16') + '" fill="none" stroke="#8591AC" stroke-width="1.8" stroke-linecap="round"/>' : '') +
+      (absente ? '' : (N > 1 ? '<path class="l8-m1" pathLength="1" d="' + l8Lisse(pts(ser)) + '" fill="none" stroke="#0050E6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>' : '') +
+        '<circle class="l8-m2" cx="' + l8F1(X(N - 1)) + '" cy="' + l8F1(Y(ser[N - 1])) + '" r="3.6" fill="#0050E6"/>') + '</svg>';
+  }
+  function l8Minis() {
+    var R = l1Ref(L1.b);
+    Array.prototype.forEach.call(document.querySelectorAll('.l8-mini[data-mini]'), function (el) {
+      var c = l8CatPar(el.getAttribute('data-mini')); if (!c || el.closest('[hidden]')) return;
+      l8Cadre(el, 'categories'); el.innerHTML = l8Mini(l8CatSerie(c), l8CatRef(c, R), Math.max(80, l8Larg(el, 160)), c.ca <= 0);
+    });
+  }
+  // la grande courbe d'une catégorie, au-dessus de ce qui s'y rattache
+  function l8CourbeCat(key) {
+    var box = document.getElementById('l8-dcv-' + key), lu = document.getElementById('l8-lu-' + key), c = l8CatPar(key); if (!box || !c) return;
+    var A = L1.A, R = l1Ref(L1.b), m = l8Mois(), N = m.N, ser = l8CatSerie(c), id = 'cc' + key, W = Math.max(240, l8Larg(box, 440));
+    var tout = l8CatRef(c, l1Ref('reseau')); if (L1.G) tout = tout.concat(l8CatRef(c, l1Ref('groupement')));
+    var ref = l8CatRef(c, R), refAt = function (i) { return l8Fin(ref[i]); };
+    l8Cadre(box, 'categories'); box.innerHTML = l8Tracer({ id: id, W: W, H: W > 560 ? 240 : 190, ser: ser, ref: ref, refTout: tout, nom: R.court, nomMax: l8NomMax(), labs: m.labs, desc: l8Desc(R, c.label + ', mois par mois') });
+    var api = l8Lier(id, {
+      texte: function (i) { var e = l8Ecart(ser[i], refAt(i)); return l1MoisAn(m.pts[i].mk) + ' : ' + l1Eur(ser[i]) + (e ? ', ' + l8Txt(e) + ' face à ' + R.long : ''); },
+      actif: function (i) { if (lu) lu.innerHTML = l1MoisAn(m.pts[i].mk) + NB + '·' + NB + '<b>' + l1Eur(ser[i]) + '</b> ' + l8Pastille(l8Ecart(ser[i], refAt(i))); },
+      repos: function () { if (api) api.aller(N - 1); }
+    });
+    if (api) api.aller(N - 1);
+  }
+  // la hauteur du dépli s'anime (jamais rejouée par un redessin : seul un clic l'appelle)
+  function l8Hauteur(d, ouvrir) {
+    clearTimeout(d._ht); d.style.overflow = 'hidden';
+    if (l8Calme()) { d.style.overflow = ''; if (!ouvrir) d.hidden = true; return; }
+    var h = d.scrollHeight;
+    d.style.height = ouvrir ? '0px' : h + 'px'; void d.offsetHeight;
+    d.style.transition = 'height .38s var(--ease)'; d.style.height = ouvrir ? h + 'px' : '0px';
+    d._ht = setTimeout(function () { d.style.transition = ''; d.style.height = ''; d.style.overflow = ''; if (!ouvrir) d.hidden = true; }, 400);
+  }
+
+  // ── Ne commande plus : frise des mois de la période, un point par produit au mois de son dernier achat
+  function l8Frises() {
+    var N = l8Mois().N;
+    Array.prototype.forEach.call(document.querySelectorAll('.l8-frz'), function (el) {
+      if (el.closest('[hidden]')) return;
+      var W = Math.max(200, l8Larg(el, 360)), slot = W / N, lab = el.hasAttribute('data-lab'), H = lab ? 22 : 44, h = '', cx = function (i) { return slot * (i + 0.5); };
+      if (lab) { var m = l8Mois(); for (var i = (N - 1) % (slot < 36 ? 2 : 1); i < N; i += (slot < 36 ? 2 : 1)) h += '<text x="' + l8F1(cx(i)) + '" y="16" text-anchor="middle">' + esc(m.labs[i]) + '</text>'; }
+      else {
+        var k = Math.max(0, Math.min(N - 1, Number(el.getAttribute('data-mi')) || 0));
+        for (var j = 0; j < N; j++) h += '<circle cx="' + l8F1(cx(j)) + '" cy="22" r="2.4" fill="#D5DCEB"/>';
+        h += (k < N - 1 ? '<line class="l8-sil" x1="' + l8F1(cx(k)) + '" x2="' + l8F1(cx(N - 1)) + '" y1="22" y2="22" stroke="#8591AC" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="1 6"/>' : '') +
+          '<g transform="translate(' + l8F1(cx(k)) + ' 22)"><circle class="l8-fdot" r="12" fill="#0050E6" fill-opacity=".14"/><circle class="l8-fdot" r="6.5" fill="#0050E6" stroke="#fff" stroke-width="2.5"/></g>';
+      }
+      l8Cadre(el, 'neplus'); el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" aria-hidden="true">' + h + '</svg>';
+    });
   }
 
   // Les rubriques construites à la demande (les autres — Fiche, Notes, Tout le détail — portent des formulaires : construites une fois)
   var L8_F = { resume: l8Resume, proposer: l8Proposer, commandes: l8Commandes, categories: l8Categories, neplus: l8NePlus, meilleurs: l8Top };
 
   // Le détail d'une catégorie, sur place (mois par mois, sa part, meilleurs produits, ce qu'elle ne commande plus, à proposer)
-  // Les 8 (ou moins) mois d'une catégorie, en barres, avec le trait du repère
-  function l1MoisBarres(c, W) {
-    var A = L1.A, R = l1Ref(L1.b), i0 = A.i0, N = A.n - i0;
-    var ser = A.pts.slice(i0).map(function (p, i) { return c.caByM[i0 + i] || 0; });
-    var ref = R.catSerie(c).slice(i0).map(function (v) { return v == null ? 0 : v; });
-    var H = 128, pt = 26, pb = 26, max = Math.max.apply(null, ser.concat(ref)) * 1.05 || 1;
-    var slot = W / N, bw = slot * 0.54, Y = function (v) { return pt + (H - pt - pb) * (1 - v / max); };
-    var g = '', lab = '', pas = slot < 56 ? 2 : 1;
-    for (var i = 0; i < N; i++) {
-      var x0 = slot * i + (slot - bw) / 2;
-      if (ser[i] > 0) g += '<rect x="' + x0.toFixed(1) + '" y="' + Y(ser[i]).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (H - pb - Y(ser[i])).toFixed(1) + '" rx="3" fill="#0050E6"/>';
-      if ((N - 1 - i) % pas === 0) lab += '<text x="' + (slot * i + slot / 2).toFixed(1) + '" y="' + (H - 7) + '" text-anchor="middle" fill="#646B80">' + esc(A.pts[i0 + i].label) + '</text>';
-    }
-    var ticks = '';
-    for (var k = 0; k < N; k++) ticks += '<line x1="' + (slot * k + 3).toFixed(1) + '" x2="' + (slot * (k + 1) - 3).toFixed(1) + '" y1="' + Y(ref[k]).toFixed(1) + '" y2="' + Y(ref[k]).toFixed(1) + '" stroke="#8591AC" stroke-width="2.5" stroke-linecap="round"/>';
-    var yl = Y(ref[N - 1]);
-    return l1Legende(R, 'barre') + '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="Ce qu’elle commande chaque mois en ' + esc(c.label) + ', face à ' + esc(R.long) + '">' +
-      '<line x1="0" x2="' + W + '" y1="' + (H - pb) + '" y2="' + (H - pb) + '" stroke="rgba(16,19,28,.12)"/>' + g + ticks +
-      lab + '</svg>';
-  }
-
   // Le dépli d'une catégorie (construit à l'ouverture)
-  function l8DetailHtml(key, W) {
+  function l8DetailHtml(key) {
     var A = L1.A, R = l1Ref(L1.b), c = null, i;
     for (i = 0; i < A.cats.length; i++) { if (A.cats[i].key === key) c = A.cats[i]; }
     if (!c) return '';
@@ -2154,7 +2562,7 @@
     } else {
       var p = A.caTot > 0 ? Math.round(c.ca / A.caTot * 100) : 0;
       var rv = R.catSerie(c)[A.n - 1];
-      h += '<div><h4>Ses ' + A.nAct + ' mois</h4><div class="l8-dmois">' + l1MoisBarres(c, W) + '</div>' +
+      h += '<div><h4>Ses ' + A.nAct + ' mois</h4><div class="l8-lu2" id="l8-lu-' + key + '"></div><div class="l8-dcv" id="l8-dcv-' + key + '"></div>' +
         '<p>' + cap(MOIS_LONG[A.last.mk % 12]) + ' : <b>' + l1Eur(c.caByM[A.n - 1] || 0) + '</b>, contre <b>' + l1Eur(rv || 0) + '</b> pour ' + esc(R.long) + '.</p></div>';
       h += '<div><h4>Sa part, ' + l1PeriodeCumul(A) + '</h4><p><b>' + l1Pct(p) + '</b> de ses commandes · <b>' + l1Nb(c.refs) + '</b> produit' + (c.refs > 1 ? 's' : '') + ' différent' + (c.refs > 1 ? 's' : '') + '.</p>' +
         '<div class="l8-piste-p"><i style="width:' + Math.max(0, Math.min(100, p)) + '%"></i></div></div>';
@@ -2189,34 +2597,6 @@
       h += '</div>';
     }
     return h;
-  }
-
-  // Légende hors du dessin : une ligne au-dessus (jamais d'étiquette posée sur les tracés)
-  function l1Legende(R, forme) {
-    return '<p class="l8-leg"><span><i class="l8-leg-a ' + forme + '"></i>Cette officine</span><span><i class="l8-leg-b"></i>' + esc(R.etiq) + '</span></p>';
-  }
-  // Courbe : l'officine (trait plein) face à la base, sur sa fenêtre d'activité
-  function l1Courbe(W) {
-    var A = L1.A, R = l1Ref(L1.b), i0 = A.i0, N = A.n - i0;
-    if (N < 2) return '<p class="pha-sub l8-vide">Pas assez de mois depuis sa première commande pour tracer une courbe.</p>';
-    var ser = A.pts.slice(i0).map(function (p) { return p.ca; }), ref = R.serie.slice(i0).map(function (v) { return v == null ? 0 : v; });
-    var H = W > 460 ? 270 : 150, pl = 6, pr = 8, pt = 34, pb = 28;   // marge haute (34) : y logent l'étiquette du dernier point, hors de tout tracé
-    var max = Math.max.apply(null, ser.concat(ref)) * 1.04 || 1;
-    var X = function (i) { return pl + (W - pl - pr) * i / (N - 1); };
-    var Y = function (v) { return pt + (H - pt - pb) * (1 - v / max); };
-    var path = function (a) { return a.map(function (v, i) { return (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1); }).join(''); };
-    var aire = path(ser) + 'L' + X(N - 1).toFixed(1) + ' ' + (H - pb) + 'L' + X(0).toFixed(1) + ' ' + (H - pb) + 'Z';
-    // un mois sur deux seulement si la place manque ; on compte depuis le DERNIER mois, qui doit toujours être écrit
-    var pas = (W - pl - pr) / (N - 1) < 56 ? 2 : 1, lab = '';
-    for (var i = (N - 1) % pas; i < N; i += pas) lab += '<text x="' + X(i).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="' + (i === 0 ? 'start' : (i === N - 1 ? 'end' : 'middle')) + '" fill="#646B80">' + esc(A.pts[i0 + i].label) + '</text>';
-    var xl = X(N - 1), yl = Y(ser[N - 1]);
-    var dots = ser.map(function (v, i) { return i === N - 1 ? '' : '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(v).toFixed(1) + '" r="3" fill="#fff" stroke="#0050E6" stroke-width="2"/>'; }).join('');
-    return l1Legende(R, 'trait') + '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="Ce qu’elle commande chaque mois, face à ' + esc(R.long) + '">' +
-      '<path d="' + aire + '" fill="#E9F0FF"/>' +
-      '<path d="' + path(ref) + '" fill="none" stroke="#8591AC" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' +
-      '<path d="' + path(ser) + '" fill="none" stroke="#0050E6" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>' + dots +
-      '<circle cx="' + xl.toFixed(1) + '" cy="' + yl.toFixed(1) + '" r="5.5" fill="#0050E6" stroke="#fff" stroke-width="2"/>' +
-      '<text class="l8-m" x="' + xl.toFixed(1) + '" y="15" text-anchor="end" fill="#0034A0">' + esc(A.pts[A.n - 1].label) + ' ' + l1Eur(ser[N - 1]) + '</text>' + lab + '</svg>';
   }
 
   // Menu : les compteurs (mêmes sources que les rubriques)
@@ -2290,7 +2670,7 @@
 
   // État de la fiche : remis à zéro quand on change d'officine (la vue pharmacien n'est PAS retenue)
   function l8Init(pid, A, o) {
-    if (String(L1.pid) !== String(pid)) { L1.b = 'reseau'; L1.ouv = {}; L1.vue = 'commercial'; L1.rub = 'resume'; L1.ong = 'stats'; L1.tous = { neplus: false, meilleurs: false }; L1.edit = false; }
+    if (String(L1.pid) !== String(pid)) { L1.b = 'reseau'; L1.ouv = {}; L1.vu = {}; L1.vue = 'commercial'; L1.rub = 'resume'; L1.ong = 'stats'; L1.tous = { neplus: false, meilleurs: false }; L1.edit = false; }
     L1.pid = String(pid); L1.A = A; L1.marge = o.marge; L1.dataR = o.dataR; L1.dataG = o.dataG; L1.nR = o.nR; L1.nG = o.nG; L1.hasGrp = o.hasGrp;
     L1.G = l1Groupe(pid, A);
     if (!L1.G) L1.b = 'reseau';
@@ -2298,28 +2678,39 @@
     L1.k = (L1.k || 0) + 1;       // un rendu complet invalide les rubriques construites à la demande
   }
 
-  // Construit (ou reconstruit, après un changement de « Face à ») les six rubriques de chiffres, l'une sous l'autre, sans jamais refaire la fiche
-  function l8Afficher() {
+  // Construit (ou reconstruit) les six rubriques de chiffres, l'une sous l'autre, sans jamais refaire la fiche.
+  // garde = rubriques déjà construites qu'on ne touche pas (« Face à » : leur repère glisse, rien n'est redessiné) ;
+  // dans ce cas les autres sont refaites sans mouvement.
+  function l8Afficher(garde) {
     var p = document.querySelector('.pha.l8'); if (!p) return;
     p.setAttribute('data-ong', L1.ong);
     var tt = document.getElementById('l8-stat-tete'); if (tt && tt.getAttribute('data-ok') !== String(L1.k)) { tt.innerHTML = l8TeteStats(); tt.setAttribute('data-ok', String(L1.k)); }
+    var neuves = [];
     Object.keys(L8_F).forEach(function (k) {
       var el = document.getElementById('l8-v-' + k);
-      if (el && el.getAttribute('data-ok') !== String(L1.k)) { el.innerHTML = L8_F[k](); el.setAttribute('data-ok', String(L1.k)); }
+      if (!el || el.getAttribute('data-ok') === String(L1.k)) return;
+      if (garde && garde.indexOf(k) >= 0 && el.getAttribute('data-ok')) { el.setAttribute('data-ok', String(L1.k)); return; }
+      el.innerHTML = L8_F[k](); el.setAttribute('data-ok', String(L1.k));
+      l8Etat(k, !!garde); l8Compteurs(k); neuves.push(k);
     });
-    l8Peindre(); l8Sommaire();
+    l8Peindre(garde ? neuves : null); l8Observer(); l8Sommaire();
   }
-  // Ce qui dépend de la largeur réelle (courbe, barres des mois d'une catégorie ouverte)
-  function l8Peindre() {
-    if (L1.ong !== 'stats') return;
+  // Ce qui dépend de la largeur réelle : courbe, colonnes, petites courbes, frises, courbe d'une catégorie ouverte.
+  // quoi = liste de rubriques à (re)dessiner (toutes si absent). Le redessin ne rejoue jamais l'arrivée : l'horloge reprend (--l8t).
+  function l8Peindre(quoi) {
+    if (L1.ong !== 'stats' || !L1.A) return;
+    var veut = function (k) { return !quoi || quoi.indexOf(k) >= 0; }, vis = function (el) { return el && !el.closest('[hidden]'); };
     var g = document.getElementById('l8-graph');
-    if (g && L1.A && !g.closest('[hidden]')) g.innerHTML = l1Courbe(Math.max(260, Math.round(g.clientWidth || 320)));
-    Object.keys(L1.ouv).forEach(function (k) { if (L1.ouv[k]) l8Detail(k); });
+    if (veut('resume') && vis(g)) { l8Cadre(g, 'resume'); g.innerHTML = l8CourbeResume(Math.max(260, l8Larg(g, 320))); l8LierResume(); }
+    var c = document.getElementById('l8-cmd');
+    if (veut('commandes') && vis(c)) { l8Cadre(c, 'commandes'); c.innerHTML = l8Colonnes(Math.max(260, l8Larg(c, 700))); l8LierCols(); }
+    if (veut('categories')) { l8Minis(); Object.keys(L1.ouv).forEach(function (k) { if (L1.ouv[k]) l8Detail(k); }); }
+    if (veut('neplus')) l8Frises();
   }
   function l8Detail(key) {
     var d = document.getElementById('l8-d-' + key); if (!d || d.hidden) return;
-    var w = d.clientWidth || 600;
-    d.innerHTML = l8DetailHtml(key, Math.max(240, Math.round(window.innerWidth > 900 ? (w - 40) / 2 : w)));
+    d.innerHTML = l8DetailHtml(key);
+    l8CourbeCat(key);
   }
   // Sommaire : la ligne de la rubrique à l'écran est marquée (la dernière rubrique dont le haut est passé sous la ligne des 140 px)
   function l8Sommaire() {
@@ -2399,7 +2790,14 @@
       var o = (k === 'ArrowLeft' || k === 'Home') ? 'stats' : 'infos';
       V2.pharmaL.onglet(o); var b = document.getElementById('l8-t-' + o); if (b) b.focus();
     },
-    base: function (k) { if (k === 'groupement' && !L1.G) k = 'reseau'; L1.b = k; L1.k++; l8Afficher(); },
+    // « Face à » : le repère GLISSE (courbe du Résumé, escalier des Commandes) ; Catégories est refaite sans mouvement
+    base: function (k) {
+      if (k === 'groupement' && !L1.G) k = 'reseau';
+      if (k === L1.b) return;
+      L1.b = k; L1.k++;
+      l8Afficher(['resume', 'commandes', 'proposer', 'neplus', 'meilleurs']);
+      l8RebaseResume(); l8RebaseCols();
+    },
     aide: function (btn) {
       var v = btn.closest ? btn.closest('.l8-tete,.l8-st-tete') : null, t = v && v.nextElementSibling; if (!t || !t.classList.contains('l8-aide-txt')) t = v && v.querySelector('.l8-aide-txt'); if (!t) return;
       t.hidden = !t.hidden; btn.setAttribute('aria-expanded', t.hidden ? 'false' : 'true');
@@ -2407,9 +2805,17 @@
     cat: function (key) {
       var d = document.getElementById('l8-d-' + key); if (!d) return;
       var ouv = d.hidden;                      // fermé → on l'ouvre
-      d.hidden = !ouv; L1.ouv[key] = ouv;
+      // une seule catégorie ouverte à la fois
+      Object.keys(L1.ouv).forEach(function (k) {
+        if (k === key || !L1.ouv[k]) return;
+        var o = document.getElementById('l8-d-' + k), b = o && o.previousElementSibling;
+        L1.ouv[k] = false; if (b) b.setAttribute('aria-expanded', 'false'); if (o) l8Hauteur(o, false);
+      });
+      L1.ouv[key] = ouv;
       var b = d.previousElementSibling; if (b) b.setAttribute('aria-expanded', ouv ? 'true' : 'false');
-      if (ouv) l8Detail(key);
+      if (!ouv) { l8Hauteur(d, false); return; }
+      d.hidden = false; l8Detail(key); l8Hauteur(d, true);
+      if (!l8Calme()) { d.classList.add('l8-lit'); d.style.setProperty('--l8t', '0ms'); clearTimeout(d._ft); d._ft = setTimeout(function () { d.classList.remove('l8-lit'); d.style.removeProperty('--l8t'); }, 1100); }
     },
     plus: function (w) { L1.tous[w] = !L1.tous[w]; L1.k++; l8Afficher(); },
     // « Modifier » : les formulaires existants remplacent la lecture ; « Terminer » les referme.
@@ -5734,13 +6140,6 @@
       '.l8-puce{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:17px;font-weight:700;padding:5px 12px 5px 9px;border-radius:999px;word-spacing:-.3em;background:var(--surf-sunken)}',
       '.l8-puce.pha-up{background:color-mix(in srgb,var(--c-mint) 13%,#fff)}.l8-puce.pha-dn{background:color-mix(in srgb,var(--c-rose) 13%,#fff)}',
       '.l8-graph{margin:24px 0 8px}',
-      '.l8-graph svg,.l8-dmois svg{display:block;width:100%;height:auto;overflow:visible}',
-      '.l8-graph text,.l8-dmois text{font-family:var(--font);font-size:13px;font-weight:700;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}',
-      '.l8-graph .l8-m{font-family:var(--mono)}',
-      '.l8-leg{display:flex;flex-wrap:wrap;gap:4px 16px;margin:0 0 4px;font-size:13px;font-weight:700;color:var(--ip-ink-2)}',
-      '.l8-leg i{display:inline-block;vertical-align:middle;margin-right:6px}',
-      '.l8-leg-a.trait{width:18px;height:3px;border-radius:2px;background:#0050E6}.l8-leg-a.barre{width:10px;height:10px;border-radius:2px;background:#0050E6}',
-      '.l8-leg-b{width:18px;height:3px;border-radius:2px;background:#8591AC}',
       '.l8-reps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px;margin-top:24px}',
       '.l8-rep{border-top:1px solid var(--line-strong);padding-top:12px}',
       '.l8-rl{font-size:14px;font-weight:700;color:var(--muted)}',
@@ -5757,21 +6156,14 @@
       '.l8-lm{font-family:var(--mono);font-size:15px;font-weight:700;white-space:nowrap;word-spacing:-.3em;min-width:48px;text-align:right}',
       '.l8-lm-l{min-width:76px}',
       '.l8-lg-g{font-size:14px;font-weight:600;color:var(--muted);white-space:nowrap}',
-      '.l8-pbar{width:64px;height:8px;border-radius:4px;background:var(--surf-sunken);position:relative;flex:none}',
-      '.l8-pbar i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--ip-blue)}',
+      '.l8-pbar{width:128px;height:6px;border-radius:3px;background:var(--surf-sunken);position:relative;flex:none}',
+      '.l8-pbar i{position:absolute;left:0;top:0;bottom:0;width:100%;border-radius:3px;background:linear-gradient(90deg,#2A6AF0,#0050E6);transform-origin:0 50%;transform:scaleX(var(--w,1))}',
       '.l8-plus{margin-top:4px}',
       '.l8-sst{margin:28px 0 8px;display:flex;align-items:baseline;justify-content:space-between;gap:12px}',
       '.l8-sst h3{margin:0;font-size:17px;font-weight:800;letter-spacing:-.02em}',
       '.l8-sst span{font-size:14px;font-weight:600;color:var(--muted)}',
-      '.l8-mois{display:grid;grid-template-columns:52px minmax(0,1fr) 84px 124px;align-items:center;gap:0 12px;min-height:40px;border-top:1px solid var(--line)}',
-      '.l8-mois:last-of-type{border-bottom:1px solid var(--line)}',
-      '.l8-me{font-size:14px;font-weight:700;color:var(--muted)}',
-      '.l8-mm,.l8-md{font-family:var(--mono);font-size:15px;font-weight:700;text-align:right;word-spacing:-.3em}',
-      '.l8-fp{font-family:var(--font);word-spacing:normal}','.l8-md{font-size:14px;white-space:nowrap}','.l8-mois>*{min-width:0}','.l8-mm{white-space:nowrap}',
+      '.l8-fp{font-family:var(--font);word-spacing:normal}',
       '.l8-dp.l8-dp3{display:grid;grid-template-columns:minmax(0,1fr) 84px 80px;align-items:baseline;gap:0 12px}.l8-dp3 .l8-dpn{font-size:14px;font-weight:700;color:var(--ip-ink);text-align:left}.l8-dp3 .mono{text-align:right;white-space:nowrap;word-spacing:-.3em;font-size:14px}.l8-dp3 .l8-dpq{text-align:right;white-space:nowrap}',
-      '.l8-barre{position:relative;height:10px;border-radius:5px;background:var(--surf-sunken)}',
-      '.l8-barre i{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:var(--ip-blue)}',
-      '.l8-barre u{position:absolute;top:-4px;bottom:-4px;width:3px;border-radius:2px;background:#8591AC;text-decoration:none}',
       '.l8-bouge{display:flex;align-items:center;gap:12px;min-height:52px;border-top:1px solid var(--line)}',
       '.l8-bouge:last-child{border-bottom:1px solid var(--line)}',
       '.l8-f{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;flex:none}',
@@ -5783,17 +6175,13 @@
       '.l8-crow{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto 20px;align-items:center;gap:0 14px;min-height:56px;padding:6px 0;border:0;background:transparent;text-align:left;font:inherit;color:inherit;cursor:pointer}',
       '.l8-crow:hover .l8-cn{color:var(--ip-blue)}',
       '.l8-cn{font-size:16px;font-weight:700;letter-spacing:-.01em}',
-      '.l8-cinf{display:grid;grid-template-columns:96px 150px 124px;align-items:center;gap:0 14px}',
+      '.l8-cinf{display:grid;grid-template-columns:96px 236px 108px;align-items:center;gap:0 18px}',
       '.l8-cm{font-family:var(--mono);font-size:15px;font-weight:700;text-align:right;word-spacing:-.3em}',
-      '.l8-ce{font-family:var(--mono);font-size:14px;font-weight:700;text-align:right;word-spacing:-.3em}',
+      '.l8-ce{display:flex;justify-content:flex-start;font-family:var(--mono);font-size:14px;font-weight:700;word-spacing:-.3em}',
       '.l8-cabs{font-size:14px;font-weight:700;color:var(--muted)}',
       '.l8-cc{display:flex;justify-content:flex-end;color:#7C859B;transition:transform .25s var(--ease)}',
       '.l8-crow[aria-expanded="true"] .l8-cc{transform:rotate(90deg);color:var(--ip-blue)}',
-      '.l8-dv{position:relative;height:10px;border-radius:5px;background:var(--surf-sunken)}',
-      '.l8-dv::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:#8591AC;border-radius:1px}',
-      '.l8-dv i{position:absolute;top:0;bottom:0;border-radius:5px}',
-      '.l8-dv i.moins{right:50%;background:var(--c-rose)}.l8-dv i.plus{left:50%;background:var(--c-mint)}',
-      '.l8-detail{padding:4px 0 24px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 40px}',
+      '.l8-detail{padding:4px 0 24px;display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:8px 40px}',
       '.l8-detail[hidden]{display:none}',
       '.l8-detail>div{min-width:0}',
       '.l8-detail h4{margin:14px 0 6px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}',
@@ -5842,6 +6230,80 @@
       '.pha-wrap[data-vue="pharmacien"] .l8-vpid{display:block;margin-bottom:20px}',
       '.l8-vpid p{margin:2px 0 0;font-size:15px;font-weight:600;color:var(--ip-ink-2)}',
       'body.l8-vp .v2-top{display:none}',
+      /* ══ La courbe qu'on parcourt (maquette 10a, 10/10/2026) : le dessin des chiffres. Arrivée en @keyframes pilotée par l'horloge L1.vu (--l8t = retard négatif) ══ */
+      '#l8-v-resume{background:radial-gradient(ellipse 48% 150px at 22% 130px,rgba(0,80,230,.07),rgba(0,80,230,0)) no-repeat}',
+      '.l8-rep:empty{display:none}',
+      '.l8-graph{margin:18px 0 4px}',
+      '.l8-tr{display:block;width:100%;height:auto;overflow:visible;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;cursor:crosshair}',
+      '.l8-tr:focus{outline:none}',
+      '.l8-tr:focus-visible{outline:3px solid color-mix(in srgb,var(--ip-blue) 55%,transparent);outline-offset:6px;border-radius:12px}',
+      '.l8-tr text{font-family:var(--font);font-size:13px;font-weight:600;fill:#646B80}',
+      '.l8-tr .l8-refnom{font-weight:800;fill:#4A5266}',
+      '.l8-tr .l8-mo.on{fill:var(--ip-ink);font-weight:800}',
+      '.l8-tr .l8-curs{opacity:0;transition:opacity .18s;pointer-events:none}',
+      '.l8-tr .l8-curs.on{opacity:1}',
+      '.l8-tr .l8-curs .l8-rule,.l8-tr .l8-curs .l8-p1,.l8-tr .l8-curs .l8-p2{transition:transform .16s var(--ease)}',
+      '.l8-tr .l8-curs.nt .l8-rule,.l8-tr .l8-curs.nt .l8-p1,.l8-tr .l8-curs.nt .l8-p2{transition:none}',
+      '.l8-ligne,.l8-halo,.l8-marche,.l8-m1{stroke-dasharray:1 2;stroke-dashoffset:0}',
+      '.l8-aire{transform-box:fill-box;transform-origin:50% 100%}',
+      '.l8-fin .l8-dot,.l8-fin .l8-puls,.l8-m2,.l8-fdot{transform-box:fill-box;transform-origin:center}',
+      '.l8-puls{opacity:0}',
+      '.l8-av .l8-ligne,.l8-av .l8-halo,.l8-av .l8-marche,.l8-av .l8-m1{stroke-dashoffset:1}',
+      '.l8-av .l8-aire{transform:scaleY(0)}',
+      '.l8-av .l8-ref{opacity:0}',
+      '.l8-av .l8-fin .l8-dot,.l8-av .l8-m2,.l8-av .l8-fdot{transform:scale(0)}',
+      '.l8-lit .l8-ligne,.l8-lit .l8-halo{animation:l8-trace .8s var(--ease) backwards;animation-delay:var(--l8t,0ms)}',
+      '.l8-lit .l8-aire{animation:l8-aire .78s var(--ease) backwards;animation-delay:calc(100ms + var(--l8t,0ms))}',
+      '.l8-lit .l8-ref{animation:l8-fondu .6s ease backwards;animation-delay:calc(200ms + var(--l8t,0ms))}',
+      '.l8-lit .l8-fin .l8-dot{animation:l8-pop .38s cubic-bezier(.22,1,.36,1) backwards;animation-delay:calc(520ms + var(--l8t,0ms))}',
+      '.l8-lit .l8-fin .l8-puls{animation:l8-bat .7s var(--ease) backwards;animation-delay:calc(700ms + var(--l8t,0ms))}',
+      '@keyframes l8-trace{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}',
+      '@keyframes l8-aire{from{transform:scaleY(0)}to{transform:scaleY(1)}}',
+      '@keyframes l8-fondu{from{opacity:0}to{opacity:1}}',
+      '@keyframes l8-pop{from{transform:scale(0)}to{transform:scale(1)}}',
+      '@keyframes l8-bat{0%{transform:scale(1);opacity:0}15%{opacity:.4}100%{transform:scale(3.2);opacity:0}}',
+      /* Commandes : colonnes, le repère en escalier */
+      '.l8-lu{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0 12px;min-height:36px}',
+      '.l8-lv{color:var(--ip-ink);font-size:15px;font-weight:700;display:inline-flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:0 8px;min-width:0}',
+      '.l8-lv b,.l8-lu2 b{font-family:var(--mono);font-weight:800;word-spacing:-.3em}',
+      '.l8-cmd{min-height:260px}',
+      '.l8-cols .l8-col{fill:var(--ip-blue);transform-box:fill-box;transform-origin:50% 100%;transition:fill .22s}',
+      '.l8-cols.hov .l8-col:not(.act){fill:#CBD8F4}',
+      '.l8-cols .l8-cvl{font-family:var(--mono);font-size:13px;font-weight:700;fill:var(--ip-ink-2);font-variant-numeric:tabular-nums;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}',
+      '.l8-av .l8-cols .l8-col{transform:scaleY(0)}',
+      '.l8-av .l8-cols .l8-cvl{transform:translateY(var(--dy))}',
+      '.l8-lit .l8-cols .l8-col{animation:l8-col .6s var(--ease) backwards;animation-delay:calc(var(--i)*45ms + var(--l8t,0ms))}',
+      '.l8-lit .l8-cols .l8-cvl{animation:l8-vl .6s var(--ease) backwards;animation-delay:calc(var(--i)*45ms + var(--l8t,0ms))}',
+      '.l8-lit .l8-cols .l8-marche{animation:l8-trace .7s var(--ease) backwards;animation-delay:calc(400ms + var(--l8t,0ms))}',
+      '@keyframes l8-col{from{transform:scaleY(0)}to{transform:scaleY(1)}}',
+      '@keyframes l8-vl{from{transform:translateY(var(--dy))}to{transform:translateY(0)}}',
+      '.l8-pastille{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:13px;font-weight:700;padding:2px 10px;border-radius:999px;word-spacing:-.3em;white-space:nowrap;background:var(--surf-sunken)}',
+      '.l8-pastille.pha-up{background:color-mix(in srgb,var(--c-mint) 13%,#fff)}.l8-pastille.pha-dn{background:color-mix(in srgb,var(--c-rose) 13%,#fff)}',
+      '.l8-pastille svg{width:14px;height:14px}',
+      /* À proposer, Meilleurs produits, Répartition : barres fines qui poussent en cascade */
+      '.l8-av .l8-pbar i{transform:scaleX(0)}',
+      '.l8-lit .l8-pbar i{animation:l8-barre .65s var(--ease) backwards;animation-delay:calc(var(--i,0)*40ms + var(--l8t,0ms))}',
+      '@keyframes l8-barre{from{transform:scaleX(0)}to{transform:scaleX(var(--w,1))}}',
+      /* Catégories : petite courbe par ligne, courbe en grand au clic */
+      '.l8-mini{display:block;height:38px;min-width:0}',
+      '.l8-mini svg{display:block;width:100%;height:38px;overflow:visible;transition:transform .25s var(--ease)}',
+      '.l8-mini.abs svg path{stroke-dasharray:1 5}',
+      '.l8-crow:hover .l8-mini svg,.l8-crow:focus-visible .l8-mini svg{transform:scale(1.03)}',
+      '.l8-lit .l8-m1{animation:l8-trace .7s var(--ease) backwards;animation-delay:calc(var(--i,0)*60ms + var(--l8t,0ms))}',
+      '.l8-lit .l8-m2{animation:l8-pop .4s cubic-bezier(.22,1,.36,1) backwards;animation-delay:calc(var(--i,0)*60ms + 500ms + var(--l8t,0ms))}',
+      '.l8-detail .l8-dcv{margin-top:2px}',
+      '.l8-lu2{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;min-height:36px;font-size:15px;font-weight:700}',
+      /* Ne commande plus : frise des mois de la période */
+      '.l8-fz{display:grid;grid-template-columns:minmax(0,1fr) 372px 96px;gap:0 14px;align-items:center;min-height:56px}',
+      '.l8-fz .l8-lg-g{text-align:right}',
+      '.l8-fzt{min-height:30px;padding:0;border-top:0}',
+      '.l8-frz{display:block;min-width:0;height:44px}.l8-fzt .l8-frz{height:22px}',
+      '.l8-frz svg{display:block;width:100%;overflow:visible}',
+      '.l8-frz text{font-family:var(--font);font-size:13px;font-weight:600;fill:#646B80}',
+      '.l8-av .l8-frz .l8-sil{opacity:0}',
+      '.l8-lit .l8-frz .l8-fdot{animation:l8-pop .45s cubic-bezier(.22,1,.36,1) backwards;animation-delay:calc(var(--i,0)*50ms + var(--l8t,0ms))}',
+      '.l8-lit .l8-frz .l8-sil{animation:l8-fondu .5s ease backwards;animation-delay:calc(var(--i,0)*50ms + 250ms + var(--l8t,0ms))}',
+      '@media(max-width:899px){.l8-pbar{width:72px}}',
       '@media(max-width:900px){',
       '.pha.l8{display:block;padding-top:0}',
       '.pha.l8>.pha-rail,.pha.l8>.pha-main{display:flex;flex-direction:column;gap:16px;min-width:0}',
@@ -5857,20 +6319,24 @@
       '.l8-t{font-size:28px}',
       '.l8-n{font-size:60px}',
       '.l8-reps{grid-template-columns:1fr;gap:0;margin-top:12px}',
+      '.l8-cmd{min-height:178px}',
+      '.l8-fz{grid-template-columns:minmax(0,1fr) 92px;gap:0 10px;padding:6px 0 4px;min-height:68px}',
+      '.l8-fz .l8-ln{grid-column:1/-1}',
+      '.l8-fzt{min-height:28px;padding:0}.l8-fzt .l8-ln{display:none}.l8-fzt .l8-lg-g{visibility:hidden}',
       '.l8-rep{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:0 12px;padding:12px 0}',
       '.l8-rv{margin:0;font-size:22px}',
       '.l8-rv-mots{font-size:19px}',
       '.l8-rt{margin:0;width:100%;text-align:right}',
-      '.l8-mois{grid-template-columns:36px minmax(0,1fr) 70px 124px;gap:0 8px}',
       '.l8-crow{grid-template-columns:minmax(0,1fr) 20px;grid-template-areas:"n c" "x x";padding:10px 0;min-height:64px}',
       '.l8-cn{grid-area:n}.l8-cc{grid-area:c}',
-      '.l8-cinf{grid-area:x;grid-template-columns:76px minmax(0,1fr) 124px;gap:0 10px;margin-top:6px}',
+      '.l8-cinf{grid-area:x;grid-template-columns:76px minmax(0,1fr) 108px;gap:0 12px;margin-top:6px}',
       '.l8-cm{text-align:left}',
       '.l8-detail{grid-template-columns:1fr}',
       '.l8-fr{flex-wrap:wrap}',
       '.l8-fnote a{padding:13px 0}',
       '.l8-pacts{width:100%}.l8-pacts .l8-btn{flex:1;justify-content:center;padding:0 8px}',
       '}',
+      '@media(prefers-reduced-motion:reduce){.l8-tr *,.l8-tr,.l8-mini *,.l8-frz *,.l8-pbar i{transition:none!important;animation:none!important}}',
       '#l8-tout-body[hidden]{display:none!important}',
       '.phf-prange{color:var(--muted);font-weight:600;font-size:14px}',
       '.phf-psub{font-size:12.5px;color:var(--muted);font-weight:500;margin-top:5px;max-width:560px;line-height:1.4}',
