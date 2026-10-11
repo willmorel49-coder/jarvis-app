@@ -64,30 +64,50 @@
   // est le prix d'achat × 1,03, donc la marge d'une ligne = net vendu − net ÷ 1,03.
   // « NR » au sens de l'index produit (isNR, short list Sagitta), comme la
   // répartition par famille. Le supplément froid s'ajoute quand même.
+  // Deux règles à part (Will, 10/10/2026) :
+  //   · générique (nature déclarée, liste de marge-regles-data.js) → aucune marge,
+  //     supplément froid compris ;
+  //   · petit prix d'un produit de la liste PRIVÉE (window.MARGE_REGLES_PRIVE,
+  //     fichier protégé chargé avec les ventes) → le montant par boîte que ce
+  //     fichier indique, à la place de boitePetit. Le supplément froid n'est pas
+  //     concerné. Montant, libellés et liste ne vivent PAS dans ce dépôt : sans
+  //     le fichier, la règle ne s'applique pas et sa ligne ne s'affiche pas.
   var MARGE = { boitePetit: 0.12, tauxInter: 0.0304, boiteCher: 13, boiteFroid: 0.63, coefNR: 1.03 };
+  function reglePrivee() {
+    var p = window.MARGE_REGLES_PRIVE; p = p && p.petitReduit;
+    return p && p.cips && p.cips.length && isFinite(+p.boite) ? p : null;
+  }
   function estNR(s, idx) { var info = (idx || productIndex())[normCip(s.artCode)]; return !!(info && info.isNR); }
+  function estGenerique(s, idx) { var info = (idx || productIndex())[normCip(s.artCode)]; return !!(info && info.sansMarge); }
+  function estPetitReduit(s, idx) {
+    var info = (idx || productIndex())[normCip(s.artCode)];
+    return !!(info && info.pr && !info.sansMarge && !info.isNR) && priceTier(s.puNet) === 0 && !!reglePrivee();
+  }
   function margeBase(s, idx) {
+    if (estGenerique(s, idx)) return 0;
     if (estNR(s, idx)) return (s.mntNetHt || 0) * (1 - 1 / MARGE.coefNR);
     var t = priceTier(s.puNet), q = +s.qte || 0;
-    if (t === 0) return q * MARGE.boitePetit;
+    if (t === 0) return q * (estPetitReduit(s, idx) ? +reglePrivee().boite : MARGE.boitePetit);
     if (t === 1) return (s.mntNetHt || 0) * MARGE.tauxInter;
     return q * MARGE.boiteCher;
   }
   // 15/09/2026 — lu sur is_froid et non plus via familyOf() : un biosimilaire froid
   // est rangé en « Biosimilaires » mais garde son supplément froid.
   function estFroid(s, idx) { var info = (idx || productIndex())[normCip(s.artCode)]; return !!(info && info.is_froid); }
-  function margeFroid(s, idx) { return estFroid(s, idx) ? (+s.qte || 0) * MARGE.boiteFroid : 0; }
+  function margeFroid(s, idx) { return estFroid(s, idx) && !estGenerique(s, idx) ? (+s.qte || 0) * MARGE.boiteFroid : 0; }
   function margeVente(s, idx) { idx = idx || productIndex(); return margeBase(s, idx) + margeFroid(s, idx); }
   V2.piloMargeVente = margeVente;
   // Cumul sur un lot de ventes : total + détail par palier (boîtes, CA, marge)
   // + les non remboursés à part (hors paliers) + le supplément chaîne du froid à
   // part : trois paliers + NR + froid = total.
+  // 10/10/2026 — deux blocs de plus, hors paliers : `pr` (petits prix de la liste
+  // privée) et `gen` (génériques, marge nulle) : trois paliers + NR + pr + gen + froid = total.
   function cumulMarge(ventes, idx) {
     idx = idx || productIndex();
-    var r = { total: 0, pal: [{ q: 0, ca: 0, m: 0 }, { q: 0, ca: 0, m: 0 }, { q: 0, ca: 0, m: 0 }], nr: { q: 0, ca: 0, m: 0 }, froid: { q: 0, m: 0 }, ca: 0, mois: {} };
+    var r = { total: 0, pal: [{ q: 0, ca: 0, m: 0 }, { q: 0, ca: 0, m: 0 }, { q: 0, ca: 0, m: 0 }], nr: { q: 0, ca: 0, m: 0 }, pr: { q: 0, ca: 0, m: 0 }, gen: { q: 0, ca: 0, m: 0 }, froid: { q: 0, m: 0 }, ca: 0, mois: {} };
     for (var i = 0; i < ventes.length; i++) {
       var s = ventes[i], t = priceTier(s.puNet), k = t < 2 ? t : 2, m = margeBase(s, idx), mf = margeFroid(s, idx);
-      var o = estNR(s, idx) ? r.nr : r.pal[k]; o.q += (+s.qte || 0); o.ca += (s.mntNetHt || 0); o.m += m;
+      var o = estGenerique(s, idx) ? r.gen : estNR(s, idx) ? r.nr : estPetitReduit(s, idx) ? r.pr : r.pal[k]; o.q += (+s.qte || 0); o.ca += (s.mntNetHt || 0); o.m += m;
       if (mf) { r.froid.q += (+s.qte || 0); r.froid.m += mf; }
       r.total += m + mf; r.ca += (s.mntNetHt || 0); r.mois[mkey(s.year, s.month)] = 1;
     }
@@ -103,7 +123,8 @@
     var S = window.SAGITTA_SHORTLIST || [];
     var F = window.FROID_CIPS || [];
     var PS = Array.isArray(window.PROD_STATS) ? window.PROD_STATS : [];
-    var stamp = B.length + 'x' + S.length + 'x' + F.length + 'x' + PS.length;
+    var R = window.MARGE_REGLES || {}, RG = R.generiques || [], RS = (reglePrivee() || {}).cips || [];
+    var stamp = B.length + 'x' + S.length + 'x' + F.length + 'x' + PS.length + 'x' + RG.length + 'x' + RS.length;
     if (_idx && _idxStamp === stamp) return _idx;
     var m = {};
     B.forEach(function (b) {
@@ -134,6 +155,18 @@
       var c = normCip(s.cip13); if (!c) return;
       if (!m[c]) m[c] = { has_ameli: false, is_froid: false, artnature: '' };
       m[c].isNR = true;
+    });
+    // Génériques déclarés (marge-regles-data.js, aucune marge) et produits de la
+    // liste privée (petit prix au montant du fichier protégé) — voir MARGE.
+    RG.forEach(function (c) {
+      c = normCip(c); if (!c) return;
+      if (!m[c]) m[c] = { has_ameli: false, is_froid: false, artnature: '' };
+      m[c].sansMarge = true;
+    });
+    RS.forEach(function (c) {
+      c = normCip(c); if (!c) return;
+      if (!m[c]) m[c] = { has_ameli: false, is_froid: false, artnature: '' };
+      m[c].pr = true;
     });
     _idx = m; _idxStamp = stamp; return m;
   }
@@ -1403,7 +1436,12 @@
         // Le supplément chaîne du froid s'ajoute aux trois paliers : la 4e ligne
         // n'apparaît que s'il y a eu des boîtes froid sur la période.
         // Les non remboursés sortent des paliers : leur ligne à eux, si la période en a.
+        // Liste privée à petit prix et génériques : hors paliers eux aussi, chacun sa ligne.
+        // Libellés de la liste privée : lus dans le fichier protégé, jamais écrits ici.
+        var regleP = reglePrivee();
+        if (regleP && mg.pr.q) PAL.push({ l: esc(regleP.libelle || ''), d: esc(regleP.detail || ''), color: TIERS[0].color, bloc: 'pr' });
         if (mg.nr.q || mg.nr.ca) PAL.push({ l: 'Non remboursés', d: 'prix libre · coefficient 1,03', color: 'var(--c-amber)', bloc: 'nr' });
+        if (mg.gen.q || mg.gen.ca) PAL.push({ l: 'Génériques', d: 'aucune marge', color: 'var(--muted)', bloc: 'gen' });
         if (mg.froid.q) PAL.push({ l: 'Chaîne du froid', d: 'en plus · 0,63 € la boîte', color: 'var(--c-froid)', ico: 'froid', bloc: 'froid' });
         var palHtml = PAL.map(function (pz, i) {
           var o = pz.bloc ? mg[pz.bloc] : mg.pal[i], pct = mg.total > 0 ? Math.max(0, o.m) / mg.total * 100 : 0;
@@ -1445,7 +1483,7 @@
               '<div class="pilo-vals">' +
                 '<div class="v2-row-val mono">' + V2.fmtEur(r.total) + '</div>' +
                 // Sur iPhone, le nombre de boîtes s'efface : sinon il coupait les prénoms (« Kari… »).
-                '<div class="v2-row-meta mono"><span class="pilo-marge-boites">' + V2.fmtNum(r.pal[0].q + r.pal[1].q + r.pal[2].q + r.nr.q) + ' boîtes · </span>' + (r.ca > 0 ? (r.total / r.ca * 100).toFixed(2).replace('.', ',') + ' % du CA' : 'CA nul') + '</div>' +
+                '<div class="v2-row-meta mono"><span class="pilo-marge-boites">' + V2.fmtNum(r.pal[0].q + r.pal[1].q + r.pal[2].q + r.nr.q + r.pr.q + r.gen.q) + ' boîtes · </span>' + (r.ca > 0 ? (r.total / r.ca * 100).toFixed(2).replace('.', ',') + ' % du CA' : 'CA nul') + '</div>' +
               '</div>' +
               '<span class="v2-row-chev">' + ICO('chev', 16) + '</span>' +
             '</a>';

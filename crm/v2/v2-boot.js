@@ -589,6 +589,9 @@
     // 10/09/2026 — base clients (export « clients actifs ») : tel, mail, contact,
     // logiciel, enseigne, commercial. Notre liste de clients → protégé.
     clientsactifs: 'v2/clients-actifs.js',
+    // 11/10/2026 — règle de marge PRIVÉE du Pilotage (montant, libellés, liste de produits) :
+    // protégé, 6 Ko, chargé avec les ventes (v2-pilotage.js, reglePrivee).
+    margeprive: 'v2/marge-regles-prive.js',
     drakkars: 'drakkars-data.js',
     cap3000: 'cap3000-data.js',
     sagitta: 'sagitta-shortlist-data.js',
@@ -677,6 +680,7 @@
     sagitta: 'sagitta-shortlist-data.js',
     clientscond: 'clients-cond.js',
     clientsactifs: 'clients-actifs.js',
+    margeprive: 'marge-regles-prive.js',
     // 30/09/2026 — réglage du suivi de rémunération OPSO (confidentiel) : chargé par opso/v2 seul.
     opsocontrat: 'opso-contrat-data.js',
     // 30/09/2026 — accès de test Offilog affiché sur l'écran Offilog d'OPSO (window.OPSO_OFFILOG_ACCES).
@@ -1118,7 +1122,7 @@
     // Bumpé 29/09/2026 : v2-offilog.js change (union catalogue OPSO, retrait
     // Pharmazon/achat côté OPSO) — sans ce bump, un appareil ayant déjà l'app
     // ouverte continuerait de servir l'ancien fichier depuis le cache.
-    var V = '?v=20261010b' + (window.V2_VER || '20260915g');
+    var V = '?v=20261011a' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1271,6 +1275,7 @@
     opsostats: 'OPSO_STATS_SALES',
     clientscond: 'CLIENTS_COND',
     clientsactifs: 'CLIENTS_ACTIFS',
+    margeprive: 'MARGE_REGLES_PRIVE',
     drakkars: 'DRAKKARS',
     cap3000: 'CAP3000',
     sagitta: 'SAGITTA_SHORTLIST',
@@ -1615,6 +1620,10 @@
     if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('clientsactifs') < 0 && !(window.V2_BRAND && window.V2_BRAND.opso)) {
       keys = keys.concat(['clientsactifs']);
     }
+    // Règle de marge privée du Pilotage : jamais les ventes sans elle (pas côté OPSO, qui n'a pas cet écran)
+    if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('margeprive') < 0 && !(window.V2_BRAND && window.V2_BRAND.opso)) {
+      keys = keys.concat(['margeprive']);
+    }
     // OPSO : le périmètre (129 adhérents) doit être en mémoire avant loadData (applyOpsoPerimeter)
     if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('opsolisting') < 0 && window.V2_BRAND && window.V2_BRAND.opso) {
       keys = keys.concat(['opsolisting']);
@@ -1627,7 +1636,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20261010b';
+    var V = '?v=20261011a';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];

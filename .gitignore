@@ -242,3 +242,5 @@ crm/catalogues-marketing-data.js
 essentiels-pharma/_brand/mockups/
 crm/v2/concurrents-epsilon-data.js
 crm/v2/concurrents-groupements-data.js
+# 11/10/2026 — règle de marge privée du Pilotage (montant, libellés, liste de produits) : espace protégé uniquement
+marge-regles-prive.js

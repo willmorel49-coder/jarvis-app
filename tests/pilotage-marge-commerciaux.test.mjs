@@ -67,6 +67,13 @@ win.SAGITTA_SHORTLIST = [{ cip13: CIP_NR }, { cip13: CIP_NR_FROID }];
 // froid-data.js : liste grossiste des CIP froid — un produit absent du benchmark y est reconnu froid
 const CIP_FROID_GROSSISTE = '3400930141861';   // SHINGRIX, sous-famille Froid chez le grossiste
 win.FROID_CIPS = [CIP_FROID_GROSSISTE, '3400930000001'];   // le second est aussi marqué non-froid dans le benchmark : la liste grossiste prime
+// marge-regles-data.js (10/10/2026) : génériques déclarés (aucune marge). Et la règle PRIVÉE (fichier protégé, hors dépôt) :
+// montant par boîte, libellés et liste de produits y sont lus — les valeurs ci-dessous sont FICTIVES, exprès.
+const CIP_GEN = '3400930000011', CIP_GEN_FROID = '3400930000012', CIP_SU = '3400930000013', CIP_GEN_SU = '3400930000014', CIP_SU_NR = '3400930000015';
+win.MARGE_REGLES = { generiques: [CIP_GEN, CIP_GEN_FROID, CIP_GEN_SU] };
+const REGLE_PRIVEE = { petitReduit: { boite: 0.05, libelle: 'Liste privée', detail: 'petits prix · 0,05 € la boîte', cips: [CIP_SU, CIP_GEN_SU, CIP_SU_NR] } };
+win.MARGE_REGLES_PRIVE = REGLE_PRIVEE;
+win.FROID_CIPS.push(CIP_GEN_FROID); win.SAGITTA_SHORTLIST.push({ cip13: CIP_SU_NR });
 const fmtNum = (n) => (Math.round(n) || 0).toLocaleString('fr-FR');
 const V2 = win.V2 = {
   pages: {}, user: null, pharmacies: [{ id: 'p1', name: 'Pharma test' }], sales: VENTES, commFilter: '', ESCALE_COMMS: [],
@@ -191,4 +198,58 @@ test('compte restreint (commercial B) : jamais le chiffre de A', () => {
   const c = carte(h);
   assert.ok(!c.includes('data-c="A"') && !c.includes('55,40'), 'A absent de la carte');
   assert.ok(texte(c).includes(V2.fmtEur(B_ATTENDU)), 'B voit sa marge');
+});
+
+test('générique déclaré : aucune marge, supplément froid compris', () => {
+  const m = V2.piloMargeVente;
+  assert.equal(m({ qte: 10, puNet: 2, mntNetHt: 20, artCode: CIP_GEN }), 0, 'petit prix');
+  assert.equal(m({ qte: 5, puNet: 100, mntNetHt: 500, artCode: CIP_GEN }), 0, 'intermédiaire');
+  assert.equal(m({ qte: 1, puNet: 1000, mntNetHt: 1000, artCode: CIP_GEN }), 0, 'cher');
+  assert.equal(m({ qte: 4, puNet: 50, mntNetHt: 200, artCode: CIP_GEN_FROID }), 0, 'générique froid : pas de 0,63 €');
+  assert.equal(m({ qte: 10, puNet: 2, mntNetHt: 20, artCode: CIP_GEN_SU }), 0, 'générique de la liste privée : zéro, pas le montant réduit');
+});
+
+test('liste privée : le montant du fichier protégé en petit prix, règle normale à partir de 4,33 €', () => {
+  const m = V2.piloMargeVente;
+  assert.equal(+m({ qte: 100, puNet: 2, mntNetHt: 200, artCode: CIP_SU }).toFixed(2), 5.00, '100 boîtes : 5,00 € (pas 12)');
+  assert.equal(+m({ qte: 1, puNet: 4.32, mntNetHt: 4.32, artCode: CIP_SU }).toFixed(2), 0.05, '4,32 € = petit prix');
+  assert.equal(+m({ qte: 1, puNet: 4.33, mntNetHt: 4.33, artCode: CIP_SU }).toFixed(4), +(4.33 * 0.0304).toFixed(4), '4,33 € = intermédiaire');
+  assert.equal(+m({ qte: 5, puNet: 100, mntNetHt: 500, artCode: CIP_SU }).toFixed(2), 15.20, 'intermédiaire : 3,04 %');
+  assert.equal(+m({ qte: -100, puNet: 2, mntNetHt: -200, artCode: CIP_SU }).toFixed(2), -5.00, 'avoir');
+  assert.equal(+m({ qte: 10, puNet: 2, mntNetHt: 20, artCode: CIP_SU_NR }).toFixed(2), 0.58, 'non remboursé : le coefficient 1,03 prime');
+});
+
+test('la carte : lignes de la liste privée et « Génériques », et la somme des blocs fait le total', () => {
+  const avant = V2.sales;
+  V2.sales = [
+    V('A', 6, 10, 2.00),                 // petit prix : 1,20 €
+    V('A', 6, 100, 2.00, CIP_SU),        // liste privée, petit prix : 5,00 €
+    V('A', 6, 5, 100.00, CIP_SU),        // liste privée, intermédiaire : 15,20 € (palier normal)
+    V('A', 6, 7, 10.00, CIP_GEN),        // générique : 0 €
+    V('A', 6, 4, 50.00, CIP_GEN_FROID),  // générique froid : 0 €, pas de supplément
+    V('A', 6, 4, 50.00, CIP_FROID),      // froid : 6,08 + 2,52
+    V('A', 6, 10, 103.00, CIP_NR),       // non remboursé : 30,00 €
+  ];
+  try {
+    const t = texte(carte(rendre('', { commercial: '', voitTous: true })));
+    assert.ok(t.includes('Liste privée') && t.includes('0,05 € la boîte') && t.includes('100 boîtes'), t.slice(0, 900));
+    assert.ok(t.includes('Génériques') && t.includes('aucune marge') && t.includes('11 boîtes'), t.slice(0, 900));
+    // 1,20 + 5,00 + (15,20 + 6,08) + 0 + 2,52 + 30,00 = 60,00 €
+    assert.ok(t.includes('60,00 €'), 'total 60,00 € : ' + t.slice(0, 300));
+    assert.ok(t.includes('21,28 €') && t.includes('2,52 €') && t.includes('4 boîtes') && !t.includes('8 boîtes'), 'intermédiaire 21,28 € ; froid 2,52 € sur 4 boîtes, pas sur le générique froid : ' + t.slice(0, 900));
+  } finally { V2.sales = avant; }
+  assert.ok(!DERNIER_MOIS.includes('Liste privée') && !DERNIER_MOIS.includes('Génériques'), 'sans ces produits dans la période : pas de ligne');
+});
+
+test('sans le fichier protégé : la règle privée ne s’applique pas et sa ligne ne s’affiche pas', () => {
+  const m = V2.piloMargeVente, avant = V2.sales;
+  delete win.MARGE_REGLES_PRIVE;
+  V2.sales = [V('A', 6, 100, 2.00, CIP_SU), V('A', 6, 7, 10.00, CIP_GEN)];
+  try {
+    assert.equal(+m({ qte: 100, puNet: 2, mntNetHt: 200, artCode: CIP_SU }).toFixed(2), 12.00, 'retour au petit prix normal');
+    assert.equal(m({ qte: 7, puNet: 10, mntNetHt: 70, artCode: CIP_GEN }), 0, 'la règle des génériques, publique, tient toujours');
+    const t = texte(carte(rendre('', { commercial: '', voitTous: true })));
+    assert.ok(!t.includes('Liste privée') && t.includes('Génériques') && t.includes('12,00 €'), t.slice(0, 600));
+  } finally { V2.sales = avant; win.MARGE_REGLES_PRIVE = REGLE_PRIVEE; }
+  assert.equal(+m({ qte: 100, puNet: 2, mntNetHt: 200, artCode: CIP_SU }).toFixed(2), 5.00, 'fichier revenu : la règle revient');
 });
