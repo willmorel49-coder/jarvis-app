@@ -48,6 +48,16 @@ def lire_prive():
         return None
 
 
+def deja(chemin, nom, attendu):
+    """Vrai si le fichier porte déjà exactement ce contenu : on ne le réécrit pas (son en-tête daté
+    le ferait changer à chaque passage, donc commiter et redéposer pour rien)."""
+    try:
+        txt = open(chemin, encoding='utf-8').read()
+        return json.loads(txt[txt.index('{', txt.index(nom)):txt.rindex('}') + 1]) == attendu
+    except Exception:
+        return False
+
+
 def init_labos(labos):
     global LABOS
     LABOS = labos
@@ -120,34 +130,38 @@ def main():
     if not gen or (labos and not su):
         sys.exit('ARRÊT : une liste sortirait vide (génériques %d, liste privée %d) — aucun fichier n\'est touché.'
                  % (len(gen), len(su)))
-    with open(SORTIE, 'w', encoding='utf-8') as f:
-        f.write('// Produits dont la marge pour l\'entreprise suit une règle à part (Pilotage > Marge produits).\n')
-        f.write('// generiques : nature déclarée « générique » (aucune marge). Codes CIP13.\n')
-        f.write('// Source : colonne ARTNATURE des fichiers de ventes de tous les commerciaux.\n')
-        f.write('// Généré le %s par generate_marge_regles.py (%d fichiers lus). Ne pas modifier à la main.\n'
-                % (datetime.date.today().strftime('%d/%m/%Y'), len(fichiers)))
-        f.write('window.MARGE_REGLES = ' + json.dumps({'generiques': gen}, separators=(',', ':')) + ';\n')
+    inchange = deja(SORTIE, 'window.MARGE_REGLES', {'generiques': gen})
+    if not inchange:
+        with open(SORTIE, 'w', encoding='utf-8') as f:
+            f.write('// Produits dont la marge pour l\'entreprise suit une règle à part (Pilotage > Marge produits).\n')
+            f.write('// generiques : nature déclarée « générique » (aucune marge). Codes CIP13.\n')
+            f.write('// Source : colonne ARTNATURE des fichiers de ventes de tous les commerciaux.\n')
+            f.write('// Généré le %s par generate_marge_regles.py (%d fichiers lus). Ne pas modifier à la main.\n'
+                    % (datetime.date.today().strftime('%d/%m/%Y'), len(fichiers)))
+            f.write('window.MARGE_REGLES = ' + json.dumps({'generiques': gen}, separators=(',', ':')) + ';\n')
     # relecture de ce qui vient d'être écrit
     txt = open(SORTIE, encoding='utf-8').read()
     relu = json.loads(txt[txt.index('{', txt.index('window.MARGE_REGLES')):txt.rindex('}') + 1])
     if relu != {'generiques': gen}:
         sys.exit('ARRÊT : le fichier relu ne correspond pas à ce qui a été calculé.')
-    print('OK %s · %d produits vus · %d génériques · %d produits aux lignes partagées · %d Ko'
+    print(('INCHANGÉ, non réécrit · ' if inchange else '') + 'OK %s · %d produits vus · %d génériques · %d produits aux lignes partagées · %d Ko'
           % (os.path.basename(SORTIE), len(tout), len(gen), partage, os.path.getsize(SORTIE) // 1024))
     if prive is None:
         sys.exit(3)   # liste publique écrite ; le fichier protégé existant n'est pas touché
     # Fichier PROTÉGÉ : règle coupée (actif: false) = liste vide, la règle ne s'applique plus à l'écran.
     regle = {'boite': prive['boite'], 'libelle': prive['libelle'], 'detail': prive['detail'], 'cips': su}
-    with open(SORTIE_PRIVEE, 'w', encoding='utf-8') as f:
-        f.write('// ⚠️ NE JAMAIS COMMITER. Servi par adresse signée (Supabase, espace « donnees-protegees »).\n')
-        f.write('// Généré le %s par generate_marge_regles.py (%d fichiers lus). Ne pas modifier à la main.\n'
-                % (datetime.date.today().strftime('%d/%m/%Y'), len(fichiers)))
-        f.write('window.MARGE_REGLES_PRIVE = ' + json.dumps({'petitReduit': regle}, ensure_ascii=False, separators=(',', ':')) + ';\n')
+    inchange_prive = deja(SORTIE_PRIVEE, 'window.MARGE_REGLES_PRIVE', {'petitReduit': regle})
+    if not inchange_prive:
+        with open(SORTIE_PRIVEE, 'w', encoding='utf-8') as f:
+            f.write('// ⚠️ NE JAMAIS COMMITER. Servi par adresse signée (Supabase, espace « donnees-protegees »).\n')
+            f.write('// Généré le %s par generate_marge_regles.py (%d fichiers lus). Ne pas modifier à la main.\n'
+                    % (datetime.date.today().strftime('%d/%m/%Y'), len(fichiers)))
+            f.write('window.MARGE_REGLES_PRIVE = ' + json.dumps({'petitReduit': regle}, ensure_ascii=False, separators=(',', ':')) + ';\n')
     txt = open(SORTIE_PRIVEE, encoding='utf-8').read()
     relu = json.loads(txt[txt.index('{', txt.index('window.MARGE_REGLES_PRIVE')):txt.rindex('}') + 1])
     if relu != {'petitReduit': regle}:
         sys.exit('ARRÊT : le fichier protégé relu ne correspond pas à ce qui a été calculé.')
-    print('OK %s (PROTÉGÉ, à déposer) · %d produits · %d octets'
+    print(('INCHANGÉ, non réécrit · ' if inchange_prive else '') + 'OK %s (PROTÉGÉ, à déposer) · %d produits · %d octets'
           % (os.path.basename(SORTIE_PRIVEE), len(su), os.path.getsize(SORTIE_PRIVEE)))
 
 
