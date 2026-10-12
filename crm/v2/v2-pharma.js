@@ -1968,7 +1968,7 @@
     if (A.nAct === 0) return h + l8Vide('Aucune commande enregistrée pour cette officine.');
     var e = l8Ecart(A.caMoy, R.moy);
     // Le grand chiffre EST l'afficheur de la courbe : au repos la moyenne par mois ; au geste, le montant du mois lu
-    h += '<div class="l8-grand"><span class="l8-n"><span id="l8-gv" data-vers="' + Math.round(A.caMoy) + '" data-fmt="n" data-dl="100" data-du="800">' + l1Nb(A.caMoy) + '</span><small>' + NB + '€</small></span><span class="l8-u" id="l8-gu">par mois</span>' +
+    h += '<div class="l8-grand"><span class="l8-n"><span id="l8-gv" data-vers="' + Math.round(A.caMoy) + '" data-fmt="n" data-dl="40" data-du="' + (L8_TR - 20) + '">' + l1Nb(A.caMoy) + '</span><small>' + NB + '€</small></span><span class="l8-u" id="l8-gu">par mois</span>' +
       '<span class="l8-puce ' + (e ? e.c : 'pha-flat') + '" id="l8-gp"' + (e ? '' : ' hidden') + '>' + (e ? l8Fleche(e) + e.t : '') + '</span></div>';
     h += '<div class="l8-graph" id="l8-graph"></div>';
     var evo = (last && prev && prev.ca > 0) ? l8Ecart(last.ca, prev.ca) : null;
@@ -2016,7 +2016,7 @@
       h += '<div class="l8-ctete l8-ctete-d">Part des officines qui le commandent</div>';
       l1Premiers(data).slice(0, 5).forEach(function (x, k) {
         var p = l1PartDes(x.r, data.total);
-        h += '<div class="l8-lg"><span class="l8-ln">' + l1NomProduit(x.r) + '<small>' + esc(l1CatLabel(x.cat)) + '</small></span><span class="l8-pbar" aria-hidden="true"><i style="--w:' + l8Fin(p / 100) + ';--i:' + l8Cran(k) + '"></i></span><span class="l8-lm">' + l1Pct(p) + '</span></div>';
+        h += '<div class="l8-lg" data-l="pr:' + sc + ':' + k + '"><span class="l8-ln">' + l1NomProduit(x.r) + '<small>' + esc(l1CatLabel(x.cat)) + '</small></span><span class="l8-pbar" aria-hidden="true"><i style="--w:' + l8Fin(p / 100) + ';--i:' + l8Cran(k) + '"></i></span><span class="l8-lm" data-vers="' + p + '" data-fmt="p" data-dl="60" data-du="720">' + l1Pct(p) + '</span></div>';
       });
       h += '</div>';
     });
@@ -2027,7 +2027,7 @@
   function l8Commandes() {
     var A = L1.A, R = l1Ref(L1.b), h = l8Tete('Commandes');
     if (A.nAct === 0) return h + l8Vide('Aucune commande enregistrée pour cette officine.');
-    h += '<div class="l8-ctete l8-lu"><span>Par mois</span><span class="l8-lv" id="l8-lu" aria-hidden="true"></span></div><div class="l8-cmd" id="l8-cmd"></div>';
+    h += '<div class="l8-ctete l8-lu"><span>Par mois</span><span class="l8-lv" id="l8-lu" aria-hidden="true"></span></div><div class="l8-cmd" id="l8-cmd" data-l="cmd"></div>';
     var last = A.last, prev = A.prev;
     if (last && prev) {
       var lignes = [];
@@ -2036,9 +2036,9 @@
         .filter(function (x) { return x.a > 0 && x.p > 0; }).sort(function (x, y) { return Math.abs(y.a - y.p) - Math.abs(x.a - x.p); }).slice(0, 2));
       h += '<div class="l8-sst"><h3>Ce qui bouge</h3><span>en ' + l8MoisCourt(last.mk) + ', face à ' + l8MoisCourt(prev.mk) + '</span></div>';
       if (!lignes.length) h += l8Vide('Aucune commande en ' + esc(l1MoisAn(prev.mk)) + ' : rien à comparer.');
-      lignes.forEach(function (x) {
+      lignes.forEach(function (x, k) {
         var e = l8Ecart(x.a, x.p), haut = x.a >= x.p;
-        h += '<div class="l8-bouge"><span class="l8-f ' + (haut ? 'h' : 'b') + '">' + l8Ic(haut ? 'haut' : 'bas', 18) + '</span><span class="l8-bn">' + esc(x.nom) + '</span><span class="l8-bv ' + e.c + '">' + e.t + '</span></div>';
+        h += '<div class="l8-bouge" data-l="bg:' + k + '"><span class="l8-f ' + (haut ? 'h' : 'b') + '">' + l8Ic(haut ? 'haut' : 'bas', 18) + '</span><span class="l8-bn">' + esc(x.nom) + '</span><span class="l8-bv ' + e.c + '">' + e.t + '</span></div>';
       });
     }
     if (A.caTot > 0) {
@@ -2049,7 +2049,7 @@
       h += '<div class="l8-sst"><h3>Répartition</h3><span>' + esc(l1PeriodeCumul(A)) + '</span></div>';
       rows.forEach(function (x, k) {
         var p = Math.max(0, Math.min(100, Math.round(x.v / A.caTot * 100)));
-        h += '<div class="l8-lg"><span class="l8-ln">' + esc(x.n) + '</span><span class="l8-pbar" aria-hidden="true"><i style="--w:' + l8Fin(p / 100) + ';--i:' + l8Cran(k) + '"></i></span><span class="l8-lm">' + l1Pct(p) + '</span></div>';
+        h += '<div class="l8-lg" data-l="rep:' + k + '"><span class="l8-ln">' + esc(x.n) + '</span><span class="l8-pbar" aria-hidden="true"><i style="--w:' + l8Fin(p / 100) + ';--i:' + l8Cran(k) + '"></i></span><span class="l8-lm" data-vers="' + p + '" data-fmt="p" data-dl="60" data-du="720">' + l1Pct(p) + '</span></div>';
       });
     }
     h += '<div class="l8-lg l8-interne"><span class="l8-ln">Marge nette</span><span class="l8-lm">' + l1Eur(L1.marge) + '</span><span class="l8-lg-g">' + esc(l1PeriodeCumul(A)) + '</span></div>';
@@ -2071,8 +2071,8 @@
     var ligne = function (x, absente) {
       var k = x.c.key, ouv = !!L1.ouv[k], e = x.e, mini = '<span class="l8-mini' + (absente ? ' abs' : '') + '" data-mini="' + k + '" style="--i:' + l8Cran(rang++) + '"></span>';
       var mil = absente ? '<span class="l8-cm l8-cabs">Absente</span>' + mini + '<span class="l8-ce"></span>'
-        : '<span class="l8-cm">' + l1Eur(x.c.moy) + '</span>' + mini + (e ? '<span class="l8-ce"><span class="l8-pastille ' + e.c + '">' + e.t + '</span></span>' : '<span class="l8-ce l8-cabs">Sans repère</span>');
-      return '<div class="l8-cat"><button type="button" class="l8-crow" aria-expanded="' + (ouv ? 'true' : 'false') + '" onclick="V2.pharmaL.cat(\'' + k + '\')"><span class="l8-cn">' + esc(x.c.label) + '</span><span class="l8-cinf">' + mil + '</span><span class="l8-cc">' + l8Ic('chev', 18) + '</span></button>' +
+        : '<span class="l8-cm" data-vers="' + Math.round(x.c.moy) + '" data-dl="40" data-du="720">' + l1Eur(x.c.moy) + '</span>' + mini + (e ? '<span class="l8-ce"><span class="l8-pastille ' + e.c + '">' + e.t + '</span></span>' : '<span class="l8-ce l8-cabs">Sans repère</span>');
+      return '<div class="l8-cat"><button type="button" class="l8-crow" data-l="cat:' + k + '" aria-expanded="' + (ouv ? 'true' : 'false') + '" onclick="V2.pharmaL.cat(\'' + k + '\')"><span class="l8-cn">' + esc(x.c.label) + '</span><span class="l8-cinf">' + mil + '</span><span class="l8-cc">' + l8Ic('chev', 18) + '</span></button>' +
         '<div class="l8-detail" id="l8-d-' + k + '"' + (ouv ? '' : ' hidden') + '></div></div>';
     };
     pres.forEach(function (x) { h += ligne(x, false); });
@@ -2096,7 +2096,7 @@
       var ym = String(q.dernier).split('-'), mk = (+ym[0]) * 12 + (+ym[1] - 1), idx = -1;
       mois.forEach(function (p, j) { if (p.mk === mk) idx = j; });
       if (idx < 0) idx = mk < mois[0].mk ? 0 : N - 1;
-      h += '<div class="l8-lg l8-fz"><span class="l8-ln">' + esc(q.nom) + '<small>' + esc(l1CatLabel(q.cat)) + '</small></span><span class="l8-frz" data-mi="' + idx + '" style="--i:' + l8Cran(k) + '" role="img" aria-label="' + esc(q.nom) + ' : dernière commande en ' + esc(l1YmLong(q.dernier)) + '"></span><span class="l8-lg-g">' + esc(l1YmLong(q.dernier)) + '</span></div>';
+      h += '<div class="l8-lg l8-fz" data-l="np:' + k + '"><span class="l8-ln">' + esc(q.nom) + '<small>' + esc(l1CatLabel(q.cat)) + '</small></span><span class="l8-frz" data-mi="' + idx + '" style="--i:' + l8Cran(k) + '" role="img" aria-label="' + esc(q.nom) + ' : dernière commande en ' + esc(l1YmLong(q.dernier)) + '"></span><span class="l8-lg-g">' + esc(l1YmLong(q.dernier)) + '</span></div>';
     });
     if (n > 6) h += '<div class="l8-plus"><button type="button" class="l8-lien" onclick="V2.pharmaL.plus(\'neplus\')">' + (L1.tous.neplus ? 'Réduire' : 'Voir les ' + n) + '</button></div>';
     return h;
@@ -2115,7 +2115,7 @@
     if (!tous.length) return h + l8Vide('Aucun produit classé dans ses commandes.');
     var max = tous[0].ca || 1;
     tous.slice(0, L1.tous.meilleurs ? 10 : 5).forEach(function (t, k) {
-      h += '<div class="l8-lg"><span class="l8-ln">' + esc(t.nom) + '<small>' + esc(t.label) + ' · ' + l1Nb(t.qte) + NB + 'boîte' + (t.qte > 1 ? 's' : '') + '</small></span><span class="l8-pbar" aria-hidden="true"><i style="--w:' + l8Fin(Math.max(0, Math.min(1, t.ca / max))).toFixed(3) + ';--i:' + l8Cran(k) + '"></i></span><span class="l8-lm l8-lm-l">' + l1Eur(t.ca) + '</span></div>';
+      h += '<div class="l8-lg" data-l="top:' + k + '"><span class="l8-ln">' + esc(t.nom) + '<small>' + esc(t.label) + ' · ' + l1Nb(t.qte) + NB + 'boîte' + (t.qte > 1 ? 's' : '') + '</small></span><span class="l8-pbar" aria-hidden="true"><i style="--w:' + l8Fin(Math.max(0, Math.min(1, t.ca / max))).toFixed(3) + ';--i:' + l8Cran(k) + '"></i></span><span class="l8-lm l8-lm-l" data-vers="' + Math.round(t.ca) + '" data-dl="60" data-du="720">' + l1Eur(t.ca) + '</span></div>';
     });
     if (tous.length > 5) h += '<div class="l8-plus"><button type="button" class="l8-lien" onclick="V2.pharmaL.plus(\'meilleurs\')">' + (L1.tous.meilleurs ? 'Réduire' : 'Voir les ' + tous.length) + '</button></div>';
     return h;
@@ -2126,7 +2126,8 @@
   // L'arrivée est écrite en @keyframes et pilotée par une horloge (L1.vu[rubrique] = instant d'entrée à l'écran) : la fiche
   // est redessinée plusieurs fois après l'ouverture ; une rubrique déjà vue reprend là où elle en était (retard négatif --l8t).
   var L8_CH = {};
-  var L8_DUREE = 1500;     // au-delà, une rubrique est construite à l'état final, sans classe
+  var L8_DUREE = 1700;     // au-delà, une rubrique est construite à l'état final, sans classe
+  var L8_TR = 1000;        // durée du tracé de la courbe (le grand chiffre compte pendant ce temps)
   function l8Calme() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
   function l8F1(v) { return String(Math.round(l8Fin(v) * 10) / 10); }
   // Largeur réelle d'un conteneur, arrondie vers le bas : le dessin n'est jamais réduit, aucun texte ne passe sous 13 px à l'écran
@@ -2134,6 +2135,9 @@
   function l8Fin(v) { v = Number(v); return isFinite(v) ? v : 0; }
   function l8Cran(k) { return Math.min(k, 8); }          // cascade plafonnée à 8 crans
   function l8Ease(t) { return 1 - Math.pow(1 - t, 3); }
+  // départ et arrivée en douceur (le tracé, la déformation du repère) : jamais de dépassement
+  function l8Doux(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+  function l8Borne(t) { return t < 0 ? 0 : t > 1 ? 1 : t; }
   // interpolation par requestAnimationFrame (mouvement réduit : état final tout de suite)
   function l8Tween(dur, fn, fin) {
     if (l8Calme() || dur <= 0) { fn(1); if (fin) fin(); return { stop: function () {} }; }
@@ -2151,11 +2155,8 @@
   // Une série lisible : jamais de NaN, jamais de null
   function l8Serie(a) { return (a || []).map(l8Fin); }
   // courbe lissée, interpolation monotone (Fritsch-Carlson) : jamais de bosse inventée
-  function l8Lisse(P) {
+  function l8Pentes(P) {
     var n = P.length, d = [], m = [], i;
-    if (!n) return '';
-    var p = 'M' + l8F1(P[0][0]) + ' ' + l8F1(P[0][1]);
-    if (n < 2) return p;
     for (i = 0; i < n - 1; i++) d[i] = (P[i + 1][1] - P[i][1]) / (P[i + 1][0] - P[i][0]);
     m[0] = d[0]; m[n - 1] = d[n - 2];
     for (i = 1; i < n - 1; i++) m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2;
@@ -2164,6 +2165,23 @@
       var a = m[i] / d[i], b = m[i + 1] / d[i], s = a * a + b * b;
       if (s > 9) { var t = 3 / Math.sqrt(s); m[i] = t * a * d[i]; m[i + 1] = t * b * d[i]; }
     }
+    return m;
+  }
+  // la hauteur de cette même courbe à l'abscisse x (le curseur glisse SUR la courbe, entre deux mois)
+  function l8YSur(P, x) {
+    var n = P.length; if (!n) return 0;
+    if (n < 2 || x <= P[0][0]) return P[0][1];
+    if (x >= P[n - 1][0]) return P[n - 1][1];
+    var m = l8Pentes(P), i = 0; while (i < n - 2 && x > P[i + 1][0]) i++;
+    var h = P[i + 1][0] - P[i][0], t = (x - P[i][0]) / h, t2 = t * t, t3 = t2 * t;
+    return (2 * t3 - 3 * t2 + 1) * P[i][1] + (t3 - 2 * t2 + t) * h * m[i] + (3 * t2 - 2 * t3) * P[i + 1][1] + (t3 - t2) * h * m[i + 1];
+  }
+  function l8Lisse(P) {
+    var n = P.length, m, i;
+    if (!n) return '';
+    var p = 'M' + l8F1(P[0][0]) + ' ' + l8F1(P[0][1]);
+    if (n < 2) return p;
+    m = l8Pentes(P);
     for (i = 0; i < n - 1; i++) {
       var dx = (P[i + 1][0] - P[i][0]) / 3;
       p += 'C' + l8F1(P[i][0] + dx) + ' ' + l8F1(P[i][1] + m[i] * dx) + ' ' + l8F1(P[i + 1][0] - dx) + ' ' + l8F1(P[i + 1][1] - m[i + 1] * dx) + ' ' + l8F1(P[i + 1][0]) + ' ' + l8F1(P[i + 1][1]);
@@ -2188,51 +2206,107 @@
   function l8Now() { var t = document.timeline && document.timeline.currentTime; return t == null ? performance.now() : t; }
   // ── L'horloge. Une rubrique pas encore vue reste à son état de départ (l8-av) ; vue depuis moins de 1,5 s elle reprend où elle
   // en était (l8-lit + retard négatif) ; au-delà elle est à l'état final, sans classe. nu = état final, sans mouvement.
-  function l8Etat(k, nu) {
-    var s = document.getElementById('l8-v-' + k); if (!s) return null;
-    s.classList.remove('l8-av', 'l8-lit'); s.style.removeProperty('--l8t'); clearTimeout(s._ft);
-    if (l8Calme() || nu) return s;
-    var t0 = L1.vu[k];
-    if (t0 == null) { s.classList.add('l8-av'); return s; }
+  // Le même mécanisme sert à deux étages : la rubrique (classes l8-av / l8-lit, clé = son nom) et, dans les rubriques longues,
+  // chaque ligne ou bloc qui a SA propre entrée (attribut data-l = sa clé d'horloge, classes l8-rav / l8-rlit) : une barre
+  // file quand ELLE arrive à l'écran, pas quand le titre de sa rubrique y arrive. Une ligne jamais vue attend toujours.
+  function l8EtatEl(s, cle, nu, pre) {
+    if (!s) return null;
+    s.classList.remove(pre + 'av', pre + 'lit'); s.style.removeProperty('--l8t'); clearTimeout(s._ft);
+    if (l8Calme()) return s;
+    var t0 = L1.vu[cle];
+    if (t0 == null) { if (!nu || pre !== 'l8-') s.classList.add(pre + 'av'); return s; }
+    if (nu) return s;
     var dt = l8Now() - t0;
     if (dt < L8_DUREE) {
-      s.classList.add('l8-lit'); s.style.setProperty('--l8t', (-Math.round(dt)) + 'ms');
-      s._ft = setTimeout(function () { s.classList.remove('l8-lit'); s.style.removeProperty('--l8t'); }, L8_DUREE - dt + 60);
+      s.classList.add(pre + 'lit'); s.style.setProperty('--l8t', (-Math.round(dt)) + 'ms');
+      s._ft = setTimeout(function () { s.classList.remove(pre + 'lit'); s.style.removeProperty('--l8t'); }, L8_DUREE - dt + 60);
     }
     return s;
+  }
+  function l8Etat(k, nu) { return l8EtatEl(document.getElementById('l8-v-' + k), k, nu, 'l8-'); }
+  function l8Lignes(racine, nu) {
+    Array.prototype.forEach.call(racine.querySelectorAll('[data-l]'), function (el) { l8EtatEl(el, el.getAttribute('data-l'), nu, 'l8-r'); });
   }
   // Un dessin refait dans une rubrique en cours de lecture : SEUL le nouvel élément reçoit son retard (le temps déjà écoulé).
   // On ne change jamais le retard d'une animation qui tourne déjà : elle sauterait en avant du temps écoulé.
   function l8Cadre(el, k) {
     if (!el) return;
-    var s = document.getElementById('l8-v-' + k), t0 = L1.vu[k];
-    if (s && s.classList.contains('l8-lit') && t0 != null) el.style.setProperty('--l8t', (-Math.round(l8Now() - t0)) + 'ms'); else el.style.removeProperty('--l8t');
+    var lg = el.closest('[data-l]'), s = lg || document.getElementById('l8-v-' + k), t0 = L1.vu[lg ? lg.getAttribute('data-l') : k];
+    if (s && t0 != null && s.classList.contains(lg ? 'l8-rlit' : 'l8-lit')) el.style.setProperty('--l8t', (-Math.round(l8Now() - t0)) + 'ms'); else el.style.removeProperty('--l8t');
   }
-  // un nombre qui compte vers sa valeur sur la même horloge (largeur figée avant de partir, chiffres tabulaires)
-  function l8Compteurs(k) {
-    var s = document.getElementById('l8-v-' + k); if (!s || l8Calme()) return;
+  // un nombre qui compte vers sa valeur sur l'horloge de sa ligne ou, à défaut, de sa rubrique (largeur figée avant de partir).
+  // Tant que l'horloge n'a pas démarré, le texte final reste en place (masqué par .l8-av / .l8-rav) : rien n'affiche jamais « 0 » à tort.
+  function l8Compteurs(k, racine) {
+    var s = racine || document.getElementById('l8-v-' + k); if (!s || l8Calme()) return;
     Array.prototype.forEach.call(s.querySelectorAll('[data-vers]'), function (el) {
-      var vers = l8Fin(el.getAttribute('data-vers')), fmt = el.getAttribute('data-fmt') === 'n' ? l8FmtN : l8FmtE, fin = fmt(vers);
-      var dl = l8Fin(el.getAttribute('data-dl')), dur = l8Fin(el.getAttribute('data-du')) || 700, t0 = L1.vu[k];
-      if (t0 != null && l8Now() - t0 >= dl + dur) { el.textContent = fin; return; }
-      if (!el.style.minWidth) { if (getComputedStyle(el).display === 'inline') el.style.display = 'inline-block'; el.style.minWidth = el.offsetWidth + 'px'; }
-      el.textContent = fmt(0);
+      var lg = el.closest('[data-l]'), cle = lg ? lg.getAttribute('data-l') : k, f = el.getAttribute('data-fmt');
+      var vers = l8Fin(el.getAttribute('data-vers')), fmt = f === 'n' ? l8FmtN : f === 'p' ? l1Pct : l8FmtE, fin = fmt(vers);
+      var dl = l8Fin(el.getAttribute('data-dl')), dur = l8Fin(el.getAttribute('data-du')) || 700, t0 = L1.vu[cle], id = el._cn = (el._cn || 0) + 1;
       if (t0 == null) return;
+      if (l8Now() - t0 >= dl + dur) { el.textContent = fin; return; }
+      if (el.offsetWidth && !el.style.minWidth) { if (getComputedStyle(el).display === 'inline') el.style.display = 'inline-block'; el.style.minWidth = el.offsetWidth + 'px'; }
       (function pas() {
-        if (!el.isConnected || el._stop) return;
-        var t = (l8Now() - L1.vu[k] - dl) / dur;
+        if (!el.isConnected || el._stop || el._cn !== id) return;
+        var t = (l8Now() - t0 - dl) / dur;
         if (t >= 1) { el.textContent = fin; return; }
         el.textContent = fmt(Math.round(vers * l8Ease(Math.max(0, t)))); requestAnimationFrame(pas);
       })();
     });
   }
+  // Le tracé d'une courbe, piloté par l'horloge (cle) : le trait avance avec un point lumineux en tête, qui finit sa course
+  // sur le dernier mois ; l'aire suit le point et sa lumière monte du sol. Un redessin en route crée de nouveaux éléments qui
+  // reprennent au même instant (même horloge). À la fin, plus aucun style posé à la main : le dessin au repos reprend la main.
+  function l8Trait(svg, cle) {
+    if (!svg || l8Calme()) return;
+    var li = svg.querySelector('.l8-ligne'), t0 = L1.vu[cle], FIN = L8_TR + 300; if (!li || t0 == null || l8Now() - t0 >= FIN) return;
+    var ha = svg.querySelector('.l8-halo'), co = svg.querySelector('.l8-com'), te = svg.querySelector('.l8-pointe'), ai = svg.querySelector('.l8-aire');
+    var cr = svg.querySelector('.l8-clr'), s1 = svg.querySelector('.l8-s1'), s2 = svg.querySelector('.l8-s2'), ch = L8_CH[svg.id.slice(5)];
+    var L = li.getTotalLength(), id = svg._tr = (svg._tr || 0) + 1;
+    if (ai && cr) ai.setAttribute('clip-path', 'url(#l8-cl-' + ch.id + ')');
+    (function pas() {
+      if (!svg.isConnected || svg._tr !== id) return;
+      var t = l8Now() - t0;
+      if (t >= FIN) {
+        li.style.strokeDashoffset = ha.style.strokeDashoffset = ''; co.style.cssText = ''; te.style.opacity = '';
+        if (ai) ai.removeAttribute('clip-path');
+        if (s1) { s1.setAttribute('stop-opacity', '.34'); s2.setAttribute('stop-opacity', '.13'); }
+        return;
+      }
+      var p = l8Doux(l8Borne(t / L8_TR)), pt = li.getPointAtLength(L * p), q = Math.min(0.16, p);
+      li.style.strokeDashoffset = ha.style.strokeDashoffset = String(1 - p);
+      co.style.strokeDasharray = q.toFixed(4) + ' 2'; co.style.strokeDashoffset = String(-(p - q)); co.style.opacity = String(1 - l8Borne((t - L8_TR * 0.82) / (L8_TR * 0.3)));
+      te.setAttribute('transform', 'translate(' + pt.x.toFixed(1) + ' ' + pt.y.toFixed(1) + ')'); te.style.opacity = String(Math.min(l8Borne(t / 90), 1 - l8Borne((t - L8_TR) / 260)));
+      if (cr) cr.setAttribute('width', Math.max(0, pt.x - ch.pl + 1).toFixed(1));
+      if (s1) { s2.setAttribute('stop-opacity', (0.13 * l8Ease(l8Borne((t - 120) / 700))).toFixed(3)); s1.setAttribute('stop-opacity', (0.34 * l8Ease(l8Borne((t - 320) / 900))).toFixed(3)); }
+      requestAnimationFrame(pas);
+    })();
+  }
+  // les mouvements pilotés à la main d'une rubrique (les autres sont en @keyframes sur la même horloge)
+  function l8Jouer(k) { if (k === 'resume') l8Trait(document.getElementById('l8-s-cr'), 'resume'); }
   // la rubrique entre à l'écran : l'horloge démarre (une seule fois par officine)
-  var _l8Obs = null;
+  var _l8Obs = null, _l8ObsL = null;
   function l8Lancer(k) {
     if (L1.vu[k] != null) return;
-    L1.vu[k] = l8Now(); l8Etat(k); l8Compteurs(k);
+    L1.vu[k] = l8Now(); l8Etat(k); l8Compteurs(k); l8Jouer(k);
+  }
+  // les lignes et les blocs qui ont leur propre entrée : chacun part quand il arrive à l'écran ; ceux qui arrivent ensemble partent en cascade
+  function l8ObserverLignes() {
+    if (_l8ObsL) { _l8ObsL.disconnect(); _l8ObsL = null; }
+    var ls = Array.prototype.filter.call(document.querySelectorAll('.pha.l8 [data-l]'), function (el) { return L1.vu[el.getAttribute('data-l')] == null; });
+    if (!ls.length) return;
+    if (l8Calme() || !('IntersectionObserver' in window)) { ls.forEach(function (el) { L1.vu[el.getAttribute('data-l')] = l8Now() - L8_DUREE; l8EtatEl(el, el.getAttribute('data-l'), true, 'l8-r'); }); return; }
+    _l8ObsL = new IntersectionObserver(function (es) {
+      var n = 0, t = l8Now();
+      es.filter(function (e) { return e.isIntersecting; }).sort(function (a, b) { return a.boundingClientRect.top - b.boundingClientRect.top; }).forEach(function (e) {
+        var el = e.target, cle = el.getAttribute('data-l'); _l8ObsL.unobserve(el);
+        if (L1.vu[cle] != null) return;
+        L1.vu[cle] = t + Math.min(n++, 8) * 70; l8EtatEl(el, cle, false, 'l8-r'); l8Compteurs(null, el);
+      });
+    }, { threshold: 0.4 });
+    ls.forEach(function (el) { _l8ObsL.observe(el); });
   }
   function l8Observer() {
+    l8ObserverLignes();
     if (_l8Obs) { _l8Obs.disconnect(); _l8Obs = null; }
     var ks = Object.keys(L8_F).filter(function (k) { return L1.vu[k] == null; });
     if (!ks.length) return;
@@ -2281,22 +2355,30 @@
     var mg = l8Marges(W, top, s, refOk ? (o.nomMax || o.nom) : ''), pl = mg.pl, pr = mg.pr, pt = 14, pb = 32;
     var X = function (i) { return N > 1 ? pl + (W - pl - pr) * i / (N - 1) : pl + (W - pl - pr) / 2; }, Y = function (v) { return pt + (H - pt - pb) * (1 - v / top); };
     var P = ser.map(function (v, i) { return [X(i), Y(v)]; }), R = ref.map(function (v, i) { return [X(i), Y(v)]; });
-    L8_CH[id] = { id: id, W: W, H: H, pl: pl, pr: pr, pt: pt, N: N, X: X, Y: Y, ser: ser, ref: ref.slice(), refOk: refOk, nom: o.nom, desc: o.desc, labs: o.labs, top: top };
+    L8_CH[id] = { id: id, W: W, H: H, pl: pl, pr: pr, pt: pt, N: N, X: X, Y: Y, P: P, ser: ser, ref: ref.slice(), refOk: refOk, nom: o.nom, desc: o.desc, labs: o.labs, top: top };
     var d = l8Lisse(P), yb = Y(0), pas = W < 540 ? 2 : 1, lab = '', i;
     for (i = (N - 1) % pas; i < N; i += pas) lab += '<text class="l8-mo" data-i="' + i + '" x="' + X(i).toFixed(1) + '" y="' + (H - 8) + '" text-anchor="' + (N === 1 ? 'middle' : i === 0 ? 'start' : i === N - 1 ? 'end' : 'middle') + '">' + esc(o.labs[i]) + '</text>';
     var aire = N > 1 ? '<path class="l8-aire" d="' + d + 'L' + X(N - 1).toFixed(1) + ' ' + yb.toFixed(1) + 'L' + X(0).toFixed(1) + ' ' + yb.toFixed(1) + 'Z" fill="url(#l8-ga-' + id + ')"/>' : '';
-    var trait = N > 1 ? '<path class="l8-halo" pathLength="1" d="' + d + '" fill="none" stroke="#0050E6" stroke-opacity=".10" stroke-width="10" stroke-linecap="round"/>' +
-      '<path class="l8-ligne" pathLength="1" d="' + d + '" fill="none" stroke="url(#l8-gl-' + id + ')" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>' : '';
-    var rp = refOk ? '<path class="l8-ref" d="' + (N > 1 ? l8Lisse(R) : 'M' + (X(0) - 10).toFixed(1) + ' ' + R[0][1].toFixed(1) + 'h20') + '" fill="none" stroke="#8591AC" stroke-width="2.5" stroke-linecap="round"/>' +
+    // le trait : une ombre large et pâle décalée vers le bas, le trait en dégradé (bleu profond au premier mois, bleu vif au
+    // dernier), puis la comète et la tête lumineuse qui ne vivent que pendant le tracé
+    var trait = N > 1 ? '<path class="l8-halo" pathLength="1" d="' + d + '" fill="none" stroke="#0050E6" stroke-opacity=".12" stroke-width="11" stroke-linecap="round" transform="translate(0 5)"/>' +
+      '<path class="l8-ligne" pathLength="1" d="' + d + '" fill="none" stroke="url(#l8-gl-' + id + ')" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<path class="l8-com" pathLength="1" d="' + d + '" fill="none" stroke="#B4D2FF" stroke-width="3.6" stroke-linecap="round"/>' +
+      '<g class="l8-pointe"><circle r="26" fill="url(#l8-gh-' + id + ')"/><circle r="4.6" fill="#fff"/></g>' : '';
+    var rp = refOk ? '<path class="l8-ref" pathLength="1" d="' + (N > 1 ? l8Lisse(R) : 'M' + (X(0) - 10).toFixed(1) + ' ' + R[0][1].toFixed(1) + 'h20') + '" fill="none" stroke="#8591AC" stroke-width="2.5" stroke-linecap="round"/>' +
       '<text class="l8-refnom" x="' + (X(N - 1) + (N > 1 ? 15 : 20)).toFixed(1) + '" y="' + (R[N - 1][1] + 4.5).toFixed(1) + '">' + esc(l8Court(o.nom, pr)) + '</text>' : '';
+    var fin = 'translate(' + X(N - 1).toFixed(1) + ' ' + P[N - 1][1].toFixed(1) + ')';
     return '<svg class="l8-tr" id="l8-s-' + id + '" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" tabindex="0" aria-label="' + esc(o.desc) + '">' +
-      '<defs><linearGradient id="l8-ga-' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0050E6" stop-opacity=".30"/><stop offset=".55" stop-color="#2A6AF0" stop-opacity=".10"/><stop offset="1" stop-color="#2A6AF0" stop-opacity="0"/></linearGradient>' +
-      '<linearGradient id="l8-gl-' + id + '" gradientUnits="userSpaceOnUse" x1="' + pl + '" y1="0" x2="' + (W - pr) + '" y2="0"><stop offset="0" stop-color="#2A6AF0"/><stop offset=".6" stop-color="#0050E6"/><stop offset="1" stop-color="#0034A0"/></linearGradient></defs>' +
-      l8Axe(W, pl, pr, top, s, Y) + aire + rp + trait +
-      '<g class="l8-fin" transform="translate(' + X(N - 1).toFixed(1) + ' ' + P[N - 1][1].toFixed(1) + ')"><circle class="l8-puls" r="7" fill="#0050E6"/><circle class="l8-dot" r="6.5" fill="#0050E6" stroke="#fff" stroke-width="2.5"/></g>' +
-      '<g class="l8-curs"><line class="l8-rule" x1="0" x2="0" y1="' + pt + '" y2="' + yb.toFixed(1) + '" stroke="#0050E6" stroke-opacity=".35" stroke-width="1.5"/>' +
+      '<defs><linearGradient id="l8-ga-' + id + '" x1="0" y1="0" x2="0" y2="1"><stop class="l8-s1" offset="0" stop-color="#0050E6" stop-opacity=".34"/><stop class="l8-s2" offset=".5" stop-color="#2A6AF0" stop-opacity=".13"/><stop offset="1" stop-color="#2A6AF0" stop-opacity="0"/></linearGradient>' +
+      '<linearGradient id="l8-gl-' + id + '" gradientUnits="userSpaceOnUse" x1="' + pl + '" y1="0" x2="' + (W - pr) + '" y2="0"><stop offset="0" stop-color="#0B3AA8"/><stop offset=".55" stop-color="#0050E6"/><stop offset="1" stop-color="#2F7BFF"/></linearGradient>' +
+      '<radialGradient id="l8-gh-' + id + '"><stop offset="0" stop-color="#2F7BFF" stop-opacity=".42"/><stop offset=".45" stop-color="#2F7BFF" stop-opacity=".14"/><stop offset="1" stop-color="#2F7BFF" stop-opacity="0"/></radialGradient>' +
+      '<linearGradient id="l8-gb-' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0050E6" stop-opacity="0"/><stop offset="1" stop-color="#0050E6" stop-opacity=".13"/></linearGradient>' +
+      '<clipPath id="l8-cl-' + id + '"><rect class="l8-clr" x="' + pl + '" y="0" width="' + (W - pl) + '" height="' + H + '"/></clipPath></defs>' +
+      l8Axe(W, pl, pr, top, s, Y) + '<circle class="l8-lueur" r="' + (W > 560 ? 74 : 52) + '" fill="url(#l8-gh-' + id + ')" transform="' + fin + '"/>' + aire + rp + trait +
+      '<g class="l8-fin' + (id === 'cr' ? ' l8-vie' : '') + '" transform="' + fin + '"><circle class="l8-puls" r="7" fill="#2F7BFF"/><circle class="l8-dot" r="7" fill="#0050E6" stroke="#fff" stroke-width="3"/></g>' +
+      '<g class="l8-curs"><g class="l8-rule"><rect x="-24" width="48" y="' + pt + '" height="' + (yb - pt).toFixed(1) + '" fill="url(#l8-gb-' + id + ')"/><line x1="0" x2="0" y1="' + pt + '" y2="' + yb.toFixed(1) + '" stroke="#0050E6" stroke-opacity=".4" stroke-width="1.5"/></g>' +
       (refOk ? '<g class="l8-p2"><circle r="5" fill="#fff" stroke="#8591AC" stroke-width="2.5"/></g>' : '') +
-      '<g class="l8-p1"><circle r="14" fill="#0050E6" fill-opacity=".14"/><circle r="6.5" fill="#0050E6" stroke="#fff" stroke-width="3"/></g></g>' +
+      '<g class="l8-p1"><circle r="20" fill="url(#l8-gh-' + id + ')"/><circle r="7" fill="#0050E6" stroke="#fff" stroke-width="3"/></g></g>' +
       lab + '<rect class="l8-zone" x="0" y="0" width="' + W + '" height="' + H + '" fill="#fff" fill-opacity="0"/></svg>';
   }
 
@@ -2306,12 +2388,25 @@
     var zone = svg.querySelector('.l8-zone'), curs = svg.querySelector('.l8-curs'), rule = svg.querySelector('.l8-rule'), p1 = svg.querySelector('.l8-p1'), p2 = svg.querySelector('.l8-p2');
     var labs = svg.querySelectorAll('.l8-mo'), refp = svg.querySelector('.l8-ref'), refn = svg.querySelector('.l8-refnom'), act = -1, tm = null, tr = null, N = ch.N;
     var px = function (a, b) { return 'translate(' + a.toFixed(1) + 'px,' + b.toFixed(1) + 'px)'; };
+    // Le curseur a une légère inertie : il rejoint le mois lu en glissant SUR la courbe (rapprochement amorti, sans dépassement),
+    // et la boucle s'arrête dès qu'il est arrivé.
+    var pos = null, cib = 0, rf = 0, tp = null;
+    function poser(x) {
+      rule.style.transform = px(x, 0); p1.style.transform = px(x, l8YSur(ch.P, x));
+      if (p2) p2.style.transform = px(x, l8YSur(ch.ref.map(function (v, k) { return [ch.X(k), ch.Y(v)]; }), x));
+    }
+    function suivre(ts) {
+      rf = 0;
+      var k = 1 - Math.exp(-(tp == null ? 16 : Math.min(64, ts - tp)) / 62); tp = ts;
+      pos = Math.abs(cib - pos) < 0.5 ? cib : pos + (cib - pos) * k;
+      poser(pos);
+      if (pos !== cib && svg.isConnected) rf = requestAnimationFrame(suivre); else tp = null;
+    }
     function mettre(i) {
       clearTimeout(tm);
-      var x = ch.X(i), neuf = act < 0;
-      if (neuf) curs.classList.add('nt');
-      rule.style.transform = px(x, 0); p1.style.transform = px(x, ch.Y(ch.ser[i])); if (p2) p2.style.transform = px(x, ch.Y(ch.ref[i]));
-      if (neuf) { void svg.getBoundingClientRect(); curs.classList.remove('nt'); curs.classList.add('on'); }
+      cib = ch.X(i);
+      if (act < 0 || pos == null || l8Calme()) { pos = cib; poser(pos); curs.classList.add('on'); }
+      else if (!rf && pos !== cib) rf = requestAnimationFrame(suivre);
       act = i;
       Array.prototype.forEach.call(labs, function (t) { t.classList.toggle('on', Number(t.getAttribute('data-i')) === i); });
       svg.setAttribute('aria-label', cb.texte(i));
@@ -2351,8 +2446,9 @@
         if (refn) refn.textContent = l8Court(nom, ch.pr);
         if (tr) tr.stop();
         if (!refp) { ch.ref = neuf; return; }
-        tr = l8Tween(350, function (t) {
-          ch.ref = de.map(function (v, i) { return v + (neuf[i] - v) * t; });
+        // la ligne se DÉFORME d'un repère à l'autre : chaque point part un peu après son voisin de gauche (une onde, sans dépassement)
+        tr = l8Tween(620, function (t) {
+          ch.ref = de.map(function (v, i) { return v + (neuf[i] - v) * l8Doux(l8Borne(t * 1.5 - 0.5 * (N > 1 ? i / (N - 1) : 0))); });
           var R = ch.ref.map(function (v, i) { return [ch.X(i), ch.Y(v)]; });
           refp.setAttribute('d', N > 1 ? l8Lisse(R) : 'M' + (ch.X(0) - 10).toFixed(1) + ' ' + R[0][1].toFixed(1) + 'h20');
           if (refn) refn.setAttribute('y', (R[N - 1][1] + 4.5).toFixed(1));
@@ -2391,13 +2487,13 @@
   }
   function l8LierResume() {
     var gv = document.getElementById('l8-gv'), ch = L8_CH.cr; if (!gv || !ch) return;
-    gv._v = Math.round(L1.A.caMoy);
+    gv._v = Math.round(L1.A.caMoy); ch.moy = l8Fin(l1Ref(L1.b).moy);
     var u = document.getElementById('l8-gu'), p = document.getElementById('l8-gp'), m = l8Mois();
     var ecartMois = function (i) { var R = l1Ref(L1.b); return l8Ecart(m.ser[i], l8Fin(R.serie[L1.A.i0 + i])); };
     l8Lier('cr', {
       texte: function (i) { var R = l1Ref(L1.b), e = ecartMois(i); return l1MoisAn(m.pts[i].mk) + ' : ' + l1Eur(m.ser[i]) + (e ? ', ' + l8Txt(e) + ' face à ' + R.long : ''); },
-      actif: function (i) { l8Glisse(gv, m.ser[i], 180); u.textContent = l1MoisAn(m.pts[i].mk); l8Puce(p, ecartMois(i)); },
-      repos: function () { l8Glisse(gv, Math.round(L1.A.caMoy), 240); u.textContent = 'par mois'; l8Puce(p, l8Ecart(L1.A.caMoy, l1Ref(L1.b).moy)); }
+      actif: function (i) { if (ch.tp) ch.tp.stop(); l8Glisse(gv, m.ser[i], 260); u.textContent = l1MoisAn(m.pts[i].mk); l8Puce(p, ecartMois(i)); },
+      repos: function () { l8Glisse(gv, Math.round(L1.A.caMoy), 320); u.textContent = 'par mois'; l8Puce(p, l8Ecart(L1.A.caMoy, l1Ref(L1.b).moy)); }
     });
   }
   // « Face à » : le repère glisse, les pastilles et « Sa place » se mettent à jour sur place
@@ -2407,12 +2503,17 @@
     if (ch.refOk !== ref.some(function (v) { return v > 0; })) { l8Peindre(['resume']); return; }
     var rp = document.getElementById('l8-rep-place'); if (rp) rp.innerHTML = l8PlaceHtml();
     ch.api.setRef(ref, R.court, l8Desc(R, 'Ce qu’elle commande chaque mois'));
-    var a = ch.api.indice();
-    if (a >= 0) ch.api.aller(a); else l8Puce(document.getElementById('l8-gp'), l8Ecart(L1.A.caMoy, R.moy));
+    var a = ch.api.indice(), de = ch.moy, vers = l8Fin(R.moy), gp = document.getElementById('l8-gp'); ch.moy = vers;
+    if (ch.tp) ch.tp.stop();
+    if (a >= 0) ch.api.aller(a);
+    // la pastille change en COMPTANT : l'écart passe par les valeurs intermédiaires, du repère quitté au repère choisi
+    else if (de > 0 && vers > 0) ch.tp = l8Tween(620, function (t) { l8Puce(gp, l8Ecart(L1.A.caMoy, t >= 1 ? R.moy : de + (vers - de) * t)); });
+    else l8Puce(gp, l8Ecart(L1.A.caMoy, R.moy));
   }
 
   // ── Commandes : colonnes par mois, le repère en trait d'escalier, même geste que la courbe
   var l8Pastille = function (e) { return e ? '<span class="l8-pastille ' + e.c + '">' + e.t + '</span>' : ''; };
+  var L8_VAGUE = 55;       // ms entre deux colonnes de la vague (la même valeur pilote les colonnes, en CSS, et leurs montants qui comptent)
   function l8Marche(ch, ref) {
     var d = '';
     ref.forEach(function (v, i) {
@@ -2429,12 +2530,18 @@
     var ch = L8_CH.cm = { id: 'cm', W: W, H: H, pl: pl, pr: pr, N: N, slot: slot, Y: Y, ref: ref.slice(), refOk: refOk, desc: desc };
     var cols = '', vl = '', lab = '', yb = Y(0), pas = slot < 40 ? 2 : 1;
     for (var i = 0; i < N; i++) {
-      var cx = pl + slot * (i + 0.5), x0 = cx - bw / 2, x1 = cx + bw / 2, yt = Y(m.ser[i]), r = Math.max(0, Math.min(6, bw / 2, (yb - yt) / 2));
-      cols += '<path class="l8-col" style="--i:' + l8Cran(i) + '" d="M' + l8F1(x0) + ' ' + l8F1(yb) + 'L' + l8F1(x0) + ' ' + l8F1(yt + r) + 'Q' + l8F1(x0) + ' ' + l8F1(yt) + ' ' + l8F1(x0 + r) + ' ' + l8F1(yt) + 'L' + l8F1(x1 - r) + ' ' + l8F1(yt) + 'Q' + l8F1(x1) + ' ' + l8F1(yt) + ' ' + l8F1(x1) + ' ' + l8F1(yt + r) + 'L' + l8F1(x1) + ' ' + l8F1(yb) + 'Z" fill="#0050E6"/>';
-      if (grand) vl += '<text class="l8-cvl" style="--i:' + l8Cran(i) + ';--dy:' + l8F1(yb - yt) + 'px" x="' + l8F1(cx) + '" y="' + l8F1(yt - 9) + '" text-anchor="middle">' + l1Nb(m.ser[i]) + '</text>';
+      var cx = pl + slot * (i + 0.5), x0 = cx - bw / 2, x1 = cx + bw / 2, yt = Y(m.ser[i]), r = Math.max(0, Math.min(9, bw / 2, (yb - yt) / 2)), der = i === N - 1;
+      // colonne en dégradé (plus claire en haut), la dernière — le mois en cours de lecture — plus dense que les autres ; --i = rang dans la vague
+      cols += '<path class="l8-col' + (der ? ' der' : '') + '" style="--i:' + Math.min(i, 14) + '" d="M' + l8F1(x0) + ' ' + l8F1(yb) + 'L' + l8F1(x0) + ' ' + l8F1(yt + r) + 'Q' + l8F1(x0) + ' ' + l8F1(yt) + ' ' + l8F1(x0 + r) + ' ' + l8F1(yt) + 'L' + l8F1(x1 - r) + ' ' + l8F1(yt) + 'Q' + l8F1(x1) + ' ' + l8F1(yt) + ' ' + l8F1(x1) + ' ' + l8F1(yt + r) + 'L' + l8F1(x1) + ' ' + l8F1(yb) + 'Z" fill="url(#l8-g' + (der ? 'd' : 'c') + ')"/>';
+      if (grand) vl += '<text class="l8-cvl" style="--i:' + Math.min(i, 14) + ';--dy:' + l8F1(yb - yt) + 'px" x="' + l8F1(cx) + '" y="' + l8F1(yt - 9) + '" text-anchor="middle" data-vers="' + Math.round(m.ser[i]) + '" data-fmt="n" data-dl="' + (Math.min(i, 14) * L8_VAGUE + 60) + '" data-du="640">' + l1Nb(m.ser[i]) + '</text>';
       if (i % pas === (N - 1) % pas) lab += '<text class="l8-mo" data-i="' + i + '" x="' + l8F1(cx) + '" y="' + (H - 8) + '" text-anchor="middle">' + esc(m.labs[i]) + '</text>';
     }
-    return '<svg class="l8-tr l8-cols" id="l8-s-cm" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" tabindex="0" aria-label="' + esc(desc) + '">' +
+    var xd = pl + slot * (N - 0.5);
+    return '<svg class="l8-tr l8-cols" id="l8-s-cm" style="--pas:' + L8_VAGUE + 'ms" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" tabindex="0" aria-label="' + esc(desc) + '">' +
+      '<defs><linearGradient id="l8-gc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6FA3FF"/><stop offset="1" stop-color="#2C6CF0"/></linearGradient>' +
+      '<linearGradient id="l8-gd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2F7BFF"/><stop offset="1" stop-color="#0038B4"/></linearGradient>' +
+      '<radialGradient id="l8-gs"><stop offset="0" stop-color="#0050E6" stop-opacity=".30"/><stop offset="1" stop-color="#0050E6" stop-opacity="0"/></radialGradient></defs>' +
+      '<ellipse class="l8-sol" cx="' + l8F1(xd) + '" cy="' + l8F1(yb) + '" rx="' + l8F1(bw * 1.25) + '" ry="9" fill="url(#l8-gs)"/>' +
       l8Axe(W, pl, pr, top, s, Y) + cols +
       (refOk ? '<path class="l8-marche" pathLength="1" d="' + l8Marche(ch, ref) + '" fill="none" stroke="#8591AC" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' +
         '<text class="l8-refnom" x="' + l8F1(W - pr + 15) + '" y="' + l8F1(Y(ref[N - 1]) + 4.5) + '">' + esc(l8Court(R.court, pr)) + '</text>' : '') + vl + lab +
@@ -2473,7 +2580,7 @@
       var de = ch.ref.slice(), R = l1Ref(L1.b); neuf = l8Serie(neuf); ch.desc = l8Desc(R, 'Ses commandes mois par mois');
       if (rn) rn.textContent = l8Court(nom, ch.pr);
       if (tr) tr.stop();
-      if (mp) tr = l8Tween(350, function (t) { ch.ref = de.map(function (v, i) { return v + (neuf[i] - v) * t; }); mp.setAttribute('d', l8Marche(ch, ch.ref)); if (rn) rn.setAttribute('y', l8F1(ch.Y(ch.ref[N - 1]) + 4.5)); });
+      if (mp) tr = l8Tween(620, function (t) { ch.ref = de.map(function (v, i) { return v + (neuf[i] - v) * l8Doux(l8Borne(t * 1.5 - 0.5 * (N > 1 ? i / (N - 1) : 0))); }); mp.setAttribute('d', l8Marche(ch, ch.ref)); if (rn) rn.setAttribute('y', l8F1(ch.Y(ch.ref[N - 1]) + 4.5)); });
       else ch.ref = neuf;
       if (act >= 0) mettre(act); else svg.setAttribute('aria-label', ch.desc);
     } };
@@ -2489,21 +2596,27 @@
   function l8CatPar(key) { var a = L1.A.cats; for (var i = 0; i < a.length; i++) { if (a[i].key === key) return a[i]; } return null; }
   function l8CatSerie(c) { var i0 = L1.A.i0; return l8Mois().pts.map(function (p, i) { return l8Fin(c.caByM[i0 + i]); }); }
   function l8CatRef(c, R) { var i0 = L1.A.i0, ser = R.catSerie(c) || []; return l8Mois().pts.map(function (p, i) { return l8Fin(ser[i0 + i]); }); }
-  function l8Mini(ser, ref, W, absente) {
+  // cle = clé de la catégorie (identifiants de dégradé uniques). Même matière que la grande courbe, en petit : trait en dégradé,
+  // lumière sous le trait, dernier point éclairé.
+  function l8Mini(ser, ref, W, absente, cle) {
     var N = ser.length, H = 38, mx = Math.max.apply(null, ser.concat(ref, [1]));
     var X = function (i) { return N > 1 ? 4 + (W - 8) * i / (N - 1) : W / 2; }, Y = function (v) { return 5 + (H - 10) * (1 - v / mx); };
     var pts = function (a) { return a.map(function (v, i) { return [X(i), Y(v)]; }); };
-    var refOk = ref.some(function (v) { return v > 0; });
+    var refOk = ref.some(function (v) { return v > 0; }), d = N > 1 ? l8Lisse(pts(ser)) : '', xf = l8F1(X(N - 1)), yf = l8F1(Y(ser[N - 1]));
     return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" aria-hidden="true">' +
+      '<defs><linearGradient id="l8-gm-' + cle + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0050E6" stop-opacity=".20"/><stop offset="1" stop-color="#0050E6" stop-opacity="0"/></linearGradient>' +
+      '<linearGradient id="l8-gt-' + cle + '" gradientUnits="userSpaceOnUse" x1="4" y1="0" x2="' + (W - 4) + '" y2="0"><stop offset="0" stop-color="#0B3AA8"/><stop offset="1" stop-color="#2F7BFF"/></linearGradient>' +
+      '<radialGradient id="l8-gp-' + cle + '"><stop offset="0" stop-color="#2F7BFF" stop-opacity=".45"/><stop offset="1" stop-color="#2F7BFF" stop-opacity="0"/></radialGradient></defs>' +
+      (absente || N < 2 ? '' : '<path class="l8-ma" d="' + d + 'L' + xf + ' ' + (H - 2) + 'L' + l8F1(X(0)) + ' ' + (H - 2) + 'Z" fill="url(#l8-gm-' + cle + ')"/>') +
       (refOk ? '<path d="' + (N > 1 ? l8Lisse(pts(ref)) : 'M' + (X(0) - 8) + ' ' + l8F1(Y(ref[0])) + 'h16') + '" fill="none" stroke="#8591AC" stroke-width="1.8" stroke-linecap="round"/>' : '') +
-      (absente ? '' : (N > 1 ? '<path class="l8-m1" pathLength="1" d="' + l8Lisse(pts(ser)) + '" fill="none" stroke="#0050E6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>' : '') +
-        '<circle class="l8-m2" cx="' + l8F1(X(N - 1)) + '" cy="' + l8F1(Y(ser[N - 1])) + '" r="3.6" fill="#0050E6"/>') + '</svg>';
+      (absente ? '' : (N > 1 ? '<path class="l8-m1" pathLength="1" d="' + d + '" fill="none" stroke="url(#l8-gt-' + cle + ')" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>' : '') +
+        '<circle class="l8-m3" cx="' + xf + '" cy="' + yf + '" r="10" fill="url(#l8-gp-' + cle + ')"/><circle class="l8-m2" cx="' + xf + '" cy="' + yf + '" r="3.8" fill="#0050E6" stroke="#fff" stroke-width="1.4"/>') + '</svg>';
   }
   function l8Minis() {
     var R = l1Ref(L1.b);
     Array.prototype.forEach.call(document.querySelectorAll('.l8-mini[data-mini]'), function (el) {
-      var c = l8CatPar(el.getAttribute('data-mini')); if (!c || el.closest('[hidden]')) return;
-      l8Cadre(el, 'categories'); el.innerHTML = l8Mini(l8CatSerie(c), l8CatRef(c, R), Math.max(80, l8Larg(el, 160)), c.ca <= 0);
+      var k = el.getAttribute('data-mini'), c = l8CatPar(k); if (!c || el.closest('[hidden]')) return;
+      l8Cadre(el, 'categories'); el.innerHTML = l8Mini(l8CatSerie(c), l8CatRef(c, R), Math.max(80, l8Larg(el, 160)), c.ca <= 0, String(k).replace(/[^0-9A-Za-z_-]/g, ''));
     });
   }
   // la grande courbe d'une catégorie, au-dessus de ce qui s'y rattache
@@ -2512,7 +2625,10 @@
     var A = L1.A, R = l1Ref(L1.b), m = l8Mois(), N = m.N, ser = l8CatSerie(c), id = 'cc' + key, W = Math.max(240, l8Larg(box, 440));
     var tout = l8CatRef(c, l1Ref('reseau')); if (L1.G) tout = tout.concat(l8CatRef(c, l1Ref('groupement')));
     var ref = l8CatRef(c, R), refAt = function (i) { return l8Fin(ref[i]); };
-    l8Cadre(box, 'categories'); box.innerHTML = l8Tracer({ id: id, W: W, H: W > 560 ? 240 : 190, ser: ser, ref: ref, refTout: tout, nom: R.court, nomMax: l8NomMax(), labs: m.labs, desc: l8Desc(R, c.label + ', mois par mois') });
+    // l'horloge du dépli (posée par l8Hauteur à l'ouverture) : un redessin en route reprend le tracé où il en était
+    if (L1.vu['d:' + key] != null) l8EtatEl(box, 'd:' + key, false, 'l8-'); else box.style.removeProperty('--l8t');
+    box.innerHTML = l8Tracer({ id: id, W: W, H: W > 560 ? 240 : 190, ser: ser, ref: ref, refTout: tout, nom: R.court, nomMax: l8NomMax(), labs: m.labs, desc: l8Desc(R, c.label + ', mois par mois') });
+    l8Trait(document.getElementById('l8-s-' + id), 'd:' + key);
     var api = l8Lier(id, {
       texte: function (i) { var e = l8Ecart(ser[i], refAt(i)); return l1MoisAn(m.pts[i].mk) + ' : ' + l1Eur(ser[i]) + (e ? ', ' + l8Txt(e) + ' face à ' + R.long : ''); },
       actif: function (i) { if (lu) lu.innerHTML = l1MoisAn(m.pts[i].mk) + NB + '·' + NB + '<b>' + l1Eur(ser[i]) + '</b> ' + l8Pastille(l8Ecart(ser[i], refAt(i))); },
@@ -2524,6 +2640,12 @@
   function l8Hauteur(d, ouvrir) {
     clearTimeout(d._ht); d.style.overflow = 'hidden';
     if (l8Calme()) { d.style.overflow = ''; if (!ouvrir) d.hidden = true; return; }
+    // à l'ouverture, la courbe de la catégorie se trace comme celle du Résumé, sur sa propre horloge
+    if (ouvrir) {
+      var key = d.id.slice(5), box = document.getElementById('l8-dcv-' + key);
+      L1.vu['d:' + key] = l8Now() + 120;
+      if (box) { l8EtatEl(box, 'd:' + key, false, 'l8-'); l8Trait(box.querySelector('svg.l8-tr'), 'd:' + key); }
+    }
     var h = d.scrollHeight;
     d.style.height = ouvrir ? '0px' : h + 'px'; void d.offsetHeight;
     d.style.transition = 'height .38s var(--ease)'; d.style.height = ouvrir ? h + 'px' : '0px';
@@ -2533,17 +2655,19 @@
   // ── Ne commande plus : frise des mois de la période, un point par produit au mois de son dernier achat
   function l8Frises() {
     var N = l8Mois().N;
-    Array.prototype.forEach.call(document.querySelectorAll('.l8-frz'), function (el) {
+    Array.prototype.forEach.call(document.querySelectorAll('.l8-frz'), function (el, fi) {
       if (el.closest('[hidden]')) return;
       var W = Math.max(200, l8Larg(el, 360)), slot = W / N, lab = el.hasAttribute('data-lab'), H = lab ? 22 : 44, h = '', cx = function (i) { return slot * (i + 0.5); };
       if (lab) { var m = l8Mois(); for (var i = (N - 1) % (slot < 36 ? 2 : 1); i < N; i += (slot < 36 ? 2 : 1)) h += '<text x="' + l8F1(cx(i)) + '" y="16" text-anchor="middle">' + esc(m.labs[i]) + '</text>'; }
       else {
-        var k = Math.max(0, Math.min(N - 1, Number(el.getAttribute('data-mi')) || 0));
-        for (var j = 0; j < N; j++) h += '<circle cx="' + l8F1(cx(j)) + '" cy="22" r="2.4" fill="#D5DCEB"/>';
-        h += (k < N - 1 ? '<line class="l8-sil" x1="' + l8F1(cx(k)) + '" x2="' + l8F1(cx(N - 1)) + '" y1="22" y2="22" stroke="#8591AC" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="1 6"/>' : '') +
-          '<g transform="translate(' + l8F1(cx(k)) + ' 22)"><circle class="l8-fdot" r="12" fill="#0050E6" fill-opacity=".14"/><circle class="l8-fdot" r="6.5" fill="#0050E6" stroke="#fff" stroke-width="2.5"/></g>';
+        var k = Math.max(0, Math.min(N - 1, Number(el.getAttribute('data-mi')) || 0)), xr = function (i) { return (N > 1 ? i / (N - 1) : 0).toFixed(3); };
+        // la frise se déroule de gauche à droite : --x = place du mois (0 à 1), chaque point s'allume quand le balayage y passe
+        for (var j = 0; j < N; j++) h += '<circle class="l8-fm" style="--x:' + xr(j) + '" cx="' + l8F1(cx(j)) + '" cy="22" r="2.4" fill="#D5DCEB"/>';
+        h += (k < N - 1 ? '<line class="l8-sil" style="--x:' + xr(k) + '" x1="' + l8F1(cx(k)) + '" x2="' + l8F1(cx(N - 1)) + '" y1="22" y2="22" stroke="#8591AC" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="1 6"/>' : '') +
+          '<g transform="translate(' + l8F1(cx(k)) + ' 22)" style="--x:' + xr(k) + '"><circle class="l8-fdot l8-fh" r="16" fill="url(#l8-gf-' + fi + ')"/><circle class="l8-fdot" r="6.5" fill="#0050E6" stroke="#fff" stroke-width="2.5"/></g>';
       }
-      l8Cadre(el, 'neplus'); el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" aria-hidden="true">' + h + '</svg>';
+      l8Cadre(el, 'neplus'); el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" aria-hidden="true">' +
+        (lab ? '' : '<defs><radialGradient id="l8-gf-' + fi + '"><stop offset="0" stop-color="#2F7BFF" stop-opacity=".40"/><stop offset=".5" stop-color="#2F7BFF" stop-opacity=".14"/><stop offset="1" stop-color="#2F7BFF" stop-opacity="0"/></radialGradient></defs>') + h + '</svg>';
     });
   }
 
@@ -2656,7 +2780,7 @@
       '<div class="pha-rail l8-rail">' +
         '<header class="l8-id"><h1 class="l8-nom">' + c.nom + '</h1><p class="l8-sous">' + esc(c.sous) + '</p>' + (acts ? '<div class="l8-acts l8-interne">' + acts + '</div>' : '') + '<div class="l8-acts l8-acts-2 l8-interne">' + acts2 + '</div></header>' +
         '<div class="l8-ongs l8-interne" role="tablist" aria-label="Stats ou infos de l’officine" onkeydown="V2.pharmaL.touche(event)">' + ong('stats', 'Stats') + ong('infos', 'Infos') + '</div>' +
-        '<nav class="l8-menu" aria-label="Rubriques">' + menu + '</nav>' +
+        '<nav class="l8-menu" aria-label="Rubriques"><span class="l8-gliss" aria-hidden="true"></span>' + menu + '</nav>' +
         '<div class="l8-pied"><button type="button" class="l8-lien gris l8-interne" onclick="V2.pharmaL.vue()">' + l8Ic('oeil', 18) + '<span>À montrer au pharmacien</span></button>' +
 '</div>' +
       '</div>' +
@@ -2691,7 +2815,7 @@
       if (!el || el.getAttribute('data-ok') === String(L1.k)) return;
       if (garde && garde.indexOf(k) >= 0 && el.getAttribute('data-ok')) { el.setAttribute('data-ok', String(L1.k)); return; }
       el.innerHTML = L8_F[k](); el.setAttribute('data-ok', String(L1.k));
-      l8Etat(k, !!garde); l8Compteurs(k); neuves.push(k);
+      l8Etat(k, !!garde); l8Lignes(el, !!garde); l8Compteurs(k); neuves.push(k);
     });
     l8Peindre(garde ? neuves : null); l8Observer(); l8Sommaire();
   }
@@ -2701,9 +2825,9 @@
     if (L1.ong !== 'stats' || !L1.A) return;
     var veut = function (k) { return !quoi || quoi.indexOf(k) >= 0; }, vis = function (el) { return el && !el.closest('[hidden]'); };
     var g = document.getElementById('l8-graph');
-    if (veut('resume') && vis(g)) { l8Cadre(g, 'resume'); g.innerHTML = l8CourbeResume(Math.max(260, l8Larg(g, 320))); l8LierResume(); }
+    if (veut('resume') && vis(g)) { l8Cadre(g, 'resume'); g.innerHTML = l8CourbeResume(Math.max(260, l8Larg(g, 320))); l8LierResume(); l8Jouer('resume'); }
     var c = document.getElementById('l8-cmd');
-    if (veut('commandes') && vis(c)) { l8Cadre(c, 'commandes'); c.innerHTML = l8Colonnes(Math.max(260, l8Larg(c, 700))); l8LierCols(); }
+    if (veut('commandes') && vis(c)) { l8Cadre(c, 'commandes'); c.innerHTML = l8Colonnes(Math.max(260, l8Larg(c, 700))); l8LierCols(); l8Compteurs('commandes', c); }
     if (veut('categories')) { l8Minis(); Object.keys(L1.ouv).forEach(function (k) { if (L1.ouv[k]) l8Detail(k); }); }
     if (veut('neplus')) l8Frises();
   }
@@ -2722,7 +2846,18 @@
       if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) cur = L8_RUB[L8_RUB.length - 1][0];
     }
     L1.rub = cur;
-    Array.prototype.forEach.call(p.querySelectorAll('.l8-row'), function (b) { if (b.getAttribute('data-r') === cur) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+    var act = null;
+    Array.prototype.forEach.call(p.querySelectorAll('.l8-row'), function (b) { if (b.getAttribute('data-r') === cur) { b.setAttribute('aria-current', 'page'); act = b; } else b.removeAttribute('aria-current'); });
+    // le repère de la rubrique active GLISSE d'une ligne à l'autre (posé sans mouvement la première fois, après chaque redessin)
+    var g = p.querySelector('.l8-gliss');
+    if (g && act && act.offsetHeight) {
+      var y = act.offsetTop, neuf = !g.classList.contains('on');
+      if (g._y === y) return;
+      g._y = y;
+      if (neuf) g.classList.add('nt');
+      g.style.height = act.offsetHeight + 'px'; g.style.transform = 'translateY(' + y + 'px)'; g.classList.add('on');
+      if (neuf) { void g.offsetHeight; g.classList.remove('nt'); }
+    }
   }
   if (!window.__l8Scroll) {
     window.__l8Scroll = true;
@@ -6111,6 +6246,11 @@
       '.l8-cpt{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--muted);white-space:nowrap;word-spacing:-.3em}',
       '.l8-cpt b{color:var(--ip-blue);font-weight:700}',
       '.l8-chev{flex:none;color:#7C859B;display:flex}',
+      /* le repère de la rubrique active : un seul fond, qui glisse d'une ligne à l'autre (sans lui, la ligne garde son fond) */
+      '.l8-menu{position:relative}',
+      '.l8-gliss{display:none;position:absolute;left:4px;right:4px;top:0;height:44px;border-radius:12px;background:linear-gradient(90deg,color-mix(in srgb,var(--ip-blue) 13%,#fff),color-mix(in srgb,var(--ip-blue) 6%,#fff));pointer-events:none;transition:transform .5s cubic-bezier(.32,.72,0,1)}',
+      '.l8-gliss.nt{transition:none}',
+      '@media(min-width:901px){.l8-gliss.on{display:block}.l8-gliss.on~.l8-row[aria-current="page"],.l8-gliss.on~.l8-row[aria-current="page"]:hover{background:transparent}}',
       '@media(min-width:901px){.l8-row[aria-current="page"]{background:var(--halo)}.l8-row[aria-current="page"] .l8-tuile{background:var(--ip-blue);color:#fff;transform:scale(1.06)}.l8-row[aria-current="page"]+.l8-row::before,.l8-row[aria-current="page"]::before{display:none}.l8-row[aria-current="page"] .l8-chev{color:var(--ip-blue)}}',
       '.l8-pied{display:flex;flex-wrap:wrap;gap:0 18px}',
       '.l8-lien{display:inline-flex;align-items:center;gap:8px;min-height:var(--tap-min,44px);padding:0;border:0;background:transparent;color:var(--ip-blue);font:inherit;font-size:14px;font-weight:800;cursor:pointer;letter-spacing:-.01em}',
@@ -6242,55 +6382,88 @@
       '.l8-tr .l8-mo.on{fill:var(--ip-ink);font-weight:800}',
       '.l8-tr .l8-curs{opacity:0;transition:opacity .18s;pointer-events:none}',
       '.l8-tr .l8-curs.on{opacity:1}',
-      '.l8-tr .l8-curs .l8-rule,.l8-tr .l8-curs .l8-p1,.l8-tr .l8-curs .l8-p2{transition:transform .16s var(--ease)}',
-      '.l8-tr .l8-curs.nt .l8-rule,.l8-tr .l8-curs.nt .l8-p1,.l8-tr .l8-curs.nt .l8-p2{transition:none}',
-      '.l8-ligne,.l8-halo,.l8-marche,.l8-m1{stroke-dasharray:1 2;stroke-dashoffset:0}',
-      '.l8-aire{transform-box:fill-box;transform-origin:50% 100%}',
-      '.l8-fin .l8-dot,.l8-fin .l8-puls,.l8-m2,.l8-fdot{transform-box:fill-box;transform-origin:center}',
-      '.l8-puls{opacity:0}',
-      '.l8-av .l8-ligne,.l8-av .l8-halo,.l8-av .l8-marche,.l8-av .l8-m1{stroke-dashoffset:1}',
-      '.l8-av .l8-aire{transform:scaleY(0)}',
-      '.l8-av .l8-ref{opacity:0}',
-      '.l8-av .l8-fin .l8-dot,.l8-av .l8-m2,.l8-av .l8-fdot{transform:scale(0)}',
-      '.l8-lit .l8-ligne,.l8-lit .l8-halo{animation:l8-trace .8s var(--ease) backwards;animation-delay:var(--l8t,0ms)}',
-      '.l8-lit .l8-aire{animation:l8-aire .78s var(--ease) backwards;animation-delay:calc(100ms + var(--l8t,0ms))}',
-      '.l8-lit .l8-ref{animation:l8-fondu .6s ease backwards;animation-delay:calc(200ms + var(--l8t,0ms))}',
-      '.l8-lit .l8-fin .l8-dot{animation:l8-pop .38s cubic-bezier(.22,1,.36,1) backwards;animation-delay:calc(520ms + var(--l8t,0ms))}',
-      '.l8-lit .l8-fin .l8-puls{animation:l8-bat .7s var(--ease) backwards;animation-delay:calc(700ms + var(--l8t,0ms))}',
+      /* Le curseur de lecture est placé par l8Lier (inertie) : aucune transition ici. Le mois lu s'allume. */
+      '.l8-tr .l8-mo{transition:fill .2s}',
+      '.l8-tr .l8-mo.on{fill:var(--ip-blue)}',
+      '.l8-ligne,.l8-halo,.l8-com,.l8-marche,.l8-m1,.l8-tr .l8-ref{stroke-dasharray:1 2;stroke-dashoffset:0}',
+      '.l8-fin .l8-dot,.l8-fin .l8-puls,.l8-m2,.l8-m3,.l8-fdot{transform-box:fill-box;transform-origin:center}',
+      '.l8-puls,.l8-com,.l8-pointe{opacity:0}',
+      '.l8-pointe,.l8-com,.l8-lueur{pointer-events:none}',
+      /* Avant l'entrée (l8-av) : rien de tracé, les nombres attendent (leur texte final est en place, masqué) */
+      '.l8-av .l8-ligne,.l8-av .l8-halo,.l8-av .l8-tr .l8-ref{stroke-dashoffset:1}',
+      '.l8-av .l8-aire,.l8-av .l8-lueur,.l8-av .l8-refnom,.l8-av .l8-puce,.l8-av .l8-grand [data-vers],.l8-av .l8-grand small,.l8-av .l8-u,.l8-av .l8-reps [data-vers],.l8-av .l8-rt{opacity:0}',
+      '.l8-av .l8-fin .l8-dot{transform:scale(0)}',
+      /* L'entrée du Résumé, sur l'horloge de la rubrique (le tracé lui-même est piloté par l8Trait, même horloge) :
+         le chiffre compte pendant le tracé ; le point se pose au bout ; la pastille arrive ; le repère se trace en dernier */
+      '.l8-lit .l8-grand [data-vers],.l8-lit .l8-grand small,.l8-lit .l8-u{animation:l8-fondu .3s ease backwards;animation-delay:var(--l8t,0ms)}',
+      '.l8-lit .l8-reps [data-vers]{animation:l8-fondu .3s ease backwards;animation-delay:calc(250ms + var(--l8t,0ms))}',
+      '.l8-lit .l8-rt{animation:l8-fondu .4s ease backwards;animation-delay:calc(900ms + var(--l8t,0ms))}',
+      '.l8-lit .l8-lueur{animation:l8-fondu .7s ease backwards;animation-delay:calc(860ms + var(--l8t,0ms))}',
+      '.l8-lit .l8-fin .l8-dot{animation:l8-pop .36s cubic-bezier(.22,1,.36,1) backwards;animation-delay:calc(940ms + var(--l8t,0ms))}',
+      '.l8-lit .l8-fin .l8-puls{animation:l8-bat .8s var(--ease) backwards;animation-delay:calc(1000ms + var(--l8t,0ms))}',
+      '.l8-lit .l8-puce{animation:l8-monte .44s var(--ease) backwards;animation-delay:calc(980ms + var(--l8t,0ms))}',
+      '.l8-lit .l8-tr .l8-ref{animation:l8-trace .5s var(--ease) backwards;animation-delay:calc(1080ms + var(--l8t,0ms))}',
+      '.l8-lit .l8-refnom{animation:l8-fondu .34s ease backwards;animation-delay:calc(1320ms + var(--l8t,0ms))}',
+      '.l8-lit .l8-curs.on{animation:l8-fondu .3s ease backwards;animation-delay:calc(1000ms + var(--l8t,0ms))}',
+      /* Au repos, une seule vie : le dernier point respire, lentement et rarement (transformation et opacité seulement) */
+      '.l8-vie .l8-puls{animation:l8-vie 5.6s cubic-bezier(.2,.6,.3,1) 2.6s infinite}',
+      '.l8-av .l8-vie .l8-puls{animation:none}',
+      '.l8-lit .l8-fin.l8-vie .l8-puls{animation:l8-bat .8s var(--ease) backwards;animation-delay:calc(1000ms + var(--l8t,0ms))}',
+      '@keyframes l8-vie{0%{transform:scale(1);opacity:0}6%{opacity:.34}32%{transform:scale(3);opacity:0}100%{transform:scale(3);opacity:0}}',
       '@keyframes l8-trace{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}',
-      '@keyframes l8-aire{from{transform:scaleY(0)}to{transform:scaleY(1)}}',
       '@keyframes l8-fondu{from{opacity:0}to{opacity:1}}',
+      '@keyframes l8-monte{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}',
       '@keyframes l8-pop{from{transform:scale(0)}to{transform:scale(1)}}',
-      '@keyframes l8-bat{0%{transform:scale(1);opacity:0}15%{opacity:.4}100%{transform:scale(3.2);opacity:0}}',
+      '@keyframes l8-bat{0%{transform:scale(1);opacity:0}15%{opacity:.5}100%{transform:scale(3.6);opacity:0}}',
       /* Commandes : colonnes, le repère en escalier */
       '.l8-lu{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0 12px;min-height:36px}',
       '.l8-lv{color:var(--ip-ink);font-size:15px;font-weight:700;display:inline-flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:0 8px;min-width:0}',
       '.l8-lv b,.l8-lu2 b{font-family:var(--mono);font-weight:800;word-spacing:-.3em}',
       '.l8-cmd{min-height:260px}',
-      '.l8-cols .l8-col{fill:var(--ip-blue);transform-box:fill-box;transform-origin:50% 100%;transition:fill .22s}',
-      '.l8-cols.hov .l8-col:not(.act){fill:#CBD8F4}',
+      /* Les colonnes gardent leur dégradé (attribut fill) ; à la lecture, les autres pâlissent. Entrée sur l'horloge du bloc
+         (l8-rav / l8-rlit) : la vague part quand le graphique arrive à l'écran, les montants montent avec leur colonne en comptant. */
+      '.l8-cols .l8-col{transform-box:fill-box;transform-origin:50% 100%;transition:fill-opacity .22s}',
+      '.l8-cols.hov .l8-col:not(.act){fill-opacity:.3}',
       '.l8-cols .l8-cvl{font-family:var(--mono);font-size:13px;font-weight:700;fill:var(--ip-ink-2);font-variant-numeric:tabular-nums;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round}',
-      '.l8-av .l8-cols .l8-col{transform:scaleY(0)}',
-      '.l8-av .l8-cols .l8-cvl{transform:translateY(var(--dy))}',
-      '.l8-lit .l8-cols .l8-col{animation:l8-col .6s var(--ease) backwards;animation-delay:calc(var(--i)*45ms + var(--l8t,0ms))}',
-      '.l8-lit .l8-cols .l8-cvl{animation:l8-vl .6s var(--ease) backwards;animation-delay:calc(var(--i)*45ms + var(--l8t,0ms))}',
-      '.l8-lit .l8-cols .l8-marche{animation:l8-trace .7s var(--ease) backwards;animation-delay:calc(400ms + var(--l8t,0ms))}',
+      '.l8-rav .l8-cols .l8-col{transform:scaleY(0)}',
+      '.l8-rav .l8-cols .l8-cvl{transform:translateY(var(--dy));opacity:0}',
+      '.l8-rav .l8-marche{stroke-dashoffset:1}',
+      '.l8-rav .l8-cols .l8-refnom,.l8-rav .l8-sol{opacity:0}',
+      '.l8-rlit .l8-cols .l8-col{animation:l8-col .72s cubic-bezier(.16,1,.3,1) backwards;animation-delay:calc(var(--i)*var(--pas,55ms) + var(--l8t,0ms))}',
+      '.l8-rlit .l8-cols .l8-cvl{animation:l8-vl .72s cubic-bezier(.16,1,.3,1) backwards;animation-delay:calc(var(--i)*var(--pas,55ms) + var(--l8t,0ms))}',
+      '.l8-rlit .l8-sol{animation:l8-fondu .6s ease backwards;animation-delay:calc(700ms + var(--l8t,0ms))}',
+      '.l8-rlit .l8-cols .l8-marche{animation:l8-trace .6s var(--ease) backwards;animation-delay:calc(760ms + var(--l8t,0ms))}',
+      '.l8-rlit .l8-cols .l8-refnom{animation:l8-fondu .34s ease backwards;animation-delay:calc(1180ms + var(--l8t,0ms))}',
       '@keyframes l8-col{from{transform:scaleY(0)}to{transform:scaleY(1)}}',
-      '@keyframes l8-vl{from{transform:translateY(var(--dy))}to{transform:translateY(0)}}',
+      '@keyframes l8-vl{from{transform:translateY(var(--dy));opacity:0}30%{opacity:1}to{transform:translateY(0);opacity:1}}',
+      /* Ce qui bouge : la pastille ronde se pose, l'écart arrive */
+      '.l8-rav .l8-f{transform:scale(0)}.l8-rav .l8-bv{opacity:0}',
+      '.l8-rlit .l8-f{animation:l8-pop .4s cubic-bezier(.22,1,.36,1) backwards;animation-delay:var(--l8t,0ms)}',
+      '.l8-rlit .l8-bv{animation:l8-monte .42s var(--ease) backwards;animation-delay:calc(180ms + var(--l8t,0ms))}',
       '.l8-pastille{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:13px;font-weight:700;padding:2px 10px;border-radius:999px;word-spacing:-.3em;white-space:nowrap;background:var(--surf-sunken)}',
       '.l8-pastille.pha-up{background:color-mix(in srgb,var(--c-mint) 13%,#fff)}.l8-pastille.pha-dn{background:color-mix(in srgb,var(--c-rose) 13%,#fff)}',
       '.l8-pastille svg{width:14px;height:14px}',
       /* À proposer, Meilleurs produits, Répartition : barres fines qui poussent en cascade */
-      '.l8-av .l8-pbar i{transform:scaleX(0)}',
-      '.l8-lit .l8-pbar i{animation:l8-barre .65s var(--ease) backwards;animation-delay:calc(var(--i,0)*40ms + var(--l8t,0ms))}',
+      /* chaque ligne a son horloge : la barre file quand ELLE arrive à l'écran (les lignes arrivées ensemble partent en cascade), son montant compte */
+      '.l8-pbar{height:8px;border-radius:4px}',
+      '.l8-pbar i{border-radius:4px;background:linear-gradient(90deg,#0B3AA8 0%,#0050E6 55%,#3F86FF 100%)}',
+      '.l8-rav .l8-pbar i{transform:scaleX(0)}',
+      '.l8-rav [data-vers]{opacity:0}',
+      '.l8-rlit .l8-pbar i{animation:l8-barre .8s cubic-bezier(.16,1,.3,1) backwards;animation-delay:var(--l8t,0ms)}',
+      '.l8-rlit [data-vers]{animation:l8-fondu .28s ease backwards;animation-delay:var(--l8t,0ms)}',
       '@keyframes l8-barre{from{transform:scaleX(0)}to{transform:scaleX(var(--w,1))}}',
       /* Catégories : petite courbe par ligne, courbe en grand au clic */
       '.l8-mini{display:block;height:38px;min-width:0}',
       '.l8-mini svg{display:block;width:100%;height:38px;overflow:visible;transition:transform .25s var(--ease)}',
       '.l8-mini.abs svg path{stroke-dasharray:1 5}',
       '.l8-crow:hover .l8-mini svg,.l8-crow:focus-visible .l8-mini svg{transform:scale(1.03)}',
-      '.l8-lit .l8-m1{animation:l8-trace .7s var(--ease) backwards;animation-delay:calc(var(--i,0)*60ms + var(--l8t,0ms))}',
-      '.l8-lit .l8-m2{animation:l8-pop .4s cubic-bezier(.22,1,.36,1) backwards;animation-delay:calc(var(--i,0)*60ms + 500ms + var(--l8t,0ms))}',
+      '.l8-rav .l8-m1{stroke-dashoffset:1}',
+      '.l8-rav .l8-m2,.l8-rav .l8-m3{transform:scale(0)}',
+      '.l8-rav .l8-ma,.l8-rav .l8-ce .l8-pastille{opacity:0}',
+      '.l8-rlit .l8-m1{animation:l8-trace .8s cubic-bezier(.45,0,.15,1) backwards;animation-delay:var(--l8t,0ms)}',
+      '.l8-rlit .l8-ma{animation:l8-fondu .6s ease backwards;animation-delay:calc(360ms + var(--l8t,0ms))}',
+      '.l8-rlit .l8-m2,.l8-rlit .l8-m3{animation:l8-pop .4s cubic-bezier(.22,1,.36,1) backwards;animation-delay:calc(720ms + var(--l8t,0ms))}',
+      '.l8-rlit .l8-ce .l8-pastille{animation:l8-monte .4s var(--ease) backwards;animation-delay:calc(760ms + var(--l8t,0ms))}',
       '.l8-detail .l8-dcv{margin-top:2px}',
       '.l8-lu2{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;min-height:36px;font-size:15px;font-weight:700}',
       /* Ne commande plus : frise des mois de la période */
@@ -6300,9 +6473,16 @@
       '.l8-frz{display:block;min-width:0;height:44px}.l8-fzt .l8-frz{height:22px}',
       '.l8-frz svg{display:block;width:100%;overflow:visible}',
       '.l8-frz text{font-family:var(--font);font-size:13px;font-weight:600;fill:#646B80}',
-      '.l8-av .l8-frz .l8-sil{opacity:0}',
-      '.l8-lit .l8-frz .l8-fdot{animation:l8-pop .45s cubic-bezier(.22,1,.36,1) backwards;animation-delay:calc(var(--i,0)*50ms + var(--l8t,0ms))}',
-      '.l8-lit .l8-frz .l8-sil{animation:l8-fondu .5s ease backwards;animation-delay:calc(var(--i,0)*50ms + 250ms + var(--l8t,0ms))}',
+      /* la frise se déroule de janvier à aujourd'hui (--x = place du mois, de 0 à 1) : les mois s'allument l'un après l'autre,
+         le point du dernier achat se pose quand le balayage arrive à son mois, puis le silence se déroule jusqu'à aujourd'hui */
+      '.l8-frz .l8-sil{transform-box:fill-box;transform-origin:0 50%}',
+      '.l8-rav .l8-frz .l8-fm{opacity:0}',
+      '.l8-rav .l8-frz .l8-fdot{transform:scale(0)}',
+      '.l8-rav .l8-frz .l8-sil{transform:scaleX(0)}',
+      '.l8-rlit .l8-frz .l8-fm{animation:l8-fondu .26s ease backwards;animation-delay:calc(var(--x,0)*640ms + var(--l8t,0ms))}',
+      '.l8-rlit .l8-frz .l8-fdot{animation:l8-pop .42s cubic-bezier(.22,1,.36,1) backwards;animation-delay:calc(var(--x,0)*640ms + var(--l8t,0ms))}',
+      '.l8-rlit .l8-frz .l8-sil{animation:l8-file .5s cubic-bezier(.16,1,.3,1) backwards;animation-delay:calc(var(--x,0)*640ms + 220ms + var(--l8t,0ms))}',
+      '@keyframes l8-file{from{transform:scaleX(0)}to{transform:scaleX(1)}}',
       '@media(max-width:899px){.l8-pbar{width:72px}}',
       '@media(max-width:900px){',
       '.pha.l8{display:block;padding-top:0}',
@@ -6336,7 +6516,7 @@
       '.l8-fnote a{padding:13px 0}',
       '.l8-pacts{width:100%}.l8-pacts .l8-btn{flex:1;justify-content:center;padding:0 8px}',
       '}',
-      '@media(prefers-reduced-motion:reduce){.l8-tr *,.l8-tr,.l8-mini *,.l8-frz *,.l8-pbar i{transition:none!important;animation:none!important}}',
+      '@media(prefers-reduced-motion:reduce){.l8-tr *,.l8-tr,.l8-mini *,.l8-frz *,.l8-pbar i,.l8-gliss,.l8-puce,.l8-f,.l8-bv,.l8-pastille,.pha.l8 [data-vers]{transition:none!important;animation:none!important}}',
       '#l8-tout-body[hidden]{display:none!important}',
       '.phf-prange{color:var(--muted);font-weight:600;font-size:14px}',
       '.phf-psub{font-size:12.5px;color:var(--muted);font-weight:500;margin-top:5px;max-width:560px;line-height:1.4}',
