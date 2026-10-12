@@ -4,6 +4,7 @@
 -- decouper_par_commercial.py jeu_opso : les 129 adhérents, aucun total du réseau).
 -- Tout le reste (ventes complètes, bench/sagitta complets, pharma-fr-*, clients…) : refusé.
 -- 30/09/2026 soir : + opso-listing-2026.js (129 adhérents, titulaire/e-mail/tél.), sorti du dépôt public.
+-- 12/10/2026 : + offilog-cat-opso.js (prix catalogue seul de l'écran Offilog OPSO), réservé aux comptes de jarvis_acces_opso().
 -- Les autres comptes : règle inchangée (opso-acces-restreint.sql).
 -- Carte écran → fichier : jarvis-preuves/opso-acces-2026-09-30/carte-opso-donnees.md.
 create or replace function public.jarvis_peut_lire_protege(objet text)
@@ -17,7 +18,7 @@ as $function$
   )
   select case
     when objet in ('opso-stats-data.js', 'opso-contrat-data.js', 'opso-offilog-acces.js',
-                  'opso-listing-2026.js')
+                  'opso-listing-2026.js', 'offilog-cat-opso.js')
       then public.jarvis_acces_opso()
     when public.jarvis_est_opso() then
       objet in ('offilog-best-prix.js', 'offilog-live-prix.js',

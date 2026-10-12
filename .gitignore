@@ -186,6 +186,8 @@ crm/v2/sagitta-prix.js
 crm/v2/ocp-prix.js
 # 12/10/2026 — prix catalogue des laboratoires (tarifs de tiers) : même traitement.
 crm/v2/offilog-prix-catalogue.js
+# 12/10/2026 — prix catalogue seul pour l'espace OPSO (sans source ni année) : même traitement.
+crm/v2/offilog-cat-opso.js
 crm/v2/offilog-catalogue-prix.js
 # 10/09/2026 — catalogues complets Sagitta + OCP (écran Ressources concurrents) : même traitement.
 crm/v2/concurrents-sagitta-data.js

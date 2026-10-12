@@ -521,6 +521,8 @@
     ocpprix: 'v2/ocp-prix.js',
     // 12/10/2026 — prix catalogue des laboratoires (tarifs de tiers) : même raison, même traitement.
     offilogprixcat: 'v2/offilog-prix-catalogue.js',
+    // 12/10/2026 — prix catalogue SEUL (espace OPSO), sans source ni année : même raison, même traitement.
+    offilogcatopso: 'v2/offilog-cat-opso.js',
     // 25/09/2026 — catalogue client Offilog : tarif labo + prix Offilog (v2-offilog-catalogue.js).
     offilogcatalogue: 'v2/offilog-catalogue-prix.js',
     // 10/09/2026 — écran « Ressources concurrents » : catalogues COMPLETS Sagitta
@@ -649,6 +651,7 @@
     sagittaprix: 'sagitta-prix.js',
     ocpprix: 'ocp-prix.js',
     offilogprixcat: 'offilog-prix-catalogue.js',
+    offilogcatopso: 'offilog-cat-opso.js',
     offilogcatalogue: 'offilog-catalogue-prix.js',
     concsagitta: 'concurrents-sagitta-data.js',
     concocp: 'concurrents-ocp-data.js',
@@ -1125,7 +1128,7 @@
     // Bumpé 29/09/2026 : v2-offilog.js change (union catalogue OPSO, retrait
     // Pharmazon/achat côté OPSO) — sans ce bump, un appareil ayant déjà l'app
     // ouverte continuerait de servir l'ancien fichier depuis le cache.
-    var V = '?v=20261012c' + (window.V2_VER || '20260915g');
+    var V = '?v=20261012d' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1248,6 +1251,7 @@
     sagittaprix: 'SAGITTA_PRIX',
     ocpprix: 'OCP_PRIX',
     offilogprixcat: 'OFFILOG_PRIX_CAT',
+    offilogcatopso: 'OFFILOG_CAT_OPSO',
     offilogcatalogue: 'OFFILOG_CATALOGUE',
     concsagitta: 'CONCURRENTS_SAGITTA',
     concocp: 'CONCURRENTS_OCP',
@@ -1640,7 +1644,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20261012c';
+    var V = '?v=20261012d';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];

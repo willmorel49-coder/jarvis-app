@@ -9,11 +9,20 @@ calcule dans la page (v2-offilog.js) avec le prix deja en memoire.
 
 Regles (mesure : jarvis-preuves/offilog-prix-catalogue-2026-10-12/RAPPORT.md) :
 - sources GARDEES : OCP Incontournables, Sagitta, Pharmazon, CENTRAL-PROM, PARAPH1,
-  PARAPH, BRUTS2 et les tableaux de laboratoire (NUTERGIA, PEDIACT...) ;
+  PARAPH, BRUTS2, les tableaux de laboratoire (NUTERGIA, PEDIACT...) et les tarifs
+  PDF de laboratoire lus ici meme (TARIFS_LABO : PRANAROM, PILEJE, ARKOPHARMA, URGO,
+  GILBERT, NUTERGIA, PIERRE FABRE, PURESSENTIEL ; pdftotext -layout) ;
 - sources EXCLUES : tarif Integral (ppht), ETRADI, ALLIANCE (prix grossiste),
   FLASH-RESTE, OFFRE-FLASH, FLEXI-V2, ALTERNATIV (prix d'operations) ;
 - prix retenu : annee la plus recente ; a annee egale OCP > Sagitta > Pharmazon >
   CENTRAL-PROM > PARAPH1 > PARAPH > BRUTS2 > les autres ;
+- dans un tarif PDF, pour une meme source, un code ne garde que son annee la plus
+  recente (une hausse annuelle n'est pas une contradiction) ;
+- URGO = source de DERNIER RECOURS (decision de Will, 12/10) : un prix Urgo n'entre
+  que si AUCUNE autre source ne porte le code, son niveau est force a `conteste`
+  (la page affiche « a verifier ») et il ne confirme ni ne conteste jamais une autre source ;
+- le classeur CONDITIONS-CONCURRENTS-GLOBAL (colonne Prix fausse) et PARAPH-OFFRES-FLASH
+  (prix d'operation) ne sont PAS lus ;
 - niveau : confirme (une autre source a +-1 %), conteste (autre source d'une
   annee voisine a plus de 5 %), seul (une seule source), proche (le reste) ;
   nbSources = sources qui s'accordent a +-5 % avec le prix retenu.
@@ -22,8 +31,15 @@ SORTIE = TARIFS DE TIERS (regle §8) : le fichier est dans .gitignore et se depo
 sur Supabase `donnees-protegees`, il ne part JAMAIS dans le depot public, et
 l'app OPSO ne le charge pas.
 
+SECOND FICHIER, pour l'espace OPSO : crm/v2/offilog-cat-opso.js = code 13 -> prix catalogue HT SEUL (un nombre ;
+ni source, ni annee, ni niveau, ni date de tarif). Exclus : tout niveau `conteste` (donc tout ce qui vient du tarif Urgo).
+Le pourcentage se calcule dans la page avec le prix Offilog affiche sur la carte. Fichier hors git aussi, destine a
+`donnees-protegees` (cle `offilogcatopso`). L'espace OPSO ne charge JAMAIS offilog-prix-catalogue.js.
+
 Usage : /usr/bin/python3 scripts/generate_offilog_prix_catalogue.py [--date AAAA-MM-JJ]
-Refuse d'ecrire si le volume tombe sous 80 % du fichier precedent.
+Refuse d'ecrire si le volume tombe sous 80 % du fichier precedent, ou si un tarif PDF
+est absent / lu en dessous de son plancher (jamais un fichier produit en silence avec
+moins de donnees).
 """
 import collections
 import csv
@@ -32,6 +48,8 @@ import glob
 import json
 import os
 import re
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -44,6 +62,7 @@ APP = Path.home() / "JARVIS" / "APP"
 DPGS = Path.home() / "DPGS-documents" / "analyse"   # raccourci : toujours globber avec la barre finale
 BEST = ROOT / "crm" / "v2" / "offilog-bestsellers-data.js"
 LIVE = ROOT / "opso" / "offilog-live-data.js"
+OUT_CAT = ROOT / "crm" / "v2" / "offilog-cat-opso.js"
 
 EXCLUES = {"ETRADI", "ALLIANCE", "FLASH-RESTE", "OFFRE-FLASH", "FLEXI-V2", "ALTERNATIV"}
 NO_PRICE_FILES = {"libelles-retrouves-2026-10-05.csv"}   # noms seulement, aucun prix
@@ -51,6 +70,16 @@ PRICE_COL = {"NUTERGIA": "pa_ht"}
 ORDRE = ["OCP", "Sagitta", "Pharmazon", "CENTRAL-PROM", "PARAPH1", "PARAPH", "BRUTS2"]
 BAD_CTRL = ["a verifier", "non appliqu", "non reproduit", "ne reconstruit pas", "meme ligne de prix",
             "aucun code produit", "illisible", "designee par le calcul", "annoncee alors que"]
+
+# Tarifs PDF de laboratoire : (source, annee, chemin relatif a ~/DPGS-documents/, lecteur, plancher).
+# plancher = 80 % du nombre de codes lus lors de la mesure du 12/10/2026 (lecteurs ameliores inclus) ; en dessous : arret.
+# La liste elle-meme (chemins des documents) vit HORS du depot public : ~/.config/jarvis/offilog-tarifs-labo.json.
+TARIFS_LABO_CFG = Path.home() / ".config" / "jarvis" / "offilog-tarifs-labo.json"
+if not TARIFS_LABO_CFG.is_file():
+    sys.exit("ERREUR : liste des tarifs de laboratoire introuvable : %s" % TARIFS_LABO_CFG)
+TARIFS_LABO = [tuple(t) for t in json.loads(TARIFS_LABO_CFG.read_text(encoding="utf-8"))]
+DERNIER_RECOURS = {"URGO"}   # n'entre que si aucune autre source ne porte le code ; niveau force a conteste
+DOCS_LABO = Path.home() / "DPGS-documents"   # raccourci : chemin complet donne a pdftotext, jamais find sans barre finale
 
 
 def digits(s):
@@ -101,6 +130,162 @@ def read_csv(path, delim=None, repair_col=None):
         return out
 
 
+# --- lecteurs des tarifs PDF (colonnes verifiees dans les PDF le 12/10/2026) ---
+# Chacun rend ({code13: prix HT}, nombre de lignes a code NON lues). Une ligne n'est lue que si
+# le code ET le prix sont sur la MEME ligne ; sinon elle reste non lue (comptee, jamais devinee).
+PX = r"(\d{1,3}[,.]\d{2})"
+E13 = r"(?<!\d)(\d{13})(?!\d)"
+
+
+def lire_arko(lines):
+    # « PRIX HT » : 1er montant ; le 2e est le prix public conseille
+    d, rej = {}, 0
+    for l in lines:
+        m = re.search(r"(?<!\d)(\d{13}|\d{5} \d{7} \d)(?!\d)", l)
+        if not m:
+            continue
+        p = re.search(PX + r" ?€\s+[A-Z]{1,4}\s+\d{1,2}(?:,\d)? ?%?\s+" + PX + r" ?€", l[m.end():])
+        if p:
+            d[m.group(1).replace(" ", "")] = fnum(p.group(1))
+        else:
+            rej += 1
+    return d, rej
+
+
+def lire_urgo(lines):
+    # « TARIF 01/01/2025 » : DERNIER montant de la ligne ; deux codes possibles « A / B »
+    d, rej = {}, 0
+    for l in lines:
+        ms = list(re.finditer(E13, l))
+        if not ms:
+            continue
+        p = re.search(r"(\d+\.\d{2})\s+-?\d+\.\d ?%\s+(\d+\.\d{2})\s*$", l)
+        v = fnum(p.group(2)) if p else None
+        if v is None:
+            q = re.match(r"^\s+(\d+\.\d{2})\s*$", l[ms[-1].end():])   # prix seul apres le dernier code
+            v = fnum(q.group(1)) if q else None
+        if v is None:
+            rej += 1
+        else:
+            for m in ms:
+                d[m.group(1)] = v
+    return d, rej
+
+
+def lire_gilbert(lines):
+    # apres TVA et colisage : « TARIF DE BASE (EN € HT) » = 1er montant ; le 2e est le prix public conseille
+    d, rej = {}, 0
+    for l in lines:
+        m = re.search(r"(?<!\d)(\d \d{3} \d{3} \d{3} \d{3}|\d,\d{3},\d{3},\d{3},\d{3}|\d{13})(?!\d)", l)
+        if not m:
+            continue
+        p = re.search(r"(?:5,5|20|10|2,1|5\.5|2\.1) ?%\s+(\d{1,3})\s+" + PX + r"(?: ?€)?(?=\s|$)", l[m.end():])
+        if p:
+            d[re.sub(r"[ ,]", "", m.group(1))] = fnum(p.group(2))
+        else:
+            rej += 1
+    return d, rej
+
+
+def lire_nutergia(lines):
+    # « P.A. HT » : 1er montant ; le 2e est le prix public TTC. Deux colonnes : une ligne peut porter deux produits
+    d, rej = {}, 0
+    for l in lines:
+        tr = False
+        for m in re.finditer(r"(?<!\d)(\d \d{6} \d{6})\*?(?!\d)\s+(?:\d{1,2}\s+)?" + PX + r" ?€\s+" + PX + r"(?: ?€)?", l):
+            d[m.group(1).replace(" ", "")] = fnum(m.group(2))
+            tr = True
+        if not tr and re.search(r"(?<!\d)\d \d{6} \d{6}(?!\d)", l):
+            rej += 1
+    return d, rej
+
+
+def lire_pfabre(lines):
+    # « Tarif en € » : 1er montant (parfois suivi de **) ; le 2e est le prix moyen conseille ; TVA parfois absente
+    d, rej = {}, 0
+    for l in lines:
+        m = re.search(r"(?<!\d)(\d \d{3} \d{3} \d{3} \d{3})(?!\d)", l)
+        if not m:
+            continue
+        p = re.search(r"^\s+(?:\d{7}\s+)?" + PX + r"\**\s+" + PX + r"(?:\s+(?:20|5,5|10))?(?:\s|$)", l[m.end():])
+        if p:
+            d[m.group(1).replace(" ", "")] = fnum(p.group(1))
+        else:
+            rej += 1
+    return d, rej
+
+
+def lire_puress(lines):
+    # « PUHT 2024 »
+    d, rej = {}, 0
+    for l in lines:
+        m = re.search(E13, l)
+        if not m:
+            continue
+        p = re.search(r"\d{1,2},\d{2} ?%\s+\d{1,3}\s+" + PX + r" ?€\s*$", l)
+        if p:
+            d[m.group(1)] = fnum(p.group(1))
+        else:
+            rej += 1
+    return d, rej
+
+
+def lire_pranarom(lines):
+    # « Tarif HT Pharma » : code, [ACL], TVA, PCB, prix en fin de ligne
+    d, rej = {}, 0
+    for l in lines:
+        m = re.search(r"(?<!\d)(\d{13})\s+(?:(\d{7}|\d{13})\s+)?(5,5|20|10|2,1|0)\s+(\d{1,3})\s+(\d{1,3},\d{2})\s*$", l)
+        if m:
+            d[m.group(1)] = fnum(m.group(5))
+        elif re.search(E13, l):
+            rej += 1
+    return d, rej
+
+
+def lire_pileje(lines):
+    # « code puis prix € » sur la meme ligne (mise en page a deux colonnes : la fin de ligne n'est pas lue)
+    d = {}
+    tous = set()
+    for l in lines:
+        tous.update(re.findall(E13, l))
+        for m in re.finditer(r"(?<!\d)(\d{13})[ \t]+(\d{1,3},\d{2})[ \t]*€", l):
+            d[m.group(1)] = fnum(m.group(2))
+    return d, len(tous - set(d))
+
+
+LECTEURS = {"arko": lire_arko, "urgo": lire_urgo, "gilbert": lire_gilbert, "nutergia": lire_nutergia,
+            "pfabre": lire_pfabre, "puress": lire_puress, "pranarom": lire_pranarom, "pileje": lire_pileje}
+
+
+def lire_tarifs_labo():
+    """Lit chaque PDF de TARIFS_LABO. Rend (candidats, lignes par source, stats par document).
+    Arret net si pdftotext ou un PDF manque, ou si un document est lu sous son plancher."""
+    exe = shutil.which("pdftotext") or ("/opt/homebrew/bin/pdftotext" if os.path.exists("/opt/homebrew/bin/pdftotext") else None)
+    if not exe:
+        sys.exit("ERREUR : pdftotext introuvable (brew install poppler) - tarifs de laboratoire non lus.")
+    par_src = collections.defaultdict(dict)   # source -> code -> (annee, prix)
+    lignes = collections.Counter()
+    stats = []
+    for src, an, rel, lecteur, plancher in TARIFS_LABO:
+        pdf = DOCS_LABO / rel
+        if not pdf.is_file():
+            sys.exit("ERREUR : tarif %s %d introuvable : %s" % (src, an, pdf))
+        r = subprocess.run([exe, "-layout", str(pdf), "-"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if r.returncode != 0:
+            sys.exit("ERREUR : pdftotext a echoue sur %s (code %d)" % (pdf, r.returncode))
+        txt = r.stdout.decode("utf-8", "replace").replace("​", "")
+        d, rej = LECTEURS[lecteur](txt.splitlines())
+        stats.append((src, an, len(d), rej))
+        if len(d) < plancher:
+            sys.exit("ERREUR : %s %d : %d codes lus, plancher %d - fichier NON ecrit." % (src, an, len(d), plancher))
+        lignes[src] += len(d)
+        for c, v in d.items():
+            if v and v > 0 and (c not in par_src[src] or par_src[src][c][0] < an):
+                par_src[src][c] = (an, v)
+    cands = [(c, src, an, v) for src, u in par_src.items() for c, (an, v) in u.items()]
+    return cands, lignes, stats
+
+
 def produits_offilog():
     """EAN 13 des meilleures ventes et du catalogue complet (fichiers publics suivis par git)."""
     eans = set()
@@ -112,6 +297,36 @@ def produits_offilog():
             if len(e) == 13:
                 eans.add(e)
     return eans
+
+
+def ecrire_cat_opso(table):
+    """Second fichier (espace OPSO) : code 13 -> prix catalogue HT SEUL, hors niveau `conteste`."""
+    cat = {e: t[0] for e, t in table.items() if t[2] != "conteste"}
+    excl = len(table) - len(cat)
+    avant = OUT_CAT.read_text(encoding="utf-8").count('":') if OUT_CAT.exists() else 0
+    if avant and len(cat) < 0.8 * avant:
+        print("REFUS (prix catalogue OPSO) : %d codes seulement, le fichier precedent en portait %d (seuil 80 %%)." % (len(cat), avant))
+        sys.exit(1)
+    if len(cat) < 1000:
+        sys.exit("REFUS (prix catalogue OPSO) : %d codes seulement, valeur anormalement basse." % len(cat))
+    body = json.dumps({e: cat[e] for e in sorted(cat)}, separators=(",", ":"))
+    out = (
+        "// Prix catalogue HT du laboratoire par code 13 — espace OPSO. Un nombre par code : AUCUNE source, année ni niveau.\n"
+        "// ⚠️ JAMAIS dans le dépôt public : Supabase `donnees-protegees` uniquement (clé offilogcatopso).\n"
+        "// OFFILOG_CAT_OPSO {code13: prix HT} · " + str(len(cat)) + " codes · generate_offilog_prix_catalogue.py\n"
+        "var OFFILOG_CAT_OPSO=" + body + ";\n"
+    )
+    OUT_CAT.write_text(out, encoding="utf-8")
+    relu = OUT_CAT.read_text(encoding="utf-8")
+    m = re.search(r"^var OFFILOG_CAT_OPSO=(\{.*\});$", relu, re.M)
+    back = json.loads(m.group(1)) if m else {}
+    ok = bool(m) and back == cat and all(isinstance(v, (int, float)) and v > 0 and len(k) == 13 for k, v in back.items())
+    ok = ok and not re.search(r"(19|20)\d\d", relu.replace(m.group(1), "") if m else relu)   # aucune annee hors du corps (les codes en contiennent par hasard)
+    ok = ok and all(table[k][2] != "conteste" for k in back)
+    print("prix catalogue OPSO ecrits :", OUT_CAT, "-", OUT_CAT.stat().st_size, "octets,", len(cat), "codes (precedent :", avant or "aucun", ") | exclus conteste :", excl)
+    print("  relecture prix catalogue OPSO :", "OK" if ok else "ECART !")
+    if not ok:
+        sys.exit(1)
 
 
 def main():
@@ -220,6 +435,17 @@ def main():
             if v and v > 0:
                 cands.append((c, src, row_year(r), v))
 
+    # tarifs PDF de laboratoire (lus ici) ; les sources de dernier recours (URGO) sont tenues a part
+    labo, labo_lignes, labo_stats = lire_tarifs_labo()
+    for src, an, nb, rej in labo_stats:
+        print("tarif %-12s %d : %4d codes lus | %3d lignes a code non lues" % (src, an, nb, rej))
+    for s_, n_ in labo_lignes.items():
+        rows_par_source[s_] += n_
+    recours = [k for k in labo if k[1] in DERNIER_RECOURS]
+    cands += [k for k in labo if k[1] not in DERNIER_RECOURS]
+    deja_porte = {k[0] for k in cands}
+    cands += [k for k in recours if k[0] not in deja_porte]   # aucune autre source ne porte le code
+
     # rang de depart des sources
     autres = sorted([s for s in rows_par_source if s not in ORDRE], key=lambda s: (-rows_par_source[s], s))
     RANK = {s: i for i, s in enumerate(ORDRE)}
@@ -253,6 +479,8 @@ def main():
         nb = 1 + len({k[0] for k in autres_src if proche(v, k[2], 0.05)})
         if s not in src_utilisees:
             src_utilisees.append(s)
+        if s in DERNIER_RECOURS:
+            niveau = "conteste"   # « a verifier » : jamais presente comme un prix sur
         table[code] = [v, a if a else 0, niveau, s, nb]
 
     ordre_src = sorted(src_utilisees, key=lambda s: RANK[s])
@@ -295,6 +523,7 @@ def main():
     print("relecture :", "OK" if ok else "ECART !")
     if not ok:
         sys.exit(1)
+    ecrire_cat_opso(table)
 
 
 if __name__ == "__main__":

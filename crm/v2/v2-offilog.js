@@ -30,6 +30,7 @@
   var SANS_OCP = OPSO;
   // Prix catalogue des laboratoires (tarifs de tiers) : jamais côté OPSO, le fichier n'y est même pas demandé.
   var SANS_PCAT = OPSO;
+  // Côté OPSO, à la place : le prix catalogue SEUL (fichier `offilogcatopso`, code 13 → prix HT), sans source ni année ; jamais « à vérifier ».
   // Même règle pour Pharmazon : conditions négociées d'un TIERS, jamais côté
   // OPSO — brief Will du 29/09/2026 (« pharmazon tu vire ça »).
   var SANS_PHARMAZON = OPSO;
@@ -421,6 +422,11 @@
       var pcv = (!SANS_PCAT && window.OFFILOG_PRIX_CAT && b.ean) ? window.OFFILOG_PRIX_CAT[String(b.ean)] : null;
       var pcat = (pcv && pcv[0] > 0) ? { prix: pcv[0], annee: pcv[1] || 0, niveau: pcv[2], src: (window.OFFILOG_PRIX_CAT_SRC || [])[pcv[3]] || '', nb: pcv[4] || 1 } : null;
       var pcatRatio = (pcat && price > 0) ? (pcat.prix - price) / pcat.prix : null;
+      // Espace OPSO : prix catalogue seul (fichier sans source ni année) ; le pourcentage se calcule ICI, avec le prix affiché sur la carte.
+      // Rien si pas de prix affiché, si Offilog n'est pas sous le catalogue, ou si l'écart dépasse 65 % ; jamais « à vérifier ».
+      var cov = (OPSO && price > 0 && window.OFFILOG_CAT_OPSO && b.ean) ? window.OFFILOG_CAT_OPSO[String(b.ean)] : null;
+      var catOpso = null;
+      if (typeof cov === 'number' && cov > 0) { var cr = (cov - price) / cov; if (cr > 0 && cr <= 0.65 && Math.round(cr * 100) >= 1) catOpso = { prix: cov, ratio: cr }; }
       // « à vérifier » : sources en désaccord, Offilog au-dessus du catalogue, ou écart suspect (> 65 %)
       var pcatVerif = !!(pcat && (pcat.niveau === 'conteste' || (pcatRatio != null && (pcatRatio < 0 || pcatRatio > 0.65))));
       // prix PUBLIC E.Leclerc (TTC), relevé par l'API du site sur tout le
@@ -471,7 +477,7 @@
         url: b.url || '', univers: o ? (o.univers || '') : '',
         achat: achat, conc: conc, hasConc: hasC, minConc: mc, alert: alert, matched: !!o,
         pz: pz || null, pzCheaper: pzCheaper, sg: sg, sgCheaper: sgCheaper, ocp: ocp, ocpCheaper: ocpCheaper,
-        pcat: pcat, pcatRatio: pcatRatio, pcatVerif: pcatVerif,
+        pcat: pcat, pcatRatio: pcatRatio, pcatVerif: pcatVerif, catOpso: catOpso,
         leclerc: leclerc, drakkars: drakkars, sousRayon: sousRayon,
         mvt: mvt, mvtPct: mvtPct, monte: mvtPct >= 20 && mvt >= SEUIL_PLACES, ecart: ecart
       };
@@ -840,6 +846,7 @@
     return '<span class="off-pcat-pill" title="Le prix Offilog est ' + txt.replace('\u2212', '') + ' sous le prix catalogue du laboratoire">' + txt + '</span>';
   }
   function pcatLine(it) {
+    if (it.catOpso) return '<div class="off-card-cat mono"><span title="Prix catalogue du laboratoire (HT)">Catalogue ' + V2.fmtEur(it.catOpso.prix) + '</span><span class="off-pcat-pill" title="Écart entre le prix Offilog et le prix catalogue du laboratoire">\u2212' + Math.round(it.catOpso.ratio * 100) + ' %</span></div>';
     if (!it.pcat) return '';
     return '<div class="off-card-cat mono"><span title="Prix catalogue du laboratoire (HT)">' + (it.pcatVerif ? 'Cat.' : 'Catalogue') + ' ' + V2.fmtEur(it.pcat.prix) + '</span>' + pcatPill(it) + '</div>';
   }
@@ -1220,7 +1227,7 @@
   }
 
   // ── Chargement du fichier best-sellers (lazy, dans crm/v2/) ──
-  var bestLoading = false, bestFail = false, offTried = false, pzTried = false, sgTried = false, ocpTried = false, pcatTried = false;
+  var bestLoading = false, bestFail = false, offTried = false, pzTried = false, sgTried = false, ocpTried = false, pcatTried = false, catOpsoTried = false;
   // Catalogue complet + prix Drakkars (OPSO uniquement) — 29/09/2026.
   var liveTried = false, dkPubTried = false, accesTried = false;
   function ensureBest(cb) {
@@ -1680,6 +1687,10 @@
       }
       // Prix catalogue des laboratoires (tarifs de tiers) : adresse signée, une fois, jamais côté OPSO.
       // Fichier absent ou en échec : l'écran reste tel quel (aucun prix catalogue, aucune erreur).
+      if (OPSO && !window.OFFILOG_CAT_OPSO && !catOpsoTried) {
+        catOpsoTried = true;
+        if (V2.loadFiles) { try { V2.loadFiles(['offilogcatopso']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; V2.render(); }); } catch (e) {} }
+      }
       if (!SANS_PCAT && !window.OFFILOG_PRIX_CAT && !pcatTried) {
         pcatTried = true;
         if (V2.loadFiles) { try { V2.loadFiles(['offilogprixcat']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; V2.render(); }); } catch (e) {} }
