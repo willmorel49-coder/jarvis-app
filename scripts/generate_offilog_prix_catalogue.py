@@ -1,0 +1,301 @@
+#!/usr/bin/env python3
+"""Tarifs laboratoire (prix catalogue HT) -> crm/v2/offilog-prix-catalogue.js
+
+Pour chaque produit Offilog (EAN 13 des meilleures ventes + du catalogue complet,
+fichiers publics du depot), le prix catalogue HT du laboratoire AVANT reduction,
+releve dans les tarifs que nous avons recus (OCP, Sagitta, Pharmazon, tableaux
+de laboratoire). Le prix Offilog n'est PAS dans ce fichier : le pourcentage se
+calcule dans la page (v2-offilog.js) avec le prix deja en memoire.
+
+Regles (mesure : jarvis-preuves/offilog-prix-catalogue-2026-10-12/RAPPORT.md) :
+- sources GARDEES : OCP Incontournables, Sagitta, Pharmazon, CENTRAL-PROM, PARAPH1,
+  PARAPH, BRUTS2 et les tableaux de laboratoire (NUTERGIA, PEDIACT...) ;
+- sources EXCLUES : tarif Integral (ppht), ETRADI, ALLIANCE (prix grossiste),
+  FLASH-RESTE, OFFRE-FLASH, FLEXI-V2, ALTERNATIV (prix d'operations) ;
+- prix retenu : annee la plus recente ; a annee egale OCP > Sagitta > Pharmazon >
+  CENTRAL-PROM > PARAPH1 > PARAPH > BRUTS2 > les autres ;
+- niveau : confirme (une autre source a +-1 %), conteste (autre source d'une
+  annee voisine a plus de 5 %), seul (une seule source), proche (le reste) ;
+  nbSources = sources qui s'accordent a +-5 % avec le prix retenu.
+
+SORTIE = TARIFS DE TIERS (regle §8) : le fichier est dans .gitignore et se depose
+sur Supabase `donnees-protegees`, il ne part JAMAIS dans le depot public, et
+l'app OPSO ne le charge pas.
+
+Usage : /usr/bin/python3 scripts/generate_offilog_prix_catalogue.py [--date AAAA-MM-JJ]
+Refuse d'ecrire si le volume tombe sous 80 % du fichier precedent.
+"""
+import collections
+import csv
+import datetime
+import glob
+import json
+import os
+import re
+import sys
+from pathlib import Path
+
+sys.dont_write_bytecode = True
+csv.field_size_limit(10 ** 9)
+
+ROOT = Path(__file__).resolve().parents[1]
+OUT = ROOT / "crm" / "v2" / "offilog-prix-catalogue.js"
+APP = Path.home() / "JARVIS" / "APP"
+DPGS = Path.home() / "DPGS-documents" / "analyse"   # raccourci : toujours globber avec la barre finale
+BEST = ROOT / "crm" / "v2" / "offilog-bestsellers-data.js"
+LIVE = ROOT / "opso" / "offilog-live-data.js"
+
+EXCLUES = {"ETRADI", "ALLIANCE", "FLASH-RESTE", "OFFRE-FLASH", "FLEXI-V2", "ALTERNATIV"}
+NO_PRICE_FILES = {"libelles-retrouves-2026-10-05.csv"}   # noms seulement, aucun prix
+PRICE_COL = {"NUTERGIA": "pa_ht"}
+ORDRE = ["OCP", "Sagitta", "Pharmazon", "CENTRAL-PROM", "PARAPH1", "PARAPH", "BRUTS2"]
+BAD_CTRL = ["a verifier", "non appliqu", "non reproduit", "ne reconstruit pas", "meme ligne de prix",
+            "aucun code produit", "illisible", "designee par le calcul", "annoncee alors que"]
+
+
+def digits(s):
+    return re.sub(r"\D", "", s or "")
+
+
+def fnum(s):
+    s = (str(s) if s is not None else "").strip().replace(",", ".").replace(" ", "").replace(" ", "")
+    try:
+        return float(s) if s else None
+    except ValueError:
+        return None
+
+
+def strip_acc(s):
+    import unicodedata
+    return "".join(c for c in unicodedata.normalize("NFD", s.lower()) if unicodedata.category(c) != "Mn")
+
+
+def ctrl_ok(c):
+    low = strip_acc((c or "").strip())
+    return not any(k in low for k in BAD_CTRL)
+
+
+def read_csv(path, delim=None, repair_col=None):
+    """Lecture csv ; repair_col = colonne texte libre pouvant contenir des ';' non
+    proteges (libelles Sagitta) : les champs en trop y sont refusionnes (reparation
+    de LECTURE, aucune valeur n'est corrigee)."""
+    with open(path, encoding="utf-8-sig", newline="") as fh:
+        first = fh.readline()
+        fh.seek(0)
+        d = delim or (";" if first.count(";") > first.count(",") else ",")
+        rd = csv.reader(fh, delimiter=d)
+        head = next(rd)
+        n = len(head)
+        out = []
+        for row in rd:
+            if len(row) != n:
+                if repair_col and len(row) > n and repair_col in head:
+                    i = head.index(repair_col)
+                    extra = len(row) - n
+                    row = row[:i] + [d.join(row[i:i + extra + 1])] + row[i + extra + 1:]
+                elif len(row) < n:
+                    row = row + [""] * (n - len(row))
+                else:
+                    row = row[:n]
+            out.append(dict(zip(head, row)))
+        return out
+
+
+def produits_offilog():
+    """EAN 13 des meilleures ventes et du catalogue complet (fichiers publics suivis par git)."""
+    eans = set()
+    for p, motif in ((BEST, r'"ean":"([^"]*)"'), (LIVE, r"ean:'([^']*)'")):
+        if not p.exists():
+            sys.exit("ERREUR : fichier produits introuvable : %s" % p)
+        for m in re.findall(motif, p.read_text(encoding="utf-8")):
+            e = digits(m)
+            if len(e) == 13:
+                eans.add(e)
+    return eans
+
+
+def main():
+    date = None
+    args = sys.argv[1:]
+    if "--date" in args:
+        date = args[args.index("--date") + 1]
+    if date is None:
+        date = datetime.date.today().isoformat()
+
+    union = produits_offilog()
+
+    pharmazon = read_csv(APP / "OFFILOG" / "catalogue-pharmazon.csv", ";")
+    sagitta = [(os.path.basename(p), read_csv(p, ";", "Libellé"))
+               for p in sorted(glob.glob(str(APP / "CONCURRENTS" / "SAGITTA" / "*.csv")))]
+    ocp = read_csv(APP / "CONCURRENTS" / "OCP" / "ocp-incontournables-2026-09.csv", ",")
+
+    cip7 = collections.defaultdict(set)   # code 7 -> codes 13 (Pharmazon / Sagitta)
+    for r in pharmazon:
+        c7, c13 = digits(r.get("cip7")), digits(r.get("cip13"))
+        if c7 and len(c13) == 13:
+            cip7[c7.zfill(7)].add(c13)
+    for _, rows in sagitta:
+        for r in rows:
+            c7, c13 = digits(r.get("CIP7")), digits(r.get("CIP13"))
+            if c7 and len(c13) == 13:
+                cip7[c7.zfill(7)].add(c13)
+
+    def code13(raw):
+        d = digits((raw or "").strip())
+        if len(d) == 13:
+            return d
+        if len(d) == 7:
+            eq = cip7.get(d)
+            if eq and len(eq) == 1:
+                return next(iter(eq))
+        return None
+
+    cands = []   # (code, source, annee ou None, valeur)
+    rows_par_source = collections.Counter()
+
+    for r in ocp:
+        rows_par_source["OCP"] += 1
+        c = code13(r.get("code13"))
+        v = fnum(r.get("ppht"))
+        if c and ctrl_ok(r.get("controle")) and v and v > 0:
+            cands.append((c, "OCP", 2026, v))
+    for _, rows in sagitta:
+        rows_par_source["Sagitta"] += len(rows)
+        for r in rows:
+            v = fnum(r.get("Prix A HT"))
+            if not v or v <= 0:
+                continue
+            for c in dict.fromkeys(x for x in (code13(r.get("CIP13")), code13(r.get("EAN13"))) if x):
+                cands.append((c, "Sagitta", 2026, v))
+    rows_par_source["Pharmazon"] += len(pharmazon)
+    for r in pharmazon:
+        v = fnum(r.get("Prix"))
+        if not v or v <= 0:
+            continue
+        for c in dict.fromkeys(x for x in (code13(r.get("cip13")), code13(r.get("EAN"))) if x):
+            cands.append((c, "Pharmazon", 2026, v))
+
+    # datation des tableaux de laboratoire (annee par document)
+    dat = {}
+    dat_path = DPGS / "DATATION-2026-09-27.tsv"
+    if dat_path.exists():
+        for ln in open(dat_path, encoding="utf-8"):
+            p = ln.rstrip("\n").split("\t")
+            if len(p) >= 4 and re.fullmatch(r"(19|20)\d\d", p[0]):
+                dat[p[3]] = int(p[0])
+
+    def row_year(r):
+        for c in ("annee", "millesime"):
+            v = (r.get(c) or "").strip()
+            if re.fullmatch(r"(?:19|20)\d\d", v):
+                return int(v)
+        if r.get("document") in dat:
+            return dat[r["document"]]
+        ys = re.findall(r"(?:19|20)\d\d", " ".join((r.get(c) or "") for c in ("periode", "colonne_prix")))
+        return max(int(y) for y in ys) if ys else None
+
+    fichiers = sorted(glob.glob(str(DPGS) + "/*.csv"))
+    if not fichiers:
+        sys.exit("ERREUR : aucun tableau DPGS lu dans %s/" % DPGS)
+    for f in fichiers:
+        bn = os.path.basename(f)
+        if bn in NO_PRICE_FILES:
+            continue
+        src = bn.split("-2026-")[0]
+        if src in EXCLUES:
+            continue
+        rows = read_csv(f)
+        if not rows:
+            continue
+        rows_par_source[src] += len(rows)
+        pcol = PRICE_COL.get(src, "prix")
+        cc = "controle" if "controle" in rows[0] else ("coherence" if "coherence" in rows[0] else None)
+        for r in rows:
+            if src == "OCP-MARQUE-CONSEIL" and "TTC" in (r.get("nature") or ""):
+                continue   # tarif LPPR TTC (remboursement), pas un prix catalogue HT
+            c = code13(r.get("code_produit"))
+            if not c or (cc and not ctrl_ok(r.get(cc))):
+                continue
+            v = fnum(r.get(pcol))
+            if v and v > 0:
+                cands.append((c, src, row_year(r), v))
+
+    # rang de depart des sources
+    autres = sorted([s for s in rows_par_source if s not in ORDRE], key=lambda s: (-rows_par_source[s], s))
+    RANK = {s: i for i, s in enumerate(ORDRE)}
+    for i, s in enumerate(autres):
+        RANK[s] = len(ORDRE) + i
+
+    par_code = collections.defaultdict(list)
+    for c, s, a, v in cands:
+        if c in union:
+            par_code[c].append((s, a, round(v, 4)))
+
+    def proche(a, b, tol):
+        return abs(a - b) <= tol * a + 1e-12
+
+    table = {}
+    src_utilisees = []
+    for code, cl in par_code.items():
+        cl = sorted(set(cl), key=lambda k: (-(k[1] if k[1] else -1), RANK[k[0]], k[2]))
+        s, a, v = cl[0]
+        autres_src = [k for k in cl if k[0] != s]
+        confirme = any(proche(v, k[2], 0.01) for k in autres_src)
+        dissid = any(k[1] is not None and a is not None and abs(k[1] - a) <= 1 and not proche(v, k[2], 0.05) for k in cl[1:])
+        if confirme:
+            niveau = "confirme"
+        elif len({k[0] for k in cl}) == 1 and len({(k[1], k[2]) for k in cl}) == 1:
+            niveau = "seul"
+        elif dissid:
+            niveau = "conteste"
+        else:
+            niveau = "proche"
+        nb = 1 + len({k[0] for k in autres_src if proche(v, k[2], 0.05)})
+        if s not in src_utilisees:
+            src_utilisees.append(s)
+        table[code] = [v, a if a else 0, niveau, s, nb]
+
+    ordre_src = sorted(src_utilisees, key=lambda s: RANK[s])
+    idx = {s: i for i, s in enumerate(ordre_src)}
+    for t in table.values():
+        t[3] = idx[t[3]]
+
+    # garde-fou volume
+    avant = 0
+    if OUT.exists():
+        avant = OUT.read_text(encoding="utf-8").count('":[')
+    if avant and len(table) < 0.8 * avant:
+        print("REFUS : %d codes seulement, le fichier precedent en portait %d (seuil 80 %%)." % (len(table), avant))
+        sys.exit(1)
+
+    body = json.dumps({e: table[e] for e in sorted(table)}, separators=(",", ":"), ensure_ascii=False)
+    out = (
+        "// Prix catalogue HT des laboratoires (avant reduction) par code 13 — TARIFS DE TIERS\n"
+        "// ⚠️ JAMAIS dans le dépôt public : Supabase `donnees-protegees` uniquement. Jamais chargé côté OPSO.\n"
+        "// OFFILOG_PRIX_CAT {code13: [prix HT, année du tarif (0 = sans date), niveau, index de OFFILOG_PRIX_CAT_SRC, nb de sources d'accord à ±5 %]}\n"
+        "// niveau : confirme | proche | seul | conteste. Aucun prix Offilog ici : le pourcentage se calcule dans la page.\n"
+        "// relevé " + date + " · " + str(len(table)) + " codes · generate_offilog_prix_catalogue.py\n"
+        "var OFFILOG_PRIX_CAT=" + body + ";\n"
+        "var OFFILOG_PRIX_CAT_SRC=" + json.dumps(ordre_src, ensure_ascii=False) + ";\n"
+        "var OFFILOG_PRIX_CAT_MAJ=" + json.dumps(date) + ";\n"
+    )
+    OUT.write_text(out, encoding="utf-8")
+
+    # relecture de controle : le fichier ecrit doit porter autant d'entrees, valeurs identiques
+    relu = OUT.read_text(encoding="utf-8")
+    m = re.search(r"^var OFFILOG_PRIX_CAT=(\{.*\});$", relu, re.M)
+    back = json.loads(m.group(1)) if m else {}
+    ok = bool(m) and back == {e: table[e] for e in table} and relu.count('":[') == len(table)
+    niv = collections.Counter(t[2] for t in table.values())
+    print("produits Offilog (EAN 13) :", len(union))
+    print("ecrit :", OUT, "-", OUT.stat().st_size, "octets,", len(table), "codes (precedent :", avant or "aucun", "), releve", date)
+    print("couverture :", len(table), "/", len(union), "= %.1f %%" % (100 * len(table) / len(union)))
+    print("niveaux :", dict(niv), "| sans date :", sum(1 for t in table.values() if not t[1]), "| avant 2026 :", sum(1 for t in table.values() if t[1] and t[1] < 2026))
+    print("source retenue :", {ordre_src[i]: n for i, n in collections.Counter(t[3] for t in table.values()).most_common()})
+    print("relecture :", "OK" if ok else "ECART !")
+    if not ok:
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

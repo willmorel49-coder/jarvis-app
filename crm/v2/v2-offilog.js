@@ -28,6 +28,8 @@
   var SANS_SAGITTA = OPSO;
   // Même règle pour le catalogue OCP « Les Incontournables » (10/09/2026).
   var SANS_OCP = OPSO;
+  // Prix catalogue des laboratoires (tarifs de tiers) : jamais côté OPSO, le fichier n'y est même pas demandé.
+  var SANS_PCAT = OPSO;
   // Même règle pour Pharmazon : conditions négociées d'un TIERS, jamais côté
   // OPSO — brief Will du 29/09/2026 (« pharmazon tu vire ça »).
   var SANS_PHARMAZON = OPSO;
@@ -49,6 +51,7 @@
     { k: 'pzcheaper',   label: 'Moins cher sur Pharmazon', sc: 'var(--ip-blue-d)' },
     { k: 'sgcheaper',   label: 'Moins cher chez Sagitta', sc: 'var(--ip-blue-d)' },
     { k: 'ocpcheaper',  label: 'Moins cher chez OCP', sc: 'var(--ip-blue-d)' },
+    { k: 'avecpcat',    label: 'Avec prix catalogue', sc: 'var(--ip-blue-d)' },
     { k: 'leclercpub',  label: 'Vendu chez E.Leclerc', sc: '#0066B3' },
     // LE MARCHÉ : seuil RELATIF, voir `mvtPct` dans buildIndex. L'ambre du logo
     // Offilog, seule couleur d'accent de l'écran.
@@ -411,6 +414,15 @@
       var ocv = (!SANS_OCP && window.OCP_PRIX && b.ean) ? window.OCP_PRIX[String(b.ean)] : null;
       var ocp = ocv ? { price: numOr0(ocv[0]), ppht: numOr0(ocv[1]), remise: numOr0(ocv[2]) } : null;
       var ocpCheaper = !!(ocp && ocp.price > 0 && price > 0 && ocp.price < price);
+      // prix catalogue du laboratoire (HT, avant réduction) par code 13 :
+      // {code: [prix, année (0 = sans date), niveau, index source, nb sources]} — fichier protégé
+      // (tarifs de tiers), jamais chargé côté OPSO. Le pourcentage se calcule ICI, avec le prix
+      // Offilog déjà en mémoire : le fichier ne porte aucun prix Offilog.
+      var pcv = (!SANS_PCAT && window.OFFILOG_PRIX_CAT && b.ean) ? window.OFFILOG_PRIX_CAT[String(b.ean)] : null;
+      var pcat = (pcv && pcv[0] > 0) ? { prix: pcv[0], annee: pcv[1] || 0, niveau: pcv[2], src: (window.OFFILOG_PRIX_CAT_SRC || [])[pcv[3]] || '', nb: pcv[4] || 1 } : null;
+      var pcatRatio = (pcat && price > 0) ? (pcat.prix - price) / pcat.prix : null;
+      // « à vérifier » : sources en désaccord, Offilog au-dessus du catalogue, ou écart suspect (> 65 %)
+      var pcatVerif = !!(pcat && (pcat.niveau === 'conteste' || (pcatRatio != null && (pcatRatio < 0 || pcatRatio > 0.65))));
       // prix PUBLIC E.Leclerc (TTC), relevé par l'API du site sur tout le
       // catalogue — bien plus large que l'ancien prix_leclerc porté par
       // OFFILOG (918 réf. contre 3 754).
@@ -459,6 +471,7 @@
         url: b.url || '', univers: o ? (o.univers || '') : '',
         achat: achat, conc: conc, hasConc: hasC, minConc: mc, alert: alert, matched: !!o,
         pz: pz || null, pzCheaper: pzCheaper, sg: sg, sgCheaper: sgCheaper, ocp: ocp, ocpCheaper: ocpCheaper,
+        pcat: pcat, pcatRatio: pcatRatio, pcatVerif: pcatVerif,
         leclerc: leclerc, drakkars: drakkars, sousRayon: sousRayon,
         mvt: mvt, mvtPct: mvtPct, monte: mvtPct >= 20 && mvt >= SEUIL_PLACES, ecart: ecart
       };
@@ -508,6 +521,7 @@
     if (k === 'pzcheaper') return !SANS_PHARMAZON && it.pzCheaper;
     if (k === 'sgcheaper') return it.sgCheaper;
     if (k === 'ocpcheaper') return it.ocpCheaper;
+    if (k === 'avecpcat') return !!it.pcat;
     if (k === 'leclercpub') return it.leclerc > 0;
     if (k === 'monte') return it.monte;
     return it.cat === k;
@@ -520,6 +534,7 @@
     });
     return base;
   }
+  function kPcat(it) { return (it.pcat && !it.pcatVerif && it.pcatRatio != null) ? it.pcatRatio : -1e9; }
   function kMvt(it) { return (it.mkt && it.mkt.prec > 0) ? it.mvt : -1e9; }
   function sorted(list) {
     var a = list.slice();
@@ -534,13 +549,16 @@
     // Écart concurrent : l'alerte la plus grave d'abord (en euros sous ton achat).
     // Jamais côté OPSO — la chip/tri/badge disparaissent avec elle (brief §4).
     else if (!OPSO && S.sort === 'ecart') a.sort(function (x, y) { return (y.ecart || 0) - (x.ecart || 0) || x.rank - y.rank; });
+    // Plus fort écart au prix catalogue : le plus grand pourcentage sous le prix catalogue d'abord ;
+    // les produits « à vérifier » ou sans prix catalogue partent en fin de liste (on ne les cache pas).
+    else if (!SANS_PCAT && S.sort === 'pcat') a.sort(function (x, y) { return kPcat(y) - kPcat(x) || (x.rank || 1e9) - (y.rank || 1e9); });
     // ventes : sans rang connu (catalogue complet OPSO, brief §1), le produit
     // passe APRÈS les classés — jamais « avant le n°1 » comme le ferait un rang 0.
     else a.sort(function (x, y) { return (x.rank || 1e9) - (y.rank || 1e9); });
     return a;
   }
   function counts(base) {
-    var c = { all: base.length, alerte: 0, pzcheaper: 0, sgcheaper: 0, ocpcheaper: 0, leclercpub: 0, monte: 0 };
+    var c = { all: base.length, alerte: 0, pzcheaper: 0, sgcheaper: 0, ocpcheaper: 0, avecpcat: 0, leclercpub: 0, monte: 0 };
     CHIPS.forEach(function (ch) { if (c[ch.k] == null) c[ch.k] = 0; });
     for (var i = 0; i < base.length; i++) {
       var it = base[i];
@@ -552,6 +570,7 @@
       if (!SANS_PHARMAZON && it.pzCheaper) c.pzcheaper++;
       if (it.sgCheaper) c.sgcheaper++;
       if (it.ocpCheaper) c.ocpcheaper++;
+      if (it.pcat) c.avecpcat++;
       if (it.leclerc > 0) c.leclercpub++;
       if (it.monte) c.monte++;
       if (c[it.cat] != null) c[it.cat]++;
@@ -573,7 +592,12 @@
       if (it.price > 0) nPrix++;
       if (it.img) nPhoto++;
     }
-    return { nProd: items.length, nMarques: nm, nOff: nOff, nPrix: nPrix, nPhoto: nPhoto };
+    // pourcentage médian sous le prix catalogue : COMPTÉ sur les produits chargés, hors « à vérifier »
+    var pr = [];
+    for (var j = 0; j < items.length; j++) { var q = items[j]; if (q.pcat && !q.pcatVerif && q.pcatRatio != null) pr.push(q.pcatRatio); }
+    pr.sort(function (a, b) { return a - b; });
+    var med = pr.length ? (pr.length % 2 ? pr[(pr.length - 1) / 2] : (pr[pr.length / 2 - 1] + pr[pr.length / 2]) / 2) : null;
+    return { nProd: items.length, nMarques: nm, nOff: nOff, nPrix: nPrix, nPhoto: nPhoto, pcMed: med, pcN: pr.length };
   }
 
   // La tête de marque : le logo, le dégradé relevé dessus, et ce que la
@@ -653,6 +677,8 @@
               ? n(st.nPrix, 'à prix Offilog connu', 'prix affiché')
               : n(st.nOff, 'à votre prix d\'achat', 'prix Offilog connu')) +
             n(st.nMarques, 'marques', 'dans la sélection') +
+            (st.pcN > 0 ? '<div class="offb-n"><b class="mono">' + Math.round(st.pcMed * 100) + ' %</b>' +
+              '<span>sous le prix catalogue</span><em>médiane sur ' + V2.fmtNum(st.pcN) + ' produits</em></div>' : '') +
           '</div>' +
         '</div>' +
       '</div>';
@@ -799,8 +825,38 @@
           (it.ocp && it.ocp.price > 0 ? '<span class="off-card-pz' + (it.ocpCheaper ? ' win' : '') + '" title="Prix net OCP, catalogue Les Incontournables (HT)">OCP ' + V2.fmtEur(it.ocp.price) + '</span>' : '') +
           (it.leclerc > 0 ? '<span class="off-card-lec' + (it.achat > 0 && it.leclerc < it.achat ? ' bad' : '') + '" title="Prix de vente au public chez E.Leclerc (TTC)">Leclerc ' + V2.fmtEur(it.leclerc) + '</span>' : '') +
           (it.drakkars > 0 ? '<span class="off-card-drk" title="Prix de vente au public chez Pharmacie des Drakkars (TTC) · relevé du ' + esc(majLabel(window.DRAKKARS_PUB_MAJ)) + '">Drakkars ' + V2.fmtEur(it.drakkars) + '</span>' : '') +
-          concBelow + '</div>' +
+          concBelow + '</div>' + pcatLine(it) +
       '</div>' +
+    '</div>';
+  }
+
+  // Prix catalogue du laboratoire + écart : une ligne sous le prix Offilog. Sans prix
+  // catalogue : rien (ni tiret ni case vide). « à vérifier » : pastille neutre, pas de couleur de victoire.
+  function pcatPill(it) {
+    if (it.pcatRatio == null) return '';
+    var pct = Math.round(it.pcatRatio * 100);
+    var txt = (pct > 0 ? '\u2212' : (pct < 0 ? '+' : '')) + Math.abs(pct) + ' %';
+    if (it.pcatVerif) return '<span class="off-pcat-pill chk" title="Écart de ' + txt + ' à vérifier : sources en désaccord ou écart inhabituel">à vérifier</span>';
+    return '<span class="off-pcat-pill" title="Le prix Offilog est ' + txt.replace('\u2212', '') + ' sous le prix catalogue du laboratoire">' + txt + '</span>';
+  }
+  function pcatLine(it) {
+    if (!it.pcat) return '';
+    return '<div class="off-card-cat mono"><span title="Prix catalogue du laboratoire (HT)">' + (it.pcatVerif ? 'Cat.' : 'Catalogue') + ' ' + V2.fmtEur(it.pcat.prix) + '</span>' + pcatPill(it) + '</div>';
+  }
+  // Volet de détail : prix HT, année du tarif, recoupement, source retenue, pourcentage.
+  function pcatBlock(it) {
+    var c = it.pcat;
+    if (!c) return '';
+    var sub = [c.annee ? 'tarif ' + c.annee : 'tarif sans date',
+      c.nb > 1 ? 'recoupé par ' + c.nb + ' sources' : 'une seule source'];
+    if (c.src) sub.push('source retenue : ' + esc(c.src));
+    var maj = majLabel(window.OFFILOG_PRIX_CAT_MAJ);
+    if (maj) sub.push('relevé du ' + esc(maj));
+    return '<div class="off-pcat">' +
+      '<div class="off-pcat-l">Prix catalogue</div>' +
+      '<div class="off-pcat-row"><b class="mono">' + V2.fmtEur(c.prix) + '</b><span class="mono">HT</span>' + pcatPill(it) + '</div>' +
+      '<div class="off-pcat-sub">' + sub.join(' · ') + '</div>' +
+      (c.niveau === 'conteste' ? '<div class="off-pcat-sub">Les tarifs reçus ne s\'accordent pas : prix à vérifier.</div>' : '') +
     '</div>';
   }
 
@@ -897,6 +953,7 @@
           kpi('Concurrent mini', it.minConc > 0 ? V2.fmtEur(it.minConc) : '—', '') +
         '</div>' +
         marcheBlock(it) +
+        pcatBlock(it) +
         pzBlock +
         '<div class="off-cmp"><div class="off-cmp-l">Prix public concurrents <span>(TTC)</span></div>' + priceCmpRows(it) + '</div>' +
         '<div class="off-insp-cta">' +
@@ -1163,7 +1220,7 @@
   }
 
   // ── Chargement du fichier best-sellers (lazy, dans crm/v2/) ──
-  var bestLoading = false, bestFail = false, offTried = false, pzTried = false, sgTried = false, ocpTried = false;
+  var bestLoading = false, bestFail = false, offTried = false, pzTried = false, sgTried = false, ocpTried = false, pcatTried = false;
   // Catalogue complet + prix Drakkars (OPSO uniquement) — 29/09/2026.
   var liveTried = false, dkPubTried = false, accesTried = false;
   function ensureBest(cb) {
@@ -1338,6 +1395,17 @@
       '@media(max-width:640px){.off-grid{grid-template-columns:repeat(2,1fr);gap:10px}.off-card-media{height:118px}.off-card-name{font-size:12px}' +
         '.off-rankrow{top:6px;left:6px;gap:3px}.off-rank{font-size:11px;padding:2px 6px}.off-mvt{font-size:10px;padding:2px 5px}}',
       '.off-card-pz.win{color:var(--ip-blue-d);background:color-mix(in srgb,var(--ip-blue-d) 10%,#fff);border-color:color-mix(in srgb,var(--ip-blue-d) 28%,transparent)}',
+      // prix catalogue du laboratoire (carte + inspecteur)
+      '.off-card-cat{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;margin:0 -5px;font-size:11px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}',
+      '.off-pcat-pill{font-size:11px;font-weight:800;color:var(--ip-blue-d);background:color-mix(in srgb,var(--ip-blue-d) 10%,#fff);border:1px solid color-mix(in srgb,var(--ip-blue-d) 28%,transparent);border-radius:7px;padding:0 5px;line-height:17px;font-variant-numeric:tabular-nums}',
+      '@media(max-width:640px){.off-card-cat,.off-card-cat .off-pcat-pill{font-size:10.5px}}',
+      '.off-pcat-pill.chk{color:var(--muted);background:var(--card-2);border-color:var(--line);font-weight:700}',
+      '.off-pcat{margin-top:18px;padding:13px 15px;background:var(--card-2);border:1px solid var(--line);border-radius:13px}',
+      '.off-pcat-l{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:800;margin-bottom:8px}',
+      '.off-pcat-row{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}',
+      '.off-pcat-row b{font-size:20px;font-weight:800;color:var(--ip-ink)}',
+      '.off-pcat-row span.mono{font-size:12px;color:var(--muted)}',
+      '.off-pcat-sub{font-size:12.5px;color:var(--ip-ink-2);margin-top:6px;font-weight:600;line-height:1.4}',
       // comparatif Offilog vs Pharmazon (inspecteur)
       '.off-pz{margin-top:18px;padding:15px;background:color-mix(in srgb,var(--ip-blue-d) 5%,#fff);border:1px solid color-mix(in srgb,var(--ip-blue-d) 22%,transparent);border-radius:13px}',
       '.off-pz-l{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ip-blue-d);font-weight:800;margin-bottom:11px}',
@@ -1610,6 +1678,12 @@
         ocpTried = true;
         if (V2.loadFiles) { try { V2.loadFiles(['ocpprix']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); }); } catch (e) {} }
       }
+      // Prix catalogue des laboratoires (tarifs de tiers) : adresse signée, une fois, jamais côté OPSO.
+      // Fichier absent ou en échec : l'écran reste tel quel (aucun prix catalogue, aucune erreur).
+      if (!SANS_PCAT && !window.OFFILOG_PRIX_CAT && !pcatTried) {
+        pcatTried = true;
+        if (V2.loadFiles) { try { V2.loadFiles(['offilogprixcat']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; V2.render(); }); } catch (e) {} }
+      }
       // ── Tout le catalogue (OPSO uniquement) : catalogue complet (8 498 réf.,
       // public) + son prix Offilog (protégé), en tâche de fond — brief 29/09/2026.
       if (OPSO && !window.OFFILOG_LIVE && !liveTried) {
@@ -1668,6 +1742,7 @@
         if (f.k === 'pzcheaper' && SANS_PHARMAZON) return '';
         if (f.k === 'sgcheaper' && SANS_SAGITTA) return '';
         if (f.k === 'ocpcheaper' && SANS_OCP) return '';
+        if (f.k === 'avecpcat' && (SANS_PCAT || n === 0)) return '';
         if (f.k !== 'pzcheaper' && f.k !== 'sgcheaper' && f.k !== 'ocpcheaper' && n === 0) return '';
         var on = S.chip === f.k ? ' on' : '';
         return '<button class="v2-seg' + on + '" style="--sc:' + f.sc + '" onclick="V2.offFilter(\'' + f.k + '\')">' +
@@ -1710,7 +1785,7 @@
       var advOpen = S.adv;
       var advBtn = '<button type="button" class="off-advbtn' + (advOpen ? ' open' : '') + '" onclick="V2.offToggleAdv()">' +
           ICO('grid', 15, 2) + ' Filtres' +
-          (S.chip === 'pzcheaper' || S.chip === 'sgcheaper' || S.chip === 'ocpcheaper' || S.chip === 'monte' ? '<span class="off-advbtn-tag">' + esc(CHIP_BY_KEY[S.chip].label) + '</span>' : '') +
+          (S.chip === 'pzcheaper' || S.chip === 'sgcheaper' || S.chip === 'ocpcheaper' || S.chip === 'avecpcat' || S.chip === 'monte' ? '<span class="off-advbtn-tag">' + esc(CHIP_BY_KEY[S.chip].label) + '</span>' : '') +
           '<span class="off-advbtn-chev">' + ICO('chev', 14, 2.2) + '</span></button>';
       var advPanel = advOpen
         ? '<div class="off-adv">' +
@@ -1723,7 +1798,8 @@
             // rouge qu'il sert (brief §4) — la comparaison à « notre achat » n'y
             // a pas de sens.
             '<div class="off-sort">' + sortBtn('ventes', 'Meilleures ventes') + sortBtn('mvt', 'Progression') +
-              (OPSO ? '' : sortBtn('ecart', 'Écart concurrent')) + sortBtn('prix_asc', 'Prix ↑') + sortBtn('prix_desc', 'Prix ↓') + '</div>' +
+              (OPSO ? '' : sortBtn('ecart', 'Écart concurrent')) + sortBtn('prix_asc', 'Prix ↑') + sortBtn('prix_desc', 'Prix ↓') +
+              (!SANS_PCAT && (c.avecpcat || 0) > 0 ? sortBtn('pcat', 'Plus fort écart au prix catalogue') : '') + '</div>' +
           '</div>'
         : '';
 
