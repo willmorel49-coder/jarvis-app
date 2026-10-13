@@ -60,8 +60,17 @@ def load_subst_set():
 MOIS = {"janvier": 1, "février": 2, "fevrier": 2, "mars": 3, "avril": 4, "mai": 5,
         "juin": 6, "juillet": 7, "août": 8, "aout": 8, "septembre": 9, "octobre": 10,
         "novembre": 11, "décembre": 12, "decembre": 12}
-TRIM = {"premier": 1, "1er": 1, "deuxième": 4, "deuxieme": 4, "2ème": 4, "second": 4,
-        "troisième": 7, "troisieme": 7, "3ème": 7, "quatrième": 10, "quatrieme": 10, "4ème": 10}
+# Trimestre / semestre : rang (1 à 4) lu comme MOT entier, en toutes lettres, en chiffres (3e, 3ème, 3eme) ou « T3 ».
+RANG = {"premier": 1, "premiere": 1, "1er": 1, "1ere": 1, "1re": 1, "1e": 1,
+        "deuxieme": 2, "second": 2, "seconde": 2, "2nd": 2, "2nde": 2, "2eme": 2, "2e": 2,
+        "troisieme": 3, "3eme": 3, "3e": 3, "quatrieme": 4, "4eme": 4, "4e": 4}
+RE_PERIODE = re.compile(r"(?<![a-z0-9])(%s)\s*(trimestre|semestre)(?![a-z])" % "|".join(sorted(RANG, key=len, reverse=True)))
+RE_T = re.compile(r"(?<![a-z0-9])t([1-4])(?![a-z0-9])")
+
+
+def mot(name, low):
+    """Le mot en entier, jamais au milieu d'un autre (« afin », « semaines », « définitif »…)."""
+    return re.search(r"(?<![a-zà-ÿ])" + name + r"(?![a-zà-ÿ])", low) is not None
 
 
 def fetch(url):
@@ -85,21 +94,25 @@ def norm_date(raw):
     if not y:
         return None
     annee = int(y.group(1))
-    # trimestre ?
-    tm = re.search(r"(premier|deuxi[èe]me|second|troisi[èe]me|quatri[èe]me|[1-4]e?r?)\s*trimestre", low)
-    if tm:
-        key = tm.group(1).replace("è", "e")
-        mois = TRIM.get(key)
-        if mois:
-            return {"raw": raw.strip(), "iso": "%04d-%02d" % (annee, mois), "mois": mois, "annee": annee, "approx": "trimestre"}
+    # trimestre / semestre ? (accents retirés pour lire « 3ème », « troisième », « 3eme » pareil)
+    sa = low.replace("è", "e").replace("é", "e").replace("ê", "e")
+    pm = RE_PERIODE.search(sa)
+    if pm and pm.group(2) == "semestre":
+        # un semestre n'a pas de mois honnête (l'écran ne sait pas écrire « S1 ») : on garde l'année seule
+        return {"raw": raw.strip(), "iso": "%04d" % annee, "mois": None, "annee": annee, "approx": "année"}
+    tt = RE_T.search(sa)
+    rang = RANG[pm.group(1)] if pm else (int(tt.group(1)) if tt else 0)
+    if rang:
+        mois = 3 * (rang - 1) + 1   # 1er mois du trimestre, comme avant ; l'écran affiche « T3 2027 »
+        return {"raw": raw.strip(), "iso": "%04d-%02d" % (annee, mois), "mois": mois, "annee": annee, "approx": "trimestre"}
     for name, num in MOIS.items():
-        if re.search(r"(?<![a-zà-ÿ])" + name + r"(?![a-zà-ÿ])", low):  # mot entier : « semaines » contient « mai »
+        if mot(name, low):  # mot entier : « semaines » contient « mai »
             approx = "mois"
-            if "début" in low or "debut" in low:
+            if mot("début", low) or mot("debut", low):
                 approx = "début"
-            elif "fin" in low:
+            elif mot("fin", low):
                 approx = "fin"
-            elif "mi " in low or "mi-" in low:
+            elif mot("mi", low):
                 approx = "mi"
             return {"raw": raw.strip(), "iso": "%04d-%02d" % (annee, num), "mois": num, "annee": annee, "approx": approx}
     return {"raw": raw.strip(), "iso": "%04d" % annee, "mois": None, "annee": annee, "approx": "année"}
