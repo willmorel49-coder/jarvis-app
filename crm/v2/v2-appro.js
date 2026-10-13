@@ -2428,6 +2428,7 @@
       .replace('Cote', 'Côte').replace('-d-', '-d’').replace(/^Ile/, 'Île');
   }
   function faTitreAnsm(i) { return cap(String(i.spec || '').replace(/\s*[–-]\s*\[.*$/, '')); }
+  function faDA(iso) { var s = fdate(iso), y = String(iso || '').slice(0, 4); return s && /^\d{4}$/.test(y) && y !== String(new Date().getFullYear()) ? s + '/' + y : s; }   // date avec son année quand ce n'est pas l'année en cours
   var FA_MOIS_EN = { january: 'janvier', february: 'février', march: 'mars', april: 'avril', may: 'mai', june: 'juin', july: 'juillet', august: 'août', september: 'septembre', october: 'octobre', november: 'novembre', december: 'décembre' };
   function emaMois(t) {   // « March 2027 » → « mars 2027 » ; « 2027 » reste « 2027 »
     t = String(t || '').trim(); if (!t) return '';
@@ -2563,7 +2564,7 @@
         if (arret && (jMaj == null || jMaj < -FA_EMA_ARRET_J)) return;
         if (!enCours && !resolu && !arret) return;
         var cips = x.cips || [], s = faStock(cips), alt = (x.cips_dci || []).length ? faStock(x.cips_dci) : null, held = s.n > 0 && s.ours;
-        var fin = x.resolution ? fdate(x.resolution) : emaMois(x.resolution_txt);
+        var fin = x.resolution ? faDA(x.resolution) : emaMois(x.resolution_txt);
         var wh = (enCours ? 'Pénurie européenne en cours' : resolu ? 'Pénurie européenne résolue' : 'Commercialisation arrêtée (EMA)') +
           (x.inn ? ' · substance : ' + x.inn : '') + (enCours && fin ? ' · résolution attendue : ' + fin : enCours ? ' · date de résolution non annoncée' : '') +
           (x.alternatives === 'Yes' ? ' · des alternatives existent' : x.alternatives === 'No' ? ' · aucune alternative' : '');
@@ -2572,10 +2573,10 @@
         add({ t: 'ema', sub: enCours ? 'cours' : resolu ? 'resolu' : 'arret',
           // j ne sert qu'au classement : une pénurie en cours touchant notre stock compte « aujourd'hui », sinon « ce mois »
           j: resolu ? jMaj : (held ? 0 : -15),
-          jl: resolu ? 'Résolue' : enCours ? 'Active' : 'Arrêt', js: resolu ? 'le ' + fdate(x.updated) : x.start ? (x.start_is_pub ? 'publiée le ' : 'depuis le ') + fdate(x.start) : '',
+          jl: resolu ? 'Résolue' : enCours ? 'Active' : 'Arrêt', js: resolu ? 'le ' + faDA(x.updated) : x.start ? (x.start_is_pub ? 'publiée le ' : 'depuis le ') + faDA(x.start) : '',
           ti: x.name, cip: s.n ? s.best : '', ours: held, wh: wh, im: im,
           vb: resolu ? 'Reprendre les achats' : arret ? 'Chercher une alternative' : held ? 'Sécuriser' : 'Surveiller', fig: held ? faCovFig(s) : null,
-          src: 'EMA · ' + (x.updated ? 'fiche du ' + fdate(x.updated) : 'relevé du ' + fdate(String(_emaPenData.generated || '').slice(0, 10))) });
+          src: 'EMA · ' + (x.updated ? 'fiche du ' + faDA(x.updated) : 'relevé du ' + faDA(String(_emaPenData.generated || '').slice(0, 10))) });
       });
     } catch (e) {}
     // Ordre : d'abord ce qui touche une référence détenue ou vendue, puis par proximité de date
