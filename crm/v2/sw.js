@@ -97,6 +97,18 @@ self.addEventListener('notificationclick', function (e) {
   );
 });
 
+/* 13/10/2026 — relais « à froid » : il répond parfois 503 sur UN fichier statique.
+   Fichier refusé (5xx ou réseau coupé) = redemandé 2 fois au plus, après 300 ms puis 1 s.
+   Un 4xx n'est pas une panne passagère. Après les essais, l'échec est rendu tel quel
+   (et jamais rangé : le `r.ok` plus bas l'écarte). */
+function redemander(req, k) {
+  var suite = function () {
+    return new Promise(function (ok) { setTimeout(ok, k ? 1000 : 300); }).then(function () { return redemander(req, k + 1); });
+  };
+  return fetch(req).then(function (r) { return r.status < 500 || k >= 2 ? r : suite(); },
+                         function (err) { if (k >= 2) throw err; return suite(); });
+}
+
 self.addEventListener('fetch', function (e) {
   var req = e.request;
   if (req.method !== 'GET') return;
@@ -122,7 +134,7 @@ self.addEventListener('fetch', function (e) {
   e.respondWith(
     caches.match(req).then(function (m) {
       if (m) return m;
-      return fetch(req).then(function (r) {
+      return redemander(req, 0).then(function (r) {
         if (r && r.ok && r.type === 'basic') {
           var copy = r.clone();
           caches.open(CACHE).then(function (c) { c.put(req, copy); });

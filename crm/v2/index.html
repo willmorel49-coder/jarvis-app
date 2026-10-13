@@ -28,6 +28,43 @@
     }
   </script>
 
+  <!-- 13/10/2026 — fichier refusé « à froid » par le relais (503 passager) : l'application le redemande toute
+       seule, 2 fois au plus, sous une adresse neuve (?r=1, ?r=2 : le navigateur retient l'échec d'une adresse).
+       Ce bloc sert tant qu'aucun service worker ne pilote la page (première visite) ; ensuite c'est sw.js qui
+       redemande. Même origine seulement. Feuille de style : après 300 ms puis 1 s. Script d'index.html :
+       aussitôt et à sa place (document.write, seul moyen de garder l'ordre d'exécution sans recharger l'écran).
+       fetch() GET : 300 ms puis 1 s. NON couverts ici : les scripts posés par le code (modules différés). -->
+  <script>
+    (function () {
+      var n = {}, F = window.fetch, CE = document.createElement;
+      function sw() { return navigator.serviceWorker && navigator.serviceWorker.controller; }
+      function local(u) { try { return new URL(u, location.href).origin === location.origin; } catch (e) { return false; } }
+      function pause(k) { return new Promise(function (ok) { setTimeout(ok, k ? 1000 : 300); }); }
+      // ⚠️ document.write n'est sûr que pour un script lu dans index.html, pendant la lecture de la page :
+      // ailleurs il effacerait l'écran. Les scripts créés par le code sont donc marqués, et jamais repris ici.
+      document.createElement = function (t) { var e = CE.apply(this, arguments); if (/^script$/i.test(t)) e.__dyn = 1; return e; };
+      addEventListener('error', function (e) {
+        var t = e.target, tag = t && t.tagName,
+            js = tag === 'SCRIPT' && !t.__dyn && !t.async && !t.defer && document.readyState === 'loading',
+            u = js ? t.src : tag === 'LINK' && t.rel === 'stylesheet' ? t.href : '';
+        if (!u || sw() || !local(u)) return;
+        var b = u.replace(/[?&]r=\d$/, ''), k = n[b] = (n[b] || 0) + 1;
+        if (k > 2) return;
+        u = b + (b.indexOf('?') < 0 ? '?' : '&') + 'r=' + k;
+        if (js) document.write('<script src="' + u.replace(/&/g, '&amp;') + '"><\/script>');
+        else setTimeout(function () { if (!t.parentNode) return; var l = t.cloneNode(); l.href = u; t.parentNode.insertBefore(l, t.nextSibling); }, k > 1 ? 1000 : 300);
+      }, true);
+      if (F) window.fetch = function (i, o) {
+        var a = arguments, me = this, u = typeof i === 'string' ? i : '';
+        if (!u || sw() || !local(u) || (o && o.method && o.method.toUpperCase() !== 'GET')) return F.apply(me, a);
+        return (function essai(k) {
+          return F.apply(me, a).then(function (r) { return r.status < 500 || k >= 2 ? r : pause(k).then(function () { return essai(k + 1); }); },
+            function (err) { if (k >= 2 || (err && err.name === 'AbortError')) throw err; return pause(k).then(function () { return essai(k + 1); }); });
+        })(0);
+      };
+    })();
+  </script>
+
   <!-- Capteur d'erreurs visible (debug) -->
   <script>
     // ⚠️ TEMPORAIRE (13/08/2026) — à retirer une fois le diagnostic fait.
