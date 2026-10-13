@@ -2359,6 +2359,10 @@
   // Règle d'or : un CIP absent du fichier de stock = stock INCONNU (jamais zéro) — le fichier ne liste
   // que les références inventoriées. Les compteurs portent sur TOUT ; la liste n'en montre que 12.
   var _faType = 'all', _faAll = false, FA_MAX = 12;
+  var FA_GROUPE_ECART = 50;       // € : sous cet écart individuel (prix public × stock), les mouvements de même sens, date et % se regroupent en UNE ligne
+  var FA_DEPASSE_J = 60;          // un retour annoncé dépassé reste signalé 60 jours, tant que la rupture ou la tension dure
+  var FA_PROCHE_J = [7, 30];      // « enjeu comparable de date » : on classe par € à l'intérieur de ces tranches de jours
+  var FA_EUR = '€';               // collé au nombre : la police à chasse fixe des chiffres élargit toute espace
   var FA_TYPES = [['prix', 'Prix'], ['rupture', 'Ruptures'], ['retour', 'Retours'], ['gener', 'Génériques'], ['has', 'Remboursements'], ['epi', 'Épidémies'], ['lots', 'Lots rappelés']];
   V2.approFa = function (t) { _faType = t; _faAll = false; if (V2.render) V2.render(); };
   V2.approFaAll = function (tout) { _faAll = !!tout; if (V2.render) V2.render(); };
@@ -2425,9 +2429,10 @@
           var expo = baisse ? (A[x.c] ? A[x.c].expo : 0) : Math.max(0, nw - old) * stq(x.c);
           add({ t: 'prix', sub: baisse ? 'baisse' : 'hausse', j: j, jl: faJl(j), js: 'le ' + fdate(x.date_effet), ti: cap(x.d), cip: x.c, ours: s.ours,
             wh: (baisse ? 'Baisse' : 'Hausse') + ' du prix public : ' + fmtEur(old) + ' → ' + fmtEur(nw) + ' (' + faPct(old, nw) + ')' + (j < 0 ? ' · déjà en vigueur' : ''),
-            im: faStockTxt(s) + (s.known && expo > 0 ? ' · ' + (baisse ? 'valeur en jeu' : 'écart') + ' ≈ ' + fmt(Math.round(expo)) + ' € au prix public' : ''),
+            im: faStockTxt(s), s: s, eur: s.known ? expo : 0,
+            px: { key: x.sens + '|' + x.date_effet + '|' + Math.round((nw - old) / old * 1000), pct: faPct(old, nw), d: x.date_effet, baisse: baisse },
             vb: baisse ? (j >= 0 ? 'Écouler avant la baisse' : 'Réévaluer le stock') : (j >= 0 ? 'Acheter avant la hausse' : 'Répercuter la hausse'),
-            fig: s.known && expo > 0 ? [(baisse ? '−' : '+') + fmt(Math.round(expo)) + ' €', 'au prix public'] : null,
+            fig: s.known && expo > 0 ? [(baisse ? '−' : '+') + fmt(Math.round(expo)) + FA_EUR, 'au prix public'] : null,
             src: 'Journal officiel (CEPS)' + (x.date_publi ? ' · publié le ' + fdate(x.date_publi) : '') });
         });
       }
@@ -2449,14 +2454,19 @@
             wh: 'De retour : la spécialité est repassée disponible (ANSM)', im: faStockTxt(s), vb: 'Reprendre les achats', fig: faCovFig(s), src: 'ANSM · changement observé le ' + fdate(i.since) });
         }
         if ((rup || ten) && faRetourOk(i.retour)) {
-          var r = i.retour, d0 = new Date(r.annee, r.mois - 1, 1), d1 = new Date(r.annee, r.mois, 0);
-          var t0 = new Date(); t0 = new Date(t0.getFullYear(), t0.getMonth(), t0.getDate());
-          var j0 = Math.round((d0.getTime() - t0.getTime()) / 86400000), j1 = Math.round((d1.getTime() - t0.getTime()) / 86400000);
-          // le mois seul ne date rien : début ≈ le 5, mi ≈ le 15, fin ≈ le 26 — sert à classer, pas à promettre un jour
-          var jr = Math.max(0, Math.round((new Date(r.annee, r.mois - 1, { 'début': 5, mi: 15, fin: 26 }[r.approx] || 15).getTime() - t0.getTime()) / 86400000));
-          if (j1 >= 0 && j0 <= 60) add({ t: 'retour', sub: 'prevu', j: jr, jl: jr > 0 ? 'J−' + jr : 'Ce mois', js: retourLabel(r), ti: nom, cip: base.cip, ours: s.ours,
+          var r = i.retour, t0 = new Date(); t0 = new Date(t0.getFullYear(), t0.getMonth(), t0.getDate());
+          var jOf = function (dt) { return Math.round((dt.getTime() - t0.getTime()) / 86400000); };
+          var j0 = jOf(new Date(r.annee, r.mois - 1, 1)), jFin = jOf(new Date(r.annee, r.mois, 0));
+          // le mois seul ne date rien : on ne l'écrit JAMAIS en J−x. Les jours ci-dessous ne servent qu'à classer et à juger « dépassé ».
+          var jLim = r.approx === 'début' ? jOf(new Date(r.annee, r.mois - 1, 10)) : r.approx === 'mi' ? jOf(new Date(r.annee, r.mois - 1, 20)) : jFin;
+          var jEst = Math.max(0, jOf(new Date(r.annee, r.mois - 1, { 'début': 5, mi: 15, fin: 26 }[r.approx] || 15)));
+          var cetteFois = j0 <= 0 && jFin >= 0, moisCourt = MOIS_L[r.mois - 1];
+          if (jLim >= 0 && j0 <= 60) add({ t: 'retour', sub: 'prevu', j: jEst, jl: cetteFois ? 'Ce mois' : cap(moisCourt), js: retourLabel(r), ti: nom, cip: base.cip, ours: s.ours,
             wh: 'Retour à disposition annoncé : ' + retourLabel(r) + (rup ? ' (rupture en cours)' : ' (tension en cours)'),
             im: faStockTxt(s), vb: 'Planifier la reprise', fig: faCovFig(s), src: base.src });
+          else if (jLim < 0 && jLim >= -FA_DEPASSE_J) add({ t: 'retour', sub: 'depasse', j: jLim, jl: 'Dépassé', js: retourLabel(r), ti: nom, cip: base.cip, ours: s.ours,
+            wh: 'Retour annoncé dépassé (' + retourLabel(r) + ') : la ' + (rup ? 'rupture' : 'tension') + ' dure toujours',
+            im: faStockTxt(s), vb: 'Relancer le fournisseur', fig: faCovFig(s), src: base.src });
         }
       });
     } catch (e) {}
@@ -2469,8 +2479,8 @@
           var cips = g.cips || [], pr = cips.filter(function (c) { return PG[c]; }), s = faStock(pr.length ? pr : cips);
           var p = String(g.lib || '').split(',')[0].split(' - '), dci = p[0], princeps = p[1] || p[0];
           add({ t: 'gener', sub: 'gener', j: j, jl: faJl(j), js: 'le ' + fdate(g.since), ti: cap(princeps), cip: s.best || '', ours: s.ours,
-            wh: 'Nouveau groupe générique (' + cap(dci) + ') — le princeps va perdre des volumes', im: faStockTxt(s) + (s.known && s.eur > 0 ? ' · valeur ≈ ' + fmt(Math.round(s.eur)) + ' € (PPHT)' : ''),
-            vb: 'Basculer vers le générique', fig: s.known && s.eur > 0 ? [fmt(Math.round(s.eur)) + ' €', 'de princeps en stock'] : null, src: 'BDPM · groupe du ' + fdate(g.since) });
+            wh: 'Nouveau groupe générique (' + cap(dci) + ') — le princeps va perdre des volumes', im: faStockTxt(s), eur: s.known ? s.eur : 0,
+            vb: 'Basculer vers le générique', fig: s.known && s.eur > 0 ? [fmt(Math.round(s.eur)) + FA_EUR, 'de princeps (PPHT)'] : null, src: 'BDPM · groupe du ' + fdate(g.since) });
         });
       }
     } catch (e) {}
@@ -2524,10 +2534,25 @@
       });
     } catch (e) {}
     // Ordre : d'abord ce qui touche une référence détenue ou vendue, puis par proximité de date
-    // un signal de tendance (épidémie) vaut « cette semaine » : il se classe à 7 jours, pas à 0, sinon ses 10 lignes passent devant une hausse de prix à J−2
+    // regroupement D'AFFICHAGE des petits mouvements de prix (même sens, même date d'effet, même %) : le comptage reste par référence (cnt)
+    var G = {}, gardes = [];
+    ev.forEach(function (e) { if (e.t === 'prix' && e.px && e.eur < FA_GROUPE_ECART) (G[e.px.key] = G[e.px.key] || []).push(e); else gardes.push(e); });
+    Object.keys(G).forEach(function (k) {
+      var L = G[k]; if (L.length < 2) { gardes.push(L[0]); return; }
+      var f = L[0], tot = 0, u = 0, kn = 0;
+      L.forEach(function (e) { tot += e.eur; u += e.s.u; kn += e.s.known; });
+      gardes.push({ t: 'prix', sub: f.sub, j: f.j, jl: f.jl, js: f.js, ti: L.length + ' références · ' + f.px.pct, cip: '', ours: L.some(function (e) { return e.ours; }),
+        wh: (f.px.baisse ? 'Baisse' : 'Hausse') + ' du prix public de ' + f.px.pct + ' sur ' + L.length + ' références' + (f.j < 0 ? ' · déjà en vigueur' : ''),
+        im: 'Stock plateforme : ' + fmt(u) + ' u. · ' + kn + ' réf. inventoriée' + (kn > 1 ? 's' : '') + ' sur ' + L.length, vb: f.vb, eur: tot,
+        fig: tot > 0 ? [(f.px.baisse ? '−' : '+') + fmt(Math.round(tot)) + FA_EUR, 'écart total, prix public'] : null, src: f.src, cnt: L.length, items: L });
+    });
+    ev = gardes;
+    // Ordre : ce qui touche une référence détenue ou vendue ; puis tranche de date ; puis les lots rappelés ; puis les € en jeu décroissants.
+    // Un signal de tendance (épidémie) vaut « cette semaine » : 7 jours, pas 0, sinon ses lignes passent devant une hausse à J−2.
     var PRIO = { lots: 0, prix: 1, rupture: 2, retour: 3, gener: 4, has: 5, epi: 6 };
+    var tranche = function (e) { return e.ord <= FA_PROCHE_J[0] ? 0 : e.ord <= FA_PROCHE_J[1] ? 1 : 2; };
     ev.forEach(function (e, n) { e.n = n; e.ord = e.t === 'epi' ? 7 : Math.abs(e.j || 0); });
-    ev.sort(function (a, b) { return (b.ours ? 1 : 0) - (a.ours ? 1 : 0) || a.ord - b.ord || PRIO[a.t] - PRIO[b.t] || a.n - b.n; });
+    ev.sort(function (a, b) { return (b.ours ? 1 : 0) - (a.ours ? 1 : 0) || tranche(a) - tranche(b) || (a.t === 'lots' ? 0 : 1) - (b.t === 'lots' ? 0 : 1) || (b.eur || 0) - (a.eur || 0) || a.ord - b.ord || PRIO[a.t] - PRIO[b.t] || a.n - b.n; });
     return ev;
   }
   function faSources() {
@@ -2537,8 +2562,8 @@
   function faView() {
     var ev = faEvents(), n = {}, shown, i;
     FA_TYPES.forEach(function (t) { n[t[0]] = 0; });
-    ev.forEach(function (e) { n[e.t]++; });
-    var pills = '<button class="fa-pill' + (_faType === 'all' ? ' on' : '') + '" onclick="V2.approFa(\'all\')">Tous <b>' + ev.length + '</b></button>' +
+    var nTot = 0; ev.forEach(function (e) { n[e.t] += e.cnt || 1; nTot += e.cnt || 1; });
+    var pills = '<button class="fa-pill' + (_faType === 'all' ? ' on' : '') + '" onclick="V2.approFa(\'all\')">Tous <b>' + nTot + '</b></button>' +
       FA_TYPES.map(function (t) { return '<button class="fa-pill' + (_faType === t[0] ? ' on' : '') + (n[t[0]] ? '' : ' z') + '" onclick="V2.approFa(\'' + t[0] + '\')">' + t[1] + ' <b>' + n[t[0]] + '</b></button>'; }).join('');
     shown = _faType === 'all' ? ev : ev.filter(function (e) { return e.t === _faType; });
     var vis = _faAll ? shown : shown.slice(0, FA_MAX);
@@ -2546,11 +2571,18 @@
       var inner = '<span class="fa-d"><b>' + esc(e.jl) + '</b><small>' + esc(e.js) + '</small></span>' +
         '<span class="fa-m"><span class="fa-t">' + esc(e.ti) + '</span><span class="fa-w">' + esc(e.wh) + '</span><span class="fa-i">' + esc(e.im) + '</span><span class="fa-s">Source : ' + esc(e.src) + '</span></span>' +
         '<span class="fa-r"><span class="fa-vb fa-v-' + (e.sub === 'hausse' ? 'hausse' : e.t) + '">' + esc(e.vb) + '</span>' + (e.fig ? '<span class="fa-fig"><b>' + esc(e.fig[0]) + '</b><small>' + esc(e.fig[1]) + '</small></span>' : '') + '</span>';
+      if (e.items) {
+        var subs = e.items.map(function (x) { return '<button type="button" class="fa-sub" onclick="V2.approTicket(\'' + esc(x.cip) + '\')"><span>' + esc(x.ti) + '</span><span>' + (x.s.known ? fmt(x.s.u) + ' u.' : 'stock inconnu') + (x.eur > 0 ? ' · ' + fmt(Math.round(x.eur)) + FA_EUR : '') + '</span></button>'; }).join('');
+        return '<div class="fa-row fa-k-' + e.t + '"><span class="fa-d"><b>' + esc(e.jl) + '</b><small>' + esc(e.js) + '</small></span>' +
+          '<span class="fa-m"><span class="fa-t">' + esc(e.ti) + '</span><span class="fa-w">' + esc(e.wh) + '</span><span class="fa-i">' + esc(e.im) + '</span>' +
+          '<details class="fa-det"><summary>Voir les ' + e.items.length + ' références</summary>' + subs + '</details><span class="fa-s">Source : ' + esc(e.src) + '</span></span>' +
+          '<span class="fa-r"><span class="fa-vb fa-v-' + (e.sub === 'hausse' ? 'hausse' : e.t) + '">' + esc(e.vb) + '</span>' + (e.fig ? '<span class="fa-fig"><b>' + esc(e.fig[0]) + '</b><small>' + esc(e.fig[1]) + '</small></span>' : '') + '</span></div>';
+      }
       return e.cip ? '<button type="button" class="fa-row fa-k-' + e.t + '" onclick="V2.approTicket(\'' + esc(e.cip) + '\')">' + inner + '</button>' : '<div class="fa-row fa-k-' + e.t + '">' + inner + '</div>';
     }).join('');
     var loading = faSources().some(function (s) { return s[2] < 2; });
     if (!rows) rows = '<div class="ap-empty">' + (loading ? 'Chargement des flux…' : 'Aucun événement à signaler pour ce filtre.') + '</div>';
-    var more = shown.length > FA_MAX ? '<div class="fa-more"><button type="button" class="fa-pill" onclick="V2.approFaAll(' + (_faAll ? 'false' : 'true') + ')">' + (_faAll ? 'Réduire la liste' : 'Voir tout (' + shown.length + ')') + '</button></div>' : '';
+    var more = shown.length > FA_MAX ? '<div class="fa-more"><button type="button" class="fa-pill" onclick="V2.approFaAll(' + (_faAll ? 'false' : 'true') + ')">' + (_faAll ? 'Réduire la liste' : 'Voir tout (' + shown.length + ' lignes)') + '</button></div>' : '';
     var fresh = faSources().map(function (s) {
       var g = s[1] && s[1].generated ? String(s[1].generated).slice(0, 10) : '', age = g ? -faJ(g) : null;
       if (s[2] < 2) return '<div class="fa-f">' + esc(s[0]) + ' — chargement…</div>';
@@ -3256,6 +3288,8 @@
       '.fa-r{text-align:right}.fa-r>span{display:block}.fa-vb{display:inline-block!important;font-size:12px;font-weight:800;border-radius:999px;padding:3px 10px;line-height:1.3}' +
       '.fa-v-prix{color:#B02A1E;background:#FDEDEA;border:1px solid #F3B0A0}.fa-v-hausse{color:#0034A0;background:#EAF1FF;border:1px solid #C8DBFF}.fa-v-rupture{color:#8A5210;background:#FFF1DB;border:1px solid #F0C98A}.fa-v-retour{color:#0B6B42;background:#E7F5EC;border:1px solid #BFE6CF}.fa-v-gener{color:#5744C9;background:#EFEBFB;border:1px solid #D3C9F5}.fa-v-has{color:#0034A0;background:#EAF1FF;border:1px solid #C8DBFF}.fa-v-epi{color:#0A6169;background:#E5F4F5;border:1px solid #B8E0E3}.fa-v-lots{color:#B02A1E;background:#FBE9E6;border:1px solid #E8A99C}' +
       '.fa-fig{margin-top:6px}.fa-fig b{display:block;font-size:15px;font-weight:800;font-family:var(--mono);color:var(--ip-ink)}.fa-fig small{display:block;font-size:12px;color:var(--muted);font-weight:600}' +
+      '.fa-det{margin-top:4px}.fa-det summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--ip-blue)}' +
+      '.fa-sub{display:flex;justify-content:space-between;gap:10px;align-items:center;width:100%;min-height:44px;box-sizing:border-box;text-align:left;font:inherit;font-size:12.5px;color:var(--ip-ink);background:var(--card-2,#F6F8FB);border:0;border-top:1px solid var(--line);padding:6px 10px;cursor:pointer}.fa-sub span:last-child{color:var(--muted);font-weight:600;text-align:right}' +
       '.fa-more{padding:10px 14px;border-top:1px solid var(--line);text-align:center}' +
       '.fa-foot{font-size:12px;color:var(--muted);line-height:1.5;padding:10px 16px;border-top:1px solid var(--line)}' +
       '.fa-fresh{display:flex;flex-wrap:wrap;gap:6px 8px;padding:10px 16px 14px;border-top:1px solid var(--line)}.fa-f{font-size:12px;color:var(--muted);font-weight:600;border:1px solid var(--line);border-radius:8px;padding:4px 9px}.fa-f.fa-late{color:#8A5210;background:#FFF1DB;border-color:#F0C98A}.fa-f.fa-late b{color:#8A5210}' +
