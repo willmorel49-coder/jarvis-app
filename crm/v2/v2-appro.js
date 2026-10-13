@@ -2566,7 +2566,7 @@
         var cips = x.cips || [], s = faStock(cips), alt = (x.cips_dci || []).length ? faStock(x.cips_dci) : null, held = s.n > 0 && s.ours;
         var fin = x.resolution ? faDA(x.resolution) : emaMois(x.resolution_txt);
         var wh = (enCours ? 'Pénurie européenne en cours' : resolu ? 'Pénurie européenne résolue' : 'Commercialisation arrêtée (EMA)') +
-          (x.inn ? ' · substance : ' + (x.inn_fr || x.inn) : '') + (enCours && fin ? ' · résolution attendue : ' + fin : enCours ? ' · date de résolution non annoncée' : '') +
+          (x.inn ? ' · substance : ' + (x.inn_fr || String(x.inn).replace(/\s*;\s*/g, ' ; ')) : '') + (enCours && fin ? ' · résolution attendue : ' + fin : enCours ? ' · date de résolution non annoncée' : '') +
           (x.alternatives === 'Yes' ? ' · des alternatives existent' : x.alternatives === 'No' ? ' · aucune alternative' : '');
         var im = s.n ? faStockTxt(s) : 'Stock inconnu — aucune référence du catalogue rattachée avec certitude';
         if (alt && alt.known) im += ' · même substance, autres marques : ' + fmt(alt.u) + ' u. en stock';
