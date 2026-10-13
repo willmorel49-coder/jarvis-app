@@ -72,7 +72,20 @@ verifie("table : désactivable", gep.traduire(bdpm, "insulin human", table=False
 verifie("table : minuscules comme la BDPM", all(v == v.lower() for v in T.values()), True)
 verifie("table : titre écrit à la main", gep.TABLE_TITRES["adhd medicines"], "Médicaments du TDAH")
 
+# ── Parenthèses des titres (13/10/2026) : « Marque (substance) » → la substance passe en français ──
+tp = lambda nom, inn, b=bdpm: gep.titre_parentheses(b, nom, inn)[0]
+verifie("parenthèse = substance → traduite", tp("Fiasp PumpCart (insulin aspart)", "insulin aspart"), "Fiasp PumpCart (insuline asparte)")
+verifie("parenthèse : casse ignorée", tp("Marque (Insulin Aspart)", "insulin aspart"), "Marque (insuline asparte)")
+verifie("parenthèse : le reste du titre ne bouge pas (marque en anglais)", tp("Insuman Rapid, Basal and Comb 25 (insulin human)", "insulin human"),
+        "Insuman Rapid, Basal and Comb 25 (insuline humaine)")
+verifie("parenthèse : une des substances d'une association", tp("Marque (insulin aspart)", "semaglutide;insulin aspart"), "Marque (insuline asparte)")
+verifie("parenthèse ≠ substance → inchangée", tp("Marque (various forms)", "insulin aspart"), None)
+verifie("parenthèse : autre substance que la ligne → inchangée", tp("Marque (semaglutide)", "insulin aspart"), None)
+verifie("parenthèse : substance sans nom français → inchangée", tp("Marque (zorbaxine)", "zorbaxine"), None)
+verifie("parenthèse : BDPM absente → inchangée", gep.titre_parentheses(None, "Marque (insulin aspart)", "insulin aspart")[0], None)
+verifie("parenthèse : Mycobutin reste traité par la table des titres", gep.TABLE_TITRES["mycobutin (rifabutin)"], "Mycobutin (rifabutine)")
+
 if ko:
     print("ECHEC :\n  " + "\n  ".join(ko))
     sys.exit(1)
-print("OK · 29 cas : BDPM d'abord, table écrite à la main en dernier recours, sinon anglais")
+print("OK · 38 cas : BDPM d'abord, table écrite à la main en dernier recours, sinon anglais ; parenthèses des titres traduites")

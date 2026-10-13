@@ -279,6 +279,21 @@ def traduire(bdpm, inn, cis=(), pont=True, table=True):
     return " ; ".join(res), src
 
 
+def titre_parentheses(bdpm, nom, inn, cis=()):
+    """(13/10/2026) « Marque (substance) » : si une parenthèse est EXACTEMENT (casse près) une des substances `inn`
+    de la ligne et qu'elle a un nom français, on la remplace ; le reste du titre ne bouge pas. (None, []) sinon."""
+    subs = {cle_table(c) for c in composants(inn)}
+    src_all, sortie = [], nom
+    for m in reversed(list(re.finditer(r"\(([^()]*)\)", nom))):
+        if cle_table(m.group(1)) not in subs:
+            continue
+        fr, src = traduire(bdpm, m.group(1).strip(), cis)
+        if fr:
+            sortie = sortie[:m.start(1)] + fr + sortie[m.end(1):]
+            src_all += src
+    return (sortie, src_all) if src_all else (None, [])
+
+
 def cis_de(bdpm, nom, cips, pivot_data):
     """CIS reliés à la ligne : ceux des références rapprochées (table pivot) + ceux dont la marque est celle de l'EMA."""
     _, _, marque = bdpm
@@ -351,6 +366,8 @@ def main():
         if bdpm and not name_fr and cle_table(nom) in TABLE_TITRES:    # titre qui n'est pas une substance : table, après la BDPM
             name_fr, src_nom = TABLE_TITRES[cle_table(nom)], ["table"]
             src = src + ["titre : table"] if inn else ["titre : table"]
+        if bdpm and not name_fr and inn_fr:                            # 13/10/2026 : « Marque (substance) » → la parenthèse passe en français
+            name_fr, src_nom = titre_parentheses(bdpm, nom, inn, cis)
         fr_table = [k for k, ok in (("inn_fr", inn_fr and "table" in src), ("name_fr", name_fr and "table" in src_nom)) if ok]
         trace.append((nom, inn, inn_fr, name_fr, src))
         items.append({
