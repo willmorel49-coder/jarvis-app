@@ -245,12 +245,17 @@
     var plus = plusItems().length
       ? '<button type="button" class="tp-plus" aria-label="Actions rapides" aria-haspopup="menu" aria-expanded="false" onclick="V2.plusMenu(this)">' + ICO('plus', 22, 2.2) + '</button>'
       : '';
+    // 13/10/2026 — raccourci « Faire une remontée » de retour dans la barre (demande de Will) : une ampoule, un clic,
+    // le formulaire s'ouvre. Même picto que la porte « Remontées » de l'accueil (U2_IC, une seule source). Jamais côté OPSO.
+    var idee = (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.remonteeOpen)
+      ? '<button type="button" class="tp-idee" title="Faire une remontée" aria-label="Faire une remontée" aria-haspopup="dialog" onclick="V2.remonteeOpen()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + U2_IC.remontees + '</svg></button>'
+      : '';
     return '' +
       '<div class="v2-top">' +
         '<div class="tp-g">' + back + brand + nom + '</div>' +
         '<div class="tp-d">' +
           ((V2.route && V2.route.name === 'home' && window.V2_BRAND && window.V2_BRAND.opso) ? '' : '<button type="button" class="v2-top-search" aria-label="Rechercher" aria-haspopup="dialog" onclick="V2.onTopSearch()">' + ICO('search', 18, 2) + '<span class="txt">Rechercher</span><kbd>' + MOD + 'K</kbd></button>') +
-          plus +
+          idee + plus +
           '<button type="button" class="tp-avb" aria-label="Mon compte" aria-haspopup="menu" aria-expanded="false" title="' + esc(V2.user ? V2.user.name : '') + '" onclick="V2.userMenu(this)"><span class="v2-av">' + esc(initials) + '</span></button>' +
         '</div>' +
       '</div>';

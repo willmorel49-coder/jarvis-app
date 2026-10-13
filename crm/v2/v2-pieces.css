@@ -65,6 +65,18 @@
 .tp-plus:active{transform:scale(.96)}
 .tp-plus[aria-expanded="true"] svg{transform:rotate(45deg)}
 
+/* ─── 4 bis. AMPOULE « Faire une remontée » : blanche, de la famille de la recherche ; elle s'allume au survol ─── */
+.tp-idee{width:44px;height:44px;border-radius:var(--r-btn);padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none;
+  background:var(--card);border:1px solid var(--line);box-shadow:var(--sh-1);color:var(--ip-blue);
+  transition:transform .18s var(--ease),border-color .18s var(--ease),box-shadow .22s var(--ease)}
+.tp-idee svg{width:22px;height:22px;fill:transparent;transition:fill .22s var(--ease)}
+/* Survol réservé aux écrans à souris : au doigt, il resterait collé après le toucher (cadre et ampoule allumée à tort). */
+@media (hover:hover){
+  .tp-idee:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var(--ip-blue) 32%,var(--line));box-shadow:var(--sh-2)}
+  .tp-idee:hover svg{fill:color-mix(in srgb,var(--ip-blue) 18%,transparent)}
+}
+.tp-idee:active{transform:scale(.96)}
+
 /* ─── 5. AVATAR : orange, 40 px dans une zone de 44 ; initiales en encre (le blanc sur orange ne mesure que 1,78:1) ─── */
 .tp-avb{width:44px;height:44px;padding:0;border:0;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%;flex:none}
 .v2-av{width:40px;height:40px;font-size:14px;font-weight:800;color:var(--ip-ink);transition:transform .18s var(--ease);cursor:pointer}
@@ -160,10 +172,18 @@
   .v2-top-search{min-width:0;width:44px;padding:0;justify-content:center;border-color:transparent;box-shadow:none;background:transparent}
   .v2-top-search .txt,.v2-top-search kbd{display:none}
   .v2-top-search svg{width:22px;height:22px}
+  .tp-idee{border-color:transparent;box-shadow:none;background:transparent}
   .v2-titre{font-size:22px}
 }
 
+/* Petits téléphones (375 px et moins) : avec l'ampoule, la maison d'un écran interne était rognée de 18 px à 360 px. On resserre les écarts, on ne retire rien. */
+@media (max-width:380px){
+  .v2-top{padding:0 8px;gap:4px}
+  .tp-g{gap:6px}
+  .tp-d{gap:2px}
+}
+
 @media (prefers-reduced-motion:reduce){
-  .tp-plus,.tp-plus svg,.v2-av,.v2-tuile,.v2-tuile-chev{transition:none}
-  .tp-plus:hover,.tp-avb:hover .v2-av,.v2-tuile:hover,.v2-tuile:hover .v2-tuile-chev{transform:none}
+  .tp-plus,.tp-plus svg,.tp-idee,.tp-idee svg,.v2-av,.v2-tuile,.v2-tuile-chev{transition:none}
+  .tp-plus:hover,.tp-idee:hover,.tp-avb:hover .v2-av,.v2-tuile:hover,.v2-tuile:hover .v2-tuile-chev{transform:none}
 }
