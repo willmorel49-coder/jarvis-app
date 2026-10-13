@@ -26,6 +26,14 @@ composant, un seul échec = toute la ligne reste en anglais. BDPM injoignable : 
 écrites quand même, en anglais, et la sortie le dit (source d'appoint, jamais bloquante).
 robots.txt de la BDPM contrôlé le 13/10/2026 : « Allow: / ».
 
+TABLE DE SECOURS (13/10/2026, décision de Will : « Oui, la table ») : pour les quelques substances
+que la BDPM ne rend pas, TABLE_SUBSTANCES / TABLE_TITRES donnent un français ÉCRIT À LA MAIN. Ce ne
+sont PAS des noms officiels : ce sont des dénominations d'usage en pharmacie, utilisées en dernier
+recours. Arbitrage : la BDPM gagne toujours ; la table ne sert que si la BDPM ne rend rien ; absent
+des deux = anglais gardé. Une ligne qui doit un nom à la table porte `fr_table` (liste des champs
+concernés : `inn_fr` et/ou `name_fr`) ; l'écran ignore ce champ. BDPM injoignable : la table ne sert pas
+(rien n'est traduit, comme avant).
+
 Écrit crm/v2/ema-penuries.json. Python 3.9 · urllib + openpyxl (comme generate_ema_generiques.py).
 """
 import io
@@ -114,6 +122,41 @@ LEXIQUE = {"human": ["humain", "humaine"], "normal": ["normal", "normale"], "sod
            "oxide": ["oxyde"], "trioxide": ["trioxyde"], "dichloride": ["dichlorure"], "chloride": ["chlorure"],
            "activated": ["active"], "inactivated": ["inactive"], "adsorbed": ["adsorbe"], "inhibitor": ["inhibiteur"],
            "vaccine": ["vaccin"], "hormone": ["hormone"]}
+
+
+# Traductions écrites à la main le 13/10/2026 — PAS des noms officiels, dernier recours seulement (voir
+# l'en-tête du fichier). Clé : l'anglais de l'EMA en minuscules ; valeur : le français en minuscules,
+# comme les noms que rend la BDPM. En cas de doute sur un terme, il n'est PAS ajouté ici.
+TABLE_SUBSTANCES = {
+    "human normal immunoglobulins": "immunoglobulines humaines normales",
+    "human normal immunoglobulin": "immunoglobuline humaine normale",
+    "concentrate of proteolytic enzymes enriched in bromelain": "concentré d'enzymes protéolytiques enrichi en bromélaïne",
+    "parathyroid hormone": "hormone parathyroïdienne",
+    "esmolol": "esmolol",
+    "insulin human": "insuline humaine",
+    "pancreas powder": "poudre de pancréas",
+    "pancrelipase": "pancrélipase",
+    "fludarabine": "fludarabine",
+    "atomoxetine": "atomoxétine",
+    "methylphenidate": "méthylphénidate",
+    "lisdexamfetamine": "lisdexamfétamine",
+    "vindesine": "vindésine",
+    "japanese encephalitis vaccine (inactivated, adsorbed)": "vaccin contre l'encéphalite japonaise (inactivé, adsorbé)",
+    "mecasermin": "mécasermine",
+}
+# Titres qui ne sont pas une simple substance (clé : titre EMA exact en minuscules ; valeur : affichée telle quelle).
+TABLE_TITRES = {
+    "adhd medicines": "Médicaments du TDAH",
+    "mycobutin (rifabutin)": "Mycobutin (rifabutine)",
+    "eli lilly insulin (various forms)": "Insuline Eli Lilly (formes diverses)",
+    "novonordisk insulin (human insulin) (various short-, rapid-, intermediate-, mixed- and long-acting forms)":
+        "Insuline NovoNordisk (insuline humaine) (diverses formes d'action courte, rapide, intermédiaire, mixte et prolongée)",
+    "perfusion solutions": "Solutions pour perfusion",
+}
+
+
+def cle_table(s):
+    return " ".join(s.lower().split())
 
 
 def fetch_texte(url):
@@ -217,7 +260,7 @@ def composants(inn):
     return [c.strip() for c in out if c.strip()]
 
 
-def traduire(bdpm, inn, cis=(), pont=True):
+def traduire(bdpm, inn, cis=(), pont=True, table=True):
     """(texte français, [sources]) ou (None, raison). Tout ou rien : un composant sans équivalent = ligne en anglais."""
     if not bdpm or not inn:
         return None, ["pas de substance" if bdpm else "BDPM indisponible"]
@@ -227,6 +270,8 @@ def traduire(bdpm, inn, cis=(), pont=True):
         fr, how = par_regles(noms, c), "BDPM (règle)"
         if fr is None and pont and cis:
             fr, how = par_pont(par_cis, cis, c), "pont CIS"
+        if fr is None and table:
+            fr, how = TABLE_SUBSTANCES.get(cle_table(c)), "table"     # dernier recours, après la BDPM
         if fr is None:
             return None, ["« %s » absent de la BDPM" % c]
         res.append(fr.lower())
@@ -298,11 +343,15 @@ def main():
         pub = iso_date(g(r, "First published"))
         cis = cis_de(bdpm, nom, cips, piv) if bdpm else ()
         inn_fr, src = traduire(bdpm, inn, cis) if inn else (None, ["pas de substance"])
-        name_fr = None
+        name_fr, src_nom = None, []
         if bdpm and (not inn or mots(nom) == mots(inn)):          # le titre n'est qu'une substance : on le traduit aussi
-            name_fr = traduire(bdpm, nom, pont=False)[0]
+            name_fr, src_nom = traduire(bdpm, nom, pont=False)
             if name_fr and not inn:
-                src = ["titre : BDPM (règle)"]
+                src = ["titre : " + ("table" if "table" in src_nom else "BDPM (règle)")]
+        if bdpm and not name_fr and cle_table(nom) in TABLE_TITRES:    # titre qui n'est pas une substance : table, après la BDPM
+            name_fr, src_nom = TABLE_TITRES[cle_table(nom)], ["table"]
+            src = src + ["titre : table"] if inn else ["titre : table"]
+        fr_table = [k for k, ok in (("inn_fr", inn_fr and "table" in src), ("name_fr", name_fr and "table" in src_nom)) if ok]
         trace.append((nom, inn, inn_fr, name_fr, src))
         items.append({
             "name": nom, "inn": inn, "inn_fr": inn_fr or "", "name_fr": (name_fr[:1].upper() + name_fr[1:]) if name_fr else "",
@@ -315,6 +364,8 @@ def main():
             "url": str(g(r, "Shortage URL") or "").strip(),
             "cips": cips, "cips_dci": alt,
         })
+        if fr_table:
+            items[-1]["fr_table"] = fr_table      # nom écrit à la main (table de secours), pas un nom officiel BDPM
     res = {"generated": datetime.date.today().isoformat(), "source": "EMA — European Medicines Agency (catalogue des pénuries)",
            "n": len(items), "items": items}
     tmp = OUT + ".tmp"
@@ -324,12 +375,13 @@ def main():
     n_us = sum(1 for x in items if x["cips"])
     print("OK · %d lignes · %d avec une référence du catalogue (marque + substance)" % (len(items), n_us))
     n_tr = sum(1 for x in items if x["inn_fr"] or x["name_fr"])
-    print("Substances : %d lignes, %d traduites (BDPM), %d gardées en anglais%s" %
+    print("Substances : %d lignes, %d traduites (BDPM ou table de secours), %d gardées en anglais%s" %
           (len(items), n_tr, len(items) - n_tr, "" if bdpm else " — BDPM indisponible, rien traduit"))
     if os.environ.get("EMA_TRACE"):
         with io.open(os.environ["EMA_TRACE"], "w", encoding="utf-8") as f:
             for t in trace:
                 f.write("\t".join([t[0], t[1], t[2] or "", t[3] or "", " + ".join(t[4])]) + "\n")
+    print("dont %d lignes avec au moins un nom venu de la table de secours" % sum(1 for x in items if x.get("fr_table")))
     for x in items[:3]:
         print("  %s | %s | %s | début %s | fin %s%s" % (x["name"][:28], x["inn"][:24], x["status"], x["start"], x["resolution"] or "-", x["resolution_txt"]))
     print("→ %s (%d o)" % (OUT, os.path.getsize(OUT)))

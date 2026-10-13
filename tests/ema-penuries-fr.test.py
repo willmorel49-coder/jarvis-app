@@ -38,11 +38,11 @@ verifie("accents et casse", gep.traduire(bdpm, "semaglutide")[0], "sémaglutide"
 verifie("règle insulin → insuline", gep.traduire(bdpm, "insulin degludec")[0], "insuline dégludec")
 verifie("règle aspart → asparte", gep.traduire(bdpm, "insulin aspart")[0], "insuline asparte")
 verifie("ordre des mots (acide)", gep.traduire(bdpm, "clavulanic acid")[0] in ("acide clavulanique", "clavulanique (acide)"), True)
-verifie("sel : on ne choisit pas à la place de la BDPM", gep.traduire(bdpm, "fludarabine")[0], None)
-verifie("sel : esmolol ≠ chlorhydrate d'esmolol", gep.traduire(bdpm, "esmolol")[0], None)
+verifie("sel : on ne choisit pas à la place de la BDPM", gep.traduire(bdpm, "fludarabine", table=False)[0], None)
+verifie("sel : esmolol ≠ chlorhydrate d'esmolol", gep.traduire(bdpm, "esmolol", table=False)[0], None)
 verifie("trioxyde", gep.traduire(bdpm, "arsenic trioxide")[0], "trioxyde d'arsenic")
 verifie("association réussie", gep.traduire(bdpm, "amoxicillin;clavulanic acid")[0] is not None, True)
-verifie("association : un seul échec = tout en anglais", gep.traduire(bdpm, "amoxicillin;fludarabine")[0], None)
+verifie("association : un seul échec = tout en anglais", gep.traduire(bdpm, "amoxicillin;fludarabine", table=False)[0], None)
 verifie("aucune forme fabriquée", gep.traduire(bdpm, "zorbaxine")[0], None)
 verifie("sans substance", gep.traduire(bdpm, "")[0], None)
 verifie("BDPM absente", gep.traduire(None, "semaglutide")[0], None)
@@ -50,7 +50,29 @@ verifie("pont par spécialité (ressemblance)", gep.traduire(bdpm, "substance vo
 verifie("pont sans spécialité liée", gep.traduire(bdpm, "substance voisin", cis=set())[0], None)
 verifie("BDPM injoignable → None, sans exception", gep.charger_bdpm(), None)
 
+# ── Table de secours (13/10/2026) : la BDPM gagne, la table comble, l'inconnu reste en anglais ──
+T = gep.TABLE_SUBSTANCES
+bdpm_t = ({**noms, **{gep.cle("MÉCASERMINE"): "MÉCASERMINE"}}, {}, {})
+sauve = T.get("mecasermin")
+T["mecasermin"] = "valeur de table qui doit perdre"
+verifie("table : la BDPM gagne quand elle a un nom", gep.traduire(bdpm_t, "mecasermin"), ("mécasermine", ["BDPM (règle)"]))
+del T["mecasermin"]
+verifie("table : sans entrée ni BDPM → anglais", gep.traduire(bdpm, "mecasermin")[0], None)
+T["mecasermin"] = sauve
+verifie("table : la BDPM n'a rien → la table sert", gep.traduire(bdpm, "parathyroid hormone"), ("hormone parathyroïdienne", ["table"]))
+verifie("table : esmolol (BDPM n'a que le sel) → table", gep.traduire(bdpm, "esmolol"), ("esmolol", ["table"]))
+verifie("table : substance inconnue des deux → anglais", gep.traduire(bdpm, "zorbaxine")[0], None)
+verifie("table : tout ou rien (un composant inconnu)", gep.traduire(bdpm, "insulin human;zorbaxine")[0], None)
+verifie("table : plusieurs substances, séparateur gardé", gep.traduire(bdpm, "atomoxetine;methylphenidate;lisdexamfetamine"),
+        ("atomoxétine ; méthylphénidate ; lisdexamfétamine", ["table"] * 3))
+verifie("table : association mixte BDPM + table", gep.traduire(bdpm, "semaglutide;insulin human"),
+        ("sémaglutide ; insuline humaine", ["BDPM (règle)", "table"]))
+verifie("table : sans BDPM la table ne sert pas", gep.traduire(None, "insulin human")[0], None)
+verifie("table : désactivable", gep.traduire(bdpm, "insulin human", table=False)[0], None)
+verifie("table : minuscules comme la BDPM", all(v == v.lower() for v in T.values()), True)
+verifie("table : titre écrit à la main", gep.TABLE_TITRES["adhd medicines"], "Médicaments du TDAH")
+
 if ko:
     print("ECHEC :\n  " + "\n  ".join(ko))
     sys.exit(1)
-print("OK · 17 cas : les substances françaises viennent de la BDPM ou restent en anglais")
+print("OK · 29 cas : BDPM d'abord, table écrite à la main en dernier recours, sinon anglais")
