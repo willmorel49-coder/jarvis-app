@@ -2478,12 +2478,13 @@
         if ((rup || ten) && faRetourOk(i.retour)) {
           var r = i.retour, t0 = new Date(); t0 = new Date(t0.getFullYear(), t0.getMonth(), t0.getDate());
           var jOf = function (dt) { return Math.round((dt.getTime() - t0.getTime()) / 86400000); };
-          var j0 = jOf(new Date(r.annee, r.mois - 1, 1)), jFin = jOf(new Date(r.annee, r.mois, 0));
+          // 13/10/2026 : un trimestre (« T3 2026 », stocké au 1er mois) court jusqu'à la fin de son 3e mois : il n'est « dépassé » qu'après
+          var j0 = jOf(new Date(r.annee, r.mois - 1, 1)), jFin = jOf(new Date(r.annee, r.mois + (r.approx === 'trimestre' ? 2 : 0), 0));
           // le mois seul ne date rien : on ne l'écrit JAMAIS en J−x. Les jours ci-dessous ne servent qu'à classer et à juger « dépassé ».
           var jLim = r.approx === 'début' ? jOf(new Date(r.annee, r.mois - 1, 10)) : r.approx === 'mi' ? jOf(new Date(r.annee, r.mois - 1, 20)) : jFin;
           var jEst = Math.max(0, jOf(new Date(r.annee, r.mois - 1, { 'début': 5, mi: 15, fin: 26 }[r.approx] || 15)));
           var cetteFois = j0 <= 0 && jFin >= 0, moisCourt = MOIS_L[r.mois - 1];
-          if (jLim >= 0 && j0 <= 60) add({ t: 'retour', sub: 'prevu', j: jEst, jl: cetteFois ? 'Ce mois' : cap(moisCourt), js: retourLabel(r), ti: nom, cip: base.cip, ours: s.ours,
+          if (jLim >= 0 && j0 <= 60) add({ t: 'retour', sub: 'prevu', j: jEst, jl: r.approx === 'trimestre' ? retourLabel(r) : cetteFois ? 'Ce mois' : cap(moisCourt), js: retourLabel(r), ti: nom, cip: base.cip, ours: s.ours,
             wh: 'Retour à disposition annoncé : ' + retourLabel(r) + (rup ? ' (rupture en cours)' : ' (tension en cours)'),
             im: faStockTxt(s), vb: 'Planifier la reprise', fig: faCovFig(s), src: base.src });
           else if (jLim < 0 && jLim >= -FA_DEPASSE_J) add({ t: 'retour', sub: 'depasse', j: jLim, jl: 'Dépassé', js: retourLabel(r), ti: nom, cip: base.cip, ours: s.ours,
