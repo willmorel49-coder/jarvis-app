@@ -23,6 +23,9 @@ Regles (mesure : jarvis-preuves/offilog-prix-catalogue-2026-10-12/RAPPORT.md) :
   (la page affiche « a verifier ») et il ne confirme ni ne conteste jamais une autre source ;
 - le classeur CONDITIONS-CONCURRENTS-GLOBAL (colonne Prix fausse) et PARAPH-OFFRES-FLASH
   (prix d'operation) ne sont PAS lus ;
+- GILBERT = a verifier (decision de Will, 13/10) : tarif de base tres haut, Offilog y ressortait
+  54 % dessous en mediane contre 33 % pour le reste. La source garde son rang, mais tout prix
+  RETENU depuis ce tarif sort au niveau `conteste` : « a verifier » dans le CRM, rien cote OPSO ;
 - niveau : confirme (une autre source a +-1 %), conteste (autre source d'une
   annee voisine a plus de 5 %), seul (une seule source), proche (le reste) ;
   nbSources = sources qui s'accordent a +-5 % avec le prix retenu.
@@ -32,7 +35,7 @@ sur Supabase `donnees-protegees`, il ne part JAMAIS dans le depot public, et
 l'app OPSO ne le charge pas.
 
 SECOND FICHIER, pour l'espace OPSO : crm/v2/offilog-cat-opso.js = code 13 -> prix catalogue HT SEUL (un nombre ;
-ni source, ni annee, ni niveau, ni date de tarif). Exclus : tout niveau `conteste` (donc tout ce qui vient du tarif Urgo).
+ni source, ni annee, ni niveau, ni date de tarif). Exclus : tout niveau `conteste` (donc tout ce qui vient des tarifs Urgo et Gilbert).
 Le pourcentage se calcule dans la page avec le prix Offilog affiche sur la carte. Fichier hors git aussi, destine a
 `donnees-protegees` (cle `offilogcatopso`). L'espace OPSO ne charge JAMAIS offilog-prix-catalogue.js.
 
@@ -79,6 +82,7 @@ if not TARIFS_LABO_CFG.is_file():
     sys.exit("ERREUR : liste des tarifs de laboratoire introuvable : %s" % TARIFS_LABO_CFG)
 TARIFS_LABO = [tuple(t) for t in json.loads(TARIFS_LABO_CFG.read_text(encoding="utf-8"))]
 DERNIER_RECOURS = {"URGO"}   # n'entre que si aucune autre source ne porte le code ; niveau force a conteste
+A_VERIFIER = {"GILBERT"}     # source ordinaire (meme rang, confirme et conteste comme avant), mais niveau force a conteste quand elle est RETENUE
 DOCS_LABO = Path.home() / "DPGS-documents"   # raccourci : chemin complet donne a pdftotext, jamais find sans barre finale
 
 
@@ -479,7 +483,7 @@ def main():
         nb = 1 + len({k[0] for k in autres_src if proche(v, k[2], 0.05)})
         if s not in src_utilisees:
             src_utilisees.append(s)
-        if s in DERNIER_RECOURS:
+        if s in DERNIER_RECOURS or s in A_VERIFIER:
             niveau = "conteste"   # « a verifier » : jamais presente comme un prix sur
         table[code] = [v, a if a else 0, niveau, s, nb]
 
