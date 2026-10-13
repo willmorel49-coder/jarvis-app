@@ -274,12 +274,12 @@
   }
   V2.nomEcran = nomEcran;
 
-  // Le menu « + » de la barre : trois gestes, dans cet ordre, seulement si la fonction existe dans l'espace courant.
+  // Le menu « + » de la barre : deux gestes, dans cet ordre, seulement si la fonction existe dans l'espace courant.
+  // 13/10/2026 — « Proposer une amélioration » en est sorti (choix de Will) : même formulaire que l'ampoule voisine.
   function plusItems() {
     // Dans le Marketing, les créations de l'espace passent en tête (v2-mkt-socle.js).
     var it = (V2.mktSocle && V2.mktSocle.plusItems) ? V2.mktSocle.plusItems() : [];
     if (V2.rdvGeste && V2.rdvGeste.ouvrir) it.push({ ic: 'cal', t: 'Noter un rendez-vous', f: function () { V2.rdvGeste.ouvrir(); } });
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.remonteeOpen) it.push({ ic: 'spark', t: 'Proposer une amélioration', f: function () { V2.remonteeOpen(); } });
     if (V2.pages && V2.pages.remontees) it.push({ ic: 'plus', t: 'Proposer un outil', f: function () { V2.go('remontees'); } });
     return it;
   }
