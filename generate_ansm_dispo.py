@@ -93,7 +93,7 @@ def norm_date(raw):
         if mois:
             return {"raw": raw.strip(), "iso": "%04d-%02d" % (annee, mois), "mois": mois, "annee": annee, "approx": "trimestre"}
     for name, num in MOIS.items():
-        if name in low:
+        if re.search(r"(?<![a-zà-ÿ])" + name + r"(?![a-zà-ÿ])", low):  # mot entier : « semaines » contient « mai »
             approx = "mois"
             if "début" in low or "debut" in low:
                 approx = "début"

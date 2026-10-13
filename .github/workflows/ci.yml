@@ -58,6 +58,9 @@ jobs:
       - name: Test robot ANSM (l'archive des épisodes clos ne perd rien)
         run: python3 tests/ansm-archive.test.py
 
+      - name: Test robot ANSM (le mois nommé dans le texte est celui qu'on garde)
+        run: python3 tests/ansm-mois-retour.test.py
+
       # Les sources de prix sont des fenêtres glissantes (DILA ~20 jours, BDPM sans
       # historique) : ce qu'un robot voit et n'archive pas est perdu définitivement.
       - name: Test archive d'évènements (prix, avis CEPS)
