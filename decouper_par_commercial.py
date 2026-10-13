@@ -61,7 +61,17 @@ CLE = os.path.expanduser('~/.config/jarvis/service-role-key')
 compact = lambda o: json.dumps(o, ensure_ascii=False, separators=(',', ':'))
 
 
-SUITE_CA = ''   # « , off:{…} » lu dans wml-officines-ca.js (client Offilog), recopié dans chaque jeu
+OFF_CA = None   # clé off de wml-officines-ca.js (« client Offilog », offilog_clients.py), lue dans main()
+
+
+def suite_off(mes_ca):
+    """« , off:{…} » réduit aux pharmacies du jeu : un commercial ne reçoit « client Offilog »
+    que pour les officines dont son jeu porte déjà les chiffres, jamais la liste du réseau."""
+    if not OFF_CA:
+        return ''
+    m = {k: v for k, v in OFF_CA['m'].items() if k in mes_ca}
+    return ', off:' + json.dumps({'d': OFF_CA['d'], 'm': m}, separators=(',', ':'), sort_keys=True)
+
 
 def dossier(commercial):
     return hashlib.sha256(commercial.encode('utf-8')).hexdigest()[:16]
@@ -212,10 +222,10 @@ def main():
 
     ca = lire(os.path.join(BASE, 'wml-officines-ca.js'))
     # 13/10/2026 — la table porte aussi « client Offilog » (clé off, offilog_clients.py) : elle est
-    # recopiée telle quelle dans le jeu de chaque commercial, sinon sa fiche officine n'en dit rien.
-    global SUITE_CA
+    # réduite aux officines de chaque jeu (suite_off), sinon la fiche officine n'en dit rien.
+    global OFF_CA
     m_ca = re.search(r'window\.WML_OFF_CA = \{n:\d+, m:(\{[^{}]*\})((?:, off:\{.*\})?)\};', ca, re.S)
-    SUITE_CA = m_ca.group(2) if m_ca else ''
+    OFF_CA = json.loads(m_ca.group(2)[6:]) if m_ca and m_ca.group(2) else None
     off_ca = json.loads(m_ca.group(1)) if m_ca else sys.exit('ARRÊT : wml-officines-ca.js illisible')
     tete_ca = ca[:m_ca.start()]
     det = lire(os.path.join(V2, 'carte-detail.js'))
@@ -332,7 +342,7 @@ def main():
         for k in [k for k in mes_ca if partagee(k)]:
             mes_ca[k] = [round(sum(a_lui.get(k, vide)['m'])), mes_ca[k][1]]
         ecrire(os.path.join(rep, 'wml-officines-ca.js'),
-               tete_ca + 'window.WML_OFF_CA = {n:%d, m:%s%s};\n' % (len(mes_ca), json.dumps(mes_ca), SUITE_CA))
+               tete_ca + 'window.WML_OFF_CA = {n:%d, m:%s%s};\n' % (len(mes_ca), json.dumps(mes_ca), suite_off(mes_ca)))
         mes_det = {k: v for k, v in carte.items() if comms_par_code.get(re.sub(r'[^0-9]', '', k), set()) & mes}
         for k in [k for k in mes_det if partagee(k)]:
             dd = a_lui.get(re.sub(r'[^0-9]', '', k), vide)
@@ -408,7 +418,7 @@ def jeu_opso(officines, d_off, ventes, off_ca, tete_ca, carte, tete_det):
     cles = {re.sub(r'[^0-9]', '', i) for i in ids}
     mes_ca = {k: v for k, v in off_ca.items() if re.sub(r'[^0-9]', '', k) in cles}
     ecrire(os.path.join(rep, 'wml-officines-ca.js'),
-           tete_ca + 'window.WML_OFF_CA = {n:%d, m:%s%s};\n' % (len(mes_ca), json.dumps(mes_ca), SUITE_CA))
+           tete_ca + 'window.WML_OFF_CA = {n:%d, m:%s%s};\n' % (len(mes_ca), json.dumps(mes_ca), suite_off(mes_ca)))
     mes_det = {k: v for k, v in carte.items() if re.sub(r'[^0-9]', '', k) in cles}
     ecrire(os.path.join(rep, 'carte-detail.js'), tete_det + 'window.CARTE_DETAIL=' + compact(mes_det) + ';\n')
     print('  %-24s %s  %6d lignes OPSO · %d officines · 0 total réseau · %d tranche(s) · %d CA · %d fiches'
