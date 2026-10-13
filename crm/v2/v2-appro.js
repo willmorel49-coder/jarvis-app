@@ -2354,6 +2354,217 @@
       (m.nEnStock || 0) + ' touchant le stock. <b>Le stock plateforme n’est pas suivi par numéro de lot</b> : vérifier physiquement les numéros ci-dessus avant de conclure.</div>';
   }
 
+  // ═══ LE FIL D'ANTICIPATION (13/10/2026) — une seule liste d'événements datés, tous flux confondus ═══
+  // Chaque ligne : date · ce qui se passe · ce que ça change pour NOTRE stock · un verbe · la source.
+  // Règle d'or : un CIP absent du fichier de stock = stock INCONNU (jamais zéro) — le fichier ne liste
+  // que les références inventoriées. Les compteurs portent sur TOUT ; la liste n'en montre que 12.
+  var _faType = 'all', _faAll = false, FA_MAX = 12;
+  var FA_TYPES = [['prix', 'Prix'], ['rupture', 'Ruptures'], ['retour', 'Retours'], ['gener', 'Génériques'], ['has', 'Remboursements'], ['epi', 'Épidémies'], ['lots', 'Lots rappelés']];
+  V2.approFa = function (t) { _faType = t; _faAll = false; if (V2.render) V2.render(); };
+  V2.approFaAll = function (tout) { _faAll = !!tout; if (V2.render) V2.render(); };
+  // écart en jours entiers entre deux minuits locaux (daysTo arrondit depuis l'heure courante : faux de ±1 j)
+  function faJ(iso) {
+    var p = String(iso || '').slice(0, 10).split('-'); if (p.length < 3) return null;
+    var d = new Date(+p[0], +p[1] - 1, +p[2]); if (isNaN(d.getTime())) return null;
+    var t = new Date(); t = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+    return Math.round((d.getTime() - t.getTime()) / 86400000);
+  }
+  function faJl(j) { return j == null ? '' : j > 0 ? 'J−' + j : j === 0 ? 'Auj.' : 'Depuis'; }
+  function faStock(cips) {
+    var S = (window.STOCK_IP && window.STOCK_IP.data) || null, idx = {};
+    try { idx = cipIndex(); } catch (e) {}
+    var r = { n: cips.length, known: 0, u: 0, eur: 0, vM: 0, sold: false, inIdx: 0, best: cips.length ? String(cips[0]) : '', bestU: -1 };
+    cips.forEach(function (c) {
+      c = String(c); var o = idx[c], v = S ? S[c] : null;
+      if (o) { r.inIdx++; if (o.vM > 0) r.sold = true; }
+      if (v == null) return;                       // absent du fichier = INCONNU, on ne le compte pas
+      var u = Math.max(0, v); r.known++; r.u += u;
+      if (o) { r.eur += u * (o.ppht || 0); if (u > 0) r.vM += o.vM || 0; }
+      if (u > r.bestU) { r.bestU = u; r.best = c; }
+    });
+    r.cov = (r.vM > 0 && r.u > 0) ? Math.round(r.u / (r.vM / 30)) : null;
+    r.ours = r.u > 0 || r.sold;
+    return r;
+  }
+  function faStockTxt(s) {
+    if (!s.n) return 'Aucune référence de votre stock rattachée à cette ligne';
+    if (!s.known) return 'Stock inconnu — référence absente de l’inventaire plateforme';
+    var t = 'Stock plateforme : ' + fmt(s.u) + ' u.';
+    if (s.cov != null) t += ' · couverture ' + (s.cov > 365 ? 'plus d’un an' : s.cov + ' j');
+    if (s.known < s.n) t += ' · sur ' + s.known + ' réf. inventoriée' + (s.known > 1 ? 's' : '') + ' / ' + s.n;
+    return t;
+  }
+  function faCovFig(s) { return s.cov != null ? [s.cov > 365 ? '> 1 an' : s.cov + ' j', 'de couverture'] : (s.u > 0 ? [fmt(s.u) + ' u.', 'en stock'] : null); }
+  function faPct(a, b) { var p = (b - a) / a * 100, r = Math.round(Math.abs(p) * 10) / 10; return (p > 0 ? '+' : '−') + String(r).replace('.', ',') + ' %'; }
+  var FA_MOIS_NOMS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  // le robot ANSM a parfois un mois faux (« fin octobre » rangé en mai) : sans accord entre le texte et le mois, on n'affiche pas
+  function faRetourOk(r) {
+    if (!r || !r.mois || !r.annee) return false;
+    var raw = String(r.raw || '').toLowerCase();
+    for (var k = 0; k < 12; k++) if (raw.indexOf(FA_MOIS_NOMS[k]) >= 0) return k + 1 === r.mois;
+    return true;
+  }
+  function faLieu(s) {   // « PROVENCE-ALPES-COTE-D-AZUR » → « Provence-Alpes-Côte-d’Azur »
+    return String(s || '').toLowerCase().split('-').map(function (m) { return /^(de|la|le|du|d|l|des|sur|en)$/.test(m) ? m : m.charAt(0).toUpperCase() + m.slice(1); }).join('-')
+      .replace('Cote', 'Côte').replace('-d-', '-d’').replace(/^Ile/, 'Île');
+  }
+  function faTitreAnsm(i) { return cap(String(i.spec || '').replace(/\s*[–-]\s*\[.*$/, '')); }
+  function faEvents() {
+    var ev = [], idx = {};
+    try { idx = cipIndex(); } catch (e) {}
+    function add(e) { ev.push(e); }
+    // 1 · PRIX (JO / CEPS) — baisses (logique d'alleger()) et hausses
+    try {
+      if (_pfData && _pfData.changes) {
+        var A = {}; alleger().forEach(function (a) { A[a.c] = a; });
+        _pfData.changes.forEach(function (x) {
+          if (x.sens !== 'baisse' && x.sens !== 'hausse') return;
+          var j = faJ(x.date_effet); if (j == null || j < -7) return;
+          var s = faStock([x.c]), baisse = x.sens === 'baisse', old = x.ancien_ttc, nw = x.ppttc;
+          if (!(old > 0) || !(nw > 0)) return;
+          var expo = baisse ? (A[x.c] ? A[x.c].expo : 0) : Math.max(0, nw - old) * stq(x.c);
+          add({ t: 'prix', sub: baisse ? 'baisse' : 'hausse', j: j, jl: faJl(j), js: 'le ' + fdate(x.date_effet), ti: cap(x.d), cip: x.c, ours: s.ours,
+            wh: (baisse ? 'Baisse' : 'Hausse') + ' du prix public : ' + fmtEur(old) + ' → ' + fmtEur(nw) + ' (' + faPct(old, nw) + ')' + (j < 0 ? ' · déjà en vigueur' : ''),
+            im: faStockTxt(s) + (s.known && expo > 0 ? ' · ' + (baisse ? 'valeur en jeu' : 'écart') + ' ≈ ' + fmt(Math.round(expo)) + ' € au prix public' : ''),
+            vb: baisse ? (j >= 0 ? 'Écouler avant la baisse' : 'Réévaluer le stock') : (j >= 0 ? 'Acheter avant la hausse' : 'Répercuter la hausse'),
+            fig: s.known && expo > 0 ? [(baisse ? '−' : '+') + fmt(Math.round(expo)) + ' €', 'au prix public'] : null,
+            src: 'Journal officiel (CEPS)' + (x.date_publi ? ' · publié le ' + fdate(x.date_publi) : '') });
+        });
+      }
+    } catch (e) {}
+    // 2 · RUPTURES / TENSIONS · 3 · RETOURS (ANSM)
+    try {
+      if (_ansmData && _ansmData.items) _ansmData.items.forEach(function (i) {
+        var st = String(i.st || ''), cips = i.cips || [], rup = /^Rupture/.test(st), ten = /^Tension/.test(st), back = /^Rem/.test(st);
+        var j = i.sinceA === 0 ? faJ(i.since) : null, s = faStock(cips), nom = faTitreAnsm(i);
+        var recent = j != null && j <= 0 && j >= -14;
+        var base = { j: j, ti: nom, cip: s.best || '', ours: s.ours, src: 'ANSM' + (i.maj ? ' · fiche du ' + i.maj.slice(0, 5) : '') };
+        if (recent && (rup || ten)) {
+          add({ t: 'rupture', sub: rup ? 'rupture' : 'tension', j: j, jl: faJl(j), js: 'le ' + fdate(i.since), ti: nom, cip: base.cip, ours: s.ours,
+            wh: (rup ? 'Rupture de stock' : 'Tension d’approvisionnement') + ' signalée à l’ANSM' + (i.subst ? ' · générique disponible' : ''),
+            im: faStockTxt(s), vb: 'Sécuriser', fig: faCovFig(s), src: 'ANSM · signalé le ' + fdate(i.since) });
+        }
+        if (recent && back) {
+          add({ t: 'retour', sub: 'revenu', j: j, jl: faJl(j), js: 'le ' + fdate(i.since), ti: nom, cip: base.cip, ours: s.ours,
+            wh: 'De retour : la spécialité est repassée disponible (ANSM)', im: faStockTxt(s), vb: 'Reprendre les achats', fig: faCovFig(s), src: 'ANSM · changement observé le ' + fdate(i.since) });
+        }
+        if ((rup || ten) && faRetourOk(i.retour)) {
+          var r = i.retour, d0 = new Date(r.annee, r.mois - 1, 1), d1 = new Date(r.annee, r.mois, 0);
+          var t0 = new Date(); t0 = new Date(t0.getFullYear(), t0.getMonth(), t0.getDate());
+          var j0 = Math.round((d0.getTime() - t0.getTime()) / 86400000), j1 = Math.round((d1.getTime() - t0.getTime()) / 86400000);
+          // le mois seul ne date rien : début ≈ le 5, mi ≈ le 15, fin ≈ le 26 — sert à classer, pas à promettre un jour
+          var jr = Math.max(0, Math.round((new Date(r.annee, r.mois - 1, { 'début': 5, mi: 15, fin: 26 }[r.approx] || 15).getTime() - t0.getTime()) / 86400000));
+          if (j1 >= 0 && j0 <= 60) add({ t: 'retour', sub: 'prevu', j: jr, jl: jr > 0 ? 'J−' + jr : 'Ce mois', js: retourLabel(r), ti: nom, cip: base.cip, ours: s.ours,
+            wh: 'Retour à disposition annoncé : ' + retourLabel(r) + (rup ? ' (rupture en cours)' : ' (tension en cours)'),
+            im: faStockTxt(s), vb: 'Planifier la reprise', fig: faCovFig(s), src: base.src });
+        }
+      });
+    } catch (e) {}
+    // 4 · NOUVEAUX GÉNÉRIQUES (BDPM)
+    try {
+      if (_generData && _generData.newGeneric) {
+        var PG = {}; (_generData.princepsWithGeneric || []).forEach(function (c) { PG[c] = 1; });
+        _generData.newGeneric.forEach(function (g) {
+          var j = faJ(g.since); if (j == null || j > 0 || j < -60) return;
+          var cips = g.cips || [], pr = cips.filter(function (c) { return PG[c]; }), s = faStock(pr.length ? pr : cips);
+          var p = String(g.lib || '').split(',')[0].split(' - '), dci = p[0], princeps = p[1] || p[0];
+          add({ t: 'gener', sub: 'gener', j: j, jl: faJl(j), js: 'le ' + fdate(g.since), ti: cap(princeps), cip: s.best || '', ours: s.ours,
+            wh: 'Nouveau groupe générique (' + cap(dci) + ') — le princeps va perdre des volumes', im: faStockTxt(s) + (s.known && s.eur > 0 ? ' · valeur ≈ ' + fmt(Math.round(s.eur)) + ' € (PPHT)' : ''),
+            vb: 'Basculer vers le générique', fig: s.known && s.eur > 0 ? [fmt(Math.round(s.eur)) + ' €', 'de princeps en stock'] : null, src: 'BDPM · groupe du ' + fdate(g.since) });
+        });
+      }
+    } catch (e) {}
+    // 5 · FUTURS REMBOURSEMENTS (HAS)
+    try {
+      if (_hasData && _hasData.items) _hasData.items.forEach(function (h) {
+        if (h.cat !== 'reimb') return;
+        var j = faJ(h.date); if (j == null || j < -60) return;
+        var cips = h.cips || [], s = faStock(cips);
+        add({ t: 'has', sub: 'has', j: j, jl: faJl(j), js: 'le ' + fdate(h.date), ti: cap(String(h.spec || '').split(',')[0]), cip: s.best || '', ours: s.ours,
+          wh: 'Avis favorable de la HAS au remboursement' + (h.asmr ? ' · ASMR ' + h.asmr : ''),
+          im: faStockTxt(s) + (!s.known && cips.length && !s.inIdx ? ' · aucune vente réseau retenue' : ''), vb: 'Préparer le référencement',
+          fig: s.u > 0 ? [fmt(s.u) + ' u.', 'déjà en stock'] : null, src: 'HAS · avis du ' + fdate(h.date) });
+      });
+    } catch (e) {}
+    // 6 · ÉPIDÉMIES (Sentinelles + Odissé)
+    try {
+      var P = window.PROD_STATS || [], memo = {};
+      var famille = function (cat) {
+        if (memo[cat]) return memo[cat];
+        var mp = EPI_MAP[cat] || {}, r = { fam: mp.fam || '', nref: 0, u: 0 };
+        if (mp.kw) for (var k = 0; k < P.length; k++) if (mp.kw.test(P[k].d || '')) { var v = window.STOCK_IP && window.STOCK_IP.data ? window.STOCK_IP.data[String(P[k].c)] : null; if ((P[k].n || 0) > 0 || v > 0) r.nref++; if (v > 0) r.u += v; }
+        return (memo[cat] = r);
+      };
+      var vus = {};
+      var epiEv = function (label, cat, trend, lieu, sem, src) {
+        if (vus[label]) return; vus[label] = 1;
+        var f = famille(cat);
+        add({ t: 'epi', sub: 'epi', j: 0, jl: sem ? 'Sem. ' + sem : 'Cette sem.', js: 'tendance', ti: label, cip: '', ours: f.u > 0,
+          wh: 'En hausse de ' + trend + ' % sur la semaine' + (lieu ? ' · plus fort : ' + lieu : ''),
+          im: f.fam ? 'Famille : ' + f.fam + (f.nref ? ' · ' + f.nref + ' réf. au catalogue, ' + fmt(f.u) + ' u. en stock' : '') : 'Famille de produits non définie',
+          vb: 'Renforcer avant le pic', fig: f.u > 0 ? [fmt(f.u) + ' u.', 'de la famille en stock'] : null, src: src });
+      };
+      if (_epiData && _epiData.indicators) _epiData.indicators.forEach(function (i) {
+        if (i.trend != null && i.trend > 10) epiEv(i.label, i.cat, i.trend, i.regions && i.regions[0] ? faLieu(i.regions[0].n) : '', String(_epiData.week || '').slice(4), 'Réseau Sentinelles · semaine ' + String(_epiData.week || '').slice(4));
+      });
+      if (_odisseData && _odisseData.pathologies) _odisseData.pathologies.forEach(function (p) {
+        if (p.trend != null && p.trend > 5) epiEv(p.label, p.cat, p.trend, p.hotDeps && p.hotDeps[0] ? faLieu(p.hotDeps[0].n) : '', String(p.semaine || _odisseData.week || '').replace(/^.*S/, ''), 'Santé publique France (urgences) · semaine ' + String(p.semaine || _odisseData.week || '').replace(/^.*S/, ''));
+      });
+    } catch (e) {}
+    // 7 · LOTS RAPPELÉS (ANSM) — 30 derniers jours, seulement une référence détenue
+    try {
+      if (_rlData && _rlData.items) _rlData.items.forEach(function (x) {
+        var j = faJ(x.d); if (j == null || j > 0 || j < -30) return;
+        var s = faStock(x.cips || []); if (!(s.u > 0)) return;
+        var nom = (x.cat && x.cat[0] && x.cat[0].d) ? cap(x.cat[0].d) : cap(String(x.t || '').split('–')[0].trim());
+        add({ t: 'lots', sub: 'lots', j: j, jl: faJl(j), js: 'le ' + fdate(x.d), ti: nom, cip: s.best, ours: true,
+          wh: 'Rappel de lots : ' + lotsLabel(x) + (x.motif ? ' — ' + clipMots(x.motif, 90) : ''),
+          im: faStockTxt(s) + ' · le stock n’est pas suivi par lot : contrôle physique à faire', vb: 'Isoler les lots',
+          fig: [fmt(s.u) + ' u.', 'à contrôler'], src: 'ANSM · décision du ' + fdate(x.d) });
+      });
+    } catch (e) {}
+    // Ordre : d'abord ce qui touche une référence détenue ou vendue, puis par proximité de date
+    // un signal de tendance (épidémie) vaut « cette semaine » : il se classe à 7 jours, pas à 0, sinon ses 10 lignes passent devant une hausse de prix à J−2
+    var PRIO = { lots: 0, prix: 1, rupture: 2, retour: 3, gener: 4, has: 5, epi: 6 };
+    ev.forEach(function (e, n) { e.n = n; e.ord = e.t === 'epi' ? 7 : Math.abs(e.j || 0); });
+    ev.sort(function (a, b) { return (b.ours ? 1 : 0) - (a.ours ? 1 : 0) || a.ord - b.ord || PRIO[a.t] - PRIO[b.t] || a.n - b.n; });
+    return ev;
+  }
+  function faSources() {
+    return [['Prix publics (JO / CEPS)', _pfData, _pfState, 3], ['Ruptures et retours (ANSM)', _ansmData, _ansmState, 3], ['Lots rappelés (ANSM)', _rlData, _rlState, 3],
+      ['Épidémies (Sentinelles)', _epiData, _epiState, 3], ['Urgences (Odissé)', _odisseData, _odiState, 9], ['Génériques (BDPM)', _generData, _generState, 40], ['Avis HAS', _hasData, _hasState, 40]];
+  }
+  function faView() {
+    var ev = faEvents(), n = {}, shown, i;
+    FA_TYPES.forEach(function (t) { n[t[0]] = 0; });
+    ev.forEach(function (e) { n[e.t]++; });
+    var pills = '<button class="fa-pill' + (_faType === 'all' ? ' on' : '') + '" onclick="V2.approFa(\'all\')">Tous <b>' + ev.length + '</b></button>' +
+      FA_TYPES.map(function (t) { return '<button class="fa-pill' + (_faType === t[0] ? ' on' : '') + (n[t[0]] ? '' : ' z') + '" onclick="V2.approFa(\'' + t[0] + '\')">' + t[1] + ' <b>' + n[t[0]] + '</b></button>'; }).join('');
+    shown = _faType === 'all' ? ev : ev.filter(function (e) { return e.t === _faType; });
+    var vis = _faAll ? shown : shown.slice(0, FA_MAX);
+    var rows = vis.map(function (e) {
+      var inner = '<span class="fa-d"><b>' + esc(e.jl) + '</b><small>' + esc(e.js) + '</small></span>' +
+        '<span class="fa-m"><span class="fa-t">' + esc(e.ti) + '</span><span class="fa-w">' + esc(e.wh) + '</span><span class="fa-i">' + esc(e.im) + '</span><span class="fa-s">Source : ' + esc(e.src) + '</span></span>' +
+        '<span class="fa-r"><span class="fa-vb fa-v-' + (e.sub === 'hausse' ? 'hausse' : e.t) + '">' + esc(e.vb) + '</span>' + (e.fig ? '<span class="fa-fig"><b>' + esc(e.fig[0]) + '</b><small>' + esc(e.fig[1]) + '</small></span>' : '') + '</span>';
+      return e.cip ? '<button type="button" class="fa-row fa-k-' + e.t + '" onclick="V2.approTicket(\'' + esc(e.cip) + '\')">' + inner + '</button>' : '<div class="fa-row fa-k-' + e.t + '">' + inner + '</div>';
+    }).join('');
+    var loading = faSources().some(function (s) { return s[2] < 2; });
+    if (!rows) rows = '<div class="ap-empty">' + (loading ? 'Chargement des flux…' : 'Aucun événement à signaler pour ce filtre.') + '</div>';
+    var more = shown.length > FA_MAX ? '<div class="fa-more"><button type="button" class="fa-pill" onclick="V2.approFaAll(' + (_faAll ? 'false' : 'true') + ')">' + (_faAll ? 'Réduire la liste' : 'Voir tout (' + shown.length + ')') + '</button></div>' : '';
+    var fresh = faSources().map(function (s) {
+      var g = s[1] && s[1].generated ? String(s[1].generated).slice(0, 10) : '', age = g ? -faJ(g) : null;
+      if (s[2] < 2) return '<div class="fa-f">' + esc(s[0]) + ' — chargement…</div>';
+      if (!g) return '<div class="fa-f fa-late"><b>' + esc(s[0]) + '</b> — flux indisponible</div>';
+      if (age > s[3]) return '<div class="fa-f fa-late"><b>' + esc(s[0]) + '</b> — flux en retard : à jour au ' + fdate(g) + ' (' + age + ' j)</div>';
+      return '<div class="fa-f">' + esc(s[0]) + ' — à jour au ' + fdate(g) + '</div>';
+    }).join('');
+    return '<div class="ap-sec">Le fil d’anticipation</div>' +
+      '<div class="ap-secsub">ce qui arrive, tous flux confondus — d’abord ce qui touche une référence que nous détenons ou vendons, puis par proximité de date. Cliquez une ligne qui porte une référence pour ouvrir sa fiche.</div>' +
+      '<div class="v2-card ap-card fa-card"><div class="fa-pills">' + pills + '</div>' + rows + more +
+      '<div class="fa-foot">Montants au <b>prix public</b> : ce n’est pas notre prix d’achat. <b>Stock inconnu</b> = référence absente de l’inventaire plateforme, jamais comptée comme zéro. Les compteurs portent sur tous les événements, la liste en montre ' + FA_MAX + ' à la fois.</div>' +
+      '<div class="fa-fresh">' + fresh + '</div></div>';
+  }
+
   // ═══ ACTU APPRO (quotidien, gratuit) : fil d'actualité filtré appro + bloc PRÉDICTIF ═══
   var _infosState = 0, _infosData = null;
   function ensureInfos() {
@@ -2369,6 +2580,10 @@
   }
   function actuView() {
     ensureInfos();
+    // le fil d'anticipation demande lui-même chacun de ses flux (arrivée directe sur Actu)
+    ensurePrixFuturs(); ensureAnsm(); ensureGener(); ensureHas(); ensureEpidemio(); ensureOdisse(); ensureRappelsLots();
+    var faH = '';
+    try { faH = faView(); } catch (e) { faH = ''; }
     // ── PRÉDICTIF : ce qui arrive, calculé sur nos robots ──
     var pred = [];
     var acts = _carnetActs || [];
@@ -2393,7 +2608,7 @@
     } else news = '<div class="ap-empty">Chargement de l’actualité…</div>';
     var rapH = rappelsCard();   // audit m2 : calculer une seule fois (évite le double scan)
     var rlH = rappelsLotsCard();
-    return '<div class="ap-sec">Prédictif — ce qui arrive</div>' +
+    return faH + '<div class="ap-sec">Prédictif — ce qui arrive</div>' +
       '<div class="ap-secsub">calculé chaque jour sur votre donnée réseau + les sources publiques gratuites</div>' +
       '<div class="v2-card ap-card" style="padding:6px 4px">' + predHtml + '</div>' +
       (rlH ? '<div class="ap-sec">Lots rappelés — médicaments</div>' +
@@ -3029,6 +3244,22 @@
       '@media(max-width:640px){.cl-wk{grid-template-columns:1fr}.cl-wc{min-height:0}.cl-wc .cl-line{display:flex}.cl-tab{min-width:0}}' +
       '.ap-sec{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ip-ink);margin:22px 0 2px}' +
       '.ap-secsub{font-size:12px;color:var(--muted);margin:0 0 12px;line-height:1.5}' +
+      /* le fil d'anticipation (espace Actu) */
+      '.fa-pills{display:flex;gap:6px;flex-wrap:wrap;padding:12px 14px 8px}' +
+      '.fa-pill{min-height:44px;display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--ip-ink-2);background:var(--card-2,#F6F8FB);border:1px solid var(--line-strong);border-radius:999px;padding:0 14px;cursor:pointer}' +
+      '.fa-pill b{font-family:var(--mono);font-size:12.5px}.fa-pill.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}.fa-pill.z{color:var(--muted);border-style:dashed}' +
+      '.fa-row{display:grid;grid-template-columns:78px minmax(0,1fr) minmax(120px,auto);gap:6px 14px;align-items:start;width:100%;min-height:44px;box-sizing:border-box;text-align:left;padding:12px 16px 12px 13px;border:0;border-top:1px solid var(--line);border-left:3px solid var(--line-strong);background:transparent;font:inherit;color:inherit}' +
+      'button.fa-row{cursor:pointer}button.fa-row:hover{background:var(--card-2,#F6F8FB)}' +
+      '.fa-k-prix{border-left-color:#D5573B}.fa-k-rupture{border-left-color:#C77700}.fa-k-retour{border-left-color:#1E9E6A}.fa-k-gener{border-left-color:#6D5AE6}.fa-k-has{border-left-color:#0050E6}.fa-k-epi{border-left-color:#0E7C86}.fa-k-lots{border-left-color:#B02A1E}' +
+      '.fa-d b{display:block;font-size:14px;font-weight:800;font-family:var(--mono);color:var(--ip-ink)}.fa-d small{display:block;font-size:12px;color:var(--muted);font-weight:600;line-height:1.3}' +
+      '.fa-m{min-width:0}.fa-m>span{display:block}.fa-t{font-size:13.5px;font-weight:800;color:var(--ip-ink);line-height:1.3}.fa-w{font-size:12.5px;color:var(--ip-ink-2);margin-top:2px;line-height:1.4}.fa-i{font-size:12.5px;font-weight:600;color:var(--ip-ink);margin-top:3px;line-height:1.4}.fa-s{font-size:12px;color:var(--muted);margin-top:3px}' +
+      '.fa-r{text-align:right}.fa-r>span{display:block}.fa-vb{display:inline-block!important;font-size:12px;font-weight:800;border-radius:999px;padding:3px 10px;line-height:1.3}' +
+      '.fa-v-prix{color:#B02A1E;background:#FDEDEA;border:1px solid #F3B0A0}.fa-v-hausse{color:#0034A0;background:#EAF1FF;border:1px solid #C8DBFF}.fa-v-rupture{color:#8A5210;background:#FFF1DB;border:1px solid #F0C98A}.fa-v-retour{color:#0B6B42;background:#E7F5EC;border:1px solid #BFE6CF}.fa-v-gener{color:#5744C9;background:#EFEBFB;border:1px solid #D3C9F5}.fa-v-has{color:#0034A0;background:#EAF1FF;border:1px solid #C8DBFF}.fa-v-epi{color:#0A6169;background:#E5F4F5;border:1px solid #B8E0E3}.fa-v-lots{color:#B02A1E;background:#FBE9E6;border:1px solid #E8A99C}' +
+      '.fa-fig{margin-top:6px}.fa-fig b{display:block;font-size:15px;font-weight:800;font-family:var(--mono);color:var(--ip-ink)}.fa-fig small{display:block;font-size:12px;color:var(--muted);font-weight:600}' +
+      '.fa-more{padding:10px 14px;border-top:1px solid var(--line);text-align:center}' +
+      '.fa-foot{font-size:12px;color:var(--muted);line-height:1.5;padding:10px 16px;border-top:1px solid var(--line)}' +
+      '.fa-fresh{display:flex;flex-wrap:wrap;gap:6px 8px;padding:10px 16px 14px;border-top:1px solid var(--line)}.fa-f{font-size:12px;color:var(--muted);font-weight:600;border:1px solid var(--line);border-radius:8px;padding:4px 9px}.fa-f.fa-late{color:#8A5210;background:#FFF1DB;border-color:#F0C98A}.fa-f.fa-late b{color:#8A5210}' +
+      '@media(max-width:640px){.fa-row{grid-template-columns:62px minmax(0,1fr);padding:12px 12px 12px 10px}.fa-r{grid-column:2;text-align:left;display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}.fa-fig{margin-top:0}.fa-fig b,.fa-fig small{display:inline}.fa-fig small{margin-left:5px}}' +
       /* actu appro + prédictif */
       '.ac-pred{display:flex;align-items:center;gap:12px;padding:11px 14px;border-top:1px solid var(--line)}.ac-pred:first-child{border-top:0}' +
       '.ac-ic{width:34px;height:34px;border-radius:10px;color:#fff;display:grid;place-items:center;font-size:15px;font-weight:800;flex:none}' +
