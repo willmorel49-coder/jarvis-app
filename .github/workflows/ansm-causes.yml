@@ -1,0 +1,54 @@
+name: Veille appro · pourquoi les ruptures arrivent (causes ANSM)
+
+# Robot GRATUIT : interroge l'API publique du portail Datamed de l'ANSM (data.ansm.sante.fr,
+# requête GraphQL reprise du dépôt officiel de l'ANSM) → causes de rupture, mesures, classes
+# thérapeutiques les plus touchées, par année. Les chiffres sont ANNUELS et bougent peu :
+# un passage par semaine suffit.
+# Écrit crm/v2/ansm-causes.json. Aucune clé, aucun coût.
+# ⚠️ Le script sort en ERREUR (et laisse le fichier intact) si l'ANSM répond vide, en erreur,
+# ou avec moins d'années qu'avant : le robot passe alors au rouge au lieu de publier du vide.
+
+on:
+  schedule:
+    - cron: '29 5 * * 1'   # chaque lundi (données annuelles, qui bougent lentement)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ansm-causes
+  cancel-in-progress: false
+
+jobs:
+  ansm-causes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Recalculer les causes de rupture ANSM
+        run: python3 generate_ansm_causes.py
+      - name: Committer si changement
+        run: |
+          git config user.name  "JARVIS copilote"
+          git config user.email "actions@users.noreplace.github.com"
+          git add crm/v2/ansm-causes.json
+          if git diff --cached --quiet; then
+            echo "Pas de changement."
+          else
+            git commit -m "data(veille): causes de rupture ANSM $(date -u +%Y-%m-%d)"
+            # 24 robots poussent sur le meme depot et GitHub livre leurs executions
+            # planifiees en paquet : une seule reprise ne suffit pas (le 03/08, ansm-dispo,
+            # has et nouveautes ont perdu leur journee). On retente, en se remettant a jour
+            # sur la branche courante, et on echoue BRUYAMMENT si tout est refuse.
+            pousse=0
+            for essai in 1 2 3 4 5; do
+              if git push; then pousse=1; break; fi
+              echo "push refuse (tentative $essai/5) — un autre robot est passe, rattrapage"
+              git pull --rebase --autostash origin "$GITHUB_REF_NAME" || exit 1
+              sleep $(( essai * 5 + RANDOM % 10 ))
+            done
+            [ "$pousse" = 1 ] || { echo "ECHEC : 5 tentatives de push refusees"; exit 1; }
+          fi

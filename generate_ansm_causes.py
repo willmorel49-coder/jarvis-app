@@ -21,11 +21,13 @@ traitements), les données sont agrégées et publiques, et l'ANSM est citée à
 
 Écrit crm/v2/ansm-causes.json. Aucune dépendance : urllib seul.
 """
-import io, os, json, ssl, datetime, urllib.request
+import io, os, sys, json, ssl, datetime, urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SORTIE = os.path.join(HERE, "crm", "v2", "ansm-causes.json")
-API = "https://data.ansm.sante.fr/api/graphql"
+# Chemin de sortie : 1er argument s'il est donné (essais hors dépôt), sinon le fichier du CRM.
+SORTIE = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "crm", "v2", "ansm-causes.json")
+EXISTANT = os.path.join(HERE, "crm", "v2", "ansm-causes.json")
+API = os.environ.get("ANSM_API_URL", "https://data.ansm.sante.fr/api/graphql")   # variable : essais des gardes-fous
 
 # Requête reprise TELLE QUELLE du dépôt officiel de l'ANSM (queries.graphql, query
 # GlobalRuptures). Ne pas l'inventer : le schéma refuse tout champ deviné — 27 noms
@@ -67,14 +69,19 @@ def interroge():
     return (d.get("data") or {}).get("getGlobalShortages")
 
 
+def refuse(motif):
+    # ⚠️ Sortie en ERREUR (code 1) : le robot GitHub passe au rouge au lieu d'avoir l'air
+    # d'avoir réussi, et le fichier existant n'est jamais touché.
+    print("REFUSÉ, fichier existant conservé :", motif)
+    return 1
+
+
 def main():
     g = interroge()
     if not g:
-        if os.path.exists(SORTIE):
-            print("fichier existant conservé (aucune écriture à la baisse)")
-            return 0
-        print("aucune donnée et aucun fichier existant — rien à écrire")
-        return 1
+        return refuse("l'ANSM n'a rien rendu d'exploitable")
+    if not (g.get("shortagesCausesPerYear") and g.get("shortagesPerYear")):
+        return refuse("réponse vide (causes ou décompte annuel absents)")
 
     annees = sorted({x["year"] for x in (g.get("shortagesCausesPerYear") or [])})
     # ⚠️ Une année incomplète passe pour un EFFONDREMENT des ruptures. Mesuré le
@@ -133,9 +140,30 @@ def main():
         "classes": classes,
         "atc": atc,
     }
-    os.makedirs(os.path.dirname(SORTIE), exist_ok=True)
-    with io.open(SORTIE, "w", encoding="utf-8") as f:
+    # Gardes : on ne publie jamais moins que ce qui est déjà en ligne.
+    if not causes.get(str(derniere)):
+        return refuse(f"aucune cause pour l'année de référence {derniere}")
+    if os.path.exists(EXISTANT):
+        try:
+            avant = json.load(io.open(EXISTANT, encoding="utf-8"))
+        except Exception:
+            avant = None
+        if avant:
+            if len(out["annees"]) < len(avant.get("annees", [])):
+                return refuse("moins d'années qu'avant")
+            if len(out["parAn"]) < len(avant.get("parAn", [])):
+                return refuse("moins d'années de décompte qu'avant")
+            if len(causes.get(str(derniere), [])) < len(avant.get("causes", {}).get(str(avant.get("derniere_complete")), [])) // 2:
+                return refuse("liste des causes de l'année de référence anormalement courte")
+    os.makedirs(os.path.dirname(os.path.abspath(SORTIE)), exist_ok=True)
+    tmp = SORTIE + ".tmp"
+    with io.open(tmp, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
+    os.replace(tmp, SORTIE)
+    # Relecture de ce qui vient d'être écrit avant de dire que c'est fait.
+    with io.open(SORTIE, encoding="utf-8") as f:
+        if json.load(f).get("generated") != out["generated"]:
+            return refuse("la relecture du fichier écrit ne correspond pas")
 
     print(f"écrit : {SORTIE} ({os.path.getsize(SORTIE)/1024:.0f} Ko)")
     print(f"années couvertes : {annees[0]} → {annees[-1]} · dernière COMPLÈTE : {derniere}"
