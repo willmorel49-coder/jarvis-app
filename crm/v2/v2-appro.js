@@ -2566,7 +2566,7 @@
         var cips = x.cips || [], s = faStock(cips), alt = (x.cips_dci || []).length ? faStock(x.cips_dci) : null, held = s.n > 0 && s.ours;
         var fin = x.resolution ? faDA(x.resolution) : emaMois(x.resolution_txt);
         var wh = (enCours ? 'Pénurie européenne en cours' : resolu ? 'Pénurie européenne résolue' : 'Commercialisation arrêtée (EMA)') +
-          (x.inn ? ' · substance : ' + x.inn : '') + (enCours && fin ? ' · résolution attendue : ' + fin : enCours ? ' · date de résolution non annoncée' : '') +
+          (x.inn ? ' · substance : ' + (x.inn_fr || x.inn) : '') + (enCours && fin ? ' · résolution attendue : ' + fin : enCours ? ' · date de résolution non annoncée' : '') +
           (x.alternatives === 'Yes' ? ' · des alternatives existent' : x.alternatives === 'No' ? ' · aucune alternative' : '');
         var im = s.n ? faStockTxt(s) : 'Stock inconnu — aucune référence du catalogue rattachée avec certitude';
         if (alt && alt.known) im += ' · même substance, autres marques : ' + fmt(alt.u) + ' u. en stock';
@@ -2574,7 +2574,9 @@
           // j ne sert qu'au classement : une pénurie en cours touchant notre stock compte « aujourd'hui », sinon « ce mois »
           j: resolu ? jMaj : (held ? 0 : -15),
           jl: resolu ? 'Résolue' : enCours ? 'Active' : 'Arrêt', js: resolu ? 'le ' + faDA(x.updated) : x.start ? (x.start_is_pub ? 'publiée le ' : 'depuis le ') + faDA(x.start) : '',
-          ti: x.name, cip: s.n ? s.best : '', ours: held, wh: wh, im: im,
+          ti: x.name_fr || x.name, cip: s.n ? s.best : '', ours: held, wh: wh, im: im,
+          // la fiche EMA de CETTE pénurie : adresse lue dans la donnée, acceptée seulement sur le site de l'EMA
+          lnk: /^https:\/\/www\.ema\.europa\.eu\//.test(String(x.url || '')) ? x.url : '',
           vb: resolu ? 'Reprendre les achats' : arret ? 'Chercher une alternative' : held ? 'Sécuriser' : 'Surveiller', fig: held ? faCovFig(s) : null,
           src: 'EMA · ' + (x.updated ? 'fiche du ' + faDA(x.updated) : 'relevé du ' + faDA(String(_emaPenData.generated || '').slice(0, 10))) });
       });
@@ -2615,7 +2617,7 @@
     var vis = _faAll ? shown : shown.slice(0, FA_MAX);
     var rows = vis.map(function (e) {
       var inner = '<span class="fa-d"><b>' + esc(e.jl) + '</b><small>' + esc(e.js) + '</small></span>' +
-        '<span class="fa-m"><span class="fa-t">' + esc(e.ti) + '</span><span class="fa-w">' + esc(e.wh) + '</span><span class="fa-i">' + esc(e.im) + '</span><span class="fa-s">Source : ' + esc(e.src) + '</span></span>' +
+        '<span class="fa-m"><span class="fa-t">' + esc(e.ti) + '</span><span class="fa-w">' + esc(e.wh) + '</span><span class="fa-i">' + esc(e.im) + '</span>' + (e.lnk ? '<a class="fa-s fa-lk" href="' + esc(e.lnk) + '" target="_blank" rel="noopener" tabindex="0" onclick="event.stopPropagation()" aria-label="Ouvrir la page de cette pénurie sur le site de l’EMA (nouvel onglet)">Source : ' + esc(e.src) + ' ↗</a>' : '<span class="fa-s">Source : ' + esc(e.src) + '</span>') + '</span>' +
         '<span class="fa-r"><span class="fa-vb fa-v-' + (e.sub === 'hausse' ? 'hausse' : e.t) + '">' + esc(e.vb) + '</span>' + (e.fig ? '<span class="fa-fig"><b>' + esc(e.fig[0]) + '</b><small>' + esc(e.fig[1]) + '</small></span>' : '') + '</span>';
       if (e.items) {
         var subs = e.items.map(function (x) { return '<button type="button" class="fa-sub" onclick="V2.approTicket(\'' + esc(x.cip) + '\')"><span>' + esc(x.ti) + '</span><span>' + (x.s.known ? fmt(x.s.u) + ' u.' : 'stock inconnu') + (x.eur > 0 ? ' · ' + fmt(Math.round(x.eur)) + FA_EUR : '') + '</span></button>'; }).join('');
@@ -2624,6 +2626,8 @@
           '<details class="fa-det"><summary>Voir les ' + e.items.length + ' références</summary>' + subs + '</details><span class="fa-s">Source : ' + esc(e.src) + '</span></span>' +
           '<span class="fa-r"><span class="fa-vb fa-v-' + (e.sub === 'hausse' ? 'hausse' : e.t) + '">' + esc(e.vb) + '</span>' + (e.fig ? '<span class="fa-fig"><b>' + esc(e.fig[0]) + '</b><small>' + esc(e.fig[1]) + '</small></span>' : '') + '</span></div>';
       }
+      // un lien ne peut pas vivre dans un <button> : la ligne devient alors un bloc cliquable et activable au clavier
+      if (e.cip && e.lnk) return '<div class="fa-row fa-k-' + e.t + '" role="button" tabindex="0" onclick="V2.approTicket(\'' + esc(e.cip) + '\')" onkeydown="if(event.target===this&&(event.key===\'Enter\'||event.key===\' \')){event.preventDefault();V2.approTicket(\'' + esc(e.cip) + '\')}">' + inner + '</div>';
       return e.cip ? '<button type="button" class="fa-row fa-k-' + e.t + '" onclick="V2.approTicket(\'' + esc(e.cip) + '\')">' + inner + '</button>' : '<div class="fa-row fa-k-' + e.t + '">' + inner + '</div>';
     }).join('');
     var loading = faSources().some(function (s) { return s[2] < 2; });
@@ -3328,7 +3332,8 @@
       '.fa-pill{min-height:44px;display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--ip-ink-2);background:var(--card-2,#F6F8FB);border:1px solid var(--line-strong);border-radius:999px;padding:0 14px;cursor:pointer}' +
       '.fa-pill b{font-family:var(--mono);font-size:12.5px}.fa-pill.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}.fa-pill.z{color:var(--muted);border-style:dashed}' +
       '.fa-row{display:grid;grid-template-columns:78px minmax(0,1fr) minmax(120px,auto);gap:6px 14px;align-items:start;width:100%;min-height:44px;box-sizing:border-box;text-align:left;padding:12px 16px 12px 13px;border:0;border-top:1px solid var(--line);border-left:3px solid var(--line-strong);background:transparent;font:inherit;color:inherit}' +
-      'button.fa-row{cursor:pointer}button.fa-row:hover{background:var(--card-2,#F6F8FB)}' +
+      'button.fa-row,div.fa-row[role=button]{cursor:pointer}button.fa-row:hover,div.fa-row[role=button]:hover{background:var(--card-2,#F6F8FB)}' +
+      '.fa-s.fa-lk{display:inline-flex;align-items:center;min-height:44px;margin-top:0;color:#0034A0;font-weight:600;text-decoration:underline;text-underline-offset:2px}.fa-lk:focus-visible,div.fa-row[role=button]:focus-visible{outline:2px solid #0050E6;outline-offset:2px}' +
       '.fa-k-prix{border-left-color:#D5573B}.fa-k-rupture{border-left-color:#C77700}.fa-k-retour{border-left-color:#1E9E6A}.fa-k-gener{border-left-color:#6D5AE6}.fa-k-has{border-left-color:#0050E6}.fa-k-epi{border-left-color:#0E7C86}.fa-k-lots{border-left-color:#B02A1E}.fa-k-ema{border-left-color:#7A5C00}' +
       '.fa-d b{display:block;font-size:14px;font-weight:800;font-family:var(--mono);color:var(--ip-ink)}.fa-d small{display:block;font-size:12px;color:var(--muted);font-weight:600;line-height:1.3}' +
       '.fa-m{min-width:0}.fa-m>span{display:block}.fa-t{font-size:13.5px;font-weight:800;color:var(--ip-ink);line-height:1.3}.fa-w{font-size:12.5px;color:var(--ip-ink-2);margin-top:2px;line-height:1.4}.fa-i{font-size:12.5px;font-weight:600;color:var(--ip-ink);margin-top:3px;line-height:1.4}.fa-s{font-size:12px;color:var(--muted);margin-top:3px}' +

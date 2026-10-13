@@ -17,6 +17,15 @@ Rien n'est inventé : sans correspondance, les deux listes restent vides.
 GARDE-FOU : téléchargement en échec, fichier illisible ou moins de MIN_LIGNES lignes
 → sortie en erreur (code 1) SANS toucher au JSON existant.
 
+SUBSTANCES EN FRANÇAIS (13/10/2026) : le JSON garde l'original anglais (`inn`, `name`) et gagne
+`inn_fr` / `name_fr`. Un nom français n'est accepté que s'il EXISTE dans la Base de Données
+Publique des Médicaments (fichier des compositions CIS_COMPO_bdpm.txt) après normalisation
+(casse, accents, ponctuation, ordre des mots). Les règles de correspondance (insulin → insuline,
+…in → …ine, …) ne servent qu'à PROPOSER un candidat ; la BDPM tranche. Association : composant par
+composant, un seul échec = toute la ligne reste en anglais. BDPM injoignable : les pénuries sont
+écrites quand même, en anglais, et la sortie le dit (source d'appoint, jamais bloquante).
+robots.txt de la BDPM contrôlé le 13/10/2026 : « Allow: / ».
+
 Écrit crm/v2/ema-penuries.json. Python 3.9 · urllib + openpyxl (comme generate_ema_generiques.py).
 """
 import io
@@ -26,9 +35,10 @@ import sys
 import json
 import datetime
 import unicodedata
+import difflib
+import itertools
+import collections
 import urllib.request
-
-import openpyxl
 
 URL = os.environ.get("EMA_PENURIES_URL",
                      "https://www.ema.europa.eu/en/documents/report/medicines-output-shortages-report_en.xlsx")
@@ -36,7 +46,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "crm", "v2", "ema-penuries.json")
 PIVOT = os.path.join(HERE, "crm", "v2", "pivot.json")
 PRODSTATS = os.path.join(HERE, "crm", "v2", "prod-stats-data.js")
+BDPM_BASE = os.environ.get("BDPM_BASE_URL", "https://base-donnees-publique.medicaments.gouv.fr/download/file/")
 MIN_LIGNES = 20
+MIN_SUBSTANCES_BDPM = 2000      # une BDPM qui en rend moins est douteuse : on ne traduit rien
+SEUIL_PONT = 0.8                # ressemblance minimale pour proposer un nom pris dans la composition d'une spécialité
 MAX_ALT = 40
 
 
@@ -94,7 +107,154 @@ def rapprocher(cat, nom, inn):
     return exact, alt[:MAX_ALT]
 
 
+# ── Substances en français (BDPM) ────────────────────────────────────────────────────────────
+VIDES_FR = {"de", "d", "du", "des", "la", "le", "l"}
+# Quelques mots dont le français n'est pas « mot anglais + e » ; ils ne servent qu'à proposer un candidat.
+LEXIQUE = {"human": ["humain", "humaine"], "normal": ["normal", "normale"], "sodium": ["sodique", "sodium"],
+           "oxide": ["oxyde"], "trioxide": ["trioxyde"], "dichloride": ["dichlorure"], "chloride": ["chlorure"],
+           "activated": ["active"], "inactivated": ["inactive"], "adsorbed": ["adsorbe"], "inhibitor": ["inhibiteur"],
+           "vaccine": ["vaccin"], "hormone": ["hormone"]}
+
+
+def fetch_texte(url):
+    """Télécharge un fichier BDPM (encodage variable selon le fichier : UTF-8 ou latin-1)."""
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=180) as r:
+        raw = r.read()
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return raw.decode("latin-1", "ignore")
+
+
+def cle(s):
+    """Clé de comparaison : mots sans accents ni casse, sans mots vides, triés (l'ordre varie : « acide X » / « X (acide) »)."""
+    return tuple(sorted(m for m in mots(s) if m not in VIDES_FR))
+
+
+def charger_bdpm():
+    """(noms, par_cis, cis_par_marque) ou None. noms : clé -> nom BDPM le plus employé."""
+    try:
+        compo = fetch_texte(BDPM_BASE + "CIS_COMPO_bdpm.txt")
+        spec = fetch_texte(BDPM_BASE + "CIS_bdpm.txt")
+    except Exception as e:
+        print("AVERTISSEMENT : BDPM injoignable (%s) — substances laissées en anglais" % e)
+        return None
+    cnt = collections.Counter()
+    par_cis = collections.defaultdict(set)
+    for ln in compo.splitlines():
+        f = ln.split("\t")
+        if len(f) < 4 or not f[3].strip():
+            continue
+        nom = f[3].strip()
+        cnt[nom] += 1
+        par_cis[f[0].strip()].add(nom)
+    noms = {}
+    for nom, _ in cnt.most_common():
+        noms.setdefault(cle(nom), nom)
+    if len(noms) < MIN_SUBSTANCES_BDPM:
+        print("AVERTISSEMENT : BDPM douteuse (%d substances < %d) — substances laissées en anglais" % (len(noms), MIN_SUBSTANCES_BDPM))
+        return None
+    marque = collections.defaultdict(set)
+    for ln in spec.splitlines():
+        f = ln.split("\t")
+        if len(f) > 1 and mots(f[1]):
+            marque[mots(f[1])[0]].add(f[0].strip())
+    return noms, par_cis, marque
+
+
+def candidats_mot(w):
+    out = list(LEXIQUE.get(w, []))
+    out += [w, w + "e"]
+    if w.endswith("ic") and len(w) > 5:
+        out.append(w[:-1] + "que")        # clavulanic → clavulanique
+    if w.endswith("s") and len(w) > 4:
+        out += [w[:-1], w[:-1] + "e"]
+    return list(dict.fromkeys(out))
+
+
+def par_regles(noms, comp):
+    """Propose des candidats (règles régulières) ; seul un candidat PRÉSENT dans la BDPM est rendu."""
+    mt = mots(comp)
+    if not mt or len(mt) > 5:
+        return None
+    trouves = {}
+    for combo in itertools.islice(itertools.product(*[candidats_mot(w) for w in mt]), 600):
+        k = tuple(sorted(c for c in combo if c not in VIDES_FR))
+        if k in noms:
+            trouves[k] = noms[k]
+    if len(trouves) == 1:
+        return list(trouves.values())[0]
+    k0 = tuple(sorted(mt))
+    return trouves.get(k0)          # plusieurs candidats : on ne garde que la forme identique à l'anglais, sinon rien
+
+
+def par_pont(par_cis, cis, comp):
+    """Pont par spécialité : parmi les substances de la composition des CIS liés à la ligne, la seule qui ressemble."""
+    e = " ".join(cle(comp))
+    meilleur = []
+    for n in {n for c in cis for n in par_cis.get(c, ())}:
+        r = difflib.SequenceMatcher(None, e, " ".join(cle(n))).ratio()
+        if r >= SEUIL_PONT:
+            meilleur.append((r, n))
+    meilleur.sort(reverse=True)
+    if meilleur and (len(meilleur) == 1 or meilleur[0][0] - meilleur[1][0] >= 0.05):
+        return meilleur[0][1]
+    return None
+
+
+def composants(inn):
+    """Sépare « a;b », « a / b », « a, b » en dehors des parenthèses."""
+    out, cur, prof = [], "", 0
+    for ch in inn:
+        prof += (ch == "(") - (ch == ")")
+        if prof <= 0 and ch in ";/,":
+            out.append(cur)
+            cur = ""
+        else:
+            cur += ch
+    out.append(cur)
+    return [c.strip() for c in out if c.strip()]
+
+
+def traduire(bdpm, inn, cis=(), pont=True):
+    """(texte français, [sources]) ou (None, raison). Tout ou rien : un composant sans équivalent = ligne en anglais."""
+    if not bdpm or not inn:
+        return None, ["pas de substance" if bdpm else "BDPM indisponible"]
+    noms, par_cis, _ = bdpm
+    res, src = [], []
+    for c in composants(inn):
+        fr, how = par_regles(noms, c), "BDPM (règle)"
+        if fr is None and pont and cis:
+            fr, how = par_pont(par_cis, cis, c), "pont CIS"
+        if fr is None:
+            return None, ["« %s » absent de la BDPM" % c]
+        res.append(fr.lower())
+        src.append(how)
+    return " ; ".join(res), src
+
+
+def cis_de(bdpm, nom, cips, pivot_data):
+    """CIS reliés à la ligne : ceux des références rapprochées (table pivot) + ceux dont la marque est celle de l'EMA."""
+    _, _, marque = bdpm
+    out = {str(pivot_data[c]["cis"]) for c in cips if c in pivot_data and pivot_data[c].get("cis")}
+    for b in re.split(r"[/,]", nom):
+        m = mots(b)
+        if m and len(m[0]) >= 4:
+            out |= marque.get(m[0], set())
+    return out
+
+
+def pivot_data():
+    try:
+        piv = json.load(io.open(PIVOT, "r", encoding="utf-8"))
+        return piv.get("data", piv)
+    except Exception:
+        return {}
+
+
 def lire(contenu):
+    import openpyxl
     wb = openpyxl.load_workbook(io.BytesIO(contenu), data_only=True)
     rows = list(wb.active.iter_rows(values_only=True))
     hidx = next((i for i, r in enumerate(rows[:30]) if r and any(str(c).strip() == "Medicine affected" for c in r if c)), None)
@@ -126,15 +286,26 @@ def main():
         print("ERREUR : %d lignes lues (< %d) — JSON existant conservé" % (len(lignes), MIN_LIGNES))
         return 1
     cat = catalogue()
+    bdpm = charger_bdpm()
+    piv = pivot_data()
     items = []
+    trace = []
     for nom, r, g in lignes:
         inn = str(g(r, "International non-proprietary") or "").strip()
         exp = g(r, "Expected resolution date")
         exp_txt = g(r, "Expected resolution")
         cips, alt = rapprocher(cat, nom, inn)
         pub = iso_date(g(r, "First published"))
+        cis = cis_de(bdpm, nom, cips, piv) if bdpm else ()
+        inn_fr, src = traduire(bdpm, inn, cis) if inn else (None, ["pas de substance"])
+        name_fr = None
+        if bdpm and (not inn or mots(nom) == mots(inn)):          # le titre n'est qu'une substance : on le traduit aussi
+            name_fr = traduire(bdpm, nom, pont=False)[0]
+            if name_fr and not inn:
+                src = ["titre : BDPM (règle)"]
+        trace.append((nom, inn, inn_fr, name_fr, src))
         items.append({
-            "name": nom, "inn": inn,
+            "name": nom, "inn": inn, "inn_fr": inn_fr or "", "name_fr": (name_fr[:1].upper() + name_fr[1:]) if name_fr else "",
             "status": str(g(r, "Supply shortage status") or "").strip(),
             "start": iso_date(g(r, "Start of shortage")) or pub,
             "start_is_pub": not iso_date(g(r, "Start of shortage")),
@@ -152,6 +323,13 @@ def main():
     os.replace(tmp, OUT)
     n_us = sum(1 for x in items if x["cips"])
     print("OK · %d lignes · %d avec une référence du catalogue (marque + substance)" % (len(items), n_us))
+    n_tr = sum(1 for x in items if x["inn_fr"] or x["name_fr"])
+    print("Substances : %d lignes, %d traduites (BDPM), %d gardées en anglais%s" %
+          (len(items), n_tr, len(items) - n_tr, "" if bdpm else " — BDPM indisponible, rien traduit"))
+    if os.environ.get("EMA_TRACE"):
+        with io.open(os.environ["EMA_TRACE"], "w", encoding="utf-8") as f:
+            for t in trace:
+                f.write("\t".join([t[0], t[1], t[2] or "", t[3] or "", " + ".join(t[4])]) + "\n")
     for x in items[:3]:
         print("  %s | %s | %s | début %s | fin %s%s" % (x["name"][:28], x["inn"][:24], x["status"], x["start"], x["resolution"] or "-", x["resolution_txt"]))
     print("→ %s (%d o)" % (OUT, os.path.getsize(OUT)))
