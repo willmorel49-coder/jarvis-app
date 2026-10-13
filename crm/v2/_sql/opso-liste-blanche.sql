@@ -5,6 +5,8 @@
 -- Tout le reste (ventes complètes, bench/sagitta complets, pharma-fr-*, clients…) : refusé.
 -- 30/09/2026 soir : + opso-listing-2026.js (129 adhérents, titulaire/e-mail/tél.), sorti du dépôt public.
 -- 12/10/2026 : + offilog-cat-opso.js (prix catalogue seul de l'écran Offilog OPSO), réservé aux comptes de jarvis_acces_opso().
+-- 13/10/2026 : Arthur Le Houerou (commercial, restreint à ses ventes dans le CRM) voit l'espace OPSO « tout, comme
+-- Emmanuel » → un compte de jarvis_acces_opso() lit aussi le jeu de ventes OPSO, en plus du sien.
 -- Les autres comptes : règle inchangée (opso-acces-restreint.sql).
 -- Carte écran → fichier : jarvis-preuves/opso-acces-2026-09-30/carte-opso-donnees.md.
 create or replace function public.jarvis_peut_lire_protege(objet text)
@@ -20,6 +22,8 @@ as $function$
     when objet in ('opso-stats-data.js', 'opso-contrat-data.js', 'opso-offilog-acces.js',
                   'opso-listing-2026.js', 'offilog-cat-opso.js')
       then public.jarvis_acces_opso()
+    when objet like 'ventes/%' and public.jarvis_acces_opso()
+         and split_part(objet, '/', 2) = left(encode(sha256(convert_to('OPSO', 'UTF8')), 'hex'), 16) then true
     when public.jarvis_est_opso() then
       objet in ('offilog-best-prix.js', 'offilog-live-prix.js',
                 'opso-bench-conditions.js', 'opso-sagitta-cip.js')

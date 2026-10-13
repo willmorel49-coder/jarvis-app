@@ -34,7 +34,8 @@
   V2.ESCALE_COMMS = ['Guy', 'Tiffany', 'Philippe', 'Germain'];
   // 30/09/2026 — seuls comptes admis dans l'espace OPSO (opso/v2). claude-test = compte des preuves.
   // 01/10/2026 — Will : « Pascale Prieto doit avoir accès à l'app OPSO » (direction régionale).
-  V2.OPSO_ACCES = ['emmanuel.noblanc@normandiepharma.fr', 'william.morel@me.com', 'pascale.prieto@integralpharma.fr', 'claude-test@integralpharma.fr'];
+  // 13/10/2026 — Will : Arthur Le Houerou y entre avec son compte du CRM (même e-mail, même mot de passe).
+  V2.OPSO_ACCES = ['emmanuel.noblanc@normandiepharma.fr', 'william.morel@me.com', 'pascale.prieto@integralpharma.fr', 'arthur.lehouerou@integralpharma.fr', 'claude-test@integralpharma.fr'];
   V2.estCommEscale = function (c) { c = String(c || ''); return c === 'Escale' || V2.ESCALE_COMMS.indexOf(c) >= 0; };
   // ventes du commercial filtré (ou toutes)
   // 11/09/2026 — perf : mémorisé sur (V2.sales, V2.commFilter). Le Pilotage
@@ -234,8 +235,12 @@
       // d'accès (docs/supabase/ventes-par-commercial.sql) lui refuse les fichiers complets.
       // Même critère que cette règle : `commercial` BRUT non vide et pas voit_tous_commerciaux.
       V2._dossierVentes = null; V2._dossierVentesConnu = false;
+      // 13/10/2026 — Will : dans l'espace OPSO, Arthur voit « tout, comme Emmanuel ». Un commercial
+      // restreint y charge donc le jeu OPSO (les adhérents), pas le sien ; dans le CRM, rien ne change.
+      // Même règle côté Supabase : jarvis_peut_lire_protege (_sql/opso-liste-blanche.sql).
+      var commJeu = (window.V2_BRAND && window.V2_BRAND.opso) ? 'OPSO' : commProfil;
       V2._dossierVentesPret = (commProfil.trim() && !V2.user.voitTousReel)
-        ? dossierVentes(commProfil) : Promise.resolve().then(function () { V2._dossierVentesConnu = true; });
+        ? dossierVentes(commJeu) : Promise.resolve().then(function () { V2._dossierVentesConnu = true; });
       // 24/09/2026 — `commercial` BRUT du profil : ouvre la bascule Intégral ↔ Escale
       // aux quatre commerciaux Escale (adresses @integralpharma.fr), dans les deux sens.
       V2.user.commEscale = V2.ESCALE_COMMS.indexOf(commProfil) >= 0;
