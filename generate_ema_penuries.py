@@ -23,7 +23,7 @@ Publique des Médicaments (fichier des compositions CIS_COMPO_bdpm.txt) après n
 (casse, accents, ponctuation, ordre des mots). Les règles de correspondance (insulin → insuline,
 …in → …ine, …) ne servent qu'à PROPOSER un candidat ; la BDPM tranche. Association : composant par
 composant, un seul échec = toute la ligne reste en anglais. BDPM injoignable : les pénuries sont
-écrites quand même, en anglais, et la sortie le dit (source d'appoint, jamais bloquante).
+écrites quand même (source d'appoint, jamais bloquante) et la sortie le dit — voir GARDER LA VEILLE.
 robots.txt de la BDPM contrôlé le 13/10/2026 : « Allow: / ».
 
 TABLE DE SECOURS (13/10/2026, décision de Will : « Oui, la table ») : pour les quelques substances
@@ -32,7 +32,13 @@ sont PAS des noms officiels : ce sont des dénominations d'usage en pharmacie, u
 recours. Arbitrage : la BDPM gagne toujours ; la table ne sert que si la BDPM ne rend rien ; absent
 des deux = anglais gardé. Une ligne qui doit un nom à la table porte `fr_table` (liste des champs
 concernés : `inn_fr` et/ou `name_fr`) ; l'écran ignore ce champ. BDPM injoignable : la table ne sert pas
-(rien n'est traduit, comme avant).
+(voir GARDER LA VEILLE : les noms de la veille, déjà passés par la BDPM et la table, la remplacent).
+
+GARDER LA VEILLE (13/10/2026) : BDPM injoignable ou douteuse → le générateur relit le ema-penuries.json
+déjà en place (celui de la veille) AVANT de l'écraser et reprend `inn_fr`, `name_fr` et `fr_table` de la
+ligne de la veille, seulement si `name` ET `inn` (anglais) sont strictement identiques : une traduction ne se
+pose jamais sur une autre substance. Ligne nouvelle ou modifiée : anglais gardé. Fichier de la veille absent
+ou illisible : tout en anglais, sans plantage. La sortie dit combien de lignes ont été reprises.
 
 Écrit crm/v2/ema-penuries.json. Python 3.9 · urllib + openpyxl (comme generate_ema_generiques.py).
 """
@@ -130,8 +136,8 @@ LEXIQUE = {"human": ["humain", "humaine"], "normal": ["normal", "normale"], "sod
 TABLE_SUBSTANCES = {
     "human normal immunoglobulins": "immunoglobulines humaines normales",
     "human normal immunoglobulin": "immunoglobuline humaine normale",
-    "concentrate of proteolytic enzymes enriched in bromelain": "concentré d'enzymes protéolytiques enrichi en bromélaïne",
-    "parathyroid hormone": "hormone parathyroïdienne",
+    "concentrate of proteolytic enzymes enriched in bromelain": "concentré d'enzymes protéolytiques riches en bromélaïne",
+    "parathyroid hormone": "parathormone",
     "esmolol": "esmolol",
     "insulin human": "insuline humaine",
     "pancreas powder": "poudre de pancréas",
@@ -181,7 +187,7 @@ def charger_bdpm():
         compo = fetch_texte(BDPM_BASE + "CIS_COMPO_bdpm.txt")
         spec = fetch_texte(BDPM_BASE + "CIS_bdpm.txt")
     except Exception as e:
-        print("AVERTISSEMENT : BDPM injoignable (%s) — substances laissées en anglais" % e)
+        print("AVERTISSEMENT : BDPM injoignable (%s) — noms de la veille repris si possible" % e)
         return None
     cnt = collections.Counter()
     par_cis = collections.defaultdict(set)
@@ -196,7 +202,7 @@ def charger_bdpm():
     for nom, _ in cnt.most_common():
         noms.setdefault(cle(nom), nom)
     if len(noms) < MIN_SUBSTANCES_BDPM:
-        print("AVERTISSEMENT : BDPM douteuse (%d substances < %d) — substances laissées en anglais" % (len(noms), MIN_SUBSTANCES_BDPM))
+        print("AVERTISSEMENT : BDPM douteuse (%d substances < %d) — noms de la veille repris si possible" % (len(noms), MIN_SUBSTANCES_BDPM))
         return None
     marque = collections.defaultdict(set)
     for ln in spec.splitlines():
@@ -305,6 +311,21 @@ def cis_de(bdpm, nom, cips, pivot_data):
     return out
 
 
+def charger_veille():
+    """{(name, inn) -> ligne} du ema-penuries.json déjà en place ; {} si absent ou illisible. Une clé en double
+    dont les traductions diffèrent est écartée (on ne devine pas)."""
+    try:
+        veille = {}
+        tr = lambda y: (y.get("inn_fr"), y.get("name_fr"), y.get("fr_table"))
+        for x in json.load(io.open(OUT, "r", encoding="utf-8"))["items"]:
+            k = (x["name"], x["inn"])
+            veille[k] = x if k not in veille or (veille[k] and tr(veille[k]) == tr(x)) else None
+        return veille
+    except Exception as e:
+        print("AVERTISSEMENT : fichier de la veille illisible (%s) — rien à reprendre" % e)
+        return {}
+
+
 def pivot_data():
     try:
         piv = json.load(io.open(PIVOT, "r", encoding="utf-8"))
@@ -347,6 +368,8 @@ def main():
         return 1
     cat = catalogue()
     bdpm = charger_bdpm()
+    veille = {} if bdpm else charger_veille()      # lu AVANT l'écriture de OUT
+    n_veille = 0
     piv = pivot_data()
     items = []
     trace = []
@@ -368,6 +391,9 @@ def main():
             src = src + ["titre : table"] if inn else ["titre : table"]
         if bdpm and not name_fr and inn_fr:                            # 13/10/2026 : « Marque (substance) » → la parenthèse passe en français
             name_fr, src_nom = titre_parentheses(bdpm, nom, inn, cis)
+        v = veille.get((nom, inn))                                     # BDPM injoignable : noms de la veille, si name ET inn identiques
+        if v and (v.get("inn_fr") or v.get("name_fr")):
+            inn_fr, name_fr, n_veille = v.get("inn_fr") or None, v.get("name_fr") or None, n_veille + 1
         fr_table = [k for k, ok in (("inn_fr", inn_fr and "table" in src), ("name_fr", name_fr and "table" in src_nom)) if ok]
         trace.append((nom, inn, inn_fr, name_fr, src))
         items.append({
@@ -381,6 +407,8 @@ def main():
             "url": str(g(r, "Shortage URL") or "").strip(),
             "cips": cips, "cips_dci": alt,
         })
+        if v and v.get("fr_table") and (inn_fr or name_fr):
+            fr_table = list(v["fr_table"])
         if fr_table:
             items[-1]["fr_table"] = fr_table      # nom écrit à la main (table de secours), pas un nom officiel BDPM
     res = {"generated": datetime.date.today().isoformat(), "source": "EMA — European Medicines Agency (catalogue des pénuries)",
@@ -391,9 +419,12 @@ def main():
     os.replace(tmp, OUT)
     n_us = sum(1 for x in items if x["cips"])
     print("OK · %d lignes · %d avec une référence du catalogue (marque + substance)" % (len(items), n_us))
+    if not bdpm:
+        print("AVERTISSEMENT : BDPM indisponible — %d ligne(s) reprise(s) de la veille (noms français), %d en anglais" %
+              (n_veille, len(items) - n_veille))
     n_tr = sum(1 for x in items if x["inn_fr"] or x["name_fr"])
     print("Substances : %d lignes, %d traduites (BDPM ou table de secours), %d gardées en anglais%s" %
-          (len(items), n_tr, len(items) - n_tr, "" if bdpm else " — BDPM indisponible, rien traduit"))
+          (len(items), n_tr, len(items) - n_tr, "" if bdpm else " — BDPM indisponible"))
     if os.environ.get("EMA_TRACE"):
         with io.open(os.environ["EMA_TRACE"], "w", encoding="utf-8") as f:
             for t in trace:

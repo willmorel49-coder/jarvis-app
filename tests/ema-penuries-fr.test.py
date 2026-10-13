@@ -59,7 +59,7 @@ verifie("table : la BDPM gagne quand elle a un nom", gep.traduire(bdpm_t, "mecas
 del T["mecasermin"]
 verifie("table : sans entrée ni BDPM → anglais", gep.traduire(bdpm, "mecasermin")[0], None)
 T["mecasermin"] = sauve
-verifie("table : la BDPM n'a rien → la table sert", gep.traduire(bdpm, "parathyroid hormone"), ("hormone parathyroïdienne", ["table"]))
+verifie("table : la BDPM n'a rien → la table sert", gep.traduire(bdpm, "parathyroid hormone"), ("parathormone", ["table"]))
 verifie("table : esmolol (BDPM n'a que le sel) → table", gep.traduire(bdpm, "esmolol"), ("esmolol", ["table"]))
 verifie("table : substance inconnue des deux → anglais", gep.traduire(bdpm, "zorbaxine")[0], None)
 verifie("table : tout ou rien (un composant inconnu)", gep.traduire(bdpm, "insulin human;zorbaxine")[0], None)
