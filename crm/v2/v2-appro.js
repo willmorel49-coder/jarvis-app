@@ -2484,7 +2484,7 @@
           var jLim = r.approx === 'début' ? jOf(new Date(r.annee, r.mois - 1, 10)) : r.approx === 'mi' ? jOf(new Date(r.annee, r.mois - 1, 20)) : jFin;
           var jEst = Math.max(0, jOf(new Date(r.annee, r.mois - 1, { 'début': 5, mi: 15, fin: 26 }[r.approx] || 15)));
           var cetteFois = j0 <= 0 && jFin >= 0, moisCourt = MOIS_L[r.mois - 1];
-          if (jLim >= 0 && j0 <= 60) add({ t: 'retour', sub: 'prevu', j: jEst, jl: r.approx === 'trimestre' ? retourLabel(r) : cetteFois ? 'Ce mois' : cap(moisCourt), js: retourLabel(r), ti: nom, cip: base.cip, ours: s.ours,
+          if (jLim >= 0 && j0 <= 60) add({ t: 'retour', sub: 'prevu', j: jEst, jl: r.approx === 'trimestre' ? retourLabel(r).split(' ')[0] : cetteFois ? 'Ce mois' : cap(moisCourt), js: retourLabel(r), ti: nom, cip: base.cip, ours: s.ours,
             wh: 'Retour à disposition annoncé : ' + retourLabel(r) + (rup ? ' (rupture en cours)' : ' (tension en cours)'),
             im: faStockTxt(s), vb: 'Planifier la reprise', fig: faCovFig(s), src: base.src });
           else if (jLim < 0 && jLim >= -FA_DEPASSE_J) add({ t: 'retour', sub: 'depasse', j: jLim, jl: 'Dépassé', js: retourLabel(r), ti: nom, cip: base.cip, ours: s.ours,
