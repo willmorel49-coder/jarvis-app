@@ -129,6 +129,10 @@ function monter(contenu) {
       } else if (/FILE=clients-actifs\.js/.test(texte)) {
         // Idem pour clientsactifs, soeur auto-ajoutée de 'wml' depuis la même date.
         win.CLIENTS_ACTIFS = {};
+      } else if (/FILE=marge-regles-prive\.js/.test(texte)) {
+        // Idem pour margeprive (règle de marge privée du Pilotage), soeur
+        // auto-ajoutée de 'wml' depuis le 11/10/2026.
+        win.MARGE_REGLES_PRIVE = {};
       } else {
         // Fichier protégé sous test (sagitta, establishments, une tranche de
         // ventes wml-ventes-NN.js…) : le scénario du test s'applique à lui.
