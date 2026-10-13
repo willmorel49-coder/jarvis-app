@@ -2238,6 +2238,19 @@
         .catch(function () { _emaState = 2; });
     } catch (e) { _emaState = 2; }
   }
+  // Pénuries européennes (catalogue EMA, robot quotidien) — alimente le fil d'anticipation
+  var _emaPenState = 0, _emaPenData = null;
+  function ensureEmaPen() {
+    if (_emaPenData || _emaPenState) return;
+    _emaPenState = 1;
+    try {
+      var day = new Date().toISOString().slice(0, 10);
+      fetch('ema-penuries.json?d=' + day, { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { _emaPenData = j || {}; _emaPenState = 2; approRerender(); })
+        .catch(function () { _emaPenState = 2; });
+    } catch (e) { _emaPenState = 2; }
+  }
   function prixCard() {
     if (!_prixData) return '';
     var d = _prixData, drops = d.drops || [];
@@ -2362,8 +2375,10 @@
   var FA_GROUPE_ECART = 50;       // € : sous cet écart individuel (prix public × stock), les mouvements de même sens, date et % se regroupent en UNE ligne
   var FA_DEPASSE_J = 60;          // un retour annoncé dépassé reste signalé 60 jours, tant que la rupture ou la tension dure
   var FA_PROCHE_J = [7, 30];      // « enjeu comparable de date » : on classe par € à l'intérieur de ces tranches de jours
+  var FA_EMA_RESOLU_J = 30;       // une pénurie européenne résolue depuis plus de 30 jours ne s'affiche plus
+  var FA_EMA_ARRET_J = 90;        // un arrêt de commercialisation reste signalé 90 jours après la dernière mise à jour de la fiche
   var FA_EUR = '€';               // collé au nombre : la police à chasse fixe des chiffres élargit toute espace
-  var FA_TYPES = [['prix', 'Prix'], ['rupture', 'Ruptures'], ['retour', 'Retours'], ['gener', 'Génériques'], ['has', 'Remboursements'], ['epi', 'Épidémies'], ['lots', 'Lots rappelés']];
+  var FA_TYPES = [['prix', 'Prix'], ['rupture', 'Ruptures'], ['retour', 'Retours'], ['gener', 'Génériques'], ['has', 'Remboursements'], ['epi', 'Épidémies'], ['lots', 'Lots rappelés'], ['ema', 'Pénuries UE']];
   V2.approFa = function (t) { _faType = t; _faAll = false; if (V2.render) V2.render(); };
   V2.approFaAll = function (tout) { _faAll = !!tout; if (V2.render) V2.render(); };
   // écart en jours entiers entre deux minuits locaux (daysTo arrondit depuis l'heure courante : faux de ±1 j)
@@ -2413,6 +2428,12 @@
       .replace('Cote', 'Côte').replace('-d-', '-d’').replace(/^Ile/, 'Île');
   }
   function faTitreAnsm(i) { return cap(String(i.spec || '').replace(/\s*[–-]\s*\[.*$/, '')); }
+  var FA_MOIS_EN = { january: 'janvier', february: 'février', march: 'mars', april: 'avril', may: 'mai', june: 'juin', july: 'juillet', august: 'août', september: 'septembre', october: 'octobre', november: 'novembre', december: 'décembre' };
+  function emaMois(t) {   // « March 2027 » → « mars 2027 » ; « 2027 » reste « 2027 »
+    t = String(t || '').trim(); if (!t) return '';
+    var m = t.match(/^([A-Za-z]+)\s+(\d{4})$/);
+    return m && FA_MOIS_EN[m[1].toLowerCase()] ? FA_MOIS_EN[m[1].toLowerCase()] + ' ' + m[2] : /^\d{4}$/.test(t) ? t : '';
+  }
   function faEvents() {
     var ev = [], idx = {};
     try { idx = cipIndex(); } catch (e) {}
@@ -2533,6 +2554,30 @@
           fig: [fmt(s.u) + ' u.', 'à contrôler'], src: 'ANSM · décision du ' + fdate(x.d) });
       });
     } catch (e) {}
+    // 8 · PÉNURIES EUROPÉENNES (catalogue EMA). Rapprochement = marque ET substance (fait par le robot) ; sinon stock inconnu.
+    try {
+      if (_emaPenData && _emaPenData.items) _emaPenData.items.forEach(function (x) {
+        var st = String(x.status || ''), enCours = /ongoing/i.test(st), resolu = /resolved/i.test(st), arret = /discontinued/i.test(st);
+        var jMaj = faJ(x.updated);
+        if (resolu && (jMaj == null || jMaj > 0 || jMaj < -FA_EMA_RESOLU_J)) return;
+        if (arret && (jMaj == null || jMaj < -FA_EMA_ARRET_J)) return;
+        if (!enCours && !resolu && !arret) return;
+        var cips = x.cips || [], s = faStock(cips), alt = (x.cips_dci || []).length ? faStock(x.cips_dci) : null, held = s.n > 0 && s.ours;
+        var fin = x.resolution ? fdate(x.resolution) : emaMois(x.resolution_txt);
+        var wh = (enCours ? 'Pénurie européenne en cours' : resolu ? 'Pénurie européenne résolue' : 'Commercialisation arrêtée (EMA)') +
+          (x.inn ? ' · substance : ' + x.inn : '') + (enCours && fin ? ' · résolution attendue : ' + fin : enCours ? ' · date de résolution non annoncée' : '') +
+          (x.alternatives === 'Yes' ? ' · des alternatives existent' : x.alternatives === 'No' ? ' · aucune alternative' : '');
+        var im = s.n ? faStockTxt(s) : 'Stock inconnu — aucune référence du catalogue rattachée avec certitude';
+        if (alt && alt.known) im += ' · même substance, autres marques : ' + fmt(alt.u) + ' u. en stock';
+        add({ t: 'ema', sub: enCours ? 'cours' : resolu ? 'resolu' : 'arret',
+          // j ne sert qu'au classement : une pénurie en cours touchant notre stock compte « aujourd'hui », sinon « ce mois »
+          j: resolu ? jMaj : (held ? 0 : -15),
+          jl: resolu ? 'Résolue' : enCours ? 'Active' : 'Arrêt', js: resolu ? 'le ' + fdate(x.updated) : x.start ? (x.start_is_pub ? 'publiée le ' : 'depuis le ') + fdate(x.start) : '',
+          ti: x.name, cip: s.n ? s.best : '', ours: held, wh: wh, im: im,
+          vb: resolu ? 'Reprendre les achats' : arret ? 'Chercher une alternative' : held ? 'Sécuriser' : 'Surveiller', fig: held ? faCovFig(s) : null,
+          src: 'EMA · ' + (x.updated ? 'fiche du ' + fdate(x.updated) : 'relevé du ' + fdate(String(_emaPenData.generated || '').slice(0, 10))) });
+      });
+    } catch (e) {}
     // Ordre : d'abord ce qui touche une référence détenue ou vendue, puis par proximité de date
     // regroupement D'AFFICHAGE des petits mouvements de prix (même sens, même date d'effet, même %) : le comptage reste par référence (cnt)
     var G = {}, gardes = [];
@@ -2549,7 +2594,7 @@
     ev = gardes;
     // Ordre : ce qui touche une référence détenue ou vendue ; puis tranche de date ; puis les lots rappelés ; puis les € en jeu décroissants.
     // Un signal de tendance (épidémie) vaut « cette semaine » : 7 jours, pas 0, sinon ses lignes passent devant une hausse à J−2.
-    var PRIO = { lots: 0, prix: 1, rupture: 2, retour: 3, gener: 4, has: 5, epi: 6 };
+    var PRIO = { lots: 0, prix: 1, rupture: 2, ema: 3, retour: 4, gener: 5, has: 6, epi: 7 };
     var tranche = function (e) { return e.ord <= FA_PROCHE_J[0] ? 0 : e.ord <= FA_PROCHE_J[1] ? 1 : 2; };
     ev.forEach(function (e, n) { e.n = n; e.ord = e.t === 'epi' ? 7 : Math.abs(e.j || 0); });
     ev.sort(function (a, b) { return (b.ours ? 1 : 0) - (a.ours ? 1 : 0) || tranche(a) - tranche(b) || (a.t === 'lots' ? 0 : 1) - (b.t === 'lots' ? 0 : 1) || (b.eur || 0) - (a.eur || 0) || a.ord - b.ord || PRIO[a.t] - PRIO[b.t] || a.n - b.n; });
@@ -2557,7 +2602,7 @@
   }
   function faSources() {
     return [['Prix publics (JO / CEPS)', _pfData, _pfState, 3], ['Ruptures et retours (ANSM)', _ansmData, _ansmState, 3], ['Lots rappelés (ANSM)', _rlData, _rlState, 3],
-      ['Épidémies (Sentinelles)', _epiData, _epiState, 3], ['Urgences (Odissé)', _odisseData, _odiState, 9], ['Génériques (BDPM)', _generData, _generState, 40], ['Avis HAS', _hasData, _hasState, 40]];
+      ['Épidémies (Sentinelles)', _epiData, _epiState, 3], ['Urgences (Odissé)', _odisseData, _odiState, 9], ['Génériques (BDPM)', _generData, _generState, 40], ['Avis HAS', _hasData, _hasState, 40], ['Pénuries européennes (EMA)', _emaPenData, _emaPenState, 3]];
   }
   function faView() {
     var ev = faEvents(), n = {}, shown, i;
@@ -2613,7 +2658,7 @@
   function actuView() {
     ensureInfos();
     // le fil d'anticipation demande lui-même chacun de ses flux (arrivée directe sur Actu)
-    ensurePrixFuturs(); ensureAnsm(); ensureGener(); ensureHas(); ensureEpidemio(); ensureOdisse(); ensureRappelsLots();
+    ensurePrixFuturs(); ensureAnsm(); ensureGener(); ensureHas(); ensureEpidemio(); ensureOdisse(); ensureRappelsLots(); ensureEmaPen();
     var faH = '';
     try { faH = faView(); } catch (e) { faH = ''; }
     // ── PRÉDICTIF : ce qui arrive, calculé sur nos robots ──
@@ -2870,6 +2915,7 @@
       ensureNational(); // charge le modèle national d'anticipation (robot mensuel, 1,2 Mo différé)
       ensureOpenMedic(); // charge la demande nationale par produit (Open Medic, robot annuel) → white space
       ensurePrixFuturs(); // charge les futures baisses de prix (avis CEPS/JO, robot quotidien)
+      ensureEmaPen(); // charge les pénuries européennes (EMA, robot quotidien)
       ensureEmaGx(); // charge les génériques/biosimilaires en approche (EMA, robot quotidien)
       // ── Cockpit réassort (crash-safe : ne casse jamais la page si un flux manque) ──
       var kpiBand = '', reaCard = '', rosCard = '', radarHtml = '', etabHtml = '', basculesHtml = '', ansmHtml = '', epiHtml = '', hasHtml = '', saiCipHtml = '', carnetHtml = '', carnetCounts = null;
@@ -3282,11 +3328,11 @@
       '.fa-pill b{font-family:var(--mono);font-size:12.5px}.fa-pill.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}.fa-pill.z{color:var(--muted);border-style:dashed}' +
       '.fa-row{display:grid;grid-template-columns:78px minmax(0,1fr) minmax(120px,auto);gap:6px 14px;align-items:start;width:100%;min-height:44px;box-sizing:border-box;text-align:left;padding:12px 16px 12px 13px;border:0;border-top:1px solid var(--line);border-left:3px solid var(--line-strong);background:transparent;font:inherit;color:inherit}' +
       'button.fa-row{cursor:pointer}button.fa-row:hover{background:var(--card-2,#F6F8FB)}' +
-      '.fa-k-prix{border-left-color:#D5573B}.fa-k-rupture{border-left-color:#C77700}.fa-k-retour{border-left-color:#1E9E6A}.fa-k-gener{border-left-color:#6D5AE6}.fa-k-has{border-left-color:#0050E6}.fa-k-epi{border-left-color:#0E7C86}.fa-k-lots{border-left-color:#B02A1E}' +
+      '.fa-k-prix{border-left-color:#D5573B}.fa-k-rupture{border-left-color:#C77700}.fa-k-retour{border-left-color:#1E9E6A}.fa-k-gener{border-left-color:#6D5AE6}.fa-k-has{border-left-color:#0050E6}.fa-k-epi{border-left-color:#0E7C86}.fa-k-lots{border-left-color:#B02A1E}.fa-k-ema{border-left-color:#7A5C00}' +
       '.fa-d b{display:block;font-size:14px;font-weight:800;font-family:var(--mono);color:var(--ip-ink)}.fa-d small{display:block;font-size:12px;color:var(--muted);font-weight:600;line-height:1.3}' +
       '.fa-m{min-width:0}.fa-m>span{display:block}.fa-t{font-size:13.5px;font-weight:800;color:var(--ip-ink);line-height:1.3}.fa-w{font-size:12.5px;color:var(--ip-ink-2);margin-top:2px;line-height:1.4}.fa-i{font-size:12.5px;font-weight:600;color:var(--ip-ink);margin-top:3px;line-height:1.4}.fa-s{font-size:12px;color:var(--muted);margin-top:3px}' +
       '.fa-r{text-align:right}.fa-r>span{display:block}.fa-vb{display:inline-block!important;font-size:12px;font-weight:800;border-radius:999px;padding:3px 10px;line-height:1.3}' +
-      '.fa-v-prix{color:#B02A1E;background:#FDEDEA;border:1px solid #F3B0A0}.fa-v-hausse{color:#0034A0;background:#EAF1FF;border:1px solid #C8DBFF}.fa-v-rupture{color:#8A5210;background:#FFF1DB;border:1px solid #F0C98A}.fa-v-retour{color:#0B6B42;background:#E7F5EC;border:1px solid #BFE6CF}.fa-v-gener{color:#5744C9;background:#EFEBFB;border:1px solid #D3C9F5}.fa-v-has{color:#0034A0;background:#EAF1FF;border:1px solid #C8DBFF}.fa-v-epi{color:#0A6169;background:#E5F4F5;border:1px solid #B8E0E3}.fa-v-lots{color:#B02A1E;background:#FBE9E6;border:1px solid #E8A99C}' +
+      '.fa-v-prix{color:#B02A1E;background:#FDEDEA;border:1px solid #F3B0A0}.fa-v-hausse{color:#0034A0;background:#EAF1FF;border:1px solid #C8DBFF}.fa-v-rupture{color:#8A5210;background:#FFF1DB;border:1px solid #F0C98A}.fa-v-retour{color:#0B6B42;background:#E7F5EC;border:1px solid #BFE6CF}.fa-v-gener{color:#5744C9;background:#EFEBFB;border:1px solid #D3C9F5}.fa-v-has{color:#0034A0;background:#EAF1FF;border:1px solid #C8DBFF}.fa-v-epi{color:#0A6169;background:#E5F4F5;border:1px solid #B8E0E3}.fa-v-lots{color:#B02A1E;background:#FBE9E6;border:1px solid #E8A99C}.fa-v-ema{color:#6B4F00;background:#FFF6D6;border:1px solid #E8D58A}' +
       '.fa-fig{margin-top:6px}.fa-fig b{display:block;font-size:15px;font-weight:800;font-family:var(--mono);color:var(--ip-ink)}.fa-fig small{display:block;font-size:12px;color:var(--muted);font-weight:600}' +
       '.fa-det{margin-top:4px}.fa-det summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--ip-blue)}' +
       '.fa-sub{display:flex;justify-content:space-between;gap:10px;align-items:center;width:100%;min-height:44px;box-sizing:border-box;text-align:left;font:inherit;font-size:12.5px;color:var(--ip-ink);background:var(--card-2,#F6F8FB);border:0;border-top:1px solid var(--line);padding:6px 10px;cursor:pointer}.fa-sub span:last-child{color:var(--muted);font-weight:600;text-align:right}' +
