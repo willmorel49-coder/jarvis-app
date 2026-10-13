@@ -759,7 +759,7 @@
   }
   function offilogTexte(pid) {
     var o = offilogDe(pid);
-    return o ? (o.oui ? 'Client Offilog' : 'Pas client Offilog') + (o.date ? ' · fichier du ' + o.date : '') : '';
+    return o ? (o.oui ? 'Cliente' : 'Non cliente') + (o.date ? ' · au ' + o.date : '') : '';
   }
   function isClientSeg(p) { var s = window.PHARMA_FR && window.PHARMA_FR.seg[p[4]]; return s && s.indexOf('Client') === 0; }
   // Prospects (non-clients) des UGA d'un ou plusieurs commerciaux. Plafonné à `cap`.
