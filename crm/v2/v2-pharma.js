@@ -748,6 +748,19 @@
       return { p: { id: o.sid, name: o.data.nom, cp: o.data.cp, ville: o.data.ville, color: '#9AA1B2', inDb: false, comms: [], _prospect: true, _cree: true, _archive: !!arch }, ca: 0, marge: 0, opp: 0 };
     }).filter(function (x) { return !q || correspond(x.p, q); });
   }
+  // 13/10/2026 — « client Offilog » (remontée de Karine) : colonne OFFILOG des fichiers de géolocalisation,
+  // portée par la table protégée WML_OFF_CA.off = {d:[dates des fichiers], m:{code:[1|0, rang de la date]}}.
+  // Une pharmacie absente de la table = on ne sait pas : rien ne s'affiche, jamais « non » par défaut.
+  function offilogDe(pid) {
+    var o = (window.WML_OFF_CA || {}).off, v = o && o.m && o.m[String(pid)];
+    if (!v) return null;
+    var d = String((o.d || [])[v[1]] || '');
+    return { oui: v[0] === 1, date: /^\d{4}-\d{2}-\d{2}$/.test(d) ? d.slice(8) + '/' + d.slice(5, 7) + '/' + d.slice(0, 4) : '' };
+  }
+  function offilogTexte(pid) {
+    var o = offilogDe(pid);
+    return o ? (o.oui ? 'Client Offilog' : 'Pas client Offilog') + (o.date ? ' · fichier du ' + o.date : '') : '';
+  }
   function isClientSeg(p) { var s = window.PHARMA_FR && window.PHARMA_FR.seg[p[4]]; return s && s.indexOf('Client') === 0; }
   // Prospects (non-clients) des UGA d'un ou plusieurs commerciaux. Plafonné à `cap`.
   // `q` : la recherche se fait AVANT le plafond, sinon un code postal hors des 300 premiers reste introuvable.
@@ -1300,7 +1313,7 @@
             '<div style="flex:1;min-width:0">' +
               '<div class="v2-prospect-n">' + esc(nameOf(pid, p[6] || p[10]) || 'Pharmacie') + '</div>' +
               '<div class="v2-prospect-a">' + esc(ville) + (cp ? ' · ' + esc(cp) : '') + '</div>' +
-              '<div class="v2-prospect-badges">' + badge(caSV ? 'Client' : seg, 'pr') + badge(grp) + badge(uga ? 'UGA ' + uga : '') + badge(secteurDe ? 'Secteur de ' + secteurDe : '') + '</div>' +
+              '<div class="v2-prospect-badges">' + badge(caSV ? 'Client' : seg, 'pr') + badge(offilogDe(pid) && offilogDe(pid).oui ? 'Client Offilog' : '') + badge(grp) + badge(uga ? 'UGA ' + uga : '') + badge(secteurDe ? 'Secteur de ' + secteurDe : '') + '</div>' +
               ((oiSiren || oiFax || oiDateouv) ? '<div class="v2-prospect-extra">' +
                 (oiSiren ? '<a href="https://annuaire-entreprises.data.gouv.fr/entreprise/' + esc(oiSiren) + '" target="_blank" rel="noopener">SIREN ' + esc(oiSiren) + '</a>' : '') +
                 (oiFax ? (oiSiren ? ' · ' : '') + 'Fax ' + esc(oiFax) : '') +
@@ -3220,6 +3233,7 @@
       var key = canonG(g).toLowerCase().replace(/[^a-z0-9]/g, '');
       return window.GRP_INFO[key] || null;
     })();
+    var offilog = offilogTexte(pid);
     var kv = function (l, v, empty) { return '<span>' + l + '</span><span' + (v ? '' : ' class="pha-empty"') + '>' + (v ? v : (empty || 'à compléter')) + '</span>'; };
     var kvProbable = function (l, estim) { return '<span>' + l + '</span><span class="pha-probable">' + esc(V2.probableTexte(estim, probable && probable.groupement)) + '</span>'; };
     // Les lignes de la carte (libellé → valeur), construites une seule fois : la carte d'avant les affiche telles quelles,
@@ -3245,6 +3259,7 @@
           (uga ? kv('UGA', esc(uga)) : '') +
           (siren ? '<span>SIREN</span><span><a href="https://annuaire-entreprises.data.gouv.fr/entreprise/' + esc(siren) + '" target="_blank" rel="noopener">' + esc(siren) + '</a></span>' : '') +
           kv('Logiciel', logiciel ? esc(logiciel) : '', 'inconnu') +
+          (offilog ? kv('Offilog', esc(offilog)) : '') +
           (livraison ? kv('Livraison', esc(livraison)) : '') +
           (generiqueur ? kv('Génériqueur', esc(generiqueur)) : (probable && probable.generiqueur ? kvProbable('Génériqueur probable', probable.generiqueur) : '')) +
           (grossiste ? kv('Grossiste principal', esc(grossiste)) : (probable && probable.grossiste ? kvProbable('Grossiste probable', probable.grossiste) : '')) +

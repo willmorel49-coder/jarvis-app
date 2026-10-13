@@ -158,9 +158,13 @@ def wml_officines():
         o['ca'] = 0; o['potentiel'] = None
     ecrire('crm/v2/wml-officines-data.js',
            s[:m.start(1)] + json.dumps(offs, ensure_ascii=False) + s[m.end(1):])
+    # 13/10/2026 — « client Offilog » (offilog_clients.py) voyage dans la même table protégée.
+    po = os.path.join(BASE, 'wml-offilog.json')
+    off = io.open(po, encoding='utf-8').read().strip() if os.path.exists(po) else ''
     ecrire('wml-officines-ca.js',
            '// Intégral Pharma — CA + potentiel par officine WML — %s\n%s'
-           'window.WML_OFF_CA = {n:%d, m:%s};\n' % (J, AV, len(mca), json.dumps(mca)))
+           'window.WML_OFF_CA = {n:%d, m:%s%s};\n'
+           % (J, AV, len(mca), json.dumps(mca), (', off:' + off) if off else ''))
     fait.append('wml-officines (%d)' % len(mca))
 
 def marketing_offers():

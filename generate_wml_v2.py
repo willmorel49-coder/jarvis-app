@@ -497,6 +497,10 @@ OVERRIDE = {
 }
 enseignes = load_enseignes()
 addr = load_geoloc_addr()
+# 13/10/2026 — « client Offilog » (colonne OFFILOG des mêmes fichiers) : écrit à part, hors dépôt,
+# puis rangé dans la table protégée par proteger_conditions.py. Jamais dans ce fichier public.
+import offilog_clients  # noqa: E402
+offilog_clients.ecrire(STATS)
 for _src in (load_base_france_addr(), load_clients_actifs_addr()):
     for _k, _v in _src.items():
         addr.setdefault(_k, _v)

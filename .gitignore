@@ -228,6 +228,7 @@ mkt-ip-prix.js
 # 28/09/2026 — le commercial affecté (604 officines) : notre couverture terrain.
 pharma-fr-comm.js
 wml-officines-ca.js
+wml-offilog.json
 biosimilaires-complet.js
 opso/opso-stats-data.js
 opso/wml-data.js
