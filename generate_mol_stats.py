@@ -16,16 +16,21 @@ import openpyxl
 OUT = 'crm/v2/mol-stats-data.js'
 
 # ── 1. CIP -> molécule / PPHT / remboursable (fichier stock+prix le plus récent) ──
-src = sorted(glob.glob('STATS/stock et prix*.xlsx'), key=os.path.getmtime, reverse=True)[0]
+from source_prix import source_prix, colonne_repli  # choix de source commun (14/10/2026)
+src = source_prix()
 ws = openpyxl.load_workbook(src, read_only=True, data_only=True).active
 h = [c.value for c in next(ws.iter_rows(min_row=1, max_row=1))]
-ci, mi, pi, ai = h.index('artcodebarre'), h.index('artmol'), h.index('ppht'), h.index('afmcode')
+ci, pi, ai = h.index('artcodebarre'), h.index('ppht'), h.index('afmcode')
+# `artmol` absente de `stock POS.xlsx` : reprise par code-barres dans le fichier le plus récent qui la porte.
+mi = h.index('artmol') if 'artmol' in h else None
+mol_repli = {} if mi is not None else colonne_repli('artmol', exclure=src)
 info = {}
 for r in ws.iter_rows(min_row=2, values_only=True):
     c = str(r[ci] or '')
     if not (c.isdigit() and len(c) >= 12):
         continue
-    mol = str(r[mi]).strip().upper() if (r[mi] and str(r[mi]) != '#N/A') else ''
+    _m = r[mi] if mi is not None else mol_repli.get(c)
+    mol = str(_m).strip().upper() if (_m and str(_m) != '#N/A') else ''
     ppht = float(r[pi]) if isinstance(r[pi], (int, float)) else 0.0
     info[c] = {'mol': mol, 'ppht': ppht, 'remb': str(r[ai] or '') == 'REMBSS'}
 

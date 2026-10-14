@@ -11,34 +11,12 @@ import glob
 import os
 import openpyxl
 
-# ⚠️ 28/09/2026 — la source se choisit sur ce qu'elle CONTIENT, pas sur son nom.
-# Le motif « stock et prix* » ne voyait pas `stock POS.xlsx` (21/09/2026), qui
-# porte pourtant la colonne `ppht` : les tarifs sont restés figés à juin pendant
-# trois mois et il a fallu une rustine en dur pour les GLP-1. À l'inverse,
-# `stock SEP 17092026.xlsx` porte `atfprix`/`artprmp` (prix de revient) et PAS de
-# `ppht` — le prendre pour source fabriquerait des tarifs faux sans erreur.
-# On garde donc le fichier le plus récent qui a BIEN les deux colonnes utiles.
-def _colonnes(chemin):
-    try:
-        w = openpyxl.load_workbook(chemin, read_only=True, data_only=True)
-        h = [c.value for c in next(w.active.iter_rows(min_row=1, max_row=1))]
-        w.close()
-        return set(x for x in h if x)
-    except Exception:
-        return set()
-
-
-cands = [f for f in glob.glob('STATS/*.xlsx') if not os.path.basename(f).startswith('~$')]
-cands.sort(key=os.path.getmtime, reverse=True)
-SRC = None
-for _f in cands:
-    _c = _colonnes(_f)
-    if 'ppht' in _c and 'artcodebarre' in _c:
-        SRC = _f
-        break
-    print('  écarté (pas de colonne ppht) :', _f)
-if not SRC:
-    raise SystemExit('ARRÊT : aucun fichier de STATS/ ne porte les colonnes artcodebarre + ppht.')
+# ⚠️ 28/09/2026 — la source se choisit sur ce qu'elle CONTIENT, pas sur son nom
+# (logique partagée avec les autres générateurs de prix : source_prix.py, 14/10/2026).
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from source_prix import source_prix
+SRC = os.path.relpath(source_prix(), os.path.dirname(os.path.abspath(__file__)))
 from pont_codes import rekey  # un produit = un code (22/09/2026)
 OUT = 'crm/v2/ppht-data.js'
 print('source:', SRC)

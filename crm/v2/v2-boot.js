@@ -1212,7 +1212,9 @@
       if (estNR) {
         // NR : marge libre PLM -> on aligne le prix IP sur le PPHT et on neutralise
         // l'offre labo (pas de tag OFFRE sur un NR). Remboursable : on garde le prix_ip réel.
-        if (!dejaUnPrixNet) b.prix_ip = pp;
+        // 14/10/2026 — NR : toujours le PPHT du jour, même si la table protégée a déjà posé un net
+        // plus bas (fusion arrivée avant : Slinda 26,04 pour un tarif de 26,16).
+        b.prix_ip = pp;
         b.offre_ip = 0;
       } else if (estPrinceps) {
         // Princeps/biosim sans abandon dans les données (net = PPHT, ex prix_ht manquant
@@ -1397,7 +1399,14 @@
       var attendu = (ht > 0 && ip > 0 && ip <= ht) ? Math.round((1 - ip / ht) * 1000) / 10 : 0;
       var coherent = ht > 0 && ip > 0 && ip <= ht && Math.abs(attendu - pct) <= 0.5;
       var dejaAbandon = ht > 0 && o.prix_ip > 0 && o.prix_ip < ht;
-      if (coherent && (ip < ht || !dejaAbandon)) {
+      // 14/10/2026 — NR : la règle est « net = PPHT » (applyPPHT). Un prix_ip de la table protégée
+      // est un net MOYEN FACTURÉ d'une génération passée (Slinda 26,04 pour un tarif de 26,16) :
+      // il ne doit pas écraser le PPHT du jour. Même définition de « NR » qu'applyPPHT (estNR).
+      var cNR = o.cip13 ? String(o.cip13) : '';
+      var natNR = !o.artnature || o.artnature === 'referent' || o.artnature === 'biosimilaire';
+      var rembNR = o.has_ameli === true && natNR && (o.categorie === 'pp' || o.categorie === 'mi' || o.categorie === 'ch');
+      var estNR = !!(cNR && window.PPHT && window.PPHT[cNR] > 0 && (window.PPHT_NR || {})[cNR] && !rembNR);
+      if (!estNR && coherent && (ip < ht || !dejaAbandon)) {
         o.prix_ip = ip; o.remise_pct = pct;
       }
       o.offre_ip = r[2]; o.ip_qty = r[3]; o.ip_ca = r[4];
