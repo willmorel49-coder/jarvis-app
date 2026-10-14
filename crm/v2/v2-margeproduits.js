@@ -40,7 +40,8 @@
   var acces = null, accesP = null, accesEchec = false;   // accesEchec : la base n'a pas répondu (ni oui ni non)
   var etatFichier = 'attente';   // attente | charge | refuse
   var D = null;                  // données préparées
-  var S = { K: null, fam: '', q: '', tri: 'mm', sens: -1, n: N_PAGE, masq: {}, sansTout: false, epingle: null };
+  var S = { K: null, fam: '', q: '', tri: 'mm', sens: -1, n: N_PAGE, masq: {}, sansTout: false, epingle: null,
+    vue: 'produit', oq: '', oComm: '', oSans: false, oTri: 'pf', oN: N_PAGE, oOuvert: {} };
   var memo = {};
   var racine = null, ecouteurs = false, minuterie = null, dernierToucher = 0;
 
@@ -95,6 +96,35 @@
       if (r.b > max.boites) max.boites = r.b;
     }
     return { M: M, meta: meta, fams: M.familles || [], rows: rows, an0: an0, an1: an1, k0: k0, k1: k1, max: max };
+  }
+  // ── Vue « Par officine » : lignes du fichier (clé « officines ») ──
+  function preparerOfficines(M, Dp) {
+    var O = M.officines, om = M.officines_meta;
+    if (!O || !om || !O.lignes || !O.colonnes) return null;
+    var ix = {}, i;
+    for (i = 0; i < O.colonnes.length; i++) ix[O.colonnes[i]] = i;
+    var comm = om.commerciaux || [], seuilSans = om.sans_froid_boites_mois_max, k0 = Dp.k0, k1 = Dp.k1;
+    var rows = O.lignes.map(function (l) {
+      var g = function (n) { return l[ix[n]]; };
+      var r = { code: String(g('code')), nom: String(g('nom') || ''), ville: String(g('ville') || ''), cp: String(g('cp') || ''),
+        ca: g('ca_hors_froid_mois') || 0, fb: g('froid_boites_mois') || 0, nf: g('nb_froids_suivis_achetes') || 0, dernier: g('dernier_mois'),
+        comm: comm[g('commercial')] || '', manq: g('manques') || [], m: {}, pf: {}, pt: {} };
+      r.m[k0] = g('marge_mois_' + k0); r.m[k1] = g('marge_mois_' + k1);
+      r.pf[k0] = g('pot_froid_' + k0); r.pf[k1] = g('pot_froid_' + k1);
+      r.pt[k0] = g('pot_total_' + k0); r.pt[k1] = g('pot_total_' + k1);
+      r.sans = r.fb < seuilSans;
+      r.nomN = norm(r.nom + ' ' + r.ville + ' ' + r.cp + ' ' + r.code);
+      return r;
+    });
+    return { rows: rows, meta: om, comm: comm };
+  }
+  var memoO = {};
+  function calcO(K) {
+    if (memoO[K]) return memoO[K];
+    var rows = D.off.rows, n = rows.length, sans = 0, pf = 0, pt = 0;
+    rows.forEach(function (r) { if (r.sans) sans++; pf += r.pf[K]; pt += r.pt[K]; });
+    memoO[K] = { n: n, sans: sans, pf: pf, pt: pt };
+    return memoO[K];
   }
   function trouverFam(re) { for (var i = 0; i < D.fams.length; i++) if (re.test(D.fams[i].nom)) return i; return -1; }
   function couleurFam(i) { return COULEURS[i] || GRIS_FAMILLE; }
@@ -168,6 +198,13 @@
     });
     return h + '</div>';
   }
+  function segmentVue() {
+    var h = '<div class="mp-seg mp-seg-vue" role="group" aria-label="Vue de l’écran">';
+    [['produit', 'Par produit'], ['officine', 'Par officine']].forEach(function (a) {
+      h += '<button type="button" data-act="vue" data-v="' + a[0] + '" aria-pressed="' + (S.vue === a[0]) + '" class="' + (S.vue === a[0] ? 'on' : '') + '">' + a[1] + '</button>';
+    });
+    return h + '</div>';
+  }
   function barre(part, couleur, max) {
     var w = Math.max(0, Math.min(1, max ? part / max : 0)) * 100;
     return '<span class="mp-bar"><i style="width:' + w.toFixed(2) + '%;background:' + couleur + '"></i></span>';
@@ -181,10 +218,15 @@
   function enTete(C) {
     return '<div class="mp-hero">' +
       '<div class="mp-hero-t"><div class="mp-eyebrow"><span class="dot"></span>Réservé à votre compte</div>' +
-      '<h1 class="mp-h1">Notre marge par produit</h1>' +
-      '<p class="mp-sub">Où se fait notre marge, produit par produit, et lesquels il faut vendre en priorité. ' +
-      'Chiffres estimés par la direction, sur les ventes de toute l’équipe (' + esc(periodeTexte()) + '), mis à jour le ' + esc(dateLongue(D.meta.genere_le)) + '.</p></div>' +
-      '<div class="mp-hero-a"><span class="mp-seg-l">Barème</span>' + segment(C.K) + '</div></div>';
+      (S.vue === 'officine'
+        ? '<h1 class="mp-h1">Notre marge par officine</h1>' +
+          '<p class="mp-sub">Les officines clientes qui n’achètent pas, ou peu, chez nous les produits qui rapportent, surtout le froid, et ce que cela rapporterait. ' +
+          'Chiffres estimés par la direction (' + esc(periodeTexte()) + '), mis à jour le ' + esc(dateLongue(D.meta.genere_le)) + '.</p></div>'
+        : '<h1 class="mp-h1">Notre marge par produit</h1>' +
+          '<p class="mp-sub">Où se fait notre marge, produit par produit, et lesquels il faut vendre en priorité. ' +
+          'Chiffres estimés par la direction, sur les ventes de toute l’équipe (' + esc(periodeTexte()) + '), mis à jour le ' + esc(dateLongue(D.meta.genere_le)) + '.</p></div>') +
+      '<div class="mp-hero-b">' + (D.off ? '<div class="mp-hero-a"><span class="mp-seg-l">Vue</span>' + segmentVue() + '</div>' : '') +
+      '<div class="mp-hero-a"><span class="mp-seg-l">Barème</span>' + segment(C.K) + '</div></div></div>';
   }
   function kpis(C) {
     var K = C.K, t = C.t, h = '', iF = trouverFam(/^froid$/i), iP = trouverFam(/^petit prix\s*</i);
@@ -485,6 +527,121 @@
       '<p class="conf">Confidentiel : réservé à votre compte.</p></footer>';
   }
 
+  // ── Vue « Par officine » ──────────────────────────────────────────
+  function moisNom(ym) { var m = ym % 100; return (MOIS[m - 1] || '') + ' ' + Math.floor(ym / 100); }
+  function kpisO() {
+    var K = S.K, A = calcO(K), om = D.off.meta, h = '';
+    var iF = trouverFam(/^froid$/i), cF = iF >= 0 ? couleurFam(iF) : 'var(--c-froid)';
+    h += '<div class="mp-kpi" style="--k:var(--ip-blue)"><div class="mp-kl">Officines clientes suivies</div>' +
+      '<div class="mp-kv" data-k="ofnb">' + entier(A.n) + '</div>' +
+      '<div class="mp-kd">Clientes actives (un achat en ' + esc(om.mois_actifs.map(function (y) { return MOIS[y % 100 - 1]; }).join(' ou ')) + ' ' + Math.floor(om.mois_actifs[0] / 100) + ') et d’au moins ' + entier(om.taille_min_ca_hors_froid) +
+      ' € d’achats par mois hors froid. ' + entier(om.nb_ecartees) + ' écartées : ' + entier(om.nb_ecartees_perdues) + ' perdues, ' + entier(om.nb_ecartees_petites) + ' trop petites (dépannage).</div></div>';
+    h += '<div class="mp-kpi" style="--k:' + cF + '"><div class="mp-kl">Dont sans froid chez nous</div>' +
+      '<div class="mp-kv" data-k="ofsans">' + entier(A.sans) + '</div>' +
+      '<div class="mp-kd">Soit ' + pct(A.n ? A.sans / A.n : 0, 1) + ' des officines suivies : moins de ' + nf(om.sans_froid_boites_mois_max, 0) + ' boîte de froid par mois chez nous.</div></div>';
+    h += '<div class="mp-kpi" style="--k:' + cF + '"><div class="mp-kl">Potentiel froid par mois, barème ' + anDe(K) + '</div>' +
+      '<div class="mp-kv" data-k="ofpf">' + eur0(A.pf) + '</div>' +
+      '<div class="mp-kd">Notre marge en plus si chaque officine achetait son froid comme la moyenne du réseau à taille égale.</div></div>';
+    h += '<div class="mp-kpi" style="--k:var(--c-mint)"><div class="mp-kl">Potentiel total par mois, barème ' + anDe(K) + '</div>' +
+      '<div class="mp-kv" data-k="ofpt">' + eur0(A.pt) + '</div>' +
+      '<div class="mp-kd">Le froid et tous les autres produits suivis (' + entier(om.nb_produits_suivis) + ' produits, dont ' + entier(om.nb_froids_suivis) + ' de froid).</div></div>';
+    return '<div class="mp-kpis">' + h + '</div>' +
+      '<p class="mp-note mp-def">« Potentiel » veut dire : ce que nous gagnerions en plus chaque mois, en notre marge, si chaque officine achetait chez nous chaque produit suivi autant que les officines de même taille. On ne compte que ce qui manque : une officine qui achète déjà plus que la moyenne n’ajoute rien. C’est une estimation, pas une promesse.</p>';
+  }
+  var TRIS_O = [['pf', 'Potentiel froid'], ['pt', 'Potentiel total'], ['m', 'Notre marge'], ['ca', 'Achats hors froid']];
+  function sectionOfficines() {
+    var om = D.off.meta;
+    var h = '<section class="mp-sec"><div class="mp-sh"><h2>Officines à appeler</h2><span>Classées par potentiel : les premières sont celles où il manque le plus de marge. Cliquez sur une officine pour voir les produits qui lui manquent.</span></div>' +
+      '<div class="mp-card"><div class="mp-bar-outils">' +
+      '<label class="mp-field mp-q"><span>Rechercher</span><input type="search" id="mp-oq" inputmode="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Nom, ville, code postal ou code" value="' + esc(S.oq) + '"></label>' +
+      '<label class="mp-field"><span>Commercial</span><select id="mp-ocomm"><option value="">Tous les commerciaux</option>';
+    om.commerciaux.forEach(function (c) { h += '<option value="' + esc(c) + '"' + (S.oComm === c ? ' selected' : '') + '>' + esc(c) + '</option>'; });
+    h += '</select></label><label class="mp-field"><span>Trier par</span><select id="mp-otri">';
+    TRIS_O.forEach(function (t) { h += '<option value="' + t[0] + '"' + (S.oTri === t[0] ? ' selected' : '') + '>' + t[1] + '</option>'; });
+    h += '</select></label><label class="mp-check"><input type="checkbox" id="mp-osans"' + (S.oSans ? ' checked' : '') + '><span>Seulement sans froid chez nous</span></label></div>' +
+      '<div class="mp-compte" id="mp-ocompte" aria-live="polite"></div>' +
+      '<div class="mp-olist" id="mp-olist"></div>' +
+      '<div class="mp-plusw"><button type="button" class="v2-btn v2-btn-ghost" data-act="plusO" id="mp-oplus">Afficher plus</button></div></div></section>';
+    return h;
+  }
+  function filtrerO() {
+    var q = norm(S.oq).trim().split(/\s+/).filter(Boolean), K = S.K, tri = S.oTri;
+    var val = tri === 'pf' ? function (r) { return r.pf[K]; } : tri === 'pt' ? function (r) { return r.pt[K]; } : tri === 'm' ? function (r) { return r.m[K]; } : function (r) { return r.ca; };
+    var out = D.off.rows.filter(function (r) {
+      if (S.oComm && r.comm !== S.oComm) return false;
+      if (S.oSans && !r.sans) return false;
+      for (var i = 0; i < q.length; i++) if (r.nomN.indexOf(q[i]) < 0) return false;
+      return true;
+    });
+    return out.sort(function (a, b) { return (val(b) - val(a)) || (a.nom < b.nom ? -1 : 1); });
+  }
+  function ligneO(r) {
+    var K = S.K, om = D.off.meta, ouvert = !!S.oOuvert[r.code];
+    var ref = r.ca * om.froid_reseau_pour_1000 / 1000;
+    var froid = '<span class="mp-ofv">' + boitesF(r.fb) + '</span>' + (r.sans ? ' <em class="mp-sf">Sans froid chez nous</em>' : '') +
+      '<small class="mp-ref">Réseau à taille égale : ' + boitesF(ref) + '</small>';
+    var h = '<div class="mp-orow-w' + (ouvert ? ' ouvert' : '') + '" data-code="' + esc(r.code) + '">' +
+      '<button type="button" class="mp-orow" data-act="ouv" data-c="' + esc(r.code) + '" aria-expanded="' + ouvert + '">' +
+      '<span class="mp-n"><b title="' + esc(r.nom) + '">' + esc(r.nom) + '</b><span>' + esc(r.ville) + (r.cp ? ' · ' + esc(r.cp) : '') + '</span></span>' +
+      '<span class="mp-c oc" data-l="Commercial">' + esc(r.comm || '—') + '</span>' +
+      '<span class="mp-c" data-l="Achats par mois hors froid">' + eur0(r.ca) + '</span>' +
+      '<span class="mp-c of" data-l="Froid : boîtes par mois">' + froid + '</span>' +
+      '<span class="mp-c" data-l="Notre marge par mois">' + eur0(r.m[K]) + '</span>' +
+      '<span class="mp-c pot f" data-l="Potentiel froid par mois">' + eur0(r.pf[K]) + '</span>' +
+      '<span class="mp-c pot" data-l="Potentiel total par mois">' + eur0(r.pt[K]) + '</span>' +
+      '<span class="mp-chev" aria-hidden="true"></span></button>';
+    if (ouvert) h += detailO(r);
+    return h + '</div>';
+  }
+  function detailO(r) {
+    var K = S.K, iF = trouverFam(/^froid$/i), liste = [], somme = 0;
+    r.manq.forEach(function (m) {
+      var p = D.rows[m[0]]; if (!p) return;
+      var g = m[1] * p.mb[K]; somme += g;
+      liste.push({ p: p, b: m[1], g: g });
+    });
+    liste.sort(function (a, b) { var fa = a.p.f === iF ? 0 : 1, fb = b.p.f === iF ? 0 : 1; return (fa - fb) || (b.g - a.g); });
+    var h = '<div class="mp-odet"><div class="mp-odh"><div><b>Produits qui lui manquent</b><span>Boîtes par mois en moins que la moyenne du réseau à taille égale, et ce que cela rapporterait en ' + anDe(K) + '. Le froid est en premier.</span></div>' +
+      '<button type="button" class="v2-btn v2-btn-primary mp-fiche" data-act="fiche" data-c="' + esc(r.code) + '">Ouvrir la fiche</button></div>';
+    if (!liste.length) h += '<div class="mp-vide">Aucun produit suivi ne lui manque.</div>';
+    else {
+      h += '<div class="mp-mq mp-mqh" aria-hidden="true"><span>Produit</span><span>Famille</span><span class="c">Boîtes / mois en moins</span><span class="c">Gain par mois</span></div>';
+      liste.forEach(function (x) {
+        h += '<div class="mp-mq"><span class="mp-n"><b>' + esc(x.p.nom) + '</b><span>' + esc(x.p.labo) + '</span></span>' +
+          '<span class="mp-c fam" data-l="Famille">' + chipFam(x.p.f) + '</span>' +
+          '<span class="mp-c" data-l="Boîtes par mois en moins">' + nf(x.b, 1) + '</span>' +
+          '<span class="mp-c" data-l="Gain par mois"><b>' + eur0(x.g) + '</b></span></div>';
+      });
+      var reste = r.pt[K] - somme;
+      if (reste >= 1) h += '<p class="mp-note">Les ' + entier(liste.length) + ' plus gros manques sont listés (' + eur0(somme) + '). Le reste du potentiel total, ' + eur0(reste) + ' par mois, est réparti sur des produits plus petits.</p>';
+    }
+    h += '<p class="mp-note">Dernier achat chez nous : ' + esc(moisNom(r.dernier)) + ' · ' + entier(r.nf) + ' des ' + entier(D.off.meta.nb_froids_suivis) + ' produits froid suivis achetés · code ' + esc(r.code) + '</p></div>';
+    return h;
+  }
+  function majOfficines() {
+    var res = filtrerO(), cpt = document.getElementById('mp-ocompte'), lst = document.getElementById('mp-olist'), plus = document.getElementById('mp-oplus');
+    if (!lst) return;
+    var n = Math.min(S.oN, res.length), h = '<div class="mp-orow mp-ohead" aria-hidden="true"><span>Officine</span><span>Commercial</span><span class="c">Achats / mois hors froid</span><span>Froid : boîtes / mois</span><span class="c">Notre marge / mois</span><span class="c">Potentiel froid / mois</span><span class="c">Potentiel total / mois</span><span></span></div>';
+    for (var i = 0; i < n; i++) h += ligneO(res[i]);
+    if (!res.length) h += '<div class="mp-vide">Aucune officine ne correspond à ces filtres.</div>';
+    lst.innerHTML = h;
+    var pfS = 0, ptS = 0; res.forEach(function (r) { pfS += r.pf[S.K]; ptS += r.pt[S.K]; });
+    cpt.textContent = entier(res.length) + ' officine' + (res.length > 1 ? 's' : '') + (res.length > n ? ' · ' + entier(n) + ' affichées' : '') + ' · potentiel froid ' + eur0(pfS) + ' par mois · potentiel total ' + eur0(ptS) + ' par mois';
+    plus.hidden = res.length <= n;
+    plus.textContent = 'Afficher plus (' + entier(res.length - n) + ' restantes)';
+  }
+  function piedO() {
+    var om = D.off.meta, seuil = D.meta.seuils_a_pousser || {}, p = om.periode || {};
+    var cv = om.couverture_noms || {};
+    return '<footer class="mp-pied"><h3>Comment on calcule le potentiel</h3><ul>' +
+      '<li>Produits suivis : ceux de la liste « à vendre en priorité » de la vue par produit, soit les ' + entier(om.nb_produits_suivis) + ' produits que nous aurons en ' + D.an1 + ', qui rapportent au moins ' + eurBoite(seuil.marge_boite_min || 0) + ' par boîte et se vendent à ' + entier(seuil.boites_mois_min || 0) + ' boîtes par mois ou plus.</li>' +
+      '<li>Taille d’une officine : ses achats chez nous par mois, hors froid (moyenne sur les mois où elle a acheté). Sont suivies les clientes actives d’au moins ' + entier(om.taille_min_ca_hors_froid) + ' € par mois : ' + entier(om.nb_retenues) + ' officines.</li>' +
+      '<li>Moyenne du réseau : pour chaque produit, les boîtes achetées par les officines suivies divisées par la somme de leurs achats hors froid. Le manque d’une officine est l’écart avec cette moyenne à sa taille, jamais en dessous de zéro.</li>' +
+      '<li>Potentiel = boîtes qui manquent × notre marge par boîte du barème choisi, en € par mois. Le froid ne compte que les produits froid suivis ; le total compte tous les produits suivis.</li></ul>' +
+      '<p>Période : ' + esc(moisNom(p.de || 0)) + ' → ' + esc(moisNom(p.a || 0)) + '. Noms et villes trouvés pour ' + pct(cv.taux || 0, 0) + ' des officines. Estimation de la direction, à confirmer par l’appel.</p>' +
+      '<p class="conf">Confidentiel : réservé à votre compte.</p></footer>';
+  }
+
   // ── Écrans d’état ─────────────────────────────────────────────────
   function top() { return (V2.topbar ? V2.topbar({ back: true, nom: 'Notre marge par produit' }) : ''); }
   function message(root, titre, texte, bouton) {
@@ -499,10 +656,16 @@
   // ── Dessin de l’écran ─────────────────────────────────────────────
   function dessiner(root) {
     var C = calc(S.K), y = window.pageYOffset || 0;
-    root.innerHTML = top() + '<div class="v2-wrap mp-wrap">' + enTete(C) + kpis(C) + sectionFamilles(C) + sectionNuage(C) + sectionPrio(C) + sectionTous() + sectionSans(C) + pied() + '</div>';
-    racine = root;
-    dessinerNuage();
-    majTableau();
+    if (S.vue === 'officine' && D.off) {
+      root.innerHTML = top() + '<div class="v2-wrap mp-wrap">' + enTete(C) + kpisO() + sectionOfficines() + piedO() + '</div>';
+      racine = root;
+      majOfficines();
+    } else {
+      root.innerHTML = top() + '<div class="v2-wrap mp-wrap">' + enTete(C) + kpis(C) + sectionFamilles(C) + sectionNuage(C) + sectionPrio(C) + sectionTous() + sectionSans(C) + pied() + '</div>';
+      racine = root;
+      dessinerNuage();
+      majTableau();
+    }
     try { window.scrollTo(0, y); } catch (e) {}
   }
 
@@ -514,7 +677,11 @@
       var host = document.getElementById('mp-chart');
       if (b && r.contains(b)) {
         var a = b.getAttribute('data-act');
-        if (a === 'an') { S.K = b.getAttribute('data-k'); S.n = N_PAGE; memo = {}; dessiner(racine); }
+        if (a === 'an') { S.K = b.getAttribute('data-k'); S.n = N_PAGE; S.oN = N_PAGE; memo = {}; memoO = {}; dessiner(racine); }
+        else if (a === 'vue') { var v = b.getAttribute('data-v'); if (v !== S.vue) { S.vue = v; cacherBulle(); dessiner(racine); } }
+        else if (a === 'ouv') { var cd = b.getAttribute('data-c'); S.oOuvert[cd] = !S.oOuvert[cd]; var w = b.parentNode; var neuf = document.createElement('div'); neuf.innerHTML = ligneO(D.off.rows.filter(function (r) { return r.code === cd; })[0]); if (w && w.parentNode && neuf.firstChild) w.parentNode.replaceChild(neuf.firstChild, w); }
+        else if (a === 'plusO') { S.oN += N_PAGE; majOfficines(); }
+        else if (a === 'fiche') { var cf = b.getAttribute('data-c'); if (V2.go) V2.go('pharma', cf); }
         else if (a === 'fam') { var f = b.getAttribute('data-f'); S.masq[f] = !S.masq[f]; b.classList.toggle('off', !!S.masq[f]); b.setAttribute('aria-pressed', String(!S.masq[f])); dessinerNuage(); }
         else if (a === 'plus') { S.n += N_PAGE; majTableau(); }
         else if (a === 'sens') { S.sens = -S.sens; S.n = N_PAGE; majTableau(); }
@@ -552,11 +719,15 @@
     });
     document.addEventListener('input', function (e) {
       if (!D || !e.target) return;
-      if (e.target.id === 'mp-q') { var v = e.target.value; clearTimeout(minuterie); minuterie = setTimeout(function () { S.q = v; S.n = N_PAGE; majTableau(); }, 120); }
+      if (e.target.id === 'mp-oq') { var vo = e.target.value; clearTimeout(minuterie); minuterie = setTimeout(function () { S.oq = vo; S.oN = N_PAGE; majOfficines(); }, 120); }
+      else if (e.target.id === 'mp-q') { var v = e.target.value; clearTimeout(minuterie); minuterie = setTimeout(function () { S.q = v; S.n = N_PAGE; majTableau(); }, 120); }
     });
     document.addEventListener('change', function (e) {
       if (!D || !e.target) return;
-      if (e.target.id === 'mp-fam') { S.fam = e.target.value; S.n = N_PAGE; majTableau(); }
+      if (e.target.id === 'mp-ocomm') { S.oComm = e.target.value; S.oN = N_PAGE; majOfficines(); }
+      else if (e.target.id === 'mp-otri') { S.oTri = e.target.value; S.oN = N_PAGE; majOfficines(); }
+      else if (e.target.id === 'mp-osans') { S.oSans = !!e.target.checked; S.oN = N_PAGE; majOfficines(); }
+      else if (e.target.id === 'mp-fam') { S.fam = e.target.value; S.n = N_PAGE; majTableau(); }
       else if (e.target.id === 'mp-tri') { S.tri = e.target.value; S.n = N_PAGE; majTableau(); }
     });
     var tmr = null;
@@ -605,6 +776,7 @@
       if (!D) {
         try { D = preparer(window.MARGE_PRODUITS); }
         catch (e) { console.error('[V2 margeproduits]', e); message(root, 'Ces chiffres ne se lisent pas', 'Le fichier de marge par produit est illisible. Il faut le régénérer.'); return; }
+        try { D.off = preparerOfficines(window.MARGE_PRODUITS, D); } catch (e2) { console.error('[V2 margeproduits] officines', e2); D.off = null; }
         if (!S.K) S.K = D.k1;
       }
       brancher();
@@ -750,8 +922,40 @@
       '.mp-etat p{font-size:14.5px;line-height:1.55;color:var(--muted);margin:0 0 18px}',
       '.mp-etat .v2-btn{min-height:48px}',
       '.mp-um svg{color:var(--c-froid)}',
+      /* vue par officine */
+      '.mp-hero-b{display:flex;align-items:center;gap:12px 24px;flex-wrap:wrap}',
+      '.mp-seg-vue button{font-family:var(--font);font-size:15px;padding:0 18px}',
+      '.mp-def{margin:14px 2px 0;font-size:14px;line-height:1.6;color:var(--ip-ink-2);max-width:100ch}',
+      '.mp-check{display:inline-flex;align-items:center;gap:10px;min-height:48px;font-size:14px;font-weight:700;color:var(--ip-ink-2);cursor:pointer}',
+      '.mp-check input{width:22px;height:22px;accent-color:#0A6C86;flex:none;margin:0}',
+      '.mp-olist{display:block}',
+      '.mp-orow{display:grid;grid-template-columns:minmax(0,1fr) 100px 108px 188px 100px 108px 108px 22px;align-items:center;gap:12px;padding:12px 22px;width:100%;text-align:left;font:inherit;font-size:13.5px;color:inherit;background:none;border:0;border-bottom:1px solid var(--line-2);cursor:pointer;min-height:56px}',
+      '.mp-orow:hover{background:var(--card-2)}',
+      '.mp-orow:focus-visible{outline:2px solid #0A6C86;outline-offset:-2px}',
+      '.mp-ohead{background:var(--card-2);border-bottom:1px solid var(--line);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding-top:11px;padding-bottom:11px;cursor:default;min-height:0}',
+      '.mp-ohead:hover{background:var(--card-2)}.mp-ohead .c{text-align:right}',
+      '.mp-orow .mp-n{min-width:0}',
+      '.mp-orow .mp-n>span{display:block}',
+      '.mp-c.oc{font-family:var(--font);text-align:left;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.mp-c.of{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left}',
+      '.mp-ofv{font-weight:800}',
+      '.mp-ref{font-family:var(--font);font-size:12px;font-weight:600;color:var(--muted)}',
+      '.mp-sf{font-style:normal;font-family:var(--font);font-size:12px;font-weight:800;color:var(--c-rose-txt);background:color-mix(in srgb,var(--c-rose) 12%,#fff);padding:2px 9px;border-radius:20px;box-shadow:0 0 0 1px color-mix(in srgb,var(--c-rose) 28%,transparent) inset;display:inline-block;width:fit-content}',
+      '.mp-c.pot{font-weight:800}.mp-c.pot.f{color:#0A6C86}',
+      '.mp-chev{width:10px;height:10px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);justify-self:end;transition:transform .15s var(--ease)}',
+      '.mp-orow-w.ouvert .mp-chev{transform:rotate(-135deg)}',
+      '.mp-orow-w.ouvert .mp-orow{background:var(--card-2)}',
+      '.mp-odet{padding:6px 22px 18px;background:var(--card-2);border-bottom:1px solid var(--line)}',
+      '.mp-odh{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;padding:12px 0}',
+      '.mp-odh b{display:block;font-size:15px;font-weight:800}.mp-odh span{display:block;font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:3px;max-width:70ch}',
+      '.mp-fiche{min-height:48px;white-space:nowrap}',
+      '.mp-mq{display:grid;grid-template-columns:minmax(0,1fr) 190px 150px 110px;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line-2);font-size:13.5px}',
+      '.mp-mqh{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-top:0;padding-bottom:6px}.mp-mqh .c{text-align:right}',
+      '.mp-mq .mp-c.fam{text-align:left}',
       /* petits écrans */
       '@media(max-width:1040px){.mp-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}',
+      '.mp-orow{grid-template-columns:minmax(0,1fr) 84px 92px 160px 88px 92px 92px 18px;gap:10px;padding-left:16px;padding-right:16px}',
+      '.mp-mq{grid-template-columns:minmax(0,1fr) 160px 130px 100px}',
       '.mp-row.prio{grid-template-columns:30px minmax(0,1fr) 130px 70px 74px 84px 84px 150px;gap:10px;padding-left:16px;padding-right:16px}',
       '.mp-row.tous{grid-template-columns:minmax(0,1fr) 150px 80px 92px 104px 90px}}',
       '@media(max-width:720px){',
@@ -792,6 +996,25 @@
       '.mp-compte{padding:10px 16px}',
       '.mp-etat{margin:36px 4px;padding:28px 18px}',
       '.mp-tip{width:236px}',
+      '.mp-hero-b{width:100%}',
+      '.mp-hero-b .mp-seg-l{display:none}',
+      '.mp-hero-b .mp-hero-a{flex:1 1 100%}',
+      '.mp-seg-vue{width:100%}.mp-seg-vue button{flex:1 1 0;padding:0 8px}',
+      '.mp-ohead{display:none}',
+      '.mp-orow{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 10px;padding:14px 38px 14px 16px;position:relative;align-items:start}',
+      '.mp-orow .mp-n{grid-column:1/-1}',
+      '.mp-orow .mp-n b{white-space:normal}',
+      '.mp-c.oc{grid-column:1/-1;order:2;white-space:normal}',
+      '.mp-c.oc::before{display:inline;margin-right:6px}',
+      '.mp-chev{position:absolute;right:16px;top:22px}',
+      '.mp-odet{padding:4px 16px 16px}',
+      '.mp-odh{flex-direction:column}',
+      '.mp-fiche{width:100%}',
+      '.mp-mqh{display:none}',
+      '.mp-mq{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px}',
+      '.mp-mq .mp-n{grid-column:1/-1}',
+      '.mp-mq .mp-c.fam{grid-column:1/-1}',
+      '.mp-check{flex:1 1 100%}',
       '}'
     ].join('\n');
     document.head.appendChild(s);
