@@ -130,6 +130,7 @@
     Object.keys(count).forEach(function (uga) {
       commByUga[uga] = Object.keys(count[uga]).sort(function (a, b) { return count[uga][b] - count[uga][a] || (a < b ? -1 : 1); });
     });
+    if (Object.keys(commByUga).length && V2.ajouterSecteursAjoutes) V2.ajouterSecteursAjoutes(commByUga, D.uga);   // 14/10/2026 : secteurs ajoutés (table protégée), jumelle de ugaCommMap
   }
   function commsOf(p) {
     var cs = commById && commById[String(p[13] || '').replace(/[^0-9]/g, '')];
