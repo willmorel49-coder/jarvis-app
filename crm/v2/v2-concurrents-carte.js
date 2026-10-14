@@ -17,7 +17,7 @@
   var V2 = window.V2 = window.V2 || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var ICO = function (n, s, w) { return window.ICO ? window.ICO(n, s, w) : ''; };
-  var CB = '?v=20261014b';
+  var CB = '?v=20261014c';
 
   var NATURES = [['', 'Toutes les natures'], ['notre groupe', 'Intégral Pharma'], ['national', 'Nationaux'], ['coopérative', 'Coopératives'], ['short-liner', 'Short-liners'],
                  ['DOM-TOM', 'DOM-TOM'], ['export', 'Export'], ['hors-répartition', 'Groupements (hors répartition)']];
