@@ -1083,7 +1083,9 @@
         });
       }
       return vide('Chargement du catalogue…',
-        'Les 16 305 références d\'Intégral Pharma arrivent (1,3 Mo, une seule fois).');
+        'Les ' + (window.CATALOGUE_COMPLET && window.CATALOGUE_COMPLET.meta && window.CATALOGUE_COMPLET.meta.n
+          ? V2.fmtNum(window.CATALOGUE_COMPLET.meta.n) + ' ' : '') +
+        'références d\'Intégral Pharma arrivent (1,3 Mo, une seule fois).');
     }
     var meta = (window.CATALOGUE_COMPLET && window.CATALOGUE_COMPLET.meta) || {};
     var lignes = catalogueLignes();

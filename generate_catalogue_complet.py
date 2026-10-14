@@ -47,12 +47,16 @@ import json
 import os
 import re
 import sys
+import time
 from collections import Counter
 
 import openpyxl
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-XLSX = os.path.join(ROOT, 'STATS', 'stock et prix 22 06 2026.xlsx')
+sys.path.insert(0, ROOT)
+from source_prix import source_prix, colonne_repli, ppht_reference  # noqa: E402  (choix de source commun, 14/10/2026)
+XLSX = source_prix()
+PPHT_REF = ppht_reference()
 PROD_STATS = os.path.join(ROOT, 'crm', 'v2', 'prod-stats-data.js')
 GENERIQUEURS = os.path.join(ROOT, 'crm', 'v2', 'generiqueurs-data.js')
 OUT = os.path.join(ROOT, 'crm', 'v2', 'catalogue-complet-data.js')
@@ -188,8 +192,12 @@ def lire_catalogue():
     ws = openpyxl.load_workbook(XLSX, read_only=True, data_only=True).active
     hh = [c.value for c in next(ws.iter_rows(min_row=1, max_row=1))]
     col = {n: hh.index(n) for n in
-           ('artcodebarre', 'artdesignation', 'artcollection', 'artmol',
+           ('artcodebarre', 'artdesignation', 'artcollection',
             'artnature', 'afmcode', 'ppht', 'stockdispo', 'artclasse')}
+    # `artmol` : absente de `stock POS.xlsx` -> reprise par code-barres dans le fichier le plus
+    # récent qui la porte (juin). Un produit né après reste sans molécule (vide, non inventée).
+    mol_col = hh.index('artmol') if 'artmol' in hh else None
+    mol_repli = {} if mol_col is not None else colonne_repli('artmol', exclure=XLSX)
     out = {}
     for r in ws.iter_rows(min_row=2, values_only=True):
         brut = str(r[col['artcodebarre']] or '').strip()
@@ -211,11 +219,11 @@ def lire_catalogue():
             'c': cip,
             'd': d,
             'labo': txt(r[col['artcollection']]),
-            'mol': txt(r[col['artmol']]),
+            'mol': txt(r[mol_col]) if mol_col is not None else txt(mol_repli.get(brut)),
             'nat': txt(r[col['artnature']]),
             'remb': txt(r[col['afmcode']]) == 'REMBSS',
             'afm': txt(r[col['afmcode']]),
-            'ppht': r2(nombre(r[col['ppht']])),
+            'ppht': PPHT_REF[cip] if cip in PPHT_REF else r2(nombre(r[col['ppht']])),   # 14/10 : ppht-data.js fait foi
             's': stock,
             'mitm': txt(r[col['artclasse']]).upper() == 'MITM',
         }
@@ -268,7 +276,7 @@ def main():
     labos, mols = {}, {}
     rows = []
     fam_compte = Counter()
-    faux_abandons, ecarts_fam = [], []
+    faux_abandons, ecarts_fam, statut_change = [], [], []
 
     for cip in sorted(cat):
         o = cat[cip]
@@ -286,7 +294,14 @@ def main():
                 # et mon calcul dit princeps. Ça collerait un abandon de marge
                 # fictif à un produit qui n'en porte aucun.
                 if not porte_abandon(f) and porte_abandon(calcule):
-                    faux_abandons.append((cip, o['d'][:40], f, calcule))
+                    # 14/10/2026 — le réseau dit « nr » (relevé de juin) et le fichier de prix
+                    # récent dit « remboursable » : le STATUT a changé dans la source, ce n'est
+                    # pas une règle cassée. Le classement du réseau est retenu (aucun abandon
+                    # publié) ; on le compte à part pour ne pas déclencher l'arrêt de sécurité.
+                    if f == 'nr':
+                        statut_change.append((cip, o['d'][:40], f, calcule))
+                    else:
+                        faux_abandons.append((cip, o['d'][:40], f, calcule))
         fam_compte[f] += 1
 
         # NET : le net réseau d'abord — c'est CELUI QUE L'APP AFFICHE déjà
@@ -326,6 +341,10 @@ def main():
     # la même erreur frappe alors en silence les 10 000 références que le
     # réseau ne connaît pas. (Mesuré : la borne de mot sans le point en
     # laissait passer 26 d'un coup.)
+    if statut_change:
+        print('\nℹ️  %d produit(s) « nr » au réseau et « remboursable » dans le fichier de prix récent '
+              '(statut changé depuis juin) : classement du réseau retenu, aucun abandon publié.'
+              % len(statut_change))
     if faux_abandons:
         print('\n⚠️  %d produit(s) que le réseau dit générique/biosimilaire et que '
               'le calcul dit princeps :' % len(faux_abandons))
@@ -344,8 +363,8 @@ def main():
         mols_l[v] = k
 
     meta = {
-        'source': 'STATS/stock et prix 22 06 2026.xlsx',
-        'arrete': '2026-06-22',
+        'source': os.path.relpath(XLSX, ROOT),
+        'arrete': time.strftime('%Y-%m-%d', time.localtime(os.path.getmtime(XLSX))),
         'stockSource': 'crm/v2/etab-prices-data.js (somme des établissements)',
         'stockArrete': stk_date,
         'n': len(rows),

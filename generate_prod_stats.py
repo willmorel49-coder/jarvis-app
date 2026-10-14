@@ -9,7 +9,7 @@ Pour chaque produit reellement vendu par le reseau (>=3 pharmacies) :
              l'officine : confondre les deux fausse tout argumentaire (cf. ROBOT.md §10).
   - remise : remise Integral (PPHT - prix net achat) / pharmacie / an
   - ca     : CA d'achat HT / pharmacie / an
-Source prix + libelle + statut remb : STATS/stock et prix 22 06 2026.xlsx
+Source prix + libelle + statut remb : le plus récent STATS/*.xlsx portant artcodebarre + ppht (source_prix.py)
 Source ventes : crm/v2/wml-officines-data.js (WML_SALES compact)
 """
 import openpyxl, re, json, os
@@ -18,29 +18,13 @@ from collections import defaultdict
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 def dernier_prix():
-    """Le fichier de prix/stock LE PLUS RÉCENT (STOCKS/ puis STATS/), daté par son NOM.
-    Même correction que generate_stock.py : un chemin en dur fige le script sur un vieux
-    millésime sans rien signaler."""
-    import glob as _g, datetime as _dt
-    cands = []
-    for d in ('STOCKS', 'STATS'):
-        for f in _g.glob(os.path.join(ROOT, d, '*.xlsx')):
-            b = os.path.basename(f)
-            if b.startswith('~$') or 'stock' not in b.lower():
-                continue
-            m = re.search(r'(\d{2})[ _-](\d{2})[ _-](\d{4})', b)
-            if not m:
-                continue
-            try:
-                cands.append((_dt.date(int(m.group(3)), int(m.group(2)), int(m.group(1))), f))
-            except ValueError:
-                pass
-    if not cands:
-        raise SystemExit('[prod-stats] aucun fichier de prix trouvé')
-    cands.sort(key=lambda x: x[0])
-    print(f'[prod-stats] prix et statuts lus dans : {os.path.basename(cands[-1][1])} '
-          f'(inventaire du {cands[-1][0]})')
-    return cands[-1][1]
+    """Le fichier de prix LE PLUS RÉCENT qui PORTE les colonnes artcodebarre + ppht (source_prix.py,
+    la même règle que generate_ppht.py). Avant le 14/10/2026 : daté par son NOM, ce qui ratait
+    `stock POS.xlsx` et laissait les tarifs de juin (Slinda 26,67 au lieu de 26,16)."""
+    import sys as _s
+    _s.path.insert(0, ROOT)
+    from source_prix import source_prix
+    return source_prix()
 
 
 XLSX = dernier_prix()
@@ -80,6 +64,11 @@ for r in ws.iter_rows(min_row=2, values_only=True):
 # Un produit = un code : l'ancien article du catalogue de juin prête ses infos au code gardé
 # (33 des 68 codes gardés n'existent que dans les relevés de septembre).
 info = rekey(info)
+# 14/10/2026 : le PPHT de ppht-data.js fait foi (un produit = un prix sur tous les écrans)
+from source_prix import ppht_reference
+for _c, _p in ppht_reference().items():
+    if _c in info:
+        info[_c]['ppht'] = float(_p)
 froid = froid | {canon(c) for c in froid}
 
 # Filet de sécurité : quand `artnature` manque ou dit "Referent" à tort, un générique

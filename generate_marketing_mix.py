@@ -244,12 +244,10 @@ def load_sales_index():
 # ── Catalogue NR : nos sorties NON remboursables, classées par RAYON pharmacien ──
 from mkt_rayons import classify_rayon, RAYONS  # noqa: E402  (source de vérité partagée)
 def load_ppht():
-    """CIP13 -> PPHT (tarif grossiste officiel) depuis STATS/stock et prix*.xlsx."""
-    import glob as _g
-    cands = sorted(_g.glob('STATS/stock et prix*.xlsx'), key=os.path.getmtime, reverse=True)
-    if not cands:
-        return {}
-    ws = openpyxl.load_workbook(cands[0], read_only=True, data_only=True).active
+    """CIP13 -> PPHT (tarif grossiste officiel) depuis le STATS/*.xlsx le plus récent portant
+    artcodebarre + ppht (source_prix.py, même règle que generate_ppht.py — 14/10/2026)."""
+    from source_prix import source_prix
+    ws = openpyxl.load_workbook(source_prix(), read_only=True, data_only=True).active
     hdr = [c.value for c in next(ws.iter_rows(min_row=1, max_row=1))]
     ix = {h: i for i, h in enumerate(hdr) if h}
     out = {}
@@ -258,6 +256,8 @@ def load_ppht():
         p = r[ix['ppht']] if 'ppht' in ix else None
         if cip.isdigit() and isinstance(p, (int, float)) and p > 0:
             out[cip] = round(float(p), 2)
+    from source_prix import ppht_reference
+    out.update({k: v for k, v in ppht_reference().items() if k in out})   # ppht-data.js fait foi
     print('  [ppht] %d prix tarif chargés' % len(out))
     return out
 
