@@ -98,18 +98,31 @@
     Object.keys(CACHE).forEach(function (ym) {
       var m = CACHE[ym];
       m.rdv.forEach(function (r) {
-        pose({ date: r.date, type: 'rdv', deb: hm2min(r.heure), dur: r.duree_min || dur, label: r.nom || 'Rendez-vous', sub: r.ville || '' });
+        pose({ date: r.date, type: 'rdv', deb: hm2min(r.heure), dur: r.duree_min || dur, label: r.nom || 'Rendez-vous', sub: r.ville || '', jarvis: true });
       });
       m.occ.forEach(function (o) {
         var x = reco[o.date + '|' + (o.jour_entier ? 'J' : String(o.debut).slice(0, 5))];
         var deb = o.jour_entier ? H_DEB : hm2min(o.debut), fin = o.jour_entier ? H_FIN : hm2min(o.fin);
         if (x) pose({ date: o.date, type: 'rdv', deb: deb, dur: fin - deb, label: x.nom, sub: (x.ville || '') + (x.etat === 'confirmer' ? (x.ville ? ' · ' : '') + 'à confirmer' : '') });
-        else pose({ date: o.date, type: 'occ', deb: deb, dur: fin - deb, label: o.jour_entier ? 'Occupé toute la journée' : 'Occupé', sub: 'agenda personnel' });
+        else pose({ date: o.date, type: 'occ', entier: !!o.jour_entier, deb: deb, dur: fin - deb, label: o.jour_entier ? 'Occupé toute la journée' : 'Occupé', sub: 'agenda personnel' });
       });
     });
     ((CTX && CTX.blocages) || []).forEach(function (b) {
       var d = b.moment === 'apres_midi' ? 12 * 60 : H_DEB, f = b.moment === 'matin' ? 12 * 60 : H_FIN;
       pose({ date: b.date, type: 'blo', deb: d, dur: f - d, label: 'Indisponible', sub: b.moment === 'matin' ? 'matin bloqué' : b.moment === 'apres_midi' ? 'après-midi bloqué' : 'journée bloquée' });
+    });
+    // Un « occupé » de l'agenda perso qui tombe sur un rendez-vous JARVIS est ce même rendez-vous
+    // recopié dans Google/Outlook : on ne l'affiche pas (ni dans les compteurs). Début de l'occupé
+    // dans [début rdv − 15 min ; fin rdv], ou plages qui se chevauchent. « Toute la journée » reste.
+    Object.keys(idx).forEach(function (k) {
+      var rv = idx[k].filter(function (e) { return e.jarvis; });
+      if (!rv.length) return;
+      idx[k] = idx[k].filter(function (e) {
+        if (e.type !== 'occ' || e.entier) return true;
+        return !rv.some(function (r) {
+          return (e.deb >= r.deb - 15 && e.deb <= r.deb + r.dur) || (e.deb < r.deb + r.dur && e.deb + e.dur > r.deb);
+        });
+      });
     });
     Object.keys(idx).forEach(function (k) { idx[k].sort(function (a, b) { return a.deb - b.deb; }); });
     return idx;
