@@ -145,7 +145,7 @@
     if (!el || !window.L) return;
     if (S.map) { try { S.map.remove(); } catch (e) {} S.map = null; }
     var L = window.L;
-    S.map = L.map(el, { preferCanvas: true, zoomControl: true, attributionControl: true, zoomSnap: 0.25, renderer: L.canvas({ padding: 0.5, tolerance: 7 }) }).setView([46.6, 2.4], 5.5);
+    S.map = L.map(el, { preferCanvas: true, zoomControl: true, attributionControl: true, zoomSnap: 0.25, zoomDelta: 0.5, renderer: L.canvas({ padding: 0.5, tolerance: 7 }) }).setView([46.6, 2.4], 5.5);
     try { S.map.attributionControl.setPrefix(''); } catch (e) {}
     addBaseLayer(S.map);
     // 14/10 tour 2 : ~250 sites = assez peu pour TOUS les montrer, un point coloré par site (canvas) : plus de ronds blancs numérotés
@@ -249,7 +249,7 @@
       '<button type="button" class="cm-tog' + (S.f.nonrep ? ' on' : '') + '" aria-pressed="' + S.f.nonrep + '" onclick="V2.concBascule(\'nonrep\')" title="Afficher aussi les non-répartiteurs : exportateurs, dépositaires, plateformes d\'achat, groupements">Non-répartiteurs <em>' + nNr + '</em></button>' +
       '<button type="button" class="cm-tog' + (S.f.fermes ? ' on' : '') + '" aria-pressed="' + S.f.fermes + '" onclick="V2.concBascule(\'fermes\')" title="Sites fermés depuis le registre : pratique pour voir les fermetures d\'entrepôts">Sites fermés <em>' + nFe + '</em></button></span>';
     return '<div class="cm-bar"><div class="cm-rech"><div class="v2-champ">' + ICO('search', 20, 2) +
-      '<input id="cm-q" type="search" inputmode="search" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Grossiste, ville…" value="' + esc(S.f.q) + '" oninput="V2.concRecherche(this.value)" aria-label="Chercher un grossiste"></div>' +
+      '<input id="cm-q" type="search" inputmode="search" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Grossiste, ville, groupe" value="' + esc(S.f.q) + '" oninput="V2.concRecherche(this.value)" aria-label="Chercher un grossiste"></div>' +
       '<div class="cm-sug" id="cm-sug" role="listbox"></div></div><button type="button" class="cm-fbtn" onclick="V2.concFiltres()" aria-expanded="false">Filtres</button><div class="cm-rowb" id="cm-rowb">' + nat + tog + '<span id="cm-zones-h">' + zonesHtml() + '</span></div></div>';
   }
   function nOuverts(fn) { return (S.pts || []).filter(function (p) { return !p.ferme && p.rep && (!fn || fn(p)); }).length; }
@@ -408,7 +408,7 @@
       '.cm-leg{display:flex;flex-direction:column;gap:8px}',
       '.cm-fbtn{display:none}',
       '.cm-plus{flex:none;min-height:36px;padding:0 14px;border:1px dashed var(--line-strong,#cdd3df);border-radius:var(--r-pill);background:none;font:inherit;font-size:13px;font-weight:700;color:var(--ip-blue);cursor:pointer;white-space:nowrap}',
-      '.cm-bar .v2-select select{width:200px}.cm-rech{flex:1 1 170px;max-width:200px}.cm-bar{gap:8px}',
+      '.cm-bar .v2-select select{width:200px}.cm-rech{flex:1 1 220px;max-width:280px}.cm-bar{gap:8px}',
       '.cm-chips{display:flex;flex-wrap:wrap;gap:6px;padding-bottom:2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}.cm-chips::-webkit-scrollbar{display:none}',
       '.cm-chip{flex:none;white-space:nowrap;display:inline-flex;align-items:stretch;border:1px solid var(--line);border-radius:var(--r-pill);background:var(--card);overflow:hidden}',
       '.cm-chip.on{border-color:var(--ip-ink);box-shadow:0 0 0 2px color-mix(in srgb,var(--ip-ink) 12%,transparent)}',
