@@ -256,6 +256,8 @@ def load_ppht():
         p = r[ix['ppht']] if 'ppht' in ix else None
         if cip.isdigit() and isinstance(p, (int, float)) and p > 0:
             out[cip] = round(float(p), 2)
+    from source_prix import ppht_reference
+    out.update({k: v for k, v in ppht_reference().items() if k in out})   # ppht-data.js fait foi
     print('  [ppht] %d prix tarif chargés' % len(out))
     return out
 

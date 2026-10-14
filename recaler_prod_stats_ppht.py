@@ -60,13 +60,17 @@ for r in ws.iter_rows(min_row=2, values_only=True):
     if k.isdigit() and len(k) >= 12 and isinstance(r[pi], (int, float)):
         tarif[k] = float(r[pi])
 tarif = rekey(tarif)
+# Référence de prix = ppht-data.js (valeur prise telle quelle) ; la source brute ne sert que pour les CIP absents.
+from source_prix import ppht_reference  # noqa: E402
+_ref = ppht_reference()
+tarif.update({k: v for k, v in _ref.items() if k in tarif})
 
 n_pp = n_st = absent = 0
 for i, r in enumerate(rows):
     if r['c'] not in tarif:
         absent += 1
         continue
-    p = round(tarif[r['c']], 2)
+    p = tarif[r['c']] if r['c'] in _ref else round(tarif[r['c']], 2)
     if p != r['ppht']:
         r['ppht'] = p
         n_pp += 1
@@ -91,7 +95,7 @@ for cat in bs['cats']:
     for r in cat['rows']:
         k = str(r['c'])
         if k in tarif:
-            p = round(tarif[k], 2)
+            p = tarif[k] if k in _ref else round(tarif[k], 2)
             if p != r['p']:
                 r['p'] = p
                 n_bs += 1

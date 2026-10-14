@@ -54,8 +54,9 @@ import openpyxl
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ROOT)
-from source_prix import source_prix, colonne_repli  # noqa: E402  (choix de source commun, 14/10/2026)
+from source_prix import source_prix, colonne_repli, ppht_reference  # noqa: E402  (choix de source commun, 14/10/2026)
 XLSX = source_prix()
+PPHT_REF = ppht_reference()
 PROD_STATS = os.path.join(ROOT, 'crm', 'v2', 'prod-stats-data.js')
 GENERIQUEURS = os.path.join(ROOT, 'crm', 'v2', 'generiqueurs-data.js')
 OUT = os.path.join(ROOT, 'crm', 'v2', 'catalogue-complet-data.js')
@@ -222,7 +223,7 @@ def lire_catalogue():
             'nat': txt(r[col['artnature']]),
             'remb': txt(r[col['afmcode']]) == 'REMBSS',
             'afm': txt(r[col['afmcode']]),
-            'ppht': r2(nombre(r[col['ppht']])),
+            'ppht': PPHT_REF[cip] if cip in PPHT_REF else r2(nombre(r[col['ppht']])),   # 14/10 : ppht-data.js fait foi
             's': stock,
             'mitm': txt(r[col['artclasse']]).upper() == 'MITM',
         }

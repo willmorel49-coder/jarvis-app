@@ -64,6 +64,11 @@ for r in ws.iter_rows(min_row=2, values_only=True):
 # Un produit = un code : l'ancien article du catalogue de juin prête ses infos au code gardé
 # (33 des 68 codes gardés n'existent que dans les relevés de septembre).
 info = rekey(info)
+# 14/10/2026 : le PPHT de ppht-data.js fait foi (un produit = un prix sur tous les écrans)
+from source_prix import ppht_reference
+for _c, _p in ppht_reference().items():
+    if _c in info:
+        info[_c]['ppht'] = float(_p)
 froid = froid | {canon(c) for c in froid}
 
 # Filet de sécurité : quand `artnature` manque ou dit "Referent" à tort, un générique

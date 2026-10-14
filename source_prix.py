@@ -70,3 +70,17 @@ def colonne_repli(nom, exclure=None):
             return out
     print('  [repli %s] aucun fichier ne porte cette colonne' % nom)
     return {}
+
+
+def ppht_reference():
+    """{CIP13: PPHT} de crm/v2/ppht-data.js (window.PPHT, surcharge STOCK 150926 comprise) : LA référence
+    de prix de l'appli (décision du 14/10/2026 : un produit = un prix sur tous les écrans). {} si absent."""
+    import json
+    import re
+    p = os.path.join(ROOT, 'crm', 'v2', 'ppht-data.js')
+    try:
+        t = open(p, encoding='utf-8').read()
+        return json.loads(re.search(r'window\.PPHT\s*=\s*(\{.*?\});\n', t, re.S).group(1))
+    except (OSError, AttributeError, ValueError):
+        print('  ⚠️ ppht-data.js illisible : prix pris dans la source brute')
+        return {}
