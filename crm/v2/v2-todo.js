@@ -259,6 +259,8 @@
   V2.todo = {
     charger: charger,
     ouverts: function () { return (st.items || []).filter(function (x) { return !x.fait; }); },
+    // Toutes les lignes (cochées comprises), lecture seule : « Mon agenda » (v2-agenda-vues.js) y pose les lignes datées (`pour`).
+    tous: function () { return (st.items || []).slice(); },
     // Accueil (widget « To do list ») : les lignes à faire, les plus urgentes d'abord, et leur libellé (le même que la carte « À faire »).
     urgents: function () { return trier(V2.todo.ouverts()); },
     libelle: function (it) { return KINDS[it.k].l + (it.nom ? ' · ' + it.nom : (it.note ? ' · ' + it.note : '')); },
@@ -321,7 +323,7 @@
     cocher: function (id, fait) {
       ecrire(function (items) {
         return items.map(function (x) { if (x.id === id) { x.fait = !!fait; x.faitLe = fait ? new Date().toISOString() : ''; } return x; });
-      }).then(rendre);
+      }).then(function () { rendre(); if (V2.todo.apresCoche) V2.todo.apresCoche(); });
     },
     retirer: function (id) {
       var it = (st.items || []).find(function (x) { return x.id === id; });
