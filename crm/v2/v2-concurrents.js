@@ -824,8 +824,9 @@
   }
   function teteHtml(espace, droite) {
     var o = ONGLETS.filter(function (x) { return x[0] === espace; })[0];
-    var sous = { carte: 'Chaque point est un site de grossiste-répartiteur. Cliquez : la fiche s\'ouvre à côté.', annuaire: 'Les groupes, leurs acteurs et la part de marché de chacun.', actu: 'Faits vérifiés et presse sur les grossistes, mis à jour chaque jour.' }[espace] || (o ? o[2] : '');
-    return '<div class="v2-tete cc-tete"><div><h1 class="v2-titre">Concurrents</h1><p class="v2-sous">' + esc(sous) + '</p></div>' + (droite || '') + '</div>';
+    var sous = { carte: '', annuaire: 'Les groupes, leurs acteurs et la part de marché de chacun.', actu: 'Faits vérifiés et presse sur les grossistes, mis à jour chaque jour.' }[espace];
+    if (sous === undefined) sous = o ? o[2] : '';
+    return '<div class="v2-tete cc-tete' + (sous ? '' : ' sans-sous') + '"><div><h1 class="v2-titre">Concurrents</h1>' + (sous ? '<p class="v2-sous">' + esc(sous) + '</p>' : '') + '</div>' + (droite || '') + '</div>';
   }
   function ficheHtml(k) {
     var s = SRC[k];

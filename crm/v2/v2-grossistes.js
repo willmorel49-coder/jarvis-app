@@ -92,6 +92,8 @@
       '<div class="gr-maill-w">Attention : allocation géographique automatique (département → dépôt le plus proche, plafond 170 km). À valider avec votre répartition officielle.</div></div>';
   }
   function flagOf(g) { var t = (g.pays || '') + (g.mere || ''); var c = /allemagne/i.test(t) ? 'DE' : (/usa|américain|amerisource|cencora/i.test(t) ? 'US' : (/japon|toyota/i.test(t) ? 'JP' : 'FR')); return '<i class="gr-pays">' + c + '</i>'; }
+  // nom commercial d'une fiche ou d'un groupe (« Phoenix OCP », « CERP (Astera) »…)
+  function aff(o) { return (o && (o.nom_aff || shortNom(o.nom))) || ''; }
   function shortNom(s) { return String(s || '').split('(')[0].split('—')[0].split('/')[0].trim(); }
   function fmtEur(n) { if (n == null) return '—'; var a = Math.abs(n); if (a >= 1e9) return (Math.round(n / 1e8) / 10).toLocaleString('fr') + ' Md€'; if (a >= 1e6) return (Math.round(n / 1e5) / 10).toLocaleString('fr') + ' M€'; if (a >= 1e3) return Math.round(n / 1e3).toLocaleString('fr') + ' k€'; return Math.round(n).toLocaleString('fr') + ' €'; }
   var EFF = { '00': '0 sal.', '01': '1-2', '02': '3-5', '03': '6-9', '11': '10-19', '12': '20-49', '21': '50-99', '22': '100-199', '31': '200-249', '32': '250-499', '41': '500-999', '42': '1000-1999', '51': '2000-4999', '52': '5000-9999', '53': '≥10 000' };
@@ -119,9 +121,9 @@
   function marketBar() {
     var gs = groupes().filter(function (g) { return g.pdm_num > 0; }).sort(function (a, b) { return b.pdm_num - a.pdm_num; });
     var sum = gs.reduce(function (s, g) { return s + g.pdm_num; }, 0), autres = Math.max(0, Math.round((100 - sum) * 10) / 10);
-    var seg = gs.map(function (g) { return '<span class="gr-mbseg" style="width:' + g.pdm_num + '%;background:' + g.couleur + '" title="' + esc(shortNom(g.nom)) + ' ' + g.pdm_num + '%"></span>'; }).join('') +
+    var seg = gs.map(function (g) { return '<span class="gr-mbseg" style="width:' + g.pdm_num + '%;background:' + g.couleur + '" title="' + esc(aff(g)) + ' ' + g.pdm_num + '%"></span>'; }).join('') +
       (autres > 0 ? '<span class="gr-mbseg" style="width:' + autres + '%;background:#CBD2DD" title="Indépendants, short-liners & DOM-TOM"></span>' : '');
-    var leg = gs.map(function (g) { return '<span class="gr-mbl"><i style="background:' + g.couleur + '"></i>' + esc(shortNom(g.nom)) + ' ' + g.pdm_num + '%</span>'; }).join('') +
+    var leg = gs.map(function (g) { return '<span class="gr-mbl"><i style="background:' + g.couleur + '"></i>' + esc(aff(g)) + ' ' + g.pdm_num + '%</span>'; }).join('') +
       '<span class="gr-mbl"><i style="background:#CBD2DD"></i>Autres ~' + Math.round(autres) + '%</span>';
     var M = (DATA() && DATA().marche) || null;
     var tuiles = M && M.tuiles ? M.tuiles : [{ v: '~22 Md€', l: 'marché FR' }, { v: String(list().length), l: 'acteurs recensés' }, { v: '~90 %', l: 'aux 3 leaders' }, { v: '~57 %', l: 'du médicament (volume)' }];
@@ -150,7 +152,7 @@
       '<span><b>' + mem.length + '</b> répart.</span>' +
       '<span><b>' + ((g.enseignes && g.enseignes.length) || '—') + '</b> ens.</span></div>';
     var head = '<button class="gr-ghead" onclick="V2.grossisteGroupe(\'' + g.id + '\')">' +
-      '<div class="gr-ghrow"><span class="gr-grang">#' + g.rang + '</span><b class="gr-gnom">' + esc(shortNom(g.nom)) + '</b>' +
+      '<div class="gr-ghrow"><span class="gr-grang">#' + g.rang + '</span><b class="gr-gnom">' + esc(aff(g)) + '</b>' +
         '<span class="gr-gstat s-' + statutCls(g.statut) + '">' + esc(g.statut) + '</span>' +
         '<span class="gr-gchev">' + (open ? '▾' : '▸') + ' ' + mem.length + '</span></div>' +
       micro +
@@ -163,7 +165,7 @@
     var rows = mem.slice().sort(function (a, b) { return kNum(b.ca_eur) - kNum(a.ca_eur); }).map(function (f) {
       var right = (f.ca_eur && f.ca_eur !== 'inconnu' && f.ca_eur !== '—') ? shortNom(f.ca_eur) : shortNom((f.geo || '').split(',')[0]).slice(0, 22);
       return '<button class="gr-mrow" onclick="V2.grossisteOpen(\'' + esc(f.id) + '\')">' +
-        '<i class="gr-pas memb"></i><span class="gr-mname">' + esc(shortNom(f.nom)) + (f.lien_ip ? '<em class="gr-mip">IP</em>' : '') + (f.repartiteur === false ? '<em class="gr-mnr">hors répartition</em>' : '') + '</span>' +
+        '<i class="gr-pas memb"></i><span class="gr-mname">' + esc(aff(f)) + (f.lien_ip ? '<em class="gr-mip">IP</em>' : '') + (f.repartiteur === false ? '<em class="gr-mnr">hors répartition</em>' : '') + '</span>' +
         '<span class="gr-mca">' + esc(right) + '</span><span class="gr-marr">→</span></button>';
     }).join('');
     var ens = (g.enseignes && g.enseignes.length) ? '<div class="gr-lvl"><span class="gr-lvlab">Enseignes / groupements</span><div class="gr-ens">' +
@@ -309,8 +311,8 @@
     var histo = (g.histoire && g.histoire.length) ? '<ul class="gr-histo">' + g.histoire.slice().sort(function (a, b) { return String(b.date || '').localeCompare(String(a.date || '')); }).map(function (h) { return '<li><span>' + esc(dFr(h.date)) + '</span><div>' + esc(h.fait) + (h.source ? ' <small>' + lien(h.source, 'source') + '</small>' : '') + '</div></li>'; }).join('') + '</ul>' : '';
     var actuLegacy = (!(g.faits_recents || []).length && g.actu) ? '<p class="gr-np">Repère de la base de juillet : ' + esc(g.actu) + '</p>' : '';
     return '<div class="gr-fiche">' +
-      '<div class="gr-fhead"><div><h2>' + esc(g.nom) + '</h2><div class="gr-fmeta">' + typeBadge(g.type) + (g.lien_ip ? '<span class="gr-iplink">Lié à Intégral Pharma</span>' : '') + fiab(g) +
-        (grp ? '<button type="button" class="gr-grplink" onclick="V2.concGroupe(\'' + esc(grp.id) + '\')">' + esc(shortNom(grp.nom)) + '</button>' : '') +
+      '<div class="gr-fhead"><div><h2>' + esc(aff(g)) + '</h2>' + (g.societe ? '<p class="gr-soc">' + esc(g.societe) + (g.societe_siren ? ' · SIREN ' + esc(g.societe_siren) : '') + '</p>' : '') + '<div class="gr-fmeta">' + typeBadge(g.type) + (g.lien_ip ? '<span class="gr-iplink">Lié à Intégral Pharma</span>' : '') + fiab(g) +
+        (grp ? '<button type="button" class="gr-grplink" onclick="V2.concGroupe(\'' + esc(grp.id) + '\')">' + esc(aff(grp)) + '</button>' : '') +
         '<span>mis à jour le ' + esc(dFr(g.maj)) + '</span>' +
         (g.financials && g.financials.siren ? '<a href="https://annuaire-entreprises.data.gouv.fr/entreprise/' + esc(g.financials.siren) + '" target="_blank" rel="noopener">fiche officielle ↗</a>' : '') + '</div></div></div>' +
       (g.repartiteur === false && g.non_repartiteur_motif ? '<div class="gr-nonrep"><h4>Pas un répartiteur officinal</h4><p>' + esc(g.non_repartiteur_motif) + '</p></div>' : '') +
@@ -351,9 +353,9 @@
     var mem = membersOf(gid);
     var npts = mem.reduce(function (s, m) { return s + (m.nb_points || 0); }, 0);
     var rows = mem.slice().sort(function (a, b) { return (b.nb_points || 0) - (a.nb_points || 0) || kNum(b.ca_eur) - kNum(a.ca_eur); }).map(function (f) {
-      return '<button class="gr-mrow" onclick="V2.grossisteOpen(\'' + esc(f.id) + '\')"><i class="gr-pas memb"></i><span class="gr-mname">' + esc(shortNom(f.nom)) + (f.lien_ip ? '<em class="gr-mip">IP</em>' : '') + '</span><span class="gr-mca">' + (f.nb_points || 0) + ' site' + ((f.nb_points || 0) > 1 ? 's' : '') + '</span><span class="gr-marr">→</span></button>';
+      return '<button class="gr-mrow" onclick="V2.grossisteOpen(\'' + esc(f.id) + '\')"><i class="gr-pas memb"></i><span class="gr-mname">' + esc(aff(f)) + (f.lien_ip ? '<em class="gr-mip">IP</em>' : '') + '</span><span class="gr-mca">' + (f.nb_points || 0) + ' site' + ((f.nb_points || 0) > 1 ? 's' : '') + '</span><span class="gr-marr">→</span></button>';
     }).join('');
-    return '<div class="gr-fiche" style="--gc:' + esc(g.couleur) + '"><div class="gr-fhead"><div><h2>' + esc(shortNom(g.nom)) + '</h2><div class="gr-fmeta"><span class="gr-gstat s-' + statutCls(g.statut) + '">' + esc(g.statut) + '</span>' +
+    return '<div class="gr-fiche" style="--gc:' + esc(g.couleur) + '"><div class="gr-fhead"><div><h2>' + esc(aff(g)) + '</h2><div class="gr-fmeta"><span class="gr-gstat s-' + statutCls(g.statut) + '">' + esc(g.statut) + '</span>' +
       (g.part_marche ? '<span>part de marché : ' + esc(g.part_marche) + '</span>' : '') + '<span>' + mem.length + ' acteur' + (mem.length > 1 ? 's' : '') + ' · ' + npts + ' site' + (npts > 1 ? 's' : '') + ' sur la carte</span></div></div></div>' +
       (g.resume ? '<div class="gr-retenir"><p>' + esc(g.resume) + '</p></div>' : '') +
       sec('Société mère', '<p class="gr-proprio"><b>' + esc(g.mere || 'non publié') + '</b>' + (g.pays ? ' · ' + esc(g.pays) : '') + '</p>') +
@@ -434,7 +436,7 @@
   // Pour la carte : données + actualité prêtes, puis rappel.
   V2.grossistesPret = function (cb) { ensureData(function (err) { if (err) { cb(err); return; } ensureActu(function () { cb(); }); }); };
   V2.grossistesInfo = function () {
-    return { data: DATA(), byId: byId, groupes: groupes, membres: membersOf, nom: shortNom, actuDe: actuDe, tagNom: TAGNAME, verif: VERIF, actu: ACTU, statutCls: statutCls, kNum: kNum };
+    return { data: DATA(), byId: byId, groupes: groupes, membres: membersOf, nom: shortNom, aff: aff, actuDe: actuDe, tagNom: TAGNAME, verif: VERIF, actu: ACTU, statutCls: statutCls, kNum: kNum };
   };
   function reAnnu(refocus) { var b = document.getElementById('gr-body'); if (b) b.innerHTML = annuaireHtml(); if (refocus) { var i = document.getElementById('gr-q'); if (i) { i.focus(); try { i.setSelectionRange(i.value.length, i.value.length); } catch (e) {} } } }
   V2.grossisteGroupe = function (id) { openGroupe = (openGroupe === id ? null : id); reAnnu(); };
@@ -731,6 +733,7 @@
       '.gr-histo small a{color:var(--ip-blue);text-decoration:none}',
       '.gr-grplink{border:0;background:none;padding:0;font:inherit;font-weight:700;color:var(--ip-blue);cursor:pointer;text-decoration:underline;text-underline-offset:3px}',
       '.gr-pays{display:inline-block;font-style:normal;font-size:12px;font-weight:800;padding:0 6px;border-radius:5px;background:var(--surf-sunken,#F4F6FB);color:var(--muted-d,var(--muted));margin-right:4px}',
+      '.gr-soc{margin:2px 0 0;font-size:13px;color:var(--muted-d,var(--muted))}',
       '.gr-mserie{margin-top:6px;font-size:12px;color:var(--muted)}',
       '.gr-det>summary{display:flex;align-items:center;gap:8px;min-height:44px;cursor:pointer;list-style:none;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.02em;color:var(--muted)}',
       '.gr-det>summary::-webkit-details-marker{display:none}',

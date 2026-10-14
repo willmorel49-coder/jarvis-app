@@ -75,19 +75,20 @@
   function ptsGroupe(gid) { return (S.pts || []).filter(function (p) { return p.groupe_id === gid; }); }
 
   // ── style des points ───────────────────────────────────────────────────────
-  function styleDe(p, sel) {
-    var g = grp(p.groupe_id) || {}, col = g.couleur || '#607D8B';
-    if (sel) return { radius: p.nous ? 11 : 9, color: '#10131C', weight: 3, fillColor: p.ferme ? '#FFFFFF' : (p.nous ? '#F39A1B' : col), fillOpacity: 1 };
-    if (p.nous && !p.ferme) return { radius: 9, color: '#10131C', weight: 2.5, fillColor: '#F39A1B', fillOpacity: 1 };
-    // site fermé (affiché seulement si l'interrupteur est posé) : rond blanc, contour pointillé de la couleur du groupe
-    if (p.ferme) return { radius: 6, color: p.nous ? '#F39A1B' : col, weight: 2, dashArray: '2 3', fillColor: '#FFFFFF', fillOpacity: 0.95 };
-    return { radius: 6.5, color: p.decisions ? '#FFC400' : '#FFFFFF', weight: p.decisions ? 4 : 1.5, fillColor: col, fillOpacity: 0.92 };
+  // Un point coloré par site (9-10 px, liseré blanc). Groupe ou acteur choisi : ses points grossissent, les autres passent en gris clair.
+  function surligne(p) { if (S.f.groupe) return p.groupe_id === S.f.groupe; if (S.sel) return p.id === S.sel; if (S.selG) return p.groupe_id === S.selG; return null; }
+  function styleDe(p) {
+    var g = grp(p.groupe_id) || {}, col = g.couleur || '#607D8B', hi = surligne(p);
+    if (p.ferme) return { radius: 5, color: hi === false ? '#C9CFD9' : (p.nous ? '#F39A1B' : col), weight: 2, dashArray: '2 3', fillColor: '#FFFFFF', fillOpacity: 0.95 };
+    if (hi === false) return { radius: 4.5, color: '#FFFFFF', weight: 1, fillColor: '#CDD3DD', fillOpacity: 0.9 };
+    if (p.nous) return { radius: 8, color: '#10131C', weight: 3, fillColor: '#F39A1B', fillOpacity: 1 };
+    if (hi) return { radius: 7.5, color: p.decisions ? '#FFC400' : '#10131C', weight: p.decisions ? 4 : 2, fillColor: col, fillOpacity: 1 };
+    return { radius: 5, color: p.decisions ? '#FFC400' : '#FFFFFF', weight: p.decisions ? 3.5 : 1.5, fillColor: col, fillOpacity: 0.95 };
   }
   function visible(p) {
     var f = S.f, g = grp(p.groupe_id) || {};
     if (p.ferme && !f.fermes) return false;              // décision de Will (14/10) : fermés masqués par défaut
     if (!p.rep && !f.nonrep) return false;                // non-répartiteurs (exportateurs, dépositaires, plateformes…) masqués par défaut
-    if (f.groupe && p.groupe_id !== f.groupe) return false;
     if (f.nature && g.statut !== f.nature) return false;
     if (f.q) {
       var fi = fiche(p.id) || {};
@@ -98,8 +99,9 @@
     return true;
   }
   function tip(p) {
-    var fi = fiche(p.id) || {};
-    return '<b>' + esc(S.info.nom(fi.nom || p.nom)) + '</b><br>' + esc(p.ville || '') + (p.dep ? ' (' + esc(p.dep) + ')' : '') +
+    var fi = fiche(p.id) || {}, g = grp(p.groupe_id) || {};
+    var nom = p.nom && !/^[A-ZÉ0-9 '&.-]+$/.test(p.nom) ? p.nom : S.info.aff(fi);
+    return '<b>' + esc(nom) + '</b> · ' + esc(S.info.aff(g)) + ' · ' + esc(p.ville || '') + (p.dep ? ' (' + esc(p.dep) + ')' : '') +
       (p.nous ? '<br>Intégral Pharma' : '') + (p.ferme ? '<br>Fermé le ' + esc(String(p.date_fermeture || '').split('-').reverse().join('/')) : '') + (p.decisions ? '<br>Décision officielle sur ce site' : '') + (p.hors_naf ? '<br>Site logistique ou siège (activité ' + esc(p.naf) + ')' : '') + (!p.rep ? '<br>Pas un répartiteur officinal' : '');
   }
 
@@ -108,25 +110,25 @@
     if (!S.map || !S.cluster) return;
     S.cluster.clearLayers();
     if (S.selLayer) S.selLayer.clearLayers();
-    var arr = [], n = 0;
+    var arr = [], n = 0, hi = 0;
     Object.keys(S.marks).forEach(function (k) { delete S.marks[k]; });
     (S.pts || []).forEach(function (p) {
       if (!visible(p)) return;
-      var m = window.L.circleMarker([p.lat, p.lon], styleDe(p, S.sel && p.id === S.sel));
+      var m = window.L.circleMarker([p.lat, p.lon], styleDe(p));
       m._p = p;
       m.bindTooltip(tip(p), { direction: 'top', offset: [0, -6], className: 'cm-tip' });
       m.on('click', function () { ouvrirFiche(p.id); });
-      S.marks[p.pid] = m; n++;
+      S.marks[p.pid] = m; n++; if (surligne(p) === true) hi++;
       // les sites de l'acteur ouvert sont posés HORS des paquets : on voit où il est, même à l'échelle de la France
-      if (S.sel && p.id === S.sel && S.selLayer) S.selLayer.addLayer(m); else arr.push(m);
+      if ((surligne(p) === true || p.nous) && S.selLayer) S.selLayer.addLayer(m); else arr.push(m);
     });
-    if (S.cluster.addLayers) S.cluster.addLayers(arr); else arr.forEach(function (m) { S.cluster.addLayer(m); });
+    arr.forEach(function (m) { S.cluster.addLayer(m); });
     var c = document.getElementById('cm-count');
-    if (c) { c.setAttribute('data-shown', n); c.setAttribute('data-total', (S.pts || []).length); c.textContent = n + (n > 1 ? ' sites affichés' : ' site affiché'); }
+    if (c) { c.setAttribute('data-drawn', S.cluster.getLayers().length + S.selLayer.getLayers().length); c.setAttribute('data-shown', n); c.setAttribute('data-hi', hi); c.setAttribute('data-total', (S.pts || []).length); c.textContent = n + (n > 1 ? ' sites affichés' : ' site affiché'); }
     return n;
   }
   function recolorerSel() {
-    Object.keys(S.marks).forEach(function (k) { var m = S.marks[k]; m.setStyle(styleDe(m._p, S.sel && m._p.id === S.sel)); });
+    Object.keys(S.marks).forEach(function (k) { var m = S.marks[k]; m.setStyle(styleDe(m._p)); });
   }
   function cadrer(pts, maxZ) {
     if (!S.map || !pts.length) return;
@@ -136,6 +138,8 @@
       S.map.fitBounds(b, { padding: [50, 50], maxZoom: maxZ || 9 });
     } catch (e) {}
   }
+  var FRANCE = [[41.2, -5.6], [51.3, 9.9]];
+  function cadrerFrance() { if (S.map) S.map.fitBounds(FRANCE, { padding: [10, 10], animate: false }); }
   function monterCarte() {
     var el = document.getElementById('cm-map');
     if (!el || !window.L) return;
@@ -144,10 +148,8 @@
     S.map = L.map(el, { preferCanvas: true, zoomControl: true, attributionControl: true, zoomSnap: 0.25, renderer: L.canvas({ padding: 0.5, tolerance: 7 }) }).setView([46.6, 2.4], 5.5);
     try { S.map.attributionControl.setPrefix(''); } catch (e) {}
     addBaseLayer(S.map);
-    if (L.markerClusterGroup) {
-      S.cluster = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 44, disableClusteringAtZoom: 8, removeOutsideVisibleBounds: true, spiderfyOnMaxZoom: false, zoomToBoundsOnClick: true, showCoverageOnHover: false,
-        iconCreateFunction: function (c) { var n = c.getChildCount(); return L.divIcon({ html: '<div class="cm-cl">' + n + '</div>', className: 'cm-clw', iconSize: [34, 34] }); } });
-    } else S.cluster = L.layerGroup();
+    // 14/10 tour 2 : ~250 sites = assez peu pour TOUS les montrer, un point coloré par site (canvas) : plus de ronds blancs numérotés
+    S.cluster = L.layerGroup();
     S.map.addLayer(S.cluster);
     S.selLayer = L.layerGroup().addTo(S.map);
     dessiner();
@@ -163,10 +165,10 @@
       if (best) ouvrirFiche(best._p.id);
     });
     var vue = vueInitiale();
-    if (vue) cadrer(vue, 10); else setTimeout(function () { if (S.map === cible && !S.param) S.map.fitBounds([[41.2, -5.6], [51.3, 9.9]], { padding: [8, 8] }); }, 90);
+    if (vue) cadrer(vue, 10); else { cadrerFrance(); }
     var cible = S.map;
-    setTimeout(function () { if (S.map === cible && document.getElementById('cm-map')) { S.map.invalidateSize(); if (vue) cadrer(vue, 10); } }, 80);
-    setTimeout(function () { if (S.map === cible && document.getElementById('cm-map')) { S.map.invalidateSize(); } }, 450);
+    setTimeout(function () { if (S.map === cible && document.getElementById('cm-map')) { S.map.invalidateSize(); if (vue) cadrer(vue, 10); else cadrerFrance(); } }, 80);
+    setTimeout(function () { if (S.map === cible && document.getElementById('cm-map')) { S.map.invalidateSize(); if (!S.param && !S.sel && !S.selG) cadrerFrance(); } }, 450);
     if (!S.resizeLie) {
       S.resizeLie = true;
       window.addEventListener('resize', function () { if (S.map && V2.route && V2.route.name === 'concurrents' && document.getElementById('cm-map')) S.map.invalidateSize(); });
@@ -213,7 +215,7 @@
   function appliquerParam() {
     var p = S.param || '';
     var mG = p.match(/^g\/(.+)$/), mGr = p.match(/^gr\/(.+)$/);
-    S.sel = null;
+    S.sel = null; S.selG = null;
     if (mG) {
       var id = decodeURIComponent(mG[1]), f = fiche(id);
       if (!f) { ouvrirVolet('Fiche', '<div class="gr-empty">Fiche introuvable : ' + esc(id) + '.</div>'); dessiner(); return; }
@@ -221,7 +223,7 @@
       // ancienne adresse d'une fiche fusionnée (#concurrents/g/phoenix) : l'adresse devient celle de la fiche de tête
       if (f.id !== id) { try { history.replaceState(null, '', '#concurrents/g/' + encodeURIComponent(f.id)); if (V2.route) V2.route.param = 'g/' + f.id; } catch (e) {} }
       var pts = ptsDe(f.id);
-      ouvrirVolet(S.info.nom(f.nom), '<div class="v2-loading"><div class="v2-spinner"></div></div>');
+      ouvrirVolet(S.info.aff(f), '<div class="v2-loading"><div class="v2-spinner"></div></div>');
       V2.grossisteFiche(f.id, pts, function (html) {
         var c = document.getElementById('cm-vcorps'); if (!c || S.sel !== f.id) return;
         c.innerHTML = html; c.scrollTop = 0;
@@ -232,7 +234,7 @@
     } else if (mGr) {
       var gid = decodeURIComponent(mGr[1]), g = grp(gid);
       S.selG = gid;
-      ouvrirVolet(g ? S.info.nom(g.nom) : 'Groupe', '<div class="v2-loading"><div class="v2-spinner"></div></div>');
+      ouvrirVolet(g ? S.info.aff(g) : 'Groupe', '<div class="v2-loading"><div class="v2-spinner"></div></div>');
       V2.grossisteGroupeFiche(gid, function (html) { var c = document.getElementById('cm-vcorps'); if (c && S.selG === gid) { c.innerHTML = html; c.scrollTop = 0; } });
       dessiner();
       var q = ptsGroupe(gid); if (q.length) cadrer(q, 8);
@@ -244,11 +246,11 @@
     var nat = '<label class="v2-select" aria-label="Nature"><select id="cm-nat" onchange="V2.concFiltre(\'nature\', this.value)">' + NATURES.map(function (n) { return '<option value="' + esc(n[0]) + '"' + (S.f.nature === n[0] ? ' selected' : '') + '>' + esc(n[1]) + '</option>'; }).join('') + '</select><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></label>';
     var nNr = (S.pts || []).filter(function (p) { return !p.rep && !p.ferme; }).length, nFe = (S.pts || []).filter(function (p) { return p.ferme; }).length;
     var tog = '<span class="cm-togs" id="cm-togs">' +
-      '<button type="button" class="cm-tog' + (S.f.nonrep ? ' on' : '') + '" aria-pressed="' + S.f.nonrep + '" onclick="V2.concBascule(\'nonrep\')" title="Exportateurs, dépositaires, plateformes d\'achat, groupements : pas des répartiteurs officinaux">Afficher aussi les non-répartiteurs <em>' + nNr + '</em></button>' +
+      '<button type="button" class="cm-tog' + (S.f.nonrep ? ' on' : '') + '" aria-pressed="' + S.f.nonrep + '" onclick="V2.concBascule(\'nonrep\')" title="Afficher aussi les non-répartiteurs : exportateurs, dépositaires, plateformes d\'achat, groupements">Non-répartiteurs <em>' + nNr + '</em></button>' +
       '<button type="button" class="cm-tog' + (S.f.fermes ? ' on' : '') + '" aria-pressed="' + S.f.fermes + '" onclick="V2.concBascule(\'fermes\')" title="Sites fermés depuis le registre : pratique pour voir les fermetures d\'entrepôts">Sites fermés <em>' + nFe + '</em></button></span>';
     return '<div class="cm-bar"><div class="cm-rech"><div class="v2-champ">' + ICO('search', 20, 2) +
-      '<input id="cm-q" type="search" inputmode="search" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Un grossiste, une ville, un groupe" value="' + esc(S.f.q) + '" oninput="V2.concRecherche(this.value)" aria-label="Chercher un grossiste"></div>' +
-      '<div class="cm-sug" id="cm-sug" role="listbox"></div></div><div class="cm-rowb">' + nat + tog + '<span id="cm-zones-h">' + zonesHtml() + '</span></div></div>';
+      '<input id="cm-q" type="search" inputmode="search" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Grossiste, ville…" value="' + esc(S.f.q) + '" oninput="V2.concRecherche(this.value)" aria-label="Chercher un grossiste"></div>' +
+      '<div class="cm-sug" id="cm-sug" role="listbox"></div></div><button type="button" class="cm-fbtn" onclick="V2.concFiltres()" aria-expanded="false">Filtres</button><div class="cm-rowb" id="cm-rowb">' + nat + tog + '<span id="cm-zones-h">' + zonesHtml() + '</span></div></div>';
   }
   function nOuverts(fn) { return (S.pts || []).filter(function (p) { return !p.ferme && p.rep && (!fn || fn(p)); }).length; }
   function zonesHtml() {
@@ -262,22 +264,24 @@
   function legendeHtml() {
     var cpt = {}; (S.pts || []).forEach(function (p) { if ((S.f.fermes || !p.ferme) && (S.f.nonrep || p.rep)) cpt[p.groupe_id] = (cpt[p.groupe_id] || 0) + 1; });
     var gs = S.info.groupes().filter(function (g) { return cpt[g.id]; }).sort(function (a, b) { return (cpt[b.id] || 0) - (cpt[a.id] || 0); });
-    var chips = gs.map(function (g) {
+    var tousG = gs.length, visG = S.legAll ? gs : gs.slice(0, 9);
+    var chips = visG.map(function (g) {
       var on = S.f.groupe === g.id;
-      return '<span class="cm-chip' + (on ? ' on' : '') + '"><button type="button" class="cm-chip-m" onclick="V2.concFiltre(\'groupe\', \'' + esc(g.id) + '\')" aria-pressed="' + on + '" title="Filtrer la carte sur ce groupe"><i style="background:' + esc(g.couleur) + '"></i>' + esc(S.info.nom(g.nom).replace(/^Groupe\s+/i, '')) + ' <em>' + cpt[g.id] + '</em></button>' +
-        '<button type="button" class="cm-chip-i" onclick="V2.concGroupe(\'' + esc(g.id) + '\')" aria-label="Ouvrir la fiche du groupe ' + esc(S.info.nom(g.nom)) + '">' + ICO('chev', 14, 2.4) + '</button></span>';
+      return '<span class="cm-chip' + (on ? ' on' : '') + '"><button type="button" class="cm-chip-m" onclick="V2.concFiltre(\'groupe\', \'' + esc(g.id) + '\')" aria-pressed="' + on + '" title="Filtrer la carte sur ce groupe"><i style="background:' + esc(g.couleur) + '"></i>' + esc(S.info.aff(g)) + ' <em>' + cpt[g.id] + '</em></button>' +
+        '<button type="button" class="cm-chip-i" onclick="V2.concGroupe(\'' + esc(g.id) + '\')" aria-label="Ouvrir la fiche du groupe ' + esc(S.info.aff(g)) + '">' + ICO('chev', 14, 2.4) + '</button></span>';
     }).join('');
     CLES = '<span class="cm-cle"><i class="nous"></i>Intégral Pharma</span><span class="cm-cle"><i class="dec"></i>Décision officielle</span><span class="cm-cle"><i class="fer"></i>Site fermé</span>';
-    return '<div class="cm-leg" id="cm-leg"><div class="cm-chips">' + chips + '</div></div>';
+    var plus = tousG > 9 ? '<button type="button" class="cm-plus" onclick="V2.concLegende()">' + (S.legAll ? 'Moins' : '+ ' + (tousG - 9) + ' autres groupes') + '</button>' : '';
+    return '<div class="cm-leg" id="cm-leg"><div class="cm-chips">' + chips + plus + '</div></div>';
   }
   function basHtml() {
     var m = S.meta || {}, n = (S.pts || []).length, ns = (S.sans || []).length;
     var acteurs = {}; (S.pts || []).forEach(function (p) { if (!p.ferme && p.rep) acteurs[p.id] = 1; });
     var gs = S.info.groupes().filter(function (g) { return g.pdm_num > 0; }).sort(function (a, b) { return b.pdm_num - a.pdm_num; });
     var sum = gs.reduce(function (s, g) { return s + g.pdm_num; }, 0), autres = Math.max(0, Math.round((100 - sum) * 10) / 10);
-    var barre = gs.map(function (g) { return '<span style="width:' + g.pdm_num + '%;background:' + esc(g.couleur) + '" title="' + esc(S.info.nom(g.nom)) + ' ' + g.pdm_num + ' %"></span>'; }).join('') + (autres > 0 ? '<span style="width:' + autres + '%;background:#CBD2DD" title="Autres"></span>' : '');
-    var leg = gs.map(function (g) { return '<span><i style="background:' + esc(g.couleur) + '"></i>' + esc(S.info.nom(g.nom).replace(/^Groupe\s+/i, '')) + ' ' + String(g.pdm_num).replace('.', ',') + ' %</span>'; }).join('');
-    var sansHtml = ns ? '<details class="cm-sans"><summary>' + ns + ' site' + (ns > 1 ? 's' : '') + ' sans coordonnées (non placés sur la carte)</summary><ul>' + S.sans.map(function (p) { var fi = fiche(p.id) || {}; return '<li><button type="button" onclick="V2.grossisteOpen(\'' + esc(p.id) + '\')">' + esc(S.info.nom(fi.nom || p.nom)) + '</button> ' + esc(p.ville || '') + ' ' + esc(p.cp || '') + '</li>'; }).join('') + '</ul></details>' : '';
+    var barre = gs.map(function (g) { return '<span style="width:' + g.pdm_num + '%;background:' + esc(g.couleur) + '" title="' + esc(S.info.aff(g)) + ' ' + g.pdm_num + ' %"></span>'; }).join('') + (autres > 0 ? '<span style="width:' + autres + '%;background:#CBD2DD" title="Autres"></span>' : '');
+    var leg = gs.map(function (g) { return '<span><i style="background:' + esc(g.couleur) + '"></i>' + esc(S.info.aff(g)) + ' ' + String(g.pdm_num).replace('.', ',') + ' %</span>'; }).join('');
+    var sansHtml = ns ? '<details class="cm-sans"><summary>' + ns + ' site' + (ns > 1 ? 's' : '') + ' sans coordonnées (non placés sur la carte)</summary><ul>' + S.sans.map(function (p) { var fi = fiche(p.id) || {}; return '<li><button type="button" onclick="V2.grossisteOpen(\'' + esc(p.id) + '\')">' + esc(S.info.aff(fi)) + '</button> ' + esc(p.ville || '') + ' ' + esc(p.cp || '') + '</li>'; }).join('') + '</ul></details>' : '';
     return '<div class="cm-bas"><div class="cm-marche"><div class="cm-marche-t">Poids des groupes sur le marché</div><div class="cm-mbar">' + barre + '</div><div class="cm-mleg">' + leg + '</div></div>' +
       '<div class="cm-faits"><b>' + nOuverts() + '</b> sites ouverts de répartiteurs · <b>' + Object.keys(acteurs).length + '</b> acteurs cartographiés · données du ' + esc(String(m.maj || '').split('-').reverse().join('/')) +
       '<span class="cm-honnete">' + (m.provisoire ? esc(m.provisoire) + '. ' : '') + 'Source : registre des entreprises, activité 46.46Z (commerce de gros de produits pharmaceutiques) ; la liste officielle de l\'ANSM n\'est pas téléchargeable.</span></div>' + sansHtml + '</div>';
@@ -320,13 +324,14 @@
   V2.concCarteMap = function () { return S.map; };   // pour les sondes de test (lecture seule)
 
   // ── actions ────────────────────────────────────────────────────────────────
+  V2.concLegende = function () { S.legAll = !S.legAll; var h = document.getElementById('cm-leg-h'); if (h) h.innerHTML = legendeHtml(); };
+  V2.concFiltres = function () { var r = document.getElementById('cm-rowb'), b = document.querySelector('.cm-fbtn'); if (!r) return; var o = r.classList.toggle('ouvert'); if (b) b.setAttribute('aria-expanded', o); };
   V2.concGroupe = function (gid) { V2.go('concurrents', 'gr/' + gid); try { history.replaceState(null, '', '#concurrents/gr/' + encodeURIComponent(gid)); } catch (e) {} };
   V2.concFermer = function () { V2.go('concurrents', 'carte'); };
   V2.concFiltre = function (cle, v) {
     if (cle === 'groupe') S.f.groupe = (S.f.groupe === v ? '' : v); else S.f[cle] = v;
     dessiner();
     var h = document.getElementById('cm-leg-h'); if (h) h.innerHTML = legendeHtml();
-    if (cle === 'groupe' && S.f.groupe) cadrer(ptsGroupe(S.f.groupe), 8);
   };
   V2.concBascule = function (cle) {
     S.f[cle] = !S.f[cle];
@@ -344,7 +349,7 @@
       var nq = norm(S.f.q).trim();
       if (nq.length < 2) { s.innerHTML = ''; s.classList.remove('on'); return; }
       var gs = S.info.data.grossistes.filter(function (g) { return !g.fusionne_dans && norm(g.nom + ' ' + g.id).indexOf(nq) >= 0; }).slice(0, 7);
-      s.innerHTML = gs.map(function (g) { var gr = grp(g.groupe_id) || {}; return '<button type="button" role="option" onclick="V2.concChoisir(\'' + esc(g.id) + '\')"><i style="background:' + esc(gr.couleur || '#607D8B') + '"></i><b>' + esc(S.info.nom(g.nom)) + '</b><span>' + (g.nb_points || 0) + ' site' + ((g.nb_points || 0) > 1 ? 's' : '') + '</span></button>'; }).join('');
+      s.innerHTML = gs.map(function (g) { var gr = grp(g.groupe_id) || {}; return '<button type="button" role="option" onclick="V2.concChoisir(\'' + esc(g.id) + '\')"><i style="background:' + esc(gr.couleur || '#607D8B') + '"></i><b>' + esc(S.info.aff(g)) + '</b><span>' + (g.nb_points || 0) + ' site' + ((g.nb_points || 0) > 1 ? 's' : '') + '</span></button>'; }).join('');
       s.classList.toggle('on', gs.length > 0);
     }, 120);
   };
@@ -355,7 +360,8 @@
   };
   V2.concZone = function (k) {
     var z = ZONES.filter(function (x) { return x[0] === k; })[0]; if (!z || !S.map) return;
-    S.map.fitBounds(z[2], { padding: [20, 20], maxZoom: k === 'fr' ? 6 : 11 });
+    if (k === 'fr') { cadrerFrance(); return; }
+    S.map.fitBounds(z[2], { padding: [20, 20], maxZoom: 11 });
   };
   V2.concCentrer = function (pid) {
     var m = S.marks[pid]; if (!m || !S.map) return;
@@ -383,7 +389,7 @@
       '.cm-root{display:flex;flex-direction:column;gap:12px}',
       '.cm-chargement{display:flex;flex-direction:column;align-items:center;gap:12px;padding:90px 20px;color:var(--muted)}',
       '.cm-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px}',
-      '.cm-rech{position:relative;flex:1 1 320px;max-width:520px}',
+      '.cm-rech{position:relative;flex:1 1 220px;max-width:340px}',
       '.cm-sug{display:none;position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:600;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--sh-pop);overflow:hidden}',
       '.cm-sug.on{display:block}',
       '.cm-sug button{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:8px 14px;border:0;border-top:1px solid var(--line);background:none;font:inherit;font-size:14px;color:var(--ip-ink);text-align:left;cursor:pointer}',
@@ -397,14 +403,17 @@
       '.cm-rowb{display:contents}',
       '.cm-zones{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.cm-zones::-webkit-scrollbar{display:none}',
       '#cm-zones-h{display:contents}',
-      '.cm-zone{flex:none;min-height:40px;padding:0 14px;border:1px solid var(--line);border-radius:var(--r-pill);background:var(--card);font:inherit;font-size:13px;font-weight:700;color:var(--ip-ink-2);cursor:pointer}',
-      '.cm-zone em{font-style:normal;font-weight:700;color:var(--muted);margin-left:6px;font-variant-numeric:tabular-nums}.cm-zone:hover{border-color:var(--ip-blue);color:var(--ip-blue)}',
+      '.cm-zone{flex:none;min-height:40px;padding:0 10px;border:1px solid var(--line);border-radius:var(--r-pill);background:var(--card);font:inherit;font-size:13px;font-weight:700;color:var(--ip-ink-2);cursor:pointer}',
+      '.cm-zone em{font-style:normal;font-weight:700;color:var(--muted);margin-left:4px;font-variant-numeric:tabular-nums}.cm-zone:hover{border-color:var(--ip-blue);color:var(--ip-blue)}',
       '.cm-leg{display:flex;flex-direction:column;gap:8px}',
-      '.cm-chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}.cm-chips::-webkit-scrollbar{display:none}',
+      '.cm-fbtn{display:none}',
+      '.cm-plus{flex:none;min-height:36px;padding:0 14px;border:1px dashed var(--line-strong,#cdd3df);border-radius:var(--r-pill);background:none;font:inherit;font-size:13px;font-weight:700;color:var(--ip-blue);cursor:pointer;white-space:nowrap}',
+      '.cm-bar .v2-select select{width:200px}.cm-rech{flex:1 1 170px;max-width:200px}.cm-bar{gap:8px}',
+      '.cm-chips{display:flex;flex-wrap:wrap;gap:6px;padding-bottom:2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}.cm-chips::-webkit-scrollbar{display:none}',
       '.cm-chip{flex:none;white-space:nowrap;display:inline-flex;align-items:stretch;border:1px solid var(--line);border-radius:var(--r-pill);background:var(--card);overflow:hidden}',
       '.cm-chip.on{border-color:var(--ip-ink);box-shadow:0 0 0 2px color-mix(in srgb,var(--ip-ink) 12%,transparent)}',
       '.cm-chip button{border:0;background:none;font:inherit;cursor:pointer;color:var(--ip-ink)}',
-      '.cm-chip .cm-chip-m{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:0 6px 0 12px;font-size:13px;font-weight:700}',
+      '.cm-chip .cm-chip-m{display:inline-flex;align-items:center;gap:7px;min-height:34px;padding:0 6px 0 12px;font-size:13px;font-weight:700}',
       '.cm-chip-m i{width:11px;height:11px;border-radius:50%;flex:none}.cm-chip-m em{font-style:normal;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}',
       '.cm-chip.on .cm-chip-m{background:var(--ip-ink);color:#fff}.cm-chip.on .cm-chip-m em{color:#fff}',
       '.cm-chip-i{display:grid;place-items:center;width:34px;color:var(--muted);border-left:1px solid var(--line)!important}.cm-chip-i:hover{color:var(--ip-blue)}',
@@ -444,7 +453,11 @@
       '.cm-bas{grid-template-columns:1fr}',
       '.cm-rech{flex-basis:100%;max-width:none}',
       '.cm-cles{left:8px;bottom:8px;gap:2px 10px;padding:5px 9px;max-width:calc(100% - 72px)}',
-      '.cm-rowb{display:flex;gap:8px;align-items:center;width:100%;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:2px}.cm-rowb::-webkit-scrollbar{display:none}',
+      '.cm-fbtn{display:inline-flex;align-items:center;min-height:48px;padding:0 16px;border:1px solid var(--line);border-radius:var(--r-btn);background:var(--card);font:inherit;font-size:14px;font-weight:700;color:var(--ip-ink-2);box-shadow:var(--sh-1)}',
+      '.cm-rech{flex:1 1 0;min-width:0;max-width:none}.cm-bar{flex-wrap:nowrap}',
+      '.cm-rowb{display:none}.cm-rowb.ouvert{display:flex;flex-wrap:wrap;gap:8px;align-items:center;position:absolute;left:14px;right:14px;z-index:700;padding:12px;margin-top:62px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--sh-pop)}',
+      '.cm-bar{position:relative}.cm-zones{flex-wrap:wrap;overflow:visible}',
+      '.cm-chips{flex-wrap:nowrap;overflow-x:auto}',
       '.cm-rowb>*{flex:none}.cm-togs{flex-wrap:nowrap}.cm-zones{overflow:visible}',
       'html.cm-lock .v2-wrap{overscroll-behavior:contain}',
       '}'
