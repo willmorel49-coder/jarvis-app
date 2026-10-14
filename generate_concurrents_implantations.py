@@ -222,11 +222,14 @@ def _point(e, x, fid, fiche, avant):
         lat, lon = ancien.get('lat'), ancien.get('lon')
     if lat is None or lon is None:
         lat, lon = _ban(e, cp)
+    ville = nom_commune(e)
+    if _NOMS.get(e.get('commune') or '') == '' and ancien.get('ville'):
+        ville = ancien['ville']   # l'API des communes s'est tue : le nom du mois dernier vaut mieux que « Saint Pierre »
     ens = e.get('liste_enseignes') or []
     enseigne = ' / '.join(ens) if ens else (e.get('nom_commercial') or '')
     return {'pid': siret, 'id': fid, 'groupe_id': fiche.get('groupe_id', ''), 'siret': siret, 'siren': x['siren'],
             'nom': enseigne or x.get('nom_raison_sociale') or x.get('nom_complet') or fiche.get('nom', ''),
-            'ville': nom_commune(e), 'cp': cp, 'dep': cp[:3] if cp[:2] in ('97', '98') else dep(cp),
+            'ville': ville, 'cp': cp, 'dep': cp[:3] if cp[:2] in ('97', '98') else dep(cp),
             'lat': lat, 'lon': lon, 'ansm': 'introuvable', 'nous': fiche.get('groupe_id') == 'integral',
             'siege': bool(e.get('est_siege')), 'hors_naf': naf != '46.46Z', 'naf': naf,
             'ferme': ferme, 'date_fermeture': e.get('date_fermeture') or '',
