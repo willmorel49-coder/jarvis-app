@@ -831,7 +831,7 @@
     offilog: { fam: 'produits', ico: 'offilog', nom: 'Offilog', ph: 'La centrale parapharmacie', page: 'offilog' },
     concurrents: { fam: 'piloter', ico: 'concurrents', nom: 'Concurrents', ph: 'Ce que font les autres', page: 'concurrents' },
     remontees: { fam: 'communiquer', ico: 'remontees', nom: 'Remontées', ph: 'Le mur d\'idées de l\'équipe', page: 'remontees' },
-    // 14/10/2026 — fil de discussion de l'équipe (idée d'Inès Montignac). L'écran n'est chargé que hors espace OPSO : sans lui, pas de porte.
+    // 14/10/2026 — fil de discussion de l'équipe (idée d'une commerciale). L'écran n'est chargé que hors espace OPSO : sans lui, pas de porte.
     discussion: { fam: 'communiquer', ico: 'discussion', nom: 'Discussion', ph: 'Le fil de discussion de l\'équipe', page: 'discussion' },
     marchefr: { fam: 'piloter', ico: 'marche', nom: 'Le marché', ph: 'Le marché français d\'une référence, région par région', page: 'marchefr' },
     carteGrp: { fam: 'piloter', ico: 'carte-grp', nom: 'Carte des groupements', ph: 'Où sont les adhérents de chaque groupement', page: 'carteGrp' },

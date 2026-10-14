@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════
    CRM V2 · Discussion — le fil de discussion de l'équipe (14/10/2026)
-   Demande d'Inès Montignac : « mettre un fil de discussion comme Slack ».
+   Demande d'une commerciale : « mettre un fil de discussion comme Slack ».
    Décisions de Will (14/10/2026) : des SUJETS LIBRES que tout le monde peut créer,
    pas de découpage par officine ; toute l'équipe voit tout, direction comprise ;
    les comptes OPSO sont exclus ; aucun sujet privé.

@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════
    CRM V2 · Mon agenda — onglets Jour / Semaine / Mois (14/10/2026)
-   Idée d'Inès Montignac : « une vision semaine et mois pour l'agenda, mélangée avec la
+   Idée d'une commerciale : « une vision semaine et mois pour l'agenda, mélangée avec la
    to do list ». Version A1 choisie par Will le 14/10/2026.
 
    Ce que ce module ajoute à « Mon agenda » (v2-rdv-planning.js, qui l'appelle une fois
