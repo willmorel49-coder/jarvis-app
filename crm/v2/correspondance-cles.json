@@ -1,0 +1,1574 @@
+{
+ "maj": "2026-10-14",
+ "note": "Une seule clé : l'id de la fiche. Tables générées par assembler.py.",
+ "fiches": [
+  {
+   "id": "ocp",
+   "groupe_id": "phoenix",
+   "couleur": "#E30613",
+   "cle_implantations": "phoenix",
+   "tag_actu": "ocp",
+   "tags_actu": [
+    "ocp",
+    "phoenix"
+   ],
+   "prix_sources": [
+    "ocp",
+    "mc",
+    "etradi"
+   ],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "phoenix",
+   "groupe_id": "phoenix",
+   "couleur": "#E30613",
+   "cle_implantations": "phoenix",
+   "tag_actu": "ocp",
+   "tags_actu": [
+    "ocp",
+    "phoenix"
+   ],
+   "prix_sources": [
+    "ocp",
+    "mc",
+    "etradi"
+   ],
+   "fusionne_dans": "ocp"
+  },
+  {
+   "id": "cerp-rouen",
+   "groupe_id": "astera",
+   "couleur": "#F39200",
+   "cle_implantations": "cerp",
+   "tag_actu": "cerp",
+   "tags_actu": [
+    "cerp",
+    "cerp-rouen",
+    "cerp-rrm"
+   ],
+   "prix_sources": [
+    "cerp"
+   ],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "cerp-rrm",
+   "groupe_id": "astera",
+   "couleur": "#F39200",
+   "cle_implantations": "cerp",
+   "tag_actu": "cerp",
+   "tags_actu": [
+    "cerp",
+    "cerp-rouen",
+    "cerp-rrm"
+   ],
+   "prix_sources": [
+    "cerp"
+   ],
+   "fusionne_dans": "cerp-rouen"
+  },
+  {
+   "id": "cerp-ba",
+   "groupe_id": "cerp-ba",
+   "couleur": "#00843D",
+   "cle_implantations": "cerp-ba",
+   "tag_actu": "cerp",
+   "tags_actu": [
+    "cerp",
+    "cerp-ba"
+   ],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "alliance",
+   "groupe_id": "cencora",
+   "couleur": "#0033A0",
+   "cle_implantations": "alliance",
+   "tag_actu": "alliance",
+   "tags_actu": [
+    "alliance"
+   ],
+   "prix_sources": [
+    "alliance"
+   ],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "sagitta",
+   "groupe_id": "sagitta",
+   "couleur": "#6A1B9A",
+   "cle_implantations": "sagitta",
+   "tag_actu": "sagitta",
+   "tags_actu": [
+    "sagitta"
+   ],
+   "prix_sources": [
+    "sagitta"
+   ],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "cophana",
+   "groupe_id": "phoenix",
+   "couleur": "#E30613",
+   "cle_implantations": "",
+   "tag_actu": "cophana",
+   "tags_actu": [
+    "cophana"
+   ],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "welcoop",
+   "groupe_id": "welcoop",
+   "couleur": "#5D4037",
+   "cle_implantations": "",
+   "tag_actu": "welcoop",
+   "tags_actu": [
+    "welcoop"
+   ],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "giphar",
+   "groupe_id": "giphar",
+   "couleur": "#C2185B",
+   "cle_implantations": "giphar",
+   "tag_actu": "giphar",
+   "tags_actu": [
+    "giphar"
+   ],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "epsilon",
+   "groupe_id": "ginkgo",
+   "couleur": "#7CB342",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [
+    "epsilon"
+   ],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "pharmest",
+   "groupe_id": "integral",
+   "couleur": "#F39A1B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "axipharm",
+   "groupe_id": "vast-holding",
+   "couleur": "#0ea5e9",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "anjou-sante",
+   "groupe_id": "lis-pharma",
+   "couleur": "#6f42c1",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "mezeghel",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": "mezegel-repartition"
+  },
+  {
+   "id": "r3s",
+   "groupe_id": "sagitta",
+   "couleur": "#6A1B9A",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": "sagitta-occitanie"
+  },
+  {
+   "id": "d2p",
+   "groupe_id": "atrilux",
+   "couleur": "#7c3aed",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "straight",
+   "groupe_id": "zlz-holding",
+   "couleur": "#f59e0b",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "ginkgo",
+   "groupe_id": "ginkgo",
+   "couleur": "#7CB342",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [
+    "epsilon"
+   ],
+   "fusionne_dans": "epsilon"
+  },
+  {
+   "id": "ginkgo-bfc",
+   "groupe_id": "ginkgo",
+   "couleur": "#7CB342",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "apocoop",
+   "groupe_id": "ginkgo",
+   "couleur": "#7CB342",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "mhgc",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "lispharma",
+   "groupe_id": "lis-pharma",
+   "couleur": "#6f42c1",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "clicpharma",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "sipr",
+   "groupe_id": "domtom",
+   "couleur": "#00ACC1",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "pharmar",
+   "groupe_id": "cerp-ba",
+   "couleur": "#00843D",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "sopharma",
+   "groupe_id": "eurapharma",
+   "couleur": "#EF6C00",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "ubipharm",
+   "groupe_id": "ubipharm",
+   "couleur": "#1565C0",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "consultrade-obc",
+   "groupe_id": "cerp-ba",
+   "couleur": "#00843D",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "aredis",
+   "groupe_id": "aredis",
+   "couleur": "#00838F",
+   "cle_implantations": "aredis",
+   "tag_actu": "aredis",
+   "tags_actu": [
+    "aredis"
+   ],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "distrinep",
+   "groupe_id": "aredis",
+   "couleur": "#00838F",
+   "cle_implantations": "aredis",
+   "tag_actu": "aredis",
+   "tags_actu": [
+    "aredis"
+   ],
+   "prix_sources": [],
+   "fusionne_dans": "aredis"
+  },
+  {
+   "id": "aredis-pharma",
+   "groupe_id": "aredis",
+   "couleur": "#00838F",
+   "cle_implantations": "aredis",
+   "tag_actu": "aredis",
+   "tags_actu": [
+    "aredis"
+   ],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "ambapharm",
+   "groupe_id": "vast-holding",
+   "couleur": "#0ea5e9",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "pharmafit-provence",
+   "groupe_id": "pharmaprovence-groupe",
+   "couleur": "#d97706",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [
+    "pharmafit"
+   ],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "sr-pharma",
+   "groupe_id": "integral",
+   "couleur": "#F39A1B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "novapharma",
+   "groupe_id": "lis-pharma",
+   "couleur": "#6f42c1",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "grs",
+   "groupe_id": "groupe-musetti",
+   "couleur": "#b91c1c",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "loire-repartition",
+   "groupe_id": "groupe-musetti",
+   "couleur": "#b91c1c",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "exopharmex",
+   "groupe_id": "export",
+   "couleur": "#9E9D24",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "dpo",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "cophac",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "sodipharm",
+   "groupe_id": "cerp-ba",
+   "couleur": "#00843D",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "distrisante",
+   "groupe_id": "cerp-ba",
+   "couleur": "#00843D",
+   "cle_implantations": "cerp-ba",
+   "tag_actu": "cerp-ba",
+   "tags_actu": [
+    "cerp-ba"
+   ],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "atlantique-repartition",
+   "groupe_id": "cerp-ba",
+   "couleur": "#00843D",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "est-repartition",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "arp",
+   "groupe_id": "duotaing",
+   "couleur": "#10b981",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "bs-repart",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "rrp",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "elixir-pharma",
+   "groupe_id": "lis-pharma",
+   "couleur": "#6f42c1",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "coalia",
+   "groupe_id": "astera",
+   "couleur": "#F39200",
+   "cle_implantations": "cerp",
+   "tag_actu": "cerp",
+   "tags_actu": [
+    "cerp"
+   ],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "cdp-pharma",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "pharma-distribution",
+   "groupe_id": "jalisambre",
+   "couleur": "#e11d48",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "lg-distripharma",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "pharmapro",
+   "groupe_id": "groupements",
+   "couleur": "#94A3B8",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "kalliste-pharma",
+   "groupe_id": "lis-pharma",
+   "couleur": "#6f42c1",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "dpc-ansidei",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "memo-pharma-export",
+   "groupe_id": "export",
+   "couleur": "#9E9D24",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "centre-specialites-export",
+   "groupe_id": "export",
+   "couleur": "#9E9D24",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "all-pharma-france-export",
+   "groupe_id": "export",
+   "couleur": "#9E9D24",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "pharma-plus-export",
+   "groupe_id": "export",
+   "couleur": "#9E9D24",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "agir-pharma",
+   "groupe_id": "groupements",
+   "couleur": "#94A3B8",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "cap-unipharm",
+   "groupe_id": "groupements",
+   "couleur": "#94A3B8",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "ak-distri-sante",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "gpg",
+   "groupe_id": "cerp-ba",
+   "couleur": "#00843D",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "spg",
+   "groupe_id": "eurapharma",
+   "couleur": "#EF6C00",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "soredip",
+   "groupe_id": "eurapharma",
+   "couleur": "#EF6C00",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "copharmay",
+   "groupe_id": "cerp-ba",
+   "couleur": "#00843D",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "dt-pharma",
+   "groupe_id": "ubipharm",
+   "couleur": "#1565C0",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "cerp-martinique",
+   "groupe_id": "domtom",
+   "couleur": "#00ACC1",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "prespharm-om",
+   "groupe_id": "domtom",
+   "couleur": "#00ACC1",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "bi-pharma",
+   "groupe_id": "domtom",
+   "couleur": "#00ACC1",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "laborex",
+   "groupe_id": "eurapharma",
+   "couleur": "#EF6C00",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "cerpol",
+   "groupe_id": "cerp-ba",
+   "couleur": "#00843D",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "medipac",
+   "groupe_id": "eurapharma",
+   "couleur": "#EF6C00",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "tahiti-pharm",
+   "groupe_id": "domtom",
+   "couleur": "#00ACC1",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "unipharma-nc",
+   "groupe_id": "domtom",
+   "couleur": "#00ACC1",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "gpnc",
+   "groupe_id": "domtom",
+   "couleur": "#00ACC1",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "ocdp",
+   "groupe_id": "domtom",
+   "couleur": "#00ACC1",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "medicor",
+   "groupe_id": "lis-pharma",
+   "couleur": "#6f42c1",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "schatz-pharma",
+   "groupe_id": "lis-pharma",
+   "couleur": "#6f42c1",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "comptoir-pharmaceutique-provencal",
+   "groupe_id": "lis-pharma",
+   "couleur": "#6f42c1",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "gdc-pharma",
+   "groupe_id": "lis-pharma",
+   "couleur": "#6f42c1",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "ubipharm-guadeloupe",
+   "groupe_id": "ubipharm",
+   "couleur": "#1565C0",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "ubipharm-martinique",
+   "groupe_id": "ubipharm",
+   "couleur": "#1565C0",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "continental-pharmaceutique",
+   "groupe_id": "eurapharma",
+   "couleur": "#EF6C00",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "ip-ops",
+   "groupe_id": "integral",
+   "couleur": "#F39A1B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "ip-cpr",
+   "groupe_id": "integral",
+   "couleur": "#F39A1B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "ip-sop",
+   "groupe_id": "integral",
+   "couleur": "#F39A1B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "ip-pos",
+   "groupe_id": "integral",
+   "couleur": "#F39A1B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "ip-hp",
+   "groupe_id": "integral",
+   "couleur": "#F39A1B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "ip-sep",
+   "groupe_id": "integral",
+   "couleur": "#F39A1B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "ip-msp",
+   "groupe_id": "integral",
+   "couleur": "#F39A1B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "ip-esc",
+   "groupe_id": "integral",
+   "couleur": "#F39A1B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "sagitta-occitanie",
+   "groupe_id": "sagitta",
+   "couleur": "#6A1B9A",
+   "cle_implantations": "sagitta",
+   "tag_actu": "sagitta",
+   "tags_actu": [
+    "sagitta"
+   ],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "sagitta-nouvelle-aquitaine",
+   "groupe_id": "sagitta",
+   "couleur": "#6A1B9A",
+   "cle_implantations": "sagitta",
+   "tag_actu": "sagitta",
+   "tags_actu": [
+    "sagitta"
+   ],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "mediane-repartition",
+   "groupe_id": "drapier",
+   "couleur": "#8E24AA",
+   "cle_implantations": "drapier",
+   "tag_actu": "drapier",
+   "tags_actu": [
+    "drapier"
+   ],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "mezegel-repartition",
+   "groupe_id": "drapier",
+   "couleur": "#8E24AA",
+   "cle_implantations": "drapier",
+   "tag_actu": "drapier",
+   "tags_actu": [
+    "drapier"
+   ],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "medisca",
+   "groupe_id": "drapier",
+   "couleur": "#8E24AA",
+   "cle_implantations": "drapier",
+   "tag_actu": "drapier",
+   "tags_actu": [
+    "drapier"
+   ],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "alvernia",
+   "groupe_id": "drapier",
+   "couleur": "#8E24AA",
+   "cle_implantations": "drapier",
+   "tag_actu": "drapier",
+   "tags_actu": [
+    "drapier"
+   ],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "rbp-pharma",
+   "groupe_id": "zlz-holding",
+   "couleur": "#f59e0b",
+   "cle_implantations": "rbp",
+   "tag_actu": "aredis",
+   "tags_actu": [
+    "aredis",
+    "rbp"
+   ],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "horizon-pharma",
+   "groupe_id": "zlz-holding",
+   "couleur": "#f59e0b",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "medi-live",
+   "groupe_id": "zlz-holding",
+   "couleur": "#f59e0b",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "next-med",
+   "groupe_id": "zlz-holding",
+   "couleur": "#f59e0b",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "omega-repartition",
+   "groupe_id": "zlz-holding",
+   "couleur": "#f59e0b",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "sun-medical",
+   "groupe_id": "atrilux",
+   "couleur": "#7c3aed",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "cophas",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "altea-pharma",
+   "groupe_id": "lis-pharma",
+   "couleur": "#6f42c1",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "bresse-bugey-jura-repartition",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "franche-comte-repartition",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "bourgogne-morvan-repartition",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "aravis-repartition",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "agli-farm",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "nord-repartition",
+   "groupe_id": "integral",
+   "couleur": "#F39A1B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "sirona-pharma",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "neo-pharma",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "alfa-pharma",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "pharmazon",
+   "groupe_id": "groupements",
+   "couleur": "#94A3B8",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "alienor-repartition",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "pharmel",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "active-repartition",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "delta-pharma",
+   "groupe_id": "ginkgo",
+   "couleur": "#7CB342",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "pharmafit-occitanie",
+   "groupe_id": "pharmaprovence-groupe",
+   "couleur": "#d97706",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "corsicapharm",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "pharmus-repartition",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "delta-repartition",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "sud-repartition",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "distri-pharma",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "capitol-pharma",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "medicale-pharmaceutique",
+   "groupe_id": "export",
+   "couleur": "#9E9D24",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "pharma-lab",
+   "groupe_id": "independants",
+   "couleur": "#607D8B",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "eur-im-ex-pharma",
+   "groupe_id": "export",
+   "couleur": "#9E9D24",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "piex",
+   "groupe_id": "export",
+   "couleur": "#9E9D24",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "evolupharm",
+   "groupe_id": "groupements",
+   "couleur": "#94A3B8",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "planetpharma",
+   "groupe_id": "ubipharm",
+   "couleur": "#1565C0",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "ubipharm-guyane",
+   "groupe_id": "ubipharm",
+   "couleur": "#1565C0",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "ubipharm-mayotte",
+   "groupe_id": "ubipharm",
+   "couleur": "#1565C0",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "polynesia-pharma",
+   "groupe_id": "domtom",
+   "couleur": "#00ACC1",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  },
+  {
+   "id": "pharmatrex",
+   "groupe_id": "export",
+   "couleur": "#9E9D24",
+   "cle_implantations": "",
+   "tag_actu": "",
+   "tags_actu": [],
+   "prix_sources": [],
+   "fusionne_dans": ""
+  }
+ ],
+ "implantations_vers_fiche": {
+  "phoenix": "ocp",
+  "cerp": "cerp-rouen",
+  "cerp-ba": "cerp-ba",
+  "alliance": "alliance",
+  "giphar": "giphar",
+  "sagitta": "sagitta",
+  "drapier": "mediane-repartition",
+  "aredis": "aredis",
+  "rbp": "rbp-pharma"
+ },
+ "tag_actu_vers_fiche": {
+  "ocp": "ocp",
+  "phoenix": "ocp",
+  "cerp": "cerp-rouen",
+  "cerp-rouen": "cerp-rouen",
+  "cerp-rrm": "cerp-rouen",
+  "cerp-ba": "cerp-ba",
+  "alliance": "alliance",
+  "sagitta": "sagitta",
+  "giphar": "giphar",
+  "drapier": "mediane-repartition",
+  "aredis": "aredis",
+  "rbp": "rbp-pharma",
+  "cophana": "cophana",
+  "welcoop": "welcoop"
+ },
+ "source_prix_vers_fiche": {
+  "sagitta": "sagitta",
+  "ocp": "ocp",
+  "mc": "ocp",
+  "etradi": "ocp",
+  "alliance": "alliance",
+  "pharmafit": "pharmafit-provence",
+  "cerp": "cerp-rouen",
+  "epsilon": "epsilon"
+ },
+ "fusions": {
+  "phoenix": "ocp",
+  "cerp-rrm": "cerp-rouen",
+  "mezeghel": "mezegel-repartition",
+  "r3s": "sagitta-occitanie",
+  "distrinep": "aredis",
+  "ginkgo": "epsilon"
+ },
+ "acteur_verifie_vers_fiche": {
+  "phoenix": "ocp",
+  "cerp": "cerp-rouen",
+  "cerp-ba": "cerp-ba",
+  "alliance": "alliance",
+  "giphar": "giphar",
+  "sagitta": "sagitta",
+  "drapier": "mediane-repartition",
+  "aredis": "aredis",
+  "rbp": "rbp-pharma"
+ },
+ "decisions_non_rattachees": [
+  {
+   "cle": "dabstart",
+   "date": "2026-03-17",
+   "entite": "Dabstart (dépositaire)",
+   "siren": "490223179",
+   "raison": "rattachement non sûr (decisions/A-RATTACHER.md)"
+  },
+  {
+   "cle": "sr-pharma",
+   "date": "2022-09-26",
+   "entite": "SR Pharma",
+   "siren": "491371126",
+   "raison": "rattachement non sûr (decisions/A-RATTACHER.md)"
+  },
+  {
+   "cle": "",
+   "date": "2019-05-06",
+   "entite": "5 grossistes-répartiteurs « short-liners » (Novapharma, SR Pharma, COPHAC, GRS, Loire Répartition)",
+   "siren": "",
+   "raison": "acteur sans fiche"
+  },
+  {
+   "cle": "sr-pharma",
+   "date": "2018-11-12",
+   "entite": "SR Pharma",
+   "siren": "491371126",
+   "raison": "rattachement non sûr (decisions/A-RATTACHER.md)"
+  },
+  {
+   "cle": "novapharma",
+   "date": "2018",
+   "entite": "Novapharma",
+   "siren": "790656250",
+   "raison": "rattachement non sûr (decisions/A-RATTACHER.md)"
+  },
+  {
+   "cle": "grs",
+   "date": "2018",
+   "entite": "Groupe Répartition Services (GRS)",
+   "siren": "793633728",
+   "raison": "rattachement non sûr (decisions/A-RATTACHER.md)"
+  },
+  {
+   "cle": "loire-repartition",
+   "date": "2018",
+   "entite": "Loire Répartition",
+   "siren": "808195036",
+   "raison": "rattachement non sûr (decisions/A-RATTACHER.md)"
+  },
+  {
+   "cle": "cerp-rouen",
+   "date": "2001-04-11",
+   "entite": "CERP Rouen",
+   "siren": "",
+   "raison": "SIREN de CERP Rouen non vérifié (A-RATTACHER.md)"
+  }
+ ]
+}

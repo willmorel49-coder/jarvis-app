@@ -210,7 +210,9 @@
       return { name: 'home', param: null };
     }
     var param = null;
-    if (parts[1]) { try { param = decodeURIComponent(parts[1]); } catch (e) { param = parts[1]; } }  // lien malformé → pas de crash/spinner figé
+    // 14/10/2026 — #concurrents/g/<id> (fiche d'un grossiste) : le paramètre porte un « / ».
+    var reste = parts[0] === 'concurrents' ? parts.slice(1).join('/') : parts[1];
+    if (reste) { try { param = decodeURIComponent(reste); } catch (e) { param = reste; } }  // lien malformé → pas de crash/spinner figé
     return { name: parts[0] || 'home', param: param };
   }
 
@@ -524,6 +526,8 @@
     groupements: 'var(--pil-fiche)', molecules: '#7C3AED',
     infos: 'var(--c-amber)', marketing: 'var(--c-rose)', sagitta: 'var(--pil-froid)',
     produits: 'var(--ip-blue)',
+    // 14/10/2026 — même teal que la tuile d'accueil (halo de tête de la carte des grossistes)
+    concurrents: '#0E7C86',
     // 29/09/2026 — écrans OPSO « Pharmacies » et « Meilleurs achats » (opso-pharmacies.js)
     opsopharmacies: 'var(--pil-opp)', opsoachats: 'var(--pil-cat)', opsobord: 'var(--pil-pilo)'
   };
@@ -1815,7 +1819,7 @@
       // leurs prix et l'actualité du secteur. L'ex-tuile « Grossistes concurrents »
       // est fondue dedans (#grossistes redirige). Conditions de tiers : jamais côté OPSO.
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.concurrents) {
-        P.push({ k: 'concurrents', cls: 'p5', accent: '#0E7C86', ico: 'spark', tag: 'Veille', t: 'Concurrents', d: 'Tout sur les concurrents au même endroit, en trois questions : qui sont les grossistes, à quel prix ils vendent face à notre net, et quoi de neuf dans le secteur.', go: 'Ouvrir les concurrents' });
+        P.push({ k: 'concurrents', cls: 'p5', accent: '#0E7C86', ico: 'spark', tag: 'Veille', t: 'Concurrents', d: 'La carte de tous les grossistes de France : cliquez sur un point, la fiche s\'ouvre avec ses chiffres, ses prix face à notre net et son actualité.', go: 'Ouvrir les concurrents' });
       }
       // Remontées équipe (mur d'idées interne) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.remontees) {
@@ -1946,7 +1950,7 @@
     var idx = [];
     // Pages
     var PAGES = [['home', 'Accueil', 'opp'], ['pharma', 'Opportunités pharmacie', 'opp'], ['offilog', 'Offilog · parapharmacie & prix concurrents', 'spark'], ['pilotage', 'Pilotage CA & marge', 'pilo']];
-    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.concurrents) PAGES.splice(3, 0, ['concurrents', 'Concurrents · grossistes, leurs prix, actualité', 'spark']);
+    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.concurrents) PAGES.splice(3, 0, ['concurrents', 'Concurrents · la carte des grossistes, leurs prix, actualité', 'spark']);
     // 04/09/2026 — l'app OPSO redevient un simple visu groupement : plus de
     // fiches commerciales chez elle (v2-fiches n'y est plus chargé).
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Fiches marketing OPSO', 'fiche']);
@@ -1981,6 +1985,19 @@
     // Une page non chargée (app OPSO allégée) ne se propose pas au clavier.
     PAGES = PAGES.filter(function (p) { return p[0] === 'home' || !!V2.pages[p[0]]; });
     PAGES.forEach(function (p) { idx.push({ grp: 'Pages', label: p[1], ico: p[2], action: function () { V2.go(p[0]); } }); });
+    // 14/10/2026 — chaque grossiste est trouvable au clavier (« Sagitta », « Giphar »…) et ouvre sa fiche.
+    // La base se charge à la demande : au premier ⌘K on la demande, l'index se reconstruit à son arrivée.
+    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.concurrents) {
+      if (window.GROSSISTES_DATA && window.GROSSISTES_DATA.grossistes) {
+        window.GROSSISTES_DATA.grossistes.forEach(function (g) {
+          if (g.fusionne_dans) return;
+          idx.push({ grp: 'Grossistes', label: String(g.nom).split('(')[0].split(' — ')[0].trim(), ico: 'spark', meta: String(g.id).toLowerCase(), action: function () { V2.go('concurrents', 'g/' + g.id); try { history.replaceState(null, '', '#concurrents/g/' + encodeURIComponent(g.id)); } catch (e) {} } });
+        });
+      } else if (V2.grossistesPret && !V2._grossistesCmdk) {
+        V2._grossistesCmdk = true;
+        V2.grossistesPret(function () { cmdkIdx = null; });
+      }
+    }
     // Espace Groupements (sous-vue de pharma avec param) — recherchable dans ⌘K
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.pharma) {
       idx.push({ grp: 'Pages', label: 'Groupements · listes & listings produits', ico: 'list', action: function () { V2.go('pharma', 'groupements'); } });
