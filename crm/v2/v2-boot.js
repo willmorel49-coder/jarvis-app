@@ -1544,7 +1544,7 @@
     }
   }
   var _etatCarte = '';
-  // 14/10/2026 — « secteurs ajoutés » : table protégée SECTEURS_AJOUTES = {uga:{'66CER':['Pauline S.'],...}}. Elle s'ajoute, sans rien retirer,
+  // 14/10/2026 — « secteurs ajoutés » : table protégée SECTEURS_AJOUTES = {uga:{'XXXXX':['Prénom N.'],...}}. Elle s'ajoute, sans rien retirer,
   // à la règle « une UGA appartient aux commerciaux qui y ont un client ». Table absente = `map` rendue telle quelle.
   // `map` est indexée par numéro d'UGA (celui de PHARMA_FR.p[i][2]) ; `uga` = PHARMA_FR.uga. Utilisée par ugaCommMap (v2-pharma.js) ET buildCommMaps (v2-carte.js).
   V2.ajouterSecteursAjoutes = function (map, uga) {

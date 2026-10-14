@@ -1623,7 +1623,7 @@
       '<div class="pha-legend"><span><i style="background:#0050E6"></i>Cette officine</span><span><i style="background:#B9C4DB"></i>Officine moyenne du réseau (' + V2.fmtNum(A.nOff) + ')</span></div>' +
       analyseMoisTableau(A) + '</div>';
   }
-  // 14/10/2026 — « CA exact par mois » (remontée de Karine) : un tableau mois par mois en euros EXACTS sous la courbe, visible sans dépliage.
+  // 14/10/2026 — « CA exact par mois » (remontée d'une commerciale) : un tableau mois par mois en euros EXACTS sous la courbe, visible sans dépliage.
   // Mêmes mois que la courbe, depuis le premier mois d'activité (A.i0) ; l'évolution se lit face au mois d'avant.
   function analyseMoisTableau(A) {
     if (!A.nAct) return '';
