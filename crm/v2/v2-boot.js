@@ -104,6 +104,104 @@
     return val;
   };
 
+  // ── 14/10/2026 : « NOTRE MARGE » par client (ce que les ventes rapportent à l'entreprise) ──
+  // Source : window.MARGE_CLIENTS (fichier protégé `marge-clients.js`, estimation de la direction
+  // calculée avec les vrais prix d'achat). Lignes [ci, oi, AAAAMM, ca, tot, p, p1, p2, i, c, fr, nr, caGen].
+  // Un commercial restreint reçoit le même format réduit à SES prénoms : une officine de collègue
+  // n'y figure pas → somme nulle, sans erreur. ⚠️ Ce n'est PAS la « marge nette » de la pharmacie
+  // (margeNettePharma, mdl) : deux libellés, deux chiffres, ne jamais les confondre.
+  // Aucun prix d'achat ni aucune marge par produit ici : totaux et répartition par familles seulement.
+  V2.notreMarge = (function () {
+    var FAM = ['p', 'p1', 'p2', 'i', 'c', 'fr', 'nr'];
+    var LIBELLES = {
+      p: 'Petits prix (moins de 4,33 €)', p1: 'Petits prix (moins de 3,17 €)', p2: 'De 3,17 à 4,33 €',
+      i: 'De 4,33 à 468 €', c: 'Plus de 468 €', fr: 'Chaîne du froid', nr: 'Non remboursés'
+    };
+    var MOIS_LONGS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    var memo = { d: null, parOff: null, parCom: null };
+    function donnees() {
+      var d = window.MARGE_CLIENTS;
+      return (d && d.r && d.c && d.o) ? d : null;
+    }
+    // index construit une seule fois par jeu de données : lignes rangées par officine et par prénom
+    function index() {
+      var d = donnees();
+      if (!d) return null;
+      if (memo.d === d) return memo;
+      var parOff = {}, parCom = {};
+      for (var i = 0; i < d.r.length; i++) {
+        var l = d.r[i];
+        var po = String(d.o[l[1]]);
+        (parOff[po] || (parOff[po] = [])).push(l);
+        (parCom[l[0]] || (parCom[l[0]] = [])).push(l);
+      }
+      memo = { d: d, parOff: parOff, parCom: parCom };
+      return memo;
+    }
+    function ymDe(cle, defaut) {
+      var m = /^(\d{4})-(\d{2})$/.exec(cle || '');
+      return m ? +(m[1] + m[2]) : defaut;
+    }
+    function cleDe(ym) { var t = String(ym); return t.slice(0, 4) + '-' + t.slice(4, 6); }
+    function arrondi(x) { return Math.round(x * 100) / 100; }
+    // opts : { pid: string|Set, comms: array|null (null = tous), du: 'AAAA-MM', au: 'AAAA-MM' }
+    function somme(opts) {
+      opts = opts || {};
+      var r = { tot: 0, fam: { p: 0, p1: 0, p2: 0, i: 0, c: 0, fr: 0, nr: 0 }, ca: 0, caGen: 0, moisCouverts: [], n: 0 };
+      var ix = index();
+      if (!ix) return r;
+      var d = ix.d;
+      var du = ymDe(opts.du, 0), au = ymDe(opts.au, 999999);
+      d.mois.forEach(function (m) { var y = ymDe(m, 0); if (y >= du && y <= au) r.moisCouverts.push(m); });
+      var ok = null;   // prénoms autorisés → indices dans d.c
+      if (opts.comms) {
+        ok = {};
+        opts.comms.forEach(function (nom) { var k = d.c.indexOf(nom); if (k >= 0) ok[k] = 1; });
+      }
+      function ajoute(l) {
+        if (l[2] < du || l[2] > au) return;
+        if (ok && !ok[l[0]]) return;
+        r.n++; r.ca += l[3]; r.tot += l[4];
+        for (var f = 0; f < 7; f++) r.fam[FAM[f]] += l[5 + f];
+        r.caGen += l[12] || 0;
+      }
+      if (opts.pid != null) {
+        var pids = (typeof opts.pid === 'string' || typeof opts.pid === 'number') ? [String(opts.pid)] : Array.from(opts.pid).map(String);
+        pids.forEach(function (pid) { (ix.parOff[pid] || []).forEach(ajoute); });
+      } else if (ok) {
+        Object.keys(ok).forEach(function (k) { (ix.parCom[k] || []).forEach(ajoute); });
+      } else {
+        d.r.forEach(ajoute);
+      }
+      r.tot = arrondi(r.tot); r.ca = arrondi(r.ca); r.caGen = arrondi(r.caGen);
+      FAM.forEach(function (f) { r.fam[f] = arrondi(r.fam[f]); });
+      return r;
+    }
+    function nomMoisLong(cle) {
+      var m = /^(\d{4})-(\d{2})$/.exec(cle || '');
+      return m ? MOIS_LONGS[+m[2] - 1] + ' ' + m[1] : '';
+    }
+    return {
+      LIBELLES: LIBELLES,
+      FAMILLES: FAM,
+      dispo: function () { return !!donnees(); },
+      jusqua: function () { var d = donnees(); return d ? (d.jusqua || '') : ''; },
+      mois: function () { var d = donnees(); return d ? d.mois.slice() : []; },
+      reserve: function (cleMois) { var d = donnees(); return (d && d.reserves && d.reserves[cleMois]) || ''; },
+      somme: somme,
+      cleDe: cleDe,
+      nomMoisLong: nomMoisLong,
+      // « estimation, à jour jusqu'à septembre 2026 »
+      libelleDate: function () { var d = donnees(); return d ? 'estimation, à jour jusqu’à ' + nomMoisLong(d.jusqua) : ''; },
+      // lignes de répartition : seulement les familles non nulles (à 0 € = masquées)
+      familles: function (res) {
+        return FAM.filter(function (f) { return Math.round((res.fam[f] || 0) * 100) !== 0; })
+          .map(function (f) { return { k: f, l: LIBELLES[f], v: res.fam[f] }; });
+      },
+      noteGen: function (res) { return res && res.caGen > 0 ? 'Génériques : comptés à zéro' : ''; }
+    };
+  })();
+
   // ── TEMPS 2 (24/09/2026) : le jeu de ventes d'un commercial restreint ──
   // Le reste du réseau n'y est qu'en total par (mois, produit), sur une officine fictive
   // « 0 » ou « 0E » : les sommes par produit restent exactes, mais rien ne s'y COMPTE par
@@ -163,7 +261,7 @@
     } catch (e) { fini('indisponible'); return Promise.resolve(); }
   }
   V2._dossierVentesPret = Promise.resolve();
-  var FICHIERS_VENTES = { 'wml-officines-ca.js': 1, 'carte-detail.js': 1, 'wml-ventes-index.js': 1, 'grp-agregats.js': 1 };
+  var FICHIERS_VENTES = { 'wml-officines-ca.js': 1, 'carte-detail.js': 1, 'wml-ventes-index.js': 1, 'grp-agregats.js': 1, 'marge-clients.js': 1 };
   // Nom dans le seau d'un fichier de ventes : celui du jeu du commercial s'il est restreint.
   V2.cheminVentes = function (nom) {
     return (V2._dossierVentes && (FICHIERS_VENTES[nom] || /^wml-ventes-\d+\.js$/.test(nom)))
@@ -575,6 +673,8 @@
     prodstatscond: 'prod-stats-conditions.js',
     pharmafrca: 'pharma-fr-ca.js',
     wmlca: 'wml-officines-ca.js',
+    // 14/10/2026 — « Notre marge » par client et par mois (estimation direction), même chemin que wmlca ; protégé
+    margeclients: 'marge-clients.js',
     // 05/10/2026 — totaux par groupement du jeu d'un commercial restreint (v2-pharma.js, agregatGroupement)
     grpagregats: 'grp-agregats.js',
     biosimcomplet: 'biosimilaires-complet.js',
@@ -681,6 +781,8 @@
     prodstatscond: 'prod-stats-conditions.js',
     pharmafrca: 'pharma-fr-ca.js',
     wmlca: 'wml-officines-ca.js',
+    // 14/10/2026 — « Notre marge » par client et par mois (estimation direction), même chemin que wmlca ; protégé
+    margeclients: 'marge-clients.js',
     // 05/10/2026 — totaux par groupement du jeu d'un commercial restreint (v2-pharma.js, agregatGroupement)
     grpagregats: 'grp-agregats.js',
     biosimcomplet: 'biosimilaires-complet.js',
@@ -1288,6 +1390,7 @@
     secteursajoutes: 'SECTEURS_AJOUTES',
     mktipprix: 'MKT_IP_PRIX',
     wmlca: 'WML_OFF_CA',
+    margeclients: 'MARGE_CLIENTS',
     grpagregats: 'GRP_AGREGATS',
     biosimcomplet: 'BIOSIMILAIRES_COMPLET',
     mktnr: 'MKT_NR',
@@ -1660,7 +1763,7 @@
       keys = keys.concat(['wmlca']);
     }
     // TEMPS 2 : savoir QUEL jeu de ventes lire avant d'en demander un seul fichier.
-    if (keys && keys.indexOf('wmlca') >= 0 && !V2._dossierVentesConnu) {
+    if (keys && (keys.indexOf('wmlca') >= 0 || keys.indexOf('margeclients') >= 0) && !V2._dossierVentesConnu) {
       var ensuite = keys;
       return V2._dossierVentesPret.then(function () { V2._dossierVentesConnu = true; return V2.loadFiles(ensuite); });
     }
@@ -1674,6 +1777,11 @@
     // Règle de marge privée du Pilotage : jamais les ventes sans elle (pas côté OPSO, qui n'a pas cet écran)
     if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('margeprive') < 0 && !(window.V2_BRAND && window.V2_BRAND.opso)) {
       keys = keys.concat(['margeprive']);
+    }
+    // 14/10/2026 — « Notre marge » par client : chargée avec les ventes (jeu du commercial, ou fichier complet pour la direction), jamais côté OPSO.
+    // (l'attente du jeu de ventes ci-dessus la couvre : 'wmlca' accompagne toujours 'wml')
+    if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('margeclients') < 0 && !(window.V2_BRAND && window.V2_BRAND.opso)) {
+      keys = keys.concat(['margeclients']);
     }
     // OPSO : le périmètre (129 adhérents) doit être en mémoire avant loadData (applyOpsoPerimeter)
     if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('opsolisting') < 0 && window.V2_BRAND && window.V2_BRAND.opso) {

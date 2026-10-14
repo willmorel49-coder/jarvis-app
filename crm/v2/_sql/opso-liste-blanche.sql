@@ -30,7 +30,7 @@ as $function$
       or (objet like 'ventes/%' and exists (select 1 from p where btrim(commercial) <> '')
           and split_part(objet, '/', 2) = (
             select left(encode(sha256(convert_to(commercial, 'UTF8')), 'hex'), 16) from p))
-    when objet !~ '^(wml-ventes-[0-9]+\.js|wml-officines-ca\.js|carte-detail\.js|ventes/.*)$' then true
+    when objet !~ '^(wml-ventes-[0-9]+\.js|wml-officines-ca\.js|carte-detail\.js|marge-clients\.js|ventes/.*)$' then true
     when exists (select 1 from p where tous or btrim(commercial) = '') then true
     when objet like 'ventes/%' then
       split_part(objet, '/', 2) = (

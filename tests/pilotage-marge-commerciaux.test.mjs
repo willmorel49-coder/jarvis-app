@@ -172,7 +172,7 @@ test('la règle par boîte rend les valeurs connues', () => {
 test('vue « Tous » : total = A + B + C + D, classement A, D, B, C ; A marqué « 1 mois sur 2 »', () => {
   const h = rendre('', { commercial: '', voitTous: true });
   const c = carte(h), t = texte(c);
-  assert.ok(c.includes('Notre marge — ce que les ventes rapportent à Intégral'), 'la carte existe');
+  assert.ok(c.includes('Notre marge — règle de secours'), 'la carte existe (sans le fichier « Notre marge » : règle de secours)');
   assert.ok(t.includes(V2.fmtEur(A_ATTENDU + B_ATTENDU + C_ATTENDU + D_ATTENDU)), 'total ' + V2.fmtEur(A_ATTENDU + B_ATTENDU + C_ATTENDU + D_ATTENDU) + ' dans : ' + t.slice(0, 300));
   const iA = c.indexOf('data-c="A"'), iB = c.indexOf('data-c="B"'), iC = c.indexOf('data-c="C"'), iD = c.indexOf('data-c="D"');
   assert.ok(iA > 0 && iD > 0 && iB > 0 && iC > 0 && iA < iD && iD < iB && iB < iC, 'A (55,40 €) avant D (30 €) avant B (12,12 €) avant C (8,60 €)');
@@ -252,4 +252,33 @@ test('sans le fichier protégé : la règle privée ne s’applique pas et sa li
     assert.ok(!t.includes('Liste privée') && t.includes('Génériques') && t.includes('12,00 €'), t.slice(0, 600));
   } finally { V2.sales = avant; win.MARGE_REGLES_PRIVE = REGLE_PRIVEE; }
   assert.equal(+m({ qte: 100, puNet: 2, mntNetHt: 200, artCode: CIP_SU }).toFixed(2), 5.00, 'fichier revenu : la règle revient');
+});
+
+// ── Réforme du 20/01/2027 : le palier « petits prix » se coupe en deux (14/10/2026) ──
+test('règle 2027 : sous 3,1746 € → 0,088 € la boîte ; de 3,1746 à 4,33 € → 2,772 % du net ; froid 0,80 €', () => {
+  const m = V2.piloMargeVente;
+  const A27 = (o) => Object.assign({ year: 2027 }, o);
+  assert.equal(+m(A27({ qte: 10, puNet: 2, mntNetHt: 20 })).toFixed(4), 0.88, '10 boîtes à 2 € : 0,88 € (pas 1,20)');
+  assert.equal(+m(A27({ qte: 5, puNet: 3.17, mntNetHt: 15.85 })).toFixed(4), 0.44, '3,17 € est encore sous la bascule');
+  assert.equal(+m(A27({ qte: 5, puNet: 4, mntNetHt: 20 })).toFixed(4), +(20 * 0.02772).toFixed(4), '4 € : 2,772 % du net');
+  assert.equal(+m(A27({ qte: 1, puNet: 3.1746, mntNetHt: 3.1746 })).toFixed(4), +(3.1746 * 0.02772).toFixed(4), 'la bascule appartient à la tranche haute');
+  assert.equal(+m(A27({ qte: 1, puNet: 4.33, mntNetHt: 4.33 })).toFixed(4), +(4.33 * 0.0304).toFixed(4), '4,33 € : intermédiaire, inchangé');
+  assert.equal(+m(A27({ qte: 5, puNet: 100, mntNetHt: 500 })).toFixed(2), 15.20, 'intermédiaire inchangé');
+  assert.equal(+m(A27({ qte: 2, puNet: 1000, mntNetHt: 2000 })).toFixed(2), 26, 'cher inchangé');
+  assert.equal(+m(A27({ qte: 4, puNet: 50, mntNetHt: 200, artCode: CIP_FROID })).toFixed(2), 9.28, 'froid : 6,08 + 4 × 0,80');
+  assert.equal(+m(A27({ qte: 10, puNet: 103, mntNetHt: 1030, artCode: CIP_NR })).toFixed(2), 30.00, 'non remboursé inchangé');
+  assert.equal(m(A27({ qte: 10, puNet: 2, mntNetHt: 20, artCode: CIP_GEN })), 0, 'générique : toujours zéro');
+  // 2026 ne bouge pas
+  assert.equal(+m({ year: 2026, qte: 5, puNet: 4, mntNetHt: 20 }).toFixed(2), 0.60, '2026 : 0,12 € la boîte jusqu’à 4,33 €');
+});
+
+test('la carte affiche la 4e tranche « 3,17 – 4,33 € » seulement si la période en contient', () => {
+  const avant = V2.sales;
+  V2.sales = [Object.assign(V('A', 1, 5, 4.00), { year: 2027 }), Object.assign(V('A', 1, 10, 2.00), { year: 2027 })];
+  try {
+    const t = texte(carte(rendre('', { commercial: '', voitTous: true })));
+    assert.ok(t.includes('3,17 – 4,33 €') && t.includes('0,088 € dès 2027'), t.slice(0, 700));
+    assert.ok(t.includes(V2.fmtEur(20 * 0.02772 + 0.88)), 'total = 0,5544 + 0,88 : ' + t.slice(0, 300));
+  } finally { V2.sales = avant; }
+  assert.ok(!DERNIER_MOIS.includes('3,17 – 4,33'), 'sans vente 2027 : pas de 4e ligne');
 });

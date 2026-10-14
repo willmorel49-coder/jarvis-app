@@ -31,7 +31,7 @@ as $$
   )
   select case
     -- ni un fichier de ventes complet, ni un jeu par commercial : règle habituelle
-    when objet !~ '^(wml-ventes-[0-9]+\.js|wml-officines-ca\.js|carte-detail\.js|ventes/.*)$' then true
+    when objet !~ '^(wml-ventes-[0-9]+\.js|wml-officines-ca\.js|carte-detail\.js|marge-clients\.js|ventes/.*)$' then true
     -- accès total (direction, DR, commercial vide)
     when exists (select 1 from p where tous or btrim(commercial) = '') then true
     -- commercial restreint : SON dossier uniquement

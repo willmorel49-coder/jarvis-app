@@ -745,6 +745,16 @@ _r = _sp.run([_sys.executable, _os.path.join(_os.path.dirname(_os.path.abspath(_
 if _r.returncode != 0:
     _sys.exit('ARRÊT : proteger_conditions.py a échoué — ne pas committer.')
 
+# ── 14/10/2026 — « Notre marge » par client (marge-clients.js, fichier protégé) : estimé AVANT le découpage,
+# qui en tire un fichier par commercial. JAMAIS bloquant : un échec se dit clairement et la suite continue
+# (code 3 = réglage privé illisible, rien n'est écrit ; le fichier précédent, s'il existe, reste en place).
+try:
+    _rm = _sp.run([_sys.executable, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 'generate_marge_clients.py')])
+    if _rm.returncode != 0:
+        print('⚠️  generate_marge_clients.py a échoué (code %d) : « Notre marge » par client PAS mise à jour — le découpage continue.' % _rm.returncode)
+except Exception as _e:  # noqa: BLE001
+    print('⚠️  generate_marge_clients.py n\'a pas pu démarrer (%s) : « Notre marge » par client PAS mise à jour — le découpage continue.' % _e)
+
 # ── 24/09/2026 — confidentialité des ventes, temps 2 : un jeu PAR COMMERCIAL
 # (ses officines + le reste du réseau en total par produit), après proteger_conditions
 # qui vient d'écrire wml-officines-ca.js. publier.py le refait de toute façon.

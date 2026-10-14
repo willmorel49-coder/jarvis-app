@@ -158,6 +158,26 @@
     var base = pharmaSalesAll(pid);
     return V2.commFilter ? base.filter(function (s) { return s.commercial === V2.commFilter; }) : base;
   }
+  // ── 14/10/2026 : « Notre marge » (ce que les ventes rapportent à l'entreprise) — PAS la « marge nette » ci-dessus,
+  // qui est celle de la pharmacie. Source : V2.notreMarge (v2-boot.js), estimation de la direction.
+  // Mêmes mois et même périmètre que le CA de la fiche et de la liste : tous les mois des ventes chargées,
+  // filtrés par le commercial affiché. Rien (null) si le fichier est absent ou si l'officine est celle d'un collègue ;
+  // aucun repli sur la règle forfaitaire ici (trop approximative à l'échelle d'un client).
+  var _moisVentes = null;
+  function moisVentes() {
+    var m = _moisVentes, S = V2.sales || [];
+    if (m && m.ref === S && m.n === S.length) return m;
+    var lo = 1e9, hi = -1;
+    for (var i = 0; i < S.length; i++) { var k = (+S[i].year || 0) * 12 + (+S[i].month || 1) - 1; if (k < lo) lo = k; if (k > hi) hi = k; }
+    var cl = function (k) { var mm = k % 12 + 1; return Math.floor(k / 12) + '-' + (mm < 10 ? '0' : '') + mm; };
+    return (_moisVentes = { ref: S, n: S.length, du: hi >= 0 ? cl(lo) : '', au: hi >= 0 ? cl(hi) : '' });
+  }
+  function notreMargeDe(pid) {
+    var NM = V2.notreMarge;
+    if (!NM || !NM.dispo() || (V2.voitVentesDe && !V2.voitVentesDe(pid))) return null;
+    var mv = moisVentes(); if (!mv.du) return null;
+    return NM.somme({ pid: String(pid), comms: V2.commFilter ? [V2.commFilter] : null, du: mv.du, au: mv.au });
+  }
   // libellé période couverte par les données (ex. "cumul 5 mois · janv.–mai 2026")
   function periodLabel() {
     var MN = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
@@ -685,12 +705,17 @@
         ? '<span class="v2-row-opp mono" title="Compteur réservé à son commercial">—</span>'
         : '<span class="v2-row-opp mono" title="' + x.opp + ' des ' + marketTop().size + ' meilleures ventes du secteur ne sont pas commandées par cette officine">' + x.opp + ' / ' + marketTop().size + ' opp</span>';
     var badge = opsoBadge(x.p);
+    var nmL = notreMargeDe(x.p.id);   // null : fichier absent, ou officine d'un collègue
     return '<a class="v2-row' + (isOpso() && x.p.inDb ? ' opso-row-cliente' : '') + '" onclick="V2.go(\'pharma\',\'' + V2.esc(String(x.p.id)) + '\')">' +
       '<span class="v2-row-dot" style="background:' + V2.esc(color) + '"></span>' +
       '<span class="v2-row-name">' + V2.esc(x.p.name) + (cpDe(x.p) ? ' <span style="color:var(--muted);font-weight:500">· ' + V2.esc(cpDe(x.p)) + '</span>' : '') + '</span>' +
       badge + (x.p._cree ? '<span class="v2-row-meta">' + (x.p._archive ? 'archivée' : 'créé à la main') + '</span>' : '') +
       (x.p._sansVente ? '<span class="v2-row-meta">aucune vente sur la période</span>' : '') +
       oppPill +
+      // 14/10/2026 — « notre marge » (ce que l'officine rapporte à Intégral), à côté de la « marge nette » de la pharmacie
+      (V2.notreMarge && V2.notreMarge.dispo()
+        ? '<span class="v2-row-meta mono pha-nm-row" title="Notre marge, ' + V2.esc(V2.notreMarge.libelleDate()) + '">notre marge ' +
+          (nmL ? V2.fmtEur(nmL.tot) : '—') + '</span>' : '') +
       '<span class="v2-row-meta">marge nette</span>' +
       // 24/09/2026 — officine d'un collègue : « — » plutôt qu'un faux « 0 € »
       '<span class="v2-row-val mono" style="color:var(--c-opp)">' + (V2.voitVentesDe(x.p.id) ? V2.fmtEur(x.marge) : '—') + '</span>' +
@@ -1615,6 +1640,24 @@
       '<div class="pha-kpi" style="--a:var(--c-amber)"><div class="pha-kl">Cumul ' + A.nAct + ' mois</div><div class="pha-kval mono">' + V2.fmtEur(A.caTot) + '</div><div class="pha-kd"><span class="pha-sub">marge nette ' + V2.fmtEur(marge) + ' · ' + V2.fmtNum(nbRefs) + ' réf.</span></div></div>' +
       '<div class="pha-kpi" style="--a:var(--c-cat)"><div class="pha-kl">Place dans le réseau</div><div class="pha-kval mono">' + (A.rank ? A.rank + '<small>/' + A.nOff + '</small>' : '—') + '</div><div class="pha-kd"><span class="pha-sub">' + (A.grpRank ? A.grpRank + 'e sur ' + A.nGrp + ' chez ' + esc(A.grpName) : 'hors groupement') + '</span></div></div>' +
     '</div>';
+  }
+
+  // 14/10/2026 — « Notre marge » de l'officine : cumul sur les mêmes mois que le CA ci-dessus, familles en petit.
+  function analyseNotreMarge(pid) {
+    var r = notreMargeDe(pid), NM = V2.notreMarge;
+    if (!r || !r.n) return '';
+    var fam = NM.familles(r).map(function (f) {
+      return '<div class="pha-nm-l"><span>' + esc(f.l) + '</span><b class="mono">' + V2.fmtEur(f.v) + '</b></div>';
+    }).join('');
+    var notes = [NM.libelleDate()];
+    r.moisCouverts.forEach(function (m) { var rs = NM.reserve(m); if (rs) notes.push(cap(NM.nomMoisLong(m)) + ' : ' + rs); });
+    var ng = NM.noteGen(r); if (ng) notes.push(ng);
+    return '<div class="pha-kpi pha-nm" style="--a:var(--c-mint,#1E9E6A)">' +
+      '<div class="pha-nm-t"><div><div class="pha-kl">Notre marge</div>' +
+        '<div class="pha-kval mono">' + V2.fmtEur(r.tot) + '</div>' +
+        '<div class="pha-kd"><span class="pha-sub">' + (r.ca > 0 ? (r.tot / r.ca * 100).toFixed(2).replace('.', ',') + ' % du CA · ' : '') + 'ce que ses achats rapportent à Intégral</span></div></div>' +
+      '<div class="pha-nm-f">' + fam + '</div></div>' +
+      '<div class="pha-sub pha-nm-n">' + notes.map(esc).join(' · ') + '</div></div>';
   }
 
   function analyseChart(A) {
@@ -3371,7 +3414,7 @@
     // ── Colonne « chiffres » ──
     var A = analyseData(pid, sales);
     var chiffres = retourProposer(pid, A, { dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp }) +
-      analyseKpis(A, marge, nbRefs) + analyseChart(A) + analyseTranches(A) + analyseParts(A) + analyseTop5(A) + analyseNePlus(pid);
+      analyseKpis(A, marge, nbRefs) + analyseNotreMarge(pid) + analyseChart(A) + analyseTranches(A) + analyseParts(A) + analyseTop5(A) + analyseNePlus(pid);
     // 09/10/2026 — maquette 8 « Le menu » (remplace la 1b, jugée « trop complexe ») : l'état de la fiche est posé ici,
     // la page est assemblée plus bas (carte d'identité courte, menu, une rubrique à la fois).
     if (menu) l8Init(pid, A, { marge: marge, dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp });
@@ -4981,6 +5024,13 @@
         var mois = Object.keys(moisVus).map(Number).sort(function (a, b) { return a - b; });
         var periode = mois.length ? MN[mois[0] - 1] + '-' + MN[mois[mois.length - 1] - 1] : '';
         function fr(d) { d = String(d || ''); var m = d.match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '/' + m[2] + '/' + m[1] : d; }
+        // 14/10/2026 — « Notre marge » en colonnes AJOUTÉES À LA FIN (après les notes) : aucun index en dur ne bouge.
+        var NMx = V2.notreMarge, nmOn = !!(NMx && NMx.dispo()), mvx = moisVentes();
+        var nmRes = {}, nmFams = [];
+        if (nmOn && mvx.du) {
+          phs.forEach(function (p) { nmRes[String(p.id)] = V2.voitVentesDe(p.id) ? NMx.somme({ pid: String(p.id), comms: V2.commFilter ? [V2.commFilter] : null, du: mvx.du, au: mvx.au }) : null; });
+          nmFams = NMx.FAMILLES.filter(function (f) { return Object.keys(nmRes).some(function (id) { return nmRes[id] && Math.round(nmRes[id].fam[f] * 100) !== 0; }); });
+        } else nmOn = false;
         var head = ['CIP', 'Pharmacie', 'Nom commercial (annuaire)', 'Adresse', 'CP', 'Ville', 'UGA', 'Téléphone',
           'Portable / tél. perso', 'Fax', 'Mail', 'Titulaire (contact)', 'Fonction', 'Dirigeant(s) déclaré(s)',
           'Pharmaciens RPPS (titulaires / adjoints)', 'Ouverture ou reprise', 'Groupement', 'Livrée par', 'LGO', 'Robot',
@@ -4988,7 +5038,8 @@
           'Grossistes / génériqueurs probables : d\'où ça vient']
           .concat(mois.map(function (m) { return 'CA HT ' + MN[m - 1] + ' ' + an; }))
           .concat(['CA HT ' + an + (periode ? ' (' + periode + ')' : ''), 'Nb de produits différents',
-            'À savoir', 'Vente du fonds (BODACC)', 'Procédure collective (BODACC)', 'Dernière note', 'Notes de l\'équipe (plus récente en premier)']);
+            'À savoir', 'Vente du fonds (BODACC)', 'Procédure collective (BODACC)', 'Dernière note', 'Notes de l\'équipe (plus récente en premier)'])
+          .concat(nmOn ? ['Notre marge (estimation à fin ' + NMx.nomMoisLong(NMx.jusqua()) + ')'].concat(nmFams.map(function (f) { return 'Notre marge : ' + NMx.LIBELLES[f]; })) : []);
         var rows = phs.map(function (p) {
           var id = String(p.id), b = CA[id] || [], o = OI[id] || [], pr = prof[id] || {}, ov = over[id] || {};
           var gens = String(b[10] || '').split('/').map(function (g) { return g.trim(); }).filter(Boolean);
@@ -5021,7 +5072,11 @@
             .concat(mois.map(function (m) { return parMois[m] ? Math.round(parMois[m] * 100) / 100 : 0; }))
             .concat([Math.round(tot * 100) / 100, Object.keys(refs).length, savoir.join('\n'), vf, pc,
               ns.length ? fr(ns[0].created_at) : '',
-              ns.map(function (n) { return fr(n.created_at) + ' · ' + (n.author_name || '—') + ' : ' + String(n.body || '').trim(); }).join('\n')]);
+              ns.map(function (n) { return fr(n.created_at) + ' · ' + (n.author_name || '—') + ' : ' + String(n.body || '').trim(); }).join('\n')])
+            .concat(nmOn ? (function () {
+              var q = nmRes[id];   // null : officine d'un collègue → cases vides
+              return [q ? q.tot : ''].concat(nmFams.map(function (f) { return q ? q.fam[f] : ''; }));
+            })() : []);
         });
         var iTot = 28 + mois.length;
         rows.sort(function (x, y) { return (y[iTot] || 0) - (x[iTot] || 0); });
@@ -5040,6 +5095,12 @@
         ws['!freeze'] = { xSplit: 2, ySplit: 2 };
         for (var ri = 2; ri <= rows.length + 2; ri++) for (var ci = 28; ci <= iTot; ci++) {
           var cell = ws[window.XLSX.utils.encode_cell({ r: ri, c: ci })]; if (cell && cell.t === 'n') cell.z = '# ##0 €';
+        }
+        if (nmOn) {
+          for (var rn = 2; rn <= rows.length + 1; rn++) for (var cn = head.length - 1 - nmFams.length; cn <= head.length - 1; cn++) {
+            var cellN = ws[window.XLSX.utils.encode_cell({ r: rn, c: cn })]; if (cellN && cellN.t === 'n') cellN.z = '# ##0 €';
+          }
+          ws['!cols'] = ws['!cols'].concat([{ wch: 22 }].concat(nmFams.map(function () { return { wch: 18 }; })));
         }
         var wb = window.XLSX.utils.book_new();
         window.XLSX.utils.book_append_sheet(wb, ws, 'Mes clients');
@@ -6287,6 +6348,10 @@
       '.pha-kval{font-size:24px;font-weight:800;letter-spacing:-.03em;margin-top:5px;line-height:1.1;color:var(--ip-ink)}',
       '.pha-kval small{font-size:13px;color:var(--muted);font-weight:700}',
       '.pha-kd{font-size:12px;font-weight:700;margin-top:3px}',
+      '.pha-nm{margin-top:12px}.pha-nm-t{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;justify-content:space-between}',
+      '.pha-nm-f{flex:1 1 260px;max-width:420px;display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}',
+      '.pha-nm-l{display:flex;justify-content:space-between;gap:12px}.pha-nm-l b{color:var(--ip-ink);font-weight:700}',
+      '.pha-nm-n{margin-top:8px}',
       '.pha-chart{width:100%;height:auto;display:block}',
       '.pha-legend{display:flex;gap:16px;font-size:12px;font-weight:700;color:var(--muted);margin-top:6px;flex-wrap:wrap}',
       '.pha-legend i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}',

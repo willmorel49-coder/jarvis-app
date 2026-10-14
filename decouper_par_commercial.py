@@ -26,6 +26,7 @@ CE QU'IL Y A DANS UN JEU (crm/v2/ventes/<empreinte>/)
                         aucun produit commandé par une seule officine). Sans lui, « son
                         groupement » se comptait sur SES officines seules (05/10/2026).
   carte-detail.js       fiche de la carte : SES officines seulement
+  marge-clients.js      « Notre marge » par client : SES lignes seulement (tiré de marge-clients.js, generate_marge_clients.py)
 
 QUI A UN JEU
   · chaque prénom du dictionnaire des ventes (un compte créé demain marche tout de suite) ;
@@ -118,6 +119,41 @@ def comms_du_jeu(commercial):
     if commercial == 'Escale':
         return set(ESCALE_COMMS)
     return set(parts)
+
+
+def marge_clients_du_jeu(complet, mes):
+    """14/10/2026 — « Notre marge » par client : les lignes de marge-clients.js (fichier complet, déjà analysé
+    par generate_marge_clients.analyser) dont le prénom est dans `mes`. Les listes c (prénoms) et o (officines)
+    sont réduites à ce que les lignes gardées utilisent et les rangs sont renumérotés : le jeu ne contient donc
+    NI la ligne NI le code d'une officine d'un collègue. Mêmes métadonnées (v, fait, jusqua, mois, reserves, fam).
+    Fonction pure : ne lit ni n'écrit rien."""
+    ok = {i for i, c in enumerate(complet['c']) if c in mes}
+    lignes = [r for r in complet['r'] if r[0] in ok]
+    cs = sorted({r[0] for r in lignes})
+    os_ = sorted({r[1] for r in lignes})
+    ci = {a: i for i, a in enumerate(cs)}
+    oi = {a: i for i, a in enumerate(os_)}
+    jeu = {k: complet[k] for k in ('v', 'fait', 'jusqua', 'mois', 'reserves', 'fam')}
+    jeu['c'] = [complet['c'][i] for i in cs]
+    jeu['o'] = [complet['o'][i] for i in os_]
+    jeu['r'] = [[ci[r[0]], oi[r[1]]] + r[2:] for r in lignes]
+    return jeu
+
+
+def lire_marge_clients():
+    """Le fichier complet marge-clients.js (racine, gitignoré) analysé, ou None s'il manque ou s'il est illisible :
+    on prévient et on n'écrit rien, le découpage ne doit pas échouer pour une donnée facultative."""
+    chemin = os.path.join(BASE, 'marge-clients.js')
+    if not os.path.exists(chemin):
+        print('  [marge-clients.js absent : aucun fichier « Notre marge » écrit — lancer generate_marge_clients.py]')
+        return None
+    try:
+        sys.path.insert(0, BASE)
+        import generate_marge_clients as gmc
+        return gmc.analyser(lire(chemin))
+    except Exception as e:
+        print('  [marge-clients.js illisible (%s) : aucun fichier « Notre marge » écrit]' % e)
+        return None
 
 
 def noms_produits():
@@ -278,6 +314,7 @@ def main():
     total_reseau = sum(v[6] for v in ventes)
     nb_mois = len(next(iter(carte.values()))['m'])
     noms = noms_produits()
+    mc_complet = lire_marge_clients()
     for commercial in jeux:
         mes = comms_du_jeu(commercial)
         # 25/09/2026 — officine PARTAGÉE entre deux commerciaux : seules SES lignes restent en détail ;
@@ -350,6 +387,9 @@ def main():
             mes_det[k] = {'m': [round(x) for x in dd['m']], 'top': [[noms.get(c, c), round(x)] for c, x in top if x > 0],
                           'np': len(dd['prod']), 'pot': mes_det[k].get('pot')}
         ecrire(os.path.join(rep, 'carte-detail.js'), tete_det + 'window.CARTE_DETAIL=' + compact(mes_det) + ';\n')
+        if mc_complet:   # « Notre marge » par client : SES lignes seulement (le jeu OPSO, fabriqué à part, n'en reçoit aucun)
+            import generate_marge_clients as gmc
+            ecrire(os.path.join(rep, 'marge-clients.js'), gmc.formater(marge_clients_du_jeu(mc_complet, mes)))
         print('  %-24s %s  %6d lignes à lui · %6d totaux réseau · %d tranche(s) · %d CA · %d fiches'
               % (commercial, dossier(commercial), len(detail), len(agreges), len(tr), len(mes_ca), len(mes_det)))
     jeu_opso(officines, d_off, ventes, off_ca, tete_ca, carte, tete_det)

@@ -73,6 +73,18 @@
   //     concerné. Montant, libellés et liste ne vivent PAS dans ce dépôt : sans
   //     le fichier, la règle ne s'applique pas et sa ligne ne s'affiche pas.
   var MARGE = { boitePetit: 0.12, tauxInter: 0.0304, boiteCher: 13, boiteFroid: 0.63, coefNR: 1.03 };
+  // Réforme du 20/01/2027 (arrêté du 3/8/2026), pour les ventes dont l'année est 2027 ou plus : le palier
+  // « petits prix » se coupe en deux (bascule 0,22 ÷ 0,0693 = 3,1746 € ; borne réglable ici) —
+  // sous la bascule 0,088 € la boîte, de la bascule à 4,33 € 2,772 % du prix net ; froid 0,80 € la boîte.
+  // Le reste (3,04 % de 4,33 à 468 €, 13 € au-delà, non remboursés, génériques) ne change pas.
+  var MARGE_2027 = { an: 2027, seuilPetit: 3.1746, boitePetit: 0.088, tauxPetit2: 0.02772, boiteFroid: 0.80 };
+  function enReforme(s) { return (+s.year || 0) >= MARGE_2027.an; }
+  // case du bloc `pal` : 0 petits prix · 1 intermédiaires · 2 chers · 3 = « de 3,17 à 4,33 € » (2027 seulement)
+  function caseMarge(s) {
+    var t = priceTier(s.puNet);
+    if (t === 0 && enReforme(s) && (+s.puNet || 0) >= MARGE_2027.seuilPetit) return 3;
+    return t < 2 ? t : 2;
+  }
   function reglePrivee() {
     var p = window.MARGE_REGLES_PRIVE; p = p && p.petitReduit;
     return p && p.cips && p.cips.length && isFinite(+p.boite) ? p : null;
@@ -87,14 +99,20 @@
     if (estGenerique(s, idx)) return 0;
     if (estNR(s, idx)) return (s.mntNetHt || 0) * (1 - 1 / MARGE.coefNR);
     var t = priceTier(s.puNet), q = +s.qte || 0;
-    if (t === 0) return q * (estPetitReduit(s, idx) ? +reglePrivee().boite : MARGE.boitePetit);
+    if (t === 0) {
+      if (enReforme(s)) {
+        if ((+s.puNet || 0) >= MARGE_2027.seuilPetit) return (s.mntNetHt || 0) * MARGE_2027.tauxPetit2;
+        return q * (estPetitReduit(s, idx) ? +reglePrivee().boite : MARGE_2027.boitePetit);
+      }
+      return q * (estPetitReduit(s, idx) ? +reglePrivee().boite : MARGE.boitePetit);
+    }
     if (t === 1) return (s.mntNetHt || 0) * MARGE.tauxInter;
     return q * MARGE.boiteCher;
   }
   // 15/09/2026 — lu sur is_froid et non plus via familyOf() : un biosimilaire froid
   // est rangé en « Biosimilaires » mais garde son supplément froid.
   function estFroid(s, idx) { var info = (idx || productIndex())[normCip(s.artCode)]; return !!(info && info.is_froid); }
-  function margeFroid(s, idx) { return estFroid(s, idx) && !estGenerique(s, idx) ? (+s.qte || 0) * MARGE.boiteFroid : 0; }
+  function margeFroid(s, idx) { return estFroid(s, idx) && !estGenerique(s, idx) ? (+s.qte || 0) * (enReforme(s) ? MARGE_2027.boiteFroid : MARGE.boiteFroid) : 0; }
   function margeVente(s, idx) { idx = idx || productIndex(); return margeBase(s, idx) + margeFroid(s, idx); }
   V2.piloMargeVente = margeVente;
   // Cumul sur un lot de ventes : total + détail par palier (boîtes, CA, marge)
@@ -104,9 +122,9 @@
   // privée) et `gen` (génériques, marge nulle) : trois paliers + NR + pr + gen + froid = total.
   function cumulMarge(ventes, idx) {
     idx = idx || productIndex();
-    var r = { total: 0, pal: [{ q: 0, ca: 0, m: 0 }, { q: 0, ca: 0, m: 0 }, { q: 0, ca: 0, m: 0 }], nr: { q: 0, ca: 0, m: 0 }, pr: { q: 0, ca: 0, m: 0 }, gen: { q: 0, ca: 0, m: 0 }, froid: { q: 0, m: 0 }, ca: 0, mois: {} };
+    var r = { total: 0, pal: [{ q: 0, ca: 0, m: 0 }, { q: 0, ca: 0, m: 0 }, { q: 0, ca: 0, m: 0 }, { q: 0, ca: 0, m: 0 }], nr: { q: 0, ca: 0, m: 0 }, pr: { q: 0, ca: 0, m: 0 }, gen: { q: 0, ca: 0, m: 0 }, froid: { q: 0, m: 0 }, ca: 0, mois: {} };
     for (var i = 0; i < ventes.length; i++) {
-      var s = ventes[i], t = priceTier(s.puNet), k = t < 2 ? t : 2, m = margeBase(s, idx), mf = margeFroid(s, idx);
+      var s = ventes[i], k = caseMarge(s), m = margeBase(s, idx), mf = margeFroid(s, idx);
       var o = estGenerique(s, idx) ? r.gen : estNR(s, idx) ? r.nr : estPetitReduit(s, idx) ? r.pr : r.pal[k]; o.q += (+s.qte || 0); o.ca += (s.mntNetHt || 0); o.m += m;
       if (mf) { r.froid.q += (+s.qte || 0); r.froid.m += mf; }
       r.total += m + mf; r.ca += (s.mntNetHt || 0); r.mois[mkey(s.year, s.month)] = 1;
@@ -1428,8 +1446,33 @@
       var comms = V2.commercials ? V2.commercials() : [];
       if (!opso) {
         var mg = cumulMarge(cur, idx);
+        // ── 14/10/2026 — SOURCE du chiffre : le fichier « Notre marge » (estimation de la direction, prix
+        // d'achat réels) pour les mois qu'il couvre ; la règle forfaitaire ci-dessous pour les autres, et
+        // pour tout si le fichier est absent. Périmètre = celui du CA de la carte (commercial affiché).
+        var NM = V2.notreMarge;
+        var cleMk = function (k) { var mm = k % 12 + 1; return Math.floor(k / 12) + '-' + (mm < 10 ? '0' : '') + mm; };
+        var moisPer = Object.keys(mg.mois).map(Number).sort(function (a, b) { return a - b; });
+        var moisFic = (NM && NM.dispo()) ? NM.mois() : [];
+        var couvert = {}, nbCouv = 0, horsFic = [];
+        moisPer.forEach(function (k) { if (moisFic.indexOf(cleMk(k)) >= 0) { couvert[k] = 1; nbCouv++; } else horsFic.push(k); });
+        var surFichier = nbCouv > 0;
+        var duCle = moisPer.length ? cleMk(moisPer[0]) : '', auCle = moisPer.length ? cleMk(moisPer[moisPer.length - 1]) : '';
+        var commsPerim = null;
+        if (V2.commFilter) commsPerim = [V2.commFilter];
+        else { var setC = {}; cur.forEach(function (s) { if (s.commercial) setC[s.commercial] = 1; }); commsPerim = Object.keys(setC); }
+        var margeDe = function (ventes, comms) {
+          var f = null, rg;
+          if (surFichier) {
+            f = NM.somme({ comms: comms, du: duCle, au: auCle });
+            rg = horsFic.length ? cumulMarge(ventes.filter(function (s) { return !couvert[mkey(s.year, s.month)]; }), idx) : null;
+          } else rg = ventes === cur ? mg : cumulMarge(ventes, idx);
+          return { f: f, rg: rg, total: (f ? f.tot : 0) + (rg ? rg.total : 0) };
+        };
+        var MC = margeDe(cur, commsPerim);
+        var totalCarte = MC.total;
+        var a27 = cur.some(enReforme);
         var PAL = [
-          { l: '0 – 4,33 €',   d: 'petits prix · 0,12 € la boîte',     color: TIERS[0].color },
+          { l: '0 – 4,33 €',   d: 'petits prix · 0,12 € la boîte' + (a27 ? ' (0,088 € dès 2027)' : ''), color: TIERS[0].color },
           { l: '4,33 – 468 €', d: 'intermédiaires · 3,04 % du prix',   color: TIERS[1].color },
           { l: '> 468 €',      d: 'chers · 13 € la boîte',            color: TIERS[2].color },
         ];
@@ -1439,12 +1482,37 @@
         // Liste privée à petit prix et génériques : hors paliers eux aussi, chacun sa ligne.
         // Libellés de la liste privée : lus dans le fichier protégé, jamais écrits ici.
         var regleP = reglePrivee();
+        if (mg.pal[3].q || mg.pal[3].ca) PAL.push({ l: '3,17 – 4,33 €', d: 'dès 2027 · 2,772 % du prix', color: TIERS[0].color, bloc: 'p4' });
         if (regleP && mg.pr.q) PAL.push({ l: esc(regleP.libelle || ''), d: esc(regleP.detail || ''), color: TIERS[0].color, bloc: 'pr' });
         if (mg.nr.q || mg.nr.ca) PAL.push({ l: 'Non remboursés', d: 'prix libre · coefficient 1,03', color: 'var(--c-amber)', bloc: 'nr' });
         if (mg.gen.q || mg.gen.ca) PAL.push({ l: 'Génériques', d: 'aucune marge', color: 'var(--muted)', bloc: 'gen' });
-        if (mg.froid.q) PAL.push({ l: 'Chaîne du froid', d: 'en plus · 0,63 € la boîte', color: 'var(--c-froid)', ico: 'froid', bloc: 'froid' });
-        var palHtml = PAL.map(function (pz, i) {
-          var o = pz.bloc ? mg[pz.bloc] : mg.pal[i], pct = mg.total > 0 ? Math.max(0, o.m) / mg.total * 100 : 0;
+        if (mg.froid.q) PAL.push({ l: 'Chaîne du froid', d: 'en plus · 0,63 € la boîte' + (a27 ? ' (0,80 € dès 2027)' : ''), color: 'var(--c-froid)', ico: 'froid', bloc: 'froid' });
+        var COUL_FAM = { p: TIERS[0].color, p1: TIERS[0].color, p2: TIERS[0].color, i: TIERS[1].color, c: TIERS[2].color, fr: 'var(--c-froid)', nr: 'var(--c-amber)' };
+        var palFichier = function () {
+          var lignesF = NM.familles(MC.f).map(function (fz) {
+            var pct = totalCarte > 0 ? Math.max(0, fz.v) / totalCarte * 100 : 0;
+            return '<div class="pilo-fam">' +
+              '<div class="pilo-fam-top">' +
+                '<span class="pilo-fam-l"><span class="pilo-fam-ico" style="color:' + COUL_FAM[fz.k] + '">' + ICO(fz.k === 'fr' ? 'froid' : 'pill', 15) + '</span>' +
+                  '<span>' + esc(fz.l) + '</span></span>' +
+                '<span class="pilo-fam-v"><span class="mono" style="font-weight:700">' + V2.fmtEur(fz.v) + '</span>' +
+                  '<span class="mono pilo-fam-pct">' + pct.toFixed(0) + ' %</span></span>' +
+              '</div>' +
+              '<div class="pilo-bar"><span class="pilo-bar-fill" data-w="' + pct.toFixed(1) + '" style="width:0;background:' + COUL_FAM[fz.k] + '"></span></div>' +
+            '</div>';
+          }).join('');
+          if (MC.rg) {
+            var pr = totalCarte > 0 ? Math.max(0, MC.rg.total) / totalCarte * 100 : 0;
+            lignesF += '<div class="pilo-fam"><div class="pilo-fam-top"><span class="pilo-fam-l"><span class="pilo-fam-ico" style="color:var(--muted)">' + ICO('pill', 15) + '</span>' +
+              '<span>Mois sans fichier<small class="pilo-marge-d">règle de secours · ' + horsFic.map(nomMois).join(', ') + '</small></span></span>' +
+              '<span class="pilo-fam-v"><span class="mono" style="font-weight:700">' + V2.fmtEur(MC.rg.total) + '</span><span class="mono pilo-fam-pct">' + pr.toFixed(0) + ' %</span></span></div>' +
+              '<div class="pilo-bar"><span class="pilo-bar-fill" data-w="' + pr.toFixed(1) + '" style="width:0;background:var(--muted)"></span></div></div>';
+          }
+          var ng = NM.noteGen(MC.f);
+          return lignesF + (ng ? '<small class="pilo-marge-d">' + esc(ng) + '</small>' : '');
+        };
+        var palHtml = surFichier ? palFichier() : PAL.map(function (pz, i) {
+          var o = pz.bloc === 'p4' ? mg.pal[3] : pz.bloc ? mg[pz.bloc] : mg.pal[i], pct = mg.total > 0 ? Math.max(0, o.m) / mg.total * 100 : 0;
           return '<div class="pilo-fam">' +
             '<div class="pilo-fam-top">' +
               '<span class="pilo-fam-l"><span class="pilo-fam-ico" style="color:' + pz.color + '">' + ICO(pz.ico || 'pill', 15) + '</span>' +
@@ -1455,7 +1523,14 @@
             '<div class="pilo-bar"><span class="pilo-bar-fill" data-w="' + pct.toFixed(1) + '" style="width:0;background:' + pz.color + '"></span></div>' +
           '</div>';
         }).join('');
-        var margePct = mg.ca > 0 ? mg.total / mg.ca * 100 : 0;
+        var margePct = mg.ca > 0 ? totalCarte / mg.ca * 100 : 0;
+        // Mentions sous le titre : date du fichier, réserve d'un mois, mois estimés par la règle
+        var notesM = [], maj = function (t) { return t.charAt(0).toUpperCase() + t.slice(1); };
+        if (surFichier) {
+          notesM.push(NM.libelleDate());
+          moisPer.forEach(function (k) { var rs = couvert[k] ? NM.reserve(cleMk(k)) : ''; if (rs) notesM.push(maj(nomMois(k)) + ' : ' + rs); });
+          if (horsFic.length) notesM.push(maj(horsFic.map(nomMois).join(', ')) + ' : règle de secours (pas encore dans le fichier)');
+        }
         var vueTous = !V2.commFilter && !(myComm && !voitTous);
         var classement = '';
         if (vueTous && comms.length > 1) {
@@ -1465,7 +1540,9 @@
           var parComm = {};
           cur.forEach(function (s) { (parComm[s.commercial] || (parComm[s.commercial] = [])).push(s); });
           var lignes = comms.map(function (cm) {
-            var r = cumulMarge(parComm[cm] || [], idx); r.cm = cm; return r;
+            var r = cumulMarge(parComm[cm] || [], idx); r.cm = cm;
+            if (surFichier) r.total = margeDe(parComm[cm] || [], [cm]).total;   // même source que la carte
+            return r;
           }).filter(function (r) { return r.ca !== 0 || r.total !== 0; })
             .sort(function (a, b) { return b.total - a.total; });
           var maxM = lignes.length ? Math.max(0, lignes[0].total) : 0;
@@ -1477,29 +1554,28 @@
               '<div style="flex:1;min-width:0">' +
                 '<div class="v2-row-name">' + esc(r.cm) +
                   (partiel ? ' <small class="pilo-marge-partiel">' + r.nbMois + ' mois sur ' + mg.nbMois + '</small>' : '') +
-                  (V2.ESCALE_COMMS.indexOf(r.cm) >= 0 ? ' <small class="pilo-marge-partiel">estimée</small>' : '') + '</div>' +
+                  (!surFichier && V2.ESCALE_COMMS.indexOf(r.cm) >= 0 ? ' <small class="pilo-marge-partiel">estimée</small>' : '') + '</div>' +
                 '<div class="pilo-bar"><span class="pilo-bar-fill" data-w="' + pct.toFixed(1) + '" style="width:0;background:var(--c-mint)"></span></div>' +
               '</div>' +
               '<div class="pilo-vals">' +
                 '<div class="v2-row-val mono">' + V2.fmtEur(r.total) + '</div>' +
                 // Sur iPhone, le nombre de boîtes s'efface : sinon il coupait les prénoms (« Kari… »).
-                '<div class="v2-row-meta mono"><span class="pilo-marge-boites">' + V2.fmtNum(r.pal[0].q + r.pal[1].q + r.pal[2].q + r.nr.q + r.pr.q + r.gen.q) + ' boîtes · </span>' + (r.ca > 0 ? (r.total / r.ca * 100).toFixed(2).replace('.', ',') + ' % du CA' : 'CA nul') + '</div>' +
+                '<div class="v2-row-meta mono"><span class="pilo-marge-boites">' + V2.fmtNum(r.pal[0].q + r.pal[1].q + r.pal[2].q + r.pal[3].q + r.nr.q + r.pr.q + r.gen.q) + ' boîtes · </span>' + (r.ca > 0 ? (r.total / r.ca * 100).toFixed(2).replace('.', ',') + ' % du CA' : 'CA nul') + '</div>' +
               '</div>' +
               '<span class="v2-row-chev">' + ICO('chev', 16) + '</span>' +
             '</a>';
           }).join('');
         }
-        var enEscale = !!(window.V2_BRAND && window.V2_BRAND.escale);
         margeCard =
           '<div class="v2-card pilo-marge" data-reveal>' +
             '<div class="v2-card-head" style="align-items:flex-start">' +
-              // Le fichier Escale n'a pas de prix d'achat : la règle Intégral n'est qu'une estimation.
-              '<div><div class="v2-card-t">' + ICO('spark', 17) + (enEscale
-                ? 'Notre marge estimée — règle Intégral, en attendant les prix d\'achat Escale'
-                : 'Notre marge — ce que les ventes rapportent à Intégral') + '</div>' +
+              '<div><div class="v2-card-t">' + ICO('spark', 17) + (surFichier
+                ? 'Notre marge — ce que les ventes rapportent à Intégral'
+                : 'Notre marge — règle de secours') + '</div>' +
                 '<div class="pilo-marge-sub">' + (pf ? esc(pf.label) : '') + ' · ' +
-                  (V2.commFilter ? esc(V2.commFilter) : (vueTous ? 'tous les commerciaux' : 'mon périmètre')) + '</div></div>' +
-              '<div class="pilo-marge-total"><span class="mono pilo-marge-v" data-count>' + V2.fmtEur(mg.total) + '</span>' +
+                  (V2.commFilter ? esc(V2.commFilter) : (vueTous ? 'tous les commerciaux' : 'mon périmètre')) + '</div>' +
+                notesM.map(function (n) { return '<div class="pilo-marge-partiel">' + esc(n) + '</div>'; }).join('') + '</div>' +
+              '<div class="pilo-marge-total"><span class="mono pilo-marge-v" data-count>' + V2.fmtEur(totalCarte) + '</span>' +
                 '<span class="pilo-marge-pct mono">' + margePct.toFixed(2).replace('.', ',') + ' % du CA net</span></div>' +
             '</div>' +
             '<div class="pilo-marge-body">' +
@@ -1525,6 +1601,17 @@
 
       // Top 10 par CA
       var topCa = phRows.slice().sort(function (a, b) { return b.ca - a.ca; }).slice(0, 10);
+      // 14/10/2026 — « Notre marge » par officine, même période et même périmètre que le CA de la ligne :
+      // seulement les mois couverts par le fichier (pas de repli sur la règle, trop approximatif par client).
+      var nmTop = (!opso && V2.notreMarge && V2.notreMarge.dispo() && cur.length) ? (function () {
+        var ks = {}; cur.forEach(function (s) { ks[mkey(s.year, s.month)] = 1; });
+        var kk = Object.keys(ks).map(Number).sort(function (a, b) { return a - b; });
+        var cl = function (k) { var mm = k % 12 + 1; return Math.floor(k / 12) + '-' + (mm < 10 ? '0' : '') + mm; };
+        var cs = {}; cur.forEach(function (s) { if (s.commercial) cs[s.commercial] = 1; });
+        var fic = V2.notreMarge.mois();
+        if (!kk.some(function (k) { return fic.indexOf(cl(k)) >= 0; })) return null;   // aucun mois couvert : pas de chiffre
+        return { du: cl(kk[0]), au: cl(kk[kk.length - 1]), comms: V2.commFilter ? [V2.commFilter] : Object.keys(cs) };
+      })() : null;
       var maxCa = topCa.length ? topCa[0].ca : 1;
       var topCaHtml = topCa.map(function (r, i) {
         var pct = maxCa > 0 ? Math.max(2, r.ca / maxCa * 100) : 0;
@@ -1539,6 +1626,7 @@
           '<div class="pilo-vals">' +
             '<div class="v2-row-val mono">' + V2.fmtEur(r.ca) + '</div>' +
             '<div class="v2-row-meta mono">Marge pharm. ' + V2.fmtEur(r.mdl) + '</div>' +
+            (nmTop ? '<div class="v2-row-meta mono" title="' + esc(V2.notreMarge.libelleDate()) + '">Notre marge ' + V2.fmtEur(V2.notreMarge.somme({ pid: String(r.id), comms: nmTop.comms, du: nmTop.du, au: nmTop.au }).tot) + '</div>' : '') +
           '</div>' +
           '<span class="v2-row-chev">' + ICO('chev', 16) + '</span>' +
         '</a>';
