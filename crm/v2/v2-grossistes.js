@@ -8,7 +8,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var ICO = function (n, s, w) { return window.ICO ? window.ICO(n, s, w) : ''; };
-  var CB = '?v=20261014c';
+  var CB = '?v=20261014q';
 
   var view = 'annuaire';   // 'annuaire' | 'actu'
   var openGroupe = null;   // groupe déplié (niveau 2)
@@ -284,7 +284,7 @@
     var d = g.decisions || [];
     if (!d.length) return '';
     var carte = function (x) {
-      return '<li><div class="gr-dec-h"><span class="gr-dec-t">' + esc(x.type || 'décision') + '</span> <b>' + esc(x.autorite || '') + '</b> · ' + esc(dFr(x.date)) + (x.site_ville ? ' · ' + esc(x.site_ville) : '') + (x.reference ? ' · <span class="gr-sir">' + esc(x.reference) + '</span>' : '') + '</div>' +
+      return '<li><div class="gr-dec-h"><span class="gr-dec-t">' + esc(x.type || 'décision') + '</span> <b>' + esc(x.autorite || '') + '</b> · ' + esc((x.date_au_plus_tard ? 'publiée au plus tard le ' : '') + dFr(x.date)) + (x.site_ville ? ' · ' + esc(x.site_ville) : '') + (x.reference ? ' · <span class="gr-sir">' + esc(x.reference) + '</span>' : '') + '</div>' +
         (x.montant ? '<p class="gr-dec-m">Montant : <b>' + esc(Number(x.montant).toLocaleString('fr-FR', { maximumFractionDigits: 2 })) + ' €</b></p>' : '') +
         (x.resume ? '<p>' + esc(x.resume) + '</p>' : '') +
         ((x.manquements || []).length ? '<ul class="gr-ul">' + x.manquements.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul>' : '') +
