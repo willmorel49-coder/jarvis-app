@@ -3,6 +3,8 @@ name: Agences des concurrents (carte du secteur)
 # Robot GRATUIT, MENSUEL : lit le registre officiel des entreprises et committe
 # crm/v2/concurrents-implantations.json, que « Infos du jour » lit pour la carte
 # des agences concurrentes. Aucune clé, aucun coût. Déclenchable aussi à la main.
+# Depuis le 14/10/2026 il refait aussi la carte de l'onglet Concurrents :
+# crm/v2/grossistes-points.json + compteurs de sites des fiches (grossistes-data.js).
 
 on:
   schedule:
@@ -29,14 +31,18 @@ jobs:
       - name: Lire les agences
         run: python3 generate_concurrents_implantations.py
       - name: Committer si changement
+        # Même si une des deux étapes a échoué : chacune n'écrit son fichier que si ses
+        # contrôles passent ; le robot reste rouge pour qu'on voie l'échec.
+        if: ${{ !cancelled() }}
         run: |
-          if git diff --quiet -- crm/v2/concurrents-implantations.json; then
+          FICHIERS="crm/v2/concurrents-implantations.json crm/v2/grossistes-points.json crm/v2/grossistes-data.js"
+          if git diff --quiet -- $FICHIERS; then
             echo "Pas de changement."
           else
             git config user.name  "JARVIS veille"
             git config user.email "actions@users.noreplace.github.com"
-            git add crm/v2/concurrents-implantations.json
-            git commit -m "data(concurrents): agences du $(date -u +%Y-%m-%d)"
+            git add $FICHIERS
+            git commit -m "data(concurrents): agences et carte des grossistes du $(date -u +%Y-%m-%d)"
             # 24 robots poussent sur le meme depot et GitHub livre leurs executions
             # planifiees en paquet : une seule reprise ne suffit pas. On retente, en
             # se remettant a jour sur la branche courante, et on echoue BRUYAMMENT

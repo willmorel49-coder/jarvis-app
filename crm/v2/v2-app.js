@@ -813,7 +813,7 @@
   // jamais de chiffre d'ouvertures ni de nom de personne. Hors OPSO uniquement.
   // ════════════════════════════════════════════
   // Ordre de repli (mesure du 30/09/2026), utilisé tant que le vrai classement n'est pas là.
-  var G4_REPLI = ['pharma', 'produits', 'pilotage', 'marketing', 'infos', 'rdv', 'carte', 'appro', 'todo', 'biosimilaires', 'offilog', 'concurrents', 'remontees', 'marchefr', 'carteGrp', 'lgo', 'academy'];
+  var G4_REPLI = ['pharma', 'produits', 'pilotage', 'marketing', 'infos', 'rdv', 'carte', 'appro', 'todo', 'biosimilaires', 'offilog', 'concurrents', 'remontees', 'discussion', 'marchefr', 'carteGrp', 'lgo', 'academy'];
   // 02/10/2026 — Will : « supprimer audit, fiches pdf, l'argument, audit marge, réforme 2027, présentation intégral » : ces six outils
   // n'existent plus nulle part (ni porte, ni écran). Un réglage enregistré qui les cite encore est écarté par u2Net.
   // k = nom de la route mesurée par V2.mesurer (= `ecran` côté base) ; page = écran qui doit exister.
@@ -831,6 +831,8 @@
     offilog: { fam: 'produits', ico: 'offilog', nom: 'Offilog', ph: 'La centrale parapharmacie', page: 'offilog' },
     concurrents: { fam: 'piloter', ico: 'concurrents', nom: 'Concurrents', ph: 'Ce que font les autres', page: 'concurrents' },
     remontees: { fam: 'communiquer', ico: 'remontees', nom: 'Remontées', ph: 'Le mur d\'idées de l\'équipe', page: 'remontees' },
+    // 14/10/2026 — fil de discussion de l'équipe (idée d'une commerciale). L'écran n'est chargé que hors espace OPSO : sans lui, pas de porte.
+    discussion: { fam: 'communiquer', ico: 'discussion', nom: 'Discussion', ph: 'Le fil de discussion de l\'équipe', page: 'discussion' },
     marchefr: { fam: 'piloter', ico: 'marche', nom: 'Le marché', ph: 'Le marché français d\'une référence, région par région', page: 'marchefr' },
     carteGrp: { fam: 'piloter', ico: 'carte-grp', nom: 'Carte des groupements', ph: 'Où sont les adhérents de chaque groupement', page: 'carteGrp' },
     lgo: { fam: 'communiquer', ico: 'lgo', nom: 'Logiciels officine', ph: 'Importer le catalogue dans chaque logiciel', page: 'lgo' },
@@ -922,6 +924,7 @@
     marketing: '<path d="M4 10v4h3l8 4V6L7 10z"/><path d="M18.5 9.5a3.5 3.5 0 010 5"/>',
     lgo: '<rect x="3.5" y="5" width="17" height="12" rx="2"/><path d="M8 21h8M12 17v4M9.5 10.5l2.5 2.5 2.5-2.5M12 8v5"/>',
     remontees: '<path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"/>',
+    discussion: '<path d="M4 5.5h16v10H12l-4.5 3.5v-3.5H4z"/><path d="M8 9.5h8M8 12.5h5"/>',
     academy: '<path d="M2.5 9.5L12 5l9.5 4.5L12 14z"/><path d="M6.5 11.8V16c0 1.2 2.5 2.5 5.5 2.5s5.5-1.3 5.5-2.5v-4.2M21.5 9.5V14"/>',
     palette: '<path d="M12 3.5a8.5 8.5 0 100 17c1.2 0 1.8-.8 1.8-1.7 0-1.5-1.3-1.6-1.3-2.9 0-.9.7-1.4 1.6-1.4H17a3.5 3.5 0 003.5-3.5C20.5 7 16.8 3.5 12 3.5z"/><circle cx="7.8" cy="11.5" r="1"/><circle cx="10.5" cy="7.7" r="1"/><circle cx="15.2" cy="8" r="1"/>',
     check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
