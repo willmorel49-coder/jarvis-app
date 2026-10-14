@@ -248,7 +248,7 @@ STATS = os.path.join(BASE, 'STATS')
 # Tous les masters pharmacies (WML + MD + futurs commerciaux) — WML d'abord (prioritaire)
 PHARM_FILES = sorted(glob.glob(os.path.join(STATS, '*_pharmacies.xlsx')),
                      key=lambda p: (not os.path.basename(p).startswith('WML_'), p))
-# (commercial, préfixe fichier) — chaque source : les mois de MONTHS_NUM réellement déposés
+# (commercial, préfixe fichier) — chaque source : les mois de MOIS_LUS réellement déposés
 SOURCES = [
     ('Will', 'WML'),         # William Morel
     ('Pauline G.', 'PGN'),   # Pauline Guillaumin
@@ -304,8 +304,9 @@ RATTACHEES = {
 # (refacturé) = 98,40 € rendus. On inverse le signe (quantité et montant) de ces
 # lignes pour qu'elles se retirent du CA et de la marge (Will, 16/09/2026).
 AVOIRS_EN_POSITIF = {'GUY', 'TIF', 'PHI', 'GER'}
-MONTHS_NUM = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-NB_MOIS = len(MONTHS_NUM)
+# Mois lus = couples (année, mois). Ajouter (2027, 1) quand les ventes de janvier 2027 sont déposées.
+MOIS_LUS = [(2026, m) for m in range(1, 10)]
+NB_MOIS = len(MOIS_LUS)
 MOIS_ABBR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil',
              'Août', 'Sep', 'Oct', 'Nov', 'Déc']
 OUT = os.path.join(BASE, 'crm', 'v2', 'wml-officines-data.js')
@@ -324,6 +325,7 @@ def num(v):
         return 0.0
 
 
+from mois_wml import mois_compacte, nom_tableur, borne, periode
 from pont_codes import canon, rekey  # un produit = un code (22/09/2026)
 from pont_officines import code_officine, codes_comptes  # une pharmacie = une fiche (05/10/2026)
 
@@ -396,8 +398,8 @@ for code, rec in reprises:
 # Certains exports bruts (ex. Karine / KV) n'ont pas la colonne ARTCODEBARRE (EAN).
 # On la reconstruit à partir des fichiers déjà enrichis (98,9% des lignes KV couvertes).
 ART2EAN = {}
-for _p in sorted(_f for _m in MONTHS_NUM
-                 for _f in glob.glob(os.path.join(STATS, '*_%02d_2026*.xlsx' % _m))):
+for _p in sorted(_f for _a, _m in MOIS_LUS
+                 for _f in glob.glob(os.path.join(STATS, '*_%02d_%d*.xlsx' % (_m, _a)))):
     _wb = openpyxl.load_workbook(_p, read_only=True, data_only=True)
     _ws = _wb.active
     _it = _ws.iter_rows(values_only=True)
@@ -431,8 +433,8 @@ for _comm, _prefix in sorted(set(RATTACHEES.values())):
     LECTURES.append((_comm, _prefix, os.path.join(STATS, 'hors-perimetre'),
                      {k for k, v in RATTACHEES.items() if v == (_comm, _prefix)}))
 for comm, prefix, dossier, garder in LECTURES:
-    for mois in MONTHS_NUM:
-        path = os.path.join(dossier, '%s_%02d_2026.xlsx' % (prefix, mois))
+    for annee, mois in MOIS_LUS:
+        path = os.path.join(dossier, nom_tableur(prefix, annee, mois))
         if garder is not None and not os.path.exists(path):   # pas encore rangé par le robot
             path = os.path.join(STATS, os.path.basename(path))
         if not os.path.exists(path):
@@ -479,7 +481,7 @@ for comm, prefix, dossier, garder in LECTURES:
             if prefix in AVOIRS_EN_POSITIF and str(c(r, 'PCVNUM') or '').startswith('AC'):
                 _q, _mnt = -_q, -_mnt
             # format compact (tableau) : [pharmacyId, mois, comm, cip13, qte, puNet, mntNetHt]
-            sales.append([code, mois, comm, canon(cip13(_bc)),
+            sales.append([code, mois_compacte(annee, mois), comm, canon(cip13(_bc)),
                           _q, num(c(r, 'PLVPUNET')), _mnt])
             n += 1
         wb.close()
@@ -668,12 +670,13 @@ def load_benchmark_names():
 
 name_by_cip = rekey(load_benchmark_names())
 pot_by_code = {o['id']: o.get('potentiel') for o in officines}
+POS_MOIS = {mois_compacte(a, m): i for i, (a, m) in enumerate(MOIS_LUS)}   # mois compacté -> position
 _det = {}
 for srow in sales:
     code, mois, comm, cip, qte, pu, mnt = srow
     d = _det.setdefault(code, {'m': [0] * NB_MOIS, 'prod': {}})
-    if isinstance(mois, int) and 1 <= mois <= NB_MOIS:
-        d['m'][mois - 1] += (mnt or 0)
+    if mois in POS_MOIS:   # 'm' est rangé par POSITION dans MOIS_LUS (jan..sep 2026 : mois - 1)
+        d['m'][POS_MOIS[mois]] += (mnt or 0)
     d['prod'][cip] = d['prod'].get(cip, 0) + (mnt or 0)
 CARTE_DETAIL = {}
 for code, d in _det.items():
@@ -689,19 +692,21 @@ DET_OUT = os.path.join(BASE, 'crm', 'v2', 'carte-detail.js')
 with open(DET_OUT, 'w', encoding='utf-8') as f:
     f.write('// Détail par officine pour la fiche de la carte Copilote (CA mensuel, top produits).\n')
     f.write('// {id: {m:[%s..%s], top:[[nom,ca]...], np:nbProduits, pot:potentiel}}\n'
-        % (MOIS_ABBR[MONTHS_NUM[0] - 1].lower(), MOIS_ABBR[MONTHS_NUM[-1] - 1].lower()))
+        % tuple(borne(a, m, MOIS_ABBR, MOIS_LUS[0][0] != MOIS_LUS[-1][0]).lower() for a, m in (MOIS_LUS[0], MOIS_LUS[-1])))
     f.write('window.CARTE_DETAIL=' + json.dumps(CARTE_DETAIL, ensure_ascii=False, separators=(',', ':')) + ';\n')
 print('  [fiche] carte-detail.js : {} officines, {:.0f} Ko'.format(len(CARTE_DETAIL), os.path.getsize(DET_OUT) / 1024))
 
 # ── 4. Écriture JS ──
-months_lbl = '%s-%s 2026' % (MOIS_ABBR[MONTHS_NUM[0] - 1], MOIS_ABBR[MONTHS_NUM[-1] - 1])
-WML_MOIS = ['2026-%02d' % m for m in MONTHS_NUM]   # période couverte, lue par le front
+months_lbl = periode(MOIS_LUS, MOIS_ABBR)
+WML_MOIS = ['%d-%02d' % (a, m) for a, m in MOIS_LUS]   # période couverte, lue par le front
 with open(OUT, 'w', encoding='utf-8') as f:
     f.write('// WML Officines + Ventes — source de vérité CRM V2\n')
     f.write('// {} officines actives · {} lignes de ventes · {}\n'.format(
         len(officines), len(sales), months_lbl))
-    f.write('// Généré par generate_wml_v2.py depuis STATS/WML_pharmacies + WML_%02d..%02d_2026\n'
-        % (MONTHS_NUM[0], MONTHS_NUM[-1]))
+    f.write('// Généré par generate_wml_v2.py depuis STATS/WML_pharmacies + WML_%02d..%02d_%d\n'
+        % (MOIS_LUS[0][1], MOIS_LUS[-1][1], MOIS_LUS[0][0]) if MOIS_LUS[0][0] == MOIS_LUS[-1][0] else
+        '// Généré par generate_wml_v2.py depuis STATS/WML_pharmacies + WML_%02d_%d..%02d_%d\n'
+        % (MOIS_LUS[0][1], MOIS_LUS[0][0], MOIS_LUS[-1][1], MOIS_LUS[-1][0]))
     f.write('// WML_SALES format compact : [pharmacyId, mois, commercial, cip13, qte, puNet, mntNetHt]\n')
     f.write('const WML_OFFICINES = ' + json.dumps(officines, ensure_ascii=False, separators=(',', ':')) + ';\n')
     f.write('const WML_SALES = ' + json.dumps(sales, ensure_ascii=False, separators=(',', ':')) + ';\n')

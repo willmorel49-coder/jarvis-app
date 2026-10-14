@@ -21,6 +21,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { readdirSync } from 'node:fs';
+import { chargerDecodage } from './aide-decodage-ventes.mjs';
 
 const RACINE = dirname(dirname(fileURLToPath(import.meta.url)));
 const DIR = join(RACINE, 'crm', 'v2');
@@ -41,10 +42,12 @@ for (const f of readdirSync(DIR)
   charger(f);
 }
 const W = bac.window, dO = W.WML_D_OFFICINES, dC = W.WML_D_COMMERCIAUX;
-const VENTES = W.WML_SALES.map((s) => ({
-  pharmacyId: String(dO[s[0]]), month: s[1], year: 2026,
-  commercial: dC[s[2]] || '', mntNetHt: s[6] || 0,
-}));
+// Le mois et l'année viennent du VRAI décodage de v2-boot.js (V2.decoderVente), plus d'une copie en dur.
+const decodage = chargerDecodage();
+const VENTES = W.WML_SALES.map((s) => {
+  const v = decodage.decoderVente([String(dO[s[0]]), s[1], dC[s[2]] || '', '', 0, 0, s[6]]);
+  return { pharmacyId: v.pharmacyId, month: v.month, year: v.year, commercial: v.commercial, mntNetHt: v.mntNetHt };
+});
 const OFFICINES = W.WML_OFFICINES;
 
 // ── `achats()` extrait du fichier livré ────────────────────────────────────

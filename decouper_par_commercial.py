@@ -50,6 +50,8 @@ import shutil
 import subprocess
 import sys
 
+from mois_wml import mois_compacte
+
 BASE = os.path.dirname(os.path.abspath(__file__))
 V2 = os.path.join(BASE, 'crm', 'v2')
 SORTIE = os.path.join(V2, 'ventes')
@@ -313,6 +315,7 @@ def main():
 
     total_reseau = sum(v[6] for v in ventes)
     nb_mois = len(next(iter(carte.values()))['m'])
+    pos_mois = {mois_compacte(int(a), int(m)): i for i, (a, m) in enumerate(x.split('-') for x in declaration(tete, 'WML_MOIS'))}   # mois compacté -> position (carte-detail.js : 'm' par position)
     noms = noms_produits()
     mc_complet = lire_marge_clients()
     for commercial in jeux:
@@ -371,8 +374,8 @@ def main():
         a_lui = {}
         for v in detail:
             dd = a_lui.setdefault(re.sub(r'[^0-9]', '', str(d_off[v[0]])), {'m': [0] * nb_mois, 'prod': {}})
-            if isinstance(v[1], int) and 1 <= v[1] <= nb_mois:
-                dd['m'][v[1] - 1] += v[6]
+            if v[1] in pos_mois and pos_mois[v[1]] < nb_mois:
+                dd['m'][pos_mois[v[1]]] += v[6]
             dd['prod'][d_pro[v[3]]] = dd['prod'].get(d_pro[v[3]], 0) + v[6]
         partagee = lambda k: bool(comms_par_code.get(re.sub(r'[^0-9]', '', k), set()) - mes)
         vide = {'m': [0] * nb_mois, 'prod': {}}

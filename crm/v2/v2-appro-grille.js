@@ -327,16 +327,16 @@
     }).join('') : '<div class="g5-wait">chargement du stock des sept sites…</div>';
 
     /* ── Les ventes du réseau, mois par mois ── */
-    var MOIS = (window.WML_MOIS || []).map(function (ym) { return +String(ym).split('-')[1]; });
+    var MOIS = (window.WML_MOIS || []).map(function (ym) { return V2.moisCompact(+String(ym).split('-')[0], +String(ym).split('-')[1]); });   // mois COMPACT (V2.moisCompact) : 13 = janv. 2027
     if (!MOIS.length) MOIS = [1, 2, 3, 4, 5, 6];
     var MSA = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
     var dpm = C.dpm()[String(o.c)] || {};
     var serie = MOIS.map(function (m) { return dpm[m] || 0; });
     var mx = Math.max.apply(null, serie.concat([1]));
     var courbe = '<div class="g5-courbe">' + serie.map(function (v, k) {
-      return '<div title="' + C.fmt(v) + ' unités en ' + MSA[MOIS[k] - 1] + '"><i style="height:' +
+      return '<div title="' + C.fmt(v) + ' unités en ' + MSA[V2.moisDeMois(MOIS[k]) - 1] + (MOIS[k] > 12 ? ' ' + V2.anneeDeMois(MOIS[k]) : '') + '"><i style="height:' +
         Math.max(2, Math.round(v / mx * 88)) + 'px' + (k === serie.length - 1 ? ';background:var(--c-amber,#C98A1A)' : '') + '"></i></div>';
-    }).join('') + '</div><div class="g5-moislab">' + MOIS.map(function (m) { return '<span>' + MSA[m - 1] + '</span>'; }).join('') + '</div>';
+    }).join('') + '</div><div class="g5-moislab">' + MOIS.map(function (m) { return '<span>' + MSA[V2.moisDeMois(m) - 1] + (m > 12 ? ' ' + V2.anneeDeMois(m) % 100 : '') + '</span>'; }).join('') + '</div>';
 
     /* ── D'où sort la quantité : le calcul écrit en toutes lettres ── */
     function ligne(t, n, e) {

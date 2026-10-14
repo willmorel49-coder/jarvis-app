@@ -151,7 +151,7 @@
     var off = {}, m, i;
     for (i = 0; i < S.length; i++) {
       m = S[i][1];
-      if (m >= 1 && m <= 12 && !V2.estReste(S[i][0])) (off[m] || (off[m] = {}))[S[i][0]] = 1;
+      if (m >= 1 && !V2.estReste(S[i][0])) (off[m] || (off[m] = {}))[S[i][0]] = 1;
     }
     var R = V2.reperesReseau();   // restreint : officines actives du réseau, toutes faites
     var mois = Object.keys(R ? R.act : off).map(Number).sort(function (a, b) { return a - b; });
@@ -1703,7 +1703,8 @@
     var name = (p && p.d) || cip;
     // Demande sur TOUTE la période couverte (WML_MOIS, écrit par le générateur).
     // Bornée en dur à 6, la courbe perdait le dernier mois importé sans aucun message.
-    var MOIS = (window.WML_MOIS || []).map(function (ym) { return +ym.split('-')[1]; });
+    // 14/10/2026 — année 2027 : les ventes sont rangées par mois COMPACT (V2.moisCompact), pas par numéro de mois.
+    var MOIS = (window.WML_MOIS || []).map(function (ym) { return V2.moisCompact(+ym.split('-')[0], +ym.split('-')[1]); });
     if (!MOIS.length) MOIS = [1, 2, 3, 4, 5, 6];
     var rang = {}; MOIS.forEach(function (m, k) { rang[m] = k; });
     // 11/09/2026 — perf : lecture d'index (une passe complète + String() par ligne à chaque ouverture, avant)
@@ -1711,7 +1712,7 @@
     var series = MOIS.map(function (m) { return dpm[m] || 0; });
     var mx = Math.max.apply(null, series) || 1;
     var MSA = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-    var MS = MOIS.map(function (m) { return MSA[m - 1]; });
+    var MS = MOIS.map(function (m) { return MSA[V2.moisDeMois(m) - 1] + (m > 12 ? ' ' + V2.anneeDeMois(m) % 100 : ''); });
     var spark = '<div class="tk-spark">' + series.map(function (v, k) {
       return '<div class="tk-bar"><i style="height:' + Math.round(6 + v / mx * 66) + 'px"></i><b>' + fmt(v) + '</b><span>' + MS[k] + '</span></div>';
     }).join('') + '</div>';

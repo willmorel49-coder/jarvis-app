@@ -33,6 +33,7 @@
   // stock d'autant trop courtes. Un compteur de période ne s'écrit pas, il se COMPTE.
   // Elle sert de repli quand l'index n'est pas encore construit ; `moisDe()` fait foi.
   M.MOIS_COUVERTS = 6;
+  M.AN0 = 2026;   // origine du compteur de mois compact (même valeur que V2.AN0 dans v2-boot.js)
 
   // Le nombre de mois RÉELLEMENT présents dans l'index (jamais moins de 1).
   M.moisDe = function (idx) {
@@ -96,7 +97,9 @@
       // d'entrer chez l'officine. Le fichier mensuel de Will porte la preuve,
       // aucune trace serveur n'est necessaire.
       // v2-boot nomme le champ `month`, les tests `mois` : on accepte les deux.
-      var mo = +(v.mois != null ? v.mois : v.month) || 0;
+      // 14/10/2026 — année 2027 : `month` (1-12) ne dit plus rien seul, janvier 2027 serait pris pour janvier 2026.
+      // On range donc par mois COMPACT (1..12 = 2026, 13 = janv. 2027 : voir V2.moisCompact dans v2-boot.js).
+      var mo = +(v.mois != null ? v.mois : (v.year ? (v.year - M.AN0) * 12 + v.month : v.month)) || 0;
       if (mo > 0) {
         var pm = idx.premierMois[ph] || (idx.premierMois[ph] = {});
         if (pm[cip] === undefined || mo < pm[cip]) pm[cip] = mo;

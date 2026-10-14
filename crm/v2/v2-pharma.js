@@ -181,19 +181,25 @@
   // libellé période couverte par les données (ex. "cumul 5 mois · janv.–mai 2026")
   function periodLabel() {
     var MN = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-    var ms = {}, yr = null, parCom = {};
+    var ms = {}, parCom = {};
     // 11/09/2026 — perf : mémorisé sur la référence de V2.sales (passe complète sinon)
     if (periodLabel._ref === V2.sales && periodLabel._val != null) return periodLabel._val;
     (V2.sales || []).forEach(function (s) {
       if (!s.month) return;
-      ms[s.month] = 1; if (s.year) yr = s.year;
-      if (s.commercial) (parCom[s.commercial] || (parCom[s.commercial] = {}))[s.month] = 1;
+      // 14/10/2026 — année 2027 : un mois = année × 12 + mois − 1 (comme mkey du Pilotage), jamais le seul numéro de mois
+      // (janvier 2027 était pris pour janvier 2026). Les mois consécutifs restent consécutifs, y compris d'une année à l'autre.
+      var k = (+s.year || 0) * 12 + s.month - 1;
+      ms[k] = 1;
+      if (s.commercial) (parCom[s.commercial] || (parCom[s.commercial] = {}))[k] = 1;
     });
     var ks = Object.keys(ms).map(Number).sort(function (a, b) { return a - b; });
     periodLabel._ref = V2.sales;
     if (!ks.length) return (periodLabel._val = '');
     var der = ks[ks.length - 1];
-    var span = MN[ks[0] - 1] + '–' + MN[der - 1] + (yr ? ' ' + yr : '');
+    var moisDe = function (k) { return MN[k % 12]; }, anDe = function (k) { return Math.floor(k / 12); };
+    var span = anDe(ks[0]) === anDe(der) || !anDe(ks[0])
+      ? moisDe(ks[0]) + '–' + moisDe(der) + (anDe(der) ? ' ' + anDe(der) : '')
+      : moisDe(ks[0]) + ' ' + anDe(ks[0]) + '–' + moisDe(der) + ' ' + anDe(der);
     // 25/09/2026 — garde « mois incomplet » (reference_dernier_mois_incomplet) : chaque secteur
     // a son fichier, qui ne s'arrête pas forcément au même mois. Les listes sont des cumuls
     // (rien n'est écarté ni comparé), mais l'étiquette le DIT quand le dernier mois manque à un
@@ -203,7 +209,7 @@
       var m = parCom[c]; if (!(m[der - 1] || m[der - 2] || m[der - 3] || m[der])) return;
       actifs++; if (!m[der]) courts++;
     });
-    var note = courts ? ' (' + MN[der - 1] + ' incomplet : ' + courts + ' secteur' + (courts > 1 ? 's' : '') + ' sur ' + actifs + ' s\'arrête' + (courts > 1 ? 'nt' : '') + ' avant)' : '';
+    var note = courts ? ' (' + moisDe(der) + ' incomplet : ' + courts + ' secteur' + (courts > 1 ? 's' : '') + ' sur ' + actifs + ' s\'arrête' + (courts > 1 ? 'nt' : '') + ' avant)' : '';
     return (periodLabel._val = 'cumul ' + ks.length + ' mois · ' + span + note);
   }
 
@@ -1475,7 +1481,7 @@
     var R = V2.reperesReseau();   // commercial restreint : repères réseau tout faits
     var list = Object.keys(months).map(function (k) { return months[k]; }).sort(function (x, y) { return x.mk - y.mk; });
     list.forEach(function (m) {
-      m.n = (R && R.act[m.month]) || Object.keys(act[m.mk] || {}).length || 1;   // officines actives ce mois-là
+      m.n = (R && R.act[V2.moisCompact(m.year, m.month)]) || Object.keys(act[m.mk] || {}).length || 1;   // officines actives ce mois-là
       m.avg = m.total / m.n; m.avgByCat = {};
       Object.keys(m.byCat).forEach(function (c) { m.avgByCat[c] = m.byCat[c] / m.n; });
     });
@@ -5019,10 +5025,12 @@
             gros1: pr.gros1 || b[18] || '', gros2: pr.gros2 || '', gen1: pr.gen1 || gs[0] || '', gen2: pr.gen2 || gs[1] || '' };
         }));
         var MN = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-        var moisVus = {}, an = 2026;
-        (V2.sales || []).forEach(function (s) { if (s.month) { moisVus[s.month] = 1; if (s.year) an = s.year; } });
+        // 14/10/2026 — année 2027 : les mois sont rangés par année × 12 + mois − 1, chaque colonne porte SON année.
+        var moisVus = {}, an = V2.AN0;
+        (V2.sales || []).forEach(function (s) { if (s.month) { moisVus[(+s.year || an) * 12 + s.month - 1] = 1; if (s.year && s.year > an) an = s.year; } });
         var mois = Object.keys(moisVus).map(Number).sort(function (a, b) { return a - b; });
-        var periode = mois.length ? MN[mois[0] - 1] + '-' + MN[mois[mois.length - 1] - 1] : '';
+        var periode = mois.length ? MN[mois[0] % 12] + '-' + MN[mois[mois.length - 1] % 12] : '';
+        var anTitre = mois.length && Math.floor(mois[0] / 12) !== Math.floor(mois[mois.length - 1] / 12) ? Math.floor(mois[0] / 12) + '-' + Math.floor(mois[mois.length - 1] / 12) : String(an);
         function fr(d) { d = String(d || ''); var m = d.match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '/' + m[2] + '/' + m[1] : d; }
         // 14/10/2026 — « Notre marge » en colonnes AJOUTÉES À LA FIN (après les notes) : aucun index en dur ne bouge.
         var NMx = V2.notreMarge, nmOn = !!(NMx && NMx.dispo()), mvx = moisVentes();
@@ -5036,15 +5044,15 @@
           'Pharmaciens RPPS (titulaires / adjoints)', 'Ouverture ou reprise', 'Groupement', 'Livrée par', 'LGO', 'Robot',
           'Grossiste 1', 'Grossiste 2', 'Grossiste 3 / autre', 'Génériqueur 1', 'Génériqueur 2', 'Génériqueur 3', 'Biosimilaires',
           'Grossistes / génériqueurs probables : d\'où ça vient']
-          .concat(mois.map(function (m) { return 'CA HT ' + MN[m - 1] + ' ' + an; }))
-          .concat(['CA HT ' + an + (periode ? ' (' + periode + ')' : ''), 'Nb de produits différents',
+          .concat(mois.map(function (m) { return 'CA HT ' + MN[m % 12] + ' ' + Math.floor(m / 12); }))
+          .concat(['CA HT ' + anTitre + (periode ? ' (' + periode + ')' : ''), 'Nb de produits différents',
             'À savoir', 'Vente du fonds (BODACC)', 'Procédure collective (BODACC)', 'Dernière note', 'Notes de l\'équipe (plus récente en premier)'])
           .concat(nmOn ? ['Notre marge (estimation à fin ' + NMx.nomMoisLong(NMx.jusqua()) + ')'].concat(nmFams.map(function (f) { return 'Notre marge : ' + NMx.LIBELLES[f]; })) : []);
         var rows = phs.map(function (p) {
           var id = String(p.id), b = CA[id] || [], o = OI[id] || [], pr = prof[id] || {}, ov = over[id] || {};
           var gens = String(b[10] || '').split('/').map(function (g) { return g.trim(); }).filter(Boolean);
           var parMois = {}, refs = {}, tot = 0;
-          pharmaSales(id).concat(pharmaSales('EX' + id), pharmaSales(id + 'EX')).forEach(function (s) { parMois[s.month] = (parMois[s.month] || 0) + (s.mntNetHt || 0); tot += s.mntNetHt || 0; if (s.artCode) refs[s.artCode] = 1; });
+          pharmaSales(id).concat(pharmaSales('EX' + id), pharmaSales(id + 'EX')).forEach(function (s) { var km = (+s.year || an) * 12 + s.month - 1; parMois[km] = (parMois[km] || 0) + (s.mntNetHt || 0); tot += s.mntNetHt || 0; if (s.artCode) refs[s.artCode] = 1; });
           var savoir = [];
           if (o[6] === 'C') savoir.push('Société déclarée cessée' + (o[7] ? ' le ' + fr(o[7]) : '') + ' — reprise probable ou à vérifier');
           if (o[9] === 'R') savoir.push('Un dirigeant a 62 ans ou plus (départ en retraite possible)');

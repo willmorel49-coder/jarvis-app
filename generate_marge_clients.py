@@ -91,7 +91,7 @@ DEBUT_2027 = (2027, 1, 20)    # jour d'entrée en vigueur : une ligne datée à 
 MOIS_2027 = 202702            # sans date de ligne : tout mois à partir de février 2027
 
 FAM = ['p', 'p1', 'p2', 'i', 'c', 'fr', 'nr']
-SOURCES_ENV = ('SOURCES', 'RATTACHEES', 'AVOIRS_EN_POSITIF', 'MONTHS_NUM')
+SOURCES_ENV = ('SOURCES', 'RATTACHEES', 'AVOIRS_EN_POSITIF', 'MOIS_LUS')
 
 
 # ══════════════════════════════════════════════ fonctions pures (testées) ════════════════════════
@@ -340,18 +340,19 @@ def lire_prive():
 
 
 def lire_wml_v2(chemin):
-    """SOURCES, RATTACHEES, avoirs, mois et millésime lus DANS generate_wml_v2.py (non importable) : jamais de copie qui diverge."""
+    """SOURCES, RATTACHEES, avoirs et mois lus (couples (année, mois)) DANS generate_wml_v2.py (non importable) : jamais de copie qui diverge."""
     src = open(chemin, encoding='utf-8').read()
     out = {}
     for node in ast.parse(src).body:
         if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name) \
                 and node.targets[0].id in SOURCES_ENV:
-            out[node.targets[0].id] = ast.literal_eval(node.value)
+            if node.targets[0].id == 'MOIS_LUS':   # une compréhension de liste : pas un littéral, on l'évalue sans rien d'autre que range
+                out['MOIS_LUS'] = eval(compile(ast.Expression(node.value), chemin, 'eval'), {'__builtins__': {'range': range}})
+            else:
+                out[node.targets[0].id] = ast.literal_eval(node.value)
     manque = [k for k in SOURCES_ENV if k not in out]
-    m = re.search(r"'%s_%02d_(\d{4})\.xlsx'", src)
-    if manque or not m:
-        raise ValueError('generate_wml_v2.py : %s introuvable' % (', '.join(manque) or 'millésime des fichiers'))
-    out['ANNEE'] = int(m.group(1))
+    if manque:
+        raise ValueError('generate_wml_v2.py : %s introuvable' % ', '.join(manque))
     return out
 
 
@@ -536,7 +537,7 @@ def main():
     print('Listes : %d génériques · %d froid · liste privée %s' % (len(L.gen), len(L.fr), ('%d' % len(L.privee)) if privee else 'absente'))
 
     # ── quels tableurs : exactement ceux de generate_wml_v2 ──
-    annee, mois_num = env['ANNEE'], env['MONTHS_NUM']
+    mois_lus = env['MOIS_LUS']
     rattachees = {k: tuple(v) for k, v in env['RATTACHEES'].items()}
     lectures = [(comm, prefix, stats, None) for comm, prefix in env['SOURCES']]
     for comm, prefix in sorted(set(rattachees.values())):
@@ -554,7 +555,7 @@ def main():
         json.dump(cat, f, ensure_ascii=False)
     taches = []
     for comm, prefix, dossier, garder in lectures:
-        for mois in mois_num:
+        for annee, mois in mois_lus:
             p = os.path.join(dossier, '%s_%02d_%d.xlsx' % (prefix, mois, annee))
             if garder is not None and not os.path.exists(p):
                 p = os.path.join(stats, os.path.basename(p))
@@ -602,7 +603,7 @@ def main():
     if not rows:
         print('ARRÊT : 0 ligne — rien n\'est écrit.')
         return 5
-    mois_txt = ['%d-%02d' % (annee, m) for m in mois_num]
+    mois_txt = ['%d-%02d' % (a, m) for a, m in mois_lus]
     ym_max = max(m[1] for m in meta)
     d = {'v': 1, 'fait': datetime.date.today().isoformat(), 'jusqua': '%d-%02d' % (ym_max // 100, ym_max % 100), 'mois': mois_txt,
          'reserves': prive['reserves'], 'fam': FAM, 'c': prenoms, 'o': officines, 'r': rows}

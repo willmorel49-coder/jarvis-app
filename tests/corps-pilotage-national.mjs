@@ -21,6 +21,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { chargerDecodage } from './aide-decodage-ventes.mjs';
 
 const RACINE = dirname(dirname(fileURLToPath(import.meta.url)));
 const DIR = join(RACINE, 'crm', 'v2');
@@ -83,10 +84,13 @@ for (const f of ['../benchmark-data.js', 'prod-stats-data.js', 'ameli-avg-data.j
 // ── Les ventes, remises dans la forme que l'app leur donne au démarrage ────
 // (même décodage que V2.loadData dans v2-boot.js : rangs → valeurs)
 const dOff = win.WML_D_OFFICINES, dCom = win.WML_D_COMMERCIAUX, dPro = win.WML_D_PRODUITS;
-const VENTES = win.WML_SALES.map((s) => ({
-  pharmacyId: String(dOff[s[0]]), month: s[1], year: 2026, commercial: dCom[s[2]] || '',
-  artCode: String(dPro[s[3]]), artFamille: null, qte: s[4] || 0, puNet: s[5] || 0, mntNetHt: s[6] || 0,
-}));
+// Le mois et l'année viennent du VRAI décodage de v2-boot.js (V2.decoderVente), plus d'une copie en dur.
+const decodage = chargerDecodage();
+const VENTES = win.WML_SALES.map((s) => {
+  const v = decodage.decoderVente([String(dOff[s[0]]), s[1], dCom[s[2]] || '', String(dPro[s[3]]), s[4], s[5], s[6]]);
+  return { pharmacyId: v.pharmacyId, month: v.month, year: v.year, commercial: v.commercial,
+    artCode: String(v.artCode), artFamille: null, qte: v.qte, puNet: v.puNet, mntNetHt: v.mntNetHt };
+});
 const OFFICINES = win.WML_OFFICINES.map((p) => ({ id: String(p.id), name: p.name, groupement: p.groupement }));
 
 // ── Le V2 minimal dont l'écran a besoin ───────────────────────────────────

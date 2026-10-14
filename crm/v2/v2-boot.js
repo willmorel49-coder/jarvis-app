@@ -208,6 +208,21 @@
   // officine. Les repères qu'on ne peut plus compter (officines actives par mois, rang de
   // ses officines) arrivent tout faits dans l'index du jeu (decouper_par_commercial.py).
   V2.estReste = function (pid) { pid = String(pid); return pid === '0' || pid === '0E'; };
+
+  // ── 14/10/2026 : ANNÉE 2027 — le mois d'une ligne de ventes est un COMPTEUR, pas un numéro de mois.
+  // Ligne compacte de WML_SALES : [officine, moisCompacte, commercial, cip13, qte, puNet, mntNetHt] avec
+  // moisCompacte = (année − AN0) × 12 + mois : 1..12 = 2026, 13 = janvier 2027, 24 = décembre 2027.
+  // Pour 1..12 le résultat est exactement celui d'avant (année 2026, mois = le compteur).
+  V2.AN0 = 2026;   // origine du compteur de mois
+  V2.moisCompact = function (annee, mois) { return (annee - V2.AN0) * 12 + mois; };
+  V2.anneeDeMois = function (c) { return V2.AN0 + Math.floor((c - 1) / 12); };
+  V2.moisDeMois = function (c) { return (((c - 1) % 12) + 12) % 12 + 1; };
+  // Une ligne compacte (déjà remise en valeurs par le décodage des rangs) → la vente telle que l'app la lit.
+  V2.decoderVente = function (s) {
+    return { id: null, importId: null, pharmacyId: String(s[0]), month: V2.moisDeMois(s[1]), year: V2.anneeDeMois(s[1]),
+             commercial: s[2] || '', artDesignation: '', artCode: s[3], artFamille: null,
+             qte: s[4] || 0, puBrut: 0, puNet: s[5] || 0, mntNetHt: s[6] || 0 };
+  };
   // null = ventes complètes (accès total) : compter comme avant.
   V2.reperesReseau = function () {
     var j = V2._dossierVentes && window.WML_TRANCHES_JEU; if (!j) return null;
@@ -416,7 +431,7 @@
     (V2.sales || []).forEach(function (s) {
       if (s.month && s.year) { var k = s.year * 12 + s.month; if (!seenK[k]) { seenK[k] = 1; refMonths.push({ year: s.year, month: s.month }); } }
     });
-    if (!refMonths.length) refMonths = [{ year: 2026, month: 1 }];
+    if (!refMonths.length) refMonths = [{ year: V2.AN0, month: 1 }];
     var nMonths = refMonths.length;
 
     V2.pharmacies = listing.map(function (a) {
@@ -543,11 +558,7 @@
         }
       }
       // format tableau : [pharmacyId, mois, commercial, cip13, qte, puNet, mntNetHt]
-      V2.sales = window.WML_SALES.map(function (s) {
-        return { id: null, importId: null, pharmacyId: String(s[0]), month: s[1], year: 2026,
-                 commercial: s[2] || '', artDesignation: '', artCode: s[3], artFamille: null,
-                 qte: s[4] || 0, puBrut: 0, puNet: s[5] || 0, mntNetHt: s[6] || 0 };
-      });
+      V2.sales = window.WML_SALES.map(V2.decoderVente);
       V2.imports = [];
       V2.applyOpsoPerimeter();
       V2.applyEscalePerimeter();

@@ -1,5 +1,5 @@
 """
-Génère les données de l'app OPSO Santé depuis les stats mensuelles (STATS/*_0X_2026.xlsx) :
+Génère les données de l'app OPSO Santé depuis les stats mensuelles (STATS/*_MM_AAAA.xlsx) :
   - opso/wml-sales-data.js  (WML_STATIC_SALES : lignes produit par officine — vue détaillée)
   - opso/opso-adherents.js  (OPSO_ADHERENTS : adhérents OPSO ACTIFS = avec ventes)
   - opso/wml-data.js        (WML_MONTHS + WML_DATA : agrégat par officine — onglet CA & Commandes)
@@ -14,6 +14,7 @@ import json, os, re, glob, warnings
 from collections import defaultdict
 warnings.filterwarnings('ignore')
 import openpyxl
+from mois_wml import periode
 
 # Le dossier du script LUI-MÊME. Écrit en dur, BASE ramenait toujours vers
 # ~/JARVIS/APP — resté 439 commits en arrière : le robot des stats y a ignoré
@@ -26,11 +27,12 @@ LISTING_JS = os.path.join(BASE, 'opso', 'opso-listing-2026.js')
 OUT_SALES = os.path.join(BASE, 'opso', 'wml-sales-data.js')
 OUT_ADH = os.path.join(BASE, 'opso', 'opso-adherents.js')
 OUT_DATA = os.path.join(BASE, 'opso', 'wml-data.js')
-MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-WML_MONTHS = ['2026-%02d' % m for m in MONTHS]
+# Mois lus = couples (année, mois), comme dans generate_wml_v2.py. Ajouter (2027, 1) quand les ventes de janvier 2027 sont déposées.
+MOIS_LUS = [(2026, m) for m in range(1, 10)]
+WML_MONTHS = ['%d-%02d' % (a, m) for a, m in MOIS_LUS]
 MOIS_ABBR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil',
              'Août', 'Sep', 'Oct', 'Nov', 'Déc']
-PERIODE = '%s-%s 2026' % (MOIS_ABBR[MONTHS[0] - 1], MOIS_ABBR[MONTHS[-1] - 1])
+PERIODE = periode(MOIS_LUS, MOIS_ABBR)
 
 
 def classify(nature, afm, pu_net):
@@ -129,11 +131,11 @@ def _put(key, ean, nat, afm, sub):
 
 
 def fichiers_mois(suffixe=''):
-    """Les tableurs de TOUS les mois de MONTHS — la liste des mois est la seule source de
+    """Les tableurs de TOUS les mois de MOIS_LUS — la liste des mois est la seule source de
     vérité. (Jusqu'au 10/09/2026, un motif '0[1-6]' écrit en dur ignorait juillet et août :
-    l'app OPSO affichait presque 0 € sur ces deux mois alors que MONTHS allait jusqu'à 8.)"""
-    return sorted(p for m in MONTHS
-                  for p in glob.glob(os.path.join(STATS, '*_%02d_2026%s.xlsx' % (m, suffixe))))
+    l'app OPSO affichait presque 0 € sur ces deux mois alors que la liste des mois allait jusqu'à 8.)"""
+    return sorted(p for a, m in MOIS_LUS
+                  for p in glob.glob(os.path.join(STATS, '*_%02d_%d%s.xlsx' % (m, a, suffixe))))
 
 
 for p in fichiers_mois('*'):
@@ -187,7 +189,7 @@ idx = 0
 def new_ph(cip):
     return {'tc': cip, 'nom': OPSO_INFO.get(cip, {}).get('nom', 'Officine ' + cip),
             'ca': 0.0, 'mg': 0.0, 'qt': 0.0,
-            'ca_m': [0.0] * len(MONTHS), 'mg_m': [0.0] * len(MONTHS), 'qt_m': [0.0] * len(MONTHS),
+            'ca_m': [0.0] * len(MOIS_LUS), 'mg_m': [0.0] * len(MOIS_LUS), 'qt_m': [0.0] * len(MOIS_LUS),
             'afm': defaultdict(lambda: [0.0, 0.0, 0.0]),
             'cat': defaultdict(lambda: [0.0, 0.0, 0.0]),
             'sf': defaultdict(lambda: [0.0, 0.0, 0.0]),
@@ -197,13 +199,13 @@ def new_ph(cip):
 
 for path in fichiers_mois():
     base = os.path.basename(path)
-    mm = re.match(r'[A-Za-z]+_(\d{2})_2026\.xlsx$', base)
+    mm = re.match(r'[A-Za-z]+_(\d{2})_(\d{4})\.xlsx$', base)
     if not mm:
         continue
-    month = int(mm.group(1))
-    if month not in MONTHS:
+    month, year = int(mm.group(1)), int(mm.group(2))
+    if (year, month) not in MOIS_LUS:
         continue
-    mi = MONTHS.index(month)
+    mi = MOIS_LUS.index((year, month))
     wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
     ws = wb.active
     it = ws.iter_rows(values_only=True)
@@ -240,7 +242,7 @@ for path in fichiers_mois():
         art_famille = 'froid' if subfamily.lower() == 'froid' else famille
 
         # -- wml-sales-data.js --
-        all_sales.append({'id': f'wml_{cip}_{month}_2026_{idx}', 'pharmacyCode': cip, 'month': month,
+        all_sales.append({'id': f'wml_{cip}_{month}_{year}_{idx}', 'pharmacyCode': cip, 'month': month, 'year': year,
                           'artDesignation': designation, 'artCode': art_code, 'artFamille': art_famille,
                           'qte': qte, 'puBrut': pu_brut, 'puNet': pu_net, 'mntNetHt': mnt})
         idx += 1
@@ -310,10 +312,10 @@ for relpath, sheet2cip in AGG_SOURCES:
             subfamily = str(amap.get('sub') or '')
             famille = classify(str(nature), afm, pu_net)
             art_famille = 'froid' if subfamily.lower() == 'froid' else famille
-            month = (li % len(MONTHS)) + 1
-            mi = MONTHS.index(month)
+            mi = li % len(MOIS_LUS)
+            year, month = MOIS_LUS[mi]
             li += 1
-            all_sales.append({'id': f'wml_{cip}_{month}_2026_{idx}', 'pharmacyCode': cip, 'month': month,
+            all_sales.append({'id': f'wml_{cip}_{month}_{year}_{idx}', 'pharmacyCode': cip, 'month': month, 'year': year,
                               'artDesignation': designation, 'artCode': code, 'artFamille': art_famille,
                               'qte': qte, 'puBrut': pu_brut, 'puNet': pu_net, 'mntNetHt': mnt})
             idx += 1
@@ -341,14 +343,14 @@ print('\nTotal : %d lignes · %d adhérents OPSO actifs' % (len(all_sales), len(
 # ── 3ter. Focus GLP-1 (Wegovy / Mounjaro…) : blockbusters non-remboursés « stars du moment » ──
 GLP1_BRANDS = [('Mounjaro', 'MOUNJARO'), ('Wegovy', 'WEGOVY'), ('Ozempic', 'OZEMPIC'),
                ('Trulicity', 'TRULICITY'), ('Autres GLP-1', 'VICTOZA|SAXENDA|RYBELSUS|BYDUREON|LYXUMIA')]
-glp1 = {'ca': 0.0, 'qt': 0.0, 'ca_m': [0.0] * len(MONTHS),
+glp1 = {'ca': 0.0, 'qt': 0.0, 'ca_m': [0.0] * len(MOIS_LUS),
         'brands': {b[0]: [0.0, 0.0] for b in GLP1_BRANDS}, 'ph': set()}
 for s in all_sales:
     d = (s['artDesignation'] or '').upper()
     for name, pat in GLP1_BRANDS:
         if re.search(pat, d):
             glp1['ca'] += s['mntNetHt']; glp1['qt'] += s['qte']
-            glp1['ca_m'][MONTHS.index(s['month'])] += s['mntNetHt']
+            glp1['ca_m'][MOIS_LUS.index((s['year'], s['month']))] += s['mntNetHt']
             glp1['brands'][name][0] += s['mntNetHt']; glp1['brands'][name][1] += s['qte']
             glp1['ph'].add(s['pharmacyCode'])
             break
@@ -365,7 +367,7 @@ lines = [
 for s in all_sales:
     lines.append('{'
                  f'id:{js_str(s["id"])},pharmacyCode:{js_str(s["pharmacyCode"])},importId:null,'
-                 f'month:{s["month"]},year:2026,'
+                 f'month:{s["month"]},year:{s["year"]},'
                  f'artDesignation:{js_str(s["artDesignation"])},artCode:{js_str(s["artCode"])},artId:null,'
                  f'artFamille:{js_str(s["artFamille"])},qte:{fv(s["qte"])},puBrut:{fv(s["puBrut"])},'
                  f'puNet:{fv(s["puNet"])},mntNetHt:{fv(s["mntNetHt"])}' '},')
@@ -381,8 +383,8 @@ def obj_num_map(d):
 order = sorted(agg.keys(), key=lambda c: -agg[c]['ca'])
 dlines = [
     '// WML Commandes — app OPSO Santé (généré par generate_wml_sales.py)',
-    '// %d officines · %d mois (%s → %s) · tous commerciaux' % (len(agg), len(MONTHS), WML_MONTHS[0], WML_MONTHS[-1]),
-    '// Champs : tc nom ca mg qt ca_m/mg_m/qt_m[%d]  afm{code:[ca,mg,qt]}  sf{sf:[ca,mg,qt]}  pr[[nom,ca,mg,qt,ean]]  tr{t1..t4:[n,ca,mg]}' % len(MONTHS),
+    '// %d officines · %d mois (%s → %s) · tous commerciaux' % (len(agg), len(MOIS_LUS), WML_MONTHS[0], WML_MONTHS[-1]),
+    '// Champs : tc nom ca mg qt ca_m/mg_m/qt_m[%d]  afm{code:[ca,mg,qt]}  sf{sf:[ca,mg,qt]}  pr[[nom,ca,mg,qt,ean]]  tr{t1..t4:[n,ca,mg]}' % len(MOIS_LUS),
     'const WML_MONTHS = %s;' % json.dumps(WML_MONTHS),
     'const WML_DATA = [',
 ]

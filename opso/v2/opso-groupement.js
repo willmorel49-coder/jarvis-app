@@ -161,6 +161,8 @@
     if (!moisArr.length) return '';
     var first = moisArr[0], last = moisArr[moisArr.length - 1];
     if (first.y === last.y && first.m === last.m) return MOIS_ABREV[first.m - 1] + ' ' + first.y;
+    // 14/10/2026 — année 2027 : sur deux années, chacune des bornes porte la sienne (« janv. 2026–janv. 2027 »).
+    if (first.y !== last.y) return MOIS_ABREV[first.m - 1] + ' ' + first.y + '–' + MOIS_ABREV[last.m - 1] + ' ' + last.y;
     // MOIS_ABREV porte déjà son point (« janv. », pas « juin. ») : pas de point ajouté ici.
     return MOIS_ABREV[first.m - 1] + '–' + MOIS_ABREV[last.m - 1] + ' ' + last.y;
   }
@@ -600,10 +602,10 @@
         b.className = 'oa-col'; b.type = 'button';
         b.setAttribute('data-mois', i);
         b.setAttribute('aria-pressed', 'false');
-        b.setAttribute('aria-label', MOIS_PLEIN[mo.m - 1] + ' : ' + euros(mo.ca));
-        b.title = cap1(MOIS_PLEIN[mo.m - 1]) + ' · ' + euros(mo.ca);
+        b.setAttribute('aria-label', MOIS_PLEIN[mo.m - 1] + ' ' + mo.y + ' : ' + euros(mo.ca));
+        b.title = cap1(MOIS_PLEIN[mo.m - 1]) + ' ' + mo.y + ' · ' + euros(mo.ca);
         b.style.setProperty('--k', i);
-        b.innerHTML = '<span class="oa-bar" style="--h:' + Math.max(0.04, mo.ca / maxCa).toFixed(4) + '"><i></i><b class="oa-val og-num" aria-hidden="true">' + Math.round(mo.ca / 1000) + ' k€</b></span><span class="oa-lab">' + MOIS_ABREV[mo.m - 1] + '</span>';
+        b.innerHTML = '<span class="oa-bar" style="--h:' + Math.max(0.04, mo.ca / maxCa).toFixed(4) + '"><i></i><b class="oa-val og-num" aria-hidden="true">' + Math.round(mo.ca / 1000) + ' k€</b></span><span class="oa-lab">' + MOIS_ABREV[mo.m - 1] + (DATA.mois[0].y !== DATA.mois[DATA.mois.length - 1].y ? ' ' + (mo.y % 100) : '') + '</span>';
         b.addEventListener('click', function () { selectMonth(i); });
         monthsNav.appendChild(b); monthPills.push(b);
       });
@@ -639,7 +641,7 @@
           var prev = DATA.mois[i - 1];
           var diff = mo.ca - prev.ca;
           var diffPct = prev.ca ? (diff / prev.ca) * 100 : 0;
-          mfEcart.innerHTML = (diff >= 0 ? '+ ' : '− ') + esc(pct1(Math.abs(diffPct))) + ' <small>vs ' + esc(MOIS_ABREV[prev.m - 1]) + '</small>';
+          mfEcart.innerHTML = (diff >= 0 ? '+ ' : '− ') + esc(pct1(Math.abs(diffPct))) + ' <small>vs ' + esc(MOIS_ABREV[prev.m - 1] + (prev.y !== mo.y ? ' ' + prev.y : '')) + '</small>';
           mfEcart.className = 'oa-delta ' + (diff >= 0 ? 'up' : 'dn');
         }
         monthPills.forEach(function (p, k) { p.setAttribute('aria-pressed', k === i ? 'true' : 'false'); });
@@ -765,25 +767,29 @@
 
     function renderTrajectoire(DATA) {
       DATA_REF = DATA;
-      var mois = DATA.mois;
+      // 14/10/2026 — année 2027 : la trajectoire est celle d'UNE année civile (du premier mois suivi à décembre) ;
+      // quand les données couvrent 2026 ET 2027 on trace l'année du dernier mois, sans mélanger les deux.
+      var anTraj = DATA.mois.length ? DATA.mois[DATA.mois.length - 1].y : 0;
+      var mois = DATA.mois.filter(function (mo) { return mo.y === anTraj; });
       var nReal = mois.length;
       if (!nReal) return;
+      var totalAn = mois.reduce(function (t, mo) { return t + mo.ca; }, 0);   // = DATA.total tant que les données tiennent sur une seule année
       var firstMonthIdx = mois[0].m - 1; // 0-based
       var nSlots = 12 - firstMonthIdx;   // du premier mois suivi à décembre de la même année
       var monthly = mois.map(function (mo) { return mo.ca; });
       var cumulReal = [];
       monthly.reduce(function (acc, v, i) { var s = acc + v; cumulReal[i] = s; return s; }, 0);
 
-      var avgMonthly = nReal ? DATA.total / nReal : 0;
+      var avgMonthly = nReal ? totalAn / nReal : 0;
       var cumulBase = cumulReal.slice();
       for (var m = nReal; m < nSlots; m++) cumulBase[m] = cumulBase[m - 1] + avgMonthly;
 
-      var perAdherentPerMonth = (DATA.pharmaClientes && nReal) ? (DATA.total / DATA.pharmaClientes / nReal) : 0;
+      var perAdherentPerMonth = (DATA.pharmaClientes && nReal) ? (totalAn / DATA.pharmaClientes / nReal) : 0;
       var basisEl = byId('og-sim-basis');
-      if (basisEl) basisEl.textContent = euros(DATA.total) + ' ÷ ' + DATA.pharmaClientes + ' ÷ ' + nReal + ' = ' + euros(perAdherentPerMonth) + ' en moyenne par adhérente cliente et par mois (calculé).';
-      var sub = byId('og-traj-sub'); if (sub) sub.textContent = cap1(DATA.periode);
+      if (basisEl) basisEl.textContent = euros(totalAn) + ' ÷ ' + DATA.pharmaClientes + ' ÷ ' + nReal + ' = ' + euros(perAdherentPerMonth) + ' en moyenne par adhérente cliente et par mois (calculé).';
+      var sub = byId('og-traj-sub'); if (sub) sub.textContent = cap1(periodeLabel(mois));
       var septNote = byId('og-sept-note');
-      if (septNote) septNote.textContent = 'Cumul mensuel des achats des adhérentes chez Intégral Pharma, ' + DATA.periode + '. Pointillés : au rythme actuel — hypothèse, pas un engagement.'
+      if (septNote) septNote.textContent = 'Cumul mensuel des achats des adhérentes chez Intégral Pharma, ' + periodeLabel(mois) + '. Pointillés : au rythme actuel — hypothèse, pas un engagement.'
         + (DATA.nextAbrev ? ' ' + cap1(DATA.nextAbrev) + ' : données en attente — non incluses dans le cumul.' : '');
 
       function cumulSim(n) {

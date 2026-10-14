@@ -31,7 +31,11 @@
   // Mois par mois (demande de Will, 15/09/2026) : nos ventes, notre part du marché France
   // et le marché France, par produit. Ventes France : france-mois-data.js (Medic'AM).
   var FRANCE_V = '20260915f';
-  var ANNEE = 2026;        // même année que les ventes (v2-boot.js : year 2026)
+  var ANNEE = 2026;        // repli seulement : l'année de référence est celle du dernier mois des ventes (anneeRef)
+  // 14/10/2026 — année 2027 : les mois des ventes sont un compteur (1..12 = 2026, 13 = janv. 2027, voir V2.moisCompact).
+  function moisCal(c) { return V2.moisDeMois ? V2.moisDeMois(c) : c; }
+  function anneeDe(c) { return V2.anneeDeMois ? V2.anneeDeMois(c) : ANNEE; }
+  function anneeRef() { var m = D.cache && D.cache.mois; return m && m.length ? anneeDe(m[m.length - 1]) : ANNEE; }
   var MOIS_C = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
   var GRIS = '#6B7385';    // l'année précédente, en retrait (4,7:1 sur blanc)
 
@@ -170,7 +174,7 @@
     if (!F) return null;
     if (D.frPos && D.frPosRef === F) return D.frPos;
     var out = [], i;
-    for (i = 0; i < VM.mois.length; i++) out.push(F.meta.mois.indexOf(ANNEE + '-' + pad2(VM.mois[i])));
+    for (i = 0; i < VM.mois.length; i++) out.push(F.meta.mois.indexOf(anneeDe(VM.mois[i]) + '-' + pad2(moisCal(VM.mois[i]))));
     D.frPos = out; D.frPosRef = F;
     return out;
   }
@@ -200,7 +204,7 @@
       var v = (fm && posF[i] >= 0) ? fm[posF[i]] : null;
       frm.push(v); part.push(v > 0 ? q[i] / v : null);
     }
-    var f25 = [], f26 = [], y0 = 0, y1 = 0, nb = 0, dern = 0;
+    var f25 = [], f26 = [], y0 = 0, y1 = 0, nb = 0, dern = 0, ANNEE = anneeRef();
     if (fm) {
       for (i = 1; i <= 12; i++) {
         var a = F.meta.mois.indexOf((ANNEE - 1) + '-' + pad2(i)), b = F.meta.mois.indexOf(ANNEE + '-' + pad2(i));
@@ -210,7 +214,7 @@
     }
     var k = Math.min(3, Math.floor(n / 2)), v1 = 0, v2 = 0;
     for (i = 0; i < k; i++) { v1 += q[i]; v2 += q[n - 1 - i]; }
-    return { mois: VM.mois, q: q, ca: ca, fr: frm, part: part, f25: f25, f26: f26, aFrance: !!fm,
+    return { mois: VM.mois, q: q, ca: ca, fr: frm, part: part, f25: f25, f26: f26, an: ANNEE, aFrance: !!fm,
              k: k, v1: v1, v2: v2, tp: fm ? tendPart(q, fm, posF) : null,
              yoy: y0 > 0 ? y1 / y0 - 1 : null, y1: y1, yoyMois: nb, yoyDern: dern };
   }
@@ -241,7 +245,7 @@
     if (V2.approMoisRetenus) mois = V2.approMoisRetenus(S);
     else {
       var vus = {};
-      for (i = 0; i < S.length; i++) if (S[i][1] >= 1 && S[i][1] <= 12) vus[S[i][1]] = 1;
+      for (i = 0; i < S.length; i++) if (S[i][1] >= 1) vus[S[i][1]] = 1;
       mois = Object.keys(vus).map(Number).sort(function (a, b) { return a - b; });
     }
     for (i = 0; i < mois.length; i++) garde[mois[i]] = 1;
@@ -719,16 +723,17 @@
     return '<div class="cp-tu"><em>' + lib + '</em><b>' + val + '</b>' +
       (sg ? '<span class="cp-dl ' + sg.cls + '">' + sg.txt + '</span>' : '') + '<small>' + sous + '</small></div>';
   }
-  function plage(mois, a, b) { return MOIS_C[mois[a] - 1] + (a === b ? '' : '–' + MOIS_C[mois[b] - 1]); }
+  function plage(mois, a, b) { return MOIS_C[moisCal(mois[a]) - 1] + (a === b ? '' : '–' + MOIS_C[moisCal(mois[b]) - 1]); }
 
   function evoHtml(l) {
     var F = window.FRANCE_MOIS;
     if (!F && D.frEtat < 2) return '<p class="cp-note">Chargement des ventes France mois par mois…</p>';
     var e = evolution(l.cip);
     if (!e) return '<p class="cp-note">Les ventes du réseau ne sont pas encore chargées.</p>';
+    var ANNEE = e.an;   // année du dernier mois de nos ventes (2027 dès que janvier 2027 y est)
     D.pts = {};
     var W = largeurPan(), n = e.mois.length, ca = C.unite === 'ca', i, h = '';
-    var labels = e.mois.map(function (m) { return MOIS_C[m - 1]; });
+    var labels = e.mois.map(function (m) { return MOIS_C[moisCal(m) - 1]; });
     var fmtV = ca ? eurK : numK, uni = ca ? '' : ' bt';
 
     // Les trois chiffres qui répondent : nos ventes montent-elles, gagnons-nous des parts, le marché bouge-t-il ?
@@ -751,7 +756,7 @@
         '<button class="' + (ca ? 'on' : '') + '" aria-pressed="' + ca + '" onclick="V2.comptoir.unite(\'ca\')">Chiffre d\'affaires</button></span></div>' +
       courbe({ id: 'cp-c-v', g: 'n', W: W, H: 180, labels: labels, fmt: fmtV,
         series: [{ v: ca ? e.ca : e.q, cls: 'b', aire: true }],
-        aria: 'Nos ventes mois par mois, ' + plage(e.mois, 0, n - 1) + ' ' + ANNEE,
+        aria: 'Nos ventes mois par mois, ' + plage(e.mois, 0, n - 1) + ' ' + anneeDe(e.mois[n - 1]),
         tip: bulleN }) + '</div>';
 
     if (e.aFrance) {
@@ -779,11 +784,11 @@
     // La même chose en tableau : chaque valeur se lit sans survoler.
     var rows = '';
     for (i = 0; i < n; i++) {
-      rows += '<tr><td>' + MOIS_C[e.mois[i] - 1] + '</td><td>' + fr(e.q[i]) + '</td><td>' + eurK(e.ca[i]) + '</td>' +
+      rows += '<tr><td>' + MOIS_C[moisCal(e.mois[i]) - 1] + ' ' + anneeDe(e.mois[i]) + '</td><td>' + fr(e.q[i]) + '</td><td>' + eurK(e.ca[i]) + '</td>' +
         '<td>' + (e.fr[i] != null ? fr(e.fr[i]) : '—') + '</td><td>' + fmtPart(e.part[i]) + '</td></tr>';
     }
     h += '<details class="cp-tab"><summary>Voir les chiffres mois par mois</summary><div class="cp-tabw"><table>' +
-      '<thead><tr><th>' + ANNEE + '</th><th>Nos boîtes</th><th>Notre CA</th><th>France</th><th>Part</th></tr></thead>' +
+      '<thead><tr><th>Mois</th><th>Nos boîtes</th><th>Notre CA</th><th>France</th><th>Part</th></tr></thead>' +
       '<tbody>' + rows + '</tbody></table></div></details>' +
       '<p class="cp-note">Nos ventes : réseau, mois complets. France : Medic\'AM, boîtes remboursées, publié jusqu\'à ' +
         (F ? esc(MOIS_C[+F.meta.mois[F.meta.mois.length - 1].slice(5) - 1] + ' ' + F.meta.mois[F.meta.mois.length - 1].slice(0, 4)) : '—') +
@@ -791,7 +796,7 @@
     return h;
 
     function bulleN(j) {
-      return '<b>' + MOIS_C[e.mois[j] - 1] + ' ' + ANNEE + '</b>' +
+      return '<b>' + MOIS_C[moisCal(e.mois[j]) - 1] + ' ' + anneeDe(e.mois[j]) + '</b>' +
         ligneBulle('b', ca ? eurK(e.ca[j]) : fr(e.q[j]) + uni, 'nos ventes') +
         (e.aFrance
           ? (e.fr[j] != null
@@ -943,7 +948,7 @@
 
     var n = filtrees(d.lignes).length;
     var MOIS = ['', 'janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-    var periode = d.mois.length ? MOIS[d.mois[0]] + '–' + MOIS[d.mois[d.mois.length - 1]] + ' (' + d.mois.length + ' mois complets)' : '—';
+    var periode = d.mois.length ? MOIS[moisCal(d.mois[0])] + '–' + MOIS[moisCal(d.mois[d.mois.length - 1])] + ' (' + d.mois.length + ' mois complets)' : '—';
 
     poserPanneau(d);
     return '<div class="cp">' +

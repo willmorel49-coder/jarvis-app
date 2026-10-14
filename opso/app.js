@@ -103,7 +103,14 @@ function wmlPeriod() {
   const ab = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
   const ms = (typeof WML_MONTHS !== 'undefined' && WML_MONTHS.length) ? WML_MONTHS : ['2026-01','2026-04'];
   const f = ms[0].split('-'), l = ms[ms.length-1].split('-');
+  // 14/10/2026 — année 2027 : sur deux années, chaque borne porte la sienne (« Jan 2026–Jan 2027 »)
+  if (f[0] !== l[0]) return ab[(+f[1])-1] + ' ' + f[0] + '–' + ab[(+l[1])-1] + ' ' + l[0];
   return ab[(+f[1])-1] + '–' + ab[(+l[1])-1] + ' ' + l[0];
+}
+// Année du dernier mois des achats groupement (WML_MONTHS) — pour les titres et noms de fichiers.
+function wmlAnnee() {
+  const ms = (typeof WML_MONTHS !== 'undefined' && WML_MONTHS.length) ? WML_MONTHS : ['2026-01'];
+  return ms[ms.length-1].split('-')[0];
 }
 
 function getOpsoChartColorPale(i) {
@@ -973,7 +980,9 @@ function wmlGlp1Card() {
     </div>`;
   }).join('');
   const maxM = Math.max.apply(null, g.caM) || 1;
-  const ML = (typeof WML_MONTHS !== 'undefined' ? WML_MONTHS : []).map(ym => ['', 'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'][+ym.split('-')[1]]);
+  const _MLW = typeof WML_MONTHS !== 'undefined' ? WML_MONTHS : [];
+  const _MLdeuxAns = _MLW.length > 0 && _MLW[0].split('-')[0] !== _MLW[_MLW.length-1].split('-')[0];   // 14/10/2026 : 2026 ET 2027 → l'année suit chaque mois
+  const ML = _MLW.map(ym => ['', 'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'][+ym.split('-')[1]] + (_MLdeuxAns ? ' ' + ym.split('-')[0].slice(2) : ''));
   const bars = g.caM.map((v, i) => {
     const h = maxM > 0 ? Math.max(4, v / maxM * 100) : 4;
     return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">
@@ -3448,7 +3457,7 @@ function showPharmaDetail(pharmacyId, overridePeriod) {
         return `<div id="sec-wml" class="card fade-up" style="margin-bottom:20px;border-left:3px solid var(--green);scroll-margin-top:80px">
           <div class="card-header">
             <div>
-              <div class="card-title">📦 Achats via le groupement — 2026</div>
+              <div class="card-title">📦 Achats via le groupement — ${wmlAnnee()}</div>
               <div class="card-subtitle">${wmlPeriod()} · ${(wmlEntry.pr || []).length} références · TIRCODE ${wmlEntry.tc}</div>
             </div>
             <div style="text-align:right">
@@ -8920,14 +8929,14 @@ function exportWmlCSV(tircode) {
         margeBrute != null ? fmtC(margeBrute) : '',
       ];
     });
-    filename = `WML_${titleCase(ph.nom).replace(/\s+/g,'_')}_2026.csv`;
+    filename = `WML_${titleCase(ph.nom).replace(/\s+/g,'_')}_${wmlAnnee()}.csv`;
   } else {
     header = ['Pharmacie','TIRCODE','CA HT','Marge €','Tx marge %','Qté'];
     rows = WML_VISIBLE.sort((a,b)=>b.ca-a.ca).map(d => {
       const tx = d.ca > 0 ? (d.mg/d.ca*100) : 0;
       return [`"${titleCase(d.nom).replace(/"/g,'""')}"`, d.tc, fmtC(d.ca), fmtC(d.mg), fmtC(tx), d.qt];
     });
-    filename = 'WML_Groupement_2026.csv';
+    filename = `WML_Groupement_${wmlAnnee()}.csv`;
   }
   const csv = [header.join(';'), ...rows.map(r => r.join(';'))].join('\n');
   const blob = new Blob(['﻿'+csv], { type:'text/csv;charset=utf-8;' });
@@ -8976,7 +8985,9 @@ function renderWml() {
   const MONTH_IDX = _WMONTHS.map((_,i)=>i);
   const MONTH_LABELS = _WMONTHS.map(ym => { const [y,m] = ym.split('-'); return _MABBR[(+m)-1] + ' ' + y; });
   const _first = _WMONTHS[0].split('-'), _last = _WMONTHS[N_MONTHS-1].split('-');
-  const PERIOD_SHORT = _MABBR[(+_first[1])-1] + '–' + _MABBR[(+_last[1])-1] + ' ' + _last[0];
+  const PERIOD_SHORT = _first[0] !== _last[0]   // 14/10/2026 : sur deux années, chaque borne porte la sienne
+    ? _MABBR[(+_first[1])-1] + ' ' + _first[0] + '–' + _MABBR[(+_last[1])-1] + ' ' + _last[0]
+    : _MABBR[(+_first[1])-1] + '–' + _MABBR[(+_last[1])-1] + ' ' + _last[0];
   const AFM_LABELS = { REMBSS:'Remb. SS', MED010:'Médicament OTC', DM_20:'Dispositif médical', PARA:'Parapharmacie', DM:'DM', MED021:'Médicament autre', AUTRE:'Autre' };
 
   const ph = wmlPharma ? WML_VISIBLE.find(d => d.tc === wmlPharma) : null;
@@ -9542,7 +9553,7 @@ function renderWml() {
           <div class="section-header-title">
             <div class="section-header-icon">🏥</div>
             <div class="section-header-text">
-              <h2>Toutes les pharmacies · Jan – Avr 2026</h2>
+              <h2>Toutes les pharmacies · ${wmlPeriod()}</h2>
               <div class="section-header-sub">${sorted.length} pharmacie${sorted.length>1?'s':''} · cliquer pour voir le détail</div>
             </div>
           </div>

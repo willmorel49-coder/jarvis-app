@@ -1058,7 +1058,9 @@
     });
     try {
       var wm = window.WML_MOIS || [], lm = moisLbls();
-      var caTitre = 'CA' + (wm.length ? ' ' + lm[0] + '–' + lm[lm.length - 1] + ' ' + wm[wm.length - 1].split('-')[0] : '') + ' (€)';
+      // 14/10/2026 — année 2027 : sur deux années, chaque mois porte la sienne (moisLbls) et l'année finale n'est plus ajoutée.
+      var plusieursAns = wm.length && wm[0].split('-')[0] !== wm[wm.length - 1].split('-')[0];
+      var caTitre = 'CA' + (wm.length ? ' ' + lm[0] + '–' + lm[lm.length - 1] + (plusieursAns ? '' : ' ' + wm[wm.length - 1].split('-')[0]) : '') + ' (€)';
       var aoa = [['Client / Prospect', 'Palier', 'Officine', 'Titulaire', 'Ville', 'Code postal', 'Département', 'Téléphone', 'E-mail', caTitre, 'Potentiel', 'Groupement', 'Commercial', 'UGA', 'N° officine', 'Latitude', 'Longitude']];
       var avecRep = hasReprises(); if (avecRep) aoa[0].push('Reprise récente');
       var nCli = 0;
@@ -2058,7 +2060,8 @@
   var _MAB = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
   function moisLbls() {
     var m = window.WML_MOIS || [];
-    return m.length ? m.map(function (ym) { return _MAB[+ym.split('-')[1] - 1]; })
+    var deuxAns = m.length && m[0].split('-')[0] !== m[m.length - 1].split('-')[0];   // 14/10/2026 : 2026 ET 2027 → l'année suit chaque mois
+    return m.length ? m.map(function (ym) { return _MAB[+ym.split('-')[1] - 1] + (deuxAns ? ' ' + ym.split('-')[0] : ''); })
                     : ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'];
   }
   function renderFiche(i) {
@@ -2069,7 +2072,7 @@
     var comm = commLbl(p), inT = inTour(i);
     var inWml = !!(p[13] && (V2.pharmacies || []).some(function (x) { return String(x.id) === String(p[13]); }));   // une de tes 630 officines → lien fiche complète
     var spark = '';
-    if (det && det.m) { var mx = Math.max.apply(null, det.m.concat([1])); spark = '<div class="cn-fspark">' + det.m.map(function (v, j) { var h = Math.round((v / mx) * 46) + 2; return '<div class="cn-fbar" title="' + FMO[j] + ' : ' + eurK(v) + '"><i style="height:' + h + 'px"></i><span>' + FMO[j] + '</span></div>'; }).join('') + '</div>'; }
+    if (det && det.m) { var mx = Math.max.apply(null, det.m.concat([1])); spark = '<div class="cn-fspark">' + det.m.map(function (v, j) { var h = Math.round((v / mx) * 46) + 2; return '<div class="cn-fbar" title="' + FMO[j] + ' : ' + eurK(v) + '"><i style="height:' + h + 'px"></i><span>' + FMO[j].split(' ')[0] + '</span></div>'; }).join('') + '</div>'; }
     var top = (det && det.top && det.top.length) ? '<div class="cn-fsec"><h4>Top produits (CA)</h4>' + det.top.map(function (t) { return '<div class="cn-ftrow"><span>' + esc(t[0]) + '</span><b>' + eurK(t[1]) + '</b></div>'; }).join('') + '</div>' : '';
     var q = encodeURIComponent((p[6] || '') + ' ' + (p[7] || '') + ' ' + (p[8] || ''));
     // Lot 2 — mêmes coordonnées que la fiche officine (V2.rdvInfo), plus ce que la base clients sait de l'officine.
