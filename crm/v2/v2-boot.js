@@ -586,6 +586,8 @@
     // officines nommées avec le prénom de qui les suit. Sur un dépôt public,
     // c'est notre couverture terrain lisible département par département.
     pharmafrcomm: 'pharma-fr-comm.js',
+    // 14/10/2026 — secteurs ajoutés (UGA -> commercial) : donnée de couverture terrain, protégée comme le commercial affecté.
+    secteursajoutes: 'secteurs-ajoutes.js',
     // 28/09/2026 — les 154 prix nets IP des 8 offres marketing officielles.
     mktipprix: 'mkt-ip-prix.js',
     mktnr: 'v2/mkt-nr-data.js',
@@ -684,6 +686,7 @@
     biosimcomplet: 'biosimilaires-complet.js',
     pharmafrseg: 'pharma-fr-seg.js',
     pharmafrcomm: 'pharma-fr-comm.js',
+    secteursajoutes: 'secteurs-ajoutes.js',
     mktipprix: 'mkt-ip-prix.js',
     mktnr: 'mkt-nr-data.js',
     opsostats: 'opso-stats-data.js',
@@ -1282,6 +1285,7 @@
     pharmafrca: 'PHARMA_FR_CA',
     pharmafrseg: 'PHARMA_FR_SEG',
     pharmafrcomm: 'PHARMA_FR_COMM',
+    secteursajoutes: 'SECTEURS_AJOUTES',
     mktipprix: 'MKT_IP_PRIX',
     wmlca: 'WML_OFF_CA',
     grpagregats: 'GRP_AGREGATS',
@@ -1468,6 +1472,11 @@
       _fusionsFaites.pharmafrcomm = true;
       if (nC < PC.n) console.warn('[V2] commerciaux : ' + nC + ' points rattachés pour ' + PC.n + ' officines protégées');
     }
+    // 14/10/2026 — secteurs ajoutés : à l'arrivée de la table, la liste « Prospects » (déjà rendue sans elle) se redessine une fois.
+    if (!_fusionsFaites.secteursajoutes && window.SECTEURS_AJOUTES) {
+      _fusionsFaites.secteursajoutes = true;
+      try { if (V2.route && V2.route.name === 'pharma' && !V2.route.param && V2.render) V2.render(); } catch (e) {}
+    }
     // Les prix nets des offres marketing : le tableau MARKETING_IP_OFFERS a été
     // construit au chargement de marketing-offers.js, avant cette table.
     if (!_fusionsFaites.mktipprix && window.MKT_IP_PRIX && window.MARKETING_IP_APPLY_PRIX) {
@@ -1525,7 +1534,7 @@
     // base nationale se recalculent (V2.reconcilePharma, la seule règle), et La carte, si elle est
     // ouverte, se recale. Vu en vraie session : une carte ouverte avant eux restait à 0 CA. Même filet
     // que REPRISES en tête de fichier. Une seule fois par arrivée (_etatCarte), pas à chaque bridge().
-    var etat = (window.WML_OFFICINES ? 'w' : '') + (_fusionsFaites.wmlca ? 'c' : '') + (_fusionsFaites.pharmafr ? 'p' : '') + (_fusionsFaites.pharmafrseg ? 's' : '') + (_fusionsFaites.pharmafrcomm ? 'm' : '') + (_fusionsFaites.clientsactifs ? 'a' : '');
+    var etat = (window.WML_OFFICINES ? 'w' : '') + (_fusionsFaites.wmlca ? 'c' : '') + (_fusionsFaites.pharmafr ? 'p' : '') + (_fusionsFaites.pharmafrseg ? 's' : '') + (_fusionsFaites.pharmafrcomm ? 'm' : '') + (_fusionsFaites.secteursajoutes ? 'u' : '') + (_fusionsFaites.clientsactifs ? 'a' : '');
     if (etat !== _etatCarte) {
       _etatCarte = etat;
       if (window.PHARMA_FR) {
@@ -1535,6 +1544,22 @@
     }
   }
   var _etatCarte = '';
+  // 14/10/2026 — « secteurs ajoutés » : table protégée SECTEURS_AJOUTES = {uga:{'66CER':['Pauline S.'],...}}. Elle s'ajoute, sans rien retirer,
+  // à la règle « une UGA appartient aux commerciaux qui y ont un client ». Table absente = `map` rendue telle quelle.
+  // `map` est indexée par numéro d'UGA (celui de PHARMA_FR.p[i][2]) ; `uga` = PHARMA_FR.uga. Utilisée par ugaCommMap (v2-pharma.js) ET buildCommMaps (v2-carte.js).
+  V2.ajouterSecteursAjoutes = function (map, uga) {
+    var T = window.SECTEURS_AJOUTES && window.SECTEURS_AJOUTES.uga;
+    if (!T || !map || !uga) return map;
+    Object.keys(T).forEach(function (lib) {
+      var i = uga.indexOf(lib); if (i < 0) return;
+      [].concat(T[lib] || []).forEach(function (c) {
+        if (!c) return;
+        var l = map[i] || (map[i] = []);
+        if (l.indexOf(c) < 0) l.push(c);
+      });
+    });
+    return map;
+  };
   V2.fusionsProtegees = fusionsProtegees;
 
   function bridge() {
@@ -1626,6 +1651,10 @@
         var apres = keys;
         return V2.loadFiles(pre).then(function () { return V2.loadFiles(apres); });
       }
+    }
+    // 14/10/2026 — les secteurs ajoutés (UGA -> commercial) se chargent avec le commercial affecté, jamais côté OPSO.
+    if (keys && keys.indexOf('pharmafrcomm') >= 0 && keys.indexOf('secteursajoutes') < 0 && !(window.V2_BRAND && window.V2_BRAND.opso)) {
+      keys = keys.concat(['secteursajoutes']);
     }
     if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('wmlca') < 0) {
       keys = keys.concat(['wmlca']);

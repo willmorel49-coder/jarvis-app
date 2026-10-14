@@ -703,9 +703,9 @@
   // Une UGA appartient à TOUS les commerciaux qui y ont au moins un client (tous les noms
   // de `comms`, pas seulement le premier) : avant, le seul « plus de clients » laissait
   // Guillaume ou Pauline A. sans aucun prospect. Ordre = plus de clients d'abord.
-  var _ugaComm = null;
+  var _ugaComm = null, _ugaCommT = false;
   function ugaCommMap() {
-    if (_ugaComm) return _ugaComm;
+    if (_ugaComm && _ugaCommT === !!window.SECTEURS_AJOUTES) return _ugaComm;   // table arrivée depuis : on refait
     var D = window.PHARMA_FR; if (!D || !D.p) return {};   // pas de cache tant que PHARMA_FR absent
     var idComm = {};
     (V2.pharmacies || []).forEach(function (p) {
@@ -723,7 +723,9 @@
     Object.keys(count).forEach(function (uga) {
       map[uga] = Object.keys(count[uga]).sort(function (a, b) { return count[uga][b] - count[uga][a] || (a < b ? -1 : 1); });
     });
-    if (Object.keys(map).length) _ugaComm = map;   // ne pas cacher une map vide (clients pas encore chargés)
+    // 14/10/2026 — secteurs ajoutés (table protégée) : seulement une fois les clients chargés, sinon la map ne serait plus « vide » et serait cachée trop tôt
+    if (Object.keys(map).length && V2.ajouterSecteursAjoutes) V2.ajouterSecteursAjoutes(map, D.uga);
+    if (Object.keys(map).length) { _ugaComm = map; _ugaCommT = !!window.SECTEURS_AJOUTES; }   // ne pas cacher une map vide (clients pas encore chargés)
     return map;
   }
   // pseudo-ligne de liste pour un point PHARMA_FR (prospect ou promu) — réutilise listRowHtml
@@ -1618,7 +1620,20 @@
   function analyseChart(A) {
     return '<div class="v2-card pha-card"><div class="pha-ch"><h3>Ce qu\'elle commande par mois</h3><span class="pha-sub">CA net Intégral' + (A.last ? ' · ' + esc(A.last.label) + ' = dernier mois reçu' : '') + '</span></div>' +
       (A.n >= 2 ? caChartSvg(A.pts, 820, 250) : '<div class="v2-cat-empty" style="border:none">Pas assez de mois pour tracer une courbe.</div>') +
-      '<div class="pha-legend"><span><i style="background:#0050E6"></i>Cette officine</span><span><i style="background:#B9C4DB"></i>Officine moyenne du réseau (' + V2.fmtNum(A.nOff) + ')</span></div></div>';
+      '<div class="pha-legend"><span><i style="background:#0050E6"></i>Cette officine</span><span><i style="background:#B9C4DB"></i>Officine moyenne du réseau (' + V2.fmtNum(A.nOff) + ')</span></div>' +
+      analyseMoisTableau(A) + '</div>';
+  }
+  // 14/10/2026 — « CA exact par mois » (remontée de Karine) : un tableau mois par mois en euros EXACTS sous la courbe, visible sans dépliage.
+  // Mêmes mois que la courbe, depuis le premier mois d'activité (A.i0) ; l'évolution se lit face au mois d'avant.
+  function analyseMoisTableau(A) {
+    if (!A.nAct) return '';
+    var rows = '';
+    for (var i = A.i0; i < A.n; i++) {
+      var p = A.pts[i], q = i > A.i0 ? A.pts[i - 1] : null;
+      rows += '<tr><td>' + esc(cap(p.label)) + ' ' + esc(p.year) + '</td><td class="num"><b>' + V2.fmtEur(p.ca) + '</b></td><td class="num">' + (q ? evoHtml(pctOf(p.ca, q.ca)) : '<span class="pha-flat">—</span>') + '</td></tr>';
+    }
+    rows += '<tr style="border-top:1.5px solid var(--line)"><td><b>Cumul ' + A.nAct + ' mois</b></td><td class="num"><b>' + V2.fmtEur(A.caTot) + '</b></td><td class="num"></td></tr>';
+    return '<div class="v2-cat-table-wrap pha-mois-wrap" id="pha-mois"><table class="v2-table pha-table pha-mois"><thead><tr><th>Mois</th><th class="num">CA net</th><th class="num">Évolution</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   }
 
   // 12/10/2026 — retour à la fiche du 8 octobre, avec une nouveauté gardée par Will : les deux listes « À proposer » (réseau, groupe d'achat de
@@ -6278,6 +6293,7 @@
       '.pha-table{font-size:12.5px}.pha-table td,.pha-table th{white-space:nowrap;padding:8px 8px}',
       '.pha-table td:first-child{white-space:normal;min-width:150px}.pha-table td:first-child .pha-sub{display:block;padding-left:17px}',
       '.pha-table .ph-tr-dot{margin-right:8px}',
+      '.pha-mois-wrap{margin-top:10px}.pha-mois td:first-child{min-width:0;white-space:nowrap}.v2-table.pha-mois thead th,.v2-table.pha-mois tbody td{padding:8px 6px}.v2-table.pha-mois thead th{letter-spacing:.03em}.v2-table.pha-mois thead th:first-child,.v2-table.pha-mois tbody td:first-child{padding-left:14px}.v2-table.pha-mois thead th:last-child,.v2-table.pha-mois tbody td:last-child{padding-right:14px}',
       '.pha-absent td{color:var(--muted)}',
       '.pha-bar{height:6px;border-radius:999px;background:var(--surf-sunken,#F4F6FB);overflow:hidden;margin-top:4px;width:64px;margin-left:auto}',
       '.pha-bar i{display:block;height:100%;border-radius:999px}',
