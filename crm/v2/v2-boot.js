@@ -675,6 +675,9 @@
     wmlca: 'wml-officines-ca.js',
     // 14/10/2026 — « Notre marge » par client et par mois (estimation direction), même chemin que wmlca ; protégé
     margeclients: 'marge-clients.js',
+    // 14/10/2026 — « Notre marge par produit » (écran Will seul) : UN fichier à la racine du seau, lisible par jarvis_acces_marge_produits() ;
+    // PAS dans FICHIERS_VENTES (ce n'est pas un jeu par commercial). Ne jamais le coupler à 'wml' : l'écran le demande lui-même après le contrôle d'accès.
+    margeproduits: 'marge-produits.js',
     // 05/10/2026 — totaux par groupement du jeu d'un commercial restreint (v2-pharma.js, agregatGroupement)
     grpagregats: 'grp-agregats.js',
     biosimcomplet: 'biosimilaires-complet.js',
@@ -783,6 +786,9 @@
     wmlca: 'wml-officines-ca.js',
     // 14/10/2026 — « Notre marge » par client et par mois (estimation direction), même chemin que wmlca ; protégé
     margeclients: 'marge-clients.js',
+    // 14/10/2026 — « Notre marge par produit » (écran Will seul) : UN fichier à la racine du seau, lisible par jarvis_acces_marge_produits() ;
+    // PAS dans FICHIERS_VENTES (ce n'est pas un jeu par commercial). Ne jamais le coupler à 'wml' : l'écran le demande lui-même après le contrôle d'accès.
+    margeproduits: 'marge-produits.js',
     // 05/10/2026 — totaux par groupement du jeu d'un commercial restreint (v2-pharma.js, agregatGroupement)
     grpagregats: 'grp-agregats.js',
     biosimcomplet: 'biosimilaires-complet.js',
@@ -1391,6 +1397,7 @@
     mktipprix: 'MKT_IP_PRIX',
     wmlca: 'WML_OFF_CA',
     margeclients: 'MARGE_CLIENTS',
+    margeproduits: 'MARGE_PRODUITS',
     grpagregats: 'GRP_AGREGATS',
     biosimcomplet: 'BIOSIMILAIRES_COMPLET',
     mktnr: 'MKT_NR',
