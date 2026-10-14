@@ -285,7 +285,8 @@
     if (!d.length) return '';
     var carte = function (x) {
       return '<li><div class="gr-dec-h"><span class="gr-dec-t">' + esc(x.type || 'décision') + '</span> <b>' + esc(x.autorite || '') + '</b> · ' + esc((x.date_au_plus_tard ? 'publiée au plus tard le ' : '') + dFr(x.date)) + (x.site_ville ? ' · ' + esc(x.site_ville) : '') + (x.reference ? ' · <span class="gr-sir">' + esc(x.reference) + '</span>' : '') + '</div>' +
-        (x.montant ? '<p class="gr-dec-m">Montant : <b>' + esc(Number(x.montant).toLocaleString('fr-FR', { maximumFractionDigits: 2 })) + ' €</b></p>' : '') +
+        // devise 'FRF' : sanction prononcée en francs (avant 2002) → montant en F + équivalent en euros (1 € = 6,55957 F)
+        (x.montant ? '<p class="gr-dec-m">Montant : <b>' + esc(Number(x.montant).toLocaleString('fr-FR', { maximumFractionDigits: 2 })) + (x.devise === 'FRF' ? ' F</b> (≈ ' + esc(fmtEur(x.montant / 6.55957)) + ')' : ' €</b>') + '</p>' : '') +
         (x.resume ? '<p>' + esc(x.resume) + '</p>' : '') +
         ((x.manquements || []).length ? '<ul class="gr-ul">' + x.manquements.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul>' : '') +
         (x.suite ? '<p class="gr-np">Suite : ' + esc(x.suite) + '</p>' : '') + (x.url ? '<a href="' + esc(x.url) + '" target="_blank" rel="noopener">Lire la décision ↗</a>' : '') + '</li>';
