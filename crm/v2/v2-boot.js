@@ -288,6 +288,9 @@
     try {
       var c = getSb(); if (!c) return false;
       var u = await c.auth.getUser();
+      // 14/10/2026 — compte bloqué par Will (ban Supabase, provisoire) : page de
+      // maintenance au lieu de l'écran de connexion. Aucune liste dans ce dépôt public.
+      if (u && u.error && compteBloque(u.error)) { V2.enMaintenance = true; return false; }
       var user = u && u.data && u.data.user;
       if (!user) return false;
       var pr = await c.from('user_profiles').select('*').eq('id', user.id).single();
@@ -376,6 +379,7 @@
     var c = getSb(); if (!c) return { ok: false, msg: 'Connexion indisponible' };
     var r = await c.auth.signInWithPassword({ email: email, password: password });
     if (r.error) {
+      if (compteBloque(r.error)) { V2.enMaintenance = true; return { ok: false, maintenance: true }; }
       // message maîtrisé : on n'expose pas le texte brut de Supabase (anglais,
       // parfois « rate limit »…) et on ne dit jamais si l'email existe.
       var m = /invalid|credential/i.test(r.error.message || '')
@@ -385,6 +389,19 @@
     }
     var ok = await V2.loadUserProfile();
     return { ok: ok, msg: ok ? '' : 'Profil introuvable' };
+  };
+
+  // Supabase répond `user_banned` (connexion, renouvellement, GET /user) — même avec
+  // un mauvais mot de passe, et dès la réouverture d'une session déjà ouverte (éprouvé le 14/10).
+  function compteBloque(e) { return !!e && (e.code === 'user_banned' || /banned/i.test(e.message || '')); }
+
+  // App restée ouverte (iPhone) : relu au retour sur l'écran, voir V2.boot.
+  V2.verifierBlocage = function () {
+    var c = getSb(); if (!c) return Promise.resolve(false);
+    return Promise.resolve(c.auth.getUser()).then(function (u) {
+      if (!(u && u.error && compteBloque(u.error))) return false;
+      V2.enMaintenance = true; V2.user = null; V2.renderMaintenance(); return true;
+    }).catch(function () { return false; });
   };
 
   V2.signOut = async function () {
@@ -1255,7 +1272,7 @@
     // Bumpé 29/09/2026 : v2-offilog.js change (union catalogue OPSO, retrait
     // Pharmazon/achat côté OPSO) — sans ce bump, un appareil ayant déjà l'app
     // ouverte continuerait de servir l'ancien fichier depuis le cache.
-    var V = '?v=20261014o' + (window.V2_VER || '20260915g');
+    var V = '?v=20261014p' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1813,7 +1830,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20261014o';
+    var V = '?v=20261014p';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
