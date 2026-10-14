@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Synchronise les VRAIS clients depuis les fichiers WML_XX_2026.xlsx (factures mensuelles).
+Synchronise les VRAIS clients depuis les fichiers WML_MM_AAAA.xlsx (factures mensuelles).
+Les mois lus sont ceux de MOIS_LUS (generate_wml_v2.py, via mois_wml.py) : aucun tableur n'est découvert tout seul.
 
 Règles :
-- Un CIP qui apparaît dans WML 2026 = CLIENT (ca2023 = CA cumulé 2026 de la pharmacie)
+- Un CIP qui apparaît dans WML = CLIENT (ca2023 = CA cumulé des mois lus de la pharmacie)
 - Un CIP qui n'apparaît PAS dans WML = PROSPECT (ca2023 forcé à 0, garde son potentielGx)
 - Si un client WML n'est pas dans clients-data.js : on l'ajoute
 
@@ -16,9 +17,11 @@ import re
 import shutil
 from pathlib import Path
 from collections import defaultdict
-from glob import glob
+from mois_wml import lire_mois_lus, nom_tableur
 
 CRM_JS_PATH = Path('crm/clients-data.js')
+MOIS_LUS = lire_mois_lus()
+ANNEES = '-'.join(str(a) for a in sorted({a for a, _ in MOIS_LUS}))   # « 2026 », puis « 2026-2027 »
 
 
 def clean_int_str(v):
@@ -32,8 +35,11 @@ def clean_int_str(v):
 
 
 def read_wml_clients():
-    """Lit tous les WML_*_2026.xlsx et agrège le CA par CIP."""
-    files = sorted(glob('WML_*_2026.xlsx'))
+    """Lit les WML_MM_AAAA.xlsx des mois de MOIS_LUS (ordre chronologique) et agrège le CA par CIP."""
+    files = [f for f in (nom_tableur('WML', a, m) for a, m in MOIS_LUS) if Path(f).exists()]
+    for a, m in MOIS_LUS:
+        if not Path(nom_tableur('WML', a, m)).exists():
+            print(f'[sync] ATTENTION : {nom_tableur("WML", a, m)} absent (mois ignoré)')
     print(f'[sync] Fichiers WML trouvés : {len(files)} → {[Path(f).name for f in files]}')
     clients_ca = defaultdict(float)
     clients_nom = {}
@@ -139,7 +145,7 @@ def build_new_client_record(cip, nom, ca):
     return (
         f'  {{cip:"{cip}",nom:"{nom_safe}",adresse:"{adresse}",cp:"{cp}",ville:"{ville}",'
         f'email:"{email}",tel:"{tel}",potentielGx:0,ca2023:{int(round(ca))},'
-        f'prochaineVisite:null,commentaire:"Client WML 2026 (auto)",'
+        f'prochaineVisite:null,commentaire:"Client WML {ANNEES} (auto)",'
         f'pelgraz:"",pelmeg:"",ecodage:"{groupement}",gros1:"",gros2:""}},'
     )
 
@@ -160,7 +166,7 @@ def main():
     print('[sync] Lecture des fichiers WML...')
     clients_ca, clients_nom = read_wml_clients()
 
-    print('[sync] Top 10 clients WML 2026 (CA cumulé) :')
+    print(f'[sync] Top 10 clients WML {ANNEES} (CA cumulé) :')
     for cip, ca in sorted(clients_ca.items(), key=lambda x: -x[1])[:10]:
         print(f'  CIP {cip:8s} · {clients_nom.get(cip, "?"):40s} · {ca:>12.0f} €')
 

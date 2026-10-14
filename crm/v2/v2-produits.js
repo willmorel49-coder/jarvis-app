@@ -697,6 +697,20 @@
       '</div></div>';
   }
 
+  // 14/10/2026 — « ventes réseau <période> » lu dans WML_MOIS (écrit par le générateur, format 'AAAA-MM', une ou
+  // deux années), jamais écrit en dur : le texte « jan.–juin 2026 » était déjà faux (les ventes vont plus loin).
+  // Même forme que periodLabel (v2-pharma.js) : « janv.–sept. 2026 » ; sur deux années « déc. 2026–janv. 2027 ».
+  function sourceVentes() {
+    var MN = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+    var ms = window.WML_MOIS;
+    if (!ms || !ms.length) return 'ventes réseau';
+    var f = String(ms[0]).split('-'), l = String(ms[ms.length - 1]).split('-');
+    if (!MN[f[1] - 1] || !MN[l[1] - 1]) return 'ventes réseau';
+    return 'ventes réseau ' + (f[0] === l[0]
+      ? MN[f[1] - 1] + '–' + MN[l[1] - 1] + ' ' + l[0]
+      : MN[f[1] - 1] + ' ' + f[0] + '–' + MN[l[1] - 1] + ' ' + l[0]);
+  }
+
   function actionsHtml(sousTitre) {
     return '<button class="v2-btn v2-btn-primary pr-pdf" onclick="V2.produits.apercu(true)">Voir et retoucher le document</button>' +
       '<button class="v2-btn pr-mail" onclick="V2.produits.selFicheMarketing()">Fiche marketing</button>' +
@@ -766,7 +780,7 @@
         '<span class="pr-ctx-pot">' + eur(pot) + ' de potentiel</span>' +
         '<span class="pr-ctx-n">' + num(lignes.length) + ' produits</span>' +
       '</div>' + noteSeuil + suiviHtml() + composeurHtml(dispo) +
-      actionsHtml('ventes réseau jan.–juin 2026') +
+      actionsHtml(sourceVentes()) +
       '</div>' + filtresHtml() + liste(lignes, rl.visibles, rl.corps) + panierHtml();
   }
 
@@ -879,7 +893,7 @@
         '" onclick="V2.produits.setToutGrp(true)">Toute la data</span>' +
       '</div>' +
       (S.toutGrp ? '' : composeurHtml(dispo)) +
-      actionsHtml('ventes réseau jan.–juin 2026') +
+      actionsHtml(sourceVentes()) +
       '</div>' + filtresHtml() +
       (lignes.length ? tableauHtml(visibles) +
         (visibles.length < lignes.length
@@ -976,7 +990,7 @@
       '</div>' +
       '<div class="pr-chips"><span class="pr-chip' + (S.horsStock ? ' on' : '') +
         '" onclick="V2.produits.setHorsStock()">Uniquement ce qu\'on n\'a pas</span></div>' +
-      '<div class="pr-source">ventes réseau jan.–juin 2026</div>' +
+      '<div class="pr-source">' + esc(sourceVentes()) + '</div>' +
       '</div>' + filtresHtml() + liste(lignes, rl.visibles, rl.corps);
   }
 

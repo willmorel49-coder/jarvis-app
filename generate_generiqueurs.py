@@ -28,6 +28,7 @@ import re
 import sys
 import json
 import glob
+from mois_wml import lire_mois_lus, est_tableur_lu
 
 # --------------------------------------------------------------------------
 # Chemins
@@ -35,7 +36,7 @@ import glob
 APP_DIR = "/Users/williammorel/JARVIS/APP"
 SCRATCH = "/private/tmp/claude-501/-Users-williammorel/f4b1647e-ffce-439a-9a3a-39081571be45/scratchpad"
 OUT_JS = os.path.join(APP_DIR, "crm", "v2", "generiqueurs-data.js")
-STATS_GLOB = os.path.join(APP_DIR, "STATS", "*_0[1-6]_2026.xlsx")
+STATS_GLOB = os.path.join(APP_DIR, "STATS", "*.xlsx")   # filtré par MOIS_LUS (mois_wml.py), jamais par un motif d'année
 
 BDPM_BASE = "https://base-donnees-publique.medicaments.gouv.fr/download/file/"
 BDPM_FILES = ["CIS_bdpm.txt", "CIS_CIP_bdpm.txt", "CIS_GENER_bdpm.txt"]
@@ -238,7 +239,8 @@ def build():
 # --------------------------------------------------------------------------
 def validate(result):
     import pandas as pd
-    files = sorted(glob.glob(STATS_GLOB))
+    mois_lus = lire_mois_lus()   # les mois de la chaîne des ventes (generate_wml_v2.py), 2026 puis 2027
+    files = sorted(f for f in glob.glob(STATS_GLOB) if est_tableur_lu(f, mois_lus))
     total = 0
     found = 0
     sample_missing = []

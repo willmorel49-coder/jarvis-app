@@ -6,6 +6,7 @@ Nécessite pdftotext (les .txt sont régénérés ici). Python 3.9.
 """
 import re, json, os, subprocess, unicodedata, openpyxl
 from pont_officines import code_officine  # une pharmacie = une fiche (05/10/2026)
+from mois_wml import lire_mois_lus, est_tableur_lu  # mois des ventes = la liste de la chaîne, jamais un motif d'année
 
 
 def norm_name(s):
@@ -179,7 +180,8 @@ def parse_integral():
 # On indexe par CIP13, nom normalisé, racine, et marque+dimension → match large.
 def load_sales_index():
     import glob as _g
-    files = _g.glob('STATS/*_0[1-5]_2026.xlsx')
+    mois_lus = lire_mois_lus()
+    files = [p for p in _g.glob('STATS/*.xlsx') if est_tableur_lu(p, mois_lus)]
     byDesig = {}     # désignation -> [vol, set(pharma), afm, prix_net, cip]
     byCip = {}       # cip13 -> [vol, set(pharma)]
     allph = set()

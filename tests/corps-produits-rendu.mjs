@@ -93,8 +93,15 @@ test('rendu : l officine et son groupe de comparaison sont nommes', () => {
 });
 
 test('rendu : la fraicheur des donnees est mentionnee, une seule fois', () => {
-  const n = (h.match(/ventes réseau jan\.–juin 2026/g) || []).length;
-  assert.equal(n, 1, `mention de date presente ${n} fois`);
+  // Le texte se lit dans WML_MOIS ('AAAA-MM', une ou deux annees) : on le recalcule ICI, avec sa propre liste de mois.
+  const MN = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  const ms = sb.WML_MOIS;
+  assert.ok(ms && ms.length, 'WML_MOIS absent');
+  const [a0, m0] = ms[0].split('-'), [a1, m1] = ms[ms.length - 1].split('-');
+  const attendu = 'ventes réseau ' + (a0 === a1 ? `${MN[m0 - 1]}–${MN[m1 - 1]} ${a1}` : `${MN[m0 - 1]} ${a0}–${MN[m1 - 1]} ${a1}`);
+  assert.ok(!/jan\.–juin 2026/.test(h), 'ancien texte en dur « jan.–juin 2026 » encore la');
+  const n = h.split(attendu).length - 1;
+  assert.equal(n, 1, `mention « ${attendu} » presente ${n} fois`);
 });
 
 test('rendu : les quatre chiffres de chaque ligne sont la', () => {

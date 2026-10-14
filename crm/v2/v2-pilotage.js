@@ -1570,7 +1570,7 @@
           '<div class="v2-card pilo-marge" data-reveal>' +
             '<div class="v2-card-head" style="align-items:flex-start">' +
               '<div><div class="v2-card-t">' + ICO('spark', 17) + (surFichier
-                ? 'Notre marge — ce que les ventes rapportent à Intégral'
+                ? 'Notre marge — ce que les ventes rapportent à ' + V2.notreMarge.marque()
                 : 'Notre marge — règle de secours') + '</div>' +
                 '<div class="pilo-marge-sub">' + (pf ? esc(pf.label) : '') + ' · ' +
                   (V2.commFilter ? esc(V2.commFilter) : (vueTous ? 'tous les commerciaux' : 'mon périmètre')) + '</div>' +

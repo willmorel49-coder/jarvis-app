@@ -177,6 +177,18 @@
       FAM.forEach(function (f) { r.fam[f] = arrondi(r.fam[f]); });
       return r;
     }
+    // Espace Escale : « à jour jusqu'à » = dernier mois des ventes d'Escale, qui peuvent avoir un mois de retard
+    // sur le CRM (14/10/2026 : août contre septembre). Calculé une fois par jeu de données.
+    var memoJ = { d: null, v: '' };
+    function jusquaDe(d) {
+      if (!(window.V2_BRAND && window.V2_BRAND.escale)) return d.jusqua || '';
+      if (memoJ.d === d) return memoJ.v;
+      var ok = {}, max = 0;
+      (V2.ESCALE_COMMS || []).forEach(function (nom) { var k = d.c.indexOf(nom); if (k >= 0) ok[k] = 1; });
+      for (var i = 0; i < d.r.length; i++) { var l = d.r[i]; if (ok[l[0]] && l[2] > max) max = l[2]; }
+      memoJ = { d: d, v: max ? cleDe(max) : (d.jusqua || '') };
+      return memoJ.v;
+    }
     function nomMoisLong(cle) {
       var m = /^(\d{4})-(\d{2})$/.exec(cle || '');
       return m ? MOIS_LONGS[+m[2] - 1] + ' ' + m[1] : '';
@@ -185,14 +197,16 @@
       LIBELLES: LIBELLES,
       FAMILLES: FAM,
       dispo: function () { return !!donnees(); },
-      jusqua: function () { var d = donnees(); return d ? (d.jusqua || '') : ''; },
+      jusqua: function () { var d = donnees(); return d ? jusquaDe(d) : ''; },
+      // à qui « rapportent » les ventes : le nom de l'espace (Escale Pharma) ou Intégral
+      marque: function () { return (window.V2_BRAND && window.V2_BRAND.escale) ? 'Escale Pharma' : 'Intégral'; },
       mois: function () { var d = donnees(); return d ? d.mois.slice() : []; },
       reserve: function (cleMois) { var d = donnees(); return (d && d.reserves && d.reserves[cleMois]) || ''; },
       somme: somme,
       cleDe: cleDe,
       nomMoisLong: nomMoisLong,
       // « estimation, à jour jusqu'à septembre 2026 »
-      libelleDate: function () { var d = donnees(); return d ? 'estimation, à jour jusqu’à ' + nomMoisLong(d.jusqua) : ''; },
+      libelleDate: function () { var d = donnees(); return d ? 'estimation, à jour jusqu’à ' + nomMoisLong(jusquaDe(d)) : ''; },
       // lignes de répartition : seulement les familles non nulles (à 0 € = masquées)
       familles: function (res) {
         return FAM.filter(function (f) { return Math.round((res.fam[f] || 0) * 100) !== 0; })

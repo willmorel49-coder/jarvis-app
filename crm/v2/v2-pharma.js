@@ -1661,7 +1661,7 @@
     return '<div class="pha-kpi pha-nm" style="--a:var(--c-mint,#1E9E6A)">' +
       '<div class="pha-nm-t"><div><div class="pha-kl">Notre marge</div>' +
         '<div class="pha-kval mono">' + V2.fmtEur(r.tot) + '</div>' +
-        '<div class="pha-kd"><span class="pha-sub">' + (r.ca > 0 ? (r.tot / r.ca * 100).toFixed(2).replace('.', ',') + ' % du CA · ' : '') + 'ce que ses achats rapportent à Intégral</span></div></div>' +
+        '<div class="pha-kd"><span class="pha-sub">' + (r.ca > 0 ? (r.tot / r.ca * 100).toFixed(2).replace('.', ',') + ' % du CA · ' : '') + 'ce que ses achats rapportent à ' + esc(NM.marque()) + '</span></div></div>' +
       '<div class="pha-nm-f">' + fam + '</div></div>' +
       '<div class="pha-sub pha-nm-n">' + notes.map(esc).join(' · ') + '</div></div>';
   }
@@ -5095,6 +5095,13 @@
         var totaux = ['', 'TOTAL'].concat(new Array(26).fill('')).concat(mois.map(function (m, j) {
           return Math.round(rows.reduce(function (s, r) { return s + (r[28 + j] || 0); }, 0) * 100) / 100;
         })).concat([Math.round(rows.reduce(function (s, r) { return s + (r[iTot] || 0); }, 0) * 100) / 100]);
+        // Ligne TOTAL : « Notre marge » et ses familles s'additionnent comme le CA (choix de Will, 14/10/2026) ;
+        // une case vide (officine d'un collègue) compte pour 0.
+        var iNm = head.length - 1 - nmFams.length;
+        if (nmOn) {
+          while (totaux.length < iNm) totaux.push('');
+          for (var kn = 0; kn <= nmFams.length; kn++) totaux.push(Math.round(rows.reduce(function (s, r) { return s + (+r[iNm + kn] || 0); }, 0) * 100) / 100);
+        }
         var ws = window.XLSX.utils.aoa_to_sheet([[titre], head].concat(rows).concat([totaux]));
         var larg = [9, 30, 24, 30, 7, 20, 8, 14, 14, 14, 30, 26, 11, 28, 12, 12, 18, 10, 16, 12, 14, 14, 16, 14, 14, 14, 14, 40]
           .concat(mois.map(function () { return 11; })).concat([13, 10, 34, 26, 26, 12, 80]);
@@ -5105,7 +5112,7 @@
           var cell = ws[window.XLSX.utils.encode_cell({ r: ri, c: ci })]; if (cell && cell.t === 'n') cell.z = '# ##0 €';
         }
         if (nmOn) {
-          for (var rn = 2; rn <= rows.length + 1; rn++) for (var cn = head.length - 1 - nmFams.length; cn <= head.length - 1; cn++) {
+          for (var rn = 2; rn <= rows.length + 2; rn++) for (var cn = iNm; cn <= head.length - 1; cn++) {
             var cellN = ws[window.XLSX.utils.encode_cell({ r: rn, c: cn })]; if (cellN && cellN.t === 'n') cellN.z = '# ##0 €';
           }
           ws['!cols'] = ws['!cols'].concat([{ wch: 22 }].concat(nmFams.map(function () { return { wch: 18 }; })));

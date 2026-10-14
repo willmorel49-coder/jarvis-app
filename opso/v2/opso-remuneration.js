@@ -109,16 +109,25 @@
   }
 
   // ── Calcul complet ──
-  function compute() {
+  // Choix de Will (14/10/2026) : l'écran s'ouvre sur l'année du dernier mois de ventes, et un bouton par
+  // année garde les précédentes consultables (la dernière période 2026 est payée début 2027).
+  // `anneeVoulue` absente ou sans ventes → l'année la plus récente.
+  function compute(anneeVoulue) {
     var C = reglage(); if (!C) return null;
     var sales = V2.sales || []; if (!sales.length) return null;
     var needsPS = C.ordre.some(function (k) { return C.motifs[k] && C.motifs[k].categorie; });
     if (needsPS && !(window.PROD_STATS && window.PROD_STATS.length)) return null;   // catalogue pas encore là : on attend
     var ix = indexes();
 
-    var annee = 0;
-    sales.forEach(function (s) { if (s.year && s.month && s.year > annee) annee = s.year; });
-    if (!annee) return null;
+    var vues = {};
+    sales.forEach(function (s) { if (s.year && s.month) vues[s.year] = 1; });
+    var annees = Object.keys(vues).map(Number).sort(function (a, b) { return a - b; });
+    if (!annees.length) return null;
+    var annee = annees.indexOf(anneeVoulue) >= 0 ? anneeVoulue : annees[annees.length - 1];
+    // `effet` (mois de départ de l'accord) et `prime.depuis` portent sur l'année de l'accord seulement (2026, ou
+    // `effetAnnee` du réglage protégé) : les années suivantes sont entièrement sous accord, prime dès janvier.
+    var anAccord = C.effetAnnee || 2026;
+    var effet = annee === anAccord ? (C.effet || 0) : 0;
 
     var today = new Date();
     var quads = C.periodes.map(function (p) {
@@ -139,17 +148,20 @@
     // Prime par nouvelle pharmacie (réglage `prime` : montant, mois de départ) : pharmacie dont le PREMIER achat
     // réel de l'année tombe à partir de ce mois. Les lignes « stats officine » injectées (sans clé commercial,
     // réparties à parts égales sur les mois) ne se datent pas : ces pharmacies ne sont jamais comptées nouvelles.
+    // Après l'année de l'accord, « nouvelle » = aucune ligne de vente (quelle qu'elle soit) les années d'avant.
     var P = (C.prime && C.prime.montant > 0) ? C.prime : null;
-    var premier = {}, nomDe = {};
+    var depuisPrime = P ? (annee === anAccord ? (P.depuis || 1) : 1) : 1;
+    var premier = {}, nomDe = {}, avant = {};
     (V2.pharmacies || []).forEach(function (ph) { nomDe[String(ph.id)] = ph.name || ''; });
     if (P) sales.forEach(function (s) {
+      if (s.year && s.year < annee) { avant[String(s.pharmacyId)] = 1; return; }
       if (s.year !== annee || !s.month || typeof s.commercial === 'undefined' || !((s.mntNetHt || 0) > 0)) return;
       var id = String(s.pharmacyId);
       if (!premier[id] || s.month < premier[id]) premier[id] = s.month;
     });
     quads.forEach(function (q) { q.nouvelles = []; });
     if (P) Object.keys(premier).forEach(function (id) {
-      var m = premier[id]; if (m < (P.depuis || 1)) return;
+      var m = premier[id]; if (m < depuisPrime || (annee !== anAccord && avant[id])) return;
       var qi = quadDeMois[m]; if (qi !== undefined) quads[qi].nouvelles.push({ id: id, nom: nomDe[id] || id, mois: m });
     });
 
@@ -160,7 +172,7 @@
       var statut = today > fin ? 'clos' : (today >= debut ? 'encours' : 'avenir');
       var eche = echeance(C, annee, q.a);
       // Période entièrement antérieure à l'accord (réglage `effet`, mois de départ) : montant indicatif, hors total.
-      var indicatif = !!(C.effet && q.a < C.effet);
+      var indicatif = !!(effet && q.a < effet);
       return {
         de: q.de, a: q.a, periode: MOIS_ABREV[q.de - 1] + '–' + MOIS_ABREV[q.a - 1] + ' ' + annee,
         nMois: nMois, nPrevus: nPrevus, statut: statut, echeance: eche, indicatif: indicatif,
@@ -178,7 +190,8 @@
     lignes.forEach(function (l) { tot.primes += l.primes; tot.nNouvelles += l.nouvelles.length; });
     lignes.forEach(function (l) { if (l.indicatif) return; tot.total += l.total; tot.retenu += l.retenu; tot.exclu += l.exclu; tot.remuCA += l.remu; });
     tot.remu = tot.remuCA + tot.primes;
-    return { annee: annee, lignes: lignes, totalAnnee: tot, C: C, P: P };
+    return { annee: annee, annees: annees, premiereAnnee: annee === anAccord, effet: effet, depuisPrime: depuisPrime,
+      lignes: lignes, totalAnnee: tot, C: C, P: P };
   }
 
   // ── Styles (injectés une fois) ──
@@ -207,6 +220,11 @@
     + ".opr-tot .opr-per{margin-bottom:10px}"
     + ".opr-note{font-size:.8125rem;line-height:1.45;color:var(--muted,#646B80);margin:14px 0 0}"
     + ".opr-note p{margin:0 0 4px}"
+    + ".opr-ans{display:inline-flex;gap:6px}"
+    + ".opr-an{position:relative;font:inherit;font-size:13px;font-weight:600;cursor:pointer}"
+    + ".opr-an::after{content:'';position:absolute;inset:-9px -3px}"
+    + ".opr-an[aria-pressed=false]{background:transparent;color:var(--muted,#646B80);border-color:var(--line,#E3E7F0)}"
+    + ".opr-an:focus-visible{outline:2px solid var(--ip-blue,#4e9f70);outline-offset:2px}"
   ;
   function injectStyle() {
     if (document.getElementById('opr-style')) return;
@@ -231,10 +249,10 @@
   }
 
   var MOIS_LONG = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
-  function moisEffet(D) { return MOIS_LONG[D.C.effet - 1] + ' ' + D.annee; }
+  function moisEffet(D) { return MOIS_LONG[D.effet - 1] + ' ' + D.annee; }
 
   function detailPrimes(D, l) {
-    if (!D.P || D.P.depuis > l.a || !l.nouvelles.length) return '';
+    if (!D.P || D.depuisPrime > l.a || !l.nouvelles.length) return '';
     var n = l.nouvelles.length, pl = n > 1 ? 's' : '';
     return '<p class="oa-dt">' + n + ' nouvelle' + pl + ' pharmacie' + pl + ' cliente' + pl + ' · ' + euros(D.P.montant) + ' chacune' + (l.indicatif ? ', comptés dans le total' : '') + '</p>'
       + '<ul class="oa-dl">' + l.nouvelles.map(function (x) { return '<li><span>' + esc(x.nom) + '</span><b>' + MOIS_ABREV[x.mois - 1] + '</b></li>'; }).join('') + '</ul>';
@@ -253,7 +271,7 @@
 
   function ligne(D, l, idx) {
     var vide = l.nMois === 0, id = 'oa-q-' + l.de + '-' + l.a;
-    var primes = (D.P && D.P.depuis <= l.a && l.nouvelles.length)
+    var primes = (D.P && D.depuisPrime <= l.a && l.nouvelles.length)
       ? '<p class="oa-lp">+ ' + l.nouvelles.length + ' nouvelle' + (l.nouvelles.length > 1 ? 's' : '') + ' pharmacie' + (l.nouvelles.length > 1 ? 's' : '') + ' · <b class="og-num">' + euros(l.primes) + '</b>' + (l.indicatif ? ' <span>compté dans le total</span>' : '') + '</p>' : '';
     var detail = vide ? '' : '<dl class="oa-qn"><div><dt>CA HT net</dt><dd class="og-num">' + euros(l.total) + '</dd></div><div class="r"><dt>Retenu</dt><dd class="og-num">' + euros(l.retenu) + '</dd></div><div class="x"><dt>Exclu</dt><dd class="og-num">' + euros(l.exclu) + '</dd></div></dl>'
       + detailExclusions(D, l) + detailPrimes(D, l)
@@ -267,16 +285,26 @@
       + '</li>';
   }
 
+  // Une seule année : la puce d'avant. Plusieurs : un bouton par année (aria-pressed), ouvert sur la plus récente.
+  function choixAnnees(D) {
+    if (D.annees.length < 2) return '<span class="oa-chip">' + D.annee + '</span>';
+    return '<span class="opr-ans" role="group" aria-label="Année affichée">' + D.annees.map(function (a) {
+      return '<button type="button" class="oa-chip opr-an" data-opr-annee="' + a + '" aria-pressed="' + (a === D.annee ? 'true' : 'false') + '">' + a + '</button>';
+    }).join('') + '</span>';
+  }
+
   function html(D) {
     var T = D.totalAnnee;
-    var depuis = D.C.effet ? 'depuis ' + esc(moisEffet(D)) : 'de ' + D.annee;
+    var depuis = D.effet ? 'depuis ' + esc(moisEffet(D)) : 'de ' + D.annee;
     var out = '<section class="v2-card og-block oa-remu opr-wrap" aria-labelledby="opr-titre">'
-      + '<header class="oa-head"><h2 class="oa-h" id="opr-titre">Rémunération du groupement</h2><span class="oa-chip">' + D.annee + '</span>'
+      + '<header class="oa-head"><h2 class="oa-h" id="opr-titre">Rémunération du groupement</h2>' + choixAnnees(D)
       + '<button type="button" class="oa-ib" aria-expanded="false" aria-controls="oa-remu-note" aria-label="Comment elle est calculée"><span aria-hidden="true">i</span></button></header>'
       + '<div class="oa-note" id="oa-remu-note" hidden>'
         + '<p>Partenariat Intégral Pharma : rémunération prévue au contrat de référencement, calculée par quadrimestre sur les achats des adhérentes chez Intégral Pharma, groupe de grossistes-répartiteurs. Année ' + D.annee + '.</p>'
         + '<p>Estimation à partir des ventes enregistrées ; le montant facturé fait foi.</p>'
-        + (D.P ? '<p>Nouvelle pharmacie cliente : adhérente dont le premier achat de l’année chez Intégral Pharma tombe à partir de ' + esc(MOIS_LONG[(D.P.depuis || 1) - 1]) + '. Les pharmacies suivies seulement par des statistiques globales, non datées au mois, ne sont pas comptées.</p>' : '')
+        + (D.P ? (D.premiereAnnee
+          ? '<p>Nouvelle pharmacie cliente : adhérente dont le premier achat de l’année chez Intégral Pharma tombe à partir de ' + esc(MOIS_LONG[D.depuisPrime - 1]) + '. Les pharmacies suivies seulement par des statistiques globales, non datées au mois, ne sont pas comptées.</p>'
+          : '<p>Nouvelle pharmacie cliente : adhérente qui achète chez Intégral Pharma en ' + D.annee + ' sans aucun achat enregistré les années précédentes. Les pharmacies suivies seulement par des statistiques globales, non datées au mois, ne sont pas comptées.</p>') : '')
         + '<p>Échéance : fin de la période, plus ' + ((D.C.paiement && D.C.paiement.jours) || 0) + ' jours' + ((D.C.paiement && D.C.paiement.finDeMois) ? ', ramenés à la fin du mois' : '') + '.</p>'
       + '</div>'
       // Le total, écrit comme une addition.
@@ -298,7 +326,7 @@
   function signature() {
     var s = V2.sales || [];
     return [s.length, window.PROD_STATS ? window.PROD_STATS.length : 0, window.BENCHMARK ? window.BENCHMARK.length : 0,
-      reglage() ? (window.OPSO_CONTRAT.version || 'ok') : 'none', new Date().getDate()].join('|');
+      reglage() ? (window.OPSO_CONTRAT.version || 'ok') : 'none', new Date().getDate(), choixAnnee].join('|');
   }
 
   function assurerReglage() {
@@ -317,7 +345,7 @@
 
   function render(slot, sig) {
     var D = null;
-    try { D = compute(); } catch (e) { D = null; if (window.console) console.warn('[opso-remuneration]', e); }
+    try { D = compute(choixAnnee); } catch (e) { D = null; if (window.console) console.warn('[opso-remuneration]', e); }
     slot.setAttribute('data-opr-sig', sig);
     if (!D) { slot.innerHTML = ''; return; }
     injectStyle();
@@ -336,7 +364,18 @@
   var timer = null;
   function planifier() { clearTimeout(timer); timer = setTimeout(tick, 120); }
 
+  var choixAnnee = 0;   // 0 = l'année la plus récente
   function demarrer() {
+    document.addEventListener('click', function (e) {
+      var b = e.target && e.target.closest && e.target.closest('[data-opr-annee]');
+      if (!b) return;
+      choixAnnee = +b.getAttribute('data-opr-annee') || 0;
+      var slot = document.querySelector('[data-opso-slot="remuneration"]');
+      if (!slot) return;
+      render(slot, signature());
+      var nb = slot.querySelector('[data-opr-annee="' + choixAnnee + '"]');
+      if (nb) nb.focus();
+    });
     if (window.MutationObserver) new MutationObserver(planifier).observe(document.body, { childList: true, subtree: true });
     setInterval(tick, 2000);   // filet : les ventes arrivent sans forcément toucher au DOM (7 → 19 clientes)
     tick();
