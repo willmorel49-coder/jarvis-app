@@ -2353,6 +2353,10 @@
       '.v2-login-foot::before{content:"";width:5px;height:5px;border-radius:50%;flex:0 0 auto;' +
         'background:var(--c-mint);box-shadow:0 0 0 3px color-mix(in srgb,var(--c-mint) 20%,transparent)}' +
 
+      // 14/10/2026 — page de maintenance : même scène que la connexion, point ambre.
+      '.v2-maint-t{font-size:17px;font-weight:700;letter-spacing:-.01em;color:var(--ip-ink-2);margin:0 0 8px}' +
+      '.v2-maint-s{font-size:14px;line-height:1.5;color:var(--muted);margin:0 0 18px}' +
+      '.v2-maint .v2-login-foot::before{background:var(--c-amber);box-shadow:0 0 0 3px color-mix(in srgb,var(--c-amber) 20%,transparent)}' +
       '@media (prefers-reduced-motion:reduce){.v2-login-card,.v2-login-logo,.v2-login-fields{animation:none}' +
         '.v2-brand,.v2-brand .v2-logo,.v2-top-search{transition:none}}';
     var st = document.createElement('style');
@@ -2373,7 +2377,8 @@
     // l'authentification (et pendant que l'utilisateur tape son mot de passe).
     if (V2.lancerModules) V2.lancerModules();
     var logged = await V2.loadUserProfile();
-    if (!logged) { V2.renderLogin(); return; }
+    if (!logged) { if (V2.enMaintenance || maintenanceVue()) V2.renderMaintenance(); else V2.renderLogin(); return; }
+    try { localStorage.removeItem('v2-maintenance'); } catch (e) {}
     root.innerHTML = '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement de vos données…</div></div>';
     var opso = !!(window.V2_BRAND && window.V2_BRAND.opso);
     // PPHT et PROD_STATS ne sont plus des balises d'index.html (CRM) : ils doivent
@@ -2413,10 +2418,49 @@
         V2.loadFiles(V2.NEEDS_DEFAUT).then(function () { V2.invalidateCmdk(); });
       }, 250);
     }
+    // 14/10/2026 — un compte bloqué pendant que l'app reste ouverte bascule sur la
+    // page de maintenance au retour sur l'écran (relu au plus toutes les 5 min).
+    if (!V2._veilleBlocage) {
+      V2._veilleBlocage = true; var vuBlocage = 0;
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState !== 'visible' || !V2.user || Date.now() - vuBlocage < 300000) return;
+        vuBlocage = Date.now(); V2.verifierBlocage();
+      });
+    }
     window.addEventListener('hashchange', function () {
       var r = parseHash();
       if (r.name !== V2.route.name || r.param !== V2.route.param) { __clearStaleErrBanner(); V2.route = r; V2.render(); }
     });
+  };
+
+  // ── MAINTENANCE ───────────────────────────────
+  // 14/10/2026 — Will coupe provisoirement l'accès de certains comptes (ban Supabase).
+  // Ils voient cette page, jamais une erreur. Le repère local la réaffiche à la
+  // réouverture même si Supabase a retiré la session ; « Réessayer » rouvre la connexion.
+  function maintenanceVue() { try { return localStorage.getItem('v2-maintenance') === '1'; } catch (e) { return false; } }
+  V2.renderMaintenance = function () {
+    var root = $app();
+    injectShellStyles();
+    try { document.documentElement.style.setProperty('--accent', 'var(--info)'); } catch (e) {}
+    try { localStorage.setItem('v2-maintenance', '1'); } catch (e) {}
+    // Rangement local des fichiers protégés vidé, comme à la déconnexion.
+    try { caches.keys().then(function (ks) { ks.forEach(function (k) { if (k.indexOf('v2-protege-') === 0) caches.delete(k); }); }); } catch (e) {}
+    root.innerHTML = '<div class="v2-login v2-maint"><div class="v2-login-card">' +
+      '<div class="v2-login-logo">' + ICO('logo', 30) + '</div>' +
+      '<h1>' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '</h1>' +
+      '<p>' + ((window.V2_BRAND && window.V2_BRAND.sub) || 'Espace commercial · CRM') + '</p>' +
+      '<div class="v2-login-spark" aria-hidden="true"></div>' +
+      '<div class="v2-login-fields">' +
+        '<h2 class="v2-maint-t">Maintenance en cours</h2>' +
+        '<div class="v2-maint-s">L’application est momentanément indisponible. Merci de réessayer un peu plus tard.</div>' +
+        '<button type="button" class="v2-btn v2-btn-primary" id="v2-maint-btn">Réessayer</button>' +
+      '</div>' +
+      '<div class="v2-login-foot">Mise à jour en cours</div>' +
+      '</div></div>';
+    document.getElementById('v2-maint-btn').onclick = function () {
+      try { localStorage.removeItem('v2-maintenance'); } catch (e) {}
+      V2.enMaintenance = false; V2.renderLogin();
+    };
   };
 
   // ── LOGIN ─────────────────────────────────────
@@ -2450,6 +2494,7 @@
       btn.textContent = 'Connexion…'; btn.disabled = true; err.textContent = '';
       V2.signIn(em, pw).then(function (r) {
         if (r.ok) { V2.boot(); }
+        else if (r.maintenance) { V2.renderMaintenance(); }
         else { err.textContent = r.msg || 'Identifiants incorrects'; btn.textContent = 'Se connecter'; btn.disabled = false; document.getElementById('v2-email').focus(); }
       }).catch(function () {
         err.textContent = 'Connexion impossible — vérifiez votre connexion internet.';
