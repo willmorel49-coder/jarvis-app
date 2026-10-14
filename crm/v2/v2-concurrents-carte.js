@@ -17,7 +17,7 @@
   var V2 = window.V2 = window.V2 || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var ICO = function (n, s, w) { return window.ICO ? window.ICO(n, s, w) : ''; };
-  var CB = '?v=20261013p';
+  var CB = '?v=20261013q';
 
   var NATURES = [['', 'Toutes les natures'], ['notre groupe', 'Intégral Pharma'], ['national', 'Nationaux'], ['coopérative', 'Coopératives'], ['short-liner', 'Short-liners'],
                  ['DOM-TOM', 'DOM-TOM'], ['export', 'Export'], ['hors-répartition', 'Groupements (hors répartition)']];
@@ -101,7 +101,8 @@
   function tip(p) {
     var fi = fiche(p.id) || {}, g = grp(p.groupe_id) || {};
     var nom = p.nom && !/^[A-ZÉ0-9 '&.-]+$/.test(p.nom) ? p.nom : S.info.aff(fi);
-    return '<b>' + esc(nom) + '</b> · ' + esc(S.info.aff(g)) + ' · ' + esc(p.ville || '') + (p.dep ? ' (' + esc(p.dep) + ')' : '') +
+    var aff = S.info.aff(g);
+    return '<b>' + esc(nom) + '</b> · ' + (aff === nom ? '' : esc(aff) + ' · ') + esc(p.ville || '') + (p.dep ? ' (' + esc(p.dep) + ')' : '') +
       (p.nous ? '<br>Intégral Pharma' : '') + (p.ferme ? '<br>Fermé le ' + esc(String(p.date_fermeture || '').split('-').reverse().join('/')) : '') + (p.decisions ? '<br>Décision officielle sur ce site' : '') + (p.hors_naf ? '<br>Site logistique ou siège (activité ' + esc(p.naf) + ')' : '') + (!p.rep ? '<br>Pas un répartiteur officinal' : '');
   }
 

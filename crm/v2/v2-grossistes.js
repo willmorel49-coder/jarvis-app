@@ -8,7 +8,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var ICO = function (n, s, w) { return window.ICO ? window.ICO(n, s, w) : ''; };
-  var CB = '?v=20261013p';
+  var CB = '?v=20261013q';
 
   var view = 'annuaire';   // 'annuaire' | 'actu'
   var openGroupe = null;   // groupe déplié (niveau 2)
@@ -247,7 +247,7 @@
   function proprioHtml(g) {
     var P = g.proprietaire_final, ch = g.chaine || [], dir = g.dirigeants || [];
     if (!P && !ch.length && !dir.length) return '';
-    var top = P ? '<p class="gr-proprio"><b>' + esc(P.nom) + '</b>' + (P.pays ? ' · ' + esc(P.pays) : '') + (P.type ? ' · <em>' + esc(P.type) + '</em>' : '') + '</p>' : '';
+    var top = P ? '<p class="gr-proprio"><b>' + esc(P.nom) + '</b>' + (P.pays ? ' · ' + esc(P.pays) : '') + (P.type ? ' · <em>' + esc(({ famille: 'famille', 'cooperative de pharmaciens': 'coopérative de pharmaciens', cotee: 'cotée en bourse', fonds: 'fonds', personne: 'personne', autre: 'autre' })[P.type] || P.type) + '</em>' : '') + '</p>' : '';
     var chaine = ch.length ? '<ol class="gr-chaine">' + ch.map(function (c) {
       return '<li class="r-' + esc(c.role || '') + '"><b>' + esc(c.nom) + '</b>' + (c.siren ? ' <span class="gr-sir">SIREN ' + esc(c.siren) + '</span>' : '') +
         (c.part ? '<span class="gr-ch-p">' + esc(c.part) + '</span>' : '') + (c.source ? '<span class="gr-ch-s">' + lien(c.source, 'source') + '</span>' : '') + '</li>';
