@@ -1121,6 +1121,7 @@
         var idx = indexOfficines();
         var R = window.V2RECO;
         var reconnus = [];          // ce qui tombe dans la fenêtre affichée
+        var reconnusTous = [];      // 14/10/2026 : idem sans borne haute, pour les vues Semaine/Mois (v2-agenda-vues.js)
         var derniereVisite = {};    // cip -> date la plus récente dans le passé
         if (idx && R) {
           for (var b = 0; b < brut.length; b++) {
@@ -1132,14 +1133,15 @@
               if (!derniereVisite[cipEv] || ev.date > derniereVisite[cipEv]) {
                 derniereVisite[cipEv] = ev.date;
               }
-            } else if (ev.date <= finApercu) {
-              reconnus.push({
-                date: ev.date, debut: ev.debut, fin: ev.fin, jour_entier: ev.jour_entier,
-                cle: R.cleAlias(ev.titre), cip: cipEv,
-                nom: m.officine.name, ville: m.officine.ville || '',
-                etat: m.etat, source: m.source, client: !!idx.idsPorte[cipEv]
-              });
             }
+            var recoEv = {
+              date: ev.date, debut: ev.debut, fin: ev.fin, jour_entier: ev.jour_entier,
+              cle: R.cleAlias(ev.titre), cip: cipEv,
+              nom: m.officine.name, ville: m.officine.ville || '',
+              etat: m.etat, source: m.source, client: !!idx.idsPorte[cipEv]
+            };
+            if (ev.date >= auj) reconnusTous.push(recoEv);
+            if (ev.date >= auj && ev.date <= finApercu) reconnus.push(recoEv);
           }
         }
         // date -> ['44','49']. Vide = jour non déclaré, donc sans contrainte.
@@ -1178,16 +1180,12 @@
           jours += rendreJour(isoPlus(i), dispo, blocages, rdvs, occupes, auj, reconnus);
         }
 
-        root.innerHTML = top + '<div class="v2-wrap narrow">' +
-          '<div class="v2-rdv-cap"><h1>Mon agenda</h1>' +
-            '<p>Votre trimestre en haut : touchez un jour pour dire où vous serez. ' +
+        var texteDetail = 'Votre trimestre en haut : touchez un jour pour dire où vous serez. ' +
             'En dessous, vos quatre prochaines semaines heure par heure, exactement ' +
             'comme le pharmacien les voit quand il ouvre votre lien — ce qui est en ' +
-            'couleur ne peut plus être réservé.</p></div>' +
-
-          '<div class="agp-etat">' + etatAgenda(ag) + '</div>' +
-
-          offreAnnuaire +
+            'couleur ne peut plus être réservé.';
+        var etatH = '<div class="agp-etat">' + etatAgenda(ag) + '</div>';
+        var detailH = offreAnnuaire +
 
           apercuSecteurs(rdvs, reconnus, auj, dispo) +
 
@@ -1198,9 +1196,8 @@
             '<span><i class="agp-pot agp-p-lib"></i>réservable</span>' +
           '</div>' +
 
-          jours +
-
-          '<div style="display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 0">' +
+          jours;
+        var boutonsH = '<div style="display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 0">' +
             (V2.pages.rdvajout
               ? '<button class="v2-btn v2-btn-primary" style="min-height:48px" ' +
                 'onclick="V2.go(\'rdvajout\')">' + ICO('plus', 15) + ' Noter un rendez-vous</button>' : '') +
@@ -1208,7 +1205,20 @@
               ICO('cal', 15) + ' Mes disponibilités</button>' +
             '<button class="v2-btn" style="min-height:48px" onclick="V2.go(\'rdv\')">' +
               'Mes rendez-vous</button>' +
-          '</div></div>';
+          '</div>';
+
+        // 14/10/2026 : onglets Jour / Semaine / Mois (v2-agenda-vues.js). L'écran d'avant
+        // (aperçu secteurs + 4 semaines heure par heure) devient l'onglet « Secteurs et heures ».
+        if (V2.agendaVues && V2.agendaVues.monter) {
+          V2.agendaVues.monter(root, top, {
+            etat: etatH, detail: detailH, boutons: boutonsH, texteDetail: texteDetail,
+            reconnus: reconnusTous, blocages: blocages, dispo: dispo, auj: auj
+          });
+          return;
+        }
+        root.innerHTML = top + '<div class="v2-wrap narrow">' +
+          '<div class="v2-rdv-cap"><h1>Mon agenda</h1><p>' + texteDetail + '</p></div>' +
+          etatH + detailH + boutonsH + '</div>';
       }).catch(function () {
         root.innerHTML = top + '<div class="v2-wrap narrow"><div class="v2-rdv-cap">' +
           '<h1>Mon agenda</h1><p>Votre planning n’a pas pu être chargé. Réessayez dans un instant.</p>' +
