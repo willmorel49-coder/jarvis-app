@@ -9,6 +9,8 @@
      EXCEPTION décidée par Will pour CE catalogue OPSO seulement. Génériques et non
      remboursables : un seul prix, le net. Jamais de pourcentage ni de prix barré.
    - Période : LUE dans PROD_RESEAU.periode, jamais écrite en dur.
+   - Offre Privilège OPSO Santé : section de la page 2, prix LUS dans le fichier privé
+     donnees-protegees/opso-offre-privilege.json (jamais dans le code). Fichier illisible → section absente.
    Prend la route « marketing » (chargé APRÈS v2-marketing.js, qui reste en place).
    Sortie : impression navigateur A4 (photos offilog.fr sans CORS, comme la fiche).
    ═══════════════════════════════════════════════════════════════════ */
@@ -63,6 +65,35 @@
     return _photos[normCip(cip)] || '';
   }
 
+  // ── Offre Privilège : fichier privé du seau Supabase (même lecture que opso-prix.js) ──
+  var _offre = null, _offreEtat = '';   // _offreEtat : '' · charge · ok · echec
+  function offreValide(j) {
+    return j && typeof j === 'object' && typeof j.titre === 'string' && j.titre && typeof j.labo === 'string' &&
+      Array.isArray(j.mentions) && j.mentions.every(function (m) { return typeof m === 'string'; }) &&
+      Array.isArray(j.lignes) && j.lignes.length > 0 && j.lignes.every(function (l) {
+        return l && /^\d{8,13}$/.test(String(l.cip)) && typeof l.prix === 'number' && l.prix > 0 && (l.ppht == null || typeof l.ppht === 'number');
+      });
+  }
+  function chargerOffre() {
+    var c = V2.sb && V2.sb();
+    if (!c || !c.storage) return Promise.reject(new Error('pas de session'));
+    return c.storage.from('donnees-protegees').download('opso-offre-privilege.json').then(function (r) {
+      if (!r || r.error || !r.data) throw new Error('lecture impossible');
+      return r.data.text();
+    }).then(function (t) { var j = JSON.parse(t); if (!offreValide(j)) throw new Error('fichier illisible'); return j; });
+  }
+  function lancerOffre(root) {
+    if (_offreEtat) return;
+    _offreEtat = 'charge';
+    var fin = function () { if (V2.route && V2.route.name === 'marketing') render(root); };
+    try {
+      chargerOffre().then(function (j) { _offre = j; _offreEtat = 'ok'; }).catch(function (e) {
+        _offre = null; _offreEtat = 'echec';
+        try { console.warn('[opso-catalogue] offre privilège indisponible :', e && e.message); } catch (x) {}
+      }).then(fin);
+    } catch (e) { _offreEtat = 'echec'; try { console.warn('[opso-catalogue] offre privilège indisponible :', e && e.message); } catch (x) {} }
+  }
+
   // Construit les rayons : produits du réseau classés par nombre de pharmacies, avec prix.
   var _cache = null;
   function construire() {
@@ -72,7 +103,7 @@
     var CH = window.OPSO_CATALOGUE_CHOIX || {}, retirer = {}, ajouter = {};
     (CH.retirer || []).forEach(function (c) { retirer[normCip(c)] = 1; });
     (CH.ajouter || []).forEach(function (c) { ajouter[normCip(c)] = 1; });
-    var cle = [R.empreinte, PS.length, B.length, (V2.sales || []).length, (window.OPSO_NONGEN || []).length, (CH.retirer || []).join(), (CH.ajouter || []).join()].join('|');
+    var cle = [R.empreinte, PS.length, B.length, (V2.sales || []).length, (window.OPSO_NONGEN || []).length, (CH.retirer || []).join(), (CH.ajouter || []).join(), _offreEtat === 'ok' ? 'offre' + _offre.lignes.length + _offre.maj : _offreEtat].join('|');
     if (_cache && _cache.cle === cle) return _cache;
     var ps = {}; PS.forEach(function (r) { var c = normCip(r.c); if (c && !ps[c]) ps[c] = r; });
     var bench = {}; B.forEach(function (r) { var c = normCip(r && r.cip13); if (c && !bench[c]) bench[c] = r; });
@@ -104,7 +135,19 @@
       });
     });
     var nOpso = {}; (V2.sales || []).forEach(function (s) { if (s.qte > 0 && !(V2.estReste && V2.estReste(s.pharmacyId))) nOpso[s.pharmacyId] = 1; });
-    _cache = { cle: cle, rayons: rayons.filter(function (x) { return x.items.length; }), R: R, opsoPharmas: Object.keys(nOpso).length };
+    // Offre Privilège : prix du fichier privé, désignation / part du réseau comme les rayons, tri par part décroissante.
+    var offre = null;
+    if (_offreEtat === 'ok' && _offre) {
+      var rn = {}; Object.keys(R.n).forEach(function (k) { rn[normCip(k)] = k; });
+      var lo = _offre.lignes.filter(function (l) { return !retirer[normCip(l.cip)]; }).map(function (l) {
+        var c = normCip(l.cip), p = ps[c], cip = rn[c] || String(l.cip);
+        return { cip: cip, nom: (p && p.d) || (bench[c] && bench[c].designation) || cip, n: R.n[cip] || 0,
+          opso: opso[c] ? Object.keys(opso[c]).length : 0, ppht: l.ppht > 0 ? l.ppht : null, net: l.prix };
+      });
+      lo.sort(function (a, b) { return b.n - a.n; });
+      if (lo.length) offre = { titre: _offre.titre, labo: _offre.labo, mentions: _offre.mentions, items: lo };
+    }
+    _cache = { cle: cle, offre: offre, rayons: rayons.filter(function (x) { return x.items.length; }), R: R, opsoPharmas: Object.keys(nOpso).length };
     return _cache;
   }
 
@@ -137,10 +180,12 @@
       '<span>' + esc(periodeTexte(d.R.periode)) + ' · ' + num + ' / ' + total + '</span></footer>';
   }
   function couvertureHtml(d, total, debuts) {
-    var tuiles = d.rayons.map(function (x, i) {
-      return '<li><span class="oc-t-num">' + String(i + 1).padStart(2, '0') + '</span><b>' + esc(x.r.label) + '</b>' +
-        '<span>' + x.items.length + ' produits · page ' + debuts[i] + '</span></li>';
-    }).join('');
+    var dec = d.offre ? 1 : 0;   // l'offre prend la page 2 et le n° 01 du sommaire
+    var tuiles = (d.offre ? '<li><span class="oc-t-num">01</span><b>' + esc(d.offre.titre) + '</b><span>' + d.offre.items.length + ' produits · page 2</span></li>' : '') +
+      d.rayons.map(function (x, i) {
+        return '<li><span class="oc-t-num">' + String(i + 1 + dec).padStart(2, '0') + '</span><b>' + esc(x.r.label) + '</b>' +
+          '<span>' + x.items.length + ' produits · page ' + debuts[i] + '</span></li>';
+      }).join('');
     var ex = d.rayons[0] && d.rayons[0].items[0];
     return '<section class="oc-page oc-couv">' +
       '<header class="oc-couv-haut"><div class="oc-halo"></div>' +
@@ -149,21 +194,34 @@
         '<p class="oc-accroche">Les produits les plus commandés dans le réseau Intégral, et ceux que les adhérentes d’OPSO Santé commandent déjà.</p>' +
         '<p class="oc-chiffre"><b>' + d.opsoPharmas + '</b> adhérentes OPSO Santé commandent chez Intégral Pharma</p>' +
       '</header>' +
-      '<div class="oc-couv-bas"><h2>Au sommaire</h2><ol class="oc-tuiles">' + tuiles + '</ol>' +
+      '<div class="oc-couv-bas' + (d.offre ? ' oc-dense' : '') + '"><h2>Au sommaire</h2><ol class="oc-tuiles">' + tuiles + '</ol>' +
         (ex ? '<div class="oc-lire"><h2>Comment lire une ligne</h2>' +
           '<p>La barre et le pourcentage donnent la part des pharmacies du réseau Intégral qui ont commandé le produit (' + esc(periodeTexte(d.R.periode)) + '). ' +
           '« N adhérentes OPSO » : combien de pharmacies d’OPSO Santé le commandent.</p>' +
           '<p>PPHT : prix pharmacien hors taxes. Prix net : prix HT facturé par Intégral Pharma, abandon de marge déduit. Génériques et non remboursables : prix net seul.</p></div>' : '') +
       '</div>' + piedHtml(d, 1, total) + '</section>';
   }
+  // Page 2 : l'offre sur UNE page A4 (rangées resserrées par .r-offre). « Sanofi · » + mentions LUES dans le fichier.
+  function offreHtml(d, total) {
+    var o = d.offre, max = Math.max(o.items[0].n, 1);
+    return '<section class="oc-page oc-offre r-offre">' +
+      '<header class="oc-r-haut"><h2>' + esc(o.titre) + '</h2>' +
+        '<span class="oc-r-sous">classés par part des pharmacies du réseau</span></header>' +
+      '<p class="oc-mentions">' + esc([o.labo].concat(o.mentions).join(' · ')) + '</p>' +
+      '<div class="oc-entete"><span></span><span></span><span>Produit</span><span>Commandé par</span>' +
+        '<span class="oc-prix deux"><span>PPHT</span><span>Prix net</span></span></div>' +
+      o.items.map(function (it, i) { return ligneHtml(it, i + 1, max, true, d.R.officines); }).join('') +
+      piedHtml(d, 2, total) + '</section>';
+  }
   function pagesHtml(d) {
-    var pages = [], debuts = [], num = 2;
+    var pages = [], debuts = [], num = d.offre ? 3 : 2;
     d.rayons.forEach(function (x) {
       debuts.push(num);
       for (var i = 0; i < x.items.length; i += PAR_PAGE) { pages.push({ x: x, de: i }); num++; }
     });
-    var total = pages.length + 1;
+    var dec = d.offre ? 1 : 0, total = pages.length + 1 + dec;
     var html = couvertureHtml(d, total, debuts);
+    if (d.offre) html += offreHtml(d, total);
     pages.forEach(function (pg, k) {
       var x = pg.x, lot = x.items.slice(pg.de, pg.de + PAR_PAGE), suite = pg.de > 0;
       var max = x.items[0].n;   // barres à l'échelle du rayon (le 1er du rayon = barre pleine)
@@ -173,7 +231,7 @@
         '<div class="oc-entete"><span></span><span></span><span>Produit</span><span>Commandé par</span>' +
           '<span class="oc-prix' + (x.r.deux ? ' deux' : '') + '">' + (x.r.deux ? '<span>PPHT</span><span>Prix net</span>' : '<span>Prix net</span>') + '</span></div>' +
         lot.map(function (it, i) { return ligneHtml(it, pg.de + i + 1, max, x.r.deux, d.R.officines); }).join('') +
-        piedHtml(d, k + 2, total) + '</section>';
+        piedHtml(d, k + 2 + dec, total) + '</section>';
     });
     return html;
   }
@@ -215,6 +273,12 @@
       '.oc-tuiles b{display:block;font-weight:400;font-size:12pt;line-height:1.2}',
       '.oc-tuiles span:last-child{display:block;font-size:9.5pt;color:var(--gris);margin-top:1mm}',
       '.oc-t-num{position:absolute;left:5mm;top:4.2mm;font-size:13pt;color:var(--vert)}',
+      // 5 entrées au sommaire (avec l'offre) = 3 rangées : on resserre pour rester au-dessus du pied
+      '.oc-dense{padding-top:9mm}',
+      '.oc-dense .oc-tuiles{gap:3mm 4mm}',
+      '.oc-dense .oc-tuiles li{padding-top:3.2mm;padding-bottom:3.2mm;min-height:16mm}',
+      '.oc-dense .oc-t-num{top:3.4mm}',
+      '.oc-dense .oc-lire{margin-top:6mm}',
       '.oc-lire{margin-top:9mm;padding-top:5mm;border-top:.3mm solid rgba(42,45,47,.12)}',
       '.oc-lire p{font-size:10pt;color:var(--gris);line-height:1.45;margin-top:1.6mm;max-width:170mm}',
       // pages de rayon
@@ -240,6 +304,9 @@
       '.oc-prix.deux{grid-template-columns:1fr 1fr;column-gap:3mm}',
       '.oc-ppht{font-size:9.5pt;color:var(--gris)}',
       '.oc-net{font-size:11.5pt;color:var(--vert-f)}',
+      '.oc-mentions{padding:2.4mm 12mm 0;height:7mm;font-size:9.5pt;color:var(--vert-f)}',
+      '.r-offre .oc-ligne{height:9.4mm}',
+      '.r-offre .oc-vign{width:7.4mm;height:7.4mm}',
       '.oc-pied span:last-child{white-space:nowrap}',
       '.oc-pied{position:absolute;left:12mm;right:12mm;bottom:6mm;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6mm;font-size:8pt;color:var(--gris);border-top:.3mm solid rgba(42,45,47,.12);padding-top:2.2mm}'
     ].join('\n');
@@ -256,6 +323,7 @@
   function page(html) { return V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) + '<div class="v2-wrap">' + html + '</div>'; }
   function render(root) {
     injectStyles();
+    lancerOffre(root);
     var d = construire();
     if (!d) {
       root.innerHTML = page('<div class="v2-empty" style="padding:40px;text-align:center;color:var(--muted)">Chargement du catalogue…</div>');
@@ -309,6 +377,10 @@
   function csv() {
     var d = construire(); if (!d) return null;
     var lignes = [['Rayon', 'Rang', 'Produit', 'CIP13', 'Part des pharmacies du réseau', 'dont OPSO', 'PPHT', 'Prix net']];
+    if (d.offre) d.offre.items.forEach(function (it, i) {
+      lignes.push([sansFormule(d.offre.titre), i + 1, sansFormule(it.nom), '="' + it.cip + '"', partCsv(it.n, d.R.officines), it.opso,
+        it.ppht ? virgule(it.ppht) : '', virgule(it.net)]);
+    });
     d.rayons.forEach(function (x) {
       x.items.forEach(function (it, i) {
         lignes.push([sansFormule(x.r.court), i + 1, sansFormule(it.nom), '="' + it.cip + '"', partCsv(it.n, d.R.officines), it.opso,
