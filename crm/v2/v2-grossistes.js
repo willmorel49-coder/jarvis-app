@@ -65,7 +65,7 @@
     t = t || ''; var cls = /coop/i.test(t) ? 'coop' : (/short|r[eé]gional/i.test(t) ? 'sl' : 'nat');
     return '<span class="gr-type ' + cls + '">' + esc(typeCourt(t)) + '</span>';
   }
-  function typeTxt(t) { return (t && typeCourt(t) !== t) ? '<p class="gr-typetxt">' + esc(t) + '</p>' : ''; }
+  function typeTxt(t) { return (t && typeCourt(t).toLowerCase() !== String(t).trim().toLowerCase()) ? '<p class="gr-typetxt">' + esc(t) + '</p>' : ''; }   // « filiale » → « Filiale » n'est pas une coupe
   function timeAgo(iso) {
     if (!iso) return '';
     try {
