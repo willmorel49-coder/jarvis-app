@@ -65,7 +65,14 @@
       '.v2-nt-ligne{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:10px;font-size:14px;color:var(--muted);line-height:1.5}',
       '.v2-nt-ligne .v2-btn{min-height:44px}',
       '.v2-nt-ligne .v2-nt-res{margin-top:0}',
-      '.v2-nt-lien{min-height:44px;padding:0 4px;background:none;border:0;color:var(--ip-blue);font:inherit;font-weight:600;cursor:pointer}'
+      '.v2-nt-lien{min-height:44px;padding:0 4px;background:none;border:0;color:var(--ip-blue);font:inherit;font-weight:600;cursor:pointer}',
+      '.v2-nt-ligne>span:not(.v2-nt-pastille):not(.v2-nt-res){flex:1 1 220px;min-width:0}',
+      // Dans le bandeau bleu de la Discussion : texte blanc, et au-dessus de son voile lumineux.
+      '.v2-rdv-cap .v2-nt-ligne{position:relative;color:#fff}',
+      '.v2-rdv-cap .v2-nt-lien{color:#fff;text-decoration:underline}',
+      '.v2-rdv-cap .v2-nt-off{background:rgba(255,255,255,.75)}',
+      '.v2-rdv-cap .v2-nt-ligne .v2-btn.v2-btn-primary{background:#fff;color:#0039A8;border:1px solid #fff;box-shadow:none}',
+      '.v2-rdv-cap .v2-nt-res span{color:#fff!important}'
     ].join('');
     document.head.appendChild(s);
   }
