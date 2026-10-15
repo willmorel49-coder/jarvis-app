@@ -39,7 +39,7 @@
   function normCip(c) { return String(c == null ? '' : c).replace(/\D/g, '').replace(/^0+/, ''); }
 
   // ── Données ──
-  var SRC_RESEAU = '../../crm/v2/prod-reseau-data.js?v=20260930a';
+  var SRC_RESEAU = '../../crm/v2/prod-reseau-data.js?v=20261015xm';
   var SRC_NONGEN = 'opso-nongen-data.js?v=20261001a';
   function chargerScript(src, temoin) {
     if (window[temoin] || document.querySelector('script[src^="' + src.split('?')[0] + '"]')) return Promise.resolve();
