@@ -18,6 +18,8 @@
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var ICO = function (n, s, w) { return window.ICO ? window.ICO(n, s, w) : ''; };
   var CY_URL = 'https://cdn.jsdelivr.net/npm/cytoscape@3.34.3/dist/cytoscape.min.js';
+  // Empreinte du fichier exact (SRI) : un fichier modifié sur le CDN est refusé par le navigateur.
+  var CY_SRI = 'sha384-qPKQxl9uMXOw7vSTUDAnpUilhLuulovw6P5Z4db4bqxW5VhumS7przEmHX0iM0Oc';
   var ACCENT = '#0E7C86', ACCENT_D = '#09565D', INK = '#10131C', INK2 = '#2A2F3C', MUTED = '#646B80', ORANGE = '#F39A1B';
   var FR = new Intl.NumberFormat('fr-FR');
   var S = { host: null, d: null, N: null, out: null, inn: null, info: null, cy: null, montage: 0, st: { sel: null, min: 2 }, tel: null };
@@ -49,7 +51,7 @@
   // ── chargement : Cytoscape (une fois), polices, données ────────────────────────
   function chargerCy(cb) {
     if (window.cytoscape) { cb(); return; }
-    var s = document.createElement('script'); s.src = CY_URL; s.onload = function () { cb(); }; s.onerror = function () { cb('err'); };
+    var s = document.createElement('script'); s.integrity = CY_SRI; s.crossOrigin = 'anonymous'; s.src = CY_URL; s.onload = function () { cb(); }; s.onerror = function () { cb('err'); };
     document.head.appendChild(s);
   }
   function chargerDonnees(cb) {
