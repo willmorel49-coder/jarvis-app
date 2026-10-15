@@ -315,7 +315,7 @@ def om_(*l):
 V = {(2026, A13): {202605: {100.0: 50}, 202606: {90.0: 40, 100.0: 5}, 202607: {90.0: 45}}}
 OMb = om_((2026, A13, 202605, 100.0, 4.0, 10, 100.0), (2026, A13, 202606, 90.0, -6.0, 10, 90.0), (2026, A13, 202607, 90.0, 3.5, 10, 90.0))
 check("baisse : brut plus bas et marge effondrée -> mois touché, référence = mois suivant",
-      gm.detecter_baisses(OMb, V) == {202606: {A13: (202607, None)}}, gm.detecter_baisses(OMb, V))
+      gm.detecter_baisses(OMb, V) == {202606: {A13: (202607, None, 100.0)}}, gm.detecter_baisses(OMb, V))
 check("baisse sans perte (marge normale au nouveau prix) : rien",
       gm.detecter_baisses(om_((2026, A13, 202605, 100.0, 4.0, 10, 100.0), (2026, A13, 202606, 90.0, 3.4, 10, 90.0), (2026, A13, 202607, 90.0, 3.5, 10, 90.0)), V) == {})
 check("hausse de prix (brut plus haut) : rien",
@@ -335,10 +335,26 @@ Vc = {(2026, A13): {202605: {100.0: 50}, 202606: {90.0: 40}, 202607: {80.0: 40},
 OMc = om_((2026, A13, 202605, 100.0, 4.0, 10, 100.0), (2026, A13, 202606, 90.0, -6.0, 10, 90.0),
           (2026, A13, 202607, 80.0, -5.0, 10, 80.0), (2026, A13, 202608, 80.0, 3.0, 10, 80.0))
 check("deux baisses de suite : la référence saute le mois lui-même touché",
-      gm.detecter_baisses(OMc, Vc) == {202606: {A13: (202608, None)}, 202607: {A13: (202608, None)}}, gm.detecter_baisses(OMc, Vc))
+      gm.detecter_baisses(OMc, Vc) == {202606: {A13: (202608, None, 100.0)}, 202607: {A13: (202608, None, 90.0)}}, gm.detecter_baisses(OMc, Vc))
 check("régimes séparés : une vente de 2027 n'est jamais comparée à 2026",
       gm.detecter_baisses(om_((2026, A13, 202612, 100.0, 4.0, 10, 100.0), (2027, A13, 202701, 90.0, -6.0, 10, 90.0), (2027, A13, 202702, 90.0, 3.5, 10, 90.0)),
                           {(2026, A13): {202612: {100.0: 50}}, (2027, A13): {202701: {90.0: 40}, 202702: {90.0: 40}}}) == {})
+check("baisse : référence vendue à un autre brut -> même taux de marge (2,70 à 90 € contre 3 × 90 / 80 = 3,375 attendus : perte)",
+      gm.detecter_baisses(om_((2026, A13, 202605, 100.0, 4.0, 10, 100.0), (2026, A13, 202606, 90.0, 2.7, 10, 90.0), (2026, A13, 202607, 80.0, 3.0, 10, 80.0)),
+                          {(2026, A13): {202605: {100.0: 50}, 202606: {90.0: 40}, 202607: {80.0: 45}}}) == {202606: {A13: (202607, None, 100.0)}})
+Tb = ({A13: {90.0: [35.0, 10.0]}}, {A13: {90.0: [35.0, 10.0]}})
+info = (202607, None, 100.0)
+check("boîtes au prix baissé : marge par boîte du mois de référence au même brut (4 × 3,5)",
+      gm.marge_baisse(G(A13, B=90.0, N=88.0, q=4), info, {202607: Tb}, -24.0) == (14.0, 'code même brut'))
+r_b = gm.marge_baisse(G(A13, B=80.0, N=78.0, q=2), info, {202607: Tb}, -10.0)
+check("boîtes à un brut absent du mois de référence : même taux de marge (2 × 3,5 × 80 / 90)",
+      proche(r_b[0], 2 * 3.5 * 80 / 90) and r_b[1] == 'code brut proche', r_b)
+check("la règle ne fait jamais baisser une marge : ordinaire 20 € > 14 € -> rien d'imposé",
+      gm.marge_baisse(G(A13, B=90.0, N=88.0, q=4), info, {202607: Tb}, 20.0) == (None, 'marge ordinaire déjà au niveau'))
+check("dernier mois lu : taux d'avant la baisse × net (0,04 × 10 × 90)",
+      gm.marge_baisse(G(A13, B=90.0, N=90.0, q=10), (None, 0.04, 100.0), {}, -5.0)[0] == 0.04 * 900)
+check("code non vendu au mois de référence : cascade ordinaire",
+      gm.marge_baisse(G(B13, B=90.0, N=88.0, q=4), info, {202607: Tb}, -24.0) == (None, None))
 check("mention : un produit, référence connue (élision « d'août »)",
       gm.texte_baisses({A13: (202608, None)}, 202607) == "1 produit dont le prix a baissé compté avec sa marge par boîte d'août : la perte sur le stock n'est pas comptée",
       gm.texte_baisses({A13: (202608, None)}, 202607))

@@ -33,9 +33,10 @@ BAISSES DE PRIX (decision de Will, 15/10/2026 : « ce n'est pas de notre fait »
 Une baisse de prix ne compte jamais dans la marge d'un commercial, et plus aucune liste n'est a taper : la baisse est
 reperee toute seule, code par code, dans le meme regime. Un mois est touche quand le code s'y vend a un prix brut plus
 bas d'au moins 1 % que le brut le plus vendu du mois d'avant ET que la marge par boite lue a ce brut tombe sous celle du
-mois de reference (meme brut, sinon le plus proche ; ecart au-dela de 0,50 EUR ou 2 %). Toutes les boites du code ce
-mois-la sont alors comptees avec la marge par boite du mois de reference = le premier mois suivant sans baisse (meme
-calcul que les mois de remplacement). Baisse du dernier mois lu : marge d'avant la baisse, en taux du prix net, en
+mois de reference (meme brut, sinon le plus proche ramene au meme taux de marge ; ecart au-dela de 0,50 EUR ou 2 %).
+Les boites du code vendues ce mois-la au prix baisse sont alors comptees avec la marge par boite du mois de reference =
+le premier mois suivant sans baisse (meme calcul que les mois de remplacement ; autre brut = meme taux de marge) ; celles
+vendues encore a l'ancien prix gardent leur marge, et aucune boite ne descend sous sa marge ordinaire. Baisse du dernier mois lu : marge d'avant la baisse, en taux du prix net, en
 attendant le mois suivant (le calcul se refait seul a chaque passage). Un code deja dans un mois de remplacement du
 reglage garde ce remplacement. La mention du mois est fabriquee depuis les baisses reperees.
 
@@ -230,8 +231,9 @@ def detecter_baisses(om, ventes, exclus=None):
     """Baisses de prix repérées dans les ventes.
     om = {(régime, code, ym, brut): [marge lue, boîtes, q×net]} (Cascade.OM, lignes dont la marge est lue) ;
     ventes = {(régime, code): {ym: {brut: boîtes}}} (toutes les ventes positives) ; exclus = {ym: codes d'un mois de
-    remplacement du réglage}. Rend {ym: {code: (mois de référence, taux)}} : mois de référence = premier mois suivant
-    lu sans baisse ni remplacement, taux None ; sans lui : (None, marge / net d'avant la baisse)."""
+    remplacement du réglage}. Rend {ym: {code: (mois de référence, taux, brut d'avant)}} : mois de référence = premier mois
+    suivant lu sans baisse ni remplacement, taux None ; sans lui : (None, marge / net d'avant la baisse). Brut d'avant =
+    le plus vendu du mois précédent : seules les boîtes vendues au moins 1 % en dessous portent la baisse."""
     exclus = exclus or {}
     lue = defaultdict(lambda: defaultdict(dict))
     for (reg, cle, ym, B), x in om.items():
@@ -265,16 +267,39 @@ def detecter_baisses(om, ventes, exclus=None):
                 else:
                     t = L[n]
                     k = B if B in t else min(t, key=lambda b: (abs(b - B), b))
-                    r = t[k][0] / t[k][1]
+                    r = t[k][0] / t[k][1] * B / k        # autre brut : même taux de marge
                 if x[0] / x[1] < r - max(TOL_EUROS, TOL_TAUX * abs(r)):
-                    out[m][cle] = (n, taux)
+                    out[m][cle] = (n, taux, bp)
                     break
     return dict(out)
 
 
+def marge_baisse(g, info, tables, sans):
+    """Marge imposée à un groupe de boîtes vendues au prix baissé. info = (mois de référence, taux, brut d'avant) ;
+    tables = celles des mois de référence ; sans = marge ordinaire du groupe. Mois de référence connu : marge par boîte
+    à ce mois (même brut, sinon le plus proche ramené au même taux de marge) ; sinon taux d'avant la baisse × net.
+    Rend (None, niveau) quand la marge ordinaire est déjà au moins à ce niveau : la règle enlève une perte, rien d'autre."""
+    n, taux, _bp = info
+    B = g[3]
+    if n is None:
+        imp, niveau = g[12] * taux, "taux d'avant la baisse"
+    else:
+        pb, niveau = par_boite(tables[n], g[2], g[2], B)
+        if pb is None:
+            return None, None
+        if niveau.endswith('brut proche'):
+            t = tables[n][0].get(g[2]) or tables[n][1].get(g[2])
+            k = min(t, key=lambda x: (abs(x - B), x))
+            pb = pb * B / k
+        imp = g[11] * pb
+    if imp <= sans:
+        return None, 'marge ordinaire déjà au niveau'
+    return imp, niveau
+
+
 def texte_baisses(d, ym, autres=False):
     """Mention d'un mois touché par des baisses de prix ({code: (mois de référence, taux)})."""
-    nb, refs = len(d), {n for n, _ in d.values()}
+    nb, refs = len(d), {v[0] for v in d.values()}
     sujet = '%d %sproduit%s dont le prix a baissé compté%s' % (nb, 'autre ' if autres and nb == 1 else 'autres ' if autres else '',
                                                              '' if nb == 1 else 's', '' if nb == 1 else 's')
     leur = 'sa' if nb == 1 else 'leur'
@@ -750,7 +775,7 @@ def main():
     for x in rempl.values():
         suivis[x['par']].update(x['cips'])
     for d_b in baisses.values():
-        for cle_b, (n_b, _t) in d_b.items():
+        for cle_b, (n_b, _t, _bp) in d_b.items():
             if n_b is not None:
                 suivis[n_b].setdefault(cle_b, cle_b)    # baisse : le « produit » est le code lui-même
     tables = {ym: ({}, {}) for ym in suivis}        # mois de remplacement -> marge et boîtes par code / produit, par brut
@@ -762,7 +787,7 @@ def main():
             if r and g[2] in r['cips']:
                 differes.append((comm, ym, g))      # estimé après la lecture du mois de remplacement
                 continue
-            if bx and g[2] in bx:
+            if bx and g[2] in bx and g[3] < bx[g[2]][2] * SEUIL_BAISSE:
                 differes_b.append((comm, ym, g))    # estimé après la lecture du mois de référence
                 continue
             src, m = ajouter(lignes, (comm, g[0], ym), g, ym, cascade, L)
@@ -794,13 +819,8 @@ def main():
                  ' · '.join('%s %.0f' % kv for kv in sorted(b[3].items()))))
     bilan_b = defaultdict(lambda: [set(), 0.0, 0.0, 0.0, defaultdict(float)])   # mois -> codes, boîtes, marge sans, avec, boîtes par niveau
     for comm, ym, g in differes_b:
-        n_b, taux = baisses[ym][g[2]]
-        if n_b is None:
-            imp, niveau = g[12] * taux, "taux d'avant la baisse"
-        else:
-            pb, niveau = par_boite(tables[n_b], g[2], g[2], g[3])
-            imp = None if pb is None else g[11] * pb
         sans = cascade.marge(g, ym)[0]
+        imp, niveau = marge_baisse(g, baisses[ym][g[2]], tables, sans)
         src, m = ajouter(lignes, (comm, g[0], ym), g, ym, cascade, L, imp)
         if src != 'gen':
             prov['baisse de prix' if src == 'mois de remplacement' else src] += m
