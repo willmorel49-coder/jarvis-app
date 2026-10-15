@@ -24,6 +24,7 @@
   var COLS_S = 'id,titre,cree_par,cree_par_nom,cree_le,dernier_message_le,remontee_id';
   var COLS_R = 'id,message_id,auteur_id,auteur_nom,emoji,cree_le,archive';
   var MAX_TEXTE = 4000, MAX_TITRE = 120, PAS = 45000;
+  var GENERAL = 'general', TITRE_GENERAL = 'Général';   // tant qu'aucun sujet n'existe, le fil écrit dans « Général », créé au premier message
   var SEAU = 'excel-imports', MAX_OCTETS = 20 * 1048576, COTE = 2000, MAX_PJ = 5, ACCEPT = 'image/*,.pdf,.xls,.xlsx,.csv';
   var EMOJIS = ['👍', '✅', '👀', '🙏'];
   var LIB_EMOJI = ['Pouce levé', 'Fait', 'Je regarde', 'Merci'];
@@ -203,6 +204,7 @@
       if (!S.dernier) S.dernier = new Date().toISOString();
       if (S.sujet && !ordinaire(S.sujet)) S.sujet = null;
       if (!S.cible || !ordinaire(S.cible)) S.cible = S.sujets[0] ? S.sujets[0].id : '';
+      if (!S.sujets.length && !S.sujet && !S.nouveau) S.mob = 'fil';   // au téléphone, une liste sans sujet serait un écran presque vide
       snapVuFil();
       peindre();
       chargerCaps(c).then(function () { return enrichir(); });
@@ -544,6 +546,7 @@
 
   // ── Zone d'écriture ──
   function listeSujetsHtml() {
+    if (!S.sujets.length) return '<option value="' + GENERAL + '" selected>' + TITRE_GENERAL + '</option>';
     return S.sujets.map(function (s) { return '<option value="' + ID(s.id) + '"' + (s.id === S.cible ? ' selected' : '') + '>' + esc(s.titre) + '</option>'; }).join('');
   }
   function composeurHtml(o) {
@@ -868,6 +871,22 @@
       return remSujet(remId);
     });
   }
+  function assurerGeneral() {
+    var c = client();
+    return c.from(T_SUJETS).select(COLS_S).eq('archive', false).is('remontee_id', null).eq('titre', TITRE_GENERAL).limit(1).then(function (r) {
+      if (r.data && r.data[0]) return r.data[0];   // quelqu'un vient de l'ouvrir : on reprend le sien
+      return c.from(T_SUJETS).insert({ titre: TITRE_GENERAL, cree_par: moi(), cree_par_nom: nomMoi() }).select(COLS_S).single().then(function (r2) {
+        if (r2.error || !r2.data) throw new Error('sujet');
+        S.pleins[r2.data.id] = true;
+        return r2.data;
+      });
+    }).then(function (sj) {
+      if (!ordinaire(sj.id)) S.sujets.unshift(sj);
+      S.cible = sj.id;
+      var sel = document.getElementById('dsc-cible'); if (sel) sel.innerHTML = listeSujetsHtml();
+      return sj.id;
+    });
+  }
   function surMessage(id) { return S.msgs[id] || null; }
   function suivreIdee() {   // le formulaire « Proposer une idée » est celui de la page Remontées : on relit les idées quand il se ferme
     var essais = 0, vu = false, iv = setInterval(function () {
@@ -1063,7 +1082,7 @@
       }
       S.occupe = true;
       var fin = function () { S.occupe = false; };
-      var chaine = remId ? assurerSujetRem(remId).then(function (sj) { return sj.id; }) : Promise.resolve(sid);
+      var chaine = remId ? assurerSujetRem(remId).then(function (sj) { return sj.id; }) : sid === GENERAL ? assurerGeneral() : Promise.resolve(sid);
       chaine.then(function (cible) {
         sid = cible;
         return televerser(cible, pjs);
