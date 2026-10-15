@@ -387,10 +387,169 @@ def parse_bodacc(suivi):
     return out
 
 
+
+# ── 15/10/2026 — BODACC pour TOUTES les fiches concurrentes qui ont un SIREN ─────────────────
+# Will (15/10) : donner de l'actualité aux fiches qui n'en ont aucune. Le registre officiel publie
+# les changements de dirigeants, cessions, procédures collectives, créations et dépôts de comptes,
+# par SIREN. Le tag de chaque article est « bodacc-<id de la fiche> » : il n'apparaît QUE dans la fiche
+# visée (les tags habituels sont partagés : « sagitta » ou « cerp » iraient dans trois fiches).
+# La liste des fiches est lue dans crm/v2/grossistes-data.js (lecture seule), donc une fiche nouvelle
+# est suivie dès qu'elle a un SIREN ; elle n'affiche rien tant que son tag bodacc-<id> n'est pas dans tags_actu.
+# Filtre SIREN EXACT côté serveur (registre="123456789") : « like %123 456 789% » ramassait des sociétés
+# sans rapport (100+ faux résultats pour Aravis, mesuré le 15/10).
+# Licence : jeu ouvert de la DILA ; le robots.txt du portail interdit /api/ aux robots génériques
+# (gabarit Opendatasoft), usage ici = ~90 requêtes/jour, pauses, User-Agent identifié. A arbitrer par Will.
+DATA_FICHES = os.path.join(ROOT, 'crm', 'v2', 'grossistes-data.js')
+BODACC_SRC = 'BODACC (annonce légale)'
+BODACC_API = os.environ.get('JARVIS_BODACC_API') or 'https://bodacc-datadila.opendatasoft.com/api/explore/v2.1/catalog/datasets/annonces-commerciales/records'
+BODACC_MAX = 3            # annonces gardées par fiche (les plus récentes, hors dépôts de comptes)
+BODACC_COMPTES_MAX = 1    # un dépôt de comptes (le dernier) seulement s'il reste de la place sous le plafond
+BODACC_PAUSE = 0.7
+UA_BODACC = 'JARVIS-veille/1.0 (veille registre officiel, ~90 requetes/jour)'
+NOUS_IDS = ('sr-pharma', 'nord-repartition', 'pharmest')
+
+
+def fiches_concurrentes():
+    """[(id, nom, siren)] des fiches concurrentes (repartiteur != false, hors « nous ») ayant un SIREN."""
+    try:
+        txt = open(DATA_FICHES, encoding='utf-8').read()
+        d = json.loads(txt[txt.index('window.GROSSISTES_DATA=') + len('window.GROSSISTES_DATA='):].rstrip().rstrip(';'))
+        out = []
+        for g in d['grossistes']:
+            if g.get('repartiteur') is False or g['id'] in NOUS_IDS or g.get('groupe_id') == 'integral' or g['id'].startswith('ip-'):
+                continue
+            s = re.sub(r'\D', '', str(g.get('societe_siren') or (g.get('financials') or {}).get('siren') or ''))
+            if len(s) == 9:
+                out.append((g['id'], g.get('nom_aff') or g['id'], s))
+        return out
+    except Exception as e:
+        sys.stderr.write('BODACC : liste des fiches illisible (%s) - articles BODACC précédents conservés\n' % e)
+        return []
+
+
+def _j(x):
+    try:
+        return json.loads(x) if isinstance(x, str) and x.strip() else {}
+    except Exception:
+        return {}
+
+
+def _fr(d):
+    m = re.match(r'(\d{4})-(\d{2})-(\d{2})', d or '')
+    return '%s/%s/%s' % (m.group(3), m.group(2), m.group(1)) if m else (d or '')
+
+
+def bodacc_texte(r, siren, nom):
+    """(titre, résumé) en français clair, sans donnée personnelle. Libellés des procédures = ceux du jugement."""
+    fam = r.get('familleavis')
+    rect = {'rectificatif': 'Rectificatif - ', 'annulation': 'Annulation - '}.get(r.get('typeavis'), '')
+    ville = (r.get('ville') or '').strip().title()
+    lieu = ' (%s)' % ville if ville else ''
+    if fam == 'collective':
+        j = _j(r.get('jugement'))
+        nature = (j.get('nature') or j.get('famille') or 'procédure collective').strip()
+        titre = 'Procédure collective publiée au BODACC'
+        res = '%s%s%s. Jugement du %s%s.' % (nom, lieu, ' : ' + nature[0].lower() + nature[1:] if nature else '', _fr(j.get('date')), ' (tribunal : %s)' % r['tribunal'] if r.get('tribunal') else '')
+        return rect + titre, res.replace(' (tribunal : None)', '')
+    if fam == 'vente':
+        prec = [re.sub(r'\D', '', x) for x in re.findall(r'"numeroIdentification":\s*"([^"]+)"', r.get('listeprecedentproprietaire') or '')]
+        role = 'cède' if siren in prec else 'reprend'
+        titre = 'Cession de fonds de commerce publiée au BODACC'
+        cat = (_j(r.get('acte')).get('vente') or {}).get('categorieVente') or ''
+        return rect + titre, '%s%s %s un fonds de commerce%s.' % (nom, lieu, role, (' (' + cat[0].lower() + cat[1:] + ')') if cat else '')
+    if fam == 'creation':
+        return rect + 'Immatriculation publiée au BODACC', '%s%s : immatriculation au registre du commerce%s.' % (nom, lieu, (' le ' + _fr(_j(r.get('acte')).get('dateImmatriculation'))) if _j(r.get('acte')).get('dateImmatriculation') else '')
+    if fam == 'radiation':
+        return rect + 'Radiation publiée au BODACC', '%s%s : radiation du registre du commerce.' % (nom, lieu)
+    if fam == 'dpc':
+        cl = _j(r.get('depot')).get('dateCloture')
+        return rect + 'Dépôt des comptes annuels publié au BODACC', '%s%s a déposé ses comptes%s.' % (nom, lieu, (' de l\'exercice clos le ' + _fr(cl)) if cl else '')
+    if fam == 'modification':
+        desc = (_j(r.get('modificationsgenerales')).get('descriptif') or '').lower()
+        parts = []
+        if 'administration' in desc or 'représentant permanent' in desc:
+            parts.append('direction')
+        if 'siège' in desc:
+            parts.append('adresse du siège')
+        if 'capital' in desc:
+            parts.append('capital')
+        if 'activité' in desc and 'mise en activité' not in desc:
+            parts.append('activité')
+        if 'mise en activité' in desc:
+            parts.append('mise en activité')
+        if parts == ['direction']:
+            titre = 'Changement dans la direction publié au BODACC'
+            res = '%s%s : modification de l\'administration (dirigeants, gérance ou représentant). Le nom n\'est pas dans l\'annonce, voir le lien.' % (nom, lieu)
+        elif parts:
+            titre = 'Modification publiée au BODACC : ' + ', '.join(parts)
+            res = '%s%s : modification portant sur %s.' % (nom, lieu, ', '.join(parts))
+        else:
+            titre = 'Modification publiée au BODACC'
+            res = '%s%s : %s' % (nom, lieu, clean(desc).capitalize() or 'modification du registre.')
+        return rect + titre, res
+    return rect + 'Annonce publiée au BODACC', '%s%s : %s.' % (nom, lieu, r.get('familleavis_lib') or 'annonce légale')
+
+
+def bodacc_fiche(fid, nom, siren):
+    """Annonces d'une fiche -> items (jusqu'à BODACC_MAX). Lève une exception si le registre est injoignable ou illisible."""
+    q = BODACC_API + '?' + urllib.parse.urlencode({'where': 'registre="%s" and dateparution >= date\'%s\'' % (siren, DATE_MINI),
+                                                     'order_by': 'dateparution desc', 'limit': 100})
+    req = urllib.request.Request(q, headers={'User-Agent': UA_BODACC})
+    with urllib.request.urlopen(req, timeout=45) as r:
+        d = json.loads(r.read())
+    rows = d['results']                       # KeyError si la réponse n'a pas la forme attendue = échec, pas "zéro annonce"
+    if not isinstance(rows, list):
+        raise ValueError('results illisible')
+    vus, norm, comptes = set(), [], []
+    for r in rows:
+        if siren not in [re.sub(r'\D', '', str(x)) for x in (r.get('registre') or [])]:
+            continue
+        if not r.get('id') or r['id'] in vus or (r.get('dateparution') or '') < DATE_MINI:
+            continue
+        vus.add(r['id'])
+        titre, res = bodacc_texte(r, siren, nom)
+        it = {'titre': titre, 'url': r.get('url_complete') or 'https://www.bodacc.fr/',
+              'source': BODACC_SRC, 'date': r['dateparution'] + 'T08:00:00+00:00',
+              'tag': 'bodacc-' + fid, 'resume': res[:240], 'libre': True}
+        (comptes if r.get('familleavis') == 'dpc' else norm).append(it)
+    norm.sort(key=lambda x: x['date'], reverse=True)
+    comptes.sort(key=lambda x: x['date'], reverse=True)
+    pris = norm[:BODACC_MAX]
+    if len(pris) < BODACC_MAX:
+        pris += comptes[:min(BODACC_COMPTES_MAX, BODACC_MAX - len(pris))]
+    return pris
+
+
+def collecte_bodacc(precedents):
+    """Items BODACC de toutes les fiches. Fiche en échec -> ses articles du passage précédent sont GARDÉS (jamais vidés)."""
+    fiches = fiches_concurrentes()
+    if not fiches:
+        return list(precedents), {'fiches': 0, 'echecs': 0, 'gardes': len(precedents)}
+    out, echecs = [], []
+    for fid, nom, siren in fiches:
+        time.sleep(BODACC_PAUSE)
+        try:
+            out += bodacc_fiche(fid, nom, siren)
+        except Exception as e:
+            sys.stderr.write('FAIL bodacc-fiche %s (%s) : %s\n' % (fid, siren, e))
+            echecs.append('bodacc-' + fid)
+    gardes = [p for p in precedents if p.get('tag') in echecs]
+    for p in gardes:
+        if not trop_vieux(p):
+            out.append(p)
+    if echecs:
+        sys.stderr.write('BODACC : %d fiche(s) en échec sur %d, %d article(s) du passage précédent conservés\n' % (len(echecs), len(fiches), len(gardes)))
+    return out, {'fiches': len(fiches), 'echecs': len(echecs), 'gardes': len(gardes)}
+
+
 def main():
     sortie = OUT
     if '--sortie' in sys.argv:                 # essai hors dépôt : python3 generate_grossistes_actu.py --sortie /chemin.json
         sortie = os.path.abspath(sys.argv[sys.argv.index('--sortie') + 1])
+    try:
+        precedents = [i for i in json.load(open(sortie, encoding='utf-8')).get('items', []) if i.get('source') == BODACC_SRC]
+    except Exception:
+        precedents = []
     seen, items = {}, []
     for feed in FEEDS:                 # flux directs gratuits d'abord (accès libre prioritaire)
         for row in parse_direct(feed):
@@ -437,9 +596,21 @@ def main():
     # tri par date décroissante (sans date -> en bas)
     items.sort(key=lambda x: x.get('date') or '', reverse=True)
     items = items[:300]                # était 120 : les fiches élargies en ajoutent ~100 de plus
+    # BODACC par fiche : plafond PROPRE (3 par fiche), hors du plafond de 300 pour ne jamais être poussé dehors.
+    bod, bod_info = collecte_bodacc(precedents)
+    # Deux fiches peuvent partager un SIREN (ocp/phoenix) : la clé de dédoublonnage est url + tag.
+    # Une annonce déjà apportée par la liste historique BODACC_SUIVIS (même url) n'est pas redoublée.
+    urls_suivis = {r['url'] for r in items if r.get('source') == 'BODACC'}
+    for b in bod:
+        cle = b['url'] + '#' + b['tag']
+        if b['url'] not in urls_suivis and cle not in seen and not trop_vieux(b):
+            seen[cle] = b
+            items.append(b)
+    items.sort(key=lambda x: x.get('date') or '', reverse=True)
     data = {
         'maj': datetime.now(timezone.utc).isoformat(),
         'n': len(items),
+        'bodacc': bod_info,
         'items': items,
         'note': 'Actualités agrégées via Google News RSS (secteur répartition pharmaceutique + grossistes). Gratuit, sans clé.',
     }
