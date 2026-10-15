@@ -224,13 +224,17 @@
     return u ? '<span class="gr-srctxt">' + esc(u) + '</span>' : '';
   }
   function euros(n) { return (n == null || n === '') ? 'non publié' : fmtEur(n); }
+  // 15/10/2026 soir — Will : « que du ciblage sur les grossistes ». Le robot classe chaque article (champ cible) :
+  // 'fil' = sujet grossiste (onglet + fiche), 'fiche' = annonce légale de routine (fiche seulement), '' = hors sujet.
+  // Fichier d'avant le classement (pas de champ) : tout passe, comme avant.
+  function fil(i) { return i.cible == null || i.cible === 'fil'; }
   function actuDe(gs) {
     // gs : liste de fiches (une fiche, ou tous les membres d'un groupe). Fait vérifié + fait d'enquête + article de presse.
     var tags = {}, cles = {}, out = [], vus = {};
     gs.forEach(function (g) { (g.tags_actu || []).forEach(function (t) { tags[t] = 1; }); if (g.cle_implantations) cles[g.cle_implantations] = 1; });
     ((VERIF && VERIF.items) || []).forEach(function (i) { if (i.acteur && (cles[i.acteur] || tags[i.acteur])) out.push({ k: 'verifie', date: i.date, titre: i.titre, texte: i.texte, url: i.url, source: i.source, nc: i.nonConfirme }); });
     gs.forEach(function (g) { (g.faits_recents || []).forEach(function (f) { out.push({ k: 'enquete', date: f.date, titre: f.fait, url: /^https?:/.test(f.source || '') ? f.source.split(' ; ')[0] : '', source: f.source, nc: f.confirme === false }); }); });
-    ((ACTU && ACTU.items) || []).forEach(function (i) { if (i.tag && tags[i.tag]) out.push({ k: 'presse', date: (i.date || '').slice(0, 10), titre: i.titre, texte: i.resume, url: i.url, source: i.source }); });
+    ((ACTU && ACTU.items) || []).forEach(function (i) { if (i.tag && tags[i.tag] && i.cible !== '') out.push({ k: 'presse', date: (i.date || '').slice(0, 10), titre: i.titre, texte: i.resume, url: i.url, source: i.source }); });
     out = out.filter(function (x) { var k = (x.titre || '').toLowerCase().slice(0, 60); if (vus[k]) return false; vus[k] = 1; return true; });
     out.sort(function (a, b) { return String(b.date || '').localeCompare(String(a.date || '')); });
     return out;
@@ -440,7 +444,7 @@
       '</section>';
   }
   function actuHtml() {
-    var items = (ACTU && ACTU.items) || [];
+    var items = ((ACTU && ACTU.items) || []).filter(fil);
     var tags = {}; items.forEach(function (i) { tags[i.tag || ''] = (tags[i.tag || ''] || 0) + 1; });
     var nLibre = items.filter(function (i) { return i.libre; }).length;
     var chips = '<button class="gr-actutag' + (actuTag === '' ? ' on' : '') + '" onclick="V2.grossisteActuTag(\'\')">Tout (' + items.length + ')</button>' +
@@ -458,7 +462,7 @@
     }).join('') || '<div class="gr-empty">Pas encore d\'actualités. Le robot de veille tourne chaque jour.</div>';
     var maj = ACTU && ACTU.maj ? 'Mis à jour ' + timeAgo(ACTU.maj) : '';
     return verifHtml() + '<div class="gr-actubar">' + chips + '</div>' +
-      '<div class="gr-actumaj">' + esc(maj) + ' · sources : FSPF, ANSM &amp; presse (Google News) — filtre « accès libre » pour l\'info lisible en entier</div>' +
+      '<div class="gr-actumaj">' + esc(maj) + ' · grossistes-répartiteurs seulement : presse et annonces légales (BODACC) — filtre « accès libre » pour l\'info lisible en entier</div>' +
       '<div class="gr-actulist">' + rows + '</div>';
   }
 
@@ -515,7 +519,7 @@
   // Mêmes fichiers (actualités + faits vérifiés), pour la phrase du jour et la
   // carte du secteur d'« Infos du jour » (v2-infos-concurrents.js).
   V2.grossistesActuDonnees = function (cb) {
-    ensureActu(function () { cb((ACTU && ACTU.items) || [], (VERIF && VERIF.items) || []); });
+    ensureActu(function () { cb(((ACTU && ACTU.items) || []).filter(fil), (VERIF && VERIF.items) || []); });
   };
   // Chiffres vivants des portes de l'accueil « Concurrents » : même compte
   // d'acteurs que la liste, articles des 7 derniers jours, fraîcheur du robot.
@@ -523,7 +527,7 @@
     ensureData(function () {
       var acteurs = list().length;
       ensureActu(function () {
-        var items = (ACTU && ACTU.items) || [], now = Date.now();
+        var items = ((ACTU && ACTU.items) || []).filter(fil), now = Date.now();
         var semaine = items.filter(function (i) { return now - new Date(i.date) < 7 * 864e5; }).length;
         cb({ acteurs: acteurs, groupes: groupes().length, semaine: semaine, maj: ACTU && ACTU.maj ? timeAgo(ACTU.maj) : '' });
       });

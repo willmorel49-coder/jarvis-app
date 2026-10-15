@@ -72,6 +72,13 @@ QUERIES = [
     {'tag': 'sagitta', 'q': 'Mezegel Répartition'},
     {'tag': 'aredis', 'q': 'Aredis pharmacie'},
     {'tag': 'rbp', 'q': '"RBP Pharma"'},
+
+    # 15/10/2026 soir — « creuse encore » : 100 requêtes testées, seules celles-ci ramènent des articles
+    # neufs sur la répartition (détail : jarvis-preuves/concurrents-carte-2026-10-14/actu-ciblage/CREUSER.md).
+    {'tag': '', 'q': 'CSRP répartition pharmaceutique'},
+    {'tag': '', 'q': 'marge des grossistes médicaments'},
+    {'tag': '', 'q': 'répartiteurs pharmaceutiques ventes directes laboratoires'},
+    {'tag': '', 'q': 'répartiteur pharmaceutique nouveau site logistique'},
 ]
 
 # Annonces OFFICIELLES (BODACC, gratuit, sans clé) : une cession ou un changement
@@ -166,7 +173,7 @@ ACTEURS = [
     # ── grands ──
     {'tag': 'cerp-ba', 'qs': ['CERP Bretagne Atlantique', 'CERP Bretagne', 'Atlantique Répartition'],
      'nom': r'CERP Bretagne|Pharmar|Ploufragan|Bretagne Atlantique', 'brand': True},
-    {'tag': 'cerp', 'qs': ['CERP Rouen', 'Astera CERP', 'Astera pharmacie répartition'],
+    {'tag': 'cerp', 'qs': ['CERP Rouen', 'Astera CERP', 'Astera pharmacie répartition', 'CERP Wissous entrepôt', 'CERP Rouen entrepôt'],
      'nom': r'\bAstera\b|\bCERP\b', 'brand': True, 'ctx': r'pharmac|r[eé]partit|grossiste|Rouen|Normandie|Rhin|Bronchain|CERP|Astera'},
     {'tag': 'sipr', 'qs': ['SIPR Réunion', 'CERP Réunion'],
      'nom': r'\bSIPR\b|CERP R[eé]union|CERP Oc[eé]an', 'brand': True},
@@ -542,6 +549,63 @@ def collecte_bodacc(precedents):
     return out, {'fiches': len(fiches), 'echecs': len(echecs), 'gardes': len(gardes)}
 
 
+# ── 15/10/2026 soir — CIBLAGE : Will, mot pour mot : « dans les actus je veux que du ciblage sur les grossistes,
+# là y a trop d'infos pas intéressantes ». Le fil gardait tout (ruptures de produits, prévention, génériques,
+# groupements, comptes déposés…) : 142 articles sur 325 ne parlaient d'aucun grossiste. On ne SUPPRIME rien
+# (le résumé du matin, generate_brief.py, lit les angles génériques/marge dans ce même fichier) : chaque article
+# reçoit un champ « cible » que l'onglet Concurrents lit :
+#   'fil'   = sujet = un grossiste-répartiteur ou la répartition → onglet « Actualité » ET fiche du grossiste ;
+#   'fiche' = annonce légale de routine (comptes déposés, direction sans nom, adresse) → fiche seulement ;
+#   ''      = hors sujet grossiste → ni l'un ni l'autre (reste lisible par le résumé du matin).
+REPART = re.compile(r'r[ée]partit|grossiste|\bCSRP\b|vente directe', re.I)
+# Un article sur un grossiste doit parler de son MÉTIER ou d'un événement de l'entreprise (lu dans le titre).
+EVENEMENT = re.compile(r'r[ée]partit|grossiste|entrep[ôo]t|logisti|livr|\bsites?\b|investi|projet d.ampleur|implant|s.installe|ouvr|'
+                       r'rach[èe]t|rachat|cession|c[èe]de|fusion|acqui|reprise|repren|croissance externe|capital|filiale|'
+                       r'redressement|liquidation|sauvegarde|faillite|sanction|amende|condamn|\bANSM\b|DGCCRF|concurrence|'
+                       r'nomm|nomination|directeur|directrice|pr[ée]sident|\bP?DG\b|fermeture|ferme\b|emploi|licenci|salari|'
+                       r'gr[èe]ve|plan social|\bPSE\b|r[ée]sultats|chiffre d|e-commerce|vente en ligne|fourni|contingent|quota', re.I)
+# Bruit déjà vu le 15/10 sous un tag de grossiste : filiales africaines, projets informatiques, fait divers.
+BRUIT = re.compile(r'\baccident|percut|\bERP\b|\bSAP\b|S/4|\bcloud\b|Tchad|Guin[ée]e\b|Cameroun|S[ée]n[ée]gal|'
+                   r'C[ôo]te d.Ivoire|Maroc|Gabon|Afrique|\b\d+ ans\b|installation officinale', re.I)
+ETRANGER = re.compile(r'Le Desk|Telquel|Le360|M[ée]dias ?24|Hespress|L.[ÉE]conomiste|Tchadinfos|Guineematin|\.ma$|\.tn$|\.sn$', re.I)
+BODACC_FIL = re.compile(r'proc[ée]dure collective|redressement|liquidation|sauvegarde|cession|fonds de commerce|'
+                        r'immatriculation|cr[ée]ation|radiation|dissolution|fusion|absorption|mise en activit', re.I)
+
+
+def noms_par_tag():
+    """tag -> regex du nom du grossiste (NOMS + ACTEURS) : un article tagué doit nommer son grossiste."""
+    out = {}
+    for tag, rx in NOMS:
+        out.setdefault(tag, []).append(rx)
+    for a in ACTEURS:
+        out.setdefault(a['tag'], []).append(a['nom_rx'])
+    return out
+
+
+def tags_grossistes():
+    """Tous les tags_actu des fiches de grossistes (grossistes-data.js). Vide si illisible."""
+    try:
+        txt = open(DATA_FICHES, encoding='utf-8').read()
+        d = json.loads(txt[txt.index('window.GROSSISTES_DATA=') + len('window.GROSSISTES_DATA='):].rstrip().rstrip(';'))
+        return {t for g in d['grossistes'] if g.get('repartiteur') is not False for t in (g.get('tags_actu') or [])}
+    except Exception as e:
+        sys.stderr.write('CIBLAGE : liste des fiches illisible (%s)\n' % e)
+        return set()
+
+
+def cible(row, tags, noms):
+    titre, txt = row.get('titre', ''), row.get('titre', '') + ' ' + row.get('resume', '')
+    if (row.get('source') or '').startswith('BODACC'):
+        return 'fil' if BODACC_FIL.search(txt) else 'fiche'
+    if BRUIT.search(titre) or ETRANGER.search(row.get('source') or ''):
+        return ''
+    tag = row.get('tag') or ''
+    if tag in tags:
+        nomme = any(rx.search(txt) for rx in noms.get(tag, [])) or bool(REPART.search(titre))
+        return 'fil' if nomme and EVENEMENT.search(titre) else ''
+    return 'fil' if REPART.search(titre) else ''
+
+
 def main():
     sortie = OUT
     if '--sortie' in sys.argv:                 # essai hors dépôt : python3 generate_grossistes_actu.py --sortie /chemin.json
@@ -607,6 +671,9 @@ def main():
             seen[cle] = b
             items.append(b)
     items.sort(key=lambda x: x.get('date') or '', reverse=True)
+    tags, noms = tags_grossistes(), noms_par_tag()
+    for r in items:
+        r['cible'] = cible(r, tags, noms) if tags else 'fil'      # liste des fiches illisible : on n'écarte rien
     data = {
         'maj': datetime.now(timezone.utc).isoformat(),
         'n': len(items),
