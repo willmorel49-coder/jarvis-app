@@ -24,11 +24,12 @@
   // 'gen' hors répertoire ANSM (OPSO_NONGEN : Spagulax, Permixon…) → rangé en remboursable ('pr').
   var PAR_PAGE = 22;
   var RAYONS = [
-    { k: 'remb', label: 'Médicaments remboursables', f: { pr_low: 1, pr_mid: 1, pr_high: 1, pr: 1 }, pages: 2, deux: true },
-    { k: 'gen', label: 'Génériques', f: { gen: 1 }, pages: 1, deux: false },
-    { k: 'biosim', label: 'Biosimilaires', f: { biosim: 1 }, pages: 1, deux: true },
-    { k: 'nr', label: 'Non remboursables', f: { nr: 1 }, pages: 2, deux: false }
+    { k: 'remb', label: 'Médicaments remboursables', f: { pr_low: 1, pr_mid: 1, pr_high: 1, pr: 1 }, pages: 2, deux: true, court: 'Remboursables' },
+    { k: 'gen', label: 'Génériques', f: { gen: 1 }, pages: 1, deux: false, court: 'Génériques' },
+    { k: 'biosim', label: 'Biosimilaires', f: { biosim: 1 }, pages: 1, deux: true, court: 'Biosimilaires' },
+    { k: 'nr', label: 'Non remboursables', f: { nr: 1 }, pages: 2, deux: false, court: 'Non remboursables' }
   ];
+  var TITRE = 'Le catalogue';   // titre de la couverture ET de l’Excel
   var MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
   function periodeTexte(p) {
     if (!p) return '';
@@ -133,7 +134,7 @@
     return '<section class="oc-page oc-couv">' +
       '<header class="oc-couv-haut"><div class="oc-halo"></div>' +
         '<div class="oc-lockup"><img class="l-ip" src="' + LOGO_IP + '" alt="Intégral Pharma"><span class="by">by</span><img class="l-opso" src="' + esc(logoOpso()) + '" alt="OPSO Santé"></div>' +
-        '<h1>Le catalogue</h1>' +
+        '<h1>' + TITRE + '</h1>' +
         '<p class="oc-accroche">Les produits les plus commandés dans le réseau Intégral, et ceux que les adhérentes d’OPSO Santé commandent déjà.</p>' +
         '<p class="oc-chiffre"><b>' + d.opsoPharmas + '</b> adhérentes OPSO Santé commandent chez Intégral Pharma</p>' +
       '</header>' +
@@ -170,6 +171,9 @@
     if (document.getElementById('oc-styles')) return;
     var css = [
       '.oc-barre-outils{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin:0 0 16px}',
+      '.oc-actions{display:flex;flex-wrap:wrap;gap:10px}',
+      '@media (max-width:520px){.oc-actions{width:100%}.oc-actions .v2-btn{flex:1 1 100%;white-space:normal}}',
+      '@media print{.oc-actions{display:none!important}}',
       '.oc-barre-outils p{margin:0;color:var(--muted);font-size:13.5px;max-width:640px}',
       '.oc-apercu{background:#e9ecef;border-radius:14px;padding:14px;overflow:hidden}',
       '.oc-apercu .oc-cadre{width:calc(210mm * var(--s,1));height:calc(297mm * var(--s,1));margin:0 auto 14px;overflow:hidden;border-radius:3px;box-shadow:0 20px 40px -24px rgba(42,45,47,.5),0 2px 6px rgba(42,45,47,.12)}',
@@ -253,7 +257,8 @@
     var nb = 0; d.rayons.forEach(function (x) { nb += x.items.length; });
     root.innerHTML = page('<div class="oc-barre-outils"><div><h1 class="v2-h1" style="margin:0 0 4px">Le catalogue</h1>' +
       '<p>' + nb + ' produits parmi les plus commandés dans le réseau Intégral (' + esc(periodeTexte(d.R.periode)) + '), avec le nombre d’adhérentes OPSO Santé qui les commandent.</p></div>' +
-      '<button class="v2-btn primary" onclick="V2.opsoCatalogue.imprimer()">Imprimer / enregistrer en PDF</button></div>' +
+      '<div class="oc-actions"><button class="v2-btn primary" onclick="V2.opsoCatalogue.imprimer()">Imprimer / enregistrer en PDF</button>' +
+      '<button class="v2-btn primary" id="oc-btn-xlsx" onclick="V2.opsoCatalogue.excel()">Télécharger en Excel</button></div></div>' +
       '<div class="oc-apercu">' + pagesHtml(d).replace(/<section class="oc-page/g, '<div class="oc-cadre"><section class="oc-page').replace(/<\/section>/g, '</section></div>') + '</div>');
     ajusterApercu(root);
     if (!window.OFFILOG_BEST || !window.MKT_IMG) chargerPhotos().then(function () { _photos = null; if (V2.route && V2.route.name === 'marketing') render(root); });
@@ -279,7 +284,77 @@
     var fonts = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
     return Promise.race([Promise.all(attentes.concat([fonts])), new Promise(function (ok) { setTimeout(ok, 6000); })]).then(function () { return box; });
   }
+  // ── Excel : les MÊMES lignes que l'écran (construire()), même arrondi du pourcentage. Jamais le nombre réseau. ──
+  var xlsxEnCours = null;
+  function ensureXlsx() {   // même chargement que crm/v2/v2-offilog-catalogue.js
+    if (window.XLSX) return Promise.resolve();
+    if (xlsxEnCours) return xlsxEnCours;
+    xlsxEnCours = new Promise(function (ok, ko) {
+      var s = document.createElement('script');
+      s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+      s.onload = function () { window.XLSX ? ok() : ko(); }; s.onerror = function () { xlsxEnCours = null; ko(); };
+      document.head.appendChild(s);
+    });
+    return xlsxEnCours;
+  }
+  var centime = function (v) { return Math.round(v * 100) / 100; };
+  function cellulePart(n, tot) {   // même règle que pct() : arrondi entier, « < 1 % » sous 1
+    var p = n / tot * 100;
+    return p < 1 ? { t: 's', v: '< 1 %' } : { t: 'n', v: Math.round(p) / 100, z: '0%' };
+  }
+  function feuille(entetes, lignes, haut, largeurs) {
+    var aoa = haut.concat([entetes]);
+    var ws = XLSX.utils.aoa_to_sheet(aoa);
+    var r0 = aoa.length;                       // première ligne de données (0-based)
+    lignes.forEach(function (l, i) {
+      l.forEach(function (c, j) {
+        var ref = XLSX.utils.encode_cell({ r: r0 + i, c: j });
+        if (c == null || c === '') return;
+        ws[ref] = typeof c === 'object' ? c : (typeof c === 'number' ? { t: 'n', v: c } : { t: 's', v: String(c) });
+        if (entetes[j] === 'CIP13') ws[ref].z = '@';
+        if (entetes[j] === 'PPHT' || entetes[j] === 'Prix net') ws[ref].z = '#,##0.00\u00a0"€"';
+      });
+    });
+    ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: r0 + lignes.length - 1, c: entetes.length - 1 } });
+    ws['!cols'] = largeurs.map(function (w) { return { wch: w }; });
+    return ws;
+  }
+  function classeur() {
+    var d = construire(); if (!d) return null;
+    var per = periodeTexte(d.R.periode), perCourte = per.replace(/^commandes de /, '');
+    var haut = [[TITRE], [per], []];
+    var cat = [], wb = XLSX.utils.book_new();
+    var ent = ['Rang', 'Produit', 'CIP13', 'Part des pharmacies du réseau', 'dont OPSO', 'PPHT', 'Prix net'];
+    d.rayons.forEach(function (x) {
+      x.items.forEach(function (it, i) {
+        var l = [i + 1, it.nom, String(it.cip), cellulePart(it.n, d.R.officines), it.opso, x.r.deux && it.ppht ? centime(it.ppht) : '', centime(it.net)];
+        cat.push([x.r.court].concat(l));
+      });
+    });
+    var wsCat = feuille(['Rayon'].concat(ent), cat, haut, [20, 7, 46, 16, 16, 11, 12, 12]);
+    XLSX.utils.book_append_sheet(wb, wsCat, 'Catalogue');
+    d.rayons.forEach(function (x) {
+      var cols = x.r.deux ? ent : ent.filter(function (e) { return e !== 'PPHT'; });
+      var lignes = cat.filter(function (l) { return l[0] === x.r.court; }).map(function (l) {
+        var m = l.slice(1); return x.r.deux ? m : m.slice(0, 5).concat(m.slice(6));
+      });
+      XLSX.utils.book_append_sheet(wb, feuille(cols, lignes, haut, [7, 46, 16, 16, 16, 11, 12]), x.r.court);
+    });
+    return { wb: wb, nom: 'Catalogue OPSO - ' + perCourte.replace(/[\\/:*?"<>|]/g, ' ') + '.xlsx' };
+  }
+  function telechargerExcel() {
+    var b = document.getElementById('oc-btn-xlsx');
+    if (b && b.disabled) return;
+    if (b) b.disabled = true;
+    ensureXlsx().then(function () {
+      var c = classeur();
+      if (!c) throw new Error('données');
+      XLSX.writeFile(c.wb, c.nom);
+    }).catch(function () { V2.toast && V2.toast('Téléchargement Excel impossible, réessayez dans un instant', 'error'); })
+      .then(function () { if (b) b.disabled = false; });
+  }
   V2.opsoCatalogue = {
+    excel: telechargerExcel,
     imprimer: function () {
       var avant = document.title;
       document.title = 'Catalogue-Integral-Pharma-OPSO-Sante';
