@@ -519,7 +519,8 @@
     marketing: 'Les produits classés par nombre de pharmacies',
     offilog: 'La parapharmacie, rayon par rayon',
     opsopharmacies: 'L\'évolution de chaque officine',
-    opsoachats: 'Les références les plus commandées'
+    opsoachats: 'Les références les plus commandées',
+    opsoprix: 'PFHT, prix habituel et prix négocié'
   };
   // Mini-aperçu de chaque espace : un chiffre réel ou une forme, jamais une phrase.
   function apercu(k, DATA) {
