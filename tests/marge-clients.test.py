@@ -308,6 +308,46 @@ lg, c = {}, cascade()
 src, m = gm.ajouter(lg, ('Alice', 'o1', 202606), G(A13, B=100.0, N=90.0, q=3), 202606, c, c.L, marge=15.0)
 check("marge imposée : comptée telle quelle, dans la famille du prix net de juin", src == 'mois de remplacement' and m == 15.0 and lg[('Alice', 'o1', 202606)][3] == 15.0)
 
+# ── baisses de prix (décision du 15/10/2026 : une baisse de prix ne compte jamais dans la marge d'un commercial) ──
+def om_(*l):
+    """(régime, code, ym, brut, marge par boîte, boîtes, net par boîte) -> Cascade.OM."""
+    return {(r, c, ym, B): [mb * q, q, nb * q] for r, c, ym, B, mb, q, nb in l}
+V = {(2026, A13): {202605: {100.0: 50}, 202606: {90.0: 40, 100.0: 5}, 202607: {90.0: 45}}}
+OMb = om_((2026, A13, 202605, 100.0, 4.0, 10, 100.0), (2026, A13, 202606, 90.0, -6.0, 10, 90.0), (2026, A13, 202607, 90.0, 3.5, 10, 90.0))
+check("baisse : brut plus bas et marge effondrée -> mois touché, référence = mois suivant",
+      gm.detecter_baisses(OMb, V) == {202606: {A13: (202607, None)}}, gm.detecter_baisses(OMb, V))
+check("baisse sans perte (marge normale au nouveau prix) : rien",
+      gm.detecter_baisses(om_((2026, A13, 202605, 100.0, 4.0, 10, 100.0), (2026, A13, 202606, 90.0, 3.4, 10, 90.0), (2026, A13, 202607, 90.0, 3.5, 10, 90.0)), V) == {})
+check("hausse de prix (brut plus haut) : rien",
+      gm.detecter_baisses(om_((2026, A13, 202605, 80.0, 4.0, 10, 80.0), (2026, A13, 202606, 90.0, -6.0, 10, 90.0), (2026, A13, 202607, 90.0, 3.5, 10, 90.0)),
+                          {(2026, A13): {202605: {80.0: 50}, 202606: {90.0: 40}, 202607: {90.0: 45}}}) == {})
+check("baisse de 0,5 % seulement : rien (seuil 1 %)",
+      gm.detecter_baisses(om_((2026, A13, 202605, 100.0, 4.0, 10, 100.0), (2026, A13, 202606, 99.5, -6.0, 10, 99.5), (2026, A13, 202607, 99.5, 3.5, 10, 99.5)),
+                          {(2026, A13): {202605: {100.0: 50}, 202606: {99.5: 40}, 202607: {99.5: 45}}}) == {})
+check("code déjà dans un mois de remplacement du réglage : le réglage garde la main",
+      gm.detecter_baisses(OMb, V, {202606: {A13}}) == {})
+Vd = {(2026, A13): {202605: {100.0: 50}, 202606: {90.0: 40}}}
+OMd = om_((2026, A13, 202605, 100.0, 4.0, 10, 100.0), (2026, A13, 202606, 90.0, -6.0, 10, 90.0))
+r_d = gm.detecter_baisses(OMd, Vd)
+check("baisse du dernier mois lu : pas de mois suivant -> taux d'avant la baisse (4 / 100)",
+      list(r_d) == [202606] and r_d[202606][A13][0] is None and proche(r_d[202606][A13][1], 0.04), r_d)
+Vc = {(2026, A13): {202605: {100.0: 50}, 202606: {90.0: 40}, 202607: {80.0: 40}, 202608: {80.0: 40}}}
+OMc = om_((2026, A13, 202605, 100.0, 4.0, 10, 100.0), (2026, A13, 202606, 90.0, -6.0, 10, 90.0),
+          (2026, A13, 202607, 80.0, -5.0, 10, 80.0), (2026, A13, 202608, 80.0, 3.0, 10, 80.0))
+check("deux baisses de suite : la référence saute le mois lui-même touché",
+      gm.detecter_baisses(OMc, Vc) == {202606: {A13: (202608, None)}, 202607: {A13: (202608, None)}}, gm.detecter_baisses(OMc, Vc))
+check("régimes séparés : une vente de 2027 n'est jamais comparée à 2026",
+      gm.detecter_baisses(om_((2026, A13, 202612, 100.0, 4.0, 10, 100.0), (2027, A13, 202701, 90.0, -6.0, 10, 90.0), (2027, A13, 202702, 90.0, 3.5, 10, 90.0)),
+                          {(2026, A13): {202612: {100.0: 50}}, (2027, A13): {202701: {90.0: 40}, 202702: {90.0: 40}}}) == {})
+check("mention : un produit, référence connue (élision « d'août »)",
+      gm.texte_baisses({A13: (202608, None)}, 202607) == "1 produit dont le prix a baissé compté avec sa marge par boîte d'août : la perte sur le stock n'est pas comptée",
+      gm.texte_baisses({A13: (202608, None)}, 202607))
+check("mention : en plus d'un mois de remplacement = « autres »",
+      gm.texte_baisses({A13: (202607, None), B13: (202607, None)}, 202606, autres=True) == "2 autres produits dont le prix a baissé comptés avec leur marge par boîte de juillet : la perte sur le stock n'est pas comptée")
+check("mention : dernier mois lu = en attendant le mois suivant (décembre -> janvier 2027)",
+      gm.texte_baisses({A13: (None, 0.04)}, 202612) == "1 produit dont le prix a baissé compté avec sa marge d'avant la baisse, en attendant les ventes de janvier 2027 : la perte sur le stock n'est pas comptée",
+      gm.texte_baisses({A13: (None, 0.04)}, 202612))
+
 print()
 if ECHECS:
     print("ÉCHECS (%d) : %s" % (len(ECHECS), ", ".join(ECHECS)))

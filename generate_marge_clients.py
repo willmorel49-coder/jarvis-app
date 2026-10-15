@@ -29,6 +29,16 @@ trois produits). Marge par boite = celle que la cascade donne a l'autre mois, au
 brut le plus proche (meme code produit d'abord, puis tous les codes du produit). La mention affichee sous la
 carte est fabriquee a partir de ce meme reglage : elle ne peut pas dire autre chose que le calcul.
 
+BAISSES DE PRIX (decision de Will, 15/10/2026 : « ce n'est pas de notre fait »)
+Une baisse de prix ne compte jamais dans la marge d'un commercial, et plus aucune liste n'est a taper : la baisse est
+reperee toute seule, code par code, dans le meme regime. Un mois est touche quand le code s'y vend a un prix brut plus
+bas d'au moins 1 % que le brut le plus vendu du mois d'avant ET que la marge par boite lue a ce brut tombe sous celle du
+mois de reference (meme brut, sinon le plus proche ; ecart au-dela de 0,50 EUR ou 2 %). Toutes les boites du code ce
+mois-la sont alors comptees avec la marge par boite du mois de reference = le premier mois suivant sans baisse (meme
+calcul que les mois de remplacement). Baisse du dernier mois lu : marge d'avant la baisse, en taux du prix net, en
+attendant le mois suivant (le calcul se refait seul a chaque passage). Un code deja dans un mois de remplacement du
+reglage garde ce remplacement. La mention du mois est fabriquee depuis les baisses reperees.
+
 CE QUI NE VIT PAS DANS LE DEPOT
 Rien de prive ici : ni prix d'achat, ni taux appris, ni laboratoire, ni montant de la regle privee.
 Les parametres prives sont dans ~/.config/jarvis/marge-direction-prive.json (illisible = code 3, rien
@@ -197,6 +207,85 @@ def par_boite(tables, cle, nom, B):
             k = min(t, key=lambda x: (abs(x - B), x))
             return t[k][0] / t[k][1], niveau + ' brut proche'
     return None, None
+
+
+SEUIL_BAISSE = 0.99              # brut au moins 1 % sous le brut le plus vendu du mois d'avant
+TOL_EUROS, TOL_TAUX = 0.50, 0.02  # marge par boîte plus basse que la référence au-delà de 0,50 € ou 2 % = perte
+
+
+def rang(ym):
+    return (ym // 100) * 12 + ym % 100
+
+
+def nom_mois(ym, ym_texte):
+    """« juillet », « avril 2027 » (année écrite si elle diffère de celle du mois dont on parle)."""
+    return MOIS_FR[ym % 100 - 1] + ('' if ym // 100 == ym_texte // 100 else ' %d' % (ym // 100))
+
+
+def de(mot):
+    return ("d'" if mot[:1] in 'aeiouéèêâô' else 'de ') + mot
+
+
+def detecter_baisses(om, ventes, exclus=None):
+    """Baisses de prix repérées dans les ventes.
+    om = {(régime, code, ym, brut): [marge lue, boîtes, q×net]} (Cascade.OM, lignes dont la marge est lue) ;
+    ventes = {(régime, code): {ym: {brut: boîtes}}} (toutes les ventes positives) ; exclus = {ym: codes d'un mois de
+    remplacement du réglage}. Rend {ym: {code: (mois de référence, taux)}} : mois de référence = premier mois suivant
+    lu sans baisse ni remplacement, taux None ; sans lui : (None, marge / net d'avant la baisse)."""
+    exclus = exclus or {}
+    lue = defaultdict(lambda: defaultdict(dict))
+    for (reg, cle, ym, B), x in om.items():
+        if x[1] > 0 and x[2] > 0:
+            lue[(reg, cle)][ym][B] = x
+    out = defaultdict(dict)
+    for (reg, cle), v in ventes.items():
+        L = lue.get((reg, cle))
+        if not L:
+            continue
+        mois = sorted(v)
+        exclu = {m for m in mois if cle in exclus.get(m, ())}
+        for i in range(len(mois) - 1, 0, -1):            # du plus récent au plus ancien : la référence est déjà jugée
+            m, p = mois[i], mois[i - 1]
+            if m in exclu or not L.get(m) or rang(m) - rang(p) > 2 or not v[p]:
+                continue
+            bp = max(v[p], key=lambda b: (v[p][b], b))
+            n = next((k for k in mois[i + 1:] if L.get(k) and k not in exclu and cle not in out.get(k, {})), None)
+            taux = None
+            if n is None:
+                av = L.get(p) or {}
+                xs = [av[bp]] if bp in av else list(av.values())
+                if not xs or not sum(x[2] for x in xs):
+                    continue
+                taux = sum(x[0] for x in xs) / sum(x[2] for x in xs)
+            for B, x in L[m].items():
+                if B >= bp * SEUIL_BAISSE:
+                    continue
+                if n is None:
+                    r = taux * x[2] / x[1]
+                else:
+                    t = L[n]
+                    k = B if B in t else min(t, key=lambda b: (abs(b - B), b))
+                    r = t[k][0] / t[k][1]
+                if x[0] / x[1] < r - max(TOL_EUROS, TOL_TAUX * abs(r)):
+                    out[m][cle] = (n, taux)
+                    break
+    return dict(out)
+
+
+def texte_baisses(d, ym, autres=False):
+    """Mention d'un mois touché par des baisses de prix ({code: (mois de référence, taux)})."""
+    nb, refs = len(d), {n for n, _ in d.values()}
+    sujet = '%d %sproduit%s dont le prix a baissé compté%s' % (nb, 'autre ' if autres and nb == 1 else 'autres ' if autres else '',
+                                                             '' if nb == 1 else 's', '' if nb == 1 else 's')
+    leur = 'sa' if nb == 1 else 'leur'
+    if refs == {None}:
+        suite = ym + 1 if ym % 100 < 12 else (ym // 100 + 1) * 100 + 1
+        fin = '%s marge d\'avant la baisse, en attendant les ventes %s' % (leur, de(nom_mois(suite, ym)))
+    elif len(refs) == 1:
+        fin = '%s marge par boîte %s' % (leur, de(nom_mois(refs.pop(), ym)))
+    else:
+        fin = '%s marge par boîte du mois d\'après la baisse' % leur
+    return '%s avec %s : la perte sur le stock n\'est pas comptée' % (sujet, fin)
 
 
 class Listes:
@@ -641,9 +730,12 @@ def main():
     # ── passe 1 : apprendre les prix d'achat ; passe 2 : estimer ──
     cascade = Cascade(L)
     nb_lignes = 0
+    ventes = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))     # (régime, code) -> ym -> brut -> boîtes
     for fc, (comm, ym) in zip(chemins, meta):
         for g in charger_groupes(fc):
             cascade.apprendre(g, ym)
+            if g[9] and g[11] > 0 and g[2] not in L.gen:
+                ventes[(g[1], g[2])][ym][g[3]] += g[11]
             nb_lignes += 1
     if not cascade.figer():
         print('ARRÊT : aucune ligne avec la marge de la direction (MARGETHEORIQUE) — rien à apprendre.')
@@ -653,16 +745,25 @@ def main():
     lignes = {}
     prov = defaultdict(float)
     rempl = prive['remplacements']
-    suivis = defaultdict(dict)                      # mois de remplacement -> {code: produit}
+    baisses = detecter_baisses(cascade.OM, ventes, {ym: set(x['cips']) for ym, x in rempl.items()})
+    suivis = defaultdict(dict)                      # mois de remplacement ou de référence -> {code: produit}
     for x in rempl.values():
         suivis[x['par']].update(x['cips'])
+    for d_b in baisses.values():
+        for cle_b, (n_b, _t) in d_b.items():
+            if n_b is not None:
+                suivis[n_b].setdefault(cle_b, cle_b)    # baisse : le « produit » est le code lui-même
     tables = {ym: ({}, {}) for ym in suivis}        # mois de remplacement -> marge et boîtes par code / produit, par brut
-    differes = []
+    differes, differes_b = [], []
     for fc, (comm, ym) in zip(chemins, meta):
         r = rempl.get(ym)
+        bx = baisses.get(ym)
         for g in charger_groupes(fc):
             if r and g[2] in r['cips']:
                 differes.append((comm, ym, g))      # estimé après la lecture du mois de remplacement
+                continue
+            if bx and g[2] in bx:
+                differes_b.append((comm, ym, g))    # estimé après la lecture du mois de référence
                 continue
             src, m = ajouter(lignes, (comm, g[0], ym), g, ym, cascade, L)
             if src != 'gen':
@@ -691,6 +792,32 @@ def main():
         print('Remplacement %d-%02d par %d-%02d · %s : %.0f boîtes · marge %.0f € -> %.0f € (%s)'
               % (ym // 100, ym % 100, rempl[ym]['par'] // 100, rempl[ym]['par'] % 100, nom, b[0], b[1], b[2],
                  ' · '.join('%s %.0f' % kv for kv in sorted(b[3].items()))))
+    bilan_b = defaultdict(lambda: [set(), 0.0, 0.0, 0.0, defaultdict(float)])   # mois -> codes, boîtes, marge sans, avec, boîtes par niveau
+    for comm, ym, g in differes_b:
+        n_b, taux = baisses[ym][g[2]]
+        if n_b is None:
+            imp, niveau = g[12] * taux, "taux d'avant la baisse"
+        else:
+            pb, niveau = par_boite(tables[n_b], g[2], g[2], g[3])
+            imp = None if pb is None else g[11] * pb
+        sans = cascade.marge(g, ym)[0]
+        src, m = ajouter(lignes, (comm, g[0], ym), g, ym, cascade, L, imp)
+        if src != 'gen':
+            prov['baisse de prix' if src == 'mois de remplacement' else src] += m
+        b = bilan_b[ym]
+        b[0].add(g[2])
+        b[1] += g[11]
+        b[2] += sans
+        b[3] += m
+        b[4][niveau or 'non vendu : cascade ordinaire'] += g[11]
+    for ym, b in sorted(bilan_b.items()):
+        print('Baisses de prix %d-%02d : %d codes · %.0f boîtes · marge %.0f € -> %.0f € (%s)'
+              % (ym // 100, ym % 100, len(b[0]), b[1], b[2], b[3], ' · '.join('%s %.0f' % kv for kv in sorted(b[4].items()))))
+    reserves = dict(prive['reserves'])
+    for ym, d_b in sorted(baisses.items()):
+        k = '%d-%02d' % (ym // 100, ym % 100)
+        t_b = texte_baisses(d_b, ym, autres=ym in rempl)
+        reserves[k] = reserves[k] + ' ; ' + t_b if ym in rempl else t_b
     prenoms = sorted({k[0] for k in lignes})
     officines = sorted({k[1] for k in lignes})
     c_idx = {p: i for i, p in enumerate(prenoms)}
@@ -702,7 +829,7 @@ def main():
     mois_txt = ['%d-%02d' % (a, m) for a, m in mois_lus]
     ym_max = max(m[1] for m in meta)
     d = {'v': 1, 'fait': datetime.date.today().isoformat(), 'jusqua': '%d-%02d' % (ym_max // 100, ym_max % 100), 'mois': mois_txt,
-         'reserves': prive['reserves'], 'fam': FAM, 'c': prenoms, 'o': officines, 'r': rows}
+         'reserves': reserves, 'fam': FAM, 'c': prenoms, 'o': officines, 'r': rows}
     for r in rows:
         assert abs(sum(r[5:12]) - r[4]) < 0.005, 'tot != somme des familles'
 
