@@ -246,13 +246,13 @@
   function sec(t, body, cls) { return body ? '<div class="gr-sec' + (cls ? ' ' + cls : '') + '"><h4>' + t + '</h4>' + body + '</div>' : ''; }
   function proprioHtml(g) {
     var P = g.proprietaire_final, ch = g.chaine || [], dir = g.dirigeants || [];
-    if (!P && !ch.length && !dir.length) return '';
+    if (!P && !ch.length && !(dir.length && !(g.personnes && g.personnes.length))) return '';
     var top = P ? '<p class="gr-proprio"><b>' + esc(P.nom) + '</b>' + (P.pays ? ' · ' + esc(P.pays) : '') + (P.type ? ' · <em>' + esc(({ famille: 'famille', 'cooperative de pharmaciens': 'coopérative de pharmaciens', cotee: 'cotée en bourse', fonds: 'fonds', personne: 'personne', autre: 'autre' })[P.type] || P.type) + '</em>' : '') + '</p>' : '';
     var chaine = ch.length ? '<ol class="gr-chaine">' + ch.map(function (c) {
       return '<li class="r-' + esc(c.role || '') + '"><b>' + esc(c.nom) + '</b>' + (c.siren ? ' <span class="gr-sir">SIREN ' + esc(c.siren) + '</span>' : '') +
         (c.part ? '<span class="gr-ch-p">' + esc(c.part) + '</span>' : '') + (c.source ? '<span class="gr-ch-s">' + lien(c.source, 'source') + '</span>' : '') + '</li>';
     }).join('') + '</ol>' : '';
-    var dirs = dir.length ? '<div class="gr-dirs"><span>Registre public</span>' + dir.map(function (d) { return '<div><b>' + esc(d.nom) + '</b> ' + esc(d.fonction || '') + '</div>'; }).join('') + '</div>' : '';
+    var dirs = (dir.length && !(g.personnes && g.personnes.length)) ? '<div class="gr-dirs"><span>Registre public</span>' + dir.map(function (d) { return '<div><b>' + esc(d.nom) + '</b> ' + esc(d.fonction || '') + '</div>'; }).join('') + '</div>' : '';
     return sec('Propriétaire et chaîne de détention', top + (chaine ? '<details class="gr-det gr-det-in"><summary>La chaîne : ' + ch.length + ' maillon' + (ch.length > 1 ? 's' : '') + ' jusqu\'à la société qui exploite</summary><div class="gr-det-b">' + chaine + '</div></details>' : '') + (dirs ? '<details class="gr-det gr-det-in"><summary>Dirigeants (' + dir.length + ')</summary><div class="gr-det-b">' + dirs + '</div></details>' : ''));
   }
   function chiffresHtml(g) {
@@ -295,6 +295,46 @@
     return sec('Décisions officielles (' + d.length + ')', '<ul class="gr-dec">' + d.slice(0, 3).map(carte).join('') + '</ul>' +
       (reste.length ? '<details class="gr-det gr-det-in"><summary>' + reste.length + ' autre' + (reste.length > 1 ? 's' : '') + ' décision' + (reste.length > 1 ? 's' : '') + ', plus anciennes</summary><div class="gr-det-b"><ul class="gr-dec">' + reste.map(carte).join('') + '</ul></div></details>' : ''), 'gr-decs');
   }
+  // ── 15/10/2026 : Qui fait quoi (personnes), Projets, Partenariats — données ajoutées par integrer_personnes.py ──
+  var ROLE_LAB = { dirige: 'Dirige', possede: 'Possède', pilote: 'Pilote', administre: 'Conseil' };
+  var ROLE_ORD = ['dirige', 'possede', 'pilote', 'administre'];
+  function personneLi(p) {
+    return '<li class="gr-pe"><b>' + esc(p.nom) + '</b>' + (p.fonction ? ' <span class="gr-pe-f">' + esc(p.fonction) + '</span>' : '') +
+      (p.depuis ? ' <span class="gr-pe-d">depuis ' + esc(dFr(p.depuis)) + '</span>' : '') +
+      (p.parcours ? '<span class="gr-pe-p">' + esc(p.parcours) + '</span>' : '') +
+      (p.source ? '<span class="gr-pe-s">' + lien(p.source, 'source') + '</span>' : '') + '</li>';
+  }
+  function personnesParRole(liste) {
+    return ROLE_ORD.map(function (r) {
+      var l = liste.filter(function (p) { return p.role === r; });
+      return l.length ? '<div class="gr-qr"><h5>' + ROLE_LAB[r] + '</h5><ul class="gr-pe-l">' + l.map(personneLi).join('') + '</ul></div>' : '';
+    }).join('');
+  }
+  function quiFaitQuoiHtml(g) {
+    var ps = (g.personnes || []).slice().sort(function (a, b) { return ROLE_ORD.indexOf(a.role) - ROLE_ORD.indexOf(b.role); });
+    var q = g.qui_fait_quoi ? '<p class="gr-qfq">' + esc(g.qui_fait_quoi) + '</p>' : '';
+    if (!q && !ps.length) return '';
+    var tete = ps.slice(0, 6), reste = ps.slice(6);
+    return sec('Qui fait quoi', q + personnesParRole(tete) +
+      (reste.length ? '<details class="gr-det gr-det-in"><summary>' + reste.length + ' autre' + (reste.length > 1 ? 's' : '') + ' personne' + (reste.length > 1 ? 's' : '') + '</summary><div class="gr-det-b">' + personnesParRole(reste) + '</div></details>' : ''));
+  }
+  var STATUT_LAB = { 'annonce': 'annoncé', 'en cours': 'en cours', 'fait': 'fait', 'abandonne': 'abandonné' };
+  function projetsHtml(g) {
+    var pr = g.projets || [];
+    if (!pr.length) return '';
+    return sec('Projets', '<ul class="gr-pj">' + pr.map(function (x) {
+      return '<li><span class="gr-pj-d">' + esc(dFr(x.date)) + '</span><div><b>' + esc(x.projet) + '</b>' +
+        '<span class="gr-pj-m"><u class="gr-st st-' + esc(String(x.statut || '').replace(/\s/g, '-')) + '">' + esc(STATUT_LAB[x.statut] || x.statut || '') + '</u>' + (x.lieu ? ' ' + esc(x.lieu) : '') + (x.source ? ' ' + lien(x.source, 'source') : '') + '</span></div></li>';
+    }).join('') + '</ul>');
+  }
+  function partenairesHtml(g) {
+    var pa = g.partenaires || [];
+    if (!pa.length) return '';
+    return sec('Partenariats', '<ul class="gr-pj">' + pa.map(function (x) {
+      return '<li><div><b>' + esc(x.avec) + '</b>' + (x.nature ? ' <span class="gr-pe-f">' + esc(x.nature) + '</span>' : '') +
+        '<span class="gr-pj-m">' + (x.depuis ? 'depuis ' + esc(dFr(x.depuis)) + ' ' : '') + (x.source ? lien(x.source, 'source') : '') + '</span></div></li>';
+    }).join('') + '</ul>');
+  }
   function prixHtml(g) {
     var ps = g.prix_sources || [];
     if (!ps.length) return sec('Ses prix', '<p class="gr-np">Pas de tarif disponible pour cet acteur : aucun catalogue de prix n\'est dans le comparateur.</p>');
@@ -319,12 +359,15 @@
       (g.repartiteur === false && g.non_repartiteur_motif ? '<div class="gr-nonrep"><h4>Pas un répartiteur officinal</h4><p>' + esc(g.non_repartiteur_motif) + '</p></div>' : '') +
       (g.siren_note ? '<div class="gr-nonrep"><p>' + esc(g.siren_note) + '</p></div>' : '') +
       (g.a_retenir ? '<div class="gr-retenir"><h4>À retenir face à un pharmacien</h4><p>' + esc(g.a_retenir) + '</p></div>' : '') +
+      quiFaitQuoiHtml(g) +
       (g.lien_ip_txt ? '<div class="gr-ipnote">' + esc(g.lien_ip_txt) + '</div>' : '') +
       proprioHtml(g) +
       '<div class="gr-sec"><h4>Chiffres</h4><div class="gr-fkpis">' +
         kpi(g.ca_eur, 'CA' + (g.ca_annee && npub(g.ca_annee) ? ' (' + esc(g.ca_annee) + ')' : '')) + kpi(g.nb_agences, 'établissements') + kpi(g.part_marche, 'part de marché') + kpi(g.effectifs, 'effectifs') + '</div>' + chiffresHtml(g) + '</div>' +
       finHtml(g).replace('<div class="gr-sec gr-finsec"><h4>', '<details class="gr-sec gr-det gr-finsec"><summary>').replace('</h4>', '</summary><div class="gr-det-b">').replace(/<\/div>$/, '</div></details>') +
       implantationsHtml(g, pts) +
+      projetsHtml(g) +
+      partenairesHtml(g) +
       decisionsHtml(g) +
       prixHtml(g) +
       sec('Actualité', actuFilHtml(actuDe([g])) + actuLegacy) +
@@ -707,6 +750,17 @@
       '.gr-chaine li.r-filiale::before{background:var(--ip-blue)}',
       '.gr-sir{font-size:12px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}',
       '.gr-ch-p,.gr-ch-s{display:block;font-size:12px;color:var(--muted)}.gr-ch-s a{color:var(--ip-blue);text-decoration:none}',
+      '.gr-qfq{margin:0 0 10px;font-size:14px;line-height:1.55}',
+      '.gr-qr{margin:10px 0 0}.gr-qr h5{margin:0 0 2px;font-size:13px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--ip-blue-d)}',
+      '.gr-pe-l,.gr-pj{list-style:none;margin:0;padding:0}',
+      '.gr-pe{padding:7px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.45}.gr-pe-l .gr-pe:first-child{border-top:0}',
+      '.gr-pe-f{font-size:13.5px;color:var(--muted-d,var(--muted))}.gr-pe-d{font-size:13px;color:var(--muted);white-space:nowrap}',
+      '.gr-pe-p,.gr-pe-s,.gr-pj-m{display:block;font-size:13px;line-height:1.5;color:var(--muted)}',
+      '.gr-pe-s a,.gr-pj-m a{color:var(--ip-blue);text-decoration:none;font-weight:700}',
+      '.gr-pj-d{flex:0 0 92px;white-space:nowrap;font-size:13px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums;padding-top:1px}.gr-pe-s .gr-srctxt,.gr-pj-m .gr-srctxt{font-size:13px}',
+      '.gr-pj>li{display:flex;gap:12px;padding:9px 0;border-top:1px solid var(--line)}.gr-pj>li:first-child{border-top:0}.gr-pj>li>div{flex:1;min-width:0;font-size:14px;line-height:1.45}',
+      '.gr-st{text-decoration:none;font-size:13px;font-weight:800;padding:1px 9px;border-radius:999px;background:color-mix(in srgb,var(--ip-blue) 12%,var(--card));color:var(--ip-blue-d);margin-right:4px}',
+      '.gr-st.st-en-cours{background:#FFF4E0;color:#8A4B00}.gr-st.st-fait{background:#E4F6EC;color:#0B6B3B}.gr-st.st-abandonne{background:#F1F1F1;color:#444}',
       '.gr-dirs{margin-top:10px;font-size:13px;line-height:1.55}.gr-dirs>span{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:2px}',
       '.gr-ent{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:10px}',
       '.gr-ent-r{display:flex;flex-wrap:wrap;gap:4px 16px;justify-content:space-between;padding:10px 14px;border-top:1px solid var(--line)}.gr-ent-r:first-child{border-top:0}',
