@@ -73,7 +73,9 @@ self.addEventListener('push', function (e) {
     body: d.corps || 'Un rendez-vous vient d’être pris.',
     icon: './icons/icon-192.png',
     badge: './icons/icon-192.png',
-    tag: 'jarvis-rdv',
+    // Discussion : une étiquette par sujet, pour que dix messages du même
+    // sujet n'empilent pas dix alertes.
+    tag: d.tag || 'jarvis-rdv',
     renotify: true,
     data: { url: d.url || '#rdv' }
   }));

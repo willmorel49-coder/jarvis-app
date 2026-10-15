@@ -15,6 +15,10 @@
 //   « essai »      { essai:true } — commercial connecté — « teste sur mon
 //                  téléphone », pour ne pas découvrir que rien n'arrive le
 //                  jour où un vrai pharmacien réserve.
+//   { message_id } — clé de service — nouveau message dans la Discussion
+//   { remontee_id } — clé de service — nouvelle remontée
+//                  Ces deux-là préviennent toute l'équipe abonnée, sauf
+//                  l'auteur et les comptes OPSO (la Discussion leur est fermée).
 // ═══════════════════════════════════════════════════════════════
 import webpush from 'npm:web-push@3.6.7'
 import { createClient } from 'npm:@supabase/supabase-js@2.112.2'
@@ -53,12 +57,35 @@ function libelle(iso: string) {
   return `${JOURS[d.getUTCDay()]} ${+p[2]} ${MOIS[+p[1] - 1]}`
 }
 
+type Abo = { id: number; endpoint: string; p256dh: string; auth: string }
+
 /** Envoie à tous les téléphones d'un commercial. Renvoie le compte des envois. */
 async function pousser(userId: string, charge: Record<string, unknown>) {
-  const db = admin()
-  const { data: abos } = await db.from('push_abo')
+  const { data: abos } = await admin().from('push_abo')
     .select('id, endpoint, p256dh, auth').eq('user_id', userId)
-  if (!abos || !abos.length) return { envoyes: 0, abonnes: 0, raison: 'aucun_appareil' }
+  return envoyer(abos || [], charge)
+}
+
+/** Discussion : toute l'équipe abonnée, sauf l'auteur et OPSO. */
+async function pousserEquipe(auteurId: string, charge: Record<string, unknown>) {
+  const db = admin()
+  const [{ data: abos }, { data: opso }] = await Promise.all([
+    db.from('push_abo').select('id, endpoint, p256dh, auth, user_id').neq('user_id', auteurId),
+    db.from('user_profiles').select('id').eq('role', 'opso'),
+  ])
+  const exclus = new Set((opso || []).map((p: { id: string }) => p.id))
+  return envoyer((abos || []).filter((a: { user_id: string }) => !exclus.has(a.user_id)), charge)
+}
+
+/** Un texte de notification : une ligne, coupée proprement. */
+function court(t: string, n: number) {
+  const s = String(t || '').replace(/\s+/g, ' ').trim()
+  return s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s
+}
+
+async function envoyer(abos: Abo[], charge: Record<string, unknown>) {
+  const db = admin()
+  if (!abos.length) return { envoyes: 0, abonnes: 0, raison: 'aucun_appareil' }
 
   let envoyes = 0
   for (const a of abos) {
@@ -91,7 +118,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   if (req.method !== 'POST') return reponse({ ok: false, raison: 'methode' }, 405)
 
-  let c: { rdv_id?: string; essai?: boolean }
+  let c: { rdv_id?: string; essai?: boolean; message_id?: string; remontee_id?: string }
   try { c = await req.json() } catch { return reponse({ ok: false, raison: 'json' }, 400) }
 
   const entete = req.headers.get('Authorization') || ''
@@ -119,9 +146,49 @@ Deno.serve(async (req) => {
 
   // ─── Le vrai cas : la base signale un rendez-vous confirmé.
   if (entete !== 'Bearer ' + CLE_SERVICE) return reponse({ ok: false, raison: 'interdit' }, 403)
+  const db = admin()
+
+  // ─── Discussion : un message vient d'être posté.
+  if (c.message_id) {
+    const { data: m } = await db.from('discussion_messages')
+      .select('sujet_id, auteur_id, auteur_nom, texte, pieces, archive')
+      .eq('id', c.message_id).maybeSingle()
+    if (!m) return reponse({ ok: false, raison: 'message_inconnu' }, 404)
+    const { data: sj } = await db.from('discussion_sujets')
+      .select('titre, archive').eq('id', m.sujet_id).maybeSingle()
+    if (m.archive || !sj || sj.archive) return reponse({ ok: true, envoyes: 0, raison: 'archive' })
+    const pj = (m.pieces || [])[0] as { type?: string } | undefined
+    const quoi = court(m.texte, 140) ||
+      (pj ? (pj.type === 'image' ? 'a envoyé une photo' : 'a envoyé un document') : '')
+    return reponse({
+      ok: true,
+      ...(await pousserEquipe(m.auteur_id, {
+        titre: court(sj.titre, 60) || 'Discussion',
+        corps: (m.auteur_nom || 'Quelqu’un') + ' : ' + quoi,
+        url: '#discussion',
+        tag: 'jarvis-dsc-' + m.sujet_id,
+      })),
+    })
+  }
+
+  // ─── Une remontée vient d'être déposée.
+  if (c.remontee_id) {
+    const { data: r } = await db.from('improvements')
+      .select('author_id, author_name, body').eq('id', c.remontee_id).maybeSingle()
+    if (!r) return reponse({ ok: false, raison: 'remontee_inconnue' }, 404)
+    return reponse({
+      ok: true,
+      ...(await pousserEquipe(r.author_id, {
+        titre: 'Nouvelle remontée',
+        corps: (r.author_name || 'Quelqu’un') + ' : ' + court(r.body, 140),
+        url: '#discussion',
+        tag: 'jarvis-rem',
+      })),
+    })
+  }
+
   if (!c.rdv_id) return reponse({ ok: false, raison: 'rdv_manquant' }, 400)
 
-  const db = admin()
   const { data: r } = await db.from('rdv')
     .select('user_id, date, heure, nom, ville, contact_nom, contact_tel')
     .eq('id', c.rdv_id).maybeSingle()

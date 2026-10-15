@@ -1151,7 +1151,8 @@
       VU = null;
       root.innerHTML = top + '<div class="v2-wrap v2-u dsc-wrap"><div class="v2-rdv-cap"><h1>Discussion</h1>' +
         '<p>Le fil de l’équipe réunit les messages de tous les sujets et les remontées. Un sujet = une conversation : tout le monde peut en lancer un, et toute l’équipe le voit. ' +
-        'Les nouveaux messages arrivent toutes les 45 secondes.</p></div><div id="dsc"></div></div>';
+        'Les nouveaux messages arrivent toutes les 45 secondes.</p><div id="dsc-notif"></div></div><div id="dsc"></div></div>';
+      if (V2.rdvNotif && V2.rdvNotif.ligne) V2.rdvNotif.ligne(document.getElementById('dsc-notif'));
       demarrer();
       charger();
     }

@@ -61,7 +61,11 @@
       '.v2-nt-acts .v2-btn{min-height:44px}',
       '.v2-nt-aide{margin-top:12px;font-size:14px;color:var(--muted);line-height:1.55}',
       '.v2-nt-aide ol{margin:6px 0 0;padding-left:20px}.v2-nt-aide li{margin:3px 0}',
-      '.v2-nt-res{margin-top:10px;font-size:14px;line-height:1.5}'
+      '.v2-nt-res{margin-top:10px;font-size:14px;line-height:1.5}',
+      '.v2-nt-ligne{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:10px;font-size:14px;color:var(--muted);line-height:1.5}',
+      '.v2-nt-ligne .v2-btn{min-height:44px}',
+      '.v2-nt-ligne .v2-nt-res{margin-top:0}',
+      '.v2-nt-lien{min-height:44px;padding:0 4px;background:none;border:0;color:var(--ip-blue);font:inherit;font-weight:600;cursor:pointer}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -69,6 +73,13 @@
   function dire(html, couleur) {
     var e = document.getElementById('v2-nt-res');
     if (e) e.innerHTML = '<span style="color:' + (couleur || 'var(--muted)') + '">' + html + '</span>';
+  }
+
+  // Après activer/couper : l'écran Discussion ne se recharge pas (ses
+  // brouillons seraient perdus), on redessine seulement sa ligne.
+  function apres(retour) {
+    if (retour === 'discussion') V2.rdvNotif.ligne(document.getElementById('dsc-notif'));
+    else if (V2.go) V2.go('rdvdispo');
   }
 
   V2.rdvNotif = {
@@ -85,7 +96,7 @@
         .catch(function () { return { abonnes: 0 }; });
     },
 
-    activer: function () {
+    activer: function (retour) {
       if (!supporte()) { dire('Ce navigateur ne sait pas recevoir de notifications.', 'var(--rose,#E0556E)'); return; }
       var c = sb(), u = uid();
       if (!c || !u) { dire('Reconnectez-vous et réessayez.', 'var(--rose,#E0556E)'); return; }
@@ -127,7 +138,7 @@
           if (r && r.error) { dire('Enregistrement impossible.', 'var(--rose,#E0556E)'); return; }
           V2.toast('Ce téléphone sera prévenu.');
           dire('C’est activé. Envoyez-vous un essai pour en être sûr.', 'var(--mint,#1E9E6A)');
-          if (V2.go) V2.go('rdvdispo');
+          apres(retour);
         });
       }).catch(function () { dire('Activation impossible sur cet appareil.', 'var(--rose,#E0556E)'); });
     },
@@ -160,7 +171,7 @@
       }).catch(function () { dire('Envoi impossible.', 'var(--rose,#E0556E)'); });
     },
 
-    couper: function () {
+    couper: function (retour) {
       var c = sb(), u = uid();
       if (!c || !u) return;
       if (!window.confirm('Ne plus être prévenu sur cet appareil ?')) return;
@@ -172,8 +183,46 @@
         return fin.then(function () { return ab ? ab.unsubscribe() : null; });
       }).then(function () {
         V2.toast('Alertes coupées sur cet appareil.');
-        if (V2.go) V2.go('rdvdispo');
+        apres(retour);
       }).catch(function () { dire('Impossible pour l’instant.', 'var(--rose,#E0556E)'); });
+    },
+
+    // Écran Discussion : une ligne, pas un bloc. Même abonnement que les
+    // rendez-vous (un appareil abonné reçoit les deux), mais l'état montré est
+    // celui de CET appareil : c'est sur le téléphone qu'on veut l'activer.
+    ligne: function (el) {
+      if (!el) return;
+      css();
+      if (estIOS() && !estInstallee()) {
+        el.innerHTML = '<div class="v2-nt-ligne"><span class="v2-nt-pastille v2-nt-off"></span>' +
+          '<span>Pour être prévenu des messages sur iPhone : bouton Partager, « Sur l’écran d’accueil », ' +
+          'puis ouvrir JARVIS depuis la nouvelle icône.</span></div>';
+        return;
+      }
+      if (!supporte()) { el.innerHTML = ''; return; }
+      if (window.Notification && Notification.permission === 'denied') {
+        el.innerHTML = '<div class="v2-nt-ligne"><span class="v2-nt-pastille v2-nt-ko"></span>' +
+          '<span>Les notifications sont bloquées pour JARVIS sur cet appareil (réglages du navigateur).</span></div>';
+        return;
+      }
+      var c = sb(), u = uid();
+      // serviceWorker.ready n'aboutit jamais sans service worker : délai de garde.
+      var ici = new Promise(function (ok) {
+        var t = setTimeout(function () { ok(null); }, 2500);
+        navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); })
+          .then(function (ab) { clearTimeout(t); ok(ab); }, function () { clearTimeout(t); ok(null); });
+      });
+      var miens = (c && u) ? c.from('push_abo').select('endpoint').eq('user_id', u) : null;
+      Promise.all([ici, miens]).then(function (r) {
+        var ab = r[0], l = (r[1] && r[1].data) || [];
+        var actif = !!ab && l.some(function (x) { return x.endpoint === ab.endpoint; });
+        el.innerHTML = '<div class="v2-nt-ligne">' + (actif
+          ? '<span class="v2-nt-pastille v2-nt-on"></span><span>Cet appareil est prévenu des nouveaux messages.</span>' +
+            '<button type="button" class="v2-nt-lien" onclick="V2.rdvNotif.couper(\'discussion\')">Ne plus me prévenir</button>'
+          : '<button type="button" class="v2-btn v2-btn-primary" onclick="V2.rdvNotif.activer(\'discussion\')">' +
+            'Me prévenir des nouveaux messages</button>') +
+          '<span class="v2-nt-res" id="v2-nt-res"></span></div>';
+      }).catch(function () { el.innerHTML = ''; });
     },
 
     // `st` = ce que charger() a renvoyé.
