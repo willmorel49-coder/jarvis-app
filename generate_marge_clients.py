@@ -21,6 +21,14 @@ applique aux autres :
 Les niveaux 2 a 4 sont appris PAR REGIME (2026 / 2027) : un prix d'achat de 2026 n'est jamais applique
 a une vente de 2027 (reforme du 20/01/2027, arrete du 3 aout 2026).
 
+MOIS DE REMPLACEMENT (decision de Will, 15/10/2026)
+Quand le prix d'un produit change en cours de mois, la direction a vendu au nouveau prix des boites achetees a
+l'ancien : la marge du mois s'effondre sans rien dire du travail du commercial. Le reglage prive peut alors dire
+« pour ces produits, ce mois-la, compter la marge par boite d'un autre mois » (juin 2026 -> juillet 2026 pour
+trois produits). Marge par boite = celle que la cascade donne a l'autre mois, au meme prix brut, sinon au prix
+brut le plus proche (meme code produit d'abord, puis tous les codes du produit). La mention affichee sous la
+carte est fabriquee a partir de ce meme reglage : elle ne peut pas dire autre chose que le calcul.
+
 CE QUI NE VIT PAS DANS LE DEPOT
 Rien de prive ici : ni prix d'achat, ni taux appris, ni laboratoire, ni montant de la regle privee.
 Les parametres prives sont dans ~/.config/jarvis/marge-direction-prive.json (illisible = code 3, rien
@@ -91,6 +99,7 @@ DEBUT_2027 = (2027, 1, 20)    # jour d'entrée en vigueur : une ligne datée à 
 MOIS_2027 = 202702            # sans date de ligne : tout mois à partir de février 2027
 
 FAM = ['p', 'p1', 'p2', 'i', 'c', 'fr', 'nr']
+MOIS_FR = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
 SOURCES_ENV = ('SOURCES', 'RATTACHEES', 'AVOIRS_EN_POSITIF', 'MOIS_LUS')
 
 
@@ -138,6 +147,56 @@ def pf(B, froid, regime):
     if b <= BRUT_PLAFOND:
         return b / (1 + TAUX_GROSSISTE)
     return b - PLAFOND_PROPORTIONNEL
+
+
+def ym_de(t):
+    """'2026-06' -> 202606. Lève AttributeError si le texte n'a pas cette forme."""
+    a, m = re.fullmatch(r'(\d{4})-(0[1-9]|1[0-2])', str(t)).groups()
+    return int(a) * 100 + int(m)
+
+
+def mention(noms, ym, ym_par, motif=''):
+    """Texte affiché après « Juin : » (Pilotage) et « Juin 2026 : » (fiche officine), tiré du réglage."""
+    liste = noms[0] if len(noms) == 1 else ', '.join(noms[:-1]) + ' et ' + noms[-1]
+    mois = MOIS_FR[ym_par % 100 - 1] + ('' if ym_par // 100 == ym // 100 else ' %d' % (ym_par // 100))
+    t = '%s %s avec %s marge par boîte de %s' % (liste, 'compté' if len(noms) == 1 else 'comptés', 'sa' if len(noms) == 1 else 'leur', mois)
+    return t + (' (%s)' % motif if motif else '')
+
+
+def lire_remplacements(liste):
+    """Bloc `remplacements` du réglage privé -> {ym: {'par': ym, 'cips': {cip: produit}, 'noms': [...], 'texte': mention}}.
+    Lève une exception si le bloc est mal formé : mieux vaut ne rien écrire que compter un mois de travers."""
+    out = {}
+    for x in liste or []:
+        ym, par = ym_de(x['mois']), ym_de(x['par'])
+        noms = [str(n) for n in x['produits']]
+        cips = {}
+        for n in noms:
+            codes = [cip13(c) for c in x['produits'][n]]
+            assert codes and all(len(c) == 13 for c in codes), 'codes produit de %s' % n
+            for c in codes:
+                assert c not in cips, 'code %s dans deux produits' % c
+                cips[c] = n
+        assert noms and par != ym and ym not in out
+        out[ym] = {'par': par, 'cips': cips, 'noms': noms, 'texte': mention(noms, ym, par, str(x.get('motif') or ''))}
+    assert not set(out) & {r['par'] for r in out.values()}, 'un mois remplacé sert aussi de remplacement'
+    return out
+
+
+def par_boite(tables, cle, nom, B):
+    """Marge par boîte du mois de remplacement pour un groupe de lignes (code `cle`, produit `nom`, prix brut `B`).
+    tables = ({code: {brut: [marge, boîtes]}}, {produit: {brut: [marge, boîtes]}}). Ordre : même code au même brut,
+    même produit au même brut, même code au brut le plus proche, même produit au brut le plus proche.
+    Rend (marge par boîte, niveau), ou (None, None) si le produit n'a pas été vendu ce mois-là."""
+    a, b = tables[0].get(cle) or {}, tables[1].get(nom) or {}
+    for t, niveau in ((a, 'code'), (b, 'produit')):
+        if B in t:
+            return t[B][0] / t[B][1], niveau + ' même brut'
+    for t, niveau in ((a, 'code'), (b, 'produit')):
+        if t:
+            k = min(t, key=lambda x: (abs(x - B), x))
+            return t[k][0] / t[k][1], niveau + ' brut proche'
+    return None, None
 
 
 class Listes:
@@ -261,9 +320,9 @@ class Cascade:
         return ecran(g, L), 'ecran'
 
 
-def ajouter(lignes, cle, g, ym, cascade, L):
+def ajouter(lignes, cle, g, ym, cascade, L, marge=None):
     """Ajoute un groupe de lignes à l'agrégat `lignes[(prénom, officine, ym)]` = 7 familles + ca + caGen.
-    Rend la provenance de la marge (pour la mesure)."""
+    `marge` imposée = mois de remplacement. Rend la provenance de la marge (pour la mesure)."""
     off, reg, cle_p, B, N, rb, froid, gen, su, pos, a_mt, q, net, qN, mt = g
     cip = '' if cle_p.startswith('#') else cle_p
     x = lignes.get(cle)
@@ -274,7 +333,7 @@ def ajouter(lignes, cle, g, ym, cascade, L):
     if f is None:
         x[8] += net
         return 'gen', 0.0
-    m, src = cascade.marge(g, ym)
+    m, src = cascade.marge(g, ym) if marge is None else (marge, 'mois de remplacement')
     x[f] += m
     return src, m
 
@@ -333,8 +392,11 @@ def lire_prive():
         petit = float(r['petit_par_boite'])
         petit27 = float(r.get('petit_par_boite_2027', petit))
         res = {str(k): str(v) for k, v in (r.get('reserves') or {}).items()}
+        rempl = lire_remplacements(r.get('remplacements'))
+        for ym, x in rempl.items():      # la mention d'un mois remplacé vient du remplacement lui-même
+            res['%d-%02d' % (ym // 100, ym % 100)] = x['texte']
         assert labos and petit >= 0 and petit27 >= 0
-        return {'labos': labos, 'petit': petit, 'petit_2027': petit27, 'reserves': res}
+        return {'labos': labos, 'petit': petit, 'petit_2027': petit27, 'reserves': res, 'remplacements': rempl}
     except Exception:
         return None
 
@@ -590,11 +652,45 @@ def main():
           % (nb_lignes, cascade.lignes_connues, len(cascade.OM), len(cascade.OB), len(cascade.OC), time.time() - t0), flush=True)
     lignes = {}
     prov = defaultdict(float)
+    rempl = prive['remplacements']
+    suivis = defaultdict(dict)                      # mois de remplacement -> {code: produit}
+    for x in rempl.values():
+        suivis[x['par']].update(x['cips'])
+    tables = {ym: ({}, {}) for ym in suivis}        # mois de remplacement -> marge et boîtes par code / produit, par brut
+    differes = []
     for fc, (comm, ym) in zip(chemins, meta):
+        r = rempl.get(ym)
         for g in charger_groupes(fc):
+            if r and g[2] in r['cips']:
+                differes.append((comm, ym, g))      # estimé après la lecture du mois de remplacement
+                continue
             src, m = ajouter(lignes, (comm, g[0], ym), g, ym, cascade, L)
             if src != 'gen':
                 prov[src] += m
+                nom = suivis[ym].get(g[2]) if ym in suivis else None
+                if nom and g[11] > 0:
+                    for t, k in ((tables[ym][0], g[2]), (tables[ym][1], nom)):
+                        x = t.setdefault(k, {}).setdefault(g[3], [0.0, 0.0])
+                        x[0] += m
+                        x[1] += g[11]
+    bilan = defaultdict(lambda: [0.0, 0.0, 0.0, defaultdict(float)])   # (mois, produit) -> boîtes, marge sans, marge avec, boîtes par niveau
+    for comm, ym, g in differes:
+        r = rempl[ym]
+        nom = r['cips'][g[2]]
+        pb, niveau = par_boite(tables[r['par']], g[2], nom, g[3])
+        sans = cascade.marge(g, ym)[0]
+        src, m = ajouter(lignes, (comm, g[0], ym), g, ym, cascade, L, None if pb is None else g[11] * pb)
+        if src != 'gen':
+            prov[src] += m
+        b = bilan[(ym, nom)]
+        b[0] += g[11]
+        b[1] += sans
+        b[2] += m
+        b[3][niveau or 'non vendu : cascade ordinaire'] += g[11]
+    for (ym, nom), b in sorted(bilan.items()):
+        print('Remplacement %d-%02d par %d-%02d · %s : %.0f boîtes · marge %.0f € -> %.0f € (%s)'
+              % (ym // 100, ym % 100, rempl[ym]['par'] // 100, rempl[ym]['par'] % 100, nom, b[0], b[1], b[2],
+                 ' · '.join('%s %.0f' % kv for kv in sorted(b[3].items()))))
     prenoms = sorted({k[0] for k in lignes})
     officines = sorted({k[1] for k in lignes})
     c_idx = {p: i for i, p in enumerate(prenoms)}

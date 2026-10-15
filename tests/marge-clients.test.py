@@ -278,6 +278,36 @@ try:
 finally:
     dc.BASE = base0
 
+# ── mois de remplacement (décision du 15/10/2026 : juin compté avec la marge par boîte de juillet) ──
+A13, B13, C13 = '3400000000011', '3400000000028', '3400000000035'
+R = gm.lire_remplacements([{'mois': '2026-06', 'par': '2026-07', 'motif': 'prix changé en cours de mois',
+                            'produits': {'Produit A': [A13, B13], 'Produit C': [C13]}}])
+check("remplacement lu : juin -> juillet, trois codes, deux produits",
+      list(R) == [202606] and R[202606]['par'] == 202607 and R[202606]['cips'] == {A13: 'Produit A', B13: 'Produit A', C13: 'Produit C'})
+check("mention tirée du réglage : produits, mois de remplacement, motif",
+      R[202606]['texte'] == 'Produit A et Produit C comptés avec leur marge par boîte de juillet (prix changé en cours de mois)', R[202606]['texte'])
+check("mention : un seul produit au singulier ; autre année = année écrite",
+      gm.mention(['Produit A'], 202612, 202701) == 'Produit A compté avec sa marge par boîte de janvier 2027')
+for nom, mauvais in (("mois mal écrit", {'mois': '2026-6', 'par': '2026-07', 'produits': {'A': [A13]}}),
+                     ("code produit trop court", {'mois': '2026-06', 'par': '2026-07', 'produits': {'A': ['3400']}}),
+                     ("produit sans code", {'mois': '2026-06', 'par': '2026-07', 'produits': {'A': []}}),
+                     ("mois remplacé par lui-même", {'mois': '2026-06', 'par': '2026-06', 'produits': {'A': [A13]}})):
+    try:
+        gm.lire_remplacements([mauvais])
+        check("réglage refusé : " + nom, False)
+    except Exception:
+        check("réglage refusé : " + nom, True)
+check("aucun remplacement dans le réglage : rien", gm.lire_remplacements(None) == {})
+T = ({A13: {100.0: [50.0, 10.0], 120.0: [36.0, 3.0]}}, {'Produit A': {100.0: [60.0, 12.0], 90.0: [8.0, 2.0]}})
+check("par boîte : même code au même brut d'abord (50 / 10)", gm.par_boite(T, A13, 'Produit A', 100.0) == (5.0, 'code même brut'))
+check("par boîte : code absent ce mois-là -> même produit au même brut (60 / 12)", gm.par_boite(T, B13, 'Produit A', 100.0) == (5.0, 'produit même brut'))
+check("par boîte : le même brut sur un autre code passe avant le brut proche du même code (8 / 2)", gm.par_boite(T, A13, 'Produit A', 90.0) == (4.0, 'produit même brut'))
+check("par boîte : brut inconnu -> brut le plus proche du même code (36 / 3)", gm.par_boite(T, A13, 'Produit A', 118.0) == (12.0, 'code brut proche'))
+check("par boîte : produit non vendu ce mois-là -> rien (cascade ordinaire)", gm.par_boite(T, C13, 'Produit C', 100.0) == (None, None))
+lg, c = {}, cascade()
+src, m = gm.ajouter(lg, ('Alice', 'o1', 202606), G(A13, B=100.0, N=90.0, q=3), 202606, c, c.L, marge=15.0)
+check("marge imposée : comptée telle quelle, dans la famille du prix net de juin", src == 'mois de remplacement' and m == 15.0 and lg[('Alice', 'o1', 202606)][3] == 15.0)
+
 print()
 if ECHECS:
     print("ÉCHECS (%d) : %s" % (len(ECHECS), ", ".join(ECHECS)))
