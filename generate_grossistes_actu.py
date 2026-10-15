@@ -13,6 +13,7 @@ import re
 import sys
 import html
 import urllib.parse
+import time
 import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
@@ -135,6 +136,116 @@ def tag_par_nom(row):
     return ''
 # Sources connues PAYANTES (mur d'abonnement) — on tague pour prévenir l'utilisateur.
 PAYWALL = re.compile(r'moniteur des pharmacies|quotidien du pharmacien|apmnews|les echos|le figaro|mediapart|whatsupdoc|pharmaceutiques\b|l\'?usine|challenges', re.I)
+
+
+# ── 15/10/2026 — ÉLARGISSEMENT : une requête par fiche de grossiste qui a de la presse ──────
+# Will (14/10) : « je veux vraiment qu'on ait des actus, pas besoin de remonter dans le temps
+# aussi loin ». 85 fiches sur 132 n'avaient aucune actualité. Le tag de ces articles = l'`id` de
+# la fiche (ou le tag déjà lu par la fiche : sagitta, cerp, cerp-ba, drapier, aredis…).
+# On n'interroge PAS les fiches sans presse en ligne (52 homonymes purs) et jamais SR Pharma,
+# Nord Répartition, Pharmest ni les ip-* (ce sont nous).
+#
+# FILTRE ANTI-HOMONYMES, le même pour tous (un article n'est rattaché que s'il passe les 3 portes) :
+#   1. porte « métier » : le titre contient pharmac*, répartit*, grossiste, officine, médicament
+#      ou ANSM — hors du nom lui-même (« Comptoir Pharmaceutique… » ne se valide pas tout seul) ;
+#   2. porte « nom » : le titre porte le nom de l'acteur (regex 'nom'), ou une formule de repli 'alt'
+#      (ex. « deux grossistes-répartiteurs » pour l'amende ANSM de Medi-Live et d'Aredis, dont le
+#      titre ne cite aucun des deux) ;
+#   3. porte « lieu » : pour un nom courant (Delta, Epsilon, Straight, Atlantique, Alvernia…),
+#      le titre porte aussi sa ville, sa région ou un mot de son groupe ('ctx').
+# Sans résumé exploitable dans le flux Google (il ne répète que le titre), tout se juge sur le titre.
+DATE_MINI = '2025-10-01'
+# Homonymes déjà constatés : le CERP belge (Frasnes-lez-Buissenal, 28/10/2025) n'est pas le CERP français.
+EXCLUS = re.compile(r'Belgique|Wallonie|Hainaut|Frasnes|Buissenal|Tournai|Li[eè]ge|Namur', re.I)
+METIER = re.compile(r'pharmac|r[eé]partit|grossiste|officine|m[eé]dicament|\bANSM\b', re.I)
+
+ACTEURS = [
+    # 'brand': True = le nom est lui-même une marque du monde pharmaceutique (CERP, Giphar, Welcoop,
+    # Laborex…) : il tient lieu de mot du métier (porte 1), sans quoi « CERP Réunion sanctionnée
+    # d'une amende » serait écarté. Jamais pour un nom courant.
+    # ── grands ──
+    {'tag': 'cerp-ba', 'qs': ['CERP Bretagne Atlantique', 'CERP Bretagne', 'Atlantique Répartition'],
+     'nom': r'CERP Bretagne|Pharmar|Ploufragan|Bretagne Atlantique', 'brand': True},
+    {'tag': 'cerp', 'qs': ['CERP Rouen', 'Astera CERP', 'Astera pharmacie répartition'],
+     'nom': r'\bAstera\b|\bCERP\b', 'brand': True, 'ctx': r'pharmac|r[eé]partit|grossiste|Rouen|Normandie|Rhin|Bronchain|CERP|Astera'},
+    {'tag': 'sipr', 'qs': ['SIPR Réunion', 'CERP Réunion'],
+     'nom': r'\bSIPR\b|CERP R[eé]union|CERP Oc[eé]an', 'brand': True},
+    {'tag': 'epsilon', 'qs': ['Epsilon pharmacie', 'Gink\'GO', 'Apo\'Coop'],
+     'nom': r'\bEpsilon\b', 'ctx': r"Gink'?\s?GO|Apo'?\s?Coop|Bourgogne|Franche|Dijon|Besan[cç]on|Chalon|Mâcon|r[eé]partiteur|grossiste"},
+    {'tag': 'ginkgo', 'qs': ['Gink\'GO pharmacie', 'Gink\'GO alliance d\'achat'], 'nom': r"Gink'?\s?GO"},
+    {'tag': 'apocoop', 'qs': ['Apo\'Coop pharmacie'], 'nom': r"Apo'?\s?Coop"},
+    {'tag': 'd2p', 'qs': ['D2P Pharma', 'D2P grossiste'], 'nom': r'\bD2P\b', 'ctx': r'pharma|r[eé]partit|grossiste'},
+    {'tag': 'drapier', 'qs': ['Medisca grossiste', 'Alvernia pharmacie'],
+     'nom': r'\bMedisca\b|\bAlvernia\b', 'ctx': r'Couchey|Dijon|Bourgogne|C[ôo]te-d.Or|Auvergne|Cournon|Clermont|Drapier|r[eé]partit|grossiste'},
+    {'tag': 'aredis', 'qs': ['Aredis ANSM', 'Distrinep'], 'nom': r'\bAredis\b|Distrinep',
+     'alt': r'(sanctionne|inflige|amende).{0,40}deux grossistes'},
+    {'tag': 'cophana', 'qs': ['Cophana'], 'nom': r'\bCophana\b', 'brand': True},
+    {'tag': 'welcoop', 'qs': ['Welcoop', 'Welcoop coopérative pharmacie'], 'nom': r'\bWelcoop\b', 'brand': True},
+    {'tag': 'giphar', 'qs': ['Giphar', 'Giphar officine'], 'nom': r'\bGiphar\b', 'brand': True},
+    {'tag': 'sagitta', 'qs': ['Sagitta Pharma', 'Groupe Sterne pharmacie', 'Sirona Group Sagitta'],
+     'nom': r'\bSagitta\b|Access Direct', 'brand': True},
+    {'tag': 'alliance', 'qs': ['Alliance Healthcare logistique', 'Alliance Healthcare France'], 'nom': r'Alliance Healthcare', 'brand': True},
+    {'tag': 'ocp', 'qs': ['Phoenix Pharma France', 'OCP répartiteur'], 'nom': r'Phoenix (OCP|Pharma)|\bOCP\b',
+     'ctx': r'pharmac|r[eé]partit|grossiste|France|OCP'},
+    # ── indépendants qui ont de la presse (DOSSIER-WEB du 14/10) ──
+    {'tag': 'medi-live', 'qs': ['Medi-Live', 'Medi-Live ANSM grossiste'], 'nom': r'Medi[- ]Live',
+     'alt': r'(sanctionne|inflige|amende).{0,40}deux grossistes'},
+    {'tag': 'sirona-pharma', 'qs': ['Sirona-Pharma redressement judiciaire', 'Sirona-Pharma Segré'],
+     'nom': r'Sirona[- ]Pharma'},
+    {'tag': 'atlantique-repartition', 'qs': ['Atlantique Répartition', 'Atlantique Répartition Sterne'],
+     'nom': r'Atlantique R[eé]partition', 'ctx': r'pharmac|Bretagne|Ploufragan|CERP|Sterne|Finist|Morbihan|Loire|Saint-Brieuc'},
+    {'tag': 'pharmar', 'qs': ['Pharmar Ploufragan', 'Pharmar répartiteur'], 'nom': r'\bPharmar\b',
+     'ctx': r'Ploufragan|Bretagne|CERP|Odillard|Hurault|r[eé]partit|grossiste'},
+    {'tag': 'active-repartition', 'qs': ['Active Répartition pharmacie', 'Active Répartition grossiste'],
+     'nom': r'Active R[eé]partition', 'ctx': r'pharmac|grossiste|FIDA|Delannoy|Lamarche|r[eé]partiteur'},
+    {'tag': 'lispharma', 'qs': ['LIS Pharma', 'Francilienne Pharmaceutique'],
+     'nom': r'LIS Pharma|Francilienne Pharmaceutique|Therelys', 'ctx': r'r[eé]partit|grossiste|Neuilly|pharmac|Francilienne|Therelys'},
+    {'tag': 'straight', 'qs': ['Straight ZLZ grossiste', 'Straight Zemmar'], 'nom': r'\bStraight\b',
+     'ctx': r'ZLZ|Zemmar|grossiste|r[eé]partiteur'},
+    {'tag': 'ubipharm', 'qs': ['UbiPharm', 'UbiPharm Afrique pharmacie'], 'nom': r'Ubi\s?Pharm', 'brand': True},
+    {'tag': 'sun-medical', 'qs': ['Sun Médical Luisant', 'Sun Medical pharmacie Chartres'],
+     'nom': r'Sun M[eé]dical', 'ctx': r'Luisant|Chartres|Eure-et-Loir|pharmac|r[eé]partit'},
+    {'tag': 'ambapharm', 'qs': ['Ambapharm'], 'nom': r'Ambapharm', 'brand': True},
+    {'tag': 'mhgc', 'qs': ['MHGC Group', 'MHGC Puzo'], 'nom': r'\bMHGC\b|Puzo', 'ctx': r'Puzo|FFDP|grossiste|r[eé]partit|pharmac'},
+    {'tag': 'aravis-repartition', 'qs': ['Aravis Répartition pharmacie'], 'nom': r'Aravis R[eé]partition'},
+    {'tag': 'kalliste-pharma', 'qs': ['Kalliste Pharma'], 'nom': r'Kalliste', 'brand': True},
+    {'tag': 'corsicapharm', 'qs': ['Corsicapharm'], 'nom': r'Corsicapharm', 'brand': True},
+    {'tag': 'cophac', 'qs': ['Cophac Corse', 'Cophac pharmacie'], 'nom': r'\bCophac\b', 'brand': True},
+    {'tag': 'pharmafit-provence', 'qs': ['Pharmafit Provence'], 'nom': r'Pharmafit', 'brand': True},
+    {'tag': 'pharma-distribution', 'qs': ['Pharma Distribution Corse', 'Pharma Distribution Cipolli'], 'nom': r'Pharma Distribution',
+     'ctx': r'Cipolli|r[eé]partit|grossiste|Corse|pharmac'},
+    {'tag': 'unipharma-nc', 'qs': ['Unipharma Nouvelle-Calédonie', 'Unipharma Leroux'], 'nom': r'Unipharma',
+     'ctx': r'Cal[eé]donie|Noum[eé]a|Leroux|r[eé]partit|grossiste'},
+    {'tag': 'laborex', 'qs': ['Laborex', 'Laborex CFAO Healthcare'], 'nom': r'Laborex', 'brand': True},
+    {'tag': 'alfa-pharma', 'qs': ['Alfa Pharma répartiteur'], 'nom': r'Alfa Pharma', 'ctx': r'r[eé]partit|grossiste|pharmac'},
+    {'tag': 'clicpharma', 'qs': ['Clic Pharma grossiste'], 'nom': r'Clic Pharma', 'ctx': r'grossiste|r[eé]partit|pharmac'},
+    {'tag': 'r3s', 'qs': ['Pharmasmile', 'R3S Pharmasmile'], 'nom': r'Pharmasmile|\bR3S\b', 'ctx': r'Pharmasmile|pharmac|r[eé]partit'},
+]
+for _a in ACTEURS:
+    _a['nom_rx'] = re.compile(_a['nom'], re.I)
+    _a['alt_rx'] = re.compile(_a['alt'], re.I) if _a.get('alt') else None
+    _a['ctx_rx'] = re.compile(_a['ctx'], re.I) if _a.get('ctx') else None
+PAUSE = 1.0   # secondes entre deux requêtes Google News du lot élargi (politesse, évite le blocage)
+
+
+def passe_filtre(row, acteur):
+    """Les trois portes anti-homonymes. Le titre seul fait foi (le résumé Google répète le titre)."""
+    txt = row['titre'] + ' ' + row.get('resume', '')
+    m = acteur['nom_rx'].search(txt)
+    if not m and not (acteur.get('alt_rx') is not None and acteur['alt_rx'].search(txt)):
+        return False
+    if EXCLUS.search(txt):
+        return False
+    reste = acteur['nom_rx'].sub(' ', txt)          # le nom lui-même ne compte pas comme mot du métier
+    if not METIER.search(reste) and not (acteur.get('brand') and m):
+        return False
+    if acteur['ctx_rx'] is not None and not acteur['ctx_rx'].search(txt):
+        return False
+    return True
+
+
+def trop_vieux(row):
+    return bool(row.get('date')) and row['date'][:10] < DATE_MINI
 
 
 def fetch(url):
@@ -277,6 +388,9 @@ def parse_bodacc(suivi):
 
 
 def main():
+    sortie = OUT
+    if '--sortie' in sys.argv:                 # essai hors dépôt : python3 generate_grossistes_actu.py --sortie /chemin.json
+        sortie = os.path.abspath(sys.argv[sys.argv.index('--sortie') + 1])
     seen, items = {}, []
     for feed in FEEDS:                 # flux directs gratuits d'abord (accès libre prioritaire)
         for row in parse_direct(feed):
@@ -299,18 +413,39 @@ def main():
     for row in items:
         if not row.get('tag'):
             row['tag'] = tag_par_nom(row)
+    # 15/10/2026 — lot élargi : une fiche = ses requêtes, filtrées par les trois portes anti-homonymes.
+    for a in ACTEURS:
+        for qtxt in a['qs']:
+            time.sleep(PAUSE)
+            for row in parse_feed({'tag': a['tag'], 'q': qtxt}):
+                if not passe_filtre(row, a) or trop_vieux(row):
+                    continue
+                k = row['url']
+                if k in seen:
+                    if not seen[k].get('tag'):
+                        seen[k]['tag'] = a['tag']
+                    continue
+                seen[k] = row
+                items.append(row)
+    # Plus rien d'avant le 01/10/2025 (les articles sans date restent : le contrôle ne condamne pas).
+    items = [r for r in items if not trop_vieux(r)]
+    items = [r for r in items if not (r.get('tag') in ('cerp', 'cerp-ba') and EXCLUS.search(r['titre']))]
+    # « Cerp Bretagne Atlantique » ramassé par une requête « cerp » portait le tag du CERP de Rouen.
+    for r in items:
+        if r.get('tag') == 'cerp' and re.search(r'Bretagne|Ploufragan|Brieuc|C[ôo]tes-d.Armor|Pharmar', r['titre'], re.I):
+            r['tag'] = 'cerp-ba'
     # tri par date décroissante (sans date -> en bas)
     items.sort(key=lambda x: x.get('date') or '', reverse=True)
-    items = items[:120]
+    items = items[:300]                # était 120 : les fiches élargies en ajoutent ~100 de plus
     data = {
         'maj': datetime.now(timezone.utc).isoformat(),
         'n': len(items),
         'items': items,
         'note': 'Actualités agrégées via Google News RSS (secteur répartition pharmaceutique + grossistes). Gratuit, sans clé.',
     }
-    with open(OUT, 'w', encoding='utf-8') as f:
+    with open(sortie, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, separators=(',', ':'))
-    print('OK %d actualités grossistes -> %s' % (len(items), OUT))
+    print('OK %d actualités grossistes -> %s' % (len(items), sortie))
 
 
 if __name__ == '__main__':
