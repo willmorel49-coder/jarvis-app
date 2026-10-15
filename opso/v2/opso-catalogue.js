@@ -41,6 +41,7 @@
   // ── Données ──
   var SRC_RESEAU = '../../crm/v2/prod-reseau-data.js?v=20261015xm';
   var SRC_NONGEN = 'opso-nongen-data.js?v=20261001a';
+  var SRC_CHOIX = 'opso-catalogue-choix-data.js?v=20261015a';   // CIP à retirer / à ajouter (retour du 15/10)
   function chargerScript(src, temoin) {
     if (window[temoin] || document.querySelector('script[src^="' + src.split('?')[0] + '"]')) return Promise.resolve();
     return new Promise(function (ok) { var s = document.createElement('script'); s.src = src; s.onload = s.onerror = function () { ok(); }; document.head.appendChild(s); });
@@ -66,9 +67,12 @@
   var _cache = null;
   function construire() {
     var R = window.PROD_RESEAU, PS = window.PROD_STATS, B = window.BENCHMARK;
-    if (!R || !PS || !B) return null;
+    if (!R || !PS || !B || !window.OPSO_CATALOGUE_CHOIX) return null;   // sans la liste, un produit retiré reviendrait
     var nonGen = {}; (window.OPSO_NONGEN || []).forEach(function (c) { nonGen[normCip(c)] = 1; });
-    var cle = [R.empreinte, PS.length, B.length, (V2.sales || []).length, (window.OPSO_NONGEN || []).length].join('|');
+    var CH = window.OPSO_CATALOGUE_CHOIX || {}, retirer = {}, ajouter = {};
+    (CH.retirer || []).forEach(function (c) { retirer[normCip(c)] = 1; });
+    (CH.ajouter || []).forEach(function (c) { ajouter[normCip(c)] = 1; });
+    var cle = [R.empreinte, PS.length, B.length, (V2.sales || []).length, (window.OPSO_NONGEN || []).length, (CH.retirer || []).join(), (CH.ajouter || []).join()].join('|');
     if (_cache && _cache.cle === cle) return _cache;
     var ps = {}; PS.forEach(function (r) { var c = normCip(r.c); if (c && !ps[c]) ps[c] = r; });
     var bench = {}; B.forEach(function (r) { var c = normCip(r && r.cip13); if (c && !bench[c]) bench[c] = r; });
@@ -77,15 +81,22 @@
       if (!(s.qte > 0) || (V2.estReste && V2.estReste(s.pharmacyId))) return;
       var c = normCip(s.artCode); (opso[c] || (opso[c] = {}))[s.pharmacyId] = 1;
     });
-    var rayons = RAYONS.map(function (r) { return { r: r, items: [], sansPrix: 0 }; });
+    var rayons = RAYONS.map(function (r) { return { r: r, items: [], sansPrix: 0, vus: 0 }; });
     Object.keys(R.n).forEach(function (cip) {
       var c = normCip(cip), p = ps[c]; if (!p) return;
       var f = p.f === 'gen' && nonGen[c] ? 'pr' : p.f;
       var ray = rayons.filter(function (x) { return x.r.f[f]; })[0]; if (!ray) return;
-      if (ray.items.length >= ray.r.pages * PAR_PAGE) return;       // R.n est déjà trié par nombre décroissant
+      // R.n est déjà trié par nombre décroissant : les premiers du rayon, plus les produits ajoutés à leur rang.
+      // Un produit retiré garde sa place dans le décompte (le suivant ne la reprend pas).
+      var dedans = ray.vus < ray.r.pages * PAR_PAGE;
+      if (!dedans && !ajouter[c]) return;
       var bp = V2.bestPrice(bench[c]);
       if (bp.ip && !(bp.ht > bp.ip) && p.ppht > bp.ip && !p.stale) bp.ht = p.ppht;   // PPHT absent du benchmark : celui du catalogue
-      if (!bp.ip) { ray.sansPrix++; return; }                       // jamais une ligne sans prix net
+      // Produit ajouté absent du benchmark : remboursable à PPHT connu → PPHT − barème, comme horsBenchmark (v2-pharma).
+      if (!bp.ip && ajouter[c] && ray.r.k === 'remb' && p.ppht > 0 && !p.stale && V2.abandonBareme) { bp.ht = p.ppht; bp.ip = Math.round((p.ppht - V2.abandonBareme(p.ppht)) * 100) / 100; }
+      if (!bp.ip) { if (dedans) ray.sansPrix++; return; }           // jamais une ligne sans prix net
+      ray.vus++;
+      if (retirer[c]) return;
       ray.items.push({
         cip: cip, nom: p.d || (bench[c] && bench[c].designation) || cip, n: R.n[cip],
         opso: opso[c] ? Object.keys(opso[c]).length : 0,
@@ -248,7 +259,7 @@
     var d = construire();
     if (!d) {
       root.innerHTML = page('<div class="v2-empty" style="padding:40px;text-align:center;color:var(--muted)">Chargement du catalogue…</div>');
-      Promise.all([chargerScript(SRC_RESEAU, 'PROD_RESEAU'), chargerScript(SRC_NONGEN, 'OPSO_NONGEN'), V2.loadFiles ? V2.loadFiles(['bench']) : 0]).then(function () {
+      Promise.all([chargerScript(SRC_RESEAU, 'PROD_RESEAU'), chargerScript(SRC_NONGEN, 'OPSO_NONGEN'), chargerScript(SRC_CHOIX, 'OPSO_CATALOGUE_CHOIX'), V2.loadFiles ? V2.loadFiles(['bench']) : 0]).then(function () {
         if (V2.route && V2.route.name === 'marketing' && construire()) render(root);
         else if (V2.route && V2.route.name === 'marketing') root.innerHTML = page('<div class="v2-empty" style="padding:40px;text-align:center;color:var(--muted)">Le catalogue n’a pas pu se charger. Rechargez la page.</div>');
       });
