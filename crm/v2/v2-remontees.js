@@ -255,6 +255,8 @@
   V2.pages.remontees = {
     needs: [],   // audité 11/09/2026 : aucune lecture du catalogue
     render: function (root) {
+      // 15/10/2026 (Will) : les remontées vivent dans Le QG, ouvert sur l'onglet « Remontées ». Sans Le QG (OPSO), l'ancienne page.
+      if (V2.pages.discussion && !(V2.user && V2.user.opsoOnly)) return V2.pages.discussion.render(root, { filtre: 'remontees' });
       ensureCss();
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) : '';
       root.innerHTML = top +

@@ -832,9 +832,9 @@
     biosimilaires: { fam: 'produits', ico: 'biosim', nom: 'Biosimilaires', ph: 'Les biosimilaires et leurs références', page: 'biosimilaires' },
     offilog: { fam: 'produits', ico: 'offilog', nom: 'Offilog', ph: 'La centrale parapharmacie', page: 'offilog' },
     concurrents: { fam: 'piloter', ico: 'concurrents', nom: 'Concurrents', ph: 'Ce que font les autres', page: 'concurrents' },
-    remontees: { fam: 'communiquer', ico: 'remontees', nom: 'Remontées', ph: 'Le mur d\'idées de l\'équipe', page: 'remontees' },
+    remontees: { fam: 'communiquer', ico: 'remontees', nom: 'Le QG', ph: 'Messages, sujets et remontées de l\'équipe', page: 'remontees' },
     // 14/10/2026 — fil de discussion de l'équipe (idée d'une commerciale). L'écran n'est chargé que hors espace OPSO : sans lui, pas de porte.
-    discussion: { fam: 'communiquer', ico: 'discussion', nom: 'Discussion', ph: 'Le fil de discussion de l\'équipe', page: 'discussion' },
+    discussion: { fam: 'communiquer', ico: 'discussion', nom: 'Le QG', ph: 'Messages, sujets et remontées de l\'équipe', page: 'discussion' },
     marchefr: { fam: 'piloter', ico: 'marche', nom: 'Le marché', ph: 'Le marché français d\'une référence, région par région', page: 'marchefr' },
     carteGrp: { fam: 'piloter', ico: 'carte-grp', nom: 'Carte des groupements', ph: 'Où sont les adhérents de chaque groupement', page: 'carteGrp' },
     lgo: { fam: 'communiquer', ico: 'lgo', nom: 'Logiciels officine', ph: 'Importer le catalogue dans chaque logiciel', page: 'lgo' },
@@ -903,9 +903,9 @@
   // 01/10/2026 — « À la une » : UNE nouveauté annoncée au-dessus de « Vos outils », hors
   // classement (décision de Will). Temporaire : après `fin`, le bandeau disparaît tout seul
   // et l'outil ne garde que son rang dans la liste. Jamais en Escale ni en OPSO.
-  var G4_UNE = { page: 'lgo', ico: 'lgo', fin: '2026-10-31',
-    nom: 'Le catalogue, au format de chaque logiciel',
-    ph: 'Winpharma, LGPI, Smart RX, LEO, Pharmaland… le fichier s\'importe tel quel, mode d\'emploi joint.' };
+  var G4_UNE = { page: 'discussion', ico: 'discussion', fin: '2026-11-15',   // 15/10/2026 (Will) : Le QG à la une, à la place du catalogue LGO
+    nom: 'Le QG : la discussion et les remontées réunies',
+    ph: 'Écrivez à toute l\'équipe, partagez photos et documents, proposez une idée et suivez les remontées, au même endroit.' };
 
   // ── Accueil u2 : les pictos (une seule famille, trait 1,75, tirés de la maquette validée) ──
   var U2_IC = {
@@ -1171,6 +1171,7 @@
       var d = G4_PORTES[k];
       if (!d) return false;
       if (k === 'lgo' && escale) return false;       // pas de « Logiciels officine » en Escale
+      if (k === 'remontees' && V2.pages.discussion) return false;   // 15/10/2026 (Will) : les remontées vivent dans Le QG
       return k === 'academy' || !!V2.pages[d.page];  // un outil dont l'écran n'est pas chargé n'apparaît pas
     }));
   }
@@ -1829,7 +1830,7 @@
       }
       // Remontées équipe (mur d'idées interne) — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.remontees) {
-        P.push({ k: 'remontees', cls: 'p6', accent: '#7C3AED', ico: 'spark', tag: 'Équipe', t: 'Remontées', d: 'Le mur d\'idées de l\'équipe : proposez une amélioration de l\'appli, votez pour celles des autres, suivez leur avancement.', go: 'Voir les remontées' });
+        P.push({ k: V2.pages.discussion ? 'discussion' : 'remontees', cls: 'p6', accent: '#7C3AED', ico: 'spark', tag: 'Équipe', t: V2.pages.discussion ? 'Le QG' : 'Remontées', d: V2.pages.discussion ? 'Le QG de l\'équipe : écrivez à tous, partagez photos et documents, proposez une idée et suivez les remontées, au même endroit.' : 'Le mur d\'idées de l\'équipe : proposez une amélioration de l\'appli, votez pour celles des autres, suivez leur avancement.', go: V2.pages.discussion ? 'Ouvrir Le QG' : 'Voir les remontées' });
       }
       // Prise de RDV par mailing — app JARVIS
       if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.rdv) {

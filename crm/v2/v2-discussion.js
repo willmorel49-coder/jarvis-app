@@ -718,9 +718,9 @@
   function peindre() {
     var box = document.getElementById('dsc'); if (!box) return;
     if (S.etat === 'chargement') { box.innerHTML = '<p class="dsc-vide">Chargement de la discussion…</p>'; return; }
-    if (S.etat === 'absent') { box.innerHTML = etatHtml('La discussion arrive bientôt', 'Cet espace d’échange est en cours d’installation. Revenez dans quelques jours.'); return; }
-    if (S.etat === 'horsligne') { box.innerHTML = etatHtml('Discussion indisponible', 'Il faut être connecté pour lire et écrire à l’équipe.'); return; }
-    if (S.etat === 'erreur') { box.innerHTML = etatHtml('Discussion momentanément indisponible', 'Le chargement a échoué. Rien n’est perdu.', true); return; }
+    if (S.etat === 'absent') { box.innerHTML = etatHtml('Le QG arrive bientôt', 'Cet espace d’échange est en cours d’installation. Revenez dans quelques jours.'); return; }
+    if (S.etat === 'horsligne') { box.innerHTML = etatHtml('Le QG est indisponible', 'Il faut être connecté pour lire et écrire à l’équipe.'); return; }
+    if (S.etat === 'erreur') { box.innerHTML = etatHtml('Le QG est momentanément indisponible', 'Le chargement a échoué. Rien n’est perdu.', true); return; }
     box.innerHTML = '<div class="dsc-deux dsc-' + (S.mob === 'fil' ? 'surfil' : 'surliste') + '"><nav class="dsc-canaux" id="dsc-liste" aria-label="Sujets">' + listeHtml() + '</nav><div class="dsc-droite" id="dsc-droite">' + droiteHtml() + '</div></div>';
     var ta = box.querySelector('textarea[data-k="nouveau"]'), cle = S.sujet || 'fil';
     if (ta && S.bro[cle]) ta.value = S.bro[cle];
@@ -1161,15 +1161,15 @@
 
   V2.pages.discussion = {
     needs: [],
-    render: function (root) {
+    render: function (root, o) {   // o.filtre : ouvrir sur un onglet (la page Remontées ouvre Le QG sur « Remontées »)
       if (V2.user && V2.user.opsoOnly) { root.innerHTML = '<div class="v2-wrap v2-u"><p>Cet espace n’est pas ouvert à ce compte.</p></div>'; return; }
       ensureCss();
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) : '';
       S.sujet = null; S.nouveau = false; S.mob = 'liste'; S.msgs = {}; S.pleins = {}; S.rx = {}; S.nonLus = {}; S.dernier = ''; S.edit = null; S.retrait = null; S.ouverts = {}; S.rOuvert = {};
-      S.filtre = 'tout'; S.q = ''; S.res = null; S.fich = null; S.repRem = null; S.enVol = false; S.occupe = false; S.mention = null; S.bro = {}; S.pj = {}; S.urls = {}; S.urlsLe = 0;
+      S.filtre = (o && o.filtre) || 'tout'; if (o && o.filtre) S.mob = 'fil'; S.q = ''; S.res = null; S.fich = null; S.repRem = null; S.enVol = false; S.occupe = false; S.mention = null; S.bro = {}; S.pj = {}; S.urls = {}; S.urlsLe = 0;
       VU = null;
-      root.innerHTML = top + '<div class="v2-wrap v2-u dsc-wrap"><div class="v2-rdv-cap"><h1>Discussion</h1>' +
-        '<p>Le fil de l’équipe réunit les messages de tous les sujets et les remontées. Un sujet = une conversation : tout le monde peut en lancer un, et toute l’équipe le voit. ' +
+      root.innerHTML = top + '<div class="v2-wrap v2-u dsc-wrap"><div class="v2-rdv-cap"><h1>Le QG</h1>' +
+        '<p>Le QG réunit les messages de tous les sujets et les remontées de l’équipe. Un sujet = une conversation : tout le monde peut en lancer un, et toute l’équipe le voit. ' +
         'Les nouveaux messages arrivent toutes les 45 secondes.</p><div id="dsc-notif"></div></div><div id="dsc"></div></div>';
       if (V2.rdvNotif && V2.rdvNotif.ligne) V2.rdvNotif.ligne(document.getElementById('dsc-notif'));
       demarrer();
