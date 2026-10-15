@@ -4822,6 +4822,7 @@
     s.onerror = function () { xlsxLoading = false; cb(false); };
     document.head.appendChild(s);
   }
+  V2.ensureXLSX = ensureXLSX;   // 15/10/2026 : réutilisé par les listings face à un concurrent (v2-concurrents.js)
   // Mêmes colonnes que le PDF (Produit, CIP13, PPHT, Prix net IP, Nbr pharma) :
   // pas de colonne « abandon » — le % ne figure jamais sur un document remis.
   // mode 'blob' : ne télécharge rien, rend une promesse de File (pour « Transmettre »).

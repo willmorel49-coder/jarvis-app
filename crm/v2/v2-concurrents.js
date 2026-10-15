@@ -893,7 +893,7 @@
       var n = nous(c), ip = n && n.ip > 0 ? n.ip : null, v = '';
       if (ip && nb && !n.exclu) v = Math.abs(min - ip) < 0.005 ? 'egal' : (ip < min ? 'win' : 'lose');
       var ec = (ip && nb) ? Math.round((min - ip) * 100) / 100 : null;
-      l.push({ c: c, d: r.d || ('CIP ' + c), n: r.n, f: r.f || '', ip: ip, exclu: !!(n && n.exclu), px: px, srcOcp: srcOcp, nb: nb, min: min, qui: qui, v: v, ec: ec,
+      l.push({ c: c, d: r.d || ('CIP ' + c), n: r.n, f: r.f || '', ip: ip, ppht: (n && n.ppht > 0) ? n.ppht : null, exclu: !!(n && n.exclu), px: px, srcOcp: srcOcp, nb: nb, min: min, qui: qui, v: v, ec: ec,
         // écart en % de NOTRE net (même base que la médiane) ; enjeu = écart × pharmacies, seulement quand on perd
         ecp: (ip && nb) ? Math.round((min - ip) / ip * 1000) / 10 : null, enjeu: v === 'lose' ? Math.round(-ec * r.n * 100) / 100 : 0 });
     });
@@ -979,7 +979,7 @@
   }
   function comparateurHtml() {
     var o = S.cmp, puce = function (on, fn, t) { return '<button type="button" class="v2-seg' + (on ? ' on' : '') + '" onclick="' + fn + '">' + t + '</button>'; };
-    return '<section class="cc-fiche cmp">' +
+    return '<div id="lst-cartes">' + lstCartes() + '</div><section class="cc-fiche cmp">' +
       '<div class="cc-head"><div><span class="cc-eyebrow"><i class="dot"></i>Tous les concurrents côte à côte</span><h1 class="v2-page-title">Le comparateur de prix</h1>' +
       '<p class="v2-page-sub">Nos produits les plus commandés en tête (nombre de pharmacies clientes qui les prennent), notre net en face du net de chaque concurrent. En rouge, un concurrent moins cher que nous ; en vert, plus cher. Une ligne s\'ouvre en carte « tous les prix ».</p></div>' +
       '<div class="cc-meta"><span>Sources <b>' + CMP_COL.map(function (k) { return esc(COL_NOM[k]); }).join(' · ') + '</b></span><span>OCP = eTradi + Incontournables, le moins cher des deux</span><span>Alliance : shortlists <b>2025</b></span><span>Pharmafit : prix de la boutique <b>sans compte</b></span><span>CERP : dernière promo <b>Central Prom</b> connue</span></div></div>' +
@@ -989,7 +989,7 @@
       '<div id="cc-body">' + cmpCorps() + '</div></section>';
   }
   var cmpTimer = null;
-  function rerenderCmp() { var b = document.getElementById('cc-body'); if (b) b.innerHTML = cmpCorps(); }
+  function rerenderCmp() { var b = document.getElementById('cc-body'); if (b) b.innerHTML = cmpCorps(); var l = document.getElementById('lst-corps'); if (l) l.innerHTML = lstCorps(); var c = document.getElementById('lst-cartes'); if (c) c.innerHTML = lstCartes(); }
   V2.ccCmpQ = function (v) { S.cmp.q = v; S.cmp.vus = CMP_PAS; clearTimeout(cmpTimer); cmpTimer = setTimeout(rerenderCmp, 160); };
   V2.ccCmp = function (k, v) { if (k === 'fam') S.cmp.fam = v; else S.cmp[k] = !S.cmp[k]; S.cmp.vus = CMP_PAS; V2.render(); };
   V2.ccCmpPlus = function () { S.cmp.vus += CMP_PAS; rerenderCmp(); };
@@ -1012,6 +1012,219 @@
     a.href = URL.createObjectURL(new Blob(['﻿' + tete.map(q).join(';') + '\n' + lignes.join('\n') + '\n'], { type: 'text/csv;charset=utf-8' }));
     a.download = nom.replace(/-+$/, '') + '.csv';
     document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  };
+
+  // ── Listings « face à un concurrent » ───────────────────────────────
+  // 15/10/2026 — demande de Will : « fais moi la possibilité d'éditer les meilleurs listing produits a passer face a chaque
+  // concurrents, grace a la feature prix ». Une carte par colonne de CMP_COL (une colonne de plus = une carte de plus, sans autre
+  // code), puis l'éditeur #concurrents/listing/<k> : les produits où NOTRE net est sous celui du concurrent, hors génériques et
+  // biosimilaires, classés par nombre de pharmacies. Trois sorties : PDF et Excel POUR L'OFFICINE (jamais un nom de concurrent,
+  // un prix de concurrent ni un écart, ni dans le contenu, ni dans le titre, ni dans le nom du fichier) et Excel INTERNE.
+  S.lst = { k: '', fam: 'all', min: 0, q: '', off: {}, top: null, vus: CMP_PAS };
+  var LST_SECT = [['pr', 'Princeps remboursables'], ['nr', 'Non remboursables'], ['autre', 'Autres produits']];
+  var LST_TOP = [[20, '20 premiers'], [50, '50 premiers'], [100, '100 premiers'], [0, 'Tout']];
+  var LST_MIN = [[0, 'Tous les écarts'], [2, 'Écart de 2 % ou plus'], [5, 'Écart de 5 % ou plus']];
+  function lstSect(f) { return f && f.indexOf('pr_') === 0 ? 'pr' : (f === 'nr' ? 'nr' : 'autre'); }
+  function lstSectNom(s) { return LST_SECT.filter(function (x) { return x[0] === s; })[0][1]; }
+  function lstSources(k) { return k === 'ocp' ? ['ocp', 'etradi'] : [k]; }
+  // Prêt = les relevés du concurrent ET nos produits/nets (PROD_STATS, BENCHMARK) sont en mémoire : sans eux les comptes seraient faux (0 produit).
+  function lstPret(k) { return lstSources(k).every(function (x) { return SRC[x].charge(); }) && !!window.PROD_STATS && !!(window.BENCHMARK || (V2.protegeEchec && V2.protegeEchec.bench)); }
+  // Les produits où Intégral est moins cher que le concurrent k (déjà classés par pharmacies décroissantes par cmpLignes).
+  function lstGagnes(k) {
+    if (!lstPret(k)) return [];
+    return cmpLignes().filter(function (x) { return !x.exclu && x.ip > 0 && x.px[k] > 0 && x.ip < x.px[k] - 0.004; });
+  }
+  function lstEcartPct(x, k) { return (x.px[k] - x.ip) / x.ip * 100; }
+  function lstCand() {
+    var o = S.lst, k = o.k;
+    return lstGagnes(k).filter(function (x) {
+      if (o.fam !== 'all' && lstSect(x.f) !== o.fam) return false;
+      if (o.min > 0 && lstEcartPct(x, k) < o.min - 0.0001) return false;
+      return true;
+    });
+  }
+  function lstRetenus() { var off = S.lst.off; return lstCand().filter(function (x) { return !off[x.c]; }); }
+  function lstDate(k) {
+    var d = '';
+    lstSources(k).forEach(function (x) { var m = SRC[x].charge() && SRC[x].maj(); if (typeof m === 'string' && m > d) d = m; });
+    return d;
+  }
+  function lstSrcTxt(k) { var d = lstDate(k); return (COL_SOUS[k] || 'prix net') + (d ? ' · relevé du ' + dateFr(d) : ''); }
+
+  // Bloc de cartes, en haut du comparateur.
+  function lstCartes() {
+    var cartes = CMP_COL.map(function (k) {
+      if (!lstPret(k)) {
+        var rate = lstSources(k).filter(echec)[0];
+        return '<div class="lst-carte attente" data-k="' + k + '"><div class="lst-nom">' + esc(COL_NOM[k]) + '</div><div class="lst-src">' + esc(COL_SOUS[k] || 'prix net') + '</div>' +
+          (rate ? '<button type="button" class="cc-lien" onclick="V2.ccRetry(\'' + rate + '\')">réessayer</button>' : '<div class="lst-att" aria-busy="true">chargement du relevé…</div>') + '</div>';
+      }
+      var g = lstGagnes(k);
+      var tete = g.slice(0, 3).map(function (x) { return '<li>' + esc(String(x.d).slice(0, 44)) + '</li>'; }).join('');
+      return '<button type="button" class="lst-carte" data-k="' + k + '" data-n="' + g.length + '" onclick="V2.go(\'concurrents\',\'listing/' + k + '\')">' +
+        '<span class="lst-nom">' + esc(COL_NOM[k]) + '</span><span class="lst-src">' + esc(lstSrcTxt(k)) + '</span>' +
+        '<span class="lst-n"><b>' + num(g.length) + '</b> produit' + (g.length > 1 ? 's' : '') + ' où Intégral est moins cher</span>' +
+        (tete ? '<ul class="lst-tete">' + tete + '</ul>' : '<span class="lst-vide">Aucun produit pour le moment</span>') +
+        '<span class="lst-go">Préparer le listing</span></button>';
+    }).join('');
+    return '<div class="lst-bloc"><div class="lst-bloc-t"><h2>Listings face à un concurrent</h2>' +
+      '<p>Choisissez un concurrent : on prépare la liste des produits où nous sommes moins chers, classés par nombre de pharmacies qui les commandent, à remettre à l\'officine.</p></div>' +
+      '<div class="lst-cartes">' + cartes + '</div></div>';
+  }
+
+  // L'éditeur.
+  function lstCorps() {
+    var o = S.lst, k = o.k;
+    if (!lstPret(k)) {
+      var rate = lstSources(k).filter(echec)[0];
+      return rate ? '<div class="v2-empty"><div class="v2-empty-t">Données protégées non chargées</div><button class="v2-btn v2-btn-primary" onclick="V2.ccRetry(\'' + rate + '\')">Réessayer</button></div>'
+        : '<div class="cc-sk" aria-busy="true"><div class="cc-sk-l" style="width:38%"></div><div class="cc-sk-l" style="width:92%"></div><div class="cc-sk-l" style="width:84%"></div></div>';
+    }
+    var cand = lstCand(), ret = lstRetenus(), mots = norm(o.q.trim()).split(/\s+/).filter(Boolean);
+    var aff = cand.filter(function (x) { if (!mots.length) return true; var h = norm(x.d) + ' ' + x.c; for (var i = 0; i < mots.length; i++) if (h.indexOf(mots[i]) < 0) return false; return true; });
+    var vus = aff.slice(0, o.vus), rang = {};
+    cand.forEach(function (x, i) { rang[x.c] = i + 1; });
+    var nom = COL_NOM[k];
+    var barre = '<div class="cc-bilan cmp-bilan lst-barre"><div><b id="lst-n">' + num(ret.length) + '</b> produit' + (ret.length > 1 ? 's' : '') + ' retenu' + (ret.length > 1 ? 's' : '') + ' <span class="cc-mute">sur ' + num(cand.length) + ' où Intégral est moins cher que ' + esc(nom) + '</span></div>' +
+      '<div class="lst-sorties">' +
+      '<button type="button" class="cc-btn prim lst-pdf" onclick="V2.ccLstPdf()"' + (ret.length ? '' : ' disabled') + '>' + ICO('download', 18, 2.2) + 'PDF pour l\'officine</button>' +
+      '<button type="button" class="cc-btn sec lst-xo" onclick="V2.ccLstExcel(false)"' + (ret.length ? '' : ' disabled') + '>' + ICO('download', 18, 2.2) + 'Excel pour l\'officine</button>' +
+      '<button type="button" class="cc-btn sec lst-xi" onclick="V2.ccLstExcel(true)"' + (ret.length ? '' : ' disabled') + ' title="Contient le net de ' + esc(nom) + ' : ne jamais le donner à une officine">' + ICO('download', 18, 2.2) + 'Excel interne</button>' +
+      '</div></div>';
+    var groupes = LST_SECT.map(function (s) {
+      var rs = vus.filter(function (x) { return lstSect(x.f) === s[0]; });
+      if (!rs.length) return '';
+      var nbR = rs.filter(function (x) { return !o.off[x.c]; }).length;
+      var trs = rs.map(function (x) {
+        var off = !!o.off[x.c], e = lstEcartPct(x, k);
+        return '<tr class="cc-p lst-r' + (off ? ' off' : '') + '" data-c="' + esc(x.c) + '">' +
+          '<td class="lst-ck" data-label=""><label class="lst-box"><input type="checkbox" class="lst-cb" data-c="' + esc(x.c) + '"' + (off ? '' : ' checked') + ' onchange="V2.ccLstTog(\'' + safeArg(x.c) + '\')" aria-label="Retenir ' + esc(x.d) + '"><span aria-hidden="true"></span></label></td>' +
+          '<td class="num mono cmp-rg" data-label="Rang">' + rang[x.c] + '</td>' +
+          '<td class="cc-name" data-label="Produit"><div class="cmp-d">' + esc(x.d) + '</div><div class="cmp-c">' + esc(x.c) + (FAM_TAG[x.f] ? ' · ' + esc(FAM_TAG[x.f]) : '') + '</div></td>' +
+          '<td class="num" data-label="Pharmacies"><b>' + num(x.n) + '</b></td>' +
+          '<td class="num mono cmp-nous" data-label="Notre net">' + eur(x.ip) + '</td>' +
+          '<td class="num mono lst-int" data-label="Interne · ' + esc(nom) + '">' + eur(x.px[k]) + '</td>' +
+          '<td class="num mono lst-int" data-label="Interne · écart">' + cmpPct(e) + '</td></tr>';
+      }).join('');
+      return '<tr class="lst-fam"><td colspan="7"><b>' + esc(s[1]) + '</b> <span class="cc-mute">' + num(nbR) + ' retenu' + (nbR > 1 ? 's' : '') + ' sur ' + num(rs.length) + ' affichés</span></td></tr>' + trs;
+    }).join('');
+    if (!vus.length) groupes = '<tr><td colspan="7" style="padding:26px;text-align:center;color:var(--muted)">' + (cand.length ? 'Aucun produit ne correspond à la recherche.' : 'Aucun produit où Intégral est moins cher avec ces réglages.') + '</td></tr>';
+    var head = '<tr><th class="lst-ck"><span class="sr-only">Retenu</span></th><th class="num">#</th><th>Produit</th><th class="num">Pharmacies<small>qui commandent</small></th><th class="num cmp-nous">Notre net<small>sur le document</small></th>' +
+      '<th class="num lst-int">' + esc(nom) + '<small>interne seulement</small></th><th class="num lst-int">Écart<small>% de notre net</small></th></tr>';
+    var plus = aff.length > vus.length ? '<button type="button" class="v2-btn cmp-plus" onclick="V2.ccLstPlus()">Voir ' + Math.min(CMP_PAS, aff.length - vus.length) + ' produits de plus <span class="cc-mute">(' + num(vus.length) + ' sur ' + num(aff.length) + ')</span></button>' : '';
+    return barre + '<div class="cc-tablewrap"><table class="v2-table cc-table cmp-t lst-t"><thead>' + head + '</thead><tbody>' + groupes + '</tbody></table></div>' + plus +
+      '<p class="cmp-leg">Sur le PDF et l\'Excel pour l\'officine : produit, CIP13, PPHT, prix net Intégral et nombre de pharmacies du réseau qui commandent. Le nom du concurrent, son prix et l\'écart n\'y figurent jamais ; ils restent à l\'écran et dans l\'Excel interne.</p>';
+  }
+  function lstHtml() {
+    var o = S.lst, k = o.k, nom = COL_NOM[k];
+    var puce = function (on, fn, t) { return '<button type="button" class="v2-seg' + (on ? ' on' : '') + '" onclick="' + fn + '">' + t + '</button>'; };
+    var ret = lstPret(k) ? lstRetenus().length : -1, cand = lstPret(k) ? lstCand().length : -1;
+    return '<section class="cc-fiche cmp lst" data-k="' + k + '">' +
+      '<div class="cc-head"><div><span class="cc-eyebrow"><i class="dot"></i>Listing face à un concurrent</span><h1 class="v2-page-title">Listing face à ' + esc(nom) + '</h1>' +
+      '<p class="v2-page-sub">Les produits où notre net est sous celui de ' + esc(nom) + ', du plus commandé au moins commandé (nombre de pharmacies clientes). Décochez ce que vous ne voulez pas proposer, puis éditez le document pour l\'officine.</p></div>' +
+      '<div class="cc-meta"><span>Source <b>' + esc(lstSrcTxt(k)) + '</b></span><span>Génériques et biosimilaires exclus</span><button type="button" class="cc-lien" onclick="V2.go(\'concurrents\',\'prix\')">' + ICO('back', 14, 2) + 'Retour au comparateur</button></div></div>' +
+      '<div class="v2-segs lst-top">' + LST_TOP.map(function (t) { return puce(o.top === t[0] && ret >= 0, 'V2.ccLstTop(' + t[0] + ')', esc(t[1])); }).join('') + '</div>' +
+      '<div class="v2-segs">' + [['all', 'Toutes familles'], ['pr', 'Princeps remboursables'], ['nr', 'Non remboursables']].map(function (f) { return puce(o.fam === f[0], 'V2.ccLst(\'fam\',\'' + f[0] + '\')', esc(f[1])); }).join('') + '</div>' +
+      '<div class="v2-segs">' + LST_MIN.map(function (m) { return puce(o.min === m[0], 'V2.ccLst(\'min\',' + m[0] + ')', esc(m[1])); }).join('') + '</div>' +
+      '<div class="cc-tools"><div class="cc-search">' + ICO('search', 15, 2) + '<input id="lst-q" type="search" placeholder="Produit ou code…" value="' + esc(o.q) + '" oninput="V2.ccLstQ(this.value)" autocomplete="off"></div></div>' +
+      '<div id="lst-corps">' + lstCorps() + '</div></section>';
+  }
+  var lstTimer = null;
+  function rerenderLst() { var b = document.getElementById('lst-corps'); if (b) b.innerHTML = lstCorps(); }
+  V2.ccLstQ = function (v) { S.lst.q = v; S.lst.vus = CMP_PAS; clearTimeout(lstTimer); lstTimer = setTimeout(rerenderLst, 160); };
+  V2.ccLstPlus = function () { S.lst.vus += CMP_PAS; rerenderLst(); };
+  V2.ccLst = function (c, v) { S.lst[c] = v; S.lst.vus = CMP_PAS; S.lst.top = null; V2.render(); };
+  V2.ccLstTog = function (c) { var off = S.lst.off; if (off[c]) delete off[c]; else off[c] = 1; S.lst.top = null; rerenderLst(); };
+  // « 20 / 50 / 100 / tout » : on ne garde que les N premiers (les plus commandés) des produits proposés ; tout = on rétablit tout.
+  V2.ccLstTop = function (n) {
+    var cand = lstCand(), off = {};
+    if (n > 0) cand.slice(n).forEach(function (x) { off[x.c] = 1; });
+    S.lst.off = off; S.lst.top = n; S.lst.vus = CMP_PAS; V2.render();
+  };
+  function lstTelecharge(blob, nom) {
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nom;
+    document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+  }
+  function lstJour() { return new Date().toISOString().slice(0, 10); }
+  function lstDateLongue() { return new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }); }
+  // Excel : pour l'officine (interne = false) ou interne (true). La liste est celle de l'écran : produits cochés, classés par pharmacies.
+  V2.ccLstExcel = function (interne) {
+    var k = S.lst.k, rows = lstRetenus(), nom = COL_NOM[k];
+    if (!rows.length) { V2.toast('Aucun produit retenu', 'warn'); return; }
+    if (!V2.ensureXLSX) { V2.toast('Export Excel indisponible', 'error'); return; }
+    V2.toast('Génération de l\'Excel…');
+    V2.ensureXLSX(function (ok) {
+      if (!ok || !window.XLSX) { V2.toast('Export Excel indisponible (hors ligne ?)', 'error'); return; }
+      var X = window.XLSX, aoa, cols, fin, fichier, feuille;
+      if (!interne) {
+        aoa = [['Sélection Intégral Pharma'],
+          [num(rows.length) + ' produit' + (rows.length > 1 ? 's' : '') + ' · classés par nombre de pharmacies du réseau qui les commandent · éditée le ' + lstDateLongue()], [],
+          ['#', 'Famille', 'Produit', 'CIP13', 'PPHT (€)', 'Prix net Intégral (€)', 'Pharmacies du réseau qui commandent']];
+        rows.forEach(function (x, i) { aoa.push([i + 1, lstSectNom(lstSect(x.f)), x.d, String(x.c), x.ppht > 0 ? +x.ppht.toFixed(2) : '', +x.ip.toFixed(2), x.n]); });
+        cols = [{ wch: 4 }, { wch: 22 }, { wch: 50 }, { wch: 15 }, { wch: 10 }, { wch: 18 }, { wch: 22 }]; fin = 6;
+        fichier = 'Selection-Integral-Pharma-' + rows.length + '-produits-' + lstJour() + '.xlsx'; feuille = 'Sélection';
+      } else {
+        aoa = [['INTERNE — conditions de tiers, ne pas donner à une officine'],
+          ['Listing face à ' + nom + ' · ' + num(rows.length) + ' produit' + (rows.length > 1 ? 's' : '') + ' où Intégral est moins cher · éditée le ' + lstDateLongue()], [],
+          ['#', 'Famille', 'Produit', 'CIP13', 'PPHT (€)', 'Prix net Intégral (€)', 'Pharmacies du réseau qui commandent', 'Net ' + nom + ' (€)', 'Écart € (' + nom + ' − Intégral)', 'Écart % de notre net', 'Source', 'Relevé du']];
+        var d = lstDate(k);
+        rows.forEach(function (x, i) {
+          aoa.push([i + 1, lstSectNom(lstSect(x.f)), x.d, String(x.c), x.ppht > 0 ? +x.ppht.toFixed(2) : '', +x.ip.toFixed(2), x.n, +x.px[k].toFixed(2),
+            +(x.px[k] - x.ip).toFixed(2), +lstEcartPct(x, k).toFixed(1), k === 'ocp' ? 'OCP · ' + x.srcOcp : (COURT[k] || nom), d ? dateFr(d) : '']);
+        });
+        cols = [{ wch: 4 }, { wch: 22 }, { wch: 50 }, { wch: 15 }, { wch: 10 }, { wch: 18 }, { wch: 22 }, { wch: 16 }, { wch: 20 }, { wch: 16 }, { wch: 22 }, { wch: 12 }]; fin = 11;
+        fichier = 'INTERNE-Listing-face-a-' + String(nom).replace(/[^A-Za-z0-9-]/g, '_') + '-' + rows.length + '-produits-' + lstJour() + '.xlsx'; feuille = 'INTERNE';
+      }
+      var ws = X.utils.aoa_to_sheet(aoa);
+      ws['!cols'] = cols; ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: fin } }, { s: { r: 1, c: 0 }, e: { r: 1, c: fin } }];
+      var wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, feuille);
+      lstTelecharge(new Blob([X.write(wb, { bookType: 'xlsx', type: 'array' })], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), fichier);
+      V2.toast('Excel téléchargé');
+    });
+  };
+  // PDF pour l'officine : même habillage que la liste « À proposer » (bandeau bleu, familles colorées, tableau dense).
+  // AUCUN concurrent, aucun prix concurrent, aucun écart.
+  function lstPdfHtml(rows) {
+    var MONO = "'Geist Mono',ui-monospace,monospace", COULEUR = { pr: '#0050E6', nr: '#0E7C86', autre: '#5B6477' };
+    var e2 = function (v) { return (v ? v.toFixed(2).replace('.', ',') : '0,00') + ' €'; };
+    var COLS = '<colgroup><col style="width:6%"><col style="width:36%"><col style="width:15%"><col style="width:13%"><col style="width:15%"><col style="width:15%"></colgroup>';
+    var thd = function (h, al, light) { return '<th style="text-align:' + al + ';padding:6px 8px;font-size:8.5px;font-weight:800;letter-spacing:.6px;color:' + (light ? '#C7D2E6' : '#FFFFFF') + ';text-transform:uppercase">' + h + '</th>'; };
+    var rg = {}; rows.forEach(function (x, i) { rg[x.c] = i + 1; });
+    var sections = LST_SECT.map(function (s) {
+      var rs = rows.filter(function (x) { return lstSect(x.f) === s[0]; });
+      if (!rs.length) return '';
+      var trs = rs.map(function (x, i) {
+        return '<tr style="page-break-inside:avoid;background:' + (i % 2 ? '#F7F9FC' : '#FFFFFF') + ';border-bottom:1px solid #F1F4F9">' +
+          '<td style="padding:6px 8px;font-family:' + MONO + ';font-size:9px;color:#9AA1B2">' + rg[x.c] + '</td>' +
+          '<td style="padding:6px 8px;font-size:12px;font-weight:700;color:#10131C">' + esc(String(x.d).slice(0, 52)) + '</td>' +
+          '<td style="padding:6px 8px;font-family:' + MONO + ';font-size:9px;color:#737A8C">' + esc(x.c) + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:9.5px;color:#B6BFCE;white-space:nowrap">' + (x.ppht > 0 ? (x.ip < x.ppht ? '<span style="text-decoration:line-through">' + e2(x.ppht) + '</span>' : e2(x.ppht)) : '—') + '</td>' +
+          '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:12px;font-weight:800;color:#0050E6;white-space:nowrap">' + e2(x.ip) + '</td>' +
+          '<td style="padding:6px 8px;text-align:center;font-family:' + MONO + ';font-size:9.5px;color:#10131C">' + num(x.n) + '</td></tr>';
+      }).join('');
+      return '<div style="page-break-after:avoid;page-break-inside:avoid;margin-top:11px"><div style="background:' + COULEUR[s[0]] + ';display:flex;align-items:center;justify-content:space-between;padding:4px 10px;border-radius:5px 5px 0 0">' +
+        '<span style="color:#FFFFFF;font-size:12px;font-weight:800;letter-spacing:.4px;text-transform:uppercase">' + esc(s[1]) + '</span>' +
+        '<span style="color:rgba(255,255,255,.85);font-size:9px;font-weight:700">' + rs.length + ' produit' + (rs.length > 1 ? 's' : '') + '</span></div></div>' +
+        '<table style="width:100%;border-collapse:collapse;table-layout:fixed;border:1px solid #E7EBF2;border-top:none">' + COLS + '<tbody>' + trs + '</tbody></table>';
+    }).join('');
+    var dateStr = lstDateLongue();
+    return '<div style="width:794px;background:#FFFFFF;color:#10131C;font-family:Satoshi,Inter,system-ui,sans-serif;font-size:12px;line-height:1.35">' +
+      '<div style="background:linear-gradient(90deg,#0034A0,#0050E6);padding:14px 22px;display:flex;align-items:center;justify-content:space-between;page-break-inside:avoid">' +
+        '<div style="display:flex;align-items:center;gap:13px"><div style="width:34px;height:34px;border-radius:8px;background:#FFFFFF;display:flex;align-items:center;justify-content:center;font-weight:800;color:#0050E6;font-size:17px;letter-spacing:-1px">IP</div>' +
+        '<div><div style="color:#FFFFFF;font-size:15px;font-weight:800;line-height:1.1">Intégral Pharma</div><div style="color:#A9C2F5;font-size:12px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;margin-top:2px">Sélection Intégral Pharma</div></div></div>' +
+        '<div style="text-align:right;color:#FFFFFF"><div style="font-size:12px;color:#A9C2F5">Édité le ' + dateStr + '</div><div style="font-size:12px;font-weight:700;margin-top:1px">' + rows.length + ' produit' + (rows.length > 1 ? 's' : '') + '</div></div></div>' +
+      '<div style="background:#10131C;padding:6px 22px;page-break-inside:avoid"><span style="color:#C7D2E6;font-size:9.5px;font-weight:600;letter-spacing:.3px">PRODUITS CLASSÉS PAR NOMBRE DE PHARMACIES DU RÉSEAU QUI LES COMMANDENT</span></div>' +
+      '<div style="padding:16px 22px 20px">' +
+        '<table style="width:100%;border-collapse:collapse;table-layout:fixed;page-break-after:avoid">' + COLS + '<thead><tr style="background:#10131C">' + thd('#', 'left') + thd('Produit', 'left') + thd('CIP13', 'left', true) + thd('PPHT', 'right') + thd('Prix net Intégral', 'right') + thd('Pharmacies', 'center') + '</tr></thead></table>' +
+        sections +
+        '<div style="margin-top:16px;padding-top:9px;border-top:1px solid #E7EBF2;font-size:8.5px;color:#737A8C;line-height:1.45"><span style="font-weight:800;color:#0050E6">Intégral Pharma</span> · groupe de grossistes-répartiteurs. Prix nets HT indicatifs, édités le ' + dateStr + '.<br>Pharmacies = nombre de pharmacies du réseau qui commandent le produit.</div>' +
+      '</div></div>';
+  }
+  V2.ccLstPdf = function () {
+    var rows = lstRetenus();
+    if (!rows.length) { V2.toast('Aucun produit retenu', 'warn'); return; }
+    if (!V2.pdfPreview) { V2.toast('Module PDF indisponible', 'error'); return; }
+    V2.pdfPreview(lstPdfHtml(rows), 'Selection-Integral-Pharma-' + rows.length + '-produits-' + lstJour() + '.pdf', 'Sélection Intégral Pharma');
   };
 
   // ── Actions ──────────────────────────────────────────────────────────
@@ -1109,10 +1322,14 @@
       if (p === 'sommaire') p = 'carte';
       if (p === 'acteurs') p = 'annuaire';
       if (p === 'comparateur') p = 'prix';
+      // 15/10/2026 : #concurrents/listing/<k> = l'éditeur de listing face au concurrent k (k = une colonne du comparateur).
+      var lstK = /^listing\//.test(p) ? p.slice(8) : '';
+      if (lstK && CMP_COL.indexOf(lstK) < 0) { p = 'prix'; lstK = ''; }
+      if (lstK && S.lst.k !== lstK) S.lst = { k: lstK, fam: 'all', min: 0, q: '', off: {}, top: null, vus: CMP_PAS };
       var carte = (p === 'carte' || /^(g|gr)\//.test(p));
       // La carte déjà montée n'est pas reconstruite (zoom conservé) : on ne fait que changer la fiche.
       if (carte && V2.concCarteRender && document.getElementById('cm-root') && root.contains(document.getElementById('cm-root'))) { V2.concCarteRender(document.getElementById('cm-host'), p); return; }
-      var espace = carte ? 'carte' : (p === 'annuaire' || p === 'actu') ? p : ((SRC[p] || p === 'prix') ? 'prix' : 'carte');
+      var espace = carte ? 'carte' : (p === 'annuaire' || p === 'actu') ? p : ((SRC[p] || p === 'prix' || lstK) ? 'prix' : 'carte');
       if (espace === 'carte' && !carte) p = 'carte';
       var cmp = espace === 'prix' && !SRC[p];
       var src = espace === 'prix' && SRC[p] ? p : '';
@@ -1124,7 +1341,7 @@
       else if (espace === 'annuaire' || espace === 'actu') corps = '<div id="cc-gr-host"></div>';
       else {
         var comptoir = '<div class="cc-cbar-holder">' + comptoirBar(false) + '<div id="cc-cres" class="cc-cres"></div></div>';
-        corps = cmp ? tabsHtml('comparateur') + liensHtml() + comptoir + comparateurHtml() : tabsHtml(src) + liensHtml() + comptoir + ficheHtml(src);
+        corps = lstK ? tabsHtml('comparateur') + lstHtml() : cmp ? tabsHtml('comparateur') + liensHtml() + comptoir + comparateurHtml() : tabsHtml(src) + liensHtml() + comptoir + ficheHtml(src);
       }
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="v2-wrap v2-u cc-wrap' + (tel ? ' tel' : '') + (cmp ? ' cmp-w' : '') + (espace === 'carte' ? ' cm-w' : '') + '">' + (tete || kickerHtml(espace)) + corps + '</div>';
@@ -1145,8 +1362,10 @@
       // Sur le comptoir, rien n'est téléchargé d'office (2 Mo pour Sagitta).
       // Le comparateur n'a de sens qu'avec TOUS les concurrents : il les demande
       // tous en entrant (≈ 3,7 Mo, en différé), et se redessine à chaque arrivée.
+      // Nos produits et nos nets (le BENCHMARK fait le net actuel, voir nous()) : demandés s'ils manquent, puis le bloc se redessine.
+      if (cmp && V2.loadFiles && !(window.PROD_STATS && window.BENCHMARK)) V2.loadFiles(['bench', 'prodstats']).then(function () { if (V2.route && V2.route.name === 'concurrents') rerenderCmp(); });
       if (cmp) CMP.forEach(function (k) {
-        if (!SRC[k].charge()) charger(k, function () { if (V2.route && V2.route.name === 'concurrents' && (!V2.route.param || V2.route.param === 'prix' || V2.route.param === 'comparateur')) rerenderCmp(); });
+        if (!SRC[k].charge()) charger(k, function () { if (V2.route && V2.route.name === 'concurrents' && (!V2.route.param || V2.route.param === 'prix' || V2.route.param === 'comparateur' || /^listing\//.test(V2.route.param))) rerenderCmp(); });
       });
       if (src && !SRC[src].charge()) {
         charger(src, function () { if (V2.route && V2.route.name === 'concurrents') V2.render(); });
@@ -1310,6 +1529,28 @@
       '.cmp-bilan{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.cmp-exp{white-space:nowrap}',
       '.cmp-leg{margin:12px 0 0;font-size:12.5px;line-height:1.5;color:var(--muted)}',
       '.cmp-plus{display:block;margin:14px auto 0}',
+      /* 15/10/2026 — listings face à un concurrent */
+      '.lst-bloc{margin:0 0 22px}.lst-bloc-t h2{margin:0 0 4px;font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--titre,#0B1F4D)}.lst-bloc-t p{margin:0 0 14px;font-size:14px;line-height:1.5;color:var(--muted);max-width:70ch}',
+      '.lst-cartes{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}@media (max-width:1000px){.lst-cartes{grid-template-columns:repeat(2,1fr)}}',
+      '.lst-carte{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;padding:16px 18px;background:var(--card);border:1px solid rgba(11,31,77,.10);border-radius:var(--r-md);box-shadow:var(--sh-1);font:inherit;color:var(--ip-ink);cursor:pointer;transition:transform .25s var(--ease),box-shadow .25s var(--ease)}',
+      'button.lst-carte:hover{transform:translateY(-2px);box-shadow:var(--sh-3)}.lst-carte.attente{cursor:default;opacity:.85}',
+      '.lst-nom{font-size:18px;font-weight:800;letter-spacing:-.02em;color:var(--titre,#0B1F4D)}.lst-src{font-size:12.5px;color:var(--muted)}',
+      '.lst-n{font-size:14px;color:var(--ip-ink-2)}.lst-n b{font-size:26px;font-weight:800;letter-spacing:-.03em;color:var(--ip-blue-d);margin-right:4px;font-variant-numeric:tabular-nums}',
+      '.lst-tete{margin:2px 0 0;padding:0 0 0 16px;font-size:12.5px;line-height:1.5;color:var(--muted)}.lst-vide,.lst-att{font-size:13px;color:var(--muted)}',
+      '.lst-go{margin-top:auto;padding-top:6px;font-size:14px;font-weight:700;color:var(--ip-blue)}',
+      '.lst-sorties{display:flex;gap:10px;flex-wrap:wrap}.lst-sorties .cc-btn{flex:0 0 auto;min-height:48px;font-size:15px}.lst-sorties .cc-btn[disabled]{opacity:.45;cursor:not-allowed}',
+      '.lst-t th.lst-ck,.lst-t td.lst-ck{width:52px;padding-left:12px;padding-right:4px}.lst-box{display:flex;flex:none;min-width:44px;align-items:center;justify-content:center;width:44px;height:44px;margin:-8px 0 -8px -8px;cursor:pointer;position:relative}',
+      '.lst-box input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}.lst-box span{width:22px;height:22px;border-radius:6px;border:2px solid rgba(11,31,77,.30);background:#fff;display:block;position:relative}',
+      '.lst-box input:checked+span{background:var(--ip-blue);border-color:var(--ip-blue)}.lst-box input:checked+span:after{content:"";position:absolute;left:6px;top:2px;width:5px;height:10px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}',
+      '.lst-box input:focus-visible+span{outline:3px solid rgba(0,80,230,.35);outline-offset:2px}',
+      '.lst-r.off td:not(.lst-ck){opacity:1;color:var(--muted-2);text-decoration:line-through}.lst-r.off .cmp-d{color:var(--muted-2)}',
+      '.lst-fam td{background:rgba(0,80,230,.05);padding:10px 12px;font-size:14px;color:var(--titre,#0B1F4D)}',
+      '.lst-t th.lst-int,.lst-t td.lst-int{background:rgba(200,56,90,.06);color:#7A2338}.lst-t td.lst-int{font-weight:600}',
+      '.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}',
+      '.lst-top{margin-top:4px}',
+      '@media (max-width:700px){.lst-cartes{grid-template-columns:1fr}.lst-sorties{width:100%;flex-direction:column}.lst-sorties .cc-btn{width:100%;justify-content:center}',
+      '.lst .v2-segs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}.lst .v2-segs .v2-seg{flex:none}.lst .v2-page-sub{display:none}',
+      '.lst-t th.lst-ck{display:none}.lst-t tr.lst-r{position:relative;padding-left:52px}.lst-t td.lst-ck{position:absolute;left:4px;top:8px;width:48px;padding:0}.lst-t td.lst-ck:before{display:none}.lst-t td.lst-ck .lst-box{margin:0}.lst-t tr.lst-fam td{display:block}}',
       '@media (max-width:700px){.cc-wrap.cmp-w .cc-tablewrap{overflow:visible}.cmp-t,.cmp-t tbody{display:block;width:100%}.cmp-t tr{padding:10px 6px}',
       '.cmp-t td{align-items:center;padding:5px 8px}.cmp-t td:before{text-align:left}.cmp-t td.vide,.cmp-t td.cmp-rg{display:none}',
       '.cmp-exp{width:100%;justify-content:center}.cmp-pc{display:inline;margin-left:6px}',
