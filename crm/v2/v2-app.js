@@ -1716,6 +1716,7 @@
   V2.accueilPont = {
     userId: u2Id, m: function () { return _u2.m; }, etat: u2Etat, vis: u2Vis, cles: u2Cles,
     outil: u2Outil, lien: u2LienAttr, ic: u2Ic, page: function (k) { return !!(V2.pages && V2.pages[k]); },
+    une: function () { return u2Nouveau(G4_UNE.page) ? G4_UNE : null; },
     infos: qInfosModele, infosData: function () { return _qInfos.data; },
     relances: qRelances, relancesAll: function () { return _relances || []; }, semaine: qSemaine, parJour: qParJour, quand: qQuand,
     // la To do list : null tant qu'elle n'est pas chargée (jamais un « 0 » qui ressemblerait à un vrai zéro)

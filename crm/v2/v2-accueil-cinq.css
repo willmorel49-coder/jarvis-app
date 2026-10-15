@@ -267,3 +267,37 @@
 .ac-au-l{gap:5px 5px}
 .ac-au .ac-b{gap:5px;padding:0 6px;font-size:13px;font-weight:650;letter-spacing:-.01em}
 .ac-au .ac-b svg.u2-ic{width:15px;height:15px}
+
+/* 15/10/2026 — la nouveauté du moment (G4_UNE) : l'étiquette « Nouveau » */
+.acq-nv{flex:none;display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.02em;line-height:1;color:#fff;
+  background:linear-gradient(160deg,var(--ip-blue),var(--ip-blue-d));box-shadow:0 1px 0 rgba(255,255,255,.3) inset,0 4px 10px -4px color-mix(in srgb,var(--ip-blue) 60%,transparent)}
+/* scène de Le QG : l'ampoule respire, trois points « quelqu'un écrit », les bulles arrivent au premier rendu */
+.acq-halo{transform-origin:186px 44px;animation:ac-respire 6s ease-in-out infinite;animation-delay:var(--ph,0s)}
+.acq-pt{transform-box:fill-box;transform-origin:center;animation:acq-ecrit 1.5s ease-in-out infinite;animation-delay:calc(var(--k) * .18s)}
+@keyframes acq-ecrit{0%,60%,100%{transform:translateY(0);opacity:.55}30%{transform:translateY(-3px);opacity:1}}
+.acq-b1,.acq-b2{transform-box:fill-box;transform-origin:left bottom}
+.ac-ent .acq-b1{animation:acq-bulle .5s var(--ease) backwards;animation-delay:.3s}
+.ac-ent .acq-b2{animation:acq-bulle .5s var(--ease) backwards;animation-delay:.55s}
+@keyframes acq-bulle{from{transform:translateY(10px) scale(.92);opacity:0}}
+@media (prefers-reduced-motion:reduce){.acq-halo,.acq-pt{animation:none}}
+/* le bandeau de la nouveauté, entre Officines et les quatre cartes */
+.acq-zone{margin-top:14px}
+.acq-ban{position:relative;display:grid;grid-template-columns:132px minmax(0,1fr) auto;align-items:center;gap:16px;padding:9px 16px 9px 9px;border-radius:20px;overflow:hidden;isolation:isolate;
+  border:1px solid color-mix(in srgb,var(--ip-blue) 24%,var(--line));
+  background:radial-gradient(70% 160% at 0% 50%,color-mix(in srgb,#FFD27A 16%,var(--halo)),#fff 62%);box-shadow:var(--sh-2);
+  transition:transform .2s var(--ease),box-shadow .3s var(--ease),border-color .2s}
+.acq-ban:hover{transform:translateY(-2px);box-shadow:var(--sh-3);border-color:color-mix(in srgb,var(--ip-blue) 42%,var(--line))}
+.acq-ban:active{transform:none}
+.acq-sc{aspect-ratio:240/150;border-radius:13px}
+.acq-tx{display:flex;flex-direction:column;gap:4px;min-width:0}
+.acq-l1{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;min-width:0}
+.acq-nm{font-size:17.5px;font-weight:800;letter-spacing:-.02em;line-height:1.2;color:var(--ip-ink)}
+.acq-ph{font-size:13.5px;line-height:1.4;color:var(--muted-d)}
+.acq-go{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border-radius:999px;font-size:13.5px;font-weight:800;color:var(--ip-blue-d);background:var(--halo);
+  border:1px solid color-mix(in srgb,var(--ip-blue) 22%,var(--line));white-space:nowrap;transition:transform .2s var(--ease)}
+.acq-go svg.u2-ic{width:16px;height:16px}
+.acq-ban:hover .acq-go{transform:translateX(3px)}
+@container acc (max-width:639px){.acq-ban{grid-template-columns:104px minmax(0,1fr);gap:12px;padding:8px 12px 8px 8px}.acq-go{display:none}}
+@container acc (max-width:479px){.acq-zone{margin-top:12px}.acq-ban{grid-template-columns:88px minmax(0,1fr)}.acq-nm{font-size:16px}
+  .acq-ph{font-size:13px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}}
+@media (prefers-reduced-motion:reduce){.acq-ban:hover,.acq-ban:hover .acq-go{transform:none}}

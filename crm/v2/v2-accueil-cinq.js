@@ -15,6 +15,8 @@
   function fr(n) { return String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
   function calme() { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } }
   function P() { return V2.accueilPont || null; }
+  // 15/10/2026 — la nouveauté du moment, lue dans G4_UNE (v2-app.js) par le pont : rien après sa date de fin, en Escale, en OPSO, ni si la personne a masqué l'outil
+  function une() { var p = P(), u = p && p.une ? p.une() : null; return u && p.vis().indexOf(u.page) >= 0 ? u : null; }
 
   // Le décalage de chaque scène dans sa boucle (les cartes ne respirent pas toutes en même temps)
   var PHASE = { pharma: '0s', infos: '-2.1s', todo: '-4.2s', groupements: '-1.3s', offilog: '-3.4s' };
@@ -187,6 +189,24 @@
       '<rect x="161" y="14" width="34" height="14" rx="6" style="fill:var(--ip-blue-d)"/>' + l + '</g></svg>';
   }
 
+  // 15/10/2026 — scène de Le QG : deux bulles de conversation, quelqu'un écrit, l'ampoule des remontées éclaire le tout
+  function sceneQG() {
+    return '<svg viewBox="0 0 240 150" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><defs>' +
+      '<linearGradient id="yq-nuit" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:color-mix(in srgb,var(--ip-blue-d) 62%,#05070d)"/><stop offset="1" style="stop-color:color-mix(in srgb,var(--ip-blue) 72%,var(--ip-blue-d))"/></linearGradient>' +
+      '<radialGradient id="yq-lu" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FFF1CF" stop-opacity=".95"/><stop offset=".45" stop-color="#FFD27A" stop-opacity=".42"/><stop offset="1" stop-color="#FFD27A" stop-opacity="0"/></radialGradient>' +
+      '<linearGradient id="yq-am" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF6DC"/><stop offset="1" stop-color="#FFC966"/></linearGradient>' +
+      '</defs><rect width="240" height="150" fill="url(#yq-nuit)"/>' +
+      '<g class="acq-halo"><circle cx="186" cy="44" r="58" fill="url(#yq-lu)"/></g>' +
+      '<g class="acq-b1"><path d="M30 36 h92 a10 10 0 0 1 10 10 v26 a10 10 0 0 1 -10 10 h-70 l-14 11 v-11 h-8 a10 10 0 0 1 -10 -10 v-26 a10 10 0 0 1 10 -10 z" fill="#fff"/>' +
+      '<rect x="36" y="48" width="70" height="6" rx="3" style="fill:var(--ip-blue)" opacity=".55"/><rect x="36" y="60" width="50" height="6" rx="3" style="fill:var(--ip-blue)" opacity=".3"/></g>' +
+      '<g class="acq-b2"><path d="M98 92 h92 a10 10 0 0 1 10 10 v18 a10 10 0 0 1 -10 10 h-8 v10 l-13 -10 h-71 a10 10 0 0 1 -10 -10 v-18 a10 10 0 0 1 10 -10 z" style="fill:color-mix(in srgb,var(--ip-blue) 42%,#fff)"/>' +
+      '<rect x="106" y="103" width="56" height="6" rx="3" fill="#fff" opacity=".9"/><rect x="106" y="114" width="78" height="6" rx="3" fill="#fff" opacity=".55"/></g>' +
+      '<g><rect x="22" y="104" width="50" height="24" rx="12" fill="#fff" opacity=".16"/>' +
+      '<circle class="acq-pt" style="--k:0" cx="36" cy="116" r="3.2" fill="#fff"/><circle class="acq-pt" style="--k:1" cx="47" cy="116" r="3.2" fill="#fff"/><circle class="acq-pt" style="--k:2" cx="58" cy="116" r="3.2" fill="#fff"/></g>' +
+      '<g><circle cx="186" cy="40" r="14" fill="url(#yq-am)"/><path d="M180 52 h12 v6 a3 3 0 0 1 -3 3 h-6 a3 3 0 0 1 -3 -3 z" style="fill:color-mix(in srgb,var(--ip-blue) 30%,#fff)"/>' +
+      '<path d="M181 55 h10" style="stroke:var(--ip-blue-d)" stroke-opacity=".4" stroke-width="1.4"/><path d="M182 38 q4 5 8 0" fill="none" stroke="#C7791A" stroke-width="1.6" stroke-linecap="round"/></g>' +
+      '</svg>';
+  }
   var CK = '<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect class="bx" x="1.5" y="1.5" width="17" height="17" rx="5"/><path class="ck" pathLength="1" d="M5.2 10.4 8.7 13.8 14.8 6.6"/></svg>';
 
   /* ── Le contenu vivant de chaque carte : une fonction par zone, rendue seulement quand sa donnée change ── */
@@ -277,9 +297,18 @@
       '<span class="ac-sc ac-sc-off ac4-sc">' + sceneOff() + '</span>' +
       '<span class="ac4-fi" data-slot="h.fi">' + slot('h.fi', ctx) + '</span></a></div>';
   }
+  // Le bandeau : la nouveauté du moment, une seule zone cliquable entre Officines et les quatre cartes
+  function bandeauQG(u) {
+    var p = P(), t = p.outil(u.page);
+    return '<section class="acq-zone ac-in" style="--i:2" aria-label="Nouveauté"><a class="acq-ban"' + lien(t, u.page) + '>' +
+      '<span class="ac-sc acq-sc">' + sceneQG() + '</span>' +
+      '<span class="acq-tx"><span class="acq-l1"><span class="acq-nv">Nouveau</span><b class="acq-nm">' + esc(u.nom) + '</b></span>' +
+      '<span class="acq-ph">' + esc(u.ph) + '</span></span>' +
+      '<span class="acq-go" aria-hidden="true">Découvrir' + p.ic('arrow') + '</span></a></section>';
+  }
   function autres(etat) {
-    var p = P(), cles = [];
-    (etat.fams || []).forEach(function (f) { f.cles.forEach(function (k) { if (CINQ.indexOf(k) < 0 && cles.indexOf(k) < 0) cles.push(k); }); });
+    var p = P(), cles = [], u = une();
+    (etat.fams || []).forEach(function (f) { f.cles.forEach(function (k) { if (CINQ.indexOf(k) < 0 && cles.indexOf(k) < 0 && !(u && k === u.page)) cles.push(k); }); });
     if (!cles.length) return '';
     return '<section class="ac-au ac-in" style="--i:9" aria-label="Autres outils"><h2>Autres outils</h2><div class="ac-au-l">' +
       cles.map(function (k) {
@@ -296,7 +325,8 @@
     var presents = { pharma: vis.indexOf('pharma') >= 0, infos: vis.indexOf('infos') >= 0, todo: vis.indexOf('todo') >= 0, offilog: vis.indexOf('offilog') >= 0, groupements: cles.indexOf('pharma') >= 0 };
     var h = '<div class="ac-wrap' + (cascade ? ' ac-ent' : '') + '" id="u2-cinq">';
     if (presents.pharma) h += '<section aria-label="Officines">' + hero(ctx.t.pharma, ctx) + '</section>';
-    var rang = '', i = 2;
+    var u = une(); if (u) h += bandeauQG(u);
+    var rang = '', i = 3;
     ['infos', 'todo', 'groupements', 'offilog'].forEach(function (k) {
       if (!presents[k]) return;
       rang += carte(k, i++, k === 'groupements' ? { k: k, nom: GRP.nom, ph: GRP.ph, href: GRP.href, act: GRP.act } : ctx.t[k], ctx);
@@ -343,7 +373,7 @@
     if (window.IntersectionObserver) {
       if (VU) VU.disconnect();
       VU = new IntersectionObserver(function (es) { es.forEach(function (e) { e.target.classList.toggle('ac-hors', !e.isIntersecting); }); }, { rootMargin: '80px' });
-      [].forEach.call(root.querySelectorAll('.ac-c, .ac4-haut'), function (c) { VU.observe(c); });
+      [].forEach.call(root.querySelectorAll('.ac-c, .ac4-haut, .acq-ban'), function (c) { VU.observe(c); });
     }
   }
   /* la tache de lumière du bandeau suit le pointeur : un seul écouteur, posé une fois */
