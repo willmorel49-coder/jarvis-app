@@ -398,7 +398,7 @@ def parse_bodacc(suivi):
 # Filtre SIREN EXACT côté serveur (registre="123456789") : « like %123 456 789% » ramassait des sociétés
 # sans rapport (100+ faux résultats pour Aravis, mesuré le 15/10).
 # Licence : jeu ouvert de la DILA ; le robots.txt du portail interdit /api/ aux robots génériques
-# (gabarit Opendatasoft), usage ici = ~90 requêtes/jour, pauses, User-Agent identifié. A arbitrer par Will.
+# (gabarit Opendatasoft), usage ici = ~90 requêtes/jour, pauses, User-Agent identifié. Tranché par Will le 15/10/2026 : interface gardée (accès officiel décrit par l’État).
 DATA_FICHES = os.path.join(ROOT, 'crm', 'v2', 'grossistes-data.js')
 BODACC_SRC = 'BODACC (annonce légale)'
 BODACC_API = os.environ.get('JARVIS_BODACC_API') or 'https://bodacc-datadila.opendatasoft.com/api/explore/v2.1/catalog/datasets/annonces-commerciales/records'
