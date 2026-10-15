@@ -814,7 +814,7 @@
   // 14/10/2026 — UNE barre, QUATRE onglets (demande de Will : « une carte interactive »). La carte s'ouvre en premier ;
   // le comparateur de prix est dans « Prix » (code inchangé). L'ancien sommaire à quatre portes disparaît comme écran :
   // ses quatre questions sont les sous-titres des onglets.
-  var ONGLETS = [['carte', 'Carte', 'Où sont-ils ? Qui est qui ?'], ['annuaire', 'Annuaire', 'Les groupes et leurs acteurs'], ['prix', 'Prix', 'Qui est le moins cher ?'], ['actu', 'Actualité', 'Quoi de neuf ?']];
+  var ONGLETS = [['carte', 'Carte', 'Où sont-ils ? Qui est qui ?'], ['annuaire', 'Annuaire', 'Les groupes et leurs acteurs'], ['prix', 'Prix', 'Qui est le moins cher ?'], ['actu', 'Actualité', 'Quoi de neuf ?'], ['liens', 'Liens', 'Qui détient qui ?']];
   function kickerHtml(espace, seulementNav) {
     var nav = '<nav class="v2-tabs cc-onglets" role="tablist" aria-label="Concurrents">' + ONGLETS.map(function (o) {
       return '<button type="button" class="v2-tab' + (espace === o[0] ? ' on' : '') + '" role="tab" aria-selected="' + (espace === o[0]) + '" title="' + esc(o[2]) + '" onclick="V2.go(\'concurrents\',\'' + o[0] + '\')">' + esc(o[1]) + '</button>';
@@ -1336,9 +1336,11 @@
       if (lstK && CMP_COL.indexOf(lstK) < 0) { p = 'prix'; lstK = ''; }
       if (lstK && S.lst.k !== lstK) S.lst = { k: lstK, fam: 'all', min: 0, q: '', off: {}, top: null, vus: CMP_PAS };
       var carte = (p === 'carte' || /^(g|gr)\//.test(p));
+      var liens = /^liens(\/|$)/.test(p);
+      if (liens && V2.concLiensRender && document.getElementById('cl-root') && root.contains(document.getElementById('cl-root'))) { V2.concLiensRender(document.getElementById('cl-host')); return; }
       // La carte déjà montée n'est pas reconstruite (zoom conservé) : on ne fait que changer la fiche.
       if (carte && V2.concCarteRender && document.getElementById('cm-root') && root.contains(document.getElementById('cm-root'))) { V2.concCarteRender(document.getElementById('cm-host'), p); return; }
-      var espace = carte ? 'carte' : (p === 'annuaire' || p === 'actu') ? p : ((SRC[p] || p === 'prix' || lstK) ? 'prix' : 'carte');
+      var espace = liens ? 'liens' : carte ? 'carte' : (p === 'annuaire' || p === 'actu') ? p : ((SRC[p] || p === 'prix' || lstK) ? 'prix' : 'carte');
       if (espace === 'carte' && !carte) p = 'carte';
       var cmp = espace === 'prix' && !SRC[p];
       var src = espace === 'prix' && SRC[p] ? p : '';
@@ -1346,14 +1348,20 @@
       fermerTout();
       var corps;
       var tete = (espace === 'prix') ? '' : teteHtml(espace, kickerHtml(espace, true));
-      if (espace === 'carte') corps = '<div id="cm-host"></div>';
+      if (espace === 'liens') corps = '<div id="cl-host"></div>';
+      else if (espace === 'carte') corps = '<div id="cm-host"></div>';
       else if (espace === 'annuaire' || espace === 'actu') corps = '<div id="cc-gr-host"></div>';
       else {
         var comptoir = '<div class="cc-cbar-holder">' + comptoirBar(false) + '<div id="cc-cres" class="cc-cres"></div></div>';
         corps = lstK ? tabsHtml('comparateur') + lstHtml() : cmp ? tabsHtml('comparateur') + liensHtml() + comptoir + comparateurHtml() : tabsHtml(src) + liensHtml() + comptoir + ficheHtml(src);
       }
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
-        '<div class="v2-wrap v2-u cc-wrap' + (tel ? ' tel' : '') + (cmp ? ' cmp-w' : '') + (espace === 'carte' ? ' cm-w' : '') + '">' + (tete || kickerHtml(espace)) + corps + '</div>';
+        '<div class="v2-wrap v2-u cc-wrap' + (tel ? ' tel' : '') + (cmp ? ' cmp-w' : '') + (espace === 'carte' || espace === 'liens' ? ' cm-w' : '') + '">' + (tete || kickerHtml(espace)) + corps + '</div>';
+      if (espace === 'liens') {
+        if (V2.concLiensRender) V2.concLiensRender(document.getElementById('cl-host'));
+        else document.getElementById('cl-host').innerHTML = '<div class="cc-vide">Cet onglet n\'est pas chargé. Rechargez la page.</div>';
+        return;
+      }
       if (espace === 'carte') {
         if (V2.concCarteRender) V2.concCarteRender(document.getElementById('cm-host'), p);
         else document.getElementById('cm-host').innerHTML = '<div class="cc-vide">La carte n\'est pas chargée. Rechargez la page.</div>';
