@@ -6,6 +6,7 @@
 -- Même liste côté app : OPSO_ACCES dans crm/v2/v2-boot.js.
 -- 01/10/2026 — Will : « Pascale Prieto doit avoir accès à l'app OPSO ».
 -- 13/10/2026 — Will : Arthur Le Houerou y entre avec son compte du CRM.
+-- 15/10/2026 — Will : Guy Bourdon y entre aussi, avec son compte du CRM.
 create or replace function public.jarvis_acces_opso()
 returns boolean language sql stable security definer set search_path to 'public'
 as $$
@@ -16,6 +17,7 @@ as $$
                              'william.morel@me.com',
                              'pascale.prieto@integralpharma.fr',
                              'arthur.lehouerou@integralpharma.fr',
+                             'guy.bourdon@integralpharma.fr',
                              'claude-test@integralpharma.fr'))
 $$;
 
