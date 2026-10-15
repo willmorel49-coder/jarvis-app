@@ -304,7 +304,9 @@ RATTACHEES = {
 # (refacturé) = 98,40 € rendus. On inverse le signe (quantité et montant) de ces
 # lignes pour qu'elles se retirent du CA et de la marge (Will, 16/09/2026).
 AVOIRS_EN_POSITIF = {'GUY', 'TIF', 'PHI', 'GER'}
-# Mois lus = couples (année, mois). Ajouter (2027, 1) quand les ventes de janvier 2027 sont déposées.
+# Mois lus = couples (année, mois). LA liste de toute la chaîne : generate_wml_sales.py, generate_marge_clients.py
+# et les scripts hors chaîne la lisent ici (mois_wml.lire_mois_lus). Un mois de plus = une seule modification :
+# octobre 2026 → range(1, 11) ; décembre → range(1, 13) ; janvier 2027 → [(2026, m) for m in range(1, 13)] + [(2027, 1)].
 MOIS_LUS = [(2026, m) for m in range(1, 10)]
 NB_MOIS = len(MOIS_LUS)
 MOIS_ABBR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil',

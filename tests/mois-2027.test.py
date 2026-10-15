@@ -51,6 +51,15 @@ check('MOIS_LUS commence à 2026-01', env['MOIS_LUS'][0] == (2026, 1))
 check('WML_MOIS 2026 = chaînes AAAA-MM', ['%d-%02d' % x for x in l26][:3] == ['2026-01', '2026-02', '2026-03'])
 
 # faux source avec janvier 2027 ajouté : la lecture suit sans toucher au reste
+# une seule liste à la main : generate_wml_sales.py lit celle de generate_wml_v2.py (pas de 2e copie à oublier)
+import ast
+_src = open(os.path.join(RACINE, 'generate_wml_sales.py'), encoding='utf-8').read()
+_aff = [n.value for n in ast.parse(_src).body if isinstance(n, ast.Assign) and len(n.targets) == 1
+        and isinstance(n.targets[0], ast.Name) and n.targets[0].id == 'MOIS_LUS']
+check('ventes OPSO : MOIS_LUS = lire_mois_lus()', len(_aff) == 1 and isinstance(_aff[0], ast.Call)
+      and getattr(_aff[0].func, 'id', '') == 'lire_mois_lus' and not _aff[0].args, ast.dump(_aff[0]) if _aff else 'absent')
+check('lire_mois_lus() = la liste de generate_wml_v2.py', mw.lire_mois_lus() == env['MOIS_LUS'])
+
 faux = ("SOURCES = [('A', 'AA')]\nRATTACHEES = {}\nAVOIRS_EN_POSITIF = set()\n"
         "MOIS_LUS = [(2026, m) for m in range(1, 10)] + [(2026, 12), (2027, 1)]\n")
 with tempfile.NamedTemporaryFile('w', suffix='.py', delete=False, encoding='utf-8') as f:

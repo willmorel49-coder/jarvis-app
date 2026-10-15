@@ -14,7 +14,7 @@ import json, os, re, glob, warnings
 from collections import defaultdict
 warnings.filterwarnings('ignore')
 import openpyxl
-from mois_wml import periode
+from mois_wml import periode, lire_mois_lus
 
 # Le dossier du script LUI-MÊME. Écrit en dur, BASE ramenait toujours vers
 # ~/JARVIS/APP — resté 439 commits en arrière : le robot des stats y a ignoré
@@ -27,8 +27,9 @@ LISTING_JS = os.path.join(BASE, 'opso', 'opso-listing-2026.js')
 OUT_SALES = os.path.join(BASE, 'opso', 'wml-sales-data.js')
 OUT_ADH = os.path.join(BASE, 'opso', 'opso-adherents.js')
 OUT_DATA = os.path.join(BASE, 'opso', 'wml-data.js')
-# Mois lus = couples (année, mois), comme dans generate_wml_v2.py. Ajouter (2027, 1) quand les ventes de janvier 2027 sont déposées.
-MOIS_LUS = [(2026, m) for m in range(1, 10)]
+# Mois lus = couples (année, mois), lus DANS generate_wml_v2.py : une seule liste à tenir à la main
+# (deux copies, c'était un mois ajouté d'un côté et oublié de l'autre).
+MOIS_LUS = lire_mois_lus()
 WML_MONTHS = ['%d-%02d' % (a, m) for a, m in MOIS_LUS]
 MOIS_ABBR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil',
              'Août', 'Sep', 'Oct', 'Nov', 'Déc']
