@@ -285,9 +285,13 @@
   var printBound = false;
   function preparer() {
     var d = construire(); if (!d) return Promise.resolve(null);
+    return preparerHtml(pagesHtml(d));
+  }
+  // Même mise en page d'impression pour tout écran A4 de la famille (ex. opso-prix.js) : on lui passe ses pages.
+  function preparerHtml(pagesDuDocument) {
     injectStyles(); nettoyer();
     var st = document.createElement('style'); st.id = 'oc-print-style'; st.textContent = STYLE_IMPR; document.head.appendChild(st);
-    var box = document.createElement('div'); box.id = 'oc-print'; box.innerHTML = pagesHtml(d); document.body.appendChild(box);
+    var box = document.createElement('div'); box.id = 'oc-print'; box.innerHTML = pagesDuDocument; document.body.appendChild(box);
     if (!printBound) { printBound = true; window.addEventListener('afterprint', nettoyer); }
     var attentes = Array.prototype.map.call(box.querySelectorAll('img'), function (im) {
       return new Promise(function (ok) { if (im.complete) return ok(); im.addEventListener('load', ok); im.addEventListener('error', ok); });
@@ -314,8 +318,8 @@
     var per = periodeTexte(d.R.periode).replace(/^commandes de /, '').replace(/[\\/:*?"<>|]/g, ' ');
     return { texte: '﻿' + lignes.map(function (l) { return l.map(champ).join(';'); }).join('\r\n') + '\r\n', nom: 'Catalogue OPSO - ' + per + '.csv' };
   }
-  function telechargerCsv() {
-    var c = csv();
+  function telechargerCsv() { telechargerTexte(csv()); }
+  function telechargerTexte(c) {
     if (!c) { V2.toast && V2.toast('Téléchargement impossible, réessayez dans un instant', 'error'); return; }
     var url = URL.createObjectURL(new Blob([c.texte], { type: 'text/csv;charset=utf-8' }));
     var a = document.createElement('a'); a.href = url; a.download = c.nom;
@@ -334,7 +338,10 @@
       });
     },
     preparer: preparer,
-    donnees: construire
+    donnees: construire,
+    // Pièces communes réutilisées par les autres écrans A4 OPSO (opso-prix.js) : mêmes styles, mêmes logos, même impression, même CSV.
+    commun: { styles: injectStyles, ajuster: ajusterApercu, logo: logoOpso, logoIntegral: LOGO_IP, enveloppe: page, preparerHtml: preparerHtml,
+      telecharger: telechargerTexte, csv: { champ: champ, sansFormule: sansFormule, virgule: virgule } }
   };
 
   V2.pages.marketing = { needs: [], render: render };

@@ -531,7 +531,7 @@
     // 14/10/2026 — même teal que la tuile d'accueil (halo de tête de la carte des grossistes)
     concurrents: '#0E7C86',
     // 29/09/2026 — écrans OPSO « Pharmacies » et « Meilleurs achats » (opso-pharmacies.js)
-    opsopharmacies: 'var(--pil-opp)', opsoachats: 'var(--pil-cat)', opsobord: 'var(--pil-pilo)'
+    opsopharmacies: 'var(--pil-opp)', opsoachats: 'var(--pil-cat)', opsobord: 'var(--pil-pilo)', opsoprix: 'var(--pil-fiche)'
   };
   function accentFor(name) {
     if (name === 'marketing') return (window.V2_BRAND && window.V2_BRAND.opso) ? 'var(--pil-fiche)' : 'var(--pil-rose)';
@@ -1871,6 +1871,10 @@
         if (V2.pages.opsoachats) {
           P.push({ k: 'opsoachats', cls: 'p3', accent: 'var(--pil-cat)', ico: 'cat', tag: 'Classement', t: 'Meilleurs achats', d: 'Les produits que les pharmacies OPSO commandent chez nous, classés par nombre de pharmacies clientes — la liste de référence à montrer aux adhérents.', go: 'Voir les meilleurs achats' });
         }
+        // 15/10/2026 — listing à part : PFHT, prix Intégral habituel et prix négocié OPSO Santé (opso-prix.js, OPSO uniquement).
+        if (V2.pages.opsoprix) {
+          P.push({ k: 'opsoprix', cls: 'p2', accent: 'var(--pil-fiche)', ico: 'cat', tag: 'À part', t: 'Les prix OPSO Santé', d: 'Pour chaque produit : le prix fabricant (PFHT), notre prix habituel sur facture et le prix négocié pour OPSO Santé. Mounjaro, Hélicidine, offre Sanofi et UPSA, Wegovy comprimés à venir.', go: 'Voir les prix' });
+        }
       }
       // 11/09/2026 — espace ESCALE PHARMA. 24/09/2026 — Will : « features communes,
       // pas de distinctions » : même accueil, mêmes portes que le CRM ; seules les
@@ -1966,6 +1970,7 @@
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsobord) PAGES.push(['opsobord', 'Tableau de bord · chiffre, rémunération, trajectoire', 'grid']);
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsopharmacies) PAGES.push(['opsopharmacies', 'Pharmacies · évolution par officine', 'pharma']);
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsoachats) PAGES.push(['opsoachats', 'Meilleurs achats · classement par nombre de pharmacies', 'cat']);
+    if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsoprix) PAGES.push(['opsoprix', 'Les prix OPSO Santé · PFHT, prix habituel, prix négocié', 'cat']);
     // Une seule entrée « La carte » (l'entrée « Copilote » en doublon est retirée le 27/08/2026).
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.carte) PAGES.splice(1, 0, ['carte', 'La carte · officines, clients, prospects, tournée', 'pharma']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.infos) PAGES.splice(1, 0, ['infos', 'Infos du matin', 'spark']);
