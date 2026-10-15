@@ -55,10 +55,17 @@
     var cls = f === 'haute' ? 'hi' : (f === 'faible' ? 'lo' : 'mid');
     return '<span class="gr-fiab ' + cls + '">fiabilité ' + esc(g.fiabilite || 'moyenne') + '</span>';
   }
+  // 15/10/2026 : un type rédigé en phrase (40 fiches > 30 signes) débordait de la pastille → pastille = le début, phrase entière sous l'en-tête (typeTxt).
+  function typeCourt(t) {
+    var c = String(t || '').split(/\s+[—–]\s+|\s+\(|\s+=\s+|\s*:\s+|,\s+|\.\s/)[0].trim();
+    if (c.length > 48) c = c.slice(0, 48).replace(/\s+\S*$/, '').replace(/[\s\/+,;-]+$/, '') + '…';
+    return c.charAt(0).toUpperCase() + c.slice(1);
+  }
   function typeBadge(t) {
     t = t || ''; var cls = /coop/i.test(t) ? 'coop' : (/short|r[eé]gional/i.test(t) ? 'sl' : 'nat');
-    return '<span class="gr-type ' + cls + '">' + esc(t) + '</span>';
+    return '<span class="gr-type ' + cls + '">' + esc(typeCourt(t)) + '</span>';
   }
+  function typeTxt(t) { return (t && typeCourt(t) !== t) ? '<p class="gr-typetxt">' + esc(t) + '</p>' : ''; }
   function timeAgo(iso) {
     if (!iso) return '';
     try {
@@ -355,7 +362,7 @@
       '<div class="gr-fhead"><div><h2>' + esc(aff(g)) + '</h2>' + (g.societe ? '<p class="gr-soc">' + esc(g.societe) + (g.societe_siren ? ' · SIREN ' + esc(g.societe_siren) : '') + '</p>' : '') + '<div class="gr-fmeta">' + typeBadge(g.type) + (g.lien_ip ? '<span class="gr-iplink">Lié à Intégral Pharma</span>' : '') + fiab(g) +
         (grp ? '<button type="button" class="gr-grplink" onclick="V2.concGroupe(\'' + esc(grp.id) + '\')">' + esc(aff(grp)) + '</button>' : '') +
         '<span>mis à jour le ' + esc(dFr(g.maj)) + '</span>' +
-        (g.financials && g.financials.siren ? '<a href="https://annuaire-entreprises.data.gouv.fr/entreprise/' + esc(g.financials.siren) + '" target="_blank" rel="noopener">fiche officielle ↗</a>' : '') + '</div></div></div>' +
+        (g.financials && g.financials.siren ? '<a href="https://annuaire-entreprises.data.gouv.fr/entreprise/' + esc(g.financials.siren) + '" target="_blank" rel="noopener">fiche officielle ↗</a>' : '') + '</div>' + typeTxt(g.type) + '</div></div>' +
       (g.repartiteur === false && g.non_repartiteur_motif ? '<div class="gr-nonrep"><h4>Pas un répartiteur officinal</h4><p>' + esc(g.non_repartiteur_motif) + '</p></div>' : '') +
       (g.siren_note ? '<div class="gr-nonrep"><p>' + esc(g.siren_note) + '</p></div>' : '') +
       (g.a_retenir ? '<div class="gr-retenir"><h4>À retenir face à un pharmacien</h4><p>' + esc(g.a_retenir) + '</p></div>' : '') +
@@ -555,7 +562,8 @@
       '.gr-card-ens{display:flex;flex-wrap:wrap;gap:5px}',
       '.gr-chip{font-size:12px;font-weight:600;padding:3px 8px;border-radius:999px;background:color-mix(in srgb,var(--ip-blue) 8%,var(--card));color:var(--ip-blue);border:1px solid color-mix(in srgb,var(--ip-blue) 18%,transparent)}',
       '.gr-card-go{font-size:12px;font-weight:700;color:var(--ip-blue)}',
-      '.gr-type{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}',
+      '.gr-type{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}',
+      '.gr-typetxt{margin:6px 0 0;font-size:12.5px;line-height:1.45;color:var(--muted)}',
       '.gr-type.nat{background:#E9F0FF;color:#0034A0}.gr-type.coop{background:#E7F8EF;color:#0B7A44}.gr-type.sl{background:#FFF2E0;color:#A35B00}',
       '.gr-fiab{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px}',
       '.gr-fiab.hi{background:#E7F8EF;color:#0B7A44}.gr-fiab.mid{background:#FFF6E0;color:#8A6100}.gr-fiab.lo{background:#FDE8E8;color:#B42318}',

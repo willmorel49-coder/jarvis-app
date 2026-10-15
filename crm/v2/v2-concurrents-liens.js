@@ -260,7 +260,7 @@
     } else box.style.height = '';
     pan.hidden = false;
     var cy = creerCy(els, { style: [
-      { selector: 'node.gch', style: { shape: 'round-rectangle', width: 'data(w)', height: 24, padding: 0, 'text-halign': 'center', 'text-valign': 'center', 'font-size': 11, 'text-max-width': 260, 'text-wrap': 'none', 'background-color': '#F3F5F9', 'border-color': INK2 } },
+      { selector: 'node.gch', style: { shape: 'round-rectangle', width: 'data(w)', height: 24, padding: 0, 'text-halign': 'center', 'text-valign': 'center', 'font-size': tel ? 12 : 11, 'text-max-width': 260, 'text-wrap': 'none', 'background-color': '#F3F5F9', 'border-color': INK2 } },
       { selector: 'node.drt', style: { 'font-size': 10.5, padding: 0, width: 'data(w)', height: 22, 'text-wrap': 'none' } },
       { selector: 'node.drt.grille', style: { 'font-size': 12, height: 'data(h)', 'text-wrap': 'wrap', 'text-max-width': 'data(tw)', 'text-line-height': 1.2 } },
       { selector: 'edge', style: { 'curve-style': 'unbundled-bezier', 'control-point-distances': [0], 'control-point-weights': [0.5], 'line-color': 'data(color)', width: 1, opacity: 0.35, 'target-arrow-shape': 'none' } },
@@ -292,7 +292,7 @@
       if (id) {
         var g = D.gauche.filter(function (x) { return x.n.id === id; })[0];
         if (g) {
-          var e0 = elN(g.n); e0.data.lab = court(g.n.label, 30); e0.data.w = 12 + 6.6 * e0.data.lab.length; e0.position = { x: 0, y: 0 }; e0.classes += 'gch '; els.push(e0);
+          var e0 = elN(g.n); e0.data.lab = court(g.n.label, 30); e0.data.w = 12 + 7.2 * e0.data.lab.length; e0.position = { x: 0, y: 0 }; e0.classes += 'gch '; els.push(e0);
           var typeLien = g.n.type === 'personne' ? 'dirige' : 'detient', GOUT = 16, y = 58, prec = id, lignes = [];
           for (var k = 0; k < g.reps.length; k += 2) lignes.push(g.reps.slice(k, k + 2));
           lignes.forEach(function (paire, li) {
@@ -327,7 +327,8 @@
       majCompte();
     }
     pan.innerHTML = id ? carteIdentite(S.N[id]) : '<div class="cl-pan-v"><b>Une carte d\'identité par personne.</b><br>Touchez un nom à gauche : fonctions, parcours et source s\'affichent ici.</div>';
-    if (id && !init && !tel && pan.scrollIntoView && window.innerWidth < 1100) pan.scrollIntoView({ block: 'nearest' });
+    // 15/10/2026 (choix de Will) : sur téléphone la carte d'identité s'ouvre sous le schéma, hors de l'écran → on y descend.
+    if (id && !init && pan.scrollIntoView) { if (tel) pan.scrollIntoView({ block: 'start', behavior: 'smooth' }); else if (window.innerWidth < 1100) pan.scrollIntoView({ block: 'nearest' }); }
     info(id ? '<b>' + esc(court(S.N[id].label, 50)) + '</b> tient ou dirige ' + FR.format(atteint(id).length) + ' grossiste' + (atteint(id).length > 1 ? 's' : '') + '. Touchez un grossiste pour ouvrir sa fiche.' : 'Touchez un grossiste pour ouvrir sa fiche, une personne ou une société pour voir ses grossistes.');
   };
   // Carte d'identité : fonctions et parcours lus dans les fiches (V2.grossistesInfo), sinon dans les libellés des liens.
@@ -434,7 +435,7 @@
       '.cl-li-t{display:inline-flex;align-items:center;gap:8px;min-width:0}.cl-li b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cl-li em{font-style:normal;font-size:12.5px;font-weight:700;color:' + ACCENT_D + ';white-space:nowrap}',
       '.cl-li.on{background:var(--ip-ink);border-color:var(--ip-ink);color:#fff}.cl-li.on em{color:#fff}',
       '@media(max-width:1023px){.cl-cols{flex-direction:column}.cl-panel{width:auto;max-width:none;max-height:none;align-self:stretch}}',
-      '@media(max-width:699px){.cl-cy{height:340px;min-height:300px;touch-action:none}.cl-ctl{display:flex;top:auto;bottom:10px}.cl-count{top:auto;bottom:64px;left:10px}.cl-root{gap:8px}.cl-phrase{font-size:13px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}}'
+      '@media(max-width:699px){.cl-panel{scroll-margin-top:72px}.cl-cy{height:340px;min-height:300px;touch-action:none}.cl-ctl{display:flex;top:auto;bottom:10px}.cl-count{top:auto;bottom:64px;left:10px}.cl-root{gap:8px}.cl-phrase{font-size:13px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}}'
     ].join('');
     document.head.appendChild(s);
   }
