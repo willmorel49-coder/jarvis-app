@@ -288,13 +288,15 @@
   //    Les MÊMES lignes que l'écran (construire()), même arrondi du pourcentage. Jamais le nombre réseau. ──
   var virgule = function (v) { return (Math.round(v * 100) / 100).toFixed(2).replace('.', ','); };
   function partCsv(n, tot) { var p = n / tot * 100; return p < 1 ? '< 1%' : Math.round(p) + '%'; }   // même règle que pct(), sans espace
+  // Un texte qui commence par = + - @ serait lu par Excel comme une formule : on le neutralise par une apostrophe.
+  function sansFormule(v) { v = String(v == null ? '' : v); return /^[=+\-@\t\r]/.test(v) ? "'" + v : v; }
   function champ(v) { v = String(v == null ? '' : v); return /[;"\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
   function csv() {
     var d = construire(); if (!d) return null;
     var lignes = [['Rayon', 'Rang', 'Produit', 'CIP13', 'Part des pharmacies du réseau', 'dont OPSO', 'PPHT', 'Prix net']];
     d.rayons.forEach(function (x) {
       x.items.forEach(function (it, i) {
-        lignes.push([x.r.court, i + 1, it.nom, '="' + it.cip + '"', partCsv(it.n, d.R.officines), it.opso,
+        lignes.push([sansFormule(x.r.court), i + 1, sansFormule(it.nom), '="' + it.cip + '"', partCsv(it.n, d.R.officines), it.opso,
           x.r.deux && it.ppht ? virgule(it.ppht) : '', virgule(it.net)]);
       });
     });
