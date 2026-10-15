@@ -79,6 +79,21 @@ PFIT_CSV = [CHASSES / "travail-chasse-12" / "pharmafit" / "fichiers" / "pharmafi
 OUT_PFIT = ROOT / "crm" / "v2" / "concurrents-pharmafit-data.js"
 CPROM_CSV = Path.home() / "DPGS-documents" / "analyse" / "CENTRAL-PROM-2026-09-27.csv"
 OUT_CERP = ROOT / "crm" / "v2" / "concurrents-cerp-data.js"
+# 15/10/2026 — chasse 15 : Central Prom avril-octobre 2026, Central Flash, Central Lab et les tarifs que des
+# laboratoires négocient via CERP (Cooper, Gilbert, Bausch). Lus tels quels dans le dossier de la chasse
+# (contrôlés à l'image : 20/20 sur Central Prom, 20/20 sur le reste), JAMAIS copiés dans analyse/ (le
+# générateur ramasse les CSV de ce dossier par d'autres globs).
+CH15 = CHASSES / "travail-chasse-15" / "csv"
+CPROM26_CSV = CH15 / "CENTRAL-PROM-2026-04-A-10.csv"
+FLASH_CSV = CH15 / "CENTRAL-FLASH-2025-2026.csv"
+LAB_CSV = CH15 / "CENTRAL-LAB-2025-2026.csv"
+LABO_CERP_CSV = [("Cooper via CERP", CH15 / "COOPER-CERP-2026.csv"),
+                 ("Gilbert via CERP", CH15 / "GILBERT-CERP-2026-03.csv"),
+                 ("Bausch + Lomb Chauvin via CERP", CH15 / "BAUSCH-CHAUVIN-OTC-CERP-2026.csv")]
+CERP_MAJ = "2026-10-01"
+CERP_PERIODE = "2025-2026"
+CERP_ENTETE = ("Astera - CERP — Central Prom, Central Flash, Central Lab 2025-2026 et tarifs laboratoires négociés via CERP 2026, "
+               "dernière offre connue par produit et par famille de document")
 # 05/10/2026 (suite) — factures Epsilon d'un compte de DÉMONSTRATION, et conditions que d'autres groupements
 # obtiennent des laboratoires (classeur consolidé, onglet « Conditions par produit », lu en lecture seule).
 EPS_CSV = CHASSES / "travail-chasse-13" / "archives-profondes" / "fichiers" / "epsilon__factures-espace-client-demo-lignes-transcrites__2026-07.csv"
@@ -602,37 +617,88 @@ def pharmafit():
 
 
 def central_prom():
-    """Une ligne par produit : son catalogue Central Prom le plus récent (2025-2026), meilleur palier contrôlé."""
-    cols = ["code13", "libelle", "ppht", "net", "remise", "qtes", "paliers", "periode", "page"]
-    if not CPROM_CSV.exists():
-        print("ERREUR : fichier introuvable :", CPROM_CSV)
-        sys.exit(1)
+    """Une ligne par produit ET par famille de document (Central Prom, Central Flash, Central Lab, tarif laboratoire
+    négocié via CERP) : l'offre la plus récente de cette famille, meilleur palier contrôlé. Une offre finie avant le
+    01/01/2026 est écartée dès qu'une autre famille en a une plus récente pour le même produit. Le comparateur prend
+    le moins cher des lignes d'un code (cmpNet) : plusieurs familles = le moins cher des offres retenues."""
+    cols = ["code13", "libelle", "ppht", "net", "remise", "qtes", "paliers", "periode", "page", "famille", "document"]
+    # (famille de document, libellé affiché, fichier, façon de dater l'offre)
+    sources = [("prom", "Central Prom", CPROM_CSV, "doc"), ("prom", "Central Prom", CPROM26_CSV, "doc"),
+               ("flash", "Central Flash", FLASH_CSV, "periode"), ("lab", "Central Lab", LAB_CSV, "periode")]
+    sources += [("labo", nom, f, "annuel") for nom, f in LABO_CERP_CSV]
+    for _, _, f, _ in sources:
+        if not f.exists():
+            print("ERREUR : fichier introuvable :", f)
+            sys.exit(1)
     prod, n, sans_mois = {}, 0, set()
-    with open(CPROM_CSV, encoding="utf-8-sig", newline="") as fh:
-        for r in csv.DictReader(fh):
-            n += 1
-            code, net, an = (r.get("code_produit") or "").strip(), fnum(r.get("prix_net")), (r.get("annee") or "").strip()
-            if len(code) != 13 or not net or an not in ("2025", "2026") or not (r.get("controle") or "").startswith("exacte"):
-                continue
-            doc = (r.get("document") or "").upper()
-            m = [k for k, x in enumerate(MOIS) if x in doc]
-            if not m:
-                sans_mois.add(doc)
-                continue
-            quand = (int(an), max(m))
-            prod.setdefault(code, {}).setdefault(quand, []).append((fnum(r.get("quantite")) or 1, net, r))
+    for fam, nom_fam, f, mode in sources:
+        with open(f, encoding="utf-8-sig", newline="") as fh:
+            for r in csv.DictReader(fh):
+                n += 1
+                code, net, an = (r.get("code_produit") or "").strip(), fnum(r.get("prix_net")), (r.get("annee") or "").strip()
+                if len(code) != 13 or not net or not (r.get("controle") or "").startswith("exacte"):
+                    continue
+                per = (r.get("periode") or "")
+                if mode == "doc":
+                    if an not in ("2025", "2026"):
+                        continue
+                    doc = (r.get("document") or "").upper()
+                    m = [k for k, x in enumerate(MOIS) if x in doc]
+                    if not m:
+                        sans_mois.add(doc)
+                        continue
+                    quand, lib = (int(an), max(m)), MOIS_FR[max(m)] + " " + an
+                elif mode == "periode":
+                    # fin de l'offre lue dans « Offre valable du 1er/01 au 31/01/2026 » (le champ annee du CSV se trompe
+                    # sur Central Flash janvier 2026) ; « octobre 2026* » sans jour : mois et année en toutes lettres
+                    d = re.findall(r"(\d{2})/(\d{4})", per)
+                    if d:
+                        quand = (int(d[-1][1]), int(d[-1][0]) - 1)
+                    else:
+                        mm = re.search(r"([a-zéû]+) (\d{4})", per.lower())
+                        if not mm or mm.group(1) not in MOIS_FR:
+                            sans_mois.add(per)
+                            continue
+                        quand = (int(mm.group(2)), MOIS_FR.index(mm.group(1)))
+                    deb = re.search(r"(\d{1,2})(?:er)?/(\d{2})\s+au\b", per)
+                    k0 = int(deb.group(2)) - 1 if deb else quand[1]
+                    lib = (MOIS_FR[k0] + "-" if k0 != quand[1] else "") + MOIS_FR[quand[1]] + " " + str(quand[0])
+                else:
+                    # tarif annuel d'un laboratoire : « au 1er janvier 2026 », « à compter du 01/03/2026 », « tarif 2026 »
+                    d = re.search(r"(\d{2})/(\d{2})/(\d{4})", per)
+                    mm = re.search(r"(janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre) (\d{4})", per.lower())
+                    y4 = re.search(r"(\d{4})", per)
+                    if d:
+                        quand = (int(d.group(3)), int(d.group(2)) - 1)
+                    elif mm:
+                        quand = (int(mm.group(2)), MOIS_FR.index(mm.group(1)))
+                    elif y4:
+                        quand = (int(y4.group(1)), 0)
+                    else:
+                        sans_mois.add(per)
+                        continue
+                    lib = MOIS_FR[quand[1]] + " " + str(quand[0]) if (d or mm) else "tarif " + str(quand[0])
+                prod.setdefault(code, {}).setdefault(fam, {}).setdefault(quand, []).append((fnum(r.get("quantite")) or 1, net, r, lib, nom_fam))
     if sans_mois:
-        print("ERREUR : mois illisible dans le nom de", sorted(sans_mois))
+        print("ERREUR : date illisible dans", sorted(sans_mois))
         sys.exit(1)
-    data = []
-    for code, par in prod.items():
-        quand = max(par)
-        ps = sorted({(x[0], x[1]) for x in par[quand]}, key=lambda x: (x[0], -x[1]))
-        r = min(par[quand], key=lambda x: x[1])[2]
-        net, ppht = min(x[1] for x in ps), fnum(r.get("prix"))
-        data.append([code, (r.get("nom") or "").strip(), ppht, net, round((ppht - net) / ppht * 100, 2) if ppht else None,
-                     " · ".join("dès %g" % x[0] for x in ps), "|".join("%g" % x[1] for x in ps),
-                     MOIS_FR[quand[1]] + " " + str(quand[0]), (r.get("page") or "").strip()])
+    data, debut_2026 = [], (2026, 0)
+    for code, fams in prod.items():
+        retenues = []   # (quand, famille, lignes de cette offre)
+        for fam, par in fams.items():
+            quand = max(par)
+            retenues.append((quand, fam, par[quand]))
+        recent = max(x[0] for x in retenues)
+        for quand, fam, lignes in retenues:
+            if quand < debut_2026 and quand < recent:
+                continue   # offre d'avant 2026, une autre famille a plus récent
+            ps = sorted({(x[0], x[1]) for x in lignes}, key=lambda x: (x[0], -x[1]))
+            best = min(lignes, key=lambda x: x[1])
+            r = best[2]
+            net, ppht = min(x[1] for x in ps), fnum(r.get("prix"))
+            data.append([code, (r.get("nom") or "").strip(), ppht, net, round((ppht - net) / ppht * 100, 2) if ppht else None,
+                         " · ".join("dès %g" % x[0] for x in ps), "|".join("%g" % x[1] for x in ps),
+                         best[3], (r.get("page") or "").strip(), best[4], (r.get("document") or "").strip()])
     return cols, data, n
 
 
@@ -644,9 +710,9 @@ def chasses():
     if not ok:
         sys.exit(1)
     c, d, n = central_prom()
-    o = {"maj": "2026-03-01", "periode": "2025-2026", "cols": c, "rows": d}
-    relu, ok = ecrire(OUT_CERP, "CONCURRENTS_CERP", o, "Astera - CERP — catalogues mensuels Central Prom 2025-2026, dernière offre connue par produit", lambda x: len(x["rows"]) == len(d))
-    print("Central Prom : %d lignes lues -> %d produits, %d octets, relecture %s" % (n, len(d), OUT_CERP.stat().st_size, "OK" if ok else "ÉCART !"))
+    o = {"maj": CERP_MAJ, "periode": CERP_PERIODE, "cols": c, "rows": d}
+    relu, ok = ecrire(OUT_CERP, "CONCURRENTS_CERP", o, CERP_ENTETE, lambda x: len(x["rows"]) == len(d))
+    print("CERP : %d lignes lues -> %d lignes (%d produits), %d octets, relecture %s" % (n, len(d), len({x[0] for x in d}), OUT_CERP.stat().st_size, "OK" if ok else "ÉCART !"))
     if not ok:
         sys.exit(1)
     c, d, n = epsilon()
