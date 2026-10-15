@@ -1047,6 +1047,12 @@
     });
   }
   function lstRetenus() { var off = S.lst.off; return lstCand().filter(function (x) { return !off[x.c]; }); }
+  // Fichiers : lignes dans l'ordre du DOCUMENT (famille, puis pharmacies décroissantes) pour une numérotation 1, 2, 3… sans trou.
+  // Le choix « 50 premiers » reste pris sur l'ordre global (les 50 plus commandés, toutes familles).
+  function lstDoc() {
+    var ord = {}; LST_SECT.forEach(function (s, i) { ord[s[0]] = i; });
+    return lstRetenus().map(function (x, i) { return [x, i]; }).sort(function (a, b) { return (ord[lstSect(a[0].f)] - ord[lstSect(b[0].f)]) || (a[1] - b[1]); }).map(function (p) { return p[0]; });
+  }
   function lstDate(k) {
     var d = '';
     lstSources(k).forEach(function (x) { var m = SRC[x].charge() && SRC[x].maj(); if (typeof m === 'string' && m > d) d = m; });
@@ -1152,7 +1158,7 @@
   function lstDateLongue() { return new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }); }
   // Excel : pour l'officine (interne = false) ou interne (true). La liste est celle de l'écran : produits cochés, classés par pharmacies.
   V2.ccLstExcel = function (interne) {
-    var k = S.lst.k, rows = lstRetenus(), nom = COL_NOM[k];
+    var k = S.lst.k, rows = lstDoc(), nom = COL_NOM[k];
     if (!rows.length) { V2.toast('Aucun produit retenu', 'warn'); return; }
     if (!V2.ensureXLSX) { V2.toast('Export Excel indisponible', 'error'); return; }
     V2.toast('Génération de l\'Excel…');
@@ -1224,7 +1230,7 @@
       '</div></div>';
   }
   V2.ccLstPdf = function () {
-    var rows = lstRetenus();
+    var rows = lstDoc();
     if (!rows.length) { V2.toast('Aucun produit retenu', 'warn'); return; }
     if (!V2.pdfPreview) { V2.toast('Module PDF indisponible', 'error'); return; }
     V2.pdfPreview(lstPdfHtml(rows), 'Selection-Integral-Pharma-' + rows.length + '-produits-' + lstJour() + '.pdf', 'Sélection Intégral Pharma');
