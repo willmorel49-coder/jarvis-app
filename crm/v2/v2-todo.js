@@ -727,7 +727,7 @@
   V2.todo.signature = function () { return signature(); };
   V2.todo.reglagesMail = function () { return reglages(); };
   // Onglets de la page : mes tâches, les relances prospects, les prospects chauds (16/10/2026).
-  V2.todo.onglet = function (o) { st.onglet = o; rendre(); };
+  V2.todo.onglet = function (o) { st.onglet = o; if (o !== 'taches' && V2.relances && V2.relances.rafraichir) V2.relances.rafraichir(); rendre(); };
   V2.todo.copierModele = function (k) {
     var x = modele(k), t = 'Objet : ' + x.objet + '\n\n' + x.corps;
     if (navigator.clipboard && navigator.clipboard.writeText) {

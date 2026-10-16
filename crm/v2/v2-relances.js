@@ -172,7 +172,7 @@
     if (st.enCours) return st.enCours;
     st.ko = [];
     st.enCours = Promise.all([carte(), lireEnvois(), lireStore(), V2.todo && V2.todo.charger ? V2.todo.charger().catch(function () { return []; }) : Promise.resolve([])])
-      .then(function (r) { st.E = r[1]; st.store = r[2]; st.enCours = null; return construire(); },
+      .then(function (r) { st.E = r[1]; st.store = r[2]; st.lu = Date.now(); st.enCours = null; return construire(); },
             function (e) { st.enCours = null; throw e; });
     return st.enCours;
   }
@@ -258,7 +258,7 @@
           lignes.push(s);
         });
         lignes.forEach(function (s, i) { s.id = 'r' + i; });
-        st.calc = { lignes: lignes, clientes: Object.keys(clientes).length, quand: Date.now() };
+        st.calc = { lignes: lignes, clientes: Object.keys(clientes).length, quand: st.lu || Date.now() };
         return st.calc;
   }
   function parId(id) { return st.calc ? st.calc.lignes.filter(function (s) { return s.id === id; })[0] : null; }
@@ -370,6 +370,12 @@
       noter(s.cleStore, function (f) { f.st = f.st === v ? '' : v; });
     },
     voirEcartes: function () { st.voirEcartes = !st.voirEcartes; rendre(); },
+    // À l'ouverture d'un onglet : la to do list a pu bouger (ligne ajoutée, cochée) → on reconstruit ;
+    // et au-delà de 5 minutes, on relit aussi les envois (app laissée ouverte dans Safari).
+    rafraichir: function () {
+      if (st.calc && Date.now() - st.calc.quand > 5 * 60000) { st.calc = null; return; }
+      if (st.E && st.store) construire();
+    },
     actualiser: function () { st.calc = null; rendre(); },
 
     // Ajout à la main : des adresses collées (une ou plusieurs) ou un nom par ligne.
