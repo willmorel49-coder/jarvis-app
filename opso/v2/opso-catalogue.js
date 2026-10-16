@@ -68,7 +68,7 @@
   // ── Offre Privilège : fichier privé du seau Supabase (même lecture que opso-prix.js) ──
   var _offre = null, _offreEtat = '';   // _offreEtat : '' · charge · ok · echec
   function offreValide(j) {
-    return j && typeof j === 'object' && typeof j.titre === 'string' && j.titre && typeof j.labo === 'string' &&
+    return j && typeof j === 'object' && typeof j.titre === 'string' && j.titre &&
       Array.isArray(j.mentions) && j.mentions.every(function (m) { return typeof m === 'string'; }) &&
       Array.isArray(j.lignes) && j.lignes.length > 0 && j.lignes.every(function (l) {
         return l && /^\d{8,13}$/.test(String(l.cip)) && typeof l.prix === 'number' && l.prix > 0 && (l.ppht == null || typeof l.ppht === 'number');
@@ -145,7 +145,7 @@
           opso: opso[c] ? Object.keys(opso[c]).length : 0, ppht: l.ppht > 0 ? l.ppht : null, net: l.prix };
       });
       lo.sort(function (a, b) { return b.n - a.n; });
-      if (lo.length) offre = { titre: _offre.titre, labo: _offre.labo, mentions: _offre.mentions, items: lo };
+      if (lo.length) offre = { titre: _offre.titre, mentions: _offre.mentions, items: lo };
     }
     _cache = { cle: cle, offre: offre, rayons: rayons.filter(function (x) { return x.items.length; }), R: R, opsoPharmas: Object.keys(nOpso).length };
     return _cache;
@@ -201,13 +201,13 @@
           '<p>PPHT : prix pharmacien hors taxes. Prix net : prix HT facturé par Intégral Pharma, abandon de marge déduit. Génériques et non remboursables : prix net seul.</p></div>' : '') +
       '</div>' + piedHtml(d, 1, total) + '</section>';
   }
-  // Page 2 : l'offre sur UNE page A4 (rangées resserrées par .r-offre). « Sanofi · » + mentions LUES dans le fichier.
+  // Page 2 : l'offre sur UNE page A4 (rangées resserrées par .r-offre). Mentions LUES dans le fichier, sans nom de laboratoire (Will, 16/10).
   function offreHtml(d, total) {
     var o = d.offre, max = Math.max(o.items[0].n, 1);
     return '<section class="oc-page oc-offre r-offre">' +
       '<header class="oc-r-haut"><h2>' + esc(o.titre) + '</h2>' +
         '<span class="oc-r-sous">classés par part des pharmacies du réseau</span></header>' +
-      '<p class="oc-mentions">' + esc([o.labo].concat(o.mentions).join(' · ')) + '</p>' +
+      '<p class="oc-mentions">' + esc(o.mentions.join(' · ')) + '</p>' +
       '<div class="oc-entete"><span></span><span></span><span>Produit</span><span>Commandé par</span>' +
         '<span class="oc-prix deux"><span>PPHT</span><span>Prix net</span></span></div>' +
       o.items.map(function (it, i) { return ligneHtml(it, i + 1, max, true, d.R.officines); }).join('') +
