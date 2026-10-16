@@ -5646,6 +5646,95 @@
       else V2.toast(added.length > 1 ? added.length + ' fichiers ajoutés pour toute l\'équipe' : 'Fichier ajouté pour toute l\'équipe');
     });
   };
+  // ════════════════════════════════════════════
+  // 16/10/2026 — LA MALLETTE (v2-mallette.js) : le même moteur que « Transmettre », prêté à un second écran.
+  // Rien n'est recopié : la mallette appelle les MÊMES fonctions (groupementProducts, buildRecoCats, clientPdfData,
+  // V2.prospectPdf avec le style choisi sur l'appareil, V2.pharmaListPdf) et lit le destinataire aux mêmes sources.
+  // ════════════════════════════════════════════
+  V2.pharmaPont = {
+    // Groupements (noms canoniques) qui ont au moins une cliente active, du plus fourni au moins fourni.
+    groupements: function () {
+      var byG = {};
+      (V2.pharmacies || []).forEach(function (p) {
+        var g = groupName(p);
+        if (g === '— Sans groupement') return;
+        var o = byG[g] || (byG[g] = { nom: g, membres: 0, actives: 0 });
+        o.membres++; if (aDesVentes(p.id)) o.actives++;
+      });
+      return Object.keys(byG).map(function (k) { return byG[k]; }).filter(function (o) { return o.actives > 0; })
+        .sort(function (a, b) { return b.actives - a.actives || a.nom.localeCompare(b.nom, 'fr', { sensitivity: 'base' }); });
+    },
+    // Fichiers lourds dont les listings ont besoin (même appel que Transmettre) : résolue quand le catalogue est là.
+    pret: function () { return !!window.BENCHMARK; },
+    charger: function () {
+      if (window.BENCHMARK && (window.CATALOGUE_COMPLET || !V2.loadFiles)) return Promise.resolve(true);
+      return V2.loadFiles(['bench', 'sagitta', 'catcomplet']).then(function () { return !!window.BENCHMARK; }, function () { return !!window.BENCHMARK; });
+    },
+    estClient: function (pid) { return txIsClient(pid); },
+    groupementDe: function (pid) {
+      var p = (V2.pharmacies || []).filter(function (x) { return String(x.id) === String(pid); })[0];
+      if (p) { var g = groupName(p); return g === '— Sans groupement' ? '' : g; }
+      var pt = pharmaFrById(pid), D = window.PHARMA_FR;
+      var gr = pt && D && D.grp ? D.grp[pt[3]] : '';
+      return gr && gr !== '—' ? canonG(gr) : '';
+    },
+    // Aperçu d'un groupement : les familles et leurs premiers produits (lus sur les vraies ventes, aucun tarif).
+    apercu: function (grp) {
+      if (!window.BENCHMARK) return null;
+      var d = groupementProducts(grp), n = 0;
+      var fam = d.cats.map(function (o) {
+        n += o.rows.length;
+        return { famille: o.cat.label, produits: o.rows.slice(0, 3).map(function (r) { return cap(String(r.designation || '').toLowerCase()); }) };
+      });
+      return { familles: fam, produits: n, pharmacies: d.panel };
+    },
+    // Un listing en PDF, comme « Transmettre » le fabrique. kind : 'grp' (son groupement choisi) · 'reseau' (meilleures
+    // rotations) · 'ventes' (ses ventes et ses opportunités, cliente seulement). o : { pid, grp, nom }.
+    listing: function (kind, o) {
+      o = o || {};
+      var cli = o.pid && txIsClient(o.pid), nom = o.nom || '';
+      var suite = function () {
+        if (kind === 'ventes') {
+          if (!cli) return null;
+          return Promise.resolve(V2.pharmaListPdf(o.pid, 'reseau', 'blob'));
+        }
+        if (!V2.prospectPdf) return null;
+        if (kind === 'grp') {
+          if (!o.grp) return null;
+          return V2.prospectPdf(groupementProducts(o.grp), { nom: nom || 'Officine', ref: o.grp, reseau: false, fichier: (nom ? nom + ' — ' : '') + o.grp, maxPages: cli ? 10 : 0 }, 'blob');
+        }
+        // réseau : la liste complète des meilleures rotations (même chemin que le prospect de Transmettre)
+        return V2.prospectPdf(buildRecoCats('__mallette__', 'reseau'), { nom: nom || 'Officine', ref: reseauLbl(), reseau: true, fichier: (nom ? nom + ' — ' : '') + reseauLbl(), maxPages: cli ? 10 : 0 }, 'blob');
+      };
+      return V2.pharmaPont.charger().then(function (ok) { return ok ? suite() : null; });
+    },
+    // Le destinataire, aux mêmes sources que « Transmettre » : annuaire RDV, base clients, base nationale (tout de suite) ;
+    // puis la saisie de l'équipe sur la fiche (e-mail, logiciel), lue en différé comme Transmettre le fait.
+    contactTout: function (pid) {
+      pid = String(pid);
+      var cli = txIsClient(pid), pharma = (V2.pharmacies || []).filter(function (p) { return String(p.id) === pid; })[0];
+      var ri = V2.rdvInfo ? V2.rdvInfo(pid) : null, pt = pharmaFrById(pid);
+      return {
+        pid: pid, client: cli,
+        nom: nameOf(pid, (pharma && pharma.name) || (ri && ri.nom) || (pt && (pt[6] || pt[10])) || ''),
+        ville: (pharma && pharma.ville) || (ri && ri.ville) || (pt && pt[7]) || '',
+        titulaire: clientTitulaire(pid),
+        email: (ri && ri.email) || (pt && pt[11]) || (pharma && pharma.email) || '',
+        groupement: V2.pharmaPont.groupementDe(pid),
+        lgo: txLgoDetect(pid, null)
+      };
+    },
+    contact: function (pid) {
+      var out = V2.pharmaPont.contactTout(pid);
+      if (!V2.profil || !V2.profil.charger) return Promise.resolve(out);
+      return V2.profil.charger('client', String(pid)).then(function (d) {
+        d = d || {};
+        if (String(d.email || '').trim()) out.email = String(d.email).trim();
+        if (String(d.lgo || '').trim()) out.lgo = txLgoDetect(pid, d);
+        return out;
+      }, function () { return out; });
+    }
+  };
   V2.grpToggleCat = function (catKey) {
     var key = 'g_' + catKey, idx = -1;
     for (var i = 0; i < CATS.length; i++) { if (CATS[i].key === catKey) { idx = i; break; } }

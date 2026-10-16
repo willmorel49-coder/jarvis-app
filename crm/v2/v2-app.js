@@ -815,7 +815,7 @@
   // jamais de chiffre d'ouvertures ni de nom de personne. Hors OPSO uniquement.
   // ════════════════════════════════════════════
   // Ordre de repli (mesure du 30/09/2026), utilisé tant que le vrai classement n'est pas là.
-  var G4_REPLI = ['pharma', 'produits', 'pilotage', 'marketing', 'infos', 'rdv', 'carte', 'appro', 'todo', 'biosimilaires', 'offilog', 'concurrents', 'remontees', 'discussion', 'marchefr', 'carteGrp', 'lgo', 'academy'];
+  var G4_REPLI = ['pharma', 'produits', 'pilotage', 'marketing', 'mallette', 'infos', 'rdv', 'carte', 'appro', 'todo', 'biosimilaires', 'offilog', 'concurrents', 'remontees', 'discussion', 'marchefr', 'carteGrp', 'lgo', 'academy'];
   // 02/10/2026 — Will : « supprimer audit, fiches pdf, l'argument, audit marge, réforme 2027, présentation intégral » : ces six outils
   // n'existent plus nulle part (ni porte, ni écran). Un réglage enregistré qui les cite encore est écarté par u2Net.
   // k = nom de la route mesurée par V2.mesurer (= `ecran` côté base) ; page = écran qui doit exister.
@@ -837,6 +837,8 @@
     discussion: { fam: 'communiquer', ico: 'discussion', nom: 'Le QG', ph: 'Messages, sujets et remontées de l\'équipe', page: 'discussion' },
     marchefr: { fam: 'piloter', ico: 'marche', nom: 'Le marché', ph: 'Le marché français d\'une référence, région par région', page: 'marchefr' },
     carteGrp: { fam: 'piloter', ico: 'carte-grp', nom: 'Carte des groupements', ph: 'Où sont les adhérents de chaque groupement', page: 'carteGrp' },
+    // 16/10/2026 — La Mallette : les documents à envoyer (catalogues, fiches, pas-à-pas, listings), en un seul PDF ou séparés, avec le mail. Choix de Will (maquette m1).
+    mallette: { fam: 'communiquer', ico: 'mallette', nom: 'La Mallette', ph: 'Les documents à envoyer, en un seul PDF ou séparés', page: 'mallette' },
     lgo: { fam: 'communiquer', ico: 'lgo', nom: 'Logiciels officine', ph: 'Importer le catalogue dans chaque logiciel', page: 'lgo' },
     // JARVIS Academy : lien externe (Q_ACADEMY), dans « Communiquer et progresser » ; pas d'écran de l'app (page: null).
     academy: { fam: 'communiquer', ico: 'academy', nom: 'JARVIS Academy', ph: 'Se former à l\'outil, pas à pas', page: null }
@@ -941,7 +943,8 @@
     espace: '<path d="M7 8h13l-3-3.5M17 16H4l3 3.5"/>',
     grille: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/>',
     widgets: '<rect x="4" y="4" width="16" height="7" rx="2"/><rect x="4" y="14" width="7" height="6" rx="2"/><rect x="14" y="14" width="6" height="6" rx="2"/>',
-    doc: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/>'
+    doc: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/>',
+    mallette: '<path d="M3.5 8h17v11.5h-17z"/><path d="M9 8V5.5h6V8"/><path d="M3.5 13.2h17M11 13.2h2"/>'
   };
   U2_IC.pharma = U2_IC.officines;
   function u2Ic(n, s, cls) {
@@ -1982,6 +1985,7 @@
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.appro) PAGES.push(['appro', 'Appro Intégral · vue achats détaillée', 'spark']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.marchefr) PAGES.push(['marchefr', 'Le marché · le marché français d’une référence, région par région', 'cat']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.biosimilaires) PAGES.splice(4, 0, ['biosimilaires', 'Base Biosimilaires (marché FR)', 'cat']);
+    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.mallette) PAGES.push(['mallette', 'La Mallette · les documents à envoyer, en un seul PDF ou séparés', 'fiche']);   // 16/10/2026
     if (!(window.V2_BRAND && (window.V2_BRAND.opso || window.V2_BRAND.escale)) && V2.pages.lgo) PAGES.push(['lgo', 'Logiciels officine · importer le catalogue (LGPI, Winpharma, LEO…)', 'list']);
     // Le module Rendez-vous n'était atteignable que par sa tuile. Mis en avant
     // le 17/08, il doit aussi se trouver au clavier — c'est le chemin de ceux
