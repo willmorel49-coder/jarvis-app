@@ -128,7 +128,7 @@
   }
   V2.mesurer = function (ecran) {
     try {
-      if (!ecran || !V2.user) return;
+      if (!ecran || !V2.user || ecran === 'documents') return;   // 16/10/2026 : l'écran privé ne laisse aucune trace d'usage
       var t = Date.now();
       var vus = _vusLire();
       if (vus[ecran] && t - vus[ecran] < 5 * 60 * 1000) return;
@@ -815,7 +815,43 @@
   // jamais de chiffre d'ouvertures ni de nom de personne. Hors OPSO uniquement.
   // ════════════════════════════════════════════
   // Ordre de repli (mesure du 30/09/2026), utilisé tant que le vrai classement n'est pas là.
-  var G4_REPLI = ['pharma', 'produits', 'pilotage', 'marketing', 'mallette', 'infos', 'rdv', 'carte', 'appro', 'todo', 'biosimilaires', 'offilog', 'concurrents', 'remontees', 'discussion', 'marchefr', 'carteGrp', 'lgo', 'academy'];
+  // 16/10/2026 — « Documents » : 1 232 documents des grossistes, groupements et laboratoires, visibles par le compte de Will SEUL.
+  // La porte et l'entrée ⌘K n'existent que si la fonction Supabase documents_acces_ok() a rendu true (liée à son identifiant, pas au rôle admin).
+  // Réponse gardée en mémoire et en sessionStorage (clé par utilisateur), jamais en localStorage. Par défaut : cachée, donc aucun clignotement pour les autres.
+  var _docAcc = { uid: null, ok: false, vu: false, p: null };
+  function docCle() { return 'jarvis_doc_acces:' + ((V2.user && V2.user.id) || ''); }
+  function docOk() {
+    if (!V2.user || !V2.user.id || (window.V2_BRAND && window.V2_BRAND.opso)) return false;
+    if (_docAcc.uid !== V2.user.id) {
+      _docAcc = { uid: V2.user.id, ok: false, vu: false, p: null };
+      try { var m = sessionStorage.getItem(docCle()); if (m === '1' || m === '0') { _docAcc.ok = (m === '1'); _docAcc.vu = true; } } catch (e) {}
+    }
+    return _docAcc.ok;
+  }
+  // Rend une promesse { true | false | null } ; une seule question par utilisateur et par session. Un échec (réseau, réponse illisible) rend null SANS le mémoriser : nouvelle tentative au prochain appel.
+  V2.documentsVerifier = function () {
+    docOk();
+    if (!V2.user || !V2.user.id || (window.V2_BRAND && window.V2_BRAND.opso)) return Promise.resolve(false);
+    if (_docAcc.vu) return Promise.resolve(_docAcc.ok);
+    if (_docAcc.p) return _docAcc.p;
+    var uid = _docAcc.uid, c = V2.sb && V2.sb();
+    if (!c || !c.rpc) return Promise.resolve(null);
+    var acc = _docAcc;
+    acc.p = Promise.resolve(c.rpc('documents_acces_ok')).then(function (r) {
+      acc.p = null;
+      if (!r || r.error || typeof r.data !== 'boolean') return null;
+      acc.vu = true; acc.ok = (r.data === true);
+      try { sessionStorage.setItem('jarvis_doc_acces:' + uid, acc.ok ? '1' : '0'); } catch (e) {}
+      if (acc.ok && _docAcc === acc) {
+        cmdkIdx = null;   // l'index ⌘K se refait avec l'entrée « Documents »
+        if (_u2.monte && V2.route && V2.route.name === 'home') u2Redessiner();   // l'accueil se redessine si on y est encore
+      }
+      return acc.ok;
+    }, function () { acc.p = null; return null; });
+    return acc.p;
+  };
+  V2.documentsAcces = docOk;
+  var G4_REPLI = ['pharma', 'produits', 'pilotage', 'marketing', 'mallette', 'infos', 'rdv', 'carte', 'appro', 'todo', 'biosimilaires', 'offilog', 'concurrents', 'remontees', 'discussion', 'marchefr', 'carteGrp', 'lgo', 'documents', 'academy'];
   // 02/10/2026 — Will : « supprimer audit, fiches pdf, l'argument, audit marge, réforme 2027, présentation intégral » : ces six outils
   // n'existent plus nulle part (ni porte, ni écran). Un réglage enregistré qui les cite encore est écarté par u2Net.
   // k = nom de la route mesurée par V2.mesurer (= `ecran` côté base) ; page = écran qui doit exister.
@@ -839,6 +875,8 @@
     carteGrp: { fam: 'piloter', ico: 'carte-grp', nom: 'Carte des groupements', ph: 'Où sont les adhérents de chaque groupement', page: 'carteGrp' },
     // 16/10/2026 — La Mallette : les documents à envoyer (catalogues, fiches, pas-à-pas, listings), en un seul PDF ou séparés, avec le mail. Choix de Will (maquette m1).
     mallette: { fam: 'communiquer', ico: 'mallette', nom: 'La Mallette', ph: 'Les documents à envoyer, en un seul PDF ou séparés', page: 'mallette' },
+    // 16/10/2026 — Documents : le classement des grossistes, groupements et laboratoires, consultable depuis l'iPhone. Porte visible seulement si documents_acces_ok() = true (voir docOk).
+    documents: { fam: 'communiquer', ico: 'documents', nom: 'Documents', ph: 'Tarifs, conditions et catalogues, rangés par dossier', page: 'documents' },
     lgo: { fam: 'communiquer', ico: 'lgo', nom: 'Logiciels officine', ph: 'Importer le catalogue dans chaque logiciel', page: 'lgo' },
     // JARVIS Academy : lien externe (Q_ACADEMY), dans « Communiquer et progresser » ; pas d'écran de l'app (page: null).
     academy: { fam: 'communiquer', ico: 'academy', nom: 'JARVIS Academy', ph: 'Se former à l\'outil, pas à pas', page: null }
@@ -950,7 +988,8 @@
     grille: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/>',
     widgets: '<rect x="4" y="4" width="16" height="7" rx="2"/><rect x="4" y="14" width="7" height="6" rx="2"/><rect x="14" y="14" width="6" height="6" rx="2"/>',
     doc: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/>',
-    mallette: '<path d="M3.5 8h17v11.5h-17z"/><path d="M9 8V5.5h6V8"/><path d="M3.5 13.2h17M11 13.2h2"/>'
+    mallette: '<path d="M3.5 8h17v11.5h-17z"/><path d="M9 8V5.5h6V8"/><path d="M3.5 13.2h17M11 13.2h2"/>',
+    documents: '<path d="M3.5 7.5V19h17V9H11L9.2 6.5H3.5z"/><path d="M3.5 11h17"/>'
   };
   U2_IC.pharma = U2_IC.officines;
   function u2Ic(n, s, cls) {
@@ -1180,6 +1219,7 @@
       var d = G4_PORTES[k];
       if (!d) return false;
       if (k === 'lgo' && escale) return false;       // pas de « Logiciels officine » en Escale
+      if (k === 'documents' && !docOk()) return false;   // 16/10/2026 : cachée tant que documents_acces_ok() n'a pas rendu true
       if (k === 'remontees' && V2.pages.discussion) return false;   // 15/10/2026 (Will) : les remontées vivent dans Le QG
       return k === 'academy' || !!V2.pages[d.page];  // un outil dont l'écran n'est pas chargé n'apparaît pas
     }));
@@ -1600,6 +1640,7 @@
     u2Lier(root);
     if (cascade) setTimeout(function () { var p = document.querySelector('.u2-cascade'); if (p) p.classList.remove('u2-cascade'); }, 900);
     u2Distant();
+    if (!docOk()) V2.documentsVerifier();   // 16/10/2026 : une seule question par session ; l'accueil se redessine si la réponse est oui
     if (V2.todo && V2.todo.charger && !_u2.todoPret) V2.todo.charger().then(function () { _u2.todoPret = true; u2MajWidgets(); }, function () {});
   }
 
@@ -1884,6 +1925,7 @@
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.appro) PAGES.push(['appro', 'Appro Intégral · vue achats détaillée', 'spark']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.marchefr) PAGES.push(['marchefr', 'Le marché · le marché français d’une référence, région par région', 'cat']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.biosimilaires) PAGES.splice(4, 0, ['biosimilaires', 'Base Biosimilaires (marché FR)', 'cat']);
+    if (docOk() && V2.pages.documents) PAGES.push(['documents', 'Documents · tarifs, conditions et catalogues, rangés par dossier', 'fiche']);   // 16/10/2026 : seulement si documents_acces_ok() = true
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.mallette) PAGES.push(['mallette', 'La Mallette · les documents à envoyer, en un seul PDF ou séparés', 'fiche']);   // 16/10/2026
     if (!(window.V2_BRAND && (window.V2_BRAND.opso || window.V2_BRAND.escale)) && V2.pages.lgo) PAGES.push(['lgo', 'Logiciels officine · importer le catalogue (LGPI, Winpharma, LEO…)', 'list']);
     // Le module Rendez-vous n'était atteignable que par sa tuile. Mis en avant
