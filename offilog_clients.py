@@ -10,6 +10,9 @@ Règles (arrêtées avec Will le 13/10/2026) :
   - case vide = on ne sait pas : la pharmacie est ABSENTE de la table, jamais « non » par défaut ;
   - deux lignes qui se contredisent pour une même pharmacie : « O » l'emporte ;
   - la date annoncée à l'écran est celle du NOM du fichier, jamais écrite en dur.
+16/10/2026 (Will, « Oui, passer au 02/10 ») : la ligne Offilog lit AUSSI le dernier
+STATS/total ventes/clients_actifs_<date>.xlsx, plus frais que les géolocalisations de juillet.
+Par pharmacie le fichier le plus récent l'emporte ; à date égale, « O » l'emporte.
 
 C'est une liste de clients : elle ne va JAMAIS dans un fichier public. Ce script écrit
 `wml-offilog.json` (couvert par .gitignore) ; `proteger_conditions.py` le range dans la
@@ -42,16 +45,27 @@ def _cle(code):
         return m.group(0) if m else str(code or '').strip()
 
 
-def lire(stats):
-    """-> {'d': [dates des fichiers], 'm': {TIRCODE: [1 si « O » / 0 si « N », rang de la date]}}"""
-    import openpyxl
+def _fichiers(stats):
+    """-> [(date, chemin)] triés : dernier géolocalisation de chaque préfixe + dernier clients_actifs."""
     derniers = {}
     for p in glob.glob(os.path.join(stats, '*_geolocalisation_*.xlsx')):
         pref, date = os.path.basename(p)[:-5].split('_geolocalisation_')
         if pref not in derniers or date > derniers[pref][0]:
             derniers[pref] = (date, p)
+    fichiers = list(derniers.values())
+    ca = []
+    for p in glob.glob(os.path.join(stats, 'total ventes', 'clients_actifs_*.xlsx')):
+        ca.append((os.path.basename(p)[:-5].split('clients_actifs_')[1], p))
+    if ca:
+        fichiers.append(max(ca))
+    return sorted(fichiers)
+
+
+def lire(stats):
+    """-> {'d': [dates des fichiers], 'm': {TIRCODE: [1 si « O » / 0 si « N », rang de la date]}}"""
+    import openpyxl
     vus = {}   # TIRCODE -> (valeur, date)
-    for date, p in sorted(derniers.values()):
+    for date, p in _fichiers(stats):
         wb = openpyxl.load_workbook(p, read_only=True, data_only=True); ws = wb.worksheets[0]
         it = ws.iter_rows(values_only=True)
         h = [str(c).strip() if c is not None else '' for c in next(it)]
@@ -66,8 +80,8 @@ def lire(stats):
             if v not in ('O', 'N'):
                 continue
             k = _cle(r[ti]); avant = vus.get(k)
-            # « O » l'emporte sur « N » ; à valeur égale, le fichier le plus récent donne la date
-            if avant is None or (v == 'O' and avant[0] == 'N') or (v == avant[0] and date > avant[1]):
+            # fichiers lus du plus ancien au plus récent : le plus récent l'emporte ; à date égale, « O »
+            if avant is None or date > avant[1] or (v == 'O' and avant[0] == 'N'):
                 vus[k] = (v, date)
         wb.close()
     dates = sorted({d for _, d in vus.values()})
@@ -83,19 +97,8 @@ def _code_branche(v):
 def lire_offre(stats):
     """-> {'bd': [dates des fichiers], 'b': {TIRCODE: [code, rang de la date]}} ; {} si rien de lu."""
     import openpyxl
-    derniers = {}
-    for p in glob.glob(os.path.join(stats, '*_geolocalisation_*.xlsx')):
-        pref, date = os.path.basename(p)[:-5].split('_geolocalisation_')
-        if pref not in derniers or date > derniers[pref][0]:
-            derniers[pref] = (date, p)
-    fichiers = list(derniers.values())
-    ca = []
-    for p in glob.glob(os.path.join(stats, 'total ventes', 'clients_actifs_*.xlsx')):
-        ca.append((os.path.basename(p)[:-5].split('clients_actifs_')[1], p))
-    if ca:
-        fichiers.append(max(ca))
     vus = {}   # TIRCODE -> (code, date)
-    for date, p in sorted(fichiers):
+    for date, p in _fichiers(stats):
         wb = openpyxl.load_workbook(p, read_only=True, data_only=True); ws = wb.worksheets[0]
         it = ws.iter_rows(values_only=True)
         h = [str(c).strip() if c is not None else '' for c in next(it)]

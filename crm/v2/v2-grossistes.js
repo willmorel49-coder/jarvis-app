@@ -8,7 +8,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var ICO = function (n, s, w) { return window.ICO ? window.ICO(n, s, w) : ''; };
-  var CB = '?v=20261016ze';
+  var CB = '?v=20261016of';
 
   var view = 'annuaire';   // 'annuaire' | 'actu'
   var openGroupe = null;   // groupe déplié (niveau 2)
