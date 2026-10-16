@@ -1,6 +1,7 @@
 -- 14/10/2026 — Will : « fais moi un onglet que pour moi sur jarvis, moi seul ai l'accès » (« Notre marge par produit »).
 -- marge-produits.js (racine du seau donnees-protegees) laisse deviner nos prix d'achat : il ne se lit QUE par les
 -- comptes de jarvis_acces_marge_produits() — Will + claude-test (compte des preuves, banni hors des contrôles).
+-- 16/10/2026 — Will ouvre l'écran à son « groupe restreint » : Karine, Pauline S., Pauline G., Florent.
 -- Cas posé EN TÊTE de jarvis_peut_lire_protege : aucune autre branche (direction, voit_tous_commerciaux…) ne l'ouvre.
 -- Le reste de la fonction = sa définition lue en production le 14/10/2026 (identique à opso-liste-blanche.sql).
 -- Rejouable.
@@ -11,6 +12,10 @@ as $$
     select 1 from auth.users u
     where u.id = auth.uid()
       and lower(u.email) in ('william.morel@me.com',
+                             'karine.vezzaro@integralpharma.fr',
+                             'pauline.soldevila@integralpharma.fr',
+                             'pauline.guillaumin@integralpharma.fr',
+                             'florent.mirabel@integralpharma.fr',
                              'claude-test@integralpharma.fr'))
 $$;
 revoke all on function public.jarvis_acces_marge_produits() from public, anon;
