@@ -13,10 +13,10 @@
   'use strict';
   var V2 = window.V2; if (!V2) return;
   V2.pages = V2.pages || {};
-  var CB = '?v=20261016u';
+  var CB = '?v=20261016v';
   var TX_BUCKET = 'marketing-pdfs';   // le même seau que Marketing › Documents partagés et « Transmettre »
-  var PDFLIB = 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
-  var JSZIP = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+  var PDFLIB = 'vendor/pdf-lib-1.17.1.min.js';
+  var JSZIP = 'vendor/jszip-3.10.1.min.js';
 
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function norm(s) { return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[-'’]/g, ' ').replace(/\s+/g, ' ').trim(); }
