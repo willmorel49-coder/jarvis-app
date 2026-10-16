@@ -2025,7 +2025,7 @@
     // Tournée prospect : intégrée au Copilote (Organisateur de tournée) — recherchable via l'entrée « Copilote ».
     // Pharmacies
     (V2.pharmacies || []).forEach(function (p) {
-      idx.push({ grp: 'Pharmacies', label: p.name, ico: 'pharma', meta: '', pid: String(p.id), action: function () { V2.go('pharma', p.id); } });
+      idx.push({ grp: 'Pharmacies', label: p.name, ico: 'pharma', meta: '', pid: String(p.id), lieu: (p.ville || '') + (p.cp ? ' · ' + p.cp : ''), action: function () { V2.go('pharma', p.id); } });
     });
     // Produits (top 300 PROD_STATS par rotation) — ouvre « Par produit » filtré sur le produit
     var PS = window.PROD_STATS || [];
@@ -2088,6 +2088,16 @@
           action: (function (pid) { return function () { V2.go('pharma', pid); }; })(id) });
       });
     }
+    // 16/10/2026 — homonymes (« PHARMACIE DE LA TOUR » à Saint-Amand ET à Gruissan) : une cliente
+    // n'affichait que son nom, deux lignes identiques. Dès qu'un nom revient dans la liste, la cliente
+    // reçoit sa ville et son code postal, au format des autres rubriques. Copie : l'index n'est pas
+    // touché (son `meta` sert aussi à la recherche).
+    var nbNom = {}, cleNom = function (x) { return deaccLower(x.label).replace(/\s+/g, ' ').trim(); };
+    out.forEach(function (x) { if (x.pid != null) { var k = cleNom(x); nbNom[k] = (nbNom[k] || 0) + 1; } });
+    out = out.map(function (x) {
+      if (x.pid == null || x.meta || !x.lieu || nbNom[cleNom(x)] < 2) return x;
+      var y = {}; for (var c in x) y[c] = x[c]; y.meta = x.lieu; return y;
+    });
     // Toujours proposer de CRÉER une fiche prospect si on ne trouve pas (ou pour ajouter)
     if (q.length >= 2) {
       out.push({ grp: 'Créer', label: '➕ Créer une fiche prospect « ' + q + ' »', ico: 'pharma',
