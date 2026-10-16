@@ -35,7 +35,7 @@
   };
   var ORDER = ['rdv', 'merci', 'compte', 'libre'];
 
-  var st = { items: null, backend: 'local', filtre: 'afaire', chargement: null, kind: 'rdv' };
+  var st = { items: null, backend: 'local', filtre: 'afaire', chargement: null, kind: 'rdv', onglet: 'taches' };
 
   function sb() { return (V2.sb && V2.sb()) || null; }
   function scope() { return { st: 'groupement', sid: '__todo_' + ((V2.user && V2.user.id) || 'local') + '__' }; }
@@ -714,12 +714,20 @@
   V2.todo.compEnvoyer = function () {
     var c = lireComp(); if (!c) return;
     var m = { objet: String(c.objet || '').trim(), corps: c.corps || '' }, dest = String(c.dest || '').trim();
+    // Relances prospects (v2-relances.js) : la relance est notée au moment où le mail part vers la messagerie.
+    if (c.surEnvoi) { var f = c.surEnvoi; c.surEnvoi = null; try { f(c); } catch (e) {} }
     if (!c.docs.length) { ouvrirMail(dest, m); return; }
     // Avec documents : la fenêtre « Transmettre » les prépare puis les envoie avec CE texte (Safari
     // n'ouvre la feuille de partage que dans un clic, d'où ses deux temps « Préparer » puis « Envoyer »).
     if (V2.pharmaTransmettre) V2.pharmaTransmettre(c.pid || '', c.docs, { nom: c.nom, mail: dest, texte: m,
       surChoix: function (keys) { if (st.comp === c) { c.docs = keys; dessinerComp(); } } });
   };
+  // Pour v2-relances.js : la même fenêtre « Préparer le mail », la même signature, le même accès test Offilog.
+  V2.todo.composerMail = function (c) { composer(c); };
+  V2.todo.signature = function () { return signature(); };
+  V2.todo.reglagesMail = function () { return reglages(); };
+  // Onglets de la page : mes tâches, les relances prospects, les prospects chauds (16/10/2026).
+  V2.todo.onglet = function (o) { st.onglet = o; rendre(); };
   V2.todo.copierModele = function (k) {
     var x = modele(k), t = 'Objet : ' + x.objet + '\n\n' + x.corps;
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -740,12 +748,21 @@
       var ouv = trier(V2.todo.ouverts()), faits = (st.items || []).filter(function (x) { return x.fait; })
         .sort(function (a, b) { return String(b.faitLe).localeCompare(String(a.faitLe)); });
       var liste = st.filtre === 'fait' ? faits : ouv;
+      // 16/10, Will : « dans la to do list, un truc relance et un truc prospects chauds ».
+      var R = V2.relances, ong = R ? st.onglet : 'taches', nR = R ? R.nbARelancer() : null, nC = R ? R.nbChauds() : null;
+      var onglets = R ? '<div class="v2-todo-tabs" role="tablist">' + [['taches', 'Tâches', ouv.length], ['relances', 'À relancer', nR], ['chauds', 'Prospects chauds', nC]].map(function (o) {
+        return '<button role="tab" aria-selected="' + (ong === o[0]) + '" class="' + (ong === o[0] ? 'is-on' : '') + '" onclick="V2.todo.onglet(\'' + o[0] + '\')">' + o[1] + (o[2] != null ? ' · ' + o[2] : '') + '</button>';
+      }).join('') + '</div>' : '';
+      if (ong !== 'taches') {
+        root.innerHTML = top + '<div class="v2-wrap narrow"><div class="v2-todo-hero"><h1>To do list</h1></div>' + onglets + R.html(ong) + '</div>';
+        return;
+      }
       var noms = (V2.pharmacies || []).map(function (p) { return '<option value="' + esc(p.name || '') + '">'; }).join('');
       root.innerHTML = top +
         '<div class="v2-wrap narrow">' +
           '<div class="v2-todo-hero"><h1>To do list</h1>' +
             '<p>Demandes de rendez-vous à envoyer, suites de rendez-vous, ouvertures de compte, et tout le reste. Personnelle : chacun voit la sienne.' +
-            (st.backend === 'local' ? ' <b>Gardée sur cet appareil seulement.</b>' : '') + '</p></div>' +
+            (st.backend === 'local' ? ' <b>Gardée sur cet appareil seulement.</b>' : '') + '</p></div>' + onglets +
           '<div class="v2-card v2-todo-add">' +
             '<div class="v2-todo-kinds">' + ORDER.map(function (k) {
               return '<button class="v2-todo-kind' + (st.kind === k ? ' is-on' : '') + '" onclick="V2.todo.choisir(\'' + k + '\')">' + ICO(KINDS[k].ico, 15, 2) + '<span>' + esc(KINDS[k].l) + '</span></button>';
@@ -790,6 +807,9 @@
       '.v2-todo-seg{display:inline-flex;gap:2px;padding:3px;background:var(--surf-sunken,#F4F6FA);border:1px solid var(--line);border-radius:10px}',
       '.v2-todo-seg button{border:none;background:none;min-height:38px;padding:6px 14px;border-radius:7px;font:inherit;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer}',
       '.v2-todo-seg button.is-on{background:#fff;color:var(--ip-ink);box-shadow:0 1px 3px rgba(15,20,32,.12)}',
+      '.v2-todo-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:3px;margin:0 0 16px;background:var(--surf-sunken,#F4F6FA);border:1px solid var(--line);border-radius:12px}',
+      '.v2-todo-tabs button{border:none;background:none;min-height:44px;padding:6px 8px;border-radius:9px;font:inherit;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;line-height:1.2}',
+      '.v2-todo-tabs button.is-on{background:#fff;color:var(--ip-ink);box-shadow:0 1px 3px rgba(15,20,32,.12)}',
       '.v2-todo-list{padding:4px 0}',
       '.v2-todo-empty{padding:28px 18px;text-align:center;color:var(--muted);font-size:14px}',
       '.v2-todo-it{display:flex;gap:12px;padding:14px 18px;border-top:1px solid var(--line)}',
