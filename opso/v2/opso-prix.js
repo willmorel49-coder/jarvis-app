@@ -5,13 +5,14 @@
    Sections, dans l'ordre : Wegovy comprimés (à venir) · Mounjaro injectable ·
    Hélicidine · Offre spéciale (en dernier ; sans nom de laboratoire, et seulement les
    produits que les adhérentes OPSO commandent déjà — Will, 16/10/2026).
-   Toute l'offre tient sur UNE page A4 tant que les rangées restent lisibles (≥ 6 mm).
+   Mise en page « Les familles de produits » (maquette p2 choisie par Will le 16/10/2026) : Wegovy et Mounjaro
+   en grands blocs, Hélicidine en bandeau, l'Offre spéciale en cartes par marque ; pas de couverture séparée.
    ⚠️ Les prix négociés sont des CONDITIONS COMMERCIALES : aucun prix, aucun taux,
    aucune liste de CIP négociés n'est écrit ici. Tout vient de opso-prix-negocies.json,
    dans le seau privé « donnees-protegees » (lecture : compte connecté seulement).
    Sans session ou en cas d'échec, l'écran le dit et n'affiche aucun chiffre de repli.
-   Réutilise les pièces de opso-catalogue.js (V2.opsoCatalogue.commun) : styles oc-*,
-   aperçu A4, impression, CSV.
+   Réutilise les pièces de opso-catalogue.js (V2.opsoCatalogue.commun) : page A4 oc-page, pied oc-pied,
+   logos, aperçu A4, impression, CSV.
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -140,113 +141,257 @@
     return _d;
   }
 
-  // ── Rendu ──
+  // ── Rendu : « Les familles de produits » (maquette p2, choisie par Will le 16/10/2026) ──
+  // Page 1 : bandeau court (logos, titre, édition) + légende des trois prix + Wegovy et Mounjaro en grands blocs.
+  // Ensuite : Hélicidine en bandeau, puis l'Offre spéciale en cartes par marque sur deux colonnes équilibrées.
+  // Le nombre de produits varie (filtre des commandes, nouveaux CIP) : chaque hauteur est FIXÉE en CSS et refaite ici
+  // au millimètre ; ce qui ne tient pas passe à la page suivante, coupé entre deux rangées et marqué « (suite) ».
   function dateEdition() { var d = new Date(); return d.getDate() + (d.getDate() === 1 ? 'er ' : ' ') + MOIS[d.getMonth()] + ' ' + d.getFullYear(); }
-  var CAP = 23, UN_BANDEAU = 1.7;   // une page = 23 lignes ; un bandeau de section pèse 1,7 ligne
-  var H_LIGNE = 10.2, H_MIN = 6;    // hauteur d'une rangée (mm) ; en dessous de 6 mm on repasse sur plusieurs pages
-  function paginer(d) {
-    var pages = [], cur = null, place = 0, unites = 0;
-    d.sections.forEach(function (s) { unites += UN_BANDEAU + s.items.length; });
-    // Toute l'offre sur UNE page : les rangées se resserrent juste ce qu'il faut (p.h, en mm).
-    if (unites <= CAP * H_LIGNE / H_MIN) {
-      cur = [];
-      d.sections.forEach(function (s) { cur.push({ bandeau: s, suite: false }); s.items.forEach(function (it) { cur.push({ it: it, s: s }); }); });
-      cur.h = Math.min(H_LIGNE, Math.floor(CAP * H_LIGNE / unites * 100) / 100);
-      return [cur];
+  var H = {
+    bas: 277, haut1: 73, haut: 17, ecart: 4.5, ecartCarte: 3.4, bord: 0.6, plusMax: 3,   // mm ; plusMax = ce qu'une rangée peut gagner pour remplir la page
+    famTete: 28, famCols: 10, famRang: 10.6,
+    bandeCols: 7, rang: 11.2,
+    offreTete: 17, carteTete: 10.5, carteCols: 5.6
+  };
+  function hFam(n) { return H.famTete + H.famCols + n * H.famRang + H.bord; }
+  function hBande(n) { return H.bandeCols + n * H.rang + H.bord; }
+  function hCarte(n) { return H.carteTete + H.carteCols + n * H.rang + H.bord; }
+  function hColonne(c) { var h = 0; c.forEach(function (x, i) { h += hCarte(x.items.length) + (i ? H.ecartCarte : 0); }); return h; }
+  function rangsColonne(c) { var n = 0; c.forEach(function (x) { n += x.items.length; }); return n; }
+  // Offre spéciale : une carte par marque (le premier mot de la désignation), dans l'ordre alphabétique des lignes.
+  function marques(items) {
+    var cartes = [], parNom = {};
+    items.forEach(function (it) {
+      var m = String(it.nom || '').trim().split(/\s+/)[0].toUpperCase() || '—';
+      if (!parNom[m]) { parNom[m] = { nom: m, items: [], ordre: cartes.length }; cartes.push(parNom[m]); }
+      parNom[m].items.push(it);
+    });
+    return cartes;
+  }
+  // Toutes les cartes tiennent sur la page : deux colonnes équilibrées (la plus grande carte d'abord, dans la colonne la moins remplie).
+  function equilibrer(file, cap) {
+    var cols = [[], []], h = [0, 0];
+    file.slice().sort(function (a, b) { return b.items.length - a.items.length || a.ordre - b.ordre; }).forEach(function (x) {
+      var c = h[0] <= h[1] ? 0 : 1; cols[c].push(x); h[c] += hCarte(x.items.length) + (cols[c].length > 1 ? H.ecartCarte : 0);
+    });
+    if (Math.max(h[0], h[1]) > cap + 1e-6) return null;
+    cols.forEach(function (c) { c.sort(function (a, b) { return a.ordre - b.ordre; }); });
+    if (!cols[0].length || (cols[1].length && hColonne(cols[1]) > hColonne(cols[0]))) cols.reverse();   // la colonne la plus haute à gauche
+    return { cols: cols.filter(function (c) { return c.length; }), reste: [] };
+  }
+  // Sinon : colonne de gauche puis de droite ; une carte d'au moins 6 rangées est coupée entre deux rangées, le reste va à la page suivante.
+  function remplir(file, cap) {
+    var cols = [[], []], ci = 0, h = 0, f = file.slice();
+    while (f.length && ci < 2) {
+      var x = f[0], dispo = cap - h - (cols[ci].length ? H.ecartCarte : 0);
+      var k = Math.floor((dispo - hCarte(0)) / H.rang + 1e-6), n = x.items.length;
+      if (k >= n) { cols[ci].push(x); h += hCarte(n) + (cols[ci].length > 1 ? H.ecartCarte : 0); f.shift(); continue; }
+      var tropHaute = hCarte(n) > H.bas - H.haut - 2 * H.ecart - H.offreTete;   // plus haute qu'une colonne de page neuve
+      if ((n >= 6 && k >= 2 && n - k >= 2) || (k >= 1 && !cols[ci].length && tropHaute)) {   // une petite carte passe entière à la colonne suivante
+        cols[ci].push({ nom: x.nom, items: x.items.slice(0, k), ordre: x.ordre, suite: x.suite });
+        f[0] = { nom: x.nom, items: x.items.slice(k), ordre: x.ordre, suite: true };
+      }
+      ci++; h = 0;
     }
-    function nouvelle() { cur = []; pages.push(cur); place = 0; }
+    return { cols: cols.filter(function (c) { return c.length; }), reste: f };
+  }
+  function miseEnPage(d) {
+    var pages = [], pg = null;
+    function nouvelle() { pg = { blocs: [], y: pages.length ? H.haut : H.haut1, rangs: 0, cols: null }; pages.push(pg); }
+    function reste() { return H.bas - pg.y - H.ecart; }
+    nouvelle();
     d.sections.forEach(function (s) {
-      var suite = false, i = 0;
-      if (s.fort && cur && s.items.length + UN_BANDEAU <= CAP) nouvelle();   // la section mise en avant tient sur UNE page : on ne la coupe pas
+      if (s.k === 'offre') {
+        var file = marques(s.items).map(function (c) { return { nom: c.nom, items: c.items, ordre: c.ordre, suite: false }; }), suite = false;
+        while (file.length) {
+          var cap = reste() - H.offreTete - H.ecart;
+          if (cap < hCarte(Math.min(2, file[0].items.length)) && pg.blocs.length) { nouvelle(); continue; }
+          var r = equilibrer(file, cap) || remplir(file, cap);
+          if (!r.cols.length) { if (pg.blocs.length) { nouvelle(); continue; } r = { cols: [[file[0]]], reste: file.slice(1) }; }   // garde-fou : jamais de boucle sans fin
+          pg.blocs.push({ type: 'offre', s: s, suite: suite }, { type: 'grille', cols: r.cols });
+          pg.y += H.ecart + H.offreTete; pg.yGrille = pg.y + H.ecart; pg.cols = r.cols;
+          pg.y = pg.yGrille + Math.max.apply(null, r.cols.map(hColonne));
+          file = r.reste; suite = true;
+          if (file.length) nouvelle();
+        }
+        return;
+      }
+      var fam = s.k !== 'helicidine', i = 0, suiteS = false;
       while (i < s.items.length) {
-        if (!cur || place + UN_BANDEAU + 1 > CAP) nouvelle();
-        cur.push({ bandeau: s, suite: suite }); place += UN_BANDEAU;
-        while (i < s.items.length && place + 1 <= CAP) { cur.push({ it: s.items[i], s: s }); place += 1; i++; }
-        suite = true;
+        var n = s.items.length - i, k = Math.floor((reste() - (fam ? hFam(0) : hBande(0))) / (fam ? H.famRang : H.rang) + 1e-6);
+        if (k < Math.min(2, n) && pg.blocs.length) { nouvelle(); continue; }
+        k = Math.max(1, Math.min(n, k));
+        pg.blocs.push({ type: fam ? 'fam' : 'bande', s: s, items: s.items.slice(i, i + k), suite: suiteS });
+        pg.y += H.ecart + (fam ? hFam(k) : hBande(k)); pg.rangs += k;
+        i += k; suiteS = true;
       }
     });
+    // Ce qui reste de hauteur est rendu aux rangées (jusqu'à plusMax chacune) : la page se remplit sans trou au bas.
+    pages.forEach(function (p) {
+      var e = H.plusMax;
+      if (!p.cols) { if (p.rangs) e = Math.min(e, (H.bas - p.y) / p.rangs); }
+      else p.cols.forEach(function (c) { e = Math.min(e, (H.bas - p.yGrille - hColonne(c) - 0) / (p.rangs + rangsColonne(c))); });
+      p.e = Math.max(0, Math.floor(e * 100) / 100);
+    });
     return pages;
+  }
+
+  var SV = {   // visuels dessinés (aucune photo : les liens photo du catalogue répondent 404 le 16/10/2026)
+    stylo: '<svg viewBox="0 0 60 60" aria-hidden="true"><g transform="rotate(-38 30 30)"><rect x="6" y="23" width="40" height="14" rx="4" fill="#fff"/><rect x="6" y="23" width="14" height="14" rx="4" fill="#dddf4b"/><rect x="46" y="26" width="6" height="8" rx="1.5" fill="#cfe5d6"/><rect x="52" y="29" width="7" height="2" fill="#fff"/><rect x="24" y="27" width="16" height="2" rx="1" fill="#0d8530"/><rect x="24" y="31" width="10" height="2" rx="1" fill="#92b9a2"/></g></svg>',
+    boite: '<svg viewBox="0 0 60 60" aria-hidden="true"><rect x="9" y="20" width="42" height="30" rx="4" fill="#fff"/><rect x="9" y="20" width="42" height="9" rx="4" fill="#dddf4b"/><circle cx="22" cy="40" r="5" fill="#0d8530"/><circle cx="36" cy="40" r="5" fill="#92b9a2"/><ellipse cx="44" cy="13" rx="6" ry="3.5" fill="#fff" transform="rotate(-25 44 13)"/><ellipse cx="33" cy="10" rx="6" ry="3.5" fill="#dddf4b" transform="rotate(15 33 10)"/></svg>',
+    flacon: '<svg viewBox="0 0 60 60" aria-hidden="true"><rect x="23" y="6" width="14" height="9" rx="2" fill="#dddf4b"/><path d="M25 15h10v5c8 3 11 8 11 14v16a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V34c0-6 3-11 11-14z" fill="#fff"/><rect x="19" y="32" width="22" height="14" rx="2" fill="#0d8530"/><rect x="22" y="36" width="16" height="2" fill="#fff"/><rect x="22" y="40" width="10" height="2" fill="#dddf4b"/></svg>',
+    sachet: '<svg viewBox="0 0 60 60" aria-hidden="true"><path d="M12 12h36v36H12z" fill="#fff"/><path d="M12 12h36v7H12z" fill="#dddf4b"/><path d="M12 48h36v-5H12z" fill="#92b9a2"/><circle cx="30" cy="31" r="6" fill="#0d8530"/></svg>'
+  };
+  var SOUS_TITRE = { wegovy: 'Comprimés', mounjaro: 'Stylo injecteur · un dosage par ligne' };
+  function suiteTxt(b) { return b.suite ? ' <small>(suite)</small>' : ''; }
+  function majuscule(t) { t = String(t || ''); return t.charAt(0).toUpperCase() + t.slice(1); }
+  function dose(nom) { var m = /(\d+(?:,\d+)?)\s*mg/i.exec(nom || ''); return m ? m[1] + ' mg' : ''; }
+  function nomHtml(it) { return '<div class="op-nom"><span class="op-nm">' + esc(it.nom) + '</span><i>CIP13 : ' + esc(it.cipTexte) + '</i></div>'; }
+  function prixHtml(it) { return '<div class="op-p">' + eur(it.pfht) + '</div><div class="op-p">' + eur(it.habituel) + '</div><div class="op-po">' + eur(it.opso) + '</div>'; }
+  var CH = '<div class="op-ch"><span>Présentation</span><span>PFHT</span><span>Habituel</span><span class="o">OPSO Santé</span></div>';
+  function famHtml(b) {
+    var s = b.s, stylo = s.k === 'mounjaro';
+    var sous = (SOUS_TITRE[s.k] || '') + (s.etiquette === 'à venir' ? ' — pas encore disponibles, prix donnés à l’avance' : '');
+    return '<div class="op-fam"><div class="op-fam-h"><div class="op-vis">' + (stylo ? SV.stylo : SV.boite) + '</div>' +
+      '<div><div class="op-fam-t">' + esc(s.titre) + suiteTxt(b) + '</div>' + (sous ? '<div class="op-fam-s">' + esc(sous) + '</div>' : '') + '</div>' +
+      (s.etiquette ? '<span class="op-pill">' + esc(majuscule(s.etiquette)) + '</span>' : '') + '</div>' +
+      '<div class="op-cols"><span>Dosage</span><span>Désignation</span><span>PFHT</span><span>Prix Intégral habituel</span><span class="o">Prix OPSO Santé</span></div>' +
+      b.items.map(function (it) {
+        return '<div class="op-rw' + (stylo ? ' vign' : '') + '"><div class="op-dose">' + (stylo ? '<span class="op-th">' + SV.stylo + '</span>' : '') + '<span>' + esc(dose(it.nom)) + '</span></div>' +
+          nomHtml(it) + prixHtml(it) + '</div>';
+      }).join('') + '</div>';
+  }
+  function bandeHtml(b) {
+    return '<div class="op-bande"><div class="op-bande-c"><span class="op-ico">' + SV.flacon + '</span><b>' + esc(b.s.titre) + suiteTxt(b) + '</b></div>' +
+      '<div>' + CH + b.items.map(function (it) { return '<div class="op-pr">' + nomHtml(it) + prixHtml(it) + '</div>'; }).join('') + '</div></div>';
+  }
+  function offreHtml(b) {
+    var n = b.s.items.length;
+    return '<div class="op-os"><div><div class="op-os-t">' + esc(b.s.titre) + suiteTxt(b) + '</div><div class="op-os-s">Produits regroupés par marque · tous les prix sont HT, par boîte</div></div>' +
+      '<span class="op-pill">' + n + (n > 1 ? ' produits' : ' produit') + '</span></div>';
+  }
+  function carteHtml(x) {
+    var sachets = x.items.filter(function (it) { return /\bSACH/i.test(it.nom); }).length * 2 > x.items.length;
+    var tot = x.total || x.items.length;
+    return '<div class="op-carte"><div class="op-carte-h"><span class="op-ico">' + (sachets ? SV.sachet : SV.boite) + '</span><b>' + esc(majuscule(x.nom.toLowerCase())) + suiteTxt(x) + '</b>' +
+      '<span class="op-carte-n">' + tot + (tot > 1 ? ' présentations' : ' présentation') + '</span></div>' + CH +
+      x.items.map(function (it) { return '<div class="op-pr">' + nomHtml(it) + prixHtml(it) + '</div>'; }).join('') + '</div>';
+  }
+  function haut1Html() {
+    var C = V2.opsoCatalogue.commun, logo = (window.V2_BRAND && window.V2_BRAND.logo) || 'assets/opsosante-logo.png';
+    return '<header class="op-couv"><div class="op-logos"><img class="op-l1" src="' + esc(C.logoIntegral) + '" alt="Intégral Pharma"><span class="op-by">by</span><img class="op-l2" src="' + esc(logo) + '" alt="OPSO Santé"></div>' +
+      '<h1 class="op-titre">' + TITRE + '</h1><div class="op-sous"><span class="op-pill">Édition du ' + esc(dateEdition()) + '</span><span>Un dosage par ligne, trois prix HT par boîte.</span></div></header>' +
+      '<div class="op-leg"><div><b>PFHT</b>prix fabricant hors taxes</div><div><b>Prix Intégral habituel</b>prix HT facturé, abandon de marge déduit</div>' +
+      '<div class="o"><b>Prix OPSO Santé</b>le prix négocié pour les adhérentes</div></div>';
+  }
+  function hautHtml(p) {
+    var t = [];
+    p.blocs.forEach(function (b) { if (b.s && t.indexOf(b.s.titre) < 0) t.push(b.s.titre); });
+    var quoi = t.length > 1 ? t.slice(0, -1).join(', ') + ' et ' + t[t.length - 1] : t.join('');
+    var C = V2.opsoCatalogue.commun, logo = (window.V2_BRAND && window.V2_BRAND.logo) || 'assets/opsosante-logo.png';
+    return '<header class="op-haut"><div class="op-haut-t' + ((TITRE + quoi).length > 48 ? ' long' : '') + '">' + TITRE + (quoi ? ' · ' + esc(quoi) : '') + '</div>' +
+      '<div class="op-logos2"><img class="op-l1" src="' + esc(C.logoIntegral) + '" alt="Intégral Pharma"><img src="' + esc(logo) + '" alt="OPSO Santé"></div></header>';
   }
   function piedHtml(num, total) {
     return '<footer class="oc-pied"><span>Intégral Pharma, groupe de grossistes-répartiteurs, pour les adhérentes d’OPSO Santé</span>' +
       '<span>Édition du ' + esc(dateEdition()) + ' · ' + num + ' / ' + total + '</span></footer>';
   }
-  function ligneHtml(it, fort) {
-    return '<div class="op-ligne' + (fort ? ' fort' : '') + '"><span class="op-nom">' + esc(it.nom) + '</span>' +
-      '<span class="op-cip">' + esc(it.cipTexte) + '</span><span class="op-n">' + eur(it.pfht) + '</span>' +
-      '<span class="op-n">' + eur(it.habituel) + '</span><span class="op-opso">' + eur(it.opso) + '</span></div>';
-  }
-  function enteteHtml() {
-    return '<div class="op-entete"><span>Désignation</span><span>CIP</span><span class="op-n">PFHT</span><span class="op-n">Prix Intégral habituel</span><span class="op-opso">Prix OPSO Santé</span></div>';
-  }
-  function couvertureHtml(d, total, debuts) {
-    var C = V2.opsoCatalogue.commun;
-    var tuiles = d.sections.map(function (s, i) {
-      return '<li><span class="oc-t-num">' + String(i + 1).padStart(2, '0') + '</span><b>' + esc(s.titre) + (s.etiquette ? ' — ' + esc(s.etiquette) : '') + '</b>' +
-        '<span>' + s.items.length + (s.items.length > 1 ? ' produits' : ' produit') + ' · page ' + debuts[s.k] + '</span></li>';
-    }).join('');
-    return '<section class="oc-page oc-couv">' +
-      '<header class="oc-couv-haut"><div class="oc-halo"></div>' +
-        '<div class="oc-lockup"><img class="l-ip" src="' + esc(C.logoIntegral) + '" alt="Intégral Pharma"><span class="by">by</span><img class="l-opso" src="' + esc(C.logo()) + '" alt="OPSO Santé"></div>' +
-        '<h1 class="op-titre">' + TITRE + '</h1>' +
-        '<p class="oc-accroche">Pour chaque produit : le prix fabricant (PFHT), notre prix habituel sur facture, et le prix négocié pour les adhérentes d’OPSO Santé.</p>' +
-        '<p class="oc-chiffre">Édition du ' + esc(dateEdition()) + '</p>' +
-      '</header>' +
-      '<div class="oc-couv-bas"><h2>Au sommaire</h2><ol class="oc-tuiles">' + tuiles + '</ol>' +
-        '<div class="oc-lire"><h2>Comment lire une ligne</h2>' +
-          '<p>PFHT : prix fabricant hors taxes. Prix Intégral habituel : le prix HT que facture Intégral Pharma, abandon de marge déduit. Prix OPSO Santé : le prix HT négocié pour les adhérentes d’OPSO Santé, en vert. Tous les prix sont HT, par boîte.</p>' +
-          '<p>Les comprimés Wegovy ne sont pas encore disponibles : leurs prix sont donnés à l’avance.</p></div>' +
-      '</div>' + piedHtml(1, total) + '</section>';
-  }
   function pagesHtml(d) {
-    var pages = paginer(d), total = pages.length + 1, debuts = {};
-    pages.forEach(function (p, i) { p.forEach(function (e) { if (e.bandeau && debuts[e.bandeau.k] == null) debuts[e.bandeau.k] = i + 2; }); });
-    var html = couvertureHtml(d, total, debuts);
-    pages.forEach(function (p, i) {
-      var serre = p.h && p.h < H_LIGNE;
-      html += '<section class="oc-page op-page' + (serre ? ' op-serre" style="--h:' + p.h + 'mm' : '') + '"><header class="oc-r-haut"><h2>' + TITRE + '</h2><span class="oc-r-sous">prix HT par boîte</span></header>' + enteteHtml();
-      p.forEach(function (e) {
-        if (e.bandeau) html += '<div class="op-bandeau' + (e.bandeau.fort ? ' fort' : '') + '"><b>' + esc(e.bandeau.titre) + (e.suite ? ' <small>(suite)</small>' : '') + '</b>' +
-          (e.bandeau.etiquette ? '<em>' + esc(e.bandeau.etiquette) + '</em>' : '') + '</div>';
-        else html += ligneHtml(e.it, e.s.fort);
+    var pages = miseEnPage(d), total = pages.length, totaux = {}, lmax = 0;
+    d.sections.forEach(function (s) { if (s.k === 'helicidine' || s.k === 'offre') s.items.forEach(function (it) { [it.pfht, it.habituel, it.opso].forEach(function (v) { lmax = Math.max(lmax, eur(v).length); }); }); });
+    var cols = ';--cn:' + Math.max(12.5, 1.7 * lmax + 2.3).toFixed(1) + 'mm;--co:' + Math.max(17.5, 2 * lmax + 5.5).toFixed(1) + 'mm';   // un prix à trois chiffres élargit les colonnes
+    marques((d.sections.filter(function (s) { return s.k === 'offre'; })[0] || { items: [] }).items).forEach(function (c) { totaux[c.nom] = c.items.length; });
+    return pages.map(function (p, i) {
+      var html = '<section class="oc-page op-doc" style="--e:' + p.e + 'mm' + cols + '">' + (i ? hautHtml(p) : haut1Html());
+      p.blocs.forEach(function (b) {
+        if (b.type === 'fam') html += famHtml(b);
+        else if (b.type === 'bande') html += bandeHtml(b);
+        else if (b.type === 'offre') html += offreHtml(b);
+        else html += '<div class="op-grille">' + b.cols.map(function (c) {
+          return '<div class="op-col">' + c.map(function (x) { x.total = totaux[x.nom]; return carteHtml(x); }).join('') + '</div>';
+        }).join('') + '</div>';
       });
-      html += piedHtml(i + 2, total) + '</section>';
-    });
-    return html;
+      return html + piedHtml(i + 1, total) + '</section>';
+    }).join('');
+  }
+  // Filet : une désignation plus longue que deux lignes passe en 8 pt serré plutôt que d'être coupée.
+  function ajusterNoms(el) {
+    Array.prototype.forEach.call(el.querySelectorAll('.op-nm'), function (n) { if (n.scrollHeight > n.clientHeight + 1) n.classList.add('long'); });
   }
 
-  var STYLE_ID = 'op-styles';
+  var STYLE_ID = 'op-styles-familles';
   function injectStyles() {
     V2.opsoCatalogue.commun.styles();
     if (document.getElementById(STYLE_ID)) return;
-    var cols = 'minmax(0,1fr) 33mm 24mm 28mm 33mm';
+    var e = 'var(--e,0mm)';
     var css = [
-      '.op-titre{font-size:44pt!important}',
-      '.op-entete,.op-ligne{display:grid;grid-template-columns:' + cols + ';align-items:center;column-gap:3mm;padding:0 11mm 0 12mm}',
-      '.op-entete{height:11mm;font-size:8pt;color:var(--gris);text-transform:uppercase;letter-spacing:.03em;line-height:1.15;border-bottom:.3mm solid rgba(42,45,47,.15)}',
-      '.op-entete .op-opso{color:var(--vert-f)}',
-      '.op-entete .op-n,.op-entete .op-opso{white-space:normal}',
-      '.op-n{text-align:right;white-space:nowrap}',
-      '.op-opso{text-align:right;white-space:nowrap}',
-      '.op-ligne{height:var(--h,' + H_LIGNE + 'mm);border-top:.25mm solid rgba(42,45,47,.08);font-size:9.5pt}',
-      '.op-nom{font-size:9.5pt;line-height:1.15;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}',
-      '.op-cip{font-size:8.5pt;color:var(--gris);white-space:nowrap}',
-      '.op-ligne .op-n{color:var(--gris)}',
-      '.op-ligne .op-opso{font-size:12pt;font-weight:700;color:var(--vert-f)}',
-      '.op-ligne.fort{background:linear-gradient(90deg,rgba(243,244,196,0) 55%,var(--lime-p) 100%)}',
-      '.op-ligne.fort .op-opso{font-size:13pt;color:var(--anthra);background:var(--lime);border-radius:2mm;padding:.8mm 2.4mm;justify-self:end}',
-      '.op-bandeau{height:calc(var(--h,' + H_LIGNE + 'mm) * ' + UN_BANDEAU + ');display:flex;align-items:flex-end;gap:4mm;padding:0 12mm 1.6mm;border-top:.25mm solid rgba(42,45,47,.08)}',
-      '.op-bandeau b{font-weight:400;font-size:13pt;color:var(--vert-f)}',
-      '.op-bandeau b small{font-size:9pt;color:var(--gris)}',
-      '.op-bandeau em{font-style:normal;font-size:9pt;color:var(--anthra);background:var(--lime);border-radius:3mm;padding:.4mm 3mm}',
-      '.op-bandeau.fort b{color:var(--anthra)}',
-      // page resserrée (toute l'offre sur une page) : une seule ligne par désignation, prix OPSO plus compact
-      '.op-serre .op-entete,.op-serre .op-ligne{grid-template-columns:minmax(0,1fr) 25mm 22mm 25mm 28mm}',   // la désignation gagne la place des chiffres
-      '.op-serre .op-nom{-webkit-line-clamp:1;font-size:8.5pt}',
-      '.op-serre .op-ligne{font-size:8.5pt}',
-      '.op-serre .op-cip{font-size:8pt}',
-      '.op-serre .op-ligne .op-opso{font-size:10.5pt}',
-      '.op-serre .op-ligne.fort .op-opso{font-size:10.5pt;padding:.3mm 2mm}',
+      '.op-doc{--vert:#0d8530;--vert-v:#11a63c;--vert-f:#0a6a26;--gris:#4f5456;--trait:#d3e2d8}',
+      '.op-doc .op-pill{background:var(--lime);color:var(--anthra);border-radius:5mm 5mm 5mm 0;padding:1.4mm 4mm;font-size:9.5pt;white-space:nowrap}',
+      // page 1 : bandeau court + légende (73 mm en tout, cf. H.haut1)
+      '.op-couv{position:relative;height:60mm;color:#fff;padding:9mm 12mm 0;border-radius:0 0 0 16mm;overflow:hidden;' +
+        'background:radial-gradient(circle at 88% 0%,#8bcf4c 0,rgba(139,207,76,0) 46%),linear-gradient(135deg,#17b543 0%,#0d8530 100%)}',
+      '.op-couv::after{content:"";position:absolute;right:-30mm;top:-30mm;width:90mm;height:90mm;border-radius:50%;border:1px solid rgba(255,255,255,.28);box-shadow:0 0 0 7mm rgba(255,255,255,.04),0 0 0 14mm rgba(255,255,255,.04)}',
+      '.op-logos{position:relative;z-index:1;display:flex;align-items:center;gap:4mm}',
+      '.op-logos .op-l1{height:11mm;width:auto;background:#fff;border-radius:2.4mm;padding:1mm 1.6mm}',
+      '.op-by{font-style:italic;font-size:10pt}',
+      '.op-logos .op-l2{height:14mm;width:auto}',
+      '.op-doc .op-titre{position:relative;z-index:1;font-size:27pt;line-height:1.05;margin-top:7mm;color:#fff}',
+      '.op-sous{position:relative;z-index:1;display:flex;align-items:center;gap:4mm;margin-top:3mm;font-size:10pt}',
+      '.op-leg{display:flex;gap:3mm;height:8mm;margin:5mm 12mm 0;font-size:8pt;color:var(--gris);line-height:1.3}',
+      '.op-leg div{flex:1;border-left:2px solid var(--trait);padding-left:2.5mm}',
+      '.op-leg b{display:block;font-weight:400;font-size:8.5pt;color:var(--anthra)}',
+      '.op-leg .o{border-left-color:var(--vert-v)}.op-leg .o b{color:var(--vert)}',
+      // pages suivantes : en-tête court (17 mm, cf. H.haut)
+      '.op-haut{height:17mm;padding:8mm 12mm 0;display:flex;align-items:center;justify-content:space-between;gap:4mm}',
+      '.op-haut-t{font-size:15pt;color:var(--vert);white-space:nowrap}.op-haut-t.long{font-size:12pt}',
+      '.op-logos2{display:flex;align-items:center;gap:3mm;flex:none}.op-logos2 img{height:9mm;width:auto}',
+      '.op-logos2 .op-l1{background:#fff;border:1px solid var(--trait);border-radius:2mm;padding:.8mm 1.2mm}',
+      // grands blocs Wegovy / Mounjaro
+      '.op-fam{margin:4.5mm 12mm 0;border-radius:6mm;overflow:hidden;border:1px solid var(--trait);background:linear-gradient(180deg,#fff 0,#f4f9f6 100%)}',
+      '.op-fam-h{height:28mm;display:flex;align-items:center;gap:5mm;padding:0 6mm;color:#fff;' +
+        'background:radial-gradient(circle at 92% 20%,rgba(221,223,75,.45) 0,rgba(221,223,75,0) 45%),linear-gradient(120deg,#0f9a38,#0a6a26)}',
+      '.op-vis{width:22mm;height:20mm;flex:none}.op-vis svg{width:100%;height:100%;display:block}',
+      '.op-fam-t{font-size:17pt;line-height:1.05}.op-fam-t small,.op-os-t small{font-size:10pt}',
+      '.op-fam-s{font-size:8.5pt;margin-top:1mm;color:#eaf6ee}',
+      '.op-fam-h .op-pill{margin-left:auto}',
+      '.op-cols,.op-rw{display:grid;grid-template-columns:28mm minmax(0,1fr) 20mm 20mm 29mm;align-items:center;column-gap:2.5mm;padding:0 6mm}',
+      '.op-cols{height:10mm;font-size:8pt;line-height:1.2;color:var(--gris);text-align:right}',
+      '.op-cols span:nth-child(-n+2){text-align:left}.op-cols .o{color:var(--vert)}',
+      '.op-rw{height:calc(' + H.famRang + 'mm + ' + e + ');border-top:1px solid var(--trait)}',
+      '.op-dose{display:flex;align-items:center;gap:1.5mm;white-space:nowrap;font-size:12.5pt;line-height:1;color:var(--vert-f)}',
+      '.op-th{width:8mm;height:9mm;flex:none}.op-th svg{width:100%;height:100%;display:block}',
+      '.op-rw .op-nm{font-size:9pt}',
+      '.op-rw .op-p{font-size:9.5pt}',
+      '.op-rw .op-po{border-radius:3mm 3mm 3mm 0;padding:1.2mm 3mm;font-size:13pt}',
+      // désignation + CIP, prix (communs aux blocs, au bandeau et aux cartes)
+      '.op-nom{min-width:0;line-height:1.15}',
+      '.op-nm{display:block;max-height:2.3em;overflow:hidden;font-size:8.5pt}.op-nm.long{font-size:8pt;letter-spacing:-.02em}',
+      '.op-nom i{display:block;font-style:normal;font-size:8pt;color:var(--gris);margin-top:.4mm;white-space:nowrap}',
+      '.op-p{text-align:right;font-size:8.5pt;white-space:nowrap}',
+      '.op-po{justify-self:end;background:var(--lime);color:var(--anthra);border-radius:2.4mm 2.4mm 2.4mm 0;padding:.9mm 1.8mm;font-size:10pt;white-space:nowrap}',
+      // Hélicidine en bandeau
+      '.op-bande{margin:4.5mm 12mm 0;border-radius:5mm;border:1px solid var(--trait);background:linear-gradient(100deg,#f1f8f3,#fff 60%);overflow:hidden;display:grid;grid-template-columns:minmax(30mm,auto) minmax(0,1fr)}',
+      '.op-bande-c{display:flex;align-items:center;justify-content:center;gap:2mm;padding:2mm 4mm;color:#fff;background:radial-gradient(circle at 30% 20%,#2fc15a 0,#0d8530 80%)}',
+      '.op-bande-c b{font-weight:400;font-size:12pt;white-space:nowrap}',
+      '.op-bande .op-ico{width:6mm;height:6mm}',
+      '.op-ch,.op-pr{display:grid;grid-template-columns:minmax(0,1fr) var(--cn,12.5mm) var(--cn,12.5mm) var(--co,17.5mm);column-gap:1.6mm;align-items:center;padding:0 3.5mm}',
+      '.op-ch{height:5.6mm;font-size:8pt;color:var(--gris);text-align:right;white-space:nowrap}.op-ch span:first-child{text-align:left}.op-ch .o{color:var(--vert)}',
+      '.op-bande .op-ch{height:7mm;padding-top:1.4mm}',
+      '.op-pr{height:calc(' + H.rang + 'mm + ' + e + ');border-top:1px solid var(--trait)}',
+      '.op-ch+.op-pr{border-top:0}',
+      // Offre spéciale : en-tête vert + cartes par marque
+      '.op-os{height:17mm;margin:4.5mm 12mm 0;border-radius:5mm;color:#fff;display:flex;align-items:center;gap:4mm;padding:0 6mm;' +
+        'background:radial-gradient(circle at 92% 10%,rgba(221,223,75,.5) 0,rgba(221,223,75,0) 40%),linear-gradient(110deg,#17b543,#0a6a26)}',
+      '.op-os-t{font-size:15pt;line-height:1.1}.op-os-s{font-size:8.5pt;color:#eaf6ee;margin-top:.6mm}',
+      '.op-os .op-pill{margin-left:auto}',
+      '.op-grille{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:4mm;align-items:start;margin:4.5mm 12mm 0}',
+      '.op-col{display:flex;flex-direction:column;gap:3.4mm}',
+      '.op-carte{border-radius:4.5mm;border:1px solid var(--trait);background:linear-gradient(180deg,#fff,#f6faf7);overflow:hidden}',
+      '.op-carte-h{height:10.5mm;display:flex;align-items:center;gap:2.5mm;padding:0 3.5mm;background:linear-gradient(110deg,#e3f1e8,#f6faf7 75%);border-bottom:1px solid var(--trait)}',
+      '.op-carte-h b{font-weight:400;font-size:11.5pt;color:var(--vert-f);letter-spacing:.3px;white-space:nowrap}',
+      '.op-carte-h b small{font-size:8.5pt;color:var(--gris)}',
+      '.op-carte-n{margin-left:auto;font-size:8pt;color:var(--gris);white-space:nowrap}',
+      '.op-ico{width:7mm;height:7mm;flex:none}.op-ico svg{width:100%;height:100%;display:block}',
       '.op-alerte{margin:0 0 14px;padding:10px 14px;border-radius:10px;background:#fff6dc;color:#5c4400;font-size:13.5px}',
       '@media print{.op-alerte{display:none!important}}'
     ].join('\n');
@@ -274,6 +419,7 @@
       '<button class="v2-btn primary" id="op-btn-csv" onclick="V2.opsoPrix.csv()">Télécharger en Excel (CSV)</button></div></div>' + alerte +
       '<div class="oc-apercu">' + pagesHtml(d).replace(/<section class="oc-page/g, '<div class="oc-cadre"><section class="oc-page').replace(/<\/section>/g, '</section></div>') + '</div>');
     V2.opsoCatalogue.commun.ajuster(root);
+    ajusterNoms(root);
   }
 
   // ── Excel (CSV) : mêmes lignes que l'écran, UTF-8 + BOM, « ; », CRLF, virgule décimale ──
@@ -292,14 +438,15 @@
   }
 
   V2.opsoPrix = {
-    lignes: lignes, pfht: pfhtDe, paginer: paginer, csvTexte: csv,
+    lignes: lignes, pfht: pfhtDe, paginer: miseEnPage, csvTexte: csv,
     signalees: 0, sansPrix: 0, lignesN: 0,   // lus par la sonde
     donnees: construire,
     csv: function () { V2.opsoCatalogue.commun.telecharger(csv()); },
     imprimer: function () {
       var avant = document.title, d = construire(); if (!d) return;
       document.title = 'Prix-OPSO-Sante';
-      V2.opsoCatalogue.commun.preparerHtml(pagesHtml(d)).then(function () {
+      V2.opsoCatalogue.commun.preparerHtml(pagesHtml(d)).then(function (box) {
+        if (box) ajusterNoms(box);
         try { window.print(); } catch (e) { V2.toast && V2.toast('Impression impossible', 'error'); }
         setTimeout(function () { document.title = avant; }, 1500);
       });
