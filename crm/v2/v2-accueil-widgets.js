@@ -1,11 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════════════════════
-   JARVIS · accueil u2 — la colonne de droite de widgets et l'ATELIER plein écran (04/10/2026, maquette z4 « L'atelier »)
-   Demande du 04/10 : une vraie personnalisation poussée. Cinq leviers : bibliothèque par rayons (avec recherche), emplacement (l'ordre),
-   taille (Compact / Normal / Détaillé : le contenu change vraiment), contenu (réglages propres au widget), et TOUT GARDÉ PAR COMMERCIAL.
-   Où c'est gardé : le champ `wid` de la ligne `profils` de la personne (celle des réglages d'accueil, via le pont : S.wid + garder()). Navigateur
-   d'abord, base après 800 ms de calme. Champ absent ou illisible = retour aux réglages d'origine ; les anciennes cases cochées (widgets / wordre)
-   sont CONVERTIES (un widget coché = un widget posé, dans le même ordre, taille Normal).
-   Règle de base : AUCUNE donnée d'exemple. Chaque widget lit la donnée réelle déjà chargée par l'app ; un widget sans source n'est pas dans la bibliothèque.
+   JARVIS · accueil u2 — la colonne de droite de widgets et le MODE RÉGLAGE SUR PLACE (16/10/2026, version 1 « Sur place »)
+   Avant : un atelier plein écran à trois colonnes. Maintenant : « Personnaliser » met l'accueil LUI-MÊME en mode réglage, comme l'écran d'accueil
+   d'un téléphone. Chaque widget porte une croix, trois pastilles de taille, un « ⋯ » (réglages de contenu) et se déplace en le tirant (Pointer Events :
+   souris et doigt). « + Ajouter un widget » montre des aperçus RÉELS des widgets pas encore posés : un appui = posé. Une bande en haut porte les sept
+   couleurs, « Revenir aux réglages d'origine » et « Terminé ». « Autres outils » : un œil par outil (v2-accueil-cinq.js).
+   Où c'est gardé : INCHANGÉ — le champ `wid` de la ligne `profils` de la personne (S.wid + garder() par le pont). Rien de nouveau en base.
+   Règle de base : AUCUNE donnée d'exemple. Chaque widget lit la donnée réelle déjà chargée par l'app.
    Régler un widget ne redessine que la colonne de droite : les scènes animées du centre ne repartent pas.
    Ce fichier ne connaît pas les internes de v2-app.js : il lit le pont V2.accueilPont.
    ═══════════════════════════════════════════════════════════════════════════════ */
@@ -53,13 +53,6 @@
   };
   var CLES = ['relance', 'groupement', 'infos', 'todo', 'semaine', 'tournee', 'notes', 'raccourcis', 'ruptures'];
   var TAILLES = { S: 'Compact', M: 'Normal', L: 'Détaillé' };
-  // Les trois modèles prêts : un clic pose cinq widgets (annulable)
-  var MODELES = [
-    { k: 'terrain', nom: 'Terrain', ds: 'Vos relances, votre tournée, votre semaine', l: [['tournee', 'M'], ['relance', 'M'], ['semaine', 'M'], ['raccourcis', 'S'], ['ruptures', 'S']] },
-    { k: 'bureau', nom: 'Bureau', ds: 'Les groupements, les ruptures, vos notes', l: [['groupement', 'M'], ['ruptures', 'M'], ['notes', 'M'], ['raccourcis', 'M'], ['semaine', 'M']] },
-    { k: 'decouverte', nom: 'Découverte', ds: 'Un peu de tout, pour essayer', l: [['relance', 'M'], ['semaine', 'M'], ['groupement', 'S'], ['ruptures', 'S'], ['tournee', 'S']] }
-  ];
-
   /* ── Les choix proposés par un réglage ([valeur, libellé]) ── */
   function outilsChoix() {
     var p = P(), cinq = (V2.accueilCinq && V2.accueilCinq.CINQ) || [];
@@ -248,225 +241,309 @@
   // Le texte du bloc-notes se tape : son corps ne se remplace JAMAIS tant que le widget ne change pas (le texte ne contribue pas à la signature)
   function sigCorps(w, h) { return w.k === 'notes' ? 'notes|' + w.t : h; }
 
-  /* ═══ Sur l'accueil : la colonne de droite ═══ */
-  function lienPage(o) { var p = P(); if (!o) return null; var pg = o.split('/')[0]; return p.page(pg) ? { act: 'go:' + o, href: '#' + o } : null; }
-  function cadre(w, i, atelier) {
-    var L = LIB[w.k], lk = lienPage(L.o), h = corps(w, atelier);
-    var tt = (lk && !atelier) ? '<a class="aw-tl" href="' + esc(lk.href) + '" data-u2-act="' + esc(lk.act) + '"><span>' + esc(L.nom) + '</span>' + ic('arrow') + '</a>' : '<span class="aw-tl"><span>' + esc(L.nom) + '</span>' + (lk ? ic('arrow') : '') + '</span>';
-    if (!atelier) _sigW[w.id] = sigCorps(w, h);
-    return '<section class="u2-wid aw-w aw-' + w.t + (atelier ? '' : ' u2-in') + '"' + (atelier ? '' : ' style="--i:' + (i + 3) + '"') + ' data-aw-w="' + esc(w.id) + '" aria-label="' + esc(L.nom) + '">' +
-      '<div class="u2-wid-h"><h2>' + tt + '</h2>' + (atelier ? '' : '<button type="button" class="aw-ib aw-rg" data-aw="regler" data-v="' + esc(w.id) + '" aria-label="Régler ' + esc(L.nom) + '" title="Régler">' + ic('regler') + '</button>') + '</div>' +
-      '<div class="aw-c">' + h + '</div></section>';
-  }
-  var _sigW = {}, _struct = '';
-  function structure() { return JSON.stringify(W().items.map(function (w) { return [w.id, w.k, w.t, w.o]; })); }
-  function droiteHtml() {
-    var l = W().items; _sigW = {}; _struct = structure();
-    return l.map(function (w, i) { return cadre(w, i, false); }).join('') +
-      '<button type="button" class="aw-plus" data-aw="atelier" aria-label="Ajouter un widget ou régler mes widgets">' + ic('plus') + '<span><b>' + (l.length ? 'Ajouter ou régler' : 'Ajouter un widget') + '</b><small>Ouvrir l\'atelier</small></span></button>';
-  }
-  // Met la colonne à jour EN PLACE : si la liste, les tailles ou les réglages ont changé, la colonne se redessine (elle seule) ;
-  // sinon seul le corps dont la donnée a changé est remplacé. Le centre (les scènes animées) n'est jamais touché.
-  function majDroite(force) {
-    var dr = document.getElementById('u2-droite'); if (!dr || !P()) return;
-    var focus = document.activeElement, memo = focus && dr.contains(focus) ? focus.getAttribute('data-aw') && [focus.getAttribute('data-aw'), focus.getAttribute('data-v')] : null;
-    if (structure() !== _struct) {
-      dr.innerHTML = droiteHtml();
-      if (memo && memo[1]) { var n = dr.querySelector('[data-aw="' + memo[0] + '"][data-v="' + memo[1] + '"]'); if (n) { try { n.focus(); } catch (e) {} } }
-      return;
-    }
-    W().items.forEach(function (w) {
-      var el = dr.querySelector('[data-aw-w="' + w.id + '"] .aw-c'); if (!el) return;
-      var h = corps(w, false), s = sigCorps(w, h);
-      if (_sigW[w.id] === s) return;
-      _sigW[w.id] = s; el.innerHTML = h;
-    });
-  }
 
-  /* ═══ L'atelier : plein écran, trois parties (1 bibliothèque, 2 le widget choisi en vrai, 3 mon accueil) ═══ */
-  var AT = null, UI = { ouvert: false, sel: null, q: '', et: 1, avant: null, opener: null, last: null };
-  function brouillon(k) { var t = LIB[k].t; return { id: 'brouillon', k: k, t: t.indexOf('M') >= 0 ? 'M' : t.charAt(0), o: defauts(k) }; }
-  function cible() { var s = UI.sel; if (!s) return null; return s.t === 'w' ? get(s.id) : s.d; }
-  function sel0() { var w = W().items[0]; UI.sel = w ? { t: 'w', id: w.id } : { t: 'l', k: 'relance', d: brouillon('relance') }; }
-  function norm(s) { return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
-  function bibliotheque() {
-    var q = norm(UI.q).trim(), cur = cible(), h = '', n = 0;
-    FAMS.forEach(function (f) {
-      var l = CLES.filter(function (k) { var L = LIB[k]; return L.fam === f[0] && (!q || norm(L.nom + ' ' + L.ds + ' ' + f[1]).indexOf(q) >= 0); });
-      if (!l.length) return; n += l.length;
-      h += '<div class="aw-ry"><h4>' + esc(f[1]) + '</h4>' + l.map(function (k) {
-        var L = LIB[k], on = cur && cur.k === k, nb = W().items.filter(function (w) { return w.k === k; }).length;
-        return '<button type="button" class="aw-lr' + (on ? ' on' : '') + '" data-aw="lib" data-v="' + k + '" aria-pressed="' + !!(UI.sel && UI.sel.t === 'l' && on) + '"' + (on ? ' aria-current="true"' : '') + '>' +
-          '<span class="aw-lg1">' + ic(L.ic) + '</span><span class="aw-ln"><b>' + esc(L.nom) + '</b><small>' + esc(L.ds) + '</small></span>' +
-          (nb ? '<span class="aw-sur">' + CK2 + '<span>' + (nb > 1 ? 'Posé ×' + nb : 'Sur mon accueil') + '</span></span>' : '') + '</button>';
-      }).join('') + '</div>';
-    });
-    return n ? h : '<p class="aw-v">Aucun widget ne correspond à « ' + esc(UI.q) + ' ». Essayez « relance » ou « semaine ».</p>';
-  }
-  function reglagesW(w) {
-    var L = LIB[w.k], h = '<div class="aw-rb"><h4>Taille</h4><div class="aw-seg" role="radiogroup" aria-label="Taille">' + 'SML'.split('').filter(function (t) { return L.t.indexOf(t) >= 0; }).map(function (t) {
-      return '<button type="button" class="aw-sg" role="radio" aria-checked="' + (w.t === t) + '" data-aw="taille" data-v="' + t + '">' + TAILLES[t] + '</button>';
-    }).join('') + '</div></div>';
+  /* ═══ Sur l'accueil : la colonne de droite, au repos et en mode réglage ═══ */
+  var PS = { on: false, tray: true, reg: null, conf: false, neuf: null, opener: null };   // l'état du mode réglage : jamais gardé (on repart au repos)
+  function calme() { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } }
+  function lienPage(o) { var p = P(); if (!o) return null; var pg = o.split('/')[0]; return p.page(pg) ? { act: 'go:' + o, href: '#' + o } : null; }
+  function tailles(w) { return 'SML'.split('').filter(function (t) { return LIB[w.k].t.indexOf(t) >= 0; }); }
+  function reglagesHtml(w) {
+    var L = LIB[w.k], h = '';
     L.r.forEach(function (r) {
       var ch = choix(r, w);
       h += '<div class="aw-rb"><h4>' + esc(r.nom) + '</h4>';
       if (!ch.length) h += '<p class="aw-v">Rien à choisir pour le moment.</p>';
       else if (r.multi) h += '<div class="aw-ch" role="group" aria-label="' + esc(r.nom) + '">' + ch.map(function (c) {
-        return '<button type="button" class="aw-cb" role="checkbox" aria-checked="' + (w.o[r.k].indexOf(c[0]) >= 0) + '" data-aw="multi" data-v="' + esc(r.k + '|' + c[0]) + '">' + CK2 + '<span>' + esc(c[1]) + '</span></button>';
+        return '<button type="button" class="aw-cb" role="checkbox" aria-checked="' + (w.o[r.k].indexOf(c[0]) >= 0) + '" data-pb="multi" data-v="' + esc(w.id + '|' + r.k + '|' + c[0]) + '">' + CK2 + '<span>' + esc(c[1]) + '</span></button>';
       }).join('') + '</div>';
       else h += '<div class="aw-ch" role="radiogroup" aria-label="' + esc(r.nom) + '">' + ch.map(function (c) {
-        return '<button type="button" class="aw-cb aw-rd" role="radio" aria-checked="' + (w.o[r.k] === c[0]) + '" data-aw="choix" data-v="' + esc(r.k + '|' + c[0]) + '"><i></i><span>' + esc(c[1]) + '</span></button>';
+        return '<button type="button" class="aw-cb aw-rd" role="radio" aria-checked="' + (w.o[r.k] === c[0]) + '" data-pb="choix" data-v="' + esc(w.id + '|' + r.k + '|' + c[0]) + '"><i></i><span>' + esc(c[1]) + '</span></button>';
       }).join('') + '</div>';
       h += '</div>';
     });
     return h;
   }
-  function scene() {
-    var w = cible(); if (!w) { sel0(); w = cible(); }
-    var L = LIB[w.k], posed = UI.sel.t === 'w', nb = W().items.filter(function (x) { return x.k === w.k; }).length;
-    return '<div class="aw-nom"><span class="aw-lg1">' + ic(L.ic) + '</span><span class="aw-ln"><b>' + esc(L.nom) + '</b><small>' + esc(L.ds) + '</small></span></div>' +
-      '<div class="aw-etat ' + (posed ? 'pose' : 'brou') + '">' + (posed ? CK2 + '<span>Ce widget est sur votre accueil : chaque réglage s\'applique tout de suite.</span>' : '<span>Aperçu : ce widget n\'est pas encore sur votre accueil.' + (nb ? ' Vous en avez déjà ' + nb + ', vous pouvez en poser un autre.' : '') + '</span>') + '</div>' +
-      '<div class="aw-scene" aria-label="Aperçu du widget"><i class="aw-gh" aria-hidden="true"></i><div class="aw-cw">' + cadre(w, 0, true) + '</div><i class="aw-gh aw-gh2" aria-hidden="true"></i></div>' +
-      '<div class="aw-regs">' + reglagesW(w) + '</div>' +
-      '<div class="aw-go">' + (posed ? '<button type="button" class="aw-bt aw-ret" data-aw="retirer" data-v="' + esc(w.id) + '">Retirer de mon accueil</button>'
-        : '<button type="button" class="v2-btn v2-btn-primary" data-aw="ajoute" data-v="' + w.k + '"' + (W().items.length >= MAX ? ' disabled' : '') + '>' + ic('plus') + 'Ajouter à mon accueil</button>' + (W().items.length >= MAX ? '<p class="aw-v">Votre accueil porte déjà ' + MAX + ' widgets : retirez-en un pour en ajouter.</p>' : '')) + '</div>';
+  function cadre(w, i, stat) {
+    var L = LIB[w.k], lk = lienPage(L.o), h = corps(w, stat);
+    var tt = (lk && !stat) ? '<a class="aw-tl" href="' + esc(lk.href) + '" data-u2-act="' + esc(lk.act) + '"><span>' + esc(L.nom) + '</span>' + ic('arrow') + '</a>' : '<span class="aw-tl"><span>' + esc(L.nom) + '</span></span>';
+    _sigW[w.id] = sigCorps(w, h);
+    if (!PS.on) {
+      return '<section class="u2-wid aw-w aw-' + w.t + ' u2-in" style="--i:' + (i + 3) + '" data-aw-w="' + esc(w.id) + '" aria-label="' + esc(L.nom) + '">' +
+        '<div class="u2-wid-h"><h2>' + tt + '</h2></div><div class="aw-c">' + h + '</div></section>';
+    }
+    var ouv = PS.reg === w.id && L.r.length > 0, ts = tailles(w), nm = esc(L.nom);
+    return '<section class="u2-wid aw-w aw-' + w.t + ' pb-w' + (ouv ? ' pb-ouvert' : '') + (PS.neuf === w.id ? ' pb-neuf' : '') + '" data-aw-w="' + esc(w.id) + '" aria-label="' + nm + '">' +
+      '<div class="u2-wid-h pb-h"><span class="pb-grip" aria-hidden="true">' + ic('grip') + '</span><h2>' + tt + '</h2>' +
+      (L.r.length ? '<button type="button" class="aw-ib pb-dots" data-pb="reglages" data-v="' + esc(w.id) + '" aria-expanded="' + ouv + '" aria-label="Réglages de ' + nm + '" title="Réglages du contenu">' + ic('points') + '</button>' : '') +
+      '<button type="button" class="aw-ib pb-x" data-pb="retire" data-v="' + esc(w.id) + '" aria-label="Retirer ' + nm + '" title="Retirer de mon accueil">' + ic('croix') + '</button></div>' +
+      '<div class="aw-c pb-c">' + h + '</div>' +
+      '<div class="pb-sizes" role="radiogroup" aria-label="Taille de ' + nm + '">' + ts.map(function (t) {
+        return '<button type="button" class="pb-sz" role="radio" aria-checked="' + (w.t === t) + '" data-pb="taille" data-v="' + esc(w.id + '|' + t) + '">' + TAILLES[t] + '</button>';
+      }).join('') + '</div>' +
+      (ouv ? '<div class="pb-reg">' + reglagesHtml(w) + '</div>' : '') +
+      '<div class="pb-kb"><span>Clavier : </span><button type="button" data-pb="monte" data-v="' + esc(w.id) + '" aria-label="Monter ' + nm + '">Monter</button>' +
+      '<button type="button" data-pb="descend" data-v="' + esc(w.id) + '" aria-label="Descendre ' + nm + '">Descendre</button></div></section>';
   }
-  function accueilListe() {
-    var l = W().items, cur = UI.sel && UI.sel.t === 'w' ? UI.sel.id : null;
-    var h = '<div class="aw-mod"><h4>Modèles prêts à poser</h4><div class="aw-mds">' + MODELES.map(function (m) {
-      return '<button type="button" class="aw-md" data-aw="modele" data-v="' + m.k + '"><b>' + m.nom + '</b><small>' + esc(m.ds) + '</small></button>';
-    }).join('') + '</div>' + (UI.avant ? '<button type="button" class="aw-bt aw-an" data-aw="annule">' + ic('reset') + 'Annuler le modèle, revenir à mes widgets</button>' : '<p class="aw-note">Un modèle remplace votre colonne ; vous pourrez le retoucher ou l\'annuler.</p>') + '</div>';
-    h += '<h4 class="aw-lh">Ma colonne, de haut en bas <em>' + l.length + '</em></h4>';
-    if (!l.length) return h + '<p class="aw-v">Aucun widget sur votre accueil. Choisissez-en un dans la bibliothèque, ou posez un modèle.</p>';
-    return h + '<ol class="aw-ls">' + l.map(function (w, i) {
-      var nm = LIB[w.k].nom;
-      return '<li class="aw-row' + (w.id === cur ? ' on' : '') + '"><span class="aw-no1" aria-hidden="true">' + (i + 1) + '</span>' +
-        '<button type="button" class="aw-rn" data-aw="w" data-v="' + w.id + '" aria-pressed="' + (w.id === cur) + '" aria-label="Régler ' + esc(nm) + ', ' + (i + 1) + 'e position"><b>' + esc(nm) + '</b><small>' + TAILLES[w.t] + '</small></button>' +
-        '<span class="aw-fl"><button type="button" class="aw-ib" data-aw="monte" data-v="' + w.id + '" aria-label="Monter ' + esc(nm) + '"' + (i === 0 ? ' disabled' : '') + '>' + ic('up') + '</button>' +
-        '<button type="button" class="aw-ib" data-aw="descend" data-v="' + w.id + '" aria-label="Descendre ' + esc(nm) + '"' + (i === l.length - 1 ? ' disabled' : '') + '>' + ic('down') + '</button>' +
-        '<button type="button" class="aw-ib aw-x" data-aw="retire" data-v="' + w.id + '" aria-label="Retirer ' + esc(nm) + '">' + ic('croix') + '</button></span></li>';
-    }).join('') + '</ol>';
+  /* « + Ajouter un widget » : des aperçus RÉELS (la vraie donnée, dans la taille qui sera posée) des widgets pas encore sur l'accueil */
+  function libres() { var pose = {}; W().items.forEach(function (w) { pose[w.k] = 1; }); return CLES.filter(function (k) { return !pose[k]; }); }
+  function trayHtml() {
+    var lib = libres(), plein = W().items.length >= MAX;
+    var h = '<section class="pb-add" aria-label="Ajouter un widget"><button type="button" class="pb-add-h" data-pb="tray" aria-expanded="' + PS.tray + '">' + ic('plus') +
+      '<span><b>Ajouter un widget</b><small>' + (plein ? 'Votre accueil est plein' : lib.length ? lib.length + (lib.length > 1 ? ' à poser' : ' à poser') : 'Tout est déjà posé') + '</small></span>' + ic(PS.tray ? 'up' : 'down') + '</button>';
+    if (PS.tray) {
+      if (plein) h += '<p class="aw-v pb-add-m">Votre accueil porte déjà ' + MAX + ' widgets : retirez-en un pour en ajouter.</p>';
+      else if (!lib.length) h += '<p class="aw-v pb-add-m">Tous les widgets sont déjà sur votre accueil.</p>';
+      else h += '<div class="pb-trw"><div class="pb-tray" role="list">' + lib.map(function (k) {
+        var b = brouillon(k), L = LIB[k];
+        return '<div class="pb-pv" role="listitem"><div class="pb-pv-b" role="button" tabindex="0" data-pb="ajoute" data-v="' + k + '" aria-label="Ajouter ' + esc(L.nom) + ' à mon accueil">' +
+          '<div class="pb-pv-c" aria-hidden="true"><section class="u2-wid aw-w aw-' + b.t + '"><div class="u2-wid-h"><h2><span class="aw-tl"><span>' + esc(L.nom) + '</span></span></h2></div><div class="aw-c">' + corps(b, true) + '</div></section></div>' +
+          '<span class="pb-pv-go">' + ic('plus') + 'Ajouter ce widget</span></div></div>';
+      }).join('') + '</div>' + (lib.length > 1 ? '<div class="pb-pg" aria-hidden="true">' + lib.map(function (k, i) { return '<i' + (i === 0 ? ' class="on"' : '') + '></i>'; }).join('') + '</div>' : '') + '</div>';
+    }
+    return h + '</section>';
   }
-  function monter() {
-    if (AT) return;
-    AT = document.createElement('div'); AT.id = 'u2-atelier'; AT.className = 'aw-at'; AT.setAttribute('role', 'dialog'); AT.setAttribute('aria-modal', 'true'); AT.setAttribute('aria-labelledby', 'aw-ti'); AT.setAttribute('data-et', '1');
-    AT.innerHTML = '<div class="aw-in"><header class="aw-hd"><div><h2 id="aw-ti">L\'atelier des widgets</h2><p>Choisissez à gauche, réglez au milieu, retrouvez le résultat à droite. <span class="aw-gard">' + CK2 + 'Gardé pour vous.</span></p></div>' +
-      '<button type="button" class="v2-btn v2-btn-primary" data-aw="fin">Terminé</button></header>' +
-      '<div class="aw-pas" role="group" aria-label="Les trois parties de l\'atelier"><button type="button" data-aw="etape" data-v="1"><i>1</i>Choisir</button><button type="button" data-aw="etape" data-v="2"><i>2</i>Régler</button><button type="button" data-aw="etape" data-v="3"><i>3</i>Mon accueil</button></div>' +
-      '<div class="aw-bd"><section class="aw-c1 aw-pan" aria-labelledby="aw-t1"><h3 id="aw-t1"><i>1</i>Bibliothèque</h3><label class="aw-q">' + ic('search') + '<span class="u2-sr">Chercher un widget</span><input type="search" id="aw-q" placeholder="Chercher un widget" aria-label="Chercher un widget" autocomplete="off" enterkeyhint="search"></label><div class="aw-sc1" id="aw-lib"></div></section>' +
-      '<section class="aw-c2 aw-pan" aria-labelledby="aw-t2"><h3 id="aw-t2"><i>2</i>Le widget choisi</h3><div class="aw-sc1" id="aw-st"></div></section>' +
-      '<section class="aw-c3 aw-pan" aria-labelledby="aw-t3"><h3 id="aw-t3"><i>3</i>Mon accueil</h3><div class="aw-sc1" id="aw-ho"></div></section></div></div>';
-    document.body.appendChild(AT);
-    var q = AT.querySelector('#aw-q');
-    q.addEventListener('input', function () { UI.q = q.value; document.getElementById('aw-lib').innerHTML = bibliotheque(); });
-    AT.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); fermer(); return; }
-      if (e.key !== 'Tab') return;
-      var f = [].slice.call(AT.querySelectorAll('button:not([disabled]),input,a[href]')).filter(function (n) { return n.offsetParent !== null; });
-      if (!f.length) return;
-      e.preventDefault();
-      var i = f.indexOf(document.activeElement), j = e.shiftKey ? (i <= 0 ? f.length - 1 : i - 1) : (i < 0 || i === f.length - 1 ? 0 : i + 1);
-      f[j].focus();
+  function vide0() {
+    return '<div class="u2-wid"><p class="u2-vide">Aucun widget sur votre accueil.</p><button type="button" class="v2-btn v2-btn-primary pb-vide-b" data-pb="ouvrir">' + ic('plus') + 'Personnaliser</button></div>';
+  }
+  var _sigW = {}, _struct = '';
+  function structure() { return JSON.stringify([PS.on, PS.tray, PS.reg, PS.neuf, W().items.map(function (w) { return [w.id, w.k, w.t, w.o]; })]); }
+  function droiteHtml() {
+    var l = W().items; _sigW = {}; _struct = structure();
+    var h = l.map(function (w, i) { return cadre(w, i, PS.on); }).join('');
+    if (PS.on) return h + trayHtml();
+    return h || vide0();
+  }
+  // Met la colonne à jour EN PLACE : si la liste, les tailles ou les réglages ont changé, la colonne se redessine (elle seule) ;
+  // sinon seul le corps dont la donnée a changé est remplacé. Le centre (les scènes animées) n'est jamais touché.
+  function majDroite(force) {
+    var dr = document.getElementById('u2-droite'); if (!dr || !P()) return;
+    if (DR && DR.on) return;   // jamais en plein tirage
+    var focus = document.activeElement, memo = null;
+    if (focus && dr.contains(focus) && focus.getAttribute('data-pb')) memo = [focus.getAttribute('data-pb'), focus.getAttribute('data-v')];
+    if (structure() !== _struct) {
+      var y = window.pageYOffset;
+      dr.innerHTML = droiteHtml();
+      if (PS.neuf) { var nw = dr.querySelector('[data-aw-w="' + PS.neuf + '"]'); PS.neuf = null; _struct = structure(); if (nw && nw.scrollIntoView && !(nw.getBoundingClientRect().top > 0 && nw.getBoundingClientRect().bottom < window.innerHeight)) { try { nw.scrollIntoView({ block: 'center', behavior: calme() ? 'auto' : 'smooth' }); } catch (e) {} } }
+      else if (Math.abs(window.pageYOffset - y) > 1) window.scrollTo(0, y);
+      if (memo) {
+        var n = dr.querySelector('[data-pb="' + memo[0] + '"][data-v="' + (memo[1] == null ? '' : memo[1]) + '"]');
+        if (!n || n.disabled) { var alt = { monte: 'descend', descend: 'monte' }[memo[0]]; if (alt) n = dr.querySelector('[data-pb="' + alt + '"][data-v="' + memo[1] + '"]'); }
+        if (n) { try { n.focus({ preventScroll: true }); } catch (e) {} }
+      }
+      return;
+    }
+    W().items.forEach(function (w) {
+      var el = dr.querySelector('[data-aw-w="' + w.id + '"] .aw-c'); if (!el) return;
+      var h = corps(w, PS.on), s = sigCorps(w, h);
+      if (_sigW[w.id] === s) return;
+      _sigW[w.id] = s; el.innerHTML = h;
     });
   }
-  function rendre(foc) {
-    if (!AT) return;
-    var a = document.activeElement, mem = a && AT.contains(a) ? [a.getAttribute('data-aw'), a.getAttribute('data-v')] : null;
-    document.getElementById('aw-lib').innerHTML = bibliotheque();
-    document.getElementById('aw-st').innerHTML = scene();
-    document.getElementById('aw-ho').innerHTML = accueilListe();
-    AT.setAttribute('data-et', String(UI.et));
-    [].forEach.call(AT.querySelectorAll('.aw-pas button'), function (b) { b.setAttribute('aria-pressed', String(+b.getAttribute('data-v') === UI.et)); });
-    var f = foc || mem || UI.last;
-    if (f && f[0]) {
-      var n = AT.querySelector('[data-aw="' + f[0] + '"][data-v="' + f[1] + '"]');
-      if (n && !n.disabled) n.focus();
-      else if (foc === undefined && mem && /monte|descend/.test(mem[0])) { var alt = AT.querySelector('[data-aw="' + (mem[0] === 'monte' ? 'descend' : 'monte') + '"][data-v="' + mem[1] + '"]'); if (alt && !alt.disabled) alt.focus(); }
+  function garde() { P().garder(); majDroite(true); }
+  function brouillon(k) { var t = LIB[k].t; return { id: 'brouillon', k: k, t: t.indexOf('M') >= 0 ? 'M' : t.charAt(0), o: defauts(k) }; }
+
+  /* ═══ La bande du haut : couleur, retour à l'origine, Terminé ═══ */
+  function bandeHtml() {
+    var p = P(), cur = p.teinte(), h = '<div class="pb-bd"><div class="pb-bd-t"><b>Personnaliser votre accueil</b><span>Tirez un widget pour le déplacer. Tout est gardé tout de suite.</span></div>';
+    if (!p.escale()) {
+      h += '<div class="pb-col" role="radiogroup" aria-label="Couleur de votre accueil"><span class="pb-col-l">Couleur</span>' + p.teintes.map(function (t) {
+        var on = t.k === cur;
+        return '<button type="button" class="pb-dot" role="radio" aria-checked="' + on + '" data-pb="couleur" data-v="' + t.k + '" aria-label="' + esc(t.nom) + '" title="' + esc(t.nom) + '">' +
+          '<span class="u2-pas' + (t.m ? ' u2-pas-m"' : '" style="background:' + t.c + '"') + '>' + (on ? p.ic('check') : '') + '</span></button>';
+      }).join('') + '</div>';
+    }
+    h += '<div class="pb-bd-a">' + (PS.conf
+      ? '<span class="pb-conf" role="group" aria-label="Revenir aux réglages d\'origine"><b>Tout remettre comme au départ ?</b><button type="button" class="pb-lien" data-pb="rzoui">Oui, tout remettre</button><button type="button" class="pb-lien" data-pb="rznon">Non</button></span>'
+      : '<button type="button" class="pb-lien pb-rz" data-pb="rz">' + ic('reset') + '<span>Revenir aux réglages d\'origine</span></button>') +
+      '<button type="button" class="v2-btn v2-btn-primary pb-fin" data-pb="fin">Terminé</button></div></div>';
+    return h;
+  }
+  function bande() {
+    var b = document.getElementById('pb-band'), page = document.querySelector('.u2-page'); if (!b) return;
+    var mem = document.activeElement && b.contains(document.activeElement) ? [document.activeElement.getAttribute('data-pb'), document.activeElement.getAttribute('data-v')] : null;
+    if (!PS.on) { b.hidden = true; b.innerHTML = ''; if (page) { page.classList.remove('pb-on'); page.style.removeProperty('--pb-h'); } return; }
+    b.innerHTML = bandeHtml(); b.hidden = false;
+    if (page) { page.classList.add('pb-on'); page.style.setProperty('--pb-h', b.offsetHeight + 'px'); }
+    if (mem && mem[0]) {
+      var n = b.querySelector('[data-pb="' + mem[0] + '"]' + (mem[1] ? '[data-v="' + mem[1] + '"]' : '')) || (/rz/.test(mem[0]) ? b.querySelector('[data-pb="rz"],[data-pb="rznon"]') : null);
+      if (n) { try { n.focus({ preventScroll: true }); } catch (e) {} }
     }
   }
-  function appliquerTeinte() {
-    var v = P().vars(), k;
-    for (k in v) if (Object.prototype.hasOwnProperty.call(v, k)) AT.style.setProperty(k, v[k]);
+  function cinqMaj() { if (V2.accueilCinq && V2.accueilCinq.maj) V2.accueilCinq.maj(); }
+  function commencer(opener) {
+    var p = P(); if (!p || PS.on) return;
+    PS.on = true; PS.tray = true; PS.reg = null; PS.conf = false; PS.neuf = null; PS.opener = opener || null;
+    p.fermer(); p.rail(true);
+    bande(); majDroite(true); cinqMaj();
+    try { window.scrollTo({ top: 0, behavior: calme() ? 'auto' : 'smooth' }); } catch (e) { window.scrollTo(0, 0); }
+    setTimeout(function () { var f = document.querySelector('#pb-band .pb-dot[aria-checked="true"]') || document.querySelector('#pb-band .pb-fin'); if (f) { try { f.focus({ preventScroll: true }); } catch (e) {} } }, 60);
   }
-  function ouvrir(opener, id) {
-    var p = P(); if (!p) return;
-    monter(); appliquerTeinte();
-    UI.opener = opener || document.querySelector('[data-u2-rail="widgets"]') || document.querySelector('.u2-page .tp-avb'); UI.avant = null;
-    var w = id && get(id); UI.sel = w ? { t: 'w', id: w.id } : null; if (!UI.sel) sel0(); UI.q = ''; AT.querySelector('#aw-q').value = ''; UI.et = w ? 2 : 1;
-    p.fermer();   // le tiroir « Mon espace » se referme s'il était ouvert
-    UI.ouvert = true;
-    rendre(); AT.classList.add('on');
-    [document.getElementById('v2-root'), document.getElementById('u2-hors')].forEach(function (n) { if (n) n.inert = true; });
-    document.body.style.overflow = 'hidden';
-    setTimeout(function () { var n = id ? AT.querySelector('.aw-row.on .aw-rn') : AT.querySelector('#aw-q'); if (n && !n.offsetParent) n = AT.querySelector('#aw-st [aria-checked="true"]'); if (n) n.focus(); }, 60);
+  function finir(silencieux) {
+    if (!PS.on) return;
+    if (DR) dAnnuler();
+    PS.on = false; PS.reg = null; PS.conf = false; PS.neuf = null;
+    var p = P(); if (p) p.rail(false);
+    bande(); majDroite(true); cinqMaj();
+    var o = PS.opener; PS.opener = null;
+    if (!silencieux) { if (!(o && document.contains(o) && o.offsetParent)) o = document.querySelector('.pb-open') || document.querySelector('[data-u2-rail="perso"]'); if (o) { try { o.focus({ preventScroll: true }); } catch (e) {} } }
   }
-  function fermer() {
-    if (!UI.ouvert) return;
-    UI.ouvert = false; AT.classList.remove('on');
-    [document.getElementById('v2-root'), document.getElementById('u2-hors')].forEach(function (n) { if (n) n.inert = false; });
-    document.body.style.overflow = '';
-    if (UI.opener && document.contains(UI.opener)) { try { UI.opener.focus(); } catch (e) {} }
-  }
+  function basculer(b) { if (PS.on) finir(); else commencer(b); }
   function toast(m) { try { if (V2.toast) V2.toast(m); } catch (e) {} }
+
+  /* ═══ Les gestes ═══ */
   function agir(a, v, el) {
-    UI.last = AT && AT.contains(el) ? [a, v] : null;
-    if (a === 'atelier') { ouvrir(el); return; }
-    if (a === 'regler') { ouvrir(el, v); return; }
-    if (a === 'fin') { fermer(); return; }
-    if (a === 'etape') { UI.et = +v; rendre(); return; }
-    if (a === 'lib') { UI.sel = { t: 'l', k: v, d: brouillon(v) }; UI.et = 2; rendre(); return; }
-    if (a === 'w') { UI.sel = { t: 'w', id: v }; UI.et = 2; rendre(); return; }
+    var p = P(), x = v == null ? [] : String(v).split('|');
+    if (a === 'ouvrir') { commencer(el); return; }
+    if (a === 'fin') { finir(); return; }
+    if (!PS.on) return;
+    if (a === 'couleur') { p.couleur(v); bande(); return; }
+    if (a === 'rz') { PS.conf = true; bande(); return; }
+    if (a === 'rznon') { PS.conf = false; bande(); return; }
+    if (a === 'rzoui') { PS.conf = false; PS.reg = null; p.reset(); bande(); majDroite(true); cinqMaj(); toast('Votre accueil est revenu aux réglages d\'origine.'); return; }
+    if (a === 'oeil') { p.masquer(v); return; }
+    if (a === 'tray') { PS.tray = !PS.tray; majDroite(true); return; }
     if (a === 'ajoute') {
-      var d = UI.sel && UI.sel.d, w = d && ajouter(v, d.t, d.o);
-      if (!w) return;
-      UI.sel = { t: 'w', id: w.id }; UI.et = 3; UI.avant = null; toast('« ' + LIB[v].nom + ' » est ajouté à votre accueil.'); garde(); rendre(['w', w.id]); return;
+      var d = brouillon(v), w = ajouter(v, d.t, d.o); if (!w) return;
+      PS.neuf = w.id; toast('« ' + LIB[v].nom + ' » est posé sur votre accueil.'); garde(); return;
     }
-    if (a === 'taille') { var t = cible(); if (!t) return; if (UI.sel.t === 'w') { t.t = v; garde(); rendre(); } else { t.t = v; rendre(); } return; }
-    if (a === 'choix' || a === 'multi') {
-      var p = v.split('|'), c = cible(), val = p.slice(1).join('|'); if (!c) return;
-      if (a === 'multi') { val = (c.o[p[0]] || []).slice(); var i = val.indexOf(p[1]); if (i >= 0) val.splice(i, 1); else if (val.length < 6) val.push(p[1]); }
-      c.o[p[0]] = val;
-      if (UI.sel.t === 'w') garde();
-      rendre(); return;
-    }
-    if (a === 'monte' || a === 'descend') { bouger(v, a === 'monte' ? -1 : 1); garde(); rendre(); return; }
-    if (a === 'retire' || a === 'retirer') {
+    if (a === 'retire') {
       var wr = get(v); if (!wr) return;
-      var nom = LIB[wr.k].nom, idx = W().items.indexOf(wr);
-      W().items.splice(idx, 1);
-      if (UI.sel && UI.sel.t === 'w' && UI.sel.id === v) UI.sel = null;
-      if (!UI.sel) { var nx = W().items[Math.min(idx, W().items.length - 1)]; UI.sel = nx ? { t: 'w', id: nx.id } : { t: 'l', k: 'relance', d: brouillon('relance') }; }
-      toast('« ' + nom + ' » est retiré de votre accueil.');
-      var nf = W().items[Math.min(idx, W().items.length - 1)];
-      garde(); rendre(nf ? ['w', nf.id] : ['lib', 'relance']); return;
+      var nom = LIB[wr.k].nom; W().items.splice(W().items.indexOf(wr), 1);
+      if (PS.reg === v) PS.reg = null;
+      toast('« ' + nom + ' » est retiré. Il est dans « Ajouter un widget ».'); garde(); return;
     }
-    if (a === 'modele') {
-      var m = MODELES.filter(function (x) { return x.k === v; })[0]; if (!m) return;
-      UI.avant = JSON.stringify(W().items); W().items.splice(0);
-      m.l.forEach(function (x) { ajouter(x[0], x[1], null); });
-      sel0(); toast('Modèle « ' + m.nom + ' » posé. Retouchez-le comme vous voulez.'); garde(); rendre(['modele', v]); return;
+    if (a === 'taille') { var wt = get(x[0]); if (!wt || tailles(wt).indexOf(x[1]) < 0) return; wt.t = x[1]; garde(); return; }
+    if (a === 'reglages') { PS.reg = PS.reg === v ? null : v; majDroite(true); return; }
+    if (a === 'choix' || a === 'multi') {
+      var wc = get(x[0]); if (!wc) return;
+      var val = x.slice(2).join('|');
+      if (a === 'multi') { val = (wc.o[x[1]] || []).slice(); var i = val.indexOf(x[2]); if (i >= 0) val.splice(i, 1); else if (val.length < 6) val.push(x[2]); }
+      wc.o[x[1]] = val; garde(); return;
     }
-    if (a === 'annule') {
-      var l; try { l = JSON.parse(UI.avant); } catch (e) { l = null; }
-      if (!Array.isArray(l)) return;
-      W().items.splice(0); l.forEach(function (x) { var w2 = propre(x); if (w2) { w2.id = x.id || nid(); W().items.push(w2); } });
-      UI.avant = null; sel0(); toast('Vos widgets d\'avant sont revenus.'); garde(); rendre(['modele', 'terrain']); return;
-    }
+    if (a === 'monte' || a === 'descend') { bouger(v, a === 'monte' ? -1 : 1); garde(); return; }
   }
-  /* un seul écouteur pour la colonne et l'atelier ; le bloc-notes garde ce qu'on tape à chaque frappe, sans nouveau rendu */
   document.addEventListener('click', function (e) {
-    var b = e.target && e.target.closest && e.target.closest('[data-aw]'); if (!b || !P()) return;
-    if (b.disabled) return;
-    agir(b.getAttribute('data-aw'), b.getAttribute('data-v'), b);
+    var b = e.target && e.target.closest && e.target.closest('[data-pb]'); if (!b || !P()) return;
+    if (b.disabled || b.getAttribute('data-pb') === 'ajoute-ignore') return;
+    agir(b.getAttribute('data-pb'), b.getAttribute('data-v'), b);
   });
-  window.addEventListener('hashchange', function () { if (UI.ouvert) fermer(); });   // un changement d'écran (retour du navigateur) referme l'atelier
+  document.addEventListener('keydown', function (e) {
+    var t = e.target;
+    if (e.key === 'Escape' && PS.on && !(DR && DR.on)) { e.preventDefault(); finir(); return; }
+    if ((e.key === 'Enter' || e.key === ' ') && t && t.getAttribute && t.getAttribute('role') === 'button' && t.getAttribute('data-pb') === 'ajoute') { e.preventDefault(); agir('ajoute', t.getAttribute('data-v'), t); }
+    if (DR && DR.on && e.key === 'Escape') { e.preventDefault(); dAnnuler(); }
+  });
+  window.addEventListener('hashchange', function () { if (PS.on) finir(true); });
+  window.addEventListener('resize', function () { var b = document.getElementById('pb-band'), pg = document.querySelector('.u2-page'); if (PS.on && b && pg) pg.style.setProperty('--pb-h', b.offsetHeight + 'px'); });
+  /* le bloc-notes garde ce qu'on tape à chaque frappe, sans nouveau rendu (au repos seulement : en mode réglage il est montré, pas modifiable) */
   document.addEventListener('input', function (e) {
     var t = e.target; if (!t || !t.matches || !t.matches('[data-aw-notes]') || !P()) return;
     W().notes = String(t.value || '').slice(0, 600); P().garder();
   });
 
+  /* ═══ Tirer un widget (souris ET doigt : Pointer Events). Doigt : poignée = tout de suite ; ailleurs sur la carte = appui long court (260 ms) puis glisser.
+         Les autres cartes s'écartent ; au lâcher, la carte glisse à sa place, puis l'ordre est gardé. ═══ */
+  var DR = null;
+  function dGap() { var dr = document.getElementById('u2-droite'), g = dr ? parseFloat(getComputedStyle(dr).rowGap) : 14; return isNaN(g) ? 14 : g; }
+  function dDown(e) {
+    if (!PS.on || DR || !e.target.closest) return;
+    var card = e.target.closest('.pb-w'); if (!card) return;
+    if (e.target.closest('button, a, input, textarea, select, .pb-reg, .pb-kb')) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    var touch = e.pointerType !== 'mouse', grip = !!e.target.closest('.pb-grip');
+    DR = { id: card.getAttribute('data-aw-w'), card: card, x0: e.clientX, y0: e.clientY, y: e.clientY, pid: e.pointerId, on: false, touch: touch, sc0: window.pageYOffset, t: null, raf: 0 };
+    if (touch) { if (grip) dDebut(); else DR.t = setTimeout(function () { if (DR && !DR.on) dDebut(); }, 260); }
+  }
+  function dDebut() {
+    var dr = document.getElementById('u2-droite'); if (!DR || !dr) { DR = null; return; }
+    var cards = [].slice.call(dr.querySelectorAll('.pb-w'));
+    DR.items = cards.map(function (c) { var r = c.getBoundingClientRect(); return { id: c.getAttribute('data-aw-w'), el: c, top: r.top + window.pageYOffset, h: r.height }; });
+    DR.i0 = DR.items.map(function (x) { return x.id; }).indexOf(DR.id);
+    if (DR.i0 < 0) { DR = null; return; }
+    DR.idx = DR.i0; DR.gap = dGap(); DR.on = true; DR.sc0 = window.pageYOffset;
+    DR.card.classList.add('pb-lift'); dr.classList.add('pb-dragging');
+    try { DR.card.setPointerCapture(DR.pid); } catch (e) {}
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    DR.raf = requestAnimationFrame(dBoucle);
+  }
+  function dPlace() {
+    if (!DR || !DR.on) return;
+    var dy = DR.y - DR.y0 + (window.pageYOffset - DR.sc0), it = DR.items, c0 = it[DR.i0], centre = c0.top + c0.h / 2 + dy, idx = 0;
+    DR.card.style.transform = 'translate3d(0,' + dy + 'px,0) scale(1.02)';
+    it.forEach(function (x, j) { if (j !== DR.i0 && x.top + x.h / 2 < centre) idx++; });
+    DR.idx = idx;
+    var pas = c0.h + DR.gap;
+    it.forEach(function (x, j) {
+      if (j === DR.i0) return;
+      var s = (DR.i0 < j && j <= idx) ? -pas : (idx <= j && j < DR.i0) ? pas : 0;
+      x.el.style.transform = s ? 'translate3d(0,' + s + 'px,0)' : '';
+    });
+  }
+  function dBoucle() {
+    if (!DR || !DR.on) return;
+    var haut = 90, bas = window.innerHeight - 90, v = 0;
+    if (DR.y < haut) v = -Math.min(18, (haut - DR.y) / 4 + 2); else if (DR.y > bas) v = Math.min(18, (DR.y - bas) / 4 + 2);
+    if (v) window.scrollBy(0, v);
+    dPlace();
+    DR.raf = requestAnimationFrame(dBoucle);
+  }
+  function dNet() {
+    if (!DR) return;
+    clearTimeout(DR.t); cancelAnimationFrame(DR.raf);
+    var dr = document.getElementById('u2-droite');
+    if (DR.items) DR.items.forEach(function (x) { x.el.style.transform = ''; x.el.style.transition = ''; });
+    if (DR.card) { DR.card.classList.remove('pb-lift'); DR.card.style.transform = ''; DR.card.style.transition = ''; try { DR.card.releasePointerCapture(DR.pid); } catch (e) {} }
+    if (dr) dr.classList.remove('pb-dragging');
+  }
+  function dAnnuler() { dNet(); DR = null; }
+  function dMove(e) {
+    if (!DR || e.pointerId !== DR.pid) return;
+    DR.y = e.clientY;
+    if (!DR.on) {
+      var d = Math.hypot(e.clientX - DR.x0, e.clientY - DR.y0);
+      if (DR.touch) { if (d > 8) { clearTimeout(DR.t); DR = null; } }
+      else if (d > 4) dDebut();
+      return;
+    }
+    if (e.cancelable) e.preventDefault();
+  }
+  function dFin(e, annule) {
+    if (!DR || e.pointerId !== DR.pid) return;
+    if (!DR.on || annule) { dAnnuler(); return; }
+    cancelAnimationFrame(DR.raf);
+    var d = DR, it = d.items, c0 = it[d.i0], fin = 0, j;
+    if (d.idx > d.i0) for (j = d.i0 + 1; j <= d.idx; j++) fin += it[j].h + d.gap;
+    else if (d.idx < d.i0) for (j = d.idx; j < d.i0; j++) fin -= it[j].h + d.gap;
+    d.card.style.transition = calme() ? 'none' : 'transform .2s cubic-bezier(.2,.8,.2,1)';
+    d.card.style.transform = 'translate3d(0,' + fin + 'px,0)';
+    DR = { on: true, fige: true, pid: -1, items: [], card: null };   // verrou le temps du glissé final
+    setTimeout(function () {
+      DR = null;
+      if (d.idx !== d.i0) { var l = W().items, w = l.splice(d.i0, 1)[0]; l.splice(d.idx, 0, w); }
+      d.items.forEach(function (x) { x.el.style.transition = 'none'; x.el.style.transform = ''; });
+      d.card.style.transition = 'none'; d.card.style.transform = ''; d.card.classList.remove('pb-lift');
+      var dr = document.getElementById('u2-droite'); if (dr) dr.classList.remove('pb-dragging');
+      if (d.idx !== d.i0) garde();
+    }, calme() ? 0 : 210);
+  }
+  document.addEventListener('pointerdown', dDown);
+  document.addEventListener('pointermove', dMove, { passive: false });
+  document.addEventListener('pointerup', function (e) { dFin(e, false); });
+  document.addEventListener('pointercancel', function (e) { dFin(e, true); });
+  document.addEventListener('touchmove', function (e) { if (DR && DR.on && e.cancelable) e.preventDefault(); }, { passive: false });
+  document.addEventListener('contextmenu', function (e) { if (PS.on && e.target.closest && e.target.closest('.pb-w')) e.preventDefault(); });
+
+  document.addEventListener('scroll', function (e) {
+    var t = e.target; if (!t || !t.classList || !t.classList.contains('pb-tray')) return;
+    var c = t.firstElementChild, pas = c ? c.getBoundingClientRect().width + 10 : 1, k = Math.min(t.children.length - 1, Math.round(t.scrollLeft / pas));
+    [].forEach.call(t.parentNode.querySelectorAll('.pb-pg i'), function (d, i) { d.classList.toggle('on', i === k); });
+  }, true);
+  window.__atelierOuvrirPerso = function () { commencer(null); };   // le banc de l'atelier (16/10) photographie ce geste
+
   V2.accueilWidgets = {
-    net: net, defaut: defaut, droiteHtml: droiteHtml, maj: majDroite, ouvrir: ouvrir, fermer: fermer,
-    LIB: LIB, CLES: CLES, MODELES: MODELES, ouvert: function () { return UI.ouvert; }
+    net: net, defaut: defaut, droiteHtml: droiteHtml, maj: majDroite,
+    basculer: basculer, commencer: commencer, finir: finir, regle: function () { return PS.on; },
+    apres: function () { if (PS.on) { bande(); var p = P(); if (p) p.rail(true); } },
+    LIB: LIB, CLES: CLES
   };
 })();

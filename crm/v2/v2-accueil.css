@@ -27,7 +27,7 @@
 .u2-skip:focus{top:10px}
 
 /* ─── La page : rail | centre | droite ─── */
-.u2-grille{display:grid;grid-template-columns:76px minmax(0,1fr) 320px;gap:28px;padding:0 28px 64px 0;align-items:start}
+.u2-grille{display:grid;grid-template-columns:96px minmax(0,1fr) 320px;gap:28px;padding:0 28px 64px 0;align-items:start}
 .u2-centre{min-width:0;padding-top:26px;outline:0}
 .u2-droite{display:flex;flex-direction:column;gap:14px;padding-top:26px}
 .u2-salut{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 14px;margin-bottom:18px}
@@ -38,9 +38,10 @@
 /* ─── Le rail : des boutons de 64 px (picto 24 + mot), jamais un outil à ouvrir ─── */
 .u2-rail{position:sticky;top:var(--v2-top-h);height:calc(100vh - var(--v2-top-h));z-index:95;display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 6px;
   background:linear-gradient(180deg,var(--card),var(--card-2));border-right:1px solid var(--line);box-shadow:6px 0 18px -14px rgba(16,19,28,.18)}
-.u2-rb{width:64px;min-height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:1px solid transparent;background:none;border-radius:14px;cursor:pointer;
+.u2-rb{width:88px;min-height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:1px solid transparent;background:none;border-radius:14px;cursor:pointer;
   font-family:var(--font);font-size:13px;font-weight:700;color:var(--muted-d);transition:background .16s,color .16s,transform .18s var(--ease),box-shadow .2s}
 .u2-rb .u2-ic{width:24px;height:24px}
+.u2-rb[data-u2-rail="perso"]{font-size:12.5px;letter-spacing:-.01em}
 .u2-rb:hover{background:var(--halo);color:var(--ip-blue-d);transform:translateY(-1px)}
 .u2-rb[aria-expanded="true"]{background:var(--ip-blue);color:#fff;box-shadow:var(--sh-blue)}
 
@@ -108,11 +109,6 @@
 .u2-mon{display:flex;flex-direction:column;gap:22px}
 .u2-mon-b h3{font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-d);margin-bottom:8px}
 .u2-note{font-size:13px;color:var(--muted-d);margin-top:6px;line-height:1.4}
-.u2-mon-ligne{display:flex;align-items:center;gap:8px;min-height:44px;font-size:14.5px;font-weight:600;color:var(--ip-ink-2)}
-.u2-mon-ligne .u2-lb{flex:1;min-width:0}
-.u2-mon-ligne .u2-lb.u2-off{color:var(--muted-d)}
-.u2-fl{display:flex;gap:4px;align-items:center}
-.u2-mon-sel{width:100%;margin-top:8px}
 .u2-mon-compte{display:flex;align-items:center;gap:12px;margin-bottom:6px}
 .u2-mon-compte .v2-av{width:44px;height:44px;font-size:15px;cursor:default}
 .u2-mon-compte b{display:block;font-size:16px;font-weight:800;letter-spacing:-.01em}
@@ -122,43 +118,17 @@
 .u2-mon-act:hover,.u2-eto .v2-um-item:hover{background:var(--card-2);color:var(--ip-ink)}
 .u2-mon-act.u2-danger:hover{color:var(--c-rose-txt)}
 .u2-mon-act.u2-danger:hover .u2-ic{color:var(--c-rose-txt)}
-.u2-vide-mini{padding:8px 2px}
-.u2-sw{flex:none;width:52px;height:44px;border:0;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:var(--r-btn)}
-.u2-sw i{display:block;width:42px;height:24px;border-radius:12px;background:#C9CFDC;position:relative;transition:background .2s var(--ease-soft);box-shadow:0 1px 2px rgba(16,19,28,.18) inset}
-.u2-sw i::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(16,19,28,.3);transition:transform .22s var(--ease)}
-.u2-sw[aria-checked="true"] i{background:var(--ip-blue)}
-.u2-sw[aria-checked="true"] i::after{transform:translateX(18px)}
-.u2-pbtn{flex:none;width:36px;height:36px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ip-ink-2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;box-shadow:var(--sh-1);transition:transform .15s var(--ease),border-color .15s}
-.u2-pbtn .u2-ic{width:17px;height:17px}
-.u2-pbtn:hover{border-color:color-mix(in srgb,var(--ip-blue) 40%,var(--line));color:var(--ip-blue);transform:translateY(-1px)}
-.u2-pbtn:disabled{cursor:default;color:#6B7286;box-shadow:none;transform:none;background:var(--card-2)}
-.u2-pbtn[aria-pressed="true"]{background:var(--halo);color:var(--ip-blue);border-color:color-mix(in srgb,var(--ip-blue) 30%,var(--line))}
-.u2-pbtn[aria-pressed="true"] .u2-ic{fill:currentColor}
 
-/* ─── Réglages du tiroir : familles, couleurs, retour à l'origine ─── */
+/* ─── Teintes de l'accueil : pastille et motif Léopard ─── */
 .u2-note-h{margin:0 0 6px}
-.u2-fam{margin-top:10px}
-.u2-fam-h{display:flex;align-items:center;gap:8px;min-height:44px;border-bottom:1px solid var(--line-2);font-size:14px;font-weight:800;color:var(--ip-ink)}
-.u2-fam-h .u2-lb{flex:1;min-width:0}
-.u2-coul{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.u2-co{display:flex;align-items:center;gap:10px;min-height:60px;padding:6px 10px;border:1px solid var(--line);border-radius:var(--r-btn);background:var(--card);cursor:pointer;font-family:var(--font);font-size:14px;font-weight:700;color:var(--ip-ink-2);text-align:left;box-shadow:var(--sh-1)}
-.u2-co:hover{border-color:color-mix(in srgb,var(--ip-blue) 40%,var(--line))}
-.u2-co[aria-checked="true"]{border-color:var(--ip-blue);background:var(--halo);color:var(--ip-ink)}
 .u2-pas{flex:none;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(16,19,28,.25)}
 .u2-pas .u2-ic{width:22px;height:22px;stroke:#fff;stroke-width:2.6}
-.u2-co-nm{min-width:0;line-height:1.2}
 /* La teinte « Léopard » (v2-app.js, U2_TEINTES, champ m) : un motif, pas un aplat. --u2-leo = les taches seules (fond transparent), toutes plus
    sombres que l'accent : posées sur un bouton plein, le texte blanc garde au moins le contraste de l'accent nu. --u2-motif vaut « none » ailleurs. */
 .u2-page,.u2-hors{--u2-leo:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cg fill='%235F370E' fill-opacity='.45' stroke='%232E1B0B' stroke-width='3' stroke-linecap='round'%3E%3Cellipse cx='16' cy='14' rx='7' ry='5.5' stroke-dasharray='8 6.5 6 7 5 7' transform='rotate(-20 16 14)'/%3E%3Cellipse cx='46' cy='11' rx='6' ry='7' stroke-dasharray='7 6 9 6.5 5 7' transform='rotate(25 46 11)'/%3E%3Cellipse cx='32' cy='34' rx='8' ry='6' stroke-dasharray='9 7 6 6.5 7 8' transform='rotate(10 32 34)'/%3E%3Cellipse cx='10' cy='44' rx='6' ry='5' stroke-dasharray='6 6 8 6.5 5 6' transform='rotate(40 10 44)'/%3E%3Cellipse cx='54' cy='40' rx='6.5' ry='5.5' stroke-dasharray='8 6 5 7 6 6.5' transform='rotate(-35 54 40)'/%3E%3Cellipse cx='29' cy='56' rx='5.5' ry='4.5' stroke-dasharray='6 6 7 6 4 6.5' transform='rotate(15 29 56)'/%3E%3C/g%3E%3Cg fill='%232E1B0B'%3E%3Ccircle cx='33' cy='12' r='1.6'/%3E%3Ccircle cx='22' cy='30' r='1.4'/%3E%3Ccircle cx='44' cy='24' r='1.7'/%3E%3Ccircle cx='5' cy='27' r='1.3'/%3E%3Ccircle cx='43' cy='52' r='1.6'/%3E%3Ccircle cx='60' cy='22' r='1.2'/%3E%3Ccircle cx='14' cy='59' r='1.3'/%3E%3Ccircle cx='58' cy='58' r='1.4'/%3E%3C/g%3E%3C/svg%3E")}
 .u2-pas-m{background:#D9A441 var(--u2-leo) center/40px}
 .u2-pas-m .u2-ic{width:16px;height:16px;padding:3px;box-sizing:content-box;border-radius:50%;background:#2E1B0B}
 .u2-rb[aria-expanded="true"],:is(.u2-page,.u2-hors) .v2-tab[aria-checked="true"]{background-image:var(--u2-motif,none);background-size:44px}
-.u2-rz .v2-btn{height:44px}
-.u2-mon-sel{height:46px}
-.u2-mon-sel select{height:44px;min-height:44px}
-.u2-rz-go{width:100%}
-.u2-rz-b{display:flex;flex-direction:column;gap:8px}
-.u2-rz-b .v2-btn{width:100%}
 
 /* ─── Widgets de droite : titre, lien « Ouvrir », contenu ─── */
 .u2-wid{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2);padding:16px 18px 14px;position:relative}
@@ -205,10 +175,10 @@
 
 /* ─── Téléphone et tablette : pas de rail ; l'avatar ouvre « Mon espace », un panneau qui glisse depuis la droite ─── */
 @media (min-width:1100px){
-  .u2-volet{top:var(--v2-top-h);left:76px;bottom:0;width:320px;border-right:1px solid var(--line);box-shadow:var(--sh-pop);padding:20px 18px 28px;
+  .u2-volet{top:var(--v2-top-h);left:96px;bottom:0;width:320px;border-right:1px solid var(--line);box-shadow:var(--sh-pop);padding:20px 18px 28px;
     transform:translateX(-110%);transition:transform .3s var(--ease)}
   .u2-volet.on{transform:none}
-  .u2-fond{top:var(--v2-top-h);left:76px}
+  .u2-fond{top:var(--v2-top-h);left:96px}
 }
 @media (max-width:1099px){
   .u2-grille{display:block;padding:20px 16px 56px}
@@ -234,7 +204,6 @@
   .u2-rang{grid-template-columns:1fr;gap:10px;padding:14px 14px 16px}
   :is(.u2-page,.u2-hors) .v2-tab{padding:0 12px}
   :is(.u2-page,.u2-hors) .v2-tabs.u2-plein .v2-tab{padding:0 8px}
-  .u2-pbtn{width:44px;height:44px}
 }
 @media (prefers-reduced-motion:reduce){
   .u2-page *,.u2-page *::before,.u2-page *::after{animation:none!important;transition:none!important}

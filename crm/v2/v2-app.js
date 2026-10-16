@@ -932,6 +932,12 @@
     academy: '<path d="M2.5 9.5L12 5l9.5 4.5L12 14z"/><path d="M6.5 11.8V16c0 1.2 2.5 2.5 5.5 2.5s5.5-1.3 5.5-2.5v-4.2M21.5 9.5V14"/>',
     palette: '<path d="M12 3.5a8.5 8.5 0 100 17c1.2 0 1.8-.8 1.8-1.7 0-1.5-1.3-1.6-1.3-2.9 0-.9.7-1.4 1.6-1.4H17a3.5 3.5 0 003.5-3.5C20.5 7 16.8 3.5 12 3.5z"/><circle cx="7.8" cy="11.5" r="1"/><circle cx="10.5" cy="7.7" r="1"/><circle cx="15.2" cy="8" r="1"/>',
     check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    oeil: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
+    oeilbarre: '<path d="M2.5 12S6 5.5 12 5.5c1.6 0 3 .5 4.2 1.2M21.5 12S18 18.5 12 18.5c-1.6 0-3-.5-4.2-1.2"/><path d="M4 4l16 16"/>',
+    croix: '<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    grip: '<circle cx="9" cy="6" r="1.2"/><circle cx="15" cy="6" r="1.2"/><circle cx="9" cy="12" r="1.2"/><circle cx="15" cy="12" r="1.2"/><circle cx="9" cy="18" r="1.2"/><circle cx="15" cy="18" r="1.2"/>',
+    points: '<circle cx="5.5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18.5" cy="12" r="1.4"/>',
     chev: '<path d="M9 5l7 7-7 7"/>',
     arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
     pin: '<path d="M12 16v5.5M8 3h8l-1 6 3 4.5H6L9 9z"/>',
@@ -1266,7 +1272,8 @@
     // Le nombre d'officines et l'avancement des ventes sont dans le bandeau : la ligne « N officines actives » du titre disparaît (plus de doublon).
     if (V2.accueilCinq && V2.accueilPont) {
       return '<div class="u2-salut u2-in" style="--i:0"><h1 class="v2-titre" id="u2-salut">' + esc(u2Salut(m)) + '</h1>' +
-        '<p class="v2-sous">' + esc(qDateTxt(new Date())) + '</p></div>' + V2.accueilCinq.html(etat, _u2.cascade);
+        '<p class="v2-sous">' + esc(qDateTxt(new Date())) + '</p>' +
+        '<button type="button" class="v2-btn pb-open" data-pb="ouvrir">' + u2Ic('palette') + 'Personnaliser</button></div>' + V2.accueilCinq.html(etat, _u2.cascade);
     }
     var po = u2PortesHtml(etat), ra = u2RangsHtml(etat), co = u2CompteHtml(m);
     _u2.sig.portes = po; _u2.sig.rangs = ra; _u2.sig.compte = co;
@@ -1379,13 +1386,13 @@
   function u2Rubriques() {
     var l = [];
     if (V2.basculeEspace && V2.basculeEspace()) l.push(['espace', 'Espace', 'espace']);
-    l.push(['outils', 'Outils', 'grille'], ['widgets', 'Widgets', 'widgets']);
-    if (!u2Escale()) l.push(['couleurs', 'Couleurs', 'palette']);   // Escale impose ses couleurs : pas de choix
-    l.push(['compte', 'Compte', 'user']);
+    // 16/10/2026 — Outils, Widgets et Couleurs ne font plus qu'UNE entrée : « Personnaliser » règle l'accueil sur place (v2-accueil-widgets.js)
+    l.push(['perso', 'Personnaliser', 'palette'], ['compte', 'Compte', 'user']);
     return l;
   }
   function u2RailHtml() {
     return u2Rubriques().map(function (r) {
+      if (r[0] === 'perso') return '<button type="button" class="u2-rb" data-u2-rail="perso" aria-pressed="false">' + u2Ic(r[2]) + r[1] + '</button>';
       return '<button type="button" class="u2-rb" data-u2-rail="' + r[0] + '" aria-haspopup="dialog" aria-expanded="false" aria-controls="u2-volet">' + u2Ic(r[2]) + r[1] + '</button>';
     }).join('');
   }
@@ -1397,72 +1404,10 @@
       '<button type="button" class="v2-tab" role="radio" aria-checked="' + e + '" data-u2-a="esp" data-v="escale">Escale</button></div>' +
       '<p class="u2-note">Vous travaillez dans l\'espace ' + (e ? 'Escale' : 'Intégral') + '.</p></section>';
   }
-  function u2BtnMouv(a, k, nom, i, n) {
-    return '<button type="button" class="u2-pbtn" data-u2-a="' + a + 'up" data-v="' + k + '" aria-label="Monter ' + esc(nom) + '"' + (i === 0 ? ' disabled' : '') + '>' + u2Ic('up') + '</button>' +
-      '<button type="button" class="u2-pbtn" data-u2-a="' + a + 'dn" data-v="' + k + '" aria-label="Descendre ' + esc(nom) + '"' + (i === n - 1 ? ' disabled' : '') + '>' + u2Ic('down') + '</button>';
-  }
-  function u2BlocWidgets() {
-    if (V2.accueilWidgets && V2.accueilPont) {
-      return '<section class="u2-mon-b"><h3>Mes widgets</h3><p class="u2-note u2-note-h">Choisissez-les, réglez leur taille et leur contenu, puis ordonnez-les dans l\'atelier. C\'est gardé pour vous.</p>' +
-        '<button type="button" class="v2-btn v2-btn-primary aw-ouv" data-aw="atelier">' + u2Ic('widgets') + 'Ouvrir l\'atelier</button></section>';
-    }
-    var S = u2S();
-    return '<section class="u2-mon-b"><h3>Mes widgets</h3>' + S.wordre.map(function (k, i) {
-      var nm = U2_WIDGETS[k].nom, on = S.widgets[k];
-      return '<div class="u2-mon-ligne"><span class="u2-lb' + (on ? '' : ' u2-off') + '">' + esc(nm) + '</span><span class="u2-fl">' + u2BtnMouv('w', k, nm, i, S.wordre.length) + '</span>' +
-        '<button type="button" class="u2-sw" role="switch" aria-checked="' + on + '" aria-label="Afficher ' + esc(nm) + '" data-u2-a="wtog" data-v="' + k + '"><i></i></button></div>';
-    }).join('') + '</section>';
-  }
-  function u2BlocOutils() {
-    var etat = u2Etat(), pins = etat.ep;
-    var h = '<section class="u2-mon-b"><h3>Mes outils</h3>';
-    if (!pins.length) h += '<p class="u2-vide u2-vide-mini">Aucun outil épinglé. Choisissez-en un ci-dessous.</p>';
-    pins.forEach(function (k, i) {
-      var nm = G4_PORTES[k].nom;
-      h += '<div class="u2-mon-ligne"><span class="u2-lb">' + esc(nm) + '</span><span class="u2-fl">' + u2BtnMouv('p', k, nm, i, pins.length) +
-        '<button type="button" class="u2-pbtn" aria-pressed="true" data-u2-a="pin" data-v="' + k + '" aria-label="Désépingler ' + esc(nm) + '">' + u2Ic('pin') + '</button></span></div>';
-    });
-    h += '<div class="v2-select u2-mon-sel"><select data-u2-sel="pin" aria-label="Épingler un outil"><option value="">Épingler un outil…</option>';
-    etat.fams.forEach(function (f) {
-      var l = f.cles.filter(function (k) { return pins.indexOf(k) < 0; });
-      if (l.length) h += '<optgroup label="' + esc(f.nom) + '">' + l.map(function (k) { return '<option value="' + k + '">' + esc(G4_PORTES[k].nom) + '</option>'; }).join('') + '</optgroup>';
-    });
-    h += '</select>' + u2Ic('down') + '</div></section>';
-    return h + u2BlocFamilles(etat);
-  }
-  // Tous les outils, famille par famille : afficher / masquer, monter / descendre, épingler. Les familles se déplacent aussi.
-  function u2BlocFamilles(etat) {
-    var S = u2S(), m = S.masques || [];
-    var h = '<section class="u2-mon-b"><h3>Tous les outils</h3><p class="u2-note u2-note-h">Un outil masqué disparaît de votre accueil, sans être perdu : vous le réaffichez ici.</p>';
-    etat.tous.forEach(function (f, fi) {
-      h += '<div class="u2-fam" role="group" aria-label="' + esc(f.nom) + '"><div class="u2-fam-h"><span class="u2-lb">' + esc(f.nom) + '</span><span class="u2-fl">' + u2BtnMouv('f', f.k, f.nom, fi, etat.tous.length) + '</span></div>';
-      f.cles.forEach(function (k, i) {
-        var nm = G4_PORTES[k].nom, on = m.indexOf(k) < 0, ep = etat.ep.indexOf(k) >= 0;
-        h += '<div class="u2-mon-ligne"><span class="u2-lb' + (on ? '' : ' u2-off') + '">' + esc(nm) + '</span><span class="u2-fl">' + u2BtnMouv('o', k, nm, i, f.cles.length) +
-          '<button type="button" class="u2-pbtn" aria-pressed="' + ep + '" data-u2-a="fpin" data-v="' + k + '" aria-label="' + (ep ? 'Désépingler ' : 'Épingler ') + esc(nm) + '"' + (on ? '' : ' disabled') + '>' + u2Ic('pin') + '</button></span>' +
-          '<button type="button" class="u2-sw" role="switch" aria-checked="' + on + '" aria-label="Afficher ' + esc(nm) + '" data-u2-a="mtog" data-v="' + k + '"><i></i></button></div>';
-      });
-      h += '</div>';
-    });
-    return h + '</section>';
-  }
-  // Les sept teintes : pastilles rondes de 48 px, nom écrit à côté, coche sur la teinte active (boutons radio, flèches du clavier).
-  function u2BlocCouleurs() {
-    if (u2Escale()) return '';
-    var cur = u2Teinte().k;
-    return '<section class="u2-mon-b"><h3>Teinte d\'accent</h3><div class="u2-coul" role="radiogroup" aria-label="Couleur d\'accent">' + U2_TEINTES.map(function (t) {
-      var on = t.k === cur;
-      return '<button type="button" class="u2-co" role="radio" aria-checked="' + on + '" tabindex="' + (on ? '0' : '-1') + '" data-u2-a="coul" data-v="' + t.k + '">' +
-        '<span class="u2-pas' + (t.m ? ' u2-pas-m"' : '" style="background:' + t.c + '"') + '>' + (on ? u2Ic('check') : '') + '</span><span class="u2-co-nm">' + esc(t.nom) + '</span></button>';
-    }).join('') + '</div><p class="u2-note">Le fond reste clair. La couleur s\'applique à votre accueil.</p></section>';
-  }
-  // Un seul retour aux réglages d'origine, avec confirmation dans le tiroir (jamais la boîte du navigateur).
-  function u2BlocReset() {
-    if (_u2.confirmer) {
-      return '<section class="u2-mon-b u2-rz" role="group" aria-label="Revenir aux réglages d\'origine"><p class="u2-note u2-note-h"><b>Tout remettre comme au départ ?</b> Vos couleurs, vos outils épinglés, masqués et rangés, et vos widgets reviennent aux réglages d\'origine.</p>' +
-        '<div class="u2-rz-b"><button type="button" class="v2-btn v2-btn-primary" data-u2-a="rzoui">Oui, tout remettre</button><button type="button" class="v2-btn v2-btn-ghost" data-u2-a="rznon">Annuler</button></div></section>';
-    }
-    return '<section class="u2-mon-b u2-rz"><button type="button" class="v2-btn v2-btn-ghost u2-rz-go" data-u2-a="rz">Revenir aux réglages d\'origine</button></section>';
+  // Téléphone : le panneau « Mon espace » mène au même geste que le rail — un seul bouton, qui ouvre le mode réglage sur l'accueil
+  function u2BlocPerso() {
+    return '<section class="u2-mon-b"><h3>Mon accueil</h3><p class="u2-note u2-note-h">Couleur, widgets et outils se règlent directement sur l\'accueil. C\'est gardé pour vous.</p>' +
+      '<button type="button" class="v2-btn v2-btn-primary pb-ouv" data-pb="ouvrir">' + u2Ic('palette') + 'Personnaliser mon accueil</button></section>';
   }
   // Les mêmes gestes que le menu du compte de la barre (V2.userMenu), et seulement ceux qui existent sur cet appareil.
   function u2BlocCompte() {
@@ -1477,14 +1422,14 @@
   function u2VoletRendre() {
     var v = document.getElementById('u2-volet'); if (!v) return;
     var t, h;
-    if (u2Mode()) { t = 'Mon espace'; h = u2BlocEspace() + u2BlocWidgets() + u2BlocCouleurs() + u2BlocOutils() + u2BlocReset() + u2BlocCompte(); }
+    if (u2Mode()) { t = 'Mon espace'; h = u2BlocEspace() + u2BlocPerso() + u2BlocCompte(); }
     else {
-      var s = _u2.sec || 'outils';
-      if (s === 'espace' && !(V2.basculeEspace && V2.basculeEspace())) s = 'outils';
-      if (s === 'couleurs' && u2Escale()) s = 'outils';
+      var s = _u2.sec || 'compte';
+      if (s === 'espace' && !(V2.basculeEspace && V2.basculeEspace())) s = 'compte';
+      if (s !== 'espace') s = 'compte';
       _u2.sec = s;
-      t = s === 'espace' ? 'Espace' : s === 'outils' ? 'Outils' : s === 'widgets' ? 'Widgets' : s === 'couleurs' ? 'Couleurs' : 'Compte';
-      h = s === 'espace' ? u2BlocEspace() : s === 'outils' ? u2BlocOutils() + u2BlocReset() : s === 'widgets' ? u2BlocWidgets() : s === 'couleurs' ? u2BlocCouleurs() + u2BlocReset() : u2BlocCompte();
+      t = s === 'espace' ? 'Espace' : 'Compte';
+      h = s === 'espace' ? u2BlocEspace() : u2BlocCompte();
     }
     document.getElementById('u2-vt').textContent = t;
     document.getElementById('u2-mon').innerHTML = h;
@@ -1540,15 +1485,7 @@
   }
 
   // ── Les gestes des réglages : agir, garder, redessiner, rendre le focus ──
-  function u2Echange(tous, vis, k, d) {
-    var i = vis.indexOf(k), j = i + d;
-    if (i < 0 || j < 0 || j >= vis.length) return;
-    var a = tous.indexOf(k), b = tous.indexOf(vis[j]);
-    if (a < 0 || b < 0) return;
-    var t = tous[a]; tous[a] = tous[b]; tous[b] = t;
-  }
   function u2Agir(a, v, el) {
-    var S = u2S(), cles = u2Cles(), vis = u2Vis();
     if (a === 'install') { u2Fermer(false); V2.installApp(); return; }
     if (a === 'logout') { u2Fermer(false); V2.signOut(); return; }
     if (a === 'esp') { if ((v === 'escale') !== u2Escale()) V2.goSpace(v === 'escale' ? 'escale' : 'crm'); return; }
@@ -1558,43 +1495,9 @@
       if (V2.todo && V2.todo.cocher) V2.todo.cocher(v, fait);
       return;
     }
-    if (a === 'rz') { _u2.confirmer = true; u2Redessiner(a, v); return; }
-    if (a === 'rznon') { _u2.confirmer = false; u2Redessiner(a, v); return; }
-    if (a === 'rzoui') { _u2.confirmer = false; _u2.S = u2Def(); }
-    else if (a === 'coul') { if (!U2_TEINTES.some(function (t) { return t.k === v; })) return; S.couleur = v; }
-    else if (a === 'mtog') {
-      if (!G4_PORTES[v]) return;
-      var im = S.masques.indexOf(v); if (im < 0) S.masques.push(v); else S.masques.splice(im, 1);
-    }
-    else if (a === 'oup' || a === 'odn') {
-      if (!G4_PORTES[v]) return;
-      var fa = G4_PORTES[v].fam, lo = u2Fam(fa, cles).slice();
-      u2Echange(lo, lo, v, a === 'oup' ? -1 : 1); S.ordre[fa] = lo;
-    }
-    else if (a === 'fup' || a === 'fdn') {
-      var te = u2Etat().tous.map(function (f) { return f.k; }), lf = S.fordre.filter(function (k) { return te.indexOf(k) >= 0; });
-      u2Echange(S.fordre, lf, v, a === 'fup' ? -1 : 1);
-    }
-    else if (a === 'wtog') S.widgets[v] = !S.widgets[v];
-    else if (a === 'wup' || a === 'wdn') u2Echange(S.wordre, S.wordre, v, a === 'wup' ? -1 : 1);
-    else if (a === 'pin' || a === 'fpin' || a === 'pup' || a === 'pdn') {
-      if (S.epingles === null) S.epingles = u2Epingles(vis);
-      if (a === 'pin' || a === 'fpin') { var i = S.epingles.indexOf(v); if (i < 0) S.epingles.push(v); else S.epingles.splice(i, 1); }
-      else u2Echange(S.epingles, u2Epingles(vis), v, a === 'pup' ? -1 : 1);
-    } else return;
-    u2Garder();
-    u2Redessiner(a, v);
   }
   function u2Redessiner(a, v) {
     u2PoserTeinte(); u2MajCentre(); u2MajWidgets(); u2VoletRendre();
-    if (!a) return;
-    var vo = document.getElementById('u2-volet'); if (!vo) return;
-    var alt = { wup: 'wdn', wdn: 'wup', pup: 'pdn', pdn: 'pup', oup: 'odn', odn: 'oup', fup: 'fdn', fdn: 'fup' };
-    var foc = { rz: 'rznon', rzoui: 'rz', rznon: 'rz' };   // la confirmation : le focus va au bouton « Annuler », puis revient sur « Revenir… »
-    var n = vo.querySelector('[data-u2-a="' + (foc[a] || a) + '"]' + (foc[a] ? '' : '[data-v="' + v + '"]'));
-    if (n && n.disabled) n = alt[a] ? vo.querySelector('[data-u2-a="' + alt[a] + '"][data-v="' + v + '"]') : null;
-    if (!n || n.disabled) n = vo.querySelector('select') || vo.querySelector('button:not([disabled])');
-    if (n) { try { n.focus(); } catch (e) {} }
   }
 
   function qAgir(act) {
@@ -1609,8 +1512,8 @@
     var t = e.target; if (!t || !t.closest || !t.closest('.u2-page, .u2-hors')) return;
     var b;
     if ((b = t.closest('[data-u2-rail]'))) {
-      // le rail « Widgets » ouvre l'atelier plein écran (et non le tiroir)
-      if (b.getAttribute('data-u2-rail') === 'widgets' && V2.accueilWidgets && V2.accueilPont) { V2.accueilWidgets.ouvrir(b); return; }
+      // le rail « Personnaliser » met l'accueil lui-même en mode réglage (et n'ouvre pas le tiroir)
+      if (b.getAttribute('data-u2-rail') === 'perso') { if (V2.accueilWidgets && V2.accueilWidgets.basculer) V2.accueilWidgets.basculer(b); return; }
       u2Ouvrir(b.getAttribute('data-u2-rail'), b); return;
     }
     if (t.closest('[data-u2-fermer]') || t.closest('#u2-fond')) { u2Fermer(true); return; }
@@ -1622,25 +1525,9 @@
     }
     if (t.closest('[data-u2-skip]')) { var c = document.getElementById('u2-centre'); if (c) c.focus(); }
   }
-  function u2Change(e) {
-    var s = e.target && e.target.closest && e.target.closest('[data-u2-sel="pin"]');
-    if (!s || !s.value || !s.closest('.u2-page, .u2-hors')) return;
-    var k = s.value, S = u2S();
-    if (!G4_PORTES[k]) return;
-    if (S.epingles === null) S.epingles = u2Epingles(u2Vis());
-    if (S.epingles.indexOf(k) < 0) S.epingles.push(k);
-    u2Garder(); u2Redessiner('pin', k);
-    var n = document.querySelector('#u2-volet select'); if (n) { try { n.focus(); } catch (x) {} }
-  }
   function u2Touche(e) {
     var t = e.target; if (!t || !t.closest || !t.closest('.u2-page, .u2-hors')) return;
     if (e.key === 'Escape' && _u2.ouvert) { e.preventDefault(); u2Fermer(true); return; }
-    var co = t.closest('[data-u2-a="coul"]');
-    if (co && ['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].indexOf(e.key) >= 0) {
-      var lc = [].slice.call(document.querySelectorAll('#u2-volet [data-u2-a="coul"]')), ic = lc.indexOf(co);
-      var nx = lc[(ic + (e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1) + lc.length) % lc.length];
-      e.preventDefault(); u2Agir('coul', nx.getAttribute('data-v'), nx); return;
-    }
   }
   function u2Redim() {
     if (!_u2.monte) return;
@@ -1653,8 +1540,7 @@
     if (_u2.lie === root) return;
     _u2.lie = root;
     root.addEventListener('click', u2Clic);
-    root.addEventListener('change', u2Change);
-    root.addEventListener('keydown', u2Touche);
+        root.addEventListener('keydown', u2Touche);
     window.addEventListener('resize', u2Redim);
   }
 
@@ -1663,6 +1549,7 @@
     if (_u2.monte && V2.route && V2.route.name === 'home') { u2MajCentre(); if (_u2.ouvert) u2VoletRendre(); }
   }
   function u2Demonter() {
+    if (V2.accueilWidgets && V2.accueilWidgets.finir) V2.accueilWidgets.finir(true);   // quitter l'accueil = fin du mode réglage
     if (_u2.ouvert) u2Fermer(false);
     u2Verrou(false);
     _u2.monte = false;
@@ -1689,6 +1576,7 @@
     var etat = u2Etat();
     root.innerHTML = '<div class="u2-page' + (cascade ? ' u2-cascade' : '') + '"' + u2StyleAttr() + '>' +
       '<button type="button" class="u2-skip" data-u2-skip>Aller aux outils</button>' + topbar() +
+      '<div class="pb-band" id="pb-band" role="region" aria-label="Personnaliser mon accueil" hidden></div>' +
       '<div class="u2-grille">' +
         '<nav class="u2-rail" aria-label="Mon espace" id="u2-rail">' + u2RailHtml() + '</nav>' +
         '<main class="u2-centre" id="u2-centre" tabindex="-1">' + u2CentreHtml(m, etat) + '</main>' +
@@ -1704,7 +1592,8 @@
       '<aside class="u2-volet" id="u2-volet" role="dialog" aria-labelledby="u2-vt"><div class="u2-volet-t"><h2 id="u2-vt">Mon espace</h2><button type="button" class="v2-btn v2-btn-ghost" data-u2-fermer>Fermer</button></div><div class="u2-mon" id="u2-mon"></div></aside>';
     document.body.appendChild(hors);
     if (V2.accueilCinq && V2.accueilPont) V2.accueilCinq.apres(cascade);
-    hors.addEventListener('click', u2Clic); hors.addEventListener('change', u2Change); hors.addEventListener('keydown', u2Touche);
+    if (V2.accueilWidgets && V2.accueilWidgets.apres) V2.accueilWidgets.apres();   // le mode réglage, s'il était ouvert, se retrouve
+    hors.addEventListener('click', u2Clic); hors.addEventListener('keydown', u2Touche);
     _u2.monte = true;
     u2PoserTeinte();
     u2VoletRendre();
@@ -1730,7 +1619,17 @@
       return t.map(function (it) { return { id: it.id, lib: V2.todo.libelle ? V2.todo.libelle(it) : (it.nom || it.note || '') }; });
     },
     todo: function () { var l = V2.accueilPont.todoItems(); return l ? l.map(function (x) { return x.lib; }) : null; },
-    S: u2S, garder: u2Garder, vars: function () { return u2Vars(u2Teinte()); }, fermer: function () { u2Fermer(false); }
+    S: u2S, garder: u2Garder, vars: function () { return u2Vars(u2Teinte()); }, fermer: function () { u2Fermer(false); },
+    // 16/10/2026 — le mode réglage sur place : chaque geste est gardé tout de suite (u2Garder) et appliqué sans redessiner les scènes du centre
+    teintes: U2_TEINTES, teinte: function () { return u2Teinte().k; }, escale: u2Escale, mode: u2Mode, tous: function () { return u2Etat().tous; },
+    couleur: function (k) { if (u2Escale() || !U2_TEINTES.some(function (t) { return t.k === k; })) return; u2S().couleur = k; u2Garder(); u2PoserTeinte(); },
+    masquer: function (k) {
+      if (!G4_PORTES[k]) return;
+      var S = u2S(), i = S.masques.indexOf(k); if (i < 0) S.masques.push(k); else S.masques.splice(i, 1);
+      u2Garder(); if (V2.accueilCinq) V2.accueilCinq.maj();
+    },
+    reset: function () { _u2.S = u2Def(); u2Garder(); u2PoserTeinte(); u2MajCentre(); u2MajWidgets(); },
+    rail: function (on) { var b = document.querySelector('[data-u2-rail="perso"]'); if (b) b.setAttribute('aria-pressed', String(!!on)); }
   };
 
   // Spotlight : la souris met à jour --mx/--my sur la tuile survolée

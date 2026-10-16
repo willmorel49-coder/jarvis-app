@@ -307,12 +307,19 @@
       '<span class="acq-go" aria-hidden="true">Découvrir' + p.ic('arrow') + '</span></a></section>';
   }
   function autres(etat) {
-    var p = P(), cles = [], u = une();
-    (etat.fams || []).forEach(function (f) { f.cles.forEach(function (k) { if (CINQ.indexOf(k) < 0 && cles.indexOf(k) < 0 && !(u && k === u.page)) cles.push(k); }); });
+    var p = P(), cles = [], u = une(), reg = !!(V2.accueilWidgets && V2.accueilWidgets.regle && V2.accueilWidgets.regle());
+    // Mode réglage (16/10/2026) : TOUS les outils du groupe, masqués compris, chacun avec son œil ; sinon seulement ceux qu'on a laissés visibles
+    ((reg ? etat.tous : etat.fams) || []).forEach(function (f) { f.cles.forEach(function (k) { if (CINQ.indexOf(k) < 0 && cles.indexOf(k) < 0 && !(u && k === u.page)) cles.push(k); }); });
     if (!cles.length) return '';
-    return '<section class="ac-au ac-in" style="--i:9" aria-label="Autres outils"><h2>Autres outils</h2><div class="ac-au-l">' +
+    var masques = (p.S().masques) || [];
+    return '<section class="ac-au ac-in' + (reg ? ' ac-au-reg' : '') + '" style="--i:9" aria-label="Autres outils"><h2>Autres outils' + (reg ? '<small>Appuyez sur l\'œil pour afficher ou masquer un outil</small>' : '') + '</h2><div class="ac-au-l">' +
       cles.map(function (k) {
         var t = p.outil(k);
+        if (reg) {
+          var off = masques.indexOf(k) >= 0;
+          return '<span class="ac-b ac-b-reg' + (off ? ' ac-b-off' : '') + '" data-tool="' + esc(k) + '">' + p.ic(k) + '<span class="ac-b-nm">' + esc(t.nom) + '</span>' +
+            '<button type="button" class="pb-eye" data-pb="oeil" data-v="' + esc(k) + '" aria-pressed="' + !off + '" aria-label="' + (off ? 'Afficher ' : 'Masquer ') + esc(t.nom) + '" title="' + (off ? 'Afficher' : 'Masquer') + '">' + p.ic(off ? 'oeilbarre' : 'oeil') + '</button></span>';
+        }
         return '<a class="ac-b"' + lien(t, k) + ' title="' + esc(t.ph) + '">' + p.ic(k) + esc(t.nom) + (t.ext ? '<span class="u2-sr">, s\'ouvre dans un nouvel onglet</span>' : '') + '</a>';
       }).join('') + '</div></section>';
   }
