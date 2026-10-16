@@ -297,8 +297,12 @@
     tous: function () { return (st.items || []).slice(); },
     // Accueil (widget « To do list ») : les lignes à faire, les plus urgentes d'abord, et leur libellé (le même que la carte « À faire »).
     urgents: function () { return trier(V2.todo.ouverts()); },
-    // « Autre chose » : la note EST la tâche (« Repatha »), elle suit le nom de l'officine.
-    libelle: function (it) { return KINDS[it.k].l + (it.nom ? ' · ' + it.nom : '') + (it.note && (!it.nom || it.k === 'libre') ? ' · ' + it.note : ''); },
+    // « Autre chose » : la note EST la tâche — « Pharmacie du Port · Repatha », sans le mot de la sorte
+    // (dans une case de l'agenda, « Autre chose à faire · … » cachait justement ce qu'il y a à faire).
+    libelle: function (it) {
+      if (it.k === 'libre' && (it.nom || it.note)) return [it.nom, it.note].filter(Boolean).join(' · ');
+      return KINDS[it.k].l + (it.nom ? ' · ' + it.nom : (it.note ? ' · ' + it.note : ''));
+    },
 
     // Petite fenêtre « Ajouter à ma liste » depuis une fiche officine (client ou prospect).
     // Sur une fiche prospect, le nom et l'e-mail sont ceux affichés à l'écran.
@@ -603,7 +607,7 @@
     var j = +String(ancre || d).slice(8, 10);
     var rr = rep === 'hebdo' ? 'FREQ=WEEKLY'
       : rep === 'mensuel' ? (j > 28 ? 'FREQ=MONTHLY;BYMONTHDAY=' + [28, 29, 30, 31].filter(function (n) { return n <= j; }).join(',') + ';BYSETPOS=-1' : 'FREQ=MONTHLY;BYMONTHDAY=' + j) : '';
-    var titre = it.k === 'libre' ? ([it.nom, it.note].filter(Boolean).join(' · ') || 'À faire') : V2.todo.libelle(it);
+    var titre = V2.todo.libelle(it);
     var a = document.createElement('a');
     a.href = window.V2ICS.dataUrl(window.V2ICS.build({ uid: 'todo-' + it.id + '@jarvis', date: d, heure: '09:00', duree_min: 15, titre: titre, lieu: '',
       description: 'Rappel de ma to do list JARVIS.' + (it.note && it.k !== 'libre' ? '\n' + it.note : ''), organisateur: 'JARVIS', rrule: rr, alarmes: [['PT0M', 'Rappel']] }));
