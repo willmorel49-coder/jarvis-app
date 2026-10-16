@@ -1297,8 +1297,7 @@
     V2.nameOvr = V2.nameOvr || {};
     if (val) V2.nameOvr[String(pid)] = val; else delete V2.nameOvr[String(pid)];
     var ph = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); });
-    if (ph && val) ph.name = val;
-    if (window.PHARMA_FR) { var pt = pharmaFrById(pid); if (pt && val) pt[6] = val; }
+    feMemoire(String(pid), ph, 'name', 6, val);
     if (V2.profil && V2.profil.saveOverride) V2.profil.saveOverride(pid, { nom: val });
     if (V2.toast) V2.toast(val ? 'Nom mis à jour ✓' : 'Nom réinitialisé');
     V2.render();
@@ -1325,7 +1324,7 @@
     var val = (el.value || '').trim();
     V2.titOvr = V2.titOvr || {};
     if (val) V2.titOvr[String(pid)] = val; else delete V2.titOvr[String(pid)];
-    if (window.PHARMA_FR) { var pt = pharmaFrById(pid); if (pt) pt[10] = val; }
+    feMemoire(String(pid), null, null, 10, val);
     if (V2.profil && V2.profil.saveOverride) V2.profil.saveOverride(pid, { titulaire: val });
     if (V2.toast) V2.toast(val ? 'Titulaire mis à jour ✓' : 'Titulaire réinitialisé');
     V2.render();
@@ -1348,6 +1347,18 @@
     ['Contact et société', [['interlocuteur', 'Interlocuteur', 'text'], ['siren', 'SIREN', 'text']]],
     ['Suivi', [['relance_date', 'Prochaine relance', 'date']]]
   ];
+  // 16/10/2026 — pose une correction (v) ou la retire (v vide) dans la mémoire que lisent les listes : V2.pharmacies (copie de
+  // WML_OFFICINES, déjà corrigée au démarrage : la valeur de la base se relit donc dans WML_OFFICINES) et la base nationale
+  // (V2.pfPoser note la valeur d'origine avant de la changer). Vider un champ remet la valeur de la base aussitôt, sans rechargement.
+  var _phBase = {};   // pid -> { champ: valeur de la base } pour V2.pharmacies
+  function feMemoire(pid, ph, champ, col, v) {
+    if (ph && champ) {
+      var b = _phBase[pid] || (_phBase[pid] = {});
+      if (!b.hasOwnProperty(champ)) { var w = (window.WML_OFFICINES || []).find(function (o) { return String(o.id) === String(pid); }); b[champ] = w ? w[champ] : ph[champ]; }
+      ph[champ] = v || b[champ];
+    }
+    if (col != null && window.PHARMA_FR && V2.pfPoser) V2.pfPoser(pharmaFrById(pid), col, v);
+  }
   var _feCtx = {};     // pid -> { kind, v } : ce que la fiche affichait au dernier rendu (sert à ne garder que ce qui a changé)
   var _feEtat = {};    // pid -> { vals, foc } : panneau ouvert, avec ce qui a été tapé (un rendu déclenché pendant la saisie ne le perd pas)
   function feNomsGroupements(courant) {
@@ -1465,19 +1476,24 @@
         if (k === 'nom') {
           V2.nameOvr = V2.nameOvr || {};
           if (v) V2.nameOvr[pid] = v; else delete V2.nameOvr[pid];
-          if (ph && v) ph.name = v;
-          if (window.PHARMA_FR) { var pn = pharmaFrById(pid); if (pn && v) pn[6] = v; }
+          feMemoire(pid, ph, 'name', 6, v);
           ov.nom = v;
         } else if (k === 'titulaire') {
           V2.titOvr = V2.titOvr || {};
           if (v) V2.titOvr[pid] = v; else delete V2.titOvr[pid];
-          if (window.PHARMA_FR) { var pt = pharmaFrById(pid); if (pt) pt[10] = v; }
+          feMemoire(pid, null, null, 10, v);
           ov.titulaire = v; if (kind === 'prospect') pro.titulaire = v;
         } else if (k === 'groupement') {
-          if (ph) ph.groupement = v;
+          feMemoire(pid, ph, 'groupement', null, v);
           window.GRP_OVR = window.GRP_OVR || {};
           if (v) window.GRP_OVR[pid.replace(/[^0-9]/g, '')] = v; else delete window.GRP_OVR[pid.replace(/[^0-9]/g, '')];
           ov.groupement = v; recon = true; if (kind === 'prospect') pro.groupement = v;
+        } else if (k === 'ville' || k === 'cp') {
+          // 16/10/2026 — aussi en correction (lue au démarrage pour toutes les officines) : listes, recherche et carte la reprennent
+          V2.lieuOvr = V2.lieuOvr || {};
+          var lo = V2.lieuOvr[pid] || (V2.lieuOvr[pid] = { ville: '', cp: '' }); lo[k] = v;
+          feMemoire(pid, ph, k, k === 'ville' ? 7 : 8, v);
+          ov[k] = v; pro[k] = v;
         } else pro[k] = v;
       });
       // la saisie de l'équipe est mise à jour en mémoire tout de suite : l'affichage ne dépend pas d'une relecture

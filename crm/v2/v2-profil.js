@@ -331,13 +331,17 @@
         // national : V2.reconcilePharma la lit dans window.GRP_OVR, qui n'était rempli que depuis
         // la carte des groupements. On le remplit ici, au boot, pour toute fiche.
         if (o.data.groupement) { window.GRP_OVR = window.GRP_OVR || {}; window.GRP_OVR[sid.replace(/[^0-9]/g, '')] = o.data.groupement; }
+        // 16/10/2026 — ville / code postal corrigés depuis la fiche : repris par les listes, la recherche et la carte (V2.reconcilePharma)
+        if (o.data.ville || o.data.cp) { V2.lieuOvr = V2.lieuOvr || {}; V2.lieuOvr[sid] = { ville: o.data.ville || '', cp: o.data.cp || '' }; }
         var p = byId[sid]; if (!p) return;
         if (o.data.groupement) p.groupement = o.data.groupement;
         if (o.data.nom) p.name = o.data.nom;
+        if (o.data.ville) p.ville = o.data.ville;
+        if (o.data.cp) p.cp = o.data.cp;
       });
       // Annuaire déjà réconcilié avant l'arrivée des corrections → on le repasse une fois.
       var D = window.PHARMA_FR;
-      if (D && D.p && D._wmlRecon && window.GRP_OVR && V2.reconcilePharma) { D._wmlRecon = false; try { V2.reconcilePharma(); } catch (e) {} try { if (V2.carteRecalage) V2.carteRecalage(); } catch (e) {} }
+      if (D && D.p && D._wmlRecon && (window.GRP_OVR || V2.lieuOvr) && V2.reconcilePharma) { D._wmlRecon = false; try { V2.reconcilePharma(); } catch (e) {} try { if (V2.carteRecalage) V2.carteRecalage(); } catch (e) {} }
       if (cb) cb();
     });
   }
