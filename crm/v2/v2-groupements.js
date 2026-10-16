@@ -178,7 +178,7 @@
 
   function ensureGrpPoints(cb) {
     if (GP) { cb(); return; }
-    fetch('points.json?v=6', { cache: 'force-cache' })
+    fetch('points.json?v=7', { cache: 'force-cache' })
       .then(function (r) { return r.json(); })
       .then(function (j) { GP = Array.isArray(j) ? j : []; cb(); })
       .catch(function () { GP = []; cb(); });
