@@ -33,7 +33,16 @@
    tuiles restent joignables. Les outils retires volontairement le 02/10
    (commit d09043c5 : audit de marge, Fiches PDF ; plus l'argumentaire, la
    reforme 2027 et la presentation Integral) ne sont plus exiges : le test
-   verifie au contraire qu'ils ne reviennent pas en porte morte. */
+   verifie au contraire qu'ils ne reviennent pas en porte morte.
+
+   Mis a jour le 16/10/2026 : la CI etait rouge depuis le 15/10 (commit 9a4e8a50,
+   Le QG) puis le 16/10 (commit 7563b030, Documents). Deux portes du registre
+   sont desormais absentes PAR DECISION, filtrees dans u2Cles : « remontees »
+   s'efface tant que Le QG (discussion) est charge — les remontees y vivent ;
+   « documents » n'existe que si documents_acces_ok() a rendu true pour le
+   compte connecte. Elles ne sont plus exigees dans le rendu par defaut, mais
+   verifiees a part dans les deux sens : Le QG est bien la, et Documents
+   apparait (avec son libelle) des que la base a dit oui. */
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -103,6 +112,8 @@ const liens = [...h.matchAll(/<a\b[^>]*>/g)].map((m) => m[0])
   .filter((a) => /data-tool="/.test(a))
   .map((a) => ({ k: /data-tool="([^"]+)"/.exec(a)[1], href: (/href="([^"]*)"/.exec(a) || [])[1] }));
 const montres = new Set(liens.map((l) => l.k));
+// Portes absentes du rendu par defaut par decision (u2Cles), verifiees a part plus bas.
+const CONDITIONNELLES = ['remontees', 'documents'];
 
 test('accueil : le rendu a bien monte (marqueur positif, pas une page vide)', () => {
   assert.ok(h.length > 500, 'accueil vide ou presque : ' + h.slice(0, 200));
@@ -113,7 +124,7 @@ test('accueil : le rendu a bien monte (marqueur positif, pas une page vide)', ()
 test('accueil : aucun outil du registre ne disparait en silence', () => {
   // Meme intention depuis le 11/08 : un ecran qui disparait de l'accueil sans
   // que personne ne le remarque.
-  const manquants = CLES.filter((k) => !montres.has(k));
+  const manquants = CLES.filter((k) => !CONDITIONNELLES.includes(k) && !montres.has(k));
   assert.deepEqual(manquants, [], 'outils du registre absents de l accueil : ' + manquants.join(' · '));
 });
 
@@ -145,6 +156,7 @@ test('accueil : aucune porte vide, chaque porte porte un libelle et une phrase',
     assert.ok(d.ph && d.ph.trim().length > 5, `${k} : phrase absente ou trop courte`);
     // ...et ce libelle est bien celui qui s'affiche (le rendu echappe l'HTML : on
     // compare apres echappement des apostrophes).
+    if (CONDITIONNELLES.includes(k)) continue;   // libelle verifie dans son propre test, plus bas
     const nomRendu = d.nom.replace(/&/g, '&amp;');
     assert.ok(h.includes(nomRendu), `${k} : le libelle « ${d.nom} » n est pas dans le rendu`);
   }
@@ -174,4 +186,28 @@ test('accueil : les ecrans retires des tuiles restent joignables', () => {
   // ⌘K), sinon on fabrique un ecran mort. Appro est revenu en porte le 02/09.
   assert.ok(src.includes("['molecules',"), 'molecules absent de la palette ⌘K');
   assert.ok(REG.appro, 'appro n est plus une porte de l accueil');
+});
+
+test('accueil : Le QG remplace la porte des remontees (15/10/2026), sans la perdre', () => {
+  assert.ok(montres.has('discussion'), 'Le QG (discussion) absent de l accueil : les remontees ne sont plus joignables');
+  assert.ok(!montres.has('remontees'), 'la porte remontees est revenue a cote du QG : doublon');
+});
+
+test('accueil : Documents cachee par defaut, affichee des que documents_acces_ok() a dit oui', () => {
+  assert.ok(!montres.has('documents'), 'la porte Documents s affiche sans que la base ait dit oui');
+  // Meme accueil, compte connecte dont la reponse « oui » est deja gardee en
+  // sessionStorage (cle par utilisateur, comme docOk la lit) : la porte doit apparaitre.
+  const lire = sb.sessionStorage.getItem;
+  sb.V2.user = { id: 'u-test' };
+  sb.sessionStorage.getItem = (k) => (k === 'jarvis_doc_acces:u-test' ? '1' : null);
+  try {
+    const r2 = Object.assign(noeud(), { querySelector: () => null });
+    sb.V2.pages.home.render(r2);
+    const h2 = r2.innerHTML;
+    assert.ok(/<a\b[^>]*data-tool="documents"[^>]*>/.test(h2), 'acces accorde, mais la porte Documents n apparait pas');
+    assert.ok(h2.includes(REG.documents.nom), `acces accorde, mais le libelle « ${REG.documents.nom} » n est pas dans le rendu`);
+  } finally {
+    sb.V2.user = undefined;
+    sb.sessionStorage.getItem = lire;
+  }
 });
