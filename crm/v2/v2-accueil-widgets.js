@@ -444,6 +444,7 @@
   /* ═══ Tirer un widget (souris ET doigt : Pointer Events). Doigt : poignée = tout de suite ; ailleurs sur la carte = appui long court (260 ms) puis glisser.
          Les autres cartes s'écartent ; au lâcher, la carte glisse à sa place, puis l'ordre est gardé. ═══ */
   var DR = null;
+  function sansSelection() { try { var s = window.getSelection(); if (s && s.rangeCount) s.removeAllRanges(); } catch (e) {} }
   function dGap() { var dr = document.getElementById('u2-droite'), g = dr ? parseFloat(getComputedStyle(dr).rowGap) : 14; return isNaN(g) ? 14 : g; }
   function dDown(e) {
     if (!PS.on || DR || !e.target.closest) return;
@@ -451,6 +452,7 @@
     if (e.target.closest('button, a, input, textarea, select, .pb-reg, .pb-kb')) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     var touch = e.pointerType !== 'mouse', grip = !!e.target.closest('.pb-grip');
+    if (!touch && e.cancelable) e.preventDefault();   // à la souris, l'appui sur une carte ne commence jamais une sélection de texte (Safari surlignait toute la page)
     DR = { id: card.getAttribute('data-aw-w'), card: card, x0: e.clientX, y0: e.clientY, y: e.clientY, pid: e.pointerId, on: false, touch: touch, sc0: window.pageYOffset, t: null, raf: 0 };
     if (touch) { if (grip) dDebut(); else DR.t = setTimeout(function () { if (DR && !DR.on) dDebut(); }, 260); }
   }
@@ -464,6 +466,7 @@
     DR.card.classList.add('pb-lift'); dr.classList.add('pb-dragging');
     try { DR.card.setPointerCapture(DR.pid); } catch (e) {}
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    sansSelection();
     DR.raf = requestAnimationFrame(dBoucle);
   }
   function dPlace() {
@@ -518,7 +521,7 @@
     d.card.style.transform = 'translate3d(0,' + fin + 'px,0)';
     DR = { on: true, fige: true, pid: -1, items: [], card: null };   // verrou le temps du glissé final
     setTimeout(function () {
-      DR = null;
+      DR = null; sansSelection();
       if (d.idx !== d.i0) { var l = W().items, w = l.splice(d.i0, 1)[0]; l.splice(d.idx, 0, w); }
       d.items.forEach(function (x) { x.el.style.transition = 'none'; x.el.style.transform = ''; });
       d.card.style.transition = 'none'; d.card.style.transform = ''; d.card.classList.remove('pb-lift');
