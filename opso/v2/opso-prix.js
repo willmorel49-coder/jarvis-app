@@ -237,10 +237,10 @@
   }
 
   var SV = {   // visuels dessinés (aucune photo : les liens photo du catalogue répondent 404 le 16/10/2026)
-    stylo: '<svg viewBox="0 0 60 60" aria-hidden="true"><g transform="rotate(-38 30 30)"><rect x="6" y="23" width="40" height="14" rx="4" fill="#fff"/><rect x="6" y="23" width="14" height="14" rx="4" fill="#dddf4b"/><rect x="46" y="26" width="6" height="8" rx="1.5" fill="#cfe5d6"/><rect x="52" y="29" width="7" height="2" fill="#fff"/><rect x="24" y="27" width="16" height="2" rx="1" fill="#0d8530"/><rect x="24" y="31" width="10" height="2" rx="1" fill="#92b9a2"/></g></svg>',
-    boite: '<svg viewBox="0 0 60 60" aria-hidden="true"><rect x="9" y="20" width="42" height="30" rx="4" fill="#fff"/><rect x="9" y="20" width="42" height="9" rx="4" fill="#dddf4b"/><circle cx="22" cy="40" r="5" fill="#0d8530"/><circle cx="36" cy="40" r="5" fill="#92b9a2"/><ellipse cx="44" cy="13" rx="6" ry="3.5" fill="#fff" transform="rotate(-25 44 13)"/><ellipse cx="33" cy="10" rx="6" ry="3.5" fill="#dddf4b" transform="rotate(15 33 10)"/></svg>',
-    flacon: '<svg viewBox="0 0 60 60" aria-hidden="true"><rect x="23" y="6" width="14" height="9" rx="2" fill="#dddf4b"/><path d="M25 15h10v5c8 3 11 8 11 14v16a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V34c0-6 3-11 11-14z" fill="#fff"/><rect x="19" y="32" width="22" height="14" rx="2" fill="#0d8530"/><rect x="22" y="36" width="16" height="2" fill="#fff"/><rect x="22" y="40" width="10" height="2" fill="#dddf4b"/></svg>',
-    sachet: '<svg viewBox="0 0 60 60" aria-hidden="true"><path d="M12 12h36v36H12z" fill="#fff"/><path d="M12 12h36v7H12z" fill="#dddf4b"/><path d="M12 48h36v-5H12z" fill="#92b9a2"/><circle cx="30" cy="31" r="6" fill="#0d8530"/></svg>'
+    stylo: '<svg viewBox="0 0 60 60" aria-hidden="true"><ellipse cx="32" cy="50" rx="20" ry="3" fill="#06301a" fill-opacity=".26"/><g transform="rotate(-38 30 30)"><rect x="6" y="23" width="40" height="14" rx="4" fill="#fff"/><rect x="6" y="23" width="14" height="14" rx="4" fill="#dddf4b"/><rect x="46" y="26" width="6" height="8" rx="1.5" fill="#cfe5d6"/><rect x="52" y="29" width="7" height="2" fill="#fff"/><rect x="24" y="27" width="16" height="2" rx="1" fill="#0d8530"/><rect x="24" y="31" width="10" height="2" rx="1" fill="#92b9a2"/><rect x="9" y="24.2" width="34" height="2.2" rx="1.1" fill="#fff" fill-opacity=".85"/></g></svg>',
+    boite: '<svg viewBox="0 0 60 60" aria-hidden="true"><ellipse cx="31" cy="53" rx="19" ry="3" fill="#06301a" fill-opacity=".26"/><rect x="9" y="20" width="42" height="30" rx="4" fill="#fff"/><rect x="11" y="30" width="5" height="18" rx="2.5" fill="#dfeee5"/><rect x="9" y="20" width="42" height="9" rx="4" fill="#dddf4b"/><circle cx="22" cy="40" r="5" fill="#0d8530"/><circle cx="36" cy="40" r="5" fill="#92b9a2"/><ellipse cx="44" cy="13" rx="6" ry="3.5" fill="#fff" transform="rotate(-25 44 13)"/><ellipse cx="33" cy="10" rx="6" ry="3.5" fill="#dddf4b" transform="rotate(15 33 10)"/><rect x="12" y="21.2" width="36" height="2" rx="1" fill="#fff" fill-opacity=".7"/></svg>',
+    flacon: '<svg viewBox="0 0 60 60" aria-hidden="true"><ellipse cx="31" cy="56" rx="19" ry="3" fill="#06301a" fill-opacity=".26"/><rect x="23" y="6" width="14" height="9" rx="2" fill="#dddf4b"/><path d="M25 15h10v5c8 3 11 8 11 14v16a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V34c0-6 3-11 11-14z" fill="#fff"/><rect x="19" y="32" width="22" height="14" rx="2" fill="#0d8530"/><rect x="22" y="36" width="16" height="2" fill="#fff"/><rect x="22" y="40" width="10" height="2" fill="#dddf4b"/><rect x="17" y="30" width="2.6" height="22" rx="1.3" fill="#fff" fill-opacity=".9"/><rect x="24" y="7.2" width="12" height="1.6" rx=".8" fill="#fff" fill-opacity=".6"/></svg>',
+    sachet: '<svg viewBox="0 0 60 60" aria-hidden="true"><ellipse cx="31" cy="52" rx="19" ry="3" fill="#06301a" fill-opacity=".26"/><path d="M12 12h36v36H12z" fill="#fff"/><path d="M14 20h2.6v22H14z" fill="#dfeee5"/><path d="M12 12h36v7H12z" fill="#dddf4b"/><path d="M12 48h36v-5H12z" fill="#92b9a2"/><circle cx="30" cy="31" r="6" fill="#0d8530"/><path d="M12 12.8h36" stroke="#fff" stroke-opacity=".75" stroke-width="1.2"/></svg>'
   };
   var SOUS_TITRE = { wegovy: 'Comprimés', mounjaro: 'Stylo injecteur · un dosage par ligne' };
   function suiteTxt(b) { return b.suite ? ' <small>(suite)</small>' : ''; }
@@ -325,12 +325,14 @@
     if (document.getElementById(STYLE_ID)) return;
     var e = 'var(--e,0mm)';
     var css = [
-      '.op-doc{--vert:#0d8530;--vert-v:#11a63c;--vert-f:#0a6a26;--gris:#4f5456;--trait:#d3e2d8}',
-      '.op-doc .op-pill{background:var(--lime);color:var(--anthra);border-radius:5mm 5mm 5mm 0;padding:1.4mm 4mm;font-size:9.5pt;white-space:nowrap}',
+      '.op-doc{--vert:#0d8530;--vert-v:#11a63c;--vert-f:#0a6a26;--gris:#4f5456;--trait:#d3e2d8;-webkit-print-color-adjust:exact;print-color-adjust:exact;' +
+        'background:radial-gradient(ellipse 120% 50% at 100% 0%,#f4f9ee 0,rgba(244,249,238,0) 70%),linear-gradient(180deg,#fffdf8 0,#f1f7f2 100%)}',
+      '.op-doc .op-pill{background:linear-gradient(180deg,#e9eb68 0,#dddf4b 55%,#d2d53a 100%);color:var(--anthra);border-radius:5mm 5mm 5mm 0;padding:1.4mm 4mm;font-size:9.5pt;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 .4mm .9mm rgba(6,48,26,.25)}',
       // page 1 : bandeau court + légende (73 mm en tout, cf. H.haut1)
       '.op-couv{position:relative;height:60mm;color:#fff;padding:9mm 12mm 0;border-radius:0 0 0 16mm;overflow:hidden;' +
-        'background:radial-gradient(circle at 88% 0%,#8bcf4c 0,rgba(139,207,76,0) 46%),linear-gradient(135deg,#17b543 0%,#0d8530 100%)}',
-      '.op-couv::after{content:"";position:absolute;right:-30mm;top:-30mm;width:90mm;height:90mm;border-radius:50%;border:1px solid rgba(255,255,255,.28);box-shadow:0 0 0 7mm rgba(255,255,255,.04),0 0 0 14mm rgba(255,255,255,.04)}',
+        'background:radial-gradient(ellipse 85mm 60mm at 96% -6%,rgba(255,252,222,.95) 0,rgba(214,236,120,.7) 22%,rgba(139,207,76,.32) 48%,rgba(139,207,76,0) 75%),linear-gradient(200deg,#1db84a 0%,#0d8530 55%,#0a6a26 100%);box-shadow:inset 0 -1px 0 rgba(255,255,255,.18),0 .8mm 2mm rgba(6,48,26,.2)}',
+      '.op-couv::after{content:"";position:absolute;right:-30mm;top:-30mm;width:90mm;height:90mm;border-radius:50%;border:1px solid rgba(255,255,255,.14);box-shadow:0 0 0 9mm rgba(255,255,255,.015)}',
+      '.op-couv::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:linear-gradient(90deg,rgba(255,255,255,0) 20%,rgba(255,255,255,.75) 100%)}',
       '.op-logos{position:relative;z-index:1;display:flex;align-items:center;gap:4mm}',
       '.op-logos .op-l1{height:11mm;width:auto;background:#fff;border-radius:2.4mm;padding:1mm 1.6mm}',
       '.op-by{font-style:italic;font-size:10pt}',
@@ -338,18 +340,21 @@
       '.op-doc .op-titre{position:relative;z-index:1;font-size:27pt;line-height:1.05;margin-top:7mm;color:#fff}',
       '.op-sous{position:relative;z-index:1;display:flex;align-items:center;gap:4mm;margin-top:3mm;font-size:10pt}',
       '.op-leg{display:flex;gap:3mm;height:8mm;margin:5mm 12mm 0;font-size:8pt;color:var(--gris);line-height:1.3}',
-      '.op-leg div{flex:1;border-left:2px solid var(--trait);padding-left:2.5mm}',
+      '.op-leg div{position:relative;flex:1 1 auto;white-space:nowrap;padding-left:6.6mm}',
+      '.op-leg div::before{content:"";position:absolute;left:0;top:.8mm;width:5mm;height:3mm;border-radius:1.7mm 1.7mm 1.7mm 0;background:linear-gradient(180deg,#fff,#e4ece7);border:1px solid #b9cdbf;box-sizing:border-box}',
+      '.op-leg .o::before{background:linear-gradient(180deg,#e9eb68 0,#dddf4b 55%,#d2d53a 100%);border-color:#c6c935;box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 .3mm .6mm rgba(6,48,26,.25)}',
+      '.op-leg div:nth-child(2)::before{background:linear-gradient(180deg,#f3faf5,#d6e8dc);border-color:#9fbfaa}',
       '.op-leg b{display:block;font-weight:400;font-size:8.5pt;color:var(--anthra)}',
-      '.op-leg .o{border-left-color:var(--vert-v)}.op-leg .o b{color:var(--vert)}',
+      '.op-leg .o b{color:var(--vert)}',
       // pages suivantes : en-tête court (17 mm, cf. H.haut)
       '.op-haut{height:17mm;padding:8mm 12mm 0;display:flex;align-items:center;justify-content:space-between;gap:4mm}',
       '.op-haut-t{font-size:15pt;color:var(--vert);white-space:nowrap}.op-haut-t.long{font-size:12pt}',
       '.op-logos2{display:flex;align-items:center;gap:3mm;flex:none}.op-logos2 img{height:9mm;width:auto}',
       '.op-logos2 .op-l1{background:#fff;border:1px solid var(--trait);border-radius:2mm;padding:.8mm 1.2mm}',
       // grands blocs Wegovy / Mounjaro
-      '.op-fam{margin:4.5mm 12mm 0;border-radius:6mm;overflow:hidden;border:1px solid var(--trait);background:linear-gradient(180deg,#fff 0,#f4f9f6 100%)}',
+      '.op-fam{margin:4.5mm 12mm 0;border-radius:6mm;overflow:hidden;border:1px solid var(--trait);background:#fff;box-shadow:0 .5mm 1.6mm rgba(6,48,26,.14)}',
       '.op-fam-h{height:28mm;display:flex;align-items:center;gap:5mm;padding:0 6mm;color:#fff;' +
-        'background:radial-gradient(circle at 92% 20%,rgba(221,223,75,.45) 0,rgba(221,223,75,0) 45%),linear-gradient(120deg,#0f9a38,#0a6a26)}',
+        'background:radial-gradient(ellipse 70mm 40mm at 100% -10%,rgba(255,252,222,.55) 0,rgba(221,223,75,.4) 30%,rgba(221,223,75,0) 65%),linear-gradient(200deg,#13a63f,#0a6a26);box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}',
       '.op-vis{width:22mm;height:20mm;flex:none}.op-vis svg{width:100%;height:100%;display:block}',
       '.op-fam-t{font-size:17pt;line-height:1.05}.op-fam-t small,.op-os-t small{font-size:10pt}',
       '.op-fam-s{font-size:8.5pt;margin-top:1mm;color:#eaf6ee}',
@@ -363,15 +368,16 @@
       '.op-rw .op-nm{font-size:9pt}',
       '.op-rw .op-p{font-size:9.5pt}',
       '.op-rw .op-po{border-radius:3mm 3mm 3mm 0;padding:1.2mm 3mm;font-size:13pt}',
+      '.op-rw:nth-child(odd){background:#fbfdfb}',
       // désignation + CIP, prix (communs aux blocs, au bandeau et aux cartes)
       '.op-nom{min-width:0;line-height:1.15}',
       '.op-nm{display:block;max-height:2.3em;overflow:hidden;font-size:8.5pt}.op-nm.long{font-size:8pt;letter-spacing:-.02em}',
       '.op-nom i{display:block;font-style:normal;font-size:8pt;color:var(--gris);margin-top:.4mm;white-space:nowrap}',
       '.op-p{text-align:right;font-size:8.5pt;white-space:nowrap}',
-      '.op-po{justify-self:end;background:var(--lime);color:var(--anthra);border-radius:2.4mm 2.4mm 2.4mm 0;padding:.9mm 1.8mm;font-size:10pt;white-space:nowrap}',
+      '.op-po{justify-self:end;background:linear-gradient(180deg,#e9eb68 0,#dddf4b 55%,#d2d53a 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 .4mm .8mm rgba(6,48,26,.22);color:var(--anthra);border-radius:2.4mm 2.4mm 2.4mm 0;padding:.9mm 1.8mm;font-size:10pt;white-space:nowrap}',
       // Hélicidine en bandeau
-      '.op-bande{margin:4.5mm 12mm 0;border-radius:5mm;border:1px solid var(--trait);background:linear-gradient(100deg,#f1f8f3,#fff 60%);overflow:hidden;display:grid;grid-template-columns:minmax(30mm,auto) minmax(0,1fr)}',
-      '.op-bande-c{display:flex;align-items:center;justify-content:center;gap:2mm;padding:2mm 4mm;color:#fff;background:radial-gradient(circle at 30% 20%,#2fc15a 0,#0d8530 80%)}',
+      '.op-bande{margin:4.5mm 12mm 0;border-radius:5mm;border:1px solid var(--trait);background:#fff;box-shadow:0 .5mm 1.6mm rgba(6,48,26,.14);overflow:hidden;display:grid;grid-template-columns:minmax(30mm,auto) minmax(0,1fr)}',
+      '.op-bande-c{display:flex;align-items:center;justify-content:center;gap:2mm;padding:2mm 4mm;color:#fff;background:radial-gradient(ellipse 60mm 30mm at 100% 0%,rgba(236,240,150,.5) 0,rgba(236,240,150,0) 60%),linear-gradient(200deg,#16ad42,#0a6a26);box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}',
       '.op-bande-c b{font-weight:400;font-size:12pt;white-space:nowrap}',
       '.op-bande .op-ico{width:6mm;height:6mm}',
       '.op-ch,.op-pr{display:grid;grid-template-columns:minmax(0,1fr) var(--cn,12.5mm) var(--cn,12.5mm) var(--co,17.5mm);column-gap:1.6mm;align-items:center;padding:0 3.5mm}',
@@ -381,12 +387,12 @@
       '.op-ch+.op-pr{border-top:0}',
       // Offre spéciale : en-tête vert + cartes par marque
       '.op-os{height:17mm;margin:4.5mm 12mm 0;border-radius:5mm;color:#fff;display:flex;align-items:center;gap:4mm;padding:0 6mm;' +
-        'background:radial-gradient(circle at 92% 10%,rgba(221,223,75,.5) 0,rgba(221,223,75,0) 40%),linear-gradient(110deg,#17b543,#0a6a26)}',
+        'background:radial-gradient(ellipse 80mm 30mm at 100% -20%,rgba(255,252,222,.55) 0,rgba(221,223,75,.4) 30%,rgba(221,223,75,0) 65%),linear-gradient(200deg,#16ad42,#0a6a26);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 .5mm 1.6mm rgba(6,48,26,.18)}',
       '.op-os-t{font-size:15pt;line-height:1.1}.op-os-s{font-size:8.5pt;color:#eaf6ee;margin-top:.6mm}',
       '.op-os .op-pill{margin-left:auto}',
       '.op-grille{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:4mm;align-items:start;margin:4.5mm 12mm 0}',
       '.op-col{display:flex;flex-direction:column;gap:3.4mm}',
-      '.op-carte{border-radius:4.5mm;border:1px solid var(--trait);background:linear-gradient(180deg,#fff,#f6faf7);overflow:hidden}',
+      '.op-carte{border-radius:4.5mm;border:1px solid var(--trait);background:#fff;box-shadow:0 .5mm 1.6mm rgba(6,48,26,.14);overflow:hidden}',
       '.op-carte-h{height:10.5mm;display:flex;align-items:center;gap:2.5mm;padding:0 3.5mm;background:linear-gradient(110deg,#e3f1e8,#f6faf7 75%);border-bottom:1px solid var(--trait)}',
       '.op-carte-h b{font-weight:400;font-size:11.5pt;color:var(--vert-f);letter-spacing:.3px;white-space:nowrap}',
       '.op-carte-h b small{font-size:8.5pt;color:var(--gris)}',
