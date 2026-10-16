@@ -47,8 +47,42 @@
   function nettoie(a) {
     return (Array.isArray(a) ? a : []).filter(function (x) { return x && sur(x.id) && KINDS[x.k]; }).map(function (x) {
       return { id: sur(x.id), k: x.k, pid: sur(x.pid), nom: String(x.nom || ''), mail: String(x.mail || ''),
-               note: String(x.note || ''), pour: String(x.pour || ''), fait: !!x.fait, faitLe: x.faitLe || '', cree: x.cree || new Date().toISOString() };
+               note: String(x.note || ''), pour: String(x.pour || ''), fait: !!x.fait, faitLe: x.faitLe || '', cree: x.cree || new Date().toISOString(),
+               rep: x.rep && Object.prototype.hasOwnProperty.call(REP, x.rep) ? x.rep : '', ancre: isoOk(x.ancre) ? x.ancre : '', prec: isoOk(x.prec) ? x.prec : '', dernier: String(x.dernier || '') };
     });
+  }
+
+  // ── Rappels qui reviennent ──────────────────────────────────────
+  // 16/10/2026, Will : « avoir la possibilité de mettre un rappel soit hebdo, mensuel,
+  // choisir une date — exemple la pharmacie commande un Repatha toutes les semaines ».
+  // Une ligne qui revient n'est jamais « faite » : la cocher la repousse à l'échéance
+  // suivante (`pour`), comme les rappels du téléphone. `ancre` = la toute première date,
+  // dont « chaque mois » garde le jour (31 → 30 novembre → 31 décembre).
+  var REP = { '': 'Une fois', hebdo: 'Chaque semaine', mensuel: 'Chaque mois' };
+  function isoOk(v) { return /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')); }
+  function isoDe(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function aujIso() { return isoDe(new Date()); }
+  function jourMois(it, iso) { return +String(isoOk(it.ancre) ? it.ancre : iso).slice(8, 10); }
+  function suivante(it, iso) {
+    var p = iso.split('-');
+    if (it.rep === 'hebdo') return isoDe(new Date(+p[0], +p[1] - 1, +p[2] + 7));
+    var fin = new Date(+p[0], +p[1] + 1, 0).getDate();   // dernier jour du mois suivant
+    return isoDe(new Date(+p[0], +p[1], Math.min(jourMois(it, iso), fin)));
+  }
+  // La ligne revient-elle ce jour-là ? (l'agenda y pose les échéances à venir)
+  function tombeLe(it, iso) {
+    if (!it.rep || it.fait || !isoOk(it.pour) || !isoOk(iso) || iso < it.pour) return false;
+    var a = iso.split('-'), b = it.pour.split('-');
+    if (it.rep === 'hebdo') return Math.round((Date.UTC(+a[0], +a[1] - 1, +a[2]) - Date.UTC(+b[0], +b[1] - 1, +b[2])) / 864e5) % 7 === 0;
+    return +a[2] === Math.min(jourMois(it, it.pour), new Date(+a[0], +a[1], 0).getDate());
+  }
+  var JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+  function phraseRep(rep, iso) {
+    if (!isoOk(iso)) return '';
+    var d = new Date(iso + 'T00:00:00');
+    if (rep === 'hebdo') return 'Revient chaque ' + JOURS[d.getDay()] + '.';
+    if (rep === 'mensuel') return 'Revient le ' + (d.getDate() === 1 ? '1er' : d.getDate()) + ' de chaque mois' + (d.getDate() > 28 ? ' (le dernier jour quand le mois est plus court)' : '') + '.';
+    return 'Une seule fois, le ' + JOURS[d.getDay()] + ' ' + dateFr(iso) + '.';
   }
 
   // ── Stockage ────────────────────────────────────────────────────
@@ -263,7 +297,8 @@
     tous: function () { return (st.items || []).slice(); },
     // Accueil (widget « To do list ») : les lignes à faire, les plus urgentes d'abord, et leur libellé (le même que la carte « À faire »).
     urgents: function () { return trier(V2.todo.ouverts()); },
-    libelle: function (it) { return KINDS[it.k].l + (it.nom ? ' · ' + it.nom : (it.note ? ' · ' + it.note : '')); },
+    // « Autre chose » : la note EST la tâche (« Repatha »), elle suit le nom de l'officine.
+    libelle: function (it) { return KINDS[it.k].l + (it.nom ? ' · ' + it.nom : '') + (it.note && (!it.nom || it.k === 'libre') ? ' · ' + it.note : ''); },
 
     // Petite fenêtre « Ajouter à ma liste » depuis une fiche officine (client ou prospect).
     // Sur une fiche prospect, le nom et l'e-mail sont ceux affichés à l'écran.
@@ -309,22 +344,48 @@
     // Formulaire de la page
     choisir: function (k) { st.kind = k; rendre(); },
     ajouter: function () {
-      var nomEl = document.getElementById('v2-todo-nom'), noteEl = document.getElementById('v2-todo-note'), pourEl = document.getElementById('v2-todo-pour');
-      var nom = (nomEl && nomEl.value || '').trim(), note = (noteEl && noteEl.value || '').trim(), pour = (pourEl && pourEl.value || '').trim();
+      var nomEl = document.getElementById('v2-todo-nom'), noteEl = document.getElementById('v2-todo-note'), pourEl = document.getElementById('v2-todo-pour'), repEl = document.getElementById('v2-todo-rep');
+      var nom = (nomEl && nomEl.value || '').trim(), note = (noteEl && noteEl.value || '').trim(), pour = (pourEl && pourEl.value || '').trim(), rep = (repEl && REP[repEl.value] && repEl.value) || '';
       if (!nom && !note) { if (V2.toast) V2.toast('Indiquer une officine ou une note', 'warn'); return; }
+      if (rep && !isoOk(pour)) pour = aujIso();   // qui revient sans date : à partir d'aujourd'hui
       var p = nom ? (V2.pharmacies || []).find(function (x) { return String(x.name || '').trim().toLowerCase() === nom.toLowerCase(); }) : null;
-      var it = { id: newId(), k: st.kind, pid: p ? String(p.id) : '', nom: p ? p.name : nom, mail: '', note: note, pour: pour, fait: false, faitLe: '', cree: new Date().toISOString() };
+      var it = { id: newId(), k: st.kind, pid: p ? String(p.id) : '', nom: p ? p.name : nom, mail: '', note: note, pour: pour, fait: false, faitLe: '', cree: new Date().toISOString(),
+                 rep: rep, ancre: rep ? pour : '' };
       st.filtre = 'afaire';
       ecrire(function (items) { return items.concat([it]); }).then(function () {
-        if (nomEl) nomEl.value = ''; if (noteEl) noteEl.value = ''; if (pourEl) pourEl.value = '';
+        if (nomEl) nomEl.value = ''; if (noteEl) noteEl.value = ''; if (pourEl) pourEl.value = ''; if (repEl) repEl.value = '';
+        if (rep && V2.toast) V2.toast('Rappel ajouté · ' + phraseRep(rep, pour).replace(/\.$/, '').toLowerCase());
         rendre();
       });
     },
     cocher: function (id, fait) {
+      var revient = false;
       ecrire(function (items) {
-        return items.map(function (x) { if (x.id === id) { x.fait = !!fait; x.faitLe = fait ? new Date().toISOString() : ''; } return x; });
+        return items.map(function (x) {
+          if (x.id !== id) return x;
+          // Une ligne qui revient : cochée = faite pour cette fois, elle repart à l'échéance
+          // suivante après aujourd'hui (cochée en retard, elle ne reste pas dans le passé).
+          if (x.rep && fait && isoOk(x.pour)) {
+            var n = suivante(x, x.pour), a = aujIso();
+            while (n <= a) n = suivante(x, n);
+            x.prec = x.pour; x.pour = n; x.dernier = new Date().toISOString(); revient = n;
+            return x;
+          }
+          x.fait = !!fait; x.faitLe = fait ? new Date().toISOString() : ''; return x;
+        });
+      }).then(function () {
+        if (revient && V2.toast) V2.toast('C\'est noté. Prochain rappel : ' + JOURS[new Date(revient + 'T00:00:00').getDay()] + ' ' + dateFr(revient));
+        rendre(); if (V2.todo.apresCoche) V2.todo.apresCoche();
+      });
+    },
+    // Annule la dernière coche d'une ligne qui revient (le jour même) : elle retrouve son échéance.
+    annulerFait: function (id) {
+      ecrire(function (items) {
+        return items.map(function (x) { if (x.id === id && isoOk(x.prec)) { x.pour = x.prec; x.prec = ''; x.dernier = ''; } return x; });
       }).then(function () { rendre(); if (V2.todo.apresCoche) V2.todo.apresCoche(); });
     },
+    tombeLe: tombeLe,
+    repLabel: function (it) { return it && it.rep ? REP[it.rep] : ''; },
     retirer: function (id) {
       var it = (st.items || []).find(function (x) { return x.id === id; });
       if (!it || !it.fait) return;   // on ne retire qu'une ligne déjà cochée
@@ -420,16 +481,20 @@
     var qui = it.nom ? (it.pid ? '<a class="v2-todo-off" onclick="V2.go(\'pharma\',\'' + esc(it.pid) + '\')">' + esc(it.nom) + '</a>' : '<span class="v2-todo-off">' + esc(it.nom) + '</span>') : '';
     var actes = it.fait ? '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.retirer(\'' + it.id + '\')">Retirer de la liste</button>'
       : ((K.mail || it.nom ? '<button class="v2-btn v2-btn-primary v2-todo-sm" onclick="V2.todo.mail(\'' + it.id + '\')">' + ICO('fiche', 14, 2) + esc(K.mail || 'Écrire un mail') + '</button>' : '') +
-         (K.docs && it.pid ? '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.docs(\'' + it.id + '\')">' + ICO('download', 14, 2) + esc(K.docs) + '</button>' : ''));
+         (K.docs && it.pid ? '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.docs(\'' + it.id + '\')">' + ICO('download', 14, 2) + esc(K.docs) + '</button>' : '') +
+         '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.rappel(\'' + it.id + '\')">' + ICO('cal', 14, 2) + (it.pour || it.rep ? 'Modifier le rappel' : 'Ajouter un rappel') + '</button>');
+    var der = it.rep && !it.fait && it.dernier && isoDe(new Date(it.dernier)) === aujIso() && isoOk(it.prec);
     return '<div class="v2-todo-it' + (it.fait ? ' is-fait' : '') + '">' +
-      '<label class="v2-todo-chk"><input type="checkbox"' + (it.fait ? ' checked' : '') + ' onchange="V2.todo.cocher(\'' + it.id + '\',this.checked)" aria-label="' + (it.fait ? 'Remettre à faire' : 'Marquer comme fait') + '"><span></span></label>' +
+      '<label class="v2-todo-chk"><input type="checkbox"' + (it.fait ? ' checked' : '') + ' onchange="V2.todo.cocher(\'' + it.id + '\',this.checked)" aria-label="' + (it.fait ? 'Remettre à faire' : it.rep ? 'Fait pour cette fois' : 'Marquer comme fait') + '"><span></span></label>' +
       '<div class="v2-todo-c">' +
         '<div class="v2-todo-l1"><span class="v2-todo-k">' + ICO(K.ico, 14, 2) + esc(K.l) + '</span>' + qui +
-          (b && !it.fait ? '<span class="v2-todo-b" style="color:' + b.c + '">' + b.t + '</span>' : '') +
+          (it.rep && !it.fait ? '<span class="v2-todo-rep">↻ ' + esc(REP[it.rep]) + '</span>' : '') +
+          (b && !it.fait ? '<span class="v2-todo-b" style="color:' + b.c + '">' + b.t + (it.rep && b.t.indexOf('Dans') === 0 ? ' · ' + esc(dateFr(it.pour)) : '') + '</span>' : '') +
           (it.fait && it.faitLe ? '<span class="v2-todo-b" style="color:var(--muted)">Fait le ' + esc(dateFr(it.faitLe.slice(0, 10))) + '</span>' : '') + '</div>' +
         // « Autre chose » : la note EST la tâche — affichée en entier, jamais coupée dans un champ
         (it.fait || (it.k === 'libre' && it.note) ? (it.note ? '<div class="v2-todo-n' + (it.k === 'libre' ? ' v2-todo-n-libre' : '') + '">' + esc(it.note) + '</div>' : '')
                  : '<input class="v2-todo-n-in" type="text" value="' + esc(it.note) + '" placeholder="Une précision ? (facultatif)" onchange="V2.todo.note(\'' + it.id + '\',this)">') +
+        (der ? '<div class="v2-todo-der">' + ICO('check', 13, 2) + 'Fait aujourd\'hui <button onclick="V2.todo.annulerFait(\'' + it.id + '\')">Annuler</button></div>' : '') +
         (actes ? '<div class="v2-todo-acts">' + actes + '</div>' : '') +
       '</div></div>';
   }
@@ -498,6 +563,75 @@
       rendre();
     });
   };
+  // ── Fenêtre « Rappel » d'une ligne : la date, et si elle revient ───────────────
+  V2.todo.rappel = function (id) {
+    var it = (st.items || []).find(function (x) { return x.id === id; }); if (!it) return;
+    ensureCss();
+    var ex = document.getElementById('v2-todo-pop'); if (ex) ex.remove();
+    var o = document.createElement('div'); o.id = 'v2-todo-pop'; o.className = 'v2-todo-ov'; o.onclick = V2.todo.fermer;
+    var d = isoOk(it.pour) ? it.pour : aujIso(), rep = it.rep || '';
+    o.innerHTML = '<div class="v2-todo-pop v2-todo-rp" role="dialog" aria-label="Rappel" onclick="event.stopPropagation()">' +
+      '<div class="v2-todo-pop-h"><b>Rappel</b><span>' + esc(V2.todo.libelle(it)) + '</span><button class="v2-todo-x" aria-label="Fermer" onclick="V2.todo.fermer()">&times;</button></div>' +
+      '<div class="v2-todo-rp-b">' +
+        '<label><span>' + (rep ? 'Prochaine fois le' : 'Le') + '</span><input id="v2-todo-rp-d" type="date" value="' + d + '" onchange="V2.todo.rappelMaj()"></label>' +
+        '<div class="v2-todo-rp-seg" role="radiogroup" aria-label="Répéter">' + Object.keys(REP).map(function (k) {
+          return '<label><input type="radio" name="v2-todo-rp-r" value="' + k + '"' + (k === rep ? ' checked' : '') + ' onchange="V2.todo.rappelMaj()"><span>' + esc(REP[k]) + '</span></label>';
+        }).join('') + '</div>' +
+        '<p id="v2-todo-rp-p" class="v2-todo-rp-p">' + esc(phraseRep(rep, d)) + '</p>' +
+      '</div>' +
+      '<div class="v2-tc-f">' +
+        (it.pour || it.rep ? '<button class="v2-btn v2-btn-ghost v2-todo-sm v2-tc-sup" onclick="V2.todo.rappelOk(\'' + it.id + '\',\'retirer\')">Retirer le rappel</button>' : '') +
+        '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.rappelOk(\'' + it.id + '\',\'agenda\')">' + ICO('cal', 14, 2) + 'Enregistrer + alerte sur mon téléphone</button>' +
+        '<button class="v2-btn v2-btn-primary" onclick="V2.todo.rappelOk(\'' + it.id + '\')">' + ICO('check', 15, 2) + 'Enregistrer</button>' +
+      '</div>' +
+      '<p class="v2-todo-rp-n">La ligne apparaît dans la to do list, sur l\'accueil et dans Mon agenda le jour venu. « Alerte sur mon téléphone » l\'ajoute en plus à l\'agenda de l\'iPhone ou du Mac, qui sonne à 9 h ce jour-là — à chaque fois s\'il revient.</p>' +
+      '</div>';
+    document.body.appendChild(o);
+  };
+  function lireRappel() {
+    var dEl = document.getElementById('v2-todo-rp-d'), rEl = document.querySelector('input[name="v2-todo-rp-r"]:checked');
+    return { d: dEl && isoOk(dEl.value) ? dEl.value : '', rep: rEl && rEl.value && Object.prototype.hasOwnProperty.call(REP, rEl.value) ? rEl.value : '' };
+  }
+  V2.todo.rappelMaj = function () {
+    var r = lireRappel(), p = document.getElementById('v2-todo-rp-p');
+    if (p) p.textContent = r.d ? phraseRep(r.rep, r.d) : 'Choisir une date.';
+  };
+  // L'agenda du téléphone sonne tout seul : un fichier .ics (le même module que les rendez-vous),
+  // qui revient chaque semaine / chaque mois. Aucun service d'envoi, rien à payer.
+  function alerteTelephone(it, d, rep, ancre) {
+    if (!window.V2ICS) return;
+    var j = +String(ancre || d).slice(8, 10);
+    var rr = rep === 'hebdo' ? 'FREQ=WEEKLY'
+      : rep === 'mensuel' ? (j > 28 ? 'FREQ=MONTHLY;BYMONTHDAY=' + [28, 29, 30, 31].filter(function (n) { return n <= j; }).join(',') + ';BYSETPOS=-1' : 'FREQ=MONTHLY;BYMONTHDAY=' + j) : '';
+    var titre = it.k === 'libre' ? ([it.nom, it.note].filter(Boolean).join(' · ') || 'À faire') : V2.todo.libelle(it);
+    var a = document.createElement('a');
+    a.href = window.V2ICS.dataUrl(window.V2ICS.build({ uid: 'todo-' + it.id + '@jarvis', date: d, heure: '09:00', duree_min: 15, titre: titre, lieu: '',
+      description: 'Rappel de ma to do list JARVIS.' + (it.note && it.k !== 'libre' ? '\n' + it.note : ''), organisateur: 'JARVIS', rrule: rr, alarmes: [['PT0M', 'Rappel']] }));
+    a.download = 'rappel-' + sur(it.nom || it.note || 'jarvis').slice(0, 30) + '.ics';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }
+  V2.todo.rappelOk = function (id, mode) {
+    var it = (st.items || []).find(function (x) { return x.id === id; }); if (!it) return;
+    var r = lireRappel();
+    if (mode !== 'retirer' && !r.d) { if (V2.toast) V2.toast('Choisir une date', 'warn'); return; }
+    // Même échéance, même rythme : on garde le jour d'origine (un « chaque mois » du 31 tombé un 30).
+    var ancre = r.rep ? (r.rep === it.rep && r.d === it.pour && isoOk(it.ancre) ? it.ancre : r.d) : '';
+    // L'alerte part DANS le clic : Safari n'ouvre le fichier d'agenda que pendant un geste de l'utilisateur.
+    if (mode === 'agenda') alerteTelephone(it, r.d, r.rep, ancre);
+    V2.todo.fermer();
+    ecrire(function (items) {
+      return items.map(function (x) {
+        if (x.id !== id) return x;
+        if (mode === 'retirer') { x.pour = ''; x.rep = ''; x.ancre = ''; x.prec = ''; x.dernier = ''; return x; }
+        x.pour = r.d; x.rep = r.rep; x.ancre = ancre; x.prec = ''; x.dernier = '';
+        return x;
+      });
+    }).then(function (ok) {
+      if (V2.toast && ok) V2.toast(mode === 'retirer' ? 'Rappel retiré' : 'Rappel enregistré · ' + phraseRep(r.rep, r.d).replace(/\.$/, '').toLowerCase());
+      rendre(); if (V2.todo.apresCoche) V2.todo.apresCoche();
+    });
+  };
+
   // Un modèle ouvert le reste quand la page se redessine (réglages arrivés de la base, enregistrement).
   V2.todo.plier = function (k, o) { st.ouverts = st.ouverts || {}; st.ouverts[k] = !!o; };
 
@@ -770,10 +904,12 @@
             '<div class="v2-todo-form">' +
               '<label><span>Officine</span><input id="v2-todo-nom" list="v2-todo-noms" type="text" placeholder="Nom de l\'officine (ou rien)" autocomplete="off"><datalist id="v2-todo-noms">' + noms + '</datalist></label>' +
               '<label><span>Pour le</span><input id="v2-todo-pour" type="date"></label>' +
+              '<label><span>Répéter</span><select id="v2-todo-rep">' + Object.keys(REP).map(function (k) { return '<option value="' + k + '">' + esc(REP[k]) + '</option>'; }).join('') + '</select></label>' +
               '<label class="v2-todo-wide"><span>Note</span><input id="v2-todo-note" type="text" placeholder="' + (st.kind === 'libre' ? 'Ce qu\'il y a à faire' : 'Une précision (facultatif)') + '" onkeydown="if(event.key===\'Enter\')V2.todo.ajouter()"></label>' +
               '<button class="v2-btn v2-btn-primary" onclick="V2.todo.ajouter()">' + ICO('plus', 15, 2) + 'Ajouter</button>' +
             '</div>' +
-            '<div class="v2-todo-hint">Depuis une fiche officine, le bouton « Ajouter à la to do list » remplit l\'officine et son e-mail tout seul.</div>' +
+            '<div class="v2-todo-hint">Depuis une fiche officine, le bouton « Ajouter à la to do list » remplit l\'officine et son e-mail tout seul. ' +
+              '« Répéter » : la ligne revient chaque semaine ou chaque mois à partir de la date choisie (aujourd\'hui sinon) ; la cocher la repousse à la fois suivante.</div>' +
           '</div>' +
           '<div class="v2-todo-tools"><div class="v2-todo-seg">' +
             '<button class="' + (st.filtre !== 'fait' ? 'is-on' : '') + '" onclick="V2.todo.filtrer(\'afaire\')">À faire · ' + ouv.length + '</button>' +
@@ -796,11 +932,12 @@
       '.v2-todo-kinds{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}',
       '.v2-todo-kind{display:flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--surf-sunken,#F4F6FA);font:inherit;font-size:12.5px;font-weight:700;color:var(--ip-ink);cursor:pointer;transition:background .15s var(--ease),border-color .15s var(--ease)}',
       '.v2-todo-kind.is-on{background:var(--halo,#E9F0FF);border-color:var(--ip-blue);color:var(--ip-blue);box-shadow:0 0 0 1px var(--ip-blue) inset}',
-      '.v2-todo-form{display:grid;grid-template-columns:1fr 170px;gap:10px;align-items:end}',
+      '.v2-todo-form{display:grid;grid-template-columns:1fr 160px 160px;gap:10px;align-items:end}',
       '.v2-todo-form label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:var(--muted);min-width:0}',
       '.v2-todo-form input{min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:16px;background:#fff;color:var(--ip-ink);width:100%;box-sizing:border-box}',
-      '.v2-todo-form input:focus{outline:none;border-color:var(--ip-blue);box-shadow:0 0 0 3px var(--halo,#E9F0FF)}',
-      '.v2-todo-wide{grid-column:1}',
+      '.v2-todo-form select{min-height:44px;padding:8px 32px 8px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:16px;color:var(--ip-ink);width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2716%27 height=%2716%27 fill=%27none%27 stroke=%27%235B6475%27 stroke-width=%272%27%3E%3Cpath d=%27M4 6l4 4 4-4%27/%3E%3C/svg%3E") no-repeat right 10px center}',
+      '.v2-todo-form input:focus,.v2-todo-form select:focus{outline:none;border-color:var(--ip-blue);box-shadow:0 0 0 3px var(--halo,#E9F0FF)}',
+      '.v2-todo-wide{grid-column:1 / span 2}',
       '.v2-todo-form .v2-btn{min-height:44px;justify-content:center}',
       '.v2-todo-hint{margin-top:10px;font-size:12.5px;color:var(--muted)}',
       '.v2-todo-tools{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}',
@@ -895,6 +1032,25 @@
       '.v2-todo-mod .v2-todo-mt{flex:1 1 200px}',
       '.v2-todo-mien{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--halo,#E9F0FF);color:var(--ip-blue);font-size:12px;font-style:normal;font-weight:700;vertical-align:1px}',
       '.v2-todo-mod-add{padding:12px 18px;border-top:1px solid var(--line)}',
+      // Rappels qui reviennent (16/10/2026)
+      '.v2-todo-rep{display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;background:var(--halo,#E9F0FF);color:var(--ip-blue);font-size:12px;font-weight:700}',
+      '.v2-todo-der{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--ip-ink-2)}',
+      '.v2-todo-der svg{color:var(--c-mint)}',
+      '.v2-todo-der button{border:none;background:none;padding:6px 4px;min-height:32px;font:inherit;font-weight:700;color:var(--ip-blue);cursor:pointer;text-decoration:underline}',
+      '.v2-todo-rp{width:min(480px,100%);padding:8px 8px 14px}',
+      '.v2-todo-rp-b{display:flex;flex-direction:column;gap:12px;padding:6px 12px 4px}',
+      '.v2-todo-rp-b>label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:var(--ip-ink-2)}',
+      '.v2-todo-rp-b input[type=date]{min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:16px;background:#fff;color:var(--ip-ink);width:100%;box-sizing:border-box}',
+      '.v2-todo-rp-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:3px;background:var(--surf-sunken,#F4F6FA);border:1px solid var(--line);border-radius:12px}',
+      '.v2-todo-rp-seg label{position:relative;display:flex}',
+      '.v2-todo-rp-seg input{position:absolute;opacity:0;width:1px;height:1px}',
+      '.v2-todo-rp-seg span{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;min-height:44px;padding:4px 6px;border-radius:9px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;line-height:1.2}',
+      '.v2-todo-rp-seg input:checked+span{background:#fff;color:var(--ip-ink);box-shadow:0 1px 3px rgba(15,20,32,.12)}',
+      '.v2-todo-rp-seg input:focus-visible+span{box-shadow:0 0 0 3px var(--halo,#E9F0FF)}',
+      '.v2-todo-rp-p{margin:0;font-size:14px;font-weight:600;color:var(--ip-ink)}',
+      '.v2-todo-rp-n{margin:10px 12px 0;font-size:12.5px;line-height:1.45;color:var(--ip-ink-2)}',
+      // Sur téléphone, les trois boutons en pleine largeur, « Enregistrer » d'abord
+      '@media(max-width:640px){.v2-todo-rp .v2-tc-f{flex-direction:column-reverse;align-items:stretch}.v2-todo-rp .v2-tc-f .v2-btn{justify-content:center}.v2-todo-rp .v2-tc-sup{margin-right:0}}',
       '@media (max-width:760px){.v2-todo-kinds{grid-template-columns:1fr 1fr}.v2-todo-form{grid-template-columns:1fr}.v2-todo-wide{grid-column:auto}.v2-todo-b{margin-left:0}}'
     ].join('\n');
     document.head.appendChild(s);

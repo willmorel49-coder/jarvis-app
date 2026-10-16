@@ -132,7 +132,13 @@
 
   // ── Tâches : celles de la to do list ──
   function tous() { return (V2.todo && V2.todo.tous) ? V2.todo.tous() : []; }
-  function tachesDe(iso) { return tous().filter(function (t) { return t.pour === iso; }); }
+  // Un rappel qui revient (chaque semaine, chaque mois) se montre aussi aux échéances à venir,
+  // sans case : il se coche le jour venu, ce qui le repousse à la fois suivante (v2-todo.js).
+  function tachesDe(iso) {
+    var a = tous().filter(function (t) { return t.pour === iso; });
+    if (V2.todo && V2.todo.tombeLe) tous().forEach(function (t) { if (t.pour !== iso && V2.todo.tombeLe(t, iso)) a.push(Object.assign({}, t, { _prevu: true })); });
+    return a;
+  }
   function aFaireDe(iso) { return tachesDe(iso).filter(function (t) { return !t.fait; }); }
   function enRetard() { var a = auj(); return tous().filter(function (t) { return !t.fait && t.pour && t.pour < a; }); }
   function sansDate() { return tous().filter(function (t) { return !t.fait && !t.pour; }); }
@@ -144,6 +150,8 @@
       (e.sub ? '<small>' + esc(e.sub) + '</small>' : '') + '</div>';
   }
   function tache(t, avecDate) {
+    if (t._prevu) return '<div class="agv-t agv-prevu"><span class="agv-box" aria-hidden="true"></span><span class="agv-tt">' + esc(nomTache(t)) +
+      ' <em>' + esc(String(V2.todo.repLabel(t)).toLowerCase()) + '</em></span></div>';
     var retard = !t.fait && t.pour && t.pour < auj();
     return '<label class="agv-t' + (t.fait ? ' fait' : '') + '">' +
       '<input type="checkbox" data-id="' + esc(t.id) + '"' + (t.fait ? ' checked' : '') + ' onchange="V2.agendaVues.cocher(\'' + esc(t.id) + '\',this.checked)" ' +
@@ -334,6 +342,7 @@
       '.agv-ev.agv-e-occ span,.agv-ev.agv-e-blo span{color:var(--muted);font-weight:500}',
       /* tâches : case cachée sans opacity, zone de clic de 44 px */
       '.agv-t{display:flex;align-items:flex-start;gap:10px;min-height:44px;padding:9px 0;cursor:pointer;position:relative;font-size:13.5px;color:var(--ip-ink)}',
+      '.agv-prevu{cursor:default}.agv-prevu .agv-box{border-style:dashed}.agv-prevu .agv-tt em{color:var(--ip-blue)}',
       '.agv-t input{position:absolute;width:1px;height:1px;margin:0;clip:rect(0 0 0 0);overflow:hidden}',
       '.agv-box{flex:none;width:22px;height:22px;margin-top:-1px;border-radius:7px;border:2px solid var(--line-strong);background:#fff;display:inline-flex;align-items:center;justify-content:center;transition:background .15s var(--ease),border-color .15s var(--ease)}',
       '.agv-t input:checked + .agv-box{background:var(--ip-blue);border-color:var(--ip-blue)}',
