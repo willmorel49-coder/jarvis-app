@@ -451,7 +451,7 @@
     var dejaLa = estChoisi(id), r = depuis ? depuis.getBoundingClientRect() : null;
     ajouter(id);
     fermerTop();
-    V2.toast(dejaLa ? 'Le listing ' + nom + ' est déjà dans la mallette' : 'Listing ' + nom + ' ajouté : il se fabrique au moment de préparer l’envoi');
+    V2.toast(dejaLa ? 'Le listing ' + esc(nom) + ' est déjà dans la mallette' : 'Listing ' + esc(nom) + ' ajouté : il se fabrique au moment de préparer l’envoi');
     if (r && !dejaLa) voler({ getBoundingClientRect: function () { return r; }, animate: true }, S.extras[id]);
   }
 
@@ -525,7 +525,7 @@
     // Un listing « pour une cliente » n'a de sens que pour une cliente.
     if (!(c && c.client) && estChoisi('listing-ses-ventes')) { S.sel = S.sel.filter(function (i) { return i !== 'listing-ses-ventes'; }); V2.toast('« Ses ventes et ses opportunités » est retiré : ce listing est pour une pharmacie cliente.', 'warn'); }
     invalider(); rendre(); rendreMur();
-    if (c) V2.toast('Destinataire : ' + c.nom);
+    if (c) V2.toast('Destinataire : ' + esc(c.nom));
   }
 
   // ═══════════════ LE MAIL ═══════════════
@@ -716,10 +716,10 @@
       }
       S.prets = { unPdf: false, files: recus.map(function (r) { return r.file; }), xl: recus.filter(function (r) { return r.d.type !== 'pdf'; }).length, docs: recus.map(function (r) { return r.d; }) };
     }).then(function () {
-      if (echecs.length) V2.toast('Non préparé : ' + echecs.join(', '), 'error');
+      if (echecs.length) V2.toast('Non préparé : ' + esc(echecs.join(', ')), 'error');
     }, function (e) {
       console.error('[mallette] préparation', e);
-      V2.toast(echecs.length ? 'Rien n’a pu être préparé : ' + echecs.join(', ') : 'La préparation a échoué : vérifiez votre connexion et réessayez', 'error');
+      V2.toast(echecs.length ? 'Rien n’a pu être préparé : ' + esc(echecs.join(', ')) : 'La préparation a échoué : vérifiez votre connexion et réessayez', 'error');
     }).then(function () { S.busy = ''; rendrePied(); });
   }
   function telechargerBlob(blob, nom) {
@@ -804,8 +804,8 @@
         if (S.sel.indexOf(id) < 0) S.sel.push(id);
       });
       S.tab = 'equipe'; rendreOnglets(); rendreMur(); surChange();
-      if (locaux.length && !ajoutes.length) V2.toast('Ajouté pour cet envoi seulement : le dépôt pour l’équipe n’a pas abouti' + (echecs.length ? ' (' + echecs.join(', ') + ')' : ''), 'warn');
-      else if (echecs.length) V2.toast('Non déposé pour l’équipe : ' + echecs.join(', '), 'warn');
+      if (locaux.length && !ajoutes.length) V2.toast('Ajouté pour cet envoi seulement : le dépôt pour l’équipe n’a pas abouti' + (echecs.length ? ' (' + esc(echecs.join(', ')) + ')' : ''), 'warn');
+      else if (echecs.length) V2.toast('Non déposé pour l’équipe : ' + esc(echecs.join(', ')), 'warn');
       else V2.toast(ajoutes.length > 1 ? ajoutes.length + ' fichiers ajoutés pour toute l’équipe' : 'Fichier ajouté pour toute l’équipe');
     });
   }
