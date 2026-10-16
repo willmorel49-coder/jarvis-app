@@ -5,6 +5,7 @@
    par les fonctions existantes du CRM : V2.notes.addAuto, V2.profil.poserPlusieurs / saveOverride, V2.todo.ajouterLigne.
    Règles : notes PRIVÉES (RLS), jamais de delete (on archive), rien n'est marqué « appliqué » avant que l'écriture soit relue
    en base, un enregistrement vocal n'est jamais perdu (IndexedDB tant qu'il n'est pas dans la base).
+   Brouillons (avenant du 16/10 soir) : une note naît `brouillon`, privée ; le robot ne lit que `a_lire`. Le commercial l'envoie (ou la reprend) d'un geste.
    Rien n'est chargé au démarrage de l'app : l'écran n'interroge la base qu'à son ouverture.
    Contrat des données : voir le cahier des charges (compte_rendu, suites).
    ═══════════════════════════════════════════════════════════════════ */
@@ -80,7 +81,7 @@
       '.bn-act .bn-ign{margin-top:6px;font-size:13.5px;font-weight:600;color:var(--muted)}',
       '.bn-act .bn-lien{display:inline-flex;align-items:center;min-height:44px;font-size:14px;font-weight:700;color:var(--ip-blue);text-decoration:none}',
       '.bn-inc{margin:0 0 8px;padding:10px 12px;border-radius:var(--r-md);background:#FBEFDC;color:var(--c-amber-txt);font-size:14px;line-height:1.45;font-weight:600;overflow-wrap:anywhere}',
-      '.bn-vide{padding:22px 8px;text-align:center;font-size:14.5px;color:var(--muted)}',
+      '.bn-etat--brouillon{color:var(--ip-blue-d)}.bn-vide{padding:22px 8px;text-align:center;font-size:14.5px;color:var(--muted)}',
       '@media (max-width:480px){.v2-wrap.bn-wrap{padding-left:16px;padding-right:16px}.bn-ligne .v2-btn{flex:1 1 auto}}'
     ].join('\n');
     document.head.appendChild(st);
@@ -92,7 +93,8 @@
     stop: 'M7 7h10v10H7z',
     check: 'M5 12.5l4.5 4.5L19 7.5',
     clock: 'M12 3.5a8.5 8.5 0 100 17 8.5 8.5 0 000-17zM12 7.5V12l3 2',
-    alerte: 'M12 4l9 16H3zM12 10v4.5M12 17.5h.01'
+    alerte: 'M12 4l9 16H3zM12 10v4.5M12 17.5h.01',
+    crayon: 'M4 20l1-4L16.5 4.5a2 2 0 013 3L8 19zM14.5 6.5l3 3'
   };
   function ic(n) { return '<svg class="bn-i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="' + P[n] + '"/></svg>'; }
 
@@ -118,7 +120,7 @@
   function chrono(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + p2(s % 60); }
 
   // ——— État (en mémoire ; survit aux redessins du routeur) ———
-  var S = { etat: 'attente', rows: [], erreur: '', edit: null, editTxt: '', vu: {}, ecrit: {}, occupe: {}, urls: {}, attente: [], etatEnvoi: {}, mem: {}, enSauvegarde: false, msg: {}, urlsAtt: [] };
+  var S = { etat: 'attente', rows: [], erreur: '', edit: null, editTxt: '', vu: {}, ecrit: {}, occupe: {}, urls: {}, attente: [], etatEnvoi: {}, mem: {}, enSauvegarde: false, msg: {}, urlsAtt: [], msgNote: {}, envoiTout: false, minuteur: null };
 
   function actif() { return !!(V2.route && V2.route.name === 'blocnotes' && document.getElementById('bn-root')); }
 
@@ -135,7 +137,7 @@
       else toast('Les notes n’ont pas pu être relues', 'warn');
     }).then(function () {
       if (!actif()) return;
-      dessinerListe();
+      dessinerListe(); planifier();
       // la base nationale des officines ne se charge que s'il y a des mises à jour à rattacher à une fiche
       if (S.rows.some(function (r) { return actionsDe(r).some(function (a) { return a.pf; }); }) && !window.PHARMA_FR && V2.ensurePharmaFr) {
         V2.ensurePharmaFr(function () { if (actif()) dessinerListe(); });
@@ -372,7 +374,8 @@
   function gabarit() {
     var dictee = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
     return '<div class="v2-wrap v2-u bn-wrap" id="bn-root">' +
-      '<div class="bn-tete"><h1>Bloc-notes</h1><p>Écris ou dicte au fil de la journée. Ce soir, le robot lit tes notes et te propose les mises à jour du CRM : tu les appliques d’un geste.</p></div>' +
+      '<div class="bn-tete"><h1>Bloc-notes</h1><p>Tes notes restent des brouillons, rien que pour toi. Quand tu veux, envoie-les au robot : il les lit le soir et te propose les mises à jour du CRM, que tu appliques d’un geste.</p></div>' +
+      '<div class="bn-band" id="bn-bandeau-brouillons" hidden></div>' +
       '<div class="bn-band" id="bn-bandeau" hidden></div>' +
       '<div class="v2-card bn-ecrire" data-dictee="1"><div class="bn-h">Nouvelle note</div>' +
         '<textarea class="v2-notes-ta bn-ta" id="bn-ta" rows="4" placeholder="Vu la pharmacie du Port à Caen, nouveau titulaire…" aria-label="Texte de la note"></textarea>' +
@@ -395,10 +398,26 @@
       '<button type="button" class="v2-btn v2-btn-primary" data-bn="tout-global"' + (S.enSauvegarde ? ' disabled' : '') + '>' + (S.enSauvegarde ? 'En cours…' : 'Tout appliquer') + '</button>';
   }
 
+  function brouillons() { return S.rows.filter(function (r) { return r.statut === 'brouillon'; }); }
+  function dessinerBrouillons() {
+    var b = document.getElementById('bn-bandeau-brouillons'); if (!b) return;
+    var l = brouillons();
+    if (!l.length) { b.hidden = true; b.innerHTML = ''; return; }
+    b.hidden = false;
+    b.innerHTML = '<span>' + l.length + ' brouillon' + (l.length > 1 ? 's' : '') + '</span>' +
+      '<button type="button" class="v2-btn v2-btn-primary" data-bn="envoyer-tout"' + (S.envoiTout ? ' disabled' : '') + '>' + (S.envoiTout ? 'Envoi en cours…' : 'Envoyer tout au robot') + '</button>';
+  }
+
+  // Texte d'une note : écrite → body ; vocale → body (version corrigée par le commercial) s'il est rempli, sinon transcription (robot).
+  function texteDe(r) { return String((r.kind === 'vocal' ? (r.body || r.transcription) : r.body) || ''); }
+  function vocalSansTexte(r) { return r.kind === 'vocal' && !r.body && !r.transcription && r.statut !== 'lue' && r.statut !== 'erreur'; }
+
   function etatNote(r) {
+    if (r.statut === 'brouillon') return '<div class="bn-etat bn-etat--brouillon">' + ic('crayon') + 'Brouillon — le robot ne le lit pas tant que tu ne l’envoies pas</div>';
+    if (r.statut === 'a_lire') return '<div class="bn-etat">' + ic('clock') + 'Envoyée au robot — il la lira à son prochain passage, en soirée</div>';
     if (r.statut === 'lue') return '<div class="bn-etat">' + ic('check') + 'Lue par le robot' + (r.lu_le ? ' le ' + esc(dateLongue(cleJour(new Date(r.lu_le)))) + ' à ' + heure(r.lu_le) : '') + '</div>';
     if (r.statut === 'erreur') return '<div class="bn-etat bn-etat--ko">' + ic('alerte') + 'Le robot n’a pas pu la lire</div>';
-    return '<div class="bn-etat">' + ic('clock') + 'Sera lue ce soir par le robot</div>';
+    return '<div class="bn-etat">' + ic('clock') + 'Envoyée au robot — il la lira à son prochain passage, en soirée</div>';
   }
 
   function blocAction(row, a) {
@@ -433,24 +452,28 @@
     var vocal = r.kind === 'vocal', ed = S.edit === r.id;
     var h = '<div class="v2-card bn-note" data-row="' + esc(r.id) + '"><div class="bn-top"><b>' + heure(r.created_at) + '</b><span>' + (vocal ? 'Note vocale' + (r.duree_s ? ' · ' + chrono(r.duree_s) : '') : 'Note écrite') + '</span></div>';
     if (ed) {
-      h += '<textarea class="bn-ta" id="bn-edit-ta" rows="4" aria-label="Modifier la note">' + esc(S.editTxt) + '</textarea>' +
+      h += '<textarea class="bn-ta" id="bn-edit-ta" rows="4" aria-label="Modifier la note"' + (vocal ? ' placeholder="Écris ou corrige le texte de cette note vocale"' : '') + '>' + esc(S.editTxt) + '</textarea>' +
         '<div class="bn-acts"><button type="button" class="v2-btn v2-btn-primary" data-bn="edit-ok" data-row="' + esc(r.id) + '">Enregistrer</button><button type="button" class="bn-b" data-bn="edit-non">Annuler</button></div>' +
         '<div class="bn-msg bn-msg--ko" id="bn-edit-msg" role="status"></div>';
     } else {
-      var txt = vocal ? (r.transcription || '') : (r.body || '');
+      var txt = texteDe(r);
       if (txt) h += '<div class="bn-corps">' + esc(txt) + '</div>';
-      else if (vocal) h += '<div class="bn-corps" style="color:var(--muted)">' + (r.statut === 'lue' ? 'Aucun texte reconnu dans cet enregistrement.' : 'Le texte apparaîtra après le passage du robot.') + '</div>';
+      else if (vocal) h += '<div class="bn-corps" style="color:var(--muted)">' + (vocalSansTexte(r) ? 'Transcription en cours (quelques minutes, quand le Mac de l’agence est allumé)' : 'Aucun texte reconnu dans cet enregistrement.') + '</div>';
       if (vocal && r.audio_path) h += '<div class="bn-audio-zone">' + (S.urls[r.id] ? '<audio class="bn-audio" controls preload="metadata" src="' + esc(S.urls[r.id]) + '"></audio>' : '<div class="bn-acts"><button type="button" class="bn-b" data-bn="ecouter" data-row="' + esc(r.id) + '">' + ic('mic') + 'Écouter</button></div>') + '</div>';
       h += etatNote(r);
       h += blocCompteRendu(r);
-      h += '<div class="bn-acts">' + (!vocal && r.statut === 'a_lire' ? '<button type="button" class="bn-b" data-bn="edit" data-row="' + esc(r.id) + '">Modifier</button>' : '') +
+      var occN = !!S.occupe['n:' + r.id];
+      if (S.msgNote[r.id]) h += '<div class="bn-msg bn-msg--ko" role="status">' + esc(S.msgNote[r.id]) + '</div>';
+      h += '<div class="bn-acts">' + (r.statut === 'brouillon' || r.statut === 'a_lire' ? '<button type="button" class="bn-b" data-bn="edit" data-row="' + esc(r.id) + '"' + (occN ? ' disabled' : '') + '>Modifier</button>' : '') +
+        (r.statut === 'brouillon' ? '<button type="button" class="v2-btn v2-btn-primary" data-bn="envoyer" data-row="' + esc(r.id) + '"' + (occN || S.envoiTout ? ' disabled' : '') + '>' + (occN ? 'Envoi…' : 'Envoyer au robot') + '</button>' : '') +
+        (r.statut === 'a_lire' ? '<button type="button" class="bn-b" data-bn="reprendre" data-row="' + esc(r.id) + '"' + (occN || S.envoiTout ? ' disabled' : '') + '>' + (occN ? 'Un instant…' : 'Reprendre') + '</button>' : '') +
         '<button type="button" class="bn-b bn-b--rose" data-bn="retirer" data-row="' + esc(r.id) + '">Retirer</button></div>';
     }
     return h + '</div>';
   }
 
   function dessinerListe() {
-    dessinerBandeau();
+    dessinerBandeau(); dessinerBrouillons();
     var z = document.getElementById('bn-liste'); if (!z) return;
     // un champ en cours de modification garde son texte et son focus pendant un redessin
     var en = document.getElementById('bn-edit-ta'), hadFocus = en && document.activeElement === en;
@@ -476,10 +499,10 @@
     if (!body) { dire('Écris ou dicte quelque chose d’abord.', 'ko'); if (ta) ta.focus(); return; }
     var c = sb(); if (!c || !V2.user) { dire('Tu n’es pas connecté : la note n’est pas enregistrée.', 'ko'); return; }
     btn.disabled = true; dire('Enregistrement…');
-    Promise.resolve(c.from(TABLE).insert({ author_id: V2.user.id, author_name: V2.user.name || '', kind: 'texte', body: body }).select('id')).then(function (r) {
+    Promise.resolve(c.from(TABLE).insert({ author_id: V2.user.id, author_name: V2.user.name || '', kind: 'texte', body: body, statut: 'brouillon' }).select('id')).then(function (r) {
       if (!r || r.error || !Array.isArray(r.data) || !r.data.length) throw new Error('refus');
       if (ta && ta.value.trim() === body) ta.value = '';
-      dire('Note enregistrée. Le robot la lira ce soir.', 'ok');
+      dire('Brouillon enregistré. Le robot ne le lira que si tu l’envoies.', 'ok');
       return charger();
     }).catch(function () { dire('La note n’est pas enregistrée (pas de réseau ?). Ton texte est gardé : réessaie.', 'ko'); })
       .then(function () { btn.disabled = false; });
@@ -490,11 +513,66 @@
     var body = (ta && ta.value || '').trim(), c = sb();
     if (!body) { if (m) m.textContent = 'La note est vide.'; return; }
     if (!c) { if (m) m.textContent = 'La base n’est pas joignable.'; return; }
-    Promise.resolve(c.from(TABLE).update({ body: body }).eq('id', id).eq('statut', 'a_lire').select('id')).then(function (r) {
+    Promise.resolve(c.from(TABLE).update({ body: body }).eq('id', id).in('statut', ['brouillon', 'a_lire']).select('id')).then(function (r) {
       if (!r || r.error || !Array.isArray(r.data) || !r.data.length) throw new Error('refus');
       var row = trouverRow(id); if (row) row.body = body;
       S.edit = null; dessinerListe(); toast('Note modifiée');
-    }).catch(function () { var m2 = document.getElementById('bn-edit-msg'); if (m2) m2.textContent = 'La note n’a pas été modifiée (le robot l’a peut-être déjà lue). Réessaie.'; });
+    }).catch(function () {
+      var m2 = document.getElementById('bn-edit-msg'); if (m2) m2.textContent = 'La note n’a pas été modifiée (le robot l’a peut-être déjà lue). Réessaie.';
+      charger();   // relecture : l'écran montre l'état réel de la note
+    });
+  }
+
+  // ═══ Envoyer au robot / Reprendre ═══ — l'état n'est montré qu'après une réponse qui confirme UNE ligne modifiée (garde sur l'état d'origine)
+  function changerEtat(id, de, vers) {
+    var c = sb(); if (!c) return Promise.resolve(false);
+    return Promise.resolve(c.from(TABLE).update({ statut: vers }).eq('id', id).eq('statut', de).select('id')).then(function (r) {
+      if (!r || r.error || !Array.isArray(r.data) || r.data.length !== 1) return false;
+      var row = trouverRow(id); if (row) row.statut = vers;
+      return true;
+    }, function () { return false; });
+  }
+  function envoyerNote(id, de, vers) {
+    var cle = 'n:' + id; if (S.occupe[cle] || S.envoiTout) return;
+    S.occupe[cle] = true; delete S.msgNote[id]; dessinerListe();
+    changerEtat(id, de, vers).then(function (ok) {
+      delete S.occupe[cle];
+      if (ok) toast(vers === 'a_lire' ? 'Note envoyée au robot' : 'Note reprise : elle redevient un brouillon');
+      else {
+        S.msgNote[id] = vers === 'a_lire' ? 'La note n’a pas été envoyée. Réessaie si elle est toujours un brouillon.' : 'La note n’a pas pu être reprise (le robot l’a peut-être déjà lue). Voici son état à jour.';
+        toast(S.msgNote[id], 'error');
+        if (actif()) dessinerListe();
+        return charger();   // relecture de la vraie situation
+      }
+      if (actif()) dessinerListe();
+    });
+  }
+  // « Envoyer tout » : un seul geste, mais note par note (chaque envoi est gardé et relu). Le compte annoncé est celui de ce qui est vraiment parti.
+  function envoyerTout() {
+    if (S.envoiTout) return;
+    var ids = brouillons().map(function (r) { return r.id; }); if (!ids.length) return;
+    S.envoiTout = true; dessinerListe();
+    var ok = 0, ko = 0;
+    ids.reduce(function (p, id) { return p.then(function () { return changerEtat(id, 'brouillon', 'a_lire').then(function (b) { if (b) ok++; else ko++; }); }); }, Promise.resolve()).then(function () {
+      S.envoiTout = false;
+      var t = ok ? ok + ' note' + (ok > 1 ? 's' : '') + ' envoyée' + (ok > 1 ? 's' : '') + ' au robot' : '';
+      if (ko) t += (t ? ', ' : '') + ko + ' non envoyée' + (ko > 1 ? 's' : '') + ' (' + 'regarde ' + (ko > 1 ? 'leur' : 'son') + ' état dans la liste' + ')';
+      toast(t, ko ? 'error' : undefined);
+      if (actif()) dessinerListe();
+      if (ko) charger();   // relecture de la vraie situation
+    });
+  }
+
+  // ═══ Relecture automatique tant qu'un vocal attend sa transcription (au plus toutes les 60 s, seulement écran affiché) ═══
+  function planifier() {
+    if (S.minuteur || !actif()) return;
+    if (!S.rows.some(vocalSansTexte)) return;
+    S.minuteur = setTimeout(function () {
+      S.minuteur = null;
+      if (!actif()) return;   // écran quitté : plus rien ne tourne
+      if (S.edit) { planifier(); return; }
+      charger();   // charger() replanifie si besoin
+    }, 60000);
   }
 
   function retirer(id) {
@@ -573,7 +651,7 @@
     else if (R.etat === 'enreg') h = '<div class="bn-ligne" style="margin-top:0"><span class="bn-chrono"><span class="bn-point"></span><span id="bn-chrono">0:00</span></span><button type="button" class="v2-btn v2-btn-primary" data-bn="rec-stop">' + ic('stop') + 'Arrêter</button></div>';
     else if (R.etat === 'ecoute') h = '<div class="bn-msg" style="margin:0">Enregistrement de ' + chrono(R.entry.duree) + '. Écoute-le avant de l’envoyer.</div>' +
       '<audio class="bn-audio" controls preload="metadata" src="' + esc(R.url) + '"></audio>' +
-      '<div class="bn-ligne"><button type="button" class="v2-btn v2-btn-primary" data-bn="rec-envoyer">Envoyer</button><button type="button" class="bn-b" data-bn="rec-refaire">Recommencer</button></div>';
+      '<div class="bn-ligne"><button type="button" class="v2-btn v2-btn-primary" data-bn="rec-envoyer">Garder ce vocal</button><button type="button" class="bn-b" data-bn="rec-refaire">Recommencer</button></div>';
     else if (R.etat === 'envoi') h = '<div class="bn-msg" style="margin:0">Envoi en cours…</div><audio class="bn-audio" controls preload="metadata" src="' + esc(R.url) + '"></audio>';
     z.innerHTML = h + '<div class="bn-msg' + (R.msgCl ? ' bn-msg--' + R.msgCl : '') + '" id="bn-voix-msg" role="status" aria-live="polite">' + esc(R.msg) + '</div>';
   }
@@ -639,7 +717,7 @@
       var er = r && r.error;
       // un envoi précédent qui avait déjà déposé le fichier : on continue (rejouer ne doit pas échouer)
       if (er && !/exist|duplicate|409/i.test(String(er.message || '') + String(er.statusCode || '') + String(er.error || ''))) throw new Error('fichier');
-      return c.from(TABLE).insert({ id: e.id, author_id: V2.user.id, author_name: e.nom || V2.user.name || '', kind: 'vocal', body: '', audio_path: chemin, audio_type: e.type, duree_s: e.duree }).select('id');
+      return c.from(TABLE).insert({ id: e.id, author_id: V2.user.id, author_name: e.nom || V2.user.name || '', kind: 'vocal', body: '', statut: 'brouillon', audio_path: chemin, audio_type: e.type, duree_s: e.duree }).select('id');
     }).then(function (r) {
       var er = r && r.error;
       if (er && !(String(er.code) === '23505' || /duplicate|already exists/i.test(String(er.message || '')))) throw new Error('ligne');
@@ -656,12 +734,12 @@
     R.etat = 'envoi'; dire(''); dessinerVoix(); dessinerAttente();
     envoyerEntree(e).then(function (ok) {
       if (ok) {
-        oublierUrl(); R.entry = null; R.etat = 'repos'; dessinerVoix(); dire('Note vocale envoyée. Le robot la transcrira ce soir.', 'ok');
+        oublierUrl(); R.entry = null; R.etat = 'repos'; dessinerVoix(); dire('Note vocale enregistrée en brouillon. Le robot ne la lira que si tu l’envoies.', 'ok');
         dessinerAttente(); charger();
       } else {
         // l'enregistrement quitte le lecteur et passe dans « Pas encore envoyé » (gardé, avec « Renvoyer », et renvoyé tout seul à la prochaine ouverture)
         oublierUrl(); R.entry = null; R.etat = 'repos'; dessinerVoix();
-        dire('Pas envoyée (pas de réseau ?). Ton enregistrement est gardé sur cet appareil : il sera renvoyé à ta prochaine visite de cet écran, ou avec « Renvoyer ».', 'ko');
+        dire('Pas encore rangé dans tes notes (pas de réseau ?). Ton enregistrement est gardé sur cet appareil : il sera rangé à ta prochaine visite de cet écran, ou avec « Réessayer ».', 'ko');
         dessinerAttente();
       }
     });
@@ -676,13 +754,13 @@
       S.attente = l;
       if (!l.length) { z.innerHTML = ''; return; }
       (S.urlsAtt || []).forEach(function (u) { try { URL.revokeObjectURL(u); } catch (x) {} }); S.urlsAtt = [];
-      z.innerHTML = '<div class="v2-card bn-att"><div class="bn-h">Pas encore envoyé</div>' + l.map(function (e) {
+      z.innerHTML = '<div class="v2-card bn-att"><div class="bn-h">Gardé sur cet appareil, pas encore dans tes notes</div>' + l.map(function (e) {
         var u = URL.createObjectURL(e.blob); S.urlsAtt.push(u);
         var s = S.etatEnvoi[e.id] || {};
         return '<div class="bn-act"><p>Note vocale du ' + esc(dateLongue(cleJour(new Date(e.cree)))) + ' à ' + heure(e.cree) + ' (' + chrono(e.duree) + ')</p>' +
           '<audio class="bn-audio" controls preload="metadata" src="' + esc(u) + '"></audio>' +
           '<div class="bn-msg ' + (s.ko ? 'bn-msg--ko' : '') + '">' + (s.en ? 'Envoi en cours…' : s.ko ? 'Pas envoyée : réseau indisponible. L’enregistrement est gardé.' : 'Gardé sur cet appareil, pas encore dans ton bloc-notes.') + '</div>' +
-          '<div class="bn-acts"><button type="button" class="v2-btn v2-btn-primary" data-bn="renvoyer" data-id="' + esc(e.id) + '"' + (s.en ? ' disabled' : '') + '>Renvoyer</button>' +
+          '<div class="bn-acts"><button type="button" class="v2-btn v2-btn-primary" data-bn="renvoyer" data-id="' + esc(e.id) + '"' + (s.en ? ' disabled' : '') + '>Réessayer</button>' +
           '<button type="button" class="bn-b bn-b--rose" data-bn="suppr-att" data-id="' + esc(e.id) + '"' + (s.en ? ' disabled' : '') + '>Supprimer</button></div></div>';
       }).join('') + '</div>';
     });
@@ -717,7 +795,10 @@
     else if (a === 'recharger') { S.etat = 'charge'; dessinerListe(); charger(); }
     else if (a === 'ecouter') ecouter(id);
     else if (a === 'retirer') retirer(id);
-    else if (a === 'edit') { var r = trouverRow(id); if (r) { S.edit = id; S.editTxt = r.body || ''; dessinerListe(); var t = document.getElementById('bn-edit-ta'); if (t) t.focus(); } }
+    else if (a === 'envoyer') envoyerNote(id, 'brouillon', 'a_lire');
+    else if (a === 'reprendre') envoyerNote(id, 'a_lire', 'brouillon');
+    else if (a === 'envoyer-tout') envoyerTout();
+    else if (a === 'edit') { var r = trouverRow(id); if (r) { S.edit = id; S.editTxt = texteDe(r); dessinerListe(); var t = document.getElementById('bn-edit-ta'); if (t) t.focus(); } }
     else if (a === 'edit-non') { S.edit = null; dessinerListe(); }
     else if (a === 'edit-ok') modifierTexte(id);
     else if (a === 'appliquer' || a === 'ignorer') {
@@ -752,6 +833,7 @@
       r.addEventListener('click', geste);
       r.addEventListener('input', function (ev) { if (ev.target && ev.target.id === 'bn-edit-ta') S.editTxt = ev.target.value; });
       if (S.etat !== 'pret') S.etat = 'charge';   // un enregistrement en cours (R) continue : seul son affichage est refait
+      if (S.minuteur) { clearTimeout(S.minuteur); S.minuteur = null; }
       dessinerVoix(); dessinerAttente(); dessinerListe();
       charger().then(function () { if (actif()) renvoyerTout(); });
     }
