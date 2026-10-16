@@ -40,8 +40,17 @@ window.OPSO_CATALOGUE_CHOIX = {
     '3400931528746',  // BETADINE 10% BAIN BCHE FP125ML
     '3400935983862',  // BETADINE 10% SOL LOC DOS5ML 10
     '3400930108550',  // BETADINE 10% SOL VAG FP125ML
-    // … et les aiguilles Easydrip (celles que le réseau commande ; 6 et 8 mm : moins de 2 pharmacies)
+    // Demande de Will, 16/10/2026 (suite) : les autres Betadine que le réseau commande (les 4 jamais commandées restent dehors)
+    '3400932194087',  // BETADINE TUL10% 10X10PANS PE10
+    '3400932031009',  // BETADINE 250MG OV BT8
+    '3400936462922',  // BETADINE TUL10% 10X10 PANS PP5
+    '3400935355980',  // BETADINE SCRUB SOL DOS10ML 10
+    '3400936409354',  // BETADINE ALC.5% LOC SOL 10ML10
+    '3400934928314',  // BETADINE 10% SOL VAG D.10ML 10
+    // … et les aiguilles Easydrip, les quatre tailles (6 et 8 mm : fiche lue au catalogue complet, voir construire())
     '6972857294250',  // EASYDRIP+ PRO AIG 4MM 32G B100
-    '6972857294236'   // EASYDRIP+ PRO AIG 5MM 31G B100
+    '6972857294236',  // EASYDRIP+ PRO AIG 5MM 31G B100
+    '6972857294243',  // EASYDRIP+ PRO AIG 6MM 31G B100
+    '6972857294410'   // EASYDRIP+ PRO AIG 8MM 31G B100
   ]
 };

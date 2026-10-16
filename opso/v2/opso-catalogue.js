@@ -43,7 +43,7 @@
   // ── Données ──
   var SRC_RESEAU = '../../crm/v2/prod-reseau-data.js?v=20261015xm';
   var SRC_NONGEN = 'opso-nongen-data.js?v=20261001a';
-  var SRC_CHOIX = 'opso-catalogue-choix-data.js?v=20261016be';   // CIP à retirer / à ajouter (retour du 15/10)
+  var SRC_CHOIX = 'opso-catalogue-choix-data.js?v=20261016bf';   // CIP à retirer / à ajouter (retour du 15/10)
   function chargerScript(src, temoin) {
     if (window[temoin] || document.querySelector('script[src^="' + src.split('?')[0] + '"]')) return Promise.resolve();
     return new Promise(function (ok) { var s = document.createElement('script'); s.src = src; s.onload = s.onerror = function () { ok(); }; document.head.appendChild(s); });
@@ -54,7 +54,7 @@
       window.MKT_IMG ? 0 : chargerScript('../../crm/v2/mkt-images-data.js?v=20260929k', 'MKT_IMG')
     ]);
   }
-  var _photos = null;
+  var _photos = null, _photosDemandees = false;
   function photoDe(cip) {
     if (!_photos) {
       _photos = {};
@@ -95,7 +95,7 @@
   }
 
   // Construit les rayons : produits du réseau classés par nombre de pharmacies, avec prix.
-  var _cache = null;
+  var _cache = null, _ccEssaye = false;
   function construire() {
     var R = window.PROD_RESEAU, PS = window.PROD_STATS, B = window.BENCHMARK;
     if (!R || !PS || !B || !window.OPSO_CATALOGUE_CHOIX) return null;   // sans la liste, un produit retiré reviendrait
@@ -103,9 +103,17 @@
     var CH = window.OPSO_CATALOGUE_CHOIX || {}, retirer = {}, ajouter = {};
     (CH.retirer || []).forEach(function (c) { retirer[normCip(c)] = 1; });
     (CH.ajouter || []).forEach(function (c) { ajouter[normCip(c)] = 1; });
-    var cle = [R.empreinte, PS.length, B.length, (V2.sales || []).length, (window.OPSO_NONGEN || []).length, (CH.retirer || []).join(), (CH.ajouter || []).join(), _offreEtat === 'ok' ? 'offre' + _offre.lignes.length + _offre.maj : _offreEtat].join('|');
+    // Produit de l'Offre Privilège : affiché UNE fois, dans l'offre (Will, 16/10 : « des doublons avec l'offre privilège »).
+    // Dans son rayon, le suivant prend sa place.
+    var enOffre = {}; if (_offreEtat === 'ok' && _offre) _offre.lignes.forEach(function (l) { enOffre[normCip(l.cip)] = 1; });
+    // Produit ajouté sans fiche dans PROD_STATS (aiguilles Easydrip+ 6 et 8 mm : jamais vendues par nos comptes) :
+    // nom, rayon et PPHT lus au catalogue Intégral complet. On l'attend ; s'il n'a pas pu se charger, le catalogue sort sans eux.
+    var CC = window.CATALOGUE_COMPLET;
+    if (!CC && !_ccEssaye) return null;
+    var cle = [R.empreinte, PS.length, B.length, (V2.sales || []).length, (window.OPSO_NONGEN || []).length, (CH.retirer || []).join(), (CH.ajouter || []).join(), CC ? 'cc' : '', _offreEtat === 'ok' ? 'offre' + _offre.lignes.length + _offre.maj : _offreEtat].join('|');
     if (_cache && _cache.cle === cle) return _cache;
     var ps = {}; PS.forEach(function (r) { var c = normCip(r.c); if (c && !ps[c]) ps[c] = r; });
+    if (CC && CC.rows) CC.rows.forEach(function (r) { var c = normCip(r[0]); if (ajouter[c] && !ps[c]) ps[c] = { c: r[0], d: r[1], f: r[4], ppht: r[5], stale: 0 }; });
     var bench = {}; B.forEach(function (r) { var c = normCip(r && r.cip13); if (c && !bench[c]) bench[c] = r; });
     var opso = {};
     (V2.sales || []).forEach(function (s) {
@@ -114,7 +122,7 @@
     });
     var rayons = RAYONS.map(function (r) { return { r: r, items: [], sansPrix: 0, vus: 0 }; });
     Object.keys(R.n).forEach(function (cip) {
-      var c = normCip(cip), p = ps[c]; if (!p) return;
+      var c = normCip(cip), p = ps[c]; if (!p || enOffre[c]) return;
       var f = p.f === 'gen' && nonGen[c] ? 'pr' : p.f;
       var ray = rayons.filter(function (x) { return x.r.f[f]; })[0]; if (!ray) return;
       // R.n est déjà trié par nombre décroissant : les premiers du rayon, plus les produits ajoutés à leur rang.
@@ -329,7 +337,8 @@
     var d = construire();
     if (!d) {
       root.innerHTML = page('<div class="v2-empty" style="padding:40px;text-align:center;color:var(--muted)">Chargement du catalogue…</div>');
-      Promise.all([chargerScript(SRC_RESEAU, 'PROD_RESEAU'), chargerScript(SRC_NONGEN, 'OPSO_NONGEN'), chargerScript(SRC_CHOIX, 'OPSO_CATALOGUE_CHOIX'), V2.loadFiles ? V2.loadFiles(['bench']) : 0]).then(function () {
+      Promise.all([chargerScript(SRC_RESEAU, 'PROD_RESEAU'), chargerScript(SRC_NONGEN, 'OPSO_NONGEN'), chargerScript(SRC_CHOIX, 'OPSO_CATALOGUE_CHOIX'), V2.loadFiles ? V2.loadFiles(['bench', 'catcomplet']) : 0]).then(function () {
+        _ccEssaye = true;
         if (V2.route && V2.route.name === 'marketing' && construire()) render(root);
         else if (V2.route && V2.route.name === 'marketing') root.innerHTML = page('<div class="v2-empty" style="padding:40px;text-align:center;color:var(--muted)">Le catalogue n’a pas pu se charger. Rechargez la page.</div>');
       });
@@ -342,7 +351,9 @@
       '<button class="v2-btn primary" id="oc-btn-csv" onclick="V2.opsoCatalogue.csv()">Télécharger en Excel (CSV)</button></div></div>' +
       '<div class="oc-apercu">' + pagesHtml(d).replace(/<section class="oc-page/g, '<div class="oc-cadre"><section class="oc-page').replace(/<\/section>/g, '</section></div>') + '</div>');
     ajusterApercu(root);
-    if (!window.OFFILOG_BEST || !window.MKT_IMG) chargerPhotos().then(function () { _photos = null; if (V2.route && V2.route.name === 'marketing') render(root); });
+    // Photos demandées UNE fois : deux rendus coup sur coup (rayons + Offre Privilège) trouvaient les balises
+    // posées mais pas encore lues → chargerScript rendait la main tout de suite → rendu sans fin, page figée (16/10/2026).
+    if ((!window.OFFILOG_BEST || !window.MKT_IMG) && !_photosDemandees) { _photosDemandees = true; chargerPhotos().then(function () { _photos = null; if (V2.route && V2.route.name === 'marketing') render(root); }); }
   }
 
   var STYLE_IMPR = '@page{size:A4;margin:0}' +
