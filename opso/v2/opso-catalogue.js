@@ -43,7 +43,7 @@
   // ── Données ──
   var SRC_RESEAU = '../../crm/v2/prod-reseau-data.js?v=20261015xm';
   var SRC_NONGEN = 'opso-nongen-data.js?v=20261001a';
-  var SRC_CHOIX = 'opso-catalogue-choix-data.js?v=20261016g';   // CIP à retirer / à ajouter (retour du 15/10)
+  var SRC_CHOIX = 'opso-catalogue-choix-data.js?v=20261016be';   // CIP à retirer / à ajouter (retour du 15/10)
   function chargerScript(src, temoin) {
     if (window[temoin] || document.querySelector('script[src^="' + src.split('?')[0] + '"]')) return Promise.resolve();
     return new Promise(function (ok) { var s = document.createElement('script'); s.src = src; s.onload = s.onerror = function () { ok(); }; document.head.appendChild(s); });
@@ -125,6 +125,8 @@
       if (bp.ip && !(bp.ht > bp.ip) && p.ppht > bp.ip && !p.stale) bp.ht = p.ppht;   // PPHT absent du benchmark : celui du catalogue
       // Produit ajouté absent du benchmark : remboursable à PPHT connu → PPHT − barème, comme horsBenchmark (v2-pharma).
       if (!bp.ip && ajouter[c] && ray.r.k === 'remb' && p.ppht > 0 && !p.stale && V2.abandonBareme) { bp.ht = p.ppht; bp.ip = Math.round((p.ppht - V2.abandonBareme(p.ppht)) * 100) / 100; }
+      // … non remboursable (aiguilles Easydrip) : le PPHT, comme horsBenchmark pour un NR.
+      if (!bp.ip && ajouter[c] && ray.r.k === 'nr' && p.ppht > 0 && !p.stale) bp.ip = p.ppht;
       if (!bp.ip) { if (dedans) ray.sansPrix++; return; }           // jamais une ligne sans prix net
       ray.vus++;
       if (retirer[c]) return;
