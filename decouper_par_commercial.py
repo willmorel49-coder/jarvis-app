@@ -73,7 +73,11 @@ def suite_off(mes_ca):
     if not OFF_CA:
         return ''
     m = {k: v for k, v in OFF_CA['m'].items() if k in mes_ca}
-    return ', off:' + json.dumps({'d': OFF_CA['d'], 'm': m}, separators=(',', ':'), sort_keys=True)
+    off = {'d': OFF_CA['d'], 'm': m}
+    if OFF_CA.get('b'):   # 16/10/2026 — offre Sanofi / UPSA : réduite aux officines du jeu, exactement comme m
+        off['bd'] = OFF_CA['bd']
+        off['b'] = {k: v for k, v in OFF_CA['b'].items() if k in mes_ca}
+    return ', off:' + json.dumps(off, separators=(',', ':'), sort_keys=True)
 
 
 def dossier(commercial):

@@ -794,6 +794,15 @@
     var o = offilogDe(pid);
     return o ? (o.oui ? 'Cliente' : 'Non cliente') + (o.date ? ' · au ' + o.date : '') : '';
   }
+  // 16/10/2026 — offre Sanofi / UPSA (colonne TIRBRANCHE), même table protégée : off.b = {code:[0 aucun|1 Sanofi|2 UPSA|3 les deux, rang de la date]},
+  // off.bd = dates des fichiers. Pharmacie absente de off.b = on ne sait pas : aucune des deux lignes.
+  function offreDe(pid) {
+    var o = (window.WML_OFF_CA || {}).off, v = o && o.b && o.b[String(pid)];
+    if (!v) return null;
+    var d = String((o.bd || [])[v[1]] || '');
+    return { sanofi: (v[0] & 1) === 1, upsa: (v[0] & 2) === 2, date: /^\d{4}-\d{2}-\d{2}$/.test(d) ? d.slice(8) + '/' + d.slice(5, 7) + '/' + d.slice(0, 4) : '' };
+  }
+  function offreTexte(oui, date) { return (oui ? 'Oui' : 'Non') + (date ? ' · fichier du ' + date : ''); }
   function isClientSeg(p) { var s = window.PHARMA_FR && window.PHARMA_FR.seg[p[4]]; return s && s.indexOf('Client') === 0; }
   // Prospects (non-clients) des UGA d'un ou plusieurs commerciaux. Plafonné à `cap`.
   // `q` : la recherche se fait AVANT le plafond, sinon un code postal hors des 300 premiers reste introuvable.
@@ -3298,6 +3307,7 @@
       return window.GRP_INFO[key] || null;
     })();
     var offilog = offilogTexte(pid);
+    var offre = offreDe(pid);
     var kv = function (l, v, empty) { return '<span>' + l + '</span><span' + (v ? '' : ' class="pha-empty"') + '>' + (v ? v : (empty || 'à compléter')) + '</span>'; };
     var kvProbable = function (l, estim) { return '<span>' + l + '</span><span class="pha-probable">' + esc(V2.probableTexte(estim, probable && probable.groupement)) + '</span>'; };
     // Les lignes de la carte (libellé → valeur), construites une seule fois : la carte d'avant les affiche telles quelles,
@@ -3324,6 +3334,7 @@
           (siren ? '<span>SIREN</span><span><a href="https://annuaire-entreprises.data.gouv.fr/entreprise/' + esc(siren) + '" target="_blank" rel="noopener">' + esc(siren) + '</a></span>' : '') +
           kv('Logiciel', logiciel ? esc(logiciel) : '', 'inconnu') +
           (offilog ? kv('Offilog', esc(offilog)) : '') +
+          (offre ? kv('Offre Sanofi', esc(offreTexte(offre.sanofi, offre.date))) + kv('Offre UPSA', esc(offreTexte(offre.upsa, offre.date))) : '') +
           (livraison ? kv('Livraison', esc(livraison)) : '') +
           (generiqueur ? kv('Génériqueur', esc(generiqueur)) : (probable && probable.generiqueur ? kvProbable('Génériqueur probable', probable.generiqueur) : '')) +
           (grossiste ? kv('Grossiste principal', esc(grossiste)) : (probable && probable.grossiste ? kvProbable('Grossiste probable', probable.grossiste) : '')) +
