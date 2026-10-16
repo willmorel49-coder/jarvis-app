@@ -46,7 +46,7 @@ window.LGO_PROCESS = {
    "nom": "Pharmaland",
    "editeur": "LSI",
    "etapes": [
-    "Enregistrez le fichier <b>integral-top…-pharmaland.csv</b> reçu par mail (le fichier Excel joint contient les mêmes colonnes avec une ligne de titre, pour le consulter) sur l'ordinateur. Si vous le modifiez dans Excel, enregistrez-le de nouveau au format <b>CSV (séparateur point-virgule)</b>, une seule feuille.",
+    "Enregistrez le fichier <b>integral-top…-pharmaland.csv</b> reçu par mail (le fichier Excel joint contient les mêmes colonnes avec une ligne de titre, pour le consulter) sur l'ordinateur. Importez le fichier CSV <b>tel quel</b>, sans l'ouvrir dans Excel.",
     "Menu <b>Stock › Gestion des fournisseurs</b> : appelez le fournisseur Intégral Pharma et faites <b>F2-Modifie</b>.",
     "Onglet <b>Catalogue</b> : bouton <b>Télécharger</b>, puis « Recharger le catalogue téléchargé », et sélectionnez le fichier.",
     "Indiquez les positions : colonne 1 = code produit à 7 chiffres · 2 = <b>code à 13 chiffres</b> · 3 = gamme · 7 = libellé · 8 = <b>prix net HT</b> · 9 = TVA · 10 = pourcentage. Ne saisissez aucun pourcentage en plus : la colonne 10 est à 0, le prix de la colonne 8 est déjà le prix net.",
