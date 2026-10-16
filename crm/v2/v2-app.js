@@ -889,7 +889,6 @@
         return '<li class="bv-it"><span class="bv-ic">' + it.ic + '</span><div class="bv-tx"><b>' + it.t + '</b><p>' + it.d + '</p><span class="bv-ou">Où : ' + it.ou + '</span></div>' +
           '<button type="button" class="v2-btn v2-btn-ghost bv-go" data-bv-go="' + it.go + '">' + it.b + '</button></li>';
       }).join('') + '</ul>' +
-      '<p class="bv-note">Ces informations sont confidentielles : elles restent entre les membres de ce petit groupe.</p>' +
       '<div class="bv-pied"><button type="button" class="v2-btn v2-btn-primary" data-bv-ok>C\'est noté</button></div>' +
       '</div>';
     function fermer(vers) {
@@ -937,7 +936,6 @@
       '.bv-tx p{margin:3px 0 5px;font-size:14px;line-height:1.45;color:var(--ip-ink-2)}',
       '.bv-ou{display:block;font-size:12.5px;line-height:1.4;font-weight:600;color:var(--muted)}',
       '.bv .v2-btn{min-height:44px;white-space:nowrap}',
-      '.bv-note{margin:18px 0 0;font-size:13px;line-height:1.45;color:var(--muted)}',
       '.bv-pied{display:flex;justify-content:flex-end;margin-top:18px}',
       '@media (max-width:560px){.bv{padding:22px 18px 18px;border-radius:20px}.bv-t{font-size:23px}.bv-it{grid-template-columns:42px minmax(0,1fr);align-items:start;gap:12px;padding:14px}.bv-ic{width:42px;height:42px}.bv-go{grid-column:1/-1;width:100%}.bv-pied .v2-btn{width:100%}}',
       '@media (prefers-reduced-motion:reduce){.bv{animation:none}}'
