@@ -59,6 +59,7 @@
   // suivante (`pour`), comme les rappels du téléphone. `ancre` = la toute première date,
   // dont « chaque mois » garde le jour (31 → 30 novembre → 31 décembre).
   var REP = { '': 'Une fois', hebdo: 'Chaque semaine', mensuel: 'Chaque mois' };
+  var SANS_DATE = 'Sans date : la ligne attend dans la to do list.';
   function isoOk(v) { return /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')); }
   function isoDe(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
   function aujIso() { return isoDe(new Date()); }
@@ -318,9 +319,21 @@
       var ex = document.getElementById('v2-todo-pop'); if (ex) ex.remove();
       var o = document.createElement('div');
       o.id = 'v2-todo-pop'; o.className = 'v2-todo-ov';
-      o.innerHTML = '<div class="v2-todo-pop" role="dialog" aria-label="Ajouter à la to do list" onclick="event.stopPropagation()">' +
+      // 16/10/2026 — le rythme se choisit ici aussi (même date, mêmes 3 rythmes que la fenêtre « Rappel ») ;
+      // laissé sur « Une fois » sans date, l'ajout reste celui d'avant, en un geste.
+      o.innerHTML = '<div class="v2-todo-pop v2-todo-mn-pop" role="dialog" aria-label="Ajouter à la to do list" onclick="event.stopPropagation()">' +
         '<div class="v2-todo-pop-h"><b>Ajouter à la to do list</b><span>' + esc(nom || 'cette officine') + '</span>' +
           '<button class="v2-todo-x" aria-label="Fermer" onclick="V2.todo.fermer()">&times;</button></div>' +
+        '<div class="v2-todo-rp-b v2-todo-mn">' +
+          '<div class="v2-todo-rp-seg" role="radiogroup" aria-label="Répéter">' + Object.keys(REP).map(function (k) {
+            return '<label><input type="radio" name="v2-todo-rp-r" value="' + k + '"' + (k === '' ? ' checked' : '') + ' onchange="V2.todo.menuMaj()"><span>' + esc(REP[k]) + '</span></label>';
+          }).join('') + '</div>' +
+          '<label><span id="v2-todo-mn-dl">Le (facultatif)</span><input id="v2-todo-rp-d" type="date" onchange="V2.todo.menuMaj()"></label>' +
+          '<p id="v2-todo-rp-p" class="v2-todo-rp-p">' + esc(SANS_DATE) + '</p>' +
+          '<label><span>Note</span><input id="v2-todo-mn-note" type="text" placeholder="Ex. : commande de Repatha (facultatif)" autocomplete="off"></label>' +
+          '<label class="v2-todo-mn-al" id="v2-todo-mn-alr" style="display:none"><input id="v2-todo-mn-al" type="checkbox"><span>Alerte sur mon téléphone, à 9 h</span></label>' +
+        '</div>' +
+        '<div class="v2-todo-mn-k">Choisir quoi ajouter</div>' +
         ORDER.map(function (k) {
           return '<button class="v2-todo-choix" onclick="V2.todo.ajouterDepuis(\'' + esc(String(pid)) + '\',\'' + k + '\')">' +
             '<span class="v2-todo-ico">' + ICO(KINDS[k].ico, 16, 2) + '</span><span><b>' + esc(KINDS[k].l) + '</b>' +
@@ -331,15 +344,31 @@
       o._nom = nom; o._mail = mail || '';
       document.body.appendChild(o);
     },
+    // Fenêtre de la fiche : qui revient sans date = à partir d'aujourd'hui ; l'alerte n'a de sens qu'avec une date.
+    menuMaj: function () {
+      var r = lireRappel(), dEl = document.getElementById('v2-todo-rp-d');
+      if (r.rep && !r.d && dEl) { dEl.value = aujIso(); r.d = dEl.value; }
+      var dl = document.getElementById('v2-todo-mn-dl'), p = document.getElementById('v2-todo-rp-p'), al = document.getElementById('v2-todo-mn-alr'), cb = document.getElementById('v2-todo-mn-al');
+      if (dl) dl.textContent = r.rep ? 'Première fois le' : 'Le (facultatif)';
+      if (p) p.textContent = r.d ? phraseRep(r.rep, r.d) : SANS_DATE;
+      if (al) al.style.display = r.d ? '' : 'none';
+      if (cb && !r.d) cb.checked = false;
+    },
     fermer: function () { var ex = document.getElementById('v2-todo-pop'); if (ex) ex.remove(); },
     ajouterDepuis: function (pid, k) {
       var o = document.getElementById('v2-todo-pop');
       var nom = (o && o._nom) || '', mail = (o && o._mail) || '';
+      var r = lireRappel(), noteEl = document.getElementById('v2-todo-mn-note'), alEl = document.getElementById('v2-todo-mn-al');
+      if (r.rep && !r.d) r.d = aujIso();
+      var it = { id: newId(), k: k, pid: String(pid), nom: nom, mail: mail, note: (noteEl && noteEl.value || '').trim(), pour: r.d, fait: false, faitLe: '', cree: new Date().toISOString(),
+                 rep: r.rep, ancre: r.rep ? r.d : '' };
+      // L'alerte part DANS le clic : Safari n'ouvre le fichier d'agenda que pendant un geste de l'utilisateur.
+      if (alEl && alEl.checked && r.d) alerteTelephone(it, r.d, r.rep, it.ancre);
       V2.todo.fermer();
-      var it = { id: newId(), k: k, pid: String(pid), nom: nom, mail: mail, note: '', pour: '', fait: false, faitLe: '', cree: new Date().toISOString() };
       st.filtre = 'afaire';   // la nouvelle ligne doit se voir en revenant sur Ma liste
       charger().then(function () { return ecrire(function (items) { return items.concat([it]); }); }).then(function () {
-        if (V2.toast) V2.toast('Ajouté à la to do list : ' + KINDS[k].l + (nom ? ' · ' + nom : ''));
+        if (V2.toast) V2.toast('Ajouté à la to do list : ' + KINDS[k].l + (nom ? ' · ' + nom : '') +
+          (r.rep ? ' · ' + phraseRep(r.rep, r.d).replace(/\.$/, '').toLowerCase() : r.d ? ' · le ' + dateFr(r.d) : ''));
         if (V2.route && V2.route.name === 'home' && V2.render) V2.render();
         rendre();
       });
@@ -1053,6 +1082,12 @@
       '.v2-todo-rp-seg input:focus-visible+span{box-shadow:0 0 0 3px var(--halo,#E9F0FF)}',
       '.v2-todo-rp-p{margin:0;font-size:14px;font-weight:600;color:var(--ip-ink)}',
       '.v2-todo-rp-n{margin:10px 12px 0;font-size:12.5px;line-height:1.45;color:var(--ip-ink-2)}',
+      '.v2-todo-mn-pop{max-height:calc(100vh - 32px);overflow-y:auto}',
+      '.v2-todo-mn{padding-bottom:8px}',
+      '.v2-todo-mn input[type=text]{min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:16px;background:#fff;color:var(--ip-ink);width:100%;box-sizing:border-box}',
+      '.v2-todo-rp-b>label.v2-todo-mn-al{flex-direction:row;align-items:center;gap:10px;min-height:44px;font-size:14px;font-weight:600;color:var(--ip-ink);cursor:pointer}',
+      '.v2-todo-mn-al input{flex:none;width:20px;height:20px;margin:0;accent-color:var(--ip-blue)}',
+      '.v2-todo-mn-k{margin:0 4px;padding:10px 8px 2px;border-top:1px solid var(--line);font-size:12px;font-weight:700;color:var(--ip-ink-2)}',
       // Sur téléphone, les trois boutons en pleine largeur, « Enregistrer » d'abord
       '@media(max-width:640px){.v2-todo-rp .v2-tc-f{flex-direction:column-reverse;align-items:stretch}.v2-todo-rp .v2-tc-f .v2-btn{justify-content:center}.v2-todo-rp .v2-tc-sup{margin-right:0}}',
       '@media (max-width:760px){.v2-todo-kinds{grid-template-columns:1fr 1fr}.v2-todo-form{grid-template-columns:1fr}.v2-todo-wide{grid-column:auto}.v2-todo-b{margin-left:0}}'
