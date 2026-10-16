@@ -851,6 +851,99 @@
     return acc.p;
   };
   V2.documentsAcces = docOk;
+  // 16/10/2026 — Will : « il faut leur faire comprendre qu'ils ont une version upgrade dès qu'ils se connecteront ».
+  // Le groupe restreint (Documents ouvert par documents_acces_ok()) voit UNE fois par appareil, à l'accueil, ce qui s'est ouvert pour lui.
+  // Aucun nom écrit ici : chaque ligne n'apparaît que si la base dit oui (Documents, voit_tous_commerciaux, jarvis_acces_marge_produits()).
+  // Will, qui a ouvert ces accès, ne le voit pas. Toute fermeture le range (clé locale par utilisateur).
+  var BV_CLE = 'jarvis_bienvenue_groupe_20261016:';
+  var _bvEnCours = false;
+  function bvGroupe() {
+    var u = V2.user;
+    if (_bvEnCours || !u || !u.id || u.commercial === 'Will' || (window.V2_BRAND && window.V2_BRAND.opso)) return;
+    try { if (localStorage.getItem(BV_CLE + u.id) === '1') return; } catch (e) {}
+    _bvEnCours = true;
+    V2.documentsVerifier().then(function (doc) {
+      if (doc !== true || !V2.user || V2.user.id !== u.id) { _bvEnCours = false; return; }
+      var c = V2.sb && V2.sb();
+      var marge = (c && c.rpc) ? Promise.resolve(c.rpc('jarvis_acces_marge_produits')).then(function (r) { return !!(r && !r.error && r.data === true); }, function () { return false; }) : Promise.resolve(false);
+      return marge.then(function (mp) {
+        if (V2.user && V2.user.id === u.id && V2.route && V2.route.name === 'home') bvOuvrir(V2.user, mp); else _bvEnCours = false;
+      });
+    }, function () { _bvEnCours = false; });
+  }
+  function bvOuvrir(u, marge) {
+    var items = [];
+    if (u.voitTousReel) items.push({ ic: u2Ic('pilotage', 22), t: 'Les ventes de toute l\'équipe', d: 'Le Pilotage vous montre maintenant les ventes de chaque commercial, plus seulement les vôtres.', ou: 'Accueil › Pilotage', go: 'pilotage', b: 'Ouvrir le Pilotage' });
+    items.push({ ic: u2Ic('documents', 22), t: 'Documents', d: 'Les tarifs, conditions et catalogues des grossistes, groupements et laboratoires, rangés par dossier.', ou: 'Accueil › Documents', go: 'documents', b: 'Ouvrir Documents' });
+    if (marge) items.push({ ic: ICO('euro', 22, 1.75), t: 'Notre marge par produit', d: 'Ce que chaque produit nous rapporte, ceux à pousser en priorité, et la vue par officine.', ou: 'le menu à votre nom, en haut à droite', go: 'margeproduits', b: 'Ouvrir la marge' });
+    var nb = ['', 'un outil', 'deux outils', 'trois outils'][items.length] || (items.length + ' outils');
+    var prenom = String(u.name || '').trim().split(/\s+/)[0];
+    bvStyle();
+    var avant = document.activeElement;
+    var fond = document.createElement('div'); fond.className = 'bv-fond'; fond.id = 'bv-fond';
+    fond.innerHTML = '<div class="bv" role="dialog" aria-modal="true" aria-labelledby="bv-t" aria-describedby="bv-s">' +
+      '<span class="bv-badge">Accès élargi</span>' +
+      '<h2 class="bv-t" id="bv-t">' + (prenom ? esc(prenom) + ', votre' : 'Votre') + ' JARVIS passe en accès complet</h2>' +
+      '<p class="bv-s" id="bv-s">Will vous a ouvert ' + nb + ', réservés à un petit groupe. Voici où les trouver.</p>' +
+      '<ul class="bv-liste">' + items.map(function (it) {
+        return '<li class="bv-it"><span class="bv-ic">' + it.ic + '</span><div class="bv-tx"><b>' + it.t + '</b><p>' + it.d + '</p><span class="bv-ou">Où : ' + it.ou + '</span></div>' +
+          '<button type="button" class="v2-btn v2-btn-ghost bv-go" data-bv-go="' + it.go + '">' + it.b + '</button></li>';
+      }).join('') + '</ul>' +
+      '<p class="bv-note">Ces informations sont confidentielles : elles restent entre les membres de ce petit groupe.</p>' +
+      '<div class="bv-pied"><button type="button" class="v2-btn v2-btn-primary" data-bv-ok>C\'est noté</button></div>' +
+      '</div>';
+    function fermer(vers) {
+      try { localStorage.setItem(BV_CLE + u.id, '1'); } catch (e) {}
+      document.removeEventListener('keydown', touche, true);
+      if (fond.parentNode) fond.parentNode.removeChild(fond);
+      _bvEnCours = false;
+      if (vers) V2.go(vers);
+      else if (avant && avant.focus && document.contains(avant)) { try { avant.focus(); } catch (e) {} }
+    }
+    function touche(e) {
+      if (e.key === 'Escape') { e.preventDefault(); fermer(); return; }
+      if (e.key !== 'Tab') return;
+      var f = fond.querySelectorAll('button'); if (!f.length) return;
+      var a = f[0], z = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === a) { e.preventDefault(); z.focus(); }
+      else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); }
+    }
+    fond.addEventListener('click', function (e) {
+      var g = e.target.closest && e.target.closest('[data-bv-go]');
+      if (g) { fermer(g.getAttribute('data-bv-go')); return; }
+      if (e.target === fond || (e.target.closest && e.target.closest('[data-bv-ok]'))) fermer();
+    });
+    document.addEventListener('keydown', touche, true);
+    document.body.appendChild(fond);   // sur <body> : la racine de l'app porte une transformation qui collerait un « fixed » à la page (voir u2-hors)
+    var ok = fond.querySelector('[data-bv-ok]'); if (ok) { try { ok.focus({ preventScroll: true }); } catch (e) { ok.focus(); } }
+  }
+  function bvStyle() {
+    if (document.getElementById('bv-style')) return;
+    var s = document.createElement('style'); s.id = 'bv-style';
+    s.textContent = [
+      '.bv-fond{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto;background:rgba(16,19,28,.46)}',
+      // la lumière vient d'en haut à gauche : halo bleu pâle sur le blanc de la carte, liseré clair en haut
+      '.bv{position:relative;box-sizing:border-box;width:min(580px,100%);max-height:calc(100vh - 32px);overflow:auto;margin:auto;padding:30px 30px 24px;border-radius:24px;font-family:var(--font);color:var(--ip-ink);' +
+        'background:radial-gradient(130% 75% at 0% 0%,var(--halo) 0%,rgba(233,240,255,0) 62%),var(--card);box-shadow:inset 0 1px 0 #fff,var(--sh-pop);animation:bv-in .34s cubic-bezier(.2,.8,.2,1) both}',
+      '@keyframes bv-in{from{transform:translateY(14px) scale(.985)}to{transform:none}}',
+      '.bv-badge{display:inline-flex;align-items:center;padding:6px 11px;border-radius:999px;background:var(--card);border:1px solid rgba(0,80,230,.2);color:var(--ip-blue-d);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}',
+      '.bv-t{margin:16px 0 8px;font-size:27px;line-height:1.15;font-weight:800;letter-spacing:-.02em;color:var(--ip-ink)}',
+      '.bv-s{margin:0 0 20px;font-size:15.5px;line-height:1.5;color:var(--ip-ink-2)}',
+      '.bv-liste{list-style:none;margin:0;padding:0;display:grid;gap:10px}',
+      '.bv-it{display:grid;grid-template-columns:46px minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 14px 14px 16px;border-radius:16px;background:var(--card);border:1px solid var(--line-strong);box-shadow:0 1px 2px rgba(16,19,28,.05)}',
+      '.bv-ic{display:grid;place-items:center;width:46px;height:46px;border-radius:13px;background:var(--halo);color:var(--ip-blue)}',
+      '.bv-ic svg{width:22px;height:22px;fill:none;stroke:currentColor}',
+      '.bv-tx b{display:block;font-size:16px;font-weight:700;color:var(--ip-ink)}',
+      '.bv-tx p{margin:3px 0 5px;font-size:14px;line-height:1.45;color:var(--ip-ink-2)}',
+      '.bv-ou{display:block;font-size:12.5px;line-height:1.4;font-weight:600;color:var(--muted)}',
+      '.bv .v2-btn{min-height:44px;white-space:nowrap}',
+      '.bv-note{margin:18px 0 0;font-size:13px;line-height:1.45;color:var(--muted)}',
+      '.bv-pied{display:flex;justify-content:flex-end;margin-top:18px}',
+      '@media (max-width:560px){.bv{padding:22px 18px 18px;border-radius:20px}.bv-t{font-size:23px}.bv-it{grid-template-columns:42px minmax(0,1fr);align-items:start;gap:12px;padding:14px}.bv-ic{width:42px;height:42px}.bv-go{grid-column:1/-1;width:100%}.bv-pied .v2-btn{width:100%}}',
+      '@media (prefers-reduced-motion:reduce){.bv{animation:none}}'
+    ].join('\n');
+    document.head.appendChild(s);
+  }
   var G4_REPLI = ['pharma', 'produits', 'pilotage', 'marketing', 'mallette', 'infos', 'rdv', 'carte', 'appro', 'todo', 'biosimilaires', 'offilog', 'concurrents', 'remontees', 'discussion', 'marchefr', 'carteGrp', 'lgo', 'documents', 'academy'];
   // 02/10/2026 — Will : « supprimer audit, fiches pdf, l'argument, audit marge, réforme 2027, présentation intégral » : ces six outils
   // n'existent plus nulle part (ni porte, ni écran). Un réglage enregistré qui les cite encore est écarté par u2Net.
@@ -1641,6 +1734,7 @@
     if (cascade) setTimeout(function () { var p = document.querySelector('.u2-cascade'); if (p) p.classList.remove('u2-cascade'); }, 900);
     u2Distant();
     if (!docOk()) V2.documentsVerifier();   // 16/10/2026 : une seule question par session ; l'accueil se redessine si la réponse est oui
+    bvGroupe();   // 16/10/2026 : mot d'accueil du groupe restreint, une fois par appareil
     if (V2.todo && V2.todo.charger && !_u2.todoPret) V2.todo.charger().then(function () { _u2.todoPret = true; u2MajWidgets(); }, function () {});
   }
 
