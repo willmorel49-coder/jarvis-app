@@ -378,3 +378,70 @@ html[data-hab]{--c-mint:#0B6B47;--c-opp:#0B6B47;--c-mint-txt:#0B6B47}
 [data-hab="leopard"] ::-webkit-scrollbar-thumb{background:var(--h-peau);border:2px solid #2A1809}
 [data-hab="leopard"] ::-webkit-scrollbar-track{background:#2A1809}
 [data-hab="leopard"] .v2-empty-ico{color:var(--ip-blue)}
+
+/* ───────────────────────── 7. POUSSER : Infos du matin et Marketing (16/10/2026) ─────────────────────────
+   Ces deux écrans posaient leur propre fond bleu clair par-dessus la matière et lisaient des bleus codés en dur. On leur donne : la matière en fond,
+   les cartes de l'habillage (cadre + plaque + ombre), une plaque sous le texte posé directement sur la matière, et l'accent de l'habillage à la place du bleu.
+   Les couleurs de SIGNAL et de CATÉGORIE (rupture, rappel, rubriques, vert/ambre/rose) ne sont pas touchées. Tout est sous html[data-hab] : sans attribut, rien ne change. */
+
+/* le cadre, la plaque et l'ombre d'une carte, par habillage (les mêmes pièces que les cartes de l'accueil) */
+[data-hab="leopard"]{--h-cadre:5px solid transparent;--h-plaque:linear-gradient(var(--card),var(--card)) padding-box,var(--h-peau) border-box;--h-ombre:var(--sh-2)}
+[data-hab="marbre"]{--h-cadre:1px solid var(--h-or);--h-plaque:var(--card);--h-ombre:var(--sh-2),inset 0 0 0 4px var(--card),inset 0 0 0 5px rgba(201,150,60,.55)}
+[data-hab="nacre"]{--h-cadre:2px solid transparent;--h-plaque:linear-gradient(var(--card),var(--card)) padding-box,var(--h-peau) border-box;--h-ombre:var(--sh-2)}
+[data-hab="foret"]{--h-cadre:1px solid rgba(110,160,90,.65);--h-plaque:radial-gradient(120% 90% at 0% 0%,rgba(255,240,170,.55),rgba(255,240,170,0) 52%),var(--card);--h-ombre:var(--sh-2)}
+[data-hab="terracotta"]{--h-cadre:1px solid rgba(169,68,31,.55);--h-plaque:var(--card);--h-ombre:var(--sh-2)}
+[data-hab="glacier"]{--h-cadre:2px solid transparent;--h-plaque:linear-gradient(118deg,#FFFFFF,#EAF5FB 60%,#FFFFFF) padding-box,linear-gradient(135deg,#FFFFFF,#8FC3DB 38%,#EAF6FC 58%,#6FB0CF) border-box;--h-ombre:var(--sh-2)}
+[data-hab="velours"]{--h-cadre:1px solid #F2C8C8;--h-plaque:linear-gradient(105deg,rgba(255,255,255,0) 38%,rgba(255,255,255,.45) 50%,rgba(255,255,255,0) 62%),linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,0) 38%),var(--card);--h-ombre:var(--sh-2)}
+:is([data-hab="indigo"],[data-hab="emeraude"],[data-hab="canard"],[data-hab="ambre"],[data-hab="prune"]){--h-cadre:1px solid var(--line);--h-plaque:var(--card);--h-ombre:var(--sh-2)}
+
+/* les grands fonds propres à ces écrans s'effacent : la matière de l'habillage et sa lumière reprennent la place */
+html[data-hab] :is(.mk-fond,.pp-ciel){background:none}
+html[data-hab] :is(.mk-verriere,.mk-grain){display:none}
+
+/* ── INFOS DU MATIN : les jetons --pp-* lisent ceux de l'habillage ── */
+html[data-hab] :is(.pp,#pp-pan,#x13-sheet,#x13-voile){--pp-encre:var(--ip-ink);--pp-encre2:var(--ip-ink-2);--pp-encre3:var(--muted);--pp-bleu:var(--ip-blue);--pp-bleu-f:var(--ip-blue-d);--pp-halo:var(--halo)}
+html[data-hab] .pp{--pp-ombre:var(--h-ombre)}
+html[data-hab] .x13{--x13-bord:var(--h-cadre);--x13-fond:var(--h-plaque)}
+html[data-hab] .x13-tendances li+li{border-top-color:var(--line)}
+
+/* ── MARKETING : les jetons --mk-* lisent ceux de l'habillage ── */
+html[data-hab] .mk-espace{--mk-page:var(--paper);--mk-carte:var(--card);--mk-encre:var(--ip-ink);--mk-encre2:var(--ip-ink-2);--mk-attenue:var(--muted);--mk-filet:var(--muted-2);
+  --mk-bleu:var(--ip-blue);--mk-bleu-txt:var(--ip-blue);--mk-pale:color-mix(in srgb,var(--ip-blue) 11%,var(--card));--mk-groupe:var(--surf-sunken);--mk-trait:var(--line);
+  --mk-n1:var(--sh-1);--mk-n2:var(--h-ombre,var(--sh-2));--mk-n3:var(--sh-3)}
+html[data-hab] .mk-souleve{border:var(--h-cadre);background:var(--h-plaque);box-shadow:var(--h-ombre)}
+html[data-hab] .mk-espace .mk-btn.mk-plein{background:var(--h-ruban);box-shadow:var(--sh-blue)}
+
+/* texte posé directement sur la matière, dans ces deux écrans : plaque pleine (celle de l'habillage), jamais de texte sur la fourrure, le marbre, les rayons ou les plis */
+[data-hab="nacre"]{--h-pl:var(--card);--h-pl-sh:0 0 0 1px rgba(110,70,95,.28),0 6px 14px -6px rgba(90,50,80,.35);--h-pl-acc:var(--ip-blue)}
+[data-hab="glacier"]{--h-pl:var(--card);--h-pl-sh:0 0 0 1px rgba(14,70,100,.30),0 6px 14px -6px rgba(10,60,95,.35);--h-pl-acc:var(--ip-blue)}
+[data-hab="leopard"]{--h-pl-acc:var(--ip-blue)}
+[data-hab="terracotta"]{--h-pl-acc:var(--ip-blue)}
+[data-hab="marbre"]{--h-pl-acc:#E6C177}
+[data-hab="foret"]{--h-pl-acc:#CFE3A0}
+[data-hab="velours"]{--h-pl-acc:#F2B8BE}
+:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"],[data-hab="nacre"],[data-hab="glacier"]) :is(.x13 h1,.x13-h:not(.x13-sr),.pp-pied>span,.mkb-tete,.mkb-cap,.mkb-ameliorer){
+  background:var(--h-pl);box-shadow:var(--h-pl-sh,none);border-radius:13px;width:fit-content;max-width:100%;color:var(--h-pl-ink,var(--ip-ink));position:relative;z-index:1}
+:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"],[data-hab="nacre"],[data-hab="glacier"]) .x13 h1{padding:8px 18px 10px}
+:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"],[data-hab="nacre"],[data-hab="glacier"]) .x13 .x13-h:not(.x13-sr){padding:8px 14px 9px;margin:0 0 10px;color:var(--h-pl-acc)}
+:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"],[data-hab="nacre"],[data-hab="glacier"]) .x13-h1b{color:var(--h-pl-ink2,var(--muted))}
+:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"],[data-hab="nacre"],[data-hab="glacier"]) .pp-pied>span{padding:7px 14px}
+:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"],[data-hab="nacre"],[data-hab="glacier"]) .mkb-tete{padding:14px 20px 16px;margin-bottom:28px}
+:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"],[data-hab="nacre"],[data-hab="glacier"]) .mkb-sous{color:var(--h-pl-ink2,var(--muted))}
+:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"],[data-hab="nacre"],[data-hab="glacier"]) .mkb-reperes>.mkb-cap{padding:4px 12px;color:var(--h-pl-ink2,var(--muted))}
+:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"],[data-hab="nacre"],[data-hab="glacier"]) .mk-espace .mk-btn.mk-texte.mkb-ameliorer{padding:0 16px;color:var(--h-pl-acc);background:var(--h-pl);box-shadow:var(--h-pl-sh,none)}
+
+/* les quatre portes de Marketing : même plaque sous leurs en-têtes, légendes et phrases d'état posées sur la matière (les jetons --mk-* sont redéfinis DANS la plaque : tout le texte qu'elle contient les suit) */
+:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"],[data-hab="nacre"],[data-hab="glacier"]) :is(.mkf-entete,.mkd-mots,.lpo-tete>div:first-child,.lpo-colt,.lpo-regle>.lpo-cap,.mkd-astuce){
+  background:var(--h-pl);box-shadow:var(--h-pl-sh,none);border-radius:13px;width:fit-content;max-width:100%;padding:4px 12px;
+  --mk-encre:var(--h-pl-ink,var(--ip-ink));--mk-attenue:var(--h-pl-ink2,var(--muted));color:var(--mk-encre);position:relative;z-index:1}
+:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"],[data-hab="nacre"],[data-hab="glacier"]) :is(.mkf-entete,.mkd-mots,.lpo-tete>div:first-child){padding:14px 20px 16px}
+:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"],[data-hab="nacre"],[data-hab="glacier"]) .mkb-tete{--mk-encre:var(--h-pl-ink,var(--ip-ink));--mk-attenue:var(--h-pl-ink2,var(--muted))}
+html[data-hab] .lpo-vide{background:var(--card)}
+/* marbre : le bouton plein garde le ruban d'or, mais son départ est plus profond pour que le texte blanc tienne 4,5:1 */
+html[data-hab="marbre"] .mk-espace .mk-btn.mk-plein{background:linear-gradient(150deg,#9B6D18,#7C5410 52%,#5A3C0A)}
+:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"],[data-hab="nacre"],[data-hab="glacier"]) :is(.lpo-regle>.lpo-cap,.mkd-astuce){display:block}
+
+/* les grandes cartes blanches des portes (colonnes de Fiches, table de Documents, cartes « Oui / Non » de LinkedIn) : cadre, plaque et ombre de l'habillage */
+html[data-hab] :is(.mkf-bloc,.mkd-table,.lpo-pose){border:var(--h-cadre);background:var(--h-plaque);box-shadow:var(--h-ombre)}
+html[data-hab] .mkf-mes{padding:18px 22px 22px}
+html[data-hab] .mkf-bloc{border-radius:20px}
