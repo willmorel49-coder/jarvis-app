@@ -73,7 +73,7 @@
     // Dictée vocale (API navigateur native SpeechRecognition — zéro dépendance, zéro coût).
     // Toggle : 1er clic démarre l'écoute (fr-FR), 2e clic arrête. Le texte s'écrit dans la note.
     dictate: function (btn) {
-      var box = btn.closest('.v2-notes-box'); if (!box) return;
+      var box = btn.closest('.v2-notes-box, [data-dictee]'); if (!box) return;   // 16/10/2026 : l'écran Bloc-notes marque sa zone d'écriture [data-dictee]
       var ta = box.querySelector('.v2-notes-ta'); if (!ta) return;
       // déjà en écoute sur ce bouton → on arrête
       // ⚠️ `_rec` n'est posé que dans `onstart`, qui arrive APRÈS `start()` : entre

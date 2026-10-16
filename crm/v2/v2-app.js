@@ -942,7 +942,7 @@
     ].join('\n');
     document.head.appendChild(s);
   }
-  var G4_REPLI = ['pharma', 'produits', 'pilotage', 'marketing', 'mallette', 'infos', 'rdv', 'carte', 'appro', 'todo', 'biosimilaires', 'offilog', 'concurrents', 'remontees', 'discussion', 'marchefr', 'carteGrp', 'lgo', 'documents', 'academy'];
+  var G4_REPLI = ['pharma', 'produits', 'pilotage', 'marketing', 'mallette', 'infos', 'rdv', 'carte', 'appro', 'todo', 'blocnotes', 'biosimilaires', 'offilog', 'concurrents', 'remontees', 'discussion', 'marchefr', 'carteGrp', 'lgo', 'documents', 'academy'];
   // 02/10/2026 — Will : « supprimer audit, fiches pdf, l'argument, audit marge, réforme 2027, présentation intégral » : ces six outils
   // n'existent plus nulle part (ni porte, ni écran). Un réglage enregistré qui les cite encore est écarté par u2Net.
   // k = nom de la route mesurée par V2.mesurer (= `ecran` côté base) ; page = écran qui doit exister.
@@ -956,6 +956,8 @@
     carte: { fam: 'clients', ico: 'carte', nom: 'La carte', ph: 'Clients, prospects et votre tournée', page: 'carte' },
     appro: { fam: 'produits', ico: 'appro', nom: 'Appro Intégral', ph: 'Couverture de stock et ruptures', page: 'appro' },
     todo: { fam: 'clients', ico: 'todo', nom: 'To do list', ph: 'Rendez-vous à demander, remerciements, ouvertures', page: 'todo' },
+    // 16/10/2026 — Bloc-notes : notes écrites ou vocales au fil de la journée ; le robot du soir propose les mises à jour du CRM. Privé à chacun, jamais côté OPSO (voir u2Cles).
+    blocnotes: { fam: 'clients', ico: 'blocnotes', nom: 'Bloc-notes', ph: 'Écrire ou dicter au fil de la journée ; le robot met le CRM à jour le soir', page: 'blocnotes' },
     biosimilaires: { fam: 'produits', ico: 'biosim', nom: 'Biosimilaires', ph: 'Les biosimilaires et leurs références', page: 'biosimilaires' },
     offilog: { fam: 'produits', ico: 'offilog', nom: 'Offilog', ph: 'La centrale parapharmacie', page: 'offilog' },
     concurrents: { fam: 'piloter', ico: 'concurrents', nom: 'Concurrents', ph: 'Ce que font les autres', page: 'concurrents' },
@@ -1043,6 +1045,7 @@
     officines: '<path d="M4 9l1.5-5h13L20 9"/><path d="M4 9a2.5 2.5 0 005 0 2.5 2.5 0 005 0 2.5 2.5 0 005 0"/><path d="M5 12v8h14v-8"/><path d="M10 20v-4h4v4"/>',
     carte: '<path d="M12 21s7-6.2 7-11.5A7 7 0 005 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
     rdv: '<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/>',
+    blocnotes: '<path d="M6 3.5h12v17H6z"/><path d="M9.5 8.5h5M9.5 12h5M9.5 15.5h3"/>',
     todo: '<path d="M10 6h10M10 12h10M10 18h10"/><path d="M3.5 6l1.3 1.3L7 5M3.5 12l1.3 1.3L7 11M3.5 18l1.3 1.3L7 17"/>',
     clients: '<circle cx="9" cy="8.5" r="3.2"/><path d="M3 19c0-3.2 2.7-5.5 6-5.5s6 2.3 6 5.5"/><path d="M16 5.6a3 3 0 010 5.8M18 14c1.8.7 3 2.3 3 5"/>',
     produits: '<path d="M12 3l8 4.2v9.6L12 21l-8-4.2V7.2z"/><path d="M4 7.2l8 4.3 8-4.3M12 11.5V21"/>',
@@ -1310,6 +1313,7 @@
       var d = G4_PORTES[k];
       if (!d) return false;
       if (k === 'lgo' && escale) return false;       // pas de « Logiciels officine » en Escale
+      if (k === 'blocnotes' && (window.V2_BRAND && window.V2_BRAND.opso)) return false;   // 16/10/2026 : pas de Bloc-notes côté OPSO
       if (k === 'documents' && !docOk()) return false;   // 16/10/2026 : cachée tant que documents_acces_ok() n'a pas rendu true
       if (k === 'remontees' && V2.pages.discussion) return false;   // 15/10/2026 (Will) : les remontées vivent dans Le QG
       return k === 'academy' || !!V2.pages[d.page];  // un outil dont l'écran n'est pas chargé n'apparaît pas
@@ -2017,6 +2021,7 @@
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.appro) PAGES.push(['appro', 'Appro Intégral · vue achats détaillée', 'spark']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.marchefr) PAGES.push(['marchefr', 'Le marché · le marché français d’une référence, région par région', 'cat']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.biosimilaires) PAGES.splice(4, 0, ['biosimilaires', 'Base Biosimilaires (marché FR)', 'cat']);
+    if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.blocnotes) PAGES.push(['blocnotes', 'Bloc-notes · écrire ou dicter ; le robot met le CRM à jour le soir', 'fiche']);   // 16/10/2026
     if (docOk() && V2.pages.documents) PAGES.push(['documents', 'Documents · tarifs, conditions et catalogues, rangés par dossier', 'fiche']);   // 16/10/2026 : seulement si documents_acces_ok() = true
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.mallette) PAGES.push(['mallette', 'La Mallette · les documents à envoyer, en un seul PDF ou séparés', 'fiche']);   // 16/10/2026
     if (!(window.V2_BRAND && (window.V2_BRAND.opso || window.V2_BRAND.escale)) && V2.pages.lgo) PAGES.push(['lgo', 'Logiciels officine · importer le catalogue (LGPI, Winpharma, LEO…)', 'list']);

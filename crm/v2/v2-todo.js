@@ -355,6 +355,21 @@
       if (cb && !r.d) cb.checked = false;
     },
     fermer: function () { var ex = document.getElementById('v2-todo-pop'); if (ex) ex.remove(); },
+    // 16/10/2026 — Bloc-notes : ajoute UNE ligne depuis une proposition du robot (sans fenêtre). Rend une promesse { true | false } :
+    // true seulement si la ligne est bien dans la base (ou, hors connexion, dans l'appareil). `id` fixe = rejouer ne crée pas de doublon.
+    ajouterLigne: function (o) {
+      o = o || {};
+      var k = KINDS[o.k] ? o.k : 'libre';
+      var it = { id: sur(o.id) || newId(), k: k, pid: sur(o.pid), nom: String(o.nom || ''), mail: '', note: String(o.note || ''), pour: isoOk(o.pour) ? o.pour : '',
+                 fait: false, faitLe: '', cree: new Date().toISOString(), rep: '', ancre: '' };
+      return charger(true).then(function () {   // relue de force : un état « local » resté d'une lecture ratée plus tôt ne doit pas faire croire à une écriture partagée
+        return ecrire(function (items) { return items.some(function (x) { return x.id === it.id; }) ? items : items.concat([it]); });
+      }).then(function (ok) {
+        if (ok && sb() && V2.user && st.backend !== 'supabase') ok = false;   // la liste n'a pas pu être lue en base : rien de partagé
+        if (ok && V2.route && V2.route.name === 'home' && V2.render) V2.render();
+        return !!ok;
+      }, function () { return false; });
+    },
     ajouterDepuis: function (pid, k) {
       var o = document.getElementById('v2-todo-pop');
       var nom = (o && o._nom) || '', mail = (o && o._mail) || '';
