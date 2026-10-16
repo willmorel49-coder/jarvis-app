@@ -346,7 +346,9 @@
   function bandeHtml() {
     var p = P(), cur = p.teinte(), h = '<div class="pb-bd"><div class="pb-bd-t"><b>Personnaliser votre accueil</b><span>Tirez un widget pour le déplacer. Tout est gardé tout de suite.</span></div>';
     if (!p.escale()) {
-      h += '<div class="pb-col" role="radiogroup" aria-label="Couleur de votre accueil"><span class="pb-col-l">Couleur</span>' + p.teintes.map(function (t) {
+      // 16/10/2026 — « La garde-robe » : la rangée d'aperçus vivants remplace les pastilles (montée par V2HAB.monter dans bande())
+      if (window.V2HAB) h += '<div class="hab-band" data-hab-rangee="band"></div>';
+      else h += '<div class="pb-col" role="radiogroup" aria-label="Couleur de votre accueil"><span class="pb-col-l">Couleur</span>' + p.teintes.map(function (t) {
         var on = t.k === cur;
         return '<button type="button" class="pb-dot" role="radio" aria-checked="' + on + '" data-pb="couleur" data-v="' + t.k + '" aria-label="' + esc(t.nom) + '" title="' + esc(t.nom) + '">' +
           '<span class="u2-pas' + (t.m ? ' u2-pas-m"' : '" style="background:' + t.c + '"') + '>' + (on ? p.ic('check') : '') + '</span></button>';
@@ -363,6 +365,7 @@
     var mem = document.activeElement && b.contains(document.activeElement) ? [document.activeElement.getAttribute('data-pb'), document.activeElement.getAttribute('data-v')] : null;
     if (!PS.on) { b.hidden = true; b.innerHTML = ''; if (page) { page.classList.remove('pb-on'); page.style.removeProperty('--pb-h'); } return; }
     b.innerHTML = bandeHtml(); b.hidden = false;
+    if (window.V2HAB) V2HAB.monter(b.querySelector('[data-hab-rangee]'), 'band');
     if (page) { page.classList.add('pb-on'); page.style.setProperty('--pb-h', b.offsetHeight + 'px'); }
     if (mem && mem[0]) {
       var n = b.querySelector('[data-pb="' + mem[0] + '"]' + (mem[1] ? '[data-v="' + mem[1] + '"]' : '')) || (/rz/.test(mem[0]) ? b.querySelector('[data-pb="rz"],[data-pb="rznon"]') : null);

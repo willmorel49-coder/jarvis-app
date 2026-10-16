@@ -384,6 +384,7 @@
         (V2.user && V2.user.email ? '<div class="v2-um-mail">' + esc(V2.user.email) + '</div>' : '') +
       '</div>' +
       (installed ? '' : '<button class="v2-um-item" role="menuitem" onclick="V2.installApp()">' + ICO('plus', 16, 2) + 'Installer l\'app</button>') +
+      (window.V2HAB && !(window.V2_BRAND && window.V2_BRAND.escale) ? '<button class="v2-um-item" role="menuitem" onclick="V2HAB.menu()">' + u2Ic('palette', 16) + 'Mon habillage</button>' : '') +
       '<button class="v2-um-item" role="menuitem" onclick="V2.signOut()">' + ICO('logout', 16, 2) + 'Se déconnecter</button>' +
       // 24/08/2026 — information de l'équipe sur la mesure d'usage (obligation
       // CNIL dès lors qu'elle est nominative). Volontairement factuelle et
@@ -1108,8 +1109,18 @@
     { k: 'canard', nom: 'Canard', c: '#0B7285', d: '#074C58', ci: '#E4EFF2', cg: '#D1E4E8', cd: '#DDEBEE', h: '#E9F2F4', o: 'rgba(11,114,133,.28)', ol: 'rgba(11,114,133,.10)', sh: '0 4px 12px rgba(11,114,133,.26), 0 8px 24px rgba(7,76,88,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(11,114,133,.34), 0 14px 34px rgba(7,76,88,.20), 0 1px 0 rgba(255,255,255,.28) inset' },
     { k: 'ambre', nom: 'Ambre', c: '#9C5700', d: '#673900', ci: '#F4EDE3', cg: '#ECDFCF', cd: '#F1E8DC', h: '#F6F0E8', o: 'rgba(156,87,0,.28)', ol: 'rgba(156,87,0,.10)', sh: '0 4px 12px rgba(156,87,0,.26), 0 8px 24px rgba(103,57,0,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(156,87,0,.34), 0 14px 34px rgba(103,57,0,.20), 0 1px 0 rgba(255,255,255,.28) inset' },
     { k: 'prune', nom: 'Prune', c: '#8E2A7A', d: '#5E1C51', ci: '#F3E8F0', cg: '#EAD7E6', cd: '#F0E2ED', h: '#F5ECF3', o: 'rgba(142,42,122,.28)', ol: 'rgba(142,42,122,.10)', sh: '0 4px 12px rgba(142,42,122,.26), 0 8px 24px rgba(94,28,81,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(142,42,122,.34), 0 14px 34px rgba(94,28,81,.20), 0 1px 0 rgba(255,255,255,.28) inset' },
-    { k: 'leopard', nom: 'Léopard', m: 'var(--u2-leo)', c: '#94561A', d: '#5F370E', ci: '#F6EEE2', cg: '#EFE2CE', cd: '#F3E9DB', h: '#F8F1E7', o: 'rgba(148,86,26,.28)', ol: 'rgba(148,86,26,.10)', sh: '0 4px 12px rgba(148,86,26,.26), 0 8px 24px rgba(95,55,14,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(148,86,26,.34), 0 14px 34px rgba(95,55,14,.20), 0 1px 0 rgba(255,255,255,.28) inset' }
+    { k: 'leopard', nom: 'Léopard', c: '#94561A', d: '#5F370E', ci: '#F6EEE2', cg: '#EFE2CE', cd: '#F3E9DB', h: '#F8F1E7', o: 'rgba(148,86,26,.28)', ol: 'rgba(148,86,26,.10)', sh: '0 4px 12px rgba(148,86,26,.26), 0 8px 24px rgba(95,55,14,.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(148,86,26,.34), 0 14px 34px rgba(95,55,14,.20), 0 1px 0 rgba(255,255,255,.28) inset' }
   ];
+  // 16/10/2026 — « La garde-robe » : les six habillages complets sont aussi des clés valides de `couleur` (ligne `profils`). Leur accent est celui de v2-hab.css ;
+  // la matière, la lumière et la police viennent de V2HAB (v2-hab.js), pas d'ici.
+  (function () {
+    function rgb(x) { return [1, 3, 5].map(function (i) { return parseInt(x.substr(i, 2), 16); }).join(','); }
+    function hab(k, nom, c, d, h) { var r = rgb(c), r2 = rgb(d); return { k: k, nom: nom, c: c, d: d, ci: h, cg: h, cd: h, h: h, o: 'rgba(' + r + ',.28)', ol: 'rgba(' + r + ',.10)',
+      sh: '0 4px 12px rgba(' + r + ',.26), 0 8px 24px rgba(' + r2 + ',.14), 0 1px 0 rgba(255,255,255,.22) inset', shh: '0 6px 16px rgba(' + r + ',.34), 0 14px 34px rgba(' + r2 + ',.20), 0 1px 0 rgba(255,255,255,.28) inset' }; }
+    [hab('marbre', 'Marbre noir', '#8A5E14', '#5A3C0A', '#F1E9D8'), hab('nacre', 'Nacre', '#8C3F5F', '#5B2640', '#F6E6EE'), hab('foret', 'Forêt profonde', '#2D6A3E', '#1B4328', '#DDE8D2'),
+     hab('terracotta', 'Terracotta', '#A9441F', '#74290F', '#FBE0C4'), hab('glacier', 'Glacier', '#0E5A78', '#083D54', '#E3F1F9'), hab('velours', 'Velours bordeaux', '#8E1F3F', '#5E1228', '#F3DAD4')]
+      .forEach(function (t) { U2_TEINTES.push(t); });
+  })();
   var U2_FAMILLES = U2_FAMS.map(function (f) { return f[0]; });
   var Q_ACADEMY = 'https://jarvis-academy-fr.vercel.app/';
   var NOTE_USAGE = 'Les écrans que vous ouvrez sont enregistrés (votre nom et l\'heure), pour savoir lesquels améliorer en priorité.';
@@ -1255,6 +1266,7 @@
       Object.keys(v).forEach(function (n) { if (d) el.style.removeProperty(n); else el.style.setProperty(n, v[n]); });
     });
     // le halo de tête (.v2-halo, frère de l'accueil, fixé sur la fenêtre) lit --accent et --halo : on les pose sur lui seul
+    if (window.V2HAB) V2HAB.sync(t.k);   // 16/10/2026 : l'habillage de TOUTE l'app suit la même clé
     var hl = document.querySelector('.v2-halo');
     if (hl) {
       var hv = { '--accent': t.c, '--halo': t.h, '--vr-ciel': t.ci, '--vr-ciel-g': t.cg, '--vr-ciel-d': t.cd };
@@ -1542,7 +1554,8 @@
   // Téléphone : le panneau « Mon espace » mène au même geste que le rail — un seul bouton, qui ouvre le mode réglage sur l'accueil
   function u2BlocPerso() {
     return '<section class="u2-mon-b"><h3>Mon accueil</h3><p class="u2-note u2-note-h">Couleur, widgets et outils se règlent directement sur l\'accueil. C\'est gardé pour vous.</p>' +
-      '<button type="button" class="v2-btn v2-btn-primary pb-ouv" data-pb="ouvrir">' + u2Ic('palette') + 'Personnaliser mon accueil</button></section>';
+      '<button type="button" class="v2-btn v2-btn-primary pb-ouv" data-pb="ouvrir">' + u2Ic('palette') + 'Personnaliser mon accueil</button>' +
+      (window.V2HAB && !u2Escale() ? '<button type="button" class="v2-btn pb-ouv" style="margin-top:8px" onclick="V2.accueilPont.fermer();V2HAB.ouvrir()">' + u2Ic('palette') + 'Mon habillage</button>' : '') + '</section>';
   }
   // Les mêmes gestes que le menu du compte de la barre (V2.userMenu), et seulement ceux qui existent sur cet appareil.
   function u2BlocCompte() {

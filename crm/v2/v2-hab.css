@@ -1,0 +1,380 @@
+/* ═══════════════════════════════════════════════════════════════════
+   v2-hab.css — « La garde-robe » (v1 des habillages, 16/10/2026)
+   Huit habillages de TOUTE l'app. Tout part de <html data-hab="…">; sans cet attribut rien ne change (le bleu d'origine).
+   Règles de la maison : aucun flou, aucun dégradé dans du texte, aucune vidéo ; le mouvement est coupé avec prefers-reduced-motion ;
+   le texte ne se pose jamais sur une matière chargée (plaque pleine dessous).
+   Principe d'architecture : chaque habillage ne déclare que des VARIABLES (celles que toute l'app lit déjà) + 6 variables de matière :
+     --h-fond (matière du fond), --h-taille, --h-lumiere (la source de lumière), --h-top (barre du haut), --h-titre (police des titres), --h-peau (matière des cadres)
+   Les couches communes plus bas les posent partout ; les aperçus de la garde-robe lisent les MÊMES variables (ce qu'on voit est ce qu'on obtient).
+   ═══════════════════════════════════════════════════════════════════ */
+
+@font-face{font-family:'HabBodoni';src:url('hab/bodoni.woff2') format('woff2');font-weight:400 700;font-display:swap}
+@font-face{font-family:'HabBricolage';src:url('hab/bricolage.woff2') format('woff2');font-weight:200 800;font-display:swap}
+@font-face{font-family:'HabNewsreader';src:url('hab/newsreader.woff2') format('woff2');font-weight:200 800;font-display:swap}
+@font-face{font-family:'HabArchivo';src:url('hab/archivo.woff2') format('woff2');font-weight:100 900;font-display:swap}
+
+/* ───────────────────────── 1. LES HUIT HABILLAGES (variables seulement) ───────────────────────── */
+
+/* ── LÉOPARD : fourrure fauve, rosettes brun-noir, lumière chaude du haut gauche. Les cadres des cartes sont en peau. ── */
+[data-hab="leopard"]{
+  --ip-blue:#94561A; --ip-blue-d:#5F370E; --ip-ink:#2A1809; --ip-ink-2:#4A3016;
+  --muted:#684B2F; --muted-2:#6E5034; --muted-d:#684B2F;
+  --paper:#E9C887; --card:#FCF5E6; --card-2:#F6EAD0; --surf-sunken:#F0E2C4; --halo:#F3DDAE;
+  --line:rgba(70,40,12,.17); --line-2:rgba(70,40,12,.10); --line-strong:rgba(70,40,12,.30);
+  --sh-1:0 1px 2px rgba(50,26,6,.22),0 4px 8px rgba(50,26,6,.14),0 1px 0 rgba(255,244,214,.75) inset;
+  --sh-2:0 2px 3px rgba(50,26,6,.22),0 8px 16px rgba(50,26,6,.18),0 18px 32px rgba(50,26,6,.14),0 1px 0 rgba(255,244,214,.8) inset;
+  --sh-3:0 4px 8px rgba(50,26,6,.26),0 16px 30px rgba(50,26,6,.24),0 34px 60px rgba(50,26,6,.20),0 1px 0 rgba(255,244,214,.85) inset;
+  --sh-blue:0 4px 12px rgba(70,36,8,.42),0 8px 22px rgba(50,26,6,.22),0 1px 0 rgba(255,226,160,.4) inset;
+  --sh-blue-h:0 6px 16px rgba(70,36,8,.52),0 14px 32px rgba(50,26,6,.28),0 1px 0 rgba(255,226,160,.5) inset;
+  --h-fond:url(hab/leopard.webp); --h-taille:820px;
+  --h-lumiere:radial-gradient(75% 60% at 14% -8%,rgba(255,238,184,.62),rgba(255,238,184,0) 68%),radial-gradient(70% 60% at 108% 104%,rgba(52,22,2,.55),rgba(52,22,2,0) 70%),linear-gradient(180deg,rgba(255,228,150,0) 40%,rgba(74,36,6,.30));
+  --h-top:linear-gradient(180deg,#43270F,#26150A 70%,#1E1007);
+  --h-top-ink:#F9E9C8; --h-top-muted:#E2C58E; --h-top-line:#D9A249;
+  --h-titre:'HabBricolage','Satoshi','Inter',system-ui,sans-serif;
+  --h-peau:url(hab/leopard.webp) 0 0/520px;
+  --h-ruban:linear-gradient(150deg,#A66620,#94561A 48%,#5F370E);
+  --h-selection:#2A1809;
+  --h-mini-fond:url(hab/leopard.webp) 0 0/230px;
+}
+
+/* ── MARBRE NOIR : pierre sombre veinée d'or, éclairée à la bougie (un point chaud en haut au centre). Cartes : plaques d'ivoire à liseré d'or. ── */
+[data-hab="marbre"]{
+  --ip-blue:#8A5E14; --ip-blue-d:#5A3C0A; --ip-ink:#1F1A12; --ip-ink-2:#3A3224;
+  --muted:#5C5345; --muted-2:#5F5648; --muted-d:#5C5345; --h-pl-ink:#F5EDDC; --h-pl-ink2:#D8CBB0;
+  --paper:#17181C; --card:#F8F2E6; --card-2:#F1E9D8; --surf-sunken:#EAE0CC; --halo:#EFE3C8;
+  --line:rgba(138,94,20,.24); --line-2:rgba(138,94,20,.14); --line-strong:rgba(138,94,20,.40);
+  --sh-1:0 1px 2px rgba(0,0,0,.5),0 4px 10px rgba(0,0,0,.35),0 1px 0 rgba(255,244,214,.7) inset;
+  --sh-2:0 2px 4px rgba(0,0,0,.5),0 10px 22px rgba(0,0,0,.45),0 22px 40px rgba(0,0,0,.35),0 1px 0 rgba(255,244,214,.8) inset;
+  --sh-3:0 4px 8px rgba(0,0,0,.55),0 18px 34px rgba(0,0,0,.5),0 40px 70px rgba(0,0,0,.4),0 1px 0 rgba(255,244,214,.85) inset;
+  --sh-blue:0 4px 14px rgba(0,0,0,.5),0 0 0 1px rgba(236,196,110,.55) inset,0 1px 0 rgba(255,236,170,.4) inset;
+  --sh-blue-h:0 6px 18px rgba(0,0,0,.6),0 0 0 1px rgba(246,210,128,.8) inset,0 1px 0 rgba(255,236,170,.5) inset;
+  --h-fond:url(hab/marbre.webp); --h-taille:1100px;
+  --h-lumiere:radial-gradient(60% 52% at 50% -6%,rgba(255,214,140,.40),rgba(255,214,140,0) 70%),radial-gradient(90% 70% at 50% 130%,rgba(0,0,0,.7),rgba(0,0,0,0) 70%),linear-gradient(90deg,rgba(0,0,0,.55),rgba(0,0,0,0) 22%,rgba(0,0,0,0) 78%,rgba(0,0,0,.55));
+  --h-top:linear-gradient(180deg,#26241F,#141417);
+  --h-top-ink:#F6EEDC; --h-top-muted:#CDBF9F; --h-top-line:#C9A053;
+  --h-titre:'HabBodoni','Newsreader',Georgia,serif;
+  --h-peau:url(hab/marbre.webp) 0 0/700px;
+  --h-ruban:linear-gradient(150deg,#C99A3C,#8A5E14 52%,#5A3C0A);
+  --h-selection:#E6C177;
+  --h-mini-fond:url(hab/marbre.webp) 0 0/300px;
+}
+
+/* ───────────────────────── 2. LES COUCHES COMMUNES (lisent les variables ci-dessus) ───────────────────────── */
+
+html[data-hab]{background:var(--paper)}
+html[data-hab] body{background:var(--paper);color:var(--ip-ink)}
+/* la matière du fond : un calque qui couvre TOUTE la hauteur de la page (la fourrure défile avec le contenu), puis la source de lumière (fixe, dans la fenêtre) par-dessus */
+html[data-hab] body::before{position:absolute;inset:0;opacity:1;background:var(--h-fond) 0 0/var(--h-taille)}
+html[data-hab] .v2-halo{height:100vh;background:var(--h-lumiere)}
+
+/* barre du haut : une pièce à part, avec son encre à elle (les variables sont redéclarées DANS la barre) */
+html[data-hab] .v2-top{background:var(--h-top);border-bottom:2px solid var(--h-top-line);box-shadow:var(--h-top-sh,0 10px 24px -12px rgba(0,0,0,.55),0 1px 0 rgba(255,255,255,.14) inset);
+  --ip-ink:var(--h-top-ink);--ip-ink-2:var(--h-top-ink);--muted:var(--h-top-muted);--muted-2:var(--h-top-muted);color:var(--h-top-ink)}
+html[data-hab] .v2-top .tp-nom,html[data-hab] .v2-top .v2-brand-t{color:var(--h-top-ink);font-family:var(--h-titre)}
+html[data-hab] .v2-top .v2-brand-s{color:var(--h-top-muted)}
+html[data-hab] .v2-top :is(.v2-top-search,.tp-accueil,.tp-idee){background:var(--h-top-field);border-color:var(--h-top-line);box-shadow:0 1px 0 rgba(255,255,255,.10) inset;color:var(--h-top-ink)}
+html[data-hab] .v2-top .v2-top-search{color:var(--h-top-muted)}
+html[data-hab] .v2-top .v2-top-search svg,html[data-hab] .v2-top .tp-idee svg{color:var(--h-top-ink)}
+html[data-hab] .v2-top .v2-top-search kbd{background:rgba(255,255,255,.14);color:var(--h-top-ink)}
+html[data-hab] .v2-top :is(.tp-accueil,.tp-idee){color:var(--h-top-ink)}
+
+/* titres : la police de l'habillage (seulement les titres — le texte courant reste celui de l'app, donc aucune mise en page ne bouge) */
+html[data-hab] :is(h1,h2,.v2-page-title,.v2-card-t,.ac-nm,.ac-tit,.tp-nom,.v2-brand-t,.pb-bd-t b){font-family:var(--h-titre)}
+html[data-hab] :is(.v2-page-title,.ac-nm,.tp-nom){letter-spacing:-.01em}
+
+/* sélection, focus, barres de défilement */
+html[data-hab] ::selection{background:var(--h-selection);color:var(--h-sel-ink,#fff)}
+html[data-hab] :focus-visible{outline:3px solid var(--h-focus,var(--ip-blue));outline-offset:2px}
+html[data-hab]{scrollbar-color:var(--ip-blue) transparent}
+html[data-hab] ::-webkit-scrollbar{width:12px;height:12px}
+html[data-hab] ::-webkit-scrollbar-track{background:rgba(0,0,0,.10)}
+html[data-hab] ::-webkit-scrollbar-thumb{background:linear-gradient(90deg,var(--ip-blue),var(--ip-blue-d));border-radius:8px;border:2px solid rgba(255,255,255,.25)}
+
+/* boutons pleins : la matière de l'habillage (--h-ruban) au lieu du bleu */
+html[data-hab] :is(.v2-btn-primary,.tp-plus){background:var(--h-ruban);box-shadow:var(--sh-blue)}
+html[data-hab] .v2-btn-primary:hover{box-shadow:var(--sh-blue-h)}
+
+/* Habillages sombres : la PAGE est sombre mais toutes les variables de surface restent celles de l'app d'origine (encre sombre sur plaque claire) — tout ce que l'app dessine dans une carte, un tableau, un formulaire, un panneau reste lisible, même dans un écran que cette feuille ne connaît pas. Seul le texte posé directement sur la matière (titres, sous-titres) reçoit une plaque sombre à encre claire (section « texte libre » plus bas). */
+
+/* ───────────────────────── 3. LA GARDE-ROBE : aperçus, tiroir, balayage ───────────────────────── */
+
+/* la rangée d'aperçus (bande « Personnaliser » = petits ; tiroir « Mon habillage » = grands) */
+.hab-rangee{display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;padding:8px 6px 10px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.hab-band{flex:1 1 100%;order:3;min-width:0;margin-top:2px}
+.hab-p{position:relative;flex:none;width:158px;scroll-snap-align:center;display:flex;flex-direction:column;align-items:stretch;gap:7px;padding:6px 6px 8px;border:0;background:transparent;border-radius:16px;cursor:pointer;text-align:left;font-family:var(--font);
+  color:var(--ip-ink);transition:transform .28s var(--ease),background .2s}
+.hab-p-g{width:236px;padding:8px 8px 10px;gap:9px}
+.hab-p:hover{transform:translateY(-3px)}
+.hab-p:active{transform:translateY(0) scale(.985)}
+.hab-nom{font-size:13.5px;font-weight:800;letter-spacing:-.01em;line-height:1.15;padding:0 3px;color:var(--ip-ink)}
+.hab-p-g .hab-nom{font-size:15.5px;font-family:var(--font)}
+.hab-mot{font-size:12.5px;line-height:1.35;color:var(--muted);padding:0 3px;min-height:34px}
+.hab-p[aria-checked="true"]{background:color-mix(in srgb,var(--ip-blue) 12%,transparent)}
+.hab-coche{position:absolute;top:12px;right:12px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.4);opacity:0;transform:scale(.4);transition:opacity .2s,transform .3s var(--ease)}
+.hab-coche::after{content:"";position:absolute;left:6px;top:4px;width:6px;height:10px;border:solid #16140F;border-width:0 2.5px 2.5px 0;transform:rotate(42deg)}
+.hab-p[aria-checked="true"] .hab-coche{opacity:1;transform:scale(1)}
+.hab-p[aria-checked="true"]{box-shadow:0 0 0 3px var(--ip-blue)}
+
+/* le mini-écran : lit les variables de SON habillage (data-hab sur le bouton) — c'est l'app en petit, pas un dessin à part */
+.hab-mini{position:relative;display:block;aspect-ratio:16/10.5;border-radius:11px;overflow:hidden;isolation:isolate;
+  background:var(--h-fond) 0 0/var(--h-mini-taille,230px),var(--paper);box-shadow:0 0 0 1px rgba(0,0,0,.18),0 6px 14px -8px rgba(0,0,0,.45);transition:box-shadow .25s}
+.hab-mini::before{content:"";position:absolute;inset:0;z-index:0;background:var(--h-lumiere)}
+.hab-mini>*{position:relative;z-index:1}
+.hm-top{display:flex;align-items:center;gap:5px;height:15%;padding:0 6%;background:var(--h-top);border-bottom:1px solid var(--h-top-line)}
+.hm-logo{width:9px;height:9px;border-radius:3px;background:var(--h-ruban);flex:none}
+.hm-bar{flex:1;height:5px;border-radius:3px;background:var(--h-top-field);box-shadow:0 0 0 1px var(--h-top-line) inset}
+.hm-dot{width:8px;height:8px;border-radius:50%;background:linear-gradient(150deg,#FFB347,#FF7A45);flex:none}
+.hm-corps{display:flex;flex-direction:column;gap:6%;padding:6% 6% 0}
+.hm-hero{display:flex;flex-direction:column;justify-content:center;gap:3px;height:26px;padding:0 8px;border-radius:5px;background:var(--h-ruban);box-shadow:0 3px 6px -3px rgba(0,0,0,.5),0 1px 0 rgba(255,255,255,.3) inset}
+.hm-hero b{display:block;width:44%;height:4px;border-radius:2px;background:#fff}
+.hm-hero i{display:block;width:26%;height:3px;border-radius:2px;background:rgba(255,255,255,.75)}
+.hm-rangee{display:flex;gap:5px}
+.hm-c{flex:1;display:flex;flex-direction:column;gap:3px;height:34px;padding:5px 5px 0;border-radius:5px;background:var(--card);box-shadow:0 0 0 1px var(--h-mini-cadre,var(--line-strong)),0 3px 6px -3px rgba(0,0,0,.5)}
+.hm-c b{display:block;width:62%;height:3.5px;border-radius:2px;background:var(--p-ink,var(--ip-ink))}
+.hm-c i{display:block;width:38%;height:3px;border-radius:2px;background:var(--ip-blue)}
+.hm-lueur{position:absolute!important;inset:0;z-index:2!important;pointer-events:none;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.34) 50%,transparent 65%);transform:translate3d(-120%,0,0)}
+.hab-p:hover .hm-lueur,.hab-p:focus-visible .hm-lueur{transform:translate3d(120%,0,0);transition:transform .9s var(--ease)}
+@media (prefers-reduced-motion:no-preference){.hab-p[aria-checked="true"] .hm-lueur{animation:hab-vie 5.5s var(--ease) 1.2s infinite}}
+@keyframes hab-vie{0%{transform:translate3d(-120%,0,0)}38%,100%{transform:translate3d(120%,0,0)}}
+
+/* le tiroir « Mon habillage » */
+.hab-dock{position:fixed;left:0;right:0;bottom:0;z-index:130;max-width:1280px;margin:0 auto;padding:16px 18px calc(14px + env(safe-area-inset-bottom));border-radius:24px 24px 0 0;
+  background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--line-strong);border-bottom:0;box-shadow:0 -18px 44px -14px rgba(0,0,0,.5),0 -2px 0 var(--ip-blue);
+  transform:translate3d(0,108%,0);transition:transform .38s var(--ease);color:var(--ip-ink)}
+.hab-dock.open{transform:translate3d(0,0,0)}
+.hab-dock-t{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 4px 4px}
+.hab-dock-t>div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.hab-dock-t b{font-size:19px;font-weight:800;letter-spacing:-.015em;font-family:var(--h-titre,var(--font))}
+.hab-dock-t span{font-size:13.5px;color:var(--muted)}
+.hab-fin{flex:none}
+@media (max-width:640px){.hab-p-g{width:178px}.hab-dock{padding:14px 10px calc(12px + env(safe-area-inset-bottom));border-radius:20px 20px 0 0}.hab-dock-t span{display:none}.hab-mot{display:none}}
+@media (max-width:1099px){.hab-band{grid-column:1/-1;grid-row:2}}
+
+/* le balayage de matière : UN calque (transform seulement), porteur de la matière du nouvel habillage, liseré de lumière sur son bord d'attaque */
+.hab-balai{position:fixed;left:-6%;top:0;width:112%;height:100%;z-index:2147483000;pointer-events:none;overflow:hidden;will-change:transform;transform:translate3d(-104%,0,0);backface-visibility:hidden}
+.hab-balai-m{position:absolute;inset:0;background:var(--h-lumiere),var(--h-fond) 0 0/var(--h-taille),var(--paper)}
+.hab-balai-l{position:absolute;top:0;bottom:0;right:0;width:7%;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,236,190,.55) 60%,rgba(255,255,255,.95))}
+.hab-balai-n{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;font-family:var(--h-titre,var(--font));font-weight:700;font-size:clamp(44px,9vw,120px);letter-spacing:-.02em;line-height:1;color:var(--h-top-ink,#fff);text-shadow:0 3px 24px rgba(0,0,0,.55),0 1px 2px rgba(0,0,0,.6)}
+@media (prefers-reduced-motion:reduce){.hab-balai{display:none}.hab-dock{transition-duration:.01ms}.hab-p,.hm-lueur{transition-duration:.01ms;animation:none}}
+
+/* ───────────────────────── 4. COMPLÉMENTS DE VARIABLES ───────────────────────── */
+[data-hab="leopard"]{--h-top-field:rgba(255,236,190,.12);--h-mini-taille:230px;--p-ink:var(--ip-ink)}
+[data-hab="marbre"]{--h-top-field:rgba(255,236,190,.08);--h-mini-taille:300px;
+  --p-ink:#1F1A12;--p-ink2:#3A3224;--p-muted:#5C5345;--p-line:rgba(138,94,20,.24);--p-line2:rgba(138,94,20,.14);--p-line3:rgba(138,94,20,.40);
+  --h-or:#D3A44F;--h-mini-cadre:rgba(211,164,79,.8)}
+
+/* le rail de l'accueil et la barre du haut partagent la même pièce sombre */
+html[data-hab] .u2-rail{margin-bottom:-64px;background:var(--h-top);border-right:2px solid var(--h-top-line);box-shadow:8px 0 22px -12px rgba(0,0,0,.55);
+  --muted-d:var(--h-top-muted);--ip-blue-d:var(--h-top-ink);--halo:rgba(255,236,190,.14)}
+html[data-hab] .u2-rb[aria-pressed="true"],html[data-hab] .u2-rb[aria-expanded="true"]{background:var(--h-ruban);color:#fff}
+
+/* ───────────────────────── 5. SIGNATURES (ce qui fait reconnaître chaque habillage) ───────────────────────── */
+
+/* LÉOPARD : cartes encadrées de peau ; la plaque reste crème (le texte ne touche jamais la fourrure) */
+[data-hab="leopard"] :is(.v2-card,.v2-kpi,.u2-wid,.ac-c,.u2-rangs,.u2-bx,.v2-usermenu,.hab-dock,#pb-band){border:5px solid transparent;
+  background:linear-gradient(var(--card),var(--card)) padding-box,var(--h-peau) border-box}
+[data-hab="leopard"] .ac-c{background:radial-gradient(115% 80% at 10% 0%,var(--halo),var(--card) 72%) padding-box,var(--h-peau) border-box}
+
+/* MARBRE : plaques d'ivoire à double liseré d'or, sur pierre noire */
+[data-hab="marbre"] :is(.v2-card,.v2-kpi,.u2-wid,.ac-c,.u2-rangs,.u2-bx,.hab-dock){border:1px solid var(--h-or);
+  box-shadow:var(--sh-2),inset 0 0 0 4px var(--card),inset 0 0 0 5px rgba(201,150,60,.55)}
+[data-hab="marbre"] .ac-c{background:radial-gradient(115% 80% at 10% 0%,var(--halo),var(--card) 72%)}
+
+/* texte posé directement sur la matière (titres, sous-titres, étiquettes de section) : il reçoit une plaque pleine (jamais de texte sur un motif chargé).
+   ⚠ la plaque est un pseudo-élément DERRIÈRE le texte : la boîte du texte est entièrement recouverte (la mesure de contraste lit toute la boîte). */
+:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"]) :is(.u2-salut h1,.u2-salut .v2-sous,.v2-page-title,.v2-page-sub,.ac-au h2,.of-n,h1.v2-titre,p.v2-sous){position:relative;isolation:isolate;display:block;width:fit-content;max-width:calc(100% - 30px);margin:9px 0 14px 15px;color:var(--h-pl-ink,var(--ip-ink))}
+:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"]) :is(.u2-salut h1,.u2-salut .v2-sous,.v2-page-title,.v2-page-sub,.ac-au h2,.of-n,h1.v2-titre,p.v2-sous)::before{content:"";position:absolute;z-index:-1;inset:-5px -15px -6px;border-radius:13px;background:var(--h-pl);box-shadow:var(--h-pl-sh,none)}
+:is([data-hab="marbre"],[data-hab="foret"],[data-hab="velours"]) :is(.u2-salut .v2-sous b,.v2-page-sub b){color:inherit}
+.u2-salut :is(h1,.v2-sous){display:block}
+html[data-hab] .u2-salut{row-gap:6px}
+:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"]) .v2-page-sub{margin-bottom:26px}
+[data-hab="leopard"]{--h-pl:var(--card);--h-pl-sh:0 0 0 1px rgba(70,40,12,.35),0 6px 14px -6px rgba(50,26,6,.5)}
+[data-hab="marbre"]{--h-pl:rgba(14,14,17,.92);--h-pl-sh:0 0 0 1px #6A4E1E}
+[data-hab="velours"]{--h-pl:rgba(30,6,14,.90);--h-pl-sh:0 0 0 1px #7A3A48}
+
+html[data-hab] .v2-av{color:#2B1606}
+html[data-hab] :is(.pb-open,.ac-b){background:var(--card)}
+
+
+/* grandes pièces de couleur (bandeau Officines de l'accueil, en-tête de fiche) : la matière « hero » de l'habillage */
+html[data-hab] :is(.ac-fond,.pha-id){background:var(--h-hero)}
+html[data-hab] .pha-id::before{background:radial-gradient(closest-side,var(--h-glow),transparent)}
+[data-hab="leopard"]{--h-hero:linear-gradient(165deg,rgba(40,20,6,.64),rgba(30,14,3,.88)),var(--h-peau);--h-glow:rgba(255,214,140,.26)}
+[data-hab="marbre"]{--h-hero:linear-gradient(165deg,rgba(0,0,0,.42),rgba(0,0,0,.74)),var(--h-peau);--h-glow:rgba(240,200,120,.24)}
+
+/* ───────────────────────── 6. LES SIX AUTRES HABILLAGES ───────────────────────── */
+
+/* ── NACRE : opale irisée (rose, pêche, menthe, ciel), lumière blanche de perle en haut à droite. Les cartes ont un liseré irisé. Police : Newsreader. ── */
+[data-hab="nacre"]{
+  --ip-blue:#8C3F5F; --ip-blue-d:#5B2640; --ip-ink:#2F1D2A; --ip-ink-2:#4E3447;
+  --muted:#6A5262; --muted-2:#6F5766; --muted-d:#6A5262;
+  --paper:#F1E6EE; --card:#FFFDFE; --card-2:#F8F1F6; --surf-sunken:#F1E8EF; --halo:#F6E6EE;
+  --line:rgba(110,70,95,.15); --line-2:rgba(110,70,95,.08); --line-strong:rgba(110,70,95,.28);
+  --sh-1:0 1px 2px rgba(90,50,80,.12),0 4px 10px -4px rgba(90,50,80,.14),0 1px 0 #fff inset;
+  --sh-2:0 1px 2px rgba(90,50,80,.10),0 10px 22px -8px rgba(90,50,80,.22),0 1px 0 #fff inset;
+  --sh-3:0 2px 4px rgba(90,50,80,.12),0 20px 40px -12px rgba(90,50,80,.30),0 1px 0 #fff inset;
+  --sh-blue:0 4px 12px rgba(91,38,64,.34),0 8px 22px rgba(91,38,64,.16),0 1px 0 rgba(255,255,255,.35) inset;
+  --sh-blue-h:0 6px 16px rgba(91,38,64,.44),0 14px 32px rgba(91,38,64,.22),0 1px 0 rgba(255,255,255,.45) inset;
+  --h-fond:url(hab/nacre.webp); --h-taille:1100px;
+  --h-lumiere:radial-gradient(62% 56% at 90% -10%,rgba(255,255,255,.92),rgba(255,255,255,0) 68%),radial-gradient(55% 50% at -4% 104%,rgba(255,206,224,.55),rgba(255,206,224,0) 70%),linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,0) 40%);
+  --h-top:linear-gradient(180deg,#FFFFFF,#F4E8F0); --h-top-ink:#2F1D2A; --h-top-muted:#6A5262; --h-top-line:#E3BCD0; --h-top-field:rgba(140,63,95,.07);
+  --h-top-sh:0 8px 20px -12px rgba(90,50,80,.35),0 1px 0 #fff inset;
+  --h-titre:'HabNewsreader',Georgia,serif;
+  --h-peau:conic-gradient(from 200deg,#F4B2C8,#FAD0AE,#F4E7A8,#B2E4CC,#A6D4EC,#D8BEEE,#F4B2C8);
+  --h-ruban:linear-gradient(150deg,#B35C80,#8C3F5F 50%,#5B2640);
+  --h-selection:#8C3F5F; --h-mini-taille:260px; --p-ink:var(--ip-ink);
+  --h-hero:linear-gradient(165deg,rgba(98,38,70,.95),rgba(50,18,38,.98)),var(--h-fond) 0 0/900px;--h-glow:rgba(255,200,222,.20);
+}
+[data-hab="nacre"] :is(.v2-card,.v2-kpi,.u2-wid,.ac-c,.u2-rangs,.u2-bx,.v2-usermenu,.hab-dock,#pb-band){border:2px solid transparent;
+  background:linear-gradient(var(--card),var(--card)) padding-box,var(--h-peau) border-box}
+[data-hab="nacre"] .ac-c{background:radial-gradient(115% 80% at 10% 0%,var(--halo),var(--card) 72%) padding-box,var(--h-peau) border-box}
+
+/* ── FORÊT PROFONDE : sous-bois sombre, rayons de soleil entre les feuilles (en haut à gauche). Plaques vert d'eau pâle, soleil sur chaque coin. Police : Archivo. ── */
+[data-hab="foret"]{
+  --ip-blue:#2D6A3E; --ip-blue-d:#1B4328; --ip-ink:#14241B; --ip-ink-2:#2D4033;
+  --muted:#4B5E4E; --muted-2:#4F6352; --muted-d:#4B5E4E; --h-pl-ink:#EEF3DE; --h-pl-ink2:#CAD8B2;
+  --paper:#0F251B; --card:#F1F4E6; --card-2:#E8EDD8; --surf-sunken:#E0E6CC; --halo:#DDE8D2;
+  --line:rgba(45,80,50,.26); --line-2:rgba(45,80,50,.14); --line-strong:rgba(45,80,50,.42);
+  --sh-1:0 1px 2px rgba(0,0,0,.5),0 4px 10px rgba(0,0,0,.35),0 1px 0 rgba(255,255,236,.8) inset;
+  --sh-2:0 2px 4px rgba(0,0,0,.5),0 10px 22px rgba(0,0,0,.42),0 22px 40px rgba(0,0,0,.32),0 1px 0 rgba(255,255,236,.85) inset;
+  --sh-3:0 4px 8px rgba(0,0,0,.55),0 18px 34px rgba(0,0,0,.5),0 40px 70px rgba(0,0,0,.4),0 1px 0 rgba(255,255,236,.9) inset;
+  --sh-blue:0 4px 14px rgba(0,0,0,.45),0 1px 0 rgba(200,255,200,.35) inset;
+  --sh-blue-h:0 6px 18px rgba(0,0,0,.55),0 1px 0 rgba(200,255,200,.45) inset;
+  --h-fond:url(hab/foret.webp); --h-taille:1000px;
+  --h-lumiere:repeating-conic-gradient(from 196deg at 10% -12%,rgba(255,236,150,0) 0deg 5deg,rgba(255,236,150,.17) 5deg 8deg,rgba(255,236,150,0) 8deg 14deg),radial-gradient(70% 56% at 8% -8%,rgba(255,232,140,.42),rgba(255,232,140,0) 68%),radial-gradient(90% 70% at 55% 132%,rgba(0,0,0,.62),rgba(0,0,0,0) 70%);
+  --h-top:linear-gradient(180deg,#19382A,#0A1911); --h-top-ink:#EEF3DE; --h-top-muted:#C4D2AE; --h-top-line:#A8A04A; --h-top-field:rgba(220,240,170,.09);
+  --h-titre:'HabArchivo','Satoshi','Inter',system-ui,sans-serif;
+  --h-peau:url(hab/foret.webp) 0 0/600px;
+  --h-ruban:linear-gradient(150deg,#3F8A52,#2D6A3E 50%,#1B4328);
+  --h-selection:#CFE3A0; --h-sel-ink:#10241A; --h-mini-taille:300px;
+  --p-ink:#14241B; --p-ink2:#2D4033; --p-muted:#4B5E4E; --p-line:rgba(45,80,50,.26); --p-line2:rgba(45,80,50,.14); --p-line3:rgba(45,80,50,.42);
+  --h-mini-cadre:rgba(150,190,110,.8); --h-pl:rgba(8,22,15,.92); --h-pl-sh:0 0 0 1px #4C6B3E;
+  --h-hero:linear-gradient(165deg,rgba(10,34,22,.30),rgba(4,18,10,.74)),var(--h-peau);--h-glow:rgba(240,230,140,.22);
+}
+[data-hab="foret"] :is(.v2-card,.v2-kpi,.u2-wid,.ac-c,.u2-rangs,.u2-bx,.hab-dock){border:1px solid rgba(110,160,90,.65);
+  background-image:radial-gradient(120% 90% at 0% 0%,rgba(255,240,170,.55),rgba(255,240,170,0) 52%)}
+[data-hab="foret"] .ac-c{background:radial-gradient(120% 90% at 0% 0%,rgba(255,240,170,.55),rgba(255,240,170,0) 52%),radial-gradient(115% 80% at 10% 0%,var(--halo),var(--card) 72%)}
+
+/* ── TERRACOTTA : argile cuite, soleil bas de fin d'été et ombres de volets en travers de la pièce. Ombres portées dures. Police : Bricolage. ── */
+[data-hab="terracotta"]{
+  --ip-blue:#A9441F; --ip-blue-d:#74290F; --ip-ink:#3A1A0B; --ip-ink-2:#5C3018;
+  --muted:#6F3F27; --muted-2:#744529; --muted-d:#6F3F27;
+  --paper:#D9885A; --card:#FFF4E4; --card-2:#FBE6CC; --surf-sunken:#F4DDBF; --halo:#FBE0C4;
+  --line:rgba(120,50,20,.20); --line-2:rgba(120,50,20,.11); --line-strong:rgba(120,50,20,.34);
+  --sh-1:0 1px 2px rgba(90,36,12,.22),0 5px 10px -3px rgba(90,36,12,.20),0 1px 0 rgba(255,250,236,.8) inset;
+  --sh-2:7px 9px 0 rgba(112,44,16,.20),0 2px 3px rgba(90,36,12,.22),0 1px 0 rgba(255,250,236,.85) inset;
+  --sh-3:10px 13px 0 rgba(112,44,16,.24),0 4px 8px rgba(90,36,12,.26),0 1px 0 rgba(255,250,236,.9) inset;
+  --sh-blue:0 4px 12px rgba(90,30,8,.42),0 1px 0 rgba(255,214,170,.4) inset;
+  --sh-blue-h:0 6px 16px rgba(90,30,8,.52),0 1px 0 rgba(255,214,170,.5) inset;
+  --h-fond:url(hab/terracotta.webp); --h-taille:900px;
+  --h-lumiere:radial-gradient(52% 62% at 88% 6%,rgba(255,244,196,.85),rgba(255,214,140,.38) 40%,rgba(255,214,140,0) 72%),repeating-linear-gradient(112deg,rgba(90,30,10,0) 0 150px,rgba(90,30,10,.17) 150px 236px),linear-gradient(180deg,rgba(255,200,130,0) 50%,rgba(90,36,12,.30));
+  --h-top:linear-gradient(180deg,#FCE5CB,#EDBD90); --h-top-ink:#3A1A0B; --h-top-muted:#6A3A20; --h-top-line:#A9441F; --h-top-field:rgba(255,255,255,.55);
+  --h-top-sh:0 8px 18px -10px rgba(90,36,12,.5),0 1px 0 rgba(255,255,255,.7) inset;
+  --h-titre:'HabBricolage','Satoshi','Inter',system-ui,sans-serif;
+  --h-peau:url(hab/terracotta.webp) 0 0/500px;
+  --h-ruban:linear-gradient(150deg,#C65B2E,#A9441F 50%,#74290F);
+  --h-selection:#74290F; --h-mini-taille:260px; --p-ink:var(--ip-ink);
+  --h-hero:linear-gradient(165deg,rgba(110,40,14,.86),rgba(56,16,4,.97)),var(--h-peau);--h-glow:rgba(255,214,150,.24);
+  --h-pl:var(--card); --h-pl-sh:0 0 0 1px rgba(120,50,20,.35),5px 6px 0 rgba(112,44,16,.18);
+}
+[data-hab="terracotta"] :is(.v2-card,.v2-kpi,.u2-wid,.ac-c,.u2-rangs,.u2-bx,.hab-dock){border:1px solid rgba(169,68,31,.55)}
+
+/* ── GLACIER : glace bleutée taillée en facettes, lumière froide tombant du haut. Cartes nettes, biseau clair. Police : Archivo. ── */
+[data-hab="glacier"]{
+  --ip-blue:#0E5A78; --ip-blue-d:#083D54; --ip-ink:#0B2533; --ip-ink-2:#26485A;
+  --muted:#46606F; --muted-2:#4B6676; --muted-d:#46606F;
+  --paper:#E2EFF7; --card:#FFFFFF; --card-2:#F2F8FC; --surf-sunken:#E7F1F8; --halo:#E3F1F9;
+  --line:rgba(14,70,100,.16); --line-2:rgba(14,70,100,.09); --line-strong:rgba(14,70,100,.30);
+  --sh-1:0 1px 2px rgba(10,50,80,.10),0 4px 10px -4px rgba(10,60,95,.16),0 1px 0 #fff inset;
+  --sh-2:0 1px 2px rgba(10,50,80,.10),0 10px 22px -8px rgba(10,60,95,.24),0 1px 0 #fff inset,0 -3px 0 rgba(14,90,120,.06) inset;
+  --sh-3:0 2px 4px rgba(10,50,80,.12),0 20px 40px -12px rgba(10,60,95,.32),0 1px 0 #fff inset;
+  --sh-blue:0 4px 12px rgba(8,61,84,.36),0 8px 22px rgba(8,61,84,.16),0 1px 0 rgba(255,255,255,.35) inset;
+  --sh-blue-h:0 6px 16px rgba(8,61,84,.46),0 14px 32px rgba(8,61,84,.22),0 1px 0 rgba(255,255,255,.45) inset;
+  --h-fond:url(hab/glacier.webp); --h-taille:900px;
+  --h-lumiere:radial-gradient(66% 52% at 50% -12%,rgba(255,255,255,.80),rgba(255,255,255,0) 70%),linear-gradient(115deg,rgba(255,255,255,0) 28%,rgba(255,255,255,.30) 44%,rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(255,255,255,0) 50%,rgba(40,120,170,.34));
+  --h-top:linear-gradient(180deg,#FFFFFF,#DAEBF5); --h-top-ink:#0B2533; --h-top-muted:#46606F; --h-top-line:#8EC2DA; --h-top-field:rgba(14,90,120,.07);
+  --h-top-sh:0 8px 20px -12px rgba(10,60,95,.38),0 1px 0 #fff inset;
+  --h-titre:'HabArchivo','Satoshi','Inter',system-ui,sans-serif;
+  --h-peau:url(hab/glacier.webp) 0 0/500px;
+  --h-ruban:linear-gradient(150deg,#1D7FA6,#0E5A78 50%,#083D54);
+  --h-selection:#0E5A78; --h-mini-taille:260px; --p-ink:var(--ip-ink);
+  --h-hero:linear-gradient(165deg,rgba(6,46,68,.82),rgba(4,28,44,.96)),var(--h-peau);--h-glow:rgba(160,225,255,.24);
+}
+[data-hab="glacier"] :is(.v2-card,.v2-kpi,.u2-wid,.ac-c,.u2-rangs,.u2-bx,.hab-dock){border:2px solid transparent;
+  background:linear-gradient(118deg,#FFFFFF,#EAF5FB 60%,#FFFFFF) padding-box,linear-gradient(135deg,#FFFFFF,#8FC3DB 38%,#EAF6FC 58%,#6FB0CF) border-box}
+[data-hab="glacier"] .ac-c{background:linear-gradient(118deg,rgba(255,255,255,.9),rgba(231,244,251,.5) 62%,rgba(255,255,255,.85)),radial-gradient(115% 80% at 10% 0%,var(--halo),var(--card) 72%) padding-box,linear-gradient(135deg,#FFFFFF,#8FC3DB 38%,#EAF6FC 58%,#6FB0CF) border-box}
+
+/* ── VELOURS BORDEAUX : velours profond en plis, lampe de salon en haut à gauche, ombres de rideau. Plaques rosées, satin. Police : Newsreader. ── */
+[data-hab="velours"]{
+  --ip-blue:#8E1F3F; --ip-blue-d:#5E1228; --ip-ink:#2A0E15; --ip-ink-2:#4A2430;
+  --muted:#6A3E46; --muted-2:#6E434B; --muted-d:#6A3E46; --h-pl-ink:#FBEFEB; --h-pl-ink2:#EBD3CF;
+  --paper:#3A0D1A; --card:#FBEFEA; --card-2:#F5E2DC; --surf-sunken:#EED6CF; --halo:#F3DAD4;
+  --line:rgba(110,30,50,.24); --line-2:rgba(110,30,50,.13); --line-strong:rgba(110,30,50,.42);
+  --sh-1:0 1px 2px rgba(0,0,0,.5),0 4px 10px rgba(0,0,0,.35),0 1px 0 rgba(255,246,240,.8) inset;
+  --sh-2:0 2px 4px rgba(0,0,0,.5),0 12px 24px rgba(0,0,0,.45),0 24px 44px rgba(0,0,0,.34),0 1px 0 rgba(255,246,240,.85) inset;
+  --sh-3:0 4px 8px rgba(0,0,0,.55),0 18px 34px rgba(0,0,0,.5),0 40px 70px rgba(0,0,0,.42),0 1px 0 rgba(255,246,240,.9) inset;
+  --sh-blue:0 4px 14px rgba(0,0,0,.5),0 1px 0 rgba(255,190,200,.4) inset;
+  --sh-blue-h:0 6px 18px rgba(0,0,0,.6),0 1px 0 rgba(255,190,200,.5) inset;
+  --h-fond:url(hab/velours.webp); --h-taille:900px;
+  --h-lumiere:radial-gradient(56% 50% at 12% -4%,rgba(255,180,134,.48),rgba(255,180,134,0) 66%),repeating-linear-gradient(90deg,rgba(0,0,0,.36) 0 90px,rgba(0,0,0,0) 150px 210px,rgba(0,0,0,.36) 300px),radial-gradient(90% 70% at 60% 132%,rgba(0,0,0,.62),rgba(0,0,0,0) 70%);
+  --h-top:linear-gradient(180deg,#56142A,#2A0812); --h-top-ink:#FBEDE9; --h-top-muted:#E3C0BC; --h-top-line:#D89AA2; --h-top-field:rgba(255,200,196,.10);
+  --h-titre:'HabNewsreader',Georgia,serif;
+  --h-peau:url(hab/velours.webp) 0 0/600px;
+  --h-ruban:linear-gradient(150deg,#B02A52,#8E1F3F 50%,#5E1228);
+  --h-selection:#F2B8BE; --h-sel-ink:#2A0812; --h-mini-taille:300px;
+  --p-ink:#2A0E15; --p-ink2:#4A2430; --p-muted:#6A3E46; --p-line:rgba(110,30,50,.24); --p-line2:rgba(110,30,50,.13); --p-line3:rgba(110,30,50,.42);
+  --h-mini-cadre:rgba(240,180,176,.85);
+  --h-hero:linear-gradient(165deg,rgba(60,8,24,.22),rgba(30,2,12,.70)),var(--h-peau);--h-glow:rgba(255,170,150,.22);
+}
+[data-hab="velours"] :is(.v2-card,.v2-kpi,.u2-wid,.ac-c,.u2-rangs,.u2-bx,.hab-dock){border:1px solid #F2C8C8;
+  background-image:linear-gradient(105deg,rgba(255,255,255,0) 38%,rgba(255,255,255,.45) 50%,rgba(255,255,255,0) 62%),linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,0) 38%)}
+[data-hab="velours"] .ac-c{background:linear-gradient(105deg,rgba(255,255,255,0) 38%,rgba(255,255,255,.45) 50%,rgba(255,255,255,0) 62%),radial-gradient(115% 80% at 10% 0%,var(--halo),var(--card) 72%)}
+
+/* ── les cinq anciennes teintes (Indigo, Émeraude, Canard, Ambre, Prune) : toujours valides, elles colorent maintenant toute l'app (sans matière) ── */
+[data-hab="indigo"]{--ip-blue:#4B3FD0;--ip-blue-d:#322A89;--halo:#EFEEFB;--h-ruban:linear-gradient(150deg,#6A5FE0,#4B3FD0 46%,#322A89)}
+[data-hab="emeraude"]{--ip-blue:#0A7A55;--ip-blue-d:#075138;--halo:#E9F3F0;--h-ruban:linear-gradient(150deg,#1D9A72,#0A7A55 46%,#075138)}
+[data-hab="canard"]{--ip-blue:#0B7285;--ip-blue-d:#074C58;--halo:#E9F2F4;--h-ruban:linear-gradient(150deg,#1D90A4,#0B7285 46%,#074C58)}
+[data-hab="ambre"]{--ip-blue:#9C5700;--ip-blue-d:#673900;--halo:#F6F0E8;--h-ruban:linear-gradient(150deg,#BC7410,#9C5700 46%,#673900)}
+[data-hab="prune"]{--ip-blue:#8E2A7A;--ip-blue-d:#5E1C51;--halo:#F5ECF3;--h-ruban:linear-gradient(150deg,#AE4496,#8E2A7A 46%,#5E1C51)}
+:is([data-hab="indigo"],[data-hab="emeraude"],[data-hab="canard"],[data-hab="ambre"],[data-hab="prune"]){--sh-blue:0 4px 12px color-mix(in srgb,var(--ip-blue) 28%,transparent),0 8px 24px color-mix(in srgb,var(--ip-blue-d) 16%,transparent),0 1px 0 rgba(255,255,255,.22) inset}
+:is([data-hab="indigo"],[data-hab="emeraude"],[data-hab="canard"],[data-hab="ambre"],[data-hab="prune"]) :is(.v2-btn-primary,.tp-plus){background:var(--h-ruban)}
+
+/* « Retour » vit dans la barre du haut : même pièce que les autres commandes de la barre */
+html[data-hab] .v2-top .v2-back{background:var(--h-top-field);border-color:var(--h-top-line);box-shadow:0 1px 0 rgba(255,255,255,.10) inset;color:var(--h-top-ink)}
+
+/* ── BLEU JARVIS : l'app d'origine. Aucun réglage n'est posé sur la page (pas d'attribut) ; ce bloc ne sert qu'à l'APERÇU, qui lit les mêmes variables que les autres ── */
+[data-hab="bleu"]{
+  --ip-blue:#0050E6; --ip-blue-d:#0034A0; --ip-ink:#10131C; --paper:#FBFCFE; --card:#FFFFFF; --line:rgba(16,19,28,.07); --line-strong:rgba(16,19,28,.14);
+  --h-fond:linear-gradient(#FBFCFE,#FBFCFE); --h-lumiere:radial-gradient(58% 78% at 50% -14%,#fff,rgba(255,255,255,0) 64%),radial-gradient(64% 96% at 2% -12%,#CFDFFC,rgba(207,223,252,0) 66%),radial-gradient(64% 96% at 99% -8%,#DCE7FC,rgba(220,231,252,0) 68%),linear-gradient(#E4EDFC,rgba(251,252,254,0) 92%);
+  --h-top:linear-gradient(rgba(255,255,255,.96),rgba(255,255,255,.80)); --h-top-line:rgba(11,31,77,.12); --h-top-field:#EEF2FA; --h-ruban:linear-gradient(150deg,#2E6BF0,#0050E6 46%,#0034A0); --h-mini-taille:auto;
+}
+
+/* texte libre des autres écrans (même principe, plaque portée par le fond du texte lui-même : les écrans hors banc n'ont pas la mesure de contraste, le plus simple suffit) */
+:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"]) :is(.v2-sem-t,.v2-todo-hero h1,.v2-todo-hero p,.cm-marche-t,.cm-faits,.bs-count,.bs-legend,.bs-wrap>h1,.bs-wrap>p,.gr-mserie,.v2-empty-t,.v2-empty-d,.v2-camp-sec,.v2-camp-note,.mis-foot,.ml-sec-h h2,.ml-n,.ml-tete p,.v2-loading div:last-child,.off-verdict-meta,.off-count){
+  background:var(--h-pl);color:var(--h-pl-ink,var(--ip-ink));padding:2px 10px 3px;border-radius:10px;-webkit-box-decoration-break:clone;box-decoration-break:clone;box-shadow:var(--h-pl-sh,none)}
+/* ligne de repères d'Offilog : boîte qui s'ajuste à son texte ; bande de jours des Rendez-vous : le bleu codé en dur laisse place à la matière ; « + N autres groupes » : pastille pleine */
+html[data-hab] :is(.off-verdict-meta,.off-count){width:fit-content;max-width:100%}
+:is([data-hab="marbre"],[data-hab="foret"],[data-hab="velours"]) :is(.off-verdict-meta,.off-count) b,.v2-sem-t span{color:inherit}
+html[data-hab] .v2-sem-fond{background:none}
+html[data-hab] .cm-plus{background:var(--card);border-style:solid;border-color:var(--line-strong)}
+/* en-tête de fiche : encore un voile dessus (texte blanc fin à 62 % d'opacité dans cette pièce) */
+html[data-hab] .pha-id{background:linear-gradient(rgba(0,0,0,.30),rgba(0,0,0,.30)),var(--h-hero)}
+
+/* écran de chargement : le texte reçoit sa plaque, la roue prend la couleur de liseré de la barre */
+html[data-hab] .v2-spinner{border:3px solid rgba(255,255,255,.28);border-top-color:var(--h-top-line);box-shadow:0 0 0 9px var(--h-pl,var(--card))}
+html[data-hab="nacre"] .v2-spinner,html[data-hab="glacier"] .v2-spinner{border-color:var(--line-strong);border-top-color:var(--ip-blue)}
+
+/* petites pièces de couleur codées en bleu dans certains écrans : elles prennent la matière de l'habillage */
+html[data-hab]{--c-fiche:var(--ip-blue)}
+html[data-hab] :is(.v2-sem-cap,.v2-rdv-cap){background:var(--h-hero)}
+html[data-hab] :is(.ml-fiche .ml-band,.ml-rg.ml-garde .ml-gp,.ml-pile3 i::before){background:var(--h-ruban)}
+
+/* le vert « positif » (texte et boutons) : un cran plus profond pour tenir 4,5:1 sur les fonds pâles — il garde son sens (vert = bon) */
+html[data-hab]{--c-mint:#0B6B47;--c-opp:#0B6B47;--c-mint-txt:#0B6B47}
+
+/* LÉOPARD, jusqu'au bout : boutons pleins et onglets actifs liserés de peau, barre de défilement en fourrure, focus doré */
+[data-hab="leopard"]{--h-focus:#F2B84B}
+[data-hab="leopard"] :is(.v2-btn-primary,.tp-plus,.v2-tab.on,.v2-subtab.on,.v2-seg.on,.u2-rb[aria-pressed="true"]){border:3px solid transparent;background:var(--h-ruban) padding-box,linear-gradient(rgba(34,16,3,.5),rgba(34,16,3,.5)) border-box,var(--h-peau) border-box}
+[data-hab="leopard"] ::-webkit-scrollbar-thumb{background:var(--h-peau);border:2px solid #2A1809}
+[data-hab="leopard"] ::-webkit-scrollbar-track{background:#2A1809}
+[data-hab="leopard"] .v2-empty-ico{color:var(--ip-blue)}
