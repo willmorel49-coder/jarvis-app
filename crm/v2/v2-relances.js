@@ -58,6 +58,8 @@
   }
   function jourDe(iso) { var d = new Date(iso); d.setHours(0, 0, 0, 0); return d; }
   function normMail(m) { return String(m || '').trim().toLowerCase(); }
+  // Un identifiant d'officine finit dans un onclick : chiffres, lettres, _ et - seulement (comme sur() de la to do list).
+  function sur(v) { return String(v == null ? '' : v).replace(/[^0-9A-Za-z_-]/g, '').slice(0, 40); }
   var RE_MAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
   function mailsDans(t) { return (String(t || '').match(RE_MAIL) || []).map(normMail); }
 
@@ -68,7 +70,7 @@
       var x = s[k] || {};
       out[k] = { r: (Array.isArray(x.r) ? x.r : []).filter(Boolean).map(String),
                  st: ['', 'chaud', 'repondu', 'non'].indexOf(x.st) >= 0 ? x.st : '',
-                 aj: x.aj && typeof x.aj === 'object' ? { nom: String(x.aj.nom || ''), mail: normMail(x.aj.mail), pid: String(x.aj.pid || ''), d: String(x.aj.d || '') } : null };
+                 aj: x.aj && typeof x.aj === 'object' ? { nom: String(x.aj.nom || ''), mail: normMail(x.aj.mail), pid: sur(x.aj.pid), d: String(x.aj.d || '') } : null };
     });
     return { s: out };
   }
@@ -182,8 +184,8 @@
         (E.stop || []).forEach(function (x) { stop[String(x && x.cip != null ? x.cip : x)] = true; });
 
         function cleDe(pid, mail, repli) {
-          pid = String(pid || '');
-          if (!pid && mail && I.parMail[mail]) pid = I.parMail[mail];
+          pid = sur(pid);
+          if (!pid && mail && I.parMail[mail]) pid = sur(I.parMail[mail]);
           return pid ? { cle: pid, pid: pid } : (mail ? { cle: 'm:' + mail, pid: '' } : { cle: repli, pid: '' });
         }
         function contact(pid, mail, repli, c, nom) {
@@ -386,7 +388,7 @@
       var I = index(), ajouts = [];
       txt.split(/\n+/).forEach(function (ligne) {
         var ms = mailsDans(ligne);
-        if (ms.length) ms.forEach(function (m) { ajouts.push({ mail: m, pid: I.parMail[m] || '', nom: '' }); });
+        if (ms.length) ms.forEach(function (m) { ajouts.push({ mail: m, pid: sur(I.parMail[m]), nom: '' }); });
         else if (ligne.trim()) ajouts.push({ mail: '', pid: '', nom: ligne.trim().slice(0, 120) });
       });
       var clientes = ajouts.filter(function (a) { return estCliente(I, a.pid); }).length;
