@@ -233,7 +233,7 @@
           if (!s.contacts.length) return;
           var inf = infos(I, s.pid);
           s.nom = inf.nom || s.nomVu || (s.mailVu ? s.mailVu.split('@')[0] : 'Officine');
-          s.ville = inf.ville; s.grp = inf.grp; s.tel = inf.tel; s.mail = inf.mail || s.mailVu;
+          s.ville = inf.ville; s.grp = inf.grp; s.tel = inf.tel; s.mail = s.mailVu || inf.mail;   // l'adresse à laquelle j'ai écrit passe avant celle de la carte
           s.relances = f.r.slice().sort(); s.st = f.st; s.manuel = !!f.aj;
           s.notes = s.contacts.map(function (c) { return c.note; }).filter(Boolean);
           s.origine = s.contacts.reduce(function (m, c) { return ORIGINES[c.t].rang > ORIGINES[m.t].rang ? c : m; }, s.contacts[0]);
