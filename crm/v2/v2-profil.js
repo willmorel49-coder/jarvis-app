@@ -76,6 +76,7 @@
     return false;
   }
 
+  var _envoi = Promise.resolve();
   function save(st, sid, data) {
     var by = (V2.user && V2.user.name) || '', at = Date.now();
     var c = sb();
@@ -89,7 +90,8 @@
       try { console.warn('[profil] enregistrement partagé refusé', st, sid, motif); } catch (e) {}
     }
     if (c && V2.user) {
-      c.from(TABLE).upsert({ scope_type: st, scope_id: String(sid), data: data, updated_by: V2.user.id, updated_by_name: by, updated_at: new Date().toISOString() }, { onConflict: 'scope_type,scope_id' })
+      // 16/10/2026 — `_envoi` retient la promesse de l'envoi en cours : poserPlusieurs() la rend à l'appelant, qui sait ainsi quand l'écriture est partie.
+      _envoi = c.from(TABLE).upsert({ scope_type: st, scope_id: String(sid), data: data, updated_by: V2.user.id, updated_by_name: by, updated_at: new Date().toISOString() }, { onConflict: 'scope_type,scope_id' })
         .then(function (r) { if (r.error) repli(r.error.message || ''); })
         .catch(function (e) { repli((e && e.message) || 'connexion'); });
     } else { localSet(st, sid, rec); }
@@ -244,6 +246,25 @@
       var base = (res && res.rec && res.rec.data) || {};
       if (v) base[k] = v; else delete base[k];
       return save(st, String(sid), base);
+    });
+  };
+
+  // 16/10/2026 — fiche d'officine modifiable depuis la barre de gauche : poser PLUSIEURS champs d'un coup,
+  // en UNE lecture et UNE écriture (deux écritures qui se suivent se relisent l'une l'autre et la seconde
+  // effacerait la première). `patch` : { champ: valeur } ; une valeur vide SUPPRIME la saisie (retour à la
+  // valeur de la base). Même règle que `set` pour la relance : on retient QUI a posé la date.
+  // Rend la saisie fusionnée une fois l'envoi parti (ou échoué : le repli local est alors signalé par save()).
+  V2.profil.poserPlusieurs = function (st, sid, patch) {
+    return load(st, String(sid)).then(function (res) {
+      if (!lectureSure(res)) throw new Error('lecture');
+      var base = (res && res.rec && res.rec.data) || {};
+      if (patch.hasOwnProperty('relance_date') && (patch.relance_date || '') !== (base.relance_date || '')) {
+        if (patch.relance_date && V2.user) base.relance_par = V2.user.id; else delete base.relance_par;
+      }
+      Object.keys(patch).forEach(function (k) { var v = patch[k]; if (v == null || v === '') delete base[k]; else base[k] = v; });
+      _envoi = Promise.resolve();
+      var rec = save(st, String(sid), base);
+      return _envoi.then(function () { return rec; });
     });
   };
 

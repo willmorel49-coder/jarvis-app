@@ -1195,28 +1195,49 @@
   V2.pharmaCreerProspect = function () { secteurTab = 'prospects'; V2.createProspect(''); };
   function renderCreatedProspect(root, pid) {
     var seed = (_newProspectSeed && _newProspectSeed.id === pid) ? { nom: _newProspectSeed.nom } : {};
+    // 16/10/2026 — la saisie de l'équipe (tout vit dans le scope `client` pour ces fiches) est lue une fois, gardée en mémoire, puis la fiche se redessine
+    if (_coordSaisie[pid] === undefined && V2.profil && V2.profil.charger) {
+      _coordSaisie[pid] = null;
+      V2.profil.charger('client', pid).then(function (d) {
+        _coordSaisie[pid] = d || {};
+        if (V2.route && String(V2.route.param) === String(pid)) V2.render();
+      }).catch(function () { _coordSaisie[pid] = {}; });
+    }
+    var sa = _coordSaisie[pid] || {}, sv = function (k) { return String(sa[k] == null ? '' : sa[k]).trim(); };
+    var nomA = sv('nom') || seed.nom || '', cpA = cpDe({ cp: sv('cp') });
+    var fe = feMarkup({ kind: 'cree', pid: pid, v: {
+      nom: nomA, titulaire: sv('titulaire'), groupement: sv('groupement'), adresse: sv('adresse'), cp: sv('cp'), ville: sv('ville'), tel: sv('tel'), portable: sv('portable'),
+      fax: sv('fax'), email: sv('email'), interlocuteur: sv('interlocuteur'), siren: sv('siren'), relance_date: sv('relance_date')
+    } });
+    var kvC = feKv('Ville', esc([cpA, sv('ville')].filter(function (x) { return x; }).join(' '))) + feKv('Adresse', sv('adresse') ? esc(sv('adresse')) : '') + feKv('Titulaire', esc(sv('titulaire'))) +
+      (sv('interlocuteur') ? feKv('Interlocuteur', esc(sv('interlocuteur'))) : '') + feKv('Groupement', esc(sv('groupement'))) +
+      feKv('Téléphone', sv('tel') ? esc(sv('tel')) : '') + (sv('portable') ? feKv('Portable', esc(sv('portable'))) : '') + feKv('E-mail', sv('email') ? esc(sv('email')) : '');
+    var idCardC = '<div class="pha-id">' +
+      '<div class="pha-id-top"><div class="pha-code mono">PROSPECT CRÉÉ À LA MAIN</div>' + fe.bouton + '</div>' +
+      '<div class="pha-name"><span class="v2-prospect-n">' + esc(nomA || 'Nouvelle fiche prospect') + '</span></div>' +
+      '<div class="pha-kv">' + kvC + '</div>' +
+      ((sv('tel') || sv('email')) ? '<div class="pha-acts">' +
+        (sv('tel') ? '<a class="pha-btn" href="tel:' + esc(sv('tel').replace(/[^+0-9]/g, '')) + '">' + (V2.ICO ? V2.ICO('phone', 15) : '') + 'Appeler</a>' : '') +
+        (sv('email') ? '<a class="pha-btn" href="mailto:' + esc(sv('email')) + '">' + (V2.ICO ? V2.ICO('mail', 15) : '') + 'E-mail</a>' : '') + '</div>' : '') +
+      '</div>';
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
-      '<div class="v2-wrap v2-prospect">' +
+      '<div class="v2-wrap v2-prospect pha-wrap"><div class="pha">' +
+        '<div class="pha-rail">' + idCardC + fe.panneau +
         '<div class="v2-card v2-prospect-hd">' +
-          '<div class="v2-prospect-top">' +
-            '<div class="v2-pharma-pin" style="background:linear-gradient(150deg,#00B37E,#00875A)">' + (V2.ICO ? V2.ICO('pharma', 22) : '') + '</div>' +
-            '<div style="flex:1;min-width:0">' +
-              '<div class="v2-prospect-n">Nouvelle fiche prospect</div>' +
-              '<div class="v2-prospect-a">Renseignez l\'identité et les coordonnées ci-dessous</div>' +
-            '</div>' +
-          '</div>' +
-          '<p class="v2-prospect-note">Nouvelle officine — indiquez son nom, son code postal, ses coordonnées, vos infos et vos notes. Chaque champ est enregistré dès que vous le quittez, partagé avec l\'équipe, et la fiche se retrouve dans Officines, onglet Prospects.</p>' +
-        '</div>' +
+          '<p class="v2-prospect-note" style="margin-top:0">Renseignez l\'identité et les coordonnées avec le bouton « Modifier » ou dans les formulaires de la fiche. Nouvelle officine — indiquez son nom, son code postal, ses coordonnées, vos infos et vos notes. Chaque champ est enregistré dès que vous le quittez, partagé avec l\'équipe, et la fiche se retrouve dans Officines, onglet Prospects.</p>' +
+        '</div></div>' +
+        '<div class="pha-main">' +
         (V2.profil ? V2.profil.newProspectSection(pid, seed) : '') +
         (V2.profil ? V2.profil.section('client', pid) : '') +
         (V2.rdvPrepa ? V2.rdvPrepa.section(pid) : '') +
         (V2.notes ? V2.notes.section('client', pid) : '') +
         '<div class="v2-card v2-prospect-acts">' + txProspectBtn(pid) +
           '<button type="button" class="v2-btn v2-btn-ghost" id="of-archiver" onclick="V2.pharmaArchiverProspect(\'' + esc(String(pid).replace(/[^0-9A-Za-z_-]/g, '')) + '\')" title="La fiche sort des listes, rien n\'est effacé">Archiver cette fiche</button></div>' +
-      '</div>';
+      '</div></div></div>';
     if (V2.profil) V2.profil.hydrate();
     if (V2.notes) V2.notes.hydrate();
     if (V2.rdvPrepa) V2.rdvPrepa.hydrate();
+    V2.pharmaFiche.apres(pid);
     // Fiche déjà remplie : son nom en titre, pas « Nouvelle fiche prospect ».
     if (V2.profil && V2.profil.charger) V2.profil.charger('client', pid).then(function (d) {
       if (!V2.route || String(V2.route.param) !== String(pid)) return;
@@ -1310,6 +1331,183 @@
     V2.render();
   };
 
+  // ══ 16/10/2026 — « Modifier » depuis la barre de gauche : UN composant pour la fiche cliente, le prospect de la base
+  // nationale et le prospect créé à la main (demande de Will : « tout modifier et actualiser les infos dans la barre de gauche »).
+  // Le crayon de la carte bleue ouvre un panneau juste sous elle. Au clic sur « Enregistrer », seuls les champs RÉELLEMENT
+  // changés sont écrits (sinon une donnée importée deviendrait une « saisie de l'équipe », qui fait foi et n'est jamais écrasée
+  // par un import). Un champ vidé supprime la saisie : la valeur de la base revient. Les valeurs sont posées en mémoire AVANT
+  // le nouvel affichage : on ne dépend d'aucune relecture de la base.
+  // Où chaque champ vit (les mêmes endroits que les anciens formulaires, pour que tous les écrans restent d'accord) :
+  //   nom / titulaire / groupement  → correction « override » + V2.nameOvr / V2.titOvr / GRP_OVR  (fiche cliente et prospect de la base)
+  //   le reste                       → saisie de l'équipe, scope `client` (en UNE écriture : V2.profil.poserPlusieurs)
+  //   prospect de la base : titulaire et groupement vont AUSSI dans le scope `client` (c'est là que le formulaire du bas les lit)
+  //   prospect créé à la main (px_…) : tout dans le scope `client`, pas de correction.
+  var FE_GROUPES = [
+    ['Identité', [['nom', 'Nom de la pharmacie', 'text'], ['titulaire', 'Titulaire(s)', 'text'], ['groupement', 'Groupement', 'grp']]],
+    ['Coordonnées', [['adresse', 'Adresse', 'text'], ['cp', 'Code postal', 'text'], ['ville', 'Ville', 'text'], ['tel', 'Téléphone', 'tel'], ['portable', 'Portable', 'tel'], ['fax', 'Fax', 'tel'], ['email', 'E-mail', 'email']]],
+    ['Contact et société', [['interlocuteur', 'Interlocuteur', 'text'], ['siren', 'SIREN', 'text']]],
+    ['Suivi', [['relance_date', 'Prochaine relance', 'date']]]
+  ];
+  var _feCtx = {};     // pid -> { kind, v } : ce que la fiche affichait au dernier rendu (sert à ne garder que ce qui a changé)
+  var _feEtat = {};    // pid -> { vals, foc } : panneau ouvert, avec ce qui a été tapé (un rendu déclenché pendant la saisie ne le perd pas)
+  function feNomsGroupements(courant) {
+    var set = {};
+    (V2.pharmacies || []).forEach(function (p) { var g = String(p.groupement || '').trim(); if (g && g !== '—') set[g] = 1; });
+    var D = window.PHARMA_FR; if (D && D.grp) D.grp.forEach(function (g) { g = String(g || '').trim(); if (g && g !== '—') set[g] = 1; });
+    if (courant) set[courant] = 1;
+    return Object.keys(set).sort(function (x, y) { return x.localeCompare(y, 'fr'); });
+  }
+  // Une ligne « libellé / valeur » de la carte bleue (valeur absente : « à compléter »)
+  function feKv(l, v, empty) { return '<span>' + l + '</span><span' + (v ? '' : ' class="pha-empty"') + '>' + (v ? v : (empty || 'à compléter')) + '</span>'; }
+  // ctx = { kind: 'client' | 'prospect' | 'cree', pid, v: { champ: valeur affichée } }  →  { bouton, panneau }
+  function feMarkup(ctx) {
+    var pid = String(ctx.pid), v = ctx.v || {};
+    _feCtx[pid] = { kind: ctx.kind, v: v };
+    var champ = function (f) {
+      var k = f[0], val = String(v[k] == null ? '' : v[k]), id = 'pha-fe-' + k;
+      var ctrl = f[2] === 'grp'
+        ? '<select id="' + id + '" data-fe="' + k + '" data-orig="' + esc(val) + '" onchange="V2.pharmaFiche.grp(this)"><option value="">—</option>' +
+            feNomsGroupements(val).map(function (g) { return '<option' + (g === val ? ' selected' : '') + '>' + esc(g) + '</option>'; }).join('') +
+            '<option value="__add__">➕ préciser…</option></select>'
+        : '<input id="' + id + '" type="' + f[2] + '" data-fe="' + k + '" data-orig="' + esc(val) + '" value="' + esc(val) + '" autocomplete="off" placeholder="—">';
+      return '<div class="pha-fe-f pha-fe-f-' + k + '"><label for="' + id + '">' + esc(f[1]) + '</label>' + ctrl + '</div>';
+    };
+    var groupes = FE_GROUPES.map(function (g) {
+      var champs = g[1], h = '';
+      for (var i = 0; i < champs.length; i++) {
+        if (champs[i][0] === 'cp') { h += '<div class="pha-fe-duo">' + champ(champs[i]) + champ(champs[i + 1]) + '</div>'; i++; }
+        else h += champ(champs[i]);
+      }
+      return '<fieldset class="pha-fe-g"><legend>' + esc(g[0]) + '</legend>' + h + '</fieldset>';
+    }).join('');
+    var bouton = '<button type="button" class="pha-edit l8-interne" id="pha-edit" aria-expanded="false" aria-controls="pha-fe" title="Modifier les infos de cette officine" onclick="V2.pharmaFiche.ouvrir()">' +
+      '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/><path d="m14.5 7.5 3 3"/></svg>Modifier</button>';
+    var panneau = '<div class="pha-fe v2-card l8-interne" id="pha-fe" data-pid="' + esc(pid) + '" hidden role="group" aria-label="Modifier les infos de l’officine" onkeydown="V2.pharmaFiche.touche(event)" oninput="V2.pharmaFiche.saisie(event)" onfocusin="V2.pharmaFiche.foc(event)">' +
+      '<div class="pha-fe-t">Modifier la fiche</div>' + groupes +
+      '<a class="pha-fe-lien" href="#" onclick="V2.pharmaFiche.profil();return false">Logiciel, grossistes, génériqueurs →</a>' +
+      '<div class="pha-fe-btns"><button type="button" class="pha-fe-ok" onclick="V2.pharmaFiche.enregistrer()">Enregistrer</button><button type="button" class="pha-fe-no" onclick="V2.pharmaFiche.annuler()">Annuler</button></div></div>';
+    return { bouton: bouton, panneau: panneau };
+  }
+  function feFermer() {
+    var b = document.getElementById('pha-fe'), e = document.getElementById('pha-edit'), p = document.querySelector('.pha');
+    if (b) { b.hidden = true; delete _feEtat[b.getAttribute('data-pid')]; }
+    if (e) { e.setAttribute('aria-expanded', 'false'); }
+    if (p) p.removeAttribute('data-fe');
+    return e;
+  }
+  V2.pharmaFiche = {
+    ouvrir: function (rest) {
+      var b = document.getElementById('pha-fe'), e = document.getElementById('pha-edit'), p = document.querySelector('.pha'); if (!b) return;
+      if (!rest && !b.hidden) { V2.pharmaFiche.annuler(); return; }   // le crayon rebascule : un deuxième clic referme
+      var pid = b.getAttribute('data-pid'), et = _feEtat[pid] || (_feEtat[pid] = { vals: {}, foc: '' });
+      Array.prototype.forEach.call(b.querySelectorAll('[data-fe]'), function (f) {
+        var k = f.getAttribute('data-fe'), v = et.vals[k] != null ? et.vals[k] : f.getAttribute('data-orig');
+        if (f.tagName === 'SELECT' && v && !Array.prototype.some.call(f.options, function (o) { return o.value === v; })) { var o = document.createElement('option'); o.textContent = o.value = v; f.insertBefore(o, f.querySelector('option[value="__add__"]')); }
+        f.value = v;
+      });
+      b.hidden = false; if (e) e.setAttribute('aria-expanded', 'true'); if (p) p.setAttribute('data-fe', '1');
+      var cible = (et.foc && document.getElementById('pha-fe-' + et.foc)) || document.getElementById('pha-fe-nom');
+      if (cible && (!rest || et.foc)) { try { cible.focus({ preventScroll: true }); } catch (x) { cible.focus(); } }
+      if (!rest) { try { b.scrollIntoView({ block: 'nearest', behavior: 'auto' }); } catch (x) {} }
+    },
+    annuler: function () {
+      var e = feFermer(); if (e) { try { e.focus({ preventScroll: true }); } catch (x) {} }
+    },
+    // Retient ce qui est tapé (champs qui diffèrent de l'affiché) pour le retrouver si la fiche est redessinée pendant la saisie
+    saisie: function (ev) {
+      var f = ev.target, b = document.getElementById('pha-fe'); if (!f || !b || !f.getAttribute || !f.getAttribute('data-fe')) return;
+      var et = _feEtat[b.getAttribute('data-pid')]; if (!et) return;
+      var k = f.getAttribute('data-fe'); if (f.value !== f.getAttribute('data-orig')) et.vals[k] = f.value; else delete et.vals[k];
+    },
+    foc: function (ev) {
+      var f = ev.target, b = document.getElementById('pha-fe'); if (!f || !b || !f.getAttribute || !f.getAttribute('data-fe')) return;
+      var et = _feEtat[b.getAttribute('data-pid')]; if (et) et.foc = f.getAttribute('data-fe');
+    },
+    touche: function (ev) {
+      if (ev.key === 'Escape') { ev.preventDefault(); V2.pharmaFiche.annuler(); return; }
+      if (ev.key === 'Enter' && ev.target && ev.target.tagName === 'INPUT') { ev.preventDefault(); V2.pharmaFiche.enregistrer(); }
+    },
+    // « ➕ préciser… » comme le select des anciens formulaires
+    grp: function (sel) {
+      if (sel.value !== '__add__') return;
+      var v = (window.prompt('Nom du groupement :', '') || '').trim();
+      if (!v) { sel.value = sel.getAttribute('data-orig') || ''; return; }
+      var o = document.createElement('option'); o.textContent = o.value = v; sel.insertBefore(o, sel.querySelector('option[value="__add__"]')); sel.value = v;
+      V2.pharmaFiche.saisie({ target: sel });
+    },
+    // Les réglages « Logiciel, grossistes, génériqueurs… » restent dans le Profil commercial (une seule boîte, pas deux qui se contredisent)
+    profil: function () {
+      var box = document.querySelector('.pha-infos .v2-profil-box[data-st="client"] [data-fk="lgo"]') || document.querySelector('.v2-profil-box [data-fk="lgo"]');
+      box = box && box.closest('.v2-profil-box'); if (!box) return;
+      V2.pharmaFiche.annuler();
+      try { box.scrollIntoView({ block: 'start', behavior: 'auto' }); } catch (x) { box.scrollIntoView(true); }
+    },
+    // Après chaque rendu de fiche : si le panneau était ouvert (rendu déclenché pendant la saisie), il se rouvre avec ce qui était tapé
+    apres: function (pid) {
+      if (_feEtat[String(pid)] && document.getElementById('pha-fe')) V2.pharmaFiche.ouvrir(true);
+    },
+    enregistrer: function () {
+      var b = document.getElementById('pha-fe'); if (!b) return;
+      var pid = b.getAttribute('data-pid'), ctx = _feCtx[pid]; if (!ctx) return;
+      var chg = {};
+      Array.prototype.forEach.call(b.querySelectorAll('[data-fe]'), function (f) {
+        var k = f.getAttribute('data-fe'), v = (f.value || '').trim();
+        if (v === '__add__') return;
+        if (v !== String(f.getAttribute('data-orig') || '').trim()) chg[k] = v;
+      });
+      if (!V2.user) { if (V2.toast) V2.toast('Connecte-toi pour modifier'); return; }
+      if (!Object.keys(chg).length) { V2.pharmaFiche.annuler(); if (V2.toast) V2.toast('Aucun changement'); return; }
+      var kind = ctx.kind, ov = {}, pro = {}, recon = false;
+      var ph = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); });
+      Object.keys(chg).forEach(function (k) {
+        var v = chg[k];
+        if (kind === 'cree') { pro[k] = v; return; }
+        if (k === 'nom') {
+          V2.nameOvr = V2.nameOvr || {};
+          if (v) V2.nameOvr[pid] = v; else delete V2.nameOvr[pid];
+          if (ph && v) ph.name = v;
+          if (window.PHARMA_FR) { var pn = pharmaFrById(pid); if (pn && v) pn[6] = v; }
+          ov.nom = v;
+        } else if (k === 'titulaire') {
+          V2.titOvr = V2.titOvr || {};
+          if (v) V2.titOvr[pid] = v; else delete V2.titOvr[pid];
+          if (window.PHARMA_FR) { var pt = pharmaFrById(pid); if (pt) pt[10] = v; }
+          ov.titulaire = v; if (kind === 'prospect') pro.titulaire = v;
+        } else if (k === 'groupement') {
+          if (ph) ph.groupement = v;
+          window.GRP_OVR = window.GRP_OVR || {};
+          if (v) window.GRP_OVR[pid.replace(/[^0-9]/g, '')] = v; else delete window.GRP_OVR[pid.replace(/[^0-9]/g, '')];
+          ov.groupement = v; recon = true; if (kind === 'prospect') pro.groupement = v;
+        } else pro[k] = v;
+      });
+      // la saisie de l'équipe est mise à jour en mémoire tout de suite : l'affichage ne dépend pas d'une relecture
+      if (Object.keys(pro).length) {
+        var loc = Object.assign({}, _coordSaisie[pid] || {});
+        Object.keys(pro).forEach(function (k) { if (pro[k]) loc[k] = pro[k]; else delete loc[k]; });
+        if (pro.hasOwnProperty('relance_date')) { if (pro.relance_date) loc.relance_par = V2.user.id; else delete loc.relance_par; }
+        _coordSaisie[pid] = loc;
+      }
+      if (recon) {   // même repasse que chargerOverrides : l'annuaire national relit le groupement corrigé
+        var D = window.PHARMA_FR;
+        if (D && D.p && window.GRP_OVR && V2.reconcilePharma) { D._wmlRecon = false; try { V2.reconcilePharma(); } catch (x) {} try { if (V2.carteRecalage) V2.carteRecalage(); } catch (x) {} }
+      }
+      var travaux = [];
+      if (Object.keys(ov).length && V2.profil && V2.profil.saveOverride) travaux.push(new Promise(function (ok) { V2.profil.saveOverride(pid, ov, ok); setTimeout(ok, 4000); }));
+      var echec = false;
+      if (Object.keys(pro).length && V2.profil && V2.profil.poserPlusieurs) travaux.push(V2.profil.poserPlusieurs('client', pid, pro).catch(function () { echec = true; }));
+      feFermer();
+      if (V2.toast) V2.toast('Fiche mise à jour');
+      V2.render();
+      // l'envoi terminé : les anciens formulaires du bas se relisent (leur lecture, partie avec le rendu, a pu précéder l'écriture)
+      Promise.all(travaux).then(function () {
+        if (!V2.route || String(V2.route.param) !== pid) return;
+        if (echec) { _coordSaisie[pid] = undefined; V2.render(); return; }   // rien n'est parti : on ne laisse pas croire le contraire
+        Array.prototype.forEach.call(document.querySelectorAll('.v2-profil-box[data-done]'), function (x) { x.removeAttribute('data-done'); });
+        if (V2.profil) V2.profil.hydrate();
+      });
+    }
+  };
+
   function renderProspectFiche(root, pid) {
     if (!window.PHARMA_FR) {   // base nationale pas encore chargée → lazy-load puis re-rendu
       root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
@@ -1337,6 +1535,34 @@
     // son titulaire est celui de la base clients, l'annuaire national pouvant porter l'ancien.
     var caSV = ((window.CLIENTS_ACTIFS || {}).d || {})[String(pid)] || null;
     var seed = { nom: p[6] || '', groupement: grp || '', titulaire: (caSV && caSV[3]) || p[10] || dirigeantsDe(oi), tel: p[9] || oiTel, email: p[11] || '', adresse: oiAdresse };
+    // 16/10/2026 — la saisie de l'équipe (scope `client`) n'était jamais relue dans l'en-tête : un téléphone, un titulaire ou un
+    // groupement corrigé n'apparaissait pas en haut. Une lecture par fiche, gardée en mémoire (comme la fiche cliente), puis un re-rendu.
+    if (_coordSaisie[pid] === undefined && V2.profil && V2.profil.charger) {
+      _coordSaisie[pid] = null;
+      V2.profil.charger('client', pid).then(function (d) {
+        _coordSaisie[pid] = d || {};
+        if (V2.route && String(V2.route.param) === String(pid)) V2.render();
+      }).catch(function () { _coordSaisie[pid] = {}; });
+    }
+    var sa = _coordSaisie[pid] || {}, sv = function (k) { return String(sa[k] == null ? '' : sa[k]).trim(); };
+    var villeA = sv('ville') || ville, cpA = sv('cp') || cp, grpA = sv('groupement') || grp;
+    var titA = sv('titulaire') || titulaireOf(pid, seed.titulaire), telA = sv('tel') || seed.tel, mailA = sv('email') || seed.email, adrA = sv('adresse') || seed.adresse;
+    var faxA = sv('fax') || oiFax, sirenA = sv('siren') || oiSiren;
+    var fe = feMarkup({ kind: 'prospect', pid: pid, v: {
+      nom: nameOf(pid, p[6] || p[10]), titulaire: titA, groupement: grpA, adresse: adrA, cp: cpA, ville: villeA, tel: telA, portable: sv('portable'), fax: faxA, email: mailA,
+      interlocuteur: sv('interlocuteur'), siren: sirenA, relance_date: sv('relance_date')
+    } });
+    var kvP = feKv('Ville', esc([cpA, villeA].filter(function (x) { return x; }).join(' '))) + feKv('Adresse', adrA ? esc(adrA) : '') + feKv('Titulaire', esc(titA)) +
+      (sv('interlocuteur') ? feKv('Interlocuteur', esc(sv('interlocuteur'))) : '') + feKv('Groupement', esc(grpA)) +
+      feKv('Téléphone', telA ? esc(telA) : '') + (sv('portable') ? feKv('Portable', esc(sv('portable'))) : '') + feKv('E-mail', mailA ? esc(mailA) : '');
+    var idCardP = '<div class="pha-id">' +
+      '<div class="pha-id-top"><div class="pha-code mono">' + esc(String(caSV ? 'Client' : seg).toUpperCase()) + (uga ? ' · UGA ' + esc(uga) : '') + '</div>' + fe.bouton + '</div>' +
+      '<div class="pha-name">' + esc(nameOf(pid, p[6] || p[10]) || 'Pharmacie') + '</div>' +
+      '<div class="pha-kv">' + kvP + '</div>' +
+      ((telA || mailA) ? '<div class="pha-acts">' +
+        (telA ? '<a class="pha-btn" href="tel:' + esc(telA.replace(/[^+0-9]/g, '')) + '">' + (V2.ICO ? V2.ICO('phone', 15) : '') + 'Appeler</a>' : '') +
+        (mailA ? '<a class="pha-btn" href="mailto:' + esc(mailA) + '">' + (V2.ICO ? V2.ICO('mail', 15) : '') + 'E-mail</a>' : '') + '</div>' : '') +
+      '</div>';
     var secteurDe = (ugaCommMap()[p[2]] || []).join(', ');   // commerciaux présents dans son UGA
     var badge = function (t, cls) { return t ? '<span class="v2-chip' + (cls ? ' ' + cls : '') + '">' + esc(t) + '</span>' : ''; };
     // 23/09/2026 — un prospect n'a jamais de grossiste/génériqueur connu (base clients
@@ -1348,18 +1574,18 @@
         (probable.generiqueur ? '<span>Génériqueur probable</span><b>' + esc(V2.probableTexte(probable.generiqueur, probable.groupement)) + '</b>' : '') +
       '</div>' : '';
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
-      '<div class="v2-wrap v2-prospect">' +
+      // 16/10/2026 — deux colonnes comme la fiche cliente : à gauche la carte bleue (nom, infos, crayon) puis les pastilles et lignes d'avant ;
+      // à droite le reste, dans le même ordre qu'avant. Sous 900 px la carte passe en haut (règles de `.pha`).
+      '<div class="v2-wrap v2-prospect pha-wrap"><div class="pha">' +
+        '<div class="pha-rail">' + idCardP + fe.panneau +
         '<div class="v2-card v2-prospect-hd">' +
           '<div class="v2-prospect-top">' +
-            '<div class="v2-pharma-pin" style="background:linear-gradient(150deg,#0057FF,#0034A0)">' + (V2.ICO ? V2.ICO('pharma', 22) : '') + '</div>' +
             '<div style="flex:1;min-width:0">' +
-              '<div class="v2-prospect-n">' + esc(nameOf(pid, p[6] || p[10]) || 'Pharmacie') + '</div>' +
-              '<div class="v2-prospect-a">' + esc(ville) + (cp ? ' · ' + esc(cp) : '') + '</div>' +
-              '<div class="v2-prospect-badges">' + badge(caSV ? 'Client' : seg, 'pr') + badge(offilogDe(pid) && offilogDe(pid).oui ? 'Client Offilog' : '') + badge(grp) + badge(uga ? 'UGA ' + uga : '') + badge(secteurDe ? 'Secteur de ' + secteurDe : '') + '</div>' +
-              ((oiSiren || oiFax || oiDateouv) ? '<div class="v2-prospect-extra">' +
-                (oiSiren ? '<a href="https://annuaire-entreprises.data.gouv.fr/entreprise/' + esc(oiSiren) + '" target="_blank" rel="noopener">SIREN ' + esc(oiSiren) + '</a>' : '') +
-                (oiFax ? (oiSiren ? ' · ' : '') + 'Fax ' + esc(oiFax) : '') +
-                (oiDateouv ? ((oiSiren || oiFax) ? ' · ' : '') + 'Ouverte le ' + esc(oiDateouv) : '') +
+              '<div class="v2-prospect-badges">' + badge(caSV ? 'Client' : seg, 'pr') + badge(offilogDe(pid) && offilogDe(pid).oui ? 'Client Offilog' : '') + badge(grpA) + badge(uga ? 'UGA ' + uga : '') + badge(secteurDe ? 'Secteur de ' + secteurDe : '') + '</div>' +
+              ((sirenA || faxA || oiDateouv) ? '<div class="v2-prospect-extra">' +
+                (sirenA ? '<a href="https://annuaire-entreprises.data.gouv.fr/entreprise/' + esc(sirenA) + '" target="_blank" rel="noopener">SIREN ' + esc(sirenA) + '</a>' : '') +
+                (faxA ? (sirenA ? ' · ' : '') + 'Fax ' + esc(faxA) : '') +
+                (oiDateouv ? ((sirenA || faxA) ? ' · ' : '') + 'Ouverte le ' + esc(oiDateouv) : '') +
               '</div>' : '') +
               ((dirigeantsDe(oi) && !memesNoms(p[10], dirigeantsDe(oi))) ? '<div class="v2-prospect-extra">Dirigeant(s) déclaré(s) : ' + esc(dirigeantsDe(oi)) + '</div>' : '') +
               (equipeDe(oi) ? '<div class="v2-prospect-extra">Pharmaciens : ' + esc(equipeDe(oi)) + '</div>' : '') +
@@ -1373,7 +1599,8 @@
           '</div>' +
           (caSV ? '<p class="v2-prospect-note">Cliente de la base clients' + (caSV[3] ? ' (' + esc(caSV[3]) + ')' : '') + ' — aucune vente sur la période. Ses coordonnées, infos et notes se complètent ici. Tout est sauvegardé.</p>'
                 : '<p class="v2-prospect-note">Officine non cliente — complétez ses coordonnées, infos et notes pour la suivre comme un futur client. Tout est sauvegardé.</p>') +
-        '</div>' +
+        '</div></div>' +
+        '<div class="pha-main">' +
         '<div class="v2-card" style="padding:12px 16px 14px">' + nameEditor(pid, p[6] || '') + '</div>' +
         // 27/09/2026 — le potentiel sur un PROSPECT : c'est ici qu'il sert le plus, puisque
         // aucune vente n'existe encore. Découvert en le testant : la fiche prospect suit une
@@ -1390,10 +1617,11 @@
           txProspectBtn(pid) +
           '<a class="v2-btn v2-btn-ghost" href="https://www.google.com/maps/search/?api=1&query=' + q + '" target="_blank" rel="noopener">Voir sur Google Maps</a>' +
         '</div>' +
-      '</div>';
+      '</div></div></div>';
     if (V2.profil) V2.profil.hydrate();
     if (V2.notes) V2.notes.hydrate();
     if (V2.rdvPrepa) V2.rdvPrepa.hydrate();
+    V2.pharmaFiche.apres(pid);
   }
 
   var _clientsAsked = false;   // évite de redemander clients-data.js à chaque rendu
@@ -3268,6 +3496,7 @@
     var caBase = ((window.CLIENTS_ACTIFS || {}).d || {})[String(pid)], generiqueur = (caBase && caBase[10]) || '';
     // Sans le module Rendez-vous (espace Escale), V2.rdvInfo n'existe pas : la base clients se lit ici directement.
     if (!infoRdv && caBase) { logiciel = logiciel || caBase[5] || ''; portable = portable || caBase[1] || ''; }
+    portable = String(saisi.portable || '').trim() || portable;   // 16/10/2026 — la saisie de l'équipe passe avant (modifiable depuis la barre de gauche)
     var mail = String(saisi.email || '').trim() || (pharma.email == null ? '' : String(pharma.email)).trim() || (infoRdv && infoRdv.email) || (!infoRdv && caBase && caBase[2]) || '';
     // 23/09/2026 — l'adresse et la ville se complètent aussi depuis la base clients
     // (caBase[11] adresse, [12] cp, [13] ville) quand la saisie et l'annuaire RDV n'ont rien.
@@ -3278,8 +3507,10 @@
     var adresse = String(saisi.adresse || '').trim() || (caBase && caBase[11]) || (infoRdv && infoRdv.adresse) || (oi && oi[0]) || '';   // base clients (09/2026) avant CLIENTS (05/2026)
     // Même trou pour la ville : WML ne la connaît pas partout (« à compléter »
     // sur une officine dont l'annuaire donne pourtant la commune).
-    var loc = [pharma.cp || (infoRdv && infoRdv.cp) || (caBase && caBase[12]), pharma.ville || (infoRdv && infoRdv.ville) || (caBase && caBase[13])]
-      .filter(function (x) { return x; }).join(' ');
+    // 16/10/2026 — code postal et ville : la saisie de l'équipe d'abord, comme le téléphone
+    var cpV = String(saisi.cp || '').trim() || pharma.cp || (infoRdv && infoRdv.cp) || (caBase && caBase[12]);
+    var villeV = String(saisi.ville || '').trim() || pharma.ville || (infoRdv && infoRdv.ville) || (caBase && caBase[13]);
+    var loc = [cpV, villeV].filter(function (x) { return x; }).join(' ');
     var titulaire = clientTitulaire(pid);
     var comms = (pharma.comms || []).join(', ');
     // 23/09/2026 — données de la base clients jamais montrées jusqu'ici : interlocuteur
@@ -3288,9 +3519,10 @@
     // commerciale : ROBOT.md interdit.
     var interloc = (caBase && caBase[3]) ? (caBase[3] + (caBase[4] ? ' (' + caBase[4] + ')' : '')) : '';
     if (interloc && titulaire && caBase[3] === titulaire) interloc = '';  // même personne que le titulaire : pas de doublon
+    if (String(saisi.interlocuteur || '').trim()) interloc = String(saisi.interlocuteur).trim();   // 16/10/2026 — saisie de l'équipe d'abord
     var uga = (caBase && caBase[8]) || '';
-    var fax = (caBase && caBase[15]) || (oi && oi[2]) || '';
-    var siren = (caBase && caBase[14]) || (oi && oi[3]) || '';
+    var fax = String(saisi.fax || '').trim() || (caBase && caBase[15]) || (oi && oi[2]) || '';
+    var siren = String(saisi.siren || '').trim() || (caBase && caBase[14]) || (oi && oi[3]) || '';
     var nf = V2.normFournisseur || function (v) { return v || ''; };   // « Phoenix » → « Phoenix Pharma », « Mylan » → « Viatris (Mylan) »…
     var grossiste = nf((caBase && caBase[18]) || '');
     var livreePar = (caBase && caBase[16]) || '';
@@ -3314,7 +3546,7 @@
     // la rubrique « Fiche » du menu les lit en lignes.
     var kvHtml = '' +
           kv('Ville', esc(loc)) +
-          (adresse ? kv('Adresse', esc(adresse)) : '') +
+          kv('Adresse', esc(adresse)) +   // 16/10/2026 — toujours affichée (« à compléter » invite à la saisir par le crayon)
           kv('Titulaire', esc(titulaire || dirigeantsDe(oi))) +
           ((dirigeantsDe(oi) && titulaire && !memesNoms(titulaire, dirigeantsDe(oi))) ? kv('Dirigeant(s) déclaré(s)', esc(dirigeantsDe(oi))) : '') +
           (equipeDe(oi) ? kv('Pharmaciens', esc(equipeDe(oi))) : '') +
@@ -3340,9 +3572,15 @@
           (grossiste ? kv('Grossiste principal', esc(grossiste)) : (probable && probable.grossiste ? kvProbable('Grossiste probable', probable.grossiste) : '')) +
           (livreePar ? kv('Livrée par', esc(livreePar)) : '') +
           (potentiel ? kv('Potentiel', esc(potentiel)) : '');
+    // 16/10/2026 — « Modifier » dans la carte bleue : le panneau s'ouvre juste dessous (valeurs = celles affichées)
+    var fe = feMarkup({ kind: 'client', pid: pid, v: {
+      nom: nameOf(pid, pharma.name), titulaire: titulaire, groupement: (pharma.groupement && pharma.groupement !== '—') ? String(pharma.groupement).trim() : '',
+      adresse: adresse, cp: cpV == null ? '' : cpV, ville: villeV || '', tel: tel, portable: portable, fax: fax, email: mail,
+      interlocuteur: interloc, siren: siren, relance_date: String(saisi.relance_date || '')
+    } });
     var idCard =
       '<div class="pha-id">' +
-        '<div class="pha-code mono">' + (pharma.code ? 'CIP ' + esc(String(pharma.code)) + ' · ' : '') + (isEscale() ? 'CLIENTE ESCALE' : 'CLIENTE INTÉGRAL') + (comms ? ' · ' + esc(comms.toUpperCase()) : '') + '</div>' +
+        '<div class="pha-id-top"><div class="pha-code mono">' + (pharma.code ? 'CIP ' + esc(String(pharma.code)) + ' · ' : '') + (isEscale() ? 'CLIENTE ESCALE' : 'CLIENTE INTÉGRAL') + (comms ? ' · ' + esc(comms.toUpperCase()) : '') + '</div>' + fe.bouton + '</div>' +
         '<div class="pha-name">' + esc(nameOf(pid, pharma.name)) + ficheBadge + repriseBadge + '</div>' +
         '<div class="pha-kv">' + kvHtml + '</div>' +
         '<div class="pha-acts">' +
@@ -3527,7 +3765,7 @@
       L8_PROFIL.forEach(function (p) { if (saisi[p[0]]) apres.push({ l: p[1], v: esc(String(saisi[p[0]])), c: '' }); });
       fRows = avant.concat(fRows, apres);
       var ctx = {
-        pidSafe: pidSafe, nom: esc(nameOf(pid, pharma.name)), sous: [pharma.ville || (infoRdv && infoRdv.ville) || (caBase && caBase[13]) || '', (pharma.groupement && pharma.groupement !== '—') ? canonG(pharma.groupement) : ''].filter(function (x) { return x; }).join(' · '),
+        pidSafe: pidSafe, nom: esc(nameOf(pid, pharma.name)), sous: [villeV || '', (pharma.groupement && pharma.groupement !== '—') ? canonG(pharma.groupement) : ''].filter(function (x) { return x; }).join(' · '),
         tel: tel, mail: mail, lgo: btnLgo, rows: fRows, infos: infos, notes: '<div class="l8-notes">' + notes + '</div>',
         tout: l1ToutSection(pid, A) + potentielHtml + briefOff + listing + generiqueurSec,
         vpid: '<p>' + esc([adresse, loc].filter(function (x) { return x; }).join(', ')) + '</p><p>Titulaire : ' + esc(titulaire || dirigeantsDe(oi) || '—') + '</p>' +
@@ -3537,7 +3775,7 @@
     } else {
       apercu =
         '<div class="pha">' +
-          '<div class="pha-rail">' + idCard + listes + infos + notes + '</div>' +
+          '<div class="pha-rail">' + idCard + fe.panneau + listes + infos + notes + '</div>' +
           '<div class="pha-main">' + chiffres + briefOff + listing + generiqueurSec + '</div>' +
         '</div>';
     }
@@ -3558,6 +3796,7 @@
     if (V2.notes) V2.notes.hydrate();
     if (V2.rdvPrepa) V2.rdvPrepa.hydrate();
     if (briefOff) V2.briefOfficine.hydrate(pid, pharmaSalesAll(pid));
+    if (!menu) V2.pharmaFiche.apres(pid);
   }
 
   // Changer le groupement d'une pharmacie depuis sa fiche (correction persistée + appliquée).
@@ -6390,12 +6629,12 @@
       '.pha-id a{color:inherit;text-decoration:underline}',
       '.pha-id::before{content:"";position:absolute;width:420px;height:420px;border-radius:50%;left:-120px;top:-260px;background:radial-gradient(closest-side,rgba(120,170,255,.55),rgba(120,170,255,0))}',
       '.pha-id>*{position:relative}',
-      '.pha-code{font-size:12px;opacity:.75;font-weight:700;letter-spacing:.04em}',
+      '.pha-code{font-size:12px;color:rgba(255,255,255,.88);font-weight:700;letter-spacing:.04em}',   // 16/10/2026 — était `opacity:.75` sur du texte (mesuré 4,39:1 sur le rendu) : teinte à la place,
       '.pha-name{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.1;margin:6px 0 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
       '.pha-kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:13px}',
       '.pha-kv span:nth-child(odd){color:rgba(255,255,255,.62);font-weight:600}',
       '.pha-kv span:nth-child(even){font-weight:700;text-align:right;overflow-wrap:anywhere}',
-      '.pha-kv .pha-empty{color:rgba(255,255,255,.45);font-weight:500}',
+      '.pha-kv .pha-empty{color:rgba(255,255,255,.74);font-weight:500}',   // 16/10/2026 — « à compléter » mesuré à 3,79:1 sur le rendu (.45) ; .74 ≥ 4,5:1,
       // Estimation « probable » (jamais une donnée connue) : italique, teinte ambre
       // distincte du blanc plein des vraies valeurs, lisible sur la carte bleu nuit.
       '.pha-kv .pha-probable{font-style:italic;font-weight:600;color:rgba(255,196,110,.92)}',
@@ -6410,6 +6649,31 @@
       '.pha-btn{display:inline-flex;align-items:center;gap:7px;min-height:var(--tap-min,44px);padding:0 14px;border-radius:var(--r-btn,12px);border:1px solid var(--line-strong);background:var(--card);font:inherit;font-weight:700;font-size:13px;color:var(--ip-ink);cursor:pointer;text-decoration:none;white-space:nowrap}',
       '.pha-id .pha-btn{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.22);color:#fff}',
       '.pha-id .pha-btn-pri{background:#fff;color:var(--ip-blue-d);border-color:#fff;box-shadow:0 6px 16px rgba(0,0,0,.25)}',
+      // 16/10/2026 — « Modifier » dans la carte bleue + panneau d'édition sous la carte (aucun filtre, aucune barre de couleur sur un seul côté)
+      '.pha-id-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}',
+      '.pha-id-top .pha-code{min-width:0;padding-top:12px;overflow-wrap:anywhere}',
+      '.pha-edit{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;min-width:44px;padding:0 14px;border-radius:12px;border:1px solid rgba(255,255,255,.34);background:rgba(255,255,255,.14);color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent}',
+      '.pha-edit:hover,.pha-edit[aria-expanded="true"]{background:#fff;color:var(--ip-blue-d);border-color:#fff}',
+      '.pha-edit:focus-visible{outline:2px solid #fff;outline-offset:2px}',
+      '.pha[data-fe="1"] .pha-lists{display:none}',
+      '.pha-fe{padding:16px 18px 18px;display:flex;flex-direction:column;gap:12px}',
+      '.pha-fe[hidden]{display:none}',
+      '.pha-fe-t{font-size:16px;font-weight:800;letter-spacing:-.01em;color:var(--ip-ink)}',
+      '.pha-fe-g{border:0;margin:0;padding:0;min-width:0;display:flex;flex-direction:column;gap:10px}',
+      '.pha-fe-g legend{padding:0;margin-bottom:2px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}',
+      '.pha-fe-f{display:flex;flex-direction:column;gap:4px;min-width:0}',
+      '.pha-fe-f label{font-size:12.5px;font-weight:700;color:var(--ip-ink)}',
+      '.pha-fe-f input,.pha-fe-f select{width:100%;box-sizing:border-box;min-height:44px;border:1px solid var(--line-strong);border-radius:10px;padding:9px 11px;font:inherit;font-size:16px;color:var(--ip-ink);background:var(--card-2)}',
+      // la liste déroulante garde la hauteur demandée sous Safari : apparence native retirée, chevron en image
+      '.pha-fe-f select{-webkit-appearance:none;appearance:none;padding-right:38px;background-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%235B6678%27 stroke-width=%272.5%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:16px}',
+      '.pha-fe-f input:focus,.pha-fe-f select:focus{outline:none;border-color:var(--ip-blue);box-shadow:0 0 0 3px color-mix(in srgb,var(--ip-blue) 18%,transparent)}',
+      '.pha-fe-duo{display:grid;grid-template-columns:112px minmax(0,1fr);gap:10px}',
+      '.pha-fe-lien{display:inline-flex;align-items:center;min-height:44px;font-size:13.5px;font-weight:700;color:var(--ip-blue)}',
+      '.pha-fe-btns{display:flex;gap:10px}',
+      '.pha-fe-ok,.pha-fe-no{min-height:44px;border-radius:12px;font:inherit;font-size:15px;font-weight:800;cursor:pointer;padding:0 18px}',
+      '.pha-fe-ok{flex:1;border:0;background:var(--ip-blue);color:#fff}',
+      '.pha-fe-no{border:1px solid var(--line-strong);background:var(--card);color:var(--ip-ink)}',
+      '@media(max-width:900px){.pha-fe{order:-3}}',
       '.pha-btn-w{width:100%;justify-content:space-between;margin-top:8px}',
       '.pha-btn-w b{background:rgba(16,19,28,.08);padding:1px 8px;border-radius:999px;font-size:12px}',
       '.pha-btn-opp{background:var(--c-opp);border-color:var(--c-opp);color:#fff;justify-content:center}',
