@@ -247,9 +247,20 @@
     todo: function () {
       var l = P().todo();
       if (!l) return '<span class="ac-vide">Chargement de votre liste…</span>';
-      if (!l.length) return '<span class="ac-vide">Rien à faire pour l\'instant.</span>';
+      if (!l.length) return '<span class="ac-vide">Rien à faire pour l\'instant.</span>' + C.relN();
       return '<span class="ac-tl">' + l.slice(0, 3).map(function (x, j) { return '<span class="ac-t" style="--j:' + j + '">' + CK + '<span>' + esc(x) + '</span></span>'; }).join('') + '</span>' +
-        (l.length > 3 ? '<span class="ac-reste">+ ' + (l.length - 3) + (l.length - 3 > 1 ? ' autres à faire' : ' autre à faire') + '</span>' : '');
+        (l.length > 3 ? '<span class="ac-reste">+ ' + (l.length - 3) + (l.length - 3 > 1 ? ' autres à faire' : ' autre à faire') + '</span>' : '') + C.relN();
+    },
+    // 16/10/2026 — choix de Will : un compteur discret des pharmacies à relancer (To do list › À relancer).
+    // Le calcul (carte nationale + envois) part une seule fois, après l'affichage ; rien tant qu'il n'est pas fait (jamais un faux « 0 »).
+    relN: function () {
+      var R = V2.relances; if (!R || !R.nbARelancer) return '';
+      var n; try { n = R.nbARelancer(); } catch (e) { return ''; }   // l'accueil ne doit jamais tomber pour un compteur
+      if (n == null) {
+        if (!_relLance) { _relLance = true; setTimeout(function () { R.calculer().then(maj, function () {}); }, 2500); }
+        return '';
+      }
+      return n ? '<span class="ac-reste ac-rel">' + fr(n) + (n > 1 ? ' pharmacies à relancer' : ' pharmacie à relancer') + '</span>' : '';
     },
     grpScene: function () { var g = groupes().slice(0, 5).map(function (x) { return x.ids.length; }); return sceneGrp(g); },
     grp: function () {
@@ -258,6 +269,7 @@
     },
     offilog: function (t) { var n = offilogN(); return (n ? nb(n, 'références', true) : '') + ds(t.ph); }
   };
+  var _relLance = false;
   var SLOTS = {
     'h.nb': function (ctx) { return C.heroNb(ctx.m, ctx.t.pharma); },
     'h.fi': function (ctx) { return C.heroFi(ctx.t.pharma); },
