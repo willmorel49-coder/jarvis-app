@@ -13,7 +13,7 @@
   'use strict';
   var V2 = window.V2; if (!V2) return;
   V2.pages = V2.pages || {};
-  var CB = '?v=20261016hac';
+  var CB = '?v=20261017hld';
   var TX_BUCKET = 'marketing-pdfs';   // le même seau que Marketing › Documents partagés et « Transmettre »
   var PDFLIB = 'vendor/pdf-lib-1.17.1.min.js';
   var JSZIP = 'vendor/jszip-3.10.1.min.js';
