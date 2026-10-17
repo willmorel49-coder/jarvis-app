@@ -36,7 +36,7 @@
       '#v2-root .mkb{max-width:1320px;margin:0 auto;padding:32px 32px 64px}',
       '.mkb-tete{margin-bottom:24px}',
       '.mkb-h1{margin:0;font-size:var(--mk-s1);line-height:var(--mk-s1l);font-weight:700;letter-spacing:-.02em}',
-      '.mkb-sous{margin:4px 0 0;color:var(--mk-attenue);max-width:64ch}',
+      '.mkb-sous{margin:4px 0 0;color:color-mix(in srgb,var(--mk-attenue) 80%,var(--mk-encre));max-width:64ch}',
 
       /* ── les quatre portes ── */
       '.mkb-portes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px}',
@@ -69,6 +69,7 @@
       '.mkb-porte .mkb-nom svg{color:var(--mk-attenue);flex:none;transition:transform var(--mk-t2) var(--mk-sortie),color var(--mk-t2) var(--mk-sortie)}',
       '@media (hover:hover){.mkb-porte:hover .mkb-nom svg{transform:translateX(3px);color:var(--mk-bleu-txt)}}',
       '.mkb-etat{margin:4px 8px 8px;font-size:var(--mk-s5);line-height:18px;color:var(--mk-attenue);font-weight:550}',
+      'html:not([data-hab]) .mkb-etat{color:color-mix(in srgb,var(--mk-attenue) 80%,var(--mk-encre))}',
       '.mkb-etat b{color:var(--mk-encre);font-weight:700}',
 
       /* ── repères ── */

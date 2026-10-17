@@ -74,6 +74,7 @@
       '.lpo-tete{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:24px}',
       '.lpo-h1{margin:0;font-size:var(--mk-s1);line-height:var(--mk-s1l);font-weight:700;letter-spacing:-.02em}',
       '.lpo-phrase{margin:4px 0 0;color:var(--mk-attenue)}',
+      'html:not([data-hab]) .lpo-phrase{color:color-mix(in srgb,var(--mk-attenue) 80%,var(--mk-encre))}',
       '.lpo-phrase b{color:var(--mk-encre);font-weight:700}',
       '.lpo-local{display:flex;align-items:center;gap:8px;margin:8px 0 0;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600;color:#8A5200}',
       '.lpo-moi{--n:3;min-width:320px;flex:none}',
