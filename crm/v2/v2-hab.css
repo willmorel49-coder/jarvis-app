@@ -64,27 +64,27 @@
 html[data-hab]{background:var(--paper)}
 html[data-hab] body{background:var(--paper);color:var(--ip-ink)}
 /* la matière du fond : un calque qui couvre TOUTE la hauteur de la page (la fourrure défile avec le contenu), puis la source de lumière (fixe, dans la fenêtre) par-dessus */
-html[data-hab] body::before{position:absolute;inset:0;opacity:1;background:var(--h-fond) 0 0/var(--h-taille)}
-html[data-hab] .v2-halo{height:100vh;background:var(--h-lumiere)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) body::before{position:absolute;inset:0;opacity:1;background:var(--h-fond) 0 0/var(--h-taille)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .v2-halo{height:100vh;background:var(--h-lumiere)}
 
 /* barre du haut : une pièce à part, avec son encre à elle (les variables sont redéclarées DANS la barre) */
-html[data-hab] .v2-top{background:var(--h-top);border-bottom:2px solid var(--h-top-line);box-shadow:var(--h-top-sh,0 10px 24px -12px rgba(0,0,0,.55),0 1px 0 rgba(255,255,255,.14) inset);
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .v2-top{background:var(--h-top);border-bottom:2px solid var(--h-top-line);box-shadow:var(--h-top-sh,0 10px 24px -12px rgba(0,0,0,.55),0 1px 0 rgba(255,255,255,.14) inset);
   --ip-ink:var(--h-top-ink);--ip-ink-2:var(--h-top-ink);--muted:var(--h-top-muted);--muted-2:var(--h-top-muted);color:var(--h-top-ink)}
-html[data-hab] .v2-top .tp-nom,html[data-hab] .v2-top .v2-brand-t{color:var(--h-top-ink);font-family:var(--h-titre)}
-html[data-hab] .v2-top .v2-brand-s{color:var(--h-top-muted)}
-html[data-hab] .v2-top :is(.v2-top-search,.tp-accueil,.tp-idee){background:var(--h-top-field);border-color:var(--h-top-line);box-shadow:0 1px 0 rgba(255,255,255,.10) inset;color:var(--h-top-ink)}
-html[data-hab] .v2-top .v2-top-search{color:var(--h-top-muted)}
-html[data-hab] .v2-top .v2-top-search svg,html[data-hab] .v2-top .tp-idee svg{color:var(--h-top-ink)}
-html[data-hab] .v2-top .v2-top-search kbd{background:rgba(255,255,255,.14);color:var(--h-top-ink)}
-html[data-hab] .v2-top :is(.tp-accueil,.tp-idee){color:var(--h-top-ink)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .v2-top .tp-nom,html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .v2-top .v2-brand-t{color:var(--h-top-ink);font-family:var(--h-titre)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .v2-top .v2-brand-s{color:var(--h-top-muted)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .v2-top :is(.v2-top-search,.tp-accueil,.tp-idee){background:var(--h-top-field);border-color:var(--h-top-line);box-shadow:0 1px 0 rgba(255,255,255,.10) inset;color:var(--h-top-ink)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .v2-top .v2-top-search{color:var(--h-top-muted)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .v2-top .v2-top-search svg,html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .v2-top .tp-idee svg{color:var(--h-top-ink)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .v2-top .v2-top-search kbd{background:rgba(255,255,255,.14);color:var(--h-top-ink)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .v2-top :is(.tp-accueil,.tp-idee){color:var(--h-top-ink)}
 
 /* titres : la police de l'habillage (seulement les titres — le texte courant reste celui de l'app, donc aucune mise en page ne bouge) */
-html[data-hab] :is(h1,h2,.v2-page-title,.v2-card-t,.ac-nm,.ac-tit,.tp-nom,.v2-brand-t,.pb-bd-t b){font-family:var(--h-titre)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) :is(h1,h2,.v2-page-title,.v2-card-t,.ac-nm,.ac-tit,.tp-nom,.v2-brand-t,.pb-bd-t b){font-family:var(--h-titre)}
 html[data-hab] :is(.v2-page-title,.ac-nm,.tp-nom){letter-spacing:-.01em}
 
 /* sélection, focus, barres de défilement */
-html[data-hab] ::selection{background:var(--h-selection);color:var(--h-sel-ink,#fff)}
-html[data-hab] :focus-visible{outline:3px solid var(--h-focus,var(--ip-blue));outline-offset:2px}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) ::selection{background:var(--h-selection);color:var(--h-sel-ink,#fff)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) :focus-visible{outline:3px solid var(--h-focus,var(--ip-blue));outline-offset:2px}
 html[data-hab]{scrollbar-color:var(--ip-blue) transparent}
 html[data-hab] ::-webkit-scrollbar{width:12px;height:12px}
 html[data-hab] ::-webkit-scrollbar-track{background:rgba(0,0,0,.10)}
@@ -164,7 +164,7 @@ html[data-hab] .v2-btn-primary:hover{box-shadow:var(--sh-blue-h)}
   --h-or:#D3A44F;--h-mini-cadre:rgba(211,164,79,.8)}
 
 /* le rail de l'accueil et la barre du haut partagent la même pièce sombre */
-html[data-hab] .u2-rail{margin-bottom:-64px;background:var(--h-top);border-right:2px solid var(--h-top-line);box-shadow:8px 0 22px -12px rgba(0,0,0,.55);
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .u2-rail{margin-bottom:-64px;background:var(--h-top);border-right:2px solid var(--h-top-line);box-shadow:8px 0 22px -12px rgba(0,0,0,.55);
   --muted-d:var(--h-top-muted);--ip-blue-d:var(--h-top-ink);--halo:rgba(255,236,190,.14)}
 html[data-hab] .u2-rb[aria-pressed="true"],html[data-hab] .u2-rb[aria-expanded="true"]{background:var(--h-ruban);color:#fff}
 
@@ -197,8 +197,8 @@ html[data-hab] :is(.pb-open,.ac-b){background:var(--card)}
 
 
 /* grandes pièces de couleur (bandeau Officines de l'accueil, en-tête de fiche) : la matière « hero » de l'habillage */
-html[data-hab] :is(.ac-fond,.pha-id){background:var(--h-hero)}
-html[data-hab] .pha-id::before{background:radial-gradient(closest-side,var(--h-glow),transparent)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) :is(.ac-fond,.pha-id){background:var(--h-hero)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .pha-id::before{background:radial-gradient(closest-side,var(--h-glow),transparent)}
 [data-hab="leopard"]{--h-hero:linear-gradient(165deg,rgba(40,20,6,.64),rgba(30,14,3,.88)),var(--h-peau);--h-glow:rgba(255,214,140,.26)}
 [data-hab="marbre"]{--h-hero:linear-gradient(165deg,rgba(0,0,0,.42),rgba(0,0,0,.74)),var(--h-peau);--h-glow:rgba(240,200,120,.24)}
 
@@ -340,7 +340,7 @@ html[data-hab] .pha-id::before{background:radial-gradient(closest-side,var(--h-g
 :is([data-hab="indigo"],[data-hab="emeraude"],[data-hab="canard"],[data-hab="ambre"],[data-hab="prune"]) :is(.v2-btn-primary,.tp-plus){background:var(--h-ruban)}
 
 /* « Retour » vit dans la barre du haut : même pièce que les autres commandes de la barre */
-html[data-hab] .v2-top .v2-back{background:var(--h-top-field);border-color:var(--h-top-line);box-shadow:0 1px 0 rgba(255,255,255,.10) inset;color:var(--h-top-ink)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .v2-top .v2-back{background:var(--h-top-field);border-color:var(--h-top-line);box-shadow:0 1px 0 rgba(255,255,255,.10) inset;color:var(--h-top-ink)}
 
 /* ── BLEU JARVIS : l'app d'origine. Aucun réglage n'est posé sur la page (pas d'attribut) ; ce bloc ne sert qu'à l'APERÇU, qui lit les mêmes variables que les autres ── */
 [data-hab="bleu"]{
@@ -358,15 +358,15 @@ html[data-hab] :is(.off-verdict-meta,.off-count){width:fit-content;max-width:100
 html[data-hab] .v2-sem-fond{background:none}
 html[data-hab] .cm-plus{background:var(--card);border-style:solid;border-color:var(--line-strong)}
 /* en-tête de fiche : encore un voile dessus (texte blanc fin à 62 % d'opacité dans cette pièce) */
-html[data-hab] .pha-id{background:linear-gradient(rgba(0,0,0,.30),rgba(0,0,0,.30)),var(--h-hero)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .pha-id{background:linear-gradient(rgba(0,0,0,.30),rgba(0,0,0,.30)),var(--h-hero)}
 
 /* écran de chargement : le texte reçoit sa plaque, la roue prend la couleur de liseré de la barre */
-html[data-hab] .v2-spinner{border:3px solid rgba(255,255,255,.28);border-top-color:var(--h-top-line);box-shadow:0 0 0 9px var(--h-pl,var(--card))}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .v2-spinner{border:3px solid rgba(255,255,255,.28);border-top-color:var(--h-top-line);box-shadow:0 0 0 9px var(--h-pl,var(--card))}
 html[data-hab="nacre"] .v2-spinner,html[data-hab="glacier"] .v2-spinner{border-color:var(--line-strong);border-top-color:var(--ip-blue)}
 
 /* petites pièces de couleur codées en bleu dans certains écrans : elles prennent la matière de l'habillage */
 html[data-hab]{--c-fiche:var(--ip-blue)}
-html[data-hab] :is(.v2-sem-cap,.v2-rdv-cap){background:var(--h-hero)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) :is(.v2-sem-cap,.v2-rdv-cap){background:var(--h-hero)}
 html[data-hab] :is(.ml-fiche .ml-band,.ml-rg.ml-garde .ml-gp,.ml-pile3 i::before){background:var(--h-ruban)}
 
 /* le vert « positif » (texte et boutons) : un cran plus profond pour tenir 4,5:1 sur les fonds pâles — il garde son sens (vert = bon) */
@@ -455,16 +455,16 @@ html[data-hab] .mkf-bloc{border-radius:20px}
    Tout est sous html[data-hab] ou [data-hab="…"] : sans attribut (bleu), rien ne change.
    Couches : fourrure (body::before) < lumière fixe (.v2-halo) < lampe mobile (.hab-lampe) < pénombre de la page (body::after) < l'app (.v2, z-index 1)
    ═══════════════════════════════════════════════════════════════════ */
-html[data-hab] .v2-halo{-webkit-mask-image:linear-gradient(180deg,#000 74%,transparent);mask-image:linear-gradient(180deg,#000 74%,transparent)}
-html[data-hab] .hab-lampe{position:fixed;inset:-12%;z-index:0;pointer-events:none;will-change:transform;backface-visibility:hidden}
-html[data-hab] .hab-lampe>i{position:absolute;inset:0;display:block;background:var(--h-spot,none)}
-html[data-hab] body::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:var(--h-ombrage,none)}
-html[data-hab]{--h-r1:linear-gradient(transparent,transparent);--h-r2:linear-gradient(transparent,transparent);--h-top-pool:linear-gradient(transparent,transparent)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .v2-halo{-webkit-mask-image:linear-gradient(180deg,#000 74%,transparent);mask-image:linear-gradient(180deg,#000 74%,transparent)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .hab-lampe{position:fixed;inset:-12%;z-index:0;pointer-events:none;will-change:transform;backface-visibility:hidden}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .hab-lampe>i{position:absolute;inset:0;display:block;background:var(--h-spot,none)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) body::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:var(--h-ombrage,none)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])){--h-r1:linear-gradient(transparent,transparent);--h-r2:linear-gradient(transparent,transparent);--h-top-pool:linear-gradient(transparent,transparent)}
 /* barre du haut : la lumière s'y pose au plus près de la source, et son liseré du bas brille là où elle tombe */
-html[data-hab] .v2-top{background:var(--h-top-pool),var(--h-top);border-bottom:2px solid transparent;border-image:var(--h-rim,linear-gradient(var(--h-top-line),var(--h-top-line))) 1}
-html[data-hab] .u2-rail{background:var(--h-rail-pool,linear-gradient(transparent,transparent)),var(--h-top)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .v2-top{background:var(--h-top-pool),var(--h-top);border-bottom:2px solid transparent;border-image:var(--h-rim,linear-gradient(var(--h-top-line),var(--h-top-line))) 1}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .u2-rail{background:var(--h-rail-pool,linear-gradient(transparent,transparent)),var(--h-top)}
 /* cartes : reflet satiné du côté éclairé + arête haute (déclarés par habillage dans --h-plaque) */
-html[data-hab] :is(.v2-card,.v2-kpi,.u2-wid,.u2-rangs,.u2-bx,.v2-usermenu,.hab-dock,#pb-band){background:var(--h-plaque)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) :is(.v2-card,.v2-kpi,.u2-wid,.u2-rangs,.u2-bx,.v2-usermenu,.hab-dock,#pb-band){background:var(--h-plaque)}
 
 /* ── LÉOPARD : soleil de fin d'après-midi en savane. Rasant, doré, du bord gauche ; le poil brille en bandes de lustre ; tout ce qui est posé jette une longue ombre vers la droite et le bas ── */
 [data-hab="leopard"]{
@@ -632,8 +632,8 @@ html[data-hab="velours"] .ac-c{background:var(--h-r1),var(--h-r2),radial-gradien
 [data-hab="terracotta"]{--h-hero-lit:linear-gradient(246deg,rgba(255,226,160,.10),rgba(255,226,160,0) 56%)}
 [data-hab="glacier"]{--h-hero-lit:linear-gradient(160deg,rgba(190,236,255,.10),rgba(190,236,255,0) 56%)}
 [data-hab="velours"]{--h-hero-lit:linear-gradient(104deg,rgba(255,180,140,.12),rgba(255,180,140,0) 56%)}
-html[data-hab] .ac-fond{background:var(--h-hero-lit,none),var(--h-hero)}
-html[data-hab] .pha-id{background:var(--h-hero-lit,none),linear-gradient(rgba(0,0,0,.30),rgba(0,0,0,.30)),var(--h-hero)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .ac-fond{background:var(--h-hero-lit,none),var(--h-hero)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .pha-id{background:var(--h-hero-lit,none),linear-gradient(rgba(0,0,0,.30),rgba(0,0,0,.30)),var(--h-hero)}
 
 html[data-hab="nacre"] .hab-lampe>i{-webkit-mask-image:radial-gradient(64% 70% at 84% 13%,#000 0,rgba(0,0,0,.7) 34%,transparent 82%);mask-image:radial-gradient(64% 70% at 84% 13%,#000 0,rgba(0,0,0,.7) 34%,transparent 82%)}
 
@@ -653,7 +653,7 @@ html[data-hab="nacre"] .hab-lampe>i{-webkit-mask-image:radial-gradient(64% 70% a
    sombre et brillantes du côté de la source, ombres de 15 à 60 px à l'opposé, barre du haut et bandeaux touchés par la source. Le calque lampe est plus grand
    (inset -22 %) : sa dérive est large (14 % x 9 %, 19 s / 13 s). Coordonnées dans le calque : (position fenêtre en % + 22) / 1,44.
    ═══════════════════════════════════════════════════════════════════ */
-html[data-hab] .hab-lampe{inset:-22%}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .hab-lampe{inset:-22%}
 
 /* ── LÉOPARD ── */
 [data-hab="leopard"]{
@@ -865,40 +865,40 @@ html[data-hab="velours"] .hab-lampe>i{-webkit-mask-image:radial-gradient(90% 100
   --sh-2:0 1px 0 rgba(255,246,240,.85) inset,6px 8px 22px -6px rgba(10,0,4,.6),14px 20px 46px -14px rgba(10,0,4,.5);
   --sh-3:0 1px 0 rgba(255,246,240,.9) inset,10px 14px 32px -8px rgba(10,0,4,.64),24px 34px 68px -16px rgba(10,0,4,.54);
 }
-html[data-hab]{--h-ombre:var(--sh-2);--h-cadre:1px solid var(--h-fil)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])){--h-ombre:var(--sh-2);--h-cadre:1px solid var(--h-fil)}
 :is([data-hab="leopard"],[data-hab="marbre"],[data-hab="nacre"],[data-hab="foret"],[data-hab="terracotta"],[data-hab="glacier"],[data-hab="velours"]){--h-plaque:var(--h-r1),var(--h-r2),var(--card)}
 
 /* ——— le fond : calme ; la matière n'est plus qu'une trace dans le coin opposé à la source ——— */
-html[data-hab] body::before{opacity:.10;-webkit-mask-image:radial-gradient(60% 60% at var(--h-trace,100% 100%),#000,transparent 72%);mask-image:radial-gradient(60% 60% at var(--h-trace,100% 100%),#000,transparent 72%)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) body::before{opacity:.10;-webkit-mask-image:radial-gradient(60% 60% at var(--h-trace,100% 100%),#000,transparent 72%);mask-image:radial-gradient(60% 60% at var(--h-trace,100% 100%),#000,transparent 72%)}
 :is([data-hab="marbre"],[data-hab="foret"],[data-hab="velours"]) body::before{opacity:.16}
-html[data-hab] body::after{background:var(--h-ombrage,none)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) body::after{background:var(--h-ombrage,none)}
 
 /* ——— cartes sobres : liseré 1 px teinté, reflet côté lumière, arête haute, ombre douce et longue à l'opposé ——— */
-html[data-hab] :is(.v2-card,.v2-kpi,.u2-wid,.u2-rangs,.u2-bx,.v2-usermenu,.hab-dock,#pb-band,.ac-c){border:1px solid var(--h-fil);background:var(--h-r1),var(--h-r2),var(--card);box-shadow:var(--sh-2)}
-html[data-hab] .ac-c{background:var(--h-r1),var(--h-r2),radial-gradient(115% 80% at 10% 0%,var(--halo),var(--card) 72%)}
-html[data-hab] :is(.mkf-bloc,.mkd-table,.lpo-pose,.mk-souleve){border:1px solid var(--h-fil);background:var(--h-r1),var(--h-r2),var(--card);box-shadow:var(--sh-2)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) :is(.v2-card,.v2-kpi,.u2-wid,.u2-rangs,.u2-bx,.v2-usermenu,.hab-dock,#pb-band,.ac-c){border:1px solid var(--h-fil);background:var(--h-r1),var(--h-r2),var(--card);box-shadow:var(--sh-2)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .ac-c{background:var(--h-r1),var(--h-r2),radial-gradient(115% 80% at 10% 0%,var(--halo),var(--card) 72%)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) :is(.mkf-bloc,.mkd-table,.lpo-pose,.mk-souleve){border:1px solid var(--h-fil);background:var(--h-r1),var(--h-r2),var(--card);box-shadow:var(--sh-2)}
 
 /* ——— détail précieux 1 : un ruban de matière de 5 px sous la barre du haut ——— */
-html[data-hab] .v2-top{border-bottom:5px solid transparent;border-image:none;background:var(--h-top) padding-box,var(--h-fond) 0 0/var(--h-ruban-taille,360px) border-box;box-shadow:0 8px 22px -12px rgba(var(--h-ombre-c,0,0,0),.4)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .v2-top{border-bottom:5px solid transparent;border-image:none;background:var(--h-top) padding-box,var(--h-fond) 0 0/var(--h-ruban-taille,360px) border-box;box-shadow:0 8px 22px -12px rgba(var(--h-ombre-c,0,0,0),.4)}
 [data-hab="nacre"] .v2-top{background:var(--h-top) padding-box,var(--h-peau) border-box}
 :is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"]) .u2-rail{background:var(--h-top)}
-html[data-hab] .u2-rail{box-shadow:6px 0 18px -12px rgba(var(--h-ombre-c,0,0,0),.4)}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .u2-rail{box-shadow:6px 0 18px -12px rgba(var(--h-ombre-c,0,0,0),.4)}
 
 /* ——— détail précieux 2 : l'anneau de l'avatar est taillé dans la matière ——— */
-html[data-hab] .v2-av{border:3px solid transparent;background:linear-gradient(150deg,#FFB347,#FF7A45) padding-box,var(--h-fond) 0 0/200px border-box}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .v2-av{border:3px solid transparent;background:linear-gradient(150deg,#FFB347,#FF7A45) padding-box,var(--h-fond) 0 0/200px border-box}
 [data-hab="nacre"] .v2-av{background:linear-gradient(150deg,#FFB347,#FF7A45) padding-box,var(--h-peau) border-box}
 
 /* ——— détail précieux 3 : la signature, dans un coin du grand bandeau (le reste du bandeau est une teinte calme) ——— */
-html[data-hab] :is(.ac-fond,.pha-id){background:linear-gradient(90deg,rgb(var(--h-hero-teinte)) 0,rgb(var(--h-hero-teinte)) 52%,rgba(var(--h-hero-teinte),0) 86%),var(--h-fond) right top/520px no-repeat,rgb(var(--h-hero-teinte))}
-html[data-hab] .pha-id{background:linear-gradient(rgba(0,0,0,.12),rgba(0,0,0,.12)),linear-gradient(90deg,rgb(var(--h-hero-teinte)) 0,rgb(var(--h-hero-teinte)) 56%,rgba(var(--h-hero-teinte),0) 90%),var(--h-fond) right top/520px no-repeat,rgb(var(--h-hero-teinte))}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) :is(.ac-fond,.pha-id){background:linear-gradient(90deg,rgb(var(--h-hero-teinte)) 0,rgb(var(--h-hero-teinte)) 52%,rgba(var(--h-hero-teinte),0) 86%),var(--h-fond) right top/520px no-repeat,rgb(var(--h-hero-teinte))}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .pha-id{background:linear-gradient(rgba(0,0,0,.12),rgba(0,0,0,.12)),linear-gradient(90deg,rgb(var(--h-hero-teinte)) 0,rgb(var(--h-hero-teinte)) 56%,rgba(var(--h-hero-teinte),0) 90%),var(--h-fond) right top/520px no-repeat,rgb(var(--h-hero-teinte))}
 [data-hab="nacre"] :is(.ac-fond,.pha-id){background:linear-gradient(90deg,rgb(var(--h-hero-teinte)) 0,rgb(var(--h-hero-teinte)) 52%,rgba(var(--h-hero-teinte),0) 86%),var(--h-peau),rgb(var(--h-hero-teinte))}
 [data-hab="nacre"] .pha-id{background:linear-gradient(rgba(0,0,0,.12),rgba(0,0,0,.12)),linear-gradient(90deg,rgb(var(--h-hero-teinte)) 0,rgb(var(--h-hero-teinte)) 56%,rgba(var(--h-hero-teinte),0) 90%),var(--h-peau),rgb(var(--h-hero-teinte))}
 
 /* ——— détail 4 : boutons pleins et onglets actifs : le ruban de teinte, un filet clair (plus de cadre de peau) ; barre de défilement fine ——— */
 [data-hab="leopard"] :is(.v2-btn-primary,.tp-plus,.v2-tab.on,.v2-subtab.on,.v2-seg.on,.u2-rb[aria-pressed="true"]){border:1px solid rgba(255,226,160,.55);background:var(--h-ruban)}
-html[data-hab] ::-webkit-scrollbar{width:8px;height:8px}
-html[data-hab] ::-webkit-scrollbar-track{background:transparent}
-html[data-hab] ::-webkit-scrollbar-thumb{background:var(--h-ruban);border:0;border-radius:6px}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) ::-webkit-scrollbar{width:8px;height:8px}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) ::-webkit-scrollbar-track{background:transparent}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) ::-webkit-scrollbar-thumb{background:var(--h-ruban);border:0;border-radius:6px}
 [data-hab="leopard"] ::-webkit-scrollbar-thumb{background:var(--h-ruban);border:0}
 [data-hab="leopard"] ::-webkit-scrollbar-track{background:transparent}
 
@@ -907,9 +907,21 @@ html[data-hab] ::-webkit-scrollbar-thumb{background:var(--h-ruban);border:0;bord
 .hm-top{border-bottom:3px solid transparent;background:var(--h-top) padding-box,var(--h-fond) 0 0/120px border-box}
 .hm-hero{background:var(--h-ruban)}
 [data-hab="leopard"] body::before{opacity:.17}
-html[data-hab] .v2-top{border-bottom-width:6px}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .v2-top{border-bottom-width:6px}
 
 /* en-tête de fiche : une teinte calme, la matière en un fin ruban de 5 px sur son bord haut (aucun texte ne la touche) ; sur téléphone le bandeau d'accueil n'a plus de coin de matière */
-html[data-hab] .pha-id{border-top:5px solid transparent;background:linear-gradient(rgba(0,0,0,.12),rgba(0,0,0,.12)) padding-box,linear-gradient(rgb(var(--h-hero-teinte)),rgb(var(--h-hero-teinte))) padding-box,var(--h-fond) 0 0/360px border-box}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .pha-id{border-top:5px solid transparent;background:linear-gradient(rgba(0,0,0,.12),rgba(0,0,0,.12)) padding-box,linear-gradient(rgb(var(--h-hero-teinte)),rgb(var(--h-hero-teinte))) padding-box,var(--h-fond) 0 0/360px border-box}
 [data-hab="nacre"] .pha-id{background:linear-gradient(rgba(0,0,0,.12),rgba(0,0,0,.12)) padding-box,linear-gradient(rgb(var(--h-hero-teinte)),rgb(var(--h-hero-teinte))) padding-box,var(--h-peau) border-box}
-@media (max-width:640px){html[data-hab] .ac-fond{background:rgb(var(--h-hero-teinte))}}
+@media (max-width:640px){html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .ac-fond{background:rgb(var(--h-hero-teinte))}}
+
+/* ── 11. Contraste Infos du matin / Marketing avec la lumière douce (17/10/2026) ──
+   La plaque derrière ces titres est devenue transparente (--h-pl:transparent) : le texte pose sur la lumière douce, dont le pixel le plus sombre
+   est mesuré par le banc. On fonce (ou éclaircit sur velours) la couleur du texte, jamais de fond ajouté. Le bleu n'est pas concerné (aucune règle sans data-hab). */
+html[data-hab="leopard"] .x13 .x13-h:not(.x13-sr),
+html[data-hab="leopard"] .mk-espace .mk-btn.mk-texte.mkb-ameliorer{color:#603608}
+html[data-hab="terracotta"] .x13 .x13-h:not(.x13-sr),
+html[data-hab="terracotta"] .mk-espace .mk-btn.mk-texte.mkb-ameliorer{color:#5A1E08}
+html[data-hab="terracotta"] .mkb-reperes>.mkb-cap{color:#5A2E18}
+html[data-hab="nacre"] .x13 .x13-h:not(.x13-sr),
+html[data-hab="nacre"] .mk-espace .mk-btn.mk-texte.mkb-ameliorer{color:#78325A}
+html[data-hab="velours"] :is(.mkb-cap,.mkb-sous,.lpo-phrase,.lpo-nb,.lpo-cap){color:#FBEFEB}
