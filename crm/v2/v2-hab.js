@@ -39,8 +39,45 @@
     try { var m = document.querySelector('meta[name="theme-color"]'); if (m && !escale()) m.setAttribute('content', { leopard: '#C99443', marbre: '#16171B', nacre: '#EDE6F2', foret: '#10231C', terracotta: '#C9683F', glacier: '#DCEBF5', velours: '#3A0D1A' }[k] || '#0050E6'); } catch (e) {}
     ecrire(k);
     majSelection();
+    lampeSync();
     return k;
   }
+
+  // ─── La lampe (p2 « La lumière de scène ») : UN calque fixe, déplacé en transform seulement, UN seul requestAnimationFrame ───
+  // Au repos elle dérive très lentement (deux sinus de 34 s et 23 s, 7 % de la largeur et 5 % de la hauteur (la lumière douce respire, elle ne danse pas)) ; au pointeur elle se rapproche doucement (inertie).
+  // Arrêtée quand l'onglet est caché ; coupée en mouvement réduit (le calque reste posé à sa place de repos : l'état figé est déjà éclairé).
+  var REPOS = { leopard: [.05, .26], marbre: [.50, .06], nacre: [.92, .04], foret: [.08, .02], terracotta: [.90, .10], glacier: [.50, .00], velours: [.12, .05] };
+  var lampe = { el: null, raf: 0, tx: 0, ty: 0, cx: 0, cy: 0, ecrit: '' };
+  function lampeBoucle(ts) {
+    lampe.raf = 0;
+    if (document.hidden || !lampe.el || !H.hasAttribute('data-hab') || calme()) return;
+    var t = ts / 1000, w = window.innerWidth, h = window.innerHeight;
+    lampe.cx += (lampe.tx - lampe.cx) * 0.045; lampe.cy += (lampe.ty - lampe.cy) * 0.045;
+    var x = Math.sin(t * 6.2832 / 34) * 0.07 * w + lampe.cx, y = Math.sin(t * 6.2832 / 23 + 1) * 0.05 * h + lampe.cy;
+    var v = 'translate3d(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px,0)';
+    if (v !== lampe.ecrit) { lampe.ecrit = v; lampe.el.style.transform = v; }
+    lampe.raf = requestAnimationFrame(lampeBoucle);
+  }
+  function lampeDemarrer() { if (!lampe.raf && lampe.el && !document.hidden && !calme() && H.hasAttribute('data-hab')) lampe.raf = requestAnimationFrame(lampeBoucle); }
+  function lampeSync() {
+    if (!document.body) { document.addEventListener('DOMContentLoaded', lampeSync, { once: true }); return; }
+    var k = H.getAttribute('data-hab');
+    if (!k || !REPOS[k]) { if (lampe.el && lampe.el.parentNode) lampe.el.parentNode.removeChild(lampe.el); lampe.el = null; if (lampe.raf) { cancelAnimationFrame(lampe.raf); lampe.raf = 0; } return; }
+    if (!lampe.el) {
+      var e = document.createElement('div'); e.className = 'hab-lampe'; e.setAttribute('aria-hidden', 'true'); e.innerHTML = '<i></i>';
+      var hl = document.querySelector('.v2-halo');
+      if (hl && hl.parentNode) hl.parentNode.insertBefore(e, hl.nextSibling); else document.body.insertBefore(e, document.body.firstChild);
+      lampe.el = e; lampe.ecrit = '';
+    }
+    lampe.tx = lampe.ty = 0;
+    if (calme()) { lampe.el.style.transform = ''; lampe.ecrit = ''; } else lampeDemarrer();
+  }
+  window.addEventListener('pointermove', function (e) {
+    var k = H.getAttribute('data-hab'), r = REPOS[k]; if (!r || e.pointerType === 'touch') return;
+    lampe.tx = (e.clientX - r[0] * window.innerWidth) * 0.14; lampe.ty = (e.clientY - r[1] * window.innerHeight) * 0.14;
+  }, { passive: true });
+  document.addEventListener('pointerleave', function () { lampe.tx = lampe.ty = 0; });
+  document.addEventListener('visibilitychange', function () { if (document.hidden) { if (lampe.raf) { cancelAnimationFrame(lampe.raf); lampe.raf = 0; } } else lampeDemarrer(); });
 
   // Premier dessin : le navigateur d'abord (aucun clignotement), la ligne `profils` ensuite (sync, appelée par l'accueil).
   poser(lire());
@@ -149,7 +186,7 @@
   // Appelée par la ligne du menu du compte : ferme d'abord le menu.
   function menu() { var m = document.getElementById('v2-usermenu'); if (m && m._off) m._off(); if (m && m.parentNode) m.parentNode.removeChild(m); ouvrir(document.querySelector('.tp-avb')); }
 
-  window.V2HAB = { liste: GARDE, anciennes: ANCIENNES, courant: courant, sync: sync, choisir: choisir, monter: monter, ouvrir: ouvrir, fermer: fermer, menu: menu, escale: escale };
+  window.V2HAB = { liste: GARDE, anciennes: ANCIENNES, courant: courant, sync: sync, choisir: choisir, monter: monter, ouvrir: ouvrir, fermer: fermer, menu: menu, escale: escale, lampe: function () { return { present: !!lampe.el, rafActif: !!lampe.raf, transform: lampe.el ? lampe.el.style.transform : null }; } };
   // le banc de l'atelier (16/10) pose un habillage sans animation, et l'attend
   window.__atelierHabillage = function (k) { return choisir(k, { instant: true, force: true }); };
 })();

@@ -445,3 +445,471 @@ html[data-hab="marbre"] .mk-espace .mk-btn.mk-plein{background:linear-gradient(1
 html[data-hab] :is(.mkf-bloc,.mkd-table,.lpo-pose){border:var(--h-cadre);background:var(--h-plaque);box-shadow:var(--h-ombre)}
 html[data-hab] .mkf-mes{padding:18px 22px 22px}
 html[data-hab] .mkf-bloc{border-radius:20px}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   8. p2 — LA LUMIÈRE DE SCÈNE (17/10/2026)
+   Chaque habillage reçoit UNE source de lumière franche, visible à l'arrêt : pénombre sur les bords (vignettage), tache chaude, reflets sur les cartes
+   (arête haute qui accroche, reflet satiné du côté éclairé), liserés qui brillent, ombres portées longues, TOUTES du même côté (opposé à la source).
+   Mouvement (en plus) : UN calque fixe .hab-lampe (JS, transform seul, un rAF, pause onglet caché, coupé en mouvement réduit).
+   Tout est sous html[data-hab] ou [data-hab="…"] : sans attribut (bleu), rien ne change.
+   Couches : fourrure (body::before) < lumière fixe (.v2-halo) < lampe mobile (.hab-lampe) < pénombre de la page (body::after) < l'app (.v2, z-index 1)
+   ═══════════════════════════════════════════════════════════════════ */
+html[data-hab] .v2-halo{-webkit-mask-image:linear-gradient(180deg,#000 74%,transparent);mask-image:linear-gradient(180deg,#000 74%,transparent)}
+html[data-hab] .hab-lampe{position:fixed;inset:-12%;z-index:0;pointer-events:none;will-change:transform;backface-visibility:hidden}
+html[data-hab] .hab-lampe>i{position:absolute;inset:0;display:block;background:var(--h-spot,none)}
+html[data-hab] body::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:var(--h-ombrage,none)}
+html[data-hab]{--h-r1:linear-gradient(transparent,transparent);--h-r2:linear-gradient(transparent,transparent);--h-top-pool:linear-gradient(transparent,transparent)}
+/* barre du haut : la lumière s'y pose au plus près de la source, et son liseré du bas brille là où elle tombe */
+html[data-hab] .v2-top{background:var(--h-top-pool),var(--h-top);border-bottom:2px solid transparent;border-image:var(--h-rim,linear-gradient(var(--h-top-line),var(--h-top-line))) 1}
+html[data-hab] .u2-rail{background:var(--h-rail-pool,linear-gradient(transparent,transparent)),var(--h-top)}
+/* cartes : reflet satiné du côté éclairé + arête haute (déclarés par habillage dans --h-plaque) */
+html[data-hab] :is(.v2-card,.v2-kpi,.u2-wid,.u2-rangs,.u2-bx,.v2-usermenu,.hab-dock,#pb-band){background:var(--h-plaque)}
+
+/* ── LÉOPARD : soleil de fin d'après-midi en savane. Rasant, doré, du bord gauche ; le poil brille en bandes de lustre ; tout ce qui est posé jette une longue ombre vers la droite et le bas ── */
+[data-hab="leopard"]{
+  --h-lumiere:radial-gradient(54% 92% at -6% 26%,rgba(255,248,196,1),rgba(255,210,104,.66) 34%,rgba(255,184,64,0) 76%),
+    radial-gradient(104% 96% at 22% 32%,rgba(0,0,0,0) 40%,rgba(26,8,0,.80) 100%);
+  --h-spot:radial-gradient(21% 30% at 14.5% 30%,rgba(255,252,222,.88),rgba(255,228,142,.52) 30%,rgba(255,200,90,0) 72%),
+    linear-gradient(103deg,transparent 22%,rgba(255,236,172,.34) 30%,rgba(255,250,222,.62) 33%,rgba(255,236,172,.32) 37%,transparent 46%),
+    linear-gradient(103deg,transparent 52%,rgba(255,226,150,.12) 58%,rgba(255,240,190,.22) 60%,rgba(255,226,150,.10) 63%,transparent 70%);
+  --h-ombrage:linear-gradient(98deg,rgba(255,206,110,.26) 0%,rgba(255,190,80,.08) 30%,rgba(58,22,2,.40) 70%,rgba(30,10,0,.74) 100%),linear-gradient(180deg,rgba(0,0,0,0) 55%,rgba(48,18,0,.40));
+  --h-r1:linear-gradient(100deg,rgba(255,232,150,.70),rgba(255,232,150,.22) 28%,rgba(255,232,150,0) 46%,rgba(120,64,10,.20) 100%);
+  --h-r2:linear-gradient(180deg,rgba(255,255,255,.52),rgba(255,255,255,0) 24%);
+  --h-plaque:var(--h-r1) border-box,var(--h-r2) border-box,linear-gradient(var(--card),var(--card)) padding-box,var(--h-peau) border-box;
+  --sh-1:-1px -1px 0 rgba(255,238,170,.9),5px 4px 8px -2px rgba(50,22,2,.36),12px 9px 18px -6px rgba(50,22,2,.28),0 1px 0 rgba(255,244,214,.75) inset;
+  --sh-2:-1px -1px 0 rgba(255,238,170,.95),8px 7px 10px -3px rgba(50,22,2,.42),20px 16px 30px -8px rgba(50,22,2,.40),46px 36px 66px -14px rgba(40,16,0,.44),0 1px 0 rgba(255,244,214,.8) inset;
+  --sh-3:-1px -1px 0 rgba(255,238,170,1),12px 10px 14px -4px rgba(50,22,2,.46),30px 24px 44px -10px rgba(50,22,2,.44),70px 54px 96px -18px rgba(40,16,0,.50),0 1px 0 rgba(255,244,214,.85) inset;
+  --h-ombre:var(--sh-2);
+  --h-top-pool:radial-gradient(30% 300% at 4% -40%,rgba(255,210,110,.55),rgba(255,210,110,0) 72%);
+  --h-rail-pool:radial-gradient(160% 22% at 0% 0%,rgba(255,210,110,.42),rgba(255,210,110,0) 80%);
+  --h-rim:linear-gradient(90deg,#7A4A12 0%,#FFEDB0 5%,#E9B650 22%,#8A5A18 48%,#D9A249 72%,#6A3E0E 100%);
+  --h-pl-sh:0 0 0 1px rgba(70,40,12,.35),-1px -1px 0 rgba(255,238,170,.9),7px 6px 12px -4px rgba(50,26,6,.55),16px 12px 26px -8px rgba(50,26,6,.36);
+}
+html[data-hab="leopard"] .ac-c{background:var(--h-r1) border-box,var(--h-r2) border-box,radial-gradient(115% 80% at 10% 0%,var(--halo),var(--card) 72%) padding-box,var(--h-peau) border-box}
+
+/* ── MARBRE : une bougie. Un point chaud en haut au centre, la pierre tombe dans le noir sur les bords ; plaques d'ivoire à liseré d'or poli qui brille, ombres profondes vers le bas ── */
+[data-hab="marbre"]{
+  --h-lumiere:radial-gradient(46% 58% at 50% -6%,rgba(255,228,150,.82),rgba(255,172,70,.44) 38%,rgba(255,150,50,0) 76%),
+    radial-gradient(96% 104% at 50% -4%,rgba(255,176,80,.30),rgba(255,176,80,0) 72%),
+    radial-gradient(88% 80% at 50% 22%,rgba(0,0,0,0) 30%,rgba(0,0,0,.92) 100%);
+  --h-spot:radial-gradient(7.5% 11% at 50% 14.5%,rgba(255,244,200,.92),rgba(255,206,110,.50) 36%,rgba(255,170,60,0) 76%),
+    radial-gradient(26% 36% at 50% 15%,rgba(255,200,110,.18),rgba(255,200,110,0) 74%),
+    linear-gradient(90deg,transparent 40%,rgba(255,226,160,.10) 48%,rgba(255,236,190,.16) 50%,rgba(255,226,160,.10) 52%,transparent 60%);
+  --h-ombrage:linear-gradient(90deg,rgba(0,0,0,.66),rgba(0,0,0,0) 24%,rgba(0,0,0,0) 76%,rgba(0,0,0,.66)),linear-gradient(180deg,rgba(0,0,0,0) 36%,rgba(0,0,0,.56));
+  --h-r1:linear-gradient(180deg,rgba(255,226,150,.66),rgba(255,226,150,0) 26%,rgba(90,60,10,0) 58%,rgba(90,60,10,.20) 100%);
+  --h-r2:linear-gradient(0deg,rgba(255,226,150,0),rgba(255,226,150,0));
+  --h-or-poli:linear-gradient(172deg,#FFF3B8 0%,#E2B95E 22%,#8A5E14 48%,#F1D07C 74%,#9A6A18 100%);
+  --h-plaque:var(--h-r1) padding-box,var(--h-r2) padding-box,linear-gradient(var(--card),var(--card)) padding-box,var(--h-or-poli) border-box;
+  --sh-1:0 -1px 0 rgba(255,230,160,.85),0 8px 14px -4px rgba(0,0,0,.62),0 1px 0 rgba(255,244,214,.7) inset;
+  --sh-2:0 -2px 0 rgba(255,232,170,.90),0 -12px 26px -8px rgba(255,190,90,.34),0 12px 14px -4px rgba(0,0,0,.66),0 26px 40px -10px rgba(0,0,0,.78),0 52px 80px -16px rgba(0,0,0,.70),0 1px 0 rgba(255,244,214,.8) inset;
+  --sh-3:0 -2px 0 rgba(255,236,176,1),0 -16px 34px -8px rgba(255,190,90,.42),0 16px 18px -4px rgba(0,0,0,.70),0 34px 52px -10px rgba(0,0,0,.82),0 66px 100px -16px rgba(0,0,0,.76),0 1px 0 rgba(255,244,214,.85) inset;
+  --h-ombre:var(--sh-2),inset 0 0 0 4px var(--card),inset 0 0 0 5px rgba(201,150,60,.55);
+  --h-top-pool:radial-gradient(34% 320% at 50% -50%,rgba(255,206,120,.46),rgba(255,206,120,0) 72%);
+  --h-rail-pool:radial-gradient(150% 22% at 100% 0%,rgba(255,206,120,.30),rgba(255,206,120,0) 80%);
+  --h-rim:linear-gradient(90deg,#4C3410 0%,#9A6A18 22%,#FFF0B0 50%,#9A6A18 78%,#4C3410 100%);
+  --h-pl-sh:0 0 0 1px #6A4E1E,0 12px 20px -6px rgba(0,0,0,.8);
+}
+html[data-hab="marbre"] :is(.v2-card,.v2-kpi,.u2-wid,.ac-c,.u2-rangs,.u2-bx,.hab-dock){border:2px solid transparent;box-shadow:var(--h-ombre)}
+html[data-hab="marbre"] .ac-c{background:var(--h-r1) padding-box,radial-gradient(115% 80% at 10% 0%,var(--halo),var(--card) 72%) padding-box,var(--h-or-poli) border-box}
+
+/* ── NACRE : une perle sous la lumière du jour. Blanc franc en haut à droite, coin bas-gauche dans l'ombre lilas ; l'irisation passe en reflet ; ombres douces vers le bas-gauche ── */
+[data-hab="nacre"]{
+  --h-lumiere:radial-gradient(44% 58% at 100% -8%,rgba(255,255,255,.96),rgba(255,255,255,.42) 38%,rgba(255,255,255,0) 74%),
+    radial-gradient(62% 56% at -4% 108%,rgba(120,76,150,.28),rgba(120,76,150,0) 72%),
+    radial-gradient(126% 106% at 74% 16%,rgba(0,0,0,0) 52%,rgba(92,48,110,.34) 100%);
+  --h-spot:radial-gradient(11% 16% at 84% 13%,rgba(255,255,255,.98),rgba(255,255,255,0) 72%),
+    conic-gradient(from 200deg at 84% 13%,rgba(255,150,196,.46),rgba(255,206,150,.44),rgba(170,240,206,.44),rgba(150,206,246,.46),rgba(206,170,246,.44),rgba(255,150,196,.46));
+  --h-ombrage:linear-gradient(236deg,rgba(255,255,255,.34),rgba(255,255,255,0) 40%),linear-gradient(48deg,rgba(104,60,120,.16),rgba(104,60,120,0) 38%),linear-gradient(180deg,rgba(0,0,0,0) 58%,rgba(104,60,112,.22));
+  --h-r1:linear-gradient(214deg,rgba(255,200,228,.66),rgba(200,234,255,.42) 22%,rgba(255,255,255,0) 48%,rgba(120,70,140,.16) 100%);
+  --h-r2:linear-gradient(180deg,rgba(255,255,255,.9),rgba(255,255,255,0) 24%);
+  --h-plaque:var(--h-r1) padding-box,var(--h-r2) padding-box,linear-gradient(var(--card),var(--card)) padding-box,var(--h-peau) border-box;
+  --sh-1:1px -1px 0 #fff,-5px 5px 9px -3px rgba(104,56,112,.28),-11px 11px 18px -6px rgba(104,56,112,.22),0 1px 0 #fff inset;
+  --sh-2:1px -1px 0 #fff,-8px 8px 12px -4px rgba(104,56,112,.30),-20px 20px 32px -8px rgba(104,56,112,.30),-44px 44px 70px -16px rgba(80,40,96,.30),0 1px 0 #fff inset;
+  --sh-3:1px -1px 0 #fff,-12px 12px 16px -4px rgba(104,56,112,.34),-30px 30px 46px -10px rgba(104,56,112,.34),-66px 66px 100px -18px rgba(80,40,96,.34),0 1px 0 #fff inset;
+  --h-ombre:var(--sh-2);
+  --h-top-pool:radial-gradient(30% 300% at 96% -40%,rgba(255,255,255,.95),rgba(255,255,255,0) 72%),linear-gradient(90deg,rgba(255,170,206,.16),rgba(188,240,214,.16) 40%,rgba(166,214,246,.18) 70%,rgba(214,184,246,.16));
+  --h-rim:linear-gradient(90deg,#F4B2C8,#FAD0AE 20%,#F4E7A8 38%,#B2E4CC 58%,#A6D4EC 78%,#D8BEEE);
+  --h-pl-sh:0 0 0 1px rgba(110,70,95,.28),1px -1px 0 #fff,-6px 7px 12px -4px rgba(90,50,100,.40);
+}
+html[data-hab="nacre"] .ac-c{background:var(--h-r1) padding-box,var(--h-r2) padding-box,radial-gradient(115% 80% at 90% 0%,var(--halo),var(--card) 72%) padding-box,var(--h-peau) border-box}
+
+/* ── FORÊT : des rais de soleil à travers le feuillage, depuis le coin haut gauche ; le sous-bois tombe dans le vert noir ; ombres vers le bas-droite ── */
+[data-hab="foret"]{
+  --h-lumiere:radial-gradient(64% 58% at 6% -6%,rgba(255,236,148,.62),rgba(255,236,148,0) 68%),
+    radial-gradient(104% 92% at 24% 22%,rgba(0,0,0,0) 38%,rgba(0,16,6,.84) 100%),
+    linear-gradient(180deg,rgba(0,0,0,0) 50%,rgba(0,12,4,.45));
+  --h-spot:repeating-conic-gradient(from 96deg at 16% 11%,rgba(255,238,150,0) 0deg 3deg,rgba(255,244,170,.50) 3deg 5.5deg,rgba(255,238,150,0) 5.5deg 10deg,rgba(255,242,164,.32) 10deg 15deg,rgba(255,238,150,0) 15deg 21deg,rgba(255,246,176,.44) 21deg 22.5deg,rgba(255,238,150,0) 22.5deg 28deg);
+  --h-ombrage:linear-gradient(110deg,rgba(255,236,150,.12),rgba(0,0,0,0) 34%,rgba(0,12,4,.36) 100%),linear-gradient(180deg,rgba(0,0,0,0) 50%,rgba(0,10,4,.52));
+  --h-r1:linear-gradient(104deg,rgba(255,244,176,.50),rgba(255,244,176,0) 34%,rgba(30,70,40,0) 52%,rgba(30,70,40,.22) 100%);
+  --h-r2:linear-gradient(180deg,rgba(255,255,236,.42),rgba(255,255,236,0) 26%);
+  --h-plaque:var(--h-r1),var(--h-r2),radial-gradient(120% 90% at 0% 0%,rgba(255,240,170,.55),rgba(255,240,170,0) 52%),var(--card);
+  --sh-1:-1px -1px 0 rgba(240,250,190,.8),5px 6px 9px -2px rgba(0,10,4,.62),12px 14px 20px -6px rgba(0,10,4,.5),0 1px 0 rgba(255,255,236,.8) inset;
+  --sh-2:-1px -1px 0 rgba(244,252,200,.9),8px 9px 12px -3px rgba(0,10,4,.66),20px 22px 32px -8px rgba(0,10,4,.62),46px 48px 70px -14px rgba(0,8,2,.66),0 1px 0 rgba(255,255,236,.85) inset;
+  --sh-3:-1px -1px 0 rgba(248,254,210,1),12px 14px 16px -4px rgba(0,10,4,.7),30px 34px 46px -10px rgba(0,10,4,.66),70px 74px 100px -18px rgba(0,8,2,.7),0 1px 0 rgba(255,255,236,.9) inset;
+  --h-ombre:var(--sh-2);
+  --h-top-pool:radial-gradient(34% 300% at 4% -40%,rgba(255,238,150,.46),rgba(255,238,150,0) 72%);
+  --h-rail-pool:radial-gradient(160% 22% at 0% 0%,rgba(255,238,150,.34),rgba(255,238,150,0) 80%);
+  --h-rim:linear-gradient(90deg,#4C4A18 0%,#F4E88A 6%,#B8AC52 26%,#6A6A2A 52%,#A8A04A 76%,#4C4A18 100%);
+  --h-pl-sh:0 0 0 1px #5C7C48,-1px -1px 0 rgba(244,252,200,.7),7px 8px 12px -4px rgba(0,10,4,.7);
+}
+html[data-hab="foret"] .hab-lampe>i{-webkit-mask-image:radial-gradient(86% 92% at 16% 11%,#000 0,rgba(0,0,0,.6) 50%,transparent 90%);mask-image:radial-gradient(86% 92% at 16% 11%,#000 0,rgba(0,0,0,.6) 50%,transparent 90%)}
+html[data-hab="foret"] .ac-c{background:var(--h-r1),var(--h-r2),radial-gradient(120% 90% at 0% 0%,rgba(255,240,170,.55),rgba(255,240,170,0) 52%),radial-gradient(115% 80% at 10% 0%,var(--halo),var(--card) 72%)}
+
+/* ── TERRACOTTA : le soleil bas, en haut à droite ; les volets jettent leurs barres d'ombre en travers de la pièce (elles avancent avec la lampe) ; ombres DURES vers le bas-gauche ── */
+[data-hab="terracotta"]{
+  --h-lumiere:radial-gradient(58% 76% at 98% 0%,rgba(255,250,214,1),rgba(255,214,132,.72) 36%,rgba(255,190,100,0) 76%),
+    radial-gradient(108% 94% at 78% 12%,rgba(0,0,0,0) 40%,rgba(84,24,4,.72) 100%),
+    linear-gradient(180deg,rgba(255,200,130,0) 50%,rgba(90,30,8,.34));
+  --h-spot:repeating-linear-gradient(112deg,rgba(80,22,6,0) 0 118px,rgba(80,22,6,.34) 118px 196px,rgba(80,22,6,0) 196px 236px);
+  --h-ombrage:linear-gradient(250deg,rgba(255,214,136,.40),rgba(255,214,136,0) 50%),linear-gradient(70deg,rgba(84,24,4,.40),rgba(84,24,4,0) 46%),linear-gradient(180deg,rgba(0,0,0,0) 56%,rgba(84,26,6,.34));
+  --h-r1:linear-gradient(246deg,rgba(255,238,184,.74),rgba(255,238,184,.20) 28%,rgba(255,238,184,0) 48%,rgba(120,50,20,.22) 100%);
+  --h-r2:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0) 24%);
+  --h-plaque:var(--h-r1),var(--h-r2),var(--card);
+  --sh-1:1px -1px 0 rgba(255,248,214,.95),-5px 6px 0 rgba(104,38,10,.30),-8px 10px 14px -4px rgba(90,30,8,.28),0 1px 0 rgba(255,250,236,.8) inset;
+  --sh-2:1px -1px 0 rgba(255,248,214,1),-9px 11px 0 rgba(104,38,10,.34),-18px 22px 0 rgba(104,38,10,.14),-26px 32px 34px -6px rgba(90,30,8,.30),0 1px 0 rgba(255,250,236,.85) inset;
+  --sh-3:1px -1px 0 rgba(255,248,214,1),-13px 16px 0 rgba(104,38,10,.38),-26px 32px 0 rgba(104,38,10,.16),-40px 48px 48px -8px rgba(90,30,8,.34),0 1px 0 rgba(255,250,236,.9) inset;
+  --h-ombre:var(--sh-2);
+  --h-top-pool:radial-gradient(30% 300% at 96% -40%,rgba(255,250,214,.95),rgba(255,250,214,0) 72%);
+  --h-rim:linear-gradient(90deg,#74290F 0%,#A9441F 40%,#E88A4A 80%,#FFD79A 94%,#A9441F 100%);
+  --h-pl-sh:0 0 0 1px rgba(120,50,20,.35),1px -1px 0 rgba(255,248,214,.9),-6px 7px 0 rgba(112,44,16,.24);
+}
+html[data-hab="terracotta"] :is(.v2-card,.v2-kpi,.u2-wid,.ac-c,.u2-rangs,.u2-bx,.hab-dock){box-shadow:var(--h-ombre)}
+html[data-hab="terracotta"] .ac-c{background:var(--h-r1),var(--h-r2),radial-gradient(115% 80% at 90% 0%,var(--halo),var(--card) 72%)}
+
+/* ── GLACIER : une lumière froide, réfractée. Blanc franc du haut, un rayon oblique, des filets de caustique et quelques éclats qui dérivent ; bords bleu profond ; biseaux nets ── */
+[data-hab="glacier"]{
+  --h-lumiere:radial-gradient(72% 62% at 50% -12%,rgba(255,255,255,1),rgba(226,248,255,.50) 42%,rgba(255,255,255,0) 74%),
+    radial-gradient(112% 94% at 50% 22%,rgba(0,0,0,0) 38%,rgba(6,62,104,.66) 100%);
+  --h-spot:radial-gradient(84px 34px at 24% 36%,rgba(255,255,255,.95),transparent),radial-gradient(64px 26px at 68% 28%,rgba(255,255,255,.9),transparent),radial-gradient(96px 36px at 82% 62%,rgba(244,254,255,.9),transparent),radial-gradient(74px 28px at 38% 72%,rgba(255,255,255,.85),transparent),
+    repeating-linear-gradient(63deg,transparent 0 60px,rgba(10,84,132,.16) 60px 63px,rgba(255,255,255,.80) 63px 65px,transparent 65px 124px),
+    repeating-linear-gradient(117deg,transparent 0 78px,rgba(10,84,132,.14) 78px 81px,rgba(236,252,255,.74) 81px 83px,transparent 83px 158px),
+    radial-gradient(34% 40% at 50% 10%,rgba(255,255,255,.9),transparent 72%);
+  --h-ombrage:linear-gradient(115deg,rgba(255,255,255,0) 24%,rgba(255,255,255,.62) 40%,rgba(255,255,255,0) 56%),linear-gradient(180deg,rgba(255,255,255,0) 40%,rgba(14,98,156,.62));
+  --h-r1:linear-gradient(158deg,rgba(255,255,255,.96) 0,rgba(255,255,255,0) 30%,rgba(120,204,240,.38) 100%);
+  --h-r2:linear-gradient(0deg,rgba(255,255,255,0),rgba(255,255,255,0));
+  --h-plaque:var(--h-r1) padding-box,linear-gradient(118deg,#FFFFFF,#EAF5FB 60%,#FFFFFF) padding-box,linear-gradient(135deg,#FFFFFF,#8FC3DB 38%,#EAF6FC 58%,#6FB0CF) border-box;
+  --sh-1:0 -1px 0 #fff,3px 8px 12px -4px rgba(8,70,112,.34),0 1px 0 #fff inset;
+  --sh-2:0 -1px 0 #fff,0 0 0 1px rgba(150,214,240,.8),5px 14px 18px -6px rgba(8,70,112,.40),12px 28px 40px -10px rgba(8,70,112,.40),0 1px 0 #fff inset,0 -3px 0 rgba(14,90,120,.08) inset;
+  --sh-3:0 -1px 0 #fff,0 0 0 1px rgba(150,214,240,.9),8px 20px 24px -6px rgba(8,70,112,.44),20px 44px 60px -12px rgba(8,70,112,.46),0 1px 0 #fff inset;
+  --h-ombre:var(--sh-2);
+  --h-top-pool:radial-gradient(34% 300% at 50% -50%,rgba(255,255,255,1),rgba(255,255,255,0) 72%),linear-gradient(115deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.7) 44%,rgba(255,255,255,0) 58%);
+  --h-rim:linear-gradient(90deg,#5CA4C6,#EAF9FF 24%,#8EC2DA 44%,#FFFFFF 62%,#5CA4C6 84%,#B6E2F4);
+  --h-pl-sh:0 0 0 1px rgba(14,70,100,.30),0 -1px 0 #fff,3px 9px 14px -5px rgba(8,70,112,.44);
+}
+html[data-hab="glacier"] .ac-c{background:var(--h-r1) padding-box,linear-gradient(118deg,rgba(255,255,255,.9),rgba(231,244,251,.5) 62%,rgba(255,255,255,.85)),radial-gradient(115% 80% at 50% 0%,var(--halo),var(--card) 72%) padding-box,linear-gradient(135deg,#FFFFFF,#8FC3DB 38%,#EAF6FC 58%,#6FB0CF) border-box}
+
+/* ── VELOURS : une lampe de salon, en haut à gauche. Un abat-jour qui projette un cône, des plis de rideau dans la pénombre, un lustre satiné ; ombres profondes vers le bas-droite ── */
+[data-hab="velours"]{
+  --h-lumiere:radial-gradient(60% 76% at 10% -8%,rgba(255,208,156,.92),rgba(255,152,92,.46) 40%,rgba(255,140,80,0) 76%),
+    conic-gradient(from 100deg at 10% -4%,rgba(255,190,130,0) 0deg,rgba(255,190,130,.24) 18deg,rgba(255,190,130,.24) 52deg,rgba(255,190,130,0) 72deg,rgba(255,190,130,0) 360deg),
+    radial-gradient(98% 90% at 22% 14%,rgba(0,0,0,0) 30%,rgba(10,0,4,.90) 100%);
+  --h-spot:radial-gradient(16% 22% at 19.4% 13.7%,rgba(255,232,190,.88),rgba(255,176,116,.42) 38%,rgba(255,150,90,0) 74%),
+    linear-gradient(100deg,transparent 18%,rgba(255,170,150,.16) 32%,rgba(255,206,190,.26) 36%,rgba(255,170,150,.14) 41%,transparent 54%);
+  --h-ombrage:repeating-linear-gradient(90deg,rgba(0,0,0,.34) 0 90px,rgba(0,0,0,0) 150px 210px,rgba(0,0,0,.34) 300px),linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(8,0,3,.56));
+  --h-r1:linear-gradient(104deg,rgba(255,236,226,.70),rgba(255,236,226,0) 32%,rgba(70,10,24,0) 52%,rgba(70,10,24,.22) 100%);
+  --h-r2:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,0) 30%);
+  --h-plaque:var(--h-r1),var(--h-r2),linear-gradient(105deg,rgba(255,255,255,0) 40%,rgba(255,255,255,.34) 52%,rgba(255,255,255,0) 64%),var(--card);
+  --sh-1:-1px -1px 0 rgba(255,214,184,.85),6px 7px 10px -3px rgba(0,0,0,.6),14px 16px 22px -8px rgba(0,0,0,.5),0 1px 0 rgba(255,246,240,.8) inset;
+  --sh-2:-1px -1px 0 rgba(255,218,190,.92),10px 12px 14px -4px rgba(0,0,0,.64),24px 28px 40px -10px rgba(0,0,0,.62),52px 60px 80px -16px rgba(0,0,0,.66),0 1px 0 rgba(255,246,240,.85) inset;
+  --sh-3:-1px -1px 0 rgba(255,222,196,1),14px 16px 18px -4px rgba(0,0,0,.68),34px 38px 52px -10px rgba(0,0,0,.66),76px 86px 110px -18px rgba(0,0,0,.7),0 1px 0 rgba(255,246,240,.9) inset;
+  --h-ombre:var(--sh-2);
+  --h-top-pool:radial-gradient(30% 300% at 8% -40%,rgba(255,200,150,.50),rgba(255,200,150,0) 72%);
+  --h-rail-pool:radial-gradient(160% 22% at 0% 0%,rgba(255,200,150,.36),rgba(255,200,150,0) 80%);
+  --h-rim:linear-gradient(90deg,#6A2A38 0%,#FFD4B4 6%,#D89AA2 26%,#8A3A4C 54%,#C8808C 78%,#6A2A38 100%);
+  --h-pl-sh:0 0 0 1px #8A4A58,-1px -1px 0 rgba(255,214,184,.8),8px 9px 14px -4px rgba(0,0,0,.7);
+}
+html[data-hab="velours"] .ac-c{background:var(--h-r1),var(--h-r2),radial-gradient(115% 80% at 10% 0%,var(--halo),var(--card) 72%)}
+
+/* les aperçus de la garde-robe montrent la MÊME lumière (pénombre comprise) que la page */
+.hab-mini::before{background:var(--h-ombrage,none),var(--h-lumiere)}
+
+/* grandes pièces de couleur (bandeau Officines, en-tête de fiche) : la lumière de la source les touche aussi, du côté éclairé (reste sombre : le texte blanc tient) */
+[data-hab="leopard"]{--h-hero-lit:linear-gradient(100deg,rgba(255,206,110,.10),rgba(255,206,110,0) 56%)}
+[data-hab="marbre"]{--h-hero-lit:linear-gradient(180deg,rgba(255,206,120,.08),rgba(255,206,120,0) 60%)}
+[data-hab="nacre"]{--h-hero-lit:linear-gradient(214deg,rgba(255,206,230,.10),rgba(255,206,230,0) 56%)}
+[data-hab="foret"]{--h-hero-lit:linear-gradient(104deg,rgba(255,240,150,.10),rgba(255,240,150,0) 56%)}
+[data-hab="terracotta"]{--h-hero-lit:linear-gradient(246deg,rgba(255,226,160,.10),rgba(255,226,160,0) 56%)}
+[data-hab="glacier"]{--h-hero-lit:linear-gradient(160deg,rgba(190,236,255,.10),rgba(190,236,255,0) 56%)}
+[data-hab="velours"]{--h-hero-lit:linear-gradient(104deg,rgba(255,180,140,.12),rgba(255,180,140,0) 56%)}
+html[data-hab] .ac-fond{background:var(--h-hero-lit,none),var(--h-hero)}
+html[data-hab] .pha-id{background:var(--h-hero-lit,none),linear-gradient(rgba(0,0,0,.30),rgba(0,0,0,.30)),var(--h-hero)}
+
+html[data-hab="nacre"] .hab-lampe>i{-webkit-mask-image:radial-gradient(64% 70% at 84% 13%,#000 0,rgba(0,0,0,.7) 34%,transparent 82%);mask-image:radial-gradient(64% 70% at 84% 13%,#000 0,rgba(0,0,0,.7) 34%,transparent 82%)}
+
+/* plaques de texte posé sur la matière : un peu plus pleines là où la lumière est la plus forte (la mesure de contraste lit la boîte entière) */
+[data-hab="marbre"]{--h-pl:rgba(14,14,17,.985)}
+[data-hab="velours"]{--h-pl:rgba(30,6,14,.97)}
+[data-hab="foret"]{--h-pl:rgba(8,22,15,.97)}
+
+/* nacre et glacier : le sous-titre d'une page et le compteur d'officines se posent sur une plaque pleine (la pénombre des bords de page ferait tomber leur contraste) */
+:is([data-hab="nacre"],[data-hab="glacier"]) :is(.v2-page-sub,p.v2-sous,.of-n,.u2-salut .v2-sous,.off-count,.off-verdict-meta){background:var(--h-pl);box-shadow:var(--h-pl-sh,none);border-radius:10px;padding:3px 11px 4px;width:fit-content;max-width:100%;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+:is([data-hab="nacre"],[data-hab="glacier"]) :is(.v2-page-sub,p.v2-sous,.of-n){display:block;margin-top:8px}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   9. p2, deuxième passe (17/10/2026) — LA LUMIÈRE, BEAUCOUP PLUS FORTE
+   Même architecture, valeurs poussées : zone éclairée franchement dorée/claire, coin opposé écrasé (60-80 %), rais visibles, cartes ombrées de leur côté
+   sombre et brillantes du côté de la source, ombres de 15 à 60 px à l'opposé, barre du haut et bandeaux touchés par la source. Le calque lampe est plus grand
+   (inset -22 %) : sa dérive est large (14 % x 9 %, 19 s / 13 s). Coordonnées dans le calque : (position fenêtre en % + 22) / 1,44.
+   ═══════════════════════════════════════════════════════════════════ */
+html[data-hab] .hab-lampe{inset:-22%}
+
+/* ── LÉOPARD ── */
+[data-hab="leopard"]{
+  --h-lumiere:radial-gradient(62% 104% at -8% 28%,rgba(255,248,196,1),rgba(255,210,96,.80) 30%,rgba(255,184,64,0) 78%),
+    radial-gradient(96% 94% at 10% 30%,rgba(0,0,0,0) 30%,rgba(18,5,0,.74) 100%);
+  --h-spot:radial-gradient(14% 20% at 18.7% 34.7%,rgba(255,252,226,.95),rgba(255,226,140,.6) 34%,rgba(255,200,90,0) 74%),
+    repeating-conic-gradient(from 58deg at 18.7% 34.7%,rgba(255,226,130,0) 0deg 4deg,rgba(255,234,146,.62) 6deg 10deg,rgba(255,226,130,0) 13deg 18deg,rgba(255,226,130,.38) 20deg 24deg,rgba(255,226,130,0) 27deg 33deg);
+  --h-ombrage:linear-gradient(98deg,rgba(255,206,110,.36) 0%,rgba(255,190,80,.06) 28%,rgba(40,14,0,.50) 62%,rgba(14,4,0,.84) 100%),linear-gradient(180deg,rgba(0,0,0,0) 45%,rgba(30,10,0,.52));
+  --h-r1:linear-gradient(128deg,rgba(255,228,130,.9),rgba(255,228,130,.36) 24%,rgba(255,228,130,0) 42%,rgba(100,50,6,.42) 100%);
+  --h-r2:linear-gradient(180deg,rgba(255,255,255,.80),rgba(255,255,255,0) 20%);
+  --sh-1:-2px -2px 0 rgba(255,244,190,1),9px 8px 8px -3px rgba(40,16,0,.5),20px 17px 22px -6px rgba(40,16,0,.44),0 1px 0 rgba(255,244,214,.75) inset;
+  --sh-2:-2px -2px 0 rgba(255,246,196,1),14px 12px 8px -4px rgba(40,16,0,.52),28px 24px 28px -8px rgba(40,16,0,.5),58px 46px 84px -16px rgba(30,10,0,.55),0 1px 0 rgba(255,244,214,.8) inset;
+  --sh-3:-2px -2px 0 rgba(255,248,200,1),20px 17px 12px -5px rgba(40,16,0,.55),40px 32px 40px -10px rgba(40,16,0,.54),84px 64px 110px -18px rgba(30,10,0,.6),0 1px 0 rgba(255,244,214,.85) inset;
+  --h-top-pool:radial-gradient(34% 420% at 5% -70%,rgba(255,216,110,.95),rgba(255,216,110,0) 76%),linear-gradient(90deg,rgba(255,200,90,.24),rgba(255,200,90,0) 40%,rgba(0,0,0,.46) 100%);
+  --h-rail-pool:radial-gradient(180% 30% at 0% 0%,rgba(255,216,110,.24),rgba(255,216,110,0) 80%);
+  --h-hero-lit:linear-gradient(100deg,rgba(255,206,110,.07),rgba(255,206,110,0) 40%),linear-gradient(180deg,rgba(255,226,150,.12),rgba(255,226,150,0) 22%),linear-gradient(118deg,rgba(255,214,130,0) 62%,rgba(255,214,130,.20) 76%,rgba(255,214,130,0) 90%);
+}
+html[data-hab="leopard"] .hab-lampe>i{-webkit-mask-image:radial-gradient(86% 110% at 18.7% 34.7%,#000 0,rgba(0,0,0,.7) 45%,transparent 92%);mask-image:radial-gradient(86% 110% at 18.7% 34.7%,#000 0,rgba(0,0,0,.7) 45%,transparent 92%)}
+
+/* ── MARBRE ── */
+[data-hab="marbre"]{
+  --h-lumiere:radial-gradient(52% 72% at 50% -8%,rgba(255,236,168,1),rgba(255,172,64,.66) 36%,rgba(255,150,50,0) 78%),
+    radial-gradient(112% 124% at 50% -6%,rgba(255,160,60,.36),rgba(255,160,60,0) 76%),
+    radial-gradient(78% 72% at 50% 18%,rgba(0,0,0,0) 20%,rgba(0,0,0,.97) 100%);
+  --h-spot:radial-gradient(9% 13% at 50% 20.1%,rgba(255,248,214,.98),rgba(255,210,120,.6) 36%,rgba(255,170,60,0) 76%),
+    conic-gradient(from 128deg at 50% 20.1%,rgba(255,214,130,0) 0deg,rgba(255,214,130,.34) 9deg,rgba(255,214,130,0) 19deg,rgba(255,214,130,.24) 29deg,rgba(255,214,130,0) 40deg,rgba(255,214,130,.34) 52deg,rgba(255,214,130,0) 63deg,rgba(255,214,130,.24) 74deg,rgba(255,214,130,0) 86deg,rgba(255,214,130,0) 360deg);
+  --h-ombrage:linear-gradient(90deg,rgba(0,0,0,.8),rgba(0,0,0,0) 28%,rgba(0,0,0,0) 72%,rgba(0,0,0,.8)),linear-gradient(180deg,rgba(0,0,0,0) 30%,rgba(0,0,0,.66));
+  --h-r1:linear-gradient(180deg,rgba(255,228,150,.92),rgba(255,228,150,.2) 22%,rgba(90,60,10,0) 46%,rgba(90,60,10,.42) 100%);
+  --sh-1:0 -2px 0 rgba(255,236,170,.95),0 10px 10px -3px rgba(0,0,0,.7),0 1px 0 rgba(255,244,214,.7) inset;
+  --sh-2:0 -2px 0 rgba(255,238,176,1),0 -16px 30px -8px rgba(255,190,90,.44),0 18px 12px -4px rgba(0,0,0,.72),0 32px 32px -8px rgba(0,0,0,.82),0 64px 90px -16px rgba(0,0,0,.76),0 1px 0 rgba(255,244,214,.8) inset;
+  --sh-3:0 -2px 0 rgba(255,240,182,1),0 -22px 40px -8px rgba(255,190,90,.52),0 24px 16px -4px rgba(0,0,0,.76),0 44px 44px -8px rgba(0,0,0,.86),0 84px 110px -16px rgba(0,0,0,.8),0 1px 0 rgba(255,244,214,.85) inset;
+  --h-ombre:var(--sh-2),inset 0 0 0 4px var(--card),inset 0 0 0 5px rgba(201,150,60,.55);
+  --h-top-pool:radial-gradient(40% 420% at 50% -80%,rgba(255,214,130,.9),rgba(255,214,130,0) 76%),linear-gradient(90deg,rgba(0,0,0,.5),rgba(0,0,0,0) 30%,rgba(0,0,0,0) 70%,rgba(0,0,0,.5));
+  --h-hero-lit:linear-gradient(180deg,rgba(255,206,120,.06),rgba(255,206,120,0) 40%),linear-gradient(180deg,rgba(255,226,150,.12),rgba(255,226,150,0) 12%);
+}
+html[data-hab="marbre"] .hab-lampe>i{-webkit-mask-image:radial-gradient(76% 100% at 50% 20.1%,#000 0,rgba(0,0,0,.7) 45%,transparent 92%);mask-image:radial-gradient(76% 100% at 50% 20.1%,#000 0,rgba(0,0,0,.7) 45%,transparent 92%)}
+
+/* ── NACRE ── */
+[data-hab="nacre"]{
+  --h-lumiere:radial-gradient(56% 74% at 100% -8%,rgba(255,255,255,1),rgba(255,255,255,.58) 38%,rgba(255,255,255,0) 76%),
+    radial-gradient(74% 66% at -4% 108%,rgba(112,64,150,.56),rgba(112,64,150,0) 74%),
+    radial-gradient(120% 104% at 76% 14%,rgba(0,0,0,0) 40%,rgba(86,40,112,.52) 100%);
+  --h-spot:radial-gradient(12% 17% at 79.2% 18.1%,rgba(255,255,255,1),rgba(255,255,255,0) 72%),
+    repeating-conic-gradient(from 180deg at 79.2% 18.1%,rgba(255,150,196,.0) 0deg 4deg,rgba(255,150,196,.50) 6deg 10deg,rgba(255,206,150,.0) 13deg 15deg,rgba(170,240,206,.46) 17deg 21deg,rgba(150,206,246,.0) 24deg 26deg,rgba(206,170,246,.46) 28deg 32deg,rgba(255,150,196,0) 35deg 40deg);
+  --h-ombrage:linear-gradient(236deg,rgba(255,255,255,.5),rgba(255,255,255,0) 42%),linear-gradient(48deg,rgba(96,48,124,.42),rgba(96,48,124,0) 44%),linear-gradient(180deg,rgba(0,0,0,0) 52%,rgba(96,52,112,.36));
+  --h-r1:linear-gradient(232deg,rgba(255,196,226,.88),rgba(196,232,255,.5) 22%,rgba(255,255,255,0) 42%,rgba(104,56,130,.36) 100%);
+  --h-r2:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,0) 20%);
+  --sh-1:2px -2px 0 #fff,-9px 9px 9px -3px rgba(86,40,112,.42),-20px 20px 22px -6px rgba(86,40,112,.34),0 1px 0 #fff inset;
+  --sh-2:2px -2px 0 #fff,-14px 14px 10px -4px rgba(86,40,112,.46),-28px 28px 28px -8px rgba(86,40,112,.44),-58px 58px 84px -16px rgba(70,30,96,.46),0 1px 0 #fff inset;
+  --sh-3:2px -2px 0 #fff,-20px 20px 14px -5px rgba(86,40,112,.5),-40px 40px 40px -10px rgba(86,40,112,.48),-84px 84px 110px -18px rgba(70,30,96,.5),0 1px 0 #fff inset;
+  --h-top-pool:radial-gradient(36% 420% at 95% -70%,rgba(255,255,255,1),rgba(255,255,255,0) 76%),linear-gradient(90deg,rgba(255,150,196,.24),rgba(170,240,206,.24) 40%,rgba(150,206,246,.26) 70%,rgba(206,170,246,.24));
+  --h-hero-lit:linear-gradient(214deg,rgba(255,206,230,.2),rgba(255,206,230,0) 40%),linear-gradient(180deg,rgba(255,236,246,.3),rgba(255,236,246,0) 20%);
+}
+html[data-hab="nacre"] .hab-lampe>i{-webkit-mask-image:radial-gradient(80% 100% at 79.2% 18.1%,#000 0,rgba(0,0,0,.75) 40%,transparent 90%);mask-image:radial-gradient(80% 100% at 79.2% 18.1%,#000 0,rgba(0,0,0,.75) 40%,transparent 90%)}
+
+/* ── FORÊT ── */
+[data-hab="foret"]{
+  --h-lumiere:radial-gradient(70% 66% at 6% -6%,rgba(255,240,152,.86),rgba(255,236,148,0) 70%),
+    radial-gradient(96% 88% at 18% 18%,rgba(0,0,0,0) 26%,rgba(0,14,6,.94) 100%);
+  --h-spot:radial-gradient(14% 20% at 20.8% 16.7%,rgba(255,252,206,.9),rgba(255,240,150,0) 74%),
+    repeating-conic-gradient(from 92deg at 20.8% 16.7%,rgba(255,238,150,0) 0deg 3deg,rgba(255,244,170,.72) 4deg 8deg,rgba(255,238,150,0) 10deg 14deg,rgba(255,242,164,.46) 16deg 20deg,rgba(255,238,150,0) 22deg 27deg,rgba(255,246,176,.6) 28deg 30deg,rgba(255,238,150,0) 32deg 38deg);
+  --h-ombrage:linear-gradient(110deg,rgba(255,236,150,.2),rgba(0,0,0,0) 30%,rgba(0,12,4,.6) 100%),linear-gradient(180deg,rgba(0,0,0,0) 44%,rgba(0,10,4,.64));
+  --h-r1:linear-gradient(128deg,rgba(255,246,176,.86),rgba(255,246,176,.3) 24%,rgba(30,70,40,0) 42%,rgba(24,64,34,.44) 100%);
+  --h-r2:linear-gradient(180deg,rgba(255,255,236,.8),rgba(255,255,236,0) 20%);
+  --sh-1:-2px -2px 0 rgba(244,252,200,.95),9px 10px 9px -3px rgba(0,10,4,.72),20px 22px 24px -6px rgba(0,10,4,.6),0 1px 0 rgba(255,255,236,.8) inset;
+  --sh-2:-2px -2px 0 rgba(248,254,206,1),14px 15px 10px -4px rgba(0,10,4,.76),28px 30px 30px -8px rgba(0,10,4,.7),58px 62px 84px -16px rgba(0,8,2,.76),0 1px 0 rgba(255,255,236,.85) inset;
+  --sh-3:-2px -2px 0 rgba(250,255,212,1),20px 21px 14px -5px rgba(0,10,4,.8),40px 42px 40px -10px rgba(0,10,4,.74),84px 88px 110px -18px rgba(0,8,2,.8),0 1px 0 rgba(255,255,236,.9) inset;
+  --h-top-pool:radial-gradient(36% 420% at 5% -70%,rgba(255,240,152,.85),rgba(255,240,152,0) 76%),linear-gradient(90deg,rgba(0,0,0,0) 40%,rgba(0,0,0,.4));
+  --h-hero-lit:linear-gradient(104deg,rgba(255,240,150,.18),rgba(255,240,150,0) 40%),linear-gradient(180deg,rgba(255,250,196,.26),rgba(255,250,196,0) 20%);
+}
+html[data-hab="foret"] .hab-lampe>i{-webkit-mask-image:radial-gradient(92% 100% at 20.8% 16.7%,#000 0,rgba(0,0,0,.7) 48%,transparent 92%);mask-image:radial-gradient(92% 100% at 20.8% 16.7%,#000 0,rgba(0,0,0,.7) 48%,transparent 92%)}
+
+/* ── TERRACOTTA ── */
+[data-hab="terracotta"]{
+  --h-lumiere:radial-gradient(64% 84% at 100% -2%,rgba(255,252,220,1),rgba(255,214,132,.82) 34%,rgba(255,190,100,0) 78%),
+    radial-gradient(104% 92% at 82% 8%,rgba(0,0,0,0) 30%,rgba(70,18,2,.80) 100%);
+  --h-spot:repeating-linear-gradient(112deg,rgba(60,14,2,0) 0 96px,rgba(60,14,2,.52) 100px 192px,rgba(60,14,2,0) 196px 256px),
+    radial-gradient(14% 20% at 85% 12%,rgba(255,252,220,.9),rgba(255,226,150,0) 74%);
+  --h-ombrage:linear-gradient(250deg,rgba(255,214,136,.5),rgba(255,214,136,0) 46%),linear-gradient(70deg,rgba(70,18,2,.62),rgba(70,18,2,0) 52%),linear-gradient(180deg,rgba(0,0,0,0) 48%,rgba(70,20,4,.5));
+  --h-r1:linear-gradient(232deg,rgba(255,240,186,.9),rgba(255,240,186,.3) 24%,rgba(255,240,186,0) 42%,rgba(110,40,12,.42) 100%);
+  --h-r2:linear-gradient(180deg,rgba(255,255,255,.8),rgba(255,255,255,0) 20%);
+  --sh-1:2px -2px 0 rgba(255,250,218,1),-8px 9px 0 rgba(96,32,8,.4),-16px 18px 20px -4px rgba(80,24,4,.38),0 1px 0 rgba(255,250,236,.8) inset;
+  --sh-2:2px -2px 0 rgba(255,250,218,1),-15px 17px 0 rgba(96,32,8,.44),-30px 34px 0 rgba(96,32,8,.2),-46px 52px 44px -6px rgba(80,24,4,.4),0 1px 0 rgba(255,250,236,.85) inset;
+  --sh-3:2px -2px 0 rgba(255,250,218,1),-20px 23px 0 rgba(96,32,8,.48),-40px 46px 0 rgba(96,32,8,.22),-62px 70px 56px -8px rgba(80,24,4,.44),0 1px 0 rgba(255,250,236,.9) inset;
+  --h-top-pool:radial-gradient(36% 420% at 96% -70%,rgba(255,252,220,1),rgba(255,252,220,0) 76%),linear-gradient(90deg,rgba(110,40,12,.3),rgba(110,40,12,0) 40%);
+  --h-hero-lit:linear-gradient(246deg,rgba(255,226,160,.2),rgba(255,226,160,0) 40%),linear-gradient(180deg,rgba(255,240,190,.28),rgba(255,240,190,0) 20%);
+}
+html[data-hab="terracotta"] .hab-lampe>i{-webkit-mask-image:radial-gradient(130% 120% at 85% 12%,#000 0,rgba(0,0,0,.8) 55%,rgba(0,0,0,.45) 100%);mask-image:radial-gradient(130% 120% at 85% 12%,#000 0,rgba(0,0,0,.8) 55%,rgba(0,0,0,.45) 100%)}
+
+/* ── GLACIER ── */
+[data-hab="glacier"]{
+  --h-lumiere:radial-gradient(76% 68% at 50% -12%,rgba(255,255,255,1),rgba(226,248,255,.62) 42%,rgba(255,255,255,0) 76%),
+    radial-gradient(104% 90% at 50% 20%,rgba(0,0,0,0) 28%,rgba(4,52,96,.82) 100%);
+  --h-spot:repeating-linear-gradient(112deg,rgba(255,255,255,0) 0 150px,rgba(255,255,255,.62) 190px 240px,rgba(255,255,255,0) 290px 460px),
+    radial-gradient(84px 34px at 24% 36%,rgba(255,255,255,.95),transparent),radial-gradient(64px 26px at 68% 28%,rgba(255,255,255,.9),transparent),radial-gradient(96px 36px at 82% 62%,rgba(244,254,255,.9),transparent),
+    repeating-linear-gradient(63deg,transparent 0 60px,rgba(10,84,132,.18) 60px 63px,rgba(255,255,255,.85) 63px 65px,transparent 65px 124px),
+    radial-gradient(34% 40% at 50% 15.3%,rgba(255,255,255,.95),transparent 72%);
+  --h-ombrage:linear-gradient(115deg,rgba(255,255,255,0) 24%,rgba(255,255,255,.7) 40%,rgba(255,255,255,0) 56%),linear-gradient(180deg,rgba(255,255,255,0) 40%,rgba(10,90,150,.5)),linear-gradient(90deg,rgba(6,60,104,.3),rgba(6,60,104,0) 22%,rgba(6,60,104,0) 78%,rgba(6,60,104,.3));
+  --h-r1:linear-gradient(158deg,rgba(255,255,255,1) 0,rgba(255,255,255,0) 28%,rgba(100,196,236,.30) 70%,rgba(20,110,170,.30) 100%);
+  --sh-1:0 -2px 0 #fff,6px 10px 10px -3px rgba(6,60,104,.46),0 1px 0 #fff inset;
+  --sh-2:0 -2px 0 #fff,0 0 0 1px rgba(150,214,240,.9),9px 17px 12px -5px rgba(6,60,104,.5),20px 32px 34px -8px rgba(6,60,104,.5),44px 60px 80px -14px rgba(6,60,104,.5),0 1px 0 #fff inset,0 -3px 0 rgba(14,90,120,.1) inset;
+  --sh-3:0 -2px 0 #fff,0 0 0 1px rgba(150,214,240,1),13px 23px 14px -5px rgba(6,60,104,.54),30px 46px 44px -8px rgba(6,60,104,.54),64px 84px 110px -14px rgba(6,60,104,.56),0 1px 0 #fff inset;
+  --h-top-pool:radial-gradient(40% 420% at 50% -80%,rgba(255,255,255,1),rgba(255,255,255,0) 76%),linear-gradient(115deg,rgba(255,255,255,0) 26%,rgba(255,255,255,.85) 44%,rgba(255,255,255,0) 60%);
+  --h-hero-lit:linear-gradient(160deg,rgba(190,236,255,.07),rgba(190,236,255,0) 40%),linear-gradient(180deg,rgba(236,252,255,.10),rgba(236,252,255,0) 20%);
+}
+html[data-hab="glacier"] .hab-lampe>i{-webkit-mask-image:radial-gradient(110% 100% at 50% 15.3%,#000 0,rgba(0,0,0,.75) 50%,rgba(0,0,0,.3) 100%);mask-image:radial-gradient(110% 100% at 50% 15.3%,#000 0,rgba(0,0,0,.75) 50%,rgba(0,0,0,.3) 100%)}
+
+/* ── VELOURS ── */
+[data-hab="velours"]{
+  --h-lumiere:radial-gradient(62% 80% at 10% -8%,rgba(255,214,164,.96),rgba(255,152,92,.52) 40%,rgba(255,140,80,0) 78%),
+    conic-gradient(from 98deg at 10% -4%,rgba(255,196,140,0) 0deg,rgba(255,206,160,.74) 3deg,rgba(255,196,140,.5) 24deg,rgba(255,196,140,.62) 52deg,rgba(255,196,140,0) 56deg,rgba(255,196,140,0) 360deg),
+    radial-gradient(94% 86% at 20% 12%,rgba(0,0,0,0) 24%,rgba(10,0,4,.96) 100%);
+  --h-spot:radial-gradient(14% 20% at 23.6% 18.75%,rgba(255,238,200,.95),rgba(255,176,116,.5) 38%,rgba(255,150,90,0) 76%),
+    linear-gradient(100deg,transparent 14%,rgba(255,170,150,.26) 30%,rgba(255,210,194,.42) 35%,rgba(255,170,150,.22) 41%,transparent 56%);
+  --h-ombrage:repeating-linear-gradient(90deg,rgba(0,0,0,.5) 0 80px,rgba(0,0,0,0) 150px 210px,rgba(0,0,0,.5) 290px),linear-gradient(180deg,rgba(0,0,0,0) 34%,rgba(8,0,3,.68));
+  --h-r1:linear-gradient(128deg,rgba(255,238,228,.9),rgba(255,238,228,.3) 24%,rgba(70,10,24,0) 42%,rgba(60,8,22,.44) 100%);
+  --h-r2:linear-gradient(180deg,rgba(255,255,255,.8),rgba(255,255,255,0) 20%);
+  --sh-1:-2px -2px 0 rgba(255,222,196,1),10px 11px 10px -3px rgba(0,0,0,.7),22px 24px 26px -8px rgba(0,0,0,.58),0 1px 0 rgba(255,246,240,.8) inset;
+  --sh-2:-2px -2px 0 rgba(255,226,202,1),15px 17px 10px -4px rgba(0,0,0,.74),30px 34px 34px -8px rgba(0,0,0,.7),62px 70px 90px -16px rgba(0,0,0,.76),0 1px 0 rgba(255,246,240,.85) inset;
+  --sh-3:-2px -2px 0 rgba(255,230,208,1),21px 23px 14px -5px rgba(0,0,0,.78),42px 46px 44px -10px rgba(0,0,0,.74),88px 96px 120px -18px rgba(0,0,0,.8),0 1px 0 rgba(255,246,240,.9) inset;
+  --h-top-pool:radial-gradient(36% 420% at 8% -70%,rgba(255,206,156,.92),rgba(255,206,156,0) 76%),linear-gradient(90deg,rgba(0,0,0,0) 40%,rgba(0,0,0,.4));
+  --h-hero-lit:linear-gradient(104deg,rgba(255,180,140,.22),rgba(255,180,140,0) 40%),linear-gradient(180deg,rgba(255,220,200,.28),rgba(255,220,200,0) 20%);
+}
+html[data-hab="velours"] .hab-lampe>i{-webkit-mask-image:radial-gradient(90% 100% at 23.6% 18.75%,#000 0,rgba(0,0,0,.75) 48%,transparent 92%);mask-image:radial-gradient(90% 100% at 23.6% 18.75%,#000 0,rgba(0,0,0,.75) 48%,transparent 92%)}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   10. p2 « LA LUMIÈRE DOUCE » (17/10/2026, correction de Will : « plus beau minimaliste, du goût, des jolies détails subtils »)
+   Remplace les sections 8-9 par la retenue : fond CALME de la teinte sculpté par UNE source douce et large ; plus de matière plein écran (une trace dans le coin
+   opposé à la source) ; cartes sobres à liseré 1 px teinté, reflet subtil côté lumière, ombre douce et longue à l'opposé ; la matière devient quelques détails
+   précieux : ruban de 5 px sous la barre, anneau de l'avatar, coin du grand bandeau (la signature), barre de défilement fine.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ——— les teintes calmes, la lumière, les fils, les ombres (par habillage) ——— */
+[data-hab="leopard"]{
+  --paper:#F1E3C6; --h-fil:rgba(150,98,38,.45); --h-ombre-c:90,52,14; --h-trace:100% 100%;
+  --h-lumiere:radial-gradient(82% 92% at -6% -12%,rgba(255,228,150,.62),rgba(255,228,150,0) 70%),radial-gradient(130% 110% at 14% 18%,rgba(0,0,0,0) 56%,rgba(120,70,20,.20) 100%);
+  --h-spot:radial-gradient(34% 44% at 18.7% 28%,rgba(255,238,176,.46),rgba(255,226,150,0) 72%);
+  --h-ombrage:linear-gradient(180deg,rgba(0,0,0,0) 62%,rgba(120,70,20,.12));
+  --h-r1:linear-gradient(118deg,rgba(255,236,170,.50),rgba(255,236,170,0) 42%); --h-r2:linear-gradient(180deg,rgba(255,255,255,.40),rgba(255,255,255,0) 18%);
+  --h-pl:transparent; --h-pl-sh:none; --h-hero-teinte:48,26,10;
+  --sh-1:0 1px 0 rgba(255,255,255,.75) inset,3px 4px 10px -3px rgba(90,52,14,.18);
+  --sh-2:0 1px 0 rgba(255,255,255,.8) inset,6px 8px 20px -6px rgba(90,52,14,.24),14px 20px 44px -14px rgba(90,52,14,.20);
+  --sh-3:0 1px 0 rgba(255,255,255,.85) inset,10px 14px 30px -8px rgba(90,52,14,.28),24px 34px 66px -16px rgba(90,52,14,.22);
+}
+[data-hab="marbre"]{
+  --paper:#1A1A1D; --h-fil:rgba(201,160,83,.75); --h-ombre-c:0,0,0; --h-trace:100% 100%;
+  --h-lumiere:radial-gradient(70% 82% at 50% -12%,rgba(255,200,120,.22),rgba(255,200,120,0) 72%),radial-gradient(120% 100% at 50% 14%,rgba(0,0,0,0) 46%,rgba(0,0,0,.46) 100%);
+  --h-spot:radial-gradient(18% 24% at 50% 20.1%,rgba(255,226,160,.20),rgba(255,200,120,0) 72%);
+  --h-ombrage:linear-gradient(180deg,rgba(0,0,0,0) 56%,rgba(0,0,0,.30));
+  --h-r1:linear-gradient(180deg,rgba(255,228,160,.40),rgba(255,228,160,0) 34%); --h-r2:linear-gradient(0deg,rgba(255,255,255,0),rgba(255,255,255,0));
+  --h-pl:transparent; --h-pl-sh:none; --h-hero-teinte:22,22,26;
+  --sh-1:0 1px 0 rgba(255,244,214,.7) inset,0 -1px 0 rgba(255,226,160,.45),0 6px 14px -4px rgba(0,0,0,.5);
+  --sh-2:0 1px 0 rgba(255,244,214,.8) inset,0 -1px 0 rgba(255,226,160,.55),0 -10px 26px -10px rgba(255,190,90,.22),0 12px 28px -8px rgba(0,0,0,.6),0 26px 56px -16px rgba(0,0,0,.5);
+  --sh-3:0 1px 0 rgba(255,244,214,.85) inset,0 -1px 0 rgba(255,230,170,.65),0 -14px 32px -10px rgba(255,190,90,.3),0 18px 36px -8px rgba(0,0,0,.66),0 34px 72px -16px rgba(0,0,0,.55);
+}
+[data-hab="nacre"]{
+  --h-fil:rgba(190,140,172,.55); --h-ombre-c:100,60,110; --h-trace:0% 100%;
+  --h-lumiere:radial-gradient(76% 86% at 104% -12%,rgba(255,255,255,.95),rgba(255,255,255,0) 70%),radial-gradient(70% 66% at -6% 106%,rgba(190,150,215,.30),rgba(190,150,215,0) 72%);
+  --h-spot:conic-gradient(from 200deg at 79.2% 18.1%,rgba(255,170,206,.16),rgba(255,214,164,.14),rgba(188,242,214,.14),rgba(164,214,246,.16),rgba(214,184,246,.14),rgba(255,170,206,.16));
+  --h-ombrage:linear-gradient(180deg,rgba(0,0,0,0) 64%,rgba(110,70,130,.10));
+  --h-r1:linear-gradient(236deg,rgba(255,206,230,.50),rgba(206,236,255,.30) 24%,rgba(255,255,255,0) 46%); --h-r2:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,0) 18%);
+  --h-pl:transparent; --h-pl-sh:none; --h-hero-teinte:91,38,64;
+  --sh-1:0 1px 0 #fff inset,-3px 4px 10px -3px rgba(100,60,110,.18);
+  --sh-2:0 1px 0 #fff inset,-6px 8px 20px -6px rgba(100,60,110,.24),-14px 20px 44px -14px rgba(100,60,110,.20);
+  --sh-3:0 1px 0 #fff inset,-10px 14px 30px -8px rgba(100,60,110,.28),-24px 34px 66px -16px rgba(100,60,110,.22);
+}
+[data-hab="foret"]{
+  --paper:#11261C; --h-fil:rgba(140,168,96,.6); --h-ombre-c:0,12,4; --h-trace:100% 100%;
+  --h-lumiere:radial-gradient(70% 76% at -6% -12%,rgba(244,232,150,.32),rgba(244,232,150,0) 70%),radial-gradient(130% 110% at 16% 16%,rgba(0,0,0,0) 46%,rgba(0,12,4,.46) 100%);
+  --h-spot:repeating-conic-gradient(from 92deg at 20.8% 16.7%,rgba(255,238,150,0) 0deg 6deg,rgba(255,242,164,.13) 8deg 12deg,rgba(255,238,150,0) 15deg 26deg);
+  --h-ombrage:linear-gradient(180deg,rgba(0,0,0,0) 58%,rgba(0,10,4,.26));
+  --h-r1:linear-gradient(120deg,rgba(255,246,176,.44),rgba(255,246,176,0) 42%); --h-r2:linear-gradient(180deg,rgba(255,255,236,.36),rgba(255,255,236,0) 18%);
+  --h-pl:transparent; --h-pl-sh:none; --h-hero-teinte:19,48,31;
+  --sh-1:0 1px 0 rgba(255,255,236,.8) inset,3px 4px 12px -3px rgba(0,12,4,.45);
+  --sh-2:0 1px 0 rgba(255,255,236,.85) inset,6px 8px 22px -6px rgba(0,12,4,.55),14px 20px 46px -14px rgba(0,12,4,.45);
+  --sh-3:0 1px 0 rgba(255,255,236,.9) inset,10px 14px 32px -8px rgba(0,12,4,.6),24px 34px 68px -16px rgba(0,12,4,.5);
+}
+[data-hab="terracotta"]{
+  --paper:#EDCDB2; --h-fil:rgba(169,68,31,.42); --h-ombre-c:100,40,12; --h-trace:0% 100%;
+  --h-lumiere:radial-gradient(76% 86% at 104% -12%,rgba(255,244,206,.85),rgba(255,244,206,0) 70%),radial-gradient(130% 110% at 84% 16%,rgba(0,0,0,0) 56%,rgba(120,50,18,.16) 100%);
+  --h-spot:repeating-linear-gradient(112deg,rgba(100,36,10,0) 0 140px,rgba(100,36,10,.07) 144px 210px,rgba(100,36,10,0) 214px 300px);
+  --h-ombrage:linear-gradient(180deg,rgba(0,0,0,0) 62%,rgba(120,50,18,.12));
+  --h-r1:linear-gradient(242deg,rgba(255,240,190,.55),rgba(255,240,190,0) 42%); --h-r2:linear-gradient(180deg,rgba(255,255,255,.45),rgba(255,255,255,0) 18%);
+  --h-pl:transparent; --h-pl-sh:none; --h-hero-teinte:106,44,20;
+  --sh-1:0 1px 0 rgba(255,250,236,.8) inset,-3px 4px 10px -3px rgba(100,40,12,.2);
+  --sh-2:0 1px 0 rgba(255,250,236,.85) inset,-6px 8px 20px -6px rgba(100,40,12,.26),-14px 20px 44px -14px rgba(100,40,12,.22);
+  --sh-3:0 1px 0 rgba(255,250,236,.9) inset,-10px 14px 30px -8px rgba(100,40,12,.3),-24px 34px 66px -16px rgba(100,40,12,.24);
+}
+[data-hab="glacier"]{
+  --h-fil:rgba(110,176,208,.7); --h-ombre-c:10,70,110; --h-trace:100% 100%;
+  --h-lumiere:radial-gradient(78% 86% at 50% -14%,rgba(255,255,255,.95),rgba(255,255,255,0) 72%),linear-gradient(180deg,rgba(255,255,255,0) 60%,rgba(60,140,190,.14));
+  --h-spot:radial-gradient(60px 24px at 24% 30%,rgba(255,255,255,.7),transparent),radial-gradient(48px 20px at 72% 24%,rgba(255,255,255,.6),transparent);
+  --h-ombrage:linear-gradient(180deg,rgba(0,0,0,0) 64%,rgba(40,120,170,.10));
+  --h-r1:linear-gradient(150deg,rgba(255,255,255,.7),rgba(255,255,255,0) 40%,rgba(120,200,236,.14) 100%); --h-r2:linear-gradient(0deg,rgba(255,255,255,0),rgba(255,255,255,0));
+  --h-pl:transparent; --h-pl-sh:none; --h-hero-teinte:15,58,82;
+  --sh-1:0 1px 0 #fff inset,2px 5px 12px -4px rgba(10,70,110,.2);
+  --sh-2:0 1px 0 #fff inset,4px 9px 22px -6px rgba(10,70,110,.26),10px 22px 46px -14px rgba(10,70,110,.22);
+  --sh-3:0 1px 0 #fff inset,6px 14px 32px -8px rgba(10,70,110,.3),14px 32px 68px -16px rgba(10,70,110,.24);
+}
+[data-hab="velours"]{
+  --paper:#2E0E19; --h-fil:rgba(214,150,160,.6); --h-ombre-c:10,0,4; --h-trace:100% 100%;
+  --h-lumiere:radial-gradient(64% 82% at 6% -14%,rgba(255,196,148,.38),rgba(255,196,148,0) 72%),radial-gradient(130% 110% at 16% 14%,rgba(0,0,0,0) 46%,rgba(10,0,4,.46) 100%);
+  --h-spot:radial-gradient(30% 40% at 23.6% 18.75%,rgba(255,214,176,.28),rgba(255,176,116,0) 72%);
+  --h-ombrage:linear-gradient(180deg,rgba(0,0,0,0) 56%,rgba(8,0,3,.28));
+  --h-r1:linear-gradient(120deg,rgba(255,236,226,.50),rgba(255,236,226,0) 42%); --h-r2:linear-gradient(180deg,rgba(255,255,255,.36),rgba(255,255,255,0) 18%);
+  --h-pl:transparent; --h-pl-sh:none; --h-hero-teinte:74,16,32;
+  --sh-1:0 1px 0 rgba(255,246,240,.8) inset,3px 4px 12px -3px rgba(10,0,4,.5);
+  --sh-2:0 1px 0 rgba(255,246,240,.85) inset,6px 8px 22px -6px rgba(10,0,4,.6),14px 20px 46px -14px rgba(10,0,4,.5);
+  --sh-3:0 1px 0 rgba(255,246,240,.9) inset,10px 14px 32px -8px rgba(10,0,4,.64),24px 34px 68px -16px rgba(10,0,4,.54);
+}
+html[data-hab]{--h-ombre:var(--sh-2);--h-cadre:1px solid var(--h-fil)}
+:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="nacre"],[data-hab="foret"],[data-hab="terracotta"],[data-hab="glacier"],[data-hab="velours"]){--h-plaque:var(--h-r1),var(--h-r2),var(--card)}
+
+/* ——— le fond : calme ; la matière n'est plus qu'une trace dans le coin opposé à la source ——— */
+html[data-hab] body::before{opacity:.10;-webkit-mask-image:radial-gradient(60% 60% at var(--h-trace,100% 100%),#000,transparent 72%);mask-image:radial-gradient(60% 60% at var(--h-trace,100% 100%),#000,transparent 72%)}
+:is([data-hab="marbre"],[data-hab="foret"],[data-hab="velours"]) body::before{opacity:.16}
+html[data-hab] body::after{background:var(--h-ombrage,none)}
+
+/* ——— cartes sobres : liseré 1 px teinté, reflet côté lumière, arête haute, ombre douce et longue à l'opposé ——— */
+html[data-hab] :is(.v2-card,.v2-kpi,.u2-wid,.u2-rangs,.u2-bx,.v2-usermenu,.hab-dock,#pb-band,.ac-c){border:1px solid var(--h-fil);background:var(--h-r1),var(--h-r2),var(--card);box-shadow:var(--sh-2)}
+html[data-hab] .ac-c{background:var(--h-r1),var(--h-r2),radial-gradient(115% 80% at 10% 0%,var(--halo),var(--card) 72%)}
+html[data-hab] :is(.mkf-bloc,.mkd-table,.lpo-pose,.mk-souleve){border:1px solid var(--h-fil);background:var(--h-r1),var(--h-r2),var(--card);box-shadow:var(--sh-2)}
+
+/* ——— détail précieux 1 : un ruban de matière de 5 px sous la barre du haut ——— */
+html[data-hab] .v2-top{border-bottom:5px solid transparent;border-image:none;background:var(--h-top) padding-box,var(--h-fond) 0 0/var(--h-ruban-taille,360px) border-box;box-shadow:0 8px 22px -12px rgba(var(--h-ombre-c,0,0,0),.4)}
+[data-hab="nacre"] .v2-top{background:var(--h-top) padding-box,var(--h-peau) border-box}
+:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"]) .u2-rail{background:var(--h-top)}
+html[data-hab] .u2-rail{box-shadow:6px 0 18px -12px rgba(var(--h-ombre-c,0,0,0),.4)}
+
+/* ——— détail précieux 2 : l'anneau de l'avatar est taillé dans la matière ——— */
+html[data-hab] .v2-av{border:3px solid transparent;background:linear-gradient(150deg,#FFB347,#FF7A45) padding-box,var(--h-fond) 0 0/200px border-box}
+[data-hab="nacre"] .v2-av{background:linear-gradient(150deg,#FFB347,#FF7A45) padding-box,var(--h-peau) border-box}
+
+/* ——— détail précieux 3 : la signature, dans un coin du grand bandeau (le reste du bandeau est une teinte calme) ——— */
+html[data-hab] :is(.ac-fond,.pha-id){background:linear-gradient(90deg,rgb(var(--h-hero-teinte)) 0,rgb(var(--h-hero-teinte)) 52%,rgba(var(--h-hero-teinte),0) 86%),var(--h-fond) right top/520px no-repeat,rgb(var(--h-hero-teinte))}
+html[data-hab] .pha-id{background:linear-gradient(rgba(0,0,0,.12),rgba(0,0,0,.12)),linear-gradient(90deg,rgb(var(--h-hero-teinte)) 0,rgb(var(--h-hero-teinte)) 56%,rgba(var(--h-hero-teinte),0) 90%),var(--h-fond) right top/520px no-repeat,rgb(var(--h-hero-teinte))}
+[data-hab="nacre"] :is(.ac-fond,.pha-id){background:linear-gradient(90deg,rgb(var(--h-hero-teinte)) 0,rgb(var(--h-hero-teinte)) 52%,rgba(var(--h-hero-teinte),0) 86%),var(--h-peau),rgb(var(--h-hero-teinte))}
+[data-hab="nacre"] .pha-id{background:linear-gradient(rgba(0,0,0,.12),rgba(0,0,0,.12)),linear-gradient(90deg,rgb(var(--h-hero-teinte)) 0,rgb(var(--h-hero-teinte)) 56%,rgba(var(--h-hero-teinte),0) 90%),var(--h-peau),rgb(var(--h-hero-teinte))}
+
+/* ——— détail 4 : boutons pleins et onglets actifs : le ruban de teinte, un filet clair (plus de cadre de peau) ; barre de défilement fine ——— */
+[data-hab="leopard"] :is(.v2-btn-primary,.tp-plus,.v2-tab.on,.v2-subtab.on,.v2-seg.on,.u2-rb[aria-pressed="true"]){border:1px solid rgba(255,226,160,.55);background:var(--h-ruban)}
+html[data-hab] ::-webkit-scrollbar{width:8px;height:8px}
+html[data-hab] ::-webkit-scrollbar-track{background:transparent}
+html[data-hab] ::-webkit-scrollbar-thumb{background:var(--h-ruban);border:0;border-radius:6px}
+[data-hab="leopard"] ::-webkit-scrollbar-thumb{background:var(--h-ruban);border:0}
+[data-hab="leopard"] ::-webkit-scrollbar-track{background:transparent}
+
+/* ——— les aperçus de la garde-robe : même retenue (fond calme, ruban, lumière) ——— */
+.hab-mini{background:var(--paper)}
+.hm-top{border-bottom:3px solid transparent;background:var(--h-top) padding-box,var(--h-fond) 0 0/120px border-box}
+.hm-hero{background:var(--h-ruban)}
+[data-hab="leopard"] body::before{opacity:.17}
+html[data-hab] .v2-top{border-bottom-width:6px}
+
+/* en-tête de fiche : une teinte calme, la matière en un fin ruban de 5 px sur son bord haut (aucun texte ne la touche) ; sur téléphone le bandeau d'accueil n'a plus de coin de matière */
+html[data-hab] .pha-id{border-top:5px solid transparent;background:linear-gradient(rgba(0,0,0,.12),rgba(0,0,0,.12)) padding-box,linear-gradient(rgb(var(--h-hero-teinte)),rgb(var(--h-hero-teinte))) padding-box,var(--h-fond) 0 0/360px border-box}
+[data-hab="nacre"] .pha-id{background:linear-gradient(rgba(0,0,0,.12),rgba(0,0,0,.12)) padding-box,linear-gradient(rgb(var(--h-hero-teinte)),rgb(var(--h-hero-teinte))) padding-box,var(--h-peau) border-box}
+@media (max-width:640px){html[data-hab] .ac-fond{background:rgb(var(--h-hero-teinte))}}
