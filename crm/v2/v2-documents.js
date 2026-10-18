@@ -9,6 +9,9 @@
    (jamais Cache Storage, localStorage ni sessionStorage : les titres sont confidentiels).
    Ouverture : l'onglet est ouvert dans le geste du doigt (sinon Safari le bloque), puis dirigé vers l'adresse signée (V2.ouvrirDocProtege fait de même).
    Aucun prix ni condition chiffrée dans les textes de l'écran.
+   Aperçus (18/10/2026) : la première page de chaque document, en vignette. Image `apercus/<sha1>.jpg` (400 px de large) dans le
+   même espace fermé, fabriquée sur le Mac par apercus.py ; `ap: 1` dans l'index quand elle existe, sinon le picto du type reste.
+   Adresses signées de tout ce qui est affiché EN UNE FOIS, gardées 45 min en mémoire (comme v2-discussion.js).
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -73,6 +76,20 @@
       '.dc-note{margin:12px 2px 0;font-size:13.5px;line-height:1.45;color:var(--ip-ink-2)}',
       '.dc-alerte{margin:12px 0 0;padding:12px 14px;border-radius:var(--r-md);background:#FBEFDC;color:var(--c-amber-txt);font-size:14px;font-weight:600;line-height:1.4}',
       '.dc-alerte[hidden]{display:none}',
+      '.dc-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:14px}',
+      '.dc-carte{display:flex;flex-direction:column;min-width:0;padding:0;border:1px solid var(--line);border-radius:var(--r-md);background:var(--card);font-family:var(--font);text-align:left;color:var(--ip-ink);cursor:pointer;overflow:hidden;-webkit-tap-highlight-color:transparent;transition:border-color .15s,box-shadow .15s}',
+      '.dc-carte:hover{border-color:var(--line-strong);box-shadow:0 10px 24px -14px rgba(16,24,40,.3)}',
+      '.dc-carte:active{background:var(--card-2)}',
+      '.dc-carte:focus-visible{outline:2px solid var(--ip-blue);outline-offset:2px}',
+      '.dc-ap{position:relative;display:block;aspect-ratio:3/4;background:radial-gradient(130% 90% at 50% 0%,var(--card) 0%,var(--surf-sunken) 100%);border-bottom:1px solid var(--line)}',
+      '.dc-ap .dc-tuile{position:absolute;inset:0;margin:auto;width:52px;height:52px;border-radius:14px}',
+      '.dc-ap .dc-tuile svg{width:26px;height:26px}',
+      '.dc-ap img{position:absolute;inset:0;margin:auto;display:block;width:auto;height:auto;max-width:calc(100% - 28px);max-height:calc(100% - 28px);background:#fff;border-radius:2px;box-shadow:0 1px 2px rgba(16,24,40,.14),0 10px 24px -10px rgba(16,24,40,.32);opacity:0;transition:opacity .25s}',
+      '.dc-ap img.dc-vu{opacity:1}',
+      '.dc-ap.dc-ok .dc-tuile{display:none}',
+      '.dc-cc{display:flex;flex-direction:column;gap:5px;min-width:0;padding:10px 12px 12px}',
+      '.dc-carte .dc-t{font-size:14.5px}',
+      '@media (max-width:480px){.dc-grille{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.dc-cc{padding:9px 10px 11px}.dc-carte .dc-t{font-size:14px}}',
       '@media (max-width:480px){.dc-lg{padding:10px 12px;gap:10px}.dc-nb{display:none}.dc-lg .dc-nb-m{display:block}}',
       '.dc-nb-m{display:none;font-size:13px;color:var(--muted)}'
     ].join('\n');
@@ -127,13 +144,14 @@
   function nomChemin(chemin) { return chemin.split('/').map(function (s, i) { return nomDossier(s, i); }).join(' › '); }
 
   // ——— État (en mémoire ; survit aux redessins du routeur) ———
-  var D = { etat: 'attente', idx: null, docs: [], q: '', max: PAGE, cheminVu: null, msgT: 0 };
+  var D = { etat: 'attente', idx: null, docs: [], q: '', max: PAGE, cheminVu: null, msgT: 0, urls: {}, urlsLe: 0 };
 
   function preparer(j) {
     var l = (j && Array.isArray(j.documents)) ? j.documents : [];
     D.docs = l.filter(function (d) { return d && typeof d.cle === 'string' && typeof d.dossier === 'string'; }).map(function (d) {
       var t = d.titre || String(d.nom || '').replace(/\.[A-Za-z0-9]{1,5}$/, '') || 'Document';
       return { dossier: d.dossier.replace(/^\/+|\/+$/g, ''), nom: d.nom || '', titre: t, date: d.date || '', cle: d.cle, taille: d.taille, ext: String(d.ext || d.cle.split('.').pop() || '').toLowerCase(),
+        ap: d.ap ? 'apercus/' + d.cle.split('/').pop().replace(/\.[^.]+$/, '') + '.jpg' : '',
         _t: norm(t), _d: norm(nomChemin(d.dossier.replace(/^\/+|\/+$/g, ''))) + ' ' + norm(d.dossier) };
     });
   }
@@ -184,15 +202,43 @@
       '<span class="dc-corps"><span class="dc-t">' + esc(nomDossier(d.seg, prof)) + '</span><span class="dc-nb-m">' + nb(d.n) + ' document' + (d.n > 1 ? 's' : '') + '</span></span>' +
       '<span class="dc-nb">' + nb(d.n) + ' document' + (d.n > 1 ? 's' : '') + '</span>' + ic('chev', 'dc-chev') + '</button>';
   }
-  function ligneDoc(d, avecDossier) {
+  function carteDoc(d, avecDossier) {
     var t = typeDe(d), meta = [];
     meta.push('<span class="dc-bdg' + (t.cl ? ' dc-bdg--' + t.cl : '') + '">' + esc(t.nom) + '</span>');
     if (d.date) meta.push('<span>' + esc(d.date) + '</span>');
     var tl = taille(d.taille); if (tl) meta.push('<span>' + esc(tl) + '</span>');
-    return '<button type="button" class="dc-lg" data-cle="' + esc(d.cle) + '"><span class="dc-tuile' + (t.cl ? ' dc-tuile--' + t.cl : '') + '">' + ic(t.ico) + '</span>' +
-      '<span class="dc-corps"><span class="dc-t">' + esc(d.titre) + '</span>' +
+    var u = d.ap ? D.urls[d.ap] : false;
+    return '<button type="button" class="dc-carte" data-cle="' + esc(d.cle) + '"><span class="dc-ap">' +
+      '<span class="dc-tuile' + (t.cl ? ' dc-tuile--' + t.cl : '') + '">' + ic(t.ico) + '</span>' +
+      (u !== false ? '<img alt="" loading="lazy" decoding="async" data-ap="' + esc(d.ap) + '"' + (u ? ' src="' + esc(u) + '"' : '') + '>' : '') + '</span>' +
+      '<span class="dc-cc"><span class="dc-t">' + esc(d.titre) + '</span>' +
       (avecDossier ? '<span class="dc-ou">' + esc(nomChemin(d.dossier)) + '</span>' : '') +
-      '<span class="dc-m">' + meta.join('') + '</span></span>' + ic('chev', 'dc-chev') + '</button>';
+      '<span class="dc-m">' + meta.join('') + '</span></span></button>';
+  }
+
+  // ——— Aperçus : adresses signées de ce qui est affiché, EN UNE FOIS ; gardées 45 min puis relues ———
+  // D.urls[chemin] : '' = demandée, false = pas d'aperçu (le picto reste), sinon l'adresse.
+  function signerAp(docs) {
+    if (D.urlsLe && Date.now() - D.urlsLe > 45 * 60000) { D.urls = {}; D.urlsLe = 0; }
+    var need = [];
+    docs.forEach(function (d) { if (d.ap && !Object.prototype.hasOwnProperty.call(D.urls, d.ap) && need.indexOf(d.ap) < 0) need.push(d.ap); });
+    var c = V2.sb && V2.sb();
+    if (!need.length || !c || !c.storage) return;
+    need.forEach(function (p) { D.urls[p] = ''; });
+    var oublier = function () { need.forEach(function (p) { if (D.urls[p] === '') delete D.urls[p]; }); };
+    c.storage.from(BUCKET).createSignedUrls(need, 3600).then(function (s) {
+      if (!s || s.error || !s.data) { oublier(); return; }
+      if (!D.urlsLe) D.urlsLe = Date.now();
+      s.data.forEach(function (x, i) { var p = (x && x.path) || need[i]; D.urls[p] = (x && !x.error && x.signedUrl) || false; });
+      poserAp();
+    }).catch(oublier);
+  }
+  function poserAp() {
+    var z = document.getElementById('dc-corps'); if (!z) return;
+    Array.prototype.forEach.call(z.querySelectorAll('img[data-ap]:not([src])'), function (im) {
+      var u = D.urls[im.getAttribute('data-ap')];
+      if (u) im.src = u; else if (u === false && im.parentNode) im.parentNode.removeChild(im);
+    });
   }
   function fil(ch) {
     var segs = ch ? ch.split('/') : [], h = '<nav class="dc-fil" aria-label="Fil d’Ariane">';
@@ -234,10 +280,10 @@
       h += '<div class="dc-h">Résultats <span>' + (res.length ? nb(res.length) + ' trouvé' + (res.length > 1 ? 's' : '') : '') + '</span></div>';
       if (!res.length) h += '<div class="v2-card"><div class="v2-empty" style="padding:36px 20px"><div class="v2-empty-t" style="font-size:16px;font-weight:700;color:var(--ip-ink)">Aucun document ne correspond à « ' + esc(q) + ' ».</div><p style="margin-top:6px;font-size:14px">Essayez un mot plus court, ou le nom d’un dossier.</p></div></div>';
       else {
-        h += '<div class="v2-card dc-liste">' + aff.map(function (d) { return ligneDoc(d, true); }).join('') + '</div>';
+        h += '<div class="dc-grille">' + aff.map(function (d) { return carteDoc(d, true); }).join('') + '</div>';
         if (res.length > aff.length) h += '<p class="dc-note">Les ' + MAX_RES + ' premiers résultats sur ' + nb(res.length) + ' : affinez la recherche pour voir les autres.</p>';
       }
-      el.innerHTML = h; return;
+      el.innerHTML = h; signerAp(aff || []); return;
     }
     var ch = chemin(), n = niveau(ch);
     if (ch && !n.existe) {
@@ -253,11 +299,12 @@
     }
     if (n.docs.length) {
       var vus = n.docs.slice(0, D.max);
-      h += '<div class="dc-h">Documents <span>' + nb(n.docs.length) + '</span></div><div class="v2-card dc-liste">' + vus.map(function (d) { return ligneDoc(d, false); }).join('') + '</div>';
+      h += '<div class="dc-h">Documents <span>' + nb(n.docs.length) + '</span></div><div class="dc-grille">' + vus.map(function (d) { return carteDoc(d, false); }).join('') + '</div>';
       if (n.docs.length > vus.length) h += '<button type="button" class="dc-plus" data-plus="1">Afficher la suite (' + nb(n.docs.length - vus.length) + ' autres)</button>';
     }
     if (!n.dirs.length && !n.docs.length) h += '<div class="v2-card"><div class="v2-empty"><div class="v2-empty-t">Ce dossier est vide.</div></div></div>';
     el.innerHTML = h;
+    signerAp(n.docs.slice(0, D.max));
   }
 
   // ——— Message d'échec d'ouverture (sans fenêtre native) ———
@@ -324,6 +371,9 @@
       clearTimeout(tmr); tmr = setTimeout(function () { if (D.etat === 'pret') corps(); }, 120);
     });
     eff.addEventListener('click', function () { D.q = ''; q.value = ''; eff.hidden = true; corps(); q.focus(); });
+    // Aperçu chargé : il remplace le picto ; aperçu illisible (adresse expirée, image absente) : le picto reste.
+    zone.addEventListener('load', function (ev) { var im = ev.target; if (im && im.tagName === 'IMG' && im.parentNode) { im.classList.add('dc-vu'); im.parentNode.classList.add('dc-ok'); } }, true);
+    zone.addEventListener('error', function (ev) { var im = ev.target; if (im && im.tagName === 'IMG' && im.parentNode) im.parentNode.removeChild(im); }, true);
     zone.addEventListener('click', function (ev) {
       var t = ev.target && ev.target.closest ? ev.target : null; if (!t) return;
       var b;
