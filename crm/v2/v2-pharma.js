@@ -4945,7 +4945,7 @@
         (catHtml || '<div style="color:#9AA1B2;padding:36px;text-align:center;font-size:12px">Aucun produit à proposer.</div>') +
         // Pied
         '<div style="margin-top:16px;padding-top:9px;border-top:1px solid #E7EBF2;display:flex;align-items:center;justify-content:space-between;page-break-inside:avoid">' +
-          '<div style="font-size:8.5px;color:#737A8C;line-height:1.45"><span style="font-weight:800;color:#0050E6">Intégral Pharma</span> · Liste d\'achats recommandée — données réseau : ' + (periodLabel() || 'au ' + dateStr) + '.<br>Prix nets HT indicatifs. % des pharmacies = part des pharmacies de la référence commandant le produit / ' + panel + '.' + (truncated ? '<br>Top ' + PDF_CAP + ' par famille (les plus commandés) — pour cocher d\'autres produits, sélectionne-les dans l\'app avant l\'export.' : '') + '</div>' +
+          '<div style="font-size:8.5px;color:#737A8C;line-height:1.45"><span style="font-weight:800;color:#0050E6">Intégral Pharma</span> · Liste d\'achats recommandée — données réseau : ' + (periodLabel() || 'au ' + dateStr) + '.<br>Prix nets HT indicatifs. % des pharmacies = part des ' + panel + ' pharmacies de la référence qui commandent le produit.' + (truncated ? '<br>Top ' + PDF_CAP + ' par famille (les plus commandés) — pour cocher d\'autres produits, sélectionne-les dans l\'app avant l\'export.' : '') + '</div>' +
           '<div style="text-align:right;font-size:8.5px;color:#A8AFBE;white-space:nowrap">' + esc(grpName) + (pharma && pharma.ville ? '<br>' + esc(pharma.ville) : '') + '</div>' +
         '</div>' +
       '</div>' +

@@ -719,15 +719,18 @@
       '<div class="pr-source">' + esc(sousTitre) + '</div>';
   }
 
+  // Part des pharmacies qui prennent le produit (« 40 % », « < 1 % ») — même arrondi que les listes à proposer (remontée de Karine, 19/10/2026).
+  function part(n, total) { var p = total > 0 ? Math.min(100, Math.round(n / total * 100)) : 0; return (n > 0 && p < 1) ? '< 1\u00a0%' : p + '\u00a0%'; }
+
   // ── Mode Client ────────────────────────────────────────────────
   function ligneClient(l) {
     var f = fiche(l.cip);
     var abandon = (f && porteAbandon(f.f) && f.ppht > 0 && f.net > 0) ? eur(f.ppht - f.net) : '—';
     return '<div class="pr-row">' + enTeteProduit(l) +
       '<div class="pr-arg">' + (l._logo || '') +
-        '<strong>' + num(l.peers) + ' des ' + num(l._nbConf) + '</strong> ' + esc(l._grp) +
+        '<strong>' + part(l.peers, l._nbConf) + '</strong> des ' + num(l._nbConf) + ' ' + esc(l._grp) +
         ' le prennent' +
-        (l._ip ? ' · <strong>' + num(l._ip.n) + ' des ' + num(l._ip.total) + '</strong> clients IP' : '') +
+        (l._ip ? ' · <strong>' + part(l._ip.n, l._ip.total) + '</strong> des ' + num(l._ip.total) + ' clients IP' : '') +
         ' · <strong>' + eur(l.caMoyen) + '</strong> en moyenne</div>' +
       '<div class="pr-chiffres">' +
         chiffre(eur(l.potentiel), 'potentiel', 'pr-pot') +
@@ -914,7 +917,7 @@
       '</div>' +
       '<div class="pr-arg">' +
         (l.n >= SEUIL_PREUVE
-          ? '<strong>' + num(l.n) + ' des ' + num(l._reseau) + '</strong> officines du réseau nous le prennent'
+          ? '<strong>' + part(l.n, l._reseau) + '</strong> des ' + num(l._reseau) + ' officines du réseau nous le prennent'
           : 'Référence de niche') +
         (ab != null ? ' · <strong>+' + eur(ab) + ' par boîte</strong> pour le pharmacien (' +
           (Math.round(l.abandonPct * 10) / 10).toString().replace('.', ',') + ' %)' : '') + '</div>' +
