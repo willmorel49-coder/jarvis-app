@@ -1454,8 +1454,10 @@
   // marketing est l'autre besoin — un support avec photo, couleur et accroche,
   // celui que fabrique déjà l'écran Marketing. Elle marche pour UN produit
   // comme pour toute une sélection : c'est le même bouton.
-  function produitMkt(cip) {
-    var f = fiche(cip);
+  // `repli` : la ligne du catalogue du groupe ({d, f, ppht, net, labo}). Elle PRIME : son tarif est le PPHT de l'export POS
+  // (décision de Will), alors que fiche() lit ppht-data.js. Mêmes règles d'affichage, même forme d'objet.
+  function produitMkt(cip, repli) {
+    var f = repli || fiche(cip);
     if (!f) return null;
     // PROD_STATS ne porte pas le laboratoire : il vient du catalogue quand
     // celui-ci est chargé. Sans lui la fiche sort avec un produit anonyme.

@@ -38,10 +38,10 @@
   // dans l'aperçu, seules les zones prévues (titre, accroche, photo, nom, prix, mentions)
   // se modifient, jamais leur place. La clé vit dans theme.tpl (colonne theme existante).
   var MODELES = [
-    { k: 'promo',     label: 'Promo de la semaine',  accent: '#0050E6', head: 'band',  desc: 'Bandeau de couleur, grand titre' },
-    { k: 'nouveaute', label: 'Nouveauté',            accent: '#1E9E6A', head: 'band',  tag: 'Nouveau', desc: 'Bandeau et pastille « Nouveau »' },
-    { k: 'selection', label: 'Sélection du mois',    accent: '#C7791A', head: 'slim',  desc: 'Filet de couleur, titre sombre' },
-    { k: 'fiche',     label: 'Fiche produit simple', accent: '#0050E6', head: 'plain', desc: 'Sans bandeau, sobre' }
+    { k: 'promo',     label: 'Promo de la semaine',  court: 'Promo', accent: '#0050E6', head: 'band',  desc: 'Bandeau de couleur, grand titre' },
+    { k: 'nouveaute', label: 'Nouveauté',            court: 'Nouveauté', accent: '#1E9E6A', head: 'band',  tag: 'Nouveau', desc: 'Bandeau et pastille « Nouveau »' },
+    { k: 'selection', label: 'Sélection du mois',    court: 'Sélection', accent: '#C7791A', head: 'slim',  desc: 'Filet de couleur, titre sombre' },
+    { k: 'fiche',     label: 'Fiche produit simple', court: 'Fiche simple', accent: '#0050E6', head: 'plain', desc: 'Sans bandeau, sobre' }
   ];
   function modele(it) {
     var k = it && it.theme && it.theme.tpl;
@@ -68,21 +68,20 @@
   var items = null;          // null = pas encore chargé
   var backend = 'local';     // 'supabase' | 'local'
   var editing = null;
-  var replaceIdx = null;     // index du produit à remplacer quand le sélecteur s'ouvre depuis une photo de l'aperçu
-  var pickSrc = 'cat';       // univers : 'cat' (tout le catalogue) | 'offilog' (parapharmacie) | 'mix' (nos sélections) — 'gros' reste accepté par addProduct pour les fiches existantes
-  // Nombre de références annoncé AVANT que le fichier n'arrive (il pèse 1,5 Mo
-  // et ne se charge qu'à la demande). Dès qu'il est là, c'est lui qui compte.
-  var CAT_TOTAL_ATTENDU = 16305;
-  var PICK_PAGE = 60;        // résultats par page du sélecteur
-  var pickShown = PICK_PAGE; // nb de résultats affichés (« Voir 60 de plus »)
-  var pickSel = {};          // produits cochés dans le sélecteur : clé → { src, key }
-  var pickF = pickFiltresVides();   // facettes de l'univers courant, vidées au changement d'univers
-  var pickCatCache = null;   // catalogue complet pré-trié + chaîne de recherche sans accents, construit une fois
-  var pickOffCache = null;   // parapharmacie : rayon Offilog + chaîne de recherche, construit une fois
-  var pickOpenOnRender = false;   // « Parcourir tous les produits » : ouvrir le sélecteur dès que l'éditeur est rendu
-  var pickTimer = null;
-  var pickSelFor = null;     // id de la fiche pour laquelle les coches ont été posées (fermer le sélecteur ne les perd pas)
-  function pickFiltresVides() { return { rayon: 'all', fam: 'all', labo: '', stock: false, orayon: 'all', marque: '' }; }
+  var replaceIdx = null;     // index du produit à remplacer quand le catalogue s'ouvre depuis une photo de la feuille
+  // Nombre de références annoncé AVANT que le fichier n'arrive (le catalogue du groupe ne se charge qu'à l'ouverture
+  // de l'éditeur). Dès qu'il est là, c'est CATALOGUE_GROUPE.meta.n qui compte.
+  var CAT_TOTAL_ATTENDU = 22461;
+  var CG_PAGE = 60;          // cartes par page du catalogue du panneau
+  var cgF = cgFiltresVides();   // filtres du catalogue : recherche, rayon, site, labo, en stock
+  var cgPre = null;          // filtres posés par « Depuis un rayon » avant l'ouverture de l'éditeur
+  var cgShown = CG_PAGE;     // nb de cartes affichées (« Voir 60 produits de plus »)
+  var cgRes = [];            // résultat courant du filtre
+  var cgIdx = null;          // index préparé une fois (chaîne sans accents, comptes, photos d'abord)
+  var cgTimer = null;
+  var cgPour = null;         // id de la fiche pour laquelle les filtres ont été posés
+  var cgEchec = false;       // le fichier du catalogue n'a pas pu être lu
+  function cgFiltresVides() { return { q: '', rayon: 'all', site: '', labo: '', stock: false }; }
   var catSrc = 'nrreal';   // Catalogues : 'nrreal' (ventes NR réelles) | 'nr' | 'integral' | 'itp' | 'best'
   var catQuery = '';        // recherche live dans le catalogue (nom / CIP)
   var catSel = [];     // panier : produits cochés (+) dans le catalogue grossiste
@@ -365,18 +364,7 @@
   // ════════════════════════════════════════════
   // DONNÉES PRODUITS (Offilog best-sellers + images)
   // ════════════════════════════════════════════
-  var bestLoading = false, imgLoading = false;
-  function ensureBest(cb) {
-    if (window.OFFILOG_BEST) { cb(); return; }
-    if (bestLoading) { setTimeout(function () { ensureBest(cb); }, 250); return; }
-    bestLoading = true;
-    // Les prix B2B ont quitté le fichier public : ils viennent en parallèle,
-    // depuis le fichier protégé. Jeton bumpé, le fichier a changé de forme.
-    if (V2.loadFiles) { try { V2.loadFiles(['offilogbestprix']).then(function () { if (V2.fusionnerPrixBest) V2.fusionnerPrixBest(); }); } catch (e) {} }
-    var s = document.createElement('script'); s.src = 'offilog-bestsellers-data.js?v=20261019pt';
-    s.onload = function () { bestLoading = false; if (V2.fusionnerPrixBest) V2.fusionnerPrixBest(); cb(); }; s.onerror = function () { bestLoading = false; cb(); };
-    document.head.appendChild(s);
-  }
+  var imgLoading = false;
   // 11/09/2026 (phase 2) — un JPEG par produit (v2/oimg/), lu pour les produits
   // du support seulement, au lieu de 33 Mo de base64 d'un coup. Échec = repli URL brute.
   function ensureImg(cb) {
@@ -400,35 +388,9 @@
     // Offilog répond 403 aux serveurs du relais (constaté le 10/09/2026), pas au navigateur.
     return forPdf ? proxify(p.img || '') : (p.img || '');
   }
-  function refPriceB(b) { var bp = V2.bestPrice(b); return (bp.ip != null) ? bp.ip : ((b.prix_ht != null && b.prix_ht > 0) ? b.prix_ht : 0); }
 
   // ════════════════════════════════════════════
   // VUE LISTE
-  // ════════════════════════════════════════════
-  // ── Sélection grossiste (mix L'Intégral + ITP + meilleures ventes) ──
-  // Classé par NB DE PHARMACIES qui commandent (sortie réseau) — données bakées.
-  var _mixFlat = null;
-  function mixFlat() {
-    if (_mixFlat) return _mixFlat;
-    var M = window.MKT_MIX || {}, out = [], id = 0, seen = {};
-    function push(group, cat, r) {
-      // dédoublonnage : par CIP sinon par nom normalisé (1ère source = NR prioritaire)
-      var nk = String(r.cip || '') || (r.d || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-      if (nk && seen[nk]) return;
-      if (nk) seen[nk] = 1;
-      out.push({ id: id++, group: group, cat: cat, name: r.d, cip: r.cip || '', price: r.p || 0,
-        remise: r.remise || 0, sortie: r.sortie || 0, vol: r.vol || 0, total: r.total || (M.total || 0),
-        ppht: r.ppht || 0, marge: r.marge || 0 });
-    }
-    // tri par VOLUME vendu (puis sortie)
-    (M.nr || []).forEach(function (c) { (c.rows || []).forEach(function (r) { push('nr', c.cat, r); }); });
-    (M.rotations || []).forEach(function (c) { (c.rows || []).forEach(function (r) { push('rota', c.cat, r); }); });
-    (M.bestsellers || []).forEach(function (c) { (c.rows || []).forEach(function (r) { push('best', c.cat, r); }); });
-    (M.integral || []).forEach(function (c) { (c.rows || []).forEach(function (r) { push('integral', c.cat, r); }); });
-    (M.itp || []).forEach(function (c) { (c.rows || []).forEach(function (r) { push('itp', c.cat, r); }); });
-    out.sort(function (a, b) { return (b.vol - a.vol) || (b.sortie - a.sortie); });   // volume vendu puis nb pharmacies
-    _mixFlat = out; return out;
-  }
 
   function flyerPreviewHtml(it) {
     var prev = editing;
@@ -447,22 +409,6 @@
   var volDepuis = null;      // place de la vignette cliquée : la feuille de l'éditeur en part et grandit (transform + opacity)
   var retourFiche = null;    // fiche que l'on vient de quitter : sa vignette porte l'anneau un instant (geste 5)
   var listeVue = false;      // la cascade ne joue qu'à l'arrivée sur l'écran, pas à chaque re-rendu
-  function exampleSheetHtml(m) {
-    m = m || MODELES[0];
-    var prev = editing;
-    editing = { id: 'example', type: 'support', title: 'Sécheresse oculaire : trois collyres à mettre en avant',
-      accroche: 'Les trois références hydratantes les plus demandées de la rentrée, disponibles sur tout le réseau.',
-      footer: '', status: 'brouillon',
-      products: [
-        { src: 'custom', key: 'ex1', name: 'Thealose sol. opht. flacon 15 mL', brand: 'Théa', cip: '3662042005664', price: 0, remise: 0, ppht: 0, img: '', froid: false, cat: 'Yeux & ophtalmologie' },
-        { src: 'custom', key: 'ex2', name: 'Hylo Confort collyre hydratant flacon 10 mL', brand: 'Ursapharm', cip: '3401040669580', price: 0, remise: 0, ppht: 0, img: '', froid: false, cat: 'Yeux & ophtalmologie' },
-        { src: 'custom', key: 'ex3', name: 'Vismed Multi gouttes lubrifiantes flacon 15 mL', brand: 'Horus', cip: '4028694001468', price: 0, remise: 0, ppht: 0, img: '', froid: false, cat: 'Yeux & ophtalmologie' }
-      ],
-      theme: Object.assign(defaultTheme('support'), { tpl: m.k, accent: m.accent }), owner: '' };
-    var html = buildFlyerHtml(false, false);
-    editing = prev;
-    return html;
-  }
   function ficheQuand(ms) {
     if (!ms) return '';
     var d = new Date(ms), j = new Date(), h = new Date(j.getTime() - 86400000);
@@ -482,11 +428,6 @@
       '<small class="mkf-etat" data-etat="' + esc(st.k) + '">' + (st.k === 'envoye' ? mic('coche', 16, 2.4) : '') + esc(st.label) + (it.updated ? ' · ' + esc(ficheQuand(it.updated)) : '') + '</small>' +
     '</div>';
   }
-  function ficheModeleHtml(m) {
-    return '<div class="mkf-tuile mkf-modele mk-press" role="button" tabindex="0" data-mkf="modele" data-k="' + m.k + '">' +
-      fichePageHtml(exampleSheetHtml(m)) +
-      '<strong>' + esc(m.label) + '</strong><small>' + esc(m.desc) + '</small></div>';
-  }
   function ficheDepartHtml(act, icone, titre, sous) {
     return '<button type="button" class="mkf-depart mk-press" data-mkf="' + act + '">' + mic(icone, 22) +
       '<span><b>' + titre + '</b><small' + (act === 'rayon' ? ' id="mkf-ray-n"' : '') + '>' + sous + '</small></span>' + mic('suivant', 18, 2) + '</button>';
@@ -503,7 +444,7 @@
     for (i = 0; i < L.length; i++) { w = L[i].clientWidth; if (w > 0) L[i].style.setProperty('--k', (w / 794).toFixed(4)); }
   }
   function rayonsNb() {
-    var K = catCache(); if (K) return K.rayons.length;
+    var K = cgIndex(); if (K) return K.rayons.length;
     return ((window.MKT_RAYONS && window.MKT_RAYONS.rayons) || []).length || 47;
   }
   // ── « Depuis un rayon » : les rayons du catalogue avec leurs effectifs. Le catalogue (1,5 Mo) n'arrive qu'à ce clic. ──
@@ -515,13 +456,9 @@
   }
   function rayonsTouches(e) { if (e.key === 'Escape') rayonsFermer(); }
   function rayonsCorps() {
-    var K = catCache(), h = '', i;
-    if (K) {
-      for (i = 0; i < K.rayons.length; i++) h += '<button type="button" class="mkf-rayon mk-press" data-mkf="rayon-choisi" data-i="' + K.rayons[i].i + '"><span>' + esc(K.rayons[i].l) + '</span><small>' + V2.fmtNum(K.rayons[i].n) + '</small></button>';
-      return h;
-    }
-    var R = (window.MKT_RAYONS && window.MKT_RAYONS.rayons) || [];
-    for (i = 0; i < R.length; i++) h += '<button type="button" class="mkf-rayon mk-press" data-mkf="rayon-choisi" data-i="' + i + '"><span>' + esc(R[i]) + '</span></button>';
+    var K = cgIndex(), h = '', i;
+    if (!K) return '';
+    for (i = 0; i < K.rayons.length; i++) h += '<button type="button" class="mkf-rayon mk-press" data-mkf="rayon-choisi" data-i="' + K.rayons[i].i + '"><span>' + esc(K.rayons[i].l) + '</span><small>' + V2.fmtNum(K.rayons[i].n) + '</small></button>';
     return h;
   }
   function rayonsOuvrir() {
@@ -540,14 +477,14 @@
       box.innerHTML = h || '<p class="mkf-ray-rate">Le catalogue n’a pas pu être lu pour l’instant. <button type="button" class="mk-btn mk-texte" data-mkf="rayons-relire">Réessayer</button></p>';
       var nb = document.getElementById('mkf-ray-n'); if (nb && h) nb.textContent = rayonsNb() + ' rayons, avec leurs effectifs';
     };
-    if (catCache() || !V2.loadFiles) { poser(); return; }
-    V2.loadFiles(['catcomplet', 'mktrayons']).then(poser, poser);
+    if (cgIndex() || !V2.loadFiles) { poser(); return; }
+    V2.loadFiles(['catgroupe']).then(poser, poser);
   }
 
   function renderList(root) {
     volDepuis = null;
     var all = (items || []).slice().sort(function (a, b) { return (b.updated || 0) - (a.updated || 0); });
-    var catTotal = (window.CATALOGUE_COMPLET && window.CATALOGUE_COMPLET.rows && window.CATALOGUE_COMPLET.rows.length) || CAT_TOTAL_ATTENDU;
+    var catTotal = cgNb();
     var partage = backend === 'supabase'
       ? 'Elles sont partagées avec Pauline dès l’enregistrement.'
       : 'Pour l’instant, elles ne sont visibles que par vous.';
@@ -565,11 +502,9 @@
           '<aside class="mkf-cote">' +
             '<section class="mkf-bloc" aria-labelledby="mkf-t-com">' +
               '<h2 class="mkf-cap" id="mkf-t-com">Commencer</h2>' +
-              '<div class="mkf-modeles">' + MODELES.map(ficheModeleHtml).join('') + '</div>' +
-              '<div class="mkf-departs">' +
+              '<div class="mkf-departs mkf-departs-seuls">' +
+                ficheDepartHtml('support', 'fiches', 'Créer une fiche', 'Le catalogue du groupe, ' + V2.fmtNum(catTotal) + ' références, à côté de la feuille') +
                 ficheDepartHtml('rayon', 'catalogue', 'Depuis un rayon', rayonsNb() + ' rayons, avec leurs effectifs') +
-                ficheDepartHtml('catalogue', 'loupe', 'Depuis tout le catalogue', V2.fmtNum(catTotal) + ' références') +
-                ficheDepartHtml('support', 'fiches', 'Fiche produit vierge', 'Un support à remettre à l’officine') +
                 ficheDepartHtml('selection', 'selection', 'Sélection à pousser', 'Une liste de produits du moment') +
               '</div>' +
             '</section>' +
@@ -597,12 +532,11 @@
       if (act === 'ouvrir') {
         var pg = b.querySelector('.mkf-page'); volDepuis = pg ? pg.getBoundingClientRect() : null;
         V2.mkt.open(b.getAttribute('data-id'));
-      } else if (act === 'modele') { var pm = b.querySelector('.mkf-page'); volDepuis = pm ? pm.getBoundingClientRect() : null; V2.mkt.createWith(b.getAttribute('data-k')); }
+      }
       else if (act === 'rayon') rayonsOuvrir();
       else if (act === 'rayons-fermer') rayonsFermer();
       else if (act === 'rayons-relire') { rayonsFermer(); rayonsOuvrir(); }
       else if (act === 'rayon-choisi') { var ri = parseInt(b.getAttribute('data-i'), 10); rayonsFermer(); V2.mkt.createFromRayon(ri); }
-      else if (act === 'catalogue') V2.mkt.createFromCatalogue();
       else if (act === 'support' || act === 'selection') V2.mkt.create(act);
       else if (act === 'catalogues') V2.go('marketing', 'catalogues');
       else if (act === 'top50pdf') V2.mkt.top50Pdf();
@@ -871,20 +805,24 @@
                     theme: Object.assign(defaultTheme(ex.type), ex.theme || {}), owner: ex.owner };
       }
     }
+    // Arrivée sur une fiche : le catalogue repart propre (filtres vides, première page) — sauf « Depuis un rayon », qui pose son rayon.
+    if (cgPour !== editing.id) {
+      cgPour = editing.id; cgF = cgPre || cgFiltresVides(); cgPre = null; cgShown = CG_PAGE; replaceIdx = null;
+      ongletPanneau = (editing.products.length && !editing._new) ? 'feuille' : 'catalogue';
+      panneauHaut = etabliTel() && !editing.products.length;
+    }
     var n = editing.products.length;
-    var curTpl = (editing.theme && editing.theme.tpl) || 'promo';
-    var iOng = Math.max(0, ONGLETS_P.indexOf(ongletPanneau)), iSt = 0;
+    var iOng = Math.max(0, ONGLETS_P.indexOf(ongletPanneau)), iSt = 0, iMod = 0;
     STATUSES.forEach(function (s, i) { if (s.k === editing.status) iSt = i; });
-    var modelsHtml = MODELES.map(function (m) {
-      return '<button class="mkt-mtile mk-press" type="button" style="--m:' + m.accent + '" data-model="' + m.k + '" data-head="' + m.head + '" aria-pressed="' + (curTpl === m.k ? 'true' : 'false') + '" onclick="V2.mkt.setModele(\'' + m.k + '\')">' +
-        '<b>' + esc(m.label) + '</b><small>' + esc(m.desc) + '</small></button>';
-    }).join('');
+    var curTpl = (editing.theme && editing.theme.tpl) || 'promo';
+    MODELES.forEach(function (m, i) { if (m.k === curTpl) iMod = i; });
+    var modelesHtml = '<div class="mk-seg mke-modeles" id="mke-modeles" role="group" aria-label="Modèle de la feuille" style="--n:' + MODELES.length + ';--i:' + iMod + '"><i class="mk-seg-ind"></i>' +
+      MODELES.map(function (m) {
+        return '<button type="button" class="mk-press" data-model="' + m.k + '" aria-pressed="' + (curTpl === m.k ? 'true' : 'false') + '" onclick="V2.mkt.setModele(\'' + m.k + '\')">' + esc(m.court) + '</button>';
+      }).join('') + '</div>';
     var statutHtml = '<div class="mk-seg mke-statut" role="group" aria-label="Statut" style="--n:3;--i:' + iSt + '"><i class="mk-seg-ind"></i>' + STATUSES.map(function (s) {
       return '<button type="button" class="mk-press" aria-pressed="' + (editing.status === s.k ? 'true' : 'false') + '" onclick="V2.mkt.setStatus(\'' + s.k + '\',this)">' + esc(s.label) + '</button>';
     }).join('') + '</div>';
-    var ongletBtn = function (k, label) {
-      return '<button type="button" class="mk-press" data-mke="onglet" data-k="' + k + '" aria-pressed="' + (ongletPanneau === k ? 'true' : 'false') + '">' + label + '</button>';
-    };
     var S = V2.mktSocle || {};
 
     root.innerHTML = V2.topbar({ back: true, backTo: 'marketing', backLabel: 'Marketing' }) +
@@ -901,76 +839,91 @@
             (S.saveHtml ? S.saveHtml(mic('coche', 22, 2) + '<span>Enregistrer</span>', '<span>Enregistré</span>') : '<span>Enregistrer</span>') + '</button>' +
         '</nav>' +
 
-        '<section class="mke-scene" id="mke-scene" aria-label="La feuille">' +
+        '<section class="mke-scene" id="mke-scene" aria-label="La feuille">' + modelesHtml +
           '<div class="mkt-mscroll mke-defile" id="mkt-mscroll"><div class="mkt-mholder" id="mkt-mholder"><div class="mkt-msheet" id="mkt-msheet"></div></div></div>' +
         '</section>' +
 
-        '<aside class="mke-panneau' + (panneauHaut ? ' is-haut' : '') + '" id="mke-panneau" aria-label="Réglages de la fiche">' +
-          '<button type="button" class="mke-poignee" data-mke="poignee" aria-expanded="' + (panneauHaut ? 'true' : 'false') + '" aria-controls="mke-corps"><i aria-hidden="true"></i><span>Produits, apparence, envoi</span></button>' +
-          '<div class="mk-seg mke-onglets" role="group" aria-label="Réglages" style="--n:3;--i:' + iOng + '"><i class="mk-seg-ind"></i>' +
-            ongletBtn('produits', 'Produits') + ongletBtn('apparence', 'Apparence') + ongletBtn('envoi', 'Envoi') + '</div>' +
+        '<aside class="mke-panneau' + (panneauHaut ? ' is-haut' : '') + '" id="mke-panneau" aria-label="Catalogue du groupe et produits de la feuille">' +
+          '<div class="mke-tete">' +
+            '<div class="mk-seg mke-onglets" role="group" aria-label="Panneau" style="--n:2;--i:' + iOng + '"><i class="mk-seg-ind"></i>' +
+              '<button type="button" class="mk-press" data-mke="onglet" data-k="catalogue" aria-pressed="' + (ongletPanneau === 'catalogue' ? 'true' : 'false') + '">Catalogue</button>' +
+              '<button type="button" class="mk-press" data-mke="onglet" data-k="feuille" aria-pressed="' + (ongletPanneau === 'feuille' ? 'true' : 'false') + '">Sur la feuille <b class="mke-badge" id="mke-badge">' + n + '</b></button>' +
+            '</div>' +
+            '<button type="button" class="mke-poignee mk-press" data-mke="poignee" aria-expanded="' + (panneauHaut ? 'true' : 'false') + '" aria-controls="mke-corps" aria-label="' + (panneauHaut ? 'Replier le panneau' : 'Déplier le panneau') + '">' + mic('bas', 22, 2) + '</button>' +
+          '</div>' +
           '<div class="mke-corps" id="mke-corps">' +
 
-            '<div class="mke-volet" data-volet="produits">' +
+            '<div class="mke-volet" data-volet="catalogue">' + cgVoletHtml() + '</div>' +
+
+            '<div class="mke-volet" data-volet="feuille">' +
               '<div class="mke-cap"><span>Sur la feuille</span><b id="mkt-count">' + n + ' produit' + (n > 1 ? 's' : '') + '</b></div>' +
               '<div id="mkt-prodlist">' + (n ? editing.products.map(prodRow).join('') : prodVideHtml()) + '</div>' +
               catDatalist() +
-              '<button type="button" class="mk-btn mke-large mk-press" data-mke="ajouter">' + mic('plus', 20, 2) + 'Ajouter des produits</button>' +
-              '<button type="button" class="mk-btn mk-texte mke-large mk-press" data-mke="libre">' + mic('plus', 18, 2) + 'Produit libre, hors catalogue</button>' +
-            '</div>' +
-
-            '<div class="mke-volet" data-volet="apparence">' +
-              '<div class="mke-cap"><span>Modèle</span></div>' +
-              '<div class="mkt-models">' + modelsHtml + '</div>' +
-              personalizePanel() +
-            '</div>' +
-
-            '<div class="mke-volet" data-volet="envoi">' +
-              '<div class="mke-cap"><span>Statut</span></div>' + statutHtml +
-              '<p class="mke-note">' + (backend === 'supabase'
-                ? 'La fiche est partagée avec Pauline dès l’enregistrement.'
-                : 'Pour l’instant, la fiche enregistrée n’est visible que par vous.') + '</p>' +
-              '<button type="button" class="mk-btn mk-danger mke-suppr mk-press" data-mke="supprimer">' + mic('corbeille', 20) + 'Supprimer la fiche</button>' +
+              '<button type="button" class="mk-btn mke-large mk-press" data-mke="libre">' + mic('plus', 18, 2) + 'Produit libre, hors catalogue</button>' +
+              '<details class="mke-plus"><summary><span>Apparence de la feuille</span>' + mic('bas', 18, 2) + '</summary>' + personalizePanel() + '</details>' +
+              '<details class="mke-plus"><summary><span>Statut et suppression</span>' + mic('bas', 18, 2) + '</summary>' +
+                '<div class="mke-cap"><span>Statut</span></div>' + statutHtml +
+                '<p class="mke-note">' + (backend === 'supabase'
+                  ? 'La fiche est partagée avec Pauline dès l’enregistrement.'
+                  : 'Pour l’instant, la fiche enregistrée n’est visible que par vous.') + '</p>' +
+                '<button type="button" class="mk-btn mk-danger mke-suppr mk-press" data-mke="supprimer">' + mic('corbeille', 20) + 'Supprimer la fiche</button>' +
+              '</details>' +
             '</div>' +
 
           '</div>' +
         '</aside>' +
 
-        '<div class="mke-pied"><button type="button" class="mk-btn mk-plein mk-grand mk-press" id="mke-pdf" data-mke="pdf">' + mic('charger', 20, 2) + 'Télécharger le PDF</button></div>' +
+        '<div class="mke-pied"><button type="button" class="mk-btn mk-plein mk-grand mk-press" id="mke-pdf" data-mke="pdf"' + (n ? '' : ' disabled') + '>' + mic('charger', 20, 2) + 'Télécharger le PDF</button>' +
+          '<p class="mke-pied-n" id="mke-pied-n" aria-live="polite">' + esc(piedTexte()) + '</p></div>' +
 
-      '</div>' + pickerMarkup();
+      '</div>';
 
     var hote = document.getElementById('mke');
     hote.addEventListener('click', function (e) {
+      var g = e.target.closest ? e.target.closest('[data-cg]') : null;
+      if (g) { cgAgir(g); return; }
       var b = e.target.closest ? e.target.closest('[data-mke]') : null;
-      if (!b) { if (panneauHaut && e.target.closest && e.target.closest('#mke-scene')) etabliPanneau(false); return; }
+      if (!b) { if (panneauHaut && etabliTel() && e.target.closest && e.target.closest('#mke-scene')) etabliPanneau(false); return; }
       var act = b.getAttribute('data-mke');
       if (act === 'retour') { retourFiche = editing ? editing.id : null; V2.go('marketing', 'fiches'); }
       else if (act === 'zoom') etabliZoom(b.getAttribute('data-z'));
       else if (act === 'enregistrer') V2.mkt.save();
       else if (act === 'poignee') etabliPanneau(!panneauHaut);
       else if (act === 'onglet') { etabliOnglet(b.getAttribute('data-k')); if (!panneauHaut) etabliPanneau(true); }
-      else if (act === 'ajouter') V2.mkt.openPicker();
+      else if (act === 'catalogue') { etabliOnglet('catalogue'); }
       else if (act === 'libre') V2.mkt.addCustom();
       else if (act === 'supprimer') V2.mkt.remove();
       else if (act === 'pdf') V2.mkt.downloadPdf();
     });
-    wirePicker();
+    wireCatalogue();
     refreshPreview();
     if (!V2._mktFitBound) { window.addEventListener('resize', fitSheet); V2._mktFitBound = true; }
     etabliVol();
-    if (pickOpenOnRender) { pickOpenOnRender = false; openPicker(); }
+    cgCharger();
+  }
+  function piedTexte() {
+    var n = editing ? editing.products.length : 0;
+    return n ? n + ' produit' + (n > 1 ? 's' : '') + ' sur la feuille · ' + modele(editing).label + '.' : 'Ajoutez au moins un produit pour obtenir le PDF.';
+  }
+  // Compteur de l'onglet, ligne du pied et bouton PDF suivent le nombre de produits de la feuille.
+  function etabliPied() {
+    if (!editing) return;
+    var n = editing.products.length, bd = document.getElementById('mke-badge'), pn = document.getElementById('mke-pied-n'), bt = document.getElementById('mke-pdf');
+    if (bd) bd.textContent = n;
+    if (pn) pn.textContent = piedTexte();
+    if (bt) bt.disabled = !n;
   }
   // ── L'établi : taille de la feuille, onglet du panneau, feuille basse du téléphone, arrivée depuis la liste ──
-  var ONGLETS_P = ['produits', 'apparence', 'envoi'];
+  var ONGLETS_P = ['catalogue', 'feuille'];
   var zoomFeuille = 'ajuster';      // 'ajuster' = la page entière · 'largeur' = toute la largeur (téléphone : taille réelle, pour écrire)
-  var ongletPanneau = 'produits';
+  var ongletPanneau = 'catalogue';
   var panneauHaut = false;          // téléphone : la feuille basse est montée
   function etabliTel() { try { return window.matchMedia('(max-width:860px)').matches; } catch (e) { return false; } }
   function svgTrait(d, s) {
     return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
   }
-  function prodVideHtml() { return '<p class="mke-note mke-sans">Posez vos premiers produits avec le bouton ci-dessous : ils arrivent aussitôt sur la feuille.</p>'; }
+  function prodVideHtml() { return '<p class="mke-note mke-sans">Rien sur la feuille pour l’instant. Choisissez vos produits dans le catalogue du groupe : ils arrivent aussitôt ici.</p>' +
+    '<button type="button" class="mk-btn mke-large mk-press" data-mke="catalogue">' + mic('catalogue', 20, 2) + 'Ouvrir le catalogue</button>'; }
   function etabliZoom(z) {
     zoomFeuille = z === 'largeur' ? 'largeur' : 'ajuster';
     var hote = document.getElementById('mke'); if (!hote) return;
@@ -994,7 +947,7 @@
     panneauHaut = !!haut;
     var p = document.getElementById('mke-panneau'); if (!p) return;
     p.classList.toggle('is-haut', panneauHaut);
-    var g = p.querySelector('.mke-poignee'); if (g) g.setAttribute('aria-expanded', panneauHaut ? 'true' : 'false');
+    var g = p.querySelector('.mke-poignee'); if (g) { g.setAttribute('aria-expanded', panneauHaut ? 'true' : 'false'); g.setAttribute('aria-label', panneauHaut ? 'Replier le panneau' : 'Déplier le panneau'); }
   }
   // Arrivée depuis la liste : la vignette grandit et devient la feuille (transform + opacity, 320 ms) ; le rail et le
   // panneau arrivent en fondu. Pas de transition de vue du navigateur (image double sous WebKit, constat du lot 2).
@@ -1029,7 +982,7 @@
     var img = p.img
       ? '<span class="mkt-prow-img" style="background-image:url(' + esc(p.img) + ')"></span>'
       : '<span class="mkt-prow-img mkt-prow-pill">' + ICO('pill', 18, 1.6) + '</span>';
-    var sub = p.cip ? ('CIP ' + esc(p.cip)) : (p.brand ? esc(p.brand) : (p.src === 'custom' ? 'produit libre' : (p.ean ? 'EAN ' + esc(p.ean) : '')));
+    var sub = p.cip ? ('CIP ' + esc(p.cip)) : (marqueSure(p.brand) ? esc(marqueSure(p.brand)) : (p.src === 'custom' ? 'produit libre' : (p.ean ? 'EAN ' + esc(p.ean) : '')));
     return '<div class="mkt-prow">' + img +
       '<div class="mkt-prow-main">' +
         '<input class="mkt-prow-namei" value="' + esc(p.name || '') + '" placeholder="Nom du produit" aria-label="Nom" oninput="V2.mkt.setProd(' + i + ',\'name\',this.value)">' +
@@ -1049,390 +1002,319 @@
     var n = editing.products.length;
     box.innerHTML = n ? editing.products.map(prodRow).join('') : prodVideHtml();
     var c = document.getElementById('mkt-count'); if (c) c.textContent = n + ' produit' + (n > 1 ? 's' : '');
+    etabliPied(); cgMajCartes();
     refreshPreview();
   }
 
-  // ── Sélecteur de produits : explorateur de catalogue, multi-sélection ──
-  // Trois univers : tout le catalogue Intégral (16 305 références, chargé à
-  // la demande avec ses rayons), la parapharmacie Offilog (rayon, marque),
-  // nos sélections (top ventes, rotations, ITP…). Facettes à gauche,
-  // résultats par 60, une coche par ligne, pied collant « Ajouter N produits ».
-  // Ouvert depuis la photo de l'aperçu (replaceIdx) : un clic remplace et ferme.
+  // ── Le catalogue du groupe, DANS le panneau de droite (19/10/2026, l'établi allégé) ──
+  // Un seul univers : window.CATALOGUE_GROUPE (22 461 références, contrat : implementation/CONTRAT-DONNEES.md),
+  // chargé à l'ouverture de l'éditeur par V2.loadFiles(['catgroupe']) — jamais au démarrage. Plus de fenêtre
+  // de sélection : une carte = un produit, un clic sur sa coche le pose sur la feuille, un second le retire.
+  // L'index (chaîne de recherche sans accents, comptes par rayon et par laboratoire, photos d'abord) est
+  // préparé UNE fois ; la liste se rend par pages de 60, jamais d'un bloc.
   function sansAccent(x) {
     var v = String(x == null ? '' : x).toLowerCase();
-    if (v.normalize) v = v.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (v.normalize) v = v.normalize('NFD').replace(/[̀-ͯ]/g, '');
     return v;
   }
-  function pickQuery() {
-    var inp = document.getElementById('mkt-pick-input');
-    var q = sansAccent(inp ? inp.value : '').trim();
-    return q.length >= 2 ? q : '';
-  }
-  function rayonLibelle(i) {
-    var R = window.MKT_RAYONS;
-    return (R && R.rayons && typeof i === 'number' && i >= 0 && R.rayons[i]) || '';
-  }
-  // Catalogue complet : une seule passe — tri (réseau, stock, nom, comme
-  // l'onglet Catalogue de l'écran Produits), rayon et chaîne de recherche sans
-  // accents par ligne, comptes par rayon / famille / laboratoire. Filtrer
-  // ensuite ne coûte qu'un parcours linéaire, à chaque frappe.
-  function catCache() {
-    if (pickCatCache) return pickCatCache;
-    var C = (V2.produits && V2.produits.catalogueIndex) ? V2.produits.catalogueIndex() : null;
-    if (!C) return null;
-    var R = window.MKT_RAYONS, rows = [], nRay = {}, nFam = {}, nLab = {}, c, o, ri;
-    for (c in C) {
-      if (!Object.prototype.hasOwnProperty.call(C, c)) continue;
-      o = C[c];
-      ri = (R && R.cip && typeof R.cip[c] === 'number') ? R.cip[c] : -1;
-      rows.push({ o: o, r: ri, s: sansAccent(o.d + ' ' + c + ' ' + o.mol + ' ' + o.labo) });
-      nRay[ri] = (nRay[ri] || 0) + 1;
-      if (o.f) nFam[o.f] = (nFam[o.f] || 0) + 1;
-      if (o.labo) nLab[o.labo] = (nLab[o.labo] || 0) + 1;
+  function cgG() { var G = window.CATALOGUE_GROUPE; return (G && G.rows && G.rows.length) ? G : null; }
+  function cgNb() { var G = window.CATALOGUE_GROUPE; return (G && G.meta && G.meta.n) || CAT_TOTAL_ATTENDU; }
+  function cgDateFr(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || '')); return m ? m[3] + '/' + m[2] + '/' + m[1] : String(iso || ''); }
+  function cgIndex() {
+    if (cgIdx) return cgIdx;
+    var G = cgG(); if (!G) return null;
+    var L = G.labos || [], MO = G.mols || [], RY = G.rayons || [], IMG = window.MKT_IMG || {};
+    var avec = [], sans = [], par = {}, nRay = {}, nLab = {}, i, r, o, lab, mol;
+    for (i = 0; i < G.rows.length; i++) {
+      r = G.rows[i];
+      lab = r[2] >= 0 ? (L[r[2]] || '') : ''; mol = r[3] >= 0 ? (MO[r[3]] || '') : '';
+      o = { cip: String(r[0]), d: String(r[1] || ''), labo: lab, f: r[4], ppht: +r[5] || 0, net: +r[6] || 0, n: +r[7] || 0,
+            ry: (typeof r[8] === 'number' ? r[8] : -1), sites: String(r[9] || ''), photo: !!IMG[String(r[0])], s: '' };
+      o.s = sansAccent(o.d + ' ' + o.cip + ' ' + lab + ' ' + mol);
+      par[o.cip] = o;
+      (o.photo ? avec : sans).push(o);
+      nRay[o.ry] = (nRay[o.ry] || 0) + 1;
+      if (lab) nLab[lab] = (nLab[lab] || 0) + 1;
     }
-    rows.sort(function (a, b) {
-      return (b.o.n - a.o.n) || (b.o.stock - a.o.stock) || String(a.o.d).localeCompare(String(b.o.d), 'fr');
-    });
-    var rayons = Object.keys(nRay).map(Number).filter(function (i) { return i >= 0; })
+    var rayons = Object.keys(nRay).map(Number).filter(function (k) { return k >= 0; })
       .sort(function (a, b) { return nRay[b] - nRay[a]; })
-      .map(function (i) { return { i: i, l: rayonLibelle(i), n: nRay[i] }; });
-    var labos = Object.keys(nLab).sort(function (a, b) { return nLab[b] - nLab[a]; })
+      .map(function (k) { return { i: k, l: RY[k] || '', n: nRay[k] }; });
+    var labos = Object.keys(nLab).sort(function (a, b) { return a.localeCompare(b, 'fr'); })
       .map(function (l) { return { l: l, n: nLab[l] }; });
-    pickCatCache = { rows: rows, rayons: rayons, sansRayon: nRay[-1] || 0, fam: nFam, labos: labos, total: rows.length };
-    return pickCatCache;
+    // L'ordre du fichier est déjà « nombre de pharmacies décroissant » : on remonte seulement les produits à photo (partition stable).
+    cgIdx = { rows: avec.concat(sans), par: par, rayons: rayons, sansRayon: nRay[-1] || 0, labos: labos, total: G.rows.length };
+    return cgIdx;
   }
-  function pickCatRows(q) {
-    var K = catCache(); if (!K) return [];
-    var out = [], i, r, f = pickF;
+  function cgFiltre() {
+    var K = cgIndex(); if (!K) return [];
+    var f = cgF, G = window.CATALOGUE_GROUPE, q = sansAccent(f.q).trim(), terms = q.length >= 2 ? q.split(/\s+/) : [], out = [], i, o, k, c,
+        sk = f.site ? ((G.meta && G.meta.sites) || []).indexOf(f.site) : -1;
     for (i = 0; i < K.rows.length; i++) {
-      r = K.rows[i];
-      if (f.rayon === 'none') { if (r.r >= 0) continue; }
-      else if (f.rayon !== 'all' && String(r.r) !== f.rayon) continue;
-      if (f.fam !== 'all' && r.o.f !== f.fam) continue;
-      if (f.labo && r.o.labo !== f.labo) continue;
-      if (f.stock && !(pickStock(r.o) > 0)) continue;
-      if (q && r.s.indexOf(q) < 0) continue;
-      out.push(r);
+      o = K.rows[i];
+      if (f.rayon === 'none') { if (o.ry >= 0) continue; }
+      else if (f.rayon !== 'all' && String(o.ry) !== f.rayon) continue;
+      if (f.labo && o.labo !== f.labo) continue;
+      if (sk >= 0) {
+        // un site choisi : « En stock » = en stock dans CE site ; sinon = présent au relevé de ce site (0 = pas de relevé, inconnu)
+        c = o.sites.charAt(sk);
+        if (f.stock ? c !== '2' : c === '0' || c === '') continue;
+      } else if (f.stock && o.sites.indexOf('2') < 0) continue;
+      for (k = 0; k < terms.length; k++) if (o.s.indexOf(terms[k]) < 0) break;
+      if (k < terms.length) continue;
+      out.push(o);
     }
     return out;
   }
-  // Parapharmacie : même principe, rayon Offilog (OFFILOG_CATS) et marque.
-  function offCache() {
-    if (pickOffCache) return pickOffCache;
-    var O = window.OFFILOG_BEST; if (!O || !O.length) return null;
-    var CATS = window.OFFILOG_CATS || {}, rows = [], nRay = {}, nMq = {}, i, b, ry;
-    for (i = 0; i < O.length; i++) {
-      b = O[i];
-      ry = (b.id != null && CATS[String(b.id)]) || '';
-      rows.push({ b: b, ry: ry, s: sansAccent((b.name || '') + ' ' + (b.brand || '') + ' ' + (b.ean || '')) });
-      nRay[ry] = (nRay[ry] || 0) + 1;
-      if (b.brand) nMq[b.brand] = (nMq[b.brand] || 0) + 1;
+  // Les marques : un nom de fournisseur ou de dépositaire n'est JAMAIS une marque (meta.fournisseurs). Masqué au rendu,
+  // jamais réécrit dans les fiches enregistrées. Liste de secours tant que le catalogue n'est pas chargé.
+  var FOURN_SECOURS = ['INTER TRADE PHA', 'INTER TRADE PHAR', 'INTER TRADE PHAR%', 'INTER TRADE PHARMA', 'ITP'];
+  var fournCle = '', fournListe = [];
+  function fournisseurs() {
+    var G = window.CATALOGUE_GROUPE, cle = (G && G.meta && G.meta.fournisseurs) ? 'g' + G.meta.fournisseurs.length : 'x';
+    if (cle !== fournCle) {
+      fournCle = cle;
+      fournListe = FOURN_SECOURS.concat((G && G.meta && G.meta.fournisseurs) || []).map(function (x) { return sansAccent(x).replace(/%/g, '').replace(/\s+/g, ' ').trim(); }).filter(Boolean)
+        .map(function (x) { return new RegExp('(^|[^a-z0-9])' + x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^a-z0-9]|$)'); });
     }
-    var rayons = Object.keys(nRay).filter(function (r) { return !!r; })
-      .sort(function (a, b) { return nRay[b] - nRay[a]; })
-      .map(function (r) { return { l: r, n: nRay[r] }; });
-    var marques = Object.keys(nMq).sort(function (a, b) { return nMq[b] - nMq[a]; })
-      .map(function (m) { return { l: m, n: nMq[m] }; });
-    pickOffCache = { rows: rows, rayons: rayons, sansRayon: nRay[''] || 0, marques: marques, total: rows.length };
-    return pickOffCache;
+    return fournListe;
   }
-  function offRows(q) {
-    var K = offCache(); if (!K) return [];
-    var out = [], i, r, f = pickF;
-    for (i = 0; i < K.rows.length; i++) {
-      r = K.rows[i];
-      if (f.orayon === 'none') { if (r.ry) continue; }
-      else if (f.orayon !== 'all' && r.ry !== f.orayon) continue;
-      if (f.marque && r.b.brand !== f.marque) continue;
-      if (q && r.s.indexOf(q) < 0) continue;
-      out.push(r);
-    }
-    return out;
+  function marqueSure(b) {
+    var u = sansAccent(b).replace(/%/g, '').replace(/\s+/g, ' ').trim(), L = fournisseurs(), i;
+    if (!u) return '';
+    for (i = 0; i < L.length; i++) if (L[i].test(u)) return '';   // mot entier : « ITP » au milieu d'un mot n'est pas touché
+    return String(b).trim();
   }
-  function mixRows(q) {
-    var L = mixFlat(), out = [], i, b;
-    for (i = 0; i < L.length; i++) {
-      b = L[i];
-      if (!q || sansAccent(b.name).indexOf(q) >= 0 || String(b.cip).indexOf(q) >= 0) out.push(b);
-    }
-    return out;
+  // L'objet posé sur la feuille : produitMkt applique les mêmes règles de prix et d'abandon de marge que l'écran Produits
+  // (la ligne du groupe sert de repli pour un produit absent des ventes du réseau) ; la marque et le rayon viennent du groupe.
+  function cgProduit(o) {
+    var p = (V2.produits && V2.produits.produitMkt) ? V2.produits.produitMkt(o.cip, { d: o.d, f: o.f, ppht: o.ppht, net: o.net, labo: o.labo }) : null;
+    if (!p) p = { src: 'produits', key: 'p' + o.cip, id: '', name: o.d, brand: '', ean: '', cip: o.cip, price: o.net || o.ppht, remise: 0, ppht: 0,
+                  img: (window.MKT_IMG && window.MKT_IMG[o.cip]) || '', froid: false, cat: '' };
+    p.brand = marqueSure(o.labo);
+    var G = window.CATALOGUE_GROUPE, ry = (o.ry >= 0 && G && G.rayons) ? G.rayons[o.ry] : '';
+    if (ry) p.cat = ry;
+    return p;
   }
-  function pickRows(q) {
-    return pickSrc === 'cat' ? pickCatRows(q) : (pickSrc === 'offilog' ? offRows(q) : mixRows(q));
-  }
-  // Clé d'un produit dans editing.products, selon l'univers (« déjà dans la fiche »).
-  function pickKey(src, key) {
-    return (src === 'cat' ? 'p' : (src === 'offilog' ? 'o' : (src === 'gros' ? 'g' : 'm'))) + key;
-  }
-  // L'objet produit de la fiche. Le catalogue passe par produitMkt : mêmes
-  // règles de prix et d'abandon de marge que l'écran Produits, rayon en `cat`.
-  function pickProduct(src, key) {
-    if (src === 'cat') {
-      return (V2.produits && V2.produits.produitMkt) ? V2.produits.produitMkt(String(key)) : null;
-    }
-    if (src === 'mix') {
-      var L = mixFlat(), gm = null;
-      for (var m = 0; m < L.length; m++) if (String(L[m].id) === String(key)) { gm = L[m]; break; }
-      if (!gm) return null;
-      return { src: 'mix', key: 'm' + gm.id, id: '', name: gm.name, brand: (gm.group === 'itp' ? 'ITP' : (gm.group === 'integral' ? 'L\'Intégral' : '')), ean: '', cip: gm.cip, price: gm.price, remise: gm.remise, ppht: gm.ppht || 0, img: '', froid: false, cat: gm.cat || '' };
-    }
-    if (src === 'offilog') {
-      var O = window.OFFILOG_BEST || [], b = null;
-      for (var i = 0; i < O.length; i++) if (String(O[i].id) === String(key)) { b = O[i]; break; }
-      if (!b) return null;
-      return { src: 'offilog', key: 'o' + b.id, id: b.id, name: b.name, brand: b.brand || '', ean: b.ean || '', cip: '', price: b.price || 0, remise: 0, ppht: 0, img: b.img || '', froid: false, cat: 'Parapharmacie' };
-    }
-    // 'gros' : plus proposé dans le sélecteur, gardé pour les fiches existantes
-    var B = window.BENCHMARK || [], g = null;
-    for (var j = 0; j < B.length; j++) if (String(B[j].cip13) === String(key)) { g = B[j]; break; }
-    if (!g) return null;
-    var _bpg = V2.bestPrice(g);
-    return { src: 'gros', key: 'g' + g.cip13, id: '', name: g.designation, brand: '', ean: '', cip: String(g.cip13), price: _bpg.ip != null ? _bpg.ip : refPriceB(g), remise: _bpg.remise, ppht: _bpg.ht || 0, img: catImg(String(g.cip13)), froid: !!g.is_froid, cat: '' };
-  }
-
-  function pickerMarkup() {
-    return '<div id="mkt-picker" class="mkt-pick-bd mk-espace mke-pick">' +
-      '<div class="mkt-pick" id="mkt-pick-box" role="dialog" aria-label="Ajouter des produits" onclick="event.stopPropagation()">' +
-        '<span class="mkt-pick-grip" aria-hidden="true"></span>' +
-        '<div class="mkt-pick-search">' + ICO('search', 21, 2) +
-          '<input id="mkt-pick-input" placeholder="' + esc(pickPlaceholder()) + '" autocomplete="off">' +
-          '<button type="button" class="mkt-prow-x" onclick="V2.mkt.closePicker()" aria-label="Fermer le sélecteur">' + ICO('close', 18, 2) + '</button></div>' +
-        '<div class="mkt-pick-src" id="mkt-pick-src">' + pickTabs() + '</div>' +
-        '<div class="mkt-pick-body">' +
-          '<div class="mkt-pick-rail mkt-pick-strip" id="mkt-pick-rail"></div>' +
-          '<div class="mkt-pick-main">' +
-            '<div class="mkt-pick-bar">' +
-              '<span class="mkt-pick-n mkt-pick-count" id="mkt-pick-n"></span>' +
-              '<button type="button" class="mke-ftoggle mk-press" id="mkt-pick-ftoggle" aria-expanded="false" onclick="V2.mkt.pickFiltres()"><span>Rayons et filtres</span>' + mic('bas', 18, 2) + '</button>' +
-              '<div class="mkt-pick-filters mkt-pick-strip" id="mkt-pick-filters"></div>' +
-            '</div>' +
-            '<div id="mkt-pick-list" class="mkt-pick-list"></div>' +
-          '</div>' +
-        '</div>' +
-        '<div class="mkt-pick-foot" id="mkt-pick-foot"></div>' +
-      '</div></div>';
-  }
-  function pickPlaceholder() {
-    if (replaceIdx != null) return 'Choisir le produit de remplacement…';
-    if (pickSrc === 'cat') return 'Rechercher (désignation, CIP, molécule, laboratoire)…';
-    if (pickSrc === 'offilog') return 'Rechercher (nom, marque, EAN)…';
-    return 'Rechercher (désignation, CIP)…';
-  }
-  function pickTabs() {
-    var K = catCache(), O = offCache();
-    function tab(k, label, n) {
-      return '<button class="mkt-srcbtn' + (pickSrc === k ? ' on' : '') + '" data-src="' + k + '" onclick="V2.mkt.setPickSrc(\'' + k + '\')">' +
-        label + (n ? '<i class="mkt-srcbtn-n"> (' + V2.fmtNum(n) + ')</i>' : '') + '</button>';
-    }
-    return tab('cat', 'Tous les produits', K ? K.total : CAT_TOTAL_ATTENDU) +
-      tab('offilog', 'Parapharmacie', O ? O.total : 0) +
-      tab('mix', 'Nos sélections', mixFlat().length);
-  }
-  // Chip de facette. Les valeurs passent par data-v (libellés avec
-  // apostrophes ou esperluettes), jamais en argument inline.
-  function pickChip(kind, v, label, n, on) {
-    return '<button class="mkt-fchip' + (on ? ' on' : '') + '" data-v="' + esc(v) + '" onclick="V2.mkt.pickSet(\'' + kind + '\',this.getAttribute(\'data-v\'))">' +
-      '<span>' + esc(label) + '</span><i>' + V2.fmtNum(n) + '</i></button>';
-  }
-  // Rail (bureau) / bande défilante (mobile) : LES RAYONS, rien d'autre.
-  function pickRail() {
-    var h = '', K, i, f = pickF;
-    if (pickSrc === 'cat') {
-      K = catCache(); if (!K) return '';
-      h += '<div class="mkt-fac"><div class="mkt-fac-t">Rayon</div>' + pickChip('rayon', 'all', 'Tous les rayons', K.total, f.rayon === 'all');
-      for (i = 0; i < K.rayons.length; i++) h += pickChip('rayon', String(K.rayons[i].i), K.rayons[i].l, K.rayons[i].n, f.rayon === String(K.rayons[i].i));
-      if (K.sansRayon) h += pickChip('rayon', 'none', 'Sans rayon', K.sansRayon, f.rayon === 'none');
-      h += '</div>';
-    } else if (pickSrc === 'offilog') {
-      K = offCache(); if (!K) return '';
-      h += '<div class="mkt-fac"><div class="mkt-fac-t">Rayon Offilog</div>' + pickChip('orayon', 'all', 'Tous les rayons', K.total, f.orayon === 'all');
-      for (i = 0; i < K.rayons.length; i++) h += pickChip('orayon', K.rayons[i].l, K.rayons[i].l, K.rayons[i].n, f.orayon === K.rayons[i].l);
-      if (K.sansRayon) h += pickChip('orayon', 'none', 'Sans rayon', K.sansRayon, f.orayon === 'none');
-      h += '</div>';
+  function cgPosees() { var h = {}; (editing ? editing.products : []).forEach(function (p) { h[String(p.key)] = 1; }); return h; }
+  function cgPastilles(o) {
+    var G = window.CATALOGUE_GROUPE, S = (G && G.meta && G.meta.sites) || [], h = '', i, c, e;
+    for (i = 0; i < S.length; i++) {
+      c = o.sites.charAt(i); e = c === '2' ? ['ok', 'en stock'] : c === '1' ? ['zero', 'à 0'] : ['nd', 'pas de relevé'];
+      h += '<span class="cg-s cg-s-' + e[0] + '" title="' + esc(S[i] + ' : ' + e[1]) + '">' + esc(S[i]) + '<u class="cg-sr"> : ' + e[1] + '</u></span>';
     }
     return h;
   }
-  // Ligne compacte au-dessus des résultats, à côté du compteur : famille,
-  // laboratoire, stock (catalogue) ; marque (parapharmacie).
-  function pickFilters() {
-    var h = '', K, i, f = pickF, FAMS, fk;
-    if (pickSrc === 'cat') {
-      K = catCache(); if (!K) return '';
-      FAMS = (V2.produits && V2.produits.FAM) || {}; fk = Object.keys(FAMS);
-      h += pickChip('fam', 'all', 'Toutes les familles', K.total, f.fam === 'all');
-      for (i = 0; i < fk.length; i++) if (K.fam[fk[i]]) h += pickChip('fam', fk[i], FAMS[fk[i]].l, K.fam[fk[i]], f.fam === fk[i]);
-      h += '<select class="mkt-fsel" id="mkt-pick-labo" aria-label="Laboratoire" onchange="V2.mkt.pickSet(\'labo\',this.value)"><option value="">Tous les laboratoires</option>';
-      for (i = 0; i < K.labos.length; i++) h += '<option value="' + esc(K.labos[i].l) + '"' + (f.labo === K.labos[i].l ? ' selected' : '') + '>' + esc(K.labos[i].l) + ' (' + V2.fmtNum(K.labos[i].n) + ')</option>';
-      h += '</select>';
-      h += '<label class="mkt-fchk"><input type="checkbox" id="mkt-pick-stock"' + (f.stock ? ' checked' : '') + ' onchange="V2.mkt.pickSet(\'stock\',this.checked)"><span>En stock seulement</span></label>';
-    } else if (pickSrc === 'offilog') {
-      K = offCache(); if (!K) return '';
-      h += '<select class="mkt-fsel" id="mkt-pick-marque" aria-label="Marque" onchange="V2.mkt.pickSet(\'marque\',this.value)"><option value="">Toutes les marques</option>';
-      for (i = 0; i < K.marques.length; i++) h += '<option value="' + esc(K.marques[i].l) + '"' + (f.marque === K.marques[i].l ? ' selected' : '') + '>' + esc(K.marques[i].l) + ' (' + V2.fmtNum(K.marques[i].n) + ')</option>';
-      h += '</select>';
+  function cgCarteHtml(o, have, rempl) {
+    var img = (window.MKT_IMG && window.MKT_IMG[o.cip]) || '', p = cgPrixCarte(o), pose = !!have['p' + o.cip],
+        mono = (o.labo || o.d).replace(/[^A-Za-zÀ-ÿ0-9]/g, '').slice(0, 2).toUpperCase(),
+        lab = marqueSure(o.labo);
+    return '<div class="cg-carte' + (pose ? ' is-pose' : '') + '" data-cip="' + esc(o.cip) + '">' +
+      '<span class="cg-photo' + (img ? '' : ' cg-sans') + '">' +
+        (img ? '<img src="' + esc(img) + '" alt="" loading="lazy" decoding="async" onerror="this.parentNode.classList.add(\'cg-sans\');this.remove()">' : '') +
+        '<b class="cg-mono" aria-hidden="true">' + esc(mono) + '</b></span>' +
+      '<span class="cg-corps"><b class="cg-nom">' + esc(o.d) + '</b>' +
+        '<span class="cg-ref">' + (lab ? esc(lab) + ' · ' : '') + '<span class="mk-mono">' + esc(o.cip) + '</span></span>' +
+        '<span class="cg-prix' + (p > 0 ? '' : ' cg-inconnu') + '">' + (p > 0 ? V2.fmtEur(p) : 'Tarif non connu') + '</span></span>' +
+      '<button type="button" class="cg-ajout mk-press" data-cg="ajout" data-cip="' + esc(o.cip) + '" aria-pressed="' + (pose ? 'true' : 'false') + '" aria-label="' +
+        esc((rempl ? 'Remplacer par ' : (pose ? 'Retirer de la feuille : ' : 'Poser sur la feuille : ')) + o.d) + '">' + mic(pose && !rempl ? 'coche' : (rempl ? 'coche' : 'plus'), 22, 2.2) + '</button>' +
+      '<span class="cg-sites" role="group" aria-label="Stock par établissement">' + cgPastilles(o) + '</span>' +
+    '</div>';
+  }
+  // Prix montré sur la carte = celui qui sera posé sur la feuille (mêmes règles que produitMkt).
+  function cgPrixCarte(o) {
+    var p = (V2.produits && V2.produits.produitMkt) ? V2.produits.produitMkt(o.cip, { d: o.d, f: o.f, ppht: o.ppht, net: o.net, labo: o.labo }) : null;
+    return p ? (+p.price || 0) : (o.net || o.ppht || 0);
+  }
+  function cgVoletHtml() {
+    return '<div class="cg-rempl" id="cg-rempl" hidden></div>' +
+      '<div class="cg-cherche">' + mic('loupe', 20, 2) + '<input id="cg-q" type="search" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" placeholder="Nom, CIP, laboratoire, molécule" aria-label="Rechercher dans le catalogue du groupe" value="' + esc(cgF.q) + '"></div>' +
+      '<div class="cg-rangee"><div class="cg-rayons" id="cg-rayons" role="group" aria-label="Rayons"></div>' +
+        '<button type="button" class="cg-tout mk-press" id="cg-tout" data-cg="ray-plus" aria-expanded="false" aria-label="Voir tous les rayons">' + mic('bas', 20, 2) + '</button></div>' +
+      '<div class="cg-menus">' +
+        '<label class="cg-sel"><select id="cg-site" aria-label="Établissement"><option value="">Tous les sites</option></select>' + mic('bas', 18, 2) + '</label>' +
+        '<label class="cg-sel"><select id="cg-labo" aria-label="Laboratoire"><option value="">Tous les labos</option></select>' + mic('bas', 18, 2) + '</label>' +
+      '</div>' +
+      '<div class="cg-compte"><span id="cg-n" aria-live="polite"></span>' +
+        '<button type="button" class="cg-stock mk-press" id="cg-stock" data-cg="stock" aria-pressed="' + (cgF.stock ? 'true' : 'false') + '">En stock</button>' +
+        '<details class="cg-sources" id="cg-sources"><summary>Sources</summary><div class="cg-src-corps" id="cg-src-corps"></div></details></div>' +
+      '<div class="cg-liste" id="cg-liste" tabindex="-1"></div>';
+  }
+  function cgSourcesHtml() {
+    var G = window.CATALOGUE_GROUPE, m = G && G.meta; if (!m) return '';
+    var fr = m.fraicheur || {}, S = m.sites || Object.keys(fr), h = '<p class="cg-src-t">Fraîcheur par établissement</p><ul>', i;
+    for (i = 0; i < S.length; i++) {
+      var x = fr[S[i]];
+      h += '<li><b>' + esc(S[i]) + '</b><span>' + (x ? esc(cgDateFr(x.date)) + (x.quoi ? ' · ' + esc(x.quoi) : '') : 'pas de date') + '</span></li>';
     }
+    h += '</ul>';
+    if (m.tarif) h += '<p class="cg-src-n">Tarif : ' + esc(m.tarif.source || '') + ' du ' + esc(cgDateFr(m.tarif.date)) + (m.tarif.note ? ' · ' + esc(m.tarif.note) : '') + '.</p>';
+    h += '<p class="cg-src-n">Classement : produits à photo d’abord, puis nombre de pharmacies.</p>' +
+      '<p class="cg-src-t">Pastilles</p><p class="cg-src-n"><span class="cg-s cg-s-ok">OPS</span> en stock · <span class="cg-s cg-s-zero">OPS</span> à 0 · <span class="cg-s cg-s-nd">OPS</span> pas de relevé</p>';
     return h;
   }
-  function pickItemOpen(src, key, have, sk) {
-    var k = pickKey(src, key);
-    return '<div class="mkt-pick-item' + (have[k] ? ' added' : (pickSel[sk] ? ' sel' : '')) + '" onclick="V2.mkt.pickToggle(\'' + src + '\',\'' + esc(String(key)) + '\',this)">';
+  function cgResume() {
+    var G = window.CATALOGUE_GROUPE, fr = (G && G.meta && G.meta.fraicheur) || {}, d = Object.keys(fr).map(function (k) { return fr[k] && fr[k].date; }).filter(Boolean).sort();
+    return d.length ? d[0] + '|' + d[d.length - 1] : '';
   }
-  function pickItemClose() { return '<span class="mkt-pick-ck">' + ICO('check', 13, 3) + '</span></div>'; }
-  // Stock d'un produit du catalogue = somme des 7 sites (STOCK_IP) ; le stock figé dans le catalogue de juin
-  // ne sert que si le produit est inconnu des relevés — sinon « rupture » contredisait le bandeau des sites.
-  function pickStock(o) {
-    var S = window.STOCK_IP && window.STOCK_IP.data, c = String(o.cip), E = window.ETAB_PRICES;
-    if (S && S[c] > 0) return S[c];
-    if (S && E && E.all && E.all[c]) return 0;
-    return +o.stock || 0;
+  function cgPeindreFixe() {
+    var K = cgIndex(), r = document.getElementById('cg-rayons'); if (!K || !r || r.getAttribute('data-pret')) return;
+    var f = cgF, h = '<button type="button" class="cg-ray mk-press" data-cg="ray" data-v="all" aria-pressed="' + (f.rayon === 'all' ? 'true' : 'false') + '">Tous les rayons<i>' + V2.fmtNum(K.total) + '</i></button>', i;
+    for (i = 0; i < K.rayons.length; i++) h += '<button type="button" class="cg-ray mk-press" data-cg="ray" data-v="' + K.rayons[i].i + '" aria-pressed="' + (f.rayon === String(K.rayons[i].i) ? 'true' : 'false') + '">' + esc(K.rayons[i].l) + '<i>' + V2.fmtNum(K.rayons[i].n) + '</i></button>';
+    if (K.sansRayon) h += '<button type="button" class="cg-ray mk-press" data-cg="ray" data-v="none" aria-pressed="' + (f.rayon === 'none' ? 'true' : 'false') + '">Sans rayon<i>' + V2.fmtNum(K.sansRayon) + '</i></button>';
+    r.innerHTML = h; r.setAttribute('data-pret', '1');
+    var G = window.CATALOGUE_GROUPE, S = (G.meta && G.meta.sites) || [], ss = document.getElementById('cg-site'), sl = document.getElementById('cg-labo');
+    if (ss) { ss.innerHTML = '<option value="">Tous les sites</option>' + S.map(function (s) { return '<option value="' + esc(s) + '"' + (f.site === s ? ' selected' : '') + '>' + esc(s) + '</option>'; }).join(''); }
+    if (sl) { sl.innerHTML = '<option value="">Tous les labos</option>' + K.labos.map(function (l) { return '<option value="' + esc(l.l) + '"' + (f.labo === l.l ? ' selected' : '') + '>' + esc(l.l) + ' (' + V2.fmtNum(l.n) + ')</option>'; }).join(''); }
+    var sc = document.getElementById('cg-src-corps'); if (sc) sc.innerHTML = cgSourcesHtml();
+    var sm = document.getElementById('cg-sources'), rs = cgResume();
+    if (sm && rs) { var p = rs.split('|'); sm.querySelector('summary').setAttribute('title', 'Données relevées du ' + cgDateFr(p[0]) + ' au ' + cgDateFr(p[1])); }
+    cgMajRayon();
   }
-  function pickRowCat(r, have) {
-    var o = r.o, cip = String(o.cip);
-    var p = (V2.produits && V2.produits.produitMkt) ? V2.produits.produitMkt(cip) : null;
-    var img = (window.MKT_IMG && window.MKT_IMG[cip]) || '';
-    var sub = [o.labo, 'CIP ' + cip, rayonLibelle(r.r)].filter(function (x) { return !!x; }).join(' · ');
-    return pickItemOpen('cat', cip, have, 'cat|' + cip) +
-      (img ? '<span class="mkt-pick-img" style="background-image:url(' + esc(img) + ')"></span>' : '<span class="mkt-pick-ic">' + ICO('pill', 18, 1.7) + '</span>') +
-      '<span class="mkt-pick-nm"><b>' + esc(o.d) + '</b><span>' + esc(sub) + '</span>' + sitesHtml(cip) + '</span>' +
-      (pickStock(o) > 0 ? '' : '<span class="mkt-pick-rupt">rupture</span>') +
-      '<span class="mkt-pick-pr mono">' + (p && p.price > 0 ? V2.fmtEur(p.price) : '') + '</span>' +
-      pickItemClose();
+  function cgMajRayon() {
+    var r = document.getElementById('cg-rayons'); if (!r) return;
+    Array.prototype.forEach.call(r.querySelectorAll('.cg-ray'), function (b) {
+      var on = b.getAttribute('data-v') === cgF.rayon; b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      if (on && !r.classList.contains('is-ouvert')) { try { r.scrollLeft = Math.max(0, b.offsetLeft - 20); } catch (e) {} }
+    });
   }
-  function pickRowOff(r, have) {
-    var b = r.b, id = String(b.id);
-    var sub = [b.brand, r.ry].filter(function (x) { return !!x; }).join(' · ');
-    return pickItemOpen('offilog', id, have, 'offilog|' + id) +
-      (b.img ? '<span class="mkt-pick-img" style="background-image:url(' + esc(b.img) + ')"></span>' : '<span class="mkt-pick-img mkt-th-x"></span>') +
-      '<span class="mkt-pick-nm"><b>' + esc(b.name) + '</b><span>' + esc(sub) + '</span></span>' +
-      '<span class="mkt-pick-pr mono">' + (b.price > 0 ? V2.fmtEur(b.price) : '') + '</span>' +
-      pickItemClose();
+  function cgMajRempl() {
+    var b = document.getElementById('cg-rempl'); if (!b) return;
+    var p = (replaceIdx != null && editing) ? editing.products[replaceIdx] : null;
+    b.hidden = !p;
+    b.innerHTML = p ? '<span>Remplacement : choisissez le produit qui prendra la place de « <b>' + esc((p.name || 'ce produit').slice(0, 60)) + '</b> ».</span>' +
+      '<button type="button" class="mk-btn mk-press" data-cg="annuler">Annuler</button>' : '';
   }
-  function pickRowMix(b, have) {
-    var id = String(b.id);
-    var tag = b.group === 'nr' ? 'NR / Para' : (b.group === 'rota' ? 'Top rotation France' : (b.group === 'best' ? 'Top ventes' : (b.group === 'itp' ? 'ITP' : 'L\'Intégral')));
-    // chip à droite : VOLUME vendu en priorité, sinon marge (ITP)
-    var chip = (b.vol > 0)
-      ? '<span class="mkt-pick-sortie" title="volume vendu (unités)">' + V2.fmtNum(b.vol) + ' vendus</span>'
-      : (b.group === 'itp' && b.marge > 0 ? '<span class="mkt-pick-sortie marge" title="marge par boîte">marge ' + V2.fmtEur(b.marge) + '</span>' : '');
-    var subm = b.sortie > 0 ? ' · ' + b.sortie + '/' + b.total + ' pharm' : (b.cip ? ' · CIP ' + esc(b.cip) : ' · ' + esc(b.cat));
-    return pickItemOpen('mix', id, have, 'mix|' + id) +
-      '<span class="mkt-pick-ic">' + ICO('pill', 18, 1.7) + '</span>' +
-      '<span class="mkt-pick-nm"><b>' + esc(b.name) + '</b><span>' + tag + subm + '</span>' + (b.cip ? sitesHtml(b.cip) : '') + '</span>' +
-      chip +
-      '<span class="mkt-pick-pr mono">' + (b.price > 0 ? V2.fmtEur(b.price) : '') + '</span>' +
-      pickItemClose();
-  }
-  function renderPickList() {
-    var box = document.getElementById('mkt-pick-list'); if (!box || !editing) return;
-    var cnt = document.getElementById('mkt-pick-n');
-    if ((pickSrc === 'cat' && !catCache()) || (pickSrc === 'offilog' && !offCache())) {
-      box.innerHTML = '<div class="mkt-empty" style="border:none">Le catalogue n\'a pas pu être chargé. Fermez le sélecteur, puis réessayez.</div>';
-      if (cnt) cnt.textContent = '';
-      pickFoot();
+  // Rendu de la liste : par pages de 60. `plus` = vrai : on ajoute la page suivante sans tout redessiner (le défilement reste en place).
+  function cgListe(plus) {
+    var box = document.getElementById('cg-liste'), nb = document.getElementById('cg-n'); if (!box) return;
+    var K = cgIndex();
+    if (!K) {
+      box.innerHTML = cgEchec
+        ? '<div class="cg-vide"><p>Le catalogue du groupe n’a pas pu être lu pour l’instant.</p><button type="button" class="mk-btn mk-press" data-cg="relire">Réessayer</button></div>'
+        : '<div class="cg-attente" aria-busy="true"><p>Le catalogue du groupe arrive (' + V2.fmtNum(cgNb()) + ' références, une seule fois)…</p><i class="mk-sq"></i><i class="mk-sq"></i><i class="mk-sq"></i></div>';
+      if (nb) nb.textContent = '';
       return;
     }
-    var q = pickQuery(), rows = pickRows(q), have = {}, html = '', i, n = rows.length, end = Math.min(n, pickShown);
-    editing.products.forEach(function (p) { have[String(p.key)] = 1; });
-    for (i = 0; i < end; i++) {
-      html += pickSrc === 'cat' ? pickRowCat(rows[i], have) : (pickSrc === 'offilog' ? pickRowOff(rows[i], have) : pickRowMix(rows[i], have));
+    var have = cgPosees(), rempl = replaceIdx != null, deb = plus ? cgShown : 0, fin, h = '', i;
+    if (plus) cgShown += CG_PAGE; else { cgRes = cgFiltre(); cgShown = CG_PAGE; }
+    fin = Math.min(cgRes.length, cgShown);
+    for (i = deb; i < fin; i++) h += cgCarteHtml(cgRes[i], have, rempl);
+    var reste = cgRes.length - fin;
+    if (reste > 0) h += '<button type="button" class="mk-btn cg-voir mk-press" data-cg="plus">Voir ' + Math.min(CG_PAGE, reste) + ' produits de plus</button>';
+    if (plus) {
+      var old = box.querySelector('.cg-voir'); if (old) old.parentNode.removeChild(old);
+      box.insertAdjacentHTML('beforeend', h);
+    } else {
+      box.innerHTML = cgRes.length ? h : '<div class="cg-vide"><p>Aucun produit ne correspond à ces critères.</p><button type="button" class="mk-btn mk-press" data-cg="effacer">Effacer les filtres</button></div>';
+      box.scrollTop = 0;
     }
-    if (n > end) html += '<button type="button" class="mk-btn mkt-pick-more mk-press" onclick="V2.mkt.pickMore()">Voir ' + Math.min(PICK_PAGE, n - end) + ' produits de plus</button>';
-    var top = box.scrollTop;
-    box.innerHTML = html || '<div class="mkt-empty" style="border:none">Aucun produit ne correspond à ces critères.</div>';
-    box.scrollTop = pickShown > PICK_PAGE ? top : 0;
-    if (cnt) cnt.textContent = V2.fmtNum(n) + ' produit' + (n > 1 ? 's' : '');
-    pickFoot();
+    if (nb) nb.textContent = V2.fmtNum(cgRes.length) + ' produit' + (cgRes.length > 1 ? 's' : '') + ' · photos d’abord';
   }
-  function pickFoot() {
-    var foot = document.getElementById('mkt-pick-foot'); if (!foot) return;
-    if (replaceIdx != null) {
-      foot.innerHTML = '<span class="mkt-pick-nsel">Touchez un produit : il remplace celui de la feuille.</span>';
-      return;
-    }
-    var n = Object.keys(pickSel).length;
-    foot.innerHTML =
-      '<span class="mkt-pick-nsel">' + (n ? n + ' coché' + (n > 1 ? 's' : '') : 'Cochez les produits à poser sur la feuille') + '</span>' +
-      (n ? '<button type="button" class="mk-btn mk-texte mk-press" onclick="V2.mkt.pickClearSel()">Tout décocher</button>' : '') +
-      '<button type="button" class="mk-btn mk-plein mk-press" onclick="V2.mkt.pickAddSel()"' + (n ? '' : ' disabled') + '>' + mic('plus', 20, 2) +
-        'Ajouter ' + (n ? n + ' produit' + (n > 1 ? 's' : '') : 'les produits') + '</button>';
+  function cgPeindre() {
+    cgPeindreFixe(); cgMajRempl(); cgListe(false);
   }
-  function renderPickAll() {
-    var tabs = document.getElementById('mkt-pick-src'); if (tabs) tabs.innerHTML = pickTabs();
-    var rail = document.getElementById('mkt-pick-rail');
-    if (rail) { var top = rail.scrollTop; rail.innerHTML = pickRail(); rail.hidden = !rail.innerHTML; rail.scrollTop = top; }
-    var flt = document.getElementById('mkt-pick-filters');
-    if (flt) { var left = flt.scrollLeft; flt.innerHTML = pickFilters(); flt.hidden = !flt.innerHTML; flt.scrollLeft = left; }
-    var inp = document.getElementById('mkt-pick-input'); if (inp) inp.placeholder = pickPlaceholder();
-    // Le bouton « Rayons et filtres » dit combien de critères sont posés ; il disparaît quand l'univers n'en a aucun.
-    var ft = document.getElementById('mkt-pick-ftoggle');
-    if (ft) {
-      var f = pickF, nf = (f.rayon !== 'all' ? 1 : 0) + (f.fam !== 'all' ? 1 : 0) + (f.labo ? 1 : 0) + (f.stock ? 1 : 0) + (f.orayon !== 'all' ? 1 : 0) + (f.marque ? 1 : 0);
-      ft.hidden = !((rail && rail.innerHTML) || (flt && flt.innerHTML));
-      ft.firstChild.textContent = 'Rayons et filtres' + (nf ? ' · ' + nf : '');
-    }
-    renderPickList();
+  function cgCharger() {
+    if (cgG()) { cgEchec = false; cgPeindre(); return; }
+    cgEchec = false; cgPeindre();
+    if (!V2.loadFiles) { cgEchec = true; cgPeindre(); return; }
+    var fin = function () { cgEchec = !cgG(); cgPeindre(); };
+    try { V2.loadFiles(['catgroupe']).then(fin, fin); } catch (e) { fin(); }
   }
-  function wirePicker() {
-    var bd = document.getElementById('mkt-picker'); if (!bd) return;
-    bd.onclick = function () { closePicker(); };
-    var inp = document.getElementById('mkt-pick-input');
-    if (inp) {
-      inp.addEventListener('input', function () {
-        pickShown = PICK_PAGE;
-        if (pickTimer) clearTimeout(pickTimer);
-        pickTimer = setTimeout(renderPickList, 120);
+  // Mettre à jour les cartes déjà dessinées (coche) sans toucher au défilement.
+  function cgMajCartes() {
+    var box = document.getElementById('cg-liste'); if (!box) return;
+    var have = cgPosees(), rempl = replaceIdx != null, K = cgIndex();
+    Array.prototype.forEach.call(box.querySelectorAll('.cg-carte'), function (c) {
+      var cip = c.getAttribute('data-cip'), o = K && K.par[cip], b = c.querySelector('.cg-ajout'), pose = !!have['p' + cip];
+      c.classList.toggle('is-pose', pose);
+      if (b && o) {
+        b.setAttribute('aria-pressed', pose ? 'true' : 'false');
+        b.setAttribute('aria-label', (rempl ? 'Remplacer par ' : (pose ? 'Retirer de la feuille : ' : 'Poser sur la feuille : ')) + o.d);
+        b.innerHTML = mic(pose || rempl ? 'coche' : 'plus', 22, 2.2);
+      }
+    });
+  }
+  // Le mouvement qui sert : la photo de la carte vole vers la feuille, le compteur monte. Rien si « mouvement réduit ».
+  function cgVol(carte) {
+    if (docCalme() || !carte || !carte.animate) return;
+    var ph = carte.querySelector('.cg-photo'), ho = document.getElementById('mkt-mholder'), sc = document.getElementById('mke-scene'); if (!ph || !ho || !sc) return;
+    var a = ph.getBoundingClientRect(), b = ho.getBoundingClientRect(), s = sc.getBoundingClientRect(), pn = document.getElementById('mke-panneau'), bas = s.bottom;
+    if (etabliTel() && pn) bas = Math.min(bas, pn.getBoundingClientRect().top);
+    var tx = (b.left + b.width / 2) - (a.left + a.width / 2), ty = ((s.top + 70 + bas) / 2) - (a.top + a.height / 2);
+    var g = ph.cloneNode(true);
+    g.className = 'cg-vol'; g.removeAttribute('data-cip');
+    g.style.cssText = 'position:fixed;left:' + a.left + 'px;top:' + a.top + 'px;width:' + a.width + 'px;height:' + a.height + 'px;margin:0;z-index:2000;pointer-events:none';
+    document.body.appendChild(g);
+    var an = g.animate([{ transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: 'translate(' + tx + 'px,' + ty + 'px) scale(.6)', opacity: .15 }], { duration: 420, easing: 'cubic-bezier(.32,.72,0,1)' });
+    an.onfinish = an.oncancel = function () { if (g.parentNode) g.parentNode.removeChild(g); };
+  }
+  function cgBump() {
+    var bd = document.getElementById('mke-badge'); if (!bd || !bd.animate || docCalme()) return;
+    bd.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.35)' }, { transform: 'scale(1)' }], { duration: 300, easing: 'cubic-bezier(.32,.72,0,1)' });
+  }
+  function cgBascule(cip, carte) {
+    var K = cgIndex(), o = K && K.par[cip]; if (!o || !editing) return;
+    if (replaceIdx != null) { cgRemplacer(o); return; }
+    var k = 'p' + cip, i, pose = -1;
+    for (i = 0; i < editing.products.length; i++) if (String(editing.products[i].key) === k) { pose = i; break; }
+    if (pose >= 0) editing.products.splice(pose, 1);
+    else { editing.products.push(cgProduit(o)); cgVol(carte); }
+    refreshProducts(); cgMajCartes();
+    if (pose < 0) cgBump();
+  }
+  function cgRemplacer(o) {
+    var p = cgProduit(o);
+    if (editing.products.some(function (x) { return String(x.key) === String(p.key); })) { V2.toast('Ce produit est déjà sur la feuille', 'warn'); return; }
+    if (!editing.products[replaceIdx]) { replaceIdx = null; cgMajRempl(); return; }
+    editing.products[replaceIdx] = p; replaceIdx = null;
+    cgMajRempl(); refreshProducts(); cgMajCartes();
+    V2.toast('Produit remplacé');
+  }
+  function wireCatalogue() {
+    var q = document.getElementById('cg-q');
+    if (q) {
+      q.addEventListener('input', function () {
+        cgF.q = q.value;
+        if (cgTimer) clearTimeout(cgTimer);
+        cgTimer = setTimeout(function () { cgListe(false); }, 120);
       });
-      inp.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePicker(); });
+      q.addEventListener('keydown', function (e) { if (e.key === 'Escape' && replaceIdx != null) V2.mkt.closePicker(); });
+    }
+    var s = document.getElementById('cg-site'), l = document.getElementById('cg-labo');
+    if (s) s.addEventListener('change', function () { cgF.site = s.value; cgListe(false); });
+    if (l) l.addEventListener('change', function () { cgF.labo = l.value; cgListe(false); });
+  }
+  function cgAgir(b) {
+    var a = b.getAttribute('data-cg');
+    if (a === 'ajout') cgBascule(b.getAttribute('data-cip'), b.closest('.cg-carte'));
+    else if (a === 'ray') { cgF.rayon = b.getAttribute('data-v'); cgMajRayon(); cgListe(false); }
+    else if (a === 'ray-plus') {
+      var r = document.getElementById('cg-rayons'), on = r && !r.classList.contains('is-ouvert');
+      if (r) r.classList.toggle('is-ouvert', !!on); b.setAttribute('aria-expanded', on ? 'true' : 'false');
+    }
+    else if (a === 'stock') { cgF.stock = !cgF.stock; b.setAttribute('aria-pressed', cgF.stock ? 'true' : 'false'); cgListe(false); }
+    else if (a === 'plus') cgListe(true);
+    else if (a === 'annuler') V2.mkt.closePicker();
+    else if (a === 'relire') { cgIdx = null; cgCharger(); }
+    else if (a === 'effacer') {
+      cgF = cgFiltresVides();
+      var qq = document.getElementById('cg-q'), s = document.getElementById('cg-site'), l = document.getElementById('cg-labo'), st = document.getElementById('cg-stock');
+      if (qq) qq.value = ''; if (s) s.value = ''; if (l) l.value = ''; if (st) st.setAttribute('aria-pressed', 'false');
+      cgMajRayon(); cgListe(false);
     }
   }
-  function pickSpinner(txt) {
-    var box = document.getElementById('mkt-pick-list');
-    if (box) box.innerHTML = '<div class="v2-loading" style="min-height:220px"><div class="v2-spinner"></div><div>' + esc(txt) + '</div></div>';
-    var rail = document.getElementById('mkt-pick-rail'); if (rail) { rail.innerHTML = ''; rail.hidden = true; }
-    var flt = document.getElementById('mkt-pick-filters'); if (flt) { flt.innerHTML = ''; flt.hidden = true; }
-    var cnt = document.getElementById('mkt-pick-n'); if (cnt) cnt.textContent = '';
-  }
-  function ensureSrc(cb) {
-    if (pickSrc === 'mix') { cb(); return; }   // window.MKT_MIX chargé via index.html
-    if (pickSrc === 'offilog') {
-      if (!window.OFFILOG_BEST || !window.OFFILOG_CATS) pickSpinner('La parapharmacie arrive…');
-      ensureBest(function () {
-        if (window.OFFILOG_CATS || !V2.loadFiles) { cb(); return; }
-        V2.loadFiles(['offilogcats']).then(cb, cb);
-      });
-      return;
-    }
-    if (pickCatCache || (window.CATALOGUE_COMPLET && window.MKT_RAYONS) || !V2.loadFiles) { cb(); return; }
-    pickSpinner('Les ' + V2.fmtNum(CAT_TOTAL_ATTENDU) + ' références arrivent (1,5 Mo, une seule fois)…');
-    V2.loadFiles(['catcomplet', 'mktrayons']).then(cb, cb);
-  }
-  // idx (facultatif) : ouvert depuis la photo d'un produit de l'aperçu → le produit choisi REMPLACE celui-là
+  // « Poser un produit » depuis ailleurs (photo de la feuille, bouton Ajouter) : le panneau montre le catalogue.
+  // idx : le produit de la feuille que le choix va REMPLACER ; sans idx, on montre seulement le catalogue.
   function openPicker(idx) {
     replaceIdx = (typeof idx === 'number' && editing && editing.products[idx]) ? idx : null;
-    // Les coches survivent à une fermeture (clic à côté du panneau) tant qu'on
-    // reste sur la même fiche ; elles tombent en mode remplacement.
-    if (replaceIdx != null || !editing || pickSelFor !== editing.id) pickSel = {};
-    pickSelFor = editing ? editing.id : null;
-    pickShown = PICK_PAGE;
-    var bd = document.getElementById('mkt-picker'); if (!bd) return;
-    bd.classList.add('open');
-    // Le bouton flottant « + » de l'app (.v2-fab, z-index 9400) passerait
-    // par-dessus le panneau et couvrirait « Fermer » sur iPhone.
-    document.body.classList.add('mkt-picking');
-    var inp = document.getElementById('mkt-pick-input');
-    if (inp) { inp.value = ''; inp.placeholder = pickPlaceholder(); }
-    // Stock de chaque site sous les produits : chargé à la demande, la liste se redessine à l'arrivée.
-    if (!window.ETAB_PRICES) ensureEtab(function () { if (window.ETAB_PRICES && bd.classList.contains('open')) renderPickList(); });
-    ensureSrc(function () {
-      renderPickAll();
-      // Sur téléphone, le clavier couvrirait les rayons : pas de focus automatique.
-      if (inp && window.innerWidth > 640) setTimeout(function () { inp.focus(); }, 60);
-    });
+    etabliOnglet('catalogue');
+    if (!panneauHaut) etabliPanneau(true);
+    cgMajRempl(); cgMajCartes();
+    var q = document.getElementById('cg-q'); if (q && window.innerWidth > 860) setTimeout(function () { try { q.focus(); } catch (e) {} }, 60);
   }
   function closePicker() {
-    replaceIdx = null;
-    document.body.classList.remove('mkt-picking');
-    var bd = document.getElementById('mkt-picker'); if (bd) bd.classList.remove('open');
+    if (replaceIdx == null) return;
+    replaceIdx = null; cgMajRempl(); cgMajCartes();
   }
 
   // ════════════════════════════════════════════
@@ -1454,7 +1336,8 @@
         '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L4 21"/></svg>';
     var ref = p.cip ? ('CIP ' + esc(p.cip)) : (p.ean ? ('EAN ' + esc(p.ean)) : '');
     var meta = [];
-    if (p.brand) meta.push(esc(p.brand));
+    var mq = marqueSure(p.brand);
+    if (mq) meta.push(esc(mq));
     if (p.cat) meta.push(esc(p.cat));
     if (p.froid) meta.push('Chaîne du froid');
 
@@ -1524,7 +1407,7 @@
       var thumb = anyImg
         ? '<td style="padding:6px 8px;width:40px;text-align:center"' + zoneAttrs(edit, 'photo', 'Photo', { i: idx, click: true, quiet: true }) + '>' + (img ? '<img data-imgprod' + (forPdf ? ' crossorigin="anonymous"' : '') + ' src="' + esc(img) + '" style="width:34px;height:34px;object-fit:contain;border-radius:6px;background:#FBFCFE">' : ph) + '</td>'
         : '';
-      var ref = p.cip ? esc(p.cip) : (p.ean ? esc(p.ean) : '—');
+      var ref = p.cip ? esc(p.cip) : (p.ean ? esc(p.ean) : '—'), mq = marqueSure(p.brand);
       // PPHT connu, sinon reconstitué depuis la remise portée par le produit. 0 = NR/prix libre → net seul.
       var ppht = p.ppht > 0 ? p.ppht : (p.remise > 0 && p.price > 0 ? Math.round(p.price / (1 - p.remise / 100) * 100) / 100 : 0);
       var pct = (ppht > 0 && p.price > 0 && p.price < ppht) ? Math.round((1 - p.price / ppht) * 1000) / 10 : 0;
@@ -1533,7 +1416,7 @@
       return '<tr style="border-bottom:1px solid #ECEFF5;page-break-inside:avoid">' + thumb +
         '<td style="padding:7px 10px;text-align:center;font-size:9px;color:#9AA1B2;font-family:monospace;width:24px">' + n + '</td>' +
         '<td style="padding:7px 10px;font-size:11.5px;font-weight:600;color:#10131C"><span' + zoneAttrs(edit, 'pname', 'Nom', { i: idx, quiet: true }) + '>' + esc(edit ? (p.name || '') : (p.name || '').slice(0, 62)) + '</span>' +
-          (p.brand ? ' <span style="color:#9AA1B2;font-weight:500">· ' + esc(p.brand) + '</span>' : '') +
+          (mq ? ' <span style="color:#9AA1B2;font-weight:500">· ' + esc(mq) + '</span>' : '') +
           (p.froid ? ' <span style="font-size:7.5px;color:#00B5D8;border:1px solid #b8edf7;border-radius:4px;padding:0 3px;vertical-align:middle">FROID</span>' : '') + '</td>' +
         '<td style="padding:7px 10px;font-family:monospace;font-size:10px;color:#737A8C">' + ref + '</td>' +
         (showPrice ? '<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:10.5px">' + pphtCell + '</td>' : '') +
@@ -1567,7 +1450,10 @@
             (anyImg ? '<th></th>' : '') + thh('#', 'center') + thh('Produit', 'left') + thh('Réf (CIP/EAN)', 'left') +
             (showPrice ? thh('PPHT', 'right') : '') + (showRemise ? thh('Abandon', 'right') : '') + (showPrice ? thh('Net IP', 'right') : '') +
           '</tr></thead><tbody>' + rows + '</tbody></table>'
-      : '<div style="text-align:center;color:#9AA1B2;font-size:13px;padding:40px">Aucun produit.</div>';
+      : (edit
+        ? '<div style="border:2px dashed #C9D2E3;border-radius:16px;padding:56px 36px;text-align:center"><div style="font-size:20px;font-weight:800;color:#3A4152">La feuille attend vos produits.</div>' +
+          '<div style="font-size:14px;color:#626A7C;margin-top:8px">Choisissez-les dans le catalogue du groupe : ils prennent place ici, avec leur photo.</div></div>'
+        : '<div style="text-align:center;color:#9AA1B2;font-size:13px;padding:40px">Aucun produit.</div>');
     // Pauline (remontée ea89d1f9) : moins d'informations en bas de page. Le type et la date sont déjà dans l'en-tête ;
     // le pied ne garde que la mention utile, et disparaît s'il n'a rien à dire.
     var footDefaut = showPrice ? 'Prix nets HT indicatifs' : '';
@@ -1710,7 +1596,7 @@
       // La feuille se montre comme la page qui sortira : un A4 entier, même peu rempli (le blanc du bas est celui du PDF).
       h = Math.max(h, 1123);
       if (zoomFeuille === 'largeur') { if (tel) scale = 1; }                      // téléphone : taille réelle, pour écrire sur la feuille
-      else scale = Math.min(scale, Math.max((sc.clientHeight - pad) / h, Math.min(scale, 640 / 794)));   // la page entière, sans descendre sous 640 px de large
+      else scale = Math.min(scale, Math.max((sc.clientHeight - pad - 56) / h, Math.min(scale, 640 / 794)));   // la page entière, sans descendre sous 640 px de large
     }
     sh.style.transform = 'scale(' + scale + ')';
     ho.style.width = (794 * scale) + 'px'; ho.style.height = (h * scale) + 'px';
@@ -1746,7 +1632,7 @@
                   theme: defaultTheme('selection'), owner: (V2.user && V2.user.email) || '', _new: 'selection' };
       for (var j = 0; j < MODELES.length; j++) if (MODELES[j].k === 'selection') editing.theme.accent = MODELES[j].accent;
       editing.theme.tpl = 'selection';
-      pickSrc = 'cat'; pickF = pickFiltresVides(); pickF.rayon = String(i); pickOpenOnRender = true;
+      cgPre = cgFiltresVides(); cgPre.rayon = String(i);   // le rayon choisi est posé dans le catalogue du panneau
       V2.go('marketing', 'new-selection');
     },
     open: function (id) { editing = null; V2.go('marketing', id); },
@@ -1759,7 +1645,9 @@
       if (editing.theme.tpl !== m.k) editing.theme.accent = m.accent; // la couleur suit le modèle, reste modifiable ensuite
       var apply = function () {
         editing.theme.tpl = k;
-        Array.prototype.forEach.call(document.querySelectorAll('.mkt-mtile'), function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-model') === k ? 'true' : 'false'); });
+        Array.prototype.forEach.call(document.querySelectorAll('#mke-modeles button'), function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-model') === k ? 'true' : 'false'); });
+        var sg = document.getElementById('mke-modeles'); if (sg) MODELES.forEach(function (x, j) { if (x.k === k) sg.style.setProperty('--i', j); });
+        etabliPied();
         Array.prototype.forEach.call(document.querySelectorAll('.mkt-sw-acc'), function (el) { el.classList.toggle('on', el.getAttribute('data-c') === m.accent); });
         var pa = document.getElementById('mke-acc-cur'); if (pa) pa.style.background = m.accent;
         refreshPreview();
@@ -2017,76 +1905,14 @@
     },
     openPicker: function () { openPicker(); }, closePicker: closePicker,
     // « Parcourir tous les produits » (accueil Marketing) : une sélection neuve,
-    // modèle déjà posé, et le sélecteur s'ouvre sur le catalogue entier dès le
-    // rendu de l'éditeur.
+    // modèle déjà posé, et le catalogue du groupe est dans le panneau de l'éditeur.
     createFromCatalogue: function () {
       editing = { id: newId(), type: 'selection', title: '', accroche: '', footer: '', status: 'brouillon', products: [],
                   theme: defaultTheme('selection'), owner: (V2.user && V2.user.email) || '', _new: 'selection' };
       for (var i = 0; i < MODELES.length; i++) if (MODELES[i].k === 'selection') editing.theme.accent = MODELES[i].accent;
       editing.theme.tpl = 'selection';
-      pickSrc = 'cat'; pickF = pickFiltresVides(); pickOpenOnRender = true;
+      cgPre = null;   // le catalogue du groupe est toujours dans le panneau : il s'ouvre propre
       V2.go('marketing', 'new-selection');
-    },
-    setPickSrc: function (s) {
-      if (s !== 'cat' && s !== 'offilog' && s !== 'mix') return;
-      pickSrc = s;
-      pickF = pickFiltresVides(); pickShown = PICK_PAGE;   // les facettes sont propres à chaque univers
-      Array.prototype.forEach.call(document.querySelectorAll('#mkt-pick-src .mkt-srcbtn'), function (b) { b.classList.toggle('on', b.getAttribute('data-src') === s); });
-      ensureSrc(renderPickAll);
-    },
-    // Une facette change : on repart à la première page, le rail se redessine (état des chips)
-    pickSet: function (kind, v) {
-      if (!Object.prototype.hasOwnProperty.call(pickF, kind)) return;
-      pickF[kind] = (kind === 'stock') ? !!v : String(v == null ? '' : v);
-      pickShown = PICK_PAGE;
-      renderPickAll();
-    },
-    pickMore: function () { pickShown += PICK_PAGE; renderPickList(); },
-    // Rayons et filtres se déplient sous le compteur (rangés par défaut : des produits dès le premier écran).
-    pickFiltres: function () {
-      var bx = document.getElementById('mkt-pick-box'), ft = document.getElementById('mkt-pick-ftoggle'); if (!bx) return;
-      var on = !bx.classList.contains('is-filtres');
-      bx.classList.toggle('is-filtres', on);
-      if (ft) ft.setAttribute('aria-expanded', on ? 'true' : 'false');
-    },
-    // Un clic coche / décoche. En mode remplacement (ouvert depuis la photo), il remplace et ferme.
-    pickToggle: function (src, key, el) {
-      if (!editing) return;
-      if (replaceIdx != null) { V2.mkt.addProduct(src, key); return; }
-      var k = pickKey(src, key);
-      if (editing.products.some(function (x) { return String(x.key) === k; })) return;
-      var sk = src + '|' + key;
-      if (pickSel[sk]) delete pickSel[sk]; else pickSel[sk] = { src: src, key: key };
-      if (el && el.classList) el.classList.toggle('sel', !!pickSel[sk]);
-      pickFoot();
-    },
-    pickClearSel: function () {
-      pickSel = {};
-      Array.prototype.forEach.call(document.querySelectorAll('#mkt-pick-list .mkt-pick-item.sel'), function (el) { el.classList.remove('sel'); });
-      pickFoot();
-    },
-    // Ajoute tous les produits cochés, puis UN seul rafraîchissement de l'aperçu.
-    pickAddSel: function () {
-      if (!editing) return;
-      var keys = Object.keys(pickSel), n = 0, i, p;
-      for (i = 0; i < keys.length; i++) {
-        p = pickProduct(pickSel[keys[i]].src, pickSel[keys[i]].key);
-        if (!p || editing.products.some(function (x) { return String(x.key) === String(p.key); })) continue;
-        editing.products.push(p); n++;
-      }
-      pickSel = {};
-      if (!n) { V2.toast('Aucun produit à ajouter', 'warn'); pickFoot(); return; }
-      closePicker();
-      refreshProducts();
-      V2.toast(n + ' produit' + (n > 1 ? 's' : '') + ' ajouté' + (n > 1 ? 's' : ''));
-    },
-    addProduct: function (src, key) {
-      if (!editing) return;
-      var p = pickProduct(src, key);
-      if (!p) return;
-      if (editing.products.some(function (x) { return String(x.key) === String(p.key); })) { if (replaceIdx != null) V2.toast('Ce produit est déjà dans la fiche', 'warn'); return; }
-      if (replaceIdx != null && editing.products[replaceIdx]) { editing.products[replaceIdx] = p; closePicker(); refreshProducts(); return; }
-      editing.products.push(p); refreshProducts(); renderPickList();
     },
     removeProduct: function (i) { if (editing) { editing.products.splice(i, 1); refreshProducts(); } },
     // Pauline (remontée ea89d1f9) : « déplacer » = changer l'ordre des produits, une place à la fois.
@@ -3146,63 +2972,6 @@
       '.mkt-prow-o:disabled{opacity:.3;cursor:default}',
       '.mkt-prow-o:focus-visible{outline:2px solid var(--ip-blue,#0050E6);outline-offset:-2px}',
       '.mkt-prow-x:hover{color:var(--c-rose);border-color:color-mix(in srgb,var(--c-rose) 40%,var(--line))}',
-      // Sélecteur = explorateur de catalogue : rail de facettes à gauche,
-      // résultats seuls défilent, pied collant. Plein écran sous 640 px.
-      '.mkt-pick-bd{position:fixed;inset:0;z-index:210;background:rgba(16,19,28,0.55);display:flex;align-items:flex-start;justify-content:center;padding-top:8vh;opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}',
-      '.mkt-pick-bd.open{opacity:1;pointer-events:auto}',
-      '.mkt-pick{width:min(980px,94vw);height:84vh;max-height:84vh;background:var(--card);border-radius:18px;box-shadow:var(--sh-pop);display:flex;flex-direction:column;overflow:hidden;transform:scale(.97);transition:transform .24s var(--ease)}',
-      '.mkt-pick-bd.open .mkt-pick{transform:scale(1)}',
-      '.mkt-pick-body{display:flex;flex:1;min-height:0}',
-      '.mkt-pick-rail{width:220px;flex-shrink:0;overflow-y:auto;border-right:1px solid var(--line);padding:10px 10px 14px;background:var(--card-2)}',
-      '.mkt-pick-rail[hidden]{display:none}',
-      '.mkt-pick-main{flex:1;min-width:0;display:flex;flex-direction:column}',
-      '.mkt-pick-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 14px 6px;border-bottom:1px solid var(--line)}',
-      '.mkt-pick-n{flex-shrink:0;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}',
-      '.mkt-pick-filters{display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1;min-width:0}',
-      '.mkt-pick-filters[hidden]{display:none}',
-      '.mkt-pick-filters .mkt-fchip{width:auto;flex:0 0 auto;min-height:32px;padding:5px 10px;border-color:var(--line);background:var(--card);white-space:nowrap}',
-      '.mkt-pick-filters .mkt-fchip.on{border-color:var(--ip-blue);background:var(--ip-blue)}',
-      '.mkt-pick-filters .mkt-fsel{width:auto;max-width:220px;min-height:32px;padding:4px 8px}',
-      '.mkt-pick-filters .mkt-fchk{min-height:32px;padding:0 4px}',
-      'body.mkt-picking .v2-fab{display:none}',
-      '.mkt-fac{margin-bottom:12px}',
-      '.mkt-fac-t{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 6px 4px}',
-      '.mkt-fchip{display:flex;align-items:center;gap:8px;width:100%;min-height:34px;padding:6px 8px;border:1px solid transparent;border-radius:9px;background:none;font-family:var(--font);font-size:12.5px;font-weight:600;color:var(--ip-ink);text-align:left;cursor:pointer;transition:background .12s var(--ease),border-color .12s var(--ease)}',
-      '.mkt-fchip span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      '.mkt-fchip i{font-style:normal;font-family:var(--mono);font-size:12px;color:var(--muted);flex-shrink:0}',
-      '.mkt-fchip:hover{background:var(--halo)}',
-      '.mkt-fchip.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
-      '.mkt-fchip.on i{color:rgba(255,255,255,.8)}',
-      '.mkt-fsel{width:100%;min-height:38px;padding:7px 8px;border:1px solid var(--line);border-radius:9px;background:var(--card);font-family:var(--font);font-size:13px;color:var(--ip-ink)}',
-      '.mkt-fchk{display:flex;align-items:center;gap:8px;min-height:38px;padding:6px 8px;font-size:13px;font-weight:600;color:var(--ip-ink);cursor:pointer}',
-      '.mkt-fchk input{width:18px;height:18px;accent-color:var(--ip-blue);margin:0}',
-      '.mkt-pick-foot{position:sticky;bottom:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid var(--line);background:var(--card)}',
-      '.mkt-pick-nsel{flex:1;min-width:120px;font-size:13px;font-weight:600;color:var(--muted)}',
-      '.mkt-pick-foot .v2-btn[disabled]{opacity:.45;cursor:default}',
-      '.mkt-pick-more{width:100%;justify-content:center;margin:8px 0 4px}',
-      '.mkt-pick-ck{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;transition:background .12s var(--ease),border-color .12s var(--ease)}',
-      '.mkt-pick-item.sel{background:var(--halo)}',
-      '.mkt-pick-item.sel .mkt-pick-ck{background:var(--ip-blue);border-color:var(--ip-blue)}',
-      '.mkt-pick-item.added .mkt-pick-ck{display:none}',
-      '.mkt-pick-rupt{flex-shrink:0;font-size:12px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--c-rose);background:color-mix(in srgb,var(--c-rose) 12%,#fff);border-radius:999px;padding:3px 8px}',
-      '@media(max-width:640px){.mkt-pick-bd{padding-top:0}.mkt-pick{width:100vw;height:100vh;height:100dvh;max-height:100vh;max-height:100dvh;border-radius:0}.mkt-pick-body{flex-direction:column}',
-      '.mkt-pick-rail{width:auto;display:flex;flex-wrap:nowrap;align-items:center;gap:6px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;border-right:none;border-bottom:1px solid var(--line);padding:8px 12px}',
-      '.mkt-fac{display:contents}.mkt-fac-t{display:none}.mkt-fchip{width:auto;flex:0 0 auto;min-height:44px;white-space:nowrap;border-color:var(--line);background:var(--card)}',
-      '.mkt-pick-bar{flex-direction:column;align-items:stretch;gap:4px;padding:6px 0 0;flex-wrap:nowrap}.mkt-pick-n{padding:0 12px}',
-      '.mkt-pick-filters{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding:4px 12px 8px}',
-      '.mkt-pick-filters .mkt-fchip,.mkt-pick-filters .mkt-fchk{min-height:44px;flex:0 0 auto;white-space:nowrap}.mkt-pick-filters .mkt-fsel{min-height:44px;flex:0 0 auto;max-width:180px}',
-      '.mkt-pick-list .mkt-pick-nm b{-webkit-line-clamp:2}',
-      '.mkt-pick-item{min-height:44px}.mkt-pick-foot .v2-btn{min-height:var(--tap-min)}}',
-      // Ligne de résultat : le NOM peut prendre deux lignes, la sous-ligne
-      // « labo · CIP · rayon » reste sur une seule, coupée par « … ».
-      '.mkt-pick-list .mkt-pick-nm b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;overflow:hidden;line-height:1.25}',
-      '.mkt-pick-list .mkt-pick-nm>span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      '.mkt-pick-search{display:flex;align-items:center;gap:12px;padding:15px 18px;border-bottom:1px solid var(--line)}',
-      '.mkt-pick-search svg{color:var(--ip-blue);flex-shrink:0}',
-      '.mkt-pick-search input{border:none;outline:none;background:none;font-family:var(--font);font-size:16px;flex:1;color:var(--ip-ink)}',
-      '.mkt-pick-src{display:flex;gap:6px;padding:10px 16px 4px}',
-      '.mkt-srcbtn{flex:1;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 10px;font-family:var(--font);font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;transition:.16s var(--ease)}',
-      '.mkt-srcbtn.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
       '.mkt-cat-thumb{display:flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:9px;border:1px solid var(--line);background:#fff center/contain no-repeat;background-origin:content-box;padding:3px;box-shadow:0 1px 2px rgba(8,16,40,.05);flex-shrink:0}',
       '.mkt-cat-thumb-ph{background:var(--card-2);color:var(--muted-2);box-shadow:none}',
       '.mkt-catadd{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ip-blue);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.14s var(--ease)}',
@@ -3213,25 +2982,7 @@
       '.mkt-catbar #mkt-catbar-n{font-weight:700;font-size:13.5px}',
       // Mobile : barre de sélection empilée (libellé au-dessus, 2 CTA pleine largeur) au lieu de déborder
       '@media(max-width:560px){.mkt-catbar{flex-direction:column;align-items:stretch;gap:10px}.mkt-catbar>div{width:100%}.mkt-catbar>div .v2-btn{flex:1;justify-content:center}}',
-      // Mobile : les onglets d'univers deviennent une bande scrollable horizontalement (au lieu de se casser sur plusieurs lignes)
-      '@media(max-width:640px){.mkt-pick-src{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}.mkt-srcbtn{flex:0 0 auto;white-space:nowrap}}',
-      // Dans le sélecteur, sous 640 px les trois univers tiennent sur la largeur : le compte disparaît (il reste dans le compteur de résultats).
-      '.mkt-srcbtn-n{font-style:normal}',
-      '@media(max-width:640px){#mkt-pick-src{overflow:visible;padding-bottom:4px}#mkt-pick-src .mkt-srcbtn{flex:1 1 0;min-width:0;padding:10px 6px;font-size:12px;overflow:hidden;text-overflow:ellipsis}#mkt-pick-src .mkt-srcbtn-n{display:none}}',
-      '.mkt-pick-ic{width:40px;height:40px;border-radius:9px;background:var(--card-2);display:flex;align-items:center;justify-content:center;color:var(--ip-blue);flex-shrink:0}',
       '.mkt-prow-pill{display:flex;align-items:center;justify-content:center;color:var(--ip-blue);background:var(--card-2)}',
-      '.mkt-pick-list{overflow-y:auto;padding:8px}',
-      '.mkt-pick-item{display:flex;align-items:center;gap:12px;padding:8px 11px;border-radius:11px;cursor:pointer;transition:background .12s var(--ease),transform .12s var(--ease)}',
-      '.mkt-pick-item:hover{background:var(--halo);transform:translateX(2px)}',
-      '.mkt-pick-item.added{opacity:.5;pointer-events:none}',
-      '.mkt-pick-item.added::after{content:"Dans la fiche";margin-left:auto;flex-shrink:0;font-size:12px;font-weight:800;letter-spacing:.03em;color:var(--c-opp);background:color-mix(in srgb,var(--c-opp) 14%,#fff);border-radius:999px;padding:3px 9px}',
-      '.mkt-pick-img{width:40px;height:40px;border-radius:9px;background:#fff center/contain no-repeat;border:1px solid var(--line);flex-shrink:0}',
-      '.mkt-pick-nm{flex:1;min-width:0}',
-      '.mkt-pick-nm b{display:block;font-weight:600;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      '.mkt-pick-nm>span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}',
-      '.mkt-pick-pr{font-size:13px;font-weight:700;color:var(--c-mint);flex-shrink:0}',
-      '.mkt-pick-sortie{flex-shrink:0;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--ip-blue);background:var(--halo);border-radius:999px;padding:3px 8px;margin-right:2px;white-space:nowrap}',
-      '.mkt-pick-sortie.marge{color:var(--c-mint);background:color-mix(in srgb,var(--c-mint) 12%,#fff)}',
       '.mkt-modal{position:fixed;inset:0;z-index:120;background:rgba(16,19,28,0.55);display:flex;align-items:flex-start;justify-content:center;padding:4vh 16px;opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}',
       '.mkt-modal.open{opacity:1;pointer-events:auto}',
       '.mkt-dialog{width:min(900px,96vw);max-height:92vh;background:var(--card);border-radius:20px;box-shadow:var(--sh-pop);display:flex;flex-direction:column;overflow:hidden;transform:scale(.97);transition:transform .24s var(--ease)}',
@@ -3359,18 +3110,11 @@
       // le retournement de la feuille au changement de modèle (sur le holder, jamais sur #mkt-msheet qui porte déjà transform:scale())
       '#mkt-mholder{transition:transform .32s cubic-bezier(.4,0,.2,1);transform-style:preserve-3d}',
       '#mkt-mholder.mkt-turn{transform:rotateY(-92deg)}',
-      // ── Le sélecteur devient le tiroir du bas (d1) : plein-bas, poignée, coins arrondis en haut ──
-      '.mkt-pick-bd{position:fixed;inset:0;z-index:210;background:rgba(16,19,28,.45);display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;transition:opacity .3s var(--ease)}',
-      '.mkt-pick-bd.open{opacity:1;visibility:visible}',
-      '.mkt-pick{position:relative;width:100%;max-width:1180px;height:min(78vh,720px);background:var(--card);border-radius:22px 22px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 1px 0 rgba(255,255,255,1) inset,0 -2px 0 rgba(11,31,77,.04),0 -30px 60px -20px rgba(11,31,77,.45);transform:translateY(104%);transition:transform .5s var(--ease)}',
-      '.mkt-pick-bd.open .mkt-pick{transform:translateY(0)}',
-      '.mkt-pick-grip{position:absolute;top:8px;left:50%;width:48px;height:6px;margin-left:-24px;border-radius:999px;background:linear-gradient(180deg,#DCE3F0,#B9C6DE)}',
-      '@media(max-width:959px){.mkt-pick{height:92vh;border-radius:18px 18px 0 0}.mkt-pick-rail.mkt-pick-strip{width:auto;display:flex;flex-wrap:nowrap;align-items:center;gap:6px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;border-right:none;border-bottom:1px solid var(--line);padding:8px 12px}.mkt-pick-rail.mkt-pick-strip .mkt-fac{display:contents}.mkt-pick-rail.mkt-pick-strip .mkt-fac-t{display:none}.mkt-pick-rail.mkt-pick-strip .mkt-fchip{width:auto;flex:0 0 auto;min-height:44px;white-space:nowrap}}',
       // ── Mobile 390 : les tiroirs deviennent des bandes, la feuille reste au centre ──
       '@media(max-width:959px){.mkt-bench{grid-template-columns:minmax(0,1fr);gap:16px}.mkt-headline h1{font-size:24px}.mkt-rail{position:static;flex-direction:row;overflow-x:auto;gap:10px;margin:0 -14px;padding:4px 14px 10px;scroll-snap-type:x proximity;scrollbar-width:none}.mkt-rail::-webkit-scrollbar{display:none}.mkt-rail .mkt-drawer{flex:0 0 82%;max-width:320px;scroll-snap-align:start}.mkt-rail.right .mkt-drawer{flex-basis:88%}.mkt-chip,.mkt-seg button{min-height:44px}.mkt-fan{gap:10px}}',
       '@media(prefers-reduced-motion:reduce){',
-        '.mkt-pick,.mkt-dialog,.mkt-drawer,.mkt-mini,.mkt-mtile,.mkt-tool,.mkt-pick-item{transition:none!important}',
-        '.mkt-drawer:hover,.mkt-mini:hover,.mkt-mtile:hover,.mkt-pick-item:hover{transform:none!important}',
+        '.mkt-dialog,.mkt-drawer,.mkt-mini,.mkt-mtile,.mkt-tool{transition:none!important}',
+        '.mkt-drawer:hover,.mkt-mini:hover,.mkt-mtile:hover{transform:none!important}',
         '.mkt-sheetwrap,#mkt-home-wrap,#mkt-mholder{transform:none!important}',
       '}',
       // ════════════════════════════════════════════════════════════════════
@@ -3395,13 +3139,8 @@
       '.mkf-tuile small{display:flex;align-items:center;gap:4px;font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-attenue)}',
       '.mkf-etat svg{color:var(--mk-vert)}',
       '.mkf-cote .mkf-bloc{padding:20px;border-radius:var(--mk-r-carte);border:1px solid var(--mk-trait);background:linear-gradient(180deg,#fff,#FAFBFE);box-shadow:var(--mk-n1)}',
-      '.mkf-modeles{display:grid;gap:4px;margin:0 -8px}',
-      '.mkf-modele{display:grid;grid-template-columns:56px minmax(0,1fr);grid-template-rows:auto auto;column-gap:16px;align-content:center;padding:8px;border-radius:12px}',
-      '.mkf-modele .mkf-page{grid-row:1/3;margin:0;box-shadow:0 0 0 1px rgba(16,19,28,.08),0 1px 2px rgba(11,31,77,.08),2px 4px 8px -2px rgba(11,31,77,.12)}',
-      '.mkf-modele strong{align-self:end}.mkf-modele small{align-self:start}',
-      '@media (hover:hover){.mkf-modele:hover{background:var(--mk-pale)}.mkf-modele:hover .mkf-page{transform:none}}',
       '.mkf-departs,.mkf-prets{display:grid;gap:4px;margin:12px -8px 0;padding-top:12px;border-top:1px solid var(--mk-trait)}',
-      '.mkf-prets{margin-top:0;padding-top:0;border-top:0}',
+      '.mkf-prets,.mkf-departs-seuls{margin-top:0;padding-top:0;border-top:0}',
       '.mk-espace .mkf-depart{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:8px;border-radius:12px;text-align:left;color:var(--mk-encre2)}',
       '.mkf-depart>span{flex:1;min-width:0}',
       '.mkf-depart b,.mkf-pret b{display:block;font-size:var(--mk-s4);line-height:20px;font-weight:600;color:var(--mk-encre)}',
@@ -3446,16 +3185,16 @@
       '.mke-scene{grid-column:2;grid-row:1/3;position:relative;min-width:0;min-height:0;overflow:hidden;background-color:rgba(228,235,249,.6);',
       'background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\'%3E%3Ccircle cx=\'2\' cy=\'2\' r=\'1\' fill=\'%230B1F4D\' fill-opacity=\'.2\'/%3E%3C/svg%3E");background-size:24px 24px;',
       'box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 12px 24px -16px rgba(11,31,77,.18) inset}',
-      '.mke .mke-defile{position:absolute;top:0;right:0;bottom:0;left:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:32px}',
+      '.mke .mke-defile{position:absolute;top:0;right:0;bottom:0;left:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:88px 32px 32px}',
       /* la feuille : rendu réel réduit, bord net, N2, jamais inclinée (le changement de modèle devient un fondu) */
       '.mke #mkt-mholder{margin:0 auto;overflow:hidden;border-radius:3px;background:#fff;box-shadow:0 0 0 1px rgba(16,19,28,.07),var(--mk-n2);transform-style:flat;transition:opacity var(--mk-t2) var(--mk-sortie)}',
       '.mke #mkt-mholder.mkt-turn{transform:none;opacity:0}',
       '.mke-panneau{grid-column:3;grid-row:1;display:flex;flex-direction:column;min-height:0;border-left:1px solid var(--mk-trait);background:linear-gradient(180deg,#fff,#FAFBFE)}',
       '.mk-espace .mke-poignee{display:none}',
-      '.mke-onglets{flex:none;margin:16px 20px 0}',
-      '.mke-corps{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 20px 24px}',
+      '.mke-corps{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}',
       '.mke-volet{display:none}',
-      '.mke[data-onglet="produits"] .mke-volet[data-volet="produits"],.mke[data-onglet="apparence"] .mke-volet[data-volet="apparence"],.mke[data-onglet="envoi"] .mke-volet[data-volet="envoi"]{display:block}',
+      '.mke[data-onglet="catalogue"] .mke-volet[data-volet="catalogue"]{display:flex;flex-direction:column;flex:1;min-height:0;padding:12px 20px 0}',
+      '.mke[data-onglet="feuille"] .mke-volet[data-volet="feuille"]{display:block;flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 20px 24px}',
       '.mke-cap{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:24px 0 8px;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mk-attenue)}',
       '.mke-cap b{font-weight:600;letter-spacing:0;text-transform:none;color:var(--mk-encre)}',
       '.mke-note{margin:12px 0;font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-attenue)}',
@@ -3463,7 +3202,6 @@
       '.mk-espace .mke-suppr{margin-top:24px;padding:0 8px}',
       '.mke-pied{grid-column:3;grid-row:2;padding:12px 20px 16px;border-left:1px solid var(--mk-trait);border-top:1px solid var(--mk-trait);background:#fff}',
       '.mk-espace .mke-pied .mk-btn{width:100%}',
-      'body.mkt-picking .mke-pied .mk-btn{visibility:hidden}',   /* sélecteur ouvert : il recouvre le pied, et SON bouton est alors le seul plein */
       /* lignes de produit : compactes ; la catégorie, le prix et l'abandon se déplient quand on entre dans la ligne */
       '.mke .mkt-prow{flex-wrap:wrap;align-items:flex-start;gap:8px 12px;padding:8px 0;border-bottom:1px solid var(--mk-trait)}',
       '.mke .mkt-prow-img{width:44px;height:44px;border-radius:10px;border-color:var(--mk-trait)}',
@@ -3512,59 +3250,81 @@
       '.mke-champ:focus{outline:2px solid var(--mk-bleu);outline-offset:1px}',
       '@media (max-width:1100px){.mke{grid-template-columns:88px minmax(0,1fr) 340px}}',
 
-      /* ═══ le sélecteur de produits, dans la peau de l'établi : au bureau il prend la place du panneau (la feuille reste
-         visible, les produits y arrivent) ; rayons et filtres se rangent derrière UN bouton : des produits dès le premier écran ═══ */
-      '.mke-pick .mkt-pick{font-family:inherit;background:linear-gradient(180deg,#fff,#FAFBFE);box-shadow:var(--mk-n3)}',
-      '.mke-pick .mkt-pick-search{gap:8px;padding:20px 16px 12px;border-bottom:0}',
-      '.mke-pick .mkt-pick-search svg{color:var(--mk-attenue)}',
-      '.mke-pick .mkt-pick-search input{min-width:0;min-height:44px;font-family:inherit;font-size:16px;color:var(--mk-encre)}',
-      '.mke-pick .mkt-prow-x{width:44px;height:44px;border:1px solid var(--mk-trait);border-radius:12px;background:#fff;box-shadow:var(--mk-n1);color:var(--mk-encre2)}',
-      '.mke-pick .mkt-pick-src{gap:0;margin:0 16px;padding:4px;border-radius:12px;background:var(--mk-groupe);box-shadow:0 1px 2px rgba(11,31,77,.08) inset;overflow:visible}',
-      '.mke-pick .mkt-srcbtn{flex:1 1 0;min-width:0;min-height:44px;padding:0 4px;border:0;border-radius:8px;background:none;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600;color:var(--mk-attenue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      '.mke-pick .mkt-srcbtn.on{background:#fff;color:var(--mk-encre);box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(11,31,77,.14),2px 4px 8px -2px rgba(11,31,77,.12)}',
-      '.mke-pick .mkt-srcbtn-n{display:none}',
-      '#mkt-picker.mke-pick #mkt-pick-src .mkt-srcbtn{padding:0 4px;font-size:var(--mk-s5)}',
-      '.mke-pick .mkt-pick-body{flex-direction:column}',
-      '.mke-pick .mkt-pick-bar{flex-direction:row;flex-wrap:wrap;align-items:center;gap:0 8px;padding:8px 16px 4px;border-bottom:1px solid var(--mk-trait)}',
-      '.mke-pick .mkt-pick-n{padding:0;font-size:var(--mk-s5);font-weight:600;letter-spacing:.05em;color:var(--mk-attenue)}',
-      '.mk-espace .mke-ftoggle{display:inline-flex;align-items:center;gap:4px;min-height:44px;margin-left:auto;padding:0 8px;border-radius:10px;font-size:var(--mk-s4);font-weight:600;color:var(--mk-bleu-txt)}',
-      '.mke-ftoggle svg{transition:transform var(--mk-t2) var(--mk-sortie)}.is-filtres .mke-ftoggle svg{transform:rotate(180deg)}',
-      '.mke-pick .mkt-pick-rail,.mke-pick .mkt-pick-filters{display:none}',
-      '.mke-pick .is-filtres .mkt-pick-rail:not([hidden]){display:flex;flex-wrap:wrap;align-items:center;gap:6px;width:auto;max-height:30vh;overflow-x:hidden;overflow-y:auto;padding:8px 16px;border-right:0;border-bottom:1px solid var(--mk-trait);background:none}',
-      '.mke-pick .is-filtres .mkt-pick-filters:not([hidden]){display:flex;flex-wrap:wrap;flex:1 1 100%;gap:6px;overflow:visible;padding:4px 0 8px}',
-      '.mke-pick .mkt-fac{display:contents}.mke-pick .mkt-fac-t{display:none}',
-      '.mke-pick .mkt-fchip,.mke-pick .mkt-pick-filters .mkt-fchip{width:auto;flex:0 0 auto;min-height:44px;padding:0 12px;border:1px solid var(--mk-trait);border-radius:999px;background:#fff;font-size:var(--mk-s5);font-weight:600;color:var(--mk-encre);white-space:nowrap}',
-      '.mke-pick .mkt-fchip i{font-family:inherit;font-size:var(--mk-s5);color:var(--mk-attenue)}',
-      '.mke-pick .mkt-fchip.on,.mke-pick .mkt-pick-filters .mkt-fchip.on{background:var(--mk-pale);border-color:transparent;color:var(--mk-bleu-txt)}',
-      '.mke-pick .mkt-fchip.on i{color:var(--mk-bleu-txt)}',
-      '.mke-pick .mkt-pick-filters .mkt-fsel{flex:1 1 100%;max-width:none;min-height:44px;font-family:inherit;font-size:16px;border-color:var(--mk-trait);border-radius:10px;color:var(--mk-encre)}',
-      '.mke-pick .mkt-pick-filters .mkt-fchk{min-height:44px;font-size:var(--mk-s4);color:var(--mk-encre)}',
-      '.mke-pick .mkt-pick-list{flex:1;min-height:0;padding:4px 8px}',
-      '.mke-pick .mkt-pick-item{min-height:60px;gap:12px;padding:8px;border-radius:12px}',
-      '.mke-pick .mkt-pick-item:hover{background:var(--mk-pale);transform:none}.mke-pick .mkt-pick-item.sel{background:var(--mk-pale)}',
-      '.mke-pick .mkt-pick-img,.mke-pick .mkt-pick-ic{width:44px;height:44px;border-radius:10px}',
-      '.mke-pick .mkt-pick-ic{color:var(--mk-encre2);background:var(--mk-groupe)}',
-      '.mke-pick .mkt-pick-nm b{font-size:var(--mk-s4);line-height:20px;font-weight:600;color:var(--mk-encre)}',
-      '.mke-pick .mkt-pick-nm>span{font-size:var(--mk-s5);line-height:var(--mk-s5l);letter-spacing:0;text-transform:none;color:var(--mk-attenue)}',
-      '.mke-pick .mkt-pick-pr{font-family:inherit;font-size:var(--mk-s4);font-weight:600;color:var(--mk-encre)}',
-      '.mke-pick .mkt-pick-rupt{padding:0;border-radius:0;background:none;font-size:var(--mk-s5);font-weight:600;letter-spacing:0;text-transform:capitalize;color:#B93550}',
-      '.mke-pick .mkt-pick-sortie{font-family:inherit;font-size:var(--mk-s5);font-weight:600;color:var(--mk-encre2);background:var(--mk-groupe)}',
-      '.mke-pick .mkt-pick-sortie.marge{color:var(--mk-encre2);background:var(--mk-groupe)}',
-      '.mke-pick .mkt-pick-ck{width:24px;height:24px;border-radius:7px;border:1.5px solid #9AA3B5}',
-      '.mke-pick .mkt-pick-item.sel .mkt-pick-ck{background:var(--mk-bleu);border-color:var(--mk-bleu)}',
-      '.mke-pick .mkt-pick-item.added::after{content:"Déjà sur la feuille";padding:0;background:none;font-size:var(--mk-s5);font-weight:500;letter-spacing:0;color:var(--mk-attenue)}',
-      '.mke-pick .mkt-pick-foot{gap:8px;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--mk-trait);background:#fff}',
-      '.mke-pick .mkt-pick-nsel{flex:1;min-width:0;font-size:var(--mk-s4);font-weight:500;color:var(--mk-attenue)}',
-      '.mk-espace.mke-pick .mkt-pick-foot .mk-plein{flex:1 1 100%;min-height:48px}',
-      '.mk-espace.mke-pick .mkt-pick-more{width:100%;margin:8px 0}',
-      '.mke-pick .mkt-empty{border:0;font-size:var(--mk-s4);color:var(--mk-attenue)}',
-      '@media (min-width:861px){',
-      '.mke-pick.mkt-pick-bd{align-items:stretch;justify-content:flex-end;background:none;pointer-events:none}',
-      '.mke-pick .mkt-pick{pointer-events:auto;width:380px;max-width:380px;height:auto;max-height:none;margin-top:var(--mk-barre-h);border-radius:0;border-left:1px solid var(--mk-trait);box-shadow:-24px 0 48px -28px rgba(11,31,77,.32);transform:translateX(104%);transition:transform var(--mk-t3) var(--mk-glisse)}',
-      '.mke-pick.open .mkt-pick{transform:none}',
-      '.mke-pick .mkt-pick-grip{display:none}',
-      '}',
-      '@media (min-width:861px) and (max-width:1100px){.mke-pick .mkt-pick{width:340px;max-width:340px}}',
+      /* ═══ le panneau de l'établi : « Catalogue » (le catalogue du groupe : recherche, rayons, menus, UNE liste qui défile dans sa propre zone)
+         et « Sur la feuille ». Les modèles se changent au-dessus de la feuille. ═══ */
+      '.mke-tete{flex:none;display:flex;align-items:center;gap:8px;margin:16px 20px 0}',
+      '.mke-tete .mke-onglets{flex:1 1 auto;min-width:0;margin:0}',
+      '.mke-onglets .mke-badge{display:inline-grid;place-items:center;min-width:24px;height:24px;padding:0 7px;border-radius:999px;background:#fff;box-shadow:0 0 0 1px var(--mk-trait) inset;font-size:var(--mk-s5);line-height:1;font-weight:650;color:var(--mk-encre2)}',
+      '.mke-onglets button[aria-pressed="true"] .mke-badge{background:var(--mk-bleu);box-shadow:none;color:#fff}',
+      '.mke-modeles{position:absolute;z-index:3;top:16px;left:50%;width:min(520px,calc(100% - 32px));transform:translateX(-50%);box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(11,31,77,.08) inset,var(--mk-n1)}',
+      '.mk-espace .mke-modeles button{padding:0 4px;font-size:var(--mk-s5);line-height:var(--mk-s5l)}',
+      '.mke-pied-n{margin:8px 0 0;font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-attenue)}',
+      '.mk-espace .mke-pied .mk-btn[disabled]{background:var(--mk-groupe);color:var(--mk-attenue);border-color:transparent;box-shadow:none;cursor:default}',
+      '.mke-plus{border-top:1px solid var(--mk-trait)}.mke-plus+.mke-plus{border-bottom:1px solid var(--mk-trait)}',
+      '.mke-plus>summary{display:flex;align-items:center;gap:12px;min-height:48px;cursor:pointer;list-style:none;font-weight:600;border-radius:8px}',
+      '.mke-plus>summary::-webkit-details-marker{display:none}',
+      '.mke-plus>summary span{flex:1}',
+      '.mke-plus>summary svg{color:var(--mk-attenue);transition:transform var(--mk-t2) var(--mk-sortie)}',
+      '.mke-plus[open]>summary svg{transform:rotate(180deg)}',
+      '.mke-plus[open]{padding-bottom:12px}',
+      '.mke-plus .mke-cap:first-of-type{margin-top:8px}',
+      /* catalogue : zone fixe (recherche, rayons, menus, compte) puis la liste, seule à défiler */
+      '.cg-rempl{flex:none;display:flex;align-items:center;gap:12px;margin:0 0 8px;padding:8px 8px 8px 12px;border-radius:12px;background:var(--mk-pale);font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-bleu-txt)}',
+      '.cg-rempl[hidden]{display:none}.cg-rempl>span{flex:1;min-width:0}',
+      '.cg-cherche{position:relative;flex:none}',
+      '.cg-cherche svg{position:absolute;left:12px;top:12px;color:var(--mk-attenue);pointer-events:none}',
+      '.cg-cherche input{display:block;width:100%;box-sizing:border-box;min-height:44px;padding:0 12px 0 40px;font:inherit;font-size:16px;color:var(--mk-encre);background:#fff;border:1px solid var(--mk-trait);border-radius:var(--mk-r-vig);box-shadow:var(--mk-n1)}',
+      '.cg-cherche input:focus{outline:2px solid var(--mk-bleu);outline-offset:1px}',
+      '.cg-cherche input::-webkit-search-decoration,.cg-cherche input::-webkit-search-cancel-button{-webkit-appearance:none}',
+      '.cg-rangee{flex:none;position:relative;display:flex;align-items:flex-start;gap:4px;margin:8px 0 0}',
+      '.cg-rayons{flex:1;min-width:0;display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;padding:2px 2px 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}',
+      '.cg-rayons::-webkit-scrollbar{display:none}',
+      '.cg-rayons.is-ouvert{flex-wrap:wrap;overflow-x:hidden;overflow-y:auto;max-height:34vh}',
+      '.cg-ray{flex:none;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--mk-trait);background:#fff;box-shadow:var(--mk-n1);font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:600;color:var(--mk-encre);white-space:nowrap}',
+      '.cg-ray i{font-style:normal;font-weight:500;color:var(--mk-attenue)}',
+      '.cg-ray[aria-pressed="true"]{background:var(--mk-pale);border-color:transparent;color:var(--mk-bleu-txt)}.cg-ray[aria-pressed="true"] i{color:var(--mk-bleu-txt)}',
+      '.mk-espace .cg-tout{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:12px;color:var(--mk-encre2)}',
+      '.cg-tout svg{transition:transform var(--mk-t2) var(--mk-sortie)}.cg-tout[aria-expanded="true"] svg{transform:rotate(180deg)}',
+      '.cg-menus{flex:none;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin:4px 0 0}',
+      '.cg-sel{position:relative;display:block;min-width:0}',
+      '.cg-sel select{display:block;width:100%;box-sizing:border-box;height:44px;padding:0 32px 0 12px;-webkit-appearance:none;appearance:none;border:1px solid var(--mk-trait);border-radius:var(--mk-r-vig);background:#fff;box-shadow:var(--mk-n1);font:inherit;font-size:16px;font-weight:600;color:var(--mk-encre);text-overflow:ellipsis;cursor:pointer}',
+      '.cg-sel select:focus{outline:2px solid var(--mk-bleu);outline-offset:1px}',
+      '.cg-sel>svg{position:absolute;right:10px;top:13px;color:var(--mk-attenue);pointer-events:none}',
+      '.cg-compte{flex:none;position:relative;display:flex;align-items:center;gap:8px;min-height:44px;margin:4px 0 0}',
+      '.cg-compte>span{flex:1;min-width:0;font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-attenue)}',
+      '.mk-espace .cg-stock{flex:none;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--mk-trait);background:#fff;box-shadow:var(--mk-n1);font-size:var(--mk-s5);font-weight:600;color:var(--mk-encre)}',
+      '.mk-espace .cg-stock[aria-pressed="true"]{background:var(--mk-pale);border-color:transparent;box-shadow:none;color:var(--mk-bleu-txt)}',
+      '.cg-sources>summary{display:flex;align-items:center;min-height:44px;padding:0 8px;list-style:none;cursor:pointer;border-radius:10px;font-size:var(--mk-s5);font-weight:600;color:var(--mk-bleu-txt)}',
+      '.cg-sources>summary::-webkit-details-marker{display:none}',
+      '.cg-src-corps{position:absolute;z-index:6;top:100%;left:0;right:0;max-height:46vh;overflow-y:auto;padding:12px 16px;border-radius:16px;border:1px solid var(--mk-trait);background:#fff;box-shadow:var(--mk-n3);font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-encre2)}',
+      '.cg-src-corps ul{margin:4px 0 8px;padding:0;list-style:none}.cg-src-corps li{display:flex;gap:12px;padding:2px 0}.cg-src-corps li b{flex:none;width:44px;color:var(--mk-encre)}',
+      '.cg-src-t{margin:8px 0 2px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mk-attenue)}.cg-src-t:first-child{margin-top:0}',
+      '.cg-src-n{margin:6px 0 0;color:var(--mk-attenue)}',
+      '.cg-liste{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:0 -20px;padding:8px 20px 16px;border-top:1px solid var(--mk-trait);outline:none}',
+      '.cg-carte{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:4px 12px;align-items:start;margin:0 0 8px;padding:12px;border-radius:16px;border:1px solid var(--mk-trait);background:#fff;box-shadow:var(--mk-n1)}',
+      '.cg-carte.is-pose{border-color:#B9CDF6;background:#F6F9FF}',
+      '.cg-photo{position:relative;display:grid;place-items:center;width:44px;height:44px;overflow:hidden;border-radius:10px;border:1px solid var(--mk-trait);background:#fff}',
+      '.cg-photo img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain}',
+      '.cg-mono{display:none;font-size:var(--mk-s5);font-weight:650;color:var(--mk-encre2)}',
+      '.cg-sans{background:var(--mk-groupe)}.cg-sans .cg-mono{display:block}',
+      '.cg-corps{display:block;min-width:0}',
+      '.cg-nom{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;font-size:var(--mk-s4);line-height:20px;font-weight:600;color:var(--mk-encre)}',
+      '.cg-ref{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-attenue)}',
+      '.cg-ref .mk-mono{font-size:var(--mk-s5)}',
+      '.cg-prix{display:block;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:650;color:var(--mk-encre)}.cg-prix.cg-inconnu{font-weight:450;color:var(--mk-attenue)}',
+      '.mk-espace .cg-ajout{grid-column:3;grid-row:1;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:1px solid var(--mk-trait);background:#fff;box-shadow:var(--mk-n1);color:var(--mk-bleu-txt)}',
+      '.mk-espace .cg-ajout[aria-pressed="true"]{background:var(--mk-bleu);border-color:transparent;box-shadow:none;color:#fff}',
+      '.cg-sites{grid-column:1/4;display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}',
+      '.cg-s{position:relative;display:inline-flex;align-items:center;gap:3px;min-height:24px;padding:0 6px;border-radius:7px;border:1px solid transparent;font-size:var(--mk-s5);line-height:1;font-weight:600;white-space:nowrap}',
+      '.cg-s::before{font-weight:700}',
+      '.cg-s-ok{background:#EDF7F1;color:#14794F}.cg-s-ok::before{content:"\\2713"}',
+      '.cg-s-zero{background:#FBEEF1;color:#B93550}.cg-s-zero::before{content:"\\2715"}',
+      '.cg-s-nd{background:#fff;border:1px dashed #9AA3B5;color:var(--mk-attenue);font-weight:500}.cg-s-nd::before{content:"\\2013"}',
+      '.cg-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;text-decoration:none}',
+      '.mk-espace .cg-voir{width:100%;margin:4px 0 8px}',
+      '.cg-vide,.cg-attente{display:grid;gap:12px;justify-items:start;padding:16px 0;font-size:var(--mk-s4);color:var(--mk-attenue)}.cg-vide p,.cg-attente p{margin:0}',
+      '.cg-attente i{display:block;width:100%;height:92px;border-radius:16px}',
+      '.cg-vol{background:#fff;border-radius:10px;box-shadow:var(--mk-n2)}',
 
       /* ═══ 390 px : le rail devient une bande, le panneau une FEUILLE BASSE par-dessus la scène (elle ne la redimensionne
          pas), le bouton principal reste collé au-dessus des onglets bas ═══ */
@@ -3577,17 +3337,20 @@
       '.mke-zoom{flex-direction:row;margin:0 auto;padding:0;border-top:0}',
       '.mke-pousse{display:none}',
       '.mke-scene{position:absolute;top:56px;right:0;bottom:0;left:0}',
-      '.mke .mke-defile{padding:16px 16px 160px}',
-      '.mke-panneau{position:fixed;z-index:45;left:0;right:0;bottom:calc(137px + env(safe-area-inset-bottom,0px));height:min(62vh,540px);border:1px solid var(--mk-trait);border-bottom:0;border-radius:var(--mk-r-carte) var(--mk-r-carte) 0 0;',
-      'box-shadow:0 1px 0 #fff inset,0 -2px 4px rgba(11,31,77,.05),0 -16px 40px -16px rgba(11,31,77,.28);transform:translateY(calc(100% - 60px));transition:transform var(--mk-t3) var(--mk-glisse)}',
+      '.mke .mke-defile{padding:72px 16px 160px}',
+      '.mke-modeles{top:8px;width:calc(100% - 24px)}',
+      '.mke-panneau{position:fixed;z-index:45;left:0;right:0;bottom:calc(165px + env(safe-area-inset-bottom,0px));height:min(64vh,560px);border:1px solid var(--mk-trait);border-bottom:0;border-radius:var(--mk-r-carte) var(--mk-r-carte) 0 0;',
+      'box-shadow:0 1px 0 #fff inset,0 -2px 4px rgba(11,31,77,.05),0 -16px 40px -16px rgba(11,31,77,.28);transform:translateY(calc(100% - 68px));transition:transform var(--mk-t3) var(--mk-glisse)}',
       '.mke-panneau.is-haut{transform:none}',
-      '.mk-espace .mke-poignee{display:flex;flex:none;flex-direction:column;align-items:center;gap:8px;width:100%;min-height:60px;padding:8px 16px 0;font-size:var(--mk-s3);line-height:var(--mk-s3l);font-weight:650;color:var(--mk-encre)}',
-      '.mke-poignee i{display:block;width:40px;height:5px;border-radius:999px;background:#C9CFDB}',
-      '.mke-panneau.is-haut .mke-poignee span{display:none}.mke-panneau.is-haut .mke-poignee{min-height:44px}',
-      '.mke-onglets{margin:4px 16px 0}',
-      '.mke-corps{padding:0 16px 24px}',
-      '.mke-panneau:not(.is-haut) .mke-onglets,.mke-panneau:not(.is-haut) .mke-corps{visibility:hidden;transition:visibility 0s linear var(--mk-t3)}',
-      '.mke-pied{position:fixed;z-index:46;left:0;right:0;bottom:calc(65px + env(safe-area-inset-bottom,0px));height:72px;padding:12px 16px;border-left:0}',
+      '.mk-espace .mke-poignee{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:12px;background:var(--mk-groupe);color:var(--mk-encre2)}',
+      '.mke-poignee svg{transition:transform var(--mk-t2) var(--mk-sortie)}.mke-panneau:not(.is-haut) .mke-poignee svg{transform:rotate(180deg)}',
+      '.mke-tete{margin:12px 16px 0}',
+      '.mke-panneau:not(.is-haut) .mke-corps{visibility:hidden;transition:visibility 0s linear var(--mk-t3)}',
+      '.mke[data-onglet="catalogue"] .mke-volet[data-volet="catalogue"]{padding:8px 16px 0}',
+      '.mke[data-onglet="feuille"] .mke-volet[data-volet="feuille"]{padding:0 16px 24px}',
+      '.cg-liste{margin:0 -16px;padding:8px 16px 16px}',
+      '.mke-pied{position:fixed;z-index:46;left:0;right:0;bottom:calc(65px + env(safe-area-inset-bottom,0px));height:100px;box-sizing:border-box;padding:10px 16px;border-left:0}',
+      '.mke-pied-n{margin-top:4px}',
       '}',
       // ════════════════════════════════════════════════════════════════════
       // LOT 6 (19/09/2026) — « Catalogue & prix » (.mkc-*) et le cadre des écrans plein cadre (.mkt-cadre).
