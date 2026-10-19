@@ -765,6 +765,10 @@
     // qu'à l'onglet « Catalogue » de l'écran Produits : chargé à l'ouverture de
     // cet onglet, jamais au démarrage (règle de poids, ROBOT.md §11.6).
     catcomplet: 'v2/catalogue-complet-data.js',
+    // Catalogue du groupe (7 établissements, remboursables et NR mêlés, sans Offilog) : 2 Mo,
+    // chargé à la demande par la création de fiche Marketing, jamais au démarrage.
+    // Du rangement, le tarif PPHT et des états de stock : aucun prix d'achat.
+    catgroupe: 'v2/catalogue-groupe-data.js',
     // Rayon lisible par CIP (47 rayons, 11 817 CIP) : sert au sélecteur de
     // produits de l'éditeur marketing, chargé avec le catalogue complet.
     // Du rangement, pas du tarif : public.
@@ -1455,6 +1459,7 @@
     wml: 'WML_OFFICINES',
     grplogos: 'GRP_LOGOS',
     catcomplet: 'CATALOGUE_COMPLET',
+    catgroupe: 'CATALOGUE_GROUPE',
     mktrayons: 'MKT_RAYONS'
   };
 
