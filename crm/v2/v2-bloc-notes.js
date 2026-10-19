@@ -372,7 +372,7 @@
 
   // ═══ Dessin ═══
   function gabarit() {
-    var dictee = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+    var dictee = (V2.notes && V2.notes.micPossible) ? V2.notes.micPossible() : !!(window.SpeechRecognition || window.webkitSpeechRecognition);   // 19/10/2026 : sur téléphone, dictée du clavier (v2-notes.js)
     return '<div class="v2-wrap v2-u bn-wrap" id="bn-root">' +
       '<div class="bn-tete"><h1>Bloc-notes</h1><p>Tes notes restent des brouillons, rien que pour toi. Quand tu veux, envoie-les au robot : il les lit le soir et te propose les mises à jour du CRM, que tu appliques d’un geste.</p></div>' +
       '<div class="bn-band" id="bn-bandeau-brouillons" hidden></div>' +

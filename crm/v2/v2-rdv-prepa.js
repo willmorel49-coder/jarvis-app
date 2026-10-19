@@ -80,7 +80,10 @@
             '<button type="button" class="v2-btn v2-btn-ghost v2-notes-btn" onclick="V2.rdvPrepa.ajouter(this)">Ajouter</button>' +
           '</div>' +
           '<div class="v2-rp-l v2-rp-l2">Compte rendu</div>' +
-          '<textarea class="v2-notes-ta v2-rp-cr" rows="3" placeholder="Après le rendez-vous : ce qui a été dit, la suite à donner…" aria-label="Compte rendu du rendez-vous" oninput="V2.rdvPrepa.saisir(this)">' + esc(_brouillon[pid] || '') + '</textarea>' +
+          '<div class="v2-notes-add v2-rp-crl">' +
+            '<textarea class="v2-notes-ta v2-rp-cr" rows="3" placeholder="Après le rendez-vous : ce qui a été dit, la suite à donner…" aria-label="Compte rendu du rendez-vous" oninput="V2.rdvPrepa.saisir(this)">' + esc(_brouillon[pid] || (V2.notes.brouillonLire ? V2.notes.brouillonLire('cr:' + pid) : '')) + '</textarea>' +
+            (V2.notes.micro ? V2.notes.micro('.v2-rp-cr', 'Dicter le compte rendu à la voix') : '') +
+          '</div>' +
           '<div class="v2-rp-pied">' +
             '<span class="v2-rp-aide">Les points cochés sont rangés avec le compte rendu dans les notes ; les autres restent pour la fois suivante.</span>' +
             '<button type="button" class="v2-btn v2-btn-primary v2-rp-ok" onclick="V2.rdvPrepa.enregistrer(this)">Enregistrer le compte rendu</button>' +
@@ -103,7 +106,7 @@
       });
     },
 
-    saisir: function (ta) { _brouillon[pidDe(ta)] = ta.value; },
+    saisir: function (ta) { var pid = pidDe(ta); _brouillon[pid] = ta.value; if (V2.notes.brouillonPoser) V2.notes.brouillonPoser('cr:' + pid, ta.value); },
 
     ajouter: function (el) {
       var box = boite(el); if (!box) return;
@@ -150,7 +153,7 @@
       V2.notes.addAuto('client', pid, body).then(function (ok) {
         fin();
         if (!ok) { if (V2.toast) V2.toast('Compte rendu non enregistré — réessayez', 'error'); return; }
-        if (ta) ta.value = ''; delete _brouillon[pid];
+        if (ta) ta.value = ''; delete _brouillon[pid]; if (V2.notes.brouillonPoser) V2.notes.brouillonPoser('cr:' + pid, '');
         // Seuls les points rangés dans la note partent : un point ajouté ou coché pendant l'enregistrement reste.
         var avant = (_pts[pid] || []).slice();
         _pts[pid] = avant.filter(function (p) { return faits.indexOf(p) < 0; });
@@ -174,6 +177,7 @@
       '.v2-rp-pt .v2-note-x{flex:none;margin-left:0;width:44px;height:44px}',
       '.v2-rp-in{min-height:44px;resize:none}',
       '.v2-rp-cr{display:block;width:100%}',
+      '.v2-rp-crl{margin-top:0}',
       '.v2-rp-pied{display:flex;align-items:center;gap:12px;margin-top:10px}',
       '.v2-rp-aide{flex:1;min-width:0;font-size:12px;line-height:1.4;color:var(--muted)}',
       '.v2-rp-ok{flex:none;white-space:nowrap}',

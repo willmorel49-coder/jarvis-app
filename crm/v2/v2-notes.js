@@ -32,7 +32,25 @@
     }
     return a + ' ' + b;
   }
-  function voiceSupported() { return !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
+  // ⚠️ 19/10/2026 — sur iPhone, la reconnaissance vocale du navigateur N'EXISTE PAS dans l'app
+  // posée sur l'écran d'accueil (WebKit bug 225298, « plus tard » depuis 2021), et dans Safari
+  // elle répète ou perd des phrases (trois corrections, 08 et 09/2026). Sur téléphone et tablette,
+  // le micro passe donc par la dictée du CLAVIER du téléphone : elle écrit elle-même dans la zone,
+  // ponctuation comprise. La reconnaissance du navigateur ne reste que sur ordinateur.
+  function surIOS() { var n = navigator; return /iP(hone|ad|od)/.test(n.userAgent || '') || (n.platform === 'MacIntel' && n.maxTouchPoints > 1); }
+  function auClavier() { try { if (surIOS() || window.matchMedia('(hover: none) and (pointer: coarse)').matches) return true; } catch (e) {} return false; }
+  function voiceSupported() { return auClavier() || !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
+  // Brouillons gardés sur l'appareil : un compte rendu dicté ne se perd pas si le téléphone
+  // ferme l'app (appel, changement d'app). Effacés dès que la note est enregistrée.
+  var LSB = 'jarvis_brouillons_v1';
+  function cleB(k) { return ((V2.user && V2.user.id) || '') + '|' + k; }
+  function brouillons() { try { return JSON.parse(localStorage.getItem(LSB) || '{}') || {}; } catch (e) { return {}; } }
+  function brouillonLire(k) { var v = brouillons()[cleB(k)]; return typeof v === 'string' ? v : ''; }
+  function brouillonPoser(k, v) {
+    var m = brouillons(), c = cleB(k);
+    if (v && String(v).trim()) m[c] = String(v); else delete m[c];
+    try { localStorage.setItem(LSB, JSON.stringify(m)); } catch (e) {}
+  }
   var MIC_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21M8.5 21h7"/></svg>';
 
   function sb() { return (V2.sb && V2.sb()) || null; }
@@ -59,22 +77,39 @@
     section: function (scopeType, scopeId) {
       ensureCss();
       var id = 'v2n-' + Math.random().toString(36).slice(2, 9);
+      var cle = 'note:' + scopeType + ':' + scopeId;
       return '<div class="v2-notes-box v2-card" id="' + id + '" data-st="' + esc(scopeType) + '" data-sid="' + esc(String(scopeId)) + '">' +
           '<div class="v2-notes-hd">' + (V2.ICO ? V2.ICO('spark', 16, 2) : '') + '<span>Note personnelle</span></div>' +
           '<div class="v2-notes-list"><div class="v2-notes-empty">Chargement…</div></div>' +
           '<div class="v2-notes-add">' +
-            '<textarea class="v2-notes-ta" rows="2" placeholder="Ajouter une note personnelle…"></textarea>' +
-            (voiceSupported() ? '<button type="button" class="v2-notes-mic" onclick="V2.notes.dictate(this)" title="Dicter la note à la voix" aria-label="Dicter à la voix">' + MIC_SVG + '</button>' : '') +
+            '<textarea class="v2-notes-ta" rows="2" placeholder="Ajouter une note personnelle…" oninput="V2.notes.garder(this)">' + esc(brouillonLire(cle)) + '</textarea>' +
+            V2.notes.micro('.v2-notes-ta', 'Dicter la note à la voix') +
             '<button class="v2-btn v2-btn-primary v2-notes-btn" onclick="V2.notes.add(this)">Ajouter</button>' +
           '</div>' +
         '</div>';
+    },
+
+    // Bouton micro d'une zone d'écriture ; `cible` = sélecteur de la zone dans le même encadré.
+    // `onmousedown` empêche le bouton de prendre le focus : le clavier déjà ouvert ne se referme pas.
+    micro: function (cible, titre) {
+      if (!voiceSupported()) return '';
+      return '<button type="button" class="v2-notes-mic" data-cible="' + esc(cible) + '" onmousedown="event.preventDefault()" onclick="V2.notes.dictate(this)" title="' + esc(titre) + '" aria-label="' + esc(titre) + '">' + MIC_SVG + '</button>';
+    },
+    micPossible: voiceSupported,
+    brouillonLire: brouillonLire,
+    brouillonPoser: brouillonPoser,
+    garder: function (ta) {
+      var box = ta.closest('.v2-notes-box'); if (!box) return;
+      brouillonPoser('note:' + box.getAttribute('data-st') + ':' + box.getAttribute('data-sid'), ta.value);
     },
 
     // Dictée vocale (API navigateur native SpeechRecognition — zéro dépendance, zéro coût).
     // Toggle : 1er clic démarre l'écoute (fr-FR), 2e clic arrête. Le texte s'écrit dans la note.
     dictate: function (btn) {
       var box = btn.closest('.v2-notes-box, [data-dictee]'); if (!box) return;   // 16/10/2026 : l'écran Bloc-notes marque sa zone d'écriture [data-dictee]
-      var ta = box.querySelector('.v2-notes-ta'); if (!ta) return;
+      var cible = btn.getAttribute('data-cible');
+      var ta = (cible && box.querySelector(cible)) || box.querySelector('.v2-notes-ta'); if (!ta) return;
+      if (auClavier()) { dicterAuClavier(ta); return; }
       // déjà en écoute sur ce bouton → on arrête
       // ⚠️ `_rec` n'est posé que dans `onstart`, qui arrive APRÈS `start()` : entre
       // deux relances il vaut brièvement null. Un appui du doigt pile dans ce
@@ -107,7 +142,7 @@
       function ecrire(txt, enCours) {
         affiche = txt.replace(/\s+/g, ' ').replace(/^\s/, '');
         if (!enCours) affiche = affiche.replace(/\s+$/, '');
-        ta.value = affiche;
+        ta.value = affiche; signaler(ta);
       }
 
       function demarrer(premier) {
@@ -195,7 +230,7 @@
           // ⚠️ On ne VIDE JAMAIS la note. Avant, si aucun segment n'était marqué
           // « définitif », tout ce que Karine venait de dicter disparaissait à l'arrêt.
           var texte = (base + acquis).trim() || affiche.trim() || ta.value.trim();
-          ta.value = texte;
+          ta.value = texte; signaler(ta);
           if (texte) { ta.focus(); }
           else if (V2.toast) V2.toast('Rien n\'a été entendu — vérifiez le micro et réessayez', 'error');
         };
@@ -223,7 +258,7 @@
       var st = box.getAttribute('data-st'), sid = box.getAttribute('data-sid');
       btn.disabled = true; btn.textContent = 'Ajout…';
       var c = sb();
-      var done = function () { if (ta) ta.value = ''; if (V2.toast) V2.toast('Note ajoutée'); renderBox(box); };
+      var done = function () { if (ta) ta.value = ''; brouillonPoser('note:' + st + ':' + sid, ''); if (V2.toast) V2.toast('Note ajoutée'); renderBox(box); };
       if (c) {
         // échec Supabase → NE PAS faire croire que c'est sauvé (avant : sauvé en local + « Note ajoutée » puis disparue au re-render qui relit Supabase)
         var fail = function () { btn.disabled = false; btn.textContent = 'Ajouter'; if (V2.toast) V2.toast('Note non enregistrée — réessayez', 'error'); };
@@ -317,6 +352,48 @@
     }
   };
 
+  // Une écriture faite par le code ne déclenche pas `input` : on le déclenche, pour que la
+  // zone garde son brouillon comme si la personne avait tapé le texte.
+  function signaler(ta) { try { ta.dispatchEvent(new Event('input', { bubbles: true })); } catch (e) {} }
+
+  // Téléphone : le tap sur le micro ouvre le clavier sur la bonne zone (focus dans le geste,
+  // sinon iOS ne l'ouvre pas), curseur en fin de texte, et une bulle posée juste au-dessus
+  // du clavier montre où se trouve son micro. La bulle part dès que le texte arrive.
+  var _aide = null;
+  function dicterAuClavier(ta) {
+    ta.focus();
+    try { var n = ta.value.length; ta.setSelectionRange(n, n); } catch (e) {}
+    fermerAide();
+    var ios = surIOS();
+    var el = document.createElement('div');
+    el.className = 'v2-dictee-aide'; el.setAttribute('role', 'status');
+    el.innerHTML = '<div class="v2-da-l1"><span class="v2-da-key">' + MIC_SVG + '</span>' +
+        '<span>Touchez le micro <b>' + (ios ? 'en bas du clavier' : 'du clavier') + '</b>, puis parlez.</span></div>' +
+      '<div class="v2-da-l2">' + (ios ? 'Pas de micro ? Réglages › Général › Clavier › Dictée.' : 'Pas de micro ? Activez la saisie vocale dans les réglages du clavier.') + '</div>';
+    document.body.appendChild(el);
+    var vv = window.visualViewport;
+    function placer() {
+      var haut = vv ? vv.offsetTop + vv.height : window.innerHeight;
+      var gauche = vv ? vv.offsetLeft : 0, large = vv ? vv.width : window.innerWidth;
+      el.style.left = (gauche + 12) + 'px';
+      el.style.width = Math.min(large - 24, 440) + 'px';
+      el.style.top = Math.max(8, haut - el.offsetHeight - 14) + 'px';
+    }
+    function fin() { fermerAide(); }
+    placer();
+    if (vv) { vv.addEventListener('resize', placer); vv.addEventListener('scroll', placer); }
+    ta.addEventListener('input', fin); ta.addEventListener('blur', fin);
+    el.addEventListener('click', fin);
+    var minuterie = setTimeout(fin, 20000);
+    _aide = function () {
+      clearTimeout(minuterie);
+      if (vv) { vv.removeEventListener('resize', placer); vv.removeEventListener('scroll', placer); }
+      ta.removeEventListener('input', fin); ta.removeEventListener('blur', fin);
+      if (el.parentNode) el.parentNode.removeChild(el);
+    };
+  }
+  function fermerAide() { if (_aide) { var f = _aide; _aide = null; f(); } }
+
   function editLocal(st, sid, id, body) {
     var a = localFor(st, sid), changed = false;
     for (var i = 0; i < a.length; i++) { if (a[i].id === id) { a[i].body = body; changed = true; } }
@@ -382,7 +459,16 @@
       '.v2-notes-mic:hover{color:var(--ip-blue);border-color:color-mix(in srgb,var(--ip-blue) 36%,var(--line))}',
       '.v2-notes-mic.rec{color:#fff;background:var(--c-rose,#FF4D6D);border-color:var(--c-rose,#FF4D6D);animation:v2micpulse 1.3s ease-in-out infinite}',
       '@keyframes v2micpulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--c-rose,#FF4D6D) 55%,transparent)}50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--c-rose,#FF4D6D) 0%,transparent)}}',
-      '@media(prefers-reduced-motion:reduce){.v2-notes-mic.rec{animation:none}}'
+      '@media(prefers-reduced-motion:reduce){.v2-notes-mic.rec{animation:none}}',
+      // Bulle de dictée au clavier (téléphone) : couleurs inversées du thème, flèche vers le micro du clavier
+      '.v2-dictee-aide{position:fixed;z-index:10050;box-sizing:border-box;padding:12px 14px;border-radius:14px;background:var(--ip-ink,#0B1220);color:var(--card,#fff);box-shadow:0 14px 34px rgba(8,15,30,.32),0 2px 6px rgba(8,15,30,.18);animation:v2daIn .18s var(--ease,ease-out) both}',
+      '.v2-dictee-aide::after{content:"";position:absolute;right:22px;bottom:-7px;width:14px;height:14px;background:inherit;transform:rotate(45deg);border-radius:2px}',
+      '.v2-da-l1{display:flex;align-items:center;gap:10px;font-size:14.5px;line-height:1.35;font-weight:600}',
+      '.v2-da-l1 b{font-weight:800}',
+      '.v2-da-key{flex:none;width:34px;height:34px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--card,#fff) 16%,transparent);border:1px solid color-mix(in srgb,var(--card,#fff) 34%,transparent)}',
+      '.v2-da-l2{margin-top:6px;padding-left:44px;font-size:12px;line-height:1.4;color:color-mix(in srgb,var(--card,#fff) 78%,var(--ip-ink,#0B1220))}',
+      '@keyframes v2daIn{from{transform:translateY(6px)}to{transform:none}}',
+      '@media(prefers-reduced-motion:reduce){.v2-dictee-aide{animation:none}}'
     ].join('');
     document.head.appendChild(s);
   }
