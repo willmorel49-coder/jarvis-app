@@ -1380,7 +1380,7 @@
       '.off-mktbar .clr{background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;display:flex;padding:4px}',
       '.off-mktbar .clr:hover{color:#fff}',
       // 19/10/2026 — micro posé dans le titre (V2.notes.champ) : l'enveloppe prend la place du champ, la barre ne change pas de forme
-      '.off-mktbar .v2-mic-wrap{flex:none;width:230px}.off-mktbar .v2-mic-wrap .ttl{width:100%}.off-mktbar .v2-notes-mic{background:rgba(255,255,255,.16);border-color:transparent;color:#fff}',
+      '.off-mktbar .v2-mic-wrap{flex:none;width:230px}.off-mktbar .v2-mic-wrap .ttl{width:100%}.off-mktbar .v2-mic-wrap>.v2-notes-mic:not(.rec){background:rgba(255,255,255,.16);border-color:transparent;color:#fff}',
       '@media(max-width:680px){.off-mktbar .ttl{width:130px}.off-mktbar .v2-mic-wrap{width:170px}}',
       // Mobile : la barre flottante se replie (elle est centrée en position:fixed → débordait des 2 côtés). Titre sur sa propre ligne, boutons pleine largeur.
       '@media(max-width:560px){.off-mktbar{flex-wrap:wrap;justify-content:center;left:10px;right:10px;max-width:none;transform:none;bottom:calc(14px + env(safe-area-inset-bottom));padding:12px 14px}.off-mktbar .ttl{order:5;flex:1 1 100%;width:auto}.off-mktbar .v2-mic-wrap{order:5;flex:1 1 100%;width:auto}.off-mktbar .v2-mic-wrap .ttl{flex:none}.off-mktbar .v2-btn{flex:1 1 auto}.off-mktbar .clr{margin-left:auto}}',

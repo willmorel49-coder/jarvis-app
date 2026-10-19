@@ -520,6 +520,7 @@
       '.v2-mic-wrap>textarea{display:block}',
       '.v2-mic-wrap>.v2-notes-mic{position:absolute;right:5px;bottom:5px;width:32px;height:32px;border-radius:9px;z-index:1}',
       '.v2-mic-1l>.v2-notes-mic{bottom:auto;top:50%;margin-top:-16px}',
+      '.v2-mic-wrap>.v2-notes-mic:not(.rec){border-color:transparent;background:transparent}',
       '@media(hover:none) and (pointer:coarse),(max-width:640px){',
       '.v2-mic-wrap>textarea,.v2-mic-wrap>input,.v2-notes-ta{font-size:16px!important}',
       '.v2-mic-wrap>textarea,.v2-mic-wrap>input{padding-right:54px!important}',
