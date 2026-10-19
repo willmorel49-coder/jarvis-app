@@ -9,6 +9,8 @@
  */
 const { chromium } = require('/Users/williammorel/JARVIS/verif-ecran/node_modules/playwright');
 const fs = require('fs'), path = require('path'), os = require('os');
+// Marques absentes des catalogues Offilog : liste privée, hors dépôt (~/.config/jarvis/offilog-exclus.json).
+const EXCLUS = JSON.parse(fs.readFileSync(path.join(os.homedir(), '.config/jarvis/offilog-exclus.json'), 'utf8')).marques.map(m => m.toLowerCase());
 const BASE = __dirname;
 const CATS = JSON.parse(fs.readFileSync('/tmp/cats.json', 'utf8'));
 const OUT = [path.join(BASE,'opso/offilog-live-data.js'), path.join(BASE,'essentiels-pharma/offilog-live-data.js')];
@@ -91,6 +93,7 @@ const prix = t => { if(!t) return null;
 
   const tarif = {}; const lignes = [];
   for (const it of items) {
+    if (EXCLUS.some(m => (it.marque + ' ' + it.nom).toLowerCase().includes(m))) continue;   // liste privée, hors dépôt
     const pv = prix(it.prixTxt); if (pv != null) tarif[it.id] = pv;
     const pb = prix(it.barreTxt);
     lignes.push("  {id:'"+q(it.id)+"',nom:'"+q(it.nom)+"',marque:'"+q(it.marque)+"',cat:'"+q(it.cat)+

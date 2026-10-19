@@ -33,9 +33,15 @@ OUT = os.path.join(HERE, 'crm', 'v2', 'offilog-marche-data.js')
 MIN_PRODUITS = 3000   # un relevé plus court est un relevé raté, pas un marché qui s'effondre
 
 
+import json as _j, os as _o
+# Marques absentes des catalogues Offilog : liste privée, hors dépôt (~/.config/jarvis/offilog-exclus.json).
+_EXCLUS = [m.lower() for m in _j.load(open(_o.path.expanduser('~/.config/jarvis/offilog-exclus.json')))['marques']]
+def _exclu(*t): return any(m in ' '.join(x or '' for x in t).lower() for m in _EXCLUS)
+
+
 def charger_releves():
     """Tous les relevés datés, du plus ancien au plus récent. {date: {ean: rang}}."""
-    out = []
+    out, lus = [], []
     for p in sorted(glob.glob(os.path.join(ARCHIVE, 'releves', '*.json'))):
         date = os.path.basename(p)[:-5]
         if not re.match(r'^\d{4}-\d{2}-\d{2}$', date):
@@ -45,11 +51,15 @@ def charger_releves():
         if len(items) < MIN_PRODUITS:
             print('  ignoré (relevé incomplet, %d produits) : %s' % (len(items), date))
             continue
+        lus.append((date, items))
+    # Une marque de la liste privée sort du classement, et un EAN qu'UN relevé lui rattache sort de tous.
+    bannis = {str(it.get('ean') or '') for _, items in lus for it in items if _exclu(it.get('marque'), it.get('nom'))}
+    for date, items in lus:
         rangs = {}
-        for i, it in enumerate(items):
+        for it in items:
             ean = str(it.get('ean') or '')
-            if len(ean) >= 8 and ean not in rangs:   # 1er vu = meilleur rang
-                rangs[ean] = i + 1
+            if len(ean) >= 8 and ean not in rangs and ean not in bannis:   # 1er vu = meilleur rang
+                rangs[ean] = len(rangs) + 1
         out.append((date, rangs))
     return out
 

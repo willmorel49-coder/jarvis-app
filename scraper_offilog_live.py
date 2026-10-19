@@ -260,9 +260,15 @@ def scrape_category(s, cat_url, cat_label, seen_ids):
     return new_prods
 
 
+import json as _j, os as _o
+# Marques absentes des catalogues Offilog : liste privée, hors dépôt (~/.config/jarvis/offilog-exclus.json).
+_EXCLUS = [m.lower() for m in _j.load(open(_o.path.expanduser('~/.config/jarvis/offilog-exclus.json')))['marques']]
+def _exclu(*t): return any(m in ' '.join(x or '' for x in t).lower() for m in _EXCLUS)
+
 def generate_js(products, meta):
     """Génère opso/offilog-live-data.js."""
     lines = []
+    products = [p for p in products if not _exclu(p.get('marque'), p.get('nom'))]   # liste privée, hors dépôt
     for p in products:
         nom_e  = (p.get('nom','') or '').replace('\\','\\\\').replace("'","\\'").replace('\n',' ')
         marque = (p.get('marque','') or '').replace("'","\\'")

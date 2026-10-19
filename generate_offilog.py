@@ -205,6 +205,12 @@ else:
 # ── LOAD OFFILOG LIVE (optionnel) ────────────────────────────────────────────
 # Données scrapées depuis offilog.fr : prix d'achat réel + images produit
 # Matching : EAN prioritaire (tous les produits live ont un EAN)
+import json as _j, os as _o
+# Marques absentes des catalogues Offilog : liste privée, hors dépôt (~/.config/jarvis/offilog-exclus.json).
+_EXCLUS = [m.lower() for m in _j.load(open(_o.path.expanduser('~/.config/jarvis/offilog-exclus.json')))['marques']]
+def _exclu(*t): return any(m in ' '.join(x or '' for x in t).lower() for m in _EXCLUS)
+
+exclus_eans: set = set()   # EAN des marques de la liste privée (hors dépôt)
 live_by_ean:  dict = {}   # ean_str → {prix, img}
 live_by_norm: dict = {}   # nom_norm → {prix, img}
 if LIVE_JSON.exists():
@@ -213,6 +219,8 @@ if LIVE_JSON.exists():
         _live = json.load(_f)
     for _p in _live.get('products', []):
         _ean = str(_p.get('ean', '') or '').strip()
+        if _exclu(_p.get('marque'), _p.get('nom')):
+            exclus_eans.add(_ean)
         _prix = _p.get('prix')
         _img  = _p.get('img', '') or ''
         _entry = {'prix': float(_prix) if _prix else None, 'img': _img}
@@ -250,6 +258,8 @@ if BEST_JSON.exists():
         _best = json.load(_f)
     for _p in _best.get('products', []):
         _ean = str(_p.get('ean', '') or '').strip()
+        if _exclu(_p.get('marque'), _p.get('nom')):
+            exclus_eans.add(_ean)
         _rang = _p.get('rang')
         if _ean and _ean.isdigit() and len(_ean) >= 8 and _rang:
             best_by_ean[_ean] = int(_rang)
@@ -418,6 +428,7 @@ for row in rows[1:]:
         'prix_leclerc':   prix_leclerc,
     })
 
+records = [r for r in records if r['ean'] not in exclus_eans and not _exclu(r['marque'], r['produit'])]
 print(f'Records valides : {len(records)}')
 avec_drakkars = sum(1 for r in records if r['prix_drakkars'] is not None)
 avec_cap3000  = sum(1 for r in records if r['prix_cap3000']  is not None)

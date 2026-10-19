@@ -2480,7 +2480,7 @@ function loadOffilogLive() {
     const s = document.createElement('script');
     // jeton bumpé : le fichier a changé de forme (prix retirés). Sans ça, un
     // navigateur resservirait l'ancien fichier, prix compris.
-    s.src = 'offilog-live-data.js?v=20260903b';
+    s.src = 'offilog-live-data.js?v=20261019pt';
     s.async = true;
     s.onload = () => resolve();
     s.onerror = () => {

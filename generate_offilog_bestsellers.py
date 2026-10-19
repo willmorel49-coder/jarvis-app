@@ -97,6 +97,11 @@ def parse_price(txt):
 
 # 2. Pagination par lots de 300 (réponse ~1 Mo, télécharge vite, ne s'étrangle pas)
 RPP = 300
+import json as _j, os as _o
+# Marques absentes des catalogues Offilog : liste privée, hors dépôt (~/.config/jarvis/offilog-exclus.json).
+_EXCLUS = [m.lower() for m in _j.load(open(_o.path.expanduser('~/.config/jarvis/offilog-exclus.json')))['marques']]
+def _exclu(*t): return any(m in ' '.join(x or '' for x in t).lower() for m in _EXCLUS)
+
 seen = set(); best = []; rank = 0
 for page in range(1, 60):  # garde-fou : 60 lots × 300 = 18 000 produits max
     url = BASE + "/meilleures-ventes?resultsPerPage=" + str(RPP) + "&page=" + str(page)
@@ -130,6 +135,8 @@ for page in range(1, 60):  # garde-fou : 60 lots × 300 = 18 000 produits max
         ean = ean_m[0] if ean_m else ""
         cat_m = re.findall(r'offilog\.fr/([a-z0-9\-]+)/\d+-', href)
         cat = cat_m[0] if cat_m else ""
+        if _exclu(brand, name):
+            continue   # marque de la liste privée (hors dépôt)
         rank += 1
         best.append({"rank": rank, "id": pid, "name": name, "brand": brand,
                      "price": price, "ean": ean, "img": img, "cat": cat, "url": href})
