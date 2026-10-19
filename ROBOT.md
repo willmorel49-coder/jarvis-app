@@ -28,7 +28,7 @@
 | Charts | Chart.js 4.4.4 (CDN) |
 | Excel parsing | SheetJS 0.20.3 (CDN) |
 | Auth + DB | Supabase (Auth · PostgreSQL · Storage bucket `excel-imports`) |
-| Hosting | GitHub Pages (branche `main`, auto-deploy) |
+| Hosting | GitHub Pages, publié par `.github/workflows/ci.yml` APRÈS tests verts (depuis le 19/10/2026) |
 | Scrapers | Python 3.9 · requests · BeautifulSoup · openpyxl |
 | Données statiques | `crm/clients-data.js` · `crm/benchmark-data.js` · `crm/offilog-data.js` · `crm/drakkars-data.js` · `crm/cap3000-data.js` · `opso/leclerc-data.js` |
 
@@ -76,7 +76,7 @@ python3 scraper_leclerc.py     # → leclerc_prices.json + opso/leclerc-data.js
 
 | Élément | Convention |
 |---------|-----------|
-| Branche prod | `main` → push = déploiement immédiat |
+| Branche prod | `main` → push = tests, puis mise en ligne seulement s'ils sont verts |
 | Branches Claude | `claude/<sujet>` |
 | Commits | `feat:` `fix:` `chore:` `refactor:` `data:` `ux:` |
 | PR | Draft sur branches `claude/` |
@@ -113,7 +113,7 @@ python3 scraper_leclerc.py     # → leclerc_prices.json + opso/leclerc-data.js
 | Supabase anon key | Format JWT `eyJ...`, pas `sb_publishable_...` |
 | Offilog Excel | Feuille `"Croisement Complet"`, pas la feuille active |
 | SheetJS | Parser les colonnes **par nom**, pas par index |
-| GitHub Pages | Délai 1-2 min après push avant mise en ligne |
+| GitHub Pages | Délai ~3 min après push : la publication attend les tests (`ci.yml`). Test rouge = rien ne part, la prod garde la version d'avant. Nouveau robot qui pousse = son `name:` dans la liste `workflow_run` de `ci.yml` |
 | ⚠️ `crm/v2/rdv.html` (page du pharmacien) | **Aucun service worker sur cette page.** Son `?v=` est indépendant de celui de `crm/v2/index.html` et doit être monté **à la main** dès que `rdv-public.js`, `v2-rdv-creneaux.js` ou `v2-rdv-ics.js` change. Sinon un pharmacien ayant déjà ouvert le lien continue de charger l'ANCIEN fichier : le correctif est en ligne et pourtant invisible. Contrôle : `grep -o '?v=[0-9a-z]*' crm/v2/rdv.html` doit renvoyer la même valeur que `index.html` |
 | ip_app-8.html | Legacy — ne pas toucher |
 | Libs JS | Ne pas ajouter sans accord explicite |

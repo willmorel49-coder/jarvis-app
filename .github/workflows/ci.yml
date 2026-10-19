@@ -129,10 +129,15 @@ jobs:
       - name: Test pénuries EMA (substances françaises = BDPM ou anglais, jamais inventées)
         run: python3 tests/ema-penuries-fr.test.py
 
+      # Trois essais : un téléchargement raté (npm, navigateur) bloquerait la mise en ligne.
       - name: Installer Playwright (éphémère, non committé)
         run: |
-          npm i --no-save playwright@latest >/dev/null 2>&1
-          npx playwright install --with-deps chromium >/dev/null 2>&1
+          for essai in 1 2 3; do
+            npm i --no-save playwright@latest >/dev/null 2>&1 \
+              && npx playwright install --with-deps chromium >/dev/null 2>&1 && exit 0
+            echo "installation ratée (essai $essai/3), nouvel essai dans 20 s"; sleep 20
+          done
+          exit 1
 
       - name: Servir l'app + smoke test (chargement + zéro erreur JS)
         run: |
