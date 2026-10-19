@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════
    CRM V2 · Documents (V2.pages.documents) — 16/10/2026
    Le classement des grossistes, groupements et laboratoires (tarifs, conditions, catalogues), consultable depuis l'iPhone comme
-   depuis le Mac, par le compte de Will SEUL. Même rangement que sur le Mac : 5 dossiers racine, jusqu'à 3 niveaux, recherche partout.
+   depuis le Mac, par les seuls comptes inscrits dans la table documents_acces. Même rangement que sur le Mac : 5 dossiers racine, jusqu'à 3 niveaux, recherche partout.
 
    Accès : V2.documentsVerifier() (v2-app.js) interroge la fonction Supabase documents_acces_ok(). Tant que la réponse n'est pas « oui »,
    l'écran ne fait AUCUNE requête vers l'index et montre un message neutre.
@@ -352,7 +352,7 @@
   // ——— Écran ———
   function gabarit() {
     return '<div class="v2-wrap v2-u dc-wrap" id="doc-root">' +
-      '<div class="dc-tete"><h1 class="v2-titre">Documents <span class="dc-seul">' + ic('lock') + 'Visible par vous seul</span></h1>' +
+      '<div class="dc-tete"><h1 class="v2-titre">Documents <span class="dc-seul">' + ic('lock') + 'Accès restreint</span></h1>' +
       '<p class="v2-sous" id="dc-sous"></p></div>' +
       '<label class="v2-champ dc-champ">' + ic('search') +
       '<input type="text" inputmode="search" id="dc-q" placeholder="Rechercher un document…" aria-label="Rechercher un document ou un dossier" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">' +
