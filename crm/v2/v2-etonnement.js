@@ -410,7 +410,7 @@
     }
     return liste + '<div class="eto-am-f">' +
       '<label class="eto-am-l" for="eto-am-t">Le besoin, en une phrase</label>' +
-      micChamp('<input type="text" class="eto-in" id="eto-am-t" data-am="t" maxlength="200" autocomplete="off" placeholder="Exemple : connaître les derniers achats avant d\'entrer" value="' + esc(brouillon.t) + '">', 'Dicter le besoin à la voix') +
+      micChamp('<input type="text" class="eto-in" id="eto-am-t" data-am="t" maxlength="200" autocomplete="off" placeholder="Ex. : ses achats avant d\'entrer" value="' + esc(brouillon.t) + '">', 'Dicter le besoin à la voix') +
       '<label class="eto-am-l" for="eto-am-e">Moment du travail concerné</label>' +
       '<select class="eto-in eto-sel" id="eto-am-e" data-am="e"><option value="">Choisir le moment</option>' + MOMENTS.map(function (x) {
         return '<option value="' + x[0] + '"' + (x[0] === brouillon.e ? ' selected' : '') + '>' + esc(x[1]) + '</option>';
