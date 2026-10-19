@@ -76,7 +76,7 @@
           '<div class="v2-rp-l">Points à aborder</div>' +
           '<div class="v2-rp-list"><div class="v2-notes-empty">Chargement…</div></div>' +
           '<div class="v2-notes-add">' +
-            (V2.notes.champ ? V2.notes.champ : function (h) { return h; })('<input type="text" class="v2-notes-ta v2-rp-in" maxlength="300" placeholder="Ajouter un point à aborder…" aria-label="Ajouter un point à aborder" onkeydown="if(event.key===\'Enter\'){event.preventDefault();V2.rdvPrepa.ajouter(this)}">', 'Dicter le point à la voix') +
+            (V2.notes.champ ? V2.notes.champ : function (h) { return h; })('<input type="text" class="v2-notes-ta v2-rp-in" maxlength="300" placeholder="Nouveau point…" aria-label="Ajouter un point à aborder" onkeydown="if(event.key===\'Enter\'){event.preventDefault();V2.rdvPrepa.ajouter(this)}">', 'Dicter le point à la voix') +
             '<button type="button" class="v2-btn v2-btn-ghost v2-notes-btn" onclick="V2.rdvPrepa.ajouter(this)">Ajouter</button>' +
           '</div>' +
           '<div class="v2-rp-l v2-rp-l2">Compte rendu</div>' +

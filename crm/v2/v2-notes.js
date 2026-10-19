@@ -385,13 +385,23 @@
       '<div class="v2-da-l2">' + (ios ? 'Pas de micro ? Réglages › Général › Clavier › Dictée.' : 'Pas de micro ? Activez la saisie vocale dans les réglages du clavier.') + '</div>';
     document.body.appendChild(el);
     var vv = window.visualViewport;
+    // 19/10/2026 — jamais SUR le champ : un champ collé en bas de l'écran (barre flottante d'Offilog) était caché
+    // par la bulle. Elle passe alors au-dessus du champ, ou de toute sa barre fixe quand il est dans une barre basse.
+    var barre = null;
+    for (var p = ta.parentElement; p && p !== document.body; p = p.parentElement) {
+      var pos = getComputedStyle(p).position;
+      if (pos === 'fixed' || pos === 'sticky') { if (p.getBoundingClientRect().height < window.innerHeight * 0.4) barre = p; break; }
+    }
     function placer() {
       var haut = vv ? vv.offsetTop + vv.height : window.innerHeight;
       var gauche = vv ? vv.offsetLeft : 0, large = vv ? vv.width : window.innerWidth;
       el.style.left = (gauche + 12) + 'px';
       el.style.width = Math.min(large - 24, 440) + 'px';
       // 19/10/2026 — jamais plus bas que l'écran (page défilée, feuille) : la bulle reste visible même si le repère du clavier est décalé
-      el.style.top = Math.max(8, Math.min(haut, window.innerHeight) - el.offsetHeight - 14) + 'px';
+      var h = el.offsetHeight, top = Math.min(haut, window.innerHeight) - h - 14;
+      var z = (barre || ta).getBoundingClientRect();
+      if (top < z.bottom && top + h > z.top) top = z.top - h - 14;
+      el.style.top = Math.max((vv ? vv.offsetTop : 0) + 8, top) + 'px';
     }
     function fin() { fermerAide(); }
     placer();
