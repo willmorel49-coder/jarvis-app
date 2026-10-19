@@ -91,10 +91,13 @@
         '</div>';
     },
 
+    // 19/10/2026 — repère PROPRE (`data-rp-done`) : l'encadré porte aussi `.v2-notes-box` (le micro du compte rendu
+    // s'y rattache), et V2.notes.hydrate, appelé juste avant sur la fiche, posait `data-done` dessus : les points
+    // n'étaient jamais lus, « Chargement… » restait, « Ajouter » répondait « indisponibles » — depuis le 05/10.
     hydrate: function () {
-      var boxes = document.querySelectorAll('.v2-rp-box:not([data-done])');
+      var boxes = document.querySelectorAll('.v2-rp-box:not([data-rp-done])');
       Array.prototype.forEach.call(boxes, function (box) {
-        box.setAttribute('data-done', '1');
+        box.setAttribute('data-rp-done', '1');
         var pid = box.getAttribute('data-pid');
         lireFiche(pid).then(function (d) {
           _pts[pid] = (Array.isArray(d[CLE]) ? d[CLE] : []).filter(function (p) { return p && p.t; }).map(function (p) { return { t: String(p.t), ok: !!p.ok }; });
