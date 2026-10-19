@@ -267,6 +267,7 @@
   // 19/10/2026 — au téléphone, la barre du haut part quand on descend et revient dès qu'on remonte un peu
   // (classe `v2-top-part` sur <html>, le style est dans v2-pieces.css). En haut de page elle est toujours là.
   (function () {
+    if (!window.matchMedia || !window.addEventListener) return;   // fenêtre des tests (tests/*.test.mjs) : pas d'écran
     var tel = window.matchMedia('(max-width:760px)'), y0 = window.scrollY || 0, prevu = false;
     window.addEventListener('scroll', function () {
       if (prevu) return; prevu = true;
