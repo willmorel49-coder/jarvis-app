@@ -781,7 +781,7 @@
           '<button class="li-close" onclick="V2.li.closeEditor()">' + ICO('close', 18, 2) + '</button></div>' +
         '<div class="li-dr-body">' +
           '<div class="li-field li-ideabox"><label class="li-lab">Votre idée en quelques mots</label>' +
-            micChamp('<input class="li-inp" value="' + esc(e._brief || '') + '" oninput="V2.li.editField(\'_brief\',this.value)" placeholder="ex : lancement gamme solaire, disponible tout l\'été">', 'Dicter l’idée à la voix') +
+            micChamp('<input class="li-inp" value="' + esc(e._brief || '') + '" oninput="V2.li.editField(\'_brief\',this.value)" placeholder="ex : lancement gamme solaire">', 'Dicter l’idée à la voix') +
             '<div class="li-ideabtns">' +
               '<button class="li-gen" onclick="V2.li.writeFromIdea()">' + ICO('spark', 16) + 'Rédiger le post à partir de mon idée</button>' +
               '<button class="li-btn li-btn-ghost" onclick="V2.li.suggestIdea()">Proposer une idée</button>' +

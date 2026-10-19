@@ -332,7 +332,7 @@
           }).join('') + '</div>' +
           '<label><span id="v2-todo-mn-dl">Le (facultatif)</span><input id="v2-todo-rp-d" type="date" onchange="V2.todo.menuMaj()"></label>' +
           '<p id="v2-todo-rp-p" class="v2-todo-rp-p">' + esc(SANS_DATE) + '</p>' +
-          '<label><span>Note</span>' + micChamp('<input id="v2-todo-mn-note" type="text" placeholder="Ex. : commande de Repatha (facultatif)" autocomplete="off">', 'Dicter la note à la voix') + '</label>' +
+          '<label><span>Note (facultatif)</span>' + micChamp('<input id="v2-todo-mn-note" type="text" placeholder="Ex. : commande de Repatha" autocomplete="off">', 'Dicter la note à la voix') + '</label>' +
           '<label class="v2-todo-mn-al" id="v2-todo-mn-alr" style="display:none"><input id="v2-todo-mn-al" type="checkbox"><span>Alerte sur mon téléphone, à 9 h</span></label>' +
         '</div>' +
         '<div class="v2-todo-mn-k">Choisir quoi ajouter</div>' +
