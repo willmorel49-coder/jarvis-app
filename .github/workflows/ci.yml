@@ -1,39 +1,96 @@
 name: CI (contrôle avant prod)
 
-# Filet de sécurité au push : attrape les erreurs de syntaxe JS et les écrans blancs
-# AVANT qu'ils n'arrivent en ligne. Ne se déclenche que si du code de l'app change
-# (pas sur les commits de données comme la veille du matin).
+# PORTAIL DE MISE EN LIGNE (19/10/2026) : le site n'est publié QUE si tous les
+# contrôles du job « verifier » sont verts. GitHub Pages est réglé sur la source
+# « GitHub Actions » : plus de publication directe depuis la branche. Un test rouge
+# = la production reste sur la version d'avant, et GitHub envoie un e-mail d'échec.
+#
+# Trois déclencheurs publient :
+#  - un push sur main (le Mac, les sessions Claude) ;
+#  - la fin d'un robot de données (workflow_run). Les robots poussent avec le
+#    GITHUB_TOKEN, et un push fait avec ce jeton NE DÉCLENCHE AUCUN workflow (règle
+#    GitHub) : sans cette liste, leurs données n'arriveraient plus en ligne ;
+#  - un lancement à la main (workflow_dispatch).
+# ⚠️ Nouveau robot qui pousse sur main = ajouter son `name:` EXACT à la liste
+# workflow_run. Sinon l'étape « Chaque robot qui pousse est dans la liste » échoue,
+# et rien ne se publie tant que ce n'est pas corrigé.
 
 on:
   push:
     branches: [main]
-    paths:
-      - 'crm/**/*.js'
-      - 'crm/**/*.html'
-      - 'crm/**/*.css'
-      - 'tests/**'
-      - '.github/scripts/smoke.mjs'
-      - '.github/workflows/ci.yml'
   pull_request:
     paths:
       - 'crm/**/*.js'
       - 'crm/**/*.html'
       - 'crm/**/*.css'
       - 'tests/**'
+  workflow_run:
+    types: [completed]
+    branches: [main]
+    workflows:
+      - "Copilote · marché France (Ameli)"
+      - "Veille appro · pourquoi les ruptures arrivent (causes ANSM)"
+      - "Veille appro · ANSM disponibilités + dates de retour"
+      - "Bodacc secteur (Dans ton secteur)"
+      - "L'édition du matin (récap centralisé)"
+      - "Agences des concurrents (carte du secteur)"
+      - "Anticipation · génériques & biosimilaires en approche (EMA)"
+      - "Anticipation · pénuries européennes (EMA)"
+      - "Veille appro · signaux de demande (Sentinelles)"
+      - "Veille appro · génériques BDPM"
+      - "Actualités grossistes (veille concurrents)"
+      - "Veille appro · anticipation HAS (remboursement)"
+      - "Infos du matin (veille)"
+      - "Veille Journal officiel · ce qui touche les marges"
+      - "Veille appro · saison produit (Medic'AM)"
+      - "Veille appro · médicaments critiques (MITM)"
+      - "Marché · modèle national d'anticipation"
+      - "Copilote · nouveautés BDPM"
+      - "Demande · urgences par département (SurSaUD/Odissé)"
+      - "Marché · demande nationale par produit (Open Medic)"
+      - "Le parc bouge (officines · FINESS)"
+      - "Couplage · table pivot CIP13"
+      - "Anticipation · futures baisses de prix (CEPS / JO)"
+      - "Prix · baisses de prix officielles (BDPM)"
+      - "Qualité · rappels de LOTS de médicaments (ANSM)"
+      - "Qualité · rappels de produits (RappelConso)"
+      - "Reprises récentes (FINESS+)"
+      - "Copilote · ruptures ANSM"
+      - "Copilote · saisonnalité"
+      - "Copilote · tendance marché"
+      - "Copilote · potentiel de zone"
   workflow_dispatch:
 
 permissions:
   contents: read
 
+# Une seule publication à la fois, jamais interrompue en cours de route. Les passages
+# arrivés entre-temps se résument au plus récent, qui contient tous les commits d'avant.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.event_name == 'pull_request' && format('ci-pr-{0}', github.ref) || 'publication' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verifier:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Chaque robot qui pousse est dans la liste workflow_run
+        run: |
+          manque=0
+          for f in .github/workflows/*.yml; do
+            [ "$f" = .github/workflows/ci.yml ] && continue
+            grep -q 'git push' "$f" || continue
+            nom=$(sed -n 's/^name: *//p' "$f" | head -1 | sed 's/^["'"'"']//; s/["'"'"']$//')
+            if ! grep -qF -- "- \"$nom\"" .github/workflows/ci.yml; then
+              echo "::error::$f pousse sur main mais « $nom » manque dans workflow_run de ci.yml : ses données ne seraient jamais publiées"
+              manque=1
+            fi
+          done
+          [ "$manque" = 0 ] && echo "✅ Tous les robots qui poussent déclenchent la publication"
+          exit $manque
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -82,3 +139,29 @@ jobs:
           python3 -m http.server 8080 >/dev/null 2>&1 &
           sleep 2
           node .github/scripts/smoke.mjs
+
+  # Ne part QUE si « verifier » est vert (needs). Même commit que celui testé :
+  # les deux jobs extraient github.sha. Copie propre (sans le node_modules du test).
+  publier:
+    needs: verifier
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # include-hidden-files : comme l'ancienne publication depuis la branche
+      # (.nojekyll, .gitignore… restaient servis ; .git et .github jamais).
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: '.'
+          include-hidden-files: true
+
+      - id: deployment
+        uses: actions/deploy-pages@v5

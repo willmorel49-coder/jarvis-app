@@ -5,8 +5,10 @@
 set -e
 TOKEN="${1:?Usage: attendre-prod.sh <token ?v=, ex 20260710c>}"
 URL="https://willmorel49-coder.github.io/jarvis-app/crm/v2/index.html"
-echo "⏳ Attente de la version $TOKEN en prod (max ~3 min)…"
-for i in $(seq 1 18); do            # 18 × 10s ≈ 3 min
+# Depuis le 19/10/2026 la publication attend que les tests soient verts (ci.yml) :
+# compter ~3 min, davantage si une autre publication passe juste avant.
+echo "⏳ Attente de la version $TOKEN en prod (max ~8 min)…"
+for i in $(seq 1 48); do            # 48 × 10s ≈ 8 min
   if curl -fsS "$URL" 2>/dev/null | grep -q "$TOKEN"; then
     echo "✅ Version $TOKEN servie en prod."
     echo "🔗 $URL"
@@ -14,6 +16,7 @@ for i in $(seq 1 18); do            # 18 × 10s ≈ 3 min
   fi
   sleep 10
 done
-echo "⚠️ Version $TOKEN pas encore vue après 3 min (GitHub Pages parfois lent)."
-echo "   Réessaie le refresh dans 1-2 min — ou vérifie le déploiement Pages."
+echo "⚠️ Version $TOKEN pas encore vue après 8 min."
+echo "   Un test a peut-être échoué (la mise en ligne est alors bloquée) :"
+echo "   gh run list -R willmorel49-coder/jarvis-app -w ci.yml -L 3"
 exit 1
