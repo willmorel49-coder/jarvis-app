@@ -12,6 +12,10 @@
    Aperçus (18/10/2026) : la première page de chaque document, en vignette. Image `apercus/<sha1>.jpg` (400 px de large) dans le
    même espace fermé, fabriquée sur le Mac par apercus.py ; `ap: 1` dans l'index quand elle existe, sinon le picto du type reste.
    Adresses signées de tout ce qui est affiché EN UNE FOIS, gardées 45 min en mémoire (comme v2-discussion.js).
+   Retrait (19/10/2026) : « Retirer » MASQUE un document pour tout le monde, de façon réversible (table documents_retires, clé = empreinte du
+   fichier) ; rien n'est supprimé du stockage. Le droit (retirer, remettre) est porté par la BASE : colonne documents_acces.peut_retirer, fonction
+   documents_retrait_ok(), règles de documents_retires. L'écran ne fait que cacher le bouton aux autres comptes ; le retrait ne s'affiche qu'une fois
+   la base ayant répondu (rien d'optimiste). Seul le compte qui a le droit voit le bouton et la liste « Retirés ».
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -91,7 +95,34 @@
       '.dc-carte .dc-t{font-size:14.5px}',
       '@media (max-width:480px){.dc-grille{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.dc-cc{padding:9px 10px 11px}.dc-carte .dc-t{font-size:14px}}',
       '@media (max-width:480px){.dc-lg{padding:10px 12px;gap:10px}.dc-nb{display:none}.dc-lg .dc-nb-m{display:block}}',
-      '.dc-nb-m{display:none;font-size:13px;color:var(--muted)}'
+      '.dc-nb-m{display:none;font-size:13px;color:var(--muted)}',
+      // Retrait : le bouton est HORS de la carte (un bouton ne se met pas dans un bouton), posé dans son coin haut droit, zone tactile de 44 px.
+      '.dc-cw{position:relative;display:flex;min-width:0}',
+      '.dc-cw>.dc-carte{flex:1 1 auto;min-width:0}',
+      '.dc-rt{position:absolute;top:0;right:0;z-index:2;min-width:44px;height:44px;padding:0 6px;border:0;background:none;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-family:var(--font);-webkit-tap-highlight-color:transparent}',
+      '.dc-rt span{display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:var(--r-pill);background:rgba(255,255,255,.94);border:1px solid var(--line-strong);box-shadow:var(--sh-1);font-size:12.5px;font-weight:700;color:var(--ip-ink-2)}',
+      '.dc-rt:hover span{color:var(--ip-blue-d);border-color:var(--ip-blue)}',
+      '.dc-rt:focus-visible{outline:2px solid var(--ip-blue);outline-offset:-4px;border-radius:var(--r-control)}',
+      '.dc-ret{margin:26px 0 8px}',
+      '.dc-ret-t{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 6px;border:0;background:none;font-family:var(--font);font-size:14px;font-weight:700;color:var(--ip-ink-2);cursor:pointer;border-radius:var(--r-control)}',
+      '.dc-ret-t:focus-visible{outline:2px solid var(--ip-blue);outline-offset:-2px}',
+      '.dc-ret-t .dc-chev{transition:transform .15s}',
+      '.dc-ret-t[aria-expanded="true"] .dc-chev{transform:rotate(90deg)}',
+      '.dc-rl{display:flex;align-items:center;gap:12px;padding:10px 14px;min-height:56px;border-bottom:1px solid var(--line);background:var(--card)}',
+      '.dc-rl:last-child{border-bottom:0}',
+      '.dc-rl .v2-btn{flex:none;min-height:44px;white-space:nowrap}',
+      '.dc-rl .v2-btn[disabled]{cursor:default}',
+      '.dc-msg{margin:10px 2px 0;font-size:13.5px;line-height:1.45;color:var(--ip-ink-2)}',
+      '.dc-msg--ko{padding:12px 14px;border-radius:var(--r-md);background:#FBEFDC;color:var(--c-amber-txt);font-weight:600}',
+      '.dc-fond{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto;background:rgba(16,19,28,.46)}',
+      '.dc-dlg{box-sizing:border-box;width:min(460px,100%);margin:auto;padding:24px 24px 20px;border-radius:22px;font-family:var(--font);color:var(--ip-ink);background:radial-gradient(130% 75% at 0% 0%,var(--halo) 0%,rgba(233,240,255,0) 62%),var(--card);box-shadow:inset 0 1px 0 #fff,var(--sh-pop)}',
+      '.dc-dt{margin:0 0 8px;font-size:19px;line-height:1.3;font-weight:800;letter-spacing:-.01em;color:var(--ip-ink);overflow-wrap:anywhere}',
+      '.dc-ds{margin:0;font-size:15px;line-height:1.5;color:var(--ip-ink-2)}',
+      '.dc-de{margin:14px 0 0;padding:12px 14px;border-radius:var(--r-md);background:#FBEFDC;color:var(--c-amber-txt);font-size:14px;font-weight:600;line-height:1.4}',
+      '.dc-de[hidden]{display:none}',
+      '.dc-dp{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}',
+      '.dc-dlg .v2-btn{min-height:44px;white-space:nowrap}',
+      '@media (max-width:480px){.dc-dlg{padding:20px 18px 16px}.dc-dp .v2-btn{flex:1}.dc-rl{padding:10px 12px;gap:10px}}'
     ].join('\n');
     document.head.appendChild(st);
   })();
@@ -144,16 +175,31 @@
   function nomChemin(chemin) { return chemin.split('/').map(function (s, i) { return nomDossier(s, i); }).join(' › '); }
 
   // ——— État (en mémoire ; survit aux redessins du routeur) ———
-  var D = { etat: 'attente', idx: null, docs: [], q: '', max: PAGE, cheminVu: null, msgT: 0, urls: {}, urlsLe: 0 };
+  var D = { etat: 'attente', idx: null, docs: [], tous: [], retires: {}, retiresLu: false, peut: false, retiresOuvert: false, remisMsg: '', q: '', max: PAGE, cheminVu: null, msgT: 0, urls: {}, urlsLe: 0 };
 
   function preparer(j) {
     var l = (j && Array.isArray(j.documents)) ? j.documents : [];
-    D.docs = l.filter(function (d) { return d && typeof d.cle === 'string' && typeof d.dossier === 'string'; }).map(function (d) {
+    D.tous = l.filter(function (d) { return d && typeof d.cle === 'string' && typeof d.dossier === 'string'; }).map(function (d) {
       var t = d.titre || String(d.nom || '').replace(/\.[A-Za-z0-9]{1,5}$/, '') || 'Document';
-      return { dossier: d.dossier.replace(/^\/+|\/+$/g, ''), nom: d.nom || '', titre: t, date: d.date || '', cle: d.cle, taille: d.taille, ext: String(d.ext || d.cle.split('.').pop() || '').toLowerCase(),
+      return { sha: shaDe(d.cle), dossier: d.dossier.replace(/^\/+|\/+$/g, ''), nom: d.nom || '', titre: t, date: d.date || '', cle: d.cle, taille: d.taille, ext: String(d.ext || d.cle.split('.').pop() || '').toLowerCase(),
         ap: d.ap ? 'apercus/' + d.cle.split('/').pop().replace(/\.[^.]+$/, '') + '.jpg' : '',
         _t: norm(t), _d: norm(nomChemin(d.dossier.replace(/^\/+|\/+$/g, ''))) + ' ' + norm(d.dossier) };
     });
+    appliquer();
+  }
+  // Empreinte du contenu = nom du fichier stocké (« docs/<sha1>.<ext> ») : c'est la clé de la table documents_retires.
+  function shaDe(cle) { return String(cle).split('/').pop().replace(/\.[^.]+$/, ''); }
+  // Ce qui est affiché (liste, recherche, compteurs) = tout l'index MOINS les retirés.
+  function appliquer() { D.docs = D.tous.filter(function (d) { return !Object.prototype.hasOwnProperty.call(D.retires, d.sha); }); }
+  function lireRetires(c) {
+    return Promise.resolve(c.from('documents_retires').select('sha1,titre,dossier,retire_le').order('retire_le', { ascending: false })).then(function (r) {
+      if (!r || r.error || !Array.isArray(r.data)) { D.retiresLu = false; return; }
+      var m = {}; r.data.forEach(function (x) { if (x && x.sha1) m[x.sha1] = { titre: x.titre || '', dossier: x.dossier || '', le: x.retire_le || '' }; });
+      D.retires = m; D.retiresLu = true;
+    }, function () { D.retiresLu = false; });
+  }
+  function lireDroit(c) {
+    return Promise.resolve(c.rpc('documents_retrait_ok')).then(function (r) { D.peut = !!(r && !r.error && r.data === true); }, function () { D.peut = false; });
   }
   function trouver(cle) { for (var i = 0; i < D.docs.length; i++) if (D.docs[i].cle === cle) return D.docs[i]; return null; }
 
@@ -171,7 +217,8 @@
       return rep.json();
     }).then(function (j) {
       if (!j || !Array.isArray(j.documents) || !j.documents.length) throw new Error('index vide');
-      D.idx = j; preparer(j); D.etat = 'pret';
+      D.idx = j; D.retires = {}; D.retiresLu = false; D.peut = false;
+      return Promise.all([lireRetires(c), lireDroit(c)]).then(function () { preparer(j); D.etat = 'pret'; });
     }).catch(function () { D.etat = 'echec'; D.idx = null; D.docs = []; }).then(function () {
       if (ref === D.essai && actif()) corps();
     });
@@ -208,12 +255,13 @@
     if (d.date) meta.push('<span>' + esc(d.date) + '</span>');
     var tl = taille(d.taille); if (tl) meta.push('<span>' + esc(tl) + '</span>');
     var u = d.ap ? D.urls[d.ap] : false;
-    return '<button type="button" class="dc-carte" data-cle="' + esc(d.cle) + '"><span class="dc-ap">' +
+    return '<div class="dc-cw"><button type="button" class="dc-carte" data-cle="' + esc(d.cle) + '"><span class="dc-ap">' +
       '<span class="dc-tuile' + (t.cl ? ' dc-tuile--' + t.cl : '') + '">' + ic(t.ico) + '</span>' +
       (u !== false ? '<img alt="" loading="lazy" decoding="async" data-ap="' + esc(d.ap) + '"' + (u ? ' src="' + esc(u) + '"' : '') + '>' : '') + '</span>' +
       '<span class="dc-cc"><span class="dc-t">' + esc(d.titre) + '</span>' +
       (avecDossier ? '<span class="dc-ou">' + esc(nomChemin(d.dossier)) + '</span>' : '') +
-      '<span class="dc-m">' + meta.join('') + '</span></span></button>';
+      '<span class="dc-m">' + meta.join('') + '</span></span></button>' +
+      (D.peut && D.retiresLu ? '<button type="button" class="dc-rt" data-retirer="' + esc(d.cle) + '" aria-label="Retirer « ' + esc(d.titre) + ' »"><span>Retirer</span></button>' : '') + '</div>';
   }
 
   // ——— Aperçus : adresses signées de ce qui est affiché, EN UNE FOIS ; gardées 45 min puis relues ———
@@ -263,7 +311,8 @@
     return r.map(function (x) { return x.d; });
   }
 
-  function corps() {
+  function corps() { corpsInt(); pied(); }
+  function corpsInt() {
     var el = document.getElementById('dc-corps'); if (!el) return;
     var sous = document.getElementById('dc-sous');
     if (D.etat === 'charge' || D.etat === 'attente') { el.innerHTML = '<div class="v2-loading" style="min-height:30vh"><div class="v2-spinner"></div><div>Chargement…</div></div>'; return; }
@@ -275,6 +324,7 @@
     }
     if (sous) sous.textContent = nb(D.docs.length) + ' documents classés par dossier : grossistes, groupements, laboratoires.';
     var h = '', q = D.q.trim();
+    if (!D.retiresLu) h += '<div class="dc-alerte" role="status">La liste des documents retirés n’a pas pu être lue : un document déjà retiré peut encore s’afficher ici.</div>';
     if (q) {
       var res = resultats(), aff = res.slice(0, MAX_RES);
       h += '<div class="dc-h">Résultats <span>' + (res.length ? nb(res.length) + ' trouvé' + (res.length > 1 ? 's' : '') : '') + '</span></div>';
@@ -286,6 +336,10 @@
       el.innerHTML = h; signerAp(aff || []); return;
     }
     var ch = chemin(), n = niveau(ch);
+    if (ch && !n.existe && D.tous.some(function (d) { return d.dossier === ch || d.dossier.indexOf(ch + '/') === 0; })) {
+      el.innerHTML = h + fil(ch) + '<div class="v2-card"><div class="v2-empty"><div class="v2-empty-t">Ce dossier est vide : ses documents ont été retirés.</div></div></div>';
+      return;
+    }
     if (ch && !n.existe) {
       el.innerHTML = fil('') + '<div class="v2-card"><div class="v2-empty"><div class="v2-empty-t" style="font-size:16px;font-weight:700;color:var(--ip-ink);margin-bottom:14px">Ce dossier n’existe pas.</div>' +
         '<button type="button" class="v2-btn v2-btn-primary" data-dossier="">Tous les dossiers</button></div></div>';
@@ -305,6 +359,105 @@
     if (!n.dirs.length && !n.docs.length) h += '<div class="v2-card"><div class="v2-empty"><div class="v2-empty-t">Ce dossier est vide.</div></div></div>';
     el.innerHTML = h;
     signerAp(n.docs.slice(0, D.max));
+  }
+
+  // ——— Retrait : « Retirés (n) » en bas de l'écran (replié), fenêtre de confirmation, écritures ———
+  function pied() {
+    var z = document.getElementById('dc-retires'); if (!z) return;
+    var cles = Object.keys(D.retires);
+    if (D.etat !== 'pret' || !D.peut || !D.retiresLu || (!cles.length && !D.remisMsg)) { z.innerHTML = ''; return; }
+    cles.sort(function (a, b) { return String(D.retires[b].le).localeCompare(String(D.retires[a].le)); });
+    var h = '<div class="dc-ret">';
+    if (cles.length) {
+      h += '<button type="button" class="dc-ret-t" data-retires-bascule="1" aria-expanded="' + (D.retiresOuvert ? 'true' : 'false') + '" aria-controls="dc-ret-l">' + ic('chev', 'dc-chev') + 'Retirés (' + nb(cles.length) + ')</button>';
+      if (D.retiresOuvert) {
+        h += '<div class="v2-card dc-liste" id="dc-ret-l">' + cles.map(function (s) {
+          var r = D.retires[s];
+          return '<div class="dc-rl"><span class="dc-corps"><span class="dc-t">' + esc(r.titre || 'Document') + '</span>' + (r.dossier ? '<span class="dc-ou">' + esc(nomChemin(r.dossier)) + '</span>' : '') + '</span>' +
+            '<button type="button" class="v2-btn v2-btn-ghost" data-remettre="' + esc(s) + '">Remettre</button></div>';
+        }).join('') + '</div>';
+      }
+    }
+    if (D.remisMsg) h += '<p class="dc-msg' + (D.remisKo ? ' dc-msg--ko' : '') + '" role="status" id="dc-remis-msg">' + esc(D.remisMsg) + '</p>';
+    z.innerHTML = h + '</div>';
+  }
+  function ecrireRetrait(d) {
+    var c = V2.sb && V2.sb();
+    if (!c || !c.from) return Promise.resolve(false);
+    return Promise.resolve(c.from('documents_retires').insert({ sha1: d.sha, titre: d.titre, dossier: d.dossier })).then(function (r) {
+      // 23505 = déjà retiré (par un autre appareil) : c'est bien l'état voulu.
+      if (r && r.error && r.error.code !== '23505') return false;
+      D.retires[d.sha] = { titre: d.titre, dossier: d.dossier, le: new Date().toISOString() };
+      appliquer();
+      return true;
+    }, function () { return false; });
+  }
+  function ecrireRemise(sha) {
+    var c = V2.sb && V2.sb();
+    if (!c || !c.from) return Promise.resolve(false);
+    // .select() : la base répond par les lignes réellement supprimées ; zéro ligne = rien n'a été remis (règle refusée en silence).
+    return Promise.resolve(c.from('documents_retires').delete().eq('sha1', sha).select('sha1')).then(function (r) {
+      if (!r || r.error || !Array.isArray(r.data) || !r.data.length) return false;
+      delete D.retires[sha];
+      appliquer();
+      return true;
+    }, function () { return false; });
+  }
+  function confirmerRetrait(d) {
+    if (document.getElementById('dc-fond')) return;
+    var avant = document.activeElement, occupe = false;
+    var fond = document.createElement('div'); fond.className = 'dc-fond'; fond.id = 'dc-fond';
+    fond.innerHTML = '<div class="dc-dlg" role="alertdialog" aria-modal="true" aria-labelledby="dc-dt" aria-describedby="dc-ds">' +
+      '<h2 class="dc-dt" id="dc-dt">Retirer « ' + esc(d.titre) + ' » ?</h2>' +
+      '<p class="dc-ds" id="dc-ds">Il ne s’affichera plus pour personne. Vous pourrez le remettre depuis « Retirés ».</p>' +
+      '<p class="dc-de" id="dc-de" role="alert" hidden></p>' +
+      '<div class="dc-dp"><button type="button" class="v2-btn v2-btn-ghost" data-dc-non="1">Annuler</button><button type="button" class="v2-btn v2-btn-primary" data-dc-oui="1">Retirer</button></div></div>';
+    var oui = fond.querySelector('[data-dc-oui]'), non = fond.querySelector('[data-dc-non]'), err = fond.querySelector('#dc-de');
+    function fermer() {
+      document.removeEventListener('keydown', touche, true);
+      if (fond.parentNode) fond.parentNode.removeChild(fond);
+      if (avant && avant.focus && document.contains(avant)) { try { avant.focus(); } catch (e) {} }
+    }
+    function touche(e) {
+      if (e.key === 'Escape') { e.preventDefault(); if (!occupe) fermer(); return; }
+      if (e.key !== 'Tab') return;
+      var f = fond.querySelectorAll('button:not([disabled])'); if (!f.length) return;
+      var a = f[0], z = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === a) { e.preventDefault(); z.focus(); }
+      else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); }
+    }
+    fond.addEventListener('click', function (e) {
+      if (occupe) return;
+      if (e.target === fond || (e.target.closest && e.target.closest('[data-dc-non]'))) { fermer(); return; }
+      if (!(e.target.closest && e.target.closest('[data-dc-oui]'))) return;
+      occupe = true; oui.disabled = true; non.disabled = true; oui.textContent = 'Retrait en cours…'; err.hidden = true;
+      ecrireRetrait(d).then(function (ok) {
+        occupe = false;
+        if (ok) { D.remisMsg = ''; D.remisKo = false; fermer(); if (actif()) corps(); return; }
+        oui.disabled = false; non.disabled = false; oui.textContent = 'Retirer';
+        err.textContent = 'Le retrait n’a pas pu être enregistré : le document reste affiché. Vérifiez votre connexion, puis réessayez.'; err.hidden = false;
+      });
+    });
+    document.addEventListener('keydown', touche, true);
+    document.body.appendChild(fond);   // sur <body> : la racine de l'app porte une transformation qui collerait un « fixed » à la page
+    try { non.focus(); } catch (e) {}
+  }
+  function remettre(sha, bouton) {
+    var r = D.retires[sha]; if (!r) return;
+    var titre = r.titre || 'Le document';
+    if (bouton) { bouton.disabled = true; bouton.textContent = 'Remise en cours…'; }
+    ecrireRemise(sha).then(function (ok) {
+      if (!actif()) return;
+      if (ok) {
+        var revient = D.tous.some(function (d) { return d.sha === sha; });
+        D.remisKo = false;
+        D.remisMsg = revient ? '« ' + titre + ' » est de nouveau affiché.' : '« ' + titre + ' » est remis. Il réapparaîtra après la prochaine mise à jour de la liste depuis le Mac.';
+        corps();
+      } else {
+        D.remisKo = true; D.remisMsg = 'La remise n’a pas pu être enregistrée : « ' + titre + ' » reste dans les retirés. Réessayez dans un instant.';
+        pied();
+      }
+    });
   }
 
   // ——— Message d'échec d'ouverture (sans fenêtre native) ———
@@ -358,7 +511,7 @@
       '<input type="text" inputmode="search" id="dc-q" placeholder="Rechercher un document…" aria-label="Rechercher un document ou un dossier" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">' +
       '<button type="button" class="dc-eff" id="dc-eff" aria-label="Effacer la recherche" hidden>' + ic('x') + '</button></label>' +
       '<div class="dc-alerte" id="dc-alerte" role="alert" hidden></div>' +
-      '<div id="dc-corps"></div></div>';
+      '<div id="dc-corps"></div><div id="dc-retires"></div></div>';
   }
 
   function brancher(root) {
@@ -377,6 +530,9 @@
     zone.addEventListener('click', function (ev) {
       var t = ev.target && ev.target.closest ? ev.target : null; if (!t) return;
       var b;
+      if ((b = t.closest('[data-retirer]'))) { var dd = trouver(b.getAttribute('data-retirer')); if (dd && D.peut) confirmerRetrait(dd); return; }
+      if ((b = t.closest('[data-remettre]'))) { remettre(b.getAttribute('data-remettre'), b); return; }
+      if (t.closest('[data-retires-bascule]')) { D.retiresOuvert = !D.retiresOuvert; D.remisMsg = ''; pied(); return; }
       if ((b = t.closest('[data-cle]'))) { V2.documentsOuvrir(b.getAttribute('data-cle')); return; }
       if ((b = t.closest('[data-dossier]'))) {
         var ch = b.getAttribute('data-dossier') || '';
