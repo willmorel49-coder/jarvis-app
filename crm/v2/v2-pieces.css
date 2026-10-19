@@ -164,6 +164,13 @@
 .of-recherche{margin-bottom:14px}
 .of-n{font-size:14px;font-weight:600;color:var(--muted-d);margin:0 2px 12px;min-height:20px}
 
+/* 19/10/2026 — liste des officines au téléphone : bouton « Voir les 50 suivantes » sous les 50 lignes (cibles ≥ 44 px, texte ≥ 15 px) */
+@media (max-width:760px){
+  .of-suite{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding:16px 14px 18px}
+  .of-suite .v2-btn{width:100%;min-height:48px;font-size:16px}
+  .of-reste{font-size:15px;font-weight:600;color:var(--muted-d);text-align:center}
+}
+
 /* ─── Téléphone ─── */
 @media (max-width:760px){
   :where(.v2-u) .v2-seg{height:44px}

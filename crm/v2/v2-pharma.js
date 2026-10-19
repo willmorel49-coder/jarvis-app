@@ -22,6 +22,29 @@
   var sectionCollapsed = {};
   function sectionOpen(key) { return (key in sectionCollapsed) ? !sectionCollapsed[key] : false; }
   var searchQuery = '';
+
+  // 19/10/2026 — « Mes officines » au téléphone, vue Tous : 2 391 lignes d'un coup = page de 178 000 px. On n'en montre que 50 à la fois.
+  // Actif seulement : téléphone + JARVIS + aucun commercial choisi + pas un commercial restreint + plus de 50 lignes. Sinon rendu inchangé.
+  var OF_PAR = 50, ofVues = 50, ofCle = '', ofRedessine = null;
+  function ofActif(n) {
+    return n > OF_PAR && !isOpso() && !V2.commFilter && !(V2.ventesRestreintes && V2.ventesRestreintes()) &&
+      !!(window.matchMedia && window.matchMedia('(max-width:760px)').matches);
+  }
+  function ofRaz() {   // la clé change (commercial, onglet, recherche) → retour aux 50 premières
+    var cle = (V2.commFilter || '') + '|' + secteurTab + '|' + searchQuery;
+    if (cle !== ofCle) { ofCle = cle; ofVues = OF_PAR; }
+  }
+  // 50 lignes, puis un bouton « Voir les 50 suivantes » ; chaque appui en ajoute 50.
+  function ofCarte(filtered) {
+    ofRaz();
+    var vues = Math.min(ofVues, filtered.length), reste = filtered.length - vues;
+    return {
+      n: V2.fmtNum(filtered.length) + ' officines · ' + V2.fmtNum(vues) + ' affichées',
+      html: filtered.slice(0, vues).map(listRowHtml).join('') +
+        (reste > 0 ? '<div class="of-suite"><button type="button" class="v2-btn v2-btn-ghost" onclick="V2.pharmaOfPlus()">Voir les ' + Math.min(reste, OF_PAR) +
+          ' suivantes</button><span class="of-reste">(' + V2.fmtNum(reste) + ' restantes)</span></div>' : '')
+    };
+  }
   var _chartBind = null;   // bind du chart 13 mois (homogénéisé avec Pilotage), appelé après render
   // Sélection de produits cochés (bouton +) pour le PDF RDV — propre à une pharma
   var selCips = null;   // Set des CIP cochés
@@ -918,6 +941,9 @@
 
     function cardHtml(filtered) {
       nAff = pl(filtered.length, 'officine');
+      // 19/10/2026 — téléphone, vue Tous : 50 lignes à la fois (voir ofActif)
+      ofRaz();   // la clé change même quand la règle ne s'applique pas (recherche à 0 résultat) : effacer la recherche repart bien de 50
+      if (ofActif(filtered.length)) { var o = ofCarte(filtered); nAff = o.n; return o.html; }
       return filtered.length
         ? filtered.map(listRowHtml).join('')
         : '<div class="v2-empty"><div class="v2-empty-t">Aucune officine</div><div class="v2-empty-d">' +
@@ -1019,6 +1045,13 @@
         var n = document.getElementById('v2-pharma-n'); if (n) n.textContent = nAff;
       });
     }
+    // 19/10/2026 — redessin de la carte seule (comme la recherche), appelé par V2.pharmaOfPlus
+    ofRedessine = function () {
+      var card = document.getElementById('v2-pharma-card');
+      if (!card) return;
+      card.innerHTML = listBody();
+      var n = document.getElementById('v2-pharma-n'); if (n) n.textContent = nAff;
+    };
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -3996,6 +4029,8 @@
     V2.render();
   };
   V2.pharmaSecteurTab = function (v) { secteurTab = v || 'clients'; voirArchives = false; V2.render(); };
+  // 19/10/2026 — « Voir les 50 suivantes » (liste des officines au téléphone) : 50 lignes de plus, la liste est redessinée, la position à l'écran ne bouge pas.
+  V2.pharmaOfPlus = function () { ofVues += OF_PAR; if (ofRedessine) ofRedessine(); };
   V2.pharmaVoirArchives = function (on) { voirArchives = !!on; V2.render(); };
   V2.promoteToClient = function (pid) {
     if (!V2.user) { if (V2.toast) V2.toast('Connecte-toi pour passer un prospect en client'); return; }
