@@ -23,6 +23,8 @@
 (function () {
   'use strict';
   var V2 = window.V2 = window.V2 || {};
+  // 19/10/2026 — micro posé DANS le champ (V2.notes.champ, v2-notes.js) ; le champ reste tel quel si ce module n'est pas encore chargé ou si l'appareil n'a pas de dictée.
+  function micChamp(h, t) { return (V2.notes && V2.notes.champ) ? V2.notes.champ(h, t) : h; }
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
 
@@ -325,16 +327,16 @@
     return '<div class="mm-sec">' + (e.id ? 'Modifier le modèle' : 'Nouveau modèle') + '</div>' +
       '<div class="mm-box">' +
         '<label for="mm-nom">Le nom (pour vous seul)</label>' +
-        '<input id="mm-nom" maxlength="80" value="' + esc(e.nom) + '" ' +
-          'oninput="V2.rdvModelesUI.saisie()" placeholder="Ex. Mon relationnel" />' +
+        micChamp('<input id="mm-nom" maxlength="80" value="' + esc(e.nom) + '" ' +
+          'oninput="V2.rdvModelesUI.saisie()" placeholder="Ex. Mon relationnel" />', 'Dicter le nom à la voix') +
 
         '<label for="mm-objet" style="margin-top:14px">L’objet du mail</label>' +
-        '<input id="mm-objet" maxlength="300" value="' + esc(e.objet) + '" ' +
-          'oninput="V2.rdvModelesUI.saisie()" />' +
+        micChamp('<input id="mm-objet" maxlength="300" value="' + esc(e.objet) + '" ' +
+          'oninput="V2.rdvModelesUI.saisie()" />', 'Dicter l’objet à la voix') +
 
         '<label for="mm-corps" style="margin-top:14px">Le message</label>' +
-        '<textarea id="mm-corps" rows="14" oninput="V2.rdvModelesUI.saisie()">' +
-          esc(e.corps) + '</textarea>' +
+        micChamp('<textarea id="mm-corps" rows="14" oninput="V2.rdvModelesUI.saisie()">' +
+          esc(e.corps) + '</textarea>', 'Dicter le message à la voix') +
         '<div class="mm-etiq">' + chips + '</div>' +
         '<p class="mm-aide">Cliquez une étiquette pour l’insérer où est votre curseur.<br>' + tableau + '</p>' +
         '<p class="mm-aide"><b>N’écrivez ni votre signature ni la mention STOP</b> : JARVIS les ' +

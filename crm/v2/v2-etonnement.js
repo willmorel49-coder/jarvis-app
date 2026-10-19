@@ -19,6 +19,8 @@
 (function () {
   'use strict';
   var V2 = window.V2 = window.V2 || {};
+  // 19/10/2026 — micro posé DANS le champ (V2.notes.champ, v2-notes.js) ; le champ reste tel quel si ce module n'est pas encore chargé ou si l'appareil n'a pas de dictée.
+  function micChamp(h, t) { return (V2.notes && V2.notes.champ) ? V2.notes.champ(h, t) : h; }
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
   var ICO = function (n, s, w) { return V2.ICO ? V2.ICO(n, s, w) : ''; };
 
@@ -351,7 +353,7 @@
           questionsDe(t).map(function (q) {
             return '<li>' + esc(q.q) + (q.perso ? ' <button class="eto-lien" data-act="retirerq" data-id="' + esc(q.id) + '">Retirer</button>' : '') + '</li>';
           }).join('') + '</ol>' +
-          '<div class="eto-g-add"><input type="text" class="eto-in" maxlength="240" placeholder="Votre question pour ce thème" aria-label="Nouvelle question pour le thème ' + esc(t.nom) + '" data-theme="' + t.id + '">' +
+          '<div class="eto-g-add">' + micChamp('<input type="text" class="eto-in" maxlength="240" placeholder="Votre question pour ce thème" aria-label="Nouvelle question pour le thème ' + esc(t.nom) + '" data-theme="' + t.id + '">', 'Dicter la question à la voix') +
           '<button class="v2-btn v2-btn-ghost" data-act="ajouterq" data-theme="' + t.id + '">Ajouter</button></div></div>';
       }).join('') + '</details>';
   }
@@ -408,7 +410,7 @@
     }
     return liste + '<div class="eto-am-f">' +
       '<label class="eto-am-l" for="eto-am-t">Le besoin, en une phrase</label>' +
-      '<input type="text" class="eto-in" id="eto-am-t" data-am="t" maxlength="200" autocomplete="off" placeholder="Exemple : connaître les derniers achats avant d\'entrer" value="' + esc(brouillon.t) + '">' +
+      micChamp('<input type="text" class="eto-in" id="eto-am-t" data-am="t" maxlength="200" autocomplete="off" placeholder="Exemple : connaître les derniers achats avant d\'entrer" value="' + esc(brouillon.t) + '">', 'Dicter le besoin à la voix') +
       '<label class="eto-am-l" for="eto-am-e">Moment du travail concerné</label>' +
       '<select class="eto-in eto-sel" id="eto-am-e" data-am="e"><option value="">Choisir le moment</option>' + MOMENTS.map(function (x) {
         return '<option value="' + x[0] + '"' + (x[0] === brouillon.e ? ' selected' : '') + '>' + esc(x[1]) + '</option>';
@@ -436,14 +438,14 @@
       '</div>' +
       (q.r ? '<p class="eto-q-r">Relance : ' + esc(q.r) + '</p>' : '') +
       notes +
-      '<textarea class="eto-ta" id="eto-ta-' + esc(q.id) + '" data-q="' + esc(q.id) + '" rows="3" maxlength="6000" placeholder="' + (q.note ? 'Ce qui explique cette note' : 'Ses mots, tels qu\'ils sont dits') + '">' + esc(r.t || '') + '</textarea>' +
+      micChamp('<textarea class="eto-ta" id="eto-ta-' + esc(q.id) + '" data-q="' + esc(q.id) + '" rows="3" maxlength="6000" placeholder="' + (q.note ? 'Ce qui explique cette note' : 'Ses mots, tels qu\'ils sont dits') + '">' + esc(r.t || '') + '</textarea>', 'Dicter la réponse à la voix') +
       '<div class="eto-am" data-ambox="' + esc(q.id) + '">' + ameliosHtml(row, q.id) + '</div>' +
     '</div>';
   }
   function themeHtml(row, idx) {
     if (idx >= THEMES.length) {
       return '<div class="eto-th-h"><div class="eto-th-k">Hors questions</div><h2>Notes libres</h2><p>Tout ce qui s\'est dit en dehors du guide : contexte, anecdotes, sujets à creuser.</p></div>' +
-        '<div class="eto-q"><textarea class="eto-ta eto-ta-libre" data-q="' + LIBRE + '" rows="8" maxlength="12000" aria-label="Notes libres" placeholder="Notes libres">' + esc(rep(row, LIBRE).t || '') + '</textarea></div>' +
+        '<div class="eto-q">' + micChamp('<textarea class="eto-ta eto-ta-libre" data-q="' + LIBRE + '" rows="8" maxlength="12000" aria-label="Notes libres" placeholder="Notes libres">' + esc(rep(row, LIBRE).t || '') + '</textarea>', 'Dicter les notes à la voix') + '</div>' +
         '<div class="eto-nav-b"><button class="v2-btn v2-btn-ghost" data-act="theme" data-i="' + (idx - 1) + '">Thème précédent</button>' +
         '<button class="v2-btn v2-btn-primary" data-act="terminer">' + (row.statut === 'termine' ? 'Rouvrir l\'entretien' : 'Marquer l\'entretien comme terminé') + '</button></div>';
     }

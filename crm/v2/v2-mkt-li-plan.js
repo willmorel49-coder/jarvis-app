@@ -9,6 +9,8 @@
 (function () {
   'use strict';
   var V2 = window.V2 = window.V2 || {};
+  // 19/10/2026 — micro posé DANS le champ (V2.notes.champ, v2-notes.js) ; le champ reste tel quel si ce module n'est pas encore chargé ou si l'appareil n'a pas de dictée.
+  function micChamp(h, t) { return (V2.notes && V2.notes.champ) ? V2.notes.champ(h, t) : h; }
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
   var ICO = function (n, s, w) { return window.ICO ? window.ICO(n, s, w) : ''; };
   function sb() { return (V2.sb && V2.sb()) || null; }
@@ -1490,8 +1492,8 @@
         '<button type="button" class="lpo-x mk-press" onclick="V2.lip.fermer()" aria-label="Fermer">' + icS('fermer', 22, 2) + '</button></div>' +
       '<div class="lpo-vc">' +
         '<div class="lpo-scene"><div class="lpo-cible">Déposez l’image, la vidéo ou le PDF ici</div>' +
-          apercuHtml(p, '<textarea class="lpo-ltxt' + (ouvert.deplie ? '' : ' plie') + '" id="lpo-texte" rows="4" spellcheck="true" aria-label="Texte du post, modifiable" ' +
-              'onfocus="V2.lip.deplier()" oninput="V2.lip.setTexte(this.value)">' + esc(texteDe(p, e)) + '</textarea>' +
+          apercuHtml(p, micChamp('<textarea class="lpo-ltxt' + (ouvert.deplie ? '' : ' plie') + '" id="lpo-texte" rows="4" spellcheck="true" aria-label="Texte du post, modifiable" ' +
+              'onfocus="V2.lip.deplier()" oninput="V2.lip.setTexte(this.value)">' + esc(texteDe(p, e)) + '</textarea>', 'Dicter le texte du post à la voix') +
             (ouvert.deplie ? '' : '<button type="button" class="lpo-deplier" id="lpo-deplier" onclick="V2.lip.deplier(true)">… voir plus</button>'),
             '<div class="lpo-vis" id="lpo-vis">' + visuelHtml() + '</div>') +
           '<div class="lpo-aide" id="lpo-aide">' + aideHtml() + '</div>' +
@@ -1508,7 +1510,7 @@
               return '<button type="button" class="mk-press" aria-pressed="' + (e.resp === q.k) + '" onclick="V2.lip.quiTiroir(\'' + q.k + '\')">' + esc(q.label) + '</button>';
             }).join('') + '</div></section>' +
           '<section><label class="lpo-cap" for="lpo-com">Commentaire pour l’équipe</label>' +
-            '<textarea class="lpo-champ" id="lpo-com" rows="2" placeholder="Ce qu’il faut changer, préciser, éviter…" oninput="V2.lip.setChamp(\'commentaire\',this.value)">' + esc(e.commentaire || '') + '</textarea>' +
+            micChamp('<textarea class="lpo-champ" id="lpo-com" rows="2" placeholder="Ce qu’il faut changer, préciser, éviter…" oninput="V2.lip.setChamp(\'commentaire\',this.value)">' + esc(e.commentaire || '') + '</textarea>', 'Dicter le commentaire à la voix') +
             '<p class="lpo-t5">Visible par toute l’équipe. Gardé quand vous retenez le texte ou quand vous enregistrez.</p></section>' +
           repliHtml('visuel', 'Idées de visuel — ' + cur.v.length + ' proposition' + (cur.v.length > 1 ? 's' : ''), idees) +
           repliHtml('prompt', 'Prompt d’image — 3 approches', prompt) +

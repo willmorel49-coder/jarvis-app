@@ -15,6 +15,8 @@
   'use strict';
 
   var V2 = window.V2 = window.V2 || {};
+  // 19/10/2026 — micro posé DANS le champ (V2.notes.champ, v2-notes.js) ; le champ reste tel quel si ce module n'est pas encore chargé ou si l'appareil n'a pas de dictée.
+  function micChamp(h, t) { return (V2.notes && V2.notes.champ) ? V2.notes.champ(h, t) : h; }
   V2.pages = V2.pages || {};
   var ICO = window.ICO || function () { return ''; };
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
@@ -499,9 +501,9 @@
         '<div class="mkt-edit">' +
           '<div>' +
             '<div class="v2-card" style="padding:18px">' +
-              '<div class="mkt-field"><label for="mkt-f-title">Titre</label><input id="mkt-f-title" value="' + esc(editing.title) + '" oninput="V2.marketing.set(\'title\',this.value)"></div>' +
-              '<div class="mkt-field"><label for="mkt-f-sub">Sous-titre</label><input id="mkt-f-sub" value="' + esc(editing.subtitle) + '" oninput="V2.marketing.set(\'subtitle\',this.value)"></div>' +
-              '<div class="mkt-field"><label for="mkt-f-period">Période</label><input id="mkt-f-period" value="' + esc(editing.period) + '" oninput="V2.marketing.set(\'period\',this.value)"></div>' +
+              '<div class="mkt-field"><label for="mkt-f-title">Titre</label>' + micChamp('<input id="mkt-f-title" value="' + esc(editing.title) + '" oninput="V2.marketing.set(\'title\',this.value)">', 'Dicter le titre à la voix') + '</div>' +
+              '<div class="mkt-field"><label for="mkt-f-sub">Sous-titre</label>' + micChamp('<input id="mkt-f-sub" value="' + esc(editing.subtitle) + '" oninput="V2.marketing.set(\'subtitle\',this.value)">', 'Dicter le sous-titre à la voix') + '</div>' +
+              '<div class="mkt-field"><label for="mkt-f-period">Période</label>' + micChamp('<input id="mkt-f-period" value="' + esc(editing.period) + '" oninput="V2.marketing.set(\'period\',this.value)">', 'Dicter la période à la voix') + '</div>' +
               '<div class="mkt-field" style="margin-bottom:0"><label for="mkt-f-date">Date des prix</label><input id="mkt-f-date" type="date" value="' + esc(editing.priceDate) + '" oninput="V2.marketing.set(\'priceDate\',this.value)">' +
               '<p class="mkt-note" style="margin-top:6px">La fiche indique « Votre prix : prix HT Offilog au … » avec cette date. Par défaut, le jour du relevé des prix Offilog.</p></div>' +
             '</div>' +

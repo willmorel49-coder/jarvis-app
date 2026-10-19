@@ -12,6 +12,8 @@
 (function () {
   'use strict';
   var V2 = window.V2 = window.V2 || {};
+  // 19/10/2026 — micro posé DANS le champ (V2.notes.champ, v2-notes.js) ; le champ reste tel quel si ce module n'est pas encore chargé ou si l'appareil n'a pas de dictée.
+  function micChamp(h, t) { return (V2.notes && V2.notes.champ) ? V2.notes.champ(h, t) : h; }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function fr(n) { return String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
   function P() { return V2.accueilPont; }
@@ -215,7 +217,7 @@
     notes: function (w, stat) {
       var rows = w.t === 'L' ? 6 : 3, txt = W().notes || '';
       if (stat) return '<div class="aw-no aw-no-st" style="min-height:' + (rows * 24 + 24) + 'px">' + (txt ? esc(txt) : '<span class="aw-ph">Écrivez ici</span>') + '</div>';
-      return '<label class="aw-no"><span class="u2-sr">Vos notes</span><textarea data-aw-notes rows="' + rows + '" maxlength="600" placeholder="Écrivez ici">' + esc(txt) + '</textarea></label>';
+      return '<label class="aw-no"><span class="u2-sr">Vos notes</span>' + micChamp('<textarea data-aw-notes rows="' + rows + '" maxlength="600" placeholder="Écrivez ici">' + esc(txt) + '</textarea>', 'Dicter la note à la voix') + '</label>';
     },
     raccourcis: function (w, stat) {
       var p = P(), vis = p.vis(), cinq = (V2.accueilCinq && V2.accueilCinq.CINQ) || [];

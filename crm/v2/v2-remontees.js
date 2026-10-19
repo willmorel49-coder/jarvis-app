@@ -9,6 +9,8 @@
 (function () {
   'use strict';
   var V2 = window.V2 = window.V2 || {};
+  // 19/10/2026 — micro posé DANS le champ (V2.notes.champ, v2-notes.js) ; le champ reste tel quel si ce module n'est pas encore chargé ou si l'appareil n'a pas de dictée.
+  function micChamp(h, t) { return (V2.notes && V2.notes.champ) ? V2.notes.champ(h, t) : h; }
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
 
@@ -101,7 +103,7 @@
         '<div class="v2-rem-h"><span class="v2-rem-h-t">Une idée d\'amélioration&nbsp;?</span>' +
           '<button class="v2-rem-x" aria-label="Fermer" onclick="V2.remonteeClose()">&times;</button></div>' +
         '<div class="v2-rem-h-s">Bug, idée, manque… toute l\'équipe la verra.</div>' +
-        '<textarea id="v2-rem-ta" class="v2-rem-ta" rows="4" placeholder="Ex : pouvoir filtrer les officines par groupement sur la carte…"></textarea>' +
+        micChamp('<textarea id="v2-rem-ta" class="v2-rem-ta" rows="4" placeholder="Ex : pouvoir filtrer les officines par groupement sur la carte…"></textarea>', 'Dicter l’idée à la voix') +
         '<input type="file" id="v2-rem-file" accept="image/*" hidden>' +
         '<div id="v2-rem-cap" class="v2-rem-cap"></div>' +
         '<div class="v2-rem-foot"><span class="v2-rem-by">au nom de <b>' + esc(V2.user.name || '') + '</b></span>' +

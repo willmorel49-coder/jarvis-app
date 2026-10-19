@@ -76,13 +76,12 @@
           '<div class="v2-rp-l">Points à aborder</div>' +
           '<div class="v2-rp-list"><div class="v2-notes-empty">Chargement…</div></div>' +
           '<div class="v2-notes-add">' +
-            '<input type="text" class="v2-notes-ta v2-rp-in" maxlength="300" placeholder="Ajouter un point à aborder…" aria-label="Ajouter un point à aborder" onkeydown="if(event.key===\'Enter\'){event.preventDefault();V2.rdvPrepa.ajouter(this)}">' +
+            (V2.notes.champ ? V2.notes.champ : function (h) { return h; })('<input type="text" class="v2-notes-ta v2-rp-in" maxlength="300" placeholder="Ajouter un point à aborder…" aria-label="Ajouter un point à aborder" onkeydown="if(event.key===\'Enter\'){event.preventDefault();V2.rdvPrepa.ajouter(this)}">', 'Dicter le point à la voix') +
             '<button type="button" class="v2-btn v2-btn-ghost v2-notes-btn" onclick="V2.rdvPrepa.ajouter(this)">Ajouter</button>' +
           '</div>' +
           '<div class="v2-rp-l v2-rp-l2">Compte rendu</div>' +
           '<div class="v2-notes-add v2-rp-crl">' +
-            '<textarea class="v2-notes-ta v2-rp-cr" rows="3" placeholder="Après le rendez-vous : ce qui a été dit, la suite à donner…" aria-label="Compte rendu du rendez-vous" oninput="V2.rdvPrepa.saisir(this)">' + esc(_brouillon[pid] || (V2.notes.brouillonLire ? V2.notes.brouillonLire('cr:' + pid) : '')) + '</textarea>' +
-            (V2.notes.micro ? V2.notes.micro('.v2-rp-cr', 'Dicter le compte rendu à la voix') : '') +
+            (V2.notes.champ ? V2.notes.champ : function (h) { return h; })('<textarea class="v2-notes-ta v2-rp-cr" rows="3" placeholder="Après le rendez-vous : ce qui a été dit, la suite à donner…" aria-label="Compte rendu du rendez-vous" oninput="V2.rdvPrepa.saisir(this)">' + esc(_brouillon[pid] || (V2.notes.brouillonLire ? V2.notes.brouillonLire('cr:' + pid) : '')) + '</textarea>', 'Dicter le compte rendu à la voix') +   // 19/10/2026 : micro DANS le coin du champ
           '</div>' +
           '<div class="v2-rp-pied">' +
             '<span class="v2-rp-aide">Les points cochés sont rangés avec le compte rendu dans les notes ; les autres restent pour la fois suivante.</span>' +

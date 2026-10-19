@@ -9,6 +9,8 @@
 (function () {
   'use strict';
   var V2 = window.V2 = window.V2 || {};
+  // 19/10/2026 — micro posé DANS le champ (V2.notes.champ, v2-notes.js) ; le champ reste tel quel si ce module n'est pas encore chargé ou si l'appareil n'a pas de dictée.
+  function micChamp(h, t) { return (V2.notes && V2.notes.champ) ? V2.notes.champ(h, t) : h; }
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
 
@@ -1377,9 +1379,11 @@
       '.off-mktbar .v2-btn{white-space:nowrap}',
       '.off-mktbar .clr{background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;display:flex;padding:4px}',
       '.off-mktbar .clr:hover{color:#fff}',
-      '@media(max-width:680px){.off-mktbar .ttl{width:130px}}',
+      // 19/10/2026 — micro posé dans le titre (V2.notes.champ) : l'enveloppe prend la place du champ, la barre ne change pas de forme
+      '.off-mktbar .v2-mic-wrap{flex:none;width:230px}.off-mktbar .v2-mic-wrap .ttl{width:100%}.off-mktbar .v2-notes-mic{background:rgba(255,255,255,.16);border-color:transparent;color:#fff}',
+      '@media(max-width:680px){.off-mktbar .ttl{width:130px}.off-mktbar .v2-mic-wrap{width:170px}}',
       // Mobile : la barre flottante se replie (elle est centrée en position:fixed → débordait des 2 côtés). Titre sur sa propre ligne, boutons pleine largeur.
-      '@media(max-width:560px){.off-mktbar{flex-wrap:wrap;justify-content:center;left:10px;right:10px;max-width:none;transform:none;bottom:calc(14px + env(safe-area-inset-bottom));padding:12px 14px}.off-mktbar .ttl{order:5;flex:1 1 100%;width:auto}.off-mktbar .v2-btn{flex:1 1 auto}.off-mktbar .clr{margin-left:auto}}',
+      '@media(max-width:560px){.off-mktbar{flex-wrap:wrap;justify-content:center;left:10px;right:10px;max-width:none;transform:none;bottom:calc(14px + env(safe-area-inset-bottom));padding:12px 14px}.off-mktbar .ttl{order:5;flex:1 1 100%;width:auto}.off-mktbar .v2-mic-wrap{order:5;flex:1 1 100%;width:auto}.off-mktbar .v2-mic-wrap .ttl{flex:none}.off-mktbar .v2-btn{flex:1 1 auto}.off-mktbar .clr{margin-left:auto}}',
       // modal aperçu fiche marketing
       '.off-mkt-modal{position:fixed;inset:0;z-index:120;background:rgba(16,19,28,0.55);display:flex;align-items:flex-start;justify-content:center;padding:4vh 16px;opacity:0;pointer-events:none;transition:opacity .2s var(--ease)}',
       '.off-mkt-modal.open{opacity:1;pointer-events:auto}',
@@ -1837,7 +1841,7 @@
         '<div class="off-mktbar' + (mktSel.size ? '' : ' hidden') + '" id="off-mktbar">' +
           '<span class="ic">' + ICO('spark', 18, 2) + '</span>' +
           '<span class="n" id="off-mkt-n">' + mktSel.size + ' produit' + (mktSel.size > 1 ? 's' : '') + '</span>' +
-          '<input class="ttl" id="off-mkt-title" placeholder="Titre de la fiche marketing…" value="' + esc(mktTitle) + '" oninput="V2.offMktTitle(this.value)">' +
+          micChamp('<input class="ttl" id="off-mkt-title" placeholder="Titre de la fiche marketing…" value="' + esc(mktTitle) + '" oninput="V2.offMktTitle(this.value)">', 'Dicter le titre à la voix') +
           '<button class="v2-btn v2-btn-primary" onclick="V2.offMktPreview()">' + ICO('grid', 16, 2) + ' Aperçu de la fiche</button>' +
           '<button class="clr" onclick="V2.offMktClear()" title="Vider">' + ICO('close', 16, 2) + '</button>' +
         '</div>';

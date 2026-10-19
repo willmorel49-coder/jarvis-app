@@ -12,6 +12,8 @@
 (function () {
   'use strict';
   var V2 = window.V2; if (!V2) return;
+  // 19/10/2026 — micro posé DANS le champ (V2.notes.champ, v2-notes.js) ; le champ reste tel quel si ce module n'est pas encore chargé ou si l'appareil n'a pas de dictée.
+  function micChamp(h, t) { return (V2.notes && V2.notes.champ) ? V2.notes.champ(h, t) : h; }
   V2.pages = V2.pages || {};
   var TABLE = 'bloc_notes', BUCKET = 'notes-vocales', MAX_S = 300;
 
@@ -452,7 +454,7 @@
     var vocal = r.kind === 'vocal', ed = S.edit === r.id;
     var h = '<div class="v2-card bn-note" data-row="' + esc(r.id) + '"><div class="bn-top"><b>' + heure(r.created_at) + '</b><span>' + (vocal ? 'Note vocale' + (r.duree_s ? ' · ' + chrono(r.duree_s) : '') : 'Note écrite') + '</span></div>';
     if (ed) {
-      h += '<textarea class="bn-ta" id="bn-edit-ta" rows="4" aria-label="Modifier la note"' + (vocal ? ' placeholder="Écris ou corrige le texte de cette note vocale"' : '') + '>' + esc(S.editTxt) + '</textarea>' +
+      h += micChamp('<textarea class="bn-ta" id="bn-edit-ta" rows="4" aria-label="Modifier la note"' + (vocal ? ' placeholder="Écris ou corrige le texte de cette note vocale"' : '') + '>' + esc(S.editTxt) + '</textarea>', 'Dicter la correction à la voix') +
         '<div class="bn-acts"><button type="button" class="v2-btn v2-btn-primary" data-bn="edit-ok" data-row="' + esc(r.id) + '">Enregistrer</button><button type="button" class="bn-b" data-bn="edit-non">Annuler</button></div>' +
         '<div class="bn-msg bn-msg--ko" id="bn-edit-msg" role="status"></div>';
     } else {

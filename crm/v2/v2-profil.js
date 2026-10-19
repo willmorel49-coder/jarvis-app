@@ -10,6 +10,8 @@
 (function () {
   'use strict';
   var V2 = window.V2 = window.V2 || {};
+  // 19/10/2026 — micro posé DANS le champ (V2.notes.champ, v2-notes.js) ; le champ reste tel quel si ce module n'est pas encore chargé ou si l'appareil n'a pas de dictée.
+  function micChamp(h, t) { return (V2.notes && V2.notes.champ) ? V2.notes.champ(h, t) : h; }
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
   var TABLE = 'profils', LS = 'jarvis_profils_v1';
 
@@ -110,7 +112,7 @@
           '<div class="v2-profil-grid">' +
             FIELDS.map(function (f) {
               if (f.text) return '<label class="v2-profil-f v2-profil-f-wide"><span>' + esc(f.l) + '</span>' +
-                '<input type="text" data-fk="' + f.k + '" placeholder="—" onchange="V2.profil.set(this)"></label>';
+                (f.k === 'autre' ? micChamp('<input type="text" data-fk="' + f.k + '" placeholder="—" onchange="V2.profil.set(this)">', 'Dicter à la voix') : '<input type="text" data-fk="' + f.k + '" placeholder="—" onchange="V2.profil.set(this)">') + '</label>';
               return '<label class="v2-profil-f"><span>' + esc(f.l) + '</span><select data-fk="' + f.k + '" onchange="V2.profil.set(this)">' +
                 '<option value="">—</option>' + f.opts.map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') +
                 '<option value="__add__">➕ préciser…</option></select></label>';

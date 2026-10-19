@@ -17,6 +17,8 @@
 (function () {
   'use strict';
   var V2 = window.V2 = window.V2 || {};
+  // 19/10/2026 — micro posé DANS le champ (V2.notes.champ, v2-notes.js) ; le champ reste tel quel si ce module n'est pas encore chargé ou si l'appareil n'a pas de dictée.
+  function micChamp(h, t) { return (V2.notes && V2.notes.champ) ? V2.notes.champ(h, t) : h; }
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
   var ICO = window.ICO || function () { return ''; };
@@ -390,7 +392,7 @@
 
           '<div class="rda-sec">Une note (facultatif)</div>' +
           '<div class="rda-box">' +
-            '<textarea id="rda-note" placeholder="Ce qu’il faut préparer, ce qui a été dit au téléphone…"></textarea>' +
+            micChamp('<textarea id="rda-note" placeholder="Ce qu’il faut préparer, ce qui a été dit au téléphone…"></textarea>', 'Dicter la note à la voix') +
           '</div>' +
 
           '<div class="rda-acts">' +

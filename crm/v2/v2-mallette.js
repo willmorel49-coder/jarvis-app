@@ -12,6 +12,8 @@
 (function () {
   'use strict';
   var V2 = window.V2; if (!V2) return;
+  // 19/10/2026 — micro posé DANS le champ (V2.notes.champ, v2-notes.js) ; le champ reste tel quel si ce module n'est pas encore chargé ou si l'appareil n'a pas de dictée.
+  function micChamp(h, t) { return (V2.notes && V2.notes.champ) ? V2.notes.champ(h, t) : h; }
   V2.pages = V2.pages || {};
   var CB = '?v=20261019b';
   var TX_BUCKET = 'marketing-pdfs';   // le même seau que Marketing › Documents partagés et « Transmettre »
@@ -864,8 +866,8 @@
             '<button type="button" class="v2-tab" role="radio" aria-checked="false" data-ton="court">Court</button>' +
             '<button type="button" class="v2-tab on" role="radio" aria-checked="true" data-ton="chaleureux">Chaleureux</button>' +
             '<button type="button" class="v2-tab" role="radio" aria-checked="false" data-ton="detaille">Détaillé</button></div></div>' +
-          '<div class="ml-champ"><label for="ml-m-objet">Objet</label><input type="text" id="ml-m-objet" autocomplete="off"></div>' +
-          '<div class="ml-champ"><label for="ml-m-corps">Message</label><textarea id="ml-m-corps" data-mail-corps spellcheck="true"></textarea></div>' +
+          '<div class="ml-champ"><label for="ml-m-objet">Objet</label>' + micChamp('<input type="text" id="ml-m-objet" autocomplete="off">', 'Dicter l’objet à la voix') + '</div>' +
+          '<div class="ml-champ"><label for="ml-m-corps">Message</label>' + micChamp('<textarea id="ml-m-corps" data-mail-corps spellcheck="true"></textarea>', 'Dicter le message à la voix') + '</div>' +
           '<div class="ml-champ"><span class="ml-lb">Pièces jointes à l’envoi</span><div class="ml-pj" id="ml-m-pj"></div></div>' +
           '<p class="ml-honnete">« Ouvrir dans Mail » ne reprend que le texte. Pour joindre les fichiers, utilisez « Préparer l’envoi » puis « Envoyer » : la feuille de partage de l’appareil joint toutes les pièces toute seule. Sinon, « Télécharger » les dépose dans vos Téléchargements.</p>' +
         '</div>' +

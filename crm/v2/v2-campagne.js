@@ -8,6 +8,8 @@
 (function () {
   'use strict';
   var V2 = window.V2 = window.V2 || {};
+  // 19/10/2026 — micro posé DANS le champ (V2.notes.champ, v2-notes.js) ; le champ reste tel quel si ce module n'est pas encore chargé ou si l'appareil n'a pas de dictée.
+  function micChamp(h, t) { return (V2.notes && V2.notes.champ) ? V2.notes.champ(h, t) : h; }
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
   var ICO = window.ICO || function () { return ''; };
@@ -504,7 +506,7 @@
           '<p>Deux lignes, réutilisées pour toute la liste — une nouveauté, un ' +
             'événement. Aucun pourcentage : les conditions commerciales ne ' +
             's’écrivent pas dans un mail.</p>' +
-          '<textarea id="cp-texte" rows="2" oninput="V2.campagne.apercu()" placeholder="Ex. La gamme diabète arrive en septembre."></textarea>' +
+          micChamp('<textarea id="cp-texte" rows="2" oninput="V2.campagne.apercu()" placeholder="Ex. La gamme diabète arrive en septembre."></textarea>', 'Dicter le texte de la campagne à la voix') +
         '</div>' +
 
         '<div class="v2-camp-sec">Aperçu du mail</div>' +

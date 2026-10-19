@@ -14,6 +14,8 @@
 (function () {
   'use strict';
   var V2 = window.V2 = window.V2 || {};
+  // 19/10/2026 — micro posé DANS le champ (V2.notes.champ, v2-notes.js) ; le champ reste tel quel si ce module n'est pas encore chargé ou si l'appareil n'a pas de dictée.
+  function micChamp(h, t) { return (V2.notes && V2.notes.champ) ? V2.notes.champ(h, t) : h; }
   V2.pages = V2.pages || {};
   if (window.V2_BRAND && window.V2_BRAND.opso) return;   // espace OPSO : pas de discussion
 
@@ -422,7 +424,7 @@
   }
   function editeurHtml(m) {
     return '<form class="dsc-ed" onsubmit="return V2.discussion.enregistrer(event,\'' + ID(m.id) + '\')">' +
-      '<textarea name="c" data-k="e' + ID(m.id) + '" rows="3" maxlength="' + MAX_TEXTE + '" aria-label="Modifier le message">' + esc(m.texte) + '</textarea>' +
+      micChamp('<textarea name="c" data-k="e' + ID(m.id) + '" rows="3" maxlength="' + MAX_TEXTE + '" aria-label="Modifier le message">' + esc(m.texte) + '</textarea>', 'Dicter la correction à la voix') +
       '<div class="dsc-edb"><button type="submit" class="v2-btn v2-btn-primary">Enregistrer</button>' +
       '<button type="button" class="v2-btn" onclick="V2.discussion.modifier(\'\')">Annuler</button></div></form>';
   }
@@ -464,7 +466,7 @@
       '<div class="dsc-mb"><div class="dsc-mh"><b>' + esc(m.auteur_nom) + '</b><time>' + esc(heure(m.cree_le)) + '</time>' + (ment ? '<em class="dsc-pm">Vous êtes mentionné</em>' : '') + '</div>' +
       corpsMsg(m) + reactionsHtml(m) + '<div class="dsc-ma">' + actions + '</div>' +
       (ouvert ? '<div class="dsc-fil">' + visibles.map(reponseHtml).join('') +
-        '<form class="dsc-rf" onsubmit="return V2.discussion.envoyer(event,\'' + ID(m.id) + '\',\'\')"><input type="text" name="c" data-k="r' + ID(m.id) + '" maxlength="' + MAX_TEXTE + '" autocomplete="off" placeholder="Votre réponse" aria-label="Votre réponse">' +
+        '<form class="dsc-rf" onsubmit="return V2.discussion.envoyer(event,\'' + ID(m.id) + '\',\'\')">' + micChamp('<input type="text" name="c" data-k="r' + ID(m.id) + '" maxlength="' + MAX_TEXTE + '" autocomplete="off" placeholder="Votre réponse" aria-label="Votre réponse">', 'Dicter la réponse à la voix') +
         '<button type="submit" class="v2-btn v2-btn-primary">Répondre</button></form></div>' : '') +
       '</div></article>';
   }
@@ -484,7 +486,7 @@
     var fond = '';
     if (rep && rep.t) fond += '<div class="dsc-rep"><b>' + esc(rep.par || 'Réponse de la direction') + ' · direction</b>' + esc(rep.t).replace(/\n/g, '<br>') + '</div>';
     if (admin && S.repRem === i.id) {
-      fond += '<form class="dsc-repf" onsubmit="return V2.discussion.repondreRem(event,\'' + ID(i.id) + '\')"><textarea name="c" data-k="rep' + ID(i.id) + '" rows="3" maxlength="1000" aria-label="Réponse de la direction, visible par toute l’équipe" placeholder="Réponse visible par toute l’équipe">' + esc((rep && rep.t) || '') + '</textarea>' +
+      fond += '<form class="dsc-repf" onsubmit="return V2.discussion.repondreRem(event,\'' + ID(i.id) + '\')">' + micChamp('<textarea name="c" data-k="rep' + ID(i.id) + '" rows="3" maxlength="1000" aria-label="Réponse de la direction, visible par toute l’équipe" placeholder="Réponse visible par toute l’équipe">' + esc((rep && rep.t) || '') + '</textarea>', 'Dicter la réponse à la voix') +
         '<div class="dsc-edb"><button type="submit" class="v2-btn v2-btn-primary">Enregistrer la réponse</button><button type="button" class="v2-btn" onclick="V2.discussion.repRem(\'\')">Annuler</button></div></form>';
     }
     var zoneCom = '';
@@ -556,8 +558,8 @@
       'ondragover="V2.discussion.survol(event,true)" ondragleave="V2.discussion.survol(event,false)" ondrop="V2.discussion.depot(event,\'' + pk + '\')">' +
       (fil ? '<div class="dsc-cv"><label for="dsc-cible">Écrire dans</label><select id="dsc-cible" name="sujet" onchange="V2.discussion.cible(this.value)" aria-label="Sujet dans lequel écrire">' + listeSujetsHtml() + '</select>' +
         '<button type="button" class="v2-btn dsc-idee" onclick="V2.discussion.idee()" aria-label="Proposer une idée">' + ICO_IDEE + '<span class="dsc-idl">Proposer une idée</span></button></div>' : '') +
-      '<div class="dsc-zone"><textarea name="c" data-k="' + (o.comm ? 'rc' + pk.slice(3) : 'nouveau') + '" rows="' + (o.rows || 2) + '" maxlength="' + MAX_TEXTE + '" placeholder="' + esc(ph) + '" aria-label="' + esc(o.comm ? 'Votre commentaire' : 'Votre message') + '" ' +
-      'oninput="V2.discussion.saisie(this)" onkeydown="V2.discussion.touche(event,this)" onpaste="V2.discussion.colle(event,\'' + pk + '\')" onblur="V2.discussion.fermerMention()"></textarea>' +
+      '<div class="dsc-zone">' + micChamp('<textarea name="c" data-k="' + (o.comm ? 'rc' + pk.slice(3) : 'nouveau') + '" rows="' + (o.rows || 2) + '" maxlength="' + MAX_TEXTE + '" placeholder="' + esc(ph) + '" aria-label="' + esc(o.comm ? 'Votre commentaire' : 'Votre message') + '" ' +
+      'oninput="V2.discussion.saisie(this)" onkeydown="V2.discussion.touche(event,this)" onpaste="V2.discussion.colle(event,\'' + pk + '\')" onblur="V2.discussion.fermerMention()"></textarea>', 'Dicter le message à la voix') +
       '<div class="dsc-mp" role="listbox" aria-label="Personnes à mentionner" hidden></div></div>' +
       '<div class="dsc-pv" data-pk="' + pk + '"></div>' +
       '<input type="file" class="dsc-file" accept="' + ACCEPT + '" multiple hidden onchange="V2.discussion.choisis(this,\'' + pk + '\')">' +
@@ -568,8 +570,8 @@
   function nouveauHtml() {
     return '<div class="dsc-fenetre"><div class="dsc-th"><button type="button" class="dsc-retour" onclick="V2.discussion.retour()">← Sujets</button><div><h2>Nouveau sujet</h2><span>Visible par toute l’équipe commerciale et la direction</span></div></div>' +
       '<form class="dsc-nf" onsubmit="return V2.discussion.creer(event)">' +
-      '<label for="dsc-titre">Titre du sujet</label><input id="dsc-titre" name="titre" type="text" maxlength="' + MAX_TITRE + '" autocomplete="off" placeholder="Par exemple : livraison du vendredi">' +
-      '<label for="dsc-premier">Premier message</label><textarea id="dsc-premier" name="c" rows="5" maxlength="' + MAX_TEXTE + '" placeholder="Votre message"></textarea>' +
+      '<label for="dsc-titre">Titre du sujet</label>' + micChamp('<input id="dsc-titre" name="titre" type="text" maxlength="' + MAX_TITRE + '" autocomplete="off" placeholder="Par exemple : livraison du vendredi">', 'Dicter le titre à la voix') +
+      '<label for="dsc-premier">Premier message</label>' + micChamp('<textarea id="dsc-premier" name="c" rows="5" maxlength="' + MAX_TEXTE + '" placeholder="Votre message"></textarea>', 'Dicter le message à la voix') +
       '<div class="dsc-cb"><span class="dsc-note">Pas de chiffres de ventes dans un message : ils restent dans l’outil.</span>' +
       '<button type="submit" class="v2-btn v2-btn-primary">Créer le sujet</button></div></form></div>';
   }

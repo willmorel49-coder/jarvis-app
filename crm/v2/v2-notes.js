@@ -82,8 +82,7 @@
           '<div class="v2-notes-hd">' + (V2.ICO ? V2.ICO('spark', 16, 2) : '') + '<span>Note personnelle</span></div>' +
           '<div class="v2-notes-list"><div class="v2-notes-empty">Chargement…</div></div>' +
           '<div class="v2-notes-add">' +
-            '<textarea class="v2-notes-ta" rows="2" placeholder="Ajouter une note personnelle…" oninput="V2.notes.garder(this)">' + esc(brouillonLire(cle)) + '</textarea>' +
-            V2.notes.micro('.v2-notes-ta', 'Dicter la note à la voix') +
+            V2.notes.champ('<textarea class="v2-notes-ta" rows="2" placeholder="Ajouter une note personnelle…" oninput="V2.notes.garder(this)">' + esc(brouillonLire(cle)) + '</textarea>', 'Dicter la note à la voix') +   // 19/10/2026 : le micro passe DANS le coin du champ, comme partout
             '<button class="v2-btn v2-btn-primary v2-notes-btn" onclick="V2.notes.add(this)">Ajouter</button>' +
           '</div>' +
         '</div>';
@@ -93,7 +92,17 @@
     // `onmousedown` empêche le bouton de prendre le focus : le clavier déjà ouvert ne se referme pas.
     micro: function (cible, titre) {
       if (!voiceSupported()) return '';
+      ensureCss();
       return '<button type="button" class="v2-notes-mic" data-cible="' + esc(cible) + '" onmousedown="event.preventDefault()" onclick="V2.notes.dictate(this)" title="' + esc(titre) + '" aria-label="' + esc(titre) + '">' + MIC_SVG + '</button>';
+    },
+    // 19/10/2026 — « un micro partout où l'on écrit du texte » : entoure UN champ (<textarea> ou <input>) du HTML
+    // `champHtml` et pose le micro DANS son coin bas-droit (au milieu à droite pour une ligne). Rend le champ
+    // inchangé si l'appareil n'a aucune dictée (rien ne bouge à l'écran). `[data-dictee]` : c'est là que
+    // dictate() cherche le champ ; ne mettre qu'UN champ dictable dans l'enveloppe.
+    champ: function (champHtml, titre) {
+      var m = V2.notes.micro('textarea,input', titre || 'Dicter à la voix');
+      if (!m) return champHtml;
+      return '<span class="v2-mic-wrap' + (/^\s*<input/i.test(champHtml) ? ' v2-mic-1l' : '') + '" data-dictee>' + champHtml + m + '</span>';
     },
     micPossible: voiceSupported,
     brouillonLire: brouillonLire,
@@ -231,6 +240,9 @@
           // « définitif », tout ce que Karine venait de dicter disparaissait à l'arrêt.
           var texte = (base + acquis).trim() || affiche.trim() || ta.value.trim();
           ta.value = texte; signaler(ta);
+          // 19/10/2026 — les champs qui enregistrent sur `change` (fiche officine, profil…) l'attendent
+          // à la fin de la dictée, comme à la sortie d'un champ tapé au clavier.
+          try { ta.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) {}
           if (texte) { ta.focus(); }
           else if (V2.toast) V2.toast('Rien n\'a été entendu — vérifiez le micro et réessayez', 'error');
         };
@@ -304,7 +316,7 @@
       try { body = decodeURIComponent(note.getAttribute('data-raw') || ''); } catch (e) { body = ''; }
       note.classList.add('v2-note-editing');
       note.innerHTML = '<div class="v2-note-editform">' +
-          '<textarea class="v2-notes-ta v2-note-edit-ta" rows="3"></textarea>' +
+          V2.notes.champ('<textarea class="v2-notes-ta v2-note-edit-ta" rows="3"></textarea>', 'Dicter la correction à la voix') +
           '<div class="v2-note-edit-actions">' +
             '<button class="v2-btn v2-note-cancel" onclick="V2.notes.cancelEdit(this)">Annuler</button>' +
             '<button class="v2-btn v2-btn-primary v2-note-save" onclick="V2.notes.saveEdit(this)">Enregistrer</button>' +
@@ -361,6 +373,7 @@
   // du clavier montre où se trouve son micro. La bulle part dès que le texte arrive.
   var _aide = null;
   function dicterAuClavier(ta) {
+    ensureCss();   // 19/10/2026 — le Bloc-notes a son propre bouton micro : sans cela la bulle n'avait AUCUN style (posée en bas de page, hors écran)
     ta.focus();
     try { var n = ta.value.length; ta.setSelectionRange(n, n); } catch (e) {}
     fermerAide();
@@ -377,22 +390,62 @@
       var gauche = vv ? vv.offsetLeft : 0, large = vv ? vv.width : window.innerWidth;
       el.style.left = (gauche + 12) + 'px';
       el.style.width = Math.min(large - 24, 440) + 'px';
-      el.style.top = Math.max(8, haut - el.offsetHeight - 14) + 'px';
+      // 19/10/2026 — jamais plus bas que l'écran (page défilée, feuille) : la bulle reste visible même si le repère du clavier est décalé
+      el.style.top = Math.max(8, Math.min(haut, window.innerHeight) - el.offsetHeight - 14) + 'px';
     }
     function fin() { fermerAide(); }
     placer();
     if (vv) { vv.addEventListener('resize', placer); vv.addEventListener('scroll', placer); }
+    window.addEventListener('scroll', placer, true);   // 19/10/2026 — page ou feuille (modale) qui défile : la bulle reste au-dessus du clavier
     ta.addEventListener('input', fin); ta.addEventListener('blur', fin);
     el.addEventListener('click', fin);
     var minuterie = setTimeout(fin, 20000);
     _aide = function () {
       clearTimeout(minuterie);
       if (vv) { vv.removeEventListener('resize', placer); vv.removeEventListener('scroll', placer); }
+      window.removeEventListener('scroll', placer, true);
       ta.removeEventListener('input', fin); ta.removeEventListener('blur', fin);
       if (el.parentNode) el.parentNode.removeChild(el);
     };
   }
   function fermerAide() { if (_aide) { var f = _aide; _aide = null; f(); } }
+
+  // ⚠️ 19/10/2026 — « le clavier se referme quand je touche le micro tout de suite après avoir ouvert la fiche ».
+  // La fiche officine (comme l'accueil) se redessine 2 à 4 fois pendant ~2 s à l'arrivée des fichiers lus en
+  // arrière-plan (V2.render() depuis les .then) : le champ qu'on vient de toucher est REMPLACÉ par un neuf,
+  // le curseur part et le clavier se ferme. Tant qu'un champ dictable a le curseur (ou qu'une dictée
+  // d'ordinateur écrit dedans), un redessin de la MÊME page venu de l'arrière-plan est mis de côté et rejoué
+  // dès que le curseur quitte le champ. Un redessin causé par un geste (clic, Entrée : 600 ms) passe, comme
+  // un changement de page.
+  var _cleRendu = '', _geste = 0, _rendu = null, _enAttenteRendu = false, _minuteRendu = null;
+  function champDictable() {
+    var a = document.activeElement;
+    return (a && /^(TEXTAREA|INPUT)$/.test(a.tagName) && a.closest && a.closest('.v2-mic-wrap, .v2-notes-box, [data-dictee]')) ? a : null;
+  }
+  function poserGardeRendu() {
+    if (_rendu || !V2.render) return;
+    _rendu = V2.render;
+    V2.render = function () {
+      var cle = V2.route ? V2.route.name + '|' + V2.route.param : '';
+      if (cle === _cleRendu && Date.now() - _geste > 600 && (champDictable() || _enCours)) { _enAttenteRendu = true; return; }
+      _enAttenteRendu = false; _cleRendu = cle;
+      return _rendu.apply(this, arguments);
+    };
+    var geste = function (e) {
+      var t = e.target;
+      if (e.type === 'keydown' && e.key !== 'Enter') return;
+      if (t && t.closest && t.closest('.v2-notes-mic, .bn-mic')) return;
+      _geste = Date.now();
+    };
+    document.addEventListener('click', geste, true); document.addEventListener('keydown', geste, true); document.addEventListener('submit', geste, true);
+    document.addEventListener('focusout', function () {
+      if (!_enAttenteRendu) return;
+      clearTimeout(_minuteRendu);
+      _minuteRendu = setTimeout(function () { if (_enAttenteRendu && !champDictable() && !_enCours) V2.render(); }, 700);
+    }, true);
+  }
+  poserGardeRendu();
+  if (!_rendu) document.addEventListener('DOMContentLoaded', poserGardeRendu);
 
   function editLocal(st, sid, id, body) {
     var a = localFor(st, sid), changed = false;
@@ -460,6 +513,20 @@
       '.v2-notes-mic.rec{color:#fff;background:var(--c-rose,#FF4D6D);border-color:var(--c-rose,#FF4D6D);animation:v2micpulse 1.3s ease-in-out infinite}',
       '@keyframes v2micpulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--c-rose,#FF4D6D) 55%,transparent)}50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--c-rose,#FF4D6D) 0%,transparent)}}',
       '@media(prefers-reduced-motion:reduce){.v2-notes-mic.rec{animation:none}}',
+      // 19/10/2026 — micro posé DANS le champ (V2.notes.champ) : coin bas-droit d'une zone, milieu droit d'une ligne.
+      // Le texte ne passe jamais dessous (marge intérieure à droite) ; au téléphone la cible fait 44 px et la police 16 px (sinon iOS zoome).
+      '.v2-mic-wrap{position:relative;display:block;min-width:0;flex:1 1 auto}',
+      '.v2-mic-wrap>textarea,.v2-mic-wrap>input{width:100%;box-sizing:border-box;padding-right:44px!important}',
+      '.v2-mic-wrap>textarea{display:block}',
+      '.v2-mic-wrap>.v2-notes-mic{position:absolute;right:5px;bottom:5px;width:32px;height:32px;border-radius:9px;z-index:1}',
+      '.v2-mic-1l>.v2-notes-mic{bottom:auto;top:50%;margin-top:-16px}',
+      '@media(hover:none) and (pointer:coarse),(max-width:640px){',
+      '.v2-mic-wrap>textarea,.v2-mic-wrap>input,.v2-notes-ta{font-size:16px!important}',
+      '.v2-mic-wrap>textarea,.v2-mic-wrap>input{padding-right:54px!important}',
+      '.v2-mic-wrap>input{min-height:44px}',
+      '.v2-mic-wrap>textarea{min-height:56px}',
+      '.v2-mic-wrap>.v2-notes-mic{width:44px;height:44px;right:2px;bottom:2px}',
+      '.v2-mic-1l>.v2-notes-mic{margin-top:-22px;bottom:auto}}',
       // Bulle de dictée au clavier (téléphone) : couleurs inversées du thème, flèche vers le micro du clavier
       '.v2-dictee-aide{position:fixed;z-index:10050;box-sizing:border-box;padding:12px 14px;border-radius:14px;background:var(--ip-ink,#0B1220);color:var(--card,#fff);box-shadow:0 14px 34px rgba(8,15,30,.32),0 2px 6px rgba(8,15,30,.18);animation:v2daIn .18s var(--ease,ease-out) both}',
       '.v2-dictee-aide::after{content:"";position:absolute;right:22px;bottom:-7px;width:14px;height:14px;background:inherit;transform:rotate(45deg);border-radius:2px}',

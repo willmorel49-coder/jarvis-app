@@ -11,6 +11,8 @@
 (function () {
   'use strict';
   var V2 = window.V2 = window.V2 || {};
+  // 19/10/2026 — micro posé DANS le champ (V2.notes.champ, v2-notes.js) ; le champ reste tel quel si ce module n'est pas encore chargé ou si l'appareil n'a pas de dictée.
+  function micChamp(h, t) { return (V2.notes && V2.notes.champ) ? V2.notes.champ(h, t) : h; }
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
 
@@ -1632,7 +1634,7 @@
       '<details class="mke-coul"><summary><span>Fond</span><i class="mke-pastille" id="mke-bg-cur" style="background:' + esc(th.bg) + '"></i>' + mic('bas', 18, 2) + '</summary>' +
         '<div class="mkt-sws">' + bgSw + plus('Fond libre', th.bg, 'setBg') + '</div></details>' +
       '<div class="mke-cap"><label for="mkt-footer">Mentions en pied</label></div>' +
-      '<input class="mke-champ" id="mkt-footer" type="text" placeholder="ex. : Offre valable jusqu’au 31/07" value="' + esc(editing.footer || '') + '" oninput="V2.mkt.setFooter(this.value)">';
+      micChamp('<input class="mke-champ" id="mkt-footer" type="text" placeholder="ex. : Offre valable jusqu’au 31/07" value="' + esc(editing.footer || '') + '" oninput="V2.mkt.setFooter(this.value)">', 'Dicter la mention à la voix');
   }
   // aperçu live inline (toujours visible dans l'éditeur)
   function refreshPreview() {

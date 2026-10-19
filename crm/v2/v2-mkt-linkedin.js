@@ -5,6 +5,8 @@
    pas de filter:blur, pas de color-mix. Reliefs = box-shadow + rgba. */
 (function () {
   var V2 = window.V2 = window.V2 || {};
+  // 19/10/2026 — micro posé DANS le champ (V2.notes.champ, v2-notes.js) ; le champ reste tel quel si ce module n'est pas encore chargé ou si l'appareil n'a pas de dictée.
+  function micChamp(h, t) { return (V2.notes && V2.notes.champ) ? V2.notes.champ(h, t) : h; }
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
   var ICO = window.ICO || function () { return ''; };
 
@@ -775,17 +777,17 @@
       '<aside class="li-drawer' + oc + '">' +
         '<div class="li-dr-head"><div style="flex:1;min-width:0">' +
           '<div class="li-dr-eyebrow">' + (e.id ? 'Modifier le post' : 'Nouveau post') + '</div>' +
-          '<input class="li-dr-title" value="' + esc(e.title) + '" oninput="V2.li.editField(\'title\',this.value)" placeholder="Titre du post…"></div>' +
+          micChamp('<input class="li-dr-title" value="' + esc(e.title) + '" oninput="V2.li.editField(\'title\',this.value)" placeholder="Titre du post…">', 'Dicter le titre à la voix') + '</div>' +
           '<button class="li-close" onclick="V2.li.closeEditor()">' + ICO('close', 18, 2) + '</button></div>' +
         '<div class="li-dr-body">' +
           '<div class="li-field li-ideabox"><label class="li-lab">Votre idée en quelques mots</label>' +
-            '<input class="li-inp" value="' + esc(e._brief || '') + '" oninput="V2.li.editField(\'_brief\',this.value)" placeholder="ex : lancement gamme solaire, disponible tout l\'été">' +
+            micChamp('<input class="li-inp" value="' + esc(e._brief || '') + '" oninput="V2.li.editField(\'_brief\',this.value)" placeholder="ex : lancement gamme solaire, disponible tout l\'été">', 'Dicter l’idée à la voix') +
             '<div class="li-ideabtns">' +
               '<button class="li-gen" onclick="V2.li.writeFromIdea()">' + ICO('spark', 16) + 'Rédiger le post à partir de mon idée</button>' +
               '<button class="li-btn li-btn-ghost" onclick="V2.li.suggestIdea()">Proposer une idée</button>' +
             '</div></div>' +
           '<div class="li-field"><label class="li-lab">Texte du post <span id="li-count">' + (e.body || '').length + ' / 3000</span></label>' +
-            '<div class="li-ta-wrap"><textarea class="li-ta" oninput="V2.li.editField(\'body\',this.value)" placeholder="Rédigez votre post LinkedIn…">' + esc(e.body) + '</textarea></div>' +
+            '<div class="li-ta-wrap">' + micChamp('<textarea class="li-ta" oninput="V2.li.editField(\'body\',this.value)" placeholder="Rédigez votre post LinkedIn…">' + esc(e.body) + '</textarea>', 'Dicter le texte du post à la voix') + '</div>' +
             '<button class="li-gen" onclick="V2.li.gentext()">' + ICO('spark', 16) + 'Générer le texte (selon le pilier)</button></div>' +
           '<div class="li-field"><label class="li-lab">Famille éditoriale</label><div class="li-pillpick">' + pills + '</div></div>' +
           '<div class="li-field"><label class="li-lab">Statut</label><div class="li-segstat">' + stat + '</div></div>' +

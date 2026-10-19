@@ -22,6 +22,8 @@
 (function () {
   'use strict';
   var V2 = window.V2 = window.V2 || {};
+  // 19/10/2026 — micro posé DANS le champ (V2.notes.champ, v2-notes.js) ; le champ reste tel quel si ce module n'est pas encore chargé ou si l'appareil n'a pas de dictée.
+  function micChamp(h, t) { return (V2.notes && V2.notes.champ) ? V2.notes.champ(h, t) : h; }
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
   var ICO = function (n, s, w) { return window.ICO ? window.ICO(n, s, w) : ''; };   // v2-icons.js expose window.ICO
@@ -330,7 +332,7 @@
           }).join('') + '</div>' +
           '<label><span id="v2-todo-mn-dl">Le (facultatif)</span><input id="v2-todo-rp-d" type="date" onchange="V2.todo.menuMaj()"></label>' +
           '<p id="v2-todo-rp-p" class="v2-todo-rp-p">' + esc(SANS_DATE) + '</p>' +
-          '<label><span>Note</span><input id="v2-todo-mn-note" type="text" placeholder="Ex. : commande de Repatha (facultatif)" autocomplete="off"></label>' +
+          '<label><span>Note</span>' + micChamp('<input id="v2-todo-mn-note" type="text" placeholder="Ex. : commande de Repatha (facultatif)" autocomplete="off">', 'Dicter la note à la voix') + '</label>' +
           '<label class="v2-todo-mn-al" id="v2-todo-mn-alr" style="display:none"><input id="v2-todo-mn-al" type="checkbox"><span>Alerte sur mon téléphone, à 9 h</span></label>' +
         '</div>' +
         '<div class="v2-todo-mn-k">Choisir quoi ajouter</div>' +
@@ -541,7 +543,7 @@
           (it.fait && it.faitLe ? '<span class="v2-todo-b" style="color:var(--muted)">Fait le ' + esc(dateFr(it.faitLe.slice(0, 10))) + '</span>' : '') + '</div>' +
         // « Autre chose » : la note EST la tâche — affichée en entier, jamais coupée dans un champ
         (it.fait || (it.k === 'libre' && it.note) ? (it.note ? '<div class="v2-todo-n' + (it.k === 'libre' ? ' v2-todo-n-libre' : '') + '">' + esc(it.note) + '</div>' : '')
-                 : '<input class="v2-todo-n-in" type="text" value="' + esc(it.note) + '" placeholder="Une précision ? (facultatif)" onchange="V2.todo.note(\'' + it.id + '\',this)">') +
+                 : micChamp('<input class="v2-todo-n-in" type="text" value="' + esc(it.note) + '" placeholder="Une précision ? (facultatif)" onchange="V2.todo.note(\'' + it.id + '\',this)">', 'Dicter la précision à la voix')) +
         (der ? '<div class="v2-todo-der">' + ICO('check', 13, 2) + 'Fait aujourd\'hui <button onclick="V2.todo.annulerFait(\'' + it.id + '\')">Annuler</button></div>' : '') +
         (actes ? '<div class="v2-todo-acts">' + actes + '</div>' : '') +
       '</div></div>';
@@ -801,14 +803,14 @@
       '<div class="v2-todo-pop-h"><b>' + (enBase ? 'Ma version · ' + esc(c.nom) : modele ? (c.modId ? 'Modifier mon modèle' : 'Nouveau modèle') : 'Préparer le mail') + '</b>' +
         '<span>' + esc(enBase ? 'Ne vaut que pour vous' : modele ? '' : (c.nom || '')) + '</span><button class="v2-todo-x" aria-label="Fermer" onclick="V2.todo.fermerComp()">&times;</button></div>' +
       '<div class="v2-tc-b">' +
-        (modele ? '<label><span>Nom du modèle</span><input id="v2-tc-nomMod" type="text" value="' + esc(c.nomMod) + '" placeholder="Ex. : Relance après salon"></label>' : '') +
+        (modele ? '<label><span>Nom du modèle</span>' + micChamp('<input id="v2-tc-nomMod" type="text" value="' + esc(c.nomMod) + '" placeholder="Ex. : Relance après salon">', 'Dicter le nom à la voix') + '</label>' : '') +
         (enBase ? '' : '<label><span>' + (modele ? 'Partir d\'un mail existant' : 'Modèle') + '</span><select id="v2-tc-base" onchange="V2.todo.compBase(this.value)">' + opts + '</select></label>') +
         (modele || enBase ? '' : '<label><span>À</span><input id="v2-tc-dest" type="email" autocomplete="off" value="' + esc(c.dest || '') + '" placeholder="Adresse du pharmacien (facultatif)"></label>') +
-        '<label><span>Objet</span><input id="v2-tc-objet" type="text" value="' + esc(c.objet || '') + '"></label>' +
-        '<label><span>Texte du mail</span><textarea id="v2-tc-corps" rows="14">' + esc(c.corps || '') + '</textarea></label>' +
+        '<label><span>Objet</span>' + micChamp('<input id="v2-tc-objet" type="text" value="' + esc(c.objet || '') + '">', 'Dicter l’objet à la voix') + '</label>' +
+        '<label><span>Texte du mail</span>' + micChamp('<textarea id="v2-tc-corps" rows="14">' + esc(c.corps || '') + '</textarea>', 'Dicter le texte du mail à la voix') + '</label>' +
         '<div class="v2-tc-docs"><span class="v2-tc-lab">Documents joints</span><div class="v2-tc-chips">' + docs + '</div>' +
           '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.compChoisirDocs()">' + ICO('plus', 14, 2) + 'Choisir dans la banque de fichiers</button></div>' +
-        (!modele && c.garder ? '<div class="v2-tc-garde"><input id="v2-tc-nomMod" type="text" value="' + esc(c.nomMod) + '" placeholder="Nom du modèle"><button class="v2-btn v2-btn-primary v2-todo-sm" onclick="V2.todo.compEnregistrer()">Enregistrer</button></div>' : '') +
+        (!modele && c.garder ? '<div class="v2-tc-garde">' + micChamp('<input id="v2-tc-nomMod" type="text" value="' + esc(c.nomMod) + '" placeholder="Nom du modèle">', 'Dicter le nom à la voix') + '<button class="v2-btn v2-btn-primary v2-todo-sm" onclick="V2.todo.compEnregistrer()">Enregistrer</button></div>' : '') +
       '</div>' +
       '<div class="v2-tc-f">' +
         (enBase
@@ -953,7 +955,7 @@
               '<label><span>Officine</span><input id="v2-todo-nom" list="v2-todo-noms" type="text" placeholder="Nom de l\'officine (ou rien)" autocomplete="off"><datalist id="v2-todo-noms">' + noms + '</datalist></label>' +
               '<label><span>Pour le</span><input id="v2-todo-pour" type="date"></label>' +
               '<label><span>Répéter</span><select id="v2-todo-rep">' + Object.keys(REP).map(function (k) { return '<option value="' + k + '">' + esc(REP[k]) + '</option>'; }).join('') + '</select></label>' +
-              '<label class="v2-todo-wide"><span>Note</span><input id="v2-todo-note" type="text" placeholder="' + (st.kind === 'libre' ? 'Ce qu\'il y a à faire' : 'Une précision (facultatif)') + '" onkeydown="if(event.key===\'Enter\')V2.todo.ajouter()"></label>' +
+              '<label class="v2-todo-wide"><span>Note</span>' + micChamp('<input id="v2-todo-note" type="text" placeholder="' + (st.kind === 'libre' ? 'Ce qu\'il y a à faire' : 'Une précision (facultatif)') + '" onkeydown="if(event.key===\'Enter\')V2.todo.ajouter()">', 'Dicter la note à la voix') + '</label>' +
               '<button class="v2-btn v2-btn-primary" onclick="V2.todo.ajouter()">' + ICO('plus', 15, 2) + 'Ajouter</button>' +
             '</div>' +
             '<div class="v2-todo-hint">Depuis une fiche officine, le bouton « Ajouter à la to do list » remplit l\'officine et son e-mail tout seul. ' +

@@ -20,6 +20,8 @@
 (function () {
   'use strict';
   var V2 = window.V2 = window.V2 || {};
+  // 19/10/2026 — micro posé DANS le champ (V2.notes.champ, v2-notes.js) ; le champ reste tel quel si ce module n'est pas encore chargé ou si l'appareil n'a pas de dictée.
+  function micChamp(h, t) { return (V2.notes && V2.notes.champ) ? V2.notes.champ(h, t) : h; }
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
   var ICO = function (n, s, w) { return V2.ICO ? V2.ICO(n, s, w) : ''; };
 
@@ -270,8 +272,8 @@
       (lignes.length ? '<ul class="mq-avl">' + lignes.join('') + '</ul>'
                      : '<p class="mq-av-vide">Personne n\'a encore écrit ce qui va ou ne va pas.</p>') +
       '<div class="mq-avf">' +
-        '<textarea class="mq-avt" id="avt-' + id + '" rows="2" maxlength="600" ' +
-          'placeholder="Ce qui est bien, ce qui ne va pas — c\'est ça qui permet de corriger">' + esc(mien) + '</textarea>' +
+        micChamp('<textarea class="mq-avt" id="avt-' + id + '" rows="2" maxlength="600" ' +
+          'placeholder="Ce qui est bien, ce qui ne va pas — c\'est ça qui permet de corriger">' + esc(mien) + '</textarea>', 'Dicter mon avis à la voix') +
         '<button class="mq-avb" onclick="V2.maquetteAvis(\'' + id + '\')">Enregistrer mon avis</button>' +
       '</div>' +
     '</div>';
