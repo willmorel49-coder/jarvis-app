@@ -2318,6 +2318,8 @@
     return all;
   }
   function l1PartDes(r, total) { return total ? Math.min(100, Math.round(r.sortie / total * 100)) : 0; }
+  // Part des pharmacies de la référence qui commandent le produit, en texte (« 40 % », « < 1 % »). Même calcul que l1PartDes.
+  function partTxt(r, total) { var p = l1PartDes(r, total); return (r.sortie > 0 && p < 1) ? '< 1' + NB + '%' : p + NB + '%'; }
   function l1NomProduit(r) { return esc(cap((r.designation || '').toLowerCase())); }
 
   // ═════════ Rendu « menu » (maquette 8 retenue par Will, 09/10/2026) — préfixe l8- ═════════
@@ -3716,7 +3718,7 @@
         '<td>' + tag + '</td>' +
         '<td><span class="phf-price">' + (r.prix_ip > 0 ? V2.fmtEur(r.prix_ip) : '—') + '</span></td>' +
         '<td><span class="phf-rem' + (r.remise > 0 ? '' : ' phf-none') + '">' + (r.remise > 0 ? r.remise + ' %' : '—') + '</span></td>' +
-        '<td class="phf-tc"><span class="phf-sortie"><span class="mono phf-sortie-n">' + r.sortie + '/' + rot.total + '</span><span class="phf-bar"><i style="width:' + pct + '%"></i></span></span></td>' +
+        '<td class="phf-tc"><span class="phf-sortie"><span class="mono phf-sortie-n" title="' + r.sortie + ' pharmacies sur ' + rot.total + '">' + partTxt(r, rot.total) + '</span><span class="phf-bar"><i style="width:' + pct + '%"></i></span></span></td>' +
       '</tr>';
     }).join('');
     var listingBody = rot.rows.length ? '<div class="v2-card" style="padding:0;overflow:hidden;margin-top:8px">' +
@@ -3729,7 +3731,7 @@
         '</div>' +
       '</div>' +
       '<div class="phf-tablewrap"><table class="phf-tbl"><thead><tr>' +
-        '<th class="phf-tl">Produit</th><th>Statut</th><th>Prix net IP</th><th title="Abandon de marge">Abandon</th><th class="phf-tc">Nbr pharma</th>' +
+        '<th class="phf-tl">Produit</th><th>Statut</th><th>Prix net IP</th><th title="Abandon de marge">Abandon</th><th class="phf-tc">% des pharmacies</th>' +
       '</tr></thead><tbody>' + rotRows + '</tbody></table></div>' +
       (!grpRotExpanded && shownRotAll.length > ROT_LOT ? '<button class="phf-rf" style="margin:10px 14px" onclick="V2.pharmaRotExpand()">Voir tout (' + shownRotAll.length + ')</button>' : '') +
       '<div class="phf-foot">' + ICO('check', 13) + ' ' + nOwn + ' déjà commandé' + (nOwn > 1 ? 's' : '') + ' · <b style="color:var(--c-amber);margin-left:4px">' + nGap + ' à pousser</b> — sur les ' + rot.rows.length + ' meilleures rotations ' + (rot.isGrp ? 'du groupement' : 'du réseau') + '.</div>' +
@@ -4508,14 +4510,14 @@
         '<td class="mono" style="color:var(--muted);font-size:12px">' + esc(r.cip) + '</td>' +
         '<td class="num cat-ip" style="color:var(--ip-blue);font-weight:700">' + (r.prix_ip > 0 ? V2.fmtEur(r.prix_ip) + (r.offre ? ' <span class="ph-offre">offre</span>' : '') : '—') + '</td>' +
         '<td class="num" style="color:var(--c-mint);font-weight:700">' + (r.remise > 0 ? r.remise + '%' : '—') + '</td>' +
-        '<td class="num" style="font-weight:800">' + r.sortie + '<span style="color:var(--muted-2);font-weight:500">/' + panel + '</span></td>' +
+        '<td class="num" style="font-weight:800;white-space:nowrap" title="' + r.sortie + ' pharmacies sur ' + panel + '">' + partTxt(r, panel) + '</td>' +
         '<td style="width:46px;text-align:center"><button type="button" class="opp-add' + (on ? ' on' : '') + '" data-cip="' + esc(r.cip) + '" onclick="V2.pharmaToggleSel(this)" aria-label="Sélectionner pour le PDF">' + ICO(on ? 'check' : 'plus', 15) + '</button></td>' +
         (enc ? '<td style="width:38px;text-align:center"><button type="button" class="ph-rmprod" title="Retirer ce produit de la liste" onclick="V2.itemRemove(\'' + enc + '\',\'' + esc(r.cip) + '\')">' + ICO('close', 14, 2) + '</button></td>' : '') +
       '</tr>';
     }).join('');
     var body = '<div class="v2-cat-table-wrap"><table class="v2-table">' +
       '<thead><tr><th class="num">#</th><th>Produit</th><th>CIP</th><th class="num">Prix net</th><th class="num" title="Abandon de marge">Abandon</th>' +
-      '<th class="num">Nbr pharma</th><th></th>' + (enc ? '<th></th>' : '') + '</tr></thead><tbody>' + trs + '</tbody></table></div>';
+      '<th class="num">% des pharmacies</th><th></th>' + (enc ? '<th></th>' : '') + '</tr></thead><tbody>' + trs + '</tbody></table></div>';
     return '<div class="v2-card v2-cat open">' + head + body + '</div>';
   }
 
@@ -4899,7 +4901,7 @@
           '<td style="padding:6px 8px;font-family:' + MONO + ';font-size:9px;color:#737A8C">' + esc(r.cip) + '</td>' +
           '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:9.5px;color:#B6BFCE;white-space:nowrap">' + (r.prix_ht > 0 ? (r.prix_ip > 0 && r.prix_ip < r.prix_ht ? '<span style="text-decoration:line-through">' + e2(r.prix_ht) + '</span>' : e2(r.prix_ht)) : '—') + '</td>' +
           '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:12px;font-weight:800;color:#0050E6;white-space:nowrap">' + (r.prix_ip ? e2(r.prix_ip) : '—') + '</td>' +
-          '<td style="padding:6px 8px;text-align:center;font-family:' + MONO + ';font-size:9.5px;color:#10131C">' + r.sortie + '<span style="color:#A8AFBE">/' + panel + '</span></td>' +
+          '<td style="padding:6px 8px;text-align:center;font-family:' + MONO + ';font-size:9.5px;color:#10131C;white-space:nowrap">' + partTxt(r, panel) + '</td>' +
           '</tr>';
       }).join('');
       return '<div style="page-break-after:avoid;page-break-inside:avoid;margin-top:11px">' +
@@ -4936,14 +4938,14 @@
         // Titre liste + en-tête colonnes global (sombre)
         '<div style="display:flex;align-items:center;justify-content:space-between;border-top:2px solid #10131C;padding-top:9px;margin-bottom:9px;page-break-after:avoid">' +
           '<div style="font-size:12px;font-weight:800;color:#10131C">' + (prospectNom ? 'Meilleures rotations' : pharma ? 'Ses opportunités d\'achat' : 'Liste à pousser') + ' <span style="color:#737A8C;font-weight:600;font-size:12px">— ' + totalProd + ' produits, par famille</span></div>' +
-          '<div style="font-size:9px;color:#737A8C">Nbr pharma = pharmacies qui commandent / ' + panel + '</div>' +
+          '<div style="font-size:9px;color:#737A8C">% des pharmacies = part des ' + panel + ' pharmacies de la référence qui commandent le produit</div>' +
         '</div>' +
         '<table style="width:100%;border-collapse:collapse;table-layout:fixed;page-break-after:avoid">' + COLS6 +
-          '<thead><tr style="background:#10131C">' + thd('Produit', 'left') + thd('CIP13', 'left', true) + thd('PPHT', 'right') + thd('Prix net IP', 'right') + thd('Nbr pharma', 'center') + '</tr></thead></table>' +
+          '<thead><tr style="background:#10131C">' + thd('Produit', 'left') + thd('CIP13', 'left', true) + thd('PPHT', 'right') + thd('Prix net IP', 'right') + thd('% des pharmacies', 'center') + '</tr></thead></table>' +
         (catHtml || '<div style="color:#9AA1B2;padding:36px;text-align:center;font-size:12px">Aucun produit à proposer.</div>') +
         // Pied
         '<div style="margin-top:16px;padding-top:9px;border-top:1px solid #E7EBF2;display:flex;align-items:center;justify-content:space-between;page-break-inside:avoid">' +
-          '<div style="font-size:8.5px;color:#737A8C;line-height:1.45"><span style="font-weight:800;color:#0050E6">Intégral Pharma</span> · Liste d\'achats recommandée — données réseau : ' + (periodLabel() || 'au ' + dateStr) + '.<br>Prix nets HT indicatifs. Nbr pharma = nb de pharmacies de la référence commandant le produit / ' + panel + '.' + (truncated ? '<br>Top ' + PDF_CAP + ' par famille (les plus commandés) — pour cocher d\'autres produits, sélectionne-les dans l\'app avant l\'export.' : '') + '</div>' +
+          '<div style="font-size:8.5px;color:#737A8C;line-height:1.45"><span style="font-weight:800;color:#0050E6">Intégral Pharma</span> · Liste d\'achats recommandée — données réseau : ' + (periodLabel() || 'au ' + dateStr) + '.<br>Prix nets HT indicatifs. % des pharmacies = part des pharmacies de la référence commandant le produit / ' + panel + '.' + (truncated ? '<br>Top ' + PDF_CAP + ' par famille (les plus commandés) — pour cocher d\'autres produits, sélectionne-les dans l\'app avant l\'export.' : '') + '</div>' +
           '<div style="text-align:right;font-size:8.5px;color:#A8AFBE;white-space:nowrap">' + esc(grpName) + (pharma && pharma.ville ? '<br>' + esc(pharma.ville) : '') + '</div>' +
         '</div>' +
       '</div>' +
@@ -5089,7 +5091,7 @@
     document.head.appendChild(s);
   }
   V2.ensureXLSX = ensureXLSX;   // 15/10/2026 : réutilisé par les listings face à un concurrent (v2-concurrents.js)
-  // Mêmes colonnes que le PDF (Produit, CIP13, PPHT, Prix net IP, Nbr pharma) :
+  // Mêmes colonnes que le PDF (Produit, CIP13, PPHT, Prix net IP, % des pharmacies) :
   // pas de colonne « abandon » — le % ne figure jamais sur un document remis.
   // mode 'blob' : ne télécharge rien, rend une promesse de File (pour « Transmettre »).
   function achatsXlsx(title, data, useSel, mode) {
@@ -5110,7 +5112,7 @@
       }
       var wb = window.XLSX.utils.book_new();
       sections.forEach(function (o) {
-        var head = ['#', 'Produit', 'CIP13', 'PPHT (€)', 'Prix net IP (€)', 'Nb pharmacies / ' + panel];
+        var head = ['#', 'Produit', 'CIP13', 'PPHT (€)', 'Prix net IP (€)', '% des pharmacies'];
         var aoa = [
           ['Intégral Pharma — Liste d\'achats recommandée · ' + title],
           [o.cat.label + (o.cat.sub ? ' · ' + o.cat.sub : '') + ' — éditée le ' + dateStr + (periodLabel() ? ' · ventes ' + periodLabel() : '') + ' · référence ' + panel + ' pharmacie' + (panel > 1 ? 's' : '')],
@@ -5124,10 +5126,11 @@
             String(r.cip),
             r.prix_ht > 0 ? +r.prix_ht.toFixed(2) : '',
             r.prix_ip > 0 ? +r.prix_ip.toFixed(2) : '',
-            r.sortie
+            r.sortie > 0 && l1PartDes(r, panel) < 1 ? 0.005 : l1PartDes(r, panel) / 100
           ]);
         });
         var ws = window.XLSX.utils.aoa_to_sheet(aoa);
+        for (var ri = 4; ri < aoa.length; ri++) { var cl = ws[window.XLSX.utils.encode_cell({ r: ri, c: 5 })]; if (cl) cl.z = '[=0]0%;[<0.01]"< 1 %";0%'; }
         ws['!cols'] = [{ wch: 4 }, { wch: 48 }, { wch: 15 }, { wch: 10 }, { wch: 14 }, { wch: 17 }];
         ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }, { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } }];
         window.XLSX.utils.book_append_sheet(wb, ws, sheetName(o.cat.label));

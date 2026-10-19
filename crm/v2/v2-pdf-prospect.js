@@ -77,6 +77,8 @@
       date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) };
   }
   function pct(n, c) { return Math.min(100, Math.round(n / c.panel * 100)); }
+  // Part des pharmacies en texte pour les listes (« 40 % », « < 1 % »), même calcul que pct.
+  function pctTxt(n, c) { var p = pct(n, c); return (n > 0 && p < 1) ? '< 1\u00a0%' : p + '\u00a0%'; }
 
   // Chaque direction rend : fond, marges, polices, blocs (t: 'head' | 'row' | 'autre', f: n° de famille,
   // mt: espace au-dessus, keep: nb de blocs suivants à garder sur la même page, g: carte qui les regroupe),
@@ -121,6 +123,7 @@
           '<div style="width:40px;text-align:right;' + N + ';font-size:9.5px;color:' + GRIS + '">' + (t.caTot > 0 ? (r.ca / t.caTot * 100).toFixed(1).replace('.', ',') + ' %' : '—') + '</div></div>' });
       });
     }
+    if (T.avantOpps) T.avantOpps(blocks);   // style 5 : « Par où commencer » entre les achats du client et ses opportunités
     blocks.push({ t: 'autre', mt: T.mt + 6, keep: 1, h: '<div style="font-size:11px;font-weight:700;letter-spacing:1.3px;color:' + T.acc + ';text-transform:uppercase">Ses opportunités d\'achat</div>' +
       '<div style="margin-top:5px;font-size:12.5px;line-height:1.45;color:' + GRIS + ';max-width:600px">' + nb(c.tot) + ' produits commandés par ' + refPhrase(c) + ' qu\'elle ne commande pas encore, famille par famille, avec leur prix net.</div>' });
   }
@@ -183,7 +186,7 @@
     var TH = 'padding:6px 10px;font-size:8.5px;font-weight:700;letter-spacing:.8px;color:' + GRIS;
     var entete = function (k, ki, s) {
       return '<div style="display:flex;align-items:baseline;gap:10px;padding:0 4px 8px"><span style="font-family:' + M + ';font-size:11px;color:' + BLEU + '">' + num2(ki) + '</span><span style="font-size:18px;font-weight:800;letter-spacing:-.3px">' + esc(k.label) + (s ? ' <span style="font-weight:600;color:' + PALE + ';font-size:13px">(suite)</span>' : '') + '</span><span style="font-size:11px;color:' + GRIS + '">' + esc(k.sub) + '</span></div>' +
-        '<div style="display:flex;background:#EAF0FD;border-radius:10px 10px 0 0"><div style="flex:1;' + TH + '">PRODUIT</div><div style="width:92px;text-align:right;' + TH + '">PHARMACIES</div><div style="width:80px;text-align:right;' + TH + '">TARIF</div><div style="width:92px;text-align:right;' + TH + ';color:' + BLEU + '">PRIX NET</div></div>';
+        '<div style="display:flex;background:#EAF0FD;border-radius:10px 10px 0 0"><div style="flex:1;' + TH + '">PRODUIT</div><div style="width:92px;text-align:right;' + TH + '">% DES PHARMACIES</div><div style="width:80px;text-align:right;' + TH + '">TARIF</div><div style="width:92px;text-align:right;' + TH + ';color:' + BLEU + '">PRIX NET</div></div>';
     };
     blocsClient(c, { num: M, acc: BLEU, carte: 'background:#F6F8FC;border-radius:12px', px: 10, mt: 22, zebre: true,
       sec: function (l, sub, su) { return '<div style="display:flex;align-items:baseline;gap:10px;padding:0 4px 8px"><span style="font-size:18px;font-weight:800;letter-spacing:-.3px">' + esc(l) + (su ? ' <span style="font-weight:600;color:' + PALE + ';font-size:13px">(suite)</span>' : '') + '</span><span style="font-size:11px;color:' + GRIS + '">' + esc(sub) + '</span></div>'; } }, blocks, suite);
@@ -193,12 +196,12 @@
       k.rows.forEach(function (r, i) {
         var n = nom(r.d);
         blocks.push({ t: 'row', f: ki, mt: 0, h: '<div style="display:flex;align-items:center;background:' + (i % 2 ? '#F6F8FC' : '#fff') + '"><div style="flex:1;min-width:0;padding:7px 10px;font-size:11px"><b>' + esc(n.m) + '</b> <span style="color:' + GRIS + '">' + esc(n.r) + '</span>' + tags(r, 'font-size:7.5px;font-weight:800;border:1px solid;border-radius:4px;padding:1px 4px;margin-left:4px') + '</div>' +
-          '<div style="width:92px;padding:7px 10px;text-align:right;font-family:' + M + ';font-size:10px;color:' + GRIS + '">' + nb(r.n) + '</div>' +
+          '<div style="width:92px;padding:7px 10px;text-align:right;font-family:' + M + ';font-size:10px;color:' + GRIS + ';white-space:nowrap">' + pctTxt(r.n, c) + '</div>' +
           '<div style="width:80px;padding:7px 10px;text-align:right;font-family:' + M + ';font-size:10px;color:' + PALE + '">' + (baisse(r) ? '<span style="text-decoration:line-through">' + eur(r.ppht) + '</span>' : '') + '</div>' +
           '<div style="width:92px;padding:7px 10px;text-align:right;font-family:' + M + ';font-size:12.5px;font-weight:700;color:' + BLEU + '">' + eur(r.net) + '</div></div>' });
       });
     });
-    blocks.push({ t: 'autre', mt: 22, h: '<div style="font-size:9.5px;line-height:1.5;color:' + PALE + '">Prix nets HT indicatifs au ' + c.date + ' · Pharmacies : nombre des ' + refPhrase(c) + ' qui commandent le produit. <b style="color:' + GRIS + '">Intégral Pharma</b>, groupe de grossistes-répartiteurs.</div>' });
+    blocks.push({ t: 'autre', mt: 22, h: '<div style="font-size:9.5px;line-height:1.5;color:' + PALE + '">Prix nets HT indicatifs au ' + c.date + ' · % des pharmacies : part des ' + refPhrase(c) + ' qui commandent le produit. <b style="color:' + GRIS + '">Intégral Pharma</b>, groupe de grossistes-répartiteurs.</div>' });
     return { bg: '#fff', padT: 30, padX: 40, base: 'font-family:Satoshi,system-ui,sans-serif', cover: cover, blocks: blocks, suite: suite };
   }
 
@@ -278,21 +281,26 @@
     // Bandeau d'ouverture : il déborde dans la marge du haut (-30 px) pour que sa lumière parte du bord.
     blocks.push({ t: 'autre', mt: 0, h: '<div style="margin:-30px -40px 0;padding:30px 40px 26px;background:linear-gradient(180deg,#EEF3FF 0%,#FFFFFF 100%)">' +
       '<div style="display:flex;align-items:center;gap:10px">' + LOGO(BLEU, '#fff') + '<span style="font-size:14px;font-weight:800">Intégral Pharma</span><span style="margin-left:auto;font-size:10.5px;color:' + GRIS + '">' + esc(c.nom) + ' · ' + c.date + '</span></div>' +
-      '<div style="margin-top:26px;font-size:30px;font-weight:800;letter-spacing:-.8px;line-height:1.05">Par où commencer</div>' +
-      '<div style="margin-top:8px;font-size:12.5px;color:' + GRIS + ';max-width:560px;line-height:1.5">' + (c.client ? 'Les ' + top.length + ' produits qu\'elle n\'a pas encore et que commandent le plus ' + refPhrase(c) + '. Suivent ce qu\'elle commande aujourd\'hui, puis ses ' + nb(c.tot) + ' opportunités, famille par famille.' : 'Les ' + top.length + ' produits les plus commandés par ' + refPhrase(c) + '. La liste complète des ' + nb(c.tot) + ' produits suit, famille par famille.') + '</div>' +
-      cartes + '</div>' });
-    var entete = function (k, s) { return '<div style="display:flex;align-items:baseline;gap:10px;padding-bottom:6px;border-bottom:2px solid ' + ENCRE + '"><span style="font-size:15px;font-weight:800">' + esc(k.label) + (s ? ' <span style="font-weight:600;color:' + PALE + ';font-size:12px">(suite)</span>' : '') + '</span><span style="font-size:10.5px;color:' + GRIS + '">' + esc(k.sub) + '</span><span style="margin-left:auto;font-size:9px;font-weight:700;letter-spacing:.7px;color:' + PALE + '">PHARMACIES · TARIF · <span style="color:' + BLEU + '">PRIX NET</span></span></div>'; };
+      '<div style="margin-top:26px;font-size:30px;font-weight:800;letter-spacing:-.8px;line-height:1.05">' + (c.client ? 'Ses achats et ses opportunités' : 'Par où commencer') + '</div>' +
+      '<div style="margin-top:8px;font-size:12.5px;color:' + GRIS + ';max-width:560px;line-height:1.5">' + (c.client ? 'Son chiffre d\'affaires et ce qu\'elle commande aujourd\'hui, puis les ' + top.length + ' produits par où commencer, puis ses ' + nb(c.tot) + ' opportunités, famille par famille.' : 'Les ' + top.length + ' produits les plus commandés par ' + refPhrase(c) + '. La liste complète des ' + nb(c.tot) + ' produits suit, famille par famille.') + '</div>' +
+      (c.client ? '' : cartes) + '</div>' });
+    var entete = function (k, s) { return '<div style="display:flex;align-items:baseline;gap:10px;padding-bottom:6px;border-bottom:2px solid ' + ENCRE + '"><span style="font-size:15px;font-weight:800">' + esc(k.label) + (s ? ' <span style="font-weight:600;color:' + PALE + ';font-size:12px">(suite)</span>' : '') + '</span><span style="font-size:10.5px;color:' + GRIS + '">' + esc(k.sub) + '</span><span style="margin-left:auto;font-size:9px;font-weight:700;letter-spacing:.7px;color:' + PALE + '">% DES PHARMACIES · TARIF · <span style="color:' + BLEU + '">PRIX NET</span></span></div>'; };
     blocsClient(c, { num: 'PdfArchivo,system-ui,sans-serif', acc: BLEU, carte: 'background:#fff;border:1px solid ' + FILET + ';border-radius:14px;box-shadow:0 6px 16px -10px rgba(0,50,160,.25)', px: 0, mt: 24,
-      sec: function (l, sub, su) { return '<div style="display:flex;align-items:baseline;gap:10px;padding-bottom:6px;border-bottom:2px solid ' + ENCRE + '"><span style="font-size:15px;font-weight:800">' + esc(l) + (su ? ' <span style="font-weight:600;color:' + PALE + ';font-size:12px">(suite)</span>' : '') + '</span><span style="font-size:10.5px;color:' + GRIS + '">' + esc(sub) + '</span></div>'; } }, blocks, suite);
+      sec: function (l, sub, su) { return '<div style="display:flex;align-items:baseline;gap:10px;padding-bottom:6px;border-bottom:2px solid ' + ENCRE + '"><span style="font-size:15px;font-weight:800">' + esc(l) + (su ? ' <span style="font-weight:600;color:' + PALE + ';font-size:12px">(suite)</span>' : '') + '</span><span style="font-size:10.5px;color:' + GRIS + '">' + esc(sub) + '</span></div>'; },
+      avantOpps: function (bl) {
+        bl.push({ t: 'autre', mt: 24, keep: 1, h: '<div style="font-size:15px;font-weight:800;padding-bottom:6px;border-bottom:2px solid ' + ENCRE + '">Par où commencer</div>' +
+          '<div style="margin-top:8px;font-size:12.5px;color:' + GRIS + ';max-width:560px;line-height:1.5">Les ' + top.length + ' produits qu\'elle n\'a pas encore et que commandent le plus ' + refPhrase(c) + '.</div>' });
+        bl.push({ t: 'autre', mt: 0, h: '<div>' + cartes + '</div>' });
+      } }, blocks, suite);
     c.cats.forEach(function (k, ki) {
       blocks.push({ t: 'head', f: ki, mt: 20, keep: 2, h: entete(k) });
       suite[ki] = { t: 'autre', mt: 0, h: entete(k, true) };
       k.rows.forEach(function (r) {
         var n = nom(r.d);
-        blocks.push({ t: 'row', f: ki, mt: 0, h: '<div style="display:flex;gap:12px;align-items:center;padding:5px 0;border-bottom:1px solid ' + FILET + ';font-size:10.5px"><div style="flex:1;min-width:0"><b>' + esc(n.m) + '</b> <span style="color:' + GRIS + '">' + esc(n.r) + '</span>' + tags(r, 'font-size:7px;font-weight:700;border:1px solid;border-radius:3px;padding:0 3px;margin-left:3px') + '</div><div style="width:60px;text-align:right;color:' + GRIS + '">' + nb(r.n) + '</div><div style="width:62px;text-align:right;color:' + PALE + '">' + (baisse(r) ? '<span style="text-decoration:line-through">' + eur(r.ppht) + '</span>' : '') + '</div><div style="width:72px;text-align:right;font-size:12px;font-weight:800;color:' + BLEU + '">' + eur(r.net) + '</div></div>' });
+        blocks.push({ t: 'row', f: ki, mt: 0, h: '<div style="display:flex;gap:12px;align-items:center;padding:5px 0;border-bottom:1px solid ' + FILET + ';font-size:10.5px"><div style="flex:1;min-width:0"><b>' + esc(n.m) + '</b> <span style="color:' + GRIS + '">' + esc(n.r) + '</span>' + tags(r, 'font-size:7px;font-weight:700;border:1px solid;border-radius:3px;padding:0 3px;margin-left:3px') + '</div><div style="width:60px;text-align:right;color:' + GRIS + ';white-space:nowrap">' + pctTxt(r.n, c) + '</div><div style="width:62px;text-align:right;color:' + PALE + '">' + (baisse(r) ? '<span style="text-decoration:line-through">' + eur(r.ppht) + '</span>' : '') + '</div><div style="width:72px;text-align:right;font-size:12px;font-weight:800;color:' + BLEU + '">' + eur(r.net) + '</div></div>' });
       });
     });
-    blocks.push({ t: 'autre', mt: 20, h: '<div style="font-size:9.5px;line-height:1.5;color:' + PALE + '">Prix nets HT indicatifs au ' + c.date + '. Pharmacies : nombre des ' + refPhrase(c) + ' qui commandent le produit · Intégral Pharma, groupe de grossistes-répartiteurs.</div>' });
+    blocks.push({ t: 'autre', mt: 20, h: '<div style="font-size:9.5px;line-height:1.5;color:' + PALE + '">Prix nets HT indicatifs au ' + c.date + '. % des pharmacies : part des ' + refPhrase(c) + ' qui commandent le produit · Intégral Pharma, groupe de grossistes-répartiteurs.</div>' });
     return { bg: '#fff', padT: 30, padX: 40, base: 'font-family:PdfArchivo,system-ui,sans-serif', blocks: blocks, suite: suite };
   }
   var DIR = { 1: v1, 2: v2, 3: v3, 4: v4, 5: v5 };
