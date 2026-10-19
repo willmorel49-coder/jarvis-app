@@ -37,7 +37,7 @@
   };
   var ORDER = ['rdv', 'merci', 'compte', 'libre'];
 
-  var st = { items: null, backend: 'local', filtre: 'afaire', chargement: null, kind: 'rdv', onglet: 'taches' };
+  var st = { items: null, backend: 'local', filtre: 'afaire', chargement: null, kind: 'rdv', onglet: 'taches', formOuvert: false };
 
   function sb() { return (V2.sb && V2.sb()) || null; }
   function scope() { return { st: 'groupement', sid: '__todo_' + ((V2.user && V2.user.id) || 'local') + '__' }; }
@@ -393,6 +393,9 @@
 
     // Formulaire de la page
     choisir: function (k) { st.kind = k; rendre(); },
+    // Téléphone : le formulaire d'ajout se déplie sous le bouton « Ajouter une tâche » (l'état vit dans st, il survit à un nouveau rendu).
+    ouvrirForm: function () { st.formOuvert = true; rendre(); var e = document.getElementById('v2-todo-nom'); if (e) { try { e.focus(); } catch (x) {} } },
+    fermerForm: function () { st.formOuvert = false; rendre(); },
     ajouter: function () {
       var nomEl = document.getElementById('v2-todo-nom'), noteEl = document.getElementById('v2-todo-note'), pourEl = document.getElementById('v2-todo-pour'), repEl = document.getElementById('v2-todo-rep');
       var nom = (nomEl && nomEl.value || '').trim(), note = (noteEl && noteEl.value || '').trim(), pour = (pourEl && pourEl.value || '').trim(), rep = (repEl && REP[repEl.value] && repEl.value) || '';
@@ -403,6 +406,7 @@
                  rep: rep, ancre: rep ? pour : '' };
       st.filtre = 'afaire';
       ecrire(function (items) { return items.concat([it]); }).then(function () {
+        st.formOuvert = false;   // téléphone : le formulaire se replie une fois la tâche ajoutée
         if (nomEl) nomEl.value = ''; if (noteEl) noteEl.value = ''; if (pourEl) pourEl.value = ''; if (repEl) repEl.value = '';
         if (rep && V2.toast) V2.toast('Rappel ajouté · ' + phraseRep(rep, pour).replace(/\.$/, '').toLowerCase());
         rendre();
@@ -947,7 +951,9 @@
           '<div class="v2-todo-hero"><h1>To do list</h1>' +
             '<p>Demandes de rendez-vous à envoyer, suites de rendez-vous, ouvertures de compte, et tout le reste. Personnelle : chacun voit la sienne.' +
             (st.backend === 'local' ? ' <b>Gardée sur cet appareil seulement.</b>' : '') + '</p></div>' + onglets +
-          '<div class="v2-card v2-todo-add">' +
+          (st.formOuvert ? '' : '<button class="v2-btn v2-btn-primary v2-todo-ajbtn" onclick="V2.todo.ouvrirForm()">' + ICO('plus', 16, 2) + 'Ajouter une tâche</button>') +
+          '<div class="v2-card v2-todo-add' + (st.formOuvert ? '' : ' is-ferme') + '">' +
+            '<div class="v2-todo-fh"><button class="v2-btn v2-btn-ghost v2-todo-fermer" onclick="V2.todo.fermerForm()">Fermer</button></div>' +
             '<div class="v2-todo-kinds">' + ORDER.map(function (k) {
               return '<button class="v2-todo-kind' + (st.kind === k ? ' is-on' : '') + '" onclick="V2.todo.choisir(\'' + k + '\')">' + ICO(KINDS[k].ico, 15, 2) + '<span>' + esc(KINDS[k].l) + '</span></button>';
             }).join('') + '</div>' +
@@ -1107,7 +1113,10 @@
       '.v2-todo-mn-k{margin:0 4px;padding:10px 8px 2px;border-top:1px solid var(--line);font-size:12px;font-weight:700;color:var(--ip-ink-2)}',
       // Sur téléphone, les trois boutons en pleine largeur, « Enregistrer » d'abord
       '@media(max-width:640px){.v2-todo-rp .v2-tc-f{flex-direction:column-reverse;align-items:stretch}.v2-todo-rp .v2-tc-f .v2-btn{justify-content:center}.v2-todo-rp .v2-tc-sup{margin-right:0}}',
-      '@media (max-width:760px){.v2-todo-kinds{grid-template-columns:1fr 1fr}.v2-todo-form{grid-template-columns:1fr}.v2-todo-wide{grid-column:auto}.v2-todo-b{margin-left:0}}'
+      '@media (max-width:760px){.v2-todo-kinds{grid-template-columns:1fr 1fr}.v2-todo-form{grid-template-columns:1fr}.v2-todo-wide{grid-column:auto}.v2-todo-b{margin-left:0}}',
+      // 19/10/2026, Will : au téléphone un grand bouton « Ajouter une tâche » déplie le formulaire ; sur ordinateur, ni bouton ni « Fermer » (le formulaire reste toujours visible).
+      '.v2-todo-ajbtn,.v2-todo-fh{display:none}',
+      '@media(max-width:640px){html .v2-todo-ajbtn{display:flex;width:100%;min-height:52px;justify-content:center;align-items:center;gap:8px;margin:0 0 16px;font-size:16px}html .v2-todo-add.is-ferme{display:none}html .v2-todo-fh{display:flex;justify-content:flex-end;margin:-6px 0 6px}html .v2-todo-fermer{min-height:44px;min-width:88px;justify-content:center}}'
     ].join('\n');
     document.head.appendChild(s);
   }
