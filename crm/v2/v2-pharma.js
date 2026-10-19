@@ -3815,6 +3815,60 @@
     if (V2.rdvPrepa) V2.rdvPrepa.hydrate();
     if (briefOff) V2.briefOfficine.hydrate(pid, pharmaSalesAll(pid));
     if (!menu) V2.pharmaFiche.apres(pid);
+    if (!menu) phaTel();
+  }
+
+  // 19/10/2026 — fiche au téléphone (sous 900 px elle passe sur une colonne, ≈ 13 écrans) : un sommaire collé
+  // en haut de l'écran pour sauter d'un bloc à l'autre. Rien n'est retiré de la page. Caché sur ordinateur (CSS).
+  // Version « le sommaire » choisie par Will le 19/10/2026 parmi trois (sommaire · chiffres d'abord · trois onglets).
+  var PHA_TEL_BLOCS = [['Listes', '.pha-lists'], ['Notes & RDV', '.pha-notes'], ['Infos', '.pha-infos'], ['À proposer', '#pha-proposer'],
+    ['Chiffres', '.pha-kpis'], ['Catégories', '.pha-parts'], ['Ne commande plus', '.pha-np']];
+  // Hauteur de la barre du haut qui RESTE à l'écran en défilant : 0 tant qu'elle défile avec la page
+  // (`.v2-top{position:relative}` posé par v2-app.js), sa hauteur si elle redevient collée.
+  function phaTelHaut() {
+    var t = document.querySelector('.v2-top'); if (!t) return 0;
+    var p = getComputedStyle(t).position; return (p === 'sticky' || p === 'fixed') ? t.offsetHeight : 0;
+  }
+  function phaTel() {
+    var pha = document.querySelector('#phft-c-apercu > .pha'), id = pha && pha.querySelector('.pha-id');
+    if (!pha || !id) return;
+    var nav = document.createElement('nav');
+    nav.className = 'pha-som'; nav.setAttribute('aria-label', 'Aller à');
+    nav.innerHTML = PHA_TEL_BLOCS.filter(function (b) { return pha.querySelector(b[1]); }).map(function (b) {
+      return '<button type="button" class="pha-som-b" data-cible="' + b[1] + '">' + b[0] + '</button>';
+    }).join('');
+    id.parentNode.insertBefore(nav, id.nextSibling);
+    nav.style.setProperty('--pha-som-top', phaTelHaut() + 'px');
+    if (nav.offsetParent) {   // les puces suivent l'ordre réel de la page
+      var y = function (b) { var c = pha.querySelector(b.getAttribute('data-cible')); return c ? c.getBoundingClientRect().top : 0; };
+      Array.prototype.slice.call(nav.children).sort(function (a, b) { return y(a) - y(b); }).forEach(function (b) { nav.appendChild(b); });
+      phaTelSuivre();
+    }
+    if (V2._phaTelEcoute) return;
+    V2._phaTelEcoute = true;
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('.pha-som-b'); if (!b) return;
+      var p = b.closest('.pha'), n = b.parentNode;
+      var c = p.querySelector(b.getAttribute('data-cible')); if (!c) return;
+      window.scrollTo({ top: c.getBoundingClientRect().top + window.scrollY - phaTelHaut() - n.offsetHeight - 16, behavior: 'smooth' });
+    });
+    var att = 0;
+    window.addEventListener('scroll', function () { if (!att) att = requestAnimationFrame(function () { att = 0; phaTelSuivre(); }); }, { passive: true });
+  }
+  // La puce de la rubrique sous les yeux s'allume, et vient se placer dans le sommaire.
+  function phaTelSuivre() {
+    var nav = document.querySelector('.pha-som'); if (!nav || !nav.offsetParent) return;
+    var lim = nav.getBoundingClientRect().bottom + 24, cur = null;   // 24 : le saut pose le bloc 16 px sous le sommaire
+    Array.prototype.forEach.call(nav.children, function (b) {
+      var c = document.querySelector('.pha ' + b.getAttribute('data-cible'));
+      if (c && c.getBoundingClientRect().top <= lim) cur = b;
+    });
+    Array.prototype.forEach.call(nav.children, function (b) {
+      var on = b === cur;
+      if ((b.getAttribute('aria-current') === 'true') === on) return;
+      b.setAttribute('aria-current', String(on));
+      if (on) nav.scrollTo({ left: b.offsetLeft - 14, behavior: 'smooth' });
+    });
   }
 
   // Changer le groupement d'une pharmacie depuis sa fiche (correction persistée + appliquée).
@@ -6809,6 +6863,30 @@
       '  .pha-rail>*,.pha-main>*{min-width:0;align-self:stretch}',
       '  .pha-id{order:-3}.pha-lists{order:-2}.pha-notes{order:-1}',
       '  .pha-desk{display:none}.pha-mob{display:block}.pha-kpis{grid-template-columns:1fr 1fr}.pha-kval{font-size:20px}.pha-lists{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.pha-lists .pha-kl{width:100%}.pha-lists .pha-btn-w{width:auto;margin-top:0;flex:1 1 auto}}',
+      /* 19/10/2026 — fiche au téléphone (une seule colonne sous 900 px) : un sommaire collé sous la barre du haut,
+         des blocs resserrés. Rien n'est retiré de la page. */
+      '.pha-som{display:none}',
+      '@media(max-width:900px){',
+      '  .pha-som{display:flex;gap:6px;order:-3;position:sticky;top:var(--pha-som-top,0px);z-index:30;margin:0 -26px;padding:8px 26px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:var(--paper);box-shadow:0 1px 0 var(--line),0 10px 18px -14px rgba(16,19,28,.22)}',
+      '  .pha-som::-webkit-scrollbar{display:none}',
+      '  .pha-som-b{flex:none;min-height:var(--tap-min,44px);padding:0 15px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ip-ink-2);font:inherit;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .18s,color .18s,border-color .18s}',
+      '  .pha-som-b[aria-current="true"]{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
+      '}',
+      '@media(max-width:640px){',
+      '  .pha-som{margin:0 -14px;padding:8px 14px}',
+      // Profil commercial : deux listes par ligne (la grille repassait à une colonne sous 560 px : dix listes empilées).
+      '  .pha-infos .v2-profil-box:last-child .v2-profil-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:end}',
+      '  .pha-infos .phf-nmedit-row{flex-direction:row;align-items:center;margin-bottom:12px}',
+      // Par catégorie, et les catégories de « Ne commande plus » : une rangée qu'on fait glisser au doigt.
+      '  .pha-parts{display:flex;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:4px}',
+      '  .pha-parts>.pha-part{flex:0 0 80%}',
+      '  .pha-np .pha-tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}',
+      '  .pha-np .pha-tab{flex:none}',
+      // Ne commande plus : le nom sur toute la largeur, le montant dessous (il prenait la moitié de la ligne).
+      '  .pha-np .pha-r{grid-template-columns:20px minmax(0,1fr);row-gap:3px;align-items:start}',
+      '  .pha-np .pha-r>i{grid-row:1 / span 2}',
+      '  .pha-np .pha-r>b{grid-column:2}',
+      '}',
       /* ══ Fiche « menu » (maquette 8, 09/10/2026) — préfixe l8- ══ */
       '.pha.l8{grid-template-columns:340px minmax(0,1fr);gap:56px;padding-top:4px}',
       '.l8-rail{position:sticky;top:16px;gap:12px;align-self:start}',
