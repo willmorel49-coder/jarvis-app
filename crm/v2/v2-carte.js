@@ -1871,7 +1871,7 @@
           '<div class="cn-fbtop">' +
             '<h1 class="cn-h1">La carte</h1>' +
             '<label class="cn-searchwrap">' + ICO('search', 15, 2) +
-              '<input id="cn-search" class="cn-search cn-fbsearch" type="search" placeholder="Une pharmacie, une ville, un code postal…" aria-label="Chercher une officine" oninput="V2.carteSearch(this.value)">' +
+              '<input id="cn-search" class="cn-search cn-fbsearch" type="search" placeholder="' + ((window.matchMedia && window.matchMedia('(max-width:640px)').matches) ? 'Nom, ville ou CP…' : 'Une pharmacie, une ville, un code postal…') + '" aria-label="Chercher une officine" oninput="V2.carteSearch(this.value)">' +
             '</label>' +
             '<span class="cn-fbcount" id="cn-fbcount">chargement…</span>' +
             '<span class="cn-fbacts" id="cn-fbacts"></span>' +

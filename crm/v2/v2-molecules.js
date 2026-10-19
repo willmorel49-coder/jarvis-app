@@ -351,7 +351,7 @@
 
       // Panneau d'outils unique (façon Launcher) : recherche + établissement + action primaire PDF, familles en onglets dessous
       var qVal = S.q.replace(/"/g, '&quot;');
-      var searchBox = '<div class="mol-search"><span>' + ICO('search', 18) + '</span><input id="mol-q" type="search" placeholder="Chercher un produit ou un CIP (doliprane, 3400…)" value="' + qVal + '" oninput="V2.molSearch(this.value)" autocomplete="off" aria-label="Chercher un produit ou un CIP"></div>';
+      var searchBox = '<div class="mol-search"><span>' + ICO('search', 18) + '</span><input id="mol-q" type="search" placeholder="' + ((window.matchMedia && window.matchMedia('(max-width:640px)').matches) ? 'Produit ou CIP (doliprane, 3400…)' : 'Chercher un produit ou un CIP (doliprane, 3400…)') + '" value="' + qVal + '" oninput="V2.molSearch(this.value)" autocomplete="off" aria-label="Chercher un produit ou un CIP"></div>';
       var panel = '<div class="mol-panel">' +
           '<div class="mol-panel-top">' + searchBox + etabSelect + stockTgl +
             '<button id="mol-docbtn" class="v2-btn v2-btn-primary mol-doc" onclick="V2.molPdf()">' + ICO('download', 16) + 'Télécharger le PDF</button>' +

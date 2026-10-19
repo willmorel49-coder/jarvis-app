@@ -135,7 +135,7 @@
       if (!r || r.error || !Array.isArray(r.data)) throw new Error((r && r.error && r.error.message) || 'lecture');
       S.rows = r.data; S.etat = 'pret'; S.erreur = '';
     }).catch(function () {
-      if (S.etat !== 'pret') { S.etat = 'echec'; S.erreur = 'Tes notes n’ont pas pu être lues. Vérifie ta connexion puis réessaie.'; }
+      if (S.etat !== 'pret') { S.etat = 'echec'; S.erreur = 'Vos notes n’ont pas pu être lues. Vérifiez votre connexion puis réessayez.'; }
       else toast('Les notes n’ont pas pu être relues', 'warn');
     }).then(function () {
       if (!actif()) return;
@@ -327,7 +327,7 @@
         if (!v) return { stop: 'La fiche n’a pas pu être relue : rien n’a été changé.' };
         var avant = S.vu[key];
         S.vu[key] = v;
-        if (!avant || JSON.stringify(avant) !== JSON.stringify(v)) return { stop: 'Vérifie les valeurs actuelles affichées, puis appuie encore sur « Appliquer ».', neutre: true };
+        if (!avant || JSON.stringify(avant) !== JSON.stringify(v)) return { stop: 'Vérifiez les valeurs actuelles affichées, puis appuyez encore sur « Appliquer ».', neutre: true };
         return null;
       });
     }
@@ -339,7 +339,7 @@
         S.ecrit[key] = true;   // écrit en base : si le marquage échoue, on ne réécrit pas (pas de note en double)
         return marquer(row, a.id, 'applique').then(function (m) {
           if (m) delete S.ecrit[key];
-          return fin(m ? { ok: true, msg: '' } : { ok: false, msg: 'La mise à jour est faite, mais elle n’a pas pu être notée dans le bloc-notes. Appuie encore sur « Appliquer ».' });
+          return fin(m ? { ok: true, msg: '' } : { ok: false, msg: 'La mise à jour est faite, mais elle n’a pas pu être notée dans le bloc-notes. Appuyez encore sur « Appliquer ».' });
         });
       });
     }, function () { return fin({ ok: false, msg: 'Une erreur est survenue : rien n’a été marqué.' }); });
@@ -351,7 +351,7 @@
     S.occupe[key] = true; dessinerListe();
     marquer(row, a.id, 'ignore').then(function (m) {
       delete S.occupe[key];
-      if (!m) toast('Impossible de noter ce choix : réessaie.', 'error');
+      if (!m) toast('Impossible de noter ce choix : réessayez.', 'error');
       if (actif()) { dessinerListe(); }
     });
   }
@@ -376,7 +376,7 @@
   function gabarit() {
     var dictee = (V2.notes && V2.notes.micPossible) ? V2.notes.micPossible() : !!(window.SpeechRecognition || window.webkitSpeechRecognition);   // 19/10/2026 : sur téléphone, dictée du clavier (v2-notes.js)
     return '<div class="v2-wrap v2-u bn-wrap" id="bn-root">' +
-      '<div class="bn-tete"><h1>Bloc-notes</h1><p>Tes notes restent des brouillons, rien que pour toi. Quand tu veux, envoie-les au robot : il les lit le soir et te propose les mises à jour du CRM, que tu appliques d’un geste.</p></div>' +
+      '<div class="bn-tete"><h1>Bloc-notes</h1><p>Vos notes restent des brouillons, rien que pour vous. Quand vous voulez, envoyez-les au robot : il les lit le soir et vous propose les mises à jour du CRM, que vous appliquez d’un geste.</p></div>' +
       '<div class="bn-band" id="bn-bandeau-brouillons" hidden></div>' +
       '<div class="bn-band" id="bn-bandeau" hidden></div>' +
       '<div class="v2-card bn-ecrire" data-dictee="1"><div class="bn-h">Nouvelle note</div>' +
@@ -415,7 +415,7 @@
   function vocalSansTexte(r) { return r.kind === 'vocal' && !r.body && !r.transcription && r.statut !== 'lue' && r.statut !== 'erreur'; }
 
   function etatNote(r) {
-    if (r.statut === 'brouillon') return '<div class="bn-etat bn-etat--brouillon">' + ic('crayon') + 'Brouillon — le robot ne le lit pas tant que tu ne l’envoies pas</div>';
+    if (r.statut === 'brouillon') return '<div class="bn-etat bn-etat--brouillon">' + ic('crayon') + 'Brouillon — le robot ne le lit pas tant que vous ne l’envoyez pas</div>';
     if (r.statut === 'a_lire') return '<div class="bn-etat">' + ic('clock') + 'Envoyée au robot — il la lira à son prochain passage, en soirée</div>';
     if (r.statut === 'lue') return '<div class="bn-etat">' + ic('check') + 'Lue par le robot' + (r.lu_le ? ' le ' + esc(dateLongue(cleJour(new Date(r.lu_le)))) + ' à ' + heure(r.lu_le) : '') + '</div>';
     if (r.statut === 'erreur') return '<div class="bn-etat bn-etat--ko">' + ic('alerte') + 'Le robot n’a pas pu la lire</div>';
@@ -454,7 +454,7 @@
     var vocal = r.kind === 'vocal', ed = S.edit === r.id;
     var h = '<div class="v2-card bn-note" data-row="' + esc(r.id) + '"><div class="bn-top"><b>' + heure(r.created_at) + '</b><span>' + (vocal ? 'Note vocale' + (r.duree_s ? ' · ' + chrono(r.duree_s) : '') : 'Note écrite') + '</span></div>';
     if (ed) {
-      h += micChamp('<textarea class="bn-ta" id="bn-edit-ta" rows="4" aria-label="Modifier la note"' + (vocal ? ' placeholder="Écris ou corrige le texte de cette note vocale"' : '') + '>' + esc(S.editTxt) + '</textarea>', 'Dicter la correction à la voix') +
+      h += micChamp('<textarea class="bn-ta" id="bn-edit-ta" rows="4" aria-label="Modifier la note"' + (vocal ? ' placeholder="Écrivez ou corrigez le texte de cette note vocale"' : '') + '>' + esc(S.editTxt) + '</textarea>', 'Dicter la correction à la voix') +
         '<div class="bn-acts"><button type="button" class="v2-btn v2-btn-primary" data-bn="edit-ok" data-row="' + esc(r.id) + '">Enregistrer</button><button type="button" class="bn-b" data-bn="edit-non">Annuler</button></div>' +
         '<div class="bn-msg bn-msg--ko" id="bn-edit-msg" role="status"></div>';
     } else {
@@ -480,7 +480,7 @@
     // un champ en cours de modification garde son texte et son focus pendant un redessin
     var en = document.getElementById('bn-edit-ta'), hadFocus = en && document.activeElement === en;
     if (en) S.editTxt = en.value;
-    if (S.etat === 'charge' || S.etat === 'attente') { z.innerHTML = '<div class="bn-vide">Chargement de tes notes…</div>'; return; }
+    if (S.etat === 'charge' || S.etat === 'attente') { z.innerHTML = '<div class="bn-vide">Chargement de vos notes…</div>'; return; }
     if (S.etat === 'echec') { z.innerHTML = '<div class="v2-card bn-note"><div class="bn-msg bn-msg--ko" style="margin:0">' + esc(S.erreur) + '</div><div class="bn-acts"><button type="button" class="v2-btn v2-btn-primary" data-bn="recharger">Réessayer</button></div></div>'; return; }
     if (!S.rows.length) { z.innerHTML = '<div class="bn-vide">Aucune note pour l’instant. Écris ou dicte la première ci-dessus.</div>'; return; }
     var h = '', dernier = '';
@@ -499,14 +499,14 @@
     var body = (ta && ta.value || '').trim();
     var dire = function (t, cl) { if (msg) { msg.className = 'bn-msg' + (cl ? ' bn-msg--' + cl : ''); msg.textContent = t; } };
     if (!body) { dire('Écris ou dicte quelque chose d’abord.', 'ko'); if (ta) ta.focus(); return; }
-    var c = sb(); if (!c || !V2.user) { dire('Tu n’es pas connecté : la note n’est pas enregistrée.', 'ko'); return; }
+    var c = sb(); if (!c || !V2.user) { dire('Vous n’êtes pas connecté : la note n’est pas enregistrée.', 'ko'); return; }
     btn.disabled = true; dire('Enregistrement…');
     Promise.resolve(c.from(TABLE).insert({ author_id: V2.user.id, author_name: V2.user.name || '', kind: 'texte', body: body, statut: 'brouillon' }).select('id')).then(function (r) {
       if (!r || r.error || !Array.isArray(r.data) || !r.data.length) throw new Error('refus');
       if (ta && ta.value.trim() === body) ta.value = '';
-      dire('Brouillon enregistré. Le robot ne le lira que si tu l’envoies.', 'ok');
+      dire('Brouillon enregistré. Le robot ne le lira que si vous l’envoyez.', 'ok');
       return charger();
-    }).catch(function () { dire('La note n’est pas enregistrée (pas de réseau ?). Ton texte est gardé : réessaie.', 'ko'); })
+    }).catch(function () { dire('La note n’est pas enregistrée (pas de réseau ?). Votre texte est gardé : réessayez.', 'ko'); })
       .then(function () { btn.disabled = false; });
   }
 
@@ -520,7 +520,7 @@
       var row = trouverRow(id); if (row) row.body = body;
       S.edit = null; dessinerListe(); toast('Note modifiée');
     }).catch(function () {
-      var m2 = document.getElementById('bn-edit-msg'); if (m2) m2.textContent = 'La note n’a pas été modifiée (le robot l’a peut-être déjà lue). Réessaie.';
+      var m2 = document.getElementById('bn-edit-msg'); if (m2) m2.textContent = 'La note n’a pas été modifiée (le robot l’a peut-être déjà lue). Réessayez.';
       charger();   // relecture : l'écran montre l'état réel de la note
     });
   }
@@ -541,7 +541,7 @@
       delete S.occupe[cle];
       if (ok) toast(vers === 'a_lire' ? 'Note envoyée au robot' : 'Note reprise : elle redevient un brouillon');
       else {
-        S.msgNote[id] = vers === 'a_lire' ? 'La note n’a pas été envoyée. Réessaie si elle est toujours un brouillon.' : 'La note n’a pas pu être reprise (le robot l’a peut-être déjà lue). Voici son état à jour.';
+        S.msgNote[id] = vers === 'a_lire' ? 'La note n’a pas été envoyée. Réessayez si elle est toujours un brouillon.' : 'La note n’a pas pu être reprise (le robot l’a peut-être déjà lue). Voici son état à jour.';
         toast(S.msgNote[id], 'error');
         if (actif()) dessinerListe();
         return charger();   // relecture de la vraie situation
@@ -583,7 +583,7 @@
       if (!r || r.error || !Array.isArray(r.data) || !r.data.length) throw new Error('refus');
       S.rows = S.rows.filter(function (x) { return x.id !== id; }); delete S.urls[id];
       if (actif()) dessinerListe(); toast('Note retirée');
-    }).catch(function () { toast('La note n’a pas été retirée : réessaie.', 'error'); });
+    }).catch(function () { toast('La note n’a pas été retirée : réessayez.', 'error'); });
   }
 
   function ecouter(id) {
@@ -593,7 +593,7 @@
       if (!u || r.error) throw new Error('adresse');
       S.urls[id] = u; dessinerListe();
       var a = document.querySelector('.bn-note[data-row="' + id + '"] audio'); if (a) { try { var p = a.play(); if (p && p.catch) p.catch(function () {}); } catch (e) {} }
-    }).catch(function () { toast('L’enregistrement n’a pas pu être chargé : réessaie.', 'error'); });
+    }).catch(function () { toast('L’enregistrement n’a pas pu être chargé : réessayez.', 'error'); });
   }
 
   // ═══ Note vocale ═══
@@ -649,7 +649,7 @@
     var z = document.getElementById('bn-voix'); if (!z) return;
     var h = '';
     if (R.etat === 'repos') h = '<div class="bn-ligne" style="margin-top:0"><button type="button" class="v2-btn v2-btn-primary" data-bn="rec-start">' + ic('mic') + 'Note vocale</button><span class="bn-msg" style="margin:0">5 minutes au maximum</span></div>';
-    else if (R.etat === 'micro') h = '<div class="bn-msg" style="margin:0">Autorise le micro si ton téléphone le demande…</div>';
+    else if (R.etat === 'micro') h = '<div class="bn-msg" style="margin:0">Autorisez le micro si votre téléphone le demande…</div>';
     else if (R.etat === 'enreg') h = '<div class="bn-ligne" style="margin-top:0"><span class="bn-chrono"><span class="bn-point"></span><span id="bn-chrono">0:00</span></span><button type="button" class="v2-btn v2-btn-primary" data-bn="rec-stop">' + ic('stop') + 'Arrêter</button></div>';
     else if (R.etat === 'ecoute') h = '<div class="bn-msg" style="margin:0">Enregistrement de ' + chrono(R.entry.duree) + '. Écoute-le avant de l’envoyer.</div>' +
       '<audio class="bn-audio" controls preload="metadata" src="' + esc(R.url) + '"></audio>' +
@@ -684,7 +684,7 @@
       var n = e && e.name;
       if (n === 'NotAllowedError' || n === 'SecurityError' || n === 'PermissionDeniedError') dire('Le micro est refusé. Autorise le micro pour ce site (réglages du navigateur, ou Réglages > Safari > Microphone sur iPhone), puis recommence.', 'ko');
       else if (n === 'NotFoundError' || n === 'OverconstrainedError') dire('Aucun micro n’a été trouvé sur cet appareil.', 'ko');
-      else dire('Le micro n’a pas pu être démarré. Réessaie.', 'ko');
+      else dire('Le micro n’a pas pu être démarré. Réessayez.', 'ko');
     });
   }
   function arreter() {
@@ -697,7 +697,7 @@
     if (R.etat !== 'enreg') return;
     var duree = Math.min(MAX_S, Math.max(1, Math.round((Date.now() - R.t0) / 1000)));
     var blob = new Blob(R.chunks, { type: R.type }); R.rec = null;
-    if (!blob.size) { R.etat = 'repos'; dessinerVoix(); dire('Rien n’a été enregistré. Réessaie.', 'ko'); return; }
+    if (!blob.size) { R.etat = 'repos'; dessinerVoix(); dire('Rien n’a été enregistré. Réessayez.', 'ko'); return; }
     var id = uuid();
     R.entry = { id: id, uid: uid(), blob: blob, type: R.type, ext: extDe(R.type), duree: duree, cree: Date.now(), nom: V2.user && V2.user.name || '' };
     garder(R.entry);   // gardé tout de suite : fermer l'écran ou perdre le réseau ne le perd pas
@@ -736,12 +736,12 @@
     R.etat = 'envoi'; dire(''); dessinerVoix(); dessinerAttente();
     envoyerEntree(e).then(function (ok) {
       if (ok) {
-        oublierUrl(); R.entry = null; R.etat = 'repos'; dessinerVoix(); dire('Note vocale enregistrée en brouillon. Le robot ne la lira que si tu l’envoies.', 'ok');
+        oublierUrl(); R.entry = null; R.etat = 'repos'; dessinerVoix(); dire('Note vocale enregistrée en brouillon. Le robot ne la lira que si vous l’envoyez.', 'ok');
         dessinerAttente(); charger();
       } else {
         // l'enregistrement quitte le lecteur et passe dans « Pas encore envoyé » (gardé, avec « Renvoyer », et renvoyé tout seul à la prochaine ouverture)
         oublierUrl(); R.entry = null; R.etat = 'repos'; dessinerVoix();
-        dire('Pas encore rangé dans tes notes (pas de réseau ?). Ton enregistrement est gardé sur cet appareil : il sera rangé à ta prochaine visite de cet écran, ou avec « Réessayer ».', 'ko');
+        dire('Pas encore rangé dans vos notes (pas de réseau ?). Votre enregistrement est gardé sur cet appareil : il sera rangé à votre prochaine visite de cet écran, ou avec « Réessayer ».', 'ko');
         dessinerAttente();
       }
     });
@@ -756,12 +756,12 @@
       S.attente = l;
       if (!l.length) { z.innerHTML = ''; return; }
       (S.urlsAtt || []).forEach(function (u) { try { URL.revokeObjectURL(u); } catch (x) {} }); S.urlsAtt = [];
-      z.innerHTML = '<div class="v2-card bn-att"><div class="bn-h">Gardé sur cet appareil, pas encore dans tes notes</div>' + l.map(function (e) {
+      z.innerHTML = '<div class="v2-card bn-att"><div class="bn-h">Gardé sur cet appareil, pas encore dans vos notes</div>' + l.map(function (e) {
         var u = URL.createObjectURL(e.blob); S.urlsAtt.push(u);
         var s = S.etatEnvoi[e.id] || {};
         return '<div class="bn-act"><p>Note vocale du ' + esc(dateLongue(cleJour(new Date(e.cree)))) + ' à ' + heure(e.cree) + ' (' + chrono(e.duree) + ')</p>' +
           '<audio class="bn-audio" controls preload="metadata" src="' + esc(u) + '"></audio>' +
-          '<div class="bn-msg ' + (s.ko ? 'bn-msg--ko' : '') + '">' + (s.en ? 'Envoi en cours…' : s.ko ? 'Pas envoyée : réseau indisponible. L’enregistrement est gardé.' : 'Gardé sur cet appareil, pas encore dans ton bloc-notes.') + '</div>' +
+          '<div class="bn-msg ' + (s.ko ? 'bn-msg--ko' : '') + '">' + (s.en ? 'Envoi en cours…' : s.ko ? 'Pas envoyée : réseau indisponible. L’enregistrement est gardé.' : 'Gardé sur cet appareil, pas encore dans votre bloc-notes.') + '</div>' +
           '<div class="bn-acts"><button type="button" class="v2-btn v2-btn-primary" data-bn="renvoyer" data-id="' + esc(e.id) + '"' + (s.en ? ' disabled' : '') + '>Réessayer</button>' +
           '<button type="button" class="bn-b bn-b--rose" data-bn="suppr-att" data-id="' + esc(e.id) + '"' + (s.en ? ' disabled' : '') + '>Supprimer</button></div></div>';
       }).join('') + '</div>';

@@ -61,34 +61,34 @@
       '.v2-camp-acts .v2-btn{min-height:48px}',
       '.v2-camp-note{color:var(--muted);font-size:13px;margin:14px 0 0;line-height:1.5}',
       // Sélection : cibles tactiles à 44 px minimum, la liste défile seule.
-      '.cp-type{display:flex;flex-wrap:wrap;gap:6px}',
-      '.cp-type button{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line);',
+      '.cmpg-type{display:flex;flex-wrap:wrap;gap:6px}',
+      '.cmpg-type button{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line);',
       '  background:transparent;color:inherit;font:inherit;cursor:pointer}',
-      '.cp-type button.on{border-color:var(--ip-blue);color:var(--ip-blue);font-weight:700}',
-      '.cp-cpt{font-size:14px;margin:0 0 10px}',
-      '.cp-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}',
-      '.cp-chip{min-height:44px;padding:0 12px;border-radius:20px;border:1px solid var(--line);',
+      '.cmpg-type button.on{border-color:var(--ip-blue);color:var(--ip-blue);font-weight:700}',
+      '.cmpg-cpt{font-size:14px;margin:0 0 10px}',
+      '.cmpg-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}',
+      '.cmpg-chip{min-height:44px;padding:0 12px;border-radius:20px;border:1px solid var(--line);',
       '  background:transparent;color:inherit;font:inherit;font-size:13px;cursor:pointer}',
-      '.cp-chip b{opacity:.6;font-weight:600;margin-left:4px}',
-      '.cp-chip.on{border-color:var(--ip-blue);color:var(--ip-blue)}',
-      '.cp-selacts{display:flex;gap:8px;margin-bottom:10px}',
-      '.cp-selacts .v2-btn{min-height:44px}',
-      '.cp-liste{list-style:none;margin:0;padding:0;max-height:60vh;overflow-y:auto;',
+      '.cmpg-chip b{opacity:.6;font-weight:600;margin-left:4px}',
+      '.cmpg-chip.on{border-color:var(--ip-blue);color:var(--ip-blue)}',
+      '.cmpg-selacts{display:flex;gap:8px;margin-bottom:10px}',
+      '.cmpg-selacts .v2-btn{min-height:44px}',
+      '.cmpg-liste{list-style:none;margin:0;padding:0;max-height:60vh;overflow-y:auto;',
       '  border:1px solid var(--line);border-radius:var(--r-md)}',
-      '.cp-l{display:flex;align-items:center;gap:10px;padding:10px 12px;min-height:56px;',
+      '.cmpg-l{display:flex;align-items:center;gap:10px;padding:10px 12px;min-height:56px;',
       '  border-bottom:1px solid var(--line);cursor:pointer}',
-      '.cp-l:last-child{border-bottom:0}',
-      '.cp-l.on{background:rgba(0,87,255,.08)}',
-      '.cp-case{flex:0 0 auto;width:24px;height:24px;border-radius:7px;border:1px solid var(--line);',
+      '.cmpg-l:last-child{border-bottom:0}',
+      '.cmpg-l.on{background:rgba(0,87,255,.08)}',
+      '.cmpg-case{flex:0 0 auto;width:24px;height:24px;border-radius:7px;border:1px solid var(--line);',
       '  display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--ip-blue)}',
-      '.cp-l.on .cp-case{border-color:var(--ip-blue)}',
-      '.cp-nom{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}',
-      '.cp-nom b{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      '.cp-nom small{color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      '.cp-tag{flex:0 0 auto;font-size:11px;font-weight:700;text-transform:uppercase;',
+      '.cmpg-l.on .cmpg-case{border-color:var(--ip-blue)}',
+      '.cmpg-nom{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}',
+      '.cmpg-nom b{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.cmpg-nom small{color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.cmpg-tag{flex:0 0 auto;font-size:11px;font-weight:700;text-transform:uppercase;',
       '  letter-spacing:.04em;padding:3px 8px;border-radius:20px;border:1px solid var(--line)}',
-      '.cp-tag.cl{color:#00A870;border-color:#00A87055}',
-      '.cp-tag.pr{color:var(--muted)}'
+      '.cmpg-tag.cl{color:#00A870;border-color:#00A87055}',
+      '.cmpg-tag.pr{color:var(--muted)}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -168,15 +168,15 @@
     return {
       type: ETAT.type,
       groupements: ETAT.groupements,
-      dept: (val('cp-dept') || '').trim(),
-      recherche: (val('cp-q') || '').trim(),
+      dept: (val('cmpg-dept') || '').trim(),
+      recherche: (val('cmpg-q') || '').trim(),
       opposes: ETAT.opposes
     };
   }
 
   function visibles() {
     var l = window.V2CIBLE.filtrer(ETAT.tous, filtres());
-    var caMax = parseInt(val('cp-camax'), 10) || 0;
+    var caMax = parseInt(val('cmpg-camax'), 10) || 0;
     if (!caMax) return l;
     return l.filter(function (o) { return (V2.rdvCA(o.cip) || 0) <= caMax; });
   }
@@ -187,7 +187,7 @@
     chercher: function () {
       var c = sb(), u = uid();
       if (!c || !u) { V2.toast('Connecte-toi pour préparer une campagne.'); return; }
-      var z = document.getElementById('cp-liste');
+      var z = document.getElementById('cmpg-liste');
       if (!ETAT.comm) {
         if (z) z.innerHTML = '<p class="v2-camp-note">Choisissez d’abord un commercial ci-dessus.</p>';
         return;
@@ -243,7 +243,7 @@
       if (ETAT.comm === cm) return;
       ETAT.comm = cm;
       ETAT.choisis = {}; ETAT.groupements = []; ETAT.tous = [];
-      var bt = document.querySelectorAll('.cp-comm button');
+      var bt = document.querySelectorAll('.cmpg-comm button');
       for (var i = 0; i < bt.length; i++) bt[i].classList.toggle('on', bt[i].getAttribute('data-c') === cm);
       V2.campagne.chercher();
     },
@@ -253,8 +253,8 @@
     apercu: function () {
       if (!window.V2rdvApercuPret) { window.V2rdvApercuPret = 1; }
       var cips = Object.keys(ETAT.choisis);
-      V2.rdvApercu.montrer('cp-apercu', val('cp-modele') || 'routine',
-                           val('cp-texte') || '', cips.length ? cips[0] : null,
+      V2.rdvApercu.montrer('cmpg-apercu', val('cmpg-modele') || 'routine',
+                           val('cmpg-texte') || '', cips.length ? cips[0] : null,
                            ETAT.mode === 'groupe');
     },
 
@@ -264,7 +264,7 @@
     majModeles: function () {
       if (!V2.rdvModeles) return;
       V2.rdvModeles.charger().then(function () {
-        var sel = document.getElementById('cp-modele');
+        var sel = document.getElementById('cmpg-modele');
         if (!sel) return;
         var garde = sel.value || ETAT.modele || 'routine';
         var base = window.V2MOD.liste().map(function (m) {
@@ -295,7 +295,7 @@
     basculer: function (cip) {
       if (ETAT.choisis[cip]) delete ETAT.choisis[cip]; else ETAT.choisis[cip] = 1;
       V2.campagne.majBarre();
-      var e = document.getElementById('cp-l-' + cip);
+      var e = document.getElementById('cmpg-l-' + cip);
       if (e) e.classList.toggle('on', !!ETAT.choisis[cip]);
       // Première officine cochée : l'aperçu prend ses chiffres à elle.
       if (Object.keys(ETAT.choisis).length <= 1) V2.campagne.apercu();
@@ -312,7 +312,7 @@
 
     majBarre: function () {
       var n = Object.keys(ETAT.choisis).length;
-      var b = document.getElementById('cp-envoi');
+      var b = document.getElementById('cmpg-envoi');
       if (!b) return;
       b.disabled = !n;
       if (!n) { b.textContent = 'Sélectionnez des officines'; return; }
@@ -326,7 +326,7 @@
     },
 
     rafraichir: function () {
-      var z = document.getElementById('cp-liste'); if (!z) return;
+      var z = document.getElementById('cmpg-liste'); if (!z) return;
       var l = visibles(), c = window.V2CIBLE.compter(l);
       var grps = window.V2CIBLE.groupements(window.V2CIBLE.filtrer(ETAT.tous, {
         type: ETAT.type, opposes: ETAT.opposes
@@ -334,44 +334,44 @@
 
       var chips = grps.slice(0, 14).map(function (g) {
         var on = ETAT.groupements.indexOf(g.nom) >= 0;
-        return '<button class="cp-chip' + (on ? ' on' : '') + '" onclick="V2.campagne.groupe(' +
+        return '<button class="cmpg-chip' + (on ? ' on' : '') + '" onclick="V2.campagne.groupe(' +
           esc(JSON.stringify(g.nom)).replace(/"/g, '&quot;') + ')">' +
           esc(g.nom === '—' ? 'Sans groupement' : g.nom) + ' <b>' + g.n + '</b></button>';
       }).join('');
 
       var lignes = l.map(function (o) {
         var on = !!ETAT.choisis[o.cip];
-        return '<li id="cp-l-' + esc(o.cip) + '" class="cp-l' + (on ? ' on' : '') +
+        return '<li id="cmpg-l-' + esc(o.cip) + '" class="cmpg-l' + (on ? ' on' : '') +
           '" onclick="V2.campagne.basculer(' + esc(JSON.stringify(o.cip)).replace(/"/g, '&quot;') + ')">' +
-          '<span class="cp-case">' + (on ? '✓' : '') + '</span>' +
-          '<span class="cp-nom"><b>' + esc(o.nom) + '</b>' +
+          '<span class="cmpg-case">' + (on ? '✓' : '') + '</span>' +
+          '<span class="cmpg-nom"><b>' + esc(o.nom) + '</b>' +
             '<small>' + esc(o.ville || '') + (o.cp ? ' · ' + esc(o.cp) : '') +
             (o.groupement ? ' · ' + esc(o.groupement) : '') + '</small></span>' +
-          '<span class="cp-tag ' + (o.type === 'client' ? 'cl' : 'pr') + '">' +
+          '<span class="cmpg-tag ' + (o.type === 'client' ? 'cl' : 'pr') + '">' +
             (o.type === 'client' ? 'client' : 'prospect') + '</span></li>';
       }).join('');
 
       z.innerHTML =
-        '<div class="cp-cpt"><b>' + c.total + '</b> officine' + (c.total > 1 ? 's' : '') +
+        '<div class="cmpg-cpt"><b>' + c.total + '</b> officine' + (c.total > 1 ? 's' : '') +
           ' joignable' + (c.total > 1 ? 's' : '') + ' · ' + c.clients + ' client' +
           (c.clients > 1 ? 's' : '') + ' · ' + c.prospects + ' prospect' +
           (c.prospects > 1 ? 's' : '') + '</div>' +
-        (chips ? '<div class="cp-chips">' + chips + '</div>' : '') +
-        '<div class="cp-selacts">' +
+        (chips ? '<div class="cmpg-chips">' + chips + '</div>' : '') +
+        '<div class="cmpg-selacts">' +
           '<button class="v2-btn v2-btn-ghost" onclick="V2.campagne.tout(true)">Tout cocher</button>' +
           '<button class="v2-btn v2-btn-ghost" onclick="V2.campagne.tout(false)">Tout décocher</button>' +
         '</div>' +
-        (lignes ? '<ul class="cp-liste">' + lignes + '</ul>'
+        (lignes ? '<ul class="cmpg-liste">' + lignes + '</ul>'
                 : '<p class="v2-camp-note">Aucune officine avec ces filtres. ' +
                   'Les officines sans adresse mail et celles marquées « ne plus solliciter » ' +
                   'sont toujours écartées.</p>');
 
-      // ⚠️ `[data-t]` est indispensable : la classe `cp-type` habille AUSSI la
+      // ⚠️ `[data-t]` est indispensable : la classe `cmpg-type` habille AUSSI la
       // rangée des commerciaux et celle du mode d'envoi. Sans ce filtre, le
       // sélecteur attrapait 6 boutons au lieu de 3 et retirait leur état actif
       // — le mode « groupé » restait choisi en mémoire mais plus rien ne
       // l'indiquait à l'écran. Le défaut existait déjà pour le commercial.
-      var bt = document.querySelectorAll('.cp-type button[data-t]');
+      var bt = document.querySelectorAll('.cmpg-type button[data-t]');
       for (var i = 0; i < bt.length; i++)
         bt[i].classList.toggle('on', bt[i].getAttribute('data-t') === ETAT.type);
       V2.campagne.majBarre();
@@ -382,10 +382,10 @@
     // refaire sa liste.
     mode: function (m) {
       ETAT.mode = m;
-      var bt = document.querySelectorAll('.cp-mode button');
+      var bt = document.querySelectorAll('.cmpg-mode button');
       for (var i = 0; i < bt.length; i++)
         bt[i].classList.toggle('on', bt[i].getAttribute('data-m') === m);
-      var e = document.getElementById('cp-mode-note');
+      var e = document.getElementById('cmpg-mode-note');
       if (e) e.innerHTML = noteMode();
       // majModeles rappelle apercu() une fois la liste recomposée.
       V2.campagne.majModeles();
@@ -394,8 +394,8 @@
     },
 
     lancer: function () {
-      ETAT.modele = val('cp-modele') || 'routine';
-      ETAT.texte = val('cp-texte');
+      ETAT.modele = val('cmpg-modele') || 'routine';
+      ETAT.texte = val('cmpg-texte');
       if (window.V2MOD.texteRefuse(ETAT.texte)) {
         V2.toast('Retirez le pourcentage : les conditions commerciales ne s’écrivent pas dans un mail.');
         return;
@@ -434,10 +434,10 @@
         '<div class="v2-camp-cible"><b>' + esc(o.nom) + '</b>' +
           '<span>' + esc(o.ville) + (o.ville ? ' · ' : '') + esc(o.email) + '</span></div>' +
         '<div class="v2-camp-acts">' +
-          '<button class="v2-btn v2-btn-primary" id="cp-ouvrir" onclick="V2.campagne.ouvrir()">Ouvrir le mail</button>' +
+          '<button class="v2-btn v2-btn-primary" id="cmpg-ouvrir" onclick="V2.campagne.ouvrir()">Ouvrir le mail</button>' +
           '<button class="v2-btn" onclick="V2.campagne.passer()">Passer</button>' +
         '</div>' +
-        '<div class="v2-camp-acts" id="cp-apres" style="display:none;margin-top:12px">' +
+        '<div class="v2-camp-acts" id="cmpg-apres" style="display:none;margin-top:12px">' +
           '<button class="v2-btn v2-btn-primary" onclick="V2.campagne.marquerEnvoye()">Envoyé ' +
             ICO('check', 15) + ' → suivant</button>' +
         '</div>' +
@@ -448,12 +448,12 @@
 
     ouvrir: function () {
       var o = ETAT.file[ETAT.i];
-      var b = document.getElementById('cp-ouvrir');
+      var b = document.getElementById('cmpg-ouvrir');
       if (b) { b.disabled = true; b.textContent = 'Préparation…'; }
       V2.rdv.preparerMail(o.cip, ETAT.modele, ETAT.texte, function (ok) {
         if (b) { b.disabled = false; b.textContent = 'Ouvrir le mail'; }
         if (!ok) return;
-        var e = document.getElementById('cp-apres');
+        var e = document.getElementById('cmpg-apres');
         if (e) e.style.display = '';
       });
     },
@@ -485,53 +485,53 @@
 
         '<div class="v2-camp-sec">Comment vous envoyez</div>' +
         '<div class="v2-camp-box">' +
-          '<div class="cp-type cp-mode">' +
+          '<div class="cmpg-type cmpg-mode">' +
             '<button data-m="un" class="' + (ETAT.mode === 'un' ? 'on' : '') +
               '" onclick="V2.campagne.mode(\'un\')">Un par un, personnalisé</button>' +
             '<button data-m="groupe" class="' + (ETAT.mode === 'groupe' ? 'on' : '') +
               '" onclick="V2.campagne.mode(\'groupe\')">Groupé en copie cachée</button>' +
           '</div>' +
-          '<p id="cp-mode-note" style="color:var(--muted);font-size:12.5px;margin:10px 0 0;' +
+          '<p id="cmpg-mode-note" style="color:var(--muted);font-size:12.5px;margin:10px 0 0;' +
             'line-height:1.55">' + noteMode() + '</p>' +
         '</div>' +
 
         '<div class="v2-camp-sec">Le message</div>' +
         '<div class="v2-camp-box">' +
-          '<label for="cp-modele">Le modèle utilisé</label>' +
-          '<select id="cp-modele" onchange="V2.campagne.apercu()">' + mods + '</select>' +
+          '<label for="cmpg-modele">Le modèle utilisé</label>' +
+          '<select id="cmpg-modele" onchange="V2.campagne.apercu()">' + mods + '</select>' +
           (V2.pages.rdvmodeles
             ? '<p style="margin:8px 0 0"><button class="v2-btn v2-btn-ghost" ' +
               'onclick="V2.go(\'rdvmodeles\')">Écrire mes propres modèles</button></p>' : '') +
-          '<label for="cp-texte" style="margin-top:14px">Votre mot d’introduction (facultatif)</label>' +
+          '<label for="cmpg-texte" style="margin-top:14px">Votre mot d’introduction (facultatif)</label>' +
           '<p>Deux lignes, réutilisées pour toute la liste — une nouveauté, un ' +
             'événement. Aucun pourcentage : les conditions commerciales ne ' +
             's’écrivent pas dans un mail.</p>' +
-          micChamp('<textarea id="cp-texte" rows="2" oninput="V2.campagne.apercu()" placeholder="Ex. La gamme diabète arrive en septembre."></textarea>', 'Dicter le texte de la campagne à la voix') +
+          micChamp('<textarea id="cmpg-texte" rows="2" oninput="V2.campagne.apercu()" placeholder="Ex. La gamme diabète arrive en septembre."></textarea>', 'Dicter le texte de la campagne à la voix') +
         '</div>' +
 
         '<div class="v2-camp-sec">Aperçu du mail</div>' +
-        '<div id="cp-apercu"></div>' +
+        '<div id="cmpg-apercu"></div>' +
 
         '<div class="v2-camp-sec">Qui vous visez</div>' +
         '<div class="v2-camp-box">' +
           '<label>Commercial</label>' +
           '<p>On n’écrit qu’aux officines de ce commercial — clients comme prospects.</p>' +
-          '<div class="cp-type cp-comm" style="margin-bottom:14px">' + boutonsComm() + '</div>' +
-          '<div class="cp-type">' +
+          '<div class="cmpg-type cmpg-comm" style="margin-bottom:14px">' + boutonsComm() + '</div>' +
+          '<div class="cmpg-type">' +
             '<button data-t="tous" class="on" onclick="V2.campagne.typer(\'tous\')">Clients et prospects</button>' +
             '<button data-t="clients" onclick="V2.campagne.typer(\'clients\')">Clients</button>' +
             '<button data-t="prospects" onclick="V2.campagne.typer(\'prospects\')">Prospects</button>' +
           '</div>' +
           '<div class="v2-camp-duo" style="margin-top:12px">' +
-            '<div><label for="cp-dept">Département</label>' +
-              '<input id="cp-dept" class="court" inputmode="numeric" maxlength="2" placeholder="tous" ' +
+            '<div><label for="cmpg-dept">Département</label>' +
+              '<input id="cmpg-dept" class="court" inputmode="numeric" maxlength="2" placeholder="tous" ' +
               'oninput="V2.campagne.rafraichir()" /></div>' +
-            '<div><label for="cp-camax">CA maximum (€)</label>' +
-              '<input id="cp-camax" class="court" type="number" min="0" step="1000" placeholder="aucun" ' +
+            '<div><label for="cmpg-camax">CA maximum (€)</label>' +
+              '<input id="cmpg-camax" class="court" type="number" min="0" step="1000" placeholder="aucun" ' +
               'oninput="V2.campagne.rafraichir()" /></div>' +
           '</div>' +
-          '<label for="cp-q" style="margin-top:14px">Chercher</label>' +
-          '<input id="cp-q" type="search" placeholder="nom d’officine ou ville" ' +
+          '<label for="cmpg-q" style="margin-top:14px">Chercher</label>' +
+          '<input id="cmpg-q" type="search" placeholder="nom d’officine ou ville" ' +
             'oninput="V2.campagne.rafraichir()" />' +
           '<div class="v2-camp-acts" style="margin-top:14px">' +
             '<button class="v2-btn" onclick="V2.campagne.chercher()">Voir les officines</button>' +
@@ -539,12 +539,12 @@
         '</div>' +
 
         '<div class="v2-camp-sec">La liste</div>' +
-        '<div id="cp-liste"><p class="v2-camp-note">Cliquez sur « Voir les officines » : ' +
+        '<div id="cmpg-liste"><p class="v2-camp-note">Cliquez sur « Voir les officines » : ' +
           'vos clients et les prospects de votre secteur s’affichent, avec leur groupement. ' +
           'Vous cochez celles que vous voulez.</p></div>' +
 
         '<div class="v2-camp-acts" style="margin-top:16px">' +
-          '<button class="v2-btn v2-btn-primary" id="cp-envoi" disabled ' +
+          '<button class="v2-btn v2-btn-primary" id="cmpg-envoi" disabled ' +
             'onclick="V2.campagne.lancer()">Sélectionnez des officines</button>' +
         '</div>' +
         '<p class="v2-camp-note">Les officines sans adresse mail et celles marquées ' +
