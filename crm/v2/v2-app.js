@@ -2143,10 +2143,10 @@
     // n'affichait que son nom, deux lignes identiques. Dès qu'un nom revient dans la liste, la cliente
     // reçoit sa ville et son code postal, au format des autres rubriques. Copie : l'index n'est pas
     // touché (son `meta` sert aussi à la recherche).
-    var nbNom = {}, cleNom = function (x) { return deaccLower(x.label).replace(/\s+/g, ' ').trim(); };
-    out.forEach(function (x) { if (x.pid != null) { var k = cleNom(x); nbNom[k] = (nbNom[k] || 0) + 1; } });
+    // 19/10/2026 — étendu à TOUTES les clientes : au téléphone, « on ne sait pas laquelle c'est » avec le nom
+    // seul ; la ville et le code postal s'affichent comme pour les officines de France entière.
     out = out.map(function (x) {
-      if (x.pid == null || x.meta || !x.lieu || nbNom[cleNom(x)] < 2) return x;
+      if (x.pid == null || x.meta || !x.lieu) return x;
       var y = {}; for (var c in x) y[c] = x[c]; y.meta = x.lieu; return y;
     });
     // Toujours proposer de CRÉER une fiche prospect si on ne trouve pas (ou pour ajouter)
@@ -2295,7 +2295,9 @@
     var bd = document.createElement('div');
     bd.id = 'v2-cmdk'; bd.className = 'v2-cmdk-bd';
     bd.innerHTML = '<div class="v2-cmdk" onclick="event.stopPropagation()">' +
-      '<div class="v2-cmdk-search">' + ICO('search', 22, 2) + '<input id="v2-cmdk-input" placeholder="Une pharmacie (nom, ville, CP), un produit, une page…" autocomplete="off"><kbd style="font-family:var(--mono);font-size:11px;background:#F1F3F8;padding:4px 8px;border-radius:7px;color:var(--ip-ink-2)">Esc</kbd></div>' +
+      '<div class="v2-cmdk-search">' + ICO('search', 22, 2) + '<input id="v2-cmdk-input" placeholder="Une pharmacie (nom, ville, CP), un produit, une page…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"><kbd style="font-family:var(--mono);font-size:11px;background:#F1F3F8;padding:4px 8px;border-radius:7px;color:var(--ip-ink-2)">Esc</kbd>' +
+      // 19/10/2026 — au téléphone il n'y a pas de touche Échap : un « Annuler » à portée de pouce (caché sur ordinateur).
+      '<button type="button" class="v2-cmdk-x" onclick="V2.closeCmdk()">Annuler</button></div>' +
       '<div id="v2-cmdk-results" class="v2-cmdk-results"></div>' +
       '<div class="v2-cmdk-foot"><span>↑↓ naviguer</span><span>↵ ouvrir</span><span>Esc fermer</span></div>' +
       '</div>';

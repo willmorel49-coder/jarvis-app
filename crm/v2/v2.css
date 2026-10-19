@@ -521,10 +521,52 @@ html.v2-nav .v2-top::before{content:"";position:absolute;left:0;bottom:-1px;heig
   .v2-subtab,.v2-tab,.ph-vtab,.grp-tab,.v2-seg,.v2-rchip,.v2-back,.pilo-segbtn,.pilo-commbtn,.co-vbtn,.cat-pg,.off-pg,.v2-lch-mini,.net-scope-b,.phf-rf,.phf-segref-b{min-height:var(--tap-min,44px);display:inline-flex;align-items:center}
   /* table dans une carte : autoriser le scroll horizontal (sinon overflow:hidden coupe la fin) */
   .v2-card:has(> .v2-table){overflow-x:auto;-webkit-overflow-scrolling:touch}
-  /* ⌘K en bottom-sheet : à portée du pouce, au-dessus du clavier */
-  .v2-cmdk-bd{align-items:flex-end;padding-top:0}
-  .v2-cmdk{width:100%;max-width:100%;max-height:80vh;border-radius:18px 18px 0 0;padding-bottom:env(safe-area-inset-bottom)}
+  /* ⌘K au téléphone (19/10/2026) : plein écran ancré en HAUT — un panneau posé en bas passait sous le
+     clavier de l'iPhone. Le nom entier s'affiche (sur deux lignes s'il le faut), ville · CP en dessous. */
+  .v2-cmdk-bd{align-items:stretch;padding:0}
+  .v2-cmdk{width:100%;max-width:100%;height:100%;max-height:none;border-radius:0;padding-top:env(safe-area-inset-top)}
+  .v2-cmdk-search{padding:8px 8px 8px 16px;gap:10px}
+  .v2-cmdk-search input{min-width:0}
+  .v2-cmdk-search kbd,.v2-cmdk-foot{display:none}
+  .v2-cmdk-search .v2-cmdk-x{display:inline-flex}
+  .v2-cmdk-results{flex:1;padding:6px 8px calc(24px + env(safe-area-inset-bottom));overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+  .v2-cmdk-grp{padding:12px 10px 4px}
+  .v2-cmdk-item{display:grid;grid-template-columns:34px minmax(0,1fr);column-gap:12px;row-gap:2px;align-items:center;min-height:52px;padding:9px 10px}
+  .v2-cmdk-item .ico{width:34px;height:34px;grid-row:1 / span 2}
+  .v2-cmdk-item:not(:has(.meta)) .ico{grid-row:auto}
+  .v2-cmdk-item .lbl{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;font-size:15px;line-height:1.3}
+  .v2-cmdk-item .meta{grid-column:2;font-size:12.5px;line-height:1.3;overflow-wrap:anywhere}
+  /* Audit téléphone du 19/10/2026 (WebKit 390 px) — « html » en tête : ces écrans posent leur style APRÈS
+     cette feuille (balise <style> injectée), à égalité de poids ils l'emporteraient. */
+  /* listes déroulantes : WebKit ignore min-height sur un select natif → apparence propre + flèche dessinée */
+  html .v2-profil-f select,html .mol-select,html .mol-msort select,html .cp-sel,html #v2-pharma-comm{-webkit-appearance:none;appearance:none;height:44px;min-height:44px;padding-right:34px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%235B6478' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 12px center;background-size:12px 8px}
+  /* zones à toucher : 44 px */
+  html .v2-todo-off,html .pha-kv a,html .v2-card-link{display:inline-flex;align-items:center;min-height:44px}
+  html .v2-card-link{padding:0 6px}
+  html .v2-todo-n-in,html .v2-todo-mod-add .v2-btn,html .v2-profil-f input,html .phf-nmedit-in,html .phf-nmedit-btn,html .v2-camp-box .v2-btn{min-height:44px}
+  html .cp-chip,html .pilo-gis-chip,html .ap-navb,html .mol-chip,html .cm-chip .cm-chip-m{min-height:44px}
+  html .cm-chip .cm-chip-i{min-height:44px;min-width:44px}
+  html .cl-line{min-height:44px;padding-top:0}
+  html .v2-camp-box label{padding:6px 0}
+  /* rangées de puces : une seule ligne qu'on fait glisser au doigt, plutôt que six rangées avant le premier chiffre */
+  html .pilo-seg:has(.pilo-commbtn){flex-wrap:nowrap;overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch}
+  html .cp-tete .cp-chips:not(.cp-chips-w){flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+  /* noms entiers : produits Offilog, titres d'Infos du jour, documents de la Mallette, régions du Marché */
+  html .off-card-name{-webkit-line-clamp:5;min-height:0}
+  html .x13-ut{-webkit-line-clamp:6}
+  html .x13-t,html .x13-tt{-webkit-line-clamp:4}
+  html .ml-sh-t{-webkit-line-clamp:6;overflow-wrap:anywhere}
+  html .ml-doc .ml-so{-webkit-line-clamp:4;min-height:0}
+  html .mfr-b span:first-child,html .mfr-res .c{white-space:normal;overflow:visible;text-overflow:clip}
+  /* fiche officine : le nom à corriger sur toute la largeur */
+  html .phf-nmedit-row{flex-direction:column;align-items:stretch}
+  /* textes sous 12 px */
+  html .v2-profil-f>span,html .pot-t span,html .pot-t i,html .v2-profil-meta{font-size:12px}
 }
+.v2-cmdk-x{display:none;align-items:center;justify-content:center;flex-shrink:0;min-height:44px;padding:0 8px;border:0;background:none;
+  color:var(--ip-blue);font:600 16px var(--font);cursor:pointer;-webkit-tap-highlight-color:transparent}
 @media (prefers-reduced-motion:reduce){
   .v2-eyebrow .dot::after{animation:none}
   .v2-pil:active,.v2-rchip:active,.v2-back:active{transform:none}
