@@ -264,6 +264,24 @@
   }
   V2.topbar = topbar;
 
+  // 19/10/2026 — au téléphone, la barre du haut part quand on descend et revient dès qu'on remonte un peu
+  // (classe `v2-top-part` sur <html>, le style est dans v2-pieces.css). En haut de page elle est toujours là.
+  (function () {
+    var tel = window.matchMedia('(max-width:760px)'), y0 = window.scrollY || 0, prevu = false;
+    window.addEventListener('scroll', function () {
+      if (prevu) return; prevu = true;
+      requestAnimationFrame(function () {
+        prevu = false;
+        var y = window.scrollY, d = y - y0, part;
+        if (!tel.matches || y < 80) part = false;
+        else if (Math.abs(d) < 8 || y + window.innerHeight >= document.documentElement.scrollHeight - 2) return;   // rebond du bas de page
+        else part = d > 0;
+        y0 = y;
+        document.documentElement.classList.toggle('v2-top-part', part);
+      });
+    }, { passive: true });
+  })();
+
   // Nom de l'écran affiché dans la barre : on le lit dans G4_PORTES (la liste d'outils de l'accueil),
   // jamais recopié ici. Les portes qui ne sont qu'un raccourci (champ `js`) ne nomment pas l'écran.
   function nomEcran(route) {

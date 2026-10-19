@@ -27,6 +27,23 @@
 }
 @media (max-width:760px){ :root{ --v2-top-h:60px; } }
 
+/* 19/10/2026 — au téléphone, la barre du haut reste à l'écran. Depuis le 17/06 une règle de v2-app.js
+   (`.v2-top{position:relative}`) la faisait défiler avec la page partout, sauf sur l'accueil. `html` passe devant
+   cette règle injectée après les feuilles. --v2-top-vu = la hauteur de barre réellement visible : les bandeaux
+   collés de chaque écran (sommaire de la fiche…) se posent dessous. Ordinateur inchangé. */
+@media (max-width:760px){
+  html .v2-top{position:sticky;top:0}
+  /* collée, elle passe au-dessus du texte : fond plein (la verrière la laissait transparente à 74 %) */
+  html .v2-top{background:linear-gradient(#fff,#FBFCFE)}
+  :root{--v2-top-vu:var(--v2-top-h)}
+  html :is(.pha-som,.ap-nav,.lgo-tabs-w,.pb-band){top:var(--v2-top-vu)}   /* sommaire de la fiche, onglets d'Appro et des logiciels, bandeau de l'accueil */
+  html .v2-top{transition:transform .28s var(--ease,ease)}
+  html :is(.pha-som,.ap-nav,.lgo-tabs-w,.pb-band){transition:top .28s var(--ease,ease)}
+  html.v2-top-part{--v2-top-vu:0px}
+  html.v2-top-part .v2-top{transform:translateY(calc(-100% - 16px))}
+}
+@media (max-width:760px) and (prefers-reduced-motion:reduce){ html .v2-top,html :is(.pha-som,.ap-nav,.lgo-tabs-w,.pb-band){transition:none} }
+
 /* ─── 1. BARRE DU HAUT : 72 px (60 au téléphone), la même partout ─── */
 .v2-top{height:var(--v2-top-h);display:flex;align-items:center;gap:16px;padding:0 28px;
   box-shadow:0 1px 0 rgba(255,255,255,.8) inset,0 8px 20px -14px rgba(16,19,28,.14)}

@@ -3850,7 +3850,9 @@
       var b = e.target.closest && e.target.closest('.pha-som-b'); if (!b) return;
       var p = b.closest('.pha'), n = b.parentNode;
       var c = p.querySelector(b.getAttribute('data-cible')); if (!c) return;
-      window.scrollTo({ top: c.getBoundingClientRect().top + window.scrollY - phaTelHaut() - n.offsetHeight - 16, behavior: 'smooth' });
+      // la barre du haut part quand on descend et revient quand on remonte (v2-app.js) : on vise sa place APRÈS le saut
+      var y = c.getBoundingClientRect().top + window.scrollY - n.offsetHeight - 16, h = phaTelHaut();
+      window.scrollTo({ top: (y - h > window.scrollY && y - h > 80) ? y : y - h, behavior: 'smooth' });
     });
     var att = 0;
     window.addEventListener('scroll', function () { if (!att) att = requestAnimationFrame(function () { att = 0; phaTelSuivre(); }); }, { passive: true });
