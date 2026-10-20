@@ -430,7 +430,7 @@
     var d = construire(); if (!d) return Promise.resolve(null);
     return preparerHtml(pagesHtml(d));
   }
-  // Même mise en page d'impression pour tout écran A4 de la famille (ex. opso-prix.js) : on lui passe ses pages.
+  // Mise en page d'impression du catalogue (« Les prix » passe par pdfDePages depuis le 20/10/2026).
   function preparerHtml(pagesDuDocument) {
     injectStyles(); nettoyer();
     var st = document.createElement('style'); st.id = 'oc-print-style'; st.textContent = STYLE_IMPR; document.head.appendChild(st);
@@ -497,10 +497,16 @@
   var pdfEnCours = false;
   function telechargerPdf() {
     if (pdfEnCours) return;
-    if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast && V2.toast('Module PDF indisponible', 'error'); return; }
     var d = construire(); if (!d) { V2.toast && V2.toast('Le catalogue charge encore, réessayez dans un instant', 'error'); return; }
+    pdfDePages({ html: pagesHtml(d), bouton: 'oc-btn-pdf', nom: 'Catalogue-Integral-Pharma-OPSO-Sante.pdf', fini: 'Catalogue téléchargé' });
+  }
+  // Même PDF direct pour tout écran A4 de la famille (« Les prix », opso-prix.js, 20/10/2026) : on lui passe ses pages,
+  // l'id de son bouton, le nom du fichier et le message de fin.
+  function pdfDePages(o) {
+    if (pdfEnCours) return;
+    if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast && V2.toast('Module PDF indisponible', 'error'); return; }
     pdfEnCours = true;
-    var btn = document.getElementById('oc-btn-pdf'), libelle = btn ? btn.textContent : '';
+    var btn = document.getElementById(o.bouton), libelle = btn ? btn.textContent : '';
     var etat = function (t) { if (btn) { btn.textContent = t; btn.disabled = true; } };
     etat('Préparation du PDF…');
     injectStyles();
@@ -508,7 +514,7 @@
     wrap.id = 'oc-pdf';
     wrap.style.cssText = 'position:fixed;left:-10000px;top:0;width:210mm;background:#fff';
     // Ombres portées : la photo du navigateur (WebKit) les rend en bandes grises pleines → retirées du PDF seulement.
-    wrap.innerHTML = '<style>#oc-pdf .oc-page,#oc-pdf .oc-page *{box-shadow:none!important}</style>' + pagesHtml(d);
+    wrap.innerHTML = '<style>#oc-pdf .oc-page,#oc-pdf .oc-page *{box-shadow:none!important}</style>' + o.html;
     document.body.appendChild(wrap);
     if (V2.opsoPrix && V2.opsoPrix.ajusterNoms) V2.opsoPrix.ajusterNoms(wrap);
     var pages = Array.prototype.slice.call(wrap.querySelectorAll('.oc-page'));
@@ -516,7 +522,7 @@
       pdfEnCours = false; if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
       if (polices.parentNode) polices.parentNode.removeChild(polices);
       if (btn) { btn.textContent = libelle; btn.disabled = false; }
-      V2.toast && (ok ? V2.toast('Catalogue téléchargé') : V2.toast('Le PDF n’a pas pu être créé, réessayez', 'error'));
+      V2.toast && (ok ? V2.toast(o.fini) : V2.toast('Le PDF n’a pas pu être créé, réessayez', 'error'));
     };
     // Polices : la feuille Google Fonts vient d'un autre site, la photo ne peut pas la lire et retombe sur la police
     // système. Son texte, posé le temps du PDF dans une feuille de la page, est lu et embarqué par modern-screenshot
@@ -548,7 +554,7 @@
       var vide = document.createElement('canvas'); vide.width = vide.height = 10;
       return window.html2pdf().set({ margin: 0, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(vide, 'canvas').toPdf().get('pdf').then(function (pdf) {
         images.forEach(function (u, i) { if (i) pdf.addPage(); pdf.addImage(u, 'JPEG', 0, 0, 210, 297); });
-        pdf.save('Catalogue-Integral-Pharma-OPSO-Sante.pdf');
+        pdf.save(o.nom);
       });
     }).then(function () { fin(true); }, function (e) { console.error(e); fin(false); });
   }
@@ -568,8 +574,8 @@
     preparer: preparer,
     donnees: construire,
     etats: function () { return { prix: _prixEtat, offre: _offreEtat }; },   // lu par les sondes
-    // Pièces communes réutilisées par les autres écrans A4 OPSO (opso-prix.js) : mêmes styles, mêmes logos, même impression, même CSV.
-    commun: { styles: injectStyles, ajuster: ajusterApercu, logo: logoOpso, logoIntegral: LOGO_IP, enveloppe: page, preparerHtml: preparerHtml,
+    // Pièces communes réutilisées par les autres écrans A4 OPSO (opso-prix.js) : mêmes styles, mêmes logos, même PDF, même CSV.
+    commun: { styles: injectStyles, ajuster: ajusterApercu, logo: logoOpso, logoIntegral: LOGO_IP, enveloppe: page, pdf: pdfDePages,
       telecharger: telechargerTexte, csv: { champ: champ, sansFormule: sansFormule, virgule: virgule } }
   };
 

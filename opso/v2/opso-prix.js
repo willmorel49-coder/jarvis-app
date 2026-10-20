@@ -517,7 +517,7 @@
     }
     root.innerHTML = V2.opsoCatalogue.commun.enveloppe('<div class="oc-barre-outils"><div><h1 class="v2-h1" style="margin:0 0 4px">' + TITRE + '</h1>' +
       '<p>' + d.n + ' produits : le PFHT, notre prix habituel sur facture et le prix négocié pour OPSO Santé. Prix HT par boîte.</p></div>' +
-      '<div class="oc-actions"><button class="v2-btn primary" onclick="V2.opsoPrix.imprimer()">Imprimer / enregistrer en PDF</button>' +
+      '<div class="oc-actions"><button class="v2-btn primary" id="op-btn-pdf" onclick="V2.opsoPrix.pdf()">Télécharger en PDF</button>' +
       '<button class="v2-btn primary" id="op-btn-csv" onclick="V2.opsoPrix.csv()">Télécharger en Excel (CSV)</button></div></div>' + alerte +
       '<div class="oc-apercu">' + pagesHtml(d).replace(/<section class="oc-page/g, '<div class="oc-cadre"><section class="oc-page').replace(/<\/section>/g, '</section></div>') + '</div>');
     V2.opsoCatalogue.commun.ajuster(root);
@@ -547,14 +547,11 @@
     signalees: 0, sansPrix: 0, lignesN: 0,   // lus par la sonde
     donnees: construire,
     csv: function () { V2.opsoCatalogue.commun.telecharger(csv()); },
-    imprimer: function () {
-      var avant = document.title, d = construire(); if (!d) return;
-      document.title = 'Prix-OPSO-Sante';
-      V2.opsoCatalogue.commun.preparerHtml(pagesHtml(d)).then(function (box) {
-        if (box) ajusterNoms(box);
-        try { window.print(); } catch (e) { V2.toast && V2.toast('Impression impossible', 'error'); }
-        setTimeout(function () { document.title = avant; }, 1500);
-      });
+    // PDF téléchargé directement, comme « Le catalogue » (20/10/2026) : l'impression de Safari peignait les bandeaux verts en noir.
+    pdf: function () {
+      var d = construire(); if (!d) { V2.toast && V2.toast('Les prix chargent encore, réessayez dans un instant', 'error'); return; }
+      injectStyles();
+      V2.opsoCatalogue.commun.pdf({ html: pagesHtml(d), bouton: 'op-btn-pdf', nom: 'Prix-OPSO-Sante.pdf', fini: 'PDF des prix téléchargé' });
     },
     reessayer: function () { _etat = 'vide'; var r = document.getElementById('v2-root'); if (r) render(r); }
   };
