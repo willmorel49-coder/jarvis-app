@@ -37,11 +37,16 @@
   // ── Modèles (étape 1 de l'assistant guidé). La mise en page est fixée par le modèle :
   // dans l'aperçu, seules les zones prévues (titre, accroche, photo, nom, prix, mentions)
   // se modifient, jamais leur place. La clé vit dans theme.tpl (colonne theme existante).
+  // 20/10/2026 : 7 modèles « La lumière » (v2-mkt-modeles.js, choix de Will), tous en bleu Intégral. `head` et `tag`
+  // ne servent plus qu'au repli (ancienne mise en page) si ce fichier n'a pas pu se charger.
   var MODELES = [
-    { k: 'promo',     label: 'Promo de la semaine',  court: 'Promo', accent: '#0050E6', head: 'band',  desc: 'Bandeau de couleur, grand titre' },
-    { k: 'nouveaute', label: 'Nouveauté',            court: 'Nouveauté', accent: '#1E9E6A', head: 'band',  tag: 'Nouveau', desc: 'Bandeau et pastille « Nouveau »' },
-    { k: 'selection', label: 'Sélection du mois',    court: 'Sélection', accent: '#C7791A', head: 'slim',  desc: 'Filet de couleur, titre sombre' },
-    { k: 'fiche',     label: 'Fiche produit simple', court: 'Fiche simple', accent: '#0050E6', head: 'plain', desc: 'Sans bandeau, sobre' }
+    { k: 'promo',     label: 'Promo de la semaine',  court: 'Promo', accent: '#0050E6', head: 'band',  desc: 'Bandeau lumineux, grand prix net en pastille' },
+    { k: 'nouveaute', label: 'Nouveauté',            court: 'Nouveauté', accent: '#0050E6', head: 'band',  tag: 'Nouveau', desc: 'Marque « Nouveau » en lettres, lignes alternées' },
+    { k: 'selection', label: 'Sélection du mois',    court: 'Sélection', accent: '#0050E6', head: 'slim',  desc: 'Liste numérotée, un panneau par rayon' },
+    { k: 'fiche',     label: 'Fiche produit simple', court: 'Fiche simple', accent: '#0050E6', head: 'plain', desc: 'Photo en haut, caractéristiques en dessous' },
+    { k: 'vedette',   label: 'Produit vedette',      court: 'Vedette', accent: '#0050E6', head: 'band',  desc: 'Le produit sur plus de la moitié de la page' },
+    { k: 'vitrine',   label: 'Affiche vitrine',      court: 'Vitrine', accent: '#0050E6', head: 'band',  desc: 'Affiche pour les patients, sans aucun prix' },
+    { k: 'rayons',    label: 'Sélection par rayon',  court: 'Par rayon', accent: '#0050E6', head: 'slim',  desc: 'Une carte par rayon, grille de cases' }
   ];
   function modele(it) {
     var k = it && it.theme && it.theme.tpl;
@@ -793,7 +798,7 @@
       var ty = id === 'new-selection' ? 'selection' : 'support';
       if (!editing || editing._new !== ty) {
         editing = { id: newId(), type: ty, title: '', accroche: '', footer: '', status: 'brouillon', products: [],
-          theme: Object.assign(defaultTheme(ty), { tpl: ty === 'selection' ? 'selection' : 'promo' }),
+          theme: Object.assign(defaultTheme(ty), { tpl: ty === 'selection' ? 'selection' : 'promo', accent: '#0050E6' }),
           owner: (V2.user && V2.user.email) || '', _new: ty };
       }
     } else {
@@ -904,7 +909,9 @@
   }
   function piedTexte() {
     var n = editing ? editing.products.length : 0;
-    return n ? n + ' produit' + (n > 1 ? 's' : '') + ' sur la feuille · ' + modele(editing).label + '.' : 'Ajoutez au moins un produit pour obtenir le PDF.';
+    // L'affiche vitrine est lue par les patients : la réserve reste écrite sous le bouton tant que ce modèle est choisi.
+    var reserve = modele(editing).k === 'vitrine' ? ' Affiche pour les patients, sans aucun prix : la publicité des médicaments auprès du public est encadrée, réservez-la à la parapharmacie et aux produits sans ordonnance.' : '';
+    return (n ? n + ' produit' + (n > 1 ? 's' : '') + ' sur la feuille · ' + modele(editing).label + '.' : 'Ajoutez au moins un produit pour obtenir le PDF.') + reserve;
   }
   // Compteur de l'onglet, ligne du pied et bouton PDF suivent le nombre de produits de la feuille.
   function etabliPied() {
@@ -1386,9 +1393,43 @@
   }
 
   // forPdf : images via proxy + jamais d'abandon de marge. edit : zones modifiables (aperçu de l'éditeur seulement).
+  // 20/10/2026 — les aides prêtées aux modèles de v2-mkt-modeles.js (mêmes fonctions que la mise en page ci-dessous).
+  function mktCtx() {
+    return {
+      logo: 'img/logo-integral-serre.png',   // copie locale du logo : même origine, donc présent dans le PDF
+      esc: esc, fmtEur: function (n) { return V2.fmtEur(n); }, zoneAttrs: zoneAttrs, darken: darken, marqueSure: marqueSure, prodImg: prodImg,
+      // PPHT connu, sinon reconstitué depuis la remise portée par le produit ; pct au dixième, 0 si pas de baisse (comme prodTr).
+      prix: function (p) {
+        var ppht = p.ppht > 0 ? p.ppht : (p.remise > 0 && p.price > 0 ? Math.round(p.price / (1 - p.remise / 100) * 100) / 100 : 0);
+        var pct = (ppht > 0 && p.price > 0 && p.price < ppht) ? Math.round((1 - p.price / ppht) * 1000) / 10 : 0;
+        return { ppht: ppht, pct: pct };
+      },
+      dateStr: new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }),
+      placeholderSvg: function (taille) {
+        taille = taille || 72;
+        return '<svg width="' + taille + '" height="' + taille + '" viewBox="0 0 24 24" fill="none" stroke="#C6CEDC" stroke-width="1.4">' +
+          '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L4 21"/></svg>';
+      }
+    };
+  }
+  // La feuille d'un modèle « La lumière ». null si v2-mkt-modeles.js n'est pas chargé : l'ancienne mise en page sert alors de repli.
+  // Les anciennes fiches (tpl promo / nouveaute / selection / fiche, ou sans tpl) prennent le dessin neuf de leur modèle.
+  function feuilleModele(it, forPdf, edit) {
+    var C = V2.mktModeles, k = modele(it).k, m = null, i;
+    if (!C || !C.modeles) return null;
+    for (i = 0; i < C.modeles.length; i++) if (C.modeles[i].k === k) m = C.modeles[i];
+    if (!m) return null;
+    var th = Object.assign(defaultTheme(it.type), it.theme || {});
+    if (forPdf) th.showRemise = false;   // l'abandon de marge ne s'imprime jamais
+    // Les modèles affichent p.brand tel quel : le nom d'un fournisseur n'y arrive jamais (marqueSure). Mêmes index que it.products (zones).
+    var copie = Object.assign({}, it, { theme: th, products: (it.products || []).map(function (p) { return Object.assign({}, p, { brand: marqueSure(p.brand) }); }) });
+    return m.render(copie, mktCtx(), forPdf, edit);
+  }
   function buildFlyerHtml(forPdf, edit) {
     var it = editing;
     edit = !forPdf && edit === true;
+    var neuve = feuilleModele(it, forPdf, edit);
+    if (neuve != null) return neuve;
     var md = modele(it), band = md.head === 'band';
     var t = TYPES[it.type] || TYPES.support;
     var title = (it.title && it.title.trim()) ? it.title.trim() : t.plural;
@@ -3262,8 +3303,9 @@
       '.mke-tete .mke-onglets{flex:1 1 auto;min-width:0;margin:0}',
       '.mke-onglets .mke-badge{display:inline-grid;place-items:center;min-width:24px;height:24px;padding:0 7px;border-radius:999px;background:#fff;box-shadow:0 0 0 1px var(--mk-trait) inset;font-size:var(--mk-s5);line-height:1;font-weight:650;color:var(--mk-encre2)}',
       '.mke-onglets button[aria-pressed="true"] .mke-badge{background:var(--mk-bleu);box-shadow:none;color:#fff}',
-      '.mke-modeles{position:absolute;z-index:3;top:16px;left:50%;width:min(520px,calc(100% - 32px));transform:translateX(-50%);box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(11,31,77,.08) inset,var(--mk-n1)}',
+      '.mke-modeles{position:absolute;z-index:3;top:16px;left:50%;width:min(calc(var(--n) * 92px + 8px),calc(100% - 32px));grid-template-columns:repeat(var(--n),92px);overflow-x:auto;scrollbar-width:none;transform:translateX(-50%);box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(11,31,77,.08) inset,var(--mk-n1)}',
       '.mk-espace .mke-modeles button{padding:0 4px;font-size:var(--mk-s5);line-height:var(--mk-s5l)}',
+      '.mke-modeles .mk-seg-ind{width:92px}','.mke-modeles::-webkit-scrollbar{display:none}','.mk-espace .mke-modeles button{white-space:nowrap}',   // 7 modèles : cases fixes, la rangée défile si l\'écran est étroit
       '.mke-pied-n{margin:8px 0 0;font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-attenue)}',
       '.mk-espace .mke-pied .mk-btn[disabled]{background:var(--mk-groupe);color:var(--mk-attenue);border-color:transparent;box-shadow:none;cursor:default}',
       '.mke-plus{border-top:1px solid var(--mk-trait)}.mke-plus+.mke-plus{border-bottom:1px solid var(--mk-trait)}',
