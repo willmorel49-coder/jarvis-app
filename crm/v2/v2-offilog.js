@@ -1206,7 +1206,8 @@
           // ignoreElements : html2canvas recopie toute la page ; les ~60 photos offilog.fr de la liste étaient
           // rechargées dans la copie, et une seule qui traîne bloquait le PDF pour toujours (≈ 1 fois sur 8, WebKit, 25/09/2026).
           // On ne recopie que la fiche (calque html2pdf) et les styles.
-          html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', logging: false,
+          // scrollX/scrollY à 0 : l'aperçu fait défiler la page ; html2canvas décalait alors la capture et le PDF sortait vierge (20/10/2026, WebKit et Chromium).
+          html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', logging: false, scrollX: 0, scrollY: 0,
             ignoreElements: function (el) { return el.parentNode === document.body && !el.classList.contains('html2pdf__overlay') && el.tagName !== 'STYLE' && el.tagName !== 'LINK'; } },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
           pagebreak: { mode: ['css', 'legacy'] }
