@@ -311,8 +311,9 @@
       var wrap = document.createElement('div'); wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff';
       wrap.innerHTML = html; document.body.appendChild(wrap);
       var fn = 'Integral-Pharma_Top-produits' + (S.etab ? '_' + S.etab : '') + '_' + new Date().toISOString().slice(0, 10) + '.pdf';
+      // scrollX/scrollY à 0 : page défilée = capture décalée, le document glissait de 40 % et perdait sa fin (20/10/2026, WebKit, 422 px). Même parade que v2-offilog.js.
       window.html2pdf().from(wrap.firstChild).set({ filename: fn, margin: [8, 8, 10, 8], image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'] } })
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'] } })
         .save().then(function () { if (wrap.parentNode) document.body.removeChild(wrap); if (btn) { btn.disabled = false; btn.style.opacity = ''; } if (V2.toast) V2.toast('Doc téléchargé'); })
         .catch(function () { if (wrap.parentNode) document.body.removeChild(wrap); if (btn) { btn.disabled = false; btn.style.opacity = ''; } if (V2.toast) V2.toast('Erreur PDF', 'error'); });
     });

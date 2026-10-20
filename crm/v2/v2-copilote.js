@@ -349,7 +349,8 @@
       var fname = 'Fiche-visite-' + (mode === 'interne' ? 'prepa-' : '') + visiteName().replace(/[^\w-]+/g, '_').slice(0, 40) + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
       window.html2pdf().set({
         margin: 0, filename: fname, image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+        // scrollX/scrollY à 0 : page défilée = capture décalée, la fiche sortait BLANCHE (20/10/2026, WebKit, 811 px). Même parade que v2-offilog.js.
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' }
       }).from(node.firstChild).save().then(function () {
