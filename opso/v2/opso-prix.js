@@ -92,7 +92,7 @@
       if (ctx.commandes && !ctx.commandes[c]) { nonCommandes++; return; }
       if (!b) return manque('', cip, 'absent du benchmark');
       var ppht = pph(c, b); if (!(b.prix_ip > 0) || !(b.offre_ip > 0) || !(ppht > 0)) return manque(b.designation, cip, 'sans prix');
-      of.push({ cip: c, cipTexte: c, nom: b.designation, pfht: pfhtDe(ppht, !!froid[c]), habituel: b.prix_ip, opso: b.offre_ip });
+      of.push({ cip: c, cipTexte: c, nom: b.designation, pfht: pfhtDe(ppht, !!froid[c]), habituel: b.prix_ip, opso: b.offre_ip, ppht: ppht });   // ppht : lu par « Le catalogue » (Offre Privilège)
     });
     of.sort(function (a, b) { return a.nom < b.nom ? -1 : a.nom > b.nom ? 1 : 0; }).forEach(function (it) { ajouter('offre', it); });
 
@@ -114,14 +114,24 @@
       return r.data.text();
     }).then(function (t) { var j = JSON.parse(t); if (!formeValide(j)) throw new Error('fichier illisible'); return j; });
   }
-  function charger(root) {
+  // Chargement partagé : l'écran « Les prix » et « Le catalogue » (qui reprend ce document en page 2) passent par ici.
+  // silencieux : un échec lancé par le catalogue ne bloque pas l'écran « Les prix » (il retentera à son ouverture).
+  var _prom = null;
+  function chargerDonnees(silencieux) {
+    if (_etat === 'ok') return Promise.resolve(true);
+    if (_etat === 'charge' && _prom) return _prom;
     _etat = 'charge';
-    Promise.all([chargerNegocies(), V2.loadFiles ? V2.loadFiles(['bench', 'ppht']) : 0]).then(function (r) {
-      _neg = r[0]; _bench = true; _etat = 'ok';
+    _prom = Promise.all([chargerNegocies(), V2.loadFiles ? V2.loadFiles(['bench', 'ppht']) : 0]).then(function (r) {
+      _neg = r[0]; _bench = true; _etat = 'ok'; return true;
     }).catch(function (e) {
-      _neg = null; _etat = 'echec';
+      _neg = null; _etat = silencieux ? 'vide' : 'echec';
       try { console.warn('[opso-prix] chargement impossible :', e && e.message); } catch (x) {}
-    }).then(function () { if (V2.route && V2.route.name === ROUTE) render(root); });
+      return false;
+    });
+    return _prom;
+  }
+  function charger(root) {
+    chargerDonnees(false).then(function () { if (V2.route && V2.route.name === ROUTE) render(root); });
   }
   function contexte() {
     if (_etat !== 'ok' || !_neg || !Array.isArray(window.BENCHMARK) || !Array.isArray(window.FROID_CIPS)) return null;
@@ -195,9 +205,9 @@
     }
     return { cols: cols.filter(function (c) { return c.length; }), reste: f };
   }
-  function miseEnPage(d) {
+  function miseEnPage(d, haut1, plusMax) {
     var pages = [], pg = null;
-    function nouvelle() { pg = { blocs: [], y: pages.length ? H.haut : H.haut1, rangs: 0, cols: null }; pages.push(pg); }
+    function nouvelle() { pg = { blocs: [], y: pages.length ? H.haut : (haut1 > 0 ? haut1 : H.haut1), rangs: 0, cols: null }; pages.push(pg); }
     function reste() { return H.bas - pg.y - H.ecart; }
     nouvelle();
     d.sections.forEach(function (s) {
@@ -228,7 +238,7 @@
     });
     // Ce qui reste de hauteur est rendu aux rangées (jusqu'à plusMax chacune) : la page se remplit sans trou au bas.
     pages.forEach(function (p) {
-      var e = H.plusMax;
+      var e = plusMax > 0 ? plusMax : H.plusMax;
       if (!p.cols) { if (p.rangs) e = Math.min(e, (H.bas - p.y) / p.rangs); }
       else p.cols.forEach(function (c) { e = Math.min(e, (H.bas - p.yGrille - hColonne(c) - 0) / (p.rangs + rangsColonne(c))); });
       p.e = Math.max(0, Math.floor(e * 100) / 100);
@@ -281,8 +291,7 @@
     var C = V2.opsoCatalogue.commun, logo = (window.V2_BRAND && window.V2_BRAND.logo) || 'assets/opsosante-logo.png';
     return '<header class="op-couv"><div class="op-logos"><img class="op-l1" src="' + esc(C.logoIntegral) + '" alt="Intégral Pharma"><span class="op-by">by</span><img class="op-l2" src="' + esc(logo) + '" alt="OPSO Santé"></div>' +
       '<h1 class="op-titre">' + TITRE + '</h1><div class="op-sous"><span class="op-pill">Édition du ' + esc(dateEdition()) + '</span><span>Un dosage par ligne, trois prix HT par boîte.</span></div></header>' +
-      '<div class="op-leg"><div><b>PFHT</b>prix fabricant hors taxes</div><div><b>Prix Intégral habituel</b>prix HT facturé, abandon de marge déduit</div>' +
-      '<div class="o"><b>Prix OPSO Santé</b>le prix négocié pour les adhérentes</div></div>';
+      legendeHtml();
   }
   function hautHtml(p) {
     var t = [];
@@ -296,24 +305,59 @@
     return '<footer class="oc-pied"><span>Intégral Pharma, groupe de grossistes-répartiteurs, pour les adhérentes d’OPSO Santé</span>' +
       '<span>Édition du ' + esc(dateEdition()) + ' · ' + num + ' / ' + total + '</span></footer>';
   }
-  function pagesHtml(d) {
-    var pages = miseEnPage(d), total = pages.length, totaux = {}, lmax = 0;
-    d.sections.forEach(function (s) { if (s.k === 'helicidine' || s.k === 'offre') s.items.forEach(function (it) { [it.pfht, it.habituel, it.opso].forEach(function (v) { lmax = Math.max(lmax, eur(v).length); }); }); });
-    var cols = ';--cn:' + Math.max(12.5, 1.7 * lmax + 2.3).toFixed(1) + 'mm;--co:' + Math.max(17.5, 2 * lmax + 5.5).toFixed(1) + 'mm';   // un prix à trois chiffres élargit les colonnes
+  // Largeur des colonnes de prix : un prix à trois chiffres élargit les colonnes (sections à cartes ou bandeau).
+  function varsCols(sections) {
+    var lmax = 0;
+    sections.forEach(function (s) { if (s.k === 'helicidine' || s.k === 'offre') s.items.forEach(function (it) { [it.pfht, it.habituel, it.opso].forEach(function (v) { lmax = Math.max(lmax, eur(v).length); }); }); });
+    return ';--cn:' + Math.max(12.5, 1.7 * lmax + 2.3).toFixed(1) + 'mm;--co:' + Math.max(17.5, 2 * lmax + 5.5).toFixed(1) + 'mm';
+  }
+  function blocsHtml(p, totaux) {
+    var html = '';
+    p.blocs.forEach(function (b) {
+      if (b.type === 'fam') html += famHtml(b);
+      else if (b.type === 'bande') html += bandeHtml(b);
+      else if (b.type === 'offre') html += offreHtml(b);
+      else html += '<div class="op-grille">' + b.cols.map(function (c) {
+        return '<div class="op-col">' + c.map(function (x) { x.total = totaux[x.nom]; return carteHtml(x); }).join('') + '</div>';
+      }).join('') + '</div>';
+    });
+    return html;
+  }
+  function totauxMarques(d) {
+    var totaux = {};
     marques((d.sections.filter(function (s) { return s.k === 'offre'; })[0] || { items: [] }).items).forEach(function (c) { totaux[c.nom] = c.items.length; });
+    return totaux;
+  }
+  function pagesHtml(d) {
+    var pages = miseEnPage(d), total = pages.length, totaux = totauxMarques(d), cols = varsCols(d.sections);
     return pages.map(function (p, i) {
       var html = '<section class="oc-page op-doc" style="--e:' + p.e + 'mm' + cols + '">' + (i ? hautHtml(p) : haut1Html());
-      p.blocs.forEach(function (b) {
-        if (b.type === 'fam') html += famHtml(b);
-        else if (b.type === 'bande') html += bandeHtml(b);
-        else if (b.type === 'offre') html += offreHtml(b);
-        else html += '<div class="op-grille">' + b.cols.map(function (c) {
-          return '<div class="op-col">' + c.map(function (x) { x.total = totaux[x.nom]; return carteHtml(x); }).join('') + '</div>';
-        }).join('') + '</div>';
-      });
+      html += blocsHtml(p, totaux);
       return html + piedHtml(i + 1, total) + '</section>';
     }).join('');
   }
+  function legendeHtml() {
+    return '<div class="op-leg"><div><b>PFHT</b>prix fabricant hors taxes</div><div><b>Prix Intégral habituel</b>prix HT facturé, abandon de marge déduit</div>' +
+      '<div class="o"><b>Prix OPSO Santé</b>le prix négocié pour les adhérentes</div></div>';
+  }
+  // ── Pour « Le catalogue » : le corps de la page « Les prix OPSO Santé » (légende + Wegovy + Mounjaro + Hélicidine), SANS la grande
+  // en-tête de couverture, ni pied, ni l'Offre spéciale (elle rejoint l'Offre Privilège). `haut` = hauteur déjà prise par l'en-tête du catalogue.
+  // Rend { pages: [{ html, vars }], offre: [lignes de l'Offre spéciale], titres, n } ou null si les prix ne sont pas chargés.
+  function pourCatalogue(haut) {
+    var d = construire(); if (!d) return null;
+    var corps = { sections: d.sections.filter(function (s) { return s.k !== 'offre'; }) };
+    var offre = (d.sections.filter(function (s) { return s.k === 'offre'; })[0] || { items: [] }).items;
+    var n = 0; corps.sections.forEach(function (s) { n += s.items.length; });
+    var cips = []; corps.sections.forEach(function (s) { s.items.forEach(function (it) { if (it.cip) cips.push(it.cip); }); });
+    if (!n) return { pages: [], offre: offre, titres: [], n: 0, cips: cips, sections: [], signalees: d.signalees.length };
+    var pages = miseEnPage(corps, haut + 13, 2.2), vars = varsCols(corps.sections);   // 13 mm = 5 mm de marge + 8 mm de légende
+    return {
+      pages: pages.map(function (p, i) { return { html: (i ? '' : legendeHtml()) + blocsHtml(p, {}), vars: '--e:' + p.e + 'mm' + vars, fin: p.y }; }),
+      offre: offre, n: n, cips: cips, sections: corps.sections, signalees: d.signalees.length,
+      titres: corps.sections.map(function (s) { return s.titre; })
+    };
+  }
+
   // Filet : une désignation plus longue que deux lignes passe en 8 pt serré plutôt que d'être coupée.
   function ajusterNoms(el) {
     Array.prototype.forEach.call(el.querySelectorAll('.op-nm'), function (n) { if (n.scrollHeight > n.clientHeight + 1) n.classList.add('long'); });
@@ -445,6 +489,9 @@
 
   V2.opsoPrix = {
     lignes: lignes, pfht: pfhtDe, paginer: miseEnPage, csvTexte: csv,
+    charger: function () { return chargerDonnees(true); }, pourCatalogue: pourCatalogue, styles: function () { injectStyles(); },
+    etat: function () { return _etat; },
+    ajusterNoms: ajusterNoms,
     signalees: 0, sansPrix: 0, lignesN: 0,   // lus par la sonde
     donnees: construire,
     csv: function () { V2.opsoCatalogue.commun.telecharger(csv()); },

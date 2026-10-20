@@ -9,8 +9,11 @@
      EXCEPTION décidée par Will pour CE catalogue OPSO seulement. Génériques et non
      remboursables : un seul prix, le net. Jamais de pourcentage ni de prix barré.
    - Période : LUE dans PROD_RESEAU.periode, jamais écrite en dur.
-   - Offre Privilège OPSO Santé : section de la page 2, prix LUS dans le fichier privé
-     donnees-protegees/opso-offre-privilege.json (jamais dans le code). Fichier illisible → section absente.
+   - « Les prix OPSO Santé » (20/10/2026) : page 2, rendue par opso-prix.js (V2.opsoPrix.pourCatalogue), mêmes prix et même contrôle
+     que l'écran « Les prix ». Fichier opso-prix-negocies.json illisible → la page et son entrée de sommaire disparaissent.
+   - Offre Privilège OPSO Santé : page 3 (avant le 20/10 : page 2), prix LUS dans le fichier privé
+     donnees-protegees/opso-offre-privilege.json (jamais dans le code), plus les lignes de l'« Offre spéciale » de opso-prix
+     que le fichier ne contient pas (même offre, même mécanique). Fichier illisible → page absente.
    Prend la route « marketing » (chargé APRÈS v2-marketing.js, qui reste en place).
    Sortie : impression navigateur A4 (photos offilog.fr sans CORS, comme la fiche).
    ═══════════════════════════════════════════════════════════════════ */
@@ -94,6 +97,20 @@
     } catch (e) { _offreEtat = 'echec'; try { console.warn('[opso-catalogue] offre privilège indisponible :', e && e.message); } catch (x) {} }
   }
 
+  // ── Les prix OPSO Santé : fichier privé lu par opso-prix.js (même chargement que l'écran « Les prix ») ──
+  var _prixEtat = '';   // '' · charge · ok · echec
+  var HAUT_PRIX = 25;   // mm : hauteur de l'en-tête de page (.oc-r-haut) ; opso-prix.js place le reste dessous
+  var TITRE_PRIX = 'Les prix OPSO Santé';
+  function lancerPrix(root) {
+    if (_prixEtat) return;
+    _prixEtat = 'charge';
+    var fin = function () { if (V2.route && V2.route.name === 'marketing') render(root); };
+    try {
+      if (!V2.opsoPrix || !V2.opsoPrix.charger) throw new Error('opso-prix.js absent');
+      V2.opsoPrix.charger().then(function (ok) { _prixEtat = ok ? 'ok' : 'echec'; }).catch(function () { _prixEtat = 'echec'; }).then(fin);
+    } catch (e) { _prixEtat = 'echec'; try { console.warn('[opso-catalogue] prix OPSO indisponibles :', e && e.message); } catch (x) {} }
+  }
+
   // Construit les rayons : produits du réseau classés par nombre de pharmacies, avec prix.
   var _cache = null, _ccEssaye = false;
   function construire() {
@@ -106,11 +123,17 @@
     // Produit de l'Offre Privilège : affiché UNE fois, dans l'offre (Will, 16/10 : « des doublons avec l'offre privilège »).
     // Dans son rayon, le suivant prend sa place.
     var enOffre = {}; if (_offreEtat === 'ok' && _offre) _offre.lignes.forEach(function (l) { enOffre[normCip(l.cip)] = 1; });
+    // Page « Les prix OPSO Santé » : ses CIP (Mounjaro, Hélicidine) sont montrés là, et les lignes de l'Offre spéciale absentes du fichier
+    // privilège rejoignent l'Offre Privilège (page 3) : une seule fois dans tout le document.
+    var P = (_prixEtat === 'ok' && V2.opsoPrix && V2.opsoPrix.pourCatalogue) ? V2.opsoPrix.pourCatalogue(HAUT_PRIX) : null;
+    var fichier = {}; if (_offreEtat === 'ok' && _offre) _offre.lignes.forEach(function (l) { fichier[normCip(l.cip)] = l; });
+    if (P) P.cips.forEach(function (c) { enOffre[normCip(c)] = 1; });
+    if (P && _offreEtat === 'ok') P.offre.forEach(function (it) { enOffre[normCip(it.cip)] = 1; });
     // Produit ajouté sans fiche dans PROD_STATS (aiguilles Easydrip+ 6 et 8 mm : jamais vendues par nos comptes) :
     // nom, rayon et PPHT lus au catalogue Intégral complet. On l'attend ; s'il n'a pas pu se charger, le catalogue sort sans eux.
     var CC = window.CATALOGUE_COMPLET;
     if (!CC && !_ccEssaye) return null;
-    var cle = [R.empreinte, PS.length, B.length, (V2.sales || []).length, (window.OPSO_NONGEN || []).length, (CH.retirer || []).join(), (CH.ajouter || []).join(), CC ? 'cc' : '', _offreEtat === 'ok' ? 'offre' + _offre.lignes.length + _offre.maj : _offreEtat].join('|');
+    var cle = [R.empreinte, PS.length, B.length, (V2.sales || []).length, (window.OPSO_NONGEN || []).length, (CH.retirer || []).join(), (CH.ajouter || []).join(), CC ? 'cc' : '', _offreEtat === 'ok' ? 'offre' + _offre.lignes.length + _offre.maj : _offreEtat, _prixEtat === 'ok' ? 'prix' + (P ? P.n + '/' + P.offre.length + '/' + P.cips.join() : 'x') : _prixEtat].join('|');
     if (_cache && _cache.cle === cle) return _cache;
     var ps = {}; PS.forEach(function (r) { var c = normCip(r.c); if (c && !ps[c]) ps[c] = r; });
     if (CC && CC.rows) CC.rows.forEach(function (r) { var c = normCip(r[0]); if (ajouter[c] && !ps[c]) ps[c] = { c: r[0], d: r[1], f: r[4], ppht: r[5], stale: 0 }; });
@@ -154,10 +177,20 @@
         return { cip: cip, nom: (p && p.d) || (bench[c] && bench[c].designation) || cip, n: R.n[cip] || 0,
           opso: opso[c] ? Object.keys(opso[c]).length : 0, ppht: l.ppht > 0 ? l.ppht : null, net: l.prix };
       });
+      // Lignes de l'Offre spéciale (opso-prix) absentes du fichier : prix net = prix OPSO, PPHT = celui de l'app. Les autres sont déjà dans le fichier.
+      var ecarts = [];
+      if (P) P.offre.forEach(function (it) {
+        var c = normCip(it.cip);
+        if (fichier[c]) { if (Math.abs(fichier[c].prix - it.opso) > 0.004) ecarts.push({ cip: it.cip, fichier: fichier[c].prix, prix: it.opso }); return; }
+        if (retirer[c]) return;
+        var cip = rn[c] || String(it.cip), p = ps[c];
+        lo.push({ cip: cip, nom: (p && p.d) || (bench[c] && bench[c].designation) || it.nom, n: R.n[cip] || 0,
+          opso: opso[c] ? Object.keys(opso[c]).length : 0, ppht: it.ppht > 0 ? it.ppht : null, net: it.opso, ajoutPrix: true });
+      });
       lo.sort(function (a, b) { return b.n - a.n; });
-      if (lo.length) offre = { titre: _offre.titre, mentions: _offre.mentions, items: lo };
+      if (lo.length) offre = { titre: _offre.titre, mentions: _offre.mentions, items: lo, ecarts: ecarts };
     }
-    _cache = { cle: cle, offre: offre, rayons: rayons.filter(function (x) { return x.items.length; }), R: R, opsoPharmas: Object.keys(nOpso).length };
+    _cache = { cle: cle, offre: offre, prix: P && P.pages.length ? P : null, rayons: rayons.filter(function (x) { return x.items.length; }), R: R, opsoPharmas: Object.keys(nOpso).length };
     return _cache;
   }
 
@@ -186,12 +219,15 @@
       '<span class="oc-prix' + (deux ? ' deux' : '') + '">' + prix + '</span></div>';
   }
   function piedHtml(d, num, total) {
-    return '<footer class="oc-pied"><span>Intégral Pharma, groupe de grossistes-répartiteurs, pour les adhérentes d’OPSO Santé</span>' +
+    return '<footer class="oc-pied oc-pied-cat"><span>Intégral Pharma, groupe de grossistes-répartiteurs, pour les adhérentes d’OPSO Santé</span>' +
       '<span>' + esc(periodeTexte(d.R.periode)) + ' · ' + num + ' / ' + total + '</span></footer>';
   }
+  function nbPagesPrix(d) { return d.prix ? d.prix.pages.length : 0; }
   function couvertureHtml(d, total, debuts) {
-    var dec = d.offre ? 1 : 0;   // l'offre prend la page 2 et le n° 01 du sommaire
-    var tuiles = (d.offre ? '<li><span class="oc-t-num">01</span><b>' + esc(d.offre.titre) + '</b><span>' + d.offre.items.length + ' produits · page 2</span></li>' : '') +
+    var np = nbPagesPrix(d), dec = np + (d.offre ? 1 : 0);   // « Les prix » puis l'offre : pages 2 et 3, n° 01 et 02 du sommaire
+    var marques = d.prix ? d.prix.titres.map(function (t) { return t.split(' ')[0]; }).join(', ') : '';
+    var tuiles = (d.prix ? '<li><span class="oc-t-num">01</span><b>' + TITRE_PRIX + '</b><span>' + esc(marques) + ' · page 2</span></li>' : '') +
+      (d.offre ? '<li><span class="oc-t-num">' + String(np + 1).padStart(2, '0') + '</span><b>' + esc(d.offre.titre) + '</b><span>' + d.offre.items.length + ' produits · page ' + (2 + np) + '</span></li>' : '') +
       d.rayons.map(function (x, i) {
         return '<li><span class="oc-t-num">' + String(i + 1 + dec).padStart(2, '0') + '</span><b>' + esc(x.r.label) + '</b>' +
           '<span>' + x.items.length + ' produits · page ' + debuts[i] + '</span></li>';
@@ -204,34 +240,46 @@
         '<p class="oc-accroche">Les produits les plus commandés dans le réseau Intégral, et ceux que les adhérentes d’OPSO Santé commandent déjà.</p>' +
         '<p class="oc-chiffre"><b>' + d.opsoPharmas + '</b> adhérentes OPSO Santé commandent chez Intégral Pharma</p>' +
       '</header>' +
-      '<div class="oc-couv-bas' + (d.offre ? ' oc-dense' : '') + '"><h2>Au sommaire</h2><ol class="oc-tuiles">' + tuiles + '</ol>' +
+      '<div class="oc-couv-bas' + (dec ? ' oc-dense' : '') + '"><h2>Au sommaire</h2><ol class="oc-tuiles">' + tuiles + '</ol>' +
         (ex ? '<div class="oc-lire"><h2>Comment lire une ligne</h2>' +
           '<p>La barre et le pourcentage donnent la part des pharmacies du réseau Intégral qui ont commandé le produit (' + esc(periodeTexte(d.R.periode)) + '). ' +
           '« N adhérentes OPSO » : combien de pharmacies d’OPSO Santé le commandent.</p>' +
           '<p>PPHT : prix pharmacien hors taxes. Prix net : prix HT facturé par Intégral Pharma, abandon de marge déduit. Génériques et non remboursables : prix net seul.</p></div>' : '') +
       '</div>' + piedHtml(d, 1, total) + '</section>';
   }
-  // Page 2 : l'offre sur UNE page A4 (rangées resserrées par .r-offre). Mentions LUES dans le fichier, sans nom de laboratoire (Will, 16/10).
-  function offreHtml(d, total) {
+  // Pages « Les prix OPSO Santé » : corps rendu par opso-prix.js, en-tête au gabarit des pages du catalogue, pied du catalogue.
+  function prixHtml(d, total) {
+    return d.prix.pages.map(function (pg, i) {
+      return '<section class="oc-page oc-prixpage op-doc" style="' + pg.vars + '">' +
+        '<header class="oc-r-haut"><h2>' + TITRE_PRIX + (i ? ' <small>(suite)</small>' : '') + '</h2>' +
+          '<span class="oc-r-sous">trois prix HT par boîte, un dosage par ligne</span></header>' +
+        pg.html + piedHtml(d, 2 + i, total) + '</section>';
+    }).join('');
+  }
+  // Offre Privilège : l'offre sur UNE page A4 (rangées resserrées selon le nombre de lignes). Mentions LUES dans le fichier, sans nom de laboratoire (Will, 16/10).
+  var ZONE_LIGNES = 238;   // mm : de la tête de colonnes au pied de page (le pied peut passer sur deux lignes : marge gardée)
+  function offreHtml(d, total, num) {
     var o = d.offre, max = Math.max(o.items[0].n, 1);
-    return '<section class="oc-page oc-offre r-offre">' +
+    var rh = Math.min(9.4, Math.floor(ZONE_LIGNES / o.items.length * 10) / 10);   // 25 lignes : 9,4 mm comme avant ; 32 lignes : 7,4 mm
+    return '<section class="oc-page oc-offre r-offre' + (rh < 9 ? ' r-serre' : '') + '" style="--rh:' + rh + 'mm">' +
       '<header class="oc-r-haut"><h2>' + esc(o.titre) + '</h2>' +
         '<span class="oc-r-sous">classés par part des pharmacies du réseau</span></header>' +
       '<p class="oc-mentions">' + esc(o.mentions.join(' · ')) + '</p>' +
       '<div class="oc-entete"><span></span><span></span><span>Produit</span><span>Commandé par</span>' +
         '<span class="oc-prix deux"><span>PPHT</span><span>Prix net</span></span></div>' +
       o.items.map(function (it, i) { return ligneHtml(it, i + 1, max, true, d.R.officines); }).join('') +
-      piedHtml(d, 2, total) + '</section>';
+      piedHtml(d, num, total) + '</section>';
   }
   function pagesHtml(d) {
-    var pages = [], debuts = [], num = d.offre ? 3 : 2;
+    var pages = [], debuts = [], np = nbPagesPrix(d), dec = np + (d.offre ? 1 : 0), num = 2 + dec;
     d.rayons.forEach(function (x) {
       debuts.push(num);
       for (var i = 0; i < x.items.length; i += PAR_PAGE) { pages.push({ x: x, de: i }); num++; }
     });
-    var dec = d.offre ? 1 : 0, total = pages.length + 1 + dec;
+    var total = pages.length + 1 + dec;
     var html = couvertureHtml(d, total, debuts);
-    if (d.offre) html += offreHtml(d, total);
+    if (d.prix) html += prixHtml(d, total);
+    if (d.offre) html += offreHtml(d, total, 2 + np);
     pages.forEach(function (pg, k) {
       var x = pg.x, lot = x.items.slice(pg.de, pg.de + PAR_PAGE), suite = pg.de > 0;
       var max = x.items[0].n;   // barres à l'échelle du rayon (le 1er du rayon = barre pleine)
@@ -315,9 +363,20 @@
       '.oc-ppht{font-size:9.5pt;color:var(--gris)}',
       '.oc-net{font-size:11.5pt;color:var(--vert-f)}',
       '.oc-mentions{padding:2.4mm 12mm 0;height:7mm;font-size:9.5pt;color:var(--vert-f)}',
-      '.r-offre .oc-ligne{height:9.4mm}',
+      '.r-offre .oc-ligne{height:var(--rh,9.4mm)}',
       '.r-offre .oc-vign{width:7.4mm;height:7.4mm}',
-      '.oc-pied span:last-child{white-space:nowrap}',
+      // 32 lignes sur la page : rangées de 7,4 mm, désignation 9 pt, pastille plus petite
+      '.r-serre .oc-vign{width:6mm;height:6mm}.r-serre .oc-mono{font-size:6.5pt}',
+      '.r-serre .oc-nom{font-size:9pt;line-height:1.1}',
+      // 32 lignes : barre sur toute la largeur, « N adhérentes OPSO » et le pourcentage sur la même ligne dessous (tient dans 7,4 mm)
+      '.r-serre .oc-jauge{row-gap:.7mm}.r-serre .oc-barre{grid-column:1/-1;height:1.6mm}' +
+      '.r-serre .oc-jauge b{grid-row:2;grid-column:2;align-self:baseline;font-size:9.5pt;line-height:1;min-width:0}' +
+      '.r-serre .oc-jauge em{grid-row:2;grid-column:1;align-self:baseline;margin-top:0;line-height:1}',
+      '.r-serre .oc-net{font-size:11pt}.r-serre .oc-ppht{font-size:9pt}',
+      '.r-serre .oc-entete{height:8mm}',
+      '.r-serre .oc-mentions{padding-top:1.8mm}',
+      // pied du catalogue sur UNE ligne (à 8 pt, « Santé » passait seul à la ligne) ; l'écran opsoprix garde son pied à 8 pt
+      '.oc-pied span:last-child{white-space:nowrap}.oc-pied.oc-pied-cat{font-size:7.5pt}',
       '.oc-pied{position:absolute;left:12mm;right:12mm;bottom:6mm;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6mm;font-size:8pt;color:var(--gris);border-top:.3mm solid rgba(42,45,47,.12);padding-top:2.2mm}'
     ].join('\n');
     var st = document.createElement('style'); st.id = 'oc-styles'; st.textContent = css; document.head.appendChild(st);
@@ -334,6 +393,7 @@
   function render(root) {
     injectStyles();
     lancerOffre(root);
+    lancerPrix(root);
     var d = construire();
     if (!d) {
       root.innerHTML = page('<div class="v2-empty" style="padding:40px;text-align:center;color:var(--muted)">Chargement du catalogue…</div>');
@@ -351,6 +411,7 @@
       '<button class="v2-btn primary" id="oc-btn-csv" onclick="V2.opsoCatalogue.csv()">Télécharger en Excel (CSV)</button></div></div>' +
       '<div class="oc-apercu">' + pagesHtml(d).replace(/<section class="oc-page/g, '<div class="oc-cadre"><section class="oc-page').replace(/<\/section>/g, '</section></div>') + '</div>');
     ajusterApercu(root);
+    if (V2.opsoPrix && V2.opsoPrix.ajusterNoms) V2.opsoPrix.ajusterNoms(root);   // désignation trop longue de la page des prix : 8 pt serré, jamais coupée
     // Photos demandées UNE fois : deux rendus coup sur coup (rayons + Offre Privilège) trouvaient les balises
     // posées mais pas encore lues → chargerScript rendait la main tout de suite → rendu sans fin, page figée (16/10/2026).
     if ((!window.OFFILOG_BEST || !window.MKT_IMG) && !_photosDemandees) { _photosDemandees = true; chargerPhotos().then(function () { _photos = null; if (V2.route && V2.route.name === 'marketing') render(root); }); }
@@ -390,6 +451,13 @@
   function csv() {
     var d = construire(); if (!d) return null;
     var lignes = [['Rayon', 'Rang', 'Produit', 'CIP13', 'Part des pharmacies du réseau', 'dont OPSO', 'PPHT', 'Prix net']];
+    // Page « Les prix OPSO Santé » : prix net = prix OPSO ; pas de part du réseau ni de PPHT (la page ne les montre pas).
+    if (d.prix) d.prix.sections.forEach(function (sec) {
+      sec.items.forEach(function (it, i) {
+        lignes.push([sansFormule(TITRE_PRIX + ' - ' + sec.titre + (sec.etiquette ? ' (' + sec.etiquette + ')' : '')), i + 1, sansFormule(it.nom),
+          it.cip ? '="' + it.cip + '"' : it.cipTexte, '', '', '', virgule(it.opso)]);
+      });
+    });
     if (d.offre) d.offre.items.forEach(function (it, i) {
       lignes.push([sansFormule(d.offre.titre), i + 1, sansFormule(it.nom), '="' + it.cip + '"', partCsv(it.n, d.R.officines), it.opso,
         it.ppht ? virgule(it.ppht) : '', virgule(it.net)]);
@@ -418,12 +486,14 @@
       document.title = 'Catalogue-Integral-Pharma-OPSO-Sante';
       preparer().then(function (box) {
         if (!box) return;
+        if (V2.opsoPrix && V2.opsoPrix.ajusterNoms) V2.opsoPrix.ajusterNoms(box);
         try { window.print(); } catch (e) { V2.toast && V2.toast('Impression impossible', 'error'); }
         setTimeout(function () { document.title = avant; }, 1500);
       });
     },
     preparer: preparer,
     donnees: construire,
+    etats: function () { return { prix: _prixEtat, offre: _offreEtat }; },   // lu par les sondes
     // Pièces communes réutilisées par les autres écrans A4 OPSO (opso-prix.js) : mêmes styles, mêmes logos, même impression, même CSV.
     commun: { styles: injectStyles, ajuster: ajusterApercu, logo: logoOpso, logoIntegral: LOGO_IP, enveloppe: page, preparerHtml: preparerHtml,
       telecharger: telechargerTexte, csv: { champ: champ, sansFormule: sansFormule, virgule: virgule } }
