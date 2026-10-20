@@ -416,7 +416,7 @@
     var nb = 0; d.rayons.forEach(function (x) { nb += x.items.length; });
     root.innerHTML = page('<div class="oc-barre-outils"><div><h1 class="v2-h1" style="margin:0 0 4px">Le catalogue</h1>' +
       '<p>' + nb + ' produits parmi les plus commandés dans le réseau Intégral (' + esc(periodeTexte(d.R.periode)) + '), avec le nombre d’adhérentes OPSO Santé qui les commandent.</p></div>' +
-      '<div class="oc-actions"><button class="v2-btn primary" onclick="V2.opsoCatalogue.imprimer()">Imprimer / enregistrer en PDF</button>' +
+      '<div class="oc-actions"><button class="v2-btn primary" id="oc-btn-pdf" onclick="V2.opsoCatalogue.pdf()">Télécharger en PDF</button>' +
       '<button class="v2-btn primary" id="oc-btn-csv" onclick="V2.opsoCatalogue.csv()">Télécharger en Excel (CSV)</button></div></div>' +
       '<div class="oc-apercu">' + pagesHtml(d).replace(/<section class="oc-page/g, '<div class="oc-cadre"><section class="oc-page').replace(/<\/section>/g, '</section></div>') + '</div>');
     ajusterApercu(root);
@@ -488,7 +488,71 @@
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
   }
+  // ── PDF téléchargé directement (20/10/2026). Passer par l'impression ouvrait la fenêtre d'impression, et Safari y
+  //    peignait en NOIR tout dégradé transparent (couverture, bandeaux des pages). html2canvas (déjà chargé) redessine la
+  //    page à sa façon : étiquettes de prix comme barrées, icônes décalées. modern-screenshot (MIT, ajouté avec l'accord de
+  //    Will le 20/10/2026) fait dessiner chaque page par le navigateur lui-même ; jsPDF (dans html2pdf) pose une image par page A4. ──
+  var SRC_CAPTURE = 'https://cdn.jsdelivr.net/npm/modern-screenshot@4.7.0/dist/index.js';
+  var pdfEnCours = false;
+  function telechargerPdf() {
+    if (pdfEnCours) return;
+    if (typeof window.ensureHtml2Pdf !== 'function') { V2.toast && V2.toast('Module PDF indisponible', 'error'); return; }
+    var d = construire(); if (!d) { V2.toast && V2.toast('Le catalogue charge encore, réessayez dans un instant', 'error'); return; }
+    pdfEnCours = true;
+    var btn = document.getElementById('oc-btn-pdf'), libelle = btn ? btn.textContent : '';
+    var etat = function (t) { if (btn) { btn.textContent = t; btn.disabled = true; } };
+    etat('Préparation du PDF…');
+    injectStyles();
+    var wrap = document.createElement('div');
+    wrap.id = 'oc-pdf';
+    wrap.style.cssText = 'position:fixed;left:-10000px;top:0;width:210mm;background:#fff';
+    // Ombres portées : la photo du navigateur (WebKit) les rend en bandes grises pleines → retirées du PDF seulement.
+    wrap.innerHTML = '<style>#oc-pdf .oc-page,#oc-pdf .oc-page *{box-shadow:none!important}</style>' + pagesHtml(d);
+    document.body.appendChild(wrap);
+    if (V2.opsoPrix && V2.opsoPrix.ajusterNoms) V2.opsoPrix.ajusterNoms(wrap);
+    var pages = Array.prototype.slice.call(wrap.querySelectorAll('.oc-page'));
+    var fin = function (ok) {
+      pdfEnCours = false; if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+      if (polices.parentNode) polices.parentNode.removeChild(polices);
+      if (btn) { btn.textContent = libelle; btn.disabled = false; }
+      V2.toast && (ok ? V2.toast('Catalogue téléchargé') : V2.toast('Le PDF n’a pas pu être créé, réessayez', 'error'));
+    };
+    // Polices : la feuille Google Fonts vient d'un autre site, la photo ne peut pas la lire et retombe sur la police
+    // système. Son texte, posé le temps du PDF dans une feuille de la page, est lu et embarqué par modern-screenshot
+    // (son option font.cssText, elle, laisse les adresses distantes que Safari refuse de charger dans la photo).
+    var polices = document.createElement('style');
+    var css = Promise.all(Array.prototype.map.call(document.querySelectorAll('link[href*="fonts.googleapis.com/css"]'), function (l) {
+      return fetch(l.href).then(function (r) { return r.ok ? r.text() : ''; }).catch(function () { return ''; });
+    })).then(function (textes) { polices.textContent = textes.join('\n'); document.head.appendChild(polices); });
+    // Photos d'un site qui refuse la copie (Cap3000, Drakkars…) : sinon un rond vide ; on les retire et le monogramme
+    // posé dessous reprend sa place, comme à l'écran quand une photo manque.
+    var photos = Array.prototype.map.call(wrap.querySelectorAll('img'), function (im) {
+      var src = im.currentSrc || im.src; if (!src || /^data:/.test(src)) return 0;
+      return fetch(src, { mode: 'cors' }).then(function (r) { if (!r.ok) throw new Error(r.status); })
+        .catch(function () { if (im.parentNode) im.parentNode.removeChild(im); });
+    });
+    var fonts = (document.fonts && document.fonts.ready) ? document.fonts.ready : 0;
+    Promise.all([window.ensureHtml2Pdf(), chargerScript(SRC_CAPTURE, 'modernScreenshot'), css, Promise.all(photos), fonts]).then(function () {
+      if (!window.modernScreenshot || !window.html2pdf) throw new Error('outils PDF non chargés');
+      var opt = { scale: 2, quality: 0.92, backgroundColor: '#ffffff' };
+      var images = [];
+      return pages.reduce(function (suite, pg, i) {
+        return suite.then(function () {
+          etat('PDF : page ' + (i + 1) + ' sur ' + pages.length + '…');
+          return window.modernScreenshot.domToJpeg(pg, opt).then(function (u) { images.push(u); });
+        });
+      }, Promise.resolve()).then(function () { return images; });
+    }).then(function (images) {
+      // Document vierge d'une page tiré d'html2pdf (jsPDF n'y est pas exposé seul), puis une image pleine page par page.
+      var vide = document.createElement('canvas'); vide.width = vide.height = 10;
+      return window.html2pdf().set({ margin: 0, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(vide, 'canvas').toPdf().get('pdf').then(function (pdf) {
+        images.forEach(function (u, i) { if (i) pdf.addPage(); pdf.addImage(u, 'JPEG', 0, 0, 210, 297); });
+        pdf.save('Catalogue-Integral-Pharma-OPSO-Sante.pdf');
+      });
+    }).then(function () { fin(true); }, function (e) { console.error(e); fin(false); });
+  }
   V2.opsoCatalogue = {
+    pdf: telechargerPdf,
     csv: telechargerCsv,
     imprimer: function () {
       var avant = document.title;
