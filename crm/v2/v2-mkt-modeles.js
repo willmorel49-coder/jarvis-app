@@ -411,7 +411,8 @@
       'background:radial-gradient(circle at 98% -2%,rgba(255,255,255,.6) 0,rgba(255,255,255,.14) 11%,rgba(255,255,255,0) 22%),linear-gradient(125deg,' + E.acc + ' 0%,' + E.acc + ' 90%,' + E.dark + ' 100%)">' +
       '<div style="position:absolute;right:-80px;top:-140px;width:400px;height:400px;border-radius:50%;border:1.5px solid rgba(255,255,255,.20)"></div>' +
       '<div style="position:absolute;right:-170px;top:-220px;width:580px;height:580px;border-radius:50%;border:1.5px solid rgba(255,255,255,.12)"></div>' +
-      '<div style="position:relative;max-width:620px">' + titre(E, 62, 'letter-spacing:-.03em;line-height:1') + accroche(E, 18, '#FFFFFF', 'margin-top:18px;max-width:520px') + '</div></div>';
+      // En-tête de hauteur fixe : un titre long descend en taille pour ne jamais passer sous les cartes (2 lignes à 62 px ≈ 36 caractères).
+      '<div style="position:relative;max-width:620px">' + titre(E, E.title.length > 52 ? 40 : E.title.length > 36 ? 48 : 62, 'letter-spacing:-.03em;line-height:1') + accroche(E, 18, '#FFFFFF', 'margin-top:18px;max-width:520px') + '</div></div>';
     var foot = '<div style="flex:none;margin:auto 40px 0;padding:14px 0 26px;border-top:1px solid ' + P2 + ';display:flex;align-items:center;justify-content:space-between;gap:20px;font-size:11px;color:' + MUT + '">' +
       '<span style="display:flex;align-items:center;gap:14px"><img src="' + E.esc(E.ctx.logo) + '"' + (E.forPdf ? ' crossorigin="anonymous"' : '') + ' alt="Intégral Pharma" style="display:block;width:96px;height:auto"><span>Document fourni par Intégral Pharma</span></span>' +
       '<span' + E.za(E.edit, 'footer', 'Mentions', { ph: 'Mention en pied (facultatif)' }) + '>' + E.esc((E.it.footer || '').trim()) + '</span></div>';

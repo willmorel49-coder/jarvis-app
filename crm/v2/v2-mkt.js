@@ -382,7 +382,7 @@
     if (!u) return '';
     if (!/^https?:\/\//.test(u)) return u;                 // relatif (pimg/) ou data:
     if (u.indexOf('images.weserv.nl') !== -1) return u;
-    return 'https://images.weserv.nl/?url=ssl:' + u.replace(/^https?:\/\//, '') + '&w=240&output=jpg';
+    return 'https://images.weserv.nl/?url=ssl:' + u.replace(/^https?:\/\//, '') + '&w=240&output=jpg&bg=white';   // bg : un PNG transparent passé en JPEG sortait avec des bandes noires
   }
   function prodImg(p, forPdf) {
     if (forPdf && window.OFFILOG_IMG && p.id && window.OFFILOG_IMG[p.id]) return proxify(window.OFFILOG_IMG[p.id]);
@@ -819,7 +819,7 @@
     var n = editing.products.length;
     var iOng = Math.max(0, ONGLETS_P.indexOf(ongletPanneau)), iSt = 0, iMod = 0;
     STATUSES.forEach(function (s, i) { if (s.k === editing.status) iSt = i; });
-    var curTpl = (editing.theme && editing.theme.tpl) || 'promo';
+    var curTpl = modele(editing).k;   // tpl absent ou inconnu → la case du modèle réellement dessiné (promo)
     MODELES.forEach(function (m, i) { if (m.k === curTpl) iMod = i; });
     var modelesHtml = '<div class="mk-seg mke-modeles" id="mke-modeles" role="group" aria-label="Modèle de la feuille" style="--n:' + MODELES.length + ';--i:' + iMod + '"><i class="mk-seg-ind"></i>' +
       MODELES.map(function (m) {
@@ -903,6 +903,7 @@
     });
     wireCatalogue();
     refreshPreview();
+    montrerModeleActif();
     if (!V2._mktFitBound) { window.addEventListener('resize', fitSheet); V2._mktFitBound = true; }
     etabliVol();
     cgCharger();
@@ -912,6 +913,11 @@
     // L'affiche vitrine est lue par les patients : la réserve reste écrite sous le bouton tant que ce modèle est choisi.
     var reserve = modele(editing).k === 'vitrine' ? ' Affiche pour les patients, sans aucun prix : la publicité des médicaments auprès du public est encadrée, réservez-la à la parapharmacie et aux produits sans ordonnance.' : '';
     return (n ? n + ' produit' + (n > 1 ? 's' : '') + ' sur la feuille · ' + modele(editing).label + '.' : 'Ajoutez au moins un produit pour obtenir le PDF.') + reserve;
+  }
+  // Au téléphone la rangée des 7 modèles défile : la case choisie est ramenée au milieu de la rangée (la page, elle, ne bouge pas).
+  function montrerModeleActif() {
+    var sg = document.getElementById('mke-modeles'), b = sg && sg.querySelector('[aria-pressed="true"]');
+    if (b && sg.scrollWidth > sg.clientWidth) sg.scrollLeft = b.offsetLeft - (sg.clientWidth - b.offsetWidth) / 2;
   }
   // Compteur de l'onglet, ligne du pied et bouton PDF suivent le nombre de produits de la feuille.
   function etabliPied() {
@@ -1691,6 +1697,7 @@
         editing.theme.tpl = k;
         Array.prototype.forEach.call(document.querySelectorAll('#mke-modeles button'), function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-model') === k ? 'true' : 'false'); });
         var sg = document.getElementById('mke-modeles'); if (sg) MODELES.forEach(function (x, j) { if (x.k === k) sg.style.setProperty('--i', j); });
+        montrerModeleActif();
         etabliPied();
         Array.prototype.forEach.call(document.querySelectorAll('.mkt-sw-acc'), function (el) { el.classList.toggle('on', el.getAttribute('data-c') === m.accent); });
         var pa = document.getElementById('mke-acc-cur'); if (pa) pa.style.background = m.accent;
@@ -3305,7 +3312,7 @@
       '.mke-onglets button[aria-pressed="true"] .mke-badge{background:var(--mk-bleu);box-shadow:none;color:#fff}',
       '.mke-modeles{position:absolute;z-index:3;top:16px;left:50%;width:min(calc(var(--n) * 92px + 8px),calc(100% - 32px));grid-template-columns:repeat(var(--n),92px);overflow-x:auto;scrollbar-width:none;transform:translateX(-50%);box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(11,31,77,.08) inset,var(--mk-n1)}',
       '.mk-espace .mke-modeles button{padding:0 4px;font-size:var(--mk-s5);line-height:var(--mk-s5l)}',
-      '.mke-modeles .mk-seg-ind{width:92px}','.mke-modeles::-webkit-scrollbar{display:none}','.mk-espace .mke-modeles button{white-space:nowrap}',   // 7 modèles : cases fixes, la rangée défile si l\'écran est étroit
+      '.mke-modeles .mk-seg-ind{width:92px}','.mk-espace .mke-modeles{grid-template-columns:repeat(var(--n),92px)}',   // plus précis que .mk-seg (socle, chargé après) : sinon les cases tombent à 51 px au téléphone'.mke-modeles::-webkit-scrollbar{display:none}','.mk-espace .mke-modeles button{white-space:nowrap}',   // 7 modèles : cases fixes, la rangée défile si l\'écran est étroit
       '.mke-pied-n{margin:8px 0 0;font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-attenue)}',
       '.mk-espace .mke-pied .mk-btn[disabled]{background:var(--mk-groupe);color:var(--mk-attenue);border-color:transparent;box-shadow:none;cursor:default}',
       '.mke-plus{border-top:1px solid var(--mk-trait)}.mke-plus+.mke-plus{border-bottom:1px solid var(--mk-trait)}',
