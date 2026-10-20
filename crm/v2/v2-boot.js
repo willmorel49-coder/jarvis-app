@@ -1089,16 +1089,45 @@
         lancer(); remettre();
       });
     }
+    // 20/10/2026 — requête de secours. Mesure : au premier lancement d'un téléphone neuf, UNE tranche
+    // (la 7e sur 45) est restée sans réponse ~100 s ; les tranches s'exécutant dans l'ordre, elle a
+    // retenu toutes les suivantes (111 s au total, dont ~100 s d'attente sur elle seule). Si la
+    // tranche n'est pas arrivée au bout de 12 s, on lance UNE seconde requête sur la même adresse :
+    // la première réponse valide gagne, l'autre est ignorée (et annulée). La tranche n'échoue que si
+    // les DEUX ont échoué (ou l'unique, si aucune relance n'a eu lieu). Pas de relance d'une relance.
+    // ⚠️ textes[i] n'est posé qu'UNE fois (drapeau `pose`) : deux dépôts feraient compter les ventes
+    // deux fois (piège du 18/09 ci-dessus).
+    var DELAI_SECOURS = 12000;
     function telecharger(i) {
       var f = fichiers[i];
-      fetch(urls[i]).then(function (r) {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return r.text();
-      }).then(function (t) {
-        if (!t || t.length < 10) throw new Error('réponse vide');
-        try { if (cache) cache.put(cle(f), new Response(t, { headers: { 'Content-Type': 'text/javascript' } })); } catch (e) {}
-        textes[i] = t; remettre();
-      }).catch(function () { rater(f); });
+      var pose = false, relance = false, echecs = 0, minuteur = null, ctrls = [];
+      function stop() { if (minuteur) { clearTimeout(minuteur); minuteur = null; } }
+      function annuler(sauf) { ctrls.forEach(function (c, k) { if (k !== sauf && c) { try { c.abort(); } catch (e) {} } }); }
+      function lancerRequete(k) {
+        var ctrl = null; try { ctrl = new AbortController(); } catch (e) {}
+        ctrls[k] = ctrl;
+        fetch(urls[i], ctrl ? { signal: ctrl.signal } : undefined).then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.text();
+        }).then(function (t) {
+          if (!t || t.length < 10) throw new Error('réponse vide');
+          if (pose || fini) return;
+          pose = true; stop(); annuler(k);
+          try { if (cache) cache.put(cle(f), new Response(t, { headers: { 'Content-Type': 'text/javascript' } })); } catch (e) {}
+          textes[i] = t; remettre();
+        }).catch(function () {
+          if (pose) return;
+          echecs++;
+          if (!relance) { stop(); rater(f); return; }      // aucune relance lancée : l'unique requête a échoué
+          if (echecs >= 2) rater(f);                        // les deux ont échoué
+        });
+      }
+      lancerRequete(0);
+      minuteur = setTimeout(function () {
+        minuteur = null;
+        if (pose || fini || echecs) return;
+        relance = true; lancerRequete(1);
+      }, DELAI_SECOURS);
     }
     // Lance les téléchargements manquants, sans dépasser `enVol` en vol.
     function lancer() {

@@ -3406,3 +3406,131 @@
     document.head.appendChild(st);
   }
 })();
+
+
+/* ═══════════════════════════════════════════════════════════════════════════════════════════════
+   20/10/2026 — APPRO au téléphone : Will a choisi « Replié » parmi 3 (planche du 20/10) pour les onglets très longs.
+   Au-delà de la barre des onglets, chaque « rubrique » de l'onglet (une carte, un couloir, une grille…, avec son
+   intertitre et son pied) devient une ligne fermée de 52 px : titre + chiffre clé. Un appui l'ouvre, un second la referme.
+   L'ordinateur (> 760 px) ne reçoit AUCUN changement : ce bloc n'injecte rien. Les 4 grands chiffres du haut restent visibles.
+   Rien n'est retiré du DOM : les rubriques fermées sont seulement masquées (classe apv-off).
+   ═══════════════════════════════════════════════════════════════════════════════════════════════ */
+(function () {
+  var V = window.V2; if (!V || !V.pages || !V.pages.appro || V.pages.appro.__apv) return;
+  var origRender = V.pages.appro.render;
+  var ouvertes = {};                           // rubriques ouvertes, gardées d'un rendu à l'autre (clé onglet|n°)
+
+  function mobile() { return !!(window.matchMedia && window.matchMedia('(max-width:760px)').matches); }
+  function txt(e) { return (e && e.textContent || '').replace(/\s+/g, ' ').trim(); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function onglet(w) { var b = w.querySelector('.ap-navb.on'); return b ? txt(b) : '?'; }
+
+  V.pages.appro.__apv = true;
+  V.pages.appro.render = function (root) {
+    origRender.apply(this, arguments);
+    try { avancer(root); } catch (e) { if (window.console) console.error('apv', e); }
+  };
+
+  // ───────────── les rubriques d'un onglet ─────────────
+  function unites(w) {
+    var nav = w.querySelector('.ap-nav'); if (!nav) return [];
+    var kids = [].slice.call(w.children), i = kids.indexOf(nav) + 1, us = [], pend = [];
+    for (; i < kids.length; i++) {
+      var e = kids[i], c = e.className || '';
+      if (/ap-fresh/.test(c)) break;
+      if (/(^|\s)ap-sec(\s|$)|ap-secsub/.test(c)) { pend.push(e); continue; }
+      if (/(^|\s)ap-foot(\s|$)/.test(c) && us.length) { us[us.length - 1].els.push(e); continue; }
+      us.push({ els: pend.concat([e]), main: e, sec: pend.length ? txt(pend[0]) : '' }); pend = [];
+    }
+    us.forEach(function (u, k) { u.k = k; u.titre = titre(u); u.fig = figure(u); });
+    return us.filter(function (u) { return u.titre; });
+  }
+  function avant(s, sep) { var k = s.indexOf(sep); return k > 0 ? s.slice(0, k) : s; }
+  function titre(u) {
+    var m = u.main, c = m.className || '', h;
+    if (/ap-grid2/.test(c)) { var hs = [].map.call(m.querySelectorAll('h3'), function (x) { return avant(txt(x), ' — '); }); return hs.join(' · '); }
+    if (/an-pl/.test(c)) return 'À protéger';
+    if (/an-lane/.test(c)) { h = m.querySelector('.an-lhd'); if (h) { var n = h.querySelector('.an-n'); var t = txt(h); if (n) t = t.replace(txt(n), ''); return avant(t.trim(), ' — '); } }
+    if (/ap-kpis/.test(c)) return 'Les compteurs de service';
+    if (/fa-card/.test(c)) return 'Le fil d’anticipation';
+    h = m.querySelector('h3, .ap-hd h3, h4');
+    if (h) return avant(txt(h), ' — ');
+    if (u.sec) return avant(u.sec, ' — ');
+    return avant(txt(m).slice(0, 60), ' — ');
+  }
+  // le chiffre clé de la rubrique, affiché sur sa ligne repliée : <b>nombre</b> + ce qu'il compte
+  function figure(u) {
+    var m = u.main, c = m.className || '', t;
+    try {
+      if (/fa-card/.test(c)) { var p = m.querySelector('.fa-pill b'); return p ? '<b>' + esc(txt(p)) + '</b> événements à venir' : ''; }
+      if (/an-pl/.test(c)) { var bs = m.querySelectorAll('b'); return bs.length ? '<b>' + esc(txt(bs[0])) + '</b> ' + esc(txt(bs[0].parentNode).replace(txt(bs[0]), '').trim().split(' — ')[0]) : ''; }
+      if (/an-lane/.test(c)) { var n = m.querySelector('.an-n'); return n ? '<b>' + esc(txt(n)) + '</b> références' : ''; }
+      if (/g5-card/.test(c)) { var s = txt(m).match(/sur ([\d\s  ]+) mesur/); return s ? '<b>' + esc(s[1].trim()) + '</b> références' : ''; }
+      if (/ap-kpis/.test(c)) { var k = m.querySelector('.ap-kpi'); return k ? '<b>' + esc(txt(k.querySelector('.ap-kv'))) + '</b> ' + esc(txt(k.querySelector('.ap-kl'))) : ''; }
+    } catch (e) {}
+    var sub = m.querySelector('.ap-sub'); t = sub ? txt(sub) : '';
+    if (!/\d/.test(t)) { var h = m.querySelector('h3'); var inH = h ? txt(h).split(' — ').slice(1).join(' — ') : ''; if (/\d/.test(inH)) t = inH; }
+    if (!/\d/.test(t)) t = txt(m).slice(0, 160);
+    var seg = t.split(/ · | — /).filter(function (x) { return /\d/.test(x); })[0] || '';
+    var r = seg.match(/^(.*?)(\d[\d\s  .,]*\d|\d)(\s*(?:€|%|k€|M€|j|jours?)?)(.{0,26})/);
+    if (!r) return '';
+    return esc(r[1].trim() ? r[1].trim() + ' ' : '') + '<b>' + esc((r[2] + r[3]).trim()) + '</b>' + esc(r[4].replace(/[,;(].*$/, '').replace(/\s+$/, '') ? ' ' + r[4].replace(/[,;(].*$/, '').trim() : '');
+  }
+
+  // ───────────── injection du style (une fois, seulement au téléphone) ─────────────
+  function css() {
+    if (document.getElementById('apv-css')) return;
+    var st = document.createElement('style'); st.id = 'apv-css';
+    st.textContent = '@media (max-width:760px){' + [
+      'html .apv-off{display:none !important}',
+      /* ── chaque rubrique est une ligne de 52 px (titre + chiffre clé) ── */
+      'html .apv-row{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;margin:0 0 8px;padding:6px 14px;border:1px solid var(--line,#DCE5F5);border-radius:14px;background:var(--card,#fff);font:inherit;text-align:left;color:var(--ip-ink,#0B1B3A);cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 8px 18px -16px rgba(0,52,160,.5)}',
+      'html .apv-t{flex:1;min-width:0;display:block}',
+      'html .apv-tt{display:block;font-size:15.5px;font-weight:800;letter-spacing:-.01em;line-height:1.2}',
+      'html .apv-fg{display:block;margin-top:2px;font-size:13px;font-weight:600;line-height:1.25;color:var(--muted-d,#4F566B)}',
+      'html .apv-fg b{font-family:var(--mono,monospace);font-weight:800;color:var(--ip-blue,#0050E6)}',
+      'html .apv-row svg{flex:none;color:var(--ip-blue,#0050E6);transition:transform .2s}',
+      'html .apv-row[aria-expanded="true"]{background:#F3F7FF;border-color:#9BC0FF}',
+      'html .apv-row[aria-expanded="true"] svg{transform:rotate(90deg)}',
+      'html .apv-row.apv-ouverte{margin-bottom:12px}'
+    ].join('') + '}';
+    document.head.appendChild(st);
+  }
+  var CHEV = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+
+  // ───────────── rubriques repliées ─────────────
+  function replier(us, w) {
+    var tab = onglet(w);
+    us.forEach(function (u) {
+      var id = tab + '|' + u.k, b = document.createElement('button'), ouv = !!ouvertes[id];
+      b.type = 'button'; b.className = 'apv-row' + (ouv ? ' apv-ouverte' : ''); b.setAttribute('data-apv', 'rep'); b.setAttribute('data-id', id);
+      b.setAttribute('aria-expanded', ouv ? 'true' : 'false');
+      b.innerHTML = '<span class="apv-t"><span class="apv-tt">' + esc(u.titre) + '</span>' + (u.fig ? '<span class="apv-fg">' + u.fig + '</span>' : '') + '</span>' + CHEV;
+      u.els[0].parentNode.insertBefore(b, u.els[0]);
+      u.row = b; u.els.forEach(function (e) { if (!ouv) e.classList.add('apv-off'); e.setAttribute('data-apv-u', id); });
+    });
+  }
+  function basculer(b) {
+    var id = b.getAttribute('data-id'), o = b.getAttribute('aria-expanded') !== 'true';
+    ouvertes[id] = o; b.setAttribute('aria-expanded', o ? 'true' : 'false'); b.classList.toggle('apv-ouverte', o);
+    [].forEach.call(document.querySelectorAll('.v2-wrap [data-apv-u]'), function (e) { if (e.getAttribute('data-apv-u') === id) e.classList.toggle('apv-off', !o); });
+  }
+
+  // ───────────── branchement ─────────────
+  function avancer(root) {
+    if (!mobile()) return;
+    var w = root.querySelector('.v2-wrap'); if (!w) return;
+    var us = unites(w); if (!us.length) return;
+    css();
+    replier(us, w);
+    brancher();
+  }
+  var branche = false;
+  function brancher() {
+    if (branche) return; branche = true;
+    document.addEventListener('click', function (e) {
+      var t = e.target.closest ? e.target.closest('[data-apv="rep"]') : null; if (!t) return;
+      basculer(t);
+    });
+  }
+})();

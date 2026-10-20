@@ -71,6 +71,29 @@
     return String(v || '').toLowerCase().replace(/(^|[\s\-'’])([a-zà-ÿ])/g, function (m, a, b) { return a + b.toUpperCase(); })
       .replace(/\b(Sur|Sous|En|De|Du|Des|La|Le|Les|Et|Aux?)\b/g, function (m, w, i) { return i ? w.toLowerCase() : w; }).replace(/\bCedex\b.*$/i, '').trim();
   }
+  // ── 20/10/2026 · Will a choisi « Replié » parmi 3 (planche du 20/10) : au téléphone (≤ 760 px), une longue liste de pharmacies se range par région, fermée ──
+  var LGO_PAR = 50;
+  function lgoTel(n) { return n > LGO_PAR && !!(window.matchMedia && window.matchMedia('(max-width:760px)').matches); }
+  var REG_DEP = {
+    'Auvergne-Rhône-Alpes': '01 03 07 15 26 38 42 43 63 69 73 74', 'Bourgogne-Franche-Comté': '21 25 39 58 70 71 89 90', 'Bretagne': '22 29 35 56',
+    'Centre-Val de Loire': '18 28 36 37 41 45', 'Corse': '20', 'Grand Est': '08 10 51 52 54 55 57 67 68 88', 'Hauts-de-France': '02 59 60 62 80',
+    'Île-de-France': '75 77 78 91 92 93 94 95', 'Normandie': '14 27 50 61 76', 'Nouvelle-Aquitaine': '16 17 19 23 24 33 40 47 64 79 86 87',
+    'Occitanie': '09 11 12 30 31 32 34 46 48 65 66 81 82', 'Pays de la Loire': '44 49 53 72 85', 'Provence-Alpes-Côte d\'Azur': '04 05 06 13 83 84', 'Outre-mer': '97'
+  };
+  var DEP_REG = {};
+  Object.keys(REG_DEP).forEach(function (r) { REG_DEP[r].split(' ').forEach(function (d) { DEP_REG[d] = r; }); });
+  var REG_AUTRE = 'Code postal absent ou hors France';
+  function regionDe(p) {
+    var c = String(p.cp == null ? '' : p.cp).replace(/\D/g, '');
+    if (c.length === 4) c = '0' + c;
+    return c.length === 5 ? (DEP_REG[c.slice(0, 2)] || REG_AUTRE) : REG_AUTRE;
+  }
+  function regionsDe(list) {   // [{nom, items:[{p, i}]}] par ordre alphabétique, « autre » en dernier ; l'ordre des pharmacies reste celui de la liste
+    var m = {};
+    list.forEach(function (p) { var r = regionDe(p); (m[r] = m[r] || []).push(p); });
+    var noms = Object.keys(m).sort(function (a, b) { return a === REG_AUTRE ? 1 : b === REG_AUTRE ? -1 : a.localeCompare(b, 'fr'); });
+    return noms.map(function (n, k) { return { nom: n, id: 'lgo-reg-' + k, items: m[n] }; });
+  }
   var SVG = {
     loupe: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
     envoi: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>',
@@ -188,14 +211,32 @@
         '<p>Le mode d\'emploi et les catalogues sont prêts : dès qu\'une pharmacie est renseignée sur ' + esc(l.nom) + ' (depuis « À compléter » ou sa fiche), elle apparaît ici.</p>' +
         '<button type="button" class="v2-btn v2-btn-ghost lgo-vide-b" onclick="V2.lgoOnglet(\'fic\')">Voir les fichiers ' + esc(l.nom) + '</button></div>';
     }
-    return recherche('lgo-ph', list.length, 'une pharmacie') +
-      (peutEnvoyer ? '<p class="lgo-mini">« Envoyer » ouvre Transmettre avec le mode d\'emploi et le catalogue ' + esc(l.nom) + ' déjà cochés.</p>' : '') +
-      '<div class="lgo-list" id="lgo-ph">' + list.map(function (p) {
+    var ligne = function (p, i, ouvert) {
         var id = esc(p.id);
-        return '<div class="lgo-ph" data-q="' + dataQ(p) + '">' + lienFiche(p) +
+        return '<div class="lgo-ph"' + (i == null ? '' : ' data-i="' + i + '"' + (ouvert ? '' : ' hidden')) + ' data-q="' + dataQ(p) + '">' + lienFiche(p) +
           (peutEnvoyer ? '<button type="button" class="lgo-send" onclick="V2.lgoEnvoyer(\'' + id + '\',\'' + l.s + '\')" aria-label="Envoyer le catalogue à ' + esc(p.name) + '">' + SVG.envoi + '<span>Envoyer</span></button>' : '') +
         '</div>';
-      }).join('') + '<p class="lgo-vide" hidden>Aucune pharmacie ne correspond.</p></div>';
+    };
+    var tete = recherche('lgo-ph', list.length, 'une pharmacie') +
+      (peutEnvoyer ? '<p class="lgo-mini">« Envoyer » ouvre Transmettre avec le mode d\'emploi et le catalogue ' + esc(l.nom) + ' déjà cochés.</p>' : '');
+    var vide = '<p class="lgo-vide" hidden>Aucune pharmacie ne correspond.</p>';
+    if (lgoTel(list.length)) {
+      // « Replié » : chaque région est fermée, une ligne de 52 px (nom + nombre de pharmacies) ; plusieurs peuvent rester ouvertes
+      var R3 = regionsDe(list);
+      return tete + '<div class="lgo-list lgo-regs lgo-rep" id="lgo-ph">' + R3.map(function (g) {
+        var grand = g.items.length > LGO_PAR;
+        return '<section class="lgo-reg" id="' + g.id + '"><button type="button" class="lgo-reg-t" aria-expanded="false" aria-controls="' + g.id + '-c" onclick="V2.lgoReg(this)">' +
+            '<span class="lgo-reg-nom">' + esc(g.nom) + '</span><span class="lgo-reg-nb" data-n="' + g.items.length + '">' + pl(g.items.length, 'pharmacie') + '</span>' + SVG.chev + '</button>' +
+          '<div class="lgo-reg-c" id="' + g.id + '-c" hidden' + (grand ? ' data-pagine="1" data-lim="' + LGO_PAR + '"' : '') + '>' +
+            g.items.map(function (p, i) { return grand ? ligne(p, i, i < LGO_PAR) : ligne(p); }).join('') +
+            (grand ? suiteHtml(g.id + '-c', g.items.length - LGO_PAR) : '') + '</div></section>';
+      }).join('') + vide + '</div>';
+    }
+    return tete + '<div class="lgo-list" id="lgo-ph">' + list.map(function (p) { return ligne(p); }).join('') + vide + '</div>';
+  }
+  function suiteHtml(cible, reste) {
+    return '<div class="of-suite" data-suite="' + cible + '"><button type="button" class="v2-btn v2-btn-ghost" onclick="V2.lgoPlus(\'' + cible + '\')">Voir les ' + Math.min(reste, LGO_PAR) +
+      ' suivantes</button><span class="of-reste">(' + nf(reste) + ' restantes)</span></div>';
   }
 
   function panelPas(l) {
@@ -513,6 +554,22 @@
       '@media (max-width:1100px){.lgo-tab .lgo-n{display:none}}',
       '@media (max-width:420px){.lgo-tab{padding:0 2px;font-size:13px;gap:0}}',
       '@media (max-width:420px){.lgo-fh,.lgo-fl{grid-template-columns:minmax(0,1fr) 80px 80px}.lgo-send span{display:none}.lgo-send{width:44px;padding:0;justify-content:center}.lgo-acr select{width:136px}}',
+      /* 20/10/2026 — « Replié » (choix de Will, planche du 20/10) : régions fermées de la fiche logiciel, téléphone seulement */
+      '@media (max-width:760px){',
+      'html .lgo-panel .of-suite{padding:16px 6px 18px}',
+      'html .lgo-panel .of-suite[hidden]{display:none}',
+      'html .lgo-reg[hidden]{display:none}',
+      'html .lgo-rep{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin:12px 0 0}','html .lgo-reg{min-width:0}',
+      'html .lgo-reg-t{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:0 14px;border:1px solid #DCE5F5;border-radius:14px;background:#fff;font:inherit;text-align:left;color:#0B1B3A;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 8px 18px -16px rgba(0,52,160,.5)}',
+      'html .lgo-reg-nom{flex:1;min-width:0;font-size:16px;font-weight:800;letter-spacing:-.01em;line-height:1.2}',
+      'html .lgo-reg-nb{flex:none;font-size:13.5px;font-weight:700;color:#0034A0;background:#E1EBFF;border-radius:999px;padding:3px 10px;font-variant-numeric:tabular-nums}',
+      'html .lgo-reg-t svg{flex:none;color:#0050E6;transition:transform .2s}',
+      'html .lgo-reg-t[aria-expanded="true"]{background:#F3F7FF;border-color:#9BC0FF}',
+      'html .lgo-reg-t[aria-expanded="true"] svg{transform:rotate(90deg)}',
+      'html .lgo-reg-c{padding:4px 0 6px}html .lgo-reg-c[hidden]{display:none}',
+      'html .lgo-f .lgo-reg-c[hidden]{display:block}',
+      'html .lgo-rep .lgo-ph{padding:2px 14px}',
+      '}',
       '@media (prefers-reduced-motion:reduce){.lgo-main.lgo-arrive,.lgo-side.lgo-revient,.lgo-panel.lgo-in>*,.lgo-bump,.lgo-neuf .lgo-barre i{animation:none}.lgo-tabs-i,.lgo-prog-b i,.lgo-acr{transition:none}}'
     ].join('\n');
     document.head.appendChild(s);
@@ -551,9 +608,35 @@
     var vus = 0;
     [].forEach.call(box.querySelectorAll('[data-q]'), function (r) {
       var t = r.getAttribute('data-q'), okk = q.every(function (m) { return t.indexOf(m) >= 0; });
+      if (okk && !q.length && r.hasAttribute('data-i')) { var c = r.closest('[data-pagine]'); if (c && +r.getAttribute('data-i') >= +c.getAttribute('data-lim')) okk = false; }   // « Replié » : limite « par 50 » tant qu'on ne cherche rien
       r.hidden = !okk; if (okk) vus++;
     });
     var v = box.querySelector('.lgo-vide'); if (v) v.hidden = vus > 0;
+    lgoMaj(box, q.length > 0);
+  };
+  // « Replié » : boutons « suivantes » et régions pendant une recherche (sans effet sur la base : aucun de ces éléments n'y existe)
+  function lgoMaj(box, cherche) {
+    box.classList.toggle('lgo-f', cherche);
+    [].forEach.call(document.querySelectorAll('.of-suite[data-suite]'), function (b) {
+      var c = document.getElementById(b.getAttribute('data-suite')); b.hidden = cherche || !c || +c.getAttribute('data-lim') >= c.querySelectorAll('[data-i]').length;
+    });
+    [].forEach.call(box.querySelectorAll('.lgo-reg'), function (s) {
+      var k = s.querySelectorAll('[data-q]:not([hidden])').length; s.hidden = cherche && !k;
+      var nb = s.querySelector('.lgo-reg-nb[data-n]'); if (nb) nb.textContent = cherche ? k + ' trouvée' + (k > 1 ? 's' : '') + ' sur ' + nb.getAttribute('data-n') : pl(+nb.getAttribute('data-n'), 'pharmacie');
+    });
+  }
+  // « Voir les 50 suivantes » : +50 sur place, l'écran ne bouge pas
+  V2.lgoPlus = function (cible) {
+    var c = document.getElementById(cible); if (!c) return;
+    var tot = c.querySelectorAll('[data-i]').length, lim = Math.min(tot, +c.getAttribute('data-lim') + LGO_PAR);
+    c.setAttribute('data-lim', lim);
+    [].forEach.call(c.querySelectorAll('[data-i]'), function (r) { if (+r.getAttribute('data-i') < lim) r.hidden = false; });
+    var b = document.querySelector('.of-suite[data-suite="' + cible + '"]');
+    if (b) { var reste = tot - lim; if (reste <= 0) b.hidden = true; else { b.querySelector('button').textContent = 'Voir les ' + Math.min(reste, LGO_PAR) + ' suivantes'; b.querySelector('.of-reste').textContent = '(' + nf(reste) + ' restantes)'; } }
+  };
+  V2.lgoReg = function (b) {
+    var o = b.getAttribute('aria-expanded') !== 'true', c = document.getElementById(b.getAttribute('aria-controls'));
+    b.setAttribute('aria-expanded', o ? 'true' : 'false'); if (c) c.hidden = !o;
   };
   V2.lgoEffacer = function (b) {
     var inp = b.parentNode.querySelector('input'); if (!inp) return;

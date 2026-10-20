@@ -584,6 +584,67 @@
   // ne demande que ce que ses écrans lisent (carte-opso-donnees.md) ; le reste lui est refusé
   // côté Supabase (jarvis_peut_lire_protege) : le demander afficherait « chiffres non téléchargés ».
   if (window.V2_BRAND && window.V2_BRAND.opso) V2.NEEDS_DEFAUT = ['bench', 'sagitta', 'wmlca'];
+  // ════ L'attente du premier lancement : « La jauge » (20/10/2026) ════
+  // Mesure du 20/10 (iPhone simulé, vue « Tous », 45 tranches de ventes) : 111 s d'écran « Chargement… »
+  // sans le moindre signe de vie. Will a choisi la jauge : une barre n / total, le compte « Ventes du
+  // réseau : 12 sur 45 », une estimation « environ N s » dès 3 tranches, et la raison pour laquelle cette
+  // attente ne revient pas à chaque ouverture. Mise à jour SANS redessiner l'écran (c1Maj).
+  var C1_PHRASE = 'Vos ventes sont ensuite rangées sur cet appareil : cette attente ne revient qu’après une mise à jour des ventes.';
+  function c1Style() {
+    if (document.getElementById('v2c-style')) return;
+    var st = document.createElement('style'); st.id = 'v2c-style';
+    st.textContent = [
+      'html .v2c-jauge{width:min(340px,calc(100vw - 48px));text-align:left}',
+      'html .v2c-piste{position:relative;height:14px;border-radius:99px;background:var(--line-strong);overflow:hidden}',
+      'html .v2c-rempli{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:99px;background:linear-gradient(90deg,var(--ip-blue-d),var(--ip-blue));transition:width .35s ease}',
+      'html .v2c-piste.indet .v2c-rempli{width:38%;animation:v2cglisse 1.3s ease-in-out infinite alternate;transition:none}',
+      '@keyframes v2cglisse{from{transform:translateX(0)}to{transform:translateX(163%)}}',
+      '@media (prefers-reduced-motion:reduce){html .v2c-piste.indet .v2c-rempli{animation:none;width:100%}}',
+      'html .v2c-ligne{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:10px;font-size:15px;color:var(--ip-ink)}',
+      'html .v2c-compte b{font-weight:800;color:var(--ip-blue)}',
+      'html .v2c-reste{font-size:14px;color:var(--muted);white-space:nowrap}',
+      'html .v2c-note{margin:12px 0 0;font-size:14px;line-height:1.45;color:var(--muted)}',
+      'html .v2-boot-splash.v2c-lanc{padding:24px}',
+      'html .v2-boot-splash.v2c-lanc .v2-boot-msg{font-size:15px}'
+    ].join('');
+    document.head.appendChild(st);
+  }
+  function c1Reste(n, total) {
+    if (!V2._c1t0 || n < 3 || n >= total) return '';
+    var par = (Date.now() - V2._c1t0) / n, s = par * (total - n) / 1000;
+    if (s >= 90) return 'environ ' + Math.round(s / 60) + ' min';
+    return 'environ ' + Math.max(5, Math.round(s / 5) * 5) + ' s';
+  }
+  function c1JaugeHtml() {
+    var pr = V2.ventesProgres, indet = !pr || !pr.total;
+    var n = indet ? 0 : pr.n, t = indet ? 0 : pr.total;
+    return '<div class="v2c-jauge" role="progressbar" aria-label="Chargement des ventes du réseau" aria-valuemin="0" aria-valuemax="' + t + '" aria-valuenow="' + n + '">' +
+      '<div class="v2c-piste' + (indet ? ' indet' : '') + '"><div class="v2c-rempli" style="' + (indet ? '' : 'width:' + Math.round(100 * n / t) + '%') + '"></div></div>' +
+      '<div class="v2c-ligne"><span class="v2c-compte">' + (indet ? 'Préparation…' : 'Ventes du réseau : <b>' + n + '</b> sur ' + t) + '</span><span class="v2c-reste">' + (indet ? '' : c1Reste(n, t)) + '</span></div>' +
+      '<p class="v2c-note">' + C1_PHRASE + '</p></div>';
+  }
+  // Met la jauge à jour SANS redessiner l'écran.
+  function c1Maj() {
+    var js = document.querySelectorAll('.v2c-jauge'); if (!js.length) return;
+    var pr = V2.ventesProgres, indet = !pr || !pr.total;
+    for (var i = 0; i < js.length; i++) {
+      var j = js[i], pi = j.querySelector('.v2c-piste'), rp = j.querySelector('.v2c-rempli');
+      pi.classList.toggle('indet', indet);
+      if (indet) { rp.style.width = ''; continue; }
+      rp.style.width = Math.round(100 * pr.n / pr.total) + '%';
+      j.querySelector('.v2c-compte').innerHTML = 'Ventes du réseau : <b>' + pr.n + '</b> sur ' + pr.total;
+      j.querySelector('.v2c-reste').textContent = c1Reste(pr.n, pr.total);
+      j.setAttribute('aria-valuemax', pr.total); j.setAttribute('aria-valuenow', pr.n);
+    }
+  }
+  // L'écran d'attente de l'écran demandé (premier lancement, route autre que l'accueil).
+  function splashHtml() {
+    var marque = ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma');
+    c1Style();
+    return '<div class="v2-boot-splash v2c-lanc"><div class="v2-boot-brand">' + marque + '</div>'
+      + '<div class="v2-spinner"></div>'
+      + '<div class="v2-boot-msg">Chargement des données réseau…</div>' + c1JaugeHtml() + '</div>';
+  }
   // ── RENDER (routeur) ──────────────────────────
   V2.render = function () {
     var root = $app(); if (!root) return;
@@ -602,10 +663,7 @@
     // ensuite V2.pharmacies/V2.sales, donc AUCUNE page ne s'affiche sans ses données.
     if (V2.loadFiles && !V2.dataLoaded('wml') && !V2._wmlAsked) {
       V2._wmlAsked = true;
-      root.innerHTML =
-        '<div class="v2-boot-splash"><div class="v2-boot-brand">' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '</div>'
-        + '<div class="v2-spinner"></div>'
-        + '<div class="v2-boot-msg">Chargement des données réseau…</div></div>';
+      root.innerHTML = splashHtml();
       V2.loadFiles(['wml'])
         .then(function () { return V2.loadData ? V2.loadData() : null; })
         .then(function () {
@@ -642,10 +700,7 @@
         && !(window.V2_BRAND && window.V2_BRAND.opso);
       if (!partiel) {
         if (!root.querySelector('.v2-boot-splash')) {
-          root.innerHTML =
-            '<div class="v2-boot-splash"><div class="v2-boot-brand">' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '</div>'
-            + '<div class="v2-spinner"></div>'
-            + '<div class="v2-boot-msg">Chargement des données réseau…</div></div>';
+          root.innerHTML = splashHtml();
         }
         return;
       }
@@ -1827,12 +1882,15 @@
   // tout de suite (V2.render sait qu'il est partiel), et on tient à jour le
   // compteur « Chargement des ventes… n / 28 » sans re-rendre.
   V2.onOfficinesPretes = function () {
-    if (!V2.user || V2.route.name !== 'home') return;
+    V2._c1t0 = Date.now();   // 20/10/2026 : départ du chronomètre de « environ N s »
+    if (!V2.user) return;
+    if (V2.route.name !== 'home') { c1Maj(); return; }   // la jauge se met à jour sans redessiner l'écran
     V2.render();
   };
   V2.onVentesProgres = function (n, total) {
     var el = document.getElementById('v2-ventes-etat');
     if (el) el.innerHTML = 'Chargement des ventes… <b>' + n + '</b> / ' + total;
+    c1Maj();   // 20/10/2026 : jauge de l'écran de lancement (rien à faire si elle n'est pas à l'écran)
   };
   V2.pages.home = {
     needs: [],   // audité 11/09/2026 : l'accueil ne lit ni BENCHMARK ni PROD_STATS
