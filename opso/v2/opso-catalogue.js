@@ -493,6 +493,15 @@
   //    page à sa façon : étiquettes de prix comme barrées, icônes décalées. modern-screenshot (MIT, ajouté avec l'accord de
   //    Will le 20/10/2026) fait dessiner chaque page par le navigateur lui-même ; jsPDF (dans html2pdf) pose une image par page A4. ──
   var SRC_CAPTURE = 'https://cdn.jsdelivr.net/npm/modern-screenshot@4.7.0/dist/index.js';
+  // Empreinte du fichier vérifié le 20/10/2026 : si jsDelivr en servait un autre, le navigateur le refuse (comme v2-concurrents-liens.js).
+  var SRI_CAPTURE = 'sha384-5Ua3TI0kiMYH8QdNy+vc5IWS3MTa2DzQEm/uKFDQ+/biJctek9hiSP6moIm2PVog';
+  function chargerCapture() {
+    if (window.modernScreenshot) return Promise.resolve();
+    return new Promise(function (ok, ko) {
+      var s = document.createElement('script'); s.integrity = SRI_CAPTURE; s.crossOrigin = 'anonymous'; s.src = SRC_CAPTURE;
+      s.onload = ok; s.onerror = function () { ko(new Error('modern-screenshot non chargé')); }; document.head.appendChild(s);
+    });
+  }
   var pdfEnCours = false;
   function telechargerPdf() {
     if (pdfEnCours) return;
@@ -532,7 +541,7 @@
         .catch(function () { if (im.parentNode) im.parentNode.removeChild(im); });
     });
     var fonts = (document.fonts && document.fonts.ready) ? document.fonts.ready : 0;
-    Promise.all([window.ensureHtml2Pdf(), chargerScript(SRC_CAPTURE, 'modernScreenshot'), css, Promise.all(photos), fonts]).then(function () {
+    Promise.all([window.ensureHtml2Pdf(), chargerCapture(), css, Promise.all(photos), fonts]).then(function () {
       if (!window.modernScreenshot || !window.html2pdf) throw new Error('outils PDF non chargés');
       var opt = { scale: 2, quality: 0.92, backgroundColor: '#ffffff' };
       var images = [];
