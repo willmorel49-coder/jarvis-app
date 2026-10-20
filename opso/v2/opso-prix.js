@@ -344,6 +344,7 @@
   // en-tête de couverture, ni pied, ni l'Offre spéciale (elle rejoint l'Offre Privilège). `haut` = hauteur déjà prise par l'en-tête du catalogue.
   // Rend { pages: [{ html, vars }], offre: [lignes de l'Offre spéciale], titres, n } ou null si les prix ne sont pas chargés.
   function pourCatalogue(haut) {
+    injectStyles();   // posés jusqu'ici par l'écran « Les prix » seul : catalogue ouvert directement = page 2 sans mise en forme (20/10/2026)
     var d = construire(); if (!d) return null;
     var corps = { sections: d.sections.filter(function (s) { return s.k !== 'offre'; }) };
     var offre = (d.sections.filter(function (s) { return s.k === 'offre'; })[0] || { items: [] }).items;
