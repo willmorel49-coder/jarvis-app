@@ -1057,6 +1057,8 @@
     var sel = mktSelection();
     var title = mktTitleVal();
     var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    // la mention des prix ne vaut que si au moins une carte en montre un (20/10/2026)
+    var avecPrix = sel.some(function (it) { return it.price > 0; });
     var cards = sel.map(function (it) {
       // dataURL local (offilog-img-data.js) si dispo → marche dans le PDF ;
       // sinon URL brute Offilog (affichage écran OK, mais absente du PDF)
@@ -1086,7 +1088,7 @@
         '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">' + cards + '</div>' +
         '<div style="margin-top:26px;padding-top:14px;border-top:1px solid #ECEFF5;display:flex;justify-content:space-between;font-size:9px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.05em">' +
           '<span>Intégral Pharma · Sélection parapharmacie</span>' +
-          '<span>Prix indicatifs TTC · ' + esc(dateStr) + '</span>' +
+          '<span>' + (avecPrix ? 'Prix indicatifs TTC · ' : '') + esc(dateStr) + '</span>' +
         '</div>' +
       '</div>';
   }
@@ -1628,6 +1630,11 @@
   }
 
   // ── PAGE ──────────────────────────────────────
+  // La barre de sélection est posée sur <body> (voir la fin de render) : elle part avec l'écran.
+  window.addEventListener('hashchange', function () {
+    if (/^#offilog(\/|$)/.test(location.hash || '')) return;
+    var b = document.body.querySelector(':scope > #off-mktbar'); if (b) document.body.removeChild(b);
+  });
   V2.pages.offilog = {
     render: function (root, param) {
       injectCss();
@@ -1846,6 +1853,13 @@
           '<button class="v2-btn v2-btn-primary" onclick="V2.offMktPreview()">' + ICO('grid', 16, 2) + ' Aperçu de la fiche</button>' +
           '<button class="clr" onclick="V2.offMktClear()" title="Vider">' + ICO('close', 16, 2) + '</button>' +
         '</div>';
+      // La barre vit sous <body> : #v2-root garde la transformation de son animation d'entrée (mo-view-in),
+      // et un position:fixed placé dedans se cale sur la page au lieu de l'écran — mesuré sous WebKit le
+      // 20/10/2026 : barre à 4 059 px du haut d'une fenêtre de 900, bouton « Aperçu » hors de vue.
+      var barVieille = document.body.querySelector(':scope > #off-mktbar');
+      if (barVieille) document.body.removeChild(barVieille);
+      var barNeuve = root.querySelector('#off-mktbar');
+      if (barNeuve) document.body.appendChild(barNeuve);
 
       // ── Motion « façon Framer Motion » (discret, 150–300ms, RM-safe via l'API) ──
       var mo = V2.motion;
