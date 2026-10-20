@@ -1114,8 +1114,9 @@
         (img ? '<img src="' + esc(img) + '" alt="" loading="lazy" decoding="async" onerror="this.parentNode.classList.add(\'cg-sans\');this.remove()">' : '') +
         '<b class="cg-mono" aria-hidden="true">' + esc(mono) + '</b></span>' +
       '<span class="cg-corps"><b class="cg-nom">' + esc(o.d) + '</b>' +
-        '<span class="cg-ref">' + (lab ? esc(lab) + ' · ' : '') + '<span class="mk-mono">' + esc(o.cip) + '</span></span>' +
-        '<span class="cg-prix' + (p > 0 ? '' : ' cg-inconnu') + '">' + (p > 0 ? V2.fmtEur(p) : 'Tarif non connu') + '</span></span>' +
+        // le prix ouvre la ligne laboratoire · CIP (une ligne de moins par carte, 20/10/2026) : coupée au bout, c'est le CIP qui s'efface, jamais le prix
+        '<span class="cg-ref"><span class="cg-prix' + (p > 0 ? '' : ' cg-inconnu') + '">' + (p > 0 ? V2.fmtEur(p) : 'Tarif non connu') + '</span> · ' +
+          (lab ? esc(lab) + ' · ' : '') + '<span class="mk-mono">' + esc(o.cip) + '</span></span></span>' +
       '<button type="button" class="cg-ajout mk-press" data-cg="ajout" data-cip="' + esc(o.cip) + '" aria-pressed="' + (pose ? 'true' : 'false') + '" aria-label="' +
         esc((rempl ? 'Remplacer par ' : (pose ? 'Retirer de la feuille : ' : 'Poser sur la feuille : ')) + o.d) + '">' + mic(pose && !rempl ? 'coche' : (rempl ? 'coche' : 'plus'), 22, 2.2) + '</button>' +
       '<span class="cg-sites" role="group" aria-label="Stock par établissement">' + cgPastilles(o) + '</span>' +
@@ -3306,7 +3307,7 @@
       '.cg-src-t{margin:8px 0 2px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mk-attenue)}.cg-src-t:first-child{margin-top:0}',
       '.cg-src-n{margin:6px 0 0;color:var(--mk-attenue)}',
       '.cg-liste{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:0 -20px;padding:8px 20px 16px;border-top:1px solid var(--mk-trait);outline:none}',
-      '.cg-carte{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:4px 12px;align-items:start;margin:0 0 8px;padding:12px;border-radius:16px;border:1px solid var(--mk-trait);background:#fff;box-shadow:var(--mk-n1)}',
+      '.cg-carte{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:4px 12px;align-items:start;margin:0 0 8px;padding:10px 12px;border-radius:16px;border:1px solid var(--mk-trait);background:#fff;box-shadow:var(--mk-n1)}',
       '.cg-carte.is-pose{border-color:#B9CDF6;background:#F6F9FF}',
       '.cg-photo{position:relative;display:grid;place-items:center;width:44px;height:44px;overflow:hidden;border-radius:10px;border:1px solid var(--mk-trait);background:#fff}',
       '.cg-photo img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain}',
@@ -3316,15 +3317,15 @@
       '.cg-nom{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;font-size:var(--mk-s4);line-height:20px;font-weight:600;color:var(--mk-encre)}',
       '.cg-ref{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--mk-s5);line-height:var(--mk-s5l);color:var(--mk-attenue)}',
       '.cg-ref .mk-mono{font-size:var(--mk-s5)}',
-      '.cg-prix{display:block;font-size:var(--mk-s5);line-height:var(--mk-s5l);font-weight:650;color:var(--mk-encre)}.cg-prix.cg-inconnu{font-weight:450;color:var(--mk-attenue)}',
+      '.cg-prix{display:inline;font-size:var(--mk-s5);font-weight:650;color:var(--mk-encre)}.cg-prix.cg-inconnu{font-weight:450;color:var(--mk-attenue)}',
       '.mk-espace .cg-ajout{grid-column:3;grid-row:1;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:1px solid var(--mk-trait);background:#fff;box-shadow:var(--mk-n1);color:var(--mk-bleu-txt)}',
       '.mk-espace .cg-ajout[aria-pressed="true"]{background:var(--mk-bleu);border-color:transparent;box-shadow:none;color:#fff}',
-      '.cg-sites{grid-column:1/4;display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}',
-      '.cg-s{position:relative;display:inline-flex;align-items:center;gap:3px;min-height:24px;padding:0 6px;border-radius:7px;border:1px solid transparent;font-size:var(--mk-s5);line-height:1;font-weight:600;white-space:nowrap}',
-      '.cg-s::before{font-weight:700}',
-      '.cg-s-ok{background:#EDF7F1;color:#14794F}.cg-s-ok::before{content:"\\2713"}',
-      '.cg-s-zero{background:#FBEEF1;color:#B93550}.cg-s-zero::before{content:"\\2715"}',
-      '.cg-s-nd{background:#fff;border:1px dashed #9AA3B5;color:var(--mk-attenue);font-weight:500}.cg-s-nd::before{content:"\\2013"}',
+      // 20/10/2026 (choix de Will) : les 7 établissements sur UNE ligne — l'état se lit à la forme (plein / barré / pointillé), plus au symbole.
+      '.cg-sites{grid-column:1/4;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:3px;margin-top:2px}',
+      '.cg-s{position:relative;display:inline-flex;align-items:center;justify-content:center;min-height:22px;padding:0 2px;border-radius:6px;border:1px solid transparent;font-size:var(--mk-s5);line-height:1;font-weight:600;white-space:nowrap}',
+      '.cg-s-ok{background:#EDF7F1;color:#14794F}',
+      '.cg-s-zero{background:#FBEEF1;color:#B93550;text-decoration:line-through;text-decoration-thickness:1.5px}',
+      '.cg-s-nd{background:#fff;border:1px dashed #9AA3B5;color:var(--mk-attenue);font-weight:500}',
       '.cg-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;text-decoration:none}',
       '.mk-espace .cg-voir{width:100%;margin:4px 0 8px}',
       '.cg-vide,.cg-attente{display:grid;gap:12px;justify-items:start;padding:16px 0;font-size:var(--mk-s4);color:var(--mk-attenue)}.cg-vide p,.cg-attente p{margin:0}',
