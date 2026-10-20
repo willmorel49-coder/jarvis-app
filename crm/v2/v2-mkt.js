@@ -883,7 +883,8 @@
       var g = e.target.closest ? e.target.closest('[data-cg]') : null;
       if (g) { cgAgir(g); return; }
       var b = e.target.closest ? e.target.closest('[data-mke]') : null;
-      if (!b) { if (panneauHaut && etabliTel() && e.target.closest && e.target.closest('#mke-scene')) etabliPanneau(false); return; }
+      // Toucher la feuille baisse le panneau — sauf la photo d'un produit : elle vient de le monter pour le remplacement (openPicker).
+      if (!b) { if (panneauHaut && etabliTel() && e.target.closest && e.target.closest('#mke-scene') && !e.target.closest('[data-zone="photo"]')) etabliPanneau(false); return; }
       var act = b.getAttribute('data-mke');
       if (act === 'retour') { retourFiche = editing ? editing.id : null; V2.go('marketing', 'fiches'); }
       else if (act === 'zoom') etabliZoom(b.getAttribute('data-z'));
@@ -1539,7 +1540,8 @@
     if (!sh._zoneFocusWired) {
       sh._zoneFocusWired = true;
       sh.addEventListener('focusin', function (e) {
-        if (!etabliTel() || zoomFeuille === 'largeur' || !e.target.classList || !e.target.classList.contains('mkt-zone')) return;
+        // La photo n'est pas un texte : passer en « Largeur » redessinait la feuille et le toucher se perdait (le remplacement ne s'ouvrait pas, 390 px, 20/10/2026).
+        if (!etabliTel() || zoomFeuille === 'largeur' || !e.target.classList || !e.target.classList.contains('mkt-zone') || e.target.classList.contains('mkt-zone-photo')) return;
         etabliZoom('largeur');
         try { e.target.scrollIntoView({ block: 'center', inline: 'start' }); } catch (err) {}
       });
@@ -1971,7 +1973,10 @@
             var fn = (t.label + '-' + title).replace(/[^A-Za-z0-9-]/g, '_').slice(0, 50) + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
             return window.html2pdf().from(wrap.firstChild).set({
               filename: fn, margin: 0, image: { type: 'jpeg', quality: 0.95 }, // la feuille (794 px = 210 mm) porte déjà ses marges : une marge en plus rognait le bord droit
-              html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', logging: false },
+              // ignoreElements : le panneau Catalogue garde ~60 photos (chargement différé) à côté de la feuille ; html2canvas
+              // les recopiait et les attendait sans fin, le PDF ne partait jamais (WebKit, 1280 px, 20/10/2026). Même parade que v2-offilog.js.
+              html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', logging: false,
+                ignoreElements: function (el) { return el.parentNode === document.body && !el.classList.contains('html2pdf__overlay') && el.tagName !== 'STYLE' && el.tagName !== 'LINK'; } },
               jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'] }
             }).save().then(function () { if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('PDF téléchargé'); });
           }).catch(function (e) { console.error(e); if (wrap.parentNode) document.body.removeChild(wrap); V2.toast('Erreur PDF', 'error'); });
