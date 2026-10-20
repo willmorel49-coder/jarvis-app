@@ -46,7 +46,7 @@
   // ── Données ──
   var SRC_RESEAU = '../../crm/v2/prod-reseau-data.js?v=20261015xm';
   var SRC_NONGEN = 'opso-nongen-data.js?v=20261001a';
-  var SRC_CHOIX = 'opso-catalogue-choix-data.js?v=20261016bf';   // CIP à retirer / à ajouter (retour du 15/10)
+  var SRC_CHOIX = 'opso-catalogue-choix-data.js?v=20261020rp';   // CIP à retirer / à ajouter (retour du 15/10)
   function chargerScript(src, temoin) {
     if (window[temoin] || document.querySelector('script[src^="' + src.split('?')[0] + '"]')) return Promise.resolve();
     return new Promise(function (ok) { var s = document.createElement('script'); s.src = src; s.onload = s.onerror = function () { ok(); }; document.head.appendChild(s); });
@@ -143,15 +143,17 @@
       if (!(s.qte > 0) || (V2.estReste && V2.estReste(s.pharmacyId))) return;
       var c = normCip(s.artCode); (opso[c] || (opso[c] = {}))[s.pharmacyId] = 1;
     });
-    var rayons = RAYONS.map(function (r) { return { r: r, items: [], sansPrix: 0, vus: 0 }; });
+    var rayons = RAYONS.map(function (r) { return { r: r, items: [], sansPrix: 0, vus: 0, reserve: [] }; });
+    var ordre = 0;
     Object.keys(R.n).forEach(function (cip) {
       var c = normCip(cip), p = ps[c]; if (!p || enOffre[c]) return;
       var f = p.f === 'gen' && nonGen[c] ? 'pr' : p.f;
       var ray = rayons.filter(function (x) { return x.r.f[f]; })[0]; if (!ray) return;
       // R.n est déjà trié par nombre décroissant : les premiers du rayon, plus les produits ajoutés à leur rang.
-      // Un produit retiré garde sa place dans le décompte (le suivant ne la reprend pas).
-      var dedans = ray.vus < ray.r.pages * PAR_PAGE;
-      if (!dedans && !ajouter[c]) return;
+      // Un produit retiré garde sa place dans le décompte (le suivant ne la reprend pas) ; les suivants du classement
+      // ne servent qu'à compléter la dernière page du rayon (réserve, voir plus bas).
+      var dedans = ray.vus < ray.r.pages * PAR_PAGE, hors = !dedans && !ajouter[c];
+      if (hors && ray.reserve.length >= PAR_PAGE) return;
       var bp = V2.bestPrice(bench[c]);
       if (bp.ip && !(bp.ht > bp.ip) && p.ppht > bp.ip && !p.stale) bp.ht = p.ppht;   // PPHT absent du benchmark : celui du catalogue
       // Produit ajouté absent du benchmark : remboursable à PPHT connu → PPHT − barème, comme horsBenchmark (v2-pharma).
@@ -161,11 +163,18 @@
       if (!bp.ip) { if (dedans) ray.sansPrix++; return; }           // jamais une ligne sans prix net
       ray.vus++;
       if (retirer[c]) return;
-      ray.items.push({
+      (hors ? ray.reserve : ray.items).push({
         cip: cip, nom: p.d || (bench[c] && bench[c].designation) || cip, n: R.n[cip],
         opso: opso[c] ? Object.keys(opso[c]).length : 0,
-        ppht: ray.r.deux && bp.ht && bp.ht > bp.ip ? bp.ht : null, net: bp.ip
+        ppht: ray.r.deux && bp.ht && bp.ht > bp.ip ? bp.ht : null, net: bp.ip, ordre: ordre++
       });
+    });
+    // Dernière page d'un rayon à moitié vide : complétée par les suivants du classement, à leur rang (Will, 20/10/2026 :
+    // « remplir les pages 6, 7 et 11 »). Le nombre de pages ne change pas.
+    rayons.forEach(function (x) {
+      var manque = (PAR_PAGE - x.items.length % PAR_PAGE) % PAR_PAGE;
+      if (manque && x.items.length) x.items = x.items.concat(x.reserve.slice(0, manque)).sort(function (a, b) { return a.ordre - b.ordre; });
+      delete x.reserve;
     });
     var nOpso = {}; (V2.sales || []).forEach(function (s) { if (s.qte > 0 && !(V2.estReste && V2.estReste(s.pharmacyId))) nOpso[s.pharmacyId] = 1; });
     // Offre Privilège : prix du fichier privé, désignation / part du réseau comme les rayons, tri par part décroissante.

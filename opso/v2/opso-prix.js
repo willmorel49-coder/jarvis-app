@@ -238,7 +238,7 @@
     });
     // Ce qui reste de hauteur est rendu aux rangées (jusqu'à plusMax chacune) : la page se remplit sans trou au bas.
     pages.forEach(function (p) {
-      var e = plusMax > 0 ? plusMax : H.plusMax;
+      var e = plusMax >= 0 ? plusMax : H.plusMax;
       if (!p.cols) { if (p.rangs) e = Math.min(e, (H.bas - p.y) / p.rangs); }
       else p.cols.forEach(function (c) { e = Math.min(e, (H.bas - p.yGrille - hColonne(c) - 0) / (p.rangs + rangsColonne(c))); });
       p.e = Math.max(0, Math.floor(e * 100) / 100);
@@ -350,7 +350,7 @@
     var n = 0; corps.sections.forEach(function (s) { n += s.items.length; });
     var cips = []; corps.sections.forEach(function (s) { s.items.forEach(function (it) { if (it.cip) cips.push(it.cip); }); });
     if (!n) return { pages: [], offre: offre, titres: [], n: 0, cips: cips, sections: [], signalees: d.signalees.length };
-    var pages = miseEnPage(corps, haut + 13, 2.2), vars = varsCols(corps.sections);   // 13 mm = 5 mm de marge + 8 mm de légende
+    var pages = miseEnPage(corps, haut + 13, 0), vars = varsCols(corps.sections);   // 13 mm = 5 mm de marge + 8 mm de légende ; 0 = rangées à leur hauteur d'origine, blanc en bas (Will, 20/10)
     return {
       pages: pages.map(function (p, i) { return { html: (i ? '' : legendeHtml()) + blocsHtml(p, {}), vars: '--e:' + p.e + 'mm' + vars, fin: p.y }; }),
       offre: offre, n: n, cips: cips, sections: corps.sections, signalees: d.signalees.length,

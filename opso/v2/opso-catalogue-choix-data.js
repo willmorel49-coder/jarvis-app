@@ -1,6 +1,7 @@
 // Choix sur « Le catalogue » OPSO — retour du 15/10/2026 sur le CSV. Lu par opso-catalogue.js (construire()).
 // PUBLIC : des CIP, rien d'autre (jamais un prix).
-// retirer : jamais affiché, même parmi les plus commandés (sa place n'est pas reprise par le suivant).
+// retirer : jamais affiché, même parmi les plus commandés (sa place n'est pas reprise par le suivant ; depuis le 20/10/2026,
+//           la dernière page du rayon est complétée par les suivants du classement).
 // ajouter : toujours affiché, à son rang par nombre de pharmacies, même au-delà des premiers du rayon.
 window.OPSO_CATALOGUE_CHOIX = {
   retirer: [
@@ -16,7 +17,10 @@ window.OPSO_CATALOGUE_CHOIX = {
     '3400934917547',  // COTRIMOXAZOLE** TVC CPR BT10
     '3400930152812',  // ZOPICLONE ARL 3,75MG CPR BT14
     '3400937466745',  // KETOPROFENE PMY 100MG/2ML AMP6
-    '3400930109892'   // PRAMIPEXOLE ZEN LP0,26MG CPR30
+    '3400930109892',  // PRAMIPEXOLE ZEN LP0,26MG CPR30
+    // Intégral ne les aura plus (Will, 12/10/2026) : écartés quand la dernière page des remboursables est complétée (20/10)
+    '3400930151105',  // OZEMPIC 1MG INJ STYLO3ML 1
+    '3400930003763'   // TRULICITY 1,5MG INJ STY0,5ML 4
   ],
   ajouter: [
     '3400930037904',  // ENTRESTO 24MG/26MG CPR BT28
