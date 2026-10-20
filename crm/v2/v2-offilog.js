@@ -1088,7 +1088,7 @@
         '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">' + cards + '</div>' +
         '<div style="margin-top:26px;padding-top:14px;border-top:1px solid #ECEFF5;display:flex;justify-content:space-between;font-size:9px;color:#9AA1B2;text-transform:uppercase;letter-spacing:.05em">' +
           '<span>Intégral Pharma · Sélection parapharmacie</span>' +
-          '<span>' + (avecPrix ? 'Prix indicatifs TTC · ' : '') + esc(dateStr) + '</span>' +
+          '<span>' + (avecPrix ? 'Prix indicatifs HT · ' : '') + esc(dateStr) + '</span>' +
         '</div>' +
       '</div>';
   }
