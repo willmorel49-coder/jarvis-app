@@ -86,13 +86,26 @@
       ajouter('helicidine', { cip: c, cipTexte: c, nom: b.designation, pfht: pfhtDe(ppht, !!froid[c]), habituel: p.ip, opso: h.opso });
     });
     // 4. Offre spéciale : habituel = net standard SANS l'offre ; prix OPSO = l'offre. Seulement ce que les adhérentes OPSO commandent déjà.
-    var of = [];
+    var of = [], deja = {};
     (neg.offreSanofiUpsa || []).forEach(function (cip) {
-      var c = normCip(cip), b = bench[c];
+      var c = normCip(cip), b = bench[c]; deja[c] = 1;
       if (ctx.commandes && !ctx.commandes[c]) { nonCommandes++; return; }
       if (!b) return manque('', cip, 'absent du benchmark');
       var ppht = pph(c, b); if (!(b.prix_ip > 0) || !(b.offre_ip > 0) || !(ppht > 0)) return manque(b.designation, cip, 'sans prix');
       of.push({ cip: c, cipTexte: c, nom: b.designation, pfht: pfhtDe(ppht, !!froid[c]), habituel: b.prix_ip, opso: b.offre_ip, ppht: ppht });   // ppht : lu par « Le catalogue » (Offre Privilège)
+    });
+    // 4 bis. « Le catalogue » (Offre Privilège) : les lignes du fichier privilège qui ne sont pas dans l'Offre spéciale. Prix OPSO = prix net
+    // du fichier ; habituel = net de l'app SANS l'offre (comme ci-dessus) ; PFHT remonté du PPHT du fichier quand il existe, sinon de l'app.
+    // Jamais de prix inventé : un habituel introuvable laisse la case vide et la ligne est signalée (contrôle de `ajouter`).
+    (ctx.extra || []).forEach(function (x) {
+      var c = normCip(x.cip), b = bench[c]; if (deja[c]) return; deja[c] = 1;
+      if (ctx.commandes && !ctx.commandes[c]) { nonCommandes++; return; }
+      var pphtApp = pph(c, b), ppht = x.ppht > 0 ? x.ppht : pphtApp;
+      // PPHT du fichier ≠ PPHT de l'app : l'écart « habituel − PPHT » de l'app est reporté sur le PPHT du fichier (Doliprane 200 mg poudre :
+      // app 1,60 périmé, la BDPM lui donne le prix du 300 mg poudre, PPHT 1,30 → habituel 1,12 et non 1,42 — choix de Will, 20/10/2026).
+      var hab = b && b.prix_ip > 0 ? b.prix_ip : null;
+      if (hab != null && pphtApp > 0 && ppht > 0 && Math.abs(ppht - pphtApp) > 0.005) hab = r2(hab - (pphtApp - ppht));
+      of.push({ cip: c, cipTexte: c, nom: (b && b.designation) || x.nom || c, pfht: pfhtDe(ppht, !!froid[c]), habituel: hab, opso: x.prix > 0 ? x.prix : null, ppht: ppht > 0 ? ppht : null });
     });
     of.sort(function (a, b) { return a.nom < b.nom ? -1 : a.nom > b.nom ? 1 : 0; }).forEach(function (it) { ajouter('offre', it); });
 
@@ -133,7 +146,7 @@
   function charger(root) {
     chargerDonnees(false).then(function () { if (V2.route && V2.route.name === ROUTE) render(root); });
   }
-  function contexte() {
+  function contexte(extra) {
     if (_etat !== 'ok' || !_neg || !Array.isArray(window.BENCHMARK) || !Array.isArray(window.FROID_CIPS)) return null;
     // Produits commandés par les adhérentes OPSO : même règle que « Le catalogue » (quantité > 0, hors « reste du réseau »).
     var ventes = V2.sales || [], commandes = null;
@@ -141,11 +154,11 @@
       commandes = {};
       ventes.forEach(function (s) { if (s.qte > 0 && !(V2.estReste && V2.estReste(s.pharmacyId))) commandes[normCip(s.artCode)] = 1; });
     } else { try { console.warn('[opso-prix] ventes OPSO absentes : offre affichée sans filtre'); } catch (e) {} }
-    return { neg: _neg, bench: window.BENCHMARK, ppht: window.PPHT || {}, froid: window.FROID_CIPS, bestPrice: V2.bestPrice, commandes: commandes };
+    return { neg: _neg, bench: window.BENCHMARK, ppht: window.PPHT || {}, froid: window.FROID_CIPS, bestPrice: V2.bestPrice, commandes: commandes, extra: extra };
   }
   var _d = null;
-  function construire() {
-    var ctx = contexte(); if (!ctx) return null;
+  function construire(extra) {
+    var ctx = contexte(extra); if (!ctx) return null;
     _d = lignes(ctx);
     V2.opsoPrix.signalees = _d.signalees.length; V2.opsoPrix.sansPrix = _d.sansPrix.length; V2.opsoPrix.lignesN = _d.n; V2.opsoPrix.nonCommandes = _d.nonCommandes;
     return _d;
@@ -205,9 +218,9 @@
     }
     return { cols: cols.filter(function (c) { return c.length; }), reste: f };
   }
-  function miseEnPage(d, haut1, plusMax) {
+  function miseEnPage(d, haut1, plusMax, haut2) {
     var pages = [], pg = null;
-    function nouvelle() { pg = { blocs: [], y: pages.length ? H.haut : (haut1 > 0 ? haut1 : H.haut1), rangs: 0, cols: null }; pages.push(pg); }
+    function nouvelle() { pg = { blocs: [], y: pages.length ? (haut2 > 0 ? haut2 : H.haut) : (haut1 > 0 ? haut1 : H.haut1), rangs: 0, cols: null }; pages.push(pg); }
     function reste() { return H.bas - pg.y - H.ecart; }
     nouvelle();
     d.sections.forEach(function (s) {
@@ -277,7 +290,7 @@
   }
   function offreHtml(b) {
     var n = b.s.items.length;
-    return '<div class="op-os"><div><div class="op-os-t">' + esc(b.s.titre) + suiteTxt(b) + '</div><div class="op-os-s">Produits regroupés par marque · tous les prix sont HT, par boîte</div></div>' +
+    return '<div class="op-os"><div><div class="op-os-t">' + esc(b.s.titre) + suiteTxt(b) + '</div><div class="op-os-s">' + esc(b.s.sous || 'Produits regroupés par marque · tous les prix sont HT, par boîte') + '</div></div>' +
       '<span class="op-pill">' + n + (n > 1 ? ' produits' : ' produit') + '</span></div>';
   }
   function carteHtml(x) {
@@ -343,20 +356,54 @@
   // ── Pour « Le catalogue » : le corps de la page « Les prix OPSO Santé » (légende + Wegovy + Mounjaro + Hélicidine), SANS la grande
   // en-tête de couverture, ni pied, ni l'Offre spéciale (elle rejoint l'Offre Privilège). `haut` = hauteur déjà prise par l'en-tête du catalogue.
   // Rend { pages: [{ html, vars }], offre: [lignes de l'Offre spéciale], titres, n } ou null si les prix ne sont pas chargés.
-  function pourCatalogue(haut) {
+  function pourCatalogue(haut, opts) {
     injectStyles();   // posés jusqu'ici par l'écran « Les prix » seul : catalogue ouvert directement = page 2 sans mise en forme (20/10/2026)
-    var d = construire(); if (!d) return null;
+    opts = opts || {};   // opts.fichier = le fichier Offre Privilège (titre, mentions, lignes) ; opts.retirer = CIP retirés du catalogue (sans zéro de tête)
+    var sansZero = function (c) { return normCip(c).replace(/^0+/, ''); };
+    var retire = function (c) { return !!(opts.retirer && opts.retirer[sansZero(c)]); };
+    var extra = opts.fichier ? opts.fichier.lignes.filter(function (l) { return !retire(l.cip); }).map(function (l) { return { cip: l.cip, prix: l.prix, ppht: l.ppht, nom: l.nom }; }) : null;
+    var d = construire(extra); if (!d) return null;
     var corps = { sections: d.sections.filter(function (s) { return s.k !== 'offre'; }) };
     var offre = (d.sections.filter(function (s) { return s.k === 'offre'; })[0] || { items: [] }).items;
+    if (opts.fichier) offre = offre.filter(function (it) { return !retire(it.cip); });
+    var offrePages = opts.fichier ? pourOffre(offre, opts.fichier.titre, (opts.fichier.mentions || []).join(' · '), haut) : [];
     var n = 0; corps.sections.forEach(function (s) { n += s.items.length; });
     var cips = []; corps.sections.forEach(function (s) { s.items.forEach(function (it) { if (it.cip) cips.push(it.cip); }); });
-    if (!n) return { pages: [], offre: offre, titres: [], n: 0, cips: cips, sections: [], signalees: d.signalees.length };
+    var signalees = d.signalees.map(function (it) { return { cip: it.cip, nom: it.nom, pfht: it.pfht, habituel: it.habituel, opso: it.opso }; });
+    if (!n) return { pages: [], offrePages: offrePages, offre: offre, titres: [], n: 0, cips: cips, sections: [], signalees: d.signalees.length, lignesSignalees: signalees };
     var pages = miseEnPage(corps, haut + 13, 0), vars = varsCols(corps.sections);   // 13 mm = 5 mm de marge + 8 mm de légende ; 0 = rangées à leur hauteur d'origine, blanc en bas (Will, 20/10)
     return {
       pages: pages.map(function (p, i) { return { html: (i ? '' : legendeHtml()) + blocsHtml(p, {}), vars: '--e:' + p.e + 'mm' + vars, fin: p.y }; }),
-      offre: offre, n: n, cips: cips, sections: corps.sections, signalees: d.signalees.length,
+      offrePages: offrePages, offre: offre, n: n, cips: cips, sections: corps.sections, signalees: d.signalees.length, lignesSignalees: signalees,
       titres: corps.sections.map(function (s) { return s.titre; })
     };
+  }
+
+  // ── Pour « Le catalogue » : l'Offre Privilège en cartes par marque, sur UNE page A4 si possible (32 produits). ──
+  // Les rangées sont resserrées pour CETTE page seulement : on prend la plus haute rangée (11,2 mm comme l'écran des prix, jusqu'à 9,2 mm)
+  // pour laquelle tout tient ; en dessous, la page passe en « (suite) » plutôt que de rapetisser la désignation sous 8 pt.
+  function largeursOffre(items) {
+    var lmax = 0; items.forEach(function (it) { [it.pfht, it.habituel, it.opso].forEach(function (v) { lmax = Math.max(lmax, eur(v).length); }); });
+    return { cn: Math.max(11.2, 1.7 * lmax + 1.2).toFixed(1), co: Math.max(17.5, 2 * lmax + 4).toFixed(1) };
+  }
+  function pourOffre(items, titre, sous, haut) {
+    if (!items.length) return [];
+    var s = { k: 'offre', titre: titre, sous: sous, etiquette: '', items: items, fort: true }, d = { sections: [s] };
+    var sauv = { rang: H.rang, carteTete: H.carteTete, carteCols: H.carteCols }, pages = null, r = 11.2, serre = false;
+    try {
+      H.carteTete = 9; H.carteCols = 5;
+      for (; r >= 9.2 - 1e-9; r = Math.round((r - 0.1) * 10) / 10) {
+        H.rang = r; pages = miseEnPage(d, haut, 0, haut);
+        if (pages.length === 1) break;
+      }
+      if (pages.length > 1) { r = 9.2; H.rang = r; pages = miseEnPage(d, haut, 0, haut); }
+      pages = miseEnPage(d, haut, 1.2, haut);   // ce qui reste de hauteur est rendu aux rangées (au plus 1,2 mm chacune)
+      serre = r < 10.6;
+    } finally { H.rang = sauv.rang; H.carteTete = sauv.carteTete; H.carteCols = sauv.carteCols; }
+    var totaux = totauxMarques(d), w = largeursOffre(items);
+    return pages.map(function (p) {
+      return { html: blocsHtml(p, totaux), vars: '--e:' + p.e + 'mm;--rr:' + r + 'mm;--cth:9mm;--cch:5mm;--cn:' + w.cn + 'mm;--co:' + w.co + 'mm', cls: 'op-cat' + (serre ? ' serre' : ''), rang: r, fin: p.y, rangs: p.rangs };
+    });
   }
 
   // Filet : une désignation plus longue que deux lignes passe en 8 pt serré plutôt que d'être coupée.
@@ -442,6 +489,10 @@
       '.op-carte-h b{font-weight:400;font-size:11.5pt;color:var(--vert-f);letter-spacing:.3px;white-space:nowrap}',
       '.op-carte-h b small{font-size:8.5pt;color:var(--gris)}',
       '.op-carte-n{margin-left:auto;font-size:8pt;color:var(--gris);white-space:nowrap}',
+      // Variante « Offre Privilège » du catalogue (classe op-cat, 20/10/2026) : 32 produits sur une page, hauteurs lues dans des variables posées par pourOffre()
+      '.op-cat .op-pr{height:calc(var(--rr,' + H.rang + 'mm) + ' + e + ')}',
+      '.op-cat .op-carte-h{height:var(--cth,' + H.carteTete + 'mm)}.op-cat .op-ch{height:var(--cch,' + H.carteCols + 'mm)}',
+      '.op-cat.serre .op-nm{font-size:8pt}.op-cat.serre .op-nom i{font-size:7.5pt;margin-top:.2mm}',
       '.op-ico{width:7mm;height:7mm;flex:none}.op-ico svg{width:100%;height:100%;display:block}',
       '.op-alerte{margin:0 0 14px;padding:10px 14px;border-radius:10px;background:#fff6dc;color:#5c4400;font-size:13.5px}',
       '@media print{.op-alerte{display:none!important}}'
