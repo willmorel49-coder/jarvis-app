@@ -912,6 +912,8 @@
     var n = editing ? editing.products.length : 0;
     // L'affiche vitrine est lue par les patients : la réserve reste écrite sous le bouton tant que ce modèle est choisi.
     var reserve = modele(editing).k === 'vitrine' ? ' Affiche pour les patients, sans aucun prix : la publicité des médicaments auprès du public est encadrée, réservez-la à la parapharmacie et aux produits sans ordonnance.' : '';
+    // La fiche simple est pensée pour un produit : au-delà, le bas de la page reste vide (choix de Will, 20/10/2026 : le dire).
+    if (modele(editing).k === 'fiche' && n > 1) reserve = ' Plusieurs produits : le modèle « Sélection du mois » remplit mieux la page.';
     return (n ? n + ' produit' + (n > 1 ? 's' : '') + ' sur la feuille · ' + modele(editing).label + '.' : 'Ajoutez au moins un produit pour obtenir le PDF.') + reserve;
   }
   // Au téléphone la rangée des 7 modèles défile : la case choisie est ramenée au milieu de la rangée (la page, elle, ne bouge pas).
