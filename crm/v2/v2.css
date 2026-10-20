@@ -568,6 +568,36 @@ html.v2-nav .v2-top::before{content:"";position:absolute;left:0;bottom:-1px;heig
   html .phf-nmedit-row{flex-direction:column;align-items:stretch}
   /* textes sous 12 px */
   html .v2-profil-f>span,html .pot-t span,html .pot-t i,html .v2-profil-meta{font-size:12px}
+  /* Audit des sous-écrans du 20/10/2026 (WebKit 390 et 360 px) : fiche grossiste, fiche logiciel, LinkedIn,
+     Offilog, Appro « Stock & sites », Concurrents, Pilotage, Marketing, logo de l'accueil, légende de la carte */
+  html .gr-pe-s a,html .gr-pj-m a,html .gr-ch-s a,html .gr-src a,html .gr-finmeta a,html .gr-fmeta a{display:inline-flex;align-items:center;min-height:44px;padding:0 4px}
+  html .gr-grplink,html .gr-ville,html .pilo-part-btn,html .cc-lien,html .g5-seg button,html .li-pp,html .li-segstat button,html .mk-espace .mk-cherche{min-height:44px}
+  html .mk-espace .mk-cherche{min-width:44px}
+  html .lgo-ph a span,html .lgo-acr a span,html .gr-gnom,html .off-mkt-pod-t{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
+  html .li-close,html .off-insp-x{width:44px;height:44px}
+  html .li-gen,html .li-inp{height:44px}
+  html .off-insp-cta .v2-btn,html .off-toolbar .v2-btn,html #off-mktbar .v2-btn{min-height:44px}
+  html #off-mktbar .clr{min-width:44px;min-height:44px;display:inline-flex;justify-content:center;align-items:center}
+  html .gr-vf-it a{display:block;min-height:44px}
+  html .gr-vf-plus summary,html .gr-docs>summary{min-height:44px;display:flex;align-items:center}
+  html .ap-rap-lk{display:inline-flex;align-items:center;min-height:44px}
+  html .off-mkt-t span,html .gnq-val small,html .cmp-pc{font-size:12px}
+  /* cartes Offilog et grille d'Appro : 12 px seulement à partir de 380 px — à 360 px ils faisaient déborder
+     les 59 cartes Offilog (4 à 15 px rognés) et la carte « La grille et la fiche » (22 px) */
+  @media (min-width:380px){
+    html .off-rank,html .off-card-cat span,html .off-pcat-pill,html .g5-cell>span,html .g5-moislab span,html .g5-kpi .t,html .g5-kpi .s{font-size:12px}
+  }
+  html .mkd .mkd-nom,html .lpo-titre{-webkit-line-clamp:4}
+  html .cg-ref{white-space:normal;overflow-wrap:anywhere}
+  /* onglets de Concurrents : resserrés seulement sous 370 px (à 360, « Liens » était à moitié caché) */
+  @media (max-width:370px){
+    html .cc-onglets .v2-tab{padding-left:8px;padding-right:8px;min-width:44px;justify-content:center}
+  }
+  html .v2-brand-t{white-space:nowrap;font-size:14px}
+  html .v2-brand{gap:8px}
+  html .cm-cles{bottom:28px}
+  /* lien de réservation : l'adresse entière sur deux lignes (zone de texte, voir v2-rdv-lien.js) */
+  html textarea.v2-lien-url{height:72px}
 }
 .v2-cmdk-x{display:none;align-items:center;justify-content:center;flex-shrink:0;min-height:44px;padding:0 8px;border:0;background:none;
   color:var(--ip-blue);font:600 16px var(--font);cursor:pointer;-webkit-tap-highlight-color:transparent}

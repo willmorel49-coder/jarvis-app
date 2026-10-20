@@ -48,7 +48,7 @@
       '.v2-lien-box{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px}',
       '.v2-lien-url{display:block;width:100%;font:inherit;font-size:14px;padding:12px;min-height:44px;',
       '  border:1px solid var(--line);border-radius:10px;background:var(--card-2);color:inherit;',
-      '  word-break:break-all;margin:10px 0}',
+      '  word-break:break-all;margin:10px 0;resize:none;overflow:hidden;line-height:1.35}',
       '.v2-lien-acts{display:flex;flex-wrap:wrap;gap:8px}',
       '.v2-lien-acts .v2-btn{min-height:44px}',
       '.v2-lien-note{color:var(--muted);font-size:13px;line-height:1.55;margin:12px 0 0}',
@@ -95,8 +95,9 @@
           (l.actif
             ? 'Collez-le dans votre signature de mail. Une officine peut réserver sans que vous lui ayez rien envoyé.'
             : '<b>Ce lien est fermé</b> : personne ne peut réserver avec.') + '</p>' +
-        '<input class="v2-lien-url" id="v2-lien-u" readonly value="' + esc(url) + '" ' +
-          'onclick="this.select()" />' +
+        // 20/10/2026 — zone de texte plutôt qu'un champ : au téléphone l'adresse entière passe sur deux lignes
+        '<textarea class="v2-lien-url" id="v2-lien-u" readonly rows="1" ' +
+          'onclick="this.select()">' + esc(url) + '</textarea>' +
         '<div class="v2-lien-acts">' +
           '<button class="v2-btn v2-btn-primary" onclick="V2.rdvLien.copier()">Copier</button>' +
           '<button class="v2-btn" onclick="V2.rdvLien.basculer(' + (l.actif ? 'false' : 'true') + ')">' +
