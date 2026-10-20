@@ -326,6 +326,10 @@ border-bottom:1px solid var(--line)}
 .v2-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px;border-radius:var(--r-btn);
   font-family:var(--font);font-size:14px;font-weight:700;letter-spacing:-.01em;cursor:pointer;border:1px solid transparent;
   transition:transform .18s var(--ease),box-shadow .22s var(--ease),background .18s var(--ease-soft),border-color .18s var(--ease-soft);white-space:nowrap}
+/* 20/10/2026 — un .v2-btn sans variante n'avait aucun fond : Safari y mettait son gris système et le bouton avait l'air désactivé.
+   Il prend désormais une teinte bleue légère. Spécificité d'une classe, posé AVANT -primary/-ghost : toute règle d'écran plus loin garde la main. */
+.v2-btn:where(:not(.v2-btn-primary,.v2-btn-ghost)){background:color-mix(in srgb,var(--ip-blue) 9%,var(--card));border-color:color-mix(in srgb,var(--ip-blue) 22%,var(--card));color:var(--ip-blue-d)}
+.v2-btn:where(:not(.v2-btn-primary,.v2-btn-ghost)):hover{background:color-mix(in srgb,var(--ip-blue) 14%,var(--card));border-color:color-mix(in srgb,var(--ip-blue) 36%,var(--card))}
 .v2-btn-primary{background:linear-gradient(150deg,color-mix(in srgb,var(--ip-blue) 92%,#fff),var(--ip-blue) 46%,var(--ip-blue-d));
   color:#fff;box-shadow:var(--sh-blue)}
 .v2-btn-primary:hover{transform:translateY(-1px);box-shadow:var(--sh-blue-h)}
