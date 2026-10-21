@@ -30,7 +30,8 @@
   var PAR_PAGE = 22;
   var RAYONS = [
     { k: 'remb', label: 'Médicaments remboursables', f: { pr_low: 1, pr_mid: 1, pr_high: 1, pr: 1 }, pages: 2, deux: true, court: 'Remboursables' },
-    { k: 'gen', label: 'Génériques', f: { gen: 1 }, pages: 1, deux: false, court: 'Génériques' },
+    // « Autres génériques » (Guy, 21/10/2026) : on y attend Biogaran, Viatris, Teva… que le rayon ne contient pas.
+    { k: 'gen', label: 'Autres génériques', f: { gen: 1 }, pages: 1, deux: false, court: 'Autres génériques' },
     { k: 'biosim', label: 'Biosimilaires', f: { biosim: 1 }, pages: 1, deux: true, court: 'Biosimilaires' },
     { k: 'nr', label: 'Non remboursables', f: { nr: 1 }, pages: 2, deux: false, court: 'Non remboursables' }
   ];
@@ -100,7 +101,9 @@
   // ── Les prix OPSO Santé : fichier privé lu par opso-prix.js (même chargement que l'écran « Les prix ») ──
   var _prixEtat = '';   // '' · charge · ok · echec
   var HAUT_PRIX = 25;   // mm : hauteur de l'en-tête de page (.oc-r-haut) ; opso-prix.js place le reste dessous
-  var TITRE_PRIX = 'Les prix OPSO Santé';
+  // Pages 2 et 3 sous UN titre, celui de l'offre (Guy, 21/10/2026 : « je ne vois pas la différence entre prix OPSO et offre
+  // privilège OPSO ») ; titre LU dans le fichier privilège, ce libellé ne sert que s'il est illisible.
+  function titrePrix() { return (_offreEtat === 'ok' && _offre && _offre.titre) || 'Offre Privilège OPSO Santé'; }
   function lancerPrix(root) {
     if (_prixEtat) return;
     _prixEtat = 'charge';
@@ -240,12 +243,13 @@
   }
   function nbPagesPrix(d) { return d.prix ? d.prix.pages.length : 0; }
   function couvertureHtml(d, total, debuts) {
-    var np = nbPagesPrix(d), dec = np + nbPagesOffre(d);   // « Les prix » puis l'offre : pages 2 et 3, n° 01 et 02 du sommaire
+    var np = nbPagesPrix(d), dec = np + nbPagesOffre(d);   // « Les prix » puis l'offre : pages 2 et 3, UNE entrée du sommaire (n° 01)
     var marques = d.prix ? d.prix.titres.map(function (t) { return t.split(' ')[0]; }).join(', ') : '';
-    var tuiles = (d.prix ? '<li><span class="oc-t-num">01</span><b>' + TITRE_PRIX + '</b><span>' + esc(marques) + ' · page 2</span></li>' : '') +
-      (d.offre ? '<li><span class="oc-t-num">' + String(np + 1).padStart(2, '0') + '</span><b>' + esc(d.offre.titre) + '</b><span>' + d.offre.items.length + ' produits · page ' + (2 + np) + '</span></li>' : '') +
+    var pagesOffre = dec === 1 ? 'page 2' : dec === 2 ? 'pages 2 et 3' : 'pages 2 à ' + (1 + dec);
+    var tuiles = (d.prix ? '<li class="oc-t-large"><span class="oc-t-num">01</span><b>' + esc(titrePrix()) + '</b><span>' + esc(marques) +
+        (d.offre ? ' et ' + d.offre.items.length + ' autres produits' : '') + ' · ' + pagesOffre + '</span></li>' : '') +
       d.rayons.map(function (x, i) {
-        return '<li><span class="oc-t-num">' + String(i + 1 + dec).padStart(2, '0') + '</span><b>' + esc(x.r.label) + '</b>' +
+        return '<li><span class="oc-t-num">' + String(i + 1 + (d.prix ? 1 : 0)).padStart(2, '0') + '</span><b>' + esc(x.r.label) + '</b>' +
           '<span>' + x.items.length + ' produits · page ' + debuts[i] + '</span></li>';
       }).join('');
     var ex = d.rayons[0] && d.rayons[0].items[0];
@@ -260,14 +264,14 @@
         (ex ? '<div class="oc-lire"><h2>Comment lire une ligne</h2>' +
           '<p>La barre et le pourcentage donnent la part des pharmacies du réseau Intégral qui ont commandé le produit (' + esc(periodeTexte(d.R.periode)) + '). ' +
           '« N adhérentes OPSO » : combien de pharmacies d’OPSO Santé le commandent.</p>' +
-          '<p>PPHT : prix pharmacien hors taxes. Prix net : prix HT facturé par Intégral Pharma, abandon de marge déduit. Génériques et non remboursables : prix net seul.</p></div>' : '') +
+          '<p>PPHT : prix pharmacien hors taxes. Prix net : prix HT facturé par Intégral Pharma, abandon de marge déduit. Autres génériques et non remboursables : prix net seul.</p></div>' : '') +
       '</div>' + piedHtml(d, 1, total) + '</section>';
   }
   // Pages « Les prix OPSO Santé » : corps rendu par opso-prix.js, en-tête au gabarit des pages du catalogue, pied du catalogue.
   function prixHtml(d, total) {
     return d.prix.pages.map(function (pg, i) {
       return '<section class="oc-page oc-prixpage op-doc" style="' + pg.vars + '">' +
-        '<header class="oc-r-haut"><h2>' + TITRE_PRIX + (i ? ' <small>(suite)</small>' : '') + '</h2>' +
+        '<header class="oc-r-haut"><h2>' + esc(titrePrix()) + (i ? ' <small>(suite)</small>' : '') + '</h2>' +
           '<span class="oc-r-sous">trois prix HT par boîte, un dosage par ligne</span></header>' +
         pg.html + piedHtml(d, 2 + i, total) + '</section>';
     }).join('');
@@ -297,8 +301,10 @@
     pages.forEach(function (pg, k) {
       var x = pg.x, lot = x.items.slice(pg.de, pg.de + PAR_PAGE), suite = pg.de > 0;
       var max = x.items[0].n;   // barres à l'échelle du rayon (le 1er du rayon = barre pleine)
+      // « Prix Intégral Pharma » sur chaque page de rayon, des remboursables à la fin (Guy, 21/10/2026 : nous mettre en avant).
       html += '<section class="oc-page oc-rayon r-' + x.r.k + '">' +
-        '<header class="oc-r-haut"><h2>' + esc(x.r.label) + (suite ? ' <small>(suite)</small>' : '') + '</h2>' +
+        '<header class="oc-r-haut"><div class="oc-r-titre"><span class="oc-r-ip">Prix Intégral Pharma</span>' +
+          '<h2>' + esc(x.r.label) + (suite ? ' <small>(suite)</small>' : '') + '</h2></div>' +
           '<span class="oc-r-sous">classés par part des pharmacies du réseau</span></header>' +
         '<div class="oc-entete"><span></span><span></span><span>Produit</span><span>Commandé par</span>' +
           '<span class="oc-prix' + (x.r.deux ? ' deux' : '') + '">' + (x.r.deux ? '<span>PPHT</span><span>Prix net</span>' : '<span>Prix net</span>') + '</span></div>' +
@@ -358,6 +364,13 @@
       '.oc-r-haut h2{font-size:19pt;line-height:1;color:#fff}',
       '.oc-r-haut h2 small{font-size:11pt;color:rgba(255,255,255,.8)}',
       '.oc-r-sous{font-size:9.5pt;color:rgba(255,255,255,.92);white-space:nowrap}',
+      // pages de rayon : étiquette lime « Prix Intégral Pharma » au-dessus du titre, bandeau de même hauteur
+      '.oc-rayon .oc-r-haut{padding-top:5mm;padding-bottom:4.6mm;align-items:flex-end}',
+      '.oc-rayon .oc-r-sous{padding-bottom:.5mm}',
+      '.oc-r-titre{display:flex;flex-direction:column;align-items:flex-start;gap:2mm}',
+      '.oc-r-ip{font-size:9pt;line-height:1;color:var(--anthra);background:var(--lime);padding:1.2mm 2.8mm;border-radius:3mm 3mm 3mm 0}',
+      // sommaire : l'entrée de l'offre (pages 2 et 3) sur toute la largeur
+      '.oc-tuiles li.oc-t-large{grid-column:1/-1}',
       '.oc-entete,.oc-ligne{display:grid;grid-template-columns:7mm 10mm minmax(0,1fr) 56mm 46mm;align-items:center;column-gap:2.5mm;padding:0 10mm 0 8mm}',
       '.oc-entete{height:9mm;font-size:8.5pt;color:var(--gris);text-transform:uppercase;letter-spacing:.04em}',
       '.oc-ligne{height:10.6mm;border-top:.25mm solid rgba(42,45,47,.08)}',
@@ -455,7 +468,7 @@
     // Page « Les prix OPSO Santé » : prix net = prix OPSO ; pas de part du réseau ni de PPHT (la page ne les montre pas).
     if (d.prix) d.prix.sections.forEach(function (sec) {
       sec.items.forEach(function (it, i) {
-        lignes.push([sansFormule(TITRE_PRIX + ' - ' + sec.titre + (sec.etiquette ? ' (' + sec.etiquette + ')' : '')), i + 1, sansFormule(it.nom),
+        lignes.push([sansFormule(titrePrix() + ' - ' + sec.titre + (sec.etiquette ? ' (' + sec.etiquette + ')' : '')), i + 1, sansFormule(it.nom),
           it.cip ? '="' + it.cip + '"' : it.cipTexte, '', '', '', virgule(it.opso)]);
       });
     });
