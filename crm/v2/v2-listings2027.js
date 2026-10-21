@@ -214,8 +214,20 @@
     });
     return h;
   }
+  // Will, 21/10 : « les listing pdf dessus aussi » : les 6 PDF à remettre, visibles sans rien déplier.
+  // Un bouton = un seul PDF.
+  function pdfs() {
+    var h = '<div class="mp-card ls-pdfs"><div class="ls-pdfs-t"><b>Les ' + D.listes.length + ' PDF à remettre aux pharmacies</b>' +
+      '<span>Produits, CIP, boîtes par mois, prix nets à partir du ' + esc(dateLongue(D.L.date_bareme)) + ' et montant. Ni notre marge, ni taux, ni prime.</span></div><div class="ls-pdfs-g">';
+    D.listes.forEach(function (s) {
+      h += '<button type="button" class="ls-pdf" data-ls="pdf" data-i="' + s.k + '">' + ICO('fiche', 18, 2) +
+        '<span><b>' + eur0(s.budget) + ' par mois</b><small>' + entier(s.refs) + ' produits · PDF</small></span></button>';
+    });
+    return h + '</div></div>';
+  }
   function sectionListes() {
     var h = '<section class="mp-sec"><div class="mp-sh"><h2>Les ' + D.listes.length + ' listings</h2><span>Pour chaque montant d’achats mensuel : ce que nous gagnons, le taux de marge, la prime du commercial, et la même chose sur un panier habituel de même montant. Un clic ouvre la liste des produits.</span></div>';
+    h += pdfs();
     h += '<div class="mp-card ls-list">' + enteteListes();
     D.listes.forEach(function (s) { h += ligneListe(s); });
     h += '</div><p class="mp-note">Prime du commercial = notre marge × (taux du palier + ' + pct(D.bonus, 0) + ' de bonus). Le palier dépend du chiffre d’affaires total du mois du commercial. Longueur de listing : ' + esc(D.L.longueur) + ', tirée d’une sélection de ' + entier(D.L.selection_pool) + ' produits.</p></section>';
@@ -272,6 +284,7 @@
   // ── PDF pour la pharmacie (même habillage que la liste « À proposer ») ──
   // AUCUNE marge, AUCUN taux, AUCUNE prime sur ce document.
   var SECTIONS = [['froid', 'Produits froids', '#0E7C86'], ['pr', 'Princeps remboursables', '#0050E6'], ['nr', 'Non remboursables', '#5B6477']];
+  var LOGO = 'img/logo-integral-serre.png';
   function pdfHtml(s) {
     var MONO = "'Geist Mono',ui-monospace,monospace";
     var COLS = '<colgroup><col style="width:5%"><col style="width:37%"><col style="width:14%"><col style="width:8%"><col style="width:11%"><col style="width:12%"><col style="width:13%"></colgroup>';
@@ -291,20 +304,26 @@
           '<td style="padding:5.5px 8px;text-align:right;font-family:' + MONO + ';font-size:9.5px;color:#6B7385;white-space:nowrap">' + pp + '</td>' +
           '<td style="padding:5.5px 8px;text-align:right;font-family:' + MONO + ';font-size:11.5px;font-weight:800;color:#0050E6;white-space:nowrap">' + eur2(l.net) + '</td>' +
           '<td style="padding:5.5px 8px;text-align:right;font-family:' + MONO + ';font-size:10.5px;white-space:nowrap">' + eur2(l.total) + '</td></tr>';
-      }).join('');
-      return '<div style="page-break-after:avoid;page-break-inside:avoid;margin-top:13px"><div style="background:' + sec[2] + ';display:flex;align-items:center;justify-content:space-between;padding:5px 10px;border-radius:5px 5px 0 0">' +
+      });
+      // Le titre de la partie reste collé à ses 3 premières lignes (sinon html2pdf peut le laisser seul en bas de page) ;
+      // le reste des lignes suit dans un second tableau, coupé entre deux lignes.
+      var tab = function (corps, tete) { return '<table style="width:100%;border-collapse:collapse;table-layout:fixed">' + COLS + (tete || '') + '<tbody>' + corps.join('') + '</tbody></table>'; };
+      return '<div style="page-break-inside:avoid;margin-top:13px"><div style="background:' + sec[2] + ';display:flex;align-items:center;justify-content:space-between;padding:5px 10px;border-radius:5px 5px 0 0">' +
         '<span style="color:#FFFFFF;font-size:12px;font-weight:800;letter-spacing:.4px;text-transform:uppercase">' + sec[1] + '</span>' +
-        '<span style="color:#FFFFFF;font-size:9.5px;font-weight:700">' + rs.length + ' produit' + (rs.length > 1 ? 's' : '') + '</span></div></div>' +
-        '<table style="width:100%;border-collapse:collapse;table-layout:fixed">' + COLS + '<thead><tr style="background:#10131C">' + thd('#', 'left') + thd('Produit', 'left') + thd('CIP 13', 'left') +
-        thd('Boîtes / mois', 'center') + thd('PPHT', 'right') + thd('Prix net Intégral', 'right') + thd('Montant / mois', 'right') + '</tr></thead><tbody>' + trs + '</tbody></table>';
+        '<span style="color:#FFFFFF;font-size:9.5px;font-weight:700">' + rs.length + ' produit' + (rs.length > 1 ? 's' : '') + '</span></div>' +
+        tab(trs.slice(0, 3), '<thead><tr style="background:#10131C">' + thd('#', 'left') + thd('Produit', 'left') + thd('CIP 13', 'left') +
+        thd('Boîtes / mois', 'center') + thd('PPHT', 'right') + thd('Prix net Intégral', 'right') + thd('Montant / mois', 'right') + '</tr></thead>') + '</div>' +
+        (trs.length > 3 ? tab(trs.slice(3)) : '');
     }).join('');
     var chiffre = function (t, v, bleu) { return '<div style="flex:1;border:1px solid #E1E7F1;border-radius:8px;padding:9px 12px;background:#F7F9FC"><div style="font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:#5B6477">' + t +
       '</div><div style="font-size:19px;font-weight:800;margin-top:2px;color:' + (bleu ? '#0050E6' : '#10131C') + '">' + v + '</div></div>'; };
     return '<div style="width:794px;background:#FFFFFF;color:#10131C;font-family:Satoshi,Inter,system-ui,sans-serif;font-size:12px;line-height:1.35">' +
-      '<div style="background:linear-gradient(90deg,#0034A0,#0050E6);padding:14px 22px;display:flex;align-items:center;justify-content:space-between;page-break-inside:avoid">' +
-        '<div style="display:flex;align-items:center;gap:13px"><div style="width:34px;height:34px;border-radius:8px;background:#FFFFFF;display:flex;align-items:center;justify-content:center;font-weight:800;color:#0050E6;font-size:17px">I</div>' +
-        '<div><div style="color:#FFFFFF;font-size:15px;font-weight:800;line-height:1.1">Intégral Pharma</div><div style="color:#A9C2F5;font-size:12px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;margin-top:2px">Sélection Intégral Pharma</div></div></div>' +
-        '<div style="text-align:right;color:#FFFFFF"><div style="font-size:12px;color:#A9C2F5">Édité le ' + esc(jour) + '</div><div style="font-size:12px;font-weight:700;margin-top:1px">' + entier(s.refs) + ' produits</div></div></div>' +
+      // En-tête des PDF du bureau (19/10) : le vrai logo dans une pastille blanche, puis « Sélection Intégral Pharma ».
+      // Copie locale du logo (même origine) : html2canvas la reprend dans le PDF.
+      '<div style="background:linear-gradient(90deg,#0034A0,#0050E6);padding:13px 26px;display:flex;align-items:center;justify-content:space-between;page-break-inside:avoid">' +
+        '<div style="display:flex;align-items:center;gap:15px"><div style="border-radius:9px;background:#FFFFFF;padding:6px 10px;display:flex"><img src="' + LOGO + '" alt="Intégral Pharma" style="height:46px;width:auto;display:block"></div>' +
+        '<div style="color:#FFFFFF;font-size:16px;font-weight:800;line-height:1.1">Sélection Intégral Pharma</div></div>' +
+        '<div style="text-align:right;color:#FFFFFF"><div style="font-size:12px;color:#C9D8F8">Édité le ' + esc(jour) + '</div><div style="font-size:12px;font-weight:700;margin-top:1px">' + entier(s.refs) + ' produits</div></div></div>' +
       '<div style="background:#10131C;padding:6px 22px;page-break-inside:avoid"><span style="color:#C7D2E6;font-size:9.5px;font-weight:600;letter-spacing:.3px;text-transform:uppercase">Sélection pour ' + eur0(s.budget) + ' d’achats par mois · prix nets à partir du ' + esc(dateB) + '</span></div>' +
       '<div style="padding:16px 22px 20px"><div style="display:flex;gap:10px;margin-bottom:6px;page-break-inside:avoid">' +
         chiffre('Montant de la sélection', eur0(s.ca) + ' HT / mois', true) + chiffre('Produits', entier(s.refs)) + chiffre('Boîtes par mois', entier(s.boites)) + '</div>' +
@@ -455,6 +474,15 @@
       '.ls-taux{font-family:var(--mono);color:#0A6C86}',
       '.mp-fams .mp-fn small{max-width:200px}',
       /* liste des listings */
+      /* les 6 PDF à remettre */
+      '.ls-pdfs{padding:16px 18px;margin-bottom:14px}',
+      '.ls-pdfs-t{display:flex;flex-direction:column;gap:3px;margin-bottom:12px}.ls-pdfs-t b{font-size:15px;font-weight:800}.ls-pdfs-t span{font-size:13px;color:var(--muted)}',
+      '.ls-pdfs-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}',
+      '.ls-pdf{display:flex;align-items:center;gap:10px;min-height:56px;padding:10px 12px;text-align:left;font:inherit;color:var(--ip-ink,#10131C);background:var(--card-2);border:1px solid var(--line);border-radius:12px;cursor:pointer}',
+      '.ls-pdf svg{flex:none;color:#0050E6}',
+      '.ls-pdf span{display:flex;flex-direction:column;gap:1px;min-width:0}.ls-pdf b{font-size:13.5px;font-weight:800}.ls-pdf small{font-size:12px;font-weight:600;color:var(--muted)}',
+      '.ls-pdf:hover{border-color:#0050E6;background:color-mix(in srgb,#0050E6 6%,var(--card))}',
+      '.ls-pdf:focus-visible{outline:2px solid #0050E6;outline-offset:2px}',
       '.ls-list{overflow:hidden}',
       '.ls-row{grid-template-columns:minmax(0,1.1fr) 116px 108px 80px 250px 150px 22px;width:100%;text-align:left;font:inherit;font-size:13.5px;color:inherit;background:none;border:0;border-bottom:1px solid var(--line-2);cursor:pointer;min-height:64px}',
       '.ls-row.ls-hd{cursor:default;min-height:0;font-size:12px}',
@@ -486,7 +514,8 @@
       '@media(max-width:720px){',
       '.ls-kpis{grid-template-columns:minmax(0,1fr)}',
       '.ls-ex-g{grid-template-columns:minmax(0,1fr)}',
-      '.ls-expl,.ls-masse{padding:16px}',
+      '.ls-expl,.ls-masse,.ls-pdfs{padding:16px}',
+      '.ls-pdfs-g{grid-template-columns:repeat(2,minmax(0,1fr))}',
       '.ls-hd{display:none}',
       '.ls-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 10px;padding:14px 38px 14px 16px;position:relative;align-items:start}',
       '.ls-row .mp-n{grid-column:1/-1}',
