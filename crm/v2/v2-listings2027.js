@@ -74,9 +74,9 @@
     return s.replace(/ /g, ' ');     // l'espace fine ne s'imprime pas partout : espace insécable ordinaire
   }
   function moins(s) { return s.replace(/^-/, '−'); }
-  function eur0(n) { return moins(nf(Math.round(n))) + ' €'; }
-  function eur2(n) { return moins(nf(n, 2)) + ' €'; }
-  function pct(v, d) { return moins(nf(v * 100, d == null ? 1 : d)) + ' %'; }
+  function eur0(n) { return moins(nf(Math.round(n))) + '\u00a0€'; }   // espace insécable : « € » ne part jamais seul à la ligne
+  function eur2(n) { return moins(nf(n, 2)) + '\u00a0€'; }
+  function pct(v, d) { return moins(nf(v * 100, d == null ? 1 : d)) + '\u00a0%'; }
   function entier(n) { return moins(nf(Math.round(n))); }
   function fois(v) { return '× ' + nf(v, 1); }
   function dateLongue(iso) {
@@ -128,7 +128,7 @@
     return '<span class="mp-bar"><i style="width:' + w.toFixed(2) + '%;background:' + couleur + '"></i></span>';
   }
   function chipFam(f) { return '<span class="mp-fam" style="--c:' + (COULEURS[f.cle] || '#8A93A8') + '"><i></i>' + esc(NOMS_FAM[f.cle] || f.nom) + '</span>'; }
-  function pctC(v) { var x = v * 100; return moins(nf(x, Math.abs(x - Math.round(x)) < 1e-9 ? 0 : 1)) + ' %'; }   // 7,5 % · 15 % · 30 % (sans « ,0 »)
+  function pctC(v) { var x = v * 100; return moins(nf(x, Math.abs(x - Math.round(x)) < 1e-9 ? 0 : 1)) + '\u00a0%'; }   // 7,5 % · 15 % · 30 % (sans « ,0 »)
   function nomPalier(p) { return pctC(D.tranches[p].taux); }
 
   function enTete() {
@@ -143,7 +143,7 @@
     var h = '';
     h += '<div class="mp-kpi" style="--k:var(--c-froid)"><div class="mp-kl">Notre taux de marge sur les listings</div>' +
       '<div class="mp-kv" data-k="tx-listings">' + pct(D.tmin, 1) + ' à ' + pct(D.tmax, 1) + '</div>' +
-      '<div class="mp-kd">Pour 100 € achetés par la pharmacie dans un de nos ' + D.listes.length + ' listings, Intégral Pharma garde entre ' + nf(D.tmin * 100, 1) + ' et ' + nf(D.tmax * 100, 1) + ' €.</div></div>';
+      '<div class="mp-kd">Pour 100 € achetés par la pharmacie dans un de nos ' + D.listes.length + ' listings, Intégral Pharma garde entre ' + nf(D.tmin * 100, 1) + ' et ' + nf(D.tmax * 100, 1) + '\u00a0€.</div></div>';
     h += '<div class="mp-kpi" style="--k:var(--ip-blue)"><div class="mp-kl">Panier habituel du réseau</div>' +
       '<div class="mp-kv" data-k="tx-reseau">' + pct(D.tx, 2) + '</div>' +
       '<div class="mp-kd">C’est ce que nous garderons en 2027 sur 100 € d’achats habituels des pharmacies (tous produits, génériques compris).'+
@@ -189,7 +189,7 @@
   // ── c · Les 6 listings ────────────────────────────────────────────
   function enteteListes() {
     return '<div class="mp-row mp-head ls-row ls-hd" aria-hidden="true"><span>Listing</span><span class="c">Notre marge / mois</span><span class="c">Taux de notre marge</span><span class="c">Froid, part des achats</span>' +
-      '<span class="c">Prime / mois, palier ' + nomPalier(0) + ' + ' + pct(D.bonus, 0) + '</span><span class="c">Panier habituel, même montant : notre marge</span><span></span></div>';
+      '<span class="c">Prime / mois, palier ' + nomPalier(0) + '\u00a0+\u00a0' + pct(D.bonus, 0) + '</span><span class="c">Panier habituel, même montant : notre marge</span><span></span></div>';
   }
   // Prime aux autres paliers : une ligne par palier, jamais coupée au milieu.
   function autresPaliers(s) {
@@ -253,7 +253,7 @@
     h += '<p class="mp-note ls-clic">Un clic sur une ligne du tableau ouvre la liste de ses produits.</p>';
     h += '<div class="mp-card ls-list">' + enteteListes();
     D.listes.forEach(function (s) { h += ligneListe(s); });
-    h += '</div><p class="mp-note">Prime du commercial = notre marge × (taux du palier + ' + pct(D.bonus, 0) + ' de bonus) ; le barème complet est sous « En masse ». Longueur de listing : ' + esc(D.L.longueur) + ', tirée d’une sélection de ' + entier(D.L.selection_pool) + ' produits.</p></section>';
+    h += '</div><p class="mp-note">Prime du commercial = notre marge × (taux du palier + ' + pct(D.bonus, 0) + ' de bonus) ; le barème complet est sous « En masse ». Longueur de listing\u00a0: ' + esc(D.L.longueur) + ', tirée d’une sélection de ' + entier(D.L.selection_pool) + ' produits.</p></section>';
     return h;
   }
 
