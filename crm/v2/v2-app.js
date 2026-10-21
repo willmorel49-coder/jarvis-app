@@ -413,6 +413,8 @@
     if (m && V2.etonnement && V2.etonnement.menu) V2.etonnement.menu(m);
     // 14/10/2026 — « Notre marge par produit » : même principe, ligne posée seulement si la base répond oui (v2-margeproduits.js).
     if (m && V2.margeproduits && V2.margeproduits.menu) V2.margeproduits.menu(m);
+    // 21/10/2026 — « Listing produits 2027 » : même accès, ligne posée juste sous la précédente (v2-listings2027.js).
+    if (m && V2.listings2027 && V2.listings2027.menu) V2.listings2027.menu(m);
   };
 
   // ── Partage d'un PDF (mail/WhatsApp sur mobile, sinon téléchargement) ──
@@ -1658,6 +1660,7 @@
     var e = document.getElementById('u2-eto');
     if (e && V2.etonnement && V2.etonnement.menu) { try { V2.etonnement.menu(e); } catch (x) {} }
     if (e && V2.margeproduits && V2.margeproduits.menu) { try { V2.margeproduits.menu(e); } catch (x) {} }
+    if (e && V2.listings2027 && V2.listings2027.menu) { try { V2.listings2027.menu(e); } catch (x) {} }
   }
   function u2Rail() {
     var mode = u2Mode();

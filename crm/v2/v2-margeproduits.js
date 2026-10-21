@@ -786,6 +786,7 @@
 
   // La ligne du menu du compte : posée seulement si la base dit oui.
   V2.margeproduits = {
+    css: css,   // 21/10/2026 : « Listing produits 2027 » (v2-listings2027.js) réutilise le même habillage
     menu: function (m) {
       verifier().then(function (ok) {
         if (!ok || !m || !m.parentNode || m.querySelector('.mp-um')) return;
