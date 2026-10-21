@@ -40,12 +40,13 @@
   var GRIS = '#6B7385';    // l'année précédente, en retrait (4,7:1 sur blanc)
 
   var C = { q: '', fam: 'all', opp: true, stock: false, top: 200, tri: 'potentiel',
-            page: 1, cip: null, offTout: false, unite: 'q', panier: false };
+            page: 1, cip: null, offTout: false, unite: 'q', panier: false,
+            mol: false, dcTout: false, pend: null };   // 21/10/2026 : « Déjà commandé » (toute la molécule ? tout voir ?) et molécule à résoudre au prochain rendu
   var PANIER_MAX = 200;    // au-delà, une fiche n'est plus lisible : « Tout ajouter » s'arrête là et le dit
   var D = { nat: null, natEtat: 0, etabEtat: 0, catEtat: 0,
             cache: null, sig: '', aqui: null, aquiIdx: null, aquiEtat: 0, noms: null,
             frEtat: 0, mensuel: null, mensuelRef: null, mensuelN: 0, frPos: null, frPosRef: null,
-            tend: null, tendSig: '', pts: {} };
+            tend: null, tendSig: '', pts: {}, cmd: null, molCips: null, molCipsRef: null };
 
   // L'espace fine insécable de toLocaleString est quasi invisible sous WebKit.
   function fr(n, dec) {
@@ -433,6 +434,75 @@
     return out;
   }
 
+  // ── 21/10/2026 — « Déjà commandé par » : qui a déjà commandé ce produit (ou cette molécule) ──
+  // Fonctions pures (testées sans écran). Une ligne de ventes : [officine, mois, commercial, cip, boîtes, pu, CA].
+  // 🔴 Confidentialité (direction) : les officines fictives « 0 » / « 0E » (reste du réseau) ne se comptent jamais,
+  // et un commercial restreint ne voit que SES officines (V2.voitVentesDe) — on reçoit ces deux règles en paramètres,
+  // on n'en réécrit aucune. Boîtes ≤ 0 ignorées.
+  function indexCommandes(sales, voit, estReste) {
+    var par = {}, vu = {}, debut = 0, fin = 0, i;
+    for (i = 0; i < (sales ? sales.length : 0); i++) {
+      var r = sales[i], q = r[4];
+      if (!(q > 0)) continue;
+      var id = String(r[0]);
+      if (estReste && estReste(id)) continue;
+      var ok = vu[id];
+      if (ok === undefined) ok = vu[id] = !voit || !!voit(id);
+      if (!ok) continue;
+      var m = r[1], c = String(r[3]);
+      if (!debut || m < debut) debut = m;
+      if (m > fin) fin = m;
+      var o = par[c] || (par[c] = {}), e = o[id];
+      if (!e) o[id] = [q, m]; else { e[0] += q; if (m > e[1]) e[1] = m; }
+    }
+    return { par: par, debut: debut, fin: fin };
+  }
+  // cips = { cip: 1, … } ; rend [{ id, q, dern }] par boîtes décroissantes (à égalité : dernière commande la plus récente).
+  function listerCommandes(IX, cips) {
+    var tot = {}, c, id, out = [];
+    for (c in cips) {
+      if (!Object.prototype.hasOwnProperty.call(cips, c) || !IX.par[c]) continue;
+      for (id in IX.par[c]) {
+        if (!Object.prototype.hasOwnProperty.call(IX.par[c], id)) continue;
+        var e = IX.par[c][id], t = tot[id];
+        if (!t) tot[id] = { id: id, q: e[0], dern: e[1] }; else { t.q += e[0]; if (e[1] > t.dern) t.dern = e[1]; }
+      }
+    }
+    for (id in tot) if (Object.prototype.hasOwnProperty.call(tot, id)) out.push(tot[id]);
+    out.sort(function (a, b) { return (b.q - a.q) || (b.dern - a.dern) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0); });
+    return out;
+  }
+  // Calculé une seule fois par jeu de ventes (et par utilisateur : le périmètre en dépend), comme D.mensuel.
+  function commandes() {
+    var S = window.WML_SALES;
+    if (!S || !S.length) return null;
+    if (D.cmd && D.cmd.ref === S && D.cmd.n === S.length && D.cmd.user === V2.user) return D.cmd.ix;
+    var ix = indexCommandes(S, V2.voitVentesDe ? function (id) { return V2.voitVentesDe(id); } : null, V2.estReste ? function (id) { return V2.estReste(id); } : null);
+    D.cmd = { ref: S, n: S.length, user: V2.user, ix: ix };
+    return ix;
+  }
+  // Molécule (normalisée) → tous les CIP du catalogue qui la portent.
+  function molCips(d) {
+    if (D.molCips && D.molCipsRef === d) return D.molCips;
+    var m = {}, i, L = d.lignes;
+    for (i = 0; i < L.length; i++) {
+      var k = sansAccent(L[i].mol).trim();
+      if (k) (m[k] || (m[k] = [])).push(L[i].cip);
+    }
+    D.molCips = m; D.molCipsRef = d;
+    return m;
+  }
+  // Le produit le plus vendu (nos boîtes par an) d'une molécule.
+  function topDeMolecule(d, mol) {
+    var g = molCips(d)[sansAccent(mol).trim()] || [], best = null, i;
+    for (i = 0; i < g.length; i++) {
+      var l = d.parCip[g[i]];
+      if (l && (!best || l.an > best.an)) best = l;
+    }
+    return best ? best.cip : null;
+  }
+  function moisLib(m) { return MOIS_C[moisCal(m) - 1] + ' ' + anneeDe(m); }
+
   // ── Commandes ─────────────────────────────────────────────────
   var tq = null;
   V2.comptoir = {
@@ -502,7 +572,23 @@
     panierVoir: function () { C.panier = !C.panier; C.page = 1; majPanier(); },
     panierVider: function () { V2.produits.S.sel = {}; C.panier = false; majPanier(); },
     panierFiche: function () { V2.comptoir.fermerPanneau(); V2.produits.ficheDuPanier(); },
-    ouvrir: function (cip) { C.cip = String(cip); C.offTout = false; rerender(); },
+    ouvrir: function (cip) { C.cip = String(cip); C.offTout = false; C.mol = false; C.dcTout = false; rerender(); },
+    // 21/10/2026 — arrivée depuis la recherche ⌘K : filtres remis à zéro (sinon « Opportunités seulement » cache
+    // le produit cherché), recherche du Comptoir remplie, panneau ouvert. Une molécule (sans CIP) ouvre le produit
+    // que nous vendons le plus, sur la vue « Toute la molécule » ; il est choisi au rendu, quand le catalogue est prêt.
+    // On force le mode Comptoir : l'écran Produits peut avoir été laissé en mode Client.
+    depuisRecherche: function (o) {
+      o = o || {};
+      C.q = o.q || ''; C.fam = 'all'; C.opp = false; C.stock = false; C.panier = false; C.page = 1;
+      C.offTout = false; C.dcTout = false;
+      C.cip = o.cip ? String(o.cip) : null; C.mol = !o.cip; C.pend = o.cip ? null : (o.mol || o.q || null);
+      var S = V2.produits && V2.produits.S;
+      if (S) { S.mode = 'comptoir'; S.apercu = false; }
+      V2.go('produits');
+    },
+    dcMol: function (v) { C.mol = !!v; C.dcTout = false; rerender(); },
+    dcTout: function () { C.dcTout = true; rerender(); },
+    versOfficine: function (id) { V2.comptoir.fermerPanneau(); V2.go('pharma', String(id)); },
     fermer: function () { C.cip = null; rerender(); },
     offTout: function () { C.offTout = true; rerender(); },
     // Ouvre la vue Client de cette officine avec ce produit déjà retenu :
@@ -813,6 +899,44 @@
     }
   }
 
+  // Bloc « Déjà commandé par » (21/10/2026) : les clientes qui ont déjà commandé ce produit, ou toute sa molécule.
+  function dejaHtml(l, d) {
+    var IX = commandes();
+    if (!IX) return '';
+    var restreint = !!(V2.ventesRestreintes && V2.ventesRestreintes());
+    var nm = sansAccent(l.mol).trim(), grp = nm ? (molCips(d)[nm] || []) : [];
+    var multi = grp.length >= 2, tout = multi && C.mol, cips = {}, i;
+    if (tout) { for (i = 0; i < grp.length; i++) cips[grp[i]] = 1; } else cips[l.cip] = 1;
+    var liste = listerCommandes(IX, cips);
+    var titre = (restreint ? 'Vos clientes qui l\'ont commandé' : 'Déjà commandé par') + ' <span>' + fr(liste.length) + '</span>';
+    var puces = multi
+      ? '<div class="cp-chips cp-dc-ch" role="group" aria-label="Portée"><button class="cp-chip' + (tout ? '' : ' on') + '" aria-pressed="' + (!tout) + '" onclick="V2.comptoir.dcMol(false)">Ce produit</button>' +
+        '<button class="cp-chip' + (tout ? ' on' : '') + '" aria-pressed="' + tout + '" onclick="V2.comptoir.dcMol(true)">Toute la molécule (' + fr(grp.length) + ' produits)</button></div>'
+      : '';
+    var corps;
+    if (!liste.length) {
+      corps = '<p class="cp-note">' + (tout ? 'Aucune de vos clientes n\'a commandé cette molécule sur la période.' : 'Aucune de vos clientes ne l\'a commandé sur la période.') + '</p>';
+    } else {
+      var n = liste.length, per = IX.debut === IX.fin ? 'en ' + moisLib(IX.debut) : 'de ' + moisLib(IX.debut) + ' à ' + moisLib(IX.fin);
+      corps = '<p class="cp-phrase">' + (restreint ? (n > 1 ? '<b>' + fr(n) + '</b> de vos clientes ont commandé ' : '<b>1</b> de vos clientes a commandé ')
+        : (n > 1 ? '<b>' + fr(n) + '</b> clientes ont commandé ' : '<b>1</b> cliente a commandé ')) +
+        (tout ? 'cette molécule ' : 'ce produit ') + esc(per) + '.</p>';
+      var vis = C.dcTout ? liste : liste.slice(0, OFF_VISIBLES);
+      for (i = 0; i < vis.length; i++) {
+        var o = vis[i], p = officine(o.id) || {};
+        corps += '<button class="cp-dc-l" onclick="V2.comptoir.versOfficine(\'' + escAttr(o.id) + '\')"><span class="cp-dc-m">' +
+          '<b>' + esc(p.name || ('Officine ' + o.id)) + '</b>' +
+          (p.ville ? '<span>' + esc(p.ville) + '</span>' : '') +
+          '<span>Dernière commande : ' + esc(moisLib(o.dern)) + '</span></span>' +
+          '<span class="cp-dc-q"><b>' + fr(o.q) + '</b> <small>bt</small></span></button>';
+      }
+      if (!C.dcTout && liste.length > OFF_VISIBLES) {
+        corps += '<button class="cp-more" onclick="V2.comptoir.dcTout()">Voir les ' + fr(liste.length - OFF_VISIBLES) + ' autres</button>';
+      }
+    }
+    return '<p class="cp-st" id="cp-dc-t">' + titre + '</p>' + puces + corps;
+  }
+
   function panneauHtml(d) {
     var l = C.cip && d.parCip[C.cip];
     if (!l) return '';
@@ -886,6 +1010,7 @@
           (l.opp ? '<span class="cp-tag">Opportunité</span>' : '') + '</div>' +
         (l.f === 'nr' && l.net > 0 && Math.abs(l.net - l.prix) >= 0.01 * l.prix
           ? '<p class="cp-note">Prix moyen facturé au réseau : ' + eur2(l.net) + '.</p>' : '') +
+        dejaHtml(l, d) +
         '<p class="cp-st">Ventes</p>' + ventes +
         '<p class="cp-st">Mois par mois</p><div id="cp-evo">' + evoHtml(l) + '</div>' +
         '<p class="cp-st">Stock par établissement</p>' + stock +
@@ -918,6 +1043,10 @@
     return h;
   }
   function poserPanneau(d) { hote().innerHTML = C.cip ? panneauHtml(d) : ''; }
+  // Exposé pour les tests : calcul pur, sans écran.
+  V2.comptoir._indexCommandes = indexCommandes;
+  V2.comptoir._listerCommandes = listerCommandes;
+  V2.comptoir._dejaCommande = function (sales, cips, voit, estReste) { return listerCommandes(indexCommandes(sales, voit, estReste), cips); };
   V2.comptoir.fermerPanneau = function () {
     C.cip = null;
     var h = document.getElementById('cp-pan-hote');
@@ -935,6 +1064,7 @@
         '<div class="v2-empty-d">' + (echec ? 'Vérifiez la connexion, puis revenez sur cet écran.'
           : 'Les références des 7 établissements et les ventes France arrivent (une seule fois).') + '</div></div>';
     }
+    if (C.pend) { var mt = topDeMolecule(d, C.pend); C.pend = null; if (mt) C.cip = mt; }   // 21/10/2026 : molécule choisie depuis ⌘K
     var FAM = V2.produits.FAM || {}, i, k;
     var fams = '<button class="cp-chip' + (C.fam === 'all' ? ' on' : '') + '" onclick="V2.comptoir.fam(\'all\')">Toutes les familles</button>';
     for (i = 0; i < FAM_ORDRE.length; i++) {
@@ -1114,6 +1244,14 @@
       '.cp-off-m{flex:1;min-width:0}',
       '.cp-off-m b{display:block;font:700 13.5px/1.3 Inter,sans-serif;color:var(--ip-ink)}',
       '.cp-off-m span{display:block;font:400 13px/1.35 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-dc-ch{flex-wrap:wrap;overflow:visible;margin:0 0 8px}',
+      '.cp-dc-ch .cp-chip{min-height:44px;white-space:normal;text-align:left}',
+      '.cp-dc-l{display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:10px 0;border:0;border-bottom:1px solid var(--line);background:transparent;text-align:left;cursor:pointer;font:inherit;color:var(--ip-ink)}',
+      '.cp-dc-m{flex:1;min-width:0}',
+      '.cp-dc-m b{display:block;font:700 13.5px/1.3 Inter,sans-serif;color:var(--ip-ink)}',
+      '.cp-dc-m span{display:block;font:400 13px/1.35 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-dc-q{flex:none;font:400 13px/1.2 Inter,sans-serif;color:var(--cp-ink3);white-space:nowrap}',
+      '.cp-dc-q b{font:800 15px/1.2 Inter,sans-serif;color:var(--ip-ink);font-variant-numeric:tabular-nums}',
       '.cp-off-b{flex:none;min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--ip-blue);background:var(--card);color:var(--ip-blue);font:700 13.5px/1 Inter,sans-serif;cursor:pointer}',
       '.cp-cta{display:block;width:100%;min-height:50px;margin:16px 0 4px}',
       '@media (max-width:430px){.cp-vgrid{grid-template-columns:1fr 1fr}.cp-vgrid div:last-child{grid-column:span 2}}',

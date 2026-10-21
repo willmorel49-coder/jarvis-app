@@ -2089,7 +2089,7 @@
   // ════════════════════════════════════════════
   // COMMAND PALETTE ⌘K
   // ════════════════════════════════════════════
-  var cmdkIdx = null, cmdkSel = 0, cmdkResults = [];
+  var cmdkIdx = null, cmdkSel = 0, cmdkResults = [], cmdkProd = null, cmdkMols = null;
   function buildCmdkIndex() {
     var idx = [];
     // Pages
@@ -2158,12 +2158,47 @@
     (V2.pharmacies || []).forEach(function (p) {
       idx.push({ grp: 'Pharmacies', label: p.name, ico: 'pharma', meta: '', pid: String(p.id), lieu: (p.ville || '') + (p.cp ? ' · ' + p.cp : ''), action: function () { V2.go('pharma', p.id); } });
     });
-    // Produits (top 300 PROD_STATS par rotation) — ouvre « Par produit » filtré sur le produit
-    var PS = window.PROD_STATS || [];
-    PS.slice(0, 300).forEach(function (r) {
-      idx.push({ grp: 'Produits', label: r.d, ico: 'pill', meta: r.c, action: function () { V2.go('molecules', r.c); } });
-    });
+    // Produits — 21/10/2026 : TOUT le catalogue (et non plus le top 300 par rotation), sur désignation, CIP,
+    // molécule et laboratoire. Textes normalisés UNE fois ici (pas à chaque touche). Le catalogue complet
+    // arrive à la demande : au premier ⌘K on le demande, l'index se reconstruit à son arrivée ; en attendant,
+    // l'ancien comportement (top 300 par rotation, désignation + CIP).
+    cmdkProd = null; cmdkMols = null;
+    var CAT = (V2.produits && V2.produits.catalogueIndex && (V2.pages.produits || V2.pages.molecules)) ? V2.produits.catalogueIndex() : null;
+    if (CAT) {
+      var vend = {}; (window.PROD_STATS || []).forEach(function (r) { vend[String(r.c)] = r.n || 1; });
+      cmdkProd = []; var mm = {};
+      for (var ck in CAT) {
+        if (!Object.prototype.hasOwnProperty.call(CAT, ck)) continue;
+        var o = CAT[ck], nm = deaccLower(o.mol);
+        cmdkProd.push({ cip: String(o.cip), d: o.d, mol: o.mol || '', nd: deaccLower(o.d),
+          hay: deaccLower(o.d + ' ' + o.cip + ' ' + (o.mol || '') + ' ' + (o.labo || '')), v: vend[String(o.cip)] || 0 });
+        if (nm) { var e = mm[nm] || (mm[nm] = { lib: o.mol, nm: nm, nb: 0 }); e.nb++; }
+      }
+      cmdkMols = Object.keys(mm).map(function (k) { return mm[k]; });
+    } else {
+      var PS = window.PROD_STATS || [];
+      PS.slice(0, 300).forEach(function (r) {
+        idx.push({ grp: 'Produits', label: r.d, ico: 'pill', meta: r.c, action: function () { V2.go('molecules', r.c); } });
+      });
+      if (V2.produits && V2.produits.catalogueIndex && V2.loadFiles && V2.pages.produits && !V2._catCmdk) {
+        V2._catCmdk = true;
+        try {
+          var pr = V2.loadFiles(['catcomplet']);
+          if (pr && pr.then) pr.then(function () {
+            cmdkIdx = null;
+            var bd = document.getElementById('v2-cmdk'), inp = document.getElementById('v2-cmdk-input');
+            if (bd && bd.classList.contains('open') && inp && inp.value) { cmdkResults = cmdkSearch(inp.value); renderCmdkResults(); }
+          }, function () {});
+        } catch (e) {}
+      }
+    }
     return idx;
+  }
+  // 21/10/2026 — clic sur un produit / une molécule : le Comptoir, recherche remplie, filtres remis à zéro, panneau ouvert.
+  // Sans Comptoir (app OPSO, autres marques) : l'ancien chemin ; sans cette page non plus, rien.
+  function cmdkOuvrirProduit(cip, d, mol) {
+    if (V2.comptoir && V2.comptoir.depuisRecherche && V2.pages.produits) { V2.comptoir.depuisRecherche({ cip: cip, q: mol || d, mol: cip ? null : mol }); return; }
+    if (cip && V2.pages.molecules) V2.go('molecules', cip);
   }
   function deaccLower(s) {
     s = String(s == null ? '' : s).toLowerCase();
@@ -2182,6 +2217,27 @@
     }
     scored.sort(function (a, b) { return a.s - b.s; });
     var out = scored.slice(0, 24).map(function (o) { return o.x; });
+    // 21/10/2026 — Molécules (3 au plus) puis Produits (8 au plus) : tout le catalogue, sans accents ni casse,
+    // dès 3 caractères. Classement : le nom qui commence par la saisie d'abord, puis ce que nous vendons.
+    if (q.length >= 3 && cmdkProd) {
+      var nq3 = deaccLower(q), tk = nq3.split(/\s+/).filter(Boolean);
+      var tous = function (h) { for (var t = 0; t < tk.length; t++) if (h.indexOf(tk[t]) < 0) return false; return true; };
+      var mols = cmdkMols.filter(function (m) { return tous(m.nm); });
+      mols.sort(function (a, b) { return ((a.nm.indexOf(nq3) === 0 ? 0 : 1) - (b.nm.indexOf(nq3) === 0 ? 0 : 1)) || (b.nb - a.nb); });
+      mols.slice(0, 3).forEach(function (m) {
+        out.push({ grp: 'Molécules', label: m.lib.charAt(0) + m.lib.slice(1).toLowerCase(), ico: 'pill', meta: m.nb + ' produit' + (m.nb > 1 ? 's' : ''),
+          action: function () { cmdkOuvrirProduit(null, m.lib, m.lib); } });
+      });
+      var prods = [];
+      for (var pi = 0; pi < cmdkProd.length; pi++) { if (tous(cmdkProd[pi].hay)) prods.push(cmdkProd[pi]); }
+      prods.sort(function (a, b) {
+        return ((a.nd.indexOf(nq3) === 0 ? 0 : 1) - (b.nd.indexOf(nq3) === 0 ? 0 : 1)) || ((b.v > 0) - (a.v > 0)) || (b.v - a.v);
+      });
+      prods.slice(0, 8).forEach(function (r) {
+        out.push({ grp: 'Produits', label: r.d, ico: 'pill', meta: r.mol ? r.mol + ' · ' + r.cip : r.cip,
+          action: function () { cmdkOuvrirProduit(r.cip, r.d, r.mol); } });
+      });
+    }
     // Toutes les officines de France (base nationale) : trouver PAR NOM / VILLE / CP / TITULAIRE,
     // prospects compris. Clic -> fiche pharmacie (éditable même si non cliente).
     if (q.length >= 2 && window.PHARMA_FR && window.PHARMA_FR.p) {
@@ -2340,9 +2396,13 @@
       if (bd && bd.classList.contains('open') && inp && inp.value) { cmdkResults = cmdkSearch(inp.value); renderCmdkResults(); }
     });
   }
+  // 21/10/2026 — le panneau produit du Comptoir (z-index 900) recouvrait la recherche (z-index 200) : ⌘K ouvert
+  // depuis le panneau restait invisible. On referme le panneau, la recherche passe devant.
+  function cmdkFermerPanneau() { try { if (V2.comptoir && V2.comptoir.fermerPanneau) V2.comptoir.fermerPanneau(); } catch (e) {} }
   V2.openCmdk = function () {
     if (!V2.user) return;   // pas de recherche/navigation tant qu'on n'est pas connecté (écran login)
     var bd = document.getElementById('v2-cmdk'); if (!bd) return;
+    cmdkFermerPanneau();
     bd.classList.add('open');
     preloadPharmaFrForSearch();
     var inp = document.getElementById('v2-cmdk-input');
@@ -2360,6 +2420,7 @@
       var bd = document.getElementById('v2-cmdk');
       var inp = document.getElementById('v2-cmdk-input');
       if (bd && inp) {
+        cmdkFermerPanneau();
         bd.classList.add('open');
         preloadPharmaFrForSearch();
         inp.value = ''; cmdkSel = 0; cmdkResults = cmdkSearch(''); renderCmdkResults();
