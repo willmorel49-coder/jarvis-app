@@ -85,6 +85,9 @@
   }
 
   // ── Préparation des données ───────────────────────────────────────
+  // Codes du fournisseur collés au nom dans le fichier (« … - RP 0383017056230 », « … - ref 595221 ») : retirés à
+  // l'affichage, sur l'écran et le PDF. Le fichier n'est pas touché (ses noms servent aussi à « Notre marge par produit »).
+  function nomPropre(n) { return String(n).replace(/\s+-\s+(?:RP|r[ée]f\.?)\s*[0-9A-Z]+\s*$/i, ''); }
   function preparer(M) {
     var L = M.listings;
     if (!L || !L.listes || !L.listes.length || !L.reseau || !L.bareme || !L.familles || !L.colonnes) throw new Error('listings incomplets');
@@ -95,7 +98,7 @@
       for (var key in s) if (key !== 'lignes') o[key] = s[key];
       o.k = k;
       o.lignes = s.lignes.map(function (l) {
-        return { cip: String(l[ix.cip]), nom: String(l[ix.nom]), q: l[ix.q], net: l[ix.net27], total: l[ix.total], marge: l[ix.marge],
+        return { cip: String(l[ix.cip]), nom: nomPropre(l[ix.nom]), q: l[ix.q], net: l[ix.net27], total: l[ix.total], marge: l[ix.marge],
           famille: l[ix.famille], ppht: l[ix.ppht27], section: l[ix.section] };
       });
       o.tauxFois = L.reseau.taux ? o.taux / L.reseau.taux : 0;
@@ -222,7 +225,8 @@
     }).filter(function (g) { return g.rs.length; });
   }
   function detail(s) {
-    var h = '<div class="mp-odh"><div><span>Montant exact ' + eur2(s.ca) + '. Mêmes parties et mêmes numéros que sur le PDF ; la colonne « Notre marge » n’y figure jamais.</span></div></div>';
+    var h = '<div class="mp-odh"><div><span>Mêmes parties et mêmes numéros que sur le PDF ; la colonne « Notre marge » n’y figure jamais.</span></div></div>';
+    var tq = 0, tt = 0, tm = 0;
     parSection(s).forEach(function (g) {
       h += '<div class="ls-sec"><span class="mp-fam" style="--c:' + g.sec[2] + '"><i></i>' + esc(g.sec[1]) + '</span><span>' + entier(g.rs.length) + ' produit' + (g.rs.length > 1 ? 's' : '') + '</span></div>';
       h += '<div class="ls-pl ls-plh" aria-hidden="true"><span>#</span><span>Produit</span><span class="c">Boîtes</span><span class="c">Prix net</span><span class="c">Montant</span><span class="c">Notre marge</span></div>';
@@ -232,8 +236,13 @@
           '<span class="mp-n"><b>' + esc(l.nom) + '</b><span>CIP ' + esc(l.cip) + '</span></span>' +
           '<span class="mp-c" data-l="Boîtes">' + entier(l.q) + '</span><span class="mp-c" data-l="Prix net">' + eur2(l.net) + '</span>' +
           '<span class="mp-c" data-l="Montant">' + eur2(l.total) + '</span><span class="mp-c" data-l="Notre marge">' + eur2(l.marge) + '</span></div>';
+        tq += l.q; tt += l.total; tm += l.marge;
       });
     });
+    // Total de la liste, sommé sur les lignes affichées au-dessus.
+    h += '<div class="ls-pl ls-plt" data-tot="1"><span class="mp-rk"></span><span class="mp-n"><b>Total</b><span>' + entier(s.lignes.length) + ' produits</span></span>' +
+      '<span class="mp-c" data-l="Boîtes">' + entier(tq) + '</span><span class="mp-c ls-vide"></span>' +
+      '<span class="mp-c" data-l="Montant">' + eur2(tt) + '</span><span class="mp-c" data-l="Notre marge">' + eur2(tm) + '</span></div>';
     return h;
   }
   // Will, 21/10 : « les listing pdf dessus aussi » : les 6 PDF à remettre, visibles sans rien déplier.
@@ -321,12 +330,19 @@
   function pdfHtml(s) {
     var MONO = "'Geist Mono',ui-monospace,monospace";
     var COLS = '<colgroup><col style="width:5%"><col style="width:37%"><col style="width:14%"><col style="width:8%"><col style="width:11%"><col style="width:12%"><col style="width:13%"></colgroup>';
+    // Non remboursables : prix libre, aucun PPHT. La colonne disparaît et sa largeur revient au nom.
+    var COLS_NR = '<colgroup><col style="width:5%"><col style="width:48%"><col style="width:14%"><col style="width:8%"><col style="width:12%"><col style="width:13%"></colgroup>';
+    var sansPpht = function (g) { return g.sec[0] === 'nr'; };
     var thd = function (h, al) { return '<th style="text-align:' + al + ';padding:6px 8px;font-size:8.5px;font-weight:800;letter-spacing:.5px;color:#FFFFFF;text-transform:uppercase">' + h + '</th>'; };
     var jour = dateLongue(D.L.date_calcul), dateB = dateLongue(D.L.date_bareme);
     var groupes = parSection(s);
-    var tete = '<thead><tr style="background:#10131C">' + thd('#', 'left') + thd('Produit', 'left') + thd('CIP 13', 'left') +
-      thd('Boîtes / mois', 'center') + thd('PPHT', 'right') + thd('Prix net Intégral', 'right') + thd('Montant / mois', 'right') + '</tr></thead>';
-    var table = function (trs) { return '<table style="width:100%;border-collapse:collapse;table-layout:fixed">' + COLS + tete + '<tbody>' + trs.join('') + '</tbody></table>'; };
+    var tete = function (nr) {
+      return '<thead><tr style="background:#10131C">' + thd('#', 'left') + thd('Produit', 'left') + thd('CIP 13', 'left') +
+        thd('Boîtes / mois', 'center') + (nr ? '' : thd('PPHT', 'right')) + thd('Prix net Intégral', 'right') + thd('Montant / mois', 'right') + '</tr></thead>';
+    };
+    var table = function (trs, nr) { return '<table style="width:100%;border-collapse:collapse;table-layout:fixed">' + (nr ? COLS_NR : COLS) + tete(nr) + '<tbody>' + trs.join('') + '</tbody></table>'; };
+    // « Page k / N » dans la marge basse (≈ 6 mm du bord), hors du corps mesuré.
+    var numeroPage = function (k, n) { return '<div data-pdf-num="1" style="position:absolute;left:22px;right:22px;bottom:18px;text-align:center;font-size:9px;line-height:12px;font-weight:600;color:#5B6477">Page ' + k + ' / ' + n + '</div>'; };
     var titre = function (sec, n, suite) {
       return '<div style="padding-top:' + (suite ? 0 : 13) + 'px"><div style="background:' + sec[2] + ';display:flex;align-items:center;justify-content:space-between;padding:5px 10px;border-radius:5px 5px 0 0">' +
         '<span style="color:#FFFFFF;font-size:12px;font-weight:800;letter-spacing:.4px;text-transform:uppercase">' + sec[1] + (suite ? ' · suite' : '') + '</span>' +
@@ -334,17 +350,17 @@
     };
     var items = [];
     groupes.forEach(function (g, gi) {
-      var n = g.rs.length, dernier = gi === groupes.length - 1;
+      var n = g.rs.length, dernier = gi === groupes.length - 1, nr = sansPpht(g);
       items.push({ t: 'titre', g: g, lie: true });
       g.rs.forEach(function (x, i) {
         var l = x.l;
         var pp = l.ppht == null ? '—' : (l.net < l.ppht ? '<span style="text-decoration:line-through">' + eur2(l.ppht) + '</span>' : eur2(l.ppht));
-        items.push({ t: 'r', g: g, lie: i < 2 || (dernier && i >= n - 3), html: '<tr style="background:' + (i % 2 ? '#F7F9FC' : '#FFFFFF') + ';border-bottom:1px solid #EEF1F6">' +
+        items.push({ t: 'r', g: g, nr: nr, lie: i < 2 || (dernier && i >= n - 3), html: '<tr style="background:' + (i % 2 ? '#F7F9FC' : '#FFFFFF') + ';border-bottom:1px solid #EEF1F6">' +
           '<td style="padding:5.5px 8px;font-family:' + MONO + ';font-size:9px;color:#5B6477">' + x.num + '</td>' +
           '<td style="padding:5.5px 8px;font-size:11.5px;font-weight:700;color:#10131C">' + esc(String(l.nom).slice(0, 58)) + '</td>' +
           '<td style="padding:5.5px 8px;font-family:' + MONO + ';font-size:9px;color:#5B6477">' + esc(l.cip) + '</td>' +
           '<td style="padding:5.5px 8px;text-align:center;font-family:' + MONO + ';font-size:11px;font-weight:700">' + entier(l.q) + '</td>' +
-          '<td style="padding:5.5px 8px;text-align:right;font-family:' + MONO + ';font-size:9.5px;color:#6B7385;white-space:nowrap">' + pp + '</td>' +
+          (nr ? '' : '<td style="padding:5.5px 8px;text-align:right;font-family:' + MONO + ';font-size:9.5px;color:#6B7385;white-space:nowrap">' + pp + '</td>') +
           '<td style="padding:5.5px 8px;text-align:right;font-family:' + MONO + ';font-size:11.5px;font-weight:800;color:#0050E6;white-space:nowrap">' + eur2(l.net) + '</td>' +
           '<td style="padding:5.5px 8px;text-align:right;font-family:' + MONO + ';font-size:10.5px;white-space:nowrap">' + eur2(l.total) + '</td></tr>' });
       });
@@ -364,7 +380,7 @@
     var fin = '<div style="padding-top:12px"><div style="display:flex;justify-content:space-between;align-items:center;background:#EEF3FD;border:1px solid #D5E1FA;border-radius:8px;padding:10px 14px">' +
         '<b style="font-size:13px">Total de la sélection · ' + entier(s.boites) + ' boîtes par mois</b><span style="font-size:17px;font-weight:800;color:#0050E6;font-family:' + MONO + '">' + eur2(s.ca) + ' HT</span></div>' +
       '<div style="margin-top:14px;padding-top:9px;border-top:1px solid #E7EBF2;font-size:9.5px;color:#5B6477;line-height:1.5"><span style="font-weight:800;color:#0050E6">Intégral Pharma</span> · groupe de grossistes-répartiteurs. ' +
-        'Prix nets HT indicatifs à partir du ' + esc(dateB) + ', édités le ' + esc(jour) + ' : les tarifs des laboratoires peuvent évoluer d’ici là.<br>' +
+        'Prix nets HT indicatifs à partir du ' + esc(dateB) + ', édités le ' + esc(jour) + ' : <span style="white-space:nowrap">les tarifs des laboratoires peuvent évoluer d’ici là.</span><br>' +
         'PPHT barré : le prix net Intégral est inférieur au tarif. Non remboursables : prix libre, prix net seul. Les produits froids sont regroupés en tête.</div></div>';
     var RACINE = '<div style="width:794px;background:#FFFFFF;color:#10131C;font-family:Satoshi,Inter,system-ui,sans-serif;font-size:12px;line-height:1.35">';
 
@@ -378,11 +394,11 @@
         var corps = pg.blocs.map(function (b) {
           if (b.k === 'titre') return titre(b.g.sec, b.g.rs.length, false);
           if (b.k === 'suite') return titre(b.g.sec, 0, true);
-          if (b.k === 'table') return table(b.rows.map(function (it) { return it.html; }));
+          if (b.k === 'table') return table(b.rows.map(function (it) { return it.html; }), sansPpht(b.g));
           return fin;
         }).join('');
-        return '<div data-pdf-page="' + (k + 1) + '" style="height:' + PAGE_H + 'px;box-sizing:border-box;overflow:hidden;padding:' + (k ? MARGE_P : 0) + 'px 0 ' + MARGE_P + 'px">' +
-          (k ? '' : haut) + '<div data-pdf-corps="1" style="padding:0 22px">' + corps + '</div></div>';
+        return '<div data-pdf-page="' + (k + 1) + '" style="position:relative;height:' + PAGE_H + 'px;box-sizing:border-box;overflow:hidden;padding:' + (k ? MARGE_P : 0) + 'px 0 ' + MARGE_P + 'px">' +
+          (k ? '' : haut) + '<div data-pdf-corps="1" style="padding:0 22px">' + corps + '</div>' + numeroPage(k + 1, pages.length) + '</div>';
       }).join('') + '</div>';
       if (!H.mesure || pagesTiennent(html)) break;
       reserve += 30;
@@ -390,25 +406,31 @@
     return html;
   }
   // Hauteurs (px) des pièces du PDF. Sans document mesurable : estimations prudentes (H.mesure = false).
+  // Les lignes non remboursables (sans PPHT, nom plus large) sont mesurées dans leur propre tableau, à leurs colonnes.
   function mesurerPdf(RACINE, haut, titreN, titreS, table, items, fin) {
     var rows = items.filter(function (it) { return it.t === 'r'; });
-    var H = { mesure: false, haut: 250, titre: 42, suite: 29, tete: 26, fin: 120 };
+    var std = rows.filter(function (it) { return !it.nr; }), nrs = rows.filter(function (it) { return it.nr; });
+    var html = function (it) { return it.html; };
+    var H = { mesure: false, haut: 250, titre: 42, suite: 29, tete: 26, teteNr: 26, fin: 120 };
     rows.forEach(function (it) { it.h = 44; });
     try {
       var d = document.createElement('div');
       d.style.cssText = 'position:absolute;left:-10000px;top:0;width:794px;visibility:hidden;pointer-events:none';
       d.innerHTML = RACINE + '<div data-m="haut">' + haut + '</div><div style="padding:0 22px"><div data-m="titre">' + titreN + '</div><div data-m="suite">' + titreS + '</div>' +
-        table(rows.map(function (it) { return it.html; })) + '<div data-m="fin">' + fin + '</div></div></div>';
+        '<div data-m="std">' + (std.length ? table(std.map(html), false) : '') + '</div><div data-m="nr">' + (nrs.length ? table(nrs.map(html), true) : '') + '</div>' +
+        '<div data-m="fin">' + fin + '</div></div></div>';
       document.body.appendChild(d);
       var h = function (el) { return el ? el.getBoundingClientRect().height : 0; };
       var q = function (k) { return d.querySelector('[data-m="' + k + '"]'); };
-      var m = { haut: h(q('haut')), titre: h(q('titre')), suite: h(q('suite')), tete: h(d.querySelector('thead')), fin: h(q('fin')) };
-      var trs = d.querySelectorAll('tbody tr'), hs = [];
-      for (var i = 0; i < trs.length; i++) hs.push(h(trs[i]));
+      var hauteurs = function (k) { var trs = q(k).querySelectorAll('tbody tr'), r = []; for (var i = 0; i < trs.length; i++) r.push(h(trs[i])); return r; };
+      var m = { haut: h(q('haut')), titre: h(q('titre')), suite: h(q('suite')), tete: h(q('std').querySelector('thead')), teteNr: h(q('nr').querySelector('thead')), fin: h(q('fin')) };
+      if (!m.tete) m.tete = m.teteNr; if (!m.teteNr) m.teteNr = m.tete;
+      var hs = hauteurs('std'), hn = hauteurs('nr');
       document.body.removeChild(d);
-      if (m.haut > 0 && m.tete > 0 && hs.length === rows.length && hs.every(function (x) { return x > 0; })) {
+      if (m.haut > 0 && m.tete > 0 && hs.length === std.length && hn.length === nrs.length && hs.concat(hn).every(function (x) { return x > 0; })) {
         m.mesure = true; H = m;
-        rows.forEach(function (it, j) { it.h = hs[j]; });
+        std.forEach(function (it, j) { it.h = hs[j]; });
+        nrs.forEach(function (it, j) { it.h = hn[j]; });
       }
     } catch (e) {}
     return H;
@@ -425,7 +447,7 @@
       if (!p.blocs.length && chaine[0].t === 'r') { h += H.suite; ouvert = null; }
       chaine.forEach(function (it) {
         if (it.t === 'titre') { h += H.titre; ouvert = null; }
-        else if (it.t === 'r') { if (ouvert !== it.g) { h += H.tete; ouvert = it.g; } h += it.h; }
+        else if (it.t === 'r') { if (ouvert !== it.g) { h += it.nr ? H.teteNr : H.tete; ouvert = it.g; } h += it.h; }
         else { h += H.fin; ouvert = null; }
       });
       return h;
@@ -434,7 +456,7 @@
       if (!p.blocs.length && it.t === 'r') { p.blocs.push({ k: 'suite', g: it.g }); p.used += H.suite; p.ouvert = null; }
       if (it.t === 'titre') { p.blocs.push({ k: 'titre', g: it.g }); p.used += H.titre; p.ouvert = null; }
       else if (it.t === 'r') {
-        if (p.ouvert !== it.g) { p.blocs.push({ k: 'table', g: it.g, rows: [] }); p.used += H.tete; p.ouvert = it.g; }
+        if (p.ouvert !== it.g) { p.blocs.push({ k: 'table', g: it.g, rows: [] }); p.used += it.nr ? H.teteNr : H.tete; p.ouvert = it.g; }
         p.blocs[p.blocs.length - 1].rows.push(it); p.used += it.h;
       } else { p.blocs.push({ k: 'fin' }); p.used += H.fin; p.ouvert = null; }
     };
@@ -635,6 +657,7 @@
       '.ls-det{padding:6px 22px 18px;background:var(--card-2);border-bottom:1px solid var(--line)}.ls-det[hidden]{display:none}',
       '.ls-pl{display:grid;grid-template-columns:34px minmax(0,1fr) 80px 100px 110px 110px;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line-2);font-size:13.5px}',
       '.ls-plh{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-top:0;padding-bottom:6px}.ls-plh .c{text-align:right}',
+      '.ls-plt{margin-top:6px;border-top:2px solid var(--line)}.ls-plt .mp-n b,.ls-plt .mp-c{font-weight:800}',
       /* en masse */
       '.ls-masse{padding:20px 22px}',
       '.ls-champs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}',
@@ -669,6 +692,7 @@
       '.ls-plh{display:none}',
       '.ls-pl{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px;position:relative;padding-left:0}',
       '.ls-pl{padding-left:34px}.ls-pl .mp-rk{position:absolute;left:0;top:10px;font-size:13px}.ls-pl .mp-n{grid-column:1/-1}.ls-pl .mp-n b{white-space:normal}',
+      '.ls-plt .ls-vide{display:none}',
       '.ls-champs{grid-template-columns:repeat(2,minmax(0,1fr))}',
       '.ls-palier{flex-direction:column;align-items:stretch}.ls-palier .mp-seg{width:100%}.ls-palier .mp-seg button{flex:1 1 0;padding:0 8px}',
       '.ls-rh{display:none}',
