@@ -283,7 +283,8 @@
     var o = d.offre;
     return o.pages.map(function (pg, i) {
       return '<section class="oc-page oc-prixpage op-doc ' + pg.cls + '" style="' + pg.vars + '">' +
-        '<header class="oc-r-haut"><h2>' + esc(o.titre) + (i ? ' <small>(suite)</small>' : '') + '</h2>' +
+        // page 2 porte déjà ce titre (même offre, Guy 21/10) → « (suite) », comme les rayons
+        '<header class="oc-r-haut"><h2>' + esc(o.titre) + (i || nbPagesPrix(d) ? ' <small>(suite)</small>' : '') + '</h2>' +
           '<span class="oc-r-sous">prix HT par boîte, regroupés par marque</span></header>' +
         pg.html + piedHtml(d, num + i, total) + '</section>';
     }).join('');

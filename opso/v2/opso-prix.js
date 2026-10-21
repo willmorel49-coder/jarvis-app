@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   OPSO Santé · « Les prix OPSO Santé » — listing À PART du catalogue (15/10/2026).
+   OPSO Santé · « Offre Privilège OPSO Santé » — listing À PART du catalogue (15/10/2026 ; « Les prix OPSO Santé » jusqu'au 21/10/2026).
    Demande de Will : le PFHT, notre prix Intégral habituel sur facture, et le prix
    négocié pour OPSO Santé. Prix HT par boîte, jamais de pourcentage.
    Sections, dans l'ordre : Wegovy comprimés (à venir) · Mounjaro injectable ·
@@ -23,7 +23,7 @@
   var r2 = function (x) { return Math.round((x + 1e-9) * 100) / 100; };
   var normCip = function (c) { return String(c == null ? '' : c).replace(/\D/g, ''); };
   var ROUTE = 'opsoprix';
-  var TITRE = 'Les prix OPSO Santé';
+  var TITRE = 'Offre Privilège OPSO Santé';   // même nom que dans « Le catalogue » (Guy, 21/10/2026 : « prix OPSO » et « offre privilège », c'est la même chose)
   var MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
   var MSG_INDISPO = 'Prix non disponibles — reconnectez-vous';
 
@@ -366,7 +366,9 @@
     var corps = { sections: d.sections.filter(function (s) { return s.k !== 'offre'; }) };
     var offre = (d.sections.filter(function (s) { return s.k === 'offre'; })[0] || { items: [] }).items;
     if (opts.fichier) offre = offre.filter(function (it) { return !retire(it.cip); });
-    var offrePages = opts.fichier ? pourOffre(offre, opts.fichier.titre, (opts.fichier.mentions || []).join(' · '), haut) : [];
+    // Carte verte : le titre de l'offre est déjà dans le bandeau de la page → la carte prend la 1re mention (« Prix net dès la 1re boîte »), le reste en dessous.
+    var men = opts.fichier ? (opts.fichier.mentions || []) : [];
+    var offrePages = opts.fichier ? pourOffre(offre, men[0] || opts.fichier.titre, men.slice(1).join(' · '), haut) : [];
     var n = 0; corps.sections.forEach(function (s) { n += s.items.length; });
     var cips = []; corps.sections.forEach(function (s) { s.items.forEach(function (it) { if (it.cip) cips.push(it.cip); }); });
     var signalees = d.signalees.map(function (it) { return { cip: it.cip, nom: it.nom, pfht: it.pfht, habituel: it.habituel, opso: it.opso }; });
@@ -536,7 +538,7 @@
     });
     var dt = new Date(), p2 = function (n) { return (n < 10 ? '0' : '') + n; };
     return { texte: '﻿' + lignesCsv.map(function (l) { return l.map(K.champ).join(';'); }).join('\r\n') + '\r\n',
-      nom: 'Prix OPSO Sante - ' + dt.getFullYear() + '-' + p2(dt.getMonth() + 1) + '-' + p2(dt.getDate()) + '.csv' };
+      nom: 'Offre Privilege OPSO Sante - ' + dt.getFullYear() + '-' + p2(dt.getMonth() + 1) + '-' + p2(dt.getDate()) + '.csv' };
   }
 
   V2.opsoPrix = {
@@ -551,7 +553,7 @@
     pdf: function () {
       var d = construire(); if (!d) { V2.toast && V2.toast('Les prix chargent encore, réessayez dans un instant', 'error'); return; }
       injectStyles();
-      V2.opsoCatalogue.commun.pdf({ html: pagesHtml(d), bouton: 'op-btn-pdf', nom: 'Prix-OPSO-Sante.pdf', fini: 'PDF des prix téléchargé' });
+      V2.opsoCatalogue.commun.pdf({ html: pagesHtml(d), bouton: 'op-btn-pdf', nom: 'Offre-Privilege-OPSO-Sante.pdf', fini: 'PDF des prix téléchargé' });
     },
     reessayer: function () { _etat = 'vide'; var r = document.getElementById('v2-root'); if (r) render(r); }
   };

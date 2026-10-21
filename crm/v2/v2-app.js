@@ -2006,7 +2006,7 @@
         }
         // 15/10/2026 — listing à part : PFHT, prix Intégral habituel et prix négocié OPSO Santé (opso-prix.js, OPSO uniquement).
         if (V2.pages.opsoprix) {
-          P.push({ k: 'opsoprix', cls: 'p2', accent: 'var(--pil-fiche)', ico: 'cat', tag: 'À part', t: 'Les prix OPSO Santé', d: 'Pour chaque produit : le prix fabricant (PFHT), notre prix habituel sur facture et le prix négocié pour OPSO Santé. Mounjaro, Hélicidine, offre Sanofi et UPSA, Wegovy comprimés à venir.', go: 'Voir les prix' });
+          P.push({ k: 'opsoprix', cls: 'p2', accent: 'var(--pil-fiche)', ico: 'cat', tag: 'À part', t: 'Offre Privilège OPSO Santé', d: 'Pour chaque produit : le prix fabricant (PFHT), notre prix habituel sur facture et le prix négocié pour OPSO Santé. Mounjaro, Hélicidine, offre Sanofi et UPSA, Wegovy comprimés à venir.', go: 'Voir les prix' });
         }
       }
       // 11/09/2026 — espace ESCALE PHARMA. 24/09/2026 — Will : « features communes,
@@ -2103,7 +2103,7 @@
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsobord) PAGES.push(['opsobord', 'Tableau de bord · chiffre, rémunération, trajectoire', 'grid']);
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsopharmacies) PAGES.push(['opsopharmacies', 'Pharmacies · évolution par officine', 'pharma']);
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsoachats) PAGES.push(['opsoachats', 'Meilleurs achats · classement par nombre de pharmacies', 'cat']);
-    if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsoprix) PAGES.push(['opsoprix', 'Les prix OPSO Santé · PFHT, prix habituel, prix négocié', 'cat']);
+    if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsoprix) PAGES.push(['opsoprix', 'Offre Privilège OPSO Santé · PFHT, prix habituel, prix négocié', 'cat']);
     // Une seule entrée « La carte » (l'entrée « Copilote » en doublon est retirée le 27/08/2026).
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.carte) PAGES.splice(1, 0, ['carte', 'La carte · officines, clients, prospects, tournée', 'pharma']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.infos) PAGES.splice(1, 0, ['infos', 'Infos du matin', 'spark']);
