@@ -225,7 +225,7 @@
     }).filter(function (g) { return g.rs.length; });
   }
   function detail(s) {
-    var h = '<div class="mp-odh"><div><span>Mêmes parties et mêmes numéros que sur le PDF ; la colonne « Notre marge » n’y figure jamais.</span></div></div>';
+    var h = '<div class="mp-odh"><div><span>Mêmes parties et mêmes numéros que sur le PDF ; la colonne « Notre marge » n’y figure\u00a0jamais.</span></div></div>';
     var tq = 0, tt = 0, tm = 0;
     parSection(s).forEach(function (g) {
       h += '<div class="ls-sec"><span class="mp-fam" style="--c:' + g.sec[2] + '"><i></i>' + esc(g.sec[1]) + '</span><span>' + entier(g.rs.length) + ' produit' + (g.rs.length > 1 ? 's' : '') + '</span></div>';
@@ -657,6 +657,7 @@
       '.ls-det{padding:6px 22px 18px;background:var(--card-2);border-bottom:1px solid var(--line)}.ls-det[hidden]{display:none}',
       '.ls-pl{display:grid;grid-template-columns:34px minmax(0,1fr) 80px 100px 110px 110px;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line-2);font-size:13.5px}',
       '.ls-plh{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-top:0;padding-bottom:6px}.ls-plh .c{text-align:right}',
+      '.ls-det .mp-odh span{text-wrap:balance}',
       '.ls-plt{margin-top:6px;border-top:2px solid var(--line)}.ls-plt .mp-n b,.ls-plt .mp-c{font-weight:800}',
       /* en masse */
       '.ls-masse{padding:20px 22px}',
