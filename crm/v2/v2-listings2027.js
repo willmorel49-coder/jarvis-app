@@ -225,7 +225,7 @@
     }).filter(function (g) { return g.rs.length; });
   }
   function detail(s) {
-    var h = '<div class="mp-odh"><div><span>Mêmes parties et mêmes numéros que sur le PDF ; la colonne « Notre marge » n’y figure\u00a0jamais.</span></div></div>';
+    var h = '<div class="mp-odh"><div><span>Mêmes parties et mêmes numéros que sur le PDF\u00a0; la colonne «\u00a0Notre marge\u00a0» n’y figure\u00a0jamais.</span></div></div>';
     var tq = 0, tt = 0, tm = 0;
     parSection(s).forEach(function (g) {
       h += '<div class="ls-sec"><span class="mp-fam" style="--c:' + g.sec[2] + '"><i></i>' + esc(g.sec[1]) + '</span><span>' + entier(g.rs.length) + ' produit' + (g.rs.length > 1 ? 's' : '') + '</span></div>';
