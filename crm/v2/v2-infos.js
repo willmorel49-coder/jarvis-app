@@ -1226,6 +1226,7 @@
     function add(o, src) {
       var k = x14Cle(o.t); if (!o.t || vusC[k] || (src.u && vusU[src.u])) return;
       if (!x14Garde(src)) return;
+      if (x15Masque(x13Source(o))) return;   // « Ne plus voir cette source » (choix de la personne)
       vusC[k] = 1; if (src.u) vusU[src.u] = 1;
       o.theme = x14Theme(src.theme); o.img = urlSure(src.img || '') === '#' ? '' : src.img; o.u = src.u || ''; o.o = out.length; out.push(o);
     }
@@ -1246,31 +1247,263 @@
     for (k = 0; k < n; k++) { u = 'img/infos/' + th + '-' + ((r0 + k) % n + 1) + '.webp'; if (u !== prec) return u; }
     return u;
   }
-  function x14Ouvre(el) { var e = X14.liste[+el.getAttribute('data-fil-i')]; if (e) x13Ouvre(el, e); }
+  function x14Ouvre(el) { var e = X14.liste[+el.getAttribute('data-fil-i')]; if (e) x13Ouvre(el.closest('.f3-c') || el, e); }
   V2.x14 = { fil: x14Fil, image: x14Image, ouvre: x14Ouvre, theme: x14Theme };
 
   /* ── LE FIL « DISCOVER » (f3, 22/10/2026) : grandes cartes 16:9, cartes compactes à vignette, ligne de source ── */
-  var F3_COEUR = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/></svg>';
-  var F3_MENU = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5.5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="18.5" r="1.8"/></svg>';
-  function x14Rend() {
-    var L = X14.liste || []; if (!L.length) return '';
-    var prec = '';
-    var cartes = L.map(function (it, i) {
-      var src = x14Image(it, i, prec); prec = src;
-      var rep = x14Image({ theme: it.theme, rang: it.rang }, i, ''), nom = x13Source(it) || 'Actualité', ini = (nom.match(/[A-Za-zÀ-ÿ0-9]/) || ['·'])[0].toUpperCase();
-      var age = x13Age(it), compact = i % 3 === 2;
-      var img = '<img class="f3-im" src="' + esc(src) + '" data-fb="' + esc(rep) + '" alt="" loading="lazy" decoding="async" width="' + (compact ? 240 : 1200) + '" height="' + (compact ? 240 : 675) + '" onerror="if(this.getAttribute(\'data-fb\')&&this.src.indexOf(this.getAttribute(\'data-fb\'))<0){this.src=this.getAttribute(\'data-fb\')}else{this.onerror=null}">';
-      var pied = '<span class="f3-pied"><span class="f3-ic" aria-hidden="true">' + esc(ini) + '</span><span class="f3-src">' + esc(nom) + '</span>' + (age ? '<span class="f3-age">' + esc(age) + '</span>' : '') +
-        '<span class="f3-act" aria-hidden="true"><span>' + F3_COEUR + '</span><span>' + F3_MENU + '</span></span></span>';
-      return '<li class="f3-li"><button type="button" class="f3-c ' + (compact ? 'f3-pet' : 'f3-gr') + '" data-fil-i="' + i + '">' +
-        (compact ? '<span class="f3-txt"><span class="f3-t">' + x13T(it.t) + '</span>' + pied + '</span><span class="f3-vig">' + img + '</span>'
-                 : '<span class="f3-vig">' + img + '</span><span class="f3-txt"><span class="f3-t">' + x13T(it.t) + '</span>' + pied + '</span>') + '</button></li>';
-    }).join('');
-    return '<section class="f3-fil" aria-labelledby="f3-h"><header class="f3-tete"><h2 id="f3-h">Le fil du jour</h2><p>L’actualité qui compte pour vos officines, une carte à la fois</p></header><ul class="f3-ls">' + cartes + '</ul><p class="f3-cred"><a href="img/infos/credits.html" target="_blank" rel="noopener">Crédits photos</a></p></section>';
+  /* ── LE FIL « DISCOVER » + CŒUR ET « ⋮ » (22/10/2026, maquette g1 « Discover ») ──
+     Le cœur garde l'info (« Mes infos gardées »), « ⋮ » ouvre un menu (garder / ne plus voir cette source / annuler).
+     Les choix sont gardés PAR PERSONNE, comme les réglages de l'accueil : navigateur tout de suite (jarvis_infos_choix_v1:<id>),
+     puis la ligne de la table `profils` (scope 'groupement', scope_id '__infos_<id>__'), 800 ms après le dernier geste.
+     Forme : { v:1, g:{ <cléInfo>:{ le, off, e:<copie> } }, m:{ <nomSource>:{ le, off } } } ; fusion clé par clé, le `le` le plus récent gagne.
+     « ⋮ » ouvre un petit menu sous le bouton ; les infos gardées sont dans l'onglet « Gardées » en tête du fil. */
+  var F3_COEUR = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/></svg>';
+  var F3_MENU = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="12" cy="5.5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="18.5" r="1.8"/></svg>';
+
+  /* ── l'état des choix (x15) ── */
+  var X15 = { S: null, id: null, timer: 0, modifie: false, dist: false, menu: null, ban: null, banT: 0, vue: 'fil' };
+  function x15Id() { return (V2.user && V2.user.id) || 'local'; }
+  function x15Cle() { return 'jarvis_infos_choix_v1:' + x15Id(); }
+  function x15Scope() { return '__infos_' + x15Id() + '__'; }
+  function x15K(it) { return it.u ? 'u:' + it.u : 't:' + x14Cle(it.t); }
+  function x15Net(raw) {
+    var S = { v: 1, g: {}, m: {} };
+    if (!raw || typeof raw !== 'object') return S;
+    ['g', 'm'].forEach(function (z) {
+      var s = raw[z]; if (!s || typeof s !== 'object') return;
+      Object.keys(s).forEach(function (k) {
+        var o = s[k]; if (!o || typeof o !== 'object' || !(+o.le > 0)) return;
+        var n = { le: +o.le, off: o.off ? 1 : 0 };
+        if (z === 'g' && !n.off) { if (!o.e || typeof o.e !== 'object' || !o.e.t) return; n.e = o.e; }   // une info gardée sans copie ne se rouvre pas : écartée
+        S[z][k] = n;
+      });
+    });
+    return S;
+  }
+  /* fusion clé par clé : le geste le plus récent gagne ; un retrait reste noté off:1 pour ne pas revenir par la fusion */
+  function x15Fusion(a, b) {
+    var A = x15Net(a), B = x15Net(b), R = { v: 1, g: {}, m: {} };
+    ['g', 'm'].forEach(function (z) {
+      var ks = {}; Object.keys(A[z]).concat(Object.keys(B[z])).forEach(function (k) { ks[k] = 1; });
+      Object.keys(ks).forEach(function (k) { var x = A[z][k], y = B[z][k]; R[z][k] = !x ? y : !y ? x : (y.le >= x.le ? y : x); });
+    });
+    return R;
+  }
+  function x15S() {
+    if (!X15.S || X15.id !== x15Id()) {
+      X15.id = x15Id(); X15.dist = false; X15.modifie = false;
+      var raw = null; try { raw = JSON.parse(localStorage.getItem(x15Cle()) || 'null'); } catch (e) { raw = null; }
+      X15.S = x15Net(raw);
+    }
+    return X15.S;
+  }
+  function x15Garder() {   // navigateur tout de suite, base après 800 ms de calme (un seul envoi pour une rafale), échec silencieux
+    X15.modifie = true;
+    try { localStorage.setItem(x15Cle(), JSON.stringify(X15.S)); localStorage.setItem(x15Cle() + ':attente', '1'); } catch (e) {}
+    clearTimeout(X15.timer); X15.timer = setTimeout(x15Envoyer, 800);
+  }
+  function x15Envoyer() {   // relire la ligne, fusionner, puis écrire : ne jamais écraser un choix posé ailleurs entre-temps
+    try {
+      var c = V2.sb && V2.sb(); if (!c || !V2.user) return;
+      var cle = x15Cle();
+      c.from('profils').select('data').eq('scope_type', 'groupement').eq('scope_id', x15Scope()).maybeSingle().then(function (r) {
+        if (!r || r.error) return;   // lecture ratée : on garde l'attente, rien n'est écrasé
+        X15.S = x15Fusion(r.data && r.data.data, x15S());
+        try { localStorage.setItem(cle, JSON.stringify(X15.S)); } catch (e) {}
+        return c.from('profils').upsert({ scope_type: 'groupement', scope_id: x15Scope(), data: X15.S, updated_by: V2.user.id,
+          updated_by_name: V2.user.name || '', updated_at: new Date().toISOString() }, { onConflict: 'scope_type,scope_id' })
+          .then(function (u) { if (!(u && u.error)) { try { localStorage.removeItem(cle + ':attente'); } catch (e) {} } }, function () {});
+      }, function () {});
+    } catch (e) {}
+  }
+  function x15Distant() {   // la ligne de la base n'est lue qu'une fois par chargement de page
+    if (X15.dist || !V2.user) return;
+    var c = V2.sb && V2.sb(); if (!c) return;
+    X15.dist = true; var id = x15Id();
+    try {
+      c.from('profils').select('data').eq('scope_type', 'groupement').eq('scope_id', x15Scope()).maybeSingle().then(function (r) {
+        if (x15Id() !== id || !r || r.error) return;
+        var attente = false; try { attente = localStorage.getItem(x15Cle() + ':attente') === '1'; } catch (e) {}
+        if (r.data && r.data.data) { X15.S = x15Fusion(r.data.data, x15S()); try { localStorage.setItem(x15Cle(), JSON.stringify(X15.S)); } catch (e) {} x15Redessine(); }
+        if (attente || X15.modifie) x15Envoyer();
+      }, function () {});
+    } catch (e) {}
+  }
+  function x15Garde(k) { var o = x15S().g[k]; return !!(o && !o.off && o.e); }
+  function x15Masque(nom) { var o = x15S().m[nom]; return !!(o && !o.off); }
+  function x15Liste() {   // les infos gardées, la plus récemment gardée d'abord
+    var g = x15S().g; return Object.keys(g).filter(function (k) { return !g[k].off && g[k].e; })
+      .sort(function (a, b) { return g[b].le - g[a].le; }).map(function (k) { var e = g[k].e, o = {}; for (var p in e) o[p] = e[p]; o.k = k; return o; });
+  }
+  function x15N() { return x15Liste().length; }
+  function x15Masquees() { var m = x15S().m; return Object.keys(m).filter(function (n) { return !m[n].off; }).sort(function (a, b) { return a.localeCompare(b, 'fr'); }); }
+  function x15Copie(it) {   // pas de `j` (périmé), ni `html` ni `badges` (nom de client, CIP) : rien de cela ne part dans la base
+    var i = it.item || {}, o = { sur: i.sur, t: i.t, meta: i.meta, paras: i.paras, chiffres: i.chiffres, geste: i.geste, url: i.url, lien: i.lien };
+    return { rub: it.rub, t: it.t, d: it.d, theme: it.theme, img: it.img, u: it.u, src: x15Nom(it), item: JSON.parse(JSON.stringify(o)) };
+  }
+  function x15Info(k) {
+    var L = X14.liste || [], i;
+    for (i = 0; i < L.length; i++) if (x15K(L[i]) === k) return L[i];
+    var o = x15S().g[k]; return o && o.e ? o.e : null;
+  }
+  function x15Nom(it) { return it.src || x13Source(it) || 'Actualité'; }
+  function x15KDe(el) { var n = el && el.closest ? el.closest('[data-f3-k]') : null; return n ? n.getAttribute('data-f3-k') : null; }
+  function x15Ouvrable(k) {   // l'info gardée sous la forme que la feuille de lecture attend
+    var o = x15S().g[k]; if (!o || !o.e) return null;
+    var e = o.e; return { rub: e.rub, t: e.t, d: e.d, theme: e.theme, img: e.img, u: e.u, item: e.item };
   }
 
+  /* ── mise à jour SUR PLACE : cœurs, petits cœurs, compteurs, panneau (la carte n'est pas redessinée, le focus reste) ── */
+  function x15Maj(k) {
+    var on = x15Garde(k), n = x15N(), i, b;
+    var cs = document.querySelectorAll('[data-f3="coeur"]');
+    for (i = 0; i < cs.length; i++) {
+      b = cs[i]; if (x15KDe(b) !== k) continue;
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.setAttribute('aria-label', on ? 'Retirer de mes infos gardées' : 'Garder cette info');
+    }
+    var ps = document.querySelectorAll('.f3-pc');
+    for (i = 0; i < ps.length; i++) if (x15KDe(ps[i]) === k) ps[i].hidden = !on;
+    var ns = document.querySelectorAll('[data-f3-n]'); for (i = 0; i < ns.length; i++) ns[i].textContent = n;
+  }
+  function x15Pose(k, on, info) {
+    var S = x15S(), now = Date.now();
+    if (on) S.g[k] = { le: now, off: 0, e: x15Copie(info) }; else S.g[k] = { le: now, off: 1 };
+    x15Garder(); x15Maj(k);
+  }
+  function x15Bascule(k) {
+    var info = x15Info(k); if (!info) return;
+    var on = !x15Garde(k);
+    x15Pose(k, on, info);
+    x15Ban(on ? 'Info gardée dans « Mes infos gardées ».' : 'Info retirée de vos infos gardées.', function () { x15Pose(k, !on, info); });   // « Annuler » : le geste inverse
+  }
+  function x15Masquer(nom) {
+    var S = x15S(), now = Date.now(); S.m[nom] = { le: now, off: 0 }; x15Garder();
+    x15Redessine();
+    x15Ban('Vous ne verrez plus les infos de « ' + nom + ' ».', function () { S.m[nom] = { le: Date.now(), off: 1 }; x15Garder(); x15Redessine(); });
+  }
+  function x15Revoir(nom) {
+    var S = x15S(); S.m[nom] = { le: Date.now(), off: 1 }; x15Garder();
+    x15Redessine();
+  }
+
+  /* ── le bandeau (« Annuler » défait), au-dessus du rond « + » ── */
+  function x15Ban(msg, undo) {
+    var b = document.getElementById('f3-ban');
+    if (!b) { b = document.createElement('div'); b.id = 'f3-ban'; b.className = 'f3-ban'; b.setAttribute('role', 'status'); document.body.appendChild(b); }
+    b.innerHTML = '<span class="f3-ban-t">' + esc(msg) + '</span><button type="button" class="f3-ban-b" data-f3="defaire">Annuler</button>';
+    b.hidden = false; X15.ban = undo; clearTimeout(X15.banT); X15.banT = setTimeout(x15BanOff, 6000);
+  }
+  function x15BanOff() { var b = document.getElementById('f3-ban'); if (b) b.hidden = true; X15.ban = null; clearTimeout(X15.banT); }
+  function x15Defaire() { var f = X15.ban; x15BanOff(); if (f) f(); }
+
+  /* ── le menu « ⋮ » : petit menu accroché sous le bouton ── */
+  function x15MenuHtml(k, info) {
+    var on = x15Garde(k), nom = x15Nom(info);
+    var it = function (a, t) { return '<button type="button" class="f3-mi" role="menuitem" data-f3="' + a + '">' + t + '</button>'; };
+    return it('garder', on ? 'Retirer de mes infos gardées' : 'Garder cette info') + it('masquer', 'Ne plus voir : ' + esc(nom)) + it('annuler', 'Annuler');
+  }
+  function x15OuvreMenu(btn) {
+    x15FermeMenu(false); x15BanOff();   // le bandeau ne doit pas masquer le menu
+    var card = btn.closest('.f3-c'), k = card && card.getAttribute('data-f3-k'), info = k && x15Info(k); if (!info) return;
+    var el, li = btn.closest('.f3-li');
+    el = document.createElement('div'); el.className = 'f3-mn'; el.setAttribute('role', 'menu'); el.setAttribute('aria-label', 'Actions sur cette info'); el.setAttribute('data-f3-mn', '1');
+    el.innerHTML = x15MenuHtml(k, info); li.appendChild(el); li.classList.add('f3-ouvert');
+    var bR = btn.getBoundingClientRect(), lR = li.getBoundingClientRect(), mh = el.offsetHeight;
+    el.style.right = Math.max(0, Math.round(lR.right - bR.right)) + 'px';
+    var bas = bR.bottom + 4 + mh > window.innerHeight - 8 && bR.top - 4 - mh > 8;   // pas la place dessous : au-dessus du bouton
+    el.style.top = Math.round((bas ? bR.top - mh - 4 : bR.bottom + 4) - lR.top) + 'px';
+    btn.setAttribute('aria-expanded', 'true'); X15.menu = { k: k, btn: btn, el: el, li: li };
+    var p = el.querySelector('[role="menuitem"]'); if (p) { try { p.focus({ preventScroll: true }); } catch (er) {} }
+  }
+  function x15FermeMenu(rendre) {
+    var m = X15.menu; if (!m) return; X15.menu = null;
+    if (m.el.parentNode) m.el.parentNode.removeChild(m.el); if (m.li) m.li.classList.remove('f3-ouvert');
+    if (m.btn) m.btn.setAttribute('aria-expanded', 'false');
+    if (rendre && m.btn && m.btn.isConnected) { try { m.btn.focus({ preventScroll: true }); } catch (er) {} }
+  }
+  function x15Clavier(e) {   // Échap ferme le menu d'abord ; flèches dans le menu ; Tab sort du menu
+    var m = X15.menu; if (!m) return false;
+    if (e.key === 'Escape') { e.preventDefault(); x15FermeMenu(true); return true; }
+    if (e.key === 'Tab') { x15FermeMenu(false); return false; }
+    var f = [].slice.call(m.el.querySelectorAll('[role="menuitem"]')), i = f.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Home' || e.key === 'End') {
+      e.preventDefault();
+      i = e.key === 'Home' ? 0 : e.key === 'End' ? f.length - 1 : e.key === 'ArrowDown' ? (i + 1) % f.length : (i <= 0 ? f.length - 1 : i - 1);
+      f[i].focus(); return true;
+    }
+    return false;
+  }
+
+  /* ── les gestes : un attribut unique data-f3, lu avant [data-fil-i] et avant .x13 (le bandeau et le panneau sont hors .x13) ── */
+  function x15Clic(e) {
+    var t = e.target.closest('[data-f3]'), a = t ? t.getAttribute('data-f3') : '';
+    if (X15.menu && a !== 'menu' && !e.target.closest('[data-f3-mn]')) {   // clic ailleurs : le menu se ferme, le clic ne fait rien d'autre
+      x15FermeMenu(false);
+      if (!t) return true;
+    }
+    if (!t) return false;
+    var k = x15KDe(t) || (X15.menu && X15.menu.k), v = t.getAttribute('data-f3-v'), info;
+    if (a === 'coeur') { if (k) x15Bascule(k); }
+    else if (a === 'menu') { if (X15.menu && X15.menu.btn === t) x15FermeMenu(true); else x15OuvreMenu(t); }
+    else if (a === 'garder') { x15FermeMenu(true); if (k) x15Bascule(k); }
+    else if (a === 'masquer') { info = k && x15Info(k); x15FermeMenu(false); if (info) x15Masquer(x15Nom(info)); }
+    else if (a === 'annuler') x15FermeMenu(true);
+    else if (a === 'revoir') { if (v) x15Revoir(v); }
+    else if (a === 'defaire') x15Defaire();
+    else if (a === 'vue') {
+      X15.vue = v === 'gardees' ? 'gardees' : 'fil'; x15Redessine(); var o = document.querySelector('.f3-ong [data-f3-v="' + X15.vue + '"]'); if (o) { try { o.focus({ preventScroll: true }); } catch (er) {} }
+    }
+    return true;
+  }
+  function x15Redessine() {   // le fil est recalculé (sources masquées) et la section redessinée ; les cartes, elles, ne bougent pas quand on garde
+    var s = document.querySelector('.f3-fil'); if (!s) return;
+    x15FermeMenu(false); x14Fil(); s.outerHTML = x14Rend();
+  }
+
+  /* ── la liste « Sources masquées » (sous l'onglet « Gardées ») ── */
+  function x15MasqueesHtml(titre) {
+    var M = x15Masquees(); if (!M.length) return '';
+    return '<section class="f3-mq" aria-label="Sources masquées"><' + titre + ' class="f3-mq-h">Sources masquées</' + titre + '><ul>' + M.map(function (n) {
+      return '<li><span class="f3-mq-n">' + esc(n) + '</span><button type="button" class="f3-mq-b" data-f3="revoir" data-f3-v="' + esc(n) + '" aria-label="Revoir les infos de ' + esc(n) + '">Revoir</button></li>';
+    }).join('') + '</ul></section>';
+  }
+
+  /* ── le dessin d'une carte : un <div>, avec UN bouton pour ouvrir (son ::after couvre toute la carte) et de vrais boutons cœur / « ⋮ » ── */
+  function f3Carte(it, i, compact, src, garde) {
+    var k = x15K(it), on = x15Garde(k);
+    var rep = x14Image({ theme: it.theme, rang: it.rang }, i, ''), nom = x15Nom(it), ini = (nom.match(/[A-Za-zÀ-ÿ0-9]/) || ['·'])[0].toUpperCase();
+    var age = x13Age(it);
+    var img = '<img class="f3-im" src="' + esc(src) + '" data-fb="' + esc(rep) + '" alt="" loading="lazy" decoding="async" width="' + (compact ? 240 : 1200) + '" height="' + (compact ? 240 : 675) + '" onerror="if(this.getAttribute(\'data-fb\')&&this.src.indexOf(this.getAttribute(\'data-fb\'))<0){this.src=this.getAttribute(\'data-fb\')}else{this.onerror=null}">';
+    var ouv = '<button type="button" class="f3-ouv" ' + (garde ? 'data-garde-i="' + esc(k) + '"' : 'data-fil-i="' + i + '"') + '><span class="f3-t">' + x13T(it.t) + '</span></button>';
+    var coeur = compact ? '' : '<button type="button" class="f3-b f3-coeur" data-f3="coeur" aria-pressed="' + (on ? 'true' : 'false') + '" aria-label="' + (on ? 'Retirer de mes infos gardées' : 'Garder cette info') + '">' + F3_COEUR + '</button>';
+    var menu = '<button type="button" class="f3-b f3-men" data-f3="menu" aria-haspopup="menu" aria-expanded="false" aria-label="Plus d’actions sur cette info">' + F3_MENU + '</button>';
+    var pied = '<div class="f3-pied"><span class="f3-ic" aria-hidden="true">' + esc(ini) + '</span><span class="f3-qui"><span class="f3-src">' + esc(nom) + (age && !compact ? '<span aria-hidden="true">\u00a0·</span>' : '') + '</span>' + (age ? '<span class="f3-age">' + esc(age) + '</span>' : '') + '</span>' +
+      (compact ? '<span class="f3-pc" role="img" aria-label="Info gardée"' + (on ? '' : ' hidden') + '>' + F3_COEUR + '</span>' : '') +
+      '<span class="f3-act">' + coeur + menu + '</span></div>';
+    return '<li class="f3-li"><div class="f3-c ' + (compact ? 'f3-pet' : 'f3-gr') + '" tabindex="-1" data-f3-k="' + esc(k) + '">' +
+      (compact ? '<div class="f3-txt">' + ouv + pied + '</div><span class="f3-vig">' + img + '</span>'
+               : '<span class="f3-vig">' + img + '</span><div class="f3-txt">' + ouv + pied + '</div>') + '</div></li>';
+  }
+  function f3Cartes(L, garde) {
+    var prec = '';
+    return L.map(function (it, i) { var src = x14Image(it, i, prec); prec = src; return f3Carte(it, i, i % 3 === 2, src, garde); }).join('');
+  }
+  function x14Rend() {
+    x15FermeMenu(false);
+    var L = X14.liste || [], G = x15Liste(), M = x15Masquees(); if (!L.length && !G.length && !M.length) return '';
+    x15Distant();
+    var gv = X15.vue === 'gardees', corps;
+    if (gv) corps = (G.length ? '<ul class="f3-ls">' + f3Cartes(G, true) + '</ul>' : '<p class="f3-vide">Touchez le cœur d’une info pour la retrouver ici.</p>') + x15MasqueesHtml('h3');
+    else corps = (L.length ? '<ul class="f3-ls">' + f3Cartes(L, false) + '</ul>' : '<p class="f3-vide">Plus aucune info à afficher pour l’instant.</p>');
+    var tete = '<header class="f3-tete"><h2 id="f3-h" tabindex="-1">Le fil du jour</h2><p>L’actualité qui compte pour vos officines, une carte à la fois</p>' +
+      '<div class="f3-ong" role="group" aria-label="Affichage"><button type="button" data-f3="vue" data-f3-v="fil" aria-pressed="' + (gv ? 'false' : 'true') + '">Le fil du jour</button>' +
+      '<button type="button" data-f3="vue" data-f3-v="gardees" aria-pressed="' + (gv ? 'true' : 'false') + '">Gardées · <span data-f3-n>' + G.length + '</span></button></div></header>';
+    return '<section class="f3-fil" aria-labelledby="f3-h">' + tete + corps + '<p class="f3-cred"><a href="img/infos/credits.html" target="_blank" rel="noopener">Crédits photos</a></p></section>';
+  }
   function x13Ecoute(e) {
     if (e.type === 'keydown') {
+      if (X15.menu && x15Clavier(e)) return;   // Échap ferme d'abord le menu « ⋮ »
       if (!x13OuvertQ()) return;
       if (e.key === 'Escape') x13Ferme();
       else if (e.key === 'Tab') {
@@ -1292,6 +1525,7 @@
       X13.tx = null; return;
     }
     if (!e.target.closest) return;
+    if (x15Clic(e)) return;   // cœur, « ⋮ », bandeau, panneau : un seul attribut data-f3, lu AVANT .x13 (le bandeau et le panneau sont hors .x13)
     if (e.target.closest('[data-x13-ferme]') || (e.target.classList && e.target.classList.contains('x13-voile'))) { x13Ferme(); return; }
     var root = e.target.closest('.x13'); if (!root) return;
     var t;
@@ -1305,6 +1539,7 @@
       if (X13.rub) { try { zr.scrollIntoView({ block: 'nearest' }); } catch (er) {} }
       return;
     }
+    if ((t = e.target.closest('[data-garde-i]'))) { var og = x15Ouvrable(t.getAttribute('data-garde-i')); if (og) x13Ouvre(t.closest('.f3-c') || t, og); return; }   // une info gardée (onglet Gardées) : la feuille de lecture, avec sa copie
     if ((t = e.target.closest('[data-fil-i]'))) { x14Ouvre(t); return; }   // le fil d'infos visuel (socle 22/10/2026)
     if ((t = e.target.closest('.x13-c,.x13-une,.x13-tr,.x13-l'))) x13Ouvre(t);
   }
@@ -1653,6 +1888,51 @@
       '  .f3-ls{column-count:3;column-gap:24px}',
       '  .f3-li{margin-bottom:24px}',
       '}',
+      '/* ── cœur et « ⋮ » : la carte est un div, un bouton l\'ouvre en entier, les boutons cœur / ⋮ passent par-dessus ── */',
+      '.f3-li{position:relative}.f3-li.f3-ouvert{z-index:5}',
+      '.f3-c{position:relative;isolation:isolate;cursor:default}',
+      '.f3-c:focus{outline:none}',
+      '.f3-ouv{display:block;width:100%;margin:0;padding:0;border:0;background:none;text-align:left;font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent}',
+      '.f3-ouv::after{content:"";position:absolute;top:0;right:0;bottom:0;left:0;z-index:1;border-radius:22px}',
+      '.f3-ouv:focus{outline:none}',
+      '.f3-ouv:focus-visible::after{outline:3px solid rgba(0,80,230,.6);outline-offset:-3px}',
+      '.f3-ouv:active::after{background:rgba(0,80,230,.06)}',
+      '.f3-pied{white-space:normal;gap:6px;min-height:44px}',
+      '.f3-src{flex:0 1 auto;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:clip;overflow-wrap:anywhere;font-size:13.5px;line-height:1.2}',
+      '.f3-age{white-space:nowrap}',
+      '.f3-qui .f3-age::before{content:none}',   /* le « · » suit le nom de la source (jamais seul en début de ligne quand l'âge passe dessous) */
+      '.f3-qui{flex:1 1 auto;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 0}.f3-qui .f3-src{max-width:100%}.f3-qui .f3-age{margin-left:6px}',
+      '.f3-act{margin:0 -8px 0 auto;flex:none;display:flex;align-items:center}',
+      '.f3-b{position:relative;z-index:2;flex:none;display:grid;place-items:center;width:44px;height:44px;margin:0;padding:0;border:0;border-radius:50%;background:none;color:#566074;cursor:pointer;-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent}',
+      '.f3-b:focus-visible{outline:3px solid rgba(0,80,230,.6);outline-offset:-3px}',
+      '.f3-b:active{background:var(--pp-halo)}',
+      '.f3-coeur[aria-pressed="true"]{color:var(--pp-bleu)}.f3-coeur[aria-pressed="true"] svg{fill:var(--pp-bleu)}',
+      '.f3-pc{flex:none;display:grid;place-items:center;width:16px;height:16px;color:var(--pp-bleu)}.f3-pc[hidden]{display:none}.f3-pc svg{width:14px;height:14px;fill:var(--pp-bleu)}',
+      '.f3-pet .f3-ic{display:none}',
+      '.f3-pet .f3-act{margin-right:-4px}',
+      '.f3-pet .f3-txt{padding-right:4px}',
+      '.f3-pet .f3-src{max-width:none;-webkit-line-clamp:3}',
+      '@media (hover:hover){.f3-b:hover{background:var(--pp-halo);color:var(--pp-bleu-f)}}',
+      '.f3-mn{position:absolute;z-index:6;width:min(272px,calc(100% - 12px));box-sizing:border-box;padding:6px;border-radius:16px;background:#fff;box-shadow:0 0 0 1px rgba(15,20,32,.06),0 3px 8px rgba(15,20,32,.1),0 22px 44px -10px rgba(0,48,140,.4)}',
+      '.f3-mi{display:flex;align-items:center;width:100%;min-height:48px;margin:0;padding:8px 14px;border:0;border-radius:12px;background:none;text-align:left;font:600 15px/1.25 var(--pp-sans);color:var(--pp-encre);cursor:pointer;-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent}',
+      '.f3-mi:focus-visible,.f3-mi:active{outline:none;background:var(--pp-halo)}',
+      '@media (hover:hover){.f3-mi:hover{background:var(--pp-halo)}}',
+      '#f3-ban{--pp-encre:#0F1420;--pp-bleu:#0050E6;--pp-bleu-f:#003FB8;--pp-halo:#E9F0FF;--pp-sans:"Onest",-apple-system,"Helvetica Neue",Arial,sans-serif}',
+      '.f3-ban{position:fixed;z-index:9300;left:12px;right:12px;bottom:96px;box-sizing:border-box;max-width:460px;margin:0 auto;display:flex;align-items:center;gap:8px;padding:6px 6px 6px 18px;border-radius:18px;background:#0F1420;color:#fff;font:600 14.5px/1.3 var(--pp-sans);box-shadow:0 18px 40px -12px rgba(0,20,60,.6)}',
+      '.f3-ban[hidden]{display:none}.f3-ban-t{flex:1;min-width:0}',
+      '.f3-ban-b{flex:none;min-width:44px;min-height:44px;margin:0;padding:0 16px;border:0;border-radius:13px;background:#fff;color:#0F1420;font:700 14.5px/1 var(--pp-sans);cursor:pointer;-webkit-appearance:none;appearance:none}',
+      '.f3-ban-b:focus-visible{outline:3px solid #8FB4FF;outline-offset:2px}',
+      '@media (min-width:900px){.f3-ban{bottom:28px}}',
+      '.f3-ong{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0}',
+      '.f3-ong button{min-height:44px;margin:0;padding:0 18px;border:1px solid #C9D5EA;border-radius:22px;background:#fff;color:var(--pp-encre);font:700 15px/1 var(--pp-sans);cursor:pointer;-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent}',
+      '.f3-ong button[aria-pressed="true"]{background:var(--pp-bleu);border-color:var(--pp-bleu);color:#fff}',
+      '.f3-ong button:focus-visible,.f3-mq-b:focus-visible{outline:3px solid rgba(0,80,230,.6);outline-offset:2px}',
+      '.f3-vide{margin:4px 6px 10px;padding:16px 18px;border-radius:16px;background:#fff;font:650 16px/1.4 var(--pp-sans);color:var(--pp-bleu-f)}',
+      '.f3-mq{margin:22px 0 4px}.f3-mq-h{margin:0 6px 10px;font:800 18px/1.2 var(--pp-sans);color:var(--pp-encre)}',
+      '.f3-mq ul{margin:0;padding:0;list-style:none;border-radius:18px;background:#fff;overflow:hidden}',
+      '.f3-mq li{display:flex;align-items:center;gap:10px;min-height:52px;padding:4px 6px 4px 16px;border-top:1px solid #EDF0F5}.f3-mq li:first-child{border-top:0}',
+      '.f3-mq-n{flex:1;min-width:0;overflow-wrap:anywhere;font:600 15px/1.25 var(--pp-sans);color:var(--pp-encre)}',
+      '.f3-mq-b{flex:none;min-width:44px;min-height:44px;margin:0;padding:0 14px;border:0;border-radius:22px;background:var(--pp-halo);color:var(--pp-bleu-f);font:700 14.5px/1 var(--pp-sans);cursor:pointer;-webkit-appearance:none;appearance:none}',
       '.x13.x13v3{display:block;max-width:1180px}',
       '.x13v3 .x13-tete{padding:2px 2px 12px}',
       '.x13v3 h1{font-size:clamp(30px,8.4vw,36px)}',
