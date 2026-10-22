@@ -16,6 +16,9 @@
      window.MARGE_PRODUITS.meta / .familles. Les seules constantes ci-dessous
      sont des réglages d'AFFICHAGE (nombre de lignes, plancher de l'échelle).
    · Graphiques en SVG inline, sans librairie ; aucun flou, aucun verre dépoli.
+   · 22/10/2026 — fusionné dans « Listing produits 2027 » (demande de Will) : plus de ligne
+     de menu à part ; cet écran rend les onglets « Marge par produit » (#margeproduits) et
+     « Marge par officine » (#margeproduits/officine) de cette page, sous le même titre.
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -198,13 +201,6 @@
     });
     return h + '</div>';
   }
-  function segmentVue() {
-    var h = '<div class="mp-seg mp-seg-vue" role="group" aria-label="Vue de l’écran">';
-    [['produit', 'Par produit'], ['officine', 'Par officine']].forEach(function (a) {
-      h += '<button type="button" data-act="vue" data-v="' + a[0] + '" aria-pressed="' + (S.vue === a[0]) + '" class="' + (S.vue === a[0] ? 'on' : '') + '">' + a[1] + '</button>';
-    });
-    return h + '</div>';
-  }
   function barre(part, couleur, max) {
     var w = Math.max(0, Math.min(1, max ? part / max : 0)) * 100;
     return '<span class="mp-bar"><i style="width:' + w.toFixed(2) + '%;background:' + couleur + '"></i></span>';
@@ -217,16 +213,16 @@
   // ── En-tête et chiffres clés ──────────────────────────────────────
   function enTete(C) {
     return '<div class="mp-hero">' +
-      '<div class="mp-hero-t"><div class="mp-eyebrow"><span class="dot"></span>Réservé à votre compte</div>' +
+      '<div class="mp-hero-t"><div class="mp-eyebrow"><span class="dot"></span>Accès réservé au groupe restreint</div>' +
+      '<h1 class="mp-h1">Listing produits 2027</h1>' +
       (S.vue === 'officine'
-        ? '<h1 class="mp-h1">Notre marge par officine</h1>' +
+        ? 
           '<p class="mp-sub">Les officines clientes qui n’achètent pas, ou peu, chez nous les produits qui rapportent, surtout le froid, et ce que cela rapporterait. ' +
           'Chiffres estimés par la direction (' + esc(periodeTexte()) + '), mis à jour le ' + esc(dateLongue(D.meta.genere_le)) + '.</p></div>'
-        : '<h1 class="mp-h1">Notre marge par produit</h1>' +
-          '<p class="mp-sub">Où se fait notre marge, produit par produit, et lesquels il faut vendre en priorité. ' +
+        : '<p class="mp-sub">Où se fait notre marge, produit par produit, et lesquels il faut vendre en priorité. ' +
           'Chiffres estimés par la direction, sur les ventes de toute l’équipe (' + esc(periodeTexte()) + '), mis à jour le ' + esc(dateLongue(D.meta.genere_le)) + '.</p></div>') +
-      '<div class="mp-hero-b">' + (D.off ? '<div class="mp-hero-a"><span class="mp-seg-l">Vue</span>' + segmentVue() + '</div>' : '') +
-      '<div class="mp-hero-a"><span class="mp-seg-l">Barème</span>' + segment(C.K) + '</div></div></div>';
+      '<div class="mp-hero-b"><div class="mp-hero-a"><span class="mp-seg-l">Barème</span>' + segment(C.K) + '</div></div></div>' +
+      (V2.listings2027 && V2.listings2027.onglets ? V2.listings2027.onglets(S.vue === 'officine' ? 'officine' : 'produit') : '');
   }
   function kpis(C) {
     var K = C.K, t = C.t, h = '', iF = trouverFam(/^froid$/i), iP = trouverFam(/^petit prix\s*</i);
@@ -524,7 +520,7 @@
     var plus = (D.meta.plus_chez_integral || []).length ? '<li>Produits qu’Intégral n’aura plus en ' + D.an1 + ' : ' + esc(D.meta.plus_chez_integral.join(', ')) + ' (grisés dans le graphique, écartés de la liste prioritaire).</li>' : '';
     return '<footer class="mp-pied"><h3>Hypothèses de ces chiffres</h3><ul>' + hyp + plus + '</ul>' +
       '<p>' + esc(D.meta.source || '') + '. Le taux de marge est notre marge divisée par le prix net vendu.</p>' +
-      '<p class="conf">Confidentiel : réservé à votre compte.</p></footer>';
+      '<p class="conf">Confidentiel : réservé au groupe restreint.</p></footer>';
   }
 
   // ── Vue « Par officine » ──────────────────────────────────────────
@@ -639,11 +635,11 @@
       '<li>Moyenne du réseau : pour chaque produit, les boîtes achetées par les officines suivies divisées par la somme de leurs achats hors froid. Le manque d’une officine est l’écart avec cette moyenne à sa taille, jamais en dessous de zéro.</li>' +
       '<li>Potentiel = boîtes qui manquent × notre marge par boîte du barème choisi, en € par mois. Le froid ne compte que les produits froid suivis ; le total compte tous les produits suivis.</li></ul>' +
       '<p>Période : ' + esc(moisNom(p.de || 0)) + ' → ' + esc(moisNom(p.a || 0)) + '. Noms et villes trouvés pour ' + pct(cv.taux || 0, 0) + ' des officines. Estimation de la direction, à confirmer par l’appel.</p>' +
-      '<p class="conf">Confidentiel : réservé à votre compte.</p></footer>';
+      '<p class="conf">Confidentiel : réservé au groupe restreint.</p></footer>';
   }
 
   // ── Écrans d’état ─────────────────────────────────────────────────
-  function top() { return (V2.topbar ? V2.topbar({ back: true, nom: 'Notre marge par produit' }) : ''); }
+  function top() { return (V2.topbar ? V2.topbar({ back: true, nom: 'Listing produits 2027' }) : ''); }
   function message(root, titre, texte, bouton) {
     css();
     root.innerHTML = top() + '<div class="v2-wrap mp-wrap"><div class="mp-etat"><div class="mp-lock">' + ICO('euro', 26, 1.8) + '</div><h1 class="mp-et">' + esc(titre) + '</h1><p>' + esc(texte) + '</p>' + (bouton || '') + '</div></div>';
@@ -678,7 +674,6 @@
       if (b && r.contains(b)) {
         var a = b.getAttribute('data-act');
         if (a === 'an') { S.K = b.getAttribute('data-k'); S.n = N_PAGE; S.oN = N_PAGE; memo = {}; memoO = {}; dessiner(racine); }
-        else if (a === 'vue') { var v = b.getAttribute('data-v'); if (v !== S.vue) { S.vue = v; cacherBulle(); dessiner(racine); } }
         else if (a === 'ouv') { var cd = b.getAttribute('data-c'); S.oOuvert[cd] = !S.oOuvert[cd]; var w = b.parentNode; var neuf = document.createElement('div'); neuf.innerHTML = ligneO(D.off.rows.filter(function (r) { return r.code === cd; })[0]); if (w && w.parentNode && neuf.firstChild) w.parentNode.replaceChild(neuf.firstChild, w); }
         else if (a === 'plusO') { S.oN += N_PAGE; majOfficines(); }
         else if (a === 'fiche') { var cf = b.getAttribute('data-c'); if (V2.go) V2.go('pharma', cf); }
@@ -740,8 +735,9 @@
   V2.pages = V2.pages || {};
   V2.pages.margeproduits = {
     needs: [],     // le fichier de chiffres n’est demandé qu’APRÈS le contrôle d’accès (voir charger)
-    render: function (root) {
+    render: function (root, param) {
       css(); racine = root;
+      S.vue = param === 'officine' ? 'officine' : 'produit';   // l'onglet vient de l'adresse
       if (acces === null) {
         if (accesEchec) {   // pas de boucle : on le DIT, avec un bouton
           message(root, 'Connexion impossible pour l’instant', 'L’écran n’a pas pu vérifier votre accès. Réessayez dans un instant.',
@@ -784,20 +780,9 @@
     }
   };
 
-  // La ligne du menu du compte : posée seulement si la base dit oui.
+  // 22/10/2026 : plus de ligne de menu à part, on entre par « Listing produits 2027 » (v2-listings2027.js).
   V2.margeproduits = {
-    css: css,   // 21/10/2026 : « Listing produits 2027 » (v2-listings2027.js) réutilise le même habillage
-    menu: function (m) {
-      verifier().then(function (ok) {
-        if (!ok || !m || !m.parentNode || m.querySelector('.mp-um')) return;
-        var b = document.createElement('button');
-        b.className = 'v2-um-item mp-um';
-        b.innerHTML = ICO('euro', 16, 2) + 'Notre marge par produit';
-        b.onclick = function () { if (m.parentNode && m.classList.contains('v2-usermenu')) m.parentNode.removeChild(m); V2.go('margeproduits'); };
-        var ref = m.querySelector('.v2-um-item');
-        if (ref) m.insertBefore(b, ref); else m.appendChild(b);
-      });
-    }
+    css: css   // 21/10/2026 : « Listing produits 2027 » (v2-listings2027.js) réutilise le même habillage
   };
 
   // ── Habillage (variables de l’app, rien d’inventé) ────────────────

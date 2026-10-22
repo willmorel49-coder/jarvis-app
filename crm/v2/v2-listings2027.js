@@ -16,6 +16,10 @@
    · Même habillage que v2-margeproduits.js (mêmes classes mp-*, mêmes boutons).
      Ni flou, ni verre dépoli, ni dégradé sur du texte, ni opacity sur du texte.
    · « Ce qu'on fait actuellement » = le panier habituel du réseau, et rien d'autre.
+   · 22/10/2026 — Will : « mets listing produits 2027 et nos marges produits 2027 dans une
+     feature [...] fusionne les 2 features, la plus claire c'est listing produits ». Une seule
+     ligne de menu (celle-ci) ; « Notre marge par produit » devient deux onglets de cette page
+     (#margeproduits et #margeproduits/officine, rendus par v2-margeproduits.js), même titre.
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -134,12 +138,24 @@
   function pctC(v) { var x = v * 100; return moins(nf(x, Math.abs(x - Math.round(x)) < 1e-9 ? 0 : 1)) + '\u00a0%'; }   // 7,5 % · 15 % · 30 % (sans « ,0 »)
   function nomPalier(p) { return pctC(D.tranches[p].taux); }
 
+  // Les trois onglets de la page (partagés avec v2-margeproduits.js). Un onglet = une adresse.
+  var ONGLETS = [['listings', 'Les listings', 'listings2027', ''], ['produit', 'Marge par produit', 'margeproduits', ''], ['officine', 'Marge par officine', 'margeproduits', 'officine']];
+  function onglets(actif) {
+    css();   // l'habillage des onglets sert aussi sur #margeproduits
+    var h = '<nav class="ls-tabs" aria-label="Listing produits 2027">';
+    ONGLETS.forEach(function (o) {
+      if (o[0] === 'officine' && !(window.MARGE_PRODUITS && window.MARGE_PRODUITS.officines)) return;
+      var on = o[0] === actif;
+      h += '<button type="button" class="ls-tab' + (on ? ' on' : '') + '" data-ls-onglet="' + o[0] + '" data-r="' + o[2] + '" data-p="' + o[3] + '"' + (on ? ' aria-current="page"' : '') + '>' + o[1] + '</button>';
+    });
+    return h + '</nav>';
+  }
   function enTete() {
     return '<div class="mp-hero">' +
       '<div class="mp-hero-t"><div class="mp-eyebrow"><span class="dot"></span>Accès réservé au groupe restreint</div>' +
       '<h1 class="mp-h1">Listing produits 2027</h1>' +
       '<p class="mp-sub">Les ' + D.listes.length + ' listings à proposer aux pharmacies en janvier 2027, ce qu’ils rapportent à Intégral Pharma en pourcentage, et la prime qu’ils représentent pour le commercial. ' +
-      'Estimations calculées le ' + esc(dateLongue(D.L.date_calcul)) + ', prix nets à partir du ' + esc(dateLongue(D.L.date_bareme)) + '.</p></div></div>';
+      'Estimations calculées le ' + esc(dateLongue(D.L.date_calcul)) + ', prix nets à partir du ' + esc(dateLongue(D.L.date_bareme)) + '.</p></div></div>' + onglets('listings');
   }
   function kpis() {
     var fmin = Math.min.apply(null, D.listes.map(function (s) { return s.tauxFois; })), fmax = Math.max.apply(null, D.listes.map(function (s) { return s.tauxFois; }));
@@ -545,6 +561,11 @@
     });
   }
 
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-ls-onglet]') : null; if (!b || b.classList.contains('on')) return;
+    if (V2.go) V2.go(b.getAttribute('data-r'), b.getAttribute('data-p') || null);
+  });
+
   V2.pages = V2.pages || {};
   V2.pages.listings2027 = {
     needs: [],     // le fichier de chiffres n'est demandé qu'APRÈS le contrôle d'accès (voir charger)
@@ -602,7 +623,9 @@
     prime: function (marge, p) { return D ? prime(marge, p) : null; },
     pdfHtml: function (i) { return D && D.listes[i] ? pdfHtml(D.listes[i]) : null; },
     donnees: function () { return D; },
-    // La ligne du menu du compte : posée seulement si la base dit oui, juste sous « Notre marge par produit ».
+    onglets: onglets,
+    // La ligne du menu du compte : posée seulement si la base dit oui. Depuis le 22/10/2026, c'est la seule ligne
+    // de la page (la marge par produit et par officine en sont des onglets).
     menu: function (m) {
       verifier().then(function (ok) {
         if (!ok || !m || !m.parentNode || m.querySelector('.ls-um')) return;
@@ -633,6 +656,12 @@
       '.ls-ex b{font-weight:800}.ls-ex p{margin:8px 0 0;font-size:14px;line-height:1.55;color:var(--ip-ink-2)}',
       '.ls-taux{font-family:var(--mono);color:#0A6C86}',
       '.mp-fams .mp-fn small{max-width:200px}',
+      /* les trois onglets */
+      '.ls-tabs{display:flex;gap:4px;padding:4px;margin:-6px 0 22px;width:max-content;max-width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:14px}',
+      '.ls-tab{min-height:42px;padding:0 18px;font:inherit;font-size:14px;font-weight:700;color:var(--muted);background:none;border:0;border-radius:10px;cursor:pointer;white-space:nowrap}',
+      '.ls-tab:hover{color:var(--ip-ink,#10131C)}',
+      '.ls-tab.on{color:#FFFFFF;background:#0050E6;cursor:default;box-shadow:0 1px 2px rgba(0,52,160,.25)}',
+      '.ls-tab:focus-visible{outline:2px solid #0050E6;outline-offset:2px}',
       /* liste des listings */
       /* les 6 PDF à remettre */
       '.ls-pdfs{padding:16px 18px;margin-bottom:14px}',
@@ -678,6 +707,7 @@
       '.ls-pl{grid-template-columns:30px minmax(0,1fr) 70px 90px 100px 100px}}',
       '@media(max-width:720px){',
       '.ls-kpis{grid-template-columns:minmax(0,1fr)}',
+      '.ls-tabs{width:100%}.ls-tab{flex:1 1 0;min-width:0;padding:0 6px;font-size:13px;white-space:normal;line-height:1.15}',
       '.ls-ex-g{grid-template-columns:minmax(0,1fr)}',
       '.ls-expl,.ls-masse,.ls-pdfs{padding:16px}',
       '.ls-pdfs-g{grid-template-columns:repeat(2,minmax(0,1fr))}',

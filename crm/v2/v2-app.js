@@ -411,9 +411,8 @@
       '<div class="v2-um-note">' + NOTE_USAGE + '</div>');
     // 02/10/2026 — « Rapport d'étonnement » : la ligne n'est posée que pour les comptes admis (v2-etonnement.js).
     if (m && V2.etonnement && V2.etonnement.menu) V2.etonnement.menu(m);
-    // 14/10/2026 — « Notre marge par produit » : même principe, ligne posée seulement si la base répond oui (v2-margeproduits.js).
-    if (m && V2.margeproduits && V2.margeproduits.menu) V2.margeproduits.menu(m);
-    // 21/10/2026 — « Listing produits 2027 » : même accès, ligne posée juste sous la précédente (v2-listings2027.js).
+    // 21/10/2026 — « Listing produits 2027 » : ligne posée seulement si la base répond oui (v2-listings2027.js).
+    // 22/10/2026 — « Notre marge par produit » y est fusionnée (onglets) : plus de ligne à part.
     if (m && V2.listings2027 && V2.listings2027.menu) V2.listings2027.menu(m);
   };
 
@@ -952,7 +951,7 @@
     var items = [];
     if (u.voitTousReel) items.push({ ic: u2Ic('pilotage', 22), t: 'Les ventes de toute l\'équipe', d: 'Le Pilotage vous montre maintenant les ventes de chaque commercial, plus seulement les vôtres.', ou: 'Accueil › Pilotage', go: 'pilotage', b: 'Ouvrir le Pilotage' });
     items.push({ ic: u2Ic('documents', 22), t: 'Documents', d: 'Les tarifs, conditions et catalogues des grossistes, groupements et laboratoires, rangés par dossier.', ou: 'Accueil › Documents', go: 'documents', b: 'Ouvrir Documents' });
-    if (marge) items.push({ ic: ICO('euro', 22, 1.75), t: 'Notre marge par produit', d: 'Ce que chaque produit nous rapporte, ceux à pousser en priorité, et la vue par officine.', ou: 'le menu à votre nom, en haut à droite', go: 'margeproduits', b: 'Ouvrir la marge' });
+    if (marge) items.push({ ic: ICO('euro', 22, 1.75), t: 'Listing produits 2027', d: 'Les listings à proposer en janvier 2027, ce que chaque produit nous rapporte et la vue par officine.', ou: 'le menu à votre nom, en haut à droite', go: 'listings2027', b: 'Ouvrir le listing' });
     var nb = ['', 'un outil', 'deux outils', 'trois outils'][items.length] || (items.length + ' outils');
     var prenom = String(u.name || '').trim().split(/\s+/)[0];
     bvStyle();
@@ -1659,7 +1658,6 @@
     document.getElementById('u2-mon').innerHTML = h;
     var e = document.getElementById('u2-eto');
     if (e && V2.etonnement && V2.etonnement.menu) { try { V2.etonnement.menu(e); } catch (x) {} }
-    if (e && V2.margeproduits && V2.margeproduits.menu) { try { V2.margeproduits.menu(e); } catch (x) {} }
     if (e && V2.listings2027 && V2.listings2027.menu) { try { V2.listings2027.menu(e); } catch (x) {} }
   }
   function u2Rail() {
