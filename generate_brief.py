@@ -959,6 +959,31 @@ def src_poids(src):
 
 # ───────────────────────────── 1. COLLECTE ─────────────────────────────
 
+def titre_baisses(baisses):
+    """Titre des baisses de prix CEPS à venir : (titre, baisses de la date annoncée, les autres).
+
+    ⚠️ 22/10/2026 : le titre comptait TOUTES les baisses à venir avec la date de la plus
+    proche — « 80 baisses … à partir du 1er novembre » quand 5 tombaient le 1er novembre
+    et 75 le 2 janvier 2027. On compte celles de la date annoncée ; les suivantes sont
+    nommées à part, avec leur date (ou leurs deux bornes s'il y en a plusieurs)."""
+    jours = sorted(set(days_until(c['date_effet']) for c in baisses))
+    groupe = [c for c in baisses if days_until(c['date_effet']) == jours[0]]
+    reste = [c for c in baisses if days_until(c['date_effet']) != jours[0]]
+    pl = 's' if len(groupe) > 1 else ''
+    titre = ('%d baisse%s de prix publiée%s au Journal officiel, applicable%s à partir du %s'
+             % (len(groupe), pl, pl, pl, fr_date(groupe[0]['date_effet'])))
+    if reste:
+        premier = min(reste, key=lambda c: days_until(c['date_effet']))
+        dernier = max(reste, key=lambda c: days_until(c['date_effet']))
+        autres = '%d autre%s' % (len(reste), 's' if len(reste) > 1 else '')
+        if len(jours) == 2:
+            titre += ' ; %s au %s' % (autres, fr_date(premier['date_effet']))
+        else:
+            titre += ' ; %s entre le %s et le %s' % (
+                autres, fr_date(premier['date_effet']), fr_date(dernier['date_effet']))
+    return titre, groupe, reste
+
+
 def collecte():
     """Toutes les entrées candidates, normalisées au même format."""
     E = []           # entrées « éditoriales » (candidates au brief)
@@ -1027,13 +1052,12 @@ def collecte():
         baisses = [c for c in futures if c.get('sens') == 'baisse']
         if baisses:
             proche = min(baisses, key=lambda c: days_until(c['date_effet']))
-            add('%d baisse%s de prix publiée%s au Journal officiel, applicable%s à partir du %s'
-                % (len(baisses), 's' if len(baisses) > 1 else '', 's' if len(baisses) > 1 else '',
-                   's' if len(baisses) > 1 else '', fr_date(proche['date_effet'])),
+            titre, groupe, reste = titre_baisses(baisses)
+            add(titre,
                 'https://www.legifrance.gouv.fr/jorf/jo', 'CEPS · Journal officiel',
                 proche.get('date_publi') or TODAY.isoformat(),
                 'Avis de prix du Comité économique des produits de santé. '
-                + ', '.join(clean(c.get('d')) for c in baisses[:3]),
+                + ', '.join(clean(c.get('d')) for c in (groupe + reste)[:3]),
                 kind='prix', extra={'effet': proche.get('date_effet') or ''})
 
     # ── baisses de prix déjà effectives dans la BDPM (generate_prix.py) ──

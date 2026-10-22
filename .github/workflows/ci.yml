@@ -124,6 +124,9 @@ jobs:
       - name: Test robot prix CEPS (la date d'effet de chaque ligne de l'avis prime sur la date de parution)
         run: python3 tests/prix-futurs-date-effet.test.py
 
+      - name: Test brief du matin (le titre des baisses CEPS compte celles de la date annoncée)
+        run: python3 tests/brief-baisses-titre.test.py
+
       # Les sources de prix sont des fenêtres glissantes (DILA ~20 jours, BDPM sans
       # historique) : ce qu'un robot voit et n'archive pas est perdu définitivement.
       - name: Test archive d'évènements (prix, avis CEPS)
