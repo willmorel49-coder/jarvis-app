@@ -402,8 +402,30 @@ def charger_officiel():
     return dispo, cips
 
 
+def liste_suspecte(n_nouveau, n_veille):
+    """22/10/2026 : la page ANSM a rendu 0 signalement, le robot a publié une liste vide et la CI
+    est restée rouge (plus aucune mise en ligne). Une liste effondrée d'un coup (moins du
+    cinquième de la veille, quand la veille en avait plus de 50) est une panne de lecture,
+    pas une fin de pénurie : on ne réécrit rien."""
+    return n_veille > 50 and n_nouveau * 5 < n_veille
+
+
+def nb_veille():
+    try:
+        with io.open(OUT, encoding="utf-8") as f:
+            return len(json.load(f).get("items") or [])
+    except Exception:
+        return 0
+
+
 def main():
     lst = parse_list(fetch(LIST_URL))
+    n_veille = nb_veille()
+    if liste_suspecte(len(lst), n_veille):
+        # Avant toute écriture (fichier du jour ET journal) : la liste de la veille reste en place.
+        print("ARRÊT · %d signalements lus contre %d la veille : lecture de la page ANSM suspecte, rien n'est réécrit"
+              % (len(lst), n_veille))
+        raise SystemExit(1)
 
     # Enrichissement par le fichier officiel : la cle de rapprochement est l'URL de
     # fiche, que les deux sources portent — donc exacte, pas approximative.
