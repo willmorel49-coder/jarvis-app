@@ -44,7 +44,8 @@
   var etatFichier = 'attente';   // attente | charge | refuse
   var D = null;                  // données préparées
   var S = { K: null, fam: '', q: '', tri: 'mm', sens: -1, n: N_PAGE, masq: {}, sansTout: false, epingle: null,
-    vue: 'produit', oq: '', oComm: '', oSans: false, oTri: 'pf', oN: N_PAGE, oOuvert: {} };
+    vue: 'produit', oq: '', oComm: '', oSans: false, oTri: 'pf', oN: N_PAGE, oOuvert: {},
+    perim: null, oCase: null, oAl: '', lst: -1 };   // pilotage : périmètre (null = pas encore choisi), case et alerte filtrées, listing
   var memo = {};
   var racine = null, ecouteurs = false, minuterie = null, dernierToucher = 0;
 
@@ -121,7 +122,7 @@
       r.nomN = norm(r.nom + ' ' + r.ville + ' ' + r.cp + ' ' + r.code);
       return r;
     });
-    return { rows: rows, meta: om, comm: comm };
+    return { rows: rows, meta: om, comm: comm, pil: lirePilotage(M, rows, Dp) };
   }
   var memoO = {};
   function calcO(K) {
@@ -571,10 +572,12 @@
     return h;
   }
   function filtrerO() {
-    var q = norm(S.oq).trim().split(/\s+/).filter(Boolean), K = S.K, tri = S.oTri;
-    var val = tri === 'pf' ? function (r) { return r.pf[K]; } : tri === 'pt' ? function (r) { return r.pt[K]; } : tri === 'm' ? function (r) { return r.m[K]; } : function (r) { return r.ca; };
-    var out = D.off.rows.filter(function (r) {
-      if (S.oComm && r.comm !== S.oComm) return false;
+    var q = norm(S.oq).trim().split(/\s+/).filter(Boolean), K = S.K, tri = S.oTri, pil = D.off.pil;
+    var val = tri === 'en' ? function (r) { return r.en; } : tri === 'tx' ? function (r) { return -r.tx; } : tri === 'pf' ? function (r) { return r.pf[K]; } : tri === 'pt' ? function (r) { return r.pt[K]; } : tri === 'm' ? function (r) { return r.m[K]; } : function (r) { return r.ca; };
+    var out = (pil ? dansPerim() : D.off.rows).filter(function (r) {
+      if (!pil && S.oComm && r.comm !== S.oComm) return false;
+      if (pil && S.oCase !== null && r.cas !== S.oCase) return false;
+      if (pil && S.oAl && !(S.oAl in r.al)) return false;
       if (S.oSans && !r.sans) return false;
       for (var i = 0; i < q.length; i++) if (r.nomN.indexOf(q[i]) < 0) return false;
       return true;
@@ -599,7 +602,7 @@
     if (ouvert) h += detailO(r);
     return h + '</div>';
   }
-  function detailO(r) {
+  function manquants(r, interne) {
     var K = S.K, iF = trouverFam(/^froid$/i), liste = [], somme = 0;
     r.manq.forEach(function (m) {
       var p = D.rows[m[0]]; if (!p) return;
@@ -607,9 +610,10 @@
       liste.push({ p: p, b: m[1], g: g });
     });
     liste.sort(function (a, b) { var fa = a.p.f === iF ? 0 : 1, fb = b.p.f === iF ? 0 : 1; return (fa - fb) || (b.g - a.g); });
-    var h = '<div class="mp-odet"><div class="mp-odh"><div><b>Produits qui lui manquent</b><span>Boîtes par mois en moins que la moyenne du réseau à taille égale, et ce que cela rapporterait en ' + anDe(K) + '. Le froid est en premier.</span></div>' +
+    var h = interne ? '<p class="mp-note">Boîtes par mois en moins que la moyenne du réseau à taille égale, et ce que cela rapporterait en ' + anDe(K) + '. Le froid est en premier.</p>' :
+      '<div class="mp-odet"><div class="mp-odh"><div><b>Produits qui lui manquent</b><span>Boîtes par mois en moins que la moyenne du réseau à taille égale, et ce que cela rapporterait en ' + anDe(K) + '. Le froid est en premier.</span></div>' +
       '<button type="button" class="v2-btn v2-btn-primary mp-fiche" data-act="fiche" data-c="' + esc(r.code) + '">Ouvrir la fiche</button></div>';
-    if (r.plus) h += '<p class="mp-note">Plus d’achat depuis ' + esc(moisNom(r.dernier)) + '.</p>';
+    if (r.plus && !interne) h += '<p class="mp-note">Plus d’achat depuis ' + esc(moisNom(r.dernier)) + '.</p>';
     if (!liste.length) h += '<div class="mp-vide">Aucun produit suivi ne lui manque.</div>';
     else {
       h += '<div class="mp-mq mp-mqh" aria-hidden="true"><span>Produit</span><span>Famille</span><span class="c">Boîtes / mois en moins</span><span class="c">Gain par mois</span></div>';
@@ -622,18 +626,29 @@
       var reste = r.pt[K] - somme;
       if (reste >= 1) h += '<p class="mp-note">Les ' + entier(liste.length) + ' plus gros manques sont listés (' + eur0(somme) + '). Le reste du potentiel total, ' + eur0(reste) + ' par mois, est réparti sur des produits plus petits.</p>';
     }
+    if (interne) return h;
     h += '<p class="mp-note">Dernier achat chez nous : ' + esc(moisNom(r.dernier)) + ' · ' + entier(r.nf) + ' des ' + entier(D.off.meta.nb_froids_suivis) + ' produits froid suivis achetés · code ' + esc(r.code) + '</p></div>';
     return h;
   }
+  function detailO(r) { return manquants(r, false); }
   function majOfficines() {
-    var res = filtrerO(), cpt = document.getElementById('mp-ocompte'), lst = document.getElementById('mp-olist'), plus = document.getElementById('mp-oplus');
+    var res = filtrerO(), cpt = document.getElementById('mp-ocompte'), lst = document.getElementById('mp-olist'), plus = document.getElementById('mp-oplus'), pil = D.off.pil;
     if (!lst) return;
-    var n = Math.min(S.oN, res.length), h = '<div class="mp-orow mp-ohead" aria-hidden="true"><span>Officine</span><span>Commercial</span><span class="c">Achats / mois hors froid</span><span>Froid : boîtes / mois</span><span class="c">Notre marge / mois</span><span class="c">Potentiel froid / mois</span><span class="c">Potentiel total / mois</span><span></span></div>';
-    for (var i = 0; i < n; i++) h += ligneO(res[i]);
+    var n = Math.min(S.oN, res.length), h = pil ?
+      '<div class="mp-orow mp-ohead" aria-hidden="true"><span>Officine</span><span>Commercial</span><span class="c">Achats / mois hors froid</span><span>Froid : boîtes / mois</span><span>Notre taux</span><span class="c">Notre marge / mois</span><span class="c">Potentiel froid / mois</span><span class="c">Potentiel total / mois</span><span></span></div>' :
+      '<div class="mp-orow mp-ohead" aria-hidden="true"><span>Officine</span><span>Commercial</span><span class="c">Achats / mois hors froid</span><span>Froid : boîtes / mois</span><span class="c">Notre marge / mois</span><span class="c">Potentiel froid / mois</span><span class="c">Potentiel total / mois</span><span></span></div>';
+    for (var i = 0; i < n; i++) h += ligneAff(res[i]);
     if (!res.length) h += '<div class="mp-vide">Aucune officine ne correspond à ces filtres.</div>';
-    lst.innerHTML = h;
+    lst.innerHTML = pil ? fr(h) : h;
     var pfS = 0, ptS = 0; res.forEach(function (r) { pfS += r.pf[S.K]; ptS += r.pt[S.K]; });
-    cpt.textContent = entier(res.length) + ' officine' + (res.length > 1 ? 's' : '') + (res.length > n ? ' · ' + entier(n) + ' affichées' : '') + ' · potentiel froid ' + eur0(pfS) + ' par mois · potentiel total ' + eur0(ptS) + ' par mois';
+    var t = entier(res.length) + ' officine' + (res.length > 1 ? 's' : '') + (res.length > n ? ' · ' + entier(n) + ' affichées' : '') + ' · potentiel froid ' + eur0(pfS) + ' par mois · potentiel total ' + eur0(ptS) + ' par mois';
+    cpt.textContent = pil ? fr(t) : t;
+    if (pil) {
+      var ac = document.getElementById('pil-actifs'), a = '';
+      if (S.oCase !== null) a += '<button type="button" class="pil-actif" data-act="clr">Case : ' + CAS[S.oCase].nom + ' <span aria-hidden="true">×</span></button>';
+      if (S.oAl) a += '<button type="button" class="pil-actif" data-act="clr">Alerte : ' + ALN[S.oAl].nom + ' <span aria-hidden="true">×</span></button>';
+      if (ac) { ac.innerHTML = fr(a); ac.hidden = !a; }
+    }
     plus.hidden = res.length <= n;
     plus.textContent = 'Afficher plus (' + entier(res.length - n) + ' restantes)';
   }
@@ -647,6 +662,368 @@
       '<li>Potentiel = boîtes qui manquent × notre marge par boîte du barème choisi, en € par mois. Le froid ne compte que les produits froid suivis ; le total compte tous les produits suivis.</li></ul>' +
       '<p>Période : ' + esc(moisNom(p.de || 0)) + ' → ' + esc(moisNom(p.a || 0)) + '. Noms et villes trouvés pour ' + pct(cv.taux || 0, 0) + ' des officines. Estimation de la direction, à confirmer par l’appel.</p>' +
       '<p class="conf">Confidentiel : réservé au groupe restreint.</p></footer>';
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // 22/10/2026 — PILOTAGE de SES officines (clé « pilotage » du fichier protégé).
+  // Will : « cibler notre groupe, nos pharmacies, nos secteurs ; voir comment les pharmacies
+  // vont cranter avec les bons produits ; les alertes ; les bons et les mauvais clients ; le taux
+  // global et par catégories ; les produits qui nous plombent ; combien les listings feraient progresser ».
+  // « Cranter » = le TAUX de notre marge de l'officine (notre marge ÷ ses achats), toujours au barème 2027.
+  // Aucun chiffre métier écrit ici : seuils, taux du réseau, médiane, listings se lisent dans le fichier.
+  // ═══════════════════════════════════════════════════════════════════
+  var NB = ' ';
+  function fr(h) { return String(h).replace(/ ([:;%€?!»])/g, NB + '$1').replace(/« /g, '«' + NB); }
+  function pts(v) { var p = Math.abs(v) * 100; return nf(p, 2) + NB + 'point' + (p >= 2 ? 's' : ''); }
+  function sgn(v, d) { return (v < 0 ? '−' : '+') + pct(Math.abs(v), d); }
+  function sgnE(v) { return (v < 0 ? '−' : '+') + eur0(Math.abs(v)); }
+  function tx2(v) { return pct(v, 2); }
+  var CAS = [
+    { nom: 'Gros et rentable', court: 'Gros · rentable', c: '#1E9E6A', t: '#0F7A52' },
+    { nom: 'Gros mais peu rentable', court: 'Gros · peu rentable', c: '#C7791A', t: '#9A5B12', aide: 'à travailler en premier' },
+    { nom: 'Petit et rentable', court: 'Petit · rentable', c: '#3A4A9C', t: '#3A4A9C' },
+    { nom: 'Petit et peu rentable', court: 'Petit · peu rentable', c: '#E0556E', t: '#C7283D' }
+  ];
+  var ALN = {
+    b: { nom: 'Achats en baisse', court: 'Achats en baisse' },
+    t: { nom: 'Taux en baisse en 2027', court: 'Taux en baisse' },
+    p: { nom: 'Plombée par des produits sans marge', court: 'Produits sans marge' },
+    a: { nom: 'Produit habituel arrêté', court: 'Produit arrêté' },
+    x: { nom: 'Plus d’achat depuis plusieurs mois', court: 'Plus d’achat' }
+  };
+  var ALORDRE = ['b', 't', 'p', 'a', 'x'];
+  var SEC = null;   // synthèse du périmètre courant
+
+  // ── Lecture de la clé « pilotage » : null si absente (l'ancien écran reste alors affiché) ──
+  function lirePilotage(M, rows, Dp) {
+    var P = M.pilotage, i;
+    if (!P || !P.lignes || !P.colonnes || !P.meta || P.lignes.length !== rows.length) return null;
+    var ix = {};
+    for (i = 0; i < P.colonnes.length; i++) ix[P.colonnes[i]] = i;
+    for (i = 0; i < rows.length; i++) if (String(P.lignes[i][ix.code]) !== rows[i].code) return null;
+    var fams = P.familles || [], ref = fams.map(function () { return [0, 0]; });
+    rows.forEach(function (r, i) {
+      var l = P.lignes[i], g = function (n) { return l[ix[n]]; };
+      r.ach = g('achats') || 0; r.p26 = g('m26') || 0; r.p27 = g('m27') || 0;
+      r.tx = r.ach > 0 ? r.p27 / r.ach : 0; r.tx26 = r.ach > 0 ? r.p26 / r.ach : 0;
+      r.fam = g('fam') || []; r.mois = g('mois') || []; r.plomb = g('plombent') || [];
+      r.psm = g('part_sans_marge') || 0; r.arr = g('arretes') || []; r.narr = g('nb_arretes') || 0;
+      r.cas = g('case'); r.al = {};
+      var a = g('alertes') || {}, k;
+      for (k in a) if (Object.prototype.hasOwnProperty.call(a, k)) r.al[k] = a[k];
+      if (r.plus) r.al.x = 1;
+      r.perte = 0; r.arr.forEach(function (x) { r.perte += x[2]; });
+      r.en = (r.pt[Dp.k1] || 0) + r.perte;
+      r.nal = Object.keys(r.al).length;
+      r.fam.forEach(function (f, j) { if (f) { ref[j][0] += f[0]; ref[j][1] += f[2]; } });
+    });
+    var m = P.meta;
+    return { P: P, meta: m, prods: P.produits || [], tauxRes: m.taux_reseau_27, tauxRes26: m.taux_reseau_26, varRes: m.var_res, med: m.mediane_achats,
+      seuils: m.seuils || {}, L: (M.listings && M.listings.listes) || [], mois: P.mois || [], fams: fams, pc: P.plombent_par_commercial || {},
+      refFam: ref.map(function (x) { return x[0] > 0 ? x[1] / x[0] : 0; }) };
+  }
+  function nomProd(ref) { var p = D.off.pil.prods[ref]; return p ? p[1] : '—'; }
+  function famProd(ref) { var p = D.off.pil.prods[ref]; return p ? p[2] : 8; }
+  function chipFamP(j) { return '<span class="mp-fam" style="--c:' + couleurFam(j) + '"><i></i>' + esc(D.off.pil.fams[j] || '—') + '</span>'; }
+
+  // ── Périmètre : mes officines · un collègue · toute l'équipe ──
+  function monCommercial() {
+    var u = V2.user, c = u && u.commercial ? String(u.commercial) : '';
+    if (!c || !D.off) return '';
+    var list = D.off.comm, n = norm(c).trim(), i;
+    for (i = 0; i < list.length; i++) if (norm(list[i]).trim() === n) return list[i];
+    var f = n.split(/\s+/)[0], hit = list.filter(function (x) { return norm(x).split(/\s+/)[0] === f; });
+    return hit.length === 1 ? hit[0] : '';
+  }
+  function dansPerim() { return S.perim ? D.off.rows.filter(function (r) { return r.comm === S.perim; }) : D.off.rows; }
+  function blocPerim() {
+    var moi = monCommercial(), h = '<div class="pil-perim" role="group" aria-label="Périmètre"><span class="pil-pl">Périmètre</span>';
+    if (moi) h += '<button type="button" class="pil-pb' + (S.perim === moi ? ' on' : '') + '" data-act="perim" data-v="' + esc(moi) + '" aria-pressed="' + (S.perim === moi) + '">Mes officines · ' + esc(moi) + '</button>';
+    h += '<button type="button" class="pil-pb' + (S.perim === '' ? ' on' : '') + '" data-act="perim" data-v="" aria-pressed="' + (S.perim === '') + '">Toute l’équipe</button>';
+    var autre = S.perim && S.perim !== moi;
+    h += '<label class="pil-coll' + (autre ? ' on' : '') + '"><span>Un collègue</span><select id="pil-coll"><option value="">Choisir…</option>';
+    D.off.comm.forEach(function (c) { if (c !== moi) h += '<option value="' + esc(c) + '"' + (S.perim === c ? ' selected' : '') + '>' + esc(c) + '</option>'; });
+    return h + '</select></label></div>';
+  }
+
+  // ── Synthèse d'un ensemble d'officines ──
+  function agr(rows) {
+    var pl = D.off.pil, k1 = D.k1, j;
+    var A = { n: rows.length, ach: 0, m26: 0, m27: 0, pt: 0, pf: 0, fam: [], cas: [0, 0, 0, 0], casM: [0, 0, 0, 0], al: { b: 0, t: 0, p: 0, a: 0, x: 0 }, enAlerte: 0 };
+    for (j = 0; j < pl.fams.length; j++) A.fam.push([0, 0, 0]);
+    rows.forEach(function (r) {
+      A.ach += r.ach; A.m26 += r.p26; A.m27 += r.p27; A.pt += r.pt[k1]; A.pf += r.pf[k1];
+      A.cas[r.cas]++; A.casM[r.cas] += r.p27;
+      var k; for (k in r.al) if (A.al[k] !== undefined) A.al[k]++;
+      if (r.nal) A.enAlerte++;
+      r.fam.forEach(function (f, j2) { if (f) { A.fam[j2][0] += f[0]; A.fam[j2][1] += f[1]; A.fam[j2][2] += f[2]; } });
+    });
+    A.tx = A.ach > 0 ? A.m27 / A.ach : 0; A.tx26 = A.ach > 0 ? A.m26 / A.ach : 0;
+    return A;
+  }
+  function listeChoisie() { var L = D.off.pil.L; return L[S.lst] || L[0] || null; }
+  function gainListe(A, L) {
+    var N = A.cas[1], g = N * L.marge, den = A.ach + N * L.ca;
+    return { N: N, gain: g, t0: A.tx, t1: den > 0 ? (A.m27 + g) / den : 0 };
+  }
+  function txApres(r, L) { var den = r.ach + L.ca; return den > 0 ? (r.p27 + L.marge) / den : 0; }
+  // Piste de taux : échelle 0 → 2 × réseau, repère du réseau au milieu
+  function trk(v, couleur, big) {
+    var ref = D.off.pil.tauxRes || 0.02, w = Math.max(0, Math.min(1, v / (2 * ref))) * 100;
+    return '<span class="pil-trk' + (big ? ' big' : '') + '" role="img" aria-label="' + tx2(v) + ', le réseau est à ' + tx2(ref) + '"><i style="width:' + w.toFixed(1) + '%;background:' + couleur + '"></i><u></u></span>';
+  }
+  function couleurTx(v) { return v >= D.off.pil.tauxRes ? '#1E9E6A' : '#C7791A'; }
+  function pastille(k) { var c = CAS[k]; return '<em class="pil-cas" style="--c:' + c.c + '"><i></i>' + c.court + '</em>'; }
+  function puces(r, avecX) {
+    var h = '';
+    ALORDRE.forEach(function (k) { if (k in r.al && (k !== 'x' || avecX)) h += '<em class="pil-al ' + k + '" title="' + esc(ALN[k].nom) + '">' + ALN[k].court + '</em>'; });
+    return h;
+  }
+
+  // ── Alertes en phrases ──
+  function phrases(r) {
+    var pl = D.off.pil, out = [], s = pl.seuils;
+    if ('b' in r.al) out.push(['b', 'Ses achats baissent : ' + sgn(r.al.b, 0) + ' en juin → août face à la moyenne de janvier → mai, alors que l’ensemble des officines suivies fait ' + sgn(pl.varRes, 0) + ' sur la même période.']);
+    if ('t' in r.al) out.push(['t', 'Son taux baisse avec le barème 2027 : ' + tx2(r.tx) + ' contre ' + tx2(r.tx26) + ' avec le barème 2026 (' + pts(r.tx - r.tx26) + ' en moins).']);
+    if ('p' in r.al) out.push(['p', 'Elle est plombée : ' + pct(r.psm, 0) + ' de ses achats portent sur des produits qui nous rapportent moins de ' + eurBoite(s.marge_boite_sans || 0) + ' la boîte, et son taux est sous celui du réseau (' + tx2(pl.tauxRes) + ').']);
+    if ('a' in r.al) {
+      var m6 = pl.mois.length ? pl.mois[pl.mois.length - 2] : 0, m7 = pl.mois.length ? pl.mois[pl.mois.length - 1] : 0;
+      out.push(['a', r.narr + (r.narr > 1 ? ' produits qu’elle achetait presque chaque mois' : ' produit qu’elle achetait presque chaque mois') + ' (au moins ' + (s.arret_mois_habituel_sur_6 || '') + ' mois sur 6 avant l’été) ne sont plus achetés en ' + (MOIS[m6 % 100 - 1] || '') + ' ni en ' + (MOIS[m7 % 100 - 1] || '') + ' : au moins ' + eur0(r.perte) + ' de notre marge par mois en moins.']);
+    }
+    if (r.plus) out.push(['x', 'Plus d’achat depuis ' + moisNom(r.dernier) + '.']);
+    return out;
+  }
+
+  // ═══ Le tableau de bord : 4 cartes ═══
+  function carteTaux(A) {
+    var pl = D.off.pil, ecart = A.tx - pl.tauxRes;
+    return '<div class="pil-card"><div class="mp-kl">Notre taux de marge</div>' +
+      '<div class="mp-kv" data-k="taux">' + tx2(A.tx) + '</div>' + trk(A.tx, couleurTx(A.tx), true) +
+      '<div class="mp-kd">Notre marge ÷ leurs achats, par mois (moyenne janvier → août 2026), au barème 2027. Le réseau : <b>' + tx2(pl.tauxRes) + '</b>. ' +
+      (Math.abs(ecart) < 0.00005 ? 'Au niveau du réseau.' : '<b class="' + (ecart < 0 ? 'neg' : 'pos') + '">' + pts(ecart) + (ecart < 0 ? ' sous' : ' au-dessus du') + ' le réseau.</b>') +
+      ' Avec le barème 2026 : ' + tx2(A.tx26) + '.</div></div>';
+  }
+  function carteFamilles(A) {
+    var pl = D.off.pil, tot = A.ach || 1;
+    var rows = A.fam.map(function (f, j) { return { j: j, ach: f[0], m27: f[2] }; }).filter(function (x) { return x.ach > 0; }).sort(function (a, b) { return b.ach - a.ach; });
+    var h = '<div class="pil-card"><div class="mp-kl">Par famille de produits</div><div class="pil-fams">';
+    rows.slice(0, 6).forEach(function (x) {
+      var t = x.m27 / x.ach, ref = pl.refFam[x.j], egal = tx2(t) === tx2(ref), haut = t >= ref;
+      h += '<div class="pil-fr"><span class="pil-fn">' + chipFamP(x.j) + '</span>' +
+        '<span class="mp-bar" title="' + pct(x.ach / tot, 0) + ' de leurs achats"><i style="width:' + (x.ach / tot * 100).toFixed(1) + '%;background:' + couleurFam(x.j) + '"></i></span>' +
+        '<b class="' + (egal ? '' : haut ? 'pos' : 'neg') + '" title="Même famille sur l’ensemble des officines suivies : ' + tx2(ref) + '">' + (egal ? '= ' : haut ? '▲ ' : '▼ ') + tx2(t) + '</b></div>';
+    });
+    if (rows.length > 6) { var r6 = 0; rows.slice(6).forEach(function (x) { r6 += x.ach; }); h += '<div class="pil-fr ot"><span class="pil-fn">Autres familles</span><span class="mp-bar"><i style="width:' + (r6 / tot * 100).toFixed(1) + '%;background:' + GRIS_FAMILLE + '"></i></span><b></b></div>'; }
+    return h + '</div><div class="mp-kd">Barre : part de leurs achats. Chiffre : notre taux sur la famille. ▲ au-dessus, ▼ en dessous, = pareil que le même taux sur l’ensemble des officines suivies (mêmes mois, barème 2027).</div></div>';
+  }
+  function carteCases(A) {
+    var h = '<div class="pil-card"><div class="mp-kl">Bons et mauvais clients</div><div class="pil-cases">';
+    CAS.forEach(function (c, k) {
+      h += '<button type="button" class="pil-case' + (S.oCase === k ? ' on' : '') + '" style="--c:' + c.c + '" data-act="case" data-v="' + k + '" aria-pressed="' + (S.oCase === k) + '">' +
+        '<i></i><b>' + entier(A.cas[k]) + '</b><span>' + c.nom + '</span><small>' + eur0(A.casM[k]) + ' de marge par mois</small>' + (c.aide ? '<em>' + c.aide + '</em>' : '') + '</button>';
+    });
+    return h + '</div><div class="mp-kd">Gros ou petit : achats au-dessus ou en dessous de la médiane (' + eur0(D.off.pil.med) + ' par mois). Rentable : taux au moins égal à celui du réseau. Un clic filtre la liste.</div></div>';
+  }
+  function boutonsAlertes() {
+    var h = '<div class="pil-als">';
+    ALORDRE.forEach(function (k) {
+      h += '<button type="button" class="pil-alb ' + k + (S.oAl === k ? ' on' : '') + '" data-act="al" data-v="' + k + '" aria-pressed="' + (S.oAl === k) + '"><b>' + entier(SEC.al[k]) + '</b><span>' + ALN[k].nom + '</span></button>';
+    });
+    return h + '</div>';
+  }
+  function carteAlertes() {
+    return '<div class="pil-card"><div class="mp-kl">Alertes</div>' + boutonsAlertes() +
+      '<div class="mp-kd">Nombre d’officines concernées. Un clic filtre la liste. ' + entier(SEC.enAlerte) + ' sur ' + entier(SEC.n) + ' ont au moins une alerte.</div></div>';
+  }
+  function entreeV1(A) {
+    return '<section class="mp-sec pil-e1"><div class="mp-sh"><h2>Le tableau de bord</h2><span>Le taux, les familles, les bons et mauvais clients et les alertes de ' + libPerim() + ', d’un coup d’œil.</span></div>' +
+      '<div class="pil-cards">' + carteTaux(A) + carteFamilles(A) + carteCases(A) + carteAlertes() + '</div></section>';
+  }
+  function libPerim() { return S.perim === '' ? 'toute l’équipe' : (S.perim === monCommercial() ? 'vos officines' : 'les officines de ' + esc(S.perim)); }
+
+  // ═══ Simulateur, produits qui plombent, par commercial, liste, fiche ═══
+  function tableEquipe() {
+    var pl = D.off.pil, L = listeChoisie(), par = {}, ordre = [];
+    D.off.rows.forEach(function (r) { var k = r.comm || '—'; if (!par[k]) { par[k] = []; ordre.push(k); } par[k].push(r); });
+    var lignes = ordre.map(function (k) { var a = agr(par[k]); a.nom = k; return a; }).sort(function (a, b) { return b.ach - a.ach; });
+    var h = '<section class="mp-sec"><div class="mp-sh"><h2>Par commercial</h2><span>Une ligne par commercial, tout par mois (moyenne janvier → août 2026) au barème 2027. Le taux se lit face au réseau (' + tx2(pl.tauxRes) + ', trait au milieu). Cliquez sur une ligne pour passer sur ses officines.</span></div><div class="mp-card pil-eq">' +
+      '<div class="pil-er pil-eh" aria-hidden="true"><span>Commercial</span><span class="c">Officines</span><span class="c">Achats / mois</span><span class="c">Notre marge / mois</span><span>Notre taux</span><span class="c">À travailler</span><span class="c">En alerte</span><span class="c">Potentiel / mois</span><span class="c">Gain du listing' + (L ? ' de ' + eur0(L.budget) : '') + '</span></div>';
+    lignes.forEach(function (a) {
+      var g = L ? a.cas[1] * L.marge : 0;
+      h += '<button type="button" class="pil-er" data-act="perim" data-v="' + esc(a.nom) + '">' +
+        '<span class="mp-n"><b>' + esc(a.nom) + '</b></span>' +
+        '<span class="mp-c" data-l="Officines">' + entier(a.n) + '</span>' +
+        '<span class="mp-c" data-l="Achats par mois">' + eur0(a.ach) + '</span>' +
+        '<span class="mp-c" data-l="Notre marge par mois">' + eur0(a.m27) + '</span>' +
+        '<span class="mp-c pil-txc" data-l="Notre taux (face au réseau)"><b>' + tx2(a.tx) + '</b>' + trk(a.tx, couleurTx(a.tx)) + '</span>' +
+        '<span class="mp-c" data-l="À travailler">' + entier(a.cas[1]) + '</span>' +
+        '<span class="mp-c" data-l="Officines en alerte">' + entier(a.enAlerte) + '</span>' +
+        '<span class="mp-c" data-l="Potentiel par mois">' + eur0(a.pt) + '</span>' +
+        '<span class="mp-c" data-l="Gain du listing par mois"><b>' + (g ? sgnE(g) : '—') + '</b></span></button>';
+    });
+    return h + '</div></section>';
+  }
+  function sectionSim(A) {
+    var pl = D.off.pil, L = listeChoisie(); if (!L) return '';
+    var G = gainListe(A, L);
+    var h = '<section class="mp-sec"><div class="mp-sh"><h2>Si on place le bon listing</h2><span>Ce que les listings de janvier changeraient pour les officines à travailler de ' + libPerim() + ', au barème 2027.</span></div><div class="mp-card pil-sim"><div class="pil-simt">';
+    h += G.N > 0 ? 'Si vos <b>' + entier(G.N) + ' officine' + (G.N > 1 ? 's' : '') + ' à travailler</b> prenaient le listing ' : 'Aucune officine à travailler ici. Le listing, pour information : ';
+    h += '<label class="pil-lstw"><span class="sr">Listing choisi</span><select id="pil-lst">';
+    pl.L.forEach(function (l, i) { h += '<option value="' + i + '"' + (L === l ? ' selected' : '') + '>' + eur0(l.budget) + ' par mois</option>'; });
+    h += '</select></label></div>';
+    if (G.N > 0) {
+      h += '<div class="pil-simr"><div><span class="pil-cl">Notre marge en plus</span><b class="pil-big pos">' + sgnE(G.gain) + '</b><small>par mois, ' + eur0(L.marge) + ' pour chacune</small></div>' +
+        '<div><span class="pil-cl">Taux de ' + libPerim() + '</span><b class="pil-big">' + tx2(G.t0) + ' <em>→</em> ' + tx2(G.t1) + '</b>' +
+        '<div class="pil-duo"><span>Aujourd’hui</span>' + trk(G.t0, couleurTx(G.t0)) + '<span>Avec le listing</span>' + trk(G.t1, couleurTx(G.t1)) + '</div><small>Le réseau : ' + tx2(pl.tauxRes) + ' (trait au milieu des pistes)</small></div></div>';
+    }
+    h += '<p class="mp-note">Ce listing : ' + entier(L.refs) + ' références, ' + entier(L.boites) + ' boîtes et ' + eur0(L.ca) + ' d’achats par mois et par officine, pour ' + eur0(L.marge) + ' de notre marge, soit un taux de ' + tx2(L.taux) + '. On suppose que chaque officine à travailler l’achète en plus de ses achats actuels, chaque mois. Estimation, pas une promesse.</p></div></section>';
+    return h;
+  }
+  function sectionPlombent(A) {
+    var pl = D.off.pil, cle = S.perim ? String(D.off.comm.indexOf(S.perim)) : 'tous', L = (pl.pc[cle] || []).slice(0, 5), s = pl.seuils;
+    var h = '<section class="mp-sec"><div class="mp-sh"><h2>Les produits qui nous plombent</h2><span>Ceux qui pèsent dans les achats de ' + libPerim() + ' mais nous rapportent moins de ' + eurBoite(s.marge_boite_sans || 0) + ' par boîte (barème 2027) : par mois, moyenne janvier → août 2026. Les génériques en font partie, ils ne rapportent rien par nature.</span></div><div class="mp-card">';
+    if (!L.length) return h + '<div class="mp-vide">Aucun produit à signaler.</div></div></section>';
+    var max = 0; L.forEach(function (x) { if (x[2] > max) max = x[2]; });
+    h += '<div class="pil-pr pil-ph2" aria-hidden="true"><span>Produit</span><span>Achats par mois</span><span class="c">Notre marge / mois</span><span class="c">Officines</span></div>';
+    L.forEach(function (x) {
+      h += '<div class="pil-pr"><span class="mp-n"><b>' + esc(nomProd(x[0])) + '</b><span>' + chipFamP(famProd(x[0])) + '</span></span>' +
+        '<span class="mp-c pil-pa" data-l="Achats par mois"><b>' + eur0(x[2]) + '</b>' + barre(x[2], '#C7791A', max) + '<small>' + pct(A.ach ? x[2] / A.ach : 0, 1) + ' des achats</small></span>' +
+        '<span class="mp-c" data-l="Notre marge par mois">' + eur0(x[3]) + '</span>' +
+        '<span class="mp-c" data-l="Officines concernées">' + entier(x[4]) + '</span></div>';
+    });
+    return h + '</div></section>';
+  }
+
+  // ── La liste (commune) ──
+  var TRIS_P = [['en', 'Enjeu en € (alertes et potentiel)'], ['tx', 'Notre taux, le plus bas d’abord'], ['pf', 'Potentiel froid'], ['pt', 'Potentiel total'], ['m', 'Notre marge'], ['ca', 'Achats hors froid']];
+  function sectionListeP() {
+    var h = '<section class="mp-sec" id="pil-liste"><div class="mp-sh"><h2>Les officines, une par une</h2><span>Classées par enjeu : les premières sont celles où il y a le plus à gagner ou à rattraper. Cliquez sur une officine pour voir comment elle crante, ses alertes et ses produits.</span></div>' +
+      '<div class="mp-card"><div class="mp-bar-outils">' +
+      '<label class="mp-field mp-q"><span>Rechercher</span><input type="search" id="mp-oq" inputmode="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Nom, ville, code postal ou code" value="' + esc(S.oq) + '"></label>' +
+      '<label class="mp-field"><span>Trier par</span><select id="mp-otri">';
+    TRIS_P.forEach(function (t) { h += '<option value="' + t[0] + '"' + (S.oTri === t[0] ? ' selected' : '') + '>' + t[1] + '</option>'; });
+    h += '</select></label><label class="mp-check"><input type="checkbox" id="mp-osans"' + (S.oSans ? ' checked' : '') + '><span>Seulement sans froid chez nous</span></label></div>' +
+      '<div class="pil-actifs" id="pil-actifs"></div><div class="mp-compte" id="mp-ocompte" aria-live="polite"></div>' +
+      '<div class="mp-olist" id="mp-olist"></div>' +
+      '<div class="mp-plusw"><button type="button" class="v2-btn v2-btn-ghost" data-act="plusO" id="mp-oplus">Afficher plus</button></div></div></section>';
+    return h;
+  }
+  function ligneP(r) {
+    var om = D.off.meta, pl = D.off.pil, ouvert = !!S.oOuvert[r.code], ref = r.ca * om.froid_reseau_pour_1000 / 1000;
+    var froid = '<span class="mp-ofv">' + boitesF(r.fb) + '</span>' + (r.sans ? ' <em class="mp-sf">Sans froid chez nous</em>' : '') + '<small class="mp-ref">Réseau à taille égale : ' + boitesF(ref) + '</small>';
+    var h = '<div class="mp-orow-w' + (ouvert ? ' ouvert' : '') + '" data-code="' + esc(r.code) + '">' +
+      '<button type="button" class="mp-orow" data-act="ouv" data-c="' + esc(r.code) + '" aria-expanded="' + ouvert + '">' +
+      '<span class="mp-n"><b title="' + esc(r.nom) + '">' + esc(r.nom) + '</b><span>' + esc(r.ville) + (r.cp ? ' · ' + esc(r.cp) : '') + '</span>' + (r.plus ? '<span class="mp-pa">Plus d’achat depuis ' + esc(moisNom(r.dernier)) + '</span>' : '') +
+      '<span class="pil-chips">' + pastille(r.cas) + puces(r, false) + '</span></span>' +
+      '<span class="mp-c oc" data-l="Commercial">' + esc(r.comm || '—') + '</span>' +
+      '<span class="mp-c" data-l="Achats par mois hors froid">' + eur0(r.ca) + '</span>' +
+      '<span class="mp-c of" data-l="Froid : boîtes par mois">' + froid + '</span>' +
+      '<span class="mp-c pil-txc" data-l="Notre taux, face au réseau"><b>' + tx2(r.tx) + '</b>' + trk(r.tx, CAS[r.cas].c) + '<small class="mp-ref">Réseau : ' + tx2(pl.tauxRes) + '</small></span>' +
+      '<span class="mp-c" data-l="Notre marge par mois">' + eur0(r.m[D.k1]) + '</span>' +
+      '<span class="mp-c pot f" data-l="Potentiel froid par mois">' + eur0(r.pf[D.k1]) + '</span>' +
+      '<span class="mp-c pot" data-l="Potentiel total par mois">' + eur0(r.pt[D.k1]) + '</span>' +
+      '<span class="mp-chev" aria-hidden="true"></span></button>';
+    if (ouvert) h += detailP(r);
+    return h + '</div>';
+  }
+  function ligneAff(r) { return D.off.pil ? ligneP(r) : ligneO(r); }
+
+  // ── La fiche dépliée ──
+  function courbe(r) {
+    var pl = D.off.pil, v = r.mois, n = v.length; if (!n) return '';
+    var W = 340, H = 118, pl_ = 22, pr = 22, pt = 12, pb = 24, max = Math.max.apply(null, v) * 1.12 || 1, i;
+    var X = function (k) { return pl_ + k / Math.max(1, n - 1) * (W - pl_ - pr); }, Y = function (a) { return pt + (1 - a / max) * (H - pt - pb); };
+    var avant = 0, na = Math.max(1, n - 3); for (i = 0; i < na; i++) avant += v[i]; avant /= na;
+    var s = '<svg class="pil-courbe" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Achats de chaque mois, de ' + MOIS[pl.mois[0] % 100 - 1] + ' à ' + MOIS[pl.mois[n - 1] % 100 - 1] + '">';
+    if ('b' in r.al) s += '<rect x="' + (X(n - 3) - 6).toFixed(1) + '" y="' + pt + '" width="' + (W - pr - X(n - 3) + 6).toFixed(1) + '" height="' + (H - pt - pb) + '" fill="#E0556E" fill-opacity="0.12"/>';
+    s += '<line x1="' + pl_ + '" x2="' + (W - pr) + '" y1="' + Y(avant).toFixed(1) + '" y2="' + Y(avant).toFixed(1) + '" stroke="#0A6C86" stroke-width="1.2" stroke-dasharray="4 3"/>';
+    s += '<polyline fill="none" stroke="#10131C" stroke-width="2" stroke-linejoin="round" points="' + v.map(function (a, k) { return X(k).toFixed(1) + ',' + Y(a).toFixed(1); }).join(' ') + '"/>';
+    v.forEach(function (a, k) {
+      var bas = k >= n - 3 && ('b' in r.al);
+      s += '<circle cx="' + X(k).toFixed(1) + '" cy="' + Y(a).toFixed(1) + '" r="3.6" fill="' + (bas ? '#E0556E' : '#10131C') + '"/>' +
+        '<text class="mp-ax s" x="' + X(k).toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle">' + (MOIS[pl.mois[k] % 100 - 1] || '').slice(0, 4) + '.</text>';
+    });
+    return s + '</svg>';
+  }
+  function moyN(v, a, b) { var s = 0, i; for (i = a; i < b; i++) s += v[i]; return b > a ? s / (b - a) : 0; }
+  function echelle(r) {
+    var pl = D.off.pil, ref = pl.tauxRes, h = '<div class="pil-ech"><div class="pil-erow now"><span>Aujourd’hui</span>' + trk(r.tx, couleurTx(r.tx)) + '<b>' + tx2(r.tx) + '</b><small>—</small></div>';
+    pl.L.forEach(function (l) {
+      var t = txApres(r, l);
+      h += '<div class="pil-erow' + (S.lst >= 0 && listeChoisie() === l ? ' sel' : '') + '"><span>Avec le listing de ' + eur0(l.budget) + '</span>' + trk(t, couleurTx(t)) + '<b class="' + (t >= ref ? 'pos' : '') + '">' + tx2(t) + '</b><small>' + sgnE(l.marge) + ' / mois</small></div>';
+    });
+    return h + '</div>';
+  }
+  function detailP(r) {
+    var pl = D.off.pil, big = (window.innerWidth || 1280) >= 1000, ouv = big ? ' open' : '', ecart = r.tx - pl.tauxRes;
+    var mo = r.mois, n = mo.length, avant = moyN(mo, 0, Math.max(1, n - 3)), apres = moyN(mo, Math.max(1, n - 3), n);
+    var h = '<div class="mp-odet pil-det"><div class="mp-odh"><div><b>Comment elle crante</b><span>Tout par mois, moyenne janvier → août 2026, au barème 2027.</span></div>' +
+      '<button type="button" class="v2-btn v2-btn-primary mp-fiche" data-act="fiche" data-c="' + esc(r.code) + '">Ouvrir la fiche</button></div>';
+    h += '<div class="pil-cols"><div class="pil-col"><div class="pil-bloc"><div class="pil-bt">Son taux et l’échelle des listings</div>' +
+      '<div class="pil-txg"><b>' + tx2(r.tx) + '</b><span>' + (Math.abs(ecart) < 0.00005 ? 'au niveau du réseau' : pts(ecart) + (ecart < 0 ? ' sous' : ' au-dessus du') + ' réseau (' + tx2(pl.tauxRes) + ')') + ' · ' + tx2(r.tx26) + ' avec le barème 2026</span></div>' + echelle(r) +
+      '<p class="mp-note">Taux avec un listing = (notre marge + celle du listing) ÷ (ses achats + ceux du listing), par mois, barème 2027. Le trait au milieu de chaque piste est le réseau.</p></div>';
+    h += '<div class="pil-bloc"><div class="pil-bt">Alertes</div><ul class="pil-ph pil-phd">';
+    var ph = phrases(r);
+    ph.forEach(function (p) { h += '<li class="' + p[0] + '">' + esc(p[1]) + '</li>'; });
+    if (!ph.length) h += '<li>Aucune alerte : rien à signaler pour cette officine.</li>';
+    h += '</ul></div></div><div class="pil-col"><div class="pil-bloc"><div class="pil-bt">Ses achats, mois par mois</div>' + courbe(r) +
+      '<p class="mp-note">Ligne pointillée : sa moyenne de ' + MOIS[pl.mois[0] % 100 - 1] + ' à ' + MOIS[pl.mois[Math.max(0, n - 4)] % 100 - 1] + ' (' + eur0(avant) + '). ' + MOIS[pl.mois[Math.max(0, n - 3)] % 100 - 1] + ' → ' + MOIS[pl.mois[n - 1] % 100 - 1] + ' : ' + eur0(apres) + (avant ? ' (' + sgn(apres / avant - 1, 0) + ')' : '') + '. L’ensemble des officines suivies : ' + sgn(pl.varRes, 0) + '.</p></div>';
+    var tot = r.ach || 1;
+    h += '<details class="pil-bloc pil-dt"' + ouv + '><summary>Par famille</summary><div class="pil-fams">';
+    r.fam.forEach(function (f, j) {
+      if (!f) return;
+      var t = f[2] / f[0], ref = pl.refFam[j], egal = tx2(t) === tx2(ref), haut = t >= ref;
+      h += '<div class="pil-fr"><span class="pil-fn">' + chipFamP(j) + '</span><span class="mp-bar" title="' + pct(f[0] / tot, 0) + ' de ses achats"><i style="width:' + (f[0] / tot * 100).toFixed(1) + '%;background:' + couleurFam(j) + '"></i></span><b class="' + (egal ? '' : haut ? 'pos' : 'neg') + '" title="Même famille sur l’ensemble des officines suivies : ' + tx2(ref) + '">' + (egal ? '= ' : haut ? '▲ ' : '▼ ') + tx2(t) + '</b></div>';
+    });
+    h += '</div><p class="mp-note">Barre : part de ses achats. Chiffre : notre taux sur la famille. ▲ au-dessus, ▼ en dessous, = pareil que le même taux sur l’ensemble des officines suivies.</p></details></div></div>';
+    // produits qui plombent, produits arrêtés
+    h += '<div class="pil-cols"><details class="pil-bloc pil-dt"' + ouv + '><summary>Ce qui la plombe <small>(' + pct(r.psm, 0) + ' de ses achats sans marge)</small></summary>';
+    if (!r.plomb.length) h += '<p class="mp-note">Aucun produit sans marge à signaler.</p>';
+    r.plomb.forEach(function (x) {
+      h += '<div class="pil-pl3"><span class="mp-n"><b>' + esc(nomProd(x[0])) + '</b><span>' + chipFamP(famProd(x[0])) + '</span></span><span class="mp-c" data-l="Achats par mois">' + eur0(x[2]) + '</span><span class="mp-c" data-l="Notre marge par mois">' + eur0(x[3]) + '</span></div>';
+    });
+    h += '</details><details class="pil-bloc pil-dt"' + ouv + '><summary>Produits habituels arrêtés <small>(' + entier(r.narr) + ')</small></summary>';
+    if (!r.arr.length) h += '<p class="mp-note">Aucun produit habituel arrêté.</p>';
+    r.arr.forEach(function (x) {
+      h += '<div class="pil-pl3"><span class="mp-n"><b>' + esc(nomProd(x[0])) + '</b><span>' + nf(x[1], 1) + ' boîte' + (x[1] >= 2 ? 's' : '') + ' par mois de ' + MOIS[pl.mois[0] % 100 - 1] + ' à ' + MOIS[pl.mois[Math.max(0, n - 3)] % 100 - 1] + ' · dernier achat en ' + esc(moisNom(x[3])) + '</span></span><span class="mp-c" data-l="Marge perdue par mois">' + eur0(x[2]) + '</span></div>';
+    });
+    if (r.narr > r.arr.length) h += '<p class="mp-note">Les ' + r.arr.length + ' plus gros sur ' + entier(r.narr) + '.</p>';
+    h += '</details></div>';
+    h += '<details class="pil-bloc pil-manq"><summary>Produits qui lui manquent <small>(potentiel total ' + eur0(r.pt[D.k1]) + ' par mois)</small></summary>' + manquants(r, true) + '</details>';
+    return h + '<p class="mp-note">Dernier achat chez nous : ' + esc(moisNom(r.dernier)) + ' · ' + entier(r.nf) + ' des ' + entier(D.off.meta.nb_froids_suivis) + ' produits froid suivis achetés · code ' + esc(r.code) + '</p></div>';
+  }
+
+  // ── Filtres et actions communes ──
+  function majFiltres(defiler) {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-act="case"]'), function (b) { var on = S.oCase === parseInt(b.getAttribute('data-v'), 10); b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-act="al"]'), function (b) { var on = S.oAl === b.getAttribute('data-v'); b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
+    S.oN = N_PAGE; majOfficines();
+    if (defiler) { var sec = document.getElementById('pil-liste'); if (sec && sec.scrollIntoView) sec.scrollIntoView({ block: 'start' }); }
+  }
+  function piedP() {
+    var pl = D.off.pil, s = pl.seuils;
+    return '<footer class="mp-pied"><h3>Comment on lit le pilotage</h3><ul>' +
+      '<li>Notre taux = notre marge ÷ les achats de l’officine, par mois (moyenne janvier → août 2026), toujours au barème 2027. Le réseau : ' + tx2(pl.tauxRes) + ' (barème 2026 : ' + tx2(pl.tauxRes26) + ').</li>' +
+      '<li>Les quatre cases : gros ou petit selon que ses achats dépassent ou non la médiane (' + eur0(pl.med) + ' par mois) ; rentable si son taux est au moins celui du réseau. « Gros mais peu rentable » est la case à travailler en premier.</li>' +
+      '<li>Achats en baisse : ses achats de ' + (MOIS[pl.mois[5] % 100 - 1] || '') + ' → ' + (MOIS[pl.mois[pl.mois.length - 1] % 100 - 1] || '') + ' tombent à moins de ' + pct(s.baisse || 0, 0) + ' de ce que fait l’ensemble des officines suivies par rapport à ' + (MOIS[pl.mois[0] % 100 - 1] || '') + ' → ' + (MOIS[pl.mois[4] % 100 - 1] || '') + '.</li>' +
+      '<li>Taux en baisse : son taux 2027 est d’au moins ' + pts(s.taux_baisse || 0) + ' sous son taux 2026. Plombée : au moins ' + pct(s.part_sans_marge || 0, 0) + ' de ses achats sur des produits à moins de ' + eurBoite(s.marge_boite_sans || 0) + ' de marge par boîte, et un taux sous le réseau.</li>' +
+      '<li>Produit habituel arrêté : acheté au moins ' + (s.arret_mois_habituel_sur_6 || '') + ' mois sur 6 avant l’été, plus du tout en juillet ni en août, rapportant au moins ' + eurBoite(s.marge_boite_arret || 0) + ' la boîte, hors produits saisonniers.</li>' +
+      '<li>Enjeu d’une officine = son potentiel total + la marge perdue sur ses produits arrêtés, par mois.</li></ul></footer>';
+  }
+  function enteteP(C) {
+    return '<div class="mp-hero"><div class="mp-hero-t"><div class="mp-eyebrow"><span class="dot"></span>Accès réservé au groupe restreint</div>' +
+      '<h1 class="mp-h1">Listing produits 2027</h1>' +
+      '<p class="mp-sub">Le pilotage de vos officines : où notre marge crante, lesquelles travailler en premier, et ce que le bon listing changerait. Tout est en notre marge par mois (moyenne ' + esc(periodeTexte().replace(/^ventes /, '')) + ') au barème 2027, comparée au réseau. Chiffres estimés par la direction, mis à jour le ' + esc(dateLongue(D.meta.genere_le)) + '.</p></div>' +
+      '</div>' +
+      (V2.listings2027 && V2.listings2027.onglets ? V2.listings2027.onglets('officine') : '');
+  }
+  function dessinerP(root) {
+    var y = window.pageYOffset || 0, A = agr(dansPerim());
+    SEC = A;
+    root.innerHTML = fr(top() + '<div class="v2-wrap mp-wrap pil-wrap">' + enteteP() + blocPerim() + entreeV1(A) + (S.perim === '' ? tableEquipe() : '') + sectionSim(A) + sectionPlombent(A) + sectionListeP() + piedO() + piedP() + '</div>');
+    racine = root;
+    majOfficines();
+    try { window.scrollTo(0, y); } catch (e) {}
   }
 
   // ── Écrans d’état ─────────────────────────────────────────────────
@@ -663,6 +1040,7 @@
   // ── Dessin de l’écran ─────────────────────────────────────────────
   function dessiner(root) {
     var C = calc(S.K), y = window.pageYOffset || 0;
+    if (S.vue === 'officine' && D.off && D.off.pil) { dessinerP(root); return; }
     if (S.vue === 'officine' && D.off) {
       root.innerHTML = top() + '<div class="v2-wrap mp-wrap">' + enTete(C) + kpisO() + sectionOfficines() + piedO() + '</div>';
       racine = root;
@@ -685,7 +1063,11 @@
       if (b && r.contains(b)) {
         var a = b.getAttribute('data-act');
         if (a === 'an') { S.K = b.getAttribute('data-k'); S.n = N_PAGE; S.oN = N_PAGE; memo = {}; memoO = {}; dessiner(racine); }
-        else if (a === 'ouv') { var cd = b.getAttribute('data-c'); S.oOuvert[cd] = !S.oOuvert[cd]; var w = b.parentNode; var neuf = document.createElement('div'); neuf.innerHTML = ligneO(D.off.rows.filter(function (r) { return r.code === cd; })[0]); if (w && w.parentNode && neuf.firstChild) w.parentNode.replaceChild(neuf.firstChild, w); }
+        else if (a === 'ouv') { var cd = b.getAttribute('data-c'); S.oOuvert[cd] = !S.oOuvert[cd]; var w = b.parentNode; var neuf = document.createElement('div'); neuf.innerHTML = D.off.pil ? fr(ligneAff(D.off.rows.filter(function (r) { return r.code === cd; })[0])) : ligneO(D.off.rows.filter(function (r) { return r.code === cd; })[0]); if (w && w.parentNode && neuf.firstChild) w.parentNode.replaceChild(neuf.firstChild, w); }
+        else if (a === 'perim') { S.perim = b.getAttribute('data-v') || ''; S.oN = N_PAGE; S.oCase = null; S.oAl = ''; dessiner(racine); }
+        else if (a === 'case') { var kc = parseInt(b.getAttribute('data-v'), 10); S.oCase = S.oCase === kc ? null : kc; majFiltres(true); }
+        else if (a === 'al') { var ka = b.getAttribute('data-v'); S.oAl = S.oAl === ka ? '' : ka; majFiltres(true); }
+        else if (a === 'clr') { S.oCase = null; S.oAl = ''; majFiltres(false); }
         else if (a === 'plusO') { S.oN += N_PAGE; majOfficines(); }
         else if (a === 'fiche') { var cf = b.getAttribute('data-c'); if (V2.go) V2.go('pharma', cf); }
         else if (a === 'fam') { var f = b.getAttribute('data-f'); S.masq[f] = !S.masq[f]; b.classList.toggle('off', !!S.masq[f]); b.setAttribute('aria-pressed', String(!S.masq[f])); dessinerNuage(); }
@@ -731,7 +1113,9 @@
     document.addEventListener('change', function (e) {
       if (!D || !e.target) return;
       if (e.target.id === 'mp-ocomm') { S.oComm = e.target.value; S.oN = N_PAGE; majOfficines(); }
-      else if (e.target.id === 'mp-otri') { S.oTri = e.target.value; S.oN = N_PAGE; majOfficines(); }
+      else if (e.target.id === 'pil-coll') { if (e.target.value) { S.perim = e.target.value; S.oN = N_PAGE; S.oCase = null; S.oAl = ''; dessiner(racine); } }
+      else if (e.target.id === 'pil-lst') { S.lst = parseInt(e.target.value, 10) || 0; dessiner(racine); }
+      else if (e.target.id === 'mp-otri') { S.oTriChoisi = true; S.oTri = e.target.value; S.oN = N_PAGE; majOfficines(); }
       else if (e.target.id === 'mp-osans') { S.oSans = !!e.target.checked; S.oN = N_PAGE; majOfficines(); }
       else if (e.target.id === 'mp-fam') { S.fam = e.target.value; S.n = N_PAGE; majTableau(); }
       else if (e.target.id === 'mp-tri') { S.tri = e.target.value; S.n = N_PAGE; majTableau(); }
@@ -785,6 +1169,12 @@
         catch (e) { console.error('[V2 margeproduits]', e); message(root, 'Ces chiffres ne se lisent pas', 'Le fichier de marge par produit est illisible. Il faut le régénérer.'); return; }
         try { D.off = preparerOfficines(window.MARGE_PRODUITS, D); } catch (e2) { console.error('[V2 margeproduits] officines', e2); D.off = null; }
         if (!S.K) S.K = D.k1;
+      }
+      if (D.off && D.off.pil) {   // pilotage : barème 2027 seulement ; on ouvre sur MES officines si le compte a un commercial, sinon sur toute l'équipe
+        S.K = D.k1;
+        if (S.perim === null) S.perim = monCommercial();
+        if (S.lst < 0) S.lst = Math.min(1, D.off.pil.L.length - 1);
+        if (!S.oTriChoisi) { S.oTri = 'en'; S.oTriChoisi = true; }
       }
       brancher();
       dessiner(root);
@@ -1014,7 +1404,132 @@
       '.mp-mq .mp-c.fam{grid-column:1/-1}',
       '.mp-check{flex:1 1 100%}',
       '}'
-    ].join('\n');
+    ].join('\n') + '\n' + cssPil();
     document.head.appendChild(s);
+  }
+  // 22/10/2026 — habillage du pilotage (variables de l'app ; aucune barre de couleur d'un seul côté, aucun opacity sur du texte)
+  function cssPil() {
+    return [
+      '.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}',
+      '.pil-wrap .pos{color:var(--c-mint-txt)}.pil-wrap .neg{color:var(--c-rose-txt)}',
+      /* périmètre */
+      '.pil-perim{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;margin:0 0 18px}',
+      '.pil-pl{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);align-self:center;margin-right:2px}',
+      '.pil-pb{min-height:48px;padding:0 18px;border-radius:var(--r-btn);border:1px solid var(--line-strong);background:var(--card);box-shadow:var(--sh-1);font:inherit;font-size:14.5px;font-weight:700;color:var(--ip-ink-2);cursor:pointer}',
+      '.pil-pb.on,.pil-coll.on select{background:var(--ip-ink);color:#fff;border-color:var(--ip-ink)}',
+      '.pil-coll{display:flex;flex-direction:column;gap:3px;font-size:11.5px;font-weight:700;color:var(--muted)}',
+      '.pil-coll select{font:inherit;font-size:16px;font-weight:700;min-height:48px;padding:0 14px;border-radius:var(--r-btn);border:1px solid var(--line-strong);background:var(--card);color:var(--ip-ink-2);box-shadow:var(--sh-1);min-width:180px}',
+      /* pistes de taux */
+      '.pil-trk{position:relative;display:block;height:9px;border-radius:6px;background:var(--surf-sunken);box-shadow:0 0 0 1px var(--line-2) inset;min-width:50px}',
+      '.pil-trk i{display:block;height:100%;min-width:2px;border-radius:6px}',
+      '.pil-trk u{position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:#0A6C86;text-decoration:none;border-radius:1px}',
+      '.pil-trk.big{height:14px;margin:4px 0 10px}',
+      /* cases et alertes (pastilles) */
+      '.pil-chips{display:flex;flex-wrap:wrap;gap:5px 6px;margin-top:4px}',
+      '.mp-orow .mp-n>span.pil-chips{display:flex;white-space:normal;overflow:visible}',
+      '.pil-cas,.pil-al{font-style:normal;font-family:var(--font);font-size:11.5px;font-weight:800;line-height:1;padding:4px 9px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}',
+      '.pil-cas{color:var(--ip-ink-2);background:var(--card);box-shadow:0 0 0 1px var(--line-strong) inset}',
+      '.pil-cas i{width:9px;height:9px;border-radius:50%;background:var(--c);flex:none}',
+      '.pil-al{color:var(--c-amber-txt);background:color-mix(in srgb,var(--c-amber) 13%,#fff);box-shadow:0 0 0 1px color-mix(in srgb,var(--c-amber) 30%,transparent) inset}',
+      '.pil-al.b,.pil-al.t{color:var(--c-rose-txt);background:color-mix(in srgb,var(--c-rose) 11%,#fff);box-shadow:0 0 0 1px color-mix(in srgb,var(--c-rose) 28%,transparent) inset}',
+      /* entrée 1 : 4 cartes */
+      '.pil-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}',
+      '.pil-card{border:1px solid var(--line);border-radius:var(--r-card);padding:18px 18px 16px;box-shadow:var(--sh-2);background:radial-gradient(130% 95% at 0% 0%,color-mix(in srgb,var(--c-froid) 10%,#fff),#fff 62%);min-width:0;display:flex;flex-direction:column;gap:6px}',
+      '.pil-card .mp-kv{margin:6px 0 2px}',
+      '.pil-fams{display:grid;gap:9px;margin:6px 0 4px}',
+      '.pil-fr{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(40px,1fr) 78px;align-items:center;gap:8px;font-size:12.5px}',
+      '.pil-fr .mp-fam{font-size:12px}.pil-fr b{font-family:var(--mono);font-size:12.5px;text-align:right;font-variant-numeric:tabular-nums}',
+      '.pil-fr .mp-bar{height:9px}.pil-fn{min-width:0}',
+      '.pil-cases{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 4px}',
+      '.pil-case{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"i b" "n n" "s s" "e e";column-gap:7px;align-items:center;text-align:left;font:inherit;min-height:84px;padding:10px 11px;border-radius:14px;border:1px solid var(--line-strong);background:var(--card);cursor:pointer;color:var(--ip-ink-2)}',
+      '.pil-case i{grid-area:i;width:11px;height:11px;border-radius:50%;background:var(--c)}',
+      '.pil-case b{grid-area:b;font-family:var(--mono);font-size:21px;font-weight:800;line-height:1.1}',
+      '.pil-case span{grid-area:n;font-size:12.5px;font-weight:800;line-height:1.25;margin-top:3px}',
+      '.pil-case small{grid-area:s;font-size:11.5px;color:var(--muted);line-height:1.3}',
+      '.pil-case em{grid-area:e;font-style:normal;font-size:11px;font-weight:800;color:var(--c-amber-txt);margin-top:2px}',
+      '.pil-case.on{background:color-mix(in srgb,var(--c) 14%,#fff);border-color:var(--c);box-shadow:0 0 0 2px color-mix(in srgb,var(--c) 40%,transparent)}',
+      '.pil-als{display:grid;gap:6px;margin:6px 0 4px}',
+      '.pil-alb{display:grid;grid-template-columns:52px 1fr;align-items:center;gap:8px;min-height:44px;padding:4px 10px;border-radius:12px;border:1px solid var(--line-strong);background:var(--card);font:inherit;cursor:pointer;text-align:left;color:var(--ip-ink-2)}',
+      '.pil-alb b{font-family:var(--mono);font-size:19px;font-weight:800;text-align:right}.pil-alb span{font-size:12.5px;font-weight:700;line-height:1.25}',
+      '.pil-alb.on{background:var(--ip-ink);color:#fff;border-color:var(--ip-ink)}',
+      /* entrée 2 : la carte */
+      /* entrée 3 : la file */
+      '.pil-ph{margin:0;padding-left:18px;font-size:13.5px;line-height:1.5;color:var(--ip-ink-2);display:grid;gap:5px}',
+      '.pil-cl{font-size:12px;font-weight:700;color:var(--muted)}',
+      /* par commercial */
+      '.pil-er{display:grid;grid-template-columns:minmax(0,1.3fr) 76px 100px 108px minmax(130px,1.1fr) 84px 76px 104px 110px;gap:10px;align-items:center;width:100%;padding:11px 20px;text-align:left;font:inherit;font-size:13.5px;color:inherit;background:none;border:0;border-bottom:1px solid var(--line-2);min-height:52px}',
+      'button.pil-er{cursor:pointer}button.pil-er:hover{background:var(--card-2)}button.pil-er:focus-visible{outline:2px solid #0A6C86;outline-offset:-2px}',
+      '.pil-eh{background:var(--card-2);border-bottom:1px solid var(--line);font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);min-height:0;padding-top:10px;padding-bottom:10px}.pil-eh .c{text-align:right}',
+      '.pil-txc{display:flex;flex-direction:column;gap:3px;text-align:left!important}.pil-txc b{font-family:var(--mono);font-weight:800}',
+      '.pil-er .pil-txc{align-items:stretch}',
+      /* simulateur */
+      '.pil-sim{padding:18px 22px 14px}',
+      '.pil-simt{font-size:16px;line-height:1.7;color:var(--ip-ink-2)}',
+      '.pil-lstw select{font:inherit;font-size:16px;font-weight:800;min-height:48px;padding:0 14px;border-radius:var(--r-btn);border:1px solid var(--line-strong);background:var(--card);color:var(--ip-ink);box-shadow:var(--sh-1);vertical-align:middle;margin-left:4px}',
+      /* Safari : sans « appearance:none », une liste déroulante ignore min-height (25 px au lieu de 48) */
+      '.pil-coll select,.pil-lstw select{-webkit-appearance:none;appearance:none;padding-right:40px;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2716%27 height=%2716%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23646B80%27 stroke-width=%272.4%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M6 9l6 6 6-6%27/%3E%3C/svg%3E") no-repeat right 14px center}',
+      '.pil-coll.on select{background-color:var(--ip-ink)}',
+      '.pil-simr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:24px;margin-top:14px}',
+      '.pil-simr>div{display:flex;flex-direction:column;gap:5px;min-width:0}',
+      '.pil-big{font-family:var(--mono);font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1.1}.pil-big em{font-style:normal;color:var(--muted)}',
+      '.pil-simr small{font-size:12.5px;color:var(--muted)}',
+      '.pil-duo{display:grid;grid-template-columns:96px minmax(0,1fr);align-items:center;gap:7px 10px;font-size:12px;font-weight:700;color:var(--muted);margin:2px 0}',
+      /* produits qui plombent */
+      '.pil-pr{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(150px,1fr) 124px 88px;gap:14px;align-items:center;padding:12px 22px;border-bottom:1px solid var(--line-2);font-size:13.5px}.pil-pr:last-child{border-bottom:0}',
+      '.pil-ph2{background:var(--card-2);border-bottom:1px solid var(--line);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding-top:10px;padding-bottom:10px}.pil-ph2 .c{text-align:right}',
+      '.pil-pa{display:flex;flex-direction:column;gap:4px;text-align:left!important}.pil-pa .mp-bar{height:8px}.pil-pa small{font-size:11.5px;font-family:var(--font);color:var(--muted)}',
+      /* liste */
+      '.pil-actifs{display:flex;flex-wrap:wrap;gap:8px;padding:10px 22px;border-bottom:1px solid var(--line-2)}.pil-actifs[hidden]{display:none}',
+      '.pil-actif{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--ip-ink);background:var(--ip-ink);color:#fff;font:inherit;font-size:13px;font-weight:700;cursor:pointer}',
+      '.pil-wrap .mp-orow{grid-template-columns:minmax(0,1fr) 80px 88px 140px 140px 84px 88px 88px 18px;gap:10px}',
+      '.pil-wrap .mp-c.pil-txc small.mp-ref{font-size:11.5px}',
+      /* fiche */
+      '.pil-det{padding-top:10px}',
+      '.pil-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:6px;align-items:start}',
+      '.pil-col{display:flex;flex-direction:column;gap:14px;min-width:0}',
+      '.pil-bloc{padding:14px 16px;border-radius:14px;background:var(--card);border:1px solid var(--line);min-width:0}',
+      '.pil-bt,.pil-dt>summary,.pil-manq>summary{font-size:13px;font-weight:800;color:var(--ip-ink);margin-bottom:8px}',
+      '.pil-dt>summary,.pil-manq>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px;margin:0;list-style:none;flex-wrap:wrap}',
+      '.pil-dt>summary::-webkit-details-marker,.pil-manq>summary::-webkit-details-marker{display:none}',
+      '.pil-dt>summary::before,.pil-manq>summary::before{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);flex:none;transition:transform .15s var(--ease)}',
+      '.pil-dt[open]>summary::before,.pil-manq[open]>summary::before{transform:rotate(45deg)}',
+      '.pil-dt>summary small,.pil-manq>summary small{font-weight:600;color:var(--muted);font-size:12.5px}',
+      '.pil-manq{margin-top:14px}',
+      '.pil-txg{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:8px}.pil-txg b{font-family:var(--mono);font-size:30px;font-weight:800;letter-spacing:-.03em}.pil-txg span{font-size:13px;color:var(--muted)}',
+      '.pil-ech{display:grid;gap:7px}',
+      '.pil-erow{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(60px,1fr) 62px 74px;gap:8px;align-items:center;font-size:12.5px;padding:2px 4px;border-radius:8px}',
+      '.pil-erow span{color:var(--ip-ink-2);font-weight:600}.pil-erow b{font-family:var(--mono);font-size:13px;text-align:right}.pil-erow small{font-size:11.5px;color:var(--muted);text-align:right}',
+      '.pil-erow.sel{background:color-mix(in srgb,var(--c-froid) 10%,#fff);box-shadow:0 0 0 1px color-mix(in srgb,var(--c-froid) 35%,transparent) inset}',
+      '.pil-phd li{padding-left:2px}.pil-phd li.b,.pil-phd li.t{color:var(--c-rose-txt)}.pil-phd li.a,.pil-phd li.p{color:var(--c-amber-txt)}.pil-phd li.x{color:var(--ip-ink-2)}',
+      '.pil-courbe{display:block;width:100%;max-width:440px;height:auto}',
+      '.pil-pl3{display:grid;grid-template-columns:minmax(0,1fr) 96px 96px;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--line-2);font-size:13px}',
+      '.pil-pl3 .mp-n span{white-space:normal}',
+      '.pil-manq .mp-mq{background:none}',
+      /* intermédiaire */
+      '@media(max-width:1180px){.pil-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.pil-simr{grid-template-columns:1fr}}',
+      '@media(max-width:1040px){.pil-wrap .mp-orow{grid-template-columns:minmax(0,1fr) 88px 130px 120px 80px 88px 18px;gap:8px}',
+      '.pil-wrap .mp-c.oc,.pil-wrap .mp-c.pot.f,.pil-wrap .mp-ohead span:nth-child(2),.pil-wrap .mp-ohead span:nth-child(7){display:none}',
+      '.pil-cols{grid-template-columns:1fr}',
+      '.pil-er{grid-template-columns:minmax(0,1.2fr) 64px 92px 96px minmax(110px,1fr) 70px 64px 96px 96px;gap:8px;padding-left:14px;padding-right:14px}',
+      '.pil-pr{grid-template-columns:minmax(0,1.5fr) minmax(130px,1fr) 100px 70px;gap:10px;padding-left:16px;padding-right:16px}}',
+      /* téléphone */
+      '@media(max-width:720px){',
+      '.pil-perim{gap:8px}.pil-pb{flex:1 1 100%}.pil-coll{flex:1 1 100%}.pil-coll select{width:100%}',
+      '.pil-cards{grid-template-columns:1fr}',
+      '.pil-eh{display:none}',
+      '.pil-er{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:14px 16px;align-items:start}.pil-er .mp-n{grid-column:1/-1}',
+      '.pil-er .pil-txc{grid-column:1/-1}',
+      '.pil-sim{padding:16px}.pil-simt{font-size:15px}.pil-big{font-size:26px}',
+      '.pil-duo{grid-template-columns:90px minmax(0,1fr)}',
+      '.pil-ph2{display:none}.pil-pr{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:14px 16px;align-items:start}.pil-pr .mp-n{grid-column:1/-1}.pil-pr .pil-pa{grid-column:1/-1}',
+      '.pil-actifs{padding:10px 16px}',
+      '.pil-wrap .mp-orow{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 10px}',
+      '.pil-wrap .mp-c.oc,.pil-wrap .mp-c.pot.f{display:block}',
+      '.pil-wrap .mp-c.pil-txc{grid-column:1/-1}',
+      '.pil-erow{grid-template-columns:minmax(0,1.3fr) minmax(50px,1fr) 56px;}.pil-erow small{display:none}',
+      '.pil-pl3{grid-template-columns:repeat(2,minmax(0,1fr))}.pil-pl3 .mp-n{grid-column:1/-1}',
+      '.pil-bloc{padding:12px}',
+      '}'
+    ].join('\n');
   }
 })();
