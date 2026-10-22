@@ -77,6 +77,15 @@ test('petit prix : PFHT 1,70, MG 0,30 -> 0,22, abandon 0,18 -> 0,132, marge phar
   near(mp.reglementee, 0.17, 1e-9, 'marge officine 10 % de 1,70');
 });
 
+test('abandon au-dessus de notre règle (offre du laboratoire, Doliprane 0,27 €) : 2027 marqué « estimation »', () => {
+  const pfht = K.pfhtDepuisPpht(2.00, false);
+  assert.equal(nu(K.margePharmacien('pr_low', pfht, 0.27)).abandonEstime, true, 'offre labo');
+  assert.equal(nu(K.margePharmacien('pr_low', pfht, 0.18)).abandonEstime, false, 'notre règle : 0,18 €');
+  const mid = K.pfhtDepuisPpht(50, false);
+  assert.equal(nu(K.margePharmacien('pr_mid', mid, 50 * 0.0389)).abandonEstime, false, 'notre règle : 3,89 %');
+  assert.equal(nu(K.margePharmacien('pr_mid', mid, null)).abandonEstime, false, 'sans abandon');
+});
+
 test('zone 3,1746 - 4,3290 de PFHT : plancher 2026 (0,30) mais 6,93 % en 2027 ; bornes jamais arrondies', () => {
   near(K.margeGrossiste(4.0, 2026, false), 0.30, 1e-9);
   near(K.margeGrossiste(4.0, 2027, false), 0.0693 * 4.0, 1e-9);

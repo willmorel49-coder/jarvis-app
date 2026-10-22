@@ -606,8 +606,12 @@
     a27 = abandon2027(ab26, pfht);
     t26 = reg + (ab26 || 0);
     t27 = reg + (a27 || 0);
+    // Un abandon au-dessus de notre règle (60 % de la marge grossiste) vient d'une offre du laboratoire
+    // (Doliprane, Dafalgan, Kardégic) : son niveau 2027 n'est qu'une estimation, le labo seul le fixe.
+    var std = 0.6 * margeGrossiste(pfht, 2026, false);
     return { applicable: true, reglementee: reg, abandon26: ab26 == null ? null : ab26, abandon27: a27,
-             total26: t26, total27: t27, delta: t27 - t26, sansAbandon: ab26 == null };
+             total26: t26, total27: t27, delta: t27 - t26, sansAbandon: ab26 == null,
+             abandonEstime: a27 != null && std > 0 && ab26 > std * 1.05 + 0.01 };
   }
 
   function jourIso(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
@@ -1476,10 +1480,10 @@
     var diffAb = m.abandon26 != null && m.abandon27 != null && Math.round((m.abandon27 - m.abandon26) * 100) !== 0;
     return tuileT(cls, 'Marge pharmacien', 'par boîte',
       '<p class="cq-ph">Le pharmacien gagne ' + gros(eur2(m.total26)) + ' par boîte' +
-        (egal ? ', ' + gros('autant') + ' en 2027.' : ' aujourd\'hui, puis ' + gros(eur2(m.total27)) + ' à partir du ' + d27 + ' (' + (m.delta < 0 ? '−' : '+') + eur2(Math.abs(m.delta)) + ').') + '</p>' +
+        (egal ? ', ' + gros('autant') + ' en 2027' + (m.abandonEstime ? ' (estimation).' : '.') : ' aujourd\'hui, puis ' + gros(eur2(m.total27)) + ' à partir du ' + d27 + ' (' + (m.delta < 0 ? '−' : '+') + eur2(Math.abs(m.delta)) + (m.abandonEstime ? ', estimation' : '') + ').') + '</p>' +
       '<div class="cq-brs">' + barre('Aujourd\'hui', m.reglementee, m.abandon26, m.total26, max, true) +
-        barre(egal ? 'En 2027 : inchangé' : 'À partir du ' + d27, m.reglementee, m.abandon27, m.total27, max, diffAb) + '</div>',
-      m.sansAbandon ? 'Aucun abandon de marge sur ce prix.' : 'Par boîte, princeps remboursable.');
+        barre((egal ? 'En 2027 : inchangé' : 'À partir du ' + d27) + (m.abandonEstime ? ' · estimation' : ''), m.reglementee, m.abandon27, m.total27, max, diffAb) + '</div>',
+      m.sansAbandon ? 'Aucun abandon de marge sur ce prix.' : m.abandonEstime ? 'Abandon de marge 2027 : estimation, il dépend de l\'offre du laboratoire.' : 'Par boîte, princeps remboursable.');
   }
   function tuileNotreMarge(s) {
     var nm = s.notreMarge;
