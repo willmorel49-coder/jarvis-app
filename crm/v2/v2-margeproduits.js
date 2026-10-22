@@ -800,7 +800,7 @@
     return '<div class="pil-card"><div class="mp-kl">Notre taux de marge</div>' +
       '<div class="mp-kv" data-k="taux">' + tx2(A.tx) + '</div>' + trk(A.tx, couleurTx(A.tx), true) +
       '<div class="mp-kd">Notre marge ÷ leurs achats, par mois (moyenne janvier → août 2026), au barème 2027. Le réseau : <b>' + tx2(pl.tauxRes) + '</b>. ' +
-      (Math.abs(ecart) < 0.00005 ? 'Au niveau du réseau.' : '<b class="' + (ecart < 0 ? 'neg' : 'pos') + '">' + pts(ecart) + (ecart < 0 ? ' sous' : ' au-dessus du') + ' le réseau.</b>') +
+      (Math.abs(ecart) < 0.00005 ? 'Au niveau du réseau.' : '<b class="' + (ecart < 0 ? 'neg' : 'pos') + '">' + pts(ecart) + (ecart < 0 ? ' sous le' : ' au-dessus du') + ' réseau.</b>') +
       ' Avec le barème 2026 : ' + tx2(A.tx26) + '.</div></div>';
   }
   function carteFamilles(A) {
@@ -960,7 +960,7 @@
     var h = '<div class="mp-odet pil-det"><div class="mp-odh"><div><b>Comment elle crante</b><span>Tout par mois, moyenne janvier → août 2026, au barème 2027.</span></div>' +
       '<button type="button" class="v2-btn v2-btn-primary mp-fiche" data-act="fiche" data-c="' + esc(r.code) + '">Ouvrir la fiche</button></div>';
     h += '<div class="pil-cols"><div class="pil-col"><div class="pil-bloc"><div class="pil-bt">Son taux et l’échelle des listings</div>' +
-      '<div class="pil-txg"><b>' + tx2(r.tx) + '</b><span>' + (Math.abs(ecart) < 0.00005 ? 'au niveau du réseau' : pts(ecart) + (ecart < 0 ? ' sous' : ' au-dessus du') + ' réseau (' + tx2(pl.tauxRes) + ')') + ' · ' + tx2(r.tx26) + ' avec le barème 2026</span></div>' + echelle(r) +
+      '<div class="pil-txg"><b>' + tx2(r.tx) + '</b><span>' + (Math.abs(ecart) < 0.00005 ? 'au niveau du réseau' : pts(ecart) + (ecart < 0 ? ' sous le' : ' au-dessus du') + ' réseau (' + tx2(pl.tauxRes) + ')') + ' · ' + tx2(r.tx26) + ' avec le barème 2026</span></div>' + echelle(r) +
       '<p class="mp-note">Taux avec un listing = (notre marge + celle du listing) ÷ (ses achats + ceux du listing), par mois, barème 2027. Le trait au milieu de chaque piste est le réseau.</p></div>';
     h += '<div class="pil-bloc"><div class="pil-bt">Alertes</div><ul class="pil-ph pil-phd">';
     var ph = phrases(r);
