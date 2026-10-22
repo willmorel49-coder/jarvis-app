@@ -624,6 +624,8 @@
     pdfHtml: function (i) { return D && D.listes[i] ? pdfHtml(D.listes[i]) : null; },
     donnees: function () { return D; },
     onglets: onglets,
+    // 22/10/2026 — le bandeau de l'accueil (v2-accueil-cinq.js) : null tant que la base n'a pas répondu
+    acces: function () { return acces; }, verifier: verifier,
     // La ligne du menu du compte : posée seulement si la base dit oui. Depuis le 22/10/2026, c'est la seule ligne
     // de la page (la marge par produit et par officine en sont des onglets).
     menu: function (m) {

@@ -1112,9 +1112,11 @@
   // 01/10/2026 — « À la une » : UNE nouveauté annoncée au-dessus de « Vos outils », hors
   // classement (décision de Will). Temporaire : après `fin`, le bandeau disparaît tout seul
   // et l'outil ne garde que son rang dans la liste. Jamais en Escale ni en OPSO.
-  var G4_UNE = { page: 'discussion', ico: 'discussion', fin: '2026-11-15',   // 15/10/2026 (Will) : Le QG à la une, à la place du catalogue LGO
-    nom: 'Le QG : la discussion et les remontées réunies',
-    ph: 'Écrivez à toute l\'équipe, partagez photos et documents, proposez une idée et suivez les remontées, au même endroit.' };
+  // 22/10/2026 (Will) : « Listing produits 2027 » à la place du QG, peu utilisé. Ce n'est pas un outil de la liste :
+  // son lien est ici, et c'est la base (jarvis_acces_marge_produits) qui dit qui voit le bandeau (v2-accueil-cinq.js).
+  var G4_UNE = { page: 'listings2027', fin: '2027-01-31', href: '#listings2027', act: 'go:listings2027',
+    nom: 'Listing produits 2027',
+    ph: 'Les listings à proposer en janvier 2027, ce que chaque produit nous rapporte et la vue par officine.' };
 
   // ── Accueil u2 : les pictos (une seule famille, trait 1,75, tirés de la maquette validée) ──
   var U2_IC = {

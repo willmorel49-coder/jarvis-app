@@ -16,7 +16,13 @@
   function calme() { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } }
   function P() { return V2.accueilPont || null; }
   // 15/10/2026 — la nouveauté du moment, lue dans G4_UNE (v2-app.js) par le pont : rien après sa date de fin, en Escale, en OPSO, ni si la personne a masqué l'outil
-  function une() { var p = P(), u = p && p.une ? p.une() : null; return u && p.vis().indexOf(u.page) >= 0 ? u : null; }
+  // 22/10/2026 — « Listing produits 2027 » (à la place du QG) n'est pas un outil de la liste : seule la base dit qui le voit
+  function une() {
+    var p = P(), u = p && p.une ? p.une() : null; if (!u) return null;
+    if (u.page === 'listings2027') return lsAcces() === true ? u : null;
+    return p.vis().indexOf(u.page) >= 0 ? u : null;
+  }
+  function lsAcces() { var L = V2.listings2027; return L && L.acces ? L.acces() : false; }
 
   // Le décalage de chaque scène dans sa boucle (les cartes ne respirent pas toutes en même temps)
   var PHASE = { pharma: '0s', infos: '-2.1s', todo: '-4.2s', groupements: '-1.3s', offilog: '-3.4s' };
@@ -207,6 +213,29 @@
       '<path d="M181 55 h10" style="stroke:var(--ip-blue-d)" stroke-opacity=".4" stroke-width="1.4"/><path d="M182 38 q4 5 8 0" fill="none" stroke="#C7791A" stroke-width="1.6" stroke-linecap="round"/></g>' +
       '</svg>';
   }
+  // 22/10/2026 — même nuit et même lumière que la scène du QG : une liste de produits, une ligne retenue, l'étiquette 2027
+  function sceneListe() {
+    function ligne(y, k, vu) {
+      return (vu ? '<rect x="32" y="' + (y - 5) + '" width="116" height="24" rx="8" fill="#FFF1CF"/>' : '') +
+        '<rect x="40" y="' + y + '" width="14" height="14" rx="4" style="fill:color-mix(in srgb,var(--ip-blue) ' + (vu ? 55 : 22) + '%,#fff)"/>' +
+        '<rect x="60" y="' + (y + 4) + '" width="' + (vu ? 46 : 40) + '" height="6" rx="3" style="fill:var(--ip-blue)" opacity="' + (vu ? '.6' : '.3') + '"/>' +
+        '<rect class="acq-pt" x="114" y="' + (y + 1) + '" width="28" height="12" rx="6" ' + (vu ? 'style="--k:' + k + '" fill="url(#yl-am)"' : 'style="--k:' + k + ';fill:var(--ip-blue)" opacity=".18"') + '/>';
+    }
+    return '<svg viewBox="0 0 240 150" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><defs>' +
+      '<linearGradient id="yl-nuit" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:color-mix(in srgb,var(--ip-blue-d) 62%,#05070d)"/><stop offset="1" style="stop-color:color-mix(in srgb,var(--ip-blue) 72%,var(--ip-blue-d))"/></linearGradient>' +
+      '<radialGradient id="yl-lu" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FFF1CF" stop-opacity=".95"/><stop offset=".45" stop-color="#FFD27A" stop-opacity=".42"/><stop offset="1" stop-color="#FFD27A" stop-opacity="0"/></radialGradient>' +
+      '<linearGradient id="yl-am" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE7A8"/><stop offset="1" stop-color="#FFB940"/></linearGradient>' +
+      '</defs><rect width="240" height="150" fill="url(#yl-nuit)"/>' +
+      '<g class="acq-halo"><circle cx="186" cy="44" r="58" fill="url(#yl-lu)"/></g>' +
+      '<g class="acq-b1"><rect x="24" y="22" width="132" height="112" rx="12" fill="#fff"/>' +
+      '<rect x="40" y="34" width="58" height="7" rx="3.5" style="fill:var(--ip-blue-d)" opacity=".7"/>' +
+      ligne(56, 0, false) + ligne(84, 1, true) + ligne(110, 2, false) + '</g>' +
+      '<g class="acq-b2"><rect x="166" y="92" width="56" height="28" rx="9" style="fill:color-mix(in srgb,var(--ip-blue) 42%,#fff)"/>' +
+      '<text x="194" y="111.5" text-anchor="middle" font-size="15" font-weight="800" fill="#fff">2027</text></g>' +
+      '<g><circle cx="186" cy="44" r="17" fill="url(#yl-am)"/>' +
+      '<text x="186" y="51" text-anchor="middle" font-size="20" font-weight="800" fill="#9A5A00">€</text></g>' +
+      '</svg>';
+  }
   var CK = '<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect class="bx" x="1.5" y="1.5" width="17" height="17" rx="5"/><path class="ck" pathLength="1" d="M5.2 10.4 8.7 13.8 14.8 6.6"/></svg>';
 
   /* ── Le contenu vivant de chaque carte : une fonction par zone, rendue seulement quand sa donnée change ── */
@@ -311,9 +340,9 @@
   }
   // Le bandeau : la nouveauté du moment, une seule zone cliquable entre Officines et les quatre cartes
   function bandeauQG(u) {
-    var p = P(), t = p.outil(u.page);
+    var p = P(), t = u.href ? u : p.outil(u.page);
     return '<section class="acq-zone ac-in" style="--i:2" aria-label="Nouveauté"><a class="acq-ban"' + lien(t, u.page) + '>' +
-      '<span class="ac-sc acq-sc">' + sceneQG() + '</span>' +
+      '<span class="ac-sc acq-sc">' + (u.page === 'listings2027' ? sceneListe() : sceneQG()) + '</span>' +
       '<span class="acq-tx"><span class="acq-l1"><span class="acq-nv">Nouveau</span><b class="acq-nm">' + esc(u.nom) + '</b></span>' +
       '<span class="acq-ph">' + esc(u.ph) + '</span></span>' +
       '<span class="acq-go" aria-hidden="true">Découvrir' + p.ic('arrow') + '</span></a></section>';
@@ -344,7 +373,9 @@
     var presents = { pharma: vis.indexOf('pharma') >= 0, infos: vis.indexOf('infos') >= 0, todo: vis.indexOf('todo') >= 0, offilog: vis.indexOf('offilog') >= 0, groupements: cles.indexOf('pharma') >= 0 };
     var h = '<div class="ac-wrap' + (cascade ? ' ac-ent' : '') + '" id="u2-cinq">';
     if (presents.pharma) h += '<section aria-label="Officines">' + hero(ctx.t.pharma, ctx) + '</section>';
-    var u = une(); if (u) h += bandeauQG(u);
+    var u = une(), pu = p.une ? p.une() : null;
+    if (u) h += bandeauQG(u);
+    else if (pu && pu.page === 'listings2027' && lsAcces() === null) h += '<div id="acq-att"></div>';   // la base n'a pas encore répondu : apres() le pose
     var rang = '', i = 3;
     ['infos', 'todo', 'groupements', 'offilog'].forEach(function (k) {
       if (!presents[k]) return;
@@ -394,6 +425,12 @@
       VU = new IntersectionObserver(function (es) { es.forEach(function (e) { e.target.classList.toggle('ac-hors', !e.isIntersecting); }); }, { rootMargin: '80px' });
       [].forEach.call(root.querySelectorAll('.ac-c, .ac4-haut, .acq-ban'), function (c) { VU.observe(c); });
     }
+    // le bandeau du listing, dès que la base a dit oui ; si elle dit non (ou ne répond pas), la place reste vide
+    if (document.getElementById('acq-att') && V2.listings2027 && V2.listings2027.verifier) V2.listings2027.verifier().then(function () {
+      var a = document.getElementById('acq-att'), u = une(); if (!a || !u) return;
+      a.outerHTML = bandeauQG(u);
+      var b = document.querySelector('#u2-cinq .acq-ban'); if (b && VU) VU.observe(b);
+    });
   }
   /* la tache de lumière du bandeau suit le pointeur : un seul écouteur, posé une fois */
   document.addEventListener('pointermove', function (e) {
