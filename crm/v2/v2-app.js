@@ -2164,15 +2164,23 @@
     // l'ancien comportement (top 300 par rotation, désignation + CIP).
     cmdkProd = null; cmdkMols = null;
     var CAT = (V2.produits && V2.produits.catalogueIndex && (V2.pages.produits || V2.pages.molecules)) ? V2.produits.catalogueIndex() : null;
+    // 22/10/2026 — produits sans molécule : la DCI de la base nationale (table du Comptoir, même fichier,
+    // une seule demande). Demandée au premier ⌘K ; l'index se reconstruit à son arrivée, comme le catalogue.
+    var RM = (V2.comptoir && V2.comptoir.repliMol && V2.pages.produits) ? V2.comptoir.repliMol() : null;
+    if (!RM && V2.comptoir && V2.comptoir.chargerNational && V2.pages.produits && !V2._natCmdk) {
+      V2._natCmdk = true;
+      try { V2.comptoir.chargerNational().then(cmdkRelancer, function () {}); } catch (e) {}
+    }
+    RM = RM || {};
     if (CAT) {
       var vend = {}; (window.PROD_STATS || []).forEach(function (r) { vend[String(r.c)] = r.n || 1; });
       cmdkProd = []; var mm = {};
       for (var ck in CAT) {
         if (!Object.prototype.hasOwnProperty.call(CAT, ck)) continue;
-        var o = CAT[ck], nm = deaccLower(o.mol);
-        cmdkProd.push({ cip: String(o.cip), d: o.d, mol: o.mol || '', nd: deaccLower(o.d),
-          hay: deaccLower(o.d + ' ' + o.cip + ' ' + (o.mol || '') + ' ' + (o.labo || '')), v: vend[String(o.cip)] || 0 });
-        if (nm) { var e = mm[nm] || (mm[nm] = { lib: o.mol, nm: nm, nb: 0 }); e.nb++; }
+        var o = CAT[ck], rm = RM[ck], mol = o.mol || (rm && rm.mol) || '', nm = deaccLower(mol);
+        cmdkProd.push({ cip: String(o.cip), d: o.d, mol: mol, nd: deaccLower(o.d),
+          hay: deaccLower(o.d + ' ' + o.cip + ' ' + mol + ' ' + (o.labo || '') + (rm ? ' ' + rm.dci : '')), v: vend[String(o.cip)] || 0 });
+        if (nm) { var e = mm[nm] || (mm[nm] = { lib: mol, nm: nm, nb: 0 }); e.nb++; }
       }
       cmdkMols = Object.keys(mm).map(function (k) { return mm[k]; });
     } else {
@@ -2184,15 +2192,17 @@
         V2._catCmdk = true;
         try {
           var pr = V2.loadFiles(['catcomplet']);
-          if (pr && pr.then) pr.then(function () {
-            cmdkIdx = null;
-            var bd = document.getElementById('v2-cmdk'), inp = document.getElementById('v2-cmdk-input');
-            if (bd && bd.classList.contains('open') && inp && inp.value) { cmdkResults = cmdkSearch(inp.value); renderCmdkResults(); }
-          }, function () {});
+          if (pr && pr.then) pr.then(cmdkRelancer, function () {});
         } catch (e) {}
       }
     }
     return idx;
+  }
+  // Un fichier attendu par l'index vient d'arriver : index à refaire, recherche en cours relancée.
+  function cmdkRelancer() {
+    cmdkIdx = null;
+    var bd = document.getElementById('v2-cmdk'), inp = document.getElementById('v2-cmdk-input');
+    if (bd && bd.classList.contains('open') && inp && inp.value) { cmdkResults = cmdkSearch(inp.value); renderCmdkResults(); }
   }
   // 21/10/2026 — clic sur un produit / une molécule : le Comptoir, recherche remplie, filtres remis à zéro, panneau ouvert.
   // Sans Comptoir (app OPSO, autres marques) : l'ancien chemin ; sans cette page non plus, rien.

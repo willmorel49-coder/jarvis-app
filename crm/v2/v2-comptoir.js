@@ -114,15 +114,7 @@
       D.catEtat = 1;
       V2.loadFiles(['catcomplet']).then(function () { D.catEtat = 2; rerender(); });
     }
-    if (!D.natEtat) {
-      D.natEtat = 1;
-      // Même adresse que l'écran Appro : un seul téléchargement par jour.
-      var jour = new Date().toISOString().slice(0, 10);
-      fetch('national.json?d=' + jour, { cache: 'no-store' })
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (j) { D.nat = j || { data: {} }; D.natEtat = 2; rerender(); })
-        .catch(function () { D.nat = { data: {} }; D.natEtat = 3; rerender(); });
-    }
+    chargerNat();
     if (!window.ETAB_PRICES && !D.etabEtat) {
       D.etabEtat = 1;
       var s = document.createElement('script');
@@ -131,6 +123,53 @@
       s.onload = s.onerror = function () { D.etabEtat = 2; rerender(); };
       document.head.appendChild(s);
     }
+  }
+
+  // Même adresse que l'écran Appro : un seul téléchargement par jour. Partagé avec la recherche ⌘K
+  // (22/10/2026) : une seule demande, quel que soit celui qui la fait en premier.
+  function chargerNat() {
+    if (D.natP) return D.natP;
+    D.natEtat = 1;
+    var jour = new Date().toISOString().slice(0, 10);
+    D.natP = fetch('national.json?d=' + jour, { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { D.nat = j || { data: {} }; D.natEtat = 2; rerender(); }, function () { D.nat = { data: {} }; D.natEtat = 3; rerender(); });
+    return D.natP;
+  }
+
+  // ── 22/10/2026 — molécule manquante : la DCI de la base nationale ──
+  // 4 769 produits du catalogue n'ont pas de molécule (ELIQUIS 5MG compris : « apixaban » ne le trouvait pas).
+  // national.json en donne une pour 875 d'entre eux, mais UNE seule substance, même pour une association
+  // (TRAMADOL/PARACÉTAMOL → « PARACÉTAMOL »), et dans un autre vocabulaire (« MÉSILATE DE DOXAZOSINE »).
+  // On regarde donc les produits du catalogue qui ont DÉJÀ une molécule et la même DCI nationale :
+  //   aucun → la DCI nationale devient la molécule ; tous la même → celle du catalogue (même rubrique) ;
+  //   plusieurs → association probable : la DCI sert à la RECHERCHE, jamais au regroupement par molécule
+  //   (sinon les clientes du tramadol/paracétamol gonfleraient celles du paracétamol).
+  // Rend { cip: { dci, mol } } pour les seuls produits sans molécule ; mol vaut '' quand c'est ambigu.
+  function repliMolecules(CAT, N) {
+    var vues = {}, out = {}, c, n, k, m;
+    for (c in CAT) {
+      if (!Object.prototype.hasOwnProperty.call(CAT, c) || !CAT[c].mol || !(n = N[c]) || !n.d) continue;
+      k = sansAccent(n.d).trim(); m = vues[k] || (vues[k] = {});
+      if (!m[sansAccent(CAT[c].mol).trim()]) m[sansAccent(CAT[c].mol).trim()] = CAT[c].mol;
+    }
+    for (c in CAT) {
+      if (!Object.prototype.hasOwnProperty.call(CAT, c) || CAT[c].mol || !(n = N[c]) || !n.d) continue;
+      m = vues[sansAccent(n.d).trim()];
+      k = m ? Object.keys(m) : [];
+      out[c] = { dci: n.d, mol: k.length === 0 ? n.d : k.length === 1 ? m[k[0]] : '' };
+    }
+    return out;
+  }
+  // Calculé une fois par catalogue et par fichier national ; null tant que l'un des deux manque.
+  function repli() {
+    var CAT = V2.produits && V2.produits.catalogueIndex && V2.produits.catalogueIndex();
+    if (!CAT || D.natEtat < 2) return null;
+    // CAT._nrAjout : le Comptoir ajoute ensuite au même objet les NR hors catalogue (ajouterNrHorsCat).
+    if (!D.repli || D.repliCat !== CAT || D.repliNat !== D.nat || D.repliNr !== !!CAT._nrAjout) {
+      D.repli = repliMolecules(CAT, (D.nat && D.nat.data) || {}); D.repliCat = CAT; D.repliNat = D.nat; D.repliNr = !!CAT._nrAjout;
+    }
+    return D.repli;
   }
 
   // Ventes France mois par mois : 1,2 Mo, chargé seulement quand on en a besoin
@@ -311,11 +350,12 @@
     var TAR = (window.ETAB_PRICES && window.ETAB_PRICES.tarif) || {};
     var ALL = (window.ETAB_PRICES && window.ETAB_PRICES.all) || {};
     var M = window.V2PRODUITS, porte = function (f) { return M ? M.porteAbandon(f) : String(f || '').indexOf('pr_') === 0; };
+    var RM = repli() || {};   // 22/10/2026 : molécule manquante → DCI nationale
 
     var lignes = [], nDetail = 0;
     for (c in CAT) {
       if (!Object.prototype.hasOwnProperty.call(CAT, c)) continue;
-      var o = CAT[c], ps = PS[c];
+      var o = CAT[c], ps = PS[c], rm = RM[c];
       var fam = (ps && ps.f) || o.f;
       var ppht = +(ps && ps.ppht) || +o.ppht || 0;
       // NR : le tarif de la dernière extraction (15/09) remplace celui de juin. Un écart
@@ -344,7 +384,7 @@
       var stk = 0;
       if (etab) { for (i in etab) if (Object.prototype.hasOwnProperty.call(etab, i)) stk += etab[i]; }
       lignes.push({
-        cip: c, d: lib, labo: o.labo || '', mol: o.mol || '', f: fam,
+        cip: c, d: lib, labo: o.labo || '', mol: o.mol || (rm && rm.mol) || '', f: fam,
         ppht: ppht, net: net, tar: tar,
         // Prix affiché : un NR se présente à son tarif (le net réseau n'est qu'un
         // prix moyen facturé) ; le reste, au prix net.
@@ -356,7 +396,7 @@
         stock: etab ? stk : Math.max(0, Object.prototype.hasOwnProperty.call(STK, c) ? (+STK[c] || 0) : (+o.stock || 0)),
         rupt: !!R[c], an: vente, rang: rg, part: part, france: n ? n.v : 0,
         ecart: ecart, pot: opp ? ecart * (net > 0 ? net : ppht) : 0, opp: opp, etab: etab,
-        hay: sansAccent(lib + ' ' + c + ' ' + (o.labo || '') + ' ' + (o.mol || ''))
+        hay: sansAccent(lib + ' ' + c + ' ' + (o.labo || '') + ' ' + (o.mol || '') + (rm ? ' ' + rm.dci : ''))
       });
     }
     D.cache = { lignes: lignes, partMoy: partMoy, mois: V.mois, nDetail: nDetail,
@@ -1047,6 +1087,10 @@
   V2.comptoir._indexCommandes = indexCommandes;
   V2.comptoir._listerCommandes = listerCommandes;
   V2.comptoir._dejaCommande = function (sales, cips, voit, estReste) { return listerCommandes(indexCommandes(sales, voit, estReste), cips); };
+  V2.comptoir._repliMolecules = repliMolecules;
+  // Pour la recherche ⌘K (22/10/2026) : la table de repli (null tant qu'elle n'est pas prête) et sa demande.
+  V2.comptoir.repliMol = repli;
+  V2.comptoir.chargerNational = chargerNat;
   V2.comptoir.fermerPanneau = function () {
     C.cip = null;
     var h = document.getElementById('cp-pan-hote');

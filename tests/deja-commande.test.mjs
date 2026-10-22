@@ -67,3 +67,38 @@ test('période : premier et dernier mois des ventes comptées', () => {
   assert.equal(ix.debut, 1);
   assert.equal(ix.fin, 4);
 });
+
+/* 22/10/2026 — molécule manquante au catalogue : la DCI de la base nationale (national.json, champ d).
+   Elle ne porte qu'UNE substance, même pour une association : on ne s'en sert pour regrouper que si
+   les produits déjà étiquetés qui partagent cette DCI n'ont qu'une seule molécule. */
+const CAT = {
+  GEL:  { mol: 'APIXABAN' },               // absent de la base nationale
+  E5:   { mol: '' },                       // ELIQUIS 5MG : aucun voisin étiqueté avec cette DCI → la DCI elle-même
+  DX1:  { mol: 'DOXAZOSINE' },
+  DX2:  { mol: 'Doxazosine' },             // même molécule, autre graphie : pas une ambiguïté
+  DX3:  { mol: '' },                       // → vocabulaire du catalogue
+  PA1:  { mol: 'PARACETAMOL' },
+  PA2:  { mol: 'TRAMADOL/PARACETAMOL' },   // association : la base nationale dit « PARACÉTAMOL »
+  PA3:  { mol: '' },                       // ambigu → recherche seulement
+  SANS: { mol: '' },                       // inconnu de la base nationale
+  ETIQ: { mol: 'FOO' }                     // a déjà sa molécule : jamais touché
+};
+const NAT = {
+  E5: { d: 'APIXABAN' }, DX1: { d: 'MÉSILATE DE DOXAZOSINE' }, DX2: { d: 'MÉSILATE DE DOXAZOSINE' }, DX3: { d: 'MÉSILATE DE DOXAZOSINE' },
+  PA1: { d: 'PARACÉTAMOL' }, PA2: { d: 'PARACÉTAMOL' }, PA3: { d: 'PARACÉTAMOL' }, ETIQ: { d: 'BAR' }
+};
+
+test('repli DCI : seuls les produits sans molécule et connus de la base nationale', () => {
+  const r = nu(C._repliMolecules(CAT, NAT));
+  assert.deepEqual(Object.keys(r).sort(), ['DX3', 'E5', 'PA3']);
+});
+
+test('repli DCI : DCI seule, traduite dans le vocabulaire du catalogue, ou vide si association probable', () => {
+  const r = nu(C._repliMolecules(CAT, NAT));
+  assert.deepEqual(r.E5, { dci: 'APIXABAN', mol: 'APIXABAN' });
+  assert.deepEqual(r.DX3, { dci: 'MÉSILATE DE DOXAZOSINE', mol: 'DOXAZOSINE' });
+  assert.deepEqual(r.PA3, { dci: 'PARACÉTAMOL', mol: '' });
+  // Contre-épreuve : sans l'association étiquetée, le même produit se range sous le paracétamol.
+  const sansAsso = Object.assign({}, CAT); delete sansAsso.PA2;
+  assert.equal(nu(C._repliMolecules(sansAsso, NAT)).PA3.mol, 'PARACETAMOL');
+});
