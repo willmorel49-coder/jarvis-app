@@ -107,6 +107,7 @@
     var ix = {}, i;
     for (i = 0; i < O.colonnes.length; i++) ix[O.colonnes[i]] = i;
     var comm = om.commerciaux || [], seuilSans = om.sans_froid_boites_mois_max, k0 = Dp.k0, k1 = Dp.k1;
+    var premierRecent = om.mois_actifs && om.mois_actifs.length ? Math.min.apply(null, om.mois_actifs) : 0;
     var rows = O.lignes.map(function (l) {
       var g = function (n) { return l[ix[n]]; };
       var r = { code: String(g('code')), nom: String(g('nom') || ''), ville: String(g('ville') || ''), cp: String(g('cp') || ''),
@@ -116,6 +117,7 @@
       r.pf[k0] = g('pot_froid_' + k0); r.pf[k1] = g('pot_froid_' + k1);
       r.pt[k0] = g('pot_total_' + k0); r.pt[k1] = g('pot_total_' + k1);
       r.sans = r.fb < seuilSans;
+      r.plus = !!(premierRecent && typeof r.dernier === 'number' && r.dernier < premierRecent);   // « Plus d’achat depuis … » (dernier achat avant le premier mois récent)
       r.nomN = norm(r.nom + ' ' + r.ville + ' ' + r.cp + ' ' + r.code);
       return r;
     });
@@ -525,13 +527,21 @@
 
   // ── Vue « Par officine » ──────────────────────────────────────────
   function moisNom(ym) { var m = ym % 100; return (MOIS[m - 1] || '') + ' ' + Math.floor(ym / 100); }
+  // Nouvelle donnée (22/10/2026) : toutes les officines clientes de la période ; les mois sont lus dans la donnée.
+  function enteteToutes(om) {
+    var p = om.periode || {}, de = p.de || 0, a = p.a || 0, ma = om.mois_actifs || [], n = om.nb_plus_achat;
+    var plage = 'de ' + (MOIS[de % 100 - 1] || '') + (Math.floor(de / 100) !== Math.floor(a / 100) ? ' ' + Math.floor(de / 100) : '') + ' à ' + moisNom(a);
+    var t = 'Toutes les officines clientes ' + plage + ', d’au moins ' + entier(om.taille_min_ca_hors_froid) + ' € d’achats par mois hors froid.';
+    if (n > 0) t += ' Dont ' + entier(n) + ' qui n’achètent plus' + (ma.length ? ' (aucun achat en ' + ma.map(function (y) { return MOIS[y % 100 - 1]; }).join(' ni en ') + ' ' + Math.floor(ma[0] / 100) + ')' : '') + '.';
+    return t + ' ' + entier(om.nb_ecartees) + ' écartées : trop petites (dépannage).';
+  }
   function kpisO() {
     var K = S.K, A = calcO(K), om = D.off.meta, h = '';
     var iF = trouverFam(/^froid$/i), cF = iF >= 0 ? couleurFam(iF) : 'var(--c-froid)';
     h += '<div class="mp-kpi" style="--k:var(--ip-blue)"><div class="mp-kl">Officines clientes suivies</div>' +
       '<div class="mp-kv" data-k="ofnb">' + entier(A.n) + '</div>' +
-      '<div class="mp-kd">Clientes actives (un achat en ' + esc(om.mois_actifs.map(function (y) { return MOIS[y % 100 - 1]; }).join(' ou ')) + ' ' + Math.floor(om.mois_actifs[0] / 100) + ') et d’au moins ' + entier(om.taille_min_ca_hors_froid) +
-      ' € d’achats par mois hors froid. ' + entier(om.nb_ecartees) + ' écartées : ' + entier(om.nb_ecartees_perdues) + ' perdues, ' + entier(om.nb_ecartees_petites) + ' trop petites (dépannage).</div></div>';
+      '<div class="mp-kd">' + (typeof om.nb_plus_achat === 'number' ? enteteToutes(om) : 'Clientes actives (un achat en ' + esc(om.mois_actifs.map(function (y) { return MOIS[y % 100 - 1]; }).join(' ou ')) + ' ' + Math.floor(om.mois_actifs[0] / 100) + ') et d’au moins ' + entier(om.taille_min_ca_hors_froid) +
+      ' € d’achats par mois hors froid. ' + entier(om.nb_ecartees) + ' écartées : ' + entier(om.nb_ecartees_perdues) + ' perdues, ' + entier(om.nb_ecartees_petites) + ' trop petites (dépannage).') + '</div></div>';
     h += '<div class="mp-kpi" style="--k:' + cF + '"><div class="mp-kl">Dont sans froid chez nous</div>' +
       '<div class="mp-kv" data-k="ofsans">' + entier(A.sans) + '</div>' +
       '<div class="mp-kd">Soit ' + pct(A.n ? A.sans / A.n : 0, 1) + ' des officines suivies : moins de ' + nf(om.sans_froid_boites_mois_max, 0) + ' boîte de froid par mois chez nous.</div></div>';
@@ -578,7 +588,7 @@
       '<small class="mp-ref">Réseau à taille égale : ' + boitesF(ref) + '</small>';
     var h = '<div class="mp-orow-w' + (ouvert ? ' ouvert' : '') + '" data-code="' + esc(r.code) + '">' +
       '<button type="button" class="mp-orow" data-act="ouv" data-c="' + esc(r.code) + '" aria-expanded="' + ouvert + '">' +
-      '<span class="mp-n"><b title="' + esc(r.nom) + '">' + esc(r.nom) + '</b><span>' + esc(r.ville) + (r.cp ? ' · ' + esc(r.cp) : '') + '</span></span>' +
+      '<span class="mp-n"><b title="' + esc(r.nom) + '">' + esc(r.nom) + '</b><span>' + esc(r.ville) + (r.cp ? ' · ' + esc(r.cp) : '') + '</span>' + (r.plus ? '<span class="mp-pa">Plus d’achat depuis ' + esc(moisNom(r.dernier)) + '</span>' : '') + '</span>' +
       '<span class="mp-c oc" data-l="Commercial">' + esc(r.comm || '—') + '</span>' +
       '<span class="mp-c" data-l="Achats par mois hors froid">' + eur0(r.ca) + '</span>' +
       '<span class="mp-c of" data-l="Froid : boîtes par mois">' + froid + '</span>' +
@@ -599,6 +609,7 @@
     liste.sort(function (a, b) { var fa = a.p.f === iF ? 0 : 1, fb = b.p.f === iF ? 0 : 1; return (fa - fb) || (b.g - a.g); });
     var h = '<div class="mp-odet"><div class="mp-odh"><div><b>Produits qui lui manquent</b><span>Boîtes par mois en moins que la moyenne du réseau à taille égale, et ce que cela rapporterait en ' + anDe(K) + '. Le froid est en premier.</span></div>' +
       '<button type="button" class="v2-btn v2-btn-primary mp-fiche" data-act="fiche" data-c="' + esc(r.code) + '">Ouvrir la fiche</button></div>';
+    if (r.plus) h += '<p class="mp-note">Plus d’achat depuis ' + esc(moisNom(r.dernier)) + '.</p>';
     if (!liste.length) h += '<div class="mp-vide">Aucun produit suivi ne lui manque.</div>';
     else {
       h += '<div class="mp-mq mp-mqh" aria-hidden="true"><span>Produit</span><span>Famille</span><span class="c">Boîtes / mois en moins</span><span class="c">Gain par mois</span></div>';
@@ -631,7 +642,7 @@
     var cv = om.couverture_noms || {};
     return '<footer class="mp-pied"><h3>Comment on calcule le potentiel</h3><ul>' +
       '<li>Produits suivis : ceux de la liste « à vendre en priorité » de la vue par produit, soit les ' + entier(om.nb_produits_suivis) + ' produits que nous aurons en ' + D.an1 + ', qui rapportent au moins ' + eurBoite(seuil.marge_boite_min || 0) + ' par boîte et se vendent à ' + entier(seuil.boites_mois_min || 0) + ' boîtes par mois ou plus.</li>' +
-      '<li>Taille d’une officine : ses achats chez nous par mois, hors froid (moyenne sur les mois où elle a acheté). Sont suivies les clientes actives d’au moins ' + entier(om.taille_min_ca_hors_froid) + ' € par mois : ' + entier(om.nb_retenues) + ' officines.</li>' +
+      '<li>Taille d’une officine : ses achats chez nous par mois, hors froid (moyenne sur les mois où elle a acheté). Sont suivies ' + (typeof om.nb_plus_achat === 'number' ? 'toutes les officines clientes sur la période, même celles qui n’achètent plus, ' : 'les clientes actives ') + 'd’au moins ' + entier(om.taille_min_ca_hors_froid) + ' € par mois : ' + entier(om.nb_retenues) + ' officines.</li>' +
       '<li>Moyenne du réseau : pour chaque produit, les boîtes achetées par les officines suivies divisées par la somme de leurs achats hors froid. Le manque d’une officine est l’écart avec cette moyenne à sa taille, jamais en dessous de zéro.</li>' +
       '<li>Potentiel = boîtes qui manquent × notre marge par boîte du barème choisi, en € par mois. Le froid ne compte que les produits froid suivis ; le total compte tous les produits suivis.</li></ul>' +
       '<p>Période : ' + esc(moisNom(p.de || 0)) + ' → ' + esc(moisNom(p.a || 0)) + '. Noms et villes trouvés pour ' + pct(cv.taux || 0, 0) + ' des officines. Estimation de la direction, à confirmer par l’appel.</p>' +
@@ -922,6 +933,7 @@
       '.mp-ohead:hover{background:var(--card-2)}.mp-ohead .c{text-align:right}',
       '.mp-orow .mp-n{min-width:0}',
       '.mp-orow .mp-n>span{display:block}',
+      '.mp-n span.mp-pa{white-space:normal}',
       '.mp-c.oc{font-family:var(--font);text-align:left;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.mp-c.of{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left}',
       '.mp-ofv{font-weight:800}',
