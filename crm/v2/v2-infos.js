@@ -993,9 +993,9 @@
     });
     D.fil.forEach(function (a) { add({ rub: 'actu', t: a.t, d: a.d, item: ppArt(a), pri: 9, neuf: a.neuf }); });
     var S = ppScope();
-    if (S.deps) ppAnnonces(S.deps).filter(function (e) { return ppJ(e.d) <= 14; }).forEach(function (e) {
+    if (S.deps || S.dir) ppAnnonces(S.deps).filter(function (e) { return ppJ(e.d) <= 14; }).forEach(function (e) {
       var fam = SCT_FAM[e.f] || SCT_FAM.dirigeant;
-      add({ rub: 'officine', t: sctJoli(e.nom) + ' — ' + fam.l1.toLowerCase() + ' · ' + sctJoli(e.ville), d: e.d, item: ppArtBodPret(e), pri: 4 });
+      add({ rub: 'officine', t: sctJoli(e.nom) + ' — ' + fam.l1.toLowerCase() + ' · ' + sctJoli(e.ville), d: e.d, item: ppArtBodPret(e), pri: 4, bod: e, fam: fam.l1 });
     });
     return out;
   }
@@ -1073,8 +1073,8 @@
       ['mur', 'Toute l’actualité', 'journal', D.fil.length]
     ];
     if (J.length) L.push(['archive', 'Les matins d’avant', 'horloge', J.length]);
-    return '<section class="x13-s-rub" aria-label="Rubriques et outils">' +
-      '<button type="button" class="x13-tout x13-plus" data-x13-rub aria-expanded="' + (X13.rub ? 'true' : 'false') + '" aria-controls="x13-rub-z"><span>Rubriques et outils</span><span class="x13-tout-f" aria-hidden="true">' + ppIco('bas', 18) + '</span></button>' +
+    return '<section class="x13-s-rub" aria-label="Toutes les infos du jour">' +
+      '<button type="button" class="x13-tout x13-plus x13-lien" data-x13-rub aria-expanded="' + (X13.rub ? 'true' : 'false') + '" aria-controls="x13-rub-z"><span>Toutes les infos du jour</span><span class="x13-tout-f" aria-hidden="true">' + ppIco('bas', 18) + '</span></button>' +
       '<div class="x13-rub-z" id="x13-rub-z"' + (X13.rub ? '' : ' hidden') + '><div class="x13-rubs">' + L.map(function (r) {
       return '<button type="button" class="x13-rb" onclick="V2.ppOuvrir(\'' + r[0] + '\')">' + ppIco(r[2], 18) + '<span>' + esc(r[1]) + '</span>' + (r[3] != null ? '<b>' + esc(r[3]) + '</b>' : '') + '</button>';
     }).join('') + '</div><div class="pp-pied-btns">' +
@@ -1082,32 +1082,47 @@
       '<button type="button" class="pp-btn pp-btn-blanc" onclick="V2.ppOuvrir(\'sources\')">Voir la fraîcheur des sources</button>' +
       '</div></div></section>';
   }
+  /* v3 « Votre secteur d'abord » : deux blocs, même ligne. Les noms des départements viennent de sctMonSecteur() via ppScope() et SCT_DEPNOMS. */
+  function x13Ligne3(e, i) {
+    X13.liste[i] = e;
+    var cli = e.bod && sctTag(e.bod).t === 'client', a = x13Age(e);
+    var kick = e.bod ? e.fam : X13_RUB[e.rub];
+    return '<li><button type="button" class="x13-l" data-x13-i="' + i + '"><span class="x13-lt"><span class="x13-lk"><span class="x13-ru x13-t-' + e.rub + '">' + esc(kick) + '</span>' +
+      (cli ? '<span class="x13-neuf">Votre client</span>' : '') + '<span class="x13-lm">' + esc(e.bod ? (a || 'Annonces légales') : (a ? a + ' · ' : '') + x13Source(e)) + '</span></span>' +
+      '<span class="x13-ltit">' + x13T(e.bod ? sctJoli(e.bod.nom) + ' · ' + sctJoli(e.bod.ville) : e.t) + '</span></span><span class="x13-lf" aria-hidden="true">' + ppIco('bas', 18) + '</span></button></li>';
+  }
   function x13Page(D, jour, J) {
-    var P = x13Pile(D), u = P.une, i = 0, d = 1, une = '', cmp = '', tend = '';
+    var P = x13Pile(D), S = ppScope(), i = 0;
     X13.liste = [];
-    if (u) {
-      X13.liste[i] = u;
-      une = '<section class="x13-s-une" aria-labelledby="x13-h-une"><h2 class="x13-h" id="x13-h-une">À la une</h2><button type="button" class="x13-une" style="--i:0" data-x13-i="' + i + '">' + x13Couv(u, true) +
-        '<span class="x13-cap"><span class="x13-ru x13-t-' + u.rub + '">' + esc(X13_RUB[u.rub]) + '</span><span class="x13-ut">' + x13T(u.t) + '</span>' + x13Ligne(u) + '</span></button></section>';
-      i++;
-    }
-    if (P.cmp.length) {
-      cmp = '<section class="x13-s-cmp" aria-labelledby="x13-h-cmp"><h2 class="x13-h x13-sr" id="x13-h-cmp">Ensuite</h2><div class="x13-liste">' + P.cmp.map(function (e) { var h = x13Compacte(e, i, d); i++; d++; return h; }).join('') + '</div>';
-      if (P.reste.length) {
-        cmp += '<button type="button" class="x13-tout" data-x13-tout aria-expanded="false" aria-controls="x13-reste"><span>Tout voir<b>' + ppPl(P.reste.length, 'autre info', 'autres infos') + '</b></span><span class="x13-tout-f" aria-hidden="true">' + ppIco('bas', 18) + '</span></button>' +
-          '<div class="x13-reste" id="x13-reste" hidden><div class="x13-liste">' + P.reste.map(function (e) { var h = x13Compacte(e, i, 0); i++; return h; }).join('') + '</div></div>';
-      }
-      cmp += '</section>';
-    }
-    if (P.tend.length) {
-      tend = '<section class="x13-s-tend" aria-labelledby="x13-h-tend"><h2 class="x13-h" id="x13-h-tend">Tendances</h2><ol class="x13-tendances">' + P.tend.map(function (e, k) {
-        X13.liste[i] = e;
-        var h = '<li><button type="button" class="x13-tr" style="--i:' + (d + k) + '" data-x13-i="' + i + '"><span class="x13-tn x13-t-' + e.rub + '" aria-hidden="true">' + (k + 1) + '</span><span class="x13-tx"><span class="x13-tsrc">' + esc(x13Source(e)) + '</span><span class="x13-tt">' + x13T(e.t) + '</span></span></button></li>';
-        i++; return h;
-      }).join('') + '</ol></section>';
-    }
-    return '<div class="w-page x13"><header class="x13-tete"><h1><span class="x13-h1a">Infos du jour</span><span class="x13-h1b">' + esc(PP_JS[new Date(jour + 'T12:00:00').getDay()] + ' ' + ppDc(jour)) + '</span></h1></header>' +
-      une + cmp + tend + x13Rubriques(D, J) + '</div>';
+    var tout = [P.une].concat(P.cmp, P.tend, P.reste).filter(Boolean);
+    // 1) le secteur : un client d'abord, puis les plus récentes ; 4 au plus ; sans doublon de nom
+    var vu = {}, sec = tout.filter(function (e) {
+      if (e.rub !== 'officine') return false;
+      var k = x13N2(e.bod ? e.bod.nom : e.t).slice(0, 18); if (vu[k]) return false; vu[k] = 1; return true;
+    });
+    sec.sort(function (a, b) {
+      var ca = a.bod && sctTag(a.bod).t === 'client' ? 0 : 1, cb = b.bod && sctTag(b.bod).t === 'client' ? 0 : 1;
+      return (ca - cb) || String(b.d || '').localeCompare(String(a.d || ''));
+    });
+    sec = sec.slice(0, 4);
+    // 2) la France : une règle, une rupture, un rappel (le premier de chaque), complétés par le suivant le plus important ; 3 au plus
+    var fr = tout.filter(function (e) { return /^(regle|rupture|rappel|concurrent)$/.test(e.rub); }), pris = [];
+    ['regle', 'rupture', 'rappel'].forEach(function (r) { var e = fr.filter(function (x) { return x.rub === r; })[0]; if (e) pris.push(e); });
+    // une de chaque rubrique d'abord (la plus importante devant), les compléments seulement s'il reste de la place
+    pris = pris.sort(function (a, b) { return a.pri - b.pri; });
+    fr.forEach(function (e) { if (pris.length < 3 && pris.indexOf(e) < 0) pris.push(e); });
+    pris = pris.slice(0, Math.max(2, 6 - sec.length));   // 6 infos au plus sur la page
+    pris.sort(function (a, b) { return a.pri - b.pri; });
+    var noms = S.deps ? S.deps.map(function (d) { return SCT_DEPNOMS[d] || d; }).sort(function (a, b) { return a.localeCompare(b, 'fr'); }).join(' · ') : '';
+    var titreSec = S.deps ? 'Dans votre secteur' : 'Les officines · toute la France';
+    var sousSec = S.deps ? noms : 'Vue direction : aucun secteur propre, toutes les annonces des 14 derniers jours';
+    var bsec = '<section class="x13-bl x13-bl-sec" aria-labelledby="x13-h-sec"><h2 class="x13-h" id="x13-h-sec">' + esc(titreSec) + '</h2><p class="x13-sous">' + esc(sousSec) + '</p>' +
+      (sec.length ? '<ul class="x13-ls">' + sec.map(function (e) { return x13Ligne3(e, i++); }).join('') + '</ul>' :
+        '<p class="x13-vide">Rien de neuf cette semaine dans ' + (S.deps ? 'votre secteur' : 'les officines') + '.</p>') + '</section>';
+    var bfr = '<section class="x13-bl x13-bl-fr" aria-labelledby="x13-h-fr"><h2 class="x13-h" id="x13-h-fr">En France</h2><p class="x13-sous">Ce qui touche toutes les officines</p>' +
+      (pris.length ? '<ul class="x13-ls">' + pris.map(function (e) { return x13Ligne3(e, i++); }).join('') + '</ul>' : '<p class="x13-vide">Rien de neuf aujourd’hui.</p>') + '</section>';
+    return '<div class="w-page x13 x13v3"><header class="x13-tete"><h1><span class="x13-h1a">Infos du jour</span><span class="x13-h1b">' + esc(PP_JS[new Date(jour + 'T12:00:00').getDay()] + ' ' + ppDc(jour)) + '</span></h1></header>' +
+      '<div class="x13-deux">' + bsec + bfr + '</div>' + x13Rubriques(D, J) + '</div>';
   }
 
   /* ── la feuille de lecture : naît de la carte touchée ── */
@@ -1210,7 +1225,7 @@
       if (X13.rub) { try { zr.scrollIntoView({ block: 'nearest' }); } catch (er) {} }
       return;
     }
-    if ((t = e.target.closest('.x13-c,.x13-une,.x13-tr'))) x13Ouvre(t);
+    if ((t = e.target.closest('.x13-c,.x13-une,.x13-tr,.x13-l'))) x13Ouvre(t);
   }
   if (!V2._x13Ecoute) {
     V2._x13Ecoute = true;
@@ -1520,6 +1535,42 @@
       'html.x13-fige{overflow:hidden}',
       '/* entrée : décalée, transform seul */',
       '@keyframes x13-in{from{transform:translateY(18px) scale(.985)}to{transform:none}}',
+      '/* ── v3 « Votre secteur d’abord » : deux blocs, une seule forme de ligne ── */',
+      '.x13.x13v3{display:block;max-width:1180px}',
+      '.x13v3 .x13-tete{padding:2px 2px 12px}',
+      '.x13v3 h1{font-size:clamp(30px,8.4vw,36px)}',
+      '.x13v3 .x13-deux{display:flex;flex-direction:column;gap:14px}',
+      '.x13v3 .x13-bl{margin:0;padding:12px 6px 6px;border-radius:var(--x13-r);border:var(--x13-bord);background:var(--x13-fond);box-shadow:var(--pp-ombre)}',
+      '.x13v3 .x13-bl-sec{background:linear-gradient(180deg,#fff 0%,#F2F7FF 100%)}',
+      '.x13v3 .x13-h{margin:0;padding:0 12px;font:800 22px/1.1 var(--pp-sans);letter-spacing:-.025em;color:var(--pp-bleu-f)}',
+      '.x13v3 .x13-bl-fr .x13-h{color:var(--pp-encre)}',
+      '.x13v3 .x13-sous{margin:3px 0 4px;padding:0 12px;font:600 14px/1.35 var(--pp-sans);color:var(--pp-encre2)}',
+      '.x13v3 .x13-ls{margin:0;padding:0;list-style:none}',
+      '.x13v3 .x13-ls li+li{border-top:1px solid #E3E8F1;margin:0 12px}',
+      '.x13v3 .x13-l{display:flex;align-items:center;gap:10px;width:100%;min-height:68px;margin:0;padding:9px 12px;text-align:left;font:inherit;color:inherit;background:none;border:0;border-radius:16px;cursor:pointer;-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent}',
+      '.x13v3 .x13-ls li+li .x13-l{margin:0 -12px;width:calc(100% + 24px)}',
+      '.x13v3 .x13-lt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}',
+      '.x13v3 .x13-lk{display:flex;align-items:center;gap:8px;min-height:20px;white-space:nowrap;overflow:hidden}',
+      '.x13v3 .x13-lm{font:500 13px/1.3 var(--pp-sans);color:#566074;overflow:hidden;text-overflow:ellipsis;min-width:0}',
+      '.x13v3 .x13-ltit{font:700 17px/1.22 var(--pp-sans);letter-spacing:-.012em;color:var(--pp-encre);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}',
+      '.x13v3 .x13-lf{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--pp-halo);color:var(--pp-bleu);transform:rotate(-90deg)}',
+      '.x13v3 .x13-vide{margin:10px 12px 12px;padding:14px 16px;border-radius:16px;background:var(--pp-halo);font:650 16px/1.35 var(--pp-sans);color:var(--pp-bleu-f)}',
+      '.x13v3 .x13-l:active{background:#E9F0FF}',
+      '.x13v3 .x13-l:focus-visible{outline:3px solid rgba(0,80,230,.55);outline-offset:-3px}',
+      '.x13v3 .x13-s-rub{margin-top:10px}',
+      '.x13v3 .x13-lien{width:auto;min-width:0;gap:8px;min-height:44px;margin:0;padding:0 4px 0 6px;border:0;background:none;box-shadow:none;border-radius:22px;font:700 15px/1.2 var(--pp-sans);color:var(--pp-bleu-f);display:inline-flex}',
+      '.x13v3 .x13-lien .x13-tout-f{width:30px;height:30px}',
+      '@media (hover:hover){.x13v3 .x13-l:hover{background:#F1F6FF}}',
+      '@media (min-width:900px){',
+      '  .x13.x13v3{display:block}',
+      '  .x13v3 .x13-deux{flex-direction:row;align-items:stretch;gap:22px}',
+      '  .x13v3 .x13-bl{flex:1 1 0;min-width:0;padding:16px 8px 8px}',
+      '  .x13v3 .x13-bl-sec{flex:1.25 1 0}',
+      '  .x13v3 h1{font-size:40px;flex-direction:row;align-items:baseline;gap:14px}',
+      '  .x13v3 .x13-h{font-size:26px;padding:0 14px}.x13v3 .x13-sous{padding:0 14px;margin-bottom:8px}',
+      '  .x13v3 .x13-l{padding:12px 14px;min-height:84px}.x13v3 .x13-ls li+li{margin:0 14px}.x13v3 .x13-ls li+li .x13-l{margin:0 -14px;width:calc(100% + 28px)}',
+      '  .x13v3 .x13-ltit{font-size:19px}',
+      '}',
       '/* bureau : la une large à gauche, les compactes à droite */',
       '@media (max-width:899px){',
       '  .x13-s-cmp{display:contents}',
