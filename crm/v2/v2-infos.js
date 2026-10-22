@@ -1380,7 +1380,7 @@
   function x15Masquer(nom) {
     var S = x15S(), now = Date.now(); S.m[nom] = { le: now, off: 0 }; x15Garder();
     x15Redessine();
-    x15Ban('Vous ne verrez plus les infos de « ' + nom + ' ».', function () { S.m[nom] = { le: Date.now(), off: 1 }; x15Garder(); x15Redessine(); });
+    x15Ban('Vous ne verrez plus les infos de « ' + nom + ' ».', function () { x15Revoir(nom); });   // relire l'état : l'envoi vers la base a pu le remplacer depuis
   }
   function x15Revoir(nom) {
     var S = x15S(); S.m[nom] = { le: Date.now(), off: 1 }; x15Garder();
