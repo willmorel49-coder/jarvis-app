@@ -543,6 +543,406 @@
   }
   function moisLib(m) { return MOIS_C[moisCal(m) - 1] + ' ' + anneeDe(m); }
 
+  // ═══════════════════════════════════════════════════════════════
+  // SOCLE DE CALCUL du panneau produit (22/10/2026) — spec : SPEC-DONNEES.md
+  // Les designers n'ont rien à recalculer : ils affichent V2.comptoir.stats(l, d).
+  // Tout ce qui est « calcul » est pur (aucun accès à l'écran ni au réseau) et testé : V2.comptoir._calc.
+  // ═══════════════════════════════════════════════════════════════
+  var MG_TAUX = 0.0693, MG_PLAF = 32.50, SEUIL_HAUT = 468.97;     // marge grossiste réglementée : 6,93 %, plafond 32,50 €
+  var PLANCHER_MG = { 2026: 0.30, 2027: 0.22 };                    // plancher par boîte (arrêté du 3/8/2026 : 0,22 € dès le 20/01/2027)
+  var FORFAIT_FROID = { 2026: 0.63, 2027: 0.80 };                  // forfait chaîne du froid, jamais partagé avec l'officine
+  // Marge officine réglementée (annexe I-2, lissée) : [borne basse, borne haute, taux] sur le prix fabricant HT.
+  var TRANCHES_OFFICINE = [[0, 1.91, 0.10], [1.91, 22.90, 0.07], [22.90, 150, 0.055], [150, 1930, 0.05]];
+  var FAM_PRINCEPS = { pr_low: 1, pr_mid: 1, pr_high: 1 };         // comme margeNettePrinceps : princeps remboursables seuls
+  var JOURS_ALERTE_PRIX = 180, ECART_CATALOGUE = 0.02, JOURS_RAPPEL = 365;
+  var FICHIERS = {
+    prixFuturs: 'prix-futurs.json', prixArchive: 'prix-futurs-archive.json', generiques: 'generiques-bdpm.json',
+    ema: 'ema-generiques.json', regional: 'marche-regional.json', previsions: 'previsions.json',
+    ansm: 'ansm-dispo.json', rappels: 'rappels-lots.json', has: 'has-avis.json'
+  };
+
+  function anBareme(an) { return an >= 2027 ? 2027 : 2026; }
+  // Prix fabricant HT depuis le prix grossiste HT du catalogue : le barème grossiste, à l'envers.
+  // La bascule se calcule (plancher / taux), jamais avec l'arrondi 4,33.
+  function pfhtDepuisPpht(ppht, froid) {
+    var p = +ppht, pl = PLANCHER_MG[2026], base, r;
+    if (!(p > 0)) return null;
+    base = p - (froid ? FORFAIT_FROID[2026] : 0);
+    if (!(base > 0)) return null;
+    if (base <= pl + pl / MG_TAUX) r = base - pl;
+    else if (base <= SEUIL_HAUT * (1 + MG_TAUX)) r = base / (1 + MG_TAUX);
+    else r = base - MG_TAUX * SEUIL_HAUT;
+    return r > 0 ? r : null;
+  }
+  // Marge grossiste réglementée par boîte : borne entre le plancher et 32,50 €, + forfait froid si chaîne du froid.
+  function margeGrossiste(pfht, an, froid) {
+    var a = anBareme(an), m;
+    if (!(pfht > 0)) return null;
+    m = Math.min(Math.max(PLANCHER_MG[a], MG_TAUX * Math.min(pfht, SEUIL_HAUT)), MG_PLAF);
+    return froid ? m + FORFAIT_FROID[a] : m;
+  }
+  // Marge officine réglementée (hors honoraires de dispensation), inchangée en 2027.
+  function margeOfficine(pfht) {
+    var s = 0, i, t, x = +pfht;
+    if (!(x > 0)) return null;
+    for (i = 0; i < TRANCHES_OFFICINE.length; i++) {
+      t = TRANCHES_OFFICINE[i];
+      if (x > t[0]) s += (Math.min(x, t[1]) - t[0]) * t[2];
+    }
+    return s;
+  }
+  // L'abandon de marge suit la marge grossiste (hors forfait froid) : même taux, nouveau plancher.
+  function abandon2027(ab26, pfht) {
+    var a = margeGrossiste(pfht, 2026, false), b = margeGrossiste(pfht, 2027, false);
+    if (ab26 == null || !(a > 0) || !(b > 0)) return null;
+    return ab26 * b / a;
+  }
+  // Gain de l'officine sur une boîte achetée chez nous = marge réglementée + abandon de marge.
+  // Princeps remboursables seulement ; ailleurs applicable:false (jamais 0 €).
+  function margePharmacien(fam, pfht, ab26) {
+    var reg, a27, t26, t27;
+    if (!FAM_PRINCEPS[fam] || !(pfht > 0)) return { applicable: false };
+    reg = margeOfficine(pfht);
+    a27 = abandon2027(ab26, pfht);
+    t26 = reg + (ab26 || 0);
+    t27 = reg + (a27 || 0);
+    return { applicable: true, reglementee: reg, abandon26: ab26 == null ? null : ab26, abandon27: a27,
+             total26: t26, total27: t27, delta: t27 - t26, sansAbandon: ab26 == null };
+  }
+
+  function jourIso(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+  function ajouterJours(d, n) { var x = new Date(d.getTime()); x.setDate(x.getDate() + n); return x; }
+
+  // Alertes de prix public (JO / CEPS) d'un CIP : baisses et hausses (jamais « stable »), passées depuis moins
+  // de 180 jours ou à venir. futurs / archive = contenu des deux fichiers (ou null). pfhtCat = prix fabricant HT reconstruit.
+  function alertesPrix(cip, futurs, archive, now, pfhtCat) {
+    var src = [], vus = {}, ev = [], i, e, k, lim = jourIso(ajouterJours(now, -JOURS_ALERTE_PRIX)), auj = jourIso(now);
+    if (futurs && futurs.changes) src = src.concat(futurs.changes);
+    if (archive && archive.evenements) src = src.concat(archive.evenements);
+    for (i = 0; i < src.length; i++) {
+      e = src[i];
+      if (!e || String(e.c) !== String(cip) || (e.sens !== 'baisse' && e.sens !== 'hausse') || !e.date_effet) continue;
+      if (e.date_effet < lim) continue;
+      k = e.sens + '|' + e.date_effet;
+      if (vus[k]) continue;
+      vus[k] = 1;
+      ev.push({ sens: e.sens, ancienTtc: e.ancien_ttc == null ? null : +e.ancien_ttc, nouveauTtc: e.ppttc == null ? null : +e.ppttc,
+                pfht: e.pfht == null ? null : +e.pfht, dateEffet: e.date_effet, aVenir: e.date_effet > auj });
+    }
+    ev.sort(function (a, b) { return a.dateEffet < b.dateEffet ? 1 : a.dateEffet > b.dateEffet ? -1 : 0; });
+    // Le catalogue ne suit pas toujours : une baisse déjà en vigueur dont le prix fabricant s'écarte de plus de 2 %
+    // de celui du catalogue n'est pas encore dans le prix affiché.
+    var retard = false, ecart = null;
+    for (i = 0; i < ev.length; i++) {
+      if (!ev[i].aVenir) {
+        if (ev[i].sens === 'baisse' && ev[i].pfht > 0 && pfhtCat > 0) {
+          ecart = ev[i].pfht / pfhtCat - 1;
+          retard = Math.abs(ecart) > ECART_CATALOGUE;
+        }
+        break;   // seule la plus récente des alertes en vigueur compte
+      }
+    }
+    return { evenements: ev, catalogueEnRetard: retard, ecartPfht: ecart };
+  }
+
+  // Statut générique : « nouveau » (+ date) si le CIP est dans un groupe apparu au dernier passage, « commercialise »
+  // si un générique est commercialisé pour ce princeps, « repertoire » si seul le groupe est inscrit (national g = 1).
+  function statutGenerique(cip, gen, natEntree) {
+    var out = { statut: 'aucun', depuis: null }, i, g, c = String(cip);
+    if (!gen && !natEntree) return null;
+    if (gen) {
+      for (i = 0; i < (gen.newGeneric || []).length; i++) {
+        g = gen.newGeneric[i];
+        if ((g.cips || []).indexOf(c) >= 0) { out.statut = 'nouveau'; out.depuis = g.since || null; return out; }
+      }
+      if ((gen.princepsWithGeneric || []).indexOf(c) >= 0) { out.statut = 'commercialise'; return out; }
+    }
+    if (natEntree && +natEntree.g === 1) out.statut = 'repertoire';
+    return out;
+  }
+  // Génériques / biosimilaires en approche (EMA) : entrées dont la DCI est la molécule du produit.
+  function emaPourMolecule(ema, mol) {
+    var m = sansAccent(mol).trim(), jetons, out = [], i, e, k;
+    if (!ema || !ema.items) return null;
+    if (!m) return [];
+    jetons = m.split(/[\/+,]/).map(function (x) { return x.trim(); }).filter(Boolean);
+    for (i = 0; i < ema.items.length; i++) {
+      e = ema.items[i]; k = sansAccent(e.inn).trim();
+      if (k && (k === m || jetons.indexOf(k) >= 0)) out.push({ nom: e.name || '', type: e.type || '', statut: e.status || '', date: e.opinion || e.amm || null });
+    }
+    return out;
+  }
+
+  // Rupture / tension ANSM d'un CIP : la plus grave d'abord.
+  function ansmPourCip(ansm, cip) {
+    var best = null, rang = -1, i, it, r, c = String(cip);
+    if (!ansm || !ansm.items) return null;
+    for (i = 0; i < ansm.items.length; i++) {
+      it = ansm.items[i];
+      if ((it.cips || []).indexOf(c) < 0) continue;
+      r = /Rupture/.test(it.st) ? 3 : /Tension/.test(it.st) ? 2 : 1;
+      if (r > rang) { rang = r; best = it; }
+    }
+    return best ? { statut: String(best.st || ''), retour: best.retour && (best.retour.iso || best.retour.raw) || null,
+                    retourTexte: best.retour && best.retour.raw || null, depuis: best.since || null, maj: best.maj || null } : null;
+  }
+  // Rappel de lot de moins de 12 mois (le plus récent).
+  function rappelPourCip(rap, cip, now) {
+    var lim = jourIso(ajouterJours(now, -JOURS_RAPPEL)), best = null, i, it, c = String(cip);
+    if (!rap || !rap.items) return null;
+    for (i = 0; i < rap.items.length; i++) {
+      it = rap.items[i];
+      if ((it.cips || []).indexOf(c) < 0 || !it.d || it.d < lim) continue;
+      if (!best || it.d > best.d) best = it;
+    }
+    return best ? { date: best.d, titre: best.t || '', motif: best.motif || '', nbLots: (best.lots || []).length } : null;
+  }
+  // Dernier avis HAS (SMR / ASMR) d'un CIP.
+  function hasPourCip(has, cip) {
+    var best = null, i, it, c = String(cip);
+    if (!has || !has.items) return null;
+    for (i = 0; i < has.items.length; i++) {
+      it = has.items[i];
+      if ((it.cips || []).indexOf(c) < 0) continue;
+      if (!best || String(it.date || '') > String(best.date || '')) best = it;
+    }
+    return best ? { smr: best.smr || '', asmr: best.asmr || '', date: best.date || null, motif: best.motif || '' } : null;
+  }
+
+  // Prévisions (previsions.json) : [m3,b3,h3, m6,b6,h6, m12,b12,h12, bascule, fiable] ; 100 = rythme des 3 derniers mois.
+  function previsionsPourCip(prev, cip) {
+    var v = prev && prev.data && prev.data[String(cip)];
+    if (!v) return null;
+    return { m3: v[0], b3: v[1], h3: v[2], m6: v[3], b6: v[4], h6: v[5], m12: v[6], b12: v[7], h12: v[8],
+             bascule: v[9], fiable: +v[10] === 1, dernierMois: prev.dernier_mois_reel || null };
+  }
+  // Mois le plus fort / le plus faible depuis les 12 indices saisonniers (national.json, champ s).
+  function saisonDe(s) {
+    var i, hi = 0, lo = 0;
+    if (!s || s.length !== 12) return null;
+    for (i = 1; i < 12; i++) { if (s[i] > s[hi]) hi = i; if (s[i] < s[lo]) lo = i; }
+    return { moisFort: hi + 1, moisFaible: lo + 1, indices: s.slice() };
+  }
+
+  // Nos ventes d'un CIP sur les mois donnés : boîtes, CA HT, clientes (hors « reste du réseau »),
+  // et, si on le demande, le détail par commercial (trié par CA). Ligne : [officine, mois, commercial, cip, boîtes, pu, CA].
+  function ventesProduit(S, cip, mois, estReste, avecComm, voit) {
+    var garde = {}, i, r, q, id, nom, c, ids = {}, res = { boites: 0, ca: 0, clientes: 0, comm: null }, cm = avecComm ? {} : null, k;
+    for (i = 0; i < mois.length; i++) garde[mois[i]] = 1;
+    for (i = 0; i < S.length; i++) {
+      r = S[i];
+      if (r[3] !== cip && String(r[3]) !== cip) continue;
+      q = r[4];
+      if (!(q > 0) || !garde[r[1]]) continue;
+      res.boites += q; res.ca += +r[6] || 0;
+      id = String(r[0]);
+      // Les clientes comptées sont celles que l'utilisateur a le droit de voir (agrégats boîtes et CA : tout le réseau).
+      if (!(estReste && estReste(id)) && (!voit || voit(id))) ids[id] = 1;
+      if (cm) {
+        nom = r[2];
+        if (!nom) continue;
+        c = cm[nom] || (cm[nom] = { nom: nom, boites: 0, ca: 0, ids: {} });
+        c.boites += q; c.ca += +r[6] || 0;
+        if (!(estReste && estReste(id)) && (!voit || voit(id))) c.ids[id] = 1;
+      }
+    }
+    res.clientes = Object.keys(ids).length;
+    if (cm) {
+      res.comm = [];
+      for (k in cm) if (Object.prototype.hasOwnProperty.call(cm, k)) res.comm.push({ nom: cm[k].nom, boites: cm[k].boites, ca: cm[k].ca, clientes: Object.keys(cm[k].ids).length });
+      res.comm.sort(function (a, b) { return (b.ca - a.ca) || (b.boites - a.boites); });
+    }
+    return res;
+  }
+
+  // ── Chargement à la demande, une seule fois par fichier ──
+  // Un fichier absent ou en erreur donne simplement « donnée indisponible » (état 3) : jamais d'exception.
+  function planRerender() {
+    if (D.rr) return;
+    D.rr = setTimeout(function () { D.rr = null; if (C.cip) rerender(); }, 60);
+  }
+  function demander(cle) {
+    var e = D.fich && D.fich[cle], jour, p;
+    if (!D.fich) { D.fich = {}; D.fichP = []; }
+    if (D.fich[cle]) return D.fich[cle];
+    e = D.fich[cle] = { etat: 1, data: null };
+    if (typeof fetch !== 'function') { e.etat = 3; return e; }
+    try {
+      jour = new Date().toISOString().slice(0, 10);
+      p = fetch(FICHIERS[cle] + '?v=' + jour, { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { e.data = j || null; e.etat = j ? 2 : 3; }, function () { e.etat = 3; })
+        .then(function () { try { planRerender(); } catch (x) { /* rien */ } });
+      D.fichP.push(p);
+    } catch (x) { e.etat = 3; }
+    return e;
+  }
+  function fichier(cle) { var e = demander(cle); return e.etat === 2 ? e.data : null; }
+  function stats_chargement() { var k, n = 0; for (k in D.fich) if (Object.prototype.hasOwnProperty.call(D.fich, k) && D.fich[k].etat === 1) n++; return n; }
+
+  // Estimation de la direction (MARGE_PRODUITS), demandée une fois ; refusée pour les comptes sans accès.
+  function demanderMargeProduits() {
+    if (window.MARGE_PRODUITS || D.mpEtat) return;
+    D.mpEtat = 1;
+    try {
+      var c = V2.sb && V2.sb();
+      if (!V2.loadFiles || !c || !(V2.user && V2.user.id)) { D.mpEtat = 3; return; }
+      // Même accès que « Notre marge par produit » : la base répond d'abord, le fichier n'est demandé que sur un oui.
+      Promise.resolve(c.rpc('jarvis_acces_marge_produits')).then(function (r) {
+        if (!(r && !r.error && r.data === true)) { D.mpEtat = 3; return; }
+        return V2.loadFiles(['margeproduits']).then(function () { D.mpEtat = window.MARGE_PRODUITS ? 2 : 3; planRerender(); });
+      }).catch(function () { D.mpEtat = 3; });
+    } catch (x) { D.mpEtat = 3; }
+  }
+  function ligneMargeProduits(cip) {
+    var M = window.MARGE_PRODUITS, cols, ix = {}, i;
+    if (!M || !M.produits || !M.meta || !M.meta.colonnes) return null;
+    if (D.mpRef !== M) {
+      cols = M.meta.colonnes;
+      for (i = 0; i < cols.length; i++) ix[cols[i]] = i;
+      D.mpIx = {}; D.mpRef = M;
+      if (ix.cip !== undefined) for (i = 0; i < M.produits.length; i++) D.mpIx[String(M.produits[i][ix.cip])] = i;
+      D.mpCol = ix;
+    }
+    i = D.mpIx[String(cip)];
+    if (i === undefined) return null;
+    var p = M.produits[i], c = D.mpCol;
+    return { m26: c.marge_boite_26 === undefined ? null : p[c.marge_boite_26], m27: c.marge_boite_27 === undefined ? null : p[c.marge_boite_27],
+             t26: c.taux_26 === undefined ? null : p[c.taux_26], t27: c.taux_27 === undefined ? null : p[c.taux_27],
+             dispo27: c.dispo_2027 === undefined ? null : p[c.dispo_2027] === 1 };
+  }
+  // Notre marge par boîte : l'estimation de la direction si elle a ce CIP, sinon la règle du Pilotage (libellée « estimation »).
+  function notreMargeDe(l) {
+    var cip = String(l.cip), m = ligneMargeProduits(cip), pu, a, b;
+    demanderMargeProduits();
+    if (m && m.m26 != null) {
+      return { source: 'direction', libelle: 'estimation de la direction', boite26: +m.m26, boite27: m.m27 == null ? null : +m.m27,
+               delta: m.m27 == null ? null : m.m27 - m.m26, taux26: m.t26, taux27: m.t27, disponible2027: m.dispo27 };
+    }
+    pu = l.net > 0 ? l.net : (l.prix > 0 ? l.prix : 0);
+    if (!V2.piloMargeVente || !(pu > 0)) return null;
+    try {
+      a = V2.piloMargeVente({ artCode: cip, puNet: pu, qte: 1, mntNetHt: pu, year: 2026 });
+      b = V2.piloMargeVente({ artCode: cip, puNet: pu, qte: 1, mntNetHt: pu, year: 2027 });
+    } catch (x) { return null; }
+    if (!isFinite(a) || !isFinite(b)) return null;
+    return { source: 'pilotage', libelle: 'estimation (règle du Pilotage)', boite26: a, boite27: b, delta: b - a, taux26: null, taux27: null, disponible2027: null };
+  }
+
+  var _froidSet = null, _froidRef = null;
+  function estFroid(cip) {
+    var F = window.FROID_CIPS;
+    if (!F) return false;
+    if (_froidRef !== F) { _froidRef = F; _froidSet = {}; F.forEach(function (c) { _froidSet[String(c).replace(/\D/g, '')] = 1; }); }
+    return !!_froidSet[String(cip)];
+  }
+  function maintenant() { return D.horloge ? D.horloge() : new Date(); }
+  function periodeLib(mois) {
+    var a = mois[0], b = mois[0], i;
+    for (i = 1; i < mois.length; i++) { if (mois[i] < a) a = mois[i]; if (mois[i] > b) b = mois[i]; }
+    return anneeDe(a) === anneeDe(b) ? MOIS_C[moisCal(a) - 1] + ' → ' + MOIS_C[moisCal(b) - 1] + ' ' + anneeDe(b) : moisLib(a) + ' → ' + moisLib(b);
+  }
+  function moisIso(iso) { var m = /^(\d{4})-(\d{2})/.exec(String(iso || '')); return m ? MOIS_C[+m[2] - 1] + ' ' + m[1] : ''; }
+
+  // ── L'objet complet du panneau. null pour chaque partie sans donnée. ──
+  // Unités : € par boîte sauf mention ; « Ttc » = prix public ; pourcentages en nombres entiers ou décimaux (11 = +11 %).
+  function stats(l, d) {
+    var cip, froid, pfht, now, N, ne, S, mois, restreint, v, out, i, fut, arch, rg, fam, rg2, e, mom, tend, prev, sais;
+    if (!l) return null;
+    cip = String(l.cip); d = d || D.cache || {};
+    now = maintenant();
+    froid = estFroid(cip);
+    pfht = pfhtDepuisPpht(l.ppht, froid);
+    N = (D.nat && D.nat.data) || null; ne = N && N[cip] || null;
+
+    out = { cip: cip, nom: l.d, famille: l.f, froid: froid, chargement: false, indisponibles: [] };
+
+    // Prix et marges (par boîte)
+    out.prix = { ppht: l.ppht > 0 ? l.ppht : null, net: l.net > 0 ? l.net : null, affiche: l.prix > 0 ? l.prix : null,
+                 pfht: pfht, pfhtReconstitue: true, abandon26: l.ab == null ? null : l.ab };
+    out.margeGrossiste = pfht == null ? null : (function () {
+      var m26 = margeGrossiste(pfht, 2026, false), m27 = margeGrossiste(pfht, 2027, false);
+      return { reglementee26: m26, reglementee27: m27, froid: froid, forfait26: froid ? FORFAIT_FROID[2026] : 0, forfait27: froid ? FORFAIT_FROID[2027] : 0,
+               total26: margeGrossiste(pfht, 2026, froid), total27: margeGrossiste(pfht, 2027, froid) };
+    })();
+    out.margeOfficine = pfht == null ? null : { reglementee: margeOfficine(pfht), inchangee2027: true };
+    out.abandon = l.ab == null ? null : { de26: l.ab, de27: abandon2027(l.ab, pfht) };
+    out.margePharmacien = pfht == null ? null : margePharmacien(l.f, pfht, l.ab);
+    out.notreMarge = notreMargeDe(l);
+
+    // Alertes de prix public (JO)
+    fut = fichier('prixFuturs'); arch = fichier('prixArchive');
+    out.alertePrix = (fut || arch) ? alertesPrix(cip, fut, arch, now, pfht) : null;
+
+    // Générique
+    var genF = fichier('generiques'); rg2 = fichier('ema');
+    fam = statutGenerique(cip, genF, ne);
+    out.generique = (fam || rg2) ? { statut: fam ? fam.statut : null, depuis: fam ? fam.depuis : null, donneesAu: genF && genF.donneesAu || null, ema: emaPourMolecule(rg2, l.mol) } : null;
+
+    // France : boîtes et valeur de l'année 2025 (Open Medic)
+    e = fichier('regional'); rg = e && e.data && e.data[cip];
+    out.france = null;
+    if (l.france > 0 || rg) {
+      var vb = 0, vv = 0;
+      if (rg) { for (i = 0; i < (rg.b || []).length; i++) vb += rg.b[i] || 0; for (i = 0; i < (rg.e || []).length; i++) vv += rg.e[i] || 0; }
+      var bo = l.france > 0 ? l.france : vb;
+      out.france = { annee: 2025, boites: bo, valeur: rg ? vv : null, prixMoyen: rg && bo > 0 ? vv / bo : null, rang: l.rang || null,
+                     libelleValeur: 'valeur au prix public, 2025' };
+    }
+
+    // Nos ventes et par commercial, sur les mois complets du reste du panneau
+    S = window.WML_SALES; mois = d.mois;
+    restreint = !!(V2.ventesRestreintes && V2.ventesRestreintes());
+    out.nosVentes = null; out.parCommercial = null;
+    if (S && S.length && mois && mois.length) {
+      var cle = [S.length, cip, mois.join(','), restreint ? 1 : 0, V2.user ? 1 : 0].join('|');
+      if (!D.stVentes || D.stVentesRef !== S || D.stVentes.cle !== cle) {
+        D.stVentes = { cle: cle, v: ventesProduit(S, cip, mois, V2.estReste ? function (id) { return V2.estReste(id); } : null, !restreint,
+          V2.voitVentesDe ? function (id) { return V2.voitVentesDe(id); } : null) };
+        D.stVentesRef = S;
+      }
+      v = D.stVentes.v;
+      out.nosVentes = { boitesAn: l.an, boites: v.boites, ca: v.ca, clientes: v.clientes, nbMois: mois.length, periode: periodeLib(mois) };
+      if (!restreint) out.parCommercial = { periode: out.nosVentes.periode, lignes: v.comm };
+    }
+
+    // Tendance
+    mom = V2.momentum ? V2.momentum(cip) : null;
+    tend = V2.tendance ? V2.tendance(cip) : null;
+    prev = previsionsPourCip(fichier('previsions'), cip);
+    sais = saisonDe(ne && ne.s);
+    out.tendance = (tend == null && mom == null && !prev && !sais) ? null : {
+      anAn: tend, anAnPeriode: window.TENDANCE && window.TENDANCE.meta ? libMoisListe(window.TENDANCE.meta.mois, window.TENDANCE.meta.gen) : null,
+      momentum: mom, momentumPeriode: window.MOMENTUM && window.MOMENTUM.meta ? libFenetre(window.MOMENTUM.meta.fenetre) : null,
+      previsions: prev, saison: sais };
+
+    // Autres
+    var nv = V2.nouveaute ? V2.nouveaute(cip) : null;
+    out.autres = { froid: froid, nouveaute: nv ? { amm: nv.amm || null, labo: nv.labo || '' } : null,
+                   ansm: ansmPourCip(fichier('ansm'), cip), rappel: rappelPourCip(fichier('rappels'), cip, now), has: hasPourCip(fichier('has'), cip) };
+
+    for (v in FICHIERS) if (Object.prototype.hasOwnProperty.call(FICHIERS, v)) {
+      if (D.fich[v].etat === 3) out.indisponibles.push(v);
+    }
+    out.chargement = stats_chargement() > 0;
+    return out;
+  }
+  function libMoisListe(liste, gen) {
+    var m = String(liste || '').split('/').filter(Boolean), an = String(gen || '').slice(0, 4);
+    if (!m.length || !an) return null;
+    return MOIS_C[+m[0] - 1] + ' → ' + MOIS_C[+m[m.length - 1] - 1] + ' ' + an + ' face à ' + (an - 1);
+  }
+  function libFenetre(f) {
+    var m = /^(\d{4})-(\d{2})\D+(\d{4})-(\d{2})$/.exec(String(f || ''));
+    return m ? MOIS_C[+m[2] - 1] + ' ' + m[1] + ' → ' + MOIS_C[+m[4] - 1] + ' ' + m[3] : null;
+  }
+
+  // ── Vue pharmacien : le même calcul, un rendu qui masque ce qui est interne (mémorisé, avec repli sans stockage) ──
+  var CLE_VUE_PHARMA = 'jarvis.comptoir.vuePharma';
+  function lireVuePharma() { try { return !!(window.localStorage && window.localStorage.getItem(CLE_VUE_PHARMA) === '1'); } catch (x) { return false; } }
+  function ecrireVuePharma(b) { try { if (window.localStorage) window.localStorage.setItem(CLE_VUE_PHARMA, b ? '1' : '0'); } catch (x) { /* sans stockage : valable pour cette séance */ } }
+  C.vuePharma = lireVuePharma();
+
   // ── Commandes ─────────────────────────────────────────────────
   var tq = null;
   V2.comptoir = {
@@ -566,8 +966,9 @@
     // Boîtes ↔ chiffre d'affaires : on ne redessine que les courbes, le panneau garde sa position.
     unite: function (u) {
       C.unite = u === 'ca' ? 'ca' : 'q';
-      var box = document.getElementById('cp-evo'), l = D.cache && C.cip && D.cache.parCip[C.cip];
-      if (box && l) box.innerHTML = evoHtml(l);
+      var box = document.getElementById('cp-evo-n'), bm = document.getElementById('cp-evo-m'), l = D.cache && C.cip && D.cache.parCip[C.cip];
+      if (box && l) box.innerHTML = evoHtml(l, 'nous');
+      if (bm && l) bm.innerHTML = evoHtml(l, 'marche');
     },
     survol: function (ev, el) {
       var P = D.pts[el.id], svg = el.querySelector('svg');
@@ -759,7 +1160,7 @@
   }
   function largeurPan() {
     var vw = window.innerWidth || 390;
-    return Math.max(260, (vw >= 1000 ? 460 : Math.min(vw, 640)) - 40);
+    return Math.max(260, (vw >= 1000 ? 720 - 48 : Math.min(vw, 640) - 40) - 28);   // panneau, moins ses marges et le cadre de la courbe
   }
 
   // SVG à sa vraie taille en pixels : les textes des axes restent à 13 px.
@@ -851,32 +1252,33 @@
   }
   function plage(mois, a, b) { return MOIS_C[moisCal(mois[a]) - 1] + (a === b ? '' : '–' + MOIS_C[moisCal(mois[b]) - 1]); }
 
-  function evoHtml(l) {
+  function evoHtml(l, mode) {
     var F = window.FRANCE_MOIS;
     if (!F && D.frEtat < 2) return '<p class="cp-note">Chargement des ventes France mois par mois…</p>';
     var e = evolution(l.cip);
     if (!e) return '<p class="cp-note">Les ventes du réseau ne sont pas encore chargées.</p>';
     var ANNEE = e.an;   // année du dernier mois de nos ventes (2027 dès que janvier 2027 y est)
-    D.pts = {};
+    if (!mode) D.pts = {};
+    var MA = mode === 'marche', NO = mode === 'nous';
     var W = largeurPan(), n = e.mois.length, ca = C.unite === 'ca', i, h = '';
     var labels = e.mois.map(function (m) { return MOIS_C[moisCal(m) - 1]; });
     var fmtV = ca ? eurK : numK, uni = ca ? '' : ' bt';
 
     // Les trois chiffres qui répondent : nos ventes montent-elles, gagnons-nous des parts, le marché bouge-t-il ?
-    h += '<div class="cp-tus">' +
+    if (!MA) h += '<div class="cp-tus">' +
       tuile('Nos ventes', fr(e.v2 / (e.k || 1)) + ' <small>bt/mois</small>', e.v1 > 0 ? e.v2 / e.v1 - 1 : null,
         e.k ? plage(e.mois, n - e.k, n - 1) + ' face à ' + plage(e.mois, 0, e.k - 1) : '—') +
       (e.tp
         ? tuile('Notre part', fmtPart(e.tp.fin), e.tp.debut > 0 ? e.tp.fin / e.tp.debut - 1 : null,
             plage(e.mois, e.tp.c, e.tp.d) + ' face à ' + plage(e.mois, e.tp.a, e.tp.b) + ' (' + fmtPart(e.tp.debut) + ')')
         : tuile('Notre part', '—', null, e.aFrance ? 'pas assez de mois comparables' : 'pas de ventes France publiées')) +
-      (e.yoy != null
+      (NO ? '' : e.yoy != null
         ? tuile('Marché France', numK(e.y1 / e.yoyMois) + ' <small>bt/mois</small>', e.yoy,
             'janv.–' + MOIS_C[e.yoyDern - 1] + ' ' + ANNEE + ' face à ' + (ANNEE - 1))
         : tuile('Marché France', '—', null, 'non publié pour ce produit')) +
       '</div>';
 
-    h += '<div class="cp-ch"><div class="cp-ch-t"><span>Nos ventes, mois par mois</span>' +
+    if (!MA) h += '<div class="cp-ch"><div class="cp-ch-t"><span>Nos ventes, mois par mois</span>' +
       '<span class="cp-seg" role="group" aria-label="Unité">' +
         '<button class="' + (ca ? '' : 'on') + '" aria-pressed="' + !ca + '" onclick="V2.comptoir.unite(\'q\')">Boîtes</button>' +
         '<button class="' + (ca ? 'on' : '') + '" aria-pressed="' + ca + '" onclick="V2.comptoir.unite(\'ca\')">Chiffre d\'affaires</button></span></div>' +
@@ -887,7 +1289,7 @@
 
     if (e.aFrance) {
       var pm = D.cache ? D.cache.partMoy : 0, avecPart = e.part.some(function (x) { return x != null; });
-      if (avecPart) {
+      if (avecPart && !MA) {
         // Même nombre de décimales sur tout l'axe (pas « 1,0 % » au-dessus de « 0,50 % »).
         var pMax = Math.max.apply(null, e.part.map(function (x) { return x || 0; }).concat([pm]));
         var decP = niceMax(pMax * 1.08) * 100 < 1.5 ? 2 : 1;
@@ -897,7 +1299,7 @@
             series: [{ v: e.part, cls: 'b' }], ref: { v: pm, lib: 'notre part moyenne ' + fmtPart(pm) },
             aria: 'Notre part du marché France mois par mois', tip: bulleN }) + '</div>';
       }
-      h += '<div class="cp-ch"><div class="cp-ch-t"><span>Le marché France</span>' +
+      if (!NO) h += '<div class="cp-ch"><div class="cp-ch-t"><span>Le marché France, mois par mois</span>' +
         '<span class="cp-ch-lg"><span><i class="cp-lk b"></i>' + ANNEE + '</span><span><i class="cp-lk g"></i>' + (ANNEE - 1) + '</span></span></div>' +
         courbe({ id: 'cp-c-f', g: 'f', W: W, H: 170, labels: MOIS_C, fmt: numK,
           series: [{ v: e.f25, cls: 'g' }, { v: e.f26, cls: 'b' }],
@@ -913,12 +1315,12 @@
       rows += '<tr><td>' + MOIS_C[moisCal(e.mois[i]) - 1] + ' ' + anneeDe(e.mois[i]) + '</td><td>' + fr(e.q[i]) + '</td><td>' + eurK(e.ca[i]) + '</td>' +
         '<td>' + (e.fr[i] != null ? fr(e.fr[i]) : '—') + '</td><td>' + fmtPart(e.part[i]) + '</td></tr>';
     }
-    h += '<details class="cp-tab"><summary>Voir les chiffres mois par mois</summary><div class="cp-tabw"><table>' +
+    if (!MA) h += '<details class="cp-tab"><summary>Voir les chiffres mois par mois</summary><div class="cp-tabw"><table>' +
       '<thead><tr><th>Mois</th><th>Nos boîtes</th><th>Notre CA</th><th>France</th><th>Part</th></tr></thead>' +
-      '<tbody>' + rows + '</tbody></table></div></details>' +
-      '<p class="cp-note">Nos ventes : réseau, mois complets. France : Medic\'AM, boîtes remboursées, publié jusqu\'à ' +
+      '<tbody>' + rows + '</tbody></table></div></details>';
+    h += '<p class="cp-note">' + (MA ? '' : 'Nos ventes : réseau, mois complets. ') + 'France : Medic\'AM, boîtes remboursées, publié jusqu\'à ' +
         (F ? esc(MOIS_C[+F.meta.mois[F.meta.mois.length - 1].slice(5) - 1] + ' ' + F.meta.mois[F.meta.mois.length - 1].slice(0, 4)) : '—') +
-        '. Part = nos boîtes ÷ boîtes France du même mois.</p>';
+        (MA ? '.' : '. Part = nos boîtes ÷ boîtes France du même mois.') + '</p>';
     return h;
 
     function bulleN(j) {
@@ -977,6 +1379,220 @@
     return '<p class="cp-st" id="cp-dc-t">' + titre + '</p>' + puces + corps;
   }
 
+  // ── Rendu v4 « Le mélange » (22/10/2026) : squelette v1 (panneau 720 px, en-tête, tuiles) + fil numéroté v3 (cinq blocs, phrases). ──
+  // Rien n'est recalculé ici : chaque chiffre vient de V2.comptoir.stats(l, d).
+  // Date d'effet du plancher de marge grossiste 2027 (arrêté du 3/8/2026), la même que PLANCHER_MG[2027] plus haut.
+  var DATE_MG_2027 = '2027-01-20';
+  var LIB_INDISPO = { prixFuturs: 'prix publics (JO)', prixArchive: 'prix publics passés', generiques: 'génériques', ema: 'génériques en approche',
+    regional: 'valeur France', previsions: 'prévisions', ansm: 'ruptures ANSM', rappels: 'rappels de lots', has: 'avis HAS' };
+  var ALERTE_FICHIERS = ['prixFuturs', 'prixArchive', 'generiques', 'ema', 'ansm', 'rappels'];
+  function pctSigne(x) { return x == null ? '—' : (x > 0 ? '+' : x < 0 ? '−' : '') + fr(Math.abs(x)) + ' %'; }
+  function dateJour(iso) { return dateFr(String(iso || '').slice(0, 10)); }
+  function gros(t) { return '<b class="cq-g">' + t + '</b>'; }
+  function eurRond(n) { n = +n || 0; return Math.abs(n) >= 1e6 ? fr(n / 1e6, Math.abs(n) >= 1e7 ? 0 : 1) + ' M€' : Math.abs(n) >= 1e3 ? fr(n / 1e3) + ' k€' : fr(n) + ' €'; }
+
+  function bloc(num, titre, corps, cls) {
+    return '<section class="cq-bl ' + (cls || '') + '" aria-labelledby="cq-b' + num + '"><h3 class="cq-bt" id="cq-b' + num + '"><span>' + num + '</span>' + titre + '</h3>' + corps + '</section>';
+  }
+  function noteBloc(t) { return '<p class="cp-note cq-nb">' + t + '</p>'; }
+
+  // 1. Ce qui change : une carte par alerte, phrases en clair, gros badge à gauche.
+  function alerte(kind, fig, texte) {
+    return '<div class="cq-al cq-al-' + kind + '"><span class="cq-al-f">' + fig + '</span><p>' + texte + '</p></div>';
+  }
+  function blocAlertes(s, l, vp) {
+    var h = '', i, x, n = 0, premierEffectif = true;
+    if (s.alertePrix) {
+      for (i = 0; i < s.alertePrix.evenements.length; i++) {
+        x = s.alertePrix.evenements[i];
+        var baisse = x.sens === 'baisse', pct = (x.ancienTtc > 0 && x.nouveauTtc != null) ? (x.nouveauTtc / x.ancienTtc - 1) * 100 : null;
+        var verbe = x.aVenir ? (baisse ? 'baissera' : 'augmentera') : (baisse ? 'a baissé' : 'a augmenté');
+        var t = 'Le prix public ' + verbe + (pct != null ? ' de ' + gros(fr(Math.abs(pct)) + ' %') : '') + ' le ' + dateJour(x.dateEffet) +
+          (x.ancienTtc != null && x.nouveauTtc != null ? ' : ' + fr(x.ancienTtc, 2) + ' → ' + fr(x.nouveauTtc, 2) + ' € (JO).' : ' (JO).');
+        if (!x.aVenir && premierEffectif) {
+          premierEffectif = false;
+          if (s.alertePrix.catalogueEnRetard && !vp) t += ' Le prix du catalogue n\'en tient pas encore compte : les marges ci-dessous reposent sur l\'ancien prix.';
+        }
+        h += alerte('prix', pct != null ? (pct < 0 ? '−' : '+') + fr(Math.abs(pct)) + ' %' : 'Prix', t); n++;
+      }
+    }
+    var g = s.generique;
+    if (g && g.statut === 'nouveau') { h += alerte('info', 'Générique', 'Un nouveau groupe de génériques est arrivé' + (g.depuis ? ' le ' + gros(dateJour(g.depuis)) : '') + '.'); n++; }
+    else if (g && g.statut === 'commercialise') { h += alerte('info', 'Générique', 'Un générique est commercialisé.'); n++; }
+    else if (g && g.statut === 'repertoire') { h += alerte('info', 'Générique', 'Le groupe est inscrit au répertoire des génériques (pas forcément commercialisé).'); n++; }
+    if (g && g.ema && g.ema.length) {
+      for (i = 0; i < g.ema.length; i++) {
+        x = g.ema[i];
+        h += alerte('info', 'À venir', 'Un générique approche : ' + esc(x.nom) + (x.type ? ' (' + esc(x.type) + ')' : '') + (x.statut ? ', ' + esc(x.statut) : '') + (x.date ? ', avis de l\'EMA du ' + dateJour(x.date) : '') + '.'); n++;
+      }
+    }
+    var a = s.autres && s.autres.ansm;
+    if (a) { h += alerte('warn', /rupture/i.test(a.statut || '') ? 'Rupture' : 'Tension', 'Le produit est signalé « ' + esc(a.statut) + ' » par l\'ANSM' + (a.depuis ? ' depuis le ' + dateJour(a.depuis) : '') + ' ; retour prévu : ' + gros(esc(a.retourTexte || a.retour || 'non communiqué')) + '.'); n++; }
+    else if (l && l.rupt) { h += alerte('warn', 'Rupture', 'Le produit est signalé en rupture (ANSM) ; date de retour non communiquée.'); n++; }
+    var r = s.autres && s.autres.rappel;
+    if (r) { h += alerte('warn', 'Rappel', 'Un rappel de lots a été publié le ' + dateJour(r.date) + (r.titre ? ' : ' + esc(r.titre) : '') + (r.nbLots ? ' (' + fr(r.nbLots) + ' lot' + (r.nbLots > 1 ? 's' : '') + ')' : '') + '.'); n++; }
+    var manque = s.indisponibles.filter(function (k) { return ALERTE_FICHIERS.indexOf(k) >= 0; }).map(function (k) { return LIB_INDISPO[k]; });
+    if (!n) {
+      h = s.chargement ? '<p class="cq-rien cq-rien-c">Vérification en cours…</p>'
+        : '<p class="cq-rien"><i aria-hidden="true">✓</i>Rien à signaler sur ce produit.</p>';
+    }
+    if (manque.length) h += noteBloc('Non vérifié pour le moment : ' + esc(manque.join(', ')) + '.');
+    return bloc(1, 'Ce qui change', h);
+  }
+
+  // Tuiles chiffrées (squelette v1) : libellé, contenu, note de période.
+  function tuileT(cls, lib, unite, corps, per) {
+    return '<section class="cp-t ' + cls + '" aria-label="' + esc(lib) + '"><p class="cp-tl">' + esc(lib) + (unite ? '<span>' + esc(unite) + '</span>' : '') + '</p>' +
+      corps + (per ? '<p class="cp-tp">' + per + '</p>' : '') + '</section>';
+  }
+  function tuileVide(cls, lib, unite, raison) {
+    return tuileT(cls, lib, unite, '<p class="cp-big nd">—</p><p class="cp-tx">' + esc(raison) + '</p>', '');
+  }
+  function minis(items) {
+    var h = '<div class="cp-mn' + (items.length === 3 ? ' s3' : '') + '" style="--n:' + (items.length === 3 ? 2 : items.length) + '">', i;
+    for (i = 0; i < items.length; i++) h += '<div><small>' + items[i][0] + '</small><b>' + items[i][1] + '</b></div>';
+    return h + '</div>';
+  }
+  function reglette(m, b, h) {
+    var pos = function (v) { return Math.max(0, Math.min(100, (v - 70) / 60 * 100)); };
+    return '<div class="cp-rg" role="img" aria-label="Fourchette : entre ' + fr(b) + ' % et ' + fr(h) + ' %, valeur centrale ' + fr(m) + ' %">' +
+      '<i style="left:' + pos(b).toFixed(1) + '%;width:' + Math.max(2, pos(h) - pos(b)).toFixed(1) + '%"></i>' +
+      '<span class="z"></span><span class="m" style="left:' + pos(m).toFixed(1) + '%"></span></div>';
+  }
+
+  // 2. Les marges : deux tuiles, chacune = UNE phrase + deux barres empilées (aujourd'hui / 2027). Un chiffre ne s'écrit qu'une fois, hors barres.
+  function barre(lib, reg, ab, total, max, legende) {
+    var w1 = max > 0 ? reg / max * 100 : 0, w2 = max > 0 && ab ? ab / max * 100 : 0;
+    return '<div class="cq-br"><div class="cq-br-h"><span>' + lib + '</span><b>' + eur2(total) + '</b></div>' +
+      '<div class="cq-br-t" aria-hidden="true"><i class="cq-s1" style="width:' + w1.toFixed(2) + '%"></i>' + (w2 > 0 ? '<i class="cq-s2" style="width:' + w2.toFixed(2) + '%"></i>' : '') + '</div>' +
+      (legende ? '<p class="cq-br-d"><span><i class="cq-k1"></i>marge réglementée ' + eur2(reg) + '</span>' + (ab ? '<span><i class="cq-k2"></i>abandon de marge ' + eur2(ab) + '</span>' : '') + '</p>' : '') + '</div>';
+  }
+  function tuileMargePharmacien(s, vp) {
+    var m = s.margePharmacien, cls = vp ? 'w6 m1' : 'w3 m1';
+    if (!m) return tuileVide(cls, 'Marge pharmacien', 'par boîte', 'Prix fabricant HT non disponible pour ce produit.');
+    if (!m.applicable) return tuileVide(cls, 'Marge pharmacien', 'par boîte', 'Calculée pour les princeps remboursables seulement (ni générique, ni biosimilaire, ni produit non remboursable).');
+    var egal = Math.abs(m.delta) < 0.005, max = Math.max(m.total26, m.total27), d27 = dateFr(DATE_MG_2027);
+    var diffAb = m.abandon26 != null && m.abandon27 != null && Math.round((m.abandon27 - m.abandon26) * 100) !== 0;
+    return tuileT(cls, 'Marge pharmacien', 'par boîte',
+      '<p class="cq-ph">Le pharmacien gagne ' + gros(eur2(m.total26)) + ' par boîte' +
+        (egal ? ', ' + gros('autant') + ' en 2027.' : ' aujourd\'hui, puis ' + gros(eur2(m.total27)) + ' à partir du ' + d27 + ' (' + (m.delta < 0 ? '−' : '+') + eur2(Math.abs(m.delta)) + ').') + '</p>' +
+      '<div class="cq-brs">' + barre('Aujourd\'hui', m.reglementee, m.abandon26, m.total26, max, true) +
+        barre(egal ? 'En 2027 : inchangé' : 'À partir du ' + d27, m.reglementee, m.abandon27, m.total27, max, diffAb) + '</div>',
+      m.sansAbandon ? 'Aucun abandon de marge sur ce prix.' : 'Par boîte, princeps remboursable.');
+  }
+  function tuileNotreMarge(s) {
+    var nm = s.notreMarge;
+    if (nm && !(nm.boite26 > 0.004) && !(nm.boite27 > 0.004)) return tuileVide('w3 m1', 'Notre marge', 'par boîte', 'Aucune marge calculée sur ce produit par la règle du Pilotage.');
+    if (!nm) return tuileVide('w3 m1', 'Notre marge', 'par boîte', 'Donnée indisponible pour ce produit.');
+    var egal = nm.boite27 != null && Math.abs(nm.delta) < 0.005, d27 = dateFr(DATE_MG_2027), mx = Math.max(nm.boite26, nm.boite27 || 0);
+    var bar = function (lib, v) {
+      return '<div class="cq-br"><div class="cq-br-h"><span>' + lib + '</span><b>' + (v != null ? eur2(v) : '—') + '</b></div>' +
+        '<div class="cq-br-t" aria-hidden="true"><i class="cq-s3" style="width:' + (v != null && mx > 0 ? (v / mx * 100).toFixed(2) : 0) + '%"></i></div></div>';
+    };
+    return tuileT('w3 m1', 'Notre marge', 'par boîte',
+      '<p class="cq-ph">Nous gardons ' + gros(eur2(nm.boite26)) + ' par boîte' +
+        (nm.boite27 == null ? ', 2027 pas encore connue.' : egal ? ', ' + gros('autant') + ' en 2027.' : ' aujourd\'hui, puis ' + gros(eur2(nm.boite27)) + ' à partir du ' + d27 + ' (' + (nm.delta < 0 ? '−' : '+') + eur2(Math.abs(nm.delta)) + ').') + '</p>' +
+      '<div class="cq-brs">' + bar('Aujourd\'hui', nm.boite26) + (nm.boite27 != null ? bar(egal ? 'En 2027 : inchangé' : 'À partir du ' + d27, nm.boite27) : '') + '</div>',
+      nm.source === 'pilotage' ? 'Estimation, règle du Pilotage.' : esc(nm.libelle || 'Source : direction') + (nm.disponible2027 === false ? ' Produit non prévu au catalogue 2027.' : ''));
+  }
+  function blocMarges(s, vp) {
+    return bloc(2, 'Les marges', '<div class="cp-grid">' + tuileMargePharmacien(s, vp) + (vp ? '' : tuileNotreMarge(s)) + '</div>');
+  }
+
+  // 3. Le marché : rangée de trois tuiles (v1), puis la courbe France mois par mois.
+  function blocMarche(s, l, vp) {
+    var h = '', fr_ = s.france, nv = s.nosVentes, t = s.tendance;
+    if (fr_) h += tuileT(vp ? 'w3' : 'm1', 'France', '2025',
+      '<p class="cp-big">' + numK(fr_.boites) + ' <small>boîtes</small></p>' +
+      minis([['Valeur', fr_.valeur != null ? eurK(fr_.valeur) : '—'], ['Rang', fr_.rang ? 'n°' + fr(fr_.rang) : '—']]),
+      'France 2025' + (fr_.prixMoyen != null ? ' · ' + eur2(fr_.prixMoyen) + ' par boîte en moyenne' : ''));
+    else h += tuileVide(vp ? 'w3' : 'm1', 'France', '2025', 'Produit absent des ventes France.');
+    if (!vp) {
+      if (nv) {
+        var part = fr_ && fr_.boites > 0 ? nv.boitesAn / fr_.boites : null;
+        h += tuileT('m1', 'Nos ventes', '',
+          '<p class="cp-big">' + eurK(nv.ca) + ' <small>HT</small></p>' +
+          minis([['Boîtes', fr(nv.boites)], ['Clientes', fr(nv.clientes)], ['Part', part != null ? fmtPart(part) : '—']]),
+          'Nos ventes, ' + esc(nv.periode));
+      } else h += tuileVide('m1', 'Nos ventes', '', 'Ventes du réseau pas encore chargées.');
+    }
+    if (t && (t.anAn != null || t.previsions)) {
+      var p = t.previsions, tonT = t.anAn == null ? '' : t.anAn > 0.5 ? ' up' : t.anAn < -0.5 ? ' down' : '';
+      h += tuileT(vp ? 'w3 m1' : 'm1', 'Tendance', 'France, an/an',
+        '<p class="cp-big' + tonT + '">' + pctSigne(t.anAn) + ' <small>sur un an</small></p>' +
+        (p ? '<div class="cp-fc"><p class="cp-fc-h"><span>Prévision à 6 mois</span><b>' + fr(p.m6) + ' % <small>(' + fr(p.b6) + '–' + fr(p.h6) + ')</small></b></p>' +
+          reglette(p.m6, p.b6, p.h6) +
+          '<p class="cp-fc-n">100 = rythme des 3 derniers mois' + (p.fiable ? '' : ' · fourchette large') + ' · 3 mois : ' + fr(p.m3) + ' % · 12 mois : ' + fr(p.m12) + ' %</p></div>'
+          : '<p class="cp-tx">Prévisions indisponibles.</p>'),
+        t.anAn != null ? esc(t.anAnPeriode || 'même période un an avant') + (t.momentum != null ? ' · élan ' + pctSigne(t.momentum) + ' par mois' : '') : '');
+    } else h += tuileVide(vp ? 'w3 m1' : 'm1', 'Tendance', 'France, an/an', 'Pas de tendance publiée pour ce produit.');
+    return bloc(3, 'Le marché', '<div class="cp-grid">' + h + '</div>' +
+      '<p class="cp-fn">' + (vp ? '' : 'Part = nos boîtes par an ÷ boîtes France 2025. ') + 'Valeur : prix public, base de remboursement.</p>' +
+      '<div id="cp-evo-m" class="cp-card">' + evoHtml(l, 'marche') + '</div>');
+  }
+
+  // Par commercial : petites barres horizontales (direction seulement ; null = le bloc n'existe pas).
+  function parCommercialHtml(s) {
+    var pc = s.parCommercial, i, x, max = 0, h;
+    if (!pc) return '';
+    h = '<div class="cp-bl"><p class="cp-st">Par commercial</p>';
+    if (!pc.lignes.length) return h + '<p class="cp-note">Aucune vente attribuée à un commercial.</p></div>';
+    for (i = 0; i < pc.lignes.length; i++) max = Math.max(max, pc.lignes[i].ca || 0);
+    h += '<p class="cp-note">Nos ventes, ' + esc(pc.periode) + ', chiffre d\'affaires HT.</p>';
+    for (i = 0; i < pc.lignes.length; i++) {
+      x = pc.lignes[i];
+      h += '<div class="cp-pc"><b title="' + escAttr(x.nom) + '">' + esc(x.nom) + '</b>' +
+        '<span class="cp-bh"><i style="width:' + (max > 0 ? Math.max(2, (x.ca || 0) / max * 100).toFixed(1) : 0) + '%"></i></span>' +
+        '<strong>' + eurK(x.ca) + '</strong><small>' + fr(x.boites) + ' boîte' + (x.boites > 1 ? 's' : '') + ' · ' + fr(x.clientes) + ' cliente' + (x.clientes > 1 ? 's' : '') + '</small></div>';
+    }
+    return h + '</div>';
+  }
+
+  // 4. Chez nous (interne) : jamais en vue pharmacien.
+  function blocNous(s, l, d, liste, ventes, off) {
+    var h = '<div class="cq-sep" role="note"><span>Interne</span> masqué en vue pharmacien</div><section class="cq-bl cq-bl-i" aria-labelledby="cq-b4"><h3 class="cq-bt" id="cq-b4"><span>4</span>Chez nous · interne</h3>';
+    h += parCommercialHtml(s);
+    h += '<p class="cp-st">Nos ventes, mois par mois</p><div id="cp-evo-n" class="cp-card">' + evoHtml(l, 'nous') + '</div>';
+    h += '<div class="cp-bl">' + dejaHtml(l, d) + '</div>';
+    h += '<div class="cp-bl"><p class="cp-st">Potentiel</p>' + ventes + '</div>';
+    h += '<div class="cp-bl"><p class="cp-st">À qui le proposer' + (liste ? ' <span>' + fr(liste.length) + '</span>' : '') + '</p>' + off + '</div>';
+    return h + '</section>';
+  }
+
+  // 5. Le produit
+  function fait(lib, val, det) {
+    return '<div class="cp-ft"><em>' + lib + '</em><b>' + val + '</b>' + (det ? '<small>' + det + '</small>' : '') + '</div>';
+  }
+  function blocProduit(s, l, stock) {
+    var h = '<p class="cp-st cp-st0">Stock par établissement</p>' + stock + '<div class="cp-fts">', x = s.autres, g = s.generique;
+    if (g && g.statut) {
+      var lib = { commercialise: 'Un générique est commercialisé', nouveau: 'Nouveau groupe de génériques', repertoire: 'Groupe inscrit au répertoire des génériques', aucun: 'Aucun générique' };
+      h += fait('Générique', esc(lib[g.statut] || g.statut), g.depuis ? 'depuis le ' + dateJour(g.depuis) : g.donneesAu ? 'BDPM, données au ' + dateJour(g.donneesAu) : 'BDPM');
+    }
+    h += fait('Chaîne du froid', x.froid ? 'Oui, 2 à 8 °C' : 'Non');
+    if (x.has) h += fait('Avis HAS', 'SMR ' + esc(x.has.smr || '—') + ' · ASMR ' + esc(x.has.asmr || '—'), 'avis du ' + dateJour(x.has.date) + (x.has.motif ? ' · ' + esc(x.has.motif) : ''));
+    else h += fait('Avis HAS', 'Aucun avis récent');
+    if (s.tendance && s.tendance.saison) {
+      var sa = s.tendance.saison, ind = sa.indices, mx = Math.max.apply(null, ind), bars = '', i;
+      for (i = 0; i < 12; i++) bars += '<i class="' + (i + 1 === sa.moisFort ? 'f' : i + 1 === sa.moisFaible ? 'w' : '') + '" style="height:' + Math.max(8, ind[i] / (mx || 1) * 100).toFixed(0) + '%" title="' + MOIS_C[i] + '"></i>';
+      h += fait('Saisonnalité', 'Fort en ' + MOIS_C[sa.moisFort - 1] + ', faible en ' + MOIS_C[sa.moisFaible - 1], 'ventes France, indices du produit') +
+        '<div class="cp-sai" role="img" aria-label="Indice saisonnier mois par mois, de janvier à décembre">' + bars + '</div><div class="cp-sai-m" aria-hidden="true"><span>janv.</span><span>juin</span><span>déc.</span></div>';
+    }
+    h += fait('Nouveauté', x.nouveaute ? 'AMM ' + esc(x.nouveaute.amm || '') + (x.nouveaute.labo ? ' · ' + esc(x.nouveaute.labo) : '') : 'Non', 'AMM de moins de 36 mois');
+    return bloc(5, 'Le produit', h + '</div>', 'cq-bl-p');
+  }
+
+  function panneauHaut(l, s, vp) {
+    var ab = l.ab != null;
+    return '<div class="cp-hero"><div class="cp-hn"><small>' + (l.f === 'nr' ? 'Tarif' : 'Prix net') + ', par boîte</small>' +
+        '<b>' + (l.prix > 0 ? eur2(l.prix) : '—') + '</b>' + (ab ? '<s>' + eur2(l.ppht) + '</s>' : '') + '</div>' +
+      (ab ? '<div class="cp-hn ab"><small>Abandon de marge, par boîte</small><b>' + eur2(l.ab) + '</b></div>' : '') +
+      '<div class="cp-hg">' +
+        (l.f === 'nr' && l.prix > 0 ? '<span class="cp-tag">' + (l.tar ? 'Tarif au ' + dateFr(window.ETAB_PRICES.tarifDate) : 'Tarif') + '</span>' : '') +
+        (l.rupt ? '<span class="cp-tag cp-tag-r">Rupture ANSM</span>' : '') +
+        (l.opp && !vp ? '<span class="cp-tag">Opportunité</span>' : '') + '</div></div>';
+  }
+
   function panneauHtml(d) {
     var l = C.cip && d.parCip[C.cip];
     if (!l) return '';
@@ -984,6 +1600,7 @@
     var FAM = V2.produits.FAM || {};
     var AQ = aQui(), liste = AQ ? (AQ[l.cip] || []) : null, i;
     var aLaMoy = l.france > 0 ? l.france * d.partMoy : 0;
+    var vp = !!C.vuePharma, s = stats(l, d);
 
     var ventes;
     if (!(l.france > 0)) {
@@ -996,7 +1613,7 @@
         '<div><em>France</em><b>n°' + fr(l.rang) + '</b></div></div>' +
         (l.ecart > 0
           ? '<p class="cp-ecart">Écart : ' + fr(l.ecart) + ' boîtes par an' +
-            (l.opp ? ' · potentiel ' + fr(l.pot) + ' € par an si on rejoint notre part moyenne.'
+            (l.opp ? ' · potentiel ' + fr(l.pot) + ' € par an si on rejoint notre part moyenne.'
                    : ' · hors du top ' + C.top + ' France, donc pas compté comme opportunité.') + '</p>'
           : '<p class="cp-ecart plat">Nous sommes déjà à notre part moyenne, ou au-dessus.</p>');
     }
@@ -1037,26 +1654,24 @@
       }
     }
 
+    var indispo = s && s.indisponibles.filter(function (k) { return ALERTE_FICHIERS.indexOf(k) < 0; }).length ? '<p class="cp-note">Données momentanément indisponibles : ' +
+      esc(s.indisponibles.filter(function (k) { return ALERTE_FICHIERS.indexOf(k) < 0; }).map(function (k) { return LIB_INDISPO[k] || k; }).join(', ')) + '.</p>' : '';
     return '<div class="cp-fond" onclick="V2.comptoir.fermer()"></div>' +
-      '<aside class="cp-pan" role="dialog" aria-label="Fiche produit">' +
-      '<div class="cp-pan-h"><div><p class="cp-pan-t">' + esc(l.d) + '</p>' +
+      '<aside class="cp-pan' + (vp ? ' vp' : '') + '" role="dialog" aria-label="Fiche produit">' +
+      '<div class="cp-pan-h"><div class="cp-pan-id"><p class="cp-pan-t">' + esc(l.d) + '</p>' +
         '<p class="cp-meta">' + esc([l.labo, 'CIP ' + l.cip, FAM[l.f] ? FAM[l.f].l : ''].filter(Boolean).join(' · ')) + '</p></div>' +
+        '<button class="cp-vp' + (vp ? ' on' : '') + '" aria-pressed="' + vp + '" onclick="V2.comptoir.vuePharma(' + (!vp) + ')">' +
+          '<span class="cp-sw" aria-hidden="true"><i></i></span>Vue pharmacien</button>' +
         '<button class="cp-x" aria-label="Fermer" onclick="V2.comptoir.fermer()">' + (ICO('close', 18, 2) || '✕') + '</button></div>' +
       '<div class="cp-pan-c">' +
-        '<div class="cp-prix"><b>' + (l.prix > 0 ? eur2(l.prix) : '—') + '</b>' +
-          (l.f === 'nr' && l.prix > 0 ? '<span class="cp-tag">' + (l.tar ? 'Tarif au ' + dateFr(window.ETAB_PRICES.tarifDate) : 'Tarif') + '</span>' : '') +
-          (l.ab != null ? '<s>' + eur2(l.ppht) + '</s><span class="cp-tag">Abandon de marge ' + eur2(l.ab) + ' / boîte</span>' : '') +
-          (l.rupt ? '<span class="cp-tag cp-tag-r">Rupture ANSM</span>' : '') +
-          (l.opp ? '<span class="cp-tag">Opportunité</span>' : '') + '</div>' +
+        (vp ? '<p class="cp-vpn">Vue pharmacien active : notre marge, nos ventes et les noms des autres officines sont masqués.</p>' : '') +
+        (s ? panneauHaut(l, s, vp) : '') +
         (l.f === 'nr' && l.net > 0 && Math.abs(l.net - l.prix) >= 0.01 * l.prix
           ? '<p class="cp-note">Prix moyen facturé au réseau : ' + eur2(l.net) + '.</p>' : '') +
-        dejaHtml(l, d) +
-        '<p class="cp-st">Ventes</p>' + ventes +
-        '<p class="cp-st">Mois par mois</p><div id="cp-evo">' + evoHtml(l) + '</div>' +
-        '<p class="cp-st">Stock par établissement</p>' + stock +
-        '<p class="cp-st">À qui le proposer' + (liste ? ' <span>' + fr(liste.length) + '</span>' : '') + '</p>' + off +
-        boutonPanneau(l.cip) +
-        '<button class="v2-btn v2-btn-primary cp-cta" onclick="V2.produits.ficheMarketing(\'' + escAttr(l.cip) + '\')">Fiche marketing du produit</button>' +
+        (s ? blocAlertes(s, l, vp) + blocMarges(s, vp) + blocMarche(s, l, vp) + (vp ? '' : blocNous(s, l, d, liste, ventes, off)) + blocProduit(s, l, stock) : blocProduit({ autres: { froid: false }, generique: null, tendance: null }, l, stock)) +
+        indispo +
+        '<div class="cp-ctas">' + boutonPanneau(l.cip) +
+        '<button class="v2-btn v2-btn-primary cp-cta" onclick="V2.produits.ficheMarketing(\'' + escAttr(l.cip) + '\')">Fiche marketing du produit</button></div>' +
       '</div></aside>';
   }
 
@@ -1088,6 +1703,21 @@
   V2.comptoir._listerCommandes = listerCommandes;
   V2.comptoir._dejaCommande = function (sales, cips, voit, estReste) { return listerCommandes(indexCommandes(sales, voit, estReste), cips); };
   V2.comptoir._repliMolecules = repliMolecules;
+  // Socle de calcul (22/10/2026) : l'objet complet du panneau, et ses calculs purs pour les tests.
+  V2.comptoir.stats = stats;
+  V2.comptoir.vuePharma = function (b) {
+    if (arguments.length) { C.vuePharma = !!b; ecrireVuePharma(C.vuePharma); rerender(); }
+    return C.vuePharma;
+  };
+  V2.comptoir._calc = {
+    pfhtDepuisPpht: pfhtDepuisPpht, margeGrossiste: margeGrossiste, margeOfficine: margeOfficine, abandon2027: abandon2027,
+    margePharmacien: margePharmacien, alertesPrix: alertesPrix, statutGenerique: statutGenerique, emaPourMolecule: emaPourMolecule,
+    ansmPourCip: ansmPourCip, rappelPourCip: rappelPourCip, hasPourCip: hasPourCip, previsionsPourCip: previsionsPourCip,
+    saisonDe: saisonDe, ventesProduit: ventesProduit,
+    // Pour les tests : attendre les fichiers demandés, fixer la date du jour.
+    pret: function () { return Promise.all(D.fichP || []); },
+    horloge: function (f) { D.horloge = f || null; }
+  };
   // Pour la recherche ⌘K (22/10/2026) : la table de repli (null tant qu'elle n'est pas prête) et sa demande.
   V2.comptoir.repliMol = repli;
   V2.comptoir.chargerNational = chargerNat;
@@ -1257,8 +1887,8 @@
       // Panneau : feuille en bas au téléphone, colonne à droite sur ordinateur.
       '.cp-fond{position:fixed;inset:0;z-index:900;background:rgba(16,19,28,.38)}',
       '.cp-pan{position:fixed;left:0;right:0;bottom:0;z-index:901;max-width:640px;max-height:88vh;margin:0 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--card);border-radius:20px 20px 0 0;box-shadow:0 -20px 50px rgba(16,19,28,.28);padding-bottom:calc(20px + env(safe-area-inset-bottom))}',
-      '@media (min-width:1000px){.cp-pan{left:auto;top:0;width:460px;max-width:460px;max-height:none;border-radius:0;box-shadow:-20px 0 50px rgba(16,19,28,.22)}}',
-      '.cp-pan-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:16px 20px 12px}',
+      '@media (min-width:1000px){.cp-pan{left:auto;top:0;max-height:none;border-radius:0;box-shadow:-20px 0 50px rgba(16,19,28,.22)}}',
+      '.cp-pan-h{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"id x" "vp vp";align-items:start;gap:10px;padding:16px 20px 12px}.cp-pan-id{grid-area:id;min-width:0}.cp-vp{grid-area:vp;justify-self:start}.cp-x{grid-area:x}',
       '.cp-pan-t{margin:0 0 3px;font:800 16.5px/1.3 Inter,sans-serif;color:var(--ip-ink)}',
       '.cp-x{flex:none;width:44px;height:44px;margin:-6px -6px 0 0;border-radius:10px;border:1px solid rgba(16,19,28,.12);background:var(--card);color:var(--ip-ink);cursor:pointer;display:flex;align-items:center;justify-content:center}',
       '.cp-pan-c{padding:0 20px}',
@@ -1340,7 +1970,135 @@
       '.cp-tab th,.cp-tab td{padding:6px 4px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}',
       '.cp-tab th{font-weight:700;color:var(--cp-ink3)}.cp-tab td{color:var(--ip-ink)}',
       '.cp-tab th:first-child,.cp-tab td:first-child{text-align:left}',
-      '@media (max-width:430px){.cp-tus{grid-template-columns:1fr 1fr}.cp-tus .cp-tu:last-child{grid-column:span 2}}'
+      '@media (max-width:430px){.cp-tus{grid-template-columns:1fr 1fr}.cp-tus .cp-tu:last-child{grid-column:span 2}}',
+      // Tableau de bord (v1) : grille de tuiles, alertes, barres par commercial.
+      '.cp-vp{display:inline-flex;align-items:center;gap:9px;min-height:44px;padding:0 14px 0 10px;border-radius:999px;border:1.5px solid var(--ip-blue);background:var(--card);color:var(--ip-blue);font:750 14px/1 Inter,sans-serif;cursor:pointer;white-space:nowrap}',
+      '.cp-vp.on{background:var(--ip-blue);color:#fff;box-shadow:var(--sh-blue)}',
+      '.cp-sw{position:relative;flex:none;width:30px;height:18px;border-radius:999px;background:rgba(0,80,230,.22)}',
+      '.cp-sw i{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--ip-blue)}',
+      '.cp-vp.on .cp-sw{background:rgba(255,255,255,.35)}.cp-vp.on .cp-sw i{left:14px;background:#fff}',
+      '.cp-vpn{margin:0 0 12px;padding:9px 12px;border-radius:12px;background:var(--cp-wash);color:var(--cp-deep);font:650 13.5px/1.4 Inter,sans-serif}',
+      '.cp-hero{display:flex;align-items:flex-end;flex-wrap:wrap;gap:6px 28px;padding:4px 0 14px}',
+      '.cp-hn{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px}',
+      '.cp-hn small{flex:1 1 100%;font:650 13px/1.3 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-hn b{font:800 34px/1 Inter,sans-serif;letter-spacing:-.02em;color:var(--ip-ink);font-variant-numeric:tabular-nums}',
+      '.cp-hn.ab b{color:var(--ip-blue)}',
+      '.cp-hn s{font:500 14px/1 Inter,sans-serif;color:var(--cp-ink3);font-variant-numeric:tabular-nums}',
+      '.cp-hg{display:flex;gap:6px;flex-wrap:wrap;align-self:center}',
+      '.cp-als{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-wrap:wrap;gap:8px}',
+      '.cp-al{display:flex;align-items:flex-start;gap:8px;max-width:100%;padding:8px 12px;border-radius:14px;font:650 13.5px/1.35 Inter,sans-serif}',
+      '.cp-al i{flex:none;width:9px;height:9px;margin-top:5px;border-radius:50%}',
+      '.cp-al small{font:500 13px/1.35 Inter,sans-serif}',
+      '.cp-al.info{background:var(--cp-wash);color:var(--cp-deep)}.cp-al.info i{background:var(--ip-blue)}',
+      '.cp-al.warn{background:var(--cp-amberw);color:#7A4709}.cp-al.warn i{background:#D98A1F}',
+      '.cp-al.bad{background:#FDECEF;color:#A11D33}.cp-al.bad i{background:#D6334C}',
+      '.cp-calm{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:8px 12px;border-radius:14px;border:1px solid var(--line);background:var(--cp-alt);font:600 13.5px/1.35 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-calm i{flex:none;width:9px;height:9px;border-radius:50%;background:var(--cp-green)}',
+      '.cp-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}',
+      '.cp-t{grid-column:span 2;display:flex;flex-direction:column;gap:7px;min-width:0;padding:14px 14px 12px;border-radius:18px;border:1px solid var(--line);background:radial-gradient(260px 120px at 0 0,rgba(0,80,230,.10),transparent 70%),var(--card);box-shadow:var(--sh-1)}',
+      '.cp-t.w3{grid-column:span 3}.cp-t.w6{grid-column:span 6}',
+      '.cp-t.hero{border-color:rgba(0,80,230,.28);background:radial-gradient(340px 150px at 0 0,rgba(0,80,230,.17),transparent 70%),radial-gradient(240px 120px at 100% 100%,rgba(0,80,230,.06),transparent 70%),var(--card)}',
+      '.cp-tl{margin:0;font:750 13px/1.25 Inter,sans-serif;letter-spacing:.03em;text-transform:uppercase;color:var(--ip-ink)}',
+      '.cp-tl span{margin-left:7px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--cp-ink3)}',
+      '.cp-big{margin:0;font:800 30px/1.05 Inter,sans-serif;letter-spacing:-.02em;color:var(--ip-ink);font-variant-numeric:tabular-nums}',
+      '.cp-big small{font:650 14px/1 Inter,sans-serif;letter-spacing:0;color:var(--cp-ink3)}',
+      '.cp-big.nd{color:var(--cp-ink3)}.cp-big.up{color:var(--cp-green)}.cp-big.down{color:var(--cp-amber)}',
+      '.cp-tx{margin:0;font:400 13px/1.4 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-tp{margin:auto 0 0;padding-top:7px;border-top:1px solid var(--line);font:500 13px/1.35 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-duo{display:flex;align-items:flex-end;gap:10px}',
+      '.cp-duo div{display:flex;flex-direction:column;gap:4px;min-width:0}',
+      '.cp-duo small{font:650 13px/1.2 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-duo b{font:800 32px/1 Inter,sans-serif;letter-spacing:-.02em;color:var(--ip-ink);font-variant-numeric:tabular-nums;white-space:nowrap}',
+      '.cp-duo .n27 b{color:var(--ip-blue)}',
+      '.cp-ar{padding-bottom:5px;font:700 22px/1 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-dz{display:inline-flex;align-self:flex-start;padding:5px 11px;border-radius:999px;font:750 13.5px/1.2 Inter,sans-serif;font-variant-numeric:tabular-nums}',
+      '.cp-dz.up{background:#E4F4EC;color:var(--cp-green)}.cp-dz.down{background:var(--cp-amberw);color:var(--cp-amber)}',
+      '.cp-dz.nul{background:var(--cp-alt);border:1px solid var(--line);color:var(--cp-ink3)}',
+      '.cp-mn{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:8px}',
+      '.cp-mn div{display:flex;flex-direction:column;gap:2px;min-width:0}',
+      '.cp-mn.s3 div:first-child{grid-column:1/-1}',
+      '.cp-mn small{font:650 13px/1.2 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-mn b{font:800 16px/1.2 Inter,sans-serif;color:var(--ip-ink);font-variant-numeric:tabular-nums}',
+      '.cp-fc{display:flex;flex-direction:column;gap:7px}',
+      '.cp-fc-h{margin:0;display:flex;align-items:baseline;justify-content:space-between;gap:8px;font:650 13px/1.2 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-fc-h b{font:800 17px/1.1 Inter,sans-serif;color:var(--ip-ink);font-variant-numeric:tabular-nums;white-space:nowrap}',
+      '.cp-fc-h small{font:650 13px/1 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-fc-n{margin:0;font:400 13px/1.35 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-rg{position:relative;height:10px;margin:2px 6px;border-radius:999px;background:var(--cp-alt);border:1px solid var(--line)}',
+      '.cp-rg i{position:absolute;top:1px;bottom:1px;border-radius:999px;background:rgba(0,80,230,.28)}',
+      '.cp-rg .z{position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:var(--ip-ink)}',
+      '.cp-rg .m{position:absolute;top:-3px;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:var(--ip-blue);border:2px solid var(--card);box-shadow:0 1px 3px rgba(16,19,28,.35)}',
+      '.cp-fn{margin:8px 0 0;font:400 13px/1.4 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-card{padding:4px 14px 8px;border-radius:18px;border:1px solid var(--line);background:var(--card);box-shadow:var(--sh-1)}',
+      '.cp-2{display:grid;grid-template-columns:minmax(0,1fr);gap:0 28px;align-items:start}',
+      '@media (min-width:1000px){.cp-2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.cp-2>.cp-bl:only-child{grid-column:1/-1}}',
+      '.cp-bl{min-width:0}',
+      '.cp-pc{display:grid;grid-template-columns:minmax(64px,96px) minmax(0,1fr) auto;align-items:center;gap:2px 10px;padding:7px 0;border-bottom:1px solid var(--line)}',
+      '.cp-pc b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 13.5px/1.3 Inter,sans-serif;color:var(--ip-ink)}',
+      '.cp-bh{display:block;height:8px;border-radius:999px;background:var(--cp-alt);overflow:hidden}',
+      '.cp-bh i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#5C93F2,var(--ip-blue))}',
+      '.cp-pc strong{font:800 13.5px/1.2 Inter,sans-serif;color:var(--ip-ink);font-variant-numeric:tabular-nums;text-align:right}',
+      '.cp-pc small{grid-column:2/4;font:400 13px/1.3 Inter,sans-serif;color:var(--cp-ink3);font-variant-numeric:tabular-nums}',
+      '.cp-kv{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:7px 0;border-bottom:1px solid var(--line)}',
+      '.cp-kv em{font:650 13.5px/1.3 Inter,sans-serif;font-style:normal;color:var(--cp-ink3)}',
+      '.cp-kv span{display:flex;flex-direction:column;align-items:flex-end;text-align:right}',
+      '.cp-kv b{font:800 13.5px/1.3 Inter,sans-serif;color:var(--ip-ink)}',
+      '.cp-kv small{font:400 13px/1.3 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-ctas{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-top:18px}',
+      '@media (min-width:1000px){.cp-ctas{grid-template-columns:1fr 1fr}}',
+      '.cp-ctas .cp-cta{margin:0}',
+      '@media (min-width:1000px){.cp-pan{width:720px;max-width:720px}.cp-pan-h{position:sticky;top:0;z-index:3;grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:"id vp x";align-items:center;gap:12px;padding:18px 24px 12px;background:radial-gradient(520px 200px at 6% -90px,rgba(0,80,230,.13),transparent 70%),var(--card)}.cp-pan-c{padding:0 24px}}',
+      '@media (max-width:520px){.cp-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cp-t,.cp-t.w3,.cp-t.w6{grid-column:span 1}.cp-t.w3,.cp-t.w6{grid-column:span 2}.cp-t:not(.w3):not(.w6) .cp-mn{grid-template-columns:1fr}.cp-hero{display:grid;grid-template-columns:1fr 1fr}.cp-hg{grid-column:1/-1}.cp-hn b{font-size:28px}.cp-big{font-size:26px}.cp-duo b{font-size:28px}.cp-hn b{font-size:30px}}',
+      // ── v4 « Le mélange » : fil numéroté de la v3 posé sur le squelette (tuiles, en-tête) de la v1. ──
+      '.cp-pan-c{--px:20px}@media (min-width:1000px){.cp-pan-c{--px:24px}}',
+      '.cp-meta{margin:0;font:400 13px/1.4 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-hero{padding:0 0 4px}.cp-hn b{font-size:30px}',
+      '.cq-bl{padding:10px 0 4px;border-top:1px solid var(--line)}',
+      '.cq-bt{display:flex;align-items:center;gap:10px;margin:0 0 8px;font:750 13px/1 Inter,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--ip-blue-d)}',
+      '.cq-bt span{display:inline-flex;align-items:center;justify-content:center;flex:none;width:22px;height:22px;border-radius:50%;background:var(--ip-blue);color:#fff;font-size:13px;letter-spacing:0}',
+      '.cq-nb{margin:0 0 8px}',
+      '.cq-g{font:800 22px/1.1 Inter,sans-serif;letter-spacing:-.02em;color:var(--ip-blue-d);font-variant-numeric:tabular-nums;white-space:nowrap}',
+      '.cq-ph{margin:0 0 10px;font:500 15px/1.5 Inter,sans-serif;color:var(--ip-ink)}',
+      '.cq-al{display:grid;grid-template-columns:84px 1fr;gap:14px;align-items:center;margin:0 0 6px;padding:7px 14px 7px 10px;border-radius:20px;border:1px solid var(--line);background:radial-gradient(260px 120px at 0 0,rgba(0,80,230,.10),transparent 70%),var(--card);box-shadow:var(--cp-shadow)}',
+      '.cq-al p{margin:0;font:400 14.5px/1.4 Inter,sans-serif;color:var(--ip-ink)}',
+      '.cq-al-info{grid-template-columns:84px 1fr;padding:6px 14px 6px 10px;gap:12px;border-radius:16px;box-shadow:none;background:var(--cp-alt)}.cq-al-info .cq-al-f{min-height:32px;padding:3px 4px;border-radius:10px}',
+      '.cq-al-f{display:flex;align-items:center;justify-content:center;min-height:44px;padding:6px 4px;border-radius:14px;background:var(--cp-wash);color:var(--ip-blue-d);font:800 22px/1.1 Inter,sans-serif;letter-spacing:-.02em;text-align:center;font-variant-numeric:tabular-nums}',
+      '.cq-al-info .cq-al-f{font-size:14px;letter-spacing:0}',
+      '.cq-al-warn{background:radial-gradient(260px 120px at 0 0,rgba(154,91,18,.12),transparent 70%),var(--cp-amberw)}',
+      '.cq-al-warn .cq-al-f{background:#fff;color:var(--cp-amber);font-size:14px;letter-spacing:0}',
+      '.cq-al .cq-g{font-size:17px;color:inherit}.cq-al-prix .cq-g{color:var(--ip-blue-d)}',
+      '.cq-rien{display:flex;align-items:center;gap:12px;margin:0 0 8px;font:600 16px/1.4 Inter,sans-serif;color:var(--ip-ink)}',
+      '.cq-rien i{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:#E3F4EC;color:var(--cp-green);font-style:normal;font-weight:800}',
+      '.cq-rien-c{font-weight:500;color:var(--cp-ink3)}',
+      '.cq-brs{display:grid;gap:6px;margin:0 0 4px}',
+      '.cq-br-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:3px}',
+      '.cq-br-h span{font:650 13.5px/1.2 Inter,sans-serif;color:var(--ip-ink)}',
+      '.cq-br-h b{font:800 16px/1 Inter,sans-serif;color:var(--ip-blue-d);font-variant-numeric:tabular-nums}',
+      '.cq-br-t{display:flex;width:100%;height:14px;border-radius:7px;background:var(--cp-alt);overflow:hidden}',
+      '.cq-br-t i{display:block;height:100%}',
+      '.cq-s1{background:#9DB4E8}.cq-s2{background:var(--ip-blue)}.cq-s3{background:var(--ip-blue-d);border-radius:0 7px 7px 0}',
+      '.cq-br-d{display:flex;flex-wrap:wrap;align-items:center;gap:0 14px;margin:4px 0 0;font:400 13px/1.35 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cq-br-d span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}','.cq-k1,.cq-k2{display:inline-block;width:10px;height:10px;border-radius:3px;flex:none}.cq-k1{background:#9DB4E8}.cq-k2{background:var(--ip-blue)}',
+      '.cq-sep{display:flex;align-items:center;gap:10px;margin:16px calc(-1 * var(--px)) 0;padding:12px var(--px);background:radial-gradient(300px 80px at 0 0,rgba(90,140,255,.35),transparent 70%),var(--ip-blue-d);color:#fff;font:600 14px/1.2 Inter,sans-serif}',
+      '.cq-sep span{padding:4px 10px;border-radius:999px;background:#fff;color:var(--ip-blue-d);font:800 13px/1 Inter,sans-serif;text-transform:uppercase;letter-spacing:.06em}',
+      '.cq-bl-i{margin:0 calc(-1 * var(--px));padding:16px var(--px) 18px;background:var(--cp-alt);border-top:0}',
+      '.cq-bl-i .cp-card,.cq-bl-i .cp-vgrid div,.cq-bl-i .cp-ecart.plat{background:var(--card)}',
+      '.cq-bl-i .cp-chip:not(.on){background:var(--card)}',
+      '.cq-bl-i .cp-bh{background:#fff}',
+      '.cp-st small{margin-left:6px;font:400 13px/1 Inter,sans-serif;text-transform:none;letter-spacing:0;color:var(--cp-ink3)}',
+      '.cp-st0{margin-top:0}',
+      '.cp-fts{display:grid;gap:0}',
+      '.cp-ft{display:grid;grid-template-columns:130px 1fr;gap:2px 12px;padding:11px 0;border-bottom:1px solid var(--line)}',
+      '.cp-ft em{grid-row:span 2;font:650 13px/1.4 Inter,sans-serif;font-style:normal;color:var(--cp-ink3)}',
+      '.cp-ft b{font:700 15px/1.4 Inter,sans-serif;color:var(--ip-ink)}',
+      '.cp-ft small{font:400 13px/1.4 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-sai{display:flex;align-items:flex-end;gap:4px;height:44px;margin:8px 0 0 142px}',
+      '.cp-sai i{flex:1;border-radius:3px 3px 0 0;background:#C9D6F2}.cp-sai i.f{background:var(--ip-blue)}.cp-sai i.w{background:var(--cp-amber)}',
+      '.cp-sai-m{display:flex;justify-content:space-between;margin:3px 0 4px 142px;font:400 13px/1 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cq-bl-p{padding-bottom:6px}',
+      '.cp-t .cq-ph{margin:0 0 2px}.cp-t .cp-tp{padding-top:5px}',
+      '@media (min-width:1000px){.cp-hero{flex-wrap:nowrap}.cp-hg{margin-left:auto;padding-bottom:4px}.cp-t{padding:12px 14px 10px;gap:6px}.cp-pan-h{padding:14px 24px 8px}.cp-fn{margin:6px 0 8px}}',
+      '@media (max-width:520px){.cp-t.m1{grid-column:span 2}.cp-t:not(.w3):not(.w6) .cp-mn{grid-template-columns:repeat(var(--n),minmax(0,1fr))}.cp-t:not(.w3):not(.w6) .cp-mn.s3{grid-template-columns:repeat(2,minmax(0,1fr))}.cq-al{grid-template-columns:1fr;gap:8px}.cq-al-f{justify-content:flex-start;min-height:0;padding:8px 12px;font-size:20px}.cq-al-info .cq-al-f,.cq-al-warn .cq-al-f{font-size:14px}.cp-ft{grid-template-columns:1fr}.cp-ft em{grid-row:auto}.cp-sai,.cp-sai-m{margin-left:0}}'
     ].join('\n');
     document.head.appendChild(s);
   }
