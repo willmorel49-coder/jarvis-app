@@ -1122,7 +1122,7 @@
     var bfr = '<section class="x13-bl x13-bl-fr" aria-labelledby="x13-h-fr"><h2 class="x13-h" id="x13-h-fr">En France</h2><p class="x13-sous">Ce qui touche toutes les officines</p>' +
       (pris.length ? '<ul class="x13-ls">' + pris.map(function (e) { return x13Ligne3(e, i++); }).join('') + '</ul>' : '<p class="x13-vide">Rien de neuf aujourd’hui.</p>') + '</section>';
     return '<div class="w-page x13 x13v3"><header class="x13-tete"><h1><span class="x13-h1a">Infos du jour</span><span class="x13-h1b">' + esc(PP_JS[new Date(jour + 'T12:00:00').getDay()] + ' ' + ppDc(jour)) + '</span></h1></header>' +
-      '<div class="x13-deux">' + bsec + bfr + '</div>' + x13Rubriques(D, J) + '</div>';
+      '<div class="x13-deux">' + bsec + bfr + '</div>' + x13Rubriques(D, J) + (x14Fil(D, J), x14Rend()) + '</div>';
   }
 
   /* ── la feuille de lecture : naît de la carte touchée ── */
@@ -1155,8 +1155,8 @@
     sh.style.clipPath = 'inset(0px ' + Math.max(0, box.width - r.width) + 'px ' + Math.max(0, box.height - r.height) + 'px 0px round 22px)';
     sh.style.transform = 'translate(' + Math.round(r.left - box.left) + 'px,' + Math.round(r.top - box.top) + 'px)';
   }
-  function x13Ouvre(card) {
-    var e = X13.liste[+card.getAttribute('data-x13-i')]; if (!e) return;
+  function x13Ouvre(card, ent) {   // ent (facultatif) : l'info à ouvrir, quand elle ne vient pas de X13.liste (le fil, x14Ouvre)
+    var e = ent || X13.liste[+card.getAttribute('data-x13-i')]; if (!e) return;
     var sh = x13Feuille(), vo = document.getElementById('x13-voile');
     clearTimeout(X13.fin); X13.orig = card;
     sh.innerHTML = x13Feuillet(e); sh.hidden = false; vo.hidden = false; sh.scrollTop = 0;
@@ -1189,6 +1189,86 @@
     if (sh) { sh.classList.remove('ouvert'); sh.hidden = true; sh.style.clipPath = ''; sh.style.transform = ''; sh.innerHTML = ''; }
     if (vo) { vo.classList.remove('ouvert'); vo.hidden = true; }
   }
+
+  /* ════════════════ LE SOCLE DU FIL D'INFOS VISUEL (22/10/2026) ════════════════
+     Commun aux trois mises en page du fil (Apple News, Flipboard, Discover) : elles ne diffèrent
+     QUE par le dessin. Rien ne s'affiche ici.
+       x14Fil(D, J)          → la liste ordonnée des infos du fil (12 à 18, la plus récente d'abord).
+                               À appeler APRÈS x13Page() dans le même rendu : elle écarte ce que la v3 affiche déjà.
+       x14Image(it, i, prec) → l'adresse de l'image d'une info (la sienne, sinon une photo libre du thème).
+       x14Ouvre(el)          → ouvre la feuille de lecture de l'info dont l'élément porte data-fil-i="<index>".
+     Les éléments du fil portent data-fil-i (PAS data-x13-i) ; le clic est déjà écouté (x13Ecoute) dans .x13. */
+  var X14 = { liste: [] };
+  var X14_PHOTOS = { officine: 3, generique: 2, marge: 3, remboursement: 2, rupture: 3, concurrence: 3, rappel: 2, defaut: 2 };
+  var X14_THEMES = { marge: 'marge', remboursement: 'remboursement', generique: 'generique', rupture: 'rupture', concurrence: 'concurrence', officine: 'officine', rappel: 'rappel', securite: 'rappel' };
+  var X14_ETRANGER = /\b(japon|chine|etats-unis|etats unis|usa|royaume-uni|inde|bresil|canada|allemagne|italie|espagne|suisse|belgique|afrique|australie|coree|mexique|argentine|russie)\b/;
+  var X14_FRANCE = /\b(france|francais|francaise|cnam|assurance maladie|ansm|fspf|uspo|officine|pharmacie|pharmacien)/;
+  function x14Cle(t) { return x13N2(t).slice(0, 38); }
+  function x14Theme(e) { return X14_THEMES[e] || ''; }
+  /* la pertinence : thème utile, parle de la France, une officine parle de pharmacie, ni Rappel Conso, ni annonce légale hors sujet */
+  function x14Garde(e) {
+    var th = x14Theme(e.theme); if (!th) return false;
+    if (/rappel conso/i.test(String(e.s || '') + ' ' + (e.srcs || []).join(' '))) return false;
+    var tt = norm(e.t + ' ' + (e.societe || '')), tout = norm(e.t + ' ' + (e.r || ''));
+    if (ppEstAnnonceLegale(e)) {
+      if (!ppDansSecteur(e) || !sctDepDeCP(e.ville)) return false;   // hors secteur ou sans département
+      if (/laboratoire|repartition|grossiste|distribution/.test(tt)) return false;   // annonce d'un labo ou d'un grossiste
+    }
+    if (X14_ETRANGER.test(tt) && !X14_FRANCE.test(tt)) return false;
+    if (th === 'officine' && !/pharmac|officine/.test(tout)) return false;
+    return true;
+  }
+  function x14Fil(D, J) {
+    D = D || ppDonnees();
+    if (!X13.liste.length) x13Page(D, (BRIEF && BRIEF.jour) || x13Jour(), J || (ARCHIVE && ARCHIVE.jours) || []);
+    var vusC = {}, vusU = {}, out = [];
+    X13.liste.forEach(function (e) { if (!e) return; vusC[x14Cle(e.bod ? e.bod.nom : e.t)] = 1; var u = e.item && e.item.url; if (u) vusU[u] = 1; });
+    function add(o, src) {
+      var k = x14Cle(o.t); if (!o.t || vusC[k] || (src.u && vusU[src.u])) return;
+      if (!x14Garde(src)) return;
+      vusC[k] = 1; if (src.u) vusU[src.u] = 1;
+      o.theme = x14Theme(src.theme); o.img = urlSure(src.img || '') === '#' ? '' : src.img; o.u = src.u || ''; o.o = out.length; out.push(o);
+    }
+    D.ep.forEach(function (e) {
+      var amont = e.motif === 'amont';
+      add({ rub: e.j != null ? 'regle' : (amont ? 'rupture' : 'officine'), t: e.t, d: e.d, j: e.j, item: ppArtEp(e) }, e);
+    });
+    D.cinq.forEach(function (c) { add({ rub: 'actu', t: c.t, d: c.d, item: ppArt(c) }, c); });
+    D.fil.forEach(function (a) { add({ rub: 'actu', t: a.t, d: a.d, item: ppArt(a), neuf: a.neuf }, a); });
+    out.sort(function (a, b) { return String(b.d || '').localeCompare(String(a.d || '')) || ((b.neuf ? 1 : 0) - (a.neuf ? 1 : 0)) || (a.o - b.o); });
+    X14.liste = out.slice(0, 18);
+    var cpt = {}; X14.liste.forEach(function (e) { cpt[e.theme] = (cpt[e.theme] || 0); e.rang = cpt[e.theme]++; });   // rang de l'info dans son thème : répartit les photos
+    return X14.liste;
+  }
+  function x14Image(it, i, prec) {
+    if (it && it.img && urlSure(it.img) !== '#' && it.img !== prec) return it.img;
+    var th = it && X14_PHOTOS[it.theme] ? it.theme : 'defaut', n = X14_PHOTOS[th], r0 = it && it.rang != null ? it.rang : (i || 0), k, u;
+    for (k = 0; k < n; k++) { u = 'img/infos/' + th + '-' + ((r0 + k) % n + 1) + '.webp'; if (u !== prec) return u; }
+    return u;
+  }
+  function x14Ouvre(el) { var e = X14.liste[+el.getAttribute('data-fil-i')]; if (e) x13Ouvre(el, e); }
+  V2.x14 = { fil: x14Fil, image: x14Image, ouvre: x14Ouvre, theme: x14Theme };
+
+  /* ── LE FIL « DISCOVER » (f3, 22/10/2026) : grandes cartes 16:9, cartes compactes à vignette, ligne de source ── */
+  var F3_COEUR = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/></svg>';
+  var F3_MENU = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5.5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="18.5" r="1.8"/></svg>';
+  function x14Rend() {
+    var L = X14.liste || []; if (!L.length) return '';
+    var prec = '';
+    var cartes = L.map(function (it, i) {
+      var src = x14Image(it, i, prec); prec = src;
+      var rep = x14Image({ theme: it.theme, rang: it.rang }, i, ''), nom = x13Source(it) || 'Actualité', ini = (nom.match(/[A-Za-zÀ-ÿ0-9]/) || ['·'])[0].toUpperCase();
+      var age = x13Age(it), compact = i % 3 === 2;
+      var img = '<img class="f3-im" src="' + esc(src) + '" data-fb="' + esc(rep) + '" alt="" loading="lazy" decoding="async" width="' + (compact ? 240 : 1200) + '" height="' + (compact ? 240 : 675) + '" onerror="if(this.getAttribute(\'data-fb\')&&this.src.indexOf(this.getAttribute(\'data-fb\'))<0){this.src=this.getAttribute(\'data-fb\')}else{this.onerror=null}">';
+      var pied = '<span class="f3-pied"><span class="f3-ic" aria-hidden="true">' + esc(ini) + '</span><span class="f3-src">' + esc(nom) + '</span>' + (age ? '<span class="f3-age">' + esc(age) + '</span>' : '') +
+        '<span class="f3-act" aria-hidden="true"><span>' + F3_COEUR + '</span><span>' + F3_MENU + '</span></span></span>';
+      return '<li class="f3-li"><button type="button" class="f3-c ' + (compact ? 'f3-pet' : 'f3-gr') + '" data-fil-i="' + i + '">' +
+        (compact ? '<span class="f3-txt"><span class="f3-t">' + x13T(it.t) + '</span>' + pied + '</span><span class="f3-vig">' + img + '</span>'
+                 : '<span class="f3-vig">' + img + '</span><span class="f3-txt"><span class="f3-t">' + x13T(it.t) + '</span>' + pied + '</span>') + '</button></li>';
+    }).join('');
+    return '<section class="f3-fil" aria-labelledby="f3-h"><header class="f3-tete"><h2 id="f3-h">Le fil du jour</h2><p>L’actualité qui compte pour vos officines, une carte à la fois</p></header><ul class="f3-ls">' + cartes + '</ul><p class="f3-cred"><a href="img/infos/credits.html" target="_blank" rel="noopener">Crédits photos</a></p></section>';
+  }
+
   function x13Ecoute(e) {
     if (e.type === 'keydown') {
       if (!x13OuvertQ()) return;
@@ -1225,6 +1305,7 @@
       if (X13.rub) { try { zr.scrollIntoView({ block: 'nearest' }); } catch (er) {} }
       return;
     }
+    if ((t = e.target.closest('[data-fil-i]'))) { x14Ouvre(t); return; }   // le fil d'infos visuel (socle 22/10/2026)
     if ((t = e.target.closest('.x13-c,.x13-une,.x13-tr,.x13-l'))) x13Ouvre(t);
   }
   if (!V2._x13Ecoute) {
@@ -1536,6 +1617,42 @@
       '/* entrée : décalée, transform seul */',
       '@keyframes x13-in{from{transform:translateY(18px) scale(.985)}to{transform:none}}',
       '/* ── v3 « Votre secteur d’abord » : deux blocs, une seule forme de ligne ── */',
+      '.f3-fil{margin:26px -4px 0;padding:22px 14px 26px;border-radius:28px;background:radial-gradient(120% 70% at 12% 0%,#FFFFFF 0%,#EEF3FC 46%,#E6EDF9 100%);box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 24px 50px -32px rgba(0,48,140,.35)}',
+      '.f3-tete{padding:0 6px 16px}.f3-tete h2{margin:0;font:800 26px/1.1 var(--pp-sans);letter-spacing:-.025em;color:var(--pp-encre)}',
+      '.f3-tete p{margin:6px 0 0;font:500 15px/1.35 var(--pp-sans);color:var(--pp-encre2)}',
+      '.f3-ls{margin:0;padding:0;list-style:none;display:block}',
+      '.f3-li{margin:0 0 18px;break-inside:avoid;-webkit-column-break-inside:avoid;page-break-inside:avoid}',
+      '.f3-c{display:block;width:100%;margin:0;padding:0;text-align:left;font:inherit;color:inherit;background:#fff;border:0;border-radius:22px;overflow:hidden;cursor:pointer;-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent;box-shadow:0 1px 2px rgba(15,20,32,.08),0 14px 30px -18px rgba(0,48,140,.38)}',
+      '.f3-c:active{background:#F4F7FD}',
+      '.f3-c:focus-visible{outline:3px solid rgba(0,80,230,.6);outline-offset:2px}',
+      '.f3-vig{display:block;background:#DCE4F2;overflow:hidden}',
+      '.f3-im{display:block;width:100%;height:100%;object-fit:cover}',
+      '.f3-gr .f3-vig{aspect-ratio:16/9}',
+      '.f3-txt{display:flex;flex-direction:column;gap:14px;padding:16px 14px 12px 18px}',
+      '.f3-t{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;font:700 20px/1.27 var(--pp-sans);letter-spacing:-.015em;color:var(--pp-encre)}',
+      '.f3-pied{display:flex;align-items:center;gap:6px;min-height:44px;min-width:0;white-space:nowrap}',
+      '.f3-ic{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--pp-halo);color:var(--pp-bleu-f);font:800 12px/1 var(--pp-sans)}',
+      '.f3-src{min-width:0;overflow:hidden;text-overflow:ellipsis;font:600 13.5px/1.2 var(--pp-sans);color:var(--pp-encre)}',
+      '.f3-age{flex:none;font:500 13.5px/1.2 var(--pp-sans);color:#566074}',
+      '.f3-age::before{content:"\\00b7";margin-right:6px}',
+      '.f3-cred{margin:18px 0 0;text-align:center;font:500 13px/1.3 var(--pp-sans)}',
+      '.f3-cred a{display:inline-block;padding:12px 8px;color:#566074;text-decoration:underline;text-underline-offset:3px}',
+      '.f3-act{margin-left:auto;flex:none;display:flex;gap:0;color:#566074}',
+      '.f3-act span{display:grid;place-items:center;width:30px;height:34px}',
+      '.f3-pet{display:flex;align-items:stretch}',
+      '.f3-pet .f3-txt{flex:1;min-width:0;justify-content:space-between;gap:6px;padding:14px 0 6px 16px}',
+      '.f3-pet .f3-t{font-size:17px;line-height:1.28;-webkit-line-clamp:4}',
+      '.f3-pet .f3-src{max-width:9em}',
+      '.f3-pet .f3-age{display:none}',
+      '.f3-pet .f3-act span:first-child{display:none}',
+      '.f3-pet .f3-vig{flex:none;width:112px;height:112px;margin:14px 14px 14px 12px;border-radius:16px;align-self:flex-start}',
+      '@media (hover:hover){.f3-c{transition:box-shadow .2s ease}.f3-c:hover{box-shadow:0 1px 2px rgba(15,20,32,.1),0 20px 38px -16px rgba(0,48,140,.5)}}',
+      '@media (min-width:900px){',
+      '  .f3-fil{margin:34px 0 0;padding:32px 28px 18px}',
+      '  .f3-tete{padding:0 4px 22px}.f3-tete h2{font-size:34px}.f3-tete p{font-size:16px}',
+      '  .f3-ls{column-count:3;column-gap:24px}',
+      '  .f3-li{margin-bottom:24px}',
+      '}',
       '.x13.x13v3{display:block;max-width:1180px}',
       '.x13v3 .x13-tete{padding:2px 2px 12px}',
       '.x13v3 h1{font-size:clamp(30px,8.4vw,36px)}',
