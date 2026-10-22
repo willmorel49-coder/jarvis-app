@@ -43,11 +43,16 @@
       : 'commandes de ' + MOIS[p.de - 1] + ' à ' + MOIS[p.a - 1] + ' ' + p.annee;
   }
   function normCip(c) { return String(c == null ? '' : c).replace(/\D/g, '').replace(/^0+/, ''); }
+  // Ruptures de fin de mois (22/10/2026) : produit gardé, mention et CIP LUS dans opso-catalogue-choix-data.js ; '' sinon.
+  function mentionDispo(cip) {
+    var CH = window.OPSO_CATALOGUE_CHOIX || {}, c = normCip(cip);
+    return c && (CH.sousReserve || []).some(function (x) { return normCip(x) === c; }) ? String(CH.mentionDispo || '') : '';
+  }
 
   // ── Données ──
   var SRC_RESEAU = '../../crm/v2/prod-reseau-data.js?v=20261015xm';
   var SRC_NONGEN = 'opso-nongen-data.js?v=20261001a';
-  var SRC_CHOIX = 'opso-catalogue-choix-data.js?v=20261020rp';   // CIP à retirer / à ajouter (retour du 15/10)
+  var SRC_CHOIX = 'opso-catalogue-choix-data.js?v=20261022dispo';   // CIP à retirer / à ajouter (retour du 15/10), sous réserve (22/10)
   function chargerScript(src, temoin) {
     if (window[temoin] || document.querySelector('script[src^="' + src.split('?')[0] + '"]')) return Promise.resolve();
     return new Promise(function (ok) { var s = document.createElement('script'); s.src = src; s.onload = s.onerror = function () { ok(); }; document.head.appendChild(s); });
@@ -143,7 +148,7 @@
     // nom, rayon et PPHT lus au catalogue Intégral complet. On l'attend ; s'il n'a pas pu se charger, le catalogue sort sans eux.
     var CC = window.CATALOGUE_COMPLET;
     if (!CC && !_ccEssaye) return null;
-    var cle = [R.empreinte, PS.length, B.length, (V2.sales || []).length, (window.OPSO_NONGEN || []).length, (CH.retirer || []).join(), (CH.ajouter || []).join(), CC ? 'cc' : '', _offreEtat === 'ok' ? 'offre' + _offre.lignes.length + _offre.maj : _offreEtat, _prixEtat === 'ok' ? 'prix' + (P ? P.n + '/' + P.offre.length + '/' + P.offrePages.length + '/' + P.cips.join() : 'x') : _prixEtat].join('|');
+    var cle = [R.empreinte, PS.length, B.length, (V2.sales || []).length, (window.OPSO_NONGEN || []).length, (CH.retirer || []).join(), (CH.ajouter || []).join(), (CH.sousReserve || []).join() + (CH.mentionDispo || ''), CC ? 'cc' : '', _offreEtat === 'ok' ? 'offre' + _offre.lignes.length + _offre.maj : _offreEtat, _prixEtat === 'ok' ? 'prix' + (P ? P.n + '/' + P.offre.length + '/' + P.offrePages.length + '/' + P.cips.join() : 'x') : _prixEtat].join('|');
     if (_cache && _cache.cle === cle) return _cache;
     var ps = {}; PS.forEach(function (r) { var c = normCip(r.c); if (c && !ps[c]) ps[c] = r; });
     if (CC && CC.rows) CC.rows.forEach(function (r) { var c = normCip(r[0]); if (ajouter[c] && !ps[c]) ps[c] = { c: r[0], d: r[1], f: r[4], ppht: r[5], stale: 0 }; });
@@ -230,9 +235,11 @@
     var prix = deux
       ? '<span class="oc-ppht">' + (it.ppht ? eur(it.ppht) : '') + '</span><span class="oc-net">' + eur(it.net) + '</span>'
       : '<span class="oc-net">' + eur(it.net) + '</span>';
+    var dispo = mentionDispo(it.cip);
     return '<div class="oc-ligne">' +
       '<span class="oc-rang">' + rang + '</span>' + vign +
-      '<span class="oc-nom">' + esc(it.nom) + '</span>' +
+      (dispo ? '<span class="oc-nom-b"><span class="oc-nom">' + esc(it.nom) + '</span><span class="oc-dispo">' + esc(dispo) + '</span></span>'
+        : '<span class="oc-nom">' + esc(it.nom) + '</span>') +
       '<span class="oc-jauge"><span class="oc-barre"><i style="width:' + w + '%"></i></span>' +
         '<b>' + pct(it.n, tot) + '</b>' + (it.opso ? '<em>' + it.opso + (it.opso > 1 ? ' adhérentes' : ' adhérente') + ' OPSO</em>' : '') + '</span>' +
       '<span class="oc-prix' + (deux ? ' deux' : '') + '">' + prix + '</span></div>';
@@ -381,6 +388,9 @@
       '.oc-mono{font-size:8pt;color:var(--vert-f)}',
       '.oc-vign img{position:absolute;inset:8%;width:84%;height:84%;object-fit:contain;background:#fff;border-radius:50%}',
       '.oc-nom{font-size:9.5pt;line-height:1.15;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}',
+      // nom sur 2 lignes + mention = 28,5 pt dans les 29,3 pt de la ligne (WEGOVY 0,25MG FLEX… dépassait de 2,5 px en 7,5 pt)
+      '.oc-nom-b{display:flex;flex-direction:column;gap:.2mm;min-width:0}.oc-nom-b .oc-nom{line-height:1.1}',
+      '.oc-dispo{font-size:7pt;line-height:1;color:var(--gris);white-space:nowrap}',
       '.oc-jauge{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;column-gap:2mm;align-items:center}',
       '.oc-barre{height:2.4mm;border-radius:2mm;background:#edf0ee;overflow:hidden}',
       '.oc-barre i{display:block;height:100%;border-radius:2mm;background:linear-gradient(90deg,#0d8530,#11a63c 70%,#8fd14a)}',
@@ -465,22 +475,22 @@
   function champ(v) { v = String(v == null ? '' : v); return /[;"\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
   function csv() {
     var d = construire(); if (!d) return null;
-    var lignes = [['Rayon', 'Rang', 'Produit', 'CIP13', 'Part des pharmacies du réseau', 'dont OPSO', 'PPHT', 'Prix net']];
+    var lignes = [['Rayon', 'Rang', 'Produit', 'CIP13', 'Part des pharmacies du réseau', 'dont OPSO', 'PPHT', 'Prix net', 'Disponibilité']];
     // Page « Les prix OPSO Santé » : prix net = prix OPSO ; pas de part du réseau ni de PPHT (la page ne les montre pas).
     if (d.prix) d.prix.sections.forEach(function (sec) {
       sec.items.forEach(function (it, i) {
         lignes.push([sansFormule(titrePrix() + ' - ' + sec.titre + (sec.etiquette ? ' (' + sec.etiquette + ')' : '')), i + 1, sansFormule(it.nom),
-          it.cip ? '="' + it.cip + '"' : it.cipTexte, '', '', '', virgule(it.opso)]);
+          it.cip ? '="' + it.cip + '"' : it.cipTexte, '', '', '', virgule(it.opso), sansFormule(mentionDispo(it.cip))]);
       });
     });
     if (d.offre) d.offre.items.forEach(function (it, i) {
       lignes.push([sansFormule(d.offre.titre), i + 1, sansFormule(it.nom), '="' + it.cip + '"', partCsv(it.n, d.R.officines), it.opso,
-        it.ppht ? virgule(it.ppht) : '', virgule(it.net)]);
+        it.ppht ? virgule(it.ppht) : '', virgule(it.net), sansFormule(mentionDispo(it.cip))]);
     });
     d.rayons.forEach(function (x) {
       x.items.forEach(function (it, i) {
         lignes.push([sansFormule(x.r.court), i + 1, sansFormule(it.nom), '="' + it.cip + '"', partCsv(it.n, d.R.officines), it.opso,
-          x.r.deux && it.ppht ? virgule(it.ppht) : '', virgule(it.net)]);
+          x.r.deux && it.ppht ? virgule(it.ppht) : '', virgule(it.net), sansFormule(mentionDispo(it.cip))]);
       });
     });
     var per = periodeTexte(d.R.periode).replace(/^commandes de /, '').replace(/[\\/:*?"<>|]/g, ' ');

@@ -147,7 +147,8 @@
     chargerDonnees(false).then(function () { if (V2.route && V2.route.name === ROUTE) render(root); });
   }
   function contexte(extra) {
-    if (_etat !== 'ok' || !_neg || !Array.isArray(window.BENCHMARK) || !Array.isArray(window.FROID_CIPS)) return null;
+    // Sans la liste « Sous réserve de disponibilité », un produit en rupture partirait sans sa mention (22/10/2026).
+    if (_etat !== 'ok' || !_neg || !Array.isArray(window.BENCHMARK) || !Array.isArray(window.FROID_CIPS) || !window.OPSO_CATALOGUE_CHOIX) return null;
     // Produits commandés par les adhérentes OPSO : même règle que « Le catalogue » (quantité > 0, hors « reste du réseau »).
     var ventes = V2.sales || [], commandes = null;
     if (ventes.length) {
@@ -269,7 +270,16 @@
   function suiteTxt(b) { return b.suite ? ' <small>(suite)</small>' : ''; }
   function majuscule(t) { t = String(t || ''); return t.charAt(0).toUpperCase() + t.slice(1); }
   function dose(nom) { var m = /(\d+(?:,\d+)?)\s*mg/i.exec(nom || ''); return m ? m[1] + ' mg' : ''; }
-  function nomHtml(it) { return '<div class="op-nom"><span class="op-nm">' + esc(it.nom) + '</span><i>CIP13 : ' + esc(it.cipTexte) + '</i></div>'; }
+  // Ruptures de fin de mois (22/10/2026) : mention et CIP LUS dans opso-catalogue-choix-data.js (chargé par index.html) ; '' sinon.
+  function mentionDispo(cip) {
+    var CHX = window.OPSO_CATALOGUE_CHOIX || {}, c = normCip(cip).replace(/^0+/, '');
+    return c && (CHX.sousReserve || []).some(function (x) { return normCip(x).replace(/^0+/, '') === c; }) ? String(CHX.mentionDispo || '') : '';
+  }
+  // sansDispo : la carte porte déjà la mention (toutes ses présentations sont concernées).
+  function nomHtml(it, sansDispo) {
+    var dispo = sansDispo ? '' : mentionDispo(it.cip);
+    return '<div class="op-nom"><span class="op-nm">' + esc(it.nom) + '</span><i>CIP13 : ' + esc(it.cipTexte) + (dispo ? ' · ' + esc(dispo) : '') + '</i></div>';
+  }
   function prixHtml(it) { return '<div class="op-p">' + eur(it.pfht) + '</div><div class="op-p">' + eur(it.habituel) + '</div><div class="op-po">' + eur(it.opso) + '</div>'; }
   var CH = '<div class="op-ch"><span>Présentation</span><span>PFHT</span><span>Habituel</span><span class="o">OPSO Santé</span></div>';
   function famHtml(b) {
@@ -296,9 +306,13 @@
   function carteHtml(x) {
     var sachets = x.items.filter(function (it) { return /\bSACH/i.test(it.nom); }).length * 2 > x.items.length;
     var tot = x.total || x.items.length;
-    return '<div class="op-carte"><div class="op-carte-h"><span class="op-ico">' + (sachets ? SV.sachet : SV.boite) + '</span><b>' + esc(majuscule(x.nom.toLowerCase())) + suiteTxt(x) + '</b>' +
+    // Toutes les présentations de la carte sous réserve (Kardegic, 22/10/2026) : la mention UNE fois, sous la marque ; sinon ligne par ligne.
+    var dispo = x.items.length && x.items.every(function (it) { return mentionDispo(it.cip); }) ? mentionDispo(x.items[0].cip) : '';
+    var marque = '<b>' + esc(majuscule(x.nom.toLowerCase())) + suiteTxt(x) + '</b>';
+    return '<div class="op-carte"><div class="op-carte-h"><span class="op-ico">' + (sachets ? SV.sachet : SV.boite) + '</span>' +
+      (dispo ? '<span class="op-carte-t">' + marque + '<span class="op-carte-d">' + esc(dispo) + '</span></span>' : marque) +
       '<span class="op-carte-n">' + tot + (tot > 1 ? ' présentations' : ' présentation') + '</span></div>' + CH +
-      x.items.map(function (it) { return '<div class="op-pr">' + nomHtml(it) + prixHtml(it) + '</div>'; }).join('') + '</div>';
+      x.items.map(function (it) { return '<div class="op-pr">' + nomHtml(it, !!dispo) + prixHtml(it) + '</div>'; }).join('') + '</div>';
   }
   function haut1Html() {
     var C = V2.opsoCatalogue.commun, logo = (window.V2_BRAND && window.V2_BRAND.logo) || 'assets/opsosante-logo.png';
@@ -491,6 +505,7 @@
       '.op-carte-h b{font-weight:400;font-size:11.5pt;color:var(--vert-f);letter-spacing:.3px;white-space:nowrap}',
       '.op-carte-h b small{font-size:8.5pt;color:var(--gris)}',
       '.op-carte-n{margin-left:auto;font-size:8pt;color:var(--gris);white-space:nowrap}',
+      '.op-carte-t{display:flex;flex-direction:column;gap:.3mm;min-width:0}.op-carte-d{font-size:7.5pt;line-height:1.1;color:var(--gris);white-space:nowrap}',
       // Variante « Offre Privilège » du catalogue (classe op-cat, 20/10/2026) : 32 produits sur une page, hauteurs lues dans des variables posées par pourOffre()
       '.op-cat .op-pr{height:calc(var(--rr,' + H.rang + 'mm) + ' + e + ')}',
       '.op-cat .op-carte-h{height:var(--cth,' + H.carteTete + 'mm)}.op-cat .op-ch{height:var(--cch,' + H.carteCols + 'mm)}',
@@ -530,10 +545,10 @@
   function csv() {
     var d = construire(); if (!d) return null;
     var K = V2.opsoCatalogue.commun.csv, v = function (x) { return x == null ? '' : K.virgule(x); };
-    var lignesCsv = [['Section', 'Désignation', 'CIP13', 'PFHT', 'Prix Intégral habituel', 'Prix OPSO Santé']];
+    var lignesCsv = [['Section', 'Désignation', 'CIP13', 'PFHT', 'Prix Intégral habituel', 'Prix OPSO Santé', 'Disponibilité']];
     d.sections.forEach(function (s) {
       s.items.forEach(function (it) {
-        lignesCsv.push([K.sansFormule(s.titre + (s.etiquette ? ' (' + s.etiquette + ')' : '')), K.sansFormule(it.nom), it.cip ? '="' + it.cip + '"' : it.cipTexte, v(it.pfht), v(it.habituel), v(it.opso)]);
+        lignesCsv.push([K.sansFormule(s.titre + (s.etiquette ? ' (' + s.etiquette + ')' : '')), K.sansFormule(it.nom), it.cip ? '="' + it.cip + '"' : it.cipTexte, v(it.pfht), v(it.habituel), v(it.opso), K.sansFormule(mentionDispo(it.cip))]);
       });
     });
     var dt = new Date(), p2 = function (n) { return (n < 10 ? '0' : '') + n; };
