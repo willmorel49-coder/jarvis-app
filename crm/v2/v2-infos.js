@@ -533,18 +533,34 @@
       .sort(function (a, b) { return a.d < b.d ? 1 : a.d > b.d ? -1 : 0; });
   }
 
+  /* ── Bodacc et FINESS : uniquement le secteur du commercial (Will, 22/10/2026) ──
+     L'édition du matin est la même pour toute la France : ses annonces légales
+     (cessions, fermetures, changements de titulaire, procédures) se trient ICI.
+     Annonce d'une officine : gardée seulement si son département est dans le
+     secteur affiché ; sans département lisible, écartée. Annonce d'un labo ou d'un
+     grossiste : jamais sur la page (elle reste dans la fiche Concurrents). */
+  function ppEstAnnonceLegale(e) { return /bodacc|finess/i.test(String(e.s || '') + ' ' + (e.srcs || []).join(' ')); }
+  function ppDansSecteur(e) {
+    if (!ppEstAnnonceLegale(e)) return true;
+    if (!/pharmac|officine/i.test(String(e.societe || e.t || ''))) return false;
+    var deps = ppScope().deps;
+    if (!deps) return true;   // direction, vue « toute la France »
+    var d = sctDepDeCP(e.ville);   // FINESS : code commune INSEE
+    return !!d && deps.indexOf(d) >= 0;
+  }
+
   /* ── données du tableau de bord, recalculées à chaque rendu ── */
   function ppDonnees() {
     var B = BRIEF || {}, D = {};
     D.rad = {}; (B.radar || []).forEach(function (r) { D.rad[r.k] = r; });
-    D.ep = (B.epingles || []).map(function (e) { var o = {}; for (var k in e) o[k] = e[k]; o.j = e.effet ? -ppJ(e.effet) : null; return o; });
+    D.ep = (B.epingles || []).filter(ppDansSecteur).map(function (e) { var o = {}; for (var k in e) o[k] = e[k]; o.j = e.effet ? -ppJ(e.effet) : null; return o; });
     D.avenir = D.ep.filter(function (e) { return e.j != null && e.j >= 0; }).sort(function (a, b) { return a.j - b.j; });
     D.passe = D.ep.filter(function (e) { return e.j != null && e.j < 0; }).sort(function (a, b) { return b.j - a.j; });
     D.signaux = D.ep.filter(function (e) { return e.j == null; });
     D.marge = D.ep.filter(function (e) { return e.theme === 'marge' && e.j > 0; })[0] || D.avenir[D.avenir.length - 1] || null;
     D.lots = B.rappels_lots || []; D.para = B.rappels_para || [];
     D.rappels = D.lots.length + D.para.length;
-    D.fil = B.fil || [];
+    D.fil = (B.fil || []).filter(function (f) { return !ppEstAnnonceLegale(f); });
     D.filNeuf = D.fil.filter(function (f) { return f.neuf; }).length;
     D.parTh = {}; D.fil.forEach(function (f) { D.parTh[f.theme] = (D.parTh[f.theme] || 0) + 1; });
     D.amont = B.amont || []; D.ema = B.ema || []; D.jo = B.jo || []; D.rupt = B.ruptures_neuves || [];
@@ -976,6 +992,11 @@
       add({ rub: 'actu', t: c.t, d: c.d, item: ppArt(c), pri: 7 });
     });
     D.fil.forEach(function (a) { add({ rub: 'actu', t: a.t, d: a.d, item: ppArt(a), pri: 9, neuf: a.neuf }); });
+    var S = ppScope();
+    if (S.deps) ppAnnonces(S.deps).filter(function (e) { return ppJ(e.d) <= 14; }).forEach(function (e) {
+      var fam = SCT_FAM[e.f] || SCT_FAM.dirigeant;
+      add({ rub: 'officine', t: sctJoli(e.nom) + ' — ' + fam.l1.toLowerCase() + ' · ' + sctJoli(e.ville), d: e.d, item: ppArtBodPret(e), pri: 4 });
+    });
     return out;
   }
   /* la une, quatre compactes (une par rubrique de terrain), quatre tendances (l'actualité qui n'est pas déjà ailleurs), le reste */
@@ -1101,6 +1122,7 @@
   function x13OuvertQ() { var s = document.getElementById('x13-sheet'); return !!(s && !s.hidden); }
   /* les « points » qui répètent déjà le résumé ne s'affichent pas deux fois (comme dans la maquette) */
   function x13Item(it) {
+    if (it && it.paresseux) it = ppArtBod(it.paresseux);   // une annonce se marque « lue » à l'ouverture
     var ps = (it.paras || []).filter(Boolean), r0 = norm(ps[0] || '');
     var o = {}; for (var k in it) o[k] = it[k];
     o.paras = ps.filter(function (p, i) { return !i || r0.indexOf(norm(p).slice(0, 60)) < 0; });
