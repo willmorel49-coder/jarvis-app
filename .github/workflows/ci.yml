@@ -129,6 +129,9 @@ jobs:
       - name: Test pénuries EMA (substances françaises = BDPM ou anglais, jamais inventées)
         run: python3 tests/ema-penuries-fr.test.py
 
+      - name: Test catalogue (une association = l'étiquette de sa composition officielle)
+        run: python3 tests/associations-catalogue.test.py
+
       # Trois essais : un téléchargement raté (npm, navigateur) bloquerait la mise en ligne.
       - name: Installer Playwright (éphémère, non committé)
         run: |

@@ -43,12 +43,15 @@ génériqueur (LYRICA, PARLODEL chez Biogaran) et de vrais génériques mal
 classer en bloc ferait perdre un abandon réel sur les premiers. Elles restent
 donc au classement du fichier de prix.
 """
+import datetime
 import json
 import os
 import re
 import sys
 import time
-from collections import Counter
+import unicodedata
+import urllib.request
+from collections import Counter, defaultdict
 
 import openpyxl
 
@@ -230,6 +233,284 @@ def lire_catalogue():
     return out
 
 
+# ── Associations : la composition OFFICIELLE fait foi (décision de Will, 22/10/2026) ────────
+# `artmol` étiquetait 917 associations d'une seule de leurs substances (TRAMADOL/PAR.SDZ →
+# « PARACETAMOL », 257 associations rangées sous HYDROCHLOROTHIAZIDE) : « Toute la molécule »
+# additionnait leurs clientes à celles de la substance seule. Et une même association portait
+# jusqu'à six noms (losartan + HCTZ). Règle : la composition se lit dans la BDPM (substances
+# « SA » du CIS) ; à partir de deux substances, UNE étiquette par composition, posée sur tous
+# ses produits. Mesure et décision : ~/jarvis-preuves/associations-catalogue-2026-10-22/.
+BDPM_BASE = 'https://base-donnees-publique.medicaments.gouv.fr/download/file/'  # comme generate_generiques_bdpm.py
+BDPM_LOCAL = os.path.expanduser('~/bdpm-historique/data')  # copie de secours (le site répondait 503 le 22/10)
+BDPM_FICHIERS = ('CIS_CIP_bdpm.txt', 'CIS_COMPO_bdpm.txt', 'CIS_bdpm.txt')
+BDPM_AGE_MAX_J = 120        # la base se met à jour chaque mois : au-delà, elle est figée
+CHANGEMENTS_MAX = 1500      # 917 associations mal nommées + variantes d'écriture mesurées le 22/10
+# Au-delà de 3 substances (nutrition parentérale, sels de lavement, vitamines, allergènes), le nom
+# officiel compte jusqu'à 25 substances et l'étiquette actuelle (« MACROGOL 3350 ») est celle du
+# métier : 19 des 917 produits mesurés le 22/10, laissés tels quels et listés.
+SUBSTANCES_MAX = 3
+# Mots qui ne désignent jamais la substance elle-même : liaison, sel, hydratation.
+MOTS_VIDES = {'DE', 'D', 'DU', 'DES', 'ET', 'EN', 'L', 'LA', 'LE', 'SOUS', 'FORME', 'BASE', 'SEL',
+              'EXPRIME', 'EXPRIMEE', 'EQUIVALENT', 'A'}
+SELS = {'CHLORHYDRATE', 'DICHLORHYDRATE', 'MONOCHLORHYDRATE', 'BROMHYDRATE', 'MALEATE',
+        'HYDROGENOMALEATE', 'FUMARATE', 'HEMIFUMARATE', 'TARTRATE', 'HYDROGENOTARTRATE',
+        'MESILATE', 'BESILATE', 'TOSILATE', 'SUCCINATE', 'SODIQUE', 'POTASSIQUE', 'CALCIQUE',
+        'MAGNESIQUE', 'MAGNESIEN', 'ARGININE', 'TERT', 'BUTYLAMINE', 'ERBUMINE', 'HYDRATE',
+        'HYDRATEE', 'MONOHYDRATE', 'MONOHYDRATEE', 'DIHYDRATE', 'DIHYDRATEE', 'TRIHYDRATE',
+        'TRIHYDRATEE', 'HEMIHYDRATE', 'HEMIHYDRATEE', 'SESQUIHYDRATE', 'ANHYDRE', 'PENTAHYDRATE',
+        'HEXAHYDRATE', 'DIGLUCONATE', 'SOLUTION', 'BASE', 'ELEMENT'}
+# Ions et radicaux : écartés quand la substance a un autre mot (CLAVULANATE DE POTASSIUM →
+# CLAVULANATE), gardés quand elle n'a qu'eux (CARBONATE DE CALCIUM).
+IONS = {'SODIUM', 'POTASSIUM', 'CALCIUM', 'MAGNESIUM', 'ACIDE', 'SULFATE', 'CITRATE', 'ACETATE',
+        'PHOSPHATE', 'CARBONATE', 'CHLORURE', 'OXYDE', 'HYDROXYDE'}
+
+
+def sans_accent(s):
+    return ''.join(c for c in unicodedata.normalize('NFD', s or '')
+                   if unicodedata.category(c) != 'Mn').upper().strip()
+
+
+SYNONYMES = {'CHOLECALCIFEROL': 'COLECALCIFEROL'}   # les deux graphies coexistent dans la base
+
+
+def mots(s):
+    return [SYNONYMES.get(w, w) for w in re.split(r"[^A-Z0-9]+", sans_accent(s)) if w]
+
+
+def coeur(nom):
+    """Les mots qui désignent la substance (« CLAVULANATE DE POTASSIUM » → CLAVULANATE)."""
+    w = [x for x in mots(nom) if x not in MOTS_VIDES and x not in SELS]
+    return [x for x in w if x not in IONS] or w
+
+
+def nom_officiel(sa, ft):
+    """Nom sans sel, en capitales sans accent comme `artmol` : la fraction thérapeutique quand la
+    base la donne (« CLAVULANIQUE (ACIDE) » → ACIDE CLAVULANIQUE), sinon la substance sans son sel."""
+    n = sans_accent(ft or sa)
+    n = re.sub(r"^(.*?)\s*\(ACIDE\)", r"ACIDE \1", n)
+    n = re.sub(r"\s*\([^)]*\)", '', n)
+    n = re.sub(r"\b(%s)\s+D(?:E\s+|'\s*)(?=\S)" % '|'.join(sorted(SELS | IONS - {'ACIDE'}, key=len, reverse=True)), '', n)
+    w = [x for x in re.split(r"\s+", n.replace("'", "' ")) if x and x not in SELS]
+    return re.sub(r"'\s+", "'", ' '.join(w)).strip() or sans_accent(sa)
+
+
+def _lignes(raw):
+    # Les fichiers officiels ne sont pas tous dans le même encodage (CIS_CIP en UTF-8,
+    # CIS_COMPO en latin-1 au 22/10/2026) — même lecture que generate_generiques_bdpm.py.
+    try:
+        t = raw.decode('utf-8')
+    except UnicodeDecodeError:
+        t = raw.decode('latin-1', 'ignore')
+    return [ln.split('\t') for ln in t.splitlines() if ln.strip()]
+
+
+def _age_bdpm(ciscip, aujourdhui):
+    """Âge du CONTENU (date de déclaration la plus récente non future), jamais de la copie."""
+    best = ''
+    for r in ciscip:
+        p = (r[5] if len(r) > 5 else '').strip().split('/')
+        if len(p) == 3 and len(p[2]) == 4 and p[2] + '-' + p[1] + '-' + p[0] <= aujourdhui.isoformat():
+            best = max(best, p[2] + '-' + p[1] + '-' + p[0])
+    return (aujourdhui - datetime.date.fromisoformat(best)).days if best else None, best
+
+
+def lire_bdpm():
+    """{cip13: cis}, {cis: [(code, nom SA, nom FT)]}, {cis homéopathiques}, libellé de la source.
+    Téléchargement officiel d'abord, copie locale ensuite ; une base figée ou tronquée est
+    refusée, et sans base valable le script s'arrête : le catalogue publié reste en place
+    (le republier sans composition remettrait les 917 fausses étiquettes)."""
+    essais = [('téléchargement officiel', lambda f: urllib.request.urlopen(
+                  urllib.request.Request(BDPM_BASE + f, headers={'User-Agent': 'Mozilla/5.0'}),
+                  timeout=180).read()),
+              ('copie locale ' + BDPM_LOCAL, lambda f: open(os.path.join(BDPM_LOCAL, f), 'rb').read())]
+    for nom, lire in essais:
+        try:
+            ciscip, compo_l, cis_l = (_lignes(lire(f)) for f in BDPM_FICHIERS)
+        except Exception as e:  # noqa: BLE001 — panne du site ou copie absente : on passe à la suite
+            print('  [bdpm] %s indisponible (%s)' % (nom, str(e)[:80]))
+            continue
+        age, dern = _age_bdpm(ciscip, datetime.date.today())
+        if age is None or age > BDPM_AGE_MAX_J or len(ciscip) < 10000 or len(compo_l) < 10000:
+            print('  [bdpm] %s refusée : dernière date %s (âge %s j), %d présentations, %d lignes de composition'
+                  % (nom, dern or '?', age, len(ciscip), len(compo_l)))
+            continue
+        cip2cis = {r[6].strip(): r[0].strip() for r in ciscip if len(r) > 6 and len(r[6].strip()) == 13}
+        ft = {}
+        for r in compo_l:
+            if len(r) > 7 and r[6].strip() == 'FT':
+                ft[(r[0].strip(), r[1].strip(), r[7].strip())] = r[3].strip()
+        compo = defaultdict(list)
+        for r in compo_l:
+            if len(r) > 7 and r[6].strip() == 'SA':
+                cis, code = r[0].strip(), r[2].strip()
+                if all(c != code for c, _, _ in compo[cis]):
+                    compo[cis].append((code, r[3].strip(), ft.get((cis, r[1].strip(), r[7].strip()))))
+        homeo = {r[0].strip() for r in cis_l if len(r) > 5 and 'homéo' in r[5].lower()}
+        print('  [bdpm] %s · contenu au %s · %d présentations · %d compositions'
+              % (nom, dern, len(cip2cis), len(compo)))
+        return cip2cis, dict(compo), homeo, 'BDPM (%s) au %s' % (nom.split(' /')[0].split(' ~')[0], dern)
+    sys.exit('ARRÊT : aucune base BDPM valable (site officiel puis %s). Catalogue NON régénéré.' % BDPM_LOCAL)
+
+
+def _nomme(jeton, sub):
+    """Le mot d'étiquette `jeton` désigne-t-il la substance (abréviations comprises : HYD, AC.CLAV) ?"""
+    if len(jeton) < 3:
+        return False
+    for w in sub:
+        if w.startswith(jeton) or jeton.startswith(w):
+            return True
+        n = 0
+        while n < min(len(w), len(jeton)) and w[n] == jeton[n]:
+            n += 1
+        if n >= 6:
+            return True
+    return False
+
+
+def _parts(etiq):
+    return [p for p in re.split(r'\s*(?:/|\+)\s*', etiq or '') if p.strip()]
+
+
+def _complete(etiq, subs):
+    """« A/B » qui écrit chaque substance EN ENTIER, une partie par substance."""
+    ps = [set(mots(p)) for p in _parts(etiq)]
+    return len(ps) == len(subs) >= 2 and all(any(set(s) & p for p in ps) for s in subs) \
+        and all(any(set(s) & p for s in subs) for p in ps)
+
+
+def _compatible(etiq, subs):
+    """« A/B » dont chaque partie désigne une des substances (abrégée ou non), et inversement."""
+    ps = [mots(p) for p in _parts(etiq)]
+    return len(ps) == len(subs) >= 2 and all(any(_nomme(j, s) for p in ps for j in p) for s in subs) \
+        and all(any(_nomme(j, s) for s in subs for j in p) for p in ps)
+
+
+def _racine(w):
+    return re.sub(r'(ATE|IQUE)$', '', w) if len(w) > 7 else w   # CLAVULANATE ~ CLAVULANIQUE
+
+
+def fractions(compo):
+    """Les substances « SA » regroupées par molécule active : deux sels ou formes d'une même
+    molécule (VALPROATE DE SODIUM + ACIDE VALPROIQUE) n'en font qu'une, et deux génériques qui
+    n'ont pas le même sel (alendronate monosodique ou sodique) ont la même composition.
+    Rend [(racines, mots de la substance, nom officiel)], dans l'ordre de la base."""
+    out = []
+    for _, sa, ft in compo:
+        w = set(coeur(sa)) | set(coeur(ft or ''))
+        # Un sel minéral seul (CHLORURE DE SODIUM) ne se confond pas avec un autre (DE POTASSIUM).
+        r = {_racine(x) for x in w if x not in IONS} or {'+'.join(sorted(w))}
+        nom = nom_officiel(sa, ft)
+        for f in out:
+            if f[0] & r:
+                f[0] |= r
+                f[1] |= w
+                f[2] = min(f[2], nom, key=len)
+                break
+        else:
+            out.append([r, w, nom])
+    return out
+
+
+def etiquette_composition(etiqs, fr):
+    """L'étiquette UNIQUE d'une composition : l'« A/B » déjà utilisée la plus complète (toutes
+    substances en entier), sinon la plus fréquente, sinon les noms officiels sans sel. None quand
+    un nom officiel est inutilisable (souche de vaccin « A/MICHIGAN/105/2025… ») : rien ne change.
+    `etiqs` = étiquettes actuelles de ses produits, `fr` = fractions(composition)."""
+    subs = [sorted(f[1]) for f in fr]
+    n = Counter(e for e in etiqs if e)
+    for ok in (_complete, _compatible):
+        c = sorted((e for e in n if ok(e, subs)), key=lambda e: (-n[e], e))
+        if c:
+            return c[0]
+    noms = [f[2] for f in fr]
+    if any('/' in x or len(x) > 40 for x in noms):
+        return None
+    return '/'.join(noms)
+
+
+RX_ASSO_NOM = re.compile(r"^(.*?[A-Z]{3,}\.?/[A-Z]{3,})")  # « FOSINOPRIL/HYD.CRT … » → FOSINOPRIL/HYD
+
+
+def corriger_associations(cat, cip2cis, compo, homeo):
+    """Pose l'étiquette de sa composition sur chaque produit d'association. Modifie `cat` et rend
+    le bilan. Ne touche JAMAIS un produit à une seule substance officielle, ni un produit dont
+    l'étiquette ne nomme aucune de ses substances (étiquette sans rapport : à arbitrer par Will)."""
+    groupes = defaultdict(list)
+    bilan = {'changes': [], 'sans_rapport': [], 'vides': [], 'hors_bdpm': [], 'hors_bdpm_seuls': [],
+             'nombreuses': [], 'illisibles': []}
+    fr_de = {}
+    for cip, o in cat.items():
+        cis = cip2cis.get(cip)
+        if cis and cis not in homeo and len(compo.get(cis, ())) >= 2:
+            if cis not in fr_de:
+                fr_de[cis] = fractions(compo[cis])
+            fr = fr_de[cis]
+            if len(fr) < 2:
+                continue                          # une seule molécule sous deux sels : pas une association
+            if len(fr) > SUBSTANCES_MAX:
+                bilan['nombreuses'].append(cip)
+            else:
+                groupes[frozenset(frozenset(f[0]) for f in fr)].append(cip)
+    # Deux compositions dont chaque molécule se retrouve chez l'autre n'en font qu'une, même quand
+    # la base décrit l'une plus longuement (« CHOLECALCIFEROL CONCENTRAT (FORME PULVERULENTE) »).
+    cles = sorted(groupes, key=lambda k: -len(groupes[k]))
+    for i, a in enumerate(cles):
+        if a not in groupes:
+            continue
+        for b in cles[i + 1:]:
+            if b in groupes and len(a) == len(b) and all(sum(1 for y in b if x & y) == 1 for x in a) \
+                    and all(sum(1 for x in a if x & y) == 1 for y in b):
+                groupes[a] += groupes.pop(b)
+    bilan['groupes'] = len(groupes)
+    etiq_de = {}
+    for cips in groupes.values():
+        # L'ordre des noms officiels : celui de la présentation la plus représentée du groupe.
+        cis_ = Counter(cip2cis[c] for c in cips).most_common()
+        fr = fr_de[min(cis_, key=lambda x: (-x[1], x[0]))[0]]
+        e = etiquette_composition([cat[c]['mol'] for c in cips], fr)
+        if e is None:
+            bilan['illisibles'] += cips
+            continue
+        subs = [sorted(f[1]) for f in fr]
+        for c in cips:
+            avant = cat[c]['mol']
+            etiq_de[c] = e
+            if avant == e:
+                continue
+            if not avant:
+                # Produit né après juin, sans `artmol` : on ne lui invente rien (comme ailleurs).
+                bilan['vides'].append(c)
+            elif not any(_nomme(j, s) for s in subs for j in mots(avant)):
+                bilan['sans_rapport'].append((c, cat[c]['d'], avant, e))
+            else:
+                bilan['changes'].append((c, cat[c]['d'], avant, e))
+                cat[c]['mol'] = e
+    # Les produits nommés « A/B » mais absents de la base : l'étiquette d'un frère de même
+    # début de nom, quand ses frères n'en portent qu'une.
+    for cip, o in cat.items():
+        if cip in etiq_de or not o['mol'] or '/' in o['mol'] or (cip2cis.get(cip) in compo):
+            continue
+        m = RX_ASSO_NOM.match(sans_accent(o['d']))
+        if not m:
+            continue
+        freres = {etiq_de[c] for c in etiq_de if sans_accent(cat[c]['d']).startswith(m.group(1))}
+        if len(freres) == 1:
+            e = freres.pop()
+            bilan['hors_bdpm'].append((cip, o['d'], o['mol'], e))
+            o['mol'] = e
+        else:
+            bilan['hors_bdpm_seuls'].append((cip, o['d'], o['mol'], sorted(freres)))
+    # Garde-fous : rien de neuf sur une substance seule, pas de changement en série.
+    for c, _, _, _ in bilan['changes']:
+        if len(fractions(compo[cip2cis[c]])) < 2:
+            sys.exit('ARRÊT : étiquette d\'association posée sur un produit à une seule substance (%s).' % c)
+    n = len(bilan['changes']) + len(bilan['hors_bdpm'])
+    if n > CHANGEMENTS_MAX:
+        sys.exit('ARRÊT : %d étiquettes de molécule changeraient (plafond %d) — règle à revoir avant de publier.'
+                 % (n, CHANGEMENTS_MAX))
+    return bilan
+
+
 def lire_prod_stats():
     s = open(PROD_STATS, encoding='utf-8').read()
     i = s.index('[')
@@ -263,6 +544,19 @@ def main():
             sys.exit('Source manquante : ' + p)
 
     cat = lire_catalogue()
+    cip2cis, compo, homeo, src_compo = lire_bdpm()
+    assoc = corriger_associations(cat, cip2cis, compo, homeo)
+    print('associations (%s) : %d compositions · %d étiquettes corrigées · %d hors base corrigées par un frère'
+          % (src_compo, assoc['groupes'], len(assoc['changes']), len(assoc['hors_bdpm'])))
+    print('   laissées telles quelles : %d sans molécule · %d étiquette sans rapport avec la composition '
+          '(à arbitrer) · %d nommées « A/B » hors base sans frère · %d à plus de %d substances · '
+          '%d au nom officiel inutilisable' % (
+              len(assoc['vides']), len(assoc['sans_rapport']), len(assoc['hors_bdpm_seuls']),
+              len(assoc['nombreuses']), SUBSTANCES_MAX, len(assoc['illisibles'])))
+    for c, d, avant, e in assoc['sans_rapport'][:8]:
+        print('     sans rapport : %s %-34s « %s » (composition : %s)' % (c, d[:34], avant, e))
+    for c, d, avant, f in assoc['hors_bdpm_seuls']:
+        print('     hors base : %s %-34s « %s » (frères : %s)' % (c, d[:34], avant, ', '.join(f) or 'aucun'))
     ps = lire_prod_stats()
     repertoire = lire_repertoire()
     generiqueurs = labos_generiqueurs(cat, repertoire)
@@ -367,6 +661,7 @@ def main():
         'arrete': time.strftime('%Y-%m-%d', time.localtime(os.path.getmtime(XLSX))),
         'stockSource': 'crm/v2/etab-prices-data.js (somme des établissements)',
         'stockArrete': stk_date,
+        'molSource': 'artmol, associations selon la composition ' + src_compo,
         'n': len(rows),
         'enStock': sum(1 for r in rows if r[7] > 0),
         'connusReseau': sum(1 for r in rows if r[9] > 0),
