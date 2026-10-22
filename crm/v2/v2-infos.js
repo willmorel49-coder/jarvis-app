@@ -986,7 +986,7 @@
     D.signaux.forEach(function (e) { add({ rub: e.motif === 'amont' ? 'rupture' : 'officine', t: e.t, d: e.d, item: ppArtEp(e), pri: e.motif === 'amont' ? 5 : 4 }); });
     D.rupt.forEach(function (r) { add({ rub: 'rupture', t: x13NomRupt(r), d: r.since && ppJ(r.since) >= 0 ? r.since : auj, item: ppArtRupt(r), pri: 2 }); });
     D.lots.forEach(function (r) { add({ rub: 'rappel', t: r.t, d: r.d, item: ppArtLot(r), pri: 3 }); });
-    D.para.forEach(function (r) { add({ rub: 'rappel', t: sctJoli(r.titre) + (r.marque ? ' · ' + sctJoli(r.marque) : ''), d: r.date, item: ppArtPara(r), pri: 8 }); });
+    // Rappel Conso (cosmétiques grand public, encres de tatouage…) : pas sur la page, seulement dans la rubrique « Rappels » (22/10/2026)
     D.cinq.forEach(function (c) {
       if (D.lots.some(function (l) { return norm(c.t).indexOf(x13N2(l.t).slice(0, 38)) >= 0; })) return;
       add({ rub: 'actu', t: c.t, d: c.d, item: ppArt(c), pri: 7 });
