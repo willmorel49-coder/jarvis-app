@@ -630,14 +630,15 @@
                 pfht: e.pfht == null ? null : +e.pfht, dateEffet: e.date_effet, aVenir: e.date_effet > auj });
     }
     ev.sort(function (a, b) { return a.dateEffet < b.dateEffet ? 1 : a.dateEffet > b.dateEffet ? -1 : 0; });
-    // Le catalogue ne suit pas toujours : une baisse déjà en vigueur dont le prix fabricant s'écarte de plus de 2 %
-    // de celui du catalogue n'est pas encore dans le prix affiché.
+    // Le catalogue ne suit pas toujours : une baisse déjà en vigueur dont le prix fabricant est inférieur de plus de 2 %
+    // à celui du catalogue n'est pas encore dans le prix affiché. Un catalogue déjà au niveau du nouveau prix, ou
+    // dessous (BOSUTINIB ZEN, VARENICLINE TVC, 22/10/2026), n'est pas en retard.
     var retard = false, ecart = null;
     for (i = 0; i < ev.length; i++) {
       if (!ev[i].aVenir) {
         if (ev[i].sens === 'baisse' && ev[i].pfht > 0 && pfhtCat > 0) {
           ecart = ev[i].pfht / pfhtCat - 1;
-          retard = Math.abs(ecart) > ECART_CATALOGUE;
+          retard = ecart < -ECART_CATALOGUE;
         }
         break;   // seule la plus récente des alertes en vigueur compte
       }

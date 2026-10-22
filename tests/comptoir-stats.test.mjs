@@ -130,6 +130,8 @@ test('alerte prix : lue pour un CIP présent dans prix-futurs, sans doublon avec
   assert.equal(K.alertesPrix('X3', FAUX['prix-futurs.json'], null, new Date(2026, 9, 22), 5).evenements.length, 0, 'plus de 180 jours');
   // Contre-épreuve : catalogue déjà à jour (écart < 2 %) -> pas de drapeau
   assert.equal(K.alertesPrix(ELI, FAUX['prix-futurs.json'], null, new Date(2026, 9, 22), 24.5).catalogueEnRetard, false);
+  // … ni un catalogue déjà SOUS le nouveau prix (+7 % : génériques BOSUTINIB ZEN, VARENICLINE TVC, 22/10/2026)
+  assert.equal(K.alertesPrix(ELI, FAUX['prix-futurs.json'], null, new Date(2026, 9, 22), 22.72).catalogueEnRetard, false);
   assert.equal(K.alertesPrix(ELI, null, null, new Date(2026, 9, 22), 24.5).evenements.length, 0);
 });
 

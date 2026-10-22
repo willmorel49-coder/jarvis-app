@@ -67,6 +67,11 @@ def price(s):
         return None
 
 
+# « … entre en vigueur à compter du quatrième jour suivant la publication » (PRALUENT, JO du 10/09/2026).
+RANGS = {"premier": 1, "deuxième": 2, "troisième": 3, "quatrième": 4, "cinquième": 5, "sixième": 6,
+         "septième": 7, "huitième": 8, "neuvième": 9, "dixième": 10, "quinzième": 15}
+
+
 def parse_effect_date(body, fallback):
     m = re.search(r"à compter du\s+(\d{1,2})(?:er)?\s+([a-zA-Zûéèê]+)\s+(20\d{2})", body)
     if m:
@@ -76,7 +81,22 @@ def parse_effect_date(body, fallback):
                 return datetime.date(int(m.group(3)), mo, int(m.group(1))).isoformat()
             except ValueError:
                 pass
+    m = re.search(r"à compter du\s+(\w+)\s+jour suivant (?:la|sa) publication", body)
+    if m and m.group(1).lower() in RANGS and fallback:
+        try:
+            return (datetime.date.fromisoformat(fallback) + datetime.timedelta(days=RANGS[m.group(1).lower()])).isoformat()
+        except ValueError:
+            pass
     return fallback
+
+
+def date_ligne(s):
+    """« 01/11/2026 » (colonne « Date d'effet » d'une ligne du tableau) → « 2026-11-01 », sinon None."""
+    try:
+        j, mo, a = s.split("/")
+        return datetime.date(int(a), int(mo), int(j)).isoformat()
+    except (AttributeError, ValueError):
+        return None
 
 
 def parse_avis(xml, cat, snap, out, seen):
@@ -93,15 +113,18 @@ def parse_avis(xml, cat, snap, out, seen):
     if lm:
         labo = lm.group(1).strip().title()
     date_effet = parse_effect_date(body, date_publi)
-    # chaque ligne du tableau : CIP13 (avec espaces) … désignation … PFHT € PPTTC
-    for mt in re.finditer(r"(34009[\d ]{12,18}?)\s+(.+?)\s+(\d[\d ]*,\d{2})\s*€?\s+(\d[\d ]*,\d{2})", body):
+    # chaque ligne du tableau : CIP13 (avec espaces) … désignation … PFHT € PPTTC [€ Date d'effet]
+    # ⚠️ 22/10/2026 : la date propre à la ligne prime. L'avis du 06/10/2026 fixe la baisse d'ELIQUIS au
+    # 01/11/2026 dans cette colonne ; sans elle, la date de parution passait pour la date d'effet.
+    for mt in re.finditer(r"(34009[\d ]{12,18}?)\s+(.+?)\s+(\d[\d ]*,\d{2})\s*€?\s+(\d[\d ]*,\d{2})(?:\s*€)?(?:\s+(\d{2}/\d{2}/20\d{2}))?", body):
         cip = "".join(ch for ch in mt.group(1) if ch.isdigit())
         if len(cip) != 13 or (cat and cip not in cat):
             continue
         pfht, ppttc = price(mt.group(3)), price(mt.group(4))
         if pfht is None or ppttc is None:
             continue
-        key = cip + "|" + (date_effet or "")
+        effet = date_ligne(mt.group(5)) or date_effet
+        key = cip + "|" + (effet or "")
         if key in seen:
             continue
         seen.add(key)
@@ -112,7 +135,7 @@ def parse_avis(xml, cat, snap, out, seen):
         desg = (cat.get(cip) or mt.group(2).strip())[:60]
         out.append({"c": cip, "d": desg, "pfht": pfht, "ppttc": ppttc,
                     "ancien_ttc": old if isinstance(old, (int, float)) else None,
-                    "sens": sens, "date_effet": date_effet, "date_publi": date_publi, "labo": labo})
+                    "sens": sens, "date_effet": effet, "date_publi": date_publi, "labo": labo})
 
 
 def main():
