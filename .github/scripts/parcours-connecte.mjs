@@ -80,13 +80,15 @@ try {
   await page.fill('#v2-pass', mdp);
   await page.click('#v2-login-btn');
   ecranCourant = 'accueil';
+  // L'accueil dit « Bonsoir » à partir de 18 h, heure du navigateur (v2-app.js) : le runner GitHub
+  // est en UTC, donc tout passage du portail après 20 h à Paris (19 h l'hiver) tombait (23/10/2026).
   try {
-    await page.locator('h1.v2-titre', { hasText: 'Bonjour' }).first().waitFor({ state: 'visible', timeout: DELAI });
+    await page.locator('h1.v2-titre', { hasText: /Bonjour|Bonsoir/ }).first().waitFor({ state: 'visible', timeout: DELAI });
   } catch (e) {
     const err = await page.evaluate(() => (document.getElementById('v2-login-err') || {}).textContent || '').catch(() => '');
     await verifMaintenance('accueil');
     console.error('❌ Accueil introuvable après connexion' + (err ? ' (message de l\'app : « ' + err + ' »)' : '') + '.');
-    echecs.push('accueil : marqueur positif (h1.v2-titre « Bonjour ») absent après ' + DELAI / 1000 + ' s');
+    echecs.push('accueil : marqueur positif (h1.v2-titre « Bonjour » ou « Bonsoir ») absent après ' + DELAI / 1000 + ' s');
   }
   if (!echecs.length) {
     await page.waitForTimeout(2500);
