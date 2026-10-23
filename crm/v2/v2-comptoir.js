@@ -1484,7 +1484,7 @@
         (egal ? ', ' + gros('autant') + ' en 2027' + (m.abandonEstime ? ' (estimation).' : '.') : ' aujourd\'hui, puis ' + gros(eur2(m.total27)) + ' à partir du ' + d27 + ' (' + (m.delta < 0 ? '−' : '+') + eur2(Math.abs(m.delta)) + (m.abandonEstime ? ', estimation' : '') + ').') + '</p>' +
       '<div class="cq-brs">' + barre('Aujourd\'hui', m.reglementee, m.abandon26, m.total26, max, true) +
         barre((egal ? 'En 2027 : inchangé' : 'À partir du ' + d27) + (m.abandonEstime ? ' · estimation' : ''), m.reglementee, m.abandon27, m.total27, max, diffAb) + '</div>',
-      m.sansAbandon ? 'Aucun abandon de marge sur ce prix.' : m.abandonEstime ? 'Abandon de marge 2027 : estimation — au-dessus de notre règle habituelle, le niveau 2027 n\'est pas connu.' : 'Par boîte, princeps remboursable.');
+      m.sansAbandon ? 'Aucun abandon de marge sur ce prix.' : m.abandonEstime ? 'Abandon de marge 2027 : estimation — <span class="cp-nb">au-dessus</span> de notre règle habituelle, le niveau 2027 n\'est pas connu.' : 'Par boîte, princeps remboursable.');
   }
   function tuileNotreMarge(s) {
     var nm = s.notreMarge;
@@ -1599,6 +1599,93 @@
         (l.opp && !vp ? '<span class="cp-tag">Opportunité</span>' : '') + '</div></div>';
   }
 
+  // ── 23/10/2026 — Stock par établissement + ventes depuis janvier (vue interne seulement) ──
+  // Les ventes par établissement sont une donnée PROTÉGÉE (etab-ventes-data.js, Supabase) : demandées à
+  // l'ouverture d'un panneau en vue interne, jamais au démarrage, jamais en vue pharmacien.
+  var MOIS_LONG = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  function ventesEtab() {
+    var E = window.ETAB_VENTES;
+    return E && E.v && E.sites && E.a && E.de ? E : null;
+  }
+  function demanderVentesEtab() {
+    if (window.ETAB_VENTES || D.evEtat) return;
+    D.evEtat = 1;
+    try {
+      if (!V2.loadFiles) { D.evEtat = 3; return; }
+      V2.loadFiles(['etabventes']).then(function () { D.evEtat = ventesEtab() ? 2 : 3; planRerender(); },
+        function () { D.evEtat = 3; planRerender(); });
+    } catch (x) { D.evEtat = 3; }
+  }
+  function jjmm(iso) { var p = String(iso || '').split('-'); return p.length >= 3 ? p[2].slice(0, 2) + '/' + p[1] : ''; }
+  // « Stock déclaré au 15/09 (POS 21/09, SEP 17/09). » — les dates viennent de ETAB_PRICES.siteDates.
+  function noteStockDate() {
+    var SD = (window.ETAB_PRICES && window.ETAB_PRICES.siteDates) || {}, nb = {}, i, d, best = null, autres = [];
+    for (i = 0; i < ETABS.length; i++) { d = SD[ETABS[i]]; if (d) nb[d] = (nb[d] || 0) + 1; }
+    for (d in nb) if (Object.prototype.hasOwnProperty.call(nb, d) && (best === null || nb[d] > nb[best] || (nb[d] === nb[best] && d > best))) best = d;
+    if (best === null) return 'Stock déclaré par chaque établissement.';
+    for (i = 0; i < ETABS.length; i++) { d = SD[ETABS[i]]; if (d && d !== best) autres.push([d, ETABS[i]]); }
+    autres.sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : a[1] < b[1] ? -1 : 1; });
+    return 'Stock déclaré au ' + jjmm(best) + (autres.length ? ' (' + autres.map(function (x) { return x[1] + ' ' + jjmm(x[0]); }).join(', ') + ')' : '') + '.';
+  }
+  // « Ventes du 1er janvier au 30/09 ; SEP suivi depuis juin. Export : revendeurs et négociants. »
+  function noteVentes(E) {
+    var m0 = +String(E.de).split('-')[1], j0 = +String(E.de).split('-')[2], i, s, dep, h = [];
+    var h0 = (j0 === 1 ? '1er' : String(j0)) + ' ' + MOIS_LONG[m0 - 1];
+    for (i = 0; i < ETABS.length; i++) {
+      s = E.sites[ETABS[i]];
+      dep = s && s.depuis ? +String(s.depuis).split('-')[1] : 0;
+      if (dep > m0) h.push(ETABS[i] + ' suivi depuis ' + MOIS_LONG[dep - 1]);
+    }
+    return 'Ventes du ' + h0 + ' au ' + jjmm(E.a) + (h.length ? ' ; ' + h.join(', ') : '') + '. Export : revendeurs et négociants.';
+  }
+  // Lecture d'une case : { f: unités France, x: unités export, d: dernière vente }.
+  function venteCase(E, cip, site) {
+    var e = E.v[cip] && E.v[cip][site];
+    return { f: e ? Math.max(0, +e[0] || 0) : 0, x: e ? Math.max(0, +e[1] || 0) : 0, d: e && e[2] ? e[2] : '' };
+  }
+  function ventesLignes(vc) {
+    return '<span class="cp-vd">Vendu : ' + fr(vc.f) + '</span>' + (vc.x > 0 ? '<span class="cp-vd cp-vx">Export : ' + fr(vc.x) + '</span>' : '');
+  }
+  function ventesTitre(vc) {
+    return vc.d ? 'Dernière vente : ' + dateFr(vc.d) : 'Aucune vente sur la période';
+  }
+  // Bloc « Stock par établissement » : en vue pharmacien, EXACTEMENT le bloc d'avant, sans aucune vente.
+  function stockHtml(l, vp) {
+    var E = null, i, sv, vc, st, stock;
+    if (!vp) { demanderVentesEtab(); E = ventesEtab(); }
+    if (l.etab) {
+      stock = '<div class="cp-sgrid">';
+      for (i = 0; i < ETABS.length; i++) {
+        sv = l.etab[ETABS[i]];
+        vc = E ? venteCase(E, l.cip, ETABS[i]) : null;
+        st = sv === undefined ? 'Non communiqué' : '';
+        if (vc) st = (st ? st + ' · ' : '') + ventesTitre(vc);
+        stock += sv === undefined
+          ? '<div class="nd"' + (st ? ' title="' + esc(st) + '"' : '') + '><em>' + ETABS[i] + '</em><b>—</b>' + (vc ? ventesLignes(vc) : '') + '</div>'
+          : '<div class="' + (sv > 0 ? '' : 'zero') + '"' + (vc ? ' title="' + esc(st) + '"' : '') + '><em>' + ETABS[i] + '</em><b>' + fr(sv) + '</b>' + (vc ? ventesLignes(vc) : '') + '</div>';
+      }
+      stock += '</div><p class="cp-note">' + (vp ? 'Stock déclaré par chaque établissement.' : noteStockDate()) + ' « — » : non communiqué.</p>';
+    } else {
+      stock = '<div class="cp-sgrid"><div class="large"><em>Tous sites</em><b>' + fr(l.stock) + '</b></div></div>' +
+        '<p class="cp-note">Pas de détail par établissement pour ce produit.</p>';
+      if (E) {
+        var cases = '';
+        for (i = 0; i < ETABS.length; i++) {
+          vc = venteCase(E, l.cip, ETABS[i]);
+          if (E.v[l.cip] && E.v[l.cip][ETABS[i]]) cases += '<div title="' + esc(ventesTitre(vc)) + '"><em>' + ETABS[i] + '</em>' + ventesLignes(vc) + '</div>';
+        }
+        if (cases) stock += '<div class="cp-sgrid">' + cases + '</div>';
+        else stock += '<p class="cp-note">Aucune vente depuis le ' + dateFr(E.de) + '.</p>';
+      }
+    }
+    if (!vp) {
+      if (E) stock += '<p class="cp-note">' + esc(noteVentes(E)) + '</p>';
+      else if (D.evEtat === 1) stock += '<p class="cp-note">Ventes par établissement : chargement…</p>';
+      else stock += '<p class="cp-note">Ventes par établissement indisponibles.</p>';
+    }
+    return stock;
+  }
+
   function panneauHtml(d) {
     var l = C.cip && d.parCip[C.cip];
     if (!l) return '';
@@ -1624,20 +1711,7 @@
           : '<p class="cp-ecart plat">Nous sommes déjà à notre part moyenne, ou au-dessus.</p>');
     }
 
-    var stock;
-    if (l.etab) {
-      stock = '<div class="cp-sgrid">';
-      for (i = 0; i < ETABS.length; i++) {
-        var sv = l.etab[ETABS[i]];
-        stock += sv === undefined
-          ? '<div class="nd" title="Non communiqué"><em>' + ETABS[i] + '</em><b>—</b></div>'
-          : '<div class="' + (sv > 0 ? '' : 'zero') + '"><em>' + ETABS[i] + '</em><b>' + fr(sv) + '</b></div>';
-      }
-      stock += '</div><p class="cp-note">Stock déclaré par chaque établissement. « — » : non communiqué.</p>';
-    } else {
-      stock = '<div class="cp-sgrid"><div class="large"><em>Tous sites</em><b>' + fr(l.stock) + '</b></div></div>' +
-        '<p class="cp-note">Pas de détail par établissement pour ce produit.</p>';
-    }
+    var stock = stockHtml(l, vp);
 
     var off;
     if (!liste) off = '<p class="cp-note">Calcul en cours…</p>';
@@ -1708,6 +1782,7 @@
   V2.comptoir._indexCommandes = indexCommandes;
   V2.comptoir._listerCommandes = listerCommandes;
   V2.comptoir._dejaCommande = function (sales, cips, voit, estReste) { return listerCommandes(indexCommandes(sales, voit, estReste), cips); };
+  V2.comptoir._stockHtml = stockHtml;
   V2.comptoir._repliMolecules = repliMolecules;
   // Socle de calcul (22/10/2026) : l'objet complet du panneau, et ses calculs purs pour les tests.
   V2.comptoir.stats = stats;
@@ -1919,6 +1994,9 @@
       '.cp-sgrid div.zero b{color:var(--cp-amber)}',
       '.cp-sgrid div.nd b{color:var(--cp-ink3)}',
       '.cp-sgrid b{font:800 14px/1.2 Inter,sans-serif;color:var(--ip-ink);font-variant-numeric:tabular-nums}',
+      '.cp-sgrid .cp-vd{font:600 13px/1.25 Inter,sans-serif;color:var(--cp-ink3);font-variant-numeric:tabular-nums;text-align:center;overflow-wrap:anywhere}',
+      '.cp-sgrid .cp-vx{color:var(--cp-deep)}',
+      '.cp-nb{white-space:nowrap}',
       '.cp-note{margin:0 0 6px;font:400 13px/1.5 Inter,sans-serif;color:var(--cp-ink3)}',
       '.cp-off{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}',
       '.cp-off-m{flex:1;min-width:0}',

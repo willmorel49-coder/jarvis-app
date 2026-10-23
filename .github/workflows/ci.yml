@@ -127,6 +127,9 @@ jobs:
       - name: Test brief du matin (le titre des baisses CEPS compte celles de la date annoncée)
         run: python3 tests/brief-baisses-titre.test.py
 
+      - name: Test ventes par établissement (règle d'export et refus du générateur)
+        run: python3 tests/etab-ventes.test.py
+
       # Les sources de prix sont des fenêtres glissantes (DILA ~20 jours, BDPM sans
       # historique) : ce qu'un robot voit et n'archive pas est perdu définitivement.
       - name: Test archive d'évènements (prix, avis CEPS)

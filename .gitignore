@@ -257,3 +257,7 @@ marge-clients.nouveau.js
 # 14/10/2026 — "Notre marge par produit" (Will seul) : laisse deviner les prix d'achat, fichier protégé (Supabase), jamais commité
 marge-produits.js
 marge-produits.nouveau.js
+
+# 23/10/2026 — ventes par établissement (France / export) : chiffres par établissement, fichier protégé (Supabase), jamais commité
+etab-ventes-data.js
+etab-ventes-data.js.nouveau

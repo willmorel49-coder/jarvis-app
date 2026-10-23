@@ -270,6 +270,6 @@ test('le rendu provisoire ne contient jamais le sigle de la marge grossiste ni �
 
 test('note « estimation » : neutre, aucune cause affirmée (choix de Will, 22/10/2026)', () => {
   const src = readFileSync(new URL('../crm/v2/v2-comptoir.js', import.meta.url), 'utf8');
-  assert.match(src, /m\.abandonEstime \? 'Abandon de marge 2027 : estimation — au-dessus de notre règle habituelle, le niveau 2027 n\\'est pas connu\.'/);
+  assert.match(src, /m\.abandonEstime \? 'Abandon de marge 2027 : estimation — <span class="cp-nb">au-dessus<\/span> de notre règle habituelle, le niveau 2027 n\\'est pas connu\.'/);
   assert.equal(/dépend de l\\'offre du laboratoire/.test(src), false, 'ancienne note');
 });
