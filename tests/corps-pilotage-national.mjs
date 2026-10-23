@@ -18,7 +18,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chargerDecodage } from './aide-decodage-ventes.mjs';
@@ -71,9 +71,15 @@ win.ICO = () => '';
 // (v2-app.js charge 'bench' avant le premier rendu). Sans lui, le gisement
 // retombe sur le tarif grossiste au lieu du prix net Intégral — et le test
 // laissait passer cette confusion sans rien voir.
+// Autant de fichiers wml-ventes-NN.js que le dépôt en contient réellement — jamais un
+// compte figé (même règle que corps-rdv-radar-fenetre.mjs). Le 23/10/2026 un « 10 » en
+// dur ne lisait plus que 10 tranches sur 45 : trois tests tombaient en local, faute de
+// voir les secteurs dont le fichier s'arrête plus tôt.
+const TRANCHES = readdirSync(DIR)
+  .filter((f) => /^wml-ventes-\d+\.js$/.test(f))
+  .sort((a, b) => Number(a.match(/\d+/)[0]) - Number(b.match(/\d+/)[0]));
 for (const f of ['../benchmark-data.js', 'prod-stats-data.js', 'ameli-avg-data.js', 'ppht-data.js', 'tendance-data.js', 'stock-data.js',
-                 'wml-officines-data.js',
-                 ...Array.from({ length: 10 }, (_, i) => `wml-ventes-${String(i + 1).padStart(2, '0')}.js`)]) {
+                 'wml-officines-data.js', ...TRANCHES]) {
   // ⚠️ benchmark-data.js déclare `const BENCHMARK` : une liaison LEXICALE, qui
   // ne devient pas une propriété de window et qui meurt avec la portée du
   // fichier. La passerelle doit donc être collée au MÊME source, pas exécutée
