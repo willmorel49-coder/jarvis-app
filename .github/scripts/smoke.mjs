@@ -2,12 +2,15 @@
 // vérifie que le shell s'affiche et qu'AUCUNE erreur JS non gérée ne survient au
 // démarrage. Les erreurs réseau (Supabase 401/404 sans auth) sont ignorées : on
 // ne teste que les vrais bugs de code, pas la connectivité.
-import { chromium } from 'playwright';
+import { chromium, webkit } from 'playwright';
 
 const PORT = process.env.PORT || 8080;
 const url = `http://localhost:${PORT}/crm/v2/index.html`;
 
-const browser = await chromium.launch();
+// Moteur choisi par BROWSER (chromium par défaut, webkit = le moteur de Safari, 23/10/2026).
+const moteur = (process.env.BROWSER || 'chromium') === 'webkit' ? webkit : chromium;
+console.log('Moteur : ' + (process.env.BROWSER || 'chromium'));
+const browser = await moteur.launch();
 const page = await browser.newPage();
 
 const pageErrors = [];

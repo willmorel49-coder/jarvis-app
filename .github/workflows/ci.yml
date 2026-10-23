@@ -141,21 +141,37 @@ jobs:
       - name: Test catalogue (une association = l'étiquette de sa composition officielle)
         run: python3 tests/associations-catalogue.test.py
 
+      # Visiteur sans compte (23/10/2026) : un inconnu muni de la seule clé publique doit
+      # recevoir 401 sur chaque table et ne lister aucun document. Aucun secret, que des
+      # lectures. Deux messages distincts : « FAILLE » ou « contrôle impossible » (témoin
+      # rouge : Supabase injoignable ou clé changée, ce n'est PAS une faille). Une table
+      # neuve dans Supabase s'ajoute à .github/scripts/visiteur-tables.txt.
+      - name: Visiteur sans compte (401 partout, aucun document listé)
+        run: node .github/scripts/visiteur-sans-compte.mjs
+
       # Trois essais : un téléchargement raté (npm, navigateur) bloquerait la mise en ligne.
       - name: Installer Playwright (éphémère, non committé)
         run: |
           for essai in 1 2 3; do
             npm i --no-save playwright@latest >/dev/null 2>&1 \
-              && npx playwright install --with-deps chromium >/dev/null 2>&1 && exit 0
+              && npx playwright install --with-deps chromium webkit >/dev/null 2>&1 && exit 0
             echo "installation ratée (essai $essai/3), nouvel essai dans 20 s"; sleep 20
           done
           exit 1
 
-      - name: Servir l'app + smoke test (chargement + zéro erreur JS)
+      - name: Servir l'app + smoke test (chargement + zéro erreur JS) · Chromium
         run: |
           python3 -m http.server 8080 >/dev/null 2>&1 &
           sleep 2
-          node .github/scripts/smoke.mjs
+          BROWSER=chromium node .github/scripts/smoke.mjs
+
+      # WebKit = le moteur de Safari, celui de l'équipe (23/10/2026). Chromium ne suffit pas :
+      # il accepte des choses que Safari refuse.
+      - name: Smoke test · WebKit (Safari)
+        run: |
+          python3 -m http.server 8081 >/dev/null 2>&1 &
+          sleep 2
+          PORT=8081 BROWSER=webkit node .github/scripts/smoke.mjs
 
   # Ne part QUE si « verifier » est vert (needs). Même commit que celui testé :
   # les deux jobs extraient github.sha. Copie propre (sans le node_modules du test).
