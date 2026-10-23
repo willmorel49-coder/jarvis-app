@@ -127,8 +127,11 @@ jobs:
       - name: Test brief du matin (le titre des baisses CEPS compte celles de la date annoncée)
         run: python3 tests/brief-baisses-titre.test.py
 
+      # Ce test fabrique de vrais .xlsx : openpyxl est nécessaire (le Python du runner ne l'a pas).
       - name: Test ventes par établissement (règle d'export et refus du générateur)
-        run: python3 tests/etab-ventes.test.py
+        run: |
+          python3 -m pip install --quiet --break-system-packages openpyxl
+          python3 tests/etab-ventes.test.py
 
       # Les sources de prix sont des fenêtres glissantes (DILA ~20 jours, BDPM sans
       # historique) : ce qu'un robot voit et n'archive pas est perdu définitivement.
