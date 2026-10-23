@@ -1,8 +1,23 @@
 {
-  "maj": "2026-09-24",
-  "periode": "depuis le 01/06/2026",
-  "rien": "Rien de nouveau trouvé depuis le 01/06 pour Alliance Healthcare France et Phoenix Pharma / Pharmactiv. LinkedIn n'est pas lisible sans connexion : cet angle mort est comblé par des captures.",
+  "maj": "2026-10-23",
+  "periode": "du 01/06 au 23/10/2026",
+  "rien": "Rien de nouveau trouvé depuis le 23/09 pour Alliance Healthcare France, Phoenix OCP / Pharmactiv, Astera / CERP, Aredis, Medi-Live et RBP Pharma. LinkedIn n'est pas lisible sans connexion : cet angle mort est comblé par des captures.",
   "items": [
+    {
+      "date": "2026-10-22",
+      "titre": "Sirona Group, présidente de Sagitta, prend la présidence de Médiane et de Mezegel",
+      "texte": "Les annonces légales du 16/10 (Médiane Répartition) et du 22/10 (Mezegel Répartition) désignent Sirona Group comme présidente : c'est la société qui préside Sagitta Pharma. Jusqu'ici, les deux sociétés étaient présidées par des holdings de leurs fondateurs, dont Miastra, celle de Cédric Drapier. Aucun rachat ni prix n'est annoncé officiellement au 23/10.",
+      "source": "BODACC, annonces du 16/10 et du 22/10/2026",
+      "url": "https://annuaire-entreprises.data.gouv.fr/entreprise/977768548",
+      "acteur": "sagitta"
+    },
+    {
+      "date": "2026-10-15",
+      "titre": "Welcoop lance un Plan Non Violence en officine",
+      "texte": "Formation à la gestion des conflits, sensibilisation des patients et bouton d'alerte intégré au logiciel id. de Pharmagest, qui prévient les autres postes de l'officine.",
+      "source": "Welcoop, communiqué du 15/10/2026",
+      "url": "https://www.lacooperativewelcoop.com/blog/communique-de-presse-15102026/"
+    },
     {
       "date": "2026-08-07",
       "titre": "Cédric Drapier crée Alvernia en Auvergne",
@@ -91,15 +106,6 @@
       "texte": "Circulaire NAO de la FNIC-CGT le 12/06 ; assemblée générale de la branche prévue le 17/12/2026.",
       "source": "FNIC-CGT, 12/06 et 07/09/2026",
       "url": "https://fnic-cgt.com/2026/09/07/ag-repartition-pharma/"
-    },
-    {
-      "date": "2026-09-23",
-      "nonConfirme": true,
-      "titre": "Sagitta rachèterait Médiane Répartition et Mezegel Répartition",
-      "texte": "Rumeur : rien d'officiel au 23/09/2026, ni presse ni annonce légale. Le robot surveille les annonces BODACC des deux sociétés.",
-      "source": "Registre des entreprises",
-      "url": "https://www.pappers.fr/entreprise/mediane-repartition-977768548",
-      "acteur": "sagitta"
     }
   ],
   "note_acteur": "« acteur » = clé du concurrent dans concurrents-implantations.json ; « angle » = phrase de rendez-vous écrite à la main. Les deux sont facultatifs."
