@@ -393,6 +393,34 @@
     // Catalogue unifié = une seule page (pages.molecules) — plus d'onglets.
     return '';
   };
+  // 23/10/2026 — « Factures OPS » (app de démonstration, données fictives) : ligne du menu du compte posée seulement si
+  // la base répond oui (jarvis_acces_factures_ops, crm/v2/_sql/factures-ops-acces.sql). Aucun nom écrit ici.
+  var FOPS_URL = 'https://factures-ops-demo.vercel.app/', fopsOk = null, fopsP = null;
+  function fopsAcces() {
+    if (fopsOk !== null) return Promise.resolve(fopsOk);
+    if (fopsP) return fopsP;
+    var c = V2.sb && V2.sb();
+    if (!c || !V2.user || !V2.user.id) return Promise.resolve(false);
+    fopsP = c.rpc('jarvis_acces_factures_ops').then(function (r) {
+      fopsP = null;
+      if (r && !r.error) { fopsOk = (r.data === true); return fopsOk; }
+      return false;                   // échec de lecture : on redemandera, on ne conclut rien
+    }).catch(function () { fopsP = null; return false; });
+    return fopsP;
+  }
+  function fopsMenu(m) {
+    fopsAcces().then(function (ok) {
+      if (!ok || !m || !m.parentNode || m.querySelector('.fops-um')) return;
+      var b = document.createElement('button');
+      b.className = 'v2-um-item fops-um';
+      b.innerHTML = ICO('list', 16, 2) + 'Factures OPS (démo à tester)';
+      b.onclick = function () {
+        if (m.parentNode && m.classList.contains('v2-usermenu')) m.parentNode.removeChild(m);
+        window.open(FOPS_URL, '_blank', 'noopener');
+      };
+      var prem = m.querySelector('.v2-um-item'); if (prem) m.insertBefore(b, prem); else m.appendChild(b);
+    }).catch(function () {});
+  }
   V2.userMenu = function (btn) {
     if (u2PanneauAvatar(btn)) return;   // accueil u2 sous 1100 px : le panneau « Mon espace » remplace ce menu
     var installed = false;
@@ -414,6 +442,7 @@
     // 21/10/2026 — « Listing produits 2027 » : ligne posée seulement si la base répond oui (v2-listings2027.js).
     // 22/10/2026 — « Notre marge par produit » y est fusionnée (onglets) : plus de ligne à part.
     if (m && V2.listings2027 && V2.listings2027.menu) V2.listings2027.menu(m);
+    if (m) fopsMenu(m);
   };
 
   // ── Partage d'un PDF (mail/WhatsApp sur mobile, sinon téléchargement) ──
@@ -1661,6 +1690,7 @@
     var e = document.getElementById('u2-eto');
     if (e && V2.etonnement && V2.etonnement.menu) { try { V2.etonnement.menu(e); } catch (x) {} }
     if (e && V2.listings2027 && V2.listings2027.menu) { try { V2.listings2027.menu(e); } catch (x) {} }
+    if (e) { try { fopsMenu(e); } catch (x) {} }
   }
   function u2Rail() {
     var mode = u2Mode();
