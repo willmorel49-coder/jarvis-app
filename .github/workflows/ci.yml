@@ -173,6 +173,26 @@ jobs:
           sleep 2
           PORT=8081 BROWSER=webkit node .github/scripts/smoke.mjs
 
+      # Parcours connecté avec le compte de test permanent (secrets GitHub
+      # JARVIS_CI_EMAIL et JARVIS_CI_MOT_DE_PASSE). Secrets absents = ÉCHEC volontaire.
+      - name: Parcours connecté · WebKit (Safari)
+        env:
+          JARVIS_CI_EMAIL: ${{ secrets.JARVIS_CI_EMAIL }}
+          JARVIS_CI_MOT_DE_PASSE: ${{ secrets.JARVIS_CI_MOT_DE_PASSE }}
+        run: |
+          python3 -m http.server 8082 >/dev/null 2>&1 &
+          sleep 2
+          PORT=8082 BROWSER=webkit node .github/scripts/parcours-connecte.mjs
+
+      - name: Parcours connecté · Chromium
+        env:
+          JARVIS_CI_EMAIL: ${{ secrets.JARVIS_CI_EMAIL }}
+          JARVIS_CI_MOT_DE_PASSE: ${{ secrets.JARVIS_CI_MOT_DE_PASSE }}
+        run: |
+          python3 -m http.server 8083 >/dev/null 2>&1 &
+          sleep 2
+          PORT=8083 BROWSER=chromium node .github/scripts/parcours-connecte.mjs
+
   # Ne part QUE si « verifier » est vert (needs). Même commit que celui testé :
   # les deux jobs extraient github.sha. Copie propre (sans le node_modules du test).
   publier:
