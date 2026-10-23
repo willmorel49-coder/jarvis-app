@@ -1242,7 +1242,7 @@
     return X14.liste;
   }
   function x14Image(it, i, prec) {
-    if (it && it.img && urlSure(it.img) !== '#' && it.img !== prec) return it.img;
+    /* 23/10/2026 « Les objets » : l'objet de la rubrique remplace la photo de presse (it.img ignorée), tout le fil porte la signature JARVIS */
     var th = it && X14_PHOTOS[it.theme] ? it.theme : 'defaut', n = X14_PHOTOS[th], r0 = it && it.rang != null ? it.rang : (i || 0), k, u;
     for (k = 0; k < n; k++) { u = 'img/infos/' + th + '-' + ((r0 + k) % n + 1) + '.webp'; if (u !== prec) return u; }
     return u;
@@ -1499,7 +1499,7 @@
     var tete = '<header class="f3-tete"><h2 id="f3-h" tabindex="-1">Le fil du jour</h2><p>L’actualité qui compte pour vos officines, une carte à la fois</p>' +
       '<div class="f3-ong" role="group" aria-label="Affichage"><button type="button" data-f3="vue" data-f3-v="fil" aria-pressed="' + (gv ? 'false' : 'true') + '">Le fil du jour</button>' +
       '<button type="button" data-f3="vue" data-f3-v="gardees" aria-pressed="' + (gv ? 'true' : 'false') + '">Gardées · <span data-f3-n>' + G.length + '</span></button></div></header>';
-    return '<section class="f3-fil" aria-labelledby="f3-h">' + tete + corps + '<p class="f3-cred"><a href="img/infos/credits.html" target="_blank" rel="noopener">Crédits photos</a></p></section>';
+    return '<section class="f3-fil" aria-labelledby="f3-h">' + tete + corps + '<p class="f3-cred"><a href="img/infos/credits.html" target="_blank" rel="noopener">Crédits des images</a></p></section>';
   }
   function x13Ecoute(e) {
     if (e.type === 'keydown') {
