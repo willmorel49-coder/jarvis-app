@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Le mouvement du site, à choisir</title>
+<link rel="stylesheet" href="charte.css">
+<style>
+.mv{padding:var(--e8) var(--marge-colonne) var(--sect-demi)}
+.mv h1{font-size:clamp(32px,4.4vw,52px);font-weight:600;letter-spacing:-.03em;line-height:1.08}
+.mv__intro{margin-top:var(--e3);max-width:var(--lire);color:var(--encre-80)}
+.choix{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--e4);padding:var(--e6) var(--marge-colonne) 0}
+.doseC{position:relative;display:flex;flex-direction:column;align-items:flex-start;padding:var(--carte-pad);border-radius:var(--rond);
+  background:radial-gradient(85% 70% at 18% 0%,#fff 0%,rgba(255,255,255,0) 62%),var(--blanc);border:1px solid var(--filet)}
+.doseC--reco{border-color:var(--act);box-shadow:0 0 0 1px var(--act)}
+.doseC__num{display:inline-flex;align-items:center;min-height:28px;padding:0 var(--e3);border-radius:var(--pilule);background:var(--bleu-clair);
+  color:var(--act);font-size:14px;font-weight:600;letter-spacing:0}
+.doseC__reco{position:absolute;top:var(--carte-pad);right:var(--carte-pad);display:inline-flex;align-items:center;min-height:28px;padding:0 var(--e3);border-radius:var(--pilule);
+  background:var(--act);color:#fff;font-size:14px;font-weight:600;letter-spacing:0}
+.doseC h2{margin-top:var(--e4);font-size:clamp(24px,2.4vw,32px);font-weight:600;letter-spacing:-.026em;line-height:1.12}
+.doseC p{margin-top:var(--e3);color:var(--encre-80);font-size:17px;line-height:1.47;max-width:46ch}
+.doseC .pilule{min-height:44px;font-size:16px}
+.doseC__bas{margin-top:auto;padding-top:var(--e5);width:100%}
+.mv__gelule{padding:var(--e6) var(--marge-colonne) var(--sect-demi)}
+.mv__gelule p{color:var(--encre-80);max-width:var(--lire)}
+.mv__gelule .lien{margin-top:var(--e2)}
+@media (max-width:900px){.choix{grid-template-columns:1fr}.doseC__reco{position:static;margin-top:var(--e3)}}
+</style>
+</head>
+<body>
+<main>
+<section class="mv">
+  <h1>Le mouvement du site, à choisir</h1>
+  <p class="mv__intro">Quatre versions de la même page, avec les mêmes textes, les mêmes couleurs et la même mise en page. Seul le mouvement change, et chaque version garde tout ce que fait la précédente. Ouvrez-les et faites défiler la page.</p>
+</section>
+
+<section class="choix" aria-label="Les quatre versions">
+  <article class="doseC">
+    <span class="doseC__num">0</span>
+    <h2>Le site actuel</h2>
+    <p>La page telle qu'elle est aujourd'hui, avec ses mouvements d'origine. C'est le point de comparaison.</p>
+    <div class="doseC__bas"><a class="pilule pilule--vide" href="index.html">Voir le site actuel</a></div>
+  </article>
+  <article class="doseC doseC--reco">
+    <span class="doseC__num">1</span>
+    <span class="doseC__reco">Notre recommandation</span>
+    <h2>Le soin</h2>
+    <p>Les mêmes mouvements, mieux réglés : les titres se dévoilent ligne par ligne, les photos s'ouvrent, les chiffres montent en ralentissant, les survols sont plus soignés.</p>
+    <div class="doseC__bas"><a class="pilule" href="motion-1.html">Voir la version 1</a></div>
+  </article>
+  <article class="doseC">
+    <span class="doseC__num">2</span>
+    <h2>Le défilement</h2>
+    <p>Tout ce que fait la version 1, et la page réagit quand on descend : l'ouverture s'assombrit, les photos glissent lentement, les traits orange se tracent, la carte s'ouvre.</p>
+    <div class="doseC__bas"><a class="pilule pilule--vide" href="motion-2.html">Voir la version 2</a></div>
+  </article>
+  <article class="doseC">
+    <span class="doseC__num">3</span>
+    <h2>Le plan-séquence</h2>
+    <p>Tout ce que fait la version 2, avec deux moments forts sur ordinateur : les quatre chiffres restent à l'écran le temps de monter un par un, et les fonds changent de couleur en douceur. Sur téléphone, elle se comporte comme la version 2.</p>
+    <div class="doseC__bas"><a class="pilule pilule--vide" href="motion-3.html">Voir la version 3</a></div>
+  </article>
+</section>
+
+<section class="mv__gelule">
+  <p>La petite gélule du logo, dans la barre, a aussi trois animations possibles.</p>
+  <a class="lien" href="logo-gelule.html">Choisir l'animation de la gélule
+    <svg viewBox="0 0 9 14" aria-hidden="true"><path d="M1.5 1 7 7l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+  </a>
+</section>
+</main>
+</body>
+</html>

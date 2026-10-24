@@ -1,0 +1,16 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOTION 3 · « LE PLAN-SÉQUENCE » = M2 + deux moments signature (ordinateur seulement).
+     A · « Le groupe en chiffres » est tenu à l'écran le temps que les quatre chiffres
+         montent l'un après l'autre (la page ajoute --m3-extra de défilement, c'est tout).
+     B · deux passages de couleur au défilement, au lieu d'une coupure nette :
+         clair vers nuit (chiffres → réseau) et nuit vers blanc (partenaires → rejoindre).
+   Sous 820 px de large (ou 600 px de haut) : rien de tout cela, la dose 3 est la dose 2.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+/* A · le bloc de chiffres reste collé au centre de l'écran pendant la montée */
+html.m3 .m3-colle{position:sticky;top:var(--m3-haut,96px)}
+/* B · le fondu : il naît à la couleur exacte du bas de la section précédente, puis s'efface vers la section suivante */
+.m3-passage{position:absolute;left:0;right:0;top:0;height:calc(var(--sect) * .92);z-index:0;pointer-events:none;
+  transform-origin:50% 0;transform:scaleY(var(--m3-g,1));opacity:var(--m3-g,1)}
+.m3-passage--clair{background:linear-gradient(180deg,var(--bleu-clair) 0%,rgba(217,230,255,.72) 34%,rgba(217,230,255,.28) 68%,rgba(217,230,255,0) 100%)}
+.m3-passage--nuit{background:linear-gradient(180deg,#070C17 0%,rgba(7,12,23,.72) 34%,rgba(7,12,23,.28) 68%,rgba(7,12,23,0) 100%)}
+@media (max-width:819px),(max-height:599px){.m3-passage{display:none}}

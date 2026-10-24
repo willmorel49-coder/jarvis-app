@@ -1,0 +1,26 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOTION 2 · « LE DÉFILEMENT » = M1 + des effets liés au défilement.
+   Tout est piloté par motion-2.js (une variable CSS par élément). Sans lui, ou sans
+   la classe « m2 » : la page est celle de la dose 1. N'anime que transform, opacity,
+   clip-path. Au repos (défilement à 0) chaque valeur vaut son état d'origine.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* 1 · l'ouverture s'enfonce : les bords s'assombrissent à mesure qu'on la quitte */
+.m2-ombre{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;
+  background:radial-gradient(120% 95% at 50% 42%,rgba(5,9,18,0) 28%,rgba(5,9,18,.92) 100%)}
+.m2-ombre::after{content:"";position:absolute;inset:0;background:#050912;opacity:var(--m2-noir,0)}
+
+/* 2 · les photos en bande : la photo se pose lentement, le texte glisse plus vite qu'elle */
+/* le zoom de la photo passe par --m2-zoom, lu par la règle d'ouverture de motion-1.css (même propriété, une seule source) */
+html.m2 .bande__mot{translate:0 var(--m2-texte,0px)}
+
+/* 3 · le trait orange des sur-titres se trace au rythme du défilement (plus de durée, la main sur la molette) */
+html.m2 .sur-titre:not([data-h])::before{transform:scaleX(var(--m2-trait,1)) !important;transition:none !important}
+
+/* 4 · la carte du réseau s'ouvre comme une fenêtre pendant qu'on y arrive (ensuite : rien, elle est libre) */
+html.m2 .carte-boite:not(.m2-ouverte){clip-path:inset(calc((1 - var(--m2-o,1)) * 16%) calc((1 - var(--m2-o,1)) * 9%) round var(--rond))}
+html.m2 .carte-boite.m2-ouverte{clip-path:none}
+
+@media (prefers-reduced-motion:reduce){
+  .m2-ombre{display:none}
+}

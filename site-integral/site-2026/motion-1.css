@@ -1,0 +1,112 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOTION 1 · « LE SOIN » — Intégral Pharma, site 2026 (essai du 24/10/2026)
+   La même page, les mêmes textes : les mouvements qui existaient sont portés au
+   niveau studio. UNE SEULE famille de courbe, trois durées.
+     --m-out  : la courbe unique (départ vif, arrivée longue et posée)
+     --m-t1   : survols (0,5 s) · --m-t2 : textes et cartes (1 s) · --m-t3 : photos (1,5 s)
+   Sans script : rien n'est masqué (tout ce qui cache est sous « html.m », posé par
+   motion-1.js une fois son installation terminée). Mouvement réduit : état final.
+   N'anime que transform, opacity et clip-path. Aucun flou, aucune vidéo ajoutée.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+:root{
+  --m-out:cubic-bezier(.16,.84,.28,1);
+  --m-t1:.5s; --m-t2:1s; --m-t3:1.5s;
+  --sortie:cubic-bezier(.16,.84,.28,1);          /* la courbe du site devient la nôtre : survols compris */
+}
+
+/* ── 1 · L'OUVERTURE : le titre garde son geste, plus long et mieux posé ───── */
+.mot > i{animation-duration:1.15s;animation-timing-function:var(--m-out)}
+.apres-titre{animation-duration:1.1s;animation-timing-function:var(--m-out)}
+
+/* ── 2 · LA RÉVÉLATION : tout ce qui est .rv monte sous la même courbe ─────── */
+html.m .rv:not(.m-in){opacity:0;transform:translateY(26px)}
+html.m .rv.m-in{opacity:1;transform:none;
+  transition:opacity var(--m-t2) var(--m-out),transform var(--m-t2) var(--m-out);
+  transition-delay:calc(min(var(--i,0),4) * 80ms)}
+/* un bloc qui se cascade (ou qui porte un titre masqué) ne bouge pas lui-même */
+html.m .rv.m-grp:not(.m-in){opacity:1;transform:none}
+html.m .m-sub{transition:opacity var(--m-t2) var(--m-out),transform var(--m-t2) var(--m-out);
+  transition-delay:var(--m-d,0ms)}
+html.m .rv:not(.m-in) .m-sub{opacity:0;transform:translateY(22px)}
+/* révélation terminée : plus aucun retard résiduel (survols immédiats) */
+html.m .rv.m-fin{transition-delay:0s}
+
+/* ── 3 · LES TITRES : ligne par ligne, sous un masque ─────────────────────────
+   Le script range le texte en lignes le temps de l'animation, puis remet le texte d'origine :
+   la mise en page finale est celle de la page, au pixel. Le masque est un clip-path (aucune marge). */
+html.m .rv:not(.m-in) .m-titre:not(:has(.mot)),html.m .m-titre.rv:not(.m-in):not(:has(.mot)){visibility:hidden}
+.m-l{display:block;clip-path:inset(-.12em -.1em -.06em -.1em)}
+.m-li{display:block;transition:transform 1.2s var(--m-out);transition-delay:var(--m-d,0ms)}
+html.m .rv:not(.m-in) .m-li,html.m .m-titre.rv:not(.m-in) .m-li{transform:translateY(118%)}
+html.m .rv:not(.m-in) .mot > i{animation-play-state:paused}
+html.m .rv.m-in .mot > i{animation-play-state:running}
+
+/* ── 4 · LES SUR-TITRES : le trait orange se trace à l'arrivée du bloc ────── */
+html.m .rv:not(.m-in).sur-titre:not([data-h])::before,
+html.m .rv:not(.m-in) .sur-titre:not([data-h])::before{transform:scaleX(0)}
+html.m .sur-titre:not([data-h])::before{transition:transform 1.1s var(--m-out) .25s}
+
+/* ── 5 · LES CHIFFRES : le trait orange suit la cascade de leur montée ─────── */
+html.m .rv:not(.m-in) .compteur b::before{transform:scaleX(0)}
+html.m .rv.m-in .compteur b::before{transform:scaleX(1);transition:transform 1.1s var(--m-out);
+  transition-delay:calc(var(--m-d,0ms) + 450ms)}
+
+/* ── 6 · LES PHOTOS S'OUVRENT : rideau (clip-path) + léger dézoom qui se pose ─ */
+html.m .m-ouvre{transition:clip-path var(--m-t3) var(--m-out);transition-delay:calc(min(var(--i,0),4) * 100ms)}
+html.m .m-ouvre:not(.m-in){clip-path:inset(0 0 100% 0 round 22px)}
+html.m .m-ouvre.m-in{clip-path:inset(0 0 0 0 round 22px)}
+html.m .m-ouvre.m-fin{clip-path:none;transition:none}
+html.m .bande.m-ouvre:not(.m-in){clip-path:inset(26% 8% 26% 8% round 28px)}
+html.m .bande.m-ouvre.m-in{clip-path:inset(0 0 0 0 round 0)}
+html.m .m-ouvre img{scale:var(--m2-zoom,1);transition:scale 1.9s var(--m-out);transition-delay:calc(min(var(--i,0),4) * 100ms)}
+html.m .m-ouvre:not(.m-in) img{scale:1.16}
+html.m .m-ouvre.m-fin img{transition:none}
+html.m .depot.m-ouvre.m-fin img{transition:transform 1.4s var(--m-out)}
+/* la photo n'est pas masquée par le fondu du bloc : seul le rideau la révèle */
+html.m .depot.rv.m-ouvre:not(.m-in){opacity:1;transform:none}
+html.m .depot.rv.m-ouvre.m-in{transition:clip-path var(--m-t3) var(--m-out);transition-delay:calc(min(var(--i,0),4) * 100ms)}
+
+/* ── 7 · LES SURVOLS ─────────────────────────────────────────────────────────
+   a · le lien : le soulignement orange se TRACE (de gauche à droite), il se retire de l'autre côté */
+.lien{position:relative}
+.lien::after{content:"";position:absolute;left:0;right:15px;top:calc(50% + .72em);height:2px;border-radius:1px;
+  background:var(--accent);transform:scaleX(0);transform-origin:100% 50%;
+  transition:transform var(--m-t1) var(--m-out)}
+.lien:hover::after,a:hover > .lien::after,.lien:focus-visible::after{transform:scaleX(1);transform-origin:0 50%}
+.lien:hover,a:hover > .lien{text-decoration:none}
+/* b · la barre : même geste, sous le mot */
+.barre__nav a:not(.pilule){position:relative}
+.barre__nav a:not(.pilule)::after{content:"";position:absolute;left:var(--e3);right:var(--e3);top:calc(50% + 11px);height:1.5px;
+  border-radius:1px;background:currentColor;transform:scaleX(0);transform-origin:100% 50%;
+  transition:transform var(--m-t1) var(--m-out)}
+.barre__nav a:not(.pilule):hover::after,.barre__nav a:not(.pilule):focus-visible::after{transform:scaleX(1);transform-origin:0 50%}
+.barre__nav a:not(.pilule):hover{opacity:1}
+/* c · la pilule réagit : elle se soulève d'un trait et projette une ombre colorée */
+.pilule{transition:background var(--m-t1) var(--m-out),color var(--m-t1) var(--m-out),translate var(--m-t1) var(--m-out),
+  box-shadow var(--m-t1) var(--m-out),transform var(--d-micro) var(--m-out)}
+.pilule:not(.pilule--barre):hover{translate:0 -2px;box-shadow:0 10px 22px -10px rgba(0,80,230,.55)}
+.nuit .pilule:not(.pilule--barre):hover,.scene .pilule:not(.pilule--barre):hover{box-shadow:0 10px 24px -10px rgba(92,151,255,.6)}
+.bleu .pilule:not(.pilule--barre):hover{box-shadow:0 10px 24px -10px rgba(0,20,70,.55)}
+.pilule:not(.pilule--barre):active{translate:0 0;box-shadow:none}
+/* d · la carte se soulève avec son ombre (elle grandit : le pointeur reste dessus, rien ne clignote) */
+html.m .carte.rv.m-fin,.carte{transition:opacity .4s var(--m-out),translate var(--m-t1) var(--m-out),scale var(--m-t1) var(--m-out),
+  box-shadow var(--m-t1) var(--m-out),border-color var(--m-t1) var(--m-out),transform var(--d-etat) var(--m-out)}
+.carte:hover{scale:1.012;box-shadow:0 26px 44px -26px rgba(11,18,32,.34);border-color:rgba(0,80,230,.28)}
+.nuit .carte:hover{box-shadow:0 26px 44px -22px rgba(0,0,0,.55);border-color:rgba(143,184,255,.4)}
+.bleu .carte:hover{box-shadow:0 26px 44px -22px rgba(0,20,70,.5);border-color:rgba(255,255,255,.5)}
+.carte .picto{transition:translate var(--m-t1) var(--m-out)}
+.carte:hover .picto{translate:0 -3px}
+.met{transition:border-color var(--d-etat) var(--m-out),box-shadow var(--m-t1) var(--m-out),scale var(--m-t1) var(--m-out)}
+.met:hover{scale:1.012;box-shadow:0 22px 40px -26px rgba(11,18,32,.3)}
+/* e · la photo des dépôts : zoom plus lent */
+.depot img{transition-duration:1.6s;transition-timing-function:var(--m-out)}
+.depot:hover img{transform:scale(1.06)}
+
+/* ── MOUVEMENT RÉDUIT : état final, aucune translation ni zoom ──────────────── */
+@media (prefers-reduced-motion:reduce){
+  .lien::after,.barre__nav a:not(.pilule)::after{transition:none}
+  .pilule:not(.pilule--barre):hover{translate:none}
+  .carte:hover,.met:hover{scale:none}
+  .carte:hover .picto{translate:none}
+  .depot:hover img{transform:none}
+}
