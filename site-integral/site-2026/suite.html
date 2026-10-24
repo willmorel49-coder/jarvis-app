@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Les textes et les animations, à choisir</title>
+<link rel="stylesheet" href="charte.css">
+<style>
+.mv{padding:var(--e8) var(--marge-colonne) var(--e4)}
+.mv h1{font-size:clamp(32px,4.4vw,52px);font-weight:600;letter-spacing:-.03em;line-height:1.08}
+.mv__intro{margin-top:var(--e3);max-width:var(--lire);color:var(--encre-80)}
+.rangee{padding:var(--e6) var(--marge-colonne) 0}
+.rangee h2{font-size:clamp(24px,2.6vw,34px);font-weight:600;letter-spacing:-.026em;line-height:1.12}
+.rangee__note{margin-top:var(--e2);max-width:var(--lire);color:var(--encre-80)}
+.choix{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--e4);margin-top:var(--e4)}
+.doseC{position:relative;display:flex;flex-direction:column;align-items:flex-start;padding:var(--carte-pad);border-radius:var(--rond);
+  background:radial-gradient(85% 70% at 18% 0%,#fff 0%,rgba(255,255,255,0) 62%),var(--blanc);border:1px solid var(--filet)}
+.doseC--reco{border-color:var(--act);box-shadow:0 0 0 1px var(--act)}
+.doseC__tete{display:flex;flex-wrap:wrap;align-items:center;gap:var(--e2)}
+.doseC__num,.doseC__reco,.doseC__avis{display:inline-flex;align-items:center;min-height:28px;padding:0 var(--e3);border-radius:var(--pilule);
+  font-size:14px;font-weight:600;letter-spacing:0}
+.doseC__num{background:var(--bleu-clair);color:var(--act)}
+.doseC__reco{background:var(--act);color:#fff}
+.doseC__avis{background:#FDEBDD;color:#9A3412}
+.doseC h3{margin-top:var(--e4);font-size:clamp(22px,1.9vw,27px);font-weight:600;letter-spacing:-.022em;line-height:1.14}
+.doseC p{margin-top:var(--e3);color:var(--encre-80);font-size:16px;line-height:1.47}
+.doseC .pilule{min-height:44px;font-size:16px}
+.doseC__bas{margin-top:auto;padding-top:var(--e5);width:100%}
+.fin{padding:var(--e7) var(--marge-colonne) var(--sect-demi)}
+.fin p{max-width:var(--lire);color:var(--encre-80)}
+@media (max-width:1180px){.choix{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.choix{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+<section class="mv">
+  <h1>Les textes et les animations, à choisir</h1>
+  <p class="mv__intro">Chaque version part du site en ligne aujourd'hui, avec le mouvement « Le défilement » et la gélule qui tourne. Deux choix indépendants : un pour les textes longs, un pour les animations. Ouvrez chaque version et faites défiler la page.</p>
+</section>
+
+<section class="rangee" aria-labelledby="r-textes">
+  <h2 id="r-textes">Les textes longs</h2>
+  <p class="rangee__note">Les blocs concernés : « Notre histoire », « Le réseau » et Offilog, plus la mise en page des dépôts et de « Nous rejoindre ».</p>
+  <div class="choix">
+    <article class="doseC">
+      <div class="doseC__tete"><span class="doseC__num">0</span></div>
+      <h3>Le site actuel</h3>
+      <p>Les textes tels qu'ils sont en ligne aujourd'hui. C'est le point de comparaison.</p>
+      <div class="doseC__bas"><a class="pilule pilule--vide" href="index.html#groupe">Voir le site actuel</a></div>
+    </article>
+    <article class="doseC doseC--reco">
+      <div class="doseC__tete"><span class="doseC__num">T1</span><span class="doseC__reco">Recommandée</span></div>
+      <h3>L'air</h3>
+      <p>Les mêmes mots, mieux aérés : la phrase d'attaque plus grande, des lignes plus courtes, un trait orange qui se trace sous les mots importants.</p>
+      <div class="doseC__bas"><a class="pilule" href="texte-1.html#groupe">Voir la version T1</a></div>
+    </article>
+    <article class="doseC">
+      <div class="doseC__tete"><span class="doseC__num">T2</span></div>
+      <h3>La lecture vivante</h3>
+      <p id="carte-t2">Tout ce que fait T1, et les lignes prennent leur couleur pendant que vous lisez, avec une phrase forte mise en grand dans chaque bloc.</p>
+      <div class="doseC__bas"><a class="pilule pilule--vide" href="texte-2.html#groupe">Voir la version T2</a></div>
+    </article>
+    <article class="doseC">
+      <div class="doseC__tete"><span class="doseC__num">T3</span><span class="doseC__avis">À faire valider</span></div>
+      <h3>Plus court</h3>
+      <p>Tout ce que fait T1, avec des textes deux fois plus courts et le texte complet derrière « Lire la suite ». Les textes raccourcis sont à faire valider avant mise en ligne.</p>
+      <div class="doseC__bas"><a class="pilule pilule--vide" href="texte-3.html#groupe">Voir la version T3</a></div>
+    </article>
+  </div>
+</section>
+
+<section class="rangee" aria-labelledby="r-anim">
+  <h2 id="r-anim">Le métier et les autres animations</h2>
+  <p class="rangee__note">Dans les trois versions, deux autres endroits s'animent aussi : les quatre métiers de « Nous rejoindre » et les sceaux Great Place to Work et Best Managed Companies de « Notre mission ».</p>
+  <div class="choix">
+    <article class="doseC">
+      <div class="doseC__tete"><span class="doseC__num">0</span></div>
+      <h3>Le site actuel</h3>
+      <p>Aujourd'hui, les étapes du métier apparaissent sans animation propre.</p>
+      <div class="doseC__bas"><a class="pilule pilule--vide" href="index.html#metier">Voir le site actuel</a></div>
+    </article>
+    <article class="doseC doseC--reco">
+      <div class="doseC__tete"><span class="doseC__num">A1</span><span class="doseC__reco">Recommandée</span></div>
+      <h3>Le trajet</h3>
+      <p>Une lumière suit votre commande d'une étape à l'autre et dessine chaque étape en passant, une seule fois.</p>
+      <div class="doseC__bas"><a class="pilule" href="metier-1.html#metier">Voir la version A1</a></div>
+    </article>
+    <article class="doseC">
+      <div class="doseC__tete"><span class="doseC__num">A2</span></div>
+      <h3>Les gestes</h3>
+      <p>Chaque étape joue un petit geste au trait, lentement et en boucle, sans rien changer à la page.</p>
+      <div class="doseC__bas"><a class="pilule pilule--vide" href="metier-2.html#metier">Voir la version A2</a></div>
+    </article>
+    <article class="doseC">
+      <div class="doseC__tete"><span class="doseC__num">A3</span></div>
+      <h3>Le plan fixe</h3>
+      <p>Sur ordinateur, la section reste à l'écran et vous passez d'une étape à la suivante en grand, en défilant. Sur téléphone, elle se comporte comme A2.</p>
+      <div class="doseC__bas"><a class="pilule pilule--vide" href="metier-3.html#metier">Voir la version A3</a></div>
+    </article>
+  </div>
+</section>
+
+<section class="fin">
+  <p>Les deux choix se combinent : dites un numéro pour les textes et un pour les animations.</p>
+</section>
+</main>
+</body>
+</html>
