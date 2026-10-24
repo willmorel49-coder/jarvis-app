@@ -675,7 +675,7 @@
         var contact = d.contact_nom || o.contact || '';
         var mail = String(o.email || '').trim();
         if (!mail) {
-          V2.toast('Pas d’adresse mail connue pour ' + (d.nom || 'cette officine') + '.');
+          V2.toast('Pas d’adresse mail connue pour ' + esc(d.nom || 'cette officine') + '.');
           return;
         }
         var m = window.V2MOD.remerciement({

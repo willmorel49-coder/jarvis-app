@@ -603,7 +603,9 @@
             demarrer();
             return;
           }
-          secours('Ce créneau n’est plus disponible.');
+          secours(d.raison === 'trop_de_demandes'
+            ? 'Trop de demandes, réessayez plus tard.'
+            : 'Ce créneau n’est plus disponible.');
           return;
         }
         confirme(d);
