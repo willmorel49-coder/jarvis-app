@@ -1,0 +1,17 @@
+/* Gélule 3D du logo : planche d'images rendues hors du site, jouée en CSS steps().
+   Grille --c colonnes x --r lignes (chaque côté de planche <= 4096 px). Sans JS ou en mouvement réduit : le PNG d'origine, rien ne change. */
+.g3d{--c:24;--r:2;--d:1.6s;background-repeat:no-repeat;background-size:calc(var(--c)*100%) calc(var(--r)*100%);background-position:100% 100%;aspect-ratio:200/184}
+.g3d-v3{--d:1.5s}
+.g3d-v2{--r:6;--d:6s;background-position:0% 0%}
+.g3d-grand{--c:8;--r:6}
+.g3d-grand.g3d-v2{--c:12;--r:12}
+@keyframes g3dX{from{background-position-x:0%}to{background-position-x:100%}}
+@keyframes g3dY{from{background-position-y:0%}to{background-position-y:100%}}
+/* une passe par ligne (x), un cran par ligne (y) */
+.g3d-joue{animation:g3dX calc(var(--d)/var(--r)) steps(var(--c),jump-none) var(--r),g3dY var(--d) steps(var(--r),jump-none) 1}
+.g3d-v2.g3d-joue{animation:g3dX calc(var(--d)/var(--r)) steps(var(--c),jump-none) infinite,g3dY var(--d) steps(var(--r),jump-none) infinite}
+/* calque posé sur l'image d'origine de la barre (même boîte, masqué hors animation) */
+.g3d-calque{position:absolute;display:none;pointer-events:none}
+.g3d-calque.g3d-joue{display:block}
+.g3d-pause{animation-play-state:paused !important}
+@media (prefers-reduced-motion:reduce){.g3d{animation:none !important}.g3d-calque{display:none !important}}

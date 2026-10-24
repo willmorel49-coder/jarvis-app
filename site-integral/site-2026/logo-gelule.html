@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Gélule du logo en 3D</title>
+<link rel="stylesheet" href="charte.css">
+<link rel="stylesheet" href="logo-3d.css">
+<style>
+.lg{padding:var(--e8) var(--marge-colonne) var(--sect-demi)}
+.lg h1{font-size:clamp(32px,4.4vw,52px);font-weight:600;letter-spacing:-.03em;line-height:1.08}
+.lg__intro{margin-top:var(--e3);max-width:var(--lire);color:var(--encre-80)}
+.essai{padding:var(--e7) var(--marge-colonne) 0}
+.essai__tete{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--e5);flex-wrap:wrap;margin-bottom:var(--e5)}
+.essai__tete h2{font-size:clamp(22px,2.6vw,30px);font-weight:600;letter-spacing:-.022em;line-height:1.15}
+.essai__tete p{margin-top:var(--e1);color:var(--encre-48);font-size:15px}
+.essai__duo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--e4)}
+.vitrine{margin:0;display:flex;align-items:center;justify-content:center;min-height:440px;padding:var(--e6);border-radius:var(--rond);border:1px solid var(--filet)}
+.vitrine--clair{background:radial-gradient(85% 70% at 22% 0%,#fff 0%,rgba(255,255,255,0) 62%),var(--bleu-clair)}
+.vitrine--nuit{background:radial-gradient(80% 65% at 30% 0%,#1A2A47 0%,rgba(26,42,71,0) 62%),var(--nuit);border-color:var(--filet-nuit)}
+.grand{width:min(360px,100%)}
+.essai__barres{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--e4);margin-top:var(--e4)}
+.fb{display:flex;align-items:center;gap:0;height:var(--barre);padding:0 var(--e5);border-radius:var(--rond-p);border:1px solid var(--filet)}
+.fb--clair{background:var(--blanc)}
+.fb--nuit{background:var(--nuit);border-color:var(--filet-nuit)}
+.fb .barre__nom{color:var(--encre)}
+.fb--nuit .barre__nom{color:#fff}
+.fb__logo{position:relative;display:block;width:30px;margin-right:10px;flex:none}
+.fb__logo img,img.fb__logo{height:auto}
+.fb__logo img{width:30px}
+.fb__logo .g3d-calque{inset:0}
+.fb__etiquette{margin-left:auto;font-size:13px;color:var(--encre-48)}
+.fb--nuit .fb__etiquette{color:var(--encre-nuit-doux)}
+.lg .pilule--vide{min-height:40px;font-size:15px}
+.repere{background-image:url(../assets/logo3d/l1-g.webp)}
+@media (max-width:900px){.essai__duo,.essai__barres{grid-template-columns:1fr}.vitrine{min-height:380px}}
+</style>
+</head>
+<body>
+<main>
+<section class="lg">
+  <h1>La gélule du logo en 3D</h1>
+  <p class="lg__intro">Trois façons de la faire bouger, comparées avec le logo actuel. Chaque essai est montré en grand, sur fond clair et sur fond nuit, puis à taille réelle dans la barre du site.</p>
+</section>
+
+<section class="essai" data-v="0">
+  <div class="essai__tete"><div><h2>Repère 0 : le logo actuel</h2><p>Image fixe, telle qu'elle est aujourd'hui.</p></div></div>
+  <div class="essai__duo">
+    <figure class="vitrine vitrine--clair"><div class="g3d g3d-grand grand repere" role="img" aria-label="Logo actuel, image fixe"></div></figure>
+    <figure class="vitrine vitrine--nuit"><div class="g3d g3d-grand grand repere" role="img" aria-label="Logo actuel, image fixe"></div></figure>
+  </div>
+  <div class="essai__barres">
+    <div class="fb fb--clair"><img class="fb__logo" src="../assets/gelule-ip.png" alt="" width="30" height="28"><span class="barre__nom">Intégral Pharma</span><span class="fb__etiquette">Taille réelle</span></div>
+    <div class="fb fb--nuit"><img class="fb__logo" src="../assets/gelule-ip.png" alt="" width="30" height="28"><span class="barre__nom">Intégral Pharma</span><span class="fb__etiquette">Taille réelle</span></div>
+  </div>
+</section>
+
+<section class="essai" data-v="1">
+  <div class="essai__tete"><div><h2>L1 Le tour</h2><p>Un tour complet en 1,6 s, à l'arrivée puis à chaque survol.</p></div><button class="pilule pilule--vide rejouer" type="button">Rejouer</button></div>
+  <div class="essai__duo">
+    <figure class="vitrine vitrine--clair"><div class="g3d g3d-v1 g3d-grand grand" style="background-image:url(../assets/logo3d/l1-g.webp)" role="img" aria-label="Logo, la gélule fait un tour"></div></figure>
+    <figure class="vitrine vitrine--nuit"><div class="g3d g3d-v1 g3d-grand grand" style="background-image:url(../assets/logo3d/l1-g.webp)" role="img" aria-label="Logo, la gélule fait un tour"></div></figure>
+  </div>
+  <div class="essai__barres">
+    <div class="fb fb--clair"><span class="fb__logo"><img src="../assets/gelule-ip.png" alt="" width="30" height="28"><span class="g3d g3d-calque g3d-v1" style="background-image:url(../assets/logo3d/l1-p.webp)"></span></span><span class="barre__nom">Intégral Pharma</span><span class="fb__etiquette">Taille réelle</span></div>
+    <div class="fb fb--nuit"><span class="fb__logo"><img src="../assets/gelule-ip.png" alt="" width="30" height="28"><span class="g3d g3d-calque g3d-v1" style="background-image:url(../assets/logo3d/l1-p.webp)"></span></span><span class="barre__nom">Intégral Pharma</span><span class="fb__etiquette">Taille réelle</span></div>
+  </div>
+</section>
+
+<section class="essai" data-v="2">
+  <div class="essai__tete"><div><h2>L2 La bascule lente</h2><p>Une boucle douce de 6 s, les reflets glissent. Elle s'arrête hors de l'écran.</p></div><button class="pilule pilule--vide rejouer" type="button">Rejouer</button></div>
+  <div class="essai__duo">
+    <figure class="vitrine vitrine--clair"><div class="g3d g3d-v2 g3d-grand grand" style="background-image:url(../assets/logo3d/l2-g.webp)" role="img" aria-label="Logo, la gélule bascule doucement"></div></figure>
+    <figure class="vitrine vitrine--nuit"><div class="g3d g3d-v2 g3d-grand grand" style="background-image:url(../assets/logo3d/l2-g.webp)" role="img" aria-label="Logo, la gélule bascule doucement"></div></figure>
+  </div>
+  <div class="essai__barres">
+    <div class="fb fb--clair"><span class="fb__logo"><img src="../assets/gelule-ip.png" alt="" width="30" height="28"><span class="g3d g3d-calque g3d-v2" style="background-image:url(../assets/logo3d/l2-p.webp)"></span></span><span class="barre__nom">Intégral Pharma</span><span class="fb__etiquette">Taille réelle</span></div>
+    <div class="fb fb--nuit"><span class="fb__logo"><img src="../assets/gelule-ip.png" alt="" width="30" height="28"><span class="g3d g3d-calque g3d-v2" style="background-image:url(../assets/logo3d/l2-p.webp)"></span></span><span class="barre__nom">Intégral Pharma</span><span class="fb__etiquette">Taille réelle</span></div>
+  </div>
+</section>
+
+<section class="essai" data-v="3" style="padding-bottom:var(--sect)">
+  <div class="essai__tete"><div><h2>L3 L'arrivée</h2><p>La gélule arrive de la profondeur, rebondit, se pose. Un tour au survol.</p></div><button class="pilule pilule--vide rejouer" type="button">Rejouer</button></div>
+  <div class="essai__duo">
+    <figure class="vitrine vitrine--clair"><div class="g3d g3d-v3 g3d-grand grand" style="background-image:url(../assets/logo3d/l3-g.webp)" role="img" aria-label="Logo, la gélule arrive et se pose"></div></figure>
+    <figure class="vitrine vitrine--nuit"><div class="g3d g3d-v3 g3d-grand grand" style="background-image:url(../assets/logo3d/l3-g.webp)" role="img" aria-label="Logo, la gélule arrive et se pose"></div></figure>
+  </div>
+  <div class="essai__barres">
+    <div class="fb fb--clair"><span class="fb__logo"><img src="../assets/gelule-ip.png" alt="" width="30" height="28"><span class="g3d g3d-calque g3d-v3" style="background-image:url(../assets/logo3d/l3-p.webp)"></span></span><span class="barre__nom">Intégral Pharma</span><span class="fb__etiquette">Taille réelle</span></div>
+    <div class="fb fb--nuit"><span class="fb__logo"><img src="../assets/gelule-ip.png" alt="" width="30" height="28"><span class="g3d g3d-calque g3d-v3" style="background-image:url(../assets/logo3d/l3-p.webp)"></span></span><span class="barre__nom">Intégral Pharma</span><span class="fb__etiquette">Taille réelle</span></div>
+  </div>
+</section>
+</main>
+<script>
+(function(){
+  var mm=matchMedia("(prefers-reduced-motion: reduce)");
+  function cache(el){ return el.classList.contains("g3d-calque")?el.previousElementSibling:null; }
+  function jouer(el){ if(mm.matches) return; var i=cache(el); if(i) i.style.visibility="hidden"; el.classList.remove("g3d-joue"); void el.offsetWidth; el.classList.add("g3d-joue"); }
+  function fin(el){ el.classList.remove("g3d-joue"); var i=cache(el); if(i) i.style.visibility=""; }
+  document.addEventListener("animationend",function(e){ var el=e.target; if(e.animationName==="g3dY"&&!el.classList.contains("g3d-v2")) fin(el); });
+  [].forEach.call(document.querySelectorAll(".essai[data-v]"),function(s){
+    var v=s.getAttribute("data-v"); if(v==="0") return;
+    var els=[].slice.call(s.querySelectorAll(".g3d")), vu=false;
+    function tous(){ els.forEach(jouer); }
+    var b=s.querySelector(".rejouer"); if(b) b.addEventListener("click",tous);
+    if(v!=="2") els.forEach(function(el){ var h=el.closest(".vitrine,.fb")||el; h.addEventListener("mouseenter",function(){ jouer(el); }); });
+    function maj(){ var arret=document.hidden||!vu; els.forEach(function(el){ if(arret){ if(cache(el)) fin(el); else el.classList.add("g3d-pause"); } else { el.classList.remove("g3d-pause"); if(!el.classList.contains("g3d-joue")) jouer(el); } }); }
+    if("IntersectionObserver" in window) new IntersectionObserver(function(e){ var n=e[0].isIntersecting; if(n&&!vu&&v!=="2") setTimeout(tous,250); vu=n; if(v==="2") maj(); },{threshold:.35}).observe(s);
+    else { vu=true; tous(); }
+    if(v==="2") document.addEventListener("visibilitychange",maj);
+  });
+})();
+</script>
+</body>
+</html>
