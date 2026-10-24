@@ -1329,6 +1329,7 @@
       var sales = V2.commSales ? V2.commSales() : (V2.sales || []);
       var top = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' });
       injectStyles();
+      cnxVerifie();   // asynchrone : remplit #pilo-cnx une fois la page posée
 
       var opso = isOpso();
 
