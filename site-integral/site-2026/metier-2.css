@@ -1,0 +1,71 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MÉTIER · socle commun (fabriqué par animation/fabrique.py). L'orange est celui de la charte.
+   Rien ne s'applique sans les classes posées par le script : sans lui, la page est celle d'aujourd'hui.
+   N'anime que transform, opacity (jamais sur du texte), stroke-dashoffset, clip-path.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.mt-g .gs,.mt-g .gc,.mt-g .gt,.mt-g .gb,.mt-g .gr,.mt-g .hl{fill:none;stroke:var(--accent);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.mt-g .gs,.mt-g .hl{stroke-dasharray:.28 2;stroke-dashoffset:.4}
+.mt-g .gc,.mt-g .gt{stroke-dasharray:1 2;stroke-dashoffset:1}
+.mt-g .gb{stroke-opacity:0}
+.mt-g .gr{stroke-dasharray:3 4.5;stroke-opacity:0}
+.mt-b .sp{vector-effect:none}
+/* l'anneau des sceaux */
+.label__sceau{position:relative}
+.label__sceau svg.mt-anneau{position:absolute;left:-4px;top:-4px;width:52px;height:52px;overflow:visible;pointer-events:none;fill:none;stroke-linecap:round}
+.mt-anneau .rb{stroke:rgba(255,255,255,.0);stroke-width:1}
+.mt-anneau .ra{stroke:var(--accent-nuit);stroke-width:1.2;stroke-dasharray:1 2;stroke-dashoffset:1}
+.label__sceau svg .sp{fill:none}
+/* mouvement réduit : l'état final, tout de suite */
+@media (prefers-reduced-motion:reduce){
+  .mt-fin .gc,.mt-fin .gt{stroke-dashoffset:0}
+  .mt-fin .gb{stroke-opacity:1}
+  .mt-fin .gr{stroke-opacity:1}
+  .mt-fin-sceau .mt-anneau .ra{stroke-dashoffset:0;stroke-opacity:.7}
+}
+/* les pictos du métier passent de 38 à 52 px : le geste est enfin lisible (le bord gauche ne bouge pas) */
+.cartes--serre .carte.mt1c .picto,.cartes--serre .carte.mt2c .picto{width:52px;height:52px}
+.cartes--serre .carte.mt1c .picto::before,.cartes--serre .carte.mt2c .picto::before{left:-8px;top:5px;width:48px;height:42px}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   A2 · « LES GESTES » — chaque picto joue UN geste au trait, en boucle lente (9 s),
+   décalé d'une carte à l'autre pour que rien ne batte en mesure. Ne tourne que sur les cartes
+   visibles (classe mt-vit posée par le script). Au repos, le picto est exactement celui d'origine.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.mt2c{--mt-T:9s}
+.mt2c .mt-g *,.mt2c .mt-b,.mt2c .picto::before{animation-duration:var(--mt-T);animation-timing-function:cubic-bezier(.45,.05,.3,1);
+  animation-iteration-count:infinite;animation-fill-mode:both;animation-play-state:paused}
+.mt2c.mt-vit .mt-g *,.mt2c.mt-vit .mt-b,.mt2c.mt-vit .picto::before{animation-play-state:running}
+/* étape 1 · la commande arrive : un trait de lumière lit chaque ligne, puis la coche se trace */
+.mt2c .gs{animation-name:mt2-scan;animation-delay:calc(var(--mt-d) + var(--g) * .75s)}
+.mt2c .gc{animation-name:mt2-trace;animation-delay:calc(var(--mt-d) + 0s)}
+/* étape 2 · le bac se remplit : une boîte orange descend dans l'emplacement libre */
+.mt2c .gb{animation-name:mt2-pose-bac;animation-delay:var(--mt-d)}
+/* étape 3 · la préparation : le colis se soulève d'un trait, le ruban se tire */
+.mt2c .gt{animation-name:mt2-ruban;animation-delay:var(--mt-d)}
+.mt2c.mt-s2 .mt-b{animation-name:mt2-leve;animation-delay:var(--mt-d)}
+/* étape 4 · la tournée : la route défile sous le camion */
+.mt2c .gr{animation-name:mt2-route;animation-duration:2.8s;animation-timing-function:linear;animation-delay:var(--mt-d)}
+/* la tache douce respire à peine */
+.mt2c .picto::before{animation-name:mt2-tache;animation-duration:14s;animation-timing-function:ease-in-out;animation-direction:alternate;animation-delay:var(--mt-d)}
+
+@keyframes mt2-scan{0%{stroke-dashoffset:.4}14%{stroke-dashoffset:-1.2}100%{stroke-dashoffset:-1.2}}
+@keyframes mt2-trace{0%,34%{stroke-dashoffset:1;stroke-opacity:1}46%{stroke-dashoffset:0}86%{stroke-dashoffset:0;stroke-opacity:1}95%,100%{stroke-dashoffset:0;stroke-opacity:0}}
+@keyframes mt2-ruban{0%,14%{stroke-dashoffset:1;stroke-opacity:1}28%{stroke-dashoffset:0}86%{stroke-dashoffset:0;stroke-opacity:1}95%,100%{stroke-dashoffset:0;stroke-opacity:0}}
+@keyframes mt2-pose-bac{0%,8%{transform:translateY(-6px);stroke-opacity:0}24%{transform:translateY(0);stroke-opacity:1}86%{transform:translateY(0);stroke-opacity:1}95%,100%{transform:translateY(0);stroke-opacity:0}}
+@keyframes mt2-leve{0%,26%{transform:translateY(0)}34%{transform:translateY(-1.6px)}50%,100%{transform:translateY(0)}}
+@keyframes mt2-route{0%{stroke-dashoffset:0;stroke-opacity:.95}100%{stroke-dashoffset:7.5;stroke-opacity:.95}}
+@keyframes mt2-tache{from{translate:0 0;scale:1}to{translate:2px -2px;scale:1.07}}
+@media (prefers-reduced-motion:reduce){.mt2c .mt-g *,.mt2c .mt-b,.mt2c .picto::before{animation:none}}
+
+/* A2 · les deux autres endroits : les métiers (« Nous rejoindre ») et les sceaux (« Notre mission ») */
+.mt2m .mt-g .hl,.mt2s .mt-anneau .ra{animation-play-state:paused;animation-iteration-count:infinite;animation-fill-mode:both}
+.mt2m.mt-vit .mt-g .hl,.mt2s.mt-vit .mt-anneau .ra{animation-play-state:running}
+.mt2m .mt-g .hl{animation-name:mt2-passe;animation-duration:10s;animation-timing-function:cubic-bezier(.45,.05,.3,1);
+  animation-delay:calc(var(--mt-d) + var(--h) * .55s)}
+@keyframes mt2-passe{0%{stroke-dashoffset:.4}16%{stroke-dashoffset:-1.2}100%{stroke-dashoffset:-1.2}}
+/* le sceau : un point de lumière fait le tour de l'anneau, très lentement */
+.mt2s .mt-anneau .rb{stroke:rgba(255,255,255,.16)}
+.mt2s .mt-anneau .ra{stroke-dasharray:.14 .86;stroke-dashoffset:0;animation-name:mt2-orbite;animation-duration:9s;animation-timing-function:linear;
+  animation-delay:var(--mt-d)}
+@keyframes mt2-orbite{from{stroke-dashoffset:0}to{stroke-dashoffset:-1}}
+@media (prefers-reduced-motion:reduce){.mt2m .mt-g .hl,.mt2s .mt-anneau .ra{animation:none}}

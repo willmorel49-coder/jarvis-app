@@ -1,0 +1,68 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MÉTIER · socle commun (fabriqué par animation/fabrique.py). L'orange est celui de la charte.
+   Rien ne s'applique sans les classes posées par le script : sans lui, la page est celle d'aujourd'hui.
+   N'anime que transform, opacity (jamais sur du texte), stroke-dashoffset, clip-path.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.mt-g .gs,.mt-g .gc,.mt-g .gt,.mt-g .gb,.mt-g .gr,.mt-g .hl{fill:none;stroke:var(--accent);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.mt-g .gs,.mt-g .hl{stroke-dasharray:.28 2;stroke-dashoffset:.4}
+.mt-g .gc,.mt-g .gt{stroke-dasharray:1 2;stroke-dashoffset:1}
+.mt-g .gb{stroke-opacity:0}
+.mt-g .gr{stroke-dasharray:3 4.5;stroke-opacity:0}
+.mt-b .sp{vector-effect:none}
+/* l'anneau des sceaux */
+.label__sceau{position:relative}
+.label__sceau svg.mt-anneau{position:absolute;left:-4px;top:-4px;width:52px;height:52px;overflow:visible;pointer-events:none;fill:none;stroke-linecap:round}
+.mt-anneau .rb{stroke:rgba(255,255,255,.0);stroke-width:1}
+.mt-anneau .ra{stroke:var(--accent-nuit);stroke-width:1.2;stroke-dasharray:1 2;stroke-dashoffset:1}
+.label__sceau svg .sp{fill:none}
+/* mouvement réduit : l'état final, tout de suite */
+@media (prefers-reduced-motion:reduce){
+  .mt-fin .gc,.mt-fin .gt{stroke-dashoffset:0}
+  .mt-fin .gb{stroke-opacity:1}
+  .mt-fin .gr{stroke-opacity:1}
+  .mt-fin-sceau .mt-anneau .ra{stroke-dashoffset:0;stroke-opacity:.7}
+}
+/* les pictos du métier passent de 38 à 52 px : le geste est enfin lisible (le bord gauche ne bouge pas) */
+.cartes--serre .carte.mt1c .picto,.cartes--serre .carte.mt2c .picto{width:52px;height:52px}
+.cartes--serre .carte.mt1c .picto::before,.cartes--serre .carte.mt2c .picto::before{left:-8px;top:5px;width:48px;height:42px}
+
+/* ── UNE FOIS : le trait se dessine, puis le geste de l'étape (A1 et scènes de A3) ─────────── */
+:root{--mt-out:cubic-bezier(.16,.84,.28,1)}
+@keyframes mt1-trace{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes mt1-scan{from{stroke-dashoffset:.4}to{stroke-dashoffset:-1.2}}
+@keyframes mt1-drop{from{transform:translateY(-7px);stroke-opacity:0}60%{stroke-opacity:1}to{transform:translateY(0);stroke-opacity:1}}
+@keyframes mt1-pose{from{transform:translateY(-1.8px)}to{transform:translateY(0)}}
+@keyframes mt1-route{from{stroke-dashoffset:0}to{stroke-dashoffset:30}}
+@keyframes mt1-opa{from{stroke-opacity:0}to{stroke-opacity:1}}
+@keyframes mt1-tache{from{scale:.55;translate:-5px 4px}to{scale:1;translate:0 0}}
+html.mt1 .mt1c .mt-b .sp{stroke-dasharray:1 2;stroke-dashoffset:1}
+html.mt1 .mt1c.mt-on .mt-b .sp{animation:mt1-trace 1.15s var(--mt-out) both;animation-delay:calc(var(--k) * 75ms)}
+html.mt1 .mt1c.mt-on .gs{animation:mt1-scan 1.05s cubic-bezier(.45,.05,.3,1) both;animation-delay:calc(1.1s + var(--g) * .42s)}
+html.mt1 .mt1c.mt-on .gc{animation:mt1-trace .9s var(--mt-out) both;animation-delay:2.5s}
+html.mt1 .mt1c.mt-on .gb{animation:mt1-drop 1.2s var(--mt-out) both;animation-delay:1.5s}
+html.mt1 .mt1c.mt-on .gt{animation:mt1-trace 1s var(--mt-out) both;animation-delay:1.4s}
+html.mt1 .mt1c.mt-s2.mt-on .mt-b{animation:mt1-pose 1.4s var(--mt-out) both;animation-delay:1.7s}
+html.mt1 .mt1c.mt-on .gr{animation:mt1-opa .7s linear both,mt1-route 3.4s cubic-bezier(.15,.75,.25,1) both;animation-delay:1.1s}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   A1 · « LE TRAJET » — un fil fin relie les quatre étapes, une lumière (la commande) le parcourt
+   au défilement ; chaque picto se trace quand elle l'atteint, puis fait son geste.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+#metier .cartes{position:relative}
+.mt1-fil{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:3}
+.mt1-fil .b{stroke:rgba(0,80,230,.2);stroke-width:1;fill:none}
+.mt1-fil .d{stroke:rgba(0,80,230,.62);stroke-width:1.2;fill:none;stroke-linecap:round}
+.mt1-fil .lueur{fill:url(#mt1-lueur)}
+.mt1-fil .pt{fill:var(--accent)}
+.mt1-fil .lueur,.mt1-fil .pt{transition:opacity .7s ease}
+/* la tache douce se pose avec le picto */
+html.mt1 .mt1c.mt-on .picto::before{animation:mt1-tache 1.5s var(--mt-out) both}
+@media (prefers-reduced-motion:reduce){.mt1-fil{display:none}}
+
+/* les métiers (« Nous rejoindre ») et les sceaux (« Notre mission ») : tracé à l'arrivée, un seul passage de lumière */
+html.mt1 .mt1m .mt-b .sp,html.mt1 .mt1s .mt-b .sp{stroke-dasharray:1 2;stroke-dashoffset:1}
+html.mt1 .mt1m.mt-on .mt-b .sp{animation:mt1-trace 1.1s var(--mt-out) both;animation-delay:calc(var(--k) * 70ms)}
+html.mt1 .mt1m.mt-on .hl{animation:mt1-scan 1.7s cubic-bezier(.45,.05,.3,1) both;animation-delay:calc(1.3s + var(--h) * .5s)}
+html.mt1 .mt1s.mt-on .mt-b .sp{animation:mt1-trace 1s var(--mt-out) both;animation-delay:calc(var(--k) * 120ms)}
+html.mt1 .mt1s.mt-on .ra{animation:mt1-trace 2s var(--mt-out) both;animation-delay:.5s}
+.mt1s .mt-anneau .ra{stroke-opacity:.8}

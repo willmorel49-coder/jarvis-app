@@ -1,0 +1,145 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MÉTIER · socle commun (fabriqué par animation/fabrique.py). L'orange est celui de la charte.
+   Rien ne s'applique sans les classes posées par le script : sans lui, la page est celle d'aujourd'hui.
+   N'anime que transform, opacity (jamais sur du texte), stroke-dashoffset, clip-path.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.mt-g .gs,.mt-g .gc,.mt-g .gt,.mt-g .gb,.mt-g .gr,.mt-g .hl{fill:none;stroke:var(--accent);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.mt-g .gs,.mt-g .hl{stroke-dasharray:.28 2;stroke-dashoffset:.4}
+.mt-g .gc,.mt-g .gt{stroke-dasharray:1 2;stroke-dashoffset:1}
+.mt-g .gb{stroke-opacity:0}
+.mt-g .gr{stroke-dasharray:3 4.5;stroke-opacity:0}
+.mt-b .sp{vector-effect:none}
+/* l'anneau des sceaux */
+.label__sceau{position:relative}
+.label__sceau svg.mt-anneau{position:absolute;left:-4px;top:-4px;width:52px;height:52px;overflow:visible;pointer-events:none;fill:none;stroke-linecap:round}
+.mt-anneau .rb{stroke:rgba(255,255,255,.0);stroke-width:1}
+.mt-anneau .ra{stroke:var(--accent-nuit);stroke-width:1.2;stroke-dasharray:1 2;stroke-dashoffset:1}
+.label__sceau svg .sp{fill:none}
+/* mouvement réduit : l'état final, tout de suite */
+@media (prefers-reduced-motion:reduce){
+  .mt-fin .gc,.mt-fin .gt{stroke-dashoffset:0}
+  .mt-fin .gb{stroke-opacity:1}
+  .mt-fin .gr{stroke-opacity:1}
+  .mt-fin-sceau .mt-anneau .ra{stroke-dashoffset:0;stroke-opacity:.7}
+}
+/* les pictos du métier passent de 38 à 52 px : le geste est enfin lisible (le bord gauche ne bouge pas) */
+.cartes--serre .carte.mt1c .picto,.cartes--serre .carte.mt2c .picto{width:52px;height:52px}
+.cartes--serre .carte.mt1c .picto::before,.cartes--serre .carte.mt2c .picto::before{left:-8px;top:5px;width:48px;height:42px}
+
+/* ── UNE FOIS : le trait se dessine, puis le geste de l'étape (A1 et scènes de A3) ─────────── */
+:root{--mt-out:cubic-bezier(.16,.84,.28,1)}
+@keyframes mt1-trace{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes mt1-scan{from{stroke-dashoffset:.4}to{stroke-dashoffset:-1.2}}
+@keyframes mt1-drop{from{transform:translateY(-7px);stroke-opacity:0}60%{stroke-opacity:1}to{transform:translateY(0);stroke-opacity:1}}
+@keyframes mt1-pose{from{transform:translateY(-1.8px)}to{transform:translateY(0)}}
+@keyframes mt1-route{from{stroke-dashoffset:0}to{stroke-dashoffset:30}}
+@keyframes mt1-opa{from{stroke-opacity:0}to{stroke-opacity:1}}
+@keyframes mt1-tache{from{scale:.55;translate:-5px 4px}to{scale:1;translate:0 0}}
+html.mt1 .mt1c .mt-b .sp{stroke-dasharray:1 2;stroke-dashoffset:1}
+html.mt1 .mt1c.mt-on .mt-b .sp{animation:mt1-trace 1.15s var(--mt-out) both;animation-delay:calc(var(--k) * 75ms)}
+html.mt1 .mt1c.mt-on .gs{animation:mt1-scan 1.05s cubic-bezier(.45,.05,.3,1) both;animation-delay:calc(1.1s + var(--g) * .42s)}
+html.mt1 .mt1c.mt-on .gc{animation:mt1-trace .9s var(--mt-out) both;animation-delay:2.5s}
+html.mt1 .mt1c.mt-on .gb{animation:mt1-drop 1.2s var(--mt-out) both;animation-delay:1.5s}
+html.mt1 .mt1c.mt-on .gt{animation:mt1-trace 1s var(--mt-out) both;animation-delay:1.4s}
+html.mt1 .mt1c.mt-s2.mt-on .mt-b{animation:mt1-pose 1.4s var(--mt-out) both;animation-delay:1.7s}
+html.mt1 .mt1c.mt-on .gr{animation:mt1-opa .7s linear both,mt1-route 3.4s cubic-bezier(.15,.75,.25,1) both;animation-delay:1.1s}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   A2 · « LES GESTES » — chaque picto joue UN geste au trait, en boucle lente (9 s),
+   décalé d'une carte à l'autre pour que rien ne batte en mesure. Ne tourne que sur les cartes
+   visibles (classe mt-vit posée par le script). Au repos, le picto est exactement celui d'origine.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.mt2c{--mt-T:9s}
+.mt2c .mt-g *,.mt2c .mt-b,.mt2c .picto::before{animation-duration:var(--mt-T);animation-timing-function:cubic-bezier(.45,.05,.3,1);
+  animation-iteration-count:infinite;animation-fill-mode:both;animation-play-state:paused}
+.mt2c.mt-vit .mt-g *,.mt2c.mt-vit .mt-b,.mt2c.mt-vit .picto::before{animation-play-state:running}
+/* étape 1 · la commande arrive : un trait de lumière lit chaque ligne, puis la coche se trace */
+.mt2c .gs{animation-name:mt2-scan;animation-delay:calc(var(--mt-d) + var(--g) * .75s)}
+.mt2c .gc{animation-name:mt2-trace;animation-delay:calc(var(--mt-d) + 0s)}
+/* étape 2 · le bac se remplit : une boîte orange descend dans l'emplacement libre */
+.mt2c .gb{animation-name:mt2-pose-bac;animation-delay:var(--mt-d)}
+/* étape 3 · la préparation : le colis se soulève d'un trait, le ruban se tire */
+.mt2c .gt{animation-name:mt2-ruban;animation-delay:var(--mt-d)}
+.mt2c.mt-s2 .mt-b{animation-name:mt2-leve;animation-delay:var(--mt-d)}
+/* étape 4 · la tournée : la route défile sous le camion */
+.mt2c .gr{animation-name:mt2-route;animation-duration:2.8s;animation-timing-function:linear;animation-delay:var(--mt-d)}
+/* la tache douce respire à peine */
+.mt2c .picto::before{animation-name:mt2-tache;animation-duration:14s;animation-timing-function:ease-in-out;animation-direction:alternate;animation-delay:var(--mt-d)}
+
+@keyframes mt2-scan{0%{stroke-dashoffset:.4}14%{stroke-dashoffset:-1.2}100%{stroke-dashoffset:-1.2}}
+@keyframes mt2-trace{0%,34%{stroke-dashoffset:1;stroke-opacity:1}46%{stroke-dashoffset:0}86%{stroke-dashoffset:0;stroke-opacity:1}95%,100%{stroke-dashoffset:0;stroke-opacity:0}}
+@keyframes mt2-ruban{0%,14%{stroke-dashoffset:1;stroke-opacity:1}28%{stroke-dashoffset:0}86%{stroke-dashoffset:0;stroke-opacity:1}95%,100%{stroke-dashoffset:0;stroke-opacity:0}}
+@keyframes mt2-pose-bac{0%,8%{transform:translateY(-6px);stroke-opacity:0}24%{transform:translateY(0);stroke-opacity:1}86%{transform:translateY(0);stroke-opacity:1}95%,100%{transform:translateY(0);stroke-opacity:0}}
+@keyframes mt2-leve{0%,26%{transform:translateY(0)}34%{transform:translateY(-1.6px)}50%,100%{transform:translateY(0)}}
+@keyframes mt2-route{0%{stroke-dashoffset:0;stroke-opacity:.95}100%{stroke-dashoffset:7.5;stroke-opacity:.95}}
+@keyframes mt2-tache{from{translate:0 0;scale:1}to{translate:2px -2px;scale:1.07}}
+@media (prefers-reduced-motion:reduce){.mt2c .mt-g *,.mt2c .mt-b,.mt2c .picto::before{animation:none}}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   A3 · « LE PLAN FIXE » — sur ordinateur, la section se tient à l'écran ; le défilement fait avancer les
+   quatre étapes une à une (grande scène au trait à gauche, le texte de l'étape à droite, repère 1-2-3-4).
+   Sur téléphone, écran bas ou mouvement réduit : la section reste celle d'aujourd'hui + les gestes d'A2.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+#metier.mt3{padding-top:64px}
+html.mt3on #metier .dedans{position:sticky;top:var(--barre);height:calc(100vh - var(--barre) - 16px);height:calc(100svh - var(--barre) - 16px);
+  display:flex;flex-direction:column;justify-content:center}
+.mt3-piste{display:block}
+/* la carte devient la scène : une grande carte blanche, la scène à gauche, le texte à droite */
+html.mt3on #metier .cartes{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;
+  column-gap:clamp(24px,4.5vw,72px);row-gap:var(--e4);align-items:center;margin-top:var(--e5);padding:clamp(18px,2.4vw,36px);
+  background:linear-gradient(158deg,#FFFFFF 0%,#F8FAFD 60%,#FFFFFF 100%);border:1px solid var(--filet);border-radius:var(--rond);
+  box-shadow:0 30px 60px -40px rgba(11,18,32,.28);overflow:hidden;position:relative}
+html.mt3on #metier .cartes .carte{grid-column:2;grid-row:1;background:none;border:0;padding:0;overflow:visible;box-shadow:none;
+  opacity:1 !important;transform:none !important;translate:none;scale:none;transition:clip-path .8s var(--mt-out),translate .8s var(--mt-out);
+  clip-path:inset(0 0 100% 0);translate:0 22px;pointer-events:none}
+html.mt3on #metier .cartes .carte::before{display:none}
+html.mt3on #metier .cartes .carte:hover{scale:none;box-shadow:none;border-color:transparent}
+html.mt3on #metier .cartes .carte.mt3-on{clip-path:inset(-10px -10px -10px -10px);translate:0 0;pointer-events:auto;transition-delay:.18s}
+html.mt3on #metier .cartes .carte .picto{display:none}
+html.mt3on #metier .cartes .carte .petit-accent{margin-bottom:var(--e4);font-size:clamp(15px,1.2vw,17px)}
+html.mt3on #metier .cartes .carte .t-carte{font-size:clamp(28px,3vw,44px);line-height:1.06;letter-spacing:-.03em;min-height:0;margin-bottom:var(--e4)}
+html.mt3on #metier .cartes .carte .corps{font-size:clamp(17px,1.4vw,20px);line-height:1.5;max-width:30ch}
+.mt3-visuel{grid-column:1;grid-row:1 / 3;align-self:stretch;justify-self:stretch;position:relative;min-height:0;display:flex;align-items:center;justify-content:center}
+.mt3-svg{display:block;height:100%;width:100%;max-height:100%;aspect-ratio:1/1;overflow:visible;fill:none;stroke:var(--act);stroke-width:.34;stroke-linecap:round;stroke-linejoin:round}
+.mt3-svg .sp{stroke-width:.34}
+.mt3-svg .mt-g *{stroke-width:.4}
+.mt3-svg .tache{fill:var(--bleu-clair);stroke:none;transform-box:fill-box;transform-origin:50% 50%;transition:transform 1.2s var(--mt-out)}
+.mt3-svg .sc{opacity:0;transition:opacity .5s ease}
+.mt3-svg .sc.vis{opacity:1}
+/* les extras des scènes (en coordonnées de la scène, 100 × 100) */
+.mt3-svg .gh{stroke:var(--act);stroke-opacity:.3;stroke-width:.3}
+.mt3-svg .pt{stroke:var(--act);stroke-width:.4;fill:none;transform-box:fill-box;transform-origin:50% 50%}
+.mt3-svg .pt.al{stroke:var(--accent);fill:var(--accent)}
+.mt3-svg .ombre{stroke:var(--act);stroke-opacity:.2;stroke-width:.4}
+.mt3-svg .gr3{stroke:var(--accent);stroke-width:.45;stroke-dasharray:5 6;stroke-opacity:0}
+.mt3-svg .gx{stroke:var(--accent);stroke-width:.5;stroke-dasharray:1 2;stroke-dashoffset:1}
+.mt3-svg .lueur3{fill:url(#mt3-lueur);stroke:none;opacity:0;transform-box:fill-box;transform-origin:50% 50%}
+/* gestes propres aux scènes */
+@keyframes mt3-ghost{from{transform:translate(0,0);stroke-opacity:0}to{transform:var(--to);stroke-opacity:.3}}
+@keyframes mt3-pt{from{stroke-opacity:0;scale:.2;fill-opacity:0}to{stroke-opacity:1;scale:1;fill-opacity:1}}
+@keyframes mt3-roule{from{transform:translateX(0)}to{transform:translateX(15px)}}
+@keyframes mt3-route3{from{stroke-dashoffset:0}to{stroke-dashoffset:33}}
+@keyframes mt3-lueur{from{opacity:0;scale:.4}to{opacity:1;scale:1}}
+html.mt1 .mt1c.mt-on .gh{animation:mt3-ghost 1.1s var(--mt-out) both;animation-delay:1.2s}
+html.mt1 .mt1c.mt-on .gh.g2{animation-delay:1.45s}
+html.mt1 .mt1c.mt-on .pt{animation:mt3-pt .6s var(--mt-out) both;animation-delay:calc(.2s + var(--q) * .11s)}
+html.mt1 .mt1c.mt-on .pt.al{animation-delay:1.6s}
+html.mt1 .mt1c.mt-on .ombre{animation:mt1-opa 1s linear both}
+html.mt1 .mt1c.mt-on .camion{animation:mt3-roule 3.4s cubic-bezier(.2,.7,.2,1) both;animation-delay:1.3s}
+html.mt1 .mt1c.mt-on .gr3{animation:mt1-opa .6s linear both,mt3-route3 3.4s cubic-bezier(.2,.7,.2,1) both;animation-delay:1.3s}
+html.mt1 .mt1c.mt-on .gx{animation:mt1-trace .9s var(--mt-out) both;animation-delay:3.6s}
+html.mt1 .mt1c.mt-on .lueur3{animation:mt3-lueur 1.8s var(--mt-out) both;animation-delay:3.5s}
+/* le repère 1-2-3-4 */
+.mt3-repere{grid-column:2;grid-row:2;align-self:end;position:relative;padding-top:var(--e4)}
+.mt3-repere .n{display:flex;justify-content:space-between;font-size:15px;font-weight:500;letter-spacing:0;color:var(--encre-80)}
+.mt3-repere .n span{position:relative;transition:color .5s ease;display:inline-block;width:2ch;text-align:left}
+.mt3-repere .n span.on{color:var(--act)}
+.mt3-repere .n span:last-child{text-align:right}
+.mt3-repere .rail{display:block;height:2px;margin-top:var(--e3);background:rgba(17,19,24,.12);border-radius:2px;overflow:hidden;position:relative}
+.mt3-repere .rail i{position:absolute;inset:0;background:var(--act);transform-origin:0 50%;transform:scaleX(var(--p,0))}
+.mt3-repere .rail b{position:absolute;top:-1px;left:0;width:4px;height:4px;border-radius:50%;background:var(--accent);translate:calc(var(--px,0) * 1px) 0}
+@media (prefers-reduced-motion:reduce){html.mt3on #metier .cartes .carte{transition:none}}
+
+/* A3 · les deux autres endroits : le trait se dessine EN MÊME TEMPS que le défilement (la main sur la molette) */
+.mt3m .mt-b .sp,.mt3s .mt-b .sp{stroke-dasharray:1 2}
+.mt3s .mt-anneau .ra{stroke-opacity:.8}
