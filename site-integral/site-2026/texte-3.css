@@ -1,0 +1,18 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TEXTE 3 · « PLUS COURT » = TEXTE 1 + versions raccourcies + « Lire la suite » animé.
+   Le texte court et le texte complet occupent la même place : l'un se replie pendant que l'autre
+   se déplie (hauteur animée par grid-template-rows). Aucune opacité sur du texte au repos.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+.t3-zone{display:grid;grid-template-rows:1fr;transition:grid-template-rows .75s var(--m-out,cubic-bezier(.16,.84,.28,1)),visibility 0s}
+.t3-zone > .t3-in{min-height:0;overflow:hidden;padding-block:.15em}
+.t3-plein{grid-template-rows:0fr;visibility:hidden;transition:grid-template-rows .75s var(--m-out,cubic-bezier(.16,.84,.28,1)),visibility 0s .75s}
+.t3-ouvert .t3-court{grid-template-rows:0fr;visibility:hidden;transition:grid-template-rows .75s var(--m-out,cubic-bezier(.16,.84,.28,1)),visibility 0s .75s}
+.t3-ouvert .t3-plein{grid-template-rows:1fr;visibility:visible;transition:grid-template-rows .75s var(--m-out,cubic-bezier(.16,.84,.28,1)),visibility 0s 0s}
+/* le bouton : le lien de la charte, en bouton */
+.t3-btn{appearance:none;-webkit-appearance:none;background:none;border:0;padding:0;font-family:inherit;cursor:pointer;margin-top:var(--e3)}
+.t3-btn svg{width:14px;height:9px;transition:transform .5s var(--m-out,cubic-bezier(.16,.84,.28,1))}
+.t3-ouvert .t3-btn svg{transform:rotate(180deg)}
+.t3-btn:focus-visible{outline:2px solid var(--anneau,var(--act));outline-offset:4px;border-radius:6px}
+@media (prefers-reduced-motion:reduce){
+  .t3-zone,.t3-plein,.t3-ouvert .t3-court,.t3-ouvert .t3-plein,.t3-btn svg{transition:none}
+}

@@ -1,0 +1,18 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TEXTE 2 · « LA LECTURE VIVANTE » = TEXTE 1 + relief, citations, lecture au défilement.
+   La lecture est pilotée par texte-2.js (une couleur par mot) : sans lui, l'encre est pleine.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+/* chiffres et noms propres en relief : un cran de graisse, l'encre pleine */
+html.t1 .t2-rel{font-weight:600;color:var(--encre);letter-spacing:-.012em}
+html.t1 .nuit .t2-rel,html.t1 .bleu .t2-rel{color:#fff}
+/* la phrase forte : la fin du dernier paragraphe, déplacée sous lui et reprise en grand (jamais redite) */
+.t2-cit{margin-top:var(--e5)}
+.t2-cit p{margin:0;font-size:clamp(26px,2.7vw,38px);font-weight:300;line-height:1.14;letter-spacing:-.026em;color:var(--encre);text-wrap:balance}
+.t2-cit p::first-letter{text-transform:uppercase}
+.nuit .t2-cit p,.bleu .t2-cit p{color:#fff}
+/* elle se pose à l'arrivée : montée courte (l'état final est sa place exacte) */
+html.m .t2-cit.t2-att:not(.t2-vu){opacity:0;transform:translateY(24px)}
+html.m .t2-cit.t2-att{transition:opacity 1s var(--m-out),transform 1s var(--m-out)}
+@media (prefers-reduced-motion:reduce){
+  html.m .t2-cit.t2-att{transition:none}
+}
