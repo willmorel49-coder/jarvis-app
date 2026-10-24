@@ -1484,7 +1484,7 @@
       '.cn-fiche .cn-pacts{flex-direction:column;gap:8px}',
       '.cn-fiche .cn-pact-full{gap:8px;justify-content:center}',
       // Téléphone : tiroir bas à hauteur FIXE (74 % de la carte) → le contenu défile dedans, les boutons restent visibles
-      '@media(max-width:760px){.cn-fiche{top:auto;left:0;right:0;bottom:0;width:100%;height:74%}.cn-fiche .cn-pdialog{border-radius:18px 18px 0 0}.cn-fiche .cn-pacts{padding:10px 12px}}',
+      '@media(max-width:760px){.cn-fiche{top:auto;left:0;right:0;bottom:0;width:100%;height:88%}.cn-maparea .leaflet-bottom{z-index:640}.cn-fiche .cn-pdialog{border-radius:18px 18px 0 0}.cn-fiche .cn-pacts{padding:10px 12px;flex-direction:row}.cn-fiche .cn-pacts .v2-btn{min-height:44px}.cn-fiche .cn-pact-full{flex-basis:100%}}',   // .leaflet-bottom (z 1000 par défaut) passe sous la fiche (z 650) : « Fond : Esri… » chevauchait « Itinéraire »
       '@media(min-width:640px){.cn-pdialog{border-radius:18px}}',
       '.cn-phead{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line)}',
       '.cn-phead b{font-size:16px;font-weight:800;color:var(--ip-ink)}.cn-phead small{display:block;font-size:12px;color:var(--muted);margin-top:2px}',
@@ -1738,16 +1738,21 @@
   // bulles, zones, export) vit sous « Plus de filtres » : toujours là, jamais en travers.
   var fbMore = false;
   function fbSecondaryActive() { return !!(deptFocus.length || ugaFocus.length || caMin || caMax || potMin || repOnly || villeFocus || titFocus || zonesOn || displayMode !== 'points' || colorMode !== 'type'); }
+  // 24/10/2026 — Pauline S. (Android) : au téléphone, le panneau ouvert écrasait la fiche de l'officine, et un
+  // filtre posé l'empêchait de se refermer. Sur petit écran, les filtres actifs restent visibles en puces :
+  // le panneau ne s'ouvre plus que sur demande, et la fiche le referme en s'ouvrant (V2.carteFiche).
+  function fbEtroit() { return !!(window.matchMedia && window.matchMedia('(max-width:760px)').matches); }
+  function fbIsOpen() { return fbMore || (!fbEtroit() && fbSecondaryActive()); }
   function renderFbRow() {
     var el = document.getElementById('cn-fbrow'); if (!el) return;
     var narrow = window.matchMedia && window.matchMedia('(max-width:760px)').matches;
     var commItem = fbItem('comm', commFocus.length === 1 ? commFocus[0] : commFocus.length ? commFocus.length + ' commerciaux' : 'Commercial', commFocus.length > 0);
     var grpItem = fbItem('grp', grpFocus.length === 1 ? grpFocus[0] : grpFocus.length ? grpFocus.length + ' groupements' : 'Groupement', grpFocus.length > 0);
-    var more = fbMore || fbSecondaryActive();
+    var more = fbIsOpen();
     el.innerHTML =
       '<div class="cn-seg cn-statut" role="group" aria-label="Statut">' + typeBtn('all', 'Tout') + typeBtn('clients', 'Clients') + typeBtn('prospects', 'Prospects') + '</div>' +
       (narrow ? '' : commItem + grpItem) +
-      '<button class="cn-fb-btn cn-fb-more' + (more ? ' on' : '') + '" aria-expanded="' + (more ? 'true' : 'false') + '" onclick="V2.carteFbMore()">' + (narrow ? 'Filtres' : 'Plus de filtres') + '<i class="cn-fb-car">' + (more ? '▴' : '▾') + '</i></button>';
+      '<button class="cn-fb-btn cn-fb-more' + (more || fbSecondaryActive() ? ' on' : '') + '" aria-expanded="' + (more ? 'true' : 'false') + '" onclick="V2.carteFbMore()">' + (narrow ? 'Filtres' : 'Plus de filtres') + '<i class="cn-fb-car">' + (more ? '▴' : '▾') + '</i></button>';
     // Les deux actions vivent sur la ligne de recherche (à droite) : elles ne bougent jamais,
     // et sur téléphone la ligne des filtres ne passe pas à la ligne.
     var acts = document.getElementById('cn-fbacts');
@@ -1779,7 +1784,7 @@
       '</select>' +
       '<button class="cn-fb-btn cn-fb-ghost" onclick="V2.carteExportKml()">' + ICO('download', 13) + '<span>Exporter vers Google My Maps</span></button>';
   }
-  V2.carteFbMore = function () { fbMore = !(fbMore || fbSecondaryActive()); if (!fbMore) fbOpen = ''; renderFbRow(); };
+  V2.carteFbMore = function () { fbMore = !fbIsOpen(); if (!fbMore) fbOpen = ''; renderFbRow(); };
   function renderFbChips(n) {
     var cel = document.getElementById('cn-fbcount');
     if (cel) { if (n == null) { n = 0; if (D) for (var i = 0; i < D.p.length; i++) if (pass(D.p[i])) n++; } cel.textContent = n.toLocaleString('fr') + ' officine' + (n > 1 ? 's' : ''); }
@@ -2040,6 +2045,7 @@
     // « Liste », la fiche s'ouvrait DERRIÈRE le panneau de liste (z 3000) — invisible. Une fiche
     // ancrée à la carte n'a de sens que carte visible : on ferme la liste avant de l'ouvrir.
     V2.carteListClose();
+    if (fbEtroit() && (fbMore || fbOpen)) { fbMore = false; fbOpen = ''; renderFbRow(); if (map) setTimeout(function () { if (map) map.invalidateSize(); }, 0); }   // 24/10/2026 : la fiche prend la place des filtres
     if (!document.getElementById('cn-fiche')) {
       // Fiche ANCRÉE à la carte (volet à droite sur ordinateur, tiroir bas sur téléphone) :
       // la carte reste visible et cliquable, un autre point remplace simplement la fiche.
