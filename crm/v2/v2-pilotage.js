@@ -1276,6 +1276,37 @@
 
   // PAGE
   // ════════════════════════════════════════════
+  // 24/10/2026 — « Qui se connecte à JARVIS » : relevé privé (noms + adresses de connexion),
+  // réservé au compte de Will. La tuile n'existe qu'après le oui de la base
+  // (jarvis_acces_connexions, crm/v2/_sql/connexions.sql) ; le fichier vit dans le seau protégé.
+  var _cnx = null;   // null = pas encore demandé · false = refusé · { date } = admis
+  function cnxBloc() {
+    if (!_cnx) return '';
+    return '<a class="pilo-marche" onclick="V2.ouvrirDocProtege(\'connexions\')">' + ICO('fiche', 17) +
+        '<span><b>Qui se connecte à JARVIS</b><small>Relevé privé, visible de votre seul compte' +
+        (_cnx.date ? ' · mis à jour le ' + esc(_cnx.date) : '') + ' : comptes, connexions ratées, lieux.</small></span>' +
+        '<span class="pilo-marche-go">Ouvrir ' + ICO('chev', 16) + '</span></a>' +
+      '<div style="margin:-6px 0 18px;text-align:right"><button class="v2-btn v2-btn-ghost" onclick="V2.ouvrirDocProtege(\'connexionsExcel\')">' +
+        ICO('fiche', 15) + ' Le relevé en Excel</button></div>';
+  }
+  function cnxVerifie() {
+    var c = (V2.sb && V2.sb()) || null;
+    if (_cnx !== null || !c || !c.rpc) return;
+    _cnx = false;
+    Promise.resolve(c.rpc('jarvis_acces_connexions')).then(function (r) {
+      if (!(r && !r.error && r.data === true)) return;
+      return c.storage.from('donnees-protegees').list('', { search: 'connexions-jarvis.html', limit: 5 }).then(function (l) {
+        var o = l && l.data && l.data.filter(function (x) { return x.name === 'connexions-jarvis.html'; })[0];
+        var d = o && (o.updated_at || o.created_at) ? new Date(o.updated_at || o.created_at) : null;
+        return d && !isNaN(d) ? d.toLocaleDateString('fr-FR') : '';
+      }, function () { return ''; }).then(function (date) {
+        _cnx = { date: date };
+        var slot = document.getElementById('pilo-cnx');
+        if (slot) slot.innerHTML = cnxBloc();
+      });
+    }, function () {});
+  }
+
   V2.pages.pilotage = {
     render: function (root) {
       // ── Confidentialité inter-commerciaux (Pilotage uniquement) ──
@@ -2253,6 +2284,7 @@
       root.innerHTML = top +
         '<div class="v2-wrap">' +
           header +
+          '<div id="pilo-cnx">' + cnxBloc() + '</div>' +
           marcheLink +
           (opsoSect ? opsoSect.html : '') +
           // ── ESSENTIEL, toujours visible : où j'en suis en un coup d'œil ──
