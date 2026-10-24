@@ -69,6 +69,9 @@
     // trois mois. La propriété URL est affichée cliquable par la plupart des
     // agendas ; ceux qui l'ignorent montrent quand même la description.
     if (r.url) lignes.push('URL:' + ech(r.url));
+    // Un rappel de la to do list qui revient (chaque semaine, chaque mois) : la règle
+    // est écrite telle quelle (ex. FREQ=WEEKLY), sans échappement.
+    if (r.rrule) lignes.push('RRULE:' + r.rrule);
 
     // ── Les rappels ─────────────────────────────────────────────
     // Le seul moyen GRATUIT de rappeler un rendez-vous à un pharmacien :
@@ -81,8 +84,9 @@
     // et une heure avant pour qu'il soit là. Un rappel unique la veille
     // s'oublie dans la journée ; un rappel unique à l'heure arrive trop
     // tard pour prévenir.
+    // `alarmes` remplace les deux rappels d'un rendez-vous (to do list : une alerte à l'heure).
     if (r.rappels !== false) {
-      [['-P1D', 'Rendez-vous demain'], ['-PT1H', 'Rendez-vous dans une heure']]
+      (r.alarmes || [['-P1D', 'Rendez-vous demain'], ['-PT1H', 'Rendez-vous dans une heure']])
         .forEach(function (a) {
           lignes = lignes.concat([
             'BEGIN:VALARM',
