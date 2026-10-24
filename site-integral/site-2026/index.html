@@ -127,9 +127,9 @@
 
 /* le relevé des postes ouverts */
 .releve{margin-top:var(--e7)}
-.tampon{display:inline-flex;align-items:center;gap:var(--e2);padding:6px 14px;border-radius:var(--pilule);
+.tampon{display:inline-flex;align-items:flex-start;gap:var(--e2);padding:6px 14px;border-radius:var(--pilule);
   border:1px solid var(--filet);background:#FCFDFF;font-size:14px;color:var(--encre-48)}
-.tampon i{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none}
+.tampon i{width:7px;height:7px;margin-top:calc((1.47em - 7px) / 2);border-radius:50%;background:var(--accent);flex:none}  /* le point suit la 1re ligne, même sur deux lignes */
 .lignes{margin-top:var(--e5);border-top:1px solid var(--filet)}
 .ligne{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) auto;gap:var(--e4);align-items:center;
   padding:var(--e4) var(--e3);border-bottom:1px solid var(--filet);
@@ -139,7 +139,12 @@
 .ligne .ou{color:var(--encre-48)}
 .ligne .ct{display:inline-flex;align-items:center;gap:var(--e2);font-size:14px;color:var(--encre-80);white-space:nowrap}
 .ligne .ct i{width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none}
-@media (max-width:640px){.ligne{grid-template-columns:1fr;gap:var(--e2);padding-inline:0}}
+/* une seule grille pour toutes les lignes : les colonnes tombent au même endroit d'une ligne à l'autre */
+@supports (grid-template-columns:subgrid){
+  .lignes{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) auto}
+  .ligne{grid-template-columns:subgrid;grid-column:1/-1}
+}
+@media (max-width:640px){.lignes{display:block}.ligne{grid-template-columns:1fr;gap:var(--e2);padding-inline:0}}
 
 /* ═════ VALEURS ═══════════════════════════════════════════════════════════════ */
 .valeurs{display:grid;grid-template-columns:repeat(4,1fr);margin-top:var(--e8);border-top:1px solid var(--filet)}

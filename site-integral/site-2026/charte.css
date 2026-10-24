@@ -110,6 +110,9 @@ ul{list-style:none;padding:0}
 .centre{text-align:center}
 .centre .t-lg,.centre .t-md,.centre .lire,.centre .lead-aere{margin-inline:auto}
 .lire{max-width:var(--lire)}
+/* retours à la ligne : titres équilibrés, jamais un mot seul sur la dernière ligne d'un texte */
+h1,h2,h3,.action b,.toit__legende b,.met span,.tampon,.chemin li > span:last-child{text-wrap:balance}
+p,li,.valeurs-ligne span{text-wrap:pretty}
 
 /* la couleur des rôles selon le fond */
 .nuit{color:var(--encre-nuit)}
@@ -191,6 +194,8 @@ a:hover > .lien{text-decoration:underline;text-underline-offset:4px}
 .cartes--serre .picto{width:38px;height:38px;margin-bottom:var(--e4)}
 .cartes--serre .picto::before{left:-6px;top:4px;width:35px;height:31px}
 .cartes--serre .t-carte{margin-bottom:var(--e3)}
+/* quatre colonnes : le texte démarre à la même hauteur, que le titre tienne sur une ou deux lignes */
+@media (min-width:1081px){.cartes--serre .t-carte{min-height:2.28em}}
 .cartes--serre .corps{font-size:16px;line-height:1.45}
 .carte .t-carte{margin-bottom:var(--e4)}
 .carte .corps{color:var(--encre-80)}
@@ -278,7 +283,8 @@ a:hover > .lien{text-decoration:underline;text-underline-offset:4px}
 }
 
 /* ═════ 8 · LE PIED ═══════════════════════════════════════════════════════════ */
-.pied{position:relative;z-index:10;color:var(--encre-nuit-doux);padding:var(--sect-demi) var(--gout);
+/* padding bas 104px : le dernier texte reste au-dessus de la pastille LinkedIn */
+.pied{position:relative;z-index:10;color:var(--encre-nuit-doux);padding:var(--sect-demi) var(--gout) max(var(--sect-demi),104px);
   background:linear-gradient(180deg,#070C17 0%, #04070F 100%)}
 .pied__in{display:grid;gap:var(--e5);max-width:var(--large);margin-inline:auto}
 .pied__logo{display:inline-block;background:#fff;border-radius:var(--rond-p);padding:var(--e3) var(--e4)}
@@ -337,7 +343,7 @@ html.js .rv.vu{opacity:1;transform:none}
 .pied .pied__in{position:relative;z-index:1}
 
 /* b · le titre qui se lève mot à mot, à l'ouverture (kinetic-word-reveal) */
-.mot{display:inline-block;overflow:hidden;vertical-align:top;padding:.03em .02em .06em}
+.mot{display:inline-block;overflow:hidden;vertical-align:top;padding:.03em .02em .06em;margin-inline:-.02em .02em}  /* le retrait de .02em ne décale plus la 1re ligne hors de la colonne */
 .mot > i{display:inline-block;font-style:inherit;transform:translateY(110%);opacity:0;
   animation:mot-monte .9s cubic-bezier(.16,.84,.28,1) forwards;animation-delay:var(--d,0ms)}
 @keyframes mot-monte{to{transform:none;opacity:1}}
