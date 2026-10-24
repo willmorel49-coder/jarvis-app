@@ -442,6 +442,8 @@
     // 21/10/2026 — « Listing produits 2027 » : ligne posée seulement si la base répond oui (v2-listings2027.js).
     // 22/10/2026 — « Notre marge par produit » y est fusionnée (onglets) : plus de ligne à part.
     if (m && V2.listings2027 && V2.listings2027.menu) V2.listings2027.menu(m);
+    // 24/10/2026 — « Sécurité » : ligne posée seulement si la base répond oui (v2-securite.js).
+    if (m && V2.securite && V2.securite.menu) V2.securite.menu(m);
     if (m) fopsMenu(m);
   };
 
@@ -1690,6 +1692,7 @@
     var e = document.getElementById('u2-eto');
     if (e && V2.etonnement && V2.etonnement.menu) { try { V2.etonnement.menu(e); } catch (x) {} }
     if (e && V2.listings2027 && V2.listings2027.menu) { try { V2.listings2027.menu(e); } catch (x) {} }
+    if (e && V2.securite && V2.securite.menu) { try { V2.securite.menu(e); } catch (x) {} }
     if (e) { try { fopsMenu(e); } catch (x) {} }
   }
   function u2Rail() {
