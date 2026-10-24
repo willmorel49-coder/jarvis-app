@@ -45,6 +45,13 @@ test('les retours a la ligne de la description sont echappes', () => {
   assert.ok(s.includes('ligne 1\\nligne 2'));
 });
 
+test('un retour chariot seul est echappe aussi (pas de ligne injectee)', () => {
+  const s = ICS.build({ ...BASE, description: 'a\rATTENDEE:x\r\nb' });
+  assert.ok(s.includes('a\\nATTENDEE:x\\nb'));
+  assert.ok(!/\r(?!\n)/.test(s));
+  assert.ok(!s.split('\r\n').some(l => l.startsWith('ATTENDEE')));
+});
+
 test('aucune ligne ne depasse 75 octets', () => {
   const s = ICS.build({ ...BASE, description: 'x'.repeat(400) });
   s.split('\r\n').forEach(l => {

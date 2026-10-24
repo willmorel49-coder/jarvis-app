@@ -18,6 +18,8 @@
   var MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
               'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
   var INDISPO = 'Le service est momentanément indisponible. Merci de réessayer dans un instant.';
+  // La base refuse ces deux signes (raison « caracteres_interdits ») : on le dit avant l'envoi.
+  var CHEVRONS = 'Les signes < et > ne sont pas acceptés : merci de les retirer.';
 
   function esc(s) {
     return String(s == null ? '' : s)
@@ -204,6 +206,7 @@
       var cp = (document.getElementById('cp').value || '').trim();
       var e = document.getElementById('err');
       if (nom.length < 2) { e.textContent = 'Indiquez le nom de votre officine.'; return; }
+      if (/[<>]/.test(nom)) { e.textContent = CHEVRONS; return; }
       if (!/^[0-9]{5}$/.test(cp)) { e.textContent = 'Le code postal doit avoir 5 chiffres.'; return; }
       b.disabled = true; b.textContent = 'Un instant…';
       // Le code postal sert à placer l'officine sur la carte, donc à ne
@@ -569,7 +572,8 @@
       carte(
         '<label for="nom">Votre nom</label><input id="nom" autocomplete="name" />' +
         '<label for="tel">Votre téléphone (facultatif)</label><input id="tel" type="tel" autocomplete="tel" />' +
-        '<p style="margin-top:18px"><button class="btn" id="go">Confirmer ce rendez-vous</button></p>') +
+        '<p style="margin-top:18px"><button class="btn" id="go">Confirmer ce rendez-vous</button></p>' +
+        '<p id="err" role="alert" aria-live="polite" style="color:#C7283D;margin-top:12px"></p>') +
       '<div class="pied"><div class="secours">' +
         '<button id="retour">← Choisir un autre horaire</button>' +
       '</div></div>';
@@ -579,6 +583,11 @@
     document.getElementById('go').addEventListener('click', function () {
       var b = this;
       function rendre() { b.disabled = false; b.textContent = 'Confirmer ce rendez-vous'; }
+      var e = document.getElementById('err');
+      if (/[<>]/.test(document.getElementById('nom').value + document.getElementById('tel').value)) {
+        e.textContent = CHEVRONS; return;
+      }
+      e.textContent = '';
       b.disabled = true; b.textContent = 'Enregistrement…';
       var appel = ctoken
         ? sb.rpc('rdv_poser_public', {
@@ -603,6 +612,8 @@
             demarrer();
             return;
           }
+          // Refus de la base : on laisse le formulaire ouvert pour corriger.
+          if (d.raison === 'caracteres_interdits') { rendre(); e.textContent = CHEVRONS; return; }
           secours(d.raison === 'trop_de_demandes'
             ? 'Trop de demandes, réessayez plus tard.'
             : 'Ce créneau n’est plus disponible.');

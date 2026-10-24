@@ -14,7 +14,7 @@
       .replace(/\\/g, '\\\\')
       .replace(/;/g, '\\;')
       .replace(/,/g, '\\,')
-      .replace(/\r?\n/g, '\\n');
+      .replace(/\r\n|\r|\n/g, '\\n');  // un \r seul coupe aussi la ligne chez certains agendas
   }
 
   // Nombre d'octets UTF-8 d'un caractère, sans dépendre de Buffer (navigateur inclus).

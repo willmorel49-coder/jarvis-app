@@ -38,7 +38,7 @@ const VTIMEZONE = [
 /** Échappe ce qui a un sens dans iCal : virgule, point-virgule, antislash, saut de ligne. */
 const ech = (s: unknown) =>
   String(s ?? '').replace(/\\/g, '\\\\').replace(/;/g, '\\;')
-    .replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
+    .replace(/,/g, '\\,').replace(/\r\n|\r|\n/g, '\\n')  // \r seul compris
 
 /** Une ligne iCal ne dépasse pas 75 octets : au-delà, on replie avec une espace. */
 function plier(ligne: string) {
