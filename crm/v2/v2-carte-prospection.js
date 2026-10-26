@@ -19,6 +19,11 @@
    - « Mail envoyé » et « relance » : table `profils` existante (scope 'groupement', scope_id '__prospection_<id>__', même rangement
      que u2ScopeId() de v2-app.js). La relance crée aussi une
      ligne dans la To do existante (V2.todo.ajouterLigne). « Ne pas y retourner » = champ existant du Profil.
+   - LISTE DE DIFFUSION (26/10/2026 soir) : champ `l` ('oui' = à ajouter, 'non' = à retirer) de la même ligne de suivi, écrit
+     SEULEMENT quand le souhait diffère de l'état Outlook connu. Cet état vit dans une seconde ligne `profils`
+     (scope_id '__prospection_outlook_<id>__', data = { maj, o: { cip: 'b' | 'a' | 'e:AAAA-MM-JJ' } }) écrite UNIQUEMENT par
+     ~/prospection-tournees/diffusion/synchro.py ; l'app la LIT seulement. Le clic n'agit pas sur Outlook : les brouillons
+     se mettent à jour quand Will le demande (synchro.py).
    ═══════════════════════════════════════════════════════════════════ */
 (function (glob) {
   'use strict';
@@ -106,7 +111,7 @@
     actif: false, charge: false, erreur: '', manque: [],
     donnees: null, proj: null, prospects: [], sansPosition: 0,
     rayon: 10, choisi: '', affiches: 60,
-    suiviCouleur: { pret: false }, prive: {}, priveOk: false
+    suiviCouleur: { pret: false }, prive: {}, priveOk: false, outlook: null
   };
   var COUL_TOURNEE = ['#7C3AED', '#EA580C', '#0891B2', '#DB2777', '#A16207', '#334155'];
   var RAYON_MAX = 50;
@@ -141,13 +146,52 @@
 
   // Suivi (mail envoyé, relance) : UNE ligne `profils` par utilisateur, même rangement que u2ScopeId() (v2-app.js) :
   // scope_type 'groupement' (la base n'accepte que des types existants) + un scope_id qu'aucun groupement ne porte.
-  // data = { s: { cip: { m: 'AAAA-MM-JJ', r: 'AAAA-MM-JJ' } } }.
+  // data = { s: { cip: { m: 'AAAA-MM-JJ', r: 'AAAA-MM-JJ', l: 'oui' | 'non' } } }.
   function scopeSuivi() { return '__prospection_' + ((V2.user && V2.user.id) || 'local') + '__'; }
   function versSuivi(data) {
     var out = {}, s = (data && data.s) || {};
-    Object.keys(s).forEach(function (k) { out[k] = { mail: (s[k] && s[k].m) || '', relance: (s[k] && s[k].r) || '' }; });
+    Object.keys(s).forEach(function (k) { out[k] = { mail: (s[k] && s[k].m) || '', relance: (s[k] && s[k].r) || '', liste: (s[k] && s[k].l) || '' }; });
     return out;
   }
+  // État des brouillons Outlook : seconde ligne `profils`, écrite par synchro.py seulement. Rend { maj, o } ; null si la lecture a raté,
+  // si la ligne n'existe pas encore ou si son contenu n'a pas la forme attendue (jamais lu comme « aucun brouillon »).
+  function scopeOutlook() { return '__prospection_outlook_' + ((V2.user && V2.user.id) || 'local') + '__'; }
+  C.lireEtatOutlook = function () {
+    var c = sb();
+    if (!c || !V2.user) return Promise.resolve(null);
+    return Promise.resolve(c.from('profils').select('data').eq('scope_type', 'groupement').eq('scope_id', scopeOutlook()).maybeSingle())
+      .then(function (r) {
+        var d = r && !r.error && r.data && r.data.data;
+        if (!d || !d.o || typeof d.o !== 'object' || Array.isArray(d.o)) return null;
+        return { maj: String(d.maj || ''), o: d.o };
+      }, function () { return null; });
+  };
+  // Liste de diffusion d'une officine. prive = { cip: { liste } } (suivi privé) ; outlook = { maj, o } ou null (non lu).
+  // etat : pret (brouillon prêt) · hors (adresse connue, pas de brouillon) · envoye (mail de prospection parti) · sansmail · inconnu (Outlook non lu).
+  // dans : ce que Will veut · attente : 'ajout' | 'retrait' quand son souhait diffère d'Outlook · le : jour d'envoi.
+  C.diffusion = function (cip, prive, outlook) {
+    if (!outlook || !outlook.o || typeof outlook.o !== 'object') return { etat: 'inconnu', dans: false, attente: '', le: '' };
+    var code = Object.prototype.hasOwnProperty.call(outlook.o, cip) ? String(outlook.o[cip]) : '';
+    var liste = (prive && prive[cip] && prive[cip].liste) || '';
+    if (code === 'b') return { etat: 'pret', dans: liste !== 'non', attente: liste === 'non' ? 'retrait' : '', le: '' };
+    if (code === 'a') return { etat: 'hors', dans: liste === 'oui', attente: liste === 'oui' ? 'ajout' : '', le: '' };
+    if (/^e:\d{4}-\d{2}-\d{2}$/.test(code)) return { etat: 'envoye', dans: false, attente: '', le: code.slice(2) };
+    return { etat: 'sansmail', dans: false, attente: '', le: '' };
+  };
+  // Valeur à écrire pour que Will « veuille » (ou non) la liste : '' (rien à écrire) quand son souhait égale l'état d'Outlook.
+  // Rend null quand aucun geste n'est possible (envoyé, sans mail, Outlook non lu).
+  C.valeurSouhait = function (etat, veut) {
+    if (etat === 'pret') return veut ? '' : 'non';
+    if (etat === 'hors') return veut ? 'oui' : '';
+    return null;
+  };
+  // Chiffres de l'en-tête, CALCULÉS : n = pharmacies dans la liste (souhait compris), k = changements à reporter dans Outlook.
+  C.compteDiffusion = function (prive, outlook) {
+    var n = 0, k = 0;
+    if (!outlook || !outlook.o) return { n: 0, k: 0, lu: false };
+    Object.keys(outlook.o).forEach(function (cip) { var d = C.diffusion(cip, prive, outlook); if (d.dans) n++; if (d.attente) k++; });
+    return { n: n, k: k, lu: true };
+  };
   // Rend { cip: { mail, relance } } ; null si la lecture a raté (jamais « rien à signaler »).
   C.lireSuiviPrive = function () {
     var c = sb();
@@ -159,14 +203,15 @@
   C.ecrireSuiviPrive = function (cip, colonne, valeur) {
     var c = sb();
     if (!c || !V2.user) return Promise.resolve(false);
-    var champ = colonne === 'mail_envoye_le' ? 'm' : colonne === 'relance_le' ? 'r' : '';
+    var champ = colonne === 'mail_envoye_le' ? 'm' : colonne === 'relance_le' ? 'r' : colonne === 'liste_souhait' ? 'l' : '';
     if (!champ) return Promise.resolve(false);
+    if (champ === 'l' && valeur !== '' && valeur !== 'oui' && valeur !== 'non') return Promise.resolve(false);
     return Promise.resolve(c.from('profils').select('data').eq('scope_type', 'groupement').eq('scope_id', scopeSuivi()).maybeSingle()).then(function (r) {
       if (!r || r.error) return false;
       var data = (r.data && r.data.data) || {}, s = data.s || {};
       var e = s[cip] || {};
       if (valeur) e[champ] = valeur; else delete e[champ];
-      if (e.m || e.r) s[cip] = e; else delete s[cip];
+      if (e.m || e.r || e.l) s[cip] = e; else delete s[cip];
       return Promise.resolve(c.from('profils').upsert({ scope_type: 'groupement', scope_id: scopeSuivi(), data: { s: s }, updated_by: V2.user.id,
         updated_by_name: V2.user.name || '', updated_at: new Date().toISOString() }, { onConflict: 'scope_type,scope_id' })).then(function (u) { return !!(u && !u.error); });
     }, function () { return false; });
@@ -181,7 +226,8 @@
     var pRdv = V2.rdvProchainsCharger ? Promise.resolve(V2.rdvProchainsCharger()).catch(function () { return null; }) : Promise.resolve(null);
     var pRouge = (V2.profil && V2.profil.nePasRetourner) ? Promise.resolve(V2.profil.nePasRetourner()).catch(function () { return null; }) : Promise.resolve(null);
     var pPriv = C.lireSuiviPrive();
-    return Promise.all([pDon, pAct, pVu, pRdv, pRouge, pPriv]).then(function (r) {
+    var pOut = C.lireEtatOutlook();
+    return Promise.all([pDon, pAct, pVu, pRdv, pRouge, pPriv, pOut]).then(function (r) {
       S.donnees = r[0]; S.proj = C.projeter(S.donnees.tournees);
       if (!r[1]) throw new Error('clients actifs non lus : le compte des prospects serait faux');
       if (r[2] !== true) S.manque.push('visites');
@@ -190,6 +236,8 @@
       S.suiviCouleur = { pret: true, rdv: r[3], rouge: r[4], vu: function (k) { return V2.rdvVuLe ? V2.rdvVuLe(k) : null; } };
       S.prive = r[5] || {}; S.priveOk = !!r[5];
       if (!S.priveOk) S.manque.push('mails envoyés et relances');
+      S.outlook = r[6] || null;
+      if (!S.outlook) S.manque.push('état des brouillons Outlook');
       var D = glob.PHARMA_FR;
       if (!D || !D.p) throw new Error('base des officines non chargée');
       var res = C.prospects(D.p, glob.CLIENTS_ACTIFS.d, S.proj);
@@ -325,9 +373,12 @@
     [calques.traces, calques.clientes, calques.depot, calques.prospects, calques.anneaux].forEach(function (g) { g.addTo(map); });
     appliquerRayon();
   }
+  // Pâle = hors de la liste de diffusion, souhait compris (adresse connue, pas de brouillon voulu). Mail déjà parti, sans adresse, Outlook non lu : comme avant.
+  function pale(cip) { var d = C.diffusion(cip, S.prive, S.outlook); return (d.etat === 'pret' || d.etat === 'hors') && !d.dans; }
+  C.pale = pale;
   function styleProspect(p) {
     var pr = S.prive[p.cip] || {}, sel = S.choisi === p.cip;
-    return { renderer: I.canvas, radius: sel ? 9 : 6, color: sel ? '#10131C' : (pr.mail ? '#10131C' : '#FFFFFF'), weight: sel ? 3 : (pr.mail ? 2.5 : 1), fillColor: couleurEtat(p.cip), fillOpacity: 0.95 };
+    return { renderer: I.canvas, radius: sel ? 9 : 6, color: sel ? '#10131C' : (pr.mail ? '#10131C' : '#FFFFFF'), weight: sel ? 3 : (pr.mail ? 2.5 : 1), fillColor: couleurEtat(p.cip), fillOpacity: pale(p.cip) ? 0.4 : 0.95 };
   }
   // Ajoute/retire les points selon le curseur (liste triée : un seul parcours)
   function appliquerRayon() {
@@ -399,6 +450,7 @@
       lg(SC.rouge, 'Ne pas y retourner') + lg(SC.vert, 'Rendez-vous à venir') + lg(SC.gris, 'Déjà vue') + lg(SC.bleu, 'Jamais vue') +
     '<span class="pp-lg"><i class="pp-ring-m"></i>Contour foncé : mail envoyé</span>' +
     '<span class="pp-lg"><i class="pp-ring-r"></i>Anneau orange : relance à faire</span>' +
+    '<span class="pp-lg"><i class="pp-pale"></i>Point pâle : pas dans ma liste de diffusion</span>' +
     '<span class="pp-lg"><i class="pp-cli"></i>Cliente (contour de la tournée ; pointillé : tournée supposée)</span>';
     if (S.manque.length) h += '<span class="pp-lg pp-lg-m">Non lu : ' + esc(S.manque.join(', ')) + '. Ces couleurs ou suivis peuvent être incomplets ; rouvrir la prospection pour réessayer.</span>';
     if (S.sansPosition) h += '<span class="pp-lg pp-lg-n">' + S.sansPosition + ' officine' + (S.sansPosition > 1 ? 's' : '') + ' du secteur sans position, non comptée' + (S.sansPosition > 1 ? 's' : '') + '.</span>';
@@ -411,9 +463,31 @@
     else if (e === 'gris') out.push('<span class="pp-pu pp-gris">Déjà vue le ' + esc(C.fr(S2.vu(p.cip))) + '</span>');
     else if (e === 'bleu') out.push('<span class="pp-pu pp-bleu">Jamais vue</span>');
     else out.push('<span class="pp-pu pp-gris">Suivi non lu</span>');
+    var df = C.diffusion(p.cip, S.prive, S.outlook);
+    if (df.etat === 'envoye') out.push('<span class="pp-pu pp-diff">Mail parti le ' + esc(C.fr(df.le)) + '</span>');
+    else if (df.attente === 'retrait') out.push('<span class="pp-pu pp-diff-att">Retrait en attente</span>');
+    else if (df.attente === 'ajout') out.push('<span class="pp-pu pp-diff-att">Ajout en attente</span>');
+    else if (df.etat === 'pret') out.push('<span class="pp-pu pp-diff">Dans ma liste</span>');
     if (pr.mail) out.push('<span class="pp-pu pp-mail">Mail envoyé le ' + esc(C.fr(pr.mail)) + '</span>');
     if (pr.relance) out.push('<span class="pp-pu pp-rel">Relance le ' + esc(C.fr(pr.relance)) + '</span>');
     return out.join('');
+  }
+  // Premier bloc du détail : phrase d'état + UN seul bouton (jamais dans le bouton de ligne pp-main)
+  function blocDiffusion(p) {
+    var d = C.diffusion(p.cip, S.prive, S.outlook), t, b = '', id = p.cip;
+    var btn = function (veut, lib) { return '<button class="v2-btn v2-btn-ghost" onclick="V2.carteProspection.diffusionChoisir(\'' + id + '\',' + (veut ? 'true' : 'false') + ')"' + (S.priveOk ? '' : ' disabled') + '>' + lib + '</button>'; };
+    if (d.etat === 'inconnu') t = 'État des brouillons Outlook non lu : la liste ne peut pas être modifiée pour l\'instant.';
+    else if (d.etat === 'envoye') t = 'Mail parti le ' + C.fr(d.le);
+    else if (d.etat === 'sansmail') t = 'Aucune adresse mail connue pour cette pharmacie';
+    else if (d.etat === 'pret') {
+      if (d.attente === 'retrait') { t = 'Retirée de votre liste : le brouillon ira à la corbeille à la prochaine mise à jour'; b = btn(true, 'Remettre dans ma liste'); }
+      else { t = 'Brouillon prêt dans Outlook'; b = btn(false, 'Retirer de ma liste'); }
+    } else {
+      if (d.attente === 'ajout') { t = 'Ajoutée : le brouillon sera créé à la prochaine mise à jour'; b = btn(false, 'Annuler'); }
+      else { t = 'Pas dans votre liste'; b = btn(true, 'Ajouter à ma liste'); }
+    }
+    return '<div class="pp-blk" id="pp-diff-' + id + '"><div class="pp-bt">Liste de diffusion</div><div class="pp-l' + (d.etat === 'inconnu' ? ' pp-l-m' : '') + '">' + esc(t) + '</div>' +
+      (b ? '<div class="pp-ligne">' + b + '</div>' : '') + '</div>';
   }
   function detailHtml(p) {
     var pr = S.prive[p.cip] || {}, e = etatDe(p.cip), id = p.cip, aj = C.aujourdhui();
@@ -424,6 +498,7 @@
     else if (e === 'bleu') rdv = '<div class="pp-l">Aucun rendez-vous ni visite enregistrés.</div>';
     return '<div class="pp-det" onclick="event.stopPropagation()">' +
       (S.priveOk ? '' : '<div class="pp-warn">Suivi non lu : mail envoyé et relance indisponibles pour l\'instant.</div>') +
+      blocDiffusion(p) +
       '<div class="pp-blk"><div class="pp-bt">Mail envoyé</div>' +
         '<div class="pp-ligne"><input type="date" id="pp-mail-' + id + '" value="' + esc(pr.mail || aj) + '" aria-label="Date d\'envoi du mail"' + off + '>' +
         '<button class="v2-btn v2-btn-primary" onclick="V2.carteProspection.mail(\'' + id + '\')"' + off + '>Enregistrer</button>' +
@@ -460,12 +535,23 @@
     if (n > vus) h += '<button class="v2-btn v2-btn-ghost pp-plus" onclick="V2.carteProspection.plus()">Afficher plus (' + (n - vus).toLocaleString('fr-FR') + ' restants)</button>';
     return h;
   }
+  // En-tête : N et K se CALCULENT (jamais en dur). Mise à jour sans reconstruire le panneau (la liste garde sa position).
+  function teteHtml() {
+    var c = C.compteDiffusion(S.prive, S.outlook), h = '<b>Prospection</b><span>Officines du secteur qui ne sont clientes de personne, de la plus proche du trajet à la plus éloignée.</span><span class="pp-note">Trajet approché, d\'une cliente à la suivante.</span>';
+    if (!c.lu) return h + '<span class="pp-diff-t pp-l-m">État des brouillons Outlook non lu : la liste de diffusion ne peut pas être modifiée.</span>';
+    h += '<span class="pp-diff-t" id="pp-diff-n"><b>' + c.n.toLocaleString('fr-FR') + '</b> pharmacie' + (c.n > 1 ? 's' : '') + ' dans votre liste de diffusion</span>';
+    if (c.k) h += '<span class="pp-diff-k" id="pp-diff-k">' + c.k.toLocaleString('fr-FR') + ' changement' + (c.k > 1 ? 's' : '') + ' à reporter dans Outlook : demandez la mise à jour des brouillons.</span>';
+    var m = S.outlook && S.outlook.maj ? new Date(S.outlook.maj) : null;
+    if (m && !isNaN(m.getTime())) h += '<span class="pp-note" id="pp-diff-maj">Brouillons mis à jour le ' + C.fr(C.aujourdhui(m)) + ' à ' + ('0' + m.getHours()).slice(-2) + ' h ' + ('0' + m.getMinutes()).slice(-2) + '</span>';
+    return h;
+  }
+  function majTete() { var t = document.getElementById('pp-tete'); if (t) t.innerHTML = teteHtml(); }
   function majListe() { var l = document.getElementById('pp-liste'); if (l) l.innerHTML = listeHtml(); }
   function majTout() {
     var r = document.getElementById('pp-rail');
     if (r) {
       if (!S.charge) poserRail();
-      else r.innerHTML = '<div class="pp-tete"><b>Prospection</b><span>Officines du secteur qui ne sont clientes de personne, de la plus proche du trajet à la plus éloignée.</span><span class="pp-note">Trajet approché, d\'une cliente à la suivante.</span></div>' +
+      else r.innerHTML = '<div class="pp-tete" id="pp-tete">' + teteHtml() + '</div>' +
         '<div class="pp-scroll" id="pp-scroll"><details class="pp-legd"' + (window.matchMedia && window.matchMedia('(max-width:760px)').matches ? '' : ' open') + '><summary>Légende</summary>' + legendeHtml() + '</details>' +
         '<div class="pp-liste" id="pp-liste">' + listeHtml() + '</div></div>';
     }
@@ -536,6 +622,20 @@
     if (V2.rdv && V2.rdv.proposer) { try { V2.rdv.proposer(cip); return; } catch (e) {} }
     var i = indexDe(cip); if (i >= 0 && V2.carteFiche) V2.carteFiche(i);
   };
+  // Clic « Retirer / Remettre / Ajouter / Annuler » : enregistre SEULEMENT le souhait (Outlook ne bouge qu'à la mise à jour demandée).
+  C.diffusionChoisir = function (cip, veut) {
+    cip = cleCip(cip);
+    var d = C.diffusion(cip, S.prive, S.outlook), val = C.valeurSouhait(d.etat, !!veut);
+    if (val === null) { if (V2.toast) V2.toast('Cette pharmacie ne peut pas être ajoutée ni retirée', 'warn'); return Promise.resolve(false); }
+    return C.ecrireSuiviPrive(cip, 'liste_souhait', val).then(function (bon) {
+      if (!bon) { if (V2.toast) V2.toast('Non enregistré : la base n\'a pas répondu', 'warn'); return false; }
+      S.prive[cip] = S.prive[cip] || { mail: '', relance: '', liste: '' };
+      S.prive[cip].liste = val;
+      apres(cip); majTete();
+      if (V2.toast) V2.toast(veut ? 'Ajoutée à votre liste' : 'Retirée de votre liste');
+      return true;
+    });
+  };
   C.nePasRetourner = function (cip, on) {
     cip = cleCip(cip);
     if (!(V2.profil && V2.profil.poser)) { if (V2.toast) V2.toast('Profil indisponible', 'warn'); majListe(); return; }
@@ -564,6 +664,8 @@
       '.pp-tete b{font-size:16px;font-weight:800;letter-spacing:-.01em;color:var(--ip-ink)}',
       '.pp-tete span{font-size:12.5px;color:var(--muted);line-height:1.4}',
       '.pp-tete .pp-note{font-size:12px;color:#4B5565}',
+      '.pp-tete .pp-diff-t{margin-top:4px;color:var(--ip-ink)}.pp-tete .pp-diff-t b{font-size:13.5px;font-weight:800;color:var(--ip-blue,#0057FF);font-variant-numeric:tabular-nums}',
+      '.pp-tete .pp-diff-k{font-size:12.5px;font-weight:700;color:#92400E}',
       '.pp-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}',
       '.pp-etat{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center;font-size:13.5px;color:var(--ip-ink)}',
       '.pp-etat span{color:var(--muted)}',
@@ -578,6 +680,7 @@
       '.pp-lg i.pp-ring-m{background:#fff;box-shadow:0 0 0 2.5px #10131C inset}',
       '.pp-lg i.pp-ring-r{background:#fff;box-shadow:0 0 0 3px #F59E0B inset}',
       '.pp-lg i.pp-cli{background:#fff;box-shadow:0 0 0 3px #7C3AED inset}',
+      '.pp-lg i.pp-pale{background:#9DB8F2;box-shadow:0 0 0 1px rgba(16,19,28,.18) inset}',
       '.pp-lg-n{font-size:12px;color:var(--muted)}',
       '.pp-lg-m{font-size:12px;font-weight:700;color:#B42318}',
       '.pp-liste{display:flex;flex-direction:column}',
@@ -591,7 +694,7 @@
       '.pp-sub b{color:var(--ip-ink)}',
       '.pp-pus{grid-column:2;display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}',
       '.pp-pu{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 9px;line-height:1.5}',
-      '.pp-rouge{background:#FDECEA;color:#B42318}.pp-vert{background:#E3F6EA;color:#0B6B36}.pp-gris{background:#EEF0F4;color:#4B5565}.pp-bleu{background:#E6EEFD;color:#1D4ED8}.pp-mail{background:#E8EAF0;color:#10131C}.pp-rel{background:#FEF3C7;color:#92400E}',
+      '.pp-rouge{background:#FDECEA;color:#B42318}.pp-vert{background:#E3F6EA;color:#0B6B36}.pp-gris{background:#EEF0F4;color:#4B5565}.pp-bleu{background:#E6EEFD;color:#1D4ED8}.pp-mail{background:#E8EAF0;color:#10131C}.pp-rel{background:#FEF3C7;color:#92400E}.pp-diff{background:#E6EEFD;color:#1D4ED8}.pp-diff-att{background:#FEF3C7;color:#92400E}',
       '.pp-det{padding:2px 16px 14px 36px;display:flex;flex-direction:column;gap:12px}',
       '.pp-blk{display:flex;flex-direction:column;gap:6px}',
       '.pp-bt{font-size:12px;font-weight:800;color:var(--ip-ink)}',
@@ -599,6 +702,7 @@
       '.pp-det input[type=date]{font:inherit;font-size:16px;min-height:44px;padding:6px 10px;border:1px solid var(--line-strong,#c3c9d4);border-radius:10px;background:var(--card);color:var(--ip-ink)}',
       '.pp-det .v2-btn{min-height:44px}',
       '.pp-aide,.pp-l{font-size:12px;color:#4B5565;line-height:1.4}',
+      '.pp-l-m{font-weight:700;color:#B42318}',
       '.pp-warn{font-size:12px;font-weight:700;color:#B42318;background:#FDECEA;border-radius:8px;padding:8px 10px}',
       '.pp-nr{display:flex;align-items:center;gap:10px;min-height:44px;font-size:13px;font-weight:700;color:var(--ip-ink);cursor:pointer}',
       '.pp-nr input{width:22px;height:22px;accent-color:#D92D20;flex:none}',

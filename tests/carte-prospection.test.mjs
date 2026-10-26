@@ -119,7 +119,7 @@ test('suivi : rangé dans profils (groupement, __prospection_<id>__), colonnes s
   assert.equal(l.scope_type, 'groupement'); assert.equal(l.scope_id, '__prospection_u1__'); assert.equal(l.updated_by, 'u1');
   assert.equal(o.onConflict, 'scope_type,scope_id');
   assert.deepEqual(l.data.s['111'], { m: '2026-10-26', r: '2026-11-09' });
-  assert.deepEqual(await C.lireSuiviPrive(), { '111': { mail: '2026-10-26', relance: '2026-11-09' } });
+  assert.deepEqual(await C.lireSuiviPrive(), { '111': { mail: '2026-10-26', relance: '2026-11-09', liste: '' } });
   await C.ecrireSuiviPrive('111', 'mail_envoye_le', '');
   assert.deepEqual(b.ligne.s['111'], { r: '2026-11-09' });
   await C.ecrireSuiviPrive('111', 'relance_le', '');
@@ -129,4 +129,87 @@ test('suivi : rangé dans profils (groupement, __prospection_<id>__), colonnes s
 test('suivi : lecture ratée = null (jamais « vide »)', async () => {
   V2.user = { id: 'u1' }; V2.sb = () => ({ from: () => ({ select() { return this; }, eq() { return this; }, maybeSingle: () => Promise.resolve({ data: null, error: { message: 'x' } }) }) });
   assert.equal(await C.lireSuiviPrive(), null);
+});
+
+// ── Liste de diffusion (26/10/2026 soir) : souhait `l` dans le suivi, état Outlook dans une seconde ligne ──
+const OUT = { maj: '2026-10-26T18:00:00', o: { p: 'b', h: 'a', e: 'e:2026-10-20' } };
+const pv = (cip, liste) => ({ [cip]: { mail: '', relance: '', liste } });
+test('diffusion : brouillon prêt → dans la liste ; « non » = retrait en attente', () => {
+  assert.deepEqual(C.diffusion('p', {}, OUT), { etat: 'pret', dans: true, attente: '', le: '' });
+  assert.deepEqual(C.diffusion('p', pv('p', 'non'), OUT), { etat: 'pret', dans: false, attente: 'retrait', le: '' });
+  assert.deepEqual(C.diffusion('p', pv('p', 'oui'), OUT), { etat: 'pret', dans: true, attente: '', le: '' });   // souhait égal à Outlook : rien à reporter
+});
+test('diffusion : adresse sans brouillon → hors ; « oui » = ajout en attente', () => {
+  assert.deepEqual(C.diffusion('h', {}, OUT), { etat: 'hors', dans: false, attente: '', le: '' });
+  assert.deepEqual(C.diffusion('h', pv('h', 'oui'), OUT), { etat: 'hors', dans: true, attente: 'ajout', le: '' });
+  assert.deepEqual(C.diffusion('h', pv('h', 'non'), OUT), { etat: 'hors', dans: false, attente: '', le: '' });
+});
+test('diffusion : mail parti, sans adresse, Outlook non lu', () => {
+  assert.deepEqual(C.diffusion('e', pv('e', 'oui'), OUT), { etat: 'envoye', dans: false, attente: '', le: '2026-10-20' });
+  assert.deepEqual(C.diffusion('zz', {}, OUT), { etat: 'sansmail', dans: false, attente: '', le: '' });
+  assert.equal(C.diffusion('p', {}, null).etat, 'inconnu');
+  assert.equal(C.diffusion('p', {}, undefined).etat, 'inconnu');
+  assert.equal(C.diffusion('p', pv('p', 'non'), { maj: '', o: null }).etat, 'inconnu');
+  assert.equal(C.diffusion('p', pv('p', 'non'), null).attente, '');   // inconnu : pas de bouton, pas de « retrait » inventé
+  assert.equal(C.diffusion('toString', {}, OUT).etat, 'sansmail');     // pas de piège de prototype
+  assert.equal(C.diffusion('x', {}, { o: { x: 'e:hier' } }).etat, 'sansmail');   // code mal formé : jamais « envoyé »
+});
+test('valeurSouhait : ne s\'écrit que si le souhait diffère d\'Outlook', () => {
+  assert.equal(C.valeurSouhait('pret', false), 'non'); assert.equal(C.valeurSouhait('pret', true), '');
+  assert.equal(C.valeurSouhait('hors', true), 'oui'); assert.equal(C.valeurSouhait('hors', false), '');
+  assert.equal(C.valeurSouhait('envoye', true), null); assert.equal(C.valeurSouhait('sansmail', false), null); assert.equal(C.valeurSouhait('inconnu', true), null);
+});
+test('compteDiffusion : N et K calculés', () => {
+  const o = { maj: '', o: { a: 'b', b: 'b', c: 'b', d: 'a', e: 'a', f: 'e:2026-10-01' } };
+  const prive = { b: { liste: 'non' }, d: { liste: 'oui' }, c: { liste: 'oui' }, e: { liste: 'non' } };
+  assert.deepEqual(C.compteDiffusion(prive, o), { n: 3, k: 2, lu: true });   // a, c, d dans la liste ; b (retrait) et d (ajout) en attente
+  assert.deepEqual(C.compteDiffusion({}, o), { n: 3, k: 0, lu: true });      // a, b, c
+  assert.equal(C.compteDiffusion({}, null).lu, false);
+});
+
+// Faux client à DEUX lignes profils, distinguées par scope_id
+function fauxDeux(lignes, panne) {
+  const ecr = [];
+  const q = (f) => ({
+    select() { return this; }, eq(k, v) { f[k] = v; return this; },
+    maybeSingle() {
+      if (panne && panne.includes(f.scope_id)) return Promise.resolve({ data: null, error: { message: 'x' } });
+      return Promise.resolve({ data: lignes[f.scope_id] ? { data: lignes[f.scope_id] } : null, error: null });
+    },
+    upsert(l) { ecr.push(l); lignes[l.scope_id] = l.data; return Promise.resolve({ error: null }); },
+  });
+  return { ecr, client: { from: (t) => { assert.equal(t, 'profils'); return q({}); } } };
+}
+test('ecrireSuiviPrive : garde `l`, ne touche pas aux autres officines, retire la ligne quand plus rien', async () => {
+  const f = fauxDeux({ '__prospection_u1__': { s: { 222: { m: '2026-10-01', r: '2026-11-01', l: 'oui' }, 333: { l: 'non' } } } });
+  V2.user = { id: 'u1', name: 'Will' }; V2.sb = () => f.client;
+  assert.equal(await C.ecrireSuiviPrive('111', 'liste_souhait', 'non'), true);
+  assert.deepEqual(f.ecr[0].data.s, { 111: { l: 'non' }, 222: { m: '2026-10-01', r: '2026-11-01', l: 'oui' }, 333: { l: 'non' } });
+  assert.equal(await C.ecrireSuiviPrive('222', 'mail_envoye_le', ''), true);   // effacer m : r et l restent
+  assert.deepEqual(f.ecr[1].data.s['222'], { r: '2026-11-01', l: 'oui' });
+  assert.equal(await C.ecrireSuiviPrive('111', 'liste_souhait', ''), true);    // souhait redevenu égal : `l` retiré, entrée supprimée
+  assert.equal(f.ecr[2].data.s['111'], undefined); assert.ok(f.ecr[2].data.s['333']);
+  assert.equal(await C.ecrireSuiviPrive('111', 'liste_souhait', 'peut-être'), false);   // valeur inconnue refusée
+  assert.equal(f.ecr.length, 3);
+  assert.equal(f.ecr[0].scope_type, 'groupement'); assert.equal(f.ecr[0].scope_id, '__prospection_u1__');
+  assert.deepEqual((await C.lireSuiviPrive())['222'], { mail: '', relance: '2026-11-01', liste: 'oui' });
+});
+test('ecrireSuiviPrive : lecture ratée avant écriture = false, rien écrit', async () => {
+  const f = fauxDeux({}, ['__prospection_u1__']); V2.user = { id: 'u1' }; V2.sb = () => f.client;
+  assert.equal(await C.ecrireSuiviPrive('111', 'liste_souhait', 'non'), false); assert.equal(f.ecr.length, 0);
+});
+test('état Outlook : lu dans __prospection_outlook_<id>__ ; lecture ratée, ligne absente ou mal formée = null (→ inconnu)', async () => {
+  V2.user = { id: 'u1' };
+  let f = fauxDeux({ '__prospection_outlook_u1__': { maj: '2026-10-26T18:00:00', o: { 111: 'b', 222: 'a', 333: 'e:2026-10-20' } } });
+  V2.sb = () => f.client;
+  const o = await C.lireEtatOutlook();
+  assert.deepEqual(o, { maj: '2026-10-26T18:00:00', o: { 111: 'b', 222: 'a', 333: 'e:2026-10-20' } });
+  assert.equal(C.diffusion('111', {}, o).etat, 'pret');
+  f = fauxDeux({ '__prospection_outlook_u1__': { maj: 'x', o: {} } }, ['__prospection_outlook_u1__']); V2.sb = () => f.client;
+  assert.equal(await C.lireEtatOutlook(), null);
+  f = fauxDeux({}); V2.sb = () => f.client; assert.equal(await C.lireEtatOutlook(), null);
+  f = fauxDeux({ '__prospection_outlook_u1__': { maj: 'x', o: [1] } }); V2.sb = () => f.client; assert.equal(await C.lireEtatOutlook(), null);
+  V2.sb = () => ({ from: () => ({ select() { return this; }, eq() { return this; }, maybeSingle: () => Promise.reject(new Error('réseau')) }) });
+  assert.equal(await C.lireEtatOutlook(), null);
+  delete V2.user; assert.equal(await C.lireEtatOutlook(), null);
 });
