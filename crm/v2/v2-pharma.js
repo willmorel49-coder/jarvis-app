@@ -5758,13 +5758,14 @@
       foot = '<div class="tx-state">Préparation du fichier ' + tx.step + ' sur ' + tx.total + '…</div>';
     } else if (tx.files) {
       var tot = tx.files.reduce(function (s, f) { return s + (f.size || 0); }, 0);
-      var canSh = false;
-      try { canSh = !!(navigator.share && navigator.canShare && navigator.canShare({ files: tx.files })); } catch (e) {}
+      var part = V2.txPartage(tx.files), canSh = part.ok.length > 0;   // 26/10/2026 : partage possible même si un Excel est du lot
       var tt = tx.texte || txTexteDefaut(tx.files);
       var href = 'mailto:' + encodeURIComponent(mail) + '?subject=' + encodeURIComponent(tt.objet) + '&body=' + encodeURIComponent(tt.corps);
       foot = '<div class="tx-state"><b>' + tx.files.length + ' fichier' + (tx.files.length > 1 ? 's' : '') + ' prêt' + (tx.files.length > 1 ? 's' : '') + '</b> · ' + txSize(tot) +
           (tot > 20 * 1048576 ? '<span class="tx-warn">Plus de 20 Mo : de nombreuses messageries refusent un mail aussi lourd.</span>' : '') +
-          (!canSh ? '<span class="tx-hint">Les fichiers arrivent dans Téléchargements : glisse-les dans le mail avant de l\'envoyer.</span>' : '') + '</div>' +
+          (!canSh ? '<span class="tx-hint">Les fichiers arrivent dans Téléchargements : glisse-les dans le mail avant de l\'envoyer.</span>' : '') +
+          (canSh && part.reste.length ? '<span class="tx-hint">' + part.reste.length + (part.reste.length > 1 ? ' fichiers ne passent' : ' fichier ne passe') + ' pas par la feuille de partage (' + esc(part.reste.map(function (f) { return f.name; }).join(', ')) + ') : ' + (part.reste.length > 1 ? 'ils arrivent' : 'il arrive') + ' dans Téléchargements, à joindre au mail.</span>' : '') +
+          (canSh && mail ? '<span class="tx-hint">L\'adresse ' + esc(mail) + ' sera copiée : à coller dans « À » de votre messagerie.</span>' : '') + '</div>' +
         '<button class="v2-btn v2-btn-ghost" onclick="V2.pharmaTxReset()">Modifier</button>' +
         (!canSh && (mail || tx.modele) ? '<a class="v2-btn v2-btn-ghost" href="' + esc(href) + '">Ouvrir le mail</a>' : '') +
         '<button class="v2-btn v2-btn-primary" onclick="V2.pharmaTxSend()">' + ICO(canSh ? 'spark' : 'download', 16) + (canSh ? 'Envoyer' : 'Télécharger les fichiers') + '</button>';
@@ -5946,6 +5947,21 @@
       if (fails.length) V2.toast('Non préparé : ' + fails.join(', '), 'error');
     });
   };
+  // 26/10/2026 — Karine (Android/Chrome) : « les pièces jointes cochées ne partent pas ». Chrome refuse TOUT le lot
+  // (canShare = false) dès qu'un seul fichier n'est pas d'un type partageable : l'Excel (.xlsx/.xls) ne l'est pas
+  // (liste MDN : PDF, CSV, images, texte, audio, vidéo). On sépare donc : `ok` part par la feuille de partage,
+  // `reste` (les Excel) est téléchargé à côté. Partagé avec la Mallette (V2.txPartage).
+  V2.txPartage = function (files) {
+    var ok = [], reste = [];
+    try {
+      if (navigator.share && navigator.canShare) {
+        if (navigator.canShare({ files: files })) return { ok: files, reste: [] };
+        files.forEach(function (f) { (navigator.canShare({ files: [f] }) ? ok : reste).push(f); });
+        if (ok.length && navigator.canShare({ files: ok })) return { ok: ok, reste: reste };
+      }
+    } catch (e) {}
+    return { ok: [], reste: files };
+  };
   function txDownloadAll(files) {
     files.forEach(function (f, i) {
       setTimeout(function () {
@@ -5970,12 +5986,17 @@
     var files = tx.files, pid = tx.pid;
     if (!files || !files.length) return;
     try {
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: files })) {
+      var part = V2.txPartage(files);   // 26/10/2026 : seuls les types partageables passent par la feuille ; les Excel se téléchargent
+      if (part.ok.length) {
         var tt = tx.texte || txTexteDefaut(files);
-        var sh = { files: files, title: tt.objet, text: tt.corps };
+        var sh = { files: part.ok, title: tt.objet, text: tt.corps };
+        // L'API ne sait pas pré-remplir « À » : l'adresse est copiée dans le presse-papiers (n'use pas le geste du clic).
+        var adr = txMail[pid] || '';
+        if (adr && navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(adr).then(function () { V2.toast('Adresse copiée : à coller dans « À »'); }, function () { V2.toast('Adresse à mettre dans « À » : ' + esc(adr), 'warn'); });
         navigator.share(sh)
           .then(function () { txTrace(pid, files); })
-          .catch(function (e) { if (!e || e.name !== 'AbortError') { txDownloadAll(files); txTrace(pid, files); } });
+          .catch(function (e) { if (!e || e.name !== 'AbortError') { txDownloadAll(part.ok); txTrace(pid, files); } });
+        if (part.reste.length) txDownloadAll(part.reste);
         return;
       }
     } catch (e) {}

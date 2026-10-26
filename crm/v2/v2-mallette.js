@@ -325,6 +325,8 @@
   }
   function destLibelle() { return S.dest ? S.dest.nom + (S.dest.ville ? ' · ' + S.dest.ville : '') : 'Sans destinataire'; }
   function canShare(files) { try { return !!(navigator.share && navigator.canShare && navigator.canShare({ files: files })); } catch (e) { return false; } }
+  // 26/10/2026 — Chrome Android refuse le lot entier si un Excel s'y trouve : on partage ce qui peut l'être (V2.txPartage, v2-pharma.js).
+  function partage(files) { return V2.txPartage ? V2.txPartage(files) : (canShare(files) ? { ok: files, reste: [] } : { ok: [], reste: files }); }
   function totalKoFichiers(files) { return files.reduce(function (s, f) { return s + (f.size || 0); }, 0); }
   function tailleTxt(b) { b = +b || 0; return b < 1048576 ? Math.max(1, Math.round(b / 1024)) + ' Ko' : (b / 1048576).toFixed(1).replace('.', ',') + ' Mo'; }
   function rendrePied() {
@@ -338,14 +340,16 @@
       corps = '<div class="ml-etat" role="status">' + ic('layers') + '<span>Préparation du fichier ' + S.etape + ' sur ' + S.total + '…</span></div>' +
         '<button type="button" class="v2-btn v2-btn-primary ml-occupe" disabled>' + ic('layers') + 'Préparation…</button>';
     } else if (S.prets) {
-      var f = S.prets.files, tot = totalKoFichiers(f), partage = canShare(f);
+      var f = S.prets.files, tot = totalKoFichiers(f), pt = partage(f), peutPartager = pt.ok.length > 0;
       corps = '<div class="ml-etat ml-pret" role="status"><b>' + f.length + ' fichier' + (f.length > 1 ? 's' : '') + ' prêt' + (f.length > 1 ? 's' : '') + '</b><span>' + tailleTxt(tot) +
         (S.prets.unPdf && S.prets.pages ? ' · PDF de ' + pagesTxt(S.prets.pages) : '') + '</span>' +
         (S.prets.unPdf && S.prets.xl ? '<small>' + S.prets.xl + (S.prets.xl > 1 ? ' fichiers Excel partent' : ' fichier Excel part') + ' à côté du PDF.</small>' : '') +
         (tot > 20 * 1048576 ? '<small class="ml-alerte">Plus de 20 Mo : de nombreuses messageries refusent un mail aussi lourd.</small>' : '') +
-        (!partage ? '<small>Sur cet appareil, les fichiers arrivent dans Téléchargements : glissez-les dans le mail avant de l’envoyer.</small>' : '') + '</div>' +
-        (partage ? '<button type="button" class="v2-btn v2-btn-primary" data-action="envoyer">' + ic('send') + 'Envoyer</button>' : '') +
-        '<div class="ml-duo"><button type="button" class="v2-btn ' + (partage ? 'v2-btn-ghost' : 'v2-btn-primary') + '" data-action="telecharger">' + ic('download') + (S.prets.unPdf ? 'Télécharger' : 'Télécharger (.zip)') + '</button>' +
+        (!peutPartager ? '<small>Sur cet appareil, les fichiers arrivent dans Téléchargements : glissez-les dans le mail avant de l’envoyer.</small>' : '') +
+        (peutPartager && pt.reste.length ? '<small>' + pt.reste.length + (pt.reste.length > 1 ? ' fichiers ne passent' : ' fichier ne passe') + ' pas par la feuille de partage (' + esc(pt.reste.map(function (x) { return x.name; }).join(', ')) + ') : ' + (pt.reste.length > 1 ? 'ils arrivent' : 'il arrive') + ' dans Téléchargements, à joindre au mail.</small>' : '') +
+        (peutPartager && S.dest && S.dest.email ? '<small>L’adresse ' + esc(S.dest.email) + ' sera copiée : à coller dans « À » de votre messagerie.</small>' : '') + '</div>' +
+        (peutPartager ? '<button type="button" class="v2-btn v2-btn-primary" data-action="envoyer">' + ic('send') + 'Envoyer</button>' : '') +
+        '<div class="ml-duo"><button type="button" class="v2-btn ' + (peutPartager ? 'v2-btn-ghost' : 'v2-btn-primary') + '" data-action="telecharger">' + ic('download') + (S.prets.unPdf ? 'Télécharger' : 'Télécharger (.zip)') + '</button>' +
         '<button type="button" class="v2-btn v2-btn-ghost" data-action="modifier">Modifier</button></div>';
     } else {
       corps = '<button type="button" class="v2-btn v2-btn-primary" data-action="preparer"' + (n ? '' : ' disabled') + '>' + ic('check') + 'Préparer l’envoi</button>' +
@@ -763,11 +767,15 @@
     var p = S.prets; if (!p) return;
     var tt = texteEnvoi();
     try {
-      if (canShare(p.files)) {
+      var pt = partage(p.files);
+      if (pt.ok.length) {
         // Le clic EST le geste : le fichier est déjà prêt, la feuille de partage s'ouvre tout de suite (Safari refuse sinon).
-        navigator.share({ files: p.files, title: tt.objet, text: tt.corps })
+        // 26/10/2026 : l'adresse du pharmacien est copiée (l'API ne remplit pas « À ») ; les Excel se téléchargent à côté.
+        if (S.dest && S.dest.email && navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(S.dest.email).then(function () { V2.toast('Adresse copiée : à coller dans « À »'); }, function () { V2.toast('Adresse à mettre dans « À » : ' + esc(S.dest.email), 'warn'); });
+        navigator.share({ files: pt.ok, title: tt.objet, text: tt.corps })
           .then(function () { tracer(p); })
           .catch(function (e) { if (!e || e.name !== 'AbortError') { telecharger(); } });
+        pt.reste.forEach(function (f, i) { setTimeout(function () { telechargerBlob(f, f.name); }, i * 400); });
         return;
       }
     } catch (e) {}
