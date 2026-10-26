@@ -73,6 +73,9 @@ concurrency:
 jobs:
   verifier:
     runs-on: ubuntu-latest
+    # Plafond (26/10/2026) : sans lui, GitHub attend 6 h. Une vérification figée tenait toute la
+    # file « publication » : rien d'autre ne se publiait. D'habitude 2 à 3 min.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -158,10 +161,12 @@ jobs:
       # Trois essais : un téléchargement raté (npm, navigateur) bloquerait la mise en ligne.
       - name: Installer Playwright (éphémère, non committé)
         run: |
+          # 26/10/2026 : un essai qui s'enlise (14, 43, 45 min) ne rendait jamais la main → coupé à 5 min
+          # et relancé (d'habitude moins d'1 min 30). `timeout` vise tout le groupe de processus.
           for essai in 1 2 3; do
-            npm i --no-save playwright@latest >/dev/null 2>&1 \
-              && npx playwright install --with-deps chromium webkit >/dev/null 2>&1 && exit 0
-            echo "installation ratée (essai $essai/3), nouvel essai dans 20 s"; sleep 20
+            timeout -k 20 300 sh -c 'npm i --no-save playwright@latest >/dev/null 2>&1 \
+              && npx playwright install --with-deps chromium webkit >/dev/null 2>&1' && exit 0
+            echo "installation ratée ou au-delà de 5 min (essai $essai/3), nouvel essai dans 20 s"; sleep 20
           done
           exit 1
 
