@@ -2027,11 +2027,20 @@
     renderListPanel();
   };
   V2.carteListClose = function () { var el = document.getElementById('cn-listpanel'); if (el) el.remove(); };
+  // 26/10/2026 (Will) : ouvrir une officine depuis la Liste centre et zoome la carte sur elle — avant, la vue ne bougeait
+  // pas (Perpignan ouverte, carte restée sur le nord). Centrée dans la partie VISIBLE, pas sous la fiche : à gauche du
+  // volet sur ordinateur, au-dessus du tiroir sur téléphone (fitBounds + paddingBottomRight, prévu par Leaflet pour ça).
   V2.carteLocate = function (i) {
-    var p = D.p[i]; if (!p || !map) return;
-    map.setView([p[0], p[1]], 15, { animate: true });
-    V2.carteListClose();
-    V2.carteFiche(i);
+    var p = D && D.p[i]; if (!p) return;
+    V2.carteFiche(i);   // ferme la Liste et pose la fiche : sa place est connue avant de centrer
+    setTimeout(function () {   // après le invalidateSize de carteFiche (téléphone : les filtres se replient)
+      if (!map) return;
+      map.invalidateSize({ pan: false });   // la pastille de recherche réduit la carte sans la prévenir : centre décalé de 16 px mesuré
+      var c = map.getContainer().getBoundingClientRect(), f = document.getElementById('cn-fiche'), r = f && f.getBoundingClientRect();
+      var bas = !!(r && r.width && r.left <= c.left + 1 && r.top > c.top), droite = !!(r && r.width && !bas && r.left > c.left);
+      map.fitBounds(window.L.latLngBounds([[p[0], p[1]], [p[0], p[1]]]), { maxZoom: 15, animate: true,
+        paddingBottomRight: [droite ? c.right - r.left : 0, bas ? c.bottom - r.top : 0] });
+    }, 0);
   };
   function statusLabel(p) { return segOf(p) || '—'; }
   // ── Cœur partagé : calcule la liste filtrée + triée (utilisé par le dock ET la modale) ──
@@ -2049,7 +2058,7 @@
       var p = D.p[i], cl = isClient(p), pr = D.seg[p[4]] === 'Prospect', inT = tourPos(keyOf(p)) >= 0;
       var comm = commLbl(p);
       return '<div class="cn-lrow">' +
-        '<div class="cn-lmain" onclick="V2.carteFiche(' + i + ')">' +
+        '<div class="cn-lmain" onclick="V2.carteLocate(' + i + ')">' +
           '<b>' + esc(p[6] || p[10] || ('Pharmacie' + (p[7] ? ' · ' + p[7] : ''))) + '</b>' +
           '<span class="cn-lsub">' + esc(p[7]) + (p[8] ? ' · ' + esc(p[8]) : '') + (p[10] && p[6] ? ' · ' + esc(p[10]) : '') + '</span>' +
           '<span class="cn-ltags">' +
