@@ -2128,7 +2128,7 @@
     var pr = V2.loadFiles ? V2.loadFiles(['clientsactifs', 'officinesinfos']) : null, fin = function () { ensureDetail(function () { renderFiche(i); }); };
     if (pr && pr.then) pr.then(fin, fin); else fin();
   };
-  V2.carteFicheClose = function () { var el = document.getElementById('cn-fiche'); if (el) el.remove(); if (V2.carteProspection && V2.carteProspection.ficheFermee) V2.carteProspection.ficheFermee(); };
+  V2.carteFicheClose = function () { ficheIdx = null; var el = document.getElementById('cn-fiche'); if (el) el.remove(); if (V2.carteProspection && V2.carteProspection.ficheFermee) V2.carteProspection.ficheFermee(); };
   // Libellés des mois RÉELLEMENT couverts par les exports (WML_MOIS, écrit par le
   // générateur). Écrits en dur, un mois ajouté à la base sortait une barre sans étiquette.
   var _MAB = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
@@ -2138,8 +2138,18 @@
     return m.length ? m.map(function (ym) { return _MAB[+ym.split('-')[1] - 1] + (deuxAns ? ' ' + ym.split('-')[0] : ''); })
                     : ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'];
   }
+  var ficheIdx = null;
+  // 26/10/2026 — appelé par v2-probable.js quand l'estimation « probable » arrive : sur La carte on ne redessine PAS la
+  // page (la fiche ouverte se refermait ~2 s après), on rafraîchit seulement la fiche. true = cas géré, pas de V2.render().
+  V2.carteFicheMaj = function () {
+    if (!surCarte() || !map || !document.getElementById('carte-map')) return false;
+    var el = document.getElementById('cn-fiche');
+    if (el && ficheIdx != null && D && D.p[ficheIdx]) { var sc = el.querySelector('.cn-plist'), y = sc ? sc.scrollTop : 0; renderFiche(ficheIdx); sc = el.querySelector('.cn-plist'); if (sc) sc.scrollTop = y; }
+    return true;
+  };
   function renderFiche(i) {
     var el = document.getElementById('cn-fiche'); if (!el) return;
+    ficheIdx = i;
     var FMO = moisLbls();
     var p = D.p[i], det = (DETAIL && p[13] && voitCa(p)) ? DETAIL[p[13]] : null;
     var caCache = !voitCa(p) && isClient(p);   // cliente d'un collègue : aucun chiffre

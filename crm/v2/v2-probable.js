@@ -116,6 +116,8 @@
       _building = false;
       // Ré-affiche la fiche déjà ouverte une fois l'estimation disponible (même
       // logique que _oiAsked / _clientsAsked dans v2-pharma.js).
+      // 26/10/2026 : sur La carte, seule la fiche ouverte est rafraîchie (la page n'est pas rebâtie).
+      if (V2.carteFicheMaj && V2.carteFicheMaj()) return;
       if (V2.route && V2.render) V2.render();
     }).catch(function () { _building = false; });
   }
