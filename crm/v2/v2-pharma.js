@@ -3783,7 +3783,13 @@
     })() : '';
     // CA par génériqueur (Biogaran, Zentiva, EG…) — table BDPM ; section repliable (inchangé)
     var generiqueurSec = (function () {
-      var card = V2.generiqueurCard ? V2.generiqueurCard(sales, { title: 'Ses achats par génériqueur' }) : '';
+      // 26/10/2026 — CA ramené à 12 mois : mêmes mois que « Sa moyenne / mois » (de sa 1re commande au dernier mois complet)
+      var gOpts = { title: 'Ses achats par génériqueur' };
+      if (A.nAct >= 3 && A.debut && A.last) {
+        var gk0 = A.debut.mk, gk1 = A.last.mk;
+        gOpts.annuel = { mois: A.nAct, ventes: sales.filter(function (s) { if (!s.month || !s.year) return false; var k = s.year * 12 + (s.month - 1); return k >= gk0 && k <= gk1; }) };
+      }
+      var card = V2.generiqueurCard ? V2.generiqueurCard(sales, gOpts) : '';
       if (!card) return '';
       var open = sectionOpen('gnq');
       return '<div class="ph-section">' +

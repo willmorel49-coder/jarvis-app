@@ -60,6 +60,8 @@
       '.gnq-bar > i{display:block;height:100%;border-radius:6px}' +
       '.gnq-val{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--ip-ink);white-space:nowrap}' +
       '.gnq-val small{color:var(--muted);font-weight:600;margin-left:4px}' +
+      '.gnq-an{display:block;font-size:11px;font-weight:600;color:var(--muted)}' +
+      '.gnq-note{font-size:12px;color:var(--muted);margin:-4px 0 10px}' +
       '.gnq-empty{font-size:13px;color:var(--muted);padding:6px 0}' +
       '@media(max-width:520px){.gnq-row{grid-template-columns:88px 1fr auto}.gnq-lab{font-size:12px}}';
     document.head.appendChild(st);
@@ -71,6 +73,15 @@
     var r = V2.caParGeneriqueur(sales);
     if (!r.loaded || !r.rows.length) return '';   // table absente ou zéro générique
     injectCss();
+    // 26/10/2026 — CA ramené à 12 mois (fiche officine seulement, option opts.annuel = { mois, ventes }) :
+    // sans l'option, le HTML est identique. Moins de 3 mois : pas de chiffre sur 12 mois.
+    var an = null, anBy = {}, anTot = 0;
+    if (opts.annuel && opts.annuel.mois >= 3) {
+      var ra = V2.caParGeneriqueur(opts.annuel.ventes || []);
+      var k12 = 12 / opts.annuel.mois;
+      ra.rows.forEach(function (o) { anBy[o.lab] = o.ca * k12; });
+      anTot = ra.total * k12; an = opts.annuel;
+    }
     var maxRows = opts.max || 12;
     var shown = r.rows.slice(0, maxRows);
     var maxCa = shown[0].ca || 1;
@@ -81,13 +92,15 @@
       return '<div class="gnq-row">' +
         '<span class="gnq-lab" title="' + esc(o.lab) + '">' + esc(cleanLab(o.lab)) + '</span>' +
         '<span class="gnq-bar"><i style="width:' + w + '%;background:' + col + '"></i></span>' +
-        '<span class="gnq-val">' + eur(o.ca) + '<small>' + pct + '%</small></span>' +
+        '<span class="gnq-val">' + eur(o.ca) + '<small>' + pct + '%</small>' +
+          (an ? '<span class="gnq-an">≈ ' + eur(anBy[o.lab] || 0) + '/an</span>' : '') + '</span>' +
       '</div>';
     }).join('');
     var extra = r.rows.length > maxRows ? ('<div class="gnq-empty">+ ' + (r.rows.length - maxRows) + ' autres génériqueurs</div>') : '';
     return '<div class="gnq-card">' +
       '<div class="gnq-h"><span class="gnq-t">' + esc(opts.title || 'CA par génériqueur') + '</span>' +
         '<span class="gnq-tot">' + eur(r.total) + ' · ' + r.rows.length + ' génériqueurs</span></div>' +
+      (an ? '<div class="gnq-note">Sur 12 mois : moyenne de ses ' + an.mois + ' mois × 12, soit ≈ ' + eur(anTot) + '/an.</div>' : '') +
       body + extra +
     '</div>';
   };
