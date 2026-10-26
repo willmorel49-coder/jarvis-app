@@ -58,3 +58,5 @@ usage_ecran
 user_profiles
 visites
 securite_plan
+prospection_suivi
+prospection_tournees
