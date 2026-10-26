@@ -735,7 +735,7 @@
         : '<span class="v2-row-opp mono" title="' + x.opp + ' des ' + marketTop().size + ' meilleures ventes du secteur ne sont pas commandées par cette officine">' + x.opp + ' / ' + marketTop().size + ' opp</span>';
     var badge = opsoBadge(x.p);
     var nmL = notreMargeDe(x.p.id);   // null : fichier absent, ou officine d'un collègue
-    return '<a class="v2-row' + (isOpso() && x.p.inDb ? ' opso-row-cliente' : '') + '" onclick="V2.go(\'pharma\',\'' + V2.esc(String(x.p.id)) + '\')">' +
+    return '<a class="v2-row' + (isOpso() && x.p.inDb ? ' opso-row-cliente' : '') + '" onclick="V2.pharmaNav.va(\'' + V2.esc(String(x.p.id)) + '\',1)">' +   /* 26/10/2026 — v2 : le clic garde l'ordre de la liste vue à cet instant */
       '<span class="v2-row-dot" style="background:' + V2.esc(color) + '"></span>' +
       '<span class="v2-row-name">' + V2.esc(x.p.name) + (cpDe(x.p) ? ' <span style="color:var(--muted);font-weight:500">· ' + V2.esc(cpDe(x.p)) + '</span>' : '') + '</span>' +
       badge + (x.p._cree ? '<span class="v2-row-meta">' + (x.p._archive ? 'archivée' : 'créé à la main') + '</span>' : '') +
@@ -941,6 +941,7 @@
 
     function cardHtml(filtered) {
       nAff = pl(filtered.length, 'officine');
+      V2._ordreMesOff = filtered.map(function (x) { return String(x.p.id); });   // 26/10/2026 — v2 : l'ordre de la liste d'où l'on vient (« Précédente / Suivante » de la fiche)
       // 19/10/2026 — téléphone, vue Tous : 50 lignes à la fois (voir ofActif)
       ofRaz();   // la clé change même quand la règle ne s'applique pas (recherche à 0 résultat) : effacer la recherche repart bien de 50
       if (ofActif(filtered.length)) { var o = ofCarte(filtered); nAff = o.n; return o.html; }
@@ -989,6 +990,7 @@
     function listBody() {
       try {
         if (!isOpso() && secteurTab === 'prospects') {
+          V2._ordreMesOff = null;   // 26/10/2026 — v2 : pas de « n sur N » pour les prospects
           nAff = '';
           var q = searchQuery.trim().toLowerCase();
           var lienArch = function (txt, on) { return '<a class="v2-row" id="of-archives" style="justify-content:center;color:var(--muted);cursor:pointer" onclick="V2.pharmaVoirArchives(' + on + ')">' + txt + '</a>'; };
@@ -3637,6 +3639,9 @@
         '<div class="pha-acts">' +
           (tel ? '<a class="pha-btn" href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) + '">' + ICO('phone', 15) + 'Appeler</a>' : '') +
           (mail ? '<a class="pha-btn" href="mailto:' + esc(mail) + '">' + ICO('mail', 15) + 'E-mail</a>' : '') +
+          // 26/10/2026 — v2 « Tout dans la carte » : « Produits » (le Catalogue pour cette officine) et « Noter » (défile jusqu'à la note)
+          (V2.pages.produits ? '<button class="pha-btn" onclick="V2.go(\'produits\', \'' + pidSafe + '\')" title="Le Catalogue pour cette officine">' + ICO('cat', 15, 2) + 'Produits</button>' : '') +
+          (V2.notes ? '<button class="pha-btn" onclick="V2.pharmaNav.noter()" title="Aller à la note personnelle">' + ICO('fiche', 15, 2) + 'Noter</button>' : '') +
           (mail && V2.rdv ? '<button class="pha-btn pha-btn-pri" onclick="V2.rdv.proposer(\'' + pidSafe + '\')" title="Elle choisit son créneau, calé sur la géographie de votre journée">' + ICO('cal', 15) + 'Proposer un RDV</button>' : '') +
           (!tel && !mail ? '<span class="pha-sub" style="color:rgba(255,255,255,.7)">Téléphone et e-mail à renseigner dans « Infos officine »</span>' : '') +
         '</div>' +
@@ -3826,7 +3831,7 @@
     } else {
       apercu =
         '<div class="pha">' +
-          '<div class="pha-rail">' + idCard + fe.panneau + listes + infos + notes + '</div>' +
+          '<div class="pha-rail">' + phaNavHtml(pid) + idCard + fe.panneau + listes + infos + notes + '</div>' +
           '<div class="pha-main">' + chiffres + briefOff + listing + generiqueurSec + '</div>' +
         '</div>';
     }
@@ -3850,6 +3855,52 @@
     if (!menu) V2.pharmaFiche.apres(pid);
     if (!menu) phaTel();
   }
+
+  // 26/10/2026 — v2 « Tout dans la carte » : ligne « ‹ Précédente · 3 sur 47 · Suivante › » + champ « Autre officine… » au-dessus de la carte bleue.
+  // Ordre = celui de la liste « Mes officines » d'où l'on vient (V2._ordreMesOff, posé par renderList) ; sinon l'ordre de « Mes officines » (CA décroissant).
+  // L'ordre n'est valable que si la fiche a été ouverte DEPUIS la liste (clic sur une ligne) ou par Précédente / Suivante : V2._navPid = l'officine visée.
+  // Ouverte autrement (⌘K, lien direct) : pas de compteur trompeur, la ligne Précédente / Suivante est masquée.
+  function phaOrdre(pid) { var o = V2._ordreFiche; return (o && String(V2._navPid) === String(pid) && o.indexOf(String(pid)) >= 0) ? o : null; }
+  function phaNavHtml(pid) {
+    var o = phaOrdre(pid), i = o ? o.indexOf(String(pid)) : -1, n = o ? o.length : 0;
+    var dis = function (ok) { return ok ? '' : ' disabled aria-disabled="true"'; };
+    var cible = function (j) { return j >= 0 && j < n ? "V2.pharmaNav.va('" + esc(o[j]) + "')" : ''; };
+    return '<div class="v2-card pha-nav" id="pha-nav">' +
+      (o ? '<div class="pha-nav-l">' +
+        '<button type="button" class="pha-btn pha-nav-b"' + dis(i > 0) + ' onclick="' + cible(i - 1) + '">‹ Précédente</button>' +
+        '<span class="pha-nav-n mono" aria-live="polite">' + (i >= 0 ? V2.fmtNum(i + 1) + ' sur ' + V2.fmtNum(n) : '') + '</span>' +
+        '<button type="button" class="pha-btn pha-nav-b"' + dis(i >= 0 && i < n - 1) + ' onclick="' + cible(i + 1) + '">Suivante ›</button>' +
+      '</div>' : '') +
+      '<label class="v2-champ pha-nav-champ">' + ICO('search', 20, 2) +
+        '<input id="pha-autre" type="text" placeholder="Autre officine…" aria-label="Aller à une autre officine : nom, ville ou code postal" autocomplete="off" oninput="V2.pharmaNav.chercher(this.value)" onkeydown="if(event.key===\'Enter\'){V2.pharmaNav.premier();}"></label>' +
+      '<div class="pha-nav-res" id="pha-autre-res"></div>' +
+    '</div>';
+  }
+  V2.pharmaNav = {
+    // ouvre une fiche ; depuis une ligne de la liste (liste=1) on fige l'ordre de la liste telle qu'affichée à cet instant
+    va: function (id, liste) {
+      if (liste) V2._ordreFiche = (V2._ordreMesOff || []).slice();
+      V2._navPid = String(id);
+      V2.go('pharma', String(id));
+    },
+    chercher: function (v) {
+      var z = document.getElementById('pha-autre-res'); if (!z) return;
+      var q = String(v || '').trim().toLowerCase(), cur = V2.route && V2.route.param ? String(V2.route.param) : '';
+      if (q.length < 2) { z.innerHTML = ''; return; }
+      var r = [];
+      (V2.pharmacies || []).some(function (p) { if (String(p.id) !== cur && correspond(p, q)) r.push(p); return r.length >= 6; });
+      z.innerHTML = r.length ? r.map(function (p) {
+        return '<button type="button" class="pha-btn pha-nav-r" onclick="V2.pharmaNav.va(\'' + esc(String(p.id)) + '\')"><b>' + esc(nameOf(p.id, p.name)) + '</b><span>' + esc([cpDe(p), p.ville || ''].filter(Boolean).join(' ')) + '</span></button>';
+      }).join('') : '<div class="pha-nav-vide">Aucune officine trouvée.</div>';
+    },
+    premier: function () { var b = document.querySelector('#pha-autre-res .pha-nav-r'); if (b) b.click(); },
+    noter: function () {
+      var ta = document.querySelector('.pha-notes .v2-notes-box[data-st] .v2-notes-add .v2-notes-ta'); if (!ta) return;
+      var b = ta.closest('.v2-notes-box') || ta;
+      b.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      try { ta.focus({ preventScroll: true }); } catch (e) { ta.focus(); }
+    }
+  };
 
   // 19/10/2026 — fiche au téléphone (sous 900 px elle passe sur une colonne, ≈ 13 écrans) : un sommaire collé
   // en haut de l'écran pour sauter d'un bloc à l'autre. Rien n'est retiré de la page. Caché sur ordinateur (CSS).
@@ -6800,6 +6851,19 @@
       '.pha-kv .pha-retraite a{color:inherit;text-decoration:underline}',
       '.pha-kv .pha-grpdesc{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}',
       '.pha-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}',
+      // 26/10/2026 — v2 : ligne Précédente / Suivante + champ « Autre officine… » au-dessus de la carte bleue ; boutons de la carte en deux colonnes au téléphone
+      '.pha-nav{padding:12px 14px;display:flex;flex-direction:column;gap:10px}',
+      '.pha-nav-l{display:flex;align-items:center;justify-content:space-between;gap:8px}',
+      '.pha-nav-n{font-weight:800;font-size:13px;color:var(--ip-ink);text-align:center;flex:1;white-space:nowrap}',
+      '.pha-nav-b{padding:0 10px}',
+      '.pha-nav-b[disabled]{cursor:default;color:var(--muted)}',
+      '.pha-nav-res{display:flex;flex-direction:column;gap:6px}',
+      '.pha-nav-res:empty{display:none}',
+      '.pha-nav-r{justify-content:space-between;white-space:normal;text-align:left;width:100%;box-sizing:border-box;font-weight:500}',
+      '.pha-nav-r b{font-weight:800}',
+      '.pha-nav-r span{color:var(--muted);font-size:12px}',
+      '.pha-nav-vide{font-size:13px;color:var(--muted);padding:4px 2px}',
+      '@media(max-width:900px){.pha-nav{order:-4}.pha-id .pha-acts .pha-btn{flex:1 1 calc(50% - 4px);justify-content:center}}',
       '.pha-btn{display:inline-flex;align-items:center;gap:7px;min-height:var(--tap-min,44px);padding:0 14px;border-radius:var(--r-btn,12px);border:1px solid var(--line-strong);background:var(--card);font:inherit;font-weight:700;font-size:13px;color:var(--ip-ink);cursor:pointer;text-decoration:none;white-space:nowrap}',
       '.pha-id .pha-btn{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.22);color:#fff}',
       '.pha-id .pha-btn-pri{background:#fff;color:var(--ip-blue-d);border-color:#fff;box-shadow:0 6px 16px rgba(0,0,0,.25)}',

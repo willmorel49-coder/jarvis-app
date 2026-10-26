@@ -81,6 +81,9 @@
       return '<div class="v2-notes-box v2-card" id="' + id + '" data-st="' + esc(scopeType) + '" data-sid="' + esc(String(scopeId)) + '">' +
           '<div class="v2-notes-hd">' + (V2.ICO ? V2.ICO('spark', 16, 2) : '') + '<span>Note personnelle</span></div>' +
           '<div class="v2-notes-list"><div class="v2-notes-empty">Chargement…</div></div>' +
+          // 26/10/2026 — v2 : les 4 phrases toutes faites, au-dessus du champ (fiche officine seulement) ; un appui écrit la phrase DANS le champ
+          (scopeType === 'client' ? '<div class="v2-notes-puces" role="group" aria-label="Phrases toutes faites">' +
+            ['À rappeler', 'Commande en cours', 'Rendez-vous pris', 'Absent, repasser'].map(function (t) { return '<button type="button" class="v2-notes-puce" onclick="V2.notes.puce(this)">' + esc(t) + '</button>'; }).join('') + '</div>' : '') +
           '<div class="v2-notes-add">' +
             V2.notes.champ('<textarea class="v2-notes-ta" rows="2" placeholder="Ajouter une note personnelle…" oninput="V2.notes.garder(this)">' + esc(brouillonLire(cle)) + '</textarea>', 'Dicter la note à la voix') +   // 19/10/2026 : le micro passe DANS le coin du champ, comme partout
             '<button class="v2-btn v2-btn-primary v2-notes-btn" onclick="V2.notes.add(this)">Ajouter</button>' +
@@ -107,6 +110,16 @@
     micPossible: voiceSupported,
     brouillonLire: brouillonLire,
     brouillonPoser: brouillonPoser,
+    // 26/10/2026 — v2 : écrit la phrase du bouton dans le champ de note (à la suite de ce qui y est déjà), curseur à la fin
+    puce: function (btn) {
+      var box = btn.closest('.v2-notes-box'); if (!box) return;
+      var ta = box.querySelector('.v2-notes-ta'); if (!ta) return;
+      var v = ta.value.replace(/\s+$/, '');
+      ta.value = (v ? v + ' ' : '') + btn.textContent + ' ';
+      V2.notes.garder(ta);
+      try { ta.focus({ preventScroll: true }); } catch (e) { ta.focus(); }
+      try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch (e) {}
+    },
     garder: function (ta) {
       var box = ta.closest('.v2-notes-box'); if (!box) return;
       brouillonPoser('note:' + box.getAttribute('data-st') + ':' + box.getAttribute('data-sid'), ta.value);
@@ -513,6 +526,10 @@
       '.v2-note-editform{display:flex;flex-direction:column;gap:8px}',
       '.v2-note-edit-ta{width:100%;flex:none}',
       '.v2-note-edit-actions{display:flex;gap:8px;justify-content:flex-end}',
+      '.v2-notes-puces{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}',
+      '.v2-notes-puce{display:inline-flex;align-items:center;justify-content:center;min-height:var(--tap-min,44px);padding:0 14px;border-radius:var(--r-btn,12px);border:1px solid var(--line-strong);background:var(--card);font:inherit;font-weight:700;font-size:13px;color:var(--ip-ink);cursor:pointer;-webkit-tap-highlight-color:transparent}',
+      '.v2-notes-puce:hover{border-color:var(--ip-blue);color:var(--ip-blue)}',
+      '.v2-notes-puce:focus-visible{outline:2px solid var(--ip-blue);outline-offset:2px}',
       '.v2-notes-add{display:flex;gap:9px;align-items:flex-end;margin-top:12px}',
       '.v2-notes-ta{flex:1;min-width:0;box-sizing:border-box;border:1px solid var(--line-strong);border-radius:11px;padding:10px 12px;font:inherit;font-size:13.5px;color:var(--ip-ink);background:var(--card);resize:vertical;min-height:44px}',
       '.v2-notes-ta:focus{outline:none;border-color:var(--ip-blue);box-shadow:0 0 0 3px var(--halo,color-mix(in srgb,var(--ip-blue) 18%,transparent))}',
