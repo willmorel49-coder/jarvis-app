@@ -5749,7 +5749,9 @@
       lgoHtml +
       group('Documents Intégral Pharma', '', of('app')) +
       group('Faits dans l\'app', 'fiches Marketing de l\'équipe, biosimilaires, catalogue', of('fab'),
-        txFiches === null && !isEscale() && !isOpso() ? '<div class="tx-empty">Chargement des fiches Marketing…</div>' : '') +
+        (txFiches === null && !isEscale() && !isOpso() ? '<div class="tx-empty">Chargement des fiches Marketing…</div>' : '') +
+        // 26/10/2026 — « Créer un document » (v2-mkt-doc.js) : Offre Sanofi, Offre UPSA, Essentiels d'hiver, sur un seul écran
+        (V2.mktDoc && V2.mktDoc.ouvrir && !isEscale() && !isOpso() ? '<button type="button" class="v2-btn v2-btn-ghost tx-upl"' + (tx.busy ? ' disabled' : '') + ' onclick="V2.pharmaTxCreerDoc()">' + ICO('plus', 15, 2) + 'Créer un document</button>' : '')) +
       group('Bibliothèque de l\'équipe', 'déposés par chacun, visibles par tous', lib, libMsg + upl);
     body.scrollTop = keepY;
 
@@ -5854,6 +5856,27 @@
     V2.pharmaTransmettre(pid);
     if (tx.lgo.pid === String(pid) && !tx.lgo.touched && s && tx.lgo.s !== s && TX_LGO.some(function (l) { return l.s === s; })) { tx.lgo.s = s; tx.lgo.auto = true; }
     if (tx.lgo.s) { tx.sel['G:' + tx.lgo.s + ':' + tx.lgo.n] = true; tx.files = null; txRender(); }
+  };
+  // 26/10/2026 — « Créer un document » : l'écran s'ouvre PAR-DESSUS cette fenêtre (qui reste en place) ; au retour le nouveau
+  // document est coché dans « Faits dans l'app », prêt à partir.
+  V2.pharmaTxCreerDoc = function () {
+    if (tx.busy || !V2.mktDoc || !V2.mktDoc.ouvrir) return;
+    var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === tx.pid; });
+    V2.mktDoc.ouvrir({ pid: tx.modele ? null : tx.pid, nom: tx.modele ? '' : (pharma ? nameOf(tx.pid, pharma.name) : (tx.nom || '')) });
+  };
+  V2.pharmaTxApresDoc = function (id) {
+    if (!id) return;
+    var bd = document.getElementById('tx-modal');
+    if (bd && !bd.classList.contains('open')) bd.classList.add('open');
+    tx.files = null; tx.busy = '';
+    txLoadFiches().then(function () {
+      tx.sel['M:' + id] = true;   // coché : « Préparer les fichiers » l'emporte avec les autres
+      if (tx.surChoix) tx.surChoix(Object.keys(tx.sel));
+      txRender();
+      var c = document.querySelector('#tx-body input[data-k="M:' + id + '"]');
+      if (c && c.scrollIntoView) try { c.scrollIntoView({ block: 'center' }); } catch (e) {}
+    });
+    txRender();
   };
   V2.pharmaTxClose = function () { var bd = document.getElementById('tx-modal'); if (bd) bd.classList.remove('open'); };
   V2.pharmaTxReset = function () { tx.files = null; txRender(); };

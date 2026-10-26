@@ -508,6 +508,7 @@
             '<section class="mkf-bloc" aria-labelledby="mkf-t-com">' +
               '<h2 class="mkf-cap" id="mkf-t-com">Commencer</h2>' +
               '<div class="mkf-departs mkf-departs-seuls">' +
+                (V2.mktDoc ? ficheDepartHtml('document', 'fiches', 'Créer un document', 'Offre Sanofi, offre UPSA, Essentiels d’hiver : prêt en un écran, même au téléphone') : '') +
                 ficheDepartHtml('support', 'fiches', 'Créer une fiche', 'Le catalogue du groupe, ' + V2.fmtNum(catTotal) + ' références, à côté de la feuille') +
                 ficheDepartHtml('rayon', 'catalogue', 'Depuis un rayon', rayonsNb() + ' rayons, avec leurs effectifs') +
                 ficheDepartHtml('selection', 'selection', 'Sélection à pousser', 'Une liste de produits du moment') +
@@ -542,6 +543,7 @@
       else if (act === 'rayons-fermer') rayonsFermer();
       else if (act === 'rayons-relire') { rayonsFermer(); rayonsOuvrir(); }
       else if (act === 'rayon-choisi') { var ri = parseInt(b.getAttribute('data-i'), 10); rayonsFermer(); V2.mkt.createFromRayon(ri); }
+      else if (act === 'document') { if (V2.mktDoc) V2.mktDoc.ouvrir({ pid: null }); }
       else if (act === 'support' || act === 'selection') V2.mkt.create(act);
       else if (act === 'catalogues') V2.go('marketing', 'catalogues');
       else if (act === 'top50pdf') V2.mkt.top50Pdf();
@@ -804,6 +806,7 @@
     } else {
       var ex = (items || []).filter(function (x) { return x.id === id; })[0];
       if (!ex) { V2.toast('Fiche introuvable', 'error'); V2.go('marketing', 'fiches'); return; }
+      if (ex.theme && ex.theme.doc && V2.mktDoc) { V2.mktDoc.ouvrir({ id: ex.id, pid: null }); renderList(root); return; }   // lien direct vers un document : même écran
       if (!editing || editing.id !== ex.id) {
         editing = { id: ex.id, type: ex.type, title: ex.title, accroche: ex.accroche, footer: ex.footer || '', status: ex.status,
                     products: (ex.products || []).map(function (p) { return Object.assign({}, p); }),
@@ -1342,7 +1345,7 @@
   // plusieurs ». À N produits le tableau reste la bonne forme ; à un seul il
   // donne une feuille A4 vide avec une ligne au milieu. Ici la photo devient
   // grande, le prix devient l'objet de la page.
-  function ficheProduitBody(p, acc, showPrice, showRemise, showImg, forPdf, edit) {
+  function ficheProduitBody(p, acc, showPrice, showRemise, showImg, forPdf, edit, showPpht) {
     var img = showImg ? prodImg(p, forPdf) : '';
     var ppht = p.ppht > 0 ? p.ppht
       : (p.remise > 0 && p.price > 0 ? Math.round(p.price / (1 - p.remise / 100) * 100) / 100 : 0);
@@ -1359,7 +1362,7 @@
     if (p.froid) meta.push('Chaîne du froid');
 
     var lignesPrix = '';
-    if (showPrice && ppht > 0 && pct > 0) {
+    if (showPrice && showPpht !== false && ppht > 0 && pct > 0) {
       lignesPrix += '<div style="display:flex;justify-content:space-between;align-items:baseline;' +
         'padding:7px 0;border-bottom:1px solid #ECEFF5">' +
         '<span style="font-size:11.5px;color:#737A8C">Tarif grossiste (PPHT)</span>' +
@@ -1433,8 +1436,8 @@
     var copie = Object.assign({}, it, { theme: th, products: (it.products || []).map(function (p) { return Object.assign({}, p, { brand: marqueSure(p.brand) }); }) });
     return m.render(copie, mktCtx(), forPdf, edit);
   }
-  function buildFlyerHtml(forPdf, edit) {
-    var it = editing;
+  function buildFlyerHtml(forPdf, edit, itPar) {
+    var it = itPar || editing;   // 26/10/2026 : itPar = une fiche passée en argument (V2.mkt.feuilleHtml), sans toucher à `editing`
     edit = !forPdf && edit === true;
     var neuve = feuilleModele(it, forPdf, edit);
     if (neuve != null) return neuve;
@@ -1448,9 +1451,10 @@
     var bg = th.bg || '#FFFFFF';
     // À l'impression (PDF client) on ne communique JAMAIS l'abandon de marge, quel que soit le toggle.
     var showPrice = th.showPrice !== false, showRemise = (th.showRemise !== false) && !forPdf;
+    var showPpht = th.showPpht !== false;   // 26/10/2026 : « Net seul » masque la colonne PPHT (défaut = affichée)
     var showImg = th.showImg !== false;
     var anyImg = showImg && (it.products || []).some(function (p) { return p.img; });
-    var cols = (anyImg ? 1 : 0) + 3 + (showPrice ? 2 : 0) + (showRemise ? 1 : 0);
+    var cols = (anyImg ? 1 : 0) + 3 + (showPrice ? 1 : 0) + (showPrice && showPpht ? 1 : 0) + (showRemise ? 1 : 0);
     function prodTr(p, n) {
       var img = prodImg(p, forPdf), idx = (it.products || []).indexOf(p);
       var ph = '<div style="width:34px;height:34px;border-radius:6px;background:#F1F4F9;display:flex;align-items:center;justify-content:center">' +
@@ -1470,7 +1474,7 @@
           (mq ? ' <span style="color:#9AA1B2;font-weight:500">· ' + esc(mq) + '</span>' : '') +
           (p.froid ? ' <span style="font-size:7.5px;color:#00B5D8;border:1px solid #b8edf7;border-radius:4px;padding:0 3px;vertical-align:middle">FROID</span>' : '') + '</td>' +
         '<td style="padding:7px 10px;font-family:monospace;font-size:10px;color:#737A8C">' + ref + '</td>' +
-        (showPrice ? '<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:10.5px">' + pphtCell + '</td>' : '') +
+        (showPrice && showPpht ? '<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:10.5px">' + pphtCell + '</td>' : '') +
         (showRemise ? '<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:10.5px;font-weight:700;color:' + (pct > 0 ? '#1E9E6A' : '#B6BFCE') + '">' + remCell + '</td>' : '') +
         (showPrice ? '<td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:12.5px;font-weight:800;color:' + acc + '"><span' + zoneAttrs(edit, 'price', 'Prix net HT', { i: idx, quiet: true }) + '>' + (p.price > 0 ? V2.fmtEur(p.price) : (edit ? '' : '—')) + '</span></td>' : '') +
       '</tr>';
@@ -1494,12 +1498,12 @@
     function thh(lbl, al) { return '<th style="padding:6px 10px;text-align:' + al + ';font-size:8px;text-transform:uppercase;letter-spacing:.05em;color:#9AA1B2">' + lbl + '</th>'; }
     var unSeul = (it.products || []).length === 1;
     var body = unSeul
-      ? ficheProduitBody(it.products[0], acc, showPrice, showRemise, showImg, forPdf, edit)
+      ? ficheProduitBody(it.products[0], acc, showPrice, showRemise, showImg, forPdf, edit, showPpht)
       : rows
       ? '<table style="width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden">' +
           '<thead><tr style="background:#F7F9FC;border-bottom:1.5px solid #E2E7F0">' +
             (anyImg ? '<th></th>' : '') + thh('#', 'center') + thh('Produit', 'left') + thh('Réf (CIP/EAN)', 'left') +
-            (showPrice ? thh('PPHT', 'right') : '') + (showRemise ? thh('Abandon', 'right') : '') + (showPrice ? thh('Net IP', 'right') : '') +
+            (showPrice && showPpht ? thh('PPHT', 'right') : '') + (showRemise ? thh('Abandon', 'right') : '') + (showPrice ? thh('Net IP', 'right') : '') +
           '</tr></thead><tbody>' + rows + '</tbody></table>'
       : (edit
         ? '<div style="border:2px dashed #C9D2E3;border-radius:16px;padding:56px 36px;text-align:center"><div style="font-size:20px;font-weight:800;color:#3A4152">La feuille attend vos produits.</div>' +
@@ -1687,7 +1691,12 @@
       cgPre = cgFiltresVides(); cgPre.rayon = String(i);   // le rayon choisi est posé dans le catalogue du panneau
       V2.go('marketing', 'new-selection');
     },
-    open: function (id) { editing = null; V2.go('marketing', id); },
+    // 26/10/2026 : une fiche créée par « Créer un document » (theme.doc) se rouvre dans cet écran, pas dans l'éditeur.
+    open: function (id) {
+      var ex = (items || []).filter(function (x) { return String(x.id) === String(id); })[0];
+      if (ex && ex.theme && ex.theme.doc && V2.mktDoc) { V2.mktDoc.ouvrir({ id: ex.id, pid: null }); return; }
+      editing = null; V2.go('marketing', id);
+    },
     // Changer de modèle depuis l'éditeur : la feuille bascule sur sa tranche, change de peau, revient.
     setModele: function (k) {
       if (!editing) return;
@@ -2730,6 +2739,48 @@
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'] } });
       });
     });
+  };
+  // ── 26/10/2026 — « Créer un document » (v2-mkt-doc.js) : ce que l'écran emprunte au store et au rendu de Marketing ──
+  // Aucune copie : le même `saveItem` / `loadItems`, les mêmes modèles « La lumière », le même PDF.
+  V2.mkt.feuilleHtml = function (it, forPdf) {   // fonction pure : ne touche pas à `editing`
+    var th = Object.assign({}, it.theme || {}, { showRemise: false });   // l'abandon de marge ne s'imprime jamais, aperçu compris
+    return buildFlyerHtml(!!forPdf, false, Object.assign({}, it, { theme: th }));
+  };
+  V2.mkt.docEnregistrer = function (it) {   // rend { ok, partage } : partage = bien envoyé à Supabase (équipe), sinon repli local
+    return (items ? Promise.resolve() : loadItems()).then(function () { return saveItem(it); }).then(function () {
+      var ok = (items || []).some(function (x) { return String(x.id) === String(it.id); });
+      return { ok: ok, partage: backend === 'supabase' && ok };
+    });
+  };
+  V2.mkt.docFiche = function (id) {
+    return (items ? Promise.resolve(items) : loadItems()).then(function (a) {
+      var ex = (a || []).filter(function (x) { return String(x.id) === String(id); })[0];
+      return ex ? { id: ex.id, type: ex.type, title: ex.title, accroche: ex.accroche, footer: ex.footer || '', status: ex.status,
+        products: (ex.products || []).map(function (p) { return Object.assign({}, p); }), theme: Object.assign({}, ex.theme || {}), owner: ex.owner } : null;
+    });
+  };
+  V2.mkt.docImages = function (it) { return new Promise(function (res) { var prev = editing; editing = it; ensureImg(function () { editing = prev; res(); }); editing = prev; }); };
+  V2.mkt.docNouvelId = newId;
+  V2.mkt.docProduit = function (o) { var p = cgProduit(o); p.brand = ''; return p; };   // jamais de nom de labo sur ces documents
+  V2.mkt.docCatalogue = {
+    prete: function () { return !!cgG(); },
+    charger: function (cb) {   // cb(true/false) : le catalogue du groupe est chargé à la demande, comme dans l'éditeur
+      if (cgG()) { cb(true); return; }
+      if (!V2.loadFiles) { cb(false); return; }
+      var fin = function () { cb(!!cgG()); };
+      try { V2.loadFiles(['catgroupe']).then(fin, fin); } catch (e) { fin(); }
+    },
+    par: function (cip) { var K = cgIndex(); return (K && K.par[String(cip)]) || null; },
+    chercher: function (q, n) {   // nom ou CIP ; 2 caractères minimum ; les produits à photo d'abord (ordre de l'index)
+      var K = cgIndex(), t = sansAccent(q).trim().split(/\s+/).filter(Boolean), out = [], i, o, k;
+      if (!K || !t.length || sansAccent(q).trim().length < 2) return out;
+      for (i = 0; i < K.rows.length && out.length < (n || 30); i++) {
+        o = K.rows[i];
+        for (k = 0; k < t.length; k++) if (o.s.indexOf(t[k]) < 0) break;
+        if (k === t.length) out.push(o);
+      }
+      return out;
+    }
   };
   V2.mkt.catalogueCategoriesFichier = function () {
     return new Promise(function (res) { ensureNrEtPrinceps(res); }).then(function () {

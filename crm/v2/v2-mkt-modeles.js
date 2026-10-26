@@ -26,7 +26,7 @@
   function env(def, it, ctx, forPdf, edit) {
     var th = it.theme || {}, acc = th.accent || def.accent;
     return { def: def, it: it, ctx: ctx, esc: ctx.esc, za: ctx.zoneAttrs, edit: !forPdf && edit === true, forPdf: !!forPdf,
-      acc: acc, dark: eclaircir(acc), showPrice: th.showPrice !== false, showImg: th.showImg !== false,
+      acc: acc, dark: eclaircir(acc), showPrice: th.showPrice !== false, showPpht: th.showPpht !== false, showImg: th.showImg !== false,
       bg: th.bg || '#FFFFFF', prods: it.products || [],
       title: (it.title && it.title.trim()) ? it.title.trim() : def.label };
   }
@@ -49,7 +49,7 @@
   /* ── prix : tarif barré discret, prix net dans une pastille éclairée ── */
   function tarif(E, p, size) {
     var px = E.ctx.prix(p);
-    if (!E.showPrice || !(px.ppht > 0 && px.pct > 0)) return '';
+    if (!E.showPrice || !E.showPpht || !(px.ppht > 0 && px.pct > 0)) return '';
     return '<span style="' + NUM + 'font-size:' + (size || 11) + 'px;font-weight:500;color:' + MUT + ';text-decoration:line-through;white-space:nowrap">' + E.ctx.fmtEur(px.ppht) + '</span>';
   }
   function net(E, p, i, size, padX) {
@@ -63,7 +63,7 @@
     if (!E.showPrice) return '';
     var sw = function (bg, bd) { return '<span style="display:inline-block;width:26px;height:13px;border-radius:999px;background:' + bg + ';border:1px solid ' + bd + ';margin-right:10px;vertical-align:-2px"></span>'; };
     return '<div style="flex:none;display:flex;gap:34px;margin:18px 40px 0;font-size:11px;line-height:1.35;color:' + MUT + '">' +
-      '<div>' + sw('#fff', P3) + '<b style="color:' + INK + ';font-weight:700">Tarif grossiste (PPHT)</b><br><span style="margin-left:36px">prix habituel, hors taxes</span></div>' +
+      (E.showPpht ? '<div>' + sw('#fff', P3) + '<b style="color:' + INK + ';font-weight:700">Tarif grossiste (PPHT)</b><br><span style="margin-left:36px">prix habituel, hors taxes</span></div>' : '') +
       '<div>' + sw('linear-gradient(180deg,#fff,' + P2 + ')', P3) + '<b style="color:' + INK + ';font-weight:700">Prix net HT</b><br><span style="margin-left:36px">le prix de cette feuille, hors taxes</span></div></div>';
   }
 
@@ -243,8 +243,8 @@
     var haut = panneau(halo('<div style="display:flex;gap:34px;align-items:center;width:100%;box-sizing:border-box;min-height:' + (E.showImg ? 0 : 380) + 'px;padding:34px 30px">' + gauche + info + '</div>', 'border-radius:24px;flex:1;width:100%;', '22% 50%'), 'flex:1;display:flex;');
     var slab = E.showPrice
       ? '<div style="margin-top:18px;border-radius:30px;padding:38px 40px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,#FFFFFF 0%,' + P2 + ' 100%);border:1px solid ' + P3 + ';box-shadow:0 16px 36px rgba(0,80,230,.16)">' +
-          '<div><div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:' + MUT + '">Tarif grossiste (PPHT)</div>' +
-            '<div style="margin-top:6px;">' + (tarif(E, p, 22) || '<span style="font-size:14px;color:' + MUT + '">Prix net uniquement</span>') + '</div></div>' +
+          (E.showPpht ? '<div><div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:' + MUT + '">Tarif grossiste (PPHT)</div>' +
+            '<div style="margin-top:6px;">' + (tarif(E, p, 22) || '<span style="font-size:14px;color:' + MUT + '">Prix net uniquement</span>') + '</div></div>' : '<div></div>') +
           '<div style="text-align:right"><div style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:' + INK + '">Prix net HT</div>' +
             '<div style="' + NUM + 'font-size:76px;font-weight:800;letter-spacing:-.035em;line-height:1;color:' + INK + ';margin-top:2px"' + E.za(E.edit, 'price', 'Prix net HT', { i: 0, ph: '0,00 €' }) + '>' + eur(E, p) + '</div></div></div>'
       : '';
@@ -366,7 +366,7 @@
       var nom = E.showImg ? '<div style="font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.1;color:' + INK + ';padding:22px 34px 8px"' + E.za(E.edit, 'pname', 'Nom du produit', { i: 0, ph: 'Produit' }) + '>' + nm(E, p, 70) + '</div>' : '<div style="height:10px"></div>';
       var specs = ligneSpec(E, 'Laboratoire', E.esc(p.brand || '—'), false, true) + ligneSpec(E, 'Rayon', E.esc(p.cat || '—'), false) + ligneSpec(E, 'Code CIP', E.esc(p.cip || p.ean || '—'), false);
       if (E.showPrice) {
-        if (px.ppht > 0 && px.pct > 0) specs += ligneSpec(E, 'Tarif grossiste (PPHT)', tarif(E, p, 16), false);
+        if (E.showPpht && px.ppht > 0 && px.pct > 0) specs += ligneSpec(E, 'Tarif grossiste (PPHT)', tarif(E, p, 16), false);
         specs += '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0 2px;border-top:1px solid ' + LINE + '"><span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:' + INK + '">Prix net HT</span>' + net(E, p, 0, 32) + '</div>';
       }
       body = '<div data-prod style="flex:1;display:flex;flex-direction:column;background:#FFFFFF;border-radius:24px;' + SHADOW + 'page-break-inside:avoid;break-inside:avoid">' + visuel + nom + '<div style="padding:0 34px 26px">' + specs + '</div></div>';
