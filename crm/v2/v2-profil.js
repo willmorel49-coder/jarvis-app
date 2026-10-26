@@ -24,7 +24,10 @@
   var ROBOT = ['Aucun', 'Riedl', 'BD Rowa', 'Mekapharm', 'Meditech', 'Sinteco', 'Willach', 'Tecny-Farma', 'Apostore', 'Omnicell'];
   var BIOSIM = ['Biogaran', 'Zentiva', 'EG Labo', 'Teva', 'Sandoz', 'Viatris', 'Accord', 'Celltrion', 'Amgen', 'Fresenius Kabi', 'Stada', 'Biogen'];
   // Config des champs — ajouter/retirer ici suffit.
+  // 26/10/2026 — « Ne pas y retourner » (Pauline S., choix de Will) : peint l'officine en rouge sur La carte
+  // (couleur « Suivi des prospects »), pour toute l'équipe. `seul` : fiches d'officine uniquement ; `fixe` : pas de « préciser ».
   var FIELDS = [
+    { k: 'ne_pas_retourner', l: 'Ne pas y retourner', opts: ['Oui'], seul: 'client', fixe: true },
     { k: 'gros1', l: 'Grossiste n°1', opts: GROS },
     { k: 'gros2', l: 'Grossiste n°2', opts: GROS },
     { k: 'gros3', l: 'Grossiste n°3', opts: GROS },
@@ -110,12 +113,12 @@
       return '<div class="v2-profil-box v2-card" data-st="' + esc(scopeType) + '" data-sid="' + esc(String(scopeId)) + '"' + seedAttr + '>' +
           '<div class="v2-profil-hd">' + (V2.ICO ? V2.ICO('pilo', 16, 2) : '') + '<span>Profil commercial</span><small id="" class="v2-profil-meta"></small></div>' +
           '<div class="v2-profil-grid">' +
-            FIELDS.map(function (f) {
+            FIELDS.filter(function (f) { return !f.seul || f.seul === scopeType; }).map(function (f) {
               if (f.text) return '<label class="v2-profil-f v2-profil-f-wide"><span>' + esc(f.l) + '</span>' +
                 (f.k === 'autre' ? micChamp('<input type="text" data-fk="' + f.k + '" placeholder="—" onchange="V2.profil.set(this)">', 'Dicter à la voix') : '<input type="text" data-fk="' + f.k + '" placeholder="—" onchange="V2.profil.set(this)">') + '</label>';
               return '<label class="v2-profil-f"><span>' + esc(f.l) + '</span><select data-fk="' + f.k + '" onchange="V2.profil.set(this)">' +
                 '<option value="">—</option>' + f.opts.map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') +
-                '<option value="__add__">➕ préciser…</option></select></label>';
+                (f.fixe ? '' : '<option value="__add__">➕ préciser…</option>') + '</select></label>';
             }).join('') +
           '</div></div>';
     },
@@ -176,6 +179,7 @@
         }
         Object.keys(mine).forEach(function (k) { if (mine[k] && mine[k] !== '__add__') base[k] = mine[k]; else delete base[k]; });
         var rec = save(st, sid, base);
+        if (V2.carteProfilChange) V2.carteProfilChange(st, sid, base);   // La carte repeint l'officine (« Ne pas y retourner »)
         setMeta(box, rec);
         if (V2.toast) V2.toast('Enregistré');
       });
@@ -202,6 +206,17 @@
     Object.keys(m).forEach(function (k) { if (k.indexOf(pre) === 0) out.push({ sid: k.slice(pre.length), data: (m[k] && m[k].data) || {} }); });
     return out;
   }
+  // 26/10/2026 — La carte (couleur « Suivi des prospects ») : toutes les officines marquées « Ne pas y retourner », en une lecture.
+  // Rend { cip: 1 } ; null si la lecture a raté (la carte le dit, au lieu de les peindre « jamais vues »).
+  V2.profil.nePasRetourner = function () {
+    var c = sb();
+    if (!c) { var m0 = {}; localScopeList('client').forEach(function (x) { if (x.data.ne_pas_retourner) m0[x.sid] = 1; }); return Promise.resolve(m0); }
+    return c.from(TABLE).select('scope_id').eq('scope_type', 'client').eq('data->>ne_pas_retourner', 'Oui').limit(1000)
+      .then(function (r) {
+        if (r.error || !r.data) return null;
+        var m = {}; r.data.forEach(function (x) { m[String(x.scope_id)] = 1; }); return m;
+      }, function () { return null; });
+  };
   // Charge TOUS les enregistrements d'un scope (ex. 'newpharma' pour lister les prospects créés).
   V2.profil.loadScope = function (st) {
     var c = sb();

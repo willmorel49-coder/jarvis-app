@@ -67,6 +67,38 @@
   // d'Intégral, pour les clients (le point grossit avec le palier) ; les prospects
   // en gris neutre. Avant : trois verts + un bleu + un ambre — Will : « le bordel ».
   var SEG_COL = { 'Client A': '#0034A0', 'Client B': '#0050E6', 'Client C': '#4D86F0', 'Prospect': '#A3ABBD', 'Non défini': '#C9CFD9' };
+  // 26/10/2026 — couleur « Suivi des prospects » (Pauline S., 4 états choisis par Will). Priorité rouge > vert > gris > bleu ;
+  // les clientes restent pâles : ce mode sert à choisir où prospecter.
+  var SUIVI_COL = { rouge: '#D92D20', vert: '#12A150', gris: '#8B93A3', bleu: '#2563EB', client: '#E1E5EC', attente: '#C9CFD9' };
+  var suivi = null;   // { pret, vu, rdv: { cip: date } | null, rouge: { cip: 1 } | null } — lu au choix du mode
+  function suiviEtat(p) {
+    if (isClient(p)) return 'client';
+    if (!suivi || !suivi.pret) return 'attente';
+    var k = String(p[13] || '');
+    if (suivi.rouge && suivi.rouge[k]) return 'rouge';
+    if (suivi.rdv && suivi.rdv[k]) return 'vert';
+    if (V2.rdvVuLe && V2.rdvVuLe(k)) return 'gris';
+    return 'bleu';
+  }
+  function chargerSuivi() {
+    suivi = { pret: false };
+    Promise.all([
+      V2.rdvVuCharger ? V2.rdvVuCharger() : Promise.resolve(false),
+      V2.rdvProchainsCharger ? V2.rdvProchainsCharger() : Promise.resolve(null),
+      (V2.profil && V2.profil.nePasRetourner) ? V2.profil.nePasRetourner() : Promise.resolve(null)
+    ]).then(function (r) {
+      suivi = { pret: true, vu: r[0] === true, rdv: r[1], rouge: r[2] };
+      if (colorMode !== 'suivi' || displayMode !== 'points' || zonesOn) return;
+      var lg = document.getElementById('carte-legend'); if (lg) lg.innerHTML = legendHtml();
+      recolor();
+    });
+  }
+  // Appelé par le Profil commercial (v2-profil.js) après un enregistrement : l'officine change de couleur sans recharger.
+  V2.carteProfilChange = function (st, sid, data) {
+    if (st !== 'client' || !suivi || !suivi.rouge) return;
+    if (data && data.ne_pas_retourner) suivi.rouge[String(sid)] = 1; else delete suivi.rouge[String(sid)];
+    if (colorMode === 'suivi') recolor();
+  };
 
   function css(href) { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; document.head.appendChild(l); }
   function js(src, cb) { var s = document.createElement('script'); s.src = src; s.onload = cb; s.onerror = function () { cb('err'); }; document.head.appendChild(s); }
@@ -166,6 +198,7 @@
       return '#D4DAE3';
     }
     if (colorMode === 'type') return SEG_COL[segOf(p)] || (isClient(p) ? '#7C93C9' : '#AEB6C4');
+    if (colorMode === 'suivi') return SUIVI_COL[suiviEtat(p)];
     if (colorMode === 'grp') return GRP_COL[p[3]] || '#CBD2DD';
     if (colorMode === 'ca') { var c = caOf(p); if (!c) return '#E2E6EC'; if (c >= 50000) return '#7A0C2E'; if (c >= 20000) return '#C7283D'; if (c >= 8000) return '#EA580C'; if (c >= 2000) return '#F59E0B'; return '#FCD34D'; }
     return hsl(D.uga[p[2]] || '');
@@ -236,7 +269,7 @@
   function tierRadius(p) { var s = segOf(p); return s === 'Client A' ? 7.5 : s === 'Client B' ? 6 : s.indexOf('Client') === 0 ? 5 : 4.2; }
   function markerStyle(p, i) {
     var t = inTour(i);
-    var r = t ? 7 : (colorMode === 'ca' ? caRadius(caOf(p)) : colorMode === 'type' ? tierRadius(p) : 5.5);
+    var r = t ? 7 : (colorMode === 'ca' ? caRadius(caOf(p)) : colorMode === 'type' ? tierRadius(p) : (colorMode === 'suivi' && isClient(p)) ? 4 : 5.5);
     return { renderer: canvas, radius: r, color: t ? '#10131C' : '#fff', weight: t ? 2 : 0.9, fillColor: colorFor(p), fillOpacity: 0.95 };
   }
   // Mode « Bulles CA » : un seul bleu, translucide, rayon = CA (les grosses cibles ressortent)
@@ -1300,6 +1333,15 @@
       commNames().forEach(function (c) { out += lg(COMM_COL[c], c); });
       return out + lg(PROSPECT_COL, 'Prospect (à conquérir)') + lg('#D4DAE3', 'Hors réseau');
     }
+    if (colorMode === 'suivi') {
+      if (!suivi || !suivi.pret) return '<span class="cn-lg-txt">Lecture du suivi…</span>';
+      var manque = [];
+      if (!suivi.rouge) manque.push('« ne pas y retourner »');
+      if (!suivi.rdv) manque.push('rendez-vous');
+      if (!suivi.vu) manque.push('visites');
+      return lg(SUIVI_COL.rouge, 'Ne pas y retourner') + lg(SUIVI_COL.vert, 'Rendez-vous pris') + lg(SUIVI_COL.gris, 'Déjà vue') + lg(SUIVI_COL.bleu, 'Jamais vue') + lg(SUIVI_COL.client, 'Cliente') +
+        (manque.length ? '<span class="cn-lg-txt">Non lu : ' + manque.join(', ') + ' — rechoisir la couleur pour réessayer</span>' : '');
+    }
     if (colorMode === 'type') return lg(SEG_COL['Client A'], 'Client A · 5 000 €/mois et plus') + lg(SEG_COL['Client B'], 'Client B · 1 500 à 5 000 €/mois') + lg(SEG_COL['Client C'], 'Client C · moins de 1 500 €/mois') + lg(SEG_COL.Prospect, 'Prospect');
     if (colorMode === 'grp') return Object.keys(GRP_COL).map(function (g) { return lg(GRP_COL[g], D.grp[g]); }).join('') + lg('#CBD2DD', 'Autres');
     if (colorMode === 'ca') return lg('#FCD34D', '< 2 k€') + lg('#F59E0B', '2–8 k€') + lg('#EA580C', '8–20 k€') + lg('#C7283D', '20–50 k€') + lg('#7A0C2E', '≥ 50 k€') + lg('#E2E6EC', 'Pas de CA');
@@ -1773,7 +1815,7 @@
       fbItem('tit', titFocus ? 'Titulaire : ' + titFocus : 'Titulaire', !!titFocus) +
       '<span class="cn-fbsep" aria-hidden="true"></span>' +
       '<label class="cn-fb-lbl">Couleur <select class="cn-sel cn-fb-sel" onchange="V2.carteColor(this.value)">' +
-        [['type', 'Client / Prospect'], ['comm', 'Commercial'], ['ca', 'Tranche de CA'], ['grp', 'Groupement'], ['uga', 'UGA']]
+        [['type', 'Client / Prospect'], ['suivi', 'Suivi des prospects'], ['comm', 'Commercial'], ['ca', 'Tranche de CA'], ['grp', 'Groupement'], ['uga', 'UGA']]
           .map(function (o) { return '<option value="' + o[0] + '"' + (colorMode === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
       '</select></label>' +
       '<div class="cn-disp">' + dispBtn('points', 'Points') + dispBtn('bulles', 'Bulles = CA') + '</div>' +
@@ -1916,6 +1958,7 @@
 
   V2.carteColor = function (m) {
     colorMode = m;
+    if (m === 'suivi') chargerSuivi();   // relu à chaque choix : un RDV pris ou une officine marquée entre-temps s'y voit
     ['comm', 'type', 'ca', 'uga', 'grp'].forEach(function (k) { var b = document.getElementById('cb-' + k); if (b) b.classList.toggle('on', k === m); });
     // Choisir une couleur n'a de sens qu'en mode Points : si on est en Bulles, on y revient pour que le clic ait un effet visible.
     if (displayMode !== 'points') { V2.carteDisplay('points'); return; }

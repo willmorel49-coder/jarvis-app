@@ -184,6 +184,21 @@
       .then(function (r) { return ((r && r.data) || [])[0] || null; }, function () { return null; });
   };
 
+  // 26/10/2026 — La carte, couleur « Suivi des prospects » : TOUS mes prochains rendez-vous confirmés d'un coup
+  // ({ cip: date la plus proche }). Relu à chaque choix de ce mode ; null si la lecture a raté.
+  V2.rdvProchainsCharger = function () {
+    var c = sb(), u = uid();
+    if (!c || !u) return Promise.resolve(null);
+    return c.from('rdv').select('cip, date').eq('user_id', u).eq('statut', 'confirme')
+      .gte('date', new Date().toISOString().slice(0, 10)).order('date').limit(1000)
+      .then(function (r) {
+        if (r.error || !r.data) return null;
+        var m = {};
+        r.data.forEach(function (d) { var k = String(d.cip || ''); if (k && !m[k]) m[k] = d.date; });
+        return m;
+      }, function () { return null; });
+  };
+
   V2.rdvVuLe = function (cip) {
     var k = String(cip || ''), best = null;
     function garder(d) { if (d && (!best || d > best)) best = d; }
