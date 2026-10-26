@@ -249,7 +249,29 @@
     if (interne()) I.mode(false);
   };
   // Appelé au début de chaque rendu de La carte : la carte est neuve, le mode repart éteint.
-  C.reset = function () { S.actif = false; S.choisi = ''; calques = null; marqueurs = {}; anneaux = {}; };
+  // garder = redessin différé de la même page en mode Prospection (v2-carte.js) : on note la vue et le prospect choisi
+  // sur la carte qui va disparaître, et reprendre() rouvre le mode sur la carte neuve.
+  C.reset = function (garder) {
+    S.reprise = null;
+    if (garder && S.actif && I && I.map) { try { S.reprise = { c: I.map.getCenter(), z: I.map.getZoom(), choisi: S.choisi }; } catch (e) { S.reprise = null; } }
+    S.actif = false; S.choisi = ''; calques = null; marqueurs = {}; anneaux = {};
+  };
+  C.reprendre = function () {
+    var r = S.reprise; S.reprise = null;
+    if (!r || S.ok !== true || !interne()) return Promise.resolve(null);
+    S.actif = true; S.charge = false; S.erreur = '';
+    I.mode(true); poserRail();
+    return C.charger().then(function () {
+      if (!S.actif) return;
+      S.charge = true; dessiner(); majTout();
+      I.map.setView(r.c, r.z, { animate: false });
+      if (r.choisi) C.choisir(r.choisi, true);   // rouvre la fiche (données déjà chargées : aucun nouveau redessin)
+    }, function (e) {
+      if (!S.actif) return;
+      S.erreur = (e && e.message) || 'lecture impossible';
+      majTout();
+    });
+  };
   C.ficheFermee = function () { var sh = document.querySelector('.cn-shell'); if (sh) sh.classList.remove('cn-fiche-on'); };
 
   function retirerCalques() {

@@ -71,7 +71,7 @@
   // les clientes restent pâles : ce mode sert à choisir où prospecter.
   var SUIVI_COL = { rouge: '#D92D20', vert: '#12A150', gris: '#8B93A3', bleu: '#2563EB', client: '#E1E5EC', attente: '#C9CFD9' };
   // 26/10/2026 — mode « Prospection » (v2-carte-prospection.js, Will seul) : la carte lui prête ses couleurs et sa carte, rien d'autre.
-  var prospOn = false;
+  var prospOn = false, prospARouvrir = false;
   V2.carteInterne = function () { return { map: map, canvas: canvas, SUIVI_COL: SUIVI_COL, mode: prospMode }; };
   function prospMode(on) {
     prospOn = !!on;
@@ -1702,6 +1702,7 @@
     // alors). Même garde que le écouteur resize juste en dessous.
     setTimeout(function () { if (map && surCarte() && document.getElementById('carte-map')) { map.invalidateSize(); rebuild(); updateTourBar(); drawTourLine(); homeView(); } }, 60);
     setTimeout(function () { if (map && surCarte() && document.getElementById('carte-map')) map.invalidateSize(); }, 420);
+    if (prospARouvrir) { prospARouvrir = false; setTimeout(function () { if (map && surCarte() && document.getElementById('carte-map') && V2.carteProspection && V2.carteProspection.reprendre) V2.carteProspection.reprendre(); }, 90); }   // après le homeView() de 60 ms
     if (!V2._carteResize) { V2._carteResize = true; window.addEventListener('resize', function () { if (map && surCarte()) { map.invalidateSize(); renderFbRow(); } }); }
   }
   // Fond de carte. CARTO (light_all) exige une clé d'API depuis août 2026 : chaque
@@ -1925,7 +1926,11 @@
   V2.pages.carte = {
     render: function (root) {
       injectCss();
-      prospOn = false; if (V2.carteProspection && V2.carteProspection.reset) V2.carteProspection.reset();
+      // 26/10/2026 — un redessin DIFFÉRÉ de la même page (v2-probable.js à la 1re fiche, arrivée des relances…) rebâtit
+      // toute la carte : constaté en production, le mode Prospection se refermait 2 s après le choix d'un prospect.
+      // Si l'écran affiché EST La carte en mode Prospection, on le rouvre sur la carte neuve (même vue, même prospect).
+      prospARouvrir = prospOn && !!root.querySelector('.cn-shell.cn-prosp');
+      prospOn = false; if (V2.carteProspection && V2.carteProspection.reset) V2.carteProspection.reset(prospARouvrir);
       // ══ LA CARTE (27/08/2026, Will : « beaucoup plus simple, là c'est le bordel ») ══
       // Avant : barre de 8 filtres + colonne de réglages à gauche + liste de 19 671
       // officines à droite + deux boutons « Organisateur de tournée » + un bandeau.
