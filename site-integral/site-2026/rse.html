@@ -756,6 +756,7 @@ function ecrire(){
 var cv = document.getElementById('ciel');
 var ctx = null, dpr = 1, L = 0, H = 0, grainF = null, poussieres = [];
 var fond = null, fctx = null, dernierFond = {x:-99, y:-99, I:-1, img:-99};
+var halo = null, hctx = null; /* les grands halos : peints petits, posés agrandis */
 function initCiel(){
   try { ctx = cv.getContext('2d', {alpha:false}); } catch(e){ ctx = null; }
   if (!ctx){
@@ -766,6 +767,7 @@ function initCiel(){
   }
   fond = document.createElement('canvas'); fctx = fond.getContext('2d');
   if (!fctx){ ctx = null; return false; }
+  halo = document.createElement('canvas'); halo.width = halo.height = 256; hctx = halo.getContext('2d');
   var g = document.createElement('canvas'); g.width = g.height = 96;
   var gc = g.getContext('2d');
   if (gc){
@@ -815,6 +817,15 @@ function peindreFond(){
   var rayons = [[Math.max(L,H) * 0.62, etat.halo, 0.34], [Math.max(L,H) * 0.24, etat.halo, 0.46], [70 + 60 * etat.alt, etat.noyau, 0.95]];
   for (var k = 0; k < rayons.length; k++){
     var R = rayons[k][0], col = versRVB2(rayons[k][1]), al = rayons[k][2] * force * etat.I;
+    if (hctx && R > 200){
+      /* un dégradé si doux ne perd rien à l'agrandissement, et coûte vingt fois moins */
+      hctx.globalCompositeOperation = 'copy';
+      var g4 = hctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+      g4.addColorStop(0, 'rgba(' + col + ',' + al.toFixed(3) + ')'); g4.addColorStop(.5, 'rgba(' + col + ',' + (al * 0.28).toFixed(3) + ')'); g4.addColorStop(1, 'rgba(' + col + ',0)');
+      hctx.fillStyle = g4; hctx.fillRect(0, 0, 256, 256);
+      c.drawImage(halo, sx - R, sy - R, R * 2, R * 2);
+      continue;
+    }
     var g2 = c.createRadialGradient(sx, sy, 0, sx, sy, R);
     g2.addColorStop(0, 'rgba(' + col + ',' + al.toFixed(3) + ')'); g2.addColorStop(.5, 'rgba(' + col + ',' + (al * 0.28).toFixed(3) + ')'); g2.addColorStop(1, 'rgba(' + col + ',0)');
     c.fillStyle = g2; boite(c, sx - R, sy - R, R * 2, R * 2);
