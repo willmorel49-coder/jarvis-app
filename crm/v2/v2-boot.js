@@ -721,6 +721,8 @@
     // 14/10/2026 — « Notre marge par produit » (écran Will seul) : UN fichier à la racine du seau, lisible par jarvis_acces_marge_produits() ;
     // PAS dans FICHIERS_VENTES (ce n'est pas un jeu par commercial). Ne jamais le coupler à 'wml' : l'écran le demande lui-même après le contrôle d'accès.
     margeproduits: 'marge-produits.js',
+    // 26/10/2026 — tournées de Will (mode Prospection de La carte) : fichier à la RACINE du seau, nom `connexions-jarvis…` VOULU (jarvis_peut_lire_protege le réserve à jarvis_acces_connexions()). Demandé par v2-carte-prospection.js APRÈS le oui de cette fonction, jamais au démarrage.
+    prospection: 'connexions-jarvis-prospection.js',
     // 23/10/2026 — ventes par ÉTABLISSEMENT (France / export) depuis janvier : chiffres par établissement, protégés. Demandées à l'ouverture
     // du panneau produit en vue interne (V2.loadFiles(['etabventes']) dans v2-comptoir.js), jamais au démarrage, jamais en vue pharmacien.
     etabventes: 'v2/etab-ventes-data.js',
@@ -839,6 +841,8 @@
     // 14/10/2026 — « Notre marge par produit » (écran Will seul) : UN fichier à la racine du seau, lisible par jarvis_acces_marge_produits() ;
     // PAS dans FICHIERS_VENTES (ce n'est pas un jeu par commercial). Ne jamais le coupler à 'wml' : l'écran le demande lui-même après le contrôle d'accès.
     margeproduits: 'marge-produits.js',
+    // 26/10/2026 — tournées de Will (mode Prospection de La carte) : fichier à la RACINE du seau, nom `connexions-jarvis…` VOULU (jarvis_peut_lire_protege le réserve à jarvis_acces_connexions()). Demandé par v2-carte-prospection.js APRÈS le oui de cette fonction, jamais au démarrage.
+    prospection: 'connexions-jarvis-prospection.js',
     // 23/10/2026 — ventes par ÉTABLISSEMENT (France / export) depuis janvier : chiffres par établissement, protégés. Demandées à l'ouverture
     // du panneau produit en vue interne (V2.loadFiles(['etabventes']) dans v2-comptoir.js), jamais au démarrage, jamais en vue pharmacien.
     etabventes: 'etab-ventes-data.js',
@@ -1480,6 +1484,7 @@
     wmlca: 'WML_OFF_CA',
     margeclients: 'MARGE_CLIENTS',
     margeproduits: 'MARGE_PRODUITS',
+    prospection: 'PROSPECTION_TOURNEES',
     etabventes: 'ETAB_VENTES',
     grpagregats: 'GRP_AGREGATS',
     biosimcomplet: 'BIOSIMILAIRES_COMPLET',

@@ -61,42 +61,72 @@ test('dates : jour local, format français', () => {
   assert.equal(C.jours(['lundi', 'jeudi']), 'lun, jeu');
 });
 
-// ── Verrou : le mode n'existe que sur un OUI de la base ──
+// ── Verrou : le mode n'existe que sur un OUI de jarvis_acces_connexions() (RPC existante, Will + compte de preuve) ──
+const ACCES = 'jarvis_acces_connexions';
 function faux(reponses, journal) {
-  return { rpc: (nom) => { journal.push(nom); const r = reponses[nom]; return r instanceof Error ? Promise.reject(r) : Promise.resolve(r); }, from: () => { throw new Error('pas de table ici'); } };
+  return { rpc: (nom) => { journal.push('rpc:' + nom); const r = reponses[nom]; return r instanceof Error ? Promise.reject(r) : Promise.resolve(r); }, from: () => { throw new Error('pas de table ici'); } };
 }
-async function essai(reponses) {
+async function essai(reponses, fichier) {
   const j = []; const S = C.etatInterne;
   S.ok = null; S.verif = null;
+  delete globalThis.PROSPECTION_TOURNEES;
   V2.user = { id: 'u' }; V2.sb = () => faux(reponses, j);
+  V2.loadFiles = (cles) => { j.push('fichier:' + cles.join(',')); if (fichier) globalThis.PROSPECTION_TOURNEES = fichier; return Promise.resolve(); };
   const ok = await C.verifier(true);
   return { ok, j, bouton: C.bouton() };
 }
-test('verrou : réponse « non » → pas de mode, aucune donnée demandée', async () => {
-  const r = await essai({ jarvis_acces_prospection: { data: false } });
-  assert.equal(r.ok, false); assert.equal(C.ok(), false);
+test('verrou : réponse « non » → pas de bouton, le fichier des tournées n\'est jamais demandé', async () => {
+  const r = await essai({ [ACCES]: { data: false } }, { tournees: { T1: {} } });
+  assert.equal(r.ok, false); assert.equal(C.ok(), false); assert.equal(r.bouton, '');
   await assert.rejects(C.demanderDonnees());
-  assert.deepEqual(r.j, ['jarvis_acces_prospection']);   // jarvis_prospection_donnees jamais appelée
+  assert.deepEqual(r.j, ['rpc:' + ACCES]);
 });
 test('verrou : erreur de la base ou rejet → NON (jamais « oui » par défaut)', async () => {
-  assert.equal((await essai({ jarvis_acces_prospection: { data: null, error: { message: 'x' } } })).ok, false);
-  assert.equal((await essai({ jarvis_acces_prospection: new Error('réseau') })).ok, false);
-  assert.equal((await essai({ jarvis_acces_prospection: { data: 'true' } })).ok, false);
+  assert.equal((await essai({ [ACCES]: { data: null, error: { message: 'x' } } })).ok, false);
+  assert.equal((await essai({ [ACCES]: new Error('réseau') })).ok, false);
+  assert.equal((await essai({ [ACCES]: { data: 'true' } })).ok, false);
 });
-test('verrou : pas de session → non', async () => {
-  C.etatInterne.verif = null; delete V2.user; V2.sb = () => faux({}, []);
-  assert.equal(await C.verifier(true), false);
+test('verrou : pas de session → non, aucun appel', async () => {
+  C.etatInterne.verif = null; delete V2.user; const j = []; V2.sb = () => faux({}, j);
+  assert.equal(await C.verifier(true), false); assert.deepEqual(j, []);
 });
-test('verrou : « oui » → les données ne sont demandées qu\'ensuite, et une réponse vide est une erreur', async () => {
-  let r = await essai({ jarvis_acces_prospection: { data: true }, jarvis_prospection_donnees: { data: { tournees: { T1: {} }, clientes: [] } } });
-  assert.equal(r.ok, true); assert.equal(C.ok(), true);
+test('verrou : « oui » → bouton ; les tournées ne se demandent qu\'ensuite ; fichier absent ou vide = erreur', async () => {
+  let r = await essai({ [ACCES]: { data: true } }, { tournees: { T1: {} }, clientes: [] });
+  assert.equal(r.ok, true); assert.match(r.bouton, /Prospection/);
+  assert.deepEqual(r.j, ['rpc:' + ACCES]);   // rien d'autre tant qu'on n'ouvre pas le mode
   assert.deepEqual((await C.demanderDonnees()).tournees, { T1: {} });
-  assert.deepEqual(r.j, ['jarvis_acces_prospection', 'jarvis_prospection_donnees']);
-  await essai({ jarvis_acces_prospection: { data: true }, jarvis_prospection_donnees: { data: null } });
+  assert.deepEqual(r.j, ['rpc:' + ACCES, 'fichier:prospection']);
+  await essai({ [ACCES]: { data: true } }, null);
   await assert.rejects(C.demanderDonnees());
 });
-test('verrou : le bouton du menu est vide sur « non », présent sur « oui »', async () => {
-  assert.equal((await essai({ jarvis_acces_prospection: { data: false } })).bouton, '');
-  assert.equal((await essai({ jarvis_acces_prospection: { data: null, error: { message: 'x' } } })).bouton, '');
-  assert.match((await essai({ jarvis_acces_prospection: { data: true } })).bouton, /Prospection/);
+
+// ── Suivi : une ligne `profils` par utilisateur (modèle u2ScopeId), relue avant d'être réécrite ──
+function fauxProfils(depart) {
+  const base = { ligne: depart || null, ecritures: [] };
+  const q = (filtres) => ({
+    select() { return this; }, eq(k, v) { filtres[k] = v; return this; },
+    maybeSingle() { return Promise.resolve({ data: base.ligne ? { data: base.ligne } : null, error: null }); },
+    upsert(l, o) { base.ecritures.push([l, o, filtres]); base.ligne = l.data; return Promise.resolve({ error: null }); },
+  });
+  base.client = { from: (t) => { assert.equal(t, 'profils'); return q({}); } };
+  return base;
+}
+test('suivi : rangé dans profils (groupement, __prospection_<id>__), colonnes séparées, effacer = retirer', async () => {
+  const b = fauxProfils(null); V2.user = { id: 'u1', name: 'Will' }; V2.sb = () => b.client;
+  assert.equal(await C.ecrireSuiviPrive('111', 'mail_envoye_le', '2026-10-26'), true);
+  assert.equal(await C.ecrireSuiviPrive('111', 'relance_le', '2026-11-09'), true);
+  const [l, o] = b.ecritures[1];
+  assert.equal(l.scope_type, 'groupement'); assert.equal(l.scope_id, '__prospection_u1__'); assert.equal(l.updated_by, 'u1');
+  assert.equal(o.onConflict, 'scope_type,scope_id');
+  assert.deepEqual(l.data.s['111'], { m: '2026-10-26', r: '2026-11-09' });
+  assert.deepEqual(await C.lireSuiviPrive(), { '111': { mail: '2026-10-26', relance: '2026-11-09' } });
+  await C.ecrireSuiviPrive('111', 'mail_envoye_le', '');
+  assert.deepEqual(b.ligne.s['111'], { r: '2026-11-09' });
+  await C.ecrireSuiviPrive('111', 'relance_le', '');
+  assert.deepEqual(b.ligne.s, {});
+  assert.equal(await C.ecrireSuiviPrive('111', 'autre', 'x'), false);
+});
+test('suivi : lecture ratée = null (jamais « vide »)', async () => {
+  V2.user = { id: 'u1' }; V2.sb = () => ({ from: () => ({ select() { return this; }, eq() { return this; }, maybeSingle: () => Promise.resolve({ data: null, error: { message: 'x' } }) }) });
+  assert.equal(await C.lireSuiviPrive(), null);
 });

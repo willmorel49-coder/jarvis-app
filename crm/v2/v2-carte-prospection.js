@@ -3,16 +3,21 @@
    Will : « un VRAI outil de prospection dans JARVIS, sur la carte, pour lui seul :
    ne prospecter que des pharmacies cohérentes avec les tournées de livraison ».
 
-   - Les tournées (tracés, clientes, positions) ne sont PAS dans ce fichier ni dans le dépôt (public) :
-     elles se demandent à la base APRÈS un « oui » de jarvis_acces_prospection(), par
-     jarvis_prospection_donnees() (voir _sql/prospection.sql). Le bouton n'existe que sur ce « oui » ;
+   - VERROU : la RPC EXISTANTE jarvis_acces_connexions() (crm/v2/_sql/connexions.sql : Will + compte de preuve). Aucune
+     nouvelle fonction ni table en base (décision du 26/10 : pas de SQL). Le bouton n'existe que sur un « oui » ;
      une erreur de la base vaut « non », jamais « oui ».
+   - DONNÉES DES TOURNÉES (tracés, clientes, positions) : PAS dans le dépôt (public). Elles vivent dans un fichier du seau
+     privé `donnees-protegees`, à sa RACINE, nommé `connexions-jarvis-prospection.js`. CE NOM EST VOULU : la fonction de la base
+     jarvis_peut_lire_protege() réserve tout objet `connexions-jarvis%` à jarvis_acces_connexions() (branche placée en tête,
+     connexions.sql) ; un autre nom serait lisible par tout compte connecté. On le charge avec le chargeur de fichiers protégés
+     de l'app (V2.loadFiles, clé « prospection » de v2-boot.js : adresse signée), SEULEMENT après le « oui » ci-dessus.
    - Prospects = officines de PHARMA_FR des 8 départements du secteur qui ne sont pas dans CLIENTS_ACTIFS
      (cliente de n'importe quel commercial). Distance au tracé le plus proche calculée ICI, dans le
      navigateur : projection plane locale, mêmes constantes que donnees.py (xy / d_seg / d_trace).
    - Couleurs du suivi = celles du mode « Suivi des prospects » de La carte (SUIVI_COL, v2-carte.js) :
      rouge ne pas y retourner > vert RDV à venir > gris déjà vue > bleu jamais vue.
-   - « Mail envoyé » et « relance » : table privée prospection_suivi (RLS propriétaire). La relance crée aussi une
+   - « Mail envoyé » et « relance » : table `profils` existante (scope 'groupement', scope_id '__prospection_<id>__', même rangement
+     que u2ScopeId() de v2-app.js). La relance crée aussi une
      ligne dans la To do existante (V2.todo.ajouterLigne). « Ne pas y retourner » = champ existant du Profil.
    ═══════════════════════════════════════════════════════════════════ */
 (function (glob) {
@@ -114,7 +119,7 @@
     if (S.verif && !force) return S.verif;
     var c = sb();
     if (!c || !c.rpc || !V2.user) { S.ok = false; return Promise.resolve(false); }
-    S.verif = Promise.resolve(c.rpc('jarvis_acces_prospection')).then(function (r) {
+    S.verif = Promise.resolve(c.rpc('jarvis_acces_connexions')).then(function (r) {
       S.ok = !!(r && !r.error && r.data === true);
       return S.ok;
     }, function () { S.ok = false; return false; });
@@ -126,35 +131,45 @@
   // Les tracés ne sont demandés qu'après un « oui ». Rend le jeu de données ou lève.
   C.demanderDonnees = function () {
     if (S.ok !== true) return Promise.reject(new Error('accès non accordé'));
-    var c = sb();
-    return Promise.resolve(c.rpc('jarvis_prospection_donnees')).then(function (r) {
-      if (!r || r.error || !r.data || !r.data.tournees) throw new Error((r && r.error && r.error.message) || 'tournées non reçues');
-      return r.data;
+    if (!V2.loadFiles) return Promise.reject(new Error('chargeur de fichiers protégés absent'));
+    return Promise.resolve(V2.loadFiles(['prospection'])).then(function () {
+      var d = glob.PROSPECTION_TOURNEES;
+      if (!d || !d.tournees) throw new Error('fichier des tournées non reçu');
+      return d;
     });
   };
 
-  // Suivi privé (mail envoyé, relance) : lu par tranches (la base plafonne à 1000 lignes).
+  // Suivi (mail envoyé, relance) : UNE ligne `profils` par utilisateur, même rangement que u2ScopeId() (v2-app.js) :
+  // scope_type 'groupement' (la base n'accepte que des types existants) + un scope_id qu'aucun groupement ne porte.
+  // data = { s: { cip: { m: 'AAAA-MM-JJ', r: 'AAAA-MM-JJ' } } }.
+  function scopeSuivi() { return '__prospection_' + ((V2.user && V2.user.id) || 'local') + '__'; }
+  function versSuivi(data) {
+    var out = {}, s = (data && data.s) || {};
+    Object.keys(s).forEach(function (k) { out[k] = { mail: (s[k] && s[k].m) || '', relance: (s[k] && s[k].r) || '' }; });
+    return out;
+  }
+  // Rend { cip: { mail, relance } } ; null si la lecture a raté (jamais « rien à signaler »).
   C.lireSuiviPrive = function () {
-    var c = sb(), PAS = 1000, out = {};
-    if (!c) return Promise.resolve(null);
-    function tranche(d) {
-      return Promise.resolve(c.from('prospection_suivi').select('cip,mail_envoye_le,relance_le').order('cip').range(d, d + PAS - 1)).then(function (r) {
-        if (!r || r.error || !r.data) return null;
-        r.data.forEach(function (x) { out[String(x.cip)] = { mail: x.mail_envoye_le || '', relance: x.relance_le || '' }; });
-        if (r.data.length === PAS && d + PAS < 50000) return tranche(d + PAS);
-        return out;
-      }, function () { return null; });
-    }
-    return tranche(0);
+    var c = sb();
+    if (!c || !V2.user) return Promise.resolve(null);
+    return Promise.resolve(c.from('profils').select('data').eq('scope_type', 'groupement').eq('scope_id', scopeSuivi()).maybeSingle())
+      .then(function (r) { return (!r || r.error) ? null : versSuivi(r.data && r.data.data); }, function () { return null; });
   };
-  // Écrit UNE colonne (la relance ne touche pas la date du mail, et inversement). Jamais de DELETE : remettre à null.
+  // Écrit UNE valeur : la ligne est relue juste avant (le Mac et l'iPhone ne s'écrasent pas), puis réécrite. Jamais de DELETE : '' = effacé.
   C.ecrireSuiviPrive = function (cip, colonne, valeur) {
     var c = sb();
     if (!c || !V2.user) return Promise.resolve(false);
-    if (colonne !== 'mail_envoye_le' && colonne !== 'relance_le') return Promise.resolve(false);
-    var ligne = { user_id: V2.user.id, cip: cip, maj: new Date().toISOString() };
-    ligne[colonne] = valeur || null;
-    return Promise.resolve(c.from('prospection_suivi').upsert(ligne, { onConflict: 'user_id,cip' })).then(function (r) { return !!(r && !r.error); }, function () { return false; });
+    var champ = colonne === 'mail_envoye_le' ? 'm' : colonne === 'relance_le' ? 'r' : '';
+    if (!champ) return Promise.resolve(false);
+    return Promise.resolve(c.from('profils').select('data').eq('scope_type', 'groupement').eq('scope_id', scopeSuivi()).maybeSingle()).then(function (r) {
+      if (!r || r.error) return false;
+      var data = (r.data && r.data.data) || {}, s = data.s || {};
+      var e = s[cip] || {};
+      if (valeur) e[champ] = valeur; else delete e[champ];
+      if (e.m || e.r) s[cip] = e; else delete s[cip];
+      return Promise.resolve(c.from('profils').upsert({ scope_type: 'groupement', scope_id: scopeSuivi(), data: { s: s }, updated_by: V2.user.id,
+        updated_by_name: V2.user.name || '', updated_at: new Date().toISOString() }, { onConflict: 'scope_type,scope_id' })).then(function (u) { return !!(u && !u.error); });
+    }, function () { return false; });
   };
 
   // Chargement complet (sans DOM). Rend S. Une source qui échoue est NOTÉE dans S.manque : jamais lue comme « rien ».
@@ -386,7 +401,7 @@
     else if (e === 'gris') rdv = '<div class="pp-l">Déjà vue le <b>' + esc(C.fr(S.suiviCouleur.vu(id))) + '</b></div>';
     else if (e === 'bleu') rdv = '<div class="pp-l">Aucun rendez-vous ni visite enregistrés.</div>';
     return '<div class="pp-det" onclick="event.stopPropagation()">' +
-      (S.priveOk ? '' : '<div class="pp-warn">Suivi privé non lu : mail envoyé et relance indisponibles pour l\'instant.</div>') +
+      (S.priveOk ? '' : '<div class="pp-warn">Suivi non lu : mail envoyé et relance indisponibles pour l\'instant.</div>') +
       '<div class="pp-blk"><div class="pp-bt">Mail envoyé</div>' +
         '<div class="pp-ligne"><input type="date" id="pp-mail-' + id + '" value="' + esc(pr.mail || aj) + '" aria-label="Date d\'envoi du mail"' + off + '>' +
         '<button class="v2-btn v2-btn-primary" onclick="V2.carteProspection.mail(\'' + id + '\')"' + off + '>Enregistrer</button>' +

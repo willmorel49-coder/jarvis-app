@@ -261,3 +261,5 @@ marge-produits.nouveau.js
 # 23/10/2026 — ventes par établissement (France / export) : chiffres par établissement, fichier protégé (Supabase), jamais commité
 etab-ventes-data.js
 etab-ventes-data.js.nouveau
+
+connexions-jarvis-prospection.js
