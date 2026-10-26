@@ -358,7 +358,6 @@
     var h = '<div class="pp-leg"><div class="pp-leg-t">Tournées</div>' + k.map(function (code) {
       return '<span class="pp-lg pp-lg-t"><i class="pp-trait" style="background:' + couleur(code) + '"></i>' + esc(tourneeLbl(code)) + '</span>';
     }).join('') +
-    '<span class="pp-lg pp-lg-n">Trajet approché, d\'une cliente à la suivante.</span>' +
     '<div class="pp-leg-t">Prospects</div>' +
       lg(SC.rouge, 'Ne pas y retourner') + lg(SC.vert, 'Rendez-vous à venir') + lg(SC.gris, 'Déjà vue') + lg(SC.bleu, 'Jamais vue') +
     '<span class="pp-lg"><i class="pp-ring-m"></i>Contour foncé : mail envoyé</span>' +
@@ -429,7 +428,7 @@
     var r = document.getElementById('pp-rail');
     if (r) {
       if (!S.charge) poserRail();
-      else r.innerHTML = '<div class="pp-tete"><b>Prospection</b><span>Officines du secteur qui ne sont clientes de personne, de la plus proche du trajet à la plus éloignée.</span></div>' +
+      else r.innerHTML = '<div class="pp-tete"><b>Prospection</b><span>Officines du secteur qui ne sont clientes de personne, de la plus proche du trajet à la plus éloignée.</span><span class="pp-note">Trajet approché, d\'une cliente à la suivante.</span></div>' +
         '<div class="pp-scroll" id="pp-scroll"><details class="pp-legd"' + (window.matchMedia && window.matchMedia('(max-width:760px)').matches ? '' : ' open') + '><summary>Légende</summary>' + legendeHtml() + '</details>' +
         '<div class="pp-liste" id="pp-liste">' + listeHtml() + '</div></div>';
     }
@@ -527,6 +526,7 @@
       '.pp-tete{flex:none;padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:3px}',
       '.pp-tete b{font-size:16px;font-weight:800;letter-spacing:-.01em;color:var(--ip-ink)}',
       '.pp-tete span{font-size:12.5px;color:var(--muted);line-height:1.4}',
+      '.pp-tete .pp-note{font-size:12px;color:#4B5565}',
       '.pp-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}',
       '.pp-etat{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center;font-size:13.5px;color:var(--ip-ink)}',
       '.pp-etat span{color:var(--muted)}',
