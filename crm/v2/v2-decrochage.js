@@ -246,7 +246,7 @@
     if (document.getElementById('dr-css')) return;
     var s = document.createElement('style'); s.id = 'dr-css';
     s.textContent = [
-      '.dr{padding:16px 16px 12px;margin:0 0 14px;border-left:4px solid var(--warn)}',
+      '.dr{padding:16px 16px 12px;margin:0 0 14px}',
       '.dr-tete{display:flex;align-items:center;gap:10px}',
       '.dr-titre{font-size:17px;font-weight:800;letter-spacing:-.01em;color:var(--ip-ink);margin:0}',
       '.dr-n{min-width:26px;height:26px;padding:0 8px;border-radius:var(--r-pill);background:var(--ip-blue);color:#fff;font-weight:800;font-size:14px;display:inline-flex;align-items:center;justify-content:center}',
@@ -269,7 +269,7 @@
       '.dr-g-x{color:var(--muted)}',
       '.dr-g:focus-visible,.dr-voir:focus-visible,.dr-nom:focus-visible{outline:2px solid var(--ip-blue);outline-offset:2px}',
       '.dr-voir{margin-top:8px;min-height:var(--tap-min);width:100%;border:0;border-top:1px solid var(--line-strong);background:none;color:var(--ip-blue);font:inherit;font-size:14px;font-weight:700;cursor:pointer}',
-      '.dr-bandeau{padding:14px 16px;margin:0 0 14px;border-left:4px solid var(--warn)}',
+      '.dr-bandeau{padding:14px 16px;margin:0 0 14px}',
       '.dr-bandeau .dr-titre{font-size:15px}',
       '.dr-bandeau .dr-ct a{color:var(--ip-blue)}'
     ].join('\n');
