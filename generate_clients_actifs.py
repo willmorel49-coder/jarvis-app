@@ -54,6 +54,11 @@ LGO_ESCALE = {'LGPI': 'LGPI', 'WINPHARMA': 'Winpharma', 'SMART RX': 'Smart Rx', 
               'PHARMALAND': 'Pharmaland', 'LSI PHARMALAND': 'Pharmaland', 'ALLIADIS': 'Alliadis',
               'ACTIPHARM': 'Actipharm', 'VINDALIS': 'Vindilis', 'VINPILIS': 'Vindilis'}
 GROUPEMENTS_DB = '/Users/williammorel/JARVIS/GROUPEMENTS/data/output/pharmacies.sqlite'
+# code officine → (adresse fausse de l'export, bonne adresse : celle d'où l'officine a écrit à Will)
+ADRESSES_CORRIGEES = {
+    '2274280': ('phamaciedesbateliers@gmail.com', 'pharmaciedesbateliers@gmail.com'),        # Gardan, Ingrandes
+    '2024330': ('pharmaciecoeurderosieres@gmail.com', 'pharmaciecoeurderoseraie@gmail.com'),  # Cœur de Roseraie, Angers
+}
 
 
 def norm_nom(v):
@@ -291,6 +296,12 @@ def main():
         if g:
             v[18] = g
             n_gros += 1
+    # 27/10/2026 — adresses fausses de l'export (mails « Non remis » de l'envoi du 27/10) : remplacées
+    # SEULEMENT si l'export porte encore l'ancienne ; corrigé à la source, la ligne ne fait plus rien.
+    for code, (faux, bon) in ADRESSES_CORRIGEES.items():
+        if code in d and d[code][2] == faux:
+            d[code][2] = bon
+            print('adresse corrigée %s : %s → %s' % (code, faux, bon))
     txt = ('// Intégral Pharma — base clients (export clients actifs du %s) — généré le %s\n'
            '// ⚠️ NE JAMAIS COMMITER. Servi par adresse signée (Supabase).\n'
            '// code officine → [tel, portable, email, contact, fonction, logiciel, enseigne, commercial, uga, livraison,\n'
