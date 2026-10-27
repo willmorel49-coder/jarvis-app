@@ -142,7 +142,8 @@
     var F = window.FROID_CIPS || [];
     var PS = Array.isArray(window.PROD_STATS) ? window.PROD_STATS : [];
     var R = window.MARGE_REGLES || {}, RG = R.generiques || [], RS = (reglePrivee() || {}).cips || [];
-    var stamp = B.length + 'x' + S.length + 'x' + F.length + 'x' + PS.length + 'x' + RG.length + 'x' + RS.length;
+    var BM = (window.BIOSIMILAIRES && window.BIOSIMILAIRES.molecules) || [];
+    var stamp = B.length + 'x' + S.length + 'x' + F.length + 'x' + PS.length + 'x' + RG.length + 'x' + RS.length + 'x' + BM.length;
     if (_idx && _idxStamp === stamp) return _idx;
     var m = {};
     B.forEach(function (b) {
@@ -167,6 +168,18 @@
       var c = normCip(r.c); if (!c) return;
       if (!m[c]) m[c] = { has_ameli: false, is_froid: false, artnature: '' };
       m[c].artnature = 'biosimilaire';
+    });
+    // 27/10/2026 — et la base officielle (window.BIOSIMILAIRES), celle de la carte « Biosimilaires par
+    // laboratoire » : PROD_STATS ignore ~1 à 5 k€/mois de Yuflyma, Hyrimoz, Retacrit, énoxaparines…
+    // rangés en Froid ou Princeps. Famille et carte comptent désormais les mêmes produits.
+    BM.forEach(function (mol) {
+      (mol.biosimilaires || []).forEach(function (b) {
+        (b.cips || []).forEach(function (c) {
+          c = normCip(c); if (!c) return;
+          if (!m[c]) m[c] = { has_ameli: false, is_froid: false, artnature: '' };
+          m[c].artnature = 'biosimilaire';
+        });
+      });
     });
     // SAGITTA = short list NR (non remboursable) : marque isNR=true
     S.forEach(function (s) {
