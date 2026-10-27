@@ -2205,7 +2205,11 @@
       // précis donc c'est mieux, pas besoin d'avoir de doublons ». Les deux cartes
       // statiques « Répartition par famille / par tranche » ne s'affichent plus que
       // si la carte mois par mois n'a rien à montrer (moins de 2 mois de ventes).
-      var gnqCard = V2.generiqueurCard ? V2.generiqueurCard(cur, { title: 'CA par génériqueur' + (pf ? ' · ' + pf.label : ''), max: 15 }) : '';
+      // 27/10/2026 — génériques et biosimilaires dans deux cartes séparées, comme la fiche officine (choix de Will)
+      var gnqCard = V2.generiqueurCard
+        ? V2.generiqueurCard(cur, { title: 'Génériques par génériqueur' + (pf ? ' · ' + pf.label : ''), max: 15, type: 'gen' }) +
+          V2.generiqueurCard(cur, { title: 'Biosimilaires par laboratoire' + (pf ? ' · ' + pf.label : ''), max: 15, type: 'biosim' })
+        : '';
       var repartition = (partsMoisCard
           ? '<div data-reveal>' + partsMoisCard + '</div>'
           : legendeReseau(compare, repereLabel) + '<div class="pilo-grid2" data-reveal>' + famCard + tierCard + '</div>') +
