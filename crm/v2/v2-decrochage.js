@@ -271,7 +271,11 @@
       '.dr-voir{margin-top:8px;min-height:var(--tap-min);width:100%;border:0;border-top:1px solid var(--line-strong);background:none;color:var(--ip-blue);font:inherit;font-size:14px;font-weight:700;cursor:pointer}',
       '.dr-bandeau{padding:14px 16px;margin:0 0 14px}',
       '.dr-bandeau .dr-titre{font-size:15px}',
-      '.dr-bandeau .dr-ct a{color:var(--ip-blue)}'
+      '.dr-bandeau .dr-ct a{color:var(--ip-blue)}',
+      // Au doigt : le nom de l'officine (~20 px) et le lien du bandeau (~16 px)
+      // s'agrandissent à 44 px sans bouger la mise en page (marge négative).
+      '@media(max-width:640px){.dr-nom{display:inline-block;padding:12px 0;margin:-12px 0}' +
+        '.dr-bandeau .dr-ct a{display:inline-block;padding:14px 0;margin:-14px 0}}'
     ].join('\n');
     document.head.appendChild(s);
   }
