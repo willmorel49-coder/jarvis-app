@@ -1653,10 +1653,6 @@
         '</div></div>' +
         '<div class="pha-main">' +
         '<div class="v2-card" style="padding:12px 16px 14px">' + nameEditor(pid, p[6] || '') + '</div>' +
-        // 27/09/2026 — le potentiel sur un PROSPECT : c'est ici qu'il sert le plus, puisque
-        // aucune vente n'existe encore. Découvert en le testant : la fiche prospect suit une
-        // branche à part, où la colonne « chiffres » n'existe pas — le bloc y manquait.
-        (V2.potentielBloc ? V2.potentielBloc({ cp: cp, ville: ville }) : '') +
         (V2.profil ? V2.profil.coordSection(pid, seed) : '') +
         (V2.profil ? V2.profil.section('client', pid) : '') +
         (V2.rdvPrepa ? V2.rdvPrepa.section(pid) : '') +
@@ -3743,12 +3739,7 @@
     // 24/09/2026 — officine d'un collègue (commercial restreint) : aucun chiffre de vente,
     // ni « déjà commandé / à pousser » (ça dirait ce qu'elle achète), ni audit de marge.
     if (!voitVentes) chiffres = '<div class="v2-card pha-card"><div class="pha-sub" style="padding:16px 18px">Les chiffres de vente de cette officine sont réservés à son commercial' + (pharma.comms && pharma.comms.length ? ' (' + esc(pharma.comms.join(', ')) + ')' : '') + '.</div></div>';
-    // 27/09/2026 — « Ce que cette officine devrait vendre » (v2-potentiel.js). Construit
-    // sur des données PUBLIQUES (Assurance Maladie, INSEE, FINESS) : il s'affiche donc
-    // AUSSI pour l'officine d'un collègue, après le message de restriction — il ne dit
-    // rien de ce qu'elle achète, seulement ce que sa population laisse attendre.
-    var potentielHtml = V2.potentielBloc ? V2.potentielBloc(pharma) : '';
-    chiffres += potentielHtml;   // 12/10/2026 — comme avant : « Ce que cette officine devrait vendre » ferme la colonne des chiffres
+    // 27/10/2026 (Will) : « Ce que cette officine devrait vendre » retiré partout — « ça sert à rien » (ajouté le 27/09, 8278c252).
 
     // Best rotations du groupement / réseau : détail produit par produit, replié (inchangé)
     var rot = grpBestRotations(pid, 60);
@@ -3842,7 +3833,7 @@
       var ctx = {
         pidSafe: pidSafe, nom: esc(nameOf(pid, pharma.name)), sous: [villeV || '', (pharma.groupement && pharma.groupement !== '—') ? canonG(pharma.groupement) : ''].filter(function (x) { return x; }).join(' · '),
         tel: tel, mail: mail, lgo: btnLgo, rows: fRows, infos: infos, notes: '<div class="l8-notes">' + notes + '</div>',
-        tout: l1ToutSection(pid, A) + potentielHtml + briefOff + listing + generiqueurSec,
+        tout: l1ToutSection(pid, A) + briefOff + listing + generiqueurSec,
         vpid: '<p>' + esc([adresse, loc].filter(function (x) { return x; }).join(', ')) + '</p><p>Titulaire : ' + esc(titulaire || dirigeantsDe(oi) || '—') + '</p>' +
           '<p>Groupement d’achat : ' + esc((pharma.groupement && pharma.groupement !== '—') ? canonG(pharma.groupement) : '—') + '</p>'
       };
