@@ -312,7 +312,7 @@
     var useCluster = !bulles && !!window.L.markerClusterGroup;
     // Will, 27/08/2026 : « quand on clique sur un point il faut qu'on voie l'officine et toutes
     // les données » → plus de petite bulle : le clic ouvre directement la fiche, à côté de la carte.
-    function openPop(e) { var i = e.layer._pi; if (D.p[i]) V2.carteFiche(i); }
+    function openPop(e) { var i = e.layer._pi; if (D.p[i]) { V2.carteFiche(i); garderVisible(i); } }
     if (useCluster) {
       // Paquets : un seul style (blanc, filet bleu Intégral) au lieu des ronds vert/jaune/orange du plugin.
       // ⚠️ 27/08/2026 (Will : « quand je clique sur un point ça ne fait rien ») : au zoom
@@ -1425,7 +1425,7 @@
       '.cn-fb-clear:hover{color:var(--ip-blue,#0057FF)}',
       // Téléphone : titre et compteur laissent toute la place à la recherche ; les boutons d'action gardent leur icône seule.
       '@media(max-width:760px){.cn-fb{padding:8px 12px}.cn-h1{display:none}.cn-fbcount{display:none}.cn-searchwrap{max-width:none}.cn-fbacts{margin-left:auto;gap:6px}.cn-fbrow{gap:6px}.cn-fb-btn{min-height:44px}.cn-statut button{min-height:44px;padding:6px 10px;font-size:12.5px}.cn-fb-more{padding:7px 10px}.cn-fb-act span{display:none}.cn-fb-act{padding:7px 12px}.cn-fb-menu{min-width:200px;max-width:min(300px,80vw);right:auto}.cn-fb-sel{max-width:170px;height:44px}.cn-tourbar button{min-height:40px}}',
-      '@media(prefers-reduced-motion:reduce){.cn-fb-btn{transition:none}}',
+      '@media(prefers-reduced-motion:reduce){.cn-fb-btn,.cn-fiche{transition:none}}',
       // Bulle de survol enrichie (multi-lignes)
       '.cn-tip{padding:7px 10px!important;border:none!important;border-radius:9px!important;box-shadow:0 6px 20px rgba(11,19,28,.22)!important;max-width:230px!important}',
       '.cn-tip b{display:block;font-size:12.5px;font-weight:700;color:#0B131C;line-height:1.25}',
@@ -1541,8 +1541,9 @@
       '.cn-fiche .cn-phead{padding:14px 16px}',
       '.cn-fiche .cn-pacts{flex-direction:column;gap:8px}',
       '.cn-fiche .cn-pact-full{gap:8px;justify-content:center}',
-      // Téléphone : tiroir bas à hauteur FIXE (74 % de la carte) → le contenu défile dedans, les boutons restent visibles
-      '@media(max-width:760px){.cn-fiche{top:auto;left:0;right:0;bottom:0;width:100%;height:88%}.cn-maparea .leaflet-bottom{z-index:640}.cn-fiche .cn-pdialog{border-radius:18px 18px 0 0}.cn-fiche .cn-pacts{padding:10px 12px;flex-direction:row}.cn-fiche .cn-pacts .v2-btn{min-height:44px}.cn-fiche .cn-pact-full{flex-basis:100%}}',   // .leaflet-bottom (z 1000 par défaut) passe sous la fiche (z 650) : « Fond : Esri… » chevauchait « Itinéraire »
+      // Téléphone : tiroir bas, hauteur fixée par le cran → le contenu défile dedans, les boutons restent visibles.
+      // 27/10/2026 (Will) : 3 crans — s'ouvre à mi-hauteur, se tire vers le haut (88 %) ou vers le bas (bandeau = en-tête seul)
+      '@media(max-width:760px){.cn-fiche{top:auto;left:0;right:0;bottom:0;width:100%;height:50%;transition:height .26s cubic-bezier(.2,.8,.2,1)}.cn-fiche.cn-cran-haut{height:88%}.cn-fiche.cn-cran-bas{height:var(--cn-bandeau,76px)}.cn-fiche.cn-tire{transition:none}.cn-fiche .cn-phead{position:relative;padding-top:20px;touch-action:none;cursor:grab}.cn-fiche .cn-phead::before{content:"";position:absolute;top:7px;left:50%;width:38px;height:5px;margin-left:-19px;border-radius:3px;background:rgba(11,31,77,.22)}.cn-maparea .leaflet-bottom{z-index:640}.cn-fiche .cn-pdialog{border-radius:18px 18px 0 0}.cn-fiche .cn-pacts{padding:10px 12px;flex-direction:row}.cn-fiche .cn-pacts .v2-btn{min-height:44px}.cn-fiche .cn-pact-full{flex-basis:100%}}',   // .leaflet-bottom (z 1000 par défaut) passe sous la fiche (z 650) : « Fond : Esri… » chevauchait « Itinéraire »
       '@media(min-width:640px){.cn-pdialog{border-radius:18px}}',
       '.cn-phead{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line)}',
       '.cn-phead b{font-size:16px;font-weight:800;color:var(--ip-ink)}.cn-phead small{display:block;font-size:12px;color:var(--muted);margin-top:2px}',
@@ -1685,7 +1686,7 @@
         var d = map.latLngToContainerPoint(ll).distanceTo(e.containerPoint);
         if (d < bd) { bd = d; best = m; }
       }
-      if (best && bd <= 10 && D.p[best._pi]) V2.carteFiche(best._pi);
+      if (best && bd <= 10 && D.p[best._pi]) { V2.carteFiche(best._pi); garderVisible(best._pi); }
     });
     map.on('click', function (e) {
       if (!pickDepotMode) return;
@@ -2033,15 +2034,64 @@
   V2.carteLocate = function (i) {
     var p = D && D.p[i]; if (!p) return;
     V2.carteFiche(i);   // ferme la Liste et pose la fiche : sa place est connue avant de centrer
-    setTimeout(function () {   // après le invalidateSize de carteFiche (téléphone : les filtres se replient)
-      if (!map) return;
-      map.invalidateSize({ pan: false });   // la pastille de recherche réduit la carte sans la prévenir : centre décalé de 16 px mesuré
-      var c = map.getContainer().getBoundingClientRect(), f = document.getElementById('cn-fiche'), r = f && f.getBoundingClientRect();
-      var bas = !!(r && r.width && r.left <= c.left + 1 && r.top > c.top), droite = !!(r && r.width && !bas && r.left > c.left);
-      map.fitBounds(window.L.latLngBounds([[p[0], p[1]], [p[0], p[1]]]), { maxZoom: 15, animate: true,
-        paddingBottomRight: [droite ? c.right - r.left : 0, bas ? c.bottom - r.top : 0] });
-    }, 0);
+    setTimeout(function () { if (map) centrerVisible(p, 15); }, 0);   // après le invalidateSize de carteFiche (téléphone : les filtres se replient)
   };
+  // zoom : 15 depuis la Liste ; zoom courant après un changement de cran de la fiche (téléphone).
+  function centrerVisible(p, zoom) {
+    map.invalidateSize({ pan: false });   // la pastille de recherche réduit la carte sans la prévenir : centre décalé de 16 px mesuré
+    var c = map.getContainer().getBoundingClientRect(), f = document.getElementById('cn-fiche'), r = f && f.getBoundingClientRect();
+    var bas = !!(r && r.width && r.left <= c.left + 1 && r.top > c.top), droite = !!(r && r.width && !bas && r.left > c.left);
+    map.fitBounds(window.L.latLngBounds([[p[0], p[1]], [p[0], p[1]]]), { maxZoom: zoom, animate: true,
+      paddingBottomRight: [droite ? c.right - r.left : 0, bas ? c.bottom - r.top : 0] });
+  }
+  // 27/10/2026 (Will) : au téléphone, la fiche s'ouvre à MI-HAUTEUR (avant 88 % : 76 px de carte au-dessus) et se tire au
+  // doigt par son en-tête — vers le haut : 88 % ; vers le bas : bandeau (nom + ✕, toute la carte visible, l'officine reste
+  // choisie). Un appui sur l'en-tête change de cran (bandeau → mi-hauteur → haut → mi-hauteur). Après chaque cran, le point
+  // est recentré dans la partie visible, au zoom courant.
+  var CRANS = ['bas', 'mi', 'haut'];
+  function cranDe(el) { for (var k = 0; k < CRANS.length; k++) if (el.classList.contains('cn-cran-' + CRANS[k])) return CRANS[k]; return 'mi'; }
+  function poserCran(el, c) { CRANS.forEach(function (k) { el.classList.toggle('cn-cran-' + k, k === c); }); }
+  function apresCran() { setTimeout(function () { if (map && ficheIdx != null && D && D.p[ficheIdx] && document.getElementById('cn-fiche')) centrerVisible(D.p[ficheIdx], map.getZoom()); }, 300); }   // fin de la transition (.26 s)
+  function tirerFiche(el) {
+    var g = null;
+    el.addEventListener('pointerdown', function (e) {
+      if (!fbEtroit() || g || !e.target.closest || !e.target.closest('.cn-phead') || e.target.closest('button,a')) return;
+      g = { id: e.pointerId, y0: e.clientY, h0: el.getBoundingClientRect().height, hh: el.parentNode.getBoundingClientRect().height, y: e.clientY, t: e.timeStamp, v: 0, bouge: false };
+      try { el.setPointerCapture(e.pointerId); } catch (er) {}
+    });
+    el.addEventListener('pointermove', function (e) {
+      if (!g || e.pointerId !== g.id) return;
+      if (!g.bouge && Math.abs(e.clientY - g.y0) < 6) return;
+      if (!g.bouge) { g.bouge = true; el.classList.add('cn-tire'); }
+      if (e.timeStamp > g.t) g.v = (g.y - e.clientY) / (e.timeStamp - g.t);   // px/ms, > 0 vers le haut
+      g.y = e.clientY; g.t = e.timeStamp;
+      var ph = el.querySelector('.cn-phead'), mini = ph ? ph.offsetHeight : 76;
+      el.style.height = Math.max(mini, Math.min(g.hh * 0.88, g.h0 + g.y0 - e.clientY)) + 'px';
+    });
+    function lacher(e) {
+      if (!g || e.pointerId !== g.id) return;
+      var c = cranDe(el);
+      if (!g.bouge) c = e.type === 'pointerup' ? (c === 'mi' ? 'haut' : 'mi') : c;   // appui simple
+      else {
+        var ph = el.querySelector('.cn-phead'), vise = el.getBoundingClientRect().height + g.v * 180, best = Infinity;
+        [['bas', ph ? ph.offsetHeight : 76], ['mi', g.hh * 0.5], ['haut', g.hh * 0.88]].forEach(function (x) { var d = Math.abs(x[1] - vise); if (d < best) { best = d; c = x[0]; } });
+      }
+      g = null;
+      el.classList.remove('cn-tire'); el.style.height = '';
+      poserCran(el, c); apresCran();
+    }
+    el.addEventListener('pointerup', lacher);
+    el.addEventListener('pointercancel', lacher);
+  }
+  // Clic sur un point (téléphone) : si la fiche à mi-hauteur le recouvre, la carte glisse pour le montrer au-dessus.
+  function garderVisible(i) {
+    if (!fbEtroit()) return;
+    setTimeout(function () {
+      var f = document.getElementById('cn-fiche'), p = D && D.p[i]; if (!map || !f || !p || ficheIdx !== i && ficheIdx != null) return;
+      var c = map.getContainer().getBoundingClientRect(), y = map.latLngToContainerPoint([p[0], p[1]]).y;
+      if (y > f.getBoundingClientRect().top - c.top - 24) centrerVisible(p, map.getZoom());
+    }, 120);
+  }
   function statusLabel(p) { return segOf(p) || '—'; }
   // ── Cœur partagé : calcule la liste filtrée + triée (utilisé par le dock ET la modale) ──
   function listComputed() {
@@ -2127,10 +2177,11 @@
       // Fiche ANCRÉE à la carte (volet à droite sur ordinateur, tiroir bas sur téléphone) :
       // la carte reste visible et cliquable, un autre point remplace simplement la fiche.
       var host = document.querySelector('.cn-maparea');
-      var el = document.createElement('div'); el.id = 'cn-fiche'; el.className = host ? 'cn-fiche' : 'cn-panel';
+      var el = document.createElement('div'); el.id = 'cn-fiche'; el.className = host ? 'cn-fiche cn-cran-mi' : 'cn-panel';
       if (!host) el.onclick = function (e) { if (e.target === el) V2.carteFicheClose(); };
+      else tirerFiche(el);
       (host || document.body).appendChild(el);
-    }
+    } else if (ficheIdx !== i) poserCran(document.getElementById('cn-fiche'), 'mi');   // autre officine : retour à mi-hauteur (même officine re-rendue : cran gardé)
     document.getElementById('cn-fiche').innerHTML = '<div class="cn-pdialog" onclick="event.stopPropagation()"><div class="cn-tempty">Chargement de la fiche…</div></div>';
     // La base clients (portable, interlocuteur, logiciel, livraison) est protégée et peut arriver après : on l'attend.
     // officinesinfos (public, FINESS) complète adresse/SIREN pour les PROSPECTS aussi.
@@ -2238,6 +2289,7 @@
         '<button class="v2-btn ' + (inT ? 'v2-btn-ghost' : (inWml ? 'v2-btn-ghost' : 'v2-btn-primary')) + '" onclick="V2.carteTour(' + i + ');V2.carteFiche(' + i + ')">' + (inT ? '✓ Dans ma tournée' : '+ Ajouter à ma tournée') + '</button>' +
         '<a class="v2-btn v2-btn-ghost" href="https://www.google.com/maps/dir/?api=1&destination=' + q + '" target="_blank" rel="noopener">Itinéraire</a>' +
       '</div></div>';
+    var ph = el.querySelector('.cn-phead'); if (ph && ph.offsetHeight) el.style.setProperty('--cn-bandeau', ph.offsetHeight + 'px');   // cran « bandeau » = en-tête seul
     if (V2.profil) V2.profil.hydrate();   // charge/sauve les infos officine (Supabase profils), comme l'onglet Pharmacies
     if (V2.notes) V2.notes.hydrate();
     // Suivi : dernière visite (3 sources réunies par V2.rdvVuLe) et prochain rendez-vous — lus à l'ouverture de la fiche.
