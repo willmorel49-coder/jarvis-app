@@ -2129,7 +2129,7 @@
         var maxDrop = decl.length ? Math.abs(decl[0].drop) : 1;
         var declHtml = decl.map(function (r, i) {
           var pct = maxDrop > 0 ? Math.max(3, Math.abs(r.drop) / maxDrop * 100) : 0;
-          return '<a class="v2-row" onclick="V2.go(\'pharma\',\'' + esc(r.id) + '\')">' +
+          return '<a class="v2-row pilo-bs-row" onclick="V2.go(\'pharma\',\'' + esc(r.id) + '\')">' +
             '<span class="mono pilo-rank">' + (i + 1) + '</span>' +
             '<span class="v2-row-dot" style="background:var(--c-rose)"></span>' +
             '<div style="flex:1;min-width:0">' +
@@ -2813,8 +2813,10 @@
       '.pilo-gis-chipv{font-size:12px;color:var(--muted);font-weight:700}' +
       '.pilo-gis-ok{color:var(--c-mint-txt,#0F7A52);font-weight:700}' +
       '.pilo-gis-neuf{color:var(--c-amber-txt,#9A5B12);font-weight:700}' +
-      '.pilo-gis-note{margin-top:16px;padding-top:13px;border-top:1px solid var(--line);font-size:12px;line-height:1.55;color:var(--muted-2)}' +
+      '.pilo-gis-note{margin-top:16px;padding:13px 20px 16px;border-top:1px solid var(--line);font-size:12px;line-height:1.55;color:var(--muted-2)}' +
       '.pilo-gis-note b{color:var(--muted);font-weight:800}' +
+      // Carte « Pharmacies en baisse » : à écran étroit le nom passe sur 2 lignes au plus (au lieu d'une ligne coupée par « … »).
+      '@media(max-width:640px){.pilo-bs-row .v2-row-name{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;overflow-wrap:break-word}}' +
       // tranches de prix
       // Mois incomplet : dessiné, mais visiblement mis de côté (gris, hachuré).
       '.pilo-cbar-part .pilo-cbar-fill{background:var(--line-strong)!important;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.55) 0 3px,transparent 3px 6px)}' +

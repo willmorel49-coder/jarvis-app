@@ -277,7 +277,7 @@
       '.dr-bandeau .dr-ct a{color:var(--ip-blue)}',
       // Au doigt : le nom de l'officine (~20 px) et le lien du bandeau (~16 px)
       // s'agrandissent à 44 px sans bouger la mise en page (marge négative).
-      '@media(max-width:640px){.dr-nom{display:inline-block;padding:12px 0;margin:-12px 0}' +
+      '@media(max-width:640px){.dr-nom{display:inline-block;position:relative;z-index:1;padding:12px 0;margin:-12px 0}' +
         '.dr-bandeau .dr-ct a{display:inline-block;padding:14px 0;margin:-14px 0}}'
     ].join('\n');
     document.head.appendChild(s);
