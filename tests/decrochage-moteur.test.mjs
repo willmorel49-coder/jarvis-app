@@ -8,7 +8,10 @@
  * Règle validée par Will le 27/10/2026 (questions cliquées) : baisse ≥ 25 % ET
  * ≥ 500 € d'achats sur les 3 mois d'avant — la règle exacte du radar « Qui
  * inviter » (v2-rdv-radar.js), d'où le test de parité (cas 7) qui fait tourner
- * le VRAI `achats()` du radar, extrait du fichier livré, sur les mêmes ventes.
+ * l'ANCIEN `achats()` du radar (copie figée : tests/fixtures/radar-achats-avant-2026-10-28.js)
+ * sur les mêmes ventes. Le radar appelle désormais le moteur : l'extraire du
+ * fichier livré rendrait la comparaison circulaire (cas 7b : le NOUVEAU achats()
+ * est vérifié séparément).
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -274,12 +277,14 @@ test('(6 bis) une ligne « revenue » quitte la liste ; « toujours en baisse »
 });
 
 // ── (7) Parité avec le radar « Qui inviter » ────────────────────────────────
-// `achats()` extrait du fichier livré — pas une copie — exactement comme
-// tests/corps-rdv-radar-fenetre.mjs.
-const SRC_RADAR = readFileSync(join(RACINE, 'crm', 'v2', 'v2-rdv-radar.js'), 'utf8');
+// Référence INDÉPENDANTE : l'ancien `achats()`, figé dans tests/fixtures/ (voir
+// l'en-tête de ce fichier). Le radar livré appelle maintenant le moteur ; le
+// comparer à lui-même ne prouverait rien.
+const SRC_RADAR = readFileSync(join(RACINE, 'tests', 'fixtures', 'radar-achats-avant-2026-10-28.js'), 'utf8');
+const SRC_RADAR_LIVRE = readFileSync(join(RACINE, 'crm', 'v2', 'v2-rdv-radar.js'), 'utf8');
 function extraire(src, nom) {
   const i = src.indexOf(`function ${nom}(`);
-  assert.ok(i > 0, `fonction ${nom} introuvable dans v2-rdv-radar.js`);
+  assert.ok(i > 0, `fonction ${nom} introuvable`);
   let p = 0, j = src.indexOf('{', i);
   for (; j < src.length; j++) {
     if (src[j] === '{') p++;
@@ -288,6 +293,8 @@ function extraire(src, nom) {
   return src.slice(i, j + 1);
 }
 const CODE_ACHATS = extraire(SRC_RADAR, 'achats');
+const CODE_ACHATS_LIVRE = extraire(SRC_RADAR_LIVRE, 'achats');
+const CODE_NOTER_LIVRE = extraire(SRC_RADAR_LIVRE, 'noter');
 function radar(ventes, commercial) {
   const bac = { V2: { sales: ventes, user: { commercial } }, moi: () => commercial || '',
     nomMois: (k) => k, console };
@@ -302,7 +309,7 @@ function radar(ventes, commercial) {
   return { ach, garde: garde.sort() };
 }
 
-test('(7) parite : sur les memes ventes, le moteur rend les officines du radar', () => {
+function ventesParite() {
   const moisPSA = MOIS_2026.slice(0, 7);
   const cinq = MOIS_2026.slice(4);
   const ventes = [
@@ -316,6 +323,11 @@ test('(7) parite : sur les memes ventes, le moteur rend les officines du radar',
     vente('P249', '2026-04', 400), vente('P249', '2026-05', 300), vente('P249', '2026-06', 300),
     vente('P249', '2026-07', 251), vente('P249', '2026-08', 250), vente('P249', '2026-09', 250),
   ];
+  return ventes;
+}
+
+test('(7) parite : sur les memes ventes, le moteur rend les officines de l ANCIEN radar', () => {
+  const ventes = ventesParite();
   let nonVides = 0;
   for (const c of ['KV', 'PSA', 'MD']) {
     const { ach, garde } = radar(ventes, c);
@@ -341,4 +353,68 @@ test('(8) un vrai zero quand rien ne baisse, plusieurs lignes quand ca baisse', 
   assert.deepEqual(zero.lignes, []);
   const plusieurs = D.calculer({ ventes: jeuCas1(), commercial: 'KV', aujourdhui: AUJ });
   assert.equal(plusieurs.nbARappeler, 3);
+});
+
+// ── (7b) Le NOUVEAU achats() du radar, branché sur le moteur ────────────────
+// `achats()` et `noter()` extraits du fichier livré, avec le vrai moteur
+// branché sur V2.decrochage. Ils doivent rendre exactement ce que l'ancien
+// calcul rendait, et les mêmes officines que le moteur.
+function radarLivre(ventes, commercial, avecMoteur = true) {
+  const bac = { V2: { sales: ventes, user: { commercial }, decrochage: avecMoteur ? D : undefined },
+    moi: () => commercial || '', nomMois: (k) => 'M' + k, moisDepuis: () => null, console };
+  vm.createContext(bac);
+  vm.runInContext(CODE_ACHATS_LIVRE + '\n' + CODE_NOTER_LIVRE, bac);
+  return bac;
+}
+function ancien(ventes, commercial) {
+  const bac = { V2: { sales: ventes, user: { commercial } }, moi: () => commercial || '',
+    nomMois: (k) => 'M' + k, console };
+  vm.createContext(bac);
+  vm.runInContext(CODE_ACHATS, bac);
+  return vm.runInContext('achats()', bac);
+}
+
+test('(7b) le nouvel achats() du radar rend les memes chiffres que l ancien et les memes officines que le moteur', () => {
+  const ventes = ventesParite();
+  let nonVides = 0;
+  for (const c of ['KV', 'PSA', 'MD']) {
+    const avant = ancien(ventes, c);
+    const bac = radarLivre(ventes, c);
+    const ach = vm.runInContext('achats()', bac);
+    assert.equal(ach.comparable, avant.comparable, `${c} : comparable`);
+    assert.equal(ach.moisComplets, avant.moisComplets, `${c} : mois complets`);
+    assert.deepEqual(JSON.parse(JSON.stringify(ach.moisEcartes)), JSON.parse(JSON.stringify(avant.moisEcartes)), `${c} : mois écartés`);
+    assert.deepEqual(JSON.parse(JSON.stringify(ach.periode)), JSON.parse(JSON.stringify(avant.periode)), `${c} : période affichée`);
+    assert.deepEqual(Object.keys(ach.par).sort(), Object.keys(avant.par).sort(), `${c} : officines`);
+    for (const id of Object.keys(avant.par)) {
+      assert.deepEqual({ ...ach.par[id] }, { ...avant.par[id] }, `${c}/${id} : total/récent/avant`);
+    }
+    // Mêmes officines « en baisse » que le moteur ET que l'ancienne règle, avec la même phrase.
+    const r = D.calculer({ ventes, commercial: c, aujourdhui: AUJ, reglages: { maxLignes: Infinity } });
+    const enBaisseRadar = [], phrases = {};
+    for (const id of Object.keys(ach.par)) {
+      bac.__o = { cip: id }; bac.__ach = ach;
+      const n = vm.runInContext('noter(__o, __ach, { dispo: 0 }, false)', bac);
+      const baisse = n.raisons.find((x) => /ses achats ont baissé de/.test(x));
+      if (baisse) {
+        enBaisseRadar.push(id); phrases[id] = baisse;
+        assert.equal(n.pts, 30 + Math.min(10, ach.par[id].total / 5000), `${c}/${id} : score`);
+        const a = avant.par[id];
+        assert.ok(baisse.includes(`${Math.round((a.avant - a.recent) / a.avant * 100)} %`), `${c}/${id} : pourcentage affiché`);
+      }
+    }
+    assert.deepEqual(enBaisseRadar.sort(), pids(r).sort(), `${c} : pas les mêmes officines que le moteur`);
+    if (enBaisseRadar.length) nonVides++;
+  }
+  assert.equal(nonVides, 2, 'KV et PSA doivent avoir des baisses, MD aucune');
+});
+
+test('(7c) sans le moteur charge, le radar ne plante pas : simplement aucune baisse', () => {
+  const bac = radarLivre(ventesParite(), 'KV', false);
+  const ach = vm.runInContext('achats()', bac);
+  assert.equal(ach.comparable, false);
+  assert.equal(ach.periode, null);
+  bac.__o = { cip: 'A' }; bac.__ach = ach;
+  const n = vm.runInContext('noter(__o, __ach, { dispo: 0 }, false)', bac);
+  assert.ok(!n.raisons.some((x) => /baissé/.test(x)));
 });

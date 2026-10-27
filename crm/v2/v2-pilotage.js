@@ -2087,36 +2087,45 @@
       }
 
       // ── Alerte : Top 10 pharmacies en BAISSE ──
-      // 15/09/2026 — suit la période : la période choisie face à la même durée
-      // juste avant (moyenne mensuelle). Quand le fichier ne couvre pas la
-      // période d'avant (« Année » en janvier…), on coupe la période en deux
-      // moitiés. Un seul mois sans mois précédent : pas de comparaison, et on le dit.
-      var mdlCard, nMoisPer = pf ? pf.au - pf.du + 1 : 0, baseCmp = null;
-      if (pf && pf.prevComplet) {
-        baseCmp = { a: prev, b: cur, nA: nMoisPer, nB: nMoisPer, lib: 'vs ' + pf.prevLabel };
-      } else if (pf && nMoisPer >= 2) {
-        var cutK = pf.du + Math.ceil(nMoisPer / 2);
-        baseCmp = {
-          a: cur.filter(function (s) { return mkey(s.year, s.month) < cutK; }),
-          b: cur.filter(function (s) { return mkey(s.year, s.month) >= cutK; }),
-          nA: cutK - pf.du, nB: pf.au - cutK + 1, lib: '2ᵉ moitié vs 1ʳᵉ de la période'
-        };
+      // 27/10/2026 — UNE SEULE règle de décrochage dans l'app : celle du moteur
+      // (v2-decrochage-moteur.js, la même que le radar « Qui inviter » et « À
+      // rappeler ») : baisse ≥ 25 % ET ≥ 500 € d'achats sur les 3 mois d'avant,
+      // les 3 derniers mois COMPLETS contre les 3 précédents. Cette carte ne suit
+      // donc plus la période choisie en haut : une règle qui change avec le
+      // bouton ne peut pas être la même qu'ailleurs.
+      // ⚠️ La fenêtre se calcule sur le fichier DE CHAQUE COMMERCIAL, jamais sur
+      // le réseau (les fichiers ne s'arrêtent pas au même mois : sinon les
+      // officines du fichier le plus court ressortent toutes « en chute »). En
+      // vue « Tous », on groupe donc les ventes par commercial en UN passage, et
+      // une officine est en baisse si elle l'est chez au moins un commercial
+      // (montants de ce commercial ; le plus grand écart si plusieurs).
+      var mdlCard, DCR = V2.decrochage, decl = [], declOk = false;
+      if (DCR) {
+        var parCom = {}, meilleur = {};
+        sales.forEach(function (s) { var c = s.commercial || ''; (parCom[c] || (parCom[c] = [])).push(s); });
+        Object.keys(parCom).forEach(function (c) {
+          var fen = DCR.fenetre(parCom[c], '');
+          if (!fen.comparable) return;
+          declOk = true;
+          var par = DCR.sommes(parCom[c], '', fen.ancre);
+          Object.keys(par).forEach(function (id) {
+            var a = par[id];
+            if (!DCR.enBaisse(a)) return;
+            var ecart = a.avant - a.recent;
+            if (!meilleur[id] || ecart > meilleur[id].ecart) meilleur[id] = { ecart: ecart, avant: a.avant, recent: a.recent };
+          });
+        });
+        decl = Object.keys(meilleur).map(function (id) {
+          var m = meilleur[id], em = m.avant / 3, lm = m.recent / 3;
+          return { id: id, em: em, lm: lm, drop: lm - em, pct: (lm - em) / em * 100 };
+        }).sort(function (a, b) { return a.drop - b.drop; }).slice(0, 10);
       }
-      if (!baseCmp) {
+      if (!declOk) {
         mdlCard = '<div class="v2-card">' +
           '<div class="v2-card-head"><div class="v2-card-t">' + ICO('alert', 17) + 'Pharmacies en baisse · à relancer</div></div>' +
-          '<div class="v2-empty"><div class="v2-empty-d">Pas de comparaison possible sur ' + (pf ? esc(pf.label) : 'cette période') +
-            ' : le fichier de ventes ne couvre pas la période d\'avant.</div></div></div>';
+          '<div class="v2-empty"><div class="v2-empty-d">Pas de comparaison possible : il faut au moins ' + (DCR ? DCR.REGLAGES.moisMin : 6) +
+            ' mois complets dans le fichier de ventes.</div></div></div>';
       } else {
-        var nEarly = baseCmp.nA, nLate = baseCmp.nB;
-        var eByPh = {}, lByPh = {};
-        baseCmp.a.forEach(function (s) { eByPh[s.pharmacyId] = (eByPh[s.pharmacyId] || 0) + (s.mntNetHt || 0); });
-        baseCmp.b.forEach(function (s) { lByPh[s.pharmacyId] = (lByPh[s.pharmacyId] || 0) + (s.mntNetHt || 0); });
-        var decl = Object.keys(eByPh).map(function (id) {
-          var em = (eByPh[id] || 0) / nEarly, lm = (lByPh[id] || 0) / nLate;
-          return { id: id, em: em, lm: lm, drop: lm - em, pct: em > 0 ? (lm - em) / em * 100 : 0 };
-        }).filter(function (r) { return r.em > 0 && r.drop < 0; })
-          .sort(function (a, b) { return a.drop - b.drop; }).slice(0, 10);
         var maxDrop = decl.length ? Math.abs(decl[0].drop) : 1;
         var declHtml = decl.map(function (r, i) {
           var pct = maxDrop > 0 ? Math.max(3, Math.abs(r.drop) / maxDrop * 100) : 0;
@@ -2137,8 +2146,8 @@
         mdlCard =
           '<div class="v2-card">' +
             '<div class="v2-card-head"><div class="v2-card-t">' + ICO('alert', 17) + 'Pharmacies en baisse · à relancer</div>' +
-              '<span class="v2-card-link" style="color:var(--muted);cursor:default">' + esc(baseCmp.lib) + '</span></div>' +
-            (declHtml || '<div class="v2-empty"><div class="v2-empty-d">Aucune pharmacie en recul sur la période.</div></div>') +
+              '<span class="v2-card-link" style="color:var(--muted);cursor:default">' + '3 derniers mois complets vs les 3 précédents' + '</span></div>' +
+            (declHtml || '<div class="v2-empty"><div class="v2-empty-d">Aucune pharmacie à relancer sur ces 3 mois.</div></div>') +
           '</div>';
       }
 

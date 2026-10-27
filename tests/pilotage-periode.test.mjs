@@ -5,10 +5,16 @@
  * fabriquées dont chaque total est unique (puissances de deux), on choisit une
  * période par les vrais contrôles (bouton « Choisir » puis listes Du / Au), et on
  * lit ce que l'écran affiche.
+ *
+ * 27/10/2026 — UNE exception : la carte « Pharmacies en baisse » applique la
+ * règle unique du moteur de décrochage (3 derniers mois complets contre les 3
+ * précédents) et ne suit plus la période. Elle est testée à part, sur 9 mois de
+ * ventes, dans pilotage-decrochage.test.mjs ; ici on vérifie qu'elle ne bouge pas.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -36,8 +42,8 @@ const V2 = win.V2 = {
   pages: {}, user: { commercial: '', voitTous: true }, pharmacies: [{ id: 'p1', name: 'Un' }, { id: 'p2', name: 'Deux' }, { id: 'p3', name: 'Trois' }],
   sales: VENTES, commFilter: '', ESCALE_COMMS: [],
   commSales() { return V2.commFilter ? V2.sales.filter((s) => s.commercial === V2.commFilter) : V2.sales; },
-  commercials: () => ['A', 'B'],
-  esc: (s) => String(s == null ? '' : s),
+  commercials: () => ['A', 'B'], decrochage: createRequire(import.meta.url)('../crm/v2/v2-decrochage-moteur.js'),
+  esc:(s) => String(s == null ? '' : s),
   sumCA: (a) => a.reduce((s, x) => s + (x.mntNetHt || 0), 0),
   fmtNum: (n) => String(Math.round(n)), fmtK: (n) => String(Math.round(n)),
   margeMDLboite: () => 0, tint: () => '', topbar: () => '', go() {}, render() {},
@@ -64,12 +70,18 @@ function rendre() {
 const heros = (h) => (h.match(/pilo-hero-v mono" data-count>([^<]*)</) || [])[1];
 const bloc = (h, debut, fin) => { const i = h.indexOf(debut); return i < 0 ? '' : h.slice(i, fin ? h.indexOf(fin, i + debut.length) : undefined); };
 const mk = (m) => 2026 * 12 + (m - 1);
+const carte = (h) => bloc(h, 'Pharmacies en baisse', 'data-reveal');
+const SANS_COMPARAISON = 'Pas de comparaison possible : il faut au moins 6 mois complets';
+let carteDernierMois = '';
 
 test('« Dernier mois » : juin seul (8 805 €)', () => {
-  assert.equal(heros(rendre().html), V2.fmtEur(8805));
+  const h = rendre().html;
+  assert.equal(heros(h), V2.fmtEur(8805));
+  carteDernierMois = carte(h);
+  assert.ok(carteDernierMois.includes(SANS_COMPARAISON), '4 mois de ventes : pas de liste — ' + carteDernierMois.slice(0, 200));
 });
 
-test('« Choisir » avril → mai : chiffres, mois par mois, graphe et pharmacies en baisse suivent', () => {
+test('« Choisir » avril → mai : chiffres, mois par mois et graphe suivent ; la carte des baisses ne bouge pas', () => {
   const r = rendre();
   r.seg('custom').onclick();                          // part de juin
   let r2 = rendre();
@@ -86,11 +98,12 @@ test('« Choisir » avril → mai : chiffres, mois par mois, graphe et pharmacie
   assert.ok(!mpm.includes('>juin<') && !mpm.includes('>mars<'), 'mars et juin absents : ' + mpm.slice(0, 120));
   // Graphe : avril et mai en couleur, pas juin
   assert.equal((h.match(/pilo-cbar-in"/g) || []).length, 2, 'deux barres dans la période');
-  // Mars est couvert → avril-mai se compare à février-mars ? Février absent : moitiés.
-  assert.ok(h.includes('2ᵉ moitié vs 1ʳᵉ de la période'), 'pharmacies en baisse : moitiés de la période');
-  // p3 passe de 600 (avril) à 5 (mai) : c'est elle, et pas p1 qui monte
-  const baisse = bloc(h, 'Pharmacies en baisse');
-  assert.ok(baisse.includes('Trois') && !baisse.includes('>Un<'), 'p3 en baisse, pas p1');
+  // Avant le 27/10, la carte comparait les deux moitiés de la période et
+  // listait p3 (600 → 5). Règle unique : 4 mois de ventes ne suffisent pas,
+  // et la carte est la même qu'en « Dernier mois ».
+  assert.ok(!h.includes('2ᵉ moitié vs 1ʳᵉ de la période'), 'plus de comparaison par moitiés');
+  assert.equal(carte(h), carteDernierMois, 'la carte ne suit pas la période');
+  assert.ok(!carte(h).includes('Trois'), 'p3 n\'est pas listée sur la seule période');
 });
 
 test('un mois isolé sans mois précédent : aucune comparaison inventée', () => {
@@ -98,7 +111,8 @@ test('un mois isolé sans mois précédent : aucune comparaison inventée', () =
   const r2 = rendre(); r2.sel('au').value = String(mk(3)); r2.sel('au').onchange();
   const h = rendre().html;
   assert.equal(heros(h), V2.fmtEur(1800), 'mars seul');
-  assert.ok(h.includes('Pas de comparaison possible sur Mars 2026'), 'le dit en clair');
+  assert.ok(carte(h).includes(SANS_COMPARAISON), 'le dit en clair');
+  assert.ok(!/v2-row-name/.test(carte(h)), 'aucune ligne dans la carte');
 });
 
 test('« 3 mois » : avril → juin, et on revient bien aux boutons rapides', () => {

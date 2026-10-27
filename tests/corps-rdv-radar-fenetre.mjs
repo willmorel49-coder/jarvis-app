@@ -20,6 +20,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
+import { createRequire } from 'node:module';
 import { readdirSync } from 'node:fs';
 import { chargerDecodage } from './aide-decodage-ventes.mjs';
 
@@ -63,10 +64,13 @@ function extraire(nom) {
   return SRC.slice(i, j + 1);
 }
 const CODE = extraire('achats');
+// Depuis le 28/10/2026 le calcul de la fenetre vit dans le moteur unique : on
+// branche le VRAI moteur, pas une copie.
+const MOTEUR = createRequire(import.meta.url)('../crm/v2/v2-decrochage-moteur.js');
 
 function achatsPour(commercial) {
   const bac2 = {
-    V2: { sales: VENTES, user: { commercial } },
+    V2: { sales: VENTES, user: { commercial }, decrochage: MOTEUR },
     moi: () => commercial || '',
     nomMois: (k) => 'M' + k,
     console,
@@ -90,10 +94,31 @@ test('les donnees portent bien des fichiers de longueurs DIFFERENTES', () => {
 });
 
 test('la fenetre suit le fichier DU COMMERCIAL, pas celui du reseau', () => {
-  // Le code doit lire les ventes de `moi()`, pas V2.sales en entier.
+  // Meme intention qu avant, a travers l appel au moteur : achats() lit le
+  // commercial connecte, demande la fenetre au moteur POUR LUI (jamais pour le
+  // reseau entier) et ne recalcule plus ni seuil de 60 % ni minimum de mois.
   assert.ok(/var moiC = moi\(\)/.test(SRC), 'achats() n interroge plus le commercial connecte');
-  assert.ok(/toutes\.filter\(function \(v\) \{ return v\.commercial === moiC/.test(SRC),
-    'la fenetre se calcule encore sur le reseau entier');
+  assert.ok(/DC\.fenetre\(toutes, moiC\)/.test(SRC),
+    'la fenetre ne se demande plus au moteur POUR le commercial connecte');
+  assert.ok(/DC\.sommes\(toutes, moiC, ancre\)/.test(SRC),
+    'les deux trimestres ne se limitent plus aux ventes du commercial connecte');
+  assert.ok(!/mediane \* 0\.6|complets\.length >= 6/.test(CODE),
+    'achats() recalcule a la main la regle des mois incomplets / des six mois');
+});
+
+test('le moteur ecarte les mois incomplets et exige 6 mois, pour le commercial', () => {
+  // Le comportement (et plus le texte) : sur les vraies ventes, chaque
+  // commercial recoit de la part du moteur la meme fenetre que celle du radar.
+  for (const c of COMMERCIAUX) {
+    const f = MOTEUR.fenetre(VENTES, c);
+    const r = achatsPour(c);
+    assert.equal(r.comparable, f.comparable, `${c} : comparable`);
+    assert.equal(r.moisComplets, f.moisComplets, `${c} : mois complets`);
+    assert.equal(f.comparable, f.moisComplets >= MOTEUR.REGLAGES.moisMin, `${c} : six mois complets`);
+    assert.equal(r.moisEcartes.length, f.moisEcartes.length, `${c} : mois incomplets ecartes`);
+  }
+  assert.equal(MOTEUR.REGLAGES.moisMin, 6);
+  assert.equal(MOTEUR.REGLAGES.moisIncompletPct, 0.6);
 });
 
 test('un secteur dont le fichier est trop court ne recoit AUCUN signal de baisse', () => {

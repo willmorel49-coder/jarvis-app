@@ -113,46 +113,38 @@
   // complets fait le reste : un commercial dont le fichier n'en couvre pas six
   // ne reçoit PAS de signal de baisse, et l'écran lui dit pourquoi. Mieux vaut
   // une raison de moins qu'une raison fausse.
+  //
+  // 27/10/2026 — LE CALCUL DE LA FENÊTRE ET DES DEUX TRIMESTRES N'EST PLUS ICI :
+  // il vit dans v2-decrochage-moteur.js (V2.decrochage), la règle unique de
+  // l'app. Ce qui est dit ci-dessus (mois de queue écartés, fichier DU
+  // commercial, six mois complets) y est appliqué tel quel. Cette fonction ne
+  // fait plus que le total de l'officine et l'habillage des noms de mois.
   function achats() {
     var moiC = moi();
     var toutes = V2.sales || [];
-    // Sans commercial rattaché, le portefeuille est vide de toute façon
-    // (`recenser()` rend une liste vide) : on garde le réseau pour ne pas
-    // diviser par zéro, aucun officine ne sera noté.
-    var s = moiC ? toutes.filter(function (v) { return v.commercial === moiC; }) : toutes;
-    var m = {}, i, parMois = {};
-    for (i = 0; i < s.length; i++) {
-      if (!s[i].month || !s[i].year) continue;
-      var mk0 = s[i].year * 12 + (s[i].month - 1);
-      parMois[mk0] = (parMois[mk0] || 0) + (s[i].mntNetHt || 0);
-    }
-    var cles = Object.keys(parMois).map(Number).sort(function (a, b) { return a - b; });
-    var totaux = cles.map(function (k) { return parMois[k]; }).slice().sort(function (a, b) { return a - b; });
-    var mediane = totaux.length ? totaux[Math.floor(totaux.length / 2)] : 0;
-
-    var complets = cles.slice(), ecartes = [];
-    while (complets.length && parMois[complets[complets.length - 1]] < mediane * 0.6) {
-      ecartes.push(complets.pop());
-    }
-    var ancre = complets.length ? complets[complets.length - 1] : null;
-    // Six mois COMPLETS, pas six mois de fichier. Sans ça on ne compare rien :
-    // mieux vaut une raison de moins qu'une raison fausse.
-    var comparable = complets.length >= 6 && ancre != null;
-
+    var DC = V2.decrochage;
+    // Module absent : pas de comparaison, jamais de plantage — le radar garde
+    // ses autres raisons (visite, ANSM…). Même effet qu'un fichier trop court.
+    var F = DC ? DC.fenetre(toutes, moiC) : { comparable: false, ancre: null, moisComplets: 0, moisEcartes: [] };
+    var ancre = F.ancre, comparable = F.comparable;
+    var m = {}, i;
     // `total` reste le chiffre d'affaires COMPLET de l'officine, tous
     // commerciaux confondus — c'est ce qu'affiche la fiche, ça ne doit pas
     // changer de sens. Seules les deux fenêtres de comparaison se limitent aux
-    // ventes du commercial connecté : 5 officines sur 702 sont couvertes par
-    // deux commerciaux, et le fichier de l'autre peut s'arrêter plus tôt — sa
-    // part disparaîtrait de la fenêtre récente et rejouerait la fausse baisse.
+    // ventes du commercial connecté (5 officines sur 702 sont couvertes par
+    // deux commerciaux, et le fichier de l'autre peut s'arrêter plus tôt : sa
+    // part disparaîtrait de la fenêtre récente et rejouerait la fausse baisse).
     for (i = 0; i < toutes.length; i++) {
       var v = toutes[i], k = String(v.pharmacyId);
       if (!m[k]) m[k] = { total: 0, recent: 0, avant: 0 };
       m[k].total += (v.mntNetHt || 0);
-      if (comparable && v.month && v.year && (!moiC || v.commercial === moiC)) {
-        var mk = v.year * 12 + (v.month - 1);
-        if (mk <= ancre && mk > ancre - 3) m[k].recent += (v.mntNetHt || 0);
-        else if (mk <= ancre - 3 && mk > ancre - 6) m[k].avant += (v.mntNetHt || 0);
+    }
+    if (comparable) {
+      var som = DC.sommes(toutes, moiC, ancre);
+      for (var id in som) {
+        if (!m[id]) m[id] = { total: 0, recent: 0, avant: 0 };
+        m[id].recent = som[id].recent;
+        m[id].avant = som[id].avant;
       }
     }
     return {
@@ -160,8 +152,8 @@
       periode: comparable
         ? { recent: [nomMois(ancre - 2), nomMois(ancre)], avant: [nomMois(ancre - 5), nomMois(ancre - 3)] }
         : null,
-      moisEcartes: ecartes.sort().map(nomMois),
-      moisComplets: complets.length
+      moisEcartes: F.moisEcartes.map(function (c) { return nomMois(DC.deCle(c)); }),
+      moisComplets: F.moisComplets
     };
   }
 
@@ -194,13 +186,12 @@
     var a = ach.par[o.cip] || { total: 0, recent: 0, avant: 0 };
     // Une baisse ne veut rien dire sous un volume plancher : passer de 40 € à
     // 20 € n'est pas un décrochage, c'est une boîte de moins.
-    if (ach.comparable && a.avant >= 500) {
+    // (La règle — seuils compris — est celle du moteur : V2.decrochage.enBaisse.)
+    if (ach.comparable && V2.decrochage && V2.decrochage.enBaisse(a)) {
       var baisse = (a.avant - a.recent) / a.avant;
-      if (baisse >= 0.25) {
-        pts += 30;
-        raisons.push('ses achats ont baissé de ' + Math.round(baisse * 100) +
-                     ' % sur trois mois');
-      }
+      pts += 30;
+      raisons.push('ses achats ont baissé de ' + Math.round(baisse * 100) +
+                   ' % sur trois mois');
     }
     // On mène par NOTRE stock, comme dans le mail : c'est le fait vérifiable
     // et actionnable. Le fichier ANSM liste des SIGNALEMENTS sur ~18 mois, pas
