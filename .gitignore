@@ -263,3 +263,8 @@ etab-ventes-data.js
 etab-ventes-data.js.nouveau
 
 connexions-jarvis-prospection.js
+
+# 27/10/2026 — CA par client et par produit (96 officines, 20 produits chacune) : retiré du dépôt public.
+# Chargé par AUCUNE app vivante (seul chargeur : crm/perf-boot.js, lui-même chargé par aucune page — vérifié).
+# generate_client_products.py l'écrit encore s'il est relancé : cette ligne l'empêche de repartir en ligne.
+crm/client-products.js
