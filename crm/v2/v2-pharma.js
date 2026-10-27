@@ -1936,7 +1936,8 @@
     '</div>';
   }
 
-  // 27/10/2026 — « Marge pharmacien » (choix de Will) : son propre bloc, aussi visible que « Notre marge » et à côté de lui,
+  // 27/10/2026 — « Marge pharmacien » (choix de Will) : son propre bloc, aussi visible que « Notre marge » et juste au-dessus de lui
+  // (côte à côte, « Notre marge » tombait en demi-largeur sur 520 px de haut et ce bloc s'étirait à vide),
   // pour TOUS les commerciaux (il ne dépend pas de l'accès direction). Même chiffre que l'ancienne ligne « marge nette » du Cumul
   // (margeNettePharma, inchangé), mêmes mois que le Cumul. Jamais sur les PDF client (règle du 25/09) : seul l'écran l'affiche.
   function analyseMargePharma(A, marge) {
@@ -6966,7 +6967,7 @@
       '.pha-nm-f{flex:1 1 260px;max-width:420px;display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}',
       '.pha-nm-l{display:flex;justify-content:space-between;gap:12px}.pha-nm-l b{color:var(--ip-ink);font-weight:700}',
       '.pha-nm-n{margin-top:8px}',
-      '.pha-marges{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:12px}.pha-marges>.pha-nm{margin-top:0}',
+      '.pha-marges{display:grid;gap:12px;margin-top:12px}.pha-marges>.pha-nm{margin-top:0}',
       '.pha-chart{width:100%;height:auto;display:block}',
       '.pha-legend{display:flex;gap:16px;font-size:12px;font-weight:700;color:var(--muted);margin-top:6px;flex-wrap:wrap}',
       '.pha-legend i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}',
