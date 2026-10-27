@@ -189,26 +189,34 @@
     _idx = m; _idxStamp = stamp; return m;
   }
 
-  // famille d'une vente (priorité : biosim > froid > génériques > NR > princeps)
+  // famille d'une vente (priorité : biosim > génériques > froid > NR > princeps)
   // 15/09/2026 — biosim passe devant froid : la plupart des biosimilaires sont froids,
   // et la famille Biosimilaires restait vide.
+  // 27/10/2026 — choix de Will : « Génériques » = la liste officielle, même périmètre que la carte
+  // « Génériques par génériqueur » (V2.estGeneriqueOfficiel), froid compris. La nature déclarée par
+  // le grossiste rangeait en août ~63 k€ de vrais génériques en princeps et ~44 k€ en froid, et
+  // comptait ~52 k€ de marques (Permixon, Spagulax). Elle reste la règle de la marge (estGenerique).
+  // Table pas encore chargée (off === null) → l'ancien classement.
   function familyOf(sale, idx) {
-    var info = idx[normCip(sale.artCode)] || null;
+    var cip = normCip(sale.artCode), info = idx[cip] || null;
+    var off = V2.estGeneriqueOfficiel ? V2.estGeneriqueOfficiel(cip) : null;
     if (info) {
       if (info.artnature === 'biosimilaire') return 'biosim';
+      if (off) return 'generiques';
       if (info.is_froid) return 'froid';
-      if (info.artnature === 'generique' || info.artnature === 'generique_partenaire') return 'generiques';
+      if (off == null && (info.artnature === 'generique' || info.artnature === 'generique_partenaire')) return 'generiques';
       if (info.isNR) return 'nr';
     }
     // fallback sur artFamille texte des ventes
     var f = (sale.artFamille || '').toLowerCase();
     if (f) {
       if (/biosim/.test(f)) return 'biosim';
+      if (off) return 'generiques';
       if (/froid|frigo|réfri|refri/.test(f)) return 'froid';
-      if (/génér|gener|\bgx\b/.test(f)) return 'generiques';
+      if (off == null && /génér|gener|\bgx\b/.test(f)) return 'generiques';
       if (/\bnr\b|non.?rembours/.test(f)) return 'nr';
     }
-    return 'princeps';
+    return off ? 'generiques' : 'princeps';
   }
 
   // remboursable = has_ameli ET pas NR Sagitta

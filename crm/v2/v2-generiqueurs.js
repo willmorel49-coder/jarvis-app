@@ -61,6 +61,14 @@
     var MQ = marques(), BS = biosimLabos(); cip = String(cip);
     return !!(MQ && MQ[cip] && !(BS && BS[cip]));
   };
+  // 27/10/2026 — même périmètre que la carte « Génériques par génériqueur » (type 'gen') : la famille
+  // « Génériques » du Pilotage le reprend (choix de Will). null tant que la table n'est pas chargée.
+  V2.estGeneriqueOfficiel = function (cip) {
+    var G = window.GENERIQUEURS;
+    if (!G) return null;
+    var MQ = marques(), BS = biosimLabos(); cip = String(cip);
+    return !!(G[cip] && !(MQ && MQ[cip]) && !(BS && BS[cip]));
+  };
 
   // Agrège les ventes par génériqueur. Renvoie { rows:[{lab,ca,n}], total }.
   // type : absent = comme avant (table BDPM telle quelle) · 'gen' = génériques sans les biosimilaires ·

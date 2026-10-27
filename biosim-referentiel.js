@@ -331,8 +331,8 @@ const BIOSIM_REFERENTIEL = [
   {
     dci: "OMALIZUMAB", atc: "R03DX05", aire: "Pneumo / allergo (asthme sévère, urticaire)",
     reference: "Xolair", reference_labo: "Novartis", canal: "ville",
-    substituable: false, substituable_date: null,
-    note: "Avis favorable de l'ANSM à la substitution (30/07/2026) — arrêté non vérifié",
+    substituable: true, substituable_date: "2026-10-22",
+    note: "Substituable : arrêté du 22/10/2026 (JO du 27/10/2026), groupe 14 — avis ANSM du 30/07/2026",
     biosimilaires: [
       { nom: "Omlyclo", labo: "Celltrion", annee: 2024 },
     ],
