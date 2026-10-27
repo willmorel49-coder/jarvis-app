@@ -10,7 +10,7 @@
    ⚠️ AUCUNE ÉCRITURE AUTOMATIQUE : seuls les trois gestes du commercial
    écrivent, et seulement dans la table decrochage_suivi (_sql/decrochage-suivi.sql).
    Tant que la table n'existe pas ou refuse l'écriture, le geste reste sur
-   l'appareil (clé jarvis_decrochage_v1) et repart à l'ouverture suivante —
+   l'appareil (clé jarvis_decrochage_v1:<id du compte>) et repart à l'ouverture suivante —
    même motif que v2-visites.js. Rien n'est perdu.
    Hors OPSO et Escale (hors périmètre de cette version).
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -44,8 +44,11 @@
   function ventesChargees() { var p = V2.ventesProgres; return !(p && p.total && p.n < p.total); }
 
   // ── Les gestes : table d'abord, appareil en secours ──────────────────
-  function locaux() { try { var a = JSON.parse(localStorage.getItem(LS) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
-  function locauxSet(a) { try { localStorage.setItem(LS, JSON.stringify(a)); } catch (e) {} }
+  // Une clé PAR COMPTE : deux commerciaux sur le même appareil ne se mélangent pas — les
+  // gestes de l'un ne partent jamais au nom de l'autre et ne masquent pas ses lignes.
+  function cleLS() { return LS + ':' + ((V2.user && V2.user.id) || 'sans-compte'); }
+  function locaux() { try { var a = JSON.parse(localStorage.getItem(cleLS()) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+  function locauxSet(a) { try { localStorage.setItem(cleLS(), JSON.stringify(a)); } catch (e) {} }
   function cleGeste(g) { return g.pharmacy_id + '|' + g.mois_ref; }
   function suivis() {
     var par = {};
@@ -96,7 +99,7 @@
     if (!M || horsPerimetre() || !V2.user) return null;
     if (!qui) return { sansCommercial: true };
     if (!ventesChargees()) return { chargement: true };
-    var j = auj(), cle = [qui, j, version, (V2.sales || []).length].join('|');
+    var j = auj(), cle = [V2.user.id, qui, j, version, (V2.sales || []).length].join('|');
     if (memo && memo.cle === cle && memo.ref === V2.sales) return memo.r;
     charger();
     var r = M.calculer({

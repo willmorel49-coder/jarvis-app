@@ -101,7 +101,7 @@ test('OPSO et Escale : bloc absent', () => {
 test('geste « pas pertinent » : gardé sur l’appareil sans table, la ligne quitte la liste et c’est dit', () => {
   const { V2, stock } = monter();
   V2.decrochageUI.geste('111', 'pas_pertinent', 'saisonnier');
-  const gardes = JSON.parse(stock.jarvis_decrochage_v1);
+  const gardes = JSON.parse(stock['jarvis_decrochage_v1:u-test']);
   assert.equal(gardes.length, 1);
   assert.equal(gardes[0].pharmacy_id, '111');
   assert.equal(gardes[0].statut, 'pas_pertinent');
@@ -118,4 +118,14 @@ test('bandeau de fiche : présent pour l’officine listée, absent pour une aut
   V2.decrochageUI.bloc();
   assert.match(V2.decrochageUI.bandeau('111'), /id="dr-bandeau"[\s\S]*−800 € par mois[\s\S]*Ce qu’elle ne commande plus/);
   assert.equal(V2.decrochageUI.bandeau('222'), '');
+});
+
+test('deux comptes sur le même appareil : les gestes de l’un ne masquent rien chez l’autre', () => {
+  const { V2, stock } = monter();
+  V2.decrochageUI.geste('111', 'pas_pertinent', 'saisonnier');
+  assert.doesNotMatch(V2.decrochageUI.bloc(), /Pharmacie des Tilleuls/, 'masquée pour u-test');
+  V2.user = { id: 'u-autre', commercial: V2.user.commercial };
+  assert.match(V2.decrochageUI.bloc(), /Pharmacie des Tilleuls/, 'toujours visible pour u-autre');
+  assert.equal(stock['jarvis_decrochage_v1:u-autre'], undefined, 'rien de rangé au nom de u-autre');
+  assert.equal(JSON.parse(stock['jarvis_decrochage_v1:u-test']).length, 1);
 });
