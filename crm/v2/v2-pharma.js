@@ -2061,7 +2061,7 @@
       '<td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>';
     var legende = '<div class="pha-sub" style="padding:8px 18px 12px;line-height:1.5">' +
       'Marge nette gagnée par l\'officine : <b>0,18 €</b> par boîte jusqu\'à 4,33 € · <b>4,2 %</b> de 4,33 à 468 € · ' +
-      '<b>19,50 €</b> par boîte au-delà. Princeps remboursés seulement : génériques, biosimilaires et non remboursés hors calcul.</div>';
+      '<b>19,50 €</b> par boîte au-delà. Princeps remboursés seulement : génériques, biosimilaires et non remboursés hors calcul, sauf les génériques qu\'Intégral facture comme princeps.</div>';
     var desk ='<div class="v2-card pha-card pha-desk" style="padding:0;overflow:hidden"><div class="pha-ch" style="padding:16px 18px 6px"><h3>Son CA par tranche, face à l\'officine moyenne du réseau</h3><span class="pha-sub">écart = sa moyenne mensuelle vs celle du réseau, ' + l1Fenetre(A) + ' (depuis sa première commande) · évolution = dernier mois vs le précédent</span></div>' +
       '<div class="v2-cat-table-wrap" style="border-top:none"><table class="v2-table pha-table"><thead><tr><th>Tranche</th><th class="num">Réf.</th><th class="num">CA ' + A.nAct + ' mois</th><th class="num">Part</th><th class="num">Marge nette</th><th class="num">Taux</th><th class="num">Réseau / mois</th><th class="num">Écart</th><th class="num">Évol.</th></tr></thead><tbody>' + rows + '</tbody></table></div>' + legende + '</div>';
     // Téléphone : une ligne par tranche, dépliable sur son top 10
