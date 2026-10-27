@@ -273,3 +273,77 @@ test('note « estimation » : neutre, aucune cause affirmée (choix de Will, 22/
   assert.match(src, /m\.abandonEstime \? 'Abandon de marge 2027 : estimation — <span class="cp-nb">au-dessus<\/span> de notre règle habituelle, le niveau 2027 n\\'est pas connu\.'/);
   assert.equal(/dépend de l\\'offre du laboratoire/.test(src), false, 'ancienne note');
 });
+
+// ── 27/10/2026 : nouveau prix public au JO → la marge pharmacien se lit au nouveau prix (choix de Will) ──
+const sansBalise = (h) => h.replace(/<[^>]+>/g, '').replace(/[\u00a0\u202f]/g, ' ');
+test('ELIQUIS 5MG au nouveau prix (PFHT 24,30) : réglementée 1,74 + abandon 1,01 (même part de la marge grossiste) = 2,75', () => {
+  const pfht = K.pfhtDepuisPpht(54.53, false);
+  const m = nu(K.margeAuPrix('pr_mid', pfht, 2.12, 24.3));
+  near(m.reglementee, 1.737, 0.002); near(m.abandon26, 2.12 * (0.0693 * 24.3) / (0.0693 * pfht), 1e-9); near(m.total26, 2.75, 0.01);
+  assert.equal(nu(K.margeAuPrix('pr_mid', pfht, null, 24.3)).sansAbandon, true, 'sans abandon aujourd\'hui, aucun inventé');
+  assert.equal(nu(K.margeAuPrix('gen', pfht, 1, 24.3)).applicable, false);
+});
+
+test('prixJO : prochain changement avec prix fabricant ; baisse en vigueur seulement si le catalogue est en retard', () => {
+  const ev = (d, av, pf) => ({ sens: 'baisse', dateEffet: d, aVenir: av, pfht: pf });
+  assert.equal(K.prixJO(null), null);
+  assert.equal(K.prixJO({ evenements: [ev('2026-09-01', false, 5)], catalogueEnRetard: false }), null, 'catalogue à jour : il fait foi');
+  assert.equal(nu(K.prixJO({ evenements: [ev('2026-09-01', false, 5)], catalogueEnRetard: true })).enVigueur.dateEffet, '2026-09-01');
+  const r = nu(K.prixJO({ evenements: [ev('2027-01-02', true, 4), ev('2026-11-01', true, 5), ev('2026-09-01', false, 6)], catalogueEnRetard: false }));
+  assert.equal(r.prochain.dateEffet, '2026-11-01', 'le plus proche'); assert.equal(r.enVigueur, null);
+  assert.equal(K.prixJO({ evenements: [ev('2026-11-01', true, null)], catalogueEnRetard: false }), null, 'sans prix fabricant : rien à recalculer');
+});
+
+test('panneau ELIQUIS 5MG le 27/10, baisse de 52 % au 01/11 : « 5,33 € aujourd\'hui, puis 2,75 € », plus jamais « autant »', async () => {
+  const b = bac({ 'national.json': FAUX['national.json'], 'prix-futurs.json': { changes: [
+    { c: ELI, d: 'ELIQUIS 5MG', pfht: 24.3, ppttc: 28.3, ancien_ttc: 58.95, sens: 'baisse', date_effet: '2026-11-01', date_publi: '2026-10-06' }] } });
+  b.V2.ventesRestreintes = () => false;
+  b.V2.comptoir._calc.horloge(() => new Date(2026, 9, 27));
+  await b.V2.comptoir.chargerNational();
+  b.V2.comptoir.stats(leELIQUIS()); await b.V2.comptoir._calc.pret();
+  const s = b.V2.comptoir.stats(leELIQUIS(), { mois: [1] });
+  near(s.margePharmacien.total26, 5.33, 0.01, 'aujourd\'hui : catalogue'); near(s.margePharmacien.apres.total26, 2.75, 0.01, 'dès le 01/11');
+  assert.equal(s.prixJO.prochain.dateEffet, '2026-11-01'); assert.equal(s.prixJO.enVigueur, null);
+  const t = sansBalise(b.V2.comptoir._calc.tuileMargePharmacien(s, false));
+  assert.match(t, /gagne 5,33 € par boîte aujourd'hui, puis 2,75 € à partir du 01\/11\/2026 \(baisse du prix public, estimation\)\./);
+  assert.doesNotMatch(t, /autant|inchangé/);
+  assert.match(t, /Nouveau prix publié au Journal officiel/);
+  // Notre marge : plus aucun chiffre 2027 quand le prix change
+  s.notreMarge = { source: 'pilotage', boite26: 1.59, boite27: 1.59, delta: 0 };
+  const n = sansBalise(b.V2.comptoir._calc.tuileNotreMarge(s));
+  assert.match(n, /Nous gardons 1,59 € par boîte aujourd'hui ; à revoir après la baisse du 01\/11\/2026\./);
+  assert.doesNotMatch(n, /autant|2027/);
+});
+
+test('baisse déjà en vigueur, catalogue en retard : marge au nouveau prix tout de suite, notre marge « à revoir »', async () => {
+  const b = bac({ 'national.json': FAUX['national.json'], 'prix-futurs.json': { changes: [
+    { c: ELI, d: 'ELIQUIS 5MG', pfht: 24.3, ppttc: 28.3, ancien_ttc: 58.95, sens: 'baisse', date_effet: '2026-11-01', date_publi: '2026-10-06' }] } });
+  b.V2.ventesRestreintes = () => false;
+  b.V2.comptoir._calc.horloge(() => new Date(2026, 10, 3));   // 03/11/2026 : la baisse est passée, le catalogue non
+  await b.V2.comptoir.chargerNational();
+  b.V2.comptoir.stats(leELIQUIS()); await b.V2.comptoir._calc.pret();
+  const s = b.V2.comptoir.stats(leELIQUIS(), { mois: [1] });
+  assert.equal(s.alertePrix.catalogueEnRetard, true);
+  near(s.margePharmacien.auPrixJO.total26, 2.75, 0.01);
+  const t = sansBalise(b.V2.comptoir._calc.tuileMargePharmacien(s, true));
+  assert.match(t, /gagne 2,75 € par boîte au nouveau prix public \(estimation\), autant en 2027\./);
+  assert.doesNotMatch(t, /5,33/);
+  s.notreMarge = { source: 'pilotage', boite26: 1.59, boite27: 1.59, delta: 0 };
+  assert.match(sansBalise(b.V2.comptoir._calc.tuileNotreMarge(s)), /au prix du catalogue ; à revoir depuis la baisse du 01\/11\/2026\./);
+});
+
+test('petit prix (plancher 2027) puis nouveau prix au 02/01/2027 : trois étapes, sans « autant »', () => {
+  const pf = K.pfhtDepuisPpht(3.6, false);           // ≈ 3,30 € : plancher 0,30 en 2026, 6,93 % en 2027
+  const ap = nu(K.margeAuPrix('pr_low', pf, 0.18, 3.2));
+  const s = { margePharmacien: Object.assign(nu(K.margePharmacien('pr_low', pf, 0.18)), { apres: ap }),
+              prixJO: { enVigueur: null, prochain: { sens: 'baisse', dateEffet: '2027-01-02', pfht: 3.2 } } };
+  const t = sansBalise(K.tuileMargePharmacien(s, false));
+  assert.match(t, /aujourd'hui, puis .* à partir du 02\/01\/2027 \(baisse du prix public, estimation\), puis .* à partir du 20\/01\/2027\./);
+  assert.doesNotMatch(t, /autant/);
+});
+
+test('sans changement de prix au JO : la tuile reste celle d\'avant (« autant en 2027 » quand c\'est vrai)', () => {
+  const pf = K.pfhtDepuisPpht(54.53, false);
+  const s = { margePharmacien: nu(K.margePharmacien('pr_mid', pf, 2.12)), prixJO: null };
+  assert.match(sansBalise(K.tuileMargePharmacien(s, false)), /gagne 5,33 € par boîte, autant en 2027\./);
+});

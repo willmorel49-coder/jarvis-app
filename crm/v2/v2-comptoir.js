@@ -614,6 +614,25 @@
              total26: t26, total27: t27, delta: t27 - t26, sansAbandon: ab26 == null,
              abandonEstime: a27 != null && std > 0 && ab26 > std * 1.05 + 0.01 };
   }
+  // 27/10/2026 — Un nouveau prix public publié au JO change la marge pharmacien. Avant, la marge 2027 reposait sur le
+  // prix du catalogue : ELIQUIS 5MG annonçait 5,30 €, « autant en 2027 », à cinq jours d'une baisse de 52 % (≈ 2,75 €).
+  // Choix de Will : recalculer au nouveau prix. La marge réglementée est exacte (prix fabricant HT de l'avis) ;
+  // l'abandon de marge garde sa part de la marge grossiste d'aujourd'hui : c'est une estimation.
+  function margeAuPrix(fam, pfht, ab26, pfhtNouveau) {
+    var a = margeGrossiste(pfht, 2026, false), b = margeGrossiste(pfhtNouveau, 2026, false);
+    return margePharmacien(fam, pfhtNouveau, ab26 == null || !(a > 0) || !(b > 0) ? null : ab26 * b / a);
+  }
+  // Le prix JO qui compte pour la marge : la baisse en vigueur que le catalogue n'a pas encore prise (enVigueur),
+  // et le prochain changement annoncé avec son prix fabricant (prochain). null si le catalogue fait foi.
+  function prixJO(alerte) {
+    var ev = alerte ? alerte.evenements : [], out = { enVigueur: null, prochain: null }, i;
+    for (i = 0; i < ev.length; i++) {
+      if (ev[i].aVenir) { if (ev[i].pfht > 0) out.prochain = ev[i]; }   // tri décroissant : le dernier vu est le plus proche
+      else if (!out.enVigueur) out.enVigueur = ev[i];                   // le plus récent en vigueur
+    }
+    if (!alerte || !alerte.catalogueEnRetard) out.enVigueur = null;
+    return out.enVigueur || out.prochain ? out : null;
+  }
 
   function jourIso(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
   function ajouterJours(d, n) { var x = new Date(d.getTime()); x.setDate(x.getDate() + n); return x; }
@@ -879,6 +898,11 @@
     // Alertes de prix public (JO)
     fut = fichier('prixFuturs'); arch = fichier('prixArchive');
     out.alertePrix = (fut || arch) ? alertesPrix(cip, fut, arch, now, pfht) : null;
+    out.prixJO = prixJO(out.alertePrix);
+    if (out.prixJO && out.margePharmacien && out.margePharmacien.applicable) {
+      if (out.prixJO.enVigueur) out.margePharmacien.auPrixJO = margeAuPrix(l.f, pfht, l.ab, out.prixJO.enVigueur.pfht);
+      if (out.prixJO.prochain) out.margePharmacien.apres = margeAuPrix(l.f, pfht, l.ab, out.prixJO.prochain.pfht);
+    }
 
     // Générique
     var genF = fichier('generiques'); rg2 = fichier('ema');
@@ -1417,7 +1441,7 @@
           (x.ancienTtc != null && x.nouveauTtc != null ? ' : ' + fr(x.ancienTtc, 2) + ' → ' + fr(x.nouveauTtc, 2) + ' € (JO).' : ' (JO).');
         if (!x.aVenir && premierEffectif) {
           premierEffectif = false;
-          if (s.alertePrix.catalogueEnRetard && !vp) t += ' Le prix du catalogue n\'en tient pas encore compte : les marges ci-dessous reposent sur l\'ancien prix.';
+          if (s.alertePrix.catalogueEnRetard && !vp) t += ' Le prix du catalogue n\'en tient pas encore compte : la marge pharmacien ci-dessous est calculée au nouveau prix, notre marge sur l\'ancien.';
         }
         h += alerte('prix', pct != null ? (pct < 0 ? '−' : '+') + fr(Math.abs(pct)) + ' %' : 'Prix', t); n++;
       }
@@ -1477,6 +1501,7 @@
     var m = s.margePharmacien, cls = vp ? 'w6 m1' : 'w3 m1';
     if (!m) return tuileVide(cls, 'Marge pharmacien', 'par boîte', 'Prix fabricant HT non disponible pour ce produit.');
     if (!m.applicable) return tuileVide(cls, 'Marge pharmacien', 'par boîte', 'Calculée pour les princeps remboursables seulement (ni générique, ni biosimilaire, ni produit non remboursable).');
+    if (m.auPrixJO || m.apres) return tuileMargePrixJO(s, cls);
     var egal = Math.abs(m.delta) < 0.005, max = Math.max(m.total26, m.total27), d27 = dateFr(DATE_MG_2027);
     var diffAb = m.abandon26 != null && m.abandon27 != null && Math.round((m.abandon27 - m.abandon26) * 100) !== 0;
     return tuileT(cls, 'Marge pharmacien', 'par boîte',
@@ -1485,6 +1510,36 @@
       '<div class="cq-brs">' + barre('Aujourd\'hui', m.reglementee, m.abandon26, m.total26, max, true) +
         barre((egal ? 'En 2027 : inchangé' : 'À partir du ' + d27) + (m.abandonEstime ? ' · estimation' : ''), m.reglementee, m.abandon27, m.total27, max, diffAb) + '</div>',
       m.sansAbandon ? 'Aucun abandon de marge sur ce prix.' : m.abandonEstime ? 'Abandon de marge 2027 : estimation — <span class="cp-nb">au-dessus</span> de notre règle habituelle, le niveau 2027 n\'est pas connu.' : 'Par boîte, princeps remboursable.');
+  }
+  // 27/10/2026 — Nouveau prix public au JO (à venir, ou en vigueur mais absent du catalogue) : la marge se lit au nouveau
+  // prix, étape par étape (aujourd'hui, date du nouveau prix, puis 20/01/2027 si le plancher change encore quelque chose).
+  function tuileMargePrixJO(s, cls) {
+    var m = s.margePharmacien, jo = s.prixJO, auj = m.auPrixJO || m, ap = m.apres, est = !m.sansAbandon, d27 = dateFr(DATE_MG_2027);
+    var et = [[m.auPrixJO ? 'Aujourd\'hui, nouveau prix' + (est ? ' · estimation' : '') : 'Aujourd\'hui', auj.reglementee, auj.abandon26, auj.total26]];
+    var ph = 'Le pharmacien gagne ' + gros(eur2(auj.total26)) + ' par boîte' + (m.auPrixJO ? ' au nouveau prix public' + (est ? ' (estimation)' : '') : (ap ? ' aujourd\'hui' : ''));
+    var fin = auj, depuis27 = false, i, max = 0, h = '';
+    if (ap) {
+      var dAp = jo.prochain.dateEffet;
+      depuis27 = dAp >= DATE_MG_2027;
+      et.push(['À partir du ' + dateJour(dAp) + (est ? ' · estimation' : ''), ap.reglementee, depuis27 ? ap.abandon27 : ap.abandon26, depuis27 ? ap.total27 : ap.total26]);
+      ph += ', puis ' + gros(eur2(et[1][3])) + ' à partir du ' + dateJour(dAp) + ' (' + (jo.prochain.sens === 'hausse' ? 'hausse' : 'baisse') + ' du prix public' + (est ? ', estimation' : '') + ')';
+      fin = ap;
+    }
+    if (!depuis27) {
+      if (Math.abs(fin.total27 - et[et.length - 1][3]) < 0.005) {
+        if (!ap) { ph += ', ' + gros('autant') + ' en 2027'; et.push(['En 2027 : inchangé', fin.reglementee, fin.abandon27, fin.total27]); }
+      } else {
+        ph += ', puis ' + gros(eur2(fin.total27)) + ' à partir du ' + d27;
+        et.push(['À partir du ' + d27, fin.reglementee, fin.abandon27, fin.total27]);
+      }
+    }
+    for (i = 0; i < et.length; i++) max = Math.max(max, et[i][3]);
+    for (i = 0; i < et.length; i++) {
+      var leg = !i || Math.round((et[i][1] - et[i - 1][1]) * 100) !== 0 || Math.round(((et[i][2] || 0) - (et[i - 1][2] || 0)) * 100) !== 0;
+      h += barre(et[i][0], et[i][1], et[i][2], et[i][3], max, leg);
+    }
+    return tuileT(cls, 'Marge pharmacien', 'par boîte', '<p class="cq-ph">' + ph + '.</p><div class="cq-brs">' + h + '</div>',
+      'Nouveau prix publié au Journal officiel.' + (est ? ' Abandon de marge au nouveau prix : estimation, même proportion qu\'aujourd\'hui.' : ''));
   }
   function tuileNotreMarge(s) {
     var nm = s.notreMarge;
@@ -1495,11 +1550,19 @@
       return '<div class="cq-br"><div class="cq-br-h"><span>' + lib + '</span><b>' + (v != null ? eur2(v) : '—') + '</b></div>' +
         '<div class="cq-br-t" aria-hidden="true"><i class="cq-s3" style="width:' + (v != null && mx > 0 ? (v / mx * 100).toFixed(2) : 0) + '%"></i></div></div>';
     };
+    var pied = nm.source === 'pilotage' ? 'Estimation, règle du Pilotage.' : esc(nm.libelle || 'Source : direction') + (nm.disponible2027 === false ? ' Produit non prévu au catalogue 2027.' : '');
+    // 27/10/2026 — Prix public en train de changer : notre marge future dépend de nos conditions au nouveau prix,
+    // inconnues. Aucun chiffre 2027 (choix de Will).
+    var jo = s.prixJO, ev = jo && (jo.prochain || jo.enVigueur);
+    if (ev) return tuileT('w3 m1', 'Notre marge', 'par boîte',
+      '<p class="cq-ph">Nous gardons ' + gros(eur2(nm.boite26)) + ' par boîte ' + (jo.prochain ? 'aujourd\'hui ; à revoir après ' : 'au prix du catalogue ; à revoir depuis ') +
+        (ev.sens === 'hausse' ? 'la hausse' : 'la baisse') + ' du ' + dateJour(ev.dateEffet) + '.</p>' +
+      '<div class="cq-brs">' + bar('Aujourd\'hui', nm.boite26) + '</div>', pied);
     return tuileT('w3 m1', 'Notre marge', 'par boîte',
       '<p class="cq-ph">Nous gardons ' + gros(eur2(nm.boite26)) + ' par boîte' +
         (nm.boite27 == null ? ', 2027 pas encore connue.' : egal ? ', ' + gros('autant') + ' en 2027.' : ' aujourd\'hui, puis ' + gros(eur2(nm.boite27)) + ' à partir du ' + d27 + ' (' + (nm.delta < 0 ? '−' : '+') + eur2(Math.abs(nm.delta)) + ').') + '</p>' +
       '<div class="cq-brs">' + bar('Aujourd\'hui', nm.boite26) + (nm.boite27 != null ? bar(egal ? 'En 2027 : inchangé' : 'À partir du ' + d27, nm.boite27) : '') + '</div>',
-      nm.source === 'pilotage' ? 'Estimation, règle du Pilotage.' : esc(nm.libelle || 'Source : direction') + (nm.disponible2027 === false ? ' Produit non prévu au catalogue 2027.' : ''));
+      pied);
   }
   function blocMarges(s, vp) {
     return bloc(2, 'Les marges', '<div class="cp-grid">' + tuileMargePharmacien(s, vp) + (vp ? '' : tuileNotreMarge(s)) + '</div>');
@@ -1792,9 +1855,9 @@
   };
   V2.comptoir._calc = {
     pfhtDepuisPpht: pfhtDepuisPpht, margeGrossiste: margeGrossiste, margeOfficine: margeOfficine, abandon2027: abandon2027,
-    margePharmacien: margePharmacien, alertesPrix: alertesPrix, statutGenerique: statutGenerique, emaPourMolecule: emaPourMolecule,
+    margePharmacien: margePharmacien, margeAuPrix: margeAuPrix, prixJO: prixJO, alertesPrix: alertesPrix, statutGenerique: statutGenerique, emaPourMolecule: emaPourMolecule,
     ansmPourCip: ansmPourCip, rappelPourCip: rappelPourCip, hasPourCip: hasPourCip, previsionsPourCip: previsionsPourCip,
-    saisonDe: saisonDe, ventesProduit: ventesProduit,
+    saisonDe: saisonDe, ventesProduit: ventesProduit, tuileMargePharmacien: tuileMargePharmacien, tuileNotreMarge: tuileNotreMarge,
     // Pour les tests : attendre les fichiers demandés, fixer la date du jour.
     pret: function () { return Promise.all(D.fichP || []); },
     horloge: function (f) { D.horloge = f || null; }
