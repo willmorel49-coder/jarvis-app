@@ -3795,16 +3795,18 @@
     // CA par génériqueur (Biogaran, Zentiva, EG…) — table BDPM ; section repliable (inchangé)
     var generiqueurSec = (function () {
       // 26/10/2026 — CA ramené à 12 mois : mêmes mois que « Sa moyenne / mois » (de sa 1re commande au dernier mois complet)
-      var gOpts = { title: 'Ses achats par génériqueur' };
+      // 27/10/2026 — génériques et biosimilaires dans deux cartes séparées (demande de Will)
+      var gOpts = { title: 'Ses génériques par génériqueur', type: 'gen' };
       if (A.nAct >= 3 && A.debut && A.last) {
         var gk0 = A.debut.mk, gk1 = A.last.mk;
         gOpts.annuel = { mois: A.nAct, ventes: sales.filter(function (s) { if (!s.month || !s.year) return false; var k = s.year * 12 + (s.month - 1); return k >= gk0 && k <= gk1; }) };
       }
-      var card = V2.generiqueurCard ? V2.generiqueurCard(sales, gOpts) : '';
+      var bOpts = { title: 'Ses biosimilaires par laboratoire', type: 'biosim', annuel: gOpts.annuel };
+      var card = V2.generiqueurCard ? V2.generiqueurCard(sales, gOpts) + V2.generiqueurCard(sales, bOpts) : '';
       if (!card) return '';
       var open = sectionOpen('gnq');
       return '<div class="ph-section">' +
-        sectionHead('CA par génériqueur', 'combien elle achète chez Biogaran, Zentiva, EG…', 'gnq', open) +
+        sectionHead('CA par génériqueur', 'génériques et biosimilaires à part, chez Biogaran, Zentiva, EG…', 'gnq', open) +
         (open ? card : '') +
       '</div>';
     })();
