@@ -9,6 +9,7 @@ des Medicaments (BDPM, gratuite, sans cle).
 
 Sortie :
     crm/v2/generiqueurs-data.js  ->  window.GENERIQUEURS = {"<cip13>":"<Generiqueur>", ...}
+                                     window.GENERIQUEURS_MARQUES = ["<cip13>", ...]
 
 Sources BDPM (fichiers texte tab-delimites, telechargeables sans cle) :
     - CIS_bdpm.txt        : [0]=CIS, [10]=titulaire (entreprise AMM = genriqueur)
@@ -18,6 +19,11 @@ Sources BDPM (fichiers texte tab-delimites, telechargeables sans cle) :
 Logique :
     Generique = CIS present dans CIS_GENER avec type != 0.
     Pour chaque CIS generique : titulaire (CIS_bdpm) normalise -> genriqueur ;
+    27/10/2026 : le rattrapage (passage 2) prend aussi les MARQUES et les princeps
+    de ces labos (Kardegic, Spasfon, Izalgi...). Gardes dans GENERIQUEURS (nom du
+    labo pour Appro et Produits), listes dans GENERIQUEURS_MARQUES : les cartes
+    generiqueurs ne les comptent pas. Marque = CIS du fichier GENER (referent,
+    type 0) ou nom du medicament qui ne porte pas le nom du labo.
     CIP13 (CIS_CIP) -> cle (13 chiffres exacts, zeros de tete conserves).
 
 Python 3.9 strict (pas de type hints X | Y).
@@ -121,6 +127,10 @@ GENERIQUEUR_WHITELIST = [
     "EUGIA",
 ]
 
+# Nom court que le labo met dans le nom de ses copies (TRAMADOL BGR, ESOMEPRAZOLE EG...).
+ALIAS_NOM = {"BIOGARAN": ["BGR"], "EUROGENERICS": ["EG"], "EG LABO": ["EG"], "SUN PHARMA": ["SUN"],
+             "MYLAN": ["VIATRIS"], "VIATRIS": ["MYLAN"], "TEVA": ["RATIOPHARM"], "EVOLUPHARM": ["EVOLUGEN"]}
+
 # Suffixes juridiques a retirer en fin de nom (pour les titulaires non mappes).
 JURIDIC_SUFFIXES = [
     "LABORATOIRES", "LABORATOIRE", "LABO", "PHARMACEUTICALS", "PHARMACEUTICAL",
@@ -182,6 +192,7 @@ def build():
 
     # 1) CIS generiques (type != 0)
     generic_cis = set()
+    gener_cis = set()      # tout CIS du fichier GENER, referents (type 0) compris
     for cols in read_rows(p_gen):
         if len(cols) < 4:
             continue
@@ -189,12 +200,14 @@ def build():
         typ = cols[3].strip()
         if not cis or not typ:
             continue
+        gener_cis.add(cis)
         if typ != "0":
             generic_cis.add(cis)
 
     # 2) CIS -> titulaire (brut upper + nom normalise)
     cis_titulaire = {}     # cis -> nom normalise
     cis_is_gennaire = {}   # cis -> True si titulaire = generiqueur whitelist
+    cis_copie = {}         # cis -> True si le nom du medicament porte le nom du labo
     for cols in read_rows(p_cis):
         if len(cols) < 11:
             continue
@@ -205,6 +218,10 @@ def build():
         cis_titulaire[cis] = normalize_titulaire(titulaire)
         up = (titulaire or "").upper()
         cis_is_gennaire[cis] = any(k in up for k in GENERIQUEUR_WHITELIST)
+        nom = (cols[1] or "").upper()
+        cis_copie[cis] = any(re.search(r"\b" + re.escape(a) + r"\b", nom)
+                             for k in GENERIQUEUR_WHITELIST if k in up
+                             for a in [k] + ALIAS_NOM.get(k, []))
 
     # 3) CIS -> CIP13
     #    Passage 1 : CIS generiques (regle BDPM officielle, type != 0).
@@ -214,6 +231,7 @@ def build():
     result = {}
     n_cip_rows = 0
     n_ext = 0
+    marques = set()
     for cols in read_rows(p_cip):
         if len(cols) < 7:
             continue
@@ -229,9 +247,12 @@ def build():
             result[cip13] = lab
         elif cis_is_gennaire.get(cis):
             n_ext += 1
-            result.setdefault(cip13, lab)
+            if cip13 not in result:
+                result[cip13] = lab
+                if cis in gener_cis or not cis_copie.get(cis):
+                    marques.add(cip13)
 
-    return generic_cis, result, n_cip_rows, n_ext
+    return generic_cis, result, n_cip_rows, n_ext, marques
 
 
 # --------------------------------------------------------------------------
@@ -274,18 +295,19 @@ def validate(result):
 # --------------------------------------------------------------------------
 # Ecriture du .js
 # --------------------------------------------------------------------------
-def write_js(result):
+def write_js(result, marques):
     # tri par cle pour un diff stable
     ordered = {k: result[k] for k in sorted(result.keys())}
     payload = json.dumps(ordered, ensure_ascii=False, separators=(",", ":"))
     with open(OUT_JS, "w", encoding="utf-8") as f:
         f.write("window.GENERIQUEURS = " + payload + ";\n")
+        f.write("window.GENERIQUEURS_MARQUES = " + json.dumps(sorted(marques), separators=(",", ":")) + ";\n")
     return os.path.getsize(OUT_JS)
 
 
 def main():
-    generic_cis, result, n_cip_rows, n_ext = build()
-    size = write_js(result)
+    generic_cis, result, n_cip_rows, n_ext, marques = build()
+    size = write_js(result, marques)
 
     # Stats
     from collections import Counter
@@ -296,6 +318,7 @@ def main():
     print("CIS generiques (type!=0)      : %d" % len(generic_cis))
     print("Lignes CIP13 de generiques    : %d" % n_cip_rows)
     print("CIP13 rattrapes (titulaire)   : %d" % n_ext)
+    print("  dont marques/princeps        : %d (hors cartes)" % len(marques))
     print("CIP13 mappes                  : %d" % len(result))
     print("Generiqueurs distincts        : %d" % len(labs))
     print("Fichier .js                   : %s (%d octets)" % (OUT_JS, size))

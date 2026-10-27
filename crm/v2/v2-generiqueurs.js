@@ -45,12 +45,25 @@
     return _bsLab;
   }
 
+  // 27/10/2026 — la table garde les marques et princeps des labos génériqueurs (Kardegic, Spasfon…)
+  // pour donner leur labo à Appro et Produits ; window.GENERIQUEURS_MARQUES les liste : hors des cartes.
+  var _mqSrc = null, _mq = null;
+  function marques() {
+    var M = window.GENERIQUEURS_MARQUES;
+    if (!M) return null;
+    if (_mqSrc === M) return _mq;
+    _mqSrc = M; _mq = {};
+    M.forEach(function (c) { _mq[String(c)] = 1; });
+    return _mq;
+  }
+
   // Agrège les ventes par génériqueur. Renvoie { rows:[{lab,ca,n}], total }.
   // type : absent = comme avant (table BDPM telle quelle) · 'gen' = génériques sans les biosimilaires ·
   // 'biosim' = biosimilaires seuls, par laboratoire.
   V2.caParGeneriqueur = function (sales, type) {
     var G = window.GENERIQUEURS || null;
     var BS = type ? biosimLabos() : null;
+    var MQ = type === 'biosim' ? null : marques();
     if (type === 'biosim') G = BS;
     if (!G || !sales) return { rows: [], total: 0, loaded: !!G };
     var by = {}, total = 0;
@@ -58,6 +71,7 @@
       var s = sales[i], cip = s.artCode != null ? String(s.artCode) : '';
       var lab = cip && G[cip];
       if (!lab) continue;                       // pas un générique référencé BDPM
+      if (MQ && MQ[cip]) continue;              // marque ou princeps d'un labo génériqueur
       if (type === 'gen' && BS && BS[cip]) continue;   // biosimilaire : compté à part
       var ca = s.mntNetHt || 0;
       var e = by[lab] || (by[lab] = { lab: lab, ca: 0, n: 0 });
