@@ -1931,9 +1931,19 @@
     return '<div class="pha-kpis">' +
       '<div class="pha-kpi" style="--a:var(--ip-blue)"><div class="pha-kl">CA ' + esc(lastLbl) + '</div><div class="pha-kval mono">' + (A.last ? V2.fmtEur(A.last.ca) : '—') + '</div><div class="pha-kd">' + evoHtml(A.evoM) + ' <span class="pha-sub">vs ' + (A.prev ? esc(A.prev.label) : 'mois précédent') + '</span></div></div>' +
       '<div class="pha-kpi" style="--a:var(--c-opp)"><div class="pha-kl">Sa moyenne / mois</div><div class="pha-kval mono">' + V2.fmtEur(A.caMoy) + '</div><div class="pha-kd">' + evoHtml(pctOf(A.caMoy, A.netMoy)) + ' <span class="pha-sub">réseau ' + V2.fmtEur(A.netMoy) + '/mois</span></div></div>' +
-      '<div class="pha-kpi" style="--a:var(--c-amber)"><div class="pha-kl">Cumul ' + A.nAct + ' mois</div><div class="pha-kval mono">' + V2.fmtEur(A.caTot) + '</div><div class="pha-kd"><span class="pha-sub">marge nette ' + V2.fmtEur(marge) + ' · ' + V2.fmtNum(nbRefs) + ' réf.</span></div></div>' +
+      '<div class="pha-kpi" style="--a:var(--c-amber)"><div class="pha-kl">Cumul ' + A.nAct + ' mois</div><div class="pha-kval mono">' + V2.fmtEur(A.caTot) + '</div><div class="pha-kd"><span class="pha-sub">' + V2.fmtNum(nbRefs) + ' réf.</span></div></div>' +
       '<div class="pha-kpi" style="--a:var(--c-cat)"><div class="pha-kl">Place dans le réseau</div><div class="pha-kval mono">' + (A.rank ? A.rank + '<small>/' + A.nOff + '</small>' : '—') + '</div><div class="pha-kd"><span class="pha-sub">' + (A.grpRank ? A.grpRank + 'e sur ' + A.nGrp + ' chez ' + esc(A.grpName) : 'hors groupement') + '</span></div></div>' +
     '</div>';
+  }
+
+  // 27/10/2026 — « Marge pharmacien » (choix de Will) : son propre bloc, aussi visible que « Notre marge » et à côté de lui,
+  // pour TOUS les commerciaux (il ne dépend pas de l'accès direction). Même chiffre que l'ancienne ligne « marge nette » du Cumul
+  // (margeNettePharma, inchangé), mêmes mois que le Cumul. Jamais sur les PDF client (règle du 25/09) : seul l'écran l'affiche.
+  function analyseMargePharma(A, marge) {
+    return '<div class="pha-kpi pha-nm pha-mp" style="--a:var(--ip-blue)">' +
+      '<div class="pha-kl">Marge pharmacien</div>' +
+      '<div class="pha-kval mono">' + V2.fmtEur(marge) + '</div>' +
+      '<div class="pha-kd"><span class="pha-sub">ce que la pharmacie gagne grâce à Intégral, princeps remboursés seulement · cumul ' + A.nAct + ' mois</span></div></div>';
   }
 
   // 14/10/2026 — « Notre marge » de l'officine : cumul sur les mêmes mois que le CA ci-dessus, familles en petit.
@@ -3725,7 +3735,7 @@
     // ── Colonne « chiffres » ──
     var A = analyseData(pid, sales);
     var chiffres = retourProposer(pid, A, { dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp }) +
-      analyseKpis(A, marge, nbRefs) + analyseNotreMarge(pid) + analyseChart(A) + analyseTranches(A) + analyseParts(A) + analyseTop5(A) + analyseNePlus(pid);
+      analyseKpis(A, marge, nbRefs) + '<div class="pha-marges">' + analyseMargePharma(A, marge) + analyseNotreMarge(pid) + '</div>' + analyseChart(A) + analyseTranches(A) + analyseParts(A) + analyseTop5(A) + analyseNePlus(pid);
     // 09/10/2026 — maquette 8 « Le menu » (remplace la 1b, jugée « trop complexe ») : l'état de la fiche est posé ici,
     // la page est assemblée plus bas (carte d'identité courte, menu, une rubrique à la fois).
     if (menu) l8Init(pid, A, { marge: marge, dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp });
@@ -6956,6 +6966,7 @@
       '.pha-nm-f{flex:1 1 260px;max-width:420px;display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}',
       '.pha-nm-l{display:flex;justify-content:space-between;gap:12px}.pha-nm-l b{color:var(--ip-ink);font-weight:700}',
       '.pha-nm-n{margin-top:8px}',
+      '.pha-marges{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:12px}.pha-marges>.pha-nm{margin-top:0}',
       '.pha-chart{width:100%;height:auto;display:block}',
       '.pha-legend{display:flex;gap:16px;font-size:12px;font-weight:700;color:var(--muted);margin-top:6px;flex-wrap:wrap}',
       '.pha-legend i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}',
