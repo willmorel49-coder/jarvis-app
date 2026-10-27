@@ -13200,9 +13200,13 @@ function renderGroupement() {
     try {
       if (_essMap) { _essMap.remove(); _essMap = null; }
       _essMap = L.map(mapEl, { scrollWheelZoom: false, attributionControl: true });
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '© OpenStreetMap © CARTO', maxZoom: 19, subdomains: 'abcd'
+      // Fond sombre Esri (gratuit, sans clé) : CARTO exige une clé d'API et affichait
+      // « API KEY REQUIRED » sur chaque tuile (constaté le 27/10/2026). Même source que le CRM v2.
+      const esri = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_';
+      L.tileLayer(esri + 'Base/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Fond : Esri, HERE, Garmin, © OpenStreetMap', maxNativeZoom: 16, maxZoom: 19
       }).addTo(_essMap);
+      L.tileLayer(esri + 'Reference/MapServer/tile/{z}/{y}/{x}', { maxNativeZoom: 16, maxZoom: 19 }).addTo(_essMap);
       const pts = [];
       geo.forEach(o => {
         const m = L.circleMarker([o.lat, o.lng], { radius: 8, color: '#fff', weight: 2, fillColor: '#57AE31', fillOpacity: 0.95 }).addTo(_essMap);
