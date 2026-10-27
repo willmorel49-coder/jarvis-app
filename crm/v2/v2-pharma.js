@@ -278,11 +278,14 @@
   // Un « générique » du grossiste hors liste (Permixon, Spagulax…) rejoint le froid ou les princeps.
   // La marge nette garde la nature du grossiste (classifyNature) : c'est elle qui donne l'abandon de marge.
   // Table pas encore chargée (off === null) → l'ancien classement.
+  // 27/10/2026 (nuit) — choix de Will : un produit absent du référentiel n'entre dans une famille que
+  // s'il est sur la liste officielle (Génériques ou Génériques partenaires, ~249 k€ sur 9 mois) ; les
+  // autres absents (~5,2 M€, princeps, para…) restent « Hors catégories ».
   function classify(b, cip) {
-    if (!b) return null;
     var off = V2.estGeneriqueOfficiel ? V2.estGeneriqueOfficiel(cip) : null;
+    if (!b && !off) return null;
     if (off == null) return classifyNature(b, cip);
-    var nat = String(b.artnature || '').toLowerCase();
+    var nat = String((b && b.artnature) || '').toLowerCase();
     if (off && nat !== 'biosimilaire') {
       var ci = V2.produits && V2.produits.catalogueIndex ? V2.produits.catalogueIndex() : null, cr = ci && ci[cip];
       var lab = (cr && cr.labo) || (window.GENERIQUEURS && window.GENERIQUEURS[cip]) || '';
@@ -1177,7 +1180,7 @@
     sales.forEach(function (s) {
       var cip = String(s.artCode || '');
       var b = cip ? bIdx.get(cip) : null;
-      var cat = b ? classify(b, cip) : null;
+      var cat = classify(b, cip);
       var bk = (cat && buckets[cat]) ? buckets[cat] : other;
       bk.ca += s.mntNetHt || 0;
       bk.qte += s.qte || 0;
@@ -1193,7 +1196,7 @@
     var byCat = {}; CATS.forEach(function (c) { byCat[c.key] = {}; });
     sales.forEach(function (s) {
       var cip = String(s.artCode || ''); if (cip.length < 7) return;
-      var b = bIdx.get(cip); var cat = b ? classify(b, cip) : null;
+      var b = bIdx.get(cip); var cat = classify(b, cip);
       if (!cat || !byCat[cat]) return;
       var m = byCat[cat], e = m[cip];
       if (!e) { e = m[cip] = { cip: cip, designation: (b && b.designation) || s.artDesignation || cip, ca: 0, qte: 0 }; }
@@ -1778,7 +1781,7 @@
       var mk = s.year * 12 + (s.month - 1);
       var m = months[mk] || (months[mk] = { mk: mk, year: s.year, month: s.month, total: 0, byCat: {} });
       var cip = String(s.artCode || ''); var b = cip ? bIdx.get(cip) : null;
-      var cat = (b ? classify(b, cip) : null) || 'other';
+      var cat = classify(b, cip) || 'other';
       var v = s.mntNetHt || 0, pk = String(s.pharmacyId);
       m.byCat[cat] = (m.byCat[cat] || 0) + v; m.total += v;
       if (V2.estReste(pk)) continue;   // total du reste du réseau : compté en €, pas comme officine
@@ -1863,7 +1866,7 @@
     var bIdx = benchIndex();
     var mine = {}, mineQ = {}; sales.forEach(function (s) {
       if (!s.month || !s.year) return; var k = s.year * 12 + (s.month - 1);
-      var cip = String(s.artCode || ''); var b = cip ? bIdx.get(cip) : null; var cat = (b ? classify(b, cip) : null) || 'other';
+      var cip = String(s.artCode || ''); var b = cip ? bIdx.get(cip) : null; var cat = classify(b, cip) || 'other';
       var mm = mine[cat] || (mine[cat] = {}); mm[k] = (mm[k] || 0) + (s.mntNetHt || 0);
       var mq = mineQ[cat] || (mineQ[cat] = {}); mq[k] = (mq[k] || 0) + (s.qte || 0);
     });
@@ -2212,12 +2215,12 @@
     var bIdx = benchIndex(), suivi = {}, ca = {}, q = {};
     np.lignes.forEach(function (l) { suivi[l.cip] = 1; });
     ventes.forEach(function (s) { var c = String(s.artCode || ''); if (suivi[c]) { ca[c] = (ca[c] || 0) + (s.mntNetHt || 0); q[c] = (q[c] || 0) + (s.qte || 0); } });
-    var parCat = {}, classees = 0;
+    var parCat = {}, classees = 0, cc = V2.produits && V2.produits.catalogueIndex ? V2.produits.catalogueIndex() : null;
     np.lignes.forEach(function (l) {
-      var b = bIdx.get(l.cip), cat = b ? classify(b, l.cip) : null;
+      var b = bIdx.get(l.cip), cat = classify(b, l.cip);
       if (!cat) return;
       var nb = Math.max(1, Object.keys(l.mois).length);
-      (parCat[cat] || (parCat[cat] = [])).push({ designation: b.designation || l.cip, mois: l.mois, dernier: l.dernier, caMois: (ca[l.cip] || 0) / nb, qMois: (q[l.cip] || 0) / nb });
+      (parCat[cat] || (parCat[cat] = [])).push({ designation: (b && b.designation) || (cc && cc[l.cip] && cc[l.cip].d) || l.cip, mois: l.mois, dernier: l.dernier, caMois: (ca[l.cip] || 0) / nb, qMois: (q[l.cip] || 0) / nb });
       classees++;
     });
     if (!classees) {
@@ -2330,7 +2333,7 @@
       for (var j = 0; j < rows.length; j++) {
         var s = rows[j]; if (!s.month || !s.year) continue;
         var i = pos[s.year * 12 + (s.month - 1)]; if (i == null) continue;
-        var cip = String(s.artCode || ''), b = cip ? bIdx.get(cip) : null, cat = b ? classify(b, cip) : null;
+        var cip = String(s.artCode || ''), b = cip ? bIdx.get(cip) : null, cat = classify(b, cip);
         if (cat && sum[cat]) sum[cat][i] += (s.mntNetHt || 0);
       }
     });
@@ -2364,12 +2367,12 @@
     var bIdx = benchIndex(), suivi = {}, ca = {};
     np.lignes.forEach(function (l) { suivi[l.cip] = 1; });
     ventes.forEach(function (s) { var c = String(s.artCode || ''); if (suivi[c]) ca[c] = (ca[c] || 0) + (s.mntNetHt || 0); });
-    var lignes = [];
+    var lignes = [], cc = V2.produits && V2.produits.catalogueIndex ? V2.produits.catalogueIndex() : null;
     np.lignes.forEach(function (l) {
-      var b = bIdx.get(l.cip), cat = b ? classify(b, l.cip) : null;
+      var b = bIdx.get(l.cip), cat = classify(b, l.cip);
       if (!cat) return;
       var nb = Math.max(1, Object.keys(l.mois).length);
-      lignes.push({ nom: b.designation || l.cip, cat: cat, dernier: l.dernier, caMois: (ca[l.cip] || 0) / nb });
+      lignes.push({ nom: (b && b.designation) || (cc && cc[l.cip] && cc[l.cip].d) || l.cip, cat: cat, dernier: l.dernier, caMois: (ca[l.cip] || 0) / nb });
     });
     lignes.sort(function (x, y) { return y.caMois - x.caMois; });
     return { connu: true, avant: np.avant.length, fin: np.fin, total: np.lignes.length, lignes: lignes };
@@ -4983,7 +4986,7 @@
       var cip = String(s.artCode || ''); if (cip.length < 7) return;
       var e = by[cip];
       if (!e) {
-        var b = bIdx.get(cip), ck = b ? classify(b, cip) : null;
+        var b = bIdx.get(cip), ck = classify(b, cip);
         e = by[cip] = { cip: cip, designation: (b && b.designation) || s.artDesignation || (cc && cc[cip] && cc[cip].d) || cip, cat: CATS.filter(function (c) { return c.key === ck; })[0] || null, ca: 0, qte: 0 };
       }
       e.ca += s.mntNetHt || 0; e.qte += s.qte || 0;
