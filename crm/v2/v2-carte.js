@@ -1543,7 +1543,7 @@
       '.cn-fiche .cn-pact-full{gap:8px;justify-content:center}',
       // Téléphone : tiroir bas, hauteur fixée par le cran → le contenu défile dedans, les boutons restent visibles.
       // 27/10/2026 (Will) : 3 crans — s'ouvre à mi-hauteur, se tire vers le haut (88 %) ou vers le bas (bandeau = en-tête seul)
-      '@media(max-width:760px){.cn-fiche{top:auto;left:0;right:0;bottom:0;width:100%;height:50%;transition:height .26s cubic-bezier(.2,.8,.2,1)}.cn-fiche.cn-cran-haut{height:88%}.cn-fiche.cn-cran-bas{height:var(--cn-bandeau,76px)}.cn-fiche.cn-tire{transition:none}.cn-fiche .cn-phead{position:relative;padding-top:20px;touch-action:none;cursor:grab}.cn-fiche .cn-phead::before{content:"";position:absolute;top:7px;left:50%;width:38px;height:5px;margin-left:-19px;border-radius:3px;background:rgba(11,31,77,.22)}.cn-maparea .leaflet-bottom{z-index:640}.cn-fiche .cn-pdialog{border-radius:18px 18px 0 0}.cn-fiche .cn-pacts{padding:10px 12px;flex-direction:row}.cn-fiche .cn-pacts .v2-btn{min-height:44px}.cn-fiche .cn-pact-full{flex-basis:100%}}',   // .leaflet-bottom (z 1000 par défaut) passe sous la fiche (z 650) : « Fond : Esri… » chevauchait « Itinéraire »
+      '@media(max-width:760px){.cn-fiche{top:auto;left:0;right:0;bottom:0;width:100%;height:50%;transition:height .26s cubic-bezier(.2,.8,.2,1)}.cn-fiche.cn-cran-haut{height:88%}.cn-fiche.cn-cran-bas{height:var(--cn-bandeau,76px)}.cn-fiche.cn-tire{transition:none}.cn-fiche .cn-phead{position:relative;padding-top:20px;touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}.cn-fiche .cn-phead::before{content:"";position:absolute;top:7px;left:50%;width:38px;height:5px;margin-left:-19px;border-radius:3px;background:rgba(11,31,77,.22)}.cn-maparea .leaflet-bottom{z-index:640}.cn-fiche .cn-pdialog{border-radius:18px 18px 0 0}.cn-fiche .cn-pacts{padding:10px 12px;flex-direction:row}.cn-fiche .cn-pacts .v2-btn{min-height:44px}.cn-fiche .cn-pact-full{flex-basis:100%}}',   // .leaflet-bottom (z 1000 par défaut) passe sous la fiche (z 650) : « Fond : Esri… » chevauchait « Itinéraire »
       '@media(min-width:640px){.cn-pdialog{border-radius:18px}}',
       '.cn-phead{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line)}',
       '.cn-phead b{font-size:16px;font-weight:800;color:var(--ip-ink)}.cn-phead small{display:block;font-size:12px;color:var(--muted);margin-top:2px}',
@@ -2058,7 +2058,9 @@
       if (!fbEtroit() || g || !e.target.closest || !e.target.closest('.cn-phead') || e.target.closest('button,a')) return;
       g = { id: e.pointerId, y0: e.clientY, h0: el.getBoundingClientRect().height, hh: el.parentNode.getBoundingClientRect().height, y: e.clientY, t: e.timeStamp, v: 0, bouge: false };
       try { el.setPointerCapture(e.pointerId); } catch (er) {}
+      if (e.pointerType === 'mouse') e.preventDefault();   // à la souris, tirer sélectionnait le texte de la fiche et la carte (WebKit, 27/10)
     });
+    el.addEventListener('selectstart', function (e) { if (g) e.preventDefault(); });
     el.addEventListener('pointermove', function (e) {
       if (!g || e.pointerId !== g.id) return;
       if (!g.bouge && Math.abs(e.clientY - g.y0) < 6) return;

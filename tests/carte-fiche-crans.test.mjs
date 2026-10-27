@@ -13,6 +13,7 @@ test('CSS téléphone : 50 % par défaut, 88 % au cran haut, bandeau mesuré au 
   assert.match(tel, /\.cn-fiche\.cn-cran-bas\{height:var\(--cn-bandeau,76px\)\}/);
   assert.match(tel, /\.cn-fiche\.cn-tire\{transition:none\}/);
   assert.match(tel, /\.cn-fiche \.cn-phead\{[^}]*touch-action:none/);   // sinon Safari prend le geste pour un défilement
+  assert.match(tel, /\.cn-fiche \.cn-phead\{[^}]*-webkit-user-select:none;user-select:none/);   // sinon tirer sélectionne le nom et la carte (mesuré sous WebKit le 27/10)
   assert.match(carte, /el\.className = host \? 'cn-fiche cn-cran-mi' : 'cn-panel'/);
 });
 
