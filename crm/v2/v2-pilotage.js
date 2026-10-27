@@ -2133,7 +2133,8 @@
             '<span class="mono pilo-rank">' + (i + 1) + '</span>' +
             '<span class="v2-row-dot" style="background:var(--c-rose)"></span>' +
             '<div style="flex:1;min-width:0">' +
-              '<div class="v2-row-name">' + esc(pharmaName(r.id)) + '</div>' +
+              // Le titre dit déjà « Pharmacies » : sans le préfixe, le nom qui distingue l'officine tient sur 2 lignes au téléphone.
+              '<div class="v2-row-name">' + esc(pharmaName(r.id).replace(/^pharmacie\s+(?=\S)/i, '')) + '</div>' +
               '<div class="pilo-bar"><span class="pilo-bar-fill" data-w="' + pct.toFixed(1) + '" style="width:0;background:var(--c-rose)"></span></div>' +
             '</div>' +
             '<div class="pilo-vals">' +
