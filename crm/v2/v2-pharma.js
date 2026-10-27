@@ -149,7 +149,7 @@
   function margeNettePrinceps(cat) { return cat === 'pp' || cat === 'mi' || cat === 'ch' || cat === 'froid'; }
   function margeNetteCat(cip) {
     var b = cip ? benchIndex().get(cip) : null;
-    return b ? classify(b, cip) : null;
+    return b ? classifyNature(b, cip) : null;
   }
   function margeNetteLigne(s) {
     var cip = String(s.artCode || '');
@@ -248,7 +248,7 @@
     if (_froidSrc !== F) { _froidSrc = F; _froidSet = {}; F.forEach(function (c) { _froidSet[String(c).replace(/\D/g, '')] = 1; }); }
     return !!_froidSet[String(cip || (b && b.cip13) || '')];
   }
-  function classify(b, cip) {
+  function classifyNature(b, cip) {
     if (!b) return null;
     var nat = String(b.artnature || '').toLowerCase();
     // 8. Non remboursés : dans Sagitta OU has_ameli=false
@@ -271,6 +271,29 @@
     // 1-3. Princeps par tranche prix (champ categorie : pp/mi/ch)
     if (b.categorie === 'pp' || b.categorie === 'mi' || b.categorie === 'ch') return b.categorie;
     return null; // hors périmètre des 8 catégories
+  }
+  // 27/10/2026 — choix de Will (question cliquée) : la fiche range les génériques comme le Pilotage et la
+  // carte « Génériques par génériqueur » : liste officielle (V2.estGeneriqueOfficiel), froid et non
+  // remboursés compris. Partenaire = labo EG · Zentiva · Zydus · Teva (catalogue, sinon table BDPM).
+  // Un « générique » du grossiste hors liste (Permixon, Spagulax…) rejoint le froid ou les princeps.
+  // La marge nette garde la nature du grossiste (classifyNature) : c'est elle qui donne l'abandon de marge.
+  // Table pas encore chargée (off === null) → l'ancien classement.
+  function classify(b, cip) {
+    if (!b) return null;
+    var off = V2.estGeneriqueOfficiel ? V2.estGeneriqueOfficiel(cip) : null;
+    if (off == null) return classifyNature(b, cip);
+    var nat = String(b.artnature || '').toLowerCase();
+    if (off && nat !== 'biosimilaire') {
+      var ci = V2.produits && V2.produits.catalogueIndex ? V2.produits.catalogueIndex() : null, cr = ci && ci[cip];
+      var lab = (cr && cr.labo) || (window.GENERIQUEURS && window.GENERIQUEURS[cip]) || '';
+      return (lab ? /^(EG|ZENTIVA|ZYDUS|TEVA)\b/i.test(lab) : nat === 'generique_partenaire') ? 'genp' : 'gen';
+    }
+    var cat = classifyNature(b, cip);
+    if (cat !== 'gen' && cat !== 'genp') return cat;
+    if (estFroid(b, cip)) return 'froid';
+    if (b.categorie === 'pp' || b.categorie === 'mi' || b.categorie === 'ch') return b.categorie;
+    var pp = (window.PPHT && window.PPHT[cip] > 0) ? window.PPHT[cip] : (b.prix_ht > 0 ? b.prix_ht : 0);
+    return pp > 0 ? (pp <= 4.33 ? 'pp' : (pp <= 468 ? 'mi' : 'ch')) : null;
   }
 
   // ── Fusion OPS + CPR + HP par CIP (cumul qte/ca + détail par source) ──
