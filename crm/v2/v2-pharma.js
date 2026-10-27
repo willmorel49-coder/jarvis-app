@@ -3874,12 +3874,12 @@
   function phaNavHtml(pid) {
     var o = phaOrdre(pid), i = o ? o.indexOf(String(pid)) : -1, n = o ? o.length : 0;
     var dis = function (ok) { return ok ? '' : ' disabled aria-disabled="true"'; };
-    var cible = function (j) { return j >= 0 && j < n ? "V2.pharmaNav.va('" + esc(o[j]) + "')" : ''; };
+    var cible = function (j, geste) { return j >= 0 && j < n ? "V2.pharmaNav.va('" + esc(o[j]) + "',0,'" + geste + "')" : ''; };
     return '<div class="v2-card pha-nav" id="pha-nav">' +
       (o ? '<div class="pha-nav-l">' +
-        '<button type="button" class="pha-btn pha-nav-b"' + dis(i > 0) + ' onclick="' + cible(i - 1) + '">‹ Précédente</button>' +
+        '<button type="button" class="pha-btn pha-nav-b"' + dis(i > 0) + ' onclick="' + cible(i - 1, 'fiche-precedente') + '">‹ Précédente</button>' +
         '<span class="pha-nav-n mono" aria-live="polite">' + (i >= 0 ? V2.fmtNum(i + 1) + ' sur ' + V2.fmtNum(n) : '') + '</span>' +
-        '<button type="button" class="pha-btn pha-nav-b"' + dis(i >= 0 && i < n - 1) + ' onclick="' + cible(i + 1) + '">Suivante ›</button>' +
+        '<button type="button" class="pha-btn pha-nav-b"' + dis(i >= 0 && i < n - 1) + ' onclick="' + cible(i + 1, 'fiche-suivante') + '">Suivante ›</button>' +
       '</div>' : '') +
       '<label class="v2-champ pha-nav-champ">' + ICO('search', 20, 2) +
         '<input id="pha-autre" type="text" placeholder="Autre officine…" aria-label="Aller à une autre officine : nom, ville ou code postal" autocomplete="off" oninput="V2.pharmaNav.chercher(this.value)" onkeydown="if(event.key===\'Enter\'){V2.pharmaNav.premier();}"></label>' +
@@ -3888,7 +3888,9 @@
   }
   V2.pharmaNav = {
     // ouvre une fiche ; depuis une ligne de la liste (liste=1) on fige l'ordre de la liste telle qu'affichée à cet instant
-    va: function (id, liste) {
+    // 27/10/2026 — geste = Précédente / Suivante / « Autre officine… », compté à chaque appui (mesure avant/après du 09/11, choix de Will)
+    va: function (id, liste, geste) {
+      if (geste && V2.mesurer) V2.mesurer(geste, true);
       if (liste) V2._ordreFiche = (V2._ordreMesOff || []).slice();
       V2._navPid = String(id);
       V2.go('pharma', String(id));
@@ -3900,7 +3902,7 @@
       var r = [];
       (V2.pharmacies || []).some(function (p) { if (String(p.id) !== cur && correspond(p, q)) r.push(p); return r.length >= 6; });
       z.innerHTML = r.length ? r.map(function (p) {
-        return '<button type="button" class="pha-btn pha-nav-r" onclick="V2.pharmaNav.va(\'' + esc(String(p.id)) + '\')"><b>' + esc(nameOf(p.id, p.name)) + '</b><span>' + esc([cpDe(p), p.ville || ''].filter(Boolean).join(' ')) + '</span></button>';
+        return '<button type="button" class="pha-btn pha-nav-r" onclick="V2.pharmaNav.va(\'' + esc(String(p.id)) + '\',0,\'fiche-autre\')"><b>' + esc(nameOf(p.id, p.name)) + '</b><span>' + esc([cpDe(p), p.ville || ''].filter(Boolean).join(' ')) + '</span></button>';
       }).join('') : '<div class="pha-nav-vide">Aucune officine trouvée.</div>';
     },
     premier: function () { var b = document.querySelector('#pha-autre-res .pha-nav-r'); if (b) b.click(); },

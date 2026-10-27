@@ -126,14 +126,17 @@
   function _vusEcrire(m) {
     try { sessionStorage.setItem('jarvis_vus', JSON.stringify(m)); } catch (e) {}
   }
-  V2.mesurer = function (ecran) {
+  // 27/10/2026 — chaque = true : un GESTE (pas un écran), compté à chaque fois, sans l'anti-doublon de 5 min.
+  V2.mesurer = function (ecran, chaque) {
     try {
       if (!ecran || !V2.user || ecran === 'documents') return;   // 16/10/2026 : l'écran privé ne laisse aucune trace d'usage
-      var t = Date.now();
-      var vus = _vusLire();
-      if (vus[ecran] && t - vus[ecran] < 5 * 60 * 1000) return;
-      vus[ecran] = t;
-      _vusEcrire(vus);
+      if (!chaque) {
+        var t = Date.now();
+        var vus = _vusLire();
+        if (vus[ecran] && t - vus[ecran] < 5 * 60 * 1000) return;
+        vus[ecran] = t;
+        _vusEcrire(vus);
+      }
       var c = V2.sb && V2.sb();
       if (!c) return;
       var s = '';
