@@ -175,6 +175,7 @@
   // toutes ventes d'une pharma, TOUS commerciaux (vue groupements = vue d'équipe)
   // 24/09/2026 — confidentialité : rien pour l'officine d'un collègue (V2.voitVentesDe, v2-boot.js)
   function pharmaSalesAll(pid) { if (V2.voitVentesDe && !V2.voitVentesDe(pid)) return []; return salesIndex()[String(pid)] || []; }
+  V2.pharmaVentesDe = pharmaSalesAll;   // 28/10/2026 — « À rappeler » (v2-decrochage.js) : les habitudes interrompues des seules lignes affichées
   // cliente ou non — pas un chiffre de vente : reste vrai pour l'officine d'un collègue
   function aDesVentes(pid) { return (salesIndex()[String(pid)] || []).length > 0; }
   function pharmaSales(pid) {
@@ -1055,6 +1056,7 @@
         pharmaTabs('officines') +
         counterHtml +
         '<div class="of-bar">' + commBar + secteurBar + opsoFilterBar + '</div>' +
+        (!isOpso() && secteurTab === 'clients' && V2.decrochageUI ? V2.decrochageUI.bloc() : '') +   // 28/10/2026 — « À rappeler cette semaine », en tête de l'onglet Clients
         '<label class="v2-champ of-recherche">' + ICO('search', 20, 2) +
           '<input id="v2-pharma-search" type="text" placeholder="Nom, titulaire, ville ou code postal…" aria-label="Rechercher une officine par son nom, son titulaire, sa ville ou son code postal" autocomplete="off" value="' +
           V2.esc(searchQuery) + '"></label>' +
@@ -3880,6 +3882,7 @@
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
       '<div class="v2-wrap ph-detail pha-wrap" data-vue="' + vue + '" style="--accent:var(--pil-opp)">' +
         tabs +
+        (voitVentes && !isOpso() && V2.decrochageUI ? V2.decrochageUI.bandeau(pid) : '') +   // 28/10/2026 — bandeau si l'officine est « à rappeler »
         '<div id="phft-c-apercu">' + apercu + '</div>' +
       '</div>';
     document.body.classList.toggle('l8-vp', vue === 'pharmacien');

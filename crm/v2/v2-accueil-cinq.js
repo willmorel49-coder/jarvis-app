@@ -242,6 +242,11 @@
   function nb(n, lib, anim) { return '<span class="ac-nb"><b' + (anim ? ' data-roule="' + n + '"' : '') + '>' + fr(n) + '</b><span>' + esc(lib) + '</span></span>'; }
   function ds(t) { return '<span class="ac-ds">' + esc(t) + '</span>'; }
 
+  // 28/10/2026 — « N à rappeler » (v2-decrochage.js) : rien tant que ce n'est pas calculable, jamais un faux 0.
+  function aRappeler() {
+    var n = null; try { n = V2.decrochageUI ? V2.decrochageUI.compte() : null; } catch (e) {}
+    return typeof n === 'number' && n > 0 ? '<span class="ac-sub">À rappeler : <b>' + fr(n) + '</b></span>' : '';
+  }
   var C = {
     // Bandeau Officines : le nombre (ou l'avancement du chargement), puis les dernières fiches
     heroNb: function (m, t) {
@@ -249,7 +254,7 @@
         var pr = V2.ventesProgres || {};
         return '<span class="ac-vente" id="v2-ventes-etat">Chargement des ventes… <b>' + (pr.n || 0) + '</b> / ' + (pr.total || '?') + '</span>';
       }
-      return nb(m.nb, m.nb > 1 ? 'officines actives' : 'officine active', true) + (m.mes != null ? '<span class="ac-sub">Vos officines : <b>' + fr(m.mes) + '</b></span>' : '');
+      return nb(m.nb, m.nb > 1 ? 'officines actives' : 'officine active', true) + (m.mes != null ? '<span class="ac-sub">Vos officines : <b>' + fr(m.mes) + '</b></span>' : '') + aRappeler();
     },
     heroFi: function (t) {
       var l = fichesLire().slice(0, 3);
