@@ -163,10 +163,21 @@ jobs:
         run: |
           # 26/10/2026 : un essai qui s'enlise (14, 43, 45 min) ne rendait jamais la main → coupé à 5 min
           # et relancé (d'habitude moins d'1 min 30). `timeout` vise tout le groupe de processus.
+          # 27/10/2026 : après un essai coupé, les essais 2 et 3 échouaient en 2-3 s (26/10, deux fois), cause
+          # invisible : les sorties partaient dans /dev/null. → la fin de la sortie de chaque essai raté va dans le
+          # journal, et on nettoie ce que l'essai coupé laisse derrière lui avant de relancer : apt et dpkg (lancés par
+          # sudo, hors du groupe de `timeout`, ils gardent le verrou), paquets npm à moitié posés, verrou des navigateurs.
           for essai in 1 2 3; do
-            timeout -k 20 300 sh -c 'npm i --no-save playwright@latest >/dev/null 2>&1 \
-              && npx playwright install --with-deps chromium webkit >/dev/null 2>&1' && exit 0
-            echo "installation ratée ou au-delà de 5 min (essai $essai/3), nouvel essai dans 20 s"; sleep 20
+            sortie="$RUNNER_TEMP/playwright-essai-$essai.log"
+            timeout -k 20 300 sh -c 'npm i --no-save playwright@latest \
+              && npx playwright install --with-deps chromium webkit' >"$sortie" 2>&1 && exit 0
+            echo "::warning::Installation de Playwright ratée ou au-delà de 5 min (essai $essai/3). Fin de sa sortie :"
+            tail -n 30 "$sortie"
+            sudo pkill -9 -x apt-get || true
+            sudo pkill -9 -x dpkg || true
+            sudo dpkg --configure -a || true
+            rm -rf node_modules/playwright node_modules/playwright-core node_modules/.playwright* "$HOME/.cache/ms-playwright/__dirlock"
+            echo "nettoyé, nouvel essai dans 20 s"; sleep 20
           done
           exit 1
 
