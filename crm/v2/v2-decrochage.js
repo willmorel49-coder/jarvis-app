@@ -133,7 +133,7 @@
   // ── Les phrases (gabarits remplis de chiffres) ───────────────────────
   function regle() {
     var R = D().REGLAGES;
-    return 'baisse d’au moins ' + Math.round(R.baissePct * 100) + ' % et ' + eur(R.baisseMinAvant) + ' sur trois mois';
+    return 'baisse d’au moins ' + Math.round(R.baissePct * 100) + '\u00A0% et ' + eur(R.baisseMinAvant) + ' sur trois mois';
   }
   function periodeTxt(r) {
     var a = r.periode.avant, b = r.periode.recent;
@@ -141,9 +141,9 @@
   }
   function phrase(l, r) {
     var t = (l.raison === 'reprise' ? 'Changement de titulaire · ' : '') +
-      '−' + eur(l.ecartMensuel) + ' par mois (' + periodeTxt(r) + ', −' + Math.round(l.pct * 100) + ' %)';
+      '−' + eur(l.ecartMensuel) + ' par mois (' + periodeTxt(r) + ', −' + Math.round(l.pct * 100) + '\u00A0%)';
     var h = habitudes(l);
-    if (h && h.fin) t += ' ; ' + h.n + ' référence' + (h.n > 1 ? 's' : '') + ' habituelle' + (h.n > 1 ? 's' : '') + ' absente' + (h.n > 1 ? 's' : '') + ' en ' + moisNom(h.fin).split(' ')[0];
+    if (h && h.fin) t += '\u00A0; ' + h.n + ' référence' + (h.n > 1 ? 's' : '') + ' habituelle' + (h.n > 1 ? 's' : '') + ' absente' + (h.n > 1 ? 's' : '') + ' en ' + moisNom(h.fin).split(' ')[0];
     return t;
   }
   function contactTxt(l) {

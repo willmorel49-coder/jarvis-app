@@ -58,14 +58,14 @@ test('marqueur positif : le bloc liste l’officine qui décroche, avec ses euro
   assert.match(h, /Pharmacie des Tilleuls/);
   assert.doesNotMatch(h, /Pharmacie du Port/);           // stable : jamais dans la liste
   assert.match(h, /−800 € par mois/);                     // (3 000 − 600) / 3
-  assert.match(h, /−80 %/);
+  assert.match(h, /−80\u00A0%/);  // insécable : le « % » ne tombe jamais seul en début de ligne
   assert.match(h, /href="tel:0231000000"/);              // « Appeler » seulement si le téléphone est connu
   assert.match(h, />Noter</);
   assert.match(h, />Pas pertinent</);
   assert.match(h, /Ventes jusqu’à fin septembre 2026/);
   // Les seuils affichés se LISENT dans le réglage.
   const Rg = V2.decrochage.REGLAGES;
-  assert.match(h, new RegExp('au moins ' + Math.round(Rg.baissePct * 100) + ' % et ' + Rg.baisseMinAvant + ' €'));
+  assert.match(h, new RegExp('au moins ' + Math.round(Rg.baissePct * 100) + '\u00A0% et ' + Rg.baisseMinAvant + ' €'));
   assert.doesNotMatch(h, ERREURS);
   assert.equal(V2.decrochageUI.compte(), 1);
 });
@@ -74,7 +74,7 @@ test('état vide : aucune baisse → la règle est rappelée, pas un bloc muet',
   const { V2 } = monter({ sales: ventes(9, false) });
   const h = V2.decrochageUI.bloc();
   assert.match(h, /À rappeler cette semaine/);
-  assert.match(h, /Aucune officine en baisse d’au moins 25 % et 500 €/);
+  assert.match(h, /Aucune officine en baisse d’au moins 25\u00A0% et 500 €/);
   assert.doesNotMatch(h, /dr-l"/);
   assert.doesNotMatch(h, ERREURS);
   assert.equal(V2.decrochageUI.compte(), 0);
