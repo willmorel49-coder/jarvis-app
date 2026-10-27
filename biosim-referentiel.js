@@ -174,6 +174,8 @@ const BIOSIM_REFERENTIEL = [
       { nom: "Stimufend", labo: "Fresenius Kabi", annee: 2022, distrib: "Teva" },
       { nom: "Udenyca", labo: "Accord / Coherus", annee: 2019 },
       { nom: "Dyrupeg", labo: "Stada", annee: 2023 },
+      // 27/10/2026 — absent de la base jusqu'ici (AMM 2025) ; nos lignes sont facturées BIOGARAN.
+      { nom: "Vivlipeg", labo: "Biocon Biologics", annee: 2025, distrib: "Biogaran" },
     ],
   },
   {
@@ -203,7 +205,8 @@ const BIOSIM_REFERENTIEL = [
     reference: "NovoRapid", reference_labo: "Novo Nordisk", canal: "mixte",
     substituable: false, substituable_date: null,
     biosimilaires: [
-      { nom: "Insuline asparte Sanofi", labo: "Sanofi", annee: 2020 },
+      // 27/10/2026 — désignation Intégral abrégée « INSULINE ASPART SAN… » : sans `match`, aucun CIP trouvé.
+      { nom: "Insuline asparte Sanofi", labo: "Sanofi", annee: 2020, match: ["INSULINE ASPART SAN", "INSULINE ASPARTE SANOFI"] },
       { nom: "Kirsty", labo: "Viatris / Biocon", annee: 2021 },
     ],
   },
@@ -239,6 +242,8 @@ const BIOSIM_REFERENTIEL = [
       { nom: "Pavblu", labo: "Amgen", annee: 2025, statut: "AMM UE" },
       { nom: "Mynzepli", labo: "Advanz / Alvotech", annee: 2025, statut: "AMM UE" },
       { nom: "Ahzantive", labo: "Formycon / Klinge", annee: 2025, statut: "AMM UE" },
+      // 27/10/2026 — même produit Formycon sous un second nom ; nos lignes sont facturées HORUS PHARMA.
+      { nom: "Baiama", labo: "Formycon", annee: 2025, distrib: "Horus Pharma" },
     ],
   },
   // ---------------- OS / ENDOCRINO ----------------
@@ -319,6 +324,17 @@ const BIOSIM_REFERENTIEL = [
     biosimilaires: [
       { nom: "Bekemv", labo: "Amgen", annee: 2023 },
       { nom: "Epysqli", labo: "Samsung Bioepis", annee: 2023 },
+    ],
+  },
+  // ---------------- PNEUMO / ALLERGO ----------------
+  // 27/10/2026 — Omlyclo vendu dans le réseau depuis 2026 (BDPM : omalizumab, Celltrion).
+  {
+    dci: "OMALIZUMAB", atc: "R03DX05", aire: "Pneumo / allergo (asthme sévère, urticaire)",
+    reference: "Xolair", reference_labo: "Novartis", canal: "ville",
+    substituable: false, substituable_date: null,
+    note: "Avis favorable de l'ANSM à la substitution (30/07/2026) — arrêté non vérifié",
+    biosimilaires: [
+      { nom: "Omlyclo", labo: "Celltrion", annee: 2024 },
     ],
   },
 ];

@@ -86,6 +86,7 @@
     for (var i = 0; i < S.length; i++) {
       var r = S[i], q = r[4] || 0; if (q <= 0) continue;
       var c = String(r[3]), lab = G[c]; if (!lab) continue;
+      if (V2.estMarqueGeneriqueur && V2.estMarqueGeneriqueur(c)) continue;   // 27/10/2026 : Kardégic, Spasfon… ne sont pas du volume génériqueur
       var o = by[lab] || (by[lab] = { lab: lab, ca: 0, q: 0, cips: {} });
       o.ca += (r[6] || 0); o.q += q; o.cips[c] = (o.cips[c] || 0) + q; totCa += (r[6] || 0);
     }

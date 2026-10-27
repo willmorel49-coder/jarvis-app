@@ -48,3 +48,11 @@ test('sans base biosimilaires : pas de carte biosimilaires, génériques comme a
     assert.equal(V2.caParGeneriqueur(ventes, 'gen').total, 11000);
   } finally { globalThis.BIOSIMILAIRES = B; }
 });
+test('négo labos d\'Appro : une marque de génériqueur est écartée, un biosimilaire de marque reste', () => {
+  globalThis.GENERIQUEURS_MARQUES = ['111', '333'];
+  try {
+    assert.equal(V2.estMarqueGeneriqueur('111'), true);    // ex. Kardégic : marque d'un labo génériqueur
+    assert.equal(V2.estMarqueGeneriqueur('333'), false);   // biosimilaire Sandoz : garde son labo
+    assert.equal(V2.estMarqueGeneriqueur(222), false);     // vrai générique
+  } finally { globalThis.GENERIQUEURS_MARQUES = undefined; }
+});

@@ -56,6 +56,11 @@
     M.forEach(function (c) { _mq[String(c)] = 1; });
     return _mq;
   }
+  // Marque ou princeps d'un labo génériqueur, hors biosimilaires (ils gardent leur labo) : négo labos d'Appro.
+  V2.estMarqueGeneriqueur = function (cip) {
+    var MQ = marques(), BS = biosimLabos(); cip = String(cip);
+    return !!(MQ && MQ[cip] && !(BS && BS[cip]));
+  };
 
   // Agrège les ventes par génériqueur. Renvoie { rows:[{lab,ca,n}], total }.
   // type : absent = comme avant (table BDPM telle quelle) · 'gen' = génériques sans les biosimilaires ·
