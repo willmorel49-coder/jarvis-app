@@ -222,7 +222,7 @@
     var vide = {
       comparable: false, moisRef: F.ancre != null ? cle(F.ancre) : null, periode: null,
       moisEcartes: F.moisEcartes, moisComplets: F.moisComplets,
-      lignes: [], total: 0, nbARappeler: null, masquees: 0, ponctuels: 0, revenues: [],
+      lignes: [], toutes: [], total: 0, nbARappeler: null, masquees: 0, ponctuels: 0, revenues: [],
       portefeuille: null
     };
     if (!F.comparable) return vide;
@@ -275,7 +275,7 @@
       comparable: true, moisRef: cle(F.ancre),
       periode: { avant: [cle(F.ancre - 5), cle(F.ancre - 3)], recent: [cle(F.ancre - 2), cle(F.ancre)] },
       moisEcartes: F.moisEcartes, moisComplets: F.moisComplets,
-      lignes: lignes.slice(0, R.maxLignes), total: lignes.length,
+      lignes: lignes.slice(0, R.maxLignes), toutes: lignes, total: lignes.length,
       nbARappeler: lignes.filter(function (l) { return l.etat === 'a_rappeler'; }).length,
       masquees: masquees, ponctuels: ponctuels, revenues: revenues,
       portefeuille: portefeuille(par, R)

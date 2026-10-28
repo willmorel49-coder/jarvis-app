@@ -178,6 +178,7 @@ test('une note de fiche récente compte comme un contact : la ligne passe « en 
   assert.match(h, new RegExp('Dernier contact : ' + iso(-3).slice(8, 10) + '/' + iso(-3).slice(5, 7)));
   assert.ok(f.lus.includes('notes scope_type=client'), 'seulement les notes de fiche client');
   assert.ok(f.lus.includes('rdv statut=confirme'), 'seulement les rendez-vous confirmés');
+  assert.doesNotMatch(h, /déjà contactée/, 'ligne visible avec son étiquette : pas de doublon en pied');
   assert.doesNotMatch(h, ERREURS);
 });
 
@@ -201,4 +202,35 @@ test('une note ancienne (plus de 14 jours) ne suffit pas : la ligne reste à rap
   assert.match(h, /Pharmacie des Tilleuls/);
   assert.doesNotMatch(h, /en cours/);
   assert.match(h, /Dernier contact : /);
+});
+
+// Constaté en prod le 28/10/2026 : « en cours » se range après les « à rappeler », puis la liste est coupée à 10 ;
+// une officine notée disparaissait donc de la liste ET de sa fiche. Décision de Will : pied de liste + fiche.
+test('au-delà des 10 premières, une officine notée est comptée en pied et garde son bandeau « en cours »', async () => {
+  const v = [];   // 222 stable et lourde : sans elle, juillet-septembre passeraient pour incomplets
+  for (let m = 1; m <= 9; m++) v.push({ pharmacyId: '222', year: 2026, month: m, commercial: 'KV', mntNetHt: 50000 });
+  for (let i = 1; i <= 12; i++) for (let m = 1; m <= 9; m++) {
+    const avant = 1000 + 100 * i;
+    v.push({ pharmacyId: String(300 + i), year: 2026, month: m, commercial: 'KV', mntNetHt: m >= 7 ? avant * 0.2 : avant });
+  }
+  const { V2 } = monter({ sales: v });
+  const max = V2.decrochage.REGLAGES.maxLignes, jours = V2.decrochage.REGLAGES.enCoursJours;
+  // 312 : la plus forte baisse, donc 1re sans note (marqueur positif) ; notée, elle passe en fin de liste.
+  const avant = V2.decrochageUI.bloc();
+  assert.equal((avant.match(/class="dr-l[ "]/g) || []).length, max);
+  assert.match(avant, /data-pid="312"/);
+  assert.doesNotMatch(avant, /déjà contactée/);
+  assert.doesNotMatch(V2.decrochageUI.bandeau('312'), /en cours/);
+  const f = faussesTables({ notes: [{ scope_id: '312', created_at: new Date(Date.now() - 2 * 864e5).toISOString() }] });
+  V2.sb = () => f.sb; V2.decrochageUI._raz();
+  V2.decrochageUI.bloc(); await attendre(); await attendre();
+  const h = V2.decrochageUI.bloc();
+  assert.equal((h.match(/class="dr-l[ "]/g) || []).length, max, 'toujours 10 lignes');
+  assert.doesNotMatch(h, /data-pid="312"/, 'hors des 10 premières');
+  assert.match(h, new RegExp('Les ' + max + ' premières sur 12, par euros en jeu · 1 déjà contactée depuis moins de ' + jours + ' jours'));
+  assert.match(h, /<span class="dr-n">11<\/span>/, 'la pastille ne compte que les officines à rappeler');
+  const b = V2.decrochageUI.bandeau('312');
+  assert.match(b, /id="dr-bandeau"[\s\S]*<span class="dr-tag">en cours<\/span>/);
+  assert.match(b, new RegExp('Dernier contact : ' + iso(-2).slice(8, 10) + '/' + iso(-2).slice(5, 7)));
+  assert.doesNotMatch(h + b, ERREURS);
 });

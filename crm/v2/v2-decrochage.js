@@ -146,13 +146,16 @@
       suivis: suivis(), reprises: window.REPRISES || {}
     });
     var noms = {}; (V2.pharmacies || []).forEach(function (p) { noms[String(p.id)] = p; });
-    r.lignes.forEach(function (l) { l.p = noms[l.pid] || null; });
+    (r.toutes || r.lignes).forEach(function (l) { l.p = noms[l.pid] || null; });
     memo = { cle: cle, ref: V2.sales, r: r };
     return r;
   }
+  // Toute la liste, pas seulement les 10 affichées : une officine notée passe « en cours », donc en fin
+  // de liste, et garde son bandeau de fiche (décision de Will, 28/10/2026).
   function ligneDe(pid) {
     var r = calcul(); if (!r || !r.lignes) return null;
-    for (var i = 0; i < r.lignes.length; i++) if (r.lignes[i].pid === String(pid)) return r.lignes[i];
+    var t = r.toutes || r.lignes;
+    for (var i = 0; i < t.length; i++) if (t[i].pid === String(pid)) return t[i];
     return null;
   }
 
@@ -248,6 +251,9 @@
     var n = r.lignes.length, plus = n > 3;
     var pied = [];
     if (r.total > n) pied.push('Les ' + n + ' premières sur ' + r.total + ', par euros en jeu');
+    var enCours = function (l) { return l.etat === 'en_cours'; };
+    var contactees = (r.toutes || r.lignes).filter(enCours).length - r.lignes.filter(enCours).length;
+    if (contactees > 0) pied.push(contactees + ' déjà contactée' + (contactees > 1 ? 's' : '') + ' depuis moins de ' + D().REGLAGES.enCoursJours + ' jours');
     if (r.masquees) pied.push(ecartees(r.masquees, 'pas pertinent'));
     if (r.ponctuels) pied.push(ecartees(r.ponctuels, 'achats ponctuels'));
     if (r.revenues.length) pied.push(r.revenues.length + ' revenue' + (r.revenues.length > 1 ? 's' : '') + ' après votre geste');
