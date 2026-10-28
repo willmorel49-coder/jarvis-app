@@ -854,7 +854,7 @@ THEMES = [
         r'g[ée]n[ée]riqu|biosimil|hybride|substitu|interchangeab|r[ée]pertoire|'
         r'\bbio[- ]?similaire|princeps|brevet|d[ée]ch[ée]ance', re.I)),
     ('rupture', re.compile(
-        r'rupture|tension d.approvision|p[ée]nurie|contingent|quota|'
+        r'rupture|tension d.approvision|p[ée]nurie(?! de (m[ée]decins|soignants|infirmi|personnel|praticiens|pharmaciens|main))|contingent|quota|'   # 28/10/2026 : « Pénurie de médecins » n'est pas une rupture de médicament
         r'approvisionnement|stock[ -]?out|indisponib|remise ? disposition|\bmitm\b|'
         r'disponibilit[ée] des (m[ée]dicaments|produits)|alertes? de disponibilit', re.I)),
     ('securite', re.compile(

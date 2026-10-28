@@ -1474,6 +1474,7 @@
     var k = x15K(it), on = x15Garde(k);
     var rep = x14Image({ theme: it.theme, rang: it.rang }, i, ''), nom = x15Nom(it), ini = (nom.match(/[A-Za-zÀ-ÿ0-9]/) || ['·'])[0].toUpperCase();
     var age = x13Age(it).replace(/^il y a /, '');   // « 5 j », « 1 sem. » : tient sur la ligne de la source
+    if (compact && /^img\/infos\/[a-z]+-\d\.webp$/.test(src)) { rep = src; src = src.replace(/\.webp$/, '-c.webp'); }   // 28/10/2026 : la vignette prend l'objet recadré en carré (-c), l'image 16:9 en secours
     var img = '<img class="f3-im" src="' + esc(src) + '" data-fb="' + esc(rep) + '" alt="" loading="lazy" decoding="async" width="' + (compact ? 240 : 1200) + '" height="' + (compact ? 240 : 675) + '" onerror="if(this.getAttribute(\'data-fb\')&&this.src.indexOf(this.getAttribute(\'data-fb\'))<0){this.src=this.getAttribute(\'data-fb\')}else{this.onerror=null}">';
     var ouv = '<button type="button" class="f3-ouv" ' + (garde ? 'data-garde-i="' + esc(k) + '"' : 'data-fil-i="' + i + '"') + '><span class="f3-t">' + x13T(x15Nom(it) === 'FSPF' && String(it.t || '').replace(/\s*[–-]?\s*20\d\d-\d{1,3}\s*$/, '') || it.t) + '</span></button>';   // FSPF : sans la référence de circulaire finale (« Rupture de quétiapine – 2026-42 ») ; titre entier s'il ne restait rien
     var coeur = compact ? '' : '<button type="button" class="f3-b f3-coeur" data-f3="coeur" aria-pressed="' + (on ? 'true' : 'false') + '" aria-label="' + (on ? 'Retirer de mes infos gardées' : 'Garder cette info') + '">' + F3_COEUR + '</button>';
