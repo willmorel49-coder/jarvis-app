@@ -367,7 +367,9 @@ for pf in PHARM_FILES:
             pass
         code, ancien = code_officine(code)
         rec = {
-            'name': s(col(r, 'Nom abrégé')) or ('Officine ' + code),
+            # Faute de frappe du fichier clients (« PHARMACE DE LIGNE », 28/10/2026) : corrigée ici,
+            # sinon chaque passage du robot des stats la réécrit.
+            'name': _re.sub(r'^PHARMACE\b', 'PHARMACIE', s(col(r, 'Nom abrégé'))) or ('Officine ' + code),
             'ville': s(col(r, 'Ville')),
             'cp': s(col(r, 'Code Postal')),
             'tel': s(col(r, 'Téléphone')),

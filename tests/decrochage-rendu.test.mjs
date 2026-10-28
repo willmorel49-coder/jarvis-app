@@ -146,3 +146,59 @@ test('bandeau « tout le portefeuille baisse » : chiffre calculé, seuil lu, ab
   assert.match(h, /Pharmacie des Tilleuls/, 'la liste ne change pas');
   assert.doesNotMatch(h, ERREURS);
 });
+
+// Décision de Will, 28/10/2026 : une note de fiche ou un rendez-vous confirmé compte comme un contact.
+function faussesTables(lignes) {
+  const lus = [];
+  const chaine = (t) => {
+    const q = { filtres: [] };
+    const o = {
+      select() { return o; }, eq(k, v) { q.filtres.push(k + '=' + v); return o; }, gte() { return o; },
+      order() { return o; }, limit() { return o; },
+      then(ok, ko) { lus.push(t + ' ' + q.filtres.join(',')); return Promise.resolve({ data: lignes[t] || [], error: null }).then(ok, ko); }
+    };
+    return o;
+  };
+  return { sb: { from: chaine }, lus };
+}
+function iso(decalageJours) {
+  const d = new Date(Date.now() + decalageJours * 864e5), m = d.getMonth() + 1, j = d.getDate();
+  return d.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (j < 10 ? '0' : '') + j;
+}
+const attendre = () => new Promise((r) => setTimeout(r, 0));
+
+test('une note de fiche récente compte comme un contact : la ligne passe « en cours »', async () => {
+  const { V2 } = monter();
+  assert.doesNotMatch(V2.decrochageUI.bloc(), /en cours/, 'marqueur : sans note, pas « en cours »');
+  const f = faussesTables({ notes: [{ scope_id: '111', created_at: new Date(Date.now() - 3 * 864e5).toISOString() }] });
+  V2.sb = () => f.sb; V2.decrochageUI._raz();
+  V2.decrochageUI.bloc(); await attendre(); await attendre();
+  const h = V2.decrochageUI.bloc();
+  assert.match(h, /<span class="dr-tag">en cours<\/span>/);
+  assert.match(h, new RegExp('Dernier contact : ' + iso(-3).slice(8, 10) + '/' + iso(-3).slice(5, 7)));
+  assert.ok(f.lus.includes('notes scope_type=client'), 'seulement les notes de fiche client');
+  assert.ok(f.lus.includes('rdv statut=confirme'), 'seulement les rendez-vous confirmés');
+  assert.doesNotMatch(h, ERREURS);
+});
+
+test('un rendez-vous confirmé à venir garde la ligne « en cours » et le dit', async () => {
+  const { V2 } = monter();
+  const f = faussesTables({ rdv: [{ cip: '111', date: iso(40), cree_le: new Date(Date.now() - 60 * 864e5).toISOString() }] });
+  V2.sb = () => f.sb; V2.decrochageUI._raz();
+  V2.decrochageUI.bloc(); await attendre(); await attendre();
+  const h = V2.decrochageUI.bloc();
+  assert.match(h, /<span class="dr-tag">en cours<\/span>/);
+  assert.match(h, new RegExp('Rendez-vous prévu le ' + iso(40).slice(8, 10) + '/' + iso(40).slice(5, 7)));
+  assert.doesNotMatch(h, /Dernier contact/);
+});
+
+test('une note ancienne (plus de 14 jours) ne suffit pas : la ligne reste à rappeler', async () => {
+  const { V2 } = monter();
+  const f = faussesTables({ notes: [{ scope_id: '111', created_at: new Date(Date.now() - 30 * 864e5).toISOString() }] });
+  V2.sb = () => f.sb; V2.decrochageUI._raz();
+  V2.decrochageUI.bloc(); await attendre(); await attendre();
+  const h = V2.decrochageUI.bloc();
+  assert.match(h, /Pharmacie des Tilleuls/);
+  assert.doesNotMatch(h, /en cours/);
+  assert.match(h, /Dernier contact : /);
+});

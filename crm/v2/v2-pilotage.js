@@ -2816,6 +2816,12 @@
       '.pilo-gis-neuf{color:var(--c-amber-txt,#9A5B12);font-weight:700}' +
       '.pilo-gis-note{margin-top:16px;padding:13px 20px 16px;border-top:1px solid var(--line);font-size:12px;line-height:1.55;color:var(--muted-2)}' +
       '.pilo-gis-note b{color:var(--muted);font-weight:800}' +
+      // Même retrait de 20 px que le titre et la note : rien ne touche le bord de la carte.
+      '.pilo-gis .pilo-legende{margin:14px 20px}' +
+      '.pilo-gis .pilo-gis-chips,.pilo-gis .opso-gauge-track,.pilo-gis .opso-gauge-labels{margin-left:20px;margin-right:20px}' +
+      '.pilo-gis .opso-gauge-labels{gap:12px}' +
+      '.pilo-gis .opso-gauge-labels>span:first-child{white-space:nowrap}' +
+      '.pilo-gis .pilo-pr{padding-left:20px;padding-right:20px}' +
       // Carte « Pharmacies en baisse » : à écran étroit le nom passe sur 2 lignes au plus (au lieu d'une ligne coupée par « … »).
       '@media(max-width:640px){.pilo-bs-row .v2-row-name{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;overflow-wrap:break-word}}' +
       // tranches de prix

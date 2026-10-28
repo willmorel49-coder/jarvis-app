@@ -93,6 +93,43 @@
     } catch (e) {}
   }
 
+  // ── Les autres contacts : notes de fiche et rendez-vous confirmés ─────────
+  // Décision de Will (28/10/2026) : une note ou un rendez-vous compte comme un contact,
+  // comme une visite. Toute l'équipe, comme les visites (même règle de lecture). Un
+  // rendez-vous à venir garde la ligne « en cours » jusqu'à sa date.
+  var autres = {};
+  function jour(s) {
+    s = String(s || ''); if (s.length <= 10) return s;
+    var d = new Date(s); if (isNaN(d)) return s.slice(0, 10);
+    var m = d.getMonth() + 1, j = d.getDate();
+    return d.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (j < 10 ? '0' : '') + j;
+  }
+  function plusRecent(m, pid, d) {
+    pid = String(pid == null ? '' : pid); d = jour(d);
+    if (pid && /^\d{4}-\d{2}-\d{2}$/.test(d) && !(m[pid] >= d)) m[pid] = d;
+  }
+  function chargerContacts() {
+    var c = sb();
+    if (!c || chargerContacts.fait) return;
+    chargerContacts.fait = true;
+    var depuis = new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
+    function lu(p, f) { return Promise.resolve(p).then(function (r) { ((r && !r.error && r.data) || []).forEach(f); }, function () {}); }
+    try {
+      Promise.all([
+        lu(c.from('notes').select('scope_id, created_at').eq('scope_type', 'client').gte('created_at', depuis)
+          .order('created_at', { ascending: false }).limit(5000), function (n) { plusRecent(autres, n.scope_id, n.created_at); }),
+        lu(c.from('rdv').select('cip, date, cree_le').eq('statut', 'confirme').gte('date', depuis)
+          .order('date', { ascending: false }).limit(5000), function (x) { plusRecent(autres, x.cip, x.cree_le); plusRecent(autres, x.cip, x.date); })
+      ]).then(function () { version++; rafraichir(); }, function () {});
+    } catch (e) {}
+  }
+  function contacts() {
+    var m = {}, v = (V2.visite && V2.visite.all ? V2.visite.all() : null) || {};
+    Object.keys(v).forEach(function (k) { plusRecent(m, k, v[k]); });
+    Object.keys(autres).forEach(function (k) { plusRecent(m, k, autres[k]); });
+    return m;
+  }
+
   // ── Le calcul, mémorisé (l'accueil et la liste le demandent à chaque rendu) ──
   function calcul() {
     var M = D(), qui = commercial();
@@ -101,11 +138,11 @@
     if (!ventesChargees()) return { chargement: true };
     var j = auj(), cle = [V2.user.id, qui, j, version, (V2.sales || []).length].join('|');
     if (memo && memo.cle === cle && memo.ref === V2.sales) return memo.r;
-    charger();
+    charger(); chargerContacts();
     var r = M.calculer({
       ventes: V2.sales || [], commercial: qui, aujourdhui: j,
       voit: V2.voitVentesDe ? function (pid) { return V2.voitVentesDe(pid); } : null,
-      contacts: V2.visite && V2.visite.all ? V2.visite.all() : {},
+      contacts: contacts(),
       suivis: suivis(), reprises: window.REPRISES || {}
     });
     var noms = {}; (V2.pharmacies || []).forEach(function (p) { noms[String(p.id)] = p; });
@@ -165,7 +202,9 @@
     return t;
   }
   function contactTxt(l) {
-    var t = l.dernierContact ? 'Dernier contact : ' + jjmm(l.dernierContact) : 'Aucun contact noté';
+    var t = !l.dernierContact ? 'Aucun contact noté'
+      : l.dernierContact > auj() ? 'Rendez-vous prévu le ' + jjmm(l.dernierContact)
+      : 'Dernier contact : ' + jjmm(l.dernierContact);
     if (l.resultat && l.resultat.statut === 'toujours_en_baisse') t += ' · toujours en baisse depuis le geste';
     return t;
   }
@@ -312,6 +351,6 @@
       var el = document.querySelector('.pha-np'); if (el) el.scrollIntoView({ block: 'start' });
     },
     // pour les tests
-    _raz: function () { serveur = null; memo = null; version++; ouvert = false; motifDe = null; charger.fait = false; }
+    _raz: function () { serveur = null; memo = null; version++; ouvert = false; motifDe = null; charger.fait = false; autres = {}; chargerContacts.fait = false; }
   };
 })();
