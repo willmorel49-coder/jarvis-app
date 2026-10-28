@@ -138,6 +138,21 @@
     var R = D().REGLAGES;
     return 'baisse d’au moins ' + Math.round(R.baissePct * 100) + '\u00A0% et ' + eur(R.baisseMinAvant) + ' sur trois mois';
   }
+  function ponctuelTxt() {
+    var R = D().REGLAGES;
+    return 'hors achats ponctuels (achats dans ' + R.ponctuelMoisMax + ' mois sur ' + R.regulariteMois + ' au plus)';
+  }
+  function ecartees(n, pourquoi) { return n + ' écartée' + (n > 1 ? 's' : '') + ' (' + pourquoi + ')'; }
+  // 28/10/2026 (b) — tout le portefeuille baisse : le chiffre vient du calcul, le seuil des réglages.
+  // Rien si la liste est vide : la phrase parle des baisses « ci-dessous ».
+  function portefeuilleHtml(r) {
+    var pf = r.portefeuille, R = D().REGLAGES;
+    if (!pf || !pf.enBaisse || !r.lignes.length) return '';
+    return '<p class="dr-pf"><b>Tout le portefeuille baisse.</b> La moitié des ' + pf.officines + ' officines à plus de ' +
+      esc(eur(R.baisseMinAvant)) + ' achète au moins ' + Math.round(-pf.evolution * 100) + '\u00A0% de moins (' + esc(periodeTxt(r)) +
+      ')\u00A0; ce message apparaît dès ' + Math.round(R.portefeuilleBaissePct * 100) +
+      '\u00A0%. Une partie des baisses ci-dessous suit sans doute ce mouvement général.</p>';
+  }
   function periodeTxt(r) {
     var a = r.periode.avant, b = r.periode.recent;
     return moisNom(b[0], true) + '-' + moisNom(b[1], true) + ' contre ' + moisNom(a[0], true) + '-' + moisNom(a[1], true);
@@ -189,13 +204,15 @@
     if (r.chargement) return '<p class="dr-vide">Chargement des ventes…</p>';
     if (!r.comparable) return '<p class="dr-vide">Liste suspendue : il manque des mois de ventes complets (' + r.moisComplets + ' sur ' + D().REGLAGES.moisMin + ').</p>';
     if (!r.lignes.length) return fraicheur(r) + '<p class="dr-vide">Aucune officine en ' + esc(regle()) + '.' +
-      (r.masquees ? ' ' + r.masquees + ' écartée' + (r.masquees > 1 ? 's' : '') + ' (pas pertinent).' : '') + '</p>';
+      (r.masquees ? ' ' + ecartees(r.masquees, 'pas pertinent') + '.' : '') +
+      (r.ponctuels ? ' ' + ecartees(r.ponctuels, 'achats ponctuels') + '.' : '') + '</p>';
     var n = r.lignes.length, plus = n > 3;
     var pied = [];
     if (r.total > n) pied.push('Les ' + n + ' premières sur ' + r.total + ', par euros en jeu');
-    if (r.masquees) pied.push(r.masquees + ' écartée' + (r.masquees > 1 ? 's' : '') + ' (pas pertinent)');
+    if (r.masquees) pied.push(ecartees(r.masquees, 'pas pertinent'));
+    if (r.ponctuels) pied.push(ecartees(r.ponctuels, 'achats ponctuels'));
     if (r.revenues.length) pied.push(r.revenues.length + ' revenue' + (r.revenues.length > 1 ? 's' : '') + ' après votre geste');
-    return fraicheur(r) + '<ol class="dr-liste">' + r.lignes.map(function (l, i) { return ligneHtml(l, r, i); }).join('') + '</ol>' +
+    return fraicheur(r) + portefeuilleHtml(r) + '<ol class="dr-liste">' + r.lignes.map(function (l, i) { return ligneHtml(l, r, i); }).join('') + '</ol>' +
       (plus ? '<button type="button" class="dr-voir" aria-expanded="' + ouvert + '" onclick="V2.decrochageUI.voir()">' + (ouvert ? 'Replier' : 'Voir les ' + n) + '</button>' : '') +
       (pied.length ? '<p class="dr-pied">' + esc(pied.join(' · ')) + '</p>' : '');
   }
@@ -206,7 +223,7 @@
     return '<section class="v2-card dr' + (ouvert ? ' dr-ouvert' : '') + '" id="dr-bloc" aria-labelledby="dr-titre">' +
       '<div class="dr-tete"><h2 class="dr-titre" id="dr-titre">À rappeler cette semaine</h2>' +
       (typeof nb === 'number' && nb > 0 ? '<span class="dr-n">' + nb + '</span>' : '') + '</div>' +
-      '<p class="dr-regle">Officines en ' + esc(regle()) + '.</p>' + corps(r) + '</section>';
+      '<p class="dr-regle">Officines en ' + esc(regle()) + ', ' + esc(ponctuelTxt()) + '.</p>' + corps(r) + '</section>';
   }
   function rafraichir() {
     var el = document.getElementById('dr-bloc');
@@ -256,6 +273,7 @@
       '.dr-regle,.dr-date,.dr-pied{font-size:13px;color:var(--muted);margin:4px 0 0}',
       '.dr-date.dr-vieux{color:var(--ip-ink);background:color-mix(in srgb,var(--warn) 22%,transparent);border-radius:var(--r-sm);padding:4px 8px;display:inline-block;font-weight:600}',
       '.dr-vide{font-size:14px;color:var(--ip-ink-2);margin:10px 0 4px}',
+      '.dr-pf{font-size:13px;line-height:1.45;color:var(--ip-ink);background:color-mix(in srgb,var(--warn) 22%,transparent);border-radius:var(--r-sm);padding:8px 10px;margin:10px 0 0}',
       '.dr-liste{list-style:none;margin:10px 0 0;padding:0}',
       '.dr-l{padding:12px 0;border-top:1px solid var(--line-strong)}',
       '.dr:not(.dr-ouvert) .dr-plus{display:none}',

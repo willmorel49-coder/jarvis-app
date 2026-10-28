@@ -95,3 +95,14 @@ test('Pilotage : changer la période ne change pas la carte des baisses', () => 
   assert.equal(carte(h), avant, 'février → mars : même carte qu\'en « Dernier mois »');
   assert.deepEqual(noms(h), ['Deux', 'Trois']);
 });
+
+test('Pilotage : un achat ponctuel (2 mois d achat sur 6) n entre pas dans la carte', () => {
+  // p5 chez A : 1 500 € en mai et en juin seulement → avant 3 000, récent 0 (−100 %), mais ponctuel.
+  const ajout = [V('A', 5, 1500, 'p5'), V('A', 6, 1500, 'p5')];
+  VENTES.push(...ajout); V2.pharmacies.push({ id: 'p5', name: 'Cinq' });
+  try {
+    V2.commFilter = '';
+    const h = rendre().html;
+    assert.deepEqual(noms(h), ['Deux', 'Trois'], 'marqueur positif : les vraies baisses restent, p5 non');
+  } finally { VENTES.splice(VENTES.length - ajout.length, ajout.length); V2.pharmacies.pop(); }
+});

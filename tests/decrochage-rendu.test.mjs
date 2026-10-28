@@ -129,3 +129,20 @@ test('deux comptes sur le même appareil : les gestes de l’un ne masquent rien
   assert.equal(stock['jarvis_decrochage_v1:u-autre'], undefined, 'rien de rangé au nom de u-autre');
   assert.equal(JSON.parse(stock['jarvis_decrochage_v1:u-test']).length, 1);
 });
+
+test('bandeau « tout le portefeuille baisse » : chiffre calculé, seuil lu, absent sinon', () => {
+  const sans = monter().V2.decrochageUI.bloc();   // médiane de [−80 %, 0 %] = 0 % → pas de bandeau
+  assert.doesNotMatch(sans, /Tout le portefeuille baisse/);
+  assert.match(sans, /hors achats ponctuels \(achats dans 2 mois sur 6 au plus\)/);
+  // + 333 : 1 000 puis 850 €/mois (−15 %) → médiane de [−80, −15, 0] = −15 % → bandeau.
+  const v = ventes();
+  for (let m = 1; m <= 9; m++) v.push({ pharmacyId: '333', year: 2026, month: m, commercial: 'KV', mntNetHt: m >= 7 ? 850 : 1000 });
+  const { V2 } = monter({ sales: v });
+  const h = V2.decrochageUI.bloc();
+  assert.match(h, /Tout le portefeuille baisse/);
+  assert.match(h, /La moitié des 3 officines à plus de 500 € achète au moins 15\u00A0% de moins/);
+  assert.match(h, new RegExp('dès ' + Math.round(V2.decrochage.REGLAGES.portefeuilleBaissePct * 100) + '\u00A0%'));
+  assert.ok(h.indexOf('dr-pf') < h.indexOf('dr-liste'), 'en tête de liste');
+  assert.match(h, /Pharmacie des Tilleuls/, 'la liste ne change pas');
+  assert.doesNotMatch(h, ERREURS);
+});

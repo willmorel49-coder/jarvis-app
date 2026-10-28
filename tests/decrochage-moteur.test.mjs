@@ -387,7 +387,10 @@ test('(7b) le nouvel achats() du radar rend les memes chiffres que l ancien et l
     assert.deepEqual(JSON.parse(JSON.stringify(ach.periode)), JSON.parse(JSON.stringify(avant.periode)), `${c} : période affichée`);
     assert.deepEqual(Object.keys(ach.par).sort(), Object.keys(avant.par).sort(), `${c} : officines`);
     for (const id of Object.keys(avant.par)) {
-      assert.deepEqual({ ...ach.par[id] }, { ...avant.par[id] }, `${c}/${id} : total/récent/avant`);
+      // Le radar recopie désormais aussi les mois d'achat du moteur (achats ponctuels, 28/10/2026) :
+      // on compare les trois montants que l'ancien calcul rendait.
+      const { total, recent, avant: av } = ach.par[id];
+      assert.deepEqual({ total, recent, avant: av }, { ...avant.par[id] }, `${c}/${id} : total/récent/avant`);
     }
     // Mêmes officines « en baisse » que le moteur ET que l'ancienne règle, avec la même phrase.
     const r = D.calculer({ ventes, commercial: c, aujourdhui: AUJ, reglages: { maxLignes: Infinity } });
@@ -417,4 +420,67 @@ test('(7c) sans le moteur charge, le radar ne plante pas : simplement aucune bai
   bac.__o = { cip: 'A' }; bac.__ach = ach;
   const n = vm.runInContext('noter(__o, __ach, { dispo: 0 }, false)', bac);
   assert.ok(!n.raisons.some((x) => /baissé/.test(x)));
+});
+
+// ── (9) Achats ponctuels (décision de Will, 28/10/2026) ─────────────────────
+// Fenêtre récente juil.-sept. → les 6 mois d'avant sont janv.-juin, tous connus (FOND-KV).
+//   Q2 : 1 500 € en mai et en juin seulement → avant 3 000, récent 0 → baisse 100 %,
+//        mais achats dans 2 mois sur 6 → achat ponctuel, n'entre pas, compté.
+//   Q3 : 1 000 € en mars, mai, juin → avant 2 000, récent 0 → 3 mois sur 6 → entre (borne).
+test('(9) achat ponctuel : 2 mois d achat sur 6 n entre pas et se compte, 3 mois entre', () => {
+  const ventes = [...jeuCas1(), vente('Q2', '2026-05', 1500), vente('Q2', '2026-06', 1500),
+    vente('Q3', '2026-03', 1000), vente('Q3', '2026-05', 1000), vente('Q3', '2026-06', 1000)];
+  const r = D.calculer({ ventes, commercial: 'KV', aujourdhui: AUJ, reglages: { maxLignes: Infinity } });
+  assert.deepEqual(pids(r), ['A', 'Q3', 'B', 'C'], 'Q3 (écart 2 000 / 3 = 667 €, entre A 1 200 et B 400) entre, Q2 non');
+  assert.equal(r.ponctuels, 1, 'une ligne écartée se compte, elle ne disparaît pas en silence');
+  const som = D.sommes(ventes, 'KV', D.deCle('2026-09'));
+  assert.deepEqual([som.Q2.moisConnus, som.Q2.moisAchat], [6, 2]);
+  assert.deepEqual([som.Q3.moisConnus, som.Q3.moisAchat], [6, 3]);
+  assert.equal(D.enBaisse(som.Q2), false);
+  assert.equal(D.enBaisse(som.Q3), true);
+  // Le seuil se lit dans les réglages : à 3 mois au plus, Q3 devient ponctuelle à son tour.
+  const r3 = D.calculer({ ventes, commercial: 'KV', aujourdhui: AUJ, reglages: { maxLignes: Infinity, ponctuelMoisMax: 3 } });
+  assert.ok(!pids(r3).includes('Q3'));
+  assert.equal(r3.ponctuels, 2);
+  assert.deepEqual({ regulariteMois: D.REGLAGES.regulariteMois, ponctuelMoisMax: D.REGLAGES.ponctuelMoisMax }, { regulariteMois: 6, ponctuelMoisMax: 2 });
+});
+
+test('(9 bis) historique trop court pour juger : on garde (un mois absent du fichier n est pas un mois vide)', () => {
+  // Fichier de MD : avr.-sept. seulement → des 6 mois d'avant (janv.-juin), 3 sont connus.
+  // R : 1 500 € en juin seulement, puis 0. 2 mois connus sans achat < 4 → pas certain → gardée.
+  const six = ['2026-04', '2026-05', '2026-06', ...RECENT];
+  const ventes = [...fond('MD', six), vente('R', '2026-06', 1500, 'MD')];
+  const r = D.calculer({ ventes, commercial: 'MD', aujourdhui: AUJ });
+  assert.equal(r.comparable, true);
+  assert.deepEqual(pids(r), ['R']);
+  assert.equal(r.ponctuels, 0);
+});
+
+test('(9 ter) le radar suit : pas de raison « baisse » pour un achat ponctuel', () => {
+  const ventes = [...jeuCas1(), vente('Q2', '2026-05', 1500), vente('Q2', '2026-06', 1500)];
+  const bac = radarLivre(ventes, 'KV');
+  const ach = vm.runInContext('achats()', bac);
+  const baisse = (id) => { bac.__o = { cip: id }; bac.__ach = ach;
+    return vm.runInContext('noter(__o, __ach, { dispo: 0 }, false)', bac).raisons.some((x) => /baissé/.test(x)); };
+  assert.equal(baisse('Q2'), false, 'Q2 : achat ponctuel');
+  assert.equal(baisse('A'), true, 'marqueur positif : A reste en baisse dans le radar');
+});
+
+// ── (10) Bandeau « tout le portefeuille baisse » : la liste ne change pas ────
+//   jeuCas1, officines ≥ 500 € avant : FOND 0, A −60 %, B −40 %, C −100 %, D 0
+//   → triées −100, −60, −40, 0, 0 → médiane (3e sur 5) −40 % ≤ −10 % → bandeau.
+test('(10) portefeuille : médiane d evolution des officines au-dessus du plancher, seuil −10 % compris', () => {
+  const r = D.calculer({ ventes: jeuCas1(), commercial: 'KV', aujourdhui: AUJ });
+  assert.deepEqual(r.portefeuille, { evolution: -0.4, officines: 5, enBaisse: true });
+  assert.deepEqual(pids(r), ['A', 'B', 'C'], 'le bandeau ne change pas la liste');
+  assert.equal(D.REGLAGES.portefeuilleBaissePct, 0.10);
+  // Bornes. X et Y : 1 000 €/mois puis 900 (−10 % pile) ; Z stable. Médiane (2e sur 3) = −10 % → bandeau.
+  const borne = (recent) => [...fond(), ...serie('X', MOIS_2026.slice(0, 6), 1000), ...serie('X', RECENT, recent),
+    ...serie('Y', MOIS_2026.slice(0, 6), 1000), ...serie('Y', RECENT, recent)];
+  assert.equal(D.calculer({ ventes: borne(900), commercial: 'KV', aujourdhui: AUJ }).portefeuille.enBaisse, true);
+  // 901 €/mois → −9,9 % → pas de bandeau.
+  assert.equal(D.calculer({ ventes: borne(901), commercial: 'KV', aujourdhui: AUJ }).portefeuille.enBaisse, false);
+  // Rien de stable ne déclenche quoi que ce soit (médiane 0).
+  const stable = D.calculer({ ventes: [...fond(), ...serie('D', MOIS_2026, 1000)], commercial: 'KV', aujourdhui: AUJ });
+  assert.deepEqual(stable.portefeuille, { evolution: 0, officines: 2, enBaisse: false });
 });

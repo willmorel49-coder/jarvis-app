@@ -141,10 +141,11 @@
     }
     if (comparable) {
       var som = DC.sommes(toutes, moiC, ancre);
+      // TOUT ce que rend le moteur (récent, avant, et les mois d'achat qui
+      // écartent les achats ponctuels depuis le 28/10/2026) : enBaisse() en a besoin.
       for (var id in som) {
         if (!m[id]) m[id] = { total: 0, recent: 0, avant: 0 };
-        m[id].recent = som[id].recent;
-        m[id].avant = som[id].avant;
+        for (var f in som[id]) m[id][f] = som[id][f];
       }
     }
     return {

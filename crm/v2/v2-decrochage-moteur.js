@@ -11,6 +11,10 @@
    27/10/2026 (questions cliquées) : baisse ≥ 25 % ET ≥ 500 € d'achats sur les
    3 mois d'avant, 3 derniers mois COMPLETS contre les 3 précédents. Le test de
    parité fait tourner le vrai `achats()` du radar sur les mêmes ventes.
+   28/10/2026 (décision de Will, « Les deux ») : les achats ponctuels (achats
+   dans 2 mois au plus sur les 6 d'avant la fenêtre récente) n'entrent plus,
+   partout ; et calculer() rend l'évolution du portefeuille pour le bandeau
+   « tout le portefeuille baisse » de l'écran (la liste n'en dépend pas).
 
    ⚠️ LES DEUX PIÈGES DU RADAR, REPRIS TELS QUELS (voir v2-rdv-radar.js) :
    1. Le dernier mois du fichier est presque toujours incomplet : un mois de
@@ -37,7 +41,15 @@
     pasPertinentJours: 60,    // « pas pertinent » masque 60 jours
     moisIncompletPct: 0.6,    // mois de queue sous 60 % de la médiane → écarté
     moisMin: 6,               // six mois COMPLETS, sinon pas de liste
-    maxLignes: 10
+    maxLignes: 10,
+    // 28/10/2026, décision de Will (« Les deux ») :
+    // (a) achat ponctuel = achats dans 2 mois AU PLUS sur les 6 qui précèdent
+    //     la fenêtre récente → n'est pas un décrochage, n'entre pas.
+    regulariteMois: 6,
+    ponctuelMoisMax: 2,
+    // (b) médiane d'évolution du portefeuille (officines ≥ baisseMinAvant)
+    //     ≤ −10 % → bandeau « tout le portefeuille baisse ». La liste ne change pas.
+    portefeuilleBaissePct: 0.10
   });
 
   function reglages(r) {
@@ -86,25 +98,66 @@
   }
 
   // Avant et récent par officine, sur les seules ventes du commercial.
-  function sommes(siennes, ancre) {
-    var par = {};
-    for (var i = 0; i < siennes.length; i++) {
+  // Plus, pour la règle des achats ponctuels : sur les `regulariteMois` mois qui
+  // précèdent la fenêtre récente, combien sont CONNUS (le fichier du commercial
+  // a des ventes ce mois-là) et dans combien l'officine a acheté (net > 0).
+  function sommes(siennes, ancre, R) {
+    R = R || REGLAGES;
+    var par = {}, mois = {}, connus = {}, bas = ancre - 2 - R.regulariteMois, i;
+    for (i = 0; i < siennes.length; i++) {
       var v = siennes[i];
       if (!v.month || !v.year) continue;
       var n = k(v.year, v.month), id = String(v.pharmacyId);
-      var a = par[id] || (par[id] = { recent: 0, avant: 0 });
+      var a = par[id] || (par[id] = { recent: 0, avant: 0, moisConnus: 0, moisAchat: 0 });
       if (n <= ancre && n > ancre - 3) a.recent += (v.mntNetHt || 0);
       else if (n <= ancre - 3 && n > ancre - 6) a.avant += (v.mntNetHt || 0);
+      if (n <= ancre - 3 && n >= bas) {
+        connus[n] = 1;
+        var m = mois[id] || (mois[id] = {});
+        m[n] = (m[n] || 0) + (v.mntNetHt || 0);
+      }
+    }
+    var nbConnus = Object.keys(connus).length;
+    for (var pid in par) {
+      par[pid].moisConnus = nbConnus;
+      for (var c in mois[pid] || {}) if (mois[pid][c] > 0) par[pid].moisAchat++;
     }
     return par;
   }
 
-  // LA règle. Une baisse ne veut rien dire sous le plancher : passer de 40 € à
-  // 20 €, c'est une boîte de moins, pas un décrochage.
-  function enBaisse(a, r) {
+  // Achat ponctuel : des achats dans `ponctuelMoisMax` mois au plus sur
+  // `regulariteMois`. Un mois absent du fichier n'est PAS compté vide : on
+  // n'écarte que si c'est certain (assez de mois connus sans achat), sinon on garde.
+  function ponctuel(a, r) {
     var R = reglages(r);
+    if (!a || typeof a.moisConnus !== 'number' || typeof a.moisAchat !== 'number') return false;
+    return a.moisConnus - a.moisAchat >= R.regulariteMois - R.ponctuelMoisMax;
+  }
+
+  // La baisse seule. Elle ne veut rien dire sous le plancher : passer de 40 € à
+  // 20 €, c'est une boîte de moins, pas un décrochage.
+  function baisse(a, R) {
     if (!a || !(a.avant >= R.baisseMinAvant) || a.avant <= 0) return false;
     return (a.avant - a.recent) / a.avant >= R.baissePct;
+  }
+
+  // LA règle : une baisse, hors achat ponctuel. Le radar et le Pilotage
+  // l'appellent avec ce que rend sommes() — ils suivent sans rien recalculer.
+  function enBaisse(a, r) {
+    var R = reglages(r);
+    return baisse(a, R) && !ponctuel(a, R);
+  }
+
+  // Évolution du portefeuille : médiane de (récent − avant) / avant sur les
+  // officines au-dessus du plancher. Médiane comme fenetre() (élément du milieu,
+  // le plus haut des deux si le nombre est pair). null s'il n'y en a aucune.
+  function portefeuille(par, R) {
+    var ev = [];
+    for (var id in par) if (par[id].avant >= R.baisseMinAvant) ev.push((par[id].recent - par[id].avant) / par[id].avant);
+    if (!ev.length) return { evolution: null, officines: 0, enBaisse: false };
+    ev.sort(function (a, b) { return a - b; });
+    var med = ev[Math.floor(ev.length / 2)];
+    return { evolution: med, officines: ev.length, enBaisse: med <= -R.portefeuilleBaissePct };
   }
 
   // Dernier geste enregistré par officine (le plus récent l'emporte).
@@ -160,7 +213,8 @@
        reglages: {…}                 // facultatif, pour les tests
      }
      → { comparable, moisRef, periode, moisEcartes, moisComplets,
-         lignes:[…], total, nbARappeler, masquees, revenues:[…] } */
+         lignes:[…], total, nbARappeler, masquees, ponctuels, revenues:[…],
+         portefeuille: {evolution, officines, enBaisse} } */
   function calculer(e) {
     var R = reglages(e && e.reglages);
     var siennes = ventesDe(e.ventes, e.commercial);
@@ -168,21 +222,23 @@
     var vide = {
       comparable: false, moisRef: F.ancre != null ? cle(F.ancre) : null, periode: null,
       moisEcartes: F.moisEcartes, moisComplets: F.moisComplets,
-      lignes: [], total: 0, nbARappeler: null, masquees: 0, revenues: []
+      lignes: [], total: 0, nbARappeler: null, masquees: 0, ponctuels: 0, revenues: [],
+      portefeuille: null
     };
     if (!F.comparable) return vide;
 
-    var par = sommes(siennes, F.ancre);
+    var par = sommes(siennes, F.ancre, R);
     var voit = e.voit || function () { return true; };
     var contacts = e.contacts || {}, reprises = e.reprises || {};
     var habitudes = e.habitudes || function () { return 0; };
     var gestes = derniersGestes(e.suivis);
     var auj = e.aujourdhui;
-    var lignes = [], masquees = 0, revenues = [];
+    var lignes = [], masquees = 0, ponctuels = 0, revenues = [];
 
     Object.keys(par).forEach(function (id) {
       var a = par[id];
-      if (!enBaisse(a, R) || !voit(id)) return;
+      if (!baisse(a, R) || !voit(id)) return;
+      if (ponctuel(a, R)) { ponctuels++; return; }   // compté, jamais écarté en silence
       var g = gestes[id] || null;
       if (g && g.statut === 'pas_pertinent' && g.geste_le && jours(g.geste_le, auj) < R.pasPertinentJours) {
         masquees++;
@@ -221,14 +277,15 @@
       moisEcartes: F.moisEcartes, moisComplets: F.moisComplets,
       lignes: lignes.slice(0, R.maxLignes), total: lignes.length,
       nbARappeler: lignes.filter(function (l) { return l.etat === 'a_rappeler'; }).length,
-      masquees: masquees, revenues: revenues
+      masquees: masquees, ponctuels: ponctuels, revenues: revenues,
+      portefeuille: portefeuille(par, R)
     };
   }
 
   var D = {
-    REGLAGES: REGLAGES, calculer: calculer, resultat: resultat, enBaisse: enBaisse,
+    REGLAGES: REGLAGES, calculer: calculer, resultat: resultat, enBaisse: enBaisse, ponctuel: ponctuel,
     fenetre: function (ventes, commercial, r) { return fenetre(ventesDe(ventes, commercial), reglages(r)); },
-    sommes: function (ventes, commercial, ancre) { return sommes(ventesDe(ventes, commercial), ancre); },
+    sommes: function (ventes, commercial, ancre, r) { return sommes(ventesDe(ventes, commercial), ancre, reglages(r)); },
     cle: cle, deCle: deCle
   };
   V2.decrochage = D;
