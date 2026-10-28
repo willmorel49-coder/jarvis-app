@@ -7030,8 +7030,10 @@
       '.pha-nm-n{margin-top:8px}',
       '.pha-marges{display:grid;gap:12px;margin-top:12px}.pha-marges>.pha-nm{margin-top:0}',
       '.pha-r4-l{margin-top:12px}.pha-r4-n{font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px}.pha-r4-b{display:flex;align-items:center;gap:8px;height:20px}.pha-r4-b i{display:block;height:10px;border-radius:999px;background:var(--a)}.pha-r4-b.fr i{background:#B9C4DB}',
-      '.pha-r4-b b{font-size:16px;color:var(--ip-ink);white-space:nowrap}.pha-r4-b.fr b{font-size:13px;font-weight:600;color:var(--muted)}.pha-r4-b span{font-size:11.5px;color:var(--muted)}',
-      '.pha .pha-sub,.pha .pha-grpdesc{display:-webkit-box !important;-webkit-box-orient:vertical;-webkit-line-clamp:1;overflow:hidden;cursor:help}.pha .pha-sub:hover,.pha .pha-grpdesc:hover,.pha .pha-sub.pha-lu,.pha .pha-grpdesc.pha-lu{-webkit-line-clamp:unset}',
+      '.pha-r4-b b{font-size:16px;color:var(--ip-ink);white-space:nowrap}.pha-r4-b.fr b{font-size:13px;font-weight:600;color:var(--muted)}.pha-r4-b span{font-size:11.5px;color:var(--muted);white-space:nowrap}.pha-r4-b b.pha-dn{color:var(--c-rose-txt)}',
+      '.pha .pha-sub,.pha .pha-grpdesc{display:-webkit-box !important;-webkit-box-orient:vertical;-webkit-line-clamp:1;overflow:hidden;cursor:help}.pha .pha-sub.pha-lu,.pha .pha-grpdesc.pha-lu{-webkit-line-clamp:unset}',
+      // le survol reste « collé » après un toucher sur iPhone : il rouvrirait une note qu'on vient de replier
+      '@media (hover:hover){.pha .pha-sub:hover,.pha .pha-grpdesc:hover{-webkit-line-clamp:unset}}',
       '@media (hover:none){.pha .pha-sub,.pha .pha-grpdesc{cursor:pointer}}',
       '.pha .pha-sub[style*="padding:8px 18px 12px"]{padding-top:0 !important;padding-bottom:0 !important;border:solid transparent;border-width:8px 0 12px}',
       '.pha-chart{width:100%;height:auto;display:block}',
