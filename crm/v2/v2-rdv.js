@@ -847,6 +847,8 @@
     var ou = [d.ville, d.contact_nom].filter(Boolean).map(esc).join(' · ');
     var mois = V2.rdvMoisDepuis ? V2.rdvMoisDepuis(d.cip) : null;
     if (mois) ou += (ou ? ' · ' : '') + 'vue il y a ' + mois + ' mois';
+    // 28/10/2026 — noté sans réseau, pas encore parti (v2-hors-ligne.js).
+    if (d._attente) ou += (ou ? ' · ' : '') + 'en attente d’envoi';
     return '<article class="v2-sem-r">' +
       '<div class="h">' + esc(hhmm(d.heure)) + '</div>' +
       '<div class="co">' +

@@ -926,6 +926,7 @@
         '<span class="agp-h">' + esc(hhmm(r.heure)) + '</span>' +
         '<span class="agp-n">' + esc(r.nom || 'Rendez-vous') + '</span>' +
         (r.ville ? '<span class="agp-sm">· ' + esc(r.ville) + '</span>' : '') +
+        (r._attente ? '<span class="agp-sm">· en attente d’envoi</span>' : '') +   // 28/10/2026 : noté sans réseau (v2-hors-ligne.js)
         '<span class="agp-a">' +
           (r.contact_nom ? '<span class="agp-sm" style="align-self:center">' + esc(r.contact_nom) + '</span>' : '') +
           (tel ? '<a href="tel:' + esc(tel) + '">' + esc(r.contact_tel) + '</a>' : '') +

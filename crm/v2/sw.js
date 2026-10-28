@@ -10,7 +10,7 @@
 
    ⚠️ Bumper VER à chaque déploiement (aligné sur le ?v= de index.html).
    ═══════════════════════════════════════════════════════════════════ */
-var VER = '20261028hn';
+var VER = '20261028ho';
 var CACHE = 'jarvis-' + VER;
 
 /* 11/09/2026 (perf, phase 3) — le SOCLE est rangé dès l'installation : les
@@ -30,12 +30,21 @@ var SOCLE = [
   'manifest.webmanifest'
 ];
 
+/* 28/10/2026 — les polices : v2.css et v2-hab.css les appellent SANS ?v=, donc rangées à part.
+   Avant, elles n'entraient au cache qu'au fil de l'eau : juste après une mise en ligne, l'ancien
+   rangement (qui les avait) est effacé à l'activation, et une ouverture sans réseau n'avait plus
+   sa police (vu une fois en prod : « Load failed » sur fonts/inter-latin.woff2).
+   ⚠️ Liste à tenir alignée sur les url(…woff2) de v2.css et v2-hab.css. */
+var POLICES = ['fonts/inter-latin.woff2', 'fonts/inter-latin-ext.woff2',
+  'hab/archivo.woff2', 'hab/bodoni.woff2', 'hab/bricolage.woff2', 'hab/newsreader.woff2'];
+
 self.addEventListener('install', function (e) {
   self.skipWaiting(); // le nouveau SW prend la main tout de suite
   e.waitUntil(
     caches.open(CACHE).then(function (c) {
       return Promise.all(SOCLE.map(function (f) {
-        var url = f === './index.html' ? f : f + '?v=' + VER;
+        return f === './index.html' ? f : f + '?v=' + VER;
+      }).concat(POLICES).map(function (url) {
         return fetch(url).then(function (r) {
           if (r && r.ok && r.type === 'basic') return c.put(url, r);
         }).catch(function () {});   // un fichier absent n'empêche pas l'installation

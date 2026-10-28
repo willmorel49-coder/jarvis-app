@@ -98,7 +98,7 @@
     Object.keys(CACHE).forEach(function (ym) {
       var m = CACHE[ym];
       m.rdv.forEach(function (r) {
-        pose({ date: r.date, type: 'rdv', deb: hm2min(r.heure), dur: r.duree_min || dur, label: r.nom || 'Rendez-vous', sub: r.ville || '', jarvis: true });
+        pose({ date: r.date, type: 'rdv', deb: hm2min(r.heure), dur: r.duree_min || dur, label: r.nom || 'Rendez-vous', sub: (r.ville || '') + (r._attente ? (r.ville ? ' · ' : '') + 'en attente d’envoi' : ''), jarvis: true });
       });
       m.occ.forEach(function (o) {
         var x = reco[o.date + '|' + (o.jour_entier ? 'J' : String(o.debut).slice(0, 5))];
