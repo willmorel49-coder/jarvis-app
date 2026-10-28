@@ -129,11 +129,12 @@
   HL.avantDeconnexion = function () {
     return Promise.resolve(HL.envoyer()).then(function () {
       var n = HL.miennes().length, moi = V2.user && V2.user.id;
-      if (!n) return true;
-      if (!window.confirm(n + (n > 1 ? ' saisies faites hors ligne ne sont pas encore parties' : ' saisie faite hors ligne n’est pas encore partie') +
+      if (n && !window.confirm(n + (n > 1 ? ' saisies faites hors ligne ne sont pas encore parties' : ' saisie faite hors ligne n’est pas encore partie') +
         '. Se déconnecter maintenant les efface de cet appareil.\n\nSe déconnecter quand même ?')) return false;
-      lsEcrire(LS_ENVOIS, lsLire(LS_ENVOIS).filter(function (x) { return !x || x.uid !== moi; }));
-      lsEcrire(LS_REFUS, lsLire(LS_REFUS).filter(function (x) { return !x || x.uid !== moi; }));
+      // Les saisies refusées par le serveur ont été dites à l'écran : elles partent avec la session.
+      function pasAMoi(x) { return !!x && !!x.uid && x.uid !== moi; }
+      lsEcrire(LS_ENVOIS, lsLire(LS_ENVOIS).filter(pasAMoi));
+      lsEcrire(LS_REFUS, lsLire(LS_REFUS).filter(pasAMoi));
       return true;
     }, function () { return true; });
   };
