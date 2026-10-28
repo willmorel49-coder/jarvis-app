@@ -48,6 +48,7 @@ n'est ecrit). Le bareme des grossistes est une loi : il reste dans le code.
 SORTIE (gitignoree, JAMAIS commitee) : marge-clients.js a la racine du depot.
   window.MARGE_CLIENTS = {v:1, fait, jusqua, mois, reserves, fam, c:[prenoms], o:[pharmacyId],
                           livraison:{cout, moy:{n, jm, parJour, renta}},
+                          pilotageMoy:{f:{'AAAA-MM|AAAA-MM':{n, jm, parJour, renta, caCl, mgCl, nSect, secteurs}, ...}},
                           r:[[ci, oi, ym, ca, tot, p, p1, p2, i, c, fr, nr, caGen, jours], ...]}
   ca = CA net HT de toutes les lignes (generiques compris) ; caGen = la part generique de ce CA
   (marge 0) ; tot = somme exacte des 7 familles apres arrondi au centime.
@@ -57,6 +58,9 @@ SORTIE (gitignoree, JAMAIS commitee) : marge-clients.js a la racine du depot.
   livraison (28/10/2026) = cout d'une livraison (reglage prive `cout_livraison`) + l'officine MOYENNE de TOUS
   les clients, calculee ici et recopiee telle quelle dans chaque jeu : un commercial ne charge que ses
   officines, une moyenne faite dans la page serait celle de SES clients. Cout absent ou illisible = pas de cle.
+  pilotageMoy (28/10/2026) = la meme officine moyenne pour CHAQUE fenetre [du, au] de mois du fichier (45 fenetres sur 9 mois),
+  pour le bloc « Mon secteur compare a la moyenne Integral » du Pilotage : calculee ici sur le jeu COMPLET, recopiee telle
+  quelle dans chaque jeu, jamais recalculee dans la page. Presente seulement si livraison l'est (la rentabilite en depend).
 decouper_par_commercial.py en tire un fichier par jeu de commercial.
 
 Usage : /usr/bin/python3 generate_marge_clients.py
@@ -484,6 +488,8 @@ def formater(d):
               'c:%s,' % j(d['c']), 'o:%s,' % j(d['o'])]
     if 'livraison' in d:
         lignes.append('livraison:%s,' % j(d['livraison']))
+    if 'pilotageMoy' in d:
+        lignes.append('pilotageMoy:%s,' % j(d['pilotageMoy']))
     lignes.append('r:[')
     lignes.append(',\n'.join(j(r) for r in d['r']))
     lignes.append(']};')
@@ -504,6 +510,10 @@ def analyser(texte):
         if L[k].startswith('livraison:'):        # facultative : un fichier d'avant le 28/10/2026 n'en a pas
             assert L[k].endswith(',')
             d['livraison'] = json.loads(L[k][len('livraison:'):-1])
+            k += 1
+        if L[k].startswith('pilotageMoy:'):      # facultative aussi (28/10/2026, bloc « Mon secteur » du Pilotage)
+            assert L[k].endswith(',')
+            d['pilotageMoy'] = json.loads(L[k][len('pilotageMoy:'):-1])
             k += 1
         assert L[k] == 'r:['
         fin = next(n for n in range(len(L) - 1, i, -1) if L[n] == ']};')
@@ -573,6 +583,47 @@ def moyenne_livraison(d, jours, cout):
         return None
     return {'n': len(L), 'jm': round(sum(x[0] for x in L) / len(L), 5), 'parJour': round(sum(x[1] for x in L) / len(L), 5),
             'renta': round(sum(x[2] for x in L) / len(L), 5)}
+
+
+def moyennes_pilotage(d, cout):
+    """28/10/2026 — l'officine moyenne du RÉSEAU ENTIER pour chaque fenêtre [du, au] de mois de d['mois'] (45 sur 9 mois).
+    Même définition que moyenne_livraison, par fenêtre : par officine, sur les mois où elle a commandé (jours > 0),
+    jm = jours / nm, parJour = marge / jours, renta = (marge - jours x coût) / nm, caCl = CA / nm, mgCl = marge / nm ;
+    moyenne simple des officines. `jours` d'un officine-mois = le max des lignes (même valeur sur chacune).
+    nSect = clients actifs d'un « secteur moyen » (officines actives comptées dans chaque secteur où elles figurent).
+    Rend {'f': {'AAAA-MM|AAAA-MM': {...} ou None}} ; la fenêtre entière doit retomber sur livraison.moy (contrôlé à l'appelant)."""
+    mois = d['mois']
+    K = [int(m[:4] + m[5:7]) for m in mois]
+    fen = {}
+    for a in range(len(K)):
+        for b in range(a, len(K)):
+            off = {}
+            for r in d['r']:
+                if not K[a] <= r[2] <= K[b]:
+                    continue
+                x = off.setdefault(str(d['o'][r[1]]), {'ca': 0.0, 'mg': 0.0, 'j': {}, 'ci': set()})
+                x['ca'] += r[3]
+                x['mg'] += r[4]
+                x['ci'].add(r[0])
+                if (r[13] or 0) > x['j'].get(r[2], 0):
+                    x['j'][r[2]] = r[13]
+            P = []
+            par_sect = {}
+            for x in off.values():
+                n = sum(x['j'].values())
+                nm = len([v for v in x['j'].values() if v > 0])
+                if n:
+                    P.append((n / nm, x['mg'] / n, (x['mg'] - n * cout) / nm, x['ca'] / nm, x['mg'] / nm))
+                    for ci in x['ci']:
+                        par_sect[ci] = par_sect.get(ci, 0) + 1
+            if not P:
+                fen[mois[a] + '|' + mois[b]] = None
+                continue
+            k = len(P)
+            moy = lambda q: round(sum(p[q] for p in P) / k, 4)
+            fen[mois[a] + '|' + mois[b]] = {'n': k, 'jm': moy(0), 'parJour': moy(1), 'renta': moy(2), 'caCl': moy(3), 'mgCl': moy(4),
+                                            'nSect': round(sum(par_sect.values()) / len(par_sect), 1), 'secteurs': len(par_sect)}
+    return {'f': fen}
 
 
 def lire_wml_v2(chemin):
@@ -935,6 +986,15 @@ def main():
         d['livraison'] = {'cout': cout, 'moy': moy}
         print('Livraison : coût %.2f € · officine moyenne de %d clients : %.2f jours de commande par mois · %.2f € par jour · %.2f € par mois livraisons déduites'
               % (cout, moy['n'], moy['jm'], moy['parJour'], moy['renta']))
+        # Moyenne du Pilotage par fenêtre : la fenêtre entière DOIT retomber sur la moyenne de la fiche, sinon rien n'est écrit.
+        pm = moyennes_pilotage(d, cout)
+        tout = pm['f'].get(mois_txt[0] + '|' + mois_txt[-1])
+        ecarts = [q for q in ('n', 'jm', 'parJour', 'renta') if tout is None or abs(tout[q] - moy[q]) > 0.001]
+        if ecarts:
+            print('ARRÊT : la fenêtre entière du Pilotage ne retombe pas sur livraison.moy (%s) — rien n\'est écrit.' % ', '.join(ecarts))
+            return 5
+        d['pilotageMoy'] = pm
+        print('Pilotage : %d fenêtres de mois, la fenêtre entière retombe sur la moyenne de la fiche.' % len(pm['f']))
     else:
         print('Livraison : coût absent du réglage privé (cout_livraison) — pas de bloc « Rentabilité » sur la fiche.')
     for r in rows:

@@ -1295,6 +1295,137 @@
   V2.monthlyCaSeries = monthlyCaSeries;
   V2.miniSparkline = sparkline;
 
+
+  // 28/10/2026 — Will : « tout doit être beaucoup plus simple [...] même sur pilotage : notre secteur comparé à la moyenne Intégral ».
+  // Bloc en tête du Pilotage (modèle : « Rentabilité » de la fiche officine). Côté secteur : calculé ici depuis MARGE_CLIENTS.r.
+  // Côté moyenne : TOUJOURS lu dans MARGE_CLIENTS.pilotageMoy (tout le réseau, précalculé par generate_marge_clients.py, recopié tel quel dans chaque jeu de commercial) — jamais recalculé ici.
+  // marge-clients.js arrive avec les ventes (V2.loadFiles(['wml']) y ajoute 'margeclients'), avant tout rendu de page.
+  var PS_OUVERT = false;   // « Tout le détail » : l'état survit au rendu
+  var PS_MEMO = {};
+  function psEur(n) { return V2.fmtEur(n); }
+  function psDec(x) { return (Math.round(x * 10) / 10).toFixed(1).replace('.', ','); }
+  function psEnt(x) { return Math.round(x).toLocaleString('fr-FR'); }
+  function psFenetre(pf) {
+    var MC = window.MARGE_CLIENTS; if (!MC || !MC.mois || !MC.r || !pf) return null;
+    var liste = [];
+    MC.mois.forEach(function (m, i) {
+      var k = (+m.slice(0, 4)) * 12 + (+m.slice(5, 7)) - 1;
+      if (k >= pf.du && k <= pf.au) liste.push({ i: i, m: m, k: k, an: +(m.slice(0, 4) + m.slice(5, 7)) });
+    });
+    return liste;
+  }
+  function psSecteur(MC, nom, fen) {
+    var ci = MC.c.indexOf(nom); if (ci < 0) return null;
+    var cle = nom + '|' + fen[0].m + '|' + fen[fen.length - 1].m;
+    if (PS_MEMO[cle] !== undefined && PS_MEMO.ref === MC) return PS_MEMO[cle];
+    if (PS_MEMO.ref !== MC) PS_MEMO = { ref: MC };
+    var ok = {}; fen.forEach(function (f) { ok[f.an] = 1; });
+    var cout = (MC.livraison && +MC.livraison.cout) || 0, off = {};
+    MC.r.forEach(function (l) {
+      if (l[0] !== ci || !ok[l[2]]) return;
+      var id = MC.o[l[1]], x = off[id] || (off[id] = { ca: 0, mg: 0, j: {} });
+      x.ca += l[3]; x.mg += l[4];
+      if ((l[13] || 0) > (x.j[l[2]] || 0)) x.j[l[2]] = l[13] || 0;
+    });
+    var S = { n: 0, jm: 0, parJour: 0, renta: 0, caCl: 0, mgCl: 0 };
+    Object.keys(off).forEach(function (id) {
+      var x = off[id], J = 0, nm = 0;
+      Object.keys(x.j).forEach(function (m) { if (x.j[m] > 0) { J += x.j[m]; nm++; } });
+      if (!J) return;
+      S.n++; S.jm += J / nm; S.parJour += x.mg / J; S.renta += (x.mg - J * cout) / nm; S.caCl += x.ca / nm; S.mgCl += x.mg / nm;
+    });
+    var res = null;
+    if (S.n) { ['jm', 'parJour', 'renta', 'caCl', 'mgCl'].forEach(function (q) { S[q] /= S.n; }); res = S; }
+    PS_MEMO[cle] = res; return res;
+  }
+  function psLibMois(fen) {
+    var a = fen[0].k, b = fen[fen.length - 1].k, ya = Math.floor(a / 12), yb = Math.floor(b / 12);
+    if (a === b) return cap(MN[a % 12]) + ' ' + ya;
+    return ya === yb ? cap(MN[a % 12]) + ' → ' + MN[b % 12] + ' ' + yb : cap(MN[a % 12]) + ' ' + ya + ' → ' + MN[b % 12] + ' ' + yb;
+  }
+  // Une ligne : libellé, barre du secteur (couleur d'accent) + valeur, puis barre grise de la moyenne + valeur + libellé.
+  // Les deux barres partagent la même échelle (même piste, même réserve pour la valeur).
+  function psLigne(lib, v, f, fV, fF, libF, seul) {
+    var max = Math.max(Math.abs(v == null ? 0 : v), Math.abs(f), 1e-9);
+    var w = function (x) { return Math.max(2, Math.min(100, Math.abs(x) / max * 100)).toFixed(1); };
+    var barre = function (x, fr, fmt, neg) {
+      return '<i style="width:calc((100% - 80px) * ' + (w(x) / 100).toFixed(3) + ')"></i><b class="mono' + (neg ? ' ps-neg' : '') + '">' + fmt(x) + '</b>';
+    };
+    var h = '<div class="ps-l"><div class="ps-n">' + lib + '</div>';
+    if (!seul) h += '<div class="ps-b"><span class="ps-tr' + (v < 0 ? ' neg' : '') + '">' + barre(v, false, fV, v < 0) + '</span><span class="ps-sp"></span></div>';
+    h += '<div class="ps-b fr"><span class="ps-tr">' + barre(f, true, fF, f < 0) + '</span><span class="ps-lb">' + libF + '</span></div></div>';
+    return h;
+  }
+  function psBloc(pf) {
+    var MC = window.MARGE_CLIENTS, PM = MC && MC.pilotageMoy;
+    if (!MC || !MC.r || !PM || !PM.f || !pf) return null;
+    var fen = psFenetre(pf), nom = V2.commFilter ? String(V2.commFilter) : '';
+    if (!fen || !fen.length) return { vide: 'Pas encore de chiffres de marge pour ' + esc(pf.label) };
+    var M = PM.f[fen[0].m + '|' + fen[fen.length - 1].m];
+    if (!M) return null;
+    var S = null;
+    if (nom) { S = psSecteur(MC, nom, fen); if (!S) return { vide: 'Pas encore de chiffres de marge pour ' + esc(nom) + ' sur ' + esc(pf.label) }; }
+    var moi = nom && V2.user && V2.user.commercial && String(V2.user.commercial) === nom;
+    var titre = !nom ? 'Moyenne Intégral par client' : moi ? 'Mon secteur comparé à la moyenne Intégral' : 'Secteur de ' + esc(nom.split(' ')[0]) + ' comparé à la moyenne Intégral';
+    var sous = esc(psLibMois(fen)) + ' · par client, sur tout le réseau Intégral';
+    var L = function (cle, lib, fmt) { return psLigne(lib, S ? S[cle] : null, M[cle], fmt, fmt, 'Moy. Intégral', !S); };
+    var act = S ? psLigne('Clients actifs', S.n, M.nSect, psEnt, psDec, 'Secteur moyen Intégral', false)
+                : psLigne('Clients actifs sur le réseau', null, M.n, psEnt, psEnt, 'Réseau Intégral', true);
+    var ca = L('caCl', 'CA par client / mois', psEur), mg = L('mgCl', 'Notre marge par client / mois', psEur),
+        jm = L('jm', 'Jours de commande / mois', psDec), pj = L('parJour', 'Marge / jour de commande', psEur),
+        rt = L('renta', 'Marge − livraisons / mois', psEur);
+    var tete = '<div class="ps-t">' + titre + '</div><div class="ps-s">' + sous + '</div>';
+    return { html: '<div class="ps-wrap ps-v2" data-fen="' + fen[0].m + '|' + fen[fen.length - 1].m + '"><div class="ps-card ps-tete">' + tete + '</div><div class="ps-g2">' +
+      '<div class="ps-card"><div class="ps-k">Ventes</div>' + act + ca + mg + '</div>' +
+      '<div class="ps-card"><div class="ps-k">Rentabilité</div>' + jm + pj + rt + '</div></div></div>' };
+  }
+  function psStyles() {
+    if (document.getElementById('ps-styles')) return;
+    var st = document.createElement('style'); st.id = 'ps-styles';
+    st.textContent =
+      '.ps-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-1);padding:20px 22px;margin-bottom:var(--sp-4);--a:var(--c-mint,#1E9E6A)}' +
+      '.ps-t{font-size:18px;font-weight:700;color:var(--ip-ink);letter-spacing:-.01em}.ps-s{font-size:13px;color:var(--muted);margin-top:3px}' +
+      '.ps-k{font-size:15px;font-weight:700;color:var(--ip-ink)}' +
+      '.ps-g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.ps-g2 .ps-card{margin-bottom:0}.ps-v2 .ps-tete{margin-bottom:14px}' +
+      '@media(max-width:700px){.ps-g2{grid-template-columns:minmax(0,1fr)}}' +
+      '.ps-l{margin-top:12px}.ps-n{font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px}' +
+      '.ps-b{display:flex;align-items:center;gap:8px;min-height:20px}.ps-b+.ps-b{margin-top:4px}' +
+      '.ps-tr{flex:1;min-width:0;display:flex;align-items:center;gap:8px}' +
+      '.ps-tr i{display:block;flex:none;height:10px;border-radius:999px;background:var(--a)}.ps-tr.neg i{background:#D64550}.ps-b.fr i{background:#B9C4DB}' +
+      '.ps-b b{font-size:16px;color:var(--ip-ink);white-space:nowrap}.ps-b.fr b{font-size:13px;font-weight:600;color:var(--muted)}.ps-b b.ps-neg{color:#D64550}' +
+      '.ps-lb,.ps-sp{flex:none;width:96px}.ps-lb{font-size:11.5px;line-height:1.2;color:var(--muted)}' +
+      '@media(max-width:560px){.ps-lb,.ps-sp{width:68px}.ps-lb{font-size:11px}.ps-card{padding:18px 16px}}' +
+      '.ps-vide{font-size:14px;color:var(--muted);padding:6px 2px 4px}' +
+      '.ps-det-btn{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 var(--sp-4);padding:16px 20px;border:1px solid var(--line);border-radius:var(--r-card);background:var(--card);box-shadow:var(--sh-1);font:inherit;font-size:15px;font-weight:700;color:var(--ip-ink);cursor:pointer;text-align:left}' +
+      '.ps-det-btn:hover{background:var(--card-2)}.ps-det-btn svg{margin-left:auto;color:var(--muted-2);transition:transform .2s}.ps-det-btn[aria-expanded="true"] svg{transform:rotate(90deg)}' +
+      '.ps-det[hidden]{display:none}';
+    document.head.appendChild(st);
+  }
+  // Rend { avant, apres } : le bloc + le bouton « Tout le détail » + l'ouverture du conteneur du Pilotage actuel, puis sa fermeture.
+  function piloSimple(pf, opso) {
+    var B = null;
+    if (!opso) { psStyles(); try { B = psBloc(pf); } catch (e) { B = null; } }
+    if (!B) return { avant: '', apres: '' };
+    if (B.vide) return { avant: '<div class="ps-card"><div class="ps-vide">' + B.vide + '</div></div>', apres: '' };
+    return {
+      avant: B.html + '<button type="button" class="ps-det-btn" aria-expanded="' + (PS_OUVERT ? 'true' : 'false') + '" aria-controls="ps-det"><span>Tout le détail</span>' + ICO('chev', 16) + '</button>' +
+        '<div class="ps-det" id="ps-det"' + (PS_OUVERT ? '' : ' hidden') + '>',
+      apres: '</div>'
+    };
+  }
+  function piloSimpleLier(root) {
+    var b = root.querySelector('.ps-det-btn'), d = root.querySelector('#ps-det'); if (!b || !d) return;
+    b.onclick = function () {
+      PS_OUVERT = !PS_OUVERT; d.hidden = !PS_OUVERT; b.setAttribute('aria-expanded', PS_OUVERT ? 'true' : 'false');
+      if (!PS_OUVERT) return;
+      Array.prototype.forEach.call(d.querySelectorAll('[data-reveal]'), function (el) { el.classList.add('in'); });
+      requestAnimationFrame(function () {
+        Array.prototype.forEach.call(d.querySelectorAll('.pilo-bar-fill,.opso-gauge-fill,.pilo-kpi-meter-fill'), function (el) { el.style.width = (el.dataset.w || 0) + '%'; });
+        try { window.dispatchEvent(new Event('resize')); } catch (e) {}
+      });
+    };
+  }
+
   // PAGE
   // ════════════════════════════════════════════
   V2.pages.pilotage = {
@@ -2285,9 +2416,11 @@
             '<span><b>Marché &amp; opportunités</b><small>Marché France × vos ventes réseau : où pousser quoi, princeps en stock Intégral.</small></span>' +
             '<span class="pilo-marche-go">Ouvrir ' + ICO('chev', 16) + '</span></a>'
         : '';
+      var PS = piloSimple(pf, opso);
       root.innerHTML = top +
         '<div class="v2-wrap">' +
           header +
+          PS.avant +
           marcheLink +
           (opsoSect ? opsoSect.html : '') +
           // ── ESSENTIEL, toujours visible : où j'en suis en un coup d'œil ──
@@ -2305,7 +2438,10 @@
           disc('Mes pharmacies', (nbActive ? nbActive + ' active' + (nbActive > 1 ? 's' : '') + ' sur la période' : '') + (nbGrp >= 2 && !opso ? ' · ' + nbGrp + ' groupements' : ''), classements, false) +
           (marche ? disc('Le gisement & les pharmacies à relancer',
                'ce que la France achète et pas mes officines, et qui décroche', marche, false) : '') +
+          PS.apres +
         '</div>';
+
+      piloSimpleLier(root);
 
       // ── Bind segmented ──
       Array.prototype.forEach.call(root.querySelectorAll('.pilo-segbtn'), function (b) {
