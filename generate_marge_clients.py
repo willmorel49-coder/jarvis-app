@@ -48,7 +48,8 @@ n'est ecrit). Le bareme des grossistes est une loi : il reste dans le code.
 SORTIE (gitignoree, JAMAIS commitee) : marge-clients.js a la racine du depot.
   window.MARGE_CLIENTS = {v:1, fait, jusqua, mois, reserves, fam, c:[prenoms], o:[pharmacyId],
                           livraison:{cout, moy:{n, jm, parJour, renta}},
-                          pilotageMoy:{f:{'AAAA-MM|AAAA-MM':{n, jm, parJour, renta, caCl, mgCl, nSect, secteurs}, ...}},
+                          pilotageMoy:{f:{'AAAA-MM|AAAA-MM':{n, jm, parJour, renta, caCl, mgCl, nSect, secteurs}, ...},
+                                       couv:{'AAAA-MM':[secteurs complets, secteurs attendus], ...}},
                           r:[[ci, oi, ym, ca, tot, p, p1, p2, i, c, fr, nr, caGen, jours], ...]}
   ca = CA net HT de toutes les lignes (generiques compris) ; caGen = la part generique de ce CA
   (marge 0) ; tot = somme exacte des 7 familles apres arrondi au centime.
@@ -623,7 +624,27 @@ def moyennes_pilotage(d, cout):
             moy = lambda q: round(sum(p[q] for p in P) / k, 4)
             fen[mois[a] + '|' + mois[b]] = {'n': k, 'jm': moy(0), 'parJour': moy(1), 'renta': moy(2), 'caCl': moy(3), 'mgCl': moy(4),
                                             'nSect': round(sum(par_sect.values()) / len(par_sect), 1), 'secteurs': len(par_sect)}
-    return {'f': fen}
+    return {'f': fen, 'couv': couverture_mois(d)}
+
+
+def couverture_mois(d, plancher=5):
+    """28/10/2026 (Will : « avertir à l'écran » quand un mois est incomplet, jamais un texte en dur) — pour chaque mois après le premier :
+    secteurs ATTENDUS = ceux qui avaient au moins `plancher` officines le mois d'avant ; secteur COMPLET = attendu qui a ce mois-ci au moins
+    la moitié de ses officines du mois d'avant (absent = 0). Rend {'AAAA-MM': [complets, attendus]} pour les seuls mois où complets < attendus.
+    Aucun prénom ni nombre d'officines par secteur : ce champ est recopié dans le jeu de chaque commercial."""
+    mois = d['mois']
+    K = [int(m[:4] + m[5:7]) for m in mois]
+    par = {}
+    for r in d['r']:
+        par.setdefault(r[2], {}).setdefault(r[0], set()).add(r[1])
+    out = {}
+    for i in range(1, len(K)):
+        avant, ici = par.get(K[i - 1], {}), par.get(K[i], {})
+        attendus = [c for c, s in avant.items() if len(s) >= plancher]
+        complets = [c for c in attendus if 2 * len(ici.get(c, ())) >= len(avant[c])]
+        if len(complets) < len(attendus):
+            out[mois[i]] = [len(complets), len(attendus)]
+    return out
 
 
 def lire_wml_v2(chemin):

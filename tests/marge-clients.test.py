@@ -440,6 +440,15 @@ jp_b = dc.marge_clients_du_jeu(lp, dc.comms_du_jeu('Bruno'))
 check("découpage : le jeu de Bruno garde la moyenne du RÉSEAU, recopiée telle quelle (jamais recalculée sur ses 2 officines)",
       jp_b['pilotageMoy'] == pm and gm.analyser(gm.formater(jp_b))['pilotageMoy'] == pm)
 check("découpage : sans pilotageMoy dans le fichier complet, aucune clé inventée", 'pilotageMoy' not in dc.marge_clients_du_jeu(liv, {'Bruno'}))
+# mois incomplet (28/10/2026) : A 10 -> 10 -> 0 (absent), B 10 -> 4 -> 4 (moins de la moitié en mars), C 3 -> 0 (sous le plancher, pas attendu)
+cv = dict(liv, mois=['2026-01', '2026-02', '2026-03'], c=['A', 'B', 'C'], o=list(range(30)),
+          r=[[0, o, 202601] for o in range(10)] + [[0, o, 202602] for o in range(10)] + [[1, 10 + o, 202601] for o in range(10)] +
+            [[1, 10 + o, 202602] for o in range(10)] + [[1, 10 + o, 202603] for o in range(4)] + [[2, 20 + o, 202601] for o in range(3)])
+check("mois incomplet : février complet (rien), mars = 0 secteur complet sur 2 attendus (C sous le plancher)",
+      gm.couverture_mois(cv) == {'2026-03': [0, 2]}, gm.couverture_mois(cv))
+cv['r'] += [[1, 10 + o, 202603] for o in range(4, 5)]
+check("mois incomplet : la moitié exacte du mois d'avant compte comme complet", gm.couverture_mois(cv) == {'2026-03': [1, 2]}, gm.couverture_mois(cv))
+check("mois incomplet : rangé dans pilotageMoy, donc recopié dans chaque jeu", 'couv' in pm and pm['couv'] == gm.couverture_mois(liv))
 
 print()
 if ECHECS:

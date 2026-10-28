@@ -1356,6 +1356,18 @@
     h += '<div class="ps-b fr"><span class="ps-tr">' + barre(f, true, fF, f < 0) + '</span><span class="ps-lb">' + libF + '</span></div></div>';
     return h;
   }
+  // 28/10/2026 — Will : un mois incomplet (secteurs qui n'ont pas transmis toutes leurs ventes) est signalé à l'écran.
+  // LU dans MARGE_CLIENTS.pilotageMoy.couv ({'AAAA-MM': [complets, attendus]}, calculé par generate_marge_clients.couverture_mois), jamais écrit ici.
+  function psCouv(PM, fen) {
+    var C = PM.couv || {}, L = fen.filter(function (f) { return C[f.m]; });
+    if (!L.length) return '';
+    var lib = function (f) { return MN[f.k % 12] + ' ' + Math.floor(f.k / 12); };
+    var sur = function (f) { var c = C[f.m]; return c[0] + ' secteur' + (c[0] > 1 ? 's' : '') + ' sur ' + c[1]; };
+    var t = L.length === 1
+      ? cap(lib(L[0])) + ' incomplet : ' + sur(L[0]) + ' ont transmis toutes leurs ventes. Chiffres partiels pour ce mois.'
+      : 'Mois incomplets : ' + L.map(function (f) { return lib(f) + ' (' + sur(f) + ')'; }).join(', ') + ' ont transmis toutes leurs ventes. Chiffres partiels pour ces mois.';
+    return '<div class="ps-inc" role="note">' + esc(t) + '</div>';
+  }
   function psBloc(pf) {
     var MC = window.MARGE_CLIENTS, PM = MC && MC.pilotageMoy;
     if (!MC || !MC.r || !PM || !PM.f || !pf) return null;
@@ -1374,7 +1386,7 @@
     var ca = L('caCl', 'CA par client / mois', psEur), mg = L('mgCl', 'Notre marge par client / mois', psEur),
         jm = L('jm', 'Jours de commande / mois', psDec), pj = L('parJour', 'Marge / jour de commande', psEur),
         rt = L('renta', 'Marge − livraisons / mois', psEur);
-    var tete = '<div class="ps-t">' + titre + '</div><div class="ps-s">' + sous + '</div>';
+    var tete = '<div class="ps-t">' + titre + '</div><div class="ps-s">' + sous + '</div>' + psCouv(PM, fen);
     return { html: '<div class="ps-wrap ps-v2" data-fen="' + fen[0].m + '|' + fen[fen.length - 1].m + '"><div class="ps-card ps-tete">' + tete + '</div><div class="ps-g2">' +
       '<div class="ps-card"><div class="ps-k">Ventes</div>' + act + ca + mg + '</div>' +
       '<div class="ps-card"><div class="ps-k">Rentabilité</div>' + jm + pj + rt + '</div></div></div>' };
@@ -1396,6 +1408,8 @@
       '.ps-lb,.ps-sp{flex:none;width:96px}.ps-lb{font-size:11.5px;line-height:1.2;color:var(--muted)}' +
       '@media(max-width:560px){.ps-lb,.ps-sp{width:68px}.ps-lb{font-size:11px}.ps-card{padding:18px 16px}}' +
       '.ps-vide{font-size:14px;color:var(--muted);padding:6px 2px 4px}' +
+      '.ps-inc{display:flex;gap:9px;align-items:flex-start;margin-top:12px;padding:10px 12px;border-radius:10px;background:#FFF4DE;color:#6E4300;font-size:13px;line-height:1.45}' +
+      '.ps-inc::before{content:"";flex:none;width:8px;height:8px;margin-top:5px;border-radius:50%;background:#E59A12}' +
       '.ps-det-btn{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 var(--sp-4);padding:16px 20px;border:1px solid var(--line);border-radius:var(--r-card);background:var(--card);box-shadow:var(--sh-1);font:inherit;font-size:15px;font-weight:700;color:var(--ip-ink);cursor:pointer;text-align:left}' +
       '.ps-det-btn:hover{background:var(--card-2)}.ps-det-btn svg{margin-left:auto;color:var(--muted-2);transition:transform .2s}.ps-det-btn[aria-expanded="true"] svg{transform:rotate(90deg)}' +
       '.ps-det[hidden]{display:none}';
