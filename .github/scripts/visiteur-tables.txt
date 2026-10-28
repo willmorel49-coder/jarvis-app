@@ -10,6 +10,7 @@ academy_reponses
 academy_reunions
 academy_temps_gagne
 bloc_notes
+decrochage_suivi
 discussion_messages
 discussion_reactions
 discussion_sujets
