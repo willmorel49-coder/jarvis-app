@@ -1,8 +1,22 @@
 {
- "generated_at": "2026-10-27T12:23:28.416044+00:00",
+ "generated_at": "2026-10-28T13:09:42.805076+00:00",
  "source": "Journal officiel · open data DILA",
- "count": 3,
+ "count": 4,
  "items": [
+  {
+   "id": "JORFTEXT000055020770",
+   "titre": "Décision du 26 octobre 2026 fixant les prix d'une spécialité pharmaceutique remboursable aux assurés sociaux",
+   "url": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055020770",
+   "jo": "2026-10-28",
+   "signe_le": "2026-10-26",
+   "motifs": [
+    "arrêté prix & marges (le texte de 1987 qui fixe la marge grossiste)",
+    "modification de l'arrêté fondateur de 1987"
+   ],
+   "resume": null,
+   "date_effet": "2026-10-31",
+   "a_venir": true
+  },
   {
    "id": "JORFTEXT000054969604",
    "titre": "Décision du 7 octobre 2026 relative à l'abrogation de tarifs forfaitaires de responsabilité pour des groupes génériques",
