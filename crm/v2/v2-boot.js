@@ -178,7 +178,7 @@
       FAM.forEach(function (f) { r.fam[f] = arrondi(r.fam[f]); });
       return r;
     }
-    // 28/10/2026 — jours de commande d'une officine sur [du, au] : 14e valeur des lignes (l[13]), la MÊME sur chaque ligne de
+    // 28/10/2026 — livraisons (factures FC distinctes) d'une officine sur [du, au] : 14e valeur des lignes (l[13]), la MÊME sur chaque ligne de
     // l'officine-mois → max par mois, jamais la somme ; SANS filtre commercial (officine partagée = ses dates distinctes).
     function jours(pid, du, au) {
       var r = { jours: 0, nm: 0 }, ix = index();

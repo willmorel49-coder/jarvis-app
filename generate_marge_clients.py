@@ -53,9 +53,11 @@ SORTIE (gitignoree, JAMAIS commitee) : marge-clients.js a la racine du depot.
                           r:[[ci, oi, ym, ca, tot, p, p1, p2, i, c, fr, nr, caGen, jours], ...]}
   ca = CA net HT de toutes les lignes (generiques compris) ; caGen = la part generique de ce CA
   (marge 0) ; tot = somme exacte des 7 familles apres arrondi au centime.
-  jours = jours de commande DISTINCTS de l'officine ce mois-la, tous commerciaux confondus (meme valeur sur
-  chaque ligne de l'officine-mois : la page prend le max, jamais la somme). Un jour de commande = une date
-  avec au moins une facture FC (pas un avoir AC), comme la page de reunion du 28/10/2026.
+  jours (r[13], nom historique) = LIVRAISONS de l'officine ce mois-la (mois de PCVDATEEFFET), tous commerciaux confondus
+  (meme valeur sur chaque ligne de l'officine-mois : la page prend le max, jamais la somme). Decision de Will du 28/10/2026
+  (« 1 facture = 1 livraison ») : une livraison = un numero de facture PCVNUM DISTINCT commencant par FC (pas un avoir AC,
+  pas le compte INTER). Deux factures le meme jour = 2 livraisons ; une facture sur plusieurs lignes = 1.
+  Dans livraison.moy et pilotageMoy : jm = livraisons par mois, parJour = marge par livraison, renta = marge - livraisons x cout, par mois.
   livraison (28/10/2026) = cout d'une livraison (reglage prive `cout_livraison`) + l'officine MOYENNE de TOUS
   les clients, calculee ici et recopiee telle quelle dans chaque jeu : un commercial ne charge que ses
   officines, une moyenne faite dans la page serait celle de SES clients. Cout absent ou illisible = pas de cle.
@@ -93,7 +95,7 @@ SORTIE = os.path.join(BASE, 'marge-clients.js')
 PRIVE = os.environ.get('JARVIS_MARGE_DIRECTION_PRIVE') or os.path.expanduser('~/.config/jarvis/marge-direction-prive.json')
 CACHE = os.path.expanduser('~/.cache/jarvis-marge-clients')
 ENTETE = '// ⚠️ NE JAMAIS COMMITER. Servi par adresse signée (Supabase).'
-VERSION_CACHE = 'g3'                 # g3 (28/10/2026) : le cache garde aussi les jours de commande
+VERSION_CACHE = 'g4'                 # g4 (28/10/2026) : le cache garde les NUMEROS DE FACTURE (g3 gardait des dates : jamais relu comme des factures)
 
 # ── Barème des grossistes (la LOI, publique) ───────────────────────────────────────────────────
 # Prix grossiste (« brut », PGHT) = prix fabricant (PFHT) + max(plancher, 6,93 % du PFHT), la part
@@ -545,14 +547,18 @@ def lire_prive():
         return None
 
 
-def jours_par_mois(couples):
-    """Couples (officine, 'AAAA-MM-JJ') -> {(officine, AAAAMM): nombre de dates distinctes}. Une officine servie par deux
-    commerciaux le même jour compte UN jour. Écarte le compte INTER et le jour anormal ANOM_JOUR."""
-    J = defaultdict(int)
-    for off, d in set(map(tuple, couples)):
-        if off == 'INTER' or (off, d) == ANOM_JOUR or not re.match(r'^\d{4}-\d{2}-\d{2}$', d):
+def livraisons_par_mois(triplets):
+    """Triplets (officine, 'AAAA-MM-JJ', numéro de facture FC) -> {(officine, AAAAMM): nombre de factures distinctes}.
+    1 facture = 1 livraison (Will, 28/10/2026) : deux factures le même jour = 2 ; une facture sur plusieurs lignes ou vue par
+    deux commerciaux / deux tableurs = 1. Écarte le compte INTER, le jour anormal ANOM_JOUR et la date illisible."""
+    vus = set()
+    for off, d, pcv in set(map(tuple, triplets)):
+        if off == 'INTER' or (off, d) == ANOM_JOUR or not pcv or not re.match(r'^\d{4}-\d{2}-\d{2}$', d):
             continue
-        J[(off, int(d[:4] + d[5:7]))] += 1
+        vus.add((off, int(d[:4] + d[5:7]), pcv))
+    J = defaultdict(int)
+    for off, ym, _pcv in vus:
+        J[(off, ym)] += 1
     return dict(J)
 
 
@@ -563,9 +569,9 @@ def arrondi_js(x):
 
 def moyenne_livraison(d, jours, cout):
     """L'officine moyenne de TOUS les clients de `d` (même calcul que la fiche, mesuré dans Safari le 28/10/2026) :
-    officines qui ont des lignes ET des jours de commande sur les mois de d['mois'] ; par officine, jm = jours / nm,
-    parJour = marge / jours, renta = (marge - jours x coût) / nm, nm = mois avec au moins un jour ; puis moyenne simple.
-    `jours` = {(officine, AAAAMM): n}. Rend None s'il n'y a aucune officine."""
+    officines qui ont des lignes ET des livraisons sur les mois de d['mois'] ; par officine, jm = livraisons / nm,
+    parJour = marge / livraisons (marge par livraison), renta = (marge - livraisons x coût) / nm, nm = mois avec au moins une
+    livraison ; puis moyenne simple. `jours` = {(officine, AAAAMM): nombre de livraisons}. Rend None s'il n'y a aucune officine."""
     mois = [int(m[:4] + m[5:7]) for m in d['mois']]
     dans = set(mois)
     tot = {}
@@ -588,9 +594,9 @@ def moyenne_livraison(d, jours, cout):
 
 def moyennes_pilotage(d, cout):
     """28/10/2026 — l'officine moyenne du RÉSEAU ENTIER pour chaque fenêtre [du, au] de mois de d['mois'] (45 sur 9 mois).
-    Même définition que moyenne_livraison, par fenêtre : par officine, sur les mois où elle a commandé (jours > 0),
-    jm = jours / nm, parJour = marge / jours, renta = (marge - jours x coût) / nm, caCl = CA / nm, mgCl = marge / nm ;
-    moyenne simple des officines. `jours` d'un officine-mois = le max des lignes (même valeur sur chacune).
+    Même définition que moyenne_livraison, par fenêtre : par officine, sur les mois où elle a eu des livraisons (r[13] > 0),
+    jm = livraisons / nm, parJour = marge / livraisons, renta = (marge - livraisons x coût) / nm, caCl = CA / nm, mgCl = marge / nm ;
+    moyenne simple des officines. Les livraisons d'un officine-mois = le max des lignes (même valeur sur chacune).
     nSect = clients actifs d'un « secteur moyen » (officines actives comptées dans chaque secteur où elles figurent).
     Rend {'f': {'AAAA-MM|AAAA-MM': {...} ou None}} ; la fenêtre entière doit retomber sur livraison.moy (contrôlé à l'appelant)."""
     mois = d['mois']
@@ -730,7 +736,7 @@ def _init_worker(chemin_cat, labos, avoirs):
 
 
 def lire_fichier(tache):
-    """Un tableur -> fichier de cache {g: groupes de lignes, j: couples (officine, date) des factures FC}, JSON compressé.
+    """Un tableur -> fichier de cache {g: groupes de lignes, j: triplets (officine, date, numéro de facture) des factures FC}, JSON compressé.
     Rend (chemin du cache, nb de lignes lues)."""
     comm, prefix, chemin, garder, ym, sig = tache
     st = os.stat(chemin)
@@ -768,9 +774,9 @@ def lire_fichier(tache):
         pcv = str(c(r, 'PCVNUM') or '')
         if prefix in avoirs and pcv.startswith('AC'):
             q, net = -q, -net                     # avoirs Escale, comme generate_wml_v2
-        if pcv.startswith('FC') and code != 'INTER':   # jour de commande = une date avec au moins une facture (page de réunion du 28/10/2026)
+        if pcv.startswith('FC') and code != 'INTER':   # livraison = un numéro de facture FC distinct (Will, 28/10/2026) ; sa date donne le mois
             dt = c(r, 'PCVDATEEFFET')
-            jours.add((code, dt.date().isoformat() if hasattr(dt, 'date') else str(dt)[:10]))
+            jours.add((code, dt.date().isoformat() if hasattr(dt, 'date') else str(dt)[:10], pcv))
         cip = cip13(c(r, 'ARTCODEBARRE'))
         k = cat.get(cip) or (None, None, None, None)
         afm = c(r, 'AFMCODE') if 'AFMCODE' in hi else k[3]
@@ -807,9 +813,12 @@ def lire_fichier(tache):
 
 
 def charger_jours(chemin):
-    """Couples [officine, 'AAAA-MM-JJ'] des factures FC d'un fichier de cache."""
+    """Triplets [officine, 'AAAA-MM-JJ', numéro de facture] des factures FC d'un fichier de cache (version g4 ou plus)."""
     with gzip.open(chemin, 'rt', encoding='utf-8') as f:
-        return json.load(f)['j']
+        j = json.load(f)['j']
+    if any(len(x) != 3 for x in j):          # un ancien cache (dates seules) ne se relit JAMAIS comme des factures
+        raise ValueError('cache de factures périmé : %s' % chemin)
+    return j
 
 
 def charger_groupes(chemin):
@@ -990,12 +999,12 @@ def main():
     if not rows:
         print('ARRÊT : 0 ligne — rien n\'est écrit.')
         return 5
-    # ── jours de commande : dates distinctes par officine et par mois, tous commerciaux et tous tableurs confondus ──
-    J = jours_par_mois(x for fc in chemins for x in charger_jours(fc))
+    # ── livraisons : numéros de facture FC distincts par officine et par mois, tous commerciaux et tous tableurs confondus ──
+    J = livraisons_par_mois(x for fc in chemins for x in charger_jours(fc))
     for r in rows:
         r.append(J.get((officines[r[1]], r[2]), 0))
-    vus = {(officines[r[1]], r[2]): r[13] for r in rows}      # ce que la fiche voit : les jours des officine-mois qui ont une ligne
-    print('Jours de commande : %d jours · %d officines · dont %d jours sur des officine-mois présents dans le fichier'
+    vus = {(officines[r[1]], r[2]): r[13] for r in rows}      # ce que la fiche voit : les livraisons des officine-mois qui ont une ligne
+    print('Livraisons : %d factures · %d officines · dont %d sur des officine-mois présents dans le fichier'
           % (sum(J.values()), len({k[0] for k in J}), sum(vus.values())))
     mois_txt = ['%d-%02d' % (a, m) for a, m in mois_lus]
     ym_max = max(m[1] for m in meta)
@@ -1005,7 +1014,7 @@ def main():
     moy = moyenne_livraison(d, vus, cout) if cout else None
     if moy:
         d['livraison'] = {'cout': cout, 'moy': moy}
-        print('Livraison : coût %.2f € · officine moyenne de %d clients : %.2f jours de commande par mois · %.2f € par jour · %.2f € par mois livraisons déduites'
+        print('Livraison : coût %.2f € · officine moyenne de %d clients : %.2f livraisons par mois · %.2f € par livraison · %.2f € par mois livraisons déduites'
               % (cout, moy['n'], moy['jm'], moy['parJour'], moy['renta']))
         # Moyenne du Pilotage par fenêtre : la fenêtre entière DOIT retomber sur la moyenne de la fiche, sinon rien n'est écrit.
         pm = moyennes_pilotage(d, cout)

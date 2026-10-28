@@ -364,13 +364,55 @@ check("mention : dernier mois lu = en attendant le mois suivant (décembre -> ja
       gm.texte_baisses({A13: (None, 0.04)}, 202612) == "1 produit dont le prix a baissé compté avec sa marge d'avant la baisse, en attendant les ventes de janvier 2027 : la perte sur le stock n'est pas comptée",
       gm.texte_baisses({A13: (None, 0.04)}, 202612))
 
-# ═════════════════════════════ 8. rentabilité : jours de commande et coût d'une livraison (28/10/2026) ═════════════════════════════
-print("8. rentabilité : jours, moyenne de tous les clients, coût d'une livraison")
-J = gm.jours_par_mois([('2000002', '2026-01-05'), ('2000002', '2026-01-05'),   # même jour vu par Alice ET Bruno = UN jour
-                       ('2000002', '2026-01-19'), ('2000001', '2026-02-02'), ['2000001', '2026-02-03'],
-                       ('INTER', '2026-01-05'), ('2269223', '2026-04-30'), ('2269223', '2026-04-29'), ('2000003', 'None')])
-check("jours : dates DISTINCTES par officine-mois, INTER, jour anormal et date illisible écartés",
-      J == {('2000002', 202601): 2, ('2000001', 202602): 2, ('2269223', 202604): 1}, J)
+# ═════════════════════════════ 8. rentabilité : livraisons (1 facture = 1 livraison) et coût d'une livraison (28/10/2026) ═════════════════════════════
+print("8. rentabilité : livraisons, moyenne de tous les clients, coût d'une livraison")
+J = gm.livraisons_par_mois([('2000002', '2026-01-05', 'FC1'), ('2000002', '2026-01-05', 'FC1'),   # même facture vue par Alice ET Bruno = UNE livraison
+                            ('2000002', '2026-01-05', 'FC2'),                  # 2e facture le MÊME jour = 2e livraison
+                            ('2000002', '2026-01-19', 'FC3'), ('2000001', '2026-02-02', 'FC4'), ['2000001', '2026-02-03', 'FC5'],
+                            ('INTER', '2026-01-05', 'FC6'), ('2269223', '2026-04-30', 'FC7'), ('2269223', '2026-04-29', 'FC8'),
+                            ('2000003', 'None', 'FC9'), ('2000003', '2026-03-03', '')])
+check("livraisons : factures DISTINCTES par officine-mois (2 le même jour = 2), INTER, jour anormal, date illisible et facture vide écartés",
+      J == {('2000002', 202601): 3, ('2000001', 202602): 2, ('2269223', 202604): 1}, J)
+# lecture réelle d'un tableur : une facture sur 3 lignes = 1 livraison ; deux factures le même jour = 2 ; avoir AC et INTER non comptés
+import datetime as _dt
+import gzip
+import json
+import tempfile as _tf
+import openpyxl as _ox
+_dir = _tf.mkdtemp()
+_xl = os.path.join(_dir, 'T_09_2026.xlsx')
+_wb = _ox.Workbook()
+_ws = _wb.active
+_ws.append(['TIRCODE', 'PCVNUM', 'PCVDATEEFFET', 'PLVQTE', 'PLVPUBRUT', 'PLVPUNET', 'PLVMNTNETHT', 'ARTCODEBARRE', 'PLVDESIGNATION'])
+_d = _dt.datetime(2026, 9, 7)
+for _t, _n, _dd in [('2000001', 'FC100', _d), ('2000001', 'FC100', _d), ('2000001', 'FC100', _d),      # 1 facture, 3 lignes
+                    ('2000001', 'FC101', _d),                                                          # 2e facture le même jour
+                    ('2000001', 'AC102', _d),                                                          # avoir : pas une livraison
+                    ('INTER', 'FC103', _d)]:                                                           # compte INTER : écarté
+    _ws.append([_t, _n, _dd, 1, 10.0, 8.0, 8.0, '3400900000007', 'X'])
+_wb.save(_xl)
+_cat = os.path.join(_dir, 'cat.json')
+json.dump({}, open(_cat, 'w'))
+_ancien_cache, gm.CACHE = gm.CACHE, os.path.join(_dir, 'cache')
+os.makedirs(gm.CACHE)
+try:
+    gm._init_worker(_cat, [], [])
+    _fc, _n = gm.lire_fichier(('T', 'T', _xl, None, 202609, 'sigtest'))
+    _tri = gm.charger_jours(_fc)
+    check("lecture d'un tableur : 3 lignes d'une facture + une 2e facture le même jour = 2 livraisons ; avoir AC et INTER non comptés",
+          gm.livraisons_par_mois(_tri) == {('2000001', 202609): 2}, _tri)
+    # un ancien cache (couples de dates) n'est jamais relu comme des factures
+    _vieux = os.path.join(_dir, 'vieux.json.gz')
+    with gzip.open(_vieux, 'wt', encoding='utf-8') as _f:
+        json.dump({'g': [], 'j': [['2000001', '2026-09-07']]}, _f)
+    try:
+        gm.charger_jours(_vieux)
+        _refus = False
+    except ValueError:
+        _refus = True
+    check("un cache ancien (dates seules) est refusé, jamais relu comme des factures ; la version de cache a changé", _refus and gm.VERSION_CACHE != 'g3')
+finally:
+    gm.CACHE = _ancien_cache
 liv = {'v': 1, 'fait': '2026-10-28', 'jusqua': '2026-02', 'mois': ['2026-01', '2026-02'], 'reserves': {}, 'fam': gm.FAM,
        'c': ['Alice', 'Bruno'], 'o': ['2000001', '2000002', '2000003'],
        'r': [[0, 0, 202601, 500.0, 100.0, 0, 0, 0, 100.0, 0, 0, 0, 0, 0],
@@ -380,19 +422,19 @@ liv = {'v': 1, 'fait': '2026-10-28', 'jusqua': '2026-02', 'mois': ['2026-01', '2
              [1, 2, 202601, 100.0, 10.0, 10.0, 0, 0, 0, 0, 0, 0, 0, 0]]}    # aucun jour : hors moyenne
 vus = {(liv['o'][r[1]], r[2]): r[13] for r in liv['r']}
 moy = gm.moyenne_livraison(liv, vus, 20.0)
-# 2000001 : 400 € · 4 jours sur 1 mois -> jm 4 · 100 €/jour · (400-80)/1 = 320 ; 2000002 : 80 € · 2 jours sur 1 mois -> 2 · 40 · 40
-check("moyenne : officine moyenne de tous les clients (jours max par mois, jamais la somme des deux commerciaux)",
+# 2000001 : 400 € · 4 livraisons sur 1 mois -> jm 4 · 100 €/jour · (400-80)/1 = 320 ; 2000002 : 80 € · 2 livraisons sur 1 mois -> 2 · 40 · 40
+check("moyenne : officine moyenne de tous les clients (livraisons max par mois, jamais la somme des deux commerciaux)",
       moy == {'n': 2, 'jm': 3.0, 'parJour': 70.0, 'renta': 180.0}, moy)
-check("moyenne : aucune officine avec des jours = None", gm.moyenne_livraison(liv, {}, 20.0) is None)
+check("moyenne : aucune officine avec des livraisons = None", gm.moyenne_livraison(liv, {}, 20.0) is None)
 check("arrondi de la page (Math.round) et non arrondi au pair", gm.arrondi_js(0.125) == 0.13 and round(0.125, 2) == 0.12)
 liv['livraison'] = {'cout': 20.0, 'moy': moy}
 t_liv = gm.formater(liv)
 check("la ligne livraison est écrite entre o: et r:[", "o:[\"2000001\",\"2000002\",\"2000003\"],\nlivraison:{" in t_liv and "},\nr:[" in t_liv)
-check("aller-retour formater / analyser avec livraison et jours", gm.analyser(t_liv) == liv)
+check("aller-retour formater / analyser avec livraison et livraisons par ligne", gm.analyser(t_liv) == liv)
 check("un fichier d'avant le 28/10/2026 (sans livraison) se relit toujours", 'livraison' not in gm.analyser(gm.formater(complet)))
 jl_a = dc.marge_clients_du_jeu(liv, dc.comms_du_jeu('Bruno'))
 check("découpage : le jeu de Bruno garde la moyenne de TOUS les clients, recopiée telle quelle", jl_a['livraison'] == liv['livraison'] and len(jl_a['o']) == 2)
-check("découpage : la valeur jours voyage avec la ligne", sorted(r[13] for r in jl_a['r']) == [0, 2])
+check("découpage : le nombre de livraisons voyage avec la ligne", sorted(r[13] for r in jl_a['r']) == [0, 2])
 check("découpage : sans livraison dans le fichier complet, aucune clé inventée", 'livraison' not in dc.marge_clients_du_jeu(complet, {'Alice'}))
 import json
 import tempfile
@@ -419,14 +461,14 @@ check("fenêtres : une par couple [du, au] (3 sur 2 mois)", sorted(pm['f']) == [
 neuf = dict(liv, mois=['2026-%02d' % m for m in range(1, 10)], r=[])
 check("fenêtres : 45 sur 9 mois, aucune officine = None", len(gm.moyennes_pilotage(neuf, 20.0)['f']) == 45 and
       all(v is None for v in gm.moyennes_pilotage(neuf, 20.0)['f'].values()))
-# 2000001 : CA 1000 · 400 € · 4 jours sur 1 mois ; 2000002 (partagée) : CA 400 · 80 € · 2 jours sur 1 mois ; 2000003 : aucun jour, hors moyenne
+# 2000001 : CA 1000 · 400 € · 4 livraisons sur 1 mois ; 2000002 (partagée) : CA 400 · 80 € · 2 livraisons sur 1 mois ; 2000003 : aucune livraison, hors moyenne
 # secteur moyen : Alice 2 officines actives, Bruno 1 -> 1,5
 check("fenêtre entière : même officine moyenne que la fiche (livraison.moy), CA et marge par client en plus",
       pm['f']['2026-01|2026-02'] == {'n': 2, 'jm': 3.0, 'parJour': 70.0, 'renta': 180.0, 'caCl': 700.0, 'mgCl': 240.0, 'nSect': 1.5, 'secteurs': 2},
       pm['f']['2026-01|2026-02'])
 check("fenêtre entière = livraison.moy (le contrôle qui arrête le générateur)",
       all(abs(pm['f']['2026-01|2026-02'][q] - moy[q]) <= 0.001 for q in ('n', 'jm', 'parJour', 'renta')))
-check("janvier seul : 2000001 sans jour en janvier sort de la moyenne",
+check("janvier seul : 2000001 sans livraison en janvier sort de la moyenne",
       pm['f']['2026-01|2026-01'] == {'n': 1, 'jm': 2.0, 'parJour': 40.0, 'renta': 40.0, 'caCl': 400.0, 'mgCl': 80.0, 'nSect': 1.0, 'secteurs': 2},
       pm['f']['2026-01|2026-01'])
 check("février seul : seules les lignes du mois comptent",

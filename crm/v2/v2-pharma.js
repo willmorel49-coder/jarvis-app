@@ -1991,8 +1991,8 @@
 
 
   // 28/10/2026 — rentabilité d'un client, livraisons déduites (Will, version 4 « Les chiffres ») : « Notre marge » (méthode direction,
-  // génériques à zéro) moins ses jours de commande × le coût d'une livraison (réglage privé, jamais en dur). Un jour de commande = une date
-  // avec au moins une facture ; « par mois » = sur les mois où elle a commandé. Mêmes mois et même visibilité que « Notre marge ».
+  // génériques à zéro) moins ses livraisons × le coût d'une livraison (réglage privé, jamais en dur). Une livraison = une facture (FC) distincte
+  // (Will, 28/10/2026) ; « par mois » = sur les mois où elle a été livrée. Mêmes mois et même visibilité que « Notre marge ».
   // Barre grise = officine moyenne de TOUS nos clients, calculée par le générateur (un commercial ne charge que ses officines).
   function rentaDec(x) { return (Math.round(x * 10) / 10).toFixed(1).replace('.', ','); }
   function rentabiliteDe(pid) {
@@ -2013,8 +2013,8 @@
         '<div class="pha-r4-b fr"><i style="width:' + w(f) + '%"></i><b class="mono">' + fmt(f) + '</b><span>Moy. clients</span></div></div>';
     }
     return '<div class="pha-kpi pha-nm pha-rt pha-r4" style="--a:var(--c-mint,#1E9E6A)"><div class="pha-kl">Rentabilité</div>' +
-      ligne('Jours de commande / mois', R.jm, M.jm, rentaDec) +
-      ligne('Marge / jour de commande', R.parJour, M.parJour, V2.fmtEur) +
+      ligne('Livraisons / mois', R.jm, M.jm, rentaDec) +
+      ligne('Marge par livraison', R.parJour, M.parJour, V2.fmtEur) +
       ligne('Marge − livraisons / mois', R.renta, M.renta, V2.fmtEur) + '</div>';
   }
   function analyseChart(A) {

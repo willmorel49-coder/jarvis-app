@@ -1361,7 +1361,8 @@
   function psCouv(PM, fen) {
     var C = PM.couv || {}, L = fen.filter(function (f) { return C[f.m]; });
     if (!L.length) return '';
-    var lib = function (f) { return MN[f.k % 12] + ' ' + Math.floor(f.k / 12); };
+    var MF = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    var lib = function (f) { return MF[f.k % 12] + ' ' + Math.floor(f.k / 12); };
     var sur = function (f) { var c = C[f.m]; return c[0] + ' secteur' + (c[0] > 1 ? 's' : '') + ' sur ' + c[1]; };
     var t = L.length === 1
       ? cap(lib(L[0])) + ' incomplet : ' + sur(L[0]) + ' ont transmis toutes leurs ventes. Chiffres partiels pour ce mois.'
@@ -1384,7 +1385,7 @@
     var act = S ? psLigne('Clients actifs', S.n, M.nSect, psEnt, psDec, 'Secteur moyen Intégral', false)
                 : psLigne('Clients actifs sur le réseau', null, M.n, psEnt, psEnt, 'Réseau Intégral', true);
     var ca = L('caCl', 'CA par client / mois', psEur), mg = L('mgCl', 'Notre marge par client / mois', psEur),
-        jm = L('jm', 'Jours de commande / mois', psDec), pj = L('parJour', 'Marge / jour de commande', psEur),
+        jm = L('jm', 'Livraisons / mois', psDec), pj = L('parJour', 'Marge par livraison', psEur),
         rt = L('renta', 'Marge − livraisons / mois', psEur);
     var tete = '<div class="ps-t">' + titre + '</div><div class="ps-s">' + sous + '</div>' + psCouv(PM, fen);
     return { html: '<div class="ps-wrap ps-v2" data-fen="' + fen[0].m + '|' + fen[fen.length - 1].m + '"><div class="ps-card ps-tete">' + tete + '</div><div class="ps-g2">' +
