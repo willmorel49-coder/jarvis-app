@@ -86,6 +86,10 @@
   }
   HL.memoriser = function (user) {
     if (!user || !user.id) return;
+    // Appareil partagé : un AUTRE compte vient de se vérifier en ligne → les lectures rangées
+    // pour le précédent ne doivent jamais lui être resservies sans réseau.
+    var avant = null; try { avant = JSON.parse(localStorage.getItem(LS_MEMO) || 'null'); } catch (e) {}
+    if (avant && avant.id && avant.id !== user.id) { try { caches.delete(CACHE); } catch (e) {} }
     try { localStorage.setItem(LS_MEMO, JSON.stringify({ t: Date.now(), id: user.id, email: user.email || '' })); } catch (e) {}
   };
   HL.oublier = function () { try { localStorage.removeItem(LS_MEMO); } catch (e) {} };
@@ -114,6 +118,24 @@
   };
   HL.enAttente = function (table) {
     return lsLire(LS_ENVOIS).filter(function (x) { return x && x.ligne && (!table || x.table === table); });
+  };
+  // Celles du compte connecté seulement : ce qu'on montre et ce qu'on compte à l'écran.
+  HL.miennes = function (table) {
+    var moi = V2.user && V2.user.id;
+    return HL.enAttente(table).filter(function (x) { return !!moi && x.uid === moi; });
+  };
+  // Avant la déconnexion : dernier essai d'envoi ; s'il reste des saisies, on prévient AVANT
+  // de les effacer de l'appareil (sinon elles y resteraient lisibles après la déconnexion).
+  HL.avantDeconnexion = function () {
+    return Promise.resolve(HL.envoyer()).then(function () {
+      var n = HL.miennes().length, moi = V2.user && V2.user.id;
+      if (!n) return true;
+      if (!window.confirm(n + (n > 1 ? ' saisies faites hors ligne ne sont pas encore parties' : ' saisie faite hors ligne n’est pas encore partie') +
+        '. Se déconnecter maintenant les efface de cet appareil.\n\nSe déconnecter quand même ?')) return false;
+      lsEcrire(LS_ENVOIS, lsLire(LS_ENVOIS).filter(function (x) { return !x || x.uid !== moi; }));
+      lsEcrire(LS_REFUS, lsLire(LS_REFUS).filter(function (x) { return !x || x.uid !== moi; }));
+      return true;
+    }, function () { return true; });
   };
   function retirer(x) {
     lsEcrire(LS_ENVOIS, lsLire(LS_ENVOIS).filter(function (y) {
@@ -234,7 +256,7 @@
   }
   function afficher() {
     if (!document.body) { document.addEventListener('DOMContentLoaded', afficher); return; }
-    var n = HL.enAttente().length, sa = n > 1 ? ' saisies en attente' : ' saisie en attente';
+    var n = HL.miennes().length, sa = n > 1 ? ' saisies en attente' : ' saisie en attente';
     var txt = '', bouton = '';
     if (coupe && tropVieux) txt = 'Hors ligne depuis plus de 3 jours : retrouvez du réseau pour rouvrir JARVIS.';
     else if (coupe) txt = 'Hors ligne' + (sansReseauDepuis ? ' · données du ' + quand(sansReseauDepuis) : '') + (n ? ' · ' + n + sa : '');
@@ -248,5 +270,5 @@
     el.innerHTML = '<span class="v2hl-pt"></span><span>' + txt + '</span>' +
       (bouton ? '<button type="button" onclick="location.reload()">' + bouton + '</button>' : '');
   }
-  if (lsLire(LS_ENVOIS).length) afficher();
+  HL.afficher = afficher;
 })();

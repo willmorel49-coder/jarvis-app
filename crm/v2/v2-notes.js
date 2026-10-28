@@ -65,7 +65,7 @@
   function avecAttente(notes, st, sid) {
     if (!V2.hl) return notes;
     var vues = {}; notes.forEach(function (n) { vues[n.id] = 1; });
-    var att = V2.hl.enAttente(TABLE).filter(function (x) {
+    var att = V2.hl.miennes(TABLE).filter(function (x) {
       return x.ligne.scope_type === st && x.ligne.scope_id === String(sid) && !vues[x.ligne.id];
     }).map(function (x) { var n = fromRow(x.ligne); n.attente = true; return n; }).reverse();
     return att.concat(notes);
