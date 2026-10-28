@@ -107,7 +107,7 @@
 
   // ── 14/10/2026 : « NOTRE MARGE » par client (ce que les ventes rapportent à l'entreprise) ──
   // Source : window.MARGE_CLIENTS (fichier protégé `marge-clients.js`, estimation de la direction
-  // calculée avec les vrais prix d'achat). Lignes [ci, oi, AAAAMM, ca, tot, p, p1, p2, i, c, fr, nr, caGen].
+  // calculée avec les vrais prix d'achat). Lignes [ci, oi, AAAAMM, ca, tot, p, p1, p2, i, c, fr, nr, caGen, jours].
   // Un commercial restreint reçoit le même format réduit à SES prénoms : une officine de collègue
   // n'y figure pas → somme nulle, sans erreur. ⚠️ Ce n'est PAS la « marge nette » de la pharmacie
   // (margeNettePharma, mdl) : deux libellés, deux chiffres, ne jamais les confondre.
@@ -178,6 +178,19 @@
       FAM.forEach(function (f) { r.fam[f] = arrondi(r.fam[f]); });
       return r;
     }
+    // 28/10/2026 — jours de commande d'une officine sur [du, au] : 14e valeur des lignes (l[13]), la MÊME sur chaque ligne de
+    // l'officine-mois → max par mois, jamais la somme ; SANS filtre commercial (officine partagée = ses dates distinctes).
+    function jours(pid, du, au) {
+      var r = { jours: 0, nm: 0 }, ix = index();
+      if (!ix) return r;
+      var a = ymDe(du, 0), b = ymDe(au, 999999), parMois = {};
+      (ix.parOff[String(pid)] || []).forEach(function (l) {
+        var n = +l[13] || 0;
+        if (l[2] >= a && l[2] <= b && n > (parMois[l[2]] || 0)) parMois[l[2]] = n;
+      });
+      Object.keys(parMois).forEach(function (m) { r.jours += parMois[m]; r.nm++; });
+      return r;
+    }
     // Espace Escale : « à jour jusqu'à » = dernier mois des ventes d'Escale, qui peuvent avoir un mois de retard
     // sur le CRM (14/10/2026 : août contre septembre). Calculé une fois par jeu de données.
     var memoJ = { d: null, v: '' };
@@ -204,6 +217,9 @@
       mois: function () { var d = donnees(); return d ? d.mois.slice() : []; },
       reserve: function (cleMois) { var d = donnees(); return (d && d.reserves && d.reserves[cleMois]) || ''; },
       somme: somme,
+      jours: jours,
+      // coût d'une livraison (réglage privé) + officine moyenne de TOUS les clients, écrits par le générateur ; absent = pas de bloc
+      livraison: function () { var d = donnees(), L = d && d.livraison; return (L && +L.cout > 0 && L.moy) ? L : null; },
       cleDe: cleDe,
       nomMoisLong: nomMoisLong,
       // « estimation, à jour jusqu'à septembre 2026 »

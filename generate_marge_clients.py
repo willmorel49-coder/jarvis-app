@@ -47,9 +47,16 @@ n'est ecrit). Le bareme des grossistes est une loi : il reste dans le code.
 
 SORTIE (gitignoree, JAMAIS commitee) : marge-clients.js a la racine du depot.
   window.MARGE_CLIENTS = {v:1, fait, jusqua, mois, reserves, fam, c:[prenoms], o:[pharmacyId],
-                          r:[[ci, oi, ym, ca, tot, p, p1, p2, i, c, fr, nr, caGen], ...]}
+                          livraison:{cout, moy:{n, jm, parJour, renta}},
+                          r:[[ci, oi, ym, ca, tot, p, p1, p2, i, c, fr, nr, caGen, jours], ...]}
   ca = CA net HT de toutes les lignes (generiques compris) ; caGen = la part generique de ce CA
   (marge 0) ; tot = somme exacte des 7 familles apres arrondi au centime.
+  jours = jours de commande DISTINCTS de l'officine ce mois-la, tous commerciaux confondus (meme valeur sur
+  chaque ligne de l'officine-mois : la page prend le max, jamais la somme). Un jour de commande = une date
+  avec au moins une facture FC (pas un avoir AC), comme la page de reunion du 28/10/2026.
+  livraison (28/10/2026) = cout d'une livraison (reglage prive `cout_livraison`) + l'officine MOYENNE de TOUS
+  les clients, calculee ici et recopiee telle quelle dans chaque jeu : un commercial ne charge que ses
+  officines, une moyenne faite dans la page serait celle de SES clients. Cout absent ou illisible = pas de cle.
 decouper_par_commercial.py en tire un fichier par jeu de commercial.
 
 Usage : /usr/bin/python3 generate_marge_clients.py
@@ -62,6 +69,7 @@ import glob
 import gzip
 import hashlib
 import json
+import math
 import os
 import re
 import subprocess
@@ -80,12 +88,13 @@ SORTIE = os.path.join(BASE, 'marge-clients.js')
 PRIVE = os.environ.get('JARVIS_MARGE_DIRECTION_PRIVE') or os.path.expanduser('~/.config/jarvis/marge-direction-prive.json')
 CACHE = os.path.expanduser('~/.cache/jarvis-marge-clients')
 ENTETE = '// ⚠️ NE JAMAIS COMMITER. Servi par adresse signée (Supabase).'
-VERSION_CACHE = 'g2'
+VERSION_CACHE = 'g3'                 # g3 (28/10/2026) : le cache garde aussi les jours de commande
 
 # ── Barème des grossistes (la LOI, publique) ───────────────────────────────────────────────────
 # Prix grossiste (« brut », PGHT) = prix fabricant (PFHT) + max(plancher, 6,93 % du PFHT), la part
 # proportionnelle étant plafonnée à 32,4996 € (6,93 % de 468,97 €). Le forfait froid s'ajoute au brut.
 # Réforme du 20/01/2027 (arrêté du 03/08/2026) : plancher 0,30 -> 0,22 €, forfait froid 0,63 -> 0,80 €.
+ANOM_JOUR = ('2269223', '2026-04-30')  # jour anormal écarté, comme la page de réunion du 28/10/2026
 TAUX_GROSSISTE = 0.0693
 PFHT_PLAFOND = 468.97
 PLAFOND_PROPORTIONNEL = 32.4996                        # = 6,93 % de 468,97 €, arrondi comme le bareme
@@ -472,7 +481,10 @@ def formater(d):
     j = lambda v: json.dumps(v, ensure_ascii=False, separators=(',', ':'))
     lignes = [ENTETE, "window.MARGE_CLIENTS = {v:%d, fait:'%s', jusqua:'%s'," % (d['v'], d['fait'], d['jusqua']),
               'mois:%s,' % j(d['mois']), 'reserves:%s,' % j(d['reserves']), 'fam:%s,' % j(d['fam']),
-              'c:%s,' % j(d['c']), 'o:%s,' % j(d['o']), 'r:[']
+              'c:%s,' % j(d['c']), 'o:%s,' % j(d['o'])]
+    if 'livraison' in d:
+        lignes.append('livraison:%s,' % j(d['livraison']))
+    lignes.append('r:[')
     lignes.append(',\n'.join(j(r) for r in d['r']))
     lignes.append(']};')
     return '\n'.join(lignes) + '\n'
@@ -488,9 +500,14 @@ def analyser(texte):
         for k, cle in enumerate(('mois', 'reserves', 'fam', 'c', 'o'), 1):
             assert L[i + k].startswith(cle + ':') and L[i + k].endswith(',')
             d[cle] = json.loads(L[i + k][len(cle) + 1:-1])
-        assert L[i + 6] == 'r:['
-        fin = next(k for k in range(len(L) - 1, i, -1) if L[k] == ']};')
-        corps = L[i + 7:fin]
+        k = i + 6
+        if L[k].startswith('livraison:'):        # facultative : un fichier d'avant le 28/10/2026 n'en a pas
+            assert L[k].endswith(',')
+            d['livraison'] = json.loads(L[k][len('livraison:'):-1])
+            k += 1
+        assert L[k] == 'r:['
+        fin = next(n for n in range(len(L) - 1, i, -1) if L[n] == ']};')
+        corps = L[k + 1:fin]
         d['r'] = [json.loads(l.rstrip(',')) for l in corps if l.strip()]
     except (StopIteration, AssertionError, AttributeError, IndexError, json.JSONDecodeError) as e:
         raise ValueError('marge-clients.js illisible (%s)' % e)
@@ -510,9 +527,52 @@ def lire_prive():
         for ym, x in rempl.items():      # la mention d'un mois remplacé vient du remplacement lui-même
             res['%d-%02d' % (ym // 100, ym % 100)] = x['texte']
         assert labos and petit >= 0 and petit27 >= 0
-        return {'labos': labos, 'petit': petit, 'petit_2027': petit27, 'reserves': res, 'remplacements': rempl}
+        cout = r.get('cout_livraison')       # facultatif : absent ou illisible = pas de bloc « Rentabilité », jamais une valeur en dur
+        cout = float(cout) if isinstance(cout, (int, float)) and not isinstance(cout, bool) and cout > 0 else None
+        return {'labos': labos, 'petit': petit, 'petit_2027': petit27, 'reserves': res, 'remplacements': rempl, 'cout_livraison': cout}
     except Exception:
         return None
+
+
+def jours_par_mois(couples):
+    """Couples (officine, 'AAAA-MM-JJ') -> {(officine, AAAAMM): nombre de dates distinctes}. Une officine servie par deux
+    commerciaux le même jour compte UN jour. Écarte le compte INTER et le jour anormal ANOM_JOUR."""
+    J = defaultdict(int)
+    for off, d in set(map(tuple, couples)):
+        if off == 'INTER' or (off, d) == ANOM_JOUR or not re.match(r'^\d{4}-\d{2}-\d{2}$', d):
+            continue
+        J[(off, int(d[:4] + d[5:7]))] += 1
+    return dict(J)
+
+
+def arrondi_js(x):
+    """Math.round(x * 100) / 100 de la page (round() de Python arrondit au pair)."""
+    return math.floor(x * 100 + 0.5) / 100
+
+
+def moyenne_livraison(d, jours, cout):
+    """L'officine moyenne de TOUS les clients de `d` (même calcul que la fiche, mesuré dans Safari le 28/10/2026) :
+    officines qui ont des lignes ET des jours de commande sur les mois de d['mois'] ; par officine, jm = jours / nm,
+    parJour = marge / jours, renta = (marge - jours x coût) / nm, nm = mois avec au moins un jour ; puis moyenne simple.
+    `jours` = {(officine, AAAAMM): n}. Rend None s'il n'y a aucune officine."""
+    mois = [int(m[:4] + m[5:7]) for m in d['mois']]
+    dans = set(mois)
+    tot = {}
+    for r in d['r']:
+        if r[2] in dans:
+            o = str(d['o'][r[1]])
+            tot[o] = tot.get(o, 0.0) + r[4]
+    L = []
+    for o, t in tot.items():
+        t = arrondi_js(t)
+        js = [jours.get((o, m), 0) for m in mois]
+        n, nm = sum(js), sum(1 for x in js if x > 0)
+        if n:
+            L.append((n / nm, t / n, (t - n * cout) / nm))
+    if not L:
+        return None
+    return {'n': len(L), 'jm': round(sum(x[0] for x in L) / len(L), 5), 'parJour': round(sum(x[1] for x in L) / len(L), 5),
+            'renta': round(sum(x[2] for x in L) / len(L), 5)}
 
 
 def lire_wml_v2(chemin):
@@ -598,7 +658,8 @@ def _init_worker(chemin_cat, labos, avoirs):
 
 
 def lire_fichier(tache):
-    """Un tableur -> fichier de cache (groupes de lignes, JSON compressé). Rend (chemin du cache, nb de lignes lues)."""
+    """Un tableur -> fichier de cache {g: groupes de lignes, j: couples (officine, date) des factures FC}, JSON compressé.
+    Rend (chemin du cache, nb de lignes lues)."""
     comm, prefix, chemin, garder, ym, sig = tache
     st = os.stat(chemin)
     nom = '%s_%d_%s_%d_%d_%s.json.gz' % (prefix, ym, hashlib.md5((chemin + '|' + ','.join(garder or [])).encode()).hexdigest()[:8],
@@ -618,6 +679,7 @@ def lire_fichier(tache):
         i = hi.get(k)
         return r[i] if (i is not None and i < len(r)) else None
     G = {}
+    jours = set()
     n = 0
     for r in it:
         tir = c(r, 'TIRCODE')
@@ -631,8 +693,12 @@ def lire_fichier(tache):
         if not code or (garder is not None and code not in garder):
             continue
         q, B, N, net = num(c(r, 'PLVQTE')), num(c(r, 'PLVPUBRUT')), num(c(r, 'PLVPUNET')), num(c(r, 'PLVMNTNETHT'))
-        if prefix in avoirs and str(c(r, 'PCVNUM') or '').startswith('AC'):
+        pcv = str(c(r, 'PCVNUM') or '')
+        if prefix in avoirs and pcv.startswith('AC'):
             q, net = -q, -net                     # avoirs Escale, comme generate_wml_v2
+        if pcv.startswith('FC') and code != 'INTER':   # jour de commande = une date avec au moins une facture (page de réunion du 28/10/2026)
+            dt = c(r, 'PCVDATEEFFET')
+            jours.add((code, dt.date().isoformat() if hasattr(dt, 'date') else str(dt)[:10]))
         cip = cip13(c(r, 'ARTCODEBARRE'))
         k = cat.get(cip) or (None, None, None, None)
         afm = c(r, 'AFMCODE') if 'AFMCODE' in hi else k[3]
@@ -663,15 +729,21 @@ def lire_fichier(tache):
     out = [list(k) + [round(v, 6) for v in x] for k, x in G.items()]
     tmp = fc + '.tmp'
     with gzip.open(tmp, 'wt', encoding='utf-8', compresslevel=1) as f:
-        json.dump(out, f, separators=(',', ':'))
+        json.dump({'g': out, 'j': sorted(jours)}, f, separators=(',', ':'))
     os.replace(tmp, fc)
     return fc, n
+
+
+def charger_jours(chemin):
+    """Couples [officine, 'AAAA-MM-JJ'] des factures FC d'un fichier de cache."""
+    with gzip.open(chemin, 'rt', encoding='utf-8') as f:
+        return json.load(f)['j']
 
 
 def charger_groupes(chemin):
     """Groupes d'un fichier de cache -> tuples (off, reg, cle, B, N, rb, froid, gen, su, pos, a_mt, q, net, qN, mt)."""
     with gzip.open(chemin, 'rt', encoding='utf-8') as f:
-        rows = json.load(f)
+        rows = json.load(f)['g']
     return [(r[0], r[1], r[2], r[3], r[4], bool(r[5]), bool(r[6]), bool(r[7]), bool(r[8]), bool(r[9]), bool(r[10]),
              r[11], r[12], r[13], r[14]) for r in rows]
 
@@ -846,10 +918,25 @@ def main():
     if not rows:
         print('ARRÊT : 0 ligne — rien n\'est écrit.')
         return 5
+    # ── jours de commande : dates distinctes par officine et par mois, tous commerciaux et tous tableurs confondus ──
+    J = jours_par_mois(x for fc in chemins for x in charger_jours(fc))
+    for r in rows:
+        r.append(J.get((officines[r[1]], r[2]), 0))
+    vus = {(officines[r[1]], r[2]): r[13] for r in rows}      # ce que la fiche voit : les jours des officine-mois qui ont une ligne
+    print('Jours de commande : %d jours · %d officines · dont %d jours sur des officine-mois présents dans le fichier'
+          % (sum(J.values()), len({k[0] for k in J}), sum(vus.values())))
     mois_txt = ['%d-%02d' % (a, m) for a, m in mois_lus]
     ym_max = max(m[1] for m in meta)
     d = {'v': 1, 'fait': datetime.date.today().isoformat(), 'jusqua': '%d-%02d' % (ym_max // 100, ym_max % 100), 'mois': mois_txt,
          'reserves': reserves, 'fam': FAM, 'c': prenoms, 'o': officines, 'r': rows}
+    cout = prive['cout_livraison']
+    moy = moyenne_livraison(d, vus, cout) if cout else None
+    if moy:
+        d['livraison'] = {'cout': cout, 'moy': moy}
+        print('Livraison : coût %.2f € · officine moyenne de %d clients : %.2f jours de commande par mois · %.2f € par jour · %.2f € par mois livraisons déduites'
+              % (cout, moy['n'], moy['jm'], moy['parJour'], moy['renta']))
+    else:
+        print('Livraison : coût absent du réglage privé (cout_livraison) — pas de bloc « Rentabilité » sur la fiche.')
     for r in rows:
         assert abs(sum(r[5:12]) - r[4]) < 0.005, 'tot != somme des familles'
 

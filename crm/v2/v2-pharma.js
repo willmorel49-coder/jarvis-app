@@ -1989,6 +1989,34 @@
       '<div class="pha-sub pha-nm-n">' + notes.map(esc).join(' · ') + '</div></div>';
   }
 
+
+  // 28/10/2026 — rentabilité d'un client, livraisons déduites (Will, version 4 « Les chiffres ») : « Notre marge » (méthode direction,
+  // génériques à zéro) moins ses jours de commande × le coût d'une livraison (réglage privé, jamais en dur). Un jour de commande = une date
+  // avec au moins une facture ; « par mois » = sur les mois où elle a commandé. Mêmes mois et même visibilité que « Notre marge ».
+  // Barre grise = officine moyenne de TOUS nos clients, calculée par le générateur (un commercial ne charge que ses officines).
+  function rentaDec(x) { return (Math.round(x * 10) / 10).toFixed(1).replace('.', ','); }
+  function rentabiliteDe(pid) {
+    var r = notreMargeDe(pid), NM = V2.notreMarge, L = NM && NM.livraison && NM.livraison();
+    if (!r || !r.n || !L) return null;
+    var mv = moisVentes(), J = NM.jours(pid, mv.du, mv.au);
+    if (!J.jours) return null;
+    var cout = +L.cout;
+    return { jours: J.jours, nm: J.nm, cout: cout, parJour: r.tot / J.jours, jm: J.jours / J.nm, renta: (r.tot - J.jours * cout) / J.nm, moy: L.moy };
+  }
+  function rentaChiffres(pid) {
+    var R = rentabiliteDe(pid); if (!R) return '';
+    var M = R.moy;
+    function ligne(lib, v, f, fmt) {
+      var max = Math.max(v, f, 1e-9), w = function (x) { return Math.max(2, Math.min(100, x / max * 100)).toFixed(1); };
+      return '<div class="pha-r4-l"><div class="pha-r4-n">' + lib + '</div>' +
+        '<div class="pha-r4-b"><i style="width:' + w(v) + '%"></i><b class="mono' + (v < 0 ? ' pha-dn' : '') + '">' + fmt(v) + '</b></div>' +
+        '<div class="pha-r4-b fr"><i style="width:' + w(f) + '%"></i><b class="mono">' + fmt(f) + '</b><span>Moy. clients</span></div></div>';
+    }
+    return '<div class="pha-kpi pha-nm pha-rt pha-r4" style="--a:var(--c-mint,#1E9E6A)"><div class="pha-kl">Rentabilité</div>' +
+      ligne('Jours de commande / mois', R.jm, M.jm, rentaDec) +
+      ligne('Marge / jour de commande', R.parJour, M.parJour, V2.fmtEur) +
+      ligne('Marge − livraisons / mois', R.renta, M.renta, V2.fmtEur) + '</div>';
+  }
   function analyseChart(A) {
     return '<div class="v2-card pha-card"><div class="pha-ch"><h3>Ce qu\'elle commande par mois</h3><span class="pha-sub">CA net Intégral' + (A.last ? ' · ' + esc(A.last.label) + ' = dernier mois reçu' : '') + '</span></div>' +
       (A.n >= 2 ? caChartSvg(A.pts, 820, 250) : '<div class="v2-cat-empty" style="border:none">Pas assez de mois pour tracer une courbe.</div>') +
@@ -3760,7 +3788,7 @@
     // ── Colonne « chiffres » ──
     var A = analyseData(pid, sales);
     var chiffres = retourProposer(pid, A, { dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp }) +
-      analyseKpis(A, marge, nbRefs) + '<div class="pha-marges">' + analyseMargePharma(A, marge) + analyseNotreMarge(pid) + '</div>' + analyseChart(A) + analyseTranches(A) + analyseParts(A) + analyseTop5(A) + analyseNePlus(pid);
+      analyseKpis(A, marge, nbRefs) + '<div class="pha-marges">' + analyseMargePharma(A, marge) + analyseNotreMarge(pid) + rentaChiffres(pid) + '</div>' + analyseChart(A) + analyseTranches(A) + analyseParts(A) + analyseTop5(A) + analyseNePlus(pid);
     // 09/10/2026 — maquette 8 « Le menu » (remplace la 1b, jugée « trop complexe ») : l'état de la fiche est posé ici,
     // la page est assemblée plus bas (carte d'identité courte, menu, une rubrique à la fois).
     if (menu) l8Init(pid, A, { marge: marge, dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp });
@@ -6541,6 +6569,15 @@
 
   // ── Styles spécifiques au pilier (injectés une fois) ───────────
   // Cohérents avec v2.css ; aucune classe .v2-* du design system n'est redéfinie.
+  // 28/10/2026 — une note coupée sur une ligne se déplie au toucher (téléphone : pas de survol). iOS n'envoie le clic délégué
+  // qu'aux éléments « cliquables » : d'où cursor:pointer sous (hover:none).
+  if (!V2._phaLu) {
+    V2._phaLu = true;
+    document.addEventListener('click', function (e) {
+      var t = e.target && e.target.closest && e.target.closest('.pha .pha-sub, .pha .pha-grpdesc');
+      if (t && !(e.target.closest('a, button, input, select, textarea'))) t.classList.toggle('pha-lu');
+    });
+  }
   if (!document.getElementById('v2-pharma-style')) {
     var st = document.createElement('style');
     st.id = 'v2-pharma-style';
@@ -6992,6 +7029,11 @@
       '.pha-nm-l{display:flex;justify-content:space-between;gap:12px}.pha-nm-l b{color:var(--ip-ink);font-weight:700}',
       '.pha-nm-n{margin-top:8px}',
       '.pha-marges{display:grid;gap:12px;margin-top:12px}.pha-marges>.pha-nm{margin-top:0}',
+      '.pha-r4-l{margin-top:12px}.pha-r4-n{font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px}.pha-r4-b{display:flex;align-items:center;gap:8px;height:20px}.pha-r4-b i{display:block;height:10px;border-radius:999px;background:var(--a)}.pha-r4-b.fr i{background:#B9C4DB}',
+      '.pha-r4-b b{font-size:16px;color:var(--ip-ink);white-space:nowrap}.pha-r4-b.fr b{font-size:13px;font-weight:600;color:var(--muted)}.pha-r4-b span{font-size:11.5px;color:var(--muted)}',
+      '.pha .pha-sub,.pha .pha-grpdesc{display:-webkit-box !important;-webkit-box-orient:vertical;-webkit-line-clamp:1;overflow:hidden;cursor:help}.pha .pha-sub:hover,.pha .pha-grpdesc:hover,.pha .pha-sub.pha-lu,.pha .pha-grpdesc.pha-lu{-webkit-line-clamp:unset}',
+      '@media (hover:none){.pha .pha-sub,.pha .pha-grpdesc{cursor:pointer}}',
+      '.pha .pha-sub[style*="padding:8px 18px 12px"]{padding-top:0 !important;padding-bottom:0 !important;border:solid transparent;border-width:8px 0 12px}',
       '.pha-chart{width:100%;height:auto;display:block}',
       '.pha-legend{display:flex;gap:16px;font-size:12px;font-weight:700;color:var(--muted);margin-top:6px;flex-wrap:wrap}',
       '.pha-legend i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}',

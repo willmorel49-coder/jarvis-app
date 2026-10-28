@@ -364,6 +364,54 @@ check("mention : dernier mois lu = en attendant le mois suivant (décembre -> ja
       gm.texte_baisses({A13: (None, 0.04)}, 202612) == "1 produit dont le prix a baissé compté avec sa marge d'avant la baisse, en attendant les ventes de janvier 2027 : la perte sur le stock n'est pas comptée",
       gm.texte_baisses({A13: (None, 0.04)}, 202612))
 
+# ═════════════════════════════ 8. rentabilité : jours de commande et coût d'une livraison (28/10/2026) ═════════════════════════════
+print("8. rentabilité : jours, moyenne de tous les clients, coût d'une livraison")
+J = gm.jours_par_mois([('2000002', '2026-01-05'), ('2000002', '2026-01-05'),   # même jour vu par Alice ET Bruno = UN jour
+                       ('2000002', '2026-01-19'), ('2000001', '2026-02-02'), ['2000001', '2026-02-03'],
+                       ('INTER', '2026-01-05'), ('2269223', '2026-04-30'), ('2269223', '2026-04-29'), ('2000003', 'None')])
+check("jours : dates DISTINCTES par officine-mois, INTER, jour anormal et date illisible écartés",
+      J == {('2000002', 202601): 2, ('2000001', 202602): 2, ('2269223', 202604): 1}, J)
+liv = {'v': 1, 'fait': '2026-10-28', 'jusqua': '2026-02', 'mois': ['2026-01', '2026-02'], 'reserves': {}, 'fam': gm.FAM,
+       'c': ['Alice', 'Bruno'], 'o': ['2000001', '2000002', '2000003'],
+       'r': [[0, 0, 202601, 500.0, 100.0, 0, 0, 0, 100.0, 0, 0, 0, 0, 0],
+             [0, 0, 202602, 500.0, 300.0, 0, 0, 0, 300.0, 0, 0, 0, 0, 4],
+             [0, 1, 202601, 200.0, 50.0, 50.0, 0, 0, 0, 0, 0, 0, 0, 2],     # officine PARTAGÉE : même valeur de jours
+             [1, 1, 202601, 200.0, 30.0, 30.0, 0, 0, 0, 0, 0, 0, 0, 2],     # sur la ligne de chaque commercial
+             [1, 2, 202601, 100.0, 10.0, 10.0, 0, 0, 0, 0, 0, 0, 0, 0]]}    # aucun jour : hors moyenne
+vus = {(liv['o'][r[1]], r[2]): r[13] for r in liv['r']}
+moy = gm.moyenne_livraison(liv, vus, 20.0)
+# 2000001 : 400 € · 4 jours sur 1 mois -> jm 4 · 100 €/jour · (400-80)/1 = 320 ; 2000002 : 80 € · 2 jours sur 1 mois -> 2 · 40 · 40
+check("moyenne : officine moyenne de tous les clients (jours max par mois, jamais la somme des deux commerciaux)",
+      moy == {'n': 2, 'jm': 3.0, 'parJour': 70.0, 'renta': 180.0}, moy)
+check("moyenne : aucune officine avec des jours = None", gm.moyenne_livraison(liv, {}, 20.0) is None)
+check("arrondi de la page (Math.round) et non arrondi au pair", gm.arrondi_js(0.125) == 0.13 and round(0.125, 2) == 0.12)
+liv['livraison'] = {'cout': 20.0, 'moy': moy}
+t_liv = gm.formater(liv)
+check("la ligne livraison est écrite entre o: et r:[", "o:[\"2000001\",\"2000002\",\"2000003\"],\nlivraison:{" in t_liv and "},\nr:[" in t_liv)
+check("aller-retour formater / analyser avec livraison et jours", gm.analyser(t_liv) == liv)
+check("un fichier d'avant le 28/10/2026 (sans livraison) se relit toujours", 'livraison' not in gm.analyser(gm.formater(complet)))
+jl_a = dc.marge_clients_du_jeu(liv, dc.comms_du_jeu('Bruno'))
+check("découpage : le jeu de Bruno garde la moyenne de TOUS les clients, recopiée telle quelle", jl_a['livraison'] == liv['livraison'] and len(jl_a['o']) == 2)
+check("découpage : la valeur jours voyage avec la ligne", sorted(r[13] for r in jl_a['r']) == [0, 2])
+check("découpage : sans livraison dans le fichier complet, aucune clé inventée", 'livraison' not in dc.marge_clients_du_jeu(complet, {'Alice'}))
+import json
+import tempfile
+prive_ok = {'laboratoires_contenant': ['X'], 'petit_par_boite': 0.1}
+def prive_avec(**kw):
+    f = tempfile.NamedTemporaryFile('w', suffix='.json', delete=False)
+    json.dump(dict(prive_ok, **kw), f)
+    f.close()
+    gm.PRIVE, ancien = f.name, gm.PRIVE
+    try:
+        return gm.lire_prive()
+    finally:
+        gm.PRIVE = ancien
+        os.remove(f.name)
+check("réglage privé : cout_livraison lu", prive_avec(cout_livraison=20)['cout_livraison'] == 20.0)
+check("réglage privé : coût absent = None (pas de bloc), le reste du réglage reste lisible", prive_avec()['cout_livraison'] is None and prive_avec()['petit'] == 0.1)
+check("réglage privé : coût illisible ou nul = None, jamais une valeur par défaut",
+      all(prive_avec(cout_livraison=v)['cout_livraison'] is None for v in ('20', None, True, 0, -5)))
+
 print()
 if ECHECS:
     print("ÉCHECS (%d) : %s" % (len(ECHECS), ", ".join(ECHECS)))
