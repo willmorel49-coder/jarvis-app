@@ -1910,6 +1910,7 @@
       '.f3-coeur[aria-pressed="true"]{color:var(--pp-bleu)}.f3-coeur[aria-pressed="true"] svg{fill:var(--pp-bleu)}',
       '.f3-pc{flex:none;display:grid;place-items:center;width:16px;height:16px;color:var(--pp-bleu)}.f3-pc[hidden]{display:none}.f3-pc svg{width:14px;height:14px;fill:var(--pp-bleu)}',
       '.f3-pet .f3-ic{display:none}',
+      '@media (max-width:899px){.f3-ic{display:none}}',   /* 28/10/2026 (choix de Will) : sur téléphone, sans la pastille « Agence du médicament · hier » tient sur une ligne */
       '.f3-pet .f3-act{margin-right:-4px}',
       '.f3-pet .f3-txt{padding-right:4px}',
       '.f3-pet .f3-src{max-width:none;-webkit-line-clamp:3}',
