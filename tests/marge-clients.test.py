@@ -412,6 +412,35 @@ check("réglage privé : coût absent = None (pas de bloc), le reste du réglage
 check("réglage privé : coût illisible ou nul = None, jamais une valeur par défaut",
       all(prive_avec(cout_livraison=v)['cout_livraison'] is None for v in ('20', None, True, 0, -5)))
 
+# ═════════════════════════════ 9. Pilotage : moyenne du réseau par fenêtre de mois (28/10/2026) ═════════════════════════════
+print("9. Pilotage : pilotageMoy, une moyenne du réseau entier par fenêtre [du, au]")
+pm = gm.moyennes_pilotage(liv, 20.0)
+check("fenêtres : une par couple [du, au] (3 sur 2 mois)", sorted(pm['f']) == ['2026-01|2026-01', '2026-01|2026-02', '2026-02|2026-02'], sorted(pm['f']))
+neuf = dict(liv, mois=['2026-%02d' % m for m in range(1, 10)], r=[])
+check("fenêtres : 45 sur 9 mois, aucune officine = None", len(gm.moyennes_pilotage(neuf, 20.0)['f']) == 45 and
+      all(v is None for v in gm.moyennes_pilotage(neuf, 20.0)['f'].values()))
+# 2000001 : CA 1000 · 400 € · 4 jours sur 1 mois ; 2000002 (partagée) : CA 400 · 80 € · 2 jours sur 1 mois ; 2000003 : aucun jour, hors moyenne
+# secteur moyen : Alice 2 officines actives, Bruno 1 -> 1,5
+check("fenêtre entière : même officine moyenne que la fiche (livraison.moy), CA et marge par client en plus",
+      pm['f']['2026-01|2026-02'] == {'n': 2, 'jm': 3.0, 'parJour': 70.0, 'renta': 180.0, 'caCl': 700.0, 'mgCl': 240.0, 'nSect': 1.5, 'secteurs': 2},
+      pm['f']['2026-01|2026-02'])
+check("fenêtre entière = livraison.moy (le contrôle qui arrête le générateur)",
+      all(abs(pm['f']['2026-01|2026-02'][q] - moy[q]) <= 0.001 for q in ('n', 'jm', 'parJour', 'renta')))
+check("janvier seul : 2000001 sans jour en janvier sort de la moyenne",
+      pm['f']['2026-01|2026-01'] == {'n': 1, 'jm': 2.0, 'parJour': 40.0, 'renta': 40.0, 'caCl': 400.0, 'mgCl': 80.0, 'nSect': 1.0, 'secteurs': 2},
+      pm['f']['2026-01|2026-01'])
+check("février seul : seules les lignes du mois comptent",
+      pm['f']['2026-02|2026-02'] == {'n': 1, 'jm': 4.0, 'parJour': 75.0, 'renta': 220.0, 'caCl': 500.0, 'mgCl': 300.0, 'nSect': 1.0, 'secteurs': 1},
+      pm['f']['2026-02|2026-02'])
+lp = dict(liv, pilotageMoy=pm)
+t_lp = gm.formater(lp)
+check("la ligne pilotageMoy est écrite après livraison, juste avant r:[", "},\npilotageMoy:{" in t_lp and "}},\nr:[" in t_lp)
+check("aller-retour formater / analyser avec pilotageMoy", gm.analyser(t_lp) == lp)
+jp_b = dc.marge_clients_du_jeu(lp, dc.comms_du_jeu('Bruno'))
+check("découpage : le jeu de Bruno garde la moyenne du RÉSEAU, recopiée telle quelle (jamais recalculée sur ses 2 officines)",
+      jp_b['pilotageMoy'] == pm and gm.analyser(gm.formater(jp_b))['pilotageMoy'] == pm)
+check("découpage : sans pilotageMoy dans le fichier complet, aucune clé inventée", 'pilotageMoy' not in dc.marge_clients_du_jeu(liv, {'Bruno'}))
+
 print()
 if ECHECS:
     print("ÉCHECS (%d) : %s" % (len(ECHECS), ", ".join(ECHECS)))
