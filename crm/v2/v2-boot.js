@@ -273,7 +273,9 @@
   var sb = null;
   function getSb() {
     if (!sb && window.supabase && window.SUPABASE_URL) {
-      sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+      // 28/10/2026 — V2.hl.fetch (v2-hors-ligne.js) range les lectures et les resert sans réseau.
+      sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY,
+        V2.hl ? { global: { fetch: V2.hl.fetch } } : undefined);
     }
     return sb;
   }
@@ -307,9 +309,16 @@
       // maintenance au lieu de l'écran de connexion. Aucune liste dans ce dépôt public.
       if (u && u.error && compteBloque(u.error)) { V2.enMaintenance = true; return false; }
       var user = u && u.data && u.data.user;
+      // 28/10/2026 — sans réseau, le compte ne peut pas être revérifié : on ouvre sur la
+      // dernière vérification en ligne, 3 jours au plus (Will). Le profil vient alors du
+      // rangement des lectures (V2.hl.fetch).
+      var enLigne = !!user;
+      if (!user && V2.hl && V2.hl.coupure(u && u.error)) user = V2.hl.ouvrirSansReseau();
       if (!user) return false;
       var pr = await c.from('user_profiles').select('*').eq('id', user.id).single();
+      if ((pr.error || !pr.data) && pr.status === 0) return false;   // coupure : surtout pas de signOut
       if (pr.error || !pr.data) { await c.auth.signOut(); return false; }
+      if (enLigne && V2.hl) { V2.hl.memoriser(user); setTimeout(V2.hl.envoyer, 1500); V2.hl.rangerPlusTard(); }
       // Utilisateur « OPSO seulement » (ex. Normandie Pharma) : n'a pas accès au CRM Intégral.
       // S'il ouvre l'app Intégral (brand non-opso), on le renvoie vers son espace OPSO.
       // 30/09/2026 — la colonne `opso_only` n'existe pas en base : c'est le rôle
@@ -421,6 +430,7 @@
 
   V2.signOut = async function () {
     var c = getSb(); if (c) { try { await c.auth.signOut(); } catch (e) {} }
+    try { if (V2.hl) V2.hl.oublier(); } catch (e) {}   // plus d'ouverture sans réseau après déconnexion
     V2.user = null; V2.ready = false;
     // 03/09/2026 — le rangement local des fichiers protégés est VIDÉ à la
     // déconnexion : sur un poste partagé, il resterait sinon lisible sans
@@ -946,7 +956,9 @@
     try {
       caches.keys().then(function (ks) {
         ks.forEach(function (k) {
-          if (k.indexOf(CACHE_PROTEGE) === 0 && k !== courant &&
+          // 28/10/2026 — le rangement des lectures (hors ligne, v2-hors-ligne.js) n'est pas
+          // une version de fichiers protégés : il les effaçait juste après leur rangement.
+          if (k.indexOf(CACHE_PROTEGE) === 0 && k !== courant && k !== 'v2-protege-lectures' &&
               (k.indexOf(CACHE_VENTES) === 0) === ventes) caches.delete(k);
         });
       });
@@ -1014,13 +1026,28 @@
         }).catch(function () { ko(); });
       });
     }
+    // 28/10/2026 — sans réseau, l'empreinte n'a pas pu être lue (la clé ne correspond
+    // plus) : on sert la dernière copie rangée de ce fichier, quelle que soit sa version.
+    function repli(c, sinon) {
+      if (!c) { sinon(); return; }
+      c.keys().then(function (ks) {
+        var r = null;
+        ks.forEach(function (q) { if (q.url.indexOf(base) === 0) r = q; });
+        if (!r) { sinon(); return; }
+        c.match(r).then(function (h) { return h ? h.text() : ''; }).then(function (t) {
+          if (t && t.length >= 10) cb(t); else sinon();
+        }, sinon);
+      }, sinon);
+    }
+    var horsLigne = !!(V2.hl && V2.hl.sansReseau());
     try {
       caches.open(nomCache).then(function (c) {
         nettoyerVieuxRangements(nomCache);
+        var manque = horsLigne ? function () { repli(c, function () { telecharger(c); }); } : function () { telecharger(c); };
         c.match(cle).then(function (hit) {
-          if (hit) { hit.text().then(cb, function () { telecharger(c); }); return; }
-          telecharger(c);
-        }, function () { telecharger(c); });
+          if (hit) { hit.text().then(cb, manque); return; }
+          manque();
+        }, manque);
       }, function () { telecharger(null); });
     } catch (e) { telecharger(null); }
   }
@@ -1330,7 +1357,7 @@
     // Bumpé 29/09/2026 : v2-offilog.js change (union catalogue OPSO, retrait
     // Pharmazon/achat côté OPSO) — sans ce bump, un appareil ayant déjà l'app
     // ouverte continuerait de servir l'ancien fichier depuis le cache.
-    var V = '?v=20261028h' + (window.V2_VER || '20260915g');
+    var V = '?v=20261028hl' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1891,7 +1918,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20261028h';
+    var V = '?v=20261028hl';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];

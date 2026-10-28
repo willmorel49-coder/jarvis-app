@@ -10,7 +10,7 @@
 
    ⚠️ Bumper VER à chaque déploiement (aligné sur le ?v= de index.html).
    ═══════════════════════════════════════════════════════════════════ */
-var VER = '20261028h';
+var VER = '20261028hl';
 var CACHE = 'jarvis-' + VER;
 
 /* 11/09/2026 (perf, phase 3) — le SOCLE est rangé dès l'installation : les
@@ -25,7 +25,7 @@ var SOCLE = [
   'v2.css', 'v2-pieces.css', 'v2-accueil.css', 'v2-accueil-cinq.css', 'v2-accueil-widgets.css', 'v2-motion.css', 'v2-verriere.css', 'v2-hab.css',
   'vendor/leaflet/leaflet.css', 'vendor/leaflet/MarkerCluster.css', 'vendor/leaflet/MarkerCluster.Default.css',
   'vendor/supabase/supabase-2.112.2.min.js',
-  'v2-icons.js', 'groupement-alias.js', 'v2-boot.js', 'v2-profil.js',
+  'v2-icons.js', 'groupement-alias.js', 'v2-hors-ligne.js', 'v2-boot.js', 'v2-profil.js',
   'v2-accueil-cinq.js', 'v2-accueil-widgets.js', 'v2-app.js', 'v2-motion.js', 'v2-bg.js', 'v2-hab.js',
   'manifest.webmanifest'
 ];
@@ -53,12 +53,33 @@ self.addEventListener('activate', function (e) {
       // versions, et la déconnexion le vide.
       // 30/09/2026 — même règle pour le tiroir des autres fichiers protégés,
       // rangés par empreinte (quota de trafic Supabase dépassé ce jour-là).
+      // 28/10/2026 — et le rangement des lectures Supabase (hors ligne, v2-hors-ligne.js).
       return Promise.all(keys.map(function (k) {
         if (k !== CACHE && k.indexOf('v2-protege-ventes-') !== 0 &&
-            k !== 'v2-protege-empreintes') return caches.delete(k);
+            k !== 'v2-protege-empreintes' && k !== 'v2-protege-lectures') return caches.delete(k);
       }));
     }).then(function () { return self.clients.claim(); })
   );
+});
+
+/* 28/10/2026 — hors ligne : la page, chargée EN LIGNE, envoie la liste des fichiers qu'elle a
+   lus (modules différés, données publiques). Ceux qui manquent au rangement de CETTE version
+   y entrent. Sans ça, ils n'étaient rangés qu'à partir d'une page déjà pilotée par ce service
+   worker : au premier passage après une mise en ligne, ils partaient dans l'ancien cache,
+   effacé à l'activation — et l'app rouverte sans réseau n'avait plus ses écrans (banc WebKit). */
+self.addEventListener('message', function (e) {
+  var d = e.data;
+  if (!d || d.type !== 'ranger' || !Array.isArray(d.urls)) return;
+  e.waitUntil(caches.open(CACHE).then(function (c) {
+    return Promise.all(d.urls.slice(0, 600).map(function (u) {
+      var url; try { url = new URL(u, self.registration.scope); } catch (x) { return null; }
+      if (url.origin !== self.location.origin || /\/sw\.js$/.test(url.pathname)) return null;
+      return c.match(url.href).then(function (m) {
+        if (m) return null;
+        return fetch(url.href).then(function (r) { if (r && r.ok && r.type === 'basic') return c.put(url.href, r); }).catch(function () {});
+      });
+    }));
+  }).catch(function () {}));
 });
 
 /* ── Alertes « un pharmacien vient de réserver » ────────────────────

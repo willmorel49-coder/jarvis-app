@@ -60,12 +60,23 @@
   function newId() { return 'n' + Date.now() + Math.floor((window.performance && performance.now ? performance.now() : 0) % 1000); }
   function fromRow(r) { return { id: r.id, author: r.author_name || '—', authorId: r.author_id || '', body: r.body || '', created: r.created_at ? new Date(r.created_at).getTime() : Date.now() }; }
 
+  // 28/10/2026 — notes écrites sans réseau, pas encore parties (V2.hl, v2-hors-ligne.js) :
+  // montrées en tête, marquées « en attente d'envoi ».
+  function avecAttente(notes, st, sid) {
+    if (!V2.hl) return notes;
+    var vues = {}; notes.forEach(function (n) { vues[n.id] = 1; });
+    var att = V2.hl.enAttente(TABLE).filter(function (x) {
+      return x.ligne.scope_type === st && x.ligne.scope_id === String(sid) && !vues[x.ligne.id];
+    }).map(function (x) { var n = fromRow(x.ligne); n.attente = true; return n; }).reverse();
+    return att.concat(notes);
+  }
   function load(st, sid) {
     var c = sb();
     if (c) {
       return c.from(TABLE).select('*').eq('scope_type', st).eq('scope_id', String(sid)).order('created_at', { ascending: false })
         .then(function (r) {
-          if (!r.error && r.data) return { backend: 'supabase', notes: r.data.map(fromRow) };
+          if (!r.error && r.data) return { backend: 'supabase', notes: avecAttente(r.data.map(fromRow), st, sid) };
+          if (r.status === 0 && V2.hl) return { backend: 'supabase', notes: avecAttente([], st, sid) };
           return { backend: 'local', notes: localFor(st, sid) };
         }).catch(function () { return { backend: 'local', notes: localFor(st, sid) }; });
     }
@@ -287,8 +298,19 @@
       if (c) {
         // échec Supabase → NE PAS faire croire que c'est sauvé (avant : sauvé en local + « Note ajoutée » puis disparue au re-render qui relit Supabase)
         var fail = function () { btn.disabled = false; btn.textContent = 'Ajouter'; if (V2.toast) V2.toast('Note non enregistrée — réessayez', 'error'); };
+        // 28/10/2026 — sans réseau : gardée sur l'appareil (avec son id et son heure), elle
+        // part seule au retour du réseau. Si l'appareil refuse de la garder : échec dit.
+        var garder = function () {
+          var ligne = { id: V2.hl.nouvelId(), scope_type: st, scope_id: String(sid), author_id: V2.user.id,
+                        author_name: V2.user.name || '', body: body, created_at: new Date().toISOString() };
+          if (!V2.hl.differer({ table: TABLE, ligne: ligne, quoi: 'Une note' })) { fail(); return; }
+          if (ta) ta.value = ''; brouillonPoser('note:' + st + ':' + sid, '');
+          if (V2.toast) V2.toast('Note gardée sur l’appareil : elle partira au retour du réseau');
+          renderBox(box);
+        };
+        if (V2.hl && V2.hl.sansReseau()) { garder(); return; }
         c.from(TABLE).insert({ scope_type: st, scope_id: String(sid), author_id: V2.user.id, author_name: V2.user.name || '', body: body })
-          .then(function (r) { if (r.error) fail(); else done(); })
+          .then(function (r) { if (r.error && r.status === 0 && V2.hl) garder(); else if (r.error) fail(); else done(); })
           .catch(function () { fail(); });
       } else { addLocal(st, sid, body); done(); }
     },
@@ -305,8 +327,14 @@
         return true;
       };
       if (!c) { addLocal(st, sid, body); return Promise.resolve(redraw()); }
+      var garder = function () {   // 28/10/2026 — sans réseau : même boîte d'envoi que V2.notes.add
+        var ok = V2.hl.differer({ table: TABLE, quoi: 'Une note', ligne: { id: V2.hl.nouvelId(), scope_type: st, scope_id: String(sid),
+          author_id: V2.user.id, author_name: V2.user.name || '', body: body, created_at: new Date().toISOString() } });
+        return ok ? redraw() : false;
+      };
+      if (V2.hl && V2.hl.sansReseau()) return Promise.resolve(garder());
       return c.from(TABLE).insert({ scope_type: st, scope_id: String(sid), author_id: V2.user.id, author_name: V2.user.name || '', body: body })
-        .then(function (r) { return r.error ? false : redraw(); }, function () { return false; });
+        .then(function (r) { return r.error ? (r.status === 0 && V2.hl ? garder() : false) : redraw(); }, function () { return false; });
     },
 
     remove: function (el) {
@@ -492,7 +520,8 @@
       var uid = (V2.user && V2.user.id) || '__';
       list.innerHTML = notes.map(function (n) {
         var d = ''; try { d = new Date(n.created).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' }); } catch (e) {}
-        var mine = (res.backend === 'local') || (n.authorId && n.authorId === uid);
+        if (n.attente) d += ' · en attente d’envoi';
+        var mine = !n.attente && ((res.backend === 'local') || (n.authorId && n.authorId === uid));
         return '<div class="v2-note" data-id="' + esc(n.id) + '" data-raw="' + encodeURIComponent(n.body) + '">' +
           '<div class="v2-note-top"><span class="v2-note-au">' + esc(n.author) + '</span><span class="v2-note-dt">' + d + '</span>' +
             (mine ? '<button class="v2-note-edit" onclick="V2.notes.edit(this)" title="Modifier" aria-label="Modifier">✎</button>' +
@@ -567,4 +596,10 @@
     ].join('');
     document.head.appendChild(s);
   }
+
+  // 28/10/2026 — notes faites hors ligne parties : les encadrés affichés perdent leur « en attente ».
+  window.addEventListener('v2-hl-envoye', function (e) {
+    if (e.detail && e.detail.tables && e.detail.tables.indexOf(TABLE) < 0) return;
+    Array.prototype.forEach.call(document.querySelectorAll('.v2-notes-box'), function (b) { try { renderBox(b); } catch (x) {} });
+  });
 })();

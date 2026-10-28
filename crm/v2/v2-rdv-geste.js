@@ -280,7 +280,7 @@
             if (m) m.innerHTML = '<span style="color:var(--rose,#E0556E)">' + esc(r.message) + '</span>';
             return;
           }
-          V2.toast('Rendez-vous noté.');
+          V2.toast(r.attente ? 'Rendez-vous gardé sur l’appareil : il sera vérifié et enregistré au retour du réseau.' : 'Rendez-vous noté.');
           V2.rdvGeste.fermer();
           // On ne déplace pas l'utilisateur : il faisait autre chose. S'il est
           // déjà sur un écran de rendez-vous, on le rafraîchit, c'est tout.

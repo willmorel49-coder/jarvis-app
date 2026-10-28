@@ -227,8 +227,19 @@
         ? Promise.resolve({ lat: o.lat, lon: o.lon })
         : geocode([o.adresse, o.cp, o.ville].filter(Boolean).join(' '));
 
+      // 28/10/2026 — sans réseau : le rendez-vous est gardé sur l'appareil et part au
+      // retour du réseau (V2.hl, v2-hors-ligne.js). La règle « pas de chevauchement » ne
+      // peut être vérifiée qu'à ce moment-là : un refus est alors dit en clair, et rien
+      // n'est perdu. Sa position est cherchée avant l'envoi si elle manque.
+      var geo = (o.lat != null && o.lon != null) ? null : [o.adresse, o.cp, o.ville].filter(Boolean).join(' ');
+      function garder(ligne) {
+        ligne.id = V2.hl.nouvelId();
+        var ok = V2.hl.differer({ table: 'rdv', ligne: ligne, geo: ligne.lat == null ? geo : null,
+          quoi: 'Le rendez-vous du ' + ligne.date.split('-').reverse().join('/') + ' à ' + ligne.heure + ' (' + ligne.nom + ')' });
+        return ok ? { attente: true, data: { id: ligne.id } } : { error: { message: 'stockage' } };
+      }
       return pos.then(function (ll) {
-        return c.from('rdv').insert({
+        var ligne = {
           user_id: u,
           cip: o.cip || null,
           nom: o.nom || 'Officine',
@@ -245,8 +256,13 @@
           contact_nom: q.contact || o.contact || null,
           contact_tel: q.tel || o.tel || null,
           message: q.note || null
-        }).select('id').single();
+        };
+        if (V2.hl && V2.hl.sansReseau()) return garder(ligne);
+        return c.from('rdv').insert(ligne).select('id').single().then(function (r) {
+          return (r && r.error && r.status === 0 && V2.hl) ? garder(ligne) : r;
+        });
       }).then(function (r) {
+        if (r && r.attente) return { ok: true, id: r.data.id, attente: true };
         if (r && r.error) {
           // La règle « pas de chevauchement » de la base : deux rendez-vous ne
           // peuvent pas se marcher dessus. Le message brut ne dirait rien.
@@ -280,7 +296,7 @@
         contact: val('rda-contact'), tel: val('rda-tel'), note: val('rda-note')
       }).then(function (r) {
         if (!r.ok) { rendre(); dire(esc(r.message), 'var(--rose,#E0556E)'); return; }
-        V2.toast('Rendez-vous noté.');
+        V2.toast(r.attente ? 'Rendez-vous gardé sur l’appareil : il sera vérifié et enregistré au retour du réseau.' : 'Rendez-vous noté.');
         choisie = null;
         V2.go('rdvplanning');
       });

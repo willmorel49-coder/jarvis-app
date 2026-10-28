@@ -12,11 +12,13 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
         var hadController = !!navigator.serviceWorker.controller;
-        navigator.serviceWorker.register('sw.js?v=20261028h').then(function (reg) {
-          try { reg.update(); } catch (e) {}   // vérifie tout de suite au chargement          // pendant une longue session, re-vérifier périodiquement s'il y a une nouvelle version
-          setInterval(function () { try { reg.update(); } catch (e) {} }, 5 * 60 * 1000);
+        // 28/10/2026 — sans réseau, reg.update() est REJETÉ : sans .catch, le capteur d’erreurs affichait
+        // « Script sw.js load failed » au commercial hors ligne (banc WebKit).
+        navigator.serviceWorker.register('sw.js?v=20261028hl').then(function (reg) {
+          try { reg.update().catch(function () {}); } catch (e) {}   // vérifie tout de suite au chargement          // pendant une longue session, re-vérifier périodiquement s'il y a une nouvelle version
+          setInterval(function () { try { reg.update().catch(function () {}); } catch (e) {} }, 5 * 60 * 1000);
           // dès qu'on revient sur l'appli (onglet réactivé) : re-check -> bannière « Actualiser » si nouvelle version
-          document.addEventListener('visibilitychange', function () { if (!document.hidden) { try { reg.update(); } catch (e) {} } });
+          document.addEventListener('visibilitychange', function () { if (!document.hidden) { try { reg.update().catch(function () {}); } catch (e) {} } });
         }).catch(function () {});
         // Un nouveau service worker prend la main = nouvelle version déployée → proposer d'actualiser
         navigator.serviceWorker.addEventListener('controllerchange', function () {
@@ -189,17 +191,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Onest:wght@400;500;600;700;800&family=Martian+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   </noscript>
   <link rel="dns-prefetch" href="https://images.weserv.nl">
-  <link rel="stylesheet" href="v2.css?v=20261028h" />
-  <link rel="stylesheet" href="v2-pieces.css?v=20261028h" />
-  <link rel="stylesheet" href="v2-accueil.css?v=20261028h" />
-  <link rel="stylesheet" href="v2-accueil-cinq.css?v=20261028h" />
-  <link rel="stylesheet" href="v2-accueil-widgets.css?v=20261028h" />
-  <link rel="stylesheet" href="v2-motion.css?v=20261028h" />
+  <link rel="stylesheet" href="v2.css?v=20261028hl" />
+  <link rel="stylesheet" href="v2-pieces.css?v=20261028hl" />
+  <link rel="stylesheet" href="v2-accueil.css?v=20261028hl" />
+  <link rel="stylesheet" href="v2-accueil-cinq.css?v=20261028hl" />
+  <link rel="stylesheet" href="v2-accueil-widgets.css?v=20261028hl" />
+  <link rel="stylesheet" href="v2-motion.css?v=20261028hl" />
   <!-- Peau « Verrière » (choix Will 12/08/2026) — chargée en dernier, purement additive -->
-  <link rel="stylesheet" href="v2-verriere.css?v=20261028h" />
+  <link rel="stylesheet" href="v2-verriere.css?v=20261028hl" />
 
   <!-- PWA : installable sur l'écran d'accueil (iOS + Android) -->
-  <link rel="manifest" href="manifest.webmanifest?v=20261028h" />
+  <link rel="manifest" href="manifest.webmanifest?v=20261028hl" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />  <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="JARVIS" />
@@ -222,7 +224,7 @@
   <!-- 11/09/2026 — perf : copie locale épinglée (même fichier que rdv.html). Servie par le
        service worker, plus de troisième domaine avant le premier rendu, et la version ne
        change plus sans nous. Même origine = traces d'erreur complètes. -->
-  <script src="vendor/supabase/supabase-2.112.2.min.js?v=20261028h"></script>
+  <script src="vendor/supabase/supabase-2.112.2.min.js?v=20261028hl"></script>
   <script>
     window.V2_DATAV = '20261019b';   // version des données lazy (pharma-fr-data.js) — recherche & fiches prospect
     // La marque de l'OUTIL. Will, 19/08/2026 : « c'est JARVIS CRM ; où il y a
@@ -240,7 +242,7 @@
         window.V2_BRAND = { name: 'Escale Pharma', sub: 'Espace commercial', escale: true };
         document.title = 'Escale Pharma · Espace commercial';
         var mt = document.querySelector('meta[name="theme-color"]'); if (mt) mt.setAttribute('content', '#0B6E8F');
-        document.write('<link rel="stylesheet" href="../../escale/v2/escale-theme.css?v=20261028h">');
+        document.write('<link rel="stylesheet" href="../../escale/v2/escale-theme.css?v=20261028hl">');
       }
     } catch (e) {}
     window.SUPABASE_URL = 'https://iyvavhnlhxksokkerkos.supabase.co';
@@ -256,8 +258,8 @@
     };
   </script>
   <!-- 16/10/2026 — « La garde-robe » : huit habillages de toute l'app (matière, lumière, police). Posé AVANT le premier dessin. -->
-  <link rel="stylesheet" href="v2-hab.css?v=20261028h" />
-  <script src="v2-hab.js?v=20261028h"></script>
+  <link rel="stylesheet" href="v2-hab.css?v=20261028hl" />
+  <script src="v2-hab.js?v=20261028hl"></script>
 </head>
 <body>
   <div class="v2-halo"></div>
@@ -265,12 +267,14 @@
 
   <!-- ═══ SOCLE (≈ 275 Ko) : le strict nécessaire à l'écran de connexion — 11/09/2026 ═══
        Avant : 80 scripts (6,05 Mo) chargés et exécutés AVANT le premier pixel. -->
-  <script src="v2-icons.js?v=20261028h"></script>
+  <script src="v2-icons.js?v=20261028hl"></script>
   <!-- Table d'alias groupements (canonicalisation) : fusionne les doublons partout -->
-  <script src="groupement-alias.js?v=20261028h"></script>
-  <script src="v2-boot.js?v=20261028h"></script>
+  <script src="groupement-alias.js?v=20261028hl"></script>
+  <!-- 28/10/2026 — hors ligne (consulter + noter sans réseau) : AVANT v2-boot.js, qui lui passe le client Supabase -->
+  <script src="v2-hors-ligne.js?v=20261028hl"></script>
+  <script src="v2-boot.js?v=20261028hl"></script>
   <!-- Profil commercial : lu DANS loadData (corrections manuelles de groupement) → avant les données -->
-  <script src="v2-profil.js?v=20261028h"></script>
+  <script src="v2-profil.js?v=20261028hl"></script>
   <script>
     // ═══ LE RESTE (≈ 5,4 Mo) : MÊME ORDRE qu'avant, posé par V2.chargerScripts (v2-boot.js)
     // juste après le premier rendu, en scripts `async=false` (téléchargés en parallèle,
@@ -302,13 +306,13 @@
       'v2-visites.js', 'v2-campagne-cible.js', 'lgo-process-data.js', 'lgo-savoir-data.js', 'v2-lgo.js', 'v2-mallette.js', 'v2-documents.js'
     ];
   </script>
-  <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=20261028h">
-  <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.css?v=20261028h">
-  <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.Default.css?v=20261028h">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=20261028hl">
+  <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.css?v=20261028hl">
+  <link rel="stylesheet" href="vendor/leaflet/MarkerCluster.Default.css?v=20261028hl">
   <!-- App (boot), puis les deux couches qui enveloppent V2.render (sondage ≤ 500 ms : rester collées à v2-app) -->
-  <script src="v2-accueil-cinq.js?v=20261028h"></script>
-  <script src="v2-accueil-widgets.js?v=20261028h"></script>
-  <script src="v2-app.js?v=20261028h"></script>
-  <script src="v2-motion.js?v=20261028h"></script>
-  <script src="v2-bg.js?v=20261028h"></script>
+  <script src="v2-accueil-cinq.js?v=20261028hl"></script>
+  <script src="v2-accueil-widgets.js?v=20261028hl"></script>
+  <script src="v2-app.js?v=20261028hl"></script>
+  <script src="v2-motion.js?v=20261028hl"></script>
+  <script src="v2-bg.js?v=20261028hl"></script>
 </body></html>
