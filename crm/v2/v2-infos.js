@@ -1473,9 +1473,9 @@
   function f3Carte(it, i, compact, src, garde) {
     var k = x15K(it), on = x15Garde(k);
     var rep = x14Image({ theme: it.theme, rang: it.rang }, i, ''), nom = x15Nom(it), ini = (nom.match(/[A-Za-zÀ-ÿ0-9]/) || ['·'])[0].toUpperCase();
-    var age = x13Age(it);
+    var age = x13Age(it).replace(/^il y a /, '');   // « 5 j », « 1 sem. » : tient sur la ligne de la source
     var img = '<img class="f3-im" src="' + esc(src) + '" data-fb="' + esc(rep) + '" alt="" loading="lazy" decoding="async" width="' + (compact ? 240 : 1200) + '" height="' + (compact ? 240 : 675) + '" onerror="if(this.getAttribute(\'data-fb\')&&this.src.indexOf(this.getAttribute(\'data-fb\'))<0){this.src=this.getAttribute(\'data-fb\')}else{this.onerror=null}">';
-    var ouv = '<button type="button" class="f3-ouv" ' + (garde ? 'data-garde-i="' + esc(k) + '"' : 'data-fil-i="' + i + '"') + '><span class="f3-t">' + x13T(it.t) + '</span></button>';
+    var ouv = '<button type="button" class="f3-ouv" ' + (garde ? 'data-garde-i="' + esc(k) + '"' : 'data-fil-i="' + i + '"') + '><span class="f3-t">' + x13T(String(it.t || '').replace(/\s*[–-]?\s*20\d\d-\d{1,3}\s*$/, '')) + '</span></button>';   // sans la référence de circulaire finale (« Rupture de quétiapine – 2026-42 »)
     var coeur = compact ? '' : '<button type="button" class="f3-b f3-coeur" data-f3="coeur" aria-pressed="' + (on ? 'true' : 'false') + '" aria-label="' + (on ? 'Retirer de mes infos gardées' : 'Garder cette info') + '">' + F3_COEUR + '</button>';
     var menu = '<button type="button" class="f3-b f3-men" data-f3="menu" aria-haspopup="menu" aria-expanded="false" aria-label="Plus d’actions sur cette info">' + F3_MENU + '</button>';
     var pied = '<div class="f3-pied"><span class="f3-ic" aria-hidden="true">' + esc(ini) + '</span><span class="f3-qui"><span class="f3-src">' + esc(nom) + (age && !compact ? '<span aria-hidden="true">\u00a0·</span>' : '') + '</span>' + (age ? '<span class="f3-age">' + esc(age) + '</span>' : '') + '</span>' +
@@ -1886,7 +1886,7 @@
       '  .f3-fil{margin:34px 0 0;padding:32px 28px 18px}',
       '  .f3-tete{padding:0 4px 22px}.f3-tete h2{font-size:34px}.f3-tete p{font-size:16px}',
       '  .f3-ls{column-count:3;column-gap:24px}',
-      '  .f3-li{margin-bottom:24px}',
+      '  .f3-li{margin-bottom:0;padding-bottom:24px}',   /* une marge fausse l\'équilibre des colonnes dans Safari (178 px de vide mesurés), un espace intérieur non */
       '}',
       '/* ── cœur et « ⋮ » : la carte est un div, un bouton l\'ouvre en entier, les boutons cœur / ⋮ passent par-dessus ── */',
       '.f3-li{position:relative}.f3-li.f3-ouvert{z-index:5}',
