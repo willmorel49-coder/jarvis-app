@@ -984,7 +984,7 @@
   function bvOuvrir(u, marge) {
     var items = [];
     if (u.voitTousReel) items.push({ ic: u2Ic('pilotage', 22), t: 'Les ventes de toute l\'équipe', d: 'Le Pilotage vous montre maintenant les ventes de chaque commercial, plus seulement les vôtres.', ou: 'Accueil › Pilotage', go: 'pilotage', b: 'Ouvrir le Pilotage' });
-    items.push({ ic: u2Ic('documents', 22), t: 'Documents', d: 'Les tarifs, conditions et catalogues des grossistes, groupements et laboratoires, rangés par dossier.', ou: 'Accueil › Documents', go: 'documents', b: 'Ouvrir Documents' });
+    items.push({ ic: u2Ic('documents', 22), t: 'Documents', d: 'Les tarifs, conditions et catalogues, rangés en deux familles : grossistes et parapharmacie.', ou: 'Accueil › Documents', go: 'documents', b: 'Ouvrir Documents' });
     if (marge) items.push({ ic: ICO('euro', 22, 1.75), t: 'Listing produits 2027', d: 'Les listings à proposer en janvier 2027, ce que chaque produit nous rapporte et la vue par officine.', ou: 'le menu à votre nom, en haut à droite', go: 'listings2027', b: 'Ouvrir le listing' });
     var nb = ['', 'un outil', 'deux outils', 'trois outils'][items.length] || (items.length + ' outils');
     var prenom = String(u.name || '').trim().split(/\s+/)[0];

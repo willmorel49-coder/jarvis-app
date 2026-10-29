@@ -322,7 +322,7 @@
       if (sous) sous.textContent = '';
       return;
     }
-    if (sous) sous.textContent = nb(D.docs.length) + ' documents classés par dossier : grossistes, groupements, laboratoires.';
+    if (sous) sous.textContent = nb(D.docs.length) + ' documents classés en deux familles : grossistes et parapharmacie.';
     var h = '', q = D.q.trim();
     if (!D.retiresLu) h += '<div class="dc-alerte" role="status">La liste des documents retirés n’a pas pu être lue : un document déjà retiré peut encore s’afficher ici.</div>';
     if (q) {
