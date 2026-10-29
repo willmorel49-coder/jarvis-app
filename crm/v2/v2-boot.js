@@ -16,7 +16,8 @@
     // Chemin relatif à crm/v2 : depuis un univers séparé (opso/v2, escale/v2), on passe par V2_DATA_BASE.
     fetch((window.V2_DATA_BASE || '../') + 'v2/reprises.json?d=' + day, { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : {}; })
-      .then(function (j) { window.REPRISES = j || {}; if (V2.render && V2.route) V2.render(); })
+      // 29/10/2026 — l'écran Documents ne se redessine plus à l'arrivée de ces données (il ne les affiche pas).
+      .then(function (j) { window.REPRISES = j || {}; if (V2.render && V2.route && V2.route.name !== 'documents') V2.render(); })
       .catch(function () {});
   })();
 
@@ -626,7 +627,9 @@
       V2.donneesSecours = false;   // les vraies données ont pris la place du repli
       V2.ready = true;
       // Corrections manuelles (ex. groupement changé depuis une fiche) — appliquées en arrière-plan.
-      try { if (V2.profil && V2.profil.applyOverrides) V2.profil.applyOverrides(function () { if (V2.render) V2.render(); }); } catch (e) {}
+      // 29/10/2026 — mesuré en production : c'était le seul redessin non demandé de l'écran Documents (0,75 s après son
+      // affichage, la grille et ses aperçus repartaient de zéro). Documents n'affiche aucune fiche : il ne se redessine plus ici.
+      try { if (V2.profil && V2.profil.applyOverrides) V2.profil.applyOverrides(function () { if (V2.render && !(V2.route && V2.route.name === 'documents')) V2.render(); }); } catch (e) {}
       return;
     }
 
@@ -1380,7 +1383,7 @@
     // Bumpé 29/09/2026 : v2-offilog.js change (union catalogue OPSO, retrait
     // Pharmazon/achat côté OPSO) — sans ce bump, un appareil ayant déjà l'app
     // ouverte continuerait de servir l'ancien fichier depuis le cache.
-    var V = '?v=20261029mq' + (window.V2_VER || '20260915g');
+    var V = '?v=20261029mr' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1950,7 +1953,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20261029mq';
+    var V = '?v=20261029mr';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];

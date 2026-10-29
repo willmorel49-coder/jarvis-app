@@ -895,7 +895,8 @@
       });
       out.sort(function (a, b) { return a.diff - b.diff; });
       _relances = out; _relancesPret = true;
-      if (V2.render) V2.render();
+      // 29/10/2026 — même règle que les corrections de fiches (v2-boot.js) : l'écran Documents ne se redessine pas pour les relances.
+      if (V2.render && !(V2.route && V2.route.name === 'documents')) V2.render();
     }).catch(function () { _relances = []; _relancesPret = true; });
   }
   function relancesCardHtml() {
