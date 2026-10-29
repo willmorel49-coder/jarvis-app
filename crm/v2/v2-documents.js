@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════
    CRM V2 · Documents (V2.pages.documents) — 16/10/2026
    Le classement des grossistes, groupements et laboratoires (tarifs, conditions, catalogues), consultable depuis l'iPhone comme
-   depuis le Mac, par les seuls comptes inscrits dans la table documents_acces. Même rangement que sur le Mac : 5 dossiers racine, jusqu'à 3 niveaux, recherche partout.
+   depuis le Mac, par les seuls comptes inscrits dans la table documents_acces. Même rangement que sur le Mac : 4 dossiers racine (2 familles Grossistes / Parapharmacie depuis le 29/10/2026, puis Réserve et Antérieur à 2025), recherche partout.
 
    Accès : V2.documentsVerifier() (v2-app.js) interroge la fonction Supabase documents_acces_ok(). Tant que la réponse n'est pas « oui »,
    l'écran ne fait AUCUNE requête vers l'index et montre un message neutre.
@@ -162,10 +162,10 @@
     return (n / 1073741824).toFixed(1).replace('.', ',') + NBSP + 'Go';
   }
 
-  // ——— Noms lisibles des cinq dossiers racine (le numéro fixe l'ordre) ———
+  // ——— Noms lisibles des quatre dossiers racine (le numéro fixe l'ordre) — deux familles depuis le 29/10/2026 ———
   var RACINES = {
-    '1': 'Grossistes', '2': 'Groupements', '3': 'Laboratoires, parapharmacie et plateformes',
-    '4': 'Réserve (confidentiel ou nominatif)', '5': 'Antérieur à 2025 (pièces rares sur les short-liners)'
+    '1': 'Grossistes', '2': 'Parapharmacie',
+    '3': 'Réserve (confidentiel ou nominatif)', '4': 'Antérieur à 2025 (pièces rares)'
   };
   function numRacine(seg) { var m = /^\s*(\d+)\b/.exec(seg); return m ? m[1] : null; }
   function nomDossier(seg, niveau) {
