@@ -526,20 +526,28 @@
     eff.addEventListener('click', function () { D.q = ''; q.value = ''; eff.hidden = true; corps(); q.focus(); });
     // Aperçu chargé : il remplace le picto ; aperçu illisible (adresse expirée, image absente) : le picto reste.
     zone.addEventListener('load', function (ev) { var im = ev.target; if (im && im.tagName === 'IMG' && im.parentNode) { im.classList.add('dc-vu'); im.parentNode.classList.add('dc-ok'); } }, true);
-    // 29/10/2026 — un échec de chargement n'est pas définitif : en production, 4 aperçus de Solipharm sur 148 restaient en picto
-    // alors que leur adresse répondait 200. Au 1er échec : adresse re-signée, image marquée et rechargée ; le picto au 2e échec.
+    // 29/10/2026 — un échec de chargement n'est pas définitif. Mesuré en production : Supabase refuse par vagues de 5 à 8 s
+    // (429 « too_many_connections »), un nouvel essai immédiat retombait dedans. Donc jusqu'à 3 nouveaux essais espacés
+    // (2 s, 5 s, 10 s), adresse re-signée à chaque fois ; une re-signature refusée compte comme un essai raté.
+    // data-reessai = nombre d'essais lancés ; le picto seulement après le dernier ; rien si l'image a quitté la page.
+    var ATTENTES = [2000, 5000, 10000];
+    function reessayer(im) {
+      var n = +im.getAttribute('data-reessai') || 0, ap = im.getAttribute('data-ap'), c = V2.sb && V2.sb();
+      if (n >= ATTENTES.length || !ap || !c || !c.storage) { if (im.parentNode) im.parentNode.removeChild(im); return; }
+      im.setAttribute('data-reessai', String(n + 1));
+      setTimeout(function () {
+        if (!im.isConnected) return;
+        Promise.resolve(c.storage.from(BUCKET).createSignedUrl(ap, 3600)).then(function (r) {
+          var u = r && !r.error && r.data && r.data.signedUrl;
+          if (!u) throw new Error('adresse refusée');
+          D.urls[ap] = u;
+          if (im.isConnected) im.src = u;
+        }).catch(function () { if (im.isConnected) reessayer(im); });
+      }, ATTENTES[n]);
+    }
     zone.addEventListener('error', function (ev) {
       var im = ev.target; if (!im || im.tagName !== 'IMG' || !im.parentNode) return;
-      var ap = im.getAttribute('data-ap'), c = V2.sb && V2.sb();
-      var retirer = function () { if (im.parentNode) im.parentNode.removeChild(im); };
-      if (im.hasAttribute('data-reessai') || !ap || !c || !c.storage) { retirer(); return; }
-      im.setAttribute('data-reessai', '1');
-      Promise.resolve(c.storage.from(BUCKET).createSignedUrl(ap, 3600)).then(function (r) {
-        var u = r && !r.error && r.data && r.data.signedUrl;
-        if (!u) throw new Error('adresse refusée');
-        D.urls[ap] = u;
-        if (im.parentNode) im.src = u;
-      }).catch(retirer);
+      reessayer(im);
     }, true);
     zone.addEventListener('click', function (ev) {
       var t = ev.target && ev.target.closest ? ev.target : null; if (!t) return;
