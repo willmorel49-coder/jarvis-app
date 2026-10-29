@@ -30,6 +30,10 @@
   var SANS_SAGITTA = OPSO;
   // Même règle pour le catalogue OCP « Les Incontournables » (10/09/2026).
   var SANS_OCP = OPSO;
+  // CERP (offres mensuelles) et Paraph (catalogue de la centrale) : conditions de tiers, jamais côté OPSO,
+  // et les deux fichiers protégés n'y sont même pas demandés (29/10/2026).
+  var SANS_CERP = OPSO;
+  var SANS_PARAPH = OPSO;
   // Prix catalogue des laboratoires (tarifs de tiers) : jamais côté OPSO, le fichier n'y est même pas demandé.
   var SANS_PCAT = OPSO;
   // Côté OPSO, à la place : le prix catalogue SEUL (fichier `offilogcatopso`, code 13 → prix HT), sans source ni année ; jamais « à vérifier ».
@@ -54,6 +58,8 @@
     { k: 'pzcheaper',   label: 'Moins cher sur Pharmazon', sc: 'var(--ip-blue-d)' },
     { k: 'sgcheaper',   label: 'Moins cher chez Sagitta', sc: 'var(--ip-blue-d)' },
     { k: 'ocpcheaper',  label: 'Moins cher chez OCP', sc: 'var(--ip-blue-d)' },
+    { k: 'cerpcheaper', label: 'Moins cher chez CERP', sc: 'var(--ip-blue-d)' },
+    { k: 'paraphcheaper', label: 'Moins cher chez Paraph', sc: 'var(--ip-blue-d)' },
     { k: 'avecpcat',    label: 'Avec prix catalogue', sc: 'var(--ip-blue-d)' },
     { k: 'leclercpub',  label: 'Vendu chez E.Leclerc', sc: '#0066B3' },
     { k: 'farmalinepub', label: 'Vendu chez Farmaline', sc: '#0F7A55' },
@@ -166,6 +172,73 @@
 
   // date du relevé Sagitta (portée par le fichier protégé), au format français
   function sgMajLabel() { return majLabel(window.SAGITTA_PRIX_MAJ); }
+  // ── CERP : offres mensuelles « Central Prom / Flash / Lab » (fichier protégé `conccerp`) ──
+  // Plusieurs offres par code (une par mois et par famille). On garde la plus RÉCENTE, et seulement si elle est
+  // récente : période qui commence au plus tôt 2 mois avant le mois de la date de mise à jour portée par le
+  // fichier, ou « tarif AAAA » de l'année de cette date. À période égale : le net le plus bas.
+  // Aucune date écrite en dur : tout se calcule depuis `maj`. Le libellé CERP (qui commence par le CIP7) n'est jamais lu.
+  var MOIS_FR = { janvier: 0, 'février': 1, mars: 2, avril: 3, mai: 4, juin: 5, juillet: 6, 'août': 7, septembre: 8, octobre: 9, novembre: 10, 'décembre': 11 };
+  // « octobre 2026 » → mois absolu ; « juillet-août 2026 » → son premier mois ; « tarif 2026 » → janvier + indicateur.
+  function cerpPeriode(txt) {
+    var p = String(txt || '').trim().toLowerCase();
+    var t = /^tarif (\d{4})$/.exec(p);
+    if (t) return { m: +t[1] * 12, tarif: true };
+    var m = /^(?:([^\s-]+)-)?([^\s-]+) (\d{4})$/.exec(p);
+    if (!m) return null;
+    var mo = MOIS_FR[m[1] || m[2]];
+    return mo == null ? null : { m: +m[3] * 12 + mo, tarif: false };
+  }
+  var cerpMemo = null, cerpMemoSrc = null;
+  function cerpIndex() {
+    var src = window.CONCURRENTS_CERP;
+    var out = new Map();
+    if (SANS_CERP || !src || !src.rows || !src.cols) return out;
+    if (cerpMemoSrc === src) return cerpMemo;
+    var c = {}; src.cols.forEach(function (n, i) { c[n] = i; });
+    var md = /^(\d{4})-(\d{2})/.exec(String(src.maj || ''));
+    if (!md) { cerpMemoSrc = src; cerpMemo = out; return out; }
+    var maj = +md[1] * 12 + (+md[2] - 1), plancher = maj - 2;
+    var best = new Map();
+    src.rows.forEach(function (r) {
+      var code = ean13(r[c.code13]);
+      var per = cerpPeriode(r[c.periode]);
+      var net = numOr0(r[c.net]);
+      if (!code || !per || net <= 0) return;
+      if (!(per.tarif ? (per.m === +md[1] * 12) : per.m >= plancher)) return;
+      var cur = best.get(code);
+      if (!cur || per.m > cur.m || (per.m === cur.m && net < cur.price)) {
+        var q = String(r[c.qtes] || '').match(/\d+/g);
+        best.set(code, { m: per.m, price: net, ppht: numOr0(r[c.ppht]), qte: q ? +q[q.length - 1] : 0, periode: String(r[c.periode] || '') });
+      }
+    });
+    cerpMemoSrc = src; cerpMemo = best;
+    return best;
+  }
+  // ── Paraph : net HT de la centrale Paraph, catalogue 2025 (fichier protégé `concgroupements`) ──
+  var paraphMemo = null, paraphMemoSrc = null;
+  function paraphIndex() {
+    var src = window.CONCURRENTS_GROUPEMENTS;
+    var out = new Map();
+    if (SANS_PARAPH || !src || !src.rows || !src.cols) return out;
+    if (paraphMemoSrc === src) return paraphMemo;
+    var c = {}; src.cols.forEach(function (n, i) { c[n] = i; });
+    src.rows.forEach(function (r) {
+      if (r[c.groupement] !== 'Paraph' || !/CATALOGUE-CENTRALE-PARAPH/.test(String(r[c.document] || ''))) return;
+      var code = ean13(String(r[c.code]).replace(/\D/g, '').padStart(13, '0'));
+      var net = numOr0(r[c.net]);
+      if (!code || net <= 0) return;
+      var cur = out.get(code);
+      if (!cur || net < cur.price) out.set(code, { price: net, ppht: numOr0(r[c.prix]), annee: +r[c.annee] || 0 });
+    });
+    paraphMemoSrc = src; paraphMemo = out;
+    return out;
+  }
+  function cerpLabel(x) { return 'CERP ' + V2.fmtEur(x.price) + (x.qte > 0 ? ' dès ' + x.qte : ''); }
+  function cerpTip(x) {
+    return 'Offre CERP de ' + x.periode + (x.qte > 0 ? ', à partir de ' + x.qte + ' unité' + (x.qte > 1 ? 's' : '') : '') +
+      ' · prix tarif ' + V2.fmtEur(x.ppht) + ' · net HT ' + V2.fmtEur(x.price);
+  }
+  function paraphLabel(x) { return 'Paraph' + (x.annee ? ' ' + x.annee : '') + ' ' + V2.fmtEur(x.price); }
   // date du relevé du catalogue OCP (portée par le fichier protégé)
   function majLabel(d) {
     if (!d) return '';
@@ -431,6 +504,11 @@
       var ocv = (!SANS_OCP && window.OCP_PRIX && b.ean) ? window.OCP_PRIX[String(b.ean)] : null;
       var ocp = ocv ? { price: numOr0(ocv[0]), ppht: numOr0(ocv[1]), remise: numOr0(ocv[2]) } : null;
       var ocpCheaper = !!(ocp && ocp.price > 0 && price > 0 && ocp.price < price);
+      // CERP (offre mensuelle récente) et Paraph (catalogue de la centrale) par code 13 : fichiers protégés, jamais côté OPSO.
+      var cerp = (!SANS_CERP && b.ean) ? (cerpIndex().get(ean13(b.ean)) || null) : null;
+      var cerpCheaper = !!(cerp && cerp.price > 0 && price > 0 && cerp.price < price);
+      var paraph = (!SANS_PARAPH && b.ean) ? (paraphIndex().get(ean13(b.ean)) || null) : null;
+      var paraphCheaper = !!(paraph && paraph.price > 0 && price > 0 && paraph.price < price);
       // prix catalogue du laboratoire (HT, avant réduction) par code 13 :
       // {code: [prix, année (0 = sans date), niveau, index source, nb sources]} — fichier protégé
       // (tarifs de tiers), jamais chargé côté OPSO. Le pourcentage se calcule ICI, avec le prix
@@ -501,6 +579,7 @@
         url: b.url || '', univers: o ? (o.univers || '') : '',
         achat: achat, conc: conc, hasConc: hasC, minConc: mc, alert: alert, matched: !!o,
         pz: pz || null, pzCheaper: pzCheaper, sg: sg, sgCheaper: sgCheaper, ocp: ocp, ocpCheaper: ocpCheaper,
+        cerp: cerp, cerpCheaper: cerpCheaper, paraph: paraph, paraphCheaper: paraphCheaper,
         pcat: pcat, pcatRatio: pcatRatio, pcatVerif: pcatVerif, catOpso: catOpso,
         leclerc: leclerc, drakkars: drakkars, pub: pub, sousRayon: sousRayon,
         mvt: mvt, mvtPct: mvtPct, monte: mvtPct >= 20 && mvt >= SEUIL_PLACES, ecart: ecart
@@ -551,6 +630,8 @@
     if (k === 'pzcheaper') return !SANS_PHARMAZON && it.pzCheaper;
     if (k === 'sgcheaper') return it.sgCheaper;
     if (k === 'ocpcheaper') return it.ocpCheaper;
+    if (k === 'cerpcheaper') return !SANS_CERP && it.cerpCheaper;
+    if (k === 'paraphcheaper') return !SANS_PARAPH && it.paraphCheaper;
     if (k === 'avecpcat') return !!it.pcat;
     if (k === 'leclercpub') return it.leclerc > 0;
     if (k === 'farmalinepub') return it.pub.farmaline > 0;
@@ -589,7 +670,7 @@
     return a;
   }
   function counts(base) {
-    var c = { all: base.length, alerte: 0, pzcheaper: 0, sgcheaper: 0, ocpcheaper: 0, avecpcat: 0, leclercpub: 0, farmalinepub: 0, monte: 0 };
+    var c = { all: base.length, alerte: 0, pzcheaper: 0, sgcheaper: 0, ocpcheaper: 0, cerpcheaper: 0, paraphcheaper: 0, avecpcat: 0, leclercpub: 0, farmalinepub: 0, monte: 0 };
     CHIPS.forEach(function (ch) { if (c[ch.k] == null) c[ch.k] = 0; });
     for (var i = 0; i < base.length; i++) {
       var it = base[i];
@@ -601,6 +682,8 @@
       if (!SANS_PHARMAZON && it.pzCheaper) c.pzcheaper++;
       if (it.sgCheaper) c.sgcheaper++;
       if (it.ocpCheaper) c.ocpcheaper++;
+      if (!SANS_CERP && it.cerpCheaper) c.cerpcheaper++;
+      if (!SANS_PARAPH && it.paraphCheaper) c.paraphcheaper++;
       if (it.pcat) c.avecpcat++;
       if (it.leclerc > 0) c.leclercpub++;
       if (it.pub.farmaline > 0) c.farmalinepub++;
@@ -855,6 +938,8 @@
           (it.pz && it.pz.price > 0 ? '<span class="off-card-pz' + (it.pzCheaper ? ' win' : '') + '">Pharmazon ' + V2.fmtEur(it.pz.price) + '</span>' : '') +
           (it.sg && it.sg.price > 0 ? '<span class="off-card-pz' + (it.sgCheaper ? ' win' : '') + '" title="Tarif d\'achat Sagitta (HT)">Sagitta ' + V2.fmtEur(it.sg.price) + '</span>' : '') +
           (it.ocp && it.ocp.price > 0 ? '<span class="off-card-pz' + (it.ocpCheaper ? ' win' : '') + '" title="Prix net OCP, catalogue Les Incontournables (HT)">OCP ' + V2.fmtEur(it.ocp.price) + '</span>' : '') +
+          (it.cerp && it.cerp.price > 0 ? '<span class="off-card-pz' + (it.cerpCheaper ? ' win' : '') + '" title="' + esc(cerpTip(it.cerp)) + '">' + esc(cerpLabel(it.cerp)) + '</span>' : '') +
+          (it.paraph && it.paraph.price > 0 ? '<span class="off-card-pz' + (it.paraphCheaper ? ' win' : '') + '" title="Net HT de la centrale Paraph, catalogue ' + (it.paraph.annee || '') + ' · prix tarif ' + V2.fmtEur(it.paraph.ppht) + ' · net HT ' + V2.fmtEur(it.paraph.price) + '">' + esc(paraphLabel(it.paraph)) + '</span>' : '') +
           (it.leclerc > 0 ? '<span class="off-card-lec' + (it.achat > 0 && it.leclerc < it.achat ? ' bad' : '') + '" title="Prix de vente au public chez E.Leclerc (TTC)">Leclerc ' + V2.fmtEur(it.leclerc) + '</span>' : '') +
           (it.drakkars > 0 ? '<span class="off-card-drk" title="Prix de vente au public chez Pharmacie des Drakkars (TTC) · relevé du ' + esc(majLabel(window.DRAKKARS_PUB_MAJ)) + '">Drakkars ' + V2.fmtEur(it.drakkars) + '</span>' : '') +
           PUBS.map(function (P) {
@@ -960,30 +1045,37 @@
     }
     return ref + rows + lec + drk + pubRows(it);
   }
+  // Lignes du bloc « Prix d'achat » : triées du moins cher au plus cher (à prix égal, Offilog d'abord).
+  function achatLignes(it) {
+    var L = [];
+    if (it.price > 0) L.push({ n: 'Offilog', p: it.price, ref: true, sub: 'prix en ligne' });
+    if (it.pz && it.pz.price > 0) L.push({ n: 'Pharmazon', p: it.pz.price, sub: it.pz.labo ? esc(it.pz.labo) : 'tarif B2B' });
+    if (it.sg && it.sg.price > 0) L.push({ n: 'Sagitta', p: it.sg.price, sub: sgMajLabel() ? 'tarif du ' + sgMajLabel() : 'tarif' });
+    if (it.ocp && it.ocp.price > 0) L.push({ n: 'OCP', p: it.ocp.price, sub: 'sept-déc 2026' });
+    if (it.cerp && it.cerp.price > 0) L.push({ n: 'CERP', p: it.cerp.price, sub: esc(it.cerp.periode) + (it.cerp.qte > 0 ? ' · dès ' + it.cerp.qte : '') + ' · prix tarif ' + V2.fmtEur(it.cerp.ppht) + ' · net HT' });
+    if (it.paraph && it.paraph.price > 0) L.push({ n: 'Paraph', p: it.paraph.price, sub: 'catalogue ' + (it.paraph.annee || '') + ' · prix tarif ' + V2.fmtEur(it.paraph.ppht) + ' · net HT' });
+    return L.sort(function (x, y) { return (x.p - y.p) || ((y.ref ? 1 : 0) - (x.ref ? 1 : 0)); });
+  }
+  function achatBlock(it) {
+    var L = achatLignes(it);
+    if (L.length < 2) return '';
+    var rows = L.map(function (x) {
+      var d = x.p - it.price, pct = it.price > 0 ? Math.round(d / it.price * 100) : 0;
+      var below = !x.ref && it.price > 0 && x.p < it.price;
+      var delta = x.ref || !(it.price > 0) ? '<span class="off-cmp-delta"></span>' :
+        '<span class="off-cmp-delta ' + (below ? 'bad' : 'ok') + '" style="white-space:nowrap">' + (d >= 0 ? '+' : '−') + V2.fmtEur(Math.abs(d)) + ' · ' + (d >= 0 ? '+' : '−') + Math.abs(pct) + ' %</span>';
+      return '<div class="' + (x.ref ? 'off-cmp-ref' : 'off-cmp-row' + (below ? ' below' : '')) + '" data-achat="' + x.n + '">' +
+        '<span class="off-cmp-src">' + x.n + ' <i style="opacity:.65;font-weight:500">· ' + x.sub + '</i></span>' +
+        '<span class="off-cmp-price ' + (below ? 'bad' : '') + ' mono">' + V2.fmtEur(x.p) + '</span>' + delta + '</div>';
+    }).join('');
+    return '<div class="off-cmp" id="off-achat"><div class="off-cmp-l">Prix d\'achat <span>(HT, écart à Offilog)</span></div>' + rows + '</div>';
+  }
   function inspector(it) {
     var img = it.img ? '<div class="off-insp-img"><img data-imgprod src="' + esc(it.img) + '" loading="lazy" alt=""></div>' : '';
     function kpi(l, v, col) { return '<div class="off-kpi"><div class="off-kpi-l">' + l + '</div><div class="off-kpi-v"' + (col ? ' style="color:' + col + '"' : '') + '>' + v + '</div></div>'; }
-    // Comparatif d'achat pro : Offilog vs Pharmazon vs Sagitta vs OCP — seules les
-    // plateformes qui portent un prix pour CE produit entrent dans le bloc.
-    var pzBlock = '';
-    var plats = [{ n: 'Offilog', p: it.price, sub: '' }];
-    if (it.pz && it.pz.price > 0) plats.push({ n: 'Pharmazon', p: it.pz.price, sub: it.pz.labo ? ' · ' + esc(it.pz.labo) : '' });
-    if (it.sg && it.sg.price > 0) plats.push({ n: 'Sagitta', p: it.sg.price, sub: sgMajLabel() ? ' · tarif ' + sgMajLabel() : '' });
-    if (it.ocp && it.ocp.price > 0) plats.push({ n: 'OCP', p: it.ocp.price, sub: ' · sept-déc 2026' });
-    if (plats.length >= 2) {
-      var avecPrix = plats.filter(function (x) { return x.p > 0; }).slice().sort(function (a, b) { return a.p - b.p; });
-      var best = (avecPrix.length >= 2 && avecPrix[0].p < avecPrix[1].p) ? avecPrix[0] : null;
-      pzBlock = '<div class="off-pz">' +
-        '<div class="off-pz-l">Comparatif d\'achat · ' + plats.map(function (x) { return x.n; }).join(' vs ') + '</div>' +
-        '<div class="off-pz-row" style="grid-template-columns:repeat(' + plats.length + ',1fr)">' +
-        plats.map(function (x) {
-          return '<div class="off-pz-cell' + (best === x ? ' win' : '') + '"><span>' + x.n + x.sub + '</span><b class="mono">' + (x.p > 0 ? V2.fmtEur(x.p) : '—') + '</b></div>';
-        }).join('') +
-        '</div>' +
-        (best ? '<div class="off-pz-note">Moins cher sur <b>' + best.n + '</b> · écart ' + V2.fmtEur(avecPrix[1].p - avecPrix[0].p) + '</div>'
-              : (avecPrix.length >= 2 ? '<div class="off-pz-note">Même prix sur les plateformes comparées</div>' : '')) +
-      '</div>';
-    }
+    // Bloc « Prix d'achat » : une ligne par plateforme qui porte un prix pour CE produit, du moins cher au plus cher.
+    // Offilog = référence (mise en évidence), l'écart se lit contre lui. Classes du volet existantes, aucune couleur nouvelle.
+    var pzBlock = achatBlock(it);
     var badges = (it.hasRank ? '<span class="off-badge" style="--bc:var(--pil-froid)">#' + it.rank + ' ventes</span>' : '') +
       (it.cat && CHIP_BY_KEY[it.cat] ? '<span class="off-badge" style="--bc:' + CHIP_BY_KEY[it.cat].sc + '">' + esc(CHIP_BY_KEY[it.cat].label) + '</span>' : '') +
       (it.univers && it.univers !== 'Non classé' ? '<span class="off-badge" style="--bc:#6D4FC4">' + esc(it.univers) + '</span>' : '');
@@ -1043,7 +1135,7 @@
     captureCardRects(); // repositionnement fluide des cartes qui restent visibles
     S.chip = k; S.page = 0;
     // si on choisit une catégorie (hors verdicts), on ouvre les filtres avancés pour rester cohérent
-    if (k !== 'all' && k !== 'alerte' && k !== 'pzcheaper' && k !== 'sgcheaper' && k !== 'ocpcheaper') S.adv = true;
+    if (k !== 'all' && k !== 'alerte' && k !== 'pzcheaper' && k !== 'sgcheaper' && k !== 'ocpcheaper' && k !== 'cerpcheaper' && k !== 'paraphcheaper') S.adv = true;
     V2.render();
   };
   V2.offToggleAdv = function () { S.adv = !S.adv; V2.render(); };
@@ -1173,8 +1265,8 @@
     // Les prix négociés Pharmazon (conditions d'un TIERS) ne sont plus dans ce
     // fichier : ils arrivent par adresse signée, en parallèle. Jeton bumpé.
     if (V2.loadFiles) { try { V2.loadFiles(['pharmazonprix']).then(function () { if (V2.fusionnerPrixPharmazon) V2.fusionnerPrixPharmazon(); idxBuilt = false; V2.render(); }); } catch (e) {} }
-    inject(MOD_BASE + 'pharmazon-data.js?v=20261029mp', function () {
-      inject('pharmazon-data.js?v=20261029mp', function () { pzLoading = false; cb(); });
+    inject(MOD_BASE + 'pharmazon-data.js?v=20261029ach', function () {
+      inject('pharmazon-data.js?v=20261029ach', function () { pzLoading = false; cb(); });
     });
   }
 
@@ -1275,7 +1367,7 @@
   }
 
   // ── Chargement du fichier best-sellers (lazy, dans crm/v2/) ──
-  var bestLoading = false, bestFail = false, offTried = false, pzTried = false, sgTried = false, ocpTried = false, pcatTried = false, catOpsoTried = false;
+  var bestLoading = false, bestFail = false, offTried = false, pzTried = false, sgTried = false, ocpTried = false, pcatTried = false, catOpsoTried = false, cerpTried = false, paraphTried = false;
   // Catalogue complet + prix Drakkars (OPSO uniquement) — 29/09/2026.
   var liveTried = false, dkPubTried = false, accesTried = false, pubsTried = false;
   function ensureBest(cb) {
@@ -1741,6 +1833,16 @@
         ocpTried = true;
         if (V2.loadFiles) { try { V2.loadFiles(['ocpprix']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; /* 11/09/2026 (phase 4) : l'écran a pu changer pendant l'attente */ V2.render(); }); } catch (e) {} }
       }
+      // CERP (offres mensuelles) et Paraph (catalogue 2025) : fichiers protégés `conccerp` et `concgroupements`,
+      // adresse signée, une fois chacun, jamais demandés côté OPSO.
+      if (!SANS_CERP && !window.CONCURRENTS_CERP && !cerpTried) {
+        cerpTried = true;
+        if (V2.loadFiles) { try { V2.loadFiles(['conccerp']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; V2.render(); }); } catch (e) {} }
+      }
+      if (!SANS_PARAPH && !window.CONCURRENTS_GROUPEMENTS && !paraphTried) {
+        paraphTried = true;
+        if (V2.loadFiles) { try { V2.loadFiles(['concgroupements']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; V2.render(); }); } catch (e) {} }
+      }
       // Prix catalogue des laboratoires (tarifs de tiers) : adresse signée, une fois, jamais côté OPSO.
       // Fichier absent ou en échec : l'écran reste tel quel (aucun prix catalogue, aucune erreur).
       if (OPSO && !window.OFFILOG_CAT_OPSO && !catOpsoTried) {
@@ -1814,8 +1916,10 @@
         if (f.k === 'pzcheaper' && SANS_PHARMAZON) return '';
         if (f.k === 'sgcheaper' && SANS_SAGITTA) return '';
         if (f.k === 'ocpcheaper' && SANS_OCP) return '';
+        if (f.k === 'cerpcheaper' && SANS_CERP) return '';
+        if (f.k === 'paraphcheaper' && SANS_PARAPH) return '';
         if (f.k === 'avecpcat' && (SANS_PCAT || n === 0)) return '';
-        if (f.k !== 'pzcheaper' && f.k !== 'sgcheaper' && f.k !== 'ocpcheaper' && n === 0) return '';
+        if (f.k !== 'pzcheaper' && f.k !== 'sgcheaper' && f.k !== 'ocpcheaper' && f.k !== 'cerpcheaper' && f.k !== 'paraphcheaper' && n === 0) return '';
         var on = S.chip === f.k ? ' on' : '';
         return '<button class="v2-seg' + on + '" style="--sc:' + f.sc + '" onclick="V2.offFilter(\'' + f.k + '\')">' +
           (f.k === 'all' ? '' : '<span class="sw"></span>') + esc(f.label) + '<span class="cnt">' + V2.fmtNum(n) + '</span></button>';
@@ -1857,7 +1961,7 @@
       var advOpen = S.adv;
       var advBtn = '<button type="button" class="off-advbtn' + (advOpen ? ' open' : '') + '" onclick="V2.offToggleAdv()">' +
           ICO('grid', 15, 2) + ' Filtres' +
-          (S.chip === 'pzcheaper' || S.chip === 'sgcheaper' || S.chip === 'ocpcheaper' || S.chip === 'avecpcat' || S.chip === 'monte' ? '<span class="off-advbtn-tag">' + esc(CHIP_BY_KEY[S.chip].label) + '</span>' : '') +
+          (S.chip === 'pzcheaper' || S.chip === 'sgcheaper' || S.chip === 'ocpcheaper' || S.chip === 'cerpcheaper' || S.chip === 'paraphcheaper' || S.chip === 'avecpcat' || S.chip === 'monte' ? '<span class="off-advbtn-tag">' + esc(CHIP_BY_KEY[S.chip].label) + '</span>' : '') +
           '<span class="off-advbtn-chev">' + ICO('chev', 14, 2.2) + '</span></button>';
       var advPanel = advOpen
         ? '<div class="off-adv">' +
