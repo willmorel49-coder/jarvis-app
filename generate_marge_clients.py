@@ -47,7 +47,7 @@ n'est ecrit). Le bareme des grossistes est une loi : il reste dans le code.
 
 SORTIE (gitignoree, JAMAIS commitee) : marge-clients.js a la racine du depot.
   window.MARGE_CLIENTS = {v:1, fait, jusqua, mois, reserves, fam, c:[prenoms], o:[pharmacyId],
-                          livraison:{cout, moy:{n, jm, parJour, renta}},
+                          livraison:{cout, moy:{n, jm, parJour, renta, caMois, mgMois, mpMois, refs, partGen, fam:{p, p1, p2, i, c, fr, nr}}},
                           pilotageMoy:{f:{'AAAA-MM|AAAA-MM':{n, jm, parJour, renta, caCl, mgCl, nSect, secteurs}, ...},
                                        couv:{'AAAA-MM':[secteurs complets, secteurs attendus], ...}},
                           r:[[ci, oi, ym, ca, tot, p, p1, p2, i, c, fr, nr, caGen, jours], ...]}
@@ -64,6 +64,11 @@ SORTIE (gitignoree, JAMAIS commitee) : marge-clients.js a la racine du depot.
   pilotageMoy (28/10/2026) = la meme officine moyenne pour CHAQUE fenetre [du, au] de mois du fichier (45 fenetres sur 9 mois),
   pour le bloc « Mon secteur compare a la moyenne Integral » du Pilotage : calculee ici sur le jeu COMPLET, recopiee telle
   quelle dans chaque jeu, jamais recalculee dans la page. Presente seulement si livraison l'est (la rentabilite en depend).
+  moy.caMois ... fam (29/10/2026) = les six moyennes « Moy. clients » du reste de la fiche (CA, marge, marge pharmacien par mois, references,
+  part de generiques, marge par tranche de prix), meme fenetre et memes officines que moy ; produitsMoy (29/10/2026, champ de premier niveau
+  {mois, secteurs, seuil, g}) = la moyenne Integral de l'ecran Produits, partie globale seulement. Elles demandent les lignes de ventes
+  completes (crm/v2/wml-ventes-NN.js), le benchmark, la liste NR Sagitta (privee), froid-data.js et national.json : TOUT OU RIEN, une
+  source absente = la moyenne concernee n'est pas ecrite (« ABSENT : ... » dans la sortie) et la page affiche l'ecran d'avant.
 decouper_par_commercial.py en tire un fichier par jeu de commercial.
 
 Usage : /usr/bin/python3 generate_marge_clients.py
@@ -493,6 +498,8 @@ def formater(d):
         lignes.append('livraison:%s,' % j(d['livraison']))
     if 'pilotageMoy' in d:
         lignes.append('pilotageMoy:%s,' % j(d['pilotageMoy']))
+    if 'produitsMoy' in d:
+        lignes.append('produitsMoy:%s,' % j(d['produitsMoy']))
     lignes.append('r:[')
     lignes.append(',\n'.join(j(r) for r in d['r']))
     lignes.append(']};')
@@ -517,6 +524,10 @@ def analyser(texte):
         if L[k].startswith('pilotageMoy:'):      # facultative aussi (28/10/2026, bloc « Mon secteur » du Pilotage)
             assert L[k].endswith(',')
             d['pilotageMoy'] = json.loads(L[k][len('pilotageMoy:'):-1])
+            k += 1
+        if L[k].startswith('produitsMoy:'):      # facultative aussi (29/10/2026, moyenne Intégral de l'écran Produits)
+            assert L[k].endswith(',')
+            d['produitsMoy'] = json.loads(L[k][len('produitsMoy:'):-1])
             k += 1
         assert L[k] == 'r:['
         fin = next(n for n in range(len(L) - 1, i, -1) if L[n] == ']};')
@@ -651,6 +662,267 @@ def couverture_mois(d, plancher=5):
         if len(complets) < len(attendus):
             out[mois[i]] = [len(complets), len(attendus)]
     return out
+
+
+# ═══ 29/10/2026 — moyennes « Fiche » et « Produits » (ateliers moyenne-partout du 28/10, recopiées telles quelles) ═══
+# Ces deux moyennes demandent les lignes de ventes COMPLÈTES (wml-ventes-NN.js + dictionnaires de wml-officines-data.js).
+# TOUT OU RIEN : si une source manque ou ne se lit pas, la moyenne concernée n'est PAS écrite (« ABSENT : … » dans la sortie) et
+# le générateur continue ; la page affiche alors l'écran d'avant. Jamais de valeur écrite en dur, jamais de moyenne partielle.
+FAMS_MOY = ('p', 'p1', 'p2', 'i', 'c', 'fr', 'nr')
+SEUIL_PRODUITS = 3                  # confidentialité (écran Produits) : un produit pris par < 3 officines n'a pas de moyenne
+TOPS_PRODUITS = (50, 100, 200, 500)  # les quatre choix du sélecteur « Meilleures ventes France : top N »
+DOSSIERS_VENTES = (os.path.join(BASE, 'crm', 'v2'), os.path.expanduser('~/JARVIS/APP-atelier/crm/v2'))
+SAGITTA_PRIVE = (os.path.join(BASE, 'crm', 'sagitta-shortlist-data.js'), os.path.expanduser('~/JARVIS/APP/crm/sagitta-shortlist-data.js'))
+
+
+def lire_js_objets(chemin, variable):
+    """Tableau d'objets JS (clés sans guillemets, virgule finale) d'un `const|window.<variable> = [...]` -> liste de dict.
+    Les chaînes sont protégées : une clé n'est mise entre guillemets que HORS d'une chaîne."""
+    t = '\n'.join(l for l in open(chemin, encoding='utf-8').read().split('\n') if not l.lstrip().startswith('//'))
+    i = t.index('=', t.index(variable))
+    corps = t[t.index('[', i):]
+    corps = corps[:corps.rindex(']') + 1]
+    corps = re.sub(r'("(?:[^"\\]|\\.)*")|,(?=\s*[\]}])|([{,]\s*)([A-Za-z_]\w*)(\s*:)',
+                   lambda m: m.group(1) or ('' if m.group(3) is None else m.group(2) + '"' + m.group(3) + '"' + m.group(4)), corps)
+    return json.loads(corps)
+
+
+def lire_dico_js(texte, nom):
+    m = re.search(r'\n(?:const |var |window\.)?' + nom + r'\s*=\s*', texte)
+    return json.JSONDecoder().raw_decode(texte[m.end():])[0]
+
+
+def sources_moyennes():
+    """Cherche les sources des deux moyennes comme le reste du générateur (crm/ à côté de lui, puis l'atelier ; Sagitta est PRIVÉE).
+    Rend un dict de chemins/dictionnaires et ce qui manque, par moyenne : {'fiche': [...], 'produits': [...]} (noms lisibles)."""
+    S, manque = {}, []
+    v2 = next((d for d in DOSSIERS_VENTES if os.path.exists(os.path.join(d, 'wml-ventes-01.js'))
+               and os.path.exists(os.path.join(d, 'wml-officines-data.js'))), None)
+    if not v2:
+        manque.append('lignes de ventes (wml-ventes-01.js + wml-officines-data.js)')
+    else:
+        S['v2'] = v2
+        tete = open(os.path.join(v2, 'wml-officines-data.js'), encoding='utf-8').read()
+        try:
+            S['nT'] = int(re.search(r'WML_TRANCHES *= *(\d+)', tete).group(1))
+            S['tete'] = tete
+        except AttributeError:
+            manque.append('WML_TRANCHES (wml-officines-data.js)')
+        else:
+            absents = [k for k in range(1, S['nT'] + 1) if not os.path.exists(os.path.join(v2, 'wml-ventes-%02d.js' % k))]
+            if absents:
+                manque.append('tranches de ventes wml-ventes-%s' % ', '.join('%02d' % k for k in absents[:5]))
+    S['bench'] = premier_existant(os.path.join(BASE, 'crm', 'benchmark-data.js'), os.path.expanduser('~/JARVIS/APP-atelier/crm/benchmark-data.js'))
+    S['sagitta'] = premier_existant(*SAGITTA_PRIVE)
+    S['froid'] = premier_existant(os.path.join(BASE, 'crm', 'v2', 'froid-data.js'))
+    S['national'] = premier_existant(*(os.path.join(d, 'national.json') for d in DOSSIERS_VENTES))
+    return S, {'fiche': manque + [nom for cle, nom in (('bench', 'benchmark-data.js'), ('sagitta', 'sagitta-shortlist-data.js (liste NR privée)'),
+                                                        ('froid', 'froid-data.js')) if not S[cle]],
+               'produits': manque + ([] if S['national'] else ['national.json'])}
+
+
+def lignes_ventes(dossier, nT):
+    """Fabrique d'itérateurs : chaque appel relit les nT tranches (une à la fois, pour ne pas tout tenir en mémoire).
+    Ligne = [officine, mois (compteur), commercial, produit, quantité, prix net, montant] (rangs dans les dictionnaires)."""
+    def parcourir():
+        for k in range(1, nT + 1):
+            t = open('%s/wml-ventes-%02d.js' % (dossier, k), encoding='utf-8').read()
+            i = t.index('var c=[') + 6
+            j = t.index(';for(var i=0;i<c.length', i)
+            yield from json.loads(t[i:j])
+    return parcourir
+
+
+def _boite_pharma(p):
+    """V2.margeNetteBoite(p, true) de crm/v2/v2-pharma.js — recopie fidèle (palier 0,18 € puis 4,2 %, plafond 19,50 €)."""
+    if not p > 0:
+        return 0.0
+    if p <= 4.33:
+        return 0.18
+    if p <= 468:
+        return p * 0.042
+    return 19.50
+
+
+def princeps_rembourses(bench, nr, froid):
+    """Ensemble des CIP dont la marge pharmacien compte : copie fidèle de margeNettePharma (v2-pharma.js) = classifyNature puis
+    isRemboursable, PRINCEPS REMBOURSÉS SEULS (catégories pp, mi, ch, froid) ; génériques, biosimilaires et non remboursés = 0.
+    `bench` = {cip: [artnature, has_ameli (1/0/-1), is_froid (1/0), categorie, designation]}."""
+    ok = set()
+    for cip, (nat, ameli, froid_b, categ, des) in bench.items():
+        force = bool(re.match(r'^(MOUNJARO|WEGOVY)\b', des, re.I))
+        if not force and (cip in nr or ameli == 0):
+            cat = 'froid' if (froid_b == 1 or cip in froid) else 'nr'
+        elif nat.lower() == 'biosimilaire':
+            cat = 'biosim'
+        elif nat.lower() in ('generique_partenaire', 'generique'):
+            cat = 'gen'
+        elif froid_b == 1 or cip in froid:
+            cat = 'froid'
+        elif categ in ('pp', 'mi', 'ch'):
+            cat = categ
+        else:
+            cat = None
+        if cat in ('pp', 'mi', 'ch', 'froid') and (force or (cip not in nr and ameli == 1)):
+            ok.add(cip)
+    return ok
+
+
+def refs_et_marge_pharmacien(lignes, d_off, d_pro, compteurs, princeps):
+    """Par officine (pharmacyId) sur les mois `compteurs` (n° de mois 1-12 des ventes) : codes produit distincts (>= 7 caractères)
+    et marge pharmacien = Σ margeNetteBoite(prix net) x quantité sur les princeps remboursés. -> ({pid: nb refs}, {pid: marge})."""
+    refs, mp = {}, {}
+    for ro, m, _rc, rp, q, pu, _mnt in lignes():
+        if m not in compteurs or ro < 0:
+            continue
+        cip, pid = d_pro[rp], d_off[ro]
+        if len(cip) >= 7:
+            refs.setdefault(pid, set()).add(cip)
+        if cip in princeps:
+            mp[pid] = mp.get(pid, 0.0) + _boite_pharma(pu or 0) * (q or 0)
+    return {p: len(v) for p, v in refs.items()}, mp
+
+
+def moyennes_fiche(d, refs, mp):
+    """L'officine moyenne de TOUS les clients pour le reste de la fiche (atelier fiche/moyennes_fiche.py, 28/10/2026) : mêmes officines et
+    même fenêtre que moyenne_livraison (tous les mois de d['mois'], au moins un mois avec des livraisons r[13] > 0 ; nm = mois avec
+    livraisons), moyenne SIMPLE. Par officine, sur toutes ses lignes (tous commerciaux) : caMois = Σ r[3] / nm, mgMois = Σ r[4] / nm,
+    fam[f] = Σ r[5+f] / nm, partGen = Σ r[12] / Σ r[3] x 100 (officines à CA > 0), refs = nombre de codes produit distincts achetés,
+    mpMois = marge pharmacien / nm. Les sommes sont arrondies au centime avant la division, comme l'atelier.
+    -> (les six clés, n, jm) ; n et jm servent au contrôle contre livraison.moy. (None, 0, 0) s'il n'y a aucune officine."""
+    ym = {int(m[:4] + m[5:7]) for m in d['mois']}
+    A = {}
+    for l in d['r']:
+        if l[2] not in ym:
+            continue
+        x = A.setdefault(str(d['o'][l[1]]), {'ca': 0.0, 'mg': 0.0, 'gen': 0.0, 'fam': [0.0] * 7, 'liv': {}})
+        x['ca'] += l[3]
+        x['mg'] += l[4]
+        x['gen'] += l[12] or 0
+        for f in range(7):
+            x['fam'][f] += l[5 + f]
+        if (l[13] or 0) > x['liv'].get(l[2], 0):
+            x['liv'][l[2]] = l[13]
+    P = []
+    for pid, x in A.items():
+        nm = len([v for v in x['liv'].values() if v > 0])
+        if nm:
+            P.append({'nm': nm, 'ca': round(x['ca'], 2), 'mg': round(x['mg'], 2), 'gen': round(x['gen'], 2), 'refs': refs.get(pid, 0),
+                      'mp': round(mp.get(pid, 0.0), 2), 'fam': [round(v, 2) for v in x['fam']], 'livraisons': sum(x['liv'].values())})
+    if not P:
+        return None, 0, 0
+    n = len(P)
+    moy = lambda f: sum(f(p) for p in P) / n
+    avec_ca = [p for p in P if p['ca'] > 0]
+    six = {'caMois': round(moy(lambda p: p['ca'] / p['nm']), 4),
+           'mgMois': round(moy(lambda p: p['mg'] / p['nm']), 4),
+           'mpMois': round(moy(lambda p: p['mp'] / p['nm']), 4),
+           'refs': round(moy(lambda p: p['refs']), 4),
+           'partGen': round(sum(p['gen'] / p['ca'] * 100 for p in avec_ca) / len(avec_ca), 4) if avec_ca else 0.0,
+           'fam': {FAMS_MOY[f]: round(moy(lambda p, f=f: p['fam'][f] / p['nm']), 4) for f in range(7)}}
+    return six, n, moy(lambda p: p['livraisons'] / p['nm'])
+
+
+def mois_produits(lignes, d_off):
+    """Mois (compteurs) retenus pour la moyenne Produits : même règle que V2.approMoisRetenus (v2-appro.js) sur le réseau entier,
+    hors officines fictives « 0 » / « 0E »."""
+    off = {}
+    for r in lignes():
+        if r[1] >= 1 and d_off[r[0]] not in ('0', '0E'):
+            off.setdefault(r[1], set()).add(r[0])
+    mois = sorted(off)
+    nb = lambda m: len(off[m])
+    while len(mois) > 3:
+        dernier, reste = mois[-1], mois[:-1]
+        if nb(dernier) >= 0.8 * (sum(nb(m) for m in reste) / len(reste)):
+            break
+        mois = reste
+    if len(mois) > 3:
+        tri = sorted(nb(m) for m in mois)
+        med = tri[len(tri) // 2]
+        pleins = [m for k, m in enumerate(mois) if k == 0 or not (nb(m) < 0.8 * med and nb(m) < 0.8 * nb(mois[k - 1]))]
+        if len(pleins) >= 3:
+            mois = pleins
+    return mois
+
+
+def moyennes_produits(lignes, d_off, d_com, d_pro, national):
+    """Partie GLOBALE de la moyenne Intégral de l'écran Produits (atelier produits/moyennes_produits.py, 28/10/2026) : « secteur moyen » =
+    total RÉSEAU ÷ nombre de SECTEURS (commerciaux) ACTIFS. Lignes retenues : boîtes > 0, mois retenus, hors officines « 0 »/« 0E » et
+    commercial vide. nCl = Σ_s |officines de s| ÷ nS · refs = Σ_s |produits de s| ÷ nS · refsCl = Σ_(s,officine) |produits| ÷ Σ_s |officines de s| ·
+    bt = Σ boîtes ÷ nS ÷ nM · ca = Σ CA ÷ nS ÷ nM · top[N] = Σ_s |produits du top N France achetés par s| ÷ nS (top N = N plus fortes ventes
+    France de national.json, v > 0). Pas de détail par produit. -> {mois, secteurs, seuil, g} ou None s'il n'y a aucune ligne retenue."""
+    mois = mois_produits(lignes, d_off)
+    garde, nM = set(mois), len(mois)
+    boites = ca = 0.0
+    sect_off, sect_ref, paire_ref = {}, {}, {}
+    for r in lignes():
+        if not (r[4] > 0) or r[1] not in garde:
+            continue
+        if d_off[r[0]] in ('0', '0E') or r[2] < 0:
+            continue
+        s, c = d_com[r[2]], d_pro[r[3]]
+        boites += r[4]
+        ca += r[6]
+        sect_off.setdefault(s, set()).add(r[0])
+        sect_ref.setdefault(s, set()).add(c)
+        paire_ref.setdefault((s, r[0]), set()).add(c)
+    nS = len(sect_off)
+    if not nS or not nM:
+        return None
+    nat = national['data']
+    tri = sorted((c for c in nat if nat[c] and nat[c].get('v', 0) > 0), key=lambda c: -nat[c]['v'])
+    rang = {c: i + 1 for i, c in enumerate(tri)}
+    top = {str(n): round(sum(len([c for c in sect_ref[s] if rang.get(c, 1e9) <= n]) for s in sect_ref) / nS, 3) for n in TOPS_PRODUITS}
+    g = {'nCl': round(sum(len(v) for v in sect_off.values()) / nS, 4),
+         'refs': round(sum(len(v) for v in sect_ref.values()) / nS, 3),
+         'refsCl': round(sum(len(v) for v in paire_ref.values()) / sum(len(v) for v in sect_off.values()), 3),
+         'bt': round(boites / nS / nM, 3), 'ca': round(ca / nS / nM, 2), 'top': top}
+    return {'mois': mois, 'secteurs': nS, 'seuil': SEUIL_PRODUITS, 'g': g}
+
+
+def calculer_moyennes_ventes(d, S, avec_fiche=True, avec_produits=True):
+    """Orchestre les deux moyennes ; chaque échec devient un « ABSENT : … » (message) sans rien lever. -> (six clés ou None, produitsMoy ou None, messages)."""
+    msgs = []
+    six = prod = None
+    if not (avec_fiche or avec_produits):
+        return None, None, msgs
+    try:
+        d_off, d_pro = lire_dico_js(S['tete'], 'WML_D_OFFICINES'), lire_dico_js(S['tete'], 'WML_D_PRODUITS')
+        d_com = lire_dico_js(S['tete'], 'WML_D_COMMERCIAUX')
+        lignes = lignes_ventes(S['v2'], S['nT'])
+    except (KeyError, AttributeError, ValueError, OSError) as e:
+        return None, None, ['ABSENT : dictionnaires de wml-officines-data.js illisibles (%s) — fiche et produits sans moyenne' % e]
+    if avec_fiche:
+        try:
+            bench = {}
+            for x in lire_js_objets(S['bench'], 'BENCHMARK'):
+                if x.get('cip13'):
+                    bench[str(x['cip13'])] = [str(x.get('artnature') or ''), 1 if x.get('has_ameli') is True else (0 if x.get('has_ameli') is False else -1),
+                                              1 if x.get('is_froid') is True else 0, x.get('categorie') or '', str(x.get('designation') or '')]
+            nr = {str(x.get('cip13') or x.get('cip') or '') for x in lire_js_objets(S['sagitta'], 'SAGITTA_SHORTLIST')} - {''}
+            froid = {re.sub(r'\D', '', str(c)) for c in lire_js_liste(S['froid'], 'FROID_CIPS')}
+            if not (bench and nr and froid):
+                raise ValueError('référentiel vide (benchmark %d · NR %d · froid %d)' % (len(bench), len(nr), len(froid)))
+            cpt = {int(m[5:7]) for m in d['mois']}
+            refs, mp = refs_et_marge_pharmacien(lignes, d_off, d_pro, cpt, princeps_rembourses(bench, nr, froid))
+            six, n, jm = moyennes_fiche(d, refs, mp)
+            M = d['livraison']['moy']
+            if six is None or n != M['n'] or abs(jm - M['jm']) > 0.001:
+                msgs.append('ABSENT : moyennes de la fiche — la base ne retombe pas sur livraison.moy (%s officines au lieu de %s) ; six clés non écrites' % (n, M['n']))
+                six = None
+        except (KeyError, IndexError, TypeError, AttributeError, ValueError, OSError) as e:
+            six = None
+            msgs.append('ABSENT : moyennes de la fiche illisibles (%s: %s) ; six clés non écrites' % (type(e).__name__, e))
+    if avec_produits:
+        try:
+            prod = moyennes_produits(lignes, d_off, d_com, d_pro, json.load(open(S['national'], encoding='utf-8')))
+            if prod is None:
+                msgs.append('ABSENT : produitsMoy — aucune ligne de ventes retenue')
+        except (KeyError, IndexError, TypeError, AttributeError, ValueError, OSError) as e:
+            prod = None
+            msgs.append('ABSENT : produitsMoy illisible (%s: %s)' % (type(e).__name__, e))
+    return six, prod, msgs
 
 
 def lire_wml_v2(chemin):
@@ -1027,6 +1299,26 @@ def main():
         print('Pilotage : %d fenêtres de mois, la fenêtre entière retombe sur la moyenne de la fiche.' % len(pm['f']))
     else:
         print('Livraison : coût absent du réglage privé (cout_livraison) — pas de bloc « Rentabilité » sur la fiche.')
+    # ── 29/10/2026 : moyennes du reste de la fiche (six clés de livraison.moy) et de l'écran Produits (produitsMoy) — tout ou rien ──
+    S_moy, manque_moy = sources_moyennes()
+    avec_fiche = bool(moy) and not manque_moy['fiche']
+    avec_produits = not manque_moy['produits']
+    if manque_moy['fiche']:
+        print('ABSENT : %s — les six moyennes de la fiche ne sont pas écrites' % ' · '.join(manque_moy['fiche']))
+    if manque_moy['produits']:
+        print('ABSENT : %s — produitsMoy n\'est pas écrit' % ' · '.join(manque_moy['produits']))
+    if avec_fiche or avec_produits:
+        six, prod, msgs_moy = calculer_moyennes_ventes(d, S_moy, avec_fiche, avec_produits)
+        for m in msgs_moy:
+            print(m)
+        if six:
+            d['livraison']['moy'].update(six)
+            print('Fiche : moyennes ajoutées à livraison.moy — CA %.2f · marge %.2f · marge pharmacien %.2f € par mois · %.1f références · %.2f %% de génériques'
+                  % (six['caMois'], six['mgMois'], six['mpMois'], six['refs'], six['partGen']))
+        if prod:
+            d['produitsMoy'] = prod
+            print('Produits : moyenne du secteur moyen (%d secteurs, mois %s) — %.1f clientes · %.0f références · %.0f boîtes et %.0f € par mois'
+                  % (prod['secteurs'], prod['mois'], prod['g']['nCl'], prod['g']['refs'], prod['g']['bt'], prod['g']['ca']))
     for r in rows:
         assert abs(sum(r[5:12]) - r[4]) < 0.005, 'tot != somme des familles'
 

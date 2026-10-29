@@ -131,7 +131,7 @@ def marge_clients_du_jeu(complet, mes):
     """14/10/2026 — « Notre marge » par client : les lignes de marge-clients.js (fichier complet, déjà analysé
     par generate_marge_clients.analyser) dont le prénom est dans `mes`. Les listes c (prénoms) et o (officines)
     sont réduites à ce que les lignes gardées utilisent et les rangs sont renumérotés : le jeu ne contient donc
-    NI la ligne NI le code d'une officine d'un collègue. Mêmes métadonnées (v, fait, jusqua, mois, reserves, fam, livraison, pilotageMoy).
+    NI la ligne NI le code d'une officine d'un collègue. Mêmes métadonnées (v, fait, jusqua, mois, reserves, fam, livraison, pilotageMoy, produitsMoy).
     Fonction pure : ne lit ni n'écrit rien."""
     ok = {i for i, c in enumerate(complet['c']) if c in mes}
     lignes = [r for r in complet['r'] if r[0] in ok]
@@ -144,6 +144,8 @@ def marge_clients_du_jeu(complet, mes):
         jeu['livraison'] = complet['livraison']
     if 'pilotageMoy' in complet:   # idem (bloc « Mon secteur » du Pilotage) : moyenne du réseau entier, 45 fenêtres, jamais recalculée sur le jeu
         jeu['pilotageMoy'] = complet['pilotageMoy']
+    if 'produitsMoy' in complet:   # idem (écran Produits, 29/10/2026) : moyenne du réseau entier, aucun nom, TELLE QUELLE dans chaque jeu
+        jeu['produitsMoy'] = complet['produitsMoy']
     jeu['c'] = [complet['c'][i] for i in cs]
     jeu['o'] = [complet['o'][i] for i in os_]
     jeu['r'] = [[ci[r[0]], oi[r[1]]] + r[2:] for r in lignes]

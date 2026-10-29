@@ -492,6 +492,124 @@ cv['r'] += [[1, 10 + o, 202603] for o in range(4, 5)]
 check("mois incomplet : la moitié exacte du mois d'avant compte comme complet", gm.couverture_mois(cv) == {'2026-03': [1, 2]}, gm.couverture_mois(cv))
 check("mois incomplet : rangé dans pilotageMoy, donc recopié dans chaque jeu", 'couv' in pm and pm['couv'] == gm.couverture_mois(liv))
 
+# ═════════════════════════════ 10. Moyennes « Fiche » et « Produits » dans le générateur (29/10/2026) ═════════════════════════════
+print("10. Moyennes fiche (six clés de livraison.moy) et Produits (produitsMoy), tout ou rien — données inventées, réponses calculées à la main")
+check("marge pharmacien d'une boîte : 0 / palier 0,18 € / 4,2 % / plafond 19,50 €",
+      gm._boite_pharma(0) == 0.0 and gm._boite_pharma(-1) == 0.0 and gm._boite_pharma(4.33) == 0.18 and
+      proche(gm._boite_pharma(10), 0.42) and proche(gm._boite_pharma(468), 468 * 0.042) and gm._boite_pharma(500) == 19.50)
+_bench = {'A1': ['', 1, 0, 'pp', 'DOLI'], 'A2': ['generique', 1, 0, 'pp', 'X'], 'A3': ['biosimilaire', 1, 0, 'pp', 'X'],
+          'A4': ['', 0, 0, 'pp', 'X'], 'A5': ['', 1, 1, 'pp', 'X'], 'A6': ['', 1, 0, 'pp', 'X'], 'A7': ['', 1, 0, 'zz', 'X'],
+          'A8': ['', 0, 0, 'pp', 'WEGOVY 1MG'], 'A9': ['', 1, 0, 'ch', 'Y'], 'A10': ['', -1, 0, 'mi', 'Y']}
+check("princeps remboursés seuls : princeps, froid remboursé, Wegovy/Mounjaro forcés, ch = oui ; générique, biosimilaire, non remboursé, liste NR, catégorie inconnue, remboursement inconnu = non",
+      gm.princeps_rembourses(_bench, {'A6'}, set()) == {'A1', 'A5', 'A8', 'A9'}, gm.princeps_rembourses(_bench, {'A6'}, set()))
+check("froid par la liste froid-data (is_froid faux dans le benchmark) : un produit sans remboursement connu reste exclu, un remboursé entre",
+      gm.princeps_rembourses({'F1': ['', 1, 0, 'zz', 'X'], 'F2': ['', 0, 0, 'zz', 'X']}, set(), {'F1', 'F2'}) == {'F1'})
+_rows = [[0, 1, 0, 0, 2, 10.0, 20], [0, 2, 0, 0, 1, 500, 500], [0, 3, 0, 0, 1, 10, 10], [0, 1, 0, 1, 1, 3.0, 3],
+         [0, 1, 0, 2, 5, 3.0, 15], [-1, 1, 0, 0, 1, 10, 10], [1, 1, 0, 2, 1, 4.33, 4]]
+_refs, _mp = gm.refs_et_marge_pharmacien(lambda: iter(_rows), ['p1', 'p2'], ['1234567890123', '12345', '9990000000002'], {1, 2}, {'1234567890123'})
+check("références : codes distincts de 7 caractères et plus, mois hors fenêtre et officine -1 ignorés", _refs == {'p1': 2, 'p2': 1}, _refs)
+check("marge pharmacien : Σ marge d'une boîte x quantité sur les princeps seuls (2 x 0,42 + 1 x 19,50)", set(_mp) == {'p1'} and proche(_mp['p1'], 20.34), _mp)
+# fiche : P1 partagée entre deux commerciaux (jours = même valeur, max et non somme), P2 un seul mois, P3 sans livraison (hors moyenne)
+_df = {'mois': ['2026-01', '2026-02'], 'o': ['p1', 'p2', 'p3'],
+       'r': [[0, 0, 202601, 300.0, 60.0, 60.0, 0, 0, 0, 0, 0, 0, 30.0, 2], [1, 0, 202601, 200.0, 40.0, 40.0, 0, 0, 0, 0, 0, 0, 20.0, 2],
+             [0, 0, 202602, 300.0, 60.0, 0, 0, 0, 60.0, 0, 0, 0, 0.0, 3], [0, 1, 202601, 200.0, 40.0, 0, 0, 0, 0, 0, 40.0, 0, 20.0, 1],
+             [0, 2, 202601, 900.0, 90.0, 90.0, 0, 0, 0, 0, 0, 0, 0.0, 0], [0, 0, 202603, 9999.0, 999.0, 999.0, 0, 0, 0, 0, 0, 0, 0.0, 9]]}
+_six, _n, _jm = gm.moyennes_fiche(_df, {'p1': 4, 'p2': 2, 'p3': 50}, {'p1': 40.0, 'p2': 6.0, 'p3': 777.0})
+# P1 : nm 2 · CA 800/2 = 400 · marge 160/2 = 80 · tranche p 100/2 = 50 · i 60/2 = 30 · génériques 50/800 = 6,25 % · refs 4 · marge pharmacien 40/2 = 20
+# P2 : nm 1 · CA 200 · marge 40 · fr 40 · génériques 10 % · refs 2 · marge pharmacien 6   (mars hors fenêtre, P3 sans livraison : jamais comptés)
+check("fiche : moyenne SIMPLE des 2 officines (CA, marge, marge pharmacien, références, part génériques)",
+      _six['caMois'] == 300.0 and _six['mgMois'] == 60.0 and _six['mpMois'] == 13.0 and _six['refs'] == 3.0 and _six['partGen'] == 8.125, _six)
+check("fiche : marge par tranche de prix et par mois, sept familles", _six['fam'] == {'p': 25.0, 'p1': 0.0, 'p2': 0.0, 'i': 15.0, 'c': 0.0, 'fr': 20.0, 'nr': 0.0}, _six['fam'])
+check("fiche : n et livraisons par mois (pour le contrôle contre livraison.moy), jamais la somme des commerciaux", _n == 2 and proche(_jm, (5 / 2 + 1 / 1) / 2), (_n, _jm))
+check("fiche : même base que livraison.moy (n, jm)", (lambda m: m['n'] == _n and proche(m['jm'], _jm))(gm.moyenne_livraison(_df, {(_df['o'][r[1]], r[2]): r[13] for r in _df['r']}, 20.0)))
+check("fiche : aucune officine avec livraison = pas de moyenne", gm.moyennes_fiche(dict(_df, r=[]), {}, {}) == (None, 0, 0))
+# produits : 3 mois, 2 secteurs, une ligne chaque cas à écarter (boîtes 0, boîtes négatives, officine fictive « 0 », commercial -1)
+_do, _dc, _dp = ['o1', 'o2', 'o3', '0'], ['S1', 'S2'], ['c1', 'c2', 'c3']
+_vp = [[0, 1, 0, 0, 10, 1, 100], [0, 2, 0, 1, 5, 1, 50], [1, 3, 0, 0, 4, 1, 40], [1, 1, 1, 0, 6, 1, 60], [2, 2, 1, 2, 2, 1, 20],
+       [0, 1, 1, 1, 0, 1, 999], [0, 1, 0, 0, -3, 1, -30], [3, 1, 0, 0, 9, 1, 90], [2, 1, -1, 0, 7, 1, 70]]
+_nat = {'data': {'c1': {'v': 100}, 'c2': {'v': 50}, 'c3': {'v': 10}, 'c4': {'v': 0}, 'c5': None}}
+_tops, gm.TOPS_PRODUITS = gm.TOPS_PRODUITS, (1, 2)
+try:
+    _pm = gm.moyennes_produits(lambda: iter(_vp), _do, _dc, _dp, _nat)
+finally:
+    gm.TOPS_PRODUITS = _tops
+# S1 : o1, o2 · c1, c2 ; S2 : o2, o3 · c1, c3 ; paires (S1,o1){c1,c2} (S1,o2){c1} (S2,o2){c1} (S2,o3){c3} = 5 sur 4 clientes ; 27 boîtes, 270 € sur 2 secteurs x 3 mois
+check("produits : secteur moyen = total réseau / secteurs actifs (clientes, références, par cliente, boîtes et CA par mois, top N France)",
+      _pm == {'mois': [1, 2, 3], 'secteurs': 2, 'seuil': 3, 'g': {'nCl': 2.0, 'refs': 2.0, 'refsCl': 1.25, 'bt': 4.5, 'ca': 45.0, 'top': {'1': 1.0, '2': 1.5}}}, _pm)
+check("produits : le détail par produit n'est pas retenu (aucune clé p)", 'p' not in _pm)
+check("produits : aucune ligne retenue = None", gm.moyennes_produits(lambda: iter([[0, 1, 0, 0, 0, 1, 1]]), _do, _dc, _dp, _nat) is None)
+_ms = [[i, m, 0, 0, 1, 1, 1] for m in (1, 2, 3) for i in range(10)] + [[0, 4, 0, 0, 1, 1, 1]]
+check("produits : un dernier mois trop maigre (1 officine contre 10 en moyenne) est écarté, comme V2.approMoisRetenus",
+      gm.mois_produits(lambda: iter(_ms), ['o%d' % i for i in range(10)]) == [1, 2, 3])
+check("produits : 3 mois ou moins, tous gardés", gm.mois_produits(lambda: iter(_ms[:5] + [[0, 4, 0, 0, 1, 1, 1]]), ['o%d' % i for i in range(10)]) == [1, 4])
+# lecture d'un tableau d'objets JS : clés sans guillemets, virgule finale, une clé écrite DANS une chaîne reste intacte
+_jf = tempfile.NamedTemporaryFile('w', suffix='.js', delete=False, encoding='utf-8')
+_jf.write('// c\nconst BENCHMARK = [\n  {designation:"A,cip13:\\"x\\",b:c",cip13:"111",is_froid:false,m:[1,2]},\n  {designation:"B",cip13:"222",has_ameli:true},\n];\n')
+_jf.close()
+try:
+    _ob = gm.lire_js_objets(_jf.name, 'BENCHMARK')
+finally:
+    os.remove(_jf.name)
+check("lecture JS : clés sans guillemets, virgule finale, texte contenant « ,cip13: » intact",
+      _ob == [{'designation': 'A,cip13:"x",b:c', 'cip13': '111', 'is_froid': False, 'm': [1, 2]}, {'designation': 'B', 'cip13': '222', 'has_ameli': True}], _ob)
+# formater / analyser / découpage
+_cp = dict(liv, produitsMoy=_pm)
+_tp = gm.formater(_cp)
+check("la ligne produitsMoy est écrite avant r:[ (après pilotageMoy quand il existe)", "},\nproduitsMoy:{" in _tp and "}},\nr:[" in _tp)
+check("aller-retour formater / analyser avec produitsMoy", gm.analyser(_tp) == _cp)
+_cq = dict(liv, pilotageMoy=pm, produitsMoy=_pm)
+check("aller-retour avec pilotageMoy ET produitsMoy (ordre livraison, pilotageMoy, produitsMoy)",
+      gm.analyser(gm.formater(_cq)) == _cq and gm.formater(_cq).index('\npilotageMoy:') < gm.formater(_cq).index('\nproduitsMoy:') < gm.formater(_cq).index('\nr:['))
+check("un fichier d'avant (sans produitsMoy) se relit toujours", 'produitsMoy' not in gm.analyser(gm.formater(liv)))
+_jb = dc.marge_clients_du_jeu(_cq, dc.comms_du_jeu('Bruno'))
+check("découpage : produitsMoy est celui du RÉSEAU, tel quel dans le jeu de Bruno, sans aucun prénom", _jb['produitsMoy'] == _pm and
+      not any(c in json.dumps(_jb['produitsMoy']) for c in liv['c']))
+check("découpage : sans produitsMoy dans le complet, aucune clé inventée", 'produitsMoy' not in dc.marge_clients_du_jeu(liv, {'Bruno'}))
+# tout ou rien : mini-arbre de sources
+_t = tempfile.mkdtemp()
+_v2 = os.path.join(_t, 'v2')
+os.makedirs(_v2)
+open(os.path.join(_v2, 'wml-officines-data.js'), 'w', encoding='utf-8').write(
+    '// d\nwindow.WML_TRANCHES = 1;\nconst WML_D_OFFICINES = ["p1","p2"];\nconst WML_D_COMMERCIAUX = ["S1"];\nconst WML_D_PRODUITS = ["1234567890123","9990000000002"];\n')
+open(os.path.join(_v2, 'wml-ventes-01.js'), 'w', encoding='utf-8').write('var c=[[0,1,0,0,2,10.0,20],[1,1,0,1,1,5.0,5]];for(var i=0;i<c.length;i++){}\n')
+open(os.path.join(_v2, 'national.json'), 'w', encoding='utf-8').write('{"data":{"1234567890123":{"v":10}}}')
+open(os.path.join(_t, 'bench.js'), 'w', encoding='utf-8').write('const BENCHMARK = [\n {designation:"DOLI",categorie:"pp",cip13:"1234567890123",is_froid:false,has_ameli:true,artnature:""},\n];\n')
+open(os.path.join(_t, 'sagitta.js'), 'w', encoding='utf-8').write('const SAGITTA_SHORTLIST = [{"cip13":"9990000000999"}];\n')
+open(os.path.join(_t, 'froid.js'), 'w', encoding='utf-8').write('window.FROID_CIPS = ["9990000000555"];\n')
+_dm = {'mois': ['2026-01'], 'o': ['p1', 'p2'], 'livraison': {'cout': 20.0, 'moy': {'n': 1, 'jm': 2.0}},
+       'r': [[0, 0, 202601, 100.0, 20.0, 20.0, 0, 0, 0, 0, 0, 0, 10.0, 2], [0, 1, 202601, 50.0, 10.0, 0, 0, 0, 10.0, 0, 0, 0, 0.0, 0]]}
+_S = {'v2': _v2, 'nT': 1, 'tete': open(os.path.join(_v2, 'wml-officines-data.js'), encoding='utf-8').read(), 'bench': os.path.join(_t, 'bench.js'),
+      'sagitta': os.path.join(_t, 'sagitta.js'), 'froid': os.path.join(_t, 'froid.js'), 'national': os.path.join(_v2, 'national.json')}
+_six2, _pr2, _m2 = gm.calculer_moyennes_ventes(_dm, _S)
+_att_prod = {'mois': [1], 'secteurs': 1, 'seuil': 3, 'g': {'nCl': 2.0, 'refs': 2.0, 'refsCl': 1.0, 'bt': 3.0, 'ca': 25.0, 'top': {'50': 1.0, '100': 1.0, '200': 1.0, '500': 1.0}}}
+check("de bout en bout (mini-sources) : les six clés de la fiche (marge pharmacien 2 x 0,42 = 0,84)",
+      _six2 == {'caMois': 100.0, 'mgMois': 20.0, 'mpMois': 0.84, 'refs': 1.0, 'partGen': 10.0,
+                'fam': {'p': 20.0, 'p1': 0.0, 'p2': 0.0, 'i': 0.0, 'c': 0.0, 'fr': 0.0, 'nr': 0.0}} and _m2 == [], (_six2, _m2))
+check("de bout en bout (mini-sources) : produitsMoy", _pr2 == _att_prod, _pr2)
+_S2 = dict(_S, sagitta=os.path.join(_t, 'absent.js'))
+_six3, _pr3, _m3 = gm.calculer_moyennes_ventes(_dm, _S2)
+check("tout ou rien : liste NR illisible = les six clés absentes ENSEMBLE, « ABSENT » dit, produitsMoy intact",
+      _six3 is None and _pr3 == _att_prod and len(_m3) == 1 and _m3[0].startswith('ABSENT : moyennes de la fiche'), _m3)
+_six4, _pr4, _m4 = gm.calculer_moyennes_ventes(_dm, dict(_S, national=os.path.join(_t, 'absent.json')))
+check("tout ou rien : national.json illisible = produitsMoy absent ENTIER, « ABSENT » dit, la fiche intacte",
+      _pr4 is None and _six4 is not None and len(_m4) == 1 and _m4[0].startswith('ABSENT : produitsMoy'), _m4)
+_six5, _pr5, _m5 = gm.calculer_moyennes_ventes(dict(_dm, livraison={'cout': 20.0, 'moy': {'n': 5, 'jm': 2.0}}), _S)
+check("tout ou rien : la base ne retombe pas sur livraison.moy (n = 5 au lieu de 1) = six clés absentes, jamais une moyenne douteuse",
+      _six5 is None and _pr5 == _att_prod and len(_m5) == 1 and 'livraison.moy' in _m5[0], _m5)
+open(os.path.join(_v2, 'wml-ventes-01.js'), 'w', encoding='utf-8').write('pas des ventes')
+_six6, _pr6, _m6 = gm.calculer_moyennes_ventes(_dm, _S)
+check("tout ou rien : une tranche de ventes illisible = rien d'écrit pour les deux, deux messages, aucun plantage", _six6 is None and _pr6 is None and len(_m6) == 2, _m6)
+# sources introuvables : chaque moyenne dit CE QUI lui manque
+_dv, _sg = gm.DOSSIERS_VENTES, gm.SAGITTA_PRIVE
+gm.DOSSIERS_VENTES, gm.SAGITTA_PRIVE = (os.path.join(_t, 'vide'),), (os.path.join(_t, 'pas-sagitta.js'),)
+try:
+    _Sx, _mx = gm.sources_moyennes()
+finally:
+    gm.DOSSIERS_VENTES, gm.SAGITTA_PRIVE = _dv, _sg
+check("sources absentes : lignes de ventes manquantes pour la fiche ET les produits, national.json pour les produits, liste NR privée pour la fiche seule",
+      any('lignes de ventes' in x for x in _mx['fiche']) and any('lignes de ventes' in x for x in _mx['produits']) and 'national.json' in _mx['produits']
+      and any('sagitta' in x for x in _mx['fiche']) and not any('sagitta' in x for x in _mx['produits']), _mx)
+
 print()
 if ECHECS:
     print("ÉCHECS (%d) : %s" % (len(ECHECS), ", ".join(ECHECS)))
