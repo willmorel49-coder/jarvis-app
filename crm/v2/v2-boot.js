@@ -735,6 +735,10 @@
     opsooffilogacces: 'v2/opso-offilog-acces.js',
     // Prix PUBLICS Pharmacie des Drakkars (TTC), léger — voir generate_drakkars_pub.js.
     drakkarspub: 'v2/drakkars-pub-data.js',
+    // 29/10/2026 — prix PUBLICS Farmaline (Belgique, TVA belge), Maxi Parapharmacie et Cap 3000 (TTC) : mêmes fichiers légers.
+    farmalinepub: 'v2/farmaline-pub-data.js',
+    maxiparapub: 'v2/maxipara-pub-data.js',
+    cap3000pub: 'v2/cap3000-pub-data.js',
     // 26/09/2026 — bloc « Le marché » de l'écran Offilog : rang de vente relevé
     // chaque mois (robot ~/offilog-marche/) + repère top vente. Aucun prix : public.
     offilogmarche: 'v2/offilog-marche-data.js',
@@ -1376,7 +1380,7 @@
     // Bumpé 29/09/2026 : v2-offilog.js change (union catalogue OPSO, retrait
     // Pharmazon/achat côté OPSO) — sans ce bump, un appareil ayant déjà l'app
     // ouverte continuerait de servir l'ancien fichier depuis le cache.
-    var V = '?v=20261028hr' + (window.V2_VER || '20260915g');
+    var V = '?v=20261029a' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1519,6 +1523,9 @@
     offiloglive: 'OFFILOG_LIVE',
     offiloglivprix: 'OFFILOG_LIVE_PRIX',
     drakkarspub: 'DRAKKARS_PUB',
+    farmalinepub: 'FARMALINE_PUB',
+    maxiparapub: 'MAXIPARA_PUB',
+    cap3000pub: 'CAP3000_PUB',
     offilogmarche: 'OFFILOG_MARCHE',
     benchcond: 'BENCH_COND',
     prodstatscond: 'PROD_COND',
@@ -1820,6 +1827,12 @@
     try { if (typeof OFFILOG_LIVE_PRIX !== 'undefined') window.OFFILOG_LIVE_PRIX = OFFILOG_LIVE_PRIX; } catch (e) {}
     try { if (typeof DRAKKARS_PUB !== 'undefined') window.DRAKKARS_PUB = DRAKKARS_PUB; } catch (e) {}
     try { if (typeof DRAKKARS_PUB_MAJ !== 'undefined') window.DRAKKARS_PUB_MAJ = DRAKKARS_PUB_MAJ; } catch (e) {}
+    try { if (typeof FARMALINE_PUB !== 'undefined') window.FARMALINE_PUB = FARMALINE_PUB; } catch (e) {}
+    try { if (typeof FARMALINE_PUB_MAJ !== 'undefined') window.FARMALINE_PUB_MAJ = FARMALINE_PUB_MAJ; } catch (e) {}
+    try { if (typeof MAXIPARA_PUB !== 'undefined') window.MAXIPARA_PUB = MAXIPARA_PUB; } catch (e) {}
+    try { if (typeof MAXIPARA_PUB_MAJ !== 'undefined') window.MAXIPARA_PUB_MAJ = MAXIPARA_PUB_MAJ; } catch (e) {}
+    try { if (typeof CAP3000_PUB !== 'undefined') window.CAP3000_PUB = CAP3000_PUB; } catch (e) {}
+    try { if (typeof CAP3000_PUB_MAJ !== 'undefined') window.CAP3000_PUB_MAJ = CAP3000_PUB_MAJ; } catch (e) {}
     fusionnerPrixPharmazon();
     try { if (typeof OFFILOG_BEST !== 'undefined') window.OFFILOG_BEST = OFFILOG_BEST; } catch (e) {}
     fusionnerPrixBest();
@@ -1937,7 +1950,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20261028hr';
+    var V = '?v=20261029a';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];

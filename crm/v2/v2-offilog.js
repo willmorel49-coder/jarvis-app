@@ -56,6 +56,7 @@
     { k: 'ocpcheaper',  label: 'Moins cher chez OCP', sc: 'var(--ip-blue-d)' },
     { k: 'avecpcat',    label: 'Avec prix catalogue', sc: 'var(--ip-blue-d)' },
     { k: 'leclercpub',  label: 'Vendu chez E.Leclerc', sc: '#0066B3' },
+    { k: 'farmalinepub', label: 'Vendu chez Farmaline', sc: '#0F7A55' },
     // LE MARCHÉ : seuil RELATIF, voir `mvtPct` dans buildIndex. L'ambre du logo
     // Offilog, seule couleur d'accent de l'écran.
     { k: 'monte',       label: 'Ça monte fort',  sc: '#F8A808' },
@@ -77,6 +78,19 @@
     // ⚠️ Remise en ligne le 11/08/2026 : la décision du 06/08 n'était jamais arrivée
     // en production, elle dormait sur une branche abandonnée.
     { key: 'prix_leclerc',  label: 'E.Leclerc', color: '#0066B3' },
+  ];
+
+  // Plateformes à prix PUBLIC (TTC) ajoutées le 29/10/2026 : même montage que Drakkars
+  // (fichier léger ean -> prix, pastille sur la carte, ligne dans le volet de détail).
+  // Côté OPSO, comme Leclerc et Drakkars : un prix n'apparaît QUE s'il est au moins égal
+  // au prix Offilog (voir buildIndex).
+  var PUBS = [
+    { k: 'farmaline', g: 'FARMALINE_PUB', label: 'Farmaline', long: 'Farmaline (public TTC, TVA belge)', color: '#0F7A55',
+      tip: 'Prix de vente au public chez Farmaline, pharmacie en ligne belge (TTC, TVA belge)' },
+    { k: 'maxipara', g: 'MAXIPARA_PUB', label: 'Maxi Para', long: 'Maxi Parapharmacie (public TTC)', color: '#A8420C',
+      tip: 'Prix de vente au public chez Maxi Parapharmacie (TTC)' },
+    { k: 'cap3000', g: 'CAP3000_PUB', label: 'Cap 3000', long: 'Pharmacie Cap 3000 (public TTC)', color: '#7A3FB0',
+      tip: 'Prix de vente au public chez Pharmacie Cap 3000 (TTC)' }
   ];
 
   // ── La marque OFFILOG ─────────────────────────
@@ -444,6 +458,14 @@
       var dkRaw = (window.DRAKKARS_PUB && e13 && window.DRAKKARS_PUB[e13] > 0) ? window.DRAKKARS_PUB[e13] : 0;
       var drakkars = (OPSO && !(price > 0 && dkRaw >= price)) ? 0 : dkRaw;
       if (drakkars > 0) { if (mc === 0 || drakkars < mc) mc = drakkars; hasC = true; }
+      // Farmaline, Maxi Para, Cap 3000 (public TTC) : même règle, même prise en compte dans « concurrent le moins cher ».
+      var pub = {};
+      PUBS.forEach(function (P) {
+        var raw = (window[P.g] && e13 && window[P.g][e13] > 0) ? window[P.g][e13] : 0;
+        var v = (OPSO && !(price > 0 && raw >= price)) ? 0 : raw;
+        if (v > 0) { if (mc === 0 || v < mc) mc = v; hasC = true; }
+        pub[P.k] = v;
+      });
       var sousRayon = (window.OFFILOG_CATS && b.id != null) ? (window.OFFILOG_CATS[String(b.id)] || '') : '';
       // LE MARCHÉ : rang de vente relevé mois par mois (offilog-marche-data.js).
       // Le dernier relevé fait foi partout — carte, tri, bloc marché — sinon l'écran
@@ -480,7 +502,7 @@
         achat: achat, conc: conc, hasConc: hasC, minConc: mc, alert: alert, matched: !!o,
         pz: pz || null, pzCheaper: pzCheaper, sg: sg, sgCheaper: sgCheaper, ocp: ocp, ocpCheaper: ocpCheaper,
         pcat: pcat, pcatRatio: pcatRatio, pcatVerif: pcatVerif, catOpso: catOpso,
-        leclerc: leclerc, drakkars: drakkars, sousRayon: sousRayon,
+        leclerc: leclerc, drakkars: drakkars, pub: pub, sousRayon: sousRayon,
         mvt: mvt, mvtPct: mvtPct, monte: mvtPct >= 20 && mvt >= SEUIL_PLACES, ecart: ecart
       };
     }
@@ -531,6 +553,7 @@
     if (k === 'ocpcheaper') return it.ocpCheaper;
     if (k === 'avecpcat') return !!it.pcat;
     if (k === 'leclercpub') return it.leclerc > 0;
+    if (k === 'farmalinepub') return it.pub.farmaline > 0;
     if (k === 'monte') return it.monte;
     return it.cat === k;
   }
@@ -566,7 +589,7 @@
     return a;
   }
   function counts(base) {
-    var c = { all: base.length, alerte: 0, pzcheaper: 0, sgcheaper: 0, ocpcheaper: 0, avecpcat: 0, leclercpub: 0, monte: 0 };
+    var c = { all: base.length, alerte: 0, pzcheaper: 0, sgcheaper: 0, ocpcheaper: 0, avecpcat: 0, leclercpub: 0, farmalinepub: 0, monte: 0 };
     CHIPS.forEach(function (ch) { if (c[ch.k] == null) c[ch.k] = 0; });
     for (var i = 0; i < base.length; i++) {
       var it = base[i];
@@ -580,6 +603,7 @@
       if (it.ocpCheaper) c.ocpcheaper++;
       if (it.pcat) c.avecpcat++;
       if (it.leclerc > 0) c.leclercpub++;
+      if (it.pub.farmaline > 0) c.farmalinepub++;
       if (it.monte) c.monte++;
       if (c[it.cat] != null) c[it.cat]++;
     }
@@ -833,6 +857,9 @@
           (it.ocp && it.ocp.price > 0 ? '<span class="off-card-pz' + (it.ocpCheaper ? ' win' : '') + '" title="Prix net OCP, catalogue Les Incontournables (HT)">OCP ' + V2.fmtEur(it.ocp.price) + '</span>' : '') +
           (it.leclerc > 0 ? '<span class="off-card-lec' + (it.achat > 0 && it.leclerc < it.achat ? ' bad' : '') + '" title="Prix de vente au public chez E.Leclerc (TTC)">Leclerc ' + V2.fmtEur(it.leclerc) + '</span>' : '') +
           (it.drakkars > 0 ? '<span class="off-card-drk" title="Prix de vente au public chez Pharmacie des Drakkars (TTC) · relevé du ' + esc(majLabel(window.DRAKKARS_PUB_MAJ)) + '">Drakkars ' + V2.fmtEur(it.drakkars) + '</span>' : '') +
+          PUBS.map(function (P) {
+            return it.pub[P.k] > 0 ? '<span class="off-card-pub" style="--c:' + P.color + '" title="' + P.tip + ' · relevé du ' + esc(majLabel(window[P.g + '_MAJ'])) + '">' + P.label + ' ' + V2.fmtEur(it.pub[P.k]) + '</span>' : '';
+          }).join('') +
           concBelow + '</div>' + pcatLine(it) +
       '</div>' +
     '</div>';
@@ -870,9 +897,25 @@
   }
 
   // ── Inspecteur DÉTAIL ─────────────────────────
+  // Lignes du volet de détail pour Farmaline, Maxi Para, Cap 3000 (public TTC), avec la date du relevé.
+  function pubRows(it) {
+    return PUBS.map(function (P) {
+      var v = it.pub[P.k];
+      if (!(v > 0)) return '';
+      var bel = it.achat > 0 && v < it.achat;
+      var dl = it.achat > 0 ? (v - it.achat) : 0;
+      var mj = majLabel(window[P.g + '_MAJ']);
+      return '<div class="off-cmp-row' + (bel ? ' below' : '') + '">' +
+        '<span class="off-cmp-src"><span class="dot" style="background:' + P.color + '"></span>' + P.long +
+          (mj ? ' <i style="opacity:.65;font-weight:500">· relevé du ' + esc(mj) + '</i>' : '') + '</span>' +
+        '<span class="off-cmp-price ' + (bel ? 'bad' : '') + ' mono">' + V2.fmtEur(v) + '</span>' +
+        (it.achat > 0 ? '<span class="off-cmp-delta ' + (bel ? 'bad' : 'ok') + '">' + (dl >= 0 ? '+' : '') + V2.fmtEur(dl) + '</span>' : '<span class="off-cmp-delta"></span>') +
+      '</div>';
+    }).join('');
+  }
   function priceCmpRows(it) {
     if (!it.matched) {
-      return '<div class="off-cmp-row muted"><span class="off-cmp-na">Pas de données concurrents pour ce produit (hors périmètre veille).</span></div>';
+      return '<div class="off-cmp-row muted"><span class="off-cmp-na">Pas de données concurrents pour ce produit (hors périmètre veille).</span></div>' + pubRows(it);
     }
     // ligne de référence : le prix d'achat IP sert de seuil — tout ce qui passe dessous est en rouge
     var ref = it.achat > 0
@@ -915,7 +958,7 @@
         (it.achat > 0 ? '<span class="off-cmp-delta ' + (belowD ? 'bad' : 'ok') + '">' + (dD >= 0 ? '+' : '') + V2.fmtEur(dD) + '</span>' : '<span class="off-cmp-delta"></span>') +
       '</div>';
     }
-    return ref + rows + lec + drk;
+    return ref + rows + lec + drk + pubRows(it);
   }
   function inspector(it) {
     var img = it.img ? '<div class="off-insp-img"><img data-imgprod src="' + esc(it.img) + '" loading="lazy" alt=""></div>' : '';
@@ -1130,8 +1173,8 @@
     // Les prix négociés Pharmazon (conditions d'un TIERS) ne sont plus dans ce
     // fichier : ils arrivent par adresse signée, en parallèle. Jeton bumpé.
     if (V2.loadFiles) { try { V2.loadFiles(['pharmazonprix']).then(function () { if (V2.fusionnerPrixPharmazon) V2.fusionnerPrixPharmazon(); idxBuilt = false; V2.render(); }); } catch (e) {} }
-    inject(MOD_BASE + 'pharmazon-data.js?v=20260903a', function () {
-      inject('pharmazon-data.js?v=20260903a', function () { pzLoading = false; cb(); });
+    inject(MOD_BASE + 'pharmazon-data.js?v=20261029a', function () {
+      inject('pharmazon-data.js?v=20261029a', function () { pzLoading = false; cb(); });
     });
   }
 
@@ -1234,7 +1277,7 @@
   // ── Chargement du fichier best-sellers (lazy, dans crm/v2/) ──
   var bestLoading = false, bestFail = false, offTried = false, pzTried = false, sgTried = false, ocpTried = false, pcatTried = false, catOpsoTried = false;
   // Catalogue complet + prix Drakkars (OPSO uniquement) — 29/09/2026.
-  var liveTried = false, dkPubTried = false, accesTried = false;
+  var liveTried = false, dkPubTried = false, accesTried = false, pubsTried = false;
   function ensureBest(cb) {
     if (window.OFFILOG_BEST) { cb(); return; }
     if (bestLoading) return;
@@ -1592,6 +1635,7 @@
 
       '.off-card-lec{font-size:12px;font-weight:700;color:#0066B3;background:color-mix(in srgb,#0066B3 8%,#fff);border:1px solid color-mix(in srgb,#0066B3 24%,transparent);border-radius:7px;padding:1px 6px;font-variant-numeric:tabular-nums}',
       '.off-card-lec.bad{color:var(--c-rose-txt,#C2263F);background:color-mix(in srgb,#C2263F 8%,#fff);border-color:color-mix(in srgb,#C2263F 26%,transparent)}',
+      '.off-card-pub{font-size:12px;font-weight:700;color:var(--c);background:color-mix(in srgb,var(--c) 8%,#fff);border:1px solid color-mix(in srgb,var(--c) 24%,transparent);border-radius:7px;padding:1px 6px;font-variant-numeric:tabular-nums}',
       '.off-card-drk{font-size:12px;font-weight:700;color:#5E6673;background:color-mix(in srgb,#5E6673 8%,#fff);border:1px solid color-mix(in srgb,#5E6673 24%,transparent);border-radius:7px;padding:1px 6px;font-variant-numeric:tabular-nums}',
 
       // ══════════ LA CARTE, REGISTRE PARA ══════════
@@ -1723,6 +1767,11 @@
       if (OPSO && !window.DRAKKARS_PUB && !dkPubTried) {
         dkPubTried = true;
         if (V2.loadFiles) { try { V2.loadFiles(['drakkarspub']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; V2.render(); }); } catch (e) {} }
+      }
+      // Prix publics Farmaline, Maxi Para, Cap 3000 (légers, générés) — CRM et OPSO, en tâche de fond.
+      if (!pubsTried) {
+        pubsTried = true;
+        if (V2.loadFiles) { try { V2.loadFiles(['farmalinepub', 'maxiparapub', 'cap3000pub']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; V2.render(); }); } catch (e) {} }
       }
       // les deux morceaux (catalogue, prix protégés) arrivent dans un ordre
       // quelconque : on retente la fusion à chaque rendu, c'est idempotent.
