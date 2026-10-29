@@ -3929,14 +3929,13 @@
     var S = sesChiffresDe(pid, marge, nbRefs);
     var detail = analyseKpis(A, marge, nbRefs) + '<div class="pha-marges">' + analyseMargePharma(A, marge) + analyseNotreMarge(pid) + '</div>';
     // 29/10/2026 — deux jeux de blocs : « Intégral » = exactement l'écran d'avant (vi-int) ; « pharmacien » = les cartes d'avant le 29/10, dépliées, sans l'interne (vi-ph).
-    // Top 10 et « Ne commande plus » (ses propres achats) sont communs aux deux vues.
-    var chiffresInt = retourProposer(pid, A, { dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp }) +
-      (S ? '<div class="pha-marges">' + m5Bloc(A, S) + rentaChiffres(pid) + m5Tranches(S) + '</div>' + m5Replie('chiffres', 'Cumul, dernier mois et marges en détail', detail)
+    // Top 10 et « Ne commande plus » (ses propres achats) sont communs aux deux vues, ainsi que « À proposer » (29/10, demande de Will : les listes groupement et Intégral se montrent au pharmacien).
+    var chiffresInt = (S ? '<div class="pha-marges">' + m5Bloc(A, S) + rentaChiffres(pid) + m5Tranches(S) + '</div>' + m5Replie('chiffres', 'Cumul, dernier mois et marges en détail', detail)
            : analyseKpis(A, marge, nbRefs) + '<div class="pha-marges">' + analyseMargePharma(A, marge) + analyseNotreMarge(pid) + rentaChiffres(pid) + '</div>') +
       analyseChart(A) + (S ? m5Replie('tranches', 'Son CA par tranche, tableau détaillé', analyseTranches(A)) + m5Replie('parts', 'Par catégorie, mois par mois', analyseParts(A)) : analyseTranches(A) + analyseParts(A));
     var chiffresPh = analyseKpis(A, marge, nbRefs, true) + '<div class="pha-marges">' + analyseMargePharma(A, marge) + '</div>' +
       analyseChart(A, true) + analyseTranches(A, true) + analyseParts(A, true);
-    var chiffres = viW(chiffresInt, 'vi-int') + viW(chiffresPh, 'vi-ph') + analyseTop5(A) + analyseNePlus(pid);
+    var chiffres = retourProposer(pid, A, { dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp }) + viW(chiffresInt, 'vi-int') + viW(chiffresPh, 'vi-ph') + analyseTop5(A) + analyseNePlus(pid);
     // 09/10/2026 — maquette 8 « Le menu » (remplace la 1b, jugée « trop complexe ») : l'état de la fiche est posé ici,
     // la page est assemblée plus bas (carte d'identité courte, menu, une rubrique à la fois).
     if (menu) l8Init(pid, A, { marge: marge, dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp });
