@@ -31,11 +31,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
   <link rel="dns-prefetch" href="https://images.weserv.nl">
   <!-- Socle visuel V2 (partagé) + override thème vert OPSO -->
-  <link rel="stylesheet" href="../../crm/v2/v2.css?v=20261029ach" />
-  <link rel="stylesheet" href="../../crm/v2/v2-pieces.css?v=20261029ach" />
-  <link rel="stylesheet" href="opso-theme.css?v=20261029ach" />
-  <link rel="stylesheet" href="opso-ux-accueil.css?v=20261029ach" />
-  <link rel="stylesheet" href="opso-ux-listes.css?v=20261029ach" />
+  <link rel="stylesheet" href="../../crm/v2/v2.css?v=20261029mq" />
+  <link rel="stylesheet" href="../../crm/v2/v2-pieces.css?v=20261029mq" />
+  <link rel="stylesheet" href="opso-theme.css?v=20261029mq" />
+  <link rel="stylesheet" href="opso-ux-accueil.css?v=20261029mq" />
+  <link rel="stylesheet" href="opso-ux-listes.css?v=20261029mq" />
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
@@ -59,7 +59,7 @@
   <div class="v2" id="v2-root"></div>
 
   <!-- Socle (modules partagés crm/v2) -->
-  <script src="../../crm/v2/v2-icons.js?v=20261029ach"></script>
+  <script src="../../crm/v2/v2-icons.js?v=20261029mq"></script>
   <!-- Données officines + ventes WML (source de vérité) -->
   <!-- `wml-officines-data.js` n'est plus chargé ici. Il contient les 691
        officines clientes avec leur chiffre d'affaires et 437 848 lignes de
@@ -71,32 +71,32 @@
   <!-- Listing officiel OPSO Santé (129 adhérents) : titulaire, e-mail, téléphone. Sorti du
        dépôt public le 30/09/2026 — chargé après connexion (clé `opsolisting` de PROTEGES). -->
   <!-- Achats par officine (opso/STATISTIQUES) — alimente le suivi groupement -->
-  <script src="../../crm/v2/v2-boot.js?v=20261029ach"></script>
+  <script src="../../crm/v2/v2-boot.js?v=20261029mq"></script>
   <!-- Piliers -->
   <!-- 04/09/2026, décision Will : l'app OPSO est un VISU pour le groupement,
        pas un JARVIS complet. Retirés : v2-pharma (écran commercial interne),
        v2-catalogue (toutes nos conditions), v2-fiches (outil de vente).
        Restent : Suivi groupement, Fiches marketing OPSO, Offilog. -->
 
-  <script src="../../crm/v2/v2-offilog.js?v=20261029ach"></script>
+  <script src="../../crm/v2/v2-offilog.js?v=20261029mq"></script>
   <!-- 15/09/2026 — liste des produits froids : sans elle, la famille « Froid » du Pilotage est sous-estimée -->
-  <script src="../../crm/v2/froid-data.js?v=20261029ach"></script>
-  <script src="../../crm/v2/v2-pilotage.js?v=20261029ach"></script>
+  <script src="../../crm/v2/froid-data.js?v=20261029mq"></script>
+  <script src="../../crm/v2/v2-pilotage.js?v=20261029mq"></script>
   <!-- Fiches marketing OPSO (charte Normandie Pharma) — OPSO uniquement -->
-  <script src="../../crm/v2/v2-marketing.js?v=20261029ach"></script>
+  <script src="../../crm/v2/v2-marketing.js?v=20261029mq"></script>
   <!-- « Le catalogue » côté grossiste (30/09/2026) : prend la route « marketing », classé par nombre de pharmacies -->
   <!-- 22/10/2026 — choix du catalogue (retirer / ajouter / « Sous réserve de disponibilité ») : lu par le catalogue ET l'écran de l'offre -->
-  <script src="opso-catalogue-choix-data.js?v=20261029ach"></script>
-  <script src="opso-catalogue.js?v=20261029ach"></script>
+  <script src="opso-catalogue-choix-data.js?v=20261029mq"></script>
+  <script src="opso-catalogue.js?v=20261029mq"></script>
   <!-- 15/10/2026 — « Les prix OPSO Santé » : PFHT, prix habituel, prix négocié (lus dans le seau privé, jamais dans le dépôt) -->
-  <script src="opso-prix.js?v=20261029ach"></script>
+  <script src="opso-prix.js?v=20261029mq"></script>
   <!-- Espace groupement OPSO (maquette 5, 29/09/2026) — le cap + le mois, propre à OPSO -->
-  <script src="opso-groupement.js?v=20261029ach"></script>
+  <script src="opso-groupement.js?v=20261029mq"></script>
   <!-- Écrans Pharmacies + Meilleurs achats OPSO (29/09/2026), propres à OPSO -->
-  <script src="opso-pharmacies.js?v=20261029ach"></script>
+  <script src="opso-pharmacies.js?v=20261029mq"></script>
   <!-- Suivi de la rémunération du contrat de référencement (30/09/2026) : réglage protégé, chargé après connexion -->
-  <script src="opso-remuneration.js?v=20261029ach"></script>
+  <script src="opso-remuneration.js?v=20261029mq"></script>
   <!-- App (boot en dernier) -->
-  <script src="../../crm/v2/v2-app.js?v=20261029ach"></script>
+  <script src="../../crm/v2/v2-app.js?v=20261029mq"></script>
 </body>
 </html>
