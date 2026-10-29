@@ -98,11 +98,17 @@
   function net(raw) {
     var w = raw && raw.wid && typeof raw.wid === 'object' && Array.isArray(raw.wid.items) ? raw.wid : null;
     var src = w ? w.items : ancien(raw), out = [], vus = {};
+    /* 29/10/2026 — migration UNIQUE : « Mon secteur comparé à la moyenne Intégral » est posé chez tous ceux qui avaient déjà enregistré leurs widgets, en tête
+       de la colonne (sa place d'origine), sans toucher aux autres. Le drapeau `m1` vit dans `wid`, donc au même endroit que les réglages (navigateur ET base) :
+       retiré ensuite, il ne revient pas. Plein (12 widgets) : rien n'est posé ni marqué, on réessaiera. Sans réglage enregistré, `ancien` le pose déjà. */
+    var m1 = !!(w && w.m1);
+    if (w && !m1 && !src.some(function (x) { return x && x.k === 'secteur'; }) && src.filter(function (x) { return propre(x); }).length < MAX) { src = [{ k: 'secteur', t: 'M', o: {} }].concat(src); m1 = true; }
+    else if (!w || src.some(function (x) { return x && x.k === 'secteur'; })) m1 = true;
     src.forEach(function (x) { var p = propre(x); if (p && out.length < MAX) out.push(p); });
     out.forEach(function (p) { if (p.id && !vus[p.id]) vus[p.id] = 1; else p.id = ''; });
     var n = 0; out.forEach(function (p) { var m = /^w(\d+)$/.exec(p.id); if (m) n = Math.max(n, +m[1]); });
     out.forEach(function (p) { if (!p.id) { n++; p.id = 'w' + n; } });
-    return { v: 2, items: out, notes: (w && typeof w.notes === 'string') ? w.notes.slice(0, 600) : '' };
+    return { v: 2, items: out, notes: (w && typeof w.notes === 'string') ? w.notes.slice(0, 600) : '', m1: m1 };
   }
   function defaut() { return net(null); }
   function W() { var S = P().S(); if (!S.wid) S.wid = defaut(); return S.wid; }

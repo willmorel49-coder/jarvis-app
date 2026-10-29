@@ -206,7 +206,7 @@ test('v2-appro-grille : la courbe du réseau suit 2026 puis 2027', () => {
 
 test('v2-comptoir (Produits) : évolution sur nov. 2026 → févr. 2027, année 2027, mois de France retrouvés', () => {
   const src = lire('crm/v2/v2-comptoir.js');
-  const noms = ['pad2', 'zeros', 'moisCal', 'anneeDe', 'anneeRef', 'ventesMois', 'frPos', 'tendPart', 'evolution', 'plage', 'evoHtml']
+  const noms = ['pad2', 'zeros', 'moisCal', 'anneeDe', 'anneeRef', 'ventesMois', 'frPos', 'tendPart', 'evolution', 'plage', 'pmCouvT', 'evoHtml']
     .filter((n) => src.includes('function ' + n + '('));
   const code = noms.map((n) => fonction(src, n)).join('\n');
   const V2 = remplirV2({});

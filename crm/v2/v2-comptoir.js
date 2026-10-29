@@ -1509,7 +1509,9 @@
     if (!MA) h += '<details class="cp-tab"><summary>Voir les chiffres mois par mois</summary><div class="cp-tabw"><table>' +
       '<thead><tr><th>Mois</th><th>Nos boîtes</th><th>Notre CA</th><th>France</th><th>Part</th></tr></thead>' +
       '<tbody>' + rows + '</tbody></table></div></details>';
-    h += '<p class="cp-note">' + (MA ? '' : 'Nos ventes : réseau, mois complets. ') + 'France : Medic\'AM, boîtes remboursées, publié jusqu\'à ' +
+    // 29/10/2026 : plus de « mois complets » écrit en dur ; mention LUE dans MARGE_CLIENTS.pilotageMoy.couv (pmCouvT, comme la note du bas de l'écran) ; sans couv : aucune mention.
+    var couvPan = MA ? '' : pmCouvT({ mois: e.mois });
+    h += '<p class="cp-note">' + (MA ? '' : 'Nos ventes : réseau. ' + (couvPan ? esc(couvPan) + ' ' : '')) + 'France : Medic\'AM, boîtes remboursées, publié jusqu\'à ' +
         (F ? esc(MOIS_C[+F.meta.mois[F.meta.mois.length - 1].slice(5) - 1] + ' ' + F.meta.mois[F.meta.mois.length - 1].slice(0, 4)) : '—') +
         (MA ? '.' : '. Part = nos boîtes ÷ boîtes France du même mois.') + '</p>';
     return h;
