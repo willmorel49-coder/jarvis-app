@@ -4042,10 +4042,11 @@
       };
       apercu = l8Page(ctx);
     } else {
+      // 29/10/2026 (soir) — choix de Will : « CA par génériqueur » montré aussi en vue pharmacien (enveloppe sans classe = commune aux deux vues)
       apercu =
         '<div class="pha">' +
           '<div class="pha-rail">' + viW(phaNavHtml(pid), 'vi-int') + idCard + viW(fe.panneau + listes + infos + notes, 'vi-int') + '</div>' +
-          '<div class="pha-main">' + chiffres + viW(briefOff + listing + generiqueurSec, 'vi-int') + '</div>' +
+          '<div class="pha-main">' + chiffres + viW(briefOff + listing, 'vi-int') + viW(generiqueurSec, '') + '</div>' +
         '</div>';
     }
     if (!voitVentes) { listing = ''; generiqueurSec = ''; }
