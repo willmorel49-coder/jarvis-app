@@ -1146,6 +1146,7 @@
       : 'Mois incomplets : ' + L.map(function (f) { return f.lib + ' (' + sur(f) + ')'; }).join(', ') + ' ont transmis toutes leurs ventes. Chiffres partiels pour ces mois.';
     return t;
   }
+  V2.pmCouvT = pmCouvT;   // 29/10/2026 : partagé avec l'Appro (mêmes mois incomplets, même texte)
   function pmCouv(d) { var t = pmCouvT(d); return t ? '<div class="pm-inc" role="note">' + esc(t) + '</div>' : ''; }
   function pmPer(d) {
     var a = d.mois[0], b = d.mois[d.mois.length - 1], ya = anneeDe(a), yb = anneeDe(b);

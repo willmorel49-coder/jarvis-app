@@ -192,6 +192,19 @@
   }
   // Partagé avec l'écran Produits (v2-comptoir.js) : mêmes mois complets, même part moyenne.
   V2.approMoisRetenus = moisRetenus;
+  // 29/10/2026 — mois incomplets des mois retenus : LUS dans MARGE_CLIENTS.pilotageMoy.couv via V2.pmCouvT (v2-comptoir.js, même texte que le Pilotage).
+  // Sans couv (ou sans comptoir chargé) : aucune mention. moisRetenus balaie toutes les ventes : mémorisé par jeu de ventes.
+  var _couvRef = null, _couvMR = null;
+  function couvAppro(MR) {
+    if (!MR) {
+      var S = window.WML_SALES;
+      if (!S || !V2.pmCouvT) return '';
+      if (_couvRef !== S) { _couvRef = S; _couvMR = moisRetenus(S); }
+      MR = _couvMR;
+    }
+    return V2.pmCouvT ? V2.pmCouvT({ mois: MR }) : '';
+  }
+  V2.approCouvT = couvAppro;
 
   /* ═══ LA DEMANDE PAR ÉTABLISSEMENT ════════════════════════════════════════
      Remplace l'hypothèse « parts égales entre les sept sites » par la vraie demande
@@ -899,7 +912,7 @@
     if (ix) {
       var k0 = Object.keys(ix)[0], nm = k0 ? ix[k0].nMois : null, nu = 0;
       Object.keys(ix).forEach(function (c) { if (ix[c].unk) nu++; });
-      if (nm) vit = 'Vitesse = moyenne sur ' + nm + ' mois complets (un mois d’export partiel est écarté).';
+      if (nm) vit = 'Vitesse = moyenne sur ' + nm + ' mois.' + (couvAppro() ? ' ' + esc(couvAppro()) : '');
       if (nu) vit += ' <b>' + nu + ' références jamais inventoriées</b> — leurs quantités sont des estimations.';
     }
     return '<div class="ap-fresh">🕓 Sources à jour : ' + parts.join(' · ') + '. ' + vit + '</div>' + warn;
@@ -1590,7 +1603,7 @@
       '<div class="ap-sub">boîtes par mois et par pharmacie : deux secteurs de même taille ne consomment pas pareil</div></div></div>' +
       rows +
       '<div class="ap-foot" style="padding:10px 18px 12px;margin:0">Calculé sur les ' + nMois +
-      ' mois complets retenus. La barre compare la densité — ce qu\'une pharmacie du secteur prend en moyenne chaque mois. ' +
+      ' mois retenus.' + (couvAppro(MR) ? ' ' + esc(couvAppro(MR)) : '') + ' La barre compare la densité — ce qu\'une pharmacie du secteur prend en moyenne chaque mois. ' +
       'Un secteur dense consomme un réassort plus vite à nombre d\'officines égal.</div></div>';
   }
 
@@ -2973,10 +2986,10 @@
           reaCard = '<div class="v2-card ap-card"><div class="ap-hd"><div class="ap-ic" style="background:var(--c-amber)">' + ICO('alert', 15, 2) + '</div>' +
             '<div><h3>À commander — réassort recommandé</h3><div class="ap-sub">couverture en jours (stock plateforme ÷ vitesse réseau) + quantité conseillée — ' + fmt(h.ncmd) + ' réfs à passer, les 24 premières par euros de ventes à risque avant la prochaine livraison (' + (AM.DELAI + AM.REVUE) + ' jours)</div></div></div>' +
             reaRows +
-            '<div class="ap-foot" style="padding:10px 18px 12px;margin:0">Vitesse = ventes réseau/mois (WML, mois complets uniquement). Cible ' + CIBLE + ' j, portée à ' + CIBLE_TENSION + ' j si tension ANSM ou marché en hausse. Sur la base du dernier stock importé' + (window.STOCK_IP && window.STOCK_IP.meta && window.STOCK_IP.meta.gen ? ' (' + fdate(window.STOCK_IP.meta.gen) + ')' : '') + '.</div></div>';
+            '<div class="ap-foot" style="padding:10px 18px 12px;margin:0">Vitesse = ventes réseau/mois (WML, mois retenus).' + (couvAppro() ? ' ' + esc(couvAppro()) : '') + ' Cible ' + CIBLE + ' j, portée à ' + CIBLE_TENSION + ' j si tension ANSM ou marché en hausse. Sur la base du dernier stock importé' + (window.STOCK_IP && window.STOCK_IP.meta && window.STOCK_IP.meta.gen ? ' (' + fdate(window.STOCK_IP.meta.gen) + ')' : '') + '.</div></div>';
 
           var rosRows = rossignols().map(function (o) {
-            var cv = o.vM > 0 ? Math.round(o.cov) + ' j de stock' : 'aucune vente sur les mois complets';
+            var cv = o.vM > 0 ? Math.round(o.cov) + ' j de stock' : 'aucune vente sur les mois retenus';
             return '<div class="ap-row"><div class="ap-nm">' + esc(cap(o.d)) + (o.stale ? ' <span class="ap-tag ru">tarif à rafraîchir</span>' : '') +
               '<small>' + cv + ' · stock ' + fmt(o.st) + '</small></div>' +
               '<div class="ap-vol mono">' + (V2.fmtEur ? V2.fmtEur(o.cap) : fmt(o.cap)) + '</div>' +

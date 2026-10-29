@@ -1358,7 +1358,7 @@
   }
   // 28/10/2026 — Will : un mois incomplet (secteurs qui n'ont pas transmis toutes leurs ventes) est signalé à l'écran.
   // LU dans MARGE_CLIENTS.pilotageMoy.couv ({'AAAA-MM': [complets, attendus]}, calculé par generate_marge_clients.couverture_mois), jamais écrit ici.
-  function psCouv(PM, fen) {
+  function psCouvT(PM, fen) {
     var C = PM.couv || {}, L = fen.filter(function (f) { return C[f.m]; });
     if (!L.length) return '';
     var MF = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
@@ -1367,8 +1367,9 @@
     var t = L.length === 1
       ? cap(lib(L[0])) + ' incomplet : ' + sur(L[0]) + ' ont transmis toutes leurs ventes. Chiffres partiels pour ce mois.'
       : 'Mois incomplets : ' + L.map(function (f) { return lib(f) + ' (' + sur(f) + ')'; }).join(', ') + ' ont transmis toutes leurs ventes. Chiffres partiels pour ces mois.';
-    return '<div class="ps-inc" role="note">' + esc(t) + '</div>';
+    return t;
   }
+  function psCouv(PM, fen) { var t = psCouvT(PM, fen); return t ? '<div class="ps-inc" role="note">' + esc(t) + '</div>' : ''; }
   function psBloc(pf) {
     var MC = window.MARGE_CLIENTS, PM = MC && MC.pilotageMoy;
     if (!MC || !MC.r || !PM || !PM.f || !pf) return null;
@@ -2245,7 +2246,7 @@
       // vue « Tous », on groupe donc les ventes par commercial en UN passage, et
       // une officine est en baisse si elle l'est chez au moins un commercial
       // (montants de ce commercial ; le plus grand écart si plusieurs).
-      var mdlCard, DCR = V2.decrochage, decl = [], declOk = false;
+      var mdlCard, DCR = V2.decrochage, decl = [], declOk = false, ancreMax = null;
       if (DCR) {
         var parCom = {}, meilleur = {};
         sales.forEach(function (s) { var c = s.commercial || ''; (parCom[c] || (parCom[c] = [])).push(s); });
@@ -2253,6 +2254,7 @@
           var fen = DCR.fenetre(parCom[c], '');
           if (!fen.comparable) return;
           declOk = true;
+          if (ancreMax == null || fen.ancre > ancreMax) ancreMax = fen.ancre;
           var par = DCR.sommes(parCom[c], '', fen.ancre);
           Object.keys(par).forEach(function (id) {
             var a = par[id];
@@ -2270,8 +2272,16 @@
         mdlCard = '<div class="v2-card">' +
           '<div class="v2-card-head"><div class="v2-card-t">' + ICO('alert', 17) + 'Pharmacies en baisse · à relancer</div></div>' +
           '<div class="v2-empty"><div class="v2-empty-d">Pas de comparaison possible : il faut au moins ' + (DCR ? DCR.REGLAGES.moisMin : 6) +
-            ' mois complets dans le fichier de ventes.</div></div></div>';
+            ' mois de ventes dans le fichier.</div></div></div>';
       } else {
+        // 29/10/2026 : plus de « mois complets » écrit en dur ; les mois incomplets de la fenêtre (6 mois finissant au plus récent des fichiers) sont LUS dans couv (psCouvT, comme le bloc du haut).
+        var decCouv = '', PMd = window.MARGE_CLIENTS && window.MARGE_CLIENTS.pilotageMoy;
+        if (PMd && PMd.couv && ancreMax != null) {
+          var fenD = [];
+          for (var q = ancreMax - 5; q <= ancreMax; q++) fenD.push({ k: q, m: Math.floor(q / 12) + '-' + ('0' + (q % 12 + 1)).slice(-2) });
+          var tD = psCouvT(PMd, fenD);
+          if (tD) { psStyles(); decCouv = '<div class="ps-inc" role="note" style="margin:0 20px 10px">' + esc(tD) + '</div>'; }
+        }
         var maxDrop = decl.length ? Math.abs(decl[0].drop) : 1;
         var declHtml = decl.map(function (r, i) {
           var pct = maxDrop > 0 ? Math.max(3, Math.abs(r.drop) / maxDrop * 100) : 0;
@@ -2293,7 +2303,7 @@
         mdlCard =
           '<div class="v2-card">' +
             '<div class="v2-card-head"><div class="v2-card-t">' + ICO('alert', 17) + 'Pharmacies en baisse · à relancer</div>' +
-              '<span class="v2-card-link" style="color:var(--muted);cursor:default">' + '3 derniers mois complets vs les 3 précédents' + '</span></div>' +
+              '<span class="v2-card-link" style="color:var(--muted);cursor:default">' + '3 derniers mois vs les 3 précédents' + '</span></div>' + decCouv +
             (declHtml || '<div class="v2-empty"><div class="v2-empty-d">Aucune pharmacie à relancer sur ces 3 mois.</div></div>') +
           '</div>';
       }

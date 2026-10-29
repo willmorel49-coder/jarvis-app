@@ -71,7 +71,7 @@ const heros = (h) => (h.match(/pilo-hero-v mono" data-count>([^<]*)</) || [])[1]
 const bloc = (h, debut, fin) => { const i = h.indexOf(debut); return i < 0 ? '' : h.slice(i, fin ? h.indexOf(fin, i + debut.length) : undefined); };
 const mk = (m) => 2026 * 12 + (m - 1);
 const carte = (h) => bloc(h, 'Pharmacies en baisse', 'data-reveal');
-const SANS_COMPARAISON = 'Pas de comparaison possible : il faut au moins 6 mois complets';
+const SANS_COMPARAISON = 'Pas de comparaison possible : il faut au moins 6 mois de ventes';
 let carteDernierMois = '';
 
 test('« Dernier mois » : juin seul (8 805 €)', () => {

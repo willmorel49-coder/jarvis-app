@@ -76,10 +76,10 @@ test('Pilotage : la carte « Pharmacies en baisse » suit la règle unique du mo
   // p4 (fichier de C, trop court) n'apparaît pas.
   assert.deepEqual(noms(h), ['Deux', 'Trois']);
   assert.deepEqual(montants(h), ['▼ ' + V2.fmtEur(500) + '/mois', '▼ ' + V2.fmtEur(400) + '/mois']);
-  assert.ok(carte(h).includes('3 derniers mois complets vs les 3 précédents'), 'libellé de la règle');
+  assert.ok(carte(h).includes('3 derniers mois vs les 3 précédents'), 'libellé de la règle');
   V2.commFilter = 'B'; h = rendre().html; assert.deepEqual(noms(h), ['Trois']);
   V2.commFilter = 'C'; h = rendre().html;
-  assert.ok(carte(h).includes('Pas de comparaison possible : il faut au moins 6 mois complets'), 'C : fichier trop court');
+  assert.ok(carte(h).includes('Pas de comparaison possible : il faut au moins 6 mois de ventes'), 'C : fichier trop court');
   assert.deepEqual(noms(h), []);
   V2.commFilter = '';
 });

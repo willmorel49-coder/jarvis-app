@@ -274,7 +274,7 @@
       ' concernée' + (L.length > 1 ? 's' : '') + ', les ' + Math.min(_n, L.length) + ' premières affichées.' +
       noteDemande() +
       '<br><br>Le stock par site vient de <code>etab-prices-data.js</code>, la vitesse de vente est celle du ' +
-      'réseau entier sur les mois complets.' + dates +
+      'réseau entier sur les mois retenus.' + (V2.approCouvT && V2.approCouvT() ? ' ' + C.esc(V2.approCouvT()) : '') + dates +
       ' Un site sans ligne pour un produit est <b>non communiqué</b>, pas à zéro : il n’est ni donneur ni receveur.' +
       '<br><br><b>Comment la cible est fixée.</b> Elle n’est plus la même pour toutes les références. ' +
       'Chacune est classée sur deux axes : sa <b>valeur</b> pour le réseau (A, B ou C) et la ' +
