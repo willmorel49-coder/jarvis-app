@@ -40,6 +40,7 @@
      fam = rayon ; o = écran ouvert par le titre (page, ou page/param) ; t = tailles permises ; r = réglages de contenu ; ic = picto */
   var FAMS = [['clients', 'Mes clients'], ['journee', 'Ma journée'], ['veille', 'Veille du marché']];
   var LIB = {
+    secteur: { nom: 'Mon secteur comparé à la moyenne Intégral', ds: 'Vos chiffres clés à côté de la moyenne du réseau', ic: 'pilotage', fam: 'clients', o: 'pilotage', t: 'SML', r: [] },
     relance: { nom: 'À relancer', ds: 'Les officines à rappeler, avec leur date', ic: 'clients', fam: 'clients', o: 'rdv', t: 'SML',
       r: [{ k: 'horizon', nom: 'Afficher', ch: [['retard', 'Seulement les retards'], ['jour', 'Retards et aujourd\'hui'], ['deux', 'Jusqu\'à dans 2 jours']], d: 'deux' }] },
     groupement: { nom: 'Un groupement à la loupe', ds: 'Ses adhérents actifs, en pourcentage', ic: 'carteGrp', fam: 'clients', o: 'pharma/groupements', t: 'SM',
@@ -53,7 +54,7 @@
       r: [{ k: 'outils', nom: 'Outils affichés', multi: 'outils', d: ['rdv', 'carte', 'produits', 'pilotage'] }] },
     ruptures: { nom: 'Ruptures à surveiller', ds: 'Les ruptures et tensions du moment', ic: 'appro', fam: 'veille', o: 'infos', t: 'SML', r: [] }
   };
-  var CLES = ['relance', 'groupement', 'infos', 'todo', 'semaine', 'tournee', 'notes', 'raccourcis', 'ruptures'];
+  var CLES = ['secteur', 'relance', 'groupement', 'infos', 'todo', 'semaine', 'tournee', 'notes', 'raccourcis', 'ruptures'];
   var TAILLES = { S: 'Compact', M: 'Normal', L: 'Détaillé' };
   /* ── Les choix proposés par un réglage ([valeur, libellé]) ── */
   function outilsChoix() {
@@ -92,7 +93,7 @@
     var ordre = (raw && Array.isArray(raw.wordre) && raw.wordre.length === B.length && raw.wordre.every(function (k, i, a) { return B.indexOf(k) >= 0 && a.indexOf(k) === i; })) ? raw.wordre : B;
     var on = (raw && raw.widgets && typeof raw.widgets === 'object') ? raw.widgets : {};
     /* Infos du matin et To do list sont au centre : ils ne se répètent pas dans la colonne (ils restent dans la bibliothèque) */
-    return ordre.filter(function (k) { return on[k] !== false && k !== 'infos' && k !== 'todo'; }).map(function (k) { return { k: k, t: 'M', o: {} }; });
+    return [{ k: 'secteur', t: 'M', o: {} }].concat(ordre.filter(function (k) { return on[k] !== false && k !== 'infos' && k !== 'todo'; }).map(function (k) { return { k: k, t: 'M', o: {} }; }));
   }
   function net(raw) {
     var w = raw && raw.wid && typeof raw.wid === 'object' && Array.isArray(raw.wid.items) ? raw.wid : null;
@@ -131,6 +132,7 @@
   function nbLignes(t, s, m, l) { return t === 'S' ? s : t === 'M' ? m : l; }
 
   var CORPS = {
+    secteur: function (w) { var C = V2.accueilCinq; return C && C.cmp ? C.cmp.widget(w.t) : vide('Ce widget ne peut pas s\'afficher pour l\'instant.'); },
     infos: function (w, stat) {
       var p = P(), i = p.infos();
       if (i.etat === 'charge') return vide('Chargement du brief du jour…');
@@ -270,7 +272,7 @@
     var tt = (lk && !stat) ? '<a class="aw-tl" href="' + esc(lk.href) + '" data-u2-act="' + esc(lk.act) + '"><span>' + esc(L.nom) + '</span>' + ic('arrow') + '</a>' : '<span class="aw-tl"><span>' + esc(L.nom) + '</span></span>';
     _sigW[w.id] = sigCorps(w, h);
     if (!PS.on) {
-      return '<section class="u2-wid aw-w aw-' + w.t + ' u2-in" style="--i:' + (i + 3) + '" data-aw-w="' + esc(w.id) + '" aria-label="' + esc(L.nom) + '">' +
+      return '<section class="u2-wid aw-w aw-' + w.t + ' aw-k-' + w.k + ' u2-in" style="--i:' + (i + 3) + '" data-aw-w="' + esc(w.id) + '" aria-label="' + esc(L.nom) + '">' +
         '<div class="u2-wid-h"><h2>' + tt + '</h2></div><div class="aw-c">' + h + '</div></section>';
     }
     var ouv = PS.reg === w.id && L.r.length > 0, ts = tailles(w), nm = esc(L.nom);
@@ -341,7 +343,7 @@
       _sigW[w.id] = s; el.innerHTML = h;
     });
   }
-  function garde() { P().garder(); majDroite(true); }
+  function garde() { P().garder(); majDroite(true); if (V2.accueilCinq) V2.accueilCinq.maj(); }
   function brouillon(k) { var t = LIB[k].t; return { id: 'brouillon', k: k, t: t.indexOf('M') >= 0 ? 'M' : t.charAt(0), o: defauts(k) }; }
 
   /* ═══ La bande du haut : couleur, retour à l'origine, Terminé ═══ */
@@ -552,6 +554,6 @@
     net: net, defaut: defaut, droiteHtml: droiteHtml, maj: majDroite,
     basculer: basculer, commencer: commencer, finir: finir, regle: function () { return PS.on; },
     apres: function () { if (PS.on) { bande(); var p = P(); if (p) p.rail(true); } },
-    LIB: LIB, CLES: CLES
+    LIB: LIB, CLES: CLES, pose: function (k) { return W().items.some(function (w) { return w.k === k; }); }
   };
 })();

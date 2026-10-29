@@ -2017,6 +2017,66 @@
       ligne('Marge par livraison', R.parJour, M.parJour, V2.fmtEur) +
       ligne('Marge − livraisons / mois', R.renta, M.renta, V2.fmtEur) + '</div>';
   }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // 28/10/2026 — le RESTE des chiffres de l'officine au modèle « Rentabilité » (Will : « ça doit être partout comme ça »).
+  // Chaque mesure = le chiffre de l'officine + sa barre, puis DESSOUS la barre grise « Moy. clients » (mêmes classes pha-r4-*).
+  // « Moy. clients » = l'officine moyenne de TOUS nos clients, précalculée par le générateur à côté de livraison.moy
+  // (caMois, mgMois, mpMois, refs, partGen, fam) : jamais calculée dans la page. Côté officine : les mêmes mois que la
+  // rentabilité (mois avec livraisons) et les mêmes lignes que « Notre marge » (celles du commercial affiché).
+  // ══════════════════════════════════════════════════════════════════════════
+  function sesChiffresDe(pid, marge, nbRefs) {
+    var r = notreMargeDe(pid), NM = V2.notreMarge, L = NM && NM.livraison && NM.livraison();
+    if (!r || !r.n || !L || !L.moy || L.moy.caMois == null) return null;   // fichier d'avant, ou pas de moyenne : l'écran d'avant
+    var mv = moisVentes(), J = NM.jours(pid, mv.du, mv.au);
+    if (!J.nm) return null;
+    var nm = J.nm, fam = {};
+    NM.FAMILLES.forEach(function (f) { fam[f] = (r.fam[f] || 0) / nm; });
+    return { nm: nm, ca: r.ca / nm, mg: r.tot / nm, mp: marge / nm, refs: nbRefs, gen: r.ca > 0 ? r.caGen / r.ca * 100 : 0, fam: fam, moy: L.moy };
+  }
+  function m5Pct(x) { return rentaDec(x) + ' %'; }
+  function m5Echelle(v, f) { var max = Math.max(v, f, 1e-9); return function (x) { return Math.max(2, Math.min(100, x / max * 100)).toFixed(1); }; }
+  function m5Moy(S) { return 'Officine moyenne de nos ' + V2.fmtNum(S.moy.n) + ' clients, sur ses mois de livraison'; }
+  // même marque que « Rentabilité » (rentaChiffres) : libellé, barre + chiffre de l'officine, barre grise + chiffre + « Moy. clients »
+  function m5Ligne(lib, v, f, fmt, tip, S) {
+    var w = m5Echelle(v, f);
+    return '<div class="pha-r4-l pha-m5l"><div class="pha-r4-n"' + (tip ? ' title="' + esc(tip) + '"' : '') + '>' + lib + '</div>' +
+      '<div class="pha-r4-b"><i style="width:' + w(v) + '%"></i><b class="mono' + (v < 0 ? ' pha-dn' : '') + '">' + fmt(v) + '</b></div>' +
+      '<div class="pha-r4-b fr"><i style="width:' + w(f) + '%"></i><b class="mono">' + fmt(f) + '</b><span title="' + esc(m5Moy(S)) + '">Moy. clients</span></div></div>';
+  }
+  // état ouvert / fermé des volets : un re-dessin de la fiche (Part % / CA € / Boîtes, onglets) ne les referme pas
+  var m5Det = {};
+  V2.pharmaM5Ouvert = function (cle, ouvert) { m5Det[cle] = !!ouvert; };
+  function m5Replie(cle, titre, corps) {
+    if (!corps) return '';
+    return '<details class="pha-m5-det"' + (m5Det[cle] ? ' open' : '') + ' ontoggle="V2.pharmaM5Ouvert(\'' + cle + '\',this.open)"><summary><span>' + esc(titre) + '</span>' + ICO('chev', 14) + '</summary>' + corps + '</details>';
+  }
+
+  // versions 2 et 3 : un bloc « Ses chiffres » au modèle, à la place des cartes du haut (elles sont REPLIÉES dessous, rien n'est perdu)
+  function m5Bloc(A, S) {
+    var M = S.moy, NM = V2.notreMarge;
+    return '<div class="pha-kpi pha-nm pha-rt pha-r4 pha-m5" style="--a:var(--ip-blue)">' +
+      '<div class="pha-m5-h"><div class="pha-kl">Ses chiffres</div>' +
+        (A.rank ? '<div class="pha-m5-rk" title="' + esc(A.grpRank ? A.grpRank + 'e sur ' + A.nGrp + ' chez ' + A.grpName : 'hors groupement') + '">Place dans le réseau <b class="mono">' + A.rank + '</b>/' + A.nOff + '</div>' : '') + '</div>' +
+      m5Ligne('CA / mois', S.ca, M.caMois, V2.fmtEur, 'CA net HT par mois, sur ses mois de livraison', S) +
+      m5Ligne('Notre marge / mois', S.mg, M.mgMois, V2.fmtEur, 'ce que ses achats rapportent à ' + NM.marque() + ' · génériques comptés à zéro', S) +
+      m5Ligne('Marge pharmacien / mois', S.mp, M.mpMois, V2.fmtEur, 'ce que la pharmacie gagne grâce à Intégral, princeps remboursés seulement', S) +
+      m5Ligne('Références achetées', S.refs, M.refs, V2.fmtNum, 'codes produit distincts achetés depuis janvier', S) +
+      m5Ligne('Part des génériques', S.gen, M.partGen, m5Pct, 'part des génériques dans son CA net', S) +
+      '<div class="pha-sub pha-m5-n">' + esc(NM.libelleDate()) + '</div></div>';
+  }
+
+  // version 3 : « Notre marge » par tranche de prix, au même modèle (mêmes familles que la carte « Notre marge », par mois)
+  function m5Tranches(S) {
+    var NM = V2.notreMarge, M = S.moy, F = M.fam || {}, h = '';
+    NM.FAMILLES.forEach(function (f) {
+      if (Math.round((S.fam[f] || 0) * 100) === 0 && Math.round((F[f] || 0) * 100) === 0) return;
+      h += m5Ligne(esc(NM.LIBELLES[f]), S.fam[f] || 0, F[f] || 0, V2.fmtEur, '', S);
+    });
+    if (!h) return '';
+    return '<div class="pha-kpi pha-nm pha-rt pha-r4 pha-m5" style="--a:var(--c-mint,#1E9E6A)">' +
+      '<div class="pha-m5-h"><div class="pha-kl">Notre marge par tranche de prix</div><div class="pha-m5-rk">par mois</div></div>' + h + '</div>';
+  }
   function analyseChart(A) {
     return '<div class="v2-card pha-card"><div class="pha-ch"><h3>Ce qu\'elle commande par mois</h3><span class="pha-sub">CA net Intégral' + (A.last ? ' · ' + esc(A.last.label) + ' = dernier mois reçu' : '') + '</span></div>' +
       (A.n >= 2 ? caChartSvg(A.pts, 820, 250) : '<div class="v2-cat-empty" style="border:none">Pas assez de mois pour tracer une courbe.</div>') +
@@ -3787,8 +3847,12 @@
 
     // ── Colonne « chiffres » ──
     var A = analyseData(pid, sales);
+    var S = sesChiffresDe(pid, marge, nbRefs);
+    var detail = analyseKpis(A, marge, nbRefs) + '<div class="pha-marges">' + analyseMargePharma(A, marge) + analyseNotreMarge(pid) + '</div>';
     var chiffres = retourProposer(pid, A, { dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp }) +
-      analyseKpis(A, marge, nbRefs) + '<div class="pha-marges">' + analyseMargePharma(A, marge) + analyseNotreMarge(pid) + rentaChiffres(pid) + '</div>' + analyseChart(A) + analyseTranches(A) + analyseParts(A) + analyseTop5(A) + analyseNePlus(pid);
+      (S ? '<div class="pha-marges">' + m5Bloc(A, S) + rentaChiffres(pid) + m5Tranches(S) + '</div>' + m5Replie('chiffres', 'Cumul, dernier mois et marges en détail', detail)
+           : analyseKpis(A, marge, nbRefs) + '<div class="pha-marges">' + analyseMargePharma(A, marge) + analyseNotreMarge(pid) + rentaChiffres(pid) + '</div>') +
+      analyseChart(A) + (S ? m5Replie('tranches', 'Son CA par tranche, tableau détaillé', analyseTranches(A)) + m5Replie('parts', 'Par catégorie, mois par mois', analyseParts(A)) : analyseTranches(A) + analyseParts(A)) + analyseTop5(A) + analyseNePlus(pid);
     // 09/10/2026 — maquette 8 « Le menu » (remplace la 1b, jugée « trop complexe ») : l'état de la fiche est posé ici,
     // la page est assemblée plus bas (carte d'identité courte, menu, une rubrique à la fois).
     if (menu) l8Init(pid, A, { marge: marge, dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp });
@@ -7030,7 +7094,11 @@
       '.pha-nm-n{margin-top:8px}',
       '.pha-marges{display:grid;gap:12px;margin-top:12px}.pha-marges>.pha-nm{margin-top:0}',
       '.pha-r4-l{margin-top:12px}.pha-r4-n{font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px}.pha-r4-b{display:flex;align-items:center;gap:8px;height:20px}.pha-r4-b i{display:block;height:10px;border-radius:999px;background:var(--a)}.pha-r4-b.fr i{background:#B9C4DB}',
-      '.pha-r4-b b{font-size:16px;color:var(--ip-ink);white-space:nowrap}.pha-r4-b.fr b{font-size:13px;font-weight:600;color:var(--muted)}.pha-r4-b span{font-size:11.5px;color:var(--muted);white-space:nowrap}.pha-r4-b b.pha-dn{color:var(--c-rose-txt)}',
+            '.pha-m5l .pha-r4-b span{font-size:12px}.pha-m5-h{display:flex;justify-content:space-between;align-items:baseline;gap:4px 12px;flex-wrap:wrap}.pha-m5-rk{font-size:12px;font-weight:600;color:var(--muted)}.pha-m5-rk b{color:var(--ip-ink)}.pha-m5-n{margin-top:12px}',
+      '.pha-m5-mini{margin-top:10px}.pha-m5-mini .pha-r4-b{height:10px;margin-bottom:5px}.pha-m5-cap{font-size:12px;font-weight:600;color:var(--muted)}.pha-m5-cap b{color:var(--ip-ink)}.pha-m5-2{display:flex;flex-wrap:wrap;gap:0 28px;align-items:flex-start}.pha-m5-2>div:first-child{flex:1 1 300px;min-width:0}.pha-m5-2>.pha-r4-l{flex:1 1 300px;margin-top:0;min-width:0}',
+      '.pha-m5-det{margin-top:12px}.pha-m5-det>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;padding:0 4px;border-top:1px solid var(--line);font-size:13.5px;font-weight:800;color:var(--ip-ink)}',
+      '.pha-m5-det>summary::-webkit-details-marker{display:none}.pha-m5-det[open]>summary{margin-bottom:8px}.pha-m5-det[open]>summary svg{transform:rotate(180deg)}',
+'.pha-r4-b b{font-size:16px;color:var(--ip-ink);white-space:nowrap}.pha-r4-b.fr b{font-size:13px;font-weight:600;color:var(--muted)}.pha-r4-b span{font-size:12px;color:var(--muted);white-space:nowrap}.pha-r4-b b.pha-dn{color:var(--c-rose-txt)}',
       '.pha .pha-sub,.pha .pha-grpdesc{display:-webkit-box !important;-webkit-box-orient:vertical;-webkit-line-clamp:1;overflow:hidden;cursor:help}.pha .pha-sub.pha-lu,.pha .pha-grpdesc.pha-lu{-webkit-line-clamp:unset}',
       // le survol reste « collé » après un toucher sur iPhone : il rouvrirait une note qu'on vient de replier
       '@media (hover:hover){.pha .pha-sub:hover,.pha .pha-grpdesc:hover{-webkit-line-clamp:unset}}',

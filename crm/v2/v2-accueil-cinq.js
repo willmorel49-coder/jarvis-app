@@ -238,6 +238,93 @@
   }
   var CK = '<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect class="bx" x="1.5" y="1.5" width="17" height="17" rx="5"/><path class="ck" pathLength="1" d="M5.2 10.4 8.7 13.8 14.8 6.6"/></svg>';
 
+
+  /* ── 28/10/2026 — « Mon secteur comparé à la moyenne Intégral » (modèle : psBloc du Pilotage, rentaChiffres de la fiche officine) ──
+     Côté secteur : calculé ici depuis MARGE_CLIENTS.r, comme psBloc (les lignes du commercial SEUL). Côté moyenne : LU dans MARGE_CLIENTS.pilotageMoy.f['<du>|<au>'],
+     tout le réseau Intégral, précalculé par le générateur — jamais recalculé ici. Période : TOUS les mois du fichier de marges (l'accueil n'a pas de sélecteur). */
+  var CMP_MODE = 'v2';
+  var CMP_MF = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  var CMP_MEMO = { ref: null, nom: null, d: null };
+  function cEur(n) { return V2.fmtEur ? V2.fmtEur(n) : fr(n) + ' €'; }
+  function cDec(x) { return (Math.round(x * 10) / 10).toFixed(1).replace('.', ','); }
+  function cEnt(x) { return Math.round(x).toLocaleString('fr-FR'); }
+  function cmpSecteur(MC, nom, fen) {
+    var ci = MC.c.indexOf(nom); if (ci < 0) return null;
+    var ok = {}; fen.forEach(function (f) { ok[f.an] = 1; });
+    var cout = (MC.livraison && +MC.livraison.cout) || 0, off = {};
+    MC.r.forEach(function (l) {
+      if (l[0] !== ci || !ok[l[2]]) return;
+      var id = MC.o[l[1]], x = off[id] || (off[id] = { ca: 0, mg: 0, j: {} });
+      x.ca += l[3]; x.mg += l[4];
+      if ((l[13] || 0) > (x.j[l[2]] || 0)) x.j[l[2]] = l[13] || 0;
+    });
+    var S = { n: 0, jm: 0, parJour: 0, renta: 0, caCl: 0, mgCl: 0 };
+    Object.keys(off).forEach(function (id) {
+      var x = off[id], J = 0, nm = 0;
+      Object.keys(x.j).forEach(function (m) { if (x.j[m] > 0) { J += x.j[m]; nm++; } });
+      if (!J) return;
+      S.n++; S.jm += J / nm; S.parJour += x.mg / J; S.renta += (x.mg - J * cout) / nm; S.caCl += x.ca / nm; S.mgCl += x.mg / nm;
+    });
+    if (!S.n) return null;
+    ['jm', 'parJour', 'renta', 'caCl', 'mgCl'].forEach(function (q) { S[q] /= S.n; });
+    return S;
+  }
+  // null = rien à montrer (données pas là, pas de commercial, pas de ligne) : jamais un faux zéro
+  function cmpDonnees() {
+    var MC = window.MARGE_CLIENTS, PM = MC && MC.pilotageMoy, nom = V2.user && V2.user.commercial ? String(V2.user.commercial) : '';
+    if (!MC || !MC.r || !MC.mois || !MC.mois.length || !PM || !PM.f || !nom) return null;
+    if (CMP_MEMO.ref === MC && CMP_MEMO.nom === nom) return CMP_MEMO.d;
+    var fen = MC.mois.map(function (m, i) { return { i: i, m: m, k: (+m.slice(0, 4)) * 12 + (+m.slice(5, 7)) - 1, an: +(m.slice(0, 4) + m.slice(5, 7)) }; });
+    var M = PM.f[fen[0].m + '|' + fen[fen.length - 1].m], S = M ? cmpSecteur(MC, nom, fen) : null, d = null;
+    if (M && S) {
+      var a = fen[0].k, b = fen[fen.length - 1].k, cap = function (s) { return s.charAt(0).toUpperCase() + s.slice(1); };
+      var lib = a === b ? cap(CMP_MF[a % 12]) + ' ' + Math.floor(a / 12) : Math.floor(a / 12) === Math.floor(b / 12) ? cap(CMP_MF[a % 12]) + ' → ' + CMP_MF[b % 12] + ' ' + Math.floor(b / 12) : cap(CMP_MF[a % 12]) + ' ' + Math.floor(a / 12) + ' → ' + CMP_MF[b % 12] + ' ' + Math.floor(b / 12);
+      var C = PM.couv || {}, inc = fen.filter(function (f) { return C[f.m]; }).map(function (f) { return CMP_MF[f.k % 12]; });
+      d = { S: S, M: M, lib: lib, note: inc.length ? ' · ' + inc.join(', ') + (inc.length > 1 ? ' incomplets' : ' incomplet') : '' };
+    }
+    CMP_MEMO = { ref: MC, nom: nom, d: d }; return d;
+  }
+  // Une ligne : libellé, barre du secteur + valeur, puis DESSOUS la barre grise de la moyenne + valeur + étiquette (même échelle pour les deux).
+  function cmpLigne(lib, v, f, fV, fF, libF) {
+    var max = Math.max(Math.abs(v), Math.abs(f), 1e-9);
+    var w = function (x) { return Math.max(2, Math.min(100, Math.abs(x) / max * 100)).toFixed(1); };
+    var barre = function (x, fmt) { return '<i style="width:calc((100% - 84px) * ' + (w(x) / 100).toFixed(3) + ')"></i><b>' + fmt(x) + '</b>'; };
+    return '<span class="cm-l"><span class="cm-n">' + esc(lib) + '</span>' +
+      '<span class="cm-b"><span class="cm-tr">' + barre(v, fV) + '</span><span class="cm-sp"></span></span>' +
+      '<span class="cm-b cm-fr"><span class="cm-tr">' + barre(f, fF) + '</span><span class="cm-lb">' + esc(libF) + '</span></span></span>';
+  }
+  function cmpLignes(D, cles) {
+    var S = D.S, M = D.M, t = {
+      n: ['Clients actifs', S.n, M.nSect, cEnt, cDec, 'Secteur moyen Intégral'],
+      caCl: ['CA par client / mois', S.caCl, M.caCl, cEur, cEur, 'Moy. Intégral'],
+      mgCl: ['Notre marge par client / mois', S.mgCl, M.mgCl, cEur, cEur, 'Moy. Intégral'],
+      jm: ['Livraisons / mois', S.jm, M.jm, cDec, cDec, 'Moy. Intégral'],
+      parJour: ['Marge par livraison', S.parJour, M.parJour, cEur, cEur, 'Moy. Intégral'],
+      renta: ['Marge − livraisons / mois', S.renta, M.renta, cEur, cEur, 'Moy. Intégral']
+    };
+    return cles.map(function (k) { var x = t[k]; return cmpLigne(x[0], x[1], x[2], x[3], x[4], x[5]); }).join('');
+  }
+  // v2 seulement : sous 1100 px la colonne de droite passe SOUS le centre (hors du premier écran) ; le même modèle est alors posé juste sous Officines,
+  // et seulement si le widget est posé sur l'accueil (le retirer retire aussi cette bande). Au-delà de 1100 px la bande est cachée (voir le CSS).
+  function cmpMob() {
+    var Wd = V2.accueilWidgets; if (!Wd || !Wd.pose || !Wd.pose('secteur')) return '';
+    var D = cmpDonnees(); if (!D) return '';
+    return '<span class="cm-mt">Mon secteur comparé à la moyenne Intégral</span>' + cmpWidget('M');
+  }
+  var CMP_HERO = ['n', 'caCl', 'mgCl'];
+  function cmpHero() {
+    var D = cmpDonnees(); if (!D) return '';
+    return '<span class="cm-h"><b>Mon secteur comparé à la moyenne Intégral</b><span>' + esc(D.lib + D.note) + ' · par client</span></span>' +
+      '<span class="cm-g">' + cmpLignes(D, CMP_HERO) + '</span>';
+  }
+  // Le widget : v2 = tout le modèle (2, 4 ou 6 lignes selon la taille) ; v3 = la moitié « Rentabilité » (le haut de l'accueil porte « Ventes »)
+  function cmpWidget(t) {
+    var D = cmpDonnees();
+    if (!D) return '<p class="aw-v">' + (window.MARGE_CLIENTS && window.MARGE_CLIENTS.r ? 'Pas encore de chiffres de marge pour votre secteur.' : 'Les chiffres de marge se chargent : le détail arrive.') + '</p>';
+    var v3 = CMP_MODE === 'v3', cles = v3 ? (t === 'S' ? ['parJour', 'renta'] : ['jm', 'parJour', 'renta']) : t === 'S' ? ['n', 'mgCl'] : t === 'M' ? ['n', 'caCl', 'mgCl', 'jm'] : ['n', 'caCl', 'mgCl', 'jm', 'parJour', 'renta'];
+    return '<div class="aw-cmp"><span class="cm-s">' + (v3 ? 'Comparée à la moyenne Intégral · ' : '') + esc(D.lib + D.note) + (v3 ? '' : ' · par client') + '</span><span class="cm-g">' + cmpLignes(D, cles) + '</span></div>';
+  }
+
   /* ── Le contenu vivant de chaque carte : une fonction par zone, rendue seulement quand sa donnée change ── */
   function nb(n, lib, anim) { return '<span class="ac-nb"><b' + (anim ? ' data-roule="' + n + '"' : '') + '>' + fr(n) + '</b><span>' + esc(lib) + '</span></span>'; }
   function ds(t) { return '<span class="ac-ds">' + esc(t) + '</span>'; }
@@ -307,6 +394,7 @@
   var SLOTS = {
     'h.nb': function (ctx) { return C.heroNb(ctx.m, ctx.t.pharma); },
     'h.fi': function (ctx) { return C.heroFi(ctx.t.pharma); },
+    'm.cmp': function () { return cmpMob(); },
     'infos.bd': function () { return C.infos(); },
     'todo.n': function () { return C.todoN(); },
     'todo.bd': function () { return C.todo(); },
@@ -377,7 +465,7 @@
     var ctx = contexte(), vis = etat.vis || [], cles = etat.cles || [];
     var presents = { pharma: vis.indexOf('pharma') >= 0, infos: vis.indexOf('infos') >= 0, todo: vis.indexOf('todo') >= 0, offilog: vis.indexOf('offilog') >= 0, groupements: cles.indexOf('pharma') >= 0 };
     var h = '<div class="ac-wrap' + (cascade ? ' ac-ent' : '') + '" id="u2-cinq">';
-    if (presents.pharma) h += '<section aria-label="Officines">' + hero(ctx.t.pharma, ctx) + '</section>';
+    if (presents.pharma) h += '<section aria-label="Officines">' + hero(ctx.t.pharma, ctx) + '</section><section class="cm-mob" data-slot="m.cmp" aria-label="Mon secteur comparé à la moyenne Intégral">' + slot('m.cmp', ctx) + '</section>';
     var u = une(), pu = p.une ? p.une() : null;
     if (u) h += bandeauQG(u);
     else if (pu && pu.page === 'listings2027' && lsAcces() === null) h += '<div id="acq-att"></div>';   // la base n'a pas encore répondu : apres() le pose
@@ -443,5 +531,5 @@
     var r = b.getBoundingClientRect(); b.style.setProperty('--mx', (e.clientX - r.left) + 'px'); b.style.setProperty('--my', (e.clientY - r.top) + 'px');
   });
 
-  V2.accueilCinq = { html: html, maj: maj, apres: apres, CINQ: CINQ };
+  V2.accueilCinq = { html: html, maj: maj, apres: apres, CINQ: CINQ, cmp: { widget: cmpWidget, donnees: cmpDonnees } };
 })();

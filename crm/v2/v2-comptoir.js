@@ -399,7 +399,7 @@
         hay: sansAccent(lib + ' ' + c + ' ' + (o.labo || '') + ' ' + (o.mol || '') + (rm ? ' ' + rm.dci : ''))
       });
     }
-    D.cache = { lignes: lignes, partMoy: partMoy, mois: V.mois, nDetail: nDetail,
+    D.cache = { lignes: lignes, rangs: rangs, partMoy: partMoy, mois: V.mois, nDetail: nDetail,
                 natGen: D.nat && D.nat.generated, parCip: null };
     D.cache.parCip = {};
     for (i = 0; i < lignes.length; i++) D.cache.parCip[lignes[i].cip] = lignes[i];
@@ -1073,6 +1073,165 @@
   };
 
   // ── Rendu ─────────────────────────────────────────────────────
+  var PM_V = {tete:1,fiche:0,liste:0};   // v1 : où s'affiche la comparaison (tête de l'écran / fiche du produit / liste)
+  // ═══════════════════════════════════════════════════════════════════
+  // 28/10/2026 — « Mon secteur comparé à la moyenne Intégral » (Will : « partout comme ça »).
+  // Même modèle que psBloc (Pilotage) et rentaChiffres (fiche officine) : une ligne par mesure, la barre colorée du secteur et
+  // son chiffre, puis DESSOUS la barre grise de la moyenne, son chiffre et son étiquette ; les deux barres ont la même échelle.
+  //   · Le secteur = les lignes de ventes du commercial SEUL (une officine partagée ne compte que ses lignes à lui), calculé ici
+  //     depuis WML_SALES : un commercial restreint n'y a que ses officines (+ le « reste du réseau » en total, ignoré ici).
+  //   · La moyenne n'est JAMAIS calculée ici : elle vient de MARGE_CLIENTS.produitsMoy, précalculée par le générateur
+  //     (secteur moyen = total réseau ÷ nombre de secteurs actifs). Mois différents des nôtres → pas de comparaison.
+  //     Champ absent (fichier d'avant) → aucun bloc, l'écran d'avant.
+  // ═══════════════════════════════════════════════════════════════════
+  var PM_MEMO = { ref: null, cle: '', val: null };
+  function pmNoms() {
+    var u = V2.user, out = [];
+    if (!u || !u.commercial) return out;
+    String(u.commercial).split('+').forEach(function (x) { x = x.trim(); if (x) out.push(x); });
+    return out;
+  }
+  function pmMoy(d) {
+    var M = window.MARGE_CLIENTS && window.MARGE_CLIENTS.produitsMoy;
+    return (M && M.g && M.mois && d && d.mois && M.mois.join(',') === d.mois.join(',')) ? M : null;
+  }
+  // Les ventes du secteur sur les mois complets de l'écran (boîtes > 0, comme les tuiles de la fiche produit).
+  function pmSecteur(d) {
+    var S = window.WML_SALES, noms = pmNoms(), i, r, c, id, x;
+    if (!S || !S.length || !noms.length || !d || !d.mois.length) return null;
+    var cle = S.length + '|' + noms.join('+') + '|' + d.mois.join(',');
+    if (PM_MEMO.val && PM_MEMO.cle === cle && PM_MEMO.ref === S) return PM_MEMO.val;
+    var okN = {}, okM = {}, par = {}, cl = {}, mo = {}, bt = 0, ca = 0, nRef = 0, k, refCl = 0, nCl = 0, nm;
+    noms.forEach(function (n) { okN[n] = 1; });
+    d.mois.forEach(function (m) { okM[m] = 1; });
+    for (i = 0; i < S.length; i++) {
+      r = S[i];
+      if (!(r[4] > 0) || !okM[r[1]] || !okN[r[2]]) continue;
+      id = String(r[0]);
+      if (V2.estReste && V2.estReste(id)) continue;
+      c = String(r[3]);
+      x = par[c];
+      if (!x) { x = par[c] = { o: {}, n: 0, bt: 0, ca: 0 }; nRef++; }
+      if (!x.o[id]) { x.o[id] = 1; x.n++; (cl[id] || (cl[id] = { n: 0 })).n++; }
+      x.bt += r[4]; x.ca += +r[6] || 0; bt += r[4]; ca += +r[6] || 0; mo[r[1]] = 1;
+    }
+    nm = Object.keys(mo).length;
+    for (k in cl) if (Object.prototype.hasOwnProperty.call(cl, k)) { nCl++; refCl += cl[k].n; }
+    var val = (nm && nCl) ? { nCl: nCl, nRef: nRef, refsCl: refCl / nCl, nm: nm, bt: bt / nm, ca: ca / nm, par: par } : null;
+    PM_MEMO = { ref: S, cle: cle, val: val };
+    return val;
+  }
+  function pmTop(sec, d, n) {
+    var c, t = 0, R = d.rangs || {};
+    for (c in sec.par) if (Object.prototype.hasOwnProperty.call(sec.par, c) && R[c] && R[c] <= n) t++;
+    return t;
+  }
+  function pmEnt(x) { return fr(Math.round(x)); }
+  function pmDec(x) { return fr(x, 1); }
+  function pmNb(x) { return x >= 10 ? pmEnt(x) : x >= 1 ? fr(x, 1) : fr(x, 2); }
+  function pmEur(x) { return fr(x, x < 100 ? 1 : 0) + ' €'; }
+  function pmPct(x) { return fr(x * 100, 1) + ' %'; }
+  // 29/10/2026 — mois incomplets : LU dans MARGE_CLIENTS.pilotageMoy.couv ({'AAAA-MM': [secteurs complets, attendus]}), comme psCouv du Pilotage
+  // (même source, même texte). Aucun mois incomplet, ou couv absent : aucune mention (on n'affirme jamais une complétude).
+  function pmCouvT(d) {
+    var MC = window.MARGE_CLIENTS, C = MC && MC.pilotageMoy && MC.pilotageMoy.couv;
+    if (!C || !d || !d.mois) return '';
+    var MF = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    var L = d.mois.map(function (m) { var k = anneeDe(m) + '-' + ('0' + moisCal(m)).slice(-2); return { k: k, lib: MF[moisCal(m) - 1] + ' ' + anneeDe(m), c: C[k] }; })
+      .filter(function (f) { return f.c; });
+    if (!L.length) return '';
+    var sur = function (f) { return f.c[0] + ' secteur' + (f.c[0] > 1 ? 's' : '') + ' sur ' + f.c[1]; };
+    var t = L.length === 1
+      ? L[0].lib.charAt(0).toUpperCase() + L[0].lib.slice(1) + ' incomplet : ' + sur(L[0]) + ' ont transmis toutes leurs ventes. Chiffres partiels pour ce mois.'
+      : 'Mois incomplets : ' + L.map(function (f) { return f.lib + ' (' + sur(f) + ')'; }).join(', ') + ' ont transmis toutes leurs ventes. Chiffres partiels pour ces mois.';
+    return t;
+  }
+  function pmCouv(d) { var t = pmCouvT(d); return t ? '<div class="pm-inc" role="note">' + esc(t) + '</div>' : ''; }
+  function pmPer(d) {
+    var a = d.mois[0], b = d.mois[d.mois.length - 1], ya = anneeDe(a), yb = anneeDe(b);
+    return MOIS_C[moisCal(a) - 1] + (ya === yb ? '' : ' ' + ya) + '–' + MOIS_C[moisCal(b) - 1] + ' ' + yb;
+  }
+  // Une ligne : libellé, barre du secteur + valeur, puis barre grise de la moyenne + valeur + étiquette (même échelle).
+  function pmLigne(cle, lib, v, f, fV, fF, libF) {
+    var max = Math.max(v || 0, f || 0, 1e-9);
+    var w = function (x) { return x > 0 ? Math.max(2, Math.min(100, x / max * 100)) : 0; };
+    var barre = function (x, fmt) { return '<i style="width:calc((100% - 80px) * ' + (w(x) / 100).toFixed(3) + ')"></i><b>' + fmt(x) + '</b>'; };
+    return '<div class="pm-l" data-k="' + cle + '"><div class="pm-n">' + lib + '</div>' +
+      '<div class="pm-b"><span class="pm-tr">' + barre(v, fV) + '</span><span class="pm-sp"></span></div>' +
+      '<div class="pm-b fr"><span class="pm-tr">' + barre(f, fF) + '</span><span class="pm-lb">' + libF + '</span></div></div>';
+  }
+  var PM_NOM = 'Moy. Intégral', PM_MOY = 'Moy. Intégral';
+  // Bloc en tête de l'écran (v1 : une carte et 4 lignes ; v3 : deux cartes et 6 lignes).
+  function pmTete(d) {
+    if (!PM_V.tete) return '';
+    try {
+      var sec = pmSecteur(d), M = pmMoy(d), g = M && M.g, top = C.top, L, h;
+      if (!sec) return '';
+      if (!(window.MARGE_CLIENTS && window.MARGE_CLIENTS.produitsMoy)) return '';   // fichier sans moyenne : l'écran d'avant, comme la fiche
+      var titre = '<div class="pm-t">Mon secteur comparé à la moyenne Intégral</div>' +
+        '<div class="pm-s">' + esc(pmPer(d)) + ' · tout le réseau Intégral</div>' + pmCouv(d);
+      if (!g || !g.top || g.top[String(top)] == null) {
+        return '<div class="pm-wrap" data-pm="tete">' + '<div class="pm-card">' + titre + '<div class="pm-vide">La moyenne Intégral n\'est pas disponible pour ces mois.</div></div></div>';
+      }
+      var base = '<div class="pm-s pm-base">' + fr(sec.nCl) + ' officines clientes actives dans mon secteur · ' + pmDec(g.nCl) + ' dans un secteur moyen</div>';
+      var topN = 'Meilleures ventes France (top ' + fr(top) + ') : produits achetés';
+      var lRef = pmLigne('refs', 'Produits différents achetés', sec.nRef, g.refs, pmEnt, pmDec, PM_NOM),
+          lTop = pmLigne('top', topN, pmTop(sec, d, top), g.top[String(top)], pmEnt, pmDec, PM_NOM),
+          lBt = pmLigne('bt', 'Boîtes par mois', sec.bt, g.bt, pmEnt, pmEnt, PM_MOY),
+          lCa = pmLigne('ca', 'Chiffre d\'affaires par mois (HT)', sec.ca, g.ca, pmEur, pmEur, PM_MOY);
+      if (PM_V.tete === 1) {
+        h = '<div class="pm-wrap" data-pm="tete"><div class="pm-card">' + titre + base + lRef + lTop + lBt + lCa + '</div></div>';
+      } else {
+        var lRc = pmLigne('refsCl', 'Produits différents par cliente', sec.refsCl, g.refsCl, pmEnt, pmEnt, PM_MOY),
+            lBc = pmLigne('btCl', 'Boîtes par cliente et par mois', sec.bt / sec.nCl, g.bt / g.nCl, pmEnt, pmEnt, PM_MOY);
+        h = '<div class="pm-wrap pm-v3" data-pm="tete"><div class="pm-card pm-tete">' + titre + base + '</div><div class="pm-g2">' +
+          '<div class="pm-card"><div class="pm-k">Ce que mes clientes achètent</div>' + lRef + lRc + lTop + '</div>' +
+          '<div class="pm-card"><div class="pm-k">Ce que ça représente</div>' + lBt + lBc + lCa + '</div></div></div>';
+      }
+      return h;
+    } catch (e) { return ''; }
+  }
+  // Dans la fiche d'un produit : ce produit chez mes clientes, face à un secteur moyen (vue interne seulement).
+  function pmFiche(l, d, vp) {
+    if (!PM_V.fiche || vp) return '';
+    try {
+      var sec = pmSecteur(d), M = pmMoy(d), x, m, n, bt, ca, g;
+      if (!sec || !M) return '';
+      g = M.g; m = M.p[l.cip]; x = sec.par[l.cip];
+      n = x ? x.n : 0; bt = x ? x.bt / sec.nm : 0; ca = x ? x.ca / sec.nm : 0;
+      var titre = '<div class="pm-t">Mon secteur comparé à la moyenne Intégral</div>' +
+        '<div class="pm-s">Ce produit · ' + esc(pmPer(d)) + '</div>' + pmCouv(d);
+      if (!m) {
+        return '<div class="pm-wrap pm-fiche" data-pm="fiche"><div class="pm-card">' + titre +
+          '<div class="pm-vide">Moins de ' + fr(M.seuil) + ' officines achètent ce produit sur tout le réseau : pas de moyenne Intégral. ' +
+          (n > 0 ? 'Dans mon secteur, ' + fr(n) + ' officine' + (n > 1 ? 's l\'achètent' : ' l\'achète') + '.' : 'Aucune de mes clientes ne l\'a acheté.') + '</div></div></div>';
+      }
+      return '<div class="pm-wrap pm-fiche" data-pm="fiche"><div class="pm-card">' + titre +
+        pmLigne('n', 'Mes clientes qui l\'achètent', n, m[0], pmEnt, pmDec, PM_NOM) +
+        pmLigne('part', 'Part de mes clientes qui l\'achètent', n / sec.nCl, m[0] / g.nCl, pmPct, pmPct, PM_MOY) +
+        pmLigne('bt', 'Boîtes par mois', bt, m[1], pmNb, pmNb, PM_MOY) +
+        pmLigne('ca', 'Chiffre d\'affaires par mois (HT)', ca, m[2], pmEur, pmEur, PM_MOY) +
+        pmLigne('btCl', 'Boîtes par cliente qui l\'achète, par mois', n > 0 ? bt / n : 0, m[1] / m[0], pmNb, pmNb, PM_MOY) +
+        '</div></div>';
+    } catch (e) { return ''; }
+  }
+  // Dans la liste : sous chaque produit, mes clientes qui l'achètent face à un secteur moyen (une barre comparée par produit).
+  function pmListe(l, d) {
+    if (!PM_V.liste) return '';
+    try {
+      var sec = pmSecteur(d), M = pmMoy(d), m, x;
+      if (!sec || !M) return '';
+      m = M.p[l.cip]; if (!m) return '';
+      x = sec.par[l.cip];
+      return '<span class="pm-s2" data-pm="liste"><span class="pm-n">Mes clientes qui l\'achètent</span><span class="pm-bs">' +
+        '<span class="pm-b"><span class="pm-tr">' + pmBarre(x ? x.n : 0, Math.max(x ? x.n : 0, m[0])) + '</span><span class="pm-sp"></span></span>' +
+        '<span class="pm-b fr"><span class="pm-tr">' + pmBarre(m[0], Math.max(x ? x.n : 0, m[0]), pmDec) + '</span><span class="pm-lb">' + PM_NOM + '</span></span></span></span>';
+    } catch (e) { return ''; }
+  }
+  function pmBarre(v, max, fmt) {
+    var w = v > 0 ? Math.max(2, Math.min(100, v / (max || 1e-9) * 100)) : 0;
+    return '<i style="width:calc((100% - 80px) * ' + (w / 100).toFixed(3) + ')"></i><b>' + (fmt || pmEnt)(v) + '</b>';
+  }
   function dotCls(v) { return v <= 0 ? 'z' : v < 50 ? 'l' : 'g'; }
   function partHtml(l, partMoy, TD) {
     if (l.part === null || !(partMoy > 0)) return '<span class="cp-part-na">—</span>';
@@ -1125,6 +1284,7 @@
       '<span class="cp-num">' + (l.opp ? '<b>' + eurK(l.pot) + '</b><i>par an</i>' : '<span class="cp-na">—</span>') + '</span>' +
       etabsCellules(l) +
       '<span class="cp-aqui">' + aQuiNb(l, AQ) + '</span>' +
+      pmListe(l, d) +
       '</div>';
   }
   function carte(l, d, AQ, TD) {
@@ -1139,6 +1299,7 @@
       (l.opp ? '<span class="cp-pill">Potentiel <b>' + eurK(l.pot) + '</b> par an</span>' : '') +
       '<span class="cp-card-b"><span class="cp-strip">' + etabsCellules(l) + '</span>' +
         '<span class="cp-aqui">à qui : ' + aQuiNb(l, AQ) + '</span>' + boutonAdd(l.cip) + '</span>' +
+      pmListe(l, d) +
       '</div>';
   }
   function resultatsHtml(d) {
@@ -1809,6 +1970,7 @@
       '<div class="cp-pan-c">' +
         (vp ? '<p class="cp-vpn">Vue pharmacien active : notre marge, nos ventes et les noms des autres officines sont masqués.</p>' : '') +
         (s ? panneauHaut(l, s, vp) : '') +
+        pmFiche(l, d, vp) +
         (l.f === 'nr' && l.net > 0 && Math.abs(l.net - l.prix) >= 0.01 * l.prix
           ? '<p class="cp-note">Prix moyen facturé au réseau : ' + eur2(l.net) + '.</p>' : '') +
         (s ? blocAlertes(s, l, vp) + blocMarges(s, vp) + blocMarche(s, l, vp) + (vp ? '' : blocNous(s, l, d, liste, ventes, off)) + blocProduit(s, l, stock) : blocProduit({ autres: { froid: false }, generique: null, tendance: null }, l, stock)) +
@@ -1896,10 +2058,12 @@
 
     var n = filtrees(d.lignes).length;
     var MOIS = ['', 'janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-    var periode = d.mois.length ? MOIS[moisCal(d.mois[0])] + '–' + MOIS[moisCal(d.mois[d.mois.length - 1])] + ' (' + d.mois.length + ' mois complets)' : '—';
+    // 29/10/2026 : plus de « mois complets » écrit en dur ; les mois incomplets sont LUS dans MARGE_CLIENTS.pilotageMoy.couv (même texte que le bloc et le Pilotage).
+    var periode = d.mois.length ? MOIS[moisCal(d.mois[0])] + '–' + MOIS[moisCal(d.mois[d.mois.length - 1])] + ' (' + d.mois.length + ' mois)' : '—';
+    var couvNote = pmCouvT(d);
 
     poserPanneau(d);
-    return '<div class="cp">' +
+    return '<div class="cp">' + pmTete(d) +
       '<div class="cp-tete">' +
         '<div class="cp-tete-l"><span class="cp-sous">Catalogue des 7 établissements</span><span class="cp-n" id="cp-count">' + libCompte(n) + '</span></div>' +
         '<div class="cp-search">' + ICO('search', 18, 2) +
@@ -1920,7 +2084,7 @@
       '<div id="cp-res">' + resultatsHtml(d) + '</div>' +
       '<div id="cp-bar-hote">' + barreHtml() + '</div>' +
       '<p class="cp-src">Opportunité = dans le top ' + C.top + ' des ventes France et nos ventes sous notre part moyenne. ' +
-        'Nos ventes : réseau, ' + esc(periode) + ', ramenées à l\'année. Ventes France : Open Medic' +
+        'Nos ventes : réseau, ' + esc(periode) + ', ramenées à l\'année. ' + (couvNote ? esc(couvNote) + ' ' : '') + 'Ventes France : Open Medic' +
         (d.natGen ? ' (mis à jour le ' + esc(String(d.natGen).split('-').reverse().join('/')) + ')' : '') + '. ' +
         'Stock par établissement connu pour ' + fr(d.nDetail) + ' références ; ailleurs, stock total des 7 sites.' +
         (window.ETAB_PRICES && window.ETAB_PRICES.tarifDate
@@ -2245,7 +2409,34 @@
       '.cq-bl-p{padding-bottom:6px}',
       '.cp-t .cq-ph{margin:0 0 2px}.cp-t .cp-tp{padding-top:5px}',
       '@media (min-width:1000px){.cp-hero{flex-wrap:nowrap}.cp-hg{margin-left:auto;padding-bottom:4px}.cp-t{padding:12px 14px 10px;gap:6px}.cp-pan-h{padding:14px 24px 8px}.cp-fn{margin:6px 0 8px}}',
-      '@media (max-width:520px){.cp-t.m1{grid-column:span 2}.cp-t:not(.w3):not(.w6) .cp-mn{grid-template-columns:repeat(var(--n),minmax(0,1fr))}.cp-t:not(.w3):not(.w6) .cp-mn.s3{grid-template-columns:repeat(2,minmax(0,1fr))}.cq-al{grid-template-columns:1fr;gap:8px}.cq-al-f{justify-content:flex-start;min-height:0;padding:8px 12px;font-size:20px}.cq-al-info .cq-al-f,.cq-al-warn .cq-al-f{font-size:14px}.cp-ft{grid-template-columns:1fr}.cp-ft em{grid-row:auto}.cp-sai,.cp-sai-m{margin-left:0}}'
+      '@media (max-width:520px){.cp-t.m1{grid-column:span 2}.cp-t:not(.w3):not(.w6) .cp-mn{grid-template-columns:repeat(var(--n),minmax(0,1fr))}.cp-t:not(.w3):not(.w6) .cp-mn.s3{grid-template-columns:repeat(2,minmax(0,1fr))}.cq-al{grid-template-columns:1fr;gap:8px}.cq-al-f{justify-content:flex-start;min-height:0;padding:8px 12px;font-size:20px}.cq-al-info .cq-al-f,.cq-al-warn .cq-al-f{font-size:14px}.cp-ft{grid-template-columns:1fr}.cp-ft em{grid-row:auto}.cp-sai,.cp-sai-m{margin-left:0}}',
+      '.pm-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card,18px);box-shadow:var(--sh-1);padding:20px 22px;margin-bottom:16px;--a:var(--c-mint,#1E9E6A)}',
+      '.pm-t{font:700 18px/1.3 Inter,sans-serif;color:var(--ip-ink);letter-spacing:-.01em}',
+      '.pm-s{font:400 13px/1.4 Inter,sans-serif;color:var(--muted);margin-top:3px}',
+      '.pm-base{color:var(--ip-ink);font-weight:600;margin-top:6px}',
+      '.pm-k{font:700 15px/1.3 Inter,sans-serif;color:var(--ip-ink)}',
+      '.pm-g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:16px}.pm-g2 .pm-card{margin-bottom:0}',
+      '.pm-v3 .pm-tete{margin-bottom:14px}',
+      '.pm-l{margin-top:12px}.pm-n{font:600 12.5px/1.3 Inter,sans-serif;color:var(--muted);margin-bottom:5px}',
+      '.pm-b{display:flex;align-items:center;gap:8px;min-height:20px}.pm-b+.pm-b{margin-top:4px}',
+      '.pm-tr{flex:1;min-width:0;display:flex;align-items:center;gap:8px}',
+      '.pm-tr i{display:block;flex:none;height:10px;border-radius:999px;background:var(--a)}.pm-b.fr i{background:#B9C4DB}',
+      '.pm-b b{font:700 16px/1.2 var(--mono,"Geist Mono",ui-monospace,monospace);font-variant-numeric:tabular-nums;color:var(--ip-ink);white-space:nowrap}',
+      '.pm-b.fr b{font-size:13px;font-weight:600;color:var(--muted)}',
+      '.pm-lb,.pm-sp{flex:none;width:96px}.pm-lb{font:400 12px/1.2 Inter,sans-serif;color:var(--muted)}',
+      '.pm-vide{font:400 14px/1.45 Inter,sans-serif;color:var(--muted);padding:8px 2px 2px}',
+      '.pm-fiche{margin-top:14px}.pm-fiche .pm-card{padding:16px 18px;margin-bottom:6px}.pm-fiche .pm-t{font-size:16px}',
+      '.cp-row .pm-s2{grid-column:2/-1;grid-row:2;display:grid;grid-template-columns:minmax(150px,210px) minmax(0,480px);align-items:center;gap:0 12px;margin-top:2px;--a:var(--c-mint,#1E9E6A)}',
+      '.cp-row .pm-s2 .pm-n{margin:0}',
+      '.pm-bs{display:block}',
+      '.pm-s2 .pm-b{display:flex}',
+      '.pm-s2 .pm-tr i{height:8px}',
+      '.cp-card .pm-s2{display:block;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);--a:var(--c-mint,#1E9E6A)}',
+      '.cp-card .pm-s2 .pm-n{display:block;margin-bottom:5px}',
+      '@media(max-width:700px){.pm-g2{grid-template-columns:minmax(0,1fr)}}',
+      '@media(max-width:560px){.pm-lb,.pm-sp{width:76px}.pm-card{padding:18px 16px}.pm-fiche .pm-card{padding:14px 14px}}',
+      '.pm-inc{display:flex;gap:9px;align-items:flex-start;margin-top:12px;padding:10px 12px;border-radius:10px;background:#FFF4DE;color:#6E4300;font-size:13px;line-height:1.45}',
+      '.pm-inc::before{content:"";flex:none;width:8px;height:8px;margin-top:5px;border-radius:50%;background:#E59A12}'
     ].join('\n');
     document.head.appendChild(s);
   }

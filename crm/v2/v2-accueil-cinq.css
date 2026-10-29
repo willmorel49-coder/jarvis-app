@@ -301,3 +301,37 @@
 @container acc (max-width:479px){.acq-zone{margin-top:12px}.acq-ban{grid-template-columns:88px minmax(0,1fr)}.acq-nm{font-size:16px}
   .acq-ph{font-size:13px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}}
 @media (prefers-reduced-motion:reduce){.acq-ban:hover,.acq-ban:hover .acq-go{transform:none}}
+
+/* ═══ 28/10/2026 — « Mon secteur comparé à la moyenne Intégral » : lignes à deux barres (modèle psBloc / pha-r4) ═══ */
+.cm-l,.cm-n,.cm-b,.cm-tr,.cm-h,.cm-g,.cm-s{display:block;min-width:0}
+.cm-b{display:flex;align-items:center;gap:8px;min-height:20px}
+.cm-b+.cm-b{margin-top:4px}
+.cm-tr{flex:1;display:flex;align-items:center;gap:8px}
+.cm-tr i{display:block;flex:none;height:10px;border-radius:999px;background:var(--cm-bar)}
+.cm-fr i{background:var(--cm-fr)}
+.cm-tr b{font-size:16px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--cm-txt)}
+.cm-fr .cm-tr b{font-size:13px;font-weight:600;color:var(--cm-mut)}
+.cm-lb,.cm-sp{flex:none;width:92px}
+.cm-lb{font-size:12px;line-height:1.2;color:var(--cm-mut)}
+.cm-n{font-size:13px;font-weight:700;margin-bottom:5px;color:var(--cm-mut)}
+.cm-g{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+.cm-h b{display:block;font-size:15px;font-weight:800;letter-spacing:-.01em;color:var(--cm-txt)}
+.cm-h>span{display:block;margin-top:2px;font-size:13px;color:var(--cm-mut)}
+.cm-s{font-size:13px;color:var(--cm-mut);margin-bottom:10px}
+/* dans un widget (fond clair) : mêmes couleurs que le Pilotage */
+.aw-cmp{--cm-bar:var(--c-mint,#1E9E6A);--cm-fr:#B9C4DB;--cm-txt:var(--ip-ink);--cm-mut:var(--muted-d)}
+.aw-cmp .cm-lb,.aw-cmp .cm-sp{width:84px}
+@container acc (max-width:479px){
+  .cm-lb,.cm-sp{width:76px}
+}
+@media(max-width:560px){.cm-lb,.cm-sp{width:76px}}
+
+/* v2 : sous 1100 px, la colonne de droite passe sous le centre : la bande du modèle prend sa place juste sous Officines, le widget se cache (hors réglage) */
+.cm-mob{display:none}
+@media (max-width:1099px){
+  .cm-mob{--cm-bar:var(--c-mint,#1E9E6A);--cm-fr:#B9C4DB;--cm-txt:var(--ip-ink);--cm-mut:var(--muted-d);display:block;margin-top:14px;padding:16px 16px 18px;border-radius:22px;background:#fff;border:1px solid color-mix(in srgb,var(--ip-blue) 18%,var(--line));box-shadow:var(--sh-2)}
+  .cm-mob:empty{display:none}
+  .cm-mt{display:block;font-size:17px;font-weight:800;letter-spacing:-.02em;line-height:1.2;color:var(--ip-ink);margin-bottom:6px}
+  .cm-mob .aw-cmp .cm-s{margin-bottom:12px}
+  .aw-k-secteur:not(.pb-w){display:none}
+}
