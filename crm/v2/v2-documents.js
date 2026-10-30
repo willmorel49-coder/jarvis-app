@@ -574,12 +574,27 @@
     if (b) b.addEventListener('click', function () { V2.render(); });
   }
 
+  // 30/10/2026 — Les étagères (v2-documents-etageres.js) en essai, à la demande de Will : son compte SEUL les reçoit, tous les autres gardent cet écran.
+  // Fichier introuvable = Will retombe sur cet écran. Une seule tentative par session : pas de boucle. L'ouverture à tous reste sa décision.
+  var COMPTE_ESSAI = 'db78c6f2-2e3d-4489-9310-976c8c7441a2';
+  var ICI = (document.currentScript && document.currentScript.src) || '';
+  function essaiEtageres() { return !D.essaiFait && ICI.indexOf('v2-documents.js') >= 0 && !!V2.user && V2.user.id === COMPTE_ESSAI; }
+  function chargerEtageres(root, repli) {
+    D.essaiFait = true;
+    var s = document.createElement('script');
+    s.src = ICI.replace('v2-documents.js', 'v2-documents-etageres.js');
+    s.onload = function () { if (V2.route && V2.route.name === 'documents') V2.pages.documents.render(root); };
+    s.onerror = repli;
+    document.head.appendChild(s);
+  }
+
   V2.pages.documents = {
     needs: [],
     render: function (root) {
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) : '';
       if (isOpso()) { messageFerme(root, top, 'Cet espace n’est pas ouvert pour votre compte.'); return; }
       var ouvrir = function () {
+        if (essaiEtageres()) { chargerEtageres(root, ouvrir); return; }
         root.innerHTML = top + gabarit();
         brancher(root);
         if (D.etat === 'pret') corps();
