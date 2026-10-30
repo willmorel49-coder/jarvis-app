@@ -169,3 +169,18 @@ test('OPSO : ni CERP ni Paraph affichés, et les deux fichiers ne sont pas deman
   const c2 = rendre({ cerp, groupements, prixOffilog: 20 });
   assert.match(c2.html, /CERP EUR7\.50/);
 });
+
+test('Comparer à, sans concurrent choisi : « plus / moins cher » = au moins un concurrent dans ce sens', () => {
+  const E2 = '3000000000002', E3 = '3000000000003';
+  const extra = {
+    OFFILOG_BEST: [E1, E2, E3].map((e, i) => ({ rank: i + 1, id: String(i + 1), name: 'P' + i, brand: 'M', ean: e, img: '', cat: 'sante', url: '', price: 10 })),
+    OFFILOG: [E1, E2, E3].map((e) => ({ ean: e, prix_offilog: 9 })),
+    FARMALINE_PUB: { [E1]: 12 },        // plus cher que notre achat (9)
+    CITYPHARMA_PUB: { [E2]: 8 },        // moins cher
+    MAXIPARA_PUB: { [E2]: 15 },         // E2 : un moins cher ET un plus cher
+  };
+  const h = rendre({ extra, selection: false }).html;
+  assert.match(h, /data-cmp-sens="moins"[^>]*>Moins cher que nous<span class="cnt">1</);
+  assert.match(h, /data-cmp-sens="plus"[^>]*>Plus cher que nous<span class="cnt">2</);   // E1 (Farmaline) et E2 (Maxi Para)
+  assert.match(h, /data-cmp-sens="tous"[^>]*>Tous<span class="cnt">3</);
+});
