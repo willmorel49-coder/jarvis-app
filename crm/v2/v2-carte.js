@@ -1900,7 +1900,7 @@
     // DOM a été retiré par le routeur — l'appeler faisait planter la console de l'écran
     // suivant avec « Map container not found » (constaté par le lot 0, cause non identifiée
     // alors). Même garde que le écouteur resize juste en dessous.
-    setTimeout(function () { if (map && surCarte() && document.getElementById('carte-map')) { map.invalidateSize(); rebuild(); updateTourBar(); drawTourLine(); homeView(); } }, 60);
+    setTimeout(function () { if (map && surCarte() && document.getElementById('carte-map')) { map.invalidateSize(); rebuild(); if (zonesOn) drawZones(); updateTourBar(); drawTourLine(); homeView(); } }, 60);
     setTimeout(function () { if (map && surCarte() && document.getElementById('carte-map')) map.invalidateSize(); }, 420);
     if (prospARouvrir) { prospARouvrir = false; setTimeout(function () { if (map && surCarte() && document.getElementById('carte-map') && V2.carteProspection && V2.carteProspection.reprendre) V2.carteProspection.reprendre(); }, 90); }   // après le homeView() de 60 ms
     if (!V2._carteResize) { V2._carteResize = true; window.addEventListener('resize', function () { if (map && surCarte()) { map.invalidateSize(); renderFbRow(); } }); }
