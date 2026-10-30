@@ -17,4 +17,4 @@ bash scripts/potentiel-secteur/telecharger-ign.sh
 node --test tests/potentiel-secteur.test.mjs
 ```
 
-Limite connue : Blain (44) n'a pas de population par quartier dans le recensement 2023 (10 376 habitants, 0,17 %) ; rien n'est réparti.
+Blain (44) : l'IGN la découpe en 4 quartiers, l'INSEE 2023 la traite en une seule commune (440150000, 10 376 habitants). `preparer.py` fusionne les 4 contours en une zone `440150000` qui porte la ligne INSEE (3 676 quartiers) ; aucune population n'est répartie entre ex-quartiers.

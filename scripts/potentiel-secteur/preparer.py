@@ -16,6 +16,46 @@ SORTIE = os.environ.get('SORTIE') or os.path.join(ICI, '..', '..', 'crm', 'v2', 
 TOL_M = 60.0          # tolérance de simplification (mètres)
 BANDES = {'Y_LT20': 0, 'Y20T64': 1, 'Y65T79': 2, 'Y_GE80': 3}   # 0-19, 20-64, 65-79, 80+
 
+# 30/10/2026 — Blain (44015) : l'IGN la découpe en 4 quartiers, l'INSEE 2023 la traite en une seule commune
+# (code 440150000, 10 376 habitants). On fusionne les 4 contours en UNE zone portant la ligne INSEE ;
+# aucune répartition de population n'est inventée. Clé = code INSEE de la zone, valeur = quartiers IGN réunis.
+FUSIONS = {'440150000': ('440150101', '440150102', '440150103', '440150104')}
+FUSION_NOM = {'440150000': 'Blain'}   # nom_iris d'une commune non découpée = le nom de la commune
+
+def dissoudre(polys):
+    """Fusionne des polygones contigus (mêmes sommets sur la frontière commune) en un seul :
+    les arêtes parcourues dans les deux sens (frontières intérieures) disparaissent, le reste est rechaîné."""
+    aretes = set()
+    for p in polys:
+        for ring in p:
+            for a, b in zip(ring, ring[1:]):
+                aretes.add((tuple(a), tuple(b)))
+    gardees = [e for e in aretes if (e[1], e[0]) not in aretes]
+    suivant = {}
+    for a, b in gardees:
+        suivant.setdefault(a, []).append(b)
+    assert all(len(v) == 1 for v in suivant.values()), 'fusion ambiguë : sommet partagé par plusieurs arêtes'
+    vus = set()
+    anneaux = []
+    for a, b in sorted(gardees):
+        if (a, b) in vus:
+            continue
+        ring = [list(a)]
+        cur = (a, b)
+        while cur not in vus:
+            vus.add(cur)
+            ring.append(list(cur[1]))
+            cur = (cur[1], suivant[cur[1]][0])
+        assert ring[0] == ring[-1], 'fusion : anneau non fermé'
+        anneaux.append(ring)
+    def aire(r):
+        return sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(r, r[1:])) / 2.0
+    anneaux.sort(key=lambda r: -abs(aire(r)))
+    ext = [r for r in anneaux if aire(r) * aire(anneaux[0]) > 0]
+    trous = [r for r in anneaux if aire(r) * aire(anneaux[0]) < 0]
+    assert len(ext) == 1, 'fusion : plusieurs polygones séparés (non contigus)'
+    return [[ext[0]] + trous]
+
 # ---------- population ----------
 def lire_population():
     """code_iris(9 car.) -> [tot, b0, b1, b2, b3]. Communes non découpées : code commune + '0000'."""
@@ -189,11 +229,26 @@ def main():
     centre_dehors = []
     for d in DEPTS:
         data = json.load(open(BRUT + '/ign-iris/iris-%s.json' % d))
+        membres = {q: c for c, qs in FUSIONS.items() for q in qs}   # quartier IGN -> zone fusionnée
+        groupes = {}
+        for f in data['features']:
+            c = membres.get(f['properties']['code_iris'])
+            if c:
+                groupes.setdefault(c, []).append(f)
         for f in data['features']:
             p = f['properties']
             code = p['code_iris']
             vus.add(code)
             polys = anneaux_poly(f['geometry'])
+            if code in membres:
+                c = membres[code]
+                if code != FUSIONS[c][0]:
+                    continue   # la zone fusionnée prend la place du premier quartier ; les autres disparaissent
+                assert len(groupes[c]) == len(FUSIONS[c]), 'fusion : quartier IGN manquant'
+                polys = dissoudre([q for g in groupes[c] for q in anneaux_poly(g['geometry'])])
+                code = c
+                p = {'code_iris': c, 'nom_iris': FUSION_NOM[c], 'nom_commune': FUSION_NOM[c]}
+                vus.update(FUSIONS[c]); vus.add(c)
             lon, lat, hors = point_interieur(polys)
             hors_poly += 1 if hors else 0
             if not dans_multi(lon, lat, polys):

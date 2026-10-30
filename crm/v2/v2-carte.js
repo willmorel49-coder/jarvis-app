@@ -416,13 +416,13 @@
   V2.carteZoneMetric = function (m) { zoneMetric = m; if (m !== 'quartiers') V2.carteQuartierClose(); drawZones(); var lg = document.getElementById('carte-legend'); if (lg) lg.innerHTML = legendHtml(); qSyncUi(); };
 
   // ── 30/10/2026 · POTENTIEL D'UN SECTEUR — « Quartiers INSEE » (idée 11, version 1 choisie par Will) ──
-  // Les 3 679 quartiers des 8 départements, colorés par habitants par officine DANS LE RAYON. Le calcul vient du module
+  // Les 3 676 quartiers des 8 départements, colorés par habitants par officine DANS LE RAYON. Le calcul vient du module
   // partagé V2.potentielSecteur (jamais refait ici) ; ce bloc ne fait que colorer, survoler et ouvrir le panneau.
   var qRayon = 5, qLayer = null, qCache = {}, qSel = null, qLayers = {}, qMs = 0;
   function qPS() { return V2.potentielSecteur && window.POTENTIEL_SECTEUR && window.POTENTIEL_SECTEUR.iris ? V2.potentielSecteur : null; }
   // Les 3,8 Mo des quartiers (données publiques, 1,1 Mo compressés) et leur calcul ne partent qu'à la première
   // demande, jamais au démarrage. QV ne bouge que si le fichier de données change (scripts/potentiel-secteur/).
-  var QV = '?v=rp2023a', qAttente = null;
+  var QV = '?v=rp2023b', qAttente = null;
   function ensureQuartiers(cb) {
     if (qPS()) { cb(); return; }
     if (qAttente) { qAttente.push(cb); return; }

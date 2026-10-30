@@ -82,7 +82,7 @@ const DEPS = DATA.meta.depts;
 // brute force indépendant (haversine, boucle sur tout) pour recouper le module
 const R = 6371.0088;
 const hav = (a, b, c, d) => { const t = Math.PI / 180, dp = (c - a) * t, dl = (d - b) * t; const h = Math.sin(dp / 2) ** 2 + Math.cos(a * t) * Math.cos(c * t) * Math.sin(dl / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
-// Rattachement des officines des 8 départements, par force brute INDÉPENDANTE du module (boucle sur les 3 679 contours, haversine pour les replis)
+// Rattachement des officines des 8 départements, par force brute INDÉPENDANTE du module (boucle sur les 3 676 contours, haversine pour les replis)
 const pipRing = (x, y, ring) => { let c = false; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const [xi, yi] = ring[i], [xj, yj] = ring[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; };
 const pipFeat = (f, x, y) => { const mp = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates; return mp.some((pg) => pipRing(x, y, pg[0]) && !pg.slice(1).some((h) => pipRing(x, y, h))); };
 const codeVersIdx = new Map(DATA.iris.map((q, k) => [q[0], k]));
