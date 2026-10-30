@@ -574,11 +574,18 @@
     if (b) b.addEventListener('click', function () { V2.render(); });
   }
 
-  // 30/10/2026 — Les étagères (v2-documents-etageres.js) en essai, à la demande de Will : son compte SEUL les reçoit, tous les autres gardent cet écran.
-  // Fichier introuvable = Will retombe sur cet écran. Une seule tentative par session : pas de boucle. L'ouverture à tous reste sa décision.
-  var COMPTE_ESSAI = 'db78c6f2-2e3d-4489-9310-976c8c7441a2';
+  // 30/10/2026 — Les étagères (v2-documents-etageres.js), à la demande de Will : d'abord son compte seul, puis le groupe restreint et Pascale Prieto. Tout autre compte garde cet écran.
+  // Fichier introuvable = retour sur cet écran. Une seule tentative par session : pas de boucle. L'ouverture à tous reste sa décision.
+  var COMPTES_ESSAI = [
+    'db78c6f2-2e3d-4489-9310-976c8c7441a2',   // Will
+    '7e972fa3-257d-4cb4-b80f-6e4117728871',   // Karine
+    '26c207ed-7bad-451d-b686-c139c6e0fffa',   // Pauline S.
+    '66c7778e-d0b1-4285-8d63-ba715181011f',   // Pauline G.
+    '912b2f6e-92d0-4e57-bdcf-fd22feaba293',   // Florent
+    '68143788-cd36-4b56-a827-09a0820e04c6'    // Pascale
+  ];
   var ICI = (document.currentScript && document.currentScript.src) || '';
-  function essaiEtageres() { return !D.essaiFait && ICI.indexOf('v2-documents.js') >= 0 && !!V2.user && V2.user.id === COMPTE_ESSAI; }
+  function essaiEtageres() { return !D.essaiFait && ICI.indexOf('v2-documents.js') >= 0 && !!V2.user && COMPTES_ESSAI.indexOf(V2.user.id) >= 0; }
   function chargerEtageres(root, repli) {
     D.essaiFait = true;
     var s = document.createElement('script');

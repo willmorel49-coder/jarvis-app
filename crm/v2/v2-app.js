@@ -966,11 +966,13 @@
   // Le groupe restreint (Documents ouvert par documents_acces_ok()) voit UNE fois par appareil, à l'accueil, ce qui s'est ouvert pour lui.
   // Aucun nom écrit ici : chaque ligne n'apparaît que si la base dit oui (Documents, voit_tous_commerciaux, jarvis_acces_marge_produits()).
   // Will, qui a ouvert ces accès, ne le voit pas. Toute fermeture le range (clé locale par utilisateur).
+  // 30/10/2026 — Pascale Prieto (DR) non plus : Documents s'ouvre pour elle, mais elle voit déjà tout, et « Will vous a ouvert… » serait faux.
   var BV_CLE = 'jarvis_bienvenue_groupe_20261016:';
+  var BV_SANS = '68143788-cd36-4b56-a827-09a0820e04c6';
   var _bvEnCours = false;
   function bvGroupe() {
     var u = V2.user;
-    if (_bvEnCours || !u || !u.id || u.commercial === 'Will' || (window.V2_BRAND && window.V2_BRAND.opso)) return;
+    if (_bvEnCours || !u || !u.id || u.commercial === 'Will' || u.id === BV_SANS || (window.V2_BRAND && window.V2_BRAND.opso)) return;
     try { if (localStorage.getItem(BV_CLE + u.id) === '1') return; } catch (e) {}
     _bvEnCours = true;
     V2.documentsVerifier().then(function (doc) {

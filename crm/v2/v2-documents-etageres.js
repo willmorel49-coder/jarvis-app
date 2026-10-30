@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
-   CRM V2 · Documents, version « étagères » (remplace V2.pages.documents) — EN ESSAI : chargée par v2-documents.js pour le SEUL compte de Will (30/10/2026).
+   CRM V2 · Documents, version « étagères » (remplace V2.pages.documents) — EN ESSAI : chargée par v2-documents.js pour Will, le groupe restreint et Pascale Prieto (30/10/2026).
    Quand Will l'ouvre à tous : ce fichier prend la place de v2-documents.js, et l'aiguillage disparaît avec l'ancien écran.
    Le classement des grossistes, groupements et laboratoires (tarifs, conditions, catalogues), consultable depuis l'iPhone comme
    depuis le Mac, par les seuls comptes inscrits dans la table documents_acces. Même rangement que sur le Mac : 4 dossiers racine (2 familles Grossistes / Parapharmacie depuis le 29/10/2026, puis Réserve et Antérieur à 2025), recherche partout.
