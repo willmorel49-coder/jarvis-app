@@ -246,6 +246,25 @@ def ban_addr_bulk(rows):
     return out
 
 
+# 30/10/2026 — 12 officines placées à tort à des centaines de km (adresse mal géocodée) ;
+# position officielle FINESS recoupée par le géocodeur IGN, sauf 2013703 (pas de fiche FINESS :
+# centre de la commune). Clé = ID officine (texte). Sans cette table, une régénération les remettrait.
+POSITIONS_CORRIGEES = {
+    '2097723': (43.81847, 4.34443),   # PHARMACIE NIMES ETOILE, Nîmes
+    '2063212': (45.24728, 4.6661),    # PHARMACIE BEL AIR, Annonay
+    '2117739': (45.11525, 5.75763),   # PHARMACIE DE L ENCLOS, Jarrie
+    '2030648': (45.75085, 3.12365),   # Aubière
+    '2020069': (47.38133, 0.70514),   # Tours
+    '2022422': (47.21173, -1.65279),  # Saint-Herblain
+    '2135433': (48.83349, -1.56786),  # Granville
+    '2013703': (45.0222, 5.05055),    # PHARMACIE KENNEDY, Bourg-de-Péage (centre de la commune)
+    '2009541': (43.08561, 0.56805),   # Montréjeau
+    '2261952': (47.21142, -1.61629),  # Saint-Herblain
+    '2145331': (47.6472, -2.72487),   # Séné
+    '2265983': (47.89118, -2.83452),  # Locminé
+}
+
+
 def exact_coords():
     """{id:(lat,lng)} — adresse exacte géocodée (cache STATS/geocode_addr_cache.json)."""
     addr = load_addresses()
@@ -324,6 +343,7 @@ def main():
 
     comm_by_id, ca_by_id = wml_commercials()   # ID officine -> commercial + CA (nos clients réseau)
     EX = exact_coords()                          # ID officine -> (lat,lng) adresse exacte
+    EX.update(POSITIONS_CORRIGEES)               # 30/10/2026 : corrections à la main, prioritaires
     GRPMAP, GRPCANON = load_groupement_map()     # (cp,nom)->groupement + fusion des libellés
     SEG_MAP = {'clients a': 'Client A', 'clients b': 'Client B', 'clients c': 'Client C', 'prospects': 'Prospect'}
 
