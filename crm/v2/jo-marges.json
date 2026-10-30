@@ -1,8 +1,21 @@
 {
- "generated_at": "2026-10-29T13:15:28.412236+00:00",
+ "generated_at": "2026-10-30T13:07:36.868318+00:00",
  "source": "Journal officiel · open data DILA",
- "count": 4,
+ "count": 5,
  "items": [
+  {
+   "id": "JORFTEXT000055029771",
+   "titre": "Arrêté du 29 octobre 2026 relatif à la prise en compte, dans les prix maximum des gazoles routiers et non routiers en Guadeloupe, en Guyane, en Martinique, à La Réunion et à Mayotte, de l'avantage résultant des conditions économiques de libération de stocks stratégiques de gazole",
+   "url": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055029771",
+   "jo": "2026-10-30",
+   "signe_le": "2026-10-29",
+   "motifs": [
+    "distribution en gros"
+   ],
+   "resume": null,
+   "date_effet": null,
+   "a_venir": false
+  },
   {
    "id": "JORFTEXT000055020770",
    "titre": "Décision du 26 octobre 2026 fixant les prix d'une spécialité pharmaceutique remboursable aux assurés sociaux",
