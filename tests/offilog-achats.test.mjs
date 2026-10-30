@@ -17,7 +17,7 @@ const ligneC = (code, ppht, net, qtes, periode) => [code, '210 869 3 LIBELLE SEC
 const CAT = 'paraph/CATALOGUE-CENTRALE-PARAPH-1ERE-EDITION-2025.pdf';
 const ligneG = (code, prix, net, doc = CAT, g = 'Paraph') => [code, '', g, 2025, prix, 10, net, null, '', doc];
 
-function rendre({ opso = false, cerp, groupements, prixOffilog = 10, extra = {}, selection = true, avance = false }) {
+function rendre({ opso = false, cerp, groupements, prixOffilog = 10, extra = {}, selection = true, avance = false, apres = null }) {
   const noop = () => '';
   const fauxEl = () => new Proxy(function () {}, { get: (t, k) => (k === 'style' ? {} : k === 'dataset' ? {} : fauxEl()), apply: () => fauxEl(), set: () => true });
   const doc = { currentScript: null, head: fauxEl(), body: fauxEl(), createElement: fauxEl, getElementById: () => null, querySelector: () => null, querySelectorAll: () => [], addEventListener: noop };
@@ -41,6 +41,7 @@ function rendre({ opso = false, cerp, groupements, prixOffilog = 10, extra = {},
   vm.runInContext(SRC, ctx);
   if (selection) win.V2.offSelect('1');
   if (avance) win.V2.offToggleAdv();
+  if (apres) apres(win.V2);
   const root = { innerHTML: '', querySelector: () => null, querySelectorAll: () => [] };
   win.V2.pages.offilog.render(root, '');
   return { html: root.innerHTML, demandes };
@@ -94,9 +95,13 @@ test('bloc « Prix d\'achat » : trié du moins cher au plus cher, Offilog en r�
   });
   const bloc = html.slice(html.indexOf('id="off-achat"'));
   const ordre = [...bloc.matchAll(/data-achat="([^"]+)"/g)].map((m) => m[1]);
-  assert.deepEqual(ordre, ['CERP', 'Sagitta', 'Offilog', 'Paraph']);
+  assert.deepEqual(ordre, ['Sagitta', 'Offilog', 'Paraph', 'CERP']); // CERP : repère neutre, toujours en dernier
   assert.match(bloc, /class="off-cmp-ref" data-achat="Offilog"/);
-  assert.match(bloc, /−EUR2\.50 · −25 %/);   // CERP 7,50 contre 10
+  // CERP (7,50 contre 10) : prix visible, mais aucun écart, aucune couleur « moins cher »
+  const ligneCerp = bloc.match(/<div class="off-cmp-row" data-achat="CERP">.*?<\/div>/)[0];
+  assert.match(ligneCerp, /EUR7\.50/);
+  assert.doesNotMatch(ligneCerp, /off-cmp-delta (ok|bad)|below|bad|−|\d %/); // la case d'écart reste vide
+  assert.match(bloc, /−EUR1\.00 · −10 %/);   // Sagitta 9 contre 10 : l'écart reste calculé pour les autres
   assert.match(bloc, /\+EUR2\.50 · \+25 %/); // Paraph 12,50 contre 10
   assert.match(bloc, /04\/06\/2026/);
   // outil de mesure : sans aucune plateforme, pas de bloc
@@ -104,10 +109,50 @@ test('bloc « Prix d\'achat » : trié du moins cher au plus cher, Offilog en r�
   assert.doesNotMatch(vide.html, /id="off-achat"/);
 });
 
-test('filtres : « Moins cher chez CERP » et « Moins cher chez Paraph » comptent les bons produits', () => {
-  const { html } = rendre({ cerp: cerpDe('2026-10-01', [ligneC(E1, 14, 7.5, 'dès 2', 'octobre 2026')]), groupements: grpDe([ligneG(E1, 15, 12.5)]), selection: false, avance: true });
-  assert.match(html, /Moins cher chez CERP<span class="cnt">1</);
-  assert.match(html, /Moins cher chez Paraph<span class="cnt">0</);
+test('CERP : prix visible sur la carte, mais aucun marquage « moins cher », aucun filtre, aucun compteur', () => {
+  const { html } = rendre({ cerp: cerpDe('2026-10-01', [ligneC(E1, 14, 7.5, 'dès 2', 'octobre 2026')]), selection: false, avance: true });
+  assert.match(html, /CERP EUR7\.50 dès 2/, 'le prix CERP reste affiché');
+  assert.doesNotMatch(html, /off-card-pz win[^>]*>CERP/, 'CERP est moins cher que 10 mais ne gagne aucune pastille');
+  assert.doesNotMatch(html, /Moins cher chez|cerpcheaper/);
+  assert.doesNotMatch(html, /data-cmp-src="cerp"/, 'CERP ne figure pas dans « Comparer à »');
+  // contrôle de l'outil : Paraph, lui, reste un concurrent comparable et sa pastille « win » existe
+  const p = rendre({ groupements: grpDe([ligneG(E1, 8, 7)]), selection: false });
+  assert.match(p.html, /off-card-pz win[^>]*>Paraph/);
+});
+
+test('Comparer à : concurrents d\'achat et publics, comptes, sens et écart recalculés à la main', () => {
+  const src = { groupements: grpDe([ligneG(E1, 15, 12.5)]), extra: { FARMALINE_PUB: { [E1]: 8 }, FARMALINE_PUB_MAJ: '2026-09-10', CITYPHARMA_PUB: { [E1]: 11.5 }, CITYPHARMA_PUB_MAJ: '2026-10-30', OFFILOG_BEST: [{ rank: 1, id: '1', name: 'Produit A', brand: 'M', ean: E1, img: '', cat: 'sante', url: '', price: 10 }, { rank: 2, id: '2', name: 'Produit B', brand: 'M', ean: '3000000000002', img: '', cat: 'sante', url: '', price: 10 }], OFFILOG: [{ ean: E1, prix_offilog: 9 }, { ean: '3000000000002', prix_offilog: 9 }] }, selection: false };
+  const base = rendre(src).html;
+  assert.match(base, /data-cmp-src="paraph"[^>]*>.*?Paraph<span class="cnt">1</);
+  assert.match(base, /data-cmp-src="citypharma"[^>]*>.*?Citypharma<span class="cnt">1</);
+  assert.match(base, /data-cmp-sens="moins"[^>]*>Moins cher que nous<span class="cnt">1</, 'au moins un concurrent moins cher : Farmaline 8 < achat IP 9');
+  // concurrent choisi : Citypharma public TTC 11,50 face à notre achat IP 9,00 -> +2,50 € et +28 % (2,5/9 = 27,8)
+  const choisi = rendre({ ...src, apres: (V2) => V2.offCmpSrc('citypharma') }).html;
+  assert.match(choisi, /Citypharma public TTC EUR11\.50<\/span><span class="off-pcat-pill">\+EUR2\.50 · \+28 %</);
+  assert.match(choisi, /data-cmp-sens="plus"[^>]*>Plus cher que nous<span class="cnt">1</);
+  assert.match(choisi, /data-cmp-sens="moins"[^>]*>Moins cher que nous<span class="cnt">0</);
+  // un prix d'ACHAT se compare au prix Offilog : Paraph 12,50 contre 10 -> +2,50 € et +25 %
+  const achat = rendre({ ...src, apres: (V2) => V2.offCmpSrc('paraph') }).html;
+  assert.match(achat, /Paraph achat HT EUR12\.50<\/span><span class="off-pcat-pill">\+EUR2\.50 · \+25 %</);
+  // sens « moins » avec Farmaline : seul le produit qui porte le prix passe, écart -1,00 € et -11 %
+  const moins = rendre({ ...src, apres: (V2) => { V2.offCmpSrc('farmaline'); V2.offCmpSens('moins'); } }).html;
+  assert.match(moins, /Farmaline public TTC EUR8\.00<\/span><span class="off-pcat-pill">−EUR1\.00 · −11 %</);
+  assert.equal((moins.match(/class="off-card /g) || []).length, 1, 'une seule carte reste');
+});
+
+test('Comparer à, OPSO : jamais « moins cher que nous », aucune source masquée, aucun prix sous le prix Offilog', () => {
+  const extra = { FARMALINE_PUB: { [E1]: 8 }, CITYPHARMA_PUB: { [E1]: 12 }, CITYPHARMA_PUB_MAJ: '2026-10-30', FARMALINE_PUB_MAJ: '2026-09-10',
+    SAGITTA_PRIX: { [E1]: [5, 6, 7] }, OFFILOG_BEST: [{ rank: 1, id: '1', name: 'Produit A', brand: 'M', ean: E1, img: '', cat: 'sante', url: '', price: 10 }] };
+  const o = rendre({ opso: true, extra, selection: false, groupements: grpDe([ligneG(E1, 8, 7)]), cerp: cerpDe('2026-10-01', [ligneC(E1, 14, 7.5, 'dès 2', 'octobre 2026')]) });
+  assert.doesNotMatch(o.html, /data-cmp-sens="moins"|Moins cher que nous/);
+  assert.match(o.html, /data-cmp-sens="plus"[^>]*>Plus cher que nous<span class="cnt">1</);
+  assert.doesNotMatch(o.html, /data-cmp-src="(pz|sg|ocp|paraph|cerp)"/, 'sources masquées sur OPSO');
+  assert.match(o.html, /data-cmp-src="citypharma"/);
+  assert.doesNotMatch(o.html, /data-cmp-src="farmaline"/, 'Farmaline à 8 < 10 : masqué, donc source absente');
+  // même en forçant le sens « moins » par le code, OPSO retombe sur « Tous » et n'affiche rien sous le prix Offilog
+  const f = rendre({ opso: true, extra, selection: false, apres: (V2) => { V2.offCmpSrc('citypharma'); V2.offCmpSens('moins'); } });
+  assert.doesNotMatch(f.html, /Farmaline EUR8/);
+  assert.match(f.html, /Citypharma public TTC EUR12\.00<\/span><span class="off-pcat-pill">\+EUR2\.00 · \+20 %</);
 });
 
 test('OPSO : ni CERP ni Paraph affichés, et les deux fichiers ne sont pas demandés', () => {

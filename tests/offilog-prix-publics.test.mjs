@@ -7,13 +7,15 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const RACINE = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = fs.readFileSync(path.join(RACINE, 'crm/v2/v2-offilog.js'), 'utf8');
 
 // Rend l'écran Offilog dans un faux navigateur et rend le HTML produit.
-function rendre({ opso, farmaline, maxipara, cap3000 }) {
+function rendre({ opso, farmaline, maxipara, cap3000, citypharma = {} }) {
   const noop = () => '';
   const fauxEl = () => new Proxy(function () {}, { get: (t, k) => (k === 'style' ? {} : k === 'dataset' ? {} : fauxEl()), apply: () => fauxEl(), set: () => true });
   const doc = { currentScript: null, head: fauxEl(), body: fauxEl(), createElement: fauxEl, getElementById: () => null, querySelector: () => null, querySelectorAll: () => [], addEventListener: noop };
@@ -30,6 +32,7 @@ function rendre({ opso, farmaline, maxipara, cap3000 }) {
     FARMALINE_PUB: farmaline, FARMALINE_PUB_MAJ: '2026-09-10',
     MAXIPARA_PUB: maxipara, MAXIPARA_PUB_MAJ: '2026-04-15',
     CAP3000_PUB: cap3000, CAP3000_PUB_MAJ: '2026-10-29',
+    CITYPHARMA_PUB: citypharma, CITYPHARMA_PUB_MAJ: '2026-10-30',
     OFFILOG: [], matchMedia: () => ({ matches: false }), addEventListener: noop, localStorage: { getItem: () => null, setItem: noop },
   };
   win.window = win;
@@ -70,7 +73,7 @@ test('contrôle de l\'outil : le faux navigateur voit bien la carte du produit',
 });
 
 test('fichiers générés : seulement « EAN13 -> prix » et la date du relevé, aucune condition', () => {
-  for (const [f, nom] of [['farmaline', 'FARMALINE'], ['maxipara', 'MAXIPARA'], ['cap3000', 'CAP3000']]) {
+  for (const [f, nom] of [['farmaline', 'FARMALINE'], ['maxipara', 'MAXIPARA'], ['cap3000', 'CAP3000'], ['citypharma', 'CITYPHARMA']]) {
     const chemin = path.join(RACINE, `crm/v2/${f}-pub-data.js`);
     if (!fs.existsSync(chemin)) continue; // Cap 3000 peut manquer tant que le relevé n'est pas fait
     const t = fs.readFileSync(chemin, 'utf8');
@@ -83,4 +86,39 @@ test('fichiers générés : seulement « EAN13 -> prix » et la date du relevé,
     assert.match(t, new RegExp(`const ${nom}_PUB_MAJ = "\\d{4}-\\d{2}-\\d{2}";`));
     for (const interdit of ['Prix_Achat', 'Ecart', 'Marge', 'Potentiel', 'prix_offilog', 'marge_pct']) assert.ok(!t.includes(interdit), f + ' : ' + interdit);
   }
+});
+
+// ── Citypharma (30/10/2026) ──
+test('Citypharma CRM : prix affiché même sous le prix Offilog, avec la date du relevé et la pastille-filtre', () => {
+  const h = rendre({ opso: false, farmaline: {}, maxipara: {}, cap3000: {}, citypharma: { [EAN]: 9 } });
+  assert.match(h, /Citypharma EUR9\.00/);
+  assert.match(h, /relevé du 30\/10\/2026/);
+  // la pastille-filtre vit dans le panneau « Filtres » (fermé au rendu) : on contrôle sa déclaration, son filtre et son compteur
+  assert.match(SRC, /k: 'citypharmapub', label: 'Vendu chez Citypharma'/);
+  assert.match(SRC, /if \(k === 'citypharmapub'\) return it\.pub\.citypharma > 0;/);
+  assert.match(SRC, /if \(it\.pub\.citypharma > 0\) c\.citypharmapub\+\+;/);
+});
+
+test('Citypharma OPSO : masqué sous le prix Offilog, affiché à égalité ou au-dessus (compteur éprouvé des deux côtés)', () => {
+  const sous = rendre({ opso: true, farmaline: {}, maxipara: {}, cap3000: {}, citypharma: { [EAN]: 9.99 } });
+  assert.doesNotMatch(sous, /Citypharma EUR/);
+  const egal = rendre({ opso: true, farmaline: {}, maxipara: {}, cap3000: {}, citypharma: { [EAN]: 10 } });
+  assert.match(egal, /Citypharma EUR10\.00/);
+  const dessus = rendre({ opso: true, farmaline: {}, maxipara: {}, cap3000: {}, citypharma: { [EAN]: 14.5 } });
+  assert.match(dessus, /Citypharma EUR14\.50/);
+});
+
+test('Citypharma : le générateur écarte non achetables et doublons de rayon, garde les prix lus', () => {
+  const gen = path.join(RACINE, 'scripts/generate_plateformes_pub.py');
+  const f = path.join(os.tmpdir(), 'test-citypharma-releve-' + process.pid + '.jsonl');
+  const l = (id, ean, prix, achetable) => JSON.stringify({ id, ean, nom: 'x', prix, achetable, rayon: 'r', page: 1, pages: 1 });
+  fs.writeFileSync(f, [l('1', EAN, 12, true), l('2', EAN, 11, true), l('3', EAN, 5, false), l('1', EAN, 1, true)].join('\n') + '\n');
+  try {
+    // on charge le générateur sans lancer sa fonction principale, puis on appelle seulement la lecture
+    const py = 'import sys,json\nsrc=open(sys.argv[1]).read().replace("\\nmain()","\\n")\nns={"__file__":sys.argv[1]}\nexec(compile(src,"g","exec"),ns)\np,st=ns["lire_citypharma"](sys.argv[2])\nprint(json.dumps([p,st]))';
+    const [paires, st] = JSON.parse(execFileSync('python3', ['-I', '-c', py, gen, f], { encoding: 'utf8' }));
+    assert.deepEqual(paires, [[EAN, 12], [EAN, 11]]); // le 3e est non achetable, le 4e est le même produit que le 1er
+    assert.equal(st.non_achetables, 1);
+    assert.equal(st.doublons_rayons, 1);
+  } finally { fs.unlinkSync(f); }
 });

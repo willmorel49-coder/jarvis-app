@@ -3,6 +3,7 @@
   crm/v2/farmaline-pub-data.js   {ean13: prix}   + FARMALINE_PUB_MAJ
   crm/v2/maxipara-pub-data.js    {ean13: prix}   + MAXIPARA_PUB_MAJ
   crm/v2/cap3000-pub-data.js     {ean13: prix}   + CAP3000_PUB_MAJ
+  crm/v2/citypharma-pub-data.js  {ean13: prix}   + CITYPHARMA_PUB_MAJ   (ajouté le 30/10/2026)
 
 Même forme que crm/v2/drakkars-pub-data.js (ean -> prix TTC affiché sur le site).
 Filtré aux EAN du catalogue Offilog (comme generate_drakkars_pub.js).
@@ -10,6 +11,7 @@ Filtré aux EAN du catalogue Offilog (comme generate_drakkars_pub.js).
   python3 scripts/generate_plateformes_pub.py farmaline <concurrents-farmaline-data.js>
   python3 scripts/generate_plateformes_pub.py maxipara  <offilog_x_maxipara_3517.xlsx> <AAAA-MM-JJ>
   python3 scripts/generate_plateformes_pub.py cap3000   <releve.jsonl> <AAAA-MM-JJ>
+  python3 scripts/generate_plateformes_pub.py citypharma <releve.jsonl> <AAAA-MM-JJ>
   python3 scripts/generate_plateformes_pub.py cap3000-archive crm/cap3000-data.js 2026-06-05   (repli)
 
 ⚠️ MAXI PARA : le classeur contient AUSSI nos conditions (Prix_Achat_Offilog, Ecart_Prix,
@@ -94,6 +96,31 @@ def lire_cap3000(chemin):
     return paires, st
 
 
+def lire_citypharma(chemin):
+    """Relevé de scraper_citypharma_pub.py : une ligne par produit et par rayon. Un produit présent dans
+    plusieurs rayons (même id_product) ne compte qu'une fois ; les produits non achetables sont écartés,
+    comme Farmaline « épuisé »."""
+    paires, st, vus = [], {"lignes": 0, "doublons_rayons": 0, "non_achetables": 0, "sans_prix": 0}, set()
+    for l in open(chemin, encoding="utf8"):
+        if not l.strip():
+            continue
+        r = json.loads(l)
+        st["lignes"] += 1
+        if r["id"] in vus:
+            st["doublons_rayons"] += 1
+            continue
+        vus.add(r["id"])
+        if not r.get("achetable"):
+            st["non_achetables"] += 1
+            continue
+        if not (isinstance(r.get("prix"), (int, float)) and r["prix"] > 0):
+            st["sans_prix"] += 1
+            continue
+        paires.append((r["ean"], round(float(r["prix"]), 2)))
+    st["produits"] = len(vus)
+    return paires, st
+
+
 def lire_cap3000_archive(chemin):
     """Repli (29/10/2026) : le relevé frais a été bloqué (HTTP 403) après 164 fiches ; on garde les prix
     du 05/06/2026 de crm/cap3000-data.js, avec leur date. Aucun contournement du blocage."""
@@ -116,6 +143,10 @@ def main():
         maj = sys.argv[3]
         paires, st = lire_cap3000(sys.argv[2])
         nom, label, site, srcl = "CAP3000", "Pharmacie Cap 3000", "cap3000", "scraper_cap3000_pub.py, fiches produit"
+    elif quoi == "citypharma":
+        maj = sys.argv[3]
+        paires, st = lire_citypharma(sys.argv[2])
+        nom, label, site, srcl = "CITYPHARMA", "Citypharma (boutique en ligne)", "citypharma", "scraper_citypharma_pub.py, listes de produits du site"
     elif quoi == "cap3000-archive":
         maj = sys.argv[3]
         paires, st = lire_cap3000_archive(sys.argv[2])

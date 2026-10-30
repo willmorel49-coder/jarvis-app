@@ -41,7 +41,7 @@
   // OPSO — brief Will du 29/09/2026 (« pharmazon tu vire ça »).
   var SANS_PHARMAZON = OPSO;
 
-  var S = { chip: 'all', q: '', page: 0, sel: null, sort: 'ventes', adv: false, sous: '' };
+  var S = { chip: 'all', q: '', page: 0, sel: null, sort: 'ventes', adv: false, sous: '', cmp: '', sens: 'tous' };
   // Plancher du mouvement de rang, en places. Voir buildIndex : le seuil relatif
   // (20 %) ne suffit pas tout en haut du classement, où une place vaut 25 %.
   var SEUIL_PLACES = 5;
@@ -55,14 +55,10 @@
   var CHIPS = [
     { k: 'all',         label: 'Tout',           sc: '#0050E6' },
     { k: 'alerte',      label: 'Concurrent moins cher', sc: '#6D4FC4' },
-    { k: 'pzcheaper',   label: 'Moins cher sur Pharmazon', sc: 'var(--ip-blue-d)' },
-    { k: 'sgcheaper',   label: 'Moins cher chez Sagitta', sc: 'var(--ip-blue-d)' },
-    { k: 'ocpcheaper',  label: 'Moins cher chez OCP', sc: 'var(--ip-blue-d)' },
-    { k: 'cerpcheaper', label: 'Moins cher chez CERP', sc: 'var(--ip-blue-d)' },
-    { k: 'paraphcheaper', label: 'Moins cher chez Paraph', sc: 'var(--ip-blue-d)' },
     { k: 'avecpcat',    label: 'Avec prix catalogue', sc: 'var(--ip-blue-d)' },
     { k: 'leclercpub',  label: 'Vendu chez E.Leclerc', sc: '#0066B3' },
     { k: 'farmalinepub', label: 'Vendu chez Farmaline', sc: '#0F7A55' },
+    { k: 'citypharmapub', label: 'Vendu chez Citypharma', sc: '#5F7A0A' },
     // LE MARCHÉ : seuil RELATIF, voir `mvtPct` dans buildIndex. L'ambre du logo
     // Offilog, seule couleur d'accent de l'écran.
     { k: 'monte',       label: 'Ça monte fort',  sc: '#F8A808' },
@@ -96,7 +92,9 @@
     { k: 'maxipara', g: 'MAXIPARA_PUB', label: 'Maxi Para', long: 'Maxi Parapharmacie (public TTC)', color: '#A8420C',
       tip: 'Prix de vente au public chez Maxi Parapharmacie (TTC)' },
     { k: 'cap3000', g: 'CAP3000_PUB', label: 'Cap 3000', long: 'Pharmacie Cap 3000 (public TTC)', color: '#7A3FB0',
-      tip: 'Prix de vente au public chez Pharmacie Cap 3000 (TTC)' }
+      tip: 'Prix de vente au public chez Pharmacie Cap 3000 (TTC)' },
+    { k: 'citypharma', g: 'CITYPHARMA_PUB', label: 'Citypharma', long: 'Citypharma (public TTC)', color: '#5F7A0A',
+      tip: 'Prix de vente au public sur la boutique en ligne Citypharma, pharmacie parisienne (TTC)' }
   ];
 
   // ── La marque OFFILOG ─────────────────────────
@@ -454,6 +452,107 @@
     '</div>';
   }
 
+
+  // ── COMPARER À : un seul bloc (concurrent × sens) — 30/10/2026, demande de Will ──
+  // Remplace les pastilles « Moins cher chez X ». Base de calcul = celle du volet de détail :
+  //  · prix d'ACHAT (Pharmazon, Sagitta, OCP, Paraph, HT) face au prix Offilog ;
+  //  · prix PUBLICS (TTC) face à notre prix d'achat (Achat IP côté CRM ; côté OPSO, où ce prix n'existe pas,
+  //    face au prix Offilog — la règle « aucun prix public sous le prix Offilog » y reste appliquée en amont).
+  // CERP n'y figure pas : repère neutre. Les sources masquées sur OPSO (SANS_*) n'y figurent pas non plus.
+  var cmpListe = null;
+  function cmpSources() {
+    if (cmpListe) return cmpListe;
+    var L = [];
+    if (!SANS_PHARMAZON) L.push({ k: 'pz', label: 'Pharmazon', kind: 'achat', color: 'var(--ip-blue-d)', get: function (it) { return it.pz && it.pz.price > 0 ? it.pz.price : 0; } });
+    if (!SANS_SAGITTA) L.push({ k: 'sg', label: 'Sagitta', kind: 'achat', color: 'var(--ip-blue-d)', get: function (it) { return it.sg && it.sg.price > 0 ? it.sg.price : 0; } });
+    if (!SANS_OCP) L.push({ k: 'ocp', label: 'OCP', kind: 'achat', color: 'var(--ip-blue-d)', get: function (it) { return it.ocp && it.ocp.price > 0 ? it.ocp.price : 0; } });
+    if (!SANS_PARAPH) L.push({ k: 'paraph', label: 'Paraph', kind: 'achat', color: 'var(--ip-blue-d)', get: function (it) { return it.paraph && it.paraph.price > 0 ? it.paraph.price : 0; } });
+    L.push({ k: 'leclerc', label: 'E.Leclerc', kind: 'public', color: '#0066B3', get: function (it) { return it.leclerc > 0 ? it.leclerc : numOr0(it.conc['prix_leclerc']); } });
+    L.push({ k: 'drakkars', label: 'Drakkars', kind: 'public', color: '#5E6673', get: function (it) { return it.drakkars > 0 ? it.drakkars : 0; } });
+    PUBS.forEach(function (P) {
+      L.push({ k: P.k, label: P.label, kind: 'public', color: P.color, get: function (it) { return it.pub[P.k] > 0 ? it.pub[P.k] : 0; } });
+    });
+    cmpListe = L;
+    return L;
+  }
+  function cmpRef(it, src) { return (src.kind === 'achat' || OPSO) ? it.price : it.achat; }
+  function cmpSrc(k) { var L = cmpSources(); for (var i = 0; i < L.length; i++) if (L[i].k === k) return L[i]; return null; }
+  // Écart d'un produit face à une source : { v, ref, d (€), pct (entier arrondi comme le volet) } ou null.
+  function cmpEcart(it, src) {
+    var v = src.get(it), ref = cmpRef(it, src);
+    if (!(v > 0) || !(ref > 0)) return null;
+    var d = v - ref;
+    return { v: v, ref: ref, d: d, pct: Math.round(d / ref * 100) };
+  }
+  // Un produit passe-t-il le sens choisi, pour UNE source ? (Tous = toute présence du prix.)
+  function cmpSens(it, src, sens) {
+    if (!(src.get(it) > 0)) return false;
+    if (sens === 'tous') return true;
+    var e = cmpEcart(it, src);
+    if (!e) return false;
+    return sens === 'moins' ? e.d < 0 : e.d > 0;
+  }
+  // Sans concurrent choisi : au moins une source répond (« moins cher chez au moins un concurrent »).
+  function cmpPasse(it, srcK, sens) {
+    if (srcK) { var src = cmpSrc(srcK); return !!src && cmpSens(it, src, sens); }
+    if (sens === 'tous') return true;
+    var L = cmpSources();
+    for (var i = 0; i < L.length; i++) if (cmpSens(it, L[i], sens)) return true;
+    return false;
+  }
+  function cmpEcartLabel(e) {
+    return (e.d >= 0 ? '+' : '−') + V2.fmtEur(Math.abs(e.d)) + ' · ' + (e.d >= 0 ? '+' : '−') + Math.abs(e.pct) + ' %';
+  }
+  // Ligne affichée sur chaque carte quand un concurrent est choisi : son prix (étiqueté) et l'écart avec nous.
+  function cmpLine(it) {
+    if (!S.cmp) return '';
+    var src = cmpSrc(S.cmp);
+    if (!src) return '';
+    var e = cmpEcart(it, src);
+    if (!e) return '';
+    var eti = src.label + (src.kind === 'public' ? ' public TTC' : ' achat HT');
+    return '<div class="off-card-cmp mono" data-cmp="' + esc(src.k) + '" title="' + esc(eti + ' ' + V2.fmtEur(e.v) + ' face à ' + V2.fmtEur(e.ref) + (src.kind === 'public' && !OPSO ? ' (notre prix d\'achat)' : ' (prix Offilog)')) + '">' +
+      '<span class="off-card-cmp-v">' + esc(eti) + ' ' + V2.fmtEur(e.v) + '</span>' +
+      '<span class="off-pcat-pill">' + cmpEcartLabel(e) + '</span></div>';
+  }
+  V2.offCmpSrc = function (k) { S.cmp = (S.cmp === k) ? '' : k; S.page = 0; V2.render(); };
+  V2.offCmpSens = function (v) { S.sens = v; S.page = 0; V2.render(); };
+  // Le bloc : concurrents (avec leur nombre de produits communs) puis sens (avec leurs nombres).
+  function cmpBlock(list) {
+    var L = cmpSources(), i, j;
+    var common = {}; L.forEach(function (x) { common[x.k] = 0; });
+    var avail = {}; L.forEach(function (x) { avail[x.k] = false; });
+    for (i = 0; i < items.length; i++) for (j = 0; j < L.length; j++) if (L[j].get(items[i]) > 0) avail[L[j].k] = true;
+    for (i = 0; i < list.length; i++) for (j = 0; j < L.length; j++) if (L[j].get(list[i]) > 0) common[L[j].k]++;
+    var vis = L.filter(function (x) { return avail[x.k]; });
+    if (S.cmp && !vis.some(function (x) { return x.k === S.cmp; })) S.cmp = '';
+    if (OPSO && S.sens === 'moins') S.sens = 'tous';   // OPSO : jamais « moins cher que nous »
+    var nSens = { tous: 0, moins: 0, plus: 0 };
+    for (i = 0; i < list.length; i++) {
+      nSens.tous += cmpPasse(list[i], S.cmp, 'tous') ? 1 : 0;
+      nSens.moins += cmpPasse(list[i], S.cmp, 'moins') ? 1 : 0;
+      nSens.plus += cmpPasse(list[i], S.cmp, 'plus') ? 1 : 0;
+    }
+    if (!S.cmp) nSens.tous = list.length;
+    function seg(on, click, label, n, color, extra) {
+      return '<button type="button" class="v2-seg' + (on ? ' on' : '') + '" style="--sc:' + (color || 'var(--ip-blue-d)') + '" aria-pressed="' + (on ? 'true' : 'false') + '" onclick="' + click + '"' + (extra || '') + '>' +
+        (color ? '<span class="sw"></span>' : '') + esc(label) + '<span class="cnt">' + V2.fmtNum(n) + '</span></button>';
+    }
+    var srcSegs = seg(!S.cmp, "V2.offCmpSrc('" + (S.cmp || '') + "')", 'Tous', list.length, null, ' data-cmp-src="tous"') +
+      vis.map(function (x) {
+        return seg(S.cmp === x.k, "V2.offCmpSrc('" + x.k + "')", x.label, common[x.k], x.color, ' data-cmp-src="' + x.k + '" title="' + esc(x.label + (x.kind === 'public' ? ' · prix public TTC' : ' · prix d\'achat HT')) + '"');
+      }).join('');
+    var sensL = [['tous', 'Tous']];
+    if (!OPSO) sensL.push(['moins', 'Moins cher que nous']);
+    sensL.push(['plus', 'Plus cher que nous']);
+    var sensSegs = sensL.map(function (x) { return seg(S.sens === x[0], "V2.offCmpSens('" + x[0] + "')", x[1], nSens[x[0]], null, ' data-cmp-sens="' + x[0] + '"'); }).join('');
+    var aide = S.cmp ? 'Chaque carte montre le prix du concurrent et l\'écart avec nous, du plus gros écart (en €) au plus petit. Les prix publics sont en TTC, les prix d\'achat en HT.' : '';
+    return '<div class="off-cmpbar" id="off-cmpbar">' +
+      '<div class="off-adv-l">Comparer à</div><div class="v2-segs off-adv-segs">' + srcSegs + '</div>' +
+      '<div class="off-adv-l">Sens</div><div class="v2-segs off-adv-segs">' + sensSegs + '</div>' +
+      (aide ? '<div class="off-cmpbar-note">' + esc(aide) + '</div>' : '') + '</div>';
+  }
+
   function buildIndex() {
     if (idxBuilt) return;
     var offByEan = offIndex();
@@ -504,9 +603,8 @@
       var ocv = (!SANS_OCP && window.OCP_PRIX && b.ean) ? window.OCP_PRIX[String(b.ean)] : null;
       var ocp = ocv ? { price: numOr0(ocv[0]), ppht: numOr0(ocv[1]), remise: numOr0(ocv[2]) } : null;
       var ocpCheaper = !!(ocp && ocp.price > 0 && price > 0 && ocp.price < price);
-      // CERP (offre mensuelle récente) et Paraph (catalogue de la centrale) par code 13 : fichiers protégés, jamais côté OPSO.
+      // CERP (offre mensuelle récente, repère NEUTRE : jamais « moins cher », décision Will 30/10/2026) et Paraph (catalogue de la centrale) par code 13 : fichiers protégés, jamais côté OPSO.
       var cerp = (!SANS_CERP && b.ean) ? (cerpIndex().get(ean13(b.ean)) || null) : null;
-      var cerpCheaper = !!(cerp && cerp.price > 0 && price > 0 && cerp.price < price);
       var paraph = (!SANS_PARAPH && b.ean) ? (paraphIndex().get(ean13(b.ean)) || null) : null;
       var paraphCheaper = !!(paraph && paraph.price > 0 && price > 0 && paraph.price < price);
       // prix catalogue du laboratoire (HT, avant réduction) par code 13 :
@@ -579,7 +677,7 @@
         url: b.url || '', univers: o ? (o.univers || '') : '',
         achat: achat, conc: conc, hasConc: hasC, minConc: mc, alert: alert, matched: !!o,
         pz: pz || null, pzCheaper: pzCheaper, sg: sg, sgCheaper: sgCheaper, ocp: ocp, ocpCheaper: ocpCheaper,
-        cerp: cerp, cerpCheaper: cerpCheaper, paraph: paraph, paraphCheaper: paraphCheaper,
+        cerp: cerp, paraph: paraph, paraphCheaper: paraphCheaper,
         pcat: pcat, pcatRatio: pcatRatio, pcatVerif: pcatVerif, catOpso: catOpso,
         leclerc: leclerc, drakkars: drakkars, pub: pub, sousRayon: sousRayon,
         mvt: mvt, mvtPct: mvtPct, monte: mvtPct >= 20 && mvt >= SEUIL_PLACES, ecart: ecart
@@ -627,14 +725,10 @@
   function matchChip(it, k) {
     if (k === 'all') return true;
     if (k === 'alerte') return !OPSO && it.alert;         // chip retirée côté OPSO
-    if (k === 'pzcheaper') return !SANS_PHARMAZON && it.pzCheaper;
-    if (k === 'sgcheaper') return it.sgCheaper;
-    if (k === 'ocpcheaper') return it.ocpCheaper;
-    if (k === 'cerpcheaper') return !SANS_CERP && it.cerpCheaper;
-    if (k === 'paraphcheaper') return !SANS_PARAPH && it.paraphCheaper;
     if (k === 'avecpcat') return !!it.pcat;
     if (k === 'leclercpub') return it.leclerc > 0;
     if (k === 'farmalinepub') return it.pub.farmaline > 0;
+    if (k === 'citypharmapub') return it.pub.citypharma > 0;
     if (k === 'monte') return it.monte;
     return it.cat === k;
   }
@@ -650,6 +744,12 @@
   function kMvt(it) { return (it.mkt && it.mkt.prec > 0) ? it.mvt : -1e9; }
   function sorted(list) {
     var a = list.slice();
+    var cs = S.cmp ? cmpSrc(S.cmp) : null;
+    if (cs) {
+      // Un concurrent est choisi : le plus gros écart (en euros, quel que soit le sens) d'abord ; sans écart calculable, à la fin.
+      a.sort(function (x, y) { var ex = cmpEcart(x, cs), ey = cmpEcart(y, cs); return (ey ? Math.abs(ey.d) : -1) - (ex ? Math.abs(ex.d) : -1) || (x.rank || 1e9) - (y.rank || 1e9); });
+      return a;
+    }
     if (S.sort === 'prix_asc') a.sort(function (x, y) { return (x.price || 1e9) - (y.price || 1e9); });
     else if (S.sort === 'prix_desc') a.sort(function (x, y) { return (y.price || 0) - (x.price || 0); });
     // Progression : le plus fort gain d'abord, compté en PLACES — c'est ce que la
@@ -670,7 +770,7 @@
     return a;
   }
   function counts(base) {
-    var c = { all: base.length, alerte: 0, pzcheaper: 0, sgcheaper: 0, ocpcheaper: 0, cerpcheaper: 0, paraphcheaper: 0, avecpcat: 0, leclercpub: 0, farmalinepub: 0, monte: 0 };
+    var c = { all: base.length, alerte: 0, avecpcat: 0, leclercpub: 0, farmalinepub: 0, citypharmapub: 0, monte: 0 };
     CHIPS.forEach(function (ch) { if (c[ch.k] == null) c[ch.k] = 0; });
     for (var i = 0; i < base.length; i++) {
       var it = base[i];
@@ -679,14 +779,10 @@
       // qualifie pas (voir buildIndex), et pzCheaper/alert n'existent pas
       // côté OPSO (SANS_PHARMAZON, achat toujours à 0).
       if (!OPSO && it.alert) c.alerte++;
-      if (!SANS_PHARMAZON && it.pzCheaper) c.pzcheaper++;
-      if (it.sgCheaper) c.sgcheaper++;
-      if (it.ocpCheaper) c.ocpcheaper++;
-      if (!SANS_CERP && it.cerpCheaper) c.cerpcheaper++;
-      if (!SANS_PARAPH && it.paraphCheaper) c.paraphcheaper++;
       if (it.pcat) c.avecpcat++;
       if (it.leclerc > 0) c.leclercpub++;
       if (it.pub.farmaline > 0) c.farmalinepub++;
+      if (it.pub.citypharma > 0) c.citypharmapub++;
       if (it.monte) c.monte++;
       if (c[it.cat] != null) c[it.cat]++;
     }
@@ -938,14 +1034,14 @@
           (it.pz && it.pz.price > 0 ? '<span class="off-card-pz' + (it.pzCheaper ? ' win' : '') + '">Pharmazon ' + V2.fmtEur(it.pz.price) + '</span>' : '') +
           (it.sg && it.sg.price > 0 ? '<span class="off-card-pz' + (it.sgCheaper ? ' win' : '') + '" title="Tarif d\'achat Sagitta (HT)">Sagitta ' + V2.fmtEur(it.sg.price) + '</span>' : '') +
           (it.ocp && it.ocp.price > 0 ? '<span class="off-card-pz' + (it.ocpCheaper ? ' win' : '') + '" title="Prix net OCP, catalogue Les Incontournables (HT)">OCP ' + V2.fmtEur(it.ocp.price) + '</span>' : '') +
-          (it.cerp && it.cerp.price > 0 ? '<span class="off-card-pz' + (it.cerpCheaper ? ' win' : '') + '" title="' + esc(cerpTip(it.cerp)) + '">' + esc(cerpLabel(it.cerp)) + '</span>' : '') +
+          (it.cerp && it.cerp.price > 0 ? '<span class="off-card-pz" title="' + esc(cerpTip(it.cerp)) + '">' + esc(cerpLabel(it.cerp)) + '</span>' : '') +
           (it.paraph && it.paraph.price > 0 ? '<span class="off-card-pz' + (it.paraphCheaper ? ' win' : '') + '" title="Net HT de la centrale Paraph, catalogue ' + (it.paraph.annee || '') + ' · prix tarif ' + V2.fmtEur(it.paraph.ppht) + ' · net HT ' + V2.fmtEur(it.paraph.price) + '">' + esc(paraphLabel(it.paraph)) + '</span>' : '') +
           (it.leclerc > 0 ? '<span class="off-card-lec' + (it.achat > 0 && it.leclerc < it.achat ? ' bad' : '') + '" title="Prix de vente au public chez E.Leclerc (TTC)">Leclerc ' + V2.fmtEur(it.leclerc) + '</span>' : '') +
           (it.drakkars > 0 ? '<span class="off-card-drk" title="Prix de vente au public chez Pharmacie des Drakkars (TTC) · relevé du ' + esc(majLabel(window.DRAKKARS_PUB_MAJ)) + '">Drakkars ' + V2.fmtEur(it.drakkars) + '</span>' : '') +
           PUBS.map(function (P) {
             return it.pub[P.k] > 0 ? '<span class="off-card-pub" style="--c:' + P.color + '" title="' + P.tip + ' · relevé du ' + esc(majLabel(window[P.g + '_MAJ'])) + '">' + P.label + ' ' + V2.fmtEur(it.pub[P.k]) + '</span>' : '';
           }).join('') +
-          concBelow + '</div>' + pcatLine(it) +
+          concBelow + '</div>' + cmpLine(it) + pcatLine(it) +
       '</div>' +
     '</div>';
   }
@@ -1052,17 +1148,18 @@
     if (it.pz && it.pz.price > 0) L.push({ n: 'Pharmazon', p: it.pz.price, sub: it.pz.labo ? esc(it.pz.labo) : 'tarif B2B' });
     if (it.sg && it.sg.price > 0) L.push({ n: 'Sagitta', p: it.sg.price, sub: sgMajLabel() ? 'tarif du ' + sgMajLabel() : 'tarif' });
     if (it.ocp && it.ocp.price > 0) L.push({ n: 'OCP', p: it.ocp.price, sub: 'sept-déc 2026' });
-    if (it.cerp && it.cerp.price > 0) L.push({ n: 'CERP', p: it.cerp.price, sub: esc(it.cerp.periode) + (it.cerp.qte > 0 ? ' · dès ' + it.cerp.qte : '') + ' · prix tarif ' + V2.fmtEur(it.cerp.ppht) + ' · net HT' });
+    if (it.cerp && it.cerp.price > 0) L.push({ n: 'CERP', neutre: true, p: it.cerp.price, sub: esc(it.cerp.periode) + (it.cerp.qte > 0 ? ' · dès ' + it.cerp.qte : '') + ' · prix tarif ' + V2.fmtEur(it.cerp.ppht) + ' · net HT' });
     if (it.paraph && it.paraph.price > 0) L.push({ n: 'Paraph', p: it.paraph.price, sub: 'catalogue ' + (it.paraph.annee || '') + ' · prix tarif ' + V2.fmtEur(it.paraph.ppht) + ' · net HT' });
-    return L.sort(function (x, y) { return (x.p - y.p) || ((y.ref ? 1 : 0) - (x.ref ? 1 : 0)); });
+    // CERP : repère neutre (offre du mois, quantité minimale) — toujours en dernier, sans écart ni couleur.
+    return L.sort(function (x, y) { return ((x.neutre ? 1 : 0) - (y.neutre ? 1 : 0)) || (x.p - y.p) || ((y.ref ? 1 : 0) - (x.ref ? 1 : 0)); });
   }
   function achatBlock(it) {
     var L = achatLignes(it);
     if (L.length < 2) return '';
     var rows = L.map(function (x) {
       var d = x.p - it.price, pct = it.price > 0 ? Math.round(d / it.price * 100) : 0;
-      var below = !x.ref && it.price > 0 && x.p < it.price;
-      var delta = x.ref || !(it.price > 0) ? '<span class="off-cmp-delta"></span>' :
+      var below = !x.ref && !x.neutre && it.price > 0 && x.p < it.price;
+      var delta = x.ref || x.neutre || !(it.price > 0) ? '<span class="off-cmp-delta"></span>' :
         '<span class="off-cmp-delta ' + (below ? 'bad' : 'ok') + '" style="white-space:nowrap">' + (d >= 0 ? '+' : '−') + V2.fmtEur(Math.abs(d)) + ' · ' + (d >= 0 ? '+' : '−') + Math.abs(pct) + ' %</span>';
       return '<div class="' + (x.ref ? 'off-cmp-ref' : 'off-cmp-row' + (below ? ' below' : '')) + '" data-achat="' + x.n + '">' +
         '<span class="off-cmp-src">' + x.n + ' <i style="opacity:.65;font-weight:500">· ' + x.sub + '</i></span>' +
@@ -1135,7 +1232,7 @@
     captureCardRects(); // repositionnement fluide des cartes qui restent visibles
     S.chip = k; S.page = 0;
     // si on choisit une catégorie (hors verdicts), on ouvre les filtres avancés pour rester cohérent
-    if (k !== 'all' && k !== 'alerte' && k !== 'pzcheaper' && k !== 'sgcheaper' && k !== 'ocpcheaper' && k !== 'cerpcheaper' && k !== 'paraphcheaper') S.adv = true;
+    if (k !== 'all' && k !== 'alerte') S.adv = true;
     V2.render();
   };
   V2.offToggleAdv = function () { S.adv = !S.adv; V2.render(); };
@@ -1545,6 +1642,12 @@
         '.off-rankrow{top:6px;left:6px;gap:3px}.off-rank{font-size:11px;padding:2px 6px}.off-mvt{font-size:10px;padding:2px 5px}}',
       '.off-card-pz.win{color:var(--ip-blue-d);background:color-mix(in srgb,var(--ip-blue-d) 10%,#fff);border-color:color-mix(in srgb,var(--ip-blue-d) 28%,transparent)}',
       // prix catalogue du laboratoire (carte + inspecteur)
+      '.off-cmpbar{background:var(--card-2);border:1px solid var(--line);border-radius:var(--r-card);padding:14px 16px 2px;margin-bottom:var(--sp-5);box-shadow:var(--sh-1)}',
+      '.off-cmpbar .v2-seg{min-height:var(--tap-min)}',
+      '.off-cmpbar .off-adv-segs .v2-seg .sw{width:9px;height:9px;border-radius:50%;background:var(--sc,var(--muted-2));flex-shrink:0}',
+      '.off-cmpbar .off-adv-segs .v2-seg.on .sw{background:#fff}',
+      '.off-cmpbar-note{font-size:12.5px;color:var(--muted);margin:-6px 0 12px;line-height:1.4}',
+      '.off-card-cmp{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;margin:4px 0 0;font-size:11px;font-weight:700;color:var(--ip-ink-2);font-variant-numeric:tabular-nums}',
       '.off-card-cat{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;margin:0 -5px;font-size:11px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}',
       '.off-pcat-pill{font-size:11px;font-weight:800;color:var(--ip-blue-d);background:color-mix(in srgb,var(--ip-blue-d) 10%,#fff);border:1px solid color-mix(in srgb,var(--ip-blue-d) 28%,transparent);border-radius:7px;padding:0 5px;line-height:17px;font-variant-numeric:tabular-nums}',
       '@media(max-width:640px){.off-card-cat,.off-card-cat .off-pcat-pill{font-size:10.5px}}',
@@ -1873,7 +1976,7 @@
       // Prix publics Farmaline, Maxi Para, Cap 3000 (légers, générés) — CRM et OPSO, en tâche de fond.
       if (!pubsTried) {
         pubsTried = true;
-        if (V2.loadFiles) { try { V2.loadFiles(['farmalinepub', 'maxiparapub', 'cap3000pub']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; V2.render(); }); } catch (e) {} }
+        if (V2.loadFiles) { try { V2.loadFiles(['farmalinepub', 'maxiparapub', 'cap3000pub', 'citypharmapub']).then(function () { idxBuilt = false; if (V2.route && V2.route.name !== 'offilog') return; V2.render(); }); } catch (e) {} }
       }
       // les deux morceaux (catalogue, prix protégés) arrivent dans un ordre
       // quelconque : on retente la fusion à chaque rendu, c'est idempotent.
@@ -1896,6 +1999,8 @@
         if (S.sous && !sousDispo[S.sous]) S.sous = '';
         if (S.sous) filtered = filtered.filter(function (it) { return it.sousRayon === S.sous; });
       } else if (S.sous) { S.sous = ''; }
+      var cmpHtml = cmpBlock(filtered);   // d'abord : il corrige l'état (source absente, sens interdit sur OPSO)
+      filtered = filtered.filter(function (it) { return cmpPasse(it, S.cmp, S.sens); });
       filtered = sorted(filtered);
       var total = filtered.length;
       var pages = Math.max(1, Math.ceil(total / PER_PAGE));
@@ -1913,13 +2018,8 @@
         if (f.k === 'all') return '';      // porté par « Tout le rayon »
         if (RAYON_K[f.k]) return '';       // porté par la bande des rayons
         var n = c[f.k] || 0;
-        if (f.k === 'pzcheaper' && SANS_PHARMAZON) return '';
-        if (f.k === 'sgcheaper' && SANS_SAGITTA) return '';
-        if (f.k === 'ocpcheaper' && SANS_OCP) return '';
-        if (f.k === 'cerpcheaper' && SANS_CERP) return '';
-        if (f.k === 'paraphcheaper' && SANS_PARAPH) return '';
         if (f.k === 'avecpcat' && (SANS_PCAT || n === 0)) return '';
-        if (f.k !== 'pzcheaper' && f.k !== 'sgcheaper' && f.k !== 'ocpcheaper' && f.k !== 'cerpcheaper' && f.k !== 'paraphcheaper' && n === 0) return '';
+        if (n === 0) return '';
         var on = S.chip === f.k ? ' on' : '';
         return '<button class="v2-seg' + on + '" style="--sc:' + f.sc + '" onclick="V2.offFilter(\'' + f.k + '\')">' +
           (f.k === 'all' ? '' : '<span class="sw"></span>') + esc(f.label) + '<span class="cnt">' + V2.fmtNum(n) + '</span></button>';
@@ -1961,7 +2061,7 @@
       var advOpen = S.adv;
       var advBtn = '<button type="button" class="off-advbtn' + (advOpen ? ' open' : '') + '" onclick="V2.offToggleAdv()">' +
           ICO('grid', 15, 2) + ' Filtres' +
-          (S.chip === 'pzcheaper' || S.chip === 'sgcheaper' || S.chip === 'ocpcheaper' || S.chip === 'cerpcheaper' || S.chip === 'paraphcheaper' || S.chip === 'avecpcat' || S.chip === 'monte' ? '<span class="off-advbtn-tag">' + esc(CHIP_BY_KEY[S.chip].label) + '</span>' : '') +
+          (S.chip === 'avecpcat' || S.chip === 'monte' ? '<span class="off-advbtn-tag">' + esc(CHIP_BY_KEY[S.chip].label) + '</span>' : '') +
           '<span class="off-advbtn-chev">' + ICO('chev', 14, 2.2) + '</span></button>';
       var advPanel = advOpen
         ? '<div class="off-adv">' +
@@ -1991,6 +2091,7 @@
           // La bande verdict (alerte/bien placé) compare au prix d'achat Intégral :
           // aucun sens côté OPSO, où ce prix n'existe pas — brief §4.
           (OPSO ? '' : verdictBand(filtered)) +
+          cmpHtml +
           '<div class="off-toolbar">' +
             '<div class="off-count"><b class="mono">' + V2.fmtNum(total) + '</b> produit' + (total > 1 ? 's' : '') + ' · ' + ctxLabel + '</div>' +
             (V2.offCatalogue ? '<button type="button" class="v2-btn v2-btn-primary" onclick="V2.offCatalogue()">' + ICO('download', 15, 2) + ' Catalogue client</button>' : '') +
