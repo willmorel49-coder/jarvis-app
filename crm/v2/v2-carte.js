@@ -380,9 +380,11 @@
   function drawZones() {
     if (!map) return;
     if (zoneLayer) { map.removeLayer(zoneLayer); zoneLayer = null; }
+    if (qLayer) { map.removeLayer(qLayer); qLayer = null; qLayers = {}; }
     if (!zonesOn) return;
+    if (zoneMetric === 'quartiers') { ensureQuartiers(drawQuartiers); return; }   // quartiers INSEE (pas de couche département)
     ensureDeps(function () {
-      if (!window.DEPARTEMENTS_GEO || !zonesOn) return;
+      if (!window.DEPARTEMENTS_GEO || !zonesOn || zoneMetric === 'quartiers') return;   // choix changé pendant le chargement : pas de couche département par-dessus les quartiers
       zoneLayer = window.L.geoJSON(window.DEPARTEMENTS_GEO, {
         style: function (f) { return { fillColor: zoneColor(f.properties.code), fillOpacity: 0.72, color: '#fff', weight: 1 }; },
         onEachFeature: function (f, layer) {
@@ -405,11 +407,165 @@
     zonesOn = (on === undefined ? !zonesOn : !!on);
     var btn = document.getElementById('cn-zonebtn'); if (btn) { btn.classList.toggle('on', zonesOn); btn.textContent = zonesOn ? '✓ Zones par département' : 'Zones par département'; }
     var sel = document.getElementById('cn-zonemetric'); if (sel) sel.style.display = zonesOn ? 'block' : 'none';
+    if (!zonesOn) V2.carteQuartierClose();
     if (zonesOn) { if (cluster) map.removeLayer(cluster); drawZones(); }
-    else { if (zoneLayer) { map.removeLayer(zoneLayer); zoneLayer = null; } rebuild(); }
+    else { drawZones(); rebuild(); }
     var lg = document.getElementById('carte-legend'); if (lg) lg.innerHTML = legendHtml();
+    qSyncUi();
   };
-  V2.carteZoneMetric = function (m) { zoneMetric = m; drawZones(); var lg = document.getElementById('carte-legend'); if (lg) lg.innerHTML = legendHtml(); };
+  V2.carteZoneMetric = function (m) { zoneMetric = m; if (m !== 'quartiers') V2.carteQuartierClose(); drawZones(); var lg = document.getElementById('carte-legend'); if (lg) lg.innerHTML = legendHtml(); qSyncUi(); };
+
+  // ── 30/10/2026 · POTENTIEL D'UN SECTEUR — « Quartiers INSEE » (idée 11, version 1 choisie par Will) ──
+  // Les 3 679 quartiers des 8 départements, colorés par habitants par officine DANS LE RAYON. Le calcul vient du module
+  // partagé V2.potentielSecteur (jamais refait ici) ; ce bloc ne fait que colorer, survoler et ouvrir le panneau.
+  var qRayon = 5, qLayer = null, qCache = {}, qSel = null, qLayers = {}, qMs = 0;
+  function qPS() { return V2.potentielSecteur && window.POTENTIEL_SECTEUR && window.POTENTIEL_SECTEUR.iris ? V2.potentielSecteur : null; }
+  // Les 3,8 Mo des quartiers (données publiques, 1,1 Mo compressés) et leur calcul ne partent qu'à la première
+  // demande, jamais au démarrage. QV ne bouge que si le fichier de données change (scripts/potentiel-secteur/).
+  var QV = '?v=rp2023a', qAttente = null;
+  function ensureQuartiers(cb) {
+    if (qPS()) { cb(); return; }
+    if (qAttente) { qAttente.push(cb); return; }
+    qAttente = [cb];
+    var fin = function () { var a = qAttente; qAttente = null; a.forEach(function (f) { f(); }); };
+    var s = document.createElement('script'); s.src = 'potentiel-secteur-data.js' + QV;
+    s.onload = function () { V2.chargerScripts(['v2-potentiel-secteur.js']).then(fin, fin); };
+    s.onerror = fin;
+    document.head.appendChild(s);
+  }
+  // Clients du CRM ajoutés ou segmentation arrivée APRÈS le premier calcul (recaler) : le rattachement est à refaire.
+  function qDonneesChangees() {
+    if (!V2.potentielSecteur) return;
+    V2.potentielSecteur.reset(); qCache = {};
+    if (qLayer) qRecolor();
+    if (qSel && document.getElementById('cn-pot')) qPanneau(qSel);
+  }
+  function qCalc(r) {   // une seule passe par rayon (cache) : couleur + chiffres de chaque quartier
+    if (qCache[r]) return qCache[r];
+    var PS = qPS(), t0 = (window.performance || Date).now(), out = {}, iris = window.POTENTIEL_SECTEUR.iris;
+    for (var i = 0; i < iris.length; i++) {
+      var z = PS.quartier(iris[i][0], r);
+      out[iris[i][0]] = z ? { h: z.habParOff, c: z.echelle.couleur, l: z.echelle.libelle, n: z.nbOff } : null;
+    }
+    qMs = Math.round(((window.performance || Date).now() - t0) * 10) / 10;
+    V2._qMs = qMs;
+    return (qCache[r] = out);
+  }
+  var qIdx = null;
+  function qLigne(code) { if (!qIdx) { qIdx = {}; window.POTENTIEL_SECTEUR.iris.forEach(function (r) { qIdx[r[0]] = r; }); } return qIdx[code] || null; }
+  function qNum(n) { return Math.round(n).toLocaleString('fr-FR'); }
+  function qEuro(v) {   // « environ … » : ordre de grandeur, jamais une vente
+    if (v == null || isNaN(v)) return '—';
+    if (v >= 1e6) return (Math.round(v / 1e5) / 10).toLocaleString('fr-FR') + ' M€';
+    if (v >= 1e4) return Math.round(v / 1e3).toLocaleString('fr-FR') + ' 000 €';
+    return qNum(Math.round(v / 100) * 100) + ' €';
+  }
+  function qStyle(f) {
+    var cd = f.properties.code_iris, c = qCalc(qRayon)[cd], sel = cd === qSel;
+    return { fillColor: c ? c.c : '#EDEFF3', fillOpacity: 0.78, color: sel ? '#0B131C' : '#fff', weight: sel ? 2.5 : 0.6 };
+  }
+  function qTip(code) {
+    var c = qCalc(qRayon)[code], q = qLigne(code);
+    if (!q) return '';
+    return '<b>' + esc(q[1]) + '</b><i>' + esc(q[2]) + ' · ' + qNum(q[6]) + ' habitants</i><span>' +
+      (c && c.n ? qNum(c.h) + ' hab. par officine · ' + c.n + ' officine' + (c.n > 1 ? 's' : '') : 'Aucune officine') + ' dans ' + qRayon + ' km</span>';
+  }
+  function drawQuartiers() {
+    if (qLayer) { map.removeLayer(qLayer); qLayer = null; }
+    qLayers = {};
+    if (!zonesOn || zoneMetric !== 'quartiers') return;
+    var G = window.POTENTIEL_SECTEUR && window.POTENTIEL_SECTEUR.geo;
+    if (!qPS() || !G) { var lg0 = document.getElementById('carte-legend'); if (lg0) lg0.innerHTML = legendHtml(); return; }
+    qCalc(qRayon);
+    qLayer = window.L.geoJSON(G, {
+      renderer: canvas || undefined,
+      style: qStyle,
+      onEachFeature: function (f, layer) {
+        var code = f.properties.code_iris; qLayers[code] = layer;
+        layer.bindTooltip(function () { return qTip(code); }, { sticky: true, className: 'cn-tip' });
+        layer.on('mouseover', function () { layer.setStyle({ weight: 2.5, color: '#0B131C' }); layer.bringToFront(); });
+        layer.on('mouseout', function () { layer.setStyle(qStyle(f)); });
+        layer.on('click', function () { V2.carteQuartier(code); });
+      }
+    }).addTo(map);
+    try { if (!map.getBounds().intersects(qLayer.getBounds())) map.fitBounds(qLayer.getBounds()); } catch (e) {}   // activé loin de l'Ouest : sinon rien ne se verrait
+    qSyncUi();
+  }
+  function qRecolor() { if (!qLayer) return; qLayer.eachLayer(function (l) { l.setStyle(qStyle(l.feature)); }); }
+  function qSyncUi() {
+    var sel = document.getElementById('cn-zonerayon'); if (sel) { sel.style.display = (zonesOn && zoneMetric === 'quartiers') ? 'block' : 'none'; sel.value = String(qRayon); }
+    var lg = document.getElementById('carte-legend'); if (lg) lg.innerHTML = legendHtml();
+  }
+  V2.carteZoneRayon = function (r) {
+    qRayon = +r || 5; qRecolor(); qSyncUi();
+    if (qSel && document.getElementById('cn-pot')) qPanneau(qSel);
+  };
+  V2.carteQuartierClose = function () {
+    var el = document.getElementById('cn-pot'); if (el) el.remove();
+    var old = qSel; qSel = null; if (old && qLayers[old]) qLayers[old].setStyle(qStyle(qLayers[old].feature));
+  };
+  // Ouvre le panneau sur un quartier (active la mesure au besoin) et cadre la carte dessus.
+  V2.carteQuartier = function (code) {
+    if (!qPS()) { ensureQuartiers(function () { if (qPS()) V2.carteQuartier(code); }); return; }
+    if (!zonesOn || zoneMetric !== 'quartiers') { zonesOn = true; zoneMetric = 'quartiers'; var b = document.getElementById('cn-zonebtn'); if (b) { b.classList.add('on'); b.textContent = '✓ Zones par département'; } var s = document.getElementById('cn-zonemetric'); if (s) { s.style.display = 'block'; s.value = 'quartiers'; } if (cluster) map.removeLayer(cluster); drawQuartiers(); qSyncUi(); }
+    var old = qSel; qSel = code;
+    if (old && qLayers[old]) qLayers[old].setStyle(qStyle(qLayers[old].feature));
+    var ly = qLayers[code];
+    if (ly) {
+      ly.setStyle(qStyle(ly.feature)); ly.bringToFront();
+      var mh = document.querySelector('.cn-maparea'), etr = window.innerWidth <= 760;   // le quartier reste visible À CÔTÉ du panneau
+      try { map.fitBounds(ly.getBounds().pad(1.2), { maxZoom: 13, paddingBottomRight: etr ? [0, Math.round((mh ? mh.clientHeight : 600) * 0.52)] : [Math.min(400, Math.round((mh ? mh.clientWidth : 1000) * 0.4)) + 12, 0] }); } catch (e) {}
+    }
+    var f = document.getElementById('cn-fiche'); if (f) V2.carteFicheClose();
+    qPanneau(code);
+  };
+  function qPanneau(code) {
+    var PS = qPS(), z = PS && PS.quartier(code, qRayon); if (!z) return;
+    var host = document.querySelector('.cn-maparea'); if (!host) return;
+    var el = document.getElementById('cn-pot');
+    if (!el) { el = document.createElement('div'); el.id = 'cn-pot'; el.className = 'cn-fiche cn-pot'; host.appendChild(el); }
+    var q = qLigne(code);
+    var moy = PS.moyenneSecteur(qRayon), offs = PS.officinesSecteur();
+    var segPret = offs.some(function (o) { return o.seg !== 'autre'; });   // sans segmentation chargée : rien plutôt qu'un 0 trompeur
+    var ec = z.echelle, aucune = z.aucuneOfficine;
+    var cmp = '';
+    if (!aucune && moy && moy.marcheParOff) {
+      var pct = Math.round((z.marcheParOff / moy.marcheParOff - 1) * 100);
+      cmp = Math.abs(pct) < 3 ? 'Au niveau de la moyenne' : (Math.abs(pct) + ' % ' + (pct > 0 ? 'au-dessus' : 'en dessous') + ' de la moyenne');
+      cmp += ' des 8 départements (' + qEuro(moy.marcheParOff) + ' par officine)';
+    }
+    var prox = '';
+    if (segPret) {
+      var cand = offs.filter(function (o) { return o.seg === 'prospect'; }).map(function (o) {
+        var kl = 111.19 * Math.cos(z.centre.lat * Math.PI / 180), dx = (o.lng - z.centre.lng) * kl, dy = (o.lat - z.centre.lat) * 111.19;
+        o.d = Math.sqrt(dx * dx + dy * dy); return o;
+      }).sort(function (a, b) { return a.d - b.d; }).slice(0, 3);
+      prox = '<div class="cn-fsec"><h4>Prospects les plus proches</h4>' + (cand.length ? cand.map(function (o) {
+        var p = D.p[o.i], dd = o.d < 10 ? (Math.round(o.d * 10) / 10).toLocaleString('fr-FR') : Math.round(o.d);
+        return '<button type="button" class="cn-potrow" onclick="V2.carteQuartierClose();V2.carteFiche(' + o.i + ')"><span><b>' + esc(p[6] || 'Pharmacie') + '</b><small>' + esc(p[7] || '') + '</small></span><em>' + dd + ' km</em></button>';
+      }).join('') : '<div class="cn-tempty" style="padding:10px 0">Aucun prospect dans le secteur.</div>') + '</div>';
+    }
+    var ray = [2, 5, 10].map(function (r) { return '<button type="button" class="' + (r === qRayon ? 'on' : '') + '" aria-pressed="' + (r === qRayon) + '" onclick="V2.carteZoneRayon(' + r + ')">' + r + ' km</button>'; }).join('');
+    el.innerHTML = '<div class="cn-pdialog" onclick="event.stopPropagation()">' +
+      '<div class="cn-phead"><div><b>Potentiel du secteur</b><small>' + esc(q ? q[1] : z.nom) + ' · ' + esc(z.commune) + '</small></div><button class="cn-px" aria-label="Fermer" onclick="V2.carteQuartierClose()">✕</button></div>' +
+      '<div class="cn-plist" style="padding:0">' +
+        '<div class="cn-potray" role="group" aria-label="Rayon autour du quartier"><span>Rayon</span>' + ray + '</div>' +
+        '<div class="cn-pothero"><div class="cn-potkey" style="border-color:' + ec.couleur + '"><i style="background:' + ec.couleur + '"></i>' +
+            '<b>' + (aucune ? 'Aucune officine' : qNum(z.habParOff)) + '</b><span>' + (aucune ? 'dans ' + qRayon + ' km' : 'habitants par officine') + '</span><small>' + esc(ec.libelle) + '</small></div>' +
+          '<div class="cn-potkey cn-potkey2"><b>environ ' + qEuro(z.marche) + '</b><span>de marché par an</span><small>' + (aucune ? 'pas d’officine pour le partager' : 'soit ' + qEuro(z.marcheParOff) + ' par officine') + '</small></div></div>' +
+        '<div class="cn-fkpis"><div class="cn-fkpi"><b>' + qNum(z.pop) + '</b><span>habitants dans ' + qRayon + ' km</span></div>' +
+          '<div class="cn-fkpi"><b>' + (Math.round(z.part80 * 1000) / 10).toLocaleString('fr-FR') + ' %</b><span>ont 80 ans et +</span></div>' +
+          '<div class="cn-fkpi"><b>' + z.nbOff + '</b><span>officine' + (z.nbOff > 1 ? 's' : '') + ' dans ' + qRayon + ' km</span></div></div>' +
+        '<div class="cn-fsec"><h4>Dans ce secteur</h4>' +
+          '<div class="cn-ftrow"><span>Ce quartier</span><b>' + qNum(q ? q[6] : 0) + ' habitants</b></div>' +
+          (cmp ? '<div class="cn-ftrow"><span>Comparaison</span><b>' + esc(cmp) + '</b></div>' : '') +
+          (segPret ? '<div class="cn-ftrow"><span>Prospects</span><b>' + z.nbProspects + '</b></div><div class="cn-ftrow"><span>Clients</span><b>' + z.nbClients + '</b></div>' : '') +
+        '</div>' + prox +
+      '</div>' +
+      '<div class="cn-potsrc">INSEE, recensement 2023 · Assurance maladie, Open Medic 2024 · ordre de grandeur</div></div>';
+    var ph = el.querySelector('.cn-phead'); if (ph && ph.offsetHeight) el.style.setProperty('--cn-bandeau', ph.offsetHeight + 'px');
+  }
+
   function refreshMarkerStyle(i) { if (!markers) return; for (var k = 0; k < markers.length; k++) if (markers[k]._pi === i) { markers[k].setStyle(markerStyle(D.p[i], i)); break; } }
 
   // ── PLAN DE TOURNÉE (sélection de pharmacies → journée de prospection) ──
@@ -418,7 +574,18 @@
   function loadTours() { try { var a = JSON.parse(localStorage.getItem(TOURS_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
   function writeTours(a) { try { localStorage.setItem(TOURS_KEY, JSON.stringify(a)); } catch (e) {} }
   function keyOf(p) { return (p[6] || '') + '|' + (p[8] || ''); }
-  function loadTour() { try { var t = JSON.parse(localStorage.getItem(TOUR_KEY) || '[]'); tour = t && t.length ? t : []; } catch (e) { tour = []; } }
+  // 30/10/2026 — un arrêt gardé sans coordonnées faisait sortir le bandeau « Invalid LatLng » à chaque ouverture de la carte :
+  // sa position est reprise dans la base si on le retrouve, sinon il sort de la tournée (et on le dit).
+  function arretsValides(a) {
+    var perdus = 0, ok = (Array.isArray(a) ? a : []).filter(function (s) {
+      if (s && typeof s.lat === 'number' && typeof s.lng === 'number') return true;
+      for (var i = 0; s && s.id != null && D && D.p && i < D.p.length; i++) if (String(D.p[i][13]) === String(s.id) && typeof D.p[i][0] === 'number') { s.lat = D.p[i][0]; s.lng = D.p[i][1]; return true; }
+      perdus++; return false;
+    });
+    if (perdus && V2.toast) V2.toast(perdus + (perdus > 1 ? ' arrêts sans position retirés' : ' arrêt sans position retiré') + ' de la tournée');
+    return ok;
+  }
+  function loadTour() { try { tour = arretsValides(JSON.parse(localStorage.getItem(TOUR_KEY) || '[]')); } catch (e) { tour = []; } }
   function saveTour() { try { localStorage.setItem(TOUR_KEY, JSON.stringify(tour)); } catch (e) {} }
   function tourPos(k) { for (var j = 0; j < tour.length; j++) if (tour[j].k === k) return j; return -1; }
   function inTour(i) { return D && D.p[i] ? tourPos(keyOf(D.p[i])) >= 0 : false; }
@@ -1209,7 +1376,7 @@
     var all = loadTours(), t = null;
     for (var i = 0; i < all.length; i++) if (all[i].id === id) t = all[i];
     if (!t) return;
-    tour = (t.tour || []).slice(); depot = t.depot || null;
+    tour = arretsValides(t.tour); depot = t.depot || null;
     try { depot ? localStorage.setItem('jarvis_depot_v1', JSON.stringify(depot)) : localStorage.removeItem('jarvis_depot_v1'); } catch (e) {}
     saveTour(); updateTourBar(); rebuild(); drawTourLine();
     V2.carteToursClose(); V2.carteTourOpen(); V2.carteTourFit();
@@ -1339,6 +1506,8 @@
     if (prospOn) return '';
     var lg = function (c, t) { return '<span class="cn-lg"><i style="background:' + c + '"></i>' + esc(t) + '</span>'; };
     if (zonesOn) {
+      if (zoneMetric === 'quartiers' && !qPS()) return '<span class="cn-lg-txt">' + (qAttente ? 'Chargement des quartiers…' : 'Données des quartiers non chargées. Réessayez.') + '</span>';
+      if (zoneMetric === 'quartiers') return '<span class="cn-lg-txt cn-lg-tete">Quartiers INSEE · rayon de ' + qRayon + ' km</span>' + lg('#B01532', '≥ 4 200 hab./officine') + lg('#E8546A', '3 400–4 200 · sous-doté') + lg('#FBD08A', '2 800–3 400') + lg('#9FD9B5', '2 200–2 800') + lg('#2E9E66', '< 2 200 · bien doté');
       if (zoneMetric === 'part') return lg('#0B6E43', '≥ 25 % clients') + lg('#2E9E66', '15–25 %') + lg('#5CC98A', '7–15 %') + lg('#BFE6CF', '1–7 %') + lg('#EDEFF3', '0 %');
       if (zoneMetric === 'densite') return lg('#08306B', '≥ 400 officines') + lg('#2171B5', '250–400') + lg('#6BAED6', '120–250') + lg('#BDD7E7', '40–120') + lg('#EDEFF3', '< 40');
       if (zoneMetric === 'tension') return lg('#B01532', '≥ 4 200 hab./officine') + lg('#E8546A', '3 400–4 200 · sous-doté') + lg('#FBD08A', '2 800–3 400') + lg('#9FD9B5', '2 200–2 800') + lg('#2E9E66', '< 2 200 · bien doté');
@@ -1498,6 +1667,28 @@
       '.cn-tag{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px;background:#EEF1F6;color:#3A4150}',
       '.cn-tag.cl{background:#E3F3EB;color:#0B6E43}.cn-tag.pr{background:#E7EFFE;color:#1E5FD0}.cn-tag.co{background:#FFF0E6;color:#C2410C}',
       '.cn-tag.ca{background:#0A0E1A;color:#fff}',
+      // ── Potentiel du secteur : panneau ancré à la carte, mêmes variables que la fiche ──
+      '.cn-pot{z-index:655}',
+      '.cn-pot .cn-pdialog{max-width:none;max-height:none;height:100%;border-radius:16px;box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 18px 44px -18px rgba(11,31,77,.45),0 0 0 1px var(--line)}',
+      '@media(max-width:760px){.cn-pot .cn-phead{padding-top:14px;touch-action:auto;cursor:default}.cn-pot .cn-phead::before{display:none}}',
+      '.cn-pot .cn-phead{padding:14px 16px}.cn-pot .cn-phead small{overflow-wrap:anywhere}',
+      '.cn-potray{display:flex;align-items:center;gap:6px;padding:12px 16px 4px}.cn-potray>span{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted-2);margin-right:4px}',
+      '.cn-potray button{flex:1;min-height:40px;border:1px solid var(--line);background:var(--card-2,#F4F6FB);color:var(--ip-ink);font:inherit;font-weight:700;font-size:13px;border-radius:10px;cursor:pointer}',
+      '.cn-potray button.on{background:var(--ip-blue,#0057FF);border-color:var(--ip-blue,#0057FF);color:#fff}',
+      '.cn-pothero{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 16px 6px}',
+      '.cn-potkey{position:relative;background:var(--card,#fff);border:2px solid var(--line);border-radius:12px;padding:10px 11px 9px 11px;min-width:0}',
+      '.cn-potkey i{position:absolute;top:10px;right:10px;width:12px;height:12px;border-radius:50%}',
+      '.cn-potkey b{display:block;font-size:21px;line-height:1.1;font-weight:800;color:var(--ip-ink);font-variant-numeric:tabular-nums;overflow-wrap:anywhere;padding-right:16px}',
+      '.cn-potkey2{border-color:var(--ip-blue,#0057FF)}.cn-potkey2 b{font-size:17px;color:var(--ip-blue,#0057FF);padding-right:0}',
+      '.cn-potkey span{display:block;font-size:12px;font-weight:600;color:var(--ip-ink);margin-top:3px}',
+      '.cn-potkey small{display:block;font-size:11.5px;color:var(--muted);margin-top:2px;line-height:1.3}',
+      '.cn-potrow{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:48px;padding:6px 0;border:none;border-bottom:1px solid var(--line);background:transparent;font:inherit;text-align:left;cursor:pointer;color:var(--ip-ink)}',
+      '.cn-potrow span{min-width:0}.cn-potrow b{display:block;font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cn-potrow small{display:block;font-size:11.5px;color:var(--muted)}',
+      '.cn-potrow em{flex:none;font-style:normal;font-size:12.5px;font-weight:800;color:var(--ip-blue,#0057FF)}',
+      '.cn-potsrc{flex:none;padding:9px 16px;border-top:1px solid var(--line);font-size:11px;line-height:1.35;color:var(--muted)}',
+      '.cn-lg-tete{flex:1 0 100%;color:var(--ip-ink)}',
+      '.cn-pot .cn-px{width:44px;height:44px}.cn-potray button{min-height:44px}',   // cibles >= 44 px aussi sur ordinateur
+      '@media(max-width:760px){.cn-pot{top:auto;left:0;right:0;bottom:0;width:100%;height:52%}.cn-pot .cn-pdialog{border-radius:18px 18px 0 0}.cn-pot .cn-px{width:44px;height:44px}.cn-potray button{min-height:44px}.cn-potkey b{font-size:19px}.cn-potkey2 b{font-size:15px}.cn-potrow{min-height:48px}.cn-maparea .leaflet-bottom{z-index:640}}',
       '.cn-fkpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:6px 16px 12px}',
       '.cn-fkpi{text-align:center;background:var(--card-2,#F4F6FB);border-radius:10px;padding:9px 4px}',
       '.cn-fkpi b{display:block;font-size:15px;font-weight:800;color:var(--ip-blue,#0057FF)}',
@@ -1639,6 +1830,7 @@
     reconcileWithWml();   // WML = vérité clients : corrige statut + groupement AVANT tout calcul de couleur
     buildCommMaps();      // portefeuilles réels + secteurs UGA pour le filtre Commercial
     computeColors();
+    qDonneesChangees();
     // Valeurs des menus de la barre de filtres (calculées sur les données réellement présentes)
     COMMS = commNames().sort(function (a, b) { return a.localeCompare(b, 'fr', { sensitivity: 'base' }); });
     var _gu = {}; D.p.forEach(function (p) { var g = D.grp[p[3]]; if (g && g !== '—') _gu[g] = 1; });
@@ -1670,6 +1862,7 @@
     if (V2.carteProspection && V2.carteProspection.verifier) V2.carteProspection.verifier().then(function (ok) { if (ok && !prospOn && document.getElementById('cn-fbacts')) renderFbRow(); });   // le bouton « Prospection » n'apparaît que sur un OUI de la base
     // Nettoie une éventuelle carte précédente (évite l'accumulation d'instances Leaflet au fil des visites).
     if (map) { try { map.remove(); } catch (e) {} map = null; cluster = null; markers = null; }
+    qLayer = null; qLayers = {}; qSel = null;
     map = window.L.map(root.querySelector('#carte-map'), { preferCanvas: true, zoomControl: true, attributionControl: true }).setView([46.6, 2.4], 6);
     try { map.attributionControl.setPrefix(false); } catch (e) {}
     // tolerance : la souris « attrape » un point jusqu'à 7 px autour (Will, 27/08 : « quand on passe
@@ -1842,8 +2035,11 @@
       '<div class="cn-disp">' + dispBtn('points', 'Points') + dispBtn('bulles', 'Bulles = CA') + '</div>' +
       '<button id="cn-zonebtn" class="cn-fb-btn' + (zonesOn ? ' on' : '') + '" onclick="V2.carteZones()">' + (zonesOn ? '✓ Zones par département' : 'Zones par département') + '</button>' +
       '<select id="cn-zonemetric" class="cn-sel cn-fb-sel" style="' + (zonesOn ? '' : 'display:none') + '" onchange="V2.carteZoneMetric(this.value)">' +
-        [['part', 'Colorer : part de clients'], ['densite', 'Colorer : densité d\'officines'], ['tension', 'Colorer : zone sous-dotée (hab./officine)'], ['potentiel', 'Colorer : potentiel (prospects)']]
+        [['part', 'Colorer : part de clients'], ['densite', 'Colorer : densité d\'officines'], ['tension', 'Colorer : zone sous-dotée (hab./officine)'], ['quartiers', 'Colorer : quartiers INSEE (hab./officine)'], ['potentiel', 'Colorer : potentiel (prospects)']]
           .map(function (o) { return '<option value="' + o[0] + '"' + (zoneMetric === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') +
+      '</select>' +
+      '<select id="cn-zonerayon" class="cn-sel cn-fb-sel" aria-label="Rayon" style="' + (zonesOn && zoneMetric === 'quartiers' ? '' : 'display:none') + '" onchange="V2.carteZoneRayon(this.value)">' +
+        [2, 5, 10].map(function (r) { return '<option value="' + r + '"' + (qRayon === r ? ' selected' : '') + '>Rayon : ' + r + ' km</option>'; }).join('') +
       '</select>' +
       '<button class="cn-fb-btn cn-fb-ghost" onclick="V2.carteExportKml()">' + ICO('download', 13) + '<span>Exporter vers Google My Maps</span></button>';
   }

@@ -1,0 +1,44 @@
+{
+ "source": "Assurance maladie, Open Medic 2024 (base complète, tous régimes, médicaments délivrés en ville), base de remboursement (BSE), Licence ouverte / Open Licence ; population INSEE recensement 2023",
+ "annee": 2024,
+ "url": "https://www.assurance-maladie.ameli.fr/etudes-et-donnees/open-medic-base-complete-depenses-medicaments",
+ "unite": "euros de base de remboursement par habitant et par an",
+ "eur_par_habitant_par_bande": [
+  141.01,
+  263.93,
+  1131.18,
+  1131.18
+ ],
+ "bandes_colonnes": [
+  "pop0019",
+  "pop2064",
+  "pop6579",
+  "pop80p"
+ ],
+ "note": "Open Medic ne coupe pas les 60 ans et + : 65-79 ans et 80 ans et + reçoivent donc le même montant par habitant (65 ans et +). Tranches Open Medic 0-19 / 20-59 / 60+ calées sur 0-19 / 20-64 / 65+ de l'INSEE.",
+ "bse_metropole_par_tranche_open_medic_eur": {
+  "0": 2151699943,
+  "20": 9714372597,
+  "60": 15950758487
+ },
+ "rem_metropole_par_tranche_open_medic_eur": {
+  "0": 1594467671,
+  "20": 8279039425,
+  "60": 14395306938
+ },
+ "population_metropole_insee_2023": {
+  "Y_LT20": 15258857,
+  "Y20T64": 36806019,
+  "Y_GE65": 14100939,
+  "_T": 66165815
+ },
+ "controle_somme_tranches_moins_total": 0,
+ "bse_total_fichier_eur": 29719673619,
+ "rem_total_fichier_eur": 26031855506,
+ "bse_exclu_eur": {
+  "region 99": 1052354654,
+  "region 5": 847950181,
+  "age 99": 2537757
+ },
+ "bse_metropole_retenu_eur": 27816831027
+}
