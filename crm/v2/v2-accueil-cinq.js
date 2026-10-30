@@ -710,6 +710,20 @@
   }
   // v3 : onglet caché = toutes les boucles de la grille s'arrêtent (la case hors écran est déjà arrêtée par l'observateur plus bas : ac-hors)
   document.addEventListener('visibilitychange', function () { var r = document.getElementById('u2-cinq'); if (r) r.classList.toggle('m1-pause', document.hidden); });
+  // Une scène vit à la fois : ensemble, les boucles tombent à 28-43 images/s dans Safari (mesuré le 30/10/2026), seule chacune en tient 57 à 60.
+  // Seules les boucles s'arrêtent : l'arrivée des cases n'est jamais figée. La case sous la souris reste vivante.
+  function boucles(c) { return c.getAnimations({ subtree: true }).filter(function (a) { return a.effect && a.effect.getTiming().iterations === Infinity; }); }
+  var _tour = 0;
+  setInterval(function () {
+    var r = document.getElementById('u2-cinq'); if (!r || document.hidden || !r.getAnimations) return;
+    var cs = [].slice.call(r.querySelectorAll('.m1-c')), vues = cs.filter(function (c) { return !c.classList.contains('ac-hors'); });
+    var actif = vues[_tour++ % (vues.length || 1)];
+    cs.forEach(function (c) { var vit = c === actif || c.matches(':hover'); boucles(c).forEach(function (a) { if (vit) a.play(); else a.pause(); }); });
+  }, 6000);
+  document.addEventListener('pointerover', function (e) {
+    var c = e.target.closest && e.target.closest('#u2-cinq .m1-c');
+    if (c && c.getAnimations) boucles(c).forEach(function (a) { a.play(); });
+  });
   /* le halo de bordure de la maquette : deux variables CSS posées sous la souris (aucun flou, aucun masque) ; au doigt, rien */
   var _gl = { raf: 0, x: 0, y: 0, c: null };
   document.addEventListener('pointermove', function (e) {
