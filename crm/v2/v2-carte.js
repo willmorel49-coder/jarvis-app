@@ -585,7 +585,13 @@
     if (perdus && V2.toast) V2.toast(perdus + (perdus > 1 ? ' arrêts sans position retirés' : ' arrêt sans position retiré') + ' de la tournée');
     return ok;
   }
-  function loadTour() { try { tour = arretsValides(JSON.parse(localStorage.getItem(TOUR_KEY) || '[]')); } catch (e) { tour = []; } }
+  function loadTour() {
+    try {
+      var t = JSON.parse(localStorage.getItem(TOUR_KEY) || '[]'), av = JSON.stringify(t);
+      tour = arretsValides(t);
+      if (JSON.stringify(tour) !== av) saveTour();   // réparée une fois pour toutes : le message ne revient pas à chaque ouverture
+    } catch (e) { tour = []; }
+  }
   function saveTour() { try { localStorage.setItem(TOUR_KEY, JSON.stringify(tour)); } catch (e) {} }
   function tourPos(k) { for (var j = 0; j < tour.length; j++) if (tour[j].k === k) return j; return -1; }
   function inTour(i) { return D && D.p[i] ? tourPos(keyOf(D.p[i])) >= 0 : false; }
