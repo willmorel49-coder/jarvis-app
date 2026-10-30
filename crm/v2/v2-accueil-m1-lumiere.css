@@ -1,0 +1,70 @@
+/* ═══════════════════════════════════════════════════════════════════
+   JARVIS · accueil « maquette 1 » — version 2 « Avec plus de lumière » (30/10/2026)
+   Même construction et mêmes textes que la version 1 (v2-accueil-m1.css) ; seule la MATIÈRE change, par-dessus, sous la classe m1-lumiere posée sur <html> par index.html :
+   - une vraie source de lumière visible à l'arrêt (halo qui descend derrière l'en-tête, tache claire dans la case Officines, liseré clair en haut de chaque case) ;
+   - une hiérarchie plus nette : la case Officines domine (fond éclairé, chiffre plus grand, ombre teintée), les quatre autres se font plus calmes ;
+   - un mouvement qui porte le contenu, en 600 ms au plus : cases qui montent, chiffre qui compte (v2-accueil-cinq.js), barres qui se tracent, tâches qui glissent, tâche qui se raye.
+   Les habillages à matière (Léopard, Marbre, Nacre, Forêt, Terracotta, Glacier, Velours) gardent LEUR matière : seules les règles de mouvement s'y appliquent.
+   Interdits tenus : aucun flou, aucun backdrop-filter, aucun mask, aucun dégradé dans du texte, aucun violet, aucune opacité sur du texte. prefers-reduced-motion : tout s'affiche sans mouvement.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══ La matière (hors habillages à matière) ═══ */
+html.m1-lumiere:not(:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="nacre"],[data-hab="foret"],[data-hab="terracotta"],[data-hab="glacier"],[data-hab="velours"])){
+  --lu-halo:color-mix(in srgb,var(--ip-blue) 16%,transparent);
+}
+/* la lumière de la page : un halo bleu en haut à gauche (derrière le bonjour), un halo clair en haut à droite — visibles sans toucher à rien */
+html.m1-lumiere:not(:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="nacre"],[data-hab="foret"],[data-hab="terracotta"],[data-hab="glacier"],[data-hab="velours"])) .u2-grille{position:relative}
+html.m1-lumiere:not(:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="nacre"],[data-hab="foret"],[data-hab="terracotta"],[data-hab="glacier"],[data-hab="velours"])) .u2-grille::before{
+  content:"";position:absolute;left:0;right:0;top:0;height:640px;pointer-events:none;z-index:0;
+  background:radial-gradient(760px 460px at 14% 0%,var(--lu-halo),transparent 70%),radial-gradient(620px 420px at 94% 4%,color-mix(in srgb,var(--halo) 95%,transparent),transparent 72%)}
+html.m1-lumiere .u2-grille>*{position:relative;z-index:1}
+
+/* les cases : un liseré clair en haut (lumière du haut), une tache de lumière dans l'angle, ombre en couches */
+html.m1-lumiere:not(:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="nacre"],[data-hab="foret"],[data-hab="terracotta"],[data-hab="glacier"],[data-hab="velours"])) .m1-bento .m1-c{
+  background:
+    radial-gradient(300px 220px at 100% 0%,color-mix(in srgb,var(--ip-blue) 11%,transparent),transparent 72%) padding-box,
+    linear-gradient(180deg,#fff,var(--card)) padding-box,
+    radial-gradient(190px circle at var(--x,-400px) var(--y,-400px),var(--ip-blue),var(--line-strong) 78%) border-box;
+  box-shadow:var(--sh-1),0 1px 0 #fff inset}
+/* LA case qui domine : fond éclairé, tache claire en haut à gauche (la source), teinte de la marque en bas, ombre portée teintée */
+html.m1-lumiere:not(:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="nacre"],[data-hab="foret"],[data-hab="terracotta"],[data-hab="glacier"],[data-hab="velours"])) .m1-bento .m1-off{
+  background:
+    radial-gradient(520px 300px at 0% 0%,#fff,transparent 68%) padding-box,
+    radial-gradient(420px 260px at 100% 100%,color-mix(in srgb,var(--ip-blue) 14%,transparent),transparent 72%) padding-box,
+    linear-gradient(155deg,color-mix(in srgb,var(--halo) 92%,#fff),color-mix(in srgb,var(--ip-blue) 8%,var(--card))) padding-box,
+    radial-gradient(190px circle at var(--x,-400px) var(--y,-400px),var(--ip-blue),color-mix(in srgb,var(--ip-blue) 30%,var(--line-strong)) 78%) border-box;
+  box-shadow:var(--sh-3),0 28px 52px -26px var(--u2-o),0 1px 0 #fff inset}
+html.m1-lumiere .m1-bento .m1-off{min-height:18rem}
+html.m1-lumiere .m1-off .m1-big b{font-size:68px;color:var(--ip-blue-d)}
+html.m1-lumiere .m1-off .m1-ico{background:radial-gradient(120% 120% at 25% 15%,color-mix(in srgb,var(--ip-blue) 62%,#fff),var(--ip-blue) 46%,var(--ip-blue-d));color:#fff;border-color:transparent;box-shadow:0 6px 14px var(--u2-o),0 1px 0 rgba(255,255,255,.35) inset}
+html.m1-lumiere .m1-off .m1-lab{color:var(--ip-blue-d)}
+html.m1-lumiere .m1-off .m1-chip{background:rgba(255,255,255,.78);border-color:color-mix(in srgb,var(--ip-blue) 14%,var(--line))}
+html.m1-lumiere .m1-off .m1-foot h3{color:var(--ip-blue-d)}
+/* les quatre autres : plus calmes (ombre légère), petites pastilles d'icône éclairées */
+html.m1-lumiere .m1-bento .m1-c:not(.m1-off) .m1-ico{background:radial-gradient(120% 120% at 25% 15%,#fff,var(--halo));box-shadow:0 1px 0 #fff inset,0 2px 6px color-mix(in srgb,var(--ip-blue) 12%,transparent)}
+/* barres : un dégradé de la même teinte (jamais de violet), un léger creux dans la piste */
+html.m1-lumiere .m1-fill{background:linear-gradient(90deg,var(--ip-blue-d),var(--ip-blue));box-shadow:0 0 10px color-mix(in srgb,var(--ip-blue) 28%,transparent)}
+html.m1-lumiere .m1-fill.m1-grey{background:linear-gradient(90deg,#8A93A8,#A9B1C4);box-shadow:none}
+html.m1-lumiere .m1-trk{box-shadow:inset 0 1px 2px rgba(16,19,28,.10)}
+/* le surtitre (la date) se pose sur le halo : on le fonce d'un cran pour garder 4,5:1 mesuré sur le rendu */
+html.m1-lumiere:not(:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="nacre"],[data-hab="foret"],[data-hab="terracotta"],[data-hab="glacier"],[data-hab="velours"])) .u2-salut .m1-eye{color:var(--ip-blue-d)}
+/* widgets et bande : même lumière du haut */
+html.m1-lumiere .u2-page .u2-droite .u2-wid{box-shadow:var(--sh-1),0 1px 0 #fff inset}
+
+/* ═══ Le mouvement (600 ms au plus) ═══ */
+/* arrivée : les cases montent l'une après l'autre (≤ 525 ms) */
+html.m1-lumiere .ac-ent .m1-bento .ac-in,html.m1-lumiere .ac-ent .m1-hd{animation-duration:.3s;animation-delay:calc(var(--i,0) * 45ms)}
+/* barres qui se tracent (≤ 545 ms) */
+html.m1-lumiere .ac-ent .m1-fill,html.m1-lumiere .m1-arr .m1-fill{animation-duration:.38s;animation-delay:calc(60ms + var(--i,0) * 35ms)}
+/* tâches, produits, infos : elles glissent (≤ 540 ms) */
+html.m1-lumiere .ac-ent .m1-trow,html.m1-lumiere .ac-ent .m1-prow{animation-duration:.3s;animation-delay:calc(120ms + var(--j,0) * 60ms)}
+/* la tâche qui se raye : le trait apparaît, le texte s'éteint, la case se coche en se traçant */
+html.m1-lumiere .m1-t{text-decoration:line-through;text-decoration-color:transparent;transition:color .3s,text-decoration-color .3s}
+html.m1-lumiere .m1-trow[aria-checked="true"] .m1-t{text-decoration:line-through;text-decoration-color:currentColor}
+html.m1-lumiere .m1-bx svg{opacity:1}
+html.m1-lumiere .m1-bx svg path{stroke-dasharray:16;stroke-dashoffset:16;transition:stroke-dashoffset .3s var(--ease) .05s}
+html.m1-lumiere .m1-trow[aria-checked="true"] .m1-bx svg path{stroke-dashoffset:0}
+
+@media (prefers-reduced-motion:reduce){
+  html.m1-lumiere .m1-t,html.m1-lumiere .m1-bx svg path{transition:none}   /* le reste du mouvement est déjà coupé par la version 1 */
+}

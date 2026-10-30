@@ -392,15 +392,22 @@
   };
   var _relLance = false;
   var SLOTS = {
-    'h.nb': function (ctx) { return C.heroNb(ctx.m, ctx.t.pharma); },
-    'h.fi': function (ctx) { return C.heroFi(ctx.t.pharma); },
-    'm.cmp': function () { return cmpMob(); },
-    'infos.bd': function () { return C.infos(); },
-    'todo.n': function () { return C.todoN(); },
-    'todo.bd': function () { return C.todo(); },
-    'groupements.sc': function () { return C.grpScene(); },
-    'groupements.bd': function () { return C.grp(); },
-    'offilog.bd': function (ctx) { return C.offilog(ctx.t.offilog); }
+    'h.phrase': function () { return phrase(); },
+    'h.reprendre': function () { return reprendre(); },
+    'h.pill': function () { return m1Pill(); },
+    'h.nb': function (ctx) { return m1Nb(ctx.m); },
+    'h.cmp': function () { return m1Cmp(); },
+    'h.rel': function () { return m1Rel(); },
+    'todo.bd': function () { return m1Todo(); },
+    'todo.ft': function () { return m1TodoPied(); },
+    'infos.pt': function () { return m1InfosPt(); },
+    'infos.bd': function () { return m1Infos(); },
+    'infos.ft': function () { return m1InfosPied(); },
+    'grp.sc': function () { return C.grpScene(); },
+    'grp.bd': function () { return m1Grp(); },
+    'grp.ft': function () { return m1GrpPied(); },
+    'offi.bd': function () { return m1Offi(); },
+    'offi.ft': function () { return m1OffiPied(); }
   };
   var _sig = {};
   function contexte() {
@@ -444,7 +451,7 @@
     var p = P(), cles = [], u = une(), reg = !!(V2.accueilWidgets && V2.accueilWidgets.regle && V2.accueilWidgets.regle());
     // Mode réglage (16/10/2026) : TOUS les outils du groupe, masqués compris, chacun avec son œil ; sinon seulement ceux qu'on a laissés visibles
     ((reg ? etat.tous : etat.fams) || []).forEach(function (f) { f.cles.forEach(function (k) { if (CINQ.indexOf(k) < 0 && cles.indexOf(k) < 0 && !(u && k === u.page)) cles.push(k); }); });
-    if (!cles.length) return '';
+    if (!reg || !cles.length) return '';
     var masques = (p.S().masques) || [];
     return '<section class="ac-au ac-in' + (reg ? ' ac-au-reg' : '') + '" style="--i:9" aria-label="Autres outils"><h2>Autres outils' + (reg ? '<small>Appuyez sur l\'œil pour afficher ou masquer un outil</small>' : '') + '</h2><div class="ac-au-l">' +
       cles.map(function (k) {
@@ -458,26 +465,281 @@
       }).join('') + '</div></section>';
   }
 
+  /* ═══ 30/10/2026 — maquette 1 « JARVIS plus clair » (choisie par Will) : l'accueil en cinq cases, une réponse par case ═══
+     Chaque chiffre vient de ce que l'app calcule déjà (aucune requête nouvelle) ; une donnée absente = la case le dit, jamais un faux zéro.
+     Les cases portent aussi la classe ac-c : les habillages (v2-hab.css) les reconnaissent et posent leur matière. ═══ */
+  var CATS = { 'beaute-et-soins': 'Beauté & soins', sante: 'Santé', hygiene: 'Hygiène', bebe: 'Bébé', solaires: 'Solaires', veterinaire: 'Vétérinaire' };
+  function lumiere() { return document.documentElement.classList.contains('m1-lumiere'); }
+  function plur(n, a, b) { return fr(n) + ' ' + (n > 1 ? b : a); }
+  function court(nom) { return String(nom || '').replace(/^Pharmacie\s+(de la |de l['’]|des |du |de |d['’])?/i, '').trim() || String(nom || ''); }
+  function titre(s) { s = String(s || ''); return s === s.toUpperCase() ? s.toLowerCase().replace(/(^|[\s\-'’(])([a-zà-ÿ])/g, function (m, a, b) { return a + b.toUpperCase(); }) : s; }
+  function jourIso() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function dateLongue() { return new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(/\b1 /, '1er '); }
+  function chev(n) { return P().ic('chev', n || 18); }
+  function top(ic, lab, extra) { return '<div class="m1-top"><span class="m1-ico">' + P().ic(ic, 20) + '</span><span class="m1-lab">' + esc(lab) + '</span>' + (extra || '') + '</div>'; }
+  function pied(t, k, nom, slotK, corps) {
+    return '<div class="m1-foot"><h3><a class="m1-go"' + lien(t, k) + '><span>' + esc(nom) + '</span></a></h3><p data-slot="' + slotK + '">' + corps + '</p></div>';
+  }
+  var _fait = {}, _aff = [];   // To do : les lignes cochées pendant cette visite restent à l'écran, rayées
+
+  // La phrase de l'en-tête : une seule, calculée. Chaque morceau n'apparaît que si sa donnée est prête.
+  function phrase() {
+    var p = P(), parts = [], open = null, n = null, i;
+    try { if (V2.todo && V2.todo.ouverts && p.todoItems() !== null) open = V2.todo.ouverts(); } catch (e) {}
+    if (open) {
+      var j = jourIso(), nj = open.filter(function (x) { return x.pour && x.pour <= j; }).length;
+      parts.push(nj ? '<b>' + plur(nj, 'tâche', 'tâches') + '</b> aujourd’hui' : open.length ? '<b>' + plur(open.length, 'tâche', 'tâches') + '</b> à faire' : 'aucune tâche en attente');
+    }
+    try { n = V2.decrochageUI ? V2.decrochageUI.compte() : null; } catch (e) {}
+    if (typeof n === 'number') parts.push(n ? '<b>' + plur(n, 'officine', 'officines') + '</b> à rappeler' : 'aucune officine à rappeler');
+    i = p.infos();
+    if (i.etat === 'ok' && i.nb != null && i.quand !== 'ancien') parts.push('<b>' + plur(i.nb, 'info', 'infos') + '</b> ' + (i.quand === 'hier' ? 'd’hier' : 'du jour'));
+    if (!parts.length) return '';
+    var s = parts.join(', ') + '.';
+    return s.charAt(0) === '<' ? s : s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  function reprendre() {
+    var f = fichesLire()[0]; if (!f) return '';
+    var id = encodeURIComponent(String(f.id));
+    return '<a class="m1-btn" href="#pharma/' + id + '" data-u2-act="rel:' + id + '">Reprendre : ' + esc(court(f.nom)) + chev(16) + '</a>';
+  }
+  function entete(ctx) {
+    return '<div class="u2-salut m1-hd ac-in" style="--i:0"><div class="m1-hd-t"><p class="v2-sous m1-eye">' + esc(dateLongue()) + '</p>' +
+      '<h1 class="v2-titre" id="u2-salut">' + esc(P().salut()) + '</h1>' +
+      '<p class="v2-sous m1-phrase" data-slot="h.phrase">' + slot('h.phrase', ctx) + '</p></div>' +
+      '<span class="m1-hd-a" data-slot="h.reprendre">' + slot('h.reprendre', ctx) + '</span></div>';
+  }
+  function m1Une(u) {
+    var p = P(), t = u.href ? u : p.outil(u.page);
+    return '<a class="m1-une ac-in" style="--i:1"' + lien(t, u.page) + '><span class="m1-une-nv">Nouveau</span><span class="m1-une-tx"><b>' + esc(u.nom) + '</b><span>' + esc(u.ph) + '</span></span><span class="m1-une-go">Découvrir' + p.ic('arrow', 16) + '</span></a>';
+  }
+
+  // ── Officines : le nombre, la comparaison secteur / moyenne Intégral, les officines à rappeler ──
+  function m1Pill() {
+    var n = null; try { n = V2.decrochageUI ? V2.decrochageUI.compte() : null; } catch (e) {}
+    return typeof n === 'number' && n > 0 ? '<span class="m1-pill m1-warn">' + fr(n) + ' à rappeler</span>' : '';
+  }
+  function m1Nb(m) {
+    if (m.partiel) {
+      var pr = V2.ventesProgres || {};
+      return '<span class="m1-vente" id="v2-ventes-etat">Chargement des ventes… <b>' + (pr.n || 0) + '</b> / ' + (pr.total || '?') + '</span>';
+    }
+    return '<div class="m1-big"><b data-roule="' + m.nb + '">' + fr(m.nb) + '</b><small>' + (m.nb > 1 ? 'officines actives' : 'officine active') + '</small></div>' +
+      (m.mes != null ? '<div class="m1-sub">Vos officines : <b>' + fr(m.mes) + '</b></div>' : '');
+  }
+  function m1Cmp() {
+    var D = cmpDonnees();
+    if (!D) return '<p class="m1-sub">' + (window.MARGE_CLIENTS && window.MARGE_CLIENTS.r ? 'Pas encore de chiffres de marge pour votre secteur.' : 'Les chiffres de marge se chargent : le détail arrive.') + '</p>';
+    var v = D.S.caCl, f = D.M.caCl, mx = Math.max(Math.abs(v), Math.abs(f), 1e-9), diff = f ? (v - f) / Math.abs(f) * 100 : null;
+    var w = function (x) { return Math.max(2, Math.min(100, Math.abs(x) / mx * 100)).toFixed(1); };
+    var pill = diff == null ? '' : '<span class="m1-pill ' + (diff >= 0 ? 'm1-ok' : 'm1-bad') + '">' + (diff >= 0 ? '+' : '−') + cDec(Math.abs(diff)) + ' %</span>';
+    return '<div class="m1-vs-h"><span>CA par client et par mois, face à la moyenne du réseau Intégral</span>' + pill + '</div>' +
+      '<div class="m1-vs-r"><span>Mon secteur</span><i class="m1-trk"><i class="m1-fill" style="width:' + w(v) + '%"></i></i><b>' + esc(cEur(v)) + '</b></div>' +
+      '<div class="m1-vs-r"><span>Réseau</span><i class="m1-trk"><i class="m1-fill m1-grey" style="width:' + w(f) + '%"></i></i><b>' + esc(cEur(f)) + '</b></div>' +
+      '<div class="m1-per">' + esc(D.lib + D.note) + '</div>';
+  }
+  function m1Rel() {
+    var l = null; try { l = V2.decrochageUI && V2.decrochageUI.liste ? V2.decrochageUI.liste(4) : null; } catch (e) {}
+    if (!l || !l.length) return '';
+    return '<span class="m1-rel-h">À rappeler</span>' + l.map(function (x) {
+      var id = encodeURIComponent(x.pid);
+      return '<a class="m1-chip" href="#pharma/' + id + '" data-u2-act="rel:' + id + '"><b>' + esc(court(x.nom)) + '</b><span>' + esc(x.ville) + '</span></a>';
+    }).join('');
+  }
+
+  // ── To do list : trois tâches cochables pour de vrai (les lignes cochées restent là, rayées, jusqu'à la prochaine visite) ──
+  function todoListe() {
+    var l = P().todoItems(); if (!l) return null;
+    var ids = {}; l.forEach(function (x) { ids[x.id] = x; });
+    var out = [], vu = {};
+    _aff.forEach(function (x) { if (ids[x.id] || _fait[x.id]) { out.push(ids[x.id] || x); vu[x.id] = 1; } });
+    l.forEach(function (x) { if (!vu[x.id]) out.push(x); });
+    out = out.slice(0, 3); _aff = out.slice();
+    return out;
+  }
+  function m1Todo() {
+    var l = todoListe();
+    if (!l) return '<p class="m1-vide">Chargement de votre liste…</p>';
+    if (!l.length) return '<p class="m1-vide">Rien à faire pour l’instant.</p>';
+    return '<div class="m1-tlist">' + l.map(function (x, j) {
+      var on = !!_fait[x.id];
+      return '<button type="button" class="m1-trow m1-above" role="checkbox" aria-checked="' + on + '" data-u2-a="todo" data-v="' + esc(x.id) + '" style="--j:' + j + '">' +
+        '<span class="m1-bx"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8"/></svg></span><span class="m1-t">' + esc(x.lib) + '</span></button>';
+    }).join('') + '</div>';
+  }
+  // 30/10/2026 — essai en production : l'ancienne case To do lançait, 2,5 s après l'affichage, le calcul des pharmacies à relancer (C.relN) ; l'écran To do list en a besoin
+  // pour ses compteurs « À relancer · N » et « Prospects chauds · N » (sans ce calcul ils s'affichaient sans chiffre). La nouvelle case le lance de la même façon, sans rien afficher de plus.
+  function relCalcul() {
+    var R = V2.relances; if (!R || !R.nbARelancer || !R.calculer || _relLance) return;
+    var n; try { n = R.nbARelancer(); } catch (e) { return; }
+    if (n == null) { _relLance = true; setTimeout(function () { R.calculer().then(maj, function () {}); }, 2500); }
+  }
+  function m1TodoPied() {
+    var p = P(), l = p.todoItems(); if (l === null) return '';
+    var open = V2.todo && V2.todo.ouverts ? V2.todo.ouverts() : [];
+    if (!open.length) return 'Ouvrir pour ajouter une tâche';
+    var j = jourIso(), nj = open.filter(function (x) { return x.pour && x.pour <= j; }).length;
+    return nj ? plur(nj, 'tâche pour aujourd’hui', 'tâches pour aujourd’hui') : plur(open.length, 'tâche à faire', 'tâches à faire');
+  }
+
+  // ── Infos du matin : deux infos, puis les trois compteurs du brief ──
+  function heure(it) {
+    try {
+      var d = new Date(it.date); if (isNaN(d)) return '';
+      return it.today ? d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', timeZone: 'Europe/Paris' }).replace(/^1 /, '1er ');
+    } catch (e) { return ''; }
+  }
+  function m1Infos() {
+    var p = P(), i = p.infos();
+    if (i.etat === 'charge') return '<p class="m1-vide">Chargement du brief du jour…</p>';
+    if (i.etat !== 'ok') return '<p class="m1-vide">Le brief du jour n’est pas encore arrivé.</p>';
+    var d = p.infosData(), its = ((d && d.items) || []).filter(function (x) { return x && x.titre; });
+    var jour = its.filter(function (x) { return x.today; }); if (jour.length) its = jour;
+    its = its.slice(0, 2);
+    if (!its.length) return '<p class="m1-vide">' + esc(i.titre) + '</p>';
+    return '<div class="m1-ilist">' + its.map(function (x) {
+      var mauvais = /rupture|rappel/i.test(x.titre) || /rupture|rappel/i.test(x.cat || '');
+      return '<div class="m1-irow"><span class="m1-idot' + (mauvais ? ' m1-idot-bad' : '') + '"></span><div><b>' + esc(x.titre) + '</b><span>' + esc([x.source, heure(x)].filter(Boolean).join(' · ')) + '</span></div></div>';
+    }).join('') + '</div>';
+  }
+  function m1InfosPt() { var i = P().infos(); return i.etat === 'ok' && i.quand === 'auj' ? '<span class="m1-dot" title="Nouveau"></span>' : ''; }
+  function m1InfosPied() {
+    var i = P().infos(), c = [];
+    if (i.etat !== 'ok') return '';
+    if (i.nb != null) c.push(plur(i.nb, 'nouvelle', 'nouvelles'));
+    if (i.rupt != null) c.push(plur(i.rupt, 'rupture en cours', 'ruptures en cours'));
+    if (i.rapp != null) c.push(plur(i.rapp, 'rappel de produit', 'rappels de produits'));
+    return esc(c.join(' · '));
+  }
+
+  // ── Groupements : quatre lignes, la part d'adhérents actifs (même calcul que le widget « Un groupement à la loupe ») ──
+  function mesGroupes() {
+    var m = P().m() || {};
+    if (m.mes == null) return { l: groupes(), miens: false };
+    var uc = String((V2.user && V2.user.commercial) || ''), by = {};
+    (V2.pharmacies || []).forEach(function (ph) {
+      if ((ph.comms || []).indexOf(uc) < 0) return;
+      var g = nomG(ph); if (!g) return;
+      (by[g] = by[g] || { nom: g, ids: [] }).ids.push(ph.id);
+    });
+    return { miens: true, l: Object.keys(by).map(function (k) { return by[k]; }).sort(function (a, b) { return b.ids.length - a.ids.length || a.nom.localeCompare(b.nom, 'fr'); }) };
+  }
+  function m1Grp() {
+    var G = mesGroupes().l; if (!G.length) return '<p class="m1-vide">Aucun groupement à suivre pour le moment.</p>';
+    var m = P().m() || {}, ca = (!m.partiel && V2.caByPharma) ? V2.caByPharma() : null, rows;
+    if (ca) rows = G.map(function (g) { var s = 0; g.ids.forEach(function (id) { s += ca[id] || 0; }); return { nom: g.nom, v: s, t: (V2.fmtK ? V2.fmtK(s) : fr(s)) + '\u00A0€' }; }).sort(function (a, b) { return b.v - a.v; });
+    else rows = G.map(function (g) { return { nom: g.nom, v: g.ids.length, t: fr(g.ids.length) }; });
+    rows = rows.slice(0, 4);
+    var mx = Math.max(rows[0].v, 1e-9);
+    return '<div class="m1-glist">' + rows.map(function (g, i) {
+      return '<div class="m1-grow"><span title="' + esc(g.nom) + '">' + esc(g.nom) + '</span><i class="m1-trk"><i class="m1-fill" style="width:' + Math.max(2, Math.round(g.v / mx * 100)) + '%;--i:' + i + '"></i></i><b>' + esc(g.t) + '</b></div>';
+    }).join('') + '</div>';
+  }
+  function m1GrpPied() {
+    var R = mesGroupes(), n = R.l.length, m = P().m() || {};
+    if (!n) return '';
+    return esc(plur(n, 'groupement', 'groupements') + (R.miens ? ' dans votre secteur' : '') + ' · ' + ((!m.partiel && V2.caByPharma) ? 'chiffre d’affaires, les quatre premiers' : 'les ventes se chargent'));
+  }
+
+  // ── Offilog : les trois premiers produits de la centrale (rang, marque, produit, rayon) ──
+  function m1Offi() {
+    var B = window.OFFILOG_BEST; if (!B || !B.length) B = _offiTop && _offiTop.top; if (!B || !B.length) return '<p class="m1-vide">Le classement Offilog se charge.</p>';
+    return '<div class="m1-plist">' + B.slice(0, 3).map(function (b, j) {
+      var nm = String(b.name || ''), k = nm.indexOf(' – '), marque = k > 0 ? nm.slice(0, k) : (b.brand || ''), reste = k > 0 ? nm.slice(k + 3) : nm;
+      return '<div class="m1-prow" style="--j:' + j + '"><b class="m1-rk">' + esc(b.rank) + '</b><div><b>' + esc(titre(marque)) + '</b><span>' + esc(reste) + '</span></div>' +
+        (CATS[b.cat] ? '<span class="m1-pill m1-info">' + esc(CATS[b.cat]) + '</span>' : '') + '</div>';
+    }).join('') + '</div>';
+  }
+  // 30/10/2026 — essai en production : le classement Offilog (window.OFFILOG_BEST) ne se charge qu'à l'ouverture de l'écran Offilog, donc la case restait sur
+  // « se charge » tant qu'on n'y était pas allé (le banc local, lui, l'avait préchargé). On le lit une fois, après le premier dessin, dans un cadre invisible
+  // (même adresse et même jeton que v2-offilog.js : le navigateur ne le télécharge qu'une fois), on n'en garde que les trois premiers produits et le total,
+  // puis on referme le cadre. ⚠️ Surtout PAS dans la page elle-même : window.OFFILOG_BEST posé d'avance ferait croire à l'écran Offilog que tout est chargé
+  // et il ne demanderait plus les prix B2B (constaté en production : « prix Offilog moyen — »). Les prix ne sont jamais demandés ici.
+  var MOD_DIR = (function () { try { var s = document.currentScript; if (s && s.src) return s.src.replace(/[?#].*$/, '').replace(/[^/]+$/, ''); } catch (e) {} return ''; })();
+  var _offiTente = false, _offiTop = null;
+  function offiCharger() {
+    if (_offiTente || window.OFFILOG_BEST) return;
+    _offiTente = true;
+    setTimeout(function () {
+      if (window.OFFILOG_BEST) { maj(); return; }
+      var f = document.createElement('iframe'), fin = function () { try { if (f.parentNode) f.parentNode.removeChild(f); } catch (e) {} };
+      f.setAttribute('aria-hidden', 'true'); f.tabIndex = -1; f.title = ''; f.style.cssText = 'position:absolute;width:0;height:0;border:0;visibility:hidden';
+      f.onload = function () {
+        try {
+          var B = f.contentWindow && f.contentWindow.OFFILOG_BEST;
+          if (B && B.length) { _offiTop = { n: B.length, top: B.slice(0, 3).map(function (b) { return { rank: b.rank, name: b.name, brand: b.brand, cat: b.cat }; }) }; }
+        } catch (e) {}
+        fin(); if (_offiTop) maj();
+      };
+      f.srcdoc = '<!doctype html><script src="' + MOD_DIR + 'offilog-bestsellers-data.js?v=20261019pt"><\/script>';
+      document.body.appendChild(f);
+    }, 1500);
+  }
+  function m1OffiPied() { var n = offilogN() || (_offiTop ? _offiTop.n : 0); return n ? esc(fr(n) + ' références · la centrale parapharmacie') : ''; }
+
+  // 30/10/2026 (v3) — les scènes animées de l'accueil d'avant reviennent, chacune dans SA case : le code des scènes est celui d'au-dessus (sceneOff, sceneInfos, sceneTodo, sceneGrp, sceneOffi), rien n'est redessiné.
+  // Une scène est un bandeau SANS texte, derrière l'en-tête de la case ; la réponse de la case reste dessous. aria-hidden : c'est un décor qui porte du mouvement, pas de l'information.
+  function scn(k, svg, cls) { return '<span class="ac-sc m1-scn m1-scn-' + k + (cls ? ' ' + cls : '') + '" aria-hidden="true">' + svg + '</span>'; }
+  function cOff(ctx) {
+    var t = ctx.t.pharma;
+    return '<section class="ac-c ac-c-pharma m1-c m1-off ac-in" style="--i:1;--ph:' + PHASE.pharma + '" aria-label="' + esc(t.nom) + '"><span class="ac-fond" aria-hidden="true"></span>' + scn('off', sceneOff(), 'ac-sc-off') +
+      top('pharma', t.nom, '<span class="m1-sl" data-slot="h.pill">' + slot('h.pill', ctx) + '</span>') +
+      '<div class="m1-off-b"><div data-slot="h.nb">' + slot('h.nb', ctx) + '</div><div class="m1-vs" data-slot="h.cmp">' + slot('h.cmp', ctx) + '</div></div>' +
+      '<div class="m1-rel" data-slot="h.rel">' + slot('h.rel', ctx) + '</div>' +
+      '<div class="m1-foot"><h3><a class="m1-go"' + lien(t, 'pharma') + '><span>Ouvrir mes officines</span></a></h3></div></section>';
+  }
+  function cTodo(ctx) {
+    var t = ctx.t.todo;
+    return '<section class="ac-c ac-c-todo m1-c m1-todo ac-in" style="--i:2;--ph:' + PHASE.todo + '" aria-label="' + esc(t.nom) + '">' + scn('todo', sceneTodo(), 'ac-sc-td') + top('todo', t.nom, '<span class="m1-arrow">' + chev() + '</span>') +
+      '<div data-slot="todo.bd">' + slot('todo.bd', ctx) + '</div>' + pied(t, 'todo', t.nom, 'todo.ft', slot('todo.ft', ctx)) + '</section>';
+  }
+  function cInfos(ctx) {
+    var t = ctx.t.infos;
+    return '<section class="ac-c ac-c-infos m1-c m1-infos ac-in" style="--i:3;--ph:' + PHASE.infos + '" aria-label="' + esc(t.nom) + '">' + scn('infos', sceneInfos()) + top('infos', t.nom, '<span class="m1-sl" data-slot="infos.pt">' + slot('infos.pt', ctx) + '</span>') +
+      '<div data-slot="infos.bd">' + slot('infos.bd', ctx) + '</div>' + pied(t, 'infos', t.nom, 'infos.ft', slot('infos.ft', ctx)) + '</section>';
+  }
+  function cGrp(ctx) {
+    var t = { k: 'groupements', nom: GRP.nom, ph: GRP.ph, href: GRP.href, act: GRP.act };
+    return '<section class="ac-c ac-c-groupements m1-c m1-grp ac-in" style="--i:4;--ph:' + PHASE.groupements + '" aria-label="' + esc(t.nom) + '">' + scn('grp', '<span data-slot="grp.sc" class="ac-slot-sc">' + slot('grp.sc', ctx) + '</span>', 'ac-sc-gr') + top('clients', t.nom, '<span class="m1-arrow">' + chev() + '</span>') +
+      '<div data-slot="grp.bd">' + slot('grp.bd', ctx) + '</div>' + pied(t, 'groupements', t.nom, 'grp.ft', slot('grp.ft', ctx)) + '</section>';
+  }
+  function cOffi(ctx) {
+    var t = ctx.t.offilog;
+    return '<section class="ac-c ac-c-offilog m1-c m1-offi ac-in" style="--i:5;--ph:' + PHASE.offilog + '" aria-label="' + esc(t.nom) + '">' + scn('offi', sceneOffi(), 'ac-sc-of') + top('offilog', t.nom, '<span class="m1-arrow">' + chev() + '</span>') +
+      '<div data-slot="offi.bd">' + slot('offi.bd', ctx) + '</div>' + pied(t, 'offilog', t.nom, 'offi.ft', slot('offi.ft', ctx)) + '</section>';
+  }
+  // v3 : onglet caché = toutes les boucles de la grille s'arrêtent (la case hors écran est déjà arrêtée par l'observateur plus bas : ac-hors)
+  document.addEventListener('visibilitychange', function () { var r = document.getElementById('u2-cinq'); if (r) r.classList.toggle('m1-pause', document.hidden); });
+  /* le halo de bordure de la maquette : deux variables CSS posées sous la souris (aucun flou, aucun masque) ; au doigt, rien */
+  var _gl = { raf: 0, x: 0, y: 0, c: null };
+  document.addEventListener('pointermove', function (e) {
+    if (e.pointerType === 'touch') return;
+    var c = e.target && e.target.closest && e.target.closest('.m1-c'); if (!c) return;
+    _gl.x = e.clientX; _gl.y = e.clientY; _gl.c = c;
+    if (_gl.raf) return;
+    _gl.raf = requestAnimationFrame(function () { _gl.raf = 0; var r = _gl.c.getBoundingClientRect(); _gl.c.style.setProperty('--x', (_gl.x - r.left) + 'px'); _gl.c.style.setProperty('--y', (_gl.y - r.top) + 'px'); });
+  }, { passive: true });
+  document.addEventListener('pointerout', function (e) {
+    var c = e.target && e.target.closest && e.target.closest('.m1-c');
+    if (c && !c.contains(e.relatedTarget)) { c.style.removeProperty('--x'); c.style.removeProperty('--y'); }
+  });
+
   /* ── Le centre complet (appelé une seule fois par montage de l'accueil) ── */
   function html(etat, cascade) {
     var p = P(); if (!p) return '';
-    _sig = {};
+    _sig = {}; _fait = {}; _aff = [];
     var ctx = contexte(), vis = etat.vis || [], cles = etat.cles || [];
     var presents = { pharma: vis.indexOf('pharma') >= 0, infos: vis.indexOf('infos') >= 0, todo: vis.indexOf('todo') >= 0, offilog: vis.indexOf('offilog') >= 0, groupements: cles.indexOf('pharma') >= 0 };
-    var h = '<div class="ac-wrap' + (cascade ? ' ac-ent' : '') + '" id="u2-cinq">';
-    if (presents.pharma) h += '<section aria-label="Officines">' + hero(ctx.t.pharma, ctx) + '</section><section class="cm-mob" data-slot="m.cmp" aria-label="Mon secteur comparé à la moyenne Intégral">' + slot('m.cmp', ctx) + '</section>';
+    var h = '<div class="ac-wrap m1-wrap' + (cascade ? ' ac-ent' : '') + '" id="u2-cinq">' + entete(ctx);
     var u = une(), pu = p.une ? p.une() : null;
-    if (u) h += bandeauQG(u);
+    if (u) h += m1Une(u);
     else if (pu && pu.page === 'listings2027' && lsAcces() === null) h += '<div id="acq-att"></div>';   // la base n'a pas encore répondu : apres() le pose
-    var rang = '', i = 3;
-    ['infos', 'todo', 'groupements', 'offilog'].forEach(function (k) {
-      if (!presents[k]) return;
-      rang += carte(k, i++, k === 'groupements' ? { k: k, nom: GRP.nom, ph: GRP.ph, href: GRP.href, act: GRP.act } : ctx.t[k], ctx);
-    });
-    if (rang) h += '<section class="ac4-rang" aria-label="Mes quatre autres outils"><h2 class="u2-sr">Mes quatre autres outils</h2>' + rang + '</section>';
-    _sig.autres = autres(etat);
-    return h + '<div id="u2-autres">' + _sig.autres + '</div></div>';
+    h += '<div class="m1-bento">' + (presents.pharma ? cOff(ctx) : '') + (presents.todo ? cTodo(ctx) : '') + (presents.infos ? cInfos(ctx) : '') +
+      (presents.groupements ? cGrp(ctx) : '') + (presents.offilog ? cOffi(ctx) : '') + '</div></div>';
+    return h;
   }
+  // « Autres outils » (les yeux) : seulement en mode réglage, sous les widgets. En temps normal les outils vivent dans le rail.
+  function autresBloc(etat) { _sig.autres = autres(etat); return '<div id="u2-autres">' + _sig.autres + '</div>'; }
 
   /* ── Mise à jour en place : seule une zone dont le texte a changé est remplacée ; les scènes ne bougent pas ── */
   var VU = null;
@@ -488,12 +750,21 @@
       var el = root.querySelector('[data-slot="' + k + '"]'); if (!el) return;
       var h = SLOTS[k](ctx);
       if (_sig[k] === h) return;
-      _sig[k] = h; el.innerHTML = h;
+      _sig[k] = h; el.innerHTML = h; arriver(el);
     });
     var au = document.getElementById('u2-autres');
     if (au) { var h2 = autres(etat); if (_sig.autres !== h2) { _sig.autres = h2; au.innerHTML = h2; } }
+    if (p.railMaj) p.railMaj();   // le rail suit les outils masqués ou rendus
   }
 
+  // 30/10/2026 — quand une donnée arrive après le premier dessin (les ventes, les marges), sa zone se pose avec le même mouvement que l'arrivée : barres qui se tracent, chiffre qui compte (version « lumière »)
+  function arriver(el) {
+    if (!el || !el.querySelector || !el.querySelector('.m1-fill,[data-roule]')) return;
+    if (lumiere()) [].forEach.call(el.querySelectorAll('[data-roule]'), function (n) { var v = +n.getAttribute('data-roule'); if (v > 0) rouler(n, v, 520); });
+    if (calme()) return;
+    el.classList.remove('m1-arr'); void el.offsetWidth; el.classList.add('m1-arr');
+    setTimeout(function () { el.classList.remove('m1-arr'); }, 900);
+  }
   // Après la pose du centre : les compteurs roulent (premier passage seulement), les scènes se mettent en pause hors écran, l'entrée s'efface de la page
   function rouler(el, to, ms) {
     var fin = fr(to), t0 = null;
@@ -509,8 +780,10 @@
   }
   function apres(cascade) {
     var root = document.getElementById('u2-cinq'); if (!root) return;
+    if (root.querySelector('.m1-offi')) offiCharger();
+    if (root.querySelector('.m1-todo')) relCalcul();
     if (cascade) {
-      [].forEach.call(root.querySelectorAll('[data-roule]'), function (n) { var v = +n.getAttribute('data-roule'); if (v > 0) rouler(n, v, 700); });
+      if (lumiere()) [].forEach.call(root.querySelectorAll('[data-roule]'), function (n) { var v = +n.getAttribute('data-roule'); if (v > 0) rouler(n, v, 520); });
       setTimeout(function () { var r = document.getElementById('u2-cinq'); if (r) r.classList.remove('ac-ent'); }, 2400);
     }
     if (window.IntersectionObserver) {
@@ -521,8 +794,7 @@
     // le bandeau du listing, dès que la base a dit oui ; si elle dit non (ou ne répond pas), la place reste vide
     if (document.getElementById('acq-att') && V2.listings2027 && V2.listings2027.verifier) V2.listings2027.verifier().then(function () {
       var a = document.getElementById('acq-att'), u = une(); if (!a || !u) return;
-      a.outerHTML = bandeauQG(u);
-      var b = document.querySelector('#u2-cinq .acq-ban'); if (b && VU) VU.observe(b);
+      a.outerHTML = m1Une(u);
     });
   }
   /* la tache de lumière du bandeau suit le pointeur : un seul écouteur, posé une fois */
@@ -531,5 +803,7 @@
     var r = b.getBoundingClientRect(); b.style.setProperty('--mx', (e.clientX - r.left) + 'px'); b.style.setProperty('--my', (e.clientY - r.top) + 'px');
   });
 
-  V2.accueilCinq = { html: html, maj: maj, apres: apres, CINQ: CINQ, cmp: { widget: cmpWidget, donnees: cmpDonnees } };
+  // 30/10/2026 — une ligne cochée sur l'accueil reste là, rayée, jusqu'à la prochaine visite ; les compteurs se remettent à jour quand l'écriture est faite
+  function coche(id, fait) { if (fait) _fait[id] = true; else delete _fait[id]; setTimeout(maj, 150); setTimeout(maj, 1200); }
+  V2.accueilCinq = { html: html, autresBloc: autresBloc, coche: coche, maj: maj, apres: apres, CINQ: CINQ, cmp: { widget: cmpWidget, donnees: cmpDonnees } };
 })();

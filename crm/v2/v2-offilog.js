@@ -1265,8 +1265,8 @@
     // Les prix négociés Pharmazon (conditions d'un TIERS) ne sont plus dans ce
     // fichier : ils arrivent par adresse signée, en parallèle. Jeton bumpé.
     if (V2.loadFiles) { try { V2.loadFiles(['pharmazonprix']).then(function () { if (V2.fusionnerPrixPharmazon) V2.fusionnerPrixPharmazon(); idxBuilt = false; V2.render(); }); } catch (e) {} }
-    inject(MOD_BASE + 'pharmazon-data.js?v=20261030car', function () {
-      inject('pharmazon-data.js?v=20261030car', function () { pzLoading = false; cb(); });
+    inject(MOD_BASE + 'pharmazon-data.js?v=20261030potm', function () {
+      inject('pharmazon-data.js?v=20261030potm', function () { pzLoading = false; cb(); });
     });
   }
 

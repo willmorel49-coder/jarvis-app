@@ -1,0 +1,44 @@
+/* ═══════════════════════════════════════════════════════════════════
+   JARVIS · accueil « maquette 1 » — version 4 « Le lien avec l'avant » (30/10/2026) = v3 + ce seul fichier (sous la classe m1-bleu posée sur <html> par index.html).
+   La case Officines reprend le bandeau bleu d'aujourd'hui : fond bleu de marque et sa lumière (le fond .ac-fond de v2-accueil-cinq.css, avec ses variables), chiffre blanc,
+   vitrine illustrée à droite. Quelqu'un qui arrive reconnaît son accueil au premier regard.
+   Texte sur bleu : toujours blanc ou bleu très clair, jamais d'opacité ; vignettes sur une plaque bleu nuit pour garder ≥ 4,5:1 sur la partie claire du fond ; barres blanches sur piste foncée.
+   Les habillages et les teintes passent par le même fond (.ac-fond lit --ip-blue et les variables des habillages) : le bandeau suit la couleur choisie.
+   Aucun filter, aucun backdrop-filter, aucune opacité sur du texte.
+   ═══════════════════════════════════════════════════════════════════ */
+html.m1-bleu .m1-bento .m1-off{--gx:90%;--gy:50%;--gr:200px;
+  --top:color-mix(in srgb,var(--ip-blue) 88%,var(--ip-blue-d));--h0:var(--top);--h1:color-mix(in srgb,var(--top) 80%,transparent);--h2:color-mix(in srgb,var(--top) 52%,transparent);--h3:color-mix(in srgb,var(--top) 24%,transparent);--h4:color-mix(in srgb,var(--top) 8%,transparent);
+  --lu:color-mix(in srgb,var(--ip-blue) 56%,#fff);--g0:var(--lu);--g1:color-mix(in srgb,var(--lu) 78%,transparent);--g2:color-mix(in srgb,var(--lu) 46%,transparent);--g3:color-mix(in srgb,var(--lu) 20%,transparent);--g4:color-mix(in srgb,var(--lu) 6%,transparent);
+  display:grid;grid-template-columns:minmax(0,1fr) 168px;grid-auto-rows:auto;align-content:space-between;column-gap:22px;row-gap:14px;isolation:isolate;color:#fff;
+  border-color:transparent;background:none;box-shadow:0 12px 24px -18px color-mix(in srgb,var(--ip-blue-d) 55%,transparent),0 2px 5px color-mix(in srgb,var(--ip-blue-d) 14%,transparent)}
+html.m1-bleu .m1-bento .m1-off>*{grid-column:1}
+html.m1-bleu .m1-bento .m1-c.m1-off>.ac-fond{display:block;position:absolute;inset:0;z-index:-1;grid-column:auto;grid-row:auto}
+html.m1-bleu .m1-bento .m1-c.m1-off::before{display:none}
+/* la vitrine illustrée, à droite, comme avant */
+html.m1-bleu .m1-bento .m1-c>.m1-scn-off{position:relative;left:auto;right:auto;top:auto;grid-column:2;grid-row:1 / span 2;align-self:center;width:168px;height:auto;aspect-ratio:3/2;border-radius:14px;
+  box-shadow:0 6px 12px -8px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.18)}
+html.m1-bleu .m1-bento .m1-off>.m1-rel,html.m1-bleu .m1-bento .m1-off>.m1-foot{grid-column:1 / -1}
+html.m1-bleu .m1-off .m1-top{padding-right:0}
+html.m1-bleu .m1-off .m1-off-b{padding-top:0}
+/* le texte, blanc ou bleu très clair */
+html.m1-bleu .m1-off .m1-lab,html.m1-bleu .m1-off .m1-foot h3,html.m1-bleu .m1-off .m1-big b,html.m1-bleu .m1-off .m1-sub b,html.m1-bleu .m1-off .m1-vs-r b,html.m1-bleu .m1-off .m1-vente b,html.m1-bleu .m1-off .m1-rel-h,html.m1-bleu .m1-off .m1-chip b{color:#fff}
+html.m1-bleu .m1-off .m1-big small,html.m1-bleu .m1-off .m1-sub,html.m1-bleu .m1-off .m1-vs-h,html.m1-bleu .m1-off .m1-vs-r span,html.m1-bleu .m1-off .m1-per,html.m1-bleu .m1-off .m1-vente,html.m1-bleu .m1-off .m1-vide,html.m1-bleu .m1-off .m1-chip span{color:#E6EEFF}
+html.m1-bleu .m1-off .m1-ico{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.34);box-shadow:none}
+html.m1-bleu .m1-off .m1-ico .u2-ic{stroke:#fff}
+/* barres lisibles sur le bleu : le secteur en blanc, le réseau en bleu clair, sur une piste bleu nuit */
+html.m1-bleu .m1-off .m1-trk{background:rgba(0,20,92,.42);box-shadow:none}
+html.m1-bleu .m1-off .m1-fill{background:#fff;box-shadow:none}
+html.m1-bleu .m1-off .m1-fill.m1-grey{background:#A9C2FA}
+/* vignettes « À rappeler » : plaque bleu nuit, texte blanc (la partie claire du fond n'y passe jamais dessous) */
+html.m1-bleu .m1-off .m1-chip{background:rgba(0,26,104,.62);border-color:rgba(255,255,255,.24)}
+html.m1-bleu .m1-off .m1-chip:hover{background:rgba(0,26,104,.8);border-color:rgba(255,255,255,.5)}
+html.m1-bleu .m1-off .m1-arrow{color:#fff}
+@media (hover:hover){html.m1-bleu .m1-bento .m1-off:hover{box-shadow:0 14px 28px -16px color-mix(in srgb,var(--ip-blue-d) 60%,transparent),0 2px 5px color-mix(in srgb,var(--ip-blue-d) 14%,transparent)}}
+@media (max-width:1024px){html.m1-bleu .m1-bento .m1-off{grid-template-columns:minmax(0,1fr) 150px}html.m1-bleu .m1-bento .m1-c>.m1-scn-off{width:150px}}
+@media (max-width:600px){
+  html.m1-bleu .m1-bento .m1-off{grid-template-columns:minmax(0,1fr) 112px;column-gap:12px;--gx:88%;--gy:8%;--gr:110px}
+  html.m1-bleu .m1-bento .m1-c>.m1-scn-off{width:112px;grid-row:1 / span 2;align-self:start}
+  html.m1-bleu .m1-off .m1-top{flex-wrap:wrap;row-gap:6px}
+  html.m1-bleu .m1-off .m1-top .m1-sl{margin-left:0;flex-basis:100%}
+  html.m1-bleu .m1-bento .m1-off>.m1-off-b,html.m1-bleu .m1-bento .m1-off>.m1-rel,html.m1-bleu .m1-bento .m1-off>.m1-foot{grid-column:1 / -1}
+}

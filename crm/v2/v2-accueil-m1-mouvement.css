@@ -1,0 +1,87 @@
+/* ═══════════════════════════════════════════════════════════════════
+   JARVIS · accueil « maquette 1 » — version 3 « Le mouvement » (30/10/2026), par-dessus la v2 (sous la classe m1-mouv posée sur <html> par index.html)
+   Will, mot pour mot : « plus de motion et qu'on soit pas trop decu du changement d'avant ».
+   Les scènes animées de l'accueil d'avant REVIENNENT, chacune dans sa case : leur dessin et leurs boucles sont ceux de v2-accueil-cinq.css (ac-o-*, ac-i-*, ac-td-*, ac-gr-*, ac-of-*) ;
+   ici on ne fait que les loger (un bandeau sans texte derrière l'en-tête de la case, la réponse reste dessous), régler leur arrivée (case par case, 1,2 s au total) et ajouter la respiration de la page.
+   Règles du Mac de Will : tout le mouvement est transform / opacity sur des éléments SANS texte ; aucun filter, backdrop-filter, texte découpé, canvas, WebGL ; boucles arrêtées quand la case sort de l'écran (ac-hors)
+   et quand l'onglet est caché (m1-pause). prefers-reduced-motion : tout s'affiche à l'arrêt, scènes comprises (la règle de v2-accueil.css coupe toute animation sous .u2-page).
+   Officines : retenue — la vitrine reste petite et ne respire que très lentement.
+   ═══════════════════════════════════════════════════════════════════ */
+.m1-pause,.m1-pause *,.m1-pause *::before,.m1-pause *::after{animation-play-state:paused!important}
+
+/* ═══ Le bandeau de scène (Todo, Infos, Groupements, Offilog) : derrière l'en-tête, la réponse commence dessous ═══ */
+.m1-bento .m1-c>.m1-scn{position:absolute;left:0;right:0;top:0;height:88px;aspect-ratio:auto;border-radius:0;box-shadow:0 1px 0 var(--line-2);z-index:0;overflow:hidden}
+.m1-scn>svg{position:absolute;left:0;top:0;width:100%;height:100%;transition:transform .7s var(--ease)}
+.m1-bento .m1-c:not(.m1-off) .m1-top{margin-bottom:34px}
+/* l'icône et le nom de la case se posent sur une plaque pleine : le texte ne dépend jamais de la scène dessous */
+.m1-bento .m1-c:not(.m1-off) .m1-top .m1-lab{padding:4px 10px;border-radius:999px;background:var(--card);box-shadow:var(--sh-1);color:var(--ip-ink)}
+.m1-bento .m1-c:not(.m1-off) .m1-top .m1-ico{background:var(--card);box-shadow:var(--sh-1)}
+.m1-bento .m1-c:not(.m1-off) .m1-top .m1-arrow{background:var(--card);border-radius:999px;box-shadow:var(--sh-1);width:28px;height:28px;align-items:center;justify-content:center}
+.m1-bento .m1-c:not(.m1-off) .m1-top .m1-sl{background:var(--card);border-radius:999px;box-shadow:var(--sh-1);width:28px;height:28px;justify-content:center}
+/* Officines : la vitrine en petit, en haut à droite, à côté du nom (jamais ce qui attire l'œil en premier) */
+.m1-bento .m1-c>.m1-scn-off{left:auto;right:18px;top:12px;width:92px;height:62px;border-radius:12px;box-shadow:0 0 0 1px color-mix(in srgb,var(--ip-blue) 20%,transparent),0 6px 14px -8px var(--u2-o)}
+.m1-off .m1-top{padding-right:112px}
+.m1-off .m1-off-b{padding-top:12px}
+.m1-off .ac-fond{display:none}
+
+/* ═══ Réponse franche au survol ET au toucher ═══ */
+.m1-bento .m1-c:hover .m1-scn>svg,.m1-bento .m1-c:active .m1-scn>svg{transform:scale(1.07)}
+.m1-bento .m1-c:active{transform:scale(.985);transition-duration:.12s}
+.ac-c-pharma:active .ac-o-porte{transform:scaleX(.34) skewY(-5deg)}
+.ac-c-pharma:active .ac-o-lueur{opacity:.9}
+.ac-c-infos:active .ac-i-sun-w{transform:translateY(-9px)}
+.ac-c-groupements:active .ac-gr-cl{transform:scale(.9)}
+.ac-c-offilog:active .ac-of-p{transform:translateY(-5px)}
+.ac-c-todo:hover .ac-td-pt,.ac-c-todo:active .ac-td-pt{animation-duration:1.1s}
+.m1-bento .m1-c:hover .m1-trow:not([aria-checked="true"]) .m1-bx{transform:scale(1.08)}
+
+/* ═══ La page respire à l'arrêt ═══ */
+/* le halo de la page dérive lentement (un calque sans texte : transform + opacity) */
+@keyframes m1-halo{0%,100%{transform:translate3d(-50px,0,0);opacity:.55}50%{transform:translate3d(50px,0,0);opacity:1}}
+html.m1-mouv .u2-grille{overflow-x:clip}
+html.m1-mouv .u2-grille::before{left:-140px;right:-140px;top:-40px;height:680px;animation:m1-halo 9s ease-in-out infinite;will-change:transform,opacity}
+/* le rythme des scènes d'avant, un cran plus vif (toujours lent : on voit la page respirer sans y toucher) ; Officines garde le sien, plus bas */
+.ac-i-halo{animation-duration:5s}
+.ac-i-rays{animation-duration:38s}
+.ac-i-win{animation-duration:3.6s}
+.ac-gr-resp,.ac-gr-ha{animation-duration:4.4s}
+.ac-of-def{animation-duration:14s}
+.ac-of-def2{animation-duration:18s}
+/* Todo : les trois points du bloc-notes battent à tour de rôle */
+@keyframes m1-point{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.35);opacity:1}}
+.ac-td-pt{animation:m1-point 3.6s ease-in-out infinite;animation-delay:calc(var(--j,0) * -1.2s)}
+/* Officines, avec retenue : les boucles de la vitrine ralentissent encore */
+.m1-off .ac-o-croix-halo{animation-duration:10s}
+.m1-off .ac-o-croix-coeur,.m1-off .ac-o-aura{animation-duration:13s}
+
+/* ═══ L'arrivée, case par case : 1,2 s au total (délai de case --cd, puis chaque scène et chaque ligne) ═══ */
+html.m1-mouv .ac-ent .m1-c{--cd:calc((var(--i,1) - 1) * 90ms)}
+html.m1-mouv .ac-ent .m1-bento .ac-in,html.m1-mouv .ac-ent .m1-hd{animation-duration:.4s;animation-delay:var(--cd,0ms)}
+html.m1-mouv .ac-ent .m1-fill,html.m1-mouv .m1-arr .m1-fill{animation-delay:calc(var(--cd,0ms) + 120ms + var(--i,0) * 35ms)}
+html.m1-mouv .ac-ent .m1-trow,html.m1-mouv .ac-ent .m1-prow{animation-delay:calc(var(--cd,0ms) + 160ms + var(--j,0) * 60ms)}
+html.m1-mouv .ac-ent .ac-o-ens-l,html.m1-mouv .ac-ent .ac-o-ens-t{animation:ac-allume .6s ease-out backwards;animation-delay:calc(var(--cd,0ms) + 100ms)}
+html.m1-mouv .ac-ent .ac-o-croix{animation:ac-allume .6s ease-out backwards;animation-delay:calc(var(--cd,0ms) + 250ms)}
+html.m1-mouv .ac-ent .ac-o-fen{animation:ac-allume .5s ease-out backwards;animation-delay:calc(var(--cd,0ms) + 350ms)}
+html.m1-mouv .ac-ent .ac-i-sun-w{animation:ac-leve .8s var(--ease) backwards;animation-delay:calc(var(--cd,0ms) + 80ms)}
+html.m1-mouv .ac-ent .ac-i-aube{animation:ac-aube .8s ease-out backwards;animation-delay:calc(var(--cd,0ms) + 80ms)}
+html.m1-mouv .ac-ent .ac-gr-d{animation:ac-rejoint .6s var(--ease) backwards;animation-delay:calc(var(--cd,0ms) + 60ms + var(--d,0ms) * .4)}
+html.m1-mouv .ac-ent .ac-of-p{animation:ac-glisse .44s var(--ease) backwards;animation-delay:calc(var(--cd,0ms) + 100ms + var(--k,0) * 20ms)}
+html.m1-mouv .ac-ent .ac-td-pt{animation:ac-pop .4s var(--ease) backwards;animation-delay:calc(var(--cd,0ms) + 150ms + var(--j,0) * 90ms)}
+
+@media (prefers-reduced-motion:reduce){
+  html.m1-mouv .u2-grille{overflow-x:clip}
+html.m1-mouv .u2-grille::before{left:-140px;right:-140px;top:-40px;height:680px;animation:none;will-change:auto}
+  .m1-bento .m1-c:active{transform:none}
+  .m1-bento .m1-c:hover .m1-scn>svg,.m1-bento .m1-c:active .m1-scn>svg{transform:none}
+}
+
+/* ═══ Téléphone ═══ */
+@media (max-width:600px){
+  .m1-bento .m1-c>.m1-scn{height:80px}
+  .m1-bento .m1-c:not(.m1-off) .m1-top{margin-bottom:28px}
+  .m1-bento .m1-c>.m1-scn-off{width:88px;height:60px;right:16px;top:12px}
+  .m1-off .m1-top{padding-right:104px}
+}
+
+/* Todo : le bloc-notes se décale pour ne pas passer sous la flèche de la case */
+.m1-bento .ac-c-todo .m1-scn>svg{left:-64px}

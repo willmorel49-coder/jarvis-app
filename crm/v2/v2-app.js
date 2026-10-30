@@ -1321,7 +1321,7 @@
   function u2Id() { return (V2.user && V2.user.id) || 'local'; }
   function u2Cle() { return 'jarvis_accueil_u2_v1:' + u2Id(); }
   function u2ScopeId() { return '__accueil_' + u2Id() + '__'; }
-  function u2Mode() { try { return window.matchMedia('(max-width:1099px)').matches; } catch (e) { return false; } }
+  function u2Mode() { try { return window.matchMedia('(max-width:600px)').matches; } catch (e) { return false; } }   // 30/10/2026 (maquette 1) : barre en bas et tiroir sous 600 px ; au-delà, le rail de 60 px
   function u2Escale() { return !!(window.V2_BRAND && window.V2_BRAND.escale); }
   function u2Installee() { try { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch (e) { return false; } }
   function u2Nb(n) { try { return (Number(n) || 0).toLocaleString('fr-FR'); } catch (e) { return String(n); } }
@@ -1529,13 +1529,9 @@
   function u2Salut(m) { return m.salut + (m.prenom ? ' ' + m.prenom : ''); }
   function u2CentreHtml(m, etat) {
     _u2.m = m;
-    // 04/10/2026 — le centre « cinq cartes » (v2-accueil-cinq.js) : bandeau Officines calme, quatre cartes animées, « Autres outils ».
-    // Le nombre d'officines et l'avancement des ventes sont dans le bandeau : la ligne « N officines actives » du titre disparaît (plus de doublon).
-    if (V2.accueilCinq && V2.accueilPont) {
-      return '<div class="u2-salut u2-in" style="--i:0"><h1 class="v2-titre" id="u2-salut">' + esc(u2Salut(m)) + '</h1>' +
-        '<p class="v2-sous">' + esc(qDateTxt(new Date())) + '</p>' +
-        '<button type="button" class="v2-btn pb-open" data-pb="ouvrir">' + u2Ic('palette') + 'Personnaliser</button></div>' + V2.accueilCinq.html(etat, _u2.cascade);
-    }
+    // 04/10/2026 — le centre « cinq cartes » (v2-accueil-cinq.js). 30/10/2026 (maquette 1 « plus clair ») : le même fichier porte aussi l'en-tête
+    // (date, bonjour, UNE phrase, « Reprendre »), la grille de cinq cases et son halo. Le nombre d'officines et l'avancement des ventes sont dans la case Officines.
+    if (V2.accueilCinq && V2.accueilPont) return V2.accueilCinq.html(etat, _u2.cascade);
     var po = u2PortesHtml(etat), ra = u2RangsHtml(etat), co = u2CompteHtml(m);
     _u2.sig.portes = po; _u2.sig.rangs = ra; _u2.sig.compte = co;
     return '<div class="u2-salut u2-in" style="--i:0"><h1 class="v2-titre" id="u2-salut">' + esc(u2Salut(m)) + '</h1>' +
@@ -1641,21 +1637,50 @@
     u2Poser('u2-portes', u2PortesHtml(etat), 'portes');
     u2Poser('u2-rangs', u2RangsHtml(etat), 'rangs');
     if (V2.accueilCinq && V2.accueilPont) V2.accueilCinq.maj();   // les cartes : seules les zones de texte dont la donnée a changé sont remplacées
+    u2MajRail();
   }
 
   // ── Le rail (≥ 1100 px) et le tiroir : seulement des réglages ──
   function u2Rubriques() {
     var l = [];
     if (V2.basculeEspace && V2.basculeEspace()) l.push(['espace', 'Espace', 'espace']);
-    // 16/10/2026 — Outils, Widgets et Couleurs ne font plus qu'UNE entrée : « Personnaliser » règle l'accueil sur place (v2-accueil-widgets.js)
-    l.push(['perso', 'Personnaliser', 'palette'], ['compte', 'Compte', 'user']);
+    // 30/10/2026 (maquette 1) : « Outils » ouvre le rail (le tiroir plein écran sur téléphone) ; Personnaliser et Compte restent
+    l.push(['outils', 'Outils', 'grille'], ['perso', 'Personnaliser', 'palette'], ['compte', 'Compte', 'user']);
     return l;
+  }
+  // Les familles d'outils du rail et du tiroir : les mêmes liens que les anciennes pastilles « Autres outils », rangés par groupe.
+  // Hors mode réglage, un outil masqué n'y figure pas (c'est le choix de la personne) ; en mode réglage on les voit tous, avec leur œil sur la page.
+  function u2OutilsHtml(ouverts) {
+    var etat = u2Etat(), reg = !!(V2.accueilWidgets && V2.accueilWidgets.regle && V2.accueilWidgets.regle()), liste = reg ? etat.tous : etat.fams, n = 0;
+    return liste.map(function (f, i) {
+      var on = ouverts ? ouverts.indexOf(f.k) >= 0 : i === 0;
+      return '<div class="fam"><button type="button" class="fam-h" data-u2-fam="' + esc(f.k) + '" aria-expanded="' + on + '">' + u2Ic('chev', 16, 'car') + '<span>' + esc(f.nom) + '</span><span class="n">' + f.cles.length + '</span></button>' +
+        '<div class="fam-l' + (on ? ' on' : '') + '">' + f.cles.map(function (k) {
+          var t = u2Outil(k); n++;
+          return '<a class="ol"' + u2LienAttr(t, k) + '>' + u2Ic(k, 20) + '<span>' + esc(t.nom) + '</span>' + (t.ext ? '<span class="u2-sr">, s\'ouvre dans un nouvel onglet</span>' : '') + '</a>';
+        }).join('') + '</div></div>';
+    }).join('');
   }
   function u2RailHtml() {
     return u2Rubriques().map(function (r) {
-      if (r[0] === 'perso') return '<button type="button" class="u2-rb" data-u2-rail="perso" aria-pressed="false">' + u2Ic(r[2]) + r[1] + '</button>';
-      return '<button type="button" class="u2-rb" data-u2-rail="' + r[0] + '" aria-haspopup="dialog" aria-expanded="false" aria-controls="u2-volet">' + u2Ic(r[2]) + r[1] + '</button>';
-    }).join('');
+      var lbl = '<span class="lbl">' + r[1] + '</span>';
+      if (r[0] === 'perso') return '<button type="button" class="u2-rb" data-u2-rail="perso" aria-pressed="false">' + u2Ic(r[2]) + lbl + '</button>';
+      if (r[0] === 'outils') return '<button type="button" class="u2-rb" data-u2-rail="outils" aria-expanded="false" aria-controls="u2-rtools">' + u2Ic(r[2]) + lbl + u2Ic('chev', 16, 'car') + '</button>';
+      return '<button type="button" class="u2-rb" data-u2-rail="' + r[0] + '" aria-haspopup="dialog" aria-expanded="false" aria-controls="u2-volet">' + u2Ic(r[2]) + lbl + '</button>';
+    }).join('') + '<div class="rtools" id="u2-rtools"><h6>Mes outils</h6><div id="u2-rt">' + u2OutilsHtml() + '</div></div>';
+  }
+  // Remet à jour les deux listes (rail et tiroir) si les outils ont changé, en gardant les groupes ouverts.
+  function u2MajRail() {
+    var sig = u2OutilsHtml([]);
+    if (_u2.sig.rtools === sig) return;
+    _u2.sig.rtools = sig;
+    ['u2-rt', 'u2-st'].forEach(function (id) {
+      var el = document.getElementById(id); if (!el) return;
+      var ouv = [].slice.call(el.querySelectorAll('.fam-h[aria-expanded="true"]')).map(function (b) { return b.getAttribute('data-u2-fam'); });
+      var a = document.activeElement, rep = a && el.contains(a) && a.getAttribute('data-tool') ? '[data-tool="' + a.getAttribute('data-tool') + '"]' : null;
+      el.innerHTML = u2OutilsHtml(ouv);
+      if (rep) { var n = el.querySelector(rep); if (n) { try { n.focus(); } catch (e) {} } }
+    });
   }
   function u2BlocEspace() {
     if (!(V2.basculeEspace && V2.basculeEspace())) return '';
@@ -1704,10 +1729,27 @@
   function u2Rail() {
     var mode = u2Mode();
     [].slice.call(document.querySelectorAll('[data-u2-rail]')).forEach(function (b) {
+      if (b.getAttribute('data-u2-rail') === 'outils') return;
       b.setAttribute('aria-expanded', String(!!(_u2.ouvert && !mode && _u2.sec === b.getAttribute('data-u2-rail'))));
     });
     var av = document.querySelector('.u2-page .tp-avb');
     if (av) av.setAttribute('aria-expanded', String(!!(_u2.ouvert && mode)));
+  }
+  // « Outils » : ordinateur ou tablette = le rail se déplie (il se déplie aussi au survol) ; téléphone = le tiroir plein écran, par-dessus le contenu
+  function u2Outils(forcer) {
+    var mode = u2Mode(), rail = document.getElementById('u2-rail'), f = document.getElementById('u2-feuille'), b = document.querySelector('[data-u2-rail="outils"]');
+    if (mode) {
+      var on = typeof forcer === 'boolean' ? forcer : !(f && f.classList.contains('on'));
+      if (_u2.ouvert) u2Fermer(false);
+      if (f) { f.classList.toggle('on', on); f.setAttribute('aria-hidden', String(!on)); }
+      u2Verrou(on);
+      if (b) b.setAttribute('aria-expanded', String(on));
+      if (on) setTimeout(function () { var x = f && f.querySelector('.fam-h, a'); if (x) { try { x.focus({ preventScroll: true }); } catch (e) {} } }, 40);
+    } else if (rail) {
+      var o = typeof forcer === 'boolean' ? forcer : !rail.classList.contains('open');
+      rail.classList.toggle('open', o);
+      if (b) b.setAttribute('aria-expanded', String(o));
+    }
   }
   function u2Verrou(on) { try { document.body.style.overflow = on ? 'hidden' : ''; } catch (e) {} }
   function u2PremierFocus() {
@@ -1719,6 +1761,7 @@
     var v = document.getElementById('u2-volet'), f = document.getElementById('u2-fond');
     if (!v) return;
     var mode = u2Mode();
+    var fe = document.getElementById('u2-feuille'); if (fe && fe.classList.contains('on')) u2Outils(false);   // le tiroir des outils se referme avant le panneau « Mon espace »
     if (_u2.ouvert && (mode || sec === _u2.sec)) { u2Fermer(true); return; }
     _u2.sec = mode ? null : sec; _u2.opener = btn || null;
     _u2.ouvert = true; _u2.confirmer = false;
@@ -1756,6 +1799,7 @@
     if (a === 'todo') {
       var fait = el.getAttribute('aria-checked') !== 'true';
       el.setAttribute('aria-checked', String(fait));
+      if (V2.accueilCinq && V2.accueilCinq.coche) V2.accueilCinq.coche(v, fait);   // 30/10/2026 : la ligne reste là, rayée, et les compteurs suivent
       if (V2.todo && V2.todo.cocher) V2.todo.cocher(v, fait);
       return;
     }
@@ -1775,11 +1819,18 @@
   function u2Clic(e) {
     var t = e.target; if (!t || !t.closest || !t.closest('.u2-page, .u2-hors')) return;
     var b;
+    if ((b = t.closest('[data-u2-fam]'))) {   // un groupe d'outils s'ouvre ou se ferme, sur place
+      var fo = b.getAttribute('aria-expanded') !== 'true';
+      b.setAttribute('aria-expanded', String(fo)); if (b.nextElementSibling) b.nextElementSibling.classList.toggle('on', fo);
+      return;
+    }
+    if ((b = t.closest('[data-u2-rail="outils"]'))) { u2Outils(); return; }
     if ((b = t.closest('[data-u2-rail]'))) {
       // le rail « Personnaliser » met l'accueil lui-même en mode réglage (et n'ouvre pas le tiroir)
       if (b.getAttribute('data-u2-rail') === 'perso') { if (V2.accueilWidgets && V2.accueilWidgets.basculer) V2.accueilWidgets.basculer(b); return; }
       u2Ouvrir(b.getAttribute('data-u2-rail'), b); return;
     }
+    if (t.closest('[data-u2-outils-f]')) { u2Outils(false); var bo2 = document.querySelector('[data-u2-rail="outils"]'); if (bo2) { try { bo2.focus(); } catch (x) {} } return; }
     if (t.closest('[data-u2-fermer]') || t.closest('#u2-fond')) { u2Fermer(true); return; }
     if ((b = t.closest('[data-u2-a]'))) { u2Agir(b.getAttribute('data-u2-a'), b.getAttribute('data-v'), b); return; }
     if ((b = t.closest('[data-u2-act]'))) {
@@ -1792,12 +1843,17 @@
   function u2Touche(e) {
     var t = e.target; if (!t || !t.closest || !t.closest('.u2-page, .u2-hors')) return;
     if (e.key === 'Escape' && _u2.ouvert) { e.preventDefault(); u2Fermer(true); return; }
+    if (e.key === 'Escape') {
+      var fe = document.getElementById('u2-feuille'), ra = document.getElementById('u2-rail');
+      if ((fe && fe.classList.contains('on')) || (ra && ra.classList.contains('open'))) { e.preventDefault(); u2Outils(false); var bo = document.querySelector('[data-u2-rail="outils"]'); if (bo) { try { bo.focus(); } catch (x) {} } }
+    }
   }
   function u2Redim() {
     if (!_u2.monte) return;
     var m = u2Mode(); if (m === _u2.mode) return;
     _u2.mode = m;
     if (_u2.ouvert) u2Fermer(false);
+    u2Outils(false); u2Verrou(false);
     u2VoletRendre(); u2MajCentre(); u2Rail();
   }
   function u2Lier(root) {
@@ -1835,16 +1891,16 @@
     u2S(); g4ChargerOrdre(); qInfosCharger();
     var cascade = !_u2.entree;   // la courte entrée ne joue qu'une fois par chargement de page
     _u2.cascade = cascade;
-    _u2.entree = true; _u2.ouvert = false; _u2.opener = null; _u2.sec = null; _u2.sig = {}; _u2.mode = u2Mode();
+    _u2.entree = true; _u2.ouvert = false; _u2.opener = null; _u2.sec = null; _u2.sig = {}; _u2.mode = u2Mode(); _u2.sig.rtools = u2OutilsHtml([]);
     u2Verrou(false);
     var etat = u2Etat();
     root.innerHTML = '<div class="u2-page' + (cascade ? ' u2-cascade' : '') + '"' + u2StyleAttr() + '>' +
       '<button type="button" class="u2-skip" data-u2-skip>Aller aux outils</button>' + topbar() +
       '<div class="pb-band" id="pb-band" role="region" aria-label="Personnaliser mon accueil" hidden></div>' +
       '<div class="u2-grille">' +
-        '<nav class="u2-rail" aria-label="Mon espace" id="u2-rail">' + u2RailHtml() + '</nav>' +
         '<main class="u2-centre" id="u2-centre" tabindex="-1">' + u2CentreHtml(m, etat) + '</main>' +
-        '<aside class="u2-droite" id="u2-droite" aria-label="Aperçu de la journée">' + u2DroiteHtml() + '</aside>' +
+        '<aside class="u2-droite" id="u2-droite" aria-label="Mes widgets">' + u2DroiteHtml() + '</aside>' +
+        (V2.accueilCinq && V2.accueilCinq.autresBloc ? V2.accueilCinq.autresBloc(etat) : '') +
       '</div>' +
       '</div>';
     // Le fond et le tiroir vivent sur <body> : la racine de l'app porte une transformation d'entrée (v2-motion.js, mo-view-in)
@@ -1852,7 +1908,9 @@
     var vieux = document.getElementById('u2-hors'); if (vieux && vieux.parentNode) vieux.parentNode.removeChild(vieux);
     var hors = document.createElement('div'); hors.id = 'u2-hors'; hors.className = 'u2-hors';
     var sty = u2StyleAttr(); if (sty) hors.setAttribute('style', sty.replace(/^ style="|"$/g, ''));
-    hors.innerHTML = '<div class="u2-fond" id="u2-fond"></div>' +
+    // 30/10/2026 — le rail vit lui aussi sur <body> (comme le tiroir) : la racine de l'écran garde une transformation d'entrée, qui collerait un rail « fixe » à la page entière
+    hors.innerHTML = '<nav class="u2-rail" aria-label="Mon espace" id="u2-rail">' + u2RailHtml() + '</nav><div class="u2-fond" id="u2-fond"></div>' +
+      '<div class="u2-feuille" id="u2-feuille" role="dialog" aria-label="Mes outils" aria-hidden="true"><div class="u2-feuille-t"><h2>Mes outils</h2><button type="button" class="v2-btn" data-u2-outils-f>Fermer</button></div><div class="rtools"><div id="u2-st">' + u2OutilsHtml() + '</div></div></div>' +
       '<aside class="u2-volet" id="u2-volet" role="dialog" aria-labelledby="u2-vt"><div class="u2-volet-t"><h2 id="u2-vt">Mon espace</h2><button type="button" class="v2-btn v2-btn-ghost" data-u2-fermer>Fermer</button></div><div class="u2-mon" id="u2-mon"></div></aside>';
     document.body.appendChild(hors);
     if (V2.accueilCinq && V2.accueilPont) V2.accueilCinq.apres(cascade);
@@ -1872,7 +1930,7 @@
   // 04/10/2026 — le PONT entre cet accueil et ses deux modules (v2-accueil-cinq.js : le centre ; v2-accueil-widgets.js : la colonne de droite et l'atelier).
   // Les modules ne connaissent pas les internes de ce fichier : ils ne lisent que ce qui est listé ici (tout est déjà chargé, aucune requête nouvelle).
   V2.accueilPont = {
-    userId: u2Id, m: function () { return _u2.m; }, etat: u2Etat, vis: u2Vis, cles: u2Cles,
+    userId: u2Id, m: function () { return _u2.m; }, salut: function () { return u2Salut(_u2.m || {}); }, railMaj: u2MajRail, etat: u2Etat, vis: u2Vis, cles: u2Cles,
     outil: u2Outil, lien: u2LienAttr, ic: u2Ic, page: function (k) { return !!(V2.pages && V2.pages[k]); },
     une: function () { return u2Nouveau(G4_UNE.page) ? G4_UNE : null; },
     infos: qInfosModele, infosData: function () { return _qInfos.data; },

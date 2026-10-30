@@ -1,6 +1,7 @@
-/* Migration unique du widget « Mon secteur comparé à la moyenne Intégral » (29/10/2026) :
-   posé en tête chez ceux qui avaient déjà des réglages enregistrés, une seule fois (drapeau m1 dans `wid`),
-   sans déplacer les autres ; retiré ensuite, il ne revient pas ; compte sans réglage = comportement d'avant. */
+/* Widget « Mon secteur comparé à la moyenne Intégral ».
+   29/10/2026 : migration qui le posait en tête une fois (drapeau m1 dans `wid`).
+   30/10/2026 (accueil « plus clair », version 4) : la case Officines porte déjà cette comparaison, donc plus rien n'est posé
+   par défaut ni par la migration ; le drapeau m1 reste posé ; ce qui est déjà enregistré n'est pas touché. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -15,9 +16,9 @@ const net = (x) => JSON.parse(JSON.stringify(net0(x)));   // sort du contexte vm
 const ks = (s) => s.items.map((w) => w.k);
 const sans = (items) => ({ wid: { v: 2, items: items.map((k) => ({ k, t: 'M', o: {} })) } });
 
-test('réglages enregistrés sans le widget : posé en tête, les autres gardent leur ordre', () => {
+test('réglages enregistrés sans le widget : rien n\'est posé, les autres gardent leur ordre', () => {
   const r = net(sans(['tournee', 'relance', 'notes']));
-  assert.deepEqual(ks(r), ['secteur', 'tournee', 'relance', 'notes']);
+  assert.deepEqual(ks(r), ['tournee', 'relance', 'notes']);
   assert.equal(r.m1, true);
   assert.equal(new Set(r.items.map((w) => w.id)).size, r.items.length);
 });
@@ -32,22 +33,22 @@ test('déjà posé : ni doublon ni déplacement', () => {
   assert.deepEqual(ks(r), ['relance', 'secteur', 'notes']);
   assert.equal(r.m1, true);
 });
-test('liste vide enregistrée (tout retiré avant) : le widget est posé une fois', () => {
-  assert.deepEqual(ks(net(sans([]))), ['secteur']);
+test('liste vide enregistrée (tout retiré avant) : le widget n\'est pas posé', () => {
+  assert.deepEqual(ks(net(sans([]))), []);
 });
-test('douze widgets : rien n’est posé ni marqué', () => {
+test('douze widgets : rien n’est posé, le drapeau est conservé', () => {
   const douze = ['relance', 'groupement', 'infos', 'todo', 'semaine', 'tournee', 'notes', 'raccourcis', 'ruptures', 'relance', 'todo', 'notes'];
   const r = net(sans(douze));
-  assert.equal(r.items.length, 12); assert.ok(!ks(r).includes('secteur')); assert.equal(r.m1, false);
+  assert.equal(r.items.length, 12); assert.ok(!ks(r).includes('secteur')); assert.equal(r.m1, true);
 });
-test('compte sans réglage : comme avant (secteur en tête), drapeau posé', () => {
+test('compte sans réglage : plus de secteur par défaut, drapeau posé', () => {
   for (const raw of [null, {}, { epingles: [] }]) {
     const r = net(raw);
-    assert.equal(ks(r)[0], 'secteur'); assert.equal(r.m1, true);
+    assert.ok(!ks(r).includes('secteur')); assert.equal(r.m1, true);
   }
   assert.deepEqual(ks(net(null)), ks(JSON.parse(JSON.stringify(win.V2.accueilWidgets.defaut()))));
 });
-test('anciennes cases cochées (sans wid) : secteur déjà en tête comme avant', () => {
+test('anciennes cases cochées (sans wid) : plus de secteur en tête', () => {
   const r = net({ widgets: { relance: false }, wordre: ['relance', 'infos', 'todo', 'semaine'] });
-  assert.deepEqual(ks(r), ['secteur', 'semaine']);
+  assert.deepEqual(ks(r), ['semaine']);
 });

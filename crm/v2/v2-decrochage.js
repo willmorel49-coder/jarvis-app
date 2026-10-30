@@ -350,6 +350,12 @@
     bloc: bloc, bandeau: bandeau, geste: geste,
     // « N à rappeler » pour l'accueil : null tant que ce n'est pas calculable (jamais un faux 0).
     compte: function () { var r = calcul(); return r && r.comparable ? r.nbARappeler : null; },
+    // 30/10/2026 — les premières officines à rappeler (celles de la liste de l'écran), pour la case Officines de l'accueil : null tant que ce n'est pas calculable.
+    liste: function (n) {
+      var r = calcul();
+      if (!r || !r.comparable || !r.lignes) return null;
+      return r.lignes.slice(0, n || 4).map(function (l) { var p = l.p || {}; return { pid: String(l.pid), nom: p.name || ('Officine ' + l.pid), ville: p.ville || '' }; });
+    },
     motifs: function (pid) { motifDe = pid; rafraichir(); },
     voir: function () { ouvert = !ouvert; rafraichir(); },
     nePlus: function () {

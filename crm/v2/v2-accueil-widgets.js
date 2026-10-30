@@ -93,7 +93,8 @@
     var ordre = (raw && Array.isArray(raw.wordre) && raw.wordre.length === B.length && raw.wordre.every(function (k, i, a) { return B.indexOf(k) >= 0 && a.indexOf(k) === i; })) ? raw.wordre : B;
     var on = (raw && raw.widgets && typeof raw.widgets === 'object') ? raw.widgets : {};
     /* Infos du matin et To do list sont au centre : ils ne se répètent pas dans la colonne (ils restent dans la bibliothèque) */
-    return [{ k: 'secteur', t: 'M', o: {} }].concat(ordre.filter(function (k) { return on[k] !== false && k !== 'infos' && k !== 'todo'; }).map(function (k) { return { k: k, t: 'M', o: {} }; }));
+    /* 30/10/2026 — « Mon secteur comparé à la moyenne Intégral » n'est plus posé par défaut : la case Officines de l'accueil porte déjà cette comparaison (une information, une fois). Il reste dans la bibliothèque. */
+    return ordre.filter(function (k) { return on[k] !== false && k !== 'infos' && k !== 'todo'; }).map(function (k) { return { k: k, t: 'M', o: {} }; });
   }
   function net(raw) {
     var w = raw && raw.wid && typeof raw.wid === 'object' && Array.isArray(raw.wid.items) ? raw.wid : null;
@@ -102,8 +103,8 @@
        de la colonne (sa place d'origine), sans toucher aux autres. Le drapeau `m1` vit dans `wid`, donc au même endroit que les réglages (navigateur ET base) :
        retiré ensuite, il ne revient pas. Plein (12 widgets) : rien n'est posé ni marqué, on réessaiera. Sans réglage enregistré, `ancien` le pose déjà. */
     var m1 = !!(w && w.m1);
-    if (w && !m1 && !src.some(function (x) { return x && x.k === 'secteur'; }) && src.filter(function (x) { return propre(x); }).length < MAX) { src = [{ k: 'secteur', t: 'M', o: {} }].concat(src); m1 = true; }
-    else if (!w || src.some(function (x) { return x && x.k === 'secteur'; })) m1 = true;
+    /* 30/10/2026 — la migration ci-dessus ne pose plus rien (la case Officines porte la comparaison) : le drapeau est simplement conservé, pour ne rien changer à ce qui est déjà enregistré. */
+    m1 = true;
     src.forEach(function (x) { var p = propre(x); if (p && out.length < MAX) out.push(p); });
     out.forEach(function (p) { if (p.id && !vus[p.id]) vus[p.id] = 1; else p.id = ''; });
     var n = 0; out.forEach(function (p) { var m = /^w(\d+)$/.exec(p.id); if (m) n = Math.max(n, +m[1]); });
@@ -373,10 +374,11 @@
   function bande() {
     var b = document.getElementById('pb-band'), page = document.querySelector('.u2-page'); if (!b) return;
     var mem = document.activeElement && b.contains(document.activeElement) ? [document.activeElement.getAttribute('data-pb'), document.activeElement.getAttribute('data-v')] : null;
-    if (!PS.on) { b.hidden = true; b.innerHTML = ''; if (page) { page.classList.remove('pb-on'); page.style.removeProperty('--pb-h'); } return; }
+    var hors = document.getElementById('u2-hors');   // 30/10/2026 : le rail vit sur <body> (u2-hors) : il lit lui aussi pb-on et --pb-h
+    if (!PS.on) { b.hidden = true; b.innerHTML = ''; [page, hors].forEach(function (x) { if (x) { x.classList.remove('pb-on'); x.style.removeProperty('--pb-h'); } }); return; }
     b.innerHTML = bandeHtml(); b.hidden = false;
     if (window.V2HAB) V2HAB.monter(b.querySelector('[data-hab-rangee]'), 'band');
-    if (page) { page.classList.add('pb-on'); page.style.setProperty('--pb-h', b.offsetHeight + 'px'); }
+    [page, hors].forEach(function (x) { if (x) { x.classList.add('pb-on'); x.style.setProperty('--pb-h', b.offsetHeight + 'px'); } });
     if (mem && mem[0]) {
       var n = b.querySelector('[data-pb="' + mem[0] + '"]' + (mem[1] ? '[data-v="' + mem[1] + '"]' : '')) || (/rz/.test(mem[0]) ? b.querySelector('[data-pb="rz"],[data-pb="rznon"]') : null);
       if (n) { try { n.focus({ preventScroll: true }); } catch (e) {} }
@@ -447,7 +449,7 @@
     if (DR && DR.on && e.key === 'Escape') { e.preventDefault(); dAnnuler(); }
   });
   window.addEventListener('hashchange', function () { if (PS.on) finir(true); });
-  window.addEventListener('resize', function () { var b = document.getElementById('pb-band'), pg = document.querySelector('.u2-page'); if (PS.on && b && pg) pg.style.setProperty('--pb-h', b.offsetHeight + 'px'); });
+  window.addEventListener('resize', function () { var b = document.getElementById('pb-band'), pg = document.querySelector('.u2-page'), ho = document.getElementById('u2-hors'); if (PS.on && b) { if (pg) pg.style.setProperty('--pb-h', b.offsetHeight + 'px'); if (ho) ho.style.setProperty('--pb-h', b.offsetHeight + 'px'); } });
   /* le bloc-notes garde ce qu'on tape à chaque frappe, sans nouveau rendu (au repos seulement : en mode réglage il est montré, pas modifiable) */
   document.addEventListener('input', function (e) {
     var t = e.target; if (!t || !t.matches || !t.matches('[data-aw-notes]') || !P()) return;
