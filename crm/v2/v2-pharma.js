@@ -19,7 +19,8 @@
   var collapsed = {};
   // Repli des sections secondaires de la fiche (Top 5, Best-sellers IP).
   // true = repliée. Par défaut repliées (cf. sectionOpen()).
-  var sectionCollapsed = {};
+  // 30/10/2026 (Will) : « CA par génériqueur » s'ouvre déplié, dans les deux vues ; un clic le replie.
+  var sectionCollapsed = { gnq: false };
   function sectionOpen(key) { return (key in sectionCollapsed) ? !sectionCollapsed[key] : false; }
   var searchQuery = '';
 
@@ -3986,7 +3987,7 @@
         (open ? listingBody : '') +
       '</div>';
     })() : '';
-    // CA par génériqueur (Biogaran, Zentiva, EG…) — table BDPM ; section repliable (inchangé)
+    // CA par génériqueur (Biogaran, Zentiva, EG…) — table BDPM ; section repliable, dépliée au départ (30/10/2026)
     var generiqueurSec = (function () {
       // 26/10/2026 — CA ramené à 12 mois : mêmes mois que « Sa moyenne / mois » (de sa 1re commande au dernier mois complet)
       // 27/10/2026 — génériques et biosimilaires dans deux cartes séparées (demande de Will)

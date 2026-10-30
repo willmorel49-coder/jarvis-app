@@ -284,7 +284,7 @@
       // Identité publique (pharmazon-data.js) + prix protégé (pharmazonprix),
       // même chemin que l'écran Offilog.
       pzLoading = true;
-      var sc = document.createElement('script'); sc.src = MOD_BASE + 'pharmazon-data.js?v=20261030b';
+      var sc = document.createElement('script'); sc.src = MOD_BASE + 'pharmazon-data.js?v=20261030gn';
       sc.onload = function () { pzLoading = false; cb(); };
       sc.onerror = function () { pzLoading = false; V2.protegeEchec.pharmazon = true; cb(); };
       document.head.appendChild(sc);
