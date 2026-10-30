@@ -39,7 +39,7 @@
 /* le halo de la page dérive lentement (un calque sans texte : transform + opacity) */
 @keyframes m1-halo{0%,100%{transform:translate3d(-50px,0,0);opacity:.55}50%{transform:translate3d(50px,0,0);opacity:1}}
 html.m1-mouv .u2-grille{overflow-x:clip}
-html.m1-mouv .u2-grille::before{left:-140px;right:-140px;top:-40px;height:680px;animation:m1-halo 9s ease-in-out infinite;will-change:transform,opacity}
+html.m1-mouv.m1-mouv.m1-lumiere .u2-grille::before{left:-140px;right:-140px;top:-40px;height:680px;animation:m1-halo 9s ease-in-out infinite;will-change:transform,opacity}
 /* le rythme des scènes d'avant, un cran plus vif (toujours lent : on voit la page respirer sans y toucher) ; Officines garde le sien, plus bas */
 .ac-i-halo{animation-duration:5s}
 .ac-i-rays{animation-duration:38s}
@@ -70,7 +70,7 @@ html.m1-mouv .ac-ent .ac-td-pt{animation:ac-pop .4s var(--ease) backwards;animat
 
 @media (prefers-reduced-motion:reduce){
   html.m1-mouv .u2-grille{overflow-x:clip}
-html.m1-mouv .u2-grille::before{left:-140px;right:-140px;top:-40px;height:680px;animation:none;will-change:auto}
+html.m1-mouv.m1-mouv.m1-lumiere .u2-grille::before{left:-140px;right:-140px;top:-40px;height:680px;animation:none;will-change:auto}
   .m1-bento .m1-c:active{transform:none}
   .m1-bento .m1-c:hover .m1-scn>svg,.m1-bento .m1-c:active .m1-scn>svg{transform:none}
 }
