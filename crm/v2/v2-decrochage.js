@@ -354,7 +354,7 @@
     liste: function (n) {
       var r = calcul();
       if (!r || !r.comparable || !r.lignes) return null;
-      return r.lignes.slice(0, n || 4).map(function (l) { var p = l.p || {}; return { pid: String(l.pid), nom: p.name || ('Officine ' + l.pid), ville: p.ville || '' }; });
+      return r.lignes.slice(0, n || 4).map(function (l) { var p = l.p || {}; return { pid: String(l.pid), nom: p.name || ('Officine ' + l.pid), ville: p.ville || '', pct: l.pct }; });
     },
     motifs: function (pid) { motifDe = pid; rafraichir(); },
     voir: function () { ouvert = !ouvert; rafraichir(); },

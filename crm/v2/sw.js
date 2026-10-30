@@ -10,7 +10,7 @@
 
    ⚠️ Bumper VER à chaque déploiement (aligné sur le ?v= de index.html).
    ═══════════════════════════════════════════════════════════════════ */
-var VER = '20261030poto';
+var VER = '20261030potom';
 var CACHE = 'jarvis-' + VER;
 
 /* 11/09/2026 (perf, phase 3) — le SOCLE est rangé dès l'installation : les
@@ -22,7 +22,7 @@ var CACHE = 'jarvis-' + VER;
    ⚠️ Liste à tenir alignée sur les <script>/<link> du socle de index.html. */
 var SOCLE = [
   './index.html',
-  'v2.css', 'v2-pieces.css', 'v2-accueil.css', 'v2-accueil-cinq.css', 'v2-accueil-widgets.css', 'v2-accueil-m1.css', 'v2-accueil-m1-lumiere.css', 'v2-accueil-m1-mouvement.css', 'v2-accueil-m1-bleu.css', 'v2-motion.css', 'v2-verriere.css', 'v2-hab.css',
+  'v2.css', 'v2-pieces.css', 'v2-accueil.css', 'v2-accueil-cinq.css', 'v2-accueil-widgets.css', 'v2-accueil-m1.css', 'v2-accueil-m1-lumiere.css', 'v2-accueil-m1-mouvement.css', 'v2-accueil-m1-bleu.css', 'v2-motion.css', 'v2-officines-m1.css', 'v2-verriere.css', 'v2-hab.css',
   'vendor/leaflet/leaflet.css', 'vendor/leaflet/MarkerCluster.css', 'vendor/leaflet/MarkerCluster.Default.css',
   'vendor/supabase/supabase-2.112.2.min.js',
   'v2-icons.js', 'groupement-alias.js', 'v2-hors-ligne.js', 'v2-boot.js', 'v2-profil.js',

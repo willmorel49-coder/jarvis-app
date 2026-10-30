@@ -1,0 +1,169 @@
+/* ═══════════════════════════════════════════════════════════════════
+   JARVIS · écran « Mes officines » dans la veine de l'accueil « maquette 1 » (30/10/2026). Hors OPSO.
+   Même matière que l'accueil : bandeau bleu éclairé, cases blanches à tache de lumière, ombres en couches, capsules, pastilles de signal.
+   Grille de cartes (.of-m1-cartes).
+   Mouvement : arrivée en 600 ms au plus (12 premiers éléments en cascade, chiffres qui comptent) ; au repos UNE scène, la lumière du bandeau
+   (transform + opacity, éléments sans texte, en pause hors écran et onglet caché). prefers-reduced-motion : tout s'affiche à l'arrêt.
+   Interdits tenus : aucun flou, backdrop-filter, mask, texte découpé ; aucune barre de couleur sur un seul côté ; aucune opacité sur du texte ; texte ≥ 13 px ; cibles ≥ 44 px.
+   ═══════════════════════════════════════════════════════════════════ */
+.v2-wrap.of-m1{--txt-2:#454B5C;max-width:1232px;position:relative;padding-top:16px}
+/* la lumière de la page : un halo bleu en haut à gauche, un halo clair en haut à droite (comme l'accueil), fixes */
+.of-m1::before{content:"";position:absolute;left:0;right:0;top:0;height:560px;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 520px 380px at 30% 0%,color-mix(in srgb,var(--ip-blue) 14%,transparent),transparent 70%),radial-gradient(ellipse 400px 360px at 74% 0%,color-mix(in srgb,var(--halo) 95%,transparent),transparent 72%)}
+.of-m1>*{position:relative;z-index:1}
+
+/* ═══ Le bandeau bleu : surtitre, grand titre, UNE phrase, actions, capsules à compteurs ═══ */
+.of-m1 .of-hd{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"t a" "c a";column-gap:24px;row-gap:10px;align-items:end;
+  isolation:isolate;overflow:hidden;padding:16px 24px 16px;margin:0 0 14px;border-radius:14px;color:#fff;
+  background:
+    radial-gradient(circle 280px at 90% 22%,color-mix(in srgb,var(--ip-blue) 56%,#fff),transparent 72%),
+    radial-gradient(ellipse 60% 150% at 3% -16%,color-mix(in srgb,var(--ip-blue) 88%,var(--ip-blue-d)),transparent 80%),
+    linear-gradient(160deg,color-mix(in srgb,var(--ip-blue) 74%,var(--ip-blue-d)) 0%,color-mix(in srgb,var(--ip-blue) 40%,var(--ip-blue-d)) 55%,color-mix(in srgb,var(--ip-blue) 52%,var(--ip-blue-d)) 100%);
+  box-shadow:0 1px 0 rgba(255,255,255,.34) inset,0 18px 34px -22px color-mix(in srgb,var(--ip-blue-d) 70%,transparent),0 2px 5px color-mix(in srgb,var(--ip-blue-d) 16%,transparent)}
+.of-hd-t{grid-area:t;min-width:0}
+.of-hd-a{grid-area:a;align-self:end}
+.of-caps{grid-area:c;min-width:0}
+.of-eye{margin:0 0 2px;font-size:13px;font-weight:700;line-height:1.3;letter-spacing:.06em;text-transform:uppercase;color:#DCE8FF}
+.of-h1{margin:0;font-size:clamp(26px,2.6vw,32px);line-height:1.1;letter-spacing:-.025em;font-weight:800;color:#fff}
+.of-phrase{margin:4px 0 0;font-size:15px;line-height:1.4;color:#E8F0FF;max-width:56ch}
+.of-phrase b{color:#fff;font-weight:800}
+.of-m1 .of-hd .v2-btn{height:40px;min-height:40px;background:#fff;border-color:#fff;color:var(--ip-ink);font-weight:700;box-shadow:0 10px 20px -12px rgba(0,16,80,.65)}
+.of-m1 .of-hd .v2-btn svg{color:var(--ip-blue)}
+.of-m1 .of-hd .v2-btn:hover{background:#fff;color:var(--ip-ink);border-color:#fff;transform:translateY(var(--mo-lift,-3px));box-shadow:0 16px 26px -14px rgba(0,16,80,.7)}
+/* capsules (Clients / Prospects) : plaque bleu nuit pour garder le blanc lisible sur la partie claire du fond, la capsule choisie passe en blanc */
+.of-m1 .of-caps .v2-segs{margin:0;gap:8px}
+.of-m1 .of-caps .v2-seg{height:40px;min-height:40px;padding:0 8px 0 16px;gap:10px;border-radius:999px;font-size:14px;font-weight:700;color:#fff;background:rgba(0,26,104,.58);border:1px solid rgba(255,255,255,.34);box-shadow:none}
+.of-m1 .of-caps .v2-seg:hover{background:rgba(0,26,104,.78);border-color:rgba(255,255,255,.6);box-shadow:none}
+.of-m1 .of-caps .v2-seg.on{color:var(--ip-blue-d);background:#fff;border-color:#fff;box-shadow:0 10px 18px -10px rgba(0,16,80,.6)}
+.of-m1 .of-caps .v2-seg:not(:has(.of-cnt)){padding-right:16px}
+.of-cnt{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;padding:0 8px;border-radius:999px;font-size:13px;font-weight:800;color:#fff;background:rgba(255,255,255,.22);font-variant-numeric:tabular-nums}
+.of-m1 .of-caps .v2-seg.on .of-cnt{color:var(--ip-blue-d);background:var(--halo)}
+/* la scène du repos : une lueur qui dérive derrière le texte, une croix de pharmacie dont le halo respire (aucun texte, transform + opacity seulement) */
+.of-lu{position:absolute;z-index:-1;right:-120px;top:-170px;width:480px;height:480px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(closest-side,rgba(255,255,255,.22),rgba(255,255,255,0));animation:of-lu 11s ease-in-out infinite;will-change:transform,opacity}
+@keyframes of-lu{0%,100%{transform:translate3d(60px,0,0) scale(.92);opacity:.55}50%{transform:translate3d(-70px,40px,0) scale(1.06);opacity:1}}
+.of-croix{position:absolute;z-index:-1;right:56px;top:14px;width:56px;height:56px;pointer-events:none}
+.of-croix i{position:absolute;border-radius:6px;background:linear-gradient(160deg,#6DF2B0,#1E9E6A);box-shadow:0 0 0 1px rgba(255,255,255,.25) inset,0 8px 16px -6px rgba(0,30,60,.5)}
+.of-croix i:nth-of-type(1){left:19px;top:0;width:18px;height:56px}
+.of-croix i:nth-of-type(2){left:0;top:19px;width:56px;height:18px}
+.of-halo{position:absolute;left:-52px;top:-52px;width:160px;height:160px;border-radius:50%;background:radial-gradient(closest-side,rgba(92,240,168,.55),rgba(92,240,168,0));animation:of-halo 6s ease-in-out infinite;will-change:transform,opacity}
+@keyframes of-halo{0%,100%{transform:scale(.86);opacity:.45}50%{transform:scale(1.08);opacity:1}}
+.of-hd.of-hors .of-lu,.of-hd.of-hors .of-halo,.of-hd.of-pause .of-lu,.of-hd.of-pause .of-halo{animation-play-state:paused}
+
+/* ═══ Onglets, filtres, recherche : une seule rangée ═══ */
+.of-rang{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:0 0 14px}
+.of-rang .v2-tabs{margin:0}
+.of-rang .of-bar{flex:1 1 420px;margin:0;flex-wrap:nowrap}
+.of-rang .of-bar .of-recherche{min-width:0}
+.of-m1 .v2-tabs{background:#fff;border-color:var(--line-strong);border-radius:14px;box-shadow:var(--sh-1),0 1px 0 #fff inset}
+.of-m1 .v2-tab.on{box-shadow:0 6px 14px -6px color-mix(in srgb,var(--ip-blue) 55%,transparent)}
+.of-m1 .of-bar{align-items:center;gap:12px;margin:0 0 14px}
+.of-m1 .of-bar .of-recherche{flex:1 1 300px;margin:0;border-radius:var(--r-btn);border-color:var(--line-strong);box-shadow:var(--sh-1),0 1px 0 #fff inset}
+.of-m1 .v2-select{border-color:var(--line-strong)}
+.of-m1 .of-n{font-size:14px;margin:0 2px 10px;color:var(--txt-2);min-height:0}
+
+/* ═══ À rappeler : même contenu, matière de l'accueil ═══ */
+.of-m1 .dr.v2-card{border-radius:12px;border:1px solid var(--line-strong);padding:18px 20px 14px;margin:0 0 18px;box-shadow:var(--sh-1),0 1px 0 #fff inset;
+  background:radial-gradient(360px 240px at 100% 0%,color-mix(in srgb,var(--ip-blue) 11%,transparent),transparent 72%),linear-gradient(180deg,#fff,var(--card))}
+.of-m1 .dr-n{background:var(--ip-blue-d);box-shadow:0 6px 12px -6px color-mix(in srgb,var(--ip-blue) 70%,transparent)}
+.of-m1 .dr-regle,.of-m1 .dr-date,.of-m1 .dr-pied,.of-m1 .dr-ct,.of-m1 .dr-ville{color:var(--txt-2)}
+
+/* ═══ Version 1 · Les cartes ═══ */
+.of-m1-cartes #v2-pharma-card{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;background:none;border:0;box-shadow:none;border-radius:0;padding:0;overflow:visible}
+.of-m1-cartes #v2-pharma-card>:not(.of-c){grid-column:1/-1}
+.of-c{position:relative;display:flex;flex-direction:column;gap:8px;min-width:0;padding:18px;border-radius:12px;border:1px solid var(--line-strong);color:inherit;text-decoration:none;cursor:pointer;
+  background:radial-gradient(300px 220px at 100% 0%,color-mix(in srgb,var(--ip-blue) 11%,transparent),transparent 72%),linear-gradient(180deg,#fff,var(--card));
+  box-shadow:var(--sh-1),0 1px 0 #fff inset;transition:transform .25s var(--ease),box-shadow .2s,border-color .2s}
+@media (hover:hover){.of-c:hover{transform:translateY(var(--mo-lift,-3px));box-shadow:var(--sh-2),0 18px 40px rgba(16,19,28,.06);border-color:color-mix(in srgb,var(--ip-blue) 40%,var(--line-strong))}}
+.of-c:active{transform:scale(.985);transition-duration:.12s}
+.of-c:focus-visible{outline:2px solid var(--ip-blue);outline-offset:2px}
+.of-c-top{display:flex;align-items:center;gap:8px;min-height:26px}
+.of-c-grp{flex:1 1 0;min-width:0;font-size:13px;color:var(--txt-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.of-c-top .m1-pill{flex:none}
+.of-c-top .m1-bad{margin-left:auto}
+.of-c-nom{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:17px;font-weight:800;letter-spacing:-.01em;line-height:1.25;color:var(--ip-ink)}
+.of-c-ville{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--txt-2)}
+.of-c-ville .v2-row-dot{flex:none}
+.of-c-ca{display:flex;flex-direction:column;margin-top:6px}
+.of-c-ca b{font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1.05;color:var(--ip-blue-d);font-variant-numeric:tabular-nums}
+.of-c-ca small{font-size:13px;color:var(--txt-2);margin-top:2px}
+.of-c-ca.of-c-nd{flex-direction:row;align-items:baseline;gap:8px;margin-top:2px}
+.of-c-ca.of-c-nd b{font-size:17px;font-weight:700;letter-spacing:0;color:var(--txt-2)}
+.of-c-nd + .of-c-met b{font-weight:600;color:var(--txt-2)}
+.of-c-met{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:auto;padding-top:12px;border-top:1px solid var(--line)}
+.of-c-met>span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.of-c-met i{font-style:normal;font-size:13px;color:var(--txt-2)}
+.of-c-met b{font-size:14px;font-weight:800;color:var(--ip-ink);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.of-c-met b.of-vert{color:var(--c-mint-txt)}
+.of-m1-cartes .of-suite{display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 0 4px}
+.of-m1-cartes .of-reste{font-size:14px;font-weight:600;color:var(--txt-2)}
+/* « À rappeler » en bandeau serré : le titre, « Voir les n » et une rangée de noms ; « Voir les n » déroule tout (règle, gestes, pied compris) */
+.of-m1-cartes .dr:not(.dr-ouvert){display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:12px;padding:14px 18px}
+.of-m1-cartes .dr:not(.dr-ouvert)>.dr-tete{grid-column:1;grid-row:1}
+.of-m1-cartes .dr:not(.dr-ouvert)>.dr-voir{grid-column:2;grid-row:1;width:auto;margin:0;padding:0 8px;border:0}
+.of-m1-cartes .dr:not(.dr-ouvert)>.dr-liste{grid-column:1/-1;grid-row:2;display:flex;flex-wrap:wrap;gap:8px;max-height:50px;overflow:hidden;margin:10px 0 0;padding-bottom:6px}
+.of-m1-cartes .dr:not(.dr-ouvert)>:is(.dr-regle,.dr-date,.dr-pied,.dr-pf){display:none}
+.of-m1-cartes .dr:not(.dr-ouvert) .dr-l{display:flex;align-items:center;min-height:44px;padding:0 14px;border:1px solid var(--line-strong);border-radius:999px;background:#fff;box-shadow:var(--sh-1)}
+.of-m1-cartes .dr:not(.dr-ouvert) .dr-l{position:relative;padding:0}
+.of-m1-cartes .dr:not(.dr-ouvert) .dr-l-t{align-items:center;min-height:44px;padding:0 14px}
+.of-m1-cartes .dr:not(.dr-ouvert) .dr-nom::after{content:"";position:absolute;left:0;top:0;right:0;bottom:0;border-radius:999px}   /* toute la pastille est le lien */
+.of-m1-cartes .dr:not(.dr-ouvert) .dr-l .dr-ph,.of-m1-cartes .dr:not(.dr-ouvert) .dr-l .dr-ct,.of-m1-cartes .dr:not(.dr-ouvert) .dr-l .dr-gestes,.of-m1-cartes .dr:not(.dr-ouvert) .dr-l .dr-tag{display:none}
+.of-m1-cartes .dr:not(.dr-ouvert) .dr-plus{display:flex}
+
+/* ═══ L'arrivée : 600 ms au plus, les 12 premiers seulement (délai 25 ms par rang, 260 ms par élément) ═══ */
+@keyframes of-monte{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:no-preference){
+  .of-ent .of-hd{animation:of-monte .3s var(--ease) both}
+  .of-ent .of-c,.of-ent .dr-l:nth-child(-n+12){animation:of-monte .26s var(--ease) both}
+  .of-ent #v2-pharma-card>:nth-child(1),.of-ent .dr-l:nth-child(1){animation-delay:60ms}
+  .of-ent #v2-pharma-card>:nth-child(2),.of-ent .dr-l:nth-child(2){animation-delay:85ms}
+  .of-ent #v2-pharma-card>:nth-child(3),.of-ent .dr-l:nth-child(3){animation-delay:110ms}
+  .of-ent #v2-pharma-card>:nth-child(4),.of-ent .dr-l:nth-child(4){animation-delay:135ms}
+  .of-ent #v2-pharma-card>:nth-child(5),.of-ent .dr-l:nth-child(5){animation-delay:160ms}
+  .of-ent #v2-pharma-card>:nth-child(6),.of-ent .dr-l:nth-child(6){animation-delay:185ms}
+  .of-ent #v2-pharma-card>:nth-child(7),.of-ent .dr-l:nth-child(7){animation-delay:210ms}
+  .of-ent #v2-pharma-card>:nth-child(8),.of-ent .dr-l:nth-child(8){animation-delay:235ms}
+  .of-ent #v2-pharma-card>:nth-child(9),.of-ent .dr-l:nth-child(9){animation-delay:260ms}
+  .of-ent #v2-pharma-card>:nth-child(10),.of-ent .dr-l:nth-child(10){animation-delay:285ms}
+  .of-ent #v2-pharma-card>:nth-child(11),.of-ent .dr-l:nth-child(11){animation-delay:310ms}
+  .of-ent #v2-pharma-card>:nth-child(12),.of-ent .dr-l:nth-child(12){animation-delay:335ms}
+}
+@media (prefers-reduced-motion:reduce){
+  .of-lu,.of-halo{animation:none}
+  .of-c:active{transform:none}
+}
+
+/* ═══ Écrans intermédiaires et téléphone ═══ */
+@media (max-width:1024px){
+  .of-m1-cartes #v2-pharma-card{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .of-m1 .of-hd{grid-template-columns:1fr;grid-template-areas:"t" "c" "a"}
+  .of-hd-a{align-self:start}
+}
+@media (max-width:760px){
+  .v2-wrap.of-m1{padding-top:16px}
+  .of-m1 .of-hd{padding:16px 14px 14px;row-gap:10px;background:
+    radial-gradient(circle 100px at 100% -6%,color-mix(in srgb,var(--ip-blue) 56%,#fff),transparent 72%),
+    radial-gradient(ellipse 60% 150% at 3% -16%,color-mix(in srgb,var(--ip-blue) 88%,var(--ip-blue-d)),transparent 80%),
+    linear-gradient(160deg,color-mix(in srgb,var(--ip-blue) 74%,var(--ip-blue-d)) 0%,color-mix(in srgb,var(--ip-blue) 40%,var(--ip-blue-d)) 55%,color-mix(in srgb,var(--ip-blue) 52%,var(--ip-blue-d)) 100%)}
+  .of-lu{width:200px;height:200px;right:-90px;top:-110px}
+  .of-croix{right:20px;top:20px;width:40px;height:40px;transform:scale(.72);transform-origin:100% 0}
+  .of-hd-a,.of-hd-a>div{width:100%}
+  .of-hd-a>div{display:grid!important;grid-template-columns:1fr 1fr;gap:8px!important}
+  .of-hd-a .v2-btn{width:100%;padding:0 8px;font-size:14px;gap:0}
+  .of-hd-a .v2-btn svg{display:none}
+  .of-m1 .of-caps .v2-segs{flex-wrap:wrap;gap:6px}
+  .of-m1 .of-caps .v2-seg{height:44px;min-height:44px;padding:0 6px 0 12px;gap:6px;font-size:14px;white-space:nowrap}
+  .of-m1 .of-hd .of-hd-a .v2-btn{height:44px;min-height:44px}
+  .of-h1{font-size:26px}
+  .of-rang .v2-tabs,.of-rang .of-bar{flex:1 1 100%}
+  .of-rang .of-bar{flex-wrap:wrap}
+  .of-m1-cartes #v2-pharma-card{grid-template-columns:1fr;gap:12px}
+  /* « À rappeler » replié, sans liste (aucun commercial choisi, chargement…) : le message passe sous le titre au lieu d'écraser la colonne du titre */
+  .of-m1-cartes .dr:not(.dr-ouvert)>:not(.dr-tete):not(.dr-voir):not(.dr-liste){grid-column:1/-1;margin:6px 0 0}
+  .of-c{padding:16px}
+  .of-c-ca b{font-size:32px}
+  .of-m1-cartes .of-suite{flex-direction:column;align-items:stretch}
+  .of-m1-cartes .of-suite .v2-btn{width:100%;min-height:48px;font-size:16px}
+  .of-m1 .of-bar .of-recherche{flex-basis:100%}
+  .of-m1 .dr.v2-card{padding:16px 14px 12px}
+}
