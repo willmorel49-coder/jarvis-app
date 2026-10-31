@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-30T13:07:36.868318+00:00",
+ "generated_at": "2026-10-31T12:44:46.670219+00:00",
  "source": "Journal officiel · open data DILA",
  "count": 5,
  "items": [
@@ -28,7 +28,7 @@
    ],
    "resume": null,
    "date_effet": "2026-10-31",
-   "a_venir": true
+   "a_venir": false
   },
   {
    "id": "JORFTEXT000054969604",
