@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=iyvavhnlhxksokkerkos&read_only=true"
+    },
+    "datagouv": { "type": "http", "url": "https://mcp.data.gouv.fr/mcp" }
+  }
+}
