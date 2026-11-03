@@ -13,7 +13,7 @@ as $$
   select exists (
     select 1 from auth.users u
     where u.id = auth.uid()
-      and lower(u.email) in ('william.morel@me.com',
+      and lower(u.email) in ('william.morel@me.com', 'alexandre.morel@me.com',
                              'claude-test@integralpharma.fr'))
 $$;
 revoke all on function public.jarvis_acces_etonnement() from public, anon;

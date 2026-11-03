@@ -14,7 +14,7 @@ as $$
     select 1 from auth.users u
     where u.id = auth.uid()
       and lower(u.email) in ('emmanuel.noblanc@normandiepharma.fr',
-                             'william.morel@me.com',
+                             'william.morel@me.com', 'alexandre.morel@me.com',
                              'pascale.prieto@integralpharma.fr',
                              'arthur.lehouerou@integralpharma.fr',
                              'guy.bourdon@integralpharma.fr',

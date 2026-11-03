@@ -8,7 +8,7 @@
 create or replace function public.jarvis_acces_securite()
 returns boolean language sql stable security definer set search_path to 'public'
 as $$
-  select coalesce((select lower(u.email) = 'william.morel@me.com'
+  select coalesce((select lower(u.email) in ('william.morel@me.com', 'alexandre.morel@me.com')
                    from auth.users u where u.id = auth.uid()), false)
 $$;
 revoke all on function public.jarvis_acces_securite() from public, anon;

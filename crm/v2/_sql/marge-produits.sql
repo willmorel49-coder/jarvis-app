@@ -11,7 +11,7 @@ as $$
   select exists (
     select 1 from auth.users u
     where u.id = auth.uid()
-      and lower(u.email) in ('william.morel@me.com',
+      and lower(u.email) in ('william.morel@me.com', 'alexandre.morel@me.com',
                              'karine.vezzaro@integralpharma.fr',
                              'pauline.soldevila@integralpharma.fr',
                              'pauline.guillaumin@integralpharma.fr',

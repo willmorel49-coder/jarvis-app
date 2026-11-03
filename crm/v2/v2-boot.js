@@ -37,7 +37,8 @@
   // 01/10/2026 — Will : « Pascale Prieto doit avoir accès à l'app OPSO » (direction régionale).
   // 13/10/2026 — Will : Arthur Le Houerou y entre avec son compte du CRM (même e-mail, même mot de passe).
   // 15/10/2026 — Will : Guy Bourdon y entre aussi, avec son compte du CRM.
-  V2.OPSO_ACCES = ['emmanuel.noblanc@normandiepharma.fr', 'william.morel@me.com', 'pascale.prieto@integralpharma.fr', 'arthur.lehouerou@integralpharma.fr', 'guy.bourdon@integralpharma.fr', 'claude-test@integralpharma.fr'];
+  // 03/11/2026 — Will : Alexandre Morel a le même accès que lui, partout.
+  V2.OPSO_ACCES = ['emmanuel.noblanc@normandiepharma.fr', 'william.morel@me.com', 'alexandre.morel@me.com', 'pascale.prieto@integralpharma.fr', 'arthur.lehouerou@integralpharma.fr', 'guy.bourdon@integralpharma.fr', 'claude-test@integralpharma.fr'];
   V2.estCommEscale = function (c) { c = String(c || ''); return c === 'Escale' || V2.ESCALE_COMMS.indexOf(c) >= 0; };
   // ventes du commercial filtré (ou toutes)
   // 11/09/2026 — perf : mémorisé sur (V2.sales, V2.commFilter). Le Pilotage
@@ -1385,7 +1386,7 @@
     // Bumpé 29/09/2026 : v2-offilog.js change (union catalogue OPSO, retrait
     // Pharmazon/achat côté OPSO) — sans ce bump, un appareil ayant déjà l'app
     // ouverte continuerait de servir l'ancien fichier depuis le cache.
-    var V = '?v=20261103cpza' + (window.V2_VER || '20260915g');
+    var V = '?v=20261103cpzb' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1958,7 +1959,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20261103cpza';
+    var V = '?v=20261103cpzb';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];

@@ -578,6 +578,7 @@
   // Fichier introuvable = retour sur cet écran. Une seule tentative par session : pas de boucle. L'ouverture à tous reste sa décision.
   var COMPTES_ESSAI = [
     'db78c6f2-2e3d-4489-9310-976c8c7441a2',   // Will
+    '505803ca-c08e-4bda-bfa6-d2ba3183f036',   // Alexandre Morel (même accès que Will, 03/11/2026)
     '7e972fa3-257d-4cb4-b80f-6e4117728871',   // Karine
     '26c207ed-7bad-451d-b686-c139c6e0fffa',   // Pauline S.
     '66c7778e-d0b1-4285-8d63-ba715181011f',   // Pauline G.
