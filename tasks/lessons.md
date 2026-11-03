@@ -1,5 +1,8 @@
 # Lessons — Intégral Pharma CRM
 
+> ⚠️ Fichier quasi figé depuis le 06/05/2026 : il ne contient PAS l'essentiel des leçons. Les vraies sources sont
+> `ROBOT.md` §8 (pièges du dépôt), la mémoire Claude de Will, `~/.claude/JOURNAL.md` et les skills (`~/.claude/skills/`).
+
 Format : `[date] | erreur observée | règle`
 
 ---
