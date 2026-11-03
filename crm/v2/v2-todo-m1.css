@@ -1,0 +1,187 @@
+/* ═══════════════════════════════════════════════════════════════════
+   JARVIS · écran « To do list » dans la veine de l'accueil « maquette 1 » (03/11/2026).
+   En-tête bleu éclairé (date, titre, UNE phrase calculée, capsules-onglets à compteurs), cases blanches à tache de lumière, ombres en couches.
+   Les tâches en retard et d'aujourd'hui DANS le bleu, en lignes blanches ; au repos, une lueur dérive derrière le texte.
+   Mouvement : arrivée en 900 ms au plus, une fois par ouverture de l'écran (.td-ent, retirée au premier geste et à 900 ms) ; un geste n'a que son propre retour
+   (la case qui se coche, la ligne qui se barre, en transitions : rien ne rejoue quand la page se redessine). prefers-reduced-motion : tout s'affiche à l'arrêt.
+   Interdits tenus : aucune des propriétés qui font figer Safari ; aucune barre de couleur sur un seul côté ; aucune opacité sur du texte ; texte ≥ 13 px ; cibles ≥ 44 px.
+   ═══════════════════════════════════════════════════════════════════ */
+.td-m1{--td-bleu:var(--ip-blue,#0050E6);--td-nuit:var(--ip-blue-d,#0034A0);--td-gris:#566074;--td-filet:#D7E0F0;
+  --td-ombre:0 1px 0 #fff inset,0 1px 2px rgba(15,20,32,.07),0 3px 8px rgba(15,20,32,.04),0 24px 44px -26px rgba(0,48,140,.42);
+  --td-ombre-l:0 1px 0 #fff inset,0 1px 2px rgba(15,20,32,.07),0 3px 8px rgba(15,20,32,.035),0 18px 30px -20px rgba(0,48,140,.44)}
+
+/* ═══ L'en-tête bleu ═══ */
+.td-m1 .td-hd{position:relative;isolation:isolate;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr);gap:18px;margin:2px 0 18px;padding:18px 16px 16px;border-radius:18px;color:#fff;
+  background:
+    radial-gradient(circle 150px at 92% 8%,color-mix(in srgb,var(--td-bleu) 60%,#fff),transparent 72%),
+    radial-gradient(ellipse 60% 150% at 3% -16%,color-mix(in srgb,var(--td-bleu) 88%,var(--td-nuit)),transparent 80%),
+    linear-gradient(160deg,color-mix(in srgb,var(--td-bleu) 74%,var(--td-nuit)) 0%,color-mix(in srgb,var(--td-bleu) 40%,var(--td-nuit)) 55%,color-mix(in srgb,var(--td-bleu) 52%,var(--td-nuit)) 100%);
+  box-shadow:0 1px 0 rgba(255,255,255,.34) inset,0 20px 36px -22px color-mix(in srgb,var(--td-nuit) 75%,transparent),0 2px 5px color-mix(in srgb,var(--td-nuit) 18%,transparent)}
+.td-hd-t{position:relative;min-width:0}
+.td-tt{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.td-tt>div{min-width:0}
+.td-m1 .td-eye{margin:0 0 4px;font:700 13px/1.3 var(--font);letter-spacing:.07em;text-transform:uppercase;color:#E3ECFF}
+.td-m1 .td-hd .td-h1{margin:0;font:800 clamp(32px,9vw,40px)/1.04 var(--font);letter-spacing:-.03em;color:#fff}
+.td-m1 .td-phrase{margin:10px 0 0;max-width:46ch;font:500 17px/1.4 var(--font);color:#fff}
+.td-m1 .td-phrase b{font-weight:800;color:#fff}
+.td-num,.td-cnt{font-variant-numeric:tabular-nums}
+.td-m1 .td-expl{margin:10px 0 0;max-width:64ch;font:500 14px/1.5 var(--font);color:#fff}
+/* l'avertissement protège d'une perte : en plaque, bien lisible */
+.td-m1 .td-local{display:inline-block;margin:4px 0 0;padding:3px 11px;border-radius:999px;background:rgba(0,26,104,.62);border:1px solid rgba(255,255,255,.34);color:#fff;font-weight:700}
+
+/* capsules = les trois onglets : plaque bleu nuit, compteur en pastille claire ; l'onglet ouvert passe en blanc */
+.td-m1 .td-caps{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0}
+.td-m1 .td-cap{display:inline-flex;align-items:center;gap:10px;min-height:44px;margin:0;padding:0 8px 0 16px;border-radius:999px;border:1px solid rgba(255,255,255,.36);background:rgba(0,26,104,.6);color:#fff;font:700 14px/1.15 var(--font);text-align:left;cursor:pointer;-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent;transition:background .18s,border-color .18s,color .18s,transform .18s,box-shadow .18s}
+.td-m1 .td-cap:not(:has(.td-cnt)){padding-right:16px}
+.td-m1 .td-cnt{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 9px;border-radius:999px;background:rgba(255,255,255,.24);color:#fff;font:800 14px/1 var(--font)}
+.td-m1 .td-cap.is-on{background:#fff;border-color:#fff;color:var(--td-nuit);box-shadow:0 10px 20px -12px rgba(0,16,80,.9),0 1px 0 #fff inset}
+.td-m1 .td-cap.is-on .td-cnt{background:var(--td-bleu);color:#fff}
+.td-m1 .td-cap:active{transform:scale(.97)}
+.td-m1 .td-cap:focus-visible{outline:3px solid #fff;outline-offset:2px}
+@media (hover:hover){.td-m1 .td-cap:not(.is-on):hover{background:rgba(0,26,104,.82);border-color:rgba(255,255,255,.7);transform:translateY(-2px)}}
+
+/* la scène du repos : une lueur qui dérive derrière le texte */
+.td-lu{position:absolute;z-index:-1;right:-170px;top:-170px;width:460px;height:460px;border-radius:50%;pointer-events:none;background:radial-gradient(closest-side,rgba(255,255,255,.16),rgba(255,255,255,0));animation:td-lu 11s ease-in-out infinite;will-change:transform,opacity}
+@keyframes td-lu{0%,100%{transform:translate3d(50px,0,0) scale(.92);opacity:.55}50%{transform:translate3d(-60px,40px,0) scale(1.04);opacity:1}}
+.td-hd.td-hors .td-lu,.td-hd.td-pause .td-lu{animation-play-state:paused}
+
+/* ═══ Les blocs : blanc à tache de lumière, ombres en couches ═══ */
+.td-m1 .v2-todo-add,.td-m1 .v2-todo-list,.td-m1>.v2-todo-empty,.td-m1 .v2-rl-add{border:1px solid var(--td-filet);border-radius:18px;
+  background:radial-gradient(340px 240px at 100% 0%,color-mix(in srgb,var(--td-bleu) 11%,transparent),transparent 72%),linear-gradient(180deg,#fff,#F7F9FD);box-shadow:var(--td-ombre)}
+.td-m1 .v2-todo-add{padding:16px 18px;margin-bottom:18px}
+.td-m1 .v2-todo-kind{border-color:var(--td-filet);background:linear-gradient(180deg,#fff,#F3F6FC);box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(15,20,32,.06);font-size:13.5px;transition:background .18s,border-color .18s,box-shadow .18s,transform .18s}
+.td-m1 .v2-todo-kind.is-on{background:radial-gradient(120% 140% at 20% 0%,#fff,var(--halo,#E9F0FF));border-color:var(--td-bleu);color:var(--td-nuit);box-shadow:0 0 0 1px var(--td-bleu) inset,0 8px 16px -10px rgba(0,48,140,.55)}
+.td-m1 .v2-todo-kind:active{transform:scale(.98)}
+.td-m1 .v2-todo-form label{font-size:13px;color:var(--td-gris)}
+.td-m1 .v2-todo-form input,.td-m1 .v2-todo-form select{border-color:var(--td-filet);box-shadow:0 1px 2px rgba(15,20,32,.05) inset}
+.td-m1 .v2-todo-hint{font-size:13px;line-height:1.45;color:var(--td-gris)}
+.td-m1 ::placeholder{color:#697086}
+/* À faire · Fait */
+.td-m1 .v2-todo-tools{margin-bottom:14px}
+.td-m1 .v2-todo-seg{padding:4px;border-radius:14px;border-color:var(--td-filet);background:linear-gradient(180deg,#EEF2FA,#F6F8FD);box-shadow:0 1px 2px rgba(15,20,32,.07) inset}
+.td-m1 .v2-todo-seg button{min-height:40px;padding:6px 16px;border-radius:10px;font-size:14px;color:var(--td-gris);transition:background .18s,color .18s,box-shadow .18s}
+.td-m1 .v2-todo-seg button.is-on{background:#fff;color:var(--td-nuit);box-shadow:0 1px 0 #fff inset,0 2px 6px rgba(15,20,32,.1),0 8px 14px -10px rgba(0,48,140,.5)}
+.td-m1 .v2-todo-sm{font-size:13px}
+
+/* ═══ La liste des tâches : des lignes blanches éclairées, chacune sa case ═══ */
+.td-m1 .td-taches{display:flex;flex-direction:column;gap:10px;padding:0;border:0;border-radius:0;background:none;box-shadow:none;overflow:visible}
+.td-m1 .td-taches .v2-todo-it,.td-m1 .td-taches .v2-todo-it:first-child{padding:14px 18px;border:1px solid var(--td-filet);border-radius:16px;
+  background:radial-gradient(300px 190px at 100% 0%,color-mix(in srgb,var(--td-bleu) 10%,transparent),transparent 72%),#fff;box-shadow:var(--td-ombre-l);transition:background .3s,box-shadow .25s,transform .25s}
+@media (hover:hover){.td-m1 .td-taches .v2-todo-it:hover{transform:translateY(-2px);box-shadow:0 1px 0 #fff inset,0 2px 4px rgba(15,20,32,.08),0 24px 36px -20px rgba(0,48,140,.5)}}
+.td-m1 .v2-todo-k{font-size:14.5px}
+.td-m1 .v2-todo-off{font-weight:700;color:var(--td-bleu)}
+/* échéance colorée en pastille, foncée d'un cran pour tenir 4,5:1 mesuré (la couleur arrive en style en ligne) */
+.td-m1 .v2-todo-b{display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:999px;font-size:13px;font-weight:800;background:#EEF1F6}
+.td-m1 .v2-todo-b[style*="--c-rose"]{color:#B0243F!important;background:#FCECEF}
+.td-m1 .v2-todo-b[style*="--c-amber"]{color:#8F5208!important;background:#FBF1E3}
+.td-m1 .v2-todo-b[style*="--c-mint"]{color:#12704A!important;background:#E6F4EC}
+.td-m1 .v2-todo-b[style*="--muted"]{color:var(--td-gris)!important}
+.td-m1 .v2-todo-rep{font-size:13px;color:var(--td-nuit)}
+.td-m1 .v2-todo-der{font-size:13px;color:var(--ip-ink-2)}
+.td-m1 .v2-todo-der svg{color:#12704A}
+.td-m1 .v2-todo-n{font-size:14px;color:var(--td-gris)}
+.td-m1 .v2-todo-n-libre{font-size:15px;color:var(--ip-ink)}
+
+/* la case qui se coche, la ligne qui se barre : des transitions, qui ne rejouent pas quand la page se redessine */
+.td-m1 .v2-todo-chk span{border-color:#AEB9CF;border-radius:8px;background:linear-gradient(180deg,#fff,#F3F6FC);box-shadow:0 1px 2px rgba(15,20,32,.1) inset;transition:background .22s,border-color .22s,transform .3s var(--ease),box-shadow .22s}
+.td-m1 .v2-todo-chk span::after{content:"";width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:translateY(-1px) rotate(45deg) scale(.2);opacity:0;transition:transform .3s var(--ease) .04s,opacity .16s}
+.td-m1 .v2-todo-chk input:checked+span{background:radial-gradient(120% 120% at 25% 15%,color-mix(in srgb,var(--td-bleu) 62%,#fff),var(--td-bleu) 52%,var(--td-nuit));border-color:var(--td-bleu);transform:scale(1.1);box-shadow:0 4px 10px -3px rgba(0,48,140,.55)}
+.td-m1 .v2-todo-chk input:checked+span::after{transform:translateY(-1px) rotate(45deg) scale(1);opacity:1}
+@media (hover:hover){.td-m1 .v2-todo-chk:hover input:not(:checked)+span{border-color:var(--td-bleu);transform:scale(1.06)}}
+/* le trait ne se pose QUE sur la ligne cochée : posé transparent partout, WebKit le peignait quand même sur le lien de l'officine */
+.td-m1 .v2-todo-l1{transition:color .3s}
+.td-m1 .v2-todo-it:has(.v2-todo-chk input:checked) .v2-todo-l1{text-decoration:line-through;text-decoration-thickness:2px;text-decoration-color:currentColor}
+/* la ligne faite : couleur atténuée mesurée, jamais d'opacité */
+.td-m1 .v2-todo-it.is-fait .v2-todo-l1{opacity:1}
+.td-m1 .v2-todo-it:has(.v2-todo-chk input:checked) .v2-todo-l1,.td-m1 .v2-todo-it:has(.v2-todo-chk input:checked) .v2-todo-k,.td-m1 .v2-todo-it:has(.v2-todo-chk input:checked) .v2-todo-off,.td-m1 .v2-todo-it:has(.v2-todo-chk input:checked) .v2-todo-k svg{color:var(--td-gris)}
+.td-m1 .td-taches .v2-todo-it:has(.v2-todo-chk input:checked){background:linear-gradient(180deg,#F7F9FD,#F1F4FA);box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(15,20,32,.06)}
+
+/* ═══ Les mails tout prêts, Mes modèles ═══ */
+.td-m1 .v2-todo-mh{margin:30px 0 12px}
+.td-m1 .v2-todo-mh h2{font-size:20px;color:var(--ip-ink)}
+.td-m1 .v2-todo-mh p{font-size:14px;color:var(--ip-ink-2)}
+.td-m1 .v2-todo-mail+.v2-todo-mail,.td-m1 .v2-todo-mod+.v2-todo-mod{border-top-color:var(--td-filet)}
+.td-m1 .v2-todo-mail summary{transition:background .18s}
+@media (hover:hover){.td-m1 .v2-todo-mail summary:hover{background:color-mix(in srgb,var(--halo,#E9F0FF) 60%,transparent)}}
+.td-m1 .v2-todo-ico{background:radial-gradient(120% 120% at 25% 15%,#fff,var(--halo,#E9F0FF));box-shadow:0 1px 0 #fff inset,0 2px 6px color-mix(in srgb,var(--td-bleu) 14%,transparent)}
+.td-m1 .v2-todo-mt small,.td-m1 .v2-todo-reg span,.td-m1 .v2-todo-mien,.td-m1 .v2-todo-obj span{font-size:13px}
+.td-m1 .v2-todo-corps{border-color:var(--td-filet);background:linear-gradient(180deg,#F7F9FD,#fff)}
+/* À relancer, Prospects chauds (dessinés par v2-relances.js) : mêmes cases, textes à 13 px au moins */
+.td-m1 .v2-rl-kpis span,.td-m1 .v2-rl-lieu,.td-m1 .v2-rl-sig,.td-m1 .v2-rl-sts button,.td-m1 .v2-rl-add-b label{font-size:13px}
+.td-m1 .v2-rl-intro p{font-size:14px}
+.td-m1 .v2-rl-hist b{color:#B0243F}
+
+/* ═══ Version « bandeau » : les tâches du jour DANS le bleu, en lignes blanches ═══ */
+.td-m1-bandeau .td-hd{background:
+    radial-gradient(circle 150px at 100% 0%,color-mix(in srgb,var(--td-bleu) 62%,#fff),transparent 72%),
+    radial-gradient(circle 300px at 30% 108%,color-mix(in srgb,var(--td-bleu) 58%,#fff),transparent 72%),
+    radial-gradient(ellipse 60% 150% at 3% -16%,color-mix(in srgb,var(--td-bleu) 88%,var(--td-nuit)),transparent 80%),
+    linear-gradient(160deg,color-mix(in srgb,var(--td-bleu) 74%,var(--td-nuit)) 0%,color-mix(in srgb,var(--td-bleu) 40%,var(--td-nuit)) 55%,color-mix(in srgb,var(--td-bleu) 52%,var(--td-nuit)) 100%)}
+.td-jour{position:relative;min-width:0}
+.td-m1 .td-jour-h{margin:0 0 10px;font:800 21px/1.15 var(--font);letter-spacing:-.02em;color:#fff}
+.td-jour-ls{display:grid;gap:8px}
+.td-m1 .td-jl,.td-m1 .td-jl:first-child{padding:12px 14px 12px 12px;border:0;border-radius:15px;background:radial-gradient(260px 160px at 100% 0%,color-mix(in srgb,var(--td-bleu) 9%,transparent),transparent 72%),#fff;box-shadow:0 1px 0 #fff inset,0 14px 22px -14px rgba(0,16,80,.8),0 1px 2px rgba(0,16,80,.25);transition:background .3s}
+.td-m1 .td-jl:has(.v2-todo-chk input:checked){background:#F1F4FA}
+/* replié : la ligne garde son geste principal (le mail) ; « Plus » déplie la précision, les documents et le rappel */
+.td-jl:not(.td-ouv) .v2-mic-wrap,.td-jl:not(.td-ouv) .v2-todo-c>.v2-todo-n-in,.td-jl:not(.td-ouv) .v2-todo-acts .v2-btn-ghost:not(.td-plus){display:none}
+.td-m1 .td-plus{gap:6px}
+.td-m1 .td-plus svg{transform:rotate(90deg);transition:transform .25s var(--ease)}
+.td-m1 .td-jl.td-ouv .td-plus svg{transform:rotate(-90deg)}
+.td-m1 .td-suite{margin:0 0 10px 4px;font:700 13px/1.3 var(--font);letter-spacing:.07em;text-transform:uppercase;color:var(--td-gris)}
+.td-m1 .td-jour-vide{margin:0;padding:13px 16px;border-radius:15px;background:rgba(0,26,104,.55);border:1px solid rgba(255,255,255,.3);color:#fff;font:600 15px/1.4 var(--font)}
+
+/* ═══ Ordinateur ═══ */
+@media (min-width:761px){
+  .td-m1 .td-hd{padding:26px 30px 26px;gap:22px;border-radius:22px}
+  .td-m1 .td-hd .td-h1{font-size:44px}
+  .td-m1 .td-phrase{font-size:19px;line-height:1.36}
+  .td-m1 .td-caps{margin-top:20px}
+  /* bandeau : toutes les lignes repliées sur le même gabarit (libellé et échéance à droite, puis mail et Plus dessous) */
+  .td-m1 .td-jl .v2-todo-c{flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px 14px}
+  .td-m1 .td-jl .v2-todo-l1{flex:1 1 100%;max-width:100%;min-width:0}
+  .td-m1 .td-jl .v2-todo-c>:not(.v2-todo-l1):not(.v2-todo-acts){flex:1 1 100%}
+  .td-m1 .td-jl .v2-todo-acts{flex:0 1 auto}
+  .td-m1 .td-jl .v2-todo-chk{margin-top:-6px}
+}
+/* ═══ Téléphone ═══ */
+@media (max-width:760px){
+  .td-m1 .td-cap{padding:0 6px 0 14px;gap:8px}
+  .td-m1 .td-cap:not(:has(.td-cnt)){padding-right:14px}
+  .td-m1 .td-phrase{margin-top:12px}
+  .td-m1 .v2-todo-seg button{min-height:44px}
+  .td-m1 .td-taches .v2-todo-it,.td-m1 .td-taches .v2-todo-it:first-child{padding:12px 14px 14px 12px}
+  .td-m1 .td-hd{background:
+    radial-gradient(circle 100px at 100% -6%,color-mix(in srgb,var(--td-bleu) 62%,#fff),transparent 72%),
+    radial-gradient(ellipse 60% 150% at 3% -16%,color-mix(in srgb,var(--td-bleu) 88%,var(--td-nuit)),transparent 80%),
+    linear-gradient(160deg,color-mix(in srgb,var(--td-bleu) 74%,var(--td-nuit)) 0%,color-mix(in srgb,var(--td-bleu) 40%,var(--td-nuit)) 55%,color-mix(in srgb,var(--td-bleu) 52%,var(--td-nuit)) 100%)}
+  .td-lu{width:300px;height:300px;right:-100px;top:-110px}
+  .td-m1 .td-jl,.td-m1 .td-jl:first-child{position:relative;padding:10px 12px 12px 10px}
+  /* au téléphone, « Plus » devient le chevron rond du coin : la ligne garde une seule rangée d'actions (le mail) */
+  .td-m1 .td-jl .v2-todo-l1>.v2-todo-k{flex:0 0 calc(100% - 46px);min-height:34px}
+  .td-m1 .td-jl .td-plus{position:absolute;top:0;right:0;width:44px;min-height:44px;padding:0;border-radius:50%;justify-content:center}
+  .td-m1 .td-jl .td-plus span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  /* au doigt : le nom de l'officine et « Annuler » prennent 44 px de haut sans bouger la ligne */
+  .td-m1 a.v2-todo-off{display:inline-block;padding:12px 0;margin:-12px 0}
+  .td-m1 .v2-todo-der button{min-height:44px;margin:-6px 0}
+}
+
+/* ═══ L'arrivée : 900 ms au plus, une fois par ouverture de l'écran ═══ */
+@keyframes td-monte{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:no-preference){
+  .td-ent .td-hd{animation:td-monte .32s var(--ease,ease-out) both;animation-delay:var(--td-sk,0ms)}
+  .td-ent .td-cap,.td-ent .td-local{animation:td-monte .3s var(--ease,ease-out) both}
+  .td-ent .td-cap:nth-child(1){animation-delay:calc(110ms + var(--td-sk,0ms))}.td-ent .td-cap:nth-child(2){animation-delay:calc(160ms + var(--td-sk,0ms))}.td-ent .td-cap:nth-child(3){animation-delay:calc(210ms + var(--td-sk,0ms))}
+  .td-ent .td-local{animation-delay:calc(90ms + var(--td-sk,0ms))}
+  .td-ent .td-jl,.td-ent .td-jour-vide{animation:td-monte .3s var(--ease,ease-out) both;animation-delay:calc(240ms + var(--td-sk,0ms))}
+  .td-ent .td-jl:nth-child(2){animation-delay:calc(290ms + var(--td-sk,0ms))}.td-ent .td-jl:nth-child(3){animation-delay:calc(340ms + var(--td-sk,0ms))}.td-ent .td-jl:nth-child(n+4){animation-delay:calc(390ms + var(--td-sk,0ms))}
+  .td-ent>.v2-todo-ajbtn,.td-ent>.v2-todo-add,.td-ent>.v2-todo-tools{animation:td-monte .3s var(--ease,ease-out) both;animation-delay:calc(260ms + var(--td-sk,0ms))}
+  .td-ent>.v2-todo-tools,.td-ent>.td-suite{animation:td-monte .3s var(--ease,ease-out) both;animation-delay:calc(320ms + var(--td-sk,0ms))}
+  .td-ent .td-taches .v2-todo-it:nth-child(-n+5){animation:td-monte .28s var(--ease,ease-out) both}
+  .td-ent .td-taches .v2-todo-it:nth-child(1){animation-delay:calc(380ms + var(--td-sk,0ms))}.td-ent .td-taches .v2-todo-it:nth-child(2){animation-delay:calc(430ms + var(--td-sk,0ms))}.td-ent .td-taches .v2-todo-it:nth-child(3){animation-delay:calc(480ms + var(--td-sk,0ms))}
+  .td-ent .td-taches .v2-todo-it:nth-child(4){animation-delay:calc(530ms + var(--td-sk,0ms))}.td-ent .td-taches .v2-todo-it:nth-child(5){animation-delay:calc(580ms + var(--td-sk,0ms))}
+  .td-ent>.v2-todo-empty,.td-ent>.v2-todo-mh,.td-ent>.v2-todo-list:not(.td-taches){animation:td-monte .3s var(--ease,ease-out) both;animation-delay:calc(560ms + var(--td-sk,0ms))}
+}
+@media (prefers-reduced-motion:reduce){
+  .td-lu{animation:none}
+  .td-m1 .td-cap,.td-m1 .td-taches .v2-todo-it,.td-m1 .v2-todo-chk span,.td-m1 .v2-todo-chk span::after,.td-m1 .v2-todo-l1,.td-m1 .td-plus svg{transition-duration:.01ms}
+}

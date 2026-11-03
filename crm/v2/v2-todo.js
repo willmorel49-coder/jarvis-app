@@ -38,6 +38,9 @@
   var ORDER = ['rdv', 'merci', 'compte', 'libre'];
 
   var st = { items: null, backend: 'local', filtre: 'afaire', chargement: null, kind: 'rdv', onglet: 'taches', formOuvert: false };
+  // 03/11/2026 — écran « plus clair » (v2-todo-m1.css) : en-tête bleu, les tâches du jour DANS le bleu
+  // L'arrivée ne joue qu'une fois par ouverture de l'écran (réarmée en quittant #todo) ; `plus` = lignes du bandeau dépliées
+  var TD = { vu: false, t: 0, stop: false, obs: null, plus: {}, coche: {} };
 
   function sb() { return (V2.sb && V2.sb()) || null; }
   function scope() { return { st: 'groupement', sid: '__todo_' + ((V2.user && V2.user.id) || 'local') + '__' }; }
@@ -530,16 +533,20 @@
 
   // ── PAGE ────────────────────────────────────────────────────────
   function rendre() { if (V2.route && V2.route.name === 'todo' && V2.render) V2.render(); }
-  function ligne(it) {
+  function faitAuj(it) { return !!(it.rep && !it.fait && it.dernier && isoDe(new Date(it.dernier)) === aujIso() && isoOk(it.prec)); }
+  // `jour` : ligne du bandeau — la précision, les documents et le rappel se déplient sous « Plus » (ouverts d'office quand une précision existe)
+  function ligne(it, jour) {
     var K = KINDS[it.k], b = badge(it);
+    var ouv = jour && (TD.plus[it.id] != null ? TD.plus[it.id] : !!(it.note && it.k !== 'libre'));
     var qui = it.nom ? (it.pid ? '<a class="v2-todo-off" onclick="V2.go(\'pharma\',\'' + esc(it.pid) + '\')">' + esc(it.nom) + '</a>' : '<span class="v2-todo-off">' + esc(it.nom) + '</span>') : '';
     var actes = it.fait ? '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.retirer(\'' + it.id + '\')">Retirer de la liste</button>'
       : ((K.mail || it.nom ? '<button class="v2-btn v2-btn-primary v2-todo-sm" onclick="V2.todo.mail(\'' + it.id + '\')">' + ICO('fiche', 14, 2) + esc(K.mail || 'Écrire un mail') + '</button>' : '') +
          (K.docs && it.pid ? '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.docs(\'' + it.id + '\')">' + ICO('download', 14, 2) + esc(K.docs) + '</button>' : '') +
-         '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.rappel(\'' + it.id + '\')">' + ICO('cal', 14, 2) + (it.pour || it.rep ? 'Modifier le rappel' : 'Ajouter un rappel') + '</button>');
-    var der = it.rep && !it.fait && it.dernier && isoDe(new Date(it.dernier)) === aujIso() && isoOk(it.prec);
-    return '<div class="v2-todo-it' + (it.fait ? ' is-fait' : '') + '">' +
-      '<label class="v2-todo-chk"><input type="checkbox"' + (it.fait ? ' checked' : '') + ' onchange="V2.todo.cocher(\'' + it.id + '\',this.checked)" aria-label="' + (it.fait ? 'Remettre à faire' : it.rep ? 'Fait pour cette fois' : 'Marquer comme fait') + '"><span></span></label>' +
+         '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.rappel(\'' + it.id + '\')">' + ICO('cal', 14, 2) + (it.pour || it.rep ? 'Modifier le rappel' : 'Ajouter un rappel') + '</button>' +
+         (jour ? '<button type="button" class="v2-btn v2-btn-ghost v2-todo-sm td-plus" aria-expanded="' + ouv + '" onclick="V2.todo.plus(this,\'' + it.id + '\')">' + ICO('chev', 14, 2) + '<span>' + (ouv ? 'Replier' : 'Plus') + '</span></button>' : ''));
+    var der = faitAuj(it);
+    return '<div class="v2-todo-it' + (it.fait ? ' is-fait' : '') + (jour ? ' td-jl' + (ouv ? ' td-ouv' : '') : '') + '">' +
+      '<label class="v2-todo-chk"><input type="checkbox"' + (it.fait ? ' checked' : '') + ' onchange="V2.todo.cocherVu(this,\'' + it.id + '\')" aria-label="' + (it.fait ? 'Remettre à faire' : it.rep ? 'Fait pour cette fois' : 'Marquer comme fait') + '"><span></span></label>' +
       '<div class="v2-todo-c">' +
         '<div class="v2-todo-l1"><span class="v2-todo-k">' + ICO(K.ico, 14, 2) + esc(K.l) + '</span>' + qui +
           (it.rep && !it.fait ? '<span class="v2-todo-rep">↻ ' + esc(REP[it.rep]) + '</span>' : '') +
@@ -916,6 +923,20 @@
   V2.todo.reglagesMail = function () { return reglages(); };
   // Onglets de la page : mes tâches, les relances prospects, les prospects chauds (16/10/2026).
   V2.todo.onglet = function (o) { st.onglet = o; if (o !== 'taches' && V2.relances && V2.relances.rafraichir) V2.relances.rafraichir(); rendre(); };
+  // La case se coche et la ligne se barre sous les yeux, puis V2.todo.cocher (inchangée) range la ligne ; un second clic dans l'intervalle annule.
+  V2.todo.cocherVu = function (el, id) {
+    var f = el.checked;
+    if (TD.coche[id]) { clearTimeout(TD.coche[id]); delete TD.coche[id]; if (f === el.defaultChecked) return; }
+    var calme = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    TD.coche[id] = setTimeout(function () { delete TD.coche[id]; V2.todo.cocher(id, f); }, calme ? 0 : 340);
+  };
+  // Bandeau : « Plus » déplie la précision, les documents et le rappel d'une ligne, sans redessiner la page.
+  V2.todo.plus = function (b, id) {
+    var l = b.closest('.v2-todo-it'), o = !(l && l.classList.contains('td-ouv'));
+    TD.plus[id] = o; if (!l) return;
+    l.classList.toggle('td-ouv', o); b.setAttribute('aria-expanded', o);
+    var s = b.querySelector('span'); if (s) s.textContent = o ? 'Replier' : 'Plus';
+  };
   V2.todo.copierModele = function (k) {
     var x = modele(k), t = 'Objet : ' + x.objet + '\n\n' + x.corps;
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -929,28 +950,35 @@
       ensureCss();
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) : '';
       if (st.items == null) {
-        root.innerHTML = top + '<div class="v2-wrap narrow"><div class="v2-todo-hero"><h1>To do list</h1><p>Chargement…</p></div></div>';
+        root.innerHTML = top + '<div class="v2-wrap narrow">' + tdOuvre() + tdEntete('Chargement…', '', '', '') + '</div></div>';
+        tdApres(root);
         charger().then(rendre);
         return;
       }
       var ouv = trier(V2.todo.ouverts()), faits = (st.items || []).filter(function (x) { return x.fait; })
         .sort(function (a, b) { return String(b.faitLe).localeCompare(String(a.faitLe)); });
-      var liste = st.filtre === 'fait' ? faits : ouv;
+      // Bandeau : les tâches en retard, d'aujourd'hui, et la répétée cochée aujourd'hui (son « Annuler » reste où on l'a cochée) ; chacune n'apparaît qu'une fois.
+      var jour = ouv.filter(function (x) { var j = joursAvant(x); return (j != null && j <= 0) || faitAuj(x); });
+      var liste = st.filtre === 'fait' ? faits : ouv.filter(function (x) { return jour.indexOf(x) < 0; });
       // 16/10, Will : « dans la to do list, un truc relance et un truc prospects chauds ».
       var R = V2.relances, ong = R ? st.onglet : 'taches', nR = R ? R.nbARelancer() : null, nC = R ? R.nbChauds() : null;
-      var onglets = R ? '<div class="v2-todo-tabs" role="tablist">' + [['taches', 'Tâches', ouv.length], ['relances', 'À relancer', nR], ['chauds', 'Prospects chauds', nC]].map(function (o) {
-        return '<button role="tab" aria-selected="' + (ong === o[0]) + '" class="' + (ong === o[0] ? 'is-on' : '') + '" onclick="V2.todo.onglet(\'' + o[0] + '\')">' + o[1] + (o[2] != null ? ' · ' + o[2] : '') + '</button>';
+      // Les onglets SONT les capsules à compteurs de l'en-tête bleu.
+      var onglets = R ? '<div class="td-caps" role="tablist" aria-label="Ma liste">' + [['taches', 'Tâches', ouv.length], ['relances', 'À relancer', nR], ['chauds', 'Prospects chauds', nC]].map(function (o) {
+        return '<button type="button" role="tab" aria-selected="' + (ong === o[0]) + '" class="td-cap' + (ong === o[0] ? ' is-on' : '') + '" onclick="V2.todo.onglet(\'' + o[0] + '\')"><span>' + o[1] + '</span>' + (o[2] != null ? '<b class="td-cnt">' + o[2] + '</b>' : '') + '</button>';
       }).join('') + '</div>' : '';
+      var phrase = tdPhrase(ong, ouv, faits, nR, nC);
       if (ong !== 'taches') {
-        root.innerHTML = top + '<div class="v2-wrap narrow"><div class="v2-todo-hero"><h1>To do list</h1></div>' + onglets + R.html(ong) + '</div>';
+        root.innerHTML = top + '<div class="v2-wrap narrow">' + tdOuvre() + tdEntete(phrase, '', onglets, '') + R.html(ong) + '</div></div>';
+        tdApres(root);
         return;
       }
+      var bandeau = ouv.length ? '<section class="td-jour" aria-labelledby="td-jour-h"><h2 class="td-jour-h" id="td-jour-h">Pour aujourd\'hui</h2>' +
+        (jour.length ? '<div class="td-jour-ls">' + jour.map(function (it) { return ligne(it, true); }).join('') + '</div>' : '<p class="td-jour-vide">Rien d\'urgent aujourd\'hui : toute la liste est juste dessous.</p>') + '</section>' : '';
       var noms = (V2.pharmacies || []).map(function (p) { return '<option value="' + esc(p.name || '') + '">'; }).join('');
       root.innerHTML = top +
-        '<div class="v2-wrap narrow">' +
-          '<div class="v2-todo-hero"><h1>To do list</h1>' +
-            '<p>Demandes de rendez-vous à envoyer, suites de rendez-vous, ouvertures de compte, et tout le reste. Personnelle : chacun voit la sienne.' +
-            (st.backend === 'local' ? ' <b>Gardée sur cet appareil seulement.</b>' : '') + '</p></div>' + onglets +
+        '<div class="v2-wrap narrow">' + tdOuvre() +
+          tdEntete(phrase, '<p class="td-expl">Demandes de rendez-vous à envoyer, suites de rendez-vous, ouvertures de compte, et tout le reste. Personnelle : chacun voit la sienne.' +
+            (st.backend === 'local' ? ' <b class="td-local">Gardée sur cet appareil seulement.</b>' : '') + '</p>', onglets, bandeau) +
           (st.formOuvert ? '' : '<button class="v2-btn v2-btn-primary v2-todo-ajbtn" onclick="V2.todo.ouvrirForm()">' + ICO('plus', 16, 2) + 'Ajouter une tâche</button>') +
           '<div class="v2-card v2-todo-add' + (st.formOuvert ? '' : ' is-ferme') + '">' +
             '<div class="v2-todo-fh"><button class="v2-btn v2-btn-ghost v2-todo-fermer" onclick="V2.todo.fermerForm()">Fermer</button></div>' +
@@ -970,20 +998,73 @@
           '<div class="v2-todo-tools"><div class="v2-todo-seg">' +
             '<button class="' + (st.filtre !== 'fait' ? 'is-on' : '') + '" onclick="V2.todo.filtrer(\'afaire\')">À faire · ' + ouv.length + '</button>' +
             '<button class="' + (st.filtre === 'fait' ? 'is-on' : '') + '" onclick="V2.todo.filtrer(\'fait\')">Fait · ' + faits.length + '</button></div></div>' +
-          (liste.length ? '<div class="v2-card v2-todo-list">' + liste.map(ligne).join('') + '</div>'
-            : '<div class="v2-card v2-todo-empty">' + (st.filtre === 'fait' ? 'Rien de coché pour l\'instant.' : 'Rien à faire pour l\'instant — la liste est vide.') + '</div>') +
+          (jour.length && st.filtre !== 'fait' && liste.length ? '<p class="td-suite">Ensuite</p>' : '') +
+          (liste.length ? '<div class="v2-card v2-todo-list td-taches">' + liste.map(function (it) { return ligne(it); }).join('') + '</div>'
+            : '<div class="v2-card v2-todo-empty">' + (st.filtre === 'fait' ? 'Rien de coché pour l\'instant.' : jour.length ? 'Rien d\'autre à faire pour l\'instant.' : 'Rien à faire pour l\'instant — la liste est vide.') + '</div>') +
           mailsPrets() +
-        '</div>';
+        '</div></div>';
+      tdApres(root);
     }
   };
+
+  // ── L'en-tête bleu (veine « maquette 1 », recette d'Infos du jour) : date, titre, UNE phrase calculée, capsules-onglets ──
+  function tdN(n) { return '<b class="td-num">' + n + '</b>'; }
+  function tdPl(n, un, plus) { return tdN(n) + ' ' + (n > 1 ? plus : un); }
+  // Faite des nombres que la page affiche dessous ; jamais « 0 tâche ».
+  function tdPhrase(ong, ouv, faits, nR, nC) {
+    if (ong === 'relances') return nR == null ? 'Le suivi de vos envois aux prospects se prépare…' : nR ? tdPl(nR, 'prospect à relancer', 'prospects à relancer') + ' maintenant.' : 'Aucune relance à faire maintenant.';
+    if (ong === 'chauds') return nC == null ? 'Le suivi de vos prospects se prépare…' : nC ? tdPl(nC, 'prospect chaud', 'prospects chauds') + ' : le moment de les pousser à tester.' : 'Aucun prospect chaud pour l\'instant.';
+    if (!ouv.length) return faits.length ? 'Rien à faire pour l\'instant : tout est coché.' : 'Rien à faire pour l\'instant. Ajoutez votre première tâche.';
+    var j = 0, r = 0;
+    ouv.forEach(function (x) { var d = joursAvant(x); if (d === 0) j++; else if (d != null && d < 0) r++; });
+    if (!j && !r) return 'Rien d\'urgent aujourd\'hui, ' + tdPl(ouv.length, 'tâche', 'tâches') + ' à faire en tout.';
+    return (j ? tdPl(j, 'tâche pour aujourd\'hui', 'tâches pour aujourd\'hui') + (r ? ', ' + tdN(r) + ' en retard' : '') : tdPl(r, 'tâche en retard', 'tâches en retard')) + ', ' + tdN(ouv.length) + ' à faire en tout.';
+  }
+  function tdOuvre() {
+    if (!TD.vu) { TD.t = Date.now(); TD.stop = false; }
+    var arr = !TD.vu || (!TD.stop && Date.now() - TD.t < 900), sk = Date.now() - TD.t;   // un second dessin dans les 900 ms poursuit l'arrivée là où elle en est ; après un geste, plus jamais
+    TD.vu = true;
+    return '<div class="td-m1 td-m1-bandeau' + (arr ? ' td-ent' : '') + '"' + (arr && sk > 30 ? ' style="--td-sk:-' + sk + 'ms"' : '') + '>';
+  }
+  function tdEntete(phrase, expl, caps, dans) {
+    var d = new Date(), date = JOURS[d.getDay()] + ' ' + dateFr(aujIso());
+    return '<header class="td-hd"><span class="td-lu" aria-hidden="true"></span>' +
+      '<div class="td-hd-t"><div class="td-tt"><div><p class="td-eye">' + esc(date) + '</p><h1 class="td-h1">To do list</h1></div></div>' +
+      '<p class="td-phrase">' + phrase + '</p>' + expl + caps + '</div>' + dans + '</header>';
+  }
+  function tdStop() { TD.stop = true; var r = document.querySelector('.td-ent'); if (r) r.classList.remove('td-ent'); }
+  function tdApres(root) {   // après le dessin : la scène en pause hors écran ; à l'arrivée, les compteurs comptent
+    var r = root.querySelector('.td-m1'), h = r && r.querySelector('.td-hd'); if (!r || !h) return;
+    if (TD.obs) TD.obs.disconnect();
+    if (window.IntersectionObserver) { TD.obs = new IntersectionObserver(function (es) { es.forEach(function (x) { h.classList.toggle('td-hors', !x.isIntersecting); }); }); TD.obs.observe(h); }
+    if (document.hidden) h.classList.add('td-pause');
+    if (!r.classList.contains('td-ent')) return;
+    var calme = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!calme) [].slice.call(r.querySelectorAll('.td-num,.td-cnt')).forEach(function (el) {
+      var fin = +el.textContent, t0 = 0, sk = Date.now() - TD.t; if (!(fin > 0)) return;
+      el.textContent = '0';
+      requestAnimationFrame(function pas(ts) {
+        t0 = t0 || ts - sk; var p = Math.min((ts - t0) / 600, 1);
+        if (TD.stop || p >= 1) { el.textContent = fin; return; }
+        el.textContent = Math.round(fin * (1 - Math.pow(1 - p, 3))); requestAnimationFrame(pas);
+      });
+    });
+    setTimeout(function () { r.classList.remove('td-ent'); }, Math.max(0, 900 - (Date.now() - TD.t)));
+  }
+  if (!V2._tdEcoute) {
+    V2._tdEcoute = true;
+    // Le premier geste arrête l'arrivée (la page entière se redessine à chaque geste : rien ne doit rejouer).
+    document.addEventListener('pointerdown', tdStop, true);
+    document.addEventListener('keydown', tdStop, true);
+    // On lit l'adresse elle-même, quel que soit l'ordre des écouteurs (V2.route peut dater encore de l'écran quitté).
+    window.addEventListener('hashchange', function () { if ((location.hash || '').replace(/^#/, '').split('/')[0] !== 'todo') { TD.vu = false; TD.stop = false; } });
+    document.addEventListener('visibilitychange', function () { var h = document.querySelector('.td-hd'); if (h) h.classList.toggle('td-pause', document.hidden); });
+  }
 
   function ensureCss() {
     if (document.getElementById('v2-todo-css')) return;
     var s = document.createElement('style'); s.id = 'v2-todo-css';
     s.textContent = [
-      '.v2-todo-hero{margin:8px 0 18px}',
-      '.v2-todo-hero h1{font-size:clamp(24px,4vw,32px);font-weight:800;letter-spacing:-.03em;margin:0 0 6px}',
-      '.v2-todo-hero p{color:var(--muted);font-size:14px;max-width:60ch;margin:0;line-height:1.5}',
       '.v2-todo-add{padding:16px 18px;margin-bottom:16px}',
       '.v2-todo-kinds{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}',
       '.v2-todo-kind{display:flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--surf-sunken,#F4F6FA);font:inherit;font-size:12.5px;font-weight:700;color:var(--ip-ink);cursor:pointer;transition:background .15s var(--ease),border-color .15s var(--ease)}',
@@ -1000,9 +1081,6 @@
       '.v2-todo-seg{display:inline-flex;gap:2px;padding:3px;background:var(--surf-sunken,#F4F6FA);border:1px solid var(--line);border-radius:10px}',
       '.v2-todo-seg button{border:none;background:none;min-height:38px;padding:6px 14px;border-radius:7px;font:inherit;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer}',
       '.v2-todo-seg button.is-on{background:#fff;color:var(--ip-ink);box-shadow:0 1px 3px rgba(15,20,32,.12)}',
-      '.v2-todo-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:3px;margin:0 0 16px;background:var(--surf-sunken,#F4F6FA);border:1px solid var(--line);border-radius:12px}',
-      '.v2-todo-tabs button{border:none;background:none;min-height:44px;padding:6px 8px;border-radius:9px;font:inherit;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;line-height:1.2}',
-      '.v2-todo-tabs button.is-on{background:#fff;color:var(--ip-ink);box-shadow:0 1px 3px rgba(15,20,32,.12)}',
       '.v2-todo-list{padding:4px 0}',
       '.v2-todo-empty{padding:28px 18px;text-align:center;color:var(--muted);font-size:14px}',
       '.v2-todo-it{display:flex;gap:12px;padding:14px 18px;border-top:1px solid var(--line)}',
