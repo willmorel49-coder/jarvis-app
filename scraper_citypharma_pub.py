@@ -5,7 +5,7 @@ robots.txt lu le 30/10/2026 : « User-Agent: * / Allow: / » — rien d'interdit
 mécanisme de la liste de produits du site lui-même (la même réponse JSON que celle que son
 propre écran de liste demande), avec `curl` et son identité par défaut : aucun faux navigateur.
 Une seule requête à la fois, 3 s entre deux, au plus 1 500 requêtes par lancement.
-Premier code 403, 429 ou 503 (ou page qui n'est pas du JSON) : arrêt immédiat et définitif,
+Premier code 403, 429 ou 503 (ou page qui n'est pas du JSON), ou deux réponses de plus de 15 s de suite : arrêt immédiat,
 aucun nouvel essai, aucune autre identité, aucun contournement.
 
   python3 scraper_citypharma_pub.py <sortie.jsonl>     (reprend là où il s'est arrêté)
@@ -22,12 +22,18 @@ DELAY = 3.0
 MAX_REQ = 1500
 
 
+LENT = 15.0  # 03/11/2026 : le 30/10 le site est passé de ~5 s à ~70 s par requête. Deux réponses lentes de suite -> arrêt.
+lentes = [0]
+
+
 def demander(url):
-    """Une requête `curl` par défaut. Rend (code HTTP, corps)."""
+    """Une requête `curl` par défaut. Rend (code HTTP, corps). Compte les réponses lentes à la suite."""
+    t0 = time.time()
     r = subprocess.run(["curl", "-s", "--max-time", "40", "-w", "\n%{http_code}",
                         "-H", "Accept: application/json, text/javascript, */*; q=0.01",
                         "-H", "X-Requested-With: XMLHttpRequest", url],
                        capture_output=True, text=True)
+    lentes[0] = lentes[0] + 1 if time.time() - t0 > LENT else 0
     corps, _, code = r.stdout.rpartition("\n")
     return (int(code) if code.isdigit() else 0), corps
 
@@ -64,6 +70,8 @@ def main():
                     time.sleep(30)
                     code, corps = demander("%s/fr/%s/?page=%d&from-xhr" % (BASE, rayon, page))
                     n += 1
+                if lentes[0] >= 2:
+                    print("SITE RALENTI (2 réponses de plus de %d s de suite) → arrêt" % LENT, rayon, page, flush=True); return 5
                 if code in (403, 429, 503):
                     print("BLOCAGE", code, "→ arrêt immédiat et définitif", rayon, page, flush=True); return 3
                 try:
