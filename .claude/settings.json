@@ -13,5 +13,15 @@
       "Bash(curl:* | bash)",
       "Bash(npm publish:*)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/verif-syntaxe-js.mjs" }
+        ]
+      }
+    ]
   }
 }
