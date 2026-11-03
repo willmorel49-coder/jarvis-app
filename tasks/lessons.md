@@ -10,3 +10,4 @@ Format : `[date] | erreur observée | règle`
 2026-05-06 | Cap3000 : classe `.product-miniature` absente → 0 produits | Classe réelle : `li.ajax_block_product` + données complètes dans `<pre>` PHP caché
 2026-05-06 | Apothical médicaments (0 match Offilog) — source médicaments ≠ parapharmacie | Ne pas intégrer une source avant de vérifier le overlap de catégories
 2026-05-06 | Offilog Excel : `wb.active` retourne mauvaise feuille | Toujours cibler par nom : `wb['Croisement Complet']`
+2026-11-03 | `.claude/agents/gardien-deploiement.md` du dépôt (10/07, sans contrôle opso/v2) masque celui de `~/.claude/agents/` (19/10) : pour un agent, la version du PROJET l'emporte | Un agent ne vit qu'à UN endroit ; pour une skill c'est l'inverse (la version utilisateur l'emporte) — voir tasks/ameliorations_2026-11.md
