@@ -150,6 +150,9 @@ jobs:
       - name: Test catalogue (une association = l'étiquette de sa composition officielle)
         run: python3 tests/associations-catalogue.test.py
 
+      - name: Test jeton de cache (avance toujours, posé aux 5 endroits, opso/v2 compris)
+        run: python3 tests/jeton.test.py
+
       # Visiteur sans compte (23/10/2026) : un inconnu muni de la seule clé publique doit
       # recevoir 401 sur chaque table et ne lister aucun document. Aucun secret, que des
       # lectures. Deux messages distincts : « FAILLE » ou « contrôle impossible » (témoin

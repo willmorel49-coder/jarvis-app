@@ -169,5 +169,5 @@ python3 scraper_leclerc.py     # → leclerc_prices.json + opso/leclerc-data.js
 2. **Nouveau design / refonte visuelle** : NE JAMAIS coder directement une direction. D'abord 5-6 **variantes numérotées** dans une page HTML avec sélecteur, déployer, donner le lien, attendre les numéros choisis. Après 2 rejets visuels → exiger 2-3 références (Pinterest/Dribbble/screenshots).
 3. **Livraison** : jamais dire « c'est en ligne » sans preuve. Après un push touchant `crm/v2/` : `bash scripts/attendre-prod.sh <token ?v=>` (attend que la nouvelle version soit VRAIMENT servie), ouvrir/screenshoter la page modifiée (mobile 390px si UI), PUIS finir le message par l'**URL prod exacte cliquable**.
 4. **PDF / fiches** : générer le vrai PDF et vérifier chaque page (rien de coupé, pas de page blanche d'entête) AVANT de livrer.
-5. **Avant tout push touchant `crm/v2/`** : réflexe gardien-deploiement (syntaxe + `?v=` bumpé + `sw.js` VER synchro) ; si UI modifiée → verif-mobile.
+5. **Avant tout push touchant `crm/v2/`** : jeton posé par `python3 scripts/jeton.py` (commande `/jeton`, jamais à la main), réflexe gardien-deploiement (syntaxe + `?v=` bumpé + `sw.js` VER synchro) ; si UI modifiée → verif-mobile.
 6. **Poids** : l'app a déjà figé le Mac/Safari de Will. Tout nouveau `*-data.js` > 500 Ko → chargé en différé (`V2.loadFiles`), jamais dans le boot.

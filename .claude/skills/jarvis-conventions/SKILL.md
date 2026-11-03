@@ -45,6 +45,8 @@ imiter pour une valeur qui vient de l'extérieur). Vérifié le 10/08/2026.
 
 Le token de version a un format strict : `?v=AAAAMMJJ<lettre>` (exemple : `?v=20260804a`). La lettre s'incrémente pour plusieurs déploiements le même jour.
 
+**Le poser avec `python3 scripts/jeton.py` (commande `/jeton`), jamais à la main** : il choisit le suivant d'après les jetons déjà servis, le pose aux 5 endroits (dont tous les `?v=` d'`opso/v2/index.html`) et relit. `--verifier` contrôle seulement.
+
 Deux endroits **doivent** rester identiques :
 ```bash
 grep -o '?v=[0-9a-z]*' crm/v2/index.html | sort -u   # doit donner UNE seule valeur
