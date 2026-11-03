@@ -973,6 +973,7 @@
   var X13_SRC = { regle: 'Journal officiel', rupture: 'Agence du médicament', rappel: 'Agence du médicament', officine: 'Annonces légales', actu: '', concurrent: '' };
   var X13_ICO = { regle: 'loi', rupture: 'rupture', rappel: 'rappel', officine: 'cession', concurrent: 'concurrent', actu: 'journal' };
   var X13 = { liste: [], orig: null, fin: 0, tx: null, rub: false };
+  var INF = { vu: false, t: 0, stop: false, obs: null };
   function x13T(s) { return esc(String(s == null ? '' : s).replace(/\btes\b/g, 'vos').replace(/\bton\b/g, 'votre')); }
   function x13N2(t) { return norm(t).replace(/[^a-z0-9]+/g, ' ').trim(); }
   function x13NomRupt(r) { return String(r.spec || '').split(/ – | - /)[0] || String(r.dci || ''); }
@@ -1116,14 +1117,75 @@
     var noms = S.deps ? S.deps.map(function (d) { return SCT_DEPNOMS[d] || d; }).sort(function (a, b) { return a.localeCompare(b, 'fr'); }).join(' · ') : '';
     var titreSec = S.deps ? 'Dans votre secteur' : 'Les officines · toute la France';
     var sousSec = S.deps ? noms : 'Vue direction : aucun secteur propre, toutes les annonces des 14 derniers jours';
-    var bsec = '<section class="x13-bl x13-bl-sec" aria-labelledby="x13-h-sec"><h2 class="x13-h" id="x13-h-sec">' + esc(titreSec) + '</h2><p class="x13-sous">' + esc(sousSec) + '</p>' +
+    var bsec = '<section class="x13-bl x13-bl-sec" aria-labelledby="x13-h-sec"><h2 class="x13-h" id="x13-h-sec" tabindex="-1">' + esc(titreSec) + '</h2><p class="x13-sous">' + esc(sousSec) + '</p>' +
       (sec.length ? '<ul class="x13-ls">' + sec.map(function (e) { return x13Ligne3(e, i++); }).join('') + '</ul>' :
         '<p class="x13-vide">Rien de neuf cette semaine dans ' + (S.deps ? 'votre secteur' : 'les officines') + '.</p>') + '</section>';
-    var bfr = '<section class="x13-bl x13-bl-fr" aria-labelledby="x13-h-fr"><h2 class="x13-h" id="x13-h-fr">En France</h2><p class="x13-sous">Ce qui touche toutes les officines</p>' +
+    var bfr = '<section class="x13-bl x13-bl-fr" aria-labelledby="x13-h-fr"><h2 class="x13-h" id="x13-h-fr" tabindex="-1">En France</h2><p class="x13-sous">Ce qui touche toutes les officines</p>' +
       (pris.length ? '<ul class="x13-ls">' + pris.map(function (e) { return x13Ligne3(e, i++); }).join('') + '</ul>' : '<p class="x13-vide">Rien de neuf aujourd’hui.</p>') + '</section>';
-    return '<div class="w-page x13 x13v3"><header class="x13-tete"><h1><span class="x13-h1a">Infos du jour</span><span class="x13-h1b">' + esc(PP_JS[new Date(jour + 'T12:00:00').getDay()] + ' ' + ppDc(jour)) + '</span></h1></header>' +
-      '<div class="x13-deux">' + bsec + bfr + '</div>' + x13Rubriques(D, J) + (x14Fil(D, J), x14Rend()) + '</div>';
+    x14Fil(D, J);
+    var arr = !INF.vu || Date.now() - INF.t < 900; if (!INF.vu) INF.t = Date.now(); INF.vu = true; INF.stop = false;   // l'arrivée ne joue qu'une fois par ouverture de l'écran ; un second dessin dans les 900 ms la poursuit là où elle en est
+    var sk = Date.now() - INF.t;
+    var nFil = X14.liste.length, fil = x14Rend();
+    return '<div class="w-page x13 x13v3 inf-m1 inf-m1-bandeau' + (arr ? ' inf-ent' : '') + '"' + (arr && sk > 30 ? ' style="--inf-sk:-' + sk + 'ms"' : '') + '>' +
+      infEntete(esc(PP_JS[new Date(jour + 'T12:00:00').getDay()] + ' ' + ppDc(jour)), infPhrase(S, sec, pris, nFil),
+        infCap('sec', S.deps ? 'Votre secteur' : 'Les officines', sec.length) + infCap('fr', 'En France', pris.length) + (fil ? infCap('fil', 'Le fil', nFil, ' data-inf-fil') + infCap('gardees', 'Gardées', x15N(), ' data-f3-n') : ''),
+        bsec) +
+      '<div class="x13-deux">' + bfr + '</div>' + x13Rubriques(D, J) + fil + '</div>';
   }
+  /* ── l'en-tête bleu : date, titre, UNE phrase calculée, capsules à compteurs (un compteur = le nombre affiché dans le bloc visé) ── */
+  function infNum(n, att) { return '<span class="inf-num"' + (att || '') + '>' + n + '</span>'; }
+  function infPhrase(S, sec, pris, nFil) {
+    var n = sec.length, cpt = {}, fr = [], court, long;
+    pris.forEach(function (e) { cpt[e.rub] = (cpt[e.rub] || 0) + 1; });
+    [['regle', 'règle de prix', 'règles de prix'], ['rupture', 'rupture', 'ruptures'], ['rappel', 'rappel de lot', 'rappels de lot'], ['concurrent', 'info concurrent', 'infos concurrent']].forEach(function (r) {
+      if (cpt[r[0]]) fr.push('<b>' + infNum(cpt[r[0]]) + '</b> ' + (cpt[r[0]] > 1 ? r[2] : r[1]));
+    });
+    var lieu = S.deps ? 'votre secteur' : 'les officines';
+    var a = n ? '<b>' + infNum(n) + '</b> ' + (S.deps ? (n > 1 ? 'annonces' : 'annonce') + ' dans votre secteur' : (n > 1 ? 'annonces' : 'annonce') + ' d’officines') : 'Rien de neuf cette semaine dans ' + lieu;
+    long = fr.length ? (fr.length > 1 ? fr.slice(0, -1).join(', ') + ' et ' + fr[fr.length - 1] : fr[0]) + ' en France' : 'rien de neuf en France';
+    court = pris.length ? '<b>' + infNum(pris.length) + '</b> ' + (pris.length > 1 ? 'infos' : 'info') + ' en France' : 'rien de neuf en France';
+    var c = nFil ? '<b>' + infNum(nFil, ' data-inf-fil') + '</b> ' + (nFil > 1 ? 'infos' : 'info') + ' dans le fil' : 'le fil est vide pour l’instant';
+    var f = function (x) { return a + ', ' + x + ', ' + c + '.'; };
+    var s = f(long); if (s.replace(/<[^>]+>/g, '').length > 110) s = f(court);
+    return s;
+  }
+  function infCap(k, lib, n, att) { return '<button type="button" class="inf-cap" data-inf-cap="' + k + '"><span>' + esc(lib) + '</span><b class="inf-cnt"' + (att || '') + '>' + n + '</b></button>'; }
+  function infEntete(date, phrase, caps, dans) {
+    return '<header class="inf-hd"><span class="inf-lu" aria-hidden="true"></span><div class="inf-hd-t"><p class="inf-eye">' + date + '</p><h1 class="inf-h1">Infos du jour</h1><p class="inf-phrase">' + phrase + '</p>' +
+      '<div class="inf-caps" role="group" aria-label="Aller directement à">' + caps + '</div></div>' + dans + '</header>';
+  }
+  function infMaj() {   // le fil a été recalculé (source masquée) : les deux nombres du fil suivent
+    var n = X14.liste.length, ns = document.querySelectorAll('[data-inf-fil]'), i;
+    for (i = 0; i < ns.length; i++) ns[i].textContent = n;
+  }
+  function infStop() { INF.stop = true; var r = document.querySelector('.inf-ent'); if (r) r.classList.remove('inf-ent'); }
+  function infVa(k) {   // une capsule amène au bloc ; « Gardées » ouvre l'onglet
+    var v = k === 'gardees' ? 'gardees' : 'fil', cible, foc;
+    if (k === 'gardees' || k === 'fil') { if (X15.vue !== v) { X15.vue = v; x15Redessine(); } cible = document.querySelector('.f3-fil'); foc = k === 'fil' ? document.getElementById('f3-h') : document.querySelector('.f3-ong [data-f3-v="gardees"]'); }
+    else { foc = document.getElementById(k === 'sec' ? 'x13-h-sec' : 'x13-h-fr'); cible = foc && foc.closest('section'); }
+    if (!cible) return;
+    var calme = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    try { cible.scrollIntoView({ behavior: calme ? 'auto' : 'smooth', block: 'start' }); } catch (er) { cible.scrollIntoView(); }
+    if (foc) { try { foc.focus({ preventScroll: true }); } catch (er) {} }
+  }
+  function infApres(root) {   // après le dessin : compteurs qui comptent à l'arrivée, scène en pause hors écran
+    var r = root.querySelector('.inf-m1'), h = r && r.querySelector('.inf-hd'); if (!r || !h) return;
+    if (INF.obs) INF.obs.disconnect();
+    if (window.IntersectionObserver) { INF.obs = new IntersectionObserver(function (es) { es.forEach(function (x) { h.classList.toggle('inf-hors', !x.isIntersecting); }); }); INF.obs.observe(h); }
+    if (!r.classList.contains('inf-ent')) return;
+    var calme = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!calme) [].slice.call(r.querySelectorAll('.inf-num,.inf-cnt')).forEach(function (el) {
+      var fin = +el.textContent, t0 = 0, sk = Date.now() - INF.t; if (!(fin > 0)) return;
+      el.textContent = '0';
+      requestAnimationFrame(function pas(ts) {
+        t0 = t0 || ts - sk; var p = Math.min((ts - t0) / 600, 1);
+        if (INF.stop || p >= 1) { el.textContent = el.hasAttribute('data-f3-n') ? x15N() : el.hasAttribute('data-inf-fil') ? X14.liste.length : fin; return; }
+        el.textContent = Math.round(fin * (1 - Math.pow(1 - p, 3))); requestAnimationFrame(pas);
+      });
+    });
+    setTimeout(function () { r.classList.remove('inf-ent'); }, Math.max(0, 900 - (Date.now() - INF.t)));
+  }
+  document.addEventListener('visibilitychange', function () { var h = document.querySelector('.inf-hd'); if (h) h.classList.toggle('inf-pause', document.hidden); });
 
   /* ── la feuille de lecture : naît de la carte touchée ── */
   function x13Feuille() {
@@ -1458,7 +1520,7 @@
   }
   function x15Redessine() {   // le fil est recalculé (sources masquées) et la section redessinée ; les cartes, elles, ne bougent pas quand on garde
     var s = document.querySelector('.f3-fil'); if (!s) return;
-    x15FermeMenu(false); x14Fil(); s.outerHTML = x14Rend();
+    x15FermeMenu(false); x14Fil(); s.outerHTML = x14Rend(); infMaj();
   }
 
   /* ── la liste « Sources masquées » (sous l'onglet « Gardées ») ── */
@@ -1526,10 +1588,12 @@
       X13.tx = null; return;
     }
     if (!e.target.closest) return;
+    infStop();
     if (x15Clic(e)) return;   // cœur, « ⋮ », bandeau, panneau : un seul attribut data-f3, lu AVANT .x13 (le bandeau et le panneau sont hors .x13)
     if (e.target.closest('[data-x13-ferme]') || (e.target.classList && e.target.classList.contains('x13-voile'))) { x13Ferme(); return; }
     var root = e.target.closest('.x13'); if (!root) return;
     var t;
+    if ((t = e.target.closest('[data-inf-cap]'))) { infVa(t.getAttribute('data-inf-cap')); return; }
     if ((t = e.target.closest('[data-x13-tout]'))) {
       var z = root.querySelector('.x13-reste'); z.hidden = false; t.setAttribute('aria-expanded', 'true'); t.hidden = true;
       var p1 = z.querySelector('.x13-c'); if (p1) { try { p1.focus({ preventScroll: true }); } catch (er) {} }
@@ -1551,7 +1615,7 @@
     document.addEventListener('touchstart', x13Ecoute, { passive: true });
     document.addEventListener('touchend', x13Ecoute, { passive: true });
     // on lit l'adresse elle-même : cet écouteur passe AVANT celui du routeur (v2-app.js), V2.route date encore de l'écran quitté
-    window.addEventListener('hashchange', function () { if ((location.hash || '').replace(/^#/, '').split('/')[0] !== 'infos') { x13Reset(); X13.rub = false; } });
+    window.addEventListener('hashchange', function () { if ((location.hash || '').replace(/^#/, '').split('/')[0] !== 'infos') { x13Reset(); X13.rub = false; INF.vu = false; } });
   }
 
   /* ════════════════════════════ RENDU ════════════════════════════ */
@@ -1595,6 +1659,7 @@
           x13Page(D, jour, J) +
           '<footer class="pp-pied"><span>' + gen + '</span></footer>' +
         '</div>';
+      infApres(root);
 
       // venu de l'ancienne feature « Concurrents » (#infos/concurrents) : ouvrir directement son panneau
       if (V2.route && V2.route.param === 'concurrents' && !PP_CONC_AUTO) { PP_CONC_AUTO = true; if (!ppOuvert()) PP_VUES.concurrents(); }
