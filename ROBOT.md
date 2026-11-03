@@ -10,7 +10,7 @@
 |-------|--------|
 | Projet | Intégral Pharma · CRM + Catalogue |
 | Repo | https://github.com/willmorel49-coder/jarvis-app |
-| Prod CRM | https://willmorel49-coder.github.io/jarvis-app/crm/ |
+| Prod CRM | https://crm-jarvis.vercel.app (adresse neutre, la seule à donner) — source : GitHub Pages |
 | Prod Catalogue | https://willmorel49-coder.github.io/jarvis-app/ |
 | Owner | William Morel |
 | Langue réponse | Français |
@@ -52,7 +52,8 @@ Clés publiques exposées dans `crm/index.html` (lignes ~152-153). Pas de `.env`
 
 ```bash
 # Déploiement (GitHub Pages auto après push main)
-git add . && git commit -m "feat: ..." && git push
+# Depuis un worktree créé sur origin/main (jamais depuis ~/JARVIS/APP, branche périmée)
+git add <fichiers précis> && git commit -m "feat(portée): ..." && git pull --rebase origin main && git push origin HEAD:main
 
 # Pipeline données Offilog (inclut Drakkars, Cap3000, Leclerc, Ma Pharmacie)
 python3 generate_offilog.py    # → crm/offilog-data.js (3 520 produits, 1 417 prix Leclerc)
@@ -78,7 +79,7 @@ python3 scraper_leclerc.py     # → leclerc_prices.json + opso/leclerc-data.js
 |---------|-----------|
 | Branche prod | `main` → push = tests, puis mise en ligne seulement s'ils sont verts |
 | Branches Claude | `claude/<sujet>` |
-| Commits | `feat:` `fix:` `chore:` `refactor:` `data:` `ux:` |
+| Commits | `type(portée): sujet` — `feat` `fix` `chore` `refactor` `data` `ux` `docs` `test` `ci` `perf` (`wip` réservé au robot des stats). Contrôlé par `.git/hooks/commit-msg` (local, commun à tous les worktrees) |
 | PR | Draft sur branches `claude/` |
 
 ---
@@ -87,10 +88,9 @@ python3 scraper_leclerc.py     # → leclerc_prices.json + opso/leclerc-data.js
 
 | Skill | Contenu |
 |-------|---------|
-| `.claude/skills/crm-structure.md` | Architecture app.js, pages, navigation, état global |
-| `.claude/skills/crm-supabase.md` | Schema SQL complet, RLS, Storage, Auth |
-| `.claude/skills/crm-offilog.md` | Pipeline Offilog × scrapers × matching EAN/nom |
-| `.claude/skills/crm-design.md` | Tokens CSS, composants, conventions UI |
+| `.claude/skills/jarvis-conventions/` | Conventions du dépôt |
+| `.claude/skills/fx-bank/` | Effets visuels vanilla stables sous Safari |
+| `~/.claude/skills/` | `donnees-protegees-jarvis`, `refresh-stats-commercial`, `pharma-metier`, `livraison-preuve` |
 
 ---
 
@@ -100,7 +100,7 @@ python3 scraper_leclerc.py     # → leclerc_prices.json + opso/leclerc-data.js
 2. Vanilla JS only — pas de framework, pas de build step, pas de npm
 3. Scrapers Python : compatibilité **Python 3.9** stricte (pas de `X | Y` type hints)
 4. Matching Offilog : **EAN prioritaire**, nom normalisé en fallback
-5. Chaque modification fonctionnelle → `git push` immédiat sur `main`
+5. Chaque modification fonctionnelle : `node --test tests/*.test.mjs`, gardien-deploiement, puis push sur `main` depuis le worktree
 6. Scrapers longs → lancer en background `&`, surveiller via log file
 
 ---
@@ -115,6 +115,7 @@ python3 scraper_leclerc.py     # → leclerc_prices.json + opso/leclerc-data.js
 | SheetJS | Parser les colonnes **par nom**, pas par index |
 | GitHub Pages | Délai ~3 min après push : la publication attend les tests (`ci.yml`). Test rouge = rien ne part, la prod garde la version d'avant. Nouveau robot qui pousse = son `name:` dans la liste `workflow_run` de `ci.yml` |
 | ⚠️ `crm/v2/rdv.html` (page du pharmacien) | **Aucun service worker sur cette page.** Son `?v=` est indépendant de celui de `crm/v2/index.html` et doit être monté **à la main** dès que `rdv-public.js`, `v2-rdv-creneaux.js` ou `v2-rdv-ics.js` change. Sinon un pharmacien ayant déjà ouvert le lien continue de charger l'ANCIEN fichier : le correctif est en ligne et pourtant invisible. Contrôle : `grep -o '?v=[0-9a-z]*' crm/v2/rdv.html` doit renvoyer la même valeur que `index.html` |
+| Agents et skills du même nom | Agent : la version du dépôt l'emporte sur `~/.claude/agents/`. Skill : l'inverse. Un agent ne vit qu'à UN endroit. Les agents rangés dans `.claude/agents-archive/` ne sont pas chargés |
 | ip_app-8.html | Legacy — ne pas toucher |
 | Libs JS | Ne pas ajouter sans accord explicite |
 | DRAKKARS ean | Peut être `null` (EAN absent sur certains produits) — ne pas supposer que l'EAN est toujours présent |
