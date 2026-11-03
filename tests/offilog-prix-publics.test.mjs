@@ -122,3 +122,14 @@ test('Citypharma : le générateur écarte non achetables et doublons de rayon, 
     assert.equal(st.doublons_rayons, 1);
   } finally { fs.unlinkSync(f); }
 });
+
+test('Citypharma : aucun code « autre article » (CITYPHARMA_ECARTES) dans le fichier servi, leur nombre en tête', () => {
+  const gen = path.join(RACINE, 'scripts/generate_plateformes_pub.py');
+  const py = 'import sys,json\nsrc=open(sys.argv[1]).read().replace("\\nmain()","\\n")\nns={"__file__":sys.argv[1]}\nexec(compile(src,"g","exec"),ns)\nprint(json.dumps(sorted(ns["CITYPHARMA_ECARTES"])))';
+  const ecartes = JSON.parse(execFileSync('python3', ['-I', '-c', py, gen], { encoding: 'utf8' }));
+  const src = fs.readFileSync(path.join(RACINE, 'crm/v2/citypharma-pub-data.js'), 'utf8');
+  const prix = JSON.parse(src.match(/const CITYPHARMA_PUB = (\{.*?\});/)[1]);
+  assert.ok(ecartes.length > 0 && ecartes.every(e => /^\d{13}$/.test(e)));
+  assert.deepEqual(ecartes.filter(e => e in prix), []);
+  assert.match(src, /^\/\/ \d+ EAN écartés : /m);
+});

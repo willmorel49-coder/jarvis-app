@@ -23,6 +23,28 @@ import json, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# 03/11/2026 : sous ces codes, Citypharma vend un AUTRE article que le produit Offilog (lot, contenance ou
+# coffret différents) : l'écart de prix serait faux. Contrôle de tous les codes du relevé du 30/10, tri relu
+# à la main. Les cas incertains (contenance absente d'un côté) sont gardés.
+CITYPHARMA_ECARTES = frozenset((
+    "0000030065949", "3264680045295", "3264680046322", "3264680046797", "3282770398670", "3282770399172", "3282770399929",
+    "3282770401172", "3282770401790", "3282770401806", "3282771000428", "3282771000817", "3323034408800", "3337875920728",
+    "3337875926836", "3337875940139", "3401060051624", "3401560315363", "3401599424715", "3428881124900", "3428881135401",
+    "3461020003636", "3515450121320", "3515836528194", "3525722066587", "3578835501773", "3578835502053", "3578835502480",
+    "3578835503975", "3578835504279", "3578835505375", "3595894546330", "3596200056192", "3596200069352", "3596490006815",
+    "3614274826456", "3614790000002", "3614790000347", "3614790000743", "3614810010530", "3660398505081", "3664524001881",
+    "3664524001904", "3664524002000", "3665606002741", "3667235000525", "3667235000686", "3700221303757", "3700221303764",
+    "3700221303771", "3700399102855", "3700399103050", "3700399103128", "3700591910043", "3700591912276", "3700640502038",
+    "3700695221274", "3700928802478", "3701129817957", "3701132602052", "3701145600793", "3701145601585", "3701145601882",
+    "3701154700798", "3701399700140", "3701436915766", "3701436917548", "3701436930530", "3701436930790", "3701436932909",
+    "3701436938727", "3760095251899", "3760095254654", "3760135013364", "3760155210484", "3760155211740", "3760155218022",
+    "3760155218442", "3760155219005", "3760155219036", "3760155219739", "3760155220469", "3760283641839", "3760283642119",
+    "3770008103320", "3770008103795", "3770016038188", "3770035034062", "4001638095587", "4001638590815", "4001638590839",
+    "4005800270468", "4005800271755", "4005800375958", "4006000192963", "4046719318223", "5054563256058", "5054563256478",
+    "5410765005533", "5420008561641", "5420008562068", "5430000427043", "5430000427319", "5430000427326", "7640178214484",
+    "8700216470100", "8700216930666", "8718951775077",
+))
+
 
 def ean13(v):
     s = re.sub(r"\D", "", str(v if v is not None else ""))
@@ -132,6 +154,7 @@ def lire_cap3000_archive(chemin):
 def main():
     quoi = sys.argv[1]
     cible = offilog_eans()
+    ecartes = CITYPHARMA_ECARTES if quoi == "citypharma" else frozenset()
     if quoi == "farmaline":
         paires, maj, st = lire_farmaline(sys.argv[2])
         nom, label, site, srcl = "FARMALINE", "Farmaline (pharmacie en ligne belge, TVA belge)", "farmaline", "concurrents-farmaline-data.js (hors dépôt)"
@@ -155,13 +178,15 @@ def main():
         sys.exit("source inconnue")
     if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", maj):
         sys.exit("date du relevé illisible : " + maj)
-    out, bad, dup, hors = {}, 0, 0, 0
+    out, bad, dup, hors, retires = {}, 0, 0, 0, set()
     for e, p in paires:
         e = ean13(e)
         if not e:
             bad += 1
         elif e not in cible:
             hors += 1
+        elif e in ecartes:
+            retires.add(e)
         elif e in out:
             dup += 1
             out[e] = min(out[e], p)  # plusieurs lignes pour un EAN : le prix le plus bas affiché
@@ -174,8 +199,11 @@ def main():
     entete = ("// Prix PUBLICS (TTC) %s — pour l'écran Offilog (CRM et OPSO).\n"
               "// Relevé du %s (%s) · généré par scripts/generate_plateformes_pub.py\n"
               "// %d EAN du catalogue Offilog — %s ; %d EAN illisibles, %d doublons, %d hors catalogues Offilog.\n"
-              "// Prix PUBLICS d'un site de vente : autorisés dans le dépôt public. Aucune condition commerciale ici.\n"
               % (label, maj, srcl, len(out), json.dumps(st, ensure_ascii=False), bad, dup, hors))
+    if retires:
+        entete += ("// %d EAN écartés : le site vend un autre article sous le même code (lot, contenance ou coffret), "
+                   "liste CITYPHARMA_ECARTES du générateur.\n" % len(retires))
+    entete += "// Prix PUBLICS d'un site de vente : autorisés dans le dépôt public. Aucune condition commerciale ici.\n"
     corps = "const %s_PUB = %s;\nconst %s_PUB_MAJ = %s;\n" % (nom, json.dumps(out, separators=(",", ":")), nom, json.dumps(maj))
     open(chemin, "w", encoding="utf8").write(entete + corps)
     # Relecture : rien d'autre que « ean -> prix ».
@@ -185,7 +213,7 @@ def main():
     assert len(d) == len(out) and all(re.fullmatch(r"\d{13}", k) and isinstance(v, float) or isinstance(v, int) for k, v in d.items())
     for mot in ("Prix_Achat", "Ecart", "Marge", "Potentiel", "marge_pct", "prix_offilog"):
         assert mot not in rel, "colonne interdite dans le fichier : " + mot
-    print("OK", chemin, len(out), "EAN", st, "mauvais", bad, "doublons", dup, "hors Offilog", hors)
+    print("OK", chemin, len(out), "EAN", st, "mauvais", bad, "doublons", dup, "hors Offilog", hors, "écartés", len(retires))
 
 
 main()
