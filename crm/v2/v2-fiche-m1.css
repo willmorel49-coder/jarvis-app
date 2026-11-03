@@ -1,0 +1,150 @@
+/* ═══════════════════════════════════════════════════════════════════
+   JARVIS · fiche officine dans la veine de l'accueil « maquette 1 » (30/10/2026). Hors OPSO (tout est sous .fi-m1, posé seulement si !isOpso()).
+   Même matière que l'accueil et « Mes officines » : en-tête bleu éclairé, cases blanches à tache de lumière, ombres en couches, capsules à compteurs.
+   La carte bleue reste à gauche et suit le défilement (.fi-m1-lien).
+   Mouvement : arrivée en 900 ms au plus (chiffres qui comptent, courbe qui se trace, 6 premiers blocs en cascade), une fois par ouverture de fiche ;
+   au repos UNE scène (la lueur du bleu : transform + opacity, élément sans texte, en pause hors écran). prefers-reduced-motion : tout s'affiche à l'arrêt.
+   Interdits tenus : aucun flou, backdrop-filter, mask, texte découpé ; aucune barre de couleur sur un seul côté ; aucune opacité sur du texte ; texte ≥ 13 px.
+   ═══════════════════════════════════════════════════════════════════ */
+.fi-m1{--txt-2:#454B5C;position:relative}
+/* la lumière de la page : un halo bleu en haut à gauche, un halo clair en haut à droite (comme l'accueil) */
+.fi-m1::before{content:"";position:absolute;left:0;right:0;top:0;height:620px;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 560px 400px at 28% 0%,color-mix(in srgb,var(--ip-blue) 13%,transparent),transparent 70%),radial-gradient(ellipse 420px 380px at 76% 0%,color-mix(in srgb,var(--halo) 95%,transparent),transparent 72%)}
+.fi-m1>*{position:relative;z-index:1}
+
+/* ═══ L'en-tête bleu (la carte d'identité) : lumière de l'accueil, phrase, capsules ═══ */
+.fi-m1 .pha-id.fi-hd{isolation:isolate;overflow:hidden;color:#fff;border-radius:14px;
+  background:
+    radial-gradient(circle 210px at 100% 0%,color-mix(in srgb,var(--ip-blue) 82%,#fff),transparent 72%),
+    radial-gradient(ellipse 70% 130% at 2% -14%,color-mix(in srgb,var(--ip-blue) 88%,var(--ip-blue-d)),transparent 80%),
+    linear-gradient(160deg,color-mix(in srgb,var(--ip-blue) 74%,var(--ip-blue-d)) 0%,color-mix(in srgb,var(--ip-blue) 40%,var(--ip-blue-d)) 58%,color-mix(in srgb,var(--ip-blue) 52%,var(--ip-blue-d)) 100%);
+  box-shadow:0 1px 0 rgba(255,255,255,.34) inset,0 22px 40px -24px color-mix(in srgb,var(--ip-blue-d) 70%,transparent),0 2px 5px color-mix(in srgb,var(--ip-blue-d) 16%,transparent)}
+.fi-m1 .pha-id.fi-hd::before{display:none}
+.fi-m1 .pha-id.fi-hd>*{position:relative}
+.fi-m1 .pha-id.fi-hd>.fi-lu{position:absolute;z-index:-1}
+/* la scène du repos : une lueur qui dérive derrière le texte (aucun texte, transform + opacity seulement) */
+.fi-lu{right:-110px;top:-150px;width:420px;height:420px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(closest-side,rgba(255,255,255,.13),rgba(255,255,255,0));animation:fi-lu 11s ease-in-out infinite;will-change:transform,opacity}
+@keyframes fi-lu{0%,100%{transform:translate3d(50px,0,0) scale(.92);opacity:.55}50%{transform:translate3d(-60px,36px,0) scale(1.06);opacity:1}}
+.fi-hd.fi-hors .fi-lu,.fi-hd.fi-pause .fi-lu{animation-play-state:paused}
+.fi-m1 .pha-code,.fi-eye{font-size:13px;font-weight:700;line-height:1.3;letter-spacing:.06em;text-transform:uppercase;color:#fff}
+.fi-eye{padding-top:12px}
+.fi-m1 .pha-name{letter-spacing:-.025em}
+.fi-phrase{margin:0 0 14px;font-size:15px;line-height:1.4;font-weight:600;color:#fff}
+.fi-m1 .pha-kv span:nth-child(odd){color:#DCE8FF;font-size:13px}
+.fi-m1 .pha-kv span:nth-child(even){font-size:14px;color:#fff}
+.fi-m1 .pha-kv .pha-empty{color:#E3ECFF;font-size:14px}
+.fi-m1 .pha-kv .pha-probable{color:#FFE2A8}
+.fi-m1 .pha-kv .pha-grpinfo{color:#E3ECFF;font-size:13px}
+.fi-m1 .pha-id .pha-btn{min-height:44px;background:rgba(0,26,104,.58);border-color:rgba(255,255,255,.34);color:#fff;font-size:14px}
+.fi-m1 .pha-id .pha-btn:hover{background:rgba(0,26,104,.78);border-color:rgba(255,255,255,.6)}
+.fi-m1 .pha-id .pha-btn-pri{background:#fff;border-color:#fff;color:var(--ip-blue-d);box-shadow:0 10px 18px -10px rgba(0,16,80,.6)}
+.fi-m1 .pha-id .pha-btn-pri:hover{background:#fff;color:var(--ip-blue-d)}
+.fi-m1 .pha-id .pha-sub{color:#E3ECFF}
+
+/* capsules à compteurs (menent au bloc ; le compteur est celui du bloc) */
+.fi-caps{display:flex;flex-wrap:wrap;gap:8px;min-width:0}
+.fi-cap{display:inline-flex;align-items:center;gap:10px;min-height:44px;padding:0 8px 0 16px;border-radius:999px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .2s var(--ease),box-shadow .2s,background-color .2s,border-color .2s}
+.fi-cap:not(:has(.fi-cnt)){padding-right:16px}
+.fi-cnt{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;padding:0 8px;border-radius:999px;font-size:13px;font-weight:800;font-variant-numeric:tabular-nums}
+.fi-cap:active{transform:scale(.97)}
+.fi-cap:focus-visible{outline:2px solid var(--ip-blue);outline-offset:2px}
+/* version 1 : les capsules en tête de la colonne principale, sur fond clair */
+.fi-m1-lien .fi-cap{color:var(--ip-ink);background:#fff;border:1px solid var(--line-strong);box-shadow:var(--sh-1),0 1px 0 #fff inset}
+.fi-m1-lien .fi-cap .fi-cnt{color:var(--ip-blue-d);background:var(--halo)}
+@media (hover:hover){.fi-m1-lien .fi-cap:hover{transform:translateY(-2px);box-shadow:var(--sh-2);border-color:color-mix(in srgb,var(--ip-blue) 40%,var(--line-strong))}}
+
+/* ═══ Les cases : matière de l'accueil (tache de lumière dans l'angle, liseré clair, ombre en couches), plus de barre de couleur sur le côté ═══ */
+.fi-m1 .pha-kpi::after{display:none}
+.fi-m1 .pha-main>.v2-card,.fi-m1 .pha-main>.vi-ct>.v2-card,.fi-m1 .pha-rail>.v2-card,.fi-m1 .pha-rail>.vi-ct>.v2-card,.fi-m1 .pha-main .pha-kpi,.fi-m1 .pha-main>.ph-section>.v2-card{
+  border:1px solid var(--line-strong);border-radius:14px;
+  background:radial-gradient(320px 220px at 100% 0%,color-mix(in srgb,var(--ip-blue) 10%,transparent),transparent 72%),linear-gradient(180deg,#fff,var(--card));
+  box-shadow:var(--sh-1),0 1px 0 #fff inset}
+/* LA case qui domine : « À proposer » (fond éclairé, tache claire en haut à gauche, teinte de la marque en bas, ombre portée teintée) */
+.fi-m1 #pha-proposer{
+  background:radial-gradient(520px 300px at 0% 0%,#fff,transparent 68%),radial-gradient(420px 260px at 100% 100%,color-mix(in srgb,var(--ip-blue) 14%,transparent),transparent 72%),linear-gradient(155deg,color-mix(in srgb,var(--halo) 92%,#fff),color-mix(in srgb,var(--ip-blue) 8%,var(--card)));
+  box-shadow:var(--sh-2),0 26px 48px -26px color-mix(in srgb,var(--ip-blue) 45%,transparent),0 1px 0 #fff inset}
+.fi-m1 .pha-ch h3{font-size:17px;letter-spacing:-.015em;color:var(--ip-ink)}
+.fi-m1 .pha-kl{font-size:13px;color:var(--txt-2)}
+.fi-m1 .pha-sub,.fi-m1 .pha-kd,.fi-m1 .pha-legend,.fi-m1 .pha-m5-cap,.fi-m1 .pha-m5-rk,.fi-m1 .pha-r4-b span,.fi-m1 .pha-np-s,.fi-m1 .pha-part-sub,.fi-m1 .pha-part-btn,.fi-m1 .pha-tab,.fi-m1 .pha-table,.fi-m1 .pha-part-t,.fi-m1 .pha-prop-r b,.fi-m1 .pha-prop-b,.fi-m1 .pha-nm-f,.fi-m1 .pha-r4-n,.fi-m1 .pha-r4-b b,.fi-m1 .pha-cip,.fi-m1 .pha-part-v small,.fi-m1 .pha-kval small,.fi-m1 .pha-r b small{font-size:13px}
+.fi-m1 .pha-sub,.fi-m1 .pha-kd .pha-sub,.fi-m1 .pha-legend,.fi-m1 .pha-m5-cap,.fi-m1 .pha-m5-rk,.fi-m1 .pha-nm-f,.fi-m1 .pha-r4-n,.fi-m1 .pha-np-s,.fi-m1 .pha-part-sub{color:var(--txt-2)}
+.fi-m1 .pha-kval{color:var(--ip-blue-d);letter-spacing:-.035em}
+.fi-m1 .pha-kpi{padding:16px 18px}
+.fi-m1 .pha-kpis .pha-kpi:first-child{background:radial-gradient(420px 240px at 0% 0%,#fff,transparent 68%),radial-gradient(360px 220px at 100% 100%,color-mix(in srgb,var(--ip-blue) 12%,transparent),transparent 72%),linear-gradient(155deg,color-mix(in srgb,var(--halo) 92%,#fff),color-mix(in srgb,var(--ip-blue) 7%,var(--card)));box-shadow:var(--sh-2),0 1px 0 #fff inset}
+.fi-m1 .pha-kpis .pha-kpi:first-child .pha-kval{font-size:32px}
+/* À proposer : un grand chiffre par liste, des barres de la même teinte (jamais de violet) */
+.fi-m1 .pha-prop-n{font-size:36px;font-weight:800;letter-spacing:-.035em;line-height:1.05;color:var(--ip-blue-d);font-variant-numeric:tabular-nums}
+.fi-m1 .pha-prop-b{min-height:44px;padding:0 16px;border-radius:999px;background:#fff;box-shadow:var(--sh-1)}
+.fi-m1 .pha-prop-b:hover{border-color:var(--ip-blue)}
+.fi-m1 .pha-prop-bar{background:color-mix(in srgb,var(--ip-blue) 10%,#fff);box-shadow:inset 0 1px 2px rgba(16,19,28,.10)}
+.fi-m1 .pha-prop-bar i{background:linear-gradient(90deg,var(--ip-blue-d),var(--ip-blue))}
+.fi-m1 .pha-prop-r{grid-template-columns:minmax(0,1fr) 64px 48px}
+.fi-m1 .pha-prop-r b{font-size:13px;color:var(--ip-ink)}
+.fi-m1 .pha-prop-pn{font-size:14px}
+/* courbe et barres : un dégradé de la même teinte */
+.fi-m1 .pha-bar{background:color-mix(in srgb,var(--ip-blue) 8%,#fff);box-shadow:inset 0 1px 2px rgba(16,19,28,.08)}
+.fi-m1 .pha-nav{border-radius:14px}
+.fi-m1 .pha-tab.on{background:var(--ip-blue-d);border-color:var(--ip-blue-d)}
+
+/* ═══ Version 1 · Le lien avec l'avant : les deux colonnes d'aujourd'hui ═══ */
+.fi-m1-lien .pha-id.fi-hd{padding:22px 22px 20px}
+.fi-m1-lien .pha-name{font-size:25px}
+.fi-m1-lien .fi-caps{margin:0 0 2px}
+@media (min-width:901px){
+  /* en vue pharmacien la colonne de gauche ne contient que la carte : elle suit le défilement pour ne pas laisser un grand vide */
+  .fi-m1-lien .pha-rail{align-self:stretch}
+  .fi-m1-lien[data-vue="pharmacien"] .pha-id.fi-hd{position:sticky;top:84px}
+  .fi-m1-lien .fi-hd .fi-lu{right:-120px;top:-170px;width:360px;height:360px}
+}
+
+
+/* ═══ L'arrivée : 900 ms au plus, une fois par ouverture de fiche (la classe fi-ent n'est posée qu'à l'arrivée) ═══ */
+@keyframes fi-monte{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes fi-trace{to{stroke-dashoffset:0}}
+@keyframes fi-fond{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:no-preference){
+  .fi-ent .fi-hd{animation:fi-monte .34s var(--ease) both;animation-delay:var(--fi-off,0ms)}
+  .fi-ent .fi-caps{animation:fi-monte .3s var(--ease) both;animation-delay:calc(90ms + var(--fi-off,0ms))}
+  .fi-ent .pha-rail>.vi-ct>*{animation:fi-monte .3s var(--ease) both;animation-delay:calc(140ms + var(--fi-off,0ms))}
+  .fi-ent .pha-main [data-fi]{animation:fi-monte .3s var(--ease) both;animation-delay:calc(120ms + var(--i,0) * 70ms + var(--fi-off,0ms))}
+  .fi-ent .pha-cal{stroke-dasharray:1;stroke-dashoffset:1;animation:fi-trace .8s var(--ease) both;animation-delay:calc(260ms + var(--fi-off,0ms));animation-fill-mode:forwards}
+  .fi-ent .pha-chart path[fill^="url"]{animation:fi-fond .5s ease both;animation-delay:calc(520ms + var(--fi-off,0ms))}
+}
+@media (prefers-reduced-motion:reduce){
+  .fi-lu{animation:none}
+  .fi-cap:active{transform:none}
+}
+
+/* ═══ Téléphone et écrans étroits : sommaire conservé (il porte les compteurs), cibles de 44 px ═══ */
+@media (max-width:900px){
+  .fi-caps{display:none}
+  .pha-som-b .fi-cnt{margin-left:8px;min-width:24px;height:24px;padding:0 7px;color:var(--ip-blue-d);background:var(--halo)}
+  .pha-som-b[aria-current="true"] .fi-cnt{color:#fff;background:rgba(255,255,255,.24)}
+  .fi-m1 .pha-id.fi-hd{padding:20px 16px 18px}
+  .fi-m1 .fi-lu{width:240px;height:240px;right:-100px;top:-120px}
+  .fi-m1 .pha-prop-n{font-size:32px}
+  .fi-m1 .pha-prop-b{flex:1 1 auto;justify-content:center}
+  .fi-m1 .pha-prop-acts{margin-left:0;width:100%}
+}
+
+/* tableaux de la fiche : en-têtes et cellules à 13 px, gris lisible sur la case éclairée */
+.fi-m1 .pha-table th,.fi-m1 .pha-table td,.fi-m1 .v2-table.pha-mois thead th,.fi-m1 .v2-table.pha-mois tbody td{font-size:13px}
+.fi-m1 .pha-table td.num,.fi-m1 .pha-table th{color:var(--txt-2)}
+.fi-m1 .pha-table td.num[style*="c-opp"]{color:var(--c-mint-txt)!important}
+/* bouton « Modifier » de l'en-tête : plaque bleu nuit comme les autres boutons du bleu (il se posait en blanc sur la lumière : 2,96:1 mesuré) */
+.fi-m1 .fi-hd .pha-edit{min-height:44px;background:rgba(0,26,104,.58);border:1px solid rgba(255,255,255,.34);color:#fff;font-size:14px}
+.fi-m1 .fi-hd .pha-edit:hover{background:rgba(0,26,104,.78);border-color:rgba(255,255,255,.6);color:#fff}
+/* colonne de gauche (vue Intégral) : mêmes cases éclairées, textes lisibles */
+.fi-m1 .pha-btn-w.pha-btn-opp{background:#0F7A52;border-color:#0F7A52;color:#fff}   /* blanc sur #1E9E6A = 3,4:1 ; sur #0F7A52 = 5,3:1 */
+.fi-m1 .pha-up{color:#0E6A45}
+.fi-m1 .pha-btn-w b.mono{font-size:13px;color:var(--ip-ink)}
+.fi-m1 .pha .pha-r4-b span,.fi-m1 .pha .pha-m5-cap,.fi-m1 .pha .pha-m5-rk{font-size:13px}
+@media (max-width:900px){
+  /* au téléphone le nom passe sur deux lignes, sur toute la largeur : la lumière se réduit pour garder 4,5:1 sous le texte */
+  .fi-m1 .pha-id.fi-hd{background:
+    radial-gradient(circle 110px at 100% 0%,color-mix(in srgb,var(--ip-blue) 84%,#fff),transparent 72%),
+    radial-gradient(ellipse 70% 130% at 2% -14%,color-mix(in srgb,var(--ip-blue) 88%,var(--ip-blue-d)),transparent 80%),
+    linear-gradient(160deg,color-mix(in srgb,var(--ip-blue) 74%,var(--ip-blue-d)) 0%,color-mix(in srgb,var(--ip-blue) 40%,var(--ip-blue-d)) 58%,color-mix(in srgb,var(--ip-blue) 52%,var(--ip-blue-d)) 100%)}
+}
+.fi-m1 .pha-id a.pha-btn{text-decoration:none}
+@media (min-width:901px){.fi-m1-lien .fi-cap.vi-int{display:none}}   /* v1 : Listes, Notes et Infos sont déjà là, dans la colonne de gauche à côté */

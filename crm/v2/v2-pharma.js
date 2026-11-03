@@ -2009,7 +2009,9 @@
     });
     g += '<path d="' + area + '" fill="url(#' + (ph ? 'phaGradP' : 'phaGrad') + ')"/>';
     if (!ph) g += '<polyline points="' + poly('net') + '" fill="none" stroke="#B9C4DB" stroke-width="2" stroke-dasharray="5 5" stroke-linecap="round"/>';
-    g += '<polyline points="' + poly('ca') + '" fill="none" stroke="#0050E6" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>';
+    g += pts.some(function (p) { return p.ca > 0; })
+      ? '<path class="pha-cal" pathLength="1" d="M' + poly('ca').split(' ').join(' L') + '" fill="none" stroke="#0050E6" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>'   // 30/10/2026 : un tracé (se dessine à l'arrivée de la fiche), seulement s'il y a des ventes
+      : '<polyline points="' + poly('ca') + '" fill="none" stroke="#0050E6" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>';
     pts.forEach(function (p, i) {
       var last = i === n - 1;
       g += '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(p.ca).toFixed(1) + '" r="' + (last ? 5 : 3.5) + '" fill="#fff" stroke="#0050E6" stroke-width="2.2"/>' +
@@ -2253,7 +2255,7 @@
       '<div class="pha-prop' + (cols.length > 1 ? ' pha-prop-2' : '') + '">';
     cols.forEach(function (c) {
       var sc = c[0], data = c[2], n = c[3];
-      h += '<div class="pha-prop-l"><div class="pha-prop-nom">' + esc(c[1]) + '</div>';
+      h += '<div class="pha-prop-l" id="pha-prop-' + sc + '"><div class="pha-prop-nom">' + esc(c[1]) + '</div>';
       if (n <= 0) { h += '<div class="pha-sub">Rien à lui proposer sur cette base.</div></div>'; return; }
       h += '<div class="pha-prop-top"><span class="pha-prop-n mono">' + l1Nb(n) + '</span><span class="pha-sub">produits</span><span class="pha-prop-acts">' +
         '<button type="button" class="pha-prop-b" aria-label="Télécharger la liste en PDF : ' + esc(c[1]) + '" onclick="V2.pharmaListPdf(\'' + pidS + '\',\'' + sc + '\')">PDF</button>' +
@@ -3901,10 +3903,15 @@
       adresse: adresse, cp: cpV == null ? '' : cpV, ville: villeV || '', tel: tel, portable: portable, fax: fax, email: mail,
       interlocuteur: interloc, siren: siren, relance_date: String(saisi.relance_date || '')
     } });
+    var A = analyseData(pid, sales);
+    var fi = !menu && !isOpso();   // 30/10/2026 — fiche « plus clair » (hors OPSO)
+    var fiPh = fi ? fiPhrase(A, nReseau > 0 ? nReseau : nGrp, voitVentes, loc, (pharma.groupement && pharma.groupement !== '—') ? canonG(pharma.groupement) : '') : '';
+    if (fi) fiN = { r: voitVentes ? nReseau : 0, g: voitVentes && hasGrp ? nGrp : 0, grp: hasGrp ? A.grpName : '' };
     var idCard =
-      '<div class="pha-id">' + viSelecteur() +
-        '<div class="pha-id-top"><div class="pha-code mono vi-int">' + (pharma.code ? 'CIP ' + esc(String(pharma.code)) + ' · ' : '') + (isEscale() ? 'CLIENTE ESCALE' : 'CLIENTE INTÉGRAL') + (comms ? ' · ' + esc(comms.toUpperCase()) : '') + '</div>' + fe.bouton + '</div>' +
+      '<div class="pha-id' + (fi ? ' fi-hd' : '') + '">' + (fi ? '<i class="fi-lu" aria-hidden="true"></i>' : '') + viSelecteur() +
+        '<div class="pha-id-top">' + (fi ? '<div class="fi-eye vi-ph">Fiche officine</div>' : '') + '<div class="pha-code mono vi-int">' + (pharma.code ? 'CIP ' + esc(String(pharma.code)) + ' · ' : '') + (isEscale() ? 'CLIENTE ESCALE' : 'CLIENTE INTÉGRAL') + (comms ? ' · ' + esc(comms.toUpperCase()) : '') + '</div>' + fe.bouton + '</div>' +
         '<div class="pha-name">' + esc(nameOf(pid, pharma.name)) + '<span class="vi-int">' + ficheBadge + repriseBadge + '</span></div>' +
+        (fi ? '<p class="fi-phrase">' + esc(fiPh) + '</p>' : '') +
         '<div class="pha-kv vi-int">' + kvHtml + '</div><div class="pha-kv vi-ph">' + kvPh + '</div>' +
         '<div class="pha-acts vi-int">' +
           (tel ? '<a class="pha-btn" href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) + '">' + ICO('phone', 15) + 'Appeler</a>' : '') +
@@ -3993,7 +4000,6 @@
     var notes = V2.notes ? '<div class="pha-notes">' + (V2.rdvPrepa ? V2.rdvPrepa.section(pid) : '') + V2.notes.section('client', pid) + '</div>' : '';
 
     // ── Colonne « chiffres » ──
-    var A = analyseData(pid, sales);
     var S = sesChiffresDe(pid, marge, nbRefs);
     var detail = analyseKpis(A, marge, nbRefs) + '<div class="pha-marges">' + analyseMargePharma(A, marge) + analyseNotreMarge(pid) + '</div>';
     // 29/10/2026 — deux jeux de blocs : « Intégral » = exactement l'écran d'avant (vi-int) ; « pharmacien » = les cartes d'avant le 29/10, dépliées, sans l'interne (vi-ph).
@@ -4114,7 +4120,7 @@
       apercu =
         '<div class="pha">' +
           '<div class="pha-rail">' + viW(phaNavHtml(pid), 'vi-int') + idCard + viW(fe.panneau + listes + infos + notes, 'vi-int') + '</div>' +
-          '<div class="pha-main">' + chiffres + viW(briefOff + listing, 'vi-int') + viW(generiqueurSec, '') + '</div>' +
+          '<div class="pha-main">' + (fi ? '<div class="fi-caps"></div>' : '') + chiffres + viW(briefOff + listing, 'vi-int') + viW(generiqueurSec, '') + '</div>' +
         '</div>';
     }
     if (!voitVentes) { listing = ''; generiqueurSec = ''; }
@@ -4123,8 +4129,9 @@
     // Bouton « Aujourd'hui · N » : seule commande de la ligne, calée à droite.
     if (briefOff) tabs = '<div class="ph-fiche-line">' + tabs + '<span class="bo-spacer"></span>' + V2.briefOfficine.bouton() + '</div>';
 
+    var fiArr = fi ? fiArrivee(pid) : false;
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
-      '<div class="v2-wrap ph-detail pha-wrap" data-vue="' + vue + '" style="--accent:var(--pil-opp)">' +
+      '<div class="v2-wrap ph-detail pha-wrap' + (fi ? ' fi-m1 fi-m1-lien' + (fiArr ? ' fi-ent' : '') : '') + '" data-vue="' + vue + '" style="--accent:var(--pil-opp)' + (fiArr && fiDecal ? ';--fi-off:' + fiDecal + 'ms' : '') + '">' +
         viBandeau() + viRetour() + tabs +
         viW(voitVentes && !isOpso() && V2.decrochageUI ? V2.decrochageUI.bandeau(pid) : '', 'vi-int') +   // 28/10/2026 — bandeau si l'officine est « à rappeler »
         '<div id="phft-c-apercu">' + apercu + '</div>' +
@@ -4137,6 +4144,7 @@
     if (briefOff) V2.briefOfficine.hydrate(pid, pharmaSalesAll(pid));
     if (!menu) V2.pharmaFiche.apres(pid);
     if (!menu) phaTel();
+    if (fi) { fiVeille(root); if (fiArr) fiJoue(root); }
   }
 
   // 26/10/2026 — v2 « Tout dans la carte » : ligne « ‹ Précédente · 3 sur 47 · Suivante › » + champ « Autre officine… » au-dessus de la carte bleue.
@@ -4190,6 +4198,52 @@
   // 19/10/2026 — fiche au téléphone (sous 900 px elle passe sur une colonne, ≈ 13 écrans) : un sommaire collé
   // en haut de l'écran pour sauter d'un bloc à l'autre. Rien n'est retiré de la page. Caché sur ordinateur (CSS).
   // Version « le sommaire » choisie par Will le 19/10/2026 parmi trois (sommaire · chiffres d'abord · trois onglets).
+  // 30/10/2026 — fiche « plus clair » (hors OPSO) : UNE phrase calculée (rien d'interne : ni notre marge, ni moyenne, ni place), capsules à compteurs, mouvement d'arrivée.
+  var fiN = { r: 0, g: 0, grp: '' }, fiVuLe = { pid: null, t0: 0, t: 0 }, fiDecal = 0, fiObs = null;
+  function fiPhrase(A, nProp, voit, ville, grp) {
+    var prop = (voit && nProp > 0) ? V2.fmtNum(nProp) + ' produit' + (nProp > 1 ? 's' : '') + ' à proposer' : '', t;
+    if (!voit) t = ville ? 'Officine de ' + ville + (grp ? ', groupement ' + grp : '') : '';
+    else if (A.last && A.last.ca > 0) t = cap(A.last.label) + ' ' + A.last.year + ' : ' + V2.fmtEur(A.last.ca) + (A.evoM != null && A.prev ? ', ' + (A.evoM > 0 ? '+' : '') + A.evoM + ' % sur ' + A.prev.label : '');
+    else t = A.caTot > 0 && A.last ? 'Pas de commande en ' + A.last.label + ' ' + A.last.year : 'Pas encore de commande reçue';
+    var ph = [t, prop].filter(Boolean).join(' · ');
+    return ph.length > 110 ? t.slice(0, 110) : ph;
+  }
+  // l'arrivée ne joue qu'une fois par ouverture de fiche (ni à la bascule de vue, ni à un nouveau dessin) ; un dessin qui suit de moins d'une seconde reprend l'arrivée là où elle en est
+  function fiArrivee(pid) {
+    if (!(V2.pharmacies || []).length || (V2.ventesProgres && V2.ventesProgres.total && V2.ventesProgres.n < V2.ventesProgres.total)) return false;
+    var n = Date.now(), autre = String(fiVuLe.pid) !== String(pid) || n - fiVuLe.t > 8000;
+    fiDecal = 0;
+    if (autre) fiVuLe = { pid: pid, t0: n, t: n };
+    else { fiVuLe.t = n; if (n - fiVuLe.t0 >= 900) return false; fiDecal = -(n - fiVuLe.t0); }
+    return true;
+  }
+  function fiJoue(root) {
+    var w = root.querySelector('.pha-wrap'); if (!w) return;
+    var k = 0; [].slice.call(w.querySelectorAll('.pha-main > *, .pha-main > .vi-ct > *')).forEach(function (e) { if (k < 6 && e.offsetHeight > 0 && !e.classList.contains('fi-caps')) { e.setAttribute('data-fi', ''); e.style.setProperty('--i', k++); } });
+    var mo = V2.motion;
+    if (mo && mo.countUp) [].slice.call(w.querySelectorAll('.pha-kval,.pha-prop-n,.fi-cnt')).forEach(function (e) { if (!e.children.length && e.offsetHeight > 0) mo.countUp(e); });
+    setTimeout(function () { w.classList.remove('fi-ent'); }, Math.max(60, 900 + fiDecal));
+  }
+  // la scène du repos (la lueur du bleu) s'arrête hors de l'écran et quand l'onglet est caché
+  function fiVeille(root) {
+    var h = root.querySelector('.fi-hd'); if (!h || !window.IntersectionObserver) return;
+    if (fiObs) fiObs.disconnect();
+    fiObs = new IntersectionObserver(function (es) { es.forEach(function (e) { e.target.classList.toggle('fi-hors', !e.isIntersecting); }); });
+    fiObs.observe(h);
+  }
+  document.addEventListener('visibilitychange', function () { var h = document.querySelector('.fi-hd'); if (h) h.classList.toggle('fi-pause', document.hidden); });
+  // blocs du sommaire : en fiche « plus clair », « À proposer » devient une entrée par liste, avec son compteur (jamais de somme : les deux listes se chevauchent)
+  function fiBlocs() {
+    var l = [];
+    PHA_TEL_BLOCS.forEach(function (b) {
+      if (b[1] === '#pha-proposer') {
+        if (fiN.r > 0) l.push(['Le réseau', '#pha-prop-reseau', fiN.r]);
+        if (fiN.g > 0) l.push([fiN.grp, '#pha-prop-groupement', fiN.g]);
+      } else if (b[1] === '.pha-kpis') { l.push(['Ses chiffres', b[1]], ['Courbe du CA', '.pha-chart']); }
+      else l.push(b);
+    });
+    return l;
+  }
   var PHA_TEL_BLOCS = [['Listes', '.pha-lists'], ['Notes & RDV', '.pha-notes'], ['Infos', '.pha-infos'], ['À proposer', '#pha-proposer'],
     ['Chiffres', '.pha-kpis'], ['Catégories', '.pha-parts'], ['Ne commande plus', '.pha-np']];
   // Hauteur de la barre du haut qui RESTE à l'écran en défilant : 0 tant qu'elle défile avec la page
@@ -4199,13 +4253,24 @@
     var p = getComputedStyle(t).position; return (p === 'sticky' || p === 'fixed') ? t.offsetHeight : 0;
   }
   function phaTel() {
-    var pha = document.querySelector('#phft-c-apercu > .pha'), id = pha && pha.querySelector('.pha-id');
+    var pha = document.querySelector('#phft-c-apercu > .pha'), id = pha && (pha.querySelector('.pha-id') || document.querySelector('#phft-c-apercu > .pha-id'));
     if (!pha || !id) return;
-    var nav = document.createElement('nav');
+    var nav = document.createElement('nav'), fiOn = !!document.querySelector('.fi-m1');
     nav.className = 'pha-som'; nav.setAttribute('aria-label', 'Aller à');
-    nav.innerHTML = PHA_TEL_BLOCS.filter(function (b) { return viChercher(pha, b[1]); }).map(function (b) {
-      return '<button type="button" class="pha-som-b" data-cible="' + b[1] + '">' + b[0] + '</button>';
+    var cnt = function (b) { return b[2] ? ' <span class="fi-cnt">' + V2.fmtNum(b[2]) + '</span>' : ''; };
+    var blocs = (fiOn ? fiBlocs() : PHA_TEL_BLOCS).filter(function (b) { return viChercher(pha, b[1]); });
+    nav.innerHTML = blocs.map(function (b) {
+      return '<button type="button" class="pha-som-b" data-cible="' + b[1] + '">' + esc(b[0]) + cnt(b) + '</button>';
     }).join('');
+    // capsules de l'en-tête (ordinateur) : mêmes entrées, mêmes compteurs ; les rubriques de la colonne de gauche passent en dernier
+    var caps = document.querySelector('.fi-caps');
+    if (caps) {
+      var cote = function (b) { return /^\.pha-(lists|notes|infos)$/.test(b[1]) ? 1 : 0; };
+      caps.innerHTML = blocs.slice().sort(function (a, b) { return cote(a) - cote(b); }).map(function (b) {
+        var vi = /^\.pha-(lists|notes|infos)$/.test(b[1]) ? ' vi-int' : '';
+        return '<button type="button" class="fi-cap' + vi + '" data-cible="' + b[1] + '">' + esc(b[0]) + cnt(b) + '</button>';
+      }).join('');
+    }
     id.parentNode.insertBefore(nav, id.nextSibling);
     nav.style.setProperty('--pha-som-top', phaTelHaut() + 'px');
     if (nav.offsetParent) {   // les puces suivent l'ordre réel de la page
@@ -4216,8 +4281,10 @@
     if (V2._phaTelEcoute) return;
     V2._phaTelEcoute = true;
     document.addEventListener('click', function (e) {
+      var cp = e.target.closest && e.target.closest('.fi-cap');   // capsule de l'en-tête (ordinateur) : on amène le bloc sous la barre du haut
+      if (cp) { var cc = viChercher(document.getElementById('phft-c-apercu'), cp.getAttribute('data-cible')); if (cc) window.scrollTo({ top: cc.getBoundingClientRect().top + window.scrollY - 16 - phaTelHaut(), behavior: 'smooth' }); return; }
       var b = e.target.closest && e.target.closest('.pha-som-b'); if (!b) return;
-      var p = b.closest('.pha'), n = b.parentNode;
+      var p = b.closest('.pha') || document.getElementById('phft-c-apercu'), n = b.parentNode;
       var c = viChercher(p, b.getAttribute('data-cible')); if (!c) return;
       // la barre du haut part quand on descend et revient quand on remonte (v2-app.js) : on vise sa place APRÈS le saut
       var y = c.getBoundingClientRect().top + window.scrollY - n.offsetHeight - 16, h = phaTelHaut();
