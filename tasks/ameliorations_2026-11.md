@@ -214,7 +214,7 @@ exit 1
 
 ### 5.5 ROBOT.md
 ```diff
--| Prod CRM | https://willmorel49-coder.github.io/jarvis-app/crm/ |
+-| Prod CRM | [ancienne adresse GitHub Pages] |
 +| Prod CRM | https://crm-jarvis.vercel.app (adresse neutre, la seule à donner) — source : GitHub Pages |
 @@ §4
 -git add . && git commit -m "feat: ..." && git push
