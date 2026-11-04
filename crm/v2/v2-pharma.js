@@ -5974,7 +5974,7 @@
       // 23/09/2026 : 5 styles au choix et pages découpées par nous (v2-pdf-prospect.js)
       if (V2.prospectPdf) {
         return V2.prospectPdf(scope === 'groupement' ? groupementProducts(tx.grp) : buildRecoCats(pid, 'reseau'),
-          { nom: prospect, ref: scope === 'groupement' ? tx.grp : reseauLbl(), reseau: scope !== 'groupement' }, mode);
+          { nom: prospect, ref: scope === 'groupement' ? tx.grp : reseauLbl(), reseau: scope !== 'groupement', pid: pid }, mode);
       }
       return (scope === 'groupement')
         ? achatsPdf(tx.grp, groupementProducts(tx.grp), false, mode, null, prospect)
@@ -5985,7 +5985,7 @@
     var faire = function () {
       if (V2.prospectPdf) {
         return V2.prospectPdf(data, { nom: pharma.name, ref: label, reseau: scope !== 'groupement', client: clientPdfData(pid), fichier: pharma.name + ' — ' + label,
-          maxPages: 10 }, mode);   // Will, 24/09/2026 : 8-10 pages maximum
+          maxPages: 10, pid: pid }, mode);   // Will, 24/09/2026 : 8-10 pages maximum
       }
       return achatsPdf(pharma.name + ' — ' + label, data, false, mode, pid);
     };

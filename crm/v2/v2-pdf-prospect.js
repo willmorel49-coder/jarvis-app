@@ -436,7 +436,7 @@
       if (p.firstChild) p.firstChild.style.transform = 'scale(' + s + ')';
     });
   }
-  function apercu(c, fn, titre) {
+  function apercu(c, fn, titre, pid) {
     css();
     var ICO = function (n, t, w) { return V2.ICO ? V2.ICO(n, t, w) : (window.ICO ? window.ICO(n, t, w) : ''); };
     var bd = document.getElementById('pdfp-modal');
@@ -447,6 +447,7 @@
           '<div class="prepa-tt">' + ICO('fiche', 17, 2) + ' Aperçu avant impression</div>' +
           '<button class="v2-btn v2-btn-primary" id="pdfp-dl">' + ICO('download', 16) + ' Télécharger</button>' +
           (V2.canShareFiles && V2.canShareFiles() ? '<button class="v2-btn v2-btn-ghost" id="pdfp-sh">' + ICO('spark', 16) + ' Partager</button>' : '') +
+          '<button class="v2-btn v2-btn-ghost" id="pdfp-ol">' + ICO('mail', 16) + ' <span>Outlook</span></button>' +
           '<button class="prepa-x" id="pdfp-x" title="Fermer">' + ICO('close', 18, 2) + '</button>' +
         '</div>' +
         '<div class="pdfp-styles" id="pdfp-styles"></div>' +
@@ -457,7 +458,17 @@
       bd.querySelector('#pdfp-x').onclick = fermer;
       window.addEventListener('resize', ajuster);
     }
-    var etat = { style: styleLu(), pages: null };
+    var etat = { style: styleLu(), pages: null, olPret: false, to: '' };
+    function olMaj() {
+      var ol = bd.querySelector('#pdfp-ol'); if (!ol) return;
+      ol.className = 'v2-btn ' + (etat.olPret ? 'v2-btn-primary' : 'v2-btn-ghost');
+      ol.querySelector('span').textContent = etat.olPret ? 'Ouvrir le mail Outlook' : 'Outlook';
+    }
+    function olUrl() {
+      var corps = 'Bonjour,\n\nVous trouverez ci-joint votre liste d\'achats.\n\nJe reste à votre disposition pour en parler.\n\nBien cordialement,';
+      return 'https://outlook.office.com/mail/deeplink/compose?to=' + encodeURIComponent(etat.to || '') +
+        '&subject=' + encodeURIComponent(titre) + '&body=' + encodeURIComponent(corps);
+    }
     function boutons() {
       bd.querySelector('#pdfp-styles').innerHTML = '<span class="pdfp-lbl">Style :</span>' + STYLES.map(function (s) {
         return '<button class="v2-seg' + (s.id === etat.style ? ' on' : '') + '" data-s="' + s.id + '">' + s.id + ' · ' + esc(s.nom) + '</button>';
@@ -467,7 +478,7 @@
       });
     }
     function rendre() {
-      boutons(); etat.pages = null;
+      boutons(); etat.pages = null; etat.olPret = false; olMaj();
       var sc = bd.querySelector('#pdfp-scroll'), demande = etat.style;
       sc.innerHTML = '<div class="pdfp-wait">Mise en page…</div>';
       construire(c, demande).then(function (pages) {
@@ -482,6 +493,27 @@
       V2.toast('Génération du PDF…');
       fabriquer(etat.pages, fn, mode, titre).catch(function (e) { console.error(e); V2.toast('Module PDF indisponible — vérifiez votre connexion', 'error'); });
     }
+    bd.querySelector('#pdfp-ol').onclick = function () {
+      if (etat.olPret) { window.open(olUrl(), '_blank', 'noopener'); return; }   // 2ᵉ clic : rien d'asynchrone avant, sinon Safari bloque
+      var iOS = /iPhone|iPad|iPod/i.test(navigator.userAgent || '') || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      if (iOS) { lancer('share'); return; }   // la feuille de partage d'iOS propose l'app Outlook
+      if (!etat.pages) { V2.toast('Mise en page en cours…'); return; }
+      V2.toast('Génération du PDF…');
+      var rendu = etat.pages;
+      fabriquer(rendu, fn, 'save', titre).then(function () {
+        if (rendu !== etat.pages) return;   // le style a changé entre-temps
+        etat.olPret = true; olMaj();
+        V2.toast('PDF téléchargé : glissez-le dans le mail Outlook');
+      }).catch(function (e) { console.error(e); V2.toast('Module PDF indisponible — vérifiez votre connexion', 'error'); });
+    };
+    // destinataire : e-mail de la pharmacie (fiche), sinon celui saisi pour le prospect
+    try {
+      var em = document.querySelector('.v2-prospect input[data-fk="email"]');
+      etat.to = em ? String(em.value || '').trim() : '';
+      if (pid && V2.pharmaPont && V2.pharmaPont.contact) {
+        V2.pharmaPont.contact(pid).then(function (k) { if (k && String(k.email || '').trim()) etat.to = String(k.email).trim(); }, function () {});
+      }
+    } catch (e) {}
     bd.querySelector('#pdfp-dl').onclick = function () { lancer('save'); };
     var sh = bd.querySelector('#pdfp-sh'); if (sh) sh.onclick = function () { lancer('share'); };
     bd.classList.add('open');
@@ -501,7 +533,7 @@
       V2.toast('Génération du PDF…');
       return construire(c, styleLu()).then(function (pages) { return fabriquer(pages, fn, mode, titre); });
     }
-    apercu(c, fn, titre);
+    apercu(c, fn, titre, o.pid);
   };
   V2.prospectPdfStyles = STYLES;
   V2.prospectPdfStyle = function (v) { if (v >= 1 && v <= 5) styleEcrit(v); return styleLu(); };
