@@ -4698,12 +4698,12 @@
   // SOUS-ONGLET GROUPEMENTS — listes d'achats idéales par groupement
   // (produits commandés, triés par nb de pharmacies qui commandent)
   // ═══════════════════════════════════════════════════════════════
-  function pharmaTabs(active) {
+  function pharmaTabs(active, cls) {
     // 02/10/2026 — pièce commune « onglets » (.v2-tabs), la même que sur les autres écrans alignés
     var t = function (val, ico, label) {
       return '<button type="button" role="tab" class="v2-tab' + (active === val ? ' on' : '') + '" aria-selected="' + (active === val) + '" onclick="V2.pharmaView(\'' + val + '\')">' + ICO(ico, 18, 2) + label + '</button>';
     };
-    return '<div class="v2-tabs ph-v4" role="tablist" aria-label="Vues des officines">' +
+    return '<div class="v2-tabs ph-v4' + (cls ? ' ' + cls : '') + '" role="tablist" aria-label="Vues des officines">' +
       t('officines', 'pharma', 'Officines') + t('groupements', 'opp', 'Groupements') + t('listes', 'fiche', 'Mes listes') + t('carte', 'grid', 'Carte secteur') +
     '</div>';
   }
@@ -4784,6 +4784,70 @@
     return list;
   }
   V2.grpListSortSet = function (mode) { grpListSort = mode === 'name' ? 'name' : 'active'; V2.render(); };
+  // ── 03/11/2026 — « plus clair » : l'écran Groupements dans la veine de l'accueil (maquette 1). Aucun calcul nouveau : on lit ce que la liste calcule déjà.
+  var grListVu = false, grDetArr = false, grObs = null;
+  window.addEventListener('hashchange', function () { if ((location.hash || '').replace(/^#/, '').split('/')[0] !== 'pharma') grListVu = false; });
+  document.addEventListener('visibilitychange', function () { var h = document.querySelector('.gr-hd'); if (h) h.classList.toggle('gr-pause', document.hidden); });
+  // L'arrivée est « vue » quand son animation démarre vraiment (un dessin refait aussitôt après ne la perd pas) ; ensuite plus aucun dessin ne la rejoue.
+  document.addEventListener('animationstart', function (e) {
+    if (e.animationName !== 'gr-monte') return;
+    if (e.target.closest && e.target.closest('.gr-det')) grDetArr = false; else grListVu = true;
+  }, true);
+  function grNum(n) { return '<span class="gr-num">' + V2.fmtNum(n) + '</span>'; }
+  function grPct(g) { return g.nb ? Math.round(g.active / g.nb * 100) : 0; }
+  function grOuvre(g) { return 'V2.pharmaGroup(\'' + encodeURIComponent(g.name).replace(/'/g, '%27') + '\')'; }
+  function grAct(g) { return '<span class="gr-act">' + g.active + ' / ' + g.nb + ' actives</span>'; }
+  function grJauge(g) { var p = grPct(g); return '<i class="gr-jauge" role="img" aria-label="' + p + ' % des officines actives"><i style="width:' + p + '%"></i></i>'; }
+  function grSans(g) { return g.name.charAt(0) === '—'; }
+  // Une phrase, 110 caractères au plus, faite des nombres que la page montre plus bas (jamais un chiffre d'affaires).
+  function grPhrase(list) {
+    var n = list.length, nb = 0, ac = 0, top = null;
+    if (!n) return grpListSearch ? 'Aucun groupement ne correspond à « ' + esc(grpListSearch) + ' ».' : 'Aucun groupement pour le moment.';
+    list.forEach(function (g) { nb += g.nb; ac += g.active; if (!grSans(g) && (!top || g.active > top.active)) top = g; });
+    var q = grpListSearch.length > 22 ? grpListSearch.slice(0, 21) + '…' : grpListSearch;
+    var tete = '<b>' + grNum(n) + ' groupement' + (n > 1 ? 's' : '') + '</b>' + (q ? ' pour « ' + esc(q) + ' »' : '') + ', ' + grNum(ac) + ' officine' + (ac > 1 ? 's' : '') + ' active' + (ac > 1 ? 's' : '') + ' sur ' + V2.fmtNum(nb);
+    var long = function (s) { return s.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').length; };
+    if (!top) return tete + '.';
+    var t1 = tete + ' ; le plus actif : ' + esc(top.name) + ', ' + top.active + ' actives.', t2 = tete + ' ; le plus actif : ' + esc(top.name) + '.';
+    return long(t1) <= 110 ? t1 : long(t2) <= 110 ? t2 : tete + '.';
+  }
+  // Le bandeau : les quatre plus actifs, seulement quand on voit la liste dans l'ordre d'activité et sans recherche.
+  function grHaut(list) { return (grpListSort === 'active' && !grpListSearch) ? list.filter(function (g) { return !grSans(g); }).slice(0, 4) : []; }
+  function grUne(g) {
+    var p = grPct(g);
+    return '<a class="gr-une" onclick="' + grOuvre(g) + '"><span class="gr-une-t">' + grpLogo(g.name, true) +
+      '<span class="gr-ring"><svg viewBox="0 0 60 60" aria-hidden="true"><circle class="gr-ring-f" cx="30" cy="30" r="25"/><circle class="gr-ring-v" cx="30" cy="30" r="25" pathLength="100" style="--p:' + p + '"/></svg><b><span class="gr-num">' + p + '</span> %</b></span></span>' +
+      '<span class="gr-nom">' + esc(g.name) + '</span>' + grAct(g) + '</a>';
+  }
+  function grCarte(g) { return '<a class="gr-carte" onclick="' + grOuvre(g) + '"><span class="gr-carte-t">' + grpLogo(g.name) + '<span class="gr-nom">' + esc(g.name) + '</span></span><span class="gr-carte-b">' + grAct(g) + grJauge(g) + '</span></a>'; }
+  // La lumière du bandeau s'arrête quand il sort de l'écran et quand l'onglet est caché.
+  function grVeille(root) {
+    var h = root.querySelector('.gr-hd'); if (!h || !window.IntersectionObserver) return;
+    if (grObs) grObs.disconnect();
+    grObs = new IntersectionObserver(function (es) { es.forEach(function (e) { e.target.classList.toggle('gr-hors', !e.isIntersecting); }); });
+    grObs.observe(h);
+  }
+  // L'arrivée (cascade, nombres qui comptent, jauges) : une fois par ouverture de l'écran, jamais à un geste.
+  function grJoue(root) {
+    var w = root.querySelector('#gr-m1'); if (!w) return;
+    var det = w.classList.contains('gr-det');
+    var mo = V2.motion;
+    if (mo && mo.countUp) [].slice.call(w.querySelectorAll('.gr-num')).forEach(function (e) { mo.countUp(e); });
+    setTimeout(function () { w.classList.remove('gr-ent'); if (det) grDetArr = false; else grListVu = true; }, 900);
+  }
+  function grPret() { return (V2.pharmacies || []).length && !(V2.ventesProgres && V2.ventesProgres.total && V2.ventesProgres.n < V2.ventesProgres.total); }
+  // Tout ce qui dépend de la recherche et du tri se redessine ICI, sans toucher au champ (il garde le focus).
+  function grMaj() {
+    var list = groupementList(), card = document.getElementById('v2-grp-list-card'), ph = document.getElementById('gr-phrase'), top = document.getElementById('gr-top');
+    if (card) card.innerHTML = grpListBody(list);
+    if (ph) ph.innerHTML = grPhrase(list);
+    if (top) { var h = grHaut(list); top.innerHTML = h.map(grUne).join(''); top.hidden = !h.length; }
+  }
+  V2.grAller = function (id) {
+    var e = document.getElementById(id); if (!e) return;
+    var calme = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    try { e.scrollIntoView({ behavior: calme ? 'auto' : 'smooth', block: 'start' }); } catch (x) { e.scrollIntoView(); }
+  };
   function groupementProducts(grpName) {
     var ids = {};
     (V2.pharmacies || []).forEach(function (p) {
@@ -4918,56 +4982,52 @@
 
   // Compteur + lignes de la liste — extrait à part pour ne redessiner QUE ce
   // bloc à chaque frappe dans la recherche (le champ garde le focus et le curseur).
-  function grpListBody() {
-    var list = groupementList();
-    var n = list.length;
-    var rows = list.map(function (g) {
-      return '<a class="v2-row" onclick="V2.pharmaGroup(\'' + encodeURIComponent(g.name).replace(/'/g, '%27') + '\')">' +
-        grpLogo(g.name) +
-        '<span class="v2-row-name">' + esc(g.name) + '</span>' +
-        '<span class="v2-row-opp mono">' + g.active + ' / ' + g.nb + ' actives</span>' +
-        '<span class="v2-row-chev">' + ICO('chev', 16) + '</span>' +
-      '</a>';
-    }).join('');
+  function grpListBody(list) {
+    list = list || groupementList();
+    var n = list.length, haut = grHaut(list), reste = haut.length ? list.filter(function (g) { return haut.indexOf(g) < 0; }) : list;
+    var rows = reste.map(grCarte).join('');
     var empty = grpListSearch
       ? '<div class="v2-empty"><div class="v2-empty-d">Aucun groupement ne correspond à « ' + esc(grpListSearch) + ' ».</div></div>'
       : '<div class="v2-empty"><div class="v2-empty-d">Aucun groupement.</div></div>';
-    return '<div class="v2-grp-count mono" style="font-size:12px;color:var(--muted);font-weight:600;padding:0 2px 12px">' +
-        n + ' groupement' + (n > 1 ? 's' : '') +
-      '</div>' + (rows || empty);
+    return '<p class="v2-grp-count gr-n mono">' + n + ' groupement' + (n > 1 ? 's' : '') +
+        (haut.length ? '<span class="gr-n-s">dont les ' + haut.length + ' plus actifs, en haut de page</span>' : '') +
+      '</p>' + (rows ? '<div class="gr-cartes">' + rows + '</div>' : empty);
   }
   function renderGroupementsList(root) {
+    var list = groupementList(), arr = !grListVu && grPret();
+    var haut = grHaut(list);
     var sortBar =
-      '<div class="v2-card" style="margin-top:16px;padding:10px 14px;display:flex;align-items:center;gap:10px">' +
-        '<span style="font-size:12px;color:var(--muted);font-weight:600">Trier :</span>' +
+      '<div class="gr-bar">' +
+        '<div class="gr-tri"><span class="gr-tri-l">Trier :</span>' +
         '<div class="v2-segs">' +
           '<button type="button" class="v2-seg' + (grpListSort === 'active' ? ' on' : '') + '" style="--sc:var(--ip-blue)" onclick="V2.grpListSortSet(\'active\')">Activité</button>' +
           '<button type="button" class="v2-seg' + (grpListSort === 'name' ? ' on' : '') + '" style="--sc:var(--ip-blue)" onclick="V2.grpListSortSet(\'name\')">Nom (A→Z)</button>' +
+        '</div></div>' +
+        '<div class="v2-search gr-search">' + ICO('search', 18, 2) +
+          '<input id="v2-grp-search" placeholder="Rechercher un groupement…" autocomplete="off" value="' + esc(grpListSearch) + '">' +
+          '<button type="button" id="v2-grp-search-x" class="v2-grp-search-x" aria-label="Effacer la recherche" onclick="V2.grpListSearchClear()"' +
+            (grpListSearch ? '' : ' style="display:none"') + '>' + ICO('close', 16, 2) + '</button>' +
         '</div>' +
       '</div>';
-    var searchBar =
-      '<div class="v2-search" style="margin-top:16px;padding:12px 16px">' + ICO('search', 18, 2) +
-        '<input id="v2-grp-search" placeholder="Rechercher un groupement…" autocomplete="off" value="' + esc(grpListSearch) + '">' +
-        '<button type="button" id="v2-grp-search-x" class="v2-grp-search-x" aria-label="Effacer la recherche" onclick="V2.grpListSearchClear()"' +
-          (grpListSearch ? '' : ' style="display:none"') + '>' + ICO('close', 16, 2) + '</button>' +
-      '</div>';
-    // 02/10/2026 — même tête et mêmes onglets que « Mes listes » et « Carte secteur » (la vue n'avait plus aucune porte depuis l'accueil à grandes portes)
+    // 03/11/2026 — même tête bleue que « Mes officines », « Infos du jour » et « To do list » ; les quatre onglets sont les capsules
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
-      '<div class="v2-wrap v2-u">' +
-        teteOfficines('Opportunités par groupement · ce que commandent les pharmacies adhérentes — liste d\'achats à pousser.') +
-        pharmaTabs('groupements') +
+      '<div class="v2-wrap v2-u gr-m1 gr-bandeau' + (arr ? ' gr-ent' : '') + '" id="gr-m1">' +
+        '<header class="gr-hd"><span class="gr-lu" aria-hidden="true"></span>' +
+          '<div class="gr-hd-t"><p class="gr-eye">Mes officines · vue d\'équipe</p><h1 class="gr-h1">Groupements</h1>' +
+            '<p class="gr-phrase" id="gr-phrase" aria-live="polite">' + grPhrase(list) + '</p></div>' +
+          '<div class="gr-caps">' + pharmaTabs('groupements', 'gr-tabs') + '</div>' +
+          '<div class="gr-top" id="gr-top"' + (haut.length ? '' : ' hidden') + '>' + haut.map(grUne).join('') + '</div>' +
+        '</header>' +
         sortBar +
-        searchBar +
-        '<div class="v2-card" style="margin-top:16px" id="v2-grp-list-card">' + grpListBody() + '</div>' +
+        '<div class="v2-card gr-liste" id="v2-grp-list-card">' + grpListBody(list) + '</div>' +
       '</div>';
-    // Recherche live : on ne re-render QUE la liste (+ compteur) pour préserver
-    // le focus et le curseur du champ (même modèle que la recherche officines).
+    grVeille(root); if (arr) grJoue(root);
+    // Recherche live : on ne redessine que la liste, la phrase et le bandeau pour préserver le focus et le curseur du champ.
     var inp = document.getElementById('v2-grp-search');
     if (inp) {
       inp.addEventListener('input', function () {
         grpListSearch = inp.value;
-        var card = document.getElementById('v2-grp-list-card');
-        if (card) card.innerHTML = grpListBody();
+        grMaj();
         var x = document.getElementById('v2-grp-search-x');
         if (x) x.style.display = grpListSearch ? '' : 'none';
       });
@@ -4976,7 +5036,7 @@
   V2.grpListSearchClear = function () {
     grpListSearch = '';
     var inp = document.getElementById('v2-grp-search'); if (inp) inp.value = '';
-    var card = document.getElementById('v2-grp-list-card'); if (card) card.innerHTML = grpListBody();
+    grMaj();
     var x = document.getElementById('v2-grp-search-x'); if (x) x.style.display = 'none';
     if (inp) inp.focus();
   };
@@ -5026,22 +5086,6 @@
     if (String(selPid) !== 'GRP:' + grpName) { selPid = 'GRP:' + grpName; selCips = new Set(); }
     var data = groupementProducts(grpName);
     var total = data.cats.reduce(function (s, o) { return s + o.rows.length; }, 0);
-    var hero =
-      '<div class="v2-card" style="margin-bottom:22px;padding:0">' +
-        '<div style="display:flex;align-items:center;gap:14px;padding:20px 22px;border-bottom:1px solid var(--line);flex-wrap:wrap">' +
-          grpLogo(grpName, true) +
-          '<div style="flex:1;min-width:160px">' +
-            '<div style="font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.1">' + esc(grpName) + '</div>' +
-            '<div style="font-size:12px;color:var(--muted);margin-top:3px">' + data.panel + ' pharmacie' + (data.panel > 1 ? 's' : '') + ' active' + (data.panel > 1 ? 's' : '') + ' · ' + total + ' produits commandés · ' + periodLabel() + '</div>' +
-          '</div>' +
-          '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
-            '<button id="v2-opp-pdf" class="v2-btn v2-btn-primary" onclick="V2.grpDownloadPdf(\'' + encodeURIComponent(grpName).replace(/'/g, '%27') + '\')">' +
-              ICO('download', 17) + (selCips && selCips.size ? 'Liste · ' + selCips.size + ' produit' + (selCips.size > 1 ? 's' : '') : 'Liste d\'achats (PDF)') + '</button>' +
-            '<button class="v2-btn v2-btn-ghost" onclick="V2.grpDownloadXlsx(\'' + encodeURIComponent(grpName).replace(/'/g, '%27') + '\')">' + ICO('download', 16) + 'Excel</button>' +
-            (V2.canShareFiles && V2.canShareFiles() ? '<button class="v2-btn v2-btn-ghost" onclick="V2.grpDownloadPdf(\'' + encodeURIComponent(grpName).replace(/'/g, '%27') + '\',\'share\')">' + ICO('spark', 16) + 'Partager</button>' : '') +
-          '</div>' +
-        '</div>' +
-      '</div>';
     // ── Pharmacies membres du groupement ──
     var members = (V2.pharmacies || []).filter(function (p) {
       return groupName(p) === grpName;
@@ -5058,7 +5102,7 @@
       '</a>';
     }).join('');
     var membersCard =
-      '<div class="v2-card" style="margin-bottom:22px">' +
+      '<div class="v2-card" id="gr-membres" style="margin-bottom:22px">' +
         '<div class="v2-card-head"><div class="v2-card-t">' + ICO('pharma', 17) + 'Pharmacies du groupement</div>' +
           '<span class="v2-card-link" style="cursor:default;color:var(--muted)">' + members.length + ' · ' + data.panel + ' cliente' + (data.panel > 1 ? 's' : '') + '</span></div>' +
         (memRows || '<div class="v2-empty"><div class="v2-empty-d">Aucune pharmacie de ce groupement dans vos données.</div></div>') +
@@ -5066,14 +5110,30 @@
     var catsHtml = data.cats.length
       ? data.cats.map(function (o, i) { return renderGrpCatCard(o, i, data.panel, data.ovKey); }).join('')
       : '<div class="v2-empty"><div class="v2-empty-d">Aucun achat identifié pour ce groupement.</div></div>';
+    // 03/11/2026 — l'en-tête bleu : le retour, le logo, le nom, la phrase, les trois boutons et les capsules qui mènent aux blocs
+    var arr = grDetArr;
+    var uG = encodeURIComponent(grpName).replace(/'/g, '%27'), nPh = data.panel;
+    var hero = '<header class="gr-hd gr-hd-d"><span class="gr-lu" aria-hidden="true"></span>' +
+      '<div class="gr-id"><span class="gr-pastille">' + grpLogo(grpName, true) + '</span><div class="gr-hd-t"><p class="gr-eye">Groupement</p><h1 class="gr-h1">' + esc(grpName) + '</h1>' +
+        '<p class="gr-phrase">' + grNum(nPh) + ' pharmacie' + (nPh > 1 ? 's' : '') + ' active' + (nPh > 1 ? 's' : '') + ' · ' + grNum(total) + ' produits commandés · ' + periodLabel() + '</p></div></div>' +
+      '<div class="gr-acts">' +
+        '<button id="v2-opp-pdf" class="v2-btn v2-btn-primary" onclick="V2.grpDownloadPdf(\'' + uG + '\')">' +
+          ICO('download', 17) + (selCips && selCips.size ? 'Liste · ' + selCips.size + ' produit' + (selCips.size > 1 ? 's' : '') : 'Liste d\'achats (PDF)') + '</button>' +
+        '<button class="v2-btn v2-btn-ghost" onclick="V2.grpDownloadXlsx(\'' + uG + '\')">' + ICO('download', 16) + 'Excel</button>' +
+        (V2.canShareFiles && V2.canShareFiles() ? '<button class="v2-btn v2-btn-ghost" onclick="V2.grpDownloadPdf(\'' + uG + '\',\'share\')">' + ICO('spark', 16) + 'Partager</button>' : '') +
+      '</div>' +
+      '<nav class="gr-caps" aria-label="Sections de la page">' +
+        '<button type="button" class="gr-cap" onclick="V2.grAller(\'gr-membres\')">Pharmacies du groupement <span class="gr-cnt">' + members.length + '</span></button>' +
+        '<button type="button" class="gr-cap" onclick="V2.grAller(\'gr-achats\')">Liste d\'achats idéale <span class="gr-cnt">' + total + '</span></button>' +
+      '</nav></header>';
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
-      '<div class="v2-wrap ph-detail" style="--accent:var(--pil-opp)">' +
+      '<div class="v2-wrap ph-detail gr-m1 gr-det' + (arr ? ' gr-ent' : '') + '" id="gr-m1" style="--accent:var(--pil-opp)">' +
         '<button class="v2-back" style="margin-bottom:16px" onclick="V2.pharmaGroupBack()">' + ICO('back', 16) + 'Tous les groupements</button>' +
         hero +
         membersCard +
         (V2.profil ? V2.profil.section('groupement', grpName) : '') +
         (V2.notes ? V2.notes.section('groupement', grpName) : '') +
-        sectionHead('Liste d\'achats idéale', 'produits triés par nombre de pharmacies qui les commandent (Sortie)') +
+        '<span id="gr-achats" class="gr-ancre"></span>' + sectionHead('Liste d\'achats idéale', 'produits triés par nombre de pharmacies qui les commandent (Sortie)') +
         prodToolbar(data.ovKey) +
         catsHtml +
       '</div>' +
@@ -5082,12 +5142,14 @@
     if (V2.notes) V2.notes.hydrate();
 
     refreshCartbar();
+    grVeille(root); if (arr) grJoue(root);
   }
 
   // ── Handlers groupements ──
   V2.pharmaView = function (v) { pharmaView = v; selGroup = null; selList = null; V2.render(); };
   V2.pharmaGroup = function (enc) {
     try { selGroup = decodeURIComponent(enc); } catch (e) { selGroup = enc; }
+    grDetArr = true;
     // 19/09/2026 (Karine, aee2d602) — ouvrir un groupement ne changeait pas le hash :
     // le bouton PRÉCÉDENT du navigateur sortait alors carrément de l'onglet Groupements
     // au lieu d'y revenir. On pousse une entrée d'historique dédiée (même adresse) ;
