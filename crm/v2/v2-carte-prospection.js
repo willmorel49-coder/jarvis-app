@@ -645,7 +645,7 @@
       h += '<button type="button" class="pp-ar" onclick="V2.carteProspection.arret(\'' + id + '\')">' +
         '<b class="pp-num pp-num-l" style="background:' + couleur(code) + '">' + c.n + '</b>' +
         '<span class="pp-nom">' + esc(c.nom) + '</span>' +
-        '<span class="pp-sub">' + esc(c.ville || '') + (commercialDe(c) ? ' · ' + esc(commercialDe(c)) : '') + (c.transporteur ? ' · ' + esc(c.transporteur) : '') + (c.ordre_source != null ? ' · n° du fichier ' + c.ordre_source : '') + '</span>' +
+        '<span class="pp-sub">' + esc(c.ville || '') + (commercialDe(c) ? ' · ' + esc(commercialDe(c)) : '') + (c.transporteur ? ' · ' + esc(c.transporteur) : '') + (c.ordre_corrige ? ' · ' + esc(c.ordre_corrige) : (c.ordre_source != null ? ' · n° du fichier ' + c.ordre_source : '')) + '</span>' +
         (r ? '<span class="pp-ch">' + C.nb1(r.jours_mois) + ' jours de commande par mois · ' + C.eur2(r.marge_jour) + ' par jour</span>' +
              '<span class="pp-ch' + (r.rentabilite_mois < 0 ? ' pp-neg' : '') + '">Rentabilité : <b>' + C.eur(r.rentabilite_mois) + '</b> par mois</span>'
            : '<span class="pp-ch">Pas de ventes de janvier à septembre 2026</span>') + '</button>';
