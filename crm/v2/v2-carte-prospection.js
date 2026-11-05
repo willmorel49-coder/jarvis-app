@@ -24,6 +24,10 @@
      (scope_id '__prospection_outlook_<id>__', data = { maj, o: { cip: 'b' | 'a' | 'e:AAAA-MM-JJ' } }) écrite UNIQUEMENT par
      ~/prospection-tournees/diffusion/synchro.py ; l'app la LIT seulement. Le clic n'agit pas sur Outlook : les brouillons
      se mettent à jour quand Will le demande (synchro.py).
+   - TOURNÉES OPS (05/11/2026) : le fichier privé porte aussi l'ordre de livraison (n° des arrêts), le tracé par la ROUTE, le transporteur,
+     le commercial, la rentabilité de chaque cliente et de chaque tournée, et pour chaque prospect la tournée la plus proche (km sur la
+     route), l'endroit où il s'insère (« entre le n° X et le n° Y ») et un détour estimé. Rien de chiffré dans le dépôt : tout vient du
+     fichier privé. Un fichier sans ces champs (ancien format) s'affiche comme avant.
    ═══════════════════════════════════════════════════════════════════ */
 (function (glob) {
   'use strict';
@@ -80,6 +84,44 @@
     liste.sort(function (a, b) { return a.km - b.km || (a.nom < b.nom ? -1 : a.nom > b.nom ? 1 : 0); });
     return { liste: liste, sansPosition: sansPosition };
   };
+  // ── Tournées OPS : calcul pur (testé : tests/carte-tournees-ops.test.mjs) ──
+  C.nouveauFormat = function (d) { return !!(d && d.prospects && d.prospects.length && (d.clientes || []).some(function (c) { return c.n != null; })); };
+  // Prospects lus dans le fichier privé (colonnes : cip, lat, lng, tournée, km sur la route, après l'arrêt n°, avant l'arrêt n°, détour estimé, position fiable)
+  // et rapprochés de PHARMA_FR par CIP (nom, ville). Une cliente d'un commercial (CLIENTS_ACTIFS) n'est jamais prospect.
+  C.prospectsFichier = function (pts, lignes, actifs) {
+    var index = {}, liste = [];
+    for (var i = 0; i < pts.length; i++) index[cleCip(pts[i][13])] = i;
+    (lignes || []).forEach(function (r) {
+      var cip = cleCip(r[0]), i = index[cip];
+      if (i == null || (actifs && Object.prototype.hasOwnProperty.call(actifs, cip))) return;
+      if (!isFinite(r[1]) || !isFinite(r[2])) return;
+      var p = pts[i];
+      liste.push({ i: i, cip: cip, nom: p[6] || '', ville: p[7] || '', cp: String(p[8] || ''), lat: r[1], lng: r[2], tournee: r[3], km: r[4], avant: r[5], apres: r[6], detour: r[7], fiable: r[8] !== false });
+    });
+    liste.sort(function (a, b) { return a.km - b.km || (a.nom < b.nom ? -1 : a.nom > b.nom ? 1 : 0); });
+    return { liste: liste, sansPosition: 0 };
+  };
+  C.eur = function (v) { return (v == null || !isFinite(v)) ? '—' : (Math.round(v) < 0 ? '−' : '') + Math.abs(Math.round(v)).toLocaleString('fr-FR') + ' €'; };
+  C.eur2 = function (v) { return (v == null || !isFinite(v)) ? '—' : (v < 0 ? '−' : '') + Math.abs(v).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; };
+  C.nb1 = function (v) { return (v == null || !isFinite(v)) ? '—' : v.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); };
+  C.joursTournee = function (t) {
+    if (t && t.jours && t.jours.length) return C.jours(t.jours);
+    return t && t.jours_statut === 'a_confirmer' ? 'jours à confirmer' : 'jours à préciser';
+  };
+  // Où le prospect s'insère dans la tournée : phrase pour les chauffeurs.
+  C.insertion = function (p) {
+    if (!p || p.avant == null) return '';
+    var lieu = p.avant === 0 ? 'entre le dépôt et le n° ' + p.apres : (p.apres == null ? 'après le n° ' + p.avant + ' (dernier arrêt), sur le retour' : 'entre le n° ' + p.avant + ' et le n° ' + p.apres);
+    var det = p.detour == null ? '' : (p.detour < 1 ? ' · détour estimé : moins de 1 km' : ' · détour estimé ~' + Math.round(p.detour) + ' km');
+    return lieu + ' de ' + p.tournee + det;
+  };
+  // 22 tournées : teintes espacées d'un angle d'or, deux niveaux de clarté (texte blanc lisible dans la pastille numérotée)
+  C.couleurTournee = function (k) { return 'hsl(' + Math.round((k * 137.508) % 360) + ',68%,' + (k % 2 ? 33 : 40) + '%)'; };
+  C.ordonnerTournees = function (T, tri) {
+    var codes = Object.keys(T || {}).sort();
+    if (tri === 'renta') codes.sort(function (a, b) { var x = T[a].rentabilite, y = T[b].rentabilite; return (x == null ? 1e12 : x) - (y == null ? 1e12 : y) || (a < b ? -1 : 1); });
+    return codes;
+  };
   C.dans = function (liste, rayon) { var n = 0; while (n < liste.length && liste[n].km <= rayon) n++; return n; };   // liste triée : nombre de prospects à ≤ rayon km
 
   // Couleur du suivi : MÊME priorité que suiviEtat() de v2-carte.js. S = { pret, rouge, rdv, vu (fonction cip → date | null) }.
@@ -110,10 +152,9 @@
     verif: null,         // promesse de la vérification (une seule par session de page)
     actif: false, charge: false, erreur: '', manque: [],
     donnees: null, proj: null, prospects: [], sansPosition: 0,
-    rayon: 10, choisi: '', affiches: 60,
+    rayon: 10, choisi: '', affiches: 60, vue: 'prospects', tri: 'code', tourneeSel: '',
     suiviCouleur: { pret: false }, prive: {}, priveOk: false, outlook: null
   };
-  var COUL_TOURNEE = ['#7C3AED', '#EA580C', '#0891B2', '#DB2777', '#A16207', '#334155'];
   var RAYON_MAX = 50;
 
   function sb() { return (V2.sb && V2.sb()) || null; }
@@ -240,8 +281,10 @@
       if (!S.outlook) S.manque.push('état des brouillons Outlook');
       var D = glob.PHARMA_FR;
       if (!D || !D.p) throw new Error('base des officines non chargée');
-      var res = C.prospects(D.p, glob.CLIENTS_ACTIFS.d, S.proj);
+      var res = C.nouveauFormat(S.donnees) ? C.prospectsFichier(D.p, S.donnees.prospects, glob.CLIENTS_ACTIFS.d) : C.prospects(D.p, glob.CLIENTS_ACTIFS.d, S.proj);
       S.prospects = res.liste; S.sansPosition = res.sansPosition;
+      S.ops = C.nouveauFormat(S.donnees);
+      S.vue = S.ops ? 'tournees' : 'prospects'; S.tourneeSel = '';
       return S;
     });
   };
@@ -270,10 +313,14 @@
   var _tmr = null;
 
   function interne() { I = (V2.carteInterne && V2.carteInterne()) || null; return I; }
-  function couleur(code) { var k = Object.keys(S.donnees.tournees).sort().indexOf(code); return COUL_TOURNEE[(k < 0 ? 0 : k) % COUL_TOURNEE.length]; }
+  function couleur(code) { var k = Object.keys(S.donnees.tournees).sort().indexOf(code); return C.couleurTournee(k < 0 ? 0 : k); }
   function etatDe(cip) { return C.etat(cip, S.suiviCouleur); }
   function couleurEtat(cip) { var e = etatDe(cip); return (I && I.SUIVI_COL) ? I.SUIVI_COL[e] : '#8B93A3'; }
   function tourneeLbl(code) { var t = S.donnees && S.donnees.tournees[code]; return t ? t.code + ' · ' + t.nom + (t.jours && t.jours.length ? ' · ' + C.jours(t.jours) : '') : ''; }
+  var polylignes = {};            // code → polyligne du tracé
+  var pastilles = {};             // code → pastilles numérotées de la tournée
+  function commercialDe(c) { var m = (S.donnees && S.donnees.commerciaux) || {}; return (c && c.commercial && (m[c.commercial] || c.commercial)) || ''; }
+  function clienteDe(id) { var L = (S.donnees && S.donnees.clientes) || []; for (var i = 0; i < L.length; i++) if (L[i].id === id) return L[i]; return null; }
 
   C.basculer = function () { if (S.actif) C.quitter(); else C.ouvrir(); };
 
@@ -302,7 +349,7 @@
   C.reset = function (garder) {
     S.reprise = null;
     if (garder && S.actif && I && I.map) { try { S.reprise = { c: I.map.getCenter(), z: I.map.getZoom(), choisi: S.choisi }; } catch (e) { S.reprise = null; } }
-    S.actif = false; S.choisi = ''; calques = null; marqueurs = {}; anneaux = {};
+    S.actif = false; S.choisi = ''; calques = null; marqueurs = {}; anneaux = {}; polylignes = {}; pastilles = {};
   };
   C.reprendre = function () {
     var r = S.reprise; S.reprise = null;
@@ -325,7 +372,7 @@
   function retirerCalques() {
     if (!calques || !I || !I.map) { calques = null; return; }
     ['traces', 'clientes', 'prospects', 'anneaux', 'depot'].forEach(function (k) { if (calques[k]) { try { I.map.removeLayer(calques[k]); } catch (e) {} } });
-    calques = null; marqueurs = {}; anneaux = {};
+    calques = null; marqueurs = {}; anneaux = {}; polylignes = {}; pastilles = {};
   }
 
   function poserRail() {
@@ -343,13 +390,23 @@
     Object.keys(T).sort().forEach(function (k) {
       var col = couleur(k), tr = T[k].trace || [];
       if (tr.length > 1) {
-        var pl = L.polyline(tr, { color: col, weight: 5, opacity: 0.9, lineCap: 'round', lineJoin: 'round', renderer: I.canvas, interactive: false });
+        var pl = L.polyline(tr, { color: col, weight: S.ops ? 4 : 5, opacity: 0.9, lineCap: 'round', lineJoin: 'round', renderer: I.canvas, interactive: false });
+        polylignes[k] = pl;
         calques.traces.addLayer(pl);
       }
     });
     (S.donnees.clientes || []).forEach(function (c) {
       if (!isFinite(c.lat) || !isFinite(c.lng) || c.hors_secteur || !c.tournee) return;
       var col = couleur(c.tournee);
+      if (S.ops && c.n != null) {   // arrêt numéroté dans l'ordre de livraison
+        var ri = c.renta, tip = '<b>' + esc(c.nom) + '</b><span>N° ' + c.n + ' · ' + esc(c.ville || '') + (c.cp ? ' · ' + esc(c.cp) : '') + '</span><em>' + esc(tourneeLbl(c.tournee)) + (ri ? ' · rentabilité ' + esc(C.eur(ri.rentabilite_mois)) + ' par mois' : '') + '</em>';
+        var mk = L.marker([c.lat, c.lng], { icon: L.divIcon({ className: 'pp-num-w', html: '<div class="pp-num" style="background:' + col + '">' + c.n + '</div>', iconSize: [24, 24], iconAnchor: [12, 12] }), keyboard: false, riseOnHover: true });
+        mk.bindTooltip(tip, { direction: 'top', offset: [0, -10], className: 'cn-tip' });
+        mk.on('click', function () { C.arret(c.id); });
+        (pastilles[c.tournee] = pastilles[c.tournee] || []).push(mk);
+        calques.clientes.addLayer(mk);
+        return;
+      }
       var m = L.circleMarker([c.lat, c.lng], { renderer: I.canvas, radius: 7.5, color: col, weight: 3, fillColor: '#FFFFFF', fillOpacity: 1, dashArray: c.tournee_supposee ? '3 3' : null });
       m.bindTooltip('<b>' + esc(c.nom) + '</b><span>' + esc(c.ville || '') + (c.cp ? ' · ' + esc(c.cp) : '') + '</span><em>Cliente · ' + esc(tourneeLbl(c.tournee)) + (c.tournee_supposee ? ' (tournée supposée)' : '') + '</em>', { direction: 'top', offset: [0, -6], className: 'cn-tip' });
       m.on('click', function () { var i = indexDe(c.id); if (i >= 0 && V2.carteFiche) V2.carteFiche(i); });
@@ -366,12 +423,14 @@
       if (p.km > RAYON_MAX) return;
       var m = L.circleMarker([p.lat, p.lng], styleProspect(p));
       m._cip = p.cip;
-      m.bindTooltip('<b>' + esc(p.nom || 'Pharmacie') + '</b><span>' + esc(p.ville) + (p.cp ? ' · ' + esc(p.cp) : '') + '</span><em>' + C.kmFr(p.km) + ' km du trajet · ' + esc(tourneeLbl(p.tournee)) + '</em>', { direction: 'top', offset: [0, -6], className: 'cn-tip' });
+      m.bindTooltip('<b>' + esc(p.nom || 'Pharmacie') + '</b><span>' + esc(p.ville) + (p.cp ? ' · ' + esc(p.cp) : '') + '</span><em>' + C.kmFr(p.km) + ' km du trajet · ' + esc(tourneeLbl(p.tournee)) + (S.ops && p.avant != null ? ' · ' + esc(C.insertion(p)) : '') + '</em>', { direction: 'top', offset: [0, -6], className: 'cn-tip' });
       m.on('click', function () { C.choisir(p.cip, true); });
       marqueurs[p.cip] = m;
     });
-    [calques.traces, calques.clientes, calques.depot, calques.prospects, calques.anneaux].forEach(function (g) { g.addTo(map); });
+    [calques.traces, calques.clientes, calques.depot].forEach(function (g) { g.addTo(map); });
+    appliquerVue();
     appliquerRayon();
+    if (!map._ppZoom) { map._ppZoom = true; var zz = function () { var el = map.getContainer(); if (el) el.classList.toggle('pp-petit', map.getZoom() < 10); }; map.on('zoomend', zz); zz(); }
   }
   // Pâle = hors de la liste de diffusion, souhait compris (adresse connue, pas de brouillon voulu). Mail déjà parti, sans adresse, Outlook non lu : comme avant.
   function pale(cip) { var d = C.diffusion(cip, S.prive, S.outlook); return (d.etat === 'pret' || d.etat === 'hors') && !d.dans; }
@@ -407,7 +466,7 @@
     var pts = [], d = S.donnees.depot;
     if (d && isFinite(d.lat)) pts.push([d.lat, d.lng]);
     Object.keys(S.donnees.tournees).forEach(function (k) { (S.donnees.tournees[k].trace || []).forEach(function (q) { pts.push(q); }); });
-    if (pts.length > 1) { try { I.map.fitBounds(pts, { padding: [30, 30] }); } catch (e) {} }
+    if (pts.length > 1) { try { I.map.invalidateSize({ animate: false }); I.map.fitBounds(pts, { padding: [30, 30] }); } catch (e) {} }
   }
 
   // ── Barre du haut (curseur) : appelée par renderFbRow() de v2-carte.js quand le mode est actif ──
@@ -435,6 +494,7 @@
   };
   function majNombre() {
     var n = C.dans(S.prospects, S.rayon), el = document.getElementById('pp-n');
+    var on = document.getElementById('pp-onglets'); if (on && S.ops) on.outerHTML = onglets();
     if (el) el.innerHTML = '<b>' + n.toLocaleString('fr-FR') + '</b> prospect' + (n > 1 ? 's' : '') + ' à moins de ' + S.rayon + ' km';
     var inp = document.getElementById('pp-rayon'); if (inp) inp.setAttribute('aria-valuetext', S.rayon + ' kilomètres');
   }
@@ -443,15 +503,15 @@
   function legendeHtml() {
     var T = S.donnees.tournees, k = Object.keys(T).sort(), SC = (I && I.SUIVI_COL) || {};
     var lg = function (c, t) { return '<span class="pp-lg"><i style="background:' + c + '"></i>' + esc(t) + '</span>'; };
-    var h = '<div class="pp-leg"><div class="pp-leg-t">Tournées</div>' + k.map(function (code) {
+    var h = '<div class="pp-leg">' + (S.ops ? '' : '<div class="pp-leg-t">Tournées</div>' + k.map(function (code) {
       return '<span class="pp-lg pp-lg-t"><i class="pp-trait" style="background:' + couleur(code) + '"></i>' + esc(tourneeLbl(code)) + '</span>';
-    }).join('') +
+    }).join('')) +
     '<div class="pp-leg-t">Prospects</div>' +
       lg(SC.rouge, 'Ne pas y retourner') + lg(SC.vert, 'Rendez-vous à venir') + lg(SC.gris, 'Déjà vue') + lg(SC.bleu, 'Jamais vue') +
     '<span class="pp-lg"><i class="pp-ring-m"></i>Contour foncé : mail envoyé</span>' +
     '<span class="pp-lg"><i class="pp-ring-r"></i>Anneau orange : relance à faire</span>' +
     '<span class="pp-lg"><i class="pp-pale"></i>Point pâle : pas dans ma liste de diffusion</span>' +
-    '<span class="pp-lg"><i class="pp-cli"></i>Cliente (contour de la tournée ; pointillé : tournée supposée)</span>';
+    (S.ops ? '<span class="pp-lg"><i class="pp-cli"></i>Pastille numérotée : cliente, dans l\'ordre de livraison de sa tournée</span>' : '<span class="pp-lg"><i class="pp-cli"></i>Cliente (contour de la tournée ; pointillé : tournée supposée)</span>');
     if (S.manque.length) h += '<span class="pp-lg pp-lg-m">Non lu : ' + esc(S.manque.join(', ')) + '. Ces couleurs ou suivis peuvent être incomplets ; rouvrir la prospection pour réessayer.</span>';
     if (S.sansPosition) h += '<span class="pp-lg pp-lg-n">' + S.sansPosition + ' officine' + (S.sansPosition > 1 ? 's' : '') + ' du secteur sans position, non comptée' + (S.sansPosition > 1 ? 's' : '') + '.</span>';
     return h + '</div>';
@@ -520,6 +580,7 @@
         '<i class="pp-dot" style="background:' + couleurEtat(p.cip) + '"></i>' +
         '<span class="pp-nom">' + esc(p.nom || 'Pharmacie') + '</span>' +
         '<span class="pp-sub">' + esc(p.ville) + ' · <b>' + C.kmFr(p.km) + ' km</b> · ' + esc(tourneeLbl(p.tournee)) + '</span>' +
+        (S.ops && p.avant != null ? '<span class="pp-ins">' + esc(C.insertion(p).charAt(0).toUpperCase() + C.insertion(p).slice(1)) + '</span>' : '') +
         '<span class="pp-pus">' + puces(p) + '</span>' +
       '</button>' + (sel ? detailHtml(p) : '') + '</div>';
   }
@@ -537,7 +598,8 @@
   }
   // En-tête : N et K se CALCULENT (jamais en dur). Mise à jour sans reconstruire le panneau (la liste garde sa position).
   function teteHtml() {
-    var c = C.compteDiffusion(S.prive, S.outlook), h = '<b>Prospection</b><span>Officines du secteur qui ne sont clientes de personne, de la plus proche du trajet à la plus éloignée.</span><span class="pp-note">Trajet approché, d\'une cliente à la suivante.</span>';
+    if (S.ops && S.vue === 'tournees') return '<b>Tournées de livraison</b><span class="pp-note">Tracés : la vraie route, dans l\'ordre de livraison. Touchez une tournée pour voir ses arrêts dans l\'ordre.</span>';
+    var c = C.compteDiffusion(S.prive, S.outlook), h = '<b>Prospection</b><span>Officines du secteur qui ne sont clientes de personne, de la plus proche du trajet à la plus éloignée.</span><span class="pp-note">' + (S.ops ? 'Tracés : la vraie route, dans l\'ordre de livraison.' : 'Trajet approché, d\'une cliente à la suivante.') + '</span>';
     if (!c.lu) return h + '<span class="pp-diff-t pp-l-m">État des brouillons Outlook non lu : la liste de diffusion ne peut pas être modifiée.</span>';
     h += '<span class="pp-diff-t" id="pp-diff-n"><b>' + c.n.toLocaleString('fr-FR') + '</b> pharmacie' + (c.n > 1 ? 's' : '') + ' dans votre liste de diffusion</span>';
     if (c.k) h += '<span class="pp-diff-k" id="pp-diff-k">' + c.k.toLocaleString('fr-FR') + ' changement' + (c.k > 1 ? 's' : '') + ' à reporter dans Outlook : demandez la mise à jour des brouillons.</span>';
@@ -547,13 +609,99 @@
   }
   function majTete() { var t = document.getElementById('pp-tete'); if (t) t.innerHTML = teteHtml(); }
   function majListe() { var l = document.getElementById('pp-liste'); if (l) l.innerHTML = listeHtml(); }
+  // ── Tournées OPS : panneau des tournées, liste des arrêts dans l'ordre, accès aux prospects ──
+  function onglets() {
+    if (!S.ops) return '';
+    var n = C.dans(S.prospects, S.rayon), nt = Object.keys(S.donnees.tournees).length;
+    var b = function (v, lib) { var on = (v === 'tournees') ? S.vue === 'tournees' : S.vue === 'prospects'; return '<button type="button" role="tab" class="pp-onglet' + (on ? ' on' : '') + '" aria-selected="' + (on ? 'true' : 'false') + '" onclick="V2.carteProspection.vue(\'' + v + '\')">' + lib + '</button>'; };
+    return '<div class="pp-onglets" id="pp-onglets" role="tablist">' + b('tournees', 'Tournées (' + nt + ')') + b('prospects', 'Prospects (' + n.toLocaleString('fr-FR') + ')') + '</div>';
+  }
+  function chiffresTournee(t) {
+    return '<span class="pp-ch"><b>' + C.nb1(t.km_aller) + ' km</b> aller · ' + C.nb1(t.km_retour) + ' km retour</span>' +
+      '<span class="pp-ch">CA <b>' + C.eur(t.ca) + '</b> · marge <b>' + C.eur(t.marge) + '</b></span>' +
+      '<span class="pp-ch"><b>' + (t.jours_commande || 0).toLocaleString('fr-FR') + '</b> jours de commande · ' + C.eur2(t.marge_jour) + ' par jour</span>' +
+      '<span class="pp-ch' + (t.rentabilite < 0 ? ' pp-neg' : '') + '">Rentabilité, livraisons déduites : <b>' + C.eur(t.rentabilite) + '</b>' + (t.nb_rentabilite_negative ? ' · ' + t.nb_rentabilite_negative + ' client' + (t.nb_rentabilite_negative > 1 ? 's' : '') + ' en perte' : '') + '</span>';
+  }
+  function tourneesHtml() {
+    var T = S.donnees.tournees, codes = C.ordonnerTournees(T, S.tri);
+    var h = '<div class="pp-tris"><span>Trier par</span><button type="button" class="pp-tri' + (S.tri === 'code' ? ' on' : '') + '" onclick="V2.carteProspection.tri(\'code\')">Numéro</button><button type="button" class="pp-tri' + (S.tri === 'renta' ? ' on' : '') + '" onclick="V2.carteProspection.tri(\'renta\')">Rentabilité (la plus faible d\'abord)</button></div>';
+    codes.forEach(function (k) {
+      var t = T[k];
+      h += '<button type="button" class="pp-tr" onclick="V2.carteProspection.tournee(\'' + k + '\')">' +
+        '<span class="pp-nom"><i class="pp-trait" style="background:' + couleur(k) + '"></i>' + esc(k + ' · ' + t.nom) + '</span>' +
+        '<span class="pp-sub">' + esc(C.joursTournee(t)) + ' · ' + (t.transporteur ? 'transporteur ' + esc(t.transporteur) : 'transporteur non renseigné') + ' · <b>' + t.nb_arrets + ' arrêt' + (t.nb_arrets > 1 ? 's' : '') + '</b></span>' +
+        chiffresTournee(t) + '</button>';
+    });
+    return h;
+  }
+  function arretsHtml(code) {
+    var t = S.donnees.tournees[code]; if (!t) return '';
+    var h = '<div class="pp-dt"><button type="button" class="v2-btn v2-btn-ghost pp-retour" onclick="V2.carteProspection.tourneeFermer()">← Toutes les tournées</button>' +
+      '<div class="pp-nom"><i class="pp-trait" style="background:' + couleur(code) + '"></i>' + esc(code + ' · ' + t.nom) + '</div>' +
+      '<div class="pp-sub">' + esc(C.joursTournee(t)) + ' · ' + (t.transporteur ? 'transporteur ' + esc(t.transporteur) : 'transporteur non renseigné') + (t.nom_auto ? ' · nom automatique' : '') + '</div>' + chiffresTournee(t) +
+      '<div class="pp-aide">Dépôt, puis les arrêts dans l\'ordre de livraison. Rentabilité par mois = marge − jours de commande × coût d\'une livraison, divisée par les mois d\'activité (janvier à septembre 2026).</div></div>';
+    (t.arrets || []).forEach(function (id) {
+      var c = clienteDe(id); if (!c) return; var r = c.renta;
+      h += '<button type="button" class="pp-ar" onclick="V2.carteProspection.arret(\'' + id + '\')">' +
+        '<b class="pp-num pp-num-l" style="background:' + couleur(code) + '">' + c.n + '</b>' +
+        '<span class="pp-nom">' + esc(c.nom) + '</span>' +
+        '<span class="pp-sub">' + esc(c.ville || '') + (commercialDe(c) ? ' · ' + esc(commercialDe(c)) : '') + (c.transporteur ? ' · ' + esc(c.transporteur) : '') + (c.ordre_source != null ? ' · n° du fichier ' + c.ordre_source : '') + '</span>' +
+        (r ? '<span class="pp-ch">' + C.nb1(r.jours_mois) + ' jours de commande par mois · ' + C.eur2(r.marge_jour) + ' par jour</span>' +
+             '<span class="pp-ch' + (r.rentabilite_mois < 0 ? ' pp-neg' : '') + '">Rentabilité : <b>' + C.eur(r.rentabilite_mois) + '</b> par mois</span>'
+           : '<span class="pp-ch">Pas de ventes de janvier à septembre 2026</span>') + '</button>';
+    });
+    return h;
+  }
+  function corps() {
+    if (!S.ops || S.vue === 'prospects') return '<details class="pp-legd"' + (window.matchMedia && window.matchMedia('(max-width:760px)').matches ? '' : ' open') + '><summary>Légende</summary>' + legendeHtml() + '</details>' +
+      '<div class="pp-liste" id="pp-liste">' + listeHtml() + '</div>';
+    return '<div class="pp-liste pp-tournees">' + (S.tourneeSel ? arretsHtml(S.tourneeSel) : tourneesHtml()) + '</div>';
+  }
+  function appliquerVue() {
+    if (!calques || !I || !I.map) return;
+    var on = !S.ops || S.vue === 'prospects';
+    ['prospects', 'anneaux'].forEach(function (k) { var dedans = I.map.hasLayer(calques[k]); if (on && !dedans) calques[k].addTo(I.map); else if (!on && dedans) I.map.removeLayer(calques[k]); });
+    Object.keys(pastilles).forEach(function (k) {   // une tournée choisie : seules ses pastilles restent sur la carte
+      var voir = !S.tourneeSel || S.tourneeSel === k;
+      pastilles[k].forEach(function (mk) { var dedans = calques.clientes.hasLayer(mk); if (voir && !dedans) calques.clientes.addLayer(mk); else if (!voir && dedans) calques.clientes.removeLayer(mk); });
+    });
+    Object.keys(polylignes).forEach(function (k) {
+      var sel = S.tourneeSel === k, atten = !!S.tourneeSel && !sel;
+      polylignes[k].setStyle({ opacity: atten ? 0.22 : 0.92, weight: sel ? 6 : (S.ops ? 4 : 5) });
+    });
+  }
+  C.vue = function (v) {
+    S.vue = v === 'prospects' ? 'prospects' : 'tournees'; S.tourneeSel = '';
+    appliquerVue(); majTout();
+    if (S.vue === 'tournees') cadrer();
+  };
+  C.tri = function (v) { S.tri = v === 'renta' ? 'renta' : 'code'; majTout(); };
+  C.tournee = function (code) {
+    if (!S.donnees || !S.donnees.tournees[code]) return;
+    S.vue = 'tournees'; S.tourneeSel = code; appliquerVue(); majTout();
+    var t = S.donnees.tournees[code], pts = (t.trace || []).slice(); if (S.donnees.depot && isFinite(S.donnees.depot.lat)) pts.push([S.donnees.depot.lat, S.donnees.depot.lng]);
+    if (I && I.map && pts.length > 1) { try { I.map.invalidateSize({ animate: false }); I.map.fitBounds(pts, { padding: [30, 30] }); } catch (e) {} }
+    var sc = document.getElementById('pp-scroll'); if (sc) sc.scrollTop = 0;
+  };
+  C.tourneeFermer = function () { S.tourneeSel = ''; appliquerVue(); majTout(); cadrer(); };
+  // Clic sur un arrêt (liste ou pastille) : la fiche existante de l'officine
+  C.arret = function (id) {
+    var c = clienteDe(cleCip(id)); if (!c || !I) return;
+    if (I.map && isFinite(c.lat)) I.map.setView([c.lat, c.lng], Math.max(I.map.getZoom(), 12), { animate: true });
+    var i = indexDe(c.id);
+    if (i >= 0 && V2.carteFiche) {
+      var sh = document.querySelector('.cn-shell');
+      if (sh && window.matchMedia && window.matchMedia('(max-width:760px)').matches) sh.classList.add('cn-fiche-on');
+      setTimeout(function () { if (I.map) I.map.invalidateSize(); }, 30);
+      V2.carteFiche(i);
+    } else if (V2.toast) V2.toast('La fiche de cette pharmacie n\'est pas disponible', 'warn');
+  };
   function majTout() {
     var r = document.getElementById('pp-rail');
     if (r) {
       if (!S.charge) poserRail();
-      else r.innerHTML = '<div class="pp-tete" id="pp-tete">' + teteHtml() + '</div>' +
-        '<div class="pp-scroll" id="pp-scroll"><details class="pp-legd"' + (window.matchMedia && window.matchMedia('(max-width:760px)').matches ? '' : ' open') + '><summary>Légende</summary>' + legendeHtml() + '</details>' +
-        '<div class="pp-liste" id="pp-liste">' + listeHtml() + '</div></div>';
+      else r.innerHTML = '<div class="pp-tete" id="pp-tete">' + teteHtml() + '</div>' + onglets() +
+        '<div class="pp-scroll" id="pp-scroll">' + corps() + '</div>';
     }
     C.barre();
   }
@@ -717,6 +865,27 @@
       '.cn-pp-btn.on{background:var(--ip-blue,#0057FF);border-color:var(--ip-blue,#0057FF);color:#fff}',
       '.cn-fb-act.cn-pp-btn span{display:inline!important}',
       '.pp-depot-w{background:none;border:none}',
+      '.pp-num-w{background:none;border:none}',
+      '.pp-num{box-sizing:border-box;width:24px;height:24px;border-radius:50%;border:2px solid #fff;color:#fff;font-size:12px;font-weight:800;line-height:20px;text-align:center;box-shadow:0 1px 5px rgba(16,19,28,.45);font-variant-numeric:tabular-nums}',
+      '.pp-petit .pp-num{transform:scale(.5);font-size:0}',
+      '.pp-num-l{display:inline-block;grid-row:1/4;width:28px;height:28px;line-height:24px;font-size:13px;flex:none}',
+      '.pp-onglets{flex:none;display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--line)}',
+      '.pp-onglet,.pp-tri{font:inherit;font-size:13px;font-weight:800;min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line-strong,#c3c9d4);background:var(--card);color:var(--ip-ink);cursor:pointer}',
+      '.pp-onglet{flex:1}',
+      '.pp-onglet.on,.pp-tri.on{background:var(--ip-blue,#0057FF);border-color:var(--ip-blue,#0057FF);color:#fff}',
+      '.pp-tris{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:12.5px;font-weight:700;color:var(--muted)}',
+      '.pp-tri{font-size:12.5px;padding:0 10px}',
+      '.pp-tr,.pp-ar{all:unset;box-sizing:border-box;display:flex;flex-direction:column;gap:3px;width:100%;min-height:44px;padding:12px 16px;border-bottom:1px solid var(--line);cursor:pointer}',
+      '.pp-tr:focus-visible,.pp-ar:focus-visible{outline:3px solid var(--ip-blue,#0057FF);outline-offset:-3px}',
+      '.pp-ar{display:grid;grid-template-columns:36px 1fr;column-gap:8px;row-gap:3px;align-items:start}',
+      '.pp-ar>.pp-nom,.pp-ar>.pp-sub,.pp-ar>.pp-ch{grid-column:2}',
+      '.pp-ch{font-size:12px;line-height:1.4;color:#4B5565;font-variant-numeric:tabular-nums}',
+      '.pp-ch b{color:var(--ip-ink)}',
+      '.pp-neg,.pp-neg b{color:#B42318}',
+      '.pp-ins{grid-column:2;font-size:12px;font-weight:700;line-height:1.35;color:#1D4ED8}',
+      '.pp-nom .pp-trait{display:inline-block;width:22px;height:5px;border-radius:3px;margin-right:8px;vertical-align:middle}',
+      '.pp-dt{display:flex;flex-direction:column;gap:4px;padding:12px 16px;border-bottom:1px solid var(--line);background:#F3F6FD}',
+      '.pp-retour{align-self:flex-start;min-height:44px;margin-bottom:4px}',
       '.pp-depot{box-sizing:border-box;width:64px;height:24px;line-height:24px;text-align:center;font-size:11.5px;font-weight:800;color:#fff;background:#10131C;border:2px solid #fff;border-radius:6px;box-shadow:0 3px 10px rgba(16,19,28,.4)}',
       '@media(max-width:760px){',
         '.cn-prosp .cn-body{flex-direction:column}',
