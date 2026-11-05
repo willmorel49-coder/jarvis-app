@@ -46,6 +46,7 @@
   // (20 %) ne suffit pas tout en haut du classement, où une place vaut 25 %.
   var SEUIL_PLACES = 5;
   var firstPaint = true; // cascade d'entrée réservée au 1er affichage de la grille
+  var M1 = !OPSO;     // côté OPSO l'en-tête d'aujourd'hui reste
   var PER_PAGE = 60;
 
   // Sélection pour la fiche marketing parapharma
@@ -1882,6 +1883,85 @@
     document.addEventListener('pointerup', function () { if (cur) { reset(cur); cur = null; } }, true);
   }
 
+  // ── 04/11/2026 — « plus clair » : l'écran dans la veine de l'accueil (en-tête bleu, une phrase calculée, cases à tache de lumière) ──
+  // Aucun calcul nouveau : on lit la liste que la page montre. Rien de tout cela ne sert côté OPSO (M1 faux).
+  var olmVu = false, olmQuit = 0, olmObs = null;
+  window.addEventListener('hashchange', function () { if ((location.hash || '').split('/')[0] !== '#offilog') { olmVu = false; olmQuit = Date.now(); } });
+  document.addEventListener('visibilitychange', function () { var h = document.querySelector('.olm-hd'); if (h) h.classList.toggle('olm-pause', document.hidden); });
+  // L'arrivée est « vue » quand son animation démarre vraiment : un dessin refait aussitôt (arrivée des fichiers) ne la perd pas, et plus aucun dessin ne la rejoue.
+  document.addEventListener('animationstart', function (e) { if (e.animationName === 'olm-monte') { olmVu = true; } }, true);
+  function olmArrivee() {
+    if (olmVu) return false;
+    if (Date.now() - olmQuit < 8000) { olmVu = true; return false; }   // retour sur l'écran en moins de 8 s : rien ne rejoue
+    return true;
+  }
+  function olmJoue(root) {
+    var w = root.querySelector('.olm'); if (!w) return;
+    var mo = V2.motion;
+    if (mo && mo.countUp) [].slice.call(w.querySelectorAll('.olm-num,.offr-n')).forEach(function (e) { mo.countUp(e); });
+    setTimeout(function () { w.classList.remove('olm-ent'); }, 900);
+  }
+  // La lumière du bleu s'arrête quand il sort de l'écran et quand l'onglet est caché.
+  function olmVeille(root) {
+    var h = root.querySelector('.olm-hd'); if (!h || !window.IntersectionObserver) return;
+    if (olmObs) olmObs.disconnect();
+    olmObs = new IntersectionObserver(function (es) { es.forEach(function (e) { e.target.classList.toggle('olm-hors', !e.isIntersecting); }); });
+    olmObs.observe(h);
+  }
+  function olmNum(n) { return '<span class="olm-num">' + V2.fmtNum(n) + '</span>'; }
+  function olmLong(h) { return h.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').length; }
+  // UNE phrase, 110 caractères au plus, faite de nombres de produits que la page montre (jamais un prix ni un chiffre d'affaires).
+  function olmPhrase(list) {
+    var n = list.length, nOff = 0, nAl = 0, mq = Object.create(null), nm = 0;
+    for (var i = 0; i < list.length; i++) {
+      var it = list[i];
+      if (it.achat > 0) nOff++;
+      if (!OPSO && it.alert) nAl++;
+      if (it.brand && !mq[it.brand]) { mq[it.brand] = 1; nm++; }
+    }
+    if (!n) return S.q ? 'Aucun produit pour « ' + esc(S.q.length > 22 ? S.q.slice(0, 21) + '…' : S.q) + ' ».' : 'Aucun produit pour ce filtre.';
+    var ray = '';
+    if (S.chip !== 'all') { var r = RAYONS.filter(function (x) { return x.k === S.chip; })[0]; ray = r ? r.label : ((CHIP_BY_KEY[S.chip] && CHIP_BY_KEY[S.chip].label) || ''); }
+    if (S.sous) ray += (ray ? ' · ' : '') + S.sous;
+    var q = S.q.length > 22 ? S.q.slice(0, 21) + '…' : S.q;
+    var filtre = !!(S.q || ray || S.cmp);
+    var tete = '<b>' + olmNum(n) + ' produit' + (n > 1 ? 's' : '') + (filtre ? '' : ' suivis') + '</b>' + (q ? ' pour « ' + esc(q) + ' »' : '') + (ray ? ' en ' + esc(ray) : '');
+    var a = ', ' + olmNum(nOff) + ' à votre prix d\'achat', m = ', ' + olmNum(nm) + ' marque' + (nm > 1 ? 's' : ''), c = nAl ? ' ; ' + olmNum(nAl) + ' moins cher' + (nAl > 1 ? 's' : '') + ' chez un concurrent en ligne.' : '.';
+    var cand = [tete + a + m + c, tete + a + m + (nAl ? ' ; ' + olmNum(nAl) + ' moins cher' + (nAl > 1 ? 's' : '') + ' chez un concurrent.' : '.'), tete + a + c, tete + c];
+    for (var k = 0; k < cand.length; k++) if (olmLong(cand[k]) <= 110) return cand[k];
+    return tete + '.';
+  }
+  // Les quatre premières ventes montent dans le bleu : seulement « Tout », meilleures ventes, page 1, sans recherche ni comparaison.
+  function olmBandeauOk(total) { return M1 && S.chip === 'all' && S.sort === 'ventes' && S.page === 0 && !S.q && !S.sous && !S.cmp && total > 8; }
+  function olmUne(it) {
+    var sel = (S.sel != null && String(it.id) === String(S.sel)) ? ' sel' : '';
+    var id = esc(it.id), onMkt = mktSel.has(String(it.id));
+    var img = it.img ? '<img class="olm-une-img" data-imgprod src="' + esc(it.img) + '" alt="">' : '<span class="olm-une-noimg">' + ICO('pill', 30, 1.4) + '</span>';
+    // le prix et ses repères (concurrents, comparaison, prix catalogue) sont ceux de la carte, repris tels quels : rien ne se perd en montant dans le bleu
+    var ch = card(it), k = ch.indexOf('<div class="off-card-price'), prix = k >= 0 ? ch.slice(k, ch.lastIndexOf('</div></div>')) : '';
+    var rep = '';
+    if (it.alert) rep += '<span class="olm-rep bad">' + ICO('alert', 14, 2.2) + ' Concurrent moins cher' + (it.minConc > 0 ? ' · ' + V2.fmtEur(it.minConc) : '') + '</span>';
+    if (Math.abs(it.mvt) >= SEUIL_PLACES && (it.mvtPct >= 20 || it.mvtPct <= -20)) {
+      var up = it.mvtPct > 0, nb = Math.abs(it.mvt);
+      rep += '<span class="olm-rep ' + (up ? 'up' : 'down') + '">' + (up ? '▲ gagne ' : '▼ perd ') + V2.fmtNum(nb) + ' place' + (nb > 1 ? 's' : '') + '</span>';
+    }
+    return '<div class="olm-une' + sel + (it.alert ? ' alert' : '') + '" data-id="' + id + '" role="button" tabindex="0" onclick="V2.offSelect(\'' + id + '\')" onkeydown="if(event.target===this&&(event.key===\'Enter\'||event.key===\' \')){event.preventDefault();V2.offSelect(\'' + id + '\')}">' +
+      '<span class="olm-une-media">' + (it.hasRank ? '<span class="olm-rang-n mono">#' + it.rank + '</span>' : '') +
+        '<button type="button" class="off-mkt-add' + (onMkt ? ' on' : '') + '" onclick="event.stopPropagation();V2.offMktToggle(\'' + id + '\',this)" title="Ajouter à la fiche marketing" aria-label="Ajouter à la fiche marketing">' + ICO(onMkt ? 'check' : 'plus', 15) + '</button>' + img + '</span>' +
+      '<span class="olm-une-b">' + (it.brand ? '<span class="olm-une-brand">' + esc(it.brand) + '</span>' : '') +
+        '<span class="olm-une-name">' + esc(it.name) + '</span>' +
+        prix + (rep ? '<span class="olm-reps">' + rep + '</span>' : '') + '</span></div>';
+  }
+  var OLM_LOGO = function () { return '<h1 class="olm-h1"><span class="olm-pastille"><img class="olm-logo" src="' + MOD_BASE + 'logos/offilog.png" width="444" height="70" alt="Offilog" decoding="async"></span></h1>'; };
+  function olmEntete(list, haut) {
+    var st = brandStats();
+    var med = st.pcN > 0 ? '<p class="olm-med">Médiane : <b class="olm-num">' + Math.round(st.pcMed * 100) + '</b> % sous le prix catalogue, sur ' + V2.fmtNum(st.pcN) + ' produits</p>' : '';
+    return '<header class="olm-hd"><span class="olm-lu" aria-hidden="true"></span>' +
+      '<div class="olm-hd-t"><div class="olm-id">' + OLM_LOGO() + '<p class="olm-eye">La centrale parapharmacie d\'Intégral</p></div>' +
+        '<p class="olm-phrase" id="olm-phrase" aria-live="polite">' + olmPhrase(list) + '</p>' + med + '</div>' +
+      (haut.length ? '<div class="olm-top" id="olm-top">' + haut.map(olmUne).join('') + '</div>' : '') + '</header>';
+  }
+
   // ── PAGE ──────────────────────────────────────
   // La barre de sélection est posée sur <body> (voir la fin de render) : elle part avec l'écran.
   window.addEventListener('hashchange', function () {
@@ -1911,13 +1991,14 @@
         // Le squelette porte DÉJÀ la marque : sans ça, l'écran s'ouvre sur un
         // titre générique puis saute sur le logo — un clignotement d'identité.
         root.innerHTML = V2.topbar({ back: true }) +
-          '<div class="v2-wrap">' +
-            '<div class="offb"><div class="offb-bar"></div><div class="offb-in">' +
+          '<div class="v2-wrap' + (M1 ? ' olm' : '') + '">' +
+            (M1 ? '<header class="olm-hd"><div class="olm-hd-t"><div class="olm-id">' + OLM_LOGO() + '<p class="olm-eye">La centrale parapharmacie d\'Intégral</p></div></div></header>'
+              : '<div class="offb"><div class="offb-bar"></div><div class="offb-in">' +
               '<div class="offb-id">' +
                 '<img class="offb-logo" src="' + MOD_BASE + 'logos/offilog.png" width="444" height="70" alt="Offilog" decoding="async">' +
                 '<div class="offb-bl">La centrale parapharmacie d\'Intégral</div>' +
               '</div>' +
-            '</div></div>' +
+            '</div></div>') +
             '<div class="v2-page-sub">Chargement du rayon…</div>' +
             skeletonGrid(12) +
           '</div>';
@@ -2022,6 +2103,9 @@
       if (S.page < 0) S.page = 0;
       var pageItems = filtered.slice(S.page * PER_PAGE, (S.page + 1) * PER_PAGE);
       var nbTotal = (window.OFFILOG_BEST || []).length;
+      var haut = olmBandeauOk(total) ? pageItems.slice(0, 4) : [];   // v2 : les quatre premières ventes sont dans le bleu, la grille montre les suivantes
+      var gridItems = haut.length ? pageItems.slice(4) : pageItems;
+      var arr = M1 && olmArrivee();
 
       // Chips de CATÉGORIE uniquement (Santé, Beauté, Hygiène…) — repliés dans les
       // filtres avancés. Les « verdicts » (alerte / bien placé) vivent dans la
@@ -2057,7 +2141,7 @@
       }
 
       var gridHtml = total
-        ? '<div class="off-grid">' + pageItems.map(card).join('') + '</div>' + pager(total, pages)
+        ? '<div class="off-grid">' + gridItems.map(card).join('') + '</div>' + pager(total, pages)
         : '<div class="v2-empty"><div class="v2-empty-ico">' + ICO('search', 64, 1.4) + '</div>' +
           '<div class="v2-empty-t">Aucun produit</div><div class="v2-empty-d">Rien ne correspond à ce filtre et cette recherche.</div></div>';
 
@@ -2093,9 +2177,9 @@
           '</div>'
         : '';
 
-      root.innerHTML = V2.topbar({ back: true }) +         '<div class="v2-wrap' + (S.sel != null ? ' v2-detail-shift" style="--detw:392px"' : '"') + '>' +
+      root.innerHTML = V2.topbar({ back: true }) +         '<div class="v2-wrap' + (M1 ? ' olm' + (arr ? ' olm-ent' : '') : '') + (S.sel != null ? ' v2-detail-shift" style="--detw:392px"' : '"') + '>' +
           (V2.priceTabs ? V2.priceTabs('offilog') : '') +
-          brandHead() +
+          (M1 ? olmEntete(filtered, haut) : brandHead()) +
           accesTest() +
           bandeauCond() +
           rayons(c) +
@@ -2158,13 +2242,13 @@
         flipRects = null;
         // 2) Cascade d'entrée sur les premières cartes — seulement au 1er affichage
         //    (pas à chaque frappe de recherche / tri / pagination), et jamais pendant un FLIP.
-        if (grid && isFirst && !didFlip) {
+        if (grid && isFirst && !didFlip && !M1) {
           mo.stagger(grid.querySelectorAll('.off-card'), { step: 34, cap: 10, y: 8 });
         }
         // 3) Count-up des 2 chiffres verdict quand la bande arrive à l'écran —
         //    au 1er affichage seulement (pas à chaque frappe de recherche).
         var vwrap = root.querySelector('.off-verdict-wrap');
-        if (vwrap && isFirst) {
+        if (vwrap && isFirst && !M1) {
           mo.inView(vwrap, function (el) {
             var cs = el.querySelectorAll('[data-count]');
             for (var i = 0; i < cs.length; i++) mo.countUp(cs[i]);
@@ -2175,6 +2259,7 @@
         //    de quelques px vers le curseur (physique alignée sur V2.motion, RM/touch-safe).
         bindVerdictMagnetic(mo);
       }
+      if (M1) { olmVeille(root); if (arr) olmJoue(root); }
     }
   };
 })();

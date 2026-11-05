@@ -1,0 +1,215 @@
+/* ═══════════════════════════════════════════════════════════════════
+   JARVIS · écran « Offilog » dans la veine de l'accueil « maquette 1 » (04/11/2026).
+   En-tête bleu éclairé (pastille du logo, grand titre, UNE phrase calculée), rayons en capsules à compteurs, cases blanches à tache de lumière, ombres en couches.
+   Ambre Offilog (#F8A808) = seule couleur d'accent : rang, compteur de la capsule ouverte, lueur du logo.
+   « lien »    : l'en-tête bleu, puis recherche, bande verdict et grille comme avant, en plus lumineux.
+   « bandeau » : les quatre premières ventes dans le bleu (photo, marque, nom, rang, prix Offilog, repère de marché), cliquables.
+   Mouvement  : arrivée en 900 ms au plus, une fois par ouverture de l'écran (.olm-ent retirée à 900 ms) ; rien ne rejoue au rayon, à la frappe, au tri, à la page, à l'ouverture
+   d'un produit ni à l'arrivée des fichiers. Au repos : une seule lueur qui dérive dans le bleu (transform/opacity), en pause hors écran et onglet caché.
+   Interdits tenus : aucun flou, backdrop-filter, mask, texte découpé ; aucune barre de couleur sur un seul côté ; aucune opacité sur du texte ; texte ≥ 13 px ; cibles ≥ 44 px.
+   Les règles sont toutes sous .olm : l'app OPSO ne charge pas cette feuille et son module ne pose jamais .olm.
+   ═══════════════════════════════════════════════════════════════════ */
+.v2-wrap.olm{--o-bleu:var(--ip-blue,#0050E6);--o-nuit:var(--ip-blue-d,#0034A0);--o-amb:#F8A808;--o-gris:#4F596C;--o-filet:#D7E0F0;--o-rose:#C2263F;position:relative;padding-top:16px;
+  --o-ombre:0 1px 0 #fff inset,0 1px 2px rgba(15,20,32,.07),0 3px 8px rgba(15,20,32,.04),0 24px 44px -26px rgba(0,48,140,.42);
+  --o-ombre-l:0 1px 0 #fff inset,0 1px 2px rgba(15,20,32,.07),0 3px 8px rgba(15,20,32,.035),0 18px 30px -20px rgba(0,48,140,.44)}
+.olm::before{content:"";position:absolute;left:0;right:0;top:0;height:560px;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 520px 380px at 30% 0%,color-mix(in srgb,var(--ip-blue) 14%,transparent),transparent 70%),radial-gradient(ellipse 400px 360px at 74% 0%,color-mix(in srgb,var(--halo) 95%,transparent),transparent 72%)}
+.olm>*{position:relative;z-index:1}
+
+/* ═══ L'en-tête bleu ═══ */
+.olm-hd{position:relative;isolation:isolate;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr);gap:20px;margin:0 0 16px;padding:24px 26px 24px;border-radius:18px;color:#fff;
+  background:
+    radial-gradient(circle 300px at 92% 14%,color-mix(in srgb,var(--o-bleu) 56%,#fff),transparent 72%),
+    radial-gradient(ellipse 60% 150% at 3% -16%,color-mix(in srgb,var(--o-bleu) 88%,var(--o-nuit)),transparent 80%),
+    linear-gradient(160deg,color-mix(in srgb,var(--o-bleu) 74%,var(--o-nuit)) 0%,color-mix(in srgb,var(--o-bleu) 40%,var(--o-nuit)) 55%,color-mix(in srgb,var(--o-bleu) 52%,var(--o-nuit)) 100%);
+  box-shadow:0 1px 0 rgba(255,255,255,.34) inset,0 20px 36px -22px color-mix(in srgb,var(--o-nuit) 75%,transparent),0 2px 5px color-mix(in srgb,var(--o-nuit) 18%,transparent)}
+.olm-hd-t{min-width:0}
+.olm-id{display:flex;align-items:center;flex-wrap:wrap;gap:16px;margin:0 0 12px}
+.olm-pastille{flex:none;display:inline-flex;align-items:center;justify-content:center;height:66px;padding:0 22px;border-radius:18px;background:#fff;
+  box-shadow:0 1px 0 #fff inset,0 0 0 2px color-mix(in srgb,var(--o-amb) 70%,#fff),0 16px 26px -14px rgba(0,16,80,.8),0 2px 5px rgba(0,16,80,.2)}
+.olm-logo{display:block;height:38px;width:auto;max-width:100%}
+.olm-eye{margin:0;font-size:13px;font-weight:700;line-height:1.3;letter-spacing:.07em;text-transform:uppercase;color:#fff}
+.olm-h1{flex:none;display:flex;margin:0;padding:0;font-size:inherit;line-height:0;font-weight:inherit}
+.olm-phrase{margin:10px 0 0;max-width:76ch;font-size:17px;line-height:1.45;font-weight:500;color:#fff}
+.olm-phrase b{font-weight:800}
+.olm-num{font-variant-numeric:tabular-nums}
+.olm-med{display:inline-block;margin:14px 0 0;padding:7px 16px;border-radius:999px;border:1px solid rgba(255,255,255,.36);background:rgba(0,26,104,.6);font-size:14px;line-height:1.3;font-weight:600;color:#fff}
+.olm-med b{font-weight:800}
+
+/* la scène du repos : une lueur chaude qui dérive derrière le texte ; aucun texte, transform et opacity seulement */
+.olm-lu{position:absolute;z-index:-1;right:-140px;top:-200px;width:520px;height:520px;border-radius:50%;pointer-events:none;background:radial-gradient(closest-side,rgba(255,238,205,.26),rgba(255,238,205,0));animation:olm-lu 12s ease-in-out infinite;will-change:transform,opacity}
+@keyframes olm-lu{0%,100%{transform:translate3d(70px,0,0) scale(.92);opacity:.5}50%{transform:translate3d(-80px,50px,0) scale(1.06);opacity:1}}
+.olm-hd.olm-hors .olm-lu,.olm-hd.olm-pause .olm-lu{animation-play-state:paused}
+
+/* ═══ Le bandeau du marché (version « bandeau ») : les quatre premières ventes dans le bleu ═══ */
+.olm-top{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.olm-une{display:flex;flex-direction:column;min-width:0;border-radius:16px;overflow:hidden;color:var(--ip-ink);cursor:pointer;
+  background:radial-gradient(260px 170px at 100% 0%,color-mix(in srgb,var(--o-bleu) 15%,transparent),transparent 72%),linear-gradient(180deg,#fff,#F3F7FF);
+  box-shadow:0 1px 0 #fff inset,0 16px 28px -16px rgba(0,16,80,.75),0 2px 5px rgba(0,16,80,.2);transition:transform .25s var(--ease),box-shadow .2s}
+@media (hover:hover){.olm-une:hover{transform:translateY(var(--mo-lift,-3px));box-shadow:0 1px 0 #fff inset,0 22px 34px -16px rgba(0,16,80,.8),0 2px 5px rgba(0,16,80,.2)}}
+.olm-une:active{transform:scale(.985);transition-duration:.12s}
+.olm-une:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.olm-une.alert{box-shadow:0 0 0 2px var(--o-rose),0 16px 28px -16px rgba(0,16,80,.75)}
+.olm-une.sel{box-shadow:0 0 0 3px var(--o-amb),0 16px 28px -16px rgba(0,16,80,.75)}
+.olm-une-media{position:relative;display:flex;align-items:center;justify-content:center;height:158px;padding:12px;background:#fff;border-bottom:1px solid #E6ECF7}
+.olm-une-img{display:block;max-width:100%;max-height:100%;object-fit:contain}
+.olm-une-noimg{color:#8A94A6}
+.olm-rang-n{position:absolute;left:10px;top:10px;z-index:2;padding:4px 10px;border-radius:999px;background:var(--o-amb);color:#1B1300;font:800 14px/1.2 var(--mono)}
+.olm-une .off-mkt-add{top:8px;right:8px;width:44px;height:44px;border-radius:14px;z-index:2}
+.olm-une-b{display:flex;flex-direction:column;gap:4px;min-width:0;padding:12px 14px 14px;flex:1}
+.olm-une-brand{font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--o-gris);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.olm-une-name{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.6em;font-size:15px;font-weight:700;line-height:1.3;color:var(--ip-ink)}
+.olm-une .off-card-price{margin-top:2px;font-size:21px;letter-spacing:-.02em;color:var(--o-nuit)}
+.olm-reps{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.olm-rep{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:13px;font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums}
+.olm-rep.bad{background:#FDEBEE;border:1px solid #F3C2CB;color:#A4182F}
+.olm-rep.up{background:#E1F5EA;border:1px solid #B9E3CC;color:#0B6B3F}
+.olm-rep.down{background:#EEF1F6;border:1px solid #D7DEEA;color:var(--o-gris)}
+
+/* ═══ Les rayons : les capsules, avec leurs compteurs ═══ */
+.olm .offr-w{gap:12px;padding:2px 2px 16px;margin-bottom:var(--sp-3,12px)}
+.olm .offr{min-height:68px;padding:12px 16px;border:1px solid var(--o-filet);border-radius:16px;
+  background:radial-gradient(200px 120px at 100% 0%,color-mix(in srgb,var(--o-bleu) 10%,transparent),transparent 72%),linear-gradient(180deg,#fff,#F5F8FD);box-shadow:var(--o-ombre-l)}
+.olm .offr::before{display:none}
+.olm .offr{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;row-gap:2px;align-content:center;align-items:center;padding:12px 14px}
+.olm .offr-l{grid-column:1;grid-row:1;font-size:14px;color:var(--ip-ink)}
+.olm .offr-s{grid-column:1/-1;grid-row:2;margin:0;font-size:13px;line-height:1.3;white-space:normal;color:var(--o-gris)}
+.olm .offr-n{grid-column:2;grid-row:1;margin:0;min-width:36px;padding:4px 10px;border-radius:999px;background:#EAF0FB;text-align:center;font-size:14px;color:var(--o-nuit)}
+.olm .offr-all .offr-n{margin:0}
+.olm .offr:hover{transform:translateY(-2px);box-shadow:var(--o-ombre);border-color:color-mix(in srgb,var(--o-bleu) 45%,var(--o-filet))}
+.olm .offr:focus-visible{outline:3px solid var(--o-bleu);outline-offset:2px}
+.olm .offr.on{border-color:var(--o-nuit);background:radial-gradient(160px 90px at 100% 0%,color-mix(in srgb,var(--o-bleu) 80%,#fff),transparent 72%),linear-gradient(160deg,var(--o-bleu),var(--o-nuit));box-shadow:0 14px 24px -14px rgba(0,26,104,.85),0 1px 0 rgba(255,255,255,.3) inset}
+.olm .offr.on .offr-l{color:#fff}
+.olm .offr.on .offr-s{color:#fff}
+.olm .offr.on .offr-n{background:var(--o-amb);color:#1B1300}
+/* sous-rayons */
+.olm .offsr{min-height:44px;padding:0 16px;gap:8px;border:1px solid var(--o-filet);background:linear-gradient(180deg,#fff,#F3F6FC);box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(15,20,32,.06);font-size:14px;color:var(--ip-ink)}
+.olm .offsr i{font-size:13px;color:var(--o-gris)}
+.olm .offsr:hover{border-color:color-mix(in srgb,var(--o-bleu) 45%,var(--o-filet))}
+.olm .offsr.on{background:var(--o-bleu);border-color:var(--o-bleu);color:#fff}
+.olm .offsr.on i{padding:2px 8px;border-radius:999px;background:var(--o-amb);color:#1B1300}
+
+/* ═══ Recherche, bande verdict, comparaison, barre d'outils ═══ */
+.olm .off-search{border:1px solid var(--o-filet);border-radius:18px;
+  background:radial-gradient(340px 200px at 100% 0%,color-mix(in srgb,var(--o-bleu) 10%,transparent),transparent 72%),linear-gradient(180deg,#fff,#F7F9FD);box-shadow:var(--o-ombre-l)}
+.olm .off-search svg{color:var(--o-bleu)}
+.olm .off-search:focus-within{border-color:var(--o-bleu);box-shadow:0 0 0 3px color-mix(in srgb,var(--o-bleu) 18%,transparent),var(--o-ombre-l)}
+.olm .off-search .clr{align-items:center;justify-content:center;min-width:44px;min-height:44px;margin-right:-10px}
+.olm .off-verdict{min-height:84px;border:1px solid var(--o-filet);border-radius:18px;
+  background:radial-gradient(300px 180px at 100% 0%,color-mix(in srgb,var(--o-bleu) 10%,transparent),transparent 72%),linear-gradient(180deg,#fff,#F7F9FD);box-shadow:var(--o-ombre)}
+.olm .off-verdict-bad.hot{border-color:color-mix(in srgb,var(--o-rose) 40%,var(--o-filet));
+  background:radial-gradient(300px 180px at 100% 0%,color-mix(in srgb,var(--o-rose) 12%,transparent),transparent 72%),linear-gradient(180deg,#fff,#FFF6F7)}
+.olm .off-verdict-bad.hot .off-verdict-v,.olm .off-verdict-bad.hot .off-verdict-go{color:#A4182F}
+.olm .off-verdict-bad.cold{opacity:1}
+.olm .off-verdict-bad.cold .off-verdict-go{color:var(--o-gris)}
+.olm .off-verdict-v{font-size:30px}
+.olm .off-verdict-l{font-size:14px;color:var(--o-gris)}
+.olm .off-verdict-go{font-size:14px}
+.olm .off-verdict-ok .off-verdict-v{color:#0B6B3F}
+.olm .off-verdict-meta{font-size:14px;color:var(--o-gris)}
+.olm .off-verdict-meta .off-dot{color:var(--o-gris);opacity:1}
+.olm .off-cmpbar,.olm .off-adv{border:1px solid var(--o-filet);border-radius:18px;
+  background:radial-gradient(340px 200px at 100% 0%,color-mix(in srgb,var(--o-bleu) 8%,transparent),transparent 72%),linear-gradient(180deg,#fff,#F7F9FD);box-shadow:var(--o-ombre-l)}
+.olm .off-adv-l{font-size:13px;color:var(--o-gris)}
+.olm .off-cmpbar-note{font-size:13px;color:var(--o-gris)}
+.olm .off-count{font-size:15px;color:var(--o-gris)}
+.olm .off-count b{font-size:17px;color:var(--ip-ink)}
+.olm .off-advbtn{min-height:44px;padding:0 18px;border-radius:999px;border:1px solid var(--o-filet);background:linear-gradient(180deg,#fff,#F3F6FC);color:var(--ip-ink);font-size:14px;font-weight:700;box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(15,20,32,.06)}
+.olm .off-advbtn:hover{border-color:color-mix(in srgb,var(--o-bleu) 45%,var(--o-filet))}
+.olm .off-advbtn.open{border-color:var(--o-bleu);background:#fff}
+.olm .off-advbtn-tag{font-size:13px;color:var(--o-nuit)}
+.olm .off-toolbar .v2-btn{min-height:44px}
+.olm .off-sortbtn{min-height:44px;padding:0 14px;font-size:14px;color:var(--ip-ink)}
+.olm .off-sortbtn.on{background:var(--o-bleu);color:#fff}
+.olm .off-adv .off-sort{border:1px solid var(--o-filet);border-radius:14px;background:#fff}
+
+/* ═══ La grille : cartes blanches à tache de lumière ═══ */
+.olm .off-card{border:1px solid var(--o-filet);border-radius:18px;
+  background:radial-gradient(240px 160px at 100% 0%,color-mix(in srgb,var(--o-bleu) 9%,transparent),transparent 72%),linear-gradient(180deg,#fff,#F7F9FD);box-shadow:var(--o-ombre-l)}
+.olm .off-card:hover{border-color:color-mix(in srgb,var(--o-bleu) 40%,var(--o-filet));box-shadow:var(--o-ombre)}
+.olm .off-card.sel{border-color:var(--o-bleu);box-shadow:0 0 0 3px color-mix(in srgb,var(--o-bleu) 18%,transparent),var(--o-ombre)}
+.olm .off-card.alert::before{display:none}
+.olm .off-card.alert{border-color:color-mix(in srgb,var(--o-rose) 45%,var(--o-filet));box-shadow:0 0 0 1px color-mix(in srgb,var(--o-rose) 35%,transparent),var(--o-ombre-l)}
+.olm .off-card-media{border-bottom-color:#E6ECF7}
+.olm .off-card-brand{font-size:13px;color:var(--o-gris)}
+.olm .off-card-name{font-size:14px;min-height:38px}
+.olm .off-card-price{font-size:18px;color:var(--o-nuit)}
+.olm .off-card-pz,.olm .off-card-lec,.olm .off-card-pub,.olm .off-card-drk,.olm .off-card-conc,.olm .off-card-flag,.olm .off-mvt,.olm .off-rank{font-size:13px}
+.olm .off-card-cmp,.olm .off-card-cat,.olm .off-pcat-pill{font-size:13px}
+.olm .off-card-cat{flex-wrap:wrap;margin:0}
+.olm .off-pcat-pill{line-height:19px}
+.olm .off-card-pz{color:var(--o-gris)}
+.olm .off-card-pz.win{color:var(--o-nuit)}
+.olm .off-card-conc,.olm .off-card-lec.bad{color:#A4182F}
+.olm .off-mvt.down{color:#fff;background:rgba(16,19,28,.62)}
+.olm .off-pg{min-height:44px;font-size:14px}
+.olm .off-pg-info{font-size:13px;color:var(--o-gris)}
+
+/* ═══ L'arrivée : 900 ms au plus, une fois ═══ */
+@keyframes olm-monte{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:no-preference){
+  .olm-ent .olm-hd{animation:olm-monte .3s var(--ease) both}
+  .olm-ent .olm-pastille,.olm-ent .olm-phrase,.olm-ent .olm-med{animation:olm-monte .26s var(--ease) both}
+  .olm-ent .olm-pastille{animation-delay:60ms}
+  .olm-ent .olm-phrase{animation-delay:140ms}
+  .olm-ent .olm-med{animation-delay:180ms}
+  .olm-ent .offr{animation:olm-monte .26s var(--ease) both}
+  .olm-ent .offr:nth-child(1){animation-delay:120ms}
+  .olm-ent .offr:nth-child(2){animation-delay:150ms}
+  .olm-ent .offr:nth-child(3){animation-delay:180ms}
+  .olm-ent .offr:nth-child(4){animation-delay:210ms}
+  .olm-ent .offr:nth-child(5){animation-delay:240ms}
+  .olm-ent .offr:nth-child(6){animation-delay:270ms}
+  .olm-ent .offr:nth-child(7){animation-delay:300ms}
+  .olm-ent .olm-une{animation:olm-monte .26s var(--ease) both}
+  .olm-ent .olm-une:nth-child(1){animation-delay:140ms}
+  .olm-ent .olm-une:nth-child(2){animation-delay:175ms}
+  .olm-ent .olm-une:nth-child(3){animation-delay:210ms}
+  .olm-ent .olm-une:nth-child(4){animation-delay:245ms}
+  .olm-ent .off-search,.olm-ent .off-verdict-wrap{animation:olm-monte .26s var(--ease) .3s both}
+  .olm-ent .off-card:nth-child(-n+10){animation:olm-monte .26s var(--ease) both}
+  .olm-ent .off-card:nth-child(1){animation-delay:340ms}
+  .olm-ent .off-card:nth-child(2){animation-delay:370ms}
+  .olm-ent .off-card:nth-child(3){animation-delay:400ms}
+  .olm-ent .off-card:nth-child(4){animation-delay:430ms}
+  .olm-ent .off-card:nth-child(5){animation-delay:460ms}
+  .olm-ent .off-card:nth-child(6){animation-delay:490ms}
+  .olm-ent .off-card:nth-child(7){animation-delay:520ms}
+  .olm-ent .off-card:nth-child(8){animation-delay:550ms}
+  .olm-ent .off-card:nth-child(9){animation-delay:580ms}
+  .olm-ent .off-card:nth-child(10){animation-delay:610ms}
+}
+@media (prefers-reduced-motion:reduce){
+  .olm-lu{animation:none}
+  .olm-une:active{transform:none}
+}
+
+/* ═══ Écrans intermédiaires et téléphone ═══ */
+@media (max-width:1100px){.olm-top{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:760px){
+  .olm-hd{padding:18px 14px 16px;gap:16px;border-radius:16px;background:
+    radial-gradient(circle 130px at 100% -6%,color-mix(in srgb,var(--o-bleu) 56%,#fff),transparent 72%),
+    radial-gradient(ellipse 60% 150% at 3% -16%,color-mix(in srgb,var(--o-bleu) 88%,var(--o-nuit)),transparent 80%),
+    linear-gradient(160deg,color-mix(in srgb,var(--o-bleu) 74%,var(--o-nuit)) 0%,color-mix(in srgb,var(--o-bleu) 40%,var(--o-nuit)) 55%,color-mix(in srgb,var(--o-bleu) 52%,var(--o-nuit)) 100%)}
+  .olm-id{gap:10px;margin-bottom:10px}
+  .olm-pastille{height:54px;padding:0 18px}
+  .olm-logo{height:31px}
+  .olm-phrase{font-size:15px}
+  .olm-lu{width:260px;height:260px;right:-110px;top:-120px}
+  .olm-top{gap:10px}
+  .olm-une-media{height:112px;padding:8px}
+  .olm-une-b{padding:10px 10px 12px;gap:3px}
+  .olm-une-name{font-size:14px}
+  .olm-une .off-card-price{font-size:18px}
+  .olm-rep{padding:3px 8px}
+  .olm .offr{min-width:156px}
+  .olm .off-search{height:56px}
+  .olm .off-verdict{padding:14px 16px}
+  .olm .off-card-media{height:118px}
+  .olm .off-card-name{font-size:13px}
+  .olm .off-mkt-add{width:44px;height:44px;top:4px;right:4px}
+  .olm .off-mkt-add::before{display:none}
+}
+/* compteurs des segments (comparaison, filtres) : 13 px, sans opacité sur le texte ; texte d'attente de la recherche lisible */
+.olm .v2-seg .cnt{font-size:13px;opacity:1}
+.olm .off-search input::placeholder{color:#5B6578;opacity:1}
