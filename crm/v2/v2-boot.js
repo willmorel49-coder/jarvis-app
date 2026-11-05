@@ -266,6 +266,40 @@
   // Renvoie { ip, ht, remise, offre } : on prend l'offre labo si elle existe
   // et est inférieure au prix net standard. La remise est recalculée sur ce
   // prix le plus bas. Utilisé partout où on affiche un prix IP.
+  // ── Âge du tarif d'un produit NON remboursable (05/11/2026) ──
+  // Un NR a un prix libre : seul un export de Will fait foi. La date d'un CIP est la clé de
+  // TARIF_AGE.autres qui le contient, sinon TARIF_AGE.defaut. Renvoie {date:'AAAA-MM-JJ', jours, vieux} ou null
+  // (produit remboursable, fichier absent, date illisible) : alors rien ne s'affiche.
+  // `maintenant` (facultatif, une Date) sert aux tests.
+  V2.TARIF_VIEUX_JOURS = 30;
+  V2.ageTarif = function (cip, maintenant) {
+    var T = window.TARIF_AGE, c = cip == null ? '' : String(cip);
+    if (!T || !T.defaut || !c || !(window.PPHT_NR || {})[c]) return null;
+    if (V2._tarifIdxSrc !== T.autres || !V2._tarifIdx) {
+      var idx = {}, d, l, i;
+      for (d in (T.autres || {})) {
+        if (!Object.prototype.hasOwnProperty.call(T.autres, d)) continue;
+        l = T.autres[d] || [];
+        for (i = 0; i < l.length; i++) idx[String(l[i])] = d;
+      }
+      V2._tarifIdx = idx; V2._tarifIdxSrc = T.autres;
+    }
+    var date = V2._tarifIdx[c] || T.defaut;
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+    if (!m) return null;
+    var n = maintenant || new Date();
+    var j = Math.floor((Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) - Date.UTC(+m[1], +m[2] - 1, +m[3])) / 86400000);
+    return { date: date, jours: j < 0 ? 0 : j, vieux: j > V2.TARIF_VIEUX_JOURS };
+  };
+  // Mention « Tarif du 21/09/2026 » (orange + « à rafraîchir » au-delà de 30 jours). '' pour un remboursable.
+  V2.tarifAgeHtml = function (cip, maintenant) {
+    var a = V2.ageTarif(cip, maintenant);
+    if (!a) return '';
+    var d = a.date.split('-');
+    return '<span class="v2-tarifage' + (a.vieux ? ' vieux' : '') + '">Tarif du ' + d[2] + '/' + d[1] + '/' + d[0] +
+      (a.vieux ? ' · à rafraîchir' : '') + '</span>';
+  };
+
   V2.bestPrice = function (b) {
     if (!b) return { ip: null, ht: null, remise: 0, offre: false };
     var ht = (b.prix_ht != null && b.prix_ht > 0) ? b.prix_ht : 0;   // PPHT / tarif grossiste
@@ -680,6 +714,8 @@
   // ── Chargement lazy des gros fichiers data (.js globaux) ──
   var DATA_FILES = {
     ppht: 'v2/ppht-data.js',            // 393 Ko — sorti d'index.html le 11/09/2026 (perf)
+    // 05/11/2026 — âge du tarif des produits NR (publié par le robot prix-a-jour). Petit (29 Ko), sans prix : public.
+    tarifage: 'v2/tarif-age-data.js',
     prodstats: 'v2/prod-stats-data.js', // 715 Ko — idem ; lu par 12 modules + applyPPHT
     bench: 'benchmark-data.js',
     establishments: 'establishments-aggregate.js',

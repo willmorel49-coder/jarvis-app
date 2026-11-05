@@ -2748,6 +2748,8 @@
         : Promise.resolve())
     ]);
     if (!opso) V2.loadFiles(['establishments']);   // aucun écran OPSO ne le lit (30/09/2026)
+    // 05/11/2026 — âge du tarif des NR (écran Produits) : petit fichier, la mention apparaît dès qu'il arrive.
+    if (!opso) V2.loadFiles(['tarifage']).then(function () { if (V2.route && V2.route.name === 'produits') V2.render(); });
     V2.invalidateCmdk();
     V2.route = parseHash();
     V2.render();

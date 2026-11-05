@@ -734,7 +734,7 @@
         ' · <strong>' + eur(l.caMoyen) + '</strong> en moyenne</div>' +
       '<div class="pr-chiffres">' +
         chiffre(eur(l.potentiel), 'potentiel', 'pr-pot') +
-        chiffre(f && f.net > 0 ? eur(f.net) : '—', 'prix net') +
+        chiffre(f && f.net > 0 ? eur(f.net) : '—', 'prix net' + V2.tarifAgeHtml(l.cip)) +
         chiffre(abandon, 'abandon de marge') +
         chiffre(num(l.stock), 'en stock') +
       '</div>' + boutonSel(l.cip) + '</div>';
@@ -1067,7 +1067,7 @@
           (enRupture(o.cip) ? '<span class="pr-rupt">rupture ANSM</span>' : '') + badgeCont(o.cip) + '</div>' +
         '<div class="pr-t-cip">' + esc(o.cip) + (sous ? ' · ' + esc(sous) : '') + '</div>' +
       '</td>' +
-      '<td class="n pr-t-prix">' + (o.net > 0 ? eur(o.net) : '—') + '</td>' +
+      '<td class="n pr-t-prix">' + (o.net > 0 ? eur(o.net) : '—') + V2.tarifAgeHtml(o.cip) + '</td>' +
       '<td class="n pr-t-ab">' + ab + '</td>' +
       '<td class="n">' + (o.stock > 0
         ? '<b class="pr-t-stk">' + num(o.stock) + '</b>'
@@ -1712,6 +1712,9 @@
       '.pr-chiffres span{display:block;font:600 15px/1.2 "Geist Mono",ui-monospace,monospace;color:var(--ip-ink)}',
       '.pr-chiffres em{display:block;font:400 11px/1.3 Inter,sans-serif;color:var(--muted);font-style:normal}',
       '.pr-pot span{color:var(--ip-blue)}',
+      // 05/11/2026 — âge du tarif d'un NR : texte plein (jamais d'opacity), orange foncé au-delà de 30 jours.
+      '.pr-chiffres em .v2-tarifage,.pr-t-prix .v2-tarifage{display:block;font:400 11px/1.3 Inter,sans-serif;color:#5B6472;font-style:normal;white-space:normal;margin-top:2px}',
+      '.pr-chiffres em .v2-tarifage.vieux,.pr-t-prix .v2-tarifage.vieux{color:#9A5B12;font-weight:600}',
       '.pr-add{margin-top:10px;width:100%;min-height:44px;border-radius:10px;border:1px dashed var(--ip-blue);background:transparent;color:var(--ip-blue);font:600 14px/1 Inter,sans-serif;cursor:pointer}',
       '.pr-add.on{border-style:solid;background:var(--ip-blue);color:#fff}',
       '.pr-panier{position:sticky;bottom:8px;z-index:40;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding:12px;border-radius:14px;background:var(--ip-blue);color:#fff;box-shadow:0 6px 22px rgba(0,80,230,.28)}',
