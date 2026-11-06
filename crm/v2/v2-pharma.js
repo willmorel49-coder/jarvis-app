@@ -142,10 +142,12 @@
 
   // ── Marge nette officine — ce que la pharmacie gagne grâce à Intégral ──
   // Barème V2.margeNetteBoite (v2-boot.js). 25/09/2026 — Will : calculable sur le PRINCEPS
-  // remboursé seulement (tranches pp/mi/ch + froid). Génériques, biosimilaires et NR
-  // (marge libre, incalculable) → hors calcul, jamais 0 € déguisé en marge.
+  // remboursé (tranches pp/mi/ch + froid). 06/11/2026 — Will : « sur les biosimilaires c'est
+  // possible de calculer, c'est uniquement sur NR et générique que c'est pas possible » :
+  // les biosimilaires remboursés suivent le même barème (contrôle isRemboursable conservé).
+  // Génériques et NR (marge libre, incalculable) → hors calcul, jamais 0 € déguisé en marge.
   // Produit inconnu du BENCHMARK : on ne compte rien (jamais de fausse marge).
-  function margeNettePrinceps(cat) { return cat === 'pp' || cat === 'mi' || cat === 'ch' || cat === 'froid'; }
+  function margeNettePrinceps(cat) { return cat === 'pp' || cat === 'mi' || cat === 'ch' || cat === 'froid' || cat === 'biosim'; }
   function margeNetteCat(cip) {
     var b = cip ? benchIndex().get(cip) : null;
     return b ? classifyNature(b, cip) : null;
@@ -2039,7 +2041,7 @@
     return '<div class="pha-kpi pha-nm pha-mp" style="--a:var(--ip-blue)">' +
       '<div class="pha-kl">Marge pharmacien</div>' +
       '<div class="pha-kval mono">' + V2.fmtEur(marge) + '</div>' +
-      '<div class="pha-kd"><span class="pha-sub">ce que la pharmacie gagne grâce à Intégral, princeps remboursés seulement · cumul ' + A.nAct + ' mois</span></div></div>';
+      '<div class="pha-kd"><span class="pha-sub">ce que la pharmacie gagne grâce à Intégral, princeps et biosimilaires remboursés · cumul ' + A.nAct + ' mois</span></div></div>';
   }
 
   // 14/10/2026 — « Notre marge » de l'officine : cumul sur les mêmes mois que le CA ci-dessus, familles en petit.
@@ -2204,7 +2206,7 @@
         (A.rank ? '<div class="pha-m5-rk" title="' + esc(A.grpRank ? A.grpRank + 'e sur ' + A.nGrp + ' chez ' + A.grpName : 'hors groupement') + '">Place dans le réseau <b class="mono">' + A.rank + '</b>/' + A.nOff + '</div>' : '') + '</div>' +
       m5Ligne('CA / mois', S.ca, M.caMois, V2.fmtEur, 'CA net HT par mois, sur ses mois de livraison', S) +
       m5Ligne('Notre marge / mois', S.mg, M.mgMois, V2.fmtEur, 'ce que ses achats rapportent à ' + NM.marque() + ' · génériques comptés à zéro', S) +
-      m5Ligne('Marge pharmacien / mois', S.mp, M.mpMois, V2.fmtEur, 'ce que la pharmacie gagne grâce à Intégral, princeps remboursés seulement', S) +
+      m5Ligne('Marge pharmacien / mois', S.mp, M.mpMois, V2.fmtEur, 'ce que la pharmacie gagne grâce à Intégral, princeps et biosimilaires remboursés', S) +
       m5Ligne('Références achetées', S.refs, M.refs, V2.fmtNum, 'codes produit distincts achetés depuis janvier', S) +
       m5Ligne('Part des génériques', S.gen, M.partGen, m5Pct, 'part des génériques dans son CA net', S) +
       '<div class="pha-sub pha-m5-n">' + esc(NM.libelleDate()) + '</div></div>';
@@ -2288,7 +2290,7 @@
     var rows = A.cats.map(function (c) { return trancheRow(c, maxCa, ph); }).join('');
     if (A.other.refs > 0) rows += '<tr><td><span class="ph-tr-dot" style="background:var(--muted-2)"></span>Hors catégories</td><td class="num">' + V2.fmtNum(A.other.refs) + '</td><td class="num"><b>' + V2.fmtEur(A.other.ca) + '</b></td><td class="num">' + Math.round(A.caTot > 0 ? A.other.ca / A.caTot * 100 : 0) + ' %</td><td class="num">—</td><td class="num">—</td>' + (ph ? '' : '<td class="num">—</td><td class="num">—</td>') + '<td class="num">—</td></tr>';
     // Total : la marge nette de l'officine, toutes tranches confondues. Le taux se lit
-    // sur les achats qui ont réellement produit de la marge (princeps remboursés seuls).
+    // sur les achats qui ont réellement produit de la marge (princeps et biosimilaires remboursés).
     var totRefs = A.other.refs, totMarge = 0, caMarge = 0;
     A.cats.forEach(function (c) { totRefs += c.refs; totMarge += c.mdl; if (c.mdl > 0) caMarge += c.ca; });
     rows += '<tr style="border-top:1.5px solid var(--line)"><td><b>Total · marge nette de l\'officine</b></td>' +
@@ -2298,7 +2300,7 @@
       (ph ? '' : '<td class="num">—</td><td class="num">—</td>') + '<td class="num">—</td></tr>';
     var legende = '<div class="pha-sub" style="padding:8px 18px 12px;line-height:1.5">' +
       'Marge nette gagnée par l\'officine : <b>0,18 €</b> par boîte jusqu\'à 4,33 € · <b>4,2 %</b> de 4,33 à 468 € · ' +
-      '<b>19,50 €</b> par boîte au-delà. Princeps remboursés seulement : génériques, biosimilaires et non remboursés hors calcul, sauf les génériques qu\'Intégral facture comme princeps.</div>';
+      '<b>19,50 €</b> par boîte au-delà. Princeps et biosimilaires remboursés : génériques et non remboursés hors calcul, sauf les génériques qu\'Intégral facture comme princeps.</div>';
     var desk ='<div class="v2-card pha-card pha-desk" style="padding:0;overflow:hidden"><div class="pha-ch" style="padding:16px 18px 6px">' + (ph ? '<h3>Son CA par tranche</h3><span class="pha-sub">évolution = dernier mois vs le précédent</span>' : '<h3>Son CA par tranche, face à l\'officine moyenne du réseau</h3><span class="pha-sub">écart = sa moyenne mensuelle vs celle du réseau, ' + l1Fenetre(A) + ' (depuis sa première commande) · évolution = dernier mois vs le précédent</span>') + '</div>' +
       '<div class="v2-cat-table-wrap" style="border-top:none"><table class="v2-table pha-table"><thead><tr><th>Tranche</th><th class="num">Réf.</th><th class="num">CA ' + A.nAct + ' mois</th><th class="num">Part</th><th class="num">Marge nette</th><th class="num">Taux</th>' + (ph ? '' : '<th class="num">Réseau / mois</th><th class="num">Écart</th>') + '<th class="num">Évol.</th></tr></thead><tbody>' + rows + '</tbody></table></div>' + legende + '</div>';
     // Téléphone : une ligne par tranche, dépliable sur son top 10

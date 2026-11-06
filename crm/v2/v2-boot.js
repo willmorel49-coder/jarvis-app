@@ -2258,8 +2258,8 @@
   // sur le prix NET payé par l'officine. Vocabulaire maison : « marge nette »,
   // jamais « marge MDL » (la MDL est la marge réglementaire de l'officine, autre chose).
   //   Remboursés ≤ 4,33 € → 0,18 €/boîte · 4,33→468 € → 4,2 % · > 468 € → 19,50 €/boîte
-  //   Princeps remboursés SEULEMENT (Will, 25/09/2026) : génériques, biosimilaires et NR
-  //   (marge libre, incalculable) non calculés — la branche NR ci-dessous ne sert plus.
+  //   Princeps (Will, 25/09/2026) et biosimilaires (Will, 06/11/2026) remboursés : même barème.
+  //   Génériques et NR (marge libre, incalculable) non calculés — la branche NR ci-dessous ne sert plus.
   V2.MARGE_NETTE = { mi: 0.042, nr: 0.15, pp: 0.18, ch: 19.50, seuilPP: 4.33, seuilCH: 468 };
   V2.margeNetteBoite = function (prixNet, remboursable) {
     var p = +prixNet || 0;
