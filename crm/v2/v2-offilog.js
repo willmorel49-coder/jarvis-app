@@ -1933,6 +1933,22 @@
   }
   // Les quatre premières ventes montent dans le bleu : seulement « Tout », meilleures ventes, page 1, sans recherche ni comparaison.
   function olmBandeauOk(total) { return M1 && S.chip === 'all' && S.sort === 'ventes' && S.page === 0 && !S.q && !S.sous && !S.cmp && total > 8; }
+  // Choix de Will (05/11/2026, vu avec les vrais prix) : la case garde l'essentiel. Toujours les prix qui battent Offilog
+  // (repères win/bad), complétés jusqu'à 3 par les moins chers ; les autres restent dans la fiche du produit, derrière le bouton.
+  var OLM_PRIX_MAX = 3;
+  function olmEssentiel(prix, id) {
+    var t = document.createElement('div'); t.innerHTML = prix;
+    var bloc = t.querySelector('.off-card-price'); if (!bloc) return prix;
+    var ch = [].slice.call(bloc.children).filter(function (e) { return /^off-card-(pz|lec|drk|pub)\b/.test(e.className); });
+    if (ch.length <= OLM_PRIX_MAX) return prix;
+    var val = function (e) { var m = e.textContent.replace(/\s/g, '').match(/(\d+(?:,\d+)?)€/); return m ? parseFloat(m[1].replace(',', '.')) : Infinity; };
+    var garde = ch.filter(function (e) { return /\b(win|bad)\b/.test(e.className); });
+    ch.filter(function (e) { return garde.indexOf(e) < 0; }).sort(function (a, b) { return val(a) - val(b); })
+      .forEach(function (e) { if (garde.length < OLM_PRIX_MAX) garde.push(e); });
+    var n = 0; ch.forEach(function (e) { if (garde.indexOf(e) < 0) { e.remove(); n++; } });
+    if (!n) return prix;
+    return t.innerHTML + '<button type="button" class="olm-plus" onclick="event.stopPropagation();V2.offSelect(\'' + id + '\')">' + (n > 1 ? 'Voir les ' + n + ' autres prix' : 'Voir l\'autre prix') + ' →</button>';
+  }
   function olmUne(it) {
     var sel = (S.sel != null && String(it.id) === String(S.sel)) ? ' sel' : '';
     var id = esc(it.id), onMkt = mktSel.has(String(it.id));
@@ -1950,7 +1966,7 @@
         '<button type="button" class="off-mkt-add' + (onMkt ? ' on' : '') + '" onclick="event.stopPropagation();V2.offMktToggle(\'' + id + '\',this)" title="Ajouter à la fiche marketing" aria-label="Ajouter à la fiche marketing">' + ICO(onMkt ? 'check' : 'plus', 15) + '</button>' + img + '</span>' +
       '<span class="olm-une-b">' + (it.brand ? '<span class="olm-une-brand">' + esc(it.brand) + '</span>' : '') +
         '<span class="olm-une-name">' + esc(it.name) + '</span>' +
-        prix + (rep ? '<span class="olm-reps">' + rep + '</span>' : '') + '</span></div>';
+        olmEssentiel(prix, id) + (rep ? '<span class="olm-reps">' + rep + '</span>' : '') + '</span></div>';
   }
   var OLM_LOGO = function () { return '<h1 class="olm-h1"><span class="olm-pastille"><img class="olm-logo" src="' + MOD_BASE + 'logos/offilog.png" width="444" height="70" alt="Offilog" decoding="async"></span></h1>'; };
   function olmEntete(list, haut) {
