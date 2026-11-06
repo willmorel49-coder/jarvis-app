@@ -340,16 +340,25 @@
   // PDF : dessiné ligne à ligne avec jsPDF (celui de html2pdf), sans passer par une photo de la page — 500 lignes en
   // image dépasseraient la taille maximale d'un canevas sur certains navigateurs. Texte sélectionnable, léger.
   // html2pdf.bundle embarque jsPDF SANS l'exposer (vérifié le 06/11/2026 : ni window.jspdf ni window.jsPDF après chargement).
-  // On le récupère par une page minuscule rendue par html2pdf : l'objet `pdf` rendu est une instance de jsPDF, son constructeur est la classe.
-  function jsPdfClasse() {
-    if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
-    if (window.jsPDF) return Promise.resolve(window.jsPDF);
+  // Et l'objet `pdf` rendu par html2pdf n'a PAS la classe pour constructeur (constructor = Object : vu sous WebKit le
+  // 06/11/2026, « doc.setFont is not a function »). On garde donc ce DOCUMENT lui-même : html2pdf rend une page minuscule
+  // au bon format, on ajoute une page vierge et on retire la (ou les) page(s) rendue(s).
+  function nouveauPdf() {
+    var opt = { unit: 'pt', format: 'a4', orientation: 'landscape' };
+    var J = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+    if (typeof J === 'function') return Promise.resolve(new J(opt));
     var el = document.createElement('div');
     el.style.cssText = 'position:absolute;left:0;top:0;width:40px;height:20px;background:#fff;font-size:8px';
     el.textContent = '.'; document.body.appendChild(el);
     var fin = function () { if (el.parentNode) el.parentNode.removeChild(el); };
-    return window.html2pdf().set({ html2canvas: { scale: 0.5 }, jsPDF: { unit: 'pt', format: 'a4' } }).from(el).toPdf().get('pdf').then(function (pdf) {
-      fin(); return pdf && pdf.constructor;
+    return window.html2pdf().set({ html2canvas: { scale: 0.5 }, jsPDF: opt }).from(el).toPdf().get('pdf').then(function (pdf) {
+      fin();
+      if (!pdf || typeof pdf.setFont !== 'function' || typeof pdf.deletePage !== 'function') throw new Error('jsPDF absent');
+      var n = pdf.getNumberOfPages();
+      pdf.addPage('a4', 'landscape');
+      for (var i = n; i >= 1; i--) pdf.deletePage(i);
+      pdf.setPage(1);
+      return pdf;
     }, function (e) { fin(); throw e; });
   }
   // Polices PDF standard : Latin-1 seulement. Le reste est ramené à son équivalent le plus proche.
@@ -360,9 +369,7 @@
   }
   function eurPdf(v) { return v.toFixed(2).replace('.', ','); }
   function topPdf(d) {
-    return window.ensureHtml2Pdf().then(jsPdfClasse).then(function (J) {
-      if (typeof J !== 'function') throw new Error('jsPDF absent');
-      var doc = new J({ unit: 'pt', format: 'a4', orientation: 'landscape' });
+    return window.ensureHtml2Pdf().then(nouveauPdf).then(function (doc) {
       var W = 842, H = 595, MX = 28, HL = 14.5, BAS = 30;
       // colonnes : x de départ, largeur, alignement
       var col = [[MX, 30, 'r'], [MX + 40, 92, 'l'], [MX + 138, 262, 'l'], [MX + 408, 74, 'l'], [MX + 488, 100, 'l'], [MX + 592, 62, 'r'], [MX + 660, 38, 'r'], [MX + 702, 56, 'r']];
