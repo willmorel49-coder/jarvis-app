@@ -163,6 +163,7 @@
   // (v2-app.js) : chiffres de l'id WML = p[13].
   function resoudrePf(pf) {
     pf = String(pf == null ? '' : pf).trim(); if (!pf) return null;
+    if (V2.JUMEAUX && V2.JUMEAUX[pf]) pf = V2.JUMEAUX[pf];   // 06/11/2026 — ancien code annuaire d'une cliente jumelle (v2-app.js)
     var phs = V2.pharmacies || [], cl = null, i, D = window.PHARMA_FR, row = null;
     for (i = 0; i < phs.length; i++) if (String(phs[i].id) === pf) { cl = phs[i]; break; }
     if (!cl && /^[0-9]{4,}$/.test(pf)) for (i = 0; i < phs.length; i++) if (String(phs[i].id).replace(/[^0-9]/g, '') === pf) { cl = phs[i]; break; }

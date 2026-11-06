@@ -3729,6 +3729,9 @@
 
   function renderDetail(root, pid) {
     var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); });
+    // 06/11/2026 — ancien code annuaire d'une cliente jumelle (V2.JUMEAUX, lien ou note d'avant la fusion) : sa fiche cliente
+    var jum = !pharma && V2.JUMEAUX && V2.JUMEAUX[String(pid)];
+    if (jum) { pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === jum; }); if (pharma) pid = jum; }
     if (!pharma) {
       document.body.classList.remove('l8-vp');
       if (String(pid).indexOf('px_') === 0) renderCreatedProspect(root, pid);   // fiche créée à la main
@@ -3823,7 +3826,7 @@
     // (caBase[11] adresse, [12] cp, [13] ville) quand la saisie et l'annuaire RDV n'ont rien.
     // 23/09/2026 — FINESS du jour (public, national) : dernier recours, après la
     // saisie de l'équipe, l'annuaire RDV et la base clients (ROBOT.md, priorité par champ).
-    var oi = (window.OFFICINES_INFOS || {})[String(pid)] || null;
+    var oi = (window.OFFICINES_INFOS || {})[String(pid)] || (V2.codeAnnuaire && (window.OFFICINES_INFOS || {})[V2.codeAnnuaire(pid)]) || null;   // 06/11/2026 — cliente jumelle : infos sous l'ancien code annuaire
     if (!tel) tel = (oi && oi[1]) || '';
     var adresse = String(saisi.adresse || '').trim() || (caBase && caBase[11]) || (infoRdv && infoRdv.adresse) || (oi && oi[0]) || '';   // base clients (09/2026) avant CLIENTS (05/2026)
     // Même trou pour la ville : WML ne la connaît pas partout (« à compléter »

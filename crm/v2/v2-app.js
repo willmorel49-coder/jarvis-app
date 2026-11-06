@@ -2427,6 +2427,27 @@
     var m = (window.WML_MOIS && window.WML_MOIS.length) ? window.WML_MOIS.length : 8;
     return { a: 5000 * m, b: 1500 * m, mois: m };
   };
+  // 06/11/2026 — JUMEAUX (décision de Will, liste écrite) : 46 pharmacies que l'annuaire national (12/2024) connaît sous un
+  // AUTRE code que la cliente (reprise, compte neuf, n° FINESS à la place du CIP). La carte montrait deux points : la cliente
+  // (ajoutée par ajouterClientsSansPoint) et sa ligne annuaire restée « Prospect, 0 € ». Clé = code annuaire, valeur = code
+  // cliente (WML_OFFICINES). Chaque paire relue : même nom, même code postal, un seul candidat (~/tournees-ops/enquete-doublons-
+  // 2026-11-06.md §3). Pas de rapprochement automatique par le nom (voisines homonymes) ; les 6 paires douteuses n'y sont PAS.
+  V2.JUMEAUX = {
+    '2014950': '2002055', '2006609': '2003792', '2014924': '2006238', '2005316': '2006479', '2005020': '2006793', '2116473': '2009672',
+    '2212004': '2009715', '2114544': '2009866', '2116562': '2009921', '2230987': '2009992', '2105257': '2010082', '2212732': '2010106',
+    '2229861': '2010264', '2262626': '2010406', '380009332': '2010810', '2200910': '2010838', '2028450': '2010851', '130057458': '2010853',
+    '440014009': '2011018', '2000805': '2011239', '2015294': '2020399', '2008604': '2021104', '2002869': '2021261', '2013862': '2023211',
+    '2009552': '2037046', '2015045': '2059583', '2006543': '2062711', '2014325': '2063411', '2000671': '2069209', '2012635': '2070874',
+    '2001189': '2071443', '2014459': '2074072', '2009353': '2099783', '2014705': '2101949', '2009535': '2114476', '2013501': '2117079',
+    '2015300': '2119317', '2009403': '2126722', '2015223': '2131313', '2014928': '2184564', '830009254': '2212266', '2014582': '2213605',
+    '2008814': '2218797', '2006487': '2243933', '2014431': '2254180', '2007475': '2281502'
+  };
+  // Ancien code annuaire d'une cliente jumelle (les infos publiques OFFICINES_INFOS y sont rangées), '' sinon.
+  V2.codeAnnuaire = function (pid) {
+    var J = V2.JUMEAUX, c = String(pid == null ? '' : pid).replace(/[^0-9]/g, '');
+    if (!V2._jumInv) { V2._jumInv = {}; for (var a in J) V2._jumInv[J[a]] = a; }
+    return V2._jumInv[c] || '';
+  };
   V2.reconcilePharma = function (force) {
     var D = window.PHARMA_FR, W = window.WML_OFFICINES;
     if (!D || !D.p || !D.seg || (D._wmlRecon && !force) || !W || !W.length) return;
@@ -2437,6 +2458,9 @@
     var grpIdx = {}; for (var g = 0; g < D.grp.length; g++) grpIdx[canon(D.grp[g])] = g;
     function ensureGrp(nm) { var k = canon(nm); if (grpIdx[k] == null) { D.grp.push(nm); grpIdx[k] = D.grp.length - 1; } return grpIdx[k]; }
     var wml = {}; W.forEach(function (o) { if (o && o.id) wml[String(o.id).replace(/[^0-9]/g, '')] = o; });
+    // Jumeau : la ligne annuaire prend le code de la cliente (UNE fiche, au point de l'annuaire) ; l'ancien code reste dans p._ann.
+    var J = V2.JUMEAUX;
+    D.p.forEach(function (p) { var c = J[String(p[13] || '').replace(/[^0-9]/g, '')]; if (c && wml[c]) { p._ann = String(p[13]); p[13] = String(wml[c].id); } });
     var seuils = V2.seuilsPalier();
     var nC = 0;
     D.p.forEach(function (p) {

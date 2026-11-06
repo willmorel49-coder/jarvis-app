@@ -1819,7 +1819,9 @@
   // fois ; le réconciliateur commun pose ensuite palier et groupement comme pour les autres.
   function ajouterClientsSansPoint() {
     var W = window.WML_OFFICINES; if (!W || !W.length || !D || !D.p) return;
-    var vu = {}; D.p.forEach(function (p) { var k = String(p[13] || '').replace(/[^0-9]/g, ''); if (k) vu[k] = 1; });
+    // 06/11/2026 — une cliente jumelle (V2.JUMEAUX) a déjà sa ligne : celle de l'annuaire, que V2.reconcilePharma renomme
+    var J = V2.JUMEAUX || {};
+    var vu = {}; D.p.forEach(function (p) { var k = String(p[13] || '').replace(/[^0-9]/g, ''); if (k) { vu[k] = 1; if (J[k]) vu[J[k]] = 1; } });
     var iU = D.uga.indexOf(''); if (iU < 0) { D.uga.push(''); iU = D.uga.length - 1; }
     var iG = D.grp.indexOf('—'); if (iG < 0) { D.grp.push('—'); iG = D.grp.length - 1; }
     var iS = D.seg.indexOf('Client C'); if (iS < 0) { D.seg.push('Client C'); iS = D.seg.length - 1; }
@@ -2433,7 +2435,7 @@
     // clients (pas dans V2.rdvInfo). Jamais l'encours ni une condition commerciale.
     var caB = (p[13] && (window.CLIENTS_ACTIFS || {}).d) ? window.CLIENTS_ACTIFS.d[String(p[13])] : null;
     // Officine PROSPECT (pas de caB) ou trou dans la base clients : FINESS du jour (public).
-    var oi = (p[13] && window.OFFICINES_INFOS) ? window.OFFICINES_INFOS[String(p[13])] : null;
+    var oi = (p[13] && window.OFFICINES_INFOS) ? (window.OFFICINES_INFOS[String(p[13])] || (p._ann && window.OFFICINES_INFOS[p._ann]) || null) : null;   // jumelle : rangées sous l'ancien code
     var adrCaB = caB && caB[11] ? caB[11] + (caB[12] || caB[13] ? ' · ' + [caB[12], caB[13]].filter(function (x) { return x; }).join(' ') : '') : '';
     var adrOi = oi && oi[0] ? oi[0] + ((p[7] || p[8]) ? ' · ' + [p[8], p[7]].filter(function (x) { return x; }).join(' ') : '') : '';
     if (adrCaB || adrOi) lignes.push(['Adresse', adrCaB || adrOi]);
