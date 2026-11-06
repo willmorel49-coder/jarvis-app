@@ -139,6 +139,11 @@
     if (nrIndex().has(c)) return false;
     return !!(b && b.has_ameli === true);
   }
+  // 06/11/2026 — Le panneau produit (v2-comptoir.js) lit la MÊME règle pour les biosimilaires.
+  // null tant que BENCHMARK ou Sagitta manquent : l'index, construit une seule fois, resterait vide.
+  V2.estRemboursable = function (cip) {
+    return (window.BENCHMARK && window.BENCHMARK.length && window.SAGITTA_SHORTLIST) ? isRemboursable(cip) : null;
+  };
 
   // ── Marge nette officine — ce que la pharmacie gagne grâce à Intégral ──
   // Barème V2.margeNetteBoite (v2-boot.js). 25/09/2026 — Will : calculable sur le PRINCEPS

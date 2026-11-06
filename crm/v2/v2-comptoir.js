@@ -322,7 +322,7 @@
     ajouterNrHorsCat(CAT);
     var S = window.WML_SALES;
     var sig = (S ? S.length : 0) + '|' + D.natEtat + '|' + (window.ETAB_PRICES ? 1 : 0) + '|' + C.top +
-      '|' + (window.PROD_STATS || []).length;
+      '|' + (window.PROD_STATS || []).length + '|' + (window.BENCHMARK || []).length + '|' + (window.SAGITTA_SHORTLIST ? 1 : 0);
     if (D.cache && D.sig === sig) return D.cache;
 
     var N = (D.nat && D.nat.data) || {}, V = ventesAn(), STK = stockIP();
@@ -366,6 +366,12 @@
       else tar = 0;
       if (fam === 'nr' && !(ppht > 0) && ALL[c]) ppht = +ALL[c][0] || 0;
       var net = +(ps && ps.net) || +o.net || 0;
+      // 06/11/2026 — Biosimilaire remboursé : abandon au barème des princeps (Will). Remboursé = règle de la fiche
+      // (V2.estRemboursable) ; null si inconnu → hors calcul. Sans prix réseau, le catalogue le met à net = PPHT
+      // par sa propre règle : on applique le barème, comme le catalogue le fait pour un princeps.
+      var remb = fam === 'biosim' ? (V2.estRemboursable ? V2.estRemboursable(c) : null) : null;
+      var bar = M && M.bareme ? M.bareme : V2.abandonBareme;
+      if (remb === true && ppht > 0 && !(+(ps && ps.net) > 0) && bar) net = ppht - bar(ppht);
       var lib = (ps && ps.d) || o.d || ('CIP ' + c);
       var n = N[c], vente = V.an[c] || 0, rg = rangs[c] || 0;
       var part = (n && n.v > 0) ? vente / n.v : null;
@@ -389,7 +395,7 @@
         // Prix affiché : un NR se présente à son tarif (le net réseau n'est qu'un
         // prix moyen facturé) ; le reste, au prix net.
         prix: fam === 'nr' ? (ppht || net) : net,
-        ab: (porte(fam) && ppht > 0 && net > 0 && net < ppht) ? ppht - net : null,
+        ab: ((porte(fam) || remb === true) && ppht > 0 && net > 0 && net < ppht) ? ppht - net : null, remb: remb,
         // Le fichier de stock porte des valeurs négatives (-367, -1 149…) :
         // bornées à 0, comme dans l'écran Appro.
         // Détail par site connu : il est plus récent que le consolidé (début septembre).
@@ -553,7 +559,7 @@
   var FORFAIT_FROID = { 2026: 0.63, 2027: 0.80 };                  // forfait chaîne du froid, jamais partagé avec l'officine
   // Marge officine réglementée (annexe I-2, lissée) : [borne basse, borne haute, taux] sur le prix fabricant HT.
   var TRANCHES_OFFICINE = [[0, 1.91, 0.10], [1.91, 22.90, 0.07], [22.90, 150, 0.055], [150, 1930, 0.05]];
-  var FAM_PRINCEPS = { pr_low: 1, pr_mid: 1, pr_high: 1 };         // comme margeNettePrinceps : princeps remboursables seuls
+  var FAM_PRINCEPS = { pr_low: 1, pr_mid: 1, pr_high: 1 };         // princeps remboursables ; + biosimilaires remboursés (remb === true, 06/11/2026)
   var JOURS_ALERTE_PRIX = 180, ECART_CATALOGUE = 0.02, JOURS_RAPPEL = 365;
   var FICHIERS = {
     prixFuturs: 'prix-futurs.json', prixArchive: 'prix-futurs-archive.json', generiques: 'generiques-bdpm.json',
@@ -598,10 +604,11 @@
     return ab26 * b / a;
   }
   // Gain de l'officine sur une boîte achetée chez nous = marge réglementée + abandon de marge.
-  // Princeps remboursables seulement ; ailleurs applicable:false (jamais 0 €).
-  function margePharmacien(fam, pfht, ab26) {
+  // Princeps remboursables, et biosimilaires remboursés (remb === true) : Will, 06/11/2026, « barème princeps ».
+  // Ailleurs applicable:false (jamais 0 €).
+  function margePharmacien(fam, pfht, ab26, remb) {
     var reg, a27, t26, t27;
-    if (!FAM_PRINCEPS[fam] || !(pfht > 0)) return { applicable: false };
+    if (!(FAM_PRINCEPS[fam] || (fam === 'biosim' && remb === true)) || !(pfht > 0)) return { applicable: false };
     reg = margeOfficine(pfht);
     a27 = abandon2027(ab26, pfht);
     t26 = reg + (ab26 || 0);
@@ -618,9 +625,9 @@
   // prix du catalogue : ELIQUIS 5MG annonçait 5,30 €, « autant en 2027 », à cinq jours d'une baisse de 52 % (≈ 2,75 €).
   // Choix de Will : recalculer au nouveau prix. La marge réglementée est exacte (prix fabricant HT de l'avis) ;
   // l'abandon de marge garde sa part de la marge grossiste d'aujourd'hui : c'est une estimation.
-  function margeAuPrix(fam, pfht, ab26, pfhtNouveau) {
+  function margeAuPrix(fam, pfht, ab26, pfhtNouveau, remb) {
     var a = margeGrossiste(pfht, 2026, false), b = margeGrossiste(pfhtNouveau, 2026, false);
-    return margePharmacien(fam, pfhtNouveau, ab26 == null || !(a > 0) || !(b > 0) ? null : ab26 * b / a);
+    return margePharmacien(fam, pfhtNouveau, ab26 == null || !(a > 0) || !(b > 0) ? null : ab26 * b / a, remb);
   }
   // Le prix JO qui compte pour la marge : la baisse en vigueur que le catalogue n'a pas encore prise (enVigueur),
   // et le prochain changement annoncé avec son prix fabricant (prochain). null si le catalogue fait foi.
@@ -892,7 +899,8 @@
     })();
     out.margeOfficine = pfht == null ? null : { reglementee: margeOfficine(pfht), inchangee2027: true };
     out.abandon = l.ab == null ? null : { de26: l.ab, de27: abandon2027(l.ab, pfht) };
-    out.margePharmacien = pfht == null ? null : margePharmacien(l.f, pfht, l.ab);
+    out.rembourse = l.remb == null ? null : l.remb;
+    out.margePharmacien = pfht == null ? null : margePharmacien(l.f, pfht, l.ab, l.remb);
     out.notreMarge = notreMargeDe(l);
 
     // Alertes de prix public (JO)
@@ -900,8 +908,8 @@
     out.alertePrix = (fut || arch) ? alertesPrix(cip, fut, arch, now, pfht) : null;
     out.prixJO = prixJO(out.alertePrix);
     if (out.prixJO && out.margePharmacien && out.margePharmacien.applicable) {
-      if (out.prixJO.enVigueur) out.margePharmacien.auPrixJO = margeAuPrix(l.f, pfht, l.ab, out.prixJO.enVigueur.pfht);
-      if (out.prixJO.prochain) out.margePharmacien.apres = margeAuPrix(l.f, pfht, l.ab, out.prixJO.prochain.pfht);
+      if (out.prixJO.enVigueur) out.margePharmacien.auPrixJO = margeAuPrix(l.f, pfht, l.ab, out.prixJO.enVigueur.pfht, l.remb);
+      if (out.prixJO.prochain) out.margePharmacien.apres = margeAuPrix(l.f, pfht, l.ab, out.prixJO.prochain.pfht, l.remb);
     }
 
     // Générique
@@ -2116,7 +2124,7 @@
   function tuileMargePharmacien(s, vp) {
     var m = s.margePharmacien, cls = vp ? 'w6 m1' : 'w3 m1';
     if (!m) return tuileVide(cls, 'Marge pharmacien', 'par boîte', 'Prix fabricant HT non disponible pour ce produit.');
-    if (!m.applicable) return tuileVide(cls, 'Marge pharmacien', 'par boîte', 'Calculée pour les princeps remboursables seulement (ni générique, ni biosimilaire, ni produit non remboursable).');
+    if (!m.applicable) return tuileVide(cls, 'Marge pharmacien', 'par boîte', s.famille === 'biosim' && s.rembourse == null ? 'Remboursement de ce biosimilaire inconnu : marge non calculée.' : 'Calculée pour les princeps et les biosimilaires remboursés (ni générique, ni produit non remboursable).');
     if (m.auPrixJO || m.apres) return tuileMargePrixJO(s, cls);
     var egal = Math.abs(m.delta) < 0.005, max = Math.max(m.total26, m.total27), d27 = dateFr(DATE_MG_2027);
     var diffAb = m.abandon26 != null && m.abandon27 != null && Math.round((m.abandon27 - m.abandon26) * 100) !== 0;
@@ -2125,7 +2133,7 @@
         (egal ? ', ' + gros('autant') + ' en 2027' + (m.abandonEstime ? ' (estimation).' : '.') : ' aujourd\'hui, puis ' + gros(eur2(m.total27)) + ' à partir du ' + d27 + ' (' + (m.delta < 0 ? '−' : '+') + eur2(Math.abs(m.delta)) + (m.abandonEstime ? ', estimation' : '') + ').') + '</p>' +
       '<div class="cq-brs">' + barre('Aujourd\'hui', m.reglementee, m.abandon26, m.total26, max, true) +
         barre((egal ? 'En 2027 : inchangé' : 'À partir du ' + d27) + (m.abandonEstime ? ' · estimation' : ''), m.reglementee, m.abandon27, m.total27, max, diffAb) + '</div>',
-      m.sansAbandon ? 'Aucun abandon de marge sur ce prix.' : m.abandonEstime ? 'Abandon de marge 2027 : estimation — <span class="cp-nb">au-dessus</span> de notre règle habituelle, le niveau 2027 n\'est pas connu.' : 'Par boîte, princeps remboursable.');
+      m.sansAbandon ? 'Aucun abandon de marge sur ce prix.' : m.abandonEstime ? 'Abandon de marge 2027 : estimation — <span class="cp-nb">au-dessus</span> de notre règle habituelle, le niveau 2027 n\'est pas connu.' : (s.famille === 'biosim' ? 'Par boîte, biosimilaire remboursé.' : 'Par boîte, princeps remboursable.'));
   }
   // 27/10/2026 — Nouveau prix public au JO (à venir, ou en vigueur mais absent du catalogue) : la marge se lit au nouveau
   // prix, étape par étape (aujourd'hui, date du nouveau prix, puis 20/01/2027 si le plancher change encore quelque chose).
@@ -2472,7 +2480,7 @@
   };
   V2.comptoir._calc = {
     pfhtDepuisPpht: pfhtDepuisPpht, margeGrossiste: margeGrossiste, margeOfficine: margeOfficine, abandon2027: abandon2027,
-    margePharmacien: margePharmacien, margeAuPrix: margeAuPrix, prixJO: prixJO, alertesPrix: alertesPrix, statutGenerique: statutGenerique, emaPourMolecule: emaPourMolecule,
+    margePharmacien: margePharmacien, margeAuPrix: margeAuPrix, donnees: function () { return donnees(); }, prixJO: prixJO, alertesPrix: alertesPrix, statutGenerique: statutGenerique, emaPourMolecule: emaPourMolecule,
     ansmPourCip: ansmPourCip, rappelPourCip: rappelPourCip, hasPourCip: hasPourCip, previsionsPourCip: previsionsPourCip,
     saisonDe: saisonDe, ventesProduit: ventesProduit, tuileMargePharmacien: tuileMargePharmacien, tuileNotreMarge: tuileNotreMarge,
     // Pour les tests : attendre les fichiers demandés, fixer la date du jour.
