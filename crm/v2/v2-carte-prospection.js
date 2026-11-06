@@ -108,8 +108,10 @@
     if (t && t.jours && t.jours.length) return C.jours(t.jours);
     return t && t.jours_statut === 'a_confirmer' ? 'jours à confirmer' : 'jours à préciser';
   };
-  // Code de la fiche officine d'un arrêt : la fiche reliée par nom + commune (champ `fiche`, 06/11/2026), sinon le code de l'arrêt.
-  C.cleFiche = function (c) { return String((c && c.fiche) || (c && c.id) || ''); };
+  // Codes à essayer, dans l'ordre, pour ouvrir la fiche d'un arrêt : d'abord sa fiche client (code de l'arrêt, ajoutée à
+  // l'annuaire depuis WML_OFFICINES une fois connecté : elle porte ses ventes), puis la fiche reliée par nom + commune
+  // (champ `fiche`, 06/11/2026) seulement si la première est introuvable. La reliée seule ouvrait un « Prospect » à 0 €.
+  C.clesFiche = function (c) { var r = []; if (c && c.id) r.push(String(c.id)); if (c && c.fiche && String(c.fiche) !== r[0]) r.push(String(c.fiche)); return r; };
   // Où le prospect s'insère dans la tournée : phrase pour les chauffeurs.
   C.insertion = function (p) {
     if (!p || p.avant == null) return '';
@@ -411,7 +413,7 @@
       }
       var m = L.circleMarker([c.lat, c.lng], { renderer: I.canvas, radius: 7.5, color: col, weight: 3, fillColor: '#FFFFFF', fillOpacity: 1, dashArray: c.tournee_supposee ? '3 3' : null });
       m.bindTooltip('<b>' + esc(c.nom) + '</b><span>' + esc(c.ville || '') + (c.cp ? ' · ' + esc(c.cp) : '') + '</span><em>Cliente · ' + esc(tourneeLbl(c.tournee)) + (c.tournee_supposee ? ' (tournée supposée)' : '') + '</em>', { direction: 'top', offset: [0, -6], className: 'cn-tip' });
-      m.on('click', function () { var i = indexDe(C.cleFiche(c)); if (i >= 0 && V2.carteFiche) V2.carteFiche(i); });
+      m.on('click', function () { var i = indexFiche(c); if (i >= 0 && V2.carteFiche) V2.carteFiche(i); });
       calques.clientes.addLayer(m);
     });
     var d = S.donnees.depot;
@@ -462,6 +464,7 @@
     appliquerRayon();
   }
   function pChercher(cip) { for (var i = 0; i < S.prospects.length; i++) if (S.prospects[i].cip === cip) return S.prospects[i]; return null; }
+  function indexFiche(c) { var k = C.clesFiche(c), i = -1; for (var j = 0; j < k.length && i < 0; j++) i = indexDe(k[j]); return i; }
   function indexDe(cip) { var D = glob.PHARMA_FR; if (!D) return -1; cip = String(cip); for (var i = 0; i < D.p.length; i++) if (String(D.p[i][13]) === cip) return i; return -1; }
   function cadrer() {
     if (!I || !I.map) return;
@@ -690,7 +693,7 @@
   C.arret = function (id) {
     var c = clienteDe(cleCip(id)); if (!c || !I) return;
     if (I.map && isFinite(c.lat)) I.map.setView([c.lat, c.lng], Math.max(I.map.getZoom(), 12), { animate: true });
-    var i = indexDe(C.cleFiche(c));
+    var i = indexFiche(c);
     if (i >= 0 && V2.carteFiche) {
       var sh = document.querySelector('.cn-shell');
       if (sh && window.matchMedia && window.matchMedia('(max-width:760px)').matches) sh.classList.add('cn-fiche-on');
