@@ -1842,20 +1842,20 @@
   // Une ligne de la liste « chères » : nom, boîtes, chiffre d'affaires, officines, prix de la boîte.
   function pmLigneMol(m) {
     var nO = Object.keys(m.offs).length;
-    return '<div class="pm-l" role="row"><span class="pm-n" role="cell">' + esc(pmAff(m.nom)) + (m.cher ? '<small>' + (m.t3 ? 'plus de 3 000 €' : '468 € ou plus') + '</small>' : '') + '</span>' +
-      '<span class="pm-c" role="cell" data-l="Boîtes">' + pmFr(m.b) + (m.cher && m.chB < m.b ? '<small>dont ' + pmFr(m.chB) + ' chères</small>' : '') + '</span>' +
-      '<span class="pm-c" role="cell" data-l="Chiffre d’affaires">' + pmEur(m.ca) + '</span>' +
-      '<span class="pm-c" role="cell" data-l="Officines">' + pmFr(nO) + '</span>' +
-      '<span class="pm-c" role="cell" data-l="Prix de la boîte">' + (m.cher ? pmEur(pmPrixBoite(m)) : '—') + '</span></div>';
+    return '<div class="plm-l" role="row"><span class="plm-n" role="cell">' + esc(pmAff(m.nom)) + (m.cher ? '<small>' + (m.t3 ? 'plus de 3 000 €' : '468 € ou plus') + '</small>' : '') + '</span>' +
+      '<span class="plm-c" role="cell" data-l="Boîtes">' + pmFr(m.b) + (m.cher && m.chB < m.b ? '<small>dont ' + pmFr(m.chB) + ' chères</small>' : '') + '</span>' +
+      '<span class="plm-c" role="cell" data-l="Chiffre d’affaires">' + pmEur(m.ca) + '</span>' +
+      '<span class="plm-c" role="cell" data-l="Officines">' + pmFr(nO) + '</span>' +
+      '<span class="plm-c" role="cell" data-l="Prix de la boîte">' + (m.cher ? pmEur(pmPrixBoite(m)) : '—') + '</span></div>';
   }
-  var PM_TETE = '<div class="pm-l pm-h" role="row"><span role="columnheader">Molécule</span><span role="columnheader" class="pm-c">Boîtes</span><span role="columnheader" class="pm-c">Chiffre d’affaires</span><span role="columnheader" class="pm-c">Officines</span><span role="columnheader" class="pm-c">Prix de la boîte</span></div>';
+  var PM_TETE = '<div class="plm-l plm-h" role="row"><span role="columnheader">Molécule</span><span role="columnheader" class="plm-c">Boîtes</span><span role="columnheader" class="plm-c">Chiffre d’affaires</span><span role="columnheader" class="plm-c">Officines</span><span role="columnheader" class="plm-c">Prix de la boîte</span></div>';
   function pmListeHtml(L, max) {
     var vis = max ? L.slice(0, max) : L;
-    return '<div class="pm-tab" role="table">' + PM_TETE + vis.map(pmLigneMol).join('') + '</div>';
+    return '<div class="plm-tab" role="table">' + PM_TETE + vis.map(pmLigneMol).join('') + '</div>';
   }
   function pmReglePhrase() { return 'Une molécule est « chère » dès qu’une de ses boîtes est vendue à 468 € ou plus (prix net), comme les tranches « chers » et « très chers » ci-dessus.'; }
   function pmNotes(R, c) {
-    return '<p class="pm-note">' + (c.pf ? esc(c.pf.label) + ' · ' : '') + 'Prix net de la boîte vendue. ' + pmFr(R.sans) + ' produit' + (R.sans > 1 ? 's' : '') +
+    return '<p class="plm-note">' + (c.pf ? esc(c.pf.label) + ' · ' : '') + 'Prix net de la boîte vendue. ' + pmFr(R.sans) + ' produit' + (R.sans > 1 ? 's' : '') +
       ' sans molécule (surtout de la parapharmacie) ne sont pas comptés. Molécule du catalogue, ou à défaut la substance de la base nationale, comme dans Produits. ' +
       (R.ab.length ? pmFr(R.ab.length) + (R.ab.length > 1 ? ' ventes écartées' : ' vente écartée') + ' : ' + R.ab.map(function (a) { return pmEur(a.pu) + ' la boîte de ' + esc(pmAff(a.nom)); }).join(', ') + ', un prix manifestement erroné dans le fichier des ventes. ' : '') +
       (R.moy ? 'Moyenne Intégral : nombre moyen de molécules par secteur (' + pmFr(R.moy.n) + ' secteurs, mêmes mois). ' : 'La moyenne Intégral par secteur apparaît quand vous choisissez un secteur. ') + '</p>';
@@ -1875,7 +1875,7 @@
   function pmLigneListe(c) {
     var R = pmCalc(c);
     if (!R) return '<div class="pa-row pa-mol-wait" role="status"><span class="pa-row-t"><b>Molécules</b><small>Chargement du catalogue…</small></span></div>';
-    return '<button type="button" class="pa-row pa-mol" data-m="mol"><span class="pa-row-t"><b style="color:var(--pa-ink)">Molécules</b><small>dont <strong class="pm-ch">' + pmFr(R.nCh) + ' chères</strong> (468 € et plus)</small></span>' +
+    return '<button type="button" class="pa-row pa-mol" data-m="mol"><span class="pa-row-t"><b style="color:var(--pa-ink)">Molécules</b><small>dont <strong class="plm-ch">' + pmFr(R.nCh) + ' chères</strong> (468 € et plus)</small></span>' +
       '<span class="pa-row-s"></span><span class="pa-row-v"><span class="pa-n">' + pmFr(R.n) + '</span><span class="pa-u">molécules</span></span>' +
       '<span class="pa-row-e">' + (R.moy ? pmPill(R.n, R.moy.mols) : '') + '</span><span class="pa-chev">' + ICO('chev', 14) + '</span></button>';
   }
@@ -1884,14 +1884,14 @@
     if (!R) return '<h2 class="pa-pn" id="pa-sh-t">Molécules</h2><p class="pa-def">Le catalogue se charge…</p>';
     var L = PM.tout ? R.liste : R.chers, vis = (PM.tout || PM.gp) ? L : L.slice(0, 15);
     var h = '<h2 class="pa-pn" id="pa-sh-t">Molécules</h2>' +
-      '<div class="pm-duo pm-duo-s"><div class="pm-k"><span class="pa-n">' + pmFr(R.n) + '</span><span class="pa-u">molécules vendues</span>' + (R.moy ? '<div class="pm-kp">' + pmPill(R.n, R.moy.mols) + '</div>' : '') + '</div>' +
-      '<div class="pm-k pm-k2"><span class="pa-n">' + pmFr(R.nCh) + '</span><span class="pa-u">dont chères</span>' + (R.moy ? '<div class="pm-kp">' + pmPill(R.nCh, R.moy.chers) + '</div>' : '') + '</div></div>' +
+      '<div class="plm-duo plm-duo-s"><div class="plm-k"><span class="pa-n">' + pmFr(R.n) + '</span><span class="pa-u">molécules vendues</span>' + (R.moy ? '<div class="plm-kp">' + pmPill(R.n, R.moy.mols) + '</div>' : '') + '</div>' +
+      '<div class="plm-k plm-k2"><span class="pa-n">' + pmFr(R.nCh) + '</span><span class="pa-u">dont chères</span>' + (R.moy ? '<div class="plm-kp">' + pmPill(R.nCh, R.moy.chers) + '</div>' : '') + '</div></div>' +
       '<div class="pa-pper">' + esc(c.pf ? c.pf.label : '') + (R.moy ? ' · moyenne Intégral : ' + pmFr(R.moy.mols, 0) + ' molécules, dont ' + pmFr(R.moy.chers, 0) + ' chères, par secteur' : '') + '</div>' +
       '<p class="pa-def">' + pmReglePhrase() + '</p>' +
-      '<h3 class="pa-h3">' + (PM.tout ? 'Toutes les molécules vendues' : 'Les molécules chères') + ' <span class="pm-cnt">' + pmFr(L.length) + '</span></h3>' +
+      '<h3 class="pa-h3">' + (PM.tout ? 'Toutes les molécules vendues' : 'Les molécules chères') + ' <span class="plm-cnt">' + pmFr(L.length) + '</span></h3>' +
       (L.length ? pmListeHtml(vis) : '<p class="pa-def">Aucune molécule vendue à 468 € ou plus sur cette période.</p>');
-    if (!PM.tout && !PM.gp && L.length > vis.length) h += '<button type="button" class="pm-btn" data-pm="plus">Voir les ' + pmFr(L.length - vis.length) + ' autres molécules chères</button>';
-    h += '<button type="button" class="pm-btn pm-btn2" data-pm="' + (PM.tout ? 'chers' : 'tout') + '">' + (PM.tout ? 'Revenir aux molécules chères' : 'Voir toutes les molécules (' + pmFr(R.n) + ')') + '</button>' + pmNotes(R, c);
+    if (!PM.tout && !PM.gp && L.length > vis.length) h += '<button type="button" class="plm-btn" data-pm="plus">Voir les ' + pmFr(L.length - vis.length) + ' autres molécules chères</button>';
+    h += '<button type="button" class="plm-btn plm-btn2" data-pm="' + (PM.tout ? 'chers' : 'tout') + '">' + (PM.tout ? 'Revenir aux molécules chères' : 'Voir toutes les molécules (' + pmFr(R.n) + ')') + '</button>' + pmNotes(R, c);
     return h;
   }
 
