@@ -6800,11 +6800,22 @@
     if (ca < 35000) return { r: 12, color: '#0034A0', fill: '#0050E6' };
     return { r: 16, color: '#0034A0', fill: '#0034A0' };
   }
+  var _carteAnnDemande = false;
   function renderCarte(root) {
     var commBar = commSelect();
-    var withGeo = (V2.pharmacies || []).filter(function (p) {
-      if (V2.commFilter && (p.comms || []).indexOf(V2.commFilter) < 0) return false;
-      return typeof p.lat === 'number' && typeof p.lng === 'number';
+    // 06/11/2026 — même point que la grande carte (décision de Will) : l'annuaire (V2.pointAnnuaire), sinon le point WML,
+    // qui n'est que le centre de la commune. Côté JARVIS seulement, comme la liste ; une seule demande de chargement.
+    var ann = !isOpso() && V2.pointAnnuaire;
+    if (ann && !window.PHARMA_FR && V2.ensurePharmaFr && !_carteAnnDemande) {
+      _carteAnnDemande = true;
+      V2.ensurePharmaFr(function () { if (V2.route && V2.route.name === 'pharma' && !V2.route.param && pharmaView === 'carte') V2.render(); });
+    }
+    var withGeo = [];
+    (V2.pharmacies || []).forEach(function (p) {
+      if (V2.commFilter && (p.comms || []).indexOf(V2.commFilter) < 0) return;
+      var pt = ann ? V2.pointAnnuaire(p.id, p.cp) : null;
+      if (!pt && typeof p.lat === 'number' && typeof p.lng === 'number') pt = [p.lat, p.lng];
+      if (pt) withGeo.push({ p: p, pt: pt });
     });
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
       '<div class="v2-wrap v2-u">' +
@@ -6831,14 +6842,14 @@
     _secMap = window.L.map(el, { scrollWheelZoom: true, preferCanvas: true }).setView([46.7, 2.4], 6);
     V2.fondCarte(_secMap);
     var pts = [];
-    list.forEach(function (p) {
-      var ca = caOfPharma(p.id), st = secStyle(ca);
-      var mk = window.L.circleMarker([p.lat, p.lng], { radius: st.r, color: st.color, weight: 1.5, fillColor: st.fill, fillOpacity: .82 });
+    list.forEach(function (x) {
+      var p = x.p, ca = caOfPharma(p.id), st = secStyle(ca);
+      var mk = window.L.circleMarker(x.pt, { radius: st.r, color: st.color, weight: 1.5, fillColor: st.fill, fillOpacity: .82 });
       var pop = '<b>' + esc(p.name) + '</b>' + (p.ville ? '<br>' + esc(p.cp || '') + ' ' + esc(p.ville) : '') +
         (p.groupement ? '<br><span style="color:#737A8C">' + esc(groupName(p)) + '</span>' : '') +
         (V2.voitVentesDe(p.id) ? '<br><b style="color:#0050E6">' + V2.fmtEur(ca) + '</b> de CA' : '') +
         '<br><a href="#" onclick="V2.go(\'pharma\',\'' + esc(String(p.id)) + '\');return false" style="color:#0050E6;font-weight:700">Ouvrir la fiche →</a>';
-      mk.bindPopup(pop); mk.addTo(_secMap); pts.push([p.lat, p.lng]);
+      mk.bindPopup(pop); mk.addTo(_secMap); pts.push(x.pt);
     });
     if (pts.length) { try { _secMap.fitBounds(pts, { padding: [40, 40], maxZoom: 11 }); } catch (e) {} }
     setTimeout(function () { try { _secMap.invalidateSize(); } catch (e) {} }, 120);

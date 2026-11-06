@@ -2449,6 +2449,34 @@
     if (!V2._jumInv) { V2._jumInv = {}; for (var a in J) V2._jumInv[J[a]] = a; }
     return V2._jumInv[c] || '';
   };
+  // 06/11/2026 — point de l'ANNUAIRE d'une cliente (décision de Will : la petite carte du secteur suit la grande carte).
+  // Les lat/lng de WML_OFFICINES sont le CENTRE DE LA COMMUNE (generate_wml_v2.py géocode « code postal + ville ») : 1 142
+  // clientes s'y empilaient. L'annuaire (PHARMA_FR, colonnes 0/1) place l'officine : même code, sinon le code annuaire de la
+  // jumelle (V2.JUMEAUX), comme la grande carte. Garde-fou : deux codes postaux CONNUS de départements différents → pas de
+  // point (Persan 95 / Chambly 60, mis de côté par Will). Rend [lat, lng], ou null : l'appelant garde alors le point WML.
+  function deptCp(cp) {
+    cp = String(cp == null ? '' : cp).replace(/[^0-9]/g, ''); if (!cp) return '';
+    while (cp.length < 5) cp = '0' + cp;
+    if (/^9[78]/.test(cp)) return cp.slice(0, 3);
+    if (/^20/.test(cp)) return +cp >= 20200 ? '2B' : '2A';
+    return cp.slice(0, 2);
+  }
+  V2.pointAnnuaire = function (pid, cp) {
+    var D = window.PHARMA_FR; if (!D || !D.p) return null;
+    if (V2._ptAnnD !== D || V2._ptAnnN !== D.p.length) {   // index refait si la base change ou grandit
+      var I = {};
+      D.p.forEach(function (p) {
+        if (p._wml) return;   // ligne ajoutée par la grande carte AVEC le point WML : ce n'est pas l'annuaire
+        [p[13], p._ann].forEach(function (k) { k = String(k == null ? '' : k).replace(/[^0-9]/g, ''); if (k && !I[k]) I[k] = p; });
+      });
+      V2._ptAnnI = I; V2._ptAnnD = D; V2._ptAnnN = D.p.length;
+    }
+    var c = String(pid == null ? '' : pid).replace(/[^0-9]/g, ''); if (!c) return null;
+    var p = V2._ptAnnI[c] || V2._ptAnnI[V2.codeAnnuaire(c)];
+    if (!p || typeof p[0] !== 'number' || typeof p[1] !== 'number' || (!p[0] && !p[1])) return null;
+    var a = deptCp(p[8]), b = deptCp(cp);
+    return (a && b && a !== b) ? null : [p[0], p[1]];
+  };
   V2.reconcilePharma = function (force) {
     var D = window.PHARMA_FR, W = window.WML_OFFICINES;
     if (!D || !D.p || !D.seg || (D._wmlRecon && !force) || !W || !W.length) return;
