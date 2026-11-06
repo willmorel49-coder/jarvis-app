@@ -45,3 +45,9 @@ test('22 couleurs de tournée toutes différentes ; tri par rentabilité : la pl
   assert.deepEqual(C.ordonnerTournees(T, 'renta'), ['T2', 'T4', 'T1', 'T3']);
   assert.deepEqual(C.ordonnerTournees(T, 'code'), ['T1', 'T2', 'T3', 'T4']);
 });
+test('fiche d\'un arrêt : la fiche reliée par nom + commune d\'abord, sinon le code de l\'arrêt', () => {
+  assert.equal(C.cleFiche({ id: '2011018', fiche: '440014009' }), '440014009');
+  assert.equal(C.cleFiche({ id: '2011018', fiche: null }), '2011018');
+  assert.equal(C.cleFiche({ id: 2004028 }), '2004028');
+  assert.equal(C.cleFiche(null), '');
+});

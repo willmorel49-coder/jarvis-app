@@ -108,6 +108,8 @@
     if (t && t.jours && t.jours.length) return C.jours(t.jours);
     return t && t.jours_statut === 'a_confirmer' ? 'jours à confirmer' : 'jours à préciser';
   };
+  // Code de la fiche officine d'un arrêt : la fiche reliée par nom + commune (champ `fiche`, 06/11/2026), sinon le code de l'arrêt.
+  C.cleFiche = function (c) { return String((c && c.fiche) || (c && c.id) || ''); };
   // Où le prospect s'insère dans la tournée : phrase pour les chauffeurs.
   C.insertion = function (p) {
     if (!p || p.avant == null) return '';
@@ -409,7 +411,7 @@
       }
       var m = L.circleMarker([c.lat, c.lng], { renderer: I.canvas, radius: 7.5, color: col, weight: 3, fillColor: '#FFFFFF', fillOpacity: 1, dashArray: c.tournee_supposee ? '3 3' : null });
       m.bindTooltip('<b>' + esc(c.nom) + '</b><span>' + esc(c.ville || '') + (c.cp ? ' · ' + esc(c.cp) : '') + '</span><em>Cliente · ' + esc(tourneeLbl(c.tournee)) + (c.tournee_supposee ? ' (tournée supposée)' : '') + '</em>', { direction: 'top', offset: [0, -6], className: 'cn-tip' });
-      m.on('click', function () { var i = indexDe(c.id); if (i >= 0 && V2.carteFiche) V2.carteFiche(i); });
+      m.on('click', function () { var i = indexDe(C.cleFiche(c)); if (i >= 0 && V2.carteFiche) V2.carteFiche(i); });
       calques.clientes.addLayer(m);
     });
     var d = S.donnees.depot;
@@ -619,7 +621,7 @@
   function chiffresTournee(t) {
     return '<span class="pp-ch"><b>' + C.nb1(t.km_aller) + ' km</b> aller · ' + C.nb1(t.km_retour) + ' km retour</span>' +
       '<span class="pp-ch">CA <b>' + C.eur(t.ca) + '</b> · marge <b>' + C.eur(t.marge) + '</b></span>' +
-      '<span class="pp-ch"><b>' + (t.jours_commande || 0).toLocaleString('fr-FR') + '</b> jours de commande · ' + C.eur2(t.marge_jour) + ' par jour</span>' +
+      '<span class="pp-ch"><b>' + (t.jours_commande || 0).toLocaleString('fr-FR') + '</b> livraisons · ' + C.eur2(t.marge_jour) + ' par livraison</span>' +
       '<span class="pp-ch' + (t.rentabilite < 0 ? ' pp-neg' : '') + '">Rentabilité, livraisons déduites : <b>' + C.eur(t.rentabilite) + '</b>' + (t.nb_rentabilite_negative ? ' · ' + t.nb_rentabilite_negative + ' client' + (t.nb_rentabilite_negative > 1 ? 's' : '') + ' en perte' : '') + '</span>';
   }
   function tourneesHtml() {
@@ -639,14 +641,14 @@
     var h = '<div class="pp-dt"><button type="button" class="v2-btn v2-btn-ghost pp-retour" onclick="V2.carteProspection.tourneeFermer()">← Toutes les tournées</button>' +
       '<div class="pp-nom"><i class="pp-trait" style="background:' + couleur(code) + '"></i>' + esc(code + ' · ' + t.nom) + '</div>' +
       '<div class="pp-sub">' + esc(C.joursTournee(t)) + ' · ' + (t.transporteur ? 'transporteur ' + esc(t.transporteur) : 'transporteur non renseigné') + (t.nom_auto ? ' · nom automatique' : '') + '</div>' + chiffresTournee(t) +
-      '<div class="pp-aide">Dépôt, puis les arrêts dans l\'ordre de livraison. Rentabilité par mois = marge − jours de commande × coût d\'une livraison, divisée par les mois d\'activité (janvier à septembre 2026).</div></div>';
+      '<div class="pp-aide">Dépôt, puis les arrêts dans l\'ordre de livraison. Rentabilité par mois = marge − livraisons × coût d\'une livraison (1 facture = 1 livraison, même calcul que la fiche), divisée par les mois d\'activité (janvier à septembre 2026).</div></div>';
     (t.arrets || []).forEach(function (id) {
       var c = clienteDe(id); if (!c) return; var r = c.renta;
       h += '<button type="button" class="pp-ar" onclick="V2.carteProspection.arret(\'' + id + '\')">' +
         '<b class="pp-num pp-num-l" style="background:' + couleur(code) + '">' + c.n + '</b>' +
         '<span class="pp-nom">' + esc(c.nom) + '</span>' +
         '<span class="pp-sub">' + esc(c.ville || '') + (commercialDe(c) ? ' · ' + esc(commercialDe(c)) : '') + (c.transporteur ? ' · ' + esc(c.transporteur) : '') + (c.ordre_corrige ? ' · ' + esc(c.ordre_corrige) : (c.ordre_source != null ? ' · n° du fichier ' + c.ordre_source : '')) + '</span>' +
-        (r ? '<span class="pp-ch">' + C.nb1(r.jours_mois) + ' jours de commande par mois · ' + C.eur2(r.marge_jour) + ' par jour</span>' +
+        (r ? '<span class="pp-ch">' + C.nb1(r.jours_mois) + ' livraisons par mois · ' + C.eur2(r.marge_jour) + ' par livraison</span>' +
              '<span class="pp-ch' + (r.rentabilite_mois < 0 ? ' pp-neg' : '') + '">Rentabilité : <b>' + C.eur(r.rentabilite_mois) + '</b> par mois</span>'
            : '<span class="pp-ch">Pas de ventes de janvier à septembre 2026</span>') + '</button>';
     });
@@ -688,7 +690,7 @@
   C.arret = function (id) {
     var c = clienteDe(cleCip(id)); if (!c || !I) return;
     if (I.map && isFinite(c.lat)) I.map.setView([c.lat, c.lng], Math.max(I.map.getZoom(), 12), { animate: true });
-    var i = indexDe(c.id);
+    var i = indexDe(C.cleFiche(c));
     if (i >= 0 && V2.carteFiche) {
       var sh = document.querySelector('.cn-shell');
       if (sh && window.matchMedia && window.matchMedia('(max-width:760px)').matches) sh.classList.add('cn-fiche-on');
