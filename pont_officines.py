@@ -30,6 +30,14 @@ _COMPTE_NEUF = {
 }
 _CODES_GARDES = set(_COMPTE_NEUF.values())
 
+# Le cas inverse : c'est le code du compte ACTUEL qu'on garde (relié à l'annuaire, bonne adresse, toutes les ventes
+# récentes) ; l'ancien compte n'est qu'un secours, comme une ligne « EX ». Ancien code → code actuel gardé.
+_ANCIEN_COMPTE = {
+    # Grande Pharmacie de Beaulieu, Nantes (Arthur) : « EX2125556 » en janvier 2026 (adresse « 44272 NANTES CEDEX 2 »,
+    # placée à Machecoul, groupement d'avant), 2011018 depuis février, jumelle de l'annuaire 440014009 (Will, 06/11/2026).
+    '2125556': '2011018',
+}
+
 
 def code_officine(code):
     """(code gardé, ancien) : ancien = True quand la ligne vient du compte d'avant la reprise."""
@@ -38,6 +46,8 @@ def code_officine(code):
     ancien = bool(m)
     if m:
         c = m.group(1) or m.group(2)
+    if c in _ANCIEN_COMPTE:
+        return _ANCIEN_COMPTE[c], True
     if c in _COMPTE_NEUF:
         return _COMPTE_NEUF[c], False
     if c in _CODES_GARDES:
