@@ -2427,7 +2427,7 @@
     var m = (window.WML_MOIS && window.WML_MOIS.length) ? window.WML_MOIS.length : 8;
     return { a: 5000 * m, b: 1500 * m, mois: m };
   };
-  // 06/11/2026 — JUMEAUX (décision de Will, liste écrite) : 46 pharmacies que l'annuaire national (12/2024) connaît sous un
+  // 06/11/2026 — JUMEAUX (décision de Will, liste écrite) : 47 pharmacies (46 + Porte d'Azur) que l'annuaire national (12/2024) connaît sous un
   // AUTRE code que la cliente (reprise, compte neuf, n° FINESS à la place du CIP). La carte montrait deux points : la cliente
   // (ajoutée par ajouterClientsSansPoint) et sa ligne annuaire restée « Prospect, 0 € ». Clé = code annuaire, valeur = code
   // cliente (WML_OFFICINES). Chaque paire relue : même nom, même code postal, un seul candidat (~/tournees-ops/enquete-doublons-
@@ -2440,7 +2440,8 @@
     '2009552': '2037046', '2015045': '2059583', '2006543': '2062711', '2014325': '2063411', '2000671': '2069209', '2012635': '2070874',
     '2001189': '2071443', '2014459': '2074072', '2009353': '2099783', '2014705': '2101949', '2009535': '2114476', '2013501': '2117079',
     '2015300': '2119317', '2009403': '2126722', '2015223': '2131313', '2014928': '2184564', '830009254': '2212266', '2014582': '2213605',
-    '2008814': '2218797', '2006487': '2243933', '2014431': '2254180', '2007475': '2281502'
+    '2008814': '2218797', '2006487': '2243933', '2014431': '2254180', '2007475': '2281502',
+    '830004446': '2211215'   // Pharmacie Porte d'Azur, Bandol : la cliente n'avait aucune adresse, c'est celle-ci (Will, 06/11/2026)
   };
   // Ancien code annuaire d'une cliente jumelle (les infos publiques OFFICINES_INFOS y sont rangées), '' sinon.
   V2.codeAnnuaire = function (pid) {

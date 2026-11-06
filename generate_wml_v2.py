@@ -656,6 +656,9 @@ geocode_officines(officines)
 # Marseille ; BAN « Route de la Sablière 13011 Marseille » score 0,96 -> 43.294195, 5.480703 (à la rue).
 ADRESSE_FORCEE = {
     '2072452': {'cp': '13011', 'ville': 'MARSEILLE', 'lat': 43.294195, 'lng': 5.480703},
+    # 2211215 Pharmacie Porte d'Azur : aucune adresse dans les fichiers ; c'est celle de Bandol (Will, 06/11/2026),
+    # point de sa ligne de la base nationale (830004446).
+    '2211215': {'cp': '83150', 'ville': 'BANDOL', 'lat': 43.14193, 'lng': 5.74847},
 }
 for _o in officines:
     _f = ADRESSE_FORCEE.get(_cipkey(_o['code']))

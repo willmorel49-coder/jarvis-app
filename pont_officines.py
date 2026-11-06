@@ -24,6 +24,9 @@ _REPRISE = re.compile(r'^(?:EX\s*(\d{7})|(\d{7})\s*(?:EX|OLD|INBIS|IN))$', re.I)
 # janv.–mai, 2063584 mai–juin, 2063584INBIS juillet, puis 2011419 depuis août (Will, 05/10/2026).
 _COMPTE_NEUF = {
     '2011419': '2063584',
+    # Pharmacie du Parc, 21 avenue du Parc, Blagnac (Céline) : même adresse, téléphone et titulaire ; 2015038 est le
+    # code de la base nationale et des infos publiques, 2051038 n'avait ni adresse ni point (Will, 06/11/2026).
+    '2051038': '2015038',
 }
 _CODES_GARDES = set(_COMPTE_NEUF.values())
 

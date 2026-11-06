@@ -17,13 +17,13 @@ function session(jumeaux) {
   const D = g.window.PHARMA_FR, seg = p => D.seg[p[4]];
   return { V2, D, seg, prospects: D.p.filter(p => seg(p) === 'Prospect').length, lignes: id => D.p.filter(p => String(p[13]) === id) };
 }
-test('46 paires, 46 clientes distinctes, aucune des 6 douteuses', () => {
+test('47 paires (46 + Porte d\'Azur), 47 clientes distinctes, aucune des 6 douteuses', () => {
   const J = session().V2.JUMEAUX, cles = Object.keys(J);
-  assert.equal(cles.length, 46); assert.equal(new Set(Object.values(J)).size, 46);
+  assert.equal(cles.length, 47); assert.equal(new Set(Object.values(J)).size, 47);
   for (const d of ['2278924', '2070696', '2013740', '2176993', '2276005', '2000952', '2007087', '2013223']) assert.equal(J[d], undefined, d);
 });
-test('le nombre de prospects baisse d\'exactement 46', () => {
-  assert.equal(session(false).prospects - session().prospects, 46);
+test('le nombre de prospects baisse d\'exactement 47', () => {
+  assert.equal(session(false).prospects - session().prospects, 47);
 });
 test('les 3 connues : une seule ligne, cliente, ancien code gardé ; l\'ancien code ne répond plus', () => {
   const s = session();
