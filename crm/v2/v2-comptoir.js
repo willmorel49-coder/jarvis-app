@@ -330,12 +330,12 @@
     var c, i;
 
     // Part moyenne : reprend v2-appro.js::partGlobale (stock connu ∪ produits mouvants).
-    var ip = 0, nat = 0;
+    var ip = 0, nat = 0, setP = {};
     for (c in N) {
       if (!Object.prototype.hasOwnProperty.call(N, c) || !(N[c] && N[c].v > 0)) continue;
       var a = V.an[c] || 0;
       if (!Object.prototype.hasOwnProperty.call(STK, c) && a / 12 < MINVEL) continue;
-      ip += a; nat += N[c].v;
+      ip += a; nat += N[c].v; setP[c] = 1;
     }
     var partMoy = nat > 0 ? ip / nat : 0;
 
@@ -399,7 +399,7 @@
         hay: sansAccent(lib + ' ' + c + ' ' + (o.labo || '') + ' ' + (o.mol || '') + (rm ? ' ' + rm.dci : ''))
       });
     }
-    D.cache = { lignes: lignes, rangs: rangs, partMoy: partMoy, mois: V.mois, nDetail: nDetail,
+    D.cache = { lignes: lignes, rangs: rangs, partMoy: partMoy, setPart: setP, natTot: nat, mois: V.mois, nDetail: nDetail,
                 natGen: D.nat && D.nat.generated, parCip: null };
     D.cache.parCip = {};
     for (i = 0; i < lignes.length; i++) D.cache.parCip[lignes[i].cip] = lignes[i];
@@ -973,6 +973,457 @@
   function ecrireVuePharma(b) { try { if (window.localStorage) window.localStorage.setItem(CLE_VUE_PHARMA, b ? '1' : '0'); } catch (x) { /* sans stockage : valable pour cette séance */ } }
   C.vuePharma = lireVuePharma();
 
+  // ═══════════════════════════════════════════════════════════════════
+  // 06/11/2026 — MOLÉCULE : additionner tous les produits d'une molécule (princeps, génériques, dosages)
+  // et comparer chaque commercial au national. Demande de Will : « pouvoir taper n'importe quelle
+  // molécule et voir toutes ses stats commerciaux vs national ».
+  // Règles arbitrées (BRIEF 06/11) :
+  //   · molécule = colonne « mol » du catalogue + repli DCI nationale (celle que le comptoir utilise déjà : l.mol) ;
+  //     les produits sans molécule ne sont pas des molécules, l'écran le dit ;
+  //   · nos ventes = WML_SALES sur d.mois (les mêmes mois que le reste du comptoir), ramenées à l'année ;
+  //   · part du marché = nos boîtes ÷ boîtes France, comparée à d.partMoy (la part moyenne Intégral, v2-appro.js::partGlobale) ;
+  //   · un commercial : sa part sur la molécule ÷ SA part habituelle (tous les produits qui ont un national, le même
+  //     ensemble que la part moyenne) ; potentiel = (boîtes France × sa part habituelle − ses boîtes) × prix net, si > 0 ;
+  //   · le détail par commercial est réservé à la direction : un commercial restreint ne voit que SA ligne + le réseau + la France.
+  // Tout est pur : molStats() ne touche pas à l'écran.
+  // ═══════════════════════════════════════════════════════════════════
+  var MOLR = { idx: null, idxD: null, pc: null, pcS: null, pcK: '', st: {}, stD: null, stS: null, stN: 0 };
+  function molCle(m) { return sansAccent(m).trim(); }
+  function molAff(m) { var s = String(m || '').toLowerCase(); return s.charAt(0).toUpperCase() + s.slice(1); }
+  function molPluriel(n, un, plu) { return fr(n) + ' ' + (n > 1 ? plu : un); }
+
+  // Toutes les molécules du catalogue : { par: cle → fiche courte, liste, sans: nombre de produits sans molécule }.
+  function molIndex(d) {
+    if (MOLR.idx && MOLR.idxD === d) return MOLR.idx;
+    var par = {}, liste = [], i, L = d.lignes, sans = 0;
+    for (i = 0; i < L.length; i++) {
+      var l = L[i], k = molCle(l.mol);
+      if (!k) { sans++; continue; }
+      var o = par[k];
+      if (!o) { o = par[k] = { cle: k, nom: l.mol, cips: [], nProd: 0, nProdNat: 0, france: 0, an: 0, hay: k }; liste.push(o); }
+      o.hay += ' ' + sansAccent(l.d);
+      o.cips.push(l.cip); o.nProd++; o.an += l.an;
+      if (l.france > 0) { o.nProdNat++; o.france += l.france; }
+    }
+    MOLR.idx = { par: par, liste: liste, sans: sans }; MOLR.idxD = d; MOLR.st = {};
+    return MOLR.idx;
+  }
+
+  // Boîtes par an de chaque commercial sur TOUS les produits, et sa part habituelle : ses boîtes sur l'ensemble des produits
+  // de la part moyenne (d.setPart, le même que d.partMoy) ÷ les boîtes France de ce même ensemble (d.natTot).
+  function molPC(d) {
+    var S = window.WML_SALES, cle = (S ? S.length : 0) + '|' + d.mois.join(',');
+    if (MOLR.pc && MOLR.pcS === S && MOLR.pcK === cle) return MOLR.pc;
+    var garde = {}, par = {}, habit = {}, i, r, o, c, k = 12 / (d.mois.length || 1), nom;
+    for (i = 0; i < d.mois.length; i++) garde[d.mois[i]] = 1;
+    for (i = 0; S && i < S.length; i++) {
+      r = S[i];
+      if (!(r[4] > 0) || !garde[r[1]] || !r[2]) continue;
+      o = par[r[2]] || (par[r[2]] = {});
+      c = String(r[3]); o[c] = (o[c] || 0) + r[4];
+    }
+    for (nom in par) if (Object.prototype.hasOwnProperty.call(par, nom)) {
+      var s = 0;
+      for (c in d.setPart) if (Object.prototype.hasOwnProperty.call(d.setPart, c)) s += par[nom][c] || 0;
+      habit[nom] = d.natTot > 0 ? s * k / d.natTot : 0;
+    }
+    MOLR.pc = { habit: habit }; MOLR.pcS = S; MOLR.pcK = cle;
+    return MOLR.pc;
+  }
+
+  // Les molécules que la recherche reconnaît. null si le texte n'en désigne aucune.
+  // Exact d'abord (« apixaban »), puis les molécules dont le nom commence par le texte, puis la molécule d'un produit
+  // dont le nom commence par le texte (« eliquis » → apixaban). Au plus 6 candidates, les plus vendues en France d'abord.
+  function molReconnue(q, d) {
+    var k = molCle(q), I = molIndex(d), out = [], vu = {}, i, o;
+    if (k.length < 3) return null;
+    var ajoute = function (x) { if (x && !vu[x.cle]) { vu[x.cle] = 1; out.push(x); } };
+    if (I.par[k]) ajoute(I.par[k]);
+    var pref = I.liste.filter(function (m) { return !vu[m.cle] && (m.cle.indexOf(k) === 0 || m.cle.indexOf(' ' + k) >= 0 || m.cle.indexOf('/' + k) >= 0); });
+    pref.sort(function (a, b) { return (b.france - a.france) || (b.an - a.an); });
+    for (i = 0; i < pref.length; i++) ajoute(pref[i]);
+    if (out.length < 6) {
+      var viaProd = {};
+      for (i = 0; i < d.lignes.length; i++) {
+        var l = d.lignes[i];
+        if (!l.mol || sansAccent(l.d).indexOf(k) !== 0) continue;
+        o = I.par[molCle(l.mol)];
+        if (o) viaProd[o.cle] = (viaProd[o.cle] || 0) + l.an + 1;
+      }
+      Object.keys(viaProd).sort(function (a, b) { return viaProd[b] - viaProd[a]; }).forEach(function (c) { ajoute(I.par[c]); });
+    }
+    return out.length ? out.slice(0, 6) : null;
+  }
+
+  // Les mots du rapport à la moyenne : « 2,1 fois notre moyenne », « moitié moins que notre moyenne ».
+  // Jamais un pourcentage minuscule seul.
+  function molMots(r, moy) {
+    if (r == null || !isFinite(r)) return '';
+    if (r <= 0) return 'aucune vente';
+    if (r >= 1.1) return (r >= 10 ? fr(r) : fr(r, 1)) + ' fois ' + moy;
+    if (r > 0.9) return 'dans ' + moy;
+    if (r >= 0.55) return fr(Math.round((1 - r) * 100)) + ' % de moins que ' + moy;
+    if (r >= 0.4) return 'moitié moins que ' + moy;
+    return fr(1 / r, 1) + ' fois moins que ' + moy;
+  }
+  function molSens(r) { return r == null || !isFinite(r) ? '' : r >= 1.1 ? 'up' : r <= 0.9 ? 'dn' : 'eq'; }
+  function molFleche(r) { var s = molSens(r); return s === 'up' ? '▲' : s === 'dn' ? '▼' : '='; }
+  // Grands nombres en toutes lettres : « 16,0 millions ».
+  function molGros(n) {
+    n = +n || 0;
+    if (n >= 1e9) return fr(n / 1e9, 1) + ' milliard' + (n >= 2e9 ? 's' : '');
+    if (n >= 1e6) return fr(n / 1e6, n >= 1e7 ? 0 : 1) + ' million' + (n >= 2e6 ? 's' : '');
+    return fr(Math.round(n));
+  }
+  function molEuros(n) {
+    n = +n || 0;
+    if (Math.abs(n) >= 1e9) return fr(n / 1e9, 1) + ' milliard' + (Math.abs(n) >= 2e9 ? 's' : '') + ' d\'euros';
+    if (Math.abs(n) >= 1e6) return fr(n / 1e6, Math.abs(n) >= 1e7 ? 0 : 1) + ' million' + (Math.abs(n) >= 2e6 ? 's' : '') + ' d\'euros';
+    return fr(Math.round(n)) + ' €';
+  }
+
+  // Les chiffres d'une molécule. cle = molCle(nom). Rend null si inconnue.
+  function molStats(cle, d) {
+    var I = molIndex(d), M = I.par[cle], S = window.WML_SALES;
+    if (!M || !S) return null;
+    var mk = cle + '|' + (V2.user ? 1 : 0) + '|' + S.length + '|' + d.mois.join(',') + '|' + (V2.ventesRestreintes && V2.ventesRestreintes() ? 1 : 0) + '|' + (V2.user && V2.user.commercial || '');
+    if (MOLR.st[cle] && MOLR.st[cle].mk === mk) return MOLR.st[cle].v;
+    var n = d.mois.length || 1, k = 12 / n, i, r, c, garde = {}, set = {}, nat = {}, par = {}, tot = { b: 0, ca: 0, bn: 0, ids: {} };
+    for (i = 0; i < d.mois.length; i++) garde[d.mois[i]] = 1;
+    for (i = 0; i < M.cips.length; i++) { c = M.cips[i]; set[c] = 1; if (d.parCip[c] && d.parCip[c].france > 0) nat[c] = 1; }
+    var restreint = !!(V2.ventesRestreintes && V2.ventesRestreintes());
+    var mes = {}; pmNoms().forEach(function (x) { mes[x] = 1; });
+    for (i = 0; i < S.length; i++) {
+      r = S[i];
+      if (!(r[4] > 0) || !garde[r[1]]) continue;
+      c = String(r[3]);
+      if (!set[c]) continue;
+      var q = r[4], ca = +r[6] || 0, id = String(r[0]), vis = !(V2.estReste && V2.estReste(id)) && (!V2.voitVentesDe || V2.voitVentesDe(id));
+      tot.b += q; tot.ca += ca; if (nat[c]) tot.bn += q; if (vis) tot.ids[id] = 1;
+      if (r[2]) {
+        var o = par[r[2]] || (par[r[2]] = { nom: r[2], b: 0, ca: 0, bn: 0, ids: {} });
+        o.b += q; o.ca += ca; if (nat[c]) o.bn += q; if (vis) o.ids[id] = 1;
+      }
+    }
+    var PC = molPC(d), partMoy = d.partMoy, france = M.france, avecNat = M.nProdNat > 0 && france > 0, prix = 0, pw = 0, L;
+    // prix net moyen : celui de nos ventes ; à défaut, le prix des produits pondéré par la France
+    if (tot.b > 0) prix = tot.ca / tot.b;
+    else {
+      for (i = 0; i < M.cips.length; i++) { L = d.parCip[M.cips[i]]; if (L && L.prix > 0) { var w = L.france > 0 ? L.france : 1; prix += L.prix * w; pw += w; } }
+      prix = pw > 0 ? prix / pw : 0;
+    }
+    var pot = function (habit, bn) { return avecNat && habit > 0 ? Math.max(0, france * habit - bn) : null; };
+    var res = { boites: tot.b * k, ca: tot.ca * k, bn: tot.bn * k, clientes: Object.keys(tot.ids).length };
+    res.part = avecNat ? res.bn / france : null;
+    res.ratio = avecNat && partMoy > 0 ? res.part / partMoy : null;
+    res.potBoites = pot(partMoy, res.bn); res.pot = res.potBoites == null ? null : res.potBoites * prix;
+    var comm = [], nom;
+    for (nom in par) if (Object.prototype.hasOwnProperty.call(par, nom)) {
+      if (restreint && !mes[nom]) continue;
+      var p = par[nom], habit = PC.habit[nom] || 0, bn = p.bn * k, part = avecNat ? bn / france : null;
+      var pb = pot(habit, bn);
+      comm.push({ nom: nom, moi: !!mes[nom], boites: p.b * k, ca: p.ca * k, bn: bn, clientes: Object.keys(p.ids).length,
+        part: part, habit: avecNat ? habit : null, ratio: avecNat && habit > 0 ? part / habit : null,
+        potBoites: pb, pot: pb == null ? null : pb * prix });
+    }
+    comm.sort(function (a, b) { return (b.boites - a.boites) || (b.ca - a.ca); });
+    var fam = { princeps: 0, gen: 0, biosim: 0, nr: 0 }, produits = [];
+    for (i = 0; i < M.cips.length; i++) {
+      L = d.parCip[M.cips[i]]; if (!L) continue;
+      produits.push(L);
+      if (L.f && L.f.indexOf('pr_') === 0) fam.princeps++; else if (L.f === 'gen') fam.gen++; else if (L.f === 'biosim') fam.biosim++; else fam.nr++;
+    }
+    produits.sort(function (a, b) { return (b.france - a.france) || (b.an - a.an); });
+    var v = { cle: cle, nom: M.nom, aff: molAff(M.nom), nProd: M.nProd, nProdNat: M.nProdNat, avecNat: avecNat, france: avecNat ? france : 0,
+      reseau: res, prix: prix, partMoy: partMoy, comm: comm, restreint: restreint, produits: produits, fam: fam, nbMois: n,
+      cips: M.cips, sansMol: I.sans, nMols: I.liste.length };
+    MOLR.st[cle] = { mk: mk, v: v };
+    return v;
+  }
+
+  // Valeur France de la molécule (Open Medic 2025, prix public) : null tant que marche-regional.json n'est pas là.
+  function molValeur(M) {
+    var e = fichier('regional'), rg, s = 0, i, j, vu = 0;
+    if (!e || !e.data) return null;
+    for (i = 0; i < M.cips.length; i++) {
+      rg = e.data[M.cips[i]]; if (!rg) continue;
+      for (j = 0; j < (rg.e || []).length; j++) s += rg.e[j] || 0;
+      vu++;
+    }
+    return vu ? s : null;
+  }
+
+  // Mois par mois : nos boîtes (et chiffre d'affaires) sur toute la molécule, la France du même mois, notre part.
+  // Nos boîtes et la France ne portent que sur les produits qui ont une série France (sinon la part serait gonflée).
+  function molMois(M, d) {
+    var VM = ventesMois(d.mois), F = window.FRANCE_MOIS, n = d.mois.length, i, j, c;
+    if (!VM) return null;
+    var posF = F ? frPos(VM) : null, q = zeros(n), ca = zeros(n), qf = zeros(n), fr0 = zeros(n), aF = false;
+    for (j = 0; j < M.cips.length; j++) {
+      c = M.cips[j];
+      var qc = VM.q[c], cc = VM.ca[c], fm = F && F.data[c];
+      if (fm) aF = true;
+      for (i = 0; i < n; i++) {
+        if (qc) { q[i] += qc[i]; ca[i] += cc[i]; }
+        if (fm && posF[i] >= 0) { fr0[i] += fm[posF[i]] || 0; if (qc) qf[i] += qc[i]; }
+      }
+    }
+    var fr1 = [], part = [];
+    for (i = 0; i < n; i++) {
+      var ok = aF && posF && posF[i] >= 0;
+      fr1.push(ok ? fr0[i] : null); part.push(ok && fr0[i] > 0 ? qf[i] / fr0[i] : null);
+    }
+    return { mois: d.mois, q: q, ca: ca, fr: fr1, part: part, aFrance: aF };
+  }
+
+  // Chargements propres aux molécules : valeur France (Open Medic) et séries mensuelles ; on redessine ensuite le bloc molécule.
+  var MOLCH = false;
+  function molCharge() {
+    fichier('regional'); chargerFrance();
+    var e = D.fich && D.fich.regional, fini = e && e.etat >= 2 && (window.FRANCE_MOIS || D.frEtat >= 2);
+    if (fini || MOLCH) return;
+    MOLCH = true;
+    var vers = function () { MOLCH = false; try { if (V2.comptoir._majMol) V2.comptoir._majMol(); } catch (x) { /* rien */ } };
+    Promise.all((D.fichP || []).slice()).then(function () {
+      var t = setInterval(function () { if (window.FRANCE_MOIS || D.frEtat >= 2) { clearInterval(t); vers(); } }, 300);
+      setTimeout(function () { clearInterval(t); }, 20000);
+    }, vers);
+  }
+
+  // ── Pièces d'écran communes aux trois maquettes « molécule » (style cp- du comptoir, préfixe mo-) ──
+  var MOCSS_ID = 'mo-styles';
+  var MOCSS = [
+    '.mo{--mo-ink:#10131C;--mo-mut:#566074;--mo-line:rgba(16,19,28,.10);--mo-up:#0B6E4A;--mo-dn:#B4232F;--mo-blue:var(--ip-blue,#0050E6);--mo-wash:#EAF1FF;font-family:Inter,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;font-variant-numeric:tabular-nums;color:var(--mo-ink)}',
+    '.mo *{box-sizing:border-box}',
+    '.mo :where(h2,h3,p,ul){margin:0}',
+    '.mo button{font-family:inherit;-webkit-tap-highlight-color:transparent}',
+    '.mo-card{position:relative;border-radius:20px;background:#fff;border:1px solid var(--mo-line);box-shadow:0 1px 2px rgba(16,19,28,.05),0 12px 28px -16px rgba(0,50,160,.28);padding:22px 24px}',
+    '.mo-lum{background:radial-gradient(520px 220px at 12% -70px,rgba(0,80,230,.13),transparent 70%),radial-gradient(360px 200px at 98% 0,rgba(0,181,216,.08),transparent 70%),#fff}',
+    '.mo-eye{font:700 13px/1.2 Inter,sans-serif;color:var(--mo-blue);letter-spacing:.02em}',
+    '.mo-h{font:800 36px/1.08 Inter,sans-serif;letter-spacing:-.025em;margin:6px 0 4px}',
+    '.mo-sub{font:500 14px/1.4 Inter,sans-serif;color:var(--mo-mut)}',
+    '.mo-phrase{font:600 21px/1.32 Inter,sans-serif;letter-spacing:-.012em;color:#232938;margin-top:14px;max-width:900px}',
+    '.mo-phrase b{font-weight:800;color:var(--mo-ink)}',
+    '.mo-phrase b.up{color:var(--mo-up)}.mo-phrase b.dn{color:var(--mo-dn)}',
+    '.mo-h3{font:800 18px/1.25 Inter,sans-serif;letter-spacing:-.01em;margin:26px 0 4px}',
+    '.mo-h3 small{font:500 14px/1.3 Inter,sans-serif;color:var(--mo-mut);margin-left:6px}',
+    '.mo-note{font:400 13px/1.45 Inter,sans-serif;color:var(--mo-mut);margin-top:14px}',
+    '.mo-warn{display:flex;gap:9px;align-items:flex-start;margin-top:14px;padding:12px 14px;border-radius:14px;background:#FBF0E1;color:#6E3F00;font:500 14px/1.4 Inter,sans-serif}',
+    '.mo-warn::before{content:"";flex:none;width:8px;height:8px;margin-top:6px;border-radius:50%;background:#E59A12}',
+    '.mo-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;align-items:center}',
+    '.mo-chips>span{font:600 13px/1 Inter,sans-serif;color:var(--mo-mut);margin-right:2px}',
+    '.mo-chip{min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--mo-line);background:#fff;font:650 13px/1 Inter,sans-serif;color:var(--mo-ink);cursor:pointer}',
+    '.mo-chip.on{background:var(--mo-blue);border-color:var(--mo-blue);color:#fff}',
+    '.mo-chip:focus-visible,.mo-seg button:focus-visible,.mo-row:focus-visible,.mo-btn:focus-visible{outline:3px solid rgba(0,80,230,.45);outline-offset:2px}',
+    '.mo-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font:700 13px/1.25 Inter,sans-serif;white-space:nowrap}',
+    '.mo-pill i{font-style:normal;font-size:13px}',
+    '.mo-pill.up{background:#E3F5EC;color:var(--mo-up)}.mo-pill.dn{background:#FCE9EA;color:var(--mo-dn)}.mo-pill.eq{background:#ECEFF5;color:#3A4256}',
+    // une barre : la part (remplie) et le repère « sa moyenne » (trait)
+    '.mo-tr{position:relative;display:block;height:14px;border-radius:7px;background:#EDF0F6;min-width:60px}',
+    '.mo-tr .f{position:absolute;left:0;top:0;bottom:0;border-radius:7px;background:var(--mo-blue);min-width:3px}',
+    '.mo-tr .f.dn{background:#8793AE}',
+    '.mo-tr .tk{position:absolute;top:-4px;bottom:-4px;width:3px;margin-left:-1px;background:var(--mo-ink);border-radius:2px;box-shadow:0 0 0 2px #fff}',
+    '.mo-leg{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font:500 13px/1.3 Inter,sans-serif;color:var(--mo-mut)}',
+    '.mo-leg span{display:inline-flex;align-items:center;gap:7px}',
+    '.mo-leg i{display:inline-block;width:16px;height:10px;border-radius:5px;background:var(--mo-blue)}',
+    '.mo-leg i.t{width:3px;height:14px;border-radius:2px;background:var(--mo-ink)}',
+    '.mo-big{display:flex;flex-direction:column;gap:2px;min-width:0}',
+    '.mo-big em{font:600 14px/1.2 Inter,sans-serif;color:var(--mo-mut);font-style:normal}',
+    '.mo-big b{font:800 40px/1.05 Inter,sans-serif;letter-spacing:-.03em;color:var(--mo-ink)}',
+    '.mo-big b small{font:600 16px/1 Inter,sans-serif;letter-spacing:0;color:var(--mo-mut);margin-left:6px}',
+    '.mo-big span{font:500 13.5px/1.35 Inter,sans-serif;color:var(--mo-mut)}',
+    '.mo-big span b{font:700 13.5px/1.35 Inter,sans-serif;letter-spacing:0;color:var(--mo-ink)}',
+    // lignes de commerciaux
+    '.mo-c{display:grid;grid-template-columns:minmax(120px,170px) minmax(0,1fr) minmax(200px,250px) minmax(150px,190px);align-items:center;gap:6px 18px;padding:13px 0;border-top:1px solid var(--mo-line)}',
+    '.mo-c:first-child{border-top:0}',
+    '.mo-c .nm{font:700 15px/1.25 Inter,sans-serif;min-width:0;overflow-wrap:anywhere}',
+    '.mo-c .nm small{display:block;font:500 13px/1.3 Inter,sans-serif;color:var(--mo-mut)}',
+    '.mo-c .mt{font:500 13px/1.35 Inter,sans-serif;color:var(--mo-mut)}',
+    '.mo-c .mt b{font:700 14px/1.35 Inter,sans-serif;color:var(--mo-ink)}',
+    '.mo-c .pt{font:500 13px/1.35 Inter,sans-serif;color:var(--mo-mut);margin-top:3px;display:block}',
+    '.mo-c.res .nm{color:var(--mo-blue)}',
+    '.mo-c .pc{display:flex;flex-direction:column;gap:5px;align-items:flex-start}',
+    '.mo-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:999px;border:1px solid var(--mo-line);background:#fff;font:650 14px/1 Inter,sans-serif;color:var(--mo-ink);cursor:pointer;margin-top:10px}',
+    // produits de la molécule
+    '.mo-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:center;gap:6px 18px;width:100%;min-height:52px;padding:10px 0;border:0;border-top:1px solid var(--mo-line);background:transparent;text-align:left;cursor:pointer;color:inherit}',
+    '.mo-row:first-child{border-top:0}',
+    '.mo-row .nm{font:700 14px/1.3 Inter,sans-serif;min-width:0}',
+    '.mo-row .nm small{display:block;font:500 13px/1.3 Inter,sans-serif;color:var(--mo-mut)}',
+    '.mo-row .n{text-align:right;font:700 14px/1.25 Inter,sans-serif;white-space:nowrap}',
+    '.mo-row .n small{display:block;font:500 13px/1.25 Inter,sans-serif;color:var(--mo-mut)}',
+    '.mo-vide{font:500 15px/1.45 Inter,sans-serif;color:var(--mo-mut);padding:14px 0}',
+    '@media (max-width:760px){',
+    '  .mo-card{padding:18px 16px;border-radius:20px}',
+    '  .mo-h{font-size:30px}.mo-phrase{font-size:18px}',
+    '  .mo-big b{font-size:32px}',
+    '  .mo-c{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"nm pc" "tr tr" "mt mt";gap:8px 10px;padding:14px 0}',
+    '  .mo-c .nm{grid-area:nm}.mo-c .pc{grid-area:pc;align-items:flex-end}.mo-c .tw{grid-area:tr}.mo-c .mt{grid-area:mt}',
+    '  .mo-row{grid-template-columns:minmax(0,1fr) auto;gap:2px 12px}.mo-row .n.h{display:none}',
+    '}'
+  ].join('\n');
+  function injectMolStyles() {
+    if (document.getElementById(MOCSS_ID)) return;
+    var s = document.createElement('style'); s.id = MOCSS_ID; s.textContent = MOCSS + (window.MOCSS_V || '');
+    document.head.appendChild(s);
+  }
+
+  function molPill(r, moy) {
+    var s = molSens(r);
+    if (!s) return '';
+    return '<span class="mo-pill ' + s + '"><i aria-hidden="true">' + molFleche(r) + '</i>' + esc(molMots(r, moy)) + '</span>';
+  }
+  // Une barre : sa part (remplie) et son repère (trait), même échelle pour toute la liste. Cache vide si pas de repère.
+  function molTrack(part, rep, max, aria) {
+    var w = function (x) { return x > 0 ? Math.max(1.5, Math.min(100, x / (max || 1e-12) * 100)) : 0; };
+    var below = rep > 0 && part < rep * 0.9;
+    return '<span class="mo-tr" role="img" aria-label="' + escAttr(aria || '') + '"><i class="f' + (below ? ' dn' : '') + '" style="width:' + w(part).toFixed(2) + '%"></i>' +
+      (rep > 0 ? '<i class="tk" style="left:' + w(rep).toFixed(2) + '%"></i>' : '') + '</span>';
+  }
+  function molPctP(x) { return x == null ? '—' : x <= 0 ? '0 %' : x < 0.00005 ? '< 0,01 %' : fr(x * 100, 2) + ' %'; }
+  function molFamTexte(M) {
+    var f = M.fam, t = [];
+    if (f.princeps) t.push(f.princeps + (f.princeps > 1 ? ' princeps' : ' princeps'));
+    if (f.gen) t.push(molPluriel(f.gen, 'générique', 'génériques'));
+    if (f.biosim) t.push(molPluriel(f.biosim, 'biosimilaire', 'biosimilaires'));
+    if (f.nr) t.push(f.nr + ' non remboursable' + (f.nr > 1 ? 's' : ''));
+    return molPluriel(M.nProd, 'produit', 'produits') + (t.length ? ' : ' + t.join(' · ') : '');
+  }
+  function molPeriode(d) { return pmPer(d) + ' (' + d.mois.length + ' mois)'; }
+  // Notes de bas de bloc : d'où viennent les chiffres, et ce qui manque.
+  function molNote(M, d) {
+    var h = '<p class="mo-note">Nos ventes : réseau, ' + esc(molPeriode(d)) + ', ramenées à l\'année. France : boîtes remboursées par an (Medic\'AM)' +
+      (d.natGen ? ', mis à jour le ' + esc(dateFr(String(d.natGen))) : '') + '. ' +
+      (M.avecNat && M.nProdNat < M.nProd ? 'Le chiffre France existe pour ' + fr(M.nProdNat) + ' produit' + (M.nProdNat > 1 ? 's' : '') + ' sur ' + fr(M.nProd) + ' : la part ne compare que ces produits-là. ' : '') +
+      'La part moyenne Intégral (' + molPctP(d.partMoy) + ') est celle de tout le réseau sur tous les produits. ' +
+      (pmCouvT(d) ? esc(pmCouvT(d)) + ' ' : '') +
+      (M.restreint ? 'Vue commerciale : vous voyez votre ligne, le réseau et la France.' : '') + '</p>';
+    return h;
+  }
+  function molSansNat(M) {
+    return '<div class="mo-warn" role="note">Pas de chiffre national pour cette molécule : la comparaison à la France n\'est pas possible. Voici nos ventes seules.</div>';
+  }
+  // Les produits de la molécule (clic = la fiche du produit, déjà existante).
+  function molProduits(M, tout) {
+    var L = M.produits, vis = tout ? L : L.slice(0, 6), h = '', i, FAM = V2.produits.FAM || {};
+    for (i = 0; i < vis.length; i++) {
+      var l = vis[i];
+      h += '<button type="button" class="mo-row" onclick="V2.comptoir.ouvrir(\'' + escAttr(l.cip) + '\')"><span class="nm">' + esc(l.d) +
+        '<small>' + esc([l.labo, FAM[l.f] ? FAM[l.f].l : '', 'CIP ' + l.cip].filter(Boolean).join(' · ')) + '</small></span>' +
+        '<span class="n h">' + (l.prix > 0 ? eur2(l.prix) : '—') + '<small>prix net</small></span>' +
+        '<span class="n">' + fr(l.an) + '<small>nos boîtes par an</small></span>' +
+        '<span class="n h">' + (l.france > 0 ? fr(l.france) : '—') + '<small>France, boîtes par an</small></span></button>';
+    }
+    if (!tout && L.length > 6) h += '<button type="button" class="mo-btn" onclick="V2.comptoir.molProdTout()">Voir les ' + fr(L.length - 6) + ' autres produits</button>';
+    return h;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // P1 « La fiche molécule » — dès que la recherche reconnaît une molécule, une grande carte s'ouvre AU-DESSUS du tableau :
+  // la France face à nous en grand, puis les commerciaux (barre « lui » / trait « sa moyenne »), puis les produits de la molécule.
+  // ═══════════════════════════════════════════════════════════════════
+  var MIN_BOITES_COMP = 12;   // sous 12 boîtes par an (une par mois), la comparaison d'un commercial n'est que du bruit : on ne l'écrit pas
+  C.molSel = null; C.molProdTout = false; C.molCommTout = false;
+  MOLR.cands = [];
+
+  function mo1Commerciaux(M, d) {
+    var h = '', i, max = 0, maxR = 0, r = M.reseau, voir = C.molCommTout ? M.comm : M.comm.slice(0, 8);
+    if (M.avecNat) {   // le réseau a sa propre échelle : sa part est dix fois celle d'un commercial
+      maxR = Math.max(r.part || 0, d.partMoy || 0) * 1.08;
+      for (i = 0; i < M.comm.length; i++) max = Math.max(max, M.comm[i].part || 0, M.comm[i].habit || 0);
+      max *= 1.08;
+    }
+    h += '<h3 class="mo-h3" id="mo-hc">' + (M.restreint ? 'Votre secteur' : 'Les commerciaux') + (M.avecNat ? ', face à leur moyenne' : '') + '</h3>';
+    h += '<p class="mo-sub">' + (M.avecNat
+      ? 'La barre : sa part du marché France sur cette molécule. Le trait : sa part habituelle, tous produits confondus.'
+      : 'Nos ventes par commercial, ramenées à l\'année.') + '</p>';
+    if (M.avecNat) h += '<div class="mo-leg"><span><i></i>sa part sur la molécule</span><span><i class="t"></i>sa part habituelle</span></div>';
+    h += '<div role="list">';
+    // le réseau d'abord
+    h += '<div class="mo-c res" role="listitem"><span class="nm">Tout le réseau Intégral</span>' +
+      '<span class="tw">' + (M.avecNat ? molTrack(r.part, d.partMoy, maxR, 'Part du réseau ' + molPctP(r.part) + ', part moyenne ' + molPctP(d.partMoy)) : '') + '</span>' +
+      '<span class="pc">' + (M.avecNat ? molPill(r.ratio, 'notre moyenne') + '<span class="pt">part ' + molPctP(r.part) + ' · moyenne ' + molPctP(d.partMoy) + '</span>' : '') + '</span>' +
+      '<span class="mt"><b>' + fr(r.boites) + '</b> boîtes par an<br><b>' + eurK(r.ca) + '</b> · ' + molPluriel(r.clientes, 'cliente', 'clientes') +
+        (r.pot > 0 ? '<br>Potentiel : <b>' + eurK(r.pot) + '</b> par an' : '') + '</span></div>';
+    if (!M.comm.length) h += '<p class="mo-vide">' + (M.restreint ? 'Aucune vente de votre secteur sur cette molécule.' : 'Aucune vente attribuée à un commercial sur cette molécule.') + '</p>';
+    for (i = 0; i < voir.length; i++) {
+      var c = voir[i], peu = c.boites < MIN_BOITES_COMP, cmp = M.avecNat && !peu && c.ratio != null;
+      h += '<div class="mo-c' + (c.moi ? ' moi' : '') + '" role="listitem"><span class="nm">' + esc(c.nom) + (c.moi ? '<small>c\'est vous</small>' : '') + '</span>' +
+        '<span class="tw">' + (M.avecNat ? molTrack(c.part, c.habit, max, esc(c.nom) + ' : part ' + molPctP(c.part) + ', part habituelle ' + molPctP(c.habit)) : '') + '</span>' +
+        '<span class="pc">' + (cmp ? molPill(c.ratio, 'sa moyenne') + '<span class="pt">part ' + molPctP(c.part) + ' · habituelle ' + molPctP(c.habit) + '</span>'
+          : (M.avecNat ? '<span class="pt">trop peu de ventes pour comparer</span>' : '')) + '</span>' +
+        '<span class="mt"><b>' + fr(c.boites) + '</b> boîtes par an<br><b>' + eurK(c.ca) + '</b> · ' + molPluriel(c.clientes, 'cliente', 'clientes') +
+          (c.pot > 0 && !peu ? '<br>Potentiel : <b>' + eurK(c.pot) + '</b> par an' : '') + '</span></div>';
+    }
+    h += '</div>';
+    if (!C.molCommTout && M.comm.length > 8) h += '<button type="button" class="mo-btn" onclick="V2.comptoir.molCommTout()">Voir les ' + fr(M.comm.length - 8) + ' autres commerciaux</button>';
+    return h;
+  }
+
+  function mo1Carte(M, d) {
+    var r = M.reseau, h, val = molValeur(M), i;
+    var chips = '';
+    if ((MOLR.cands || []).length > 1) {
+      chips = '<div class="mo-chips" role="group" aria-label="Molécules trouvées"><span>Autres molécules trouvées</span>';
+      for (i = 0; i < MOLR.cands.length; i++) chips += '<button type="button" class="mo-chip' + (MOLR.cands[i].cle === M.cle ? ' on' : '') + '" aria-pressed="' + (MOLR.cands[i].cle === M.cle) +
+        '" onclick="V2.comptoir.molChoix(' + i + ')">' + esc(molAff(MOLR.cands[i].nom)) + '</button>';
+      chips += '</div>';
+    }
+    h = '<div class="mo-card mo-lum"><p class="mo-eye">MOLÉCULE</p><h2 class="mo-h">' + esc(M.aff) + '</h2><p class="mo-sub">' + esc(molFamTexte(M)) + '</p>' + chips;
+    if (M.avecNat) {
+      var ech = d.partMoy * 3;
+      h += '<div class="mo1-g">' +
+        '<div class="mo-big"><em>La France achète</em><b>' + esc(molGros(M.france)) + '<small>boîtes par an</small></b>' +
+          '<span>' + (val != null ? '<b>' + esc(molEuros(val)) + '</b> au prix public (2025)' : 'valeur en cours de chargement') + '</span></div>' +
+        '<div class="mo-big"><em>Le réseau Intégral vend</em><b>' + fr(r.boites) + '<small>boîtes par an</small></b>' +
+          '<span><b>' + esc(molEuros(r.ca)) + '</b> de chiffre d\'affaires · ' + molPluriel(r.clientes, 'cliente', 'clientes') + '</span></div>' +
+        '<div class="mo-big"><em>Notre part du marché</em><b>' + molPctP(r.part) + '</b>' +
+          '<span>' + molPill(r.ratio, 'notre moyenne') + '</span>' +
+          '<span>moyenne Intégral : <b>' + molPctP(d.partMoy) + '</b></span>' +
+          molTrack(r.part, d.partMoy, ech, 'Notre part ' + molPctP(r.part) + ', part moyenne ' + molPctP(d.partMoy)) + '</div></div>';
+      var s = molSens(r.ratio);
+      h += '<p class="mo-phrase">Nous vendons <b>' + fr(r.boites) + '</b> boîtes par an sur les <b>' + esc(molGros(M.france)) + '</b> que la France achète : c\'est <b class="' + s + '">' +
+        esc(molMots(r.ratio, 'notre moyenne')) + '</b>.' +
+        (r.potBoites > 0 ? ' À notre moyenne, ce seraient <b>' + fr(r.potBoites) + '</b> boîtes de plus par an, soit <b>' + esc(molEuros(r.pot)) + '</b> de chiffre d\'affaires.' : '') + '</p>';
+    } else {
+      h += molSansNat(M) + '<div class="mo1-g mo1-g1"><div class="mo-big"><em>Le réseau Intégral vend</em><b>' + fr(r.boites) + '<small>boîtes par an</small></b>' +
+        '<span><b>' + esc(molEuros(r.ca)) + '</b> de chiffre d\'affaires · ' + molPluriel(r.clientes, 'cliente', 'clientes') + '</span></div></div>';
+    }
+    h += mo1Commerciaux(M, d);
+    h += '<h3 class="mo-h3">Les produits de la molécule</h3>' + molProduits(M, C.molProdTout);
+    h += molNote(M, d) + '</div>';
+    return h;
+  }
+
+  function mo1Html(d) {
+    var rec = molReconnue(C.q, d);
+    if (!rec) return '';
+    var I = molIndex(d), exact = !!I.par[molCle(C.q)], cle = null, i;
+    MOLR.cands = rec;
+    if (C.molSel) for (i = 0; i < rec.length; i++) if (rec[i].cle === C.molSel) cle = C.molSel;
+    if (!cle && (exact || rec.length === 1)) cle = rec[0].cle;
+    molCharge();
+    if (!cle) {
+      var ch = '';
+      for (i = 0; i < rec.length; i++) ch += '<button type="button" class="mo-chip" onclick="V2.comptoir.molChoix(' + i + ')">' + esc(molAff(rec[i].nom)) + '</button>';
+      return '<div class="mo mo-1"><div class="mo-card"><p class="mo-eye">MOLÉCULES TROUVÉES</p><p class="mo-sub">Choisissez celle qui vous intéresse pour voir toutes ses statistiques.</p><div class="mo-chips">' + ch + '</div></div></div>';
+    }
+    var M = molStats(cle, d);
+    return M ? '<div class="mo mo-1">' + mo1Carte(M, d) + '</div>' : '';
+  }
+
+  window.MOCSS_V = [
+    '.mo-1{margin:0 0 14px}',
+    '.mo1-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 28px;margin-top:18px}',
+    '.mo1-g1{grid-template-columns:minmax(0,1fr)}',
+    '.mo1-g .mo-tr{margin-top:10px}',
+    '@media (max-width:760px){.mo1-g{grid-template-columns:minmax(0,1fr);gap:18px}}'
+  ].join('\n');
+
+  function majMol() {
+    var h = document.getElementById('mo-hote'), d = donnees();
+    if (h && d) { injectMolStyles(); h.innerHTML = mo1Html(d); }
+  }
+
   // ── Commandes ─────────────────────────────────────────────────
   var tq = null;
   V2.comptoir = {
@@ -1331,6 +1782,7 @@
     box.innerHTML = resultatsHtml(d);
     var src = document.getElementById('cp-count-src'), cnt = document.getElementById('cp-count');
     if (src && cnt) cnt.textContent = libCompte(+src.getAttribute('data-n') || 0);
+    if (V2.comptoir._majMol) V2.comptoir._majMol();
     var o = document.getElementById('cp-outils'); if (o && src) o.innerHTML = outilsPanierHtml(+src.getAttribute('data-n') || 0);
   }
 
@@ -2029,6 +2481,15 @@
   };
   // Pour la recherche ⌘K (22/10/2026) : la table de repli (null tant qu'elle n'est pas prête) et sa demande.
   V2.comptoir.repliMol = repli;
+  // ── P1 : commandes de la carte molécule ──
+  V2.comptoir._majMol = majMol;
+  V2.comptoir.molecule = function (nom) {   // depuis l'extérieur (lien de la vitrine) : remplit la recherche et montre la carte
+    C.q = nom || ''; C.molSel = null; C.page = 1; C.opp = false; C.fam = 'all'; C.molProdTout = false; C.molCommTout = false;
+    rerender();
+  };
+  V2.comptoir.molChoix = function (i) { var m = MOLR.cands && MOLR.cands[i]; if (m) { C.molSel = m.cle; C.molProdTout = false; C.molCommTout = false; majMol(); } };
+  V2.comptoir.molProdTout = function () { C.molProdTout = true; majMol(); };
+  V2.comptoir.molCommTout = function () { C.molCommTout = true; majMol(); };
   V2.comptoir.chargerNational = chargerNat;
   V2.comptoir.fermerPanneau = function () {
     C.cip = null;
@@ -2066,6 +2527,7 @@
     var couvNote = pmCouvT(d);
 
     poserPanneau(d);
+    injectMolStyles();
     return '<div class="cp">' + pmTete(d) +
       '<div class="cp-tete">' +
         '<div class="cp-tete-l"><span class="cp-sous">Catalogue des 7 établissements</span><span class="cp-n" id="cp-count">' + libCompte(n) + '</span></div>' +
@@ -2084,6 +2546,7 @@
         '<div class="cp-leg"><span><i class="cp-dot g"></i>stock ≥ 50</span><span><i class="cp-dot l"></i>1 à 49</span>' +
           '<span><i class="cp-dot z"></i>0</span><span><i class="cp-leg-m"></i>part moyenne ' + fr(d.partMoy * 100, 2) + ' %</span></div>' +
       '</div>' +
+      '<div id="mo-hote">' + mo1Html(d) + '</div>' +
       '<div id="cp-res">' + resultatsHtml(d) + '</div>' +
       '<div id="cp-bar-hote">' + barreHtml() + '</div>' +
       '<p class="cp-src">Opportunité = dans le top ' + C.top + ' des ventes France et nos ventes sous notre part moyenne. ' +

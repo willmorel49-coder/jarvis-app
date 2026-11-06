@@ -1749,8 +1749,150 @@
   function paGroupes(c, mini, selId) {
     var g = { ventes: [], client: [] }; c.mes.L.forEach(function (m) { g[m.grp].push(m); });
     var rows = function (A) { return A.map(function (m) { return paLigne(m, c, mini, m.id === selId); }).join(''); };
-    return '<div class="pa-grp"><h3 class="pa-gh">Les ventes</h3><div class="pa-list">' + rows(g.ventes) + '</div></div>' +
+    return '<div class="pa-grp"><h3 class="pa-gh">Les ventes</h3><div class="pa-list">' + rows(g.ventes) + pmLigneListe(c) + '</div></div>' +
       (g.client.length ? '<div class="pa-grp"><h3 class="pa-gh">Par client' + (c.mes.S ? ', face à la Moyenne Intégral' : ', Moyenne Intégral du réseau') + '</h3><div class="pa-list">' + rows(g.client) + '</div></div>' : '');
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // 06/11/2026 — Pilotage : « le nombre de molécules, et lesquelles sont chères (au-dessus de 468 €) ».
+  // Règles arbitrées : on compte les molécules DISTINCTES vendues sur la période et le périmètre choisis à l'écran
+  // (c.cur = les ventes que l'écran regarde) ; molécule = colonne « mol » du catalogue complet, ou à défaut la DCI de la base
+  // nationale — le MÊME repli que Produits (V2.comptoir.repliMol), pour que les deux écrans comptent pareil ; les produits sans
+  // molécule (surtout de la parapharmacie) ne sont pas comptés et l'écran le dit.
+  // Une boîte vendue à PM_ABERRANT € ou plus est une saisie erronée (avril 2026 : 999 999 € la boîte de Hylo Confort, annulée
+  // par un avoir ; la plus chère réellement vendue vaut 65 129 €) : la ligne est écartée en entier et l'écran le dit. Molécule CHÈRE = au moins une boîte vendue à un
+  // prix net de 468 € ou plus : priceTier(puNet) >= 2, la MÊME règle que les tranches du reste de l'écran.
+  // Moyenne Intégral : le nombre moyen de molécules par secteur, calculé sur les mêmes mois, seulement quand un secteur est choisi.
+  // ═══════════════════════════════════════════════════════════════════
+  var PM = { memo: null, charge: false, natDemande: false, tout: false, gp: false }, PM_ABERRANT = 500000;
+  function pmSans(x) { var v = String(x == null ? '' : x).toLowerCase(); return v.normalize ? v.normalize('NFD').replace(/[̀-ͯ]/g, '') : v; }
+  function pmAff(m) { var s = String(m || '').toLowerCase(); return s.charAt(0).toUpperCase() + s.slice(1); }
+  function pmCat() {
+    var CAT = V2.produits && V2.produits.catalogueIndex && V2.produits.catalogueIndex();
+    if (CAT) return CAT;
+    if (!PM.charge && V2.loadFiles) {   // le catalogue complet se charge à la demande : on redessine quand il arrive
+      PM.charge = true;
+      try { V2.loadFiles(['catcomplet']).then(function () { if (V2.route && V2.route.name === 'pilotage' && V2.render) V2.render(); }); } catch (x) { /* rien */ }
+    }
+    return null;
+  }
+  // Table de repli de Produits : { cip: { mol } } ; null tant que la base nationale n'est pas arrivée (on la demande, puis on redessine).
+  function pmRepli() {
+    var K = V2.comptoir;
+    if (!K || !K.repliMol) return {};   // comptoir absent (page factice des tests) : pas de repli
+    var R = K.repliMol();
+    if (R) return R;
+    if (!PM.natDemande && K.chargerNational) {
+      PM.natDemande = true;
+      try { K.chargerNational().then(function () { if (V2.route && V2.route.name === 'pilotage' && V2.render) V2.render(); }); } catch (x) { /* rien */ }
+    }
+    return null;
+  }
+  function pmFr(n, d) { return paNb(+n || 0, d || 0); }
+  function pmEur(n) { return pmFr(n) + ' €'; }
+  // Regroupe des ventes par molécule : { par: {cle: {nom, b, ca, offs, cher, chB, chCa, t3}}, sans: nb de produits sans molécule }
+  function pmGrouper(sales, CAT, RM) {
+    var par = {}, sans = {}, ab = [], i, s, q, c, o, k, m, id, mol;
+    for (i = 0; i < sales.length; i++) {
+      s = sales[i]; q = +s.qte || 0;
+      if (!(q > 0)) continue;
+      c = normCip(s.artCode); o = CAT[c];
+      mol = o && o.mol ? o.mol : (RM[c] && RM[c].mol) || '';
+      if (!mol) { sans[c] = 1; continue; }
+      if (+s.puNet >= PM_ABERRANT) { ab.push({ nom: mol, pu: +s.puNet }); continue; }
+      k = pmSans(mol).trim();
+      m = par[k] || (par[k] = { cle: k, nom: mol, b: 0, ca: 0, offs: {}, cher: false, chB: 0, chCa: 0, t3: false, cips: {} });
+      m.b += q; m.ca += +s.mntNetHt || 0; id = String(s.pharmacyId);
+      if (id !== '0' && id !== '0E') m.offs[id] = 1;
+      m.cips[c] = 1;
+      if (priceTier(s.puNet) >= 2) { m.cher = true; m.chB += q; m.chCa += +s.mntNetHt || 0; if (priceTier(s.puNet) === 3) m.t3 = true; }
+    }
+    return { par: par, sans: Object.keys(sans).length, ab: ab };
+  }
+  function pmCalc(c) {
+    var CAT = pmCat(), RM = pmRepli();
+    if (!CAT || !RM || !c.cur) return null;
+    var cle = (V2.commFilter || '') + '|' + c.cur.length + '|' + (c.reseauCur ? c.reseauCur.length : 0) + '|' + (c.pf ? c.pf.du + '-' + c.pf.au : '');
+    if (PM.memo && PM.memo.ref === c.cur && PM.memo.cle === cle && PM.memo.rm === RM) return PM.memo.val;
+    var G = pmGrouper(c.cur, CAT, RM), liste = [], k, nCh = 0;
+    for (k in G.par) if (Object.prototype.hasOwnProperty.call(G.par, k)) { liste.push(G.par[k]); if (G.par[k].cher) nCh++; }
+    liste.sort(function (a, b) { return b.ca - a.ca; });
+    var moy = null;   // moyenne Intégral : molécules par secteur, mêmes mois (réseau complet), seulement avec un secteur choisi
+    if (c.reseauCur && c.reseauCur.length) {
+      var parC = {}, i, s;
+      for (i = 0; i < c.reseauCur.length; i++) { s = c.reseauCur[i]; if (s.commercial) (parC[s.commercial] || (parC[s.commercial] = [])).push(s); }
+      var tot = 0, totCh = 0, n = 0, cm;
+      for (cm in parC) if (Object.prototype.hasOwnProperty.call(parC, cm)) {
+        var g = pmGrouper(parC[cm], CAT, RM), kk, a = 0, b = 0;
+        for (kk in g.par) if (Object.prototype.hasOwnProperty.call(g.par, kk)) { a++; if (g.par[kk].cher) b++; }
+        if (a) { tot += a; totCh += b; n++; }
+      }
+      if (n) moy = { mols: tot / n, chers: totCh / n, n: n };
+    }
+    var val = { liste: liste, n: liste.length, nCh: nCh, sans: G.sans, ab: G.ab, moy: moy, chers: liste.filter(function (m) { return m.cher; }) };
+    PM.memo = { ref: c.cur, cle: cle, rm: RM, val: val };
+    return val;
+  }
+  function pmPill(v, moy) {
+    if (moy == null || !(moy > 0)) return '';
+    var r = v / moy, e = r >= 1.1 ? ['up', '▲', pmFr(r, 1) + ' fois la moyenne Intégral'] : r <= 0.9 ? ['dn', '▼', r < 0.55 ? 'moitié moins que la moyenne Intégral' : pmFr(Math.round((1 - r) * 100)) + ' % de moins que la moyenne Intégral'] : ['eq', '=', 'dans la moyenne Intégral'];
+    return '<span class="pa-pill ' + e[0] + '"><i aria-hidden="true">' + e[1] + '</i>' + e[2] + '</span>';
+  }
+  function pmPrixBoite(m) { return m.chB > 0 ? m.chCa / m.chB : 0; }
+  // Une ligne de la liste « chères » : nom, boîtes, chiffre d'affaires, officines, prix de la boîte.
+  function pmLigneMol(m) {
+    var nO = Object.keys(m.offs).length;
+    return '<div class="pm-l" role="row"><span class="pm-n" role="cell">' + esc(pmAff(m.nom)) + (m.cher ? '<small>' + (m.t3 ? 'plus de 3 000 €' : '468 € ou plus') + '</small>' : '') + '</span>' +
+      '<span class="pm-c" role="cell" data-l="Boîtes">' + pmFr(m.b) + (m.cher && m.chB < m.b ? '<small>dont ' + pmFr(m.chB) + ' chères</small>' : '') + '</span>' +
+      '<span class="pm-c" role="cell" data-l="Chiffre d’affaires">' + pmEur(m.ca) + '</span>' +
+      '<span class="pm-c" role="cell" data-l="Officines">' + pmFr(nO) + '</span>' +
+      '<span class="pm-c" role="cell" data-l="Prix de la boîte">' + (m.cher ? pmEur(pmPrixBoite(m)) : '—') + '</span></div>';
+  }
+  var PM_TETE = '<div class="pm-l pm-h" role="row"><span role="columnheader">Molécule</span><span role="columnheader" class="pm-c">Boîtes</span><span role="columnheader" class="pm-c">Chiffre d’affaires</span><span role="columnheader" class="pm-c">Officines</span><span role="columnheader" class="pm-c">Prix de la boîte</span></div>';
+  function pmListeHtml(L, max) {
+    var vis = max ? L.slice(0, max) : L;
+    return '<div class="pm-tab" role="table">' + PM_TETE + vis.map(pmLigneMol).join('') + '</div>';
+  }
+  function pmReglePhrase() { return 'Une molécule est « chère » dès qu’une de ses boîtes est vendue à 468 € ou plus (prix net), comme les tranches « chers » et « très chers » ci-dessus.'; }
+  function pmNotes(R, c) {
+    return '<p class="pm-note">' + (c.pf ? esc(c.pf.label) + ' · ' : '') + 'Prix net de la boîte vendue. ' + pmFr(R.sans) + ' produit' + (R.sans > 1 ? 's' : '') +
+      ' sans molécule (surtout de la parapharmacie) ne sont pas comptés. Molécule du catalogue, ou à défaut la substance de la base nationale, comme dans Produits. ' +
+      (R.ab.length ? pmFr(R.ab.length) + (R.ab.length > 1 ? ' ventes écartées' : ' vente écartée') + ' : ' + R.ab.map(function (a) { return pmEur(a.pu) + ' la boîte de ' + esc(pmAff(a.nom)); }).join(', ') + ', un prix manifestement erroné dans le fichier des ventes. ' : '') +
+      (R.moy ? 'Moyenne Intégral : nombre moyen de molécules par secteur (' + pmFr(R.moy.n) + ' secteurs, mêmes mois). ' : 'La moyenne Intégral par secteur apparaît quand vous choisissez un secteur. ') + '</p>';
+  }
+  // Clics des boutons « voir plus » / « toutes les molécules » de la feuille : un seul écouteur sur l'écran.
+  function pmLier(haut, c) {
+    if (!haut || !haut.addEventListener) return;
+    haut.addEventListener('click', function (e) {
+      var b = e.target && e.target.closest ? e.target.closest('[data-pm]') : null;
+      if (!b) return;
+      var a = b.getAttribute('data-pm'), enFeuille = !!(b.closest && b.closest('#pa-sh-b'));
+      if (a === 'tout') PM.tout = true; else if (a === 'chers') PM.tout = false; else if (a === 'plus') PM.gp = true;
+      if (enFeuille) { var cible = haut.querySelector('#pa-sh-b'); if (cible) cible.innerHTML = pmFeuille(c); }
+    });
+  }
+  // ── L1 « Une ligne de plus » : une ligne « Molécules » dans la liste, qui ouvre la feuille avec les molécules chères ──
+  function pmLigneListe(c) {
+    var R = pmCalc(c);
+    if (!R) return '<div class="pa-row pa-mol-wait" role="status"><span class="pa-row-t"><b>Molécules</b><small>Chargement du catalogue…</small></span></div>';
+    return '<button type="button" class="pa-row pa-mol" data-m="mol"><span class="pa-row-t"><b style="color:var(--pa-ink)">Molécules</b><small>dont <strong class="pm-ch">' + pmFr(R.nCh) + ' chères</strong> (468 € et plus)</small></span>' +
+      '<span class="pa-row-s"></span><span class="pa-row-v"><span class="pa-n">' + pmFr(R.n) + '</span><span class="pa-u">molécules</span></span>' +
+      '<span class="pa-row-e">' + (R.moy ? pmPill(R.n, R.moy.mols) : '') + '</span><span class="pa-chev">' + ICO('chev', 14) + '</span></button>';
+  }
+  function pmFeuille(c) {
+    var R = pmCalc(c);
+    if (!R) return '<h2 class="pa-pn" id="pa-sh-t">Molécules</h2><p class="pa-def">Le catalogue se charge…</p>';
+    var L = PM.tout ? R.liste : R.chers, vis = (PM.tout || PM.gp) ? L : L.slice(0, 15);
+    var h = '<h2 class="pa-pn" id="pa-sh-t">Molécules</h2>' +
+      '<div class="pm-duo pm-duo-s"><div class="pm-k"><span class="pa-n">' + pmFr(R.n) + '</span><span class="pa-u">molécules vendues</span>' + (R.moy ? '<div class="pm-kp">' + pmPill(R.n, R.moy.mols) + '</div>' : '') + '</div>' +
+      '<div class="pm-k pm-k2"><span class="pa-n">' + pmFr(R.nCh) + '</span><span class="pa-u">dont chères</span>' + (R.moy ? '<div class="pm-kp">' + pmPill(R.nCh, R.moy.chers) + '</div>' : '') + '</div></div>' +
+      '<div class="pa-pper">' + esc(c.pf ? c.pf.label : '') + (R.moy ? ' · moyenne Intégral : ' + pmFr(R.moy.mols, 0) + ' molécules, dont ' + pmFr(R.moy.chers, 0) + ' chères, par secteur' : '') + '</div>' +
+      '<p class="pa-def">' + pmReglePhrase() + '</p>' +
+      '<h3 class="pa-h3">' + (PM.tout ? 'Toutes les molécules vendues' : 'Les molécules chères') + ' <span class="pm-cnt">' + pmFr(L.length) + '</span></h3>' +
+      (L.length ? pmListeHtml(vis) : '<p class="pa-def">Aucune molécule vendue à 468 € ou plus sur cette période.</p>');
+    if (!PM.tout && !PM.gp && L.length > vis.length) h += '<button type="button" class="pm-btn" data-pm="plus">Voir les ' + pmFr(L.length - vis.length) + ' autres molécules chères</button>';
+    h += '<button type="button" class="pm-btn pm-btn2" data-pm="' + (PM.tout ? 'chers' : 'tout') + '">' + (PM.tout ? 'Revenir aux molécules chères' : 'Voir toutes les molécules (' + pmFr(R.n) + ')') + '</button>' + pmNotes(R, c);
+    return h;
   }
 
   // ── Construction de l’écran
@@ -1819,7 +1961,7 @@
         var sheet = haut.querySelector('#pa-sheet'), retour = null;
         var ouvre = function (id, depuis) {
           retour = depuis; sheet.hidden = false; sheet.classList.add('on');
-          sheet.querySelector('#pa-sh-b').innerHTML = paPanneau(PA_REG[id], c, true);
+          sheet.querySelector('#pa-sh-b').innerHTML = id === 'mol' ? pmFeuille(c) : paPanneau(PA_REG[id], c, true);
           document.documentElement.classList.add('pa-noscroll'); dessine();
           var x = sheet.querySelector('.pa-x'); if (x) x.focus();
         };
@@ -1837,6 +1979,7 @@
           var lie = function (sel) { Array.prototype.forEach.call(haut.querySelectorAll(sel), function (r) { r.onclick = function () { ouvre(r.dataset.m, r); }; }); };
           lie('.pa-row'); lie('.pa-carte');
         }
+        pmLier(haut, c);
         dessine();
         var rz = null; window.addEventListener('resize', function () { clearTimeout(rz); rz = setTimeout(function () { if (document.body.contains(haut)) dessine(); }, 120); });
       }
@@ -2862,7 +3005,7 @@
       var AP = null;
       if (PFM && !opso && pf) {
         try {
-          AP = paBuild({ pf: pf, sales: sales, idx: idx, anc: anc, opso: opso, comms: comms, myComm: myComm, voitTous: voitTous, voitAussi: voitAussi, perPick: perPick,
+          AP = paBuild({ cur: cur, reseauCur: reseauCur, pf: pf, sales: sales, idx: idx, anc: anc, opso: opso, comms: comms, myComm: myComm, voitTous: voitTous, voitAussi: voitAussi, perPick: perPick,
             caCur: caCur, mdlCur: mdlCur, mdlPct: mdlPct, nbActive: nbActive, activeRatio: activeRatio, panier: panier,
             totalCarte: (typeof totalCarte === 'number' ? totalCarte : null), margePct: (typeof margePct === 'number' ? margePct : 0), commsPerim: (typeof commsPerim !== 'undefined' ? commsPerim : null) });
         } catch (e) { AP = null; if (window.console) console.warn('pilotage-apple', e); }
