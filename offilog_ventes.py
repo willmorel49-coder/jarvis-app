@@ -13,7 +13,10 @@ Règles arrêtées avec Will :
   - une ligne avec commercial l'emporte sur « sans commercial » ;
   - noms : espaces réduits, majuscules ; `corrections_de_nom`, puis `partages`, puis `noms_jarvis` (nom
     complet -> prénom JARVIS) du réglage. Un nom absent de `noms_jarvis` = « hors JARVIS » : gardé sous
-    son nom complet, jamais donné à un commercial.
+    son nom complet, jamais donné à un commercial ;
+  - « sans commercial » dans le fichier -> le commercial JARVIS de la pharmacie (choix de Will du 06/11/2026),
+    s'il y en a UN seul ; aucun ou plusieurs (pharmacie partagée) = reste « sans commercial », vu du seul
+    accès total. `comms` = {CIP: commerciaux JARVIS}, fourni par generate_wml_v2.py.
 Le réglage (seuil, montant, période de la prime, noms) vit HORS du dépôt : ~/JARVIS/OFFILOG/reglage-prime-offilog.json.
 Rien de tout cela n'est écrit en dur ici.
 
@@ -185,8 +188,9 @@ def _mois_continus(mois):
     return out
 
 
-def construire(lignes, reglage):
-    """lignes {(pièce, CIP): ligne} -> {vm, v, va, vn[, pr]} ; {} si aucune ligne."""
+def construire(lignes, reglage, comms=None, bilan=None):
+    """lignes {(pièce, CIP): ligne} -> {vm, v, va, vn[, pr]} ; {} si aucune ligne.
+    comms {CIP: commerciaux JARVIS} : rattache une pharmacie « sans commercial » à son commercial JARVIS s'il est seul."""
     if not lignes:
         return {}
     vm = _mois_continus({x['mois'] for x in lignes.values()})
@@ -200,9 +204,18 @@ def construire(lignes, reglage):
         if x['cip'] not in dernier or cle > dernier[x['cip']][0]:
             dernier[x['cip']] = (cle, x)
     zero = lambda f: 0 if abs(f) < 0.005 else round(f, 2)
+    va = {k: attribuer(dernier[k][1]['com'], reglage) for k in sorted(tot)}
+    sans = [k for k in va if not va[k]]
+    for k in sans:
+        cs = sorted((comms or {}).get(k) or ())
+        if len(cs) == 1:
+            va[k] = cs[0]
+    if bilan is not None:
+        bilan['sans_commercial'] = len(sans)
+        bilan['rattachees_jarvis'] = sum(1 for k in sans if va[k])
     out = {'vm': vm,
            'v': {k: [zero(f) for f in t] for k, t in sorted(tot.items())},
-           'va': {k: attribuer(dernier[k][1]['com'], reglage) for k in sorted(tot)},
+           'va': va,
            'vn': {k: dernier[k][1]['nom'] for k in sorted(tot) if dernier[k][1]['nom']}}
     return out
 
@@ -216,7 +229,7 @@ def prime(reglage):
     return {'s': s, 'p': p, 'de': de, 'a': a} if ok else None
 
 
-def lire(dossier=None, chemin_reglage=None, parler=True):
+def lire(dossier=None, chemin_reglage=None, parler=True, comms=None):
     """Tout le dossier -> (dict à fusionner dans `off`, bilan). Dict vide si aucune vente lisible."""
     dossier = dossier or DOSSIER
     reglage = lire_reglage(chemin_reglage if chemin_reglage else os.path.join(dossier, 'reglage-prime-offilog.json'))
@@ -238,7 +251,7 @@ def lire(dossier=None, chemin_reglage=None, parler=True):
             toutes[k] = x   # le fichier le plus récent l'emporte
     bilan['incoherences_ttc'] = sum(1 for x in toutes.values() if x['ttc'] is not None and (x['ttc'] < 0) != x['avoir'])
     bilan['lignes'] = len(toutes)
-    out = construire(toutes, reglage)
+    out = construire(toutes, reglage, comms, bilan)
     pr = prime(reglage)
     if out and pr:
         out['pr'] = pr
@@ -249,6 +262,8 @@ def lire(dossier=None, chemin_reglage=None, parler=True):
         if out:
             print('  [ventes] %d pièces · %d pharmacies · mois %s · TTC incohérent avec le signe : %d · doublons entre fichiers : %d (dont montant différent : %d)'
                   % (len(toutes), len(out['v']), ', '.join(out['vm']), bilan['incoherences_ttc'], bilan['doublons_fichiers'], bilan['conflits']))
+            print('  [ventes] sans commercial dans le fichier : %d pharmacies, dont %d rattachées à leur commercial JARVIS%s'
+                  % (bilan['sans_commercial'], bilan['rattachees_jarvis'], '' if comms else ' (commerciaux JARVIS non fournis)'))
             if not reglage:
                 print('  [ventes] réglage absent : aucune prime, aucun nom rattaché à un commercial (tout est « hors JARVIS »)')
         else:

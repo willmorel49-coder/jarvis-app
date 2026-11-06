@@ -128,10 +128,12 @@ def lire_offre(stats):
 CLES_VENTES = ('vm', 'v', 'va', 'vn')   # ventes Offilog par pharmacie (offilog_ventes.py, 06/11/2026)
 
 
-def ecrire(stats, dossier_ventes=None, reglage=None):
+def ecrire(stats, dossier_ventes=None, reglage=None, comms=None):
     """`dossier_ventes` (défaut ~/JARVIS/OFFILOG) : les .xlsx mensuels de ventes -> vm, v, va, vn, pr dans `off`.
     Aucune vente lue = vm/v/va/vn de la table d'avant gardés tels quels (une lecture vide n'efface rien).
-    `pr` (prime) vient du seul réglage : réglage absent = pas de `pr`."""
+    `pr` (prime) vient du seul réglage : réglage absent = pas de `pr`.
+    `comms` {TIRCODE: commerciaux JARVIS} : une pharmacie « sans commercial » dans le fichier Offilog va à son
+    commercial JARVIS s'il est seul (offilog_ventes.construire)."""
     t = lire(stats)
     if not t['m']:
         # rien de lu (dossier absent, colonne disparue) : on garde la table d'avant, on le dit
@@ -148,7 +150,7 @@ def ecrire(stats, dossier_ventes=None, reglage=None):
             o = {}
     t.update(o)
     import offilog_ventes
-    ventes, _ = offilog_ventes.lire(dossier_ventes, reglage)
+    ventes, _ = offilog_ventes.lire(dossier_ventes, reglage, comms=comms)
     if ventes:
         t.update(ventes)
     else:

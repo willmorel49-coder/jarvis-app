@@ -99,6 +99,22 @@ assert s3['va'] == {'9000001': 'Anne', '9000002': 'Carl', '9000003': 'Béa', '90
 assert s3['pr'] == {'s': 100, 'p': 7, 'de': '2026-09', 'a': '2027-06'}, s3['pr']
 assert s3['vn']['9000001'] == 'P UN'
 
+# ── 3 bis. « sans commercial » -> le commercial JARVIS de la pharmacie (choix de Will du 06/11/2026) ────
+# comms = {CIP: commerciaux JARVIS} (set, comme le rend generate_wml_v2.py). Un seul = il prend la prime ;
+# plusieurs (pharmacie partagée) ou aucun = reste « sans commercial » (vu du seul accès total).
+# Une pharmacie AVEC un nom dans le fichier Offilog garde ce nom, même hors JARVIS.
+xlsx(os.path.join(d3, 'ventes.xlsx'), {'sans': [SANS,
+    [9000004, 'P QUATRE', 'FC_4', serie(2026, 9, 3), 150, 180],
+    [9000005, 'P CINQ', 'FC_6', serie(2026, 9, 4), 10, 12],
+    [9000006, 'P SIX', 'FC_7', serie(2026, 9, 4), 10, 12],
+    [9000007, 'P SEPT', 'FC_8', serie(2026, 9, 4), 10, 12]],
+    'v': [ENTETE, [9000004, 'DENIS DDD', 'P QUATRE', 'FC_9', serie(2026, 9, 3), 150, 180]]})
+comms3 = {'9000004': {'Anne'}, '9000005': {'Béa'}, '9000006': {'Anne', 'Béa'}}
+s3b, _ = V.lire(d3, parler=False, comms=comms3)
+assert s3b['va'] == {'9000004': 'DENIS DDD', '9000005': 'Béa', '9000006': '', '9000007': ''}, s3b['va']
+s3c, _ = V.lire(d3, parler=False)                                       # sans comms : rien ne change
+assert s3c['va']['9000005'] == '', s3c['va']
+
 # ── 4. dédoublonnage entre feuilles ET entre fichiers ; le fichier le plus récent l'emporte ────────────
 d4 = tempfile.mkdtemp()
 json.dump(REG, open(os.path.join(d4, 'reglage-prime-offilog.json'), 'w'))
@@ -141,6 +157,9 @@ xlsx(os.path.join(vide, 'ventes.xlsx'), {'v': [ENTETE, [9000001, 'ANNE AAA', 'P'
 oc.ecrire('stats-bidon', vide)
 c = json.load(open(oc.SORTIE))
 assert c['v'] == {'9000001': [10.0]} and 'pr' not in c, c
+xlsx(os.path.join(vide, 'ventes.xlsx'), {'sans': [SANS, [9000001, 'P', 'FC_1', serie(2026, 9, 3), 10, 12]]})   # comms transmis par ecrire()
+oc.ecrire('stats-bidon', vide, comms={'9000001': {'Anne'}})
+assert json.load(open(oc.SORTIE))['va'] == {'9000001': 'Anne'}, 'ecrire() ne transmet pas les commerciaux JARVIS'
 
 # ── 7. suite_off : chaque jeu ne reçoit que ses pharmacies ─────────────────────────────────────────────
 D = charger('decouper_par_commercial')
