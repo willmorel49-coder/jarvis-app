@@ -1807,7 +1807,7 @@
     return {
       html: '<div class="pa-root pa-' + PFM + '">' + tete + corps + feuille + '</div>',
       lier: function (root) {
-        var haut = root.querySelector('.pa-root');
+        var haut = root.querySelector('.pa-root'); if (!haut) return; // page sans DOM réel (tests) : rien à brancher
         Array.prototype.forEach.call(haut.querySelectorAll('.pa-segb'), function (b) {
           b.onclick = function () { PERIOD = b.dataset.p; if (PERIOD === 'custom' && PER_DU == null && pf) { PER_DU = pf.du; PER_AU = pf.au; } V2.render(); };
         });
