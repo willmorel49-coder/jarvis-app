@@ -650,6 +650,17 @@ except Exception as e:
 
 # ── 3quater. Géocodage des officines (carte de secteur) ──
 geocode_officines(officines)
+# 06/11/2026 (demande de Will) — adresse corrigée à la main quand les fichiers se trompent. 2072452 : les exports disent
+# « 13924 MARSEILLE CEDEX 11 » (code de cedex, pas une commune) que le géocodage plaçait à Bordeaux (44.84, -0.597).
+# Adresse réelle (export clients actifs du 02/10, 2e ligne) : Route de la Sablière, Centre Géant La Valentine, 13011
+# Marseille ; BAN « Route de la Sablière 13011 Marseille » score 0,96 -> 43.294195, 5.480703 (à la rue).
+ADRESSE_FORCEE = {
+    '2072452': {'cp': '13011', 'ville': 'MARSEILLE', 'lat': 43.294195, 'lng': 5.480703},
+}
+for _o in officines:
+    _f = ADRESSE_FORCEE.get(_cipkey(_o['code']))
+    if _f:
+        _o.update(_f)
 
 # ── 3quinquies. Détail par officine pour la FICHE de la carte Copilote ──
 # (CA mensuel + top produits + nb produits + potentiel), fichier compact chargé à la demande.
