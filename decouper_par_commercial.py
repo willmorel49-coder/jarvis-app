@@ -64,16 +64,31 @@ CLE = os.path.expanduser('~/.config/jarvis/service-role-key')
 compact = lambda o: json.dumps(o, ensure_ascii=False, separators=(',', ':'))
 
 
+# Lecture de wml-officines-ca.js tel que l'écrit proteger_conditions.py : `off` porte des objets imbriqués (b, v, va, vn, pr…).
+RE_OFF_CA = re.compile(r'window\.WML_OFF_CA = \{n:\d+, m:(\{[^{}]*\})((?:, off:\{.*\})?)\};', re.S)
 OFF_CA = None   # clé off de wml-officines-ca.js (« client Offilog », offilog_clients.py), lue dans main()
 
 
-def suite_off(mes_ca):
+def suite_off(mes_ca, mes=None):
     """« , off:{…} » réduit aux pharmacies du jeu : un commercial ne reçoit « client Offilog »
-    que pour les officines dont son jeu porte déjà les chiffres, jamais la liste du réseau."""
+    que pour les officines dont son jeu porte déjà les chiffres, jamais la liste du réseau.
+    `mes` (prénoms du jeu) : ajoute les ventes Offilog par pharmacie (vm, v, va, vn, pr, 06/11/2026) —
+    une pharmacie y entre si elle est dans mes_ca OU si le fichier Offilog l'attribue à un prénom du jeu.
+    Une pharmacie attribuée à quelqu'un hors du jeu (collègue non ouvert, « hors JARVIS », « sans
+    commercial ») n'y va que par mes_ca, et son attribution est alors effacée. Sans `mes` (jeu OPSO) : aucune."""
     if not OFF_CA:
         return ''
     m = {k: v for k, v in OFF_CA['m'].items() if k in mes_ca}
     off = {'d': OFF_CA['d'], 'm': m}
+    if mes is not None and OFF_CA.get('v'):
+        va = OFF_CA.get('va') or {}
+        gardes = [k for k in OFF_CA['v'] if k in mes_ca or va.get(k) in mes]
+        off['vm'] = OFF_CA['vm']
+        off['v'] = {k: OFF_CA['v'][k] for k in gardes}
+        off['va'] = {k: (va.get(k) if va.get(k) in mes else '') for k in gardes}
+        off['vn'] = {k: (OFF_CA.get('vn') or {})[k] for k in gardes if k in (OFF_CA.get('vn') or {})}
+        if OFF_CA.get('pr'):
+            off['pr'] = OFF_CA['pr']
     if OFF_CA.get('b'):   # 16/10/2026 — offre Sanofi / UPSA : réduite aux officines du jeu, exactement comme m
         off['bd'] = OFF_CA['bd']
         off['b'] = {k: v for k, v in OFF_CA['b'].items() if k in mes_ca}
@@ -272,7 +287,7 @@ def main():
     # 13/10/2026 — la table porte aussi « client Offilog » (clé off, offilog_clients.py) : elle est
     # réduite aux officines de chaque jeu (suite_off), sinon la fiche officine n'en dit rien.
     global OFF_CA
-    m_ca = re.search(r'window\.WML_OFF_CA = \{n:\d+, m:(\{[^{}]*\})((?:, off:\{.*\})?)\};', ca, re.S)
+    m_ca = RE_OFF_CA.search(ca)
     OFF_CA = json.loads(m_ca.group(2)[6:]) if m_ca and m_ca.group(2) else None
     off_ca = json.loads(m_ca.group(1)) if m_ca else sys.exit('ARRÊT : wml-officines-ca.js illisible')
     tete_ca = ca[:m_ca.start()]
@@ -392,7 +407,7 @@ def main():
         for k in [k for k in mes_ca if partagee(k)]:
             mes_ca[k] = [round(sum(a_lui.get(k, vide)['m'])), mes_ca[k][1]]
         ecrire(os.path.join(rep, 'wml-officines-ca.js'),
-               tete_ca + 'window.WML_OFF_CA = {n:%d, m:%s%s};\n' % (len(mes_ca), json.dumps(mes_ca), suite_off(mes_ca)))
+               tete_ca + 'window.WML_OFF_CA = {n:%d, m:%s%s};\n' % (len(mes_ca), json.dumps(mes_ca), suite_off(mes_ca, mes)))
         mes_det = {k: v for k, v in carte.items() if comms_par_code.get(re.sub(r'[^0-9]', '', k), set()) & mes}
         for k in [k for k in mes_det if partagee(k)]:
             dd = a_lui.get(re.sub(r'[^0-9]', '', k), vide)

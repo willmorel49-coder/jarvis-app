@@ -898,6 +898,9 @@
     return { oui: v[0] === 1, date: /^\d{4}-\d{2}-\d{2}$/.test(d) ? d.slice(8) + '/' + d.slice(5, 7) + '/' + d.slice(0, 4) : '' };
   }
   function offilogTexte(pid) {
+    // 06/11/2026 — vrai CA Offilog par mois (HT) quand le fichier de ventes est chargé ; sinon le texte d'avant.
+    var ventes = V2.offVentes && V2.offVentes.texteFiche(pid, (window.WML_OFF_CA || {}).off);
+    if (ventes) return ventes;
     var o = offilogDe(pid);
     return o ? (o.oui ? 'Cliente' : 'Non cliente') + (o.date ? ' · au ' + o.date : '') : '';
   }

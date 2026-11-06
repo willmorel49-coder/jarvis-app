@@ -3000,6 +3000,9 @@
                '<div data-reveal id="pilo-prod-host">' + produitsCard + '</div>', false) : '') +
           (marcheFr ? disc('Le marché France', 'ce que le pays achète de plus, et de moins', '<div data-reveal>' + marcheFr + '</div>', false) : '') +
           disc('Mes pharmacies', (nbActive ? nbActive + ' active' + (nbActive > 1 ? 's' : '') + ' sur la période' : '') + (nbGrp >= 2 && !opso ? ' · ' + nbGrp + ' groupements' : ''), classements, false) +
+          // 06/11/2026 — ventes Offilog du mois par commercial, prime, pharmacies à relancer (suit le périmètre choisi ci-dessus)
+          (!opso && V2.offVentes ? disc('Offilog', 'chiffre d’affaires du mois, prime, pharmacies à relancer',
+               V2.offVentes.bloc({ commFilter: V2.commFilter || '', restreint: !!(myComm && !voitTous), mes: mesComms }), false) : '') +
           (marche ? disc('Le gisement & les pharmacies à relancer',
                'ce que la France achète et pas mes officines, et qui décroche', marche, false) : '');
       var AP = null;
@@ -3026,6 +3029,7 @@
       }
 
       piloSimpleLier(root);
+      if (!opso && V2.offVentes) V2.offVentes.lier(root, { commFilter: V2.commFilter || '', restreint: !!(myComm && !voitTous), mes: mesComms });
 
       // ── Bind segmented ──
       Array.prototype.forEach.call(root.querySelectorAll('.pilo-segbtn'), function (b) {

@@ -125,7 +125,13 @@ def lire_offre(stats):
     return {'bd': dates, 'b': {k: [c, dates.index(d)] for k, (c, d) in vus.items()}}
 
 
-def ecrire(stats):
+CLES_VENTES = ('vm', 'v', 'va', 'vn')   # ventes Offilog par pharmacie (offilog_ventes.py, 06/11/2026)
+
+
+def ecrire(stats, dossier_ventes=None, reglage=None):
+    """`dossier_ventes` (défaut ~/JARVIS/OFFILOG) : les .xlsx mensuels de ventes -> vm, v, va, vn, pr dans `off`.
+    Aucune vente lue = vm/v/va/vn de la table d'avant gardés tels quels (une lecture vide n'efface rien).
+    `pr` (prime) vient du seul réglage : réglage absent = pas de `pr`."""
     t = lire(stats)
     if not t['m']:
         # rien de lu (dossier absent, colonne disparue) : on garde la table d'avant, on le dit
@@ -141,6 +147,19 @@ def ecrire(stats):
         except (IOError, OSError, ValueError):
             o = {}
     t.update(o)
+    import offilog_ventes
+    ventes, _ = offilog_ventes.lire(dossier_ventes, reglage)
+    if ventes:
+        t.update(ventes)
+    else:
+        try:
+            avant = json.loads(io.open(SORTIE, encoding='utf-8').read())
+            t.update({k: avant[k] for k in CLES_VENTES if k in avant})
+        except (IOError, OSError, ValueError):
+            pass
+        pr = offilog_ventes.prime(offilog_ventes.lire_reglage(reglage or os.path.join(dossier_ventes or offilog_ventes.DOSSIER, 'reglage-prime-offilog.json')))
+        if pr and t.get('v'):
+            t['pr'] = pr
     io.open(SORTIE, 'w', encoding='utf-8').write(json.dumps(t, separators=(',', ':'), sort_keys=True))
     oui = sum(1 for v in t['m'].values() if v[0])
     print('  [offilog] %d pharmacies : %d « O », %d « N » (fichiers du %s)'
@@ -149,6 +168,8 @@ def ecrire(stats):
         n = [sum(1 for v in t['b'].values() if v[0] == c) for c in range(4)]
         print('  [offre] %d pharmacies : %d Sanofi seul, %d UPSA seul, %d les deux, %d aucune (fichiers du %s)'
               % (len(t['b']), n[1], n[2], n[3], n[0], ', '.join(t['bd'])))
+    if t.get('v'):
+        print('  [ventes] %d pharmacies avec achats sur %s%s' % (len(t['v']), ', '.join(t['vm']), '' if t.get('pr') else ' · pas de prime (réglage absent)'))
     return t
 
 
