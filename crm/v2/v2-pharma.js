@@ -6144,6 +6144,11 @@
     if (!isEscale() && !isOpso()) {
       (txFiches || []).forEach(function (f) { its.push({ k: 'M:' + f.id, grp: 'fab', label: f.titre, meta: 'Fiche ' + f.type.toLowerCase() + ' · ' + f.n + ' produit' + (f.n > 1 ? 's' : '') + ' · PDF généré' }); });
       if (V2.mkt && V2.mkt.catalogueCategoriesFichier) its.push({ k: 'C:categories', grp: 'fab', label: 'Catalogue par catégorie', meta: 'Princeps par tranche de prix et non remboursables · PDF généré' });
+      // 06/11/2026 — Karine : le catalogue des 500 meilleures ventes Offilog, fabriqué à l'instant avec les prix à jour (module absent d'OPSO)
+      if (V2.offCatTopFichier) {
+        its.push({ k: 'O:pdf', grp: 'fab', label: 'Catalogue Offilog · 500 meilleures ventes', meta: 'Prix HT à jour · PDF généré' });
+        its.push({ k: 'O:xlsx', grp: 'fab', xls: true, label: 'Catalogue Offilog · 500 meilleures ventes · Excel', meta: 'Prix HT à jour · Excel généré' });
+      }
       if (V2.docProtegeFichier) TX_PROTEGES.forEach(function (c) { its.push({ k: 'P:' + c, grp: 'fab', label: txProtegeTitre(c), meta: 'PDF' }); });
       if (tx.lgo.s) its.push({ k: 'G:' + tx.lgo.s + ':' + tx.lgo.n, grp: 'lgo', ic: 'LGO', label: txLgoLabel(tx.lgo.s, tx.lgo.n),
         meta: 'Mode d\'emploi PDF + fichier CSV + Excel · 3 pièces jointes' });
@@ -6311,6 +6316,8 @@
     if (k.indexOf('D:') === 0) return txPretty(k.slice(2));
     if (k.indexOf('P:') === 0) return txProtegeTitre(k.slice(2));
     if (k === 'C:categories') return 'Catalogue par catégorie';
+    if (k === 'O:pdf') return 'Catalogue Offilog · 500 meilleures ventes';
+    if (k === 'O:xlsx') return 'Catalogue Offilog · 500 meilleures ventes · Excel';
     if (k.indexOf('G:') === 0) { var g = k.split(':'); return txLgoLabel(g[1], g[2]); }
     if (k.indexOf('M:') === 0) { var f = (txFiches || []).filter(function (x) { return x.id === k.slice(2); })[0]; return f ? f.titre : 'Fiche Marketing'; }
     if (k === 'L:reseau') return 'Listing produits (réseau)';
@@ -6383,6 +6390,7 @@
     if (k.indexOf('X:') === 0) return V2.pharmaListXlsx(pid, k.slice(2), 'blob');
     if (k.indexOf('M:') === 0) return V2.mkt && V2.mkt.fichePdfFichier ? V2.mkt.fichePdfFichier(k.slice(2)) : Promise.resolve(null);
     if (k === 'C:categories') return V2.mkt && V2.mkt.catalogueCategoriesFichier ? V2.mkt.catalogueCategoriesFichier() : Promise.resolve(null);
+    if (k.indexOf('O:') === 0) return V2.offCatTopFichier && (k === 'O:pdf' || k === 'O:xlsx') ? V2.offCatTopFichier(k.slice(2)) : Promise.resolve(null);
     if (k.indexOf('P:') === 0) return TX_PROTEGES.indexOf(k.slice(2)) >= 0 && V2.docProtegeFichier ? V2.docProtegeFichier(k.slice(2)) : Promise.resolve(null);
     if (k.indexOf('G:') === 0) {
       var g = k.split(':'), s = g[1], n = +g[2];

@@ -1494,6 +1494,20 @@
     });
   }
   V2.offRetry = function () { bestFail = false; offTried = false; V2.render(); };
+  // 06/11/2026 — pour « Transmettre » (catalogue 500 meilleures ventes) : charge les meilleures ventes SANS ouvrir l'écran Offilog.
+  // Rend true une fois window.OFFILOG_BEST posé, false après 30 s ou échec.
+  V2.offilogChargerMeilleures = function () {
+    return new Promise(function (ok) {
+      if (window.OFFILOG_BEST) { ok(true); return; }
+      var fini = false, t0 = Date.now();
+      ensureBest(function () { fini = true; });
+      (function att() {
+        if (window.OFFILOG_BEST) ok(true);
+        else if (fini || Date.now() - t0 > 30000) ok(false);
+        else setTimeout(att, 150);
+      })();
+    });
+  };
 
   // ── CSS ───────────────────────────────────────
   function injectCss() {
