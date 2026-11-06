@@ -1422,8 +1422,9 @@
     var B = null;
     if (!opso) { psStyles(); try { B = psBloc(pf); } catch (e) { B = null; } }
     if (!B) return { avant: '', apres: '' };
-    if (B.vide) return { avant: '<div class="ps-card"><div class="ps-vide">' + B.vide + '</div></div>', apres: '' };
+    if (B.vide) return { avant: '<div class="ps-card"><div class="ps-vide">' + B.vide + '</div></div>', apres: '', bloc: '<div class="ps-card"><div class="ps-vide">' + B.vide + '</div></div>' };
     return {
+      bloc: B.html,
       avant: B.html + '<button type="button" class="ps-det-btn" aria-expanded="' + (PS_OUVERT ? 'true' : 'false') + '" aria-controls="ps-det"><span>Tout le détail</span>' + ICO('chev', 16) + '</button>' +
         '<div class="ps-det" id="ps-det"' + (PS_OUVERT ? '' : ' hidden') + '>',
       apres: '</div>'
@@ -1444,6 +1445,404 @@
 
   // PAGE
   // ════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════════════
+  // 05/11/2026 — Pilotage « façon Apple » (atelier local, 3 versions qui ne diffèrent que par PFM).
+  // Will : « adapter la lisibilité et l’ux ui comme APPLE car là au niveau lisibilité de la statistique c’est souvent compliqué ».
+  // PFM = 'resume' (Le résumé) | 'mesure' (Une mesure à la fois) | 'liste' (La liste) ; '' = écran d’origine.
+  // Tout ce que l’écran montrait avant reste dans « Tout le détail » (rien n’est retiré). Les moyennes viennent de
+  // MARGE_CLIENTS.pilotageMoy (générateur), jamais recalculées ici.
+  // ════════════════════════════════════════════════════════════════
+  var PFM = 'liste';
+  var PA_SEL = 'ca';          // mesure choisie (version « Une mesure à la fois »)
+  var PA_REG = {};            // mesures de l’écran en cours, par identifiant
+  var PA_MEMO = null;
+  var PA_MOIS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  var PA_NF = new Intl.NumberFormat('fr-FR');
+
+  var PA_MOISL = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  function paLab(pf) {
+    var a = pf.du, b = pf.au, ya = Math.floor(a / 12), yb = Math.floor(b / 12), F = function (k) { return PA_MOISL[((k % 12) + 12) % 12]; };
+    if (a === b) return cap(F(a)) + ' ' + ya;
+    if (PERIOD === '3m' || PERIOD === 'year') return pf.label;
+    return cap(F(a)) + (ya === yb ? '' : ' ' + ya) + ' → ' + F(b) + ' ' + yb;
+  }
+  function paMoisK(k) { return PA_MOIS[((k % 12) + 12) % 12]; }
+  function paMoisCle(k) { var mm = ((k % 12) + 12) % 12 + 1; return Math.floor(k / 12) + '-' + (mm < 10 ? '0' : '') + mm; }
+  function paNb(v, d) { return (Math.round(v * Math.pow(10, d)) / Math.pow(10, d)).toLocaleString('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+  // valeur → { n: chiffre, u: unité (plus petite) }
+  function paFmt(m, v) {
+    if (v == null || !isFinite(v)) return { n: '—', u: '' };
+    var a = Math.abs(v), k = m.kind;
+    if (k === 'eur') {
+      if (a >= 1e6) return { n: paNb(v / 1e6, 2), u: 'M€' };
+      if (a >= 100) return { n: PA_NF.format(Math.round(v)), u: '€' };
+      return { n: paNb(v, 1), u: '€' };
+    }
+    if (k === 'pct') return { n: paNb(v, 1), u: '%' };
+    if (k === 'dec') return { n: paNb(v, 1), u: m.unit || '' };
+    return { n: PA_NF.format(Math.round(v)), u: m.unit || '' };
+  }
+  function paTxt(m, v) { var f = paFmt(m, v); return f.n + (f.u ? '\u00a0' + f.u : ''); }
+  function paAx(m, v) {
+    if (m.kind === 'eur') {
+      var a = Math.abs(v);
+      if (a >= 1e6) return paNb(v / 1e6, a % 1e6 ? 1 : 0).replace(',0', '') + ' M€';
+      if (a >= 1e3) return PA_NF.format(Math.round(v / 1e3)) + ' k€';
+      return paNb(v, a < 10 && v % 1 ? 1 : 0) + ' €';
+    }
+    if (m.kind === 'pct') return paNb(v, 0) + ' %';
+    return paNb(v, v % 1 ? 1 : 0);
+  }
+  function paMix(hex, t) { // hex → mélange avec du blanc (t = part de blanc)
+    var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+    var f = function (x) { return Math.round(x + (255 - x) * t); };
+    return 'rgb(' + f(r) + ',' + f(g) + ',' + f(b) + ')';
+  }
+  function paEcart(v, ref) {
+    if (v == null || ref == null || !ref) return null;
+    var p = (v - ref) / Math.abs(ref) * 100, ap = Math.abs(p);
+    var cls = ap < 0.5 ? 'eq' : p > 0 ? 'up' : 'dn';
+    return { p: p, cls: cls, arrow: cls === 'eq' ? '●' : p > 0 ? '▲' : '▼', txt: cls === 'eq' ? 'égal' : (p > 0 ? '+' : '−') + paNb(ap, ap < 10 ? 1 : 0) + '\u00a0%' };
+  }
+  function paPill(e, mot) {
+    if (!e) return '';
+    return '<span class="pa-pill ' + e.cls + '"><i aria-hidden="true">' + e.arrow + '</i>' + e.txt + (mot ? ' <em>' + mot + '</em>' : '') + '</span>';
+  }
+
+  // ── Séries mensuelles du périmètre regardé (mémorisées : un changement de période ne les recalcule pas)
+  function paSeries(c) {
+    var anc0 = c.anc && c.anc.ancre != null ? c.anc.ancre : null;
+    var key = (V2.commFilter || '') + '|' + (c.sales ? c.sales.length : 0) + '|' + anc0;
+    if (PA_MEMO && PA_MEMO.ref === V2.sales && PA_MEMO.key === key) return PA_MEMO.val;
+    var ks = availableMonths(c.sales).map(function (m) { return mkey(m.year, m.month); }).filter(function (k) { return anc0 == null || k <= anc0; }).sort(function (a, b) { return a - b; }).slice(-13);
+    var by = {}; ks.forEach(function (k) { by[k] = { ca: 0, mdl: 0, ph: {}, rows: [] }; });
+    var NM = V2.notreMarge, fic = (NM && NM.dispo && NM.dispo()) ? NM.mois() : [];
+    c.sales.forEach(function (s) {
+      if (!s.month || !s.year) return;
+      var k = mkey(s.year, s.month), o = by[k]; if (!o) return;
+      var v = s.mntNetHt || 0; o.ca += v; o.mdl += mdlOf(s, c.idx); o.ph[s.pharmacyId] = (o.ph[s.pharmacyId] || 0) + v;
+      if (fic.indexOf(paMoisCle(k)) < 0) o.rows.push(s);
+    });
+    var R = { ks: ks, ca: [], mdl: [], act: [], panier: [], mg: [] };
+    ks.forEach(function (k) {
+      var o = by[k], na = Object.keys(o.ph).filter(function (id) { return o.ph[id] > 0; }).length;
+      R.ca.push(o.ca); R.mdl.push(o.mdl); R.act.push(na); R.panier.push(na ? o.ca / na : 0);
+      var mg;
+      if (fic.indexOf(paMoisCle(k)) >= 0 && c.commsPerim) mg = NM.somme({ comms: c.commsPerim, du: paMoisCle(k), au: paMoisCle(k) }).tot;
+      else mg = cumulMarge(o.rows, c.idx).total;
+      R.mg.push(mg);
+    });
+    PA_MEMO = { ref: V2.sales, key: key, val: R };
+    return R;
+  }
+
+  // ── Les mesures de l’écran
+  function paMesures(c) {
+    var pf = c.pf, MC = window.MARGE_CLIENTS, PM = MC && MC.pilotageMoy, fen = psFenetre(pf), nom = V2.commFilter ? String(V2.commFilter) : '';
+    var ser = paSeries(c), ks = ser.ks, n = pf.au - pf.du + 1;
+    var M = null, S = null;
+    if (PM && PM.f && fen && fen.length) { M = PM.f[fen[0].m + '|' + fen[fen.length - 1].m] || null; if (nom && M) S = psSecteur(MC, nom, fen); }
+    var idxK = function (k) { return ks.indexOf(k); };
+    var somme = function (arr, a, b) { var t = 0; for (var k = a; k <= b; k++) { var i = idxK(k); if (i < 0) return null; t += arr[i]; } return t; };
+    var delta = function (id, cur, arr) {
+      if (pf.prevComplet === false) return null;
+      var prv = null;
+      if (id === 'ca' || id === 'mg' || id === 'mdl') prv = somme(arr, pf.du - n, pf.du - 1);
+      else if (n === 1) { var j = idxK(pf.du - 1); prv = j >= 0 ? arr[j] : null; }
+      if (prv == null || !(prv > 0)) return null;
+      return paEcart(cur, prv);
+    };
+    var ci = function (id, arr, cur) { return { s: arr, d: delta(id, cur, arr) }; };
+    var L = [];
+    var push = function (o) { PA_REG[o.id] = o; L.push(o); return o; };
+    var A = ci('ca', ser.ca, c.caCur);
+    push({ id: 'ca', grp: 'ventes', nom: 'Chiffre d’affaires', kind: 'eur', col: '#0050E6', txt: '#0050E6', val: c.caCur, ser: ser.ca, delta: A.d, sub: 'hors taxes',
+      def: 'Ce que les officines ont acheté sur la période, hors taxes.' });
+    if (c.totalCarte != null) {
+      A = ci('mg', ser.mg, c.totalCarte);
+      push({ id: 'mg', grp: 'ventes', nom: 'Notre marge', kind: 'eur', col: '#16A06B', txt: '#0B6E4A', val: c.totalCarte, ser: ser.mg, delta: A.d, sub: paNb(c.margePct, 2) + '\u00a0% du chiffre d’affaires',
+        def: 'Ce que les ventes de la période rapportent à Intégral.' });
+    }
+    A = ci('mdl', ser.mdl, c.mdlCur);
+    push({ id: 'mdl', grp: 'ventes', nom: 'Marge pharmacien générée', kind: 'eur', col: '#6D4FC4', txt: '#5B3FB0', val: c.mdlCur, ser: ser.mdl, delta: A.d, sub: paNb(c.mdlPct, 1) + '\u00a0% du chiffre d’affaires',
+      def: 'Marge réalisée par les pharmaciens sur les produits remboursables vendus.' });
+    A = ci('act', ser.act, c.nbActive);
+    push({ id: 'act', grp: 'ventes', nom: 'Pharmacies actives', kind: 'int', unit: '', col: '#D98A12', txt: '#8A5200', val: c.nbActive, ser: ser.act, delta: A.d, sub: c.activeRatio + '\u00a0% des\u00a0' + PA_NF.format((V2.pharmacies || []).length) + ' officines',
+      def: 'Officines qui ont acheté au moins une fois sur la période.' });
+    A = ci('panier', ser.panier, c.panier);
+    push({ id: 'panier', grp: 'ventes', nom: 'Panier moyen', kind: 'eur', col: '#0B8FA8', txt: '#0A6B7E', val: c.panier, ser: ser.panier, delta: A.d, sub: 'par officine active',
+      def: 'Chiffre d’affaires divisé par le nombre d’officines actives.' });
+    // par client : le secteur face à la Moyenne Intégral (jamais recalculée ici)
+    var serieClient = function (cle, soi) {
+      return ks.map(function (k) {
+        var mk = paMoisCle(k), P = PM && PM.f && PM.f[mk + '|' + mk]; if (!P) return null;
+        if (!soi) return P[cle];
+        var f = psFenetre({ du: k, au: k }); if (!f || !f.length) return null;
+        var s = psSecteur(MC, nom, f); return s ? s[cle] : null;
+      });
+    };
+    var CL = [
+      { id: 'caCl', cle: 'caCl', nom: 'Chiffre d’affaires par client', kind: 'eur', col: '#2F6BFF', txt: '#0050E6', sub: 'par client et par mois', def: 'Ce qu’un client achète en moyenne chaque mois.' },
+      { id: 'mgCl', cle: 'mgCl', nom: 'Notre marge par client', kind: 'eur', col: '#16A06B', txt: '#0B6E4A', sub: 'par client et par mois', def: 'Ce qu’un client rapporte en moyenne à Intégral chaque mois.' },
+      { id: 'jm', cle: 'jm', nom: 'Livraisons par client', kind: 'dec', unit: 'par mois', col: '#4F6AA8', txt: '#3C5590', sub: 'en moyenne', def: 'Nombre de livraisons reçues par un client chaque mois.' },
+      { id: 'parJour', cle: 'parJour', nom: 'Marge par livraison', kind: 'eur', col: '#9B4FB0', txt: '#82399A', sub: 'par livraison', def: 'Notre marge divisée par le nombre de livraisons.' },
+      { id: 'renta', cle: 'renta', nom: 'Marge après livraisons', kind: 'eur', col: '#0F8F7C', txt: '#0A6E5F', sub: 'par client et par mois', def: 'Notre marge moins le coût des livraisons, par client et par mois.' }
+    ];
+    if (M) CL.forEach(function (d) {
+      var val = S ? S[d.cle] : M[d.cle], moy = M[d.cle];
+      if (S && val == null) return;
+      push({ id: d.id, grp: 'client', nom: d.nom, kind: d.kind, unit: d.unit, col: d.col, txt: d.txt, val: val, moy: S ? moy : null, ecart: S ? paEcart(val, moy) : null,
+        ser: serieClient(d.cle, !!S), serRef: S ? serieClient(d.cle, false) : null, sub: d.sub + (S ? '' : ' · tout le réseau'), def: d.def, reseau: !S });
+    });
+    return { L: L, M: M, S: S, ks: ks, fen: fen };
+  }
+
+  // ── Phrase de synthèse (générée depuis les données)
+  function paPeriode(pf) {
+    var l = pf.label, lc = l.charAt(0).toLowerCase() + l.slice(1);
+    if (PERIOD === 'current') return 'En ' + lc;
+    if (PERIOD === '3m') return 'Sur les ' + lc;
+    if (PERIOD === 'year') return 'Sur l’' + lc;
+    return 'Sur la période ' + lc;
+  }
+  function paQue(x) { return (/^[aeiouyéèêàâîôûh]/i.test(x) ? 'qu’' : 'que ') + x; }
+  function paAvant(pf) {
+    if (PERIOD === 'current') return 'en\u00a0' + PA_MOISL[(((pf.du - 1) % 12) + 12) % 12];
+    var p = pf.prevLabel; return (/^mois/.test(p) ? 'le ' : /^\d/.test(p) ? 'les ' : /^année/.test(p) ? 'l’' : '') + p;
+  }
+  function paSujet(c) {
+    var nom = V2.commFilter ? String(V2.commFilter) : '';
+    if (!nom) return 'le réseau Intégral';
+    var moi = V2.user && V2.user.commercial && String(V2.user.commercial) === nom;
+    return moi ? 'votre secteur' : 'le secteur de ' + esc(nom.split(' ')[0]);
+  }
+  function paSynthCl() { // 06/11 : la phrase « par client » seule (version liste : le grand chiffre dit déjà le reste)
+    var cc = PA_REG.caCl;
+    return (cc && cc.ecart && !cc.reseau) ? 'Par client, c’est <b class="' + cc.ecart.cls + '">' + (cc.ecart.cls === 'eq' ? 'autant que' : paNb(Math.abs(cc.ecart.p), Math.abs(cc.ecart.p) < 10 ? 1 : 0) + '\u00a0% de ' + (cc.ecart.p > 0 ? 'plus que' : 'moins que')) + '</b> la Moyenne Intégral.' : '';
+  }
+  function paSynth(c, W) {
+    var m = PA_REG.ca, pf = c.pf, h = paPeriode(pf) + ', ' + paSujet(c) + ' a fait <b>' + paTxt(m, m.val) + '</b> de ventes';
+    if (m.delta && m.delta.cls !== 'eq') h += ', <b class="' + (m.delta.cls) + '">' + paNb(Math.abs(m.delta.p), Math.abs(m.delta.p) < 10 ? 1 : 0) + '\u00a0% de ' + (m.delta.p > 0 ? 'plus' : 'moins') + '</b> ' + paQue(paAvant(pf));
+    else if (m.delta) h += ', autant ' + paQue(paAvant(pf));
+    h += '.';
+    var cl = paSynthCl(); if (cl) h += ' ' + cl;
+    return h;
+  }
+
+  // ── Deux barres : le secteur (couleur) et la Moyenne Intégral (gris), valeurs au bout
+  function paDuel(m, labA, vA, labB, vB, colA) {
+    var mx = Math.max(Math.abs(vA || 0), Math.abs(vB || 0), 1e-9), w = function (x) { return Math.max(2, Math.abs(x) / mx * 100).toFixed(1); };
+    var ligne = function (lab, v, cls, col) {
+      return '<div class="pa-duel-l"><span class="pa-duel-n">' + lab + '</span><span class="pa-duel-t"><i class="pa-bar-fill ' + cls + '" style="width:' + w(v) + '%' + (col ? ';background:' + col : '') + '"></i></span><b>' + paTxt(m, v) + '</b></div>';
+    };
+    return '<div class="pa-duel">' + ligne(labA, vA, 'a', colA || m.col) + ligne(labB, vB, 'b') + '</div>';
+  }
+  function paFaits(c) {
+    var F = [], sect = !!V2.commFilter, moi = sect && V2.user && V2.user.commercial && String(V2.user.commercial) === String(V2.commFilter);
+    var qui = moi ? 'Votre secteur' : (sect ? 'Le secteur' : 'Réseau'), sj = moi ? 'un client de votre secteur' : 'un client de ce secteur';
+    var ec = function (e, apres) { return e.cls === 'eq' ? 'autant que' : '<b class="' + e.cls + '">' + paNb(Math.abs(e.p), Math.abs(e.p) < 10 ? 1 : 0) + '\u00a0% de ' + (e.p > 0 ? 'plus' : 'moins') + '</b> ' + (apres ? paQue(apres) : 'que'); };
+    var pf = c.pf;
+    if (sect) {
+      var a = PA_REG.caCl, b = PA_REG.mgCl, j = PA_REG.jm;
+      if (a && a.ecart) F.push({ m: a, t: 'En moyenne, ' + sj + ' achète pour <b>' + paTxt(a, a.val) + '</b> par mois, ' + ec(a.ecart) + ' la Moyenne Intégral.', bars: paDuel(a, qui, a.val, 'Moyenne Intégral', a.moy) });
+      if (b && b.ecart) F.push({ m: b, t: 'Il rapporte <b>' + paTxt(b, b.val) + '</b> de marge à Intégral par mois, ' + ec(b.ecart) + ' la Moyenne Intégral.', bars: paDuel(b, qui, b.val, 'Moyenne Intégral', b.moy) });
+      if (j && j.ecart) F.push({ m: j, t: 'Il est livré <b>' + paNb(j.val, 1) + ' fois</b> par mois, ' + ec(j.ecart) + ' la Moyenne Intégral.', bars: paDuel(j, qui, j.val, 'Moyenne Intégral', j.moy) });
+      if (c.fm && c.fm.S && c.fm.M && c.fm.M.nSect != null) {
+        var cm = { kind: 'dec', unit: '', col: '#0050E6' }, e = paEcart(c.fm.S.n, c.fm.M.nSect);
+        F.push({ m: PA_REG.act, t: '<b>' + PA_NF.format(c.fm.S.n) + ' clients</b> ont été livrés, ' + (e ? ec(e) : 'contre') + ' le secteur moyen Intégral (' + paNb(c.fm.M.nSect, 1) + ').', bars: paDuel(cm, qui, c.fm.S.n, 'Secteur moyen Intégral', c.fm.M.nSect) });
+      }
+    } else {
+      var ca = PA_REG.ca, mg = PA_REG.mg, ac = PA_REG.act, cc = PA_REG.caCl;
+      var prevDuel = function (m) {
+        if (!m.delta || m.delta.cls === 'eq') return '';
+        var pv = m.val / (1 + m.delta.p / 100); return paDuel(m, cap(pf.label), m.val, cap(paAvant(pf).replace(/^(en[ \u00a0]|le |les |l’)/, '')), pv);
+      };
+      F.push({ m: ca, t: 'Les officines ont acheté pour <b>' + paTxt(ca, ca.val) + '</b>' + (ca.delta && ca.delta.cls !== 'eq' ? ', ' + ec(ca.delta, paAvant(pf)) : '') + '.', bars: prevDuel(ca) });
+      if (mg) F.push({ m: mg, t: 'Notre marge est de <b>' + paTxt(mg, mg.val) + '</b>, soit ' + paNb(c.margePct, 2) + '\u00a0% du chiffre d’affaires' + (mg.delta && mg.delta.cls !== 'eq' ? ', ' + ec(mg.delta, paAvant(pf)) : '') + '.', bars: prevDuel(mg) });
+      F.push({ m: ac, t: '<b>' + PA_NF.format(ac.val) + ' officines</b> ont commandé, soit ' + c.activeRatio + '\u00a0% des\u00a0' + PA_NF.format((V2.pharmacies || []).length) + '.', bars: '' });
+      if (cc) F.push({ m: cc, t: 'Un client Intégral achète en moyenne pour <b>' + paTxt(cc, cc.val) + '</b> par mois : c’est la Moyenne Intégral.', bars: '' });
+    }
+    return F;
+  }
+
+  // ── Mini-courbe sans axe
+  function paSpark(m, w, h) {
+    var s = m.ser.map(function (v) { return v == null ? null : v; }), pts = [];
+    s.forEach(function (v, i) { if (v != null) pts.push([i, v]); });
+    if (pts.length < 2) return '';
+    var mn = Math.min.apply(null, pts.map(function (p) { return p[1]; })), mx = Math.max.apply(null, pts.map(function (p) { return p[1]; })), sp = (mx - mn) || 1, n = s.length, pad = 4;
+    var xy = pts.map(function (p) { return [pad + p[0] / (n - 1) * (w - 2 * pad), pad + (h - 2 * pad) * (1 - (p[1] - mn) / sp)]; });
+    var d = xy.map(function (p, i) { return (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' '), l = xy[xy.length - 1];
+    return '<svg class="pa-spark" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" aria-hidden="true"><path pathLength="1" d="' + d + '" fill="none" stroke="' + m.col + '" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="' + l[0].toFixed(1) + '" cy="' + l[1].toFixed(1) + '" r="3.2" fill="' + m.col + '"/></svg>';
+  }
+
+  // ── Grand graphique (dessiné en pixels réels après insertion : jamais de texte mis à l’échelle)
+  function paChart(host) {
+    var m = PA_REG[host.getAttribute('data-m')]; if (!m) return;
+    var c = host._ctx, pf = c.pf, W = Math.max(260, host.clientWidth), H = W < 520 ? 210 : 270;
+    var padR = 58, padB = 28, padT = 12, plotW = W - padR, plotH = H - padT - padB;
+    var all = c.ks, nMax = Math.max(4, Math.min(12, Math.floor(plotW / 40))), i0 = Math.max(0, all.length - nMax), ks = all.slice(i0), n = ks.length;
+    var val = m.ser.slice(i0), ref = m.serRef ? m.serRef.slice(i0) : null;
+    var mx = 0; val.forEach(function (v) { if (v != null && v > mx) mx = v; }); if (ref) ref.forEach(function (v) { if (v != null && v > mx) mx = v; });
+    mx = mx || 1;
+    var raw = mx / 4, pw = Math.pow(10, Math.floor(Math.log10(raw))), st = [1, 2, 2.5, 5, 10].map(function (f) { return f * pw; }).filter(function (x) { return x >= raw; })[0];
+    var top = st * 4, slot = plotW / n, bw = Math.min(40, slot * 0.64), yv = function (v) { return padT + plotH - Math.max(0, v) / top * plotH; };
+    var inc = {}; var PMc = window.MARGE_CLIENTS && window.MARGE_CLIENTS.pilotageMoy; if (PMc && PMc.couv) Object.keys(PMc.couv).forEach(function (q) { inc[(+q.slice(0, 4)) * 12 + (+q.slice(5, 7)) - 1] = 1; });
+    var g = '', i;
+    for (i = 0; i <= 4; i++) {
+      var y = yv(st * i);
+      g += '<line x1="0" x2="' + plotW + '" y1="' + y.toFixed(1) + '" y2="' + y.toFixed(1) + '" stroke="' + (i ? '#E6EAF2' : '#C9D0DF') + '" stroke-width="1"/>';
+      g += '<text x="' + (plotW + 8) + '" y="' + (y + 4).toFixed(1) + '" font-size="12.5" fill="#646B80">' + paAx(m, st * i) + '</text>';
+    }
+    var cols = '', rd = [];
+    ks.forEach(function (k, j) {
+      var v = val[j], x = j * slot + slot / 2, dans = k >= pf.du && k <= pf.au, lab = cap(PA_MOISL[((k % 12) + 12) % 12]) + ' ' + Math.floor(k / 12);
+      rd.push(lab + ' : ' + (v == null ? 'pas de chiffre' : paTxt(m, v)) + (inc[k] ? ' (mois incomplet)' : ''));
+      if (v != null && v > 0) {
+        var y0 = yv(v), hh = Math.max(2, padT + plotH - y0), r = Math.min(7, bw / 2, hh);
+        var d = 'M' + (x - bw / 2).toFixed(1) + ' ' + (padT + plotH) + 'V' + (y0 + r).toFixed(1) + 'Q' + (x - bw / 2).toFixed(1) + ' ' + y0.toFixed(1) + ' ' + (x - bw / 2 + r).toFixed(1) + ' ' + y0.toFixed(1) + 'H' + (x + bw / 2 - r).toFixed(1) + 'Q' + (x + bw / 2).toFixed(1) + ' ' + y0.toFixed(1) + ' ' + (x + bw / 2).toFixed(1) + ' ' + (y0 + r).toFixed(1) + 'V' + (padT + plotH) + 'Z';
+        cols += '<path class="pa-col" style="--j:' + j + '" d="' + d + '" fill="' + (dans ? m.col : paMix(m.col, .62)) + '"' + (inc[k] ? ' stroke="' + m.col + '" stroke-width="1.5" stroke-dasharray="4 3"' : '') + '/>';
+      }
+      cols += '<text x="' + x.toFixed(1) + '" y="' + (H - 8) + '" font-size="12.5" text-anchor="middle" fill="' + (dans ? '#10131C' : '#646B80') + '" font-weight="' + (dans ? 600 : 400) + '">' + paMoisK(k) + '</text>';
+      cols += '<rect class="pa-hit" data-j="' + j + '" x="' + (j * slot).toFixed(1) + '" y="0" width="' + slot.toFixed(1) + '" height="' + (H - padB + 6) + '" fill="transparent"/>';
+    });
+    var line = '';
+    if (ref) {
+      var pts = []; ref.forEach(function (v, j) { if (v != null) pts.push([j * slot + slot / 2, yv(v)]); });
+      if (pts.length > 1) line = '<path d="' + pts.map(function (p, q) { return (q ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ') + '" fill="none" stroke="#3A4256" stroke-width="2" stroke-dasharray="5 4" stroke-linecap="round"/>' +
+        pts.map(function (p) { return '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="3" fill="#fff" stroke="#3A4256" stroke-width="1.8"/>'; }).join('');
+    }
+    host.querySelector('.pa-svg').innerHTML = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(m.nom + ', mois par mois. ' + rd.join(' ; ')) + '">' + g + cols + line + '</svg>';
+    var lec = host.querySelector('.pa-read'), def = lec.getAttribute('data-def');
+    var set = function (j) { lec.innerHTML = j == null ? def : '<b>' + esc(rd[j]) + '</b>'; if (ref && j != null && ref[j] != null) lec.innerHTML += ' <span>· Moyenne Intégral : ' + paTxt(m, ref[j]) + '</span>'; };
+    Array.prototype.forEach.call(host.querySelectorAll('.pa-hit'), function (r) {
+      var f = function () { set(+r.getAttribute('data-j')); };
+      r.addEventListener('pointerenter', f); r.addEventListener('pointerdown', f); r.addEventListener('click', f);
+    });
+    host.querySelector('.pa-svg').onpointerleave = function () { set(null); };
+  }
+  function paPanneau(m, c, avecTitre) {
+    var f = paFmt(m, m.val), d = m.delta ? paPill(m.delta, paQue(paAvant(c.pf))) : '';
+    var ref = '';
+    if (m.moy != null) ref = '<div class="pa-refl">Moyenne Intégral <b>' + paTxt(m, m.moy) + '</b> ' + paPill(m.ecart, '') + '</div>';
+    else if (m.reseau) ref = '<div class="pa-refl">Moyenne Intégral, sur tout le réseau</div>';
+    var duel = (m.moy != null) ? paDuel(m, c.sujetCourt, m.val, 'Moyenne Intégral', m.moy, m.col) : '';
+    var lg = '<div class="pa-leg"><span><i style="background:' + m.col + '"></i>' + esc(c.pf.label) + '</span><span><i style="background:' + paMix(m.col, .62) + '"></i>Autres mois</span>' +
+      (m.serRef ? '<span><i class="pt"></i>Moyenne Intégral</span>' : '') + '<span class="inc"><i class="ha" style="border-color:' + m.col + '"></i>Mois incomplet</span></div>';
+    return (avecTitre ? '<h2 class="pa-pn" style="color:' + m.txt + '">' + esc(m.nom) + '</h2>' : '') +
+      '<div class="pa-pbig"><span class="pa-n">' + f.n + '</span><span class="pa-u">' + esc(f.u) + '</span></div>' +
+      '<div class="pa-pper">' + esc(c.pf.label) + ' · ' + esc(m.sub) + '</div>' + (d ? '<div class="pa-pd">' + d + '</div>' : '') + ref +
+      '<div class="pa-chart" data-m="' + m.id + '"><div class="pa-read" data-def="Touchez une barre pour lire son mois"></div><div class="pa-svg"></div></div>' + lg +
+      (duel ? '<h3 class="pa-h3">Votre secteur face à la moyenne</h3>' + duel : '') + '<p class="pa-def">' + esc(m.def) + '</p>';
+  }
+
+  // ── Une ligne de liste (versions « Une mesure à la fois » et « La liste »)
+  function paLigne(m, c, mini, sel) {
+    var f = paFmt(m, m.val), e = m.ecart || m.delta;
+    return '<button type="button" class="pa-row' + (sel ? ' on' : '') + '" data-m="' + m.id + '"' + (sel ? ' aria-current="true"' : '') + '>' +
+      '<span class="pa-row-t"><b style="color:' + m.txt + '">' + esc(m.nom) + '</b><small>' + esc(m.sub) + '</small></span>' +
+      (mini ? '<span class="pa-row-s">' + paSpark(m, 76, 30) + '</span>' : '') +
+      '<span class="pa-row-v"><span class="pa-n">' + f.n + '</span><span class="pa-u">' + esc(f.u) + '</span></span>' +
+      '<span class="pa-row-e">' + (e ? paPill(e, '') : '') + '</span>' +
+      '<span class="pa-chev">' + ICO('chev', 14) + '</span></button>';
+  }
+  function paGroupes(c, mini, selId) {
+    var g = { ventes: [], client: [] }; c.mes.L.forEach(function (m) { g[m.grp].push(m); });
+    var rows = function (A) { return A.map(function (m) { return paLigne(m, c, mini, m.id === selId); }).join(''); };
+    return '<div class="pa-grp"><h3 class="pa-gh">Les ventes</h3><div class="pa-list">' + rows(g.ventes) + '</div></div>' +
+      (g.client.length ? '<div class="pa-grp"><h3 class="pa-gh">Par client' + (c.mes.S ? ', face à la Moyenne Intégral' : ', Moyenne Intégral du réseau') + '</h3><div class="pa-list">' + rows(g.client) + '</div></div>' : '');
+  }
+
+  // ── Construction de l’écran
+  function paBuild(c) {
+    PA_REG = {};
+    c.pf = Object.assign({}, c.pf, { label: paLab(c.pf) });
+    c.mes = paMesures(c); c.fm = { S: c.mes.S, M: c.mes.M };
+    var nomC = V2.commFilter ? String(V2.commFilter) : '', moi = nomC && V2.user && V2.user.commercial && String(V2.user.commercial) === nomC;
+    c.sujetCourt = !nomC ? 'Réseau' : moi ? 'Votre secteur' : esc(nomC.split(' ')[0]);
+    c.ks = c.mes.ks;
+    if (!PA_REG[PA_SEL]) PA_SEL = 'ca';
+    var pf = c.pf, seg = function (mode, lbl) { return '<button type="button" class="pa-segb' + (PERIOD === mode ? ' on' : '') + '" data-p="' + mode + '" aria-pressed="' + (PERIOD === mode) + '">' + lbl + '</button>'; };
+    var menu = '';
+    if (!c.opso) {
+      if (c.myComm && !c.voitTous) {
+        if (c.voitAussi.length) menu = '<select class="pa-comm" aria-label="Secteur regardé"><option value="' + esc(c.myComm) + '"' + (V2.commFilter === c.myComm ? ' selected' : '') + '>Mon secteur</option>' +
+          c.voitAussi.map(function (x) { return '<option value="' + esc(x) + '"' + (V2.commFilter === x ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join('') + '</select>';
+      } else if (c.comms.length > 1) {
+        menu = '<select class="pa-comm" aria-label="Secteur regardé"><option value="">Tous les secteurs</option>' + c.comms.map(function (x) { return '<option value="' + esc(x) + '"' + ((V2.commFilter || '') === x ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join('') + '</select>';
+      }
+    }
+    var PMx = window.MARGE_CLIENTS && window.MARGE_CLIENTS.pilotageMoy, note = '';
+    var t = (PMx && c.mes.fen && c.mes.fen.length) ? psCouvT(PMx, c.mes.fen) : '';
+    if (!t && !PMx && c.anc && c.anc.ecartes && c.anc.ecartes.length) t = phraseEcart(c.anc);
+    if (t) note = '<p class="pa-note" role="note">' + esc(t) + '</p>';
+    var tete = '<header class="pa-top"><div class="pa-bar"><h1 class="pa-title">Pilotage</h1><div class="pa-ctl">' + menu +
+      '<div class="pa-seg" role="group" aria-label="Période">' + seg('current', 'Mois') + seg('3m', '3 mois') + seg('year', 'Année') + seg('custom', 'Choisir') + '</div></div></div>' + (c.perPick ? c.perPick.replace('pilo-perpick', 'pilo-perpick pa-perpick') : '') + '</header>';
+    var corps;
+    var ca = PA_REG.ca, f0 = paFmt(ca, ca.val);
+    var hero = '<section class="pa-hero pa-rise" style="--i:1"><div class="pa-hl">' + esc(ca.nom) + ' · ' + esc(pf.label) + '</div><div class="pa-hbig"><span class="pa-n">' + f0.n + '</span><span class="pa-u">' + esc(f0.u) + '</span></div>' +
+      '<div class="pa-hr">' + (ca.delta ? paPill(ca.delta, paQue(paAvant(pf))) : '') + (PA_REG.caCl ? '<span class="pa-hm">Moyenne Intégral : <b>' + paTxt(PA_REG.caCl, PA_REG.caCl.moy != null ? PA_REG.caCl.moy : PA_REG.caCl.val) + '</b> par client et par mois</span>' : '') + '</div></section>';
+    if (PFM === 'resume') {
+      var faits = paFaits(c).map(function (x, i) {
+        return '<li class="pa-fait pa-rise" style="--i:' + (i + 3) + '"><p>' + x.t + '</p>' + x.bars + '</li>';
+      }).join('');
+      var cartes = c.mes.L.map(function (m, i) {
+        var f = paFmt(m, m.val), e = m.ecart || m.delta;
+        return '<button type="button" class="pa-carte pa-rise" style="--i:' + (i + 4) + '" data-m="' + m.id + '"><span class="pa-cl" style="color:' + m.txt + '">' + esc(m.nom) + '</span>' +
+          '<span class="pa-cbig"><span class="pa-n">' + f.n + '</span><span class="pa-u">' + esc(f.u) + '</span></span><span class="pa-cp">' + esc(pf.label) + ' · ' + esc(m.sub) + '</span>' +
+          '<span class="pa-cs">' + paSpark(m, 150, 36) + '</span>' + (e ? '<span class="pa-ce">' + paPill(e, m.ecart ? 'Moyenne Intégral' : '') + '</span>' : (m.reseau ? '<span class="pa-ce"><span class="pa-pill eq">Moyenne Intégral</span></span>' : '')) + '</button>';
+      }).join('');
+      corps = '<p class="pa-synth pa-rise" style="--i:1">' + paSynth(c) + '</p>' + note +
+        '<h2 class="pa-h2 pa-rise" style="--i:2">Ce qu’il faut retenir</h2><ul class="pa-faits">' + faits + '</ul>' +
+        '<h2 class="pa-h2">Toutes les mesures</h2><div class="pa-cartes">' + cartes + '</div>';
+    } else if (PFM === 'mesure') {
+      var sel = PA_REG[PA_SEL];
+      corps = '<p class="pa-synth pa-synth-s pa-rise" style="--i:1">' + paSynth(c) + '</p>' + note +
+        '<section class="pa-grand pa-rise" style="--i:2" id="pa-panneau">' + paPanneau(sel, c, true) + '</section>' +
+        '<h2 class="pa-h2">Les autres mesures</h2><div id="pa-liste">' + paGroupes(c, false, PA_SEL) + '</div>';
+    } else {
+      corps = hero + (paSynthCl() ? '<p class="pa-synth pa-synth-s pa-rise" style="--i:2">' + paSynthCl() + '</p>' : '') + note + '<div id="pa-liste">' + paGroupes(c, true, null) + '</div>';
+    }
+    var feuille = '<div class="pa-sheet" id="pa-sheet" hidden><div class="pa-scrim" data-close="1"></div><div class="pa-card" role="dialog" aria-modal="true" aria-labelledby="pa-sh-t"><button type="button" class="pa-x" data-close="1" aria-label="Fermer">' + '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><div id="pa-sh-b"></div></div></div>';
+    return {
+      html: '<div class="pa-root pa-' + PFM + '">' + tete + corps + feuille + '</div>',
+      lier: function (root) {
+        var haut = root.querySelector('.pa-root');
+        Array.prototype.forEach.call(haut.querySelectorAll('.pa-segb'), function (b) {
+          b.onclick = function () { PERIOD = b.dataset.p; if (PERIOD === 'custom' && PER_DU == null && pf) { PER_DU = pf.du; PER_AU = pf.au; } V2.render(); };
+        });
+        var sm = haut.querySelector('.pa-comm'); if (sm) sm.onchange = function () { V2.commFilter = sm.value || ''; CELL = { t: null }; V2.render(); };
+        Array.prototype.forEach.call(haut.querySelectorAll('.pilo-persel'), function (s) {
+          s.onchange = function () { if (s.dataset.b === 'du') PER_DU = +s.value; else PER_AU = +s.value; V2.render(); };
+        });
+        var dessine = function () { Array.prototype.forEach.call(haut.querySelectorAll('.pa-chart'), function (h) { h._ctx = c; paChart(h); }); };
+        var sheet = haut.querySelector('#pa-sheet'), retour = null;
+        var ouvre = function (id, depuis) {
+          retour = depuis; sheet.hidden = false; sheet.classList.add('on');
+          sheet.querySelector('#pa-sh-b').innerHTML = paPanneau(PA_REG[id], c, true);
+          document.documentElement.classList.add('pa-noscroll'); dessine();
+          var x = sheet.querySelector('.pa-x'); if (x) x.focus();
+        };
+        var ferme = function () { sheet.hidden = true; sheet.classList.remove('on'); document.documentElement.classList.remove('pa-noscroll'); if (retour && retour.focus) retour.focus(); };
+        Array.prototype.forEach.call(sheet.querySelectorAll('[data-close]'), function (x) { x.onclick = ferme; });
+        sheet.addEventListener('keydown', function (e) { if (e.key === 'Escape') ferme(); });
+        if (PFM === 'mesure') {
+          var maj = function () {
+            PA_REG[PA_SEL] && (haut.querySelector('#pa-panneau').innerHTML = paPanneau(PA_REG[PA_SEL], c, true));
+            haut.querySelector('#pa-liste').innerHTML = paGroupes(c, false, PA_SEL); lieLignes(); dessine();
+          };
+          var lieLignes = function () { Array.prototype.forEach.call(haut.querySelectorAll('.pa-row'), function (r) { r.onclick = function () { PA_SEL = r.dataset.m; maj(); var p = haut.querySelector('#pa-panneau'); if (p && p.getBoundingClientRect().top < 0) p.scrollIntoView({ block: 'start' }); }; }); };
+          lieLignes();
+        } else {
+          var lie = function (sel) { Array.prototype.forEach.call(haut.querySelectorAll(sel), function (r) { r.onclick = function () { ouvre(r.dataset.m, r); }; }); };
+          lie('.pa-row'); lie('.pa-carte');
+        }
+        dessine();
+        var rz = null; window.addEventListener('resize', function () { clearTimeout(rz); rz = setTimeout(function () { if (document.body.contains(haut)) dessine(); }, 120); });
+      }
+    };
+  }
+
   V2.pages.pilotage = {
     render: function (root) {
       // ── Confidentialité inter-commerciaux (Pilotage uniquement) ──
@@ -2442,10 +2841,7 @@
             '<span class="pilo-marche-go">Ouvrir ' + ICO('chev', 16) + '</span></a>'
         : '';
       var PS = piloSimple(pf, opso);
-      root.innerHTML = top +
-        '<div class="v2-wrap">' +
-          header +
-          PS.avant +
+      var detailInner =
           marcheLink +
           (opsoSect ? opsoSect.html : '') +
           // ── ESSENTIEL, toujours visible : où j'en suis en un coup d'œil ──
@@ -2462,9 +2858,29 @@
           (marcheFr ? disc('Le marché France', 'ce que le pays achète de plus, et de moins', '<div data-reveal>' + marcheFr + '</div>', false) : '') +
           disc('Mes pharmacies', (nbActive ? nbActive + ' active' + (nbActive > 1 ? 's' : '') + ' sur la période' : '') + (nbGrp >= 2 && !opso ? ' · ' + nbGrp + ' groupements' : ''), classements, false) +
           (marche ? disc('Le gisement & les pharmacies à relancer',
-               'ce que la France achète et pas mes officines, et qui décroche', marche, false) : '') +
-          PS.apres +
-        '</div>';
+               'ce que la France achète et pas mes officines, et qui décroche', marche, false) : '');
+      var AP = null;
+      if (PFM && !opso && pf) {
+        try {
+          AP = paBuild({ pf: pf, sales: sales, idx: idx, anc: anc, opso: opso, comms: comms, myComm: myComm, voitTous: voitTous, voitAussi: voitAussi, perPick: perPick,
+            caCur: caCur, mdlCur: mdlCur, mdlPct: mdlPct, nbActive: nbActive, activeRatio: activeRatio, panier: panier,
+            totalCarte: (typeof totalCarte === 'number' ? totalCarte : null), margePct: (typeof margePct === 'number' ? margePct : 0), commsPerim: (typeof commsPerim !== 'undefined' ? commsPerim : null) });
+        } catch (e) { AP = null; if (window.console) console.warn('pilotage-apple', e); }
+      }
+      if (AP) {
+        root.innerHTML = top + '<div class="v2-wrap pa-wrap">' + AP.html +
+          '<button type="button" class="ps-det-btn pa-detbtn" aria-expanded="' + (PS_OUVERT ? 'true' : 'false') + '" aria-controls="ps-det"><span><b>Tout le détail</b><small>Répartitions, classements, produits, marché France, pharmacies à relancer</small></span>' + ICO('chev', 16) + '</button>' +
+          '<div class="ps-det" id="ps-det"' + (PS_OUVERT ? '' : ' hidden') + '>' + header + (PS.bloc || '') + detailInner + '</div></div>';
+        AP.lier(root);
+      } else {
+        root.innerHTML = top +
+          '<div class="v2-wrap">' +
+            header +
+            PS.avant +
+            detailInner +
+            PS.apres +
+          '</div>';
+      }
 
       piloSimpleLier(root);
 
