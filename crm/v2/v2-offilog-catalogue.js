@@ -339,9 +339,18 @@
 
   // PDF : dessiné ligne à ligne avec jsPDF (celui de html2pdf), sans passer par une photo de la page — 500 lignes en
   // image dépasseraient la taille maximale d'un canevas sur certains navigateurs. Texte sélectionnable, léger.
+  // html2pdf.bundle embarque jsPDF SANS l'exposer (vérifié le 06/11/2026 : ni window.jspdf ni window.jsPDF après chargement).
+  // On le récupère par une page minuscule rendue par html2pdf : l'objet `pdf` rendu est une instance de jsPDF, son constructeur est la classe.
   function jsPdfClasse() {
-    if (window.jspdf && window.jspdf.jsPDF) return window.jspdf.jsPDF;
-    return window.jsPDF || null;
+    if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+    if (window.jsPDF) return Promise.resolve(window.jsPDF);
+    var el = document.createElement('div');
+    el.style.cssText = 'position:absolute;left:0;top:0;width:40px;height:20px;background:#fff;font-size:8px';
+    el.textContent = '.'; document.body.appendChild(el);
+    var fin = function () { if (el.parentNode) el.parentNode.removeChild(el); };
+    return window.html2pdf().set({ html2canvas: { scale: 0.5 }, jsPDF: { unit: 'pt', format: 'a4' } }).from(el).toPdf().get('pdf').then(function (pdf) {
+      fin(); return pdf && pdf.constructor;
+    }, function (e) { fin(); throw e; });
   }
   // Polices PDF standard : Latin-1 seulement. Le reste est ramené à son équivalent le plus proche.
   function latin(t) {
@@ -351,9 +360,8 @@
   }
   function eurPdf(v) { return v.toFixed(2).replace('.', ','); }
   function topPdf(d) {
-    return window.ensureHtml2Pdf().then(function () {
-      var J = jsPdfClasse();
-      if (!J) throw new Error('jsPDF absent');
+    return window.ensureHtml2Pdf().then(jsPdfClasse).then(function (J) {
+      if (typeof J !== 'function') throw new Error('jsPDF absent');
       var doc = new J({ unit: 'pt', format: 'a4', orientation: 'landscape' });
       var W = 842, H = 595, MX = 28, HL = 14.5, BAS = 30;
       // colonnes : x de départ, largeur, alignement
