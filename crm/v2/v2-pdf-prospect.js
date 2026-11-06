@@ -54,6 +54,10 @@
   // « KARDEGIC 75MG PDR SACH 30 » → marque en gras, le reste en clair
   function nom(d) { var t = String(d).split(' '), i = 1; while (i < t.length && !/\d/.test(t[i]) && t[i].length > 2 && i < 3) i++; return { m: t.slice(0, i).join(' '), r: t.slice(i).join(' ') }; }
   function baisse(r) { return r.ppht != null && r.net != null && r.ppht > r.net + 0.004; }
+  // 06/11/2026 — Will : « manques de prix PPHT » sur les listes à proposer. Le tarif ne s'affichait que
+  // barré, donc seulement quand le net est plus bas : case vide pour les génériques et les NR (net = PPHT).
+  // Il s'affiche désormais toujours ; barré seulement quand un abandon de marge le fait baisser.
+  function tarif(r) { return r.ppht == null ? '' : baisse(r) ? '<span style="text-decoration:line-through">' + eur(r.ppht) + '</span>' : eur(r.ppht); }
   var FROID = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0086A3" stroke-width="2.4" stroke-linecap="round" style="vertical-align:-1px"><path d="M12 2v20M4 7l16 10M20 7L4 17"/></svg>';
   function tags(r, style) {
     var o = '';
@@ -155,11 +159,11 @@
       blocks.push({ t: 'head', f: ki, mt: 26, keep: 2, h: entete(k, ki) });
       suite[ki] = { t: 'autre', mt: 0, h: entete(k, ki, true) };
       k.rows.forEach(function (r) {
-        var n = nom(r.d), p = pct(r.n, c), b = baisse(r);
+        var n = nom(r.d), p = pct(r.n, c);
         blocks.push({ t: 'row', f: ki, mt: 0, h: '<div style="display:flex;align-items:center;gap:14px;padding:7px 0;border-bottom:1px solid ' + FILET + '">' +
           '<div style="flex:1;min-width:0;font-size:11.5px;line-height:1.3;color:' + ENCRE + '"><b style="font-weight:700">' + esc(n.m) + '</b> <span style="color:' + GRIS + '">' + esc(n.r) + '</span>' + tags(r, 'font-size:7.5px;font-weight:700;letter-spacing:.4px;border:1px solid;border-radius:4px;padding:1px 4px;margin-left:4px;vertical-align:1px') + '</div>' +
           '<div style="width:112px;display:flex;align-items:center;gap:7px"><div style="flex:1;height:4px;border-radius:2px;background:#EDF1F7"><div style="height:4px;border-radius:2px;width:' + p + '%;background:#80A7F2"></div></div><span style="font-size:10px;color:' + GRIS + ';width:30px;text-align:right">' + p + ' %</span></div>' +
-          '<div style="width:62px;text-align:right;font-size:10px;color:' + PALE + ';text-decoration:line-through">' + (b ? eur(r.ppht) : '') + '</div>' +
+          '<div style="width:62px;text-align:right;font-size:10px;color:' + PALE + '">' + tarif(r) + '</div>' +
           '<div style="width:74px;text-align:right;font-size:14px;font-weight:800;color:' + BLEU + '">' + eur(r.net) + '</div></div>' });
       });
     });
@@ -197,7 +201,7 @@
         var n = nom(r.d);
         blocks.push({ t: 'row', f: ki, mt: 0, h: '<div style="display:flex;align-items:center;background:' + (i % 2 ? '#F6F8FC' : '#fff') + '"><div style="flex:1;min-width:0;padding:7px 10px;font-size:11px"><b>' + esc(n.m) + '</b> <span style="color:' + GRIS + '">' + esc(n.r) + '</span>' + tags(r, 'font-size:7.5px;font-weight:800;border:1px solid;border-radius:4px;padding:1px 4px;margin-left:4px') + '</div>' +
           '<div style="width:92px;padding:7px 10px;text-align:right;font-family:' + M + ';font-size:10px;color:' + GRIS + ';white-space:nowrap">' + pctTxt(r.n, c) + '</div>' +
-          '<div style="width:80px;padding:7px 10px;text-align:right;font-family:' + M + ';font-size:10px;color:' + PALE + '">' + (baisse(r) ? '<span style="text-decoration:line-through">' + eur(r.ppht) + '</span>' : '') + '</div>' +
+          '<div style="width:80px;padding:7px 10px;text-align:right;font-family:' + M + ';font-size:10px;color:' + PALE + '">' + tarif(r) + '</div>' +
           '<div style="width:92px;padding:7px 10px;text-align:right;font-family:' + M + ';font-size:12.5px;font-weight:700;color:' + BLEU + '">' + eur(r.net) + '</div></div>' });
       });
     });
@@ -227,7 +231,7 @@
         blocks.push({ t: 'row', f: ki, g: g, mt: 0, h: '<div style="display:flex;align-items:center;gap:10px;padding:6px 14px;border-top:1px solid #EEF1F6">' +
           '<div style="flex:1;min-width:0;font-size:11px"><b>' + esc(n.m) + '</b> <span style="color:' + GRIS + '">' + esc(n.r) + '</span>' + tags(r, 'font-size:7.5px;font-weight:800;border:1px solid;border-radius:10px;padding:1px 5px;margin-left:4px') + '</div>' +
           '<div style="width:48px;text-align:center"><span style="display:inline-block;min-width:34px;font-family:' + M + ';font-size:9.5px;font-weight:600;color:' + (p >= 50 ? '#fff' : BLEU) + ';background:' + (p >= 50 ? BLEU : '#E9F0FF') + ';border-radius:10px;padding:2px 6px">' + p + '%</span></div>' +
-          '<div style="width:70px;text-align:right;font-family:' + M + ';font-size:9.5px;color:' + PALE + '">' + (baisse(r) ? '<span style="text-decoration:line-through">' + eur(r.ppht) + '</span>' : '') + '</div>' +
+          '<div style="width:70px;text-align:right;font-family:' + M + ';font-size:9.5px;color:' + PALE + '">' + tarif(r) + '</div>' +
           '<div style="width:80px;text-align:right;font-family:' + M + ';font-size:12px;font-weight:700;color:' + ENCRE + '">' + eur(r.net) + '</div></div>' });
       });
     });
@@ -243,7 +247,7 @@
       var n = nom(r.d), p = pct(r.n, c);
       return '<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px dotted #CBD2DE">' +
         '<div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:700;line-height:1.2">' + esc(n.m) + tags(r, 'font-size:7px;font-weight:700;border:1px solid;border-radius:3px;padding:0 3px;margin-left:3px') + '</div><div style="font-size:9.5px;color:' + GRIS + ';line-height:1.3">' + esc(n.r) + '</div></div>' +
-        '<div style="text-align:right"><div style="font-size:13px;font-weight:800;color:' + BLEU + ';white-space:nowrap">' + eur(r.net) + '</div><div style="font-family:' + M + ';font-size:8.5px;color:' + PALE + ';white-space:nowrap">' + (baisse(r) ? '<span style="text-decoration:line-through">' + eur(r.ppht) + '</span> · ' : '') + p + ' %</div></div></div>';
+        '<div style="text-align:right"><div style="font-size:13px;font-weight:800;color:' + BLEU + ';white-space:nowrap">' + eur(r.net) + '</div><div style="font-family:' + M + ';font-size:8.5px;color:' + PALE + ';white-space:nowrap">' + (r.ppht != null ? (baisse(r) ? '' : 'tarif ') + tarif(r) + ' · ' : '') + p + ' %</div></div></div>';
     };
     var barre = function (k, s) { return '<div style="background:' + ENCRE + ';color:#fff;border-radius:8px;padding:8px 12px;display:flex;align-items:baseline;gap:10px"><span style="font-size:14px;font-weight:800">' + esc(k.label) + (s ? ' <span style="font-weight:600;color:#AEB6C6;font-size:11px">(suite)</span>' : '') + '</span><span style="font-size:10.5px;color:#AEB6C6">' + esc(k.sub) + '</span><span style="margin-left:auto;font-family:' + M + ';font-size:10px;color:#AEB6C6">' + k.rows.length + ' produits</span></div>'; };
     blocks.push({ t: 'autre', mt: 0, h: '<div style="display:flex;align-items:flex-end;gap:20px;border-bottom:3px solid ' + BLEU + ';padding-bottom:14px">' +
@@ -274,7 +278,7 @@
       return '<div style="flex:0 0 calc(33.33% - 8px);box-sizing:border-box;background:#fff;border:1px solid ' + FILET + ';border-radius:14px;padding:12px 14px;box-shadow:0 6px 16px -10px rgba(0,50,160,.25)">' +
         '<div style="display:flex;justify-content:space-between;gap:6px;font-size:9px;font-weight:700;color:' + PALE + '"><span>N° ' + (i + 1) + '</span><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(x.k.label.replace('Princeps · ', '')) + '</span></div>' +
         '<div style="margin-top:8px;font-size:14px;font-weight:800;letter-spacing:-.2px;line-height:1.1">' + esc(n.m) + '</div><div style="font-size:9.5px;color:' + GRIS + ';margin-top:2px;height:24px;overflow:hidden">' + esc(n.r) + '</div>' +
-        '<div style="display:flex;align-items:baseline;gap:6px;margin-top:6px"><span style="font-size:18px;font-weight:800;color:' + BLEU + '">' + eur(x.r.net) + '</span>' + (baisse(x.r) ? '<span style="font-size:9.5px;color:' + PALE + ';text-decoration:line-through">' + eur(x.r.ppht) + '</span>' : '') + '</div>' +
+        '<div style="display:flex;align-items:baseline;gap:6px;margin-top:6px"><span style="font-size:18px;font-weight:800;color:' + BLEU + '">' + eur(x.r.net) + '</span>' + (x.r.ppht != null ? '<span style="font-size:9.5px;color:' + PALE + '">' + (baisse(x.r) ? '' : 'tarif ') + tarif(x.r) + '</span>' : '') + '</div>' +
         '<div style="margin-top:8px;height:4px;border-radius:2px;background:#EDF1F7"><div style="height:4px;border-radius:2px;background:' + BLEU + ';width:' + p + '%"></div></div><div style="font-size:9px;color:' + GRIS + ';margin-top:4px">commandé par ' + p + ' % des pharmacies</div></div>';
     };
     var cartes = ''; for (var i = 0; i < top.length; i += 3) cartes += '<div style="display:flex;gap:12px;margin-top:12px">' + top.slice(i, i + 3).map(function (x, j) { return carte(x, i + j); }).join('') + '</div>';
@@ -297,7 +301,7 @@
       suite[ki] = { t: 'autre', mt: 0, h: entete(k, true) };
       k.rows.forEach(function (r) {
         var n = nom(r.d);
-        blocks.push({ t: 'row', f: ki, mt: 0, h: '<div style="display:flex;gap:12px;align-items:center;padding:5px 0;border-bottom:1px solid ' + FILET + ';font-size:10.5px"><div style="flex:1;min-width:0"><b>' + esc(n.m) + '</b> <span style="color:' + GRIS + '">' + esc(n.r) + '</span>' + tags(r, 'font-size:7px;font-weight:700;border:1px solid;border-radius:3px;padding:0 3px;margin-left:3px') + '</div><div style="width:60px;text-align:right;color:' + GRIS + ';white-space:nowrap">' + pctTxt(r.n, c) + '</div><div style="width:62px;text-align:right;color:' + PALE + '">' + (baisse(r) ? '<span style="text-decoration:line-through">' + eur(r.ppht) + '</span>' : '') + '</div><div style="width:72px;text-align:right;font-size:12px;font-weight:800;color:' + BLEU + '">' + eur(r.net) + '</div></div>' });
+        blocks.push({ t: 'row', f: ki, mt: 0, h: '<div style="display:flex;gap:12px;align-items:center;padding:5px 0;border-bottom:1px solid ' + FILET + ';font-size:10.5px"><div style="flex:1;min-width:0"><b>' + esc(n.m) + '</b> <span style="color:' + GRIS + '">' + esc(n.r) + '</span>' + tags(r, 'font-size:7px;font-weight:700;border:1px solid;border-radius:3px;padding:0 3px;margin-left:3px') + '</div><div style="width:60px;text-align:right;color:' + GRIS + ';white-space:nowrap">' + pctTxt(r.n, c) + '</div><div style="width:62px;text-align:right;color:' + PALE + '">' + tarif(r) + '</div><div style="width:72px;text-align:right;font-size:12px;font-weight:800;color:' + BLEU + '">' + eur(r.net) + '</div></div>' });
       });
     });
     blocks.push({ t: 'autre', mt: 20, h: '<div style="font-size:9.5px;line-height:1.5;color:' + PALE + '">Prix nets HT indicatifs au ' + c.date + '. % des pharmacies : part des ' + refPhrase(c) + ' qui commandent le produit · Intégral Pharma, groupe de grossistes-répartiteurs.</div>' });
