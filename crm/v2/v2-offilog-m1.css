@@ -61,7 +61,7 @@
 .olm-une-name{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.6em;font-size:15px;font-weight:700;line-height:1.3;color:var(--ip-ink)}
 .olm-une .off-card-price{margin-top:2px;font-size:21px;letter-spacing:-.02em;color:var(--o-nuit)}
 .olm-reps{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
-.olm-plus{align-self:flex-start;display:inline-flex;align-items:center;min-height:44px;margin-top:4px;padding:0 14px;border:1px solid #D5E0FA;border-radius:999px;background:#EEF3FF;color:var(--o-nuit);font:700 13px/1.2 inherit;cursor:pointer}
+.olm-plus{align-self:flex-start;display:inline-flex;align-items:center;min-height:44px;margin-top:4px;padding:0 14px;border:1px solid #D5E0FA;border-radius:999px;background:#EEF3FF;color:var(--o-nuit);font:inherit;font-size:13px;font-weight:700;line-height:1.2;cursor:pointer}
 .olm-plus:focus-visible{outline:2px solid var(--o-nuit);outline-offset:2px}
 .olm-rep{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:13px;font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums}
 .olm-rep.bad{background:#FDEBEE;border:1px solid #F3C2CB;color:#A4182F}
@@ -215,3 +215,66 @@
 /* compteurs des segments (comparaison, filtres) : 13 px, sans opacité sur le texte ; texte d'attente de la recherche lisible */
 .olm .v2-seg .cnt{font-size:13px;opacity:1}
 .olm .off-search input::placeholder{color:#5B6578;opacity:1}
+
+/* ═══ 06/11/2026 · L'arrivée « trois portes » (choix de Will : bandeau bleu + 3 portes) ═══
+   Sous l'en-tête bleu : « Que voulez-vous faire ? » et trois grandes portes. Deux ouvrent leur choix juste dessous (.olm-pan), la troisième ouvre la fenêtre Catalogue client.
+   Mêmes interdits que plus haut : aucun flou, aucune barre de couleur sur un seul côté, aucune opacité sur du texte, texte ≥ 13 px, cibles ≥ 44 px. */
+.olm-q{margin:26px 0 14px;font-size:24px;line-height:1.25;font-weight:800;letter-spacing:-.01em;color:var(--ip-ink)}
+.olm-portes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.olm-porte{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0;min-height:260px;padding:24px 24px 22px;border:1px solid var(--o-filet);border-radius:22px;text-align:left;cursor:pointer;font:inherit;color:var(--ip-ink);
+  background:radial-gradient(300px 220px at 100% 0%,color-mix(in srgb,var(--o-bleu) 14%,transparent),transparent 72%),linear-gradient(180deg,#fff,#F3F7FF);box-shadow:var(--o-ombre);transition:transform .25s var(--ease),box-shadow .2s,border-color .2s}
+@media (hover:hover){.olm-porte:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--o-bleu) 45%,var(--o-filet))}}
+.olm-porte:active{transform:scale(.985);transition-duration:.12s}
+.olm-porte:focus-visible{outline:3px solid var(--o-bleu);outline-offset:3px}
+.olm-p-ic{display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;margin-bottom:6px;border-radius:18px;color:#fff;
+  background:radial-gradient(40px 30px at 80% 0%,color-mix(in srgb,var(--o-bleu) 60%,#fff),transparent 72%),linear-gradient(160deg,var(--o-bleu),var(--o-nuit));box-shadow:0 10px 18px -10px rgba(0,26,104,.8),0 1px 0 rgba(255,255,255,.3) inset}
+.olm-p-t{font-size:22px;line-height:1.2;font-weight:800;letter-spacing:-.01em;color:var(--ip-ink)}
+.olm-p-s{font-size:15px;line-height:1.45;font-weight:500;color:var(--o-gris)}
+.olm-p-pv{margin-top:6px;font-size:14px;line-height:1.45;font-weight:600;color:var(--o-nuit)}
+.olm-p-phs{display:flex;gap:8px}
+.olm-p-ph{display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:14px;background:#fff;border:1px solid #E6ECF7;box-shadow:0 1px 2px rgba(15,20,32,.08);overflow:hidden}
+.olm-p-ph img{display:block;max-width:100%;max-height:100%;object-fit:contain}
+.olm-p-go{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-top:auto;font-size:15px;font-weight:800;color:var(--o-bleu)}
+.olm-porte.on{border-color:var(--o-nuit);background:radial-gradient(260px 200px at 100% 0%,color-mix(in srgb,var(--o-bleu) 80%,#fff),transparent 72%),linear-gradient(160deg,var(--o-bleu),var(--o-nuit));box-shadow:0 18px 30px -16px rgba(0,26,104,.85),0 1px 0 rgba(255,255,255,.3) inset}
+.olm-porte.on .olm-p-t,.olm-porte.on .olm-p-s,.olm-porte.on .olm-p-pv,.olm-porte.on .olm-p-go{color:#fff}
+.olm-porte.on .olm-p-ic{background:#fff;color:var(--o-nuit)}
+
+/* le choix qui s'ouvre sous les portes */
+.olm-pan{scroll-margin-top:76px;margin-top:18px;padding:22px 24px 26px;border:1px solid var(--o-filet);border-radius:22px;
+  background:radial-gradient(340px 220px at 100% 0%,color-mix(in srgb,var(--o-bleu) 9%,transparent),transparent 72%),linear-gradient(180deg,#fff,#F7F9FD);box-shadow:var(--o-ombre)}
+.olm-pan-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px}
+.olm-pan-t{margin:0;font-size:20px;line-height:1.25;font-weight:800;color:var(--ip-ink)}
+.olm-pan-x{flex:none;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border:1px solid var(--o-filet);border-radius:999px;background:#fff;color:var(--ip-ink);cursor:pointer}
+.olm-pan-x:focus-visible{outline:3px solid var(--o-bleu);outline-offset:2px}
+.olm-pan-l{margin:18px 0 8px;font-size:13px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--o-gris)}
+.olm-pan .off-search{margin-bottom:16px}
+.olm-pan .offr-w{margin-bottom:0}
+.olm-pan .off-verdict-wrap{margin-bottom:var(--sp-3,12px)}
+.olm-bande{margin:0 0 4px;padding:18px 18px 20px;border-radius:18px;color:#fff;
+  background:radial-gradient(circle 240px at 94% 10%,color-mix(in srgb,var(--o-bleu) 56%,#fff),transparent 72%),linear-gradient(160deg,color-mix(in srgb,var(--o-bleu) 74%,var(--o-nuit)) 0%,color-mix(in srgb,var(--o-bleu) 40%,var(--o-nuit)) 60%,color-mix(in srgb,var(--o-bleu) 52%,var(--o-nuit)) 100%);
+  box-shadow:0 1px 0 rgba(255,255,255,.34) inset,0 18px 30px -22px color-mix(in srgb,var(--o-nuit) 75%,transparent)}
+.olm-bande-t{margin:0 0 12px;font-size:16px;font-weight:800;color:#fff}
+.olm-sort{display:flex;flex-wrap:wrap;gap:8px}
+.olm-retour{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin:0 0 12px;padding:0 18px;border:1px solid var(--o-filet);border-radius:999px;background:linear-gradient(180deg,#fff,#F3F6FC);font:inherit;font-size:14px;font-weight:700;line-height:1.2;color:var(--o-nuit);cursor:pointer;box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(15,20,32,.06)}
+.olm-retour:focus-visible{outline:3px solid var(--o-bleu);outline-offset:2px}
+@media (prefers-reduced-motion:no-preference){
+  .olm-ent .olm-q,.olm-ent .olm-porte{animation:olm-monte .26s var(--ease) both}
+  .olm-ent .olm-q{animation-delay:120ms}
+  .olm-ent .olm-porte:nth-child(1){animation-delay:160ms}
+  .olm-ent .olm-porte:nth-child(2){animation-delay:200ms}
+  .olm-ent .olm-porte:nth-child(3){animation-delay:240ms}
+}
+@media (prefers-reduced-motion:reduce){.olm-porte:active{transform:none}}
+@media (max-width:1100px){.olm-portes{gap:12px}.olm-porte{padding:20px 18px 18px}.olm-p-t{font-size:19px}}
+@media (max-width:760px){
+  .olm-q{margin:20px 0 12px;font-size:21px}
+  .olm-portes{grid-template-columns:minmax(0,1fr);gap:10px}
+  .olm-porte{display:grid;grid-template-columns:56px minmax(0,1fr);column-gap:14px;row-gap:2px;align-items:center;min-height:0;padding:16px}
+  .olm-p-ic{grid-column:1;grid-row:1/4;margin:0}
+  .olm-p-t{grid-column:2;font-size:19px}
+  .olm-p-s{grid-column:2;font-size:14px}
+  .olm-p-pv{display:none}
+  .olm-p-go{grid-column:2;margin-top:0;min-height:36px}
+  .olm-pan{padding:16px 14px 20px;border-radius:18px}
+  .olm-bande{padding:14px 12px 16px;border-radius:16px}
+}

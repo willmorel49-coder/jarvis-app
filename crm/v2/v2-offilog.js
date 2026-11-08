@@ -41,7 +41,8 @@
   // OPSO — brief Will du 29/09/2026 (« pharmazon tu vire ça »).
   var SANS_PHARMAZON = OPSO;
 
-  var S = { chip: 'all', q: '', page: 0, sel: null, sort: 'ventes', adv: false, sous: '', cmp: '', sens: 'tous' };
+  var S = { chip: 'all', q: '', page: 0, sel: null, sort: 'ventes', adv: false, sous: '', cmp: '', sens: 'tous', porte: '', liste: false };
+  // porte / liste : écran d'arrivée « trois portes » (M1 seulement). porte = porte ouverte ('trouver' | 'comparer' | ''), liste = l'utilisateur a choisi un rayon, un tri ou une comparaison.
   // Plancher du mouvement de rang, en places. Voir buildIndex : le seuil relatif
   // (20 %) ne suffit pas tout en haut du classement, où une place vaut 25 %.
   var SEUIL_PLACES = 5;
@@ -516,8 +517,8 @@
       '<span class="off-card-cmp-v">' + esc(eti) + ' ' + V2.fmtEur(e.v) + '</span>' +
       '<span class="off-pcat-pill">' + cmpEcartLabel(e) + '</span></div>';
   }
-  V2.offCmpSrc = function (k) { S.cmp = (S.cmp === k) ? '' : k; S.page = 0; V2.render(); };
-  V2.offCmpSens = function (v) { S.sens = v; S.page = 0; V2.render(); };
+  V2.offCmpSrc = function (k) { S.cmp = (S.cmp === k) ? '' : k; S.page = 0; S.liste = true; V2.render(); };
+  V2.offCmpSens = function (v) { S.sens = v; S.page = 0; S.liste = true; V2.render(); };
   // Le bloc : concurrents (avec leur nombre de produits communs) puis sens (avec leurs nombres).
   function cmpBlock(list) {
     var L = cmpSources(), i, j;
@@ -1231,19 +1232,31 @@
   V2.offFilter = function (k) {
     S.sous = '';
     captureCardRects(); // repositionnement fluide des cartes qui restent visibles
-    S.chip = k; S.page = 0;
+    S.chip = k; S.page = 0; S.liste = true;
     // si on choisit une catégorie (hors verdicts), on ouvre les filtres avancés pour rester cohérent
     if (k !== 'all' && k !== 'alerte') S.adv = true;
     V2.render();
   };
   V2.offToggleAdv = function () { S.adv = !S.adv; V2.render(); };
+  // Écran d'arrivée : « Trouver » et « Comparer » ouvrent leur choix sous les portes ; « Envoyer » ouvre la fenêtre Catalogue client.
+  V2.offPorte = function (k) {
+    if (k === 'envoyer') { if (V2.offCatalogue) V2.offCatalogue(); return; }
+    S.porte = (S.porte === k) ? '' : k; S._porteScroll = !!S.porte;
+    V2.render();
+  };
+  // Retour aux trois portes : on efface ce qui avait été choisi (recherche, rayon, tri, comparaison).
+  V2.offAccueil = function () {
+    S.chip = 'all'; S.q = ''; S.page = 0; S.sort = 'ventes'; S.sous = ''; S.cmp = ''; S.sens = 'tous'; S.adv = false; S.liste = false; S.porte = '';
+    V2.render();
+    try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch (e) {}
+  };
   var _offSearchTimer = null;   // 11/09/2026 — perf : re-rendu 120 ms après la dernière touche
   V2.offSearch = function (val) {
     S.q = val || ''; S.page = 0;
     clearTimeout(_offSearchTimer);
     _offSearchTimer = setTimeout(rerenderKeepFocus, 120);
   };
-  V2.offSort = function (v) { S.sort = v; S.page = 0; V2.render(); };
+  V2.offSort = function (v) { S.sort = v; S.page = 0; S.liste = true; V2.render(); };
   V2.offPage = function (p) { S.page = p; V2.render(); try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch (e) {} };
   V2.offSelect = function (id) {
     S.sel = (id == null || (S.sel != null && String(S.sel) === String(id))) ? null : id;
@@ -1969,13 +1982,43 @@
         olmEssentiel(prix, id) + (rep ? '<span class="olm-reps">' + rep + '</span>' : '') + '</span></div>';
   }
   var OLM_LOGO = function () { return '<h1 class="olm-h1"><span class="olm-pastille"><img class="olm-logo" src="' + MOD_BASE + 'logos/offilog.png" width="444" height="70" alt="Offilog" decoding="async"></span></h1>'; };
-  function olmEntete(list, haut) {
+  function olmEntete(list) {
     var st = brandStats();
     var med = st.pcN > 0 ? '<p class="olm-med">Médiane : <b class="olm-num">' + Math.round(st.pcMed * 100) + '</b> % sous le prix catalogue, sur ' + V2.fmtNum(st.pcN) + ' produits</p>' : '';
     return '<header class="olm-hd"><span class="olm-lu" aria-hidden="true"></span>' +
       '<div class="olm-hd-t"><div class="olm-id">' + OLM_LOGO() + '<p class="olm-eye">La centrale parapharmacie d\'Intégral</p></div>' +
-        '<p class="olm-phrase" id="olm-phrase" aria-live="polite">' + olmPhrase(list) + '</p>' + med + '</div>' +
-      (haut.length ? '<div class="olm-top" id="olm-top">' + haut.map(olmUne).join('') + '</div>' : '') + '</header>';
+        '<p class="olm-phrase" id="olm-phrase" aria-live="polite">' + olmPhrase(list) + '</p>' + med + '</div></header>';
+  }
+
+  // ── 06/11/2026 — écran d'arrivée « bandeau bleu + 3 portes » (choix de Will) ──
+  // Sous l'en-tête : trois portes. « Trouver un produit » et « Comparer nos prix » ouvrent leur choix juste dessous ;
+  // « Envoyer un catalogue » ouvre la fenêtre Catalogue client. Dès qu'un rayon, un tri, une comparaison ou une recherche
+  // est choisi, la page redevient la liste d'aujourd'hui (voir enListe dans render). Aucun calcul nouveau.
+  function olmPorte(k, ic, titre, sous, pv, go) {
+    var ouv = S.porte === k, popup = (k === 'envoyer');
+    return '<button type="button" class="olm-porte' + (ouv ? ' on' : '') + '" data-porte="' + k + '"' +
+      (popup ? ' aria-haspopup="dialog"' : ' aria-expanded="' + (ouv ? 'true' : 'false') + '" aria-controls="olm-pan"') +
+      ' onclick="V2.offPorte(\'' + k + '\')">' +
+      '<span class="olm-p-ic">' + ICO(ic, 26, 1.9) + '</span>' +
+      '<span class="olm-p-t">' + titre + '</span>' +
+      '<span class="olm-p-s">' + sous + '</span>' +
+      (pv ? '<span class="olm-p-pv">' + pv + '</span>' : '') +
+      '<span class="olm-p-go">' + go + ICO('chev', 18, 2.2) + '</span></button>';
+  }
+  function olmPortes(apercu) {
+    var ph = apercu.filter(function (it) { return it.img; }).slice(0, 4).map(function (it) { return '<span class="olm-p-ph"><img data-imgprod src="' + esc(it.img) + '" alt=""></span>'; }).join('');
+    // seulement les plateformes qui ont au moins un prix chargé (même règle que le bloc « Comparer à », cmpBlock)
+    var plats = cmpSources().filter(function (x) { for (var i = 0; i < (items || []).length; i++) if (x.get(items[i]) > 0) return true; return false; }).map(function (x) { return x.label; });
+    return '<h2 class="olm-q">Que voulez-vous faire ?</h2>' +
+      '<div class="olm-portes">' +
+        olmPorte('trouver', 'search', 'Trouver un produit', 'Par nom, marque ou code EAN, ou en parcourant un rayon.', ph ? '<span class="olm-p-phs">' + ph + '</span>' : '', 'Chercher') +
+        olmPorte('envoyer', 'fiche', 'Envoyer un catalogue', 'Un PDF à montrer ou à envoyer au pharmacien, ou un fichier pour son logiciel.', '', 'Choisir un catalogue') +
+        olmPorte('comparer', 'pilo', 'Comparer nos prix', 'Où un concurrent est moins cher que votre achat, et face à quelle plateforme.', plats.length ? esc(plats.join(' · ')) : '', 'Comparer') +
+      '</div>';
+  }
+  function olmPan(titre, corps) {
+    return '<section class="olm-pan" id="olm-pan" aria-label="' + esc(titre) + '"><div class="olm-pan-h"><h3 class="olm-pan-t">' + esc(titre) + '</h3>' +
+      '<button type="button" class="olm-pan-x" onclick="V2.offPorte(\'' + S.porte + '\')" aria-label="Refermer le choix">' + ICO('close', 18, 2) + '</button></div>' + corps + '</section>';
   }
 
   // ── PAGE ──────────────────────────────────────
@@ -1988,7 +2031,7 @@
     render: function (root, param) {
       injectCss();
       // consommer le param de deep-link UNE fois (avant : re-forçait S.sel à chaque render → inspecteur inrefermable)
-      if (param != null && param !== '' && String(param) !== String(S._lastParam)) S.sel = param;
+      if (param != null && param !== '' && String(param) !== String(S._lastParam)) { S.sel = param; S.liste = true; }   // lien direct vers un produit : la liste reste derrière le volet
       S._lastParam = param;
 
       // Données : meilleures ventes (requis) + OFFILOG (veille, optionnel, en fond)
@@ -2119,8 +2162,11 @@
       if (S.page < 0) S.page = 0;
       var pageItems = filtered.slice(S.page * PER_PAGE, (S.page + 1) * PER_PAGE);
       var nbTotal = (window.OFFILOG_BEST || []).length;
-      var haut = olmBandeauOk(total) ? pageItems.slice(0, 4) : [];   // v2 : les quatre premières ventes sont dans le bleu, la grille montre les suivantes
-      var gridItems = haut.length ? pageItems.slice(4) : pageItems;
+      // Écran d'arrivée (M1) : trois portes tant qu'aucun rayon, tri, comparaison ni recherche n'est choisi.
+      var enListe = !M1 || !!(S.liste || S.q || S.chip !== 'all' || S.sous || S.cmp || S.sens !== 'tous' || S.sort !== 'ventes' || S.page > 0);
+      var enAccueil = !enListe;
+      var haut = (enAccueil && S.porte === 'trouver' && olmBandeauOk(total)) ? pageItems.slice(0, 4) : [];   // les quatre meilleures ventes s'ouvrent avec la porte « Trouver un produit »
+      var gridItems = pageItems;
       var arr = M1 && olmArrivee();
 
       // Chips de CATÉGORIE uniquement (Santé, Beauté, Hygiène…) — repliés dans les
@@ -2193,15 +2239,33 @@
           '</div>'
         : '';
 
+      var searchHtml = '<div class="off-search">' + ICO('search', 19, 2) +
+            '<input id="off-search-input" autocomplete="off" placeholder="Rechercher par produit, marque ou EAN…" value="' + qVal + '" oninput="V2.offSearch(this.value)">' + clrBtn + '</div>';
+      var accueilHtml = '';
+      if (enAccueil) {
+        accueilHtml = olmPortes(pageItems);
+        if (S.porte === 'trouver') {
+          accueilHtml += olmPan('Trouver un produit', searchHtml +
+            (haut.length ? '<div class="olm-bande"><div class="olm-bande-t">Les ' + haut.length + ' meilleures ventes</div><div class="olm-top" id="olm-top">' + haut.map(olmUne).join('') + '</div></div>' : '') +
+            '<div class="olm-pan-l">Rayon</div>' + rayons(c) +
+            (mktChips ? '<div class="olm-pan-l">Le marché</div><div class="v2-segs off-adv-segs">' + mktChips + '</div>' : '') +
+            '<div class="olm-pan-l">Trier</div><div class="off-sort olm-sort">' + sortBtn('ventes', 'Meilleures ventes') + sortBtn('mvt', 'Progression') + sortBtn('prix_asc', 'Prix ↑') + sortBtn('prix_desc', 'Prix ↓') + '</div>');
+        } else if (S.porte === 'comparer') {
+          accueilHtml += olmPan('Comparer nos prix', verdictBand(filtered) + cmpHtml +
+            (advChips ? '<div class="olm-pan-l">Repères concurrence</div><div class="v2-segs off-adv-segs">' + advChips + '</div>' : '') +
+            '<div class="olm-pan-l">Trier</div><div class="off-sort olm-sort">' + sortBtn('ecart', 'Écart concurrent') + (!SANS_PCAT && (c.avecpcat || 0) > 0 ? sortBtn('pcat', 'Plus fort écart au prix catalogue') : '') + '</div>');
+        }
+      }
       root.innerHTML = V2.topbar({ back: true }) +         '<div class="v2-wrap' + (M1 ? ' olm' + (arr ? ' olm-ent' : '') : '') + (S.sel != null ? ' v2-detail-shift" style="--detw:392px"' : '"') + '>' +
           (V2.priceTabs ? V2.priceTabs('offilog') : '') +
-          (M1 ? olmEntete(filtered, haut) : brandHead()) +
+          (M1 ? olmEntete(filtered) : brandHead()) +
           accesTest() +
           bandeauCond() +
+          (enAccueil ? accueilHtml :
+          (M1 ? '<button type="button" class="olm-retour" onclick="V2.offAccueil()">' + ICO('back', 16, 2.2) + ' Les trois portes</button>' : '') +
           rayons(c) +
           (RAYON_K[S.chip] ? sousRayons(sousDispo) : '') +
-          '<div class="off-search">' + ICO('search', 19, 2) +
-            '<input id="off-search-input" autocomplete="off" placeholder="Rechercher par produit, marque ou EAN…" value="' + qVal + '" oninput="V2.offSearch(this.value)">' + clrBtn + '</div>' +
+          searchHtml +
           // La bande verdict (alerte/bien placé) compare au prix d'achat Intégral :
           // aucun sens côté OPSO, où ce prix n'existe pas — brief §4.
           (OPSO ? '' : verdictBand(filtered)) +
@@ -2212,7 +2276,7 @@
             advBtn +
           '</div>' +
           advPanel +
-          gridHtml +
+          gridHtml) +
         '</div>' + insHtml +
         '<div class="off-mktbar' + (mktSel.size ? '' : ' hidden') + '" id="off-mktbar">' +
           '<span class="ic">' + ICO('spark', 18, 2) + '</span>' +
@@ -2275,7 +2339,14 @@
         //    de quelques px vers le curseur (physique alignée sur V2.motion, RM/touch-safe).
         bindVerdictMagnetic(mo);
       }
-      if (M1) { olmVeille(root); if (arr) olmJoue(root); }
+      if (M1) {
+        olmVeille(root); if (arr) olmJoue(root);
+        if (S._porteScroll) {   // on vient d'ouvrir une porte : son choix doit être à l'écran (sur téléphone il est sous les trois portes)
+          S._porteScroll = false;
+          var pan = root.querySelector('#olm-pan');
+          if (pan) { try { pan.scrollIntoView({ block: 'start', behavior: 'instant' }); } catch (e) {} }
+        }
+      }
     }
   };
 })();

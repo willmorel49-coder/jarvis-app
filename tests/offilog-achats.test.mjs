@@ -39,6 +39,8 @@ function rendre({ opso = false, cerp, groupements, prixOffilog = 10, extra = {},
   const ctx = vm.createContext(win);
   ctx.document = doc;
   vm.runInContext(SRC, ctx);
+  // 06/11/2026 : l'arrivée montre les trois portes ; les cartes se lisent dans la liste, ouverte ici par le tri par défaut.
+  win.V2.offSort('ventes');
   if (selection) win.V2.offSelect('1');
   if (avance) win.V2.offToggleAdv();
   if (apres) apres(win.V2);
