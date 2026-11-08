@@ -2281,6 +2281,145 @@
     return h + '</div></div>';
   }
 
+  // ══════════════════════════════════════════════════════════════════════════
+  // 06/11/2026 — fiche « plus clair » (cliente, vue Intégral) : bloc « La rangée de boutons » (version A, choix de Will sur maquette).
+  // Il REMPLACE la carte « À proposer » (qui reste montrée au pharmacien, en vue pharmacien) et la carte « Listes à proposer ».
+  // 5 grands boutons : Listing réseau · Listing groupe d'achat · Catalogue pour son logiciel · To do list · Choisir quoi lui transmettre.
+  // Chaque liste ouvre SA feuille (5 premiers produits, Voir la liste, PDF, Excel, Envoyer) ; les fonctions existantes font le travail
+  // (pharmaListPdf / pharmaListXlsx / pharmaTransmettre / pharmaTxCatalogue / todo.menu / go('produits')). Préfixe CSS : fbk- (bloc) et fbs- (feuilles).
+  // Fonctions autonomes : fbBloc(pid, A, d) est le SEUL point d'insertion (appelé dans renderFiche, là où « À proposer » se posait).
+  // ══════════════════════════════════════════════════════════════════════════
+  var fbC = null, fbOp = null, fbOv = '';
+  var FB_IC = {
+    reseau: '<rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/>',
+    groupe: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    logiciel: '<rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/>',
+    todo: '<rect x="3" y="5" width="6" height="6" rx="1"/><path d="m3 17 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>',
+    tx: '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
+    voir: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+    pdf: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+    excel: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/>',
+    envoi: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+    x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'
+  };
+  function fbIc(n, s) { return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + FB_IC[n] + '</svg>'; }
+  function fbNb(n) { return V2.fmtNum(n) + ' produit' + (n > 1 ? 's' : ''); }
+  function fbBtn(k, ic, titre, sous, pill, pri) {
+    return '<button type="button" class="fbk-b' + (pri ? ' pri' : '') + '" data-k="' + k + '" aria-haspopup="dialog" onclick="V2.fbOuvre(\'' + k + '\',this)">' +
+      '<span class="fbk-ic">' + fbIc(ic, 24) + '</span><span class="fbk-bt">' + titre + '</span><span class="fbk-bs">' + sous + '</span>' + (pill ? '<span class="fbk-pill">' + pill + '</span>' : '') + '</button>';
+  }
+  // d = { dataR, dataG, nR, nG, hasGrp } : les mêmes que retourProposer. Rend '' si l'officine d'un collègue (ses ventes ne se voient pas).
+  function fbBloc(pid, A, d) {
+    fbFerme(true);
+    if (!V2.voitVentesDe(pid)) { fbC = null; return ''; }
+    var pidS = String(pid).replace(/[^0-9A-Za-z_-]/g, '');
+    var avecLgo = !isEscale() && !isOpso();
+    var c = fbC = { pid: pidS, pidBrut: pid, A: A, d: d, grp: A.grpName, n: (tx.lgo && tx.lgo.pid === pidS) ? tx.lgo.n : 300, lgo: avecLgo ? txLgoDetect(pid, null) : '', sel: '' };
+    var h = '<section class="fbk" aria-labelledby="fbk-t"><div class="fbk-h"><h2 id="fbk-t">À proposer</h2></div><div class="fbk-row">';
+    if (d.nR > 0) h += fbBtn('reseau', 'reseau', 'Listing réseau', 'Réseau Intégral', fbNb(d.nR));
+    if (d.hasGrp && d.nG > 0) h += fbBtn('groupement', 'groupe', 'Listing groupe d’achat', esc(c.grp), fbNb(d.nG));
+    if (avecLgo) h += fbBtn('logiciel', 'logiciel', 'Catalogue pour son logiciel', c.lgo ? esc(txLgoNom(c.lgo)) : 'Logiciel à choisir', 'TOP ' + c.n);
+    if (V2.todo && V2.todo.menu) h += fbBtn('todo', 'todo', 'To do list', 'Ajouter une tâche', '');
+    h += fbBtn('tx', 'tx', 'Choisir quoi lui transmettre', 'Documents et catalogues', '', true);
+    h += '</div></section>';
+    // le logiciel saisi par l'équipe (lu en différé) fait foi, comme dans Transmettre
+    if (avecLgo && V2.profil && V2.profil.charger) V2.profil.charger('client', pid).then(function (dd) {
+      if (fbC !== c) return;
+      var s = txLgoDetect(pid, dd); if (s === c.lgo) return;
+      c.lgo = s;
+      var b = document.querySelector('.fbk-b[data-k="logiciel"] .fbk-bs'); if (b) b.textContent = s ? txLgoNom(s) : 'Logiciel à choisir';
+    }, function () {});
+    return h;
+  }
+  function fbFeuilleListe(k) {
+    var c = fbC, g = k === 'groupement', n = g ? c.d.nG : c.d.nR, data = g ? c.d.dataG : c.d.dataR;
+    var h = '<p class="fbs-k">Les 5 premiers · part des officines ' + (g ? 'de ' + esc(c.grp) : 'du réseau Intégral') + ' qui le commandent</p><ul class="fbs-pl">';
+    l1Premiers(data).slice(0, 5).forEach(function (x) {
+      var p = l1PartDes(x.r, data.total);
+      h += '<li class="fbs-pr"><span class="fbs-pn">' + l1NomProduit(x.r) + '<small>' + esc(l1CatLabel(x.cat)) + '</small></span><span class="fbs-pb" aria-hidden="true"><i style="width:' + p + '%"></i></span><b>' + l1Pct(p) + '</b></li>';
+    });
+    h += '</ul>';
+    var voir = !!(V2.pages && V2.pages.produits);
+    h += '<div class="fbs-acts ' + (voir ? 'fbs-acts-3' : 'fbs-acts-2') + '">' +
+      (voir ? '<button type="button" class="fbs-a" onclick="V2.fbVoir()">' + fbIc('voir', 22) + '<span>Voir la liste</span></button>' : '') +
+      '<button type="button" class="fbs-a" onclick="V2.pharmaListPdf(\'' + c.pid + '\',\'' + k + '\')">' + fbIc('pdf', 22) + '<span>PDF</span></button>' +
+      '<button type="button" class="fbs-a" onclick="V2.pharmaListXlsx(\'' + c.pid + '\',\'' + k + '\')">' + fbIc('excel', 22) + '<span>Excel</span></button></div>' +
+      '<button type="button" class="fbs-send" onclick="V2.fbEnvoyer(\'' + k + '\')">' + fbIc('envoi', 20) + 'Envoyer au pharmacien</button>';
+    return { t: g ? 'Listing groupe d’achat' : 'Listing réseau Intégral', s: (g ? esc(c.grp) + ' · ' : '') + fbNb(n) + ' · ce qu’elle n’a pas encore', ic: g ? 'groupe' : 'reseau', h: h };
+  }
+  function fbFeuilleLogiciel() {
+    var c = fbC;
+    var h = '<label class="fbs-sel"><span>Son logiciel</span><select aria-label="Logiciel de l’officine" onchange="V2.fbLgo(this.value)"><option value="">Choisir le logiciel…</option>' +
+      TX_LGO.map(function (l) { return '<option value="' + l.s + '"' + (l.s === c.sel ? ' selected' : '') + '>' + esc(l.nom) + '</option>'; }).join('') + '</select></label>' +
+      '<p class="fbs-hint" id="fbs-lgo-h"' + (c.sel ? ' hidden' : '') + '>Son logiciel est inconnu sur sa fiche : à choisir ici.</p>' +
+      '<p class="fbs-k">Nombre de produits</p><div class="fbs-seg" role="group" aria-label="Nombre de produits">' +
+      TX_LGO_N.map(function (n) { return '<button type="button" aria-pressed="' + (n === c.n) + '" onclick="V2.fbN(' + n + ')">TOP ' + n + '</button>'; }).join('') + '</div>' +
+      '<p class="fbs-k">Ce qui est envoyé</p><ul class="fbs-fl">' +
+      '<li>' + fbIc('pdf', 20) + '<span>Mode d’emploi<small>PDF, à ouvrir en premier</small></span></li>' +
+      '<li>' + fbIc('excel', 20) + '<span>Fichier à importer<small>CSV</small></span></li>' +
+      '<li>' + fbIc('excel', 20) + '<span>Le même contenu<small>Excel</small></span></li></ul>' +
+      '<button type="button" class="fbs-send' + (c.sel ? '' : ' is-off') + '" id="fbs-lgo-go" aria-disabled="' + (c.sel ? 'false' : 'true') + '" onclick="V2.fbCatalogue()">' + fbIc('envoi', 20) + 'Envoyer au pharmacien</button>';
+    return { t: 'Catalogue pour son logiciel', s: 'Les produits les plus commandés du réseau, hors génériques', ic: 'logiciel', h: h };
+  }
+  V2.fbOuvre = function (k, el) {
+    var c = fbC; if (!c) return;
+    if (k === 'tx') { V2.pharmaTransmettre(c.pid); return; }
+    if (k === 'todo') { V2.todo.menu(c.pid); return; }
+    var f;
+    if (k === 'logiciel') { c.sel = c.lgo; f = fbFeuilleLogiciel(); } else f = fbFeuilleListe(k);
+    fbFerme(true);
+    fbOp = el || document.activeElement;
+    var o = document.createElement('div');
+    o.id = 'fbs'; o.className = 'fbs';
+    o.innerHTML = '<div class="fbs-ov" onclick="V2.fbFerme()"></div><div class="fbs-p" role="dialog" aria-modal="true" aria-labelledby="fbs-t" tabindex="-1"><span class="fbs-grab" aria-hidden="true"></span>' +
+      '<div class="fbs-h"><span class="fbk-ic">' + fbIc(f.ic, 22) + '</span><div class="fbs-ht"><h2 id="fbs-t">' + f.t + '</h2><p>' + f.s + '</p></div>' +
+      '<button type="button" class="fbs-x" aria-label="Fermer" onclick="V2.fbFerme()">' + fbIc('x', 20) + '</button></div><div class="fbs-b">' + f.h + '</div></div>';
+    document.body.appendChild(o);
+    fbOv = document.documentElement.style.overflow; document.documentElement.style.overflow = 'hidden';
+    document.addEventListener('keydown', fbClav, true);
+    var p = o.querySelector('.fbs-p'); if (p) p.focus();
+  };
+  function fbClav(e) {
+    var p = document.querySelector('#fbs .fbs-p'); if (!p) return;
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); fbFerme(); return; }
+    if (e.key !== 'Tab') return;
+    var l = [].slice.call(p.querySelectorAll('button,select,[href],input,[tabindex="0"]')).filter(function (x) { return x.offsetParent !== null; });
+    if (!l.length) return;
+    var a = document.activeElement, i = l.indexOf(a);
+    if (e.shiftKey && (i <= 0)) { e.preventDefault(); l[l.length - 1].focus(); }
+    else if (!e.shiftKey && (i === l.length - 1 || i < 0)) { e.preventDefault(); l[0].focus(); }
+  }
+  function fbFerme(sansFocus) {
+    var o = document.getElementById('fbs'); if (!o) return;
+    o.remove();
+    document.documentElement.style.overflow = fbOv; document.removeEventListener('keydown', fbClav, true);
+    if (!sansFocus && fbOp && fbOp.focus && document.body.contains(fbOp)) { try { fbOp.focus(); } catch (e) {} }
+    if (sansFocus) fbOp = null;
+  }
+  V2.fbFerme = function () { fbFerme(); };
+  V2.fbVoir = function () { var c = fbC; fbFerme(true); if (c) V2.go('produits', c.pid); };
+  V2.fbEnvoyer = function (k) { var c = fbC; fbFerme(true); if (c) V2.pharmaTransmettre(c.pid, ['L:' + k]); };
+  V2.fbLgo = function (v) {
+    var c = fbC; if (!c) return;
+    c.sel = TX_LGO.some(function (l) { return l.s === v; }) ? v : '';
+    var b = document.getElementById('fbs-lgo-go'), h = document.getElementById('fbs-lgo-h');
+    if (b) { b.classList.toggle('is-off', !c.sel); b.setAttribute('aria-disabled', c.sel ? 'false' : 'true'); }
+    if (h) h.hidden = !!c.sel;
+  };
+  V2.fbN = function (n) {
+    var c = fbC; if (!c || TX_LGO_N.indexOf(+n) < 0) return;
+    c.n = +n;
+    [].forEach.call(document.querySelectorAll('#fbs .fbs-seg button'), function (b) { b.setAttribute('aria-pressed', String(b.textContent === 'TOP ' + n)); });
+    var p = document.querySelector('.fbk-b[data-k="logiciel"] .fbk-pill'); if (p) p.textContent = 'TOP ' + n;
+  };
+  // le catalogue au format de son logiciel : la fenêtre « Transmettre » s'ouvre avec lui déjà coché (logiciel et taille choisis ici)
+  V2.fbCatalogue = function () {
+    var c = fbC; if (!c || !c.sel) return;
+    var s = c.sel, n = c.n;
+    fbFerme(true);
+    V2.pharmaTransmettre(c.pid); V2.pharmaTxLgo(s); V2.pharmaTxLgoN(n); V2.pharmaTxCatalogue(c.pid, s);
+  };
+
   function trancheRow(c, maxCa, ph) {
     var absent = c.ca <= 0;
     return '<tr' + (absent ? ' class="pha-absent"' : '') + '><td><span class="ph-tr-dot" style="background:' + c.color + '"></span><b>' + esc(c.label) + '</b>' + (c.sub ? ' <span class="pha-sub">' + esc(c.sub) + '</span>' : '') + '</td>' +
@@ -3972,7 +4111,7 @@
     // 08/10/2026 — fiche « lecture » (1b) : les deux listes (voir à l'écran, PDF, envoyer) passent dans
     // le bloc « À proposer » de la colonne des chiffres ; ici restent les autres actions, une seule fois.
     // Officine d'un collègue : la carte reste telle qu'avant (rien de 1b n'y est affiché).
-    var listes =
+    var listes = (fi && voitVentes) ? '' :   // 06/11/2026 — fiche « plus clair » cliente : remplacée par le bloc A (fbBloc)
       '<div class="v2-card pha-card pha-lists"><div class="pha-kl">' + (menu ? 'Autres actions' : 'Listes à proposer') + '</div>' +
         (menu ? '' : btnProduits) +
         btnTodo +
@@ -4022,7 +4161,12 @@
       analyseChart(A) + (S ? m5Replie('tranches', 'Son CA par tranche, tableau détaillé', analyseTranches(A)) + m5Replie('parts', 'Par catégorie, mois par mois', analyseParts(A)) : analyseTranches(A) + analyseParts(A));
     var chiffresPh = analyseKpis(A, marge, nbRefs, true) + '<div class="pha-marges">' + analyseMargePharma(A, marge) + '</div>' +
       analyseChart(A, true) + analyseTranches(A, true) + analyseParts(A, true);
-    var chiffres = retourProposer(pid, A, { dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp }) + viW(chiffresInt, 'vi-int') + viW(chiffresPh, 'vi-ph') + analyseTop5(A) + analyseNePlus(pid);
+    // 06/11/2026 — fiche « plus clair » cliente : le bloc A « La rangée de boutons » (vue Intégral) remplace les cartes « À proposer » et « Listes à proposer » ;
+    // la carte « À proposer » reste montrée au pharmacien tel quel (vue pharmacien : décisions de Will des 12/10 et 29/10). Fiche « menu » et officine d'un collègue : comme avant.
+    var proposer = retourProposer(pid, A, { dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp });
+    var blocA = fi && voitVentes ? fbBloc(pid, A, { dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp }) : '';
+    if (blocA) proposer = viW(blocA, 'vi-int') + viW(proposer, 'vi-ph');
+    var chiffres = proposer + viW(chiffresInt, 'vi-int') + viW(chiffresPh, 'vi-ph') + analyseTop5(A) + analyseNePlus(pid);
     // 09/10/2026 — maquette 8 « Le menu » (remplace la 1b, jugée « trop complexe ») : l'état de la fiche est posé ici,
     // la page est assemblée plus bas (carte d'identité courte, menu, une rubrique à la fois).
     if (menu) l8Init(pid, A, { marge: marge, dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp });
@@ -4214,7 +4358,7 @@
   // 30/10/2026 — fiche « plus clair » (hors OPSO) : UNE phrase calculée (rien d'interne : ni notre marge, ni moyenne, ni place), capsules à compteurs, mouvement d'arrivée.
   var fiN = { r: 0, g: 0, grp: '' }, fiVuLe = { pid: null, t0: 0, t: 0 }, fiDecal = 0, fiObs = null;
   function fiPhrase(A, nProp, voit, ville, grp) {
-    var prop = (voit && nProp > 0) ? V2.fmtNum(nProp) + ' produit' + (nProp > 1 ? 's' : '') + ' à proposer' : '', t;
+    var prop = '', t;   // 06/11/2026 : « · N produits à proposer » retiré (le nombre ne s'écrit plus que sur son bouton, bloc fbBloc) ; nProp n'est plus lu
     if (!voit) t = ville ? 'Officine de ' + ville + (grp ? ', groupement ' + grp : '') : '';
     else if (A.last && A.last.ca > 0) t = cap(A.last.label) + ' ' + A.last.year + ' : ' + V2.fmtEur(A.last.ca) + (A.evoM != null && A.prev ? ', ' + (A.evoM > 0 ? '+' : '') + A.evoM + ' % sur ' + A.prev.label : '');
     else t = A.caTot > 0 && A.last ? 'Pas de commande en ' + A.last.label + ' ' + A.last.year : 'Pas encore de commande reçue';
@@ -4250,8 +4394,7 @@
     var l = [];
     PHA_TEL_BLOCS.forEach(function (b) {
       if (b[1] === '#pha-proposer') {
-        if (fiN.r > 0) l.push(['Le réseau', '#pha-prop-reseau', fiN.r]);
-        if (fiN.g > 0) l.push([fiN.grp, '#pha-prop-groupement', fiN.g]);
+        // 06/11/2026 : plus de capsules « Le réseau N » / « <groupe> N » (les nombres vivent sur les boutons du bloc fbBloc)
       } else if (b[1] === '.pha-kpis') { l.push(['Ses chiffres', b[1]], ['Courbe du CA', '.pha-chart']); }
       else l.push(b);
     });
