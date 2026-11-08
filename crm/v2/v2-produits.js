@@ -124,10 +124,41 @@
     return (C && C[String(cip)]) || null;
   }
   function famDe(cip) { var f = fiche(cip); return f ? f.f : ''; }
+  // 08/11/2026 — Le badge « rupture ANSM » lisait ruptures-data.js, figé au 06/07/2026
+  // (signalements 2024-2025) : 3 866 produits marqués, pour 23 vraiment en rupture au relevé
+  // ANSM du jour. Il lit désormais ansm-dispo.json (robot quotidien), statut « Rupture de stock »
+  // seulement (les tensions restent dans le panneau produit). Rien tant que le relevé n'est pas là.
+  var RUPT = { etat: 0, cips: null };
+  function rupturesDe(j) {
+    var out = {}, i, k, it, cs;
+    for (i = 0; j && j.items && i < j.items.length; i++) {
+      it = j.items[i]; cs = it.cips || [];
+      if (!/Rupture/.test(it.st || '')) continue;
+      for (k = 0; k < cs.length; k++) out[String(cs[k])] = 1;
+    }
+    return out;
+  }
+  function rupturesAnsm() {
+    if (RUPT.etat === 0 && typeof fetch === 'function') {
+      var route = V2.route && V2.route.name;
+      RUPT.etat = 1;
+      fetch('ansm-dispo.json?v=' + new Date().toISOString().slice(0, 10), { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) {
+          if (!j) { RUPT.etat = 3; return; }
+          RUPT.cips = rupturesDe(j); RUPT.etat = 2; V2.produits._catListe = null;
+          if (V2.route && V2.route.name === route && V2.render) V2.render();
+        }, function () { RUPT.etat = 3; });
+    }
+    return RUPT.cips;
+  }
   function enRupture(cip) {
-    var R = window.RUPTURES && window.RUPTURES.data;
+    var R = rupturesAnsm();
     return !!(R && R[String(cip)]);
   }
+  V2.produits.enRupture = enRupture;
+  V2.produits.rupturesEtat = function () { return RUPT.etat; };
+  V2.produits._rupturesDe = rupturesDe;
   function stockIP() { return (window.STOCK_IP && window.STOCK_IP.data) || {}; }
 
   // ── Groupements : nom canonique et logo ────────────────────────
@@ -335,13 +366,12 @@
     // Partager la clé rendait l'une ou l'autre illisible selon l'onglet ouvert en premier.
     if (V2.produits._catListe) return V2.produits._catListe;
     var PS = window.PROD_STATS || [], ST = stockIP();
-    var R = (window.RUPTURES && window.RUPTURES.data) || {};
     var EX = cipsExclusifs(), LB = laboParCip();
     var out = [], i;
     for (i = 0; i < PS.length; i++) {
       var r = PS[i], c = String(r.c);
       out.push({ cip: c, fam: r.f, n: +r.n || 0, ppht: +r.ppht || 0,
-                 stock: +ST[c] || 0, rupture: !!R[c],
+                 stock: +ST[c] || 0, rupture: enRupture(c),
                  labo: LB[c] || null, exclusif: !!EX[c] });
     }
     V2.produits._catListe = out;

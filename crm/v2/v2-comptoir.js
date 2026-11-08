@@ -322,11 +322,13 @@
     ajouterNrHorsCat(CAT);
     var S = window.WML_SALES;
     var sig = (S ? S.length : 0) + '|' + D.natEtat + '|' + (window.ETAB_PRICES ? 1 : 0) + '|' + C.top +
-      '|' + (window.PROD_STATS || []).length + '|' + (window.BENCHMARK || []).length + '|' + (window.SAGITTA_SHORTLIST ? 1 : 0);
+      '|' + (window.PROD_STATS || []).length + '|' + (window.BENCHMARK || []).length + '|' + (window.SAGITTA_SHORTLIST ? 1 : 0) +
+      '|' + (V2.produits.rupturesEtat ? V2.produits.rupturesEtat() : 0);
     if (D.cache && D.sig === sig) return D.cache;
 
     var N = (D.nat && D.nat.data) || {}, V = ventesAn(), STK = stockIP();
-    var R = (window.RUPTURES && window.RUPTURES.data) || {};
+    // Rupture : relevé ANSM du jour (v2-produits.js), plus ruptures-data.js figé au 06/07/2026.
+    var enRupture = V2.produits.enRupture || function () { return false; };
     var c, i;
 
     // Part moyenne : reprend v2-appro.js::partGlobale (stock connu ∪ produits mouvants).
@@ -400,7 +402,7 @@
         // bornées à 0, comme dans l'écran Appro.
         // Détail par site connu : il est plus récent que le consolidé (début septembre).
         stock: etab ? stk : Math.max(0, Object.prototype.hasOwnProperty.call(STK, c) ? (+STK[c] || 0) : (+o.stock || 0)),
-        rupt: !!R[c], an: vente, rang: rg, part: part, france: n ? n.v : 0,
+        rupt: enRupture(c), an: vente, rang: rg, part: part, france: n ? n.v : 0,
         ecart: ecart, pot: opp ? ecart * (net > 0 ? net : ppht) : 0, opp: opp, etab: etab,
         hay: sansAccent(lib + ' ' + c + ' ' + (o.labo || '') + ' ' + (o.mol || '') + (rm ? ' ' + rm.dci : ''))
       });
