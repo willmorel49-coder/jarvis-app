@@ -9,7 +9,9 @@ URL="https://willmorel49-coder.github.io/jarvis-app/crm/v2/index.html"
 # compter ~3 min, davantage si une autre publication passe juste avant.
 echo "⏳ Attente de la version $TOKEN en prod (max ~8 min)…"
 for i in $(seq 1 48); do            # 48 × 10s ≈ 8 min
-  if curl -fsS "$URL" 2>/dev/null | grep -q "$TOKEN"; then
+  # ?nc= neuf à chaque tour : sans lui, le cache de GitHub Pages resservait l'ancienne
+  # page (09/11/2026 : « pas vu après 8 min » alors que la version était en ligne).
+  if curl -fsS "$URL?nc=$(date +%s)" 2>/dev/null | grep -q "$TOKEN"; then
     echo "✅ Version $TOKEN servie en prod."
     echo "🔗 $URL"
     exit 0
