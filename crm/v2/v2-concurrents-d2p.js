@@ -188,14 +188,14 @@
     var avec = C.prods.filter(function (x) { return !x.devant10; }).sort(function (a, b) { return b.gain - a.gain; });
     var avecD2p = C.prods.filter(function (x) { return x.devant10; }).sort(function (a, b) { return b.ecart10 - a.ecart10; });
     h += '<div class="d2p-sec"><h2>À faire avec Intégral (' + fr(avec.length) + ' produits)</h2><p>Chez Intégral, ces produits vous rendent plus qu\'ailleurs, quel que soit le délai de paiement. Classés par gain.</p></div>' +
-      table(['Produit', 'Boîtes', 'Rendu par Intégral', 'Rendu par D2P', 'Gain avec Intégral'],
-        avec.slice(0, 40).map(function (x) { return [esc(x.nom), fr(x.q), eur(x.totIp), eur(x.totD2p), '<span class="d2p-win">' + eur(x.gain) + '</span>']; }),
-        avec.length > 40 ? ['Total des ' + fr(avec.length) + ' produits', fr(avec.reduce(function (a, x) { return a + x.q; }, 0)), eur(avec.reduce(function (a, x) { return a + x.totIp; }, 0)), eur(avec.reduce(function (a, x) { return a + x.totD2p; }, 0)), eur(avec.reduce(function (a, x) { return a + x.gain; }, 0))] : null);
+      table(['Produit', 'Prix grossiste', 'Intégral / boîte', 'D2P / boîte', 'Boîtes', 'Rendu par Intégral', 'Rendu par D2P', 'Gain avec Intégral'],
+        avec.slice(0, 40).map(function (x) { return [esc(x.nom), eur(x.ppht), eur(x.ip), eur(x.d2p), fr(x.q), eur(x.totIp), eur(x.totD2p), '<span class="d2p-win">' + eur(x.gain) + '</span>']; }),
+        avec.length > 40 ? ['Total des ' + fr(avec.length) + ' produits', '', '', '', fr(avec.reduce(function (a, x) { return a + x.q; }, 0)),eur(avec.reduce(function (a, x) { return a + x.totIp; }, 0)), eur(avec.reduce(function (a, x) { return a + x.totD2p; }, 0)), eur(avec.reduce(function (a, x) { return a + x.gain; }, 0))] : null);
     if (avec.length > 40) h += '<p class="d2p-note">40 premiers produits sur ' + fr(avec.length) + '.</p>';
 
     h += '<div class="d2p-sec"><h2>Là où D2P rend plus</h2><p>' + (avecD2p.length ? 'Uniquement si vous payez D2P à ' + J().lib10 + '. À ' + J().lib20 + ' ou plus tard, Intégral reste devant sur ces produits ou ils y sont à égalité.' : 'Aucun de vos produits : sur vos achats, Intégral rend plus quel que soit le délai de paiement chez D2P.') + '</p></div>';
-    if (avecD2p.length) h += table(['Produit', 'Boîtes', 'Rendu par Intégral', 'Rendu par D2P à ' + J().lib10 + '', 'Écart pour D2P', 'Condition'],
-      avecD2p.map(function (x) { return [esc(x.nom), fr(x.q), eur(x.totIp), eur(x.totD2p + x.totEsc10), '<span class="d2p-lose">' + eur(x.ecart10) + '</span>', 'paiement à ' + J().lib10 + '' + (x.devant20 ? ' ou ' + J().lib20 + '' : '')]; }), null, [0, 5]);
+    if (avecD2p.length) h += table(['Produit', 'Prix grossiste', 'Intégral / boîte', 'D2P à ' + J().lib10 + ' / boîte', 'Boîtes', 'Rendu par Intégral', 'Rendu par D2P à ' + J().lib10 + '', 'Écart pour D2P', 'Condition'],
+      avecD2p.map(function (x) { return [esc(x.nom), eur(x.ppht), eur(x.ip), eur(x.d2p + x.esc10), fr(x.q), eur(x.totIp), eur(x.totD2p + x.totEsc10), '<span class="d2p-lose">' + eur(x.ecart10) + '</span>', 'paiement à ' + J().lib10 + '' + (x.devant20 ? ' ou ' + J().lib20 + '' : '')]; }), null, [0, 8]);
     return h + '</section>';
   }
 
