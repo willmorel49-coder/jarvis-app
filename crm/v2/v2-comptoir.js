@@ -2770,6 +2770,8 @@
     var s = document.createElement('style');
     s.id = 'cpd-styles';
     s.textContent = [
+      // Le bandeau « Catalogue produits » sert de titre aux trois portes (maquette B) : le titre de page « Produits » s'efface là, et seulement là.
+      '.pr-wrap>.v2-page-title:has(+.cpd>.cpd-head){display:none}',
       '.cpd-head{position:relative;margin-top:8px;background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--line);border-radius:22px;box-shadow:var(--sh-2);overflow:hidden}',
       '.cpd-head::after{content:"";position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none;background:radial-gradient(520px 200px at 12% -70px,rgba(0,80,230,.12),transparent 70%)}',
       '.cpd-bar{height:5px;background:linear-gradient(90deg,var(--ip-blue-d),var(--ip-blue) 55%,#F39A1B)}',
