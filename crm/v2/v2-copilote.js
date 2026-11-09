@@ -22,10 +22,20 @@
   };
   V2.marketMeta = function () { return (window.AMELI_AVG && window.AMELI_AVG.meta) || null; };
   // ── SOCLE · feed #2 · ruptures/tensions ANSM (par CIP13) ──
+  // 09/11/2026 — Lisait ruptures-data.js (figé au 06/07/2026, signalements 2024-2025) : 1 866 produits du réseau
+  // marqués pour 13 vraiment en rupture au relevé du jour. Lit désormais le MÊME relevé que le Catalogue
+  // (ansm-dispo.json, « Rupture de stock » seulement, V2.produits.enRupture). Le relevé ne dit pas la DCI ni la date
+  // de signalement : { d:'', dt:'' } garde la forme attendue par les écrans.
   V2.rupture = function (cip) {
-    var R = window.RUPTURES;
-    if (!R || !R.data) return null;
-    return R.data[String(cip)] || null;   // { d: DCI, dt: date signalement } ou null
+    var P = V2.produits;
+    return (P && P.enRupture && P.enRupture(cip)) ? { d: '', dt: '' } : null;
+  };
+  // true quand le relevé du jour est arrivé (le premier appel le demande ; l'écran se redessine tout seul à son arrivée).
+  V2.rupturesPretes = function () {
+    var P = V2.produits;
+    if (!P || !P.enRupture) return false;
+    P.enRupture('');
+    return P.rupturesEtat() === 2;
   };
   // ── SOCLE · feed #3 · potentiel de zone (par officine) ──
   V2.zone = function (pid) {
@@ -242,7 +252,7 @@
 
   // produits que le réseau commande ET en tension ANSM (à anticiper / alternative molécule)
   function reseauRuptures(limit) {
-    if (!window.RUPTURES) return [];
+    if (!V2.rupturesPretes()) return [];
     var out = [];
     PS().forEach(function (r) {
       if (!eligible(r)) return;
@@ -544,8 +554,8 @@
     var m = V2.marketMeta();
     return '<div class="co-feeds" aria-label="Capteurs actifs">' +
       '<span class="co-feed on"><span class="d"></span>Marché France' + (m ? ' · ' + esc(m.periode) : '') + '</span>' +
-      (window.RUPTURES
-        ? '<span class="co-feed on warn"><span class="d"></span>Ruptures ANSM · ' + num(nbTension || 0) + ' en tension</span>'
+      (V2.rupturesPretes()
+        ? '<span class="co-feed on warn"><span class="d"></span>Ruptures ANSM · ' + num(nbTension || 0) + ' en rupture</span>'
         : '<span class="co-feed"><span class="d"></span>Ruptures ANSM · bientôt</span>') +
       (window.ZONE
         ? '<span class="co-feed on info"><span class="d"></span>Zones · ' + num((window.ZONE.meta || {}).n || 0) + ' officines</span>'
@@ -556,7 +566,7 @@
   function tensionBadge(cip) {
     var rp = V2.rupture ? V2.rupture(cip) : null;
     if (!rp) return '';
-    return ' <span class="co-tension" title="Signalé en rupture/risque de rupture à l\'ANSM' + (rp.dt ? ' · dernier signalement ' + esc(rp.dt) : '') + (rp.d ? ' · ' + esc(rp.d) : '') + '">' + ICO('alert', 10) + 'tension</span>';
+    return ' <span class="co-tension" title="En rupture de stock au relevé ANSM du jour">' + ICO('alert', 10) + 'rupture</span>';
   }
   function abChip(r) {
     return (r.f !== 'gen' && r.rpct > 0)
@@ -573,7 +583,7 @@
       '<span class="loc">' + ICO('pharma', 13) +
         (z ? '<span>' + esc(z.c) + (z.dep ? ' (' + esc(z.dep) + ')' : '') + '</span>' + (z.pop ? '<span>· <b>' + num(z.pop) + '</b> hab.</span>' : '') : '<span>zone inconnue</span>') +
       '</span>' +
-      (nbTens > 0 ? '<span class="co-warnchip">' + ICO('alert', 11) + nbTens + ' produit' + (nbTens > 1 ? 's' : '') + ' en tension chez elle</span>' : '') +
+      (nbTens > 0 ? '<span class="co-warnchip">' + ICO('alert', 11) + nbTens + ' produit' + (nbTens > 1 ? 's' : '') + ' en rupture chez elle</span>' : '') +
       '<span class="co-push"><b>' + o.miss + '</b><span>produits à pousser</span></span>' +
       '<span class="co-go">Préparer la visite ' + ICO('chev', 12) + '</span>' +
       '</button>';
@@ -657,7 +667,7 @@
     var badges = o.tags.map(function (t) {
       if (t.k === 'accel') return '<span class="co-tb ac">↗ +' + t.v + '%/mois</span>';
       if (t.k === 'grow') return '<span class="co-tb up">↑ +' + t.v + '%/an</span>';
-      if (t.k === 'tension') return '<span class="co-tb te">Tension ANSM</span>';
+      if (t.k === 'tension') return '<span class="co-tb te">Rupture ANSM</span>';
       if (t.k === 'new') return '<span class="co-tb nw">Nouveau · ' + esc(t.v) + '</span>';
       return '';
     }).join('');
@@ -665,7 +675,7 @@
     if (o.mom != null && o.mom >= 12) why.push('accélère <b class="ac">+' + o.mom + '%/mois</b>');
     if (o.ten != null && o.ten >= 12) why.push('marché <b class="up">+' + o.ten + '%/an</b>');
     if (o.fr >= 10) why.push('~<b>' + num(o.fr) + '</b>/an par pharmacie');
-    if (o.rup) why.push('<b class="te">en tension</b>');
+    if (o.rup) why.push('<b class="te">en rupture</b>');
     return '<div class="co-arg co-top-card">' +
       '<div class="t"><span class="psh top">Top opportunité</span>' + esc(cap(r.d)) + '</div>' +
       (badges ? '<div class="co-tbadges">' + badges + '</div>' : '') +
@@ -744,7 +754,7 @@
       }
 
       var nbTension = 0;
-      if (window.RUPTURES) PS().forEach(function (r) { if (V2.rupture(r.c)) nbTension++; });
+      if (V2.rupturesPretes()) PS().forEach(function (r) { if (V2.rupture(r.c)) nbTension++; });
 
       // ordre de calcul conservé : marchés → ruptures réseau → officine → tournée → saison
       var big = bigMarkets(18);
@@ -767,7 +777,7 @@
 
       // CIP éligibles en tension (pour badges cartes + bloc « à sécuriser »)
       var tensionCips = {};
-      if (window.RUPTURES) PS().forEach(function (r) { if (eligible(r) && V2.rupture(r.c)) tensionCips[String(r.c)] = 1; });
+      if (V2.rupturesPretes()) PS().forEach(function (r) { if (eligible(r) && V2.rupture(r.c)) tensionCips[String(r.c)] = 1; });
       function nbTensChez(pid) {
         var owned = orderedCips(pid), n = 0;
         for (var c in tensionCips) { if (owned[c]) n++; }
@@ -806,7 +816,7 @@
         argsHtml = '<div class="co-empty">Cette officine commande déjà les plus gros marchés France.</div>';
       }
       var secu = [];
-      if (selPid && window.RUPTURES) {
+      if (selPid && V2.rupturesPretes()) {
         var ownedSel = orderedCips(selPid);
         PS().forEach(function (r) {
           if (!eligible(r)) return;
@@ -818,7 +828,7 @@
         secu = secu.slice(0, 6);
       }
       var secuHtml = secu.length
-        ? '<div class="co-secu"><h4>' + ICO('alert', 13) + 'À sécuriser — elle commande ces produits, signalés en tension ANSM</h4>' + secu.map(secuRow).join('') + '</div>'
+        ? '<div class="co-secu"><h4>' + ICO('alert', 13) + 'À sécuriser — elle commande ces produits, en rupture de stock à l\'ANSM</h4>' + secu.map(secuRow).join('') + '</div>'
         : '';
       var focusSec = '<section class="co-sec" id="co-focus">' +
         '<div class="co-sec-h"><h2>Préparez votre visite</h2>' + (gaps.length ? '<span class="co-pill">' + gaps.length + ' arguments</span>' : '') + '</div>' +
@@ -896,13 +906,13 @@
       }
 
       // ── Vue marché — gros marchés France (dans « Explorer le marché ») ──
-      var mktSec = '<section class="co-sec"><div class="co-sec-h"><h2>Gros marchés France' + (rupRes.length ? ' &amp; tensions réseau' : '') + '</h2><span class="co-pill">' + (big.length + rupRes.length) + '</span></div>' +
+      var mktSec = '<section class="co-sec"><div class="co-sec-h"><h2>Gros marchés France' + (rupRes.length ? ' &amp; ruptures réseau' : '') + '</h2><span class="co-pill">' + (big.length + rupRes.length) + '</span></div>' +
         '<p class="co-sub">Les produits que la France consomme beaucoup mais que peu de vos officines commandent — pour creuser au calme, pas indispensable en visite.</p>' +
         big.map(mktLine).join('') +
         (rupRes.length
-          ? '<div class="co-mkth">Produits en tension dans votre réseau (' + rupRes.length + ') — anticipez le réassort, ou proposez la molécule (DCI) en alternative</div>' + rupRes.map(rupLine).join('')
+          ? '<div class="co-mkth">Produits en rupture dans votre réseau (' + rupRes.length + ') — anticipez le réassort, ou proposez la molécule (DCI) en alternative</div>' + rupRes.map(rupLine).join('')
           : '') +
-        '<div class="co-foot">« Votre réseau » = nombre de vos officines qui commandent déjà ce produit. Marché France Ameli, à titre indicatif · signalements ANSM (rupture / risque).</div>' +
+        '<div class="co-foot">« Votre réseau » = nombre de vos officines qui commandent déjà ce produit. Marché France Ameli, à titre indicatif · ruptures de stock du relevé ANSM du jour.</div>' +
         '</section>';
 
       // ── Tout le marché regroupé sous UN seul volet repliable (l'essentiel respire au-dessus) ──

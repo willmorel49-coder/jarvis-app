@@ -1250,7 +1250,7 @@
         C.red++; C.redEur += o.st * (o.ppht || 0);
       } else if (o.cov < 7 && o.vM >= 5) {
         qty = o.qcmd;
-        if (rupt) { verdict = 'SÉCURISER'; cls = 'sec'; reason = 'tension ANSM · ' + secTxt + ' — commander maintenant'; C.sec++; }
+        if (rupt) { verdict = 'SÉCURISER'; cls = 'sec'; reason = 'rupture ANSM · ' + secTxt + ' — commander maintenant'; C.sec++; }
         else { verdict = 'ACHETER'; cls = 'buy'; reason = secTxt + ' — commander maintenant'; C.buy++; }
         prio = 5; engager(qty * (o.ppht || 0), 'buy');
         // La cible de couverture n'est pas toujours 21 jours : elle passe à 30 en cas de
@@ -1744,7 +1744,7 @@
     // signaux
     var sig = [];
     if (isMitm(cip)) { var mc = (V2.rupture && V2.rupture(cip)) || (o && o.cov < 7); sig.push(mc ? '<span class="ap-tag" style="color:#B02A37;background:#FDE7EA;border:1px solid #F3B0BC">critique — MITM en tension</span>' : '<span class="ap-tag" style="color:#6B7280;background:var(--card-2,#F6F8FB);border:1px solid var(--line)">MITM — surveillé ANSM</span>'); }
-    if (V2.rupture && V2.rupture(cip)) sig.push('<span class="ap-tag ru">tension ANSM</span>');
+    if (V2.rupture && V2.rupture(cip)) sig.push('<span class="ap-tag ru">rupture ANSM</span>');
     var sai = _saiCip && _saiCip.data && _saiCip.data[cip];
     if (sai) { var pk = sai.p; sig.push('<span class="ap-tag" style="color:#6D5AE6;background:#EFEBFB;border:1px solid #D3C9F5">pic saison ' + MOIS_L[pk - 1] + '</span>'); }
     if (_generData && _generData.princepsWithGeneric && _generData.princepsWithGeneric.indexOf(cip) >= 0) sig.push('<span class="ap-tag" style="color:#0E7C86;background:#E5F4F5;border:1px solid #B8E0E3">générique dispo</span>');
@@ -3110,7 +3110,7 @@
           secHead('Intelligence marché') +
           card('spark', 'Ça monte', 'produits en croissance, présents dans le réseau — à renforcer au stock', risRows, 'var(--c-opp)') +
           '<div class="ap-grid2">' +
-            card('alert', 'Ruptures à sécuriser', 'tension ANSM sur des produits que le réseau achète', rupRows, 'var(--c-amber)') +
+            card('alert', 'Ruptures à sécuriser', 'rupture ANSM sur des produits que le réseau achète', rupRows, 'var(--c-amber)') +
             card('spark', 'La saison arrive', 'classes qui montent le mois prochain (Medic\'AM)', saiRows, '#6D5AE6') +
           '</div>' +
           card('cat', 'Nouveautés à référencer', 'AMM récentes (BDPM)', nouvRows, 'var(--ip-blue)') +

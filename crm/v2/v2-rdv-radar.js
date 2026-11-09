@@ -485,9 +485,11 @@
     // le reste, donc ce message ne devrait jamais s'afficher — s'il apparaît,
     // c'est qu'un chargement a échoué, et c'est exactement ce qu'il faut savoir
     // avant de conclure « aucune officine n'a de rupture ».
-    if (!window.RUPTURES || !window.STOCK_IP) {
+    // 09/11/2026 — le relevé ANSM du jour (ansm-dispo.json, via V2.produits) remplace ruptures-data.js, figé au 06/07.
+    var rupEtat = (V2.produits && V2.produits.enRupture) ? (V2.produits.enRupture(''), V2.produits.rupturesEtat()) : 3;
+    if (rupEtat === 3 || !window.STOCK_IP) {
       t += '<p class="rad-note"><b>Les ruptures ne sont pas prises en compte ici</b> : ' +
-           'le fichier des tensions ANSM ou celui du stock ne s’est pas chargé. ' +
+           'le relevé ANSM du jour ou le fichier du stock ne s’est pas chargé. ' +
            'Rechargez la page — les autres signaux, eux, sont bien calculés.</p>';
     }
     return t;
