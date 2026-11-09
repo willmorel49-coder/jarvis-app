@@ -27,9 +27,15 @@ FEEDS = [
     # ── Sources GRATUITES à lire uniquement. Le Quotidien du Pharmacien & Le Moniteur
     #    des pharmacies ont été RETIRÉS : articles payants/abonnés → liens inutiles (Will).
     #    On va directement aux sources primaires gratuites qu'eux-mêmes relaient :
-    #    syndicats (USPO, FSPF), presse syndicale ouverte (Le Pharmacien de France), Leem.
+    #    syndicats (USPO, FSPF, UPGF, UDGPO), presse syndicale ouverte (Le Pharmacien de France), Leem.
+    #    UPGF et UDGPO ajoutés le 09/11/2026 (Will : « lire les syndicats ») ; robots.txt des
+    #    deux sites vérifiés ce jour-là. ⚠️ PAS l'UNPF : unpf.org renvoie vers un site sans rapport.
+    #    ⚠️ L'UDGPO ne publie plus depuis le 09/01/2020 (flux et API du site vérifiés le 09/11/2026) :
+    #    0 article UDGPO est NORMAL, ce n'est pas une panne. Gardé pour le jour où il reprend.
     {'cat': 'profession',    'source': 'USPO',                 'url': 'https://uspo.fr/feed/', 'max': 12, 'filter': True},
     {'cat': 'profession',    'source': 'FSPF',                 'url': 'https://www.fspf.fr/feed/', 'max': 10, 'filter': True},
+    {'cat': 'profession',    'source': 'UPGF',                 'url': 'https://www.upgf.fr/feed/', 'max': 10, 'filter': True},
+    {'cat': 'profession',    'source': 'UDGPO',                'url': 'https://www.udgpo.com/feed/', 'max': 10, 'filter': True},
     {'cat': 'profession',    'source': 'Le Pharmacien de France', 'url': 'https://lepharmaciendefrance.fr/feed/', 'max': 10, 'filter': True},
     {'cat': 'reglementaire', 'source': 'Leem',                 'url': 'https://www.leem.org/rss.xml', 'max': 8, 'filter': True, 'strict': True},
 ]

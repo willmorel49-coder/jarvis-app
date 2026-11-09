@@ -941,7 +941,7 @@ SRC_POIDS = [
     (re.compile(r'\bansm\b', re.I),                                     32),
     (re.compile(r'\bhas\b|transparence', re.I),                         28),
     (re.compile(r'\bema\b', re.I),                                      24),
-    (re.compile(r'uspo|fspf|\bfsp\b|syndicat', re.I),                   24),
+    (re.compile(r'uspo|fspf|\bfsp\b|upgf|udgpo|syndicat', re.I),        24),
     (re.compile(r'leem|ordre national des pharmaciens|cnop', re.I),     22),
     (re.compile(r'ameli|cnam|assurance maladie|sant[ée] publique', re.I), 22),
     (re.compile(r'pharmacien de france|moniteur|quotidien du pharm', re.I), 16),
