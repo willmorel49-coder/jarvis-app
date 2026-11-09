@@ -1140,7 +1140,7 @@
     var titreSec = S.deps ? 'Votre secteur' : 'Les officines · toute la France';
     var sousSec = S.deps ? noms : 'Vue direction : aucun secteur propre, toutes les annonces des 14 derniers jours';
     var piedSec = nSec == null ? '' : '<button type="button" class="inf-c-pied" data-ouvre="secteur"><span>' + (S.dir ? 'Voir les ' + nSec + ' annonces, la carte, changer de secteur' : 'Voir les ' + nSec + ' annonces des 3 derniers mois, et la carte') + '</span><span class="inf-c-chev" aria-hidden="true">' + infChev() + '</span></button>';
-    var p1 = '<article class="inf-c-porte" data-porte="secteur">' + infPorteTete('secteur', titreSec, sousSec, nSec, 'annonces en 3 mois') +
+    var p1 = '<article class="inf-c-porte" data-porte="secteur">' + infPorteTete('secteur', titreSec, sousSec, nSec, 'annonces en 3\u00a0mois') +
       (sec.length ? '<ul class="inf-c-ls">' + sec.map(function (e) { return infLigne(e, i++); }).join('') + '</ul>' :
         '<p class="inf-c-vide">Rien de neuf cette semaine dans ' + (S.deps ? 'votre secteur' : 'les officines') + '.</p>') + piedSec + '</article>';
     var p2 = '<article class="inf-c-porte" data-porte="france">' + infPorteTete('france', 'En France', 'Ce qui touche toutes les officines.', pris.length, pris.length > 1 ? 'infos à retenir' : 'info à retenir') +
