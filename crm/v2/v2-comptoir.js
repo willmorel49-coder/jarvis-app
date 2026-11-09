@@ -41,7 +41,8 @@
 
   var C = { q: '', fam: 'all', opp: true, stock: false, top: 200, tri: 'potentiel',
             page: 1, cip: null, offTout: false, unite: 'q', panier: false,
-            mol: false, dcTout: false, pend: null };   // 21/10/2026 : « Déjà commandé » (toute la molécule ? tout voir ?) et molécule à résoudre au prochain rendu
+            mol: false, dcTout: false, pend: null,
+            porte: null, chg: 'jo' };   // 09/11/2026 : porte = null (les trois portes) | 'trouver' | 'change' | 'proposer' | 'tout' ; chg = onglet de « Ce qui change » ; 21/10/2026 : « Déjà commandé » (toute la molécule ? tout voir ?) et molécule à résoudre au prochain rendu
   var PANIER_MAX = 200;    // au-delà, une fiche n'est plus lisible : « Tout ajouter » s'arrête là et le dit
   var D = { nat: null, natEtat: 0, etabEtat: 0, catEtat: 0,
             cache: null, sig: '', aqui: null, aquiIdx: null, aquiEtat: 0, noms: null,
@@ -456,18 +457,18 @@
 
   // ── Filtres et tri ────────────────────────────────────────────
   function filtrees(L) {
-    var q = sansAccent(C.q).trim(), out = [], i;
+    var q = sansAccent(C.q).trim(), out = [], i, tr = C.porte === 'trouver';   // 09/11/2026 : « Trouver un produit » cherche dans tout le catalogue, du plus vendu au moins vendu
     for (i = 0; i < L.length; i++) {
       var l = L[i];
       // « Au panier » montre TOUT le panier : les autres filtres ne doivent pas en cacher une partie.
-      if (C.panier) { if (sel()[l.cip]) out.push(l); continue; }
+      if (C.panier && !tr) { if (sel()[l.cip]) out.push(l); continue; }
       if (C.fam !== 'all' && l.f !== C.fam) continue;
-      if (C.opp && !l.opp) continue;
-      if (C.stock && !(l.stock > 0)) continue;
+      if (C.opp && !l.opp && !tr) continue;
+      if (C.stock && !(l.stock > 0) && !tr) continue;
       if (q && l.hay.indexOf(q) < 0) continue;
       out.push(l);
     }
-    var t = C.tri, TD = (t === 'hausse' || t === 'baisse') ? tendances() : null;
+    var t = tr ? 'rang' : C.tri, TD = (t === 'hausse' || t === 'baisse') ? tendances() : null;
     out.sort(function (a, b) {
       if (TD) {
         var ta = TD[a.cip], tb = TD[b.cip];
@@ -793,7 +794,7 @@
   // Un fichier absent ou en erreur donne simplement « donnée indisponible » (état 3) : jamais d'exception.
   function planRerender() {
     if (D.rr) return;
-    D.rr = setTimeout(function () { D.rr = null; if (C.cip) rerender(); }, 60);
+    D.rr = setTimeout(function () { D.rr = null; if (C.cip || C.porte === null || C.porte === 'change') rerender(); }, 60);   // 09/11/2026 : les portes et « Ce qui change » lisent aussi ces fichiers
   }
   function demander(cle) {
     var e = D.fich && D.fich[cle], jour, p;
@@ -1445,6 +1446,20 @@
       tq = setTimeout(function () { C.page = 1; majResultats(); }, 160);
     },
     effacer: function () { C.q = ''; C.page = 1; rerender(); },
+    // 09/11/2026 — les trois portes. Ouvrir un volet repart d'une page propre ; « Parcourir » s'ouvre SANS le filtre Opportunités.
+    porte: function (k) {
+      C.porte = (k === 'trouver' || k === 'change' || k === 'proposer' || k === 'tout') ? k : null;
+      C.page = 1; C.q = ''; C.fam = 'all'; C.stock = false; C.molSel = null;
+      if (C.porte === 'tout') { C.opp = false; C.panier = false; }
+      if (C.porte === 'change') C.chg = 'jo';
+      rerender();
+      try { window.scrollTo(0, 0); } catch (x) { /* rien */ }
+      if (C.porte === 'trouver' && window.innerWidth > 640) setTimeout(function () {   // clavier du téléphone : jamais ouvert de force
+        var i = document.getElementById('cpd-q'); if (i && i.focus) { try { i.focus({ preventScroll: true }); } catch (x) { i.focus(); } }
+      }, 30);
+    },
+    portes: function () { V2.comptoir.porte(null); },
+    onglet: function (k) { C.chg = (k === 'rup' || k === 'nv') ? k : 'jo'; C.page = 1; majResultats(); },
     fam: function (k) { C.fam = k; C.page = 1; rerender(); },
     opp: function () { C.opp = !C.opp; C.page = 1; rerender(); },
     stock: function () { C.stock = !C.stock; C.page = 1; rerender(); },
@@ -1512,7 +1527,7 @@
     depuisRecherche: function (o) {
       o = o || {};
       C.q = o.q || ''; C.fam = 'all'; C.opp = false; C.stock = false; C.panier = false; C.page = 1;
-      C.offTout = false; C.dcTout = false;
+      C.offTout = false; C.dcTout = false; C.porte = 'trouver';   // 09/11/2026 : le volet « Trouver un produit », recherche remplie
       C.cip = o.cip ? String(o.cip) : null; C.mol = !o.cip; C.pend = o.cip ? null : (o.mol || o.q || null);
       var S = V2.produits && V2.produits.S;
       if (S) { S.mode = 'comptoir'; S.apercu = false; }
@@ -1765,6 +1780,9 @@
       '</div>';
   }
   function resultatsHtml(d) {
+    if (C.porte === 'trouver') return resultatsTrouver(d);   // 09/11/2026 : les volets de « Ce qui change » et « À proposer » se redessinent ici aussi
+    if (C.porte === 'change') return resultatsChange(d);
+    if (C.porte === 'proposer') return resultatsProposer(d);
     var L = filtrees(d.lignes), AQ = aQui();
     var TD = (C.tri === 'hausse' || C.tri === 'baisse') ? tendances() : null;
     var vis = L.slice(0, C.page * PAR_PAGE), rows = '', cards = '', i;
@@ -1791,7 +1809,7 @@
     if (!box || !d) return;
     box.innerHTML = resultatsHtml(d);
     var src = document.getElementById('cp-count-src'), cnt = document.getElementById('cp-count');
-    if (src && cnt) cnt.textContent = libCompte(+src.getAttribute('data-n') || 0);
+    if (src && cnt) cnt.textContent = src.getAttribute('data-lib') || libCompte(+src.getAttribute('data-n') || 0);
     if (V2.comptoir._majMol) V2.comptoir._majMol();
     var o = document.getElementById('cp-outils'); if (o && src) o.innerHTML = outilsPanierHtml(+src.getAttribute('data-n') || 0);
   }
@@ -2194,7 +2212,7 @@
     return bloc(2, 'Les marges', '<div class="cp-grid">' + tuileMargePharmacien(s, vp) + (vp ? '' : tuileNotreMarge(s)) + '</div>');
   }
 
-  // 3. Le marché : rangée de trois tuiles (v1), puis la courbe France mois par mois.
+  // 4. Le marché : rangée de trois tuiles (v1), puis la courbe France mois par mois.
   function blocMarche(s, l, vp) {
     var h = '', fr_ = s.france, nv = s.nosVentes, t = s.tendance;
     if (fr_) h += tuileT(vp ? 'w3' : 'm1', 'France', '2025',
@@ -2221,7 +2239,7 @@
           : '<p class="cp-tx">Prévisions indisponibles.</p>'),
         t.anAn != null ? esc(t.anAnPeriode || 'même période un an avant') + (t.momentum != null ? ' · élan ' + pctSigne(t.momentum) + ' par mois' : '') : '');
     } else h += tuileVide(vp ? 'w3 m1' : 'm1', 'Tendance', 'France, an/an', 'Pas de tendance publiée pour ce produit.');
-    return bloc(3, 'Le marché', '<div class="cp-grid">' + h + '</div>' +
+    return bloc(4, 'Le marché', '<div class="cp-grid">' + h + '</div>' +
       '<p class="cp-fn">' + (vp ? '' : 'Part = nos boîtes par an ÷ boîtes France 2025. ') + 'Valeur : prix public, base de remboursement.</p>' +
       '<div id="cp-evo-m" class="cp-card">' + evoHtml(l, 'marche') + '</div>');
   }
@@ -2243,18 +2261,23 @@
     return h + '</div>';
   }
 
-  // 4. Chez nous (interne) : jamais en vue pharmacien.
-  function blocNous(s, l, d, liste, ventes, off) {
-    var h = '<div class="cq-sep" role="note"><span>Interne</span> masqué en vue pharmacien</div><section class="cq-bl cq-bl-i" aria-labelledby="cq-b4"><h3 class="cq-bt" id="cq-b4"><span>4</span>Chez nous · interne</h3>';
+  // 3. À qui le proposer (interne) : bloc à part depuis le 09/11/2026, juste après les marges. Il nomme d'autres officines :
+  // jamais en vue pharmacien (le bloc n'est même pas construit).
+  function blocAqui(liste, off) {
+    return '<div class="cq-sep" role="note"><span>Interne</span> masqué en vue pharmacien</div><section class="cq-bl cq-bl-i" aria-labelledby="cq-b3"><h3 class="cq-bt" id="cq-b3"><span>3</span>À qui le proposer · interne</h3>' +
+      (liste ? '<p class="cp-st cp-st0"><span>' + fr(liste.length) + '</span> officine' + (liste.length > 1 ? 's' : '') + ', du plus gros potentiel au plus petit</p>' : '') + off + '</section>';
+  }
+  // 5. Chez nous (interne) : jamais en vue pharmacien.
+  function blocNous(s, l, d, ventes) {
+    var h = '<div class="cq-sep" role="note"><span>Interne</span> masqué en vue pharmacien</div><section class="cq-bl cq-bl-i" aria-labelledby="cq-b5"><h3 class="cq-bt" id="cq-b5"><span>5</span>Chez nous · interne</h3>';
     h += parCommercialHtml(s);
     h += '<p class="cp-st">Nos ventes, mois par mois</p><div id="cp-evo-n" class="cp-card">' + evoHtml(l, 'nous') + '</div>';
     h += '<div class="cp-bl">' + dejaHtml(l, d) + '</div>';
     h += '<div class="cp-bl"><p class="cp-st">Potentiel</p>' + ventes + '</div>';
-    h += '<div class="cp-bl"><p class="cp-st">À qui le proposer' + (liste ? ' <span>' + fr(liste.length) + '</span>' : '') + '</p>' + off + '</div>';
     return h + '</section>';
   }
 
-  // 5. Le produit
+  // 6. Le produit
   function fait(lib, val, det) {
     return '<div class="cp-ft"><em>' + lib + '</em><b>' + val + '</b>' + (det ? '<small>' + det + '</small>' : '') + '</div>';
   }
@@ -2274,7 +2297,7 @@
         '<div class="cp-sai" role="img" aria-label="Indice saisonnier mois par mois, de janvier à décembre">' + bars + '</div><div class="cp-sai-m" aria-hidden="true"><span>janv.</span><span>juin</span><span>déc.</span></div>';
     }
     h += fait('Nouveauté', x.nouveaute ? 'AMM ' + esc(x.nouveaute.amm || '') + (x.nouveaute.labo ? ' · ' + esc(x.nouveaute.labo) : '') : 'Non', 'AMM de moins de 36 mois');
-    return bloc(5, 'Le produit', h + '</div>', 'cq-bl-p');
+    return bloc(6, 'Le produit', h + '</div>', 'cq-bl-p');
   }
 
   function panneauHaut(l, s, vp) {
@@ -2438,7 +2461,7 @@
         pmFiche(l, d, vp) +
         (l.f === 'nr' && l.net > 0 && Math.abs(l.net - l.prix) >= 0.01 * l.prix
           ? '<p class="cp-note">Prix moyen facturé au réseau : ' + eur2(l.net) + '.</p>' : '') +
-        (s ? blocAlertes(s, l, vp) + blocMarges(s, vp) + blocMarche(s, l, vp) + (vp ? '' : blocNous(s, l, d, liste, ventes, off)) + blocProduit(s, l, stock) : blocProduit({ autres: { froid: false }, generique: null, tendance: null }, l, stock)) +
+        (s ? blocAlertes(s, l, vp) + blocMarges(s, vp) + (vp ? '' : blocAqui(liste, off)) + blocMarche(s, l, vp) + (vp ? '' : blocNous(s, l, d, ventes)) + blocProduit(s, l, stock) : blocProduit({ autres: { froid: false }, generique: null, tendance: null }, l, stock)) +
         indispo +
         '<div class="cp-ctas">' + boutonPanneau(l.cip) +
         '<button class="v2-btn v2-btn-primary cp-cta" onclick="V2.produits.ficheMarketing(\'' + escAttr(l.cip) + '\')">Fiche marketing du produit</button></div>' +
@@ -2456,7 +2479,7 @@
       h.id = 'cp-pan-hote';
       document.body.appendChild(h);
       window.addEventListener('hashchange', function () {
-        if (!/^#produits(\/|$)/.test(location.hash)) V2.comptoir.fermerPanneau();
+        if (!/^#produits(\/|$)/.test(location.hash)) { V2.comptoir.fermerPanneau(); C.porte = null; }   // 09/11/2026 : on revient sur les trois portes
       });
       // Les courbes sont dessinées à la largeur du panneau : on les refait si l'écran change.
       var tr = null;
@@ -2473,6 +2496,7 @@
   V2.comptoir._listerCommandes = listerCommandes;
   V2.comptoir._dejaCommande = function (sales, cips, voit, estReste) { return listerCommandes(indexCommandes(sales, voit, estReste), cips); };
   V2.comptoir._stockHtml = stockHtml;
+  V2.comptoir._portes = { changements: changements, propositions: propositions, exemples: exemples, etat: C };   // pour les tests (09/11/2026)
   V2.comptoir._repliMolecules = repliMolecules;
   // Socle de calcul (22/10/2026) : l'objet complet du panneau, et ses calculs purs pour les tests.
   V2.comptoir.stats = stats;
@@ -2494,7 +2518,7 @@
   // ── P1 : commandes de la carte molécule ──
   V2.comptoir._majMol = majMol;
   V2.comptoir.molecule = function (nom) {   // depuis l'extérieur (lien de la vitrine) : remplit la recherche et montre la carte
-    C.q = nom || ''; C.molSel = null; C.page = 1; C.opp = false; C.fam = 'all'; C.molProdTout = false; C.molCommTout = false;
+    C.q = nom || ''; C.molSel = null; C.page = 1; C.opp = false; C.fam = 'all'; C.molProdTout = false; C.molCommTout = false; C.porte = 'trouver';
     rerender();
   };
   V2.comptoir.molChoix = function (i) { var m = MOLR.cands && MOLR.cands[i]; if (m) { C.molSel = m.cle; C.molProdTout = false; C.molCommTout = false; majMol(); } };
@@ -2506,6 +2530,314 @@
     var h = document.getElementById('cp-pan-hote');
     if (h) h.innerHTML = '';
   };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // 09/11/2026 — LES TROIS PORTES (maquette B, choix de Will). Au repos, l'écran montre trois portes ; chacune ouvre son
+  // volet DANS la page (pas de fenêtre par-dessus) avec un retour « ← Les trois portes ». Rien n'est recalculé ici :
+  //   · Trouver un produit  = le moteur de recherche existant (filtrees), sans le filtre Opportunités ;
+  //   · Ce qui change       = les règles du panneau produit : alertesPrix (prix-futurs.json), l.rupt (relevé ANSM),
+  //                           V2.nouveaute (BDPM) ; libellés et durées LUS dans ces définitions ;
+  //   · À proposer          = NOTRE règle, inchangée : l.opp (top C.top des ventes France ET nos ventes sous notre part moyenne) ;
+  //   · Parcourir           = l'écran d'avant, entier (porte 'tout').
+  // ═══════════════════════════════════════════════════════════════════
+  var ICO_PORTE = {
+    down: '<path d="M3 7l6 6 4-4 8 8"/><path d="M15 17h6v-6"/>',
+    star: '<path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.4 6.6 19.5l1.2-6L3.3 9.3l6.1-.7L12 3z"/>'
+  };
+  function icoPorte(n, s) {
+    return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICO_PORTE[n] || '') + '</svg>';
+  }
+
+  // Les trois nombres du bandeau : références du catalogue, références en stock, établissements.
+  function enteteStats(d) {
+    if (!d.entete) {
+      var n = 0, i;
+      for (i = 0; i < d.lignes.length; i++) if (d.lignes[i].stock > 0) n++;
+      d.entete = { ref: d.lignes.length, stock: n, etabs: ETABS.length };
+    }
+    return d.entete;
+  }
+  // « À proposer » : exactement les lignes l.opp, du plus gros potentiel au plus petit (même tri que le tableau, tri « potentiel »).
+  function propositions(d) {
+    if (!d.prop) {
+      d.prop = d.lignes.filter(function (l) { return l.opp; }).sort(function (a, b) { return (b.pot - a.pot) || (b.an - a.an); });
+    }
+    return d.prop;
+  }
+  // Trois exemples pour la porte 1 : les meilleurs rangs France, un seul par premier mot du nom.
+  function exemples(d) {
+    if (!d.exemples) {
+      var L = d.lignes.filter(function (l) { return l.rang > 0; }).sort(function (a, b) { return a.rang - b.rang; }), vu = {}, out = [], i, k;
+      for (i = 0; i < L.length && out.length < 3; i++) {
+        k = sansAccent(L[i].d).split(/\s+/)[0];
+        if (vu[k]) continue;
+        vu[k] = 1; out.push(L[i]);
+      }
+      d.exemples = out;
+    }
+    return d.exemples;
+  }
+  // « Ce qui change » : trois listes. Une liste à null = pas encore arrivée (…Att vrai) ou indisponible (…Att faux).
+  function changements(d) {
+    var fp = demander('prixFuturs'), fa = demander('prixArchive'), fn = demander('ansm');
+    var now = maintenant(), re = V2.produits.rupturesEtat ? V2.produits.rupturesEtat() : 2;
+    var cle = [fp.etat, fa.etat, fn.etat, re, jourIso(now), window.NOUVEAUTES ? 1 : 0].join('|'), i, c, l;
+    if (d.chg && d.chgCle === cle) return d.chg;
+    var out = { jo: null, joAtt: fp.etat === 1 || fa.etat === 1, joDate: null, rup: null, rupAtt: re < 2, rupDate: null, nv: null, nvMois: null, nvDate: null };
+    // Prix au JO : les produits du catalogue qui ont au moins une BAISSE dans alertesPrix (la même fonction que la fiche :
+    // baisses déjà en vigueur depuis moins de JOURS_ALERTE_PRIX jours, ou à venir).
+    if (!out.joAtt && (fp.etat === 2 || fa.etat === 2)) {
+      var fut = fp.etat === 2 ? fp.data : null, arc = fa.etat === 2 ? fa.data : null, cips = {}, jo = [];
+      var src = [].concat((fut && fut.changes) || [], (arc && arc.evenements) || []);
+      for (i = 0; i < src.length; i++) if (src[i]) cips[String(src[i].c)] = 1;
+      for (c in cips) {
+        if (!Object.prototype.hasOwnProperty.call(cips, c)) continue;
+        l = d.parCip[c]; if (!l) continue;
+        var ev = alertesPrix(c, fut, arc, now, pfhtDepuisPpht(l.ppht, estFroid(c))).evenements.filter(function (e) { return e.sens === 'baisse'; });
+        if (!ev.length) continue;
+        var venir = ev.filter(function (e) { return e.aVenir; });
+        jo.push({ l: l, e: venir.length ? venir[venir.length - 1] : ev[0] });   // la plus proche à venir, sinon la plus récente
+      }
+      jo.sort(function (a, b) {
+        if (a.e.aVenir !== b.e.aVenir) return a.e.aVenir ? -1 : 1;
+        if (a.e.dateEffet !== b.e.dateEffet) return (a.e.dateEffet < b.e.dateEffet ? -1 : 1) * (a.e.aVenir ? 1 : -1);
+        return (a.l.rang || 1e9) - (b.l.rang || 1e9);
+      });
+      out.jo = jo;
+      out.joDate = (fp.etat === 2 && fp.data && fp.data.generated) || (fa.etat === 2 && fa.data && fa.data.generated) || null;
+    }
+    // Ruptures : l.rupt (relevé ANSM, statut « Rupture de stock » seulement, v2-produits.js).
+    if (re === 2) {
+      out.rup = d.lignes.filter(function (x) { return x.rupt; }).sort(function (a, b) { return (a.rang || 1e9) - (b.rang || 1e9); });
+      out.rupDate = fn.etat === 2 && fn.data && fn.data.generated || null;
+    }
+    // Nouveautés : V2.nouveaute (NOUVEAUTES, BDPM) ; la durée et la date du relevé sont celles du fichier.
+    if (window.NOUVEAUTES && V2.nouveaute) {
+      var nv = [];
+      for (i = 0; i < d.lignes.length; i++) { var x = V2.nouveaute(d.lignes[i].cip); if (x) nv.push({ l: d.lignes[i], n: x }); }
+      nv.sort(function (a, b) { return a.n.amm < b.n.amm ? 1 : a.n.amm > b.n.amm ? -1 : (a.l.rang || 1e9) - (b.l.rang || 1e9); });
+      out.nv = nv;
+      var meta = window.NOUVEAUTES.meta || {};
+      out.nvMois = meta.mois || null; out.nvDate = meta.gen || null;
+    }
+    d.chg = out; d.chgCle = cle;
+    return out;
+  }
+  function nbPorte(liste, att) { return liste ? fr(liste.length) : (att ? '…' : '—'); }
+
+  // ── Lignes compactes (une seule cible par ligne, 56 px de haut) ──
+  function ligneP(l, sous, b, i, avecBadges) {
+    return '<button type="button" class="cpd-l" onclick="V2.comptoir.ouvrir(\'' + escAttr(l.cip) + '\')"><span class="cpd-tx"><span class="cpd-nm">' + esc(l.d) +
+      (avecBadges ? badges(l) : (l.rupt ? '<span class="cp-badge cp-badge-r">Rupture ANSM</span>' : '')) + '</span><span class="cpd-sb">' + esc(sous) + '</span></span>' +
+      '<span class="cpd-px"><b>' + b + '</b><i>' + i + '</i></span></button>';
+  }
+  function stockLib(l) {
+    if (!(l.stock > 0)) return 'stock à 0';
+    var n = 0, k;
+    if (l.etab) for (k in l.etab) if (Object.prototype.hasOwnProperty.call(l.etab, k) && l.etab[k] > 0) n++;
+    return 'en stock' + (n ? ' · ' + fr(n) + ' site' + (n > 1 ? 's' : '') : '');
+  }
+  function plusHtml(reste) {
+    return reste > 0 ? '<button class="cp-more" onclick="V2.comptoir.plus()">Voir ' + fr(Math.min(reste, PAR_PAGE)) + ' produits de plus <i>(' + fr(reste) + ' restants)</i></button>' : '';
+  }
+  function listePage(items, f, vide) {
+    var vis = items.slice(0, C.page * PAR_PAGE), h = '', i;
+    if (!items.length) return '<div class="cp-vide">' + vide + '</div>';
+    for (i = 0; i < vis.length; i++) h += f(vis[i]);
+    return '<div class="cpd-liste">' + h + '</div>' + plusHtml(items.length - vis.length);
+  }
+
+  // ── Volet 1 : Trouver un produit ──
+  function libTrouve(n) { return C.q.trim() ? fr(n) + ' résultat' + (n > 1 ? 's' : '') : 'Les plus vendus en France'; }
+  function resultatsTrouver(d, L) {
+    L = L || filtrees(d.lignes);
+    var vis = L.slice(0, C.page * PAR_PAGE), h = '', i;
+    for (i = 0; i < vis.length; i++) {
+      var l = vis[i];
+      h += ligneP(l, [l.labo, 'CIP ' + l.cip, l.rang ? 'n°' + fr(l.rang) + ' France' : ''].filter(Boolean).join(' · '), l.prix > 0 ? eur2(l.prix) : '—', stockLib(l), true);
+    }
+    return '<div class="cp-count" id="cp-count-src" data-n="' + L.length + '" data-lib="' + esc(libTrouve(L.length)) + '"></div>' +
+      (L.length ? '<div class="cpd-liste">' + h + '</div>' + plusHtml(L.length - vis.length) : '<div class="cp-vide">Aucun produit ne correspond.</div>');
+  }
+  function famsHtml() {
+    var FAM = V2.produits.FAM || {}, i, k, h = '<button class="cp-chip' + (C.fam === 'all' ? ' on' : '') + '" onclick="V2.comptoir.fam(\'all\')">Toutes les familles</button>';
+    for (i = 0; i < FAM_ORDRE.length; i++) {
+      k = FAM_ORDRE[i];
+      if (FAM[k]) h += '<button class="cp-chip' + (C.fam === k ? ' on' : '') + '" onclick="V2.comptoir.fam(\'' + k + '\')">' + esc(FAM[k].l) + '</button>';
+    }
+    return h;
+  }
+
+  // ── Volet 2 : Ce qui change (trois onglets) ──
+  function resultatsChange(d) {
+    var X = changements(d), onglets = [['jo', 'Prix au JO', X.jo, X.joAtt], ['rup', 'Ruptures', X.rup, X.rupAtt], ['nv', 'Nouveautés', X.nv, false]], i, tabs = '', corps = '';
+    for (i = 0; i < onglets.length; i++) {
+      tabs += '<button type="button" class="cpd-tab' + (C.chg === onglets[i][0] ? ' on' : '') + '" aria-pressed="' + (C.chg === onglets[i][0]) + '" onclick="V2.comptoir.onglet(\'' + onglets[i][0] + '\')">' +
+        onglets[i][1] + ' <i>' + nbPorte(onglets[i][2], onglets[i][3]) + '</i></button>';
+    }
+    if (C.chg === 'rup') {
+      corps = '<p class="cpd-lead">Produits de notre catalogue que l\'ANSM signale en « Rupture de stock »' + (X.rupDate ? ' (relevé du ' + esc(dateFr(X.rupDate)) + ')' : '') +
+        '. Les tensions d\'approvisionnement ne sont pas comptées ici ; elles figurent dans la fiche du produit.</p>';
+      if (!X.rup) corps += '<div class="cp-vide">' + (X.rupAtt ? 'Le relevé de l\'ANSM arrive…' : 'Le relevé de l\'ANSM n\'est pas disponible pour le moment.') + '</div>';
+      else corps += listePage(X.rup, function (l) {
+        var a = ansmPourCip(fichier('ansm'), l.cip), ret = a && a.retour && /^\d{4}-\d{2}/.test(a.retour) ? moisIso(a.retour) : '';
+        return ligneP(l, (a && a.depuis ? 'Rupture depuis le ' + dateJour(a.depuis) : 'Rupture signalée') + (ret ? ' · retour annoncé : ' + ret : ' · pas de date de retour'),
+          l.stock > 0 ? 'en stock' : 'stock à 0', 'chez nous', false);
+      }, 'Aucun produit de notre catalogue n\'est en rupture au dernier relevé.');
+    } else if (C.chg === 'nv') {
+      corps = '<p class="cpd-lead">Produits de notre catalogue dont l\'autorisation de mise sur le marché (AMM) date de moins de ' + (X.nvMois ? fr(X.nvMois) + ' mois' : 'quelques années') +
+        (X.nvDate ? ' (BDPM, relevé du ' + esc(dateFr(X.nvDate)) + ')' : '') + '. Les plus récents d\'abord.</p>';
+      if (!X.nv) corps += '<div class="cp-vide">La liste des nouveautés n\'est pas disponible pour le moment.</div>';
+      else corps += listePage(X.nv, function (x) {
+        return ligneP(x.l, [x.n.labo || x.l.labo, x.n.amm ? 'AMM ' + moisIso(x.n.amm) : ''].filter(Boolean).join(' · '), x.l.prix > 0 ? eur2(x.l.prix) : '—', stockLib(x.l), false);
+      }, 'Aucune nouveauté dans notre catalogue.');
+    } else {
+      corps = '<p class="cpd-lead">Baisses du prix public publiées au Journal officiel : celles à venir, et celles déjà en vigueur depuis moins de ' + JOURS_ALERTE_PRIX + ' jours' +
+        (X.joDate ? ' (relevé du ' + esc(dateFr(X.joDate)) + ')' : '') + '.</p>';
+      if (!X.jo) corps += '<div class="cp-vide">' + (X.joAtt ? 'Le relevé du Journal officiel arrive…' : 'Le relevé du Journal officiel n\'est pas disponible pour le moment.') + '</div>';
+      else corps += listePage(X.jo, function (x) {
+        var e = x.e, pct = (e.ancienTtc > 0 && e.nouveauTtc != null) ? (e.nouveauTtc / e.ancienTtc - 1) * 100 : null;
+        return ligneP(x.l, (e.aVenir ? 'À partir du ' : 'Depuis le ') + dateJour(e.dateEffet) + ' · prix public ' + (e.ancienTtc != null ? fr(e.ancienTtc, 2) + ' → ' : '') + (e.nouveauTtc != null ? eur2(e.nouveauTtc) : '—'),
+          pct != null ? '−' + fr(Math.abs(pct), 1) + ' %' : '', e.aVenir ? 'à venir' : 'en vigueur', false);
+      }, 'Aucune baisse de prix au Journal officiel dans notre catalogue.');
+    }
+    return '<div class="cpd-tabs" role="group" aria-label="Ce qui change">' + tabs + '</div>' + corps;
+  }
+
+  // ── Volet 3 : À proposer ──
+  function resultatsProposer(d) {
+    var P = propositions(d);
+    return '<p class="cpd-lead">Les produits du top ' + fr(C.top) + ' des ventes en France sur lesquels nos ventes sont sous notre part moyenne (' + fr(d.partMoy * 100, 2) + ' %). ' +
+      'Du plus grand potentiel au plus petit : le potentiel est ce que nous vendrions de plus par an en rejoignant cette part moyenne. <b>' + fr(P.length) + '</b> produit' + (P.length > 1 ? 's' : '') + '.</p>' +
+      listePage(P, function (l) {
+        return ligneP(l, [l.labo, 'n°' + fr(l.rang) + ' France', 'nos ventes ' + fr(l.an) + ' bt/an'].filter(Boolean).join(' · '), eurK(l.pot), 'par an', false);
+      }, 'Aucun produit à proposer avec ces ventes.');
+  }
+
+  function retourHtml(titre) {
+    return '<div class="cpd-vh"><button type="button" class="cpd-back" onclick="V2.comptoir.portes()">' + (ICO('back', 18, 2) || '←') + ' Les trois portes</button><h2 class="cpd-vt">' + esc(titre) + '</h2></div>';
+  }
+  function barrePanier() { return '<div id="cp-bar-hote">' + barreHtml() + '</div>'; }
+
+  // Tout ce qui n'est pas « Parcourir » : les portes au repos, ou l'un des trois volets.
+  function portesHtml(d) {
+    var k = C.porte;
+    if (k === 'trouver') {
+      var L = filtrees(d.lignes);
+      return '<div class="cp cpd">' + retourHtml('Trouver un produit') +
+        '<div class="cpd-champ">' + ICO('search', 20, 2) + '<input id="cpd-q" type="search" enterkeyhint="search" autocomplete="off" aria-label="Rechercher un produit" ' +
+          'placeholder="Nom, molécule, CIP ou laboratoire…" value="' + escAttr(C.q) + '" oninput="V2.comptoir.q(this.value)"></div>' +
+        '<div class="cp-chips cpd-chips">' + famsHtml() + '</div>' +
+        '<p class="cpd-cnt" id="cp-count" aria-live="polite">' + esc(libTrouve(L.length)) + '</p>' +
+        '<div id="mo-hote">' + mo1Html(d) + '</div><div id="cp-res">' + resultatsTrouver(d, L) + '</div>' + barrePanier() + '</div>';
+    }
+    if (k === 'change' || k === 'proposer') {
+      return '<div class="cp cpd">' + retourHtml(k === 'change' ? 'Ce qui change' : 'À proposer') +
+        '<div id="cp-res">' + (k === 'change' ? resultatsChange(d) : resultatsProposer(d)) + '</div>' + barrePanier() + '</div>';
+    }
+    var e = enteteStats(d), X = changements(d), P = propositions(d), ex = exemples(d), i, p3 = '';
+    var p1 = '<span class="cpd-fake">' + ICO('search', 18, 2) + 'Nom, molécule, CIP, laboratoire…</span>' +
+      (ex.length ? '<em>' + ex.map(function (l) { return esc(l.d.split(' ').slice(0, 2).join(' ')); }).join(' · ') + '</em>' : '');
+    var p2 = '<span><b>' + nbPorte(X.jo, X.joAtt) + '</b><span class="n">' + (X.jo && X.jo.length === 1 ? 'baisse de prix au JO' : 'baisses de prix au JO') + '</span></span>' +
+      '<span><b>' + nbPorte(X.rup, X.rupAtt) + '</b><span class="n">' + (X.rup && X.rup.length === 1 ? 'rupture dans notre catalogue' : 'ruptures dans notre catalogue') + '</span></span>' +
+      '<span><b>' + nbPorte(X.nv, false) + '</b><span class="n">nouveautés' + (X.nvMois ? ' de moins de ' + fr(X.nvMois) + ' mois' : '') + '</span></span>';
+    for (i = 0; i < P.length && i < 3; i++) p3 += '<span><span class="n">' + esc(P[i].d) + '</span><b>' + eurK(P[i].pot) + '</b></span>';
+    if (!p3) p3 = '<span><span class="n">Rien à proposer pour le moment</span></span>';
+    var chev = ICO('chev', 18, 2) || '›';
+    return '<div class="cp cpd">' +
+      '<section class="cpd-head"><div class="cpd-bar" aria-hidden="true"></div><div class="cpd-in">' +
+        '<div><h1 class="cpd-h1">Catalogue produits</h1><div class="cpd-sub">Prix et stock des ' + fr(e.etabs) + ' établissements</div></div>' +
+        '<div class="cpd-stats"><div class="cpd-stat"><b>' + fr(e.ref) + '</b><span>références</span></div><div class="cpd-stat"><b>' + fr(e.stock) + '</b><span>en stock</span></div>' +
+          '<div class="cpd-stat"><b>' + fr(e.etabs) + '</b><span>établissements</span></div></div></div></section>' +
+      '<div class="cpd-q"><h2>Que voulez-vous faire ?</h2><p>Trois portes. Chacune ouvre son volet ici même, rien d\'autre à lire avant.</p></div>' +
+      '<div class="cpd-doors">' +
+        '<button type="button" class="cpd-door" onclick="V2.comptoir.porte(\'trouver\')"><span class="cpd-ic">' + ICO('search', 24, 1.8) + '</span><span class="cpd-t">Trouver un produit</span>' +
+          '<span class="cpd-s">Par nom, molécule, CIP ou laboratoire. La fiche donne le prix net, le stock et la marge.</span><span class="cpd-pv cpd-pill">' + p1 + '</span>' +
+          '<span class="cpd-go">Chercher <i>' + chev + '</i></span></button>' +
+        '<button type="button" class="cpd-door" onclick="V2.comptoir.porte(\'change\')"><span class="cpd-ic">' + icoPorte('down', 24) + '</span><span class="cpd-t">Ce qui change</span>' +
+          '<span class="cpd-s">Baisses de prix au Journal officiel, ruptures, nouveautés.</span><span class="cpd-pv cpd-rows cpd-rows2">' + p2 + '</span>' +
+          '<span class="cpd-go">Voir ce qui change <i>' + chev + '</i></span></button>' +
+        '<button type="button" class="cpd-door" onclick="V2.comptoir.porte(\'proposer\')"><span class="cpd-ic">' + icoPorte('star', 24) + '</span><span class="cpd-t">À proposer</span>' +
+          '<span class="cpd-s">Les meilleures ventes de France sur lesquelles nous vendons moins que notre part moyenne.</span><span class="cpd-pv cpd-rows">' + p3 + '</span>' +
+          '<span class="cpd-go">Voir les produits <i>' + chev + '</i></span></button>' +
+      '</div>' +
+      '<div class="cpd-all"><button type="button" class="cpd-link" onclick="V2.comptoir.porte(\'tout\')">' + ICO('grid', 18, 2) + ' Parcourir tout le catalogue</button></div>' +
+      barrePanier() + '</div>';
+  }
+
+  function injectPortesStyles() {
+    if (document.getElementById('cpd-styles')) return;
+    var s = document.createElement('style');
+    s.id = 'cpd-styles';
+    s.textContent = [
+      '.cpd-head{position:relative;margin-top:8px;background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--line);border-radius:22px;box-shadow:var(--sh-2);overflow:hidden}',
+      '.cpd-head::after{content:"";position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none;background:radial-gradient(520px 200px at 12% -70px,rgba(0,80,230,.12),transparent 70%)}',
+      '.cpd-bar{height:5px;background:linear-gradient(90deg,var(--ip-blue-d),var(--ip-blue) 55%,#F39A1B)}',
+      '.cpd-in{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:14px 28px;flex-wrap:wrap;padding:16px 20px}',
+      '.cpd-h1{margin:0;font:800 26px/1.1 var(--font);letter-spacing:-.03em;color:var(--ip-ink)}',
+      '.cpd-sub{margin-top:6px;font:600 15px/1.3 var(--font);color:var(--ip-ink-2);letter-spacing:-.01em}',
+      '.cpd-stats{display:flex;gap:26px;flex-wrap:wrap}',
+      '.cpd-stat b{display:block;font:700 25px/1 var(--font);font-variant-numeric:tabular-nums;letter-spacing:-.03em;color:var(--ip-ink)}',
+      '.cpd-stat span{display:block;margin-top:6px;font:700 13px/1.2 var(--font);color:var(--ip-ink-2)}',
+      '.cpd-q{margin:26px 2px 16px}.cpd-q h2{margin:0;font:800 26px/1.15 var(--font);letter-spacing:-.02em;color:var(--ip-ink)}',
+      '.cpd-q p{margin:6px 0 0;font:400 15px/1.45 var(--font);color:var(--cp-ink3)}',
+      '.cpd-doors{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}',
+      '.cpd-door{appearance:none;-webkit-appearance:none;position:relative;overflow:hidden;display:flex;flex-direction:column;text-align:left;width:100%;min-height:372px;padding:26px 26px 22px;margin:0;border-radius:26px;border:1px solid var(--line);background:linear-gradient(180deg,#fff 0%,#F6F8FC 100%);box-shadow:var(--sh-2);font:inherit;font-family:var(--font);color:inherit;cursor:pointer;transition:transform .22s var(--ease),box-shadow .26s var(--ease),border-color .2s}',
+      '.cpd-door::before{content:"";position:absolute;left:0;right:0;top:0;height:170px;pointer-events:none;background:radial-gradient(ellipse 75% 100% at 28% 0%,rgba(0,80,230,.11),rgba(0,80,230,0) 72%)}',
+      '.cpd-door:hover{transform:translateY(var(--mo-lift));box-shadow:var(--sh-3);border-color:color-mix(in srgb,var(--ip-blue) 26%,var(--line))}',
+      '.cpd-door:active{transform:translateY(-1px) scale(.992)}',
+      '.cpd-ic{position:relative;width:52px;height:52px;border-radius:16px;display:grid;place-items:center;color:#fff;background:linear-gradient(150deg,color-mix(in srgb,var(--ip-blue) 92%,#fff),var(--ip-blue) 46%,var(--ip-blue-d));box-shadow:var(--sh-blue)}',
+      '.cpd-t{position:relative;display:block;margin-top:20px;font:800 25px/1.15 var(--font);letter-spacing:-.025em;color:var(--ip-ink)}',
+      '.cpd-s{position:relative;display:block;margin-top:7px;font:400 14.5px/1.4 var(--font);color:var(--cp-ink3)}',
+      '.cpd-pv{position:relative;display:block;margin-top:22px}',
+      '.cpd-fake{display:flex;align-items:center;gap:10px;height:48px;padding:0 14px;border-radius:14px;border:1px solid var(--line-strong);background:#fff;box-shadow:var(--sh-1);color:var(--cp-ink3);font:500 14px/1 var(--font);white-space:nowrap;overflow:hidden}',
+      '.cpd-pill em{display:block;margin-top:8px;font:600 13px/1.5 var(--font);font-style:normal;color:var(--ip-ink-2)}',
+      '.cpd-rows>span{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line-2);font:600 14px/1.3 var(--font);color:var(--ip-ink-2)}',
+      '.cpd-rows>span:first-child{border-top:0;padding-top:0}',
+      '.cpd-rows b{flex:none;font:800 15px/1.2 var(--font);font-variant-numeric:tabular-nums;letter-spacing:-.02em;color:var(--ip-ink)}',
+      '.cpd-rows .n{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.cpd-rows2>span{justify-content:flex-start;gap:12px}.cpd-rows2 b{min-width:2.4em}.cpd-rows2 .n{white-space:normal}',
+      '.cpd-go{position:relative;margin-top:auto;padding-top:20px;display:flex;align-items:center;justify-content:space-between;font:800 15px/1.2 var(--font);color:var(--ip-blue-d)}',
+      '.cpd-go i{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--halo);color:var(--ip-blue);transition:transform .22s var(--ease);font-style:normal}',
+      '.cpd-door:hover .cpd-go i{transform:translateX(3px)}',
+      '.cpd-all{margin-top:18px}',
+      '.cpd-link{appearance:none;-webkit-appearance:none;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 4px;margin:0;border:0;background:none;font:700 15px/1.2 var(--font);color:var(--ip-blue-d);cursor:pointer}',
+      '.cpd-link:hover{text-decoration:underline}',
+      // volets
+      '.cpd-vh{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap;margin:8px 0 14px}',
+      '.cpd-back{appearance:none;-webkit-appearance:none;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 16px 0 10px;margin:0;border-radius:999px;border:1px solid var(--line-strong);background:var(--card);box-shadow:var(--sh-1);font:700 14px/1 var(--font);color:var(--ip-blue-d);cursor:pointer}',
+      '.cpd-back:hover{box-shadow:var(--sh-2)}',
+      '.cpd-vt{margin:0;font:800 24px/1.15 var(--font);letter-spacing:-.02em;color:var(--ip-ink)}',
+      '.cpd-champ{display:flex;align-items:center;gap:10px;height:56px;padding:0 16px;margin-bottom:10px;border-radius:16px;border:1px solid var(--line-strong);background:var(--card);box-shadow:var(--cp-shadow);color:var(--cp-ink3)}',
+      '.cpd-champ:focus-within{border-color:var(--ip-blue);box-shadow:0 0 0 3px rgba(0,80,230,.18)}',
+      '.cpd-champ input{flex:1;min-width:0;height:100%;border:0;outline:none;box-shadow:none;background:transparent;-webkit-appearance:none;appearance:none;font:500 16px/1.2 var(--font);color:var(--ip-ink)}',
+      '.cpd-champ input:focus,.cpd-champ input:focus-visible{outline:none;box-shadow:none}',
+      '.cpd-chips{margin-bottom:6px}.cpd-chips .cp-chip{min-height:44px}',
+      '.cpd-cnt{margin:14px 0 8px;font:800 13px/1.2 var(--font);text-transform:uppercase;letter-spacing:.06em;color:var(--cp-ink3)}',
+      '.cpd-lead{margin:0 0 12px;font:400 14.5px/1.5 var(--font);color:var(--cp-ink3);max-width:760px}.cpd-lead b{font-variant-numeric:tabular-nums;color:var(--ip-ink)}',
+      '.cpd-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}',
+      '.cpd-tab{appearance:none;-webkit-appearance:none;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 15px;margin:0;border-radius:999px;border:1.5px solid var(--line-strong);background:var(--card);box-shadow:var(--sh-1);font:650 14px/1 var(--font);color:var(--ip-ink-2);cursor:pointer}',
+      '.cpd-tab i{font:700 13px/1 var(--font);font-style:normal;font-variant-numeric:tabular-nums;color:var(--cp-ink3)}',
+      '.cpd-tab.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}.cpd-tab.on i{color:#fff}',
+      '.cpd-liste{border-radius:18px;border:1px solid var(--line);background:var(--card);box-shadow:var(--sh-1);padding:4px 6px}',
+      '.cpd-l{appearance:none;-webkit-appearance:none;display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:11px 8px;margin:0;border:0;border-top:1px solid var(--line-2);border-radius:12px;background:none;text-align:left;font-family:var(--font);color:inherit;cursor:pointer}',
+      '.cpd-l:first-child{border-top:0}.cpd-l:hover{background:var(--card-2)}',
+      '.cpd-tx{flex:1;min-width:0}',
+      '.cpd-nm{display:flex;align-items:center;gap:6px 8px;flex-wrap:wrap;font:700 14.5px/1.3 var(--font);color:var(--ip-ink)}',
+      '.cpd-sb{display:block;margin-top:2px;font:400 13px/1.35 var(--font);color:var(--cp-ink3)}',
+      '.cpd-px{flex:none;max-width:42%;text-align:right}',
+      '.cpd-px b{display:block;font:800 15px/1.2 var(--font);font-variant-numeric:tabular-nums;letter-spacing:-.02em;color:var(--ip-ink)}',
+      '.cpd-px i{display:block;margin-top:2px;font:400 13px/1.3 var(--font);font-style:normal;color:var(--cp-ink3)}',
+      '@media (max-width:860px){.cpd-doors{grid-template-columns:1fr;gap:14px}',
+        '.cpd-door{min-height:0;padding:20px 18px 16px;border-radius:22px}.cpd-door::before{height:110px}',
+        '.cpd-ic{position:absolute;right:16px;top:16px;width:44px;height:44px;border-radius:14px}',
+        '.cpd-t{margin-top:0;font-size:22px;padding-right:56px}.cpd-s{padding-right:56px}',
+        '.cpd-pv{margin-top:14px}.cpd-go{padding-top:10px}.cpd-go i{display:none}.cpd-fake{height:44px}.cpd-stats{gap:20px}}',
+      '@media (max-width:560px){.cpd-stat b{font-size:21px}.cpd-stats{gap:18px}.cpd-q{margin-top:20px}.cpd-h1{font-size:23px}.cpd-q h2{font-size:23px}.cpd-vt{font-size:22px}.cpd-in{padding:16px}}',
+      '@media (prefers-reduced-motion:reduce){.cpd-door,.cpd-go i{transition:none}}'
+    ].join('\n');
+    document.head.appendChild(s);
+  }
 
   V2.comptoir.rendre = function () {
     injectStyles();
@@ -2519,6 +2851,8 @@
           : 'Les références des 7 établissements et les ventes France arrivent (une seule fois).') + '</div></div>';
     }
     if (C.pend) { var mt = topDeMolecule(d, C.pend); C.pend = null; if (mt) C.cip = mt; }   // 21/10/2026 : molécule choisie depuis ⌘K
+    injectPortesStyles();
+    if (C.porte !== 'tout') { poserPanneau(d); injectMolStyles(); return portesHtml(d); }   // 09/11/2026 : les trois portes, ou l'un des trois volets
     var FAM = V2.produits.FAM || {}, i, k;
     var fams = '<button class="cp-chip' + (C.fam === 'all' ? ' on' : '') + '" onclick="V2.comptoir.fam(\'all\')">Toutes les familles</button>';
     for (i = 0; i < FAM_ORDRE.length; i++) {
@@ -2538,7 +2872,7 @@
 
     poserPanneau(d);
     injectMolStyles();
-    return '<div class="cp">' + pmTete(d) +
+    return '<div class="cp">' + retourHtml('Parcourir tout le catalogue') + pmTete(d) +
       '<div class="cp-tete">' +
         '<div class="cp-tete-l"><span class="cp-sous">Catalogue des 7 établissements</span><span class="cp-n" id="cp-count">' + libCompte(n) + '</span></div>' +
         '<div class="cp-search">' + ICO('search', 18, 2) +
