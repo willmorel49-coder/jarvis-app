@@ -4071,6 +4071,7 @@
           // 26/10/2026 — v2 « Tout dans la carte » : « Produits » (le Catalogue pour cette officine) et « Noter » (défile jusqu'à la note)
           (V2.pages.produits ? '<button class="pha-btn" onclick="V2.go(\'produits\', \'' + pidSafe + '\')" title="Le Catalogue pour cette officine">' + ICO('cat', 15, 2) + 'Produits</button>' : '') +
           (V2.notes ? '<button class="pha-btn" onclick="V2.pharmaNav.noter()" title="Aller à la note personnelle">' + ICO('fiche', 15, 2) + 'Noter</button>' : '') +
+          (voitVentes && !isOpso() && !isEscale() && V2.d2pRender ? '<button class="pha-btn" onclick="V2.go(\'concurrents\', \'d2p/' + pidSafe + '\')" title="Ce que D2P Pharma lui aurait rendu sur ses princeps">' + ICO('cat', 15, 2) + 'Face à D2P</button>' : '') +
           (mail && V2.rdv ? '<button class="pha-btn pha-btn-pri" onclick="V2.rdv.proposer(\'' + pidSafe + '\')" title="Elle choisit son créneau, calé sur la géographie de votre journée">' + ICO('cal', 15) + 'Proposer un RDV</button>' : '') +
           (!tel && !mail ? '<span class="pha-sub" style="color:rgba(255,255,255,.7)">Téléphone et e-mail à renseigner dans « Infos officine »</span>' : '') +
         '</div>' +

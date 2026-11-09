@@ -803,6 +803,7 @@
   function liensHtml() {
     var l = [];
     if (V2.pages.offilog) l.push('<button type="button" class="cc-lien" onclick="V2.go(\'offilog\')">' + ICO('froid', 14, 2) + 'Offilog face aux concurrents</button>');
+    if (V2.d2pRender && V2.d2pDisponible && V2.d2pDisponible()) l.push('<button type="button" class="cc-lien" onclick="V2.go(\'concurrents\',\'d2p\')">' + ICO('cat', 14, 2) + 'D2P Pharma face à Intégral</button>');
     return l.length ? '<div class="cc-liens">' + l.join('') + '</div>' : '';
   }
   function comptoirBar(geant) {
@@ -1378,6 +1379,12 @@
       if (p === 'acteurs') p = 'annuaire';
       if (p === 'comparateur') p = 'prix';
       // 15/10/2026 : #concurrents/listing/<k> = l'éditeur de listing face au concurrent k (k = une colonne du comparateur).
+      // 09/11/2026 : #concurrents/d2p (réseau, interne) et #concurrents/d2p/<code> (vue d'une pharmacie) — v2-concurrents-d2p.js.
+      if (/^d2p(\/|$)/.test(p) && V2.d2pRender) {
+        fermerTout(); S.src = '';
+        V2.d2pRender(root, p, '<div class="cc-tete-d2p">' + kickerHtml('prix', true) + '</div>');
+        return;
+      }
       var lstK = /^listing\//.test(p) ? p.slice(8) : '';
       if (lstK && CMP_COL.indexOf(lstK) < 0) { p = 'prix'; lstK = ''; }
       if (lstK && S.lst.k !== lstK) S.lst = { k: lstK, fam: 'all', min: 0, q: '', off: {}, top: null, vus: CMP_PAS };

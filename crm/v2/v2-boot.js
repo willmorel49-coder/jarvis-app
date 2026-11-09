@@ -759,6 +759,7 @@
     concalliance: 'v2/concurrents-alliance-data.js',
     concpharmafit: 'v2/concurrents-pharmafit-data.js',
     conccerp: 'v2/concurrents-cerp-data.js',
+    concd2p: 'v2/concurrents-d2p-data.js',
     concepsilon: 'v2/concurrents-epsilon-data.js',
     concgroupements: 'v2/concurrents-groupements-data.js',
     // Prix PUBLICS E.Leclerc (TTC) et rayons fins Offilog : données publiques.
@@ -899,6 +900,7 @@
     concalliance: 'concurrents-alliance-data.js',
     concpharmafit: 'concurrents-pharmafit-data.js',
     conccerp: 'concurrents-cerp-data.js',
+    concd2p: 'concurrents-d2p-data.js',
     concepsilon: 'concurrents-epsilon-data.js',
     concgroupements: 'concurrents-groupements-data.js',
     // 29/09/2026 — prix B2B du catalogue Offilog complet (id: prix), conditions
@@ -1558,6 +1560,7 @@
     concalliance: 'CONCURRENTS_ALLIANCE',
     concpharmafit: 'CONCURRENTS_PHARMAFIT',
     conccerp: 'CONCURRENTS_CERP',
+    concd2p: 'D2P_DATA',
     concepsilon: 'CONCURRENTS_EPSILON',
     concgroupements: 'CONCURRENTS_GROUPEMENTS',
     leclercpub: 'LECLERC_PUB',

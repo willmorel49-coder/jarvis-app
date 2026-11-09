@@ -200,6 +200,8 @@ crm/v2/concurrents-etradi-data.js
 crm/v2/concurrents-alliance-data.js
 crm/v2/concurrents-pharmafit-data.js
 crm/v2/concurrents-cerp-data.js
+# 09/11/2026 — dossier « D2P Pharma » (conditions d'un tiers) : même traitement, jamais côté OPSO.
+crm/v2/concurrents-d2p-data.js
 
 # 03/09/2026 — grande passe « conditions commerciales » : ces fichiers portent
 # nos prix nets, remises, CA par pharmacie ou par établissement. Ils vivent
