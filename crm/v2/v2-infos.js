@@ -440,7 +440,10 @@
     fiche: '<path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/>',
     copier: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/>',
     retour: '<path d="M15 5l-7 7 7 7"/>',
-    fermer: '<path d="M6 6l12 12M18 6L6 18"/>'
+    fermer: '<path d="M6 6l12 12M18 6L6 18"/>',
+    etoile: '<path d="M12 3l2.8 5.8 6.2.9-4.5 4.4 1 6.2-5.5-3-5.5 3 1-6.2L3 9.7l6.2-.9z"/>',
+    liste: '<path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/>',
+    archive: '<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10h14V9M10 13h4"/>'
   };
   function ppIco(n, s) { return sctSvg(PP_IC[n] || PP_IC.journal, s || 18); }
 
@@ -609,23 +612,30 @@
     // PP_REG n'est PAS vidé ici : la vue vient d'y inscrire ses lignes ; ppFermer() le vide
     if (!pan.classList.contains('ouvert')) { PP_PILE = []; PP_FOCUS = document.activeElement; }
     else if (PP_PILE.length) PP_PILE[PP_PILE.length - 1].scroll = corps.scrollTop;
+    // 09/11/2026 — ouvert depuis une porte de l'écran Infos : le panneau est rangé DANS la page (#inf-volet), sans voile ni blocage du défilement
+    var volet = INF.porte ? document.getElementById('inf-volet') : null;
+    if (volet) { if (pan.parentNode !== volet) volet.appendChild(pan); pan.classList.add('en-volet'); }
+    else if (pan.classList.contains('en-volet')) { pan.classList.remove('en-volet'); document.body.appendChild(pan); }
     PP_PILE.push(v); ppAfficher(v);
-    pan.classList.add('ouvert'); document.getElementById('pp-voile').classList.add('ouvert');
-    pan.setAttribute('aria-hidden', 'false'); document.documentElement.classList.add('pp-fige');
+    pan.classList.add('ouvert'); pan.setAttribute('aria-hidden', 'false');
+    if (volet) { if (PP_PILE.length > 1) { var tv = document.querySelector('.inf-c-vtete'); if (tv && tv.getBoundingClientRect().top < 0) try { tv.scrollIntoView({ block: 'start' }); } catch (e) {} } return; }
+    document.getElementById('pp-voile').classList.add('ouvert'); document.documentElement.classList.add('pp-fige');
     setTimeout(function () { var f = pan.querySelector('[data-pp-fermer]'); if (f) try { f.focus({ preventScroll: true }); } catch (e) {} }, 60);
   }
   function ppFermer() {
     var pan = document.getElementById('pp-pan'); if (!pan) return;
+    var enVolet = pan.classList.contains('en-volet');
     pan.classList.remove('ouvert'); document.getElementById('pp-voile').classList.remove('ouvert');
     pan.setAttribute('aria-hidden', 'true'); document.documentElement.classList.remove('pp-fige');
     PP_PILE = []; PP_REG = [];
+    if (enVolet) { pan.classList.remove('en-volet'); document.body.appendChild(pan); infSortie(); return; }   // fermer le volet = revenir aux trois portes
     if (PP_FOCUS && PP_FOCUS.focus && PP_FOCUS.isConnected) try { PP_FOCUS.focus({ preventScroll: true }); } catch (e) {}
   }
   function ppRetour() { if (PP_PILE.length < 2) { ppFermer(); return; } PP_PILE.pop(); ppAfficher(PP_PILE[PP_PILE.length - 1]); }
   function ppOuvert() { var p = document.getElementById('pp-pan'); return !!(p && p.classList.contains('ouvert')); }
   if (!V2._ppEchap) {
     V2._ppEchap = true;
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && ppOuvert()) ppFermer(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && ppOuvert() && !(INF.porte && x13OuvertQ())) ppFermer(); });   // volet ouvert : Échap referme d'abord la feuille de lecture
     // quitter la page (lien, bouton Retour du navigateur) referme le panneau
     // on lit l'adresse elle-même : cet écouteur passe AVANT celui du routeur (v2-app.js), V2.route date encore de l'écran quitté
     window.addEventListener('hashchange', function () {
@@ -972,8 +982,8 @@
   var X13_RUB = { regle: 'Prix et règles', rupture: 'Ruptures', rappel: 'Rappels de lot', officine: 'Officines', actu: 'Actualité', concurrent: 'Concurrents' };
   var X13_SRC = { regle: 'Journal officiel', rupture: 'Agence du médicament', rappel: 'Agence du médicament', officine: 'Annonces légales', actu: '', concurrent: '' };
   var X13_ICO = { regle: 'loi', rupture: 'rupture', rappel: 'rappel', officine: 'cession', concurrent: 'concurrent', actu: 'journal' };
-  var X13 = { liste: [], orig: null, fin: 0, tx: null, rub: false };
-  var INF = { vu: false, t: 0, stop: false, obs: null };
+  var X13 = { liste: [], orig: null, fin: 0, tx: null };
+  var INF = { vu: false, t: 0, stop: false, obs: null, porte: null, y: 0, opener: null, garde: null, html: '', france: [] };   // porte : la porte ouverte (null = les trois portes) ; garde : #pp-pan mis de côté pendant qu'on redessine la page
   function x13T(s) { return esc(String(s == null ? '' : s).replace(/\btes\b/g, 'vos').replace(/\bton\b/g, 'votre')); }
   function x13N2(t) { return norm(t).replace(/[^a-z0-9]+/g, ' ').trim(); }
   function x13NomRupt(r) { return String(r.spec || '').split(/ – | - /)[0] || String(r.dci || ''); }
@@ -1058,81 +1068,156 @@
     X13.liste[i] = e;
     return '<button type="button" class="x13-c" style="--i:' + d + '" data-x13-i="' + i + '"><span class="x13-ct"><span class="x13-rl"><span class="x13-ru x13-t-' + e.rub + '">' + esc(X13_RUB[e.rub]) + '</span>' + (x13Neuf(e) ? '<span class="x13-neuf">Nouveau</span>' : '') + '</span><span class="x13-t">' + x13T(e.t) + '</span>' + x13Ligne(e, true) + '</span>' + x13Couv(e, false) + '</button>';
   }
-  /* les pastilles « Rubriques » : l'accès à chacun des panneaux du poste de pilotage.
-     Repliées derrière un seul bouton, avec « Copier le brief » et la fraîcheur des sources ;
-     X13.rub garde l'état quand la page est redessinée sous un panneau ouvert. */
-  function x13Rubriques(D, J) {
-    var S = ppScope(), rad = D.rad.ruptures, nSec = null;
-    if (SECTEUR && (SECTEUR.ev || []).length && (S.deps || S.dir)) nSec = ppAnnonces(S.deps).length;
-    var L = [
-      ['secteur', 'Votre secteur', 'fiche', nSec],
-      ['echeances', 'À ne pas manquer', 'loi', D.ep.length],
-      ['ruptures', 'Ruptures', 'rupture', rad ? rad.v : null],
-      ['rappels', 'Rappels de lot', 'rappel', D.rappels],
-      ['concurrents', 'Concurrents', 'concurrent', VERIFS ? VERIFS.length : null],
-      ['radar', 'Le radar du jour', 'chercher', (BRIEF.radar || []).length],
-      ['mur', 'Toute l’actualité', 'journal', D.fil.length]
-    ];
-    if (J.length) L.push(['archive', 'Les matins d’avant', 'horloge', J.length]);
-    return '<section class="x13-s-rub" aria-label="Toutes les infos du jour">' +
-      '<button type="button" class="x13-tout x13-plus x13-lien" data-x13-rub aria-expanded="' + (X13.rub ? 'true' : 'false') + '" aria-controls="x13-rub-z"><span>Toutes les infos du jour</span><span class="x13-tout-f" aria-hidden="true">' + ppIco('bas', 18) + '</span></button>' +
-      '<div class="x13-rub-z" id="x13-rub-z"' + (X13.rub ? '' : ' hidden') + '><div class="x13-rubs">' + L.map(function (r) {
-      return '<button type="button" class="x13-rb" onclick="V2.ppOuvrir(\'' + r[0] + '\')">' + ppIco(r[2], 18) + '<span>' + esc(r[1]) + '</span>' + (r[3] != null ? '<b>' + esc(r[3]) + '</b>' : '') + '</button>';
-    }).join('') + '</div><div class="pp-pied-btns">' +
-      '<button type="button" class="pp-btn pp-btn-blanc" data-lbl="Copier le brief" onclick="V2.infosCopyBrief(this)">' + ppIco('copier', 18) + 'Copier le brief</button>' +
-      '<button type="button" class="pp-btn pp-btn-blanc" onclick="V2.ppOuvrir(\'sources\')">Voir la fraîcheur des sources</button>' +
-      '</div></div></section>';
-  }
-  /* v3 « Votre secteur d'abord » : deux blocs, même ligne. Les noms des départements viennent de sctMonSecteur() via ppScope() et SCT_DEPNOMS. */
-  function x13Ligne3(e, i) {
-    X13.liste[i] = e;
-    var cli = e.bod && sctTag(e.bod).t === 'client', a = x13Age(e);
-    var kick = e.bod ? e.fam : X13_RUB[e.rub];
-    return '<li><button type="button" class="x13-l" data-x13-i="' + i + '"><span class="x13-lt"><span class="x13-lk"><span class="x13-ru x13-t-' + e.rub + '">' + esc(kick) + '</span>' +
-      (cli ? '<span class="x13-neuf">Votre client</span>' : '') + '<span class="x13-lm">' + esc(e.bod ? (a || 'Annonces légales') : (a ? a + ' · ' : '') + x13Source(e)) + '</span></span>' +
-      '<span class="x13-ltit">' + x13T(e.bod ? sctJoli(e.bod.nom) + ' · ' + sctJoli(e.bod.ville) : e.t) + '</span></span><span class="x13-lf" aria-hidden="true">' + ppIco('bas', 18) + '</span></button></li>';
-  }
-  function x13Page(D, jour, J) {
-    var P = x13Pile(D), S = ppScope(), i = 0;
-    X13.liste = [];
-    var tout = [P.une].concat(P.cmp, P.tend, P.reste).filter(Boolean);
-    // 1) le secteur : un client d'abord, puis les plus récentes ; 4 au plus ; sans doublon de nom
+  /* ════════════════ LE HAUT EN « TROIS PORTES » (09/11/2026, choix de Will · direction C) ════════════════
+     Maquette : ~/jarvis-preuves/maquettes-infos-2026-11-09/c.html (d'après le Catalogue produits et Offilog).
+     Le bandeau bleu (date de l'ÉDITION, phrase, « Copier le brief ») puis trois portes :
+       « Votre secteur » (3 annonces d'officines au plus, moins de 14 jours, chacune avec sa phrase « À dire en rendez-vous »),
+       « En France » (3 infos au plus),
+       « Tout le reste » (une ligne par rubrique, avec son compteur).
+     Une porte ou une ligne ouvre le panneau EXISTANT (PP_VUES) dans la page, à la place des portes, sous la pilule
+     « ← Les trois portes » : ppOuvrirPan range alors #pp-pan dans #inf-volet au lieu de le faire glisser par-dessus la page.
+     Les 11 panneaux restent atteignables : le secteur par la porte 1, les dix autres par la porte 3. */
+  var INF_RUB = [   // porte 3 : clé du panneau, libellé, pictogramme, couleur
+    ['echeances', 'Échéances', 'horloge', '#C7791A'], ['ruptures', 'Ruptures', 'rupture', '#E0556E'], ['rappels', 'Rappels de lot', 'rappel', '#C7791A'],
+    ['concurrents', 'Concurrents', 'concurrent', '#00B5D8'], ['radar', 'Le radar', 'europe', '#0050E6'], ['une', 'La une', 'etoile', '#E0556E'],
+    ['cinq', 'Les cinq', 'liste', '#6D4FC4'], ['mur', 'Toute l’actu', 'journal', '#0050E6'], ['archive', 'Les matins d’avant', 'archive', '#465066'], ['sources', 'Sources', 'lien', '#1E9E6A']];
+  var INF_COUL = { regle: '#6D4FC4', rupture: '#E0556E', rappel: '#C7791A', concurrent: '#00B5D8', actu: '#0050E6', officine: '#0050E6' };
+  var INF_PORTE_IC = {
+    secteur: '<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/>',
+    france: PP_IC.europe,
+    reste: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>' };
+  function infChev(s) { return sctSvg('<path d="M9 5l7 7-7 7"/>', s || 18); }
+
+  /* Porte 1 : les annonces d'OFFICINES du secteur (Bodacc / FINESS), moins de 14 jours (x13Evenements) ; un client d'abord, puis les plus récentes ; 3 au plus ; sans doublon de nom.
+     Un arrêté du Journal officiel qui parle d'officines n'est pas une annonce d'officine : il reste dans « À ne pas manquer » et dans le fil. */
+  function infSecteur(tout) {
     var vu = {}, sec = tout.filter(function (e) {
-      if (e.rub !== 'officine') return false;
-      var k = x13N2(e.bod ? e.bod.nom : e.t).slice(0, 18); if (vu[k]) return false; vu[k] = 1; return true;
+      if (e.rub !== 'officine' || !e.bod) return false;
+      var k = x13N2(e.bod.nom).slice(0, 18); if (vu[k]) return false; vu[k] = 1; return true;
     });
     sec.sort(function (a, b) {
-      var ca = a.bod && sctTag(a.bod).t === 'client' ? 0 : 1, cb = b.bod && sctTag(b.bod).t === 'client' ? 0 : 1;
+      var ca = sctTag(a.bod).t === 'client' ? 0 : 1, cb = sctTag(b.bod).t === 'client' ? 0 : 1;
       return (ca - cb) || String(b.d || '').localeCompare(String(a.d || ''));
     });
-    sec = sec.slice(0, 4);
-    // 2) la France : une règle, une rupture, un rappel (le premier de chaque), complétés par le suivant le plus important ; 3 au plus
+    return sec.slice(0, 3);
+  }
+  /* Porte 2 : une règle, une rupture, un rappel (le premier de chaque), complétés par le suivant le plus important ; 3 au plus */
+  function infFrance(tout) {
     var fr = tout.filter(function (e) { return /^(regle|rupture|rappel|concurrent)$/.test(e.rub); }), pris = [];
     ['regle', 'rupture', 'rappel'].forEach(function (r) { var e = fr.filter(function (x) { return x.rub === r; })[0]; if (e) pris.push(e); });
-    // une de chaque rubrique d'abord (la plus importante devant), les compléments seulement s'il reste de la place
-    pris = pris.sort(function (a, b) { return a.pri - b.pri; });
-    fr.forEach(function (e) { if (pris.length < 3 && pris.indexOf(e) < 0) pris.push(e); });
-    pris = pris.slice(0, Math.max(2, 6 - sec.length));   // 6 infos au plus sur la page
     pris.sort(function (a, b) { return a.pri - b.pri; });
-    var noms = S.deps ? S.deps.map(function (d) { return SCT_DEPNOMS[d] || d; }).sort(function (a, b) { return a.localeCompare(b, 'fr'); }).join(' · ') : '';
-    var titreSec = S.deps ? 'Dans votre secteur' : 'Les officines · toute la France';
+    fr.forEach(function (e) { if (pris.length < 3 && pris.indexOf(e) < 0) pris.push(e); });
+    pris = pris.slice(0, 3);
+    pris.sort(function (a, b) { return a.pri - b.pri; });
+    return pris;
+  }
+  /* Porte 3 : les dix rubriques qui ne sont pas le secteur, chacune avec son compteur (null = pas de nombre à dire) */
+  function infRubriques(D, J) {
+    var rad = D.rad.ruptures, nSrc = (D.C.sources_lues || []).length || D.C.fichiers || 0;
+    var n = { echeances: D.ep.length, ruptures: rad ? rad.v : null, rappels: D.rappels, concurrents: VERIFS ? VERIFS.length : null, radar: (BRIEF.radar || []).length,
+      une: BRIEF.une ? 1 : null, cinq: D.cinq.length, mur: D.fil.length, archive: J.length || null, sources: nSrc || null };
+    return INF_RUB.filter(function (r) { return r[0] !== 'une' || BRIEF.une; }).map(function (r) { return { cle: r[0], lib: r[1], ico: r[2], c: r[3], n: n[r[0]] }; });   // « La une » sans sujet du jour n'ouvrirait rien
+  }
+  function infKick(c) { return 'color:color-mix(in srgb,' + c + ' 58%,#000)'; }
+  /* une ligne de porte : pastille de rubrique + âge, titre, et pour une annonce du secteur la phrase « À dire en rendez-vous » (sctGeste, la même que dans la fiche) */
+  function infLigne(e, i) {
+    X13.liste[i] = e;
+    var tag = e.bod ? sctTag(e.bod).t : '', a = x13Age(e), c = e.bod ? (PP_FC[e.bod.f] || INF_COUL.officine) : (INF_COUL[e.rub] || '#0050E6');
+    var kick = e.bod ? e.fam : X13_RUB[e.rub];
+    var titre = e.bod ? sctJoli(e.bod.nom) + ' · ' + sctJoli(e.bod.ville) : e.t;
+    var dire = e.bod ? '<span class="inf-c-dire"><b>À dire en rendez-vous</b> ' + esc(sctGeste(e.bod, tag)) + '</span>' : '';
+    return '<li class="inf-c-li"><button type="button" class="inf-c-l" data-x13-i="' + i + '" data-info="' + esc(e.bod ? e.bod.id : x14Cle(e.t)) + '" style="--c:' + c + '">' +
+      '<span class="inf-c-k" style="' + infKick(c) + '"><i aria-hidden="true"></i><span>' + esc(kick) + '</span>' + (tag === 'client' ? '<span class="x13-neuf">Votre client</span>' : '') +
+      '<em>' + esc(e.bod ? (a || 'Annonces légales') : (a ? a + ' · ' : '') + String(x13Source(e)).replace(/^Agence du médicament$/, 'ANSM')) + '</em></span>' +
+      '<span class="inf-c-lt">' + x13T(titre) + '</span>' + dire + '</button></li>';
+  }
+  function infPorteTete(cle, titre, sous, n, lib) {
+    return '<div class="inf-c-pt"><span class="inf-c-pic" aria-hidden="true">' + sctSvg(INF_PORTE_IC[cle], 24) + '</span><h2 class="inf-c-ptitre">' + esc(titre) + '</h2>' +
+      (n != null ? '<div class="inf-c-cpt"><b>' + esc(n) + '</b><span>' + esc(lib) + '</span></div>' : '') + '</div>' + (sous ? '<p class="inf-c-sous">' + esc(sous) + '</p>' : '');
+  }
+  function infPortes(S, sec, pris, rub, nSec) {
+    var i = 0, noms = S.deps ? S.deps.map(function (d) { return SCT_DEPNOMS[d] || d; }).sort(function (a, b) { return a.localeCompare(b, 'fr'); }).join(' · ') : '';
+    var titreSec = S.deps ? 'Votre secteur' : 'Les officines · toute la France';
     var sousSec = S.deps ? noms : 'Vue direction : aucun secteur propre, toutes les annonces des 14 derniers jours';
-    var bsec = '<section class="x13-bl x13-bl-sec" aria-labelledby="x13-h-sec"><h2 class="x13-h" id="x13-h-sec" tabindex="-1">' + esc(titreSec) + '</h2><p class="x13-sous">' + esc(sousSec) + '</p>' +
-      (sec.length ? '<ul class="x13-ls">' + sec.map(function (e) { return x13Ligne3(e, i++); }).join('') + '</ul>' :
-        '<p class="x13-vide">Rien de neuf cette semaine dans ' + (S.deps ? 'votre secteur' : 'les officines') + '.</p>') + '</section>';
-    var bfr = '<section class="x13-bl x13-bl-fr" aria-labelledby="x13-h-fr"><h2 class="x13-h" id="x13-h-fr" tabindex="-1">En France</h2><p class="x13-sous">Ce qui touche toutes les officines</p>' +
-      (pris.length ? '<ul class="x13-ls">' + pris.map(function (e) { return x13Ligne3(e, i++); }).join('') + '</ul>' : '<p class="x13-vide">Rien de neuf aujourd’hui.</p>') + '</section>';
+    var piedSec = nSec == null ? '' : '<button type="button" class="inf-c-pied" data-ouvre="secteur"><span>' + (S.dir ? 'Voir les ' + nSec + ' annonces, la carte, changer de secteur' : 'Voir les ' + nSec + ' annonces des 3 derniers mois, et la carte') + '</span><span class="inf-c-chev" aria-hidden="true">' + infChev() + '</span></button>';
+    var p1 = '<article class="inf-c-porte" data-porte="secteur">' + infPorteTete('secteur', titreSec, sousSec, nSec, 'annonces en 3 mois') +
+      (sec.length ? '<ul class="inf-c-ls">' + sec.map(function (e) { return infLigne(e, i++); }).join('') + '</ul>' :
+        '<p class="inf-c-vide">Rien de neuf cette semaine dans ' + (S.deps ? 'votre secteur' : 'les officines') + '.</p>') + piedSec + '</article>';
+    var p2 = '<article class="inf-c-porte" data-porte="france">' + infPorteTete('france', 'En France', 'Ce qui touche toutes les officines.', pris.length, pris.length > 1 ? 'infos à retenir' : 'info à retenir') +
+      (pris.length ? '<ul class="inf-c-ls">' + pris.map(function (e) { return infLigne(e, i++); }).join('') + '</ul>' : '<p class="inf-c-vide">Rien de neuf en France aujourd’hui.</p>') +
+      (pris.length ? '<button type="button" class="inf-c-pied" data-porte-ouvre="france"><span>Lire ' + (pris.length > 1 ? 'les ' + pris.length + ' infos' : 'l’info') + '</span><span class="inf-c-chev" aria-hidden="true">' + infChev() + '</span></button>' : '') + '</article>';
+    var p3 = '<article class="inf-c-porte" data-porte="reste">' + infPorteTete('reste', 'Tout le reste', 'Les autres rubriques, une ligne chacune.', rub.length, 'rubriques') +
+      '<div class="inf-c-reste">' + rub.map(function (r) {
+        return '<button type="button" class="inf-c-rub" data-ouvre="' + r.cle + '" style="--c:' + r.c + '"><span class="inf-c-ri" aria-hidden="true">' + ppIco(r.ico, 17) + '</span><span class="inf-c-rl">' + esc(r.lib) + '</span>' +
+          (r.n != null ? '<span class="inf-c-rn">' + esc(r.n) + '</span>' : '') + '<span class="inf-c-rc" aria-hidden="true">' + infChev(16) + '</span></button>';
+      }).join('') + '</div></article>';
+    return '<div class="inf-c-portes">' + p1 + p2 + p3 + '</div>';
+  }
+  /* Le volet : la pilule de retour, puis la place où ppOuvrirPan range #pp-pan */
+  function infVoletCoque(cle) {
+    var lib = cle === 'secteur' ? 'Porte 1 · ' + (ppScope().deps ? 'Votre secteur' : 'Les officines') : cle === 'france' ? 'Porte 2 · En France' : 'Porte 3 · Tout le reste · ' + (INF_RUB.filter(function (r) { return r[0] === cle; })[0] || ['', ''])[1];
+    return '<div class="inf-c-vtete"><button type="button" class="inf-c-retour" data-revenir>' + ppIco('retour', 18) + ' Les trois portes</button><p>' + esc(lib) + '</p></div><div class="inf-c-volet" id="inf-volet"></div>';
+  }
+  /* La porte 2 ouverte : les infos de France avec leur résumé, dans le même panneau que les autres */
+  function infVoletFrance() {
+    var L = INF.france || [];
+    ppOuvrirPan({ sur: 'En France · ' + ppPl(L.length, 'info'), html: '<h2>En France</h2><div class="pp-chapo">Ce qui touche toutes les officines, quel que soit le secteur.</div><div class="pp-bloc" style="margin-top:14px">' +
+      (L.length ? L.map(function (e) {
+        var p0 = (e.item.paras || []).filter(Boolean)[0] || '', a = x13Age(e);
+        return ppLigne({ item: e.item, c: INF_COUL[e.rub] || '#0050E6', ico: X13_ICO[e.rub] || 'journal', t: x13T(e.t), s: esc(p0.length > 200 ? p0.slice(0, 197).replace(/\s+\S*$/, '') + '…' : p0), d: esc([x13Source(e), a].filter(Boolean).join(' · ')) });
+      }).join('') : '<div class="pp-vide">Rien de neuf en France aujourd’hui.</div>') + '</div>' });
+  }
+  function infOuvrir(cle, origine) {
+    var z = document.getElementById('inf-zone'), racine = z && z.closest('.inf-m1');
+    if (!z || (cle !== 'france' && !PP_VUES[cle])) return;
+    INF.porte = cle; INF.y = window.pageYOffset || 0; INF.opener = origine || null;
+    z.innerHTML = infVoletCoque(cle); racine.classList.add('inf-c-ouvert');
+    if (cle === 'france') infVoletFrance(); else PP_VUES[cle]();
+    var v = document.getElementById('inf-volet'), calme = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo(0, 0);
+    if (v && v.animate && !calme) {   // le volet naît de l'élément touché
+      var r = origine && origine.getBoundingClientRect ? origine.getBoundingClientRect() : null, b = v.getBoundingClientRect();
+      v.style.transformOrigin = r && b.width ? Math.max(0, Math.min(100, (r.left + r.width / 2 - b.left) / b.width * 100)) + '% ' + Math.max(0, Math.min(100, (r.top + r.height / 2 - b.top) / b.height * 100)) + '%' : '50% 0';
+      v.animate([{ opacity: 0, transform: 'scale(.94)' }, { opacity: 1, transform: 'none' }], { duration: 280, easing: 'cubic-bezier(.32,.72,0,1)' });
+    }
+    var rb = z.querySelector('[data-revenir]'); if (rb) { try { rb.focus({ preventScroll: true }); } catch (er) {} }
+  }
+  /* revenir aux trois portes : on referme le panneau, qui rend lui-même les portes (ppFermer → infSortie) */
+  function infRevenir() { if (ppOuvert()) ppFermer(); else infSortie(); }
+  function infSortie() {
+    var z = document.getElementById('inf-zone'), racine = z && z.closest('.inf-m1'), o = INF.opener, y = INF.y;
+    INF.porte = null; INF.opener = null;
+    if (!z) return;
+    z.innerHTML = INF.html; if (racine) racine.classList.remove('inf-c-ouvert');
+    window.scrollTo(0, y);
+    var cible = o && document.body.contains(o) ? o : (o && o.getAttribute ? z.querySelector('[data-ouvre="' + o.getAttribute('data-ouvre') + '"],[data-porte-ouvre="' + o.getAttribute('data-porte-ouvre') + '"]') : null);
+    if (cible) { try { cible.focus({ preventScroll: true }); } catch (er) {} }
+  }
+  /* la date : celle de l'ÉDITION (clé jour du fichier), jamais l'horloge ; dite en clair quand ce n'est pas celle du jour */
+  function infEdition(jour, nSrc) {
+    var auj = ''; try { auj = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }); } catch (e) {}
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(auj)) auj = x13Jour();
+    var h = ''; try { var g = new Date(BRIEF.genere); if (!isNaN(g.getTime())) h = g.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }).replace(':', ' h '); } catch (e) {}
+    var jl = PP_JS[new Date(jour + 'T12:00:00').getDay()] + ' ' + ppDc(jour), duJour = jour === auj;
+    return { eye: duJour ? jl : 'Édition du ' + jl, ligne: '<b>' + (h ? 'Édition de ' + h : 'Édition du matin') + '</b>' + (duJour ? '' : ' · celle d’aujourd’hui n’est pas encore composée') + (nSrc ? ' · ' + ppPl(nSrc, 'source') : '') };
+  }
+  function x13Page(D, jour, J) {
+    var P = x13Pile(D), S = ppScope();
+    X13.liste = [];
+    var tout = [P.une].concat(P.cmp, P.tend, P.reste).filter(Boolean);
+    var sec = infSecteur(tout), pris = infFrance(tout), rub = infRubriques(D, J);
+    var nSec = SECTEUR && (SECTEUR.ev || []).length && (S.deps || S.dir) ? ppAnnonces(S.deps).length : null;
+    INF.france = pris;
+    INF.html = infPortes(S, sec, pris, rub, nSec);   // remplit X13.liste : x14Fil écarte ce que le haut affiche déjà
     x14Fil(D, J);
     var arr = !INF.vu || Date.now() - INF.t < 900; if (!INF.vu) INF.t = Date.now(); INF.vu = true; INF.stop = false;   // l'arrivée ne joue qu'une fois par ouverture de l'écran ; un second dessin dans les 900 ms la poursuit là où elle en est
     var sk = Date.now() - INF.t;
-    var nFil = X14.liste.length, fil = x14Rend();
-    return '<div class="w-page x13 x13v3 inf-m1 inf-m1-bandeau' + (arr ? ' inf-ent' : '') + '"' + (arr && sk > 30 ? ' style="--inf-sk:-' + sk + 'ms"' : '') + '>' +
-      infEntete(esc(PP_JS[new Date(jour + 'T12:00:00').getDay()] + ' ' + ppDc(jour)), infPhrase(S, sec, pris, nFil),
-        infCap('sec', S.deps ? 'Votre secteur' : 'Les officines', sec.length) + infCap('fr', 'En France', pris.length) + (fil ? infCap('fil', 'Le fil', nFil, ' data-inf-fil') + infCap('gardees', 'Gardées', x15N(), ' data-f3-n') : ''),
-        bsec) +
-      '<div class="x13-deux">' + bfr + '</div>' + x13Rubriques(D, J) + fil + '</div>';
+    var nFil = X14.liste.length, fil = x14Rend(), ed = infEdition(jour, (D.C.sources_lues || []).length || D.C.fichiers || 0);
+    return '<div class="w-page x13 x13v3 inf-m1 inf-c' + (INF.porte ? ' inf-c-ouvert' : '') + (arr ? ' inf-ent' : '') + '"' + (arr && sk > 30 ? ' style="--inf-sk:-' + sk + 'ms"' : '') + '>' +
+      infEntete(esc(ed.eye), infPhrase(S, sec, pris, nFil), ed.ligne) +
+      '<div class="inf-c-zone" id="inf-zone">' + (INF.porte ? infVoletCoque(INF.porte) : INF.html) + '</div>' + fil + '</div>';
   }
-  /* ── l'en-tête bleu : date, titre, UNE phrase calculée, capsules à compteurs (un compteur = le nombre affiché dans le bloc visé) ── */
+  /* ── l'en-tête bleu : date de l'édition, titre, UNE phrase calculée sur les lignes affichées, « Copier le brief » ── */
   function infNum(n, att) { return '<span class="inf-num"' + (att || '') + '>' + n + '</span>'; }
   function infPhrase(S, sec, pris, nFil) {
     var n = sec.length, cpt = {}, fr = [], court, long;
@@ -1149,25 +1234,15 @@
     var s = f(long); if (s.replace(/<[^>]+>/g, '').length > 110) s = f(court);
     return s;
   }
-  function infCap(k, lib, n, att) { return '<button type="button" class="inf-cap" data-inf-cap="' + k + '"><span>' + esc(lib) + '</span><b class="inf-cnt"' + (att || '') + '>' + n + '</b></button>'; }
-  function infEntete(date, phrase, caps, dans) {
-    return '<header class="inf-hd"><span class="inf-lu" aria-hidden="true"></span><div class="inf-hd-t"><p class="inf-eye">' + date + '</p><h1 class="inf-h1">Infos du jour</h1><p class="inf-phrase">' + phrase + '</p>' +
-      '<div class="inf-caps" role="group" aria-label="Aller directement à">' + caps + '</div></div>' + dans + '</header>';
+  function infEntete(date, phrase, ligne) {
+    return '<header class="inf-hd"><span class="inf-lu" aria-hidden="true"></span><div class="inf-hd-t"><p class="inf-eye">' + date + '</p><h1 class="inf-h1">Infos du jour</h1><p class="inf-phrase">' + phrase + '</p><p class="inf-ed">' + ligne + '</p></div>' +
+      '<button type="button" class="inf-copie" data-lbl="Copier le brief" onclick="V2.infosCopyBrief(this)">' + ppIco('copier', 18) + 'Copier le brief</button></header>';
   }
   function infMaj() {   // le fil a été recalculé (source masquée) : les deux nombres du fil suivent
     var n = X14.liste.length, ns = document.querySelectorAll('[data-inf-fil]'), i;
     for (i = 0; i < ns.length; i++) ns[i].textContent = n;
   }
   function infStop() { INF.stop = true; var r = document.querySelector('.inf-ent'); if (r) r.classList.remove('inf-ent'); }
-  function infVa(k) {   // une capsule amène au bloc ; « Gardées » ouvre l'onglet
-    var v = k === 'gardees' ? 'gardees' : 'fil', cible, foc;
-    if (k === 'gardees' || k === 'fil') { if (X15.vue !== v) { X15.vue = v; x15Redessine(); } cible = document.querySelector('.f3-fil'); foc = k === 'fil' ? document.getElementById('f3-h') : document.querySelector('.f3-ong [data-f3-v="gardees"]'); }
-    else { foc = document.getElementById(k === 'sec' ? 'x13-h-sec' : 'x13-h-fr'); cible = foc && foc.closest('section'); }
-    if (!cible) return;
-    var calme = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    try { cible.scrollIntoView({ behavior: calme ? 'auto' : 'smooth', block: 'start' }); } catch (er) { cible.scrollIntoView(); }
-    if (foc) { try { foc.focus({ preventScroll: true }); } catch (er) {} }
-  }
   function infApres(root) {   // après le dessin : compteurs qui comptent à l'arrivée, scène en pause hors écran
     var r = root.querySelector('.inf-m1'), h = r && r.querySelector('.inf-hd'); if (!r || !h) return;
     if (INF.obs) INF.obs.disconnect();
@@ -1593,20 +1668,17 @@
     if (e.target.closest('[data-x13-ferme]') || (e.target.classList && e.target.classList.contains('x13-voile'))) { x13Ferme(); return; }
     var root = e.target.closest('.x13'); if (!root) return;
     var t;
-    if ((t = e.target.closest('[data-inf-cap]'))) { infVa(t.getAttribute('data-inf-cap')); return; }
+    if ((t = e.target.closest('[data-revenir]'))) { infRevenir(); return; }
+    if ((t = e.target.closest('[data-ouvre]'))) { infOuvrir(t.getAttribute('data-ouvre'), t); return; }
+    if ((t = e.target.closest('[data-porte-ouvre]'))) { infOuvrir(t.getAttribute('data-porte-ouvre'), t); return; }
     if ((t = e.target.closest('[data-x13-tout]'))) {
       var z = root.querySelector('.x13-reste'); z.hidden = false; t.setAttribute('aria-expanded', 'true'); t.hidden = true;
       var p1 = z.querySelector('.x13-c'); if (p1) { try { p1.focus({ preventScroll: true }); } catch (er) {} }
       return;
     }
-    if ((t = e.target.closest('[data-x13-rub]'))) {
-      var zr = root.querySelector('.x13-rub-z'); X13.rub = zr.hidden; zr.hidden = !X13.rub; t.setAttribute('aria-expanded', X13.rub ? 'true' : 'false');
-      if (X13.rub) { try { zr.scrollIntoView({ block: 'nearest' }); } catch (er) {} }
-      return;
-    }
     if ((t = e.target.closest('[data-garde-i]'))) { var og = x15Ouvrable(t.getAttribute('data-garde-i')); if (og) x13Ouvre(t.closest('.f3-c') || t, og); return; }   // une info gardée (onglet Gardées) : la feuille de lecture, avec sa copie
     if ((t = e.target.closest('[data-fil-i]'))) { x14Ouvre(t); return; }   // le fil d'infos visuel (socle 22/10/2026)
-    if ((t = e.target.closest('.x13-c,.x13-une,.x13-tr,.x13-l'))) x13Ouvre(t);
+    if ((t = e.target.closest('.x13-c,.x13-une,.x13-tr,.x13-l,.inf-c-l'))) x13Ouvre(t);
   }
   if (!V2._x13Ecoute) {
     V2._x13Ecoute = true;
@@ -1615,7 +1687,7 @@
     document.addEventListener('touchstart', x13Ecoute, { passive: true });
     document.addEventListener('touchend', x13Ecoute, { passive: true });
     // on lit l'adresse elle-même : cet écouteur passe AVANT celui du routeur (v2-app.js), V2.route date encore de l'écran quitté
-    window.addEventListener('hashchange', function () { if ((location.hash || '').replace(/^#/, '').split('/')[0] !== 'infos') { x13Reset(); X13.rub = false; INF.vu = false; } });
+    window.addEventListener('hashchange', function () { if ((location.hash || '').replace(/^#/, '').split('/')[0] !== 'infos') { x13Reset(); INF.porte = null; INF.opener = null; INF.vu = false; } });
   }
 
   /* ════════════════════════════ RENDU ════════════════════════════ */
@@ -1653,6 +1725,10 @@
       var J = (ARCHIVE && ARCHIVE.jours) || [];
 
       x13Reset();   // la page est redessinée : une feuille restée ouverte n'a plus sa carte
+      // un volet ouvert survit au redessin (changement de secteur, arrivée d'un fichier) : le panneau est mis de côté puis remis dans le volet neuf
+      var pan0 = document.getElementById('pp-pan');
+      INF.garde = INF.porte && pan0 && pan0.classList.contains('en-volet') ? pan0 : null;
+      if (INF.garde) { if (INF.garde.parentNode) INF.garde.parentNode.removeChild(INF.garde); } else INF.porte = null;
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="v2-wrap inf2 pp">' +
           '<span class="pp-ciel" aria-hidden="true"></span>' +
@@ -1660,6 +1736,7 @@
           '<footer class="pp-pied"><span>' + gen + '</span></footer>' +
         '</div>';
       infApres(root);
+      var vz = document.getElementById('inf-volet'); if (INF.garde) { if (vz) vz.appendChild(INF.garde); else document.body.appendChild(INF.garde); INF.garde = null; }
 
       // venu de l'ancienne feature « Concurrents » (#infos/concurrents) : ouvrir directement son panneau
       if (V2.route && V2.route.param === 'concurrents' && !PP_CONC_AUTO) { PP_CONC_AUTO = true; if (!ppOuvert()) PP_VUES.concurrents(); }
