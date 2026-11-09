@@ -233,6 +233,8 @@
     paraphMemoSrc = src; paraphMemo = out;
     return out;
   }
+  // 09/11/2026 : V2.fmtEur met une espace ordinaire avant « € » ; à 390 px, une pastille cassait « 123,45 » / « € ». Dans les pastilles, le montant et son euro restent collés.
+  function colleEuro(h) { return String(h).replace(/(\d) €/g, '$1\u00a0€'); }
   function cerpLabel(x) { return 'CERP ' + V2.fmtEur(x.price) + (x.qte > 0 ? ' dès ' + x.qte : ''); }
   function cerpTip(x) {
     return 'Offre CERP de ' + x.periode + (x.qte > 0 ? ', à partir de ' + x.qte + ' unité' + (x.qte > 1 ? 's' : '') : '') +
@@ -1032,7 +1034,7 @@
       '<div class="off-card-body">' +
         (it.brand ? '<div class="off-card-brand">' + esc(it.brand) + '</div>' : '<div class="off-card-brand">&nbsp;</div>') +
         '<div class="off-card-name">' + esc(it.name) + '</div>' +
-        '<div class="off-card-price mono">' + (it.price > 0 ? V2.fmtEur(it.price) : '—') +
+        '<div class="off-card-price mono">' + colleEuro((it.price > 0 ? V2.fmtEur(it.price) : '—') +
           (it.pz && it.pz.price > 0 ? '<span class="off-card-pz' + (it.pzCheaper ? ' win' : '') + '">Pharmazon ' + V2.fmtEur(it.pz.price) + '</span>' : '') +
           (it.sg && it.sg.price > 0 ? '<span class="off-card-pz' + (it.sgCheaper ? ' win' : '') + '" title="Tarif d\'achat Sagitta (HT)">Sagitta ' + V2.fmtEur(it.sg.price) + '</span>' : '') +
           (it.ocp && it.ocp.price > 0 ? '<span class="off-card-pz' + (it.ocpCheaper ? ' win' : '') + '" title="Prix net OCP, catalogue Les Incontournables (HT)">OCP ' + V2.fmtEur(it.ocp.price) + '</span>' : '') +
@@ -1043,7 +1045,7 @@
           PUBS.map(function (P) {
             return it.pub[P.k] > 0 ? '<span class="off-card-pub" style="--c:' + P.color + '" title="' + P.tip + ' · relevé du ' + esc(majLabel(window[P.g + '_MAJ'])) + '">' + P.label + ' ' + V2.fmtEur(it.pub[P.k]) + '</span>' : '';
           }).join('') +
-          concBelow + '</div>' + cmpLine(it) + pcatLine(it) +
+          concBelow) + '</div>' + cmpLine(it) + pcatLine(it) +
       '</div>' +
     '</div>';
   }
