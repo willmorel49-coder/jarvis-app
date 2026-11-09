@@ -279,6 +279,7 @@ SOURCES = [
     ('Tiffany', 'TIF'),      # Escale Pharma (59, 62, 02)
     ('Philippe', 'PHI'),       # Escale Pharma (60, 62, 80, 76) — Philippe Caudelle (Will, 24/09/2026)
     ('Germain', 'GER'),      # Escale Pharma (60, 28)
+    ('Geoffrey', 'GSE'),     # remplace Arthur Dantec (ex-code ADC) — 8 officines au 09/11/2026 (Will, 09/11/2026)
 ]
 # Codes présents dans les exports « total ventes » mais VOLONTAIREMENT hors du CRM
 # (décision de Will, 10/09/2026 : focus sur l'équipe commerciale). Leurs fichiers
@@ -293,10 +294,14 @@ EXCLUS = ['ADC', 'VM', 'AM', 'SEP', 'GL', 'AUL', 'SV', 'LP',
 # code officine -> (commercial, code hors périmètre)
 RATTACHEES = {
     '2273308': ('Will', 'ADC'),   # Pharmacie Ropars (Brest) : ADC de janv. à août 2026, WML depuis sept. (Will, 09/10/2026)
-    # Les autres officines du code ADC attendent un futur commercial (Will, 09/10/2026) : seules
-    # celles que l'outil de gestion a déjà passées sous le code d'un commercial sont rattachées.
-    '2013601': ('Arthur', 'ADC'), # Pharmacie de Lududu (Quimper) : ALH depuis sept.
     '2084981': ('Karine', 'ADC'), # Pharmacie de Penthièvre (Yffiniac) : KV depuis sept.
+    # ADC = Arthur Dantec ; Geoffrey (GSE) le remplace (Will, 09/11/2026). L'historique ADC d'une
+    # officine va à celui qui la suit dans l'export clients actifs du 09/11/2026.
+    '2013601': ('Geoffrey', 'ADC'), # Pharmacie de Lududu (Quimper) : GSE au 09/11 (était chez Arthur L. ; ses ventes ALH de sept. restent à Arthur)
+    '2005964': ('Geoffrey', 'ADC'), # Pharmacie de Guiclan
+    '2288089': ('Geoffrey', 'ADC'), # Pharmacie Picard (Plouvorn)
+    '2272236': ('Geoffrey', 'ADC'), # Pharmacie du Bien Être (Plabennec)
+    '2095768': ('Geoffrey', 'ADC'), # Pharmacie de la Mer d'Iroise (Ploumoguer)
 }
 # Escale écrit ses avoirs (PCVNUM « AC_… ») en POSITIF = montant rendu à l'officine,
 # là où les exports Intégral les écrivent déjà en négatif. Un avoir Escale est le
