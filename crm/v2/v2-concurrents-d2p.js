@@ -83,7 +83,8 @@
       '.d2p-tot td{font-weight:800;background:#F4F7FD}',
       '.d2p-win{color:#10915E;font-weight:700}.d2p-lose{color:#C8385A;font-weight:700}',
       '.d2p-cart2{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:0 0 8px}',
-      '@media (max-width:700px){.d2p-cart2{grid-template-columns:1fr 1fr;gap:10px}.d2p-ligne{grid-template-columns:1fr}.d2p-sec h2{font-size:18px}}'
+      // 09/11/2026 — sur téléphone chaque ligne devient une fiche (v2-concurrents.js) : une case vide (ligne total) n'y affiche pas son intitulé seul.
+      '@media (max-width:700px){.d2p-cart2{grid-template-columns:1fr 1fr;gap:10px}.d2p-ligne{grid-template-columns:1fr}.d2p-sec h2{font-size:18px}.cc-table td.d2p-vide{display:none}}'
     ].join('\n');
     document.head.appendChild(s);
   }
@@ -93,9 +94,9 @@
   // `txt` : indices des colonnes de TEXTE (alignées à gauche, qui passent à la ligne) ; les autres sont des chiffres (à droite).
   function table(cols, lignes, tot, txt) {
     txt = txt || [0];
-    var cl = function (i) { return txt.indexOf(i) < 0 ? ' class="num"' : ''; };
+    var cl = function (i, v) { var k = [txt.indexOf(i) < 0 ? 'num' : '', v === '' ? 'd2p-vide' : ''].filter(Boolean).join(' '); return k ? ' class="' + k + '"' : ''; };
     var h = cols.map(function (c) { return '<th>' + esc(c) + '</th>'; }).join('');
-    var row = function (r, c) { return '<tr' + (c ? ' class="' + c + '"' : '') + '>' + r.map(function (v, i) { return '<td data-label="' + esc(cols[i]) + '"' + cl(i) + '>' + v + '</td>'; }).join('') + '</tr>'; };
+    var row = function (r, c) { return '<tr' + (c ? ' class="' + c + '"' : '') + '>' + r.map(function (v, i) { return '<td data-label="' + esc(cols[i]) + '"' + cl(i, v) + '>' + v + '</td>'; }).join('') + '</tr>'; };
     var b = lignes.map(function (r) { return row(r); }).join('') + (tot ? row(tot, 'd2p-tot') : '');
     return '<div class="cc-tablewrap"><table class="v2-table cc-table"><thead><tr>' + h + '</tr></thead><tbody>' + b + '</tbody></table></div>';
   }
@@ -204,6 +205,8 @@
   V2.d2pRender = function (root, param, nav) {
     injectCss();
     var code = String(param || '').replace(/^d2p\/?/, '');
+    // 09/11/2026 — V2.go encode le « / » (#concurrents/d2p%2F<code>) : on réécrit l'adresse propre, comme v2-concurrents-carte.js pour g/ et gr/.
+    if (code) { try { var propre = '#concurrents/d2p/' + encodeURIComponent(code); if (location.hash !== propre) history.replaceState(null, '', propre); } catch (e) {} }
     var corps;
     if (SANS) corps = etat('Indisponible', 'Ce dossier n\'existe pas dans cet espace.');
     else if (!window.D2P_DATA) {
