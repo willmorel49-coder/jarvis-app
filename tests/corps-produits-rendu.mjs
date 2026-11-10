@@ -66,6 +66,9 @@ vm.runInContext(`window.V2 = { pages:{}, sales:[], pharmacies:[],
     if (Math.abs(n) >= 1000) return Math.round(n).toLocaleString('fr-FR') + ' €';
     return n.toFixed(2).replace('.', ',') + ' €'; },
   fmtNum: n => Math.round(+n||0).toLocaleString('fr-FR'),
+  // v2-boot.js depuis le 05/11/2026 (4f05a4b5) : sans dates de tarifs chargees, la vraie fonction rend '' ;
+  // son texte et sa couleur sont prouves par tarif-age.test.mjs (10/11/2026).
+  tarifAgeHtml: () => '',
   topbar: () => '<header></header>', go: () => {}, toast: () => {}, render: () => {} };
   window.ICO = () => '';`, sb);
 
