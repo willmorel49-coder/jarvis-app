@@ -1060,32 +1060,32 @@
   // n'existent plus nulle part (ni porte, ni écran). Un réglage enregistré qui les cite encore est écarté par u2Net.
   // k = nom de la route mesurée par V2.mesurer (= `ecran` côté base) ; page = écran qui doit exister.
   var G4_PORTES = {
-    pharma: { fam: 'clients', ico: 'officines', nom: 'Officines', ph: 'La fiche de chaque client et prospect', page: 'pharma' },
-    produits: { fam: 'produits', ico: 'catalogue', nom: 'Catalogue produits', ph: 'Prix et stock des 7 établissements', page: 'produits' },
-    pilotage: { fam: 'piloter', ico: 'pilotage', nom: 'Pilotage', ph: 'CA, marge et objectifs', page: 'pilotage' },
-    marketing: { fam: 'communiquer', ico: 'marketing', nom: 'Marketing', ph: 'Supports, sélections, LinkedIn', page: 'marketing' },
-    infos: { fam: 'piloter', ico: 'infos', nom: 'Infos du matin', ph: 'Le brief du jour', page: 'infos' },
-    rdv: { fam: 'clients', ico: 'rdv', nom: 'Rendez-vous', ph: 'Demander et suivre vos rendez-vous', page: 'rdv' },
-    carte: { fam: 'clients', ico: 'carte', nom: 'La carte', ph: 'Clients, prospects et votre tournée', page: 'carte' },
-    appro: { fam: 'produits', ico: 'appro', nom: 'Appro Intégral', ph: 'Couverture de stock et ruptures', page: 'appro' },
-    todo: { fam: 'clients', ico: 'todo', nom: 'To do list', ph: 'Rendez-vous à demander, remerciements, ouvertures', page: 'todo' },
+    pharma: { fam: 'accueil', ico: 'officines', nom: 'Officines', ph: 'La fiche de chaque client et prospect', page: 'pharma' },
+    produits: { fam: 'accueil', ico: 'catalogue', nom: 'Catalogue produits', ph: 'Prix et stock des 7 établissements', page: 'produits' },
+    pilotage: { fam: 'accueil', ico: 'pilotage', nom: 'Pilotage', ph: 'CA, marge et objectifs', page: 'pilotage' },
+    marketing: { fam: 'accueil', ico: 'marketing', nom: 'Marketing', ph: 'Supports, sélections, LinkedIn', page: 'marketing' },
+    infos: { fam: 'accueil', ico: 'infos', nom: 'Infos du matin', ph: 'Le brief du jour', page: 'infos' },
+    rdv: { fam: 'direct', ico: 'rdv', nom: 'Rendez-vous', ph: 'Demander et suivre vos rendez-vous', page: 'rdv' },
+    carte: { fam: 'accueil', ico: 'carte', nom: 'La carte', ph: 'Clients, prospects et votre tournée', page: 'carte' },
+    appro: { fam: 'dev', ico: 'appro', nom: 'Appro Intégral', ph: 'Couverture de stock et ruptures', page: 'appro' },
+    todo: { fam: 'accueil', ico: 'todo', nom: 'To do list', ph: 'Rendez-vous à demander, remerciements, ouvertures', page: 'todo' },
     // 16/10/2026 — Bloc-notes : notes écrites ou vocales au fil de la journée ; le robot du soir propose les mises à jour du CRM. Privé à chacun, jamais côté OPSO (voir u2Cles).
-    blocnotes: { fam: 'clients', ico: 'blocnotes', nom: 'Bloc-notes', ph: 'Écrire ou dicter au fil de la journée ; le robot met le CRM à jour le soir', page: 'blocnotes' },
-    biosimilaires: { fam: 'produits', ico: 'biosim', nom: 'Biosimilaires', ph: 'Les biosimilaires et leurs références', page: 'biosimilaires' },
-    offilog: { fam: 'produits', ico: 'offilog', nom: 'Offilog', ph: 'La centrale parapharmacie', page: 'offilog' },
-    concurrents: { fam: 'piloter', ico: 'concurrents', nom: 'Concurrents', ph: 'Ce que font les autres', page: 'concurrents' },
-    remontees: { fam: 'communiquer', ico: 'remontees', nom: 'Le QG', ph: 'Messages, sujets et remontées de l\'équipe', page: 'remontees' },
+    blocnotes: { fam: 'dev', ico: 'blocnotes', nom: 'Bloc-notes', ph: 'Écrire ou dicter au fil de la journée ; le robot met le CRM à jour le soir', page: 'blocnotes' },
+    biosimilaires: { fam: 'direct', ico: 'biosim', nom: 'Biosimilaires', ph: 'Les biosimilaires et leurs références', page: 'biosimilaires' },
+    offilog: { fam: 'accueil', ico: 'offilog', nom: 'Offilog', ph: 'La centrale parapharmacie', page: 'offilog' },
+    concurrents: { fam: 'direct', ico: 'concurrents', nom: 'Concurrents', ph: 'Ce que font les autres', page: 'concurrents' },
+    remontees: { fam: 'dev', ico: 'remontees', nom: 'Le QG', ph: 'Messages, sujets et remontées de l\'équipe', page: 'remontees' },
     // 14/10/2026 — fil de discussion de l'équipe (idée d'une commerciale). L'écran n'est chargé que hors espace OPSO : sans lui, pas de porte.
-    discussion: { fam: 'communiquer', ico: 'discussion', nom: 'Le QG', ph: 'Messages, sujets et remontées de l\'équipe', page: 'discussion' },
-    marchefr: { fam: 'piloter', ico: 'marche', nom: 'Le marché', ph: 'Le marché français d\'une référence, région par région', page: 'marchefr' },
-    carteGrp: { fam: 'piloter', ico: 'carte-grp', nom: 'Carte des groupements', ph: 'Où sont les adhérents de chaque groupement', page: 'carteGrp' },
+    discussion: { fam: 'dev', ico: 'discussion', nom: 'Le QG', ph: 'Messages, sujets et remontées de l\'équipe', page: 'discussion' },
+    marchefr: { fam: 'dev', ico: 'marche', nom: 'Le marché', ph: 'Le marché français d\'une référence, région par région', page: 'marchefr' },
+    carteGrp: { fam: 'dev', ico: 'carte-grp', nom: 'Carte des groupements', ph: 'Où sont les adhérents de chaque groupement', page: 'carteGrp' },
     // 16/10/2026 — La Mallette : les documents à envoyer (catalogues, fiches, pas-à-pas, listings), en un seul PDF ou séparés, avec le mail. Choix de Will (maquette m1).
-    mallette: { fam: 'communiquer', ico: 'mallette', nom: 'La Mallette', ph: 'Les documents à envoyer, en un seul PDF ou séparés', page: 'mallette' },
+    mallette: { fam: 'dev', ico: 'mallette', nom: 'La Mallette', ph: 'Les documents à envoyer, en un seul PDF ou séparés', page: 'mallette' },
     // 16/10/2026 — Documents : le classement des grossistes, groupements et laboratoires, consultable depuis l'iPhone. Porte visible seulement si documents_acces_ok() = true (voir docOk).
-    documents: { fam: 'communiquer', ico: 'documents', nom: 'Documents', ph: 'Tarifs, conditions et catalogues, rangés par dossier', page: 'documents' },
-    lgo: { fam: 'communiquer', ico: 'lgo', nom: 'Logiciels officine', ph: 'Importer le catalogue dans chaque logiciel', page: 'lgo' },
+    documents: { fam: 'accueil', ico: 'documents', nom: 'Documents', ph: 'Tarifs, conditions et catalogues, rangés par dossier', page: 'documents' },
+    lgo: { fam: 'direct', ico: 'lgo', nom: 'Logiciels officine', ph: 'Importer le catalogue dans chaque logiciel', page: 'lgo' },
     // JARVIS Academy : lien externe (Q_ACADEMY), dans « Communiquer et progresser » ; pas d'écran de l'app (page: null).
-    academy: { fam: 'communiquer', ico: 'academy', nom: 'JARVIS Academy', ph: 'Se former à l\'outil, pas à pas', page: null }
+    academy: { fam: 'dev', ico: 'academy', nom: 'JARVIS Academy', ph: 'Se former à l\'outil, pas à pas', page: null }
   };
   var G4_CLE_ORDRE = 'jarvis_accueil_ordre2';
   var _g4Ordre = null;        // [{e, o, p}] : écran, ouvertures, personnes (jamais affichés)
@@ -1204,10 +1204,12 @@
   function u2Ic(n, s, cls) {
     return '<svg class="u2-ic' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true" focusable="false"' + (s ? ' style="width:' + s + 'px;height:' + s + 'px"' : '') + '>' + (U2_IC[n] || U2_IC.doc) + '</svg>';
   }
+  // 10/11/2026 (Will) — rangement : « Outils » (accès direct) et « En développement » (replié) sont les deux seuls groupes de la barre ; « accueil » regroupe
+  // les outils posés au centre de l'accueil (jamais dans la barre : pas de redite). Anciennement quatre groupes (clients, produits, piloter, communiquer).
   // Les quatre groupes de la maquette « les grandes portes » (02/10/2026), dans cet ordre : [clé, nom, picto]. Le rattachement d'un outil est le champ `fam` de G4_PORTES.
   // Avant, six familles (clients, produits, piloter, veille, communiquer, aide) : U2_ANCIENNES sert à relire les réglages déjà enregistrés (voir u2Net).
-  var U2_FAMS = [['clients', 'Mes clients', 'clients'], ['produits', 'Produits et prix', 'produits'], ['piloter', 'Piloter et veiller', 'pilotage'], ['communiquer', 'Communiquer et progresser', 'marketing']];
-  var U2_ANCIENNES = ['clients', 'produits', 'piloter', 'veille', 'communiquer', 'aide'];
+  var U2_FAMS = [['direct', 'Outils', 'grille'], ['dev', 'En développement', 'palette'], ['accueil', 'Sur la page d’accueil', 'officines']];
+  var U2_ANCIENNES = ['clients', 'produits', 'piloter', 'veille', 'communiquer', 'aide', 'direct', 'dev', 'accueil'];
   // L'outil principal de chaque groupe, mis en avant dans sa rangée.
   var U2_LOURD = { pharma: 1, produits: 1, pilotage: 1, marketing: 1 };
   var U2_WIDGETS = { infos: { nom: 'Infos du matin', page: 'infos' }, todo: { nom: 'To do list', page: 'todo' }, relance: { nom: 'À relancer', page: 'rdv' }, semaine: { nom: 'Ma semaine', page: 'rdv' } };
@@ -1651,11 +1653,13 @@
   // Les familles d'outils du rail et du tiroir : les mêmes liens que les anciennes pastilles « Autres outils », rangés par groupe.
   // Hors mode réglage, un outil masqué n'y figure pas (c'est le choix de la personne) ; en mode réglage on les voit tous, avec leur œil sur la page.
   function u2OutilsHtml(ouverts) {
-    var etat = u2Etat(), reg = !!(V2.accueilWidgets && V2.accueilWidgets.regle && V2.accueilWidgets.regle()), liste = reg ? etat.tous : etat.fams, n = 0;
-    return liste.map(function (f, i) {
-      var on = ouverts ? ouverts.indexOf(f.k) >= 0 : i === 0;
+    var etat = u2Etat(), reg = !!(V2.accueilWidgets && V2.accueilWidgets.regle && V2.accueilWidgets.regle()), n = 0;
+    // 10/11/2026 : les outils posés sur l'accueil (groupe « accueil ») ne figurent jamais dans la barre ; « Outils » est ouvert, « En développement » replié
+    var liste = (reg ? etat.tous : etat.fams).filter(function (f) { return f.k !== 'accueil'; });
+    return liste.map(function (f) {
+      var on = ouverts ? ouverts.indexOf(f.k) >= 0 : f.k === 'direct';
       return '<div class="fam"><button type="button" class="fam-h" data-u2-fam="' + esc(f.k) + '" aria-expanded="' + on + '">' + u2Ic('chev', 16, 'car') + '<span>' + esc(f.nom) + '</span><span class="n">' + f.cles.length + '</span></button>' +
-        '<div class="fam-l' + (on ? ' on' : '') + '">' + f.cles.map(function (k) {
+        '<div class="fam-l' + (on ? ' on' : '') + '">' + (f.k === 'dev' ? '<p class="fam-s">Ces outils marchent, mais ils ne sont pas encore au point.</p>' : '') + f.cles.map(function (k) {
           var t = u2Outil(k); n++;
           return '<a class="ol"' + u2LienAttr(t, k) + '>' + u2Ic(k, 20) + '<span>' + esc(t.nom) + '</span>' + (t.ext ? '<span class="u2-sr">, s\'ouvre dans un nouvel onglet</span>' : '') + '</a>';
         }).join('') + '</div></div>';

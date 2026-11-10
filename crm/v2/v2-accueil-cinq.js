@@ -29,6 +29,9 @@
   // La cinquième porte n'existe pas parmi les outils (c'est une vue de l'écran Officines) : son nom et sa phrase sont ici.
   var GRP = { nom: 'Groupements', ph: 'Ce que commandent les adhérents de chaque groupement', act: 'go:pharma/groupements', href: '#pharma/groupements' };
   var CINQ = ['pharma', 'infos', 'todo', 'groupements', 'offilog'];
+  // 10/11/2026 (Will) — cinq outils de plus au centre, en 2e rangée, plus compacts : Catalogue produits, Pilotage, Marketing, La carte, Documents (10/11 : Documents ajouté à la demande de Will).
+  // Ni scène animée, ni chiffre : un lien vers l'écran (une case dont l'écran n'est pas chargé, ou que la personne a masquée, n'apparaît pas : voir etat.vis).
+  var NEUF = ['produits', 'pilotage', 'marketing', 'carte', 'documents'];   // documents : seulement si docOk() (filtré par u2Cles, donc par etat.vis)
 
   /* ── Les données réelles ── */
   // Dernières fiches ouvertes : l'app n'en gardait aucune trace. On la tient ici, sur cet appareil et pour cette personne (aucune table, aucune requête).
@@ -739,6 +742,15 @@
   });
 
   /* ── Le centre complet (appelé une seule fois par montage de l'accueil) ── */
+  function cNeuf(k, i) {
+    var t = P().outil(k);
+    return '<section class="m1-c m1-p ac-in" style="--i:' + i + '" aria-label="' + esc(t.nom) + '"><div class="m1-top"><span class="m1-ico">' + P().ic(k, 20) + '</span><span class="m1-arrow">' + chev() + '</span></div>' +
+      '<div class="m1-foot"><h3><a class="m1-go"' + lien(t, k) + '><span>' + esc(t.nom) + '</span></a></h3><p>' + esc(t.ph) + '</p></div></section>';
+  }
+  function rang2(vis) {
+    var l = NEUF.filter(function (k) { return vis.indexOf(k) >= 0; });
+    return l.length ? '<div class="m1-bento m1-rang2">' + l.map(function (k, j) { return cNeuf(k, 6 + j); }).join('') + '</div>' : '';
+  }
   function html(etat, cascade) {
     var p = P(); if (!p) return '';
     _sig = {}; _fait = {}; _aff = [];
@@ -749,7 +761,7 @@
     if (u) h += m1Une(u);
     else if (pu && pu.page === 'listings2027' && lsAcces() === null) h += '<div id="acq-att"></div>';   // la base n'a pas encore répondu : apres() le pose
     h += '<div class="m1-bento">' + (presents.pharma ? cOff(ctx) : '') + (presents.todo ? cTodo(ctx) : '') + (presents.infos ? cInfos(ctx) : '') +
-      (presents.groupements ? cGrp(ctx) : '') + (presents.offilog ? cOffi(ctx) : '') + '</div></div>';
+      (presents.groupements ? cGrp(ctx) : '') + (presents.offilog ? cOffi(ctx) : '') + '</div><div id="u2-rang2">' + (_sig.rang2 = rang2(vis)) + '</div></div>';
     return h;
   }
   // « Autres outils » (les yeux) : seulement en mode réglage, sous les widgets. En temps normal les outils vivent dans le rail.
@@ -766,6 +778,8 @@
       if (_sig[k] === h) return;
       _sig[k] = h; el.innerHTML = h; arriver(el);
     });
+    var r2 = document.getElementById('u2-rang2');   // 10/11/2026 : une case masquée ou rendue par l'œil du mode réglage suit tout de suite
+    if (r2) { var h3 = rang2(etat.vis || []); if (_sig.rang2 !== h3) { _sig.rang2 = h3; r2.innerHTML = h3; } }
     var au = document.getElementById('u2-autres');
     if (au) { var h2 = autres(etat); if (_sig.autres !== h2) { _sig.autres = h2; au.innerHTML = h2; } }
     if (p.railMaj) p.railMaj();   // le rail suit les outils masqués ou rendus
