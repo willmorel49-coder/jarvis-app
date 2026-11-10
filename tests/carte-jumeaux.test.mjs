@@ -22,8 +22,10 @@ test('47 paires (46 + Porte d\'Azur), 47 clientes distinctes, aucune des 6 doute
   assert.equal(cles.length, 47); assert.equal(new Set(Object.values(J)).size, 47);
   for (const d of ['2278924', '2070696', '2013740', '2176993', '2276005', '2000952', '2007087', '2013223']) assert.equal(J[d], undefined, d);
 });
-test('le nombre de prospects baisse d\'exactement 47', () => {
-  assert.equal(session(false).prospects - session().prospects, 47);
+// 46 depuis octobre 2026 : Prado Saint Giniez achète sous 2006487, le code de sa fiche d'annuaire — elle n'est plus
+// prospect même sans jumeaux, sa paire reste écrite pour l'historique (Will, 10/11/2026).
+test('le nombre de prospects baisse d\'exactement 46', () => {
+  assert.equal(session(false).prospects - session().prospects, 46);
 });
 test('les 3 connues : une seule ligne, cliente, ancien code gardé ; l\'ancien code ne répond plus', () => {
   const s = session();

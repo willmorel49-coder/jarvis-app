@@ -36,6 +36,9 @@ _ANCIEN_COMPTE = {
     # Grande Pharmacie de Beaulieu, Nantes (Arthur) : « EX2125556 » en janvier 2026 (adresse « 44272 NANTES CEDEX 2 »,
     # placée à Machecoul, groupement d'avant), 2011018 depuis février, jumelle de l'annuaire 440014009 (Will, 06/11/2026).
     '2125556': '2011018',
+    # Pharmacie Prado Saint Giniez, Marseille (Mathieu) : 2243933 de janvier à septembre 2026, 2006487 depuis octobre,
+    # code de sa fiche d'annuaire, déjà sa jumelle dans V2.JUMEAUX (Will, 10/11/2026).
+    '2243933': '2006487',
 }
 
 

@@ -123,7 +123,23 @@ test('le moteur ecarte les mois incomplets et exige 6 mois, pour le commercial',
 
 test('un secteur dont le fichier est trop court ne recoit AUCUN signal de baisse', () => {
   const courts = COMMERCIAUX.filter((c) => moisDe[c].size < 6);
-  assert.ok(courts.length, 'aucun secteur au fichier court : le cas n est pas represente');
+  if (!courts.length) {
+    // 10/11/2026 : avec octobre, plus aucun vrai secteur n'a moins de 6 mois (Ingrid L. passe de 5 à 6).
+    // Le cas se fabrique à partir des 5 derniers mois d'un vrai secteur, retirés aussitôt après.
+    const ref = COMMERCIAUX.find((c) => moisDe[c].size >= 6), FAUX = 'Secteur court (fabrique)';
+    const cles = [...new Set(VENTES.filter((v) => v.commercial === ref).map((v) => v.year * 100 + v.month))]
+      .sort((x, y) => x - y).slice(-5);
+    const n = VENTES.length;
+    for (let i = 0; i < n; i++) {
+      const v = VENTES[i];
+      if (v.commercial === ref && cles.includes(v.year * 100 + v.month)) VENTES.push({ ...v, commercial: FAUX });
+    }
+    try {
+      assert.ok(VENTES.length > n, 'le secteur court fabrique est vide');
+      assert.equal(achatsPour(FAUX).comparable, false, `${FAUX} n a que 5 mois et recoit pourtant un signal de baisse`);
+    } finally { VENTES.length = n; }
+    return;
+  }
   for (const c of courts) {
     const r = achatsPour(c);
     assert.equal(r.comparable, false,
@@ -165,6 +181,9 @@ test('plus de secteur ou la moitie des officines « decroche » d un coup', () =
   // artefact de fichier, jamais un fait commercial.
   const taux = [];
   for (const c of COMMERCIAUX) {
+    // Nicolas est parti (secteur repris par Guillaume) : la baisse de ses officines depuis octobre 2026 est réelle
+    // — trois grosses n'achètent plus sous aucun code, d'autres passent chez Guillaume (Will, 10/11/2026).
+    if (c === 'Nicolas') continue;
     const r = achatsPour(c);
     if (!r.comparable) continue;
     const siennes = OFFICINES.filter((p) => (p.comms || []).indexOf(c) >= 0).map((p) => String(p.id));
