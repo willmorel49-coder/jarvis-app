@@ -1055,7 +1055,7 @@
     ].join('\n');
     document.head.appendChild(s);
   }
-  var G4_REPLI = ['pharma', 'produits', 'pilotage', 'marketing', 'mallette', 'infos', 'rdv', 'carte', 'appro', 'todo', 'blocnotes', 'biosimilaires', 'offilog', 'concurrents', 'remontees', 'discussion', 'marchefr', 'carteGrp', 'lgo', 'documents', 'academy'];
+  var G4_REPLI = ['pharma', 'produits', 'pilotage', 'marketing', 'mallette', 'infos', 'rdv', 'carte', 'tournees', 'appro', 'todo', 'blocnotes', 'biosimilaires', 'offilog', 'concurrents', 'remontees', 'discussion', 'marchefr', 'carteGrp', 'lgo', 'documents', 'academy'];
   // 02/10/2026 — Will : « supprimer audit, fiches pdf, l'argument, audit marge, réforme 2027, présentation intégral » : ces six outils
   // n'existent plus nulle part (ni porte, ni écran). Un réglage enregistré qui les cite encore est écarté par u2Net.
   // k = nom de la route mesurée par V2.mesurer (= `ecran` côté base) ; page = écran qui doit exister.
@@ -1085,8 +1085,15 @@
     documents: { fam: 'accueil', ico: 'documents', nom: 'Documents', ph: 'Tarifs, conditions et catalogues, rangés par dossier', page: 'documents' },
     lgo: { fam: 'direct', ico: 'lgo', nom: 'Logiciels officine', ph: 'Importer le catalogue dans chaque logiciel', page: 'lgo' },
     // JARVIS Academy : lien externe (Q_ACADEMY), dans « Communiquer et progresser » ; pas d'écran de l'app (page: null).
-    academy: { fam: 'dev', ico: 'academy', nom: 'JARVIS Academy', ph: 'Se former à l\'outil, pas à pas', page: null }
+    academy: { fam: 'dev', ico: 'academy', nom: 'JARVIS Academy', ph: 'Se former à l\'outil, pas à pas', page: null },
+    // 10/11/2026 — Tournées : le classement des tournées de livraison (v2-tournees.js). Le groupe (`fam`) dépend de la personne : l'équipe OPS l'a sur l'accueil, tous les autres comptes (hors rôle opso) dans « En développement ».
+    tournees: { fam: 'dev', ico: 'tournees', nom: 'Tournées', ph: 'Quelle tournée de livraison travailler en premier', page: 'tournees' }
   };
+  // 10/11/2026 (Will) — équipe OPS : Will, Alexandre Morel (même accès que Will), Arthur Lehouerou, Valérie Morlaix, Karine (KV). Écran ouvert à tout compte connecté hors rôle opso ; ceci ne décide QUE de l'endroit de l'entrée.
+  var TOURN_EQUIPE = ['william.morel@me.com', 'alexandre.morel@me.com', 'arthur.lehouerou@integralpharma.fr', 'valerie.morlaix@integralpharma.fr', 'karine.vezzaro@integralpharma.fr'];
+  V2.tourneesEquipe = function () { return !!(V2.user && TOURN_EQUIPE.indexOf(String(V2.user.email || '').toLowerCase()) >= 0); };
+  function tournInterdit() { return !!((window.V2_BRAND && window.V2_BRAND.opso) || (V2.user && (V2.user.opsoOnly || V2.user.role === 'opso'))); }
+  Object.defineProperty(G4_PORTES.tournees, 'fam', { enumerable: true, get: function () { return V2.tourneesEquipe() ? 'accueil' : 'dev'; } });
   var G4_CLE_ORDRE = 'jarvis_accueil_ordre2';
   var _g4Ordre = null;        // [{e, o, p}] : écran, ouvertures, personnes (jamais affichés)
   var _g4Demande = false;     // un seul appel réseau par chargement de page
@@ -1198,7 +1205,8 @@
     widgets: '<rect x="4" y="4" width="16" height="7" rx="2"/><rect x="4" y="14" width="7" height="6" rx="2"/><rect x="14" y="14" width="6" height="6" rx="2"/>',
     doc: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/>',
     mallette: '<path d="M3.5 8h17v11.5h-17z"/><path d="M9 8V5.5h6V8"/><path d="M3.5 13.2h17M11 13.2h2"/>',
-    documents: '<path d="M3.5 7.5V19h17V9H11L9.2 6.5H3.5z"/><path d="M3.5 11h17"/>'
+    documents: '<path d="M3.5 7.5V19h17V9H11L9.2 6.5H3.5z"/><path d="M3.5 11h17"/>',
+    tournees: '<path d="M3 6.5h11v9H3z"/><path d="M14 9.5h3.8l2.7 3v3H14z"/><circle cx="7.5" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/>'
   };
   U2_IC.pharma = U2_IC.officines;
   function u2Ic(n, s, cls) {
@@ -1442,6 +1450,7 @@
       if (!d) return false;
       if (k === 'lgo' && escale) return false;       // pas de « Logiciels officine » en Escale
       if (k === 'blocnotes' && (window.V2_BRAND && window.V2_BRAND.opso)) return false;   // 16/10/2026 : pas de Bloc-notes côté OPSO
+      if (k === 'tournees' && tournInterdit()) return false;   // 10/11/2026 : jamais pour le rôle opso
       if (k === 'documents' && !docOk()) return false;   // 16/10/2026 : cachée tant que documents_acces_ok() n'a pas rendu true
       if (k === 'remontees' && V2.pages.discussion) return false;   // 15/10/2026 (Will) : les remontées vivent dans Le QG
       return k === 'academy' || !!V2.pages[d.page];  // un outil dont l'écran n'est pas chargé n'apparaît pas
@@ -2216,6 +2225,7 @@
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.marchefr) PAGES.push(['marchefr', 'Le marché · le marché français d’une référence, région par région', 'cat']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.biosimilaires) PAGES.splice(4, 0, ['biosimilaires', 'Base Biosimilaires (marché FR)', 'cat']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.blocnotes) PAGES.push(['blocnotes', 'Bloc-notes · écrire ou dicter ; le robot met le CRM à jour le soir', 'fiche']);   // 16/10/2026
+    if (!tournInterdit() && V2.pages.tournees) PAGES.push(['tournees', 'Tournées · quelle tournée de livraison travailler en premier', 'pharma']);   // 10/11/2026
     if (docOk() && V2.pages.documents) PAGES.push(['documents', 'Documents · tarifs, conditions et catalogues, rangés par dossier', 'fiche']);   // 16/10/2026 : seulement si documents_acces_ok() = true
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.mallette) PAGES.push(['mallette', 'La Mallette · les documents à envoyer, en un seul PDF ou séparés', 'fiche']);   // 16/10/2026
     if (!(window.V2_BRAND && (window.V2_BRAND.opso || window.V2_BRAND.escale)) && V2.pages.lgo) PAGES.push(['lgo', 'Logiciels officine · importer le catalogue (LGPI, Winpharma, LEO…)', 'list']);

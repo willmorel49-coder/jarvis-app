@@ -799,6 +799,8 @@
     margeproduits: 'marge-produits.js',
     // 26/10/2026 — tournées de Will (mode Prospection de La carte) : fichier à la RACINE du seau, nom `connexions-jarvis…` VOULU (jarvis_peut_lire_protege le réserve à jarvis_acces_connexions()). Demandé par v2-carte-prospection.js APRÈS le oui de cette fonction, jamais au démarrage.
     prospection: 'connexions-jarvis-prospection.js',
+    // 10/11/2026 — écran Tournées (v2-tournees.js) : fichier à la RACINE du seau, nom SANS « connexions-jarvis » : lisible par tout compte connecté hors rôle opso (jarvis_peut_lire_protege, dernière branche). Demandé par l'écran lui-même, jamais au démarrage.
+    tournees: 'tournees-etablissements.js',
     // 23/10/2026 — ventes par ÉTABLISSEMENT (France / export) depuis janvier : chiffres par établissement, protégés. Demandées à l'ouverture
     // du panneau produit en vue interne (V2.loadFiles(['etabventes']) dans v2-comptoir.js), jamais au démarrage, jamais en vue pharmacien.
     etabventes: 'v2/etab-ventes-data.js',
@@ -920,6 +922,8 @@
     margeproduits: 'marge-produits.js',
     // 26/10/2026 — tournées de Will (mode Prospection de La carte) : fichier à la RACINE du seau, nom `connexions-jarvis…` VOULU (jarvis_peut_lire_protege le réserve à jarvis_acces_connexions()). Demandé par v2-carte-prospection.js APRÈS le oui de cette fonction, jamais au démarrage.
     prospection: 'connexions-jarvis-prospection.js',
+    // 10/11/2026 — écran Tournées (v2-tournees.js) : fichier à la RACINE du seau, nom SANS « connexions-jarvis » : lisible par tout compte connecté hors rôle opso (jarvis_peut_lire_protege, dernière branche). Demandé par l'écran lui-même, jamais au démarrage.
+    tournees: 'tournees-etablissements.js',
     // 23/10/2026 — ventes par ÉTABLISSEMENT (France / export) depuis janvier : chiffres par établissement, protégés. Demandées à l'ouverture
     // du panneau produit en vue interne (V2.loadFiles(['etabventes']) dans v2-comptoir.js), jamais au démarrage, jamais en vue pharmacien.
     etabventes: 'etab-ventes-data.js',
@@ -1424,7 +1428,7 @@
     // Bumpé 29/09/2026 : v2-offilog.js change (union catalogue OPSO, retrait
     // Pharmazon/achat côté OPSO) — sans ce bump, un appareil ayant déjà l'app
     // ouverte continuerait de servir l'ancien fichier depuis le cache.
-    var V = '?v=20261110b' + (window.V2_VER || '20260915g');
+    var V = '?v=20261110c' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1584,6 +1588,7 @@
     margeclients: 'MARGE_CLIENTS',
     margeproduits: 'MARGE_PRODUITS',
     prospection: 'PROSPECTION_TOURNEES',
+    tournees: 'TOURNEES_ECRAN',
     etabventes: 'ETAB_VENTES',
     grpagregats: 'GRP_AGREGATS',
     biosimcomplet: 'BIOSIMILAIRES_COMPLET',
@@ -1998,7 +2003,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20261110b';
+    var V = '?v=20261110c';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];

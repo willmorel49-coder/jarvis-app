@@ -31,7 +31,7 @@
   var CINQ = ['pharma', 'infos', 'todo', 'groupements', 'offilog'];
   // 10/11/2026 (Will) — cinq outils de plus au centre, en 2e rangée, plus compacts : Catalogue produits, Pilotage, Marketing, La carte, Documents (10/11 : Documents ajouté à la demande de Will).
   // Ni scène animée, ni chiffre : un lien vers l'écran (une case dont l'écran n'est pas chargé, ou que la personne a masquée, n'apparaît pas : voir etat.vis).
-  var NEUF = ['produits', 'pilotage', 'marketing', 'carte', 'documents'];   // documents : seulement si docOk() (filtré par u2Cles, donc par etat.vis)
+  var NEUF = ['produits', 'pilotage', 'marketing', 'carte', 'tournees', 'documents'];   // documents : seulement si docOk() (filtré par u2Cles, donc par etat.vis)
 
   /* ── Les données réelles ── */
   // Dernières fiches ouvertes : l'app n'en gardait aucune trace. On la tient ici, sur cet appareil et pour cette personne (aucune table, aucune requête).
@@ -748,7 +748,7 @@
       '<div class="m1-foot"><h3><a class="m1-go"' + lien(t, k) + '><span>' + esc(t.nom) + '</span></a></h3><p>' + esc(t.ph) + '</p></div></section>';
   }
   function rang2(vis) {
-    var l = NEUF.filter(function (k) { return vis.indexOf(k) >= 0; });
+    var l = NEUF.filter(function (k) { return vis.indexOf(k) >= 0 && (k !== 'tournees' || (V2.tourneesEquipe && V2.tourneesEquipe())); });   // 10/11/2026 : « Tournées » n'est posée sur l'accueil que pour l'équipe OPS (les autres l'ont dans « En développement »)
     return l.length ? '<div class="m1-bento m1-rang2">' + l.map(function (k, j) { return cNeuf(k, 6 + j); }).join('') + '</div>' : '';
   }
   function html(etat, cascade) {
