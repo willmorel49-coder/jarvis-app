@@ -16,6 +16,7 @@ Source : https://echanges.dila.gouv.fr/OPENDATA/JORFSIMPLE/ (ouvert, sans clé).
 import io
 import os
 import re
+import sys
 import gzip
 import json
 import html
@@ -33,6 +34,16 @@ SNAP = os.path.join(HERE, "crm", "v2", "prix-snapshot.json")
 PRODSTATS = os.path.join(HERE, "crm", "v2", "prod-stats-data.js")
 
 N_TARBALLS = 40          # ~20 jours (2 dumps/jour) — fenêtre glissante
+# ⚠️ 09/11/2026 : la DILA a publié une archive complète (Freemium, 08/11 13 h 02) et EFFACÉ toute sa
+# série de dumps quotidiens. Le robot n'en a plus vu qu'un, sans avis de prix, et a écrit un fichier
+# vide (83 changements la veille). La fenêtre de la source peut donc s'effondrer n'importe quand :
+# on la complète avec l'archive du robot. Un avis y reste utile tant qu'il est paru il y a moins de
+# FENETRE_JOURS (l'ancienne fenêtre) OU que sa date d'effet n'est pas passée de plus de RECUL_EFFET_JOURS
+# (l'écran Appro et le Brief Officinal affichent jusqu'à 7 jours après l'effet). Sans ce second critère,
+# les baisses du 02/01/2027 parues le 20/10 (Xarelto, rivaroxaban) sortaient du fichier dès le 09/11.
+FENETRE_JOURS = 20
+RECUL_EFFET_JOURS = 7
+MIN_DUMPS = 10           # en dessous, la DILA a remis sa série à zéro : on le signale
 MOIS = {"janvier": 1, "février": 2, "fevrier": 2, "mars": 3, "avril": 4, "mai": 5, "juin": 6,
         "juillet": 7, "août": 8, "aout": 8, "septembre": 9, "octobre": 10, "novembre": 11, "décembre": 12, "decembre": 12}
 
@@ -129,13 +140,51 @@ def parse_avis(xml, cat, snap, out, seen):
             continue
         seen.add(key)
         old = snap.get(cip)
-        sens = None
-        if isinstance(old, (int, float)) and old > 0:
-            sens = "baisse" if ppttc < old - 0.005 else ("hausse" if ppttc > old + 0.005 else "stable")
         desg = (cat.get(cip) or mt.group(2).strip())[:60]
         out.append({"c": cip, "d": desg, "pfht": pfht, "ppttc": ppttc,
                     "ancien_ttc": old if isinstance(old, (int, float)) else None,
-                    "sens": sens, "date_effet": effet, "date_publi": date_publi, "labo": labo})
+                    "sens": sens_de(ppttc, old), "date_effet": effet, "date_publi": date_publi, "labo": labo})
+
+
+def sens_de(ppttc, old):
+    if isinstance(old, (int, float)) and old > 0:
+        return "baisse" if ppttc < old - 0.005 else ("hausse" if ppttc > old + 0.005 else "stable")
+    return None
+
+
+def lire_archive():
+    """Avis déjà archivés. Une archive présente mais illisible fait ÉCHOUER le passage (exception) :
+    `archive_evenements.charger` rendrait [] en silence, le fichier perdrait tout ce que la DILA ne
+    publie plus, et `archiver` réécrirait l'archive amputée."""
+    if not os.path.exists(ARCHIVE):
+        return []
+    with io.open(ARCHIVE, "r", encoding="utf-8") as f:
+        return json.load(f)["evenements"]
+
+
+def depuis_archive(evs, cat, snap, seen, today):
+    """Avis archivés encore utiles que les dumps du jour ne contiennent pas, réévalués comme un avis
+    lu le jour même (désignation du catalogue, ancien prix et sens selon l'instantané actuel)."""
+    jour = datetime.date.fromisoformat(today)
+    parus_depuis = (jour - datetime.timedelta(days=FENETRE_JOURS)).isoformat()
+    effet_depuis = (jour - datetime.timedelta(days=RECUL_EFFET_JOURS)).isoformat()
+    repris = []
+    for e in evs:
+        cip, effet = str(e.get("c") or ""), e.get("date_effet") or ""
+        if len(cip) != 13 or (cat and cip not in cat) or not isinstance(e.get("ppttc"), (int, float)):
+            continue
+        if (e.get("date_publi") or "") < parus_depuis and effet < effet_depuis:
+            continue
+        key = cip + "|" + effet
+        if key in seen:
+            continue
+        seen.add(key)
+        old = snap.get(cip)
+        repris.append({"c": cip, "d": (cat.get(cip) or e.get("d") or "")[:60], "pfht": e.get("pfht"),
+                       "ppttc": e["ppttc"], "ancien_ttc": old if isinstance(old, (int, float)) else None,
+                       "sens": sens_de(e["ppttc"], old), "date_effet": e.get("date_effet"),
+                       "date_publi": e.get("date_publi"), "labo": e.get("labo") or ""})
+    return repris
 
 
 def main():
@@ -162,7 +211,27 @@ def main():
         except Exception as e:
             print("  échec %s : %s" % (tb, e))
 
+    # Une lecture ratée n'est pas un zéro : sans aucun dump lu, on garde le fichier d'hier et le passage
+    # échoue (rouge dans GitHub), plutôt que d'annoncer « aucune baisse de prix ».
+    if ok == 0:
+        print("::error::aucun dump DILA lu (%d listé(s)) — %s GARDÉ tel quel, rien n'est écrit" % (len(tarballs), OUT))
+        sys.exit(1)
+
     today = datetime.date.today().isoformat()
+    repris = depuis_archive(lire_archive(), cat, snap, seen, today)
+    out.extend(repris)
+    if ok < MIN_DUMPS:
+        print("::warning::la DILA ne publie que %d dump(s) (série remise à zéro) — %d avis repris de l'archive"
+              % (ok, len(repris)))
+    if not out:
+        try:
+            avant = json.load(io.open(OUT, "r", encoding="utf-8")).get("nTotal") or 0
+        except Exception:
+            avant = 0
+        if avant:
+            print("::error::0 changement de prix, dumps ET archive compris, alors que le fichier en avait %d — "
+                  "GARDÉ tel quel, rien n'est écrit" % avant)
+            sys.exit(1)
     # futures d'abord (date d'effet >= aujourd'hui), puis par date d'effet croissante
     out.sort(key=lambda x: (x.get("date_effet") or "9999"))
     futures = [x for x in out if (x.get("date_effet") or "") >= today]
@@ -170,7 +239,9 @@ def main():
 
     res = {"generated": today, "source": "Avis CEPS au Journal Officiel (DILA JORFSIMPLE)",
            "nTotal": len(out), "nFutures": len(futures), "nBaisses": len(baisses),
-           "changes": out[:120]}
+           # 400 et non plus 120 (10/11/2026) : avec les baisses à venir reprises de l'archive on était à 115,
+           # et le tri par date d'effet aurait coupé les plus lointaines — celles qu'il faut voir venir.
+           "changes": out[:400]}
     with io.open(OUT, "w", encoding="utf-8") as f:
         json.dump(res, f, ensure_ascii=False, separators=(",", ":"))
     # La DILA ne garde que ~20 jours (N_TARBALLS) : un avis sorti de la fenêtre n'existe
@@ -180,7 +251,8 @@ def main():
     n_arch, n_neuf = archiver(ARCHIVE, out, lambda e: (e.get("c"), e.get("date_effet")), today,
                               note="avis CEPS (CIP13, PFHT, date d'effet) archivés une fois "
                                    "pour toutes — la DILA ne publie qu'une fenêtre de ~20 jours")
-    print("OK · %d dumps lus · %d changements de prix (catalogue) · %d à venir · %d baisses" % (ok, len(out), len(futures), len(baisses)))
+    print("OK · %d dumps lus · %d changements de prix (catalogue, dont %d repris de l'archive) · %d à venir · %d baisses"
+          % (ok, len(out), len(repris), len(futures), len(baisses)))
     print("archive des avis CEPS = %d (+%d aujourd'hui)" % (n_arch, n_neuf))
     for x in out[:6]:
         print("  %s  %s  PFHT %.2f  TTC %.2f  effet %s  [%s]" % (x["c"], x["d"][:26], x["pfht"], x["ppttc"], x.get("date_effet"), x.get("sens")))

@@ -127,6 +127,9 @@ jobs:
       - name: Test robot prix CEPS (la date d'effet de chaque ligne de l'avis prime sur la date de parution)
         run: python3 tests/prix-futurs-date-effet.test.py
 
+      - name: Test robot prix CEPS (une fenêtre DILA effondrée ne vide jamais les baisses à venir)
+        run: python3 tests/prix-futurs-fenetre.test.py
+
       - name: Test brief du matin (le titre des baisses CEPS compte celles de la date annoncée)
         run: python3 tests/brief-baisses-titre.test.py
 
