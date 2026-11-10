@@ -1,13 +1,9 @@
-/* Les annonces en cours — relevées sur la page LinkedIn d'Intégral Pharma le 28/08/2026.
-   C'est ce fichier qu'on met à jour, jamais la page : une annonce = { poste, maison, lieu, contrat }.
-   Toutes les offres du site officiel restent accessibles par le bouton « Toutes les offres ». */
+/* Les annonces en cours — liste et date RETIRÉES le 10/11/2026 (choix de Will) : le relevé du 28/08/2026
+   avait plus de deux mois, et une copie figée du site ne doit pas porter une date qui vieillit.
+   Sans « liste », les pages gardent la phrase « Nos postes ouverts sont publiés sur notre page LinkedIn »
+   et les deux boutons. Pour réafficher des offres : ajouter releve: "JJ/MM/AAAA" et
+   liste: [ { poste, maison, lieu, contrat }, … ] (une liste vide afficherait « 0 poste » sur certaines pages). */
 window.ANNONCES = {
-  releve: "28/08/2026",
   linkedin: "https://fr.linkedin.com/company/integralpharma/jobs",
-  toutes: "https://www.integralpharma.fr/jobs",
-  liste: [
-    { poste: "Pharmacien(ne) adjoint(e)", maison: "Escale Pharma", lieu: "Chilly-Mazarin (91)", contrat: "CDI" },
-    { poste: "Commercial(e)", maison: "Sud Ouest Pharma", lieu: "Haute-Garonne et départements voisins", contrat: "CDI, temps plein" },
-    { poste: "Pharmacien(ne) commercial(e)", maison: "Sud Ouest Pharma", lieu: "Secteur toulousain", contrat: "CDI, temps plein" }
-  ]
+  toutes: "https://www.integralpharma.fr/jobs"
 };
