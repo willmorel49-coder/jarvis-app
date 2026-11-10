@@ -165,7 +165,9 @@ html[data-hab] .v2-btn-primary:hover{box-shadow:var(--sh-blue-h)}
 
 /* le rail de l'accueil et la barre du haut partagent la même pièce sombre */
 html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .u2-rail{margin-bottom:-64px;background:var(--h-top);border-right:2px solid var(--h-top-line);box-shadow:8px 0 22px -12px rgba(0,0,0,.55);
-  --muted-d:var(--h-top-muted);--ip-blue-d:var(--h-top-ink);--halo:rgba(255,236,190,.14)}
+  --muted-d:var(--h-top-muted);--ip-blue-d:var(--h-top-ink);--halo:rgba(255,236,190,.14);--ip-ink:var(--h-top-ink)}
+/* 10/11/2026 — survol dans le rail : l'encre ci-dessus (comme la barre du haut) et le voile de la barre du haut ; avant, texte et voile foncés sur la pièce sombre (1,28:1 sur Marbre) */
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .u2-rail :is(.u2-rb:not([aria-pressed="true"],[aria-expanded="true"]),.fam-h,.ol):hover{background:var(--h-top-field)}
 html[data-hab] .u2-rb[aria-pressed="true"],html[data-hab] .u2-rb[aria-expanded="true"]{background:var(--h-ruban);color:#fff}
 
 /* ───────────────────────── 5. SIGNATURES (ce qui fait reconnaître chaque habillage) ───────────────────────── */
