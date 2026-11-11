@@ -1365,8 +1365,8 @@
     var lib = function (f) { return MF[f.k % 12] + ' ' + Math.floor(f.k / 12); };
     var sur = function (f) { var c = C[f.m]; return c[0] + ' secteur' + (c[0] > 1 ? 's' : '') + ' sur ' + c[1]; };
     var t = L.length === 1
-      ? cap(lib(L[0])) + ' incomplet : ' + sur(L[0]) + ' ont transmis toutes leurs ventes. Chiffres partiels pour ce mois.'
-      : 'Mois incomplets : ' + L.map(function (f) { return lib(f) + ' (' + sur(f) + ')'; }).join(', ') + ' ont transmis toutes leurs ventes. Chiffres partiels pour ces mois.';
+      ? cap(lib(L[0])) + ' incomplet : ' + sur(L[0]) + ' ont transmis toutes leurs ventes. Ses chiffres et leur écart avec le mois d’avant sont partiels : à comparer avec prudence.'
+      : 'Mois incomplets : ' + L.map(function (f) { return lib(f) + ' (' + sur(f) + ')'; }).join(', ') + ' ont transmis toutes leurs ventes. Les chiffres de ces mois sont partiels : à comparer avec prudence.';   // 11/11/2026 — Façon 1 : la conséquence dite
     return t;
   }
   function psCouv(PM, fen) { var t = psCouvT(PM, fen); return t ? '<div class="ps-inc" role="note">' + esc(t) + '</div>' : ''; }
@@ -1567,7 +1567,7 @@
     push({ id: 'mdl', grp: 'ventes', nom: 'Marge pharmacien générée', kind: 'eur', col: '#6D4FC4', txt: '#5B3FB0', val: c.mdlCur, ser: ser.mdl, delta: A.d, sub: paNb(c.mdlPct, 1) + '\u00a0% du chiffre d’affaires',
       def: 'Marge réalisée par les pharmaciens sur les produits remboursables vendus.' });
     A = ci('act', ser.act, c.nbActive);
-    push({ id: 'act', grp: 'ventes', nom: 'Pharmacies actives', kind: 'int', unit: '', col: '#D98A12', txt: '#8A5200', val: c.nbActive, ser: ser.act, delta: A.d, sub: c.activeRatio + '\u00a0% des\u00a0' + PA_NF.format((V2.pharmacies || []).length) + ' officines',
+    push({ id: 'act', grp: 'ventes', nom: 'Officines actives', kind: 'int', unit: '', col: '#D98A12', txt: '#8A5200', val: c.nbActive, ser: ser.act, delta: A.d, sub: 'au moins une commande · ' + c.activeRatio + '\u00a0% des\u00a0' + PA_NF.format((V2.pharmacies || []).length) + ' officines',
       def: 'Officines qui ont acheté au moins une fois sur la période.' });
     A = ci('panier', ser.panier, c.panier);
     push({ id: 'panier', grp: 'ventes', nom: 'Panier moyen', kind: 'eur', col: '#0B8FA8', txt: '#0A6B7E', val: c.panier, ser: ser.panier, delta: A.d, sub: 'par officine active',
@@ -1737,13 +1737,39 @@
   }
 
   // ── Une ligne de liste (versions « Une mesure à la fois » et « La liste »)
+  // ══ 11/11/2026 — Façon 1 « L'étiquette » : chaque ligne dit sa période (« officines actives en août 2026 »), la mini-courbe sa durée et ses
+  // deux valeurs d'extrémité, la pastille par rapport à quoi ; « Par client » : la moyenne Intégral nommée et, sur tout le réseau, le repère « le mien ».
+  var cl1Mot = function (v, moy, o) { return V2.cl1Mot ? V2.cl1Mot(v, moy, o) : ''; };
+  var CL1_MC = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  function cl1MoisK(k, an) { return CL1_MC[((k % 12) + 12) % 12] + (an ? ' ' + Math.floor(k / 12) : ''); }
+  function cl1Lib(pf) { var l = pf.label || ''; return l.charAt(0).toLowerCase() + l.slice(1); }
+  function cl1En(pf) { return pf.du === pf.au ? 'en ' + cl1Lib(pf) : (PERIOD === 'year' ? 'sur l’' : PERIOD === '3m' ? 'sur les ' : 'sur la période ') + cl1Lib(pf); }
+  function cl1Rapport(pf) {
+    var a = paAvant(pf);
+    if (/^en[\s\u00a0]/.test(a)) return 'par rapport à ' + a.replace(/^en[\s\u00a0]/, '');
+    if (/^le /.test(a)) return 'par rapport au ' + a.slice(3);
+    if (/^les /.test(a)) return 'par rapport aux ' + a.slice(4);
+    return 'par rapport à ' + a;
+  }
+  var CL1_SENS = { jm: { sens: 0, mots: ['plus de livraisons que la moyenne', 'moins de livraisons que la moyenne'] } };
+  function cl1Bouts(m, c) {
+    var iA = -1, iZ = -1; (m.ser || []).forEach(function (v, i) { if (v != null) { if (iA < 0) iA = i; iZ = i; } });
+    if (iA < 0 || iZ <= iA) return '';
+    return '<span class="cl1-sp-r"><span class="cl1-sp-v">' + paTxt(m, m.ser[iA]) + '</span>' + paSpark(m, 76, 30) + '<span class="cl1-sp-v">' + paTxt(m, m.ser[iZ]) + '</span></span>' +
+      '<small class="cl1-sp-d">par mois, ' + cl1MoisK(c.ks[iA], Math.floor(c.ks[iA] / 12) !== Math.floor(c.ks[iZ] / 12)) + ' → ' + cl1MoisK(c.ks[iZ], true) + ' · ' + (iZ - iA + 1) + ' mois</small>';
+  }
   function paLigne(m, c, mini, sel) {
-    var f = paFmt(m, m.val), e = m.ecart || m.delta;
+    var f = paFmt(m, m.val), e = m.ecart || m.delta, o = CL1_SENS[m.id] || {};
+    var titre = m.id === 'act' ? m.nom + ' ' + cl1En(c.pf) : m.nom, l2 = '';
+    if (m.grp === 'client') {
+      if (m.moy != null) l2 = 'moyenne Intégral : ' + paTxt(m, m.moy) + ' ' + cl1Mot(m.val, m.moy, o);
+      else if (c.mien && c.mien[m.id] != null) l2 = 'le mien (' + esc(c.mienNom) + ') : ' + paTxt(m, c.mien[m.id]) + ' ' + cl1Mot(c.mien[m.id], m.val, o);
+    }
     return '<button type="button" class="pa-row' + (sel ? ' on' : '') + '" data-m="' + m.id + '"' + (sel ? ' aria-current="true"' : '') + '>' +
-      '<span class="pa-row-t"><b style="color:' + m.txt + '">' + esc(m.nom) + '</b><small>' + esc(m.sub) + '</small></span>' +
-      (mini ? '<span class="pa-row-s">' + paSpark(m, 76, 30) + '</span>' : '') +
+      '<span class="pa-row-t"><b style="color:' + m.txt + '">' + esc(titre) + '</b><small>' + esc(m.sub) + (m.id === 'act' ? '' : ' · ' + esc(cl1Lib(c.pf))) + '</small>' + (l2 ? '<small class="cl1-l2">' + l2 + '</small>' : '') + '</span>' +
+      (mini ? '<span class="pa-row-s cl1-sp">' + cl1Bouts(m, c) + '</span>' : '') +
       '<span class="pa-row-v"><span class="pa-n">' + f.n + '</span><span class="pa-u">' + esc(f.u) + '</span></span>' +
-      '<span class="pa-row-e">' + (e ? paPill(e, '') : '') + '</span>' +
+      '<span class="pa-row-e">' + (e ? paPill(e, '') + '<small class="cl1-pe">' + esc(m.ecart ? 'par rapport à la moyenne' : cl1Rapport(c.pf)) + '</small>' : '') + '</span>' +
       '<span class="pa-chev">' + ICO('chev', 14) + '</span></button>';
   }
   function paGroupes(c, mini, selId) {
@@ -1875,7 +1901,7 @@
   function pmLigneListe(c) {
     var R = pmCalc(c);
     if (!R) return '<div class="pa-row pa-mol-wait" role="status"><span class="pa-row-t"><b>Molécules</b><small>Chargement du catalogue…</small></span></div>';
-    return '<button type="button" class="pa-row pa-mol" data-m="mol"><span class="pa-row-t"><b style="color:var(--pa-ink)">Molécules</b><small>dont <strong class="plm-ch">' + pmFr(R.nCh) + ' chères</strong> (468 € et plus)</small></span>' +
+    return '<button type="button" class="pa-row pa-mol" data-m="mol"><span class="pa-row-t"><b style="color:var(--pa-ink)">Molécules</b><small>différentes, vendues · ' + esc(cl1Lib(c.pf)) + ' · dont <strong class="plm-ch">' + pmFr(R.nCh) + ' chères</strong> (468 € et plus)</small></span>' +
       '<span class="pa-row-s"></span><span class="pa-row-v"><span class="pa-n">' + pmFr(R.n) + '</span><span class="pa-u">molécules</span></span>' +
       '<span class="pa-row-e">' + (R.moy ? pmPill(R.n, R.moy.mols) : '') + '</span><span class="pa-chev">' + ICO('chev', 14) + '</span></button>';
   }
@@ -1900,6 +1926,12 @@
     PA_REG = {};
     c.pf = Object.assign({}, c.pf, { label: paLab(c.pf) });
     c.mes = paMesures(c); c.fm = { S: c.mes.S, M: c.mes.M };
+    // 11/11/2026 — Façon 1 : « le mien » = le secteur de la personne connectée (jamais celui d'un collègue), mêmes mois, même calcul que psSecteur
+    var mienNom = V2.user && V2.user.commercial ? String(V2.user.commercial) : '';
+    if (!V2.commFilter && mienNom && c.mes.M && c.mes.fen && c.mes.fen.length && window.MARGE_CLIENTS) {
+      var Sm = psSecteur(window.MARGE_CLIENTS, mienNom, c.mes.fen);
+      if (Sm) { c.mien = { caCl: Sm.caCl, mgCl: Sm.mgCl, jm: Sm.jm, parJour: Sm.parJour, renta: Sm.renta }; c.mienNom = mienNom.split(' ')[0]; }
+    }
     var nomC = V2.commFilter ? String(V2.commFilter) : '', moi = nomC && V2.user && V2.user.commercial && String(V2.user.commercial) === nomC;
     c.sujetCourt = !nomC ? 'Réseau' : moi ? 'Votre secteur' : esc(nomC.split(' ')[0]);
     c.ks = c.mes.ks;
@@ -1916,14 +1948,15 @@
     }
     var PMx = window.MARGE_CLIENTS && window.MARGE_CLIENTS.pilotageMoy, note = '';
     var t = (PMx && c.mes.fen && c.mes.fen.length) ? psCouvT(PMx, c.mes.fen) : '';
-    if (!t && !PMx && c.anc && c.anc.ecartes && c.anc.ecartes.length) t = phraseEcart(c.anc);
+    if (!t && c.anc && c.anc.ecartes && c.anc.ecartes.length) t = phraseEcart(c.anc);   // 11/11/2026 — Façon 1 : dit une fois, ici (plus dans le détail)
     if (t) note = '<p class="pa-note" role="note">' + esc(t) + '</p>';
     var tete = '<header class="pa-top"><div class="pa-bar"><h1 class="pa-title">Pilotage</h1><div class="pa-ctl">' + menu +
       '<span class="v2-past-l">Période :</span><div class="pa-seg" role="group" aria-label="Période">' + seg('current', 'Mois') + seg('3m', '3 mois') + seg('year', 'Année') + seg('custom', 'Au choix') + '</div></div></div>' + (c.perPick ? c.perPick.replace('pilo-perpick', 'pilo-perpick pa-perpick') : '') + '</header>';
     var corps;
     var ca = PA_REG.ca, f0 = paFmt(ca, ca.val);
     var hero = '<section class="pa-hero pa-rise" style="--i:1"><div class="pa-hl">' + esc(ca.nom) + ' · ' + esc(pf.label) + '</div><div class="pa-hbig"><span class="pa-n">' + f0.n + '</span><span class="pa-u">' + esc(f0.u) + '</span></div>' +
-      '<div class="pa-hr">' + (ca.delta ? paPill(ca.delta, paQue(paAvant(pf))) : '') + (PA_REG.caCl ? '<span class="pa-hm">Moyenne Intégral : <b>' + paTxt(PA_REG.caCl, PA_REG.caCl.moy != null ? PA_REG.caCl.moy : PA_REG.caCl.val) + '</b> par client et par mois</span>' : '') + '</div></section>';
+      '<div class="pa-hr">' + (ca.delta ? paPill(ca.delta, paQue(paAvant(pf))) : '') + (PA_REG.caCl ? '<span class="pa-hm">Moyenne Intégral : <b>' + paTxt(PA_REG.caCl, PA_REG.caCl.moy != null ? PA_REG.caCl.moy : PA_REG.caCl.val) + '</b> par client et par mois</span>' : '') + '</div>' +
+      (PFM === 'liste' && t ? '<p class="pa-note cl1-note" role="note">' + esc(t) + '</p>' : '') + '</section>';   // 11/11/2026 — Façon 1 : le mois incomplet dit à côté du chiffre qu'il touche
     if (PFM === 'resume') {
       var faits = paFaits(c).map(function (x, i) {
         return '<li class="pa-fait pa-rise" style="--i:' + (i + 3) + '"><p>' + x.t + '</p>' + x.bars + '</li>';
@@ -1943,7 +1976,7 @@
         '<section class="pa-grand pa-rise" style="--i:2" id="pa-panneau">' + paPanneau(sel, c, true) + '</section>' +
         '<h2 class="pa-h2">Les autres mesures</h2><div id="pa-liste">' + paGroupes(c, false, PA_SEL) + '</div>';
     } else {
-      corps = hero + (paSynthCl() ? '<p class="pa-synth pa-synth-s pa-rise" style="--i:2">' + paSynthCl() + '</p>' : '') + note + '<div id="pa-liste">' + paGroupes(c, true, null) + '</div>';
+      corps = hero + (paSynthCl() ? '<p class="pa-synth pa-synth-s pa-rise" style="--i:2">' + paSynthCl() + '</p>' : '') + '<div id="pa-liste">' + paGroupes(c, true, null) + '</div>';
     }
     var feuille = '<div class="pa-sheet" id="pa-sheet" hidden><div class="pa-scrim" data-close="1"></div><div class="pa-card" role="dialog" aria-modal="true" aria-labelledby="pa-sh-t"><button type="button" class="pa-x" data-close="1" aria-label="Fermer">' + '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><div id="pa-sh-b"></div></div></div>';
     return {
@@ -2205,8 +2238,8 @@
               '<div class="pilo-fam-top">' +
                 '<span class="pilo-fam-l"><span class="pilo-fam-ico" style="color:' + COUL_FAM[fz.k] + '">' + ICO(fz.k === 'fr' ? 'froid' : 'pill', 15) + '</span>' +
                   '<span>' + esc(fz.l) + '</span></span>' +
-                '<span class="pilo-fam-v"><span class="mono" style="font-weight:700">' + V2.fmtEur(fz.v) + '</span>' +
-                  '<span class="mono pilo-fam-pct">' + pct.toFixed(0) + ' %</span></span>' +
+                '<span class="pilo-fam-v"><span class="cl1-num" style="font-weight:700">' + V2.fmtEur(fz.v) + '</span>' +
+                  '<span class="cl1-num pilo-fam-pct">' + pct.toFixed(0) + ' % du total</span></span>' +
               '</div>' +
               '<div class="pilo-bar"><span class="pilo-bar-fill" data-w="' + pct.toFixed(1) + '" style="width:0;background:' + COUL_FAM[fz.k] + '"></span></div>' +
             '</div>';
@@ -2215,7 +2248,7 @@
             var pr = totalCarte > 0 ? Math.max(0, MC.rg.total) / totalCarte * 100 : 0;
             lignesF += '<div class="pilo-fam"><div class="pilo-fam-top"><span class="pilo-fam-l"><span class="pilo-fam-ico" style="color:var(--muted)">' + ICO('pill', 15) + '</span>' +
               '<span>Mois sans fichier<small class="pilo-marge-d">règle de secours · ' + horsFic.map(nomMois).join(', ') + '</small></span></span>' +
-              '<span class="pilo-fam-v"><span class="mono" style="font-weight:700">' + V2.fmtEur(MC.rg.total) + '</span><span class="mono pilo-fam-pct">' + pr.toFixed(0) + ' %</span></span></div>' +
+              '<span class="pilo-fam-v"><span class="cl1-num" style="font-weight:700">' + V2.fmtEur(MC.rg.total) + '</span><span class="cl1-num pilo-fam-pct">' + pr.toFixed(0) + ' % du total</span></span></div>' +
               '<div class="pilo-bar"><span class="pilo-bar-fill" data-w="' + pr.toFixed(1) + '" style="width:0;background:var(--muted)"></span></div></div>';
           }
           var ng = NM.noteGen(MC.f);
@@ -2270,7 +2303,7 @@
               '<div class="pilo-vals">' +
                 '<div class="v2-row-val mono">' + V2.fmtEur(r.total) + '</div>' +
                 // Sur iPhone, le nombre de boîtes s'efface : sinon il coupait les prénoms (« Kari… »).
-                '<div class="v2-row-meta mono"><span class="pilo-marge-boites">' + V2.fmtNum(r.pal[0].q + r.pal[1].q + r.pal[2].q + r.pal[3].q + r.nr.q + r.pr.q + r.gen.q) + ' boîtes · </span>' + (r.ca > 0 ? (r.total / r.ca * 100).toFixed(2).replace('.', ',') + ' % du CA' : (r.ca < 0 ? 'chiffre d’affaires négatif (retours)' : 'aucune vente')) + '</div>' +
+                '<div class="v2-row-meta cl1-num"><span class="pilo-marge-boites">' + V2.fmtNum(r.pal[0].q + r.pal[1].q + r.pal[2].q + r.pal[3].q + r.nr.q + r.pr.q + r.gen.q) + ' boîtes · </span>' + (r.ca > 0 ? (r.total / r.ca * 100).toFixed(2).replace('.', ',') + ' % de son chiffre d’affaires' : (r.ca < 0 ? 'chiffre d’affaires négatif (retours)' : 'aucune vente')) + '</div>' +
               '</div>' +
               '<span class="v2-row-chev">' + ICO('chev', 16) + '</span>' +
             '</a>';
@@ -2283,14 +2316,15 @@
                 ? 'Notre marge — ce que les ventes rapportent à ' + V2.notreMarge.marque()
                 : 'Notre marge — règle de secours') + '</div>' +
                 '<div class="pilo-marge-sub">' + (pf ? esc(pf.label) : '') + ' · ' +
-                  (V2.commFilter ? esc(V2.commFilter) : (vueTous ? 'tous les commerciaux' : 'mon périmètre')) + '</div>' +
+                  (V2.commFilter ? esc(V2.commFilter) : (vueTous ? 'tous les commerciaux' : 'mon périmètre')) +
+                  (surFichier ? ' · répartie par famille de produits : chaque pourcentage est une part de notre marge de la période' : '') + '</div>' +
                 notesM.map(function (n) { return '<div class="pilo-marge-partiel">' + esc(n) + '</div>'; }).join('') + '</div>' +
               '<div class="pilo-marge-total"><span class="mono pilo-marge-v" data-count>' + V2.fmtEur(totalCarte) + '</span>' +
                 '<span class="pilo-marge-pct mono">' + margePct.toFixed(2).replace('.', ',') + ' % du CA net</span></div>' +
             '</div>' +
             '<div class="pilo-marge-body">' +
               '<div class="pilo-marge-pal">' + palHtml + '</div>' +
-              (classement ? '<div class="pilo-marge-rows"><div class="pilo-marge-rows-t">Par commercial</div>' + classement + '</div>' : '') +
+              (classement ? '<div class="pilo-marge-rows"><div class="pilo-marge-rows-t">Par commercial · notre marge et sa part dans son chiffre d’affaires</div>' + classement + '</div>' : '') +
             '</div>' +
           '</div>';
       }
@@ -2999,7 +3033,7 @@
                'quels produits, dans quel secteur, dans quelle catégorie de prix',
                '<div data-reveal id="pilo-prod-host">' + produitsCard + '</div>', false) : '') +
           (marcheFr ? disc('Le marché France', 'ce que le pays achète de plus, et de moins', '<div data-reveal>' + marcheFr + '</div>', false) : '') +
-          disc('Mes pharmacies', (nbActive ? nbActive + ' active' + (nbActive > 1 ? 's' : '') + ' sur la période' : '') + (nbGrp >= 2 && !opso ? ' · ' + nbGrp + ' groupements' : ''), classements, false) +
+          disc('Mes pharmacies', (nbActive ? V2.fmtNum(nbActive) + ' officine' + (nbActive > 1 ? 's actives' : ' active') + (pf ? ' ' + (pf.du === pf.au ? 'en ' : 'sur ') + pf.label.charAt(0).toLowerCase() + pf.label.slice(1) : ' sur la période') : '') + (nbGrp >= 2 && !opso ? ' · ' + nbGrp + ' groupements' : ''), classements, false) +   // 11/11/2026 — Façon 1 : « officines actives en <période> »
           // 06/11/2026 — ventes Offilog du mois par commercial, prime, pharmacies à relancer (suit le périmètre choisi ci-dessus)
           (!opso && V2.offVentes ? disc('Offilog', 'chiffre d’affaires du mois, prime, pharmacies à relancer',
                V2.offVentes.bloc({ commFilter: V2.commFilter || '', restreint: !!(myComm && !voitTous), mes: mesComms }), false) : '') +
@@ -3197,7 +3231,8 @@
     if (!months.length) return { html: '', bind: function () {} };
     var last = months[months.length - 1];
     var lastK = mkey(last.year, last.month);
-    var MN = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+    var MN = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];   // 11/11/2026 — Façon 1 : plus d'initiale (J = janvier, juin ou juillet ?)
+    var cl1V = function (v) { return Math.abs(v) >= 1e6 ? (Math.round(v / 1e5) / 10).toLocaleString('fr-FR') + ' M€' : V2.fmtEur(v); };
     var MNfull = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 
     // 13 derniers mois (incl. courant), même sans vente
@@ -3245,10 +3280,10 @@
       } else if (b.ca > 0 && pc > 0 && !bars[i - 1].partiel) {
         var dd = (b.ca - pc) / pc * 100, up = dd >= 0;
         dchip = '<span class="pilo-cbar-d ' + (up ? 'up' : 'dn') + '">' + (up ? '+' : '') + Math.round(dd) + '%</span>';
-        dtip = ' · ' + (up ? '▲ +' : '▼ ') + Math.round(dd) + '% vs mois préc.';
+        dtip = ' · ' + (up ? '▲ +' : '▼ ') + Math.round(dd) + ' % par rapport au mois précédent';
       }
       return '<div class="pilo-cbar' + (hot ? ' pilo-cbar-hot' : '') + (b.partiel ? ' pilo-cbar-part' : '') + (isLast ? ' pilo-cbar-cur' : '') + (dansPer(b) ? ' pilo-cbar-in' : '') + '" data-i="' + i + '" data-tip="' + esc(cap(b.full) + ' ' + b.year + ' · ' + V2.fmtEur(b.ca) + dtip) + '">' +
-        '<span class="pilo-cbar-v mono">' + V2.fmtK(b.ca) + '</span>' + dchip +
+        '<span class="pilo-cbar-v">' + cl1V(b.ca) + '</span>' + dchip +
         '<div class="pilo-cbar-track">' +
           '<span class="pilo-cbar-fill' + (isLast ? ' cur' : '') + '" style="height:' + h.toFixed(1) + '%"></span>' +
         '</div>' +
@@ -3263,17 +3298,17 @@
     }
     var kfs =
       '<div class="pilo-kfs">' +
-        (avg > 0 ? kf('Moyenne', V2.fmtEur(avg) + '<small>/mois</small>') : '') +
+        (avg > 0 ? kf('Moyenne des mois complets', V2.fmtEur(avg) + '<small> par mois</small>') : '') +
         (best ? kf('Meilleur mois', esc(cap(best.full)) + ' · ' + V2.fmtEur(best.ca)) : '') +
-        kf('Mois complets', V2.fmtNum(nonEmpty.length) + '<small>/' + bars.length + '</small>') +
+        kf('Mois complets', V2.fmtNum(nonEmpty.length) + '<small> sur ' + bars.length + '</small>') +
       '</div>';
 
     var range = cap(bars[0].full) + ' ' + bars[0].year + ' → ' + cap(bars[bars.length - 1].full) + ' ' + bars[bars.length - 1].year;
     var html =
       '<div class="v2-card pilo-chart-card" data-reveal>' +
         '<div class="pilo-chart-head">' +
-          '<div class="v2-card-t">' + ICO('pilo', 17) + 'Évolution du CA · ' + bars.length + ' mois</div>' +
-          '<span class="pilo-chart-period mono">' + esc(range) + '</span>' +
+          '<div class="v2-card-t">' + ICO('pilo', 17) + 'Évolution du chiffre d’affaires, mois par mois</div>' +
+          '<span class="pilo-chart-period">' + esc(range) + ' · ' + bars.length + ' mois' + (partiel ? ', dont ' + partiel + ' incomplet' + (partiel > 1 ? 's' : '') : '') + '</span>' +
         '</div>' +
         '<div class="pilo-readout" id="pilo-readout"></div>' +
         '<div class="pilo-hint">' + (per && per.label ? 'En couleur : ' + esc(per.label) + ' · t' : 'T') + 'ouche un mois pour voir son évolution</div>' +
@@ -3316,12 +3351,12 @@
           evHtml = '<span class="pilo-ro-d mut">mois incomplet · pas de comparaison</span>';
         } else if (b.ca > 0 && prev > 0 && !bars[i - 1].partiel) {
           var up = b.ca >= prev, pct = Math.round(Math.abs((b.ca - prev) / prev * 100));
-          evHtml = '<span class="pilo-ro-d ' + (up ? 'up' : 'dn') + '">' + (up ? '▲ +' : '▼ ') + pct + ' % vs mois préc.</span>';
+          evHtml = '<span class="pilo-ro-d ' + (up ? 'up' : 'dn') + '">' + (up ? '▲ +' : '▼ ') + pct + ' % par rapport au mois précédent</span>';
         } else { evHtml = '<span class="pilo-ro-d mut">' + (b.ca > 0 ? 'premier mois' : 'pas de vente') + '</span>'; }
         var avgHtml = (b.ca > 0 && avg > 0 && !b.partiel)
-          ? '<span class="pilo-ro-a mono">' + (b.ca >= avg ? '+' : '−') + Math.round(Math.abs((b.ca - avg) / avg * 100)) + ' % vs moyenne</span>' : '';
+          ? '<span class="pilo-ro-a">' + (b.ca >= avg ? '+' : '−') + Math.round(Math.abs((b.ca - avg) / avg * 100)) + ' % par rapport à la moyenne des mois complets</span>' : '';
         readout.innerHTML = '<span class="pilo-ro-m">' + esc(cap(b.full) + ' ' + b.year) + '</span>' +
-          '<span class="pilo-ro-v mono">' + V2.fmtEur(b.ca) + '</span>' + evHtml + avgHtml;
+          '<span class="pilo-ro-v">' + V2.fmtEur(b.ca) + '</span>' + evHtml + avgHtml;
       }
       Array.prototype.forEach.call(barEls, function (el) {
         el.addEventListener('click', function () { selectMonth(+el.dataset.i); });

@@ -204,3 +204,37 @@ html.pa-noscroll,html.pa-noscroll body{overflow:hidden}
   .plm-c{text-align:left}.plm-c[data-l]::before{content:attr(data-l);display:block;font-size:13.5px;font-weight:500;color:var(--pa-mut)}
   .plm-btn2{margin-left:0}
 }
+
+/* ═══ Façon 1 « L'étiquette » (11/11/2026, préfixe cl1-) — Pilotage ═══
+   Liste : sous chaque nom, « quoi · période » ; mini-courbe encadrée de sa première et de sa dernière valeur, durée écrite dessous ;
+   pastille suivie de « par rapport à … » ; « Par client » : la moyenne nommée, ou le repère « le mien » sur tout le réseau.
+   Détail : plus de police à chasse fixe pour les montants, plus de texte sous 13 px dans ce qui a été touché. */
+.pa-row-t small.cl1-l2{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;margin-top:3px;font-size:13.5px;color:var(--pa-ink);font-weight:600;font-variant-numeric:tabular-nums}
+.pa-row-e{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.pa-row-e .cl1-pe{font-size:13px;color:var(--pa-mut);font-weight:500;white-space:nowrap}
+.cl1-sp{display:flex!important;flex-direction:column;align-items:center;gap:2px}
+.cl1-sp-r{display:flex;align-items:center;gap:6px}
+.cl1-sp-v{font-size:13px;font-weight:600;color:var(--pa-mut);white-space:nowrap;font-variant-numeric:tabular-nums}
+.cl1-sp-d{font-size:13px;color:var(--pa-mut);white-space:nowrap}
+@media(min-width:701px){.pa-root.pa-liste .pa-row{grid-template-columns:minmax(0,1fr) 236px minmax(118px,auto) minmax(150px,auto) 16px}}
+/* téléphone : la mini-courbe passe sur sa propre ligne, sous le nom, avec ses deux valeurs et sa durée (elle était cachée) */
+@media(max-width:700px){
+  .pa-root.pa-liste .pa-row{grid-template-areas:"t v c" "t e c" "s s c"}
+  .pa-root.pa-liste .pa-row .pa-row-s.cl1-sp{grid-area:s;justify-self:start;align-items:flex-start;margin-top:4px}
+  .pa-root.pa-liste .pa-row .pa-row-s.cl1-sp:empty{display:none!important}
+}
+.pa-hero .cl1-note{margin-top:12px;padding-top:12px;border-top:1px solid var(--pa-line)}
+/* « Voir tout le détail » */
+.ps-det .mono{font-family:var(--font);letter-spacing:0;font-variant-numeric:tabular-nums}
+.ps-det .cl1-num{font-variant-numeric:tabular-nums}
+.ps-det .pilo-cbar-v,.ps-det .pilo-cbar-d,.ps-det .pilo-cbar-lbl,.ps-det .pilo-chart-period,.ps-det .pilo-hint,.ps-det .pilo-kf-l,
+.ps-det .pilo-fam-pct,.ps-det .pilo-marge-d,.ps-det .pilo-marge-partiel,.ps-det .pilo-marge-sub,.ps-det .v2-row-meta{font-size:13px}
+.ps-det .pilo-cbar-lbl{font-family:var(--font)}
+.ps-det .pilo-cbar-d.dn{color:#C7283D}
+.ps-det .pilo-hint{color:var(--muted)}
+.ps-det .pilo-kf-l{text-transform:none;letter-spacing:0}
+@media(max-width:640px){.ps-det .pilo-cbar-lbl{font-size:13px;letter-spacing:-.02em}}
+/* « Voir tout le détail » ne redit plus ce qui est au-dessus (version liste) : le second en-tête (titre, période, sélecteurs en double, phrase
+   des mois écartés), « Moyenne Intégral par client » (les cinq chiffres de « Par client »), les vignettes chiffre d'affaires / actives / panier,
+   et le total de notre marge (ligne « Notre marge »). Ils restent calculés dans la page (les tests les lisent), ils ne s'affichent plus. */
+.pa-wrap .ps-det>.pilo-head,.pa-wrap .ps-det>.ps-wrap,.pa-wrap .ps-det .pilo-hero,.pa-wrap .ps-det .pilo-kpis3,.pa-wrap .ps-det .pilo-marge-total{display:none}
