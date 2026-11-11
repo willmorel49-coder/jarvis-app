@@ -334,7 +334,7 @@ border-bottom:1px solid var(--line)}
   transition:transform .12s var(--ease),box-shadow .18s var(--ease),background .15s var(--ease-soft),border-color .15s var(--ease-soft),color .15s var(--ease-soft);white-space:nowrap}
 .v2-btn,.v2-btn-ghost{background:var(--card);border-color:color-mix(in srgb,var(--ip-blue) 28%,var(--card));color:var(--ip-blue);box-shadow:none}
 .v2-btn:where(:not(.v2-btn-primary,.v2-btn-discret)):hover{background:color-mix(in srgb,var(--ip-blue) 6%,var(--card));border-color:color-mix(in srgb,var(--ip-blue) 48%,var(--card))}
-.v2-btn:where(:not(.v2-btn-primary,.v2-btn-discret)):active{background:color-mix(in srgb,var(--ip-blue) 14%,var(--card));border-color:color-mix(in srgb,var(--ip-blue) 55%,var(--card));transform:scale(.985);transition-duration:.06s}
+.v2-btn:where(:not(.v2-btn-primary,.v2-btn-discret)):active{background:color-mix(in srgb,var(--ip-blue) 10%,var(--card));border-color:color-mix(in srgb,var(--ip-blue) 55%,var(--card));transform:scale(.985);transition-duration:.06s}
 .v2-btn-primary{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff;box-shadow:0 1px 2px rgba(0,52,160,.28)}
 .v2-btn-primary:hover{background:var(--ip-blue);border-color:var(--ip-blue-d);box-shadow:0 3px 10px rgba(0,52,160,.30)}
 .v2-btn-primary:active{background:var(--ip-blue-d);border-color:var(--ip-blue-d);box-shadow:none;transform:scale(.985);transition-duration:.06s}
@@ -504,8 +504,9 @@ html{-webkit-tap-highlight-color:transparent}
 @media (prefers-reduced-motion:reduce){.v2-btn[aria-busy="true"]::before{animation:none;border-top-color:currentColor;border-style:dotted}}
 /* Habillage actif : le fond principal vient de v2-hab.css (non touché) ; ici seulement l'appui et le désactivé, qui doivent rester visibles. */
 html[data-hab] .v2-btn-primary:active{filter:brightness(.86)}
-html[data-hab] .v2-btn-primary:is(:disabled,[disabled],[aria-disabled="true"]){background:var(--btn-off-bg)!important;color:var(--btn-off-tx);filter:none}
-.v2-btn:focus-visible,.v2-btn-primary:focus-visible,.v2-btn-ghost:focus-visible{outline:none;box-shadow:0 0 0 2px var(--card),0 0 0 4px color-mix(in srgb,var(--ip-blue) 55%,transparent)}
+html[data-hab] .v2-btn-primary:is(:disabled,[disabled],[aria-disabled="true"]){background:var(--btn-off-bg)!important;color:var(--btn-off-tx);filter:none;box-shadow:none!important}
+/* anneau toujours bleu d'accent (v2-motion.css le teintait avec --accent, vert sur la fiche) */
+html:root .v2-btn:focus-visible,html:root .v2-btn-primary:focus-visible,html:root .v2-btn-ghost:focus-visible{outline:none;box-shadow:0 0 0 2px var(--card),0 0 0 4px color-mix(in srgb,var(--ip-blue) 55%,transparent)}
 
 /* Tuiles : élévation unifiée + OMBRE TEINTÉE par le pilier (signature « chaque outil a sa lumière ») */
 .v2-pil:hover{transform:translateY(var(--mo-lift,-3px));
@@ -781,7 +782,7 @@ html:root:root:root :is(.pha-btn,.pha-btn-w,.pha-edit,.pha-prop-b,.fi-cap,.vv-ba
   min-height:var(--tap-min,44px);border-radius:var(--r-btn);background:var(--card);border:1px solid color-mix(in srgb,var(--ip-blue) 28%,var(--card));
   color:var(--ip-blue);font-weight:600;box-shadow:none;text-shadow:none;text-decoration:none}
 html:root:root:root :is(.pha-btn,.pha-btn-w,.pha-edit,.pha-prop-b,.fi-cap,.vv-band-b,.ps-det-btn):hover{background:color-mix(in srgb,var(--ip-blue) 6%,var(--card));border-color:color-mix(in srgb,var(--ip-blue) 48%,var(--card));color:var(--ip-blue);transform:none;box-shadow:none}
-html:root:root:root :is(.pha-btn,.pha-btn-w,.pha-edit,.pha-prop-b,.fi-cap,.vv-band-b,.ps-det-btn):active{background:color-mix(in srgb,var(--ip-blue) 14%,var(--card));border-color:color-mix(in srgb,var(--ip-blue) 55%,var(--card));transform:scale(.985);transition-duration:.06s}
+html:root:root:root :is(.pha-btn,.pha-btn-w,.pha-edit,.pha-prop-b,.fi-cap,.vv-band-b,.ps-det-btn):active{background:color-mix(in srgb,var(--ip-blue) 10%,var(--card));border-color:color-mix(in srgb,var(--ip-blue) 55%,var(--card));transform:scale(.985);transition-duration:.06s}
 html:root:root:root :is(.pha-btn-w,.ps-det-btn){justify-content:space-between}
 html:root:root:root .pha-btn-w b{background:color-mix(in srgb,var(--ip-blue) 10%,var(--card));color:var(--ip-blue-d)}
 
@@ -806,7 +807,7 @@ html:root:root:root :is(.pha-tab,.pha-part-btn,.pa-segb,.v2-notes-puce,.pha-som-
   background:var(--card);color:var(--ip-ink-2);font-size:13px;font-weight:600;box-shadow:none}
 html:root:root:root .pa-segb{background:transparent;border-color:transparent;font-size:15px}
 html:root:root:root :is(.pha-tab,.pha-part-btn,.pa-segb,.v2-notes-puce,.pha-som-b):hover{background:color-mix(in srgb,var(--ip-blue) 6%,var(--card));border-color:color-mix(in srgb,var(--ip-blue) 48%,var(--card));color:var(--ip-ink)}
-html:root:root:root :is(.pha-tab,.pha-part-btn,.pa-segb,.v2-notes-puce,.pha-som-b):active{background:color-mix(in srgb,var(--ip-blue) 14%,var(--card));transform:scale(.985);transition-duration:.06s}
+html:root:root:root :is(.pha-tab,.pha-part-btn,.pa-segb,.v2-notes-puce,.pha-som-b):active{background:color-mix(in srgb,var(--ip-blue) 10%,var(--card));transform:scale(.985);transition-duration:.06s}
 html:root:root:root :is(.pha-tab,.pha-part-btn,.pa-segb,.pha-som-b):is(.on,[aria-pressed="true"],[aria-current="true"]){background:var(--ip-blue);border-color:var(--ip-blue);color:#fff;box-shadow:none}
 html:root:root:root :is(.pha-tab,.pha-part-btn,.pa-segb,.pha-som-b):is(.on,[aria-pressed="true"],[aria-current="true"]):active{background:var(--ip-blue-d);border-color:var(--ip-blue-d)}
 html:root:root:root .pha-part-seg{background:none;border:0;padding:0;gap:6px;flex-wrap:wrap;align-items:center}
