@@ -176,8 +176,9 @@ body.ml-fige{overflow:hidden}
 .ml-duo .v2-btn.ml-choisi{border-color:var(--ip-blue);color:var(--ip-blue-d);background:var(--halo)}
 .ml-duo-t{font-size:13px;color:var(--muted-d);text-align:center;margin-top:-2px}
 .v2-btn[disabled]{cursor:default;transform:none!important}
-.v2-btn-primary[disabled]{background:#B9C6E6;box-shadow:none}
-.v2-btn-ghost[disabled]{color:#8B91A3;background:var(--card-2);box-shadow:none}
+/* désactivé : règle commune dans v2.css (var(--btn-off-*)), sans opacité */
+.v2-btn-primary[disabled]{background:var(--btn-off-bg);color:var(--btn-off-tx);box-shadow:none}
+.v2-btn-ghost[disabled]{background:var(--btn-off-bg);color:var(--btn-off-tx);box-shadow:none}
 .ml-occupe svg.ml-i{animation:ml-tourne .8s linear infinite}
 @keyframes ml-tourne{to{transform:rotate(360deg)}}
 

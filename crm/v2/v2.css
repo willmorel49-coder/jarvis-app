@@ -323,20 +323,24 @@ border-bottom:1px solid var(--line)}
 }
 
 /* ─── Boutons ─── */
-.v2-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px;border-radius:var(--r-btn);
-  font-family:var(--font);font-size:14px;font-weight:700;letter-spacing:-.01em;cursor:pointer;border:1px solid transparent;
-  transition:transform .18s var(--ease),box-shadow .22s var(--ease),background .18s var(--ease-soft),border-color .18s var(--ease-soft);white-space:nowrap}
-/* 20/10/2026 — un .v2-btn sans variante n'avait aucun fond : Safari y mettait son gris système et le bouton avait l'air désactivé.
-   Il prend désormais une teinte bleue légère. Spécificité d'une classe, posé AVANT -primary/-ghost : toute règle d'écran plus loin garde la main. */
-.v2-btn:where(:not(.v2-btn-primary,.v2-btn-ghost)){background:color-mix(in srgb,var(--ip-blue) 9%,var(--card));border-color:color-mix(in srgb,var(--ip-blue) 22%,var(--card));color:var(--ip-blue-d)}
-.v2-btn:where(:not(.v2-btn-primary,.v2-btn-ghost)):hover{background:color-mix(in srgb,var(--ip-blue) 14%,var(--card));border-color:color-mix(in srgb,var(--ip-blue) 36%,var(--card))}
-.v2-btn-primary{background:linear-gradient(150deg,color-mix(in srgb,var(--ip-blue) 92%,#fff),var(--ip-blue) 46%,var(--ip-blue-d));
-  color:#fff;box-shadow:var(--sh-blue)}
-.v2-btn-primary:hover{transform:translateY(-1px);box-shadow:var(--sh-blue-h)}
-.v2-btn-primary:active{transform:translateY(0) scale(.985);box-shadow:0 2px 8px rgba(0,52,160,.30),0 1px 0 rgba(255,255,255,.15) inset;transition-duration:.06s}
-.v2-btn-ghost{background:var(--card);border-color:var(--line);color:var(--ip-ink-2);box-shadow:var(--sh-1)}
-.v2-btn-ghost:hover{border-color:color-mix(in srgb,var(--ip-blue) 32%,var(--line));color:var(--ip-ink);transform:translateY(-1px);box-shadow:var(--sh-2)}
-.v2-btn-ghost:active{transform:translateY(0) scale(.985);box-shadow:var(--sh-1);transition-duration:.06s}
+/* 11/11/2026 — SOCLE COMMUN des boutons : une famille, trois niveaux (principal / secondaire / discret).
+   Principal  = .v2-btn-primary : fond plein var(--ip-blue), texte blanc.
+   Secondaire = .v2-btn seul ET .v2-btn-ghost (même chose) : fond carte, contour bleu pâle, texte bleu.
+   Discret    = .v2-btn-discret : texte bleu, sans fond ni contour, souligné au survol (lien d'action).
+   États : survol, appui (un cran plus foncé), focus clavier, désactivé lisible (aucune opacité), chargement [aria-busy]. */
+:root{--btn-off-bg:#E8ECF4;--btn-off-tx:#525A6E;--btn-off-line:#D5DBE8}
+.v2-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px;min-height:var(--tap-min,44px);border-radius:var(--r-btn);
+  font-family:var(--font);font-size:14px;font-weight:600;letter-spacing:-.01em;cursor:pointer;border:1px solid transparent;
+  transition:transform .12s var(--ease),box-shadow .18s var(--ease),background .15s var(--ease-soft),border-color .15s var(--ease-soft),color .15s var(--ease-soft);white-space:nowrap}
+.v2-btn,.v2-btn-ghost{background:var(--card);border-color:color-mix(in srgb,var(--ip-blue) 28%,var(--card));color:var(--ip-blue);box-shadow:none}
+.v2-btn:where(:not(.v2-btn-primary,.v2-btn-discret)):hover{background:color-mix(in srgb,var(--ip-blue) 6%,var(--card));border-color:color-mix(in srgb,var(--ip-blue) 48%,var(--card))}
+.v2-btn:where(:not(.v2-btn-primary,.v2-btn-discret)):active{background:color-mix(in srgb,var(--ip-blue) 14%,var(--card));border-color:color-mix(in srgb,var(--ip-blue) 55%,var(--card));transform:scale(.985);transition-duration:.06s}
+.v2-btn-primary{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff;box-shadow:0 1px 2px rgba(0,52,160,.28)}
+.v2-btn-primary:hover{background:var(--ip-blue);border-color:var(--ip-blue-d);box-shadow:0 3px 10px rgba(0,52,160,.30)}
+.v2-btn-primary:active{background:var(--ip-blue-d);border-color:var(--ip-blue-d);box-shadow:none;transform:scale(.985);transition-duration:.06s}
+.v2-btn.v2-btn-discret{background:transparent;border-color:transparent;box-shadow:none;color:var(--ip-blue);padding-left:8px;padding-right:8px;text-decoration:none}
+.v2-btn.v2-btn-discret:hover{background:transparent;border-color:transparent;text-decoration:underline;text-underline-offset:3px}
+.v2-btn.v2-btn-discret:active{background:color-mix(in srgb,var(--ip-blue) 10%,var(--card));text-decoration:underline;transform:scale(.985);transition-duration:.06s}
 
 /* ─── Onglets internes ─── */
 .v2-tabs{display:flex;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:4px;
@@ -490,9 +494,18 @@ html{-webkit-tap-highlight-color:transparent}
 }
 
 /* Boutons : enfoncement tactile + états désactivé/focus clavier */
-.v2-btn-primary:active,.v2-btn-ghost:active{transform:translateY(0) scale(.985);transition-duration:.06s}
-.v2-btn:disabled,.v2-btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed;transform:none!important;filter:grayscale(.2)}
-.v2-btn:focus-visible{outline:none;box-shadow:0 0 0 2px var(--card),0 0 0 4px color-mix(in srgb,var(--ip-blue) 55%,transparent)}
+/* Désactivé lisible : aucune opacité, texte #525A6E sur #E8ECF4 (5,82:1). Même règle pour les trois niveaux. */
+.v2-btn:is(:disabled,[disabled],[aria-disabled="true"]),.v2-btn-primary:is(:disabled,[disabled],[aria-disabled="true"]),.v2-btn-ghost:is(:disabled,[disabled],[aria-disabled="true"]){background:var(--btn-off-bg);border-color:var(--btn-off-line);color:var(--btn-off-tx);box-shadow:none;cursor:not-allowed;transform:none!important;text-decoration:none}
+.v2-btn.v2-btn-discret:is(:disabled,[disabled],[aria-disabled="true"]){background:transparent;border-color:transparent}
+/* Chargement : curseur d'attente + petit anneau devant le texte (CSS seul). Le texte reste lisible. */
+.v2-btn[aria-busy="true"]{cursor:progress}
+.v2-btn[aria-busy="true"]::before{content:"";flex:none;width:14px;height:14px;box-sizing:border-box;border-radius:50%;border:2px solid currentColor;border-top-color:transparent;animation:v2-btn-tourne .8s linear infinite}
+@keyframes v2-btn-tourne{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.v2-btn[aria-busy="true"]::before{animation:none;border-top-color:currentColor;border-style:dotted}}
+/* Habillage actif : le fond principal vient de v2-hab.css (non touché) ; ici seulement l'appui et le désactivé, qui doivent rester visibles. */
+html[data-hab] .v2-btn-primary:active{filter:brightness(.86)}
+html[data-hab] .v2-btn-primary:is(:disabled,[disabled],[aria-disabled="true"]){background:var(--btn-off-bg)!important;color:var(--btn-off-tx);filter:none}
+.v2-btn:focus-visible,.v2-btn-primary:focus-visible,.v2-btn-ghost:focus-visible{outline:none;box-shadow:0 0 0 2px var(--card),0 0 0 4px color-mix(in srgb,var(--ip-blue) 55%,transparent)}
 
 /* Tuiles : élévation unifiée + OMBRE TEINTÉE par le pilier (signature « chaque outil a sa lumière ») */
 .v2-pil:hover{transform:translateY(var(--mo-lift,-3px));
@@ -700,15 +713,8 @@ html.v2-nav .v2-top::before{content:"";position:absolute;left:0;bottom:-1px;heig
              0 6px 16px color-mix(in srgb,var(--accent,var(--ip-blue)) 10%,rgba(16,19,28,.06)),
              var(--sh-2)}
 
-/* Bouton primaire : glow bleu marque discret + micro-brillance de surface.
-   Superpose au --sh-blue existant sans le remplacer. */
+/* Bouton principal : fond plein, plus de brillance ni de halo (socle commun, voir plus haut). */
 .v2-btn-primary{isolation:isolate}
-.v2-btn-primary::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:1;
-  background:linear-gradient(180deg,rgba(255,255,255,.16),transparent 30%);
-  opacity:.85;transition:opacity .22s var(--ease-soft)}
-.v2-btn-primary:hover{box-shadow:var(--sh-blue-h),0 0 24px color-mix(in srgb,var(--ip-blue) 22%,transparent)}
-.v2-btn-primary:hover::after{opacity:1}
-.v2-btn-primary:active::after{opacity:.6}
 .v2-btn-primary > *{position:relative;z-index:2}
 
 /* ── 3. Micro-brillance cohérente (haut-lumière subtil, signature) ──
@@ -723,14 +729,12 @@ html.v2-nav .v2-top::before{content:"";position:absolute;left:0;bottom:-1px;heig
   box-shadow:0 0 0 2px var(--card),
              0 0 0 4px color-mix(in srgb,var(--accent,var(--ip-blue)) 55%,transparent),
              var(--sh-2)}
-/* Boutons ghost : halo bleu marque très léger au survol (cohérence primaire) */
-.v2-btn-ghost:hover{box-shadow:var(--sh-2),0 0 0 3px color-mix(in srgb,var(--ip-blue) 8%,transparent)}
 /* Rows/chips : transition d'appui plus nette au relâchement */
 .v2-row:active{transition-duration:.06s}
 .v2-rchip:active{transform:translateY(0) scale(.97);transition-duration:.06s}
 
 @media (prefers-reduced-motion:reduce){
-  .v2-pil::after,.v2-search::after,.v2-btn-primary::after{transition:none}
+  .v2-pil::after,.v2-search::after{transition:none}
   .v2-kpi:hover,.v2-pil:active,.v2-kpi:active{transform:none}
 }
 
@@ -769,3 +773,60 @@ html.v2-nav .v2-top::before{content:"";position:absolute;left:0;bottom:-1px;heig
   color:rgba(255,255,255,.86);max-width:56ch}
 .v2-rdv-cap a{color:#fff;text-decoration:underline}
 @media(max-width:640px){.v2-rdv-cap{margin:-8px -14px 18px;padding:16px 20px 17px}}
+
+/* ═══ 11/11/2026 — SOCLE COMMUN, suite : les familles propres aux 4 écrans (Mes officines, fiche officine, Pilotage) se calent sur les 3 niveaux.
+   Même aspect que .v2-btn / .v2-btn-primary / .v2-btn-discret ci-dessus ; couleurs par les variables (--ip-blue…), donc les habillages (v2-hab.css) les suivent.
+   Préfixe html:root:root:root = plus fort que les règles d'écran (.fi-m1 .pha-id .pha-btn…), sans !important. ═══ */
+html:root:root:root :is(.pha-btn,.pha-btn-w,.pha-edit,.pha-prop-b,.fi-cap,.vv-band-b,.ps-det-btn){
+  min-height:var(--tap-min,44px);border-radius:var(--r-btn);background:var(--card);border:1px solid color-mix(in srgb,var(--ip-blue) 28%,var(--card));
+  color:var(--ip-blue);font-weight:600;box-shadow:none;text-shadow:none;text-decoration:none}
+html:root:root:root :is(.pha-btn,.pha-btn-w,.pha-edit,.pha-prop-b,.fi-cap,.vv-band-b,.ps-det-btn):hover{background:color-mix(in srgb,var(--ip-blue) 6%,var(--card));border-color:color-mix(in srgb,var(--ip-blue) 48%,var(--card));color:var(--ip-blue);transform:none;box-shadow:none}
+html:root:root:root :is(.pha-btn,.pha-btn-w,.pha-edit,.pha-prop-b,.fi-cap,.vv-band-b,.ps-det-btn):active{background:color-mix(in srgb,var(--ip-blue) 14%,var(--card));border-color:color-mix(in srgb,var(--ip-blue) 55%,var(--card));transform:scale(.985);transition-duration:.06s}
+html:root:root:root :is(.pha-btn-w,.ps-det-btn){justify-content:space-between}
+html:root:root:root .pha-btn-w b{background:color-mix(in srgb,var(--ip-blue) 10%,var(--card));color:var(--ip-blue-d)}
+
+/* principal : fond plein, texte blanc (au plus un par bloc) */
+html:root:root:root :is(.pha-btn-pri,.bo-open,.phf-nmedit-btn,.fbk-b.pri){background:var(--ip-blue);border:1px solid var(--ip-blue);color:#fff;font-weight:600;box-shadow:0 1px 2px rgba(0,52,160,.28);text-shadow:none}
+html:root:root:root :is(.pha-btn-pri,.bo-open,.phf-nmedit-btn){min-height:var(--tap-min,44px);border-radius:var(--r-btn)}
+html:root:root:root :is(.pha-btn-pri,.bo-open,.phf-nmedit-btn,.fbk-b.pri):hover{background:var(--ip-blue);border-color:var(--ip-blue-d);color:#fff;box-shadow:0 3px 10px rgba(0,52,160,.30);filter:none}
+html:root:root:root :is(.pha-btn-pri,.bo-open,.phf-nmedit-btn,.fbk-b.pri):active{background:var(--ip-blue-d);border-color:var(--ip-blue-d);box-shadow:none;transform:scale(.985);transition-duration:.06s}
+/* sur la carte bleue de la fiche, un anneau blanc détache le bouton principal du fond */
+html:root:root:root .pha-id .pha-btn-pri{border:2px solid #fff;box-shadow:0 6px 16px rgba(0,16,80,.35)}
+html:root:root:root .pha-id .pha-btn-pri:hover{border-color:#fff}
+html:root:root:root .pha-id .pha-btn-pri:active{border-color:#fff}
+
+/* discret : lien d'action en pied de bloc */
+html:root:root:root .dr-voir{color:var(--ip-blue);font-weight:600}
+html:root:root:root .dr-voir:hover{text-decoration:underline;text-underline-offset:3px}
+html:root:root:root .dr-voir:active{background:color-mix(in srgb,var(--ip-blue) 10%,var(--card))}
+
+/* pastilles de choix (filtres, périodes, familles) : pilule, état choisi net, un mot devant qui dit ce qu'on choisit */
+html:root:root:root :is(.pha-tab,.pha-part-btn,.pa-segb,.v2-notes-puce,.pha-som-b){
+  display:inline-flex;align-items:center;gap:7px;min-height:36px;border-radius:var(--r-pill);border:1px solid color-mix(in srgb,var(--ip-blue) 28%,var(--card));
+  background:var(--card);color:var(--ip-ink-2);font-size:13px;font-weight:600;box-shadow:none}
+html:root:root:root .pa-segb{background:transparent;border-color:transparent;font-size:15px}
+html:root:root:root :is(.pha-tab,.pha-part-btn,.pa-segb,.v2-notes-puce,.pha-som-b):hover{background:color-mix(in srgb,var(--ip-blue) 6%,var(--card));border-color:color-mix(in srgb,var(--ip-blue) 48%,var(--card));color:var(--ip-ink)}
+html:root:root:root :is(.pha-tab,.pha-part-btn,.pa-segb,.v2-notes-puce,.pha-som-b):active{background:color-mix(in srgb,var(--ip-blue) 14%,var(--card));transform:scale(.985);transition-duration:.06s}
+html:root:root:root :is(.pha-tab,.pha-part-btn,.pa-segb,.pha-som-b):is(.on,[aria-pressed="true"],[aria-current="true"]){background:var(--ip-blue);border-color:var(--ip-blue);color:#fff;box-shadow:none}
+html:root:root:root :is(.pha-tab,.pha-part-btn,.pa-segb,.pha-som-b):is(.on,[aria-pressed="true"],[aria-current="true"]):active{background:var(--ip-blue-d);border-color:var(--ip-blue-d)}
+html:root:root:root .pha-part-seg{background:none;border:0;padding:0;gap:6px;flex-wrap:wrap;align-items:center}
+.v2-past-l{display:inline-flex;align-items:center;min-height:36px;margin-right:2px;font-size:13px;font-weight:600;color:var(--ip-ink-2)}
+.of-m1 .of-caps .v2-past-l{color:#fff;font-size:14px;font-weight:700}
+.pa-ctl .v2-past-l{font-size:15px}
+.v2-compte{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 7px;border-radius:var(--r-pill);background:var(--halo,#EAF0FF);color:var(--ip-blue-d);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+html:root:root:root :is(.on,[aria-pressed="true"]) > .v2-compte{background:rgba(255,255,255,.24);color:#fff}
+@media (max-width:900px){
+  html:root:root:root :is(.pha-tab,.pha-part-btn,.pa-segb,.v2-notes-puce,.pha-som-b),.v2-past-l{min-height:var(--tap-min,44px)}
+}
+html:root:root:root .of-m1 .of-hd .v2-btn{height:auto;min-height:var(--tap-min,44px)}
+
+/* focus clavier : même anneau que .v2-btn */
+html:root:root:root :is(.pha-btn,.pha-btn-w,.pha-btn-pri,.pha-edit,.pha-prop-b,.fi-cap,.vv-band-b,.ps-det-btn,.bo-open,.phf-nmedit-btn,.fbk-b,.dr-voir,.pha-tab,.pha-part-btn,.pa-segb,.v2-notes-puce,.pha-som-b):focus-visible{outline:none;box-shadow:0 0 0 2px var(--card),0 0 0 4px color-mix(in srgb,var(--ip-blue) 55%,transparent)}
+/* désactivé lisible (texte #525A6E sur #E8ECF4 = 5,82:1), jamais d'opacité */
+html:root:root:root :is(.pha-btn,.pha-btn-w,.pha-btn-pri,.pha-edit,.pha-prop-b,.fi-cap,.vv-band-b,.ps-det-btn,.bo-open,.phf-nmedit-btn,.pha-tab,.pha-part-btn,.pa-segb,.v2-notes-puce,.pha-som-b):is(:disabled,[aria-disabled="true"]){background:var(--btn-off-bg);border-color:var(--btn-off-line);color:var(--btn-off-tx);box-shadow:none;cursor:not-allowed;transform:none}
+/* chargement : curseur d'attente + anneau devant le texte (animation coupée si l'on préfère moins de mouvement) */
+html:root:root:root :is(.pha-btn,.pha-btn-w,.pha-btn-pri,.pha-edit,.pha-prop-b,.fi-cap,.vv-band-b,.bo-open,.phf-nmedit-btn,.pha-tab,.pha-part-btn,.pa-segb)[aria-busy="true"]{cursor:progress}
+html:root:root:root :is(.pha-btn,.pha-btn-w,.pha-btn-pri,.pha-edit,.pha-prop-b,.fi-cap,.vv-band-b,.bo-open,.phf-nmedit-btn,.pha-tab,.pha-part-btn,.pa-segb)[aria-busy="true"]::before{content:"";flex:none;width:14px;height:14px;box-sizing:border-box;border-radius:50%;border:2px solid currentColor;border-top-color:transparent;animation:v2-btn-tourne .8s linear infinite}
+@media (prefers-reduced-motion:reduce){
+  html:root:root:root :is(.pha-btn,.pha-btn-w,.pha-btn-pri,.pha-edit,.pha-prop-b,.fi-cap,.vv-band-b,.bo-open,.phf-nmedit-btn,.pha-tab,.pha-part-btn,.pa-segb)[aria-busy="true"]::before{animation:none;border-top-color:currentColor;border-style:dotted}
+}

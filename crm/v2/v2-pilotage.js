@@ -1425,7 +1425,7 @@
     if (B.vide) return { avant: '<div class="ps-card"><div class="ps-vide">' + B.vide + '</div></div>', apres: '', bloc: '<div class="ps-card"><div class="ps-vide">' + B.vide + '</div></div>' };
     return {
       bloc: B.html,
-      avant: B.html + '<button type="button" class="ps-det-btn" aria-expanded="' + (PS_OUVERT ? 'true' : 'false') + '" aria-controls="ps-det"><span>Tout le détail</span>' + ICO('chev', 16) + '</button>' +
+      avant: B.html + '<button type="button" class="ps-det-btn" aria-expanded="' + (PS_OUVERT ? 'true' : 'false') + '" aria-controls="ps-det"><span>Voir tout le détail</span>' + ICO('chev', 16) + '</button>' +
         '<div class="ps-det" id="ps-det"' + (PS_OUVERT ? '' : ' hidden') + '>',
       apres: '</div>'
     };
@@ -1919,7 +1919,7 @@
     if (!t && !PMx && c.anc && c.anc.ecartes && c.anc.ecartes.length) t = phraseEcart(c.anc);
     if (t) note = '<p class="pa-note" role="note">' + esc(t) + '</p>';
     var tete = '<header class="pa-top"><div class="pa-bar"><h1 class="pa-title">Pilotage</h1><div class="pa-ctl">' + menu +
-      '<div class="pa-seg" role="group" aria-label="Période">' + seg('current', 'Mois') + seg('3m', '3 mois') + seg('year', 'Année') + seg('custom', 'Choisir') + '</div></div></div>' + (c.perPick ? c.perPick.replace('pilo-perpick', 'pilo-perpick pa-perpick') : '') + '</header>';
+      '<span class="v2-past-l">Période :</span><div class="pa-seg" role="group" aria-label="Période">' + seg('current', 'Mois') + seg('3m', '3 mois') + seg('year', 'Année') + seg('custom', 'Au choix') + '</div></div></div>' + (c.perPick ? c.perPick.replace('pilo-perpick', 'pilo-perpick pa-perpick') : '') + '</header>';
     var corps;
     var ca = PA_REG.ca, f0 = paFmt(ca, ca.val);
     var hero = '<section class="pa-hero pa-rise" style="--i:1"><div class="pa-hl">' + esc(ca.nom) + ' · ' + esc(pf.label) + '</div><div class="pa-hbig"><span class="pa-n">' + f0.n + '</span><span class="pa-u">' + esc(f0.u) + '</span></div>' +
@@ -2270,7 +2270,7 @@
               '<div class="pilo-vals">' +
                 '<div class="v2-row-val mono">' + V2.fmtEur(r.total) + '</div>' +
                 // Sur iPhone, le nombre de boîtes s'efface : sinon il coupait les prénoms (« Kari… »).
-                '<div class="v2-row-meta mono"><span class="pilo-marge-boites">' + V2.fmtNum(r.pal[0].q + r.pal[1].q + r.pal[2].q + r.pal[3].q + r.nr.q + r.pr.q + r.gen.q) + ' boîtes · </span>' + (r.ca > 0 ? (r.total / r.ca * 100).toFixed(2).replace('.', ',') + ' % du CA' : 'CA nul') + '</div>' +
+                '<div class="v2-row-meta mono"><span class="pilo-marge-boites">' + V2.fmtNum(r.pal[0].q + r.pal[1].q + r.pal[2].q + r.pal[3].q + r.nr.q + r.pr.q + r.gen.q) + ' boîtes · </span>' + (r.ca > 0 ? (r.total / r.ca * 100).toFixed(2).replace('.', ',') + ' % du CA' : (r.ca < 0 ? 'chiffre d’affaires négatif (retours)' : 'aucune vente')) + '</div>' +
               '</div>' +
               '<span class="v2-row-chev">' + ICO('chev', 16) + '</span>' +
             '</a>';
@@ -3015,7 +3015,7 @@
       }
       if (AP) {
         root.innerHTML = top + '<div class="v2-wrap pa-wrap">' + AP.html +
-          '<button type="button" class="ps-det-btn pa-detbtn" aria-expanded="' + (PS_OUVERT ? 'true' : 'false') + '" aria-controls="ps-det"><span><b>Tout le détail</b><small>Répartitions, classements, produits, marché France, pharmacies à relancer</small></span>' + ICO('chev', 16) + '</button>' +
+          '<button type="button" class="ps-det-btn pa-detbtn" aria-expanded="' + (PS_OUVERT ? 'true' : 'false') + '" aria-controls="ps-det"><span><b>Voir tout le détail</b><small>Répartitions, classements, produits, marché France, pharmacies à relancer</small></span>' + ICO('chev', 16) + '</button>' +
           '<div class="ps-det" id="ps-det"' + (PS_OUVERT ? '' : ' hidden') + '>' + header + (PS.bloc || '') + detailInner + '</div></div>';
         AP.lier(root);
       } else {

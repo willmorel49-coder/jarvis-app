@@ -1085,7 +1085,7 @@
       var sTab = function (val, label, n) {
         return '<button type="button" class="v2-seg' + (secteurTab === val ? ' on' : '') + '" aria-pressed="' + (secteurTab === val) + '" style="--sc:var(--ip-blue)" onclick="V2.pharmaSecteurTab(\'' + val + '\')">' + label + (n != null ? '<span class="of-cnt">' + V2.fmtNum(n) + '</span>' : '') + '</button>';
       };
-      secteurBar = '<div class="v2-segs">' + sTab('clients', 'Clients', nbCli) + sTab('prospects', 'Prospects de mon secteur', nbProsp) + '</div>';
+      secteurBar = '<div class="v2-segs"><span class="v2-past-l">Afficher :</span>' + sTab('clients', 'Clients', nbCli) + sTab('prospects', 'Prospects de mon secteur', nbProsp) + '</div>';
     }
 
     // Contenu de la liste selon la bascule (Clients par défaut, sinon Prospects par UGA du commercial).
@@ -1124,7 +1124,7 @@
 
     var corps = listBody();
     var actions = isOpso() ? '' : '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
-      (secteurTab === 'clients' ? '<button type="button" class="v2-btn v2-btn-ghost" onclick="V2.pharmaClientsXlsx()">' + ICO('download', 18) + 'Mes clients en Excel</button>' : '') +
+      (secteurTab === 'clients' ? '<button type="button" class="v2-btn v2-btn-ghost" onclick="V2.pharmaClientsXlsx()">' + ICO('download', 18) + 'Exporter mes clients en Excel</button>' : '') +
       '<button type="button" class="v2-btn v2-btn-ghost" id="of-creer" onclick="V2.pharmaCreerProspect()">' + ICO('plus', 18) + 'Créer un prospect</button></div>';
     var rech = '<label class="v2-champ of-recherche">' + ICO('search', 20, 2) +
       '<input id="v2-pharma-search" type="text" placeholder="Nom, titulaire, ville ou code postal…" aria-label="Rechercher une officine par son nom, son titulaire, sa ville ou son code postal" autocomplete="off" value="' +
@@ -2268,9 +2268,9 @@
       h += '<div class="pha-prop-l" id="pha-prop-' + sc + '"><div class="pha-prop-nom">' + esc(c[1]) + '</div>';
       if (n <= 0) { h += '<div class="pha-sub">Rien à lui proposer sur cette base.</div></div>'; return; }
       h += '<div class="pha-prop-top"><span class="pha-prop-n mono">' + l1Nb(n) + '</span><span class="pha-sub">produits</span><span class="pha-prop-acts">' +
-        '<button type="button" class="pha-prop-b" aria-label="Télécharger la liste en PDF : ' + esc(c[1]) + '" onclick="V2.pharmaListPdf(\'' + pidS + '\',\'' + sc + '\')">PDF</button>' +
-        '<button type="button" class="pha-prop-b" aria-label="Télécharger la liste en Excel : ' + esc(c[1]) + '" onclick="V2.pharmaListXlsx(\'' + pidS + '\',\'' + sc + '\')">Excel</button>' +
-        '<button type="button" class="pha-prop-b" aria-label="Envoyer la liste au pharmacien : ' + esc(c[1]) + '" onclick="V2.pharmaTransmettre(\'' + pidS + '\',[\'L:' + sc + '\'])">Envoyer</button></span></div>';
+        '<button type="button" class="pha-prop-b" aria-label="Télécharger la liste en PDF : ' + esc(c[1]) + '" onclick="V2.pharmaListPdf(\'' + pidS + '\',\'' + sc + '\')">Télécharger en PDF</button>' +
+        '<button type="button" class="pha-prop-b" aria-label="Télécharger la liste en Excel : ' + esc(c[1]) + '" onclick="V2.pharmaListXlsx(\'' + pidS + '\',\'' + sc + '\')">Télécharger en Excel</button>' +
+        '<button type="button" class="pha-prop-b" aria-label="Envoyer la liste au pharmacien : ' + esc(c[1]) + '" onclick="V2.pharmaTransmettre(\'' + pidS + '\',[\'L:' + sc + '\'])">Envoyer cette liste</button></span></div>';
       l1Premiers(data).slice(0, 5).forEach(function (x) {
         var p = l1PartDes(x.r, data.total);
         h += '<div class="pha-prop-r"><span class="pha-prop-pn">' + l1NomProduit(x.r) + '<span class="pha-sub">' + esc(l1CatLabel(x.cat)) + '</span></span>' +
@@ -2316,10 +2316,10 @@
     var avecLgo = !isEscale() && !isOpso();
     var c = fbC = { pid: pidS, pidBrut: pid, A: A, d: d, grp: A.grpName, n: (tx.lgo && tx.lgo.pid === pidS) ? tx.lgo.n : 300, lgo: avecLgo ? txLgoDetect(pid, null) : '', sel: '' };
     var h = '<section class="fbk" aria-labelledby="fbk-t"><div class="fbk-h"><h2 id="fbk-t">À proposer</h2></div><div class="fbk-row">';
-    if (d.nR > 0) h += fbBtn('reseau', 'reseau', 'Listing réseau', 'Réseau Intégral', fbNb(d.nR));
-    if (d.hasGrp && d.nG > 0) h += fbBtn('groupement', 'groupe', 'Listing groupe d’achat', esc(c.grp), fbNb(d.nG));
-    if (avecLgo) h += fbBtn('logiciel', 'logiciel', 'Catalogue pour son logiciel', c.lgo ? esc(txLgoNom(c.lgo)) : 'Logiciel à choisir', 'TOP ' + c.n);
-    if (V2.todo && V2.todo.menu) h += fbBtn('todo', 'todo', 'To do list', 'Ajouter une tâche', '');
+    if (d.nR > 0) h += fbBtn('reseau', 'reseau', 'Ouvrir le listing réseau', 'Réseau Intégral', fbNb(d.nR));
+    if (d.hasGrp && d.nG > 0) h += fbBtn('groupement', 'groupe', 'Ouvrir le listing du groupe d’achat', esc(c.grp), fbNb(d.nG));
+    if (avecLgo) h += fbBtn('logiciel', 'logiciel', 'Préparer le catalogue pour son logiciel', c.lgo ? esc(txLgoNom(c.lgo)) : 'Logiciel à choisir', 'TOP ' + c.n);
+    if (V2.todo && V2.todo.menu) h += fbBtn('todo', 'todo', 'Ouvrir la liste de tâches', 'Ajouter une tâche', '');
     h += fbBtn('tx', 'tx', 'Choisir quoi lui transmettre', 'Documents et catalogues', '', true);
     h += '</div></section>';
     // le logiciel saisi par l'équipe (lu en différé) fait foi, comme dans Transmettre
@@ -2558,11 +2558,11 @@
       ? (ph ? 'part de chaque catégorie dans son CA du mois' : 'part de chaque catégorie dans son CA du mois · <i class="pha-net-dash"></i> = part de la catégorie dans le CA réseau du même mois')
       : (unit === 'eur' ? 'CA net de chaque catégorie, mois par mois' : 'boîtes commandées dans chaque catégorie, mois par mois');
     var btn = function (val, lbl) {
-      return '<button class="pha-part-btn' + (unit === val ? ' on' : '') + '" onclick="V2.pharmaPartsUnit(\'' + val + '\')">' + lbl + '</button>';
+      return '<button class="pha-part-btn' + (unit === val ? ' on' : '') + '" aria-pressed="' + (unit === val) + '" onclick="V2.pharmaPartsUnit(\'' + val + '\')">' + lbl + '</button>';
     };
     return '<div class="v2-card pha-card"><div class="pha-ch pha-parts-head"><div><h3>Par catégorie, mois par mois</h3>' +
       '<span class="pha-sub">' + sub + '</span></div>' +
-      '<div class="pha-part-seg">' + btn('part', 'Part %') + btn('eur', 'CA €') + btn('vol', 'Boîtes') + '</div></div>' +
+      '<div class="pha-part-seg">' + '<span class="v2-past-l">Afficher :</span>' + btn('part', 'Part en %') + btn('eur', 'Chiffre d’affaires') + btn('vol', 'Boîtes') + '</div></div>' +
       '<div class="pha-parts">' + tiles + '</div></div>';
   }
 
@@ -2571,7 +2571,7 @@
     if (!on.length) return '';
     var cur = on.filter(function (c) { return c.key === top5Cat; })[0] || on[0];
     return '<div class="v2-card pha-card pha-desk"><div class="pha-ch"><h3>Top 10 par catégorie</h3><span class="pha-sub">ses meilleures références, en valeur</span></div>' +
-      '<div class="pha-tabs">' + on.map(function (c) { return '<button class="pha-tab' + (c.key === cur.key ? ' on' : '') + '" onclick="V2.pharmaTop5Cat(\'' + c.key + '\')"><span class="ph-tr-dot" style="background:' + c.color + '"></span>' + esc(c.label.replace('Princeps · ', '')) + '</button>'; }).join('') + '</div>' +
+      '<div class="pha-tabs"><span class="v2-past-l">Famille de produits :</span>' + on.map(function (c) { return '<button class="pha-tab' + (c.key === cur.key ? ' on' : '') + '" aria-pressed="' + (c.key === cur.key) + '" onclick="V2.pharmaTop5Cat(\'' + c.key + '\')"><span class="ph-tr-dot" style="background:' + c.color + '"></span>' + esc(c.label.replace('Princeps · ', '')) + '</button>'; }).join('') + '</div>' +
       cur.top.map(function (t, i) { return '<div class="pha-r"><i>' + (i + 1) + '</i><span>' + esc(t.designation) + '</span><b class="mono">' + V2.fmtEur(t.ca) + ' <small>· ' + V2.fmtNum(t.qte) + ' u</small></b></div>'; }).join('') +
       '<div class="pha-sub" style="margin-top:6px">' + V2.fmtNum(cur.nbRefs) + ' référence' + (cur.nbRefs > 1 ? 's' : '') + ' commandée' + (cur.nbRefs > 1 ? 's' : '') + ' dans cette catégorie</div></div>';
   }
@@ -2624,7 +2624,7 @@
         '<b class="mono">' + V2.fmtEur(r.caMois) + ' <small>/ mois · ' + V2.fmtNum(Math.round(r.qMois)) + ' u</small></b></div>';
     };
     return carte(sous,
-      '<div class="pha-tabs">' + on.map(function (c) { return '<button class="pha-tab' + (c.key === cur.key ? ' on' : '') + '" onclick="V2.pharmaNePlusCat(\'' + c.key + '\')"><span class="ph-tr-dot" style="background:' + c.color + '"></span>' + esc(c.label.replace('Princeps · ', '')) + ' · ' + parCat[c.key].length + '</button>'; }).join('') + '</div>' +
+      '<div class="pha-tabs"><span class="v2-past-l">Famille de produits :</span>' + on.map(function (c) { return '<button class="pha-tab' + (c.key === cur.key ? ' on' : '') + '" aria-pressed="' + (c.key === cur.key) + '" onclick="V2.pharmaNePlusCat(\'' + c.key + '\')"><span class="ph-tr-dot" style="background:' + c.color + '"></span>' + esc(c.label.replace('Princeps · ', '')) + '<span class="v2-compte">' + parCat[c.key].length + '</span></button>'; }).join('') + '</div>' +
       rows.slice(0, 10).map(ligne).join('') +
       (rows.length > 10 ? '<details class="pha-np-plus"><summary>Voir les ' + (rows.length - 10) + ' autres</summary>' + rows.slice(10).map(function (r, i) { return ligne(r, i + 10); }).join('') + '</details>' : '') +
       '<div class="pha-sub" style="margin-top:6px">' + V2.fmtNum(rows.length) + ' référence' + (rows.length > 1 ? 's interrompues' : ' interrompue') + ' dans cette catégorie · environ ' + V2.fmtEur(somme(rows)) + ' par mois, moyenne des mois commandés' +
@@ -4067,12 +4067,12 @@
         '<div class="pha-kv vi-int">' + kvHtml + '</div><div class="pha-kv vi-ph">' + kvPh + '</div>' +
         '<div class="pha-acts vi-int">' +
           (tel ? '<a class="pha-btn" href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) + '">' + ICO('phone', 15) + 'Appeler</a>' : '') +
-          (mail ? '<a class="pha-btn" href="mailto:' + esc(mail) + '">' + ICO('mail', 15) + 'E-mail</a>' : '') +
+          (mail ? '<a class="pha-btn" href="mailto:' + esc(mail) + '">' + ICO('mail', 15) + 'Écrire un e-mail</a>' : '') +
           // 26/10/2026 — v2 « Tout dans la carte » : « Produits » (le Catalogue pour cette officine) et « Noter » (défile jusqu'à la note)
-          (V2.pages.produits ? '<button class="pha-btn" onclick="V2.go(\'produits\', \'' + pidSafe + '\')" title="Le Catalogue pour cette officine">' + ICO('cat', 15, 2) + 'Produits</button>' : '') +
-          (V2.notes ? '<button class="pha-btn" onclick="V2.pharmaNav.noter()" title="Aller à la note personnelle">' + ICO('fiche', 15, 2) + 'Noter</button>' : '') +
-          (voitVentes && !isOpso() && !isEscale() && V2.d2pRender ? '<button class="pha-btn" onclick="V2.go(\'concurrents\', \'d2p/' + pidSafe + '\')" title="Ce que D2P Pharma lui aurait rendu sur ses princeps">' + ICO('cat', 15, 2) + 'Face à D2P</button>' : '') +
-          (mail && V2.rdv ? '<button class="pha-btn pha-btn-pri" onclick="V2.rdv.proposer(\'' + pidSafe + '\')" title="Elle choisit son créneau, calé sur la géographie de votre journée">' + ICO('cal', 15) + 'Proposer un RDV</button>' : '') +
+          (V2.pages.produits ? '<button class="pha-btn" onclick="V2.go(\'produits\', \'' + pidSafe + '\')" title="Le Catalogue pour cette officine">' + ICO('cat', 15, 2) + 'Voir ses produits</button>' : '') +
+          (V2.notes ? '<button class="pha-btn" onclick="V2.pharmaNav.noter()" title="Aller à la note personnelle">' + ICO('fiche', 15, 2) + 'Prendre une note</button>' : '') +
+          (voitVentes && !isOpso() && !isEscale() && V2.d2pRender ? '<button class="pha-btn" onclick="V2.go(\'concurrents\', \'d2p/' + pidSafe + '\')" title="Ce que D2P Pharma lui aurait rendu sur ses princeps">' + ICO('cat', 15, 2) + 'Comparer avec D2P</button>' : '') +
+          (mail && V2.rdv ? '<button class="pha-btn pha-btn-pri" onclick="V2.rdv.proposer(\'' + pidSafe + '\')" title="Elle choisit son créneau, calé sur la géographie de votre journée">' + ICO('cal', 15) + 'Proposer un rendez-vous</button>' : '') +
           (!tel && !mail ? '<span class="pha-sub" style="color:rgba(255,255,255,.7)">Téléphone et e-mail à renseigner dans « Infos officine »</span>' : '') +
         '</div>' +
       '</div>';
@@ -4401,6 +4401,22 @@
     });
     return l;
   }
+  // Libellés des boutons du sommaire : un verbe, jamais de sigle ; en vue pharmacien on s'adresse à lui (« vos »). Deux versions, la bonne se montre par vi-int / vi-ph.
+  var PHA_LIB = {
+    'Ses chiffres': ['Voir ses chiffres', 'Voir vos chiffres'],
+    'Courbe du CA': ['Voir la courbe des ventes', 'Voir la courbe de vos ventes'],
+    'Catégories': ['Voir les catégories', 'Voir vos catégories'],
+    'Ne commande plus': ['Voir ce qu’elle ne commande plus', 'Voir ce que vous ne commandez plus'],
+    'Chiffres': ['Voir les chiffres', 'Voir vos chiffres'],
+    'Listes': ['Voir les listes', 'Voir les listes'],
+    'Notes & RDV': ['Voir les notes et rendez-vous', 'Voir les notes et rendez-vous'],
+    'Infos': ['Voir les infos', 'Voir les infos'],
+    'À proposer': ['Voir ce qu’on peut lui proposer', 'Voir ce que nous vous proposons']
+  };
+  function phaLib(nom) {
+    var l = PHA_LIB[nom]; if (!l) return esc(nom);
+    return l[0] === l[1] ? esc(l[0]) : '<span class="vi-int">' + esc(l[0]) + '</span><span class="vi-ph">' + esc(l[1]) + '</span>';
+  }
   var PHA_TEL_BLOCS = [['Listes', '.pha-lists'], ['Notes & RDV', '.pha-notes'], ['Infos', '.pha-infos'], ['À proposer', '#pha-proposer'],
     ['Chiffres', '.pha-kpis'], ['Catégories', '.pha-parts'], ['Ne commande plus', '.pha-np']];
   // Hauteur de la barre du haut qui RESTE à l'écran en défilant : 0 tant qu'elle défile avec la page
@@ -4417,7 +4433,7 @@
     var cnt = function (b) { return b[2] ? ' <span class="fi-cnt">' + V2.fmtNum(b[2]) + '</span>' : ''; };
     var blocs = (fiOn ? fiBlocs() : PHA_TEL_BLOCS).filter(function (b) { return viChercher(pha, b[1]); });
     nav.innerHTML = blocs.map(function (b) {
-      return '<button type="button" class="pha-som-b" data-cible="' + b[1] + '">' + esc(b[0]) + cnt(b) + '</button>';
+      return '<button type="button" class="pha-som-b" data-cible="' + b[1] + '">' + phaLib(b[0]) + cnt(b) + '</button>';
     }).join('');
     // capsules de l'en-tête (ordinateur) : mêmes entrées, mêmes compteurs ; les rubriques de la colonne de gauche passent en dernier
     var caps = document.querySelector('.fi-caps');
@@ -4425,7 +4441,7 @@
       var cote = function (b) { return /^\.pha-(lists|notes|infos)$/.test(b[1]) ? 1 : 0; };
       caps.innerHTML = blocs.slice().sort(function (a, b) { return cote(a) - cote(b); }).map(function (b) {
         var vi = /^\.pha-(lists|notes|infos)$/.test(b[1]) ? ' vi-int' : '';
-        return '<button type="button" class="fi-cap' + vi + '" data-cible="' + b[1] + '">' + esc(b[0]) + cnt(b) + '</button>';
+        return '<button type="button" class="fi-cap' + vi + '" data-cible="' + b[1] + '">' + phaLib(b[0]) + cnt(b) + '</button>';
       }).join('');
     }
     id.parentNode.insertBefore(nav, id.nextSibling);
