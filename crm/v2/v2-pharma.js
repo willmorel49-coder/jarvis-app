@@ -2715,7 +2715,7 @@
       var nbAv = np.avant.filter(function (m) { return r.mois[m]; }).length;
       return '<div class="pha-r cl1-np"><i>' + (i + 1) + '</i><span>' + esc(r.designation) +
         '<span class="pha-np-s">commandé ' + nbAv + ' mois sur les ' + nAv + ' précédents · dernière commande : ' + esc(moisFr(r.dernier)) + '</span></span>' +
-        '<b class="cl1-num">' + V2.fmtEur(r.caMois) + ' par mois<small>' + V2.fmtNum(Math.round(r.qMois)) + ' boîte' + (Math.round(r.qMois) > 1 ? 's' : '') + ' par mois · moyenne de ses ' + r.nb + ' mois de commande</small></b></div>';
+        '<b class="cl1-num">' + V2.fmtEur(r.caMois) + ' par mois<small>' + V2.fmtNum(Math.round(r.qMois)) + ' boîte' + (Math.round(r.qMois) > 1 ? 's' : '') + ' par mois · moyenne de ses ' + r.nb + ' mois de commande en tout</small></b></div>';
     };
     return carte(sous,
       '<div class="pha-tabs"><span class="v2-past-l">Famille de produits :</span>' + on.map(function (c) { return '<button class="pha-tab' + (c.key === cur.key ? ' on' : '') + '" aria-pressed="' + (c.key === cur.key) + '" onclick="V2.pharmaNePlusCat(\'' + c.key + '\')"><span class="ph-tr-dot" style="background:' + c.color + '"></span>' + esc(c.label.replace('Princeps · ', '')) + '<span class="v2-compte">' + parCat[c.key].length + '</span></button>'; }).join('') + '</div>' +
