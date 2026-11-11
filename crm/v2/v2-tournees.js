@@ -328,16 +328,18 @@
     if (!tb) return null;
     cout = Number(cout); reduc = Number(reduc) || 0;
     if (!isFinite(cout) || cout < 0 || reduc < 0 || reduc >= 1) return null;
-    var V = tb.clientes.filter(function (c) { return c.tot; }), rm = 0, rt = 0, cmd = 0, perteAvant = 0, perteApres = 0, visees = 0;
+    // cliente inchangée (même coût, mêmes livraisons) : ses chiffres du tableau, au centime près, pour que 0 % au coût du fichier = chiffres actuels
+    var V = tb.clientes.filter(function (c) { return c.tot; }), meme = cout === tb.cout, rm = 0, mg = 0, cmd = 0, perteAvant = 0, perteApres = 0, visees = 0;
     V.forEach(function (c) {
-      var x = c.tot, perte = x.marge - x.cmd * cout < 0, k = perte ? x.cmd * (1 - reduc) : x.cmd, r = x.marge - k * cout;
+      var x = c.tot, perte = meme ? x.renta_mois < 0 : x.marge - x.cmd * cout < 0, k = perte ? x.cmd * (1 - reduc) : x.cmd;
+      var rmc = (meme && k === x.cmd) ? x.renta_mois : r2((x.marge - k * cout) / x.mois_livres);
       if (perte) { visees++; perteAvant++; }
-      if (r < 0) perteApres++;
-      cmd += k; rt += r; rm += r / x.mois_livres;
+      if (rmc < 0) perteApres++;
+      cmd += k; mg += x.marge; rm += rmc;
     });
     return { cout: cout, reduc: reduc, visees: visees,
       actuel: { cout: tb.cout, renta: tb.tot.renta, renta_mois: tb.tot.renta_mois, nb_perte: tb.tot.nb_perte, cmd: tb.tot.cmd },
-      simule: { renta: r2(rt), renta_mois: r2(rm), nb_perte_cout: perteAvant, nb_perte: perteApres, cmd: Math.round(cmd) },
+      simule: { renta: r2(mg - cmd * cout), renta_mois: r2(rm), nb_perte_cout: perteAvant, nb_perte: perteApres, cmd: Math.round(cmd) },
       ecart_mois: r2(rm - tb.tot.renta_mois), seuil: tb.tot.marge_cmd };
   };
 
@@ -603,6 +605,30 @@
       '.trn-route .trn-mp{height:320px;border-radius:var(--r-md);overflow:hidden;border:1px solid var(--line-strong)}',
       '.trn-route h3{font-size:13px;font-weight:700;margin:0 0 8px}.trn-route h3 .trn-mu{font-weight:500;color:var(--muted)}',
       '.trn-route .trn-col{min-width:0;max-height:320px;overflow-y:auto}',
+      // 11/11/2026 — les 4 ajouts : tendance, export Excel, « Et si… », « Comparer avec »
+      '.trn-tend-b{color:var(--c-rose-txt);font-weight:700}.trn-tend-h{color:var(--c-mint-txt);font-weight:700}',
+      '.trn-tendn{font-size:13px;color:var(--ip-ink-2);margin:0 0 4px;line-height:1.45}.trn-tendn b{font-weight:800}',
+      '.trn-tdl{font-size:12.5px;color:var(--ip-ink-2);margin:8px 0 0;line-height:1.45}',
+      '.trn-fen{font-size:12px;color:var(--muted);margin:10px 0 0;line-height:1.45}',
+      '.trn-nav-d{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0;max-width:100%}',
+      '.trn-xl{gap:8px}',
+      '.trn-champ{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 12px}',
+      '.trn-champ label,.trn-champ .lab{font-size:13px;font-weight:700;color:var(--ip-ink-2)}',
+      '.trn-cmpt tbody th{font-weight:600}.trn-cmpt .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}',
+      '.trn-champ .u{display:inline-flex;align-items:center;gap:6px;font-weight:700}',
+      '.trn-in{width:110px;min-height:var(--tap-min);padding:0 12px;border-radius:var(--r-btn);border:1px solid var(--line-strong);background:var(--card);color:var(--ip-ink);font:600 16px var(--font);box-shadow:var(--sh-1)}',
+      '.trn-in:focus{outline:2px solid var(--ip-blue);outline-offset:1px}',
+      '.trn-lien.p{min-height:36px;padding:0 12px;font-size:12.5px}',
+      '.trn-res{background:var(--surf-sunken);border-radius:var(--r-md);padding:12px 14px;margin-top:12px}',
+      '.trn-res dl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;margin:0;font-size:13px}',
+      '.trn-res dt{color:var(--ip-ink-2)}.trn-res dd{margin:0;text-align:right;font-weight:800;white-space:nowrap}',
+      '.trn-res p{font-size:12.5px;color:var(--ip-ink-2);margin:8px 0 0;line-height:1.45}',
+      '.trn-hyp{font-size:12px;color:var(--muted);margin:10px 0 0;line-height:1.45}',
+      '.trn-cmpt{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:10px}',
+      '.trn-cmpt th,.trn-cmpt td{padding:7px 6px;border-bottom:1px solid var(--line-2);text-align:right;white-space:nowrap}',
+      '.trn-cmpt th:first-child,.trn-cmpt td:first-child{text-align:left;white-space:normal;color:var(--ip-ink-2)}',
+      '.trn-cmpt thead th{font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}',
+      '.trn-cmpt .trn-mieux{color:var(--ip-blue);font-weight:800}',
       '.trn-notes{font-size:12px;color:var(--muted);line-height:1.5;margin:6px 2px 0}.trn-notes p{margin:0 0 6px}',
       '.trn-notes summary{cursor:pointer;font-weight:700;color:var(--ip-ink-2);min-height:var(--tap-min);display:flex;align-items:center}',
       '.trn-notes ul{margin:0;padding-left:18px}.trn-notes li{margin:0 0 4px}',
@@ -733,7 +759,7 @@
 
   function tableauDeBord(code) {
     var root = S.root, t = S.A[code], raw = S.d.tournees[code];
-    if (S.tbCode !== code) { S.pid = null; S.tbCode = code; S.lk = 'n'; S.ld = 1; }
+    if (S.tbCode !== code) { S.pid = null; S.tbCode = code; S.lk = 'n'; S.ld = 1; S.simCout = null; S.simRed = 0; S.cmpB = null; }
     var tb = S.tb = C.tableau(raw, S.d), e = etabCourant();
     var ord = C.classer(S.A, 'rentabilite_mois', -1), rang = ord.indexOf(code) + 1;
     var codes = Object.keys(S.A).sort();
@@ -741,8 +767,9 @@
     var h = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' });
     h += '<div class="trn-page trn-tb" id="trn-page"><div class="trn-tb-top">' +
       '<div class="trn-tb-nav"><button type="button" class="trn-lien" data-act="classement">← Les ' + ord.length + ' tournées</button>' +
-      '<label class="trn-sel-l">Tournée <select class="trn-sel" id="trn-sel">' + codes.map(function (c) {
-        return '<option value="' + esc(c) + '"' + (c === code ? ' selected' : '') + '>' + esc(c) + ' · ' + esc(S.A[c].nom) + '</option>'; }).join('') + '</select></label></div>' +
+      '<div class="trn-nav-d"><label class="trn-sel-l">Tournée <select class="trn-sel" id="trn-sel">' + codes.map(function (c) {
+        return '<option value="' + esc(c) + '"' + (c === code ? ' selected' : '') + '>' + esc(c) + ' · ' + esc(S.A[c].nom) + '</option>'; }).join('') + '</select></label>' +
+      (tb ? '<button type="button" class="trn-lien trn-xl" data-act="excel" id="trn-xl">Exporter en Excel</button>' : '') + '</div></div>' +
       '<div class="trn-tb-hd"><div class="trn-kick">Tableau de bord de la tournée' + (e ? ' · ' + esc(e.s) + ' · ' + esc(e.nom) : '') + '</div>' +
       '<h1 data-chk="t.' + esc(code) + '.titre">' + esc(code) + ' · ' + esc(t.nom) + '</h1>' +
       '<p class="trn-meta"><b>' + t.nb_arrets + '</b> ' + (t.nb_arrets > 1 ? 'arrêts' : 'arrêt') + ' · <b>' + C.km(t.km_total, 0) + '</b> (aller ' + C.km(raw.km_aller, 0) + ', retour ' + C.km(raw.km_retour, 0) + ') · ' + j +
@@ -764,13 +791,15 @@
         '<div class="trn-lg"><span><i class="b"></i>Cliente</span><span><i class="z"></i>Commandent souvent, pour peu de marge (plus de commandes par mois et moins de marge par commande que la médiane)</span></div>' +
         '<p class="trn-quad" id="trn-quad"></p><div class="trn-chip" id="trn-chip" aria-live="polite"></div></section></div>' +
       '<section class="trn-card" aria-labelledby="trn-h-route"><h2 id="trn-h-route">Sur la route</h2><p class="trn-sub">Carte de la tournée (couleur = rentabilité par mois de la cliente), prospects à voir en priorité et clientes à faire grossir. Touchez une cliente pour la voir.' + (tactile() ? ' Deux doigts pour déplacer ou zoomer la carte.' : '') + '</p><div class="trn-route" id="trn-route"></div></section>' +
+      '<div class="trn-g3"><section class="trn-card" aria-labelledby="trn-h-sim" id="trn-sim"></section><section class="trn-card" aria-labelledby="trn-h-cmp" id="trn-cmp"></section></div>' +
       '<section class="trn-card" aria-labelledby="trn-h-liste" id="trn-liste-c"><h2 id="trn-h-liste">Les clientes de la tournée</h2>' +
-        '<p class="trn-sub" id="trn-sub-liste"></p><div class="trn-scr" id="trn-scr-liste"><table class="trn-lst" id="trn-lst"></table></div></section>' +
+        '<p class="trn-sub" id="trn-sub-liste"></p><p class="trn-tendn" id="trn-tendn">' + texteTendances(tb) + '</p><div class="trn-scr" id="trn-scr-liste"><table class="trn-lst" id="trn-lst"></table></div>' +
+        '<p class="trn-fen" id="trn-fen">' + esc(C.texteFenetre(tb.mois, tb.fen)) + '</p></section>' +
       notes(tb) + '</div>';
     root.innerHTML = h;
     var sel = document.getElementById('trn-sel');
     if (sel) sel.onchange = function () { if (sel.value && sel.value !== S.open) V2.go('tournees', sel.value); };
-    segs(); familles(tb); liste(); route(code); graphiques(); chip();
+    segs(); familles(tb); liste(); route(code); simCarte(); cmpCarte(); graphiques(); chip();
     S.larg = (document.getElementById('trn-page') || {}).clientWidth || 0;
     suivreLargeur();
   }
@@ -937,6 +966,8 @@
     function dd(l, v, fm, k) { return '<div><dt>' + l + '</dt><dd class="' + negc(v) + '"' + (k ? ' data-chk="c.' + esc(c.id) + '.' + k + '"' : '') + '>' + fm(v) + '</dd></div>'; }
     var h = '<dl class="trn-dl6">' + dd('CA', x.ca, eurF) + dd('Notre marge', x.marge, eurF) + dd('Commandes', x.cmd, C.ent) + dd('Commandes par mois', x.cmd_mois, C.dec1) +
       dd('Marge par commande', x.marge_cmd, eurF) + dd('Rentabilité par mois', x.renta_mois, eurF) + '</dl>';
+    var t = c.tend;
+    if (t && t.sens !== 'aucune') h += '<p class="trn-tdl">Tendance <b class="' + clTend(t) + '" data-chk="c.' + esc(c.id) + '.tend.x">' + esc(C.texteTendance(t)) + '</b> : Notre marge par mois <b>' + eurF(t.marge_avant) + '</b> sur les mois complets d’avant, <b>' + eurF(t.marge_recent) + '</b> sur les 3 derniers mois complets (commandes par mois : ' + C.dec1(t.cmd_avant) + ' puis ' + C.dec1(t.cmd_recent) + ').</p>';
     var R = [['Commandes', function (m) { return m ? C.ent(m[2]) : '—'; }, C.ent(x.cmd)], ['CA', function (m) { return m ? eurF(m[0]) : '—'; }, eurF(x.ca)],
       ['Notre marge', function (m) { return m ? eurF(m[1]) : '—'; }, eurF(x.marge)],
       ['Rentabilité', function (m) { return m ? eurF(r2(m[1] - m[2] * tb.cout)) : '—'; }, eurF(x.renta)]];
@@ -961,30 +992,30 @@
     var tb = S.tb, el = document.getElementById('trn-lst'); if (!tb || !el) return;
     var scr = document.getElementById('trn-scr-liste'), sl = scr ? scr.scrollLeft : 0;
     var cl = C.trier(tb.clientes, S.lk, S.ld), c0 = tb.code, t = tb.tot;
-    var titre = S.lk === 'n' ? 'dans l’ordre de livraison' : 'triées par ' + LCOLS.filter(function (k) { return k[0] === S.lk; })[0][1].toLowerCase() + (S.ld < 0 ? ', de la plus forte à la plus faible' : ', de la plus faible à la plus forte');
+    var titre = S.lk === 'n' ? 'dans l’ordre de livraison' : 'triées par ' + (S.lk === 'tend' ? 'tendance' : LCOLS.filter(function (k) { return k[0] === S.lk; })[0][1].toLowerCase()) + (S.ld < 0 ? ', de la plus forte à la plus faible' : ', de la plus faible à la plus forte');
     var sub = document.getElementById('trn-sub-liste');
     if (sub) sub.textContent = 'Clientes ' + titre + '. Coût des livraisons = commandes × ' + eurF(tb.cout) + ' · Rentabilité = Notre marge − livraisons · « par mois » = sur les mois où la cliente a été livrée. Touchez un titre pour trier, une ligne pour voir la cliente mois par mois.';
     function thb(k, l) {
       var s = S.lk === k, srt = s ? (S.ld < 0 ? 'descending' : 'ascending') : 'none';
       return '<th scope="col" aria-sort="' + srt + '"><button type="button" class="' + (s ? 's' : '') + '" data-lk="' + k + '">' + l + (s ? (S.ld < 0 ? ' ↓' : ' ↑') : '') + '</button></th>';
     }
-    var h = '<thead><tr>' + thb('n', 'Cliente (ordre de livraison)') + LCOLS.map(function (k) { return thb(k[0], k[1]); }).join('') + '</tr></thead><tbody>';
+    var h = '<thead><tr>' + thb('n', 'Cliente (ordre de livraison)') + LCOLS.map(function (k) { return thb(k[0], k[1]); }).join('') + thb('tend', 'Tendance') + '</tr></thead><tbody>';
     cl.forEach(function (c) {
       var sel = c.id === S.pid;
       var nm = '<td title="' + esc(joli(c.nom)) + ' · ' + esc(joli(c.ville)) + '"><i>' + c.n + '</i>' + esc(court(c.nom, 60)) + '</td>';   // au téléphone : « Ph. » pour garder le nom lisible
-      if (!c.tot) { h += '<tr data-p="' + esc(c.id) + '" tabindex="0" class="' + (sel ? 'sel' : '') + '" aria-selected="' + sel + '">' + nm + '<td class="none" colspan="' + LCOLS.length + '">Aucune commande ' + esc(S.d.periode || '') + '</td></tr>'; }
+      if (!c.tot) { h += '<tr data-p="' + esc(c.id) + '" tabindex="0" class="' + (sel ? 'sel' : '') + '" aria-selected="' + sel + '">' + nm + '<td class="none" colspan="' + (LCOLS.length + 1) + '">Aucune commande ' + esc(S.d.periode || '') + '</td></tr>'; }
       else {
         h += '<tr data-p="' + esc(c.id) + '" tabindex="0" class="' + (sel ? 'sel' : '') + '" aria-selected="' + sel + '">' + nm + LCOLS.map(function (k) {
-          var v = c.tot[k[0]]; return '<td class="' + negc(v) + '" data-chk="c.' + esc(c.id) + '.' + k[0] + '">' + k[2](v) + '</td>'; }).join('') + '</tr>';
+          var v = c.tot[k[0]]; return '<td class="' + negc(v) + '" data-chk="c.' + esc(c.id) + '.' + k[0] + '">' + k[2](v) + '</td>'; }).join('') + tdTend(c.tend, 'c.' + esc(c.id) + '.tend') + '</tr>';
       }
       if (sel) {
         var f = ficheDe(c);
-        h += '<tr class="trn-x"><td colspan="' + (LCOLS.length + 1) + '"><div class="trn-x-in"><h3>' + c.n + ' · ' + esc(joli(c.nom)) + '</h3><p class="trn-sub">' + esc(joli(c.ville)) + (c.com ? ' · commercial ' + esc(c.com) : '') + '</p>' +
+        h += '<tr class="trn-x"><td colspan="' + (LCOLS.length + 2) + '"><div class="trn-x-in"><h3>' + c.n + ' · ' + esc(joli(c.nom)) + '</h3><p class="trn-sub">' + esc(joli(c.ville)) + (c.com ? ' · commercial ' + esc(c.com) : '') + '</p>' +
           moisCliente(c) + '<div class="trn-act">' + (f ? '<button type="button" class="trn-btn" data-act="fiche" data-id="' + esc(f) + '">Ouvrir sa fiche</button>' : '') +
           '<button type="button" class="trn-btn b2" data-act="fermer">Fermer</button></div></div></td></tr>';
       }
     });
-    h += '</tbody><tfoot><tr><td>Total de la tournée ' + esc(c0) + '</td>' + LCOLS.map(function (k) { return '<td class="' + negc(t[k[0]]) + '" data-chk="t.' + esc(c0) + '.' + k[0] + '">' + k[2](t[k[0]]) + '</td>'; }).join('') + '</tr></tfoot>';
+    h += '</tbody><tfoot><tr><td>Total de la tournée ' + esc(c0) + '</td>' + LCOLS.map(function (k) { return '<td class="' + negc(t[k[0]]) + '" data-chk="t.' + esc(c0) + '.' + k[0] + '">' + k[2](t[k[0]]) + '</td>'; }).join('') + tdTend(C.tendanceTournee(tb), 't.' + esc(c0) + '.tend') + '</tr></tfoot>';
     el.innerHTML = h;
     if (scr) scr.scrollLeft = sl;
   }
@@ -1040,6 +1071,95 @@
     });
   }
 
+  // ── Les 4 ajouts (11/11/2026) ──
+  function clTend(t) { return t && t.sens === 'baisse' ? 'trn-tend-b' : t && t.sens === 'hausse' ? 'trn-tend-h' : ''; }
+  function tdTend(t, chk) { return '<td class="' + clTend(t) + '" data-chk="' + chk + '">' + esc(C.texteTendance(t)) + '</td>'; }
+  function texteTendances(tb) {
+    var t = C.tendanceTournee(tb); if (!t) return esc(C.texteFenetre(tb.mois, null));
+    var n = t.nb, c = esc(tb.code);
+    return '<b class="trn-tend-b" data-chk="t.' + c + '.nb_baisse">' + n.baisse + '</b> ' + (n.baisse > 1 ? 'clientes' : 'cliente') + ' en baisse · <b class="trn-tend-h" data-chk="t.' + c + '.nb_hausse">' + n.hausse + '</b> en hausse' +
+      (n.nouvelle ? ' · ' + n.nouvelle + (n.nouvelle > 1 ? ' nouvelles' : ' nouvelle') : '') + ' · ' + n.stable + (n.stable > 1 ? ' stables' : ' stable') +
+      ' · tendance de la tournée : <b class="' + clTend(t) + '" data-chk="t.' + c + '.tend.x">' + esc(C.texteTendance(t)) + '</b> (Notre marge par mois, explication sous la liste).';
+  }
+  // Export Excel : SheetJS, déjà utilisé par la fiche officine (V2.ensureXLSX, v2-pharma.js) ; aucune nouvelle bibliothèque.
+  function exporter() {
+    var tb = S.tb, a = S.A[S.open]; if (!tb || !a) return;
+    if (!V2.ensureXLSX) { if (V2.toast) V2.toast('Export Excel indisponible', 'error'); return; }
+    if (V2.toast) V2.toast('Génération de l’Excel…');
+    V2.ensureXLSX(function (ok) {
+      if (!ok || !glob.XLSX) { if (V2.toast) V2.toast('Export Excel indisponible (hors ligne ?)', 'error'); return; }
+      var X = glob.XLSX, now = new Date(), e = etabCourant(), wb = X.utils.book_new();
+      var F = C.feuillesExcel(tb, a, S.d, nomPF, e ? e.s + ' · ' + e.nom : '', now.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }));
+      F.forEach(function (f) {
+        var ws = X.utils.aoa_to_sheet(f.lignes), n = f.lignes.length, der = f.lignes[n - 1] || [];
+        ws['!cols'] = f.largeurs.map(function (w) { return { wch: w }; });
+        var fin = /^Total/.test(String(der[1] || der[0] || '')) ? n - 2 : n - 1;   // le filtre s'arrête avant la ligne du total
+        if (f.filtre && fin >= 1) ws['!autofilter'] = { ref: X.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: fin, c: f.largeurs.length - 1 } }) };
+        X.utils.book_append_sheet(wb, ws, f.nom);
+      });
+      var blob = new Blob([X.write(wb, { bookType: 'xlsx', type: 'array' })], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      var l = document.createElement('a'); l.href = URL.createObjectURL(blob); l.download = C.nomFichierExcel(tb.code, tb.nom, now.toISOString().slice(0, 10));
+      document.body.appendChild(l); l.click(); setTimeout(function () { URL.revokeObjectURL(l.href); l.remove(); }, 800);
+      if (V2.toast) V2.toast('Excel téléchargé');
+    });
+  }
+  // « Et si… » : coût d'une livraison (au départ celui du fichier) et livraisons en moins pour les clientes en perte.
+  var REDUCS = [0, 0.25, 0.5, 0.75];
+  function simCarte() {
+    var el = document.getElementById('trn-sim'), tb = S.tb; if (!el || !tb) return;
+    var cout = S.simCout == null ? tb.cout : S.simCout;
+    el.innerHTML = '<h2 id="trn-h-sim">Et si…</h2><p class="trn-sub">Changez le coût d’une livraison, ou livrez moins souvent les clientes en perte : la rentabilité de la tournée est recalculée sur la période. Simulation seulement, rien n’est enregistré.</p>' +
+      '<div class="trn-champ"><label for="trn-sim-cout">Coût d’une livraison</label><span class="u"><input id="trn-sim-cout" class="trn-in" type="number" inputmode="decimal" min="0" step="0.5" value="' + (typeof cout === 'number' ? cout : '') + '">€</span></div>' +
+      '<div class="trn-champ"><span class="lab" id="trn-sim-l">Livraisons en moins pour les clientes en perte</span><span class="trn-seg" role="group" aria-labelledby="trn-sim-l" id="trn-sim-seg">' +
+        REDUCS.map(function (r) { return '<button type="button" data-r="' + r + '" aria-pressed="' + (S.simRed === r) + '">' + (r ? '−' : '') + Math.round(r * 100) + NB + '%</button>'; }).join('') + '</span></div>' +
+      '<div class="trn-res" id="trn-sim-res" aria-live="polite"></div>' +
+      '<p class="trn-hyp">Hypothèses : une cliente est « en perte » au coût choisi ; livrée moins souvent, elle garde la même Notre marge (mêmes achats, regroupés en moins de livraisons) et les mêmes mois livrés ; les autres clientes gardent leurs livraisons.</p>';
+    simResultat();
+  }
+  function simResultat() {
+    var el = document.getElementById('trn-sim-res'), tb = S.tb; if (!el || !tb) return;
+    var cout = S.simCout == null ? tb.cout : S.simCout, r = cout === 'x' ? null : C.simuler(tb, cout, S.simRed);
+    if (!r) { el.innerHTML = '<p style="margin:0">Saisissez un coût d’une livraison en euros (0 ou plus).</p>'; return; }
+    var c0 = esc(tb.code), sg = function (v) { return (v > 0 ? '+' : '') + eurF(v); };
+    var quoi = 'livraison à ' + eurF(r.cout) + (r.reduc ? ', ' + Math.round(r.reduc * 100) + NB + '% de livraisons en moins pour les clientes en perte' : '');
+    var h = '<dl><dt>Rentabilité par mois aujourd’hui (livraison à ' + eurF(r.actuel.cout) + ')</dt><dd class="' + negc(r.actuel.renta_mois) + '" data-chk="sim.' + c0 + '.actuel">' + eurF(r.actuel.renta_mois) + '</dd>' +
+      '<dt>Rentabilité par mois simulée (' + quoi + ')</dt><dd class="' + negc(r.simule.renta_mois) + '" data-chk="sim.' + c0 + '.simule">' + eurF(r.simule.renta_mois) + '</dd>' +
+      '<dt>Écart par mois</dt><dd class="' + negc(r.ecart_mois) + '" data-chk="sim.' + c0 + '.ecart">' + sg(r.ecart_mois) + '</dd>' +
+      '<dt>Clientes en perte</dt><dd data-chk="sim.' + c0 + '.perte">' + r.actuel.nb_perte + ' → ' + r.simule.nb_perte + '</dd>' +
+      (r.reduc ? '<dt>Commandes sur la période</dt><dd data-chk="sim.' + c0 + '.cmd">' + C.ent(r.actuel.cmd) + ' → ' + C.ent(r.simule.cmd) + '</dd>' : '') + '</dl>';
+    if (r.reduc) h += '<p>' + (r.visees ? r.visees + (r.visees > 1 ? ' clientes en perte' : ' cliente en perte') + ' à ' + eurF(r.cout) + ' la livraison ' + (r.visees > 1 ? 'sont livrées' : 'est livrée') + ' ' + Math.round(r.reduc * 100) + NB + '% moins souvent.' : 'Aucune cliente en perte à ' + eurF(r.cout) + ' la livraison : rien à réduire.') + '</p>';
+    if (typeof r.seuil === 'number') h += '<p>Seuil : au-delà de <b data-chk="sim.' + c0 + '.seuil">' + eurF(r.seuil) + '</b> par livraison (la marge par commande de la tournée), la tournée entière perd de l’argent.</p>';
+    if (r.cout !== tb.cout) h += '<div class="trn-act"><button type="button" class="trn-lien p" data-act="sim-cout">Revenir au coût du fichier (' + eurF(tb.cout) + ')</button></div>';
+    el.innerHTML = h;
+  }
+  // « Comparer avec » : par défaut la mieux classée des autres tournées.
+  function cmpCarte() {
+    var el = document.getElementById('trn-cmp'); if (!el || !S.tb) return;
+    var ord = C.classer(S.A, 'rentabilite_mois', -1), code = S.open, autres = ord.filter(function (c) { return c !== code; });
+    var h = '<h2 id="trn-h-cmp">Comparer avec une autre tournée</h2>';
+    if (!autres.length) { el.innerHTML = h + '<p class="trn-ghost">Une seule tournée dans le fichier : rien à comparer.</p>'; return; }
+    if (!S.cmpB || !S.A[S.cmpB] || S.cmpB === code) S.cmpB = autres[0];
+    el.innerHTML = h + '<p class="trn-sub">Mêmes chiffres que le classement et le tableau de bord. En gras et en couleur : la meilleure des deux, quand « meilleure » a un sens. Par défaut, la mieux classée des autres tournées.</p>' +
+      '<label class="trn-sel-l">Comparer avec <select class="trn-sel" id="trn-cmp-sel">' + autres.slice().sort().map(function (c) {
+        return '<option value="' + esc(c) + '"' + (c === S.cmpB ? ' selected' : '') + '>' + esc(c) + ' · ' + esc(S.A[c].nom) + '</option>'; }).join('') + '</select></label>' +
+      '<p class="trn-tdl" id="trn-cmp-noms"></p><div class="trn-scr"><table class="trn-cmpt" id="trn-cmp-t"></table></div>';
+    var s = document.getElementById('trn-cmp-sel'); if (s) s.onchange = function () { S.cmpB = s.value; cmpResultat(); };
+    cmpResultat();
+  }
+  function cmpResultat() {
+    var el = document.getElementById('trn-cmp-t'); if (!el) return;
+    var r = C.comparer(S.A, S.d, S.open, S.cmpB), n = Object.keys(S.A).length, nm = document.getElementById('trn-cmp-noms');
+    if (nm) nm.innerHTML = r ? '<b>' + esc(r.a) + '</b> · ' + esc(S.A[r.a].nom) + ' (cette tournée), face à <b>' + esc(r.b) + '</b> · ' + esc(S.A[r.b].nom) + '.' : '';   // au téléphone, le sélecteur fermé coupe le nom
+    if (!r) { el.innerHTML = '<tbody><tr><td>Comparaison impossible : le fichier ne porte pas les mois de l’une des deux tournées.</td></tr></tbody>'; return; }
+    var fm = function (f, v) {
+      if (typeof v !== 'number' || !isFinite(v)) return '—';
+      return f === 'eur' ? eurF(v) : f === 'pct' ? C.pct(v) : f === 'dec1' ? C.dec1(v) : f === 'km' ? C.km(v, 0) : f === 'rang' ? v + (v === 1 ? 're' : 'e') + ' sur ' + n : C.ent(v);
+    };
+    var td = function (l, v, cote) { return '<td class="' + (l.mieux === cote ? 'trn-mieux ' : '') + negc(v) + '" data-chk="cmp.' + l.k + '.' + (cote === 1 ? 'a' : 'b') + '">' + fm(l.f, v) + '</td>'; };
+    el.innerHTML = '<thead><tr><th scope="col"><span class="sr-only">Mesure</span></th><th scope="col">' + esc(r.a) + '</th><th scope="col">' + esc(r.b) + '</th></tr></thead><tbody>' +
+      r.lignes.map(function (l) { return '<tr><th scope="row">' + esc(l.l) + '</th>' + td(l, l.a, 1) + td(l, l.b, 2) + '</tr>'; }).join('') + '</tbody>';
+  }
+
   function notes(tb) {
     var n = [], mi = C.texteMoisIncomplets(tb.mois, S.d.couv);
     n.push('Commandes d’un mois = factures (livraisons) du mois, comme sur la fiche officine. « Par mois » = divisé par les mois où la cliente a été livrée ; pour la tournée, somme des clientes.');
@@ -1080,6 +1200,8 @@
         if (a === 'classement') V2.go('tournees');
         else if (a === 'fiche' && id) V2.go('pharma', id);
         else if (a === 'fermer') choisir(null);
+        else if (a === 'excel') exporter();
+        else if (a === 'sim-cout') { S.simCout = null; var ic = document.getElementById('trn-sim-cout'); if (ic) ic.value = String(S.tb ? S.tb.cout : ''); simResultat(); }
         else if (a === 'voir-ligne') {
           var r = document.querySelector('#trn-lst tr[data-p="' + (glob.CSS && CSS.escape ? CSS.escape(id) : id) + '"]');
           if (r && r.scrollIntoView) r.scrollIntoView({ block: 'center' });
@@ -1087,6 +1209,11 @@
         return;
       }
       if ((b = t.closest('#trn-seg button'))) { S.mes = b.getAttribute('data-m'); segs(); chMois(); return; }
+      if ((b = t.closest('#trn-sim-seg button'))) {
+        S.simRed = Number(b.getAttribute('data-r')) || 0;
+        [].forEach.call(document.querySelectorAll('#trn-sim-seg button'), function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+        simResultat(); return;
+      }
       if ((b = t.closest('#trn-lst th button'))) {
         var lk = b.getAttribute('data-lk');
         if (S.lk === lk) S.ld = -S.ld; else { S.lk = lk; S.ld = lk === 'n' ? 1 : -1; }
@@ -1094,6 +1221,12 @@
       }
       if ((b = t.closest('#trn-page [data-p]'))) { choisir(b.getAttribute('data-p')); return; }
       if (t.closest('#trn-retry')) { S.erreur = ''; S.d = null; V2.render(); }
+    };
+    root.oninput = function (ev) {   // coût d'une livraison de la simulation : recalcul à chaque frappe, le champ n'est pas redessiné (le curseur reste)
+      var t = ev.target; if (!t || t.id !== 'trn-sim-cout') return;
+      var v = String(t.value).replace(',', '.').trim(), x = Number(v);
+      S.simCout = (v === '' || !isFinite(x) || x < 0) ? 'x' : x;
+      simResultat();
     };
     root.onkeydown = function (ev) {
       var g = ev.target && ev.target.closest && ev.target.closest('g.trn-hit, #trn-lst tr[data-p]');
