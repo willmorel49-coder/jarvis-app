@@ -2072,8 +2072,8 @@
 
 
   // 28/10/2026 — rentabilité d'un client, livraisons déduites (Will, version 4 « Les chiffres ») : « Notre marge » (méthode direction,
-  // génériques à zéro) moins ses livraisons × le coût d'une livraison (réglage privé, jamais en dur). Une livraison = une facture (FC) distincte
-  // (Will, 28/10/2026) ; « par mois » = sur les mois où elle a été livrée. Mêmes mois et même visibilité que « Notre marge ».
+  // génériques à zéro) moins ses livraisons × le coût d'une livraison (réglage privé, jamais en dur). Une livraison = un jour avec au moins une
+  // facture (FC), au plus 1 par jour (Will, 11/11/2026, remplace « 1 facture = 1 livraison » du 28/10) ; « par mois » = sur les mois où elle a été livrée. Mêmes mois et même visibilité que « Notre marge ».
   // Barre grise = officine moyenne de TOUS nos clients, calculée par le générateur (un commercial ne charge que ses officines).
   function rentaDec(x) { return (Math.round(x * 10) / 10).toFixed(1).replace('.', ','); }
   function rentabiliteDe(pid) {

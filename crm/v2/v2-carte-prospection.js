@@ -644,7 +644,7 @@
     var h = '<div class="pp-dt"><button type="button" class="v2-btn v2-btn-ghost pp-retour" onclick="V2.carteProspection.tourneeFermer()">← Toutes les tournées</button>' +
       '<div class="pp-nom"><i class="pp-trait" style="background:' + couleur(code) + '"></i>' + esc(code + ' · ' + t.nom) + '</div>' +
       '<div class="pp-sub">' + esc(C.joursTournee(t)) + ' · ' + (t.transporteur ? 'transporteur ' + esc(t.transporteur) : 'transporteur non renseigné') + (t.nom_auto ? ' · nom automatique' : '') + '</div>' + chiffresTournee(t) +
-      '<div class="pp-aide">Dépôt, puis les arrêts dans l\'ordre de livraison. Rentabilité par mois = marge − livraisons × coût d\'une livraison (1 facture = 1 livraison, même calcul que la fiche), divisée par les mois d\'activité (janvier à septembre 2026).</div></div>';
+      '<div class="pp-aide">Dépôt, puis les arrêts dans l\'ordre de livraison. Rentabilité par mois = marge − livraisons × coût d\'une livraison (au plus 1 livraison par jour, même calcul que la fiche), divisée par les mois d\'activité (janvier à septembre 2026).</div></div>';
     (t.arrets || []).forEach(function (id) {
       var c = clienteDe(id); if (!c) return; var r = c.renta;
       h += '<button type="button" class="pp-ar" onclick="V2.carteProspection.arret(\'' + id + '\')">' +

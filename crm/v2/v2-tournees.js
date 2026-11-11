@@ -12,7 +12,7 @@
      (clé « tournees » de v2-boot.js, variable globale TOURNEES_ECRAN), fabriqué hors dépôt. Il ne porte que les valeurs BRUTES :
      toutes les formules ci-dessous (médiane, raison, gain, potentiel, tri des prospects, classement, totaux et mois du tableau de bord)
      sont calculées ICI et testées (tests/tournees.test.mjs, avec des données fictives). Calcul de la fiche officine : 1 commande =
-     1 facture = 1 livraison ; aucun prix d'achat, aucune marge produit par produit (totaux et familles seulement).
+     1 livraison = 1 jour avec facture, au plus 1 par jour (Will, 11/11/2026) ; aucun prix d'achat, aucune marge produit par produit (totaux et familles seulement).
    - QUI VOIT : tout compte connecté sauf le rôle `opso` (décision de Will, 10/11/2026 : « tout le monde voit tout » sur CET écran,
      exception à la règle « un commercial ne voit pas les ventes des autres » ; V2.voitVentesDe n'est donc PAS appliqué ici). La base
      refuse déjà le fichier au rôle opso (jarvis_peut_lire_protege) ; l'écran le dit aussi.
@@ -165,7 +165,7 @@
   // ── Tableau de bord d'UNE tournée (11/11/2026, maquette « Le tableau de bord de la tournée » choisie par Will) ──
   // Fichier version 2 : chaque arrêt porte `m` = [CA, Notre marge, commandes] par mois (null = aucune ligne ce mois-là, ordre de d.mois),
   // `f` = Notre marge par famille (ordre C.FAM), `g` = CA des génériques (leur marge est comptée à zéro, comme sur la fiche officine).
-  // Calcul = celui de la fiche (v2-pharma.js rentabiliteDe) : 1 commande = 1 facture = 1 livraison ; « par mois » = sur les mois où la
+  // Calcul = celui de la fiche (v2-pharma.js rentabiliteDe) : 1 commande = 1 livraison, au plus 1 par jour (11/11/2026) ; « par mois » = sur les mois où la
   // cliente a été livrée ; rentabilité = Notre marge − commandes × coût d'une livraison (coût LU dans le fichier, jamais écrit ici).
   C.FAM = ['p', 'p1', 'p2', 'i', 'c', 'fr', 'nr'];   // = v2-boot.js (V2.notreMarge)
   C.LIBELLES = { p: 'Petits prix (moins de 4,33 €)', p1: 'Petits prix (moins de 3,17 €)', p2: 'De 3,17 à 4,33 €', i: 'De 4,33 à 468 €', c: 'Plus de 468 €', fr: 'Chaîne du froid', nr: 'Non remboursés' };
@@ -591,7 +591,7 @@
       '<h1 data-chk="t.' + esc(code) + '.titre">' + esc(code) + ' · ' + esc(t.nom) + '</h1>' +
       '<p class="trn-meta"><b>' + t.nb_arrets + '</b> ' + (t.nb_arrets > 1 ? 'arrêts' : 'arrêt') + ' · <b>' + C.km(t.km_total, 0) + '</b> (aller ' + C.km(raw.km_aller, 0) + ', retour ' + C.km(raw.km_retour, 0) + ') · ' + j +
         (t.transporteur ? ' · transporteur ' + esc(t.transporteur) : '') + ' · <b>' + rang + '<sup>' + (rang === 1 ? 're' : 'e') + '</sup></b> sur ' + ord.length + ' au classement de la rentabilité par mois</p>' +
-      '<p class="trn-per">' + esc(cap(S.d.periode || '')) + ' · 1 commande = 1 facture = 1 livraison · coût d’une livraison : ' + eurF(Number(S.d.cout_livraison)) + '</p></div></div>';
+      '<p class="trn-per">' + esc(cap(S.d.periode || '')) + ' · 1 commande = 1 livraison, au plus 1 par jour · coût d’une livraison : ' + eurF(Number(S.d.cout_livraison)) + '</p></div></div>';
     if (!tb) {
       root.innerHTML = h + '<div class="trn-err"><b>Détail mois par mois non disponible</b><p>Le fichier des tournées reçu ne porte pas encore les mois de chaque cliente. Rien n’est affiché plutôt que des chiffres faux.</p></div></div>';
       return;

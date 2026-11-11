@@ -54,9 +54,10 @@ SORTIE (gitignoree, JAMAIS commitee) : marge-clients.js a la racine du depot.
   ca = CA net HT de toutes les lignes (generiques compris) ; caGen = la part generique de ce CA
   (marge 0) ; tot = somme exacte des 7 familles apres arrondi au centime.
   jours (r[13], nom historique) = LIVRAISONS de l'officine ce mois-la (mois de PCVDATEEFFET), tous commerciaux confondus
-  (meme valeur sur chaque ligne de l'officine-mois : la page prend le max, jamais la somme). Decision de Will du 28/10/2026
-  (« 1 facture = 1 livraison ») : une livraison = un numero de facture PCVNUM DISTINCT commencant par FC (pas un avoir AC,
-  pas le compte INTER). Deux factures le meme jour = 2 livraisons ; une facture sur plusieurs lignes = 1.
+  (meme valeur sur chaque ligne de l'officine-mois : la page prend le max, jamais la somme). Decision de Will du 11/11/2026
+  (« 1 seule par j max ») : une livraison = un JOUR (PCVDATEEFFET) avec au moins une facture PCVNUM commencant par FC (pas un
+  avoir AC, pas le compte INTER). Une pharmacie ne compte jamais plus d'UNE livraison par jour, quel que soit le nombre de
+  factures ce jour-la (refacturation, series de factures d'une ligne). Remplace « 1 facture = 1 livraison » du 28/10/2026.
   Dans livraison.moy et pilotageMoy : jm = livraisons par mois, parJour = marge par livraison, renta = marge - livraisons x cout, par mois.
   livraison (28/10/2026) = cout d'une livraison (reglage prive `cout_livraison`) + l'officine MOYENNE de TOUS
   les clients, calculee ici et recopiee telle quelle dans chaque jeu : un commercial ne charge que ses
@@ -559,16 +560,17 @@ def lire_prive():
 
 
 def livraisons_par_mois(triplets):
-    """Triplets (officine, 'AAAA-MM-JJ', numéro de facture FC) -> {(officine, AAAAMM): nombre de factures distinctes}.
-    1 facture = 1 livraison (Will, 28/10/2026) : deux factures le même jour = 2 ; une facture sur plusieurs lignes ou vue par
-    deux commerciaux / deux tableurs = 1. Écarte le compte INTER, le jour anormal ANOM_JOUR et la date illisible."""
+    """Triplets (officine, 'AAAA-MM-JJ', numéro de facture FC) -> {(officine, AAAAMM): nombre de JOURS distincts avec une facture}.
+    1 livraison par jour au plus (Will, 11/11/2026, « 1 seule par j max ») : plusieurs factures le même jour = 1 ; une facture
+    sur plusieurs lignes ou vue par deux commerciaux / deux tableurs = 1. Écarte le compte INTER, le jour anormal ANOM_JOUR,
+    la date illisible et la facture vide."""
     vus = set()
     for off, d, pcv in set(map(tuple, triplets)):
         if off == 'INTER' or (off, d) == ANOM_JOUR or not pcv or not re.match(r'^\d{4}-\d{2}-\d{2}$', d):
             continue
-        vus.add((off, int(d[:4] + d[5:7]), pcv))
+        vus.add((off, int(d[:4] + d[5:7]), d))
     J = defaultdict(int)
-    for off, ym, _pcv in vus:
+    for off, ym, _jour in vus:
         J[(off, ym)] += 1
     return dict(J)
 
@@ -1046,7 +1048,7 @@ def lire_fichier(tache):
         pcv = str(c(r, 'PCVNUM') or '')
         if prefix in avoirs and pcv.startswith('AC'):
             q, net = -q, -net                     # avoirs Escale, comme generate_wml_v2
-        if pcv.startswith('FC') and code != 'INTER':   # livraison = un numéro de facture FC distinct (Will, 28/10/2026) ; sa date donne le mois
+        if pcv.startswith('FC') and code != 'INTER':   # facture FC : sa date compte (1 livraison par jour au plus, Will, 11/11/2026) ; elle donne le mois
             dt = c(r, 'PCVDATEEFFET')
             jours.add((code, dt.date().isoformat() if hasattr(dt, 'date') else str(dt)[:10], pcv))
         cip = cip13(c(r, 'ARTCODEBARRE'))
@@ -1271,12 +1273,12 @@ def main():
     if not rows:
         print('ARRÊT : 0 ligne — rien n\'est écrit.')
         return 5
-    # ── livraisons : numéros de facture FC distincts par officine et par mois, tous commerciaux et tous tableurs confondus ──
+    # ── livraisons : jours distincts avec une facture FC, par officine et par mois, tous commerciaux et tous tableurs confondus ──
     J = livraisons_par_mois(x for fc in chemins for x in charger_jours(fc))
     for r in rows:
         r.append(J.get((officines[r[1]], r[2]), 0))
     vus = {(officines[r[1]], r[2]): r[13] for r in rows}      # ce que la fiche voit : les livraisons des officine-mois qui ont une ligne
-    print('Livraisons : %d factures · %d officines · dont %d sur des officine-mois présents dans le fichier'
+    print('Livraisons : %d (1 par jour au plus) · %d officines · dont %d sur des officine-mois présents dans le fichier'
           % (sum(J.values()), len({k[0] for k in J}), sum(vus.values())))
     mois_txt = ['%d-%02d' % (a, m) for a, m in mois_lus]
     ym_max = max(m[1] for m in meta)

@@ -364,16 +364,19 @@ check("mention : dernier mois lu = en attendant le mois suivant (décembre -> ja
       gm.texte_baisses({A13: (None, 0.04)}, 202612) == "1 produit dont le prix a baissé compté avec sa marge d'avant la baisse, en attendant les ventes de janvier 2027 : la perte sur le stock n'est pas comptée",
       gm.texte_baisses({A13: (None, 0.04)}, 202612))
 
-# ═════════════════════════════ 8. rentabilité : livraisons (1 facture = 1 livraison) et coût d'une livraison (28/10/2026) ═════════════════════════════
+# ═════════════════════════════ 8. rentabilité : livraisons (1 par jour au plus, 11/11/2026) et coût d'une livraison (28/10/2026) ═════════════════════════════
 print("8. rentabilité : livraisons, moyenne de tous les clients, coût d'une livraison")
 J = gm.livraisons_par_mois([('2000002', '2026-01-05', 'FC1'), ('2000002', '2026-01-05', 'FC1'),   # même facture vue par Alice ET Bruno = UNE livraison
-                            ('2000002', '2026-01-05', 'FC2'),                  # 2e facture le MÊME jour = 2e livraison
+                            ('2000002', '2026-01-05', 'FC2'),                  # 2e facture le MÊME jour = toujours UNE livraison (11/11/2026)
                             ('2000002', '2026-01-19', 'FC3'), ('2000001', '2026-02-02', 'FC4'), ['2000001', '2026-02-03', 'FC5'],
                             ('INTER', '2026-01-05', 'FC6'), ('2269223', '2026-04-30', 'FC7'), ('2269223', '2026-04-29', 'FC8'),
                             ('2000003', 'None', 'FC9'), ('2000003', '2026-03-03', '')])
-check("livraisons : factures DISTINCTES par officine-mois (2 le même jour = 2), INTER, jour anormal, date illisible et facture vide écartés",
-      J == {('2000002', 202601): 3, ('2000001', 202602): 2, ('2269223', 202604): 1}, J)
-# lecture réelle d'un tableur : une facture sur 3 lignes = 1 livraison ; deux factures le même jour = 2 ; avoir AC et INTER non comptés
+check("livraisons : JOURS distincts par officine-mois (2 factures le même jour = 1), INTER, jour anormal, date illisible et facture vide écartés",
+      J == {('2000002', 202601): 2, ('2000001', 202602): 2, ('2269223', 202604): 1}, J)
+# refacturation (40 factures refaites le même jour) = 1 livraison ; un 2e jour du mois = 2
+J2 = gm.livraisons_par_mois([('2000004', '2026-02-10', 'FC%d' % k) for k in range(40)] + [('2000004', '2026-02-20', 'FC99')])
+check("livraisons : 40 factures le même jour + 1 un autre jour = 2 livraisons dans le mois", J2 == {('2000004', 202602): 2}, J2)
+# lecture réelle d'un tableur : une facture sur 3 lignes + une 2e facture le même jour = 1 livraison ; avoir AC et INTER non comptés
 import datetime as _dt
 import gzip
 import json
@@ -399,8 +402,8 @@ try:
     gm._init_worker(_cat, [], [])
     _fc, _n = gm.lire_fichier(('T', 'T', _xl, None, 202609, 'sigtest'))
     _tri = gm.charger_jours(_fc)
-    check("lecture d'un tableur : 3 lignes d'une facture + une 2e facture le même jour = 2 livraisons ; avoir AC et INTER non comptés",
-          gm.livraisons_par_mois(_tri) == {('2000001', 202609): 2}, _tri)
+    check("lecture d'un tableur : 3 lignes d'une facture + une 2e facture le même jour = 1 livraison ; avoir AC et INTER non comptés",
+          gm.livraisons_par_mois(_tri) == {('2000001', 202609): 1}, _tri)
     # un ancien cache (couples de dates) n'est jamais relu comme des factures
     _vieux = os.path.join(_dir, 'vieux.json.gz')
     with gzip.open(_vieux, 'wt', encoding='utf-8') as _f:
