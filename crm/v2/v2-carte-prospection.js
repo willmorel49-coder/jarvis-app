@@ -641,10 +641,11 @@
   }
   function arretsHtml(code) {
     var t = S.donnees.tournees[code]; if (!t) return '';
+    var per = S.donnees.periode_rentabilite || '';   // « janvier à octobre 2026 » : LU dans le fichier, jamais écrit en dur
     var h = '<div class="pp-dt"><button type="button" class="v2-btn v2-btn-ghost pp-retour" onclick="V2.carteProspection.tourneeFermer()">← Toutes les tournées</button>' +
       '<div class="pp-nom"><i class="pp-trait" style="background:' + couleur(code) + '"></i>' + esc(code + ' · ' + t.nom) + '</div>' +
       '<div class="pp-sub">' + esc(C.joursTournee(t)) + ' · ' + (t.transporteur ? 'transporteur ' + esc(t.transporteur) : 'transporteur non renseigné') + (t.nom_auto ? ' · nom automatique' : '') + '</div>' + chiffresTournee(t) +
-      '<div class="pp-aide">Dépôt, puis les arrêts dans l\'ordre de livraison. Rentabilité par mois = marge − livraisons × coût d\'une livraison (au plus 1 livraison par jour, même calcul que la fiche), divisée par les mois d\'activité (janvier à septembre 2026).</div></div>';
+      '<div class="pp-aide">Dépôt, puis les arrêts dans l\'ordre de livraison. Rentabilité par mois = marge − livraisons × coût d\'une livraison (au plus 1 livraison par jour, même calcul que la fiche), divisée par les mois d\'activité' + (per ? ' (' + esc(per) + ')' : '') + '.</div></div>';
     (t.arrets || []).forEach(function (id) {
       var c = clienteDe(id); if (!c) return; var r = c.renta;
       h += '<button type="button" class="pp-ar" onclick="V2.carteProspection.arret(\'' + id + '\')">' +
@@ -653,7 +654,7 @@
         '<span class="pp-sub">' + esc(c.ville || '') + (commercialDe(c) ? ' · ' + esc(commercialDe(c)) : '') + (c.transporteur ? ' · ' + esc(c.transporteur) : '') + (c.ordre_corrige ? ' · ' + esc(c.ordre_corrige) : (c.ordre_source != null ? ' · n° du fichier ' + c.ordre_source : '')) + '</span>' +
         (r ? '<span class="pp-ch">' + C.nb1(r.jours_mois) + ' livraisons par mois · ' + C.eur2(r.marge_jour) + ' par livraison</span>' +
              '<span class="pp-ch' + (r.rentabilite_mois < 0 ? ' pp-neg' : '') + '">Rentabilité : <b>' + C.eur(r.rentabilite_mois) + '</b> par mois</span>'
-           : '<span class="pp-ch">Pas de ventes de janvier à septembre 2026</span>') + '</button>';
+           : '<span class="pp-ch">Pas de ventes ' + (per ? 'de ' + esc(per) : 'sur la période') + '</span>') + '</button>';
     });
     return h;
   }

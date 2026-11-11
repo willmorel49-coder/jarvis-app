@@ -999,14 +999,16 @@
       var s = S.lk === k, srt = s ? (S.ld < 0 ? 'descending' : 'ascending') : 'none';
       return '<th scope="col" aria-sort="' + srt + '"><button type="button" class="' + (s ? 's' : '') + '" data-lk="' + k + '">' + l + (s ? (S.ld < 0 ? ' ↓' : ' ↑') : '') + '</button></th>';
     }
-    var h = '<thead><tr>' + thb('n', 'Cliente (ordre de livraison)') + LCOLS.map(function (k) { return thb(k[0], k[1]); }).join('') + thb('tend', 'Tendance') + '</tr></thead><tbody>';
+    var tv = mobile();   // au téléphone, la Tendance juste après le nom : visible sans faire glisser le tableau (à l'ordinateur, en dernier)
+    var h = '<thead><tr>' + thb('n', 'Cliente (ordre de livraison)') + (tv ? thb('tend', 'Tendance') : '') + LCOLS.map(function (k) { return thb(k[0], k[1]); }).join('') + (tv ? '' : thb('tend', 'Tendance')) + '</tr></thead><tbody>';
     cl.forEach(function (c) {
       var sel = c.id === S.pid;
       var nm = '<td title="' + esc(joli(c.nom)) + ' · ' + esc(joli(c.ville)) + '"><i>' + c.n + '</i>' + esc(court(c.nom, 60)) + '</td>';   // au téléphone : « Ph. » pour garder le nom lisible
       if (!c.tot) { h += '<tr data-p="' + esc(c.id) + '" tabindex="0" class="' + (sel ? 'sel' : '') + '" aria-selected="' + sel + '">' + nm + '<td class="none" colspan="' + (LCOLS.length + 1) + '">Aucune commande ' + esc(S.d.periode || '') + '</td></tr>'; }
       else {
-        h += '<tr data-p="' + esc(c.id) + '" tabindex="0" class="' + (sel ? 'sel' : '') + '" aria-selected="' + sel + '">' + nm + LCOLS.map(function (k) {
-          var v = c.tot[k[0]]; return '<td class="' + negc(v) + '" data-chk="c.' + esc(c.id) + '.' + k[0] + '">' + k[2](v) + '</td>'; }).join('') + tdTend(c.tend, 'c.' + esc(c.id) + '.tend') + '</tr>';
+        var td = tdTend(c.tend, 'c.' + esc(c.id) + '.tend');
+        h += '<tr data-p="' + esc(c.id) + '" tabindex="0" class="' + (sel ? 'sel' : '') + '" aria-selected="' + sel + '">' + nm + (tv ? td : '') + LCOLS.map(function (k) {
+          var v = c.tot[k[0]]; return '<td class="' + negc(v) + '" data-chk="c.' + esc(c.id) + '.' + k[0] + '">' + k[2](v) + '</td>'; }).join('') + (tv ? '' : td) + '</tr>';
       }
       if (sel) {
         var f = ficheDe(c);
@@ -1015,7 +1017,8 @@
           '<button type="button" class="trn-btn b2" data-act="fermer">Fermer</button></div></div></td></tr>';
       }
     });
-    h += '</tbody><tfoot><tr><td>Total de la tournée ' + esc(c0) + '</td>' + LCOLS.map(function (k) { return '<td class="' + negc(t[k[0]]) + '" data-chk="t.' + esc(c0) + '.' + k[0] + '">' + k[2](t[k[0]]) + '</td>'; }).join('') + tdTend(C.tendanceTournee(tb), 't.' + esc(c0) + '.tend') + '</tr></tfoot>';
+    var tt = tdTend(C.tendanceTournee(tb), 't.' + esc(c0) + '.tend');
+    h += '</tbody><tfoot><tr><td>Total de la tournée ' + esc(c0) + '</td>' + (tv ? tt : '') + LCOLS.map(function (k) { return '<td class="' + negc(t[k[0]]) + '" data-chk="t.' + esc(c0) + '.' + k[0] + '">' + k[2](t[k[0]]) + '</td>'; }).join('') + (tv ? '' : tt) + '</tr></tfoot>';
     el.innerHTML = h;
     if (scr) scr.scrollLeft = sl;
   }
