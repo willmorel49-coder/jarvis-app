@@ -187,12 +187,12 @@
   // Rend null si le fichier n'a pas les mois (version 1) : l'écran le dit au lieu d'afficher des zéros.
   C.tableau = function (t, d) {
     if (!t || !d || !Array.isArray(d.mois) || !d.mois.length || !isFinite(Number(d.cout_livraison))) return null;
-    var NBm = d.mois.length, cout = Number(d.cout_livraison), F = C.FAM.length;
+    var NBm = d.mois.length, cout = Number(d.cout_livraison), F = C.FAM.length, fen = C.fenetreTendance(d.mois, d.couv);
     var cl = (t.arrets || []).map(function (a) {
       var m = Array.isArray(a.m) && a.m.length === NBm ? a.m : null;
       var tot = (a.r && m) ? C.totCliente(m, cout) : null;
       return { n: a.n, id: String(a.id), fi: a.fi ? String(a.fi) : '', nom: a.nom, ville: a.ville, lat: a.lat, lng: a.lng, com: a.com,
-        m: tot ? m : null, f: tot && Array.isArray(a.f) ? a.f : null, g: tot ? (+a.g || 0) : 0, tot: tot };
+        m: tot ? m : null, f: tot && Array.isArray(a.f) ? a.f : null, g: tot ? (+a.g || 0) : 0, tot: tot, tend: tot ? C.tendance(m, fen) : null };
     });
     var V = cl.filter(function (c) { return c.tot; });
     var somme = function (f) { return V.reduce(function (s, c) { return s + f(c); }, 0); };
@@ -212,7 +212,7 @@
       fam: fam, gen: r2(somme(function (c) { return c.g; })) };
     var med = V.length ? { cmd_mois: C.mediane(V.map(function (c) { return c.tot.cmd_mois; })), marge_cmd: r2(C.mediane(V.map(function (c) { return c.tot.marge_cmd; }))),
       renta_mois: r2(C.mediane(V.map(function (c) { return c.tot.renta_mois; }))) } : null;
-    return { code: t.code, nom: t.nom, mois: d.mois.slice(), cout: cout, clientes: cl, serie: serie, tot: tot, med: med };
+    return { code: t.code, nom: t.nom, mois: d.mois.slice(), cout: cout, clientes: cl, serie: serie, tot: tot, med: med, fen: fen };
   };
   // Clientes « qui commandent souvent pour peu de marge » : plus de commandes par mois ET moins de marge par commande que la médiane.
   C.souventPeu = function (tb) {
@@ -231,7 +231,7 @@
     return cl.slice().sort(function (a, b) {
       if (cle === 'n') return sens * (a.n - b.n);
       if (!a.tot || !b.tot) return (a.tot ? -1 : b.tot ? 1 : 0) || (a.n - b.n);
-      var x = a.tot[cle], y = b.tot[cle];
+      var x = cle === 'tend' ? (a.tend ? a.tend.tri : null) : a.tot[cle], y = cle === 'tend' ? (b.tend ? b.tend.tri : null) : b.tot[cle];   // tendance : % d'écart (nouvelle en haut)
       if (x == null || y == null) return (x == null && y == null) ? a.n - b.n : (x == null ? 1 : -1);   // valeur inconnue (taux sans CA) : en bas
       return (sens * (x - y)) || (a.n - b.n);
     });
@@ -264,6 +264,162 @@
   // graduation d'un axe en euros : k€ dès 2 000 € (une décimale si le pas n'est pas rond : 2,5 k€, jamais « 3 k€ » pour 2 500)
   C.kEur = function (v, max) { return max >= 2000 ? C.nf(v / 1000, v % 1000 ? 1 : 0) + NB + 'k€' : C.nf(v, v % 1 ? 1 : 0) + NB + '€'; };
   C.grad = function (v) { return C.nf(v, v % 1 ? 1 : 0); };
+
+  // ── Les 4 ajouts du tableau de bord (11/11/2026, questions cliquées de Will) ──
+  // 1. TENDANCE de chaque cliente : Notre marge par mois des 3 derniers mois COMPLETS contre les mois complets d'avant. Les mois incomplets
+  //    (d.couv, lu dans le fichier) sont laissés de côté et nommés à l'écran. « Par mois » compte ici TOUS les mois de la fenêtre, même sans
+  //    commande (une cliente qui ne commande plus doit apparaître en baisse). Hausse ou baisse = au moins 10 % d'écart ; sinon stable.
+  C.SEUIL_TENDANCE = 10;
+  C.fenetreTendance = function (mois, couv) {
+    var ok = [], exclus = [];
+    (mois || []).forEach(function (k, i) { if (couv && couv[k]) exclus.push(k); else ok.push(i); });
+    if (ok.length < 4) return null;   // il faut 3 mois récents ET au moins 1 mois avant
+    return { recent: ok.slice(-3), avant: ok.slice(0, -3), exclus: exclus };
+  };
+  C.tendance = function (m, fen) {
+    if (!Array.isArray(m) || !fen) return null;
+    var moy = function (ix, j) { return ix.reduce(function (s, i) { return s + (m[i] ? (+m[i][j] || 0) : 0); }, 0) / ix.length; };
+    var ma = moy(fen.avant, 1), mr = moy(fen.recent, 1), ca = moy(fen.avant, 0), cr = moy(fen.recent, 0), ka = moy(fen.avant, 2), kr = moy(fen.recent, 2);
+    var o = { marge_avant: r2(ma), marge_recent: r2(mr), ca_avant: r2(ca), ca_recent: r2(cr), cmd_avant: C.cmdMois(ka * 10, 10), cmd_recent: C.cmdMois(kr * 10, 10),
+      ecart: r2(mr - ma), pct: null, sens: 'stable' };
+    if (!ka && !kr) { o.sens = 'aucune'; o.tri = 0; return o; }
+    if (!ka) { o.sens = 'nouvelle'; o.tri = 1e9; return o; }
+    if (ma > 0) {
+      o.pct = r2((mr - ma) / ma * 100);
+      o.sens = o.pct >= C.SEUIL_TENDANCE ? 'hausse' : o.pct <= -C.SEUIL_TENDANCE ? 'baisse' : 'stable';
+      o.tri = o.pct;
+    } else {   // marge d'avant nulle ou négative : un pourcentage ne veut rien dire, on garde l'écart en euros
+      o.sens = mr > ma ? 'hausse' : mr < ma ? 'baisse' : 'stable';
+      o.tri = o.sens === 'hausse' ? 1e6 : o.sens === 'baisse' ? -1e6 : 0;
+    }
+    return o;
+  };
+  C.texteTendance = function (t) {
+    if (!t || t.sens === 'aucune') return '—';
+    if (t.sens === 'nouvelle') return 'Nouvelle';
+    if (t.pct != null) return (t.pct > 0 ? '+' : '') + C.nf(t.pct, 0) + NB + '%';
+    return C.eurSigne(t.ecart, 0) + NB + 'par mois';
+  };
+  C.moisListe = function (mois, ix) {   // « juin, juillet et octobre »
+    var L = ix.map(function (i) { return C.MOIS_LONGS[+String(mois[i]).slice(5, 7) - 1] || String(mois[i]); });
+    return L.length > 1 ? L.slice(0, -1).join(', ') + ' et ' + L[L.length - 1] : (L[0] || '');
+  };
+  C.texteFenetre = function (mois, fen) {
+    if (!fen) return 'Tendance non calculée : il faut au moins quatre mois complets.';
+    var t = 'Tendance = Notre marge par mois des 3 derniers mois complets (' + C.moisListe(mois, fen.recent) + ') contre les ' + fen.avant.length + ' mois complets d’avant (' + C.moisListe(mois, fen.avant) + '), tous les mois comptés même sans commande ; hausse ou baisse à partir de ' + C.SEUIL_TENDANCE + NB + '%.';
+    if (fen.exclus.length) t += ' ' + cap0(C.moisListe(mois, fen.exclus.map(function (k) { return mois.indexOf(k); }))) + (fen.exclus.length > 1 ? ', incomplets, sont laissés de côté.' : ', incomplet, est laissé de côté.');
+    return t;
+  };
+  function cap0(s) { s = String(s || ''); return s.charAt(0).toUpperCase() + s.slice(1); }
+  // Tendance de toute la tournée (somme des clientes) et nombre de clientes en hausse / en baisse / nouvelles.
+  C.tendanceTournee = function (tb) {
+    if (!tb || !tb.fen) return null;
+    var m = tb.mois.map(function (k, i) { var s = tb.serie[i]; return [s[0], s[1], s[2]]; });
+    var t = C.tendance(m, tb.fen), n = { hausse: 0, baisse: 0, stable: 0, nouvelle: 0, aucune: 0 };
+    tb.clientes.forEach(function (c) { if (c.tend) n[c.tend.sens]++; });
+    if (t) t.nb = n;
+    return t;
+  };
+
+  // 2. SIMULATION « et si… » : coût d'une livraison choisi (par défaut celui du fichier) et livraisons des clientes en perte réduites d'une part.
+  //    Hypothèses (écrites à l'écran) : une cliente « en perte » l'est AU COÛT SIMULÉ ; elle garde la même Notre marge (mêmes achats, regroupés
+  //    en moins de livraisons) et les mêmes mois livrés ; les autres clientes gardent leurs livraisons.
+  C.simuler = function (tb, cout, reduc) {
+    if (!tb) return null;
+    cout = Number(cout); reduc = Number(reduc) || 0;
+    if (!isFinite(cout) || cout < 0 || reduc < 0 || reduc >= 1) return null;
+    var V = tb.clientes.filter(function (c) { return c.tot; }), rm = 0, rt = 0, cmd = 0, perteAvant = 0, perteApres = 0, visees = 0;
+    V.forEach(function (c) {
+      var x = c.tot, perte = x.marge - x.cmd * cout < 0, k = perte ? x.cmd * (1 - reduc) : x.cmd, r = x.marge - k * cout;
+      if (perte) { visees++; perteAvant++; }
+      if (r < 0) perteApres++;
+      cmd += k; rt += r; rm += r / x.mois_livres;
+    });
+    return { cout: cout, reduc: reduc, visees: visees,
+      actuel: { cout: tb.cout, renta: tb.tot.renta, renta_mois: tb.tot.renta_mois, nb_perte: tb.tot.nb_perte, cmd: tb.tot.cmd },
+      simule: { renta: r2(rt), renta_mois: r2(rm), nb_perte_cout: perteAvant, nb_perte: perteApres, cmd: Math.round(cmd) },
+      ecart_mois: r2(rm - tb.tot.renta_mois), seuil: tb.tot.marge_cmd };
+  };
+
+  // 3. COMPARER deux tournées : les mêmes chiffres que le classement (C.analyser) et que le tableau de bord (C.tableau).
+  //    sens : 1 = plus c'est haut, mieux c'est ; -1 = l'inverse ; 0 = ni l'un ni l'autre (rien n'est mis en avant).
+  C.comparer = function (A, d, c1, c2) {
+    var a = A && A[c1], b = A && A[c2], ta = a && C.tableau(d.tournees[c1], d), tbb = b && C.tableau(d.tournees[c2], d);
+    if (!a || !b || !ta || !tbb) return null;
+    var ord = C.classer(A, 'rentabilite_mois', -1), ea = C.tendanceTournee(ta), eb = C.tendanceTournee(tbb);
+    var L = [
+      ['rang', 'Rang au classement', ord.indexOf(c1) + 1, ord.indexOf(c2) + 1, 'rang', -1],
+      ['renta_mois', 'Rentabilité par mois', ta.tot.renta_mois, tbb.tot.renta_mois, 'eur', 1],
+      ['renta', 'Rentabilité sur la période', ta.tot.renta, tbb.tot.renta, 'eur', 1],
+      ['ca', 'CA', ta.tot.ca, tbb.tot.ca, 'eur', 1],
+      ['marge', 'Notre marge', ta.tot.marge, tbb.tot.marge, 'eur', 1],
+      ['taux', 'Taux de marge', ta.tot.taux, tbb.tot.taux, 'pct', 1],
+      ['cmd', 'Commandes', ta.tot.cmd, tbb.tot.cmd, 'ent', 0],
+      ['cmd_mois', 'Commandes par mois', ta.tot.cmd_mois, tbb.tot.cmd_mois, 'dec1', 0],
+      ['marge_cmd', 'Marge par commande', ta.tot.marge_cmd, tbb.tot.marge_cmd, 'eur', 1],
+      ['cout', 'Coût des livraisons', ta.tot.cout, tbb.tot.cout, 'eur', -1],
+      ['nb_ventes', 'Clientes avec commandes', ta.tot.nb_ventes, tbb.tot.nb_ventes, 'ent', 0],
+      ['nb_perte', 'Clientes en perte', ta.tot.nb_perte, tbb.tot.nb_perte, 'ent', -1],
+      ['baisse', 'Clientes en baisse', ea ? ea.nb.baisse : null, eb ? eb.nb.baisse : null, 'ent', -1],
+      ['hausse', 'Clientes en hausse', ea ? ea.nb.hausse : null, eb ? eb.nb.hausse : null, 'ent', 1],
+      ['nb_arrets', 'Arrêts', a.nb_arrets, b.nb_arrets, 'ent', 0],
+      ['km_total', 'Kilomètres (aller et retour)', a.km_total, b.km_total, 'km', 0],
+      ['nb_prospects_2km', 'Prospects à 2 km ou moins', a.nb_prospects_2km, b.nb_prospects_2km, 'ent', 1],
+      ['potentiel', 'Potentiel par mois', a.potentiel, b.potentiel, 'eur', 0]
+    ].map(function (l) {
+      var m = 0;
+      if (l[5] && typeof l[2] === 'number' && typeof l[3] === 'number' && l[2] !== l[3]) m = (l[2] - l[3]) * l[5] > 0 ? 1 : 2;
+      return { k: l[0], l: l[1], a: l[2], b: l[3], f: l[4], mieux: m };
+    });
+    return { a: c1, b: c2, lignes: L };
+  };
+
+  // 4. EXPORT EXCEL de la tournée : les feuilles (tableaux de valeurs, nombres laissés en nombres pour qu'Excel calcule). nomDe(cip) -> { nom, ville }.
+  C.feuillesExcel = function (tb, a, d, nomDe, etab, quand) {
+    if (!tb || !a) return null;
+    var fen = tb.fen, mois = tb.mois, cout = tb.cout, v = function (x) { return typeof x === 'number' && isFinite(x) ? x : ''; };
+    var cli = [['N° d’arrêt', 'Cliente', 'Ville', 'Commercial', 'CA (€)', 'Notre marge (€)', 'Taux de marge (%)', 'Commandes', 'Commandes par mois', 'Marge par commande (€)',
+      'Coût des livraisons (€)', 'Rentabilité (€)', 'Rentabilité par mois (€)', 'Notre marge par mois, mois d’avant (€)', 'Notre marge par mois, 3 derniers mois (€)', 'Tendance']];
+    tb.clientes.forEach(function (c) {
+      var x = c.tot, t = c.tend;
+      if (!x) { cli.push([c.n, C.joli(c.nom), C.joli(c.ville), c.com || '', 'Aucune commande sur la période']); return; }
+      cli.push([c.n, C.joli(c.nom), C.joli(c.ville), c.com || '', v(x.ca), v(x.marge), v(x.taux), v(x.cmd), v(x.cmd_mois), v(x.marge_cmd), v(x.cout), v(x.renta), v(x.renta_mois),
+        t ? v(t.marge_avant) : '', t ? v(t.marge_recent) : '', t ? C.texteTendance(t).replace(/ /g, ' ') : '']);
+    });
+    var T = tb.tot, tt = C.tendanceTournee(tb);
+    cli.push(['', 'Total de la tournée ' + tb.code, '', '', v(T.ca), v(T.marge), v(T.taux), v(T.cmd), v(T.cmd_mois), v(T.marge_cmd), v(T.cout), v(T.renta), v(T.renta_mois),
+      tt ? v(tt.marge_avant) : '', tt ? v(tt.marge_recent) : '', tt ? C.texteTendance(tt).replace(/ /g, ' ') : '']);
+    var couv = d.couv || {}, inc = function (k) { return couv[k] ? 'Incomplet : ' + couv[k][0] + ' secteurs sur ' + couv[k][1] + ' ont transmis toutes leurs ventes' : 'Complet'; };
+    var mm = [['Mois', 'CA (€)', 'Notre marge (€)', 'Commandes', 'Rentabilité (€)', 'Clientes livrées', 'Mois']];
+    mois.forEach(function (k, i) { var s = tb.serie[i]; mm.push([cap0(C.moisLong(k)), s[0], s[1], s[2], s[3], s[4], inc(k)]); });
+    mm.push(['Total', T.ca, T.marge, T.cmd, T.renta, T.nb_ventes, '']);
+    var cm = [['N° d’arrêt', 'Cliente', 'Mois', 'CA (€)', 'Notre marge (€)', 'Commandes', 'Rentabilité (€)', 'Mois']];
+    tb.clientes.forEach(function (c) {
+      if (!c.m) return;
+      c.m.forEach(function (x, i) { if (x) cm.push([c.n, C.joli(c.nom), cap0(C.moisLong(mois[i])), x[0], x[1], x[2], r2(x[1] - x[2] * cout), couv[mois[i]] ? 'Incomplet' : 'Complet']); });
+    });
+    var pr = [['Rang', 'Pharmacie', 'Ville', 'Position sur la route', 'Détour (km)', 'Km depuis le dépôt sur la route', 'Position']];
+    a.prospects.forEach(function (p, i) { var n = nomDe ? nomDe(p.cip) : { nom: '', ville: '' }; pr.push([i + 1, n.nom, n.ville, C.position(p).replace(/ /g, ' '), v(p.detour), v(p.km_route), p.fiable ? 'Fiable' : 'À vérifier']); });
+    var lire = [['Tournée', tb.code + ' · ' + tb.nom], ['Établissement', etab || ''], ['Période', d.periode || ''], ['Coût d’une livraison (€)', cout],
+      ['Extrait le', quand || ''], [], ['Règles de calcul', ''],
+      ['Commandes', '1 commande = 1 livraison = 1 jour avec facture, au plus 1 par jour, comme sur la fiche officine.'],
+      ['Coût des livraisons', 'Commandes × coût d’une livraison.'], ['Rentabilité', 'Notre marge − coût des livraisons.'],
+      ['« Par mois »', 'Divisé par les mois où la cliente a été livrée ; pour la tournée, somme des clientes.'],
+      ['Tendance', C.texteFenetre(mois, fen).replace(/ /g, ' ')]];
+    if (T.gen > 0) lire.push(['Notre marge', 'Génériques comptés à zéro, comme sur la fiche officine.']);
+    var mi = C.texteMoisIncomplets(mois, couv); if (mi) lire.push(['Mois incomplets', mi]);
+    return [
+      { nom: 'Clientes', lignes: cli, largeurs: [9, 34, 22, 11, 12, 14, 10, 11, 11, 13, 13, 13, 13, 16, 16, 12], filtre: true },
+      { nom: 'Mois par mois', lignes: mm, largeurs: [16, 12, 14, 11, 13, 10, 60] },
+      { nom: 'Clientes par mois', lignes: cm, largeurs: [9, 34, 16, 12, 14, 11, 13, 11], filtre: true },
+      { nom: 'Prospects', lignes: pr, largeurs: [6, 34, 22, 44, 11, 14, 11], filtre: true },
+      { nom: 'À lire', lignes: lire, largeurs: [24, 110] }
+    ];
+  };
+  C.nomFichierExcel = function (code, nom, jour) {
+    var s = String(code + ' ' + (nom || '')).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    return 'Tournee-' + s.slice(0, 60) + (jour ? '-' + jour : '') + '.xlsx';
+  };
 
   V2.tournees = C;
   if (typeof module !== 'undefined' && module.exports) module.exports = C;
