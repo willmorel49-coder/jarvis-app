@@ -813,9 +813,9 @@ html:root:root:root :is(.pha-tab,.pha-part-btn,.pa-segb,.pha-som-b):is(.on,[aria
 html:root:root:root .pha-part-seg{background:none;border:0;padding:0;gap:6px;flex-wrap:wrap;align-items:center}
 .v2-past-l{display:inline-flex;align-items:center;min-height:36px;margin-right:2px;font-size:13px;font-weight:600;color:var(--ip-ink-2)}
 .of-m1 .of-caps .v2-past-l{color:#fff;font-size:14px;font-weight:700}
-.pa-ctl .v2-past-l{font-size:15px}
-.v2-compte{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 7px;border-radius:var(--r-pill);background:var(--halo,#EAF0FF);color:var(--ip-blue-d);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
-html:root:root:root :is(.on,[aria-pressed="true"]) > .v2-compte{background:rgba(255,255,255,.24);color:#fff}
+.pa-ctl .v2-past-l{font-size:15px;min-height:0}
+.v2-compte{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 7px;border-radius:var(--r-pill);background:var(--halo,#EAF0FF);color:var(--ip-blue-d);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+html:root:root:root :is(.on,[aria-pressed="true"]) > .v2-compte{background:#fff;color:var(--ip-blue-d)}
 @media (max-width:900px){
   html:root:root:root :is(.pha-tab,.pha-part-btn,.pa-segb,.v2-notes-puce,.pha-som-b),.v2-past-l{min-height:var(--tap-min,44px)}
 }
