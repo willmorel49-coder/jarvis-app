@@ -103,18 +103,21 @@
       '.gnq-card + .gnq-card{margin-top:12px}' +
       '.gnq-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px}' +
       '.gnq-t{font-size:14.5px;font-weight:800;color:var(--ip-ink);letter-spacing:-.01em}' +
-      '.gnq-tot{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--muted)}' +
-      '.gnq-row{display:grid;grid-template-columns:104px 1fr auto;align-items:center;gap:10px;padding:5px 0}' +
-      '.gnq-lab{font-size:12.5px;font-weight:700;color:var(--ip-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+      '.gnq-tot{font-size:13px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}' +
+      '.gnq-row{display:grid;grid-template-columns:112px 1fr auto;align-items:center;gap:10px;padding:5px 0}' +
+      '.gnq-lab{font-size:13px;font-weight:700;color:var(--ip-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
       '.gnq-bar{height:9px;border-radius:6px;background:var(--card-2,#eef1f6);overflow:hidden}' +
       '.gnq-bar > i{display:block;height:100%;border-radius:6px}' +
-      '.gnq-val{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--ip-ink);white-space:nowrap}' +
-      '.gnq-val small{color:var(--muted);font-weight:600;margin-left:4px}' +
-      '.gnq-an{display:block;font-size:11px;font-weight:600;color:var(--muted)}' +
-      '.gnq-note{font-size:12px;color:var(--muted);margin:-4px 0 10px}' +
-      '.gnq-note b{white-space:nowrap;font-weight:700}.gnq-12 .gnq-val{min-width:14ch;text-align:right}' +
+      // 11/11/2026 — Façon 1 « L'étiquette » : un seul chiffre principal par ligne (les ventes réelles), la part et l'estimation annuelle dessous,
+      // plus petites et dites en mots ; plus de police à chasse fixe pour les montants, rien sous 13 px.
+      '.gnq-val{display:flex;flex-direction:column;align-items:flex-end;font-size:14px;font-weight:800;color:var(--ip-ink);white-space:nowrap;font-variant-numeric:tabular-nums;text-align:right}' +
+      '.gnq-val small{font-size:13px;color:var(--muted);font-weight:600}' +
+      '.gnq-an{display:block;font-size:13px;font-weight:500;color:var(--muted)}' +
+      '.gnq-per{font-size:13px;color:var(--muted);margin:-8px 0 10px}' +
+      '.gnq-note{font-size:13px;color:var(--muted);margin:-4px 0 10px}' +
+      '.gnq-note b{white-space:nowrap;font-weight:700}.gnq-12 .gnq-val{min-width:14ch}' +
       '.gnq-empty{font-size:13px;color:var(--muted);padding:6px 0}' +
-      '@media(max-width:520px){.gnq-row{grid-template-columns:88px 1fr auto}.gnq-lab{font-size:12px}}';
+      '@media(max-width:520px){.gnq-row{grid-template-columns:92px 1fr auto}}';
     document.head.appendChild(st);
   }
 
@@ -144,15 +147,16 @@
       return '<div class="gnq-row">' +
         '<span class="gnq-lab" title="' + esc(o.lab) + '">' + esc(cleanLab(o.lab)) + '</span>' +
         '<span class="gnq-bar"><i style="width:' + w + '%;background:' + col + '"></i></span>' +
-        '<span class="gnq-val">' + eur(o.ca) + '<small>' + pct + '%</small>' +
-          (an ? '<span class="gnq-an">≈ ' + eur(anBy[o.lab] || 0) + '/an</span>' : '') + '</span>' +
+        '<span class="gnq-val">' + eur(o.ca) + '<small>' + pct + ' % du total</small>' +
+          (an ? '<span class="gnq-an">≈ ' + eur(anBy[o.lab] || 0) + ' sur l’année (estimation)</span>' : '') + '</span>' +
       '</div>';
     }).join('');
     var extra = r.rows.length > maxRows ? ('<div class="gnq-empty">+ ' + (r.rows.length - maxRows) + ' autres ' + qui + 's</div>') : '';
     return '<div class="gnq-card' + (an ? ' gnq-12' : '') + '">' +
-      '<div class="gnq-h"><span class="gnq-t">' + esc(opts.title || 'CA par génériqueur') + '</span>' +
-        '<span class="gnq-tot">' + eur(r.total) + ' · ' + r.rows.length + ' ' + qui + (r.rows.length > 1 ? 's' : '') + '</span></div>' +
-      (an ? '<div class="gnq-note">Sur 12 mois : moyenne de ses ' + an.mois + ' mois × 12, soit <b>≈ ' + eur(anTot) + '/an</b>.</div>' : '') +
+      '<div class="gnq-h"><span class="gnq-t">' + esc(opts.title || 'Chiffre d’affaires par génériqueur') + '</span>' +
+        '<span class="gnq-tot">' + eur(r.total) + ' au total · ' + r.rows.length + ' ' + qui + (r.rows.length > 1 ? 's' : '') + '</span></div>' +
+      (opts.periode ? '<div class="gnq-per">' + esc(opts.periode) + '</div>' : '') +
+      (an ? '<div class="gnq-note">Sur 12 mois : moyenne de ses ' + an.mois + ' mois × 12, soit <b>≈ ' + eur(anTot) + ' sur l’année</b> (estimation).</div>' : '') +
       body + extra +
     '</div>';
   };

@@ -239,3 +239,53 @@ ul.fbs-pl{display:flex;flex-direction:column;border-radius:18px;border:1px solid
 @media(max-width:900px){.fbk{order:-2}}   /* au téléphone : juste sous la carte bleue (même rang que l'ancienne carte « Listes à proposer ») */
 @media (prefers-reduced-motion:reduce){.fbk-b,.fbs-ov,.fbs-p,.fbs-a,.fbs-send{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 
+
+/* ═══ Façon 1 « L'étiquette » (11/11/2026, préfixe cl1-) — fiche officine, vue Intégral et vue pharmacien ═══
+   Chaque bloc de barres : un titre en phrase, une ligne « période · ce qu'on compare · échelle », puis des lignes
+   libellé + mot face à la moyenne / barre avec la valeur au bout / trait de la moyenne nommé. Une seule échelle par bloc. */
+.cl1-num{font-family:inherit;font-variant-numeric:tabular-nums}
+.pha-kval.cl1-num{letter-spacing:-.02em}
+.cl1-g .cl1-t{font-size:15px;letter-spacing:-.005em;text-transform:none;color:var(--ip-ink);font-weight:800}
+.cl1-g .cl1-s{margin:4px 0 2px;font-size:13px;line-height:1.45;color:var(--txt-2,#454B5C)}
+.cl1-g .cl1-rk{margin:6px 0 4px;font-size:14px;line-height:1.45;color:var(--ip-ink)}
+.cl1-g .cl1-rk b{font-weight:800;font-variant-numeric:tabular-nums}
+.cl1-g .cl1-tot{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;margin:10px 0 2px;font-size:14px;color:var(--txt-2,#454B5C)}
+.cl1-g .cl1-tot b{color:var(--ip-ink);font-weight:800;font-variant-numeric:tabular-nums}
+.cl1-l{margin-top:14px}
+.cl1-l-h{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;margin-bottom:6px}
+.cl1-l-n{font-size:14px;font-weight:700;color:var(--ip-ink);line-height:1.3}
+.cl1-mot{min-height:24px;padding:0 9px;font-size:13px}
+.cl1-tr{position:relative;height:14px;margin-right:112px}
+.cl1-b{position:absolute;left:0;top:1px;height:12px;border-radius:999px;background:var(--a,var(--ip-blue));min-width:2px}
+.cl1-m{position:absolute;top:-4px;height:38px;width:0;border-left:2px solid #3A4256;margin-left:-1px}
+.cl1-v{position:absolute;top:50%;transform:translateY(-50%);margin-left:8px;font-size:15px;font-weight:800;color:var(--ip-ink);white-space:nowrap;font-variant-numeric:tabular-nums}
+.cl1-v.cl1-neg{color:var(--c-rose-txt)}
+.cl1-ml{position:relative;height:20px;margin:4px 112px 0 0}
+.cl1-ml span{position:absolute;top:2px;padding-left:7px;font-size:13px;font-weight:600;color:#3A4256;white-space:nowrap;font-variant-numeric:tabular-nums}
+.cl1-ml.cl1-ml-d span{transform:translateX(-100%);padding:0 7px 0 0}
+.cl1-def{margin:8px 2px 0;font-size:13px;color:var(--txt-2,#454B5C)}
+/* Ne commande plus : la phrase remplace les points, le montant dit sa durée */
+.cl1-np>b{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-size:14px;font-weight:800;text-align:right}
+.cl1-np>b small{font-size:13px;font-weight:500;white-space:normal;max-width:260px}
+.fi-m1 .cl1-np .pha-np-s{font-size:13px}
+/* À proposer (vue pharmacien) : la colonne dit de quoi le pourcentage est la part */
+.cl1-ch .pha-sub{white-space:normal;overflow:visible;text-overflow:clip;display:block}
+.cl1-prop-h{display:flex;justify-content:space-between;gap:10px;padding:8px 0 4px;font-size:13px;font-weight:600;color:var(--txt-2,#454B5C)}
+.pha-prop-r.cl1-prop-r{grid-template-columns:minmax(0,1fr) 56px auto}
+.pha-prop-r.cl1-prop-r b{display:flex;flex-direction:column;align-items:flex-end;font-size:14px;font-weight:800;line-height:1.2;white-space:nowrap}
+.pha-prop-r.cl1-prop-r b small{font-size:13px;font-weight:500;color:var(--txt-2,#454B5C)}
+/* tuiles « Par catégorie, mois par mois » : la durée et les deux valeurs d'extrémité sous le mini-graphique */
+.cl1-bouts{display:flex;justify-content:space-between;align-items:baseline;gap:6px;margin-top:4px;font-size:13px;color:var(--txt-2,#454B5C);font-variant-numeric:tabular-nums}
+.cl1-bouts b{color:var(--ip-ink);font-weight:700}
+.cl1-bouts .cl1-duree{color:var(--muted);font-weight:600}
+.pha-part-sub .cl1-mot{margin-left:4px;vertical-align:middle}
+.fi-m1 .pha-part-v small{font-size:13px}
+@media (max-width:560px){
+  .cl1-tr,.cl1-ml{margin-right:96px}
+  .cl1-v{font-size:14px}
+}
+/* les étiquettes se lisent en entier, au téléphone aussi (la fiche coupait chaque sous-titre à une ligne, la suite n'apparaissait qu'au survol) */
+.pha .pha-ch .pha-sub,.pha .pha-kd .pha-sub,.pha .cl1-g .pha-sub,.pha .pha-np .pha-ch .pha-sub{-webkit-line-clamp:unset;cursor:auto}
+/* montants : chiffres tabulaires dans la police de l'app, jamais de chasse fixe (le code CIP de la carte garde la sienne) */
+.fi-m1 .mono:not(.pha-code),.fi-m1 .pha-table .num,.fi-m1 .pha-r i{font-family:var(--font);letter-spacing:0;font-variant-numeric:tabular-nums}
+.cl1-bouts>span{white-space:nowrap}
