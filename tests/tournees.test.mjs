@@ -134,3 +134,97 @@ test('index PHARMA_FR : CIP en colonne 13, nom 6, ville 7', () => {
 });
 
 test('joli : majuscules -> casse normale', () => assert.equal(C.joli('PHARMACIE DE LA GARE'), 'Pharmacie de la Gare'));
+
+// ── Tableau de bord d'une tournée (11/11/2026) : fichier version 2, données FICTIVES ──
+const NBSP = '\u00A0';
+// 3 mois ; coût d'une livraison 10 ; m = [CA, Notre marge, commandes] par mois (null = aucune ligne)
+const D2 = { mois: ['2030-01', '2030-02', '2030-03'], cout_livraison: 10, couv: { '2030-03': [3, 4] } };
+const ar = (n, m, f, g) => ({ n, id: 'k' + n, nom: 'CLIENTE ' + n, ville: 'VILLE', lat: 47, lng: -1, com: 'X', r: m ? { rm: 0 } : null, m, f, g });
+const T2 = { code: 'TY', nom: 'Ville C', arrets: [
+  ar(1, [[1000, 100, 2], [2000, 150, 3], null], [50, 0, 0, 200, 0, 0, 0], 120),   // 5 commandes sur 2 mois livrés, marge 250 : rentabilité 200, 100 par mois
+  ar(2, [[500, 20, 4], [500, 10, 4], [400, 30, 2]], [60, 0, 0, 0, 0, 0, 0], 0),     // 10 commandes sur 3 mois, marge 60 : rentabilité −40, −13,33 par mois
+  ar(3, null, null, null),                                                         // sans commande sur la période
+  ar(4, [[300, 40, 0], [0, 0, 0], null], [40, 0, 0, 0, 0, 0, 0], 0)                // des lignes mais AUCUNE commande : comptée comme sans commande
+] };
+
+test('tableau de bord : totaux d’une cliente comme la fiche (par mois = sur les mois livrés)', () => {
+  const t = C.totCliente([[1000, 100, 2], [2000, 150, 3], null], 10);
+  assert.deepEqual([t.ca, t.marge, t.cmd, t.mois_livres, t.cmd_mois, t.marge_cmd, t.cout, t.renta, t.renta_mois, t.ca_mois, t.marge_mois, t.taux],
+    [3000, 250, 5, 2, 2.5, 50, 50, 200, 100, 1500, 125, 8.33]);
+  assert.equal(C.totCliente([[300, 40, 0], null], 10), null);
+  assert.equal(C.totCliente(null, 10), null);
+});
+
+test('tableau de bord : tournée = somme des clientes avec commandes, série des mois, médianes, familles', () => {
+  const tb = C.tableau(T2, D2);
+  assert.equal(tb.clientes.length, 4);
+  assert.deepEqual(tb.clientes.map(c => !!c.tot), [true, true, false, false]);
+  assert.deepEqual(tb.serie, [[1500, 120, 6, 60, 2], [2500, 160, 7, 90, 2], [400, 30, 2, 10, 1]]);
+  const x = tb.tot;
+  assert.deepEqual([x.ca, x.marge, x.cmd, x.cout, x.renta, x.renta_mois, x.nb_ventes, x.nb_sans, x.nb_perte, x.marge_cmd, x.gen], [4400, 310, 15, 150, 160, 86.67, 2, 2, 1, 20.67, 120]);
+  assert.equal(x.cmd_mois, 5.8);   // 2,5 + 3,3
+  assert.deepEqual(x.fam, { p: 110, p1: 0, p2: 0, i: 200, c: 0, fr: 0, nr: 0 });
+  assert.deepEqual(tb.med, { cmd_mois: 2.9, marge_cmd: 28, renta_mois: 43.34 });   // marge par commande {50, 6} ; rentabilité {100, −13,33}
+});
+
+test('tableau de bord : fichier sans les mois (version 1) -> null, jamais des zéros', () => {
+  assert.equal(C.tableau(T2, { cout_livraison: 10 }), null);
+  assert.equal(C.tableau(T2, { mois: [], cout_livraison: 10 }), null);
+  assert.equal(C.tableau(null, D2), null);
+  const t = C.tableau({ code: 'TZ', arrets: [ar(1, [[1, 1, 1]], null, 0)] }, D2);   // mois de la mauvaise longueur : cliente sans détail
+  assert.equal(t.tot.nb_ventes, 0);
+});
+
+test('« commandent souvent pour peu de marge » : plus de commandes ET moins de marge par commande que la médiane', () => {
+  const tb = C.tableau(T2, D2);
+  assert.deepEqual(C.souventPeu(tb).map(c => c.n), [2]);
+});
+
+test('familles : non nulles, de la plus forte à la plus faible, part sur le total', () => {
+  const L = C.familles({ p: 110, p1: 0, p2: 0, i: 200, c: 0.004, fr: -10, nr: 0 });
+  assert.deepEqual(L.map(f => [f.k, f.part]), [['i', 62.5], ['p', 34.38], ['fr', 3.12]]);   // 3,125 exact : centime pair, comme Python
+  assert.equal(L[0].l, 'De 4,33 à 468 €');
+});
+
+test('liste des clientes : tri par colonne, sans commande en bas, ordre de livraison', () => {
+  const tb = C.tableau(T2, D2);
+  assert.deepEqual(C.trier(tb.clientes, 'renta_mois', -1).map(c => c.n), [1, 2, 3, 4]);
+  assert.deepEqual(C.trier(tb.clientes, 'renta_mois', 1).map(c => c.n), [2, 1, 3, 4]);
+  assert.deepEqual(C.trier(tb.clientes, 'n', -1).map(c => c.n), [4, 3, 2, 1]);
+});
+
+test('mois incomplets : texte du Pilotage, lu dans le fichier', () => {
+  assert.equal(C.texteMoisIncomplets(D2.mois, D2.couv), 'Mars 2030 incomplet : 3 secteurs sur 4 ont transmis toutes leurs ventes. Chiffres partiels pour ce mois.');
+  assert.equal(C.texteMoisIncomplets(D2.mois, { '2030-01': [1, 2], '2030-02': [5, 6] }), 'Mois incomplets : janvier 2030 (1 secteur sur 2), février 2030 (5 secteurs sur 6) ont transmis toutes leurs ventes. Chiffres partiels pour ces mois.');
+  assert.equal(C.texteMoisIncomplets(D2.mois, {}), '');
+});
+
+test('arrondi au centime = round() de Python, y compris à mi-chemin exact (centime pair)', () => {
+  assert.deepEqual([4321.625, 0.375, -4321.625, 1.005, 0.125, 10.5, 0].map(C.r2), [4321.62, 0.38, -4321.62, 1, 0.12, 10.5, 0]);
+});
+
+test('commandes par mois : au dixième, la moitié vers le haut', () => {
+  assert.deepEqual([C.cmdMois(5, 2), C.cmdMois(10, 3), C.cmdMois(1, 4), C.cmdMois(3, 0)], [2.5, 3.3, 0.3, null]);
+});
+
+test('axes : pas ronds, jamais sous 1 pour des commandes, k€ avec décimale si besoin', () => {
+  assert.deepEqual(C.pas(173000), { max: 200000, step: 50000 });
+  assert.deepEqual(C.pas(9), { max: 10, step: 2.5 });
+  assert.deepEqual(C.pas(2, true), { max: 2, step: 1 });
+  assert.deepEqual(C.pas(0, true), { max: 4, step: 1 });
+  assert.equal(C.kEur(2500, 10000), '2,5' + NBSP + 'k€');
+  assert.equal(C.kEur(150000, 200000), '150' + NBSP + 'k€');
+  assert.equal(C.kEur(50, 150), '50' + NBSP + '€');
+});
+
+test('montants comme la fiche : 1 000 € et plus en euros entiers, sinon au centime, inconnu = tiret', () => {
+  assert.equal(C.eurF(2345678.91), '2' + NBSP + '345' + NBSP + '679' + NBSP + '€');
+  assert.equal(C.eurF(512.34), '512,34' + NBSP + '€');
+  assert.equal(C.eurF(-123.45), '−123,45' + NBSP + '€');
+  assert.equal(C.eurF(0), '0' + NBSP + '€');
+  assert.equal(C.eurF(null), '—');
+  assert.equal(C.pct(4.17), '4,17' + NBSP + '%');
+  assert.equal(C.dec1(12.3), '12,3');
+  assert.equal(C.moisCourt('2030-08'), 'août');
+  assert.equal(C.moisLong('2030-09'), 'septembre 2030');
+});
