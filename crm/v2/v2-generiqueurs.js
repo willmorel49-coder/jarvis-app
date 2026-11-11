@@ -117,7 +117,9 @@
       '.gnq-note{font-size:13px;color:var(--muted);margin:-4px 0 10px}' +
       '.gnq-note b{white-space:nowrap;font-weight:700}.gnq-12 .gnq-val{min-width:14ch}' +
       '.gnq-empty{font-size:13px;color:var(--muted);padding:6px 0}' +
-      '@media(max-width:520px){.gnq-row{grid-template-columns:92px 1fr auto}}';
+      // téléphone : la barre passe sous le nom (sinon les deux lignes de chiffres l'écrasaient à zéro), les chiffres restent à droite, rien sous 13 px
+      'html .gnq-card .gnq-val small{font-size:13px}' +
+      '@media(max-width:560px){.gnq-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"l v" "b v";row-gap:4px}.gnq-lab{grid-area:l}.gnq-bar{grid-area:b}.gnq-val{grid-area:v}.gnq-an{white-space:normal;max-width:170px}}';
     document.head.appendChild(st);
   }
 

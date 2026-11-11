@@ -4252,7 +4252,7 @@
     // Top 10 et « Ne commande plus » (ses propres achats) sont communs aux deux vues, ainsi que « À proposer » (29/10, demande de Will : les listes groupement et Intégral se montrent au pharmacien).
     var chiffresInt = (S ? '<div class="pha-marges">' + m5Bloc(A, S, pid) + rentaChiffres(pid) + m5Tranches(S, pid) + '</div>' + m5Replie('chiffres', 'Cumul, dernier mois et marges en détail', detail)
            : analyseKpis(A, marge, nbRefs) + '<div class="pha-marges">' + analyseMargePharma(A, marge) + analyseNotreMarge(pid) + rentaChiffres(pid) + '</div>') +
-      analyseChart(A) + (S ? m5Replie('tranches', 'Son CA par tranche, tableau détaillé', analyseTranches(A)) + m5Replie('parts', 'Par catégorie, mois par mois', analyseParts(A)) : analyseTranches(A) + analyseParts(A));
+      analyseChart(A) + (S ? m5Replie('tranches', 'Son chiffre d’affaires par tranche, tableau détaillé', analyseTranches(A)) + m5Replie('parts', 'Par catégorie, mois par mois', analyseParts(A)) : analyseTranches(A) + analyseParts(A));
     var chiffresPh = analyseKpis(A, marge, nbRefs, true) + '<div class="pha-marges">' + analyseMargePharma(A, marge, true) + '</div>' +
       analyseChart(A, true) + analyseTranches(A, true) + analyseParts(A, true);
     // 06/11/2026 — fiche « plus clair » cliente : le bloc A « La rangée de boutons » (vue Intégral) remplace les cartes « À proposer » et « Listes à proposer » ;
