@@ -155,10 +155,10 @@
     }).join('');
     var extra = r.rows.length > maxRows ? ('<div class="gnq-empty">+ ' + (r.rows.length - maxRows) + ' autres ' + qui + 's</div>') : '';
     return '<div class="gnq-card' + (an ? ' gnq-12' : '') + '">' +
-      '<div class="gnq-h"><span class="gnq-t">' + esc(opts.title || 'Chiffre d’affaires par génériqueur') + '</span>' +
+      '<div class="gnq-h"><span class="gnq-t">' + (opts.titlePh ? '<span class="vi-int">' + esc(opts.title) + '</span><span class="vi-ph">' + esc(opts.titlePh) + '</span>' : esc(opts.title || 'Chiffre d’affaires par génériqueur')) + '</span>' +
         '<span class="gnq-tot">' + eur(r.total) + ' au total · ' + r.rows.length + ' ' + qui + (r.rows.length > 1 ? 's' : '') + '</span></div>' +
       (opts.periode ? '<div class="gnq-per">' + esc(opts.periode) + '</div>' : '') +
-      (an ? '<div class="gnq-note">Sur 12 mois : moyenne de ses ' + an.mois + ' mois × 12, soit <b>≈ ' + eur(anTot) + ' sur l’année</b> (estimation).</div>' : '') +
+      (an ? '<div class="gnq-note">Sur 12 mois : moyenne de <span class="vi-int">ses</span><span class="vi-ph">vos</span> ' + an.mois + ' mois × 12, soit <b>≈ ' + eur(anTot) + ' sur l’année</b> (estimation).</div>' : '') +
       body + extra +
     '</div>';
   };

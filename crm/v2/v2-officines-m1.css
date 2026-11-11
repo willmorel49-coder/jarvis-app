@@ -148,7 +148,7 @@
   .of-lu{width:200px;height:200px;right:-90px;top:-110px}
   .of-croix{right:20px;top:20px;width:40px;height:40px;transform:scale(.72);transform-origin:100% 0}
   .of-hd-a,.of-hd-a>div{width:100%}
-  .of-hd-a>div{display:grid!important;grid-template-columns:1fr 1fr;gap:8px!important}
+  .of-hd-a>div{display:grid!important;grid-template-columns:1fr;gap:8px!important}
   .of-hd-a .v2-btn{width:100%;padding:0 8px;font-size:14px;gap:0}
   .of-hd-a .v2-btn svg{display:none}
   .of-m1 .of-caps .v2-segs{flex-wrap:wrap;gap:6px}

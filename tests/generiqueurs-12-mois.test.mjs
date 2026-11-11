@@ -24,6 +24,6 @@ test('2 mois : pas de chiffre annuel, HTML identique à sans option', () => {
 test('8 mois, 8 000 € chez Biogaran : 12 000 €/an', () => {
   const h = norm(V2.generiqueurCard(ventes, { title: 'X', annuel: { mois: 8, ventes } }));
   assert.ok(h.includes('12 000'), h);
-  assert.ok(h.includes('Sur 12 mois : moyenne de ses 8 mois × 12'));
+  assert.ok(h.includes('Sur 12 mois : moyenne de <span class="vi-int">ses</span><span class="vi-ph">vos</span> 8 mois × 12'));   // deux versions : « ses » côté Intégral, « vos » côté pharmacien
   assert.ok(h.includes('15 000'));   // total 10 000 € x 12/8
 });

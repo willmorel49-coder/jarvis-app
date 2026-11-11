@@ -2179,7 +2179,7 @@
     var R = rentabiliteDe(pid); if (!R) return '';
     var M = R.moy, per = cl1PerOff(pid, true);
     return '<div class="pha-kpi pha-nm pha-rt pha-r4 cl1-g" style="--a:var(--c-mint,#1E9E6A)"><div class="pha-kl cl1-t">Ce que ses livraisons nous coûtent et nous rapportent</div>' +
-      '<p class="cl1-s">' + esc(per) + ' · par mois, sur ses ' + R.nm + ' mois livrés · même échelle pour tout le bloc, en nombre de fois la moyenne de nos clients</p>' +
+      '<p class="cl1-s">' + esc(per) + ' · par mois, ' + cl1SurMois(R.nm) + ' · même échelle pour tout le bloc, en nombre de fois la moyenne de nos clients</p>' +
       cl1Barres([
         { n: 'Livraisons par mois', v: R.jm, moy: M.jm, fmt: rentaDec, sens: 0, mots: ['plus de livraisons que la moyenne', 'moins de livraisons que la moyenne'] },
         { n: 'Notre marge par livraison', v: R.parJour, moy: M.parJour, fmt: V2.fmtEur },
@@ -2293,7 +2293,7 @@
       ' (au moins une commande), classées par chiffre d’affaires' + (A.grpRank ? ' · ' + V2.fmtNum(A.grpRank) + (A.grpRank === 1 ? 're' : 'e') + ' sur ' + V2.fmtNum(A.nGrp) + ' chez ' + esc(A.grpName) : '') + '</p>' : '';
     return '<div class="pha-kpi pha-nm pha-rt pha-r4 pha-m5 cl1-g" style="--a:var(--ip-blue)">' +
       '<div class="pha-kl cl1-t">Ses chiffres, comparés à la moyenne de nos clients</div>' + rang +
-      '<p class="cl1-s">' + esc(per) + ' · montants par mois, sur ses ' + S.nm + ' mois livrés · même échelle pour tout le bloc, en nombre de fois la moyenne' + (M.n ? ' de nos ' + V2.fmtNum(M.n) + ' clients' : '') + '</p>' +
+      '<p class="cl1-s">' + esc(per) + ' · montants par mois et part des génériques, ' + cl1SurMois(S.nm) + ' · même échelle pour tout le bloc, en nombre de fois la moyenne' + (M.n ? ' de nos ' + V2.fmtNum(M.n) + ' clients' : '') + '</p>' +
       cl1Barres([
         { n: 'Chiffre d’affaires par mois', v: S.ca, moy: M.caMois, fmt: V2.fmtEur },
         { n: 'Notre marge Intégral par mois', v: S.mg, moy: M.mgMois, fmt: V2.fmtEur },
@@ -2317,7 +2317,7 @@
     if (!L.length) return '';
     return '<div class="pha-kpi pha-nm pha-rt pha-r4 pha-m5 cl1-g" style="--a:var(--c-mint,#1E9E6A)">' +
       '<div class="pha-kl cl1-t">Notre marge Intégral par mois, famille par famille</div>' +
-      '<p class="cl1-s">' + esc(cl1PerOff(pid, true)) + ' · sur ses ' + S.nm + ' mois livrés · même échelle pour tout le bloc, en euros</p>' +
+      '<p class="cl1-s">' + esc(cl1PerOff(pid, true)) + ' · ' + cl1SurMois(S.nm) + ' · même échelle pour tout le bloc, en euros</p>' +
       '<p class="cl1-tot">Total : <b>' + V2.fmtEur(S.mg) + ' par mois</b>' + (M.mgMois != null ? ' · moyenne de nos clients : ' + V2.fmtEur(M.mgMois) + ' ' + V2.cl1Mot(S.mg, M.mgMois) : '') + '</p>' +
       cl1Barres(L, 'val') + '</div>';
   }
@@ -2353,10 +2353,11 @@
     var cols = [['reseau', 'Le réseau', d.dataR, d.nR]];
     if (d.hasGrp) cols.push(['groupement', A.grpName, d.dataG, d.nG]);
     var aide = d.hasGrp
-      ? 'Deux listes, chacune fondée sur ce que commandent les officines de sa base : celles du réseau, et celles de ' + A.grpName + ', ' + l1FenetreReseau(A) + '. Le pourcentage est la part des officines qui commandent le produit.'
-      : 'Fondée sur ce que commandent les officines du réseau, ' + l1FenetreReseau(A) + '. Le pourcentage est la part des officines qui commandent le produit.';
+      ? vv('Deux listes, chacune fondée sur ce que commandent les officines de sa base : celles du réseau, et celles de ' + esc(A.grpName) + ', ' + esc(l1FenetreReseau(A)) + '. Le pourcentage est la part des officines qui commandent le produit.',
+           'Deux listes, chacune fondée sur ce que commandent les officines de votre base : celles du réseau, et celles de ' + esc(A.grpName) + ', ' + esc(l1FenetreReseau(A)) + '. Le pourcentage est la part des officines qui commandent le produit.')
+      : esc('Fondée sur ce que commandent les officines du réseau, ' + l1FenetreReseau(A) + '. Le pourcentage est la part des officines qui commandent le produit.');
     // 11/11/2026 — Façon 1 « L'étiquette » : la phrase d'aide n'est plus coupée, et chaque pourcentage dit de quoi il est la part (en tête de colonne et dessous)
-    var h = '<div class="v2-card pha-card" id="pha-proposer"><div class="pha-ch cl1-ch"><h3>À proposer</h3><span class="pha-sub">' + esc(aide) + '</span></div>' +
+    var h = '<div class="v2-card pha-card" id="pha-proposer"><div class="pha-ch cl1-ch"><h3>À proposer</h3><span class="pha-sub">' + aide + '</span></div>' +
       '<div class="pha-prop' + (cols.length > 1 ? ' pha-prop-2' : '') + '">';
     cols.forEach(function (c) {
       var sc = c[0], data = c[2], n = c[3];
@@ -2663,7 +2664,7 @@
     var on = A.cats.filter(function (c) { return c.top.length; }).sort(function (x, y) { return y.ca - x.ca; });
     if (!on.length) return '';
     var cur = on.filter(function (c) { return c.key === top5Cat; })[0] || on[0];
-    return '<div class="v2-card pha-card pha-desk"><div class="pha-ch"><h3>Top 10 par catégorie</h3><span class="pha-sub">ses produits les plus achetés en valeur, ' + esc(cl1PerA(A)) + '</span></div>' +
+    return '<div class="v2-card pha-card pha-desk"><div class="pha-ch"><h3>Top 10 par catégorie</h3><span class="pha-sub">' + vv('ses', 'vos') + ' produits les plus achetés en valeur, ' + esc(cl1PerA(A)) + '</span></div>' +
       '<div class="pha-tabs"><span class="v2-past-l">Famille de produits :</span>' + on.map(function (c) { return '<button class="pha-tab' + (c.key === cur.key ? ' on' : '') + '" aria-pressed="' + (c.key === cur.key) + '" onclick="V2.pharmaTop5Cat(\'' + c.key + '\')"><span class="ph-tr-dot" style="background:' + c.color + '"></span>' + esc(c.label.replace('Princeps · ', '')) + '</button>'; }).join('') + '</div>' +
       cur.top.map(function (t, i) { return '<div class="pha-r"><i>' + (i + 1) + '</i><span>' + esc(t.designation) + '</span><b class="cl1-num">' + V2.fmtEur(t.ca) + ' <small>· ' + V2.fmtNum(t.qte) + ' boîte' + (t.qte > 1 ? 's' : '') + '</small></b></div>'; }).join('') +
       '<div class="pha-sub" style="margin-top:6px">' + V2.fmtNum(cur.nbRefs) + ' produit' + (cur.nbRefs > 1 ? 's' : '') + ' commandé' + (cur.nbRefs > 1 ? 's' : '') + ' dans cette catégorie</div></div>';
@@ -2683,7 +2684,7 @@
       return '<div class="v2-card pha-card pha-np"><div class="pha-ch"><h3>Ne commande plus</h3><span class="pha-sub">' + sous + '</span></div>' + corps + '</div>';
     };
     if (!np.connu) {
-      return carte('ses habitudes interrompues', '<div class="pha-sub">' + (np.avant.length < 4
+      return carte(vv('ses', 'vos') + ' habitudes interrompues', '<div class="pha-sub">' + (np.avant.length < 4
         ? 'Pas assez de mois de commandes connus pour repérer une habitude.'
         : 'Aucune commande enregistrée en ' + esc(moisFr(np.fin)) + ' : impossible de distinguer un produit abandonné d\'un mois sans commande.') + '</div>');
     }
@@ -2715,7 +2716,7 @@
       var nbAv = np.avant.filter(function (m) { return r.mois[m]; }).length;
       return '<div class="pha-r cl1-np"><i>' + (i + 1) + '</i><span>' + esc(r.designation) +
         '<span class="pha-np-s">commandé ' + nbAv + ' mois sur les ' + nAv + ' précédents · dernière commande : ' + esc(moisFr(r.dernier)) + '</span></span>' +
-        '<b class="cl1-num">' + V2.fmtEur(r.caMois) + ' par mois<small>' + V2.fmtNum(Math.round(r.qMois)) + ' boîte' + (Math.round(r.qMois) > 1 ? 's' : '') + ' par mois · moyenne de ses ' + r.nb + ' mois de commande en tout</small></b></div>';
+        '<b class="cl1-num">' + V2.fmtEur(r.caMois) + ' par mois<small>' + V2.fmtNum(Math.round(r.qMois)) + ' boîte' + (Math.round(r.qMois) > 1 ? 's' : '') + ' par mois · moyenne de ' + vv('ses', 'vos') + ' ' + r.nb + ' mois de commande en tout</small></b></div>';
     };
     return carte(sous,
       '<div class="pha-tabs"><span class="v2-past-l">Famille de produits :</span>' + on.map(function (c) { return '<button class="pha-tab' + (c.key === cur.key ? ' on' : '') + '" aria-pressed="' + (c.key === cur.key) + '" onclick="V2.pharmaNePlusCat(\'' + c.key + '\')"><span class="ph-tr-dot" style="background:' + c.color + '"></span>' + esc(c.label.replace('Princeps · ', '')) + '<span class="v2-compte">' + parCat[c.key].length + '</span></button>'; }).join('') + '</div>' +
@@ -2969,7 +2970,7 @@
     var cols = [['reseau', 'Le réseau', L1.dataR, L1.nR]];
     if (L1.hasGrp) cols.push(['groupement', A.grpName, L1.dataG, L1.nG]);
     var aide = L1.hasGrp
-      ? 'Deux listes, chacune fondée sur ce que commandent les officines de sa base : celles du réseau, et celles de ' + A.grpName + ', ' + l1FenetreReseau(A) + '. Le pourcentage est la part des officines qui commandent le produit.'
+      ? 'Deux listes, chacune fondée sur ce que commandent les officines de ' + (L1.vue === 'pharmacien' ? 'votre' : 'sa') + ' base : celles du réseau, et celles de ' + A.grpName + ', ' + l1FenetreReseau(A) + '. Le pourcentage est la part des officines qui commandent le produit.'
       : 'Fondée sur ce que commandent les officines du réseau, ' + l1FenetreReseau(A) + '. Le pourcentage est la part des officines qui commandent le produit.';
     var voir = V2.pages.produits ? '<button type="button" class="l8-btn l8-btn-pri" aria-label="Voir la liste à l’écran" onclick="V2.go(\'produits\', \'' + pid + '\')">' + l8Ic('ecran', 18) + 'Voir</button>' : '';
     var h = l8Tete('À proposer', voir, aide) + '<div class="l8-2l' + (cols.length > 1 ? ' l8-2l-deux' : '') + '">';
@@ -4315,12 +4316,12 @@
     var generiqueurSec = (function () {
       // 26/10/2026 — CA ramené à 12 mois : mêmes mois que « Sa moyenne / mois » (de sa 1re commande au dernier mois complet)
       // 27/10/2026 — génériques et biosimilaires dans deux cartes séparées (demande de Will)
-      var gOpts = { title: 'Ses génériques par génériqueur', type: 'gen', periode: cl1PerA(A) };   // 11/11/2026 — Façon 1 : la période sous le titre
+      var gOpts = { title: 'Ses génériques par génériqueur', titlePh: 'Vos génériques par génériqueur', type: 'gen', periode: cl1PerA(A) };   // 11/11/2026 — Façon 1 : la période sous le titre
       if (A.nAct >= 3 && A.debut && A.last) {
         var gk0 = A.debut.mk, gk1 = A.last.mk;
         gOpts.annuel = { mois: A.nAct, ventes: sales.filter(function (s) { if (!s.month || !s.year) return false; var k = s.year * 12 + (s.month - 1); return k >= gk0 && k <= gk1; }) };
       }
-      var bOpts = { title: 'Ses biosimilaires par laboratoire', type: 'biosim', annuel: gOpts.annuel, periode: gOpts.periode };
+      var bOpts = { title: 'Ses biosimilaires par laboratoire', titlePh: 'Vos biosimilaires par laboratoire', type: 'biosim', annuel: gOpts.annuel, periode: gOpts.periode };
       var card = V2.generiqueurCard ? V2.generiqueurCard(sales, gOpts) + V2.generiqueurCard(sales, bOpts) : '';
       if (!card) return '';
       var open = sectionOpen('gnq');
@@ -4506,6 +4507,9 @@
     'Infos': ['Voir les infos', 'Voir les infos'],
     'À proposer': ['Voir ce qu’on peut lui proposer', 'Voir ce que nous vous proposons']
   };
+  // 11/11/2026 — texte commun aux deux vues : « ses… » côté Intégral, « vos… » côté pharmacien (les deux versions sont posées, la bonne se montre par vi-int / vi-ph).
+  function vv(i, p) { return i === p ? i : '<span class="vi-int">' + i + '</span><span class="vi-ph">' + p + '</span>'; }
+  function cl1SurMois(n) { return n > 1 ? vv('sur ses ' + n + ' mois livrés', 'sur vos ' + n + ' mois livrés') : vv('sur son seul mois livré', 'sur votre seul mois livré'); }   // « 1 mois livrés » : accord au singulier
   function phaLib(nom) {
     var l = PHA_LIB[nom]; if (!l) return esc(nom);
     return l[0] === l[1] ? esc(l[0]) : '<span class="vi-int">' + esc(l[0]) + '</span><span class="vi-ph">' + esc(l[1]) + '</span>';

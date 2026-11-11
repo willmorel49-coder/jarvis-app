@@ -464,7 +464,7 @@
     '.bo-ligne:hover .bo-voir{background:var(--ip-blue-d,#0034A0)}' +
     /* le bouton à droite des onglets */
     '.bo-open{position:relative;display:inline-flex;align-items:center;gap:8px;padding:9px 16px 9px 14px;border-radius:999px;border:0;background:var(--ip-blue,#0050E6);font-family:inherit;font-weight:700;font-size:13.5px;color:#fff;cursor:pointer;box-shadow:0 6px 16px -6px rgba(0,80,230,.55);min-height:var(--tap-min,44px);transition:background .15s,transform .15s}' +
-    '.bo-open .n{background:#fff;color:var(--ip-blue,#0050E6);border-radius:999px;padding:1px 8px;font-size:12px;font-weight:800}' +
+    '.bo-open .n{background:#fff;color:var(--ip-blue,#0050E6);border-radius:999px;padding:1px 8px;font-size:13px;font-weight:800}' +
     '.bo-open .bo-dot{position:absolute;top:-3px;right:-3px;width:11px;height:11px;border:2px solid #fff;box-shadow:none;animation:bo-pouls 1.6s ease-in-out infinite}' +
     '@keyframes bo-pouls{0%,100%{transform:scale(1)}50%{transform:scale(1.35)}}' +
     '@media (prefers-reduced-motion:reduce){.bo-open .bo-dot{animation:none}}' +
