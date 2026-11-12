@@ -145,9 +145,9 @@
       if (i.etat === 'charge') return vide('Chargement du brief du jour…');
       if (i.etat !== 'ok') return vide('Le brief du jour n\'est pas encore arrivé.');
       var cases = [];
-      if (i.nb != null) cases.push('<div><b>' + fr(i.nb) + '</b><span>' + (i.nb > 1 ? 'nouvelles' : 'nouvelle') + '</span>' + (i.quand === 'auj' ? '' : '<small>' + esc(i.puce) + '</small>') + '</div>');
-      if (i.rupt != null) cases.push('<div><b>' + fr(i.rupt) + '</b><span>' + (i.rupt > 1 ? 'ruptures en cours' : 'rupture en cours') + '</span></div>');
-      if (i.rapp != null) cases.push('<div><b>' + fr(i.rapp) + '</b><span>' + (i.rapp > 1 ? 'rappels de produits' : 'rappel de produit') + '</span></div>');
+      if (i.nb != null) cases.push('<div><b>' + fr(i.nb) + '</b><span>' + (i.nb > 1 ? 'nouvelles' : 'nouvelle') + (i.quand === 'auj' ? ' aujourd’hui' : '') + '</span>' + (i.quand === 'auj' ? '' : '<small>' + esc(i.puce) + '</small>') + '</div>');
+      if (i.rupt != null) cases.push('<div><b>' + fr(i.rupt) + '</b><span>' + (i.rupt > 1 ? 'médicaments en rupture ou en tension (France, ANSM)' : 'médicament en rupture ou en tension (France, ANSM)') + '</span></div>');
+      if (i.rapp != null) cases.push('<div><b>' + fr(i.rapp) + '</b><span>' + (i.rapp > 1 ? 'rappels récents de produits de parapharmacie' : 'rappel récent de produit de parapharmacie') + '</span></div>');
       var h = cases.length ? '<div class="u2-cpt" style="--n:' + cases.length + '">' + cases.join('') + '</div>' : '';
       if (w.t !== 'S') h += '<p class="aw-p aw-tit">' + esc(i.titre) + '</p>';
       if (w.t === 'L') {
@@ -210,8 +210,8 @@
       var m = P().m() || {}, ca = (!m.partiel && V2.caByPharma) ? V2.caByPharma() : null;
       var tot = g.ids.length, h = '<div class="aw-g"><b>' + esc(g.nom) + '</b></div>';
       if (!ca) return h + chiffre(fr(tot), tot > 1 ? 'officines adhérentes' : 'officine adhérente') + (w.t === 'S' ? '' : vide('Les ventes se chargent : le détail arrive.'));
-      var act = g.ids.filter(function (id) { return (ca[id] || 0) > 0; }).length, pc = tot ? Math.round(act * 100 / tot) : 0;
-      return h + chiffre(pc + ' %', 'des adhérents sont actifs') + jauge(pc) + (w.t === 'S' ? '' : '<p class="aw-p">' + fr(act) + (act > 1 ? ' adhérents actifs' : ' adhérent actif') + ' sur ' + fr(tot) + '.</p>');
+      var per = V2.accueilCinq && V2.accueilCinq.perVentes ? V2.accueilCinq.perVentes(true) : '', act = g.ids.filter(function (id) { return (ca[id] || 0) > 0; }).length, pc = tot ? Math.round(act * 100 / tot) : 0;
+      return h + chiffre(pc + ' %', 'des adhérents ont commandé' + (per ? ' ' + per : '')) + jauge(pc) + (w.t === 'S' ? '' : '<p class="aw-p">' + fr(act) + ' sur ' + fr(tot) + (tot > 1 ? ' adhérents' : ' adhérent') + ' ont passé au moins une commande.</p>');
     },
     tournee: function (w, stat) {
       var t = []; try { t = JSON.parse(localStorage.getItem('jarvis_tour_v1') || '[]'); if (!Array.isArray(t)) t = []; } catch (e) { t = []; }
@@ -243,7 +243,7 @@
       var tot = typeof d.ruptures_total === 'number' ? d.ruptures_total : null;
       var l = (Array.isArray(d.ruptures_live) ? d.ruptures_live : []).filter(function (x) { return x && x.titre; }).map(function (x) { return [String(x.titre).split(' – [')[0], String(x.statut || '')]; });
       if (tot == null && !l.length) return vide('Aucune rupture dans le brief du jour.');
-      var h = tot != null ? chiffre(fr(tot), tot > 1 ? 'ruptures en cours' : 'rupture en cours') : '';
+      var h = tot != null ? chiffre(fr(tot), tot > 1 ? 'médicaments en rupture ou en tension en France (ANSM)' : 'médicament en rupture ou en tension en France (ANSM)') : '';
       if (w.t !== 'S' && l.length) h += lignes(l, w.t === 'L' ? 4 : 2);
       return h;
     }

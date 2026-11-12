@@ -258,3 +258,14 @@ html[data-hab] .u2-hors .u2-rail{margin-bottom:0}
   .m1-dot{animation:none}
   .u2-feuille,.u2-hors .u2-rail{transition:none}
 }
+
+/* ═══ Façon 1 « L'étiquette » (12/11/2026, préfixe cl1-) — accueil ═══ */
+.cl1-def{margin-top:4px;font-size:13px;line-height:1.4}
+.cl1-mot-l{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;margin:0 0 8px}
+.cl1-ecart{font-size:13px;font-variant-numeric:tabular-nums}
+.m1-off .m1-vs-r{grid-template-columns:112px minmax(0,1fr) 84px}
+.cl1-ttl{margin:0 0 10px;font-size:13px;line-height:1.4;color:var(--txt-2)}
+.cl1-grp .m1-grow{grid-template-columns:116px minmax(0,1fr) 92px}
+.cl1-grp .m1-grow span{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.25}
+.cl1-grp .m1-grow b{white-space:nowrap}
+@media (max-width:600px){.m1-off .m1-vs-r{grid-template-columns:104px minmax(0,1fr) 76px}.cl1-grp .m1-grow{grid-template-columns:96px minmax(0,1fr) 84px}}

@@ -298,12 +298,12 @@
   }
   function cmpLignes(D, cles) {
     var S = D.S, M = D.M, t = {
-      n: ['Clients actifs', S.n, M.nSect, cEnt, cDec, 'Secteur moyen Intégral'],
-      caCl: ['CA par client / mois', S.caCl, M.caCl, cEur, cEur, 'Moy. Intégral'],
-      mgCl: ['Notre marge par client / mois', S.mgCl, M.mgCl, cEur, cEur, 'Moy. Intégral'],
-      jm: ['Livraisons / mois', S.jm, M.jm, cDec, cDec, 'Moy. Intégral'],
-      parJour: ['Marge par livraison', S.parJour, M.parJour, cEur, cEur, 'Moy. Intégral'],
-      renta: ['Marge − livraisons / mois', S.renta, M.renta, cEur, cEur, 'Moy. Intégral']
+      n: ['Clients actifs de la période', S.n, M.nSect, cEnt, cDec, 'Secteur moyen Intégral'],
+      caCl: ['Chiffre d’affaires par client et par mois', S.caCl, M.caCl, cEur, cEur, 'Moyenne Intégral'],
+      mgCl: ['Notre marge par client et par mois', S.mgCl, M.mgCl, cEur, cEur, 'Moyenne Intégral'],
+      jm: ['Livraisons par mois', S.jm, M.jm, cDec, cDec, 'Moyenne Intégral'],
+      parJour: ['Marge par livraison', S.parJour, M.parJour, cEur, cEur, 'Moyenne Intégral'],
+      renta: ['Marge moins coût des livraisons, par mois', S.renta, M.renta, cEur, cEur, 'Moyenne Intégral']
     };
     return cles.map(function (k) { var x = t[k]; return cmpLigne(x[0], x[1], x[2], x[3], x[4], x[5]); }).join('');
   }
@@ -325,7 +325,7 @@
     var D = cmpDonnees();
     if (!D) return '<p class="aw-v">' + (window.MARGE_CLIENTS && window.MARGE_CLIENTS.r ? 'Pas encore de chiffres de marge pour votre secteur.' : 'Les chiffres de marge se chargent : le détail arrive.') + '</p>';
     var v3 = CMP_MODE === 'v3', cles = v3 ? (t === 'S' ? ['parJour', 'renta'] : ['jm', 'parJour', 'renta']) : t === 'S' ? ['n', 'mgCl'] : t === 'M' ? ['n', 'caCl', 'mgCl', 'jm'] : ['n', 'caCl', 'mgCl', 'jm', 'parJour', 'renta'];
-    return '<div class="aw-cmp"><span class="cm-s">' + (v3 ? 'Comparée à la moyenne Intégral · ' : '') + esc(D.lib + D.note) + (v3 ? '' : ' · par client') + '</span><span class="cm-g">' + cmpLignes(D, cles) + '</span></div>';
+    return '<div class="aw-cmp"><span class="cm-s">' + (v3 ? 'Comparée à la moyenne Intégral · ' : '') + esc(cl1LibMarge(D)) + (v3 ? '' : ' · par client') + '</span><span class="cm-g">' + cmpLignes(D, cles) + '</span></div>';
   }
 
   /* ── Le contenu vivant de chaque carte : une fonction par zone, rendue seulement quand sa donnée change ── */
@@ -474,6 +474,24 @@
   var CATS = { 'beaute-et-soins': 'Beauté & soins', sante: 'Santé', hygiene: 'Hygiène', bebe: 'Bébé', solaires: 'Solaires', veterinaire: 'Vétérinaire' };
   function lumiere() { return document.documentElement.classList.contains('m1-lumiere'); }
   function plur(n, a, b) { return fr(n) + ' ' + (n > 1 ? b : a); }
+  // 12/11/2026 — Façon 1 « L'étiquette » : chaque chiffre dit quoi + période (cl1-). Mois en 3 lettres et plus, jamais en initiale ; aucun sigle.
+  var CL1_MC = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  var _cl1Per = { ref: null, n: -1, lo: 0, hi: -1 };
+  function cl1Mois() {   // premier et dernier mois des ventes chargées (même règle que l'écran Officines), mémorisé sur la liste des ventes
+    var S = V2.sales || [];
+    if (_cl1Per.ref === S && _cl1Per.n === S.length) return _cl1Per;
+    var lo = 1e9, hi = -1;
+    for (var i = 0; i < S.length; i++) { var k = (+S[i].year || 0) * 12 + (+S[i].month || 1) - 1; if (k < lo) lo = k; if (k > hi) hi = k; }
+    _cl1Per = { ref: S, n: S.length, lo: lo, hi: hi }; return _cl1Per;
+  }
+  function cl1Span(lo, hi, de) {   // « janv.–oct. 2026 » ou, avec de, « de janv. à oct. 2026 »
+    if (hi < 0 || lo > hi) return '';
+    var a = Math.floor(lo / 12), b = Math.floor(hi / 12), ma = CL1_MC[lo % 12], mb = CL1_MC[hi % 12];
+    if (lo === hi) return (de ? 'en ' : '') + mb + ' ' + b;
+    return (de ? 'de ' : '') + ma + (a === b ? '' : ' ' + a) + (de ? ' à ' : '–') + mb + ' ' + b;
+  }
+  function cl1PerVentes(de) { var m = cl1Mois(); return cl1Span(m.lo, m.hi, de); }
+  function cl1SansSigle(t) { return String(t == null ? '' : t).replace(/\bCA\b/g, 'chiffre d’affaires'); }
   function court(nom) { return String(nom || '').replace(/^Pharmacie\s+(de la |de l['’]|des |du |de |d['’])?/i, '').trim() || String(nom || ''); }
   function titre(s) { s = String(s || ''); return s === s.toUpperCase() ? s.toLowerCase().replace(/(^|[\s\-'’(])([a-zà-ÿ])/g, function (m, a, b) { return a + b.toUpperCase(); }) : s; }
   function jourIso() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
@@ -520,26 +538,39 @@
   // ── Officines : le nombre, la comparaison secteur / moyenne Intégral, les officines à rappeler ──
   function m1Pill() {
     var n = null; try { n = V2.decrochageUI ? V2.decrochageUI.compte() : null; } catch (e) {}
-    return typeof n === 'number' && n > 0 ? '<span class="m1-pill m1-warn">' + fr(n) + ' à rappeler</span>' : '';
+    return typeof n === 'number' && n > 0 ? '<span class="m1-pill m1-warn">' + plur(n, 'officine', 'officines') + ' à rappeler</span>' : '';
   }
   function m1Nb(m) {
     if (m.partiel) {
       var pr = V2.ventesProgres || {};
       return '<span class="m1-vente" id="v2-ventes-etat">Chargement des ventes… <b>' + (pr.n || 0) + '</b> / ' + (pr.total || '?') + '</span>';
     }
+    var tot = (V2.pharmacies || []).length, per = cl1PerVentes(true);
     return '<div class="m1-big"><b data-roule="' + m.nb + '">' + fr(m.nb) + '</b><small>' + (m.nb > 1 ? 'officines actives' : 'officine active') + '</small></div>' +
+      (per ? '<div class="m1-sub cl1-def">' + esc(per) + ' · au moins une commande' + (tot >= m.nb && tot > 0 ? ' · sur ' + fr(tot) + ' officines' : '') + '</div>' : '') +
       (m.mes != null ? '<div class="m1-sub">Vos officines : <b>' + fr(m.mes) + '</b></div>' : '');
   }
+  // Mois de la marge (fichier MARGE_CLIENTS) : « janv.–sept. 2026 » et la liste des mois incomplets, dite UNE fois avec sa conséquence
+  function cl1PerMarge() {
+    var MC = window.MARGE_CLIENTS, PM = MC && MC.pilotageMoy, ms = (MC && MC.mois) || []; if (!ms.length) return null;
+    var k = function (m) { return (+m.slice(0, 4)) * 12 + (+m.slice(5, 7)) - 1; }, C = (PM && PM.couv) || {};
+    var inc = ms.filter(function (m) { return C[m]; }).map(function (m) { return CL1_MC[k(m) % 12]; });
+    return { lib: cl1Span(k(ms[0]), k(ms[ms.length - 1])), inc: inc };
+  }
+  function cl1LibMarge(D) { var pm = cl1PerMarge(); return pm ? pm.lib + (pm.inc.length ? ' (' + pm.inc.join(' et ') + (pm.inc.length > 1 ? ' incomplets' : ' incomplet') + ' : à comparer avec prudence)' : '') : D.lib + D.note; }
   function m1Cmp() {
     var D = cmpDonnees();
     if (!D) return '<p class="m1-sub">' + (window.MARGE_CLIENTS && window.MARGE_CLIENTS.r ? 'Pas encore de chiffres de marge pour votre secteur.' : 'Les chiffres de marge se chargent : le détail arrive.') + '</p>';
     var v = D.S.caCl, f = D.M.caCl, mx = Math.max(Math.abs(v), Math.abs(f), 1e-9), diff = f ? (v - f) / Math.abs(f) * 100 : null;
     var w = function (x) { return Math.max(2, Math.min(100, Math.abs(x) / mx * 100)).toFixed(1); };
-    var pill = diff == null ? '' : '<span class="m1-pill ' + (diff >= 0 ? 'm1-ok' : 'm1-bad') + '">' + (diff >= 0 ? '+' : '−') + cDec(Math.abs(diff)) + ' %</span>';
-    return '<div class="m1-vs-h"><span>CA par client et par mois, face à la moyenne du réseau Intégral</span>' + pill + '</div>' +
+    var mot = V2.cl1Mot ? V2.cl1Mot(v, f) : '', pm = cl1PerMarge();
+    var ecart = diff == null ? '' : '<span class="cl1-ecart">' + (diff >= 0 ? '+' : '−') + cDec(Math.abs(diff)) + ' % par rapport à la moyenne</span>';
+    var per = pm ? pm.lib + (pm.inc.length ? ' (' + pm.inc.join(' et ') + (pm.inc.length > 1 ? ' incomplets' : ' incomplet') + ' : à comparer avec prudence)' : '') : D.lib + D.note;
+    return '<div class="m1-vs-h"><span>Chiffre d’affaires par client et par mois : votre secteur face à la moyenne des clients Intégral</span></div>' +
+      (mot ? '<div class="cl1-mot-l">' + mot + ecart + '</div>' : '') +
       '<div class="m1-vs-r"><span>Mon secteur</span><i class="m1-trk"><i class="m1-fill" style="width:' + w(v) + '%"></i></i><b>' + esc(cEur(v)) + '</b></div>' +
-      '<div class="m1-vs-r"><span>Réseau</span><i class="m1-trk"><i class="m1-fill m1-grey" style="width:' + w(f) + '%"></i></i><b>' + esc(cEur(f)) + '</b></div>' +
-      '<div class="m1-per">' + esc(D.lib + D.note) + '</div>';
+      '<div class="m1-vs-r"><span>Moyenne Intégral</span><i class="m1-trk"><i class="m1-fill m1-grey" style="width:' + w(f) + '%"></i></i><b>' + esc(cEur(f)) + '</b></div>' +
+      '<div class="m1-per">' + esc(per) + ' · même échelle pour les deux barres, de 0 à ' + esc(cEur(mx)) + '</div>';
   }
   function m1Rel() {
     var l = null; try { l = V2.decrochageUI && V2.decrochageUI.liste ? V2.decrochageUI.liste(4) : null; } catch (e) {}
@@ -609,9 +640,10 @@
   function m1InfosPied() {
     var i = P().infos(), c = [];
     if (i.etat !== 'ok') return '';
-    if (i.nb != null) c.push(plur(i.nb, 'nouvelle', 'nouvelles'));
-    if (i.rupt != null) c.push(plur(i.rupt, 'rupture en cours', 'ruptures en cours'));
-    if (i.rapp != null) c.push(plur(i.rapp, 'rappel de produit', 'rappels de produits'));
+    var q = i.quand === 'auj' ? ' aujourd’hui' : i.quand === 'hier' ? ' hier' : ' dans cette édition';
+    if (i.nb != null) c.push(plur(i.nb, 'nouvelle', 'nouvelles') + q);
+    if (i.rupt != null) c.push(plur(i.rupt, 'médicament', 'médicaments') + ' en rupture ou en tension (France, ANSM)');
+    if (i.rapp != null) c.push(plur(i.rapp, 'rappel récent', 'rappels récents') + ' de produits de parapharmacie');
     return esc(c.join(' · '));
   }
 
@@ -630,27 +662,28 @@
   function m1Grp() {
     var G = mesGroupes().l; if (!G.length) return '<p class="m1-vide">Aucun groupement à suivre pour le moment.</p>';
     var m = P().m() || {}, ca = (!m.partiel && V2.caByPharma) ? V2.caByPharma() : null, rows;
-    if (ca) rows = G.map(function (g) { var s = 0; g.ids.forEach(function (id) { s += ca[id] || 0; }); return { nom: g.nom, v: s, t: (V2.fmtK ? V2.fmtK(s) : fr(s)) + '\u00A0€' }; }).sort(function (a, b) { return b.v - a.v; });
+    if (ca) rows = G.map(function (g) { var s = 0; g.ids.forEach(function (id) { s += ca[id] || 0; }); return { nom: g.nom, v: s, t: fr(s) + '\u00A0€' }; }).sort(function (a, b) { return b.v - a.v; });
     else rows = G.map(function (g) { return { nom: g.nom, v: g.ids.length, t: fr(g.ids.length) }; });
     rows = rows.slice(0, 4);
-    var mx = Math.max(rows[0].v, 1e-9);
-    return '<div class="m1-glist">' + rows.map(function (g, i) {
+    var mx = Math.max(rows[0].v, 1e-9), R = mesGroupes(), per = cl1PerVentes(true);
+    return '<p class="m1-sub cl1-ttl">' + (ca ? (R.miens ? 'Chiffre d’affaires de vos officines, par groupement' : 'Chiffre d’affaires par groupement') + (per ? ', ' + esc(per) : '') : 'Nombre d’officines par groupement') + '</p>' +
+      '<div class="m1-glist cl1-grp">' + rows.map(function (g, i) {
       return '<div class="m1-grow"><span title="' + esc(g.nom) + '">' + esc(g.nom) + '</span><i class="m1-trk"><i class="m1-fill" style="width:' + Math.max(2, Math.round(g.v / mx * 100)) + '%;--i:' + i + '"></i></i><b>' + esc(g.t) + '</b></div>';
     }).join('') + '</div>';
   }
   function m1GrpPied() {
     var R = mesGroupes(), n = R.l.length, m = P().m() || {};
     if (!n) return '';
-    return esc(plur(n, 'groupement', 'groupements') + (R.miens ? ' dans votre secteur' : '') + ' · ' + ((!m.partiel && V2.caByPharma) ? 'chiffre d’affaires, les quatre premiers' : 'les ventes se chargent'));
+    return esc(plur(n, 'groupement', 'groupements') + (R.miens ? ' dans votre secteur' : '') + ' · ' + ((!m.partiel && V2.caByPharma) ? 'les quatre premiers par chiffre d’affaires' : 'les ventes se chargent'));
   }
 
   // ── Offilog : les trois premiers produits de la centrale (rang, marque, produit, rayon) ──
   function m1Offi() {
     var B = window.OFFILOG_BEST; if (!B || !B.length) B = _offiTop && _offiTop.top; if (!B || !B.length) return '<p class="m1-vide">Le classement Offilog se charge.</p>';
-    return '<div class="m1-plist">' + B.slice(0, 3).map(function (b, j) {
+    return '<p class="m1-sub cl1-ttl">Les trois produits les plus vendus sur Offilog, selon le classement du site</p><div class="m1-plist">' + B.slice(0, 3).map(function (b, j) {
       var nm = String(b.name || ''), k = nm.indexOf(' – '), marque = k > 0 ? nm.slice(0, k) : (b.brand || ''), reste = k > 0 ? nm.slice(k + 3) : nm;
       return '<div class="m1-prow" style="--j:' + j + '"><b class="m1-rk">' + esc(b.rank) + '</b><div><b>' + esc(titre(marque)) + '</b><span>' + esc(reste) + '</span></div>' +
-        (CATS[b.cat] ? '<span class="m1-pill m1-info">' + esc(CATS[b.cat]) + '</span>' : '') + '</div>';
+        (CATS[b.cat] ? '<span class="m1-pill m1-info">Rayon : ' + esc(CATS[b.cat]) + '</span>' : '') + '</div>';
     }).join('') + '</div>';
   }
   // 30/10/2026 — essai en production : le classement Offilog (window.OFFILOG_BEST) ne se charge qu'à l'ouverture de l'écran Offilog, donc la case restait sur
@@ -678,7 +711,7 @@
       document.body.appendChild(f);
     }, 1500);
   }
-  function m1OffiPied() { var n = offilogN() || (_offiTop ? _offiTop.n : 0); return n ? esc(fr(n) + ' références · la centrale parapharmacie') : ''; }
+  function m1OffiPied() { var n = offilogN() || (_offiTop ? _offiTop.n : 0); return n ? esc(fr(n) + ' références classées · la centrale parapharmacie') : ''; }
 
   // 30/10/2026 (v3) — les scènes animées de l'accueil d'avant reviennent, chacune dans SA case : le code des scènes est celui d'au-dessus (sceneOff, sceneInfos, sceneTodo, sceneGrp, sceneOffi), rien n'est redessiné.
   // Une scène est un bandeau SANS texte, derrière l'en-tête de la case ; la réponse de la case reste dessous. aria-hidden : c'est un décor qui porte du mouvement, pas de l'information.
@@ -745,7 +778,7 @@
   function cNeuf(k, i) {
     var t = P().outil(k);
     return '<section class="m1-c m1-p ac-in" style="--i:' + i + '" aria-label="' + esc(t.nom) + '"><div class="m1-top"><span class="m1-ico">' + P().ic(k, 20) + '</span><span class="m1-arrow">' + chev() + '</span></div>' +
-      '<div class="m1-foot"><h3><a class="m1-go"' + lien(t, k) + '><span>' + esc(t.nom) + '</span></a></h3><p>' + esc(t.ph) + '</p></div></section>';
+      '<div class="m1-foot"><h3><a class="m1-go"' + lien(t, k) + '><span>' + esc(t.nom) + '</span></a></h3><p>' + esc(cl1SansSigle(t.ph)) + '</p></div></section>';
   }
   function rang2(vis) {
     var l = NEUF.filter(function (k) { return vis.indexOf(k) >= 0 && (k !== 'tournees' || (V2.tourneesEquipe && V2.tourneesEquipe())); });   // 10/11/2026 : « Tournées » n'est posée sur l'accueil que pour l'équipe OPS (les autres l'ont dans « En développement »)
@@ -833,5 +866,5 @@
 
   // 30/10/2026 — une ligne cochée sur l'accueil reste là, rayée, jusqu'à la prochaine visite ; les compteurs se remettent à jour quand l'écriture est faite
   function coche(id, fait) { if (fait) _fait[id] = true; else delete _fait[id]; setTimeout(maj, 150); setTimeout(maj, 1200); }
-  V2.accueilCinq = { html: html, autresBloc: autresBloc, coche: coche, maj: maj, apres: apres, CINQ: CINQ, cmp: { widget: cmpWidget, donnees: cmpDonnees } };
+  V2.accueilCinq = { html: html, autresBloc: autresBloc, coche: coche, maj: maj, apres: apres, CINQ: CINQ, perVentes: cl1PerVentes, cmp: { widget: cmpWidget, donnees: cmpDonnees } };
 })();
