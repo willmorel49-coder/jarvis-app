@@ -278,3 +278,15 @@
   .olm-pan{padding:16px 14px 20px;border-radius:18px}
   .olm-bande{padding:14px 12px 16px;border-radius:16px}
 }
+
+/* ═══ 12/11/2026 · clarté, façon 1 « L'étiquette » : chaque chiffre dit ce qu'il mesure et à quelle date ═══ */
+.olm .cl1-et{margin:10px 0 0;max-width:92ch;font-size:13px;line-height:1.45;font-weight:500;color:#fff}
+.olm .cl1-lb{display:inline-block;margin-left:6px;font-size:13px;font-weight:600;letter-spacing:0;color:var(--o-gris);font-family:inherit;white-space:nowrap}
+.olm .olm-une .cl1-lb{display:block;margin:0}
+/* un montant ne s'écrit jamais en police à chasse fixe : police de l'app, chiffres tabulaires */
+.olm .mono,.olm .off-card-price,.olm .off-card-lec,.olm .off-card-pz,.olm .off-card-pub,.olm .off-card-drk,.olm .off-card-cmp,.olm .off-card-cat,.olm .off-verdict-v,.olm .off-verdict-meta b,.olm .offr-n,.olm .olm-rang-n,.olm .off-rank,.olm .off-mvt,.olm .off-count b{font-family:inherit;font-variant-numeric:tabular-nums;letter-spacing:0}
+.olm .olm-bande-t{font-size:14px;line-height:1.35}
+.olm .olm-pan-l{font-size:13px;line-height:1.4;text-transform:none;letter-spacing:0}
+.olm .off-adv-l{text-transform:none;letter-spacing:0}
+.olm .off-card-lec{white-space:normal}
+.olm .v2-seg .cnt,.olm .offsr i{font-family:inherit;font-variant-numeric:tabular-nums;letter-spacing:0}

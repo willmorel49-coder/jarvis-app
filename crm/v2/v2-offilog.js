@@ -248,6 +248,16 @@
     return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : String(d);
   }
 
+  // 12/11/2026 (clarté, façon 1) : dates écrites en français, lues dans le fichier du marché — jamais en dur.
+  function cl1Date(d) {
+    if (!d || String(d).length < 10) return '';
+    var MOIS = ['janv.', 'févr.', 'mars', 'avril', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+    return String(+String(d).slice(8, 10)).replace(/^1$/, '1er') + ' ' + (MOIS[+String(d).slice(5, 7) - 1] || '') + ' ' + String(d).slice(0, 4);
+  }
+  function cl1Releves() { var M = window.OFFILOG_MARCHE, r = (M && M.releves) || []; return { der: r.length ? r[r.length - 1] : (M && M.maj) || '', prec: r.length > 1 ? r[r.length - 2] : '' }; }
+  // Les prix d'achat Intégral sont-ils chargés ? Sans eux, un « 0 » serait une donnée absente, pas un « aucun ».
+  function cl1AchatsChargés() { return !!(window.OFFILOG_COND || (V2.offilogConditions > 0)) && !condKO(); }
+
   // ── LE MARCHÉ ───────────────────────────────────────────────
   // offilog-marche-data.js : pour chaque EAN, un rang par relevé mensuel, dans l'ordre
   // de `releves`. null = le produit n'était pas au classement ce mois-là.
@@ -552,7 +562,7 @@
     var sensSegs = sensL.map(function (x) { return seg(S.sens === x[0], "V2.offCmpSens('" + x[0] + "')", x[1], nSens[x[0]], null, ' data-cmp-sens="' + x[0] + '"'); }).join('');
     var aide = S.cmp ? 'Chaque carte montre le prix du concurrent et l\'écart avec nous, du plus gros écart (en €) au plus petit. Les prix publics sont en TTC, les prix d\'achat en HT.' : '';
     return '<div class="off-cmpbar" id="off-cmpbar">' +
-      '<div class="off-adv-l">Comparer à</div><div class="v2-segs off-adv-segs">' + srcSegs + '</div>' +
+      '<div class="off-adv-l">Comparer à (nombre de produits avec un prix)</div><div class="v2-segs off-adv-segs">' + srcSegs + '</div>' +
       '<div class="off-adv-l">Sens</div><div class="v2-segs off-adv-segs">' + sensSegs + '</div>' +
       (aide ? '<div class="off-cmpbar-note">' + esc(aide) + '</div>' : '') + '</div>';
   }
@@ -950,14 +960,14 @@
       if (it.price > 0) { pSum += it.price; pN++; }
     }
     // Tuile ALERTE (rouge) — cliquable : filtre direct sur les produits battus.
-    var alertActive = S.chip === 'alerte';
+    var alertActive = S.chip === 'alerte', nonCalc = !OPSO && !cl1AchatsChargés();   // sans prix d'achat, 0 voudrait dire « non calculé »
     var alertTile = '<button type="button" class="off-verdict off-verdict-bad' + (nAlert > 0 ? ' hot' : ' cold') + (alertActive ? ' active' : '') +
         '" onclick="V2.offFilter(\'' + (alertActive ? 'all' : 'alerte') + '\')" ' +
         'title="Produits où un prix public concurrent passe sous votre prix d\'achat IP">' +
         '<span class="off-verdict-ic">' + ICO('alert', 20, 2) + '</span>' +
         '<span class="off-verdict-txt">' +
-          '<span class="off-verdict-v mono" data-count>' + V2.fmtNum(nAlert) + '</span>' +
-          '<span class="off-verdict-l">' + (nAlert > 1 ? 'produits où un concurrent est moins cher que votre achat' : 'produit où un concurrent est moins cher que votre achat') + '</span>' +
+          '<span class="off-verdict-v mono" data-count>' + (nonCalc ? '—' : V2.fmtNum(nAlert)) + '</span>' +
+          '<span class="off-verdict-l">' + (nonCalc ? 'non calculé : nos prix d\'achat ne sont pas chargés' : (nAlert > 1 ? 'produits où un concurrent est moins cher que notre prix d\'achat' : 'produit où un concurrent est moins cher que notre prix d\'achat')) + '</span>' +
         '</span>' +
         '<span class="off-verdict-go">' + (alertActive ? 'Tout revoir' : 'Les voir') + ' ' + ICO('chev', 15, 2.2) + '</span>' +
       '</button>';
@@ -965,17 +975,17 @@
     var goodTile = '<div class="off-verdict off-verdict-ok">' +
         '<span class="off-verdict-ic">' + ICO('check', 20, 2.4) + '</span>' +
         '<span class="off-verdict-txt">' +
-          '<span class="off-verdict-v mono" data-count>' + V2.fmtNum(nGood) + '</span>' +
-          '<span class="off-verdict-l">produits où votre achat tient face aux prix publics</span>' +
+          '<span class="off-verdict-v mono" data-count>' + (nonCalc ? '—' : V2.fmtNum(nGood)) + '</span>' +
+          '<span class="off-verdict-l">' + (nonCalc ? 'non calculé : nos prix d\'achat ne sont pas chargés' : 'produits comparés où notre prix d\'achat tient face aux prix publics') + '</span>' +
         '</span>' +
       '</div>';
     // Ligne secondaire discrète : total, prix moyen, réf. croisées.
     var meta = '<div class="off-verdict-meta">' +
-        '<span><b class="mono">' + V2.fmtNum(n) + '</b> produits</span>' +
+        '<span><b class="mono">' + V2.fmtNum(n) + '</b> produits suivis</span>' +
         '<span class="off-dot">·</span>' +
         '<span>prix Offilog moyen <b class="mono">' + (pN ? V2.fmtEur(pSum / pN) : '—') + '</b></span>' +
         '<span class="off-dot">·</span>' +
-        '<span><b class="mono">' + V2.fmtNum(nMatch) + '</b> réf. comparées aux concurrents</span>' +
+        '<span><b class="mono">' + V2.fmtNum(nMatch) + '</b> produits comparés aux concurrents (prix publics au dernier relevé)</span>' +
       '</div>';
     return '<div class="off-verdict-wrap">' + alertTile + goodTile + '</div>' + meta;
   }
@@ -1034,13 +1044,13 @@
       '<div class="off-card-body">' +
         (it.brand ? '<div class="off-card-brand">' + esc(it.brand) + '</div>' : '<div class="off-card-brand">&nbsp;</div>') +
         '<div class="off-card-name">' + esc(it.name) + '</div>' +
-        '<div class="off-card-price mono">' + colleEuro((it.price > 0 ? V2.fmtEur(it.price) : '—') +
+        '<div class="off-card-price mono">' + colleEuro((it.price > 0 ? V2.fmtEur(it.price) + '<span class="cl1-lb">prix Offilog</span>' : '<span class="cl1-lb">prix Offilog non connu</span>') +
           (it.pz && it.pz.price > 0 ? '<span class="off-card-pz' + (it.pzCheaper ? ' win' : '') + '">Pharmazon ' + V2.fmtEur(it.pz.price) + '</span>' : '') +
           (it.sg && it.sg.price > 0 ? '<span class="off-card-pz' + (it.sgCheaper ? ' win' : '') + '" title="Tarif d\'achat Sagitta (HT)">Sagitta ' + V2.fmtEur(it.sg.price) + '</span>' : '') +
           (it.ocp && it.ocp.price > 0 ? '<span class="off-card-pz' + (it.ocpCheaper ? ' win' : '') + '" title="Prix net OCP, catalogue Les Incontournables (HT)">OCP ' + V2.fmtEur(it.ocp.price) + '</span>' : '') +
           (it.cerp && it.cerp.price > 0 ? '<span class="off-card-pz" title="' + esc(cerpTip(it.cerp)) + '">' + esc(cerpLabel(it.cerp)) + '</span>' : '') +
           (it.paraph && it.paraph.price > 0 ? '<span class="off-card-pz' + (it.paraphCheaper ? ' win' : '') + '" title="Net HT de la centrale Paraph, catalogue ' + (it.paraph.annee || '') + ' · prix tarif ' + V2.fmtEur(it.paraph.ppht) + ' · net HT ' + V2.fmtEur(it.paraph.price) + '">' + esc(paraphLabel(it.paraph)) + '</span>' : '') +
-          (it.leclerc > 0 ? '<span class="off-card-lec' + (it.achat > 0 && it.leclerc < it.achat ? ' bad' : '') + '" title="Prix de vente au public chez E.Leclerc (TTC)">Leclerc ' + V2.fmtEur(it.leclerc) + '</span>' : '') +
+          (it.leclerc > 0 ? '<span class="off-card-lec' + (it.achat > 0 && it.leclerc < it.achat ? ' bad' : '') + '" title="Prix de vente au public chez E.Leclerc (TTC)">prix public E.Leclerc ' + V2.fmtEur(it.leclerc) + '</span>' : '') +
           (it.drakkars > 0 ? '<span class="off-card-drk" title="Prix de vente au public chez Pharmacie des Drakkars (TTC) · relevé du ' + esc(majLabel(window.DRAKKARS_PUB_MAJ)) + '">Drakkars ' + V2.fmtEur(it.drakkars) + '</span>' : '') +
           PUBS.map(function (P) {
             return it.pub[P.k] > 0 ? '<span class="off-card-pub" style="--c:' + P.color + '" title="' + P.tip + ' · relevé du ' + esc(majLabel(window[P.g + '_MAJ'])) + '">' + P.label + ' ' + V2.fmtEur(it.pub[P.k]) + '</span>' : '';
@@ -1941,9 +1951,9 @@
     var q = S.q.length > 22 ? S.q.slice(0, 21) + '…' : S.q;
     var filtre = !!(S.q || ray || S.cmp);
     var tete = '<b>' + olmNum(n) + ' produit' + (n > 1 ? 's' : '') + (filtre ? '' : ' suivis') + '</b>' + (q ? ' pour « ' + esc(q) + ' »' : '') + (ray ? ' en ' + esc(ray) : '');
-    var a = ', ' + olmNum(nOff) + ' à votre prix d\'achat', m = ', ' + olmNum(nm) + ' marque' + (nm > 1 ? 's' : ''), c = nAl ? ' ; ' + olmNum(nAl) + ' moins cher' + (nAl > 1 ? 's' : '') + ' chez un concurrent en ligne.' : '.';
+    var a = cl1AchatsChargés() ? ', ' + olmNum(nOff) + ' dont nous connaissons le prix d\'achat' : ', prix d\'achat non chargés', m = ', ' + olmNum(nm) + ' marque' + (nm > 1 ? 's' : ''), c = nAl ? ' ; ' + olmNum(nAl) + ' moins cher' + (nAl > 1 ? 's' : '') + ' chez un concurrent en ligne.' : '.';
     var cand = [tete + a + m + c, tete + a + m + (nAl ? ' ; ' + olmNum(nAl) + ' moins cher' + (nAl > 1 ? 's' : '') + ' chez un concurrent.' : '.'), tete + a + c, tete + c];
-    for (var k = 0; k < cand.length; k++) if (olmLong(cand[k]) <= 110) return cand[k];
+    for (var k = 0; k < cand.length; k++) if (olmLong(cand[k]) <= 150) return cand[k];
     return tete + '.';
   }
   // Les quatre premières ventes montent dans le bleu : seulement « Tout », meilleures ventes, page 1, sans recherche ni comparaison.
@@ -1984,12 +1994,18 @@
         olmEssentiel(prix, id) + (rep ? '<span class="olm-reps">' + rep + '</span>' : '') + '</span></div>';
   }
   var OLM_LOGO = function () { return '<h1 class="olm-h1"><span class="olm-pastille"><img class="olm-logo" src="' + MOD_BASE + 'logos/offilog.png" width="444" height="70" alt="Offilog" decoding="async"></span></h1>'; };
+  // Étiquette du bandeau : ce que mesure chaque chiffre de la phrase, et sur quelle date.
+  function cl1Etiquette() {
+    var r = cl1Releves(), d = cl1Date(r.der);
+    return '<p class="cl1-et">Produits suivis : les meilleures ventes d\'Offilog' + (d ? ', classées d\'après les ventes de ses pharmacies clientes (relevé du ' + d + ')' : '') +
+      ' · Prix d\'achat : nos conditions chez Offilog · Concurrent moins cher : un prix public d\'un concurrent en ligne (TTC) est sous notre prix d\'achat, au dernier relevé.</p>';
+  }
   function olmEntete(list) {
     var st = brandStats();
     var med = st.pcN > 0 ? '<p class="olm-med">Médiane : <b class="olm-num">' + Math.round(st.pcMed * 100) + '</b> % sous le prix catalogue, sur ' + V2.fmtNum(st.pcN) + ' produits</p>' : '';
     return '<header class="olm-hd"><span class="olm-lu" aria-hidden="true"></span>' +
       '<div class="olm-hd-t"><div class="olm-id">' + OLM_LOGO() + '<p class="olm-eye">La centrale parapharmacie d\'Intégral</p></div>' +
-        '<p class="olm-phrase" id="olm-phrase" aria-live="polite">' + olmPhrase(list) + '</p>' + med + '</div></header>';
+        '<p class="olm-phrase" id="olm-phrase" aria-live="polite">' + olmPhrase(list) + '</p>' + cl1Etiquette() + med + '</div></header>';
   }
 
   // ── 06/11/2026 — écran d'arrivée « bandeau bleu + 3 portes » (choix de Will) ──
@@ -2248,14 +2264,14 @@
         accueilHtml = olmPortes(pageItems);
         if (S.porte === 'trouver') {
           accueilHtml += olmPan('Trouver un produit', searchHtml +
-            (haut.length ? '<div class="olm-bande"><div class="olm-bande-t">Les ' + haut.length + ' meilleures ventes</div><div class="olm-top" id="olm-top">' + haut.map(olmUne).join('') + '</div></div>' : '') +
-            '<div class="olm-pan-l">Rayon</div>' + rayons(c) +
-            (mktChips ? '<div class="olm-pan-l">Le marché</div><div class="v2-segs off-adv-segs">' + mktChips + '</div>' : '') +
-            '<div class="olm-pan-l">Trier</div><div class="off-sort olm-sort">' + sortBtn('ventes', 'Meilleures ventes') + sortBtn('mvt', 'Progression') + sortBtn('prix_asc', 'Prix ↑') + sortBtn('prix_desc', 'Prix ↓') + '</div>');
+            (haut.length ? '<div class="olm-bande"><div class="olm-bande-t">Les ' + haut.length + ' meilleures ventes' + (cl1Releves().der ? ' · classement des pharmacies clientes d\'Offilog, relevé du ' + cl1Date(cl1Releves().der) : '') + '</div><div class="olm-top" id="olm-top">' + haut.map(olmUne).join('') + '</div></div>' : '') +
+            '<div class="olm-pan-l">Choisir un rayon (nombre de produits)</div>' + rayons(c) +
+            (mktChips ? '<div class="olm-pan-l">Le marché : ' + V2.fmtNum(c.monte || 0) + ' produits dont le rang s\'améliore d\'au moins 20 % au classement' + (cl1Releves().prec ? ' depuis le relevé du ' + cl1Date(cl1Releves().prec) : '') + '</div><div class="v2-segs off-adv-segs">' + mktChips + '</div>' : '') +
+            '<div class="olm-pan-l">Trier par</div><div class="off-sort olm-sort">' + sortBtn('ventes', 'Meilleures ventes') + sortBtn('mvt', 'Plus forte hausse au classement') + sortBtn('prix_asc', 'Prix croissant') + sortBtn('prix_desc', 'Prix décroissant') + '</div>');
         } else if (S.porte === 'comparer') {
           accueilHtml += olmPan('Comparer nos prix', verdictBand(filtered) + cmpHtml +
-            (advChips ? '<div class="olm-pan-l">Repères concurrence</div><div class="v2-segs off-adv-segs">' + advChips + '</div>' : '') +
-            '<div class="olm-pan-l">Trier</div><div class="off-sort olm-sort">' + sortBtn('ecart', 'Écart concurrent') + (!SANS_PCAT && (c.avecpcat || 0) > 0 ? sortBtn('pcat', 'Plus fort écart au prix catalogue') : '') + '</div>');
+            (advChips ? '<div class="olm-pan-l">Repères concurrence (nombre de produits)</div><div class="v2-segs off-adv-segs">' + advChips + '</div>' : '') +
+            '<div class="olm-pan-l">Trier par</div><div class="off-sort olm-sort">' + sortBtn('ecart', 'Écart concurrent') + (!SANS_PCAT && (c.avecpcat || 0) > 0 ? sortBtn('pcat', 'Plus fort écart au prix catalogue') : '') + '</div>');
         }
       }
       root.innerHTML = V2.topbar({ back: true }) +         '<div class="v2-wrap' + (M1 ? ' olm' + (arr ? ' olm-ent' : '') : '') + (S.sel != null ? ' v2-detail-shift" style="--detw:392px"' : '"') + '>' +
