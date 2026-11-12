@@ -250,13 +250,18 @@
   function mkey(year, month) { return year * 12 + (month - 1); }
 
   // détecte la liste des (year,month) présents, triés croissant
+  // 12/11/2026 (lot A) : mémorisé sur la référence de la liste et sa longueur — la passe sur ~2,3 M de lignes coûtait ~0,8 s À CHAQUE appel (6 appels par affichage)
+  var AM_MEMO = { ref: null, n: -1, val: null };
   function availableMonths(sales) {
+    if (AM_MEMO.ref === sales && AM_MEMO.n === sales.length) return AM_MEMO.val.slice();
     var seen = {};
     sales.forEach(function (s) {
       if (s.month && s.year) seen[mkey(s.year, s.month)] = { year: s.year, month: s.month };
     });
-    return Object.keys(seen).map(function (k) { return seen[k]; })
+    var val = Object.keys(seen).map(function (k) { return seen[k]; })
       .sort(function (a, b) { return mkey(a.year, a.month) - mkey(b.year, b.month); });
+    AM_MEMO = { ref: sales, n: sales.length, val: val };
+    return val.slice();
   }
 
   var MN = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
