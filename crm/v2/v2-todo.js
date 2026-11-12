@@ -963,7 +963,7 @@
       // 16/10, Will : « dans la to do list, un truc relance et un truc prospects chauds ».
       var R = V2.relances, ong = R ? st.onglet : 'taches', nR = R ? R.nbARelancer() : null, nC = R ? R.nbChauds() : null;
       // Les onglets SONT les capsules à compteurs de l'en-tête bleu.
-      var onglets = R ? '<div class="td-caps" role="tablist" aria-label="Ma liste">' + [['taches', 'Tâches', ouv.length], ['relances', 'À relancer', nR], ['chauds', 'Prospects chauds', nC]].map(function (o) {
+      var onglets = R ? '<div class="td-caps" role="tablist" aria-label="Ma liste">' + [['taches', 'Tâches à faire', ouv.length], ['relances', 'Prospects à relancer', nR], ['chauds', 'Prospects chauds', nC]].map(function (o) {
         return '<button type="button" role="tab" aria-selected="' + (ong === o[0]) + '" class="td-cap' + (ong === o[0] ? ' is-on' : '') + '" onclick="V2.todo.onglet(\'' + o[0] + '\')"><span>' + o[1] + '</span>' + (o[2] != null ? '<b class="td-cnt">' + o[2] + '</b>' : '') + '</button>';
       }).join('') + '</div>' : '';
       var phrase = tdPhrase(ong, ouv, faits, nR, nC);
@@ -982,6 +982,7 @@
           (st.formOuvert ? '' : '<button class="v2-btn v2-btn-primary v2-todo-ajbtn" onclick="V2.todo.ouvrirForm()">' + ICO('plus', 16, 2) + 'Ajouter une tâche</button>') +
           '<div class="v2-card v2-todo-add' + (st.formOuvert ? '' : ' is-ferme') + '">' +
             '<div class="v2-todo-fh"><button class="v2-btn v2-btn-ghost v2-todo-fermer" onclick="V2.todo.fermerForm()">Fermer</button></div>' +
+            '<p class="td-choix-l td-choix-t">Type de tâche :</p>' +
             '<div class="v2-todo-kinds">' + ORDER.map(function (k) {
               return '<button class="v2-todo-kind' + (st.kind === k ? ' is-on' : '') + '" onclick="V2.todo.choisir(\'' + k + '\')">' + ICO(KINDS[k].ico, 15, 2) + '<span>' + esc(KINDS[k].l) + '</span></button>';
             }).join('') + '</div>' +
@@ -995,9 +996,10 @@
             '<div class="v2-todo-hint">Depuis une fiche officine, le bouton « Ajouter à la to do list » remplit l\'officine et son e-mail tout seul. ' +
               '« Répéter » : la ligne revient chaque semaine ou chaque mois à partir de la date choisie (aujourd\'hui sinon) ; la cocher la repousse à la fois suivante.</div>' +
           '</div>' +
-          '<div class="v2-todo-tools"><div class="v2-todo-seg">' +
-            '<button class="' + (st.filtre !== 'fait' ? 'is-on' : '') + '" onclick="V2.todo.filtrer(\'afaire\')">À faire · ' + ouv.length + '</button>' +
-            '<button class="' + (st.filtre === 'fait' ? 'is-on' : '') + '" onclick="V2.todo.filtrer(\'fait\')">Fait · ' + faits.length + '</button></div></div>' +
+          // 12/11/2026 — Façon 1 (lot A) : pastilles de choix précédées d'un mot, compteurs hors du libellé, ce que contient chaque choix dit en clair
+          '<div class="v2-todo-tools"><span class="td-choix-l">Afficher :</span><div class="v2-todo-seg" role="group" aria-label="Afficher les tâches">' +
+            '<button class="' + (st.filtre !== 'fait' ? 'is-on' : '') + '" aria-pressed="' + (st.filtre !== 'fait') + '" onclick="V2.todo.filtrer(\'afaire\')">Tâches à faire <b class="td-cnt-s">' + ouv.length + '</b></button>' +
+            '<button class="' + (st.filtre === 'fait' ? 'is-on' : '') + '" aria-pressed="' + (st.filtre === 'fait') + '" onclick="V2.todo.filtrer(\'fait\')">Tâches faites <b class="td-cnt-s">' + faits.length + '</b></button></div></div>' +
           (jour.length && st.filtre !== 'fait' && liste.length ? '<p class="td-suite">Ensuite</p>' : '') +
           (liste.length ? '<div class="v2-card v2-todo-list td-taches">' + liste.map(function (it) { return ligne(it); }).join('') + '</div>'
             : '<div class="v2-card v2-todo-empty">' + (st.filtre === 'fait' ? 'Rien de coché pour l\'instant.' : jour.length ? 'Rien d\'autre à faire pour l\'instant.' : 'Rien à faire pour l\'instant — la liste est vide.') + '</div>') +
@@ -1067,19 +1069,22 @@
     s.textContent = [
       '.v2-todo-add{padding:16px 18px;margin-bottom:16px}',
       '.v2-todo-kinds{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}',
-      '.v2-todo-kind{display:flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--surf-sunken,#F4F6FA);font:inherit;font-size:12.5px;font-weight:700;color:var(--ip-ink);cursor:pointer;transition:background .15s var(--ease),border-color .15s var(--ease)}',
+      '.v2-todo-kind{display:flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--surf-sunken,#F4F6FA);font:inherit;font-size:13px;font-weight:700;color:var(--ip-ink);cursor:pointer;transition:background .15s var(--ease),border-color .15s var(--ease)}',
       '.v2-todo-kind.is-on{background:var(--halo,#E9F0FF);border-color:var(--ip-blue);color:var(--ip-blue);box-shadow:0 0 0 1px var(--ip-blue) inset}',
       '.v2-todo-form{display:grid;grid-template-columns:1fr 160px 160px;gap:10px;align-items:end}',
-      '.v2-todo-form label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:var(--muted);min-width:0}',
+      '.v2-todo-form label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:700;color:var(--muted);min-width:0}',
       '.v2-todo-form input{min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:16px;background:#fff;color:var(--ip-ink);width:100%;box-sizing:border-box}',
       '.v2-todo-form select{min-height:44px;padding:8px 32px 8px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:16px;color:var(--ip-ink);width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2716%27 height=%2716%27 fill=%27none%27 stroke=%27%235B6475%27 stroke-width=%272%27%3E%3Cpath d=%27M4 6l4 4 4-4%27/%3E%3C/svg%3E") no-repeat right 10px center}',
       '.v2-todo-form input:focus,.v2-todo-form select:focus{outline:none;border-color:var(--ip-blue);box-shadow:0 0 0 3px var(--halo,#E9F0FF)}',
       '.v2-todo-wide{grid-column:1 / span 2}',
       '.v2-todo-form .v2-btn{min-height:44px;justify-content:center}',
-      '.v2-todo-hint{margin-top:10px;font-size:12.5px;color:var(--muted)}',
-      '.v2-todo-tools{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}',
+      '.v2-todo-hint{margin-top:10px;font-size:13px;color:var(--muted)}',
+      '.td-choix-l{font-size:13px;font-weight:700;color:var(--ip-ink-2);margin-right:8px}',
+      '.td-choix-t{margin:0 0 8px}',
+      '.td-cnt-s{margin-left:6px;font-variant-numeric:tabular-nums;font-weight:800}',
+      '.v2-todo-tools{display:flex;align-items:center;justify-content:flex-start;margin-bottom:12px}',
       '.v2-todo-seg{display:inline-flex;gap:2px;padding:3px;background:var(--surf-sunken,#F4F6FA);border:1px solid var(--line);border-radius:10px}',
-      '.v2-todo-seg button{border:none;background:none;min-height:38px;padding:6px 14px;border-radius:7px;font:inherit;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer}',
+      '.v2-todo-seg button{border:none;background:none;min-height:38px;padding:6px 14px;border-radius:7px;font:inherit;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer}',
       '.v2-todo-seg button.is-on{background:#fff;color:var(--ip-ink);box-shadow:0 1px 3px rgba(15,20,32,.12)}',
       '.v2-todo-list{padding:4px 0}',
       '.v2-todo-empty{padding:28px 18px;text-align:center;color:var(--muted);font-size:14px}',
@@ -1097,25 +1102,25 @@
       '.v2-todo-k{display:inline-flex;align-items:center;gap:6px;font-weight:800;color:var(--ip-ink);letter-spacing:-.01em}',
       '.v2-todo-k svg{color:var(--ip-blue)}',
       '.v2-todo-off{font-weight:600;color:var(--ip-blue);cursor:pointer;text-decoration:none}',
-      '.v2-todo-b{font-size:12px;font-weight:700;margin-left:auto}',
+      '.v2-todo-b{font-size:13px;font-weight:700;margin-left:auto}',
       '.v2-todo-n{font-size:13.5px;color:var(--muted)}',
       '.v2-todo-n-libre{font-size:14px;color:var(--ip-ink);line-height:1.45;overflow-wrap:anywhere}',
       '.v2-todo-n-in{min-height:36px;padding:6px 10px;border:1px solid transparent;border-radius:8px;font:inherit;font-size:16px;background:transparent;color:var(--ip-ink);width:100%;box-sizing:border-box}',
       '.v2-todo-n-in:hover,.v2-todo-n-in:focus{border-color:var(--line);background:#fff;outline:none}',
       '.v2-todo-acts{display:flex;flex-wrap:wrap;gap:8px}',
-      '.v2-todo-sm{min-height:40px;font-size:12.5px;padding:6px 12px}',
+      '.v2-todo-sm{min-height:40px;font-size:13px;padding:6px 12px}',
       // Cible tactile ≥44px au doigt (mobile seulement) — la souris n'a pas ce besoin.
       '@media(max-width:640px){.v2-todo-seg button{min-height:44px}.v2-todo-sm{min-height:44px;display:inline-flex;align-items:center}}',
       '.v2-todo-ov{position:fixed;inset:0;z-index:130;background:rgba(16,19,28,.5);display:flex;align-items:center;justify-content:center;padding:16px}',
       '.v2-todo-pop{background:#fff;border-radius:18px;box-shadow:0 24px 60px rgba(15,20,32,.28);width:min(420px,100%);padding:8px;display:flex;flex-direction:column;gap:4px}',
       '.v2-todo-pop-h{display:flex;align-items:center;gap:8px;padding:10px 12px 6px;font-size:14px}',
       '.v2-todo-pop-h b{font-weight:800;letter-spacing:-.01em}',
-      '.v2-todo-pop-h span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:12.5px}',
+      '.v2-todo-pop-h span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:13px}',
       '.v2-todo-x{flex:none;width:36px;height:36px;border:none;background:var(--surf-sunken,#F4F6FA);border-radius:50%;font-size:20px;line-height:1;cursor:pointer;color:var(--ip-ink)}',
       '.v2-todo-choix{display:flex;align-items:center;gap:12px;text-align:left;min-height:52px;padding:10px 12px;border:none;border-radius:12px;background:none;font:inherit;color:var(--ip-ink);cursor:pointer}',
       '.v2-todo-choix:hover,.v2-todo-choix:focus-visible{background:var(--halo,#E9F0FF);outline:none}',
       '.v2-todo-choix b{display:block;font-size:14px;font-weight:700}',
-      '.v2-todo-choix small{display:block;font-size:12px;color:var(--muted)}',
+      '.v2-todo-choix small{display:block;font-size:13px;color:var(--muted)}',
       '.v2-todo-ico{flex:none;width:36px;height:36px;border-radius:10px;background:var(--halo,#E9F0FF);color:var(--ip-blue);display:inline-flex;align-items:center;justify-content:center}',
       '.v2-todo-mh{margin:28px 0 10px}',
       '.v2-todo-mh h2{font-size:18px;font-weight:800;letter-spacing:-.02em;margin:0 0 4px;color:var(--ip-ink)}',
@@ -1126,23 +1131,23 @@
       '.v2-todo-mail summary::-webkit-details-marker{display:none}',
       '.v2-todo-mt{flex:1;min-width:0}',
       '.v2-todo-mt b{display:block;font-size:14px;font-weight:700;color:var(--ip-ink)}',
-      '.v2-todo-mt small{display:block;font-size:12.5px;color:var(--ip-ink-2)}',
+      '.v2-todo-mt small{display:block;font-size:13px;color:var(--ip-ink-2)}',
       '.v2-todo-chev{flex:none;color:var(--muted);display:inline-flex;transition:transform .2s var(--ease)}',
       '.v2-todo-mail[open] .v2-todo-chev{transform:rotate(90deg)}',
       '.v2-todo-mb{padding:0 18px 16px;display:flex;flex-direction:column;gap:10px}',
       '.v2-todo-reg{padding:12px 14px;border:1px dashed var(--line);border-radius:12px;display:flex;flex-direction:column;gap:4px}',
       '.v2-todo-reg b{font-size:13px;font-weight:800;color:var(--ip-ink)}',
-      '.v2-todo-reg span{font-size:12.5px;color:var(--ip-ink-2)}',
+      '.v2-todo-reg span{font-size:13px;color:var(--ip-ink-2)}',
       '.v2-todo-reg-f{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}',
       '.v2-todo-reg-f input{flex:1 1 160px;min-width:0;min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:16px;background:var(--card,#fff);color:var(--ip-ink)}',
       '.v2-todo-obj{font-size:14px;font-weight:700;color:var(--ip-ink)}',
-      '.v2-todo-obj span{display:block;font-size:12px;font-weight:700;color:var(--ip-ink-2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}',
+      '.v2-todo-obj span{display:block;font-size:13px;font-weight:700;color:var(--ip-ink-2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}',
       '.v2-todo-corps{margin:0;padding:14px 16px;background:var(--card-2,#F7F9FC);border:1px solid var(--line);border-radius:12px;font:inherit;font-size:14px;line-height:1.55;color:var(--ip-ink);white-space:pre-wrap;overflow-wrap:anywhere}',
       // Sous la fenêtre « Transmettre » (z-index 120), qui s'ouvre par-dessus pour choisir les fichiers
       '.v2-todo-ov-comp{z-index:110;align-items:flex-start;padding:4vh 16px;overflow-y:auto}',
       '.v2-tc{width:min(640px,100%);padding:8px 8px 12px}',
       '.v2-tc-b{display:flex;flex-direction:column;gap:12px;padding:6px 12px 4px}',
-      '.v2-tc-b label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:var(--ip-ink-2)}',
+      '.v2-tc-b label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:700;color:var(--ip-ink-2)}',
       '.v2-tc-b input,.v2-tc-b select,.v2-tc-b textarea,.v2-tc-garde input{min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:16px;font-weight:400;background:#fff;color:var(--ip-ink);width:100%;box-sizing:border-box}',
       // Le rond « + » de l'app (z-index 9400) passait par-dessus la fenêtre du mail
       'body.v2-tc-on .v2-fab{display:none}',
@@ -1150,7 +1155,7 @@
       '.v2-tc-b textarea{line-height:1.5;resize:vertical;min-height:240px}',
       '.v2-tc-b input:focus,.v2-tc-b select:focus,.v2-tc-b textarea:focus{outline:none;border-color:var(--ip-blue);box-shadow:0 0 0 3px var(--halo,#E9F0FF)}',
       '.v2-tc-docs{display:flex;flex-direction:column;gap:8px;align-items:flex-start}',
-      '.v2-tc-lab{font-size:12px;font-weight:700;color:var(--ip-ink-2)}',
+      '.v2-tc-lab{font-size:13px;font-weight:700;color:var(--ip-ink-2)}',
       '.v2-tc-chips{display:flex;flex-wrap:wrap;gap:6px}',
       '.v2-tc-doc{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:4px 4px 4px 10px;border-radius:999px;background:var(--halo,#E9F0FF);color:var(--ip-ink);font-size:13px;font-weight:600}',
       '.v2-tc-doc span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
@@ -1164,16 +1169,16 @@
       '.v2-todo-mod{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:12px 18px;border-top:1px solid var(--line)}',
       '.v2-todo-mod:first-child{border-top:none}',
       '.v2-todo-mod .v2-todo-mt{flex:1 1 200px}',
-      '.v2-todo-mien{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--halo,#E9F0FF);color:var(--ip-blue);font-size:12px;font-style:normal;font-weight:700;vertical-align:1px}',
+      '.v2-todo-mien{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--halo,#E9F0FF);color:var(--ip-blue);font-size:13px;font-style:normal;font-weight:700;vertical-align:1px}',
       '.v2-todo-mod-add{padding:12px 18px;border-top:1px solid var(--line)}',
       // Rappels qui reviennent (16/10/2026)
-      '.v2-todo-rep{display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;background:var(--halo,#E9F0FF);color:var(--ip-blue);font-size:12px;font-weight:700}',
-      '.v2-todo-der{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--ip-ink-2)}',
+      '.v2-todo-rep{display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;background:var(--halo,#E9F0FF);color:var(--ip-blue);font-size:13px;font-weight:700}',
+      '.v2-todo-der{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ip-ink-2)}',
       '.v2-todo-der svg{color:var(--c-mint)}',
       '.v2-todo-der button{border:none;background:none;padding:6px 4px;min-height:32px;font:inherit;font-weight:700;color:var(--ip-blue);cursor:pointer;text-decoration:underline}',
       '.v2-todo-rp{width:min(480px,100%);padding:8px 8px 14px}',
       '.v2-todo-rp-b{display:flex;flex-direction:column;gap:12px;padding:6px 12px 4px}',
-      '.v2-todo-rp-b>label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:var(--ip-ink-2)}',
+      '.v2-todo-rp-b>label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:700;color:var(--ip-ink-2)}',
       '.v2-todo-rp-b input[type=date]{min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:16px;background:#fff;color:var(--ip-ink);width:100%;box-sizing:border-box}',
       '.v2-todo-rp-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:3px;background:var(--surf-sunken,#F4F6FA);border:1px solid var(--line);border-radius:12px}',
       '.v2-todo-rp-seg label{position:relative;display:flex}',
@@ -1182,13 +1187,13 @@
       '.v2-todo-rp-seg input:checked+span{background:#fff;color:var(--ip-ink);box-shadow:0 1px 3px rgba(15,20,32,.12)}',
       '.v2-todo-rp-seg input:focus-visible+span{box-shadow:0 0 0 3px var(--halo,#E9F0FF)}',
       '.v2-todo-rp-p{margin:0;font-size:14px;font-weight:600;color:var(--ip-ink)}',
-      '.v2-todo-rp-n{margin:10px 12px 0;font-size:12.5px;line-height:1.45;color:var(--ip-ink-2)}',
+      '.v2-todo-rp-n{margin:10px 12px 0;font-size:13px;line-height:1.45;color:var(--ip-ink-2)}',
       '.v2-todo-mn-pop{max-height:calc(100vh - 32px);overflow-y:auto}',
       '.v2-todo-mn{padding-bottom:8px}',
       '.v2-todo-mn input[type=text]{min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:16px;background:#fff;color:var(--ip-ink);width:100%;box-sizing:border-box}',
       '.v2-todo-rp-b>label.v2-todo-mn-al{flex-direction:row;align-items:center;gap:10px;min-height:44px;font-size:14px;font-weight:600;color:var(--ip-ink);cursor:pointer}',
       '.v2-todo-mn-al input{flex:none;width:20px;height:20px;margin:0;accent-color:var(--ip-blue)}',
-      '.v2-todo-mn-k{margin:0 4px;padding:10px 8px 2px;border-top:1px solid var(--line);font-size:12px;font-weight:700;color:var(--ip-ink-2)}',
+      '.v2-todo-mn-k{margin:0 4px;padding:10px 8px 2px;border-top:1px solid var(--line);font-size:13px;font-weight:700;color:var(--ip-ink-2)}',
       // Sur téléphone, les trois boutons en pleine largeur, « Enregistrer » d'abord
       '@media(max-width:640px){.v2-todo-rp .v2-tc-f{flex-direction:column-reverse;align-items:stretch}.v2-todo-rp .v2-tc-f .v2-btn{justify-content:center}.v2-todo-rp .v2-tc-sup{margin-right:0}}',
       '@media (max-width:760px){.v2-todo-kinds{grid-template-columns:1fr 1fr}.v2-todo-form{grid-template-columns:1fr}.v2-todo-wide{grid-column:auto}.v2-todo-b{margin-left:0}}',
