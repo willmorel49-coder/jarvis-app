@@ -20,7 +20,7 @@
 .inf-m1 .inf-hd .inf-h1{display:block;margin:0;font:800 clamp(30px,8.6vw,38px)/1.04 var(--pp-sans);letter-spacing:-.03em;color:#fff}
 .inf-m1 .inf-phrase{margin:8px 0 0;max-width:60ch;font:500 16px/1.42 var(--pp-sans);color:#fff}
 .inf-m1 .inf-phrase b{font-weight:800;color:#fff}
-.inf-num{font-variant-numeric:tabular-nums}
+.inf-num{font-variant-numeric:proportional-nums}   /* 12/11/2026 : en pleine phrase, chiffres de largeur normale (le « 1 » tabulaire écartait « 18 » en « 1 8 ») */
 /* « Copier le brief » et la ligne d'édition (date de l'édition, heure, nombre de sources) */
 .inf-m1 .inf-ed{margin:8px 0 0;font:600 14px/1.4 var(--pp-sans);color:#E3ECFF}
 .inf-m1 .inf-ed b{font-weight:800;color:#fff}
@@ -147,3 +147,9 @@
   .inf-m1 .f3-c,.inf-copie,.inf-c-porte,.inf-c-l,.inf-c-rub,.inf-c-retour,.inf-c-chev{transition-duration:.01ms}
   .inf-c-porte:hover,.inf-c-porte:hover .inf-c-chev{transform:none}
 }
+
+/* ═══ Façon 1 « L'étiquette » (12/11/2026, lot A) — Infos du jour ═══
+   Chaque rubrique de « Tout le reste » dit ce que son nombre compte (ruptures, rappels : avec leur source) ; le fil n'a plus de pastille d'initiale (le nom de la source est écrit à côté). */
+.inf-c-rt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.inf-c-rt .inf-c-rl{flex:none}
+.inf-c-ru{font:500 13px/1.3 var(--pp-sans);color:var(--pp-encre2)}

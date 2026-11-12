@@ -243,7 +243,7 @@
   function sctJours(d) { try { return Math.round((new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00') - new Date(d + 'T00:00:00')) / 864e5); } catch (e) { return 9999; } }
   function sctQuand(d) {
     var n = sctJours(d);
-    return n <= 0 ? 'aujourd’hui' : n === 1 ? 'hier' : n < 7 ? 'il y a ' + n + ' j' : n < 14 ? 'il y a 1 sem.' : n < 60 ? 'il y a ' + Math.floor(n / 7) + ' sem.' : 'il y a ' + Math.floor(n / 30) + ' mois';
+    return n <= 0 ? 'aujourd’hui' : n === 1 ? 'hier' : n < 7 ? 'il y a ' + n + ' jours' : n < 14 ? 'il y a 1 semaine' : n < 60 ? 'il y a ' + Math.floor(n / 7) + ' semaines' : 'il y a ' + Math.floor(n / 30) + ' mois';
   }
   function sctDateLongue(d) { try { return new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); } catch (e) { return d; } }
   // ⚠️ le CP ne dit pas exactement le département pour la Corse et les DOM : on
@@ -1116,7 +1116,10 @@
     var rad = D.rad.ruptures, nSrc = (D.C.sources_lues || []).length || D.C.fichiers || 0;
     var n = { echeances: D.ep.length, ruptures: rad ? rad.v : null, rappels: D.rappels, concurrents: VERIFS ? VERIFS.length : null, radar: (BRIEF.radar || []).length,
       une: BRIEF.une ? 1 : null, cinq: D.cinq.length, mur: D.fil.length, archive: J.length || null, sources: nSrc || null };
-    return INF_RUB.filter(function (r) { return r[0] !== 'une' || BRIEF.une; }).map(function (r) { return { cle: r[0], lib: r[1], ico: r[2], c: r[3], n: n[r[0]] }; });   // « La une » sans sujet du jour n'ouvrirait rien
+    // 12/11/2026 — Façon 1 (lot A) : chaque compteur dit ce qu'il compte ; « ruptures » et « rappels » aussi leur source et leur période, une seule fois (ici).
+    var u = { echeances: 'échéances de prix et de règles', ruptures: rad ? rad.l + ' à la date de l’édition · Agence du médicament' : 'produits en rupture ou tension · Agence du médicament', rappels: 'rappels en cours · médicaments (Agence du médicament) et parapharmacie (Rappel Conso)',
+      concurrents: 'faits concurrents vérifiés', radar: 'repères du jour', une: '', cinq: 'infos essentielles du jour', mur: 'infos lues dans la presse professionnelle', archive: 'éditions passées', sources: 'sources lues' };
+    return INF_RUB.filter(function (r) { return r[0] !== 'une' || BRIEF.une; }).map(function (r) { return { cle: r[0], lib: r[1], ico: r[2], c: r[3], n: n[r[0]], u: u[r[0]] }; });   // « La une » sans sujet du jour n'ouvrirait rien
   }
   function infKick(c) { return 'color:color-mix(in srgb,' + c + ' 58%,#000)'; }
   /* une ligne de porte : pastille de rubrique + âge, titre, et pour une annonce du secteur la phrase « À dire en rendez-vous » (sctGeste, la même que dans la fiche) */
@@ -1128,7 +1131,7 @@
     var dire = e.bod ? '<span class="inf-c-dire"><b>À dire en rendez-vous</b> ' + esc(sctGeste(e.bod, tag)) + '</span>' : '';
     return '<li class="inf-c-li"><button type="button" class="inf-c-l" data-x13-i="' + i + '" data-info="' + esc(e.bod ? e.bod.id : x14Cle(e.t)) + '" style="--c:' + c + '">' +
       '<span class="inf-c-k" style="' + infKick(c) + '"><i aria-hidden="true"></i><span>' + esc(kick) + '</span>' + (tag === 'client' ? '<span class="x13-neuf">Votre client</span>' : '') +
-      '<em>' + esc(e.bod ? (a || 'Annonces légales') : (a ? a + ' · ' : '') + String(x13Source(e)).replace(/^Agence du médicament$/, 'ANSM')) + '</em></span>' +
+      '<em>' + esc(e.bod ? (a || 'Annonces légales') : (a ? a + ' · ' : '') + String(x13Source(e))) + '</em></span>' +
       '<span class="inf-c-lt">' + x13T(titre) + '</span>' + dire + '</button></li>';
   }
   function infPorteTete(cle, titre, sous, n, lib) {
@@ -1142,13 +1145,13 @@
     var piedSec = nSec == null ? '' : '<button type="button" class="inf-c-pied" data-ouvre="secteur"><span>' + (S.dir ? 'Voir les ' + nSec + ' annonces, la carte, changer de secteur' : 'Voir les ' + nSec + ' annonces des 3 derniers mois, et la carte') + '</span><span class="inf-c-chev" aria-hidden="true">' + infChev() + '</span></button>';
     var p1 = '<article class="inf-c-porte" data-porte="secteur">' + infPorteTete('secteur', titreSec, sousSec, nSec, 'annonces en 3\u00a0mois') +
       (sec.length ? '<ul class="inf-c-ls">' + sec.map(function (e) { return infLigne(e, i++); }).join('') + '</ul>' :
-        '<p class="inf-c-vide">Rien de neuf cette semaine dans ' + (S.deps ? 'votre secteur' : 'les officines') + '.</p>') + piedSec + '</article>';
+        '<p class="inf-c-vide">Rien de neuf ces 14 derniers jours dans ' + (S.deps ? 'votre secteur' : 'les officines') + '.</p>') + piedSec + '</article>';
     var p2 = '<article class="inf-c-porte" data-porte="france">' + infPorteTete('france', 'En France', 'Ce qui touche toutes les officines.', pris.length, pris.length > 1 ? 'infos à retenir' : 'info à retenir') +
       (pris.length ? '<ul class="inf-c-ls">' + pris.map(function (e) { return infLigne(e, i++); }).join('') + '</ul>' : '<p class="inf-c-vide">Rien de neuf en France aujourd’hui.</p>') +
       (pris.length ? '<button type="button" class="inf-c-pied" data-porte-ouvre="france"><span>Lire ' + (pris.length > 1 ? 'les ' + pris.length + ' infos' : 'l’info') + '</span><span class="inf-c-chev" aria-hidden="true">' + infChev() + '</span></button>' : '') + '</article>';
     var p3 = '<article class="inf-c-porte" data-porte="reste">' + infPorteTete('reste', 'Tout le reste', 'Les autres rubriques, une ligne chacune.', rub.length, 'rubriques') +
       '<div class="inf-c-reste">' + rub.map(function (r) {
-        return '<button type="button" class="inf-c-rub" data-ouvre="' + r.cle + '" style="--c:' + r.c + '"><span class="inf-c-ri" aria-hidden="true">' + ppIco(r.ico, 17) + '</span><span class="inf-c-rl">' + esc(r.lib) + '</span>' +
+        return '<button type="button" class="inf-c-rub" data-ouvre="' + r.cle + '" style="--c:' + r.c + '"><span class="inf-c-ri" aria-hidden="true">' + ppIco(r.ico, 17) + '</span><span class="inf-c-rt"><span class="inf-c-rl">' + esc(r.lib) + '</span>' + (r.n != null && r.u ? '<span class="inf-c-ru">' + esc(r.u) + '</span>' : '') + '</span>' +
           (r.n != null ? '<span class="inf-c-rn">' + esc(r.n) + '</span>' : '') + '<span class="inf-c-rc" aria-hidden="true">' + infChev(16) + '</span></button>';
       }).join('') + '</div></article>';
     return '<div class="inf-c-portes">' + p1 + p2 + p3 + '</div>';
@@ -1199,7 +1202,7 @@
     if (!/^\d{4}-\d{2}-\d{2}$/.test(auj)) auj = x13Jour();
     var h = ''; try { var g = new Date(BRIEF.genere); if (!isNaN(g.getTime())) h = g.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }).replace(':', ' h '); } catch (e) {}
     var jl = PP_JS[new Date(jour + 'T12:00:00').getDay()] + ' ' + ppDc(jour), duJour = jour === auj;
-    return { eye: duJour ? jl : 'Édition du ' + jl, ligne: '<b>' + (h ? 'Édition de ' + h : 'Édition du matin') + '</b>' + (duJour ? '' : ' · celle d’aujourd’hui n’est pas encore composée') + (nSrc ? ' · ' + ppPl(nSrc, 'source') : '') };
+    return { eye: duJour ? jl : 'Édition du ' + jl, ligne: '<b>' + (h ? 'Édition de ' + h : 'Édition du matin') + '</b>' + (duJour ? '' : ' · celle d’aujourd’hui n’est pas encore composée') + (nSrc ? ' · ' + ppPl(nSrc, 'source') + (nSrc > 1 ? ' lues' : ' lue') : '') };
   }
   function x13Page(D, jour, J) {
     var P = x13Pile(D), S = ppScope();
@@ -1226,9 +1229,9 @@
       if (cpt[r[0]]) fr.push('<b>' + infNum(cpt[r[0]]) + '</b> ' + (cpt[r[0]] > 1 ? r[2] : r[1]));
     });
     var lieu = S.deps ? 'votre secteur' : 'les officines';
-    var a = n ? '<b>' + infNum(n) + '</b> ' + (S.deps ? (n > 1 ? 'annonces' : 'annonce') + ' dans votre secteur' : (n > 1 ? 'annonces' : 'annonce') + ' d’officines') : 'Rien de neuf cette semaine dans ' + lieu;
-    long = fr.length ? (fr.length > 1 ? fr.slice(0, -1).join(', ') + ' et ' + fr[fr.length - 1] : fr[0]) + ' en France' : 'rien de neuf en France';
-    court = pris.length ? '<b>' + infNum(pris.length) + '</b> ' + (pris.length > 1 ? 'infos' : 'info') + ' en France' : 'rien de neuf en France';
+    var a = n ? '<b>' + infNum(n) + '</b> ' + (S.deps ? (n > 1 ? 'annonces' : 'annonce') + ' des 14 derniers jours dans votre secteur' : (n > 1 ? 'annonces' : 'annonce') + ' d’officines sur les 14 derniers jours') : 'Rien de neuf ces 14 derniers jours dans ' + lieu;
+    long = fr.length ? (fr.length > 1 ? fr.slice(0, -1).join(', ') + ' et ' + fr[fr.length - 1] : fr[0]) + ' à retenir en France' : 'rien de neuf en France';
+    court = pris.length ? '<b>' + infNum(pris.length) + '</b> ' + (pris.length > 1 ? 'infos' : 'info') + ' à retenir en France' : 'rien de neuf en France';
     var c = nFil ? '<b>' + infNum(nFil, ' data-inf-fil') + '</b> ' + (nFil > 1 ? 'infos' : 'info') + ' dans le fil' : 'le fil est vide pour l’instant';
     var f = function (x) { return a + ', ' + x + ', ' + c + '.'; };
     var s = f(long); if (s.replace(/<[^>]+>/g, '').length > 110) s = f(court);
@@ -1609,14 +1612,14 @@
   /* ── le dessin d'une carte : un <div>, avec UN bouton pour ouvrir (son ::after couvre toute la carte) et de vrais boutons cœur / « ⋮ » ── */
   function f3Carte(it, i, compact, src, garde) {
     var k = x15K(it), on = x15Garde(k);
-    var rep = x14Image({ theme: it.theme, rang: it.rang }, i, ''), nom = x15Nom(it), ini = (nom.match(/[A-Za-zÀ-ÿ0-9]/) || ['·'])[0].toUpperCase();
-    var age = x13Age(it).replace(/^il y a /, '');   // « 5 j », « 1 sem. » : tient sur la ligne de la source
+    var rep = x14Image({ theme: it.theme, rang: it.rang }, i, ''), nom = x15Nom(it).replace(/^ANSM$/, 'Agence du médicament');
+    var age = x13Age(it).replace(/^il y a /, '');   // « 5 jours », « 1 semaine » : tient sur la ligne de la source
     if (compact && /^img\/infos\/[a-z]+-\d\.webp$/.test(src)) { rep = src; src = src.replace(/\.webp$/, '-c.webp'); }   // 28/10/2026 : la vignette prend l'objet recadré en carré (-c), l'image 16:9 en secours
     var img = '<img class="f3-im" src="' + esc(src) + '" data-fb="' + esc(rep) + '" alt="" loading="lazy" decoding="async" width="' + (compact ? 240 : 1200) + '" height="' + (compact ? 240 : 675) + '" onerror="if(this.getAttribute(\'data-fb\')&&this.src.indexOf(this.getAttribute(\'data-fb\'))<0){this.src=this.getAttribute(\'data-fb\')}else{this.onerror=null}">';
     var ouv = '<button type="button" class="f3-ouv" ' + (garde ? 'data-garde-i="' + esc(k) + '"' : 'data-fil-i="' + i + '"') + '><span class="f3-t">' + x13T(x15Nom(it) === 'FSPF' && String(it.t || '').replace(/\s*[–-]?\s*20\d\d-\d{1,3}\s*$/, '') || it.t) + '</span></button>';   // FSPF : sans la référence de circulaire finale (« Rupture de quétiapine – 2026-42 ») ; titre entier s'il ne restait rien
     var coeur = compact ? '' : '<button type="button" class="f3-b f3-coeur" data-f3="coeur" aria-pressed="' + (on ? 'true' : 'false') + '" aria-label="' + (on ? 'Retirer de mes infos gardées' : 'Garder cette info') + '">' + F3_COEUR + '</button>';
     var menu = '<button type="button" class="f3-b f3-men" data-f3="menu" aria-haspopup="menu" aria-expanded="false" aria-label="Plus d’actions sur cette info">' + F3_MENU + '</button>';
-    var pied = '<div class="f3-pied"><span class="f3-ic" aria-hidden="true">' + esc(ini) + '</span><span class="f3-qui"><span class="f3-src">' + esc(nom) + (age && !compact ? '<span aria-hidden="true">\u00a0·</span>' : '') + '</span>' + (age ? '<span class="f3-age">' + esc(age) + '</span>' : '') + '</span>' +
+    var pied = '<div class="f3-pied"><span class="f3-qui"><span class="f3-src">' + esc(nom) + (age && !compact ? '<span aria-hidden="true">\u00a0·</span>' : '') + '</span>' + (age ? '<span class="f3-age">' + esc(age) + '</span>' : '') + '</span>' +
       (compact ? '<span class="f3-pc" role="img" aria-label="Info gardée"' + (on ? '' : ' hidden') + '>' + F3_COEUR + '</span>' : '') +
       '<span class="f3-act">' + coeur + menu + '</span></div>';
     return '<li class="f3-li"><div class="f3-c ' + (compact ? 'f3-pet' : 'f3-gr') + '" tabindex="-1" data-f3-k="' + esc(k) + '">' +
@@ -2009,7 +2012,6 @@
       '.f3-txt{display:flex;flex-direction:column;gap:14px;padding:16px 14px 12px 18px}',
       '.f3-t{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;font:700 20px/1.27 var(--pp-sans);letter-spacing:-.015em;color:var(--pp-encre)}',
       '.f3-pied{display:flex;align-items:center;gap:6px;min-height:44px;min-width:0;white-space:nowrap}',
-      '.f3-ic{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--pp-halo);color:var(--pp-bleu-f);font:800 12px/1 var(--pp-sans)}',
       '.f3-src{min-width:0;overflow:hidden;text-overflow:ellipsis;font:600 13.5px/1.2 var(--pp-sans);color:var(--pp-encre)}',
       '.f3-age{flex:none;font:500 13.5px/1.2 var(--pp-sans);color:#566074}',
       '.f3-age::before{content:"\\00b7";margin-right:6px}',
@@ -2051,8 +2053,6 @@
       '.f3-b:active{background:var(--pp-halo)}',
       '.f3-coeur[aria-pressed="true"]{color:var(--pp-bleu)}.f3-coeur[aria-pressed="true"] svg{fill:var(--pp-bleu)}',
       '.f3-pc{flex:none;display:grid;place-items:center;width:16px;height:16px;color:var(--pp-bleu)}.f3-pc[hidden]{display:none}.f3-pc svg{width:14px;height:14px;fill:var(--pp-bleu)}',
-      '.f3-pet .f3-ic{display:none}',
-      '@media (max-width:899px){.f3-ic{display:none}}',   /* 28/10/2026 (choix de Will) : sur téléphone, sans la pastille « Agence du médicament · hier » tient sur une ligne */
       '.f3-pet .f3-act{margin-right:-4px}',
       '.f3-pet .f3-txt{padding-right:4px}',
       '.f3-pet .f3-src{max-width:none;-webkit-line-clamp:3}',

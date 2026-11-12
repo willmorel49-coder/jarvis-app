@@ -136,7 +136,7 @@ test('la phrase du bandeau compte exactement les lignes affichées', async () =>
   const html = await rendre();
   const nSec = lignes(porte(html, 'secteur')).length, nFr = lignes(porte(html, 'france')).length;
   const phrase = texte(/<p class="inf-phrase">([\s\S]*?)<\/p>/.exec(html)[1]);
-  assert.match(phrase, new RegExp('^' + nSec + ' annonces? dans votre secteur'));
+  assert.match(phrase, new RegExp('^' + nSec + ' annonces? des 14 derniers jours dans votre secteur'));
   // la France : la somme des nombres cités avant « en France » (ou « N infos en France ») = lignes affichées
   const fr = /,\s(.*?)\sen France/.exec(phrase)[1];
   const somme = [...fr.matchAll(/(\d+)\s/g)].reduce((s, m) => s + Number(m[1]), 0);
@@ -144,7 +144,7 @@ test('la phrase du bandeau compte exactement les lignes affichées', async () =>
   // sans annonce : la phrase le dit, elle n'invente pas de nombre
   const fx = fixtures(); fx['bodacc-secteur.json'].ev = [];
   const vide = texte(/<p class="inf-phrase">([\s\S]*?)<\/p>/.exec(await rendre(fx))[1]);
-  assert.match(vide, /^Rien de neuf cette semaine dans votre secteur/);
+  assert.match(vide, /^Rien de neuf ces 14 derniers jours dans votre secteur/);
 });
 
 test('les 11 panneaux restent atteignables, chacun par une seule entrée', async () => {
@@ -156,8 +156,10 @@ test('les 11 panneaux restent atteignables, chacun par une seule entrée', async
   attendues.filter((c) => c !== 'secteur').forEach((c) => assert.ok(porte(html, 'reste').includes('data-ouvre="' + c + '"'), c + ' par la porte 3'));
   // les compteurs de la porte 3 sont ceux des données fabriquées
   const reste = texte(porte(html, 'reste'));
-  assert.match(reste, /Échéances 3/); assert.match(reste, /Les cinq 5/); assert.match(reste, /Sources 3/); assert.match(reste, /Les matins d’avant 2/);
-  assert.match(reste, /Rappels de lot 1/);
+  // 12/11/2026 — Façon 1 (lot A) : chaque rubrique écrit ce que son nombre compte entre le nom et le nombre ; mêmes nombres testés
+  const rub = (nom, n) => new RegExp(nom + ' [^\\d]*' + n + '( |$)');
+  assert.match(reste, rub('Échéances', 3)); assert.match(reste, rub('Les cinq', 5)); assert.match(reste, rub('Sources', 3)); assert.match(reste, rub('Les matins d’avant', 2));
+  assert.match(reste, rub('Rappels de lot', 1));
 });
 
 test('sans sujet « La une », la rubrique n\'est pas proposée (elle n\'ouvrirait rien)', async () => {
@@ -169,7 +171,7 @@ test('sans sujet « La une », la rubrique n\'est pas proposée (elle n\'ouvrira
 test('la date du bandeau est celle de l\'ÉDITION, dite en clair quand ce n\'est pas celle du jour', async () => {
   const dujour = await rendre(fixtures({ jour: AUJ }));
   assert.doesNotMatch(dujour, /n’est pas encore composée/);
-  assert.match(texte(/<p class="inf-ed">([\s\S]*?)<\/p>/.exec(dujour)[1]), /^Édition de \d{2} h \d{2} · 3 sources$/);
+  assert.match(texte(/<p class="inf-ed">([\s\S]*?)<\/p>/.exec(dujour)[1]), /^Édition de \d{2} h \d{2} · 3 sources lues$/);
   const veille = await rendre(fixtures({ jour: iso(-1) }));
   assert.match(texte(/<p class="inf-eye">([\s\S]*?)<\/p>/.exec(veille)[1]), /^Édition du (lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche) \d{1,2}(er)? [a-zéû]+$/);
   assert.match(texte(/<p class="inf-ed">([\s\S]*?)<\/p>/.exec(veille)[1]), /celle d’aujourd’hui n’est pas encore composée/);
