@@ -125,7 +125,7 @@
     });
     arr.forEach(function (m) { S.cluster.addLayer(m); });
     var c = document.getElementById('cm-count');
-    if (c) { c.setAttribute('data-drawn', S.cluster.getLayers().length + S.selLayer.getLayers().length); c.setAttribute('data-shown', n); c.setAttribute('data-hi', hi); c.setAttribute('data-total', (S.pts || []).length); c.textContent = n + (n > 1 ? ' sites affichés' : ' site affiché'); }
+    if (c) { c.setAttribute('data-drawn', S.cluster.getLayers().length + S.selLayer.getLayers().length); c.setAttribute('data-shown', n); c.setAttribute('data-hi', hi); c.setAttribute('data-total', (S.pts || []).length); c.textContent = n + (n > 1 ? ' sites affichés' : ' site affiché') + ' sur ' + (S.pts || []).length + ' relevés'; }
     return n;
   }
   function recolorerSel() {
@@ -246,7 +246,7 @@
   function barreHtml() {
     var nat = '<label class="v2-select" aria-label="Nature"><select id="cm-nat" onchange="V2.concFiltre(\'nature\', this.value)">' + NATURES.map(function (n) { return '<option value="' + esc(n[0]) + '"' + (S.f.nature === n[0] ? ' selected' : '') + '>' + esc(n[1]) + '</option>'; }).join('') + '</select><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></label>';
     var nNr = (S.pts || []).filter(function (p) { return !p.rep && !p.ferme; }).length, nFe = (S.pts || []).filter(function (p) { return p.ferme; }).length;
-    var tog = '<span class="cm-togs" id="cm-togs">' +
+    var tog = '<span class="cm-togs" id="cm-togs"><span class="cm-togs-l">Afficher aussi :</span>' +
       '<button type="button" class="cm-tog' + (S.f.nonrep ? ' on' : '') + '" aria-pressed="' + S.f.nonrep + '" onclick="V2.concBascule(\'nonrep\')" title="Afficher aussi les non-répartiteurs : exportateurs, dépositaires, plateformes d\'achat, groupements">Non-répartiteurs <em>' + nNr + '</em></button>' +
       '<button type="button" class="cm-tog' + (S.f.fermes ? ' on' : '') + '" aria-pressed="' + S.f.fermes + '" onclick="V2.concBascule(\'fermes\')" title="Sites fermés depuis le registre : pratique pour voir les fermetures d\'entrepôts">Sites fermés <em>' + nFe + '</em></button></span>';
     return '<div class="cm-bar"><div class="cm-rech"><div class="v2-champ">' + ICO('search', 20, 2) +
@@ -255,7 +255,7 @@
   }
   function nOuverts(fn) { return (S.pts || []).filter(function (p) { return !p.ferme && p.rep && (!fn || fn(p)); }).length; }
   function zonesHtml() {
-    return '<div class="cm-zones" role="group" aria-label="Aller à">' + ZONES.map(function (z) {
+    return '<div class="cm-zones" role="group" aria-label="Aller à"><span class="cm-togs-l">Aller à :</span>' + ZONES.map(function (z) {
       var n = (S.pts || []).filter(function (p) { return !p.ferme && p.rep && z[3](p); }).length;
       if (z[0] !== 'fr' && !n) return '';
       return '<button type="button" class="cm-zone" onclick="V2.concZone(\'' + z[0] + '\')">' + esc(z[1]) + '<em>' + n + '</em></button>';
@@ -273,7 +273,7 @@
     }).join('');
     CLES = '<span class="cm-cle"><i class="nous"></i>Intégral Pharma</span><span class="cm-cle"><i class="dec"></i>Décision officielle</span><span class="cm-cle"><i class="fer"></i>Site fermé</span>';
     var plus = tousG > 9 ? '<button type="button" class="cm-plus" onclick="V2.concLegende()">' + (S.legAll ? 'Moins' : '+ ' + (tousG - 9) + ' autres groupes') + '</button>' : '';
-    return '<div class="cm-leg" id="cm-leg"><div class="cm-chips">' + chips + plus + '</div></div>';
+    return '<div class="cm-leg" id="cm-leg"><span class="cm-leg-t">Nombre de sites par groupe, selon les filtres choisis :</span><div class="cm-chips">' + chips + plus + '</div></div>';
   }
   function basHtml() {
     var m = S.meta || {}, n = (S.pts || []).length, ns = (S.sans || []).length;
@@ -283,7 +283,9 @@
     var barre = gs.map(function (g) { return '<span style="width:' + g.pdm_num + '%;background:' + esc(g.couleur) + '" title="' + esc(S.info.aff(g)) + ' ' + g.pdm_num + ' %"></span>'; }).join('') + (autres > 0 ? '<span style="width:' + autres + '%;background:#CBD2DD" title="Autres"></span>' : '');
     var leg = gs.map(function (g) { return '<span><i style="background:' + esc(g.couleur) + '"></i>' + esc(S.info.aff(g)) + ' ' + String(g.pdm_num).replace('.', ',') + ' %</span>'; }).join('');
     var sansHtml = ns ? '<details class="cm-sans"><summary>' + ns + ' site' + (ns > 1 ? 's' : '') + ' sans coordonnées (non placés sur la carte)</summary><ul>' + S.sans.map(function (p) { var fi = fiche(p.id) || {}; return '<li><button type="button" onclick="V2.grossisteOpen(\'' + esc(p.id) + '\')">' + esc(S.info.aff(fi)) + '</button> ' + esc(p.ville || '') + ' ' + esc(p.cp || '') + '</li>'; }).join('') + '</ul></details>' : '';
-    return '<div class="cm-bas"><div class="cm-marche"><div class="cm-marche-t">Poids des groupes sur le marché</div><div class="cm-mbar">' + barre + '</div><div class="cm-mleg">' + leg + '</div></div>' +
+    return '<div class="cm-bas"><div class="cm-marche"><div class="cm-marche-t">Part de marché de chaque groupe</div>' +
+      '<p class="cm-mdef">Part du chiffre d’affaires de la répartition pharmaceutique en France, estimée d’après les enquêtes du ' + esc(String((window.GROSSISTES_DATA && window.GROSSISTES_DATA.maj) || m.maj || '').split('-').reverse().join('/')) + '. Ce n’est pas le nombre de sites : la barre entière vaut 100 %.</p>' +
+      '<div class="cm-mbar">' + barre + '</div><div class="cm-mleg">' + leg + (autres > 0 ? '<span><i style="background:#CBD2DD"></i>Autres acteurs ' + String(autres).replace('.', ',') + ' %</span>' : '') + '</div></div>' +
       '<div class="cm-faits"><b>' + nOuverts() + '</b> sites ouverts de répartiteurs · <b>' + Object.keys(acteurs).length + '</b> acteurs cartographiés · données du ' + esc(String(m.maj || '').split('-').reverse().join('/')) +
       '<span class="cm-honnete">' + (m.provisoire ? esc(m.provisoire) + '. ' : '') + 'Source : registre des entreprises, activité 46.46Z (commerce de gros de produits pharmaceutiques) ; la liste officielle de l\'ANSM n\'est pas téléchargeable.</span></div>' + sansHtml + '</div>';
   }
@@ -418,14 +420,14 @@
       '.cm-chip-m i{width:11px;height:11px;border-radius:50%;flex:none}.cm-chip-m em{font-style:normal;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}',
       '.cm-chip.on .cm-chip-m{background:var(--ip-ink);color:#fff}.cm-chip.on .cm-chip-m em{color:#fff}',
       '.cm-chip-i{display:grid;place-items:center;width:34px;color:var(--muted);border-left:1px solid var(--line)!important}.cm-chip-i:hover{color:var(--ip-blue)}',
-      '.cm-cles{position:absolute;left:12px;bottom:12px;z-index:450;display:flex;flex-wrap:wrap;gap:4px 14px;max-width:calc(100% - 90px);padding:7px 12px;border-radius:12px;background:#fff;border:1px solid var(--line);box-shadow:var(--sh-2);font-size:12px;font-weight:600;color:var(--ip-ink-2);pointer-events:none}',
+      '.cm-cles{position:absolute;left:12px;bottom:12px;z-index:450;display:flex;flex-wrap:wrap;gap:4px 14px;max-width:calc(100% - 90px);padding:7px 12px;border-radius:12px;background:#fff;border:1px solid var(--line);box-shadow:var(--sh-2);font-size:13px;font-weight:600;color:var(--ip-ink-2);pointer-events:none}',
       '.cm-cle{display:inline-flex;align-items:center;gap:6px}.cm-cle i{width:12px;height:12px;border-radius:50%;box-sizing:border-box;flex:none}',
       '.cm-cle i.nous{background:#F39A1B;border:2.5px solid #10131C}.cm-cle i.dec{background:#9AA3B5;border:3px solid #FFC400}.cm-cle i.fer{background:#fff;border:2px dotted #6B7286}',
       /* scène : la carte est le héros de l'écran, lumière d'en haut (pas d'aplat) */
       '.cm-stage{display:flex;gap:16px;align-items:stretch;min-height:520px;height:calc(100vh - 330px);max-height:780px}',
       '.cm-mapwrap{position:relative;isolation:isolate;flex:1;min-width:0;border-radius:var(--r-card);overflow:hidden;border:1px solid var(--line);box-shadow:var(--sh-3),0 -40px 80px -40px color-mix(in srgb,var(--accent,var(--ip-blue)) 24%,transparent);background:#E9EDF3}',
       '.cm-map{position:absolute;inset:0}',
-      '.cm-map .leaflet-control-attribution{font-size:12px}',
+      '.cm-map .leaflet-control-attribution{font-size:13px}',
       '.cm-volet{display:none;flex:none;width:460px;max-width:46%;border-radius:var(--r-card);background:var(--card);border:1px solid var(--line);box-shadow:var(--sh-pop);flex-direction:column;overflow:hidden}',
       '.cm-volet.on{display:flex}',
       '.cm-vtete{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 10px 10px 18px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,color-mix(in srgb,var(--accent,var(--ip-blue)) 8%,var(--card)),var(--card))}',
@@ -438,10 +440,10 @@
       '.cm-cl{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#fff;border:1.5px solid var(--ip-blue,#0050E6);color:var(--ip-blue-d,#0034A0);font:800 12px/1 var(--font,system-ui);font-variant-numeric:tabular-nums;box-shadow:0 5px 14px -6px rgba(0,52,160,.45)}',
       '.cm-tip{font:600 12.5px/1.35 var(--font,system-ui);color:#10131C;border-radius:10px;border:1px solid var(--line);box-shadow:var(--sh-2);padding:6px 9px}',
       '.cm-bas{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px;align-items:start;font-size:13px;color:var(--muted-d)}',
-      '.cm-marche-t{font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px}',
+      '.cm-marche-t{font-size:14px;font-weight:800;margin-bottom:2px}.cm-mdef{margin:0 0 8px;font-size:13px;line-height:1.45;color:var(--txt-2,#454B5C)}.cm-leg-t,.cm-togs-l{font-size:13px;font-weight:600;color:var(--txt-2,#454B5C)}.cm-togs-l{align-self:center}',
       '.cm-mbar{display:flex;height:12px;border-radius:6px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.05)}.cm-mbar span{height:100%}',
-      '.cm-mleg{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:12px;font-weight:600;color:var(--ip-ink-2)}.cm-mleg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}',
-      '.cm-faits b{color:var(--ip-ink)}.cm-honnete{display:block;margin-top:4px;font-size:12px;line-height:1.5}',
+      '.cm-mleg{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:13px;font-weight:600;color:var(--ip-ink-2)}.cm-mleg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}',
+      '.cm-faits b{color:var(--ip-ink)}.cm-honnete{display:block;margin-top:4px;font-size:13px;line-height:1.5}',
       '.cm-sans{grid-column:1/-1;font-size:13px}.cm-sans summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:700;color:var(--ip-blue)}.cm-sans ul{margin:0;padding-left:18px;line-height:1.7}.cm-sans button{border:0;background:none;padding:0;font:inherit;font-weight:700;color:var(--ip-ink);cursor:pointer;text-decoration:underline}',
       /* téléphone et tablette : la fiche est une feuille du bas, la carte reste visible au-dessus */
       '@media(max-width:1023px){',
