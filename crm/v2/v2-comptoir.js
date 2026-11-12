@@ -61,6 +61,14 @@
     if (Math.abs(n) >= 1e3) return fr(n / 1e3) + ' k€';
     return fr(n) + ' €';
   }
+  // 12/11/2026 (clarté, façon 1) : un montant écrit en entier, sans « k€ ».
+  function eurPlein(n) { return fr(Math.round(+n || 0)) + '\u00a0€'; }
+  function cl1Mois(d) {   // « janv.–oct. 2026 (10 mois) » : la période sur laquelle nos ventes sont ramenées à l'année
+    var M = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+    if (!d || !d.mois || !d.mois.length) return '';
+    var a = d.mois[0], b = d.mois[d.mois.length - 1];
+    return M[moisCal(a) - 1] + (anneeDe(a) === anneeDe(b) ? '' : ' ' + anneeDe(a)) + '–' + M[moisCal(b) - 1] + ' ' + anneeDe(b) + ' (' + d.mois.length + ' mois)';
+  }
   function numK(n) {
     n = +n || 0;
     if (Math.abs(n) >= 1e6) return fr(n / 1e6, 2) + ' M';
@@ -1744,7 +1752,7 @@
     return fr((AQ[l.cip] || []).length);
   }
   function badges(l) {
-    return (l.opp ? '<span class="cp-badge">Opportunité</span>' : '') +
+    return (l.opp ? '<span class="cp-badge" title="Opportunité : dans le top ' + fr(C.top) + ' des ventes en France, et nos ventes sont sous notre part moyenne">Opportunité</span>' : '') +
       (l.rupt ? '<span class="cp-badge cp-badge-r">Rupture ANSM</span>' : '');
   }
   function ligneTable(l, d, AQ, TD) {
@@ -1754,11 +1762,11 @@
       '<span class="cp-nom"><span class="cp-lib-l"><span class="cp-lib">' + esc(l.d) + '</span>' + badges(l) + '</span>' +
         '<span class="cp-meta">' + esc([l.labo, 'CIP ' + l.cip].filter(Boolean).join(' · ')) + '</span></span>' +
       '<span class="cp-num"><b>' + (l.prix > 0 ? eur2(l.prix) : '—') + '</b>' +
-        (l.ab != null ? '<i title=""Abandon de marge">−' + eur2(l.ab) + '</i>' : '') + '</span>' +
-      '<span class="cp-num"><b>' + numK(l.an) + '</b><i>bt/an</i></span>' +
+        (l.ab != null ? '<i title="Abandon de marge accordé par boîte">abandon de marge −' + eur2(l.ab) + '</i>' : '') + '</span>' +
+      '<span class="cp-num"><b>' + numK(l.an) + '</b><i>boîtes par an</i></span>' +
       '<span class="cp-num cp-rang">' + (l.rang ? 'n°' + fr(l.rang) : '—') + '</span>' +
       partHtml(l, d.partMoy, TD) +
-      '<span class="cp-num">' + (l.opp ? '<b>' + eurK(l.pot) + '</b><i>par an</i>' : '<span class="cp-na">—</span>') + '</span>' +
+      '<span class="cp-num">' + (l.opp ? '<b>' + eurPlein(l.pot) + '</b><i>par an</i>' : '<span class="cp-na">—</span>') + '</span>' +
       etabsCellules(l) +
       '<span class="cp-aqui">' + aQuiNb(l, AQ) + '</span>' +
       pmListe(l, d) +
@@ -1771,9 +1779,9 @@
         '<span class="cp-meta">' + esc([l.labo, 'CIP ' + l.cip].filter(Boolean).join(' · ')) + '</span></span>' +
         '<span class="cp-num"><b>' + (l.prix > 0 ? eur2(l.prix) : '—') + '</b>' +
         (l.ab != null ? '<i>Abandon ' + eur2(l.ab) + '</i>' : '') + '</span></span>' +
-      '<span class="cp-card-v"><b>' + fr(l.an) + '</b> bt/an · France <b>' + (l.rang ? 'n°' + fr(l.rang) : '—') + '</b></span>' +
+      '<span class="cp-card-v"><b>' + fr(l.an) + '</b> boîtes par an · rang en France <b>' + (l.rang ? 'n°' + fr(l.rang) : '—') + '</b></span>' +
       '<span class="cp-card-p">' + partHtml(l, d.partMoy, TD) + '</span>' +
-      (l.opp ? '<span class="cp-pill">Potentiel <b>' + eurK(l.pot) + '</b> par an</span>' : '') +
+      (l.opp ? '<span class="cp-pill">Potentiel <b>' + eurPlein(l.pot) + '</b> par an</span>' : '') +
       '<span class="cp-card-b"><span class="cp-strip">' + etabsCellules(l) + '</span>' +
         '<span class="cp-aqui">à qui : ' + aQuiNb(l, AQ) + '</span>' + boutonAdd(l.cip) + '</span>' +
       pmListe(l, d) +
@@ -1787,8 +1795,8 @@
     var TD = (C.tri === 'hausse' || C.tri === 'baisse') ? tendances() : null;
     var vis = L.slice(0, C.page * PAR_PAGE), rows = '', cards = '', i;
     for (i = 0; i < vis.length; i++) { rows += ligneTable(vis[i], d, AQ, TD); cards += carte(vis[i], d, AQ, TD); }
-    var head = '<div class="cp-head"><span class="c">Panier</span><span>Produit</span><span class="n">Prix net</span><span class="n">Ventes</span>' +
-      '<span class="n">France</span><span>Part</span><span class="n">Potentiel</span>';
+    var head = '<div class="cp-head"><span class="c">Panier</span><span>Produit</span><span class="n" title="Prix net payé par la pharmacie (tarif pour les non remboursables)">Prix net</span><span class="n" title="Nos ventes, en boîtes par an">Ventes</span>' +
+      '<span class="n" title="Rang parmi les boîtes remboursées vendues en France">France</span><span title="Notre part des ventes en France, face à notre part moyenne">Part</span><span class="n" title="Ce que nous vendrions de plus par an en rejoignant notre part moyenne">Potentiel</span>';
     for (i = 0; i < ETABS.length; i++) head += '<span class="c">' + ETABS[i] + '</span>';
     head += '<span class="c">À qui</span></div>';
     var reste = L.length - vis.length;
@@ -2413,8 +2421,8 @@
         '(Open Medic) : pas de comparaison possible.</p>';
     } else {
       ventes = '<div class="cp-vgrid">' +
-        '<div><em>Nos ventes</em><b>' + fr(l.an) + ' <small>bt/an</small></b></div>' +
-        '<div><em>À notre part moyenne</em><b>' + fr(aLaMoy) + ' <small>bt/an</small></b></div>' +
+        '<div><em>Nos ventes</em><b>' + fr(l.an) + ' <small>boîtes par an</small></b></div>' +
+        '<div><em>À notre part moyenne</em><b>' + fr(aLaMoy) + ' <small>boîtes par an</small></b></div>' +
         '<div><em>France</em><b>n°' + fr(l.rang) + '</b></div></div>' +
         (l.ecart > 0
           ? '<p class="cp-ecart">Écart : ' + fr(l.ecart) + ' boîtes par an' +
@@ -2623,6 +2631,14 @@
     d.chg = out; d.chgCle = cle;
     return out;
   }
+  // Dates des relevés derrière « Ce qui change » : lues dans les fichiers, jamais écrites en dur.
+  function srcChange(X) {
+    var t = [];
+    if (X.joDate) t.push('Journal officiel au ' + esc(dateFr(String(X.joDate).slice(0, 10))));
+    if (X.rupDate) t.push('ANSM au ' + esc(dateFr(String(X.rupDate).slice(0, 10))));
+    if (X.nvDate) t.push('nouveautés au ' + esc(dateFr(String(X.nvDate).slice(0, 10))));
+    return t.length ? 'Relevés : ' + t.join(' · ') + '.' : '';
+  }
   function nbPorte(liste, att) { return liste ? fr(liste.length) : (att ? '…' : '—'); }
 
   // ── Lignes compactes (une seule cible par ligne, 56 px de haut) ──
@@ -2635,7 +2651,7 @@
     if (!(l.stock > 0)) return 'stock à 0';
     var n = 0, k;
     if (l.etab) for (k in l.etab) if (Object.prototype.hasOwnProperty.call(l.etab, k) && l.etab[k] > 0) n++;
-    return 'en stock' + (n ? ' · ' + fr(n) + ' site' + (n > 1 ? 's' : '') : '');
+    return 'en stock' + (n ? ' · ' + fr(n) + ' sur ' + fr(ETABS.length) + ' sites' : '');
   }
   function plusHtml(reste) {
     return reste > 0 ? '<button class="cp-more" onclick="V2.comptoir.plus()">Voir ' + fr(Math.min(reste, PAR_PAGE)) + ' produits de plus <i>(' + fr(reste) + ' restants)</i></button>' : '';
@@ -2654,7 +2670,7 @@
     var vis = L.slice(0, C.page * PAR_PAGE), h = '', i;
     for (i = 0; i < vis.length; i++) {
       var l = vis[i];
-      h += ligneP(l, [l.labo, 'CIP ' + l.cip, l.rang ? 'n°' + fr(l.rang) + ' France' : ''].filter(Boolean).join(' · '), l.prix > 0 ? eur2(l.prix) : '—', stockLib(l), true);
+      h += ligneP(l, [l.labo, 'code CIP ' + l.cip, l.rang ? 'n°' + fr(l.rang) + ' en France' : ''].filter(Boolean).join(' · '), l.prix > 0 ? eur2(l.prix) : '—', (l.prix > 0 ? (l.f === 'nr' ? 'tarif' : 'prix net') + ' · ' : '') + stockLib(l), true);
     }
     return '<div class="cp-count" id="cp-count-src" data-n="' + L.length + '" data-lib="' + esc(libTrouve(L.length)) + '"></div>' +
       (L.length ? '<div class="cpd-liste">' + h + '</div>' + plusHtml(L.length - vis.length) : '<div class="cp-vide">Aucun produit ne correspond.</div>');
@@ -2692,13 +2708,13 @@
         return ligneP(x.l, [x.n.labo || x.l.labo, x.n.amm ? 'AMM ' + moisIso(x.n.amm) : ''].filter(Boolean).join(' · '), x.l.prix > 0 ? eur2(x.l.prix) : '—', stockLib(x.l), false);
       }, 'Aucune nouveauté dans notre catalogue.');
     } else {
-      corps = '<p class="cpd-lead">Baisses du prix public publiées au Journal officiel : celles à venir, et celles déjà en vigueur depuis moins de ' + JOURS_ALERTE_PRIX + ' jours' +
+      corps = '<p class="cpd-lead">Baisses du prix public publiées au Journal officiel (JO) : celles à venir, et celles déjà en vigueur depuis moins de ' + JOURS_ALERTE_PRIX + ' jours' +
         (X.joDate ? ' (relevé du ' + esc(dateFr(X.joDate)) + ')' : '') + '.</p>';
       if (!X.jo) corps += '<div class="cp-vide">' + (X.joAtt ? 'Le relevé du Journal officiel arrive…' : 'Le relevé du Journal officiel n\'est pas disponible pour le moment.') + '</div>';
       else corps += listePage(X.jo, function (x) {
         var e = x.e, pct = (e.ancienTtc > 0 && e.nouveauTtc != null) ? (e.nouveauTtc / e.ancienTtc - 1) * 100 : null;
         return ligneP(x.l, (e.aVenir ? 'À partir du ' : 'Depuis le ') + dateJour(e.dateEffet) + ' · prix public ' + (e.ancienTtc != null ? fr(e.ancienTtc, 2) + ' → ' : '') + (e.nouveauTtc != null ? eur2(e.nouveauTtc) : '—'),
-          pct != null ? '−' + fr(Math.abs(pct), 1) + ' %' : '', e.aVenir ? 'à venir' : 'en vigueur', false);
+          pct != null ? '−' + fr(Math.abs(pct), 1) + ' %' : '', 'de baisse · ' + (e.aVenir ? 'à venir' : 'en vigueur'), false);
       }, 'Aucune baisse de prix au Journal officiel dans notre catalogue.');
     }
     return '<div class="cpd-tabs" role="group" aria-label="Ce qui change">' + tabs + '</div>' + corps;
@@ -2708,9 +2724,10 @@
   function resultatsProposer(d) {
     var P = propositions(d);
     return '<p class="cpd-lead">Les produits du top ' + fr(C.top) + ' des ventes en France sur lesquels nos ventes sont sous notre part moyenne (' + fr(d.partMoy * 100, 2) + ' %). ' +
-      'Du plus grand potentiel au plus petit : le potentiel est ce que nous vendrions de plus par an en rejoignant cette part moyenne. <b>' + fr(P.length) + '</b> produit' + (P.length > 1 ? 's' : '') + '.</p>' +
+      'Du plus grand potentiel au plus petit : le potentiel est une estimation de ce que nous vendrions de plus par an en rejoignant cette part moyenne (k€ = milliers d\'euros), pas des ventes réalisées. ' +
+      'Nos ventes : réseau, ' + esc(cl1Mois(d)) + ', ramenées à l\'année ; le rang est celui des boîtes remboursées vendues en France. <b>' + fr(P.length) + '</b> produit' + (P.length > 1 ? 's' : '') + '.</p>' +
       listePage(P, function (l) {
-        return ligneP(l, [l.labo, 'n°' + fr(l.rang) + ' France', 'nos ventes ' + fr(l.an) + ' bt/an'].filter(Boolean).join(' · '), eurK(l.pot), 'par an', false);
+        return ligneP(l, [l.labo, 'n°' + fr(l.rang) + ' en France', l.an > 0 ? fr(l.an) + ' boîtes par an chez nous' : 'aucune vendue chez nous'].filter(Boolean).join(' · '), eurK(l.pot), 'par an', false);
       }, 'Aucun produit à proposer avec ces ventes.');
   }
 
@@ -2747,18 +2764,18 @@
     return '<div class="cp cpd">' +
       '<section class="cpd-head"><div class="cpd-bar" aria-hidden="true"></div><div class="cpd-in">' +
         '<div><h1 class="cpd-h1">Catalogue produits</h1><div class="cpd-sub">Prix et stock des ' + fr(e.etabs) + ' établissements</div></div>' +
-        '<div class="cpd-stats"><div class="cpd-stat"><b>' + fr(e.ref) + '</b><span>références</span></div><div class="cpd-stat"><b>' + fr(e.stock) + '</b><span>en stock</span></div>' +
-          '<div class="cpd-stat"><b>' + fr(e.etabs) + '</b><span>établissements</span></div></div></div></section>' +
+        '<div class="cpd-stats"><div class="cpd-stat"><b>' + fr(e.ref) + '</b><span>références</span><small>au catalogue Intégral</small></div><div class="cpd-stat"><b>' + fr(e.stock) + '</b><span>en stock</span><small>références, tous sites réunis</small></div>' +
+          '<div class="cpd-stat"><b>' + fr(e.etabs) + '</b><span>établissements</span><small>dont nous lisons prix et stock</small></div></div></div></section>' +
       '<div class="cpd-q"><h2>Que voulez-vous faire ?</h2><p>Trois portes. Chacune ouvre son volet ici même, rien d\'autre à lire avant.</p></div>' +
       '<div class="cpd-doors">' +
         '<button type="button" class="cpd-door" onclick="V2.comptoir.porte(\'trouver\')"><span class="cpd-ic">' + ICO('search', 24, 1.8) + '</span><span class="cpd-t">Trouver un produit</span>' +
           '<span class="cpd-s">Par nom, molécule, CIP ou laboratoire. La fiche donne le prix net, le stock et la marge.</span><span class="cpd-pv cpd-pill">' + p1 + '</span>' +
           '<span class="cpd-go">Chercher <i>' + chev + '</i></span></button>' +
         '<button type="button" class="cpd-door" onclick="V2.comptoir.porte(\'change\')"><span class="cpd-ic">' + icoPorte('down', 24) + '</span><span class="cpd-t">Ce qui change</span>' +
-          '<span class="cpd-s">Baisses de prix au Journal officiel, ruptures, nouveautés.</span><span class="cpd-pv cpd-rows cpd-rows2">' + p2 + '</span>' +
+          '<span class="cpd-s">Baisses de prix au Journal officiel (JO), produits en rupture signalés par l\'ANSM, nouveautés.</span><span class="cpd-pv cpd-rows cpd-rows2">' + p2 + '<span class="cl1-src">' + srcChange(X) + '</span></span>' +
           '<span class="cpd-go">Voir ce qui change <i>' + chev + '</i></span></button>' +
         '<button type="button" class="cpd-door" onclick="V2.comptoir.porte(\'proposer\')"><span class="cpd-ic">' + icoPorte('star', 24) + '</span><span class="cpd-t">À proposer</span>' +
-          '<span class="cpd-s">Les meilleures ventes de France sur lesquelles nous vendons moins que notre part moyenne.</span><span class="cpd-pv cpd-rows">' + p3 + '</span>' +
+          '<span class="cpd-s">Les meilleures ventes de France sur lesquelles nous vendons moins que notre part moyenne.</span><span class="cpd-pv cpd-rows">' + p3 + (P.length ? '<span class="cl1-src">Montant : ce que nous vendrions de plus par an en rejoignant notre part moyenne (estimation, k€ = milliers d\'euros) ; nos ventes ' + esc(cl1Mois(d)) + ', ramenées à l\'année.</span>' : '') + '</span>' +
           '<span class="cpd-go">Voir les produits <i>' + chev + '</i></span></button>' +
       '</div>' +
       '<div class="cpd-all"><button type="button" class="cpd-link" onclick="V2.comptoir.porte(\'tout\')">' + ICO('grid', 18, 2) + ' Parcourir tout le catalogue</button></div>' +
@@ -2803,6 +2820,10 @@
       '.cpd-go i{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--halo);color:var(--ip-blue);transition:transform .22s var(--ease);font-style:normal}',
       '.cpd-door:hover .cpd-go i{transform:translateX(3px)}',
       '.cpd-all{margin-top:18px}',
+      // 12/11/2026 clarté (façon 1) : l'étiquette sous chaque chiffre clé
+      '.cpd-stat small{display:block;margin-top:2px;font:500 13px/1.25 var(--font);color:var(--ip-ink-2)}',
+      '.cpd-rows>.cl1-src{display:block;margin-top:2px;padding:8px 0 0;border-top:1px solid var(--line-2);font:500 13px/1.4 var(--font);color:var(--cp-ink3)}',
+      '.cpd-rows>.cl1-src:empty{display:none}',
       '.cpd-link{appearance:none;-webkit-appearance:none;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 4px;margin:0;border:0;background:none;font:700 15px/1.2 var(--font);color:var(--ip-blue-d);cursor:pointer}',
       '.cpd-link:hover{text-decoration:underline}',
       // volets
