@@ -606,23 +606,23 @@
     var st = document.createElement('style'); st.id = 'g5-css';
     st.textContent =
       '.g5-body{padding:13px 18px 18px}' +
-      '.g5-lede{margin:0 0 10px;font-size:13px;color:var(--muted);line-height:1.5;max-width:96ch;font-weight:500}' +
+      '.g5-lede{margin:0 0 10px;font-size:13px;color:var(--txt-2,#454B5C);line-height:1.5;max-width:96ch;font-weight:500}' +
       /* indicateurs de service — `auto-fit` plutôt qu'un nombre de colonnes fixe : à 390 px
          les cinq blocs se replient d'eux-mêmes, sans requête de média ni débordement. */
       '.g5-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:8px;margin:0 0 12px}' +
       '.g5-kpi{border:1px solid var(--line);border-radius:11px;background:var(--card);padding:9px 11px 8px;min-width:0}' +
-      '.g5-kpi .v{display:block;font-family:var(--mono);font-size:17px;font-weight:800;line-height:1.15;color:var(--ink,#152130)}' +
-      '.g5-kpi .t{display:block;font-size:11.5px;font-weight:800;margin-top:2px}' +
-      '.g5-kpi .s{display:block;font-size:11px;color:var(--muted);font-weight:500;line-height:1.35;margin-top:1px}' +
+      '.g5-kpi .v{display:block;font-family:inherit;font-variant-numeric:tabular-nums;font-size:17px;font-weight:800;line-height:1.15;color:var(--ink,#152130)}' +
+      '.g5-kpi .t{display:block;font-size:13px;font-weight:800;margin-top:2px}' +
+      '.g5-kpi .s{display:block;font-size:13px;color:var(--txt-2,#454B5C);font-weight:500;line-height:1.35;margin-top:1px}' +
       /* case ABC×XYZ et euros à risque, dans la colonne « Réseau » */
-      '.g5-cel{display:inline-block !important;font-family:var(--mono);font-size:10.5px;font-weight:800;' +
-        'letter-spacing:.3px;border:1px solid var(--line);border-radius:6px;padding:1px 5px;margin-top:3px;color:var(--muted)}' +
-      '.g5-eur{display:block;font-size:11.5px;font-weight:800;color:#B02A37;margin-top:2px}' +
+      '.g5-cel{display:inline-block !important;font-family:inherit;font-variant-numeric:tabular-nums;font-size:10.5px;font-weight:800;' +
+        'letter-spacing:.3px;border:1px solid var(--line);border-radius:6px;padding:1px 5px;margin-top:3px;color:var(--txt-2,#454B5C)}' +
+      '.g5-eur{display:block;font-size:13px;font-weight:800;color:#B02A37;margin-top:2px}' +
       /* onglets */
       '.g5-seg{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 10px}' +
       '.g5-seg button{min-height:36px;padding:0 13px;border-radius:9px;border:1px solid var(--line);' +
-        'background:var(--card);font-size:12.5px;font-weight:800;color:var(--muted);cursor:pointer}' +
-      '.g5-seg button span{font-family:var(--mono);opacity:.75;margin-left:3px}' +
+        'background:var(--card);font-size:13px;font-weight:800;color:var(--txt-2,#454B5C);cursor:pointer}' +
+      '.g5-seg button span{font-family:inherit;font-variant-numeric:tabular-nums;opacity:.75;margin-left:3px}' +
       '.g5-seg button[aria-selected="true"]{border-color:#A8D4E0;color:#0E6F80;background:#EDF8FB}' +
       /* deux colonnes */
       '.g5-duo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,344px);gap:12px;align-items:start}' +
@@ -631,8 +631,8 @@
          et la colonne « Réseau » sortait du cadre. En `auto`, les largeurs mini suffisent. */
       '.g5-grille{width:100%;border-collapse:collapse;min-width:540px}' +
       /* ⚠️ un th sticky dans un conteneur overflow-x FLOTTE sous WebKit : on le laisse statique */
-      '.g5-grille th{position:static;background:var(--card-2,#F6F8FB);font-family:var(--mono);font-size:12px;' +
-        'letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;text-align:center;' +
+      '.g5-grille th{position:static;background:var(--card-2,#F6F8FB);font-family:inherit;font-variant-numeric:tabular-nums;font-size:13px;' +
+        'letter-spacing:.06em;text-transform:uppercase;color:var(--txt-2,#454B5C);font-weight:700;text-align:center;' +
         'padding:10px 3px;border-bottom:1px solid var(--line)}' +
       '.g5-grille th.ref{text-align:left;width:42%;min-width:150px;padding-left:12px}' +
       '.g5-grille th.res{text-align:right;padding-right:12px}' +
@@ -647,92 +647,92 @@
       '.g5-grille td.ref .d{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;'  +
         'overflow:hidden;font-size:13.5px;font-weight:800;line-height:1.3;color:var(--ip-ink)}' +
       '.g5-grille td.ref .c{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:1;' +
-        'overflow:hidden;font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:2px}' +
+        'overflow:hidden;font-family:inherit;font-variant-numeric:tabular-nums;font-size:13px;color:var(--txt-2,#454B5C);margin-top:2px}' +
       '.g5-grille td.ref .fait{display:inline-block;margin-right:5px;font-weight:800}' +
       '.g5-nolab{text-decoration:none;color:#9A5B12;font-weight:700}' +
-      '.g5-grille td.res{text-align:right;padding-right:12px;font-family:var(--mono)}' +
+      '.g5-grille td.res{text-align:right;padding-right:12px;font-family:inherit;font-variant-numeric:tabular-nums}' +
       '.g5-grille td.res b{font-size:13px;font-weight:800}' +
-      '.g5-grille td.res span{display:block;font-size:12px;color:var(--muted);font-weight:500}' +
-      '.g5-empty,.g5-wait{padding:18px 14px;color:var(--muted);font-size:13px;font-weight:500;line-height:1.5}' +
+      '.g5-grille td.res span{display:block;font-size:13px;color:var(--txt-2,#454B5C);font-weight:500}' +
+      '.g5-empty,.g5-wait{padding:18px 14px;color:var(--txt-2,#454B5C);font-size:13px;font-weight:500;line-height:1.5}' +
       /* cellule de site */
       '.g5-cell{display:block;border-radius:8px;padding:6px 2px 5px;text-align:center;min-width:40px;border:1px solid var(--line)}' +
-      '.g5-cell b{display:block;font-family:var(--mono);font-size:12.5px;font-weight:800;line-height:1}' +
+      '.g5-cell b{display:block;font-family:inherit;font-variant-numeric:tabular-nums;font-size:13px;font-weight:800;line-height:1}' +
       /* sans `nowrap`, « à sec » et « ≈ 0 j » repassaient à la ligne dans une cellule étroite
          et la hauteur des lignes doublait : vu à l'œil le 27/09/2026. */
-      '.g5-cell span{display:block;margin-top:2px;font-family:var(--mono);font-size:11.5px;white-space:nowrap}' +
+      '.g5-cell span{display:block;margin-top:2px;font-family:inherit;font-variant-numeric:tabular-nums;font-size:13px;white-space:nowrap}' +
       '.g5-cell span.est{opacity:.85}' +
       '.z-sec{background:#FDECEF;border-color:#F6C9D2;color:#B02A37}' +
       '.z-hors{background:#FDF1E3;border-color:#F3DCBC;color:#9A5B12}' +
       '.z-sous{background:#EDF4FD;border-color:#CBDCFB;color:#0043BF}' +
       '.z-ok{background:#E6F6EF;border-color:#BFE6D5;color:#0F7A52}' +
       '.z-dormant{background:#F1EDFB;border-color:#D9CEF3;color:#523A9E}' +
-      '.z-vide{background:var(--card-2,#F6F8FB);color:var(--muted)}' +
-      '.z-nc{background:repeating-linear-gradient(45deg,#E4E8EF,#E4E8EF 3px,#F2F5F9 3px,#F2F5F9 6px);color:var(--muted)}' +
-      '.z-inconnu{background:var(--card-2,#F6F8FB);border-color:var(--line);color:var(--muted)}' +
+      '.z-vide{background:var(--card-2,#F6F8FB);color:var(--txt-2,#454B5C)}' +
+      '.z-nc{background:repeating-linear-gradient(45deg,#E4E8EF,#E4E8EF 3px,#F2F5F9 3px,#F2F5F9 6px);color:var(--txt-2,#454B5C)}' +
+      '.z-inconnu{background:var(--card-2,#F6F8FB);border-color:var(--line);color:var(--txt-2,#454B5C)}' +
       '.g5-mv{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}' +
       '.g5-mv i{font-style:normal;padding:2px 8px;border-radius:999px;background:#E6F6EF;color:#0F7A52;' +
-        'font-size:12px;font-weight:700;font-family:var(--mono)}' +
-      '.g5-mv i.plus{background:var(--card-2,#F6F8FB);color:var(--muted)}' +
+        'font-size:13px;font-weight:700;font-family:inherit;font-variant-numeric:tabular-nums}' +
+      '.g5-mv i.plus{background:var(--card-2,#F6F8FB);color:var(--txt-2,#454B5C)}' +
       /* fiche */
       '.g5-fiche{border:1px solid var(--line);border-left:4px solid var(--ip-blue,#0050E6);border-radius:13px;' +
         'background:var(--card);padding:16px 17px}' +
-      '.g5-vide{color:var(--muted);font-size:13px;font-weight:500;line-height:1.55}' +
-      '.g5-labo{margin:0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:800}' +
+      '.g5-vide{color:var(--txt-2,#454B5C);font-size:13px;font-weight:500;line-height:1.55}' +
+      '.g5-labo{margin:0;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--txt-2,#454B5C);font-weight:800}' +
       '.g5-nom{margin:5px 0 0;font-size:17px;font-weight:800;letter-spacing:-.01em;color:var(--ip-ink);line-height:1.25}' +
       '.g5-tags{margin-top:8px}' +
-      '.g5-b{display:inline-block;margin:5px 5px 0 0;padding:2px 8px;border-radius:6px;font-family:var(--mono);' +
-        'font-size:12px;font-weight:700;border:1px solid var(--line);color:var(--muted);background:var(--card-2,#F6F8FB)}' +
+      '.g5-b{display:inline-block;margin:5px 5px 0 0;padding:2px 8px;border-radius:6px;font-family:inherit;font-variant-numeric:tabular-nums;' +
+        'font-size:13px;font-weight:700;border:1px solid var(--line);color:var(--txt-2,#454B5C);background:var(--card-2,#F6F8FB)}' +
       '.g5-b.r{border-color:#F3B0A0;color:#C0561A;background:#FFF1EE}' +
       '.g5-b.a{border-color:#F0C98A;color:#9A5B12;background:#FFF8EC}' +
       '.g5-b.f{border-color:#A8D4E0;color:#0E6F80;background:#EDF8FB}' +
       '.g5-geste{margin:12px 0 0;font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.15}' +
-      '.g5-pour{margin:6px 0 0;font-size:12.5px;color:var(--muted);line-height:1.5;font-weight:500}' +
+      '.g5-pour{margin:6px 0 0;font-size:13px;color:var(--txt-2,#454B5C);line-height:1.5;font-weight:500}' +
       '.g5-chif{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;padding-top:13px;border-top:1px solid var(--line)}' +
-      '.g5-chif b{display:block;font-family:var(--mono);font-size:19px;font-weight:800;letter-spacing:-.02em;line-height:1;color:var(--ip-ink)}' +
-      '.g5-chif span{display:block;margin-top:3px;font-size:12px;color:var(--muted);font-weight:500}' +
+      '.g5-chif b{display:block;font-family:inherit;font-variant-numeric:tabular-nums;font-size:19px;font-weight:800;letter-spacing:-.02em;line-height:1;color:var(--ip-ink)}' +
+      '.g5-chif span{display:block;margin-top:3px;font-size:13px;color:var(--txt-2,#454B5C);font-weight:500}' +
       '.g5-gestes{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}' +
       '.g5-btn{min-height:44px;padding:0 15px;border-radius:10px;border:1px solid var(--line);background:var(--card);' +
         'font-size:13px;font-weight:800;color:var(--ip-ink);cursor:pointer;flex:1 1 auto}' +
       '.g5-btn:hover{background:var(--card-2,#F6F8FB)}' +
       '.g5-btn.pri{border-color:#CBDCFB;background:linear-gradient(180deg,#EDF4FD,#DCE9FC);color:#0043BF}' +
       '.g5-deja{margin-top:14px;padding:13px 15px;border:1px solid var(--line);border-left:3px solid var(--c);' +
-        'border-radius:11px;background:var(--card-2,#F6F8FB);font-size:13px;color:var(--muted);font-weight:500;line-height:1.5}' +
+        'border-radius:11px;background:var(--card-2,#F6F8FB);font-size:13px;color:var(--txt-2,#454B5C);font-weight:500;line-height:1.5}' +
       '.g5-deja b{color:var(--c);font-weight:800}' +
       '.g5-deja .g5-btn{margin-top:10px;width:100%}' +
       '.g5-alerte{margin-top:10px;padding:12px 14px;border:1px solid #F0C98A;border-radius:11px;background:#FFFAF1;' +
-        'font-size:12.5px;color:#7A4708;line-height:1.5;font-weight:500}' +
+        'font-size:13px;color:#7A4708;line-height:1.5;font-weight:500}' +
       '.g5-alerte b{font-weight:800}' +
       '.g5-bloc{margin-top:16px;padding-top:13px;border-top:1px solid var(--line)}' +
-      '.g5-t{margin:0 0 9px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:800}' +
-      '.g5-sub{margin:9px 0 0;font-size:12px;color:var(--muted);line-height:1.5;font-weight:500}' +
-      '.g5-ok{margin:9px 0 0;font-size:12px;color:#0F7A52;line-height:1.5;font-weight:700}' +
+      '.g5-t{margin:0 0 9px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--txt-2,#454B5C);font-weight:800}' +
+      '.g5-sub{margin:9px 0 0;font-size:13px;color:var(--txt-2,#454B5C);line-height:1.5;font-weight:500}' +
+      '.g5-ok{margin:9px 0 0;font-size:13px;color:#0F7A52;line-height:1.5;font-weight:700}' +
       '.g5-repart .l{display:grid;grid-template-columns:40px minmax(0,1fr) 92px;gap:10px;align-items:center;' +
         'padding:6px 0;border-bottom:1px solid var(--line)}' +
       '.g5-repart .l:last-child{border-bottom:0}' +
       '.g5-repart .l.calc{grid-template-columns:minmax(0,1fr) auto}' +
       '.g5-repart .l.tot{border-top:1px solid var(--line);border-bottom:0;padding-top:9px;font-weight:800}' +
-      '.g5-repart .s{font-family:var(--mono);font-size:12px;font-weight:800;color:#0E6F80;letter-spacing:.06em}' +
+      '.g5-repart .s{font-family:inherit;font-variant-numeric:tabular-nums;font-size:13px;font-weight:800;color:#0E6F80;letter-spacing:.06em}' +
       '.g5-repart .j{display:block;height:7px;border-radius:4px;background:#E9EDF3;overflow:hidden}' +
       '.g5-repart .j i{display:block;height:100%;border-radius:4px;background:#0E7C86}' +
       '.g5-repart .j.z-sec i,.g5-repart .j.z-hors i{background:#D5573B}' +
       '.g5-repart .j.z-dormant i{background:#1E9E6A}' +
       '.g5-repart .j.z-vide i,.g5-repart .j.z-nc i{background:#C9D2DE}' +
-      '.g5-repart .n{text-align:right;font-family:var(--mono);font-size:12.5px;font-weight:800;color:var(--ip-ink)}' +
-      '.g5-repart .n em{display:block;font-style:normal;font-size:12px;color:var(--muted);font-weight:500}' +
+      '.g5-repart .n{text-align:right;font-family:inherit;font-variant-numeric:tabular-nums;font-size:13px;font-weight:800;color:var(--ip-ink)}' +
+      '.g5-repart .n em{display:block;font-style:normal;font-size:13px;color:var(--txt-2,#454B5C);font-weight:500}' +
       '.g5-repart .n em.est::before{content:"";}' +
-      '.g5-repart .n u{display:block;text-decoration:none;font-size:12px;color:#9A5B12;font-weight:700}' +
+      '.g5-repart .n u{display:block;text-decoration:none;font-size:13px;color:#9A5B12;font-weight:700}' +
       '.g5-courbe{display:flex;align-items:flex-end;gap:4px;height:88px}' +
       '.g5-courbe div{flex:1;min-width:0;background:var(--card-2,#F6F8FB);border-radius:4px 4px 0 0;position:relative}' +
       '.g5-courbe div i{position:absolute;left:0;right:0;bottom:0;display:block;border-radius:4px 4px 0 0;background:var(--ip-blue,#0050E6)}' +
       '.g5-moislab{display:flex;gap:4px;margin-top:5px}' +
-      '.g5-moislab span{flex:1;text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted)}' +
+      '.g5-moislab span{flex:1;text-align:center;font-family:inherit;font-variant-numeric:tabular-nums;font-size:13px;color:var(--txt-2,#454B5C)}' +
       /* barre du bas + « voir plus » */
       '.g5-more{display:block;width:100%;margin-top:12px;min-height:44px;padding:12px;border:1px solid var(--line);' +
         'border-radius:10px;background:var(--card-2,#F6F8FB);font-size:13px;font-weight:800;color:var(--ip-ink);cursor:pointer}' +
       '.g5-barre{margin-top:12px;padding:12px 15px;border:1px solid var(--line);border-radius:11px;' +
         'background:var(--card-2,#F6F8FB);display:flex;align-items:center;gap:12px;flex-wrap:wrap}' +
-      '.g5-barre .t{font-size:12.5px;color:var(--muted);line-height:1.45;font-weight:500;flex:1 1 320px}' +
-      '.g5-barre .t b{color:var(--ip-ink);font-family:var(--mono);font-weight:800}' +
+      '.g5-barre .t{font-size:13px;color:var(--txt-2,#454B5C);line-height:1.45;font-weight:500;flex:1 1 320px}' +
+      '.g5-barre .t b{color:var(--ip-ink);font-family:inherit;font-variant-numeric:tabular-nums;font-weight:800}' +
       '.g5-barre .g5-btn{flex:0 0 auto}' +
       /* les requêtes média viennent APRÈS les règles qu'elles corrigent : à spécificité
          égale, la dernière gagne — piège payé le 27/09/2026 */
