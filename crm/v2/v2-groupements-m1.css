@@ -88,7 +88,7 @@
 .gr-m1 .gr-liste .v2-empty{padding:28px 20px}
 .gr-m1 .gr-liste .v2-empty-d{font-size:15px;color:var(--gr-gris)}
 .gr-nom{min-width:0;font-weight:700;color:var(--ip-ink)}
-.gr-act{flex:none;display:inline-block;white-space:nowrap;padding:7px 12px;border-radius:999px;background:#E1F5EA;border:1px solid #B9E3CC;color:#0B6B3F;font:700 13px/1 var(--mono);letter-spacing:-.03em}
+.gr-act{flex:none;display:inline-block;white-space:nowrap;padding:7px 12px;border-radius:999px;background:#E1F5EA;border:1px solid #B9E3CC;color:#0B6B3F;font:700 13px/1 var(--font);font-variant-numeric:tabular-nums}
 .gr-jauge{display:block;height:8px;border-radius:999px;background:#DFE7F6;overflow:hidden}
 .gr-jauge>i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#4E8DFF,var(--gr-bleu))}
 .gr-m1 .grp-logo{width:46px;height:46px;border-radius:12px;border:1px solid var(--gr-filet);box-shadow:0 1px 2px rgba(15,20,32,.08)}
@@ -106,8 +106,8 @@
 .gr-carte:focus-visible{outline:2px solid var(--gr-bleu);outline-offset:2px}
 .gr-carte-t{display:flex;align-items:center;gap:12px;min-width:0}
 .gr-carte .gr-nom{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:16px;line-height:1.25}
-.gr-carte-b{display:flex;align-items:center;gap:12px;margin-top:auto}
-.gr-carte-b .gr-jauge{flex:1 1 auto;min-width:40px}
+.gr-carte-b{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:auto}
+.gr-carte-b .gr-jauge{flex:1 1 90px;min-width:90px}
 
 /* ═══ Le détail : en-tête bleu, puis les blocs ═══ */
 .gr-det .v2-back{background:#fff;border-color:var(--gr-filet);box-shadow:var(--gr-ombre-l);font-weight:700}
@@ -231,3 +231,14 @@
   .gr-det .v2-row{padding:10px 14px}
   .gr-det .opp-add,.gr-det .ph-rmprod{min-width:44px;min-height:44px}
 }
+
+/* ═══ Façon 1 « L'étiquette » (12/11/2026, lot A) — Groupements ═══
+   « 41 actives sur 92 officines » ; chaque jauge écrit son pourcentage ; « active » défini une seule fois sous la phrase de tête ;
+   dans le détail : la colonne de montants a son titre, plus de pastille de couleur (elle ne portait rien), plus de chasse fixe sur un montant. */
+.gr-m1 .cl1-num{font-family:inherit;font-variant-numeric:tabular-nums}
+.gr-def{margin:8px 0 0;max-width:74ch;font-size:13px;line-height:1.45;font-weight:500;color:#E3ECFF}
+.gr-pc{flex:none;font-size:13px;font-weight:700;color:var(--gr-gris)}
+.gr-leg{margin:0;padding:10px 20px;font-size:13px;line-height:1.4;color:var(--gr-gris);border-bottom:1px solid #E6ECF7}
+.gr-det .v2-row-val.cl1-num{font-weight:700}
+.gr-det .v2-table td.mono{font-size:13px!important}
+@media (max-width:760px){.gr-leg{padding:10px 14px}}

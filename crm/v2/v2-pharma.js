@@ -5066,8 +5066,9 @@
   function grNum(n) { return '<span class="gr-num">' + V2.fmtNum(n) + '</span>'; }
   function grPct(g) { return g.nb ? Math.round(g.active / g.nb * 100) : 0; }
   function grOuvre(g) { return 'V2.pharmaGroup(\'' + encodeURIComponent(g.name).replace(/'/g, '%27') + '\')'; }
-  function grAct(g) { return '<span class="gr-act">' + g.active + ' / ' + g.nb + ' actives</span>'; }
-  function grJauge(g) { var p = grPct(g); return '<i class="gr-jauge" role="img" aria-label="' + p + ' % des officines actives"><i style="width:' + p + '%"></i></i>'; }
+  // 12/11/2026 — Façon 1 (lot A) : « 41 / 92 actives » ne disait ni ce qu'est une active ni sur combien : « 41 actives sur 92 officines » ; la jauge écrit son pourcentage.
+  function grAct(g) { return '<span class="gr-act"><span class="cl1-num">' + g.active + '</span> actives sur ' + g.nb + ' officine' + (g.nb > 1 ? 's' : '') + '</span>'; }
+  function grJauge(g) { var p = grPct(g); return '<i class="gr-jauge" role="img" aria-label="' + p + ' % des officines actives"><i style="width:' + p + '%"></i></i><span class="gr-pc cl1-num">' + p + ' %</span>'; }
   function grSans(g) { return g.name.charAt(0) === '—'; }
   // Une phrase, 110 caractères au plus, faite des nombres que la page montre plus bas (jamais un chiffre d'affaires).
   function grPhrase(list) {
@@ -5086,7 +5087,7 @@
   function grUne(g) {
     var p = grPct(g);
     return '<a class="gr-une" onclick="' + grOuvre(g) + '"><span class="gr-une-t">' + grpLogo(g.name, true) +
-      '<span class="gr-ring"><svg viewBox="0 0 60 60" aria-hidden="true"><circle class="gr-ring-f" cx="30" cy="30" r="25"/><circle class="gr-ring-v" cx="30" cy="30" r="25" pathLength="100" style="--p:' + p + '"/></svg><b><span class="gr-num">' + p + '</span> %</b></span></span>' +
+      '<span class="gr-ring" role="img" aria-label="' + p + ' % des officines de ce groupement sont actives"><svg viewBox="0 0 60 60" aria-hidden="true"><circle class="gr-ring-f" cx="30" cy="30" r="25"/><circle class="gr-ring-v" cx="30" cy="30" r="25" pathLength="100" style="--p:' + p + '"/></svg><b><span class="gr-num">' + p + '</span> %</b></span></span>' +
       '<span class="gr-nom">' + esc(g.name) + '</span>' + grAct(g) + '</a>';
   }
   function grCarte(g) { return '<a class="gr-carte" onclick="' + grOuvre(g) + '"><span class="gr-carte-t">' + grpLogo(g.name) + '<span class="gr-nom">' + esc(g.name) + '</span></span><span class="gr-carte-b">' + grAct(g) + grJauge(g) + '</span></a>'; }
@@ -5259,7 +5260,7 @@
     var empty = grpListSearch
       ? '<div class="v2-empty"><div class="v2-empty-d">Aucun groupement ne correspond à « ' + esc(grpListSearch) + ' ».</div></div>'
       : '<div class="v2-empty"><div class="v2-empty-d">Aucun groupement.</div></div>';
-    return '<p class="v2-grp-count gr-n mono">' + n + ' groupement' + (n > 1 ? 's' : '') +
+    return '<p class="v2-grp-count gr-n cl1-num">' + n + ' groupement' + (n > 1 ? 's' : '') +
         (haut.length ? '<span class="gr-n-s">dont les ' + haut.length + ' plus actifs, en haut de page</span>' : '') +
       '</p>' + (rows ? '<div class="gr-cartes">' + rows + '</div>' : empty);
   }
@@ -5284,7 +5285,8 @@
       '<div class="v2-wrap v2-u gr-m1 gr-bandeau' + (arr ? ' gr-ent' : '') + '" id="gr-m1">' +
         '<header class="gr-hd"><span class="gr-lu" aria-hidden="true"></span>' +
           '<div class="gr-hd-t"><p class="gr-eye">Mes officines · vue d\'équipe</p><h1 class="gr-h1">Groupements</h1>' +
-            '<p class="gr-phrase" id="gr-phrase" aria-live="polite">' + grPhrase(list) + '</p></div>' +
+            '<p class="gr-phrase" id="gr-phrase" aria-live="polite">' + grPhrase(list) + '</p>' +
+            '<p class="gr-def">Active : a commandé au moins une fois ' + (cl1PerVDe() || 'sur la période chargée') + ' (toute la période, pas le dernier mois). Chaque pourcentage est la part des officines du groupement qui sont actives.</p></div>' +
           '<div class="gr-caps">' + pharmaTabs('groupements', 'gr-tabs') + '</div>' +
           '<div class="gr-top" id="gr-top"' + (haut.length ? '' : ' hidden') + '>' + haut.map(grUne).join('') + '</div>' +
         '</header>' +
@@ -5320,7 +5322,7 @@
         '<span class="v2-cat-accent" style="background:' + c.color + '"></span>' +
         '<div class="v2-cat-titles"><div class="v2-cat-t">' + c.label +
           (c.sub ? '<span class="v2-cat-sub">' + c.sub + '</span>' : '') + '</div>' +
-          '<div class="v2-cat-meta mono">' + o.rows.length + ' produits</div></div>' +
+          '<div class="v2-cat-meta cl1-num">' + o.rows.length + ' produits</div></div>' +
         '<span class="v2-cat-chev' + (collapsed ? '' : ' open') + '">' + ICO('chev', 18) + '</span>' +
       '</div>';
     if (collapsed) return '<div class="v2-card v2-cat">' + head + '</div>';
@@ -5331,7 +5333,7 @@
       return '<tr>' +
         '<td class="num" style="color:var(--muted-2);width:30px;text-align:right;font-family:var(--mono)">' + (i + 1) + '</td>' +
         '<td><span class="v2-cat-prod">' + esc(r.designation) + '</span>' + (r.froid ? ' <span class="ph-froid">FROID</span>' : '') + (r.manual ? ' <span class="ph-manual">ajouté</span>' : '') + '</td>' +
-        '<td class="mono" style="color:var(--muted);font-size:12px">' + esc(r.cip) + '</td>' +
+        '<td class="mono" style="color:var(--muted);font-size:13px">' + esc(r.cip) + '</td>' +
         '<td class="num cat-ip" style="color:var(--ip-blue);font-weight:700">' + (r.prix_ip > 0 ? V2.fmtEur(r.prix_ip) + (r.offre ? ' <span class="ph-offre">offre</span>' : '') : '—') + '</td>' +
         '<td class="num" style="color:var(--c-mint);font-weight:700">' + (r.remise > 0 ? r.remise + '%' : '—') + '</td>' +
         '<td class="num" style="font-weight:800;white-space:nowrap" title="' + r.sortie + ' pharmacies sur ' + panel + '">' + partTxt(r, panel) + '</td>' +
@@ -5340,8 +5342,8 @@
       '</tr>';
     }).join('');
     var body = '<div class="v2-cat-table-wrap"><table class="v2-table">' +
-      '<thead><tr><th class="num">#</th><th>Produit</th><th>CIP</th><th class="num">Prix net</th><th class="num" title="Abandon de marge">Abandon</th>' +
-      '<th class="num">% des pharmacies</th><th></th>' + (enc ? '<th></th>' : '') + '</tr></thead><tbody>' + trs + '</tbody></table></div>';
+      '<thead><tr><th class="num">#</th><th>Produit</th><th>CIP</th><th class="num">Prix net</th><th class="num" title="Abandon de marge">Abandon de marge</th>' +
+      '<th class="num">Part des officines qui le commandent</th><th></th>' + (enc ? '<th></th>' : '') + '</tr></thead><tbody>' + trs + '</tbody></table></div>';
     return '<div class="v2-card v2-cat open">' + head + body + '</div>';
   }
 
@@ -5365,16 +5367,16 @@
     }).sort(function (a, b) { return (b.active - a.active) || (b.ca - a.ca); });
     var memRows = members.map(function (m) {
       return '<a class="v2-row" onclick="V2.go(\'pharma\',\'' + esc(String(m.p.id)) + '\')">' +
-        '<span class="v2-row-dot" style="background:' + esc(m.p.color || 'var(--c-cat)') + '"></span>' +
         '<span class="v2-row-name">' + esc(m.p.name) + (m.p.ville ? ' <span style="color:var(--muted);font-weight:500">· ' + esc(m.p.ville) + '</span>' : '') + '</span>' +
-        (m.active ? (m.voit ? '<span class="v2-row-val mono">' + V2.fmtEur(m.ca) + '</span>' : '<span class="v2-row-meta">cliente</span>') : '<span class="v2-row-meta">non cliente</span>') +
+        (m.active ? (m.voit ? '<span class="v2-row-val cl1-num">' + V2.fmtEur(m.ca) + '</span>' : '<span class="v2-row-meta">a commandé</span>') : '<span class="v2-row-meta">n’a pas commandé</span>') +
         '<span class="v2-row-chev">' + ICO('chev', 16) + '</span>' +
       '</a>';
     }).join('');
     var membersCard =
       '<div class="v2-card" id="gr-membres" style="margin-bottom:22px">' +
         '<div class="v2-card-head"><div class="v2-card-t">' + ICO('pharma', 17) + 'Pharmacies du groupement</div>' +
-          '<span class="v2-card-link" style="cursor:default;color:var(--muted)">' + members.length + ' · ' + data.panel + ' cliente' + (data.panel > 1 ? 's' : '') + '</span></div>' +
+          '<span class="v2-card-link" style="cursor:default;color:var(--muted)">' + members.length + ' officine' + (members.length > 1 ? 's' : '') + ' dont ' + data.panel + ' active' + (data.panel > 1 ? 's' : '') + '</span></div>' +
+        (memRows ? '<p class="gr-leg">Montant à droite : chiffre d’affaires net hors taxes de chaque officine ' + (cl1PerVDe() || 'sur la période chargée') + '. Classées des actives aux non actives, puis par chiffre d’affaires.</p>' : '') +
         (memRows || '<div class="v2-empty"><div class="v2-empty-d">Aucune pharmacie de ce groupement dans vos données.</div></div>') +
       '</div>';
     var catsHtml = data.cats.length
@@ -5385,16 +5387,16 @@
     var uG = encodeURIComponent(grpName).replace(/'/g, '%27'), nPh = data.panel;
     var hero = '<header class="gr-hd gr-hd-d"><span class="gr-lu" aria-hidden="true"></span>' +
       '<div class="gr-id"><span class="gr-pastille">' + grpLogo(grpName, true) + '</span><div class="gr-hd-t"><p class="gr-eye">Groupement</p><h1 class="gr-h1">' + esc(grpName) + '</h1>' +
-        '<p class="gr-phrase">' + grNum(nPh) + ' pharmacie' + (nPh > 1 ? 's' : '') + ' active' + (nPh > 1 ? 's' : '') + ' · ' + grNum(total) + ' produits commandés · ' + periodLabel() + '</p></div></div>' +
+        '<p class="gr-phrase">' + grNum(nPh) + ' officine' + (nPh > 1 ? 's' : '') + ' active' + (nPh > 1 ? 's' : '') + ' sur ' + grNum(members.length) + ' (au moins une commande ' + (cl1PerVDe() || 'sur la période chargée') + ') · ' + grNum(total) + ' produits différents commandés' + (/incomplet/.test(periodLabel()) ? ' · ' + periodLabel().replace(/^.*?(\()/, '$1').replace(/^\((.*)\)$/, '$1') + ' ; chiffres à lire avec prudence' : '') + '</p></div></div>' +
       '<div class="gr-acts">' +
         '<button id="v2-opp-pdf" class="v2-btn v2-btn-primary" onclick="V2.grpDownloadPdf(\'' + uG + '\')">' +
-          ICO('download', 17) + (selCips && selCips.size ? 'Liste · ' + selCips.size + ' produit' + (selCips.size > 1 ? 's' : '') : 'Liste d\'achats (PDF)') + '</button>' +
-        '<button class="v2-btn v2-btn-ghost" onclick="V2.grpDownloadXlsx(\'' + uG + '\')">' + ICO('download', 16) + 'Excel</button>' +
-        (V2.canShareFiles && V2.canShareFiles() ? '<button class="v2-btn v2-btn-ghost" onclick="V2.grpDownloadPdf(\'' + uG + '\',\'share\')">' + ICO('spark', 16) + 'Partager</button>' : '') +
+          ICO('download', 17) + 'Télécharger la liste d\'achats (PDF)' + (selCips && selCips.size ? ' <span class="cl1-bc">' + selCips.size + ' produit' + (selCips.size > 1 ? 's' : '') + ' choisi' + (selCips.size > 1 ? 's' : '') + '</span>' : '') + '</button>' +
+        '<button class="v2-btn v2-btn-ghost" onclick="V2.grpDownloadXlsx(\'' + uG + '\')">' + ICO('download', 16) + 'Télécharger en Excel</button>' +
+        (V2.canShareFiles && V2.canShareFiles() ? '<button class="v2-btn v2-btn-ghost" onclick="V2.grpDownloadPdf(\'' + uG + '\',\'share\')">' + ICO('spark', 16) + 'Partager la liste</button>' : '') +
       '</div>' +
       '<nav class="gr-caps" aria-label="Sections de la page">' +
-        '<button type="button" class="gr-cap" onclick="V2.grAller(\'gr-membres\')">Pharmacies du groupement <span class="gr-cnt">' + members.length + '</span></button>' +
-        '<button type="button" class="gr-cap" onclick="V2.grAller(\'gr-achats\')">Liste d\'achats idéale <span class="gr-cnt">' + total + '</span></button>' +
+        '<button type="button" class="gr-cap" onclick="V2.grAller(\'gr-membres\')">Voir les pharmacies du groupement <span class="gr-cnt">' + members.length + '</span></button>' +
+        '<button type="button" class="gr-cap" onclick="V2.grAller(\'gr-achats\')">Voir la liste d\'achats idéale <span class="gr-cnt">' + total + '</span></button>' +
       '</nav></header>';
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
       '<div class="v2-wrap ph-detail gr-m1 gr-det' + (arr ? ' gr-ent' : '') + '" id="gr-m1" style="--accent:var(--pil-opp)">' +
@@ -5403,7 +5405,7 @@
         membersCard +
         (V2.profil ? V2.profil.section('groupement', grpName) : '') +
         (V2.notes ? V2.notes.section('groupement', grpName) : '') +
-        '<span id="gr-achats" class="gr-ancre"></span>' + sectionHead('Liste d\'achats idéale', 'produits triés par nombre de pharmacies qui les commandent (Sortie)') +
+        '<span id="gr-achats" class="gr-ancre"></span>' + sectionHead('Liste d\'achats idéale', 'les produits commandés par les officines de ce groupement, du plus commandé au moins commandé ; « Part des officines » = combien d’officines actives le commandent') +
         prodToolbar(data.ovKey) +
         catsHtml +
       '</div>' +
