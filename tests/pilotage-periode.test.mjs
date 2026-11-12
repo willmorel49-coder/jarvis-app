@@ -67,7 +67,10 @@ function rendre() {
   V2.pages.pilotage.render(root);
   return { html: root.innerHTML, seg: (p) => segs.find((b) => b.dataset.p === p), sel: (b) => sels.find((x) => x.dataset.b === b) };
 }
-const heros = (h) => (h.match(/pilo-hero-v mono" data-count>([^<]*)</) || [])[1];
+// 12/11/2026 — le grand chiffre se lit là où il est affiché (carte du haut, « pa-hbig »), plus dans « Voir tout le détail » (redite retirée).
+// Même valeur testée ; espaces insécables et fines normalisés des deux côtés.
+const sp = (t) => String(t).replace(/\s/g, ' ');
+const heros = (h) => { const m = h.match(/pa-hbig"><span class="pa-n">([^<]*)<\/span><span class="pa-u">([^<]*)</); return m ? sp(m[1] + ' ' + m[2]) : undefined; };
 const bloc = (h, debut, fin) => { const i = h.indexOf(debut); return i < 0 ? '' : h.slice(i, fin ? h.indexOf(fin, i + debut.length) : undefined); };
 const mk = (m) => 2026 * 12 + (m - 1);
 const carte = (h) => bloc(h, 'Pharmacies en baisse', 'data-reveal');
@@ -76,7 +79,7 @@ let carteDernierMois = '';
 
 test('« Dernier mois » : juin seul (8 805 €)', () => {
   const h = rendre().html;
-  assert.equal(heros(h), V2.fmtEur(8805));
+  assert.equal(heros(h), sp(V2.fmtEur(8805)));
   carteDernierMois = carte(h);
   assert.ok(carteDernierMois.includes(SANS_COMPARAISON), '4 mois de ventes : pas de liste — ' + carteDernierMois.slice(0, 200));
 });
@@ -85,12 +88,12 @@ test('« Choisir » avril → mai : chiffres, mois par mois et graphe suivent ; 
   const r = rendre();
   r.seg('custom').onclick();                          // part de juin
   let r2 = rendre();
-  assert.equal(heros(r2.html), V2.fmtEur(8805), '« Choisir » reprend la période affichée');
+  assert.equal(heros(r2.html), sp(V2.fmtEur(8805)), '« Choisir » reprend la période affichée');
   assert.ok(r2.html.includes('pilo-persel'), 'les listes Du / Au sont affichées');
   r2.sel('du').value = String(mk(4)); r2.sel('du').onchange();
   const r3 = rendre(); r3.sel('au').value = String(mk(5)); r3.sel('au').onchange();
   const h = rendre().html;
-  assert.equal(heros(h), V2.fmtEur(2000 + 4000 + 200 + 400 + 600 + 5), 'CA avril + mai');
+  assert.equal(heros(h), sp(V2.fmtEur(2000 + 4000 + 200 + 400 + 600 + 5)), 'CA avril + mai');
   assert.ok(h.includes('Avr. → mai 2026'), 'libellé de période');
   // Mois par mois : seulement avril et mai
   const mpm = bloc(h, 'Mois par mois', 'pilo-disc');
@@ -110,7 +113,7 @@ test('un mois isolé sans mois précédent : aucune comparaison inventée', () =
   const r = rendre(); r.sel('du').value = String(mk(3)); r.sel('du').onchange();
   const r2 = rendre(); r2.sel('au').value = String(mk(3)); r2.sel('au').onchange();
   const h = rendre().html;
-  assert.equal(heros(h), V2.fmtEur(1800), 'mars seul');
+  assert.equal(heros(h), sp(V2.fmtEur(1800)), 'mars seul');
   assert.ok(carte(h).includes(SANS_COMPARAISON), 'le dit en clair');
   assert.ok(!/v2-row-name/.test(carte(h)), 'aucune ligne dans la carte');
 });
@@ -118,6 +121,6 @@ test('un mois isolé sans mois précédent : aucune comparaison inventée', () =
 test('« 3 mois » : avril → juin, et on revient bien aux boutons rapides', () => {
   rendre().seg('3m').onclick();
   const h = rendre().html;
-  assert.equal(heros(h), V2.fmtEur(2000 + 4000 + 8000 + 200 + 400 + 800 + 600 + 5 + 5));
+  assert.equal(heros(h), sp(V2.fmtEur(2000 + 4000 + 8000 + 200 + 400 + 800 + 600 + 5 + 5)));
   assert.ok(!h.includes('pilo-persel'), 'les listes disparaissent hors « Choisir »');
 });

@@ -121,10 +121,12 @@ test('(b) Pilotage : décembre 2026 + janvier 2027 → dernier mois = janvier 20
   // Dernier mois : janvier 2027 seul (2 500 + 100), libellé « 2027 », comparaison à décembre 2026 (1 400 → +85,7 %).
   const h = rendre().html;
   const t = texte(h);
-  assert.ok(t.includes('CA net HT · Janv. 2027'), 'le libellé doit dire « Janv. 2027 »');
+  // 12/11/2026 — Façon 1 (lot A) : le grand chiffre se lit dans la carte du haut (« Chiffre d’affaires · Janvier 2027 »), plus dans « Voir tout le détail » (redite retirée).
+  assert.ok(t.includes('Chiffre d’affaires · Janvier 2027'), 'le libellé doit dire « Janvier 2027 »');
   assert.ok(t.includes(V2.fmtEur(2600)), 'le CA du dernier mois = janvier 2027 seul (2 600 €)');
-  assert.ok(!t.includes('CA net HT · Janv. 2026'), 'janvier 2027 ne doit pas être pris pour janvier 2026');
-  assert.ok(t.includes('+85,7 %') && t.includes('vs mois précédent'), 'janvier 2027 se compare à décembre 2026 (1 400 €) : +85,7 %');
+  assert.ok(!t.includes('Chiffre d’affaires · Janvier 2026'), 'janvier 2027 ne doit pas être pris pour janvier 2026');
+  // même écart (1 400 € → 2 600 € = +85,7 %), lu là où il est affiché : la carte du haut l'arrondit à l'entier (+86 %) et dit « qu’en décembre »
+  assert.ok(/\+86\s%/.test(t) && /qu’en\sdécembre/.test(t), 'janvier 2027 se compare à décembre 2026 (1 400 €) : +85,7 %, affiché +86 %');
 
   // Mode « Année » : l'année du dernier mois = 2027, et seulement janvier dedans.
   const r = rendre(); r.seg('year').onclick();

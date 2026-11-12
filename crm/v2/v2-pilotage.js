@@ -1422,7 +1422,7 @@
     var B = null;
     if (!opso) { psStyles(); try { B = psBloc(pf); } catch (e) { B = null; } }
     if (!B) return { avant: '', apres: '' };
-    if (B.vide) return { avant: '<div class="ps-card"><div class="ps-vide">' + B.vide + '</div></div>', apres: '', bloc: '<div class="ps-card"><div class="ps-vide">' + B.vide + '</div></div>' };
+    if (B.vide) return { avant: '<div class="ps-card"><div class="ps-vide">' + B.vide + '</div></div>', apres: '', bloc: '<div class="ps-card"><div class="ps-vide">' + B.vide + '</div></div>', blocVide: '<div class="ps-card"><div class="ps-vide">' + B.vide + '</div></div>' };
     return {
       bloc: B.html,
       avant: B.html + '<button type="button" class="ps-det-btn" aria-expanded="' + (PS_OUVERT ? 'true' : 'false') + '" aria-controls="ps-det"><span>Voir tout le détail</span>' + ICO('chev', 16) + '</button>' +
@@ -2149,7 +2149,11 @@
 
       // Séries pour les mini-tendances (12 derniers mois)
       var caSeries = monthlyCaSeries(sales, 12);
-      var caTrend = caSeries.length >= 2 ? sparkline(caSeries, 'var(--ip-blue)', 150, 44) : '';
+      // 12/11/2026 — Façon 1 (lot A) : dans la version liste (Pilotage d'aujourd'hui), « Voir tout le détail » ne redit plus ce que l'écran montre au-dessus :
+      // ni second en-tête (titre, période, sélecteurs, phrase des mois écartés), ni « Moyenne Intégral par client », ni grand chiffre / vignettes
+      // chiffre d'affaires, actives, panier, ni total de notre marge. Ces redites ne sont plus fabriquées (elles n'étaient que cachées par la feuille de style).
+      var sansRedite = !!(PFM && !opso && pf);
+      var caTrend = !sansRedite && caSeries.length >= 2 ? sparkline(caSeries, 'var(--ip-blue)', 150, 44) : '';
       var activeRatio = (V2.pharmacies || []).length ? Math.round(nbActive / (V2.pharmacies || []).length * 100) : 0;
 
       // ── HERO : CA net HT (le KPI qui prime) ──
@@ -2164,7 +2168,7 @@
         '</div>';
 
       // ── KPIs secondaires (marge / actives / panier) ──
-      var kpis = heroKpi +
+      var kpis = sansRedite ? '' : heroKpi +
         '<div class="v2-kpis pilo-kpis3" data-reveal>' +
           '<div class="v2-kpi k2"><div class="v2-kpi-l">Marge pharmacien générée</div>' +
             '<div class="v2-kpi-v mono">' + V2.fmtEur(mdlCur) + '</div>' +
@@ -2319,8 +2323,8 @@
                   (V2.commFilter ? esc(V2.commFilter) : (vueTous ? 'tous les commerciaux' : 'mon périmètre')) +
                   (surFichier ? ' · répartie par famille de produits : chaque pourcentage est une part de notre marge de la période' : '') + '</div>' +
                 notesM.map(function (n) { return '<div class="pilo-marge-partiel">' + esc(n) + '</div>'; }).join('') + '</div>' +
-              '<div class="pilo-marge-total"><span class="mono pilo-marge-v" data-count>' + V2.fmtEur(totalCarte) + '</span>' +
-                '<span class="pilo-marge-pct mono">' + margePct.toFixed(2).replace('.', ',') + ' % du CA net</span></div>' +
+              (sansRedite ? '' : '<div class="pilo-marge-total"><span class="mono pilo-marge-v" data-count>' + V2.fmtEur(totalCarte) + '</span>' +
+                '<span class="pilo-marge-pct mono">' + margePct.toFixed(2).replace('.', ',') + ' % du CA net</span></div>') +
             '</div>' +
             '<div class="pilo-marge-body">' +
               '<div class="pilo-marge-pal">' + palHtml + '</div>' +
@@ -3050,7 +3054,7 @@
       if (AP) {
         root.innerHTML = top + '<div class="v2-wrap pa-wrap">' + AP.html +
           '<button type="button" class="ps-det-btn pa-detbtn" aria-expanded="' + (PS_OUVERT ? 'true' : 'false') + '" aria-controls="ps-det"><span><b>Voir tout le détail</b><small>Répartitions, classements, produits, marché France, pharmacies à relancer</small></span>' + ICO('chev', 16) + '</button>' +
-          '<div class="ps-det" id="ps-det"' + (PS_OUVERT ? '' : ' hidden') + '>' + header + (PS.bloc || '') + detailInner + '</div></div>';
+          '<div class="ps-det" id="ps-det"' + (PS_OUVERT ? '' : ' hidden') + '>' + (PS.blocVide || '') + detailInner + '</div></div>';   // 12/11/2026 — plus d'en-tête ni de bloc « Moyenne Intégral par client » ici
         AP.lier(root);
       } else {
         root.innerHTML = top +

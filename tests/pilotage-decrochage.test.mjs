@@ -59,7 +59,10 @@ function rendre() {
   V2.pages.pilotage.render(root);
   return { html: root.innerHTML, seg: (p) => segs.find((b) => b.dataset.p === p), sel: (b) => sels.find((x) => x.dataset.b === b) };
 }
-const heros = (h) => (h.match(/pilo-hero-v mono" data-count>([^<]*)</) || [])[1];
+// 12/11/2026 — le grand chiffre se lit là où il est affiché (carte du haut, « pa-hbig »), plus dans « Voir tout le détail » (redite retirée).
+// Même valeur testée ; espaces insécables et fines normalisés des deux côtés.
+const sp = (t) => String(t).replace(/\s/g, ' ');
+const heros = (h) => { const m = h.match(/pa-hbig"><span class="pa-n">([^<]*)<\/span><span class="pa-u">([^<]*)</); return m ? sp(m[1] + ' ' + m[2]) : undefined; };
 const bloc = (h, debut, fin) => { const i = h.indexOf(debut); return i < 0 ? '' : h.slice(i, fin ? h.indexOf(fin, i + debut.length) : undefined); };
 const mk = (m) => 2026 * 12 + (m - 1);
 

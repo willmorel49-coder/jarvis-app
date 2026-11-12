@@ -102,7 +102,13 @@ function rendre(commercial, user) {
   V2.pages.pilotage.render(root);
   return root.innerHTML;
 }
+// 12/11/2026 — Façon 1 (lot A) : « Voir tout le détail » ne redit plus le total de notre marge (la ligne « Notre marge » au-dessus le porte).
+// Le total se lit donc comme la somme des lignes de la carte (paliers, non remboursés, froid, génériques…), qui l'ont toujours fait : mêmes valeurs testées.
+const nombreFr = (x) => parseFloat(x.replace(/[^\d,\-−]/g, '').replace('−', '-').replace(',', '.'));
+const sommeCarte = (c) => { const pal = c.slice(c.indexOf('pilo-marge-pal'), c.indexOf('pilo-marge-rows') > 0 ? c.indexOf('pilo-marge-rows') : undefined);
+  let t = 0; for (const m of pal.matchAll(/pilo-fam-v"><span class="mono" style="font-weight:700">([^<]*)</g)) t += nombreFr(m[1]); return V2.fmtEur(Math.round(t * 100) / 100); };
 const DERNIER_MOIS = texte(carte(rendre('', { commercial: '', voitTous: true })));
+const TOTAL_DERNIER_MOIS = sommeCarte(carte(rendre('', { commercial: '', voitTous: true })));
 // L'écran s'ouvre sur « Dernier mois » (juin) : pour couvrir mai ET juin on
 // appuie sur « Année » par le vrai bouton — l'état de période est privé au module.
 {
@@ -118,7 +124,7 @@ const DERNIER_MOIS = texte(carte(rendre('', { commercial: '', voitTous: true }))
 
 test('« Dernier mois » exclut bien la vente de mai (total 106,00 €, pas 106,12 €)', () => {
   // A 55,40 + B 12 + C 8,60 + D 30 = 106,00 € ; avec la vente de mai ce serait 106,12 €
-  assert.ok(DERNIER_MOIS.includes('106,00 €') && !DERNIER_MOIS.includes('106,12 €'), DERNIER_MOIS.slice(0, 200));
+  assert.ok(TOTAL_DERNIER_MOIS === '106,00 €' && !DERNIER_MOIS.includes('106,12 €'), TOTAL_DERNIER_MOIS + ' · ' + DERNIER_MOIS.slice(0, 200));
 });
 
 test('non remboursés : net − net ÷ 1,03, à la place du barème ; le froid s’ajoute', () => {
@@ -173,7 +179,7 @@ test('vue « Tous » : total = A + B + C + D, classement A, D, B, C ; A marqué 
   const h = rendre('', { commercial: '', voitTous: true });
   const c = carte(h), t = texte(c);
   assert.ok(c.includes('Notre marge — règle de secours'), 'la carte existe (sans le fichier « Notre marge » : règle de secours)');
-  assert.ok(t.includes(V2.fmtEur(A_ATTENDU + B_ATTENDU + C_ATTENDU + D_ATTENDU)), 'total ' + V2.fmtEur(A_ATTENDU + B_ATTENDU + C_ATTENDU + D_ATTENDU) + ' dans : ' + t.slice(0, 300));
+  assert.ok(sommeCarte(c) === V2.fmtEur(A_ATTENDU + B_ATTENDU + C_ATTENDU + D_ATTENDU), 'total ' + V2.fmtEur(A_ATTENDU + B_ATTENDU + C_ATTENDU + D_ATTENDU) + ' dans : ' + t.slice(0, 300));
   const iA = c.indexOf('data-c="A"'), iB = c.indexOf('data-c="B"'), iC = c.indexOf('data-c="C"'), iD = c.indexOf('data-c="D"');
   assert.ok(iA > 0 && iD > 0 && iB > 0 && iC > 0 && iA < iD && iD < iB && iB < iC, 'A (55,40 €) avant D (30 €) avant B (12,12 €) avant C (8,60 €)');
   assert.ok(c.slice(iA, iD).includes(V2.fmtEur(A_ATTENDU)), 'ligne A porte 55,40 €');
@@ -188,7 +194,7 @@ test('vue « Tous » : total = A + B + C + D, classement A, D, B, C ; A marqué 
 
 test('un commercial sélectionné : son chiffre seul, sans classement', () => {
   const c = carte(rendre('A', { commercial: '', voitTous: true }));
-  assert.ok(texte(c).includes(V2.fmtEur(A_ATTENDU)));
+  assert.ok(sommeCarte(c) === V2.fmtEur(A_ATTENDU));
   assert.ok(!c.includes('pilo-marge-row'), 'pas de classement sur un seul commercial');
   assert.ok(!c.includes('data-c="B"'));
 });
@@ -235,7 +241,7 @@ test('la carte : lignes de la liste privée et « Génériques », et la somme d
     assert.ok(t.includes('Liste privée') && t.includes('0,05 € la boîte') && t.includes('100 boîtes'), t.slice(0, 900));
     assert.ok(t.includes('Génériques') && t.includes('aucune marge') && t.includes('11 boîtes'), t.slice(0, 900));
     // 1,20 + 5,00 + (15,20 + 6,08) + 0 + 2,52 + 30,00 = 60,00 €
-    assert.ok(t.includes('60,00 €'), 'total 60,00 € : ' + t.slice(0, 300));
+    assert.ok(sommeCarte(carte(rendre('', { commercial: '', voitTous: true }))) === '60,00 €', 'total 60,00 € : ' + t.slice(0, 300));
     assert.ok(t.includes('21,28 €') && t.includes('2,52 €') && t.includes('4 boîtes') && !t.includes('8 boîtes'), 'intermédiaire 21,28 € ; froid 2,52 € sur 4 boîtes, pas sur le générique froid : ' + t.slice(0, 900));
   } finally { V2.sales = avant; }
   assert.ok(!DERNIER_MOIS.includes('Liste privée') && !DERNIER_MOIS.includes('Génériques'), 'sans ces produits dans la période : pas de ligne');
@@ -278,7 +284,7 @@ test('la carte affiche la 4e tranche « 3,17 – 4,33 € » seulement si la pé
   try {
     const t = texte(carte(rendre('', { commercial: '', voitTous: true })));
     assert.ok(t.includes('3,17 – 4,33 €') && t.includes('0,088 € dès 2027'), t.slice(0, 700));
-    assert.ok(t.includes(V2.fmtEur(20 * 0.02772 + 0.88)), 'total = 0,5544 + 0,88 : ' + t.slice(0, 300));
+    assert.ok(sommeCarte(carte(rendre('', { commercial: '', voitTous: true }))) === V2.fmtEur(20 * 0.02772 + 0.88), 'total = 0,5544 + 0,88 : ' + t.slice(0, 300));
   } finally { V2.sales = avant; }
   assert.ok(!DERNIER_MOIS.includes('3,17 – 4,33'), 'sans vente 2027 : pas de 4e ligne');
 });

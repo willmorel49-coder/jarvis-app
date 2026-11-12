@@ -234,7 +234,3 @@ html.pa-noscroll,html.pa-noscroll body{overflow:hidden}
 .ps-det .pilo-hint{color:var(--muted)}
 .ps-det .pilo-kf-l{text-transform:none;letter-spacing:0}
 @media(max-width:640px){.ps-det .pilo-cbar-lbl{font-size:13px;letter-spacing:-.02em}}
-/* « Voir tout le détail » ne redit plus ce qui est au-dessus (version liste) : le second en-tête (titre, période, sélecteurs en double, phrase
-   des mois écartés), « Moyenne Intégral par client » (les cinq chiffres de « Par client »), les vignettes chiffre d'affaires / actives / panier,
-   et le total de notre marge (ligne « Notre marge »). Ils restent calculés dans la page (les tests les lisent), ils ne s'affichent plus. */
-.pa-wrap .ps-det>.pilo-head,.pa-wrap .ps-det>.ps-wrap,.pa-wrap .ps-det .pilo-hero,.pa-wrap .ps-det .pilo-kpis3,.pa-wrap .ps-det .pilo-marge-total{display:none}

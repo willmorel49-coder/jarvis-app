@@ -179,6 +179,11 @@ function faireFenetre() {
 const V = (pharmacyId, commercial, month, qte, puNet) => ({ pharmacyId, year: 2026, month, commercial, artCode: 'x', qte, puNet, mntNetHt: qte * puNet });
 const texte = (h) => h.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
 const carte = (h) => { const i = h.indexOf('pilo-marge"'); const j = h.indexOf('pilo-marge-body', i); const k = h.indexOf('<details', j); return h.slice(i, k); };
+// 12/11/2026 — Façon 1 (lot A) : « Voir tout le détail » ne redit plus le total de notre marge (déjà porté au-dessus). Même total, lu comme la somme des lignes de la carte.
+const nombreFr = (x) => parseFloat(x.replace(/[^\d,\-−]/g, '').replace('−', '-').replace(',', '.'));
+const sommeCarte = (c) => { const i = c.indexOf('pilo-marge-pal'), j = c.indexOf('pilo-marge-rows'); const pal = c.slice(i, j > 0 ? j : undefined);
+  let t = 0; for (const m of pal.matchAll(/pilo-fam-v"><span class="[^"]*" style="font-weight:700">([^<]*)</g)) t += nombreFr(m[1]); return Math.round(t * 100) / 100; };
+const eur = (n) => n.toFixed(2).replace('.', ',') + ' €';
 
 function pilotage(fichier, ventes) {
   const win = faireFenetre();
@@ -222,7 +227,7 @@ test('Pilotage « Tous » : le total vient du fichier, la carte = la somme du cl
   const c = carte(h), t = texte(c);
   // juin + juillet : Alice 90 + 60 + 8 = 158 ; Bruno 15 + 25 = 40 ; total 198 €
   assert.ok(c.includes('Notre marge — ce que les ventes rapportent à Intégral'), t.slice(0, 200));
-  assert.ok(t.includes('198,00 €'), t.slice(0, 400));
+  assert.ok(eur(sommeCarte(c)) === '198,00 €', eur(sommeCarte(c)) + ' · ' + t.slice(0, 400));
   assert.ok(t.includes('estimation, à jour jusqu’à juillet 2026'), 'mention de date');
   assert.ok(t.includes('Juin 2026 : texte de réserve inventé'), 'réserve du mois de juin');
   assert.ok(!t.includes('règle de secours'), 'rien à rattraper : pas de mention de la règle');
@@ -239,7 +244,7 @@ test('Pilotage « Tous » : le total vient du fichier, la carte = la somme du cl
 test('Pilotage : un commercial affiché → son chiffre seul, même périmètre que son CA', () => {
   const { rendre } = pilotage(FICHIER(), VENTES());
   const t = texte(carte(rendre('Bruno')));
-  assert.ok(t.includes('40,00 €') && !t.includes('198,00 €'), t.slice(0, 300));
+  assert.ok(eur(sommeCarte(carte(rendre('Bruno')))) === '40,00 €' && !t.includes('198,00 €'), t.slice(0, 300));
   assert.ok(!t.includes('Alice'));
 });
 
@@ -250,7 +255,7 @@ test('Pilotage : compte restreint, fichier réduit à ses prénoms → son chiff
   d.r = d.r.map((l) => [0, l[1]].concat(l.slice(2)));
   const { rendre } = pilotage(d, VENTES());
   const c = carte(rendre('', { commercial: 'Bruno', voitTous: false }));
-  assert.ok(texte(c).includes('40,00 €'), texte(c).slice(0, 300));
+  assert.ok(eur(sommeCarte(c)) === '40,00 €', texte(c).slice(0, 300));
   assert.ok(!c.includes('data-c="Alice"') && !c.includes('158,00'), 'rien d’Alice');
 });
 
@@ -258,7 +263,7 @@ test('Pilotage : mois mixtes (août hors fichier) → fichier pour juin-juillet 
   const v = VENTES().concat([V('2000001', 'Alice', 8, 1000, 2), V('2000002', 'Bruno', 8, 1000, 2)]);   // août (les deux commerciaux, mois assez fourni pour être « complet ») : 2 × 1000 boîtes à 2 € → règle : 2 × 120 €
   const { rendre } = pilotage(FICHIER(), v);
   const c = carte(rendre('')), t = texte(c);
-  assert.ok(t.includes('438,00 €'), '198 € du fichier + 240 € de la règle : ' + t.slice(0, 400));
+  assert.ok(eur(sommeCarte(c)) === '438,00 €', '198 € du fichier + 240 € de la règle : ' + t.slice(0, 400));
   assert.ok(t.includes('Août 2026 : règle de secours'), t.slice(0, 500));
   assert.ok(t.includes('Mois sans fichier') && t.includes('240,00 €'), 'la ligne de la règle, séparée des familles du fichier');
 });
