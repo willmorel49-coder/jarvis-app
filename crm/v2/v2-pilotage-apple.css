@@ -234,3 +234,5 @@ html.pa-noscroll,html.pa-noscroll body{overflow:hidden}
 .ps-det .pilo-hint{color:var(--muted)}
 .ps-det .pilo-kf-l{text-transform:none;letter-spacing:0}
 @media(max-width:640px){.ps-det .pilo-cbar-lbl{font-size:13px;letter-spacing:-.02em}}
+/* 12/11/2026 — lot A : textes de 12 px restants dans « Voir tout le détail » (mesurés : 25) */
+.ps-det .pilo-marge-rows-t,.ps-det .pilo-rank,.ps-det .pilo-marge-pct,.ps-det .pilo-disc-hint,.ps-det .v2-sh-s{font-size:13px}

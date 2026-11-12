@@ -68,7 +68,7 @@
 .inf-c-pic svg{display:block}
 .inf-c-ptitre{flex:1;min-width:0;margin:0;font:800 24px/1.12 var(--pp-sans);letter-spacing:-.025em;color:var(--pp-encre)}
 .inf-c-cpt{flex:none;max-width:108px;text-align:right}
-.inf-c-cpt b{display:block;font:800 32px/1 var(--pp-sans);letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--pp-encre)}
+.inf-c-cpt b{display:block;font:800 32px/1 var(--pp-sans);letter-spacing:-.03em;font-variant-numeric:proportional-nums;color:var(--pp-encre)}
 .inf-c-cpt span{display:block;margin-top:4px;font:700 13px/1.25 var(--pp-sans);color:var(--pp-encre2)}
 .inf-c-sous{margin:12px 0 0;font:500 14.5px/1.4 var(--pp-sans);color:var(--pp-encre2)}
 /* les lignes d'une porte se partagent la hauteur : trois portes de même hauteur, pas de vide sous les deux premières */
@@ -100,7 +100,7 @@
 .inf-c-ri{display:grid;place-items:center;flex:none;width:30px;height:30px;border-radius:9px;background:color-mix(in srgb,var(--c,#0050E6) 14%,#fff);color:color-mix(in srgb,var(--c,#0050E6) 60%,#000)}
 .inf-c-ri svg{display:block}
 .inf-c-rl{flex:1;min-width:0;font:600 15px/1.25 var(--pp-sans);color:var(--pp-encre);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.inf-c-rn{flex:none;font:800 15px/1 var(--pp-sans);font-variant-numeric:tabular-nums;color:var(--pp-encre)}
+.inf-c-rn{flex:none;font:800 15px/1 var(--pp-sans);font-variant-numeric:proportional-nums;color:var(--pp-encre)}
 .inf-c-rc{flex:none;display:grid;color:var(--pp-bleu-f)}
 
 /* ═══ Le volet : le panneau existant, dans la page, à la place des portes ═══ */
