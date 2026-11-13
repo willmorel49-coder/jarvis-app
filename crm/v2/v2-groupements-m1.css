@@ -225,7 +225,8 @@
   .gr-pastille{width:68px;height:68px;border-radius:18px}
   .gr-pastille .grp-logo{width:52px;height:52px}
   .gr-pastille .grp-logo-x{font-size:19px}
-  .gr-acts{display:grid;grid-template-columns:1fr 1fr;width:100%}
+  .gr-acts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);width:100%}
+  .gr-acts .v2-btn{min-width:0;white-space:normal;text-align:center;line-height:1.2}
   .gr-acts .v2-btn-primary{grid-column:1/-1}
   .gr-acts:has(.v2-btn:nth-child(2):last-child) .v2-btn-ghost{grid-column:1/-1}
   .gr-cap{flex:1 1 100%;justify-content:space-between}
