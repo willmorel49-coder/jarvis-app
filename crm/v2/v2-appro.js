@@ -3477,6 +3477,11 @@
     if (/an-lane/.test(c)) { h = m.querySelector('.an-lhd'); if (h) { var n = h.querySelector('.an-n'); var t = txt(h); if (n) t = t.replace(txt(n), ''); return avant(t.trim(), ' — '); } }
     if (/ap-kpis/.test(c)) return 'Les compteurs de service';
     if (/fa-card/.test(c)) return 'Le fil d’anticipation';
+    // 14/11/2026 — carnet d'achat : lu morceau par morceau. Le texte du bloc recollé donnait
+    // « ven. 13130 commandes » pour « ven. 13 » + « 130 commandes ».
+    if (/cl-band/.test(c)) return 'Les 7 prochains jours';
+    if (/cl-today/.test(c)) return [txt(m.querySelector('.cl-th')), txt(m.querySelector('.cl-big'))].filter(Boolean).join(' · ');
+    if (/cl-nx/.test(c)) return [txt(m.querySelector('.d')), txt(m.querySelector('.i'))].filter(Boolean).join(' · ');
     h = m.querySelector('h3, .ap-hd h3, h4');
     if (h) return avant(txt(h), ' — ');
     if (u.sec) return avant(u.sec, ' — ');
@@ -3491,8 +3496,12 @@
       if (/an-lane/.test(c)) { var n = m.querySelector('.an-n'); return n ? '<b>' + esc(txt(n)) + '</b> références' : ''; }
       if (/g5-card/.test(c)) { var s = txt(m).match(/sur ([\d\s  ]+) mesur/); return s ? '<b>' + esc(s[1].trim()) + '</b> références' : ''; }
       if (/ap-kpis/.test(c)) { var k = m.querySelector('.ap-kpi'); return k ? '<b>' + esc(txt(k.querySelector('.ap-kv'))) + '</b> ' + esc(txt(k.querySelector('.ap-kl'))) : ''; }
+      if (/cl-band/.test(c)) return [].map.call(m.querySelectorAll('.cl-bd'), function (d) { var n = txt(d.querySelector('.cn')); return esc(txt(d.querySelector('.dn'))) + ' <b>' + esc(/\d/.test(n) ? n : '0') + '</b>'; }).join(' · ');
     } catch (e) {}
-    var sub = m.querySelector('.ap-sub'); t = sub ? txt(sub) : '';
+    // carnet d'achat (14/11/2026) : le chiffre se lit dans « 130 commandes à passer », jamais dans le bloc recollé
+    var cal = /cl-today/.test(c) ? m.querySelector('.cl-big') : /cl-nx/.test(c) ? m.querySelector('.i') : null;
+    var sub = cal || m.querySelector('.ap-sub'); t = sub ? txt(sub) : '';
+    if (cal && !/\d/.test(t)) return '';
     if (!/\d/.test(t)) { var h = m.querySelector('h3'); var inH = h ? txt(h).split(' — ').slice(1).join(' — ') : ''; if (/\d/.test(inH)) t = inH; }
     if (!/\d/.test(t)) t = txt(m).slice(0, 160);
     var seg = t.split(/ · | — /).filter(function (x) { return /\d/.test(x); })[0] || '';
