@@ -3671,8 +3671,8 @@
       '.pilo-kf-l{display:block;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);white-space:nowrap}' +
       '.pilo-kf-v{display:block;font-size:14.5px;font-weight:800;letter-spacing:-.01em;margin-top:3px;color:var(--ip-ink)}' +
       '.pilo-kf-v small{font-size:12px;color:var(--muted);font-weight:600}' +
-      '.pilo-tip{position:absolute;top:-6px;transform:translateX(-50%);background:var(--ip-ink);color:#fff;font-size:12px;font-weight:600;' +
-        'padding:7px 11px;border-radius:9px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;box-shadow:var(--sh-pop);z-index:5;font-family:var(--mono)}' +
+      '.pilo-tip{position:absolute;top:-6px;transform:translateX(-50%);background:var(--ip-ink);color:#fff;font-size:13px;font-weight:600;' +
+        'padding:7px 11px;border-radius:9px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;box-shadow:var(--sh-pop);z-index:5;font-family:var(--font);font-variant-numeric:tabular-nums}' +
       '.pilo-tip.show{opacity:1}' +
       // ── OPSO section ──────────────────────────────
       '.opso-section{margin-bottom:10px}' +
