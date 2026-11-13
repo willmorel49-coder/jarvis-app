@@ -546,7 +546,7 @@
       return '<span class="m1-vente" id="v2-ventes-etat">Chargement des ventes… <b>' + (pr.n || 0) + '</b> / ' + (pr.total || '?') + '</span>';
     }
     var tot = (V2.pharmacies || []).length, per = cl1PerVentes(true);
-    return '<div class="m1-big"><b data-roule="' + m.nb + '">' + fr(m.nb) + '</b><small>' + (m.nb > 1 ? 'officines actives' : 'officine active') + '</small></div>' +
+    return '<div class="m1-big"><b data-roule="' + m.nb + '">' + fr(m.nb) + '</b><small>' + (m.nb > 1 ? 'officines actives' : 'officine active') + (m.mes != null ? ' dans tout le réseau' : '') + '</small></div>' +
       (per ? '<div class="m1-sub cl1-def">' + esc(per) + ' · au moins une commande' + (tot >= m.nb && tot > 0 ? ' · sur ' + fr(tot) + ' officines' : '') + '</div>' : '') +
       (m.mes != null ? '<div class="m1-sub">Vos officines : <b>' + fr(m.mes) + '</b></div>' : '');
   }

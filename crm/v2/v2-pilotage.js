@@ -1572,7 +1572,7 @@
     push({ id: 'mdl', grp: 'ventes', nom: 'Marge pharmacien générée', kind: 'eur', col: '#6D4FC4', txt: '#5B3FB0', val: c.mdlCur, ser: ser.mdl, delta: A.d, sub: paNb(c.mdlPct, 1) + '\u00a0% du chiffre d’affaires',
       def: 'Marge réalisée par les pharmaciens sur les produits remboursables vendus.' });
     A = ci('act', ser.act, c.nbActive);
-    push({ id: 'act', grp: 'ventes', nom: 'Officines actives', kind: 'int', unit: '', col: '#D98A12', txt: '#8A5200', val: c.nbActive, ser: ser.act, delta: A.d, sub: 'au moins une commande · ' + c.activeRatio + '\u00a0% des\u00a0' + PA_NF.format((V2.pharmacies || []).length) + ' officines',
+    push({ id: 'act', grp: 'ventes', nom: 'Officines actives', kind: 'int', unit: '', col: '#D98A12', txt: '#8A5200', val: c.nbActive, ser: ser.act, delta: A.d, sub: 'au moins une commande · ' + c.activeRatio + '\u00a0% des\u00a0' + PA_NF.format((V2.pharmacies || []).length) + ' officines' + (c.myComm && !c.voitTous ? ' de tout le réseau' : ''),
       def: 'Officines qui ont acheté au moins une fois sur la période.' });
     A = ci('panier', ser.panier, c.panier);
     push({ id: 'panier', grp: 'ventes', nom: 'Panier moyen', kind: 'eur', col: '#0B8FA8', txt: '#0A6B7E', val: c.panier, ser: ser.panier, delta: A.d, sub: 'par officine active',
