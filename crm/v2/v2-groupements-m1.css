@@ -214,7 +214,8 @@
   .gr-top{gap:10px}
   .gr-une{padding:12px;gap:8px}
   .gr-une .gr-nom{font-size:15px}
-  .gr-une .gr-act{padding:6px 7px;max-width:100%}
+  .gr-act{white-space:normal;line-height:1.25;border-radius:14px;max-width:100%}
+  .gr-une .gr-act{padding:6px 10px}
   .gr-m1 .grp-logo-big{width:44px;height:44px;border-radius:12px}
   .gr-m1 .grp-logo-big.grp-logo-x{font-size:16px}
   .gr-cartes{grid-template-columns:1fr;gap:10px}
