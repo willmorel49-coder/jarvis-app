@@ -3220,9 +3220,9 @@
       '.tk-site{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px}.tk-site i{width:100%;max-width:26px;background:#0E7C86;border-radius:3px 3px 0 0;display:block}.tk-site span{font-size:13px;font-weight:700;color:var(--txt-2,#454B5C)}.tk-site b{font-size:13px;font-family:inherit;font-variant-numeric:tabular-nums;color:var(--ip-ink)}' +
       /* vue globale (hero 4 tuiles) + navigation */
       '.ap-hero{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}' +
-      '.ap-htile{font-family:inherit;text-align:left;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--hc);border-radius:14px;padding:13px 15px;cursor:pointer;transition:.15s}' +
+      '.ap-htile{font-family:inherit;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 15px;cursor:pointer;transition:.15s}' +
       '.ap-htile:hover{box-shadow:0 4px 14px rgba(16,19,28,.08);transform:translateY(-1px)}' +
-      '.ap-hbig{font-size:26px;font-weight:800;font-family:inherit;font-variant-numeric:tabular-nums;color:var(--ip-ink);letter-spacing:-.02em;line-height:1}' +
+      '.ap-hbig{white-space:nowrap;font-size:26px;font-weight:800;font-family:inherit;font-variant-numeric:tabular-nums;color:var(--ip-ink);letter-spacing:-.02em;line-height:1}' +
       '.ap-hlab{font-size:13px;font-weight:800;color:var(--ip-ink);margin-top:5px}' +
       '.ap-hsub{font-size:13px;color:var(--txt-2,#454B5C);font-weight:600;margin-top:1px}' +
       '.ap-nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;position:sticky;top:0;z-index:10;background:var(--bg,#EEF1F6);padding:8px 0}' +
@@ -3251,14 +3251,14 @@
       '@media(max-width:640px){.tk-nat{grid-template-columns:1fr}}' +
       '.ap-navb{flex:1;min-width:120px;font-size:13.5px;font-weight:800;color:var(--txt-2,#454B5C);background:var(--card);border:1px solid var(--line);border-radius:11px;padding:10px 8px;cursor:pointer;transition:.15s}' +
       '.ap-navb:hover{border-color:#C9D2E0}.ap-navb.on{background:var(--ip-blue);color:#fff;border-color:var(--ip-blue)}' +
-      '@media(max-width:640px){.ap-hero{grid-template-columns:1fr 1fr}.ap-navb{flex:1 1 30%;min-width:0;font-size:13px;padding:9px 4px}}' +
+      '@media(max-width:640px){.ap-hero{grid-template-columns:1fr 1fr}.ap-hbig{font-size:20px}.ap-navb{flex:1 1 30%;min-width:0;font-size:13px;padding:9px 4px}}' +
       /* ── L'AXE DES TRENTE JOURS (écran d'accueil d'APPRO depuis le 28/09/2026) ──
          Aucun backdrop-filter, aucun filter:blur, aucun background-clip:text : le Mac
          de Will fige sous Safari, et un hook refuse l'écriture de ces quatre effets. */
       '.axe30{margin-bottom:18px}' +
       '.ap-hdate{margin:-4px 2px 14px;font-size:13px;line-height:1.45;color:var(--txt-2,#454B5C)}.axmax{margin:2px 0 8px;font-size:13px;line-height:1.45;color:var(--txt-2,#454B5C)}.axk-hors .axk-n{font-size:19px;color:var(--txt-2,#454B5C)}' +
       '.axkpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}' +
-      '.axk{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--k);' +
+      '.axk{background:var(--card);border:1px solid var(--line);' +
         'border-radius:14px;padding:13px 15px}' +
       '.axk-n{font-size:27px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.1}' +
       '.axk-t{font-size:13px;font-weight:700;color:var(--ip-ink);margin-top:2px}' +
