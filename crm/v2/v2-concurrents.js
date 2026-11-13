@@ -867,7 +867,7 @@
   // export Excel de ce qui est à l'écran.
   var CMP_COL = ['sagitta', 'ocp', 'alliance', 'pharmafit', 'cerp', 'pharmazon'];
   var COL_NOM = { sagitta: 'Sagitta', ocp: 'OCP', alliance: 'Alliance', pharmafit: 'Pharmafit', cerp: 'CERP', pharmazon: 'Pharmazon' };
-  var COL_SOUS = { ocp: 'eTradi + Incont.', alliance: 'prix 2025', pharmafit: 'sans compte', cerp: 'offre la plus récente' };
+  var COL_SOUS = { ocp: 'eTradi + Incontournables', alliance: 'prix 2025', pharmafit: 'sans compte', cerp: 'offre la plus récente' };
   var CMP_PAS = 100;
   // ── 20/10/2026 · Will a choisi « Replié » parmi 3 (planche du 20/10) : au téléphone (≤ 700 px, là où le tableau devient des cartes), le comparateur se range en rubriques fermées ──
   var CCV_PAR = 10;   // une carte produit fait ≈ 340 px : 10 cartes = 4 écrans, puis « Voir les 10 suivants »
