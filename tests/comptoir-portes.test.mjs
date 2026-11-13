@@ -119,7 +119,7 @@ test('aperçu des portes : exemples = meilleurs rangs à premier mot distinct ; 
   const p2 = [...h.matchAll(/<span><b>([^<]*)<\/b><span class="n">([^<]*)</g)].map((m) => m[1] + ' ' + m[2]);
   assert.deepEqual(nu(p2), ['2 baisses de prix au JO', '1 rupture dans notre catalogue', '1 nouveautés de moins de 36 mois']);
   const p3 = [...h.matchAll(/<span><span class="n">([^<]*)<\/span><b>([^<]*)<\/b>/g)].map((m) => m[1] + ' | ' + m[2].replace(/\u00a0/g, ' '));
-  assert.deepEqual(nu(p3), ['GAMMA 1G BT8 | 3 k€', 'ALPHA JUNIOR 250MG | 478 €', 'ALPHA 500MG BT10 | 463 €']);
+  assert.deepEqual(nu(p3), ['GAMMA 1G BT8 | 3 000 €', 'ALPHA JUNIOR 250MG | 478 €', 'ALPHA 500MG BT10 | 463 €']);
 });
 
 test('chaque porte ouvre son volet dans la page, avec un retour vers les trois portes', async () => {
@@ -223,7 +223,7 @@ test('À proposer : exactement les lignes « opportunité », du plus gros poten
   const t = sansBalises(h);
   assert.match(t, /top 200 des ventes en France/); assert.match(t, /sous notre part moyenne \(26,91 %\)/);
   assert.match(t, /3 produits/);
-  assert.match(t, /3 k€ par an/); assert.match(t, /478 € par an/); assert.match(t, /463 € par an/);
+  assert.match(t, /3 000 € par an/); assert.match(t, /478 € par an/); assert.match(t, /463 € par an/);
   assert.doesNotMatch(t, /BETA|DELTA|ZETA/, 'ni les produits où nous vendons déjà beaucoup, ni ceux sans rang');
   assert.doesNotMatch(t, /officines qui le prennent|réseau prend/, 'pas le repère « réseau » de la maquette');
 });

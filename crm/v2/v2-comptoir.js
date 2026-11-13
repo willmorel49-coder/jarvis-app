@@ -62,6 +62,8 @@
     return fr(n) + ' €';
   }
   // 12/11/2026 (clarté, façon 1) : un montant écrit en entier, sans « k€ ».
+  // 13/11/2026 : le potentiel de « À proposer » s'écrit en euros entiers, arrondi au millier dès 1 000 € (60 000 €, 3 000 €), jamais « k€ ».
+  function eurMille(n) { n = +n || 0; return fr(Math.abs(n) >= 1e3 ? Math.round(n / 1e3) * 1e3 : Math.round(n)) + '\u00a0€'; }
   function eurPlein(n) { return fr(Math.round(+n || 0)) + '\u00a0€'; }
   function cl1Mois(d) {   // « janv.–oct. 2026 (10 mois) » : la période sur laquelle nos ventes sont ramenées à l'année
     var M = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
@@ -2724,10 +2726,10 @@
   function resultatsProposer(d) {
     var P = propositions(d);
     return '<p class="cpd-lead">Les produits du top ' + fr(C.top) + ' des ventes en France sur lesquels nos ventes sont sous notre part moyenne (' + fr(d.partMoy * 100, 2) + ' %). ' +
-      'Du plus grand potentiel au plus petit : le potentiel est une estimation de ce que nous vendrions de plus par an en rejoignant cette part moyenne (k€ = milliers d\'euros), pas des ventes réalisées. ' +
+      'Du plus grand potentiel au plus petit : le potentiel est une estimation de ce que nous vendrions de plus par an en rejoignant cette part moyenne, pas des ventes réalisées. ' +
       'Nos ventes : réseau, ' + esc(cl1Mois(d)) + ', ramenées à l\'année ; le rang est celui des boîtes remboursées vendues en France. <b>' + fr(P.length) + '</b> produit' + (P.length > 1 ? 's' : '') + '.</p>' +
       listePage(P, function (l) {
-        return ligneP(l, [l.labo, 'n°' + fr(l.rang) + ' en France', l.an > 0 ? fr(l.an) + ' boîtes par an chez nous' : 'aucune vendue chez nous'].filter(Boolean).join(' · '), eurK(l.pot), 'par an', false);
+        return ligneP(l, [l.labo, 'n°' + fr(l.rang) + ' en France', l.an > 0 ? fr(l.an) + ' boîtes par an chez nous' : 'aucune vendue chez nous'].filter(Boolean).join(' · '), eurMille(l.pot), 'par an', false);
       }, 'Aucun produit à proposer avec ces ventes.');
   }
 
@@ -2758,13 +2760,13 @@
     var p2 = '<span><b>' + nbPorte(X.jo, X.joAtt) + '</b><span class="n">' + (X.jo && X.jo.length === 1 ? 'baisse de prix au JO' : 'baisses de prix au JO') + '</span></span>' +
       '<span><b>' + nbPorte(X.rup, X.rupAtt) + '</b><span class="n">' + (X.rup && X.rup.length === 1 ? 'rupture dans notre catalogue' : 'ruptures dans notre catalogue') + '</span></span>' +
       '<span><b>' + nbPorte(X.nv, false) + '</b><span class="n">nouveautés' + (X.nvMois ? ' de moins de ' + fr(X.nvMois) + ' mois' : '') + '</span></span>';
-    for (i = 0; i < P.length && i < 3; i++) p3 += '<span><span class="n">' + esc(P[i].d) + '</span><b>' + eurK(P[i].pot) + '</b></span>';
+    for (i = 0; i < P.length && i < 3; i++) p3 += '<span><span class="n">' + esc(P[i].d) + '</span><b>' + eurMille(P[i].pot) + '</b></span>';
     if (!p3) p3 = '<span><span class="n">Rien à proposer pour le moment</span></span>';
     var chev = ICO('chev', 18, 2) || '›';
     return '<div class="cp cpd">' +
       '<section class="cpd-head"><div class="cpd-bar" aria-hidden="true"></div><div class="cpd-in">' +
         '<div><h1 class="cpd-h1">Catalogue produits</h1><div class="cpd-sub">Prix et stock des ' + fr(e.etabs) + ' établissements</div></div>' +
-        '<div class="cpd-stats"><div class="cpd-stat"><b>' + fr(e.ref) + '</b><span>références</span><small>au catalogue Intégral</small></div><div class="cpd-stat"><b>' + fr(e.stock) + '</b><span>en stock</span><small>références, tous sites réunis</small></div>' +
+        '<div class="cpd-stats"><div class="cpd-stat"><b>' + fr(e.ref) + '</b><span>références</span><small>au catalogue Intégral</small></div><div class="cpd-stat"><b>' + fr(e.stock) + '</b><span>en stock</span><small>références du catalogue, tous sites réunis</small></div>' +
           '<div class="cpd-stat"><b>' + fr(e.etabs) + '</b><span>établissements</span><small>dont nous lisons prix et stock</small></div></div></div></section>' +
       '<div class="cpd-q"><h2>Que voulez-vous faire ?</h2><p>Trois portes. Chacune ouvre son volet ici même, rien d\'autre à lire avant.</p></div>' +
       '<div class="cpd-doors">' +
@@ -2775,7 +2777,7 @@
           '<span class="cpd-s">Baisses de prix au Journal officiel (JO), produits en rupture signalés par l\'ANSM, nouveautés.</span><span class="cpd-pv cpd-rows cpd-rows2">' + p2 + '<span class="cl1-src">' + srcChange(X) + '</span></span>' +
           '<span class="cpd-go">Voir ce qui change <i>' + chev + '</i></span></button>' +
         '<button type="button" class="cpd-door" onclick="V2.comptoir.porte(\'proposer\')"><span class="cpd-ic">' + icoPorte('star', 24) + '</span><span class="cpd-t">À proposer</span>' +
-          '<span class="cpd-s">Les meilleures ventes de France sur lesquelles nous vendons moins que notre part moyenne.</span><span class="cpd-pv cpd-rows">' + p3 + (P.length ? '<span class="cl1-src">Montant : ce que nous vendrions de plus par an en rejoignant notre part moyenne (estimation, k€ = milliers d\'euros) ; nos ventes ' + esc(cl1Mois(d)) + ', ramenées à l\'année.</span>' : '') + '</span>' +
+          '<span class="cpd-s">Les meilleures ventes de France sur lesquelles nous vendons moins que notre part moyenne.</span><span class="cpd-pv cpd-rows">' + p3 + (P.length ? '<span class="cl1-src">Montant : ce que nous vendrions de plus par an en rejoignant notre part moyenne (estimation) ; nos ventes ' + esc(cl1Mois(d)) + ', ramenées à l\'année.</span>' : '') + '</span>' +
           '<span class="cpd-go">Voir les produits <i>' + chev + '</i></span></button>' +
       '</div>' +
       '<div class="cpd-all"><button type="button" class="cpd-link" onclick="V2.comptoir.porte(\'tout\')">' + ICO('grid', 18, 2) + ' Parcourir tout le catalogue</button></div>' +
