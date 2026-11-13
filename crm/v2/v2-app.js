@@ -1990,6 +1990,15 @@
     for (var i = 0; i < S.length; i++) { var s = S[i]; m[s.pharmacyId] = (m[s.pharmacyId] || 0) + (s.mntNetHt || 0); }
     _caByPid = m; _caRef = V2.sales; return m;
   };
+  // 14/11/2026 — officines qui ont au moins une ligne de vente, sur toutes les ventes
+  // (une passe, mémorisée sur la référence de V2.sales) : le nombre d'« actives » de l'Accueil.
+  var _actIds = null, _actRef = null;
+  V2.officinesAvecVentes = function () {
+    if (_actIds && _actRef === V2.sales) return _actIds;
+    var m = {}, S = V2.sales || [];
+    for (var i = 0; i < S.length; i++) m[S[i].pharmacyId] = 1;
+    _actIds = m; _actRef = V2.sales; return m;
+  };
   // 11/09/2026 (phase 5) — appelé par v2-boot.js quand l'en-tête des officines
   // est exécuté et que les tranches de ventes commencent : on rend l'accueil
   // tout de suite (V2.render sait qu'il est partiel), et on tient à jour le
@@ -2019,7 +2028,13 @@
       var withCa = phs.map(function (p) {
         return { p: p, ca: caOf[p.id] || 0 };
       }).filter(function (x) { return x.ca > 0; }).sort(function (a, b) { return b.ca - a.ca; });
-      var nbPharma = withCa.length;
+      // 14/11/2026 — « officines actives » = au moins une ligne de vente, même règle que
+      // Groupements (aDesVentes, v2-pharma.js) : le CA > 0 écartait l'officine dont les
+      // retours dépassent les achats (Accueil 2 098 contre Groupements 2 099, le 13/11).
+      // Sur TOUTES les ventes, commercial restreint compris : actif ou non n'est pas un
+      // chiffre de vente, et l'Accueil l'écrit « dans tout le réseau » (13970603).
+      var actIds = V2.officinesAvecVentes();
+      var nbPharma = phs.filter(function (p) { return actIds[p.id]; }).length;
       var caTotal = withCa.reduce(function (s, x) { return s + x.ca; }, 0);
       var today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
       // Personnalisation par compte connecté (22/09/2026) : « ses » officines,
