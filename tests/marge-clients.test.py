@@ -494,6 +494,37 @@ check("mois incomplet : février complet (rien), mars = 0 secteur complet sur 2 
 cv['r'] += [[1, 10 + o, 202603] for o in range(4, 5)]
 check("mois incomplet : la moitié exacte du mois d'avant compte comme complet", gm.couverture_mois(cv) == {'2026-03': [1, 2]}, gm.couverture_mois(cv))
 check("mois incomplet : rangé dans pilotageMoy, donc recopié dans chaque jeu", 'couv' in pm and pm['couv'] == gm.couverture_mois(liv))
+# 16/11/2026 — l'alerte ne dit plus que « un fichier manque ou s'arrête avant la fin du mois ». A a 10 officines en janvier (février 2026 = 28 jours).
+def _cv(fev_a, fev_b=()):
+    return dict(liv, mois=['2026-01', '2026-02'], c=['A', 'B'], o=list(range(10)),
+                r=[[0, o, 202601] for o in range(10)] + [[0, o, 202602] for o in fev_a] + [[1, o, 202602] for o in fev_b])
+_dep = _cv([0], range(1, 10))      # départ : A garde 1 officine (un avoir), B reprend les 9 autres
+check("départ repris = complet : 1 présente + 9 reprises chez un autre sur 10, même sans date de fin",
+      gm.couverture_mois(_dep, {}) == {}, gm.couverture_mois(_dep, {}))
+check("départ repris : sans `fin`, la règle du 28/10 reste (signalé)", gm.couverture_mois(_dep) == {'2026-02': [0, 1]}, gm.couverture_mois(_dep))
+_creux = _cv(range(3))             # creux réel : 3 officines sur 10, personne ne reprend les 7 autres
+check("creux avec un fichier jusqu'au bout = complet (dernière facture le 28 février)",
+      gm.couverture_mois(_creux, {('A', 202602): 28}) == {}, gm.couverture_mois(_creux, {('A', 202602): 28}))
+check("creux : la limite des 7 derniers jours (le 22 = complet, le 21 = signalé)",
+      gm.couverture_mois(_creux, {('A', 202602): 22}) == {} and gm.couverture_mois(_creux, {('A', 202602): 21}) == {'2026-02': [0, 1]})
+check("fichier absent = incomplet (aucune officine, aucune date)", gm.couverture_mois(_cv([]), {}) == {'2026-02': [0, 1]}, gm.couverture_mois(_cv([]), {}))
+_court = _cv(range(4))
+check("fichier arrêté le 15 avec moins de la moitié = incomplet", gm.couverture_mois(_court, {('A', 202602): 15}) == {'2026-02': [0, 1]},
+      gm.couverture_mois(_court, {('A', 202602): 15}))
+check("la date de fin d'un AUTRE commercial ou d'un autre mois ne compte pas",
+      gm.couverture_mois(_creux, {('B', 202602): 28, ('A', 202601): 31}) == {'2026-02': [0, 1]})
+import gzip as _gz, json as _js, tempfile as _tf
+_tmp = _tf.mkdtemp()
+def _cache(nom, jours):
+    p = os.path.join(_tmp, nom)
+    with _gz.open(p, 'wt', encoding='utf-8') as f:
+        _js.dump({'j': [[1, j, 'FC_%d' % i] for i, j in enumerate(jours)], 'g': []}, f)
+    return p
+_fm = gm.fins_de_mois([_cache('MMN.gz', ['2026-09-12', '2026-09-20']), _cache('JMR.gz', ['2026-09-29', '2026-10-02']),
+                       _cache('KV.gz', ['2026-09-30'])],
+                      [('Mathieu', 202609), ('Mathieu', 202609), ('Karine', 202610)])
+check("fins_de_mois : deux tableurs d'un même prénom = le plus tardif ; une date hors du mois du tableur ne compte pas",
+      _fm == {('Mathieu', 202609): 29}, _fm)
 
 # ═════════════════════════════ 10. Moyennes « Fiche » et « Produits » dans le générateur (29/10/2026) ═════════════════════════════
 print("10. Moyennes fiche (six clés de livraison.moy) et Produits (produitsMoy), tout ou rien — données inventées, réponses calculées à la main")

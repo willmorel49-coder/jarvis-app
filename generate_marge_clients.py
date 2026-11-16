@@ -77,6 +77,7 @@ Codes de sortie : 0 ok · 2 entree introuvable · 3 reglage prive illisible · 4
 5 ecriture non verifiee.
 """
 import ast
+import calendar
 import datetime
 import glob
 import gzip
@@ -605,7 +606,7 @@ def moyenne_livraison(d, jours, cout):
             'renta': round(sum(x[2] for x in L) / len(L), 5)}
 
 
-def moyennes_pilotage(d, cout):
+def moyennes_pilotage(d, cout, fin=None):
     """28/10/2026 — l'officine moyenne du RÉSEAU ENTIER pour chaque fenêtre [du, au] de mois de d['mois'] (45 sur 9 mois).
     Même définition que moyenne_livraison, par fenêtre : par officine, sur les mois où elle a eu des livraisons (r[13] > 0),
     jm = livraisons / nm, parJour = marge / livraisons, renta = (marge - livraisons x coût) / nm, caCl = CA / nm, mgCl = marge / nm ;
@@ -643,14 +644,23 @@ def moyennes_pilotage(d, cout):
             moy = lambda q: round(sum(p[q] for p in P) / k, 4)
             fen[mois[a] + '|' + mois[b]] = {'n': k, 'jm': moy(0), 'parJour': moy(1), 'renta': moy(2), 'caCl': moy(3), 'mgCl': moy(4),
                                             'nSect': round(sum(par_sect.values()) / len(par_sect), 1), 'secteurs': len(par_sect)}
-    return {'f': fen, 'couv': couverture_mois(d)}
+    return {'f': fen, 'couv': couverture_mois(d, fin)}
 
 
-def couverture_mois(d, plancher=5):
+def couverture_mois(d, fin=None, plancher=5, marge=7):
     """28/10/2026 (Will : « avertir à l'écran » quand un mois est incomplet, jamais un texte en dur) — pour chaque mois après le premier :
     secteurs ATTENDUS = ceux qui avaient au moins `plancher` officines le mois d'avant ; secteur COMPLET = attendu qui a ce mois-ci au moins
     la moitié de ses officines du mois d'avant (absent = 0). Rend {'AAAA-MM': [complets, attendus]} pour les seuls mois où complets < attendus.
-    Aucun prénom ni nombre d'officines par secteur : ce champ est recopié dans le jeu de chaque commercial."""
+    Aucun prénom ni nombre d'officines par secteur : ce champ est recopié dans le jeu de chaque commercial.
+    16/11/2026 (Will : l'alerte ne doit dire que « le fichier d'un commercial manque ou s'arrête avant la fin du mois ») — avec `fin`
+    ({(prénom, AAAAMM): dernier jour de facture FC du mois}, voir fins_de_mois), un attendu est aussi COMPLET si :
+      (a) ses officines présentes + ses officines REPRISES (du mois d'avant, absentes chez lui, présentes ce mois-ci chez un autre
+          commercial) font au moins la moitié du mois d'avant : un départ dont les clients sont repris (Pauline A., août 2026 : 1 + 13 sur 14 ;
+          ses 14 clientes étaient déjà suivies aussi par Céline ou Inès en juillet, d'où « présentes chez un autre », pas « nouvelles chez lui ») ;
+      (b) OU sa dernière facture FC du mois tombe dans les `marge` derniers jours du mois : un creux réel, fichier complet (Pascal G.,
+          août 2026, fichier du 4 au 31). Mesuré le 16/11 : 262 tableurs sur 265 finissent dans les 3 derniers jours.
+    Volontairement PAS d'alerte « dernière facture tôt » quand (a) suffit : Pauline A. finit juillet le 20 avec un mois complet.
+    fin=None = la règle du 28/10, sans (a) ni (b)."""
     mois = d['mois']
     K = [int(m[:4] + m[5:7]) for m in mois]
     par = {}
@@ -660,10 +670,35 @@ def couverture_mois(d, plancher=5):
     for i in range(1, len(K)):
         avant, ici = par.get(K[i - 1], {}), par.get(K[i], {})
         attendus = [c for c, s in avant.items() if len(s) >= plancher]
-        complets = [c for c in attendus if 2 * len(ici.get(c, ())) >= len(avant[c])]
+        dernier_jour = calendar.monthrange(K[i] // 100, K[i] % 100)[1]
+
+        def complet(c):
+            chez_lui = ici.get(c, set())
+            n = len(chez_lui)
+            if fin is not None:
+                ailleurs = set().union(*[s for c2, s in ici.items() if c2 != c])
+                n += len((avant[c] - chez_lui) & ailleurs)
+            if 2 * n >= len(avant[c]):
+                return True
+            return fin is not None and fin.get((d['c'][c], K[i]), 0) > dernier_jour - marge
+
+        complets = [c for c in attendus if complet(c)]
         if len(complets) < len(attendus):
             out[mois[i]] = [len(complets), len(attendus)]
     return out
+
+
+def fins_de_mois(chemins, meta):
+    """16/11/2026 — {(prénom, AAAAMM): jour de la dernière facture FC du mois} pour couverture_mois. Plusieurs tableurs pour un même
+    prénom (MMN + JMR, RATTACHEES) : le plus tardif. Une date hors du mois du tableur ne compte pas (un fichier de septembre qui
+    porterait une facture d'octobre ne fait pas un septembre complet)."""
+    fin = {}
+    for fc, (comm, ym) in zip(chemins, meta):
+        pref = '%d-%02d-' % (ym // 100, ym % 100)
+        for _o, jour, _n in charger_jours(fc):
+            if jour.startswith(pref) and int(jour[8:10]) > fin.get((comm, ym), 0):
+                fin[(comm, ym)] = int(jour[8:10])
+    return fin
 
 
 # ═══ 29/10/2026 — moyennes « Fiche » et « Produits » (ateliers moyenne-partout du 28/10, recopiées telles quelles) ═══
@@ -1291,7 +1326,7 @@ def main():
         print('Livraison : coût %.2f € · officine moyenne de %d clients : %.2f livraisons par mois · %.2f € par livraison · %.2f € par mois livraisons déduites'
               % (cout, moy['n'], moy['jm'], moy['parJour'], moy['renta']))
         # Moyenne du Pilotage par fenêtre : la fenêtre entière DOIT retomber sur la moyenne de la fiche, sinon rien n'est écrit.
-        pm = moyennes_pilotage(d, cout)
+        pm = moyennes_pilotage(d, cout, fins_de_mois(chemins, meta))
         tout = pm['f'].get(mois_txt[0] + '|' + mois_txt[-1])
         ecarts = [q for q in ('n', 'jm', 'parJour', 'renta') if tout is None or abs(tout[q] - moy[q]) > 0.001]
         if ecarts:
