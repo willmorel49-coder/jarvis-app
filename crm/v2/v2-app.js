@@ -363,6 +363,8 @@
     }
     // Sur téléphone la barre d'onglets n'a pas de place pour les gestes du haut : ils sont ici (masqués sur ordinateur, où le rail les porte).
     h += '<div class="dk-coque-mob"><div class="dk-sh"><h2>Raccourcis</h2></div><div class="dk-group">' +
+      // 16/11/2026 (accueil d'avant remis) : au téléphone, le seul chemin vers « Modifier » de l'accueil (le rail le porte sur ordinateur).
+      ((V2.route && V2.route.name === 'home' && V2.accueilWidgets && V2.accueilWidgets.basculer) ? '<button type="button" class="dk-row" data-dk="perso-f"><span class="dk-row-l"><span class="dk-ti">' + u2Ic('palette', 18) + '</span></span><span class="dk-row-b"><span class="dk-row-t">Modifier mon accueil</span><span class="dk-row-s">Choisir et ranger ses cases</span></span><span class="dk-row-c" aria-hidden="true">›</span></button>' : '') +
       '<button type="button" class="dk-row" data-dk="search"><span class="dk-row-l"><span class="dk-ti">' + ICO('search', 18, 2) + '</span></span><span class="dk-row-b"><span class="dk-row-t">Rechercher</span><span class="dk-row-s">Une pharmacie, un produit</span></span><span class="dk-row-c" aria-hidden="true">›</span></button>' +
       ((V2.remonteeOpen && !(window.V2_BRAND && window.V2_BRAND.opso)) ? '<button type="button" class="dk-row" data-dk="idee"><span class="dk-row-l"><span class="dk-ti"><svg class="u2-ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false" style="width:18px;height:18px">' + U2_IC.remontees + '</svg></span></span><span class="dk-row-b"><span class="dk-row-t">Faire une remontée</span><span class="dk-row-s">Proposer une amélioration</span></span><span class="dk-row-c" aria-hidden="true">›</span></button>' : '') +
       '<button type="button" class="dk-row" data-dk="compte-f"><span class="dk-row-l"><span class="dk-ti">' + u2Ic('user', 18) + '</span></span><span class="dk-row-b"><span class="dk-row-t">Mon compte</span><span class="dk-row-s">' + esc(V2.user ? V2.user.name : '') + '</span></span><span class="dk-row-c" aria-hidden="true">›</span></button>' +
@@ -427,6 +429,7 @@
     if (a === 'idee') { dkFermer(true); V2.remonteeOpen(); return; }
     if (a === 'compte') { V2.userMenu(b); return; }
     if (a === 'compte-f') { dkFermer(true); V2.userMenu(document.querySelector('#dk-rail [data-dk="compte"]')); return; }
+    if (a === 'perso-f') { dkFermer(true); if (V2.accueilWidgets && V2.accueilWidgets.basculer) V2.accueilWidgets.basculer(document.querySelector('#dk-rail [data-dk="perso"]')); return; }
     if (a === 'perso') { if (V2.accueilWidgets && V2.accueilWidgets.basculer) V2.accueilWidgets.basculer(b); return; }
   }
 
@@ -2077,7 +2080,7 @@
     _u2.entree = true; _u2.ouvert = false; _u2.opener = null; _u2.sec = null; _u2.sig = {}; _u2.mode = u2Mode(); _u2.sig.rtools = u2OutilsHtml([]);
     u2Verrou(false);
     var etat = u2Etat();
-    root.innerHTML = '<div class="u2-page dk-acc' + (cascade ? ' u2-cascade' : '') + '"' + u2StyleAttr() + '>' +
+    root.innerHTML = '<div class="u2-page' + (cascade ? ' u2-cascade' : '') + '"' + u2StyleAttr() + '>' +
       '<button type="button" class="u2-skip" data-u2-skip>Aller aux outils</button>' + topbar() +
       '<div class="pb-band" id="pb-band" role="region" aria-label="Personnaliser mon accueil" hidden></div>' +
       '<div class="u2-grille">' +
