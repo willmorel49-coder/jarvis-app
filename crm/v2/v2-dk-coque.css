@@ -1,0 +1,99 @@
+/* ═══ COQUE d4 « Les widgets » (14/11/2026) — rail à libellés (≥ 761 px) / barre d'onglets (≤ 760 px) ═══
+   Posée par v2-app.js (dkMonter) sur <body>, jamais côté OPSO. Tout est sous `html.dk-coque` (classe posée seulement quand la coque est montée) :
+   sans elle, l'ancienne barre du haut s'affiche comme avant. Préfixes : .dk-rail, .dk-ni, .dk-coque-*. Textes 13 / 17 / 22 (kit), rayons 12 / 20 / 999.
+   Rien d'`opacity` sur du texte, pas de flou. */
+
+/* l'ancienne barre reste dans la page (d'autres modules la cherchent) mais ne se voit plus ; sa hauteur ne compte plus pour les barres collantes */
+html.dk-coque { --v2-top-h: 0px; }
+html.dk-coque .v2-top { display: none !important; }
+/* l'ancien rail de l'accueil (3 icônes) est remplacé : ses gestes sont dans la coque (Outils, Modifier, Compte) */
+html.dk-coque .u2-hors .u2-rail { display: none !important; }
+html.dk-coque .u2-page, html.dk-coque .u2-hors { --rail-w: 0px; }
+html.dk-coque.dk-coque-bloque { overflow: hidden; }
+
+#dk-coque, .dk-coque-retour { display: none; }
+html.dk-coque #dk-coque { display: block; }
+html.dk-coque .dk-coque-retour { display: flex; padding: 12px 24px 0; }
+html.dk-coque .dk-coque-back { min-height: 44px; padding: 0 16px 0 12px; }
+html.dk-coque .dk-coque-back svg { width: 18px; height: 18px; flex: none; }
+
+/* ── Rail (ordinateur, tablette) ── */
+html.dk-coque body { padding-left: 96px; }
+.dk-rail {
+  position: fixed; left: 0; top: 0; bottom: 0; width: 96px; z-index: 90;
+  display: flex; flex-direction: column; align-items: center; gap: 4px; box-sizing: border-box;
+  padding: 20px 0 16px; background: #fff; border-right: 1px solid var(--dk-line-strong);
+  overflow-x: hidden; overflow-y: auto; scrollbar-width: none;
+}
+.dk-rail::-webkit-scrollbar { display: none; }
+.dk-plus, .dk-coque-fab {
+  display: grid; place-items: center; width: 48px; height: 48px; margin: 0 0 12px; padding: 0; border: 0; cursor: pointer;
+  border-radius: var(--dk-r-field); color: #fff; background: linear-gradient(160deg, color-mix(in srgb, var(--dk-accent) 80%, #fff), var(--dk-accent-d)); box-shadow: var(--dk-sh-blue);
+  transition: transform .2s ease, box-shadow .25s ease;
+}
+.dk-plus:hover, .dk-coque-fab:hover { box-shadow: 0 10px 24px rgba(0, 80, 230, .36); }
+.dk-plus:active, .dk-coque-fab:active { transform: scale(.95); }
+.dk-plus svg, .dk-coque-fab svg { width: 26px; height: 26px; stroke: currentColor; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.dk-plus-vide { display: block; height: 12px; flex: none; }
+.dk-ni {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; box-sizing: border-box;
+  width: 80px; min-height: 64px; margin: 0; padding: 4px 2px; border: 0; border-radius: var(--dk-r-field); background: none; cursor: pointer;
+  color: var(--dk-muted); font: inherit; font-size: var(--dk-t5); font-weight: 600; line-height: 1.15; text-align: center; text-decoration: none;
+  transition: background .25s ease, color .25s ease, transform .25s ease;
+}
+@media (hover: hover) { .dk-ni:hover { background: var(--dk-sunken); color: var(--dk-ink); } }   /* 16/11 (6b) : sur écran tactile le survol reste collé après un toucher (Infos grisé en revenant sur la To do) */
+.dk-ni:active { transform: scale(.95); }
+.dk-ni[aria-current="page"], .dk-ni[aria-expanded="true"], .dk-ni[aria-pressed="true"] { background: var(--dk-accent-soft); color: var(--dk-accent); }
+.dk-ni svg { width: 24px; height: 24px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.dk-ni span { font-size: var(--dk-t5); }
+.dk-sp { flex: 1 1 auto; min-height: 8px; }
+.dk-sec { min-height: 56px; font-weight: 500; }
+.dk-sec svg { width: 22px; height: 22px; }
+.dk-av {
+  display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--dk-r-pill);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--dk-accent) 80%, #fff), var(--dk-accent-d)); color: #fff; font-size: var(--dk-t5); font-weight: 700; box-shadow: var(--dk-sh-blue);
+}
+.dk-compte { min-height: 56px; }
+.dk-compte:hover, .dk-compte[aria-expanded="true"] { background: none; }
+.dk-rail :focus-visible, .dk-coque-fab:focus-visible { outline: 3px solid var(--dk-accent); outline-offset: 2px; border-radius: var(--dk-r-field); }
+.dk-coque-fab { display: none; }
+
+/* ── Menus (compte, « + ») posés à côté du rail ── */
+.dk-coque-menu { transform-origin: bottom left; width: 320px; max-width: calc(100vw - 24px); }
+
+/* ── Feuille « Outils » : habillage propre à la coque (le kit fournit la feuille, les lignes, le contrôle segmenté) ── */
+.dk-coque-sheet .dk-sh:first-child { margin-top: 8px; }
+.dk-coque-sheet .dk-seg { margin-bottom: 8px; }
+.dk-coque-mob { display: none; }
+.dk-coque-sheet .dk-row { text-align: left; width: 100%; }
+.dk-coque-dev { margin: 32px 0 0; }
+.dk-coque-dev summary {
+  display: flex; align-items: baseline; gap: 4px; min-height: 44px; margin: 0 0 12px; cursor: pointer; list-style: none;
+  font-size: var(--dk-t2); font-weight: 700; letter-spacing: -.01em; color: var(--dk-ink);
+}
+.dk-coque-dev summary::-webkit-details-marker { display: none; }
+.dk-coque-dev summary::after { content: "›"; margin-left: auto; font-size: var(--dk-t2); font-weight: 500; color: var(--dk-muted); transition: transform .25s ease; }
+.dk-coque-dev[open] summary::after { transform: rotate(90deg); }
+.dk-coque-note { margin: 0 0 12px; font-size: var(--dk-t5); color: var(--dk-muted); }
+
+/* ── Téléphone : barre d'onglets en bas ── */
+@media (max-width: 760px) {
+  html.dk-coque body { padding-left: 0; padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
+  html.dk-coque .dk-coque-retour { padding: 8px 16px 0; }
+  .dk-rail {
+    top: auto; right: 0; width: auto; height: calc(64px + env(safe-area-inset-bottom, 0px));
+    flex-direction: row; justify-content: space-around; align-items: flex-start; gap: 0;
+    padding: 4px 4px env(safe-area-inset-bottom, 0px); border-right: 0; border-top: 1px solid var(--dk-line-strong); overflow: hidden;
+  }
+  .dk-plus, .dk-plus-vide, .dk-sp, .dk-sec { display: none; }
+  .dk-ni { flex: 1 1 0; width: auto; min-width: 0; min-height: 56px; padding: 4px 2px; }
+  .dk-coque-fab {
+    display: grid; position: fixed; right: 16px; bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 16px); z-index: 89;
+    width: 56px; height: 56px; margin: 0; border-radius: var(--dk-r-pill);
+  }
+  .dk-coque-mob { display: block; }
+  .dk-coque-menu { transform-origin: bottom center; width: auto; max-width: none; border-radius: var(--dk-r-card); }
+  html.dk-coque #v2-horsligne { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+  html.dk-coque #toast { bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 16px); }
+}
+@media (prefers-reduced-motion: reduce) { .dk-ni, .dk-plus, .dk-coque-fab, .dk-coque-dev summary::after { transition: none; } }

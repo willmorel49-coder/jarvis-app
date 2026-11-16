@@ -497,9 +497,10 @@
   function jourIso() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
   function dateLongue() { return new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(/\b1 /, '1er '); }
   function chev(n) { return P().ic('chev', n || 18); }
-  function top(ic, lab, extra) { return '<div class="m1-top"><span class="m1-ico">' + P().ic(ic, 20) + '</span><span class="m1-lab">' + esc(lab) + '</span>' + (extra || '') + '</div>'; }
+  // 14/11/2026 (refonte d4) : avec t et k, le titre de la carte EST le lien vers l'écran (il vivait dans un titre répété en pied de carte).
+  function top(ic, lab, extra, t, k) { return '<div class="m1-top"><span class="m1-ico">' + P().ic(ic, 20) + '</span>' + (t ? '<a class="m1-lab m1-go"' + lien(t, k) + '>' + esc(lab) + '</a>' : '<span class="m1-lab">' + esc(lab) + '</span>') + (extra || '') + '</div>'; }
   function pied(t, k, nom, slotK, corps) {
-    return '<div class="m1-foot"><h3><a class="m1-go"' + lien(t, k) + '><span>' + esc(nom) + '</span></a></h3><p data-slot="' + slotK + '">' + corps + '</p></div>';
+    return '<div class="m1-foot"><p data-slot="' + slotK + '">' + corps + '</p></div>';   // 14/11/2026 : plus de titre répété, seulement la légende
   }
   var _fait = {}, _aff = [];   // To do : les lignes cochées pendant cette visite restent à l'écran, rayées
 
@@ -528,7 +529,8 @@
     return '<div class="u2-salut m1-hd ac-in" style="--i:0"><div class="m1-hd-t"><p class="v2-sous m1-eye">' + esc(dateLongue()) + '</p>' +
       '<h1 class="v2-titre" id="u2-salut">' + esc(P().salut()) + '</h1>' +
       '<p class="v2-sous m1-phrase" data-slot="h.phrase">' + slot('h.phrase', ctx) + '</p></div>' +
-      '<span class="m1-hd-a" data-slot="h.reprendre">' + slot('h.reprendre', ctx) + '</span></div>';
+      '<div class="dk-actions"><span class="m1-hd-a" data-slot="h.reprendre">' + slot('h.reprendre', ctx) + '</span>' +
+      '<button type="button" class="dk-btn dk-btn-2 dk-modifier" data-u2-rail="perso" aria-pressed="false">Modifier</button></div></div>';
   }
   function m1Une(u) {
     var p = P(), t = u.href ? u : p.outil(u.page);
@@ -562,22 +564,23 @@
     var D = cmpDonnees();
     if (!D) return '<p class="m1-sub">' + (window.MARGE_CLIENTS && window.MARGE_CLIENTS.r ? 'Pas encore de chiffres de marge pour votre secteur.' : 'Les chiffres de marge se chargent : le détail arrive.') + '</p>';
     var v = D.S.caCl, f = D.M.caCl, mx = Math.max(Math.abs(v), Math.abs(f), 1e-9), diff = f ? (v - f) / Math.abs(f) * 100 : null;
-    var w = function (x) { return Math.max(2, Math.min(100, Math.abs(x) / mx * 100)).toFixed(1); };
     var mot = V2.cl1Mot ? V2.cl1Mot(v, f) : '', pm = cl1PerMarge();
     var ecart = diff == null ? '' : '<span class="cl1-ecart">' + (diff >= 0 ? '+' : '−') + cDec(Math.abs(diff)) + ' % par rapport à la moyenne</span>';
-    var per = pm ? pm.lib + (pm.inc.length ? ' (' + pm.inc.join(' et ') + (pm.inc.length > 1 ? ' incomplets' : ' incomplet') + ' : à comparer avec prudence)' : '') : D.lib + D.note;
-    return '<div class="m1-vs-h"><span>Chiffre d’affaires par client et par mois : votre secteur face à la moyenne des clients Intégral</span></div>' +
-      (mot ? '<div class="cl1-mot-l">' + mot + ecart + '</div>' : '') +
-      '<div class="m1-vs-r"><span>Mon secteur</span><i class="m1-trk"><i class="m1-fill" style="width:' + w(v) + '%"></i></i><b>' + esc(cEur(v)) + '</b></div>' +
-      '<div class="m1-vs-r"><span>Moyenne Intégral</span><i class="m1-trk"><i class="m1-fill m1-grey" style="width:' + w(f) + '%"></i></i><b>' + esc(cEur(f)) + '</b></div>' +
-      '<div class="m1-per">' + esc(per) + ' · même échelle pour les deux barres, de 0 à ' + esc(cEur(mx)) + '</div>';
+    // 14/11/2026 (refonte d4) — l'anneau : la part que « Mon secteur » représente de la « Moyenne Intégral » (mêmes deux chiffres que les lignes dessous), plafonné à un tour complet.
+    var pc = (f > 0 && v >= 0) ? Math.round(v / f * 100) : null;
+    var anneau = pc == null ? '' : '<div class="dk-ring" role="img" aria-label="Mon secteur : ' + pc + ' % de la moyenne Intégral"><svg viewBox="0 0 120 120" aria-hidden="true"><circle class="dk-ring-b" cx="60" cy="60" r="50" pathLength="100"/><circle class="dk-ring-v" cx="60" cy="60" r="50" pathLength="100" stroke-dasharray="' + Math.min(100, pc) + ' 100" transform="rotate(-90 60 60)"/></svg><span class="dk-ring-c"><b>' + pc + ' %</b><small>de la moyenne</small></span></div>';
+    var note = 'Chiffre d’affaires par client et par mois · ' + (pm ? pm.lib + (pm.inc.length ? ' · ' + pm.inc.join(' et ') + (pm.inc.length > 1 ? ' incomplets' : ' incomplet') + ' : à comparer avec prudence' : '') : D.lib + D.note);
+    return '<div class="dk-vs-m">' + anneau + '<div class="dk-vs-l">' + (mot ? '<div class="cl1-mot-l">' + mot + ecart + '</div>' : '') +
+      '<div class="m1-vs-r"><span><i class="dk-sw1"></i>Mon secteur</span><b>' + esc(cEur(v)) + '</b></div>' +
+      '<div class="m1-vs-r"><span><i class="dk-sw2"></i>Moyenne Intégral</span><b>' + esc(cEur(f)) + '</b></div></div></div>' +
+      '<div class="m1-per">' + esc(note) + '</div>';
   }
   function m1Rel() {
-    var l = null; try { l = V2.decrochageUI && V2.decrochageUI.liste ? V2.decrochageUI.liste(4) : null; } catch (e) {}
+    var l = null; try { l = V2.decrochageUI && V2.decrochageUI.liste ? V2.decrochageUI.liste(3) : null; } catch (e) {}
     if (!l || !l.length) return '';
     return '<span class="m1-rel-h">À rappeler</span>' + l.map(function (x) {
       var id = encodeURIComponent(x.pid);
-      return '<a class="m1-chip" href="#pharma/' + id + '" data-u2-act="rel:' + id + '"><b>' + esc(court(x.nom)) + '</b><span>' + esc(x.ville) + '</span></a>';
+      return '<a class="m1-chip dk-row-h" href="#pharma/' + id + '" data-u2-act="rel:' + id + '"><b>' + esc(court(x.nom)) + '</b><span>' + esc(x.ville) + '</span></a>';
     }).join('');
   }
 
@@ -594,7 +597,7 @@
   function m1Todo() {
     var l = todoListe();
     if (!l) return '<p class="m1-vide">Chargement de votre liste…</p>';
-    if (!l.length) return '<p class="m1-vide">Rien à faire pour l’instant.</p>';
+    if (!l.length) return '<div class="dk-empty-a"><p class="dk-empty">Rien à faire pour l’instant.</p><a class="dk-btn dk-btn-2"' + lien(P().outil('todo'), 'todo') + '>Ajouter une tâche</a></div>';
     return '<div class="m1-tlist">' + l.map(function (x, j) {
       var on = !!_fait[x.id];
       return '<button type="button" class="m1-trow m1-above" role="checkbox" aria-checked="' + on + '" data-u2-a="todo" data-v="' + esc(x.id) + '" style="--j:' + j + '">' +
@@ -611,7 +614,7 @@
   function m1TodoPied() {
     var p = P(), l = p.todoItems(); if (l === null) return '';
     var open = V2.todo && V2.todo.ouverts ? V2.todo.ouverts() : [];
-    if (!open.length) return 'Ouvrir pour ajouter une tâche';
+    if (!open.length) return '';   // l'état vide porte déjà le bouton « Ajouter une tâche »
     var j = jourIso(), nj = open.filter(function (x) { return x.pour && x.pour <= j; }).length;
     return nj ? plur(nj, 'tâche pour aujourd’hui', 'tâches pour aujourd’hui') : plur(open.length, 'tâche à faire', 'tâches à faire');
   }
@@ -719,29 +722,29 @@
   function cOff(ctx) {
     var t = ctx.t.pharma;
     return '<section class="ac-c ac-c-pharma m1-c m1-off ac-in" style="--i:1;--ph:' + PHASE.pharma + '" aria-label="' + esc(t.nom) + '"><span class="ac-fond" aria-hidden="true"></span>' + scn('off', sceneOff(), 'ac-sc-off') +
-      top('pharma', t.nom, '<span class="m1-sl" data-slot="h.pill">' + slot('h.pill', ctx) + '</span>') +
+      top('pharma', t.nom, '<span class="m1-sl" data-slot="h.pill">' + slot('h.pill', ctx) + '</span>', t, 'pharma') +
       '<div class="m1-off-b"><div data-slot="h.nb">' + slot('h.nb', ctx) + '</div><div class="m1-vs" data-slot="h.cmp">' + slot('h.cmp', ctx) + '</div></div>' +
       '<div class="m1-rel" data-slot="h.rel">' + slot('h.rel', ctx) + '</div>' +
       '<div class="m1-foot"><h3><a class="m1-go"' + lien(t, 'pharma') + '><span>Ouvrir mes officines</span></a></h3></div></section>';
   }
   function cTodo(ctx) {
     var t = ctx.t.todo;
-    return '<section class="ac-c ac-c-todo m1-c m1-todo ac-in" style="--i:2;--ph:' + PHASE.todo + '" aria-label="' + esc(t.nom) + '">' + scn('todo', sceneTodo(), 'ac-sc-td') + top('todo', t.nom, '<span class="m1-arrow">' + chev() + '</span>') +
+    return '<section class="ac-c ac-c-todo m1-c m1-todo ac-in" style="--i:2;--ph:' + PHASE.todo + '" aria-label="' + esc(t.nom) + '">' + scn('todo', sceneTodo(), 'ac-sc-td') + top('todo', t.nom, '<span class="m1-arrow">' + chev() + '</span>', t, 'todo') +
       '<div data-slot="todo.bd">' + slot('todo.bd', ctx) + '</div>' + pied(t, 'todo', t.nom, 'todo.ft', slot('todo.ft', ctx)) + '</section>';
   }
   function cInfos(ctx) {
     var t = ctx.t.infos;
-    return '<section class="ac-c ac-c-infos m1-c m1-infos ac-in" style="--i:3;--ph:' + PHASE.infos + '" aria-label="' + esc(t.nom) + '">' + scn('infos', sceneInfos()) + top('infos', t.nom, '<span class="m1-sl" data-slot="infos.pt">' + slot('infos.pt', ctx) + '</span>') +
+    return '<section class="ac-c ac-c-infos m1-c m1-infos ac-in" style="--i:3;--ph:' + PHASE.infos + '" aria-label="' + esc(t.nom) + '">' + scn('infos', sceneInfos()) + top('infos', t.nom, '<span class="m1-sl" data-slot="infos.pt">' + slot('infos.pt', ctx) + '</span>', t, 'infos') +
       '<div data-slot="infos.bd">' + slot('infos.bd', ctx) + '</div>' + pied(t, 'infos', t.nom, 'infos.ft', slot('infos.ft', ctx)) + '</section>';
   }
   function cGrp(ctx) {
     var t = { k: 'groupements', nom: GRP.nom, ph: GRP.ph, href: GRP.href, act: GRP.act };
-    return '<section class="ac-c ac-c-groupements m1-c m1-grp ac-in" style="--i:4;--ph:' + PHASE.groupements + '" aria-label="' + esc(t.nom) + '">' + scn('grp', '<span data-slot="grp.sc" class="ac-slot-sc">' + slot('grp.sc', ctx) + '</span>', 'ac-sc-gr') + top('clients', t.nom, '<span class="m1-arrow">' + chev() + '</span>') +
+    return '<section class="ac-c ac-c-groupements m1-c m1-grp ac-in" style="--i:4;--ph:' + PHASE.groupements + '" aria-label="' + esc(t.nom) + '">' + scn('grp', '<span data-slot="grp.sc" class="ac-slot-sc">' + slot('grp.sc', ctx) + '</span>', 'ac-sc-gr') + top('clients', t.nom, '<span class="m1-arrow">' + chev() + '</span>', t, 'groupements') +
       '<div data-slot="grp.bd">' + slot('grp.bd', ctx) + '</div>' + pied(t, 'groupements', t.nom, 'grp.ft', slot('grp.ft', ctx)) + '</section>';
   }
   function cOffi(ctx) {
     var t = ctx.t.offilog;
-    return '<section class="ac-c ac-c-offilog m1-c m1-offi ac-in" style="--i:5;--ph:' + PHASE.offilog + '" aria-label="' + esc(t.nom) + '">' + scn('offi', sceneOffi(), 'ac-sc-of') + top('offilog', t.nom, '<span class="m1-arrow">' + chev() + '</span>') +
+    return '<section class="ac-c ac-c-offilog m1-c m1-offi ac-in" style="--i:5;--ph:' + PHASE.offilog + '" aria-label="' + esc(t.nom) + '">' + scn('offi', sceneOffi(), 'ac-sc-of') + top('offilog', t.nom, '<span class="m1-arrow">' + chev() + '</span>', t, 'offilog') +
       '<div data-slot="offi.bd">' + slot('offi.bd', ctx) + '</div>' + pied(t, 'offilog', t.nom, 'offi.ft', slot('offi.ft', ctx)) + '</section>';
   }
   // v3 : onglet caché = toutes les boucles de la grille s'arrêtent (la case hors écran est déjà arrêtée par l'observateur plus bas : ac-hors)

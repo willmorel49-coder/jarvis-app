@@ -983,7 +983,7 @@
   var X13_SRC = { regle: 'Journal officiel', rupture: 'Agence du médicament', rappel: 'Agence du médicament', officine: 'Annonces légales', actu: '', concurrent: '' };
   var X13_ICO = { regle: 'loi', rupture: 'rupture', rappel: 'rappel', officine: 'cession', concurrent: 'concurrent', actu: 'journal' };
   var X13 = { liste: [], orig: null, fin: 0, tx: null };
-  var INF = { vu: false, t: 0, stop: false, obs: null, porte: null, y: 0, opener: null, garde: null, html: '', france: [] };   // porte : la porte ouverte (null = les trois portes) ; garde : #pp-pan mis de côté pendant qu'on redessine la page
+  var INF = { filtre: 'tout', vu: false, t: 0, stop: false, obs: null, porte: null, y: 0, opener: null, garde: null, html: '', france: [] };   // porte : la porte ouverte (null = les trois portes) ; garde : #pp-pan mis de côté pendant qu'on redessine la page
   function x13T(s) { return esc(String(s == null ? '' : s).replace(/\btes\b/g, 'vos').replace(/\bton\b/g, 'votre')); }
   function x13N2(t) { return norm(t).replace(/[^a-z0-9]+/g, ' ').trim(); }
   function x13NomRupt(r) { return String(r.spec || '').split(/ – | - /)[0] || String(r.dci || ''); }
@@ -1129,7 +1129,8 @@
     var kick = e.bod ? e.fam : X13_RUB[e.rub];
     var titre = e.bod ? sctJoli(e.bod.nom) + ' · ' + sctJoli(e.bod.ville) : e.t;
     var dire = e.bod ? '<span class="inf-c-dire"><b>À dire en rendez-vous</b> ' + esc(sctGeste(e.bod, tag)) + '</span>' : '';
-    return '<li class="inf-c-li"><button type="button" class="inf-c-l" data-x13-i="' + i + '" data-info="' + esc(e.bod ? e.bod.id : x14Cle(e.t)) + '" style="--c:' + c + '">' +
+    if (!e.bod) { var p0 = ((e.item && e.item.paras) || []).filter(Boolean)[0] || ''; if (p0) dire = '<span class="inf-c-ch">' + esc(p0.length > 220 ? p0.slice(0, 217).replace(/\s+\S*$/, '') + '…' : p0) + '</span>'; }   // le chapô, lu dans l'info elle-même (visible sur la grande carte « À la une »)
+    return '<li class="inf-c-li"><button type="button" class="inf-c-l" data-x13-i="' + i + '" data-info="' + esc(e.bod ? e.bod.id : x14Cle(e.t)) + '" data-dki-cat="' + dkiCat(e) + '" style="--c:' + c + '">' +
       '<span class="inf-c-k" style="' + infKick(c) + '"><i aria-hidden="true"></i><span>' + esc(kick) + '</span>' + (tag === 'client' ? '<span class="x13-neuf">Votre client</span>' : '') +
       '<em>' + esc(e.bod ? (a || 'Annonces légales') : (a ? a + ' · ' : '') + String(x13Source(e))) + '</em></span>' +
       '<span class="inf-c-lt">' + x13T(titre) + '</span>' + dire + '</button></li>';
@@ -1146,13 +1147,13 @@
     var p1 = '<article class="inf-c-porte" data-porte="secteur">' + infPorteTete('secteur', titreSec, sousSec, nSec, 'annonces en 3\u00a0mois') +
       (sec.length ? '<ul class="inf-c-ls">' + sec.map(function (e) { return infLigne(e, i++); }).join('') + '</ul>' :
         '<p class="inf-c-vide">Rien de neuf ces 14 derniers jours dans ' + (S.deps ? 'votre secteur' : 'les officines') + '.</p>') + piedSec + '</article>';
-    var p2 = '<article class="inf-c-porte" data-porte="france">' + infPorteTete('france', 'En France', 'Ce qui touche toutes les officines.', pris.length, pris.length > 1 ? 'infos à retenir' : 'info à retenir') +
+    var p2 = '<article class="inf-c-porte" data-porte="france">' + infPorteTete('france', 'À la une', 'En France : ce qui touche toutes les officines.', pris.length, pris.length > 1 ? 'infos à retenir' : 'info à retenir') +
       (pris.length ? '<ul class="inf-c-ls">' + pris.map(function (e) { return infLigne(e, i++); }).join('') + '</ul>' : '<p class="inf-c-vide">Rien de neuf en France aujourd’hui.</p>') +
       (pris.length ? '<button type="button" class="inf-c-pied" data-porte-ouvre="france"><span>Lire ' + (pris.length > 1 ? 'les ' + pris.length + ' infos' : 'l’info') + '</span><span class="inf-c-chev" aria-hidden="true">' + infChev() + '</span></button>' : '') + '</article>';
     var p3 = '<article class="inf-c-porte" data-porte="reste">' + infPorteTete('reste', 'Tout le reste', 'Les autres rubriques, une ligne chacune.', rub.length, 'rubriques') +
-      '<div class="inf-c-reste">' + rub.map(function (r) {
-        return '<button type="button" class="inf-c-rub" data-ouvre="' + r.cle + '" style="--c:' + r.c + '"><span class="inf-c-ri" aria-hidden="true">' + ppIco(r.ico, 17) + '</span><span class="inf-c-rt"><span class="inf-c-rl">' + esc(r.lib) + '</span>' + (r.n != null && r.u ? '<span class="inf-c-ru">' + esc(r.u) + '</span>' : '') + '</span>' +
-          (r.n != null ? '<span class="inf-c-rn">' + esc(r.n) + '</span>' : '') + '<span class="inf-c-rc" aria-hidden="true">' + infChev(16) + '</span></button>';
+      '<div class="inf-c-reste dk-group">' + rub.map(function (r) {
+        return '<button type="button" class="inf-c-rub dk-row" data-ouvre="' + r.cle + '" style="--c:' + r.c + ';--dk-c:' + r.c + '"><span class="dk-row-l"><span class="inf-c-ri dk-ti" aria-hidden="true">' + ppIco(r.ico, 18) + '</span></span><span class="inf-c-rt dk-row-b"><span class="inf-c-rl dk-row-t">' + esc(r.lib) + '</span>' + (r.n != null && r.u ? '<span class="inf-c-ru dk-row-s">' + esc(r.u) + '</span>' : '') + '</span>' +
+          (r.n != null ? '<span class="inf-c-rn dk-row-v">' + esc(r.n) + '</span>' : '') + '<span class="inf-c-rc dk-row-c" aria-hidden="true">' + infChev(16) + '</span></button>';
       }).join('') + '</div></article>';
     return '<div class="inf-c-portes">' + p1 + p2 + p3 + '</div>';
   }
@@ -1216,8 +1217,8 @@
     var arr = !INF.vu || Date.now() - INF.t < 900; if (!INF.vu) INF.t = Date.now(); INF.vu = true; INF.stop = false;   // l'arrivée ne joue qu'une fois par ouverture de l'écran ; un second dessin dans les 900 ms la poursuit là où elle en est
     var sk = Date.now() - INF.t;
     var nFil = X14.liste.length, fil = x14Rend(), ed = infEdition(jour, (D.C.sources_lues || []).length || D.C.fichiers || 0);
-    return '<div class="w-page x13 x13v3 inf-m1 inf-c' + (INF.porte ? ' inf-c-ouvert' : '') + (arr ? ' inf-ent' : '') + '"' + (arr && sk > 30 ? ' style="--inf-sk:-' + sk + 'ms"' : '') + '>' +
-      infEntete(esc(ed.eye), infPhrase(S, sec, pris, nFil), ed.ligne) +
+    return '<div class="w-page x13 x13v3 inf-m1 inf-c dki' + (INF.porte ? ' inf-c-ouvert' : '') + '">' +
+      infEntete(esc(ed.eye), infPhrase(S, sec, pris, nFil), ed.ligne) + infPastilles(S, [sec, pris, X14.liste]) +
       '<div class="inf-c-zone" id="inf-zone">' + (INF.porte ? infVoletCoque(INF.porte) : INF.html) + '</div>' + fil + '</div>';
   }
   /* ── l'en-tête bleu : date de l'édition, titre, UNE phrase calculée sur les lignes affichées, « Copier le brief » ── */
@@ -1238,8 +1239,32 @@
     return s;
   }
   function infEntete(date, phrase, ligne) {
-    return '<header class="inf-hd"><span class="inf-lu" aria-hidden="true"></span><div class="inf-hd-t"><p class="inf-eye">' + date + '</p><h1 class="inf-h1">Infos du jour</h1><p class="inf-phrase">' + phrase + '</p><p class="inf-ed">' + ligne + '</p></div>' +
-      '<button type="button" class="inf-copie" data-lbl="Copier le brief" onclick="V2.infosCopyBrief(this)">' + ppIco('copier', 18) + 'Copier le brief</button></header>';
+    return '<header class="dk-hd dki-hd"><div class="dk-hd-t"><p class="inf-eye">' + date + '</p><h1 class="dk-title inf-h1">Infos du jour</h1><p class="inf-phrase">' + phrase + '</p><p class="inf-ed">' + ligne + '</p></div>' +
+      '<div class="dk-actions"><button type="button" class="dk-btn dk-btn-2 dki-copie" data-lbl="Copier le brief" onclick="V2.infosCopyBrief(this)">' + ppIco('copier', 18) + 'Copier le brief</button></div></header>';
+  }
+  /* 14/11/2026 (refonte d4) — les pastilles-filtres : une par catégorie qui a VRAIMENT des infos affichées (À la une, secteur, fil), avec son vrai nombre ;
+     elles ne s'affichent que s'il y en a au moins deux. Une pastille cache les cartes des autres catégories (data-dki-cat) ; rien n'est retiré de la page. */
+  var DKI_LIB = { officine: 'Officines', rupture: 'Ruptures', rappel: 'Rappels de lot', regle: 'Prix et règles', concurrent: 'Concurrents', actu: 'Actualité' };
+  function dkiCat(e) { return (e && (e.bod || e.rub === 'officine')) ? 'officine' : ((e && e.rub) || ''); }
+  function infPastilles(S, listes) {
+    var n = {}, tot = 0;
+    listes.forEach(function (L) { (L || []).forEach(function (e) { var c = dkiCat(e); if (!DKI_LIB[c]) return; n[c] = (n[c] || 0) + 1; tot++; }); });
+    var cles = Object.keys(DKI_LIB).filter(function (c) { return n[c]; });
+    if (INF.filtre && INF.filtre !== 'tout' && !n[INF.filtre]) INF.filtre = 'tout';
+    if (cles.length < 2) return '';
+    var f = INF.filtre || 'tout';
+    return '<div class="dki-chips" role="group" aria-label="Filtrer les infos du jour"><button type="button" class="dk-chip" data-dki-f="tout" aria-pressed="' + (f === 'tout') + '">Tout <span class="dki-n">' + tot + '</span></button>' +
+      cles.map(function (c) { return '<button type="button" class="dk-chip" data-dki-f="' + c + '" aria-pressed="' + (f === c) + '">' + esc(c === 'officine' && S.deps ? 'Dans mon secteur' : DKI_LIB[c]) + ' <span class="dki-n">' + n[c] + '</span></button>'; }).join('') + '</div>';
+  }
+  function dkiFiltrer(racine) {
+    var r = (racine || document).querySelector('.dki'); if (!r) return;
+    var f = INF.filtre || 'tout', ok = function (el) { return f === 'tout' || el.getAttribute('data-dki-cat') === f; };
+    [].forEach.call(r.querySelectorAll('[data-dki-cat]'), function (el) { var b = el.closest('li') || el; b.classList.toggle('dki-off', !ok(el)); });
+    [].forEach.call(r.querySelectorAll('[data-porte="secteur"],[data-porte="france"]'), function (s) {
+      var L = s.querySelectorAll('[data-dki-cat]'); if (!L.length) return;
+      var vu = false; [].forEach.call(L, function (el) { if (ok(el)) vu = true; }); s.classList.toggle('dki-off', !vu);
+    });
+    [].forEach.call(r.querySelectorAll('[data-dki-f]'), function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-dki-f') === f)); });
   }
   function infMaj() {   // le fil a été recalculé (source masquée) : les deux nombres du fil suivent
     var n = X14.liste.length, ns = document.querySelectorAll('[data-inf-fil]'), i;
@@ -1598,7 +1623,7 @@
   }
   function x15Redessine() {   // le fil est recalculé (sources masquées) et la section redessinée ; les cartes, elles, ne bougent pas quand on garde
     var s = document.querySelector('.f3-fil'); if (!s) return;
-    x15FermeMenu(false); x14Fil(); s.outerHTML = x14Rend(); infMaj();
+    x15FermeMenu(false); x14Fil(); s.outerHTML = x14Rend(); infMaj(); dkiFiltrer();
   }
 
   /* ── la liste « Sources masquées » (sous l'onglet « Gardées ») ── */
@@ -1622,7 +1647,7 @@
     var pied = '<div class="f3-pied"><span class="f3-qui"><span class="f3-src">' + esc(nom) + (age && !compact ? '<span aria-hidden="true">\u00a0·</span>' : '') + '</span>' + (age ? '<span class="f3-age">' + esc(age) + '</span>' : '') + '</span>' +
       (compact ? '<span class="f3-pc" role="img" aria-label="Info gardée"' + (on ? '' : ' hidden') + '>' + F3_COEUR + '</span>' : '') +
       '<span class="f3-act">' + coeur + menu + '</span></div>';
-    return '<li class="f3-li"><div class="f3-c ' + (compact ? 'f3-pet' : 'f3-gr') + '" tabindex="-1" data-f3-k="' + esc(k) + '">' +
+    return '<li class="f3-li"><div class="f3-c ' + (compact ? 'f3-pet' : 'f3-gr') + '" tabindex="-1" data-f3-k="' + esc(k) + '"' + (DKI_LIB[dkiCat(it)] ? ' data-dki-cat="' + dkiCat(it) + '"' : '') + '>' +
       (compact ? '<div class="f3-txt">' + ouv + pied + '</div><span class="f3-vig">' + img + '</span>'
                : '<span class="f3-vig">' + img + '</span><div class="f3-txt">' + ouv + pied + '</div>') + '</div></li>';
   }
@@ -1671,6 +1696,7 @@
     if (e.target.closest('[data-x13-ferme]') || (e.target.classList && e.target.classList.contains('x13-voile'))) { x13Ferme(); return; }
     var root = e.target.closest('.x13'); if (!root) return;
     var t;
+    if ((t = e.target.closest('[data-dki-f]'))) { INF.filtre = t.getAttribute('data-dki-f'); dkiFiltrer(); return; }
     if ((t = e.target.closest('[data-revenir]'))) { infRevenir(); return; }
     if ((t = e.target.closest('[data-ouvre]'))) { infOuvrir(t.getAttribute('data-ouvre'), t); return; }
     if ((t = e.target.closest('[data-porte-ouvre]'))) { infOuvrir(t.getAttribute('data-porte-ouvre'), t); return; }
@@ -1738,7 +1764,7 @@
           x13Page(D, jour, J) +
           '<footer class="pp-pied"><span>' + gen + '</span></footer>' +
         '</div>';
-      infApres(root);
+      infApres(root); dkiFiltrer(root);
       var vz = document.getElementById('inf-volet'); if (INF.garde) { if (vz) vz.appendChild(INF.garde); else document.body.appendChild(INF.garde); INF.garde = null; }
 
       // venu de l'ancienne feature « Concurrents » (#infos/concurrents) : ouvrir directement son panneau

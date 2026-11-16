@@ -165,8 +165,22 @@
   }
 
   V2._navStack = V2._navStack || ['home'];
+  // 16/11/2026 — l'écran d'où l'on vient, mémorisé AVANT d'écraser V2.route (V2._navStack n'est pas fiable : V2.goBack passe par l'historique natif et
+  // ne la met pas à jour). Une fiche officine (pharma + identifiant) n'est jamais mémorisée : ouverte depuis une autre fiche, elle garde l'origine « hors fiche ».
+  // Pour « pharma », V2.pharmaOrigine() dit dans quelle sous-vue on est (groupement ouvert ou non) à cet instant.
+  function memoriserOrigine(ancien, nouveau) {
+    try {
+      if (!ancien || !ancien.name) return;
+      if (nouveau && ancien.name === nouveau.name && (ancien.param || null) === (nouveau.param || null)) return;
+      if (ancien.name === 'pharma' && ancien.param && !/^(groupements|listes|carte|officines)$/.test(String(ancien.param))) return;
+      var o = { name: ancien.name, param: ancien.param || null };
+      if (o.name === 'pharma' && V2.pharmaOrigine) o.etat = V2.pharmaOrigine();
+      V2._venuDe = o;
+    } catch (e) {}
+  }
   V2.go = function (name, param) {
     __clearStaleErrBanner();
+    memoriserOrigine(V2.route, { name: name, param: param || null });
     // sens de navigation (pour la transition) : si on revient sur l'écran
     // précédent de la pile → 'back', sinon → 'fwd'
     try {
@@ -255,7 +269,7 @@
     var idee = (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.remonteeOpen)
       ? '<button type="button" class="tp-idee" title="Faire une remontée" aria-label="Faire une remontée" aria-haspopup="dialog" onclick="V2.remonteeOpen()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + U2_IC.remontees + '</svg></button>'
       : '';
-    return '' +
+    var ancienne = '' +
       '<div class="v2-top">' +
         '<div class="tp-g">' + back + brand + nom + '</div>' +
         '<div class="tp-d">' +
@@ -264,8 +278,157 @@
           '<button type="button" class="tp-avb" aria-label="Mon compte" aria-haspopup="menu" aria-expanded="false" title="' + esc(V2.user ? V2.user.name : '') + '" onclick="V2.userMenu(this)"><span class="v2-av">' + esc(initials) + '</span></button>' +
         '</div>' +
       '</div>';
+    // 14/11/2026 — nouvelle coque (maquette d4) : espace CRM seulement, jamais OPSO. L'ancienne barre reste dans la page, cachée par
+    // `html.dk-coque` (d'autres modules la cherchent) : si la feuille v2-dk-coque.css ou le montage manque, elle réapparaît telle qu'avant.
+    if (!dkActive()) return ancienne;
+    dkMonter(initials);
+    return ancienne + '<i class="dk-coque-ancre" hidden></i>' +
+      // 16/11/2026 (retouche 6a) : opts.coque = 'aujourdhui' -> lien « ‹ Aujourd’hui » vers l'Accueil (To do, Groupements, arrivée du Catalogue produits) ;
+      // 'aucun' -> pas de retour (écran qui est un onglet de la barre : Pilotage, Offilog). Sans option : le « Retour » d'avant.
+      (opts.coque === 'aucun' ? '' : opts.coque === 'aujourdhui'
+        ? '<div class="dk-coque-retour"><button type="button" class="dk-link dk-coque-aj" onclick="V2.go(\'home\')"><span aria-hidden="true">‹</span>&nbsp;Aujourd’hui</button></div>'
+        : (opts.back ? '<div class="dk-coque-retour"><button type="button" class="dk-btn dk-btn-2 dk-coque-back" onclick="V2.goBack()">' + ICO('back', 18, 2) + 'Retour</button></div>' : ''));
   }
   V2.topbar = topbar;
+
+  // ── COQUE d4 (14/11/2026) : rail à libellés (≥ 761 px) / barre d'onglets (≤ 760 px) + feuille « Outils » ──────────────
+  // Posée sur <body> (la racine de l'écran porte une transformation d'entrée qui collerait un élément fixe à la page entière).
+  // Espace CRM et Escale seulement : OPSO garde sa barre verte d'origine. Style : v2-dk-coque.css, classes .dk-rail et .dk-coque-*.
+  function dkActive() { return !(window.V2_BRAND && window.V2_BRAND.opso) && typeof document !== 'undefined' && !!document.body && !!document.createElement; }
+  var DK_NAV = [['home', 'Accueil', 'espace'], ['pharma', 'Officines', 'officines'], ['infos', 'Infos', 'infos'], ['offilog', 'Offilog', 'offilog']];
+  function dkRubrique() {
+    var n = V2.route && V2.route.name;
+    if (n === 'home' || n === 'todo') return 'home';
+    if (n === 'pharma' || n === 'infos' || n === 'offilog') return n;
+    return 'outils';
+  }
+  function dkMarquer() {
+    var r = dkRubrique();
+    [].forEach.call(document.querySelectorAll('#dk-rail [data-dk-nav]'), function (a) {
+      if (a.getAttribute('data-dk-nav') === r) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    });
+  }
+  function dkMonter(initials) {
+    try {
+      var w = document.getElementById('dk-coque');
+      if (!w) {
+        w = document.createElement('div'); w.id = 'dk-coque';
+        w.addEventListener('click', dkClic);
+        document.body.appendChild(w);
+      }
+      var perso = !!(V2.route && V2.route.name === 'home' && V2.accueilWidgets && V2.accueilWidgets.basculer);
+      var plus = plusItems().length > 0;
+      var h = '<nav class="dk-rail" id="dk-rail" aria-label="' + esc(((window.V2_BRAND && window.V2_BRAND.name) || 'JARVIS') + ' · navigation') + '">' +
+        (plus ? '<button type="button" class="dk-plus" data-dk="plus" aria-label="Actions rapides" aria-haspopup="menu" aria-expanded="false">' + ICO('plus', 26, 2.2) + '</button>' : '<span class="dk-plus-vide"></span>');
+      DK_NAV.forEach(function (n) { h += '<a class="dk-ni" href="#' + n[0] + '" data-dk-go="' + n[0] + '" data-dk-nav="' + n[0] + '">' + u2Ic(n[2], 24) + '<span>' + n[1] + '</span></a>'; });
+      h += '<button type="button" class="dk-ni" data-dk="outils" data-dk-nav="outils" aria-haspopup="dialog" aria-expanded="false">' + u2Ic('grille', 24) + '<span>Outils</span></button>';
+      h += '<span class="dk-sp"></span>';
+      h += '<button type="button" class="dk-ni dk-sec" data-dk="search" aria-label="Rechercher" aria-haspopup="dialog">' + ICO('search', 22, 1.9) + '<span>' + MOD + 'K</span></button>';
+      if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.remonteeOpen) h += '<button type="button" class="dk-ni dk-sec" data-dk="idee" aria-label="Faire une remontée" aria-haspopup="dialog" title="Faire une remontée"><svg class="u2-ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false" style="width:22px;height:22px">' + U2_IC.remontees + '</svg><span>Idée</span></button>';
+      if (perso) h += '<button type="button" class="dk-ni dk-sec" data-dk="perso" data-u2-rail="perso" aria-pressed="false">' + u2Ic('palette', 22) + '<span>Modifier</span></button>';
+      h += '<button type="button" class="dk-ni dk-sec dk-compte" data-dk="compte" aria-label="Mon compte" aria-haspopup="menu" aria-expanded="false" title="' + esc(V2.user ? V2.user.name : '') + '"><span class="dk-av">' + esc(initials || 'WM') + '</span></button>' +
+        '</nav>' +
+        (plus ? '<button type="button" class="dk-coque-fab" data-dk="plus" aria-label="Actions rapides" aria-haspopup="menu" aria-expanded="false">' + ICO('plus', 26, 2.2) + '</button>' : '');
+      w.innerHTML = h;
+      document.documentElement.classList.add('dk-coque');
+      dkMarquer();
+    } catch (e) { try { document.documentElement.classList.remove('dk-coque'); } catch (x) {} }
+  }
+  // Un écran qui ne pose pas topbar() (plein écran, connexion) ne montre pas la coque.
+  function dkVerifier() {
+    try {
+      var root = $app(), on = !!(root && root.querySelector('.dk-coque-ancre'));
+      if (!on) { document.documentElement.classList.remove('dk-coque'); dkFermer(true); }
+      else dkMarquer();
+    } catch (e) {}
+  }
+  V2.dkCoque = { maj: dkVerifier, ouvrirOutils: function () { dkOutils(true); } };
+
+  var _dk = { sheet: null, opener: null };
+  function dkLigne(k, t) {
+    var ext = !!t.ext;
+    return '<a class="dk-row" href="' + esc(t.href) + '"' + (ext ? ' target="_blank" rel="noopener"' : ' data-dk-go="' + esc(k) + '"') + ' data-tool="' + esc(k) + '">' +
+      '<span class="dk-row-l"><span class="dk-ti">' + u2Ic(k, 18) + '</span></span>' +
+      '<span class="dk-row-b"><span class="dk-row-t">' + esc(t.nom) + '</span><span class="dk-row-s">' + esc(t.ph || '') + '</span></span>' +
+      '<span class="dk-row-c" aria-hidden="true">›</span>' + (ext ? '<span class="u2-sr">, s\'ouvre dans un nouvel onglet</span>' : '') + '</a>';
+  }
+  function dkOutilsHtml() {
+    var h = '';
+    var esp = V2.basculeEspace && V2.basculeEspace();
+    if (esp) {
+      var e = u2Escale();
+      h += '<div class="dk-sh"><h2>Espace</h2></div><div class="dk-seg" role="tablist" aria-label="Espace">' +
+        '<button type="button" role="tab" aria-selected="' + !e + '" data-dk-esp="crm">Intégral</button>' +
+        '<button type="button" role="tab" aria-selected="' + e + '" data-dk-esp="escale">Escale</button></div>';
+    }
+    // Sur téléphone la barre d'onglets n'a pas de place pour les gestes du haut : ils sont ici (masqués sur ordinateur, où le rail les porte).
+    h += '<div class="dk-coque-mob"><div class="dk-sh"><h2>Raccourcis</h2></div><div class="dk-group">' +
+      '<button type="button" class="dk-row" data-dk="search"><span class="dk-row-l"><span class="dk-ti">' + ICO('search', 18, 2) + '</span></span><span class="dk-row-b"><span class="dk-row-t">Rechercher</span><span class="dk-row-s">Une pharmacie, un produit</span></span><span class="dk-row-c" aria-hidden="true">›</span></button>' +
+      ((V2.remonteeOpen && !(window.V2_BRAND && window.V2_BRAND.opso)) ? '<button type="button" class="dk-row" data-dk="idee"><span class="dk-row-l"><span class="dk-ti"><svg class="u2-ic" viewBox="0 0 24 24" aria-hidden="true" focusable="false" style="width:18px;height:18px">' + U2_IC.remontees + '</svg></span></span><span class="dk-row-b"><span class="dk-row-t">Faire une remontée</span><span class="dk-row-s">Proposer une amélioration</span></span><span class="dk-row-c" aria-hidden="true">›</span></button>' : '') +
+      '<button type="button" class="dk-row" data-dk="compte-f"><span class="dk-row-l"><span class="dk-ti">' + u2Ic('user', 18) + '</span></span><span class="dk-row-b"><span class="dk-row-t">Mon compte</span><span class="dk-row-s">' + esc(V2.user ? V2.user.name : '') + '</span></span><span class="dk-row-c" aria-hidden="true">›</span></button>' +
+      '</div></div>';
+    var etat;
+    try { u2S(); g4ChargerOrdre(); etat = u2Etat(); } catch (x) { etat = { fams: [] }; }
+    etat.fams.filter(function (f) { return f.k !== 'accueil'; }).forEach(function (f) {
+      var lignes = f.cles.map(function (k) { return dkLigne(k, u2Outil(k)); }).join('');
+      if (f.k === 'dev') h += '<details class="dk-coque-dev"><summary>' + esc(f.nom) + ' <span class="dk-sh-n">' + f.cles.length + '</span></summary><p class="dk-coque-note">Ces outils marchent, mais ils ne sont pas encore au point.</p><div class="dk-group">' + lignes + '</div></details>';
+      else h += '<div class="dk-sh"><h2>' + esc(f.nom) + ' <span class="dk-sh-n">' + f.cles.length + '</span></h2></div><div class="dk-group">' + lignes + '</div>';
+    });
+    return h;
+  }
+  function dkFermer(sans) {
+    var sh = _dk.sheet; if (!sh) return;
+    _dk.sheet = null;
+    document.removeEventListener('keydown', dkTouche, true);
+    document.documentElement.classList.remove('dk-coque-bloque');
+    if (sh.parentNode) sh.parentNode.removeChild(sh);
+    var b = document.querySelector('#dk-rail [data-dk="outils"]'); if (b) b.setAttribute('aria-expanded', 'false');
+    if (!sans && _dk.opener && document.contains(_dk.opener)) { try { _dk.opener.focus({ preventScroll: true }); } catch (e) {} }
+  }
+  function dkTouche(e) {
+    var sh = _dk.sheet; if (!sh) return;
+    if (e.key === 'Escape') { e.preventDefault(); dkFermer(); return; }
+    if (e.key !== 'Tab') return;
+    var f = [].filter.call(sh.querySelectorAll('a[href],button,summary,[tabindex="0"]'), function (x) { return x.offsetParent !== null; });
+    if (!f.length) return;
+    var a = document.activeElement, i = f.indexOf(a);
+    if (e.shiftKey && (i <= 0)) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && (i === f.length - 1 || i < 0)) { e.preventDefault(); f[0].focus(); }
+  }
+  function dkOutils(on) {
+    if (_dk.sheet) { dkFermer(); if (on !== true) return; }
+    _dk.opener = document.activeElement && document.activeElement !== document.body ? document.activeElement : document.querySelector('#dk-rail [data-dk="outils"]');
+    var w = document.createElement('div'); w.className = 'dk-sheetwrap dk-coque-sheet'; w.id = 'dk-coque-sheet';
+    w.innerHTML = '<div class="dk-scrim" data-dk="fermer"></div><div class="dk-sheet" role="dialog" aria-modal="true" aria-label="Outils" tabindex="-1">' +
+      '<div class="dk-sheet-bar"><h2>Outils</h2><button type="button" class="dk-btn dk-btn-2" data-dk="fermer">Fermer</button></div>' +
+      '<div class="dk-sheet-body">' + dkOutilsHtml() + '</div></div>';
+    document.body.appendChild(w);
+    _dk.sheet = w;
+    document.documentElement.classList.add('dk-coque-bloque');
+    var b = document.querySelector('#dk-rail [data-dk="outils"]'); if (b) b.setAttribute('aria-expanded', 'true');
+    w.addEventListener('click', dkClic);
+    document.addEventListener('keydown', dkTouche, true);
+    var sh = w.querySelector('.dk-sheet'); if (sh) { try { sh.focus({ preventScroll: true }); } catch (e) {} }
+  }
+  function dkClic(e) {
+    var t = e.target; if (!t || !t.closest) return;
+    var b;
+    if ((b = t.closest('[data-dk-esp]'))) { var v = b.getAttribute('data-dk-esp'); if ((v === 'escale') !== u2Escale()) V2.goSpace(v); return; }
+    if ((b = t.closest('[data-dk-go]'))) {
+      e.preventDefault(); dkFermer(true);
+      V2.go(b.getAttribute('data-dk-go')); return;
+    }
+    if (!(b = t.closest('[data-dk]'))) return;
+    var a = b.getAttribute('data-dk');
+    if (a === 'fermer') { dkFermer(); return; }
+    if (a === 'outils') { dkOutils(); return; }
+    if (a === 'plus') { V2.plusMenu(b); return; }
+    if (a === 'search') { dkFermer(true); V2.onTopSearch(); return; }
+    if (a === 'idee') { dkFermer(true); V2.remonteeOpen(); return; }
+    if (a === 'compte') { V2.userMenu(b); return; }
+    if (a === 'compte-f') { dkFermer(true); V2.userMenu(document.querySelector('#dk-rail [data-dk="compte"]')); return; }
+    if (a === 'perso') { if (V2.accueilWidgets && V2.accueilWidgets.basculer) V2.accueilWidgets.basculer(b); return; }
+  }
 
   // 19/10/2026 — au téléphone, la barre du haut part quand on descend et revient dès qu'on remonte un peu
   // (classe `v2-top-part` sur <html>, le style est dans v2-pieces.css). En haut de page elle est toujours là.
@@ -322,6 +485,12 @@
       var r = btn.getBoundingClientRect();
       m.style.top = Math.round(r.bottom + 8) + 'px';
       m.style.right = Math.max(12, Math.round(window.innerWidth - r.right)) + 'px';
+      if (btn.closest && btn.closest('#dk-coque')) {   // coque d4 : à côté du rail (ordinateur) ou feuille basse au-dessus de la barre d'onglets (téléphone)
+        m.classList.add('dk-coque-menu');
+        if (window.innerWidth <= 760) { m.style.top = 'auto'; m.style.left = '16px'; m.style.right = '16px'; m.style.bottom = 'calc(80px + env(safe-area-inset-bottom,0px))'; }
+        else if (r.top > window.innerHeight / 2) { m.style.top = 'auto'; m.style.right = 'auto'; m.style.left = Math.round(r.right + 12) + 'px'; m.style.bottom = Math.max(12, Math.round(window.innerHeight - r.bottom)) + 'px'; }
+        else { m.style.right = 'auto'; m.style.left = Math.round(r.right + 12) + 'px'; m.style.top = Math.max(12, Math.round(r.top)) + 'px'; }
+      }
       btn.setAttribute('aria-expanded', 'true');
       var f = m.querySelector('[role=menuitem]'); if (f) { try { f.focus(); } catch (e) {} }
     }
@@ -425,7 +594,7 @@
     }).catch(function () {});
   }
   V2.userMenu = function (btn) {
-    if (u2PanneauAvatar(btn)) return;   // accueil u2 sous 1100 px : le panneau « Mon espace » remplace ce menu
+    if (!(btn && btn.closest && btn.closest('#dk-coque')) && u2PanneauAvatar(btn)) return;   // accueil u2 sous 1100 px : le panneau « Mon espace » remplace ce menu
     var installed = false;
     try { installed = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch (e) {}
     var m = menuBarre('v2-usermenu', btn && btn.getBoundingClientRect ? btn : null,
@@ -788,6 +957,7 @@
       root.innerHTML = topbar({ back: true }) + '<div class="v2-wrap"><div class="v2-empty"><div class="v2-empty-t">Une erreur est survenue</div><div class="v2-empty-d">' + (e && e.message ? e.message : '') + '</div><button class="v2-btn v2-btn-primary" onclick="V2.go(\'home\')">Retour à l\'accueil</button></div></div>';
     }
     if (V2.bandeauDonneesManquantes) V2.bandeauDonneesManquantes();
+    dkVerifier();   // 14/11/2026 : la coque d'un écran qui n'a pas posé de barre disparaît
     if (V2.installBanner) V2.installBanner();
     // Le bouton « noter un rendez-vous » vit sur TOUS les écrans : on le
     // repose après chaque rendu, car il doit s'effacer quand une barre
@@ -1907,7 +2077,7 @@
     _u2.entree = true; _u2.ouvert = false; _u2.opener = null; _u2.sec = null; _u2.sig = {}; _u2.mode = u2Mode(); _u2.sig.rtools = u2OutilsHtml([]);
     u2Verrou(false);
     var etat = u2Etat();
-    root.innerHTML = '<div class="u2-page' + (cascade ? ' u2-cascade' : '') + '"' + u2StyleAttr() + '>' +
+    root.innerHTML = '<div class="u2-page dk-acc' + (cascade ? ' u2-cascade' : '') + '"' + u2StyleAttr() + '>' +
       '<button type="button" class="u2-skip" data-u2-skip>Aller aux outils</button>' + topbar() +
       '<div class="pb-band" id="pb-band" role="region" aria-label="Personnaliser mon accueil" hidden></div>' +
       '<div class="u2-grille">' +
@@ -1966,7 +2136,7 @@
       u2Garder(); if (V2.accueilCinq) V2.accueilCinq.maj();
     },
     reset: function () { _u2.S = u2Def(); u2Garder(); u2PoserTeinte(); u2MajCentre(); u2MajWidgets(); },
-    rail: function (on) { var b = document.querySelector('[data-u2-rail="perso"]'); if (b) b.setAttribute('aria-pressed', String(!!on)); }
+    rail: function (on) { [].forEach.call(document.querySelectorAll('[data-u2-rail="perso"]'), function (b) { b.setAttribute('aria-pressed', String(!!on)); if (b.classList.contains('dk-modifier')) b.textContent = on ? 'Terminé' : 'Modifier'; }); }   // 14/11/2026 : le rail ET le bouton « Modifier » de l'en-tête
   };
 
   // Spotlight : la souris met à jour --mx/--my sur la tuile survolée
@@ -2852,7 +3022,7 @@
     }
     window.addEventListener('hashchange', function () {
       var r = parseHash();
-      if (r.name !== V2.route.name || r.param !== V2.route.param) { __clearStaleErrBanner(); V2.route = r; V2.render(); }
+      if (r.name !== V2.route.name || r.param !== V2.route.param) { __clearStaleErrBanner(); memoriserOrigine(V2.route, r); V2.route = r; V2.render(); }   // 16/11/2026 — origine mémorisée aussi au retour / à l'adresse tapée
     });
   };
 

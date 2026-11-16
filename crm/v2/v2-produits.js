@@ -1646,7 +1646,7 @@
       // « Le comptoir » (v2-comptoir.js, choix de Will du 15/09/2026) est la
       // vue d'entrée. Les vues par public restent, avec un retour vers lui.
       if (S.mode === 'comptoir' && !S.apercu && V2.comptoir) {
-        root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
+        root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil', coque: 'aujourdhui' }) +
           '<div class="v2-wrap pr-wrap"><div class="v2-page-title">Produits</div>' +
           V2.comptoir.rendre() + liensBas() + '</div>';
         return;

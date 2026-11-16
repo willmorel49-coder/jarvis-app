@@ -1,0 +1,163 @@
+/* ════════════════════════════════════════════════════════════════════════════════════════════
+   JARVIS · kit « d4 — Les widgets » (14/11/2026) — les pièces communes de la refonte, préfixe .dk- EXACT.
+   Ce fichier ne contient QUE des sélecteurs .dk-* et des variables --dk-* : un écran qui ne s'en sert pas ne change pas.
+   Kit : textes 40 / 22 / 17 / 15 / 13 (34 au lieu de 40 sous 600 px) · rayons 20 (cartes) / 12 (pictos, champs) / 999 (pastilles, boutons)
+   · espacements multiples de 4 · UNE couleur d'accent (celle de l'app, #0050E6 par défaut : les habillages la changent pour tout le monde).
+   Mode d'emploi : vrai/KIT.md. Chargé APRÈS toutes les autres feuilles (index.html).
+   ════════════════════════════════════════════════════════════════════════════════════════════ */
+:root {
+  --dk-t1: 40px; --dk-t2: 22px; --dk-t3: 17px; --dk-t4: 15px; --dk-t5: 13px;
+  --dk-r-card: 20px; --dk-r-field: 12px; --dk-r-pill: 999px;
+  --dk-gx: 16px;
+  --dk-accent: var(--ip-blue, #0050E6);
+  --dk-accent-d: var(--ip-blue-d, #0034A0);
+  --dk-accent-soft: var(--halo, #E9F0FF);
+  --dk-ink: var(--ip-ink, #10131C);
+  --dk-ink2: var(--ip-ink-2, #2A2F3C);
+  --dk-muted: var(--muted, #646B80);
+  --dk-line: var(--line, rgba(16, 19, 28, .07));
+  --dk-line-strong: var(--line-strong, rgba(16, 19, 28, .12));
+  --dk-ok: var(--c-mint-txt, #0F7A52);
+  --dk-bad: var(--c-rose-txt, #C7283D);
+  --dk-track: rgba(16, 19, 28, .08);
+  --dk-sunken: rgba(16, 19, 28, .065);
+  --dk-sh-1: var(--sh-1, 0 1px 2px rgba(16, 19, 28, .06));
+  --dk-sh-2: var(--sh-2, 0 1px 2px rgba(16, 19, 28, .05), 0 4px 10px rgba(16, 19, 28, .05), 0 12px 24px rgba(16, 19, 28, .05));
+  --dk-sh-3: var(--sh-3, 0 8px 24px rgba(16, 19, 28, .12));
+  --dk-sh-blue: var(--sh-blue, 0 8px 20px rgba(0, 80, 230, .28));
+}
+@media (max-width: 600px) { :root { --dk-t1: 34px; } }
+
+/* ── Textes de chiffre ── */
+.dk-num { font-variant-numeric: tabular-nums; }
+.dk-ok { color: var(--dk-ok); } .dk-bad { color: var(--dk-bad); }
+
+/* ── Carte : blanche, ombre douce, reflet teinté en haut (la « source de lumière ») ──
+   Teinte du reflet : style="--dk-c:#1E9E6A" sur la carte (par défaut l'accent). */
+.dk-card { position: relative; min-width: 0; padding: 20px 24px 24px; border-radius: var(--dk-r-card); background: #fff; box-shadow: var(--dk-sh-2); overflow: hidden; }
+.dk-card::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 96px; pointer-events: none; background: radial-gradient(240px 90px at 12% 0%, color-mix(in srgb, var(--dk-c, var(--dk-accent)) 12%, #fff), rgba(255, 255, 255, 0) 100%); }
+.dk-card > * { position: relative; }
+.dk-card-h { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; min-height: 32px; }
+.dk-card-t { flex: 1; min-width: 0; font-size: var(--dk-t4); font-weight: 600; color: var(--dk-ink); }
+/* pictogramme de carte : 32 px, rayon 12, teinte de la carte */
+.dk-ti { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: var(--dk-r-field); color: var(--dk-c, var(--dk-accent)); background: color-mix(in srgb, var(--dk-c, var(--dk-accent)) 13%, #fff); }
+.dk-ti svg { width: 18px; height: 18px; }
+@media (max-width: 600px) { .dk-card { padding: 16px 16px 20px; } }
+
+/* ── En-tête de page : date en petit, grand titre, phrase-réponse, actions à droite ── */
+.dk-hd { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+.dk-hd-t { flex: 1 1 360px; min-width: 0; }
+.dk-eyebrow { margin: 0 0 4px; font-size: var(--dk-t5); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--dk-muted); }
+.dk-title { margin: 0; font-size: var(--dk-t1); font-weight: 700; letter-spacing: -.022em; line-height: 1.05; overflow-wrap: break-word; color: var(--dk-ink); }
+.dk-lede { margin: 8px 0 0; max-width: 62ch; font-size: var(--dk-t3); line-height: 1.35; color: var(--dk-muted); }
+.dk-lede b { font-weight: 600; color: var(--dk-ink); }
+.dk-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+@media (max-width: 600px) { .dk-hd { margin-bottom: 16px; } }
+
+/* ── Boutons : un principal (bleu plein), un secondaire (bleu pâle). Toujours 44 px de haut au moins. ── */
+.dk-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 20px; border: 0; border-radius: var(--dk-r-pill); font: inherit; font-size: var(--dk-t4); font-weight: 600; line-height: 1.2; white-space: nowrap; text-align: center; text-decoration: none; cursor: pointer; transition: transform .2s ease, box-shadow .25s, background .25s; }
+.dk-btn:active { transform: scale(.96); }
+.dk-btn-1 { background: var(--dk-accent); color: #fff; box-shadow: var(--dk-sh-blue); }
+.dk-btn-2 { background: var(--dk-accent-soft); color: var(--dk-accent-d); }
+.dk-btn-2:hover { background: color-mix(in srgb, var(--dk-accent) 16%, #fff); }
+.dk-link { display: inline-flex; align-items: center; min-height: 44px; padding: 0 4px; border: 0; background: none; font: inherit; font-size: var(--dk-t4); font-weight: 600; color: var(--dk-accent); text-decoration: none; cursor: pointer; }
+
+/* ── Section : titre 22 px + action à droite ── */
+.dk-sh { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin: 32px 0 12px; }
+.dk-sh h2 { margin: 0; font-size: var(--dk-t2); font-weight: 700; letter-spacing: -.01em; color: var(--dk-ink); }
+.dk-sh-n { margin-left: 4px; font-size: var(--dk-t4); font-weight: 500; color: var(--dk-muted); }
+
+/* ── Liste groupée + ligne de liste : pictogramme / texte / valeur / flèche (56 px mini) ──
+   <div class="dk-group"><a class="dk-row">…</a><a class="dk-row">…</a></div> */
+.dk-group { background: #fff; border-radius: var(--dk-r-card); box-shadow: var(--dk-sh-1); overflow: hidden; }
+.dk-row { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 16px; border: 0; background: none; font: inherit; color: inherit; text-align: left; text-decoration: none; cursor: pointer; transition: background .2s; }
+.dk-row + .dk-row { border-top: 1px solid var(--dk-line); }
+.dk-row:is(a, button):hover { background: var(--card-2, #F7F9FC); }
+.dk-row:is(a, button):active { background: var(--surf-sunken, #EEF1F6); }
+.dk-row-l { flex: none; display: grid; place-items: center; }
+.dk-row-b { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.dk-row-t { font-size: var(--dk-t3); font-weight: 600; line-height: 1.25; color: var(--dk-ink); }
+.dk-row-s { font-size: var(--dk-t5); line-height: 1.35; color: var(--dk-muted); }
+.dk-row-v { flex: none; display: flex; flex-direction: column; align-items: flex-end; text-align: right; font-size: var(--dk-t4); font-weight: 600; line-height: 1.25; color: var(--dk-ink); }
+.dk-row-v small { font-size: var(--dk-t5); font-weight: 400; color: var(--dk-muted); }
+.dk-row-c { flex: none; display: grid; place-items: center; color: #A9B0C2; }
+
+/* ── Tuile chiffre : étiquette, chiffre, comparaison ÉCRITE (jamais un chiffre seul) ── */
+.dk-stat { min-width: 0; }
+.dk-stat-lab { font-size: var(--dk-t4); line-height: 1.3; color: var(--dk-ink2); }
+.dk-stat-num { margin-top: 4px; font-size: var(--dk-t1); font-weight: 700; letter-spacing: -.025em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--dk-ink); white-space: nowrap; }
+.dk-stat-cmp { margin-top: 8px; font-size: var(--dk-t5); line-height: 1.35; color: var(--dk-muted); }
+.dk-stat-cmp b { font-weight: 600; color: var(--dk-ink); }
+/* bande : UNE carte qui porte trois tuiles (<div class="dk-card dk-band"> + 3 × .dk-stat) */
+.dk-band { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 24px; }
+.dk-band .dk-stat + .dk-stat { padding-left: 24px; border-left: 1px solid var(--dk-line); }
+@media (max-width: 760px) {
+  .dk-band { grid-template-columns: 1fr; gap: 0; padding: 8px 16px; }
+  .dk-band .dk-stat { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 16px; align-items: baseline; padding: 12px 0; }
+  .dk-band .dk-stat + .dk-stat { padding-left: 0; border-left: 0; border-top: 1px solid var(--dk-line); }
+  .dk-band .dk-stat-num { grid-row: span 2; min-width: 96px; font-size: var(--dk-t2); }
+  .dk-band .dk-stat-lab, .dk-band .dk-stat-cmp { margin-top: 0; }
+}
+
+/* ── Contrôle segmenté : les onglets d'un écran ──
+   <div class="dk-seg" role="tablist"><button role="tab" aria-selected="true">…</button>…</div> */
+.dk-seg { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: var(--dk-r-pill); background: var(--dk-sunken); }
+.dk-seg button { min-height: 44px; padding: 0 16px; border: 0; border-radius: var(--dk-r-pill); background: none; font: inherit; font-size: var(--dk-t4); font-weight: 600; color: var(--dk-ink2); text-align: center; cursor: pointer; transition: background .25s, color .25s, box-shadow .25s; }
+.dk-seg button[aria-selected="true"] { background: #fff; color: var(--dk-accent); box-shadow: var(--dk-sh-1); }
+@media (max-width: 600px) { .dk-seg { display: flex; flex-wrap: nowrap; width: 100%; } .dk-seg button { flex: 1 1 auto; padding: 0 8px; line-height: 1.2; } }
+
+/* ── Pastille (filtre à choisir : aria-pressed) et pastille d'état ── */
+.dk-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border: 0; border-radius: var(--dk-r-pill); background: #fff; box-shadow: inset 0 0 0 1px var(--dk-line-strong); font: inherit; font-size: var(--dk-t4); font-weight: 600; color: var(--dk-ink2); cursor: pointer; transition: background .25s, color .25s, box-shadow .25s; }
+.dk-chip[aria-pressed="true"] { background: var(--dk-ink); color: #fff; box-shadow: none; }
+.dk-pill { display: inline-flex; align-items: center; min-height: 32px; padding: 0 12px; border-radius: var(--dk-r-pill); font-size: var(--dk-t5); font-weight: 700; white-space: nowrap; background: var(--dk-sunken); color: var(--dk-ink2); }
+.dk-pill-ok { background: color-mix(in srgb, var(--c-mint, #1E9E6A) 14%, #fff); color: var(--dk-ok); }
+.dk-pill-bad { background: color-mix(in srgb, var(--c-rose, #E0556E) 13%, #fff); color: var(--dk-bad); }
+
+/* ── Feuille : le panneau qui monte (centré au-dessus de 600 px, collé en bas sous 600 px) ──
+   <div class="dk-sheetwrap"><div class="dk-scrim"></div><div class="dk-sheet" role="dialog" aria-modal="true" aria-label="…" tabindex="-1">
+     <div class="dk-sheet-bar"><h2>Titre</h2><button class="dk-btn dk-btn-2">Fermer</button></div><div class="dk-sheet-body">…</div></div></div> */
+.dk-sheetwrap { position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 400; }
+.dk-scrim { position: absolute; left: 0; right: 0; top: 0; bottom: 0; background: rgba(16, 19, 28, .34); }
+.dk-sheet { position: absolute; left: 50%; top: 50%; width: min(600px, calc(100vw - 32px)); max-height: calc(100vh - 64px); transform: translate(-50%, -50%); display: flex; flex-direction: column; border-radius: var(--dk-r-card); background: #fff; box-shadow: var(--sh-pop, 0 24px 60px rgba(16, 19, 28, .28)); outline: 0; overflow: hidden; }
+.dk-sheet-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 16px 8px 24px; background: #fff; }
+.dk-sheet-bar h2 { margin: 0; font-size: var(--dk-t2); font-weight: 700; color: var(--dk-ink); }
+.dk-sheet-body { padding: 8px 24px 24px; overflow: auto; overscroll-behavior: contain; }
+@media (max-width: 600px) {
+  .dk-sheet { left: 0; right: 0; top: 48px; bottom: 0; width: auto; max-height: none; transform: none; border-radius: var(--dk-r-card) var(--dk-r-card) 0 0; }
+  .dk-sheet-bar { padding: 16px 12px 8px 16px; }
+  .dk-sheet-body { padding: 8px 16px calc(24px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* ── Interrupteur : le vrai champ (56 × 44) est la zone d'appui, le dessin est dessous ──
+   <label class="dk-sw"><input type="checkbox"><i></i></label> */
+.dk-sw { position: relative; flex: none; display: inline-block; width: 56px; height: 44px; }
+.dk-sw input { position: absolute; left: 0; top: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; font-size: 16px; }
+.dk-sw i { position: absolute; left: 2px; top: 6px; width: 52px; height: 32px; border-radius: var(--dk-r-pill); background: rgba(16, 19, 28, .16); transition: background .25s; }
+.dk-sw i::after { content: ""; position: absolute; left: 2px; top: 2px; width: 28px; height: 28px; border-radius: var(--dk-r-pill); background: #fff; box-shadow: 0 1px 3px rgba(16, 19, 28, .3); transition: transform .3s ease; }
+.dk-sw input:checked + i { background: var(--c-mint, #1E9E6A); }
+.dk-sw input:checked + i::after { transform: translateX(20px); }
+.dk-sw input:focus-visible + i { outline: 3px solid var(--dk-accent); outline-offset: 2px; }
+
+/* ── Pastille à cocher : zone d'appui 44 × 44, rond de 26 px (aria-checked sur le bouton) ──
+   <button class="dk-ck" role="checkbox" aria-checked="false" aria-label="…"><i><svg>…</svg></i></button> */
+.dk-ck { display: grid; place-items: center; flex: none; width: 44px; height: 44px; padding: 0; border: 0; background: none; cursor: pointer; }
+.dk-ck i { display: grid; place-items: center; width: 26px; height: 26px; border-radius: var(--dk-r-pill); border: 2px solid #B4BBCB; background: #fff; color: transparent; transition: background .25s, border-color .25s, color .25s, transform .25s ease; }
+.dk-ck:hover i { border-color: var(--dk-accent); }
+.dk-ck:active i { transform: scale(.88); }
+.dk-ck[aria-checked="true"] i { background: var(--c-mint, #1E9E6A); border-color: var(--c-mint, #1E9E6A); color: #fff; }
+.dk-ck svg { width: 14px; height: 14px; }
+
+/* ── État vide : une phrase, jamais un trou ── */
+.dk-empty { padding: 24px 0; font-size: var(--dk-t3); line-height: 1.4; color: var(--dk-muted); }
+.dk-empty b { color: var(--dk-ink); font-weight: 600; }
+
+/* variante : état vide + bouton d'action (une phrase, puis l'action réelle en bouton secondaire) */
+.dk-empty-a { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.dk-empty-a .dk-empty { padding: 4px 0 0; }
+
+/* ── Focus visible commun ── */
+.dk-btn:focus-visible, .dk-link:focus-visible, .dk-row:focus-visible, .dk-seg button:focus-visible, .dk-chip:focus-visible, .dk-ck:focus-visible { outline: 3px solid var(--dk-accent); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dk-btn, .dk-row, .dk-seg button, .dk-chip, .dk-sw i, .dk-sw i::after, .dk-ck i { transition-duration: .01ms; }
+}

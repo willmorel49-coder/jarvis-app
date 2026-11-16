@@ -280,11 +280,11 @@
     _sigW[w.id] = sigCorps(w, h);
     if (!PS.on) {
       return '<section class="u2-wid aw-w aw-' + w.t + ' aw-k-' + w.k + ' u2-in" style="--i:' + (i + 3) + '" data-aw-w="' + esc(w.id) + '" aria-label="' + esc(L.nom) + '">' +
-        '<div class="u2-wid-h"><h2>' + tt + '</h2></div><div class="aw-c">' + h + '</div></section>';
+        '<div class="u2-wid-h"><span class="dk-ti" aria-hidden="true">' + ic(L.ic, 18) + '</span><h2>' + tt + '</h2></div><div class="aw-c">' + h + '</div></section>';
     }
     var ouv = PS.reg === w.id && L.r.length > 0, ts = tailles(w), nm = esc(L.nom);
     return '<section class="u2-wid aw-w aw-' + w.t + ' pb-w' + (ouv ? ' pb-ouvert' : '') + (PS.neuf === w.id ? ' pb-neuf' : '') + '" data-aw-w="' + esc(w.id) + '" aria-label="' + nm + '">' +
-      '<div class="u2-wid-h pb-h"><span class="pb-grip" aria-hidden="true">' + ic('grip') + '</span><h2>' + tt + '</h2>' +
+      '<div class="u2-wid-h pb-h"><span class="pb-grip" aria-hidden="true">' + ic('grip') + '</span><span class="dk-ti" aria-hidden="true">' + ic(L.ic, 18) + '</span><h2>' + tt + '</h2>' +
       (L.r.length ? '<button type="button" class="aw-ib pb-dots" data-pb="reglages" data-v="' + esc(w.id) + '" aria-expanded="' + ouv + '" aria-label="Réglages de ' + nm + '" title="Réglages du contenu">' + ic('points') + '</button>' : '') +
       '<button type="button" class="aw-ib pb-x" data-pb="retire" data-v="' + esc(w.id) + '" aria-label="Retirer ' + nm + '" title="Retirer de mon accueil">' + ic('croix') + '</button></div>' +
       '<div class="aw-c pb-c">' + h + '</div>' +
@@ -468,13 +468,13 @@
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     var touch = e.pointerType !== 'mouse', grip = !!e.target.closest('.pb-grip');
     if (!touch && e.cancelable) e.preventDefault();   // à la souris, l'appui sur une carte ne commence jamais une sélection de texte (Safari surlignait toute la page)
-    DR = { id: card.getAttribute('data-aw-w'), card: card, x0: e.clientX, y0: e.clientY, y: e.clientY, pid: e.pointerId, on: false, touch: touch, sc0: window.pageYOffset, t: null, raf: 0 };
+    DR = { id: card.getAttribute('data-aw-w'), card: card, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, pid: e.pointerId, on: false, touch: touch, sc0: window.pageYOffset, t: null, raf: 0 };
     if (touch) { if (grip) dDebut(); else DR.t = setTimeout(function () { if (DR && !DR.on) dDebut(); }, 260); }
   }
   function dDebut() {
     var dr = document.getElementById('u2-droite'); if (!DR || !dr) { DR = null; return; }
     var cards = [].slice.call(dr.querySelectorAll('.pb-w'));
-    DR.items = cards.map(function (c) { var r = c.getBoundingClientRect(); return { id: c.getAttribute('data-aw-w'), el: c, top: r.top + window.pageYOffset, h: r.height }; });
+    DR.items = cards.map(function (c) { var r = c.getBoundingClientRect(); return { id: c.getAttribute('data-aw-w'), el: c, top: r.top + window.pageYOffset, left: r.left + window.pageXOffset, w: r.width, h: r.height }; });
     DR.i0 = DR.items.map(function (x) { return x.id; }).indexOf(DR.id);
     if (DR.i0 < 0) { DR = null; return; }
     DR.idx = DR.i0; DR.gap = dGap(); DR.on = true; DR.sc0 = window.pageYOffset;
@@ -486,16 +486,13 @@
   }
   function dPlace() {
     if (!DR || !DR.on) return;
-    var dy = DR.y - DR.y0 + (window.pageYOffset - DR.sc0), it = DR.items, c0 = it[DR.i0], centre = c0.top + c0.h / 2 + dy, idx = 0;
-    DR.card.style.transform = 'translate3d(0,' + dy + 'px,0) scale(1.02)';
-    it.forEach(function (x, j) { if (j !== DR.i0 && x.top + x.h / 2 < centre) idx++; });
+    // 14/11/2026 (refonte d4) — la grille est à deux dimensions : la carte suit le pointeur, la cible est la carte sous le pointeur (au lâcher, la carte prend sa place)
+    var dy = DR.y - DR.y0 + (window.pageYOffset - DR.sc0), dx = DR.x - DR.x0, it = DR.items, c0 = it[DR.i0];
+    DR.card.style.transform = 'translate3d(' + dx + 'px,' + dy + 'px,0) scale(1.02)';
+    var px = DR.x + window.pageXOffset, py = DR.y + window.pageYOffset, idx = DR.i0;
+    it.forEach(function (x, j) { if (j !== DR.i0 && px >= x.left && px <= x.left + x.w && py >= x.top && py <= x.top + x.h) idx = j; });
     DR.idx = idx;
-    var pas = c0.h + DR.gap;
-    it.forEach(function (x, j) {
-      if (j === DR.i0) return;
-      var s = (DR.i0 < j && j <= idx) ? -pas : (idx <= j && j < DR.i0) ? pas : 0;
-      x.el.style.transform = s ? 'translate3d(0,' + s + 'px,0)' : '';
-    });
+    it.forEach(function (x, j) { x.el.classList.toggle('pb-cible', j === idx && j !== DR.i0); });
   }
   function dBoucle() {
     if (!DR || !DR.on) return;
@@ -509,14 +506,14 @@
     if (!DR) return;
     clearTimeout(DR.t); cancelAnimationFrame(DR.raf);
     var dr = document.getElementById('u2-droite');
-    if (DR.items) DR.items.forEach(function (x) { x.el.style.transform = ''; x.el.style.transition = ''; });
+    if (DR.items) DR.items.forEach(function (x) { x.el.style.transform = ''; x.el.style.transition = ''; x.el.classList.remove('pb-cible'); });
     if (DR.card) { DR.card.classList.remove('pb-lift'); DR.card.style.transform = ''; DR.card.style.transition = ''; try { DR.card.releasePointerCapture(DR.pid); } catch (e) {} }
     if (dr) dr.classList.remove('pb-dragging');
   }
   function dAnnuler() { dNet(); DR = null; }
   function dMove(e) {
     if (!DR || e.pointerId !== DR.pid) return;
-    DR.y = e.clientY;
+    DR.y = e.clientY; DR.x = e.clientX;
     if (!DR.on) {
       var d = Math.hypot(e.clientX - DR.x0, e.clientY - DR.y0);
       if (DR.touch) { if (d > 8) { clearTimeout(DR.t); DR = null; } }
@@ -529,20 +526,11 @@
     if (!DR || e.pointerId !== DR.pid) return;
     if (!DR.on || annule) { dAnnuler(); return; }
     cancelAnimationFrame(DR.raf);
-    var d = DR, it = d.items, c0 = it[d.i0], fin = 0, j;
-    if (d.idx > d.i0) for (j = d.i0 + 1; j <= d.idx; j++) fin += it[j].h + d.gap;
-    else if (d.idx < d.i0) for (j = d.idx; j < d.i0; j++) fin -= it[j].h + d.gap;
-    d.card.style.transition = calme() ? 'none' : 'transform .2s cubic-bezier(.2,.8,.2,1)';
-    d.card.style.transform = 'translate3d(0,' + fin + 'px,0)';
-    DR = { on: true, fige: true, pid: -1, items: [], card: null };   // verrou le temps du glissé final
-    setTimeout(function () {
-      DR = null; sansSelection();
-      if (d.idx !== d.i0) { var l = W().items, w = l.splice(d.i0, 1)[0]; l.splice(d.idx, 0, w); }
-      d.items.forEach(function (x) { x.el.style.transition = 'none'; x.el.style.transform = ''; });
-      d.card.style.transition = 'none'; d.card.style.transform = ''; d.card.classList.remove('pb-lift');
-      var dr = document.getElementById('u2-droite'); if (dr) dr.classList.remove('pb-dragging');
-      if (d.idx !== d.i0) garde();
-    }, calme() ? 0 : 210);
+    var d = DR; DR = null; sansSelection();
+    d.items.forEach(function (x) { x.el.classList.remove('pb-cible'); x.el.style.transition = 'none'; x.el.style.transform = ''; });
+    d.card.style.transition = 'none'; d.card.style.transform = ''; d.card.classList.remove('pb-lift');
+    var dr = document.getElementById('u2-droite'); if (dr) dr.classList.remove('pb-dragging');
+    if (d.idx !== d.i0) { var l = W().items, w = l.splice(d.i0, 1)[0]; l.splice(d.idx, 0, w); garde(); }
   }
   document.addEventListener('pointerdown', dDown);
   document.addEventListener('pointermove', dMove, { passive: false });

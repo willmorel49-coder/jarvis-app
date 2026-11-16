@@ -59,6 +59,9 @@ begin
 
   if new.statut is distinct from 'confirme' then return new; end if;
   if tg_op = 'UPDATE' and old.statut = 'confirme' then return new; end if;
+  -- 16/11/2026 (choix de Will) : un rendez-vous noté APRÈS coup (déjà passé,
+  -- heure de Paris) ne prévient pas : c'est le commercial qui vient de le noter.
+  if (new.date + new.heure) < (now() at time zone 'Europe/Paris') then return new; end if;
 
   select decrypted_secret into v_cle
     from vault.decrypted_secrets where name = 'service_role_key' limit 1;

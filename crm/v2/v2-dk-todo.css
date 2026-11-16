@@ -1,0 +1,126 @@
+/* v2-dk-todo.css — écran « To do list » de la refonte d4 (kit : v2-dk-kit.css). Préfixe dkt-. Chargé après v2-todo-m1.css (qui ne sert plus à cet écran : ses classes td-* ne sont plus dessinées).
+   Gabarit : en-tête du kit · bande de 3 chiffres (seulement s'il y a des tâches) · onglets en contrôle segmenté · À faire / Fait · groupes « En retard ou aujourd'hui / À venir / Sans date »
+   · pastille à cocher du kit · feuille d'ajout du kit (posée sur <body>) · mails tout prêts et Mes modèles en listes groupées.
+   Interdits Safari tenus : pas de flou, pas d'opacity sur du texte, pas de barre de couleur sur un seul côté. */
+html .v2-wrap.narrow.dkt-w { max-width: 1120px; }
+html .dkt-w .dkt { position: relative; max-width: 1120px; margin: 0 auto; padding: 24px 0 48px; color: var(--dk-ink); }
+html .dkt-w .dkt > * { position: relative; }
+html .dkt-w .dkt .dk-hd { margin: 0 0 16px; }
+html .dkt-w .dkt .dk-title { display: block; font-size: var(--dk-t1); }
+html .dkt-w .dkt .dkt-note { margin: 0 0 24px; max-width: 70ch; font-size: var(--dk-t5); line-height: 1.45; color: var(--dk-muted); }
+html .dkt-w .dkt .dkt-local { margin-left: 4px; background: var(--dk-accent-soft); color: var(--dk-accent-d); white-space: normal; }
+html .dkt-w .dkt .dkt-band { margin: 0 0 24px; }
+/* chiffres de la bande : les chiffres alignés de Satoshi (tnum) dessinent un « 1 » à pied, façon machine ; chaque tuile est seule dans sa colonne, rien à aligner : chiffres proportionnels, en gras */
+html .dkt-w .dkt .dkt-band .dk-stat-num { font-variant-numeric: normal; font-weight: 700; }
+html .dkt-w .dkt .dkt-tabs { margin: 0; }
+html .dkt-w .dkt .dkt-seg2 { margin: 12px 0 0; }
+html .dkt-w .dkt .dkt-n { font-weight: 500; font-variant-numeric: tabular-nums; color: var(--dk-muted); }
+html .dkt-w .dkt .dk-seg button[aria-selected="true"] .dkt-n { color: var(--dk-accent); }
+html .dkt-w .dkt .dk-sh { margin: 32px 0 12px; }
+html .dkt-w .dkt .dkt-sub { margin: -4px 0 12px; max-width: 70ch; font-size: var(--dk-t5); line-height: 1.45; color: var(--dk-muted); }
+
+/* ── une tâche : la ligne du kit, ses gestes dessous ── */
+html .dkt-w .dkt .dkt-g { background: #fff; }
+html .dkt-w .dkt .dkt-it { padding: 8px 16px 8px 8px; }
+html .dkt-w .dkt .dkt-it + .dkt-it { border-top: 1px solid var(--dk-line); }
+html .dkt-w .dkt .dkt-main { display: flex; align-items: center; gap: 4px; min-height: 56px; }
+html .dkt-w .dkt .dkt-hit { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 4px 0 4px 4px; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+html .dkt-w .dkt .dkt-hit .dk-row-b { flex: 1; min-width: 0; }
+html .dkt-w .dkt .dkt-hit:focus-visible { outline: 3px solid var(--dk-accent); outline-offset: 2px; border-radius: var(--dk-r-field); }
+html .dkt-w .dkt .dkt-t { color: var(--dk-ink); overflow-wrap: anywhere; }
+html .dkt-w .dkt .dkt-v { flex: none; max-width: 40%; font-size: var(--dk-t5); font-weight: 600; color: var(--dk-ink2); text-align: right; }
+html .dkt-w .dkt .dkt-v.dk-bad { color: var(--dk-bad); }
+html .dkt-w .dkt .dkt-chev { flex: none; transition: transform .2s ease; }
+html .dkt-w .dkt .dkt-ouv .dkt-chev { transform: rotate(90deg); }
+html .dkt-w .dkt .is-fait .dkt-t { color: var(--dk-muted); text-decoration: line-through; }
+html .dkt-w .dkt .dkt-det { display: none; padding: 0 0 8px 48px; }
+html .dkt-w .dkt .dkt-ouv .dkt-det { display: block; }
+html .dkt-w .dkt .dkt-more { padding: 0 0 8px; }
+html .dkt-w .dkt .dkt-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 0 16px; padding: 0 0 4px 0; }
+html .dkt-w .dkt .dkt-acts .dk-btn { min-height: 44px; }
+html .dkt-w .dkt .dkt-der { display: flex; align-items: center; gap: 8px; padding: 0 0 0 48px; font-size: var(--dk-t5); font-weight: 600; color: var(--dk-ink2); }
+html .dkt-w .dkt .dkt-der svg { width: 14px; height: 14px; color: var(--c-mint, #1E9E6A); }
+html .dkt-w .dkt .dkt-vide { margin: 16px 0 0; }
+html .dkt-w .dkt .dkt-vide .dk-empty-a { align-items: flex-start; }
+
+/* ── champs ── */
+html .dkt-in, html .dkt-w .dkt .dkt-in { box-sizing: border-box; width: 100%; min-height: 44px; padding: 8px 16px; border: 0; border-radius: var(--dk-r-field); background: #fff; box-shadow: inset 0 0 0 1px var(--dk-line-strong); font: inherit; font-size: 16px; color: var(--dk-ink); }
+html .dkt-in:focus, html .dkt-w .dkt .dkt-in:focus { outline: 3px solid var(--dk-accent); outline-offset: 1px; }
+html .dkt-w .dkt .dkt-more .dkt-in { background: var(--card-2, #F7F9FC); }
+
+/* ── mails tout prêts, mes modèles ── */
+html .dkt-w .dkt .dkt-mail + .dkt-mail { border-top: 1px solid var(--dk-line); }
+html .dkt-w .dkt .dkt-mail > summary { list-style: none; }
+html .dkt-w .dkt .dkt-mail > summary::-webkit-details-marker { display: none; }
+html .dkt-w .dkt .dkt-chev { transition: transform .2s ease; }
+html .dkt-w .dkt .dkt-mail[open] .dkt-chev { transform: rotate(90deg); }
+html .dkt-w .dkt .dkt-mb { display: flex; flex-direction: column; gap: 12px; padding: 4px 16px 20px 60px; }
+html .dkt-w .dkt .dkt-obj { font-size: var(--dk-t4); font-weight: 600; color: var(--dk-ink); }
+html .dkt-w .dkt .dkt-obj span { display: block; margin-bottom: 2px; font-size: var(--dk-t5); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--dk-muted); }
+html .dkt-w .dkt .dkt-corps { margin: 0; padding: 16px; border-radius: var(--dk-r-field); background: var(--card-2, #F7F9FC); font: inherit; font-size: var(--dk-t4); line-height: 1.55; color: var(--dk-ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+html .dkt-w .dkt .dkt-acts-m { padding: 0; gap: 8px 16px; }
+html .dkt-w .dkt .dkt-reg { display: flex; flex-direction: column; gap: 4px; padding: 16px; border-radius: var(--dk-r-field); background: var(--dk-accent-soft); }
+html .dkt-w .dkt .dkt-reg b { font-size: var(--dk-t4); font-weight: 600; color: var(--dk-ink); }
+html .dkt-w .dkt .dkt-reg span { font-size: var(--dk-t5); color: var(--dk-ink2); }
+html .dkt-w .dkt .dkt-reg-f { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+html .dkt-w .dkt .dkt-reg-f .dkt-in { flex: 1 1 200px; width: auto; }
+html .dkt-w .dkt .dkt-mod { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-height: 56px; padding: 8px 16px; }
+html .dkt-w .dkt .dkt-mod + .dkt-mod { border-top: 1px solid var(--dk-line); }
+html .dkt-w .dkt .dkt-mod .dk-row-b { flex: 1 1 200px; min-width: 0; }
+html .dkt-w .dkt .dkt-acts-r { padding: 0; gap: 0 12px; }
+html .dkt-w .dkt .dkt-add { margin-top: 12px; }
+
+/* ── la feuille d'ajout (sur <body>, donc hors de .dkt) ── */
+.dkt-form { display: flex; flex-direction: column; gap: 16px; }
+.dkt-form .dkt-lab, .dkt-form .dkt-fld > span { display: block; margin: 0; font-size: var(--dk-t5); font-weight: 600; color: var(--dk-muted); }
+.dkt-form .dkt-fld { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.dkt-form .dkt-kinds { margin-top: 4px; box-shadow: inset 0 0 0 1px var(--dk-line-strong); }
+.dkt-form .dkt-opt { position: relative; cursor: pointer; }
+.dkt-form .dkt-opt input { position: absolute; left: 0; top: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.dkt-form .dkt-tick { flex: none; display: grid; place-items: center; width: 26px; height: 26px; border: 2px solid #B4BBCB; border-radius: var(--dk-r-pill); background: #fff; color: transparent; transition: background .25s, border-color .25s; }
+.dkt-form .dkt-tick svg { width: 14px; height: 14px; }
+.dkt-form .dkt-opt:has(input:checked) .dkt-tick { background: var(--dk-accent); border-color: var(--dk-accent); color: #fff; }
+.dkt-form .dkt-opt:has(input:focus-visible) { outline: 3px solid var(--dk-accent); outline-offset: -3px; }
+.dkt-form .dk-seg { display: flex; flex-wrap: nowrap; width: 100%; }
+.dkt-form .dk-seg button { flex: 1 1 0; padding: 0 8px; line-height: 1.2; }
+.dkt-form .dk-seg button[aria-checked="true"] { background: #fff; color: var(--dk-accent); box-shadow: var(--dk-sh-1); }
+.dkt-form .dkt-hint { margin: 0; font-size: var(--dk-t5); line-height: 1.45; color: var(--dk-muted); }
+.dkt-form .dkt-send { display: flex; }
+.dkt-form .dkt-send .dk-btn { width: 100%; }
+html .dkt-w .dkt .v2-notes-mic, html .dkt-form .v2-notes-mic { min-width: 44px; min-height: 44px; }
+
+/* ── « Fait aujourd'hui · Annuler » (la coche d'une tâche qui ne revient pas) ── */
+.dkt-snack { white-space: nowrap; position: fixed; left: 50%; bottom: 24px; z-index: 450; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; max-width: calc(100vw - 32px); padding: 4px 8px 4px 20px; border-radius: var(--dk-r-pill); background: var(--dk-ink); color: #fff; font-size: var(--dk-t4); font-weight: 600; box-shadow: var(--dk-sh-3); }
+.dkt-snack button { min-height: 44px; padding: 0 12px; border: 0; border-radius: var(--dk-r-pill); background: none; font: inherit; font-weight: 700; color: #A9C4FF; cursor: pointer; }
+@media (max-width: 600px) { .dkt-snack { bottom: 88px; } }
+
+/* ── les onglets « Prospects à relancer » et « Prospects chauds » : leur contenu (v2-relances.js) habillé à la maison ── */
+html .dkt-w .dkt .dkt-corps-r { margin-top: 24px; }
+html .dkt-w .dkt .dkt-corps-r .v2-card { border-radius: var(--dk-r-card); background: #fff; border: 0; box-shadow: var(--dk-sh-2); }
+html .dkt-w .dkt .dkt-corps-r .v2-todo-empty { padding: 24px; text-align: left; font-size: var(--dk-t3); line-height: 1.4; color: var(--dk-muted); }
+html .dkt-w .dkt .dkt-corps-r .v2-btn { min-height: 44px; border-radius: var(--dk-r-pill); font-size: var(--dk-t4); font-weight: 600; }
+html .dkt-w .dkt .dkt-corps-r .v2-btn-primary { background: var(--dk-accent); color: #fff; box-shadow: var(--dk-sh-blue); }
+html .dkt-w .dkt .dkt-corps-r .v2-btn-ghost { background: var(--dk-accent-soft); color: var(--dk-accent-d); border: 0; }
+
+@media (max-width: 760px) {
+  html .dkt-w .dkt .dkt-band .dk-stat-num { grid-column: 1; grid-row: 1 / span 2; }
+  html .dkt-w .dkt .dkt-band .dk-stat-lab, html .dkt-w .dkt .dkt-band .dk-stat-cmp { grid-column: 2; }
+}
+@media (max-width: 600px) {
+  html .dkt-w .dkt { padding-top: 16px; }
+  html .dkt-w .dkt .dkt-it { padding-right: 8px; }
+  html .dkt-w .dkt .dkt-v { max-width: 34%; }
+  html .dkt-w .dkt .dkt-mb { padding-left: 16px; }
+  html .dkt-w .dkt .dk-actions { width: 100%; }
+  html .dkt-w .dkt .dk-actions .dk-btn { width: 100%; }
+  html .dkt-w .dkt .dkt-tabs button { font-size: var(--dk-t5); }
+}
+/* Retouche 16/11 (1) : le compteur reste sur la ligne de l'étiquette ; bande empilée resserrée (chiffre près de son étiquette) */
+@media (max-width: 600px) {
+  html .dkt-w .dkt .dkt-tabs button { white-space: nowrap; padding: 0 6px; font-size: var(--dk-t5); }
+  html .dkt-w .dkt .dkt-tabs .dkt-n { margin-left: 4px; }
+}
+@media (max-width: 760px) {
+  html .dkt-w .dkt .dkt-band .dk-stat { grid-template-columns: 28px minmax(0, 1fr); column-gap: 12px; }
+  html .dkt-w .dkt .dkt-band .dk-stat-num { min-width: 0; }
+}

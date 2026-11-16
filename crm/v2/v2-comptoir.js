@@ -24,6 +24,13 @@
   var ICO = function (n, s, w) { return window.ICO ? window.ICO(n, s, w) : ''; };
 
   var ETABS = ['CPR', 'HP', 'MSP', 'OPS', 'POS', 'SEP', 'SOP'];
+  // Noms en clair des 7 établissements : COPIÉS de v2-carte.js (tableau DEPOTS, « source : site vitrine »), non inventés (refonte d4, 16/11/2026).
+  var ETAB_NOM = { CPR: 'Comptoir Pharmaceutique du Rhône', HP: 'Hyères Pharma', MSP: 'Mistral Santé Pharma', OPS: 'Ouest Pharma Services', POS: "Pharm'Occitanie Services", SEP: 'Sud Est Pharma', SOP: 'Sud Ouest Pharma' };
+  function legendeEtabs() {
+    var i, h = '';
+    for (i = 0; i < ETABS.length; i++) if (ETAB_NOM[ETABS[i]]) h += '<span><b>' + ETABS[i] + '</b> ' + esc(ETAB_NOM[ETABS[i]]) + '</span>';
+    return h ? '<p class="cp-leg-etab">' + h + '</p>' : '';
+  }
   var FAM_ORDRE = ['pr_low', 'pr_mid', 'pr_high', 'nr', 'gen', 'biosim'];
   var PAR_PAGE = 40, OFF_VISIBLES = 5;
   var MINVEL = 5;          // même seuil que v2-appro.js : ≥ 5 boîtes/mois = produit « mouvant »
@@ -2311,10 +2318,14 @@
   }
 
   function panneauHaut(l, s, vp) {
-    var ab = l.ab != null;
-    return '<div class="cp-hero"><div class="cp-hn"><small>' + (l.f === 'nr' ? 'Tarif' : 'Prix net') + ', par boîte</small>' +
-        '<b>' + (l.prix > 0 ? eur2(l.prix) : '—') + '</b>' + (ab ? '<s>' + eur2(l.ppht) + '</s>' : '') + '</div>' +
-      (ab ? '<div class="cp-hn ab"><small>Abandon de marge, par boîte</small><b>' + eur2(l.ab) + '</b></div>' : '') +
+    var ab = l.ab != null, nSites = 0, k;
+    if (l.etab) for (k in l.etab) if (Object.prototype.hasOwnProperty.call(l.etab, k) && l.etab[k] > 0) nSites++;
+    return '<div class="cp-hero dk-card dk-band"><div class="cp-hn dk-stat"><small class="dk-stat-lab">' + (l.f === 'nr' ? 'Tarif' : 'Prix net') + ', par boîte</small>' +
+        '<b class="dk-stat-num">' + (l.prix > 0 ? eur2(l.prix) : '—') + '</b>' + (ab ? '<s>' + eur2(l.ppht) + '</s>' : '') + '</div>' +
+      (ab ? '<div class="cp-hn ab dk-stat"><small class="dk-stat-lab">Abandon de marge, par boîte</small><b class="dk-stat-num">' + eur2(l.ab) + '</b></div>' : '') +
+      '<div class="cp-hn cp-hs dk-stat"><small class="dk-stat-lab">Stock</small><b class="dk-stat-num">' + fr(l.stock || 0) + '</b>' +
+        (l.etab ? '<span class="dk-stat-cmp">' + fr(nSites) + ' sites sur ' + fr(ETABS.length) + '</span>' : '') + '</div>' +
+      (l.rang ? '<div class="cp-hn cp-hr dk-stat"><small class="dk-stat-lab">Rang de vente</small><b class="dk-stat-num">n°\u00a0' + fr(l.rang) + '</b><span class="dk-stat-cmp">en France</span></div>' : '') +
       '<div class="cp-hg">' +
         (l.f === 'nr' && l.prix > 0 ? '<span class="cp-tag">' + (l.tar ? 'Tarif au ' + dateFr(window.ETAB_PRICES.tarifDate) : 'Tarif') + '</span>' : '') +
         (l.rupt ? '<span class="cp-tag cp-tag-r">Rupture ANSM</span>' : '') +
@@ -2433,7 +2444,7 @@
           : '<p class="cp-ecart plat">Nous sommes déjà à notre part moyenne, ou au-dessus.</p>');
     }
 
-    var stock = stockHtml(l, vp);
+    var stock = stockHtml(l, vp) + (l.etab ? legendeEtabs() : '');
 
     var off;
     if (!liste) off = '<p class="cp-note">Calcul en cours…</p>';
@@ -2491,6 +2502,8 @@
       window.addEventListener('hashchange', function () {
         if (!/^#produits(\/|$)/.test(location.hash)) { V2.comptoir.fermerPanneau(); C.porte = null; }   // 09/11/2026 : on revient sur les trois portes
       });
+      // 16/11/2026 (refonte d4) : Échap referme la fiche produit, comme la feuille du kit.
+      window.addEventListener('keydown', function (e) { if (e && e.key === 'Escape' && C.cip && V2.route && V2.route.name === 'produits') V2.comptoir.fermer(); });
       // Les courbes sont dessinées à la largeur du panneau : on les refait si l'écran change.
       var tr = null;
       window.addEventListener('resize', function () {
@@ -2645,9 +2658,9 @@
 
   // ── Lignes compactes (une seule cible par ligne, 56 px de haut) ──
   function ligneP(l, sous, b, i, avecBadges) {
-    return '<button type="button" class="cpd-l" onclick="V2.comptoir.ouvrir(\'' + escAttr(l.cip) + '\')"><span class="cpd-tx"><span class="cpd-nm">' + esc(l.d) +
+    return '<button type="button" class="cpd-l" onclick="V2.comptoir.ouvrir(\'' + escAttr(l.cip) + '\')"><span class="cpd-ini dk-ti" aria-hidden="true">' + esc(String(l.d || '?').charAt(0).toUpperCase()) + '</span><span class="cpd-tx"><span class="cpd-nm">' + esc(l.d) +
       (avecBadges ? badges(l) : (l.rupt ? '<span class="cp-badge cp-badge-r">Rupture ANSM</span>' : '')) + '</span><span class="cpd-sb">' + esc(sous) + '</span></span>' +
-      '<span class="cpd-px"><b>' + b + '</b><i>' + i + '</i></span></button>';
+      '<span class="cpd-px"><b>' + b + '</b><i>' + i + '</i></span><span class="cpd-ch" aria-hidden="true">›</span></button>';
   }
   function stockLib(l) {
     if (!(l.stock > 0)) return 'stock à 0';
@@ -2734,7 +2747,10 @@
   }
 
   function retourHtml(titre) {
-    return '<div class="cpd-vh"><button type="button" class="cpd-back" onclick="V2.comptoir.portes()">' + (ICO('back', 18, 2) || '←') + ' Les trois portes</button><h2 class="cpd-vt">' + esc(titre) + '</h2></div>';
+    var P = [['trouver', 'Trouver un produit'], ['change', 'Ce qui change'], ['proposer', 'À proposer']], i, seg = '';
+    for (i = 0; i < P.length; i++) seg += '<button type="button" role="tab" aria-selected="' + (C.porte === P[i][0]) + '" onclick="V2.comptoir.porte(\'' + P[i][0] + '\')">' + P[i][1] + '</button>';
+    return '<div class="cpd-vh"><button type="button" class="cpd-back" onclick="V2.comptoir.portes()">' + (ICO('back', 18, 2) || '←') + ' Les trois portes</button><h2 class="cpd-vt">' + esc(titre) + '</h2>' +
+      (C.porte === 'tout' ? '' : '<div class="cpd-seg dk-seg" role="tablist" aria-label="Les trois portes">' + seg + '</div>') + '</div>';
   }
   function barrePanier() { return '<div id="cp-bar-hote">' + barreHtml() + '</div>'; }
 
@@ -2764,10 +2780,10 @@
     if (!p3) p3 = '<span><span class="n">Rien à proposer pour le moment</span></span>';
     var chev = ICO('chev', 18, 2) || '›';
     return '<div class="cp cpd">' +
-      '<section class="cpd-head"><div class="cpd-bar" aria-hidden="true"></div><div class="cpd-in">' +
-        '<div><h1 class="cpd-h1">Catalogue produits</h1><div class="cpd-sub">Prix et stock des ' + fr(e.etabs) + ' établissements</div></div>' +
-        '<div class="cpd-stats"><div class="cpd-stat"><b>' + fr(e.ref) + '</b><span>références</span><small>au catalogue Intégral</small></div><div class="cpd-stat"><b>' + fr(e.stock) + '</b><span>en stock</span><small>références du catalogue, tous sites réunis</small></div>' +
-          '<div class="cpd-stat"><b>' + fr(e.etabs) + '</b><span>établissements</span><small>dont nous lisons prix et stock</small></div></div></div></section>' +
+      '<header class="cpd-head dk-hd"><div class="dk-hd-t"><p class="dk-eyebrow cpd-sub">Prix et stock des ' + fr(e.etabs) + ' établissements</p><h1 class="cpd-h1 dk-title">Catalogue produits</h1>' +
+        '<p class="dk-lede">Retrouvez un produit, son prix net et son stock, ou voyez ce qui change.</p></div></header>' +
+      '<div class="cpd-stats dk-card dk-band"><div class="cpd-stat"><b>' + fr(e.ref) + '</b><span>références</span><small>au catalogue Intégral</small></div><div class="cpd-stat"><b>' + fr(e.stock) + '</b><span>en stock</span><small>références du catalogue, tous sites réunis</small></div>' +
+        '<div class="cpd-stat"><b>' + fr(e.etabs) + '</b><span>établissements</span><small>dont nous lisons prix et stock</small></div></div>' +
       '<div class="cpd-q"><h2>Que voulez-vous faire ?</h2><p>Trois portes. Chacune ouvre son volet ici même, rien d\'autre à lire avant.</p></div>' +
       '<div class="cpd-doors">' +
         '<button type="button" class="cpd-door" onclick="V2.comptoir.porte(\'trouver\')"><span class="cpd-ic">' + ICO('search', 24, 1.8) + '</span><span class="cpd-t">Trouver un produit</span>' +

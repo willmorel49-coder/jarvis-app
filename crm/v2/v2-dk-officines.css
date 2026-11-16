@@ -1,0 +1,295 @@
+/* v2-dk-officines.css — écran « officines » de la refonte d4 (kit : v2-dk-kit.css). Réservé à l'agent de cet écran. */
+
+/* === LISTE (agent liste) === 14/11/2026 — « Mes officines » : en-tête, barre, « À rappeler », liste groupée du kit. Préfixe dko-. */
+html .dko.dko { max-width: 1240px; padding-bottom: 96px; }
+html .dko.dko .dk-hd { margin: 8px 0 24px; }
+/* barre : recherche, bascule, vues, commercial */
+html .dko.dko .dko-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 0 0 24px; }
+html .dko.dko .dko-bar .of-recherche { flex: 1 1 280px; min-width: 0; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: var(--dk-r-pill); background: var(--dk-sunken); border: 0; box-shadow: none; color: var(--dk-muted); }
+html .dko.dko .dko-bar .of-recherche input { flex: 1; min-width: 0; min-height: 44px; border: 0; outline: 0; background: none; box-shadow: none; padding: 0; font: inherit; font-size: 16px; color: var(--dk-ink); }
+html .dko.dko .dko-bar .of-recherche:focus-within { box-shadow: 0 0 0 3px color-mix(in srgb, var(--dk-accent) 35%, transparent); }
+html .dko.dko .dko-bar .v2-select { flex: 0 0 auto; min-height: 44px; border-radius: var(--dk-r-pill); background: var(--dk-sunken); border: 0; box-shadow: none; }
+html .dko.dko .dko-bar .v2-select select { min-height: 44px; font-size: 16px; font-weight: 600; color: var(--dk-ink2); background: none; border: 0; box-shadow: none; }
+html .dko.dko .dko-cnt { display: inline-block; margin-left: 4px; font-weight: 500; color: var(--dk-muted); }
+html .dko.dko .dko-seg button[aria-selected="true"] .dko-cnt { color: var(--dk-accent); }
+/* phrase de méthode, en petit, sous l'en-tête de la liste */
+html .dko.dko .dko-n { margin: 8px 0 0; font-size: var(--dk-t5); font-weight: 600; color: var(--dk-ink2); }
+html .dko.dko .cl1-leg { margin: 4px 0 12px; font-size: var(--dk-t5); line-height: 1.4; color: var(--dk-muted); }
+html .dko.dko .cl1-leg b { color: var(--dk-ink); font-weight: 600; }
+/* « À rappeler cette semaine » : carte du kit, lignes du kit (mêmes boutons, mêmes clics : v2-decrochage.js) */
+html .dko.dko .dr.v2-card { position: relative; overflow: hidden; margin: 0 0 24px; padding: 20px 24px 12px; border: 0; border-radius: var(--dk-r-card); background: #fff; box-shadow: var(--dk-sh-2); }
+html .dko.dko .dr.v2-card::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 96px; pointer-events: none; background: radial-gradient(240px 90px at 12% 0%, color-mix(in srgb, var(--dk-accent) 12%, #fff), rgba(255, 255, 255, 0) 100%); }
+html .dko.dko .dr.v2-card > * { position: relative; }
+html .dko.dko .dr-titre { font-size: var(--dk-t2); font-weight: 700; letter-spacing: -.01em; color: var(--dk-ink); }
+html .dko.dko .dr-n { min-width: 32px; height: 32px; padding: 0 10px; font-size: var(--dk-t5); background: var(--dk-accent); box-shadow: none; }
+html .dko.dko .dr-regle, html .dko.dko .dr-date, html .dko.dko .dr-pied, html .dko.dko .dr-ct, html .dko.dko .dr-ville { font-size: var(--dk-t5); color: var(--dk-muted); }
+html .dko.dko .dr-ph { font-size: var(--dk-t4); color: var(--dk-ink2); }
+html .dko.dko .dr-nom { font-size: var(--dk-t3); font-weight: 600; color: var(--dk-ink); }
+html .dko.dko .dr-liste { margin: 12px 0 0; }
+html .dko.dko .dr-l { padding: 12px 0; border-top: 1px solid var(--dk-line); }
+html .dko.dko .dr-g { min-height: 44px; padding: 0 16px; border: 0; border-radius: var(--dk-r-pill); background: var(--dk-accent-soft); color: var(--dk-accent-d); font-size: var(--dk-t4); font-weight: 600; }
+html .dko.dko .dr-g-1 { background: var(--dk-accent); color: #fff; }
+html .dko.dko .dr-g-x { background: var(--dk-sunken); color: var(--dk-ink2); }
+html .dko.dko .dr-voir { min-height: 44px; border-top: 1px solid var(--dk-line); font-size: var(--dk-t4); font-weight: 600; color: var(--dk-accent); }
+html .dko.dko .dr-tag { font-size: var(--dk-t5); }
+/* la liste groupée */
+html .dko.dko .dko-liste { margin-top: 8px; }
+html .dko.dko .dko-r { align-items: center; gap: 16px; padding: 12px 16px; min-height: 72px; }
+html .dko.dko .dko-av { display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--dk-r-pill); background: var(--dk-accent); color: #fff; font-size: var(--dk-t3); font-weight: 700; }
+html .dko.dko .dko-av-p { background: var(--dk-sunken); color: var(--dk-ink2); }
+html .dko.dko .dko-nom { overflow-wrap: anywhere; }
+html .dko.dko .dko-tags { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 4px; }
+html .dko.dko .dko-st { min-height: 24px; padding: 0 8px; }
+html .dko.dko .dko-cols { flex: 0 0 auto; display: flex; gap: 24px; }
+html .dko.dko .dko-col { display: flex; flex-direction: column; width: 172px; line-height: 1.3; }
+html .dko.dko .dko-lib { font-size: var(--dk-t5); font-weight: 600; color: var(--dk-ink2); }
+html .dko.dko .dko-val { font-size: var(--dk-t4); font-weight: 600; color: var(--dk-ink); font-variant-numeric: tabular-nums; }
+html .dko.dko .dko-val.dk-ok { color: var(--dk-ok); }
+html .dko.dko .dko-sub { font-size: var(--dk-t5); color: var(--dk-muted); }
+html .dko.dko .dko-ca { min-width: 156px; }
+html .dko.dko .dko-ca-n { font-size: var(--dk-t3); font-weight: 700; letter-spacing: -.01em; }
+html .dko.dko .dko-mot { font-size: var(--dk-t5); font-weight: 600; color: var(--dk-ink2); }
+html .dko.dko .dko-mot.dk-ok { color: var(--dk-ok); } html .dko.dko .dko-mot.dk-bad { color: var(--dk-bad); }
+html .dko.dko .dko-plus { justify-content: center; min-height: 56px; font-size: var(--dk-t4); font-weight: 600; color: var(--dk-accent); }
+html .dko.dko .of-suite { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; padding: 16px; border-top: 1px solid var(--dk-line); }
+html .dko.dko .of-reste { font-size: var(--dk-t5); color: var(--dk-muted); }
+html .dko.dko .dko-vide { padding: 24px 16px; }
+/* largeur moyenne : les trois colonnes passent sous le nom */
+@media (max-width: 1180px) {
+  html .dko.dko .dko-r { flex-wrap: wrap; row-gap: 8px; }
+  html .dko.dko .dko-cols { order: 5; flex: 1 0 100%; padding-left: 60px; }
+  html .dko.dko .dko-col { flex: 1 1 0; width: auto; }
+  html .dko.dko .dk-row-b { flex: 1 1 200px; }
+}
+/* téléphone : une seconde partie à lignes (étiquette à gauche, chiffre à droite) */
+@media (max-width: 600px) {
+  html .dko.dko .dko-bar { gap: 8px; }
+  html .dko.dko .dko-bar .v2-select { width: 100%; }
+  html .dko.dko .dko-bar .v2-select select { width: 100%; }
+  html .dko.dko .dko-vues button { font-size: var(--dk-t5); padding: 0 2px; }
+  html .dko.dko .dr.v2-card { padding: 16px 16px 8px; }
+  html .dko.dko .dko-r { gap: 12px; padding: 12px; }
+  html .dko.dko .dko-cols { flex-direction: column; gap: 0; padding-left: 0; }
+  html .dko.dko .dko-col { flex-direction: row; flex-wrap: wrap; align-items: baseline; justify-content: space-between; column-gap: 12px; padding: 8px 0; border-top: 1px solid var(--dk-line); }
+  html .dko.dko .dko-sub { flex: 1 0 100%; order: 3; }
+  html .dko.dko .dko-lib { flex: 1 1 auto; }
+  html .dko.dko .dko-ca { min-width: 0; }
+}
+/* « À rappeler » replié : trois lignes (nom, ville, phrase) ; les gestes Appeler / Noter / Pas pertinent apparaissent avec « Voir les N » (même bouton qu'avant) */
+html .dko.dko .dr-l-t { align-items: center; }
+html .dko.dko .dr-nom { display: inline-flex; align-items: center; min-height: 44px; }
+html .dko.dko .dr:not(.dr-ouvert) > :is(.dr-regle, .dr-date, .dr-pied, .dr-pf) { display: none; }
+html .dko.dko .dr:not(.dr-ouvert) .dr-l { position: relative; padding: 4px 0; }
+html .dko.dko .dr:not(.dr-ouvert) .dr-nom::after { content: ""; position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
+html .dko.dko .dr:not(.dr-ouvert) .dr-l :is(.dr-ct, .dr-gestes, .dr-tag) { display: none; }
+html .dko.dko .dr:not(.dr-ouvert) .dr-ph { margin: 0 0 8px; }
+html .dko.dko .dr:not(.dr-ouvert) .dr-plus { display: none; }
+html .dko.dko .dko-bar .v2-select svg { display: none; }
+html .dko.dko .dko-bar .v2-select::after { content: "⌄"; position: absolute; right: 16px; top: 4px; font-size: 22px; color: var(--dk-accent); pointer-events: none; }
+@media (max-width: 600px) {
+  html .dko.dko .dko-r { flex-wrap: wrap; }
+  html .dko.dko .dko-r .dk-row-c { order: 2; }
+  html .dko.dko .dko-r .dko-ca { order: 3; flex: 1 0 100%; flex-direction: row; flex-wrap: wrap; align-items: baseline; justify-content: flex-start; gap: 0 8px; text-align: left; }
+  html .dko.dko .dko-r .dko-cols { order: 4; }
+}
+/* 14/11/2026 (2e tour) — grand titre du kit (40 px, 34 sous 600 px, gras) */
+html .dko.dko .dk-hd h1.dk-title { font-size: var(--dk-t1); font-weight: 700; letter-spacing: -.022em; line-height: 1.05; color: var(--dk-ink); }
+/* « À rappeler » compact : « Voir les N » dans l'en-tête de la carte ; replié = UNE ligne par officine (nom + ville, phrase d'écart en sous-ligne tronquée) */
+html .dko.dko .dr.v2-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 12px; margin-bottom: 16px; padding: 12px 24px 4px; }
+html .dko.dko .dr.v2-card::before { height: 72px; }
+html .dko.dko .dr.v2-card > * { grid-column: 1 / -1; }
+html .dko.dko .dr.v2-card > .dr-tete { grid-column: 1; grid-row: 1; min-height: 44px; }
+html .dko.dko .dr.v2-card > .dr-voir { grid-column: 2; grid-row: 1; width: auto; min-width: 44px; margin: 0; padding: 0 4px; border: 0; }
+html .dko.dko .dr.v2-card > .dr-liste { grid-row: 3; margin: 0; }
+html .dko.dko .dr.v2-card > :is(.dr-regle, .dr-date) { grid-row: 2; margin: 0 0 4px; }
+html .dko.dko .dr.v2-card > .dr-pied { grid-row: 4; }
+html .dko.dko .dr-titre { font-size: var(--dk-t3); }
+html .dko.dko .dr:not(.dr-ouvert) .dr-l { display: block; position: relative; padding: 0 0 4px; border-top: 1px solid var(--dk-line); }
+html .dko.dko .dr:not(.dr-ouvert) .dr-l-t { flex-wrap: nowrap; gap: 8px; align-items: flex-start; }
+html .dko.dko .dr:not(.dr-ouvert) .dr-nom { align-items: flex-start; min-height: 44px; padding-top: 2px; margin-bottom: -22px; font-size: var(--dk-t4); }
+html .dko.dko .dr:not(.dr-ouvert) .dr-ville { padding-top: 3px; white-space: nowrap; }
+html .dko.dko .dr:not(.dr-ouvert) .dr-ph { position: relative; margin: 0; padding: 0; min-height: 0; font-size: var(--dk-t5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+html .dko.dko .dr:not(.dr-ouvert) .dr-l:first-child { border-top: 0; }
+html .dko.dko .dr:not(.dr-ouvert) .dr-l.dr-plus { display: none; }
+html .dko.dko .dr:not(.dr-ouvert) .dr-l { padding-bottom: 12px; }
+@media (max-width: 600px) {
+  html .dko.dko .dr.v2-card { padding: 8px 16px 4px; column-gap: 8px; }
+  html .dko.dko .dr-titre { font-size: var(--dk-t4); white-space: nowrap; }
+  html .dko.dko .dr-tete { gap: 8px; }
+  html .dko.dko .dr-n { min-width: 28px; height: 28px; }
+  html .dko.dko .dr:not(.dr-ouvert) .dr-l-t { flex-wrap: wrap; gap: 0 8px; }
+  html .dko.dko .dr:not(.dr-ouvert) .dr-nom { align-items: center; min-height: 44px; padding-top: 0; margin-bottom: 0; }
+  html .dko.dko .dr:not(.dr-ouvert) .dr-ville { padding-top: 0; flex: 1 0 100%; margin-top: -14px; white-space: normal; }
+  html .dko.dko .dr:not(.dr-ouvert) .dr-ph { padding-top: 4px; }
+}
+
+/* === FICHE (agent fiche) — 14/11/2026, préfixe dkf-, racine .dkf sur .pha-wrap (fiche hors OPSO) ===
+   Sélecteurs en `html .dkf.dkf` pour battre les feuilles d'avant (v2-pharma.js injecte ses règles après les liens, v2-fiche-m1.css). */
+html .dkf.dkf { max-width: 1280px; }
+/* en-tête de page : lien retour, statut, grand titre, phrase, bascule des vues + gestes à droite */
+html .dkf.dkf .dkf-hd { margin: 4px 0 20px; align-items: flex-end; }
+html .dkf.dkf .dkf-hd .dk-hd-t { flex: 1 1 420px; }
+html .dkf.dkf .dkf-retour { margin-left: -4px; text-decoration: none; }
+html .dkf.dkf .dkf-hd .dk-eyebrow { color: var(--dk-muted); }
+html .dkf.dkf .dkf-hd h1.dk-title { font-size: var(--dk-t1); font-weight: 700; letter-spacing: -.022em; line-height: 1.05; color: var(--dk-ink); }
+html .dkf.dkf .dkf-hd h1.dk-title .phf-reprise, html .dkf.dkf .dkf-hd h1.dk-title .opso-badge { font-size: var(--dk-t5); vertical-align: middle; margin-left: 8px; }
+html .dkf.dkf .dkf-hd .dk-actions { flex-direction: column; align-items: flex-start; gap: 12px; }
+html .dkf.dkf .dkf-gestes { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+html .dkf.dkf .dkf-gestes[class] .dk-btn svg { flex: none; }
+html .dkf.dkf .dkf-vuenote { flex: 1 1 100%; order: 9; margin: 0; font-size: var(--dk-t5); line-height: 1.4; color: var(--dk-muted); }
+html .dkf.dkf .vv-band, html .dkf.dkf .ph-detail > .vv-sel { display: none; }
+/* deux colonnes : les chiffres à gauche (large), l'identité, les notes et les infos à droite */
+@media (min-width: 901px) {
+  html .dkf.dkf .pha { grid-template-columns: minmax(0, 1fr) 384px; gap: 20px; }
+  html .dkf.dkf .pha-main { grid-column: 1; grid-row: 1; }
+  html .dkf.dkf .pha-rail { grid-column: 2; grid-row: 1; }
+  /* 16/11/2026 (soir, Will : « Retirer tout ») — vue Intégral : plus de colonne de droite, notre marge prend toute la largeur */
+  html .dkf.dkf[data-vue="integral"] .pha { grid-template-columns: minmax(0, 1fr); }
+}
+/* 16/11/2026 — barres de notre marge : le trait « moyenne » passait au travers du montant (« 69,8|7 € ») ; le montant se pose désormais sur un fond blanc, au-dessus du trait */
+html .dkf.dkf .cl1-v { z-index: 1; margin-left: 4px; padding: 0 4px; border-radius: 4px; background: #fff; }
+/* carte d'identité : de bleue à carte blanche du kit */
+html .dkf.dkf .pha-id.fi-hd { color: var(--dk-ink); background: #fff; border: 0; border-radius: var(--dk-r-card); box-shadow: var(--dk-sh-2); padding: 20px 24px 24px; position: relative; top: auto; }
+html .dkf.dkf .pha-id.fi-hd::before { display: block; content: ""; position: absolute; left: 0; right: 0; top: 0; height: 96px; width: auto; border-radius: 0; pointer-events: none; background: radial-gradient(240px 90px at 12% 0%, color-mix(in srgb, var(--dk-accent) 12%, #fff), rgba(255, 255, 255, 0) 100%); }
+html .dkf.dkf .pha-id.fi-hd > .fi-lu { display: none; }
+html .dkf.dkf .pha-id .pha-id-top { align-items: center; gap: 8px; margin-bottom: 12px; }
+html .dkf.dkf .pha-id .pha-code, html .dkf.dkf .pha-id .fi-eye { padding: 0; font-family: inherit; font-size: var(--dk-t5); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--dk-muted); }
+html .dkf.dkf .pha-id .pha-kv { font-size: var(--dk-t5); gap: 10px 16px; }
+html .dkf.dkf .pha-id .pha-kv span:nth-child(even) { overflow-wrap: break-word; word-break: normal; min-width: 0; }
+html .dkf.dkf .pha-id .pha-kv span:nth-child(odd) { color: var(--dk-muted); font-weight: 500; }
+html .dkf.dkf .pha-id .pha-kv span:nth-child(even) { color: var(--dk-ink); font-weight: 600; }
+html .dkf.dkf .pha-id .pha-kv .pha-empty { color: var(--dk-muted); font-weight: 500; }
+html .dkf.dkf .pha-id .pha-kv .pha-probable { color: #8A5A00; }
+html .dkf.dkf .pha-id a { color: var(--dk-accent); text-decoration: none; }
+html .dkf.dkf .pha-id .pha-btn, html .dkf.dkf .pha-id a.pha-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border: 0; border-radius: var(--dk-r-pill); background: var(--dk-accent-soft); color: var(--dk-accent-d); font-size: var(--dk-t5); font-weight: 600; box-shadow: none; }
+html .dkf.dkf .pha-id .pha-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+html .dkf.dkf .pha-id .pha-edit { min-height: 44px; border: 0; border-radius: var(--dk-r-pill); background: var(--dk-accent-soft); color: var(--dk-accent-d); font-size: var(--dk-t5); font-weight: 600; }
+/* « Autre officine… » et cartes du rail, comme les cartes du kit */
+html .dkf.dkf .pha-rail > .v2-card, html .dkf.dkf .pha-rail > .vi-ct > .v2-card, html .dkf.dkf .pha-main .v2-card, html .dkf.dkf .pha-main .pha-kpi,
+html .dkf.dkf .pha-main > .ph-section > .v2-card { border: 0; border-radius: var(--dk-r-card); background: #fff; box-shadow: var(--dk-sh-2); }
+/* sommaire (les mêmes ancres) : pastilles du kit */
+html .dkf.dkf .fi-caps { gap: 8px; margin: 0 0 4px; }
+html .dkf.dkf .fi-cap { min-height: 44px; border: 0; border-radius: var(--dk-r-pill); background: #fff; box-shadow: var(--dk-sh-1); color: var(--dk-accent-d); font-size: var(--dk-t5); font-weight: 600; }
+/* la grande carte « Ce qu'elle commande par mois » */
+html .dkf.dkf .dkf-cmd { padding: 24px 28px 24px; }
+html .dkf.dkf .dkf-cmd .dk-card-t { font-size: var(--dk-t4); color: var(--dk-accent-d); }
+html .dkf.dkf .dkf-big { font-size: var(--dk-t1); font-weight: 700; letter-spacing: -.025em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--dk-ink); }
+html .dkf.dkf .dkf-sub { margin: 8px 0 20px; font-size: var(--dk-t4); color: var(--dk-muted); }
+html .dkf.dkf .dkf-sub b { font-weight: 600; }
+html .dkf.dkf .dkf-plot { position: relative; height: 176px; border-bottom: 1px solid var(--dk-line-strong); }
+html .dkf.dkf .dkf-cols { display: flex; align-items: stretch; height: 100%; gap: 0; }
+html .dkf.dkf .dkf-plot { cursor: pointer; touch-action: pan-y; -webkit-tap-highlight-color: transparent; }
+html .dkf.dkf .dkf-plot:focus-visible { outline: 3px solid var(--dk-accent); outline-offset: 4px; border-radius: 12px; }
+html .dkf.dkf .dkf-bar { flex: 1 1 0; min-width: 0; display: flex; align-items: flex-end; justify-content: center; }
+html .dkf.dkf .dkf-bar i { display: block; width: min(64%, 44px); border-radius: 999px 999px 6px 6px; background: color-mix(in srgb, var(--dk-accent) 28%, #fff); transition: background .15s; }
+html .dkf.dkf .dkf-bar.on i { background: var(--dk-accent); }
+/* 16/11/2026 — .dkf-moy (trait pointillé de l'officine moyenne) retiré avec son code */
+html .dkf.dkf .dkf-labs { display: flex; margin-top: 8px; }
+html .dkf.dkf .dkf-labs span { flex: 1 1 0; min-width: 0; text-align: center; font-size: var(--dk-t5); color: var(--dk-muted); white-space: nowrap; }
+html .dkf.dkf .dkf-labs .dkf-on { font-weight: 700; color: var(--dk-ink); }
+html .dkf.dkf .dkf-read { min-height: 20px; margin: 12px 0 0; font-size: var(--dk-t5); color: var(--dk-ink); }
+html .dkf.dkf .dkf-txt { margin: 4px 0 0; font-size: var(--dk-t5); line-height: 1.5; color: var(--dk-muted); }
+html .dkf.dkf .dkf-txt b { font-weight: 600; color: var(--dk-ink); }
+html .dkf.dkf .dkf-det { margin-top: 16px; border-top: 1px solid var(--dk-line); }
+html .dkf.dkf .dkf-det > summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; font-size: var(--dk-t5); font-weight: 600; color: var(--dk-accent); }
+html .dkf.dkf .dkf-det > .v2-card { box-shadow: none; padding: 0; background: none; }
+html .dkf.dkf .dkf-det > .v2-card::before { display: none; }
+/* bande de tuiles */
+html .dkf.dkf .dkf-band { margin: 0; padding: 20px 24px; }
+html .dkf.dkf .dkf-band .dk-stat-num { font-size: var(--dk-t2); }
+html .dkf.dkf .dkf-band .dk-stat-num small { font-size: var(--dk-t4); font-weight: 500; color: var(--dk-muted); }
+@media (min-width: 761px) { html .dkf.dkf .dkf-band { grid-template-columns: repeat(4, minmax(0, 1fr)); } html .dkf.dkf .dkf-band.pha-kpis-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 600px) {
+  html .dkf.dkf .dkf-hd .dk-actions { align-items: stretch; width: 100%; }
+  html .dkf.dkf .dkf-gestes { justify-content: stretch; }
+  html .dkf.dkf .dkf-gestes .dk-btn { flex: 1 1 auto; }
+  html .dkf.dkf .dkf-cmd { padding: 20px 16px; }
+  html .dkf.dkf .dkf-plot { height: 144px; }
+  html .dkf.dkf .dkf-labs span:nth-last-child(2n+2) { visibility: hidden; }
+  html .dkf.dkf .pha-id.fi-hd { padding: 20px 16px; }
+}
+/* blocs d'avant dans la fiche (formulaires Infos officine, notes, onglets) : mêmes seuils que le kit (texte 13 px, champs 16 px, cibles 44 px) */
+html .dkf.dkf :is(.phf-nmedit-l, .v2-profil-meta, .v2-rp-l, .v2-rp-l2, .v2-rp-aide, .bo-voir, small) { font-size: var(--dk-t5); }
+html .dkf.dkf :is(.phf-nmedit-in, select, input:not([type=checkbox]):not([type=radio]):not([type=hidden]), .v2-notes-ta) { font-size: 16px; min-height: 44px; }
+html .dkf.dkf :is(.v2-notes-mic, .v2-notes-puce, .pha-tab, .pha-part-btn) { min-height: 44px !important; min-width: 44px !important; box-sizing: border-box; }
+html .dkf.dkf .v2-profil-f > span, html .dkf.dkf .v2-profil-f-wide > span { font-size: var(--dk-t5) !important; }
+html .dkf.dkf :is(select, .v2-profil-box select) { height: auto; min-height: 44px !important; box-sizing: border-box; }
+html .dkf.dkf .pha-kv a { display: inline-flex; align-items: center; min-height: 44px; }
+@media (max-width: 760px) {
+  html .dkf.dkf .dkf-band, html .dkf.dkf .dkf-band.pha-kpis-3 { grid-template-columns: minmax(0, 1fr); }
+  html .dkf.dkf .dkf-band .dk-stat { min-width: 0; }
+  html .dkf.dkf .dkf-band .dk-stat-num { min-width: 0; white-space: normal; }
+}
+/* sommaire (mêmes ancres) : à droite sous l'identité, en liste verticale du kit (ordinateur) ; téléphone : le sommaire collant d'avant */
+@media (min-width: 901px) {
+  html .dkf.dkf .pha-rail > .fi-caps { display: flex; flex-direction: column; gap: 0; margin: 0; padding: 8px 8px; border-radius: var(--dk-r-card); background: #fff; box-shadow: var(--dk-sh-2); }
+  html .dkf.dkf .pha-rail > .fi-caps:empty { display: none; }
+  html .dkf.dkf .pha-rail > .fi-caps .fi-cap { border: 0; justify-content: flex-start; width: 100%; min-height: 56px; padding: 0 16px; border-radius: 12px; background: none; box-shadow: none; font-size: var(--dk-t4); font-weight: 600; color: var(--dk-ink); text-align: left; }
+  html .dkf.dkf .pha-rail > .fi-caps .fi-cap::after { content: "›"; margin-left: auto; font-size: var(--dk-t3); font-weight: 400; color: var(--dk-muted); }
+  html .dkf.dkf .pha-rail > .fi-caps .fi-cap + .fi-cap { box-shadow: 0 -1px 0 var(--dk-line); }
+  html .dkf.dkf .pha-rail > .fi-caps .fi-cap:hover { background: var(--dk-sunken); }
+}
+
+/* Retouche coordinateur 15/11 : un seul bouton bleu plein dans l'en-tête (« Voir le brief du jour » devient secondaire, comme le kit) */
+html .dkf.dkf.dkf .dkf-hd .bo-open, html .dkf.dkf.dkf .dkf-hd .bo-open:hover { background: var(--dk-accent-soft); border-color: transparent; color: var(--dk-accent-d); box-shadow: none; }
+html .dkf.dkf.dkf .dkf-hd .bo-open:active { background: var(--dk-accent-soft); border-color: transparent; }
+html .dkf.dkf.dkf .dkf-hd .bo-open .n { background: var(--dk-accent); color: #fff; }
+
+/* 16/11 (retouche 4) : sur ordinateur, WebKit ignore la hauteur d'un menu déroulant natif (27 px mesurés malgré min-height) : on retire l'habillage natif, hauteur 44 px, flèche dessinée */
+html .dkf.dkf select { -webkit-appearance: none; appearance: none; box-sizing: border-box; height: 44px; padding: 0 40px 0 14px; border: 0; border-radius: var(--dk-r-field); background: var(--dk-sunken) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23646B80' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 14px center; color: var(--dk-ink); }
+
+/* ══ 16/11/2026 — lot F1 de la fiche officine ══ */
+/* chiffre Offilog à côté du gros chiffre du grossiste (texte 13 px minimum, aucune opacity) */
+html .dkf.dkf .dkf-bigw { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 20px; }
+html .dkf.dkf .dkf-off { display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 6px; font-size: var(--dk-t4); color: var(--dk-muted); font-variant-numeric: tabular-nums; }
+html .dkf.dkf .dkf-off-l { font-size: var(--dk-t5); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+html .dkf.dkf .dkf-off-v { font-size: var(--dk-t2); font-weight: 700; color: var(--dk-ink); }
+html .dkf.dkf .dkf-off-m { font-size: var(--dk-t5); }
+html .dkf.dkf .dkf-off-0 { font-size: var(--dk-t5); }
+/* tranches de prix : une barre par tranche (nom · barre · montant · part) */
+html .dkf.dkf .pha-tb-l { display: flex; flex-direction: column; gap: 4px; padding: 4px 18px 16px; }
+html .dkf.dkf .pha-tb-r { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr) 7rem 3.5rem; align-items: center; gap: 4px 14px; min-height: 36px; font-size: var(--dk-t4); }
+html .dkf.dkf .pha-tb-n { display: flex; align-items: center; gap: 8px; min-width: 0; font-weight: 600; color: var(--dk-ink); overflow-wrap: anywhere; }
+/* 16/11/2026 — la fourchette de la tranche (« 4,33 – 468 € ») s'affiche en entier, retour à la ligne permis, sans coupe à une ligne */
+html .dkf.dkf .pha-tb-n .pha-sub { -webkit-line-clamp: unset; overflow: visible; white-space: normal; }
+html .dkf.dkf .pha-tb-bar { height: 10px; border-radius: var(--dk-r-pill); background: var(--dk-track); overflow: hidden; }
+html .dkf.dkf .pha-tb-bar > i { display: block; height: 100%; border-radius: var(--dk-r-pill); }
+html .dkf.dkf .pha-tb-v { text-align: right; font-weight: 700; color: var(--dk-ink); }
+html .dkf.dkf .pha-tb-p { text-align: right; color: var(--dk-muted); font-variant-numeric: tabular-nums; }
+@media (max-width: 600px) {
+  html .dkf.dkf .pha-tb-l { padding: 4px 4px 12px; gap: 12px; }
+  html .dkf.dkf .pha-tb-r { grid-template-columns: minmax(0, 1fr) auto auto; row-gap: 6px; }
+  html .dkf.dkf .pha-tb-n { grid-column: 1 / -1; }
+  html .dkf.dkf .pha-tb-bar { grid-column: 1; grid-row: 2; }
+  html .dkf.dkf .pha-tb-v { grid-column: 2; grid-row: 2; }
+  html .dkf.dkf .pha-tb-p { grid-column: 3; grid-row: 2; }
+}
+/* « Ne commande plus » : carte d'alerte (couleur --dk-bad du kit), le nombre de produits dans le titre */
+html .dkf.dkf .pha-np-alerte { box-shadow: inset 5px 0 0 var(--dk-bad), var(--dk-sh-2); }
+html .dkf.dkf .pha-np-alerte .pha-ch h3 { font-size: var(--dk-t3); font-weight: 700; color: var(--dk-bad); }
+/* ordre à toutes les largeurs : sous 900 px la colonne principale n'est plus derrière le rail (display: contents) ; le graphique, « Ne commande plus » et notre marge
+   passent devant la carte d'identité (order -5), « À proposer » suit l'ordre de la page au lieu de remonter sous la carte bleue */
+@media (max-width: 900px) {
+  html .dkf.dkf .dkf-cmd, html .dkf.dkf .pha-np, html .dkf.dkf .pha-mg-nous { order: -5; }
+  html .dkf.dkf .fbk { order: 0; }
+}
+/* 16/11/2026 — Masquer / Afficher chaque bloc de la fiche : un gros bouton écrit (≥ 44 px, couleur principale du kit, texte blanc) à droite du titre.
+   Bloc masqué : son titre et le bouton restent, le reste disparaît. Le basculement se fait sur place (classe .is-masque), sans nouveau rendu. */
+html .dkf.dkf .dkf-bloc { position: relative; }
+html .dkf.dkf .dkf-bloc > .dkf-bloc-tete { box-sizing: border-box; min-height: 44px; padding-right: 136px; }
+html .dkf.dkf .dkf-bloc-btn { position: absolute; top: 10px; right: 12px; z-index: 2; display: inline-flex; align-items: center; justify-content: center; min-width: 112px; min-height: 44px; padding: 0 18px; border: 0; border-radius: var(--dk-r-pill); background: var(--dk-accent); color: #fff; font: inherit; font-size: 14px; font-weight: 700; line-height: 1.2; white-space: nowrap; cursor: pointer; box-shadow: var(--dk-sh-blue); }
+html .dkf.dkf .dkf-bloc-btn:hover { background: var(--dk-accent-d); }
+html .dkf.dkf .dkf-bloc-btn:active { transform: scale(.96); }
+html .dkf.dkf .dkf-bloc-btn:focus-visible { outline: 3px solid var(--dk-accent); outline-offset: 2px; }
+html .dkf.dkf .dkf-bloc.is-masque > :not(.dkf-bloc-tete):not(.dkf-bloc-btn) { display: none !important; }
+/* blocs sans fond de carte (« À proposer », sections génériqueurs et détail, bande de chiffres) : le bouton se cale sur le bord du bloc */
+html .dkf.dkf .fbk.dkf-bloc > .dkf-bloc-btn, html .dkf.dkf .ph-section.dkf-bloc > .dkf-bloc-btn, html .dkf.dkf .dkf-bloc-sans > .dkf-bloc-btn { top: 0; right: 0; }
+html .dkf.dkf .dkf-bloc-nom { margin: 0; padding: 10px 0; font-size: var(--dk-t3); font-weight: 700; color: var(--dk-ink); }
+@media (prefers-reduced-motion: reduce) { html .dkf.dkf .dkf-bloc-btn { transition: none; } }
+/* 16/11/2026 — fiche d4 : fenêtre « Note et prochain rendez-vous » (bouton « Prendre une note », feuille fbs de v2-fiche-m1.css).
+   Les deux encadrés perdent leur carte dans la fenêtre : un simple filet les sépare. Pas de flou derrière (interdit Safari). */
+.dkf-nf[hidden] { display: none !important; }
+.dkf-nf .pha-notes { display: flex; flex-direction: column; }
+.dkf-nf .pha-notes > .v2-notes-box { margin: 0; padding: 14px 2px 18px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.dkf-nf .pha-notes > .v2-notes-box + .v2-notes-box { border-top: 1px solid rgba(16, 19, 28, .09); padding-top: 18px; }
+.dkf-nf .v2-notes-ta { font-size: 16px; }
