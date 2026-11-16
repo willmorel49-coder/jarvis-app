@@ -83,6 +83,23 @@
 .m1-foot p:empty{display:none}
 .m1-go span,.m1-foot p{transition:transform .2s var(--io)}
 @media (hover:hover){.m1-bento .m1-c:hover .m1-go span,.m1-bento .m1-c:hover .m1-foot p{transform:translateX(8px)}}
+/* 16/11/2026 — épuration : nom de case plus répété en pied (h3.m1-cache, texte réservé aux lecteurs d'écran) ; le lien étiré reste, l'anneau de focus se dessine sur toute la case */
+.m1-foot h3.m1-cache{height:0}
+.m1-foot h3.m1-cache .m1-go{min-height:0}
+.m1-foot h3.m1-cache+p{margin-top:0}
+.m1-foot h3.m1-cache .m1-go:focus-visible{outline:none}
+.m1-foot h3.m1-cache .m1-go:focus-visible::after{outline:2px solid var(--ip-blue);outline-offset:-2px}
+/* To do : la liste (ou « Rien à faire ») suit son titre au lieu de flotter au milieu de la case */
+.m1-bento .m1-todo>[data-slot="todo.bd"]{margin-bottom:auto}
+/* un widget qui n'a rien à montrer (« Aucune relance à faire. ») garde sa place mais ne s'étire plus à la hauteur de son voisin */
+.u2-wid:has(.aw-v){align-self:start}
+/* téléphone : les officines à rappeler en 2 colonnes égales sous « N à rappeler » (avant : 3 lignes en escalier) */
+@media (max-width:600px){
+  .m1-bento .m1-off>.m1-rel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}
+  .m1-off .m1-rel-h{grid-column:1 / -1}
+  .m1-off .m1-chip{min-width:0}
+  .m1-off .m1-chip b,.m1-off .m1-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+}
 
 /* pastilles de signal (sens fixe : vert bon, ambre à surveiller, rose mauvais) */
 .m1-pill{display:inline-flex;align-items:center;gap:6px;min-height:26px;padding:0 10px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;border:1px solid transparent}
