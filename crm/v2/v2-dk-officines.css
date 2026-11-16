@@ -236,9 +236,9 @@ html .dkf.dkf .dkf-off-l { font-size: var(--dk-t5); font-weight: 600; letter-spa
 html .dkf.dkf .dkf-off-v { font-size: var(--dk-t2); font-weight: 700; color: var(--dk-ink); }
 html .dkf.dkf .dkf-off-m { font-size: var(--dk-t5); }
 html .dkf.dkf .dkf-off-0 { font-size: var(--dk-t5); }
-/* tranches de prix : une barre par tranche (nom · barre · montant · part) */
-html .dkf.dkf .pha-tb-l { display: flex; flex-direction: column; gap: 4px; padding: 4px 18px 16px; }
-html .dkf.dkf .pha-tb-r { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr) 7rem 3.5rem; align-items: center; gap: 4px 14px; min-height: 36px; font-size: var(--dk-t4); }
+/* tranches de prix : une barre par tranche (nom · barre · montant · part · marge du pharmacien, 16/11 soir) */
+html .dkf.dkf .pha-tb-l { display: flex; flex-direction: column; gap: 4px; padding: 4px 18px 16px; container: dktb / inline-size; }
+html .dkf.dkf .pha-tb-r { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr) 6rem 3rem 6.5rem; align-items: center; gap: 4px 12px; min-height: 36px; font-size: var(--dk-t4); }
 html .dkf.dkf .pha-tb-n { display: flex; align-items: center; gap: 8px; min-width: 0; font-weight: 600; color: var(--dk-ink); overflow-wrap: anywhere; }
 /* 16/11/2026 — la fourchette de la tranche (« 4,33 – 468 € ») s'affiche en entier, retour à la ligne permis, sans coupe à une ligne */
 html .dkf.dkf .pha-tb-n .pha-sub { -webkit-line-clamp: unset; overflow: visible; white-space: normal; }
@@ -246,13 +246,22 @@ html .dkf.dkf .pha-tb-bar { height: 10px; border-radius: var(--dk-r-pill); backg
 html .dkf.dkf .pha-tb-bar > i { display: block; height: 100%; border-radius: var(--dk-r-pill); }
 html .dkf.dkf .pha-tb-v { text-align: right; font-weight: 700; color: var(--dk-ink); }
 html .dkf.dkf .pha-tb-p { text-align: right; color: var(--dk-muted); font-variant-numeric: tabular-nums; }
+html .dkf.dkf .pha-tb-m { text-align: right; line-height: 1.25; }
+html .dkf.dkf .pha-tb-ml { display: block; font-size: var(--dk-t5); color: var(--dk-muted); }
+html .dkf.dkf .pha-tb-m b { font-weight: 700; color: var(--dk-accent); white-space: nowrap; }
 @media (max-width: 600px) {
   html .dkf.dkf .pha-tb-l { padding: 4px 4px 12px; gap: 12px; }
+}
+/* 16/11 soir — carte étroite (téléphone, ou colonne de moins de 640 px) : nom en haut, barre · montant · part, puis « votre marge N € » sur une ligne dessous */
+@container dktb (max-width: 639px) {
   html .dkf.dkf .pha-tb-r { grid-template-columns: minmax(0, 1fr) auto auto; row-gap: 6px; }
   html .dkf.dkf .pha-tb-n { grid-column: 1 / -1; }
   html .dkf.dkf .pha-tb-bar { grid-column: 1; grid-row: 2; }
   html .dkf.dkf .pha-tb-v { grid-column: 2; grid-row: 2; }
   html .dkf.dkf .pha-tb-p { grid-column: 3; grid-row: 2; }
+  html .dkf.dkf .pha-tb-m { grid-column: 1 / -1; grid-row: 3; }
+  html .dkf.dkf .pha-tb-m:empty { display: none; }
+  html .dkf.dkf .pha-tb-ml { display: inline; }
 }
 /* « Ne commande plus » : carte d'alerte (couleur --dk-bad du kit), le nombre de produits dans le titre */
 html .dkf.dkf .pha-np-alerte { box-shadow: inset 5px 0 0 var(--dk-bad), var(--dk-sh-2); }

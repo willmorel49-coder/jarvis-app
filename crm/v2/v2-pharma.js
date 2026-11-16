@@ -2637,19 +2637,23 @@
   // 16/11/2026 — tranches de prix : plus de tableau, une barre par tranche (nom, barre proportionnelle, chiffre d'affaires, part du total).
   // Mêmes barres sur ordinateur et téléphone. Tranche à chiffre d'affaires nul = masquée. Le tableau (produits, marge, taux, évolution, réseau,
   // légende « 0,18 € · 4,2 % · 19,50 € » écrite en dur) et trancheRow disparaissent : la marge du pharmacien reste dite par analyseMargePharma.
-  function tranchesBarres(lignes, total) {
+  // 16/11/2026 (soir) — retour de Valérie (VAM) : la marge du pharmacien revient sur chaque barre (choix cliqué de Will « Marge sur chaque barre »),
+  // lue dans c.mdl (margeNetteLigne). Tranche sans marge (génériques, non remboursés, hors catégories) : rien, pas « 0 € ». Écran seulement.
+  function tranchesBarres(lignes, total, ph) {
     var max = lignes.reduce(function (m, c) { return Math.max(m, c.ca); }, 0);
     return lignes.filter(function (c) { return c.ca > 0; }).map(function (c) {
       var pc = total > 0 ? Math.round(c.ca / total * 100) : 0;
+      var mg = Math.round((c.mdl || 0) * 100) / 100;
       return '<div class="pha-tb-r"><span class="pha-tb-n"><span class="ph-tr-dot" style="background:' + c.color + '"></span>' + esc(c.label) + (c.sub ? ' <span class="pha-sub">' + esc(c.sub) + '</span>' : '') + '</span>' +
         '<span class="pha-tb-bar"><i style="width:' + (max > 0 ? Math.max(2, c.ca / max * 100) : 0).toFixed(1) + '%;background:' + c.color + '"></i></span>' +
-        '<b class="pha-tb-v cl1-num">' + V2.fmtEur(c.ca) + '</b><span class="pha-tb-p cl1-num">' + pc + ' %</span></div>';
+        '<b class="pha-tb-v cl1-num">' + V2.fmtEur(c.ca) + '</b><span class="pha-tb-p cl1-num">' + pc + ' %</span>' +
+        '<span class="pha-tb-m">' + (mg > 0 ? '<span class="pha-tb-ml">' + (ph ? 'votre marge' : 'marge du pharmacien') + '</span> <b class="cl1-num">' + V2.fmtEur(mg) + '</b>' : '') + '</span></div>';
     }).join('');
   }
   function analyseTranches(A, ph) {
     var lignes = A.cats.slice();
     if (A.other.refs > 0 && A.other.ca > 0) lignes.push({ label: 'Hors catégories', color: 'var(--muted-2)', ca: A.other.ca });
-    var corps = tranchesBarres(lignes, A.caTot);
+    var corps = tranchesBarres(lignes, A.caTot, ph);
     if (!corps) return '';
     return '<div class="v2-card pha-card pha-tb"><div class="pha-ch"><h3>' + (ph ? 'Votre chiffre d’affaires par tranche de prix' : 'Son chiffre d’affaires par tranche de prix') + '</h3><span class="pha-sub">' + esc(cl1PerA(A)) + ' · part du total de chaque tranche</span></div>' +
       '<div class="pha-tb-l">' + corps + '</div></div>';
