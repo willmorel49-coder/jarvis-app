@@ -4109,24 +4109,12 @@
       '<p class="dkf-vuenote"><span class="vi-ph">Vue pharmacien : rien d’interne à l’écran, vous pouvez la lui montrer.</span><span class="vi-int">Vue Intégral : notre marge seule, comparée à nos clients. À ne pas lui montrer.</span></p>' +
     '</header>';
   }
-  // Bande de tuiles du kit (remplace analyseKpis hors OPSO) : étiquette, chiffre, comparaison ÉCRITE.
-  // 16/11/2026 — dernier mois incomplet pour le secteur (A.incomplet) : montant gardé, pas de pourcentage, mention « <mois> peut-être incomplet »
-  function dkfBande(A, nbRefs, ph) {
-    var lastLbl = A.last ? cl1MoisK(A.last.mk, true) : '', prevLbl = A.prev ? cl1MoisK(A.prev.mk).replace(/ \d+$/, '') : 'le mois précédent';
-    var cumul = A.debut && A.last ? cl1PerDe(cl1CleK(A.debut.mk), cl1CleK(A.last.mk)) : '';
-    var st = function (lab, num, cmp) { return '<div class="dk-stat"><div class="dk-stat-lab">' + lab + '</div><div class="dk-stat-num pha-kval">' + num + '</div><div class="dk-stat-cmp">' + cmp + '</div></div>'; };
-    return '<div class="pha-kpis dk-card dk-band dkf-band' + (ph ? ' pha-kpis-3' : '') + '">' +
-      st((ph ? 'Votre chiffre d’affaires' : 'Chiffre d’affaires') + (lastLbl ? ' en ' + esc(lastLbl) : ''), A.last ? V2.fmtEur(A.last.ca) : '—', A.incomplet ? esc(lastLbl.replace(/ \d+$/, '')) + ' peut-être incomplet' : dkfEvo(A.evoM) + ' par rapport à ' + esc(prevLbl)) +
-      st(ph ? 'Votre chiffre d’affaires par mois' : 'Son chiffre d’affaires par mois', V2.fmtEur(A.caMoy), ph ? 'en moyenne sur vos ' + A.nAct + ' mois d’activité' : dkfEvo(pctOf(A.caMoy, A.netMoy)) + ' par rapport à l’officine moyenne du réseau (' + V2.fmtEur(A.netMoy) + ' par mois)') +
-      st('Cumul' + (cumul ? ' ' + esc(cumul) : ' ' + A.nAct + ' mois'), V2.fmtEur(A.caTot), V2.fmtNum(nbRefs) + ' produits différents achetés') +
-      (ph ? '' : st('Place dans le réseau', A.rank ? V2.fmtNum(A.rank) + (A.rank === 1 ? 're' : 'e') + ' <small>sur ' + V2.fmtNum(A.nOff) + '</small>' : '—', 'officines actives ' + esc(cl1PerVDe()) + ', classées par chiffre d’affaires' + (A.grpRank ? ' · ' + A.grpRank + (A.grpRank === 1 ? 're' : 'e') + ' sur ' + A.nGrp + ' chez ' + esc(A.grpName) : ''))) +
-    '</div>';
-  }
   // La grande carte « Ce qu'elle commande par mois » : gros chiffre du dernier mois, barres arrondies (les 12 derniers mois d'activité), phrase qui lit la courbe.
-  // La courbe d'avant et son tableau exact restent dans la carte, sous « La courbe et le tableau, mois par mois ».
+  // 16/11/2026 (Will : « ya un doublon dans ce que vous commandez par moi », question cliquée « Les deux ») : le volet ne garde que le tableau exact
+  // (plus de titre répété ni de 2e graphique), et la bande « Vos chiffres clés » (dkfBande) est retirée : ses chiffres sont tous ici, nbRefs compris.
   // Le dernier mois n'est dit « incomplet » nulle part ici : le code ne le sait pas pour une officine (il dit « dernier mois reçu », comme avant).
-  // 16/11/2026 — idem dkfBande : A.incomplet remplace le pourcentage du dernier mois par la mention « peut-être incomplet »
-  function dkfCommande(A, ph, pid) {
+  // 16/11/2026 — A.incomplet remplace le pourcentage du dernier mois par la mention « peut-être incomplet »
+  function dkfCommande(A, ph, pid, nbRefs) {
     var t = ph ? 'Ce que vous commandez par mois' : 'Ce qu’elle commande par mois';
     var tete = '<div class="dk-card-h"><span class="dk-ti"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20v-6M10 20V6M16 20v-9M22 20H2"/></svg></span><h3 class="dk-card-t">' + t + '</h3></div>';
     if (!A.last || A.n < 2 || !A.nAct) return '<section class="dk-card dkf-cmd" id="dkf-cmd">' + tete + '<p class="dk-empty">' + (A.caTot > 0 && A.last ? 'Pas de commande en ' + esc(A.last.label) + ' ' + A.last.year : 'Pas encore de commande reçue') + '</p></section>';
@@ -4153,10 +4141,10 @@
       '<div class="dkf-plot" role="group" tabindex="0" aria-label="Chiffre d’affaires net par mois : survolez, touchez ou utilisez les flèches pour lire un mois" onclick="V2.pharmaDkPlot(event,this)" onpointermove="V2.pharmaDkPlot(event,this)" onkeydown="V2.pharmaDkKey(event,this)">' + '<div class="dkf-cols">' + cols + '</div></div>' +
       '<div class="dkf-labs" aria-hidden="true">' + labs + '</div>' +
       '<p class="dkf-read" aria-live="polite">Touchez ou survolez une barre pour lire son montant.</p>' +
-      '<p class="dkf-txt">CA net par mois, ' + esc(per) + '. Depuis sa première commande' + (perC ? ' (' + esc(perC) + ')' : '') + ' : cumul <b>' + V2.fmtEur(A.caTot) + '</b>, soit <b>' + V2.fmtEur(A.caMoy) + ' par mois</b> en moyenne sur ' + A.nAct + ' mois.' +
+      '<p class="dkf-txt">CA net par mois, ' + esc(per) + '. Depuis sa première commande' + (perC ? ' (' + esc(perC) + ')' : '') + ' : cumul <b>' + V2.fmtEur(A.caTot) + '</b>, soit <b>' + V2.fmtEur(A.caMoy) + ' par mois</b> en moyenne sur ' + A.nAct + ' mois' + (nbRefs ? ', <b>' + V2.fmtNum(nbRefs) + ' produits différents</b> achetés' : '') + '.' +
         // 16/11/2026 — phrase « Ligne en pointillés : l’officine moyenne du réseau… » retirée avec le trait
         '</p>' +
-      '<details class="dkf-det"><summary>La courbe et le tableau, mois par mois</summary>' + analyseChart(A, ph) + '</details>' +
+      '<details class="dkf-det"><summary>Le tableau exact, mois par mois</summary>' + analyseMoisTableau(A, ph) + '</details>' +
     '</section>';
   }
   // lecture d'une barre : le tracé entier est la zone (au doigt ou à la souris, on lit le mois sous le pointeur) ; flèches au clavier
@@ -4463,7 +4451,7 @@
       : (S ? '<div class="pha-marges">' + m5Bloc(A, S, pid) + rentaChiffres(pid) + m5Tranches(S, pid) + '</div>' + m5Replie('chiffres', 'Cumul, dernier mois et marges en détail', detail)
            : analyseKpis(A, marge, nbRefs) + '<div class="pha-marges">' + analyseMargePharma(A, marge) + analyseNotreMarge(pid) + rentaChiffres(pid) + '</div>') +
       analyseChart(A) + (S ? m5Replie('tranches', 'Son chiffre d’affaires par tranche, tableau détaillé', analyseTranches(A)) + m5Replie('parts', 'Par catégorie, mois par mois', analyseParts(A)) : analyseTranches(A) + analyseParts(A));
-    var chiffresPh = (fi ? dkfBande(A, nbRefs, true) : analyseKpis(A, marge, nbRefs, true)) + '<div class="pha-marges">' + analyseMargePharma(A, marge, true) + '</div>' +
+    var chiffresPh = (fi ? '' : analyseKpis(A, marge, nbRefs, true)) + '<div class="pha-marges">' + analyseMargePharma(A, marge, true) + '</div>' +
       (fi ? '' : analyseChart(A, true)) + analyseTranches(A, true) + analyseParts(A, true);
     // 06/11/2026 — fiche « plus clair » cliente : le bloc A « La rangée de boutons » (vue Intégral) remplace les cartes « À proposer » et « Listes à proposer » ;
     // la carte « À proposer » reste montrée au pharmacien tel quel (vue pharmacien : décisions de Will des 12/10 et 29/10). Fiche « menu » et officine d'un collègue : comme avant.
@@ -4475,7 +4463,7 @@
     // 16/11/2026 (soir, Will : « côté vue Intégral c'est uniquement notre marge à nous détaillée, rien d'autre ; côté vue pharmacien y a tout le reste qu'on avait »)
     // fiche d4 (fi) : vue Intégral = notre marge par famille + ce que rapportent ses livraisons, puis les outils (« À proposer ») ; vue pharmacien inchangée :
     // 1 graphique · 2 « Ne commande plus » · 3 ses chiffres · [4 génériqueurs, posés plus bas : generiqueurSec n'existe pas encore ici] · 5 Top 10 · 6 « À proposer ». Hors fi : l'ordre d'avant.
-    var chiffresHaut = fi ? viW(margeNousBloc(pid) + rentaChiffres(pid, true), 'vi-int') + viW(dkfCommande(A, true, pid) + analyseNePlus(pid) + chiffresPh, 'vi-ph')
+    var chiffresHaut = fi ? viW(margeNousBloc(pid) + rentaChiffres(pid, true), 'vi-int') + viW(dkfCommande(A, true, pid, nbRefs) + analyseNePlus(pid) + chiffresPh, 'vi-ph')
       : proposer + viW(chiffresInt, 'vi-int') + viW(chiffresPh, 'vi-ph');
     var chiffresBas = fi ? viW(analyseTop5(A), 'vi-ph') + proposer : analyseTop5(A) + analyseNePlus(pid);
     var chiffres = chiffresHaut;
@@ -4783,7 +4771,6 @@
     ['neplus', '.pha-main .pha-np', 'h3'],
     ['marge-nous', '.pha-main .pha-mg-nous', '.cl1-t'],
     ['livraisons', '.pha-main .pha-livr', '.cl1-t'],
-    ['chiffres-cles', '.pha-main .pha-kpis', ''],
     ['marge-pharmacien', '.pha-main .pha-mp', '.pha-kl'],
     ['tranches', '.pha-main .pha-tb', 'h3'],
     ['categories', '.pha-main .pha-parts-card', 'h3'],
@@ -4808,20 +4795,11 @@
     BM_BLOCS.forEach(function (d) {
       [].slice.call(root.querySelectorAll(d[1])).forEach(function (el) {
         if (el.getAttribute('data-bloc-vu')) return;
-        var t = d[2] ? el.querySelector(d[2]) : null, tete = null, nom, bloc = el;
-        if (d[2]) {
-          if (!t) return;
-          tete = t; while (tete && tete.parentNode !== el) tete = tete.parentNode;
-          if (!tete) return;
-          nom = (t.textContent || '').replace(/\s+/g, ' ').trim();
-        } else {
-          // bloc sans titre (la bande de chiffres) : une enveloppe avec un titre, posée autour de lui
-          nom = el.closest('.vi-ph') ? 'Vos chiffres clés' : 'Ses chiffres clés';
-          bloc = document.createElement('section'); bloc.className = 'dkf-bloc-sans';
-          tete = document.createElement('div');
-          var h = document.createElement('h3'); h.className = 'dkf-bloc-nom'; h.textContent = nom; tete.appendChild(h);
-          el.parentNode.insertBefore(bloc, el); bloc.appendChild(tete); bloc.appendChild(el);
-        }
+        var t = el.querySelector(d[2]), tete = t, nom, bloc = el;
+        if (!t) return;
+        while (tete && tete.parentNode !== el) tete = tete.parentNode;
+        if (!tete) return;
+        nom = (t.textContent || '').replace(/\s+/g, ' ').trim();
         el.setAttribute('data-bloc-vu', '1');
         bloc.classList.add('dkf-bloc'); bloc.setAttribute('data-bloc', d[0]); bloc.setAttribute('data-nom', nom.slice(0, 90));
         tete.classList.add('dkf-bloc-tete');

@@ -191,14 +191,9 @@ html .dkf.dkf .dkf-read { min-height: 20px; margin: 12px 0 0; font-size: var(--d
 html .dkf.dkf .dkf-txt { margin: 4px 0 0; font-size: var(--dk-t5); line-height: 1.5; color: var(--dk-muted); }
 html .dkf.dkf .dkf-txt b { font-weight: 600; color: var(--dk-ink); }
 html .dkf.dkf .dkf-det { margin-top: 16px; border-top: 1px solid var(--dk-line); }
+/* 16/11/2026 — téléphone : l'en-tête et la 1re colonne (« Cumul de … ») du tableau exact passent à la ligne, sinon « Évolution sur un mois » et les montants sortaient du cadre à 390 px */
+html .dkf.dkf .dkf-det .pha-mois thead th, html .dkf.dkf .dkf-det .pha-mois td:first-child { white-space: normal; }
 html .dkf.dkf .dkf-det > summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; font-size: var(--dk-t5); font-weight: 600; color: var(--dk-accent); }
-html .dkf.dkf .dkf-det > .v2-card { box-shadow: none; padding: 0; background: none; }
-html .dkf.dkf .dkf-det > .v2-card::before { display: none; }
-/* bande de tuiles */
-html .dkf.dkf .dkf-band { margin: 0; padding: 20px 24px; }
-html .dkf.dkf .dkf-band .dk-stat-num { font-size: var(--dk-t2); }
-html .dkf.dkf .dkf-band .dk-stat-num small { font-size: var(--dk-t4); font-weight: 500; color: var(--dk-muted); }
-@media (min-width: 761px) { html .dkf.dkf .dkf-band { grid-template-columns: repeat(4, minmax(0, 1fr)); } html .dkf.dkf .dkf-band.pha-kpis-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 600px) {
   html .dkf.dkf .dkf-hd .dk-actions { align-items: stretch; width: 100%; }
   html .dkf.dkf .dkf-gestes { justify-content: stretch; }
@@ -215,11 +210,6 @@ html .dkf.dkf :is(.v2-notes-mic, .v2-notes-puce, .pha-tab, .pha-part-btn) { min-
 html .dkf.dkf .v2-profil-f > span, html .dkf.dkf .v2-profil-f-wide > span { font-size: var(--dk-t5) !important; }
 html .dkf.dkf :is(select, .v2-profil-box select) { height: auto; min-height: 44px !important; box-sizing: border-box; }
 html .dkf.dkf .pha-kv a { display: inline-flex; align-items: center; min-height: 44px; }
-@media (max-width: 760px) {
-  html .dkf.dkf .dkf-band, html .dkf.dkf .dkf-band.pha-kpis-3 { grid-template-columns: minmax(0, 1fr); }
-  html .dkf.dkf .dkf-band .dk-stat { min-width: 0; }
-  html .dkf.dkf .dkf-band .dk-stat-num { min-width: 0; white-space: normal; }
-}
 /* sommaire (mêmes ancres) : à droite sous l'identité, en liste verticale du kit (ordinateur) ; téléphone : le sommaire collant d'avant */
 @media (min-width: 901px) {
   html .dkf.dkf .pha-rail > .fi-caps { display: flex; flex-direction: column; gap: 0; margin: 0; padding: 8px 8px; border-radius: var(--dk-r-card); background: #fff; box-shadow: var(--dk-sh-2); }
@@ -282,9 +272,8 @@ html .dkf.dkf .dkf-bloc-btn:hover { background: var(--dk-accent-d); }
 html .dkf.dkf .dkf-bloc-btn:active { transform: scale(.96); }
 html .dkf.dkf .dkf-bloc-btn:focus-visible { outline: 3px solid var(--dk-accent); outline-offset: 2px; }
 html .dkf.dkf .dkf-bloc.is-masque > :not(.dkf-bloc-tete):not(.dkf-bloc-btn) { display: none !important; }
-/* blocs sans fond de carte (« À proposer », sections génériqueurs et détail, bande de chiffres) : le bouton se cale sur le bord du bloc */
-html .dkf.dkf .fbk.dkf-bloc > .dkf-bloc-btn, html .dkf.dkf .ph-section.dkf-bloc > .dkf-bloc-btn, html .dkf.dkf .dkf-bloc-sans > .dkf-bloc-btn { top: 0; right: 0; }
-html .dkf.dkf .dkf-bloc-nom { margin: 0; padding: 10px 0; font-size: var(--dk-t3); font-weight: 700; color: var(--dk-ink); }
+/* blocs sans fond de carte (« À proposer », sections génériqueurs et détail) : le bouton se cale sur le bord du bloc */
+html .dkf.dkf .fbk.dkf-bloc > .dkf-bloc-btn, html .dkf.dkf .ph-section.dkf-bloc > .dkf-bloc-btn { top: 0; right: 0; }
 @media (prefers-reduced-motion: reduce) { html .dkf.dkf .dkf-bloc-btn { transition: none; } }
 /* 16/11/2026 — fiche d4 : fenêtre « Note et prochain rendez-vous » (bouton « Prendre une note », feuille fbs de v2-fiche-m1.css).
    Les deux encadrés perdent leur carte dans la fenêtre : un simple filet les sépare. Pas de flou derrière (interdit Safari). */
