@@ -740,6 +740,10 @@
     offilogcatopso: 'v2/offilog-cat-opso.js',
     // 25/09/2026 — catalogue client Offilog : tarif labo + prix Offilog (v2-offilog-catalogue.js).
     offilogcatalogue: 'v2/offilog-catalogue-prix.js',
+    // 16/11/2026 — marques à retirer du catalogue client Offilog (liste privée) : protégé, même traitement. Absente = catalogue fermé.
+    offilogexclus: 'v2/offilog-exclus.js',
+    // 16/11/2026 — nouveautés du classement (fiches avec prix), déposées chaque lundi par le robot des prix : protégé. Absent = pas de nouveautés.
+    offilognouv: 'v2/offilog-nouveautes.js',
     // 10/09/2026 — écran « Ressources concurrents » : catalogues COMPLETS Sagitta
     // (3 exports fusionnés, 2 Mo) et OCP (tous paliers + Marque Conseil, 125 Ko).
     // Conditions de tiers : protégés, jamais côté OPSO. generate_concurrents.py.
@@ -893,6 +897,8 @@
     offilogprixcat: 'offilog-prix-catalogue.js',
     offilogcatopso: 'offilog-cat-opso.js',
     offilogcatalogue: 'offilog-catalogue-prix.js',
+    offilogexclus: 'offilog-exclus.js',
+    offilognouv: 'offilog-nouveautes.js',
     concsagitta: 'concurrents-sagitta-data.js',
     concocp: 'concurrents-ocp-data.js',
     concetudes: 'concurrents-etudes-data.js',
@@ -1555,6 +1561,8 @@
     offilogprixcat: 'OFFILOG_PRIX_CAT',
     offilogcatopso: 'OFFILOG_CAT_OPSO',
     offilogcatalogue: 'OFFILOG_CATALOGUE',
+    offilogexclus: 'OFFILOG_EXCLUS',
+    offilognouv: 'OFFILOG_NOUVEAUTES',
     concsagitta: 'CONCURRENTS_SAGITTA',
     concocp: 'CONCURRENTS_OCP',
     concetudes: 'CONCURRENTS_ETUDES',

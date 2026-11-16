@@ -735,6 +735,13 @@
     items.forEach(function (it) { if (it.ean) byEan.set(String(it.ean), it); itemsById.set(String(it.id), it); });
     idxBuilt = true;
   }
+  // Accès en LECTURE aux produits de l'écran (même classement, mêmes prix, mêmes tarifs labo) : lu par le catalogue
+  // « Le catalogue Offilog » (v2-offilog-vitrine.js). Ne change aucun calcul ; sans meilleures ventes chargées : liste vide.
+  V2.offilogItems = function (frais) {
+    if (frais) idxBuilt = false;   // des fichiers viennent d'arriver : on reconstruit, comme le fait l'écran lui-même
+    if (!idxBuilt && window.OFFILOG_BEST) { try { buildIndex(); } catch (e) {} }
+    return items || [];
+  };
 
   function matchChip(it, k) {
     if (k === 'all') return true;
@@ -1251,9 +1258,8 @@
     V2.render();
   };
   V2.offToggleAdv = function () { S.adv = !S.adv; V2.render(); };
-  // Écran d'arrivée : « Trouver » et « Comparer » ouvrent leur choix sous les portes ; « Envoyer » ouvre la fenêtre Catalogue client.
+  // Écran d'arrivée : « Trouver », « Comparer » et « Le catalogue Offilog » ouvrent leur choix sous les portes.
   V2.offPorte = function (k) {
-    if (k === 'envoyer') { if (V2.offCatalogue) V2.offCatalogue(); return; }
     S.porte = (S.porte === k) ? '' : k; S._porteScroll = !!S.porte;
     V2.render();
   };
@@ -2003,7 +2009,7 @@
   }
   function olmEntete(list) {
     var st = brandStats();
-    var med = st.pcN > 0 ? '<p class="olm-med dkl-note">Médiane : <b class="olm-num">' + Math.round(st.pcMed * 100) + '</b> % sous le prix catalogue, sur ' + V2.fmtNum(st.pcN) + ' produits</p>' : '';
+    var med = st.pcN > 0 ? '<p class="olm-med">Médiane : <b class="olm-num">' + Math.round(st.pcMed * 100) + '</b> % sous le prix catalogue, sur ' + V2.fmtNum(st.pcN) + ' produits</p>' : '';
     return '<header class="dk-hd dkl-hd"><div class="dk-hd-t"><p class="dk-eyebrow">La centrale parapharmacie d\'Intégral</p>' +
       '<h1 class="dk-title">Offilog</h1>' +
       '<p class="dk-lede" id="olm-phrase" aria-live="polite">' + olmPhrase(list) + '</p>' + cl1Etiquette() + med + '</div></header>';
@@ -2011,12 +2017,12 @@
 
   // ── 06/11/2026 — écran d'arrivée « bandeau bleu + 3 portes » (choix de Will) ──
   // Sous l'en-tête : trois portes. « Trouver un produit » et « Comparer nos prix » ouvrent leur choix juste dessous ;
-  // « Envoyer un catalogue » ouvre la fenêtre Catalogue client. Dès qu'un rayon, un tri, une comparaison ou une recherche
+  // « Le catalogue Offilog » ouvre le choix 100 / 200 / 300 produits (v2-offilog-vitrine.js). Dès qu'un rayon, un tri, une comparaison ou une recherche
   // est choisi, la page redevient la liste d'aujourd'hui (voir enListe dans render). Aucun calcul nouveau.
   function olmPorte(k, ic, titre, sous, pv, go) {
-    var ouv = S.porte === k, popup = (k === 'envoyer');
+    var ouv = S.porte === k;
     return '<button type="button" class="olm-porte dk-card dkl-porte' + (ouv ? ' on' : '') + '" data-porte="' + k + '"' +
-      (popup ? ' aria-haspopup="dialog"' : ' aria-expanded="' + (ouv ? 'true' : 'false') + '" aria-controls="olm-pan"') +
+      ' aria-expanded="' + (ouv ? 'true' : 'false') + '" aria-controls="olm-pan"' +
       ' onclick="V2.offPorte(\'' + k + '\')">' +
       '<span class="olm-p-ic dk-ti">' + ICO(ic, 26, 1.9) + '</span>' +
       '<span class="olm-p-t">' + titre + '</span>' +
@@ -2031,7 +2037,7 @@
     return '<div class="dk-sh dkl-q"><h2 class="olm-q">Que voulez-vous faire ?</h2></div>' +
       '<div class="olm-portes">' +
         olmPorte('trouver', 'search', 'Trouver un produit', 'Par nom, marque ou code EAN, ou en parcourant un rayon.', ph ? '<span class="olm-p-phs">' + ph + '</span>' : '', 'Chercher') +
-        olmPorte('envoyer', 'fiche', 'Envoyer un catalogue', 'Un PDF à montrer ou à envoyer au pharmacien, ou un fichier pour son logiciel.', '', 'Choisir un catalogue') +
+        (OPSO ? '' : olmPorte('catalogue', 'fiche', 'Le catalogue Offilog', 'Les meilleures ventes d\'Offilog en catalogue, à montrer, imprimer ou envoyer au pharmacien.', '', 'Ouvrir le catalogue')) +
         olmPorte('comparer', 'pilo', 'Comparer nos prix', 'Où un concurrent est moins cher que votre achat, et face à quelle plateforme.', plats.length ? esc(plats.join(' · ')) : '', 'Comparer') +
       '</div>';
   }
@@ -2304,6 +2310,8 @@
             '<div class="olm-pan-l">Choisir un rayon (nombre de produits)</div>' + rayons(c) +
             (mktChips ? '<div class="olm-pan-l">Le marché : ' + V2.fmtNum(c.monte || 0) + ' produits dont le rang s\'améliore d\'au moins 20 % au classement' + (cl1Releves().prec ? ' depuis le relevé du ' + cl1Date(cl1Releves().prec) : '') + '</div><div class="v2-segs off-adv-segs">' + mktChips + '</div>' : '') +
             '<div class="olm-pan-l">Trier par</div><div class="off-sort olm-sort">' + sortBtn('ventes', 'Meilleures ventes') + sortBtn('mvt', 'Plus forte hausse au classement') + sortBtn('prix_asc', 'Prix croissant') + sortBtn('prix_desc', 'Prix décroissant') + '</div>');
+        } else if (S.porte === 'catalogue' && !OPSO) {
+          accueilHtml += olmPan('Le catalogue Offilog', V2.offVitrinePanneau ? V2.offVitrinePanneau() : '');
         } else if (S.porte === 'comparer') {
           accueilHtml += olmPan('Comparer nos prix', verdictBand(filtered) + cmpHtml +
             (advChips ? '<div class="olm-pan-l">Repères concurrence (nombre de produits)</div><div class="v2-segs off-adv-segs">' + advChips + '</div>' : '') +
@@ -2326,7 +2334,7 @@
           cmpHtml +
           '<div class="off-toolbar">' +
             '<div class="off-count"><b class="mono">' + V2.fmtNum(total) + '</b> produit' + (total > 1 ? 's' : '') + ' · ' + ctxLabel + '</div>' +
-            (V2.offCatalogue ? '<button type="button" class="v2-btn v2-btn-primary" onclick="V2.offCatalogue()">' + ICO('download', 15, 2) + ' Catalogue client</button>' : '') +
+            (V2.offVitrine ? '<button type="button" class="v2-btn v2-btn-primary" onclick="V2.offVitrine()">' + ICO('download', 15, 2) + ' Catalogue client</button>' : '') +
             advBtn +
           '</div>' +
           advPanel +
