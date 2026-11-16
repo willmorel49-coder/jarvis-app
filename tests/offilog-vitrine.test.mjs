@@ -369,3 +369,27 @@ test('index des détourages : chaque EAN de oimg-cut/liste.json a son WebP, et c
     assert.equal(b.toString('latin1', 0, 4) + b.toString('latin1', 8, 12), 'RIFFWEBP', e + ' est un vrai WebP');
   }
 });
+
+test('PDF : chaque photo garde ses proportions (html2canvas ignore object-fit et étire la photo sur sa boîte)', () => {
+  const { cadrage, cadrerPhotos } = monter()._offVitrinePdf;
+  const proche = (a, b) => assert.ok(Math.abs(a - b) < 0.01, a + ' ≠ ' + b);
+  // Fixodent 46395 (299 × 115) dans la grande carte de nouveauté (52 × 54 mm), posé en bas, centré : tout le vide au-dessus.
+  const W = 52 * 96 / 25.4, H = 54 * 96 / 25.4, c = cadrage(W, H, 299, 115, 0.5, 1);
+  proche(c.l, 0); proche(c.r, 0); proche(c.b, 0); proche(H - c.t, W * 115 / 299);
+  // Flacon haut (200 × 600) dans une case de grille (42 × 27 mm) : vide partagé à gauche et à droite, rien en haut ni en bas.
+  const g = cadrage(158.74, 102.05, 200, 600, 0.5, 1);
+  proche(g.t, 0); proche(g.b, 0); proche(g.l, g.r); proche(158.74 - g.l - g.r, 102.05 / 3);
+  assert.equal(cadrage(100, 50, 400, 200, 0.5, 1), null, 'déjà aux bonnes proportions : rien à faire');
+  assert.equal(cadrage(100, 50, 0, 0, 0.5, 1), null, 'photo pas chargée : rien à faire');
+  // Sur la page : seule la photo « contain » est retouchée, et son style d'origine revient à l'identique après la page.
+  const img = (fit, st) => { let s = st; const style = {};
+    return { complete: true, naturalWidth: 299, naturalHeight: 115, _fit: fit, style,
+      getAttribute: () => s, setAttribute: (_, v) => { s = v; }, removeAttribute: () => { s = null; }, lire: () => s }; };
+  const a = img('contain', null), b = img('contain', 'left:3px'), logo = img('fill', null);
+  const fw = { getComputedStyle: (im) => ({ objectFit: im._fit, width: W + 'px', height: H + 'px', objectPosition: '50% 100%' }) };
+  const remettre = cadrerPhotos({ querySelectorAll: () => [a, b, logo] }, fw);
+  assert.equal(a.style.boxSizing, 'border-box'); assert.match(a.style.padding, /^[\d.]+px 0px 0px 0px$/);
+  assert.equal(logo.style.padding, undefined, 'image sans object-fit contain : laissée telle quelle');
+  remettre();
+  assert.equal(a.lire(), null); assert.equal(b.lire(), 'left:3px');
+});

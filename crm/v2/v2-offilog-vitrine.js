@@ -655,6 +655,35 @@
       });
     });
   }
+  // html2canvas (1.0.0, dans html2pdf 0.10.2) ignore object-fit : il étire toute la photo sur sa boîte de CONTENU
+  // (tube Fixodent étiré 2,5 fois en hauteur, flacons élargis dans le PDF envoyé). Des marges intérieures ramènent cette
+  // boîte à la taille « contain », placée selon object-position. À l'écran rien ne bouge ; le style d'origine revient après la page.
+  function cadrage(W, H, nw, nh, px, py) {
+    if (!(W > 0 && H > 0 && nw > 0 && nh > 0)) return null;
+    var r = nw / nh, w = Math.min(W, H * r), h = Math.min(H, W / r);
+    if (W - w < 0.5 && H - h < 0.5) return null;
+    var l = (W - w) * px, t = (H - h) * py;
+    return { t: t, r: W - w - l, b: H - h - t, l: l };
+  }
+  function fraction(v) {
+    var k = { left: 0, top: 0, center: 0.5, right: 1, bottom: 1 }, m = /^(-?[\d.]+)%$/.exec(v || '');
+    return m ? +m[1] / 100 : (v in k ? k[v] : 0.5);
+  }
+  function cadrerPhotos(sec, fw) {
+    var faits = [];
+    [].forEach.call(sec.querySelectorAll('img'), function (im) {
+      var cs = fw.getComputedStyle(im);
+      if (cs.objectFit !== 'contain' || !im.complete) return;
+      var W = parseFloat(cs.width), H = parseFloat(cs.height), op = String(cs.objectPosition || '').split(/\s+/);
+      var c = cadrage(W, H, im.naturalWidth, im.naturalHeight, fraction(op[0]), fraction(op[1]));
+      if (!c) return;
+      faits.push([im, im.getAttribute('style')]);
+      im.style.boxSizing = 'border-box'; im.style.width = W + 'px'; im.style.height = H + 'px';
+      im.style.padding = c.t + 'px ' + c.r + 'px ' + c.b + 'px ' + c.l + 'px';
+    });
+    return function () { faits.forEach(function (x) { if (x[1] == null) x[0].removeAttribute('style'); else x[0].setAttribute('style', x[1]); }); };
+  }
+  V2._offVitrinePdf = { cadrage: cadrage, cadrerPhotos: cadrerPhotos };
   function fabriquerPdf(f, suivi) {
     var fw = f.contentWindow, secs = [].slice.call(fw.document.querySelectorAll('section.page')), pdf = null;
     if (!secs.length) return Promise.reject(new Error('aucune page'));
@@ -664,12 +693,13 @@
       secs.forEach(function (sec, i) {
         p = p.then(function () {
           if (suivi) suivi(i + 1, secs.length);
+          var remettre = cadrerPhotos(sec, fw);
           return fw.html2pdf().set({ html2canvas: { scale: 1.5, useCORS: true, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 } })
             .from(sec).toCanvas().get('canvas').then(function (cv) {
               if (i > 0) pdf.addPage('a4', 'portrait');
               pdf.addImage(cv.toDataURL('image/jpeg', 0.85), 'JPEG', 0, 0, 595.28, 841.89, undefined, 'FAST');
               cv.width = cv.height = 0;
-            });
+            }).then(remettre, function (e) { remettre(); throw e; });
         });
       });
       return p;
