@@ -309,10 +309,28 @@
       var k = mkey(s.year, s.month);
       var o = parMois[k] || (parMois[k] = { ca: 0, sect: {} });
       o.ca += (s.mntNetHt || 0);
-      o.sect[s.commercial || '—'] = 1;
+      var cs = s.commercial || '—';
+      (o.sect[cs] || (o.sect[cs] = {}))[s.pharmacyId] = 1;
+      (o.off || (o.off = {}))[s.pharmacyId] = 1;
     }
     var cles = Object.keys(parMois).map(Number).sort(function (a, b) { return a - b; });
     if (!cles.length) return null;
+    // 16/11/2026 — un secteur PARTI n'est plus attendu (même règle que couverture_mois du générateur) :
+    // absent d'un mois, il est « couvert » si son dernier mois présent comptait moins de 5 officines, ou si
+    // au moins la moitié de ces officines achètent ce mois-ci chez un autre commercial (clients repris).
+    // Pauline A. (partie en août 2026, clients chez Céline et Inès) calait le réseau sur août, sans rien dire.
+    // Un fichier qui MANQUE reste écarté : ses officines n'achètent chez personne d'autre.
+    function secteurCouvert(c, ki) {
+      for (var j = ki - 1; j >= 0; j--) {
+        var avant = parMois[cles[j]].sect[c];
+        if (!avant) continue;
+        var ids = Object.keys(avant), rep = 0;
+        if (ids.length < 5) return true;
+        ids.forEach(function (id) { if (parMois[cles[ki]].off[id]) rep++; });
+        return 2 * rep >= ids.length;
+      }
+      return false;
+    }
 
     // 11/09/2026 — seuls les secteurs RÉGULIERS (présents au moins un mois sur
     // deux) comptent : un code qui n'a vendu qu'en juillet faisait écarter août
@@ -323,9 +341,9 @@
     });
     var seuil = Math.ceil(cles.length / 2), nbSect = {}, maxSect = 0;
     for (var c in presence) if (presence[c] >= seuil) maxSect++;
-    cles.forEach(function (k) {
+    cles.forEach(function (k, ki) {
       nbSect[k] = 0;
-      for (var c2 in parMois[k].sect) if (presence[c2] >= seuil) nbSect[k]++;
+      for (var c2 in presence) if (presence[c2] >= seuil && (parMois[k].sect[c2] || secteurCouvert(c2, ki))) nbSect[k]++;
     });
 
     var complets = cles.slice(), ecartes = [], raison = '';

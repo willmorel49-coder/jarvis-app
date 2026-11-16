@@ -187,44 +187,77 @@ const presence = {};
 for (const m of moisTries) for (const c of sectParMois[m]) presence[c] = (presence[c] || 0) + 1;
 const reguliers = new Set(Object.keys(presence).filter((c) => presence[c] >= Math.ceil(moisTries.length / 2)));
 for (const m of moisTries) sectParMois[m] = new Set([...sectParMois[m]].filter((c) => reguliers.has(c)));
-const nbSectMax = reguliers.size;
-// dernier mois ou TOUS les secteurs reguliers sont presents
-const moisReseau = moisTries.slice();
-while (moisReseau.length > 1 && sectParMois[moisReseau[moisReseau.length - 1]].size < nbSectMax) moisReseau.pop();
-const ancreReseau = moisReseau[moisReseau.length - 1];
+// 16/11/2026 — dernier mois ou TOUS les secteurs reguliers sont la, recalcule a part (meme regle que ancreCompleteCalc) :
+// un secteur PARTI (dernier mois present sous 5 officines, ou la moitie de ses officines reprises par un autre) n est
+// plus attendu. Pauline A. partie en aout 2026 calait le reseau sur aout.
+function ancreDe(ventes) {
+  const pm = {};
+  for (const v of ventes) {
+    const o = pm[v.month] || (pm[v.month] = { sect: {}, off: new Set() });
+    (o.sect[v.commercial] = o.sect[v.commercial] || new Set()).add(v.pharmacyId);
+    o.off.add(v.pharmacyId);
+  }
+  const mt = Object.keys(pm).map(Number).sort((a, b) => a - b);
+  const pres = {};
+  for (const m of mt) for (const c in pm[m].sect) pres[c] = (pres[c] || 0) + 1;
+  const reg = Object.keys(pres).filter((c) => pres[c] >= Math.ceil(mt.length / 2));
+  const couvert = (c, i) => {
+    for (let j = i - 1; j >= 0; j--) {
+      const a = pm[mt[j]].sect[c];
+      if (!a) continue;
+      if (a.size < 5) return true;
+      let r = 0;
+      for (const id of a) if (pm[mt[i]].off.has(id)) r++;
+      return 2 * r >= a.size;
+    }
+    return false;
+  };
+  let k = mt.length;
+  while (k > 1 && reg.filter((c) => pm[mt[k - 1]].sect[c] || couvert(c, k - 1)).length < reg.length) k--;
+  return mt[k - 1];
+}
+const ancreReseau = ancreDe(VENTES);
+// Cas maitrise : le fichier du dernier mois d un secteur regulier MANQUE (ses ventes de ce mois sont retirees).
+// Le secteur retire est celui qui a le plus d officines ce mois-la (hors secteur teste) : les siennes n achetent pas ailleurs.
+const dernierMois = moisTries[moisTries.length - 1];
+const offDernier = {};
+for (const v of VENTES) if (v.month === dernierMois && reguliers.has(v.commercial) && v.commercial !== SECTEUR)
+  (offDernier[v.commercial] = offDernier[v.commercial] || new Set()).add(v.pharmacyId);
+const RETIRE = Object.keys(offDernier).sort((a, b) => offDernier[b].size - offDernier[a].size)[0];
+const TRONQUEES = VENTES.filter((v) => !(v.commercial === RETIRE && v.month === dernierMois));
+function avecVentes(ventes, f) {
+  const avant = V2.sales;
+  V2.sales = ventes;
+  try { return f(); } finally { V2.sales = avant; }
+}
+const noteDe = (h) => (h.match(/class="(?:pa|dkp)-note"[^>]*>([^<]*)</) || [])[1] || '';   // la refonte d4 la rend en dkp-note
+const oeilDe = (h) => (h.match(/class="dk-eyebrow"[^>]*>([^<]*)</) || [])[1] || '';
+const MOIS_LONGS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 
-test('les fichiers de ventes s arretent bien a des mois DIFFERENTS selon le commercial', () => {
-  // Sans cette asymetrie dans les donnees, tout ce fichier ne prouve rien.
-  const tailles = moisTries.map((m) => sectParMois[m].size);
-  assert.ok(new Set(tailles).size > 1,
-    `tous les mois portent ${tailles[0]} secteurs : plus d asymetrie, ce garde-fou n est plus eprouve`);
-  assert.ok(ancreReseau < moisTries[moisTries.length - 1],
-    'le dernier mois du fichier porte deja tous les secteurs');
+test('un fichier qui MANQUE ecarte le mois ; le reseau complet ne l ecarte pas', () => {
+  // Sans un cas ou le mois DOIT etre ecarte, ce fichier ne prouve rien : il est fabrique ici, pas attendu des donnees.
+  assert.ok(RETIRE, 'aucun secteur regulier a retirer');
+  assert.equal(ancreDe(TRONQUEES), moisTries[moisTries.length - 2], 'le mois sans le fichier de ' + 'un secteur n est pas ecarte');
+  assert.ok(ancreReseau <= dernierMois);
 });
 
-test('vue reseau : les mois amputes sont ecartes, et l ecran DIT pourquoi', () => {
-  const h = rendre('');
-  assert.ok(/pilo-ecarte/.test(h), 'aucune mention des mois ecartes');
-  assert.ok(/tous les secteurs n.y sont pas encore/.test(h), 'la raison de l ecart n est pas dite');
-  // les mois ecartes doivent etre nommes
-  for (const m of moisTries.filter((m) => m > ancreReseau)) {
-    const nom = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'][m - 1];
-    assert.ok(h.includes(nom + ' 2026'), `le mois ${nom} n est pas nomme dans la phrase d ecart`);
-  }
+test('vue reseau : le mois ampute est ecarte, et l ecran DIT pourquoi', () => {
+  const h = avecVentes(TRONQUEES, () => rendre(''));
+  const note = noteDe(h);
+  assert.ok(/tous les secteurs n.y sont pas encore/.test(note), `la raison de l ecart n est pas dite (note « ${note} »)`);
+  const nom = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'][dernierMois - 1];
+  assert.ok(note.toLowerCase().includes(nom), `le mois ${nom} n est pas nomme dans la phrase d ecart (« ${note} »)`);
+  assert.ok(oeilDe(h).includes(MOIS_LONGS[dernierMois - 2] + ' 2026'), `periode affichee « ${oeilDe(h)} » : le reseau devait se caler sur le mois d avant`);
 });
 
 test('vue commercial : son dernier mois n est PAS confisque', () => {
-  // Juillet est un mois PLEIN pour Will (son meilleur). Un garde-fou reseau
-  // le lui aurait cache : c est le piege que ce test verrouille.
-  const moisWill = [...new Set(VENTES.filter((v) => v.commercial === SECTEUR).map((v) => v.month))].sort((a, b) => a - b);
-  const sonDernier = moisWill[moisWill.length - 1];
-  assert.ok(sonDernier > ancreReseau, 'aucun secteur ne va plus loin que le reseau : le cas n est pas represente');
-  const h = rendre(SECTEUR);
-  const nom = ['Janv.', 'Févr.', 'Mars', 'Avr.', 'Mai', 'Juin', 'Juil.', 'Août', 'Sept.', 'Oct.', 'Nov.', 'Déc.'][sonDernier - 1];
-  const sousTitre = (h.match(/class="v2-page-sub"[^>]*>([^<]*)</) || [])[1] || '';
-  assert.ok(sousTitre.startsWith(nom + ' 2026'),
-    `periode affichee « ${sousTitre} » : son dernier mois (${nom}) lui a ete confisque`);
-  assert.ok(!/pilo-ecarte/.test(h), 'un mois lui est écarté alors que son fichier est complet');
+  // Le fichier d un AUTRE secteur manque : ce secteur-ci, complet, garde son dernier mois.
+  const moisSect = [...new Set(VENTES.filter((v) => v.commercial === SECTEUR).map((v) => v.month))].sort((a, b) => a - b);
+  const sonDernier = moisSect[moisSect.length - 1];
+  const h = avecVentes(TRONQUEES, () => rendre(SECTEUR));
+  assert.ok(oeilDe(h).includes(MOIS_LONGS[sonDernier - 1] + ' 2026'),
+    `periode affichee « ${oeilDe(h)} » : son dernier mois (${MOIS_LONGS[sonDernier - 1]}) lui a ete confisque`);
+  assert.ok(!/sont pas encore|est écarté|sont écartés/.test(noteDe(h)), 'un mois lui est écarté alors que son fichier est complet');
 });
 
 test('une periode de comparaison incomplete ne produit AUCUN pourcentage', () => {
