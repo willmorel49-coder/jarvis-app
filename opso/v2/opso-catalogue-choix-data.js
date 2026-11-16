@@ -20,7 +20,12 @@ window.OPSO_CATALOGUE_CHOIX = {
     '3400930109892',  // PRAMIPEXOLE ZEN LP0,26MG CPR30
     // Intégral ne les aura plus (Will, 12/10/2026) : écartés quand la dernière page des remboursables est complétée (20/10)
     '3400930151105',  // OZEMPIC 1MG INJ STYLO3ML 1
-    '3400930003763'   // TRULICITY 1,5MG INJ STY0,5ML 4
+    '3400930003763',  // TRULICITY 1,5MG INJ STY0,5ML 4
+    // Entrés avec le classement janvier-octobre (16/11/2026), jamais relus par Guy : la page des génériques reste celle
+    // qu'il a relue le 21/10 (Will, 17/11/2026). Autant de retirés que d'ajoutés ci-dessous : la page est pleine (22 lignes).
+    '3400926943660',  // DILTIAZEM ZTL LP 200MG GELU 28
+    '3400938806229',  // CLOPIDOGREL ZEN 75MG CPR BT30
+    '3400930248478'   // METOPIMAZINE VNP7,5MG SS DIS16
   ],
   ajouter: [
     '3400930037904',  // ENTRESTO 24MG/26MG CPR BT28
@@ -55,7 +60,11 @@ window.OPSO_CATALOGUE_CHOIX = {
     '6972857294250',  // EASYDRIP+ PRO AIG 4MM 32G B100
     '6972857294236',  // EASYDRIP+ PRO AIG 5MM 31G B100
     '6972857294243',  // EASYDRIP+ PRO AIG 6MM 31G B100
-    '6972857294410'   // EASYDRIP+ PRO AIG 8MM 31G B100
+    '6972857294410',  // EASYDRIP+ PRO AIG 8MM 31G B100
+    // Génériques relus par Guy le 21/10, sortis du classement janvier-octobre : gardés (Will, 17/11/2026)
+    '3400937666886',  // METOPROLOL SDZ 50MG CPR BT30
+    '3400930302095',  // OXAZEPAM SSP 10MG CPR BT30
+    '3400922214610'   // MONOKETO 0,25MG/ML COLLY DOS60
   ],
   // Ruptures de fin de mois (approvisionnement Intégral, 22/10/2026 : quotas des laboratoires) — choix de Will : le produit reste,
   // avec la mention ci-dessous (catalogue, écran « Offre Privilège OPSO Santé », PDF, CSV). Toutes les présentations des produits cités.
