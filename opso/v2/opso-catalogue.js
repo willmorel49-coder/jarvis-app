@@ -50,7 +50,7 @@
   }
 
   // ── Données ──
-  var SRC_RESEAU = '../../crm/v2/prod-reseau-data.js?v=20261015xm';
+  var SRC_RESEAU = '../../crm/v2/prod-reseau-data.js?v=20261116j';
   var SRC_NONGEN = 'opso-nongen-data.js?v=20261001a';
   var SRC_CHOIX = 'opso-catalogue-choix-data.js?v=20261022dispo';   // CIP à retirer / à ajouter (retour du 15/10), sous réserve (22/10)
   function chargerScript(src, temoin) {
