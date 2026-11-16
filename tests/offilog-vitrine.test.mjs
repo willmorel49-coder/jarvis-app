@@ -355,3 +355,17 @@ test('pastille « Médiane » de l\'écran Offilog : pas de .dkl-note (son gris 
   assert.ok(l, 'pastille trouvée');
   assert.doesNotMatch(l, /dkl-note/);
 });
+
+test('index des détourages : chaque EAN de oimg-cut/liste.json a son WebP, et chaque WebP est dans l\'index', () => {
+  // Une entrée sans fichier = image cassée dans le catalogue et le PDF (le module prend le WebP dès que l'EAN est à l'index).
+  const dir = path.join(RACINE, 'crm/v2/oimg-cut');
+  const liste = JSON.parse(fs.readFileSync(path.join(dir, 'liste.json'), 'utf8'));
+  const fichiers = fs.readdirSync(dir).filter((f) => f.endsWith('.webp')).map((f) => f.slice(0, -5));
+  assert.equal(new Set(liste).size, liste.length, 'aucun doublon');
+  assert.deepEqual([...liste].sort(), [...fichiers].sort());
+  for (const e of liste) {
+    assert.match(e, /^\d{13}$/);
+    const b = fs.readFileSync(path.join(dir, e + '.webp'));
+    assert.equal(b.toString('latin1', 0, 4) + b.toString('latin1', 8, 12), 'RIFFWEBP', e + ' est un vrai WebP');
+  }
+});
