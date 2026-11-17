@@ -13,9 +13,12 @@ Dossier constitué le 2026-09-24. Toutes les images sont sous licence gratuite p
 | agence-3.jpg | Intérieur d'entrepôt, hauts rayonnages de cartons/palettes bien organisés, aucune personne | https://www.pexels.com/photo/interior-of-warehouse-10697106/ | On Shot (Blue Rhino Media) | Pexels License |
 | agence-4.jpg | Intérieur de quai de chargement moderne, portes à quai éclairées en bleu, camion garé | https://www.pexels.com/photo/parked-truck-in-front-of-garage-door-209251/ | Pixabay (crédité via Pexels) | Pexels License |
 | agence-5.jpg | Allée d'entrepôt à rayonnages très hauts, deux caristes au loin avec transpalettes | https://www.pexels.com/photo/shelves-in-a-warehouse-4481327/ | Tiger Lily | Pexels License |
+| agence-9.jpg | Fiche Pharmest de la carte : longue allée d'entrepôt, cartons et palettes sous film, aucun médicament ni marque lisible (recadrée 800 × 533) | https://www.pexels.com/photo/photo-of-warehouse-4277794/ | imeenhae (d'après la recherche Pexels) | Pexels License |
 
 ## Notes de vérification
 - Chaque image a été regardée en entier (outil de lecture d'image) avant d'être gardée : cadrage, netteté, absence de logo de concurrent ou de texte non français lisible en gros plan.
 - Images écartées en cours de route (raisons) : camionnette "GLOBAL24" (logo + texte anglais visible), camion postal japonais (texte japonais + marque ISUZU), entrepôts à l'abandon ou avec graffitis, cartons de marque "REDBUZZ" visible, palette de bière "JOE IPA" + chariot "HYSTER" très visible, godet "Bobcat" avec autocollants russes, camionnettes "SECURITAS" (texte néerlandais + logo), entrepôt de peinture sombre et daté, entrepôt terne façon photo argentique des années 2000.
 - 2026-11-17 : l'ancienne photo de la préparation (mains gantées tenant des plaquettes, https://www.pexels.com/photo/person-holding-medicines-4047011/, Karola G) est retirée : des plaquettes sorties de leur boîte, c'est interdit en dépôt (remarque de Christèle, qualité). Règle pour toute photo future : médicaments uniquement dans leur boîte fermée, jamais de plaquette ni de comprimé à nu.
 - Aucune clé API, aucun compte, aucun site payant utilisé — uniquement Pexels (licence Pexels, gratuite, sans attribution obligatoire).
+
+- 2026-11-17 : agence-9.jpg (photo de Pharmest sur la carte) était la MÊME photo aux plaquettes (Pexels 4047011) : remplacée par Pexels 4277794, choix de Will.
