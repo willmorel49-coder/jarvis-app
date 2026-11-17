@@ -25,7 +25,8 @@
   var REPERES = [
     ['catalogues', 'Catalogue & prix', 'catalogue'],
     ['veille', 'Veille secteur', 'veille'],
-    ['strategie', 'Assistant stratégie', 'strategie']
+    ['strategie', 'Assistant stratégie', 'strategie'],
+    ['maquettes-v4', 'Les nouvelles maquettes de JARVIS', 'pile']
   ];
 
   /* ─────────────────────── CSS ─────────────────────── */
@@ -247,6 +248,7 @@
       var b = e.target.closest ? e.target.closest('[data-mkb-go],[data-mkb-repere]') : null; if (!b) return;
       if (b.hasAttribute('data-mkb-repere')) {
         var k = b.getAttribute('data-mkb-repere');
+        if (k === 'maquettes-v4') { location.href = 'maquettes-v4/index.html'; return; }
         if (S().nouveau) S().nouveau(k);
         return;
       }
