@@ -758,6 +758,10 @@
     offilogcatopso: 'v2/offilog-cat-opso.js',
     // 25/09/2026 — catalogue client Offilog : tarif labo + prix Offilog (v2-offilog-catalogue.js).
     offilogcatalogue: 'v2/offilog-catalogue-prix.js',
+    // 16/11/2026 — marques à retirer du catalogue client Offilog (liste privée) : protégé, même traitement. Absente = catalogue fermé.
+    offilogexclus: 'v2/offilog-exclus.js',
+    // 16/11/2026 — nouveautés du classement (fiches avec prix), déposées chaque lundi par le robot des prix : protégé. Absent = pas de nouveautés.
+    offilognouv: 'v2/offilog-nouveautes.js',
     // 10/09/2026 — écran « Ressources concurrents » : catalogues COMPLETS Sagitta
     // (3 exports fusionnés, 2 Mo) et OCP (tous paliers + Marque Conseil, 125 Ko).
     // Conditions de tiers : protégés, jamais côté OPSO. generate_concurrents.py.
@@ -911,6 +915,8 @@
     offilogprixcat: 'offilog-prix-catalogue.js',
     offilogcatopso: 'offilog-cat-opso.js',
     offilogcatalogue: 'offilog-catalogue-prix.js',
+    offilogexclus: 'offilog-exclus.js',
+    offilognouv: 'offilog-nouveautes.js',
     concsagitta: 'concurrents-sagitta-data.js',
     concocp: 'concurrents-ocp-data.js',
     concetudes: 'concurrents-etudes-data.js',
@@ -1452,7 +1458,7 @@
     // Bumpé 29/09/2026 : v2-offilog.js change (union catalogue OPSO, retrait
     // Pharmazon/achat côté OPSO) — sans ce bump, un appareil ayant déjà l'app
     // ouverte continuerait de servir l'ancien fichier depuis le cache.
-    var V = '?v=20261117fpzh' + (window.V2_VER || '20260915g');
+    var V = '?v=20261117fpzi' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -1579,6 +1585,8 @@
     offilogprixcat: 'OFFILOG_PRIX_CAT',
     offilogcatopso: 'OFFILOG_CAT_OPSO',
     offilogcatalogue: 'OFFILOG_CATALOGUE',
+    offilogexclus: 'OFFILOG_EXCLUS',
+    offilognouv: 'OFFILOG_NOUVEAUTES',
     concsagitta: 'CONCURRENTS_SAGITTA',
     concocp: 'CONCURRENTS_OCP',
     concetudes: 'CONCURRENTS_ETUDES',
@@ -2027,7 +2035,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20261117fpzh';
+    var V = '?v=20261117fpzi';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];
