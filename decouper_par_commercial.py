@@ -94,7 +94,8 @@ def suite_off(mes_ca, mes=None, opso=False):
     elif opso and OFF_CA.get('v'):
         off['vm'] = OFF_CA['vm']
         off['v'] = {k: v for k, v in OFF_CA['v'].items() if k in mes_ca}
-    if OFF_CA.get('b'):   # 16/10/2026 — offre Sanofi / UPSA : réduite aux officines du jeu, exactement comme m
+    # 17/11/2026 — Will (question cliquée) : le jeu OPSO ne reçoit PAS l'offre Sanofi / UPSA (aucun écran OPSO ne l'affiche).
+    if OFF_CA.get('b') and not opso:   # 16/10/2026 — offre Sanofi / UPSA : réduite aux officines du jeu, exactement comme m
         off['bd'] = OFF_CA['bd']
         off['b'] = {k: v for k, v in OFF_CA['b'].items() if k in mes_ca}
     return ', off:' + json.dumps(off, separators=(',', ':'), sort_keys=True)
