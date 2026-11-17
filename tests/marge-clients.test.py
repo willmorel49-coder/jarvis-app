@@ -194,6 +194,14 @@ check("tot == somme des 7 familles arrondies (chaque ligne)", ok and len(rows) =
 check("chaque ligne a 13 colonnes", all(len(r) == 13 for r in rows))
 check("le CA garde les génériques ; caGen = leur seule part", proche(rows[0][12], 14.0) and rows[0][3] > rows[0][12], rows[0])
 check("un générique de la liste ne porte aucune marge (famille p inchangée par lui)", proche(sum(r[3] for r in rows), round(sum(g[12] for g in groupes), 2), 0.011))
+# 17/11/2026 — CA net HT par famille (taux de marge de la fiche) : mêmes lignes que la marge de la famille, génériques exclus
+caf = gm.arrondir_caf(lignes, c_idx, o_idx)
+check("caFam : 7 valeurs par officine-mois, une entrée par ligne de sortie", len(caf) == len(rows) and all(len(v) == 7 for v in caf.values()), caf)
+check("caFam : somme des 7 = CA - caGen (les génériques ne sont dans aucune famille), à 2 centimes près",
+      all(abs(sum(caf[(r[0], r[1], r[2])]) - (r[3] - r[12])) < 0.02 for r in rows), (rows, caf))
+check("caFam : le CA d'un produit va dans la MÊME famille que sa marge (petit prix = p ; froid = fr ; cher = c ; 4,33 à 468 = i)",
+      caf[(0, 0, 202603)][0] > 0 and caf[(0, 0, 202603)][3] > 0 and caf[(0, 0, 202603)][5] > 0 and caf[(0, 0, 202603)][4] > 0, caf)
+check("caFam : 2027 range p1 / p2 comme la marge", caf[(0, 0, 202603)][1] > 0 and caf[(0, 0, 202603)][2] > 0, caf)
 
 # ═════════════════════════════ 5. format du fichier ═════════════════════════════
 print("5. format du fichier")

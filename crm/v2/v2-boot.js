@@ -109,7 +109,7 @@
 
   // ── 14/10/2026 : « NOTRE MARGE » par client (ce que les ventes rapportent à l'entreprise) ──
   // Source : window.MARGE_CLIENTS (fichier protégé `marge-clients.js`, estimation de la direction
-  // calculée avec les vrais prix d'achat). Lignes [ci, oi, AAAAMM, ca, tot, p, p1, p2, i, c, fr, nr, caGen, jours].
+  // calculée avec les vrais prix d'achat). Lignes [ci, oi, AAAAMM, ca, tot, p, p1, p2, i, c, fr, nr, caGen, jours, caP, caP1, caP2, caI, caC, caFr, caNr] (CA net HT par famille : 17/11/2026, absent des anciens fichiers).
   // Un commercial restreint reçoit le même format réduit à SES prénoms : une officine de collègue
   // n'y figure pas → somme nulle, sans erreur. ⚠️ Ce n'est PAS la « marge nette » de la pharmacie
   // (margeNettePharma, mdl) : deux libellés, deux chiffres, ne jamais les confondre.
@@ -150,7 +150,7 @@
     // opts : { pid: string|Set, comms: array|null (null = tous), du: 'AAAA-MM', au: 'AAAA-MM' }
     function somme(opts) {
       opts = opts || {};
-      var r = { tot: 0, fam: { p: 0, p1: 0, p2: 0, i: 0, c: 0, fr: 0, nr: 0 }, ca: 0, caGen: 0, moisCouverts: [], n: 0 };
+      var r = { tot: 0, fam: { p: 0, p1: 0, p2: 0, i: 0, c: 0, fr: 0, nr: 0 }, ca: 0, caGen: 0, caFam: null, moisCouverts: [], n: 0 }, nAvecCaFam = 0, caFam = { p: 0, p1: 0, p2: 0, i: 0, c: 0, fr: 0, nr: 0 };
       var ix = index();
       if (!ix) return r;
       var d = ix.d;
@@ -167,6 +167,8 @@
         r.n++; r.ca += l[3]; r.tot += l[4];
         for (var f = 0; f < 7; f++) r.fam[FAM[f]] += l[5 + f];
         r.caGen += l[12] || 0;
+        // 17/11/2026 — l[14..20] = CA net HT des lignes de chaque famille (mêmes lignes que la marge de la famille ; génériques exclus). Fichier d'avant : absent.
+        if (l.length >= 21) { nAvecCaFam++; for (var g = 0; g < 7; g++) caFam[FAM[g]] += l[14 + g] || 0; }
       }
       if (opts.pid != null) {
         var pids = (typeof opts.pid === 'string' || typeof opts.pid === 'number') ? [String(opts.pid)] : Array.from(opts.pid).map(String);
@@ -177,6 +179,8 @@
         d.r.forEach(ajoute);
       }
       r.tot = arrondi(r.tot); r.ca = arrondi(r.ca); r.caGen = arrondi(r.caGen);
+      // caFam seulement si TOUTES les lignes retenues le portent (un mélange ferait des taux faux) ; sinon null = pas de taux affiché
+      if (r.n > 0 && nAvecCaFam === r.n) { r.caFam = {}; FAM.forEach(function (f) { r.caFam[f] = arrondi(caFam[f]); }); }
       FAM.forEach(function (f) { r.fam[f] = arrondi(r.fam[f]); });
       return r;
     }

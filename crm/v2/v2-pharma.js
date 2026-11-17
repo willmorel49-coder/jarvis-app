@@ -299,6 +299,9 @@
   //  mode 'fois' : unités différentes d'une ligne à l'autre → la barre se lit en nombre de fois la moyenne ; le trait de la moyenne tombe au même endroit sur chaque ligne.
   //  mode 'val'  : même unité → la plus grande valeur, moyenne comprise, fixe la longueur pleine ; chaque ligne a son trait de moyenne.
   // lignes : [{ n: libellé (HTML sûr), v, moy, fmt, sens, mots }]
+  // 17/11/2026 — « 3,1 % » (format français, une décimale) ; null / non fini = ''
+  V2.cl1Taux = V2.cl1Taux || function (t) { return t == null || !isFinite(t) ? '' : (Math.round(t * 10) / 10).toFixed(1).replace('.', ',') + ' %'; };
+  // r.taux (optionnel) : taux de marge de la ligne, en % ; sans lui, la barre est exactement celle d'avant.
   function cl1Barres(lignes, mode) {
     var L = lignes.filter(function (r) { return r.v != null && isFinite(r.v); });
     var lg = function (r) { return mode === 'fois' ? (r.moy > 0 ? r.v / r.moy : 0) : r.v; };
@@ -307,7 +310,7 @@
     var pc = function (x) { return Math.max(0, Math.min(100, x / max * 100)).toFixed(1); };
     return L.map(function (r) {
       var w = pc(lg(r)), m = lm(r), x = m == null ? null : pc(m);
-      return '<div class="cl1-l"><div class="cl1-l-h"><span class="cl1-l-n">' + r.n + '</span>' + V2.cl1Mot(r.v, r.moy, r) + '</div>' +
+      return '<div class="cl1-l"><div class="cl1-l-h"><span class="cl1-l-n">' + r.n + '</span>' + (r.taux != null ? '<span class="cl1-l-t">' + V2.cl1Taux(r.taux) + ' de marge</span>' : '') + V2.cl1Mot(r.v, r.moy, r) + '</div>' +
         '<div class="cl1-tr"><span class="cl1-b" style="width:' + w + '%"></span>' + (x != null ? '<span class="cl1-m" style="left:' + x + '%"></span>' : '') +
           '<b class="cl1-v' + (r.v < 0 ? ' cl1-neg' : '') + '" style="left:' + w + '%">' + r.fmt(r.v) + '</b></div>' +
         (x != null ? '<div class="cl1-ml' + (+x > 55 ? ' cl1-ml-d' : '') + '"><span style="left:' + x + '%">moyenne : ' + r.fmt(r.moy) + '</span></div>' : '') + '</div>';
@@ -2411,9 +2414,11 @@
     fams.forEach(function (f) {
       var v = r.fam[f] || 0, moy = comp && F[f] != null ? F[f] * nm : null;
       if (Math.round(v * 100) === 0 && (moy == null || Math.round(moy * 100) === 0)) return;
-      lignes.push({ f: f, v: v, moy: moy });
+      // 17/11/2026 — taux de marge = notre marge de la famille ÷ CA net HT des lignes de la famille (r.caFam, génériques exclus) ; absent = pas de taux
+      var caf = r.caFam && r.caFam[f] > 0 ? r.caFam[f] : 0;
+      lignes.push({ f: f, v: v, moy: moy, taux: caf ? v / caf * 100 : null });
     });
-    return { tot: r.tot, moyTot: comp && M.mgMois != null ? M.mgMois * nm : null, nClients: comp && M.n ? M.n : 0, nm: nm, lignes: lignes };
+    return { taux: r.caFam && r.ca > 0 ? r.tot / r.ca * 100 : null, tot: r.tot, moyTot: comp && M.mgMois != null ? M.mgMois * nm : null, nClients: comp && M.n ? M.n : 0, nm: nm, lignes: lignes };
   }
   function margeNousBloc(pid) {
     var NM = V2.notreMarge, r = notreMargeDe(pid); if (!r || !r.n) return '';
@@ -2424,8 +2429,9 @@
     return '<div class="pha-kpi pha-nm pha-rt pha-r4 pha-m5 pha-mg-nous cl1-g" id="pha-mg-nous" style="--a:var(--c-mint,#1E9E6A)">' +
       '<div class="pha-kl cl1-t">Ce que cette officine nous rapporte</div>' +
       '<p class="cl1-s">Notre marge cumulée · ' + esc(cl1PerOff(pid, true)) + cmp + '</p>' +
-      '<p class="cl1-tot">Total : <b>' + V2.fmtEur(d.tot) + '</b>' + (d.moyTot != null ? ' · moyenne de nos clients : ' + V2.fmtEur(d.moyTot) + ' ' + V2.cl1Mot(d.tot, d.moyTot) : '') + '</p>' +
-      cl1Barres(d.lignes.map(function (x) { return { n: esc(lib[x.f]), v: x.v, moy: x.moy, fmt: V2.fmtEur }; }), 'val') +
+      '<p class="cl1-tot">Total : <b>' + V2.fmtEur(d.tot) + '</b>' + (d.taux != null ? ' · ' + V2.cl1Taux(d.taux) + ' de marge' : '') + (d.moyTot != null ? ' · moyenne de nos clients : ' + V2.fmtEur(d.moyTot) + ' ' + V2.cl1Mot(d.tot, d.moyTot) : '') + '</p>' +
+      cl1Barres(d.lignes.map(function (x) { return { n: esc(lib[x.f]), v: x.v, moy: x.moy, fmt: V2.fmtEur, taux: x.taux }; }), 'val') +
+      (d.taux != null || d.lignes.some(function (x) { return x.taux != null; }) ? '<div class="pha-sub pha-m5-n">Taux de marge : notre marge divisée par ce qu’elle nous achète dans la catégorie (chiffre d’affaires net hors taxes).</div>' : '') +
       '<div class="pha-sub pha-m5-n">' + esc(NM.libelleDate()) + ', génériques comptés à zéro.</div></div>';
   }
   V2._margeNousPure = margeNousPure;
@@ -4489,8 +4495,8 @@
     var rotRows = shownRot.map(function (r, i) {
       var pct = rot.total ? Math.min(100, Math.round(r.sortie / rot.total * 100)) : 0;
       var tag = r.owned
-        ? '<span class="phf-mk phf-mk-own">' + ICO('check', 12) + ' Commande</span>'
-        : '<span class="phf-mk phf-mk-gap">À pousser</span>';
+        ? '<span class="phf-mk phf-mk-own">' + ICO('check', 12) + (fi ? ' Déjà commandé' : ' Commande') + '</span>'
+        : '<span class="phf-mk phf-mk-gap">' + (fi ? 'Pas encore commandé' : 'À pousser') + '</span>';
       return '<tr class="' + (r.owned ? 'phf-r-own' : 'phf-r-gap') + '">' +
         '<td class="phf-td-l"><div class="phf-desig">' + esc(cap((r.designation || '').toLowerCase())) + (r.froid ? ' <span class="ph-froid">FROID</span>' : '') + '</div><div class="phf-cip">' + esc(r.cip) + '</div></td>' +
         '<td>' + tag + '</td>' +
@@ -4501,24 +4507,24 @@
     }).join('');
     var listingBody = rot.rows.length ? '<div class="v2-card" style="padding:0;overflow:hidden;margin-top:8px">' +
       '<div class="phf-phead" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">' +
-        '<div><div class="phf-ptitle"><span class="phf-pdot" style="background:var(--c-opp)"></span>Best rotations ' + (rot.isGrp ? 'de son groupement · ' + esc(rot.name) : 'du réseau') + '</div>' +
-          '<div class="phf-psub">les produits les plus commandés par ' + (rot.isGrp ? 'son groupement' : 'le réseau') + ' — ce qu\'elle a déjà et ce qu\'il reste à pousser</div></div>' +
+        '<div><div class="phf-ptitle"><span class="phf-pdot" style="background:var(--c-opp)"></span>Best rotations ' + (rot.isGrp ? (fi ? 'de votre groupement · ' : 'de son groupement · ') + esc(rot.name) : 'du réseau') + '</div>' +
+          '<div class="phf-psub">les produits les plus commandés par ' + (rot.isGrp ? (fi ? 'votre groupement' : 'son groupement') : 'le réseau') + (fi ? ' — ce que vous commandez déjà et ce que vous ne commandez pas encore' : ' — ce qu\'elle a déjà et ce qu\'il reste à pousser') + '</div></div>' +
         '<div class="phf-rotfilter">' +
           '<button class="phf-rf' + (grpListFilter === 'all' ? ' on' : '') + '" onclick="V2.pharmaGrpFilter(\'all\')">Tout · ' + rot.rows.length + '</button>' +
-          '<button class="phf-rf' + (grpListFilter === 'gap' ? ' on' : '') + (nGap === 0 ? ' phf-rf-off" disabled title="Elle commande déjà tous les best-sellers"' : '" onclick="V2.pharmaGrpFilter(\'gap\')"') + '>À pousser · ' + nGap + '</button>' +
+          '<button class="phf-rf' + (grpListFilter === 'gap' ? ' on' : '') + (nGap === 0 ? ' phf-rf-off" disabled title="' + (fi ? 'Vous commandez' : 'Elle commande') + ' déjà tous les best-sellers"' : '" onclick="V2.pharmaGrpFilter(\'gap\')"') + '>' + (fi ? 'Pas encore commandés' : 'À pousser') + ' · ' + nGap + '</button>' +
         '</div>' +
       '</div>' +
       '<div class="phf-tablewrap"><table class="phf-tbl"><thead><tr>' +
         '<th class="phf-tl">Produit</th><th>Statut</th><th>Prix net IP</th><th title="Abandon de marge">Abandon</th><th class="phf-tc">% des pharmacies</th>' +
       '</tr></thead><tbody>' + rotRows + '</tbody></table></div>' +
       (!grpRotExpanded && shownRotAll.length > ROT_LOT ? '<button class="phf-rf" style="margin:10px 14px" onclick="V2.pharmaRotExpand()">Voir tout (' + shownRotAll.length + ')</button>' : '') +
-      '<div class="phf-foot">' + ICO('check', 13) + ' ' + nOwn + ' déjà commandé' + (nOwn > 1 ? 's' : '') + ' · <b style="color:var(--c-amber);margin-left:4px">' + nGap + ' à pousser</b> — sur les ' + rot.rows.length + ' meilleures rotations ' + (rot.isGrp ? 'du groupement' : 'du réseau') + '.</div>' +
+      '<div class="phf-foot">' + ICO('check', 13) + ' ' + nOwn + ' déjà commandé' + (nOwn > 1 ? 's' : '') + ' · <b style="color:var(--c-amber);margin-left:4px">' + nGap + (fi ? ' pas encore commandé' + (nGap > 1 ? 's' : '') : ' à pousser') + '</b> — sur les ' + rot.rows.length + ' meilleures rotations ' + (rot.isGrp ? (fi ? 'de votre groupement' : 'du groupement') : 'du réseau') + '.</div>' +
     '</div>' : '';
     var listing = rot.rows.length ? (function () {
       // 16/11/2026 — fiche d4 (fi) : plus de chevron, le bouton « Masquer / Afficher » de blocsMasquables le remplace (bloc masqué au départ, comme il était replié)
       var open = fi ? true : sectionOpen('bestrot');
       return '<div class="ph-section' + (fi ? ' ph-bestrot' : '') + '">' +
-        sectionHead('Voir le détail produit par produit', 'ce qu\'elle a déjà et ce qu\'il reste à pousser, ligne par ligne', fi ? null : 'bestrot', open) +
+        sectionHead('Voir le détail produit par produit', fi ? 'ce que vous commandez déjà et ce que vous ne commandez pas encore, ligne par ligne' : 'ce qu\'elle a déjà et ce qu\'il reste à pousser, ligne par ligne', fi ? null : 'bestrot', open) +
         (open ? listingBody : '') +
       '</div>';
     })() : '';
@@ -4588,7 +4594,7 @@
           '<div class="pha-rail' + (fi ? ' vi-ph' : '') + '">' + viW(phaNavHtml(pid), 'vi-int') + idCard + (fi ? viW(fe.panneau, 'vi-int') + '<div class="fi-caps"></div>' + viW(listes + infos, 'vi-int') : viW(fe.panneau + listes + infos + notes, 'vi-int')) + '</div>' +
           // 16/11/2026 — fiche d4 : les cartes génériqueurs / biosimilaires remontent juste après les chiffres, avant le Top 10 et « À proposer »
           // 16/11/2026 (soir) — fiche d4 : plus de détail produit ; la ligne du brief reste dans la page mais cachée (le bouton « Voir le brief du jour » de l'en-tête s'en remplit, V2.briefOfficine.hydrate)
-          '<div class="pha-main">' + (fi ? chiffres + viW(generiqueurSec, 'vi-ph') + chiffresBas + (briefOff ? '<div class="fi-brief-cache" style="display:none">' + briefOff + '</div>' : '') : chiffres + chiffresBas + viW(briefOff + listing, 'vi-int') + viW(generiqueurSec, '')) + '</div>' +
+          '<div class="pha-main">' + (fi ? chiffres + viW(generiqueurSec, 'vi-ph') + chiffresBas + (voitVentes ? viW(listing, 'vi-ph') : '') + (briefOff ? '<div class="fi-brief-cache" style="display:none">' + briefOff + '</div>' : '') : chiffres + chiffresBas + viW(briefOff + listing, 'vi-int') + viW(generiqueurSec, '')) + '</div>' +
         '</div>';
     }
     if (!voitVentes) { listing = ''; generiqueurSec = ''; }

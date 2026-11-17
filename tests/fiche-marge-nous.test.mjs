@@ -23,3 +23,14 @@ test('sans moyenne : lignes sans comparaison', () => {
   const d = f(R, 0, null);
   assert.equal(d.moyTot, null); assert.equal(d.nClients, 0); assert.ok(d.lignes.every((l) => l.moy === null));
 });
+
+test('taux de marge (17/11/2026) : marge de la famille ÷ CA net HT de la famille ; total ÷ CA total ; sans caFam, aucun taux', () => {
+  const R2 = Object.assign({ ca: 40000, caFam: { p: 10000, p1: 0, p2: 0, i: 10000, c: 0, fr: 10000, nr: 0 } }, R);
+  const d = f(R2, 0, null);
+  assert.equal(d.taux, 2.5, '1000 / 40000');
+  assert.equal(JSON.stringify(d.lignes.map((l) => [l.f, l.taux])), JSON.stringify([['p', 4], ['i', 3], ['fr', 3]]));
+  const sans = f(R, 0, null);
+  assert.equal(sans.taux, null); assert.ok(sans.lignes.every((l) => l.taux === null), 'ancien fichier : rien de nouveau à l’écran');
+  const zero = f(Object.assign({ ca: 100, caFam: { p: 0, i: 0, c: 0, fr: 0, nr: 0 } }, R), 0, null);
+  assert.ok(zero.lignes.every((l) => l.taux === null), 'CA de famille nul : pas de division par zéro');
+});

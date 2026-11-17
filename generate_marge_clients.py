@@ -50,9 +50,12 @@ SORTIE (gitignoree, JAMAIS commitee) : marge-clients.js a la racine du depot.
                           livraison:{cout, moy:{n, jm, parJour, renta, caMois, mgMois, mpMois, refs, partGen, fam:{p, p1, p2, i, c, fr, nr}}},
                           pilotageMoy:{f:{'AAAA-MM|AAAA-MM':{n, jm, parJour, renta, caCl, mgCl, nSect, secteurs}, ...},
                                        couv:{'AAAA-MM':[secteurs complets, secteurs attendus], ...}},
-                          r:[[ci, oi, ym, ca, tot, p, p1, p2, i, c, fr, nr, caGen, jours], ...]}
+                          r:[[ci, oi, ym, ca, tot, p, p1, p2, i, c, fr, nr, caGen, jours, caP, caP1, caP2, caI, caC, caFr, caNr], ...]}
   ca = CA net HT de toutes les lignes (generiques compris) ; caGen = la part generique de ce CA
   (marge 0) ; tot = somme exacte des 7 familles apres arrondi au centime.
+  caP..caNr (r[14..20], 17/11/2026) = CA net HT des lignes rangees dans chaque famille, MEMES lignes et MEME classement que la marge de la
+  famille (r[5..11]) : le taux de marge d'une famille = r[5+f] / r[14+f]. Les generiques (marge 0, dans aucune famille) n'y sont PAS :
+  somme des 7 = ca - caGen, au centime pres (arrondis par famille).
   jours (r[13], nom historique) = LIVRAISONS de l'officine ce mois-la (mois de PCVDATEEFFET), tous commerciaux confondus
   (meme valeur sur chaque ligne de l'officine-mois : la page prend le max, jamais la somme). Decision de Will du 11/11/2026
   (« 1 seule par j max ») : une livraison = un JOUR (PCVDATEEFFET) avec au moins une facture PCVNUM commencant par FC (pas un
@@ -464,12 +467,13 @@ def ajouter(lignes, cle, g, ym, cascade, L, marge=None):
     cip = '' if cle_p.startswith('#') else cle_p
     x = lignes.get(cle)
     if x is None:
-        x = lignes[cle] = [0.0] * 9      # 0..6 familles · 7 = ca · 8 = caGen
+        x = lignes[cle] = [0.0] * 16     # 0..6 familles · 7 = ca · 8 = caGen · 9..15 = CA net HT des lignes de chaque famille (17/11/2026)
     x[7] += net
     f = famille(cip, N, reg, L, rb)
     if f is None:
         x[8] += net
         return 'gen', 0.0
+    x[9 + f] += net      # MÊME famille que la marge ci-dessous : le taux de marge d'une famille = marge de la famille / CA des lignes qui la composent
     m, src = cascade.marge(g, ym) if marge is None else (marge, 'mois de remplacement')
     x[f] += m
     return src, m
@@ -487,6 +491,12 @@ def arrondir(lignes, c_idx, o_idx):
         out.append([c_idx[prenom], o_idx[officine], ym, ca, tot] + fam + [cag])
     out.sort(key=lambda r: (r[0], r[1], r[2]))
     return out
+
+
+def arrondir_caf(lignes, c_idx, o_idx):
+    """17/11/2026 — CA net HT par famille (7 valeurs, centime) de chaque ligne de sortie : {(ci, oi, ym): [caP, caP1, caP2, caI, caC, caFr, caNr]}.
+    Posé en fin de ligne (r[14..20], après les livraisons r[13]) : les 13 premières colonnes et r[13] ne bougent pas."""
+    return {(c_idx[p], o_idx[o], ym): [round(v, 2) for v in x[9:16]] for (p, o, ym), x in lignes.items()}
 
 
 # ───────────────────────────────────────────── format du fichier ─────────────────────────────────
@@ -1312,6 +1322,9 @@ def main():
     J = livraisons_par_mois(x for fc in chemins for x in charger_jours(fc))
     for r in rows:
         r.append(J.get((officines[r[1]], r[2]), 0))
+    CAF = arrondir_caf(lignes, c_idx, o_idx)
+    for r in rows:
+        r.extend(CAF[(r[0], r[1], r[2])])      # r[14..20] = CA net HT des 7 familles (17/11/2026)
     vus = {(officines[r[1]], r[2]): r[13] for r in rows}      # ce que la fiche voit : les livraisons des officine-mois qui ont une ligne
     print('Livraisons : %d (1 par jour au plus) · %d officines · dont %d sur des officine-mois présents dans le fichier'
           % (sum(J.values()), len({k[0] for k in J}), sum(vus.values())))
