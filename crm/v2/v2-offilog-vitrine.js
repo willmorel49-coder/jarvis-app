@@ -683,23 +683,54 @@
     });
     return function () { faits.forEach(function (x) { if (x[1] == null) x[0].removeAttribute('style'); else x[0].setAttribute('style', x[1]); }); };
   }
-  V2._offVitrinePdf = { cadrage: cadrage, cadrerPhotos: cadrerPhotos };
+  // Une photo perdue ne doit jamais partir en case vide. Deux contrôles :
+  // 1. avant le PDF, les photos de l'aperçu (src posé, mais rien de chargé : naturalWidth 0) ;
+  // 2. pendant le PDF : html2canvas RECHARGE chaque photo (17/11/2026 : 429 de Vercel, 34 photos vides dans un PDF « réussi »).
+  //    Quand ce rechargement échoue, html2canvas 1.0.0 saute la photo et écrit seulement « Error loading image <adresse> »
+  //    par console.error (la console de l'iframe, où vit la bibliothèque ; logging: true est donc indispensable).
+  function photosCassees(racine) {
+    return [].filter.call(racine.querySelectorAll('img'), function (im) {
+      return !!im.getAttribute('src') && (!im.complete || !(im.naturalWidth > 0));
+    }).map(function (im) { return im.getAttribute('src'); });
+  }
+  function ecouterPhotosPerdues(fw) {
+    var perdues = [], c = fw.console, avant = c && c.error;
+    if (!c) return { perdues: perdues, fin: function () {} };
+    c.error = function () {
+      for (var k = 0; k < arguments.length; k++) {
+        var m = /^Error loading image (.*)$/.exec(String(arguments[k]));
+        if (m) { perdues.push(m[1]); break; }
+      }
+      if (typeof avant === 'function') return avant.apply(c, arguments);
+    };
+    return { perdues: perdues, fin: function () { c.error = avant; } };
+  }
+  // une même photo figure plusieurs fois (scène + carte) : on compte les photos, pas leurs apparitions
+  function errPhotos(liste) {
+    var u = liste.filter(function (s, i) { return liste.indexOf(s) === i; }), e = new Error('photos non chargées : ' + u.length);
+    e.photos = u; return e;
+  }
+  V2._offVitrinePdf = { cadrage: cadrage, cadrerPhotos: cadrerPhotos, photosCassees: photosCassees, ecouterPhotosPerdues: ecouterPhotosPerdues, errPhotos: errPhotos };
   function fabriquerPdf(f, suivi) {
     var fw = f.contentWindow, secs = [].slice.call(fw.document.querySelectorAll('section.page')), pdf = null;
     if (!secs.length) return Promise.reject(new Error('aucune page'));
+    var cassees = photosCassees(fw.document);
+    if (cassees.length) return Promise.reject(errPhotos(cassees));
     return Promise.all([html2pdfDans(fw), Promise.resolve(window.ensureHtml2Pdf ? window.ensureHtml2Pdf() : null)]).then(nouveauPdfA4).then(function (doc) {
       pdf = doc;
       var p = Promise.resolve();
       secs.forEach(function (sec, i) {
         p = p.then(function () {
           if (suivi) suivi(i + 1, secs.length);
-          var remettre = cadrerPhotos(sec, fw);
-          return fw.html2pdf().set({ html2canvas: { scale: 1.5, useCORS: true, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 } })
+          var remettre = cadrerPhotos(sec, fw), ecoute = ecouterPhotosPerdues(fw);
+          var fin = function () { ecoute.fin(); remettre(); };
+          return fw.html2pdf().set({ html2canvas: { scale: 1.5, useCORS: true, logging: true, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 } })
             .from(sec).toCanvas().get('canvas').then(function (cv) {
+              if (ecoute.perdues.length) { cv.width = cv.height = 0; throw errPhotos(ecoute.perdues); }   // on s'arrête à la 1re page touchée
               if (i > 0) pdf.addPage('a4', 'portrait');
               pdf.addImage(cv.toDataURL('image/jpeg', 0.85), 'JPEG', 0, 0, 595.28, 841.89, undefined, 'FAST');
               cv.width = cv.height = 0;
-            }).then(remettre, function (e) { remettre(); throw e; });
+            }).then(fin, function (e) { fin(); throw e; });
         });
       });
       return p;
@@ -723,7 +754,10 @@
       });
     }).catch(function (e) {
       console.error('catalogue Offilog, PDF', e);
-      V2.toast(/^liste des marques/.test(String(e && e.message)) ? 'La liste des marques à retirer n\'a pas pu être chargée. Rien n\'est montré. Réessayez.' : 'Le PDF n\'a pas pu être préparé (connexion ?). Rien n\'a été envoyé, réessayez.', 'error');
+      var nPh = e && e.photos ? e.photos.length : 0;
+      V2.toast(/^liste des marques/.test(String(e && e.message)) ? 'La liste des marques à retirer n\'a pas pu être chargée. Rien n\'est montré. Réessayez.'
+        : nPh ? (nPh === 1 ? 'Une photo n\'a pas pu être chargée' : nPh + ' photos n\'ont pas pu être chargées') + ' : le PDF aurait eu des cases vides. Rien n\'a été envoyé. Réessayez dans quelques minutes.'
+        : 'Le PDF n\'a pas pu être préparé (connexion ?). Rien n\'a été envoyé, réessayez.', 'error');
     }).then(function () {
       enCours = false;
       if (horsEcran && horsEcran.parentNode) horsEcran.parentNode.removeChild(horsEcran);

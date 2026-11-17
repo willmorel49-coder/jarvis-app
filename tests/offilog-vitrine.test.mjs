@@ -393,3 +393,30 @@ test('PDF : chaque photo garde ses proportions (html2canvas ignore object-fit et
   remettre();
   assert.equal(a.lire(), null); assert.equal(b.lire(), 'left:3px');
 });
+
+test('PDF : une photo non chargée arrête le PDF (aperçu cassé, ou rechargement raté par html2canvas)', () => {
+  const { photosCassees, ecouterPhotosPerdues, errPhotos } = monter()._offVitrinePdf;
+  assert.deepEqual([...errPhotos(['a.webp', 'a.webp', 'b.webp', 'a.webp']).photos], ['a.webp', 'b.webp'], 'une photo vue 3 fois (scène + carte) compte pour une');
+  const im = (src, complete, nw) => ({ complete, naturalWidth: nw, getAttribute: () => src });
+  const page = { querySelectorAll: () => [im('a.webp', true, 230), im('b.webp', true, 0), im('c.jpg', false, 0), im('', true, 0), im(null, true, 0)] };
+  assert.deepEqual([...photosCassees(page)], ['b.webp', 'c.jpg'], 'seules les photos avec une adresse et rien de chargé comptent');
+  assert.equal(photosCassees({ querySelectorAll: () => [im('a.webp', true, 230)] }).length, 0);
+  // html2canvas 1.0.0 : console.error(id, '12ms', 'Error loading image <adresse>') quand il saute une photo.
+  const vus = [], fw = { console: { error: function () { vus.push([].slice.call(arguments)); } } }, avant = fw.console.error;
+  const e = ecouterPhotosPerdues(fw);
+  fw.console.error('#1', '12ms', 'Error loading image https://crm-jarvis.vercel.app/crm/v2/oimg-cut/3401563131779.webp');
+  fw.console.error('autre erreur');
+  assert.deepEqual([...e.perdues], ['https://crm-jarvis.vercel.app/crm/v2/oimg-cut/3401563131779.webp']);
+  assert.equal(vus.length, 2, 'la console reçoit toujours les messages');
+  e.fin();
+  assert.equal(fw.console.error, avant, 'la console est rendue telle quelle après la page');
+});
+
+test('PDF : le rechargement des photos par html2canvas reste écouté (logging: true) et le message dit le nombre de photos', () => {
+  const src = fs.readFileSync(path.join(RACINE, 'crm/v2/v2-offilog-vitrine.js'), 'utf8');
+  const f = src.slice(src.indexOf('function fabriquerPdf('), src.indexOf('V2.offVitrineMail = function'));
+  assert.match(f, /html2canvas: \{[^}]*logging: true/);
+  assert.match(f, /photosCassees\(fw\.document\)/);
+  assert.match(f, /ecouterPhotosPerdues\(fw\)/);
+  assert.match(src, /photos n\\'ont pas pu être chargées/);
+});
