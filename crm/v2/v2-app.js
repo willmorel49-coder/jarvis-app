@@ -2315,8 +2315,14 @@
         if (pmE.pharma) { pmE.pharma.d = 'Les officines clientes d\'Escale Pharma : coordonnées, groupement, chiffre d\'affaires, et ce qu\'elles commandent ou pas encore.'; }
         if (pmE.pilotage) { pmE.pilotage.d = 'Le chiffre d\'affaires d\'Escale Pharma par commercial, par mois et par groupement, avec la marge et les familles produits.'; }
       }
+      // 17/11/2026 — plan du contrat OPSO 2027 (PDF interne) : une tuile, visible seulement pour les comptes de
+      // V2.PLAN_OPSO_ACCES (sinon absente de la page, pas cachée). Le verrou réel est côté serveur.
+      if (window.V2_BRAND && window.V2_BRAND.opso && V2.PLAN_OPSO_ACCES && V2.docsProteges && V2.docsProteges.planOpso2027
+          && V2.PLAN_OPSO_ACCES.indexOf(String((V2.user && V2.user.email) || '').toLowerCase()) >= 0) {
+        P.push({ k: 'planOpso2027', doc: 'planOpso2027', cls: 'p2', accent: 'var(--pil-fiche)', ico: 'fiche', tag: 'Interne', t: 'Plan du contrat 2027', d: 'Le document interne : le barème de RFA proposé, ce qu\'il rend à OPSO et ce qu\'il nous reste, palier par palier.', go: 'Ouvrir le document' });
+      }
       function tile(p) {
-        var nav = p.route ? ('V2.go(\'' + p.route.name + '\'' + (p.route.param ? ',\'' + p.route.param + '\'' : '') + ')') : ('V2.go(\'' + p.k + '\')');
+        var nav = p.doc ? ('V2.ouvrirDocProtege(\'' + p.doc + '\')') : p.route ? ('V2.go(\'' + p.route.name + '\'' + (p.route.param ? ',\'' + p.route.param + '\'' : '') + ')') : ('V2.go(\'' + p.k + '\')');
         return '<a class="v2-pil ' + p.cls + '"' + (p.accent ? ' style="--accent:' + p.accent + '"' : '') + ' onmousemove="V2.homeSpot(event,this)" onclick="' + nav + '">' +
           '<div class="v2-pil-head"><div class="v2-pil-ico">' + ICO(p.ico, 26) + '</div>' + (p.tag ? '<span class="v2-pil-num">' + p.tag + '</span>' : '') + '</div>' +
           '<div class="v2-pil-t">' + p.t + '</div><div class="v2-pil-d">' + p.d + '</div>' +
@@ -2324,7 +2330,7 @@
       }
       // Une tuile dont l'écran n'est pas chargé (app OPSO allégée, module
       // optionnel absent) ne s'affiche pas : un clic vers rien n'existe pas.
-      P = P.filter(function (p) { return p.route ? !!V2.pages[p.route.name] : !!V2.pages[p.k]; });
+      P = P.filter(function (p) { return p.doc ? true : p.route ? !!V2.pages[p.route.name] : !!V2.pages[p.k]; });
       // Accueil regroupé "par moment d'usage" (hors OPSO qui garde son ordre suivi-groupement)
       var pilHtml, todoTuile = false, g4Mode = false;
       if (window.V2_BRAND && window.V2_BRAND.opso) {

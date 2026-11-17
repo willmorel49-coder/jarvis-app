@@ -39,6 +39,10 @@
   // 15/10/2026 — Will : Guy Bourdon y entre aussi, avec son compte du CRM.
   // 03/11/2026 — Will : Alexandre Morel a le même accès que lui, partout.
   V2.OPSO_ACCES = ['emmanuel.noblanc@normandiepharma.fr', 'william.morel@me.com', 'alexandre.morel@me.com', 'pascale.prieto@integralpharma.fr', 'arthur.lehouerou@integralpharma.fr', 'guy.bourdon@integralpharma.fr', 'claude-test@integralpharma.fr'];
+  // 17/11/2026 — Will : « qu'on le voie moi et Pascale sur l'appli OPSO ». Plan du contrat OPSO 2027 (PDF interne) :
+  // Will, Pascale, Alexandre (même accès que Will), claude-test (preuves). Ni Emmanuel (OPSO, le client), ni Arthur, ni Guy.
+  // Le verrou réel est côté serveur (jarvis_acces_plan_opso, crm/v2/_sql/plan-opso-2027.sql) : cette liste ne fait qu'afficher la tuile.
+  V2.PLAN_OPSO_ACCES = ['william.morel@me.com', 'pascale.prieto@integralpharma.fr', 'alexandre.morel@me.com', 'claude-test@integralpharma.fr'];
   V2.estCommEscale = function (c) { c = String(c || ''); return c === 'Escale' || V2.ESCALE_COMMS.indexOf(c) >= 0; };
   // ventes du commercial filtré (ou toutes)
   // 11/09/2026 — perf : mémorisé sur (V2.sales, V2.commFilter). Le Pilotage
@@ -1351,6 +1355,12 @@
     biosimExcel: {
       fichier: 'base-biosimilaires.xlsx',
       titre: 'Base Biosimilaires · Excel', type: 'fichier'
+    },
+    // 17/11/2026 — plan du contrat OPSO 2027, document INTERNE (Will, Pascale, Alexandre seulement : verrou serveur
+    // jarvis_acces_plan_opso). Aucun chiffre du plan dans le dépôt, seulement le nom du fichier.
+    planOpso2027: {
+      fichier: 'opso-plan-contrat-2027-interne.pdf',
+      titre: 'Plan du contrat OPSO 2027 · interne', type: 'pdf'
     }
   };
   V2.docsProteges = DOCS_PROTEGES;
@@ -1448,7 +1458,7 @@
     // Bumpé 29/09/2026 : v2-offilog.js change (union catalogue OPSO, retrait
     // Pharmazon/achat côté OPSO) — sans ce bump, un appareil ayant déjà l'app
     // ouverte continuerait de servir l'ancien fichier depuis le cache.
-    var V = '?v=20261117fpze' + (window.V2_VER || '20260915g');
+    var V = '?v=20261117fpzf' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -2025,7 +2035,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20261117fpze';
+    var V = '?v=20261117fpzf';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];

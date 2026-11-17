@@ -531,7 +531,8 @@
     offilog: 'La parapharmacie, rayon par rayon',
     opsopharmacies: 'L\'évolution de chaque officine',
     opsoachats: 'Les références les plus commandées',
-    opsoprix: 'PFHT, prix habituel et prix négocié'
+    opsoprix: 'PFHT, prix habituel et prix négocié',
+    planOpso2027: 'Barème de RFA et ce qui nous reste (interne)'
   };
   // Mini-aperçu de chaque espace : un chiffre réel ou une forme, jamais une phrase.
   function apercu(k, DATA) {
@@ -552,7 +553,7 @@
   function compacterEspaces(scope, DATA) {
     var list = scope.querySelectorAll ? scope.querySelectorAll('.oa-espaces .v2-pil') : [];
     Array.prototype.forEach.call(list, function (a) {
-      var m = /V2\.go\('([a-z]+)'/.exec(a.getAttribute('onclick') || '');
+      var m = /V2\.(?:go|ouvrirDocProtege)\('([A-Za-z0-9]+)'/.exec(a.getAttribute('onclick') || '');
       var d = a.querySelector('.v2-pil-d');
       if (m && d && ESPACES[m[1]]) { if (!d.title) d.title = d.textContent; d.textContent = ESPACES[m[1]]; }
       var head = a.querySelector('.v2-pil-head');
