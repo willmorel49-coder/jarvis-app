@@ -190,6 +190,26 @@ test('(b) OPSO, HTML : deux boutons, celui de l\'année affichée en aria-presse
   assert.ok(h.includes('janv.–avr. 2027'));
 });
 
+test('(b) OPSO, en-tête : les nouvelles pharmacies de la période masquée sont dites « dont N … en mois–mois »', () => {
+  // Will, 17/11/2026 : l'en-tête compte les primes de la période avant l'accord, qui n'a plus de ligne à l'écran.
+  // p4 (mars) et p6 (avril) : premier achat dans la période masquée janv.–avr., après le départ de la prime (mars).
+  const o = chargerOpso(SRC(), V2026().concat([vente('p4', 2026, 3, 100), vente('p6', 2026, 4, 100)]));
+  const D = o.compute();
+  assert.equal(D.totalAnnee.nNouvelles, 4, 'p2, p5 affichées + p4, p6 masquées');
+  const h = o.afficher();
+  assert.ok(h.includes('4 nouvelles pharmacies'), 'marqueur positif : l\'en-tête compte les quatre');
+  assert.ok(h.includes('dont 2 devenues clientes en mars–avr. 2026'), 'la précision donne le nombre et les mois réels');
+  assert.ok(!h.includes('janv.–avr. 2026'), 'la période masquée reste masquée');
+  // Une seule masquée → singulier et un seul mois.
+  const h1 = chargerOpso(SRC(), V2026().concat([vente('p4', 2026, 3, 100)])).afficher();
+  assert.ok(h1.includes('dont 1 devenue cliente en mars 2026'), 'singulier, un seul mois');
+  // Aucune nouvelle dans la période masquée (p3 achète en février, avant la prime) → aucune précision.
+  const h0 = chargerOpso(SRC(), V2026()).afficher();
+  assert.ok(h0.includes('2 nouvelles pharmacies') && !h0.includes('oa-eqd'), 'rien à préciser');
+  // 2027 : aucune période masquée → aucune précision.
+  assert.ok(!chargerOpso(SRC(), V2026().concat(V2027())).afficher().includes('oa-eqd'), '2027 : rien à préciser');
+});
+
 /* ───────────────────────── (d) V2.notreMarge ───────────────────────── */
 
 const BOOT = () => lire('crm/v2/v2-boot.js');

@@ -293,6 +293,17 @@
     }).join('') + '</span>';
   }
 
+  // Will, 17/11/2026 : les nouvelles pharmacies des périodes masquées (avant l'accord) restent dans le total ;
+  // on dit combien et quand, sinon le nombre de l'en-tête ne se retrouve pas dans les lignes affichées.
+  function dontMasquees(D) {
+    var mois = [];
+    D.lignes.forEach(function (l) { if (l.indicatif) l.nouvelles.forEach(function (x) { mois.push(x.mois); }); });
+    if (!mois.length) return '';
+    var m1 = Math.min.apply(null, mois), m2 = Math.max.apply(null, mois), pl = mois.length > 1 ? 's' : '';
+    return '<span class="oa-eqd">dont ' + mois.length + ' devenue' + pl + ' cliente' + pl + ' en '
+      + MOIS_ABREV[m1 - 1] + (m2 > m1 ? '–' + MOIS_ABREV[m2 - 1] : '') + ' ' + D.annee + '</span>';
+  }
+
   function html(D) {
     var T = D.totalAnnee;
     var depuis = D.effet ? 'depuis ' + esc(moisEffet(D)) : 'de ' + D.annee;
@@ -311,7 +322,7 @@
       + '<div class="oa-rtot" data-opr-total="1">'
         + '<span class="oa-mname">À ce jour · estimation</span><b class="oa-big">' + eur(T.remu, true) + '</b>'
         + '<div class="oa-eq"><span class="oa-eqt"><b class="og-num">' + euros(T.remuCA) + '</b>sur les achats ' + depuis + '</span>'
-        + (D.P ? '<i aria-hidden="true">+</i><span class="oa-eqt"><b class="og-num">' + euros(T.primes) + '</b>' + T.nNouvelles + ' nouvelle' + (T.nNouvelles > 1 ? 's' : '') + ' pharmacie' + (T.nNouvelles > 1 ? 's' : '') + ' · ' + euros(D.P.montant) + ' chacune</span>' : '')
+        + (D.P ? '<i aria-hidden="true">+</i><span class="oa-eqt"><b class="og-num">' + euros(T.primes) + '</b>' + T.nNouvelles + ' nouvelle' + (T.nNouvelles > 1 ? 's' : '') + ' pharmacie' + (T.nNouvelles > 1 ? 's' : '') + ' · ' + euros(D.P.montant) + ' chacune' + dontMasquees(D) + '</span>' : '')
         + '</div>'
         + '<button type="button" class="oa-more oa-rtot-more" aria-expanded="false" aria-controls="oa-rtot-d">Détail</button>'
         + '<dl class="oa-qn oa-qn--tot" id="oa-rtot-d" hidden><div><dt>CA HT net</dt><dd class="og-num">' + euros(T.total) + '</dd></div><div class="r"><dt>Retenu</dt><dd class="og-num">' + euros(T.retenu) + '</dd></div><div class="x"><dt>Exclu</dt><dd class="og-num">' + euros(T.exclu) + '</dd></div></dl>'
