@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Carte du réseau</title>
-<meta name="description" content="Carte du réseau Intégral Pharma : huit agences et un partenaire.">
+<meta name="description" content="Carte du réseau integral pharma : huit grossistes-répartiteurs et un partenaire.">
 <!--
   LA CARTE DU RÉSEAU — refaite le 28/09/2026.
 
@@ -223,7 +223,7 @@ body{
   <div class="grille">
     <div class="zone">
     <div class="carte" id="carte" role="group"
-         aria-label="Carte de France : les huit agences Intégral Pharma, le siège à Hyères et le partenaire de Metz">
+         aria-label="Carte de France : les huit grossistes-répartiteurs integral pharma et le partenaire de Metz">
       <svg id="dessin" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
         <defs>
           <linearGradient id="terre" x1="0.9" y1="1" x2="0.1" y2="0">
@@ -236,21 +236,21 @@ body{
         <g id="fils"></g>
         <g id="marques"></g>
       </svg>
-      <div class="carte__badge"><span class="dot"></span>Réseau Intégral<span class="badge-full"> — huit agences et un partenaire</span></div>
+      <div class="carte__badge"><span class="dot"></span>Réseau integral pharma<span class="badge-full"> — huit grossistes-répartiteurs et un partenaire</span></div>
       </div>
       <div class="info" id="info" aria-hidden="true">
         <img class="mi__photo" id="miPhoto" alt="" hidden>
-        <span class="mi__type" id="miType">Agence Intégral</span>
+        <span class="mi__type" id="miType">Grossiste-répartiteur</span>
         <div class="mi__name" id="miName">—</div>
         <div class="mi__city" id="miCity">—</div>
         <div class="mi__actions" id="miActions"></div>
         <button type="button" class="mi__close" id="miClose" aria-label="Fermer la fiche">×</button>
       </div>
     </div>
-    <aside class="liste" aria-label="Liste des agences">
-      <div class="liste__cap" id="listeCap">Nos agences <i>— cliquez pour les coordonnées</i></div>
-      <div class="liste__l" aria-label="Annuaire des agences">
-        <button type="button" class="estab estab--siege" data-i="0"><span class="estab__sig">HP</span><span class="estab__b"><span class="estab__n">Hyères Pharma</span><span class="estab__c">Hyères · 83</span></span><span class="estab__tag">Siège</span></button>
+    <aside class="liste" aria-label="Liste des grossistes-répartiteurs">
+      <div class="liste__cap" id="listeCap">Nos grossistes-répartiteurs <i>— cliquez pour les coordonnées</i></div>
+      <div class="liste__l" aria-label="Annuaire des grossistes-répartiteurs">
+        <button type="button" class="estab" data-i="0"><span class="estab__sig">HP</span><span class="estab__b"><span class="estab__n">Hyères Pharma</span><span class="estab__c">Hyères · 83</span></span></button>
         <button type="button" class="estab" data-i="1"><span class="estab__sig">OPS</span><span class="estab__b"><span class="estab__n">Ouest Pharma Services</span><span class="estab__c">Saint-Étienne-de-Montluc · 44</span></span></button>
         <button type="button" class="estab" data-i="2"><span class="estab__sig">EP</span><span class="estab__b"><span class="estab__n">Escale Pharma</span><span class="estab__c">Chilly-Mazarin · 91</span></span></button>
         <button type="button" class="estab" data-i="3"><span class="estab__sig">CPR</span><span class="estab__b"><span class="estab__n">Comptoir Pharma. du Rhône</span><span class="estab__c">Saint-Maurice-l'Exil · 38</span></span></button>
@@ -263,10 +263,9 @@ body{
     </aside>
   </div>
   <div class="pied">
-    <span><i class="lg s"></i>Siège — Hyères</span>
-    <span><i class="lg o"></i>Agences</span>
+    <span><i class="lg o"></i>Grossistes-répartiteurs</span>
     <span><i class="lg p"></i>Partenaire — Metz</span>
-    <span class="hint" id="pptHint">Cliquez sur une agence pour afficher son mail et son téléphone</span>
+    <span class="hint" id="pptHint">Cliquez sur un grossiste-répartiteur pour afficher son mail et son téléphone</span>
   </div>
 </div>
 
@@ -294,7 +293,7 @@ body{
      du Var, trop serrés pour être visés : leur nom part en mer, un fil le
      ramène à son point. `ph` : le numéro de la photo dans ../assets/agences/. */
   var SITES = [
-    {s:'HP', n:"Hyères Pharma",               eti:'Hyères',        v:'Hyères',                    d:'83', t:'siege',
+    {s:'HP', n:"Hyères Pharma",               eti:'Hyères',        v:'Hyères',                    d:'83', t:'site',
      x:76.61, y:81.53, ax:84.0, ay:82.0, dir:'d', grappe:true, ph:1,
      mail:'pr@hpharma.fr', tel:'04 84 25 17 18'},
     {s:'OPS', n:"Ouest Pharma Services",      eti:'St-Étienne-de-Montluc', v:'Saint-Étienne-de-Montluc', d:'44', t:'site',
@@ -516,7 +515,7 @@ body{
     var m = SITES[i];
     info.classList.remove('siege','part');
     if(m.t==='siege') info.classList.add('siege'); else if(m.t==='part') info.classList.add('part');
-    miType.textContent = m.t==='siege' ? 'Siège' : (m.t==='part' ? 'Partenaire' : 'Agence Intégral');
+    miType.textContent = m.t==='siege' ? 'Siège' : (m.t==='part' ? 'Partenaire' : 'Grossiste-répartiteur');
     miName.textContent = m.n;
     miCity.textContent = m.v+' · '+m.d;
     var h='';
@@ -568,9 +567,9 @@ body{
 
   if(COARSE){
     var cap=document.getElementById('listeCap');
-    if(cap) cap.innerHTML='Nos agences <i>— touchez pour les coordonnées</i>';
+    if(cap) cap.innerHTML='Nos grossistes-répartiteurs <i>— touchez pour les coordonnées</i>';
     var hi=document.getElementById('pptHint');
-    if(hi) hi.textContent='Touchez une agence pour afficher son mail et son téléphone';
+    if(hi) hi.textContent='Touchez un grossiste-répartiteur pour afficher son mail et son téléphone';
   }
 
   /* ── l'arrivée : une fois, puis plus rien ────────────────────────────────── */

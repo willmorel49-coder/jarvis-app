@@ -18,13 +18,11 @@
     { id: "groupe",    sel: "#groupe .lead-aere",
       cles: ["partager directement la marge", "du côté du comptoir"] },
     { id: "reseau",    sel: "#reseau .duo p.corps:not(#carte-consigne)",
-      cles: ["la seule question", "le stock de toutes"] },
-    { id: "centrale",  sel: "#centrale .lead-aere",
-      cles: ["plateforme autonome", "Offilog qui vous répond directement"] },
+      cles: ["la seule question", "entre confrères"] },
     { id: "depots",    sel: "#depots .duo > p.lead-aere",
       cles: ["chaque jour"] },
     { id: "rejoindre", sel: "#rejoindre p.lire",
-      cles: ["le métier s'apprend sur place"] }
+      cles: ["un tuteur référent"] }
   ];
 
   function mots(s){ return s.split(/[ \u00a0]+/).filter(Boolean).length; }
