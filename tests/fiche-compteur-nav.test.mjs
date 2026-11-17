@@ -37,11 +37,10 @@ test('un geste ne bloque pas le comptage de l’écran qui suit', () => {
   m.mesurer('fiche-autre', true); m.mesurer('pharma');
   assert.deepEqual(m.envois, ['fiche-autre', 'pharma']);
 });
-// 16/11/2026 : Précédente / Suivante retirées de la fiche ; seul « Autre officine… » garde son geste
-test('« Autre officine… » porte son geste, Précédente / Suivante ont disparu, et va() compte avant d’ouvrir', () => {
+test('les trois boutons de la fiche portent leur geste, et va() le compte avant d’ouvrir', () => {
   const s = lire('v2-pharma.js');
-  assert.ok(!s.includes("'fiche-precedente'") && !s.includes("'fiche-suivante'"));
-  assert.ok(!s.includes('‹ Précédente') && !s.includes('Suivante ›'));
+  assert.ok(s.includes("cible(i - 1, 'fiche-precedente')"));
+  assert.ok(s.includes("cible(i + 1, 'fiche-suivante')"));
   assert.ok(s.includes("\\',0,\\'fiche-autre\\')"));
   const va = s.slice(s.indexOf('va: function (id, liste, geste)'), s.indexOf('chercher: function'));
   assert.ok(va.indexOf('V2.mesurer(geste, true)') > 0 && va.indexOf('V2.mesurer(geste, true)') < va.indexOf("V2.go('pharma'"));

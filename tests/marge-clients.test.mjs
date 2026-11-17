@@ -294,18 +294,3 @@ test('règle de secours 2027 : quatre tranches (détail dans pilotage-marge-comm
   assert.equal(+m({ year: 2027, qte: 5, puNet: 100, mntNetHt: 500 }).toFixed(2), 15.20);
   assert.equal(+m({ year: 2026, qte: 10, puNet: 2, mntNetHt: 20 }).toFixed(2), 1.20, '2026 inchangé');
 });
-
-// ── 17/11/2026 — CA par famille (taux de marge) : l[14..20], null pour un fichier d'avant ──
-test('caFam : additionné quand toutes les lignes le portent ; null sinon (ancien fichier, ou mélange)', () => {
-  const d = FICHIER();
-  const avant = nouveauV2(JSON.parse(JSON.stringify(d))).V2.notreMarge.somme({ pid: '2000001' });
-  assert.equal(avant.caFam, null, 'fichier d’avant : pas de CA par famille');
-  assert.equal(avant.tot, 205, 'le reste ne bouge pas');
-  const E = FICHIER();
-  const avec = E.r.map((l) => l.concat([0], [10, 0, 0, 20, 0, 5, 5]));   // 13 colonnes + jours (0) + 7 CA famille
-  const r = nouveauV2(Object.assign(E, { r: avec })).V2.notreMarge.somme({ pid: '2000001' });
-  assert.deepEqual(r.caFam, { p: 40, p1: 0, p2: 0, i: 80, c: 0, fr: 20, nr: 20 }, 'quatre lignes de l’officine 1 : 4 × (10, 0, 0, 20, 0, 5, 5)');
-  const melange = E.r.map((l, k) => (k === 0 ? l.slice(0, 14) : l));
-  assert.equal(nouveauV2(Object.assign(FICHIER(), { r: melange })).V2.notreMarge.somme({ pid: '2000001' }).caFam, null, 'une ligne sans caFam : pas de taux plutôt qu’un taux faux');
-  assert.equal(nouveauV2(Object.assign(FICHIER(), { r: avec })).V2.notreMarge.somme({ pid: '2000001', comms: ['Inconnu'] }).caFam, null, 'aucune ligne : null');
-});

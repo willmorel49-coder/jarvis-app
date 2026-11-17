@@ -397,6 +397,7 @@
   var SLOTS = {
     'h.phrase': function () { return phrase(); },
     'h.reprendre': function () { return reprendre(); },
+    'h.pill': function () { return m1Pill(); },
     'h.nb': function (ctx) { return m1Nb(ctx.m); },
     'h.cmp': function () { return m1Cmp(); },
     'h.rel': function () { return m1Rel(); },
@@ -497,9 +498,8 @@
   function dateLongue() { return new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(/\b1 /, '1er '); }
   function chev(n) { return P().ic('chev', n || 18); }
   function top(ic, lab, extra) { return '<div class="m1-top"><span class="m1-ico">' + P().ic(ic, 20) + '</span><span class="m1-lab">' + esc(lab) + '</span>' + (extra || '') + '</div>'; }
-  // 16/11/2026 — épuration : le nom de la case est déjà écrit en haut (m1-lab), il n'est plus répété en pied ; le lien le garde pour les lecteurs d'écran et couvre toujours toute la case
   function pied(t, k, nom, slotK, corps) {
-    return '<div class="m1-foot"><h3 class="m1-cache"><a class="m1-go"' + lien(t, k) + '><span class="u2-sr">' + esc(nom) + '</span></a></h3><p data-slot="' + slotK + '">' + corps + '</p></div>';
+    return '<div class="m1-foot"><h3><a class="m1-go"' + lien(t, k) + '><span>' + esc(nom) + '</span></a></h3><p data-slot="' + slotK + '">' + corps + '</p></div>';
   }
   var _fait = {}, _aff = [];   // To do : les lignes cochées pendant cette visite restent à l'écran, rayées
 
@@ -514,7 +514,7 @@
     try { n = V2.decrochageUI ? V2.decrochageUI.compte() : null; } catch (e) {}
     if (typeof n === 'number') parts.push(n ? '<b>' + plur(n, 'officine', 'officines') + '</b> à rappeler' : 'aucune officine à rappeler');
     i = p.infos();
-    if (i.etat === 'ok' && i.nb != null && i.quand !== 'ancien') parts.push((i.nb ? '<b>' + plur(i.nb, 'info', 'infos') + '</b> ' : 'aucune info ') + (i.quand === 'hier' ? 'd’hier' : 'du jour'));
+    if (i.etat === 'ok' && i.nb != null && i.quand !== 'ancien') parts.push('<b>' + plur(i.nb, 'info', 'infos') + '</b> ' + (i.quand === 'hier' ? 'd’hier' : 'du jour'));
     if (!parts.length) return '';
     var s = parts.join(', ') + '.';
     return s.charAt(0) === '<' ? s : s.charAt(0).toUpperCase() + s.slice(1);
@@ -536,7 +536,10 @@
   }
 
   // ── Officines : le nombre, la comparaison secteur / moyenne Intégral, les officines à rappeler ──
-  // 16/11/2026 — épuration : la pastille « N officines à rappeler » (redite de la phrase d'en-tête) est retirée ; le nombre passe devant les officines à rappeler (m1Rel)
+  function m1Pill() {
+    var n = null; try { n = V2.decrochageUI ? V2.decrochageUI.compte() : null; } catch (e) {}
+    return typeof n === 'number' && n > 0 ? '<span class="m1-pill m1-warn">' + plur(n, 'officine', 'officines') + ' à rappeler</span>' : '';
+  }
   function m1Nb(m) {
     if (m.partiel) {
       var pr = V2.ventesProgres || {};
@@ -544,7 +547,7 @@
     }
     var tot = (V2.pharmacies || []).length, per = cl1PerVentes(true);
     return '<div class="m1-big"><b data-roule="' + m.nb + '">' + fr(m.nb) + '</b><small>' + (m.nb > 1 ? 'officines actives' : 'officine active') + (m.mes != null ? ' dans tout le réseau' : '') + '</small></div>' +
-      (per ? '<div class="m1-sub cl1-def">' + esc(per) + ' · au moins une commande' + (tot > m.nb ? ' · sur ' + fr(tot) + ' officines' : '') + '</div>' : '') +
+      (per ? '<div class="m1-sub cl1-def">' + esc(per) + ' · au moins une commande' + (tot >= m.nb && tot > 0 ? ' · sur ' + fr(tot) + ' officines' : '') + '</div>' : '') +
       (m.mes != null ? '<div class="m1-sub">Vos officines : <b>' + fr(m.mes) + '</b></div>' : '');
   }
   // Mois de la marge (fichier MARGE_CLIENTS) : « janv.–sept. 2026 » et la liste des mois incomplets, dite UNE fois avec sa conséquence
@@ -561,9 +564,9 @@
     var v = D.S.caCl, f = D.M.caCl, mx = Math.max(Math.abs(v), Math.abs(f), 1e-9), diff = f ? (v - f) / Math.abs(f) * 100 : null;
     var w = function (x) { return Math.max(2, Math.min(100, Math.abs(x) / mx * 100)).toFixed(1); };
     var mot = V2.cl1Mot ? V2.cl1Mot(v, f) : '', pm = cl1PerMarge();
-    var ecart = diff == null ? '' : '<span class="cl1-ecart">' + (diff >= 0 ? '+' : '−') + cDec(Math.abs(diff)) + ' %</span>';   // 16/11/2026 : « par rapport à la moyenne » retiré, le mot juste devant le dit déjà
+    var ecart = diff == null ? '' : '<span class="cl1-ecart">' + (diff >= 0 ? '+' : '−') + cDec(Math.abs(diff)) + ' % par rapport à la moyenne</span>';
     var per = pm ? pm.lib + (pm.inc.length ? ' (' + pm.inc.join(' et ') + (pm.inc.length > 1 ? ' incomplets' : ' incomplet') + ' : à comparer avec prudence)' : '') : D.lib + D.note;
-    return '<div class="m1-vs-h"><span>Chiffre d’affaires par client et par mois</span></div>' +   // 16/11/2026 : « votre secteur face à la moyenne » retiré, les deux barres le disent juste dessous
+    return '<div class="m1-vs-h"><span>Chiffre d’affaires par client et par mois : votre secteur face à la moyenne des clients Intégral</span></div>' +
       (mot ? '<div class="cl1-mot-l">' + mot + ecart + '</div>' : '') +
       '<div class="m1-vs-r"><span>Mon secteur</span><i class="m1-trk"><i class="m1-fill" style="width:' + w(v) + '%"></i></i><b>' + esc(cEur(v)) + '</b></div>' +
       '<div class="m1-vs-r"><span>Moyenne Intégral</span><i class="m1-trk"><i class="m1-fill m1-grey" style="width:' + w(f) + '%"></i></i><b>' + esc(cEur(f)) + '</b></div>' +
@@ -572,10 +575,9 @@
   function m1Rel() {
     var l = null; try { l = V2.decrochageUI && V2.decrochageUI.liste ? V2.decrochageUI.liste(4) : null; } catch (e) {}
     if (!l || !l.length) return '';
-    var n = null; try { n = V2.decrochageUI.compte ? V2.decrochageUI.compte() : null; } catch (e) {}
-    return '<span class="m1-rel-h">' + (typeof n === 'number' && n > 0 ? fr(n) + ' à rappeler' : 'À rappeler') + '</span>' + l.map(function (x) {
+    return '<span class="m1-rel-h">À rappeler</span>' + l.map(function (x) {
       var id = encodeURIComponent(x.pid);
-      return '<a class="m1-chip" href="#pharma/' + id + '" data-u2-act="rel:' + id + '" title="' + esc(court(x.nom) + ' · ' + x.ville) + '"><b>' + esc(court(x.nom)) + '</b><span>' + esc(x.ville) + '</span></a>';
+      return '<a class="m1-chip" href="#pharma/' + id + '" data-u2-act="rel:' + id + '"><b>' + esc(court(x.nom)) + '</b><span>' + esc(x.ville) + '</span></a>';
     }).join('');
   }
 
@@ -638,8 +640,8 @@
   function m1InfosPied() {
     var i = P().infos(), c = [];
     if (i.etat !== 'ok') return '';
-    // 16/11/2026 — épuration : « N nouvelles aujourd'hui / hier » est déjà dans la phrase d'en-tête ; il ne reste ici que pour une édition ancienne (que la phrase ne cite pas)
-    if (i.nb != null && i.quand === 'ancien') c.push(plur(i.nb, 'nouvelle', 'nouvelles') + ' dans cette édition');
+    var q = i.quand === 'auj' ? ' aujourd’hui' : i.quand === 'hier' ? ' hier' : ' dans cette édition';
+    if (i.nb != null) c.push(plur(i.nb, 'nouvelle', 'nouvelles') + q);
     if (i.rupt != null) c.push(plur(i.rupt, 'médicament', 'médicaments') + ' en rupture ou en tension (France, ANSM)');
     if (i.rapp != null) c.push(plur(i.rapp, 'rappel récent', 'rappels récents') + ' de produits de parapharmacie');
     return esc(c.join(' · '));
@@ -672,7 +674,7 @@
   function m1GrpPied() {
     var R = mesGroupes(), n = R.l.length, m = P().m() || {};
     if (!n) return '';
-    return esc(plur(n, 'groupement', 'groupements') + (R.miens ? ' dans votre secteur' : '') + ' · ' + ((!m.partiel && V2.caByPharma) ? 'les quatre premiers' : 'les ventes se chargent'));   // 16/11/2026 : « par chiffre d'affaires » retiré, le titre de la case le dit
+    return esc(plur(n, 'groupement', 'groupements') + (R.miens ? ' dans votre secteur' : '') + ' · ' + ((!m.partiel && V2.caByPharma) ? 'les quatre premiers par chiffre d’affaires' : 'les ventes se chargent'));
   }
 
   // ── Offilog : les trois premiers produits de la centrale (rang, marque, produit, rayon) ──
@@ -681,7 +683,7 @@
     return '<p class="m1-sub cl1-ttl">Les trois produits les plus vendus sur Offilog, selon le classement du site</p><div class="m1-plist">' + B.slice(0, 3).map(function (b, j) {
       var nm = String(b.name || ''), k = nm.indexOf(' – '), marque = k > 0 ? nm.slice(0, k) : (b.brand || ''), reste = k > 0 ? nm.slice(k + 3) : nm;
       return '<div class="m1-prow" style="--j:' + j + '"><b class="m1-rk">' + esc(b.rank) + '</b><div><b>' + esc(titre(marque)) + '</b><span>' + esc(reste) + '</span></div>' +
-        (CATS[b.cat] ? '<span class="m1-pill m1-info">' + esc(CATS[b.cat]) + '</span>' : '') + '</div>';
+        (CATS[b.cat] ? '<span class="m1-pill m1-info">Rayon : ' + esc(CATS[b.cat]) + '</span>' : '') + '</div>';
     }).join('') + '</div>';
   }
   // 30/10/2026 — essai en production : le classement Offilog (window.OFFILOG_BEST) ne se charge qu'à l'ouverture de l'écran Offilog, donc la case restait sur
@@ -717,7 +719,7 @@
   function cOff(ctx) {
     var t = ctx.t.pharma;
     return '<section class="ac-c ac-c-pharma m1-c m1-off ac-in" style="--i:1;--ph:' + PHASE.pharma + '" aria-label="' + esc(t.nom) + '"><span class="ac-fond" aria-hidden="true"></span>' + scn('off', sceneOff(), 'ac-sc-off') +
-      top('pharma', t.nom) +
+      top('pharma', t.nom, '<span class="m1-sl" data-slot="h.pill">' + slot('h.pill', ctx) + '</span>') +
       '<div class="m1-off-b"><div data-slot="h.nb">' + slot('h.nb', ctx) + '</div><div class="m1-vs" data-slot="h.cmp">' + slot('h.cmp', ctx) + '</div></div>' +
       '<div class="m1-rel" data-slot="h.rel">' + slot('h.rel', ctx) + '</div>' +
       '<div class="m1-foot"><h3><a class="m1-go"' + lien(t, 'pharma') + '><span>Ouvrir mes officines</span></a></h3></div></section>';

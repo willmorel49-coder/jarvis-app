@@ -71,7 +71,7 @@ test('OPSO : si aucun prix public n\'est >= au nôtre, rien n\'est affiché', ()
 test('arrivée CRM (06/11/2026) : trois portes, aucune carte ; « Comparer » ne cite que les plateformes qui ont un prix', () => {
   const seul = rendre({ opso: false, farmaline: {}, maxipara: {}, cap3000: {}, citypharma: { [EAN]: 9 }, accueil: true });
   assert.match(seul, /Que voulez-vous faire \?/);
-  assert.equal((seul.match(/class="olm-porte[^"]*" data-porte="(trouver|catalogue|comparer)"/g) || []).length, 3);
+  assert.equal((seul.match(/class="olm-porte[^"]*" data-porte="(trouver|envoyer|comparer)"/g) || []).length, 3);
   assert.doesNotMatch(seul, /Produit A/, 'les cartes restent derrière « Trouver un produit »');
   assert.match(seul, /<span class="olm-p-pv">Citypharma<\/span>/);
   // contre-épreuve : deux plateformes chargées → les deux sont citées, celle sans prix ne l'est pas

@@ -735,13 +735,6 @@
     items.forEach(function (it) { if (it.ean) byEan.set(String(it.ean), it); itemsById.set(String(it.id), it); });
     idxBuilt = true;
   }
-  // Accès en LECTURE aux produits de l'écran (même classement, mêmes prix, mêmes tarifs labo) : lu par le catalogue
-  // « Le catalogue Offilog » (v2-offilog-vitrine.js). Ne change aucun calcul ; sans meilleures ventes chargées : liste vide.
-  V2.offilogItems = function (frais) {
-    if (frais) idxBuilt = false;   // des fichiers viennent d'arriver : on reconstruit, comme le fait l'écran lui-même
-    if (!idxBuilt && window.OFFILOG_BEST) { try { buildIndex(); } catch (e) {} }
-    return items || [];
-  };
 
   function matchChip(it, k) {
     if (k === 'all') return true;
@@ -944,8 +937,7 @@
       var r = RAYONS[i], n = c[r.k] || 0;
       if (!n) continue;
       var on = (S.chip === r.k) ? ' on' : '';
-      out += '<button type="button" class="offr' + on + '" data-r="' + r.k + '" onclick="V2.offFilter(\'' + r.k + '\')">' +
-        '<span class="offr-ini dk-ti" aria-hidden="true">' + esc(r.label.charAt(0)) + '</span>' +
+      out += '<button type="button" class="offr' + on + '" onclick="V2.offFilter(\'' + r.k + '\')">' +
         '<span class="offr-l">' + esc(r.label) + '</span>' +
         '<span class="offr-s">' + esc(r.sub) + '</span>' +
         '<span class="offr-n mono">' + V2.fmtNum(n) + '</span></button>';
@@ -1258,8 +1250,9 @@
     V2.render();
   };
   V2.offToggleAdv = function () { S.adv = !S.adv; V2.render(); };
-  // Écran d'arrivée : « Trouver », « Comparer » et « Le catalogue Offilog » ouvrent leur choix sous les portes.
+  // Écran d'arrivée : « Trouver » et « Comparer » ouvrent leur choix sous les portes ; « Envoyer » ouvre la fenêtre Catalogue client.
   V2.offPorte = function (k) {
+    if (k === 'envoyer') { if (V2.offCatalogue) V2.offCatalogue(); return; }
     S.porte = (S.porte === k) ? '' : k; S._porteScroll = !!S.porte;
     V2.render();
   };
@@ -2004,27 +1997,27 @@
   // Étiquette du bandeau : ce que mesure chaque chiffre de la phrase, et sur quelle date.
   function cl1Etiquette() {
     var r = cl1Releves(), d = cl1Date(r.der);
-    return '<p class="cl1-et dkl-note">Produits suivis : les meilleures ventes d\'Offilog' + (d ? ', classées d\'après les ventes de ses pharmacies clientes (relevé du ' + d + ')' : '') +
+    return '<p class="cl1-et">Produits suivis : les meilleures ventes d\'Offilog' + (d ? ', classées d\'après les ventes de ses pharmacies clientes (relevé du ' + d + ')' : '') +
       ' · Prix d\'achat : nos conditions chez Offilog · Concurrent moins cher : un prix public d\'un concurrent en ligne (TTC) est sous notre prix d\'achat, au dernier relevé.</p>';
   }
   function olmEntete(list) {
     var st = brandStats();
     var med = st.pcN > 0 ? '<p class="olm-med">Médiane : <b class="olm-num">' + Math.round(st.pcMed * 100) + '</b> % sous le prix catalogue, sur ' + V2.fmtNum(st.pcN) + ' produits</p>' : '';
-    return '<header class="dk-hd dkl-hd"><div class="dk-hd-t"><p class="dk-eyebrow">La centrale parapharmacie d\'Intégral</p>' +
-      '<h1 class="dk-title">Offilog</h1>' +
-      '<p class="dk-lede" id="olm-phrase" aria-live="polite">' + olmPhrase(list) + '</p>' + cl1Etiquette() + med + '</div></header>';
+    return '<header class="olm-hd"><span class="olm-lu" aria-hidden="true"></span>' +
+      '<div class="olm-hd-t"><div class="olm-id">' + OLM_LOGO() + '<p class="olm-eye">La centrale parapharmacie d\'Intégral</p></div>' +
+        '<p class="olm-phrase" id="olm-phrase" aria-live="polite">' + olmPhrase(list) + '</p>' + cl1Etiquette() + med + '</div></header>';
   }
 
   // ── 06/11/2026 — écran d'arrivée « bandeau bleu + 3 portes » (choix de Will) ──
   // Sous l'en-tête : trois portes. « Trouver un produit » et « Comparer nos prix » ouvrent leur choix juste dessous ;
-  // « Le catalogue Offilog » ouvre le choix 100 / 200 / 300 produits (v2-offilog-vitrine.js). Dès qu'un rayon, un tri, une comparaison ou une recherche
+  // « Envoyer un catalogue » ouvre la fenêtre Catalogue client. Dès qu'un rayon, un tri, une comparaison ou une recherche
   // est choisi, la page redevient la liste d'aujourd'hui (voir enListe dans render). Aucun calcul nouveau.
   function olmPorte(k, ic, titre, sous, pv, go) {
-    var ouv = S.porte === k;
-    return '<button type="button" class="olm-porte dk-card dkl-porte' + (ouv ? ' on' : '') + '" data-porte="' + k + '"' +
-      ' aria-expanded="' + (ouv ? 'true' : 'false') + '" aria-controls="olm-pan"' +
+    var ouv = S.porte === k, popup = (k === 'envoyer');
+    return '<button type="button" class="olm-porte' + (ouv ? ' on' : '') + '" data-porte="' + k + '"' +
+      (popup ? ' aria-haspopup="dialog"' : ' aria-expanded="' + (ouv ? 'true' : 'false') + '" aria-controls="olm-pan"') +
       ' onclick="V2.offPorte(\'' + k + '\')">' +
-      '<span class="olm-p-ic dk-ti">' + ICO(ic, 26, 1.9) + '</span>' +
+      '<span class="olm-p-ic">' + ICO(ic, 26, 1.9) + '</span>' +
       '<span class="olm-p-t">' + titre + '</span>' +
       '<span class="olm-p-s">' + sous + '</span>' +
       (pv ? '<span class="olm-p-pv">' + pv + '</span>' : '') +
@@ -2034,50 +2027,16 @@
     var ph = apercu.filter(function (it) { return it.img; }).slice(0, 4).map(function (it) { return '<span class="olm-p-ph"><img data-imgprod src="' + esc(it.img) + '" alt=""></span>'; }).join('');
     // seulement les plateformes qui ont au moins un prix chargé (même règle que le bloc « Comparer à », cmpBlock)
     var plats = cmpSources().filter(function (x) { for (var i = 0; i < (items || []).length; i++) if (x.get(items[i]) > 0) return true; return false; }).map(function (x) { return x.label; });
-    return '<div class="dk-sh dkl-q"><h2 class="olm-q">Que voulez-vous faire ?</h2></div>' +
+    return '<h2 class="olm-q">Que voulez-vous faire ?</h2>' +
       '<div class="olm-portes">' +
         olmPorte('trouver', 'search', 'Trouver un produit', 'Par nom, marque ou code EAN, ou en parcourant un rayon.', ph ? '<span class="olm-p-phs">' + ph + '</span>' : '', 'Chercher') +
-        (OPSO ? '' : olmPorte('catalogue', 'fiche', 'Le catalogue Offilog', 'Les meilleures ventes d\'Offilog en catalogue, à montrer, imprimer ou envoyer au pharmacien.', '', 'Ouvrir le catalogue')) +
+        olmPorte('envoyer', 'fiche', 'Envoyer un catalogue', 'Un PDF à montrer ou à envoyer au pharmacien, ou un fichier pour son logiciel.', '', 'Choisir un catalogue') +
         olmPorte('comparer', 'pilo', 'Comparer nos prix', 'Où un concurrent est moins cher que votre achat, et face à quelle plateforme.', plats.length ? esc(plats.join(' · ')) : '', 'Comparer') +
       '</div>';
   }
-  // Suite de l'écran d'arrivée (d4) : le produit qui monte le plus, un second chiffre, les rayons, les meilleures ventes.
-  // Tout est lu dans les produits chargés (aucun chiffre écrit en dur) ; un bloc sans donnée ne s'affiche pas.
-  // DKL_ARRIVEE_D4 : false = arrivée sans nom de produit (choix de Will du 06/11 : trois portes, aucune carte ; « Ça monte fort » et les
-  // meilleures ventes sont derrière « Trouver un produit »). true = arrivée d4 complète (tuile bleue + six meilleures ventes sous les portes).
-  var DKL_ARRIVEE_D4 = false;
-  function dklHero() {
-    var up = null, n = (items || []);
-    for (var i = 0; i < n.length; i++) { var it = n[i]; if (it.monte && (!up || it.mvt > up.mvt || (it.mvt === up.mvt && it.rank < up.rank))) up = it; }
-    return up ? '<button type="button" class="dkl-hero" onclick="V2.offSelect(\'' + esc(up.id) + '\')">' +
-      '<span class="dkl-hero-k">Ça monte fort</span>' +
-      '<span class="dkl-hero-n">+' + V2.fmtNum(up.mvt) + ' place' + (up.mvt > 1 ? 's' : '') + '</span>' +
-      '<span class="dkl-hero-t">' + esc(up.name) + '</span>' +
-      '<span class="dkl-hero-s">' + (up.brand ? esc(up.brand) + ' · ' : '') + 'rang ' + V2.fmtNum(up.rank) + ' des ventes</span></button>' : '';
-  }
-  function dklSuite(top, c) {
-    var big = DKL_ARRIVEE_D4 ? dklHero() : '';
-    var nAl = c.alerte || 0, st = brandStats();
-    var second = '';
-    if (nAl > 0 && !OPSO) second = '<button type="button" class="dk-card dkl-tile dkl-tile-bad" onclick="V2.offPorte(\'comparer\')"><span class="dkl-tile-k">Concurrent moins cher</span><span class="dkl-tile-n">' + V2.fmtNum(nAl) + '</span><span class="dkl-tile-t">produit' + (nAl > 1 ? 's' : '') + ' du classement ' + (nAl > 1 ? 'sont vendus' : 'est vendu') + ' moins cher ailleurs</span><span class="dkl-tile-s">Voir la comparaison</span></button>';
-    else if (st.nMarques > 0) second = '<button type="button" class="dk-card dkl-tile" onclick="V2.offPorte(\'trouver\')"><span class="dkl-tile-k">Marques suivies</span><span class="dkl-tile-n">' + V2.fmtNum(st.nMarques) + '</span><span class="dkl-tile-t">marques dans le classement des ventes</span><span class="dkl-tile-s">Chercher un produit</span></button>';
-    var h = (big || second) ? '<div class="dkl-duo' + (big && second ? '' : ' un') + '">' + big + second + '</div>' : '';
-    h += '<div class="dk-sh"><h2>Rayons</h2></div>' + rayons(c);
-    if (DKL_ARRIVEE_D4 && top.length) {
-      h += '<div class="dk-sh"><h2>Meilleures ventes</h2><button type="button" class="dk-link" onclick="V2.offFilter(\'all\')">Tout voir</button></div><div class="dk-group dkl-top">' +
-        top.map(function (it) {
-          var id = esc(it.id), v = '';
-          if (it.mkt && it.mkt.prec > 0 && it.mvt) v = '<span class="dk-pill ' + (it.mvt > 0 ? 'dk-pill-ok' : 'dk-pill-bad') + '">' + (it.mvt > 0 ? '+' : '−') + V2.fmtNum(Math.abs(it.mvt)) + ' place' + (Math.abs(it.mvt) > 1 ? 's' : '') + '</span>';
-          var ph = it.img ? '<span class="dkl-ph"><img data-imgprod src="' + esc(it.img) + '" alt=""></span>' : '<span class="dkl-ph dk-ti">' + ICO('pill', 22, 1.6) + '</span>';
-          return '<button type="button" class="dk-row dkl-prod" onclick="V2.offSelect(\'' + id + '\')"><span class="dkl-rk">' + (it.hasRank ? V2.fmtNum(it.rank) : '') + '</span>' + ph +
-            '<span class="dk-row-b"><span class="dk-row-t">' + esc(it.name) + '</span><span class="dk-row-s">' + esc(it.brand) + '</span></span>' + (v ? '<span class="dk-row-v">' + v + '</span>' : '') + '<span class="dk-row-c">' + ICO('chev', 16, 2.2) + '</span></button>';
-        }).join('') + '</div>';
-    }
-    return h;
-  }
   function olmPan(titre, corps) {
-    return '<section class="olm-pan dk-card dkl-pan" id="olm-pan" aria-label="' + esc(titre) + '"><div class="olm-pan-h"><h3 class="olm-pan-t">' + esc(titre) + '</h3>' +
-      '<button type="button" class="olm-pan-x dk-btn dk-btn-2" onclick="V2.offPorte(\'' + S.porte + '\')" aria-label="Refermer le choix">' + ICO('close', 18, 2) + '</button></div>' + corps + '</section>';
+    return '<section class="olm-pan" id="olm-pan" aria-label="' + esc(titre) + '"><div class="olm-pan-h"><h3 class="olm-pan-t">' + esc(titre) + '</h3>' +
+      '<button type="button" class="olm-pan-x" onclick="V2.offPorte(\'' + S.porte + '\')" aria-label="Refermer le choix">' + ICO('close', 18, 2) + '</button></div>' + corps + '</section>';
   }
 
   // ── PAGE ──────────────────────────────────────
@@ -2096,7 +2055,7 @@
       // Données : meilleures ventes (requis) + OFFILOG (veille, optionnel, en fond)
       if (!window.OFFILOG_BEST) {
         if (bestFail) {
-          root.innerHTML = V2.topbar({ back: true, coque: 'aucun' }) +
+          root.innerHTML = V2.topbar({ back: true }) +
             '<div class="v2-wrap"><div class="v2-empty">' +
               '<div class="v2-empty-ico">' + ICO('alert', 64, 1.4) + '</div>' +
               '<div class="v2-empty-t">Chargement impossible</div>' +
@@ -2108,9 +2067,9 @@
         // squelette (forme des futures cartes) au lieu du spinner sur la grille lourde
         // Le squelette porte DÉJÀ la marque : sans ça, l'écran s'ouvre sur un
         // titre générique puis saute sur le logo — un clignotement d'identité.
-        root.innerHTML = V2.topbar({ back: true, coque: 'aucun' }) +
+        root.innerHTML = V2.topbar({ back: true }) +
           '<div class="v2-wrap' + (M1 ? ' olm' : '') + '">' +
-            (M1 ? '<header class="dk-hd dkl-hd"><div class="dk-hd-t"><p class="dk-eyebrow">La centrale parapharmacie d\'Intégral</p><h1 class="dk-title">Offilog</h1></div></header>'
+            (M1 ? '<header class="olm-hd"><div class="olm-hd-t"><div class="olm-id">' + OLM_LOGO() + '<p class="olm-eye">La centrale parapharmacie d\'Intégral</p></div></div></header>'
               : '<div class="offb"><div class="offb-bar"></div><div class="offb-in">' +
               '<div class="offb-id">' +
                 '<img class="offb-logo" src="' + MOD_BASE + 'logos/offilog.png" width="444" height="70" alt="Offilog" decoding="async">' +
@@ -2303,22 +2262,19 @@
       var accueilHtml = '';
       if (enAccueil) {
         accueilHtml = olmPortes(pageItems);
-        if (!S.porte) accueilHtml += dklSuite(pageItems.slice(0, 6), c);
         if (S.porte === 'trouver') {
           accueilHtml += olmPan('Trouver un produit', searchHtml +
-            (DKL_ARRIVEE_D4 ? '' : '<div class="dkl-duo un">' + dklHero() + '</div>') + (haut.length ? '<div class="olm-bande"><div class="olm-bande-t">Les ' + haut.length + ' meilleures ventes' + (cl1Releves().der ? ' · classement des pharmacies clientes d\'Offilog, relevé du ' + cl1Date(cl1Releves().der) : '') + '</div><div class="olm-top" id="olm-top">' + haut.map(olmUne).join('') + '</div></div>' : '') +
+            (haut.length ? '<div class="olm-bande"><div class="olm-bande-t">Les ' + haut.length + ' meilleures ventes' + (cl1Releves().der ? ' · classement des pharmacies clientes d\'Offilog, relevé du ' + cl1Date(cl1Releves().der) : '') + '</div><div class="olm-top" id="olm-top">' + haut.map(olmUne).join('') + '</div></div>' : '') +
             '<div class="olm-pan-l">Choisir un rayon (nombre de produits)</div>' + rayons(c) +
             (mktChips ? '<div class="olm-pan-l">Le marché : ' + V2.fmtNum(c.monte || 0) + ' produits dont le rang s\'améliore d\'au moins 20 % au classement' + (cl1Releves().prec ? ' depuis le relevé du ' + cl1Date(cl1Releves().prec) : '') + '</div><div class="v2-segs off-adv-segs">' + mktChips + '</div>' : '') +
             '<div class="olm-pan-l">Trier par</div><div class="off-sort olm-sort">' + sortBtn('ventes', 'Meilleures ventes') + sortBtn('mvt', 'Plus forte hausse au classement') + sortBtn('prix_asc', 'Prix croissant') + sortBtn('prix_desc', 'Prix décroissant') + '</div>');
-        } else if (S.porte === 'catalogue' && !OPSO) {
-          accueilHtml += olmPan('Le catalogue Offilog', V2.offVitrinePanneau ? V2.offVitrinePanneau() : '');
         } else if (S.porte === 'comparer') {
           accueilHtml += olmPan('Comparer nos prix', verdictBand(filtered) + cmpHtml +
             (advChips ? '<div class="olm-pan-l">Repères concurrence (nombre de produits)</div><div class="v2-segs off-adv-segs">' + advChips + '</div>' : '') +
             '<div class="olm-pan-l">Trier par</div><div class="off-sort olm-sort">' + sortBtn('ecart', 'Écart concurrent') + (!SANS_PCAT && (c.avecpcat || 0) > 0 ? sortBtn('pcat', 'Plus fort écart au prix catalogue') : '') + '</div>');
         }
       }
-      root.innerHTML = V2.topbar({ back: true, coque: 'aucun' }) +         '<div class="v2-wrap' + (M1 ? ' olm' + (arr ? ' olm-ent' : '') : '') + (S.sel != null ? ' v2-detail-shift" style="--detw:392px"' : '"') + '>' +
+      root.innerHTML = V2.topbar({ back: true }) +         '<div class="v2-wrap' + (M1 ? ' olm' + (arr ? ' olm-ent' : '') : '') + (S.sel != null ? ' v2-detail-shift" style="--detw:392px"' : '"') + '>' +
           (V2.priceTabs ? V2.priceTabs('offilog') : '') +
           (M1 ? olmEntete(filtered) : brandHead()) +
           accesTest() +
@@ -2334,7 +2290,7 @@
           cmpHtml +
           '<div class="off-toolbar">' +
             '<div class="off-count"><b class="mono">' + V2.fmtNum(total) + '</b> produit' + (total > 1 ? 's' : '') + ' · ' + ctxLabel + '</div>' +
-            (V2.offVitrine ? '<button type="button" class="v2-btn v2-btn-primary" onclick="V2.offVitrine()">' + ICO('download', 15, 2) + ' Catalogue client</button>' : '') +
+            (V2.offCatalogue ? '<button type="button" class="v2-btn v2-btn-primary" onclick="V2.offCatalogue()">' + ICO('download', 15, 2) + ' Catalogue client</button>' : '') +
             advBtn +
           '</div>' +
           advPanel +

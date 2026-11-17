@@ -1,6 +1,6 @@
 // Catalogue Offilog « 500 meilleures ventes » de Transmettre (06/11/2026) :
-// la sélection est celle des ventes classées au dernier relevé (ordre du classement), le tarif laboratoire absent
-// reste vide, la marque a sa colonne.
+// la sélection est EXACTEMENT celle du bloc « meilleures ventes pour son logiciel » réglé sur 500
+// (même ordre, mêmes produits), le tarif laboratoire absent reste vide, la marque a sa colonne.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -33,21 +33,16 @@ function monter() {
   return win;
 }
 
-test('les 500 meilleures ventes : rang du dernier relevé, tous les produits classés, dans l\'ordre', () => {
+test('même sélection que le bloc de l\'écran Offilog réglé sur 500', () => {
   const w = monter();
+  w.V2.offCatLgo('n', 500);
+  const ecran = w.V2.offCatLgoDonnees().lignes.map((r) => r[2]);   // Winpharma : colonne EAN13
   const top = w.V2.offCatTopLignes();
-  // attendu, calculé ici à part : le rang suit le numéro (1..1400), tous ont un prix et un code à 13 chiffres
-  const attendu = Array.from({ length: 500 }, (_, i) => ean(i + 1));
   assert.equal(top.lignes.length, 500);
-  assert.deepEqual(Array.from(top.lignes.map((l) => l.ean)), attendu);
-  assert.deepEqual(Array.from(top.lignes.map((l) => l.rang)), attendu.map((_, i) => i + 1));
-  assert.equal(top.total, 1400);
+  assert.deepEqual(top.lignes.map((l) => l.ean), ecran);
   assert.equal(top.lignes[0].rang, 1);
   assert.equal(top.date, '2026-11-02');
   assert.equal(top.maj, '2026-10-20');
-  // la fenêtre « Catalogue client » et le bloc par logiciel n'existent plus : le 500 n'en dépend pas
-  assert.equal(w.V2.offCatLgoDonnees, undefined);
-  assert.equal(w.V2.offCatalogue, undefined);
 });
 
 test('tarif laboratoire vide hors catalogue, marque propre, écart seulement si tarif connu', () => {

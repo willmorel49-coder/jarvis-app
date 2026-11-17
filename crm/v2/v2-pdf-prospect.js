@@ -23,9 +23,7 @@
   ];
   var CLE = 'jarvis.pdfProspectStyle';
   var memo = 1;   // si le stockage du navigateur est bloqué, le choix tient au moins jusqu'au rechargement
-  // 17/11/2026 (Will) : plus de choix de style pour les listings PDF — tout le monde a le style 1 « L'essentiel » (le plus utilisé : 16 envois notés sur 25),
-  // quoi qu'un appareil ait gardé en mémoire (certains avaient le 5). Le code des styles 2 à 5 reste en place, dormant.
-  function styleLu() { return 1; }
+  function styleLu() { try { var v = +localStorage.getItem(CLE); if (v >= 1 && v <= 5) return v; } catch (e) {} return memo; }
   function styleEcrit(v) {
     memo = v;
     try { localStorage.setItem(CLE, String(v)); } catch (e) {}
@@ -425,7 +423,10 @@
   function css() {
     if (document.getElementById('pdfp-css')) return;
     var st = document.createElement('style'); st.id = 'pdfp-css';
-    st.textContent = '#pdfp-modal{z-index:130}' +
+    st.textContent = '#pdfp-modal{z-index:130}.pdfp-styles{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 18px;border-bottom:1px solid var(--line);background:var(--card)}' +
+      '.pdfp-styles .pdfp-lbl{font-size:12px;font-weight:700;color:var(--muted);margin-right:2px}' +
+      '.pdfp-styles .v2-seg{padding:7px 12px;font-size:12.5px;font-weight:700;cursor:pointer;background:var(--card);color:var(--ip-ink)}' +
+      '.pdfp-styles .v2-seg.on{background:var(--ip-blue);color:#fff;border-color:transparent}' +
       '.pdfp-page{margin:0 auto 18px;overflow:hidden;border-radius:6px;box-shadow:0 14px 44px rgba(16,19,28,.2);background:#fff}' +
       '.pdfp-page>div{transform-origin:top left}' +
       '.pdfp-wait{padding:60px 0;text-align:center;color:var(--muted);font-weight:600}';
@@ -453,6 +454,7 @@
           '<button class="v2-btn v2-btn-ghost" id="pdfp-ol">' + ICO('mail', 16) + ' <span>Outlook</span></button>' +
           '<button class="prepa-x" id="pdfp-x" title="Fermer">' + ICO('close', 18, 2) + '</button>' +
         '</div>' +
+        '<div class="pdfp-styles" id="pdfp-styles"></div>' +
         '<div class="prepa-scroll" id="pdfp-scroll"></div>' +
       '</div>';
       bd.onclick = fermer;
@@ -471,8 +473,16 @@
       return 'https://outlook.office.com/mail/deeplink/compose?to=' + encodeURIComponent(etat.to || '') +
         '&subject=' + encodeURIComponent(titre) + '&body=' + encodeURIComponent(corps);
     }
+    function boutons() {
+      bd.querySelector('#pdfp-styles').innerHTML = '<span class="pdfp-lbl">Style :</span>' + STYLES.map(function (s) {
+        return '<button class="v2-seg' + (s.id === etat.style ? ' on' : '') + '" data-s="' + s.id + '">' + s.id + ' · ' + esc(s.nom) + '</button>';
+      }).join('');
+      bd.querySelectorAll('#pdfp-styles .v2-seg').forEach(function (b) {
+        b.onclick = function () { var v = +b.getAttribute('data-s'); if (v === etat.style) return; etat.style = v; styleEcrit(v); rendre(); };
+      });
+    }
     function rendre() {
-      etat.pages = null; etat.olPret = false; olMaj();
+      boutons(); etat.pages = null; etat.olPret = false; olMaj();
       var sc = bd.querySelector('#pdfp-scroll'), demande = etat.style;
       sc.innerHTML = '<div class="pdfp-wait">Mise en page…</div>';
       construire(c, demande).then(function (pages) {

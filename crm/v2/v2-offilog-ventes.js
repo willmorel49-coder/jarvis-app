@@ -56,25 +56,6 @@
     return '';
   }
 
-  // 16/11/2026 — chiffre Offilog à côté du chiffre du grossiste (carte « Ce qu'elle commande par mois » de la fiche).
-  // pid = officine, off = WML_OFF_CA.off, ym = « AAAA-MM » du dernier mois du grossiste. Rend :
-  //  · null            : officine absente de la table (ni ventes ni note cliente) → rien du tout, jamais « non » par défaut ;
-  //  · { type:'vente', libelle:'Offilog', montant:'4 774 €', mois:'' | 'oct.', texte } : montant HT du MÊME mois que le grossiste s'il est couvert ;
-  //    sinon le dernier mois couvert, écrit (« Offilog · 4 774 € en oct. ») ;
-  //  · { type:'aucun', texte:'Offilog : aucun achat en sept.–oct. 2026' } : notée cliente, aucune vente sur la période couverte (lue dans vm).
-  function chiffreFiche(pid, off, ym) {
-    if (!off || !off.vm || !off.vm.length) return null;
-    var k = String(pid), v = off.v && off.v[k];
-    if (v) {
-      var i = off.vm.indexOf(ym); if (i < 0) i = off.vm.length - 1;
-      var mois = off.vm[i] === ym ? '' : moisCourt(off.vm[i]), montant = eur(v[i] || 0);
-      return { type: 'vente', libelle: 'Offilog', montant: montant, mois: mois, texte: 'Offilog · ' + montant + (mois ? ' en ' + mois : '') };
-    }
-    var m = off.m && off.m[k];
-    if (m && m[0] === 1) return { type: 'aucun', texte: 'Offilog : aucun achat en ' + periode(off.vm) };
-    return null;
-  }
-
   // ── 2. Périmètre ─────────────────────────────────────────────────────────
   // ctx = { commFilter: '' | prénom, restreint: bool, mes: [prénoms du commercial et collègues ouverts] }
   function portee(ctx) {
@@ -295,7 +276,7 @@
   }
 
   var O = {
-    texteFiche: texteFiche, chiffreFiche: chiffreFiche, portee: portee, classement: classement, prime: prime, aRelancer: aRelancer,
+    texteFiche: texteFiche, portee: portee, classement: classement, prime: prime, aRelancer: aRelancer,
     bloc: bloc, lier: lier, eur: eur, periode: periode, moisCourt: moisCourt, estHors: estHors,
     choisirMois: function (ym) { ETAT.mois = ym; },
     _reset: function () { ETAT.mois = null; _idx = null; }

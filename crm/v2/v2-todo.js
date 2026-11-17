@@ -395,46 +395,10 @@
     },
 
     // Formulaire de la page
-    // Formulaire d'ajout : la feuille du kit (posée sur <body>, hors de la page : un nouveau dessin de la page ne lui retire rien).
-    choisir: function (k) {
-      st.kind = k;
-      var n = document.getElementById('v2-todo-note'); if (n) n.placeholder = k === 'libre' ? 'Ce qu\'il y a à faire' : 'Une précision (facultatif)';
-    },
-    choisirRep: function (b) {
-      var seg = b.parentNode; [].forEach.call(seg.querySelectorAll('button'), function (x) { x.setAttribute('aria-checked', x === b ? 'true' : 'false'); });
-      var h = document.getElementById('v2-todo-rep'); if (h) h.value = b.getAttribute('data-rep') || '';
-    },
-    ouvrirForm: function () {
-      var ex = document.getElementById('dkt-sheet'); if (ex) ex.remove();
-      st.formOuvert = true; st.opener = document.activeElement;
-      var noms = (V2.pharmacies || []).map(function (p) { return '<option value="' + esc(p.name || '') + '">'; }).join('');
-      var w = document.createElement('div'); w.id = 'dkt-sheet'; w.className = 'dk-sheetwrap dkt-sheetwrap';
-      w.innerHTML = '<div class="dk-scrim" onclick="V2.todo.fermerForm()"></div>' +
-        '<div class="dk-sheet" role="dialog" aria-modal="true" aria-label="Ajouter une tâche" tabindex="-1">' +
-          '<div class="dk-sheet-bar"><h2>Ajouter une tâche</h2><button type="button" class="dk-btn dk-btn-2" onclick="V2.todo.fermerForm()">Fermer</button></div>' +
-          '<div class="dk-sheet-body dkt-form">' +
-            '<p class="dkt-lab">Type de tâche</p>' +
-            '<div class="dk-group dkt-kinds">' + ORDER.map(function (k) {
-              return '<label class="dk-row dkt-opt"><input type="radio" name="dkt-k" value="' + k + '"' + (st.kind === k ? ' checked' : '') + ' onchange="V2.todo.choisir(\'' + k + '\')">' +
-                '<span class="dk-row-l"><span class="dk-ti">' + ICO(KINDS[k].ico, 18, 2) + '</span></span><span class="dk-row-b"><span class="dk-row-t">' + esc(KINDS[k].l) + '</span>' + (KINDS[k].s ? '<span class="dk-row-s">' + esc(KINDS[k].s) + '</span>' : '') + '</span><span class="dkt-tick">' + CK + '</span></label>';
-            }).join('') + '</div>' +
-            '<label class="dkt-fld"><span>Officine</span><input class="dkt-in" id="v2-todo-nom" list="v2-todo-noms" type="text" placeholder="Nom de l\'officine (ou rien)" autocomplete="off"><datalist id="v2-todo-noms">' + noms + '</datalist></label>' +
-            '<label class="dkt-fld"><span>Pour le</span><input class="dkt-in" id="v2-todo-pour" type="date"></label>' +
-            '<div class="dkt-fld"><span id="dkt-repl">Répéter</span><div class="dk-seg dkt-rep" role="radiogroup" aria-labelledby="dkt-repl">' + Object.keys(REP).map(function (k) {
-              return '<button type="button" role="radio" aria-checked="' + (k === '' ? 'true' : 'false') + '" data-rep="' + k + '" onclick="V2.todo.choisirRep(this)">' + esc(REP[k]) + '</button>';
-            }).join('') + '</div><input type="hidden" id="v2-todo-rep" value=""></div>' +
-            '<label class="dkt-fld"><span>Note</span>' + micChamp('<input class="dkt-in" id="v2-todo-note" type="text" placeholder="' + (st.kind === 'libre' ? 'Ce qu\'il y a à faire' : 'Une précision (facultatif)') + '" onkeydown="if(event.key===\'Enter\')V2.todo.ajouter()">', 'Dicter la note à la voix') + '</label>' +
-            '<p class="dkt-hint">Depuis une fiche officine, le bouton « Ajouter à la to do list » remplit l\'officine et son e-mail tout seul. « Répéter » : la ligne revient chaque semaine ou chaque mois à partir de la date choisie (aujourd\'hui sinon) ; la cocher la repousse à la fois suivante.</p>' +
-            '<div class="dkt-send"><button type="button" class="dk-btn dk-btn-1" onclick="V2.todo.ajouter()">Ajouter la tâche</button></div>' +
-          '</div></div>';
-      document.body.appendChild(w);
-      var sh = w.querySelector('.dk-sheet'); if (sh) { try { sh.focus(); } catch (x) {} }
-    },
-    fermerForm: function () {
-      var w = document.getElementById('dkt-sheet'); if (w) w.remove();
-      var o = st.opener; st.formOuvert = false; st.opener = null;
-      if (o && o.focus && document.contains(o)) { try { o.focus(); } catch (x) {} }
-    },
+    choisir: function (k) { st.kind = k; rendre(); },
+    // Téléphone : le formulaire d'ajout se déplie sous le bouton « Ajouter une tâche » (l'état vit dans st, il survit à un nouveau rendu).
+    ouvrirForm: function () { st.formOuvert = true; rendre(); var e = document.getElementById('v2-todo-nom'); if (e) { try { e.focus(); } catch (x) {} } },
+    fermerForm: function () { st.formOuvert = false; rendre(); },
     ajouter: function () {
       var nomEl = document.getElementById('v2-todo-nom'), noteEl = document.getElementById('v2-todo-note'), pourEl = document.getElementById('v2-todo-pour'), repEl = document.getElementById('v2-todo-rep');
       var nom = (nomEl && nomEl.value || '').trim(), note = (noteEl && noteEl.value || '').trim(), pour = (pourEl && pourEl.value || '').trim(), rep = (repEl && REP[repEl.value] && repEl.value) || '';
@@ -445,7 +409,7 @@
                  rep: rep, ancre: rep ? pour : '' };
       st.filtre = 'afaire';
       ecrire(function (items) { return items.concat([it]); }).then(function () {
-        V2.todo.fermerForm();   // la feuille d'ajout se referme une fois la tâche ajoutée
+        st.formOuvert = false;   // téléphone : le formulaire se replie une fois la tâche ajoutée
         if (nomEl) nomEl.value = ''; if (noteEl) noteEl.value = ''; if (pourEl) pourEl.value = ''; if (repEl) repEl.value = '';
         if (rep && V2.toast) V2.toast('Rappel ajouté · ' + phraseRep(rep, pour).replace(/\.$/, '').toLowerCase());
         rendre();
@@ -570,29 +534,30 @@
   // ── PAGE ────────────────────────────────────────────────────────
   function rendre() { if (V2.route && V2.route.name === 'todo' && V2.render) V2.render(); }
   function faitAuj(it) { return !!(it.rep && !it.fait && it.dernier && isoDe(new Date(it.dernier)) === aujIso() && isoOk(it.prec)); }
-  // ── Refonte d4 (16/11/2026) : une tâche = une ligne du kit (pastille à cocher, titre, date, retard) + ses gestes dessous ──
-  var CK = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
-  function ligne(it) {
-    var K = KINDS[it.k], j = joursAvant(it), id = it.id;
-    var ouv = TD.plus[id] === true && !it.fait;   // le détail d'une ligne : fermé au départ, un toucher l'ouvre, un second le referme
-    var aIn = !it.fait && !(it.k === 'libre' && it.note);   // le champ « précision » : absent quand la note EST la tâche
-    var titre = esc(V2.todo.libelle(it));
-    var sub = [it.k === 'libre' ? K.l : '', it.fait ? (it.faitLe ? 'Fait le ' + dateFr(it.faitLe.slice(0, 10)) : 'Fait') : (it.pour ? 'Pour le ' + dateFr(it.pour) : 'Sans date'),
-      it.rep && !it.fait ? '↻ ' + REP[it.rep] : '', it.k !== 'libre' && it.note ? it.note : ''].filter(Boolean).join(' · ');
-    var b = it.fait ? null : badge(it);
-    var val = b ? '<span class="dk-row-v dkt-v' + (j < 0 ? ' dk-bad' : '') + '">' + b.t + '</span>' : '';
-    var corps = '<span class="dk-row-b"><span class="dk-row-t dkt-t">' + titre + '</span><span class="dk-row-s">' + esc(sub) + '</span></span>' + val;
-    var acts = (it.pid ? '<a class="dk-link" href="#pharma/' + esc(it.pid) + '" onclick="V2.go(\'pharma\',\'' + esc(it.pid) + '\');return false">Ouvrir la fiche de l\'officine</a>' : '') +
-      (K.mail || it.nom ? '<button type="button" class="dk-btn dk-btn-2 dkt-b" onclick="V2.todo.mail(\'' + id + '\')">' + esc(K.mail || 'Écrire un mail') + '</button>' : '') +
-      (K.docs && it.pid ? '<button type="button" class="dk-link" onclick="V2.todo.docs(\'' + id + '\')">' + esc(K.docs) + '</button>' : '') +
-      '<button type="button" class="dk-link" onclick="V2.todo.rappel(\'' + id + '\')">' + (it.pour || it.rep ? 'Modifier le rappel' : 'Ajouter un rappel') + '</button>';
-    return '<div class="dkt-it' + (it.fait ? ' is-fait' : '') + (ouv ? ' dkt-ouv' : '') + '">' +
-      '<div class="dkt-main"><button type="button" class="dk-ck" role="checkbox" aria-checked="' + !!it.fait + '" aria-label="' + (it.fait ? 'Remettre à faire' : it.rep ? 'Fait pour cette fois' : 'Marquer comme fait') + '" onclick="V2.todo.cocherVu(this,\'' + id + '\')"><i>' + CK + '</i></button>' +
-        (it.fait ? '<div class="dkt-hit">' + corps + '<button type="button" class="dk-link" onclick="V2.todo.retirer(\'' + id + '\')">Retirer de la liste</button></div>'
-          : '<button type="button" class="dkt-hit" aria-expanded="' + ouv + '" aria-controls="dkt-d-' + id + '" onclick="V2.todo.plus(this,\'' + id + '\')">' + corps + '<span class="dk-row-c dkt-chev">' + ICO('chev', 16, 2) + '</span></button>') + '</div>' +
-      (faitAuj(it) ? '<div class="dkt-der">' + CK + 'Fait aujourd\'hui <button type="button" class="dk-link" onclick="V2.todo.annulerFait(\'' + id + '\')">Annuler</button></div>' : '') +
-      (it.fait ? '' : '<div class="dkt-det" id="dkt-d-' + id + '">' + (aIn ? '<div class="dkt-more">' + micChamp('<input class="dkt-in" type="text" value="' + esc(it.note) + '" placeholder="Une précision ? (facultatif)" aria-label="Précision" onchange="V2.todo.note(\'' + id + '\',this)">', 'Dicter la précision à la voix') + '</div>' : '') +
-        '<div class="dkt-acts">' + acts + '</div></div>') + '</div>';
+  // `jour` : ligne du bandeau — la précision, les documents et le rappel se déplient sous « Plus » (ouverts d'office quand une précision existe)
+  function ligne(it, jour) {
+    var K = KINDS[it.k], b = badge(it);
+    var ouv = jour && (TD.plus[it.id] != null ? TD.plus[it.id] : !!(it.note && it.k !== 'libre'));
+    var qui = it.nom ? (it.pid ? '<a class="v2-todo-off" onclick="V2.go(\'pharma\',\'' + esc(it.pid) + '\')">' + esc(it.nom) + '</a>' : '<span class="v2-todo-off">' + esc(it.nom) + '</span>') : '';
+    var actes = it.fait ? '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.retirer(\'' + it.id + '\')">Retirer de la liste</button>'
+      : ((K.mail || it.nom ? '<button class="v2-btn v2-btn-primary v2-todo-sm" onclick="V2.todo.mail(\'' + it.id + '\')">' + ICO('fiche', 14, 2) + esc(K.mail || 'Écrire un mail') + '</button>' : '') +
+         (K.docs && it.pid ? '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.docs(\'' + it.id + '\')">' + ICO('download', 14, 2) + esc(K.docs) + '</button>' : '') +
+         '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.rappel(\'' + it.id + '\')">' + ICO('cal', 14, 2) + (it.pour || it.rep ? 'Modifier le rappel' : 'Ajouter un rappel') + '</button>' +
+         (jour ? '<button type="button" class="v2-btn v2-btn-ghost v2-todo-sm td-plus" aria-expanded="' + ouv + '" onclick="V2.todo.plus(this,\'' + it.id + '\')">' + ICO('chev', 14, 2) + '<span>' + (ouv ? 'Replier' : 'Plus') + '</span></button>' : ''));
+    var der = faitAuj(it);
+    return '<div class="v2-todo-it' + (it.fait ? ' is-fait' : '') + (jour ? ' td-jl' + (ouv ? ' td-ouv' : '') : '') + '">' +
+      '<label class="v2-todo-chk"><input type="checkbox"' + (it.fait ? ' checked' : '') + ' onchange="V2.todo.cocherVu(this,\'' + it.id + '\')" aria-label="' + (it.fait ? 'Remettre à faire' : it.rep ? 'Fait pour cette fois' : 'Marquer comme fait') + '"><span></span></label>' +
+      '<div class="v2-todo-c">' +
+        '<div class="v2-todo-l1"><span class="v2-todo-k">' + ICO(K.ico, 14, 2) + esc(K.l) + '</span>' + qui +
+          (it.rep && !it.fait ? '<span class="v2-todo-rep">↻ ' + esc(REP[it.rep]) + '</span>' : '') +
+          (b && !it.fait ? '<span class="v2-todo-b" style="color:' + b.c + '">' + b.t + (it.rep && b.t.indexOf('Dans') === 0 ? ' · ' + esc(dateFr(it.pour)) : '') + '</span>' : '') +
+          (it.fait && it.faitLe ? '<span class="v2-todo-b" style="color:var(--muted)">Fait le ' + esc(dateFr(it.faitLe.slice(0, 10))) + '</span>' : '') + '</div>' +
+        // « Autre chose » : la note EST la tâche — affichée en entier, jamais coupée dans un champ
+        (it.fait || (it.k === 'libre' && it.note) ? (it.note ? '<div class="v2-todo-n' + (it.k === 'libre' ? ' v2-todo-n-libre' : '') + '">' + esc(it.note) + '</div>' : '')
+                 : micChamp('<input class="v2-todo-n-in" type="text" value="' + esc(it.note) + '" placeholder="Une précision ? (facultatif)" onchange="V2.todo.note(\'' + it.id + '\',this)">', 'Dicter la précision à la voix')) +
+        (der ? '<div class="v2-todo-der">' + ICO('check', 13, 2) + 'Fait aujourd\'hui <button onclick="V2.todo.annulerFait(\'' + it.id + '\')">Annuler</button></div>' : '') +
+        (actes ? '<div class="v2-todo-acts">' + actes + '</div>' : '') +
+      '</div></div>';
   }
 
   // ── Les mails tout prêts (23/09, Will : « avoir des exemples de mail aussi préfaits ») ──
@@ -613,40 +578,44 @@
     if (st.mods == null) chargerMods().then(rendre);
     // 25/09, Will : « chacun doit pouvoir avoir des modèles de base et pouvoir les modifier pour lui
     // et que pour lui » → mêmes 3 modèles au départ pour tous, « Ma version » rangée avec ses modèles.
-    return '<div class="dk-sh"><h2>Les mails tout prêts</h2></div><p class="dkt-sub">Les mêmes pour toute l\'équipe au départ. Vous pouvez les modifier à votre façon : votre version ne vaut que pour vous.</p>' +
-      '<div class="dk-group dkt-g">' + MODELES.map(function (m) {
+    return '<div class="v2-todo-mh"><h2>Les mails tout prêts</h2><p>Les mêmes pour toute l\'équipe au départ. Vous pouvez les modifier à votre façon : votre version ne vaut que pour vous.</p></div>' +
+      '<div class="v2-card v2-todo-list">' + MODELES.map(function (m) {
         var x = modele(m.k), mien = !!(st.bases || {})[m.k];
-        return '<details class="dkt-mail"' + ((st.ouverts || {})[m.k] ? ' open' : '') + ' ontoggle="window.V2&&V2.todo.plier(\'' + m.k + '\',this.open)"><summary class="dk-row"><span class="dk-row-l"><span class="dk-ti">' + ICO(KINDS[m.k].ico, 18, 2) + '</span></span>' +
-          '<span class="dk-row-b"><span class="dk-row-t">' + esc(m.t) + (mien ? ' <span class="dk-pill">Ma version</span>' : '') + '</span><span class="dk-row-s">' + esc(m.s) + '</span></span><span class="dk-row-c dkt-chev">' + ICO('chev', 16, 2) + '</span></summary>' +
-          '<div class="dkt-mb">' + (m.k === 'merci' ? accesOffilog() : '') + '<div class="dkt-obj"><span>Objet</span>' + esc(x.objet) + '</div>' +
-          '<pre class="dkt-corps">' + esc(x.corps) + '</pre>' +
-          '<div class="dkt-acts dkt-acts-m"><button type="button" class="dk-btn dk-btn-1" onclick="V2.todo.preparer(\'b:' + m.k + '\')">Modifier et envoyer</button>' +
-          '<button type="button" class="dk-btn dk-btn-2" onclick="V2.todo.editerBase(\'' + m.k + '\')">' + (mien ? 'Modifier ma version' : 'Modifier ce modèle pour moi') + '</button>' +
-          (mien ? '<button type="button" class="dk-link" onclick="V2.todo.baseOrigine(\'' + m.k + '\')">Revenir au modèle d\'origine</button>' : '') +
-          '<button type="button" class="dk-link" onclick="V2.todo.copierModele(\'' + m.k + '\')">Copier le texte</button></div></div></details>';
+        return '<details class="v2-todo-mail"' + ((st.ouverts || {})[m.k] ? ' open' : '') + ' ontoggle="window.V2&&V2.todo.plier(\'' + m.k + '\',this.open)"><summary><span class="v2-todo-ico">' + ICO(KINDS[m.k].ico, 16, 2) + '</span>' +
+          '<span class="v2-todo-mt"><b>' + esc(m.t) + (mien ? ' <em class="v2-todo-mien">Ma version</em>' : '') + '</b><small>' + esc(m.s) + '</small></span><span class="v2-todo-chev">' + ICO('chev', 16, 2) + '</span></summary>' +
+          '<div class="v2-todo-mb">' + (m.k === 'merci' ? accesOffilog() : '') + '<div class="v2-todo-obj"><span>Objet</span>' + esc(x.objet) + '</div>' +
+          '<pre class="v2-todo-corps">' + esc(x.corps) + '</pre>' +
+          '<div class="v2-todo-acts"><button class="v2-btn v2-btn-primary v2-todo-sm" onclick="V2.todo.preparer(\'b:' + m.k + '\')">' + ICO('fiche', 14, 2) + 'Modifier et envoyer</button>' +
+          '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.editerBase(\'' + m.k + '\')">' + ICO('plus', 14, 2) + (mien ? 'Modifier ma version' : 'Modifier ce modèle pour moi') + '</button>' +
+          (mien ? '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.baseOrigine(\'' + m.k + '\')">Revenir au modèle d\'origine</button>' : '') +
+          '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.copierModele(\'' + m.k + '\')">' + ICO('check', 14, 2) + 'Copier le texte</button></div></div></details>';
       }).join('') + '</div>' + mesModeles();
   }
+  // ── Mes modèles (25/09, Will : « pouvoir mettre nous-mêmes des modèles et les enregistrer ») ──
   function mesModeles() {
     if (st.mods == null) { chargerMods().then(rendre); }
     var a = st.mods || [];
-    return '<div class="dk-sh"><h2>Mes modèles' + (a.length ? ' <span class="dk-sh-n">' + a.length + '</span>' : '') + '</h2></div><p class="dkt-sub">Vos propres mails, avec leurs documents joints. Personnels : chacun a les siens.</p>' +
-      (st.mods == null ? '<p class="dk-empty">Chargement…</p>'
-        : a.length ? '<div class="dk-group dkt-g">' + a.map(function (m) {
-          return '<div class="dkt-mod"><span class="dk-row-l"><span class="dk-ti" style="--dk-c:#6D4FC4">' + ICO('fiche', 18, 2) + '</span></span>' +
-            '<span class="dk-row-b"><span class="dk-row-t">' + esc(m.nom) + '</span><span class="dk-row-s">' + esc(m.objet || 'Sans objet') +
-              (m.docs.length ? ' · ' + m.docs.length + ' document' + (m.docs.length > 1 ? 's' : '') + ' joint' + (m.docs.length > 1 ? 's' : '') : '') + '</span></span>' +
-            '<span class="dkt-acts dkt-acts-r"><button type="button" class="dk-btn dk-btn-2" onclick="V2.todo.preparer(\'m:' + m.id + '\')">Utiliser</button>' +
-            '<button type="button" class="dk-link" onclick="V2.todo.editerModele(\'m:' + m.id + '\')">Modifier</button></span></div>';
-        }).join('') + '</div>' : '<p class="dk-empty">Aucun modèle pour l\'instant.</p>') +
-      '<div class="dkt-add"><button type="button" class="dk-btn dk-btn-2" onclick="V2.todo.editerModele(\'\')">' + ICO('plus', 16, 2) + 'Créer un modèle</button></div>';
+    return '<div class="v2-todo-mh"><h2>Mes modèles</h2><p>Vos propres mails, avec leurs documents joints. Personnels : chacun a les siens.</p></div>' +
+      '<div class="v2-card v2-todo-list">' +
+        (st.mods == null ? '<div class="v2-todo-empty">Chargement…</div>'
+          : a.length ? a.map(function (m) {
+            return '<div class="v2-todo-mod"><span class="v2-todo-ico">' + ICO('fiche', 16, 2) + '</span>' +
+              '<span class="v2-todo-mt"><b>' + esc(m.nom) + '</b><small>' + esc(m.objet || 'Sans objet') +
+                (m.docs.length ? ' · ' + m.docs.length + ' document' + (m.docs.length > 1 ? 's' : '') + ' joint' + (m.docs.length > 1 ? 's' : '') : '') + '</small></span>' +
+              '<span class="v2-todo-acts"><button class="v2-btn v2-btn-primary v2-todo-sm" onclick="V2.todo.preparer(\'m:' + m.id + '\')">Utiliser</button>' +
+              '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.editerModele(\'m:' + m.id + '\')">Modifier</button></span></div>';
+          }).join('') : '<div class="v2-todo-empty">Aucun modèle pour l\'instant.</div>') +
+        '<div class="v2-todo-mod-add"><button class="v2-btn v2-btn-ghost" onclick="V2.todo.editerModele(\'\')">' + ICO('plus', 15, 2) + 'Créer un modèle</button></div>' +
+      '</div>';
   }
+  // L'accès test Offilog cité dans le mail d'après rendez-vous, commun à toute l'équipe.
   function accesOffilog() {
     var r = reglages();
-    return '<div class="dkt-reg"><b>Accès test Offilog cité dans ce mail</b>' +
+    return '<div class="v2-todo-reg"><b>Accès test Offilog cité dans ce mail</b>' +
       '<span>' + (r.offilogId && r.offilogMdp ? 'Déjà rempli dans le mail, pour toute l\'équipe. À modifier ici seulement si l\'accès change.' : 'À enregistrer une fois : il se remplira ensuite tout seul dans le mail, pour toute l\'équipe.') + '</span>' +
-      '<div class="dkt-reg-f"><input class="dkt-in" id="v2-todo-oid" type="email" autocomplete="off" placeholder="Identifiant" aria-label="Identifiant" value="' + esc(r.offilogId) + '">' +
-      '<input class="dkt-in" id="v2-todo-omdp" type="text" autocomplete="off" placeholder="Mot de passe" aria-label="Mot de passe" value="' + esc(r.offilogMdp) + '">' +
-      '<button type="button" class="dk-btn dk-btn-2" onclick="V2.todo.enregistrerOffilog()">Enregistrer</button></div></div>';
+      '<div class="v2-todo-reg-f"><input id="v2-todo-oid" type="email" autocomplete="off" placeholder="Identifiant" value="' + esc(r.offilogId) + '">' +
+      '<input id="v2-todo-omdp" type="text" autocomplete="off" placeholder="Mot de passe" value="' + esc(r.offilogMdp) + '">' +
+      '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.enregistrerOffilog()">Enregistrer</button></div></div>';
   }
   V2.todo.enregistrerOffilog = function () {
     var i = document.getElementById('v2-todo-oid'), m = document.getElementById('v2-todo-omdp');
@@ -954,32 +923,19 @@
   V2.todo.reglagesMail = function () { return reglages(); };
   // Onglets de la page : mes tâches, les relances prospects, les prospects chauds (16/10/2026).
   V2.todo.onglet = function (o) { st.onglet = o; if (o !== 'taches' && V2.relances && V2.relances.rafraichir) V2.relances.rafraichir(); rendre(); };
-  // La pastille se coche et la ligne se barre sous les yeux, puis V2.todo.cocher (inchangée) range la ligne ; un second clic dans l'intervalle annule.
+  // La case se coche et la ligne se barre sous les yeux, puis V2.todo.cocher (inchangée) range la ligne ; un second clic dans l'intervalle annule.
   V2.todo.cocherVu = function (el, id) {
-    var f = el.getAttribute('aria-checked') !== 'true', l = el.closest('.dkt-it');
-    var montre = function (v) { el.setAttribute('aria-checked', v ? 'true' : 'false'); if (l) l.classList.toggle('is-fait', v); };
-    montre(f);
-    if (TD.coche[id]) { clearTimeout(TD.coche[id]); delete TD.coche[id]; return; }
+    var f = el.checked;
+    if (TD.coche[id]) { clearTimeout(TD.coche[id]); delete TD.coche[id]; if (f === el.defaultChecked) return; }
     var calme = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    TD.coche[id] = setTimeout(function () {
-      delete TD.coche[id];
-      var it = (st.items || []).find(function (x) { return x.id === id; }), revient = !!(f && it && it.rep && isoOk(it.pour));
-      V2.todo.cocher(id, f);
-      if (f && !revient) undoSnack(id);   // le « Annuler » de d4 : même geste que la case de l'onglet « Fait » (remettre à faire)
-    }, calme ? 0 : 340);
+    TD.coche[id] = setTimeout(function () { delete TD.coche[id]; V2.todo.cocher(id, f); }, calme ? 0 : 340);
   };
-  function undoSnack(id) {
-    var u = document.getElementById('dkt-undo');
-    if (!u) { u = document.createElement('div'); u.id = 'dkt-undo'; u.className = 'dkt-snack'; u.setAttribute('role', 'status'); document.body.appendChild(u); }
-    u.innerHTML = '<span>Fait aujourd\'hui</span><button type="button" onclick="V2.todo.annulerSnack(\'' + id + '\')">Annuler</button>';
-    clearTimeout(u._h); u._h = setTimeout(function () { u.remove(); }, 7000);
-  }
-  V2.todo.annulerSnack = function (id) { var u = document.getElementById('dkt-undo'); if (u) { clearTimeout(u._h); u.remove(); } V2.todo.cocher(id, false); };
-  // Un toucher sur la ligne déplie son détail (précision, mail, documents, rappel, fiche), un second le referme ; sans redessiner la page.
+  // Bandeau : « Plus » déplie la précision, les documents et le rappel d'une ligne, sans redessiner la page.
   V2.todo.plus = function (b, id) {
-    var l = b.closest('.dkt-it'), o = !(l && l.classList.contains('dkt-ouv'));
+    var l = b.closest('.v2-todo-it'), o = !(l && l.classList.contains('td-ouv'));
     TD.plus[id] = o; if (!l) return;
-    l.classList.toggle('dkt-ouv', o); b.setAttribute('aria-expanded', o);
+    l.classList.toggle('td-ouv', o); b.setAttribute('aria-expanded', o);
+    var s = b.querySelector('span'); if (s) s.textContent = o ? 'Replier' : 'Plus';
   };
   V2.todo.copierModele = function (k) {
     var x = modele(k), t = 'Objet : ' + x.objet + '\n\n' + x.corps;
@@ -992,78 +948,119 @@
     needs: [],
     render: function (root) {
       ensureCss();
-      var top = V2.topbar ? V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil', coque: 'aujourdhui' }) : '';
+      var top = V2.topbar ? V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) : '';
       if (st.items == null) {
-        root.innerHTML = top + '<div class="v2-wrap narrow dkt-w"><div class="dkt">' + tdEntete('Chargement…', '') + '</div></div>';
+        root.innerHTML = top + '<div class="v2-wrap narrow">' + tdOuvre() + tdEntete('Chargement…', '', '', '') + '</div></div>';
+        tdApres(root);
         charger().then(rendre);
         return;
       }
       var ouv = trier(V2.todo.ouverts()), faits = (st.items || []).filter(function (x) { return x.fait; })
         .sort(function (a, b) { return String(b.faitLe).localeCompare(String(a.faitLe)); });
+      // Bandeau : les tâches en retard, d'aujourd'hui, et la répétée cochée aujourd'hui (son « Annuler » reste où on l'a cochée) ; chacune n'apparaît qu'une fois.
+      var jour = ouv.filter(function (x) { var j = joursAvant(x); return (j != null && j <= 0) || faitAuj(x); });
+      var liste = st.filtre === 'fait' ? faits : ouv.filter(function (x) { return jour.indexOf(x) < 0; });
       // 16/10, Will : « dans la to do list, un truc relance et un truc prospects chauds ».
       var R = V2.relances, ong = R ? st.onglet : 'taches', nR = R ? R.nbARelancer() : null, nC = R ? R.nbChauds() : null;
-      var onglets = R ? '<div class="dk-seg dkt-tabs" role="tablist" aria-label="Ma liste">' + [['taches', 'Tâches', null], ['relances', 'Prospects à relancer', nR], ['chauds', 'Prospects chauds', nC]].map(function (o) {
-        return '<button type="button" role="tab" aria-selected="' + (ong === o[0]) + '" onclick="V2.todo.onglet(\'' + o[0] + '\')">' + o[1] + (o[2] != null ? ' <span class="dkt-n">' + o[2] + '</span>' : '') + '</button>';
+      // Les onglets SONT les capsules à compteurs de l'en-tête bleu.
+      var onglets = R ? '<div class="td-caps" role="tablist" aria-label="Ma liste">' + [['taches', 'Tâches à faire', ouv.length], ['relances', 'Prospects à relancer', nR], ['chauds', 'Prospects chauds', nC]].map(function (o) {
+        return '<button type="button" role="tab" aria-selected="' + (ong === o[0]) + '" class="td-cap' + (ong === o[0] ? ' is-on' : '') + '" onclick="V2.todo.onglet(\'' + o[0] + '\')"><span>' + o[1] + '</span>' + (o[2] != null ? '<b class="td-cnt">' + o[2] + '</b>' : '') + '</button>';
       }).join('') + '</div>' : '';
       var phrase = tdPhrase(ong, ouv, faits, nR, nC);
-      var note = '<p class="dkt-note">Demandes de rendez-vous à envoyer, suites de rendez-vous, ouvertures de compte, et tout le reste. Personnelle : chacun voit la sienne.' +
-        (st.backend === 'local' ? ' <span class="dk-pill dkt-local">Gardée sur cet appareil seulement.</span>' : '') + '</p>';
       if (ong !== 'taches') {
-        root.innerHTML = top + '<div class="v2-wrap narrow dkt-w"><div class="dkt">' + tdEntete(phrase, '') + note + onglets + '<div class="dkt-corps-r">' + R.html(ong) + '</div></div></div>';
+        root.innerHTML = top + '<div class="v2-wrap narrow">' + tdOuvre() + tdEntete(phrase, '', onglets, '') + R.html(ong) + '</div></div>';
+        tdApres(root);
         return;
       }
-      var vide = st.filtre !== 'fait' && !ouv.length;
-      var j = function (x) { return joursAvant(x); };
-      var auj = ouv.filter(function (x) { return j(x) === 0; }).length, retard = ouv.filter(function (x) { return j(x) != null && j(x) < 0; }).length;
-      var venir = ouv.filter(function (x) { return j(x) != null && j(x) > 0; }).length, sans = ouv.filter(function (x) { return j(x) == null; }).length;
-      // La bande de trois chiffres n'existe que s'il y a des tâches : jamais trois zéros.
-      var bande = st.items.length ? '<div class="dk-card dk-band dkt-band"><div class="dk-stat"><div class="dk-stat-lab">à faire aujourd\'hui</div><div class="dk-stat-num">' + auj + '</div>' +
-          '<div class="dk-stat-cmp">' + (retard ? '<b class="dk-bad">' + retard + ' en retard</b>' : '<b class="dk-ok">rien en retard</b>') + '</div></div>' +
-        '<div class="dk-stat"><div class="dk-stat-lab">à venir</div><div class="dk-stat-num">' + venir + '</div><div class="dk-stat-cmp">' + (sans ? sans + (sans > 1 ? ' tâches sans date' : ' tâche sans date') : 'sur les prochains jours') + '</div></div>' +
-        '<div class="dk-stat"><div class="dk-stat-lab">faites</div><div class="dk-stat-num">' + faits.length + '</div><div class="dk-stat-cmp">encore dans la liste</div></div></div>' : '';
-      var seg = st.items.length ? '<div class="dk-seg dkt-filtre" role="tablist" aria-label="Afficher les tâches">' +
-        '<button type="button" role="tab" aria-selected="' + (st.filtre !== 'fait') + '" onclick="V2.todo.filtrer(\'afaire\')">À faire <span class="dkt-n">' + ouv.length + '</span></button>' +
-        '<button type="button" role="tab" aria-selected="' + (st.filtre === 'fait') + '" onclick="V2.todo.filtrer(\'fait\')">Fait <span class="dkt-n">' + faits.length + '</span></button></div>' : '';
-      var groupe = function (titre, l) { return l.length ? '<div class="dk-sh"><h2>' + titre + ' <span class="dk-sh-n">' + l.length + '</span></h2></div><div class="dk-group dkt-g">' + l.map(ligne).join('') + '</div>' : ''; };
-      var corps;
-      if (st.filtre === 'fait') corps = faits.length ? groupe('Faites', faits) : '<div class="dk-card dkt-vide"><p class="dk-empty">Rien de coché pour l\'instant.</p></div>';
-      else if (!ouv.length) corps = '<div class="dk-card dkt-vide"><div class="dk-empty-a"><p class="dk-empty">' + (st.items.length ? 'Ajoutez la suivante.' : 'Ajoutez votre première tâche.') + '</p>' +
-        '<button type="button" class="dk-btn dk-btn-2" onclick="V2.todo.ouvrirForm()">' + ICO('plus', 16, 2) + 'Ajouter une tâche</button></div></div>';
-      else corps = groupe('En retard ou aujourd\'hui', ouv.filter(function (x) { return j(x) != null && j(x) <= 0; })) +
-        groupe('À venir', ouv.filter(function (x) { return j(x) != null && j(x) > 0; })) + groupe('Sans date', ouv.filter(function (x) { return j(x) == null; }));
-      root.innerHTML = top + '<div class="v2-wrap narrow dkt-w"><div class="dkt">' +
-        tdEntete(phrase, vide ? '' : '<button type="button" class="dk-btn dk-btn-1" onclick="V2.todo.ouvrirForm()">' + ICO('plus', 18, 2) + 'Ajouter une tâche</button>') + note + bande + onglets +
-        (seg ? '<div class="dkt-seg2">' + seg + '</div>' : '') + corps + mailsPrets() + '</div></div>';
+      var bandeau = ouv.length ? '<section class="td-jour" aria-labelledby="td-jour-h"><h2 class="td-jour-h" id="td-jour-h">Pour aujourd\'hui</h2>' +
+        (jour.length ? '<div class="td-jour-ls">' + jour.map(function (it) { return ligne(it, true); }).join('') + '</div>' : '<p class="td-jour-vide">Rien d\'urgent aujourd\'hui : toute la liste est juste dessous.</p>') + '</section>' : '';
+      var noms = (V2.pharmacies || []).map(function (p) { return '<option value="' + esc(p.name || '') + '">'; }).join('');
+      root.innerHTML = top +
+        '<div class="v2-wrap narrow">' + tdOuvre() +
+          tdEntete(phrase, '<p class="td-expl">Demandes de rendez-vous à envoyer, suites de rendez-vous, ouvertures de compte, et tout le reste. Personnelle : chacun voit la sienne.' +
+            (st.backend === 'local' ? ' <b class="td-local">Gardée sur cet appareil seulement.</b>' : '') + '</p>', onglets, bandeau) +
+          (st.formOuvert ? '' : '<button class="v2-btn v2-btn-primary v2-todo-ajbtn" onclick="V2.todo.ouvrirForm()">' + ICO('plus', 16, 2) + 'Ajouter une tâche</button>') +
+          '<div class="v2-card v2-todo-add' + (st.formOuvert ? '' : ' is-ferme') + '">' +
+            '<div class="v2-todo-fh"><button class="v2-btn v2-btn-ghost v2-todo-fermer" onclick="V2.todo.fermerForm()">Fermer</button></div>' +
+            '<p class="td-choix-l td-choix-t">Type de tâche :</p>' +
+            '<div class="v2-todo-kinds">' + ORDER.map(function (k) {
+              return '<button class="v2-todo-kind' + (st.kind === k ? ' is-on' : '') + '" onclick="V2.todo.choisir(\'' + k + '\')">' + ICO(KINDS[k].ico, 15, 2) + '<span>' + esc(KINDS[k].l) + '</span></button>';
+            }).join('') + '</div>' +
+            '<div class="v2-todo-form">' +
+              '<label><span>Officine</span><input id="v2-todo-nom" list="v2-todo-noms" type="text" placeholder="Nom de l\'officine (ou rien)" autocomplete="off"><datalist id="v2-todo-noms">' + noms + '</datalist></label>' +
+              '<label><span>Pour le</span><input id="v2-todo-pour" type="date"></label>' +
+              '<label><span>Répéter</span><select id="v2-todo-rep">' + Object.keys(REP).map(function (k) { return '<option value="' + k + '">' + esc(REP[k]) + '</option>'; }).join('') + '</select></label>' +
+              '<label class="v2-todo-wide"><span>Note</span>' + micChamp('<input id="v2-todo-note" type="text" placeholder="' + (st.kind === 'libre' ? 'Ce qu\'il y a à faire' : 'Une précision (facultatif)') + '" onkeydown="if(event.key===\'Enter\')V2.todo.ajouter()">', 'Dicter la note à la voix') + '</label>' +
+              '<button class="v2-btn v2-btn-primary" onclick="V2.todo.ajouter()">' + ICO('plus', 15, 2) + 'Ajouter</button>' +
+            '</div>' +
+            '<div class="v2-todo-hint">Depuis une fiche officine, le bouton « Ajouter à la to do list » remplit l\'officine et son e-mail tout seul. ' +
+              '« Répéter » : la ligne revient chaque semaine ou chaque mois à partir de la date choisie (aujourd\'hui sinon) ; la cocher la repousse à la fois suivante.</div>' +
+          '</div>' +
+          // 12/11/2026 — Façon 1 (lot A) : pastilles de choix précédées d'un mot, compteurs hors du libellé, ce que contient chaque choix dit en clair
+          '<div class="v2-todo-tools"><span class="td-choix-l">Afficher :</span><div class="v2-todo-seg" role="group" aria-label="Afficher les tâches">' +
+            '<button class="' + (st.filtre !== 'fait' ? 'is-on' : '') + '" aria-pressed="' + (st.filtre !== 'fait') + '" onclick="V2.todo.filtrer(\'afaire\')">Tâches à faire <b class="td-cnt-s">' + ouv.length + '</b></button>' +
+            '<button class="' + (st.filtre === 'fait' ? 'is-on' : '') + '" aria-pressed="' + (st.filtre === 'fait') + '" onclick="V2.todo.filtrer(\'fait\')">Tâches faites <b class="td-cnt-s">' + faits.length + '</b></button></div></div>' +
+          (jour.length && st.filtre !== 'fait' && liste.length ? '<p class="td-suite">Ensuite</p>' : '') +
+          (liste.length ? '<div class="v2-card v2-todo-list td-taches">' + liste.map(function (it) { return ligne(it); }).join('') + '</div>'
+            : '<div class="v2-card v2-todo-empty">' + (st.filtre === 'fait' ? 'Rien de coché pour l\'instant.' : jour.length ? 'Rien d\'autre à faire pour l\'instant.' : 'Rien à faire pour l\'instant — la liste est vide.') + '</div>') +
+          mailsPrets() +
+        '</div></div>';
+      tdApres(root);
     }
   };
 
-  // ── L'en-tête du kit : date, titre, UNE phrase calculée, action ──
-  function tdN(n) { return '<b>' + n + '</b>'; }
+  // ── L'en-tête bleu (veine « maquette 1 », recette d'Infos du jour) : date, titre, UNE phrase calculée, capsules-onglets ──
+  function tdN(n) { return '<b class="td-num">' + n + '</b>'; }
   function tdPl(n, un, plus) { return tdN(n) + ' ' + (n > 1 ? plus : un); }
   // Faite des nombres que la page affiche dessous ; jamais « 0 tâche ».
   function tdPhrase(ong, ouv, faits, nR, nC) {
     if (ong === 'relances') return nR == null ? 'Le suivi de vos envois aux prospects se prépare…' : nR ? tdPl(nR, 'prospect à relancer', 'prospects à relancer') + ' maintenant.' : 'Aucune relance à faire maintenant.';
     if (ong === 'chauds') return nC == null ? 'Le suivi de vos prospects se prépare…' : nC ? tdPl(nC, 'prospect chaud', 'prospects chauds') + ' : le moment de les pousser à tester.' : 'Aucun prospect chaud pour l\'instant.';
-    if (!ouv.length) return faits.length ? 'Rien à faire pour l\'instant : tout est coché.' : 'Rien à faire pour l\'instant.';
+    if (!ouv.length) return faits.length ? 'Rien à faire pour l\'instant : tout est coché.' : 'Rien à faire pour l\'instant. Ajoutez votre première tâche.';
     var j = 0, r = 0;
     ouv.forEach(function (x) { var d = joursAvant(x); if (d === 0) j++; else if (d != null && d < 0) r++; });
     if (!j && !r) return 'Rien d\'urgent aujourd\'hui, ' + tdPl(ouv.length, 'tâche', 'tâches') + ' à faire en tout.';
     return (j ? tdPl(j, 'tâche pour aujourd\'hui', 'tâches pour aujourd\'hui') + (r ? ', ' + tdN(r) + ' en retard' : '') : tdPl(r, 'tâche en retard', 'tâches en retard')) + ', ' + tdN(ouv.length) + ' à faire en tout.';
   }
-  function tdEntete(phrase, action) {
+  function tdOuvre() {
+    if (!TD.vu) { TD.t = Date.now(); TD.stop = false; }
+    var arr = !TD.vu || (!TD.stop && Date.now() - TD.t < 900), sk = Date.now() - TD.t;   // un second dessin dans les 900 ms poursuit l'arrivée là où elle en est ; après un geste, plus jamais
+    TD.vu = true;
+    return '<div class="td-m1 td-m1-bandeau' + (arr ? ' td-ent' : '') + '"' + (arr && sk > 30 ? ' style="--td-sk:-' + sk + 'ms"' : '') + '>';
+  }
+  function tdEntete(phrase, expl, caps, dans) {
     var d = new Date(), date = JOURS[d.getDay()] + ' ' + dateFr(aujIso());
-    return '<header class="dk-hd dkt-hd"><div class="dk-hd-t"><p class="dk-eyebrow">' + esc(date) + '</p><h1 class="dk-title">To do list</h1><p class="dk-lede">' + phrase + '</p></div>' +
-      (action ? '<div class="dk-actions">' + action + '</div>' : '') + '</header>';
+    return '<header class="td-hd"><span class="td-lu" aria-hidden="true"></span>' +
+      '<div class="td-hd-t"><div class="td-tt"><div><p class="td-eye">' + esc(date) + '</p><h1 class="td-h1">To do list</h1></div></div>' +
+      '<p class="td-phrase">' + phrase + '</p>' + expl + caps + '</div>' + dans + '</header>';
+  }
+  function tdStop() { TD.stop = true; var r = document.querySelector('.td-ent'); if (r) r.classList.remove('td-ent'); }
+  function tdApres(root) {   // après le dessin : la scène en pause hors écran ; à l'arrivée, les compteurs comptent
+    var r = root.querySelector('.td-m1'), h = r && r.querySelector('.td-hd'); if (!r || !h) return;
+    if (TD.obs) TD.obs.disconnect();
+    if (window.IntersectionObserver) { TD.obs = new IntersectionObserver(function (es) { es.forEach(function (x) { h.classList.toggle('td-hors', !x.isIntersecting); }); }); TD.obs.observe(h); }
+    if (document.hidden) h.classList.add('td-pause');
+    if (!r.classList.contains('td-ent')) return;
+    var calme = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!calme) [].slice.call(r.querySelectorAll('.td-num,.td-cnt')).forEach(function (el) {
+      var fin = +el.textContent, t0 = 0, sk = Date.now() - TD.t; if (!(fin > 0)) return;
+      el.textContent = '0';
+      requestAnimationFrame(function pas(ts) {
+        t0 = t0 || ts - sk; var p = Math.min((ts - t0) / 600, 1);
+        if (TD.stop || p >= 1) { el.textContent = fin; return; }
+        el.textContent = Math.round(fin * (1 - Math.pow(1 - p, 3))); requestAnimationFrame(pas);
+      });
+    });
+    setTimeout(function () { r.classList.remove('td-ent'); }, Math.max(0, 900 - (Date.now() - TD.t)));
   }
   if (!V2._tdEcoute) {
     V2._tdEcoute = true;
-    // Échap ferme la feuille d'ajout ; quitter l'écran la ferme aussi, avec son « Annuler » de fin de coche.
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && document.getElementById('dkt-sheet')) { e.stopPropagation(); V2.todo.fermerForm(); } }, true);
-    window.addEventListener('hashchange', function () {
-      if ((location.hash || '').replace(/^#/, '').split('/')[0] !== 'todo') {
-        V2.todo.fermerForm(); var u = document.getElementById('dkt-undo'); if (u) u.remove();
-      }
-    });
+    // Le premier geste arrête l'arrivée (la page entière se redessine à chaque geste : rien ne doit rejouer).
+    document.addEventListener('pointerdown', tdStop, true);
+    document.addEventListener('keydown', tdStop, true);
+    // On lit l'adresse elle-même, quel que soit l'ordre des écouteurs (V2.route peut dater encore de l'écran quitté).
+    window.addEventListener('hashchange', function () { if ((location.hash || '').replace(/^#/, '').split('/')[0] !== 'todo') { TD.vu = false; TD.stop = false; } });
+    document.addEventListener('visibilitychange', function () { var h = document.querySelector('.td-hd'); if (h) h.classList.toggle('td-pause', document.hidden); });
   }
 
   function ensureCss() {

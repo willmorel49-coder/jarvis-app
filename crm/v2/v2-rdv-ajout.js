@@ -214,11 +214,11 @@
         message: 'Indiquez la date.' });
       if (!q.heure) return Promise.resolve({ ok: false, raison: 'heure',
         message: 'Indiquez l’heure.' });
-      // 16/11/2026 — Will : un rendez-vous déjà passé se note librement (garder la trace d'une visite faite). Le refus
-      // « Cette date est déjà passée. » est retiré ; `passe` est rendu dans la réponse pour que l'écran le dise.
-      // « Aujourd'hui » se lit en heure locale (toISOString donnait la veille entre minuit et 1 h-2 h à Paris).
-      var dj = new Date(), auj = dj.getFullYear() + '-' + ('0' + (dj.getMonth() + 1)).slice(-2) + '-' + ('0' + dj.getDate()).slice(-2);
-      var passe = q.date < auj;
+      // Une date passée n'est pas une faute improbable : le champ date d'un
+      // téléphone se manipule vite. On refuse plutôt que de créer un
+      // rendez-vous invisible dans l'agenda, qui ne montre que l'à-venir.
+      if (q.date < new Date().toISOString().slice(0, 10))
+        return Promise.resolve({ ok: false, raison: 'passe', message: 'Cette date est déjà passée.' });
 
       // Sans position, le moteur de créneaux ne sait pas placer ce rendez-vous
       // dans la géographie de la journée : les suivants seraient proposés
@@ -262,7 +262,7 @@
           return (r && r.error && r.status === 0 && V2.hl) ? garder(ligne) : r;
         });
       }).then(function (r) {
-        if (r && r.attente) return { ok: true, id: r.data.id, attente: true, passe: passe };
+        if (r && r.attente) return { ok: true, id: r.data.id, attente: true };
         if (r && r.error) {
           // La règle « pas de chevauchement » de la base : deux rendez-vous ne
           // peuvent pas se marcher dessus. Le message brut ne dirait rien.
@@ -273,7 +273,7 @@
           }
           return { ok: false, raison: 'base', message: 'Enregistrement impossible.' };
         }
-        return { ok: true, id: r && r.data && r.data.id, passe: passe };
+        return { ok: true, id: r && r.data && r.data.id };
       }).catch(function () {
         return { ok: false, raison: 'reseau', message: 'Enregistrement impossible.' };
       });
@@ -296,8 +296,7 @@
         contact: val('rda-contact'), tel: val('rda-tel'), note: val('rda-note')
       }).then(function (r) {
         if (!r.ok) { rendre(); dire(esc(r.message), 'var(--rose,#E0556E)'); return; }
-        // 16/11/2026 — date passée : le message le dit
-        V2.toast(r.attente ? 'Rendez-vous gardé sur l’appareil : il sera vérifié et enregistré au retour du réseau.' : (r.passe ? 'Rendez-vous noté (date passée).' : 'Rendez-vous noté.'));
+        V2.toast(r.attente ? 'Rendez-vous gardé sur l’appareil : il sera vérifié et enregistré au retour du réseau.' : 'Rendez-vous noté.');
         choisie = null;
         V2.go('rdvplanning');
       });
@@ -383,9 +382,8 @@
 
           '<div class="rda-sec">Quand ?</div>' +
           '<div class="rda-box rda-champs">' +
-            // 16/11/2026 — heure à la minute (step 60, avant : 900 = quart d'heure)
             '<div><b>Date</b><input type="date" id="rda-date" value="' + esc(dDef) + '" /></div>' +
-            '<div><b>Heure</b><input type="time" id="rda-heure" value="09:30" step="60" /></div>' +
+            '<div><b>Heure</b><input type="time" id="rda-heure" value="09:30" step="900" /></div>' +
             '<div><b>Durée</b><input type="number" id="rda-duree" min="15" max="240" step="15" value="45" />' +
               '<small style="color:var(--muted);font-size:12px">minutes</small></div>' +
           '</div>' +
