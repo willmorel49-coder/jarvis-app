@@ -1249,7 +1249,7 @@
     if (el._h !== h) { el._h = h; el.innerHTML = h; }
     var perEl = scope.querySelector('#og-pot-per'); if (perEl) perEl.textContent = per ? 'Rythme ' + per : '';
     var note = scope.querySelector('#og-pot-note');
-    if (note) note.textContent = 'Achats HT par mois si les pharmacies commandaient les ' + P.produits + ' produits du catalogue au rythme moyen du réseau Intégral Pharma ('
+    if (note) note.textContent = 'Achats HT par mois si les pharmacies commandaient les ' + P.produits + ' produits du catalogue au rythme moyen du réseau d\'Intégral Pharma, groupe de grossistes-répartiteurs ('
       + (R.periode ? MOIS_L[R.periode.de - 1] + ' à ' + MOIS_L[R.periode.a - 1] + ' ' + R.periode.annee : 'ventes réelles')
       + ', retours déduits), y compris les pharmacies qui ne les prennent pas encore. Montants au prix net du catalogue. '
       + 'Si chaque adhérente prenait chaque produit au rythme d\'une pharmacie qui le commande déjà : ' + euros(P.plafond) + ' par mois, un maximum et non une prévision. '
