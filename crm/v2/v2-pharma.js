@@ -5013,14 +5013,16 @@
   V2.pharmaToggleSel = function (btn) {
     if (!selCips) selCips = new Set();
     var cip = btn.getAttribute('data-cip');
+    // 17/11/2026 : pages groupement et liste, le « + » existe deux fois par ligne (colonne sur ordinateur, sous le nom au téléphone) — les deux suivent
+    var ligne = btn.closest && btn.closest('tr');
+    var jumeaux = ligne ? [].filter.call(ligne.querySelectorAll('.opp-add'), function (b) { return b.getAttribute('data-cip') === cip; }) : [];
+    if (jumeaux.indexOf(btn) < 0) jumeaux.push(btn);
     if (selCips.has(cip)) {
       selCips.delete(cip);
-      btn.classList.remove('on');
-      btn.innerHTML = ICO('plus', 15);
+      jumeaux.forEach(function (b) { b.classList.remove('on'); b.innerHTML = ICO('plus', 15); });
     } else {
       selCips.add(cip);
-      btn.classList.add('on');
-      btn.innerHTML = ICO('check', 15);
+      jumeaux.forEach(function (b) { b.classList.add('on'); b.innerHTML = ICO('check', 15); });
       V2.toast('Retenu pour le rendez-vous');
     }
     // Surlignage de la ligne (fiche officine master-détail)
@@ -5685,20 +5687,24 @@
     var plus = dkg && o.rows.length > 10 && !dkgToutes[c.key];
     var trs = o.rows.map(function (r, i) {
       var on = !!(selCips && selCips.has(r.cip));
+      // 17/11/2026 (Will, choix « Sous le nom ») : au téléphone, « + » et « retirer » passent sous le nom, à côté du CIP, et leurs colonnes
+      // disparaissent (v2-dk-groupements.css). Les deux boutons existent donc deux fois par ligne ; pharmaToggleSel coche les deux ensemble.
+      var btnSel = '<button type="button" class="opp-add' + (on ? ' on' : '') + '" data-cip="' + esc(r.cip) + '" onclick="V2.pharmaToggleSel(this)" aria-label="Sélectionner pour le PDF">' + ICO(on ? 'check' : 'plus', 15) + '</button>';
+      var btnRm = enc ? '<button type="button" class="ph-rmprod" title="Retirer ce produit de la liste" onclick="V2.itemRemove(\'' + enc + '\',\'' + esc(r.cip) + '\')">' + ICO('close', 14, 2) + '</button>' : '';
       return '<tr' + (plus && i >= 10 ? ' class="dkg-plus" hidden' : '') + '>' +
         '<td class="num" style="color:var(--muted-2);width:30px;text-align:right;font-family:var(--mono)">' + (i + 1) + '</td>' +
-        '<td><span class="v2-cat-prod">' + esc(r.designation) + '</span>' + (r.froid ? ' <span class="ph-froid">FROID</span>' : '') + (r.manual ? ' <span class="ph-manual">ajouté</span>' : '') + '<span class="dkg-cip-sous">' + esc(r.cip) + '</span></td>' +   // 17/11/2026 (Will) : au téléphone, le CIP passe sous le nom (v2-dk-groupements.css)
+        '<td><span class="v2-cat-prod">' + esc(r.designation) + '</span>' + (r.froid ? ' <span class="ph-froid">FROID</span>' : '') + (r.manual ? ' <span class="ph-manual">ajouté</span>' : '') + '<span class="dkg-sous"><span class="dkg-cip-sous">' + esc(r.cip) + '</span><span class="dkg-act-sous">' + btnSel + btnRm + '</span></span></td>' +   // 17/11/2026 (Will) : au téléphone, le CIP passe sous le nom (v2-dk-groupements.css)
         '<td class="mono dkg-cip" style="color:var(--muted);font-size:13px">' + esc(r.cip) + '</td>' +
         '<td class="num cat-ip" style="color:var(--ip-blue);font-weight:700">' + (r.prix_ip > 0 ? V2.fmtEur(r.prix_ip) + (r.offre ? ' <span class="ph-offre">offre</span>' : '') : '—') + '</td>' +
         '<td class="num" style="color:var(--c-mint);font-weight:700">' + (r.remise > 0 ? String(r.remise).replace('.', ',') + '&nbsp;%' : '—') + '</td>' +   // 17/11/2026 (Will) : « 3,9 % » avec virgule, comme la fiche
         '<td class="num" style="font-weight:800;white-space:nowrap" title="' + r.sortie + ' pharmacies sur ' + panel + '">' + partTxt(r, panel) + '</td>' +
-        '<td style="width:46px;text-align:center"><button type="button" class="opp-add' + (on ? ' on' : '') + '" data-cip="' + esc(r.cip) + '" onclick="V2.pharmaToggleSel(this)" aria-label="Sélectionner pour le PDF">' + ICO(on ? 'check' : 'plus', 15) + '</button></td>' +
-        (enc ? '<td style="width:38px;text-align:center"><button type="button" class="ph-rmprod" title="Retirer ce produit de la liste" onclick="V2.itemRemove(\'' + enc + '\',\'' + esc(r.cip) + '\')">' + ICO('close', 14, 2) + '</button></td>' : '') +
+        '<td class="dkg-act" style="width:46px;text-align:center">' + btnSel + '</td>' +
+        (enc ? '<td class="dkg-act" style="width:38px;text-align:center">' + btnRm + '</td>' : '') +
       '</tr>';
     }).join('');
     var body = '<div class="v2-cat-table-wrap"><table class="v2-table">' +
       '<thead><tr><th class="num">#</th><th>Produit</th><th class="dkg-cip">CIP</th><th class="num">Prix net</th><th class="num" title="Abandon de marge">Abandon de marge</th>' +
-      '<th class="num">Part des officines qui le commandent</th><th></th>' + (enc ? '<th></th>' : '') + '</tr></thead><tbody>' + trs + '</tbody></table></div>';
+      '<th class="num">Part des officines qui le commandent</th><th class="dkg-act"></th>' + (enc ? '<th class="dkg-act"></th>' : '') + '</tr></thead><tbody>' + trs + '</tbody></table></div>';
     if (dkg && o.rows.length > 10) body += '<button type="button" class="dk-btn dk-btn-2 dkg-voir dkg-voir-cat" aria-expanded="' + !plus + '" onclick="V2.dkgCat(this,\'' + c.key + '\')">' + (plus ? 'Voir les ' + V2.fmtNum(o.rows.length) + ' produits' : 'Replier la liste') + '</button>';
     return '<div class="v2-card v2-cat open">' + head + body + '</div>';
   }

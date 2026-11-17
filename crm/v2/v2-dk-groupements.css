@@ -128,3 +128,12 @@ html .dkg.dkg .dkg-cip-sous { display: none; }
   html .dkg.dkg .v2-cat .v2-table th:first-child, html .dkg.dkg .v2-cat .v2-table td:first-child { padding-left: 12px; }
   html .dkg.dkg .v2-cat .v2-table th:last-child, html .dkg.dkg .v2-cat .v2-table td:last-child { padding-right: 12px; }
 }
+/* 17/11/2026 (Will, choix « Sous le nom ») : au téléphone, les boutons « + » (sélection pour le PDF) et « retirer » rejoignent le CIP
+   sous le nom du produit, et leurs colonnes disparaissent : plus rien à faire glisser. Ordinateur inchangé (boutons dans leurs colonnes). */
+html .dkg.dkg .dkg-act-sous { display: none; }
+@media (max-width: 600px) {
+  html .dkg.dkg .v2-cat .v2-table .dkg-act { display: none; }
+  html .dkg.dkg .v2-cat .v2-table .dkg-sous { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 2px; }
+  html .dkg.dkg .v2-cat .v2-table .dkg-sous .dkg-cip-sous { margin-top: 0; }
+  html .dkg.dkg .v2-cat .v2-table .dkg-act-sous { display: inline-flex; gap: 8px; }
+}
