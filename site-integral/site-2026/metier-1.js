@@ -49,7 +49,8 @@
     return o;
   };
   /* un trait de lumière orange qui parcourt les contours clés d'un picto de métier */
-  MT.CLES = [[2, 3], [2, 4], [0], [0]];
+  /* 17/11/2026 : cinquième métier (pharmacien responsable) — contour du bouclier puis la croix */
+  MT.CLES = [[2, 3], [2, 4], [0], [0], [0, 1]];
   MT.met = function(svg, i){
     var g = MT.split(svg), o = mk("g", { "class": "mt-g mt-m" });
     MT.CLES[i].forEach(function(key, h){
