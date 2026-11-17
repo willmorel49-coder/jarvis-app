@@ -183,9 +183,14 @@ r = parse(D.suite_off({'1': [0, 0]}, {'Anne'}))
 assert '6' not in r['v'] and '7' not in r['v']
 r = parse(D.suite_off({'6': [0, 0], '7': [0, 0]}, {'Anne'}))
 assert r['va']['6'] == '' and r['va']['7'] == '' and 'DENIS DDD' not in json.dumps(r), r
-# jeu OPSO (aucun `mes`) : AUCUNE des clés de ventes
+# ni `mes` ni `opso` : AUCUNE des clés de ventes
 r = parse(D.suite_off({'1': [0, 0]}))
 assert not ({'v', 'va', 'vn', 'vm', 'pr'} & set(r)), r
+# jeu OPSO (17/11/2026, Will : Offilog au Pilotage OPSO) : mois + ventes de SES adhérentes, jamais commercial, nom ni prime
+r = parse(D.suite_off({'1': [0, 0], '4': [0, 0]}, opso=True))
+assert r['vm'] == ['2026-09', '2026-10'] and r['v'] == {'1': [10, 20]}, r   # 4 sans vente ; 5 (à Anne) hors jeu : absent
+assert not ({'va', 'vn', 'pr'} & set(r)) and 'Anne' not in json.dumps(r) and 'P1' not in json.dumps(r), r
+assert set(r['m']) == {'1', '4'}
 # aucune vente dans la table : le jeu garde exactement la forme d'avant
 D.OFF_CA = {'d': ['2026-10-02'], 'm': {'1': [1, 0]}}
 assert parse(D.suite_off({'1': [0, 0]}, {'Anne'})) == {'d': ['2026-10-02'], 'm': {'1': [1, 0]}}

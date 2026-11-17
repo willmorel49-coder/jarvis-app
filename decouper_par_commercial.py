@@ -69,13 +69,15 @@ RE_OFF_CA = re.compile(r'window\.WML_OFF_CA = \{n:\d+, m:(\{[^{}]*\})((?:, off:\
 OFF_CA = None   # clé off de wml-officines-ca.js (« client Offilog », offilog_clients.py), lue dans main()
 
 
-def suite_off(mes_ca, mes=None):
+def suite_off(mes_ca, mes=None, opso=False):
     """« , off:{…} » réduit aux pharmacies du jeu : un commercial ne reçoit « client Offilog »
     que pour les officines dont son jeu porte déjà les chiffres, jamais la liste du réseau.
     `mes` (prénoms du jeu) : ajoute les ventes Offilog par pharmacie (vm, v, va, vn, pr, 06/11/2026) —
     une pharmacie y entre si elle est dans mes_ca OU si le fichier Offilog l'attribue à un prénom du jeu.
     Une pharmacie attribuée à quelqu'un hors du jeu (collègue non ouvert, « hors JARVIS », « sans
-    commercial ») n'y va que par mes_ca, et son attribution est alors effacée. Sans `mes` (jeu OPSO) : aucune."""
+    commercial ») n'y va que par mes_ca, et son attribution est alors effacée.
+    `opso` (jeu OPSO, 17/11/2026 — Will : Offilog au Pilotage OPSO) : vm et v de SES adhérentes (mes_ca)
+    seulement — jamais va (commercial), vn (nom du fichier) ni pr (prime). Ni `mes` ni `opso` : aucune vente."""
     if not OFF_CA:
         return ''
     m = {k: v for k, v in OFF_CA['m'].items() if k in mes_ca}
@@ -89,6 +91,9 @@ def suite_off(mes_ca, mes=None):
         off['vn'] = {k: (OFF_CA.get('vn') or {})[k] for k in gardes if k in (OFF_CA.get('vn') or {})}
         if OFF_CA.get('pr'):
             off['pr'] = OFF_CA['pr']
+    elif opso and OFF_CA.get('v'):
+        off['vm'] = OFF_CA['vm']
+        off['v'] = {k: v for k, v in OFF_CA['v'].items() if k in mes_ca}
     if OFF_CA.get('b'):   # 16/10/2026 — offre Sanofi / UPSA : réduite aux officines du jeu, exactement comme m
         off['bd'] = OFF_CA['bd']
         off['b'] = {k: v for k, v in OFF_CA['b'].items() if k in mes_ca}
@@ -486,7 +491,7 @@ def jeu_opso(officines, d_off, ventes, off_ca, tete_ca, carte, tete_det):
     cles = {re.sub(r'[^0-9]', '', i) for i in ids}
     mes_ca = {k: v for k, v in off_ca.items() if re.sub(r'[^0-9]', '', k) in cles}
     ecrire(os.path.join(rep, 'wml-officines-ca.js'),
-           tete_ca + 'window.WML_OFF_CA = {n:%d, m:%s%s};\n' % (len(mes_ca), json.dumps(mes_ca), suite_off(mes_ca)))
+           tete_ca + 'window.WML_OFF_CA = {n:%d, m:%s%s};\n' % (len(mes_ca), json.dumps(mes_ca), suite_off(mes_ca, opso=True)))
     mes_det = {k: v for k, v in carte.items() if re.sub(r'[^0-9]', '', k) in cles}
     ecrire(os.path.join(rep, 'carte-detail.js'), tete_det + 'window.CARTE_DETAIL=' + compact(mes_det) + ';\n')
     print('  %-24s %s  %6d lignes OPSO · %d officines · 0 total réseau · %d tranche(s) · %d CA · %d fiches'
