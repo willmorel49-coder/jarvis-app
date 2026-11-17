@@ -91,12 +91,13 @@
       return r.data.text();
     }).then(function (t) { var j = JSON.parse(t); if (!offreValide(j)) throw new Error('fichier illisible'); return j; });
   }
+  var _offreP = null, _prixP = null;   // fin des chargements, attendue par charger() (tableau de bord, 17/11/2026)
   function lancerOffre(root) {
     if (_offreEtat) return;
     _offreEtat = 'charge';
     var fin = function () { if (V2.route && V2.route.name === 'marketing') render(root); };
     try {
-      chargerOffre().then(function (j) { _offre = j; _offreEtat = 'ok'; }).catch(function (e) {
+      _offreP = chargerOffre().then(function (j) { _offre = j; _offreEtat = 'ok'; }).catch(function (e) {
         _offre = null; _offreEtat = 'echec';
         try { console.warn('[opso-catalogue] offre privilège indisponible :', e && e.message); } catch (x) {}
       }).then(fin);
@@ -115,7 +116,7 @@
     var fin = function () { if (V2.route && V2.route.name === 'marketing') render(root); };
     try {
       if (!V2.opsoPrix || !V2.opsoPrix.charger) throw new Error('opso-prix.js absent');
-      V2.opsoPrix.charger().then(function (ok) { _prixEtat = ok ? 'ok' : 'echec'; }).catch(function () { _prixEtat = 'echec'; }).then(fin);
+      _prixP = V2.opsoPrix.charger().then(function (ok) { _prixEtat = ok ? 'ok' : 'echec'; }).catch(function () { _prixEtat = 'echec'; }).then(fin);
     } catch (e) { _prixEtat = 'echec'; try { console.warn('[opso-catalogue] prix OPSO indisponibles :', e && e.message); } catch (x) {} }
   }
 
@@ -473,24 +474,50 @@
   // Un texte qui commence par = + - @ serait lu par Excel comme une formule : on le neutralise par une apostrophe.
   function sansFormule(v) { v = String(v == null ? '' : v); return /^[=+\-@\t\r]/.test(v) ? "'" + v : v; }
   function champ(v) { v = String(v == null ? '' : v); return /[;"\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+  // Rotations (opso-rotations-data.js, boîtes par mois) : vide si le produit n'a pas encore d'historique de ventes.
+  function rotCsv(cip) {
+    var R = window.OPSO_ROTATIONS, r = R && R.r && cip ? R.r[String(cip).replace(/\D/g, '')] : null;
+    var b = function (v) { return (Math.round(v * 10) / 10).toFixed(1).replace('.', ','); };
+    return r ? [b(r[1]), b(r[0])] : ['', ''];
+  }
+  // Mêmes lignes et même prix net que l'Excel (pages des prix, Offre Privilège, rayons) : lu par « Le potentiel du catalogue ».
+  function lignesPrix() {
+    var d = construire(); if (!d) return null;
+    var L = [];
+    if (d.prix) d.prix.sections.forEach(function (sec) { sec.items.forEach(function (it) { L.push({ rayon: titrePrix(), cip: it.cip || '', nom: it.nom, net: it.opso }); }); });
+    if (d.offre) d.offre.items.forEach(function (it) { L.push({ rayon: d.offre.titre, cip: it.cip, nom: it.nom, net: it.net }); });
+    d.rayons.forEach(function (x) { x.items.forEach(function (it) { L.push({ rayon: x.r.court, cip: it.cip, nom: it.nom, net: it.net }); }); });
+    return L;
+  }
+  // Tout ce que demande construire(), offre et prix compris : sans eux, les lignes changent (produits de l'offre remis dans leur rayon).
+  var _pret = null;
+  function charger() {
+    if (_pret) return _pret;
+    var root = document.getElementById('v2-root');
+    lancerOffre(root); lancerPrix(root);
+    _pret = Promise.all([chargerScript(SRC_RESEAU, 'PROD_RESEAU'), chargerScript(SRC_NONGEN, 'OPSO_NONGEN'), chargerScript(SRC_CHOIX, 'OPSO_CATALOGUE_CHOIX'),
+      V2.loadFiles ? V2.loadFiles(['bench', 'catcomplet']) : 0, _offreP, _prixP]).then(function () { _ccEssaye = true; return lignesPrix(); });
+    return _pret;
+  }
   function csv() {
     var d = construire(); if (!d) return null;
-    var lignes = [['Rayon', 'Rang', 'Produit', 'CIP13', 'Part des pharmacies du réseau', 'dont OPSO', 'PPHT', 'Prix net', 'Disponibilité']];
+    var lignes = [['Rayon', 'Rang', 'Produit', 'CIP13', 'Part des pharmacies du réseau', 'dont OPSO', 'PPHT', 'Prix net', 'Disponibilité',
+      'Boîtes / mois - pharmacie qui le commande', 'Boîtes / mois - moyenne du réseau']];
     // Page « Les prix OPSO Santé » : prix net = prix OPSO ; pas de part du réseau ni de PPHT (la page ne les montre pas).
     if (d.prix) d.prix.sections.forEach(function (sec) {
       sec.items.forEach(function (it, i) {
         lignes.push([sansFormule(titrePrix() + ' - ' + sec.titre + (sec.etiquette ? ' (' + sec.etiquette + ')' : '')), i + 1, sansFormule(it.nom),
-          it.cip ? '="' + it.cip + '"' : it.cipTexte, '', '', '', virgule(it.opso), sansFormule(mentionDispo(it.cip))]);
+          it.cip ? '="' + it.cip + '"' : it.cipTexte, '', '', '', virgule(it.opso), sansFormule(mentionDispo(it.cip))].concat(rotCsv(it.cip)));
       });
     });
     if (d.offre) d.offre.items.forEach(function (it, i) {
       lignes.push([sansFormule(d.offre.titre), i + 1, sansFormule(it.nom), '="' + it.cip + '"', partCsv(it.n, d.R.officines), it.opso,
-        it.ppht ? virgule(it.ppht) : '', virgule(it.net), sansFormule(mentionDispo(it.cip))]);
+        it.ppht ? virgule(it.ppht) : '', virgule(it.net), sansFormule(mentionDispo(it.cip))].concat(rotCsv(it.cip)));
     });
     d.rayons.forEach(function (x) {
       x.items.forEach(function (it, i) {
         lignes.push([sansFormule(x.r.court), i + 1, sansFormule(it.nom), '="' + it.cip + '"', partCsv(it.n, d.R.officines), it.opso,
-          x.r.deux && it.ppht ? virgule(it.ppht) : '', virgule(it.net), sansFormule(mentionDispo(it.cip))]);
+          x.r.deux && it.ppht ? virgule(it.ppht) : '', virgule(it.net), sansFormule(mentionDispo(it.cip))].concat(rotCsv(it.cip)));
       });
     });
     var per = periodeTexte(d.R.periode).replace(/^commandes de /, '').replace(/[\\/:*?"<>|]/g, ' ');
@@ -597,6 +624,7 @@
     },
     preparer: preparer,
     donnees: construire,
+    lignesPrix: lignesPrix, charger: charger,
     etats: function () { return { prix: _prixEtat, offre: _offreEtat }; },   // lu par les sondes
     // Pièces communes réutilisées par les autres écrans A4 OPSO (opso-prix.js) : mêmes styles, mêmes logos, même PDF, même CSV.
     commun: { styles: injectStyles, ajuster: ajusterApercu, logo: logoOpso, logoIntegral: LOGO_IP, enveloppe: page, pdf: pdfDePages,

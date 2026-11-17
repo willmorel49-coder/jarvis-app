@@ -443,6 +443,12 @@
         + '<header class="oa-head"><h2 class="oa-h" id="oa-mpm-t">Mois par mois</h2><span class="oa-chip" id="og-mpm-per"></span></header>'
         + '<div id="og-mpm"></div>'
       + '</section>'
+      // ── Le potentiel du catalogue : rotations du réseau × prix nets du catalogue (17/11/2026) ──
+      + '<section class="v2-card og-block oa-pot" aria-labelledby="oa-pot-t">'
+        + '<header class="oa-head"><h2 class="oa-h" id="oa-pot-t">Le potentiel du catalogue</h2><span class="oa-chip" id="og-pot-per"></span>' + infoBtn('og-pot-note', 'Comment c\'est calculé') + '</header>'
+        + '<p class="oa-note" id="og-pot-note" hidden></p>'
+        + '<div id="og-pot"><p class="mpm-note">Chargement du catalogue…</p></div>'
+      + '</section>'
       // ── Produits : barres horizontales ──
       + '<section class="v2-card og-block oa-prod" aria-labelledby="oa-prod-t">'
         + '<header class="oa-head"><h2 class="oa-h" id="oa-prod-t">Ce que les adhérentes achètent</h2></header>'
@@ -605,6 +611,7 @@
         if (mpmEl._h !== MPM.html) { mpmEl._h = MPM.html; mpmEl.innerHTML = MPM.html; }
         byId('og-mpm-per').textContent = MPM.periode;
       }
+      renderPotentiel(scope, DATA);
 
       // ---- Le mois : histogramme, une colonne cliquable par mois ----
       var monthsNav = byId('og-months');
@@ -1146,5 +1153,107 @@
     }
   };
 
-  V2.opsoGroupement = { html: html, mount: mount, computeData: computeData, espaces: espaces, moisParMois: moisParMois, offilogAdherentes: offilogAdherentes };
+  // ═══ 17/11/2026 — « Le potentiel du catalogue » (Will : « mets ça sur l'app ») ═══
+  // Boîtes par mois et par CIP : opso-rotations-data.js (public, sans prix). Prix nets : les MÊMES lignes que l'Excel du
+  // catalogue (V2.opsoCatalogue.lignesPrix). Nombre de pharmacies actuelles et d'adhérentes : ceux du tableau de bord.
+  // Aujourd'hui (mesuré) : boîtes réellement achetées par les adhérentes (ventes grossiste, hors lignes reconstituées) / mois suivis.
+  // Calcul pur, testé par tests/opso-potentiel.test.mjs.
+  function potentielCalc(L, R, sales, nMois, nAct, nAdh) {
+    var net = {}, rayons = [], parRayon = {}, items = [], une = { b: 0, e: 0 }, plafond = 0;
+    L.forEach(function (l) {
+      var c = String(l.cip || '').replace(/\D/g, ''), r = c && R[c];
+      if (!r) return;
+      net[normCip(c)] = l.net;
+      var e = r[0] * l.net;
+      une.b += r[0]; une.e += e; plafond += r[1] * l.net;
+      var k = l.rayon; if (!parRayon[k]) { parRayon[k] = { rayon: k, n: 0, b: 0, e: 0 }; rayons.push(parRayon[k]); }
+      parRayon[k].n++; parRayon[k].b += r[0] * nAdh; parRayon[k].e += e * nAdh;
+      items.push({ nom: l.nom, rot: r[1], b: r[0] * nAdh, e: e * nAdh });
+    });
+    items.sort(function (a, b) { return b.e - a.e; });
+    var mesure = 0;
+    (sales || []).forEach(function (s) {
+      if (typeof s.commercial === 'undefined' || (V2.estReste && V2.estReste(s.pharmacyId))) return;   // ligne reconstituée, reste du réseau
+      var n = net[normCip(s.artCode)]; if (n != null) mesure += (s.qte || 0) * n;
+    });
+    return { produits: items.length, une: une, act: { n: nAct, e: une.e * nAct }, adh: { n: nAdh, b: une.b * nAdh, e: une.e * nAdh },
+      plafond: plafond * nAdh, mesure: nMois ? mesure / nMois : 0, rayons: rayons, top: items.slice(0, 15) };
+  }
+  var POT_CSS = ''
+    + '#v2-root .oa-pot{padding:24px 26px 20px}'
+    + '@media (min-width:1000px){.oa.og-wrap>.oa-pot.og-block{grid-column:1/-1}}'
+    + '.pot-trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:4px 0 0}'
+    + '.pot-c{border-radius:14px;padding:16px 18px;background:#f4f7f5;border:1px solid rgba(33,57,43,.08)}'
+    + '.pot-c.is-top{background:linear-gradient(160deg,#ffffff 0%,#e6f1ea 100%);border-color:rgba(78,159,112,.35);box-shadow:0 1px 0 #fff inset,0 10px 24px -18px rgba(38,80,56,.55)}'
+    + '.pot-l{display:block;font-size:13px;color:#4c5a52;line-height:1.35}'
+    + '.pot-v{display:block;margin-top:6px;font-size:26px;font-weight:800;color:#18221d;font-variant-numeric:tabular-nums;white-space:nowrap}'
+    + '.pot-c.is-top .pot-v{color:#265038}'
+    + '.pot-s{display:block;margin-top:2px;font-size:13px;color:#4c5a52;font-variant-numeric:tabular-nums}'
+    + '.pot-auj{margin:12px 0 0;font-size:14px;color:#34403a}'
+    + '.pot-auj b{color:#18221d;font-variant-numeric:tabular-nums}'
+    + '.pot-h3{margin:22px 0 8px;font-size:12px;font-weight:600;color:#5d6577;text-transform:uppercase;letter-spacing:.06em}'
+    + '.pot-rows{list-style:none;margin:0;padding:0}'
+    + '.pot-r{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 92px 112px;align-items:center;column-gap:14px;padding:9px 0;border-bottom:1px dashed rgba(33,57,43,.12)}'
+    + '.pot-n{font-size:14px;color:#18221d;font-weight:600;min-width:0}'
+    + '.pot-n small{display:block;font-weight:400;font-size:12.5px;color:#5d6577;margin-top:1px}'
+    + '.pot-bar{height:10px;border-radius:999px;background:#edf2ee;overflow:hidden}'
+    + '.pot-bar i{display:block;height:100%;width:calc(var(--w) * 100%);border-radius:inherit;background:linear-gradient(90deg,#3e7f59,#4e9f70)}'
+    + '.pot-b{font-size:13px;color:#4c5a52;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}'
+    + '.pot-e{font-size:15px;font-weight:700;color:#18221d;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}'
+    + '@media (max-width:640px){'
+      + '#v2-root .oa-pot{padding:20px 16px 14px}'
+      + '.pot-trio{grid-template-columns:1fr;gap:8px}'
+      + '.pot-c{padding:12px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;align-items:baseline}'
+      + '.pot-v{grid-row:1/3;grid-column:2;margin:0;font-size:21px;align-self:center}'
+      + '.pot-r{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"n e" "bar b";row-gap:5px;column-gap:10px}'
+      + '.pot-n{grid-area:n}.pot-e{grid-area:e}.pot-bar{grid-area:bar;align-self:center}.pot-b{grid-area:b}'
+    + '}';
+  var _potCharge = false;
+  function renderPotentiel(scope, DATA) {
+    var el = scope.querySelector && scope.querySelector('#og-pot'); if (!el) return;
+    var C = V2.opsoCatalogue, R = window.OPSO_ROTATIONS;
+    if (!C || !C.charger || !R || !R.r) { el.innerHTML = '<p class="mpm-note">Le potentiel du catalogue n\'a pas pu se charger.</p>'; return; }
+    var L = C.lignesPrix(), etats = C.etats ? C.etats() : {};
+    var pret = L && L.length && etats.offre !== 'charge' && etats.prix !== 'charge' && etats.offre && etats.prix;
+    if (!pret) {
+      if (!_potCharge) {
+        _potCharge = true;
+        C.charger().then(function () { var r = document.getElementById('v2-root'); if (r && r.querySelector('#og-pot')) renderPotentiel(r, computeData()); });
+      }
+      return;
+    }
+    if (!document.getElementById('og-pot-style')) { var st = document.createElement('style'); st.id = 'og-pot-style'; st.textContent = POT_CSS; document.head.appendChild(st); }
+    var P = potentielCalc(L, R.r, V2.sales || [], DATA.mois.length, DATA.pharmaClientes, DATA.adherentes);
+    var MOIS_L = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    var deb = R.periode ? MOIS_ABREV[R.periode.de - 1] : '';
+    var per = R.periode ? deb.charAt(0).toUpperCase() + deb.slice(1) + '–' + MOIS_ABREV[R.periode.a - 1] + ' ' + R.periode.annee : '';
+    var boites = function (v) { return fmtEUR.format(Math.round(v)); };
+    var mde = function (v) { return fmtPct.format(Math.round(v / 1e5) / 10) + ' M€'; };
+    var maxR = P.rayons.reduce(function (m, r) { return Math.max(m, r.e); }, 1), maxT = P.top.length ? P.top[0].e : 1;
+    var ligne = function (nom, sous, w, b, e) {
+      return '<li class="pot-r"><span class="pot-n">' + esc(nom) + (sous ? '<small>' + esc(sous) + '</small>' : '') + '</span>'
+        + '<span class="pot-bar" aria-hidden="true"><i style="--w:' + Math.max(0.02, w).toFixed(4) + '"></i></span>'
+        + '<span class="pot-b">' + boites(b) + ' boîtes</span><b class="pot-e">' + euros(e) + '</b></li>';
+    };
+    var h = '<div class="pot-trio">'
+      + '<div class="pot-c"><span class="pot-l">Une pharmacie</span><b class="pot-v">' + euros(P.une.e) + '</b><span class="pot-s">' + boites(P.une.b) + ' boîtes par mois</span></div>'
+      + '<div class="pot-c"><span class="pot-l">Les ' + P.act.n + ' pharmacies clientes</span><b class="pot-v">' + euros(P.act.e) + '</b><span class="pot-s">par mois</span></div>'
+      + '<div class="pot-c is-top"><span class="pot-l">Les ' + P.adh.n + ' adhérentes</span><b class="pot-v">' + euros(P.adh.e) + '</b><span class="pot-s">par mois · ' + mde(P.adh.e * 12) + ' par an</span></div>'
+      + '</div>'
+      + '<p class="pot-auj">Aujourd\'hui, les adhérentes clientes achètent <b>' + euros(P.mesure) + '</b> par mois de ces produits.</p>'
+      + '<h3 class="pot-h3">Par rayon · les ' + P.adh.n + ' adhérentes</h3><ol class="pot-rows">'
+      + P.rayons.map(function (r) { return ligne(r.rayon, r.n + ' produit' + (r.n > 1 ? 's' : ''), r.e / maxR, r.b, r.e); }).join('') + '</ol>'
+      + '<h3 class="pot-h3">Les 15 produits qui pèsent le plus · les ' + P.adh.n + ' adhérentes</h3><ol class="pot-rows">'
+      + P.top.map(function (t) { return ligne(t.nom, fmtPct.format(Math.round(t.rot * 10) / 10) + ' boîte' + (t.rot >= 2 ? 's' : '') + ' par mois chez une pharmacie qui le commande', t.e / maxT, t.b, t.e); }).join('') + '</ol>';
+    if (el._h !== h) { el._h = h; el.innerHTML = h; }
+    var perEl = scope.querySelector('#og-pot-per'); if (perEl) perEl.textContent = per ? 'Rythme ' + per : '';
+    var note = scope.querySelector('#og-pot-note');
+    if (note) note.textContent = 'Achats HT par mois si les pharmacies commandaient les ' + P.produits + ' produits du catalogue au rythme moyen du réseau Intégral Pharma ('
+      + (R.periode ? MOIS_L[R.periode.de - 1] + ' à ' + MOIS_L[R.periode.a - 1] + ' ' + R.periode.annee : 'ventes réelles')
+      + ', retours déduits), y compris les pharmacies qui ne les prennent pas encore. Montants au prix net du catalogue. '
+      + 'Si chaque adhérente prenait chaque produit au rythme d\'une pharmacie qui le commande déjà : ' + euros(P.plafond) + ' par mois, un maximum et non une prévision. '
+      + 'Les produits sans historique de ventes (nouveautés) sont hors des totaux. Novembre et décembre ne sont pas encore connus : les produits d\'hiver seront plutôt au-dessus.';
+  }
+
+  V2.opsoGroupement = { html: html, mount: mount, computeData: computeData, espaces: espaces, moisParMois: moisParMois, offilogAdherentes: offilogAdherentes, potentielCalc: potentielCalc };
 })();
