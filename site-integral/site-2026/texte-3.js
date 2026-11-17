@@ -13,14 +13,19 @@
   /* un texte court par paragraphe (null = paragraphe laissé tel quel), et ses mots-clés */
   var COURTS = {
     groupe: { ps: [
-      "Depuis 2006, nous renforçons notre groupe de grossistes indépendants et depuis 2017, nous les avons réunis sous un seul nom : integral pharma.",
+      "Depuis 2006, nous renforçons notre groupe de grossistes indépendants et depuis 2017, nous les avons réunis sous un seul nom : Intégral Pharma.",
       "Notre raison d'être : partager directement la marge avec les officines, en toute transparence.",
       "Chaque grossiste-répartiteur livre son territoire avec ses équipes, avec la même idée qu'au premier jour : se mettre du côté du comptoir."
     ], cles: ["partager directement la marge", "du côté du comptoir"] },
     reseau: { ps: [
       "C'est la seule question qui compte vraiment. Celui dont vous connaissez l'équipe par son prénom.",
       "Les sept autres sont à ses côtés : entre confrères, au service de votre officine et de vos patients."
-    ], cles: ["la seule question", "entre confrères"] }
+    ], cles: ["la seule question", "entre confrères"] },
+    centrale: { ps: [
+      "Offilog est notre centrale de parapharmacie : des produits et des marques pour vos officines.",
+      "Une plateforme autonome : vous commandez sur son site, elle vous livre elle-même.",
+      "Elle fait partie du groupe, mais c'est Offilog qui répond directement à vos questions."
+    ], cles: ["plateforme autonome", "Offilog qui répond directement"] }
   };
 
   var CHEVRON = '<svg viewBox="0 0 14 9" aria-hidden="true"><path d="M1 1.5 7 7.5l6-6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>';
