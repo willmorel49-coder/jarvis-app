@@ -1299,11 +1299,22 @@
         offRows +
       '</div>' : '';
 
+    // 17/11/2026 — Will : « en pilotage voir mois par mois les officines qui ont commencé à travailler avec nous ».
+    // Rendu par opso/v2/opso-groupement.js (même calcul que le tableau de bord OPSO), noms des nouvelles sous leur mois.
+    var MPM = (V2.opsoGroupement && V2.opsoGroupement.moisParMois) ? V2.opsoGroupement.moisParMois({ noms: true }) : null;
+    var moisCard = (MPM && MPM.html) ?
+      '<div class="v2-card" style="margin-bottom:14px;padding:20px 22px">' +
+        '<div class="v2-card-head"><div class="v2-card-t">' + ICO('cal', 17) + 'Mois par mois · achats et nouvelles pharmacies</div>' +
+          '<span class="v2-card-link" style="color:var(--muted);cursor:default">' + esc(MPM.periode) + '</span></div>' +
+        MPM.html +
+      '</div>' : '';
+
     return {
       html: '<div class="opso-section">' +
               '<div class="opso-section-head">' + ICO('pharma', 16) + 'Groupement OPSO Santé</div>' +
               kpiActivation +
               kpiGrp +
+              moisCard +
               (perimCard || '') +
               officinesCard +
               topProdCard +

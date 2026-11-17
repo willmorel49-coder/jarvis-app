@@ -438,6 +438,11 @@
       + '</section>'
       // Emplacement du bloc « suivi de la rémunération » (rendu par opso-remuneration.js) : sans style tant qu'il est vide.
       + '<div data-opso-slot="remuneration"></div>'
+      // ── Mois par mois : achats HT, pharmacies, nouvelles (17/11/2026) ──
+      + '<section class="v2-card og-block oa-mpm" aria-labelledby="oa-mpm-t">'
+        + '<header class="oa-head"><h2 class="oa-h" id="oa-mpm-t">Mois par mois</h2><span class="oa-chip" id="og-mpm-per"></span></header>'
+        + '<div id="og-mpm"></div>'
+      + '</section>'
       // ── Produits : barres horizontales ──
       + '<section class="v2-card og-block oa-prod" aria-labelledby="oa-prod-t">'
         + '<header class="oa-head"><h2 class="oa-h" id="oa-prod-t">Ce que les adhérentes achètent</h2></header>'
@@ -592,6 +597,14 @@
       byId('og-provenance').textContent = 'Ventes Intégral Pharma (groupe de grossistes-répartiteurs) aux ' + DATA.pharmaClientes + ' adhérentes clientes, ' + DATA.periode
         + ', avoirs déduits (' + DATA.lignesAvoirs + ' ligne' + (DATA.lignesAvoirs > 1 ? 's' : '') + ').'
         + (DATA.nextAbrev ? ' ' + cap1(DATA.nextAbrev) + ' en attente.' : '');
+
+      // ---- Mois par mois (17/11/2026) : réécrit seulement si le contenu change ----
+      var mpmEl = byId('og-mpm');
+      if (mpmEl) {
+        var MPM = moisParMois();
+        if (mpmEl._h !== MPM.html) { mpmEl._h = MPM.html; mpmEl.innerHTML = MPM.html; }
+        byId('og-mpm-per').textContent = MPM.periode;
+      }
 
       // ---- Le mois : histogramme, une colonne cliquable par mois ----
       var monthsNav = byId('og-months');
@@ -960,6 +973,103 @@
     render();
   }
 
+  // ═══ Mois par mois (17/11/2026) ═══
+  // Will : « un visu sur le CA par mois avec le nombre d'officines pour être vraiment clair », et au Pilotage
+  // « mois par mois les officines qui ont commencé à travailler avec nous ».
+  // Une ligne par mois : achats HT et pharmacies actives (mêmes chiffres que « Le mois »), plus les nouvelles.
+  // Nouvelle = premier achat daté (ligne réelle > 0) ce mois-là. Le premier mois suivi ne dit rien de l'avant :
+  // il est marqué « début du suivi », jamais « nouvelles ». Les lignes réparties (relevé STATISTIQUES, sans
+  // clé « commercial ») ne se datent pas : ces pharmacies ne sont jamais nouvelles (même règle que la rémunération).
+  // Calcul pur (aucun DOM) : testé dans tests/opso-mois.test.mjs.
+  function nouvellesParMois(sales, nomDe) {
+    var premier = {}, reel = {}, reparti = {}, k0 = null;
+    sales.forEach(function (s) {
+      if (!s.year || !s.month) return;
+      var k = s.year * 12 + s.month;
+      if (k0 === null || k < k0) k0 = k;
+      if (typeof s.commercial === 'undefined') { reparti[s.pharmacyId] = 1; return; }
+      if (!((s.mntNetHt || 0) > 0)) return;
+      reel[s.pharmacyId] = 1;
+      if (!premier[s.pharmacyId] || k < premier[s.pharmacyId]) premier[s.pharmacyId] = k;
+    });
+    var parMois = {};
+    Object.keys(premier).forEach(function (id) { (parMois[premier[id]] = parMois[premier[id]] || []).push(nomDe[id] || id); });
+    Object.keys(parMois).forEach(function (k) { parMois[k].sort(function (a, b) { return a.localeCompare(b, 'fr'); }); });
+    var nonDatees = Object.keys(reparti).filter(function (id) { return !reel[id]; }).length;
+    return { k0: k0, parMois: parMois, nonDatees: nonDatees };
+  }
+  function moisParMoisData() {
+    var D = computeData(), nomDe = {};
+    (V2.pharmacies || []).forEach(function (p) { nomDe[p.id] = p.name; });
+    var N = nouvellesParMois(V2.sales || [], nomDe);
+    var rows = D.mois.map(function (mo) {
+      var k = mo.y * 12 + mo.m, debut = k === N.k0;
+      return { y: mo.y, m: mo.m, ca: mo.ca, pharmas: mo.pharmaActives, debut: debut, nouvelles: debut ? [] : (N.parMois[k] || []) };
+    });
+    return { rows: rows, periode: D.periode, nextAbrev: D.nextAbrev, nonDatees: N.nonDatees };
+  }
+  var MPM_CSS = ''
+    + '.mpm-cols,.mpm-r{display:grid;grid-template-columns:64px minmax(0,1fr) 118px 128px 150px;align-items:center;column-gap:14px}'
+    + '.mpm-cols{font-size:12px;font-weight:600;color:#5d6577;text-transform:uppercase;letter-spacing:.06em;padding:0 0 8px;border-bottom:1px solid rgba(33,57,43,.1)}'
+    + '.mpm-cols span:nth-child(3),.mpm-ca{text-align:right}'
+    + '.mpm-rows{list-style:none;margin:0;padding:0}'
+    + '.mpm-r{padding:10px 0;border-bottom:1px dashed rgba(33,57,43,.12)}'
+    + '.mpm-m{font-weight:700;color:#18221d;font-size:15px}'
+    + '.mpm-bar{height:12px;border-radius:999px;background:#edf2ee;overflow:hidden}'
+    + '.mpm-bar i{display:block;height:100%;width:calc(var(--w) * 100%);border-radius:inherit;background:linear-gradient(90deg,#3e7f59,#4e9f70)}'
+    + '.mpm-ca{font-size:15px;font-weight:700;color:#18221d;font-variant-numeric:tabular-nums;white-space:nowrap}'
+    + '.mpm-ph{font-size:14px;color:#34403a;white-space:nowrap}'
+    + '.mpm-ph b{font-size:17px;font-weight:800;color:#265038;font-variant-numeric:tabular-nums}'
+    + '.mpm-new{justify-self:start;font-size:13px;font-weight:700;color:#265038;background:#e3efe7;border-radius:999px;padding:3px 10px;white-space:nowrap}'
+    + '.mpm-new.is-none,.mpm-new.is-start{background:none;color:#5d6577;font-weight:500;padding-left:0}'
+    + '.mpm-noms{grid-column:2/-1;list-style:none;margin:8px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}'
+    + '.mpm-noms li{font-size:13px;color:#265038;background:#f1f7f3;border:1px solid rgba(78,159,112,.25);border-radius:8px;padding:3px 8px}'
+    + '.mpm-wait{grid-column:2/-1;font-size:13px;color:#5d6577}'
+    + '.mpm-note{font-size:13px;color:#5d6577;line-height:1.5;margin:12px 0 0}'
+    + '#v2-root .oa-mpm{padding:24px 26px 20px}'
+    + '@media (min-width:1000px){.oa.og-wrap>.oa-mpm.og-block{grid-column:1/-1}}'
+    + '@media (max-width:700px){'
+      + '.mpm-cols{display:none}'
+      + '.mpm-r{grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"m ca ph" "bar bar bar" "new new new";row-gap:6px;column-gap:10px}'
+      + '.mpm-m{grid-area:m}.mpm-ca{grid-area:ca}.mpm-ph{grid-area:ph}.mpm-bar{grid-area:bar}.mpm-new{grid-area:new}'
+      + '.mpm-noms,.mpm-wait{grid-column:1/-1}'
+      + '#v2-root .oa-mpm{padding:20px 16px 14px}'
+    + '}';
+  // Rend { html, periode } ; opts.noms = liste les nouvelles pharmacies sous leur mois (Pilotage).
+  function moisParMois(opts) {
+    opts = opts || {};
+    var M = moisParMoisData();
+    if (!M.rows.length) return { html: '', periode: '' };
+    if (!document.getElementById('og-mpm-style')) { var st = document.createElement('style'); st.id = 'og-mpm-style'; st.textContent = MPM_CSS; document.head.appendChild(st); }
+    var cap = function (s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; };
+    var max = M.rows.reduce(function (m, r) { return Math.max(m, r.ca); }, 1);
+    var multiAn = M.rows[0].y !== M.rows[M.rows.length - 1].y;
+    var debut = null;
+    var lignes = M.rows.map(function (r) {
+      if (r.debut) debut = r;
+      var n = r.nouvelles.length;
+      var neuf = r.debut ? '<span class="mpm-new is-start">début du suivi</span>'
+        : (n ? '<span class="mpm-new">+ ' + n + ' nouvelle' + (n > 1 ? 's' : '') + '</span>' : '<span class="mpm-new is-none">aucune nouvelle</span>');
+      return '<li class="mpm-r">'
+        + '<span class="mpm-m">' + esc(cap(MOIS_ABREV[r.m - 1]) + (multiAn ? ' ' + (r.y % 100) : '')) + '</span>'
+        + '<span class="mpm-bar" aria-hidden="true"><i style="--w:' + Math.max(0.02, r.ca / max).toFixed(4) + '"></i></span>'
+        + '<b class="mpm-ca og-num">' + euros(r.ca) + '</b>'
+        + '<span class="mpm-ph og-num"><b>' + r.pharmas + '</b> pharmacie' + (r.pharmas > 1 ? 's' : '') + '</span>'
+        + neuf
+        + (opts.noms && n ? '<ul class="mpm-noms">' + r.nouvelles.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '')
+        + '</li>';
+    }).join('');
+    if (M.nextAbrev) lignes += '<li class="mpm-r"><span class="mpm-m">' + esc(cap(M.nextAbrev)) + '</span><span class="mpm-wait">En attente des ventes</span></li>';
+    var note = 'Pharmacies : adhérentes qui ont acheté chez Intégral Pharma ce mois-là. Nouvelle : premier achat ce mois-là.';
+    if (debut) note += ' ' + cap(MOIS_ABREV[debut.m - 1]) + ' ' + debut.y + ' ouvre le suivi : on ne voit pas les achats d\'avant, ses ' + debut.pharmas + ' pharmacies ne sont donc pas comptées comme nouvelles.';
+    if (M.nonDatees) note += ' ' + (M.nonDatees > 1 ? M.nonDatees + ' adhérentes connues' : '1 adhérente connue') + ' seulement par un relevé global, sans date : dans le total, pas dans les mois.';
+    return {
+      periode: cap(M.periode),
+      html: '<div class="mpm"><div class="mpm-cols" aria-hidden="true"><span>Mois</span><span>Achats HT</span><span></span><span>Pharmacies</span><span>Nouvelles</span></div>'
+        + '<ol class="mpm-rows">' + lignes + '</ol><p class="mpm-note">' + esc(note) + '</p></div>'
+    };
+  }
+
   // 01/10/2026 — Will : « l'accueil doit être les différentes features, pas
   // directement le pilotage ». L'accueil ne montre plus que les espaces ; le
   // tableau de bord (cap, mois, rémunération, produits, trajectoire) devient
@@ -980,5 +1090,5 @@
     }
   };
 
-  V2.opsoGroupement = { html: html, mount: mount, computeData: computeData, espaces: espaces };
+  V2.opsoGroupement = { html: html, mount: mount, computeData: computeData, espaces: espaces, moisParMois: moisParMois };
 })();
