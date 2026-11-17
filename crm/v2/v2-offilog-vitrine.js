@@ -710,27 +710,58 @@
     var u = liste.filter(function (s, i) { return liste.indexOf(s) === i; }), e = new Error('photos non chargées : ' + u.length);
     e.photos = u; return e;
   }
-  V2._offVitrinePdf = { cadrage: cadrage, cadrerPhotos: cadrerPhotos, photosCassees: photosCassees, ecouterPhotosPerdues: ecouterPhotosPerdues, errPhotos: errPhotos };
+  // Un raté PASSAGER ne doit pas refuser le PDF (17/11/2026 : 1 photo sur 323 non chargée en prod, servie en 200 juste après) :
+  // avant d'abandonner, on attend un peu (le 429 de Vercel retombe vite) et on redemande la photo, deux fois au plus.
+  var PAUSES_REESSAI = [2, 6];   // secondes
+  function pause(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  // aperçu : chaque photo cassée est redemandée (même adresse reposée = nouveau chargement), 15 s au plus
+  function rechargerPhotos(racine, srcs) {
+    return Promise.all([].filter.call(racine.querySelectorAll('img'), function (im) { return srcs.indexOf(im.getAttribute('src')) >= 0; }).map(function (im) {
+      return new Promise(function (r) {
+        var t = setTimeout(fini, 15000);
+        function fini() { clearTimeout(t); im.removeEventListener('load', fini); im.removeEventListener('error', fini); r(); }
+        im.addEventListener('load', fini); im.addEventListener('error', fini);
+        im.src = im.getAttribute('src');
+      });
+    }));
+  }
+  function photosPretes(racine, k) {
+    var cassees = photosCassees(racine);
+    if (!cassees.length) return Promise.resolve();
+    if (k >= PAUSES_REESSAI.length) return Promise.reject(errPhotos(cassees));
+    return pause(PAUSES_REESSAI[k] * 1000).then(function () { return rechargerPhotos(racine, cassees); }).then(function () { return photosPretes(racine, k + 1); });
+  }
+  // une page du PDF : si html2canvas a perdu une photo en la rechargeant, la page entière est refaite après la pause
+  function rendrePage(fw, sec, k) {
+    var remettre = cadrerPhotos(sec, fw), ecoute = ecouterPhotosPerdues(fw);
+    var fin = function () { ecoute.fin(); remettre(); };
+    return fw.html2pdf().set({ html2canvas: { scale: 1.5, useCORS: true, logging: true, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 } })
+      .from(sec).toCanvas().get('canvas').then(function (cv) {
+        fin();
+        if (!ecoute.perdues.length) return cv;
+        cv.width = cv.height = 0;
+        if (k >= PAUSES_REESSAI.length) throw errPhotos(ecoute.perdues);   // toujours perdue : on s'arrête à cette page
+        return pause(PAUSES_REESSAI[k] * 1000).then(function () { return rendrePage(fw, sec, k + 1); });
+      }, function (e) { fin(); throw e; });
+  }
+  V2._offVitrinePdf = { cadrage: cadrage, cadrerPhotos: cadrerPhotos, photosCassees: photosCassees, ecouterPhotosPerdues: ecouterPhotosPerdues, errPhotos: errPhotos,
+    PAUSES_REESSAI: PAUSES_REESSAI, photosPretes: photosPretes, rendrePage: rendrePage };
   function fabriquerPdf(f, suivi) {
     var fw = f.contentWindow, secs = [].slice.call(fw.document.querySelectorAll('section.page')), pdf = null;
     if (!secs.length) return Promise.reject(new Error('aucune page'));
-    var cassees = photosCassees(fw.document);
-    if (cassees.length) return Promise.reject(errPhotos(cassees));
-    return Promise.all([html2pdfDans(fw), Promise.resolve(window.ensureHtml2Pdf ? window.ensureHtml2Pdf() : null)]).then(nouveauPdfA4).then(function (doc) {
+    return photosPretes(fw.document, 0).then(function () {
+      return Promise.all([html2pdfDans(fw), Promise.resolve(window.ensureHtml2Pdf ? window.ensureHtml2Pdf() : null)]);
+    }).then(nouveauPdfA4).then(function (doc) {
       pdf = doc;
       var p = Promise.resolve();
       secs.forEach(function (sec, i) {
         p = p.then(function () {
           if (suivi) suivi(i + 1, secs.length);
-          var remettre = cadrerPhotos(sec, fw), ecoute = ecouterPhotosPerdues(fw);
-          var fin = function () { ecoute.fin(); remettre(); };
-          return fw.html2pdf().set({ html2canvas: { scale: 1.5, useCORS: true, logging: true, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 } })
-            .from(sec).toCanvas().get('canvas').then(function (cv) {
-              if (ecoute.perdues.length) { cv.width = cv.height = 0; throw errPhotos(ecoute.perdues); }   // on s'arrête à la 1re page touchée
-              if (i > 0) pdf.addPage('a4', 'portrait');
-              pdf.addImage(cv.toDataURL('image/jpeg', 0.85), 'JPEG', 0, 0, 595.28, 841.89, undefined, 'FAST');
-              cv.width = cv.height = 0;
-            }).then(fin, function (e) { fin(); throw e; });
+          return rendrePage(fw, sec, 0).then(function (cv) {
+            if (i > 0) pdf.addPage('a4', 'portrait');
+            pdf.addImage(cv.toDataURL('image/jpeg', 0.85), 'JPEG', 0, 0, 595.28, 841.89, undefined, 'FAST');
+            cv.width = cv.height = 0;
+          });
         });
       });
       return p;

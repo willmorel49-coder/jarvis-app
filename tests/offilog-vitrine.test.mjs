@@ -34,7 +34,7 @@ function monter(opts = {}) {
   }
   if (opts.modif) opts.modif(items);
   const V2 = { offilogItems: () => items, toast() {} };
-  const win = { V2, console, document: { currentScript: { src: 'https://exemple.test/crm/v2/v2-offilog-vitrine.js?v=1' } }, OFFILOG_MARCHE: { releves: rel }, OFFILOG_CATALOGUE: { maj: 'prix' in opts ? opts.prix : '2031-03-20' } };
+  const win = { V2, console, setTimeout, clearTimeout, document: { currentScript: { src: 'https://exemple.test/crm/v2/v2-offilog-vitrine.js?v=1' } }, OFFILOG_MARCHE: { releves: rel }, OFFILOG_CATALOGUE: { maj: 'prix' in opts ? opts.prix : '2031-03-20' } };
   // liste des marques à retirer : par défaut une marque inventée qui ne touche aucun produit du jeu d'essai ; 'absent' = pas de liste
   if (opts.exclus !== 'absent') win.OFFILOG_EXCLUS = opts.exclus || { maj: '2031-03-01', marques: ['zzmarque'], eans: [], prefixes: [] };
   if (opts.cut) win.OFFILOG_CUT = opts.cut;
@@ -414,9 +414,60 @@ test('PDF : une photo non chargée arrête le PDF (aperçu cassé, ou rechargeme
 
 test('PDF : le rechargement des photos par html2canvas reste écouté (logging: true) et le message dit le nombre de photos', () => {
   const src = fs.readFileSync(path.join(RACINE, 'crm/v2/v2-offilog-vitrine.js'), 'utf8');
-  const f = src.slice(src.indexOf('function fabriquerPdf('), src.indexOf('V2.offVitrineMail = function'));
+  const f = src.slice(src.indexOf('function rendrePage('), src.indexOf('V2.offVitrineMail = function'));
   assert.match(f, /html2canvas: \{[^}]*logging: true/);
-  assert.match(f, /photosCassees\(fw\.document\)/);
+  assert.match(f, /photosPretes\(fw\.document, 0\)/);
   assert.match(f, /ecouterPhotosPerdues\(fw\)/);
+  assert.match(f, /rendrePage\(fw, sec, 0\)/);
   assert.match(src, /photos n\\'ont pas pu être chargées/);
+});
+
+// 17/11/2026 : en prod, UNE photo sur 323 a raté une fois puis a été servie normalement juste après.
+// Un raté passager est redemandé (2 essais au plus) ; une photo toujours absente refuse toujours le PDF.
+test('PDF : une photo passagèrement non chargée dans l\'aperçu est redemandée ; toujours absente, le PDF reste refusé', async () => {
+  const P = monter()._offVitrinePdf;
+  assert.deepEqual([...P.PAUSES_REESSAI], [2, 6], 'deux nouveaux essais, après 2 s puis 6 s');
+  const pauses = [...P.PAUSES_REESSAI]; P.PAUSES_REESSAI.splice(0, 2, 0, 0);
+  try {
+    // une photo qui se charge au k-ième nouvel essai (Infinity = jamais)
+    const photo = (src, charge) => {
+      const ls = { load: [], error: [] }, im = { essais: 0, complete: true, naturalWidth: charge === 0 ? 230 : 0, getAttribute: () => src,
+        addEventListener: (t, f) => ls[t].push(f), removeEventListener: (t, f) => { ls[t] = ls[t].filter((g) => g !== f); } };
+      Object.defineProperty(im, 'src', { set() { im.essais++; const ok = im.essais >= charge; im.naturalWidth = ok ? 230 : 0; setTimeout(() => ls[ok ? 'load' : 'error'].slice().forEach((f) => f())); } });
+      return im;
+    };
+    const a = photo('a.webp', 0), b = photo('b.webp', 1), page = { querySelectorAll: () => [a, b] };
+    await P.photosPretes(page, 0);
+    assert.equal(b.essais, 1, 'la photo cassée est redemandée une fois, puis le PDF continue');
+    assert.equal(a.essais, 0, 'une photo chargée n\'est jamais redemandée');
+    const c = photo('c.webp', Infinity), page2 = { querySelectorAll: () => [a, c] };
+    await assert.rejects(P.photosPretes(page2, 0), (e) => e.photos && e.photos.length === 1 && e.photos[0] === 'c.webp');
+    assert.equal(c.essais, 2, 'deux nouveaux essais, pas un de plus');
+  } finally { P.PAUSES_REESSAI.splice(0, 2, ...pauses); }
+});
+
+test('PDF : une page dont html2canvas a perdu une photo est refaite ; perdue à chaque essai, le PDF s\'arrête', async () => {
+  const P = monter()._offVitrinePdf;
+  const pauses = [...P.PAUSES_REESSAI]; P.PAUSES_REESSAI.splice(0, 2, 0, 0);
+  try {
+    // faux html2pdf : les `rates` premiers rendus de la page écrivent « Error loading image » comme html2canvas 1.0.0
+    const fenetre = (rates) => {
+      const fw = { rendus: 0, console: { error() {} }, getComputedStyle: () => ({ objectFit: 'fill' }) };
+      fw.html2pdf = () => ({ set: () => ({ from: () => ({ toCanvas: () => ({ get: () => {
+        fw.rendus++;
+        if (fw.rendus <= rates) fw.console.error('#1', '12ms', 'Error loading image https://exemple.test/oimg-cut/1.webp');
+        return Promise.resolve({ width: 10, height: 10 });
+      } }) }) }) });
+      return fw;
+    };
+    const sec = { querySelectorAll: () => [] };
+    const f1 = fenetre(1), cv = await P.rendrePage(f1, sec, 0);
+    assert.equal(f1.rendus, 2, 'page refaite une fois');
+    assert.equal(cv.width, 10, 'la page refaite est rendue');
+    const f0 = fenetre(0); await P.rendrePage(f0, sec, 0);
+    assert.equal(f0.rendus, 1, 'page sans photo perdue : rendue une seule fois');
+    const f9 = fenetre(9);
+    await assert.rejects(P.rendrePage(f9, sec, 0), (e) => e.photos && e.photos.length === 1);
+    assert.equal(f9.rendus, 3, 'un rendu + deux nouveaux essais, puis arrêt');
+  } finally { P.PAUSES_REESSAI.splice(0, 2, ...pauses); }
 });
