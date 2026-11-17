@@ -271,6 +271,15 @@ html .dkf.dkf .pha-np-alerte .pha-ch h3 { font-size: var(--dk-t3); font-weight: 
   html .dkf.dkf .dkf-cmd, html .dkf.dkf .pha-np, html .dkf.dkf .pha-mg-nous { order: -5; }
   html .dkf.dkf .fbk { order: 0; }
 }
+/* 17/11/2026 (Will) — au téléphone, vue Intégral : la colonne d'infos (menu, identité, informations, profil, notes, rendez-vous) passe À LA FIN, après tous les chiffres.
+   Le sommaire collant (.pha-som) garde sa place ; la vue pharmacien ne change pas. */
+@media (max-width: 900px) {
+  html .dkf.dkf[data-vue="integral"] .pha-rail > :not(.pha-som):not(.vi-ct), html .dkf.dkf[data-vue="integral"] .pha-rail > .vi-ct > * { order: 5; }
+}
+/* 17/11/2026 (Will) — au téléphone, le bouton rond « + » (56 px, 16 px au-dessus de la barre du bas) cachait la fin de la fiche : on lui laisse sa place en bas */
+@media (max-width: 760px) {
+  html .dkf.dkf { padding-bottom: 88px; }
+}
 /* 16/11/2026 — Masquer / Afficher chaque bloc de la fiche : un gros bouton écrit (≥ 44 px, couleur principale du kit, texte blanc) à droite du titre.
    Bloc masqué : son titre et le bouton restent, le reste disparaît. Le basculement se fait sur place (classe .is-masque), sans nouveau rendu. */
 html .dkf.dkf .dkf-bloc { position: relative; }

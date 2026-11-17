@@ -60,6 +60,7 @@
   var recoFam = null;         // famille active dans la fiche officine (master-détail)
   var recoInitKey = null;     // (pid|scope) déjà pré-sélectionné ? — tout coché par défaut
   var grpListFilter = 'all';  // listing best rotations groupement : 'all' | 'gap' (ce qu'elle ne commande pas)
+  var grpListPid = null;      // 17/11/2026 (Will) : fiche pour laquelle grpListFilter a été choisi — une autre fiche repart sur « Tout »
   var grpRotExpanded = false; // demande Pauline G. (10/09/2026) : la fiche montre trop de lignes d'un coup — repliée par défaut, 15 lignes visibles, bouton « Voir tout »
   var selList = null;         // liste personnalisée ouverte (id)
   var grpCollapsed = {};      // repli des catégories en vue groupement / liste
@@ -4489,6 +4490,7 @@
     var rot = grpBestRotations(pid, 60);
     var nOwn = rot.rows.filter(function (r) { return r.owned; }).length;
     var nGap = rot.rows.length - nOwn;
+    if (grpListPid !== String(pid)) { grpListPid = String(pid); grpListFilter = 'all'; }   // 17/11/2026 (Will) : le filtre ne suit plus d'une fiche à l'autre
     var shownRotAll = (grpListFilter === 'gap') ? rot.rows.filter(function (r) { return !r.owned; }) : rot.rows;
     var ROT_LOT = 15;
     var shownRot = grpRotExpanded ? shownRotAll : shownRotAll.slice(0, ROT_LOT);
@@ -4501,7 +4503,7 @@
         '<td class="phf-td-l"><div class="phf-desig">' + esc(cap((r.designation || '').toLowerCase())) + (r.froid ? ' <span class="ph-froid">FROID</span>' : '') + '</div><div class="phf-cip">' + esc(r.cip) + '</div></td>' +
         '<td>' + tag + '</td>' +
         '<td><span class="phf-price">' + (r.prix_ip > 0 ? V2.fmtEur(r.prix_ip) : '—') + '</span></td>' +
-        '<td><span class="phf-rem' + (r.remise > 0 ? '' : ' phf-none') + '">' + (r.remise > 0 ? r.remise + ' %' : '—') + '</span></td>' +
+        '<td><span class="phf-rem' + (r.remise > 0 ? '' : ' phf-none') + '">' + (r.remise > 0 ? String(r.remise).replace('.', ',') + ' %' : '—') + '</span></td>' +
         '<td class="phf-tc"><span class="phf-sortie"><span class="mono phf-sortie-n" title="' + r.sortie + ' pharmacies sur ' + rot.total + '">' + partTxt(r, rot.total) + '</span><span class="phf-bar"><i style="width:' + pct + '%"></i></span></span></td>' +
       '</tr>';
     }).join('');
@@ -4514,7 +4516,7 @@
           '<button class="phf-rf' + (grpListFilter === 'gap' ? ' on' : '') + (nGap === 0 ? ' phf-rf-off" disabled title="' + (fi ? 'Vous commandez' : 'Elle commande') + ' déjà tous les best-sellers"' : '" onclick="V2.pharmaGrpFilter(\'gap\')"') + '>' + (fi ? 'Pas encore commandés' : 'À pousser') + ' · ' + nGap + '</button>' +
         '</div>' +
       '</div>' +
-      '<div class="phf-tablewrap"><table class="phf-tbl"><thead><tr>' +
+      '<div class="phf-tablewrap"><table class="phf-tbl' + (fi ? ' phf-tbl-fi' : '') + '"><thead><tr>' +
         '<th class="phf-tl">Produit</th><th>Statut</th><th>Prix net IP</th><th title="Abandon de marge">Abandon</th><th class="phf-tc">% des pharmacies</th>' +
       '</tr></thead><tbody>' + rotRows + '</tbody></table></div>' +
       (!grpRotExpanded && shownRotAll.length > ROT_LOT ? '<button class="phf-rf" style="margin:10px 14px" onclick="V2.pharmaRotExpand()">Voir tout (' + shownRotAll.length + ')</button>' : '') +
@@ -7035,6 +7037,13 @@
     }, echec);
   };
   V2.pharmaTxClose = function () { var bd = document.getElementById('tx-modal'); if (bd) bd.classList.remove('open'); };
+  // 17/11/2026 (Will) : Échap ferme l'aperçu PDF (commun au CRM), puis la fenêtre Transmettre — l'aperçu ouvert depuis Transmettre se ferme en premier
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape' || e.defaultPrevented) return;
+    var pv = document.getElementById('pdf-prev'), tm = document.getElementById('tx-modal');
+    if (pv && pv.classList.contains('open')) { e.preventDefault(); V2.pdfPreviewClose(); return; }
+    if (tm && tm.classList.contains('open')) { e.preventDefault(); V2.pharmaTxClose(); }
+  });
   V2.pharmaTxReset = function () { tx.files = null; txRender(); };
   V2.pharmaTxApercu = function () {
     if (tx.busy || !tx.pid) return;

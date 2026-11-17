@@ -635,6 +635,8 @@ html.v2-nav .v2-top::before{content:"";position:absolute;left:0;bottom:-1px;heig
 @media (max-width:560px){
   .ph-detail .phf-tbl thead th:nth-child(2),.ph-detail .phf-tbl tbody td:nth-child(2){display:none}
   .ph-detail .phf-r-gap .phf-desig::after{content:" · À pousser";font-size:9px;font-weight:800;color:var(--c-amber)}
+  /* 17/11/2026 (Will) : fiche d4, le tableau n'est montré qu'en vue pharmacien — jamais « À pousser » sous ses yeux */
+  .ph-detail .phf-tbl-fi .phf-r-gap .phf-desig::after{content:" · Pas encore commandé"}
 }
 @media (prefers-reduced-motion:reduce){.mo-ripple{display:none}}
 /* Stagger d'arrivée des tuiles d'accueil (CSS pur, RM-safe) */
