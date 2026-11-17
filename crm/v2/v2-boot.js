@@ -505,7 +505,7 @@
 
   // ── Périmètre OPSO Santé (mode multi-marque) ────
   // Si window.OPSO_LISTING_2026 est chargé (app opso/v2/), on restreint le
-  // périmètre aux 129 officines du listing officiel (par CODE CIP) et on
+  // périmètre aux officines du listing officiel (par CODE CIP) et on
   // marque celles présentes dans les données (inDb = "commande déjà").
   V2.applyOpsoPerimeter = function () {
     var listing = (typeof OPSO_LISTING_2026 !== 'undefined' && OPSO_LISTING_2026) ? OPSO_LISTING_2026
@@ -553,6 +553,7 @@
         tel: a.tel || (db && db.tel) || '', perimetre: a.perimetre || '',
         groupement: 'OPSO SANTE', potentiel: (db && db.potentiel) || 0,
         inDb: !!db || hasStats, hasStats: hasStats,
+        debut: a.debut || '',   // « AAAA-MM » : mois d'adhésion (17/11/2026, Will : un achat ne compte pour OPSO qu'à partir de ce mois)
       };
     });
 
@@ -576,8 +577,17 @@
       });
     });
 
-    var ids = {}; V2.pharmacies.forEach(function (p) { ids[String(p.id)] = 1; });
-    V2.sales = (V2.sales || []).filter(function (s) { return ids[String(s.pharmacyId)]; });
+    var ids = {}, debutDe = {};
+    V2.pharmacies.forEach(function (p) {
+      ids[String(p.id)] = 1;
+      var m = /^(\d{4})-(\d{1,2})$/.exec(p.debut || '');
+      if (m) debutDe[String(p.id)] = (+m[1]) * 12 + (+m[2]);   // sans début : rien n'est retiré
+    });
+    V2.sales = (V2.sales || []).filter(function (s) {
+      if (!ids[String(s.pharmacyId)]) return false;
+      var d = debutDe[String(s.pharmacyId)];
+      return !(d && s.year && s.month && s.year * 12 + s.month < d);   // achat d'avant le mois d'adhésion : hors OPSO
+    });
   };
 
   // 11/09/2026 (phase 5) — le mappage des officines est à part : l'accueil se
@@ -1438,7 +1448,7 @@
     // Bumpé 29/09/2026 : v2-offilog.js change (union catalogue OPSO, retrait
     // Pharmazon/achat côté OPSO) — sans ce bump, un appareil ayant déjà l'app
     // ouverte continuerait de servir l'ancien fichier depuis le cache.
-    var V = '?v=20261117fpzd' + (window.V2_VER || '20260915g');
+    var V = '?v=20261117fpze' + (window.V2_VER || '20260915g');
     return Promise.all(urls.map(function (u) {
       return new Promise(function (resolve) {
         var s = document.createElement('script');
@@ -2003,7 +2013,7 @@
     if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('margeclients') < 0 && !(window.V2_BRAND && window.V2_BRAND.opso)) {
       keys = keys.concat(['margeclients']);
     }
-    // OPSO : le périmètre (129 adhérents) doit être en mémoire avant loadData (applyOpsoPerimeter)
+    // OPSO : le périmètre (les adhérents) doit être en mémoire avant loadData (applyOpsoPerimeter)
     if (keys && keys.indexOf('wml') >= 0 && keys.indexOf('opsolisting') < 0 && window.V2_BRAND && window.V2_BRAND.opso) {
       keys = keys.concat(['opsolisting']);
     }
@@ -2015,7 +2025,7 @@
     // de le servir, et le lecteur compacté ne trouverait pas ses dictionnaires.
     // Pas besoin de le suivre à chaque déploiement en revanche : quand `VER` de
     // sw.js change, l'activation du service worker efface tous les caches.
-    var V = '?v=20261117fpzd';
+    var V = '?v=20261117fpze';
     V2.versionDonnees = V;   // lu par chargerScriptProtege (fiche carte)
     var promises = keys.map(function (k) {
       var src = (window.V2_DATA_BASE || '../') + DATA_FILES[k];

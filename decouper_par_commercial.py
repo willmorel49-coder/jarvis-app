@@ -432,7 +432,7 @@ def main():
 
 def jeu_opso(officines, d_off, ventes, off_ca, tete_ca, carte, tete_det):
     """30/09/2026 — Will : « Emmanuel doit voir uniquement ce qui concerne OPSO ».
-    Le jeu du profil commercial='OPSO' : le détail des ventes des 129 adhérents
+    Le jeu du profil commercial='OPSO' : le détail des ventes des adhérents
     (opso/opso-listing-2026.js), tous commerciaux confondus, et RIEN d'autre —
     aucun total du reste du réseau. Rapprochement = V2.applyOpsoPerimeter (v2-boot.js),
     à l'identique : sinon des ventes affichées aujourd'hui disparaîtraient."""
@@ -449,6 +449,7 @@ def jeu_opso(officines, d_off, ventes, off_ca, tete_ca, carte, tete_det):
         if n and n not in by_nom:
             by_nom[n] = o
     ids = set()
+    debut_de = {}   # id officine -> compteur de mois du début de contrat (même codage que V2.moisDeMois : (année-2026)*12 + mois)
     for a in listing:
         db = by_cip.get(norm(a.get('cip') or a.get('code')))
         if not db:   # repli par nom, seulement si la ville concorde
@@ -458,8 +459,13 @@ def jeu_opso(officines, d_off, ventes, off_ca, tete_ca, carte, tete_det):
                 db = dn
         if db:
             ids.add(str(db.get('id')))
+            m_deb = re.match(r'^(\d{4})-(\d{1,2})$', str(a.get('debut') or ''))
+            if m_deb:
+                debut_de[str(db.get('id'))] = (int(m_deb.group(1)) - 2026) * 12 + int(m_deb.group(2))
     rangs = {r for r, c in enumerate(d_off) if str(c) in ids}
-    lignes = [v for v in ventes if v[0] in rangs]
+    # 17/11/2026 — Will : un achat ne compte pour OPSO qu'à partir du MOIS d'adhésion (même règle que V2.applyOpsoPerimeter).
+    debut_rang = {r: debut_de[str(c)] for r, c in enumerate(d_off) if str(c) in debut_de and r in rangs}
+    lignes = [v for v in ventes if v[0] in rangs and v[1] >= debut_rang.get(v[0], v[1])]
     if not lignes:
         sys.exit('ARRÊT : jeu OPSO vide (%d officines rapprochées)' % len(ids))
     # applyOpsoPerimeter répartit les achats d'opso-stats sur les mois PRÉSENTS dans les
