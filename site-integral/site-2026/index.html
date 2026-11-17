@@ -220,7 +220,7 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
 .label small{display:block;font-size:14px;color:rgba(255,255,255,.74)}
 
 /* ═════ LES PARTENAIRES — la grille ═══════════════════════════════════════════ */
-.labos{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--filet);border:1px solid var(--filet);
+.labos{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1px;background:var(--filet);border:1px solid var(--filet);
   margin-top:var(--e8);border-radius:var(--rond);overflow:hidden}
 .labo{background:#FCFDFF;min-height:150px;display:flex;align-items:center;justify-content:center;color:var(--encre);
   transition:background var(--d-micro) var(--sortie),color var(--d-micro) var(--sortie)}
@@ -233,8 +233,8 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
 .nuit .labo::after{background:var(--accent-nuit)}
 .labo:hover::after{transform:scaleX(1)}
 /* cinq partenaires : trois puis deux sur tablette, deux, deux puis un plein sur téléphone (aucune case vide) */
-@media (max-width:900px){.labos{grid-template-columns:repeat(6,minmax(0,1fr))}.labo{grid-column:span 2}.labo:nth-last-child(-n+2){grid-column:span 3}}
-@media (max-width:560px){.labos{grid-template-columns:repeat(2,minmax(0,1fr))}.labo,.labo:nth-last-child(-n+2){grid-column:auto}.labo:last-child{grid-column:1 / -1}.labo{min-height:110px}}
+@media (max-width:900px){.labos{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:560px){.labos{grid-template-columns:repeat(2,minmax(0,1fr))}.labo{min-height:110px}}
 
 /* ═════ MOUVEMENT RÉDUIT — ce qui est propre à cette page ═════════════════════ */
 @media (prefers-reduced-motion:reduce){
@@ -531,8 +531,8 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
 <section class="tuile nuit" id="partenaires">
   <div class="dedans">
     <div class="rv">
-      <p class="sur-titre">Nos partenaires génériqueurs</p>
-      <h2 class="t-lg">Les partenaires génériques qui nous font confiance.</h2>
+      <p class="sur-titre">Nos partenaires</p>
+      <h2 class="t-lg">Les partenaires qui nous font confiance.</h2>
     </div>
     <div class="rv" style="--i:1">
       <div class="labos" id="labos">
@@ -541,6 +541,7 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
         <div class="labo t-carte">Zydus</div>
         <div class="labo t-carte">Viatris</div>
         <div class="labo t-carte">Teva</div>
+        <div class="labo t-carte">Bioxpharma</div>
       </div>
     </div>
   </div>
@@ -576,7 +577,7 @@ html:not(.js) .valeur::before,html:not(.js) .valeur .t-carte::before{transform:n
       </div>
       <div class="met rv" style="--i:4">
         <div class="picto" aria-hidden="true"><svg viewBox="0 0 56 56"><path d="M28 7.5c4.6 1.9 9.4 3.3 14.5 4.1v12.2c0 10-6 16.6-14.5 20.7-8.5-4.1-14.5-10.7-14.5-20.7V11.6c5.1-.8 9.9-2.2 14.5-4.1z"/><path d="M28 17.5v13M21.5 24h13"/><path d="M17.5 14.2c2.4-.5 4.8-1.2 7-2.1"/></svg></div>
-        <b>Pharmacien(ne) responsable</b><span>Garant de l'application des BPDG pour le stockage, la conservation, la préparation et la livraison des bons produits, à la bonne officine et dans les temps impartis.</span>
+        <b>Pharmacien(ne) responsable</b><span>Garant des bonnes pratiques de distribution&nbsp;: le bon produit, à la bonne officine, dans les temps.</span>
       </div>
     </div>
 
