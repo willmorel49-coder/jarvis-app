@@ -4,7 +4,7 @@ Dossier constitué le 2026-09-24. Toutes les images sont sous licence gratuite p
 
 | Fichier | Scène | URL source | Auteur | Licence |
 |---|---|---|---|---|
-| depot-preparation.jpg | Mains gantées tenant des plaquettes de médicaments (blister), préparation de commande | https://www.pexels.com/photo/person-holding-medicines-4047011/ | Karola G (Kaboompics) | Pexels License |
+| preparation.jpg | Préparateur qui contrôle une commande (tablette + lecteur de code-barres) devant des rayonnages de cartons et bidons fermés — remplacée le 2026-11-17 | https://www.pexels.com/photo/employee-looking-at-an-inventory-4484047/ | Tiger Lily | Pexels License |
 | depot-stock.jpg | Allée d'entrepôt, rayonnages hauts remplis de cartons/bidons, deux opérateurs qui marchent avec une tablette | https://www.pexels.com/photo/workers-walking-along-aisle-in-warehouse-4487383/ | Tiger Lily | Pexels License |
 | depot-quai.jpg | Livreur portant un carton devant une camionnette blanche ouverte, chargement | https://www.pexels.com/photo/delivery-man-carrying-a-box-from-a-truck-6699421/ | Gustavo Fring | Pexels License |
 | depot-equipe.jpg | Deux opérateurs d'entrepôt en tenue de travail portant chacun un carton, rayonnages en arrière-plan | https://www.pexels.com/photo/men-carrying-parcels-in-a-warehouse-4487360/ | Tiger Lily | Pexels License |
@@ -17,4 +17,5 @@ Dossier constitué le 2026-09-24. Toutes les images sont sous licence gratuite p
 ## Notes de vérification
 - Chaque image a été regardée en entier (outil de lecture d'image) avant d'être gardée : cadrage, netteté, absence de logo de concurrent ou de texte non français lisible en gros plan.
 - Images écartées en cours de route (raisons) : camionnette "GLOBAL24" (logo + texte anglais visible), camion postal japonais (texte japonais + marque ISUZU), entrepôts à l'abandon ou avec graffitis, cartons de marque "REDBUZZ" visible, palette de bière "JOE IPA" + chariot "HYSTER" très visible, godet "Bobcat" avec autocollants russes, camionnettes "SECURITAS" (texte néerlandais + logo), entrepôt de peinture sombre et daté, entrepôt terne façon photo argentique des années 2000.
+- 2026-11-17 : l'ancienne photo de la préparation (mains gantées tenant des plaquettes, https://www.pexels.com/photo/person-holding-medicines-4047011/, Karola G) est retirée : des plaquettes sorties de leur boîte, c'est interdit en dépôt (remarque de Christèle, qualité). Règle pour toute photo future : médicaments uniquement dans leur boîte fermée, jamais de plaquette ni de comprimé à nu.
 - Aucune clé API, aucun compte, aucun site payant utilisé — uniquement Pexels (licence Pexels, gratuite, sans attribution obligatoire).
