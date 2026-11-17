@@ -433,7 +433,8 @@ test('PDF : une photo passagèrement non chargée dans l\'aperçu est redemandé
     const photo = (src, charge) => {
       const ls = { load: [], error: [] }, im = { essais: 0, complete: true, naturalWidth: charge === 0 ? 230 : 0, getAttribute: () => src,
         addEventListener: (t, f) => ls[t].push(f), removeEventListener: (t, f) => { ls[t] = ls[t].filter((g) => g !== f); } };
-      Object.defineProperty(im, 'src', { set() { im.essais++; const ok = im.essais >= charge; im.naturalWidth = ok ? 230 : 0; setTimeout(() => ls[ok ? 'load' : 'error'].slice().forEach((f) => f())); } });
+      im.adresses = [];
+      Object.defineProperty(im, 'src', { set(v) { im.adresses.push(v); im.essais++; const ok = im.essais >= charge; im.naturalWidth = ok ? 230 : 0; setTimeout(() => ls[ok ? 'load' : 'error'].slice().forEach((f) => f())); } });
       return im;
     };
     const a = photo('a.webp', 0), b = photo('b.webp', 1), page = { querySelectorAll: () => [a, b] };
@@ -443,6 +444,13 @@ test('PDF : une photo passagèrement non chargée dans l\'aperçu est redemandé
     const c = photo('c.webp', Infinity), page2 = { querySelectorAll: () => [a, c] };
     await assert.rejects(P.photosPretes(page2, 0), (e) => e.photos && e.photos.length === 1 && e.photos[0] === 'c.webp');
     assert.equal(c.essais, 2, 'deux nouveaux essais, pas un de plus');
+    // WebKit ressert l'échec d'une adresse reposée telle quelle (sonde du 17/11/2026) : chaque essai vise une adresse neuve, même fichier
+    assert.match(b.adresses[0], /^b\.webp\?reessai=\d+$/, 'redemandée à une adresse neuve');
+    assert.ok(c.adresses.every((s) => /^c\.webp\?reessai=\d+$/.test(s)) && c.adresses[0] !== c.adresses[1], 'chaque essai a sa propre adresse');
+    const d1 = photo('d.webp?reessai=4', 1), d2 = photo('d.webp?reessai=4', 1);
+    await P.photosPretes({ querySelectorAll: () => [d1, d2] }, 0);
+    assert.match(d1.adresses[0], /^d\.webp\?reessai=\d+$/, 'l\'ancien suffixe est remplacé, pas empilé');
+    assert.equal(d1.adresses[0], d2.adresses[0], 'les apparitions d\'une même photo partagent l\'adresse : une seule demande');
   } finally { P.PAUSES_REESSAI.splice(0, 2, ...pauses); }
 });
 

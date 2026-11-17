@@ -714,14 +714,19 @@
   // avant d'abandonner, on attend un peu (le 429 de Vercel retombe vite) et on redemande la photo, deux fois au plus.
   var PAUSES_REESSAI = [2, 6];   // secondes
   function pause(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
-  // aperçu : chaque photo cassée est redemandée (même adresse reposée = nouveau chargement), 15 s au plus
+  // aperçu : chaque photo cassée est redemandée, 15 s au plus. À une adresse NEUVE (même fichier, suffixe ?reessai=N) :
+  // la même adresse reposée ne redemande rien sous WebKit, qui ressert l'échec gardé pour la page (preuve WebKit du 17/11/2026).
+  // Un seul N par essai : les apparitions d'une même photo (scène + carte) partagent l'adresse, donc une seule demande.
+  var nReessai = 0;
   function rechargerPhotos(racine, srcs) {
+    var n = ++nReessai;
     return Promise.all([].filter.call(racine.querySelectorAll('img'), function (im) { return srcs.indexOf(im.getAttribute('src')) >= 0; }).map(function (im) {
       return new Promise(function (r) {
         var t = setTimeout(fini, 15000);
         function fini() { clearTimeout(t); im.removeEventListener('load', fini); im.removeEventListener('error', fini); r(); }
         im.addEventListener('load', fini); im.addEventListener('error', fini);
-        im.src = im.getAttribute('src');
+        var s = String(im.getAttribute('src')).replace(/[?&]reessai=\d+$/, '');
+        im.src = s + (s.indexOf('?') >= 0 ? '&' : '?') + 'reessai=' + n;
       });
     }));
   }
