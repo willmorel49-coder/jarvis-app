@@ -481,12 +481,14 @@
     return r ? [b(r[1]), b(r[0])] : ['', ''];
   }
   // Mêmes lignes et même prix net que l'Excel (pages des prix, Offre Privilège, rayons) : lu par « Le potentiel du catalogue ».
+  // Prix arrondi au centime comme dans l'Excel (virgule) : le prix brut a des fractions de centime, et le bloc affichait
+  // 451 409 € là où l'Excel donne 451 410 € (mesuré sous WebKit le 17/11/2026).
   function lignesPrix() {
     var d = construire(); if (!d) return null;
-    var L = [];
-    if (d.prix) d.prix.sections.forEach(function (sec) { sec.items.forEach(function (it) { L.push({ rayon: titrePrix(), cip: it.cip || '', nom: it.nom, net: it.opso }); }); });
-    if (d.offre) d.offre.items.forEach(function (it) { L.push({ rayon: d.offre.titre, cip: it.cip, nom: it.nom, net: it.net }); });
-    d.rayons.forEach(function (x) { x.items.forEach(function (it) { L.push({ rayon: x.r.court, cip: it.cip, nom: it.nom, net: it.net }); }); });
+    var L = [], cent = function (v) { return typeof v === 'number' ? Math.round(v * 100) / 100 : v; };
+    if (d.prix) d.prix.sections.forEach(function (sec) { sec.items.forEach(function (it) { L.push({ rayon: titrePrix(), cip: it.cip || '', nom: it.nom, net: cent(it.opso) }); }); });
+    if (d.offre) d.offre.items.forEach(function (it) { L.push({ rayon: d.offre.titre, cip: it.cip, nom: it.nom, net: cent(it.net) }); });
+    d.rayons.forEach(function (x) { x.items.forEach(function (it) { L.push({ rayon: x.r.court, cip: it.cip, nom: it.nom, net: cent(it.net) }); }); });
     return L;
   }
   // Tout ce que demande construire(), offre et prix compris : sans eux, les lignes changent (produits de l'offre remis dans leur rayon).
