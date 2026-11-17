@@ -1309,12 +1309,22 @@
         MPM.html +
       '</div>' : '';
 
+    // 17/11/2026 — Will : bloc Offilog au Pilotage OPSO (calcul et rendu dans opso/v2/opso-groupement.js).
+    var OFA = (V2.opsoGroupement && V2.opsoGroupement.offilogAdherentes) ? V2.opsoGroupement.offilogAdherentes() : null;
+    var offilogCard = (OFA && OFA.html) ?
+      '<div class="v2-card" style="margin-bottom:14px;padding:20px 22px">' +
+        '<div class="v2-card-head"><div class="v2-card-t">' + ICO('cart', 17) + 'Offilog · adhérentes clientes</div>' +
+          '<span class="v2-card-link" style="color:var(--muted);cursor:default">' + esc(OFA.periode) + '</span></div>' +
+        OFA.html +
+      '</div>' : '';
+
     return {
       html: '<div class="opso-section">' +
               '<div class="opso-section-head">' + ICO('pharma', 16) + 'Groupement OPSO Santé</div>' +
               kpiActivation +
               kpiGrp +
               moisCard +
+              offilogCard +
               (perimCard || '') +
               officinesCard +
               topProdCard +

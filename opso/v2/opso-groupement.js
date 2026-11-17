@@ -1070,6 +1070,62 @@
     };
   }
 
+  // 17/11/2026 — « Offilog · adhérentes clientes » (Pilotage OPSO). Calcul pur : off = WML_OFF_CA.off, pharmas = V2.pharmacies.
+  // Rend { vm, date, lignes:[{ nom, vals, total }] } ; null si la table manque. date = « AAAA-MM-JJ » du fichier client le plus récent cité.
+  function offilogAdherentesCalc(off, pharmas) {
+    if (!off || !off.vm || !off.vm.length) return null;
+    var chiffres = function (x) { return String(x == null ? '' : x).replace(/[^0-9]/g, ''); };
+    var vParCle = {}, mParCle = {};
+    Object.keys(off.v || {}).forEach(function (k) { vParCle[chiffres(k)] = off.v[k]; });
+    Object.keys(off.m || {}).forEach(function (k) { mParCle[chiffres(k)] = off.m[k]; });
+    var lignes = [], rangMax = -1;
+    (pharmas || []).forEach(function (p) {
+      var cles = [chiffres(p.id), chiffres(p.code)].filter(Boolean), v = null, m = null;
+      cles.forEach(function (c) { if (!v && vParCle[c]) v = vParCle[c]; if (!m && mParCle[c]) m = mParCle[c]; });
+      var vals = off.vm.map(function (_, i) { return (v && +v[i]) || 0; });
+      var total = vals.reduce(function (a, b) { return a + b; }, 0);
+      var cliente = !!m && m[0] === 1;
+      if (!cliente && !(total > 0)) return;
+      if (cliente && typeof m[1] === 'number' && m[1] > rangMax) rangMax = m[1];
+      lignes.push({ nom: p.name || String(p.id), vals: vals, total: total });
+    });
+    lignes.sort(function (a, b) { return (b.total - a.total) || a.nom.localeCompare(b.nom, 'fr'); });
+    var d = (off.d || [])[rangMax >= 0 ? rangMax : (off.d || []).length - 1];
+    d = d ? String(d).slice(0, 10) : '';
+    return { vm: off.vm.slice(), date: /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : '', lignes: lignes };
+  }
+  var OFA_CSS = ''
+    + '.ofa-rows{list-style:none;margin:0;padding:0}'
+    + '.ofa-r{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 16px;padding:10px 0;border-bottom:1px dashed rgba(33,57,43,.12)}'
+    + '.ofa-n{font-weight:700;color:#18221d;font-size:15px}'
+    + '.ofa-v{font-size:14px;color:#34403a;font-variant-numeric:tabular-nums}'
+    + '.ofa-v.is-none{color:#5d6577}'
+    + '@media (max-width:700px){.ofa-r{flex-direction:column;align-items:flex-start}}';
+  // Rend { html, periode } ; chaîne vide si la table Offilog n'est pas chargée.
+  function offilogAdherentes() {
+    var off = window.WML_OFF_CA && window.WML_OFF_CA.off;
+    var R = offilogAdherentesCalc(off, V2.pharmacies || []);
+    if (!R) return { html: '', periode: '' };
+    if (!document.getElementById('og-ofa-style')) { var st = document.createElement('style'); st.id = 'og-ofa-style'; st.textContent = OFA_CSS; document.head.appendChild(st); }
+    var cap = function (s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; };
+    var lab = function (ym) { return MOIS_ABREV[+ym.slice(5, 7) - 1]; };
+    var a = R.vm[0], b = R.vm[R.vm.length - 1];
+    var court = a === b ? lab(a) : lab(a) + '–' + lab(b);
+    var an = a.slice(0, 4) === b.slice(0, 4) ? ' ' + b.slice(0, 4) : '';
+    var periode = a.slice(0, 4) === b.slice(0, 4) ? court + an : lab(a) + ' ' + a.slice(0, 4) + '–' + lab(b) + ' ' + b.slice(0, 4);
+    var dateFr = R.date ? R.date.slice(8) + '/' + R.date.slice(5, 7) + '/' + R.date.slice(0, 4) : '';
+    var lignes = R.lignes.map(function (l) {
+      var txt = l.total > 0 ? l.vals.map(function (v, i) { return lab(R.vm[i]) + ' ' + euros(v); }).join(' · ') : 'aucune commande en ' + court;
+      return '<li class="ofa-r"><span class="ofa-n">' + esc(l.nom) + '</span><span class="ofa-v og-num' + (l.total > 0 ? '' : ' is-none') + '">' + esc(txt) + '</span></li>';
+    }).join('');
+    var note = 'Cliente Offilog' + (dateFr ? ' selon le fichier du ' + dateFr : '') + '. Chiffre Offilog : achats HT net. Les adhérentes qui n\'achètent pas chez Intégral Pharma ne figurent pas dans ce fichier : rien n\'est donc connu pour elles.';
+    return {
+      periode: cap(periode),
+      html: R.lignes.length ? '<div class="ofa"><ul class="ofa-rows">' + lignes + '</ul><p class="mpm-note">' + esc(note) + '</p></div>'
+        : '<div class="ofa"><p class="mpm-note">Aucune adhérente cliente Offilog dans le fichier. ' + esc(note) + '</p></div>'
+    };
+  }
+
   // 01/10/2026 — Will : « l'accueil doit être les différentes features, pas
   // directement le pilotage ». L'accueil ne montre plus que les espaces ; le
   // tableau de bord (cap, mois, rémunération, produits, trajectoire) devient
@@ -1090,5 +1146,5 @@
     }
   };
 
-  V2.opsoGroupement = { html: html, mount: mount, computeData: computeData, espaces: espaces, moisParMois: moisParMois };
+  V2.opsoGroupement = { html: html, mount: mount, computeData: computeData, espaces: espaces, moisParMois: moisParMois, offilogAdherentes: offilogAdherentes };
 })();
