@@ -7042,6 +7042,8 @@
     if (e.key !== 'Escape' || e.defaultPrevented) return;
     var pv = document.getElementById('pdf-prev'), tm = document.getElementById('tx-modal');
     if (pv && pv.classList.contains('open')) { e.preventDefault(); V2.pdfPreviewClose(); return; }
+    var pp = document.getElementById('pdfp-modal');   // aperçu « Voir l'aperçu » de Transmettre (v2-pdf-prospect.js : sa fermeture retire seulement « open »)
+    if (pp && pp.classList.contains('open')) { e.preventDefault(); pp.classList.remove('open'); return; }
     if (tm && tm.classList.contains('open')) { e.preventDefault(); V2.pharmaTxClose(); }
   });
   V2.pharmaTxReset = function () { tx.files = null; txRender(); };
