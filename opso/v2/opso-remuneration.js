@@ -317,7 +317,8 @@
         + '<dl class="oa-qn oa-qn--tot" id="oa-rtot-d" hidden><div><dt>CA HT net</dt><dd class="og-num">' + euros(T.total) + '</dd></div><div class="r"><dt>Retenu</dt><dd class="og-num">' + euros(T.retenu) + '</dd></div><div class="x"><dt>Exclu</dt><dd class="og-num">' + euros(T.exclu) + '</dd></div></dl>'
       + '</div>'
       + '<h3 class="oa-lh">Période par période</h3><ol class="oa-ls">';
-    D.lignes.forEach(function (l, i) { out += ligne(D, l, i); });
+    // Will, 17/11/2026 : la période antérieure à l'accord n'est plus affichée à OPSO ; ses primes restent dans le total.
+    D.lignes.filter(function (l) { return !l.indicatif; }).forEach(function (l, i) { out += ligne(D, l, i); });
     out += '</ol></section>';
     return out;
   }

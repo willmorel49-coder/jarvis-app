@@ -153,7 +153,10 @@ test('(b) OPSO : une période 2027 avant le mois `effet` n\'est PAS « indicativ
   assert.equal(D27.lignes[0].indicatif, false, '2027 : janv.–avr. est entièrement sous accord');
   assert.equal(D27.totalAnnee.remuCA, 73 + 10, '73 € (7 300 à 1 %) + 10 € (1 000 à 1 %) : rien n\'est retiré du total');
   assert.ok(!o.afficher().includes('Avant l’accord'), 'aucune mention « Avant l\'accord » en 2027');
-  assert.ok(o.clic(2026).includes('Avant l’accord · non comptée'), '2026 garde sa période avant l\'accord');
+  // Will, 17/11/2026 : la période avant l'accord n'est plus affichée à OPSO (compute() la garde, marquée indicative).
+  const h26 = o.clic(2026);
+  assert.ok(h26.includes('mai–août 2026'), 'marqueur positif : 2026 affichée');
+  assert.ok(!h26.includes('Avant l’accord') && !h26.includes('janv.–avr. 2026'), '2026 : plus de ligne « avant l\'accord »');
 });
 
 test('(b) OPSO, prime : cliente en 2026 ≠ nouvelle en 2027 ; vraiment nouvelle = nouvelle même en janvier', () => {
@@ -180,7 +183,7 @@ test('(b) OPSO, HTML : deux boutons, celui de l\'année affichée en aria-presse
   assert.ok(h.includes('janv.–avr. 2027') && !h.includes('janv.–avr. 2026'));
   h = o.clic(2026);
   assert.deepEqual(boutons(h), [['2026', 'true'], ['2027', 'false']]);
-  assert.ok(h.includes('janv.–avr. 2026') && !h.includes('janv.–avr. 2027'));
+  assert.ok(h.includes('mai–août 2026') && !h.includes('janv.–avr. 2026') && !h.includes('janv.–avr. 2027'));
   assert.equal(o.slot.focusSur, '2026', 'le focus reste sur le bouton cliqué');
   h = o.clic(2027);
   assert.deepEqual(boutons(h), [['2026', 'false'], ['2027', 'true']]);
