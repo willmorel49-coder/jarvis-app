@@ -123,4 +123,8 @@ html .dkg.dkg .dkg-cip-sous { display: none; }
 @media (max-width: 600px) {
   html .dkg.dkg .v2-cat .v2-table .dkg-cip { display: none; }
   html .dkg.dkg .v2-cat .v2-table .dkg-cip-sous { display: block; margin-top: 2px; font-family: var(--mono); font-size: var(--dk-t5); font-weight: 400; color: var(--dk-muted); }
+  /* cellules resserrées au téléphone (14 px de chaque côté -> 6 px) pour que « Part des officines qui le commandent » tienne aussi */
+  html .dkg.dkg .v2-cat .v2-table th, html .dkg.dkg .v2-cat .v2-table td { padding-left: 6px; padding-right: 6px; }
+  html .dkg.dkg .v2-cat .v2-table th:first-child, html .dkg.dkg .v2-cat .v2-table td:first-child { padding-left: 12px; }
+  html .dkg.dkg .v2-cat .v2-table th:last-child, html .dkg.dkg .v2-cat .v2-table td:last-child { padding-right: 12px; }
 }
