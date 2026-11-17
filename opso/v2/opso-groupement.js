@@ -611,7 +611,7 @@
         if (mpmEl._h !== MPM.html) { mpmEl._h = MPM.html; mpmEl.innerHTML = MPM.html; }
         byId('og-mpm-per').textContent = MPM.periode;
       }
-      renderPotentiel(scope, DATA);
+      try { renderPotentiel(scope, DATA); } catch (e) { try { console.warn('[opso] potentiel du catalogue :', e && e.message); } catch (x) {} }   // jamais le reste du tableau de bord cassé
 
       // ---- Le mois : histogramme, une colonne cliquable par mois ----
       var monthsNav = byId('og-months');
@@ -1218,7 +1218,8 @@
     if (!pret) {
       if (!_potCharge) {
         _potCharge = true;
-        C.charger().then(function () { var r = document.getElementById('v2-root'); if (r && r.querySelector('#og-pot')) renderPotentiel(r, computeData()); });
+        C.charger().then(function () { var r = document.getElementById('v2-root'); if (r && r.querySelector('#og-pot')) renderPotentiel(r, computeData()); })
+          .catch(function (e) { try { console.warn('[opso] potentiel du catalogue :', e && e.message); } catch (x) {} });
       }
       return;
     }
