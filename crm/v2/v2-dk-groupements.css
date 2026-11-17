@@ -117,3 +117,10 @@ html .dkg.dkg .dkg-m .dkg-nom { overflow-wrap: break-word; }
   html .dkg.dkg.dkg-liste-det .dkg-hd .dk-actions .dk-btn { min-width: 0; width: 100%; padding: 0 10px; line-height: 1.2; text-align: center; }
 }
 html .dkg.dkg .opp-add, html .dkg.dkg .ph-rmprod { border-radius: var(--dk-r-field); }   /* 16/11 (retouche 2d) : rayons 9 et 7 px -> jeton du kit */
+/* 17/11/2026 (Will, choix « CIP sous le nom ») : au téléphone, pages groupement et liste, le CIP passe en petit sous le nom du produit
+   et sa colonne disparaît, pour que « Abandon de marge » et « Nbr pharma » se voient sans faire glisser le tableau. Ordinateur inchangé. */
+html .dkg.dkg .dkg-cip-sous { display: none; }
+@media (max-width: 600px) {
+  html .dkg.dkg .v2-cat .v2-table .dkg-cip { display: none; }
+  html .dkg.dkg .v2-cat .v2-table .dkg-cip-sous { display: block; margin-top: 2px; font-family: var(--mono); font-size: var(--dk-t5); font-weight: 400; color: var(--dk-muted); }
+}

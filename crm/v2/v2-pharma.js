@@ -5687,8 +5687,8 @@
       var on = !!(selCips && selCips.has(r.cip));
       return '<tr' + (plus && i >= 10 ? ' class="dkg-plus" hidden' : '') + '>' +
         '<td class="num" style="color:var(--muted-2);width:30px;text-align:right;font-family:var(--mono)">' + (i + 1) + '</td>' +
-        '<td><span class="v2-cat-prod">' + esc(r.designation) + '</span>' + (r.froid ? ' <span class="ph-froid">FROID</span>' : '') + (r.manual ? ' <span class="ph-manual">ajouté</span>' : '') + '</td>' +
-        '<td class="mono" style="color:var(--muted);font-size:13px">' + esc(r.cip) + '</td>' +
+        '<td><span class="v2-cat-prod">' + esc(r.designation) + '</span>' + (r.froid ? ' <span class="ph-froid">FROID</span>' : '') + (r.manual ? ' <span class="ph-manual">ajouté</span>' : '') + '<span class="dkg-cip-sous">' + esc(r.cip) + '</span></td>' +   // 17/11/2026 (Will) : au téléphone, le CIP passe sous le nom (v2-dk-groupements.css)
+        '<td class="mono dkg-cip" style="color:var(--muted);font-size:13px">' + esc(r.cip) + '</td>' +
         '<td class="num cat-ip" style="color:var(--ip-blue);font-weight:700">' + (r.prix_ip > 0 ? V2.fmtEur(r.prix_ip) + (r.offre ? ' <span class="ph-offre">offre</span>' : '') : '—') + '</td>' +
         '<td class="num" style="color:var(--c-mint);font-weight:700">' + (r.remise > 0 ? String(r.remise).replace('.', ',') + '&nbsp;%' : '—') + '</td>' +   // 17/11/2026 (Will) : « 3,9 % » avec virgule, comme la fiche
         '<td class="num" style="font-weight:800;white-space:nowrap" title="' + r.sortie + ' pharmacies sur ' + panel + '">' + partTxt(r, panel) + '</td>' +
@@ -5697,7 +5697,7 @@
       '</tr>';
     }).join('');
     var body = '<div class="v2-cat-table-wrap"><table class="v2-table">' +
-      '<thead><tr><th class="num">#</th><th>Produit</th><th>CIP</th><th class="num">Prix net</th><th class="num" title="Abandon de marge">Abandon de marge</th>' +
+      '<thead><tr><th class="num">#</th><th>Produit</th><th class="dkg-cip">CIP</th><th class="num">Prix net</th><th class="num" title="Abandon de marge">Abandon de marge</th>' +
       '<th class="num">Part des officines qui le commandent</th><th></th>' + (enc ? '<th></th>' : '') + '</tr></thead><tbody>' + trs + '</tbody></table></div>';
     if (dkg && o.rows.length > 10) body += '<button type="button" class="dk-btn dk-btn-2 dkg-voir dkg-voir-cat" aria-expanded="' + !plus + '" onclick="V2.dkgCat(this,\'' + c.key + '\')">' + (plus ? 'Voir les ' + V2.fmtNum(o.rows.length) + ' produits' : 'Replier la liste') + '</button>';
     return '<div class="v2-card v2-cat open">' + head + body + '</div>';
