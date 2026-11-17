@@ -137,3 +137,10 @@ html .dkg.dkg .dkg-act-sous { display: none; }
   html .dkg.dkg .v2-cat .v2-table .dkg-sous .dkg-cip-sous { margin-top: 0; }
   html .dkg.dkg .v2-cat .v2-table .dkg-act-sous { display: inline-flex; gap: 8px; }
 }
+/* 17/11/2026 (Will, choix « € dans le titre ») : au téléphone, le prix net tenait sur deux lignes (« 3,71 » puis « € »). Le « € » de chaque
+   case est caché et la colonne s'appelle « Prix net (€) ». Ordinateur inchangé (« 3,71 € » dans la case, titre « Prix net »). */
+html .dkg.dkg .dkg-eur-t { display: none; }
+@media (max-width: 600px) {
+  html .dkg.dkg .v2-cat .v2-table .dkg-eur { display: none; }
+  html .dkg.dkg .v2-cat .v2-table .dkg-eur-t { display: inline; }
+}
