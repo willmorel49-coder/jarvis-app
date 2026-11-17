@@ -4490,7 +4490,7 @@
     var rot = grpBestRotations(pid, 60);
     var nOwn = rot.rows.filter(function (r) { return r.owned; }).length;
     var nGap = rot.rows.length - nOwn;
-    if (grpListPid !== String(pid)) { grpListPid = String(pid); grpListFilter = 'all'; }   // 17/11/2026 (Will) : le filtre ne suit plus d'une fiche à l'autre
+    if (grpListPid !== String(pid)) { grpListPid = String(pid); grpListFilter = 'all'; grpRotExpanded = false; }   // 17/11/2026 (Will) : ni le filtre ni « Voir tout » ne suivent plus d'une fiche à l'autre
     var shownRotAll = (grpListFilter === 'gap') ? rot.rows.filter(function (r) { return !r.owned; }) : rot.rows;
     var ROT_LOT = 15;
     var shownRot = grpRotExpanded ? shownRotAll : shownRotAll.slice(0, ROT_LOT);
@@ -5690,7 +5690,7 @@
         '<td><span class="v2-cat-prod">' + esc(r.designation) + '</span>' + (r.froid ? ' <span class="ph-froid">FROID</span>' : '') + (r.manual ? ' <span class="ph-manual">ajouté</span>' : '') + '</td>' +
         '<td class="mono" style="color:var(--muted);font-size:13px">' + esc(r.cip) + '</td>' +
         '<td class="num cat-ip" style="color:var(--ip-blue);font-weight:700">' + (r.prix_ip > 0 ? V2.fmtEur(r.prix_ip) + (r.offre ? ' <span class="ph-offre">offre</span>' : '') : '—') + '</td>' +
-        '<td class="num" style="color:var(--c-mint);font-weight:700">' + (r.remise > 0 ? r.remise + '%' : '—') + '</td>' +
+        '<td class="num" style="color:var(--c-mint);font-weight:700">' + (r.remise > 0 ? String(r.remise).replace('.', ',') + '&nbsp;%' : '—') + '</td>' +   // 17/11/2026 (Will) : « 3,9 % » avec virgule, comme la fiche
         '<td class="num" style="font-weight:800;white-space:nowrap" title="' + r.sortie + ' pharmacies sur ' + panel + '">' + partTxt(r, panel) + '</td>' +
         '<td style="width:46px;text-align:center"><button type="button" class="opp-add' + (on ? ' on' : '') + '" data-cip="' + esc(r.cip) + '" onclick="V2.pharmaToggleSel(this)" aria-label="Sélectionner pour le PDF">' + ICO(on ? 'check' : 'plus', 15) + '</button></td>' +
         (enc ? '<td style="width:38px;text-align:center"><button type="button" class="ph-rmprod" title="Retirer ce produit de la liste" onclick="V2.itemRemove(\'' + enc + '\',\'' + esc(r.cip) + '\')">' + ICO('close', 14, 2) + '</button></td>' : '') +
