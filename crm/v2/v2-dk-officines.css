@@ -143,8 +143,7 @@ html .dkf.dkf .vv-band, html .dkf.dkf .ph-detail > .vv-sel { display: none; }
   html .dkf.dkf .pha { grid-template-columns: minmax(0, 1fr) 384px; gap: 20px; }
   html .dkf.dkf .pha-main { grid-column: 1; grid-row: 1; }
   html .dkf.dkf .pha-rail { grid-column: 2; grid-row: 1; }
-  /* 16/11/2026 (soir, Will : « Retirer tout ») — vue Intégral : plus de colonne de droite, notre marge prend toute la largeur */
-  html .dkf.dkf[data-vue="integral"] .pha { grid-template-columns: minmax(0, 1fr); }
+  /* 17/11/2026 — la colonne de droite (menu, identité, infos, notes) revient en vue Intégral : la règle du 16/11 soir qui donnait toute la largeur aux chiffres est retirée */
 }
 /* 16/11/2026 — barres de notre marge : le trait « moyenne » passait au travers du montant (« 69,8|7 € ») ; le montant se pose désormais sur un fond blanc, au-dessus du trait */
 html .dkf.dkf .cl1-v { z-index: 1; margin-left: 4px; padding: 0 4px; border-radius: 4px; background: #fff; }

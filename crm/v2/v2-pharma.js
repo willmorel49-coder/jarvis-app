@@ -4116,7 +4116,7 @@
       (lede ? '<p class="dk-lede">' + lede + '</p>' : '') + '</div>' +
       '<div class="dk-actions"><div class="dk-seg dkf-seg" role="tablist" aria-label="Vue de la fiche">' + seg('pharmacien', 'Vue pharmacien') + seg('integral', 'Vue Intégral') + '</div>' +
       (acts ? '<div class="dkf-gestes vi-int">' + acts + '</div>' : '') + '</div>' +
-      '<p class="dkf-vuenote"><span class="vi-ph">Vue pharmacien : rien d’interne à l’écran, vous pouvez la lui montrer.</span><span class="vi-int">Vue Intégral : notre marge seule, comparée à nos clients. À ne pas lui montrer.</span></p>' +
+      '<p class="dkf-vuenote"><span class="vi-ph">Vue pharmacien : rien d’interne à l’écran, vous pouvez la lui montrer.</span><span class="vi-int">Vue Intégral : notre marge, vos notes et ses informations. À ne pas lui montrer.</span></p>' +
     '</header>';
   }
   // La grande carte « Ce qu'elle commande par mois » : gros chiffre du dernier mois, barres arrondies (les 12 derniers mois d'activité), phrase qui lit la courbe.
@@ -4590,8 +4590,10 @@
         '<div class="pha">' +
           // 16/11/2026 (soir, Will : « Retirer tout ») — fiche d4 : la colonne de droite entière n'est plus montrée en vue Intégral (classe vi-ph sur la colonne).
           // Elle reste dans la page, telle quelle : en vue pharmacien rien ne change, et les champs qu'elle porte (profil, notes, rendez-vous) gardent leur branchement.
-          // 16/11/2026 (Will : « Note en fenêtre ») — fiche d4 : la note et le prochain rendez-vous quittent la colonne, ils vivent dans la fenêtre dkfNoteFenetre (posée plus bas)
-          '<div class="pha-rail' + (fi ? ' vi-ph' : '') + '">' + viW(phaNavHtml(pid), 'vi-int') + idCard + (fi ? viW(fe.panneau, 'vi-int') + '<div class="fi-caps"></div>' + viW(listes + infos, 'vi-int') : viW(fe.panneau + listes + infos + notes, 'vi-int')) + '</div>' +
+          // 17/11/2026 (Will : « il manque toute la barre du côté gauche… ») — fiche d4 : la colonne redevient visible en vue Intégral avec tout ce qu'elle avait avant d4
+          // (menu, identité, formulaire des infos, profil, NOTES et prochain rendez-vous). Elle n'est plus vi-ph : l'identité reste montrée en vue pharmacien (comme avant), le reste est vi-int.
+          // Les notes reviennent dans la colonne : la fenêtre dkfNoteFenetre n'est plus posée (mêmes encadrés, mêmes id : un seul des deux endroits peut exister).
+          '<div class="pha-rail">' + viW(phaNavHtml(pid), 'vi-int') + idCard + (fi ? viW(fe.panneau, 'vi-int') + '<div class="fi-caps"></div>' + viW(listes + infos + notes, 'vi-int') : viW(fe.panneau + listes + infos + notes, 'vi-int')) + '</div>' +
           // 16/11/2026 — fiche d4 : les cartes génériqueurs / biosimilaires remontent juste après les chiffres, avant le Top 10 et « À proposer »
           // 16/11/2026 (soir) — fiche d4 : plus de détail produit ; la ligne du brief reste dans la page mais cachée (le bouton « Voir le brief du jour » de l'en-tête s'en remplit, V2.briefOfficine.hydrate)
           '<div class="pha-main">' + (fi ? chiffres + viW(generiqueurSec, 'vi-ph') + chiffresBas + (voitVentes ? viW(listing, 'vi-ph') : '') + (briefOff ? '<div class="fi-brief-cache" style="display:none">' + briefOff + '</div>' : '') : chiffres + chiffresBas + viW(briefOff + listing, 'vi-int') + viW(generiqueurSec, '')) + '</div>' +
@@ -4613,9 +4615,9 @@
           ville: villeV || '', cp: cpV || '', titulaire: titulaire || dirigeantsDe(oi) || '', tel: tel, mail: mail, pidSafe: pidSafe, brief: boutonBrief }) : viBandeau()) + viRetour() + tabs +
         viW(voitVentes && !isOpso() && V2.decrochageUI ? V2.decrochageUI.bandeau(pid) : '', 'vi-int') +   // 28/10/2026 — bandeau si l'officine est « à rappeler »
         '<div id="phft-c-apercu">' + apercu + '</div>' +
-      '</div>' +
-      // 16/11/2026 — hors de .v2-wrap et de .pha : présente dès le rendu (V2.notes.hydrate et V2.rdvPrepa.hydrate la remplissent), le sommaire du téléphone ne la voit pas
-      (fi && V2.notes ? dkfNoteFenetre(pid, esc(nameOf(pid, pharma.name))) : '');
+      '</div>';
+    // 17/11/2026 — la fenêtre « Note et prochain rendez-vous » (dkfNoteFenetre) n'est plus posée : les notes sont dans la colonne (vue Intégral). Fonction gardée, dormante.
+    // (nfRouvre est donc toujours faux, nfRetire ne trouve rien : sans effet.)
     document.body.classList.toggle('l8-vp', vue === 'pharmacien' && VI_FORME === 'ecran');   // 29/10 : seule la v3 cache aussi la barre de l'application
     if (menu) l8Afficher();
     if (V2.profil) V2.profil.hydrate();
@@ -4712,7 +4714,10 @@
     },
     premier: function () { var b = document.querySelector('#pha-autre-res .pha-nav-r'); if (b) b.click(); },
     noter: function (el) {
-      if (document.getElementById('dkf-nf')) { nfOuvre(el); return; }   // fiche d4 : la note est dans sa fenêtre
+      if (document.getElementById('dkf-nf')) { nfOuvre(el); return; }   // (fenêtre dormante : n'existe plus dans la page, 17/11/2026)
+      // fiche d4 : la note est dans la colonne, visible en vue Intégral seulement ; le bouton de l'en-tête existe aux deux vues → on passe d'abord en vue Intégral
+      var w = document.querySelector('.pha-wrap[data-vue="pharmacien"]');
+      if (w && w.classList.contains('dkf') && V2.pharmaVue) V2.pharmaVue('integral');
       var ta = document.querySelector('.pha-notes .v2-notes-box[data-st] .v2-notes-add .v2-notes-ta'); if (!ta) return;
       var b = ta.closest('.v2-notes-box') || ta;
       b.scrollIntoView({ behavior: 'smooth', block: 'center' });
