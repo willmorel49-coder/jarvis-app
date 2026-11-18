@@ -961,3 +961,38 @@ html:not([data-hab]) .v2-section-head .v2-sh-s{font-size:14px;color:#505661;font
 html:not([data-hab]) .v2-btn-primary{background-color:#0043C8;background-image:linear-gradient(170deg,#0A5BF0,#0043C8);border-color:#0036A8;box-shadow:0 8px 18px -8px rgba(0,80,230,.7),0 1px 0 rgba(255,255,255,.3) inset}
 html:not([data-hab]) .v2-btn-primary:hover{box-shadow:0 12px 24px -8px rgba(0,80,230,.75),0 1px 0 rgba(255,255,255,.32) inset}
 /* ═══ fin du temps 2 ═══ */
+
+/* ═══ COUP DE NEUF — temps 3 (18/11/2026) : les mêmes composants d'un écran à l'autre, accueil et écrans de la barre SEULEMENT.
+   Will : « faire les modifs que des feature principal et de l'accueil ». Relevé par la mesure (temps3/audit.mjs, WebKit 1280 px) :
+   trois polices (Onest sur Infos, Hanken sur Marketing), titres de page de 26 à 44 px, cartes de 12 à 28 px d'arrondi,
+   boutons bleus plats sur la fiche, sélecteur « Afficher » de la to do différent des onglets. CSS seul, habillage par défaut seul. ═══ */
+
+/* ── Une seule police : Archivo (Infos et Marketing avaient la leur) ; la ligne « CIP » de la fiche quitte la chasse fixe ── */
+html:not([data-hab]) :is(.pp,#pp-pan,#pp-voile,#x13-sheet,#x13-voile,#f3-ban){--pp-sans:var(--font)}
+html:not([data-hab]) body .mk-espace{font-family:var(--font)}
+html:not([data-hab]):root:root:root .pha-code{font-family:var(--font);letter-spacing:.08em;font-weight:700}
+/* Infos : Archivo est plus large, « Votre secteur » passait sur 2 lignes → titres de colonne à 22 px, 20 px au téléphone
+   (mesuré sous WebKit : 142 px de texte pour 150 px de place à l'ordinateur, 129 pour 140 au téléphone) */
+html:not([data-hab]) body .inf-c-ptitre{font-size:22px}
+@media (max-width:700px){html:not([data-hab]) body .inf-c-ptitre{font-size:20px}}
+
+/* ── Titres de page : une seule taille sur ordinateur (le téléphone garde les siennes) ; La carte garde son en-tête compact ── */
+@media (min-width:1001px){
+  html:not([data-hab]) body :is(#u2-salut,.of-h1,.td-h1,.inf-h1,.gr-h1,.mkb-h1,.cpd-h1){font-size:40px;font-weight:800;letter-spacing:-.025em;line-height:1.08}
+}
+
+/* ── Cartes et panneaux : l'arrondi commun (--r-card, 20 px, celui de m32) ; les tuiles chiffrées gardent 14 px (temps 2) ── */
+html:not([data-hab]) body :is(.ac-c,.u2-wid,.v2-card.dr,.v2-todo-add,.v2-todo-empty,.v2-todo-list,.inf-c-porte,.f3-fil,.gr-carte,.cpd-head,.cpd-door,.olm-porte,.fbk-b){border-radius:var(--r-card)}
+html:not([data-hab]):root:root:root :is(.pha-nav,.pha-card){border-radius:var(--r-card);border-color:#E3E6EC}
+html:not([data-hab]) body .v2-card.dr{border-color:#E3E6EC}
+
+/* ── Boutons bleus de la fiche : le bleu à lumière du bouton principal (temps 2), même taille de texte ── */
+html:not([data-hab]):root:root:root :is(.bo-open,.phf-nmedit-btn){background-color:#0043C8;background-image:linear-gradient(170deg,#0A5BF0,#0043C8);border-color:#0036A8;font-size:14px;box-shadow:0 8px 18px -8px rgba(0,80,230,.7),0 1px 0 rgba(255,255,255,.3) inset}
+
+/* ── To do, « Afficher » : comme les onglets (piste grise, 44 px, actif bleu plein) ── */
+html:not([data-hab]) body .td-m1 .v2-todo-seg{padding:4px;border-radius:18px;background-color:#EDF1F8;background-image:none;border:1px solid #E3E6EC;box-shadow:none}
+html:not([data-hab]) body .td-m1 .v2-todo-seg button{min-height:44px;border-radius:14px;font-size:14px;font-weight:650;color:#3B4357}
+html:not([data-hab]) body .td-m1 .v2-todo-seg button:hover{background-color:#fff;color:#1A2030}
+html:not([data-hab]) body .td-m1 .v2-todo-seg button.is-on,html:not([data-hab]) body .td-m1 .v2-todo-seg button.is-on:hover{background-color:#0050E6;color:#fff;box-shadow:0 8px 16px -8px rgba(0,80,230,.7),0 1px 0 rgba(255,255,255,.25) inset}
+html:not([data-hab]) body .td-m1 .v2-todo-seg button.is-on .td-cnt-s{color:#fff}
+/* ═══ fin du temps 3 ═══ */
