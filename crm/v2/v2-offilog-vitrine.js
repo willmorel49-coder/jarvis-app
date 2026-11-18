@@ -455,6 +455,16 @@
 
   // ── API sans écran (lue par les tests) ───────────────
   V2.offVitrineDonnees = function (n) { return donnees(n); };
+  // 18/11/2026 — onglet « Très bien placés » (v2-offilog.js) : la MÊME liste que le catalogue (marques exclues retirées, ordre du
+  // dernier relevé, position sans trou), avec la marque et le nom nettoyés. null tant que la liste privée manque : l'onglet reste fermé.
+  V2.offVitrineClasses = function () {
+    if (!exclusValides()) return null;
+    var XS = window.OFFILOG_EXCLUS;
+    var X = { eans: setDe(XS.eans), prefixes: setDe(XS.prefixes), liste: XS.marques.map(function (m) { return String(m).trim().toLowerCase(); }).filter(Boolean) };
+    var L = candidats(lireItems(false), X);
+    var G = gammesDe(L.map(function (x) { return { nom: nettoyer(x.it.name), marque: x.it.brand }; }));
+    return L.map(function (x) { var mn = marqueNom({ nom: nettoyer(x.it.name), marque: x.it.brand }, G); return { it: x.it, pos: x.pos, marque: mn.marque, nom: mn.nom }; });
+  };
   V2.offVitrineHtml = function (n) { return construire(donnees(n)); };
 
   // ── Chargement des sources, à l'ouverture ──────────────

@@ -2113,19 +2113,137 @@
       (lignes.length ? '<div class="olo-l" role="list"><div class="olo-h" aria-hidden="true"><span>Produit</span><span>Prix Offilog HT</span><span>Meilleur concurrent</span><span>Écart</span><span>Prix public le plus bas</span><span>Marge</span></div>' + corps + '</div>' + plus : '<p class="olo-etat">Aucun produit ne correspond.</p>');
   }
   function oppOnglets() {
-    var on = S.oppTab === 'opp';
+    var on = S.oppTab === 'opp', plc = S.oppTab === 'plc';
     return '<div class="v2-segs olo-onglets" role="tablist" aria-label="Que comparer ?">' +
-      '<button type="button" class="v2-seg' + (on ? '' : ' on') + '" role="tab" aria-selected="' + (!on) + '" data-onglet="plateformes" onclick="V2.offOppOnglet(\'plateformes\')">Face aux plateformes</button>' +
-      '<button type="button" class="v2-seg' + (on ? ' on' : '') + '" role="tab" aria-selected="' + on + '" data-onglet="opp" onclick="V2.offOppOnglet(\'opp\')">Opportunités</button></div>';
+      '<button type="button" class="v2-seg' + (on || plc ? '' : ' on') + '" role="tab" aria-selected="' + (!on && !plc) + '" data-onglet="plateformes" onclick="V2.offOppOnglet(\'plateformes\')">Face aux plateformes</button>' +
+      '<button type="button" class="v2-seg' + (on ? ' on' : '') + '" role="tab" aria-selected="' + on + '" data-onglet="opp" onclick="V2.offOppOnglet(\'opp\')">Opportunités</button>' +
+      '<button type="button" class="v2-seg' + (plc ? ' on' : '') + '" role="tab" aria-selected="' + plc + '" data-onglet="plc" onclick="V2.offOppOnglet(\'plc\')">Très bien placés</button></div>';
   }
   V2.offOppOnglet = function (k) {
-    S.oppTab = k === 'opp' ? 'opp' : 'plateformes';
+    S.oppTab = (k === 'opp' || k === 'plc') ? k : 'plateformes';
+    if (S.oppTab === 'plc') plcCharger();
     if (S.oppTab === 'opp' && !oppD() && oppEtat !== 'charge') {
       oppEtat = 'charge';
       var fin = function () { oppEtat = oppD() ? '' : 'echec'; if (V2.route && V2.route.name !== 'offilog') return; V2.render(); };
       try { V2.loadFiles(['offilogopp']).then(fin, fin); } catch (e) { fin(); }
     }
     V2.render();
+  };
+  // ── 18/11/2026 — onglet « Très bien placés » : où Offilog bat NETTEMENT Sagitta ET Pharmazon (demande de Will du 18/11) ──
+  // Calculé EN DIRECT avec ce que l'écran a en mémoire (prix Offilog du robot du lundi, classement du dernier relevé, Sagitta,
+  // Pharmazon) : il suit chaque mise à jour des prix, sans fichier à refaire. Mêmes règles que le catalogue interne du 18/11 :
+  // les deux prix connus, chacun entre 0,5 et 2 fois le prix Offilog (au-delà, conditionnement probablement différent),
+  // marques exclues retirées par la liste privée (via la vitrine), promotion Pharmazon = prix final ≤ 70 % du prix catalogue.
+  // Conditions de tiers : jamais côté OPSO (SANS_OPP).
+  var PLC_SEUILS = [
+    { k: '10', min: 0.10, label: '10 % moins cher ou plus' },
+    { k: '20', min: 0.20, label: '20 % ou plus' },
+    { k: 'tous', min: 0, label: 'Moins cher que les deux' }
+  ];
+  var PLC_LO = 0.5, PLC_HI = 2, PLC_PROMO = 0.70;
+  var PLC_TR = [[1, 100], [101, 500], [501, 1000], [1001, Infinity]];
+  var plcCache = null, plcTente = false;
+  function plcPret() { return !!(window.SAGITTA_PRIX && window.PHARMAZON && window.PHARMAZON_PRIX); }
+  function plcCharger() {
+    if (plcTente) return;
+    plcTente = true;
+    var cles = [];
+    if (!window.OFFILOG_EXCLUS) cles.push('offilogexclus');
+    if (!window.OFFILOG_MARCHE) cles.push('offilogmarche');
+    if (!window.SAGITTA_PRIX) cles.push('sagittaprix');
+    var fin = function () { idxBuilt = false; plcCache = null; if (V2.route && V2.route.name !== 'offilog') return; V2.render(); };
+    if (cles.length && V2.loadFiles) { try { V2.loadFiles(cles).then(fin, fin); } catch (e) {} }
+    if (!window.PHARMAZON || !window.PHARMAZON_PRIX) { try { ensurePz(fin); } catch (e) {} }
+  }
+  function plcToutes() {
+    var sig = [items, items && items.length, !!window.SAGITTA_PRIX, !!window.PHARMAZON_PRIX, window.OFFILOG_EXCLUS].join('|');
+    if (plcCache && plcCache.items === items && plcCache.sig === sig) return plcCache.out;
+    var L = V2.offVitrineClasses ? V2.offVitrineClasses() : null;
+    var out = null;
+    if (L) {
+      out = [];
+      L.forEach(function (x) {
+        var it = x.it, p = it.price, s = it.sg && it.sg.price > 0 ? it.sg.price : 0, z = it.pz && it.pz.price > 0 ? it.pz.price : 0;
+        if (!(p > 0) || !s || !z || s / p < PLC_LO || s / p > PLC_HI || z / p < PLC_LO || z / p > PLC_HI) return;
+        var m = Math.min(s, z), e = (p - m) / m;
+        if (!(e < 0)) return;
+        out.push({ it: it, pos: x.pos, marque: x.marque, nom: x.nom, s: s, z: z, e: e, promo: !!(it.pz.cat > 0 && z <= PLC_PROMO * it.pz.cat) });
+      });
+    }
+    plcCache = { items: items, sig: sig, out: out };
+    return out;
+  }
+  function plcSeuil(k) { return PLC_SEUILS.filter(function (f) { return f.k === k; })[0] || PLC_SEUILS[0]; }
+  function plcGarde(L, f) { return L.filter(function (x) { return f.min ? x.e <= -f.min + 1e-9 : true; }); }
+  function plcPct(e) { var v = Math.round(Math.abs(e) * 100); return '−' + v + ' %'; }
+  function plcMediane(L) {
+    if (!L.length) return 0;
+    var a = L.map(function (x) { return x.e; }).sort(function (u, v) { return u - v; }), m = a.length >> 1;
+    return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+  }
+  function plcTranche(pos) { for (var i = 0; i < PLC_TR.length; i++) if (pos >= PLC_TR[i][0] && pos <= PLC_TR[i][1]) return i; return PLC_TR.length - 1; }
+  function plcTrLib(i) { var t = PLC_TR[i]; return t[1] === Infinity ? 'Ventes n° ' + V2.fmtNum(t[0]) + ' et au-delà' : 'Ventes n° ' + V2.fmtNum(t[0]) + ' à ' + V2.fmtNum(t[1]); }
+  function plcLigne(x) {
+    var it = x.it, id = esc(it.id);
+    var img = it.img ? '<img class="olp-img" data-imgprod src="' + esc(it.img) + '" loading="lazy" alt="">' : '<span class="olp-img olp-noimg" aria-hidden="true">' + esc((x.marque || '').slice(0, 14)) + '</span>';
+    return '<div class="olo-r olp-r cl" role="button" tabindex="0" data-opp="' + id + '" onclick="V2.offSelect(\'' + id + '\')" onkeydown="if(event.target===this&&(event.key===\'Enter\'||event.key===\' \')){event.preventDefault();V2.offSelect(\'' + id + '\')}">' +
+      '<div class="olo-c olp-n" data-l="Ventes"><b class="olo-v">n° ' + V2.fmtNum(x.pos) + '</b></div>' +
+      '<div class="olo-c olp-ph">' + img + '</div>' +
+      '<div class="olo-c olo-prod"><span class="olo-marque">' + esc(x.marque || '') + '</span><span class="olo-nom">' + esc(x.nom || it.name || '') + '</span></div>' +
+      '<div class="olo-c" data-l="Offilog HT"><b class="olo-v olp-prix">' + V2.fmtEur(it.price) + '</b></div>' +
+      '<div class="olo-c" data-l="Sagitta net HT"><span class="olo-v">' + V2.fmtEur(x.s) + '</span></div>' +
+      '<div class="olo-c" data-l="Pharmazon HT"><span class="olo-v">' + V2.fmtEur(x.z) + '</span>' + (x.promo ? '<span class="olp-promo">promotion</span>' : '') + '</div>' +
+      '<div class="olo-c" data-l="Écart"><span class="olo-ecart bon">' + plcPct(x.e) + '</span><span class="olo-sous">sous le moins cher</span></div></div>';
+  }
+  function plcHtml() {
+    var tout = plcPret() ? plcToutes() : null;
+    if (tout === null) {
+      var ferme = plcPret() && window.OFFILOG_EXCLUS && !(V2.offVitrineClasses && V2.offVitrineClasses());
+      return '<p class="olo-etat" role="status">' + (ferme ? 'La liste des marques à retirer n\'est pas disponible : rien n\'est montré. Rouvrez l\'écran dans un instant.' : 'Chargement des prix Sagitta et Pharmazon…') + '</p>';
+    }
+    var f = plcSeuil(S.plcF || '10');
+    var garde = plcGarde(tout, f);
+    var q = oppNorm(S.plcQ || '');
+    var lignes = q ? garde.filter(function (x) { return oppNorm((x.marque || '') + ' ' + (x.nom || '') + ' ' + (x.it.name || '')).indexOf(q) >= 0; }) : garde;
+    var n = S.plcN || 50;
+    var M = window.OFFILOG_MARCHE || {}, rel = M.releves || [], der = rel.length ? rel[rel.length - 1] : (M.maj || '');
+    var C = window.OFFILOG_CATALOGUE;
+    var tete = '<div class="olo-photo"><p class="olo-date"><b>Usage interne</b> : prix d\'achat de tiers, ne se remet pas à un pharmacien.</p>' +
+      '<p>Classement des ventes du ' + esc(oppDate(der)) + (C && C.maj ? ', prix Offilog du ' + esc(oppDate(String(C.maj))) : '') +
+      (window.SAGITTA_PRIX_MAJ ? ', Sagitta relevé du ' + esc(oppDate(window.SAGITTA_PRIX_MAJ)) : '') + '. Se recalcule à chaque mise à jour des prix. Marques exclues retirées ; Sagitta et Pharmazon tous deux connus.</p></div>';
+    var segs = PLC_SEUILS.map(function (s) {
+      return '<button type="button" class="v2-seg olo-seg' + (s.k === f.k ? ' on' : '') + '" role="tab" aria-selected="' + (s.k === f.k) + '" onclick="V2.offPlcFiltre(\'' + s.k + '\')">' + esc(s.label) + '<span class="cnt">' + V2.fmtNum(plcGarde(tout, s).length) + '</span></button>';
+    }).join('');
+    var nPromo = garde.filter(function (x) { return x.promo; }).length;
+    var parTr = PLC_TR.map(function (t, i) { return garde.filter(function (x) { return plcTranche(x.pos) === i; }).length; });
+    var synth = '<div class="olp-synth">' +
+      '<div><b class="olo-v">' + V2.fmtNum(garde.length) + '</b><span class="olo-sous">produits</span></div>' +
+      '<div><b class="olo-v">' + (garde.length ? plcPct(plcMediane(garde)) : '—') + '</b><span class="olo-sous">écart médian</span></div>' +
+      '<div><b class="olo-v">' + V2.fmtNum(nPromo) + '</b><span class="olo-sous">face à une promotion Pharmazon</span></div>' +
+      '<div><b class="olo-v">' + parTr.map(function (v) { return V2.fmtNum(v); }).join(' · ') + '</b><span class="olo-sous">ventes 1-100 · 101-500 · 501-1 000 · au-delà</span></div></div>';
+    var recherche = '<div class="off-search olo-search">' + ICO('search', 19, 2) + '<input id="olp-q" autocomplete="off" aria-label="Chercher une marque ou un produit" placeholder="Chercher une marque ou un produit…" value="' + esc(S.plcQ || '') + '" oninput="V2.offPlcSearch(this.value)"></div>';
+    var corps = '', trPrec = -1;
+    lignes.slice(0, n).forEach(function (x) {
+      var t = plcTranche(x.pos);
+      if (t !== trPrec) { corps += '<div class="olp-tr" role="presentation">' + esc(plcTrLib(t)) + '</div>'; trPrec = t; }
+      corps += plcLigne(x);
+    });
+    var plus = lignes.length > n ? '<button type="button" class="v2-btn olo-plus" onclick="V2.offPlcPlus()">Voir 50 de plus (' + V2.fmtNum(lignes.length - n) + ' restants)</button>' : '';
+    return tete + '<div class="v2-segs olo-segs" role="tablist" aria-label="Écart avec le moins cher des deux">' + segs + '</div>' + synth + recherche +
+      '<p class="olo-nb" role="status"><b>' + V2.fmtNum(lignes.length) + '</b> produit' + (lignes.length > 1 ? 's' : '') + (q ? ' pour « ' + esc(S.plcQ) + ' »' : '') + ', dans l\'ordre des ventes</p>' +
+      (lignes.length ? '<div class="olo-l olp-l" role="list"><div class="olo-h olp-h" aria-hidden="true"><span>Ventes</span><span></span><span>Produit</span><span>Offilog HT</span><span>Sagitta net HT</span><span>Pharmazon HT</span><span>Écart</span></div>' + corps + '</div>' + plus : '<p class="olo-etat">Aucun produit ne correspond.</p>');
+  }
+  V2.offPlcFiltre = function (k) { S.plcF = k; S.plcN = 50; V2.render(); };
+  V2.offPlcPlus = function () { S.plcN = (S.plcN || 50) + 50; V2.render(); };
+  var _plcTimer = null;
+  V2.offPlcSearch = function (v) {
+    S.plcQ = v || ''; S.plcN = 50;
+    clearTimeout(_plcTimer);
+    _plcTimer = setTimeout(function () {
+      V2.render();
+      var inp = document.getElementById('olp-q');
+      if (inp) { inp.focus(); var l = inp.value.length; try { inp.setSelectionRange(l, l); } catch (e) {} }
+    }, 120);
   };
   V2.offOppFiltre = function (k) { S.oppF = k; S.oppN = 50; V2.render(); };
   V2.offOppPlus = function () { S.oppN = (S.oppN || 50) + 50; V2.render(); };
@@ -2379,6 +2497,7 @@
           accueilHtml += olmPan('Le catalogue Offilog', V2.offVitrinePanneau ? V2.offVitrinePanneau() : '');
         } else if (S.porte === 'comparer') {
           if (!SANS_OPP && S.oppTab === 'opp') accueilHtml += olmPan('Comparer nos prix', oppOnglets() + oppHtml());
+          else if (!SANS_OPP && S.oppTab === 'plc') accueilHtml += olmPan('Comparer nos prix', oppOnglets() + plcHtml());
           else accueilHtml += olmPan('Comparer nos prix', (SANS_OPP ? '' : oppOnglets()) + verdictBand(filtered) + cmpHtml +
             (advChips ? '<div class="olm-pan-l">Repères concurrence (nombre de produits)</div><div class="v2-segs off-adv-segs">' + advChips + '</div>' : '') +
             '<div class="olm-pan-l">Trier par</div><div class="off-sort olm-sort">' + sortBtn('ecart', 'Écart concurrent') + (!SANS_PCAT && (c.avecpcat || 0) > 0 ? sortBtn('pcat', 'Plus fort écart au prix catalogue') : '') + '</div>');

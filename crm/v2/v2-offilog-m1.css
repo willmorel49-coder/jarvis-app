@@ -325,3 +325,22 @@
   .olm .olo-c[data-l]::before{content:attr(data-l);font-size:12px;font-weight:700;color:var(--o-gris)}
   .olm .olo-segs .v2-seg,.olm .olo-onglets .v2-seg{min-height:44px}
 }
+
+/* ═══ 18/11/2026 · onglet « Très bien placés » (porte « Comparer nos prix ») — préfixe olp-, s'appuie sur olo- ═══ */
+.olm .olp-h,.olm .olp-r{grid-template-columns:64px 52px minmax(0,2.6fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,.9fr);align-items:center}
+.olm .olp-tr{padding:10px 16px;background:#EEF3FC;border-top:1px solid var(--o-filet);font-size:13px;font-weight:700;letter-spacing:.03em;color:var(--o-gris)}
+.olm .olp-h+.olp-tr{border-top:0}
+.olm .olp-tr+.olp-r{border-top:0}
+.olm .olp-img{width:48px;height:48px;object-fit:contain;border-radius:10px;background:#fff;border:1px solid var(--o-filet);display:block}
+.olm .olp-noimg{display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;text-align:center;line-height:1.1;color:var(--o-gris);overflow:hidden;padding:2px}
+.olm .olp-prix{font-size:16px}
+.olm .olp-promo{font-size:12px;font-weight:700;color:#8A5A00}
+.olm .olp-synth{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 12px}
+.olm .olp-synth>div{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border:1px solid var(--o-filet);border-radius:12px;background:#fff;min-width:0}
+.olm .olp-synth .olo-v{font-size:18px}
+@media (max-width:760px){
+  .olm .olp-r{grid-template-columns:52px minmax(0,1fr) minmax(0,1fr)}
+  .olm .olp-r .olo-prod{grid-column:2/-1}
+  .olm .olp-r .olp-ph{grid-row:1;grid-column:1}
+  .olm .olp-synth{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
