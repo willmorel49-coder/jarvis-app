@@ -255,9 +255,23 @@
     var idee = (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.remonteeOpen)
       ? '<button type="button" class="tp-idee" title="Faire une remontée" aria-label="Faire une remontée" aria-haspopup="dialog" onclick="V2.remonteeOpen()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + U2_IC.remontees + '</svg></button>'
       : '';
+    // 18/11/2026 — coup de neuf, temps 2 (Will : « la barre de menu en haut […] qui permet de passer d'une feature à l'autre ») : sur un écran
+    // interne, les outils de l'accueil en pastilles, dans l'ordre de l'accueil (V2.accueilCinq.barre). Mêmes écrans, aucun lien nouveau.
+    // Jamais côté OPSO. Affichée sur ordinateur et avec l'habillage par défaut seulement (v2.css, bloc « temps 2 ») : ailleurs, rien ne change.
+    var menu = '';
+    if (back && !(window.V2_BRAND && window.V2_BRAND.opso) && V2.accueilCinq && V2.accueilCinq.barre) {
+      try {
+        var rt = V2.route || {}, grp = rt.name === 'pharma' && rt.param === 'groupements';
+        var lm = V2.accueilCinq.barre().map(function (t) {
+          var on = t.k === 'groupements' ? grp : (rt.name === t.k && !(t.k === 'pharma' && grp));
+          return '<a class="tp-m' + (on ? ' on' : '') + '" href="' + esc(t.href) + '" data-tp-act="' + esc(t.act) + '"' + (on ? ' aria-current="page"' : '') + ' onclick="return V2.topAller(event,this)">' + esc(t.nom) + '</a>';
+        });
+        if (lm.length) menu = '<nav class="tp-menu" aria-label="Outils">' + lm.join('') + '</nav>';
+      } catch (e) { menu = ''; }
+    }
     return '' +
-      '<div class="v2-top">' +
-        '<div class="tp-g">' + back + brand + nom + '</div>' +
+      '<div class="v2-top' + (menu ? ' tp-avec-menu' : '') + '">' +
+        '<div class="tp-g">' + back + brand + nom + '</div>' + menu +
         '<div class="tp-d">' +
           ((V2.route && V2.route.name === 'home' && window.V2_BRAND && window.V2_BRAND.opso) ? '' : '<button type="button" class="v2-top-search" aria-label="Rechercher" aria-haspopup="dialog" onclick="V2.onTopSearch()">' + ICO('search', 18, 2) + '<span class="txt">Rechercher</span><kbd>' + MOD + 'K</kbd></button>') +
           idee + plus +
@@ -1821,6 +1835,11 @@
     u2PoserTeinte(); u2MajCentre(); u2MajWidgets(); u2VoletRendre();
   }
 
+  // 18/11/2026 — un clic dans le menu de la barre du haut : même chemin que les liens de l'accueil ; avec un modificateur, le navigateur ouvre un onglet
+  V2.topAller = function (e, a) {
+    if (!e || e.button > 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return true;
+    e.preventDefault(); qAgir(a.getAttribute('data-tp-act') || ''); return false;
+  };
   function qAgir(act) {
     var i = act.indexOf(':'), t = act.slice(0, i), v = act.slice(i + 1);
     if (t === 'go') { var p = v.split('/'); if (p[1]) V2.go(p[0], p[1]); else V2.go(p[0]); }

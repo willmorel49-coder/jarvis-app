@@ -854,3 +854,110 @@ html:not([data-hab]){
 }
 /* la lumière de m32 : halo bleuté en haut à droite, halo blanc en haut à gauche (propriétés séparées, jamais « a, b, couleur ») */
 html:not([data-hab]) body{background-color:var(--paper);background-image:radial-gradient(900px 520px at 88% -6%,#D9E6FF 0%,rgba(217,230,255,0) 70%),radial-gradient(1100px 560px at 6% -10%,#FFFFFF 0%,rgba(255,255,255,0) 70%);background-repeat:no-repeat;font-feature-settings:"liga","kern"}
+
+/* ═══ COUP DE NEUF — temps 2 (18/11/2026) : ce qui est « facile » dans la maquette m32, posé sur la vraie appli.
+   Will : « toute les améliorations faciles en design de graphiques par exemple ou la barre de menu en haut […] fais-le dans l'app ».
+   Style seulement (aucun calcul, aucune donnée) + le menu de la barre du haut (topbar, v2-app.js : les liens de l'accueil, même ordre).
+   Habillage par défaut seulement (html sans data-hab) : les 8 habillages restent tels quels, et le menu y reste caché.
+   Fonds : propriétés séparées (jamais « a, b, couleur »), ni flou ni backdrop-filter, aucune opacité sur du texte. ═══ */
+
+/* ── La barre du haut : blanc franc, filet et ombre de m32 ── */
+html:not([data-hab]) .v2-top{background-color:#fff;background-image:none;border-bottom:1px solid #E3E6EC;box-shadow:0 1px 0 #fff inset,0 8px 24px -16px rgba(26,32,48,.18)}
+html:not([data-hab]) .v2-logo{width:44px;height:44px;border-radius:14px;background-color:#0050E6;background-image:radial-gradient(90px 60px at 20% 0%,#4F8DFF 0%,rgba(79,141,255,0) 70%),linear-gradient(160deg,#0A5BF0,#003AB4);box-shadow:0 6px 14px -4px rgba(0,80,230,.5),0 1px 0 rgba(255,255,255,.35) inset}
+html:not([data-hab]) .tp-plus{background-color:#003AB4;background-image:linear-gradient(160deg,#0A5BF0,#003AB4);box-shadow:0 8px 18px -6px rgba(0,80,230,.6),0 1px 0 rgba(255,255,255,.3) inset}
+html:not([data-hab]) .tp-avb .v2-av{width:44px;height:44px;background-color:#9E4512;background-image:linear-gradient(150deg,#B14F17,#8A380A);color:#fff;box-shadow:0 6px 14px -6px rgba(138,56,10,.6),0 1px 0 rgba(255,255,255,.4) inset}
+/* le menu : caché partout par défaut (habillages, téléphone, tablette), en pilule sur ordinateur */
+.tp-menu{display:none}
+@media (min-width:1001px){
+  html:not([data-hab]) .tp-avec-menu .tp-g{flex:none}
+  /* le nom de l'écran laisse sa place au menu (la pastille bleue dit où l'on est) ; la recherche devient une loupe (⌘K marche toujours) */
+  html:not([data-hab]) .tp-avec-menu .tp-nom{display:none}
+  html:not([data-hab]) .tp-avec-menu .v2-top-search{min-width:0;width:44px;padding:0;justify-content:center}
+  html:not([data-hab]) .tp-avec-menu .v2-top-search :is(.txt,kbd){display:none}
+  html:not([data-hab]) .tp-menu{display:flex;align-items:center;gap:2px;flex:0 0 auto;margin:0 auto 0 0;padding:4px;border-radius:18px;background-color:#F1F4FA;border:1px solid #E3E6EC}
+  html:not([data-hab]) .tp-m{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;border-radius:14px;font:600 14.5px/1 var(--font);color:#3B4357;white-space:nowrap;text-decoration:none;cursor:pointer;transition:background-color .25s cubic-bezier(.32,.72,0,1),color .25s,box-shadow .25s}
+  html:not([data-hab]) .tp-m:hover{background-color:#fff;color:#1A2030;box-shadow:var(--sh-1)}
+  html:not([data-hab]) .tp-m.on,html:not([data-hab]) .tp-m.on:hover{background-color:#0050E6;color:#fff;box-shadow:0 6px 14px -6px rgba(0,80,230,.6),0 1px 0 rgba(255,255,255,.25) inset}
+  html:not([data-hab]) .tp-m:focus-visible{outline:2px solid #0050E6;outline-offset:2px}
+  /* les outils suivent l'ordre de l'accueil : les cinq premiers toujours, les suivants dès que la largeur le permet (mesuré sous WebKit le 18/11) */
+  html:not([data-hab]) .tp-m:nth-child(n+6){display:none}
+}
+@media (min-width:1120px){ html:not([data-hab]) .tp-m:nth-child(6){display:inline-flex} }
+@media (min-width:1200px){ html:not([data-hab]) .tp-m:nth-child(7){display:inline-flex} }
+@media (min-width:1290px){ html:not([data-hab]) .tp-m:nth-child(8){display:inline-flex} }
+@media (min-width:1370px){ html:not([data-hab]) .tp-m:nth-child(9){display:inline-flex} }
+@media (min-width:1480px){ html:not([data-hab]) .tp-m:nth-child(10){display:inline-flex} }
+@media (min-width:1570px){ html:not([data-hab]) .tp-m:nth-child(11){display:inline-flex} }
+@media (min-width:1680px){ html:not([data-hab]) .tp-m:nth-child(n+12){display:inline-flex} }
+/* écran large : la recherche retrouve son libellé */
+@media (min-width:1800px){
+  html:not([data-hab]) .tp-avec-menu .v2-top-search{width:220px;padding:0 10px 0 14px;justify-content:flex-start}
+  html:not([data-hab]) .tp-avec-menu .v2-top-search .txt{display:inline}
+  html:not([data-hab]) .tp-avec-menu .v2-top-search kbd{display:inline-block}
+}
+@media (prefers-reduced-motion:reduce){ html:not([data-hab]) .tp-m{transition:none} }
+
+/* ── Graphiques (SVG faits main : une règle CSS bat l'attribut, les calculs ne bougent pas) ── */
+/* fiche officine : trait de 3 px, repère « moyenne » en pointillé fin, grille plus douce, halo blanc derrière les valeurs */
+html:not([data-hab]) .pha-chart .pha-cal{stroke-width:3}
+html:not([data-hab]) .pha-chart polyline[stroke-dasharray]{stroke:#4A5265;stroke-width:1.5;stroke-dasharray:6 4}
+html:not([data-hab]) .pha-chart line{stroke:#E3E6EC}
+html:not([data-hab]) .pha-chart text[font-weight="700"]{stroke:#fff;stroke-width:4px;paint-order:stroke;stroke-linejoin:round}
+/* Pilotage : le « lecteur » du grand graphique devient une case (hauteur fixe : plus de saut quand il se remplit), survol bleuté, grille adoucie */
+html:not([data-hab]) .pa-read{min-height:44px;margin:8px 0 0;padding:10px 14px;border-radius:10px;background-color:#F3F6FC;border:1px solid #E3E6EC;color:#3B4357;display:flex;align-items:center;flex-wrap:wrap;gap:0 6px}
+html:not([data-hab]) .pa-read b{color:#1A2030}
+html:not([data-hab]) .pa-hit:hover{fill:rgba(0,80,230,.07)}
+html:not([data-hab]) .pa-leg{gap:8px 22px;font-size:14px;color:#3B4357}
+html:not([data-hab]) .pa-svg line{stroke:#E3E6EC}
+/* barres de progression : 10 px, piste claire */
+html:not([data-hab]) .pilo-bar{height:10px;border-radius:5px;background-color:#E8ECF4;box-shadow:none}
+html:not([data-hab]) .pilo-bar-fill{border-radius:5px}
+
+/* ── Pilotage en Archivo (il imposait encore la police système) ── */
+html:not([data-hab]) .pa-root{font-family:var(--font)}
+
+/* ── Tuiles chiffrées : sans barre de couleur sur le côté, chiffre en Archivo, libellé en casse normale ── */
+html:not([data-hab]) .pha-kl{text-transform:none;letter-spacing:0;font-size:14px;font-weight:650;color:#3B4357;line-height:1.3}
+html:not([data-hab]) .fi-m1 .pha-kl{font-size:14px;color:#3B4357}
+html:not([data-hab]) .v2-kpi::before,html:not([data-hab]) .pha-kpi::after{display:none}
+html:not([data-hab]) .v2-kpi{border-radius:14px;padding:18px 20px;background-color:#fff;background-image:linear-gradient(180deg,#fff,#FBFBFD);box-shadow:var(--sh-1)}
+html:not([data-hab]) .v2-kpi-v{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+html:not([data-hab]) .v2-kpi-l{text-transform:none;letter-spacing:0;font-size:14px;font-weight:650;color:#3B4357}
+/* les chiffres : Archivo à chiffres alignés, comme m32 (plus de police à chasse fixe) */
+html:not([data-hab]) :is(.v2-kpi-v,.v2-table tbody td.num,.v2-row-val){font-family:var(--font);font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+
+/* ── Cartes : la lumière du coin de m32 ── */
+html:not([data-hab]) .v2-card{border-color:#E3E6EC;background-color:#fff;background-image:radial-gradient(520px 260px at 100% 0%,rgba(0,80,230,.055),rgba(0,80,230,0) 70%),linear-gradient(180deg,#fff,#FBFBFD);box-shadow:var(--sh-1)}
+html:not([data-hab]) .v2-card-head{border-bottom-color:#E3E6EC}
+html:not([data-hab]) .v2-card-t{font-size:17px;font-weight:700;letter-spacing:-.01em}
+
+/* ── Onglets : piste grise, 44 px, actif bleu plein ── */
+html:not([data-hab]) .v2-tabs{padding:4px;border-radius:18px;background-color:#EDF1F8;border:1px solid #E3E6EC;box-shadow:none;gap:2px}
+html:not([data-hab]) .v2-tab{min-height:44px;padding:0 16px;border-radius:14px;font-size:14px;font-weight:650;color:#3B4357}
+html:not([data-hab]) .v2-tab:hover{background-color:#fff;color:#1A2030}
+html:not([data-hab]) .v2-tab.on,html:not([data-hab]) .v2-tab.on:hover{background-color:#0050E6;color:#fff;box-shadow:0 8px 16px -8px rgba(0,80,230,.7),0 1px 0 rgba(255,255,255,.25) inset}
+
+/* ── Pastilles de filtre et étiquettes ── */
+html:not([data-hab]) .v2-seg{min-height:44px;padding:0 16px;border-radius:999px;border-color:#CFDDF8;font-size:15px;font-weight:650;color:#0034A0}
+html:not([data-hab]) .v2-seg:hover{background-color:#F2F6FF}
+html:not([data-hab]) .v2-chip{font-size:13px;padding:4px 10px}
+
+/* ── Tableaux et listes : en-têtes en casse normale, filets nets, survol bleuté ── */
+html:not([data-hab]) .v2-table thead th{font-size:13px;text-transform:none;letter-spacing:0;font-weight:600;color:#505661;background-color:#fff;border-bottom:1px solid #E3E6EC}
+html:not([data-hab]) .v2-table tbody td{font-size:14px;padding:12px 14px;border-bottom-color:#E3E6EC}
+html:not([data-hab]) .v2-table tbody tr:hover{background-color:#F2F6FF}
+html:not([data-hab]) .v2-row{border-bottom-color:#E3E6EC;font-size:14px;min-height:48px}
+html:not([data-hab]) .v2-row:hover{background-color:#F2F6FF}
+
+/* ── Recherche : focus net (bord bleu + anneau de 3 px), touche ⌘K discrète ── */
+html:not([data-hab]) .v2-champ:focus-within,html:not([data-hab]) .v2-top-search:focus-visible{border-color:#0050E6;box-shadow:0 0 0 3px rgba(0,80,230,.14)}
+html:not([data-hab]) .v2-top-search kbd{font:600 13px var(--font);color:#5B6478;background-color:#F1F4FA;border:0;border-radius:8px;padding:3px 7px;box-shadow:none}
+
+/* ── Titres de section ── */
+html:not([data-hab]) .v2-section-head>h2,html:not([data-hab]) .v2-section-head .v2-sh-t{font-weight:750;letter-spacing:-.015em}
+html:not([data-hab]) .v2-section-head .v2-sh-s{font-size:14px;color:#505661;font-weight:400}
+
+/* ── Bouton principal : bleu à lumière, comme m32 ── */
+html:not([data-hab]) .v2-btn-primary{background-color:#0043C8;background-image:linear-gradient(170deg,#0A5BF0,#0043C8);border-color:#0036A8;box-shadow:0 8px 18px -8px rgba(0,80,230,.7),0 1px 0 rgba(255,255,255,.3) inset}
+html:not([data-hab]) .v2-btn-primary:hover{box-shadow:0 12px 24px -8px rgba(0,80,230,.75),0 1px 0 rgba(255,255,255,.32) inset}
+/* ═══ fin du temps 2 ═══ */
