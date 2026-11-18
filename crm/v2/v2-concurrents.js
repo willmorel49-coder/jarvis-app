@@ -90,9 +90,10 @@
     },
     pharmazon: {
       nom: 'Pharmazon', tag: 'Plateforme labos', accent: '#345DA0', cles: ['pharmazonprix'],
-      quoi: 'Le catalogue B2B Pharmazon (offres laboratoires) avec le prix négocié, le prix catalogue et la remise. Export du 14/05/2026, pas un relevé en direct.',
+      quoi: 'Le catalogue B2B Pharmazon (offres laboratoires) avec le prix négocié, le prix catalogue et la remise, relevés sur le site Pharmazon.',
       charge: function () { return !!(window.PHARMAZON && window.PHARMAZON_PRIX); },
-      maj: function () { return '2026-05-14'; },
+      // date portée par pharmazon-data.js (generate_pharmazon.py), jamais écrite ici (18/11/2026)
+      maj: function () { return window.PHARMAZON_MAJ || ''; },
       rows: function () {
         if (!window.PHARMAZON) return [];
         if (V2.fusionnerPrixPharmazon) { try { V2.fusionnerPrixPharmazon(); } catch (e) {} }
@@ -284,7 +285,7 @@
       // Identité publique (pharmazon-data.js) + prix protégé (pharmazonprix),
       // même chemin que l'écran Offilog.
       pzLoading = true;
-      var sc = document.createElement('script'); sc.src = MOD_BASE + 'pharmazon-data.js?v=20261030potom';
+      var sc = document.createElement('script'); sc.src = MOD_BASE + 'pharmazon-data.js?v=20261118pz';
       sc.onload = function () { pzLoading = false; cb(); };
       sc.onerror = function () { pzLoading = false; V2.protegeEchec.pharmazon = true; cb(); };
       document.head.appendChild(sc);

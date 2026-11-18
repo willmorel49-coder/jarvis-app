@@ -200,3 +200,15 @@ test('Sagitta : un produit connu seulement par son CIP13 a son prix sur tout l\'
   assert.doesNotMatch(rendre({ selection: false, extra: { SAGITTA_PRIX: {}, SAGITTA_PRIX_CIP: {} } }).html, /Sagitta EUR/);
   assert.doesNotMatch(rendre({ opso: true, selection: false, extra: { SAGITTA_PRIX: {}, SAGITTA_PRIX_CIP: { [E1]: 9 } } }).html, /Sagitta EUR/, 'jamais côté OPSO');
 });
+
+test('Pharmazon : un produit relevé par son EAN est aussi trouvé par son CIP13 ; l\'EAN passe avant ; rien côté OPSO (18/11/2026)', () => {
+  const pz = (lignes) => ({ PHARMAZON: lignes.map(([ean, cip, prix]) => ({ ean, cip, prix_final: prix, prix_catalogue: 0, labo: 'L', name: 'n' })) });
+  const parCip = rendre({ selection: false, extra: pz([['3700343900292', E1, 9]]) }).html;
+  assert.match(parCip, /Pharmazon EUR9\.00/, 'trouvé par le CIP13 de la fiche Pharmazon');
+  assert.match(parCip, /off-card-pz win[^>]*>Pharmazon/, '9 contre 10 : marqué moins cher que notre prix');
+  const lesDeux = rendre({ selection: false, extra: pz([['3700343900292', E1, 9], [E1, '', 8]]) }).html;
+  assert.match(lesDeux, /Pharmazon EUR8\.00/); assert.doesNotMatch(lesDeux, /Pharmazon EUR9\.00/, 'le produit relevé sous cet EAN passe avant');
+  // contrôle de l'outil : sans CIP13 relevé, aucun prix Pharmazon
+  assert.doesNotMatch(rendre({ selection: false, extra: pz([['3700343900292', '', 9]]) }).html, /Pharmazon EUR/);
+  assert.doesNotMatch(rendre({ opso: true, selection: false, extra: pz([['3700343900292', E1, 9]]) }).html, /Pharmazon EUR/, 'jamais côté OPSO');
+});

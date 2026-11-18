@@ -161,14 +161,18 @@
   // index Pharmazon par EAN (prix d'achat sur l'autre plateforme)
   // — jamais côté OPSO : conditions négociées d'un tiers (SANS_PHARMAZON).
   function pzIndex() {
-    var m = new Map();
+    var m = new Map(), parCip = [];
     if (SANS_PHARMAZON) return m;
     (window.PHARMAZON || []).forEach(function (p) {
       if (p.ean && p.prix_final != null) {
-        var e = String(p.ean);
-        if (!m.has(e)) m.set(e, { price: numOr0(p.prix_final), cat: numOr0(p.prix_catalogue), labo: p.labo || '', name: p.name || '' });
+        var e = String(p.ean), v = { price: numOr0(p.prix_final), cat: numOr0(p.prix_catalogue), labo: p.labo || '', name: p.name || '' };
+        if (!m.has(e)) m.set(e, v);
+        // Une fiche Pharmazon porte souvent un EAN ET un CIP13 (`cip`, relevé seulement s'il diffère) ; Offilog code une partie
+        // de la parapharmacie par le CIP13 : le prix se rattache aussi par lui, l'EAN passant toujours avant (18/11/2026).
+        if (p.cip) parCip.push([String(p.cip), v]);
       }
     });
+    parCip.forEach(function (x) { if (!m.has(x[0])) m.set(x[0], x[1]); });
     return m;
   }
 
@@ -1405,8 +1409,8 @@
     // Les prix négociés Pharmazon (conditions d'un TIERS) ne sont plus dans ce
     // fichier : ils arrivent par adresse signée, en parallèle. Jeton bumpé.
     if (V2.loadFiles) { try { V2.loadFiles(['pharmazonprix']).then(function () { if (V2.fusionnerPrixPharmazon) V2.fusionnerPrixPharmazon(); idxBuilt = false; V2.render(); }); } catch (e) {} }
-    inject(MOD_BASE + 'pharmazon-data.js?v=20261030potom', function () {
-      inject('pharmazon-data.js?v=20261030potom', function () { pzLoading = false; cb(); });
+    inject(MOD_BASE + 'pharmazon-data.js?v=20261118pz', function () {
+      inject('pharmazon-data.js?v=20261118pz', function () { pzLoading = false; cb(); });
     });
   }
 

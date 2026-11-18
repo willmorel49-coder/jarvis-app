@@ -8,7 +8,7 @@ paliers) + EAN13 via la fiche produit.
 Sortie : crm/v2/pharmazon-data.js  (const PHARMAZON = [...])
 Utilise curl (TLS compatible) ; checkpoints réguliers.
 """
-import subprocess, re, json, time, os, sys
+import subprocess, re, json, time, os, sys, html
 from concurrent.futures import ThreadPoolExecutor
 from bs4 import BeautifulSoup
 
@@ -48,7 +48,8 @@ EMAIL, PWD = _identifiants()
 def log(*a): print(*a, flush=True)
 
 def curl(url, xhr=False, timeout=50, post=None, referer=None):
-    cmd = ["curl", "-sL", "--connect-timeout", "20", "--max-time", str(timeout), "-A", UA, "-b", JAR, "-c", JAR]
+    # --compressed : une fiche produit pèse 2,3 Mo brute, 0,26 Mo compressée (mesuré le 18/11/2026)
+    cmd = ["curl", "-sL", "--compressed", "--connect-timeout", "20", "--max-time", str(timeout), "-A", UA, "-b", JAR, "-c", JAR]
     if xhr: cmd += ["-H", "X-Requested-With: XMLHttpRequest"]
     if referer: cmd += ["-e", referer]
     if post:
@@ -68,7 +69,9 @@ def login():
     curl(BASE + "/customer/account/loginPost/", referer=LOGIN, post=[
         "form_key=" + fk, "login[username]=" + EMAIL, "login[password]=" + PWD])
     acc = curl(BASE + "/customer/account/")
-    return "Mon compte" in acc or "logout" in acc.lower() or "morel" in acc.lower()
+    # 18/11/2026 : « logout » et « Mon compte » figurent AUSSI sur la page « Connexion client » : l'ancien contrôle
+    # disait OK sur un mot de passe refusé. Non connecté, /customer/account/ renvoie vers le formulaire (loginPost).
+    return bool(acc) and "loginPost" not in acc
 
 # ── 2. LISTE DES LABOS ──
 def labos():
@@ -84,7 +87,7 @@ def labos():
 
 # ── 3. PRODUITS D'UN LABO (paginé) ──
 def labo_products(code, name):
-    items, page, seen_first = [], 1, None
+    items, page, deja = [], 1, set()
     while page <= 60:
         h = curl(BASE + "/laboratoire/labo/index/code/%s/?p=%d" % (code, page))
         sp = BeautifulSoup(h, "html.parser")
@@ -106,8 +109,12 @@ def labo_products(code, name):
             if imgel: img = imgel.get("data-src") or imgel.get("src") or ""
             page_items.append({"sku": str(sku), "id": pid, "name": nm.strip(), "img": img, "labo": name})
         if not page_items: break
-        if page_items[0]["sku"] == seen_first: break  # même page = fin
-        seen_first = page_items[0]["sku"]
+        # 18/11/2026 : Pharmazon répète le même produit en tête de CHAQUE page d'un labo : « 1er produit déjà vu = même
+        # page » arrêtait tout à la page 2 (La Roche-Posay : 43 produits relevés sur 111). Fin de liste = une page qui
+        # n'apporte aucun produit nouveau (au-delà de la dernière, le site resert une page déjà vue).
+        nouveaux = [it for it in page_items if it["sku"] not in deja]
+        if not nouveaux: break
+        deja.update(it["sku"] for it in nouveaux)
         items += page_items
         if len(page_items) < 12: break  # dernière page partielle
         page += 1
@@ -134,34 +141,54 @@ def fetch_prices(skus):
         time.sleep(0.1)
     return out
 
-# ── 5. EAN via fiche produit ──
-def fetch_ean(pid):
-    if not pid: return ""
+# ── 5. EAN et CIP13 via fiche produit ──
+# 18/11/2026 : la fiche porte un bloc « product-codes » (EAN, CIP7, CIP13), échappé en HTML (&#x5B;…&#x5D;). Le 1er nombre
+# à 13 chiffres de la page, seul lu jusque-là, était souvent le CIP13 (cité en tête de page) alors qu'Offilog utilise l'EAN :
+# CB12 spray relevé 3401360315396 (CIP13), fiche EAN 3700343900292. On garde les deux, comme pour Sagitta.
+def codes_fiche(h):
+    m = re.search(r'class="product-codes"\s+x-data="\{\s*codes:\s*(&#x5B;.*?&#x5D;)', h or "", re.S)
+    if not m: return {}
+    try:
+        lst = json.loads(html.unescape(m.group(1)))
+    except ValueError:
+        return {}
+    return {c.get("key"): str(c.get("value") or "").strip() for c in lst if isinstance(c, dict) and c.get("key")}
+
+def fetch_codes(pid):
+    """(ean, cip13) d'une fiche ; repli sur le 1er nombre à 13 chiffres si le bloc manque. cip13 = '' s'il égale l'EAN."""
+    if not pid: return "", ""
     d = curl(BASE + "/catalog/product/view/id/%s/" % pid, timeout=45)
-    m = re.search(r'\b(\d{13})\b', d)
-    return m.group(1) if m else ""
+    c = codes_fiche(d)
+    ean = c.get("ean") if re.fullmatch(r"\d{13}", c.get("ean") or "") else ""
+    cip = c.get("cip13") if re.fullmatch(r"\d{13}", c.get("cip13") or "") else ""
+    if not ean and not cip:
+        m = re.search(r'\b(\d{13})\b', d or "")
+        return (m.group(1) if m else ""), ""
+    return (ean or cip), (cip if cip and cip != (ean or cip) else "")
 
 def write_out(rows, partial=False):
     # ⚠️ 03/09/2026 — les prix négociés Pharmazon sont les conditions d'un
     # TIERS : ils ne vont JAMAIS dans OUT, qui part dans un dépôt PUBLIC
     # (règle §8). Deux fichiers : le catalogue (identité seule) dans le dépôt,
     # le tarif dans OUT_PRIX, à déposer sur Supabase (couvert par .gitignore).
-    import os as _os
+    import os as _os, datetime as _dt
     OUT_PRIX = _os.path.join(_os.path.dirname(OUT), "pharmazon-prix.js")
+    # date du relevé, lue par l'écran Concurrents (« Relevé du … ») : jamais écrite en dur dans l'app (18/11/2026)
+    maj = _dt.date.today().isoformat()
     pub, tarif = [], {}
     for r in rows:
         ean = str(r.get("ean") or "")
         if ean and r.get("prix_final") is not None:
             tarif[ean] = [r["prix_final"], r.get("prix_catalogue") or 0, r.get("remise") or 0]
-        pub.append({k: v for k, v in r.items() if k in ("sku", "id", "name", "img", "labo", "ean")})
+        pub.append({k: v for k, v in r.items() if k in ("sku", "id", "name", "img", "labo", "ean", "cip") and (k != "cip" or v)})
     with open(OUT, "w", encoding="utf-8") as f:
         f.write("// Pharmazon (sra-pharmazon.com) — CATALOGUE SEUL, SANS LES PRIX NÉGOCIÉS%s\n" % (" [PARTIEL]" if partial else ""))
-        f.write("// %d produits · identité seulement (nom, labo, image, EAN)\n" % len(pub))
+        f.write("// %d produits · identité seulement (nom, labo, image, EAN, CIP13 s'il diffère) — relevé %s\n" % (len(pub), maj))
         f.write("// ⚠️ Les prix B2B d'un TIERS ne se republient jamais (règle §8).\n")
         f.write("const PHARMAZON = " + json.dumps(pub, ensure_ascii=False) + ";\n")
-        f.write("try{window.PHARMAZON=PHARMAZON;}catch(e){}\n")
+        f.write("try{window.PHARMAZON=PHARMAZON;window.PHARMAZON_MAJ=%s;}catch(e){}\n" % json.dumps(maj))
     with open(OUT_PRIX, "w", encoding="utf-8") as f:
-        f.write("// Pharmazon — PRIX NÉGOCIÉS (tiers) — NE JAMAIS COMMITER.\n")
+        f.write("// Pharmazon — PRIX NÉGOCIÉS (tiers) — relevé %s — NE JAMAIS COMMITER.\n" % maj)
         f.write("// %d EAN · ean -> [prix_final, prix_catalogue, remise]\n" % len(tarif))
         f.write("const PHARMAZON_PRIX = " + json.dumps(tarif) + ";\n")
     # garde-fou : se RELIRE avant de rendre la main
@@ -208,8 +235,9 @@ def main():
     t = time.time(); cnt = [0]
     def work(item):
         idx, pid = item
-        ean = fetch_ean(pid)
+        ean, cip = fetch_codes(pid)
         products[idx]["ean"] = ean
+        if cip: products[idx]["cip"] = cip
         cnt[0] += 1
         if cnt[0] % 500 == 0:
             log("  EAN %d/%d · %.0fs" % (cnt[0], len(ids), time.time() - t))
