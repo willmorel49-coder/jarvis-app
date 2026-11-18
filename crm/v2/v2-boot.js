@@ -750,6 +750,8 @@
     pharmazonprix: 'v2/pharmazon-prix.js',
     // Tarif d'achat Sagitta (grossiste) par EAN : même raison, même traitement.
     sagittaprix: 'v2/sagitta-prix.js',
+    // 18/11/2026 — opportunités Offilog (prix d'achat de concurrents, photo du 17/11) : même raison, même traitement.
+    offilogopp: 'v2/offilog-opportunites.js',
     // Catalogue OCP « Les Incontournables » (meilleur net par code 13) : même raison, même traitement.
     ocpprix: 'v2/ocp-prix.js',
     // 12/10/2026 — prix catalogue des laboratoires (tarifs de tiers) : même raison, même traitement.
@@ -911,6 +913,7 @@
     offilogbestprix: 'offilog-best-prix.js',
     pharmazonprix: 'pharmazon-prix.js',
     sagittaprix: 'sagitta-prix.js',
+    offilogopp: 'offilog-opportunites.js',
     ocpprix: 'ocp-prix.js',
     offilogprixcat: 'offilog-prix-catalogue.js',
     offilogcatopso: 'offilog-cat-opso.js',
@@ -1581,6 +1584,7 @@
     offilogbestprix: 'OFFILOG_BEST_PRIX',
     pharmazonprix: 'PHARMAZON_PRIX',
     sagittaprix: 'SAGITTA_PRIX',
+    offilogopp: 'OFFILOG_OPPORTUNITES',
     ocpprix: 'OCP_PRIX',
     offilogprixcat: 'OFFILOG_PRIX_CAT',
     offilogcatopso: 'OFFILOG_CAT_OPSO',

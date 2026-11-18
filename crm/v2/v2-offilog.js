@@ -40,6 +40,8 @@
   // Même règle pour Pharmazon : conditions négociées d'un TIERS, jamais côté
   // OPSO — brief Will du 29/09/2026 (« pharmazon tu vire ça »).
   var SANS_PHARMAZON = OPSO;
+  // Opportunités Offilog (prix d'achat de concurrents, photo du 17/11/2026) : conditions de tiers, jamais côté OPSO, fichier jamais demandé.
+  var SANS_OPP = OPSO;
 
   var S = { chip: 'all', q: '', page: 0, sel: null, sort: 'ventes', adv: false, sous: '', cmp: '', sens: 'tous', porte: '', liste: false };
   // porte / liste : écran d'arrivée « trois portes » (M1 seulement). porte = porte ouverte ('trouver' | 'comparer' | ''), liste = l'utilisateur a choisi un rayon, un tri ou une comparaison.
@@ -2040,6 +2042,95 @@
         olmPorte('comparer', 'pilo', 'Comparer nos prix', 'Où un concurrent est moins cher que votre achat, et face à quelle plateforme.', plats.length ? esc(plats.join(' · ')) : '', 'Comparer') +
       '</div>';
   }
+  // ── 18/11/2026 — onglet « Opportunités » dans la porte « Comparer nos prix » ──
+  // Photo datée du tableau unique des opportunités (fichier protégé `offilogopp`, window.OFFILOG_OPPORTUNITES).
+  // Aucun recalcul : tout compte vient des données. Chargé seulement à l'ouverture de l'onglet.
+  var OPP_F = [
+    { k: 'solides', label: 'Opportunités solides', aide: 'Offilog est moins cher que le meilleur concurrent, le prix d\'achat concurrent reste sous le prix public, et la marge est confortable.' },
+    { k: 'sanspublic', label: 'Moins cher, sans prix public', aide: 'Offilog est moins cher, mais aucun prix public n\'a été relevé : on ne peut pas juger si le prix du concurrent est tenable.' },
+    { k: 'margecourte', label: 'Moins cher, marge courte', aide: 'Offilog est moins cher, mais la marge du pharmacien à la revente est courte.' },
+    { k: 'pluscher', label: 'À ne pas pousser sur le prix', aide: 'Offilog est plus cher que le meilleur concurrent. Quand la source moins chère est une promotion Pharmazon, on dit ce que donne la comparaison sans elle.' }
+  ];
+  var oppCache = null, oppEtat = '';   // oppEtat : '' | 'charge' | 'echec'
+  function oppD() { return window.OFFILOG_OPPORTUNITES || null; }
+  function oppLignes(k) {
+    var d = oppD(); if (!d || !d[k]) return [];
+    if (oppCache && oppCache.d === d && oppCache[k]) return oppCache[k];
+    if (!oppCache || oppCache.d !== d) oppCache = { d: d };
+    var ix = {}; d.cols.forEach(function (c, i) { ix[c] = i; });
+    oppCache[k] = d[k].map(function (r) { var o = {}; for (var c in ix) o[c] = r[ix[c]]; return o; });
+    return oppCache[k];
+  }
+  function oppNb(x, dec) { return Number(x).toFixed(dec == null ? 1 : dec).replace('.', ',').replace('-', '−'); }
+  function oppDate(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : (iso || ''); }
+  function oppNorm(t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+  function oppLigne(r, sec) {
+    var existe = !!(itemsById && itemsById.get(String(r.id)));
+    var ecart = r.ecart_pct == null ? '' : '<span class="olo-ecart ' + (r.ecart_pct <= 0 ? 'bon' : 'mauvais') + '">' + (r.ecart_pct > 0 ? '+' : '') + oppNb(r.ecart_pct) + ' %</span>' +
+      '<span class="olo-sous">' + (r.ecart_pct <= 0 ? 'Offilog moins cher' : 'Offilog plus cher') + '</span>';
+    var promo = (sec === 'pluscher' && r.promo_pz) ? '<p class="olo-promo"><b>Promotion Pharmazon.</b>' + (r.sans_promo ? ' Sans la promotion Pharmazon : ' + esc(r.sans_promo) + '.' : '') + '</p>' : '';
+    var pub = r.public_min != null ? '<b class="olo-v">' + V2.fmtEur(r.public_min) + '</b>' + (r.public_min_ou ? '<span class="olo-sous">' + esc(r.public_min_ou) + '</span>' : '') : '<span class="olo-nd">Aucun prix public relevé</span>';
+    var marge = r.marge_pct != null ? '<b class="olo-v">' + oppNb(r.marge_pct) + ' %</b>' : '<span class="olo-nd">Non calculée</span>';
+    return '<div class="olo-r' + (existe ? ' cl' : '') + '"' + (existe ? ' role="button" tabindex="0" onclick="V2.offSelect(\'' + esc(r.id) + '\')" onkeydown="if(event.target===this&&(event.key===\'Enter\'||event.key===\' \')){event.preventDefault();V2.offSelect(\'' + esc(r.id) + '\')}"' : '') + '>' +
+      '<div class="olo-c olo-prod"><span class="olo-marque">' + esc(r.marque || '') + '</span><span class="olo-nom">' + esc(r.produit) + '</span></div>' +
+      '<div class="olo-c" data-l="Prix Offilog HT"><b class="olo-v">' + V2.fmtEur(r.prix_offilog) + '</b></div>' +
+      '<div class="olo-c" data-l="Meilleur concurrent"><b class="olo-v">' + V2.fmtEur(r.prix_concurrent) + '</b><span class="olo-sous">' + esc(r.concurrent || '') + (r.date_concurrent ? ' · ' + esc(r.date_concurrent) : '') + '</span></div>' +
+      '<div class="olo-c" data-l="Écart">' + ecart + '</div>' +
+      '<div class="olo-c" data-l="Prix public le plus bas">' + pub + '</div>' +
+      '<div class="olo-c" data-l="Marge">' + marge + '</div>' + promo + '</div>';
+  }
+  function oppHtml() {
+    var d = oppD();
+    if (!d) {
+      return '<p class="olo-etat" role="status">' + (oppEtat === 'echec' ? 'Les opportunités ne sont pas disponibles pour le moment. Rouvrez l\'écran dans un instant.' : 'Chargement des opportunités…') + '</p>';
+    }
+    var k = S.oppF || 'solides';
+    var q = oppNorm(S.oppQ || '');
+    var tout = oppLignes(k);
+    var lignes = q ? tout.filter(function (r) { return oppNorm((r.marque || '') + ' ' + r.produit).indexOf(q) >= 0; }) : tout;
+    var n = S.oppN || 50;
+    var segs = OPP_F.map(function (f) {
+      return '<button type="button" class="v2-seg olo-seg' + (f.k === k ? ' on' : '') + '" role="tab" aria-selected="' + (f.k === k) + '" onclick="V2.offOppFiltre(\'' + f.k + '\')">' + esc(f.label) + '<span class="cnt">' + V2.fmtNum((d[f.k] || []).length) + '</span></button>';
+    }).join('');
+    var aide = OPP_F.filter(function (f) { return f.k === k; })[0].aide;
+    var tete = '<div class="olo-photo"><p class="olo-date"><b>Photo du ' + esc(oppDate(d.date)) + '</b> : ' + esc((d.periodes && d.periodes.prix_offilog) || '') + ', ' + esc((d.periodes && d.periodes.prix_concurrents) || '') + '. Elle ne se met pas à jour toute seule.</p>' +
+      '<p class="olo-frag">' + V2.fmtNum(d.fragiles_exclus || 0) + ' produits « fragiles » sont écartés : le prix d\'achat du concurrent dépasse le prix public le plus bas relevé.</p></div>';
+    var recherche = '<div class="off-search olo-search">' + ICO('search', 19, 2) + '<input id="olo-q" autocomplete="off" aria-label="Chercher une marque ou un produit" placeholder="Chercher une marque ou un produit…" value="' + esc(S.oppQ || '') + '" oninput="V2.offOppSearch(this.value)"></div>';
+    var corps = lignes.slice(0, n).map(function (r) { return oppLigne(r, k); }).join('');
+    var plus = lignes.length > n ? '<button type="button" class="v2-btn olo-plus" onclick="V2.offOppPlus()">Voir 50 de plus (' + V2.fmtNum(lignes.length - n) + ' restants)</button>' : '';
+    return tete + '<div class="v2-segs olo-segs" role="tablist" aria-label="Type d\'opportunité">' + segs + '</div>' +
+      '<p class="olo-aide">' + esc(aide) + '</p>' + recherche +
+      '<p class="olo-nb" role="status"><b>' + V2.fmtNum(lignes.length) + '</b> produit' + (lignes.length > 1 ? 's' : '') + (q ? ' pour « ' + esc(S.oppQ) + ' »' : '') + '</p>' +
+      (lignes.length ? '<div class="olo-l" role="list"><div class="olo-h" aria-hidden="true"><span>Produit</span><span>Prix Offilog HT</span><span>Meilleur concurrent</span><span>Écart</span><span>Prix public le plus bas</span><span>Marge</span></div>' + corps + '</div>' + plus : '<p class="olo-etat">Aucun produit ne correspond.</p>');
+  }
+  function oppOnglets() {
+    var on = S.oppTab === 'opp';
+    return '<div class="v2-segs olo-onglets" role="tablist" aria-label="Que comparer ?">' +
+      '<button type="button" class="v2-seg' + (on ? '' : ' on') + '" role="tab" aria-selected="' + (!on) + '" data-onglet="plateformes" onclick="V2.offOppOnglet(\'plateformes\')">Face aux plateformes</button>' +
+      '<button type="button" class="v2-seg' + (on ? ' on' : '') + '" role="tab" aria-selected="' + on + '" data-onglet="opp" onclick="V2.offOppOnglet(\'opp\')">Opportunités</button></div>';
+  }
+  V2.offOppOnglet = function (k) {
+    S.oppTab = k === 'opp' ? 'opp' : 'plateformes';
+    if (S.oppTab === 'opp' && !oppD() && oppEtat !== 'charge') {
+      oppEtat = 'charge';
+      var fin = function () { oppEtat = oppD() ? '' : 'echec'; if (V2.route && V2.route.name !== 'offilog') return; V2.render(); };
+      try { V2.loadFiles(['offilogopp']).then(fin, fin); } catch (e) { fin(); }
+    }
+    V2.render();
+  };
+  V2.offOppFiltre = function (k) { S.oppF = k; S.oppN = 50; V2.render(); };
+  V2.offOppPlus = function () { S.oppN = (S.oppN || 50) + 50; V2.render(); };
+  var _oppTimer = null;
+  V2.offOppSearch = function (v) {
+    S.oppQ = v || ''; S.oppN = 50;
+    clearTimeout(_oppTimer);
+    _oppTimer = setTimeout(function () {
+      V2.render();
+      var inp = document.getElementById('olo-q');
+      if (inp) { inp.focus(); var l = inp.value.length; try { inp.setSelectionRange(l, l); } catch (e) {} }
+    }, 120);
+  };
+
   function olmPan(titre, corps) {
     return '<section class="olm-pan" id="olm-pan" aria-label="' + esc(titre) + '"><div class="olm-pan-h"><h3 class="olm-pan-t">' + esc(titre) + '</h3>' +
       '<button type="button" class="olm-pan-x" onclick="V2.offPorte(\'' + S.porte + '\')" aria-label="Refermer le choix">' + ICO('close', 18, 2) + '</button></div>' + corps + '</section>';
@@ -2277,7 +2368,8 @@
         } else if (S.porte === 'catalogue' && !OPSO) {
           accueilHtml += olmPan('Le catalogue Offilog', V2.offVitrinePanneau ? V2.offVitrinePanneau() : '');
         } else if (S.porte === 'comparer') {
-          accueilHtml += olmPan('Comparer nos prix', verdictBand(filtered) + cmpHtml +
+          if (!SANS_OPP && S.oppTab === 'opp') accueilHtml += olmPan('Comparer nos prix', oppOnglets() + oppHtml());
+          else accueilHtml += olmPan('Comparer nos prix', (SANS_OPP ? '' : oppOnglets()) + verdictBand(filtered) + cmpHtml +
             (advChips ? '<div class="olm-pan-l">Repères concurrence (nombre de produits)</div><div class="v2-segs off-adv-segs">' + advChips + '</div>' : '') +
             '<div class="olm-pan-l">Trier par</div><div class="off-sort olm-sort">' + sortBtn('ecart', 'Écart concurrent') + (!SANS_PCAT && (c.avecpcat || 0) > 0 ? sortBtn('pcat', 'Plus fort écart au prix catalogue') : '') + '</div>');
         }

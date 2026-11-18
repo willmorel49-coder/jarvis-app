@@ -290,3 +290,38 @@
 .olm .off-adv-l{text-transform:none;letter-spacing:0}
 .olm .off-card-lec{white-space:normal}
 .olm .v2-seg .cnt,.olm .offsr i{font-family:inherit;font-variant-numeric:tabular-nums;letter-spacing:0}
+
+/* ═══ 18/11/2026 · onglet « Opportunités » (porte « Comparer nos prix ») — préfixe olo- ═══ */
+.olm .olo-onglets{margin-bottom:14px}
+.olm .olo-photo{margin:0 0 14px;padding:14px 16px;border:1px solid var(--o-filet);border-radius:14px;background:#F5F8FE}
+.olm .olo-photo p{margin:0;font-size:14px;line-height:1.5;color:var(--ip-ink)}
+.olm .olo-photo p+p{margin-top:6px;color:var(--o-gris)}
+.olm .olo-segs{margin-bottom:10px}
+.olm .olo-aide{margin:0 0 12px;font-size:14px;line-height:1.45;color:var(--o-gris)}
+.olm .olo-nb{margin:0 0 10px;font-size:14px;color:var(--o-gris)}
+.olm .olo-etat{margin:14px 0;font-size:15px;color:var(--o-gris)}
+.olm .olo-l{border:1px solid var(--o-filet);border-radius:14px;background:#fff;overflow:hidden}
+.olm .olo-h,.olm .olo-r{display:grid;grid-template-columns:minmax(0,2.4fr) minmax(0,.9fr) minmax(0,1.5fr) minmax(0,1fr) minmax(0,1.3fr) minmax(0,.8fr);gap:6px 14px;align-items:start;padding:12px 16px}
+.olm .olo-h{background:#EEF3FC;font-size:13px;font-weight:700;color:var(--o-gris);border-bottom:1px solid var(--o-filet)}
+.olm .olo-r{border-top:1px solid var(--o-filet);font-size:14px;line-height:1.35;color:var(--ip-ink)}
+.olm .olo-h+.olo-r{border-top:0}
+.olm .olo-r.cl{cursor:pointer}
+.olm .olo-r.cl:hover{background:#F5F8FE}
+.olm .olo-r:focus-visible{outline:3px solid var(--o-bleu);outline-offset:-3px}
+.olm .olo-c{min-width:0;display:flex;flex-direction:column;gap:2px;overflow-wrap:anywhere}
+.olm .olo-marque{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--o-gris)}
+.olm .olo-nom{font-weight:600}
+.olm .olo-v{font-weight:700;font-variant-numeric:tabular-nums}
+.olm .olo-sous,.olm .olo-nd{font-size:13px;color:var(--o-gris)}
+.olm .olo-ecart{font-weight:800;font-variant-numeric:tabular-nums}
+.olm .olo-ecart.bon{color:#0B7A4B}
+.olm .olo-ecart.mauvais{color:var(--o-rose)}
+.olm .olo-promo{grid-column:1/-1;margin:0;padding:8px 12px;border-radius:10px;background:#FFF6E0;font-size:14px;line-height:1.4;color:var(--ip-ink)}
+.olm .olo-plus{margin:14px 0 0}
+@media (max-width:760px){
+  .olm .olo-h{display:none}
+  .olm .olo-r{grid-template-columns:repeat(2,minmax(0,1fr));padding:14px 14px 12px}
+  .olm .olo-prod{grid-column:1/-1}
+  .olm .olo-c[data-l]::before{content:attr(data-l);font-size:12px;font-weight:700;color:var(--o-gris)}
+  .olm .olo-segs .v2-seg,.olm .olo-onglets .v2-seg{min-height:44px}
+}
