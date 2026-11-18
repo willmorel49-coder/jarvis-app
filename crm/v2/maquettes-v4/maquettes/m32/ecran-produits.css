@@ -1,0 +1,137 @@
+/* Catalogue produits « Le comptoir » et fiche du produit. Classes préfixées .pr- ; les composants communs sont dans style.css. */
+/* ---------- bandeau : bascule « En stock » (bouton pressable sur le bleu) ---------- */
+.pr-bascule{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 16px;border-radius:var(--r2);border:1px solid rgba(255,255,255,.3);background:rgba(0,28,110,.45);color:#EAF1FF;font-weight:650;transition:background .25s var(--ease),color .25s}
+.pr-bascule .ico{width:20px;height:20px;color:#fff}   /* éteint : un « + » blanc ; allumé : la coche bleue (même lecture que les filtres des Biosimilaires) */
+.pr-bascule[aria-pressed="true"]{background:#fff;color:var(--ink);box-shadow:0 1px 0 #fff inset,0 1px 3px rgba(26,32,48,.14)}
+.pr-bascule[aria-pressed="true"] .ico{color:var(--bleu)}
+/* ---------- sous-navigation, portes, blocs de mode ---------- */
+.pr-sousnav{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:18px 0 6px}
+.pr-portes{margin-bottom:6px}
+.pr-porte{display:flex;align-items:center;gap:14px;text-align:left;width:100%;min-height:92px;padding:16px 16px 16px 18px;cursor:pointer;transition:transform .25s var(--ease),box-shadow .25s,background .2s}
+.pr-porte:hover{transform:translateY(-2px);box-shadow:var(--ombre-2)}
+.pr-porte.on{background:var(--bleu-fond2);border-color:#CFDDF8}
+.pr-porte .rond{width:48px;height:48px}
+.pr-ptxt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.pr-ptxt b{font-size:17px;font-weight:750;letter-spacing:-.01em;line-height:1.2}
+.pr-ptxt .sub{font-size:14px}
+.pr-porte>.ico:last-child{color:var(--ink3)}
+.pr-mode{margin-top:18px}
+.pr-mode .tete .filtre{min-width:260px;flex:1 1 260px;max-width:460px}
+.pr-mode .tete .filtre select{width:100%}
+.pr-offl{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px}
+.pr-av{width:48px;height:48px;border-radius:50%;flex:none;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:var(--bleu-d);background:linear-gradient(180deg,#fff,#EEF2F9);border:1px solid var(--filet);box-shadow:var(--ombre-1)}
+.pr-offt{flex:1 1 220px;min-width:0}
+.pr-offt b{display:block;font-size:17px;font-weight:750;line-height:1.2}
+.pr-offa{display:flex;flex-wrap:wrap;gap:10px;width:100%}
+.pr-comp-fams{margin:2px 0 14px}
+.pr-comp-fams .chip .ico{color:var(--bleu)}
+.pr-comp-fams .chip[aria-pressed="true"] .ico{color:#fff}
+/* ---------- familles, compteur, légende ---------- */
+.pr-filtres{margin-top:20px}
+.pr-fchip[aria-pressed="true"],.pr-fchip.on{background:var(--bleu);color:#fff;border-color:var(--bleu);box-shadow:0 8px 16px -8px rgba(0,80,230,.7)}
+.pr-cpt{margin:16px 2px 2px;font-size:15px;color:var(--ink2)}
+.pr-legl{margin:2px 2px 14px;font-size:14px;color:var(--ink3);line-height:1.55}
+.pr-legl b{color:var(--ink)}
+.pr-pt{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle;margin:0 2px;background:var(--e-bien);border:1.5px solid var(--e-bien)}
+.pr-pt.peu{background:var(--e-attention);border-color:var(--e-attention)}
+.pr-pt.zero{background:#fff;border-color:var(--enc-4)}
+/* ---------- le tableau du comptoir ---------- */
+.pr-tab{padding:6px 18px 14px}
+.pr-tab .tabl th:first-child,.pr-tab .tabl td:first-child{padding-left:4px}
+.pr-l{cursor:pointer;animation:monte .6s var(--ease) both;animation-delay:calc(var(--i,0)*35ms)}
+.pr-l:focus-visible{outline:3px solid var(--bleu);outline-offset:-3px}
+.pr-id{display:flex;align-items:center;gap:8px;min-width:280px}
+.pr-ck{position:relative;width:44px;height:44px;flex:none;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.pr-ck input{position:absolute;left:0;top:0;width:44px;height:44px;margin:0;opacity:0;cursor:pointer;font-size:16px}
+.pr-ck .box{width:24px;height:24px;border-radius:7px;border:1.5px solid var(--enc-4);background:#fff;display:inline-flex;align-items:center;justify-content:center;color:transparent;transition:background .2s,border-color .2s,color .2s}
+.pr-ck .box svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.pr-ck input:checked+.box{background:var(--bleu);border-color:var(--bleu);color:#fff}
+.pr-ck input:focus-visible+.box{outline:3px solid var(--bleu);outline-offset:2px}
+.pr-txt{display:flex;flex-direction:column;gap:3px;min-width:0}
+.pr-nom{font-size:16px;font-weight:750;letter-spacing:-.01em;line-height:1.2}
+.pr-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:14px;color:var(--ink3)}
+.pr-meta .etat{padding:2px 10px 2px 6px;font-size:13px}
+.pr-meta .etat .ico{width:16px;height:16px}
+.pr-fam{color:var(--ink2)}
+.pr-cip{font-size:13px;color:var(--ink3)}
+.pr-stk{display:inline-flex;gap:4px;align-items:center}
+.pr-stk i{width:10px;height:10px;border-radius:50%;background:var(--e-bien);border:1.5px solid var(--e-bien)}
+.pr-stk i.peu{background:var(--e-attention);border-color:var(--e-attention)}
+.pr-stk i.zero{background:#fff;border-color:var(--enc-4)}
+.pr-tab td .evo{margin-top:2px;font-size:13px;color:var(--ink3)}
+.pr-tab td .evo b{font-size:14px;font-weight:700;color:var(--ink)}
+.pr-tab td.chev{width:36px;padding-left:0;padding-right:0;color:var(--ink3)}
+.pr-tab td.vide{text-align:center;color:var(--ink3);padding:30px}
+.pr-pied{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px;margin:20px 0 4px}
+.pr-liens{margin-top:22px;justify-content:center}
+/* ---------- barre de sélection (en bas, au-dessus des onglets du téléphone) ---------- */
+.pr-selbar{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:46;display:flex;align-items:center;gap:8px 20px;flex-wrap:wrap;justify-content:center;max-width:min(760px,calc(100vw - 32px));padding:8px 10px 6px 22px;border-radius:var(--r1);background:#fff;border:1px solid var(--filet);box-shadow:0 4px 10px rgba(26,32,48,.08),0 24px 56px -14px rgba(26,32,48,.35);animation:monte .35s var(--ease) both}
+.pr-seln{font-size:16px;font-weight:750}
+.pr-selr{display:flex;gap:4px}
+.pr-selr .rond-act{min-width:60px}
+/* ---------- la fiche du produit : bandeau court, carte d'identité qui déborde, blocs ---------- */
+.pr-ban .ban-tete>div:first-child{flex-basis:auto}
+.pr-outils{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px}
+.pr-pn{display:flex;gap:8px}
+.pr-autre{min-width:260px;flex:1 1 260px;max-width:460px}
+.pr-autre select{width:100%}
+.pr-selp{margin-left:auto}
+.pr-ident{box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 2px 4px rgba(26,32,48,.06),0 28px 56px -22px rgba(0,30,120,.45)}
+.pr-ident .ident-nom h1{font-size:30px}
+.pr-ident .ident-meta .etat{padding:2px 10px 2px 6px;font-size:13px}
+.pr-ident .ident-meta .etat .ico{width:16px;height:16px}
+@media (min-width:1101px){.pr-ident{grid-template-columns:minmax(240px,.9fr) minmax(0,1.5fr) 300px}}
+.pr-ident .ident-act{min-width:0}
+.pr-ident .ident-act .pil{white-space:normal;text-align:left}
+.pr-ronds{grid-template-columns:repeat(4,1fr)}
+.pr-ronds .rond-act{min-width:0}
+.pr-chips{margin-top:18px}
+.pr-fdeux{margin-top:18px}
+.pr-etab td b{font-size:15px;font-weight:700}
+.pr-etab td.num b{font-size:16px}
+.pr-sbar{width:72px;height:8px}
+.pr-sbar i{background:#C9D3E6}
+.pr-stkn{display:inline-flex;align-items:center;gap:8px}
+.pr-hero{margin:4px 0 18px;padding:22px 16px 18px;border-radius:var(--r1);text-align:center;background:radial-gradient(560px 220px at 50% -20%,rgba(0,80,230,.11),rgba(0,80,230,0) 70%),linear-gradient(180deg,#FBFCFF,#F3F6FC);border:1px solid var(--filet);box-shadow:0 1px 0 #fff inset}
+.pr-hero-l{font-size:15px;font-weight:650;color:var(--ink2)}
+.pr-hero-n{font-size:56px;font-weight:800;letter-spacing:-.04em;line-height:1.05;margin-top:4px}
+.pr-cb .cb-l b{font-size:15px}
+.pr-posit{margin-top:22px;padding-top:18px;border-top:1px solid var(--filet)}
+.pr-frise{position:relative;height:56px;margin-top:10px;border-bottom:1px solid var(--enc-4)}
+.pr-fb{position:absolute;bottom:0;width:2px;height:24px;margin-left:-1px;border-radius:1px 1px 0 0;background:#C9D3E6}
+.pr-fb.moi{background:var(--c-ca);width:4px;height:52px;margin-left:-2px;border-radius:2px 2px 0 0;box-shadow:0 0 0 3px rgba(42,99,204,.18)}
+.pr-fax{display:flex;justify-content:space-between;font-size:13px;color:var(--ink3);margin:6px 0 4px}
+.pr-cmol{margin-top:18px}
+.pr-tnom{display:block;font-size:15px;font-weight:650;line-height:1.3}
+.pr-tmol tr[data-produit]{cursor:pointer}
+.pr-tmol tr[data-produit]:focus-visible{outline:3px solid var(--bleu);outline-offset:-3px}
+/* ---------- ordinateur étroit et téléphone ---------- */
+@media (max-width:1100px){.pr-id{min-width:220px}.pr-ronds{grid-template-columns:repeat(4,1fr)}}
+@media (max-width:900px){.pr-hero-n{font-size:48px}}
+@media (max-width:760px){
+  .pr-sousnav{margin:12px 0 4px}
+  .pr-porte{min-height:76px;padding:12px 12px 12px 14px}
+  .ban-bas .pr-bascule{flex:1 1 100%;justify-content:center}
+  .pr-mode .tete .filtre{min-width:0;width:100%;max-width:none}
+  .pr-mode .seg{width:100%}.pr-mode .seg button{flex:1;justify-content:center;padding:0 8px}
+  .pr-offa .pil{flex:1 1 100%}
+  .pr-tab{padding:4px 12px 12px}
+  .pr-tab thead{display:none}
+  .pr-tab table,.pr-tab tbody,.pr-tab tr{display:block;width:100%}
+  .pr-tab tr.pr-l{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;padding:12px 2px;border-bottom:1px solid var(--filet)}
+  .pr-tab td{display:block;border:0;padding:4px 0;text-align:left}
+  .pr-tab td[data-l="Produit"]{grid-column:1 / -1}
+  .pr-tab td:not([data-l="Produit"]):not(.chev)::before{content:attr(data-l);display:block;font-size:13px;color:var(--lib);font-weight:500;margin-bottom:2px}
+  .pr-tab td.num{text-align:left}
+  .pr-tab td.chev{display:none}
+  .pr-id{min-width:0;align-items:flex-start}
+  .pr-ck{margin-top:-4px}
+  .pr-selbar{bottom:96px;padding:6px 8px 4px 14px;gap:4px 10px}
+  .pr-seln{font-size:15px;flex:1 1 100%;text-align:center}
+  .pr-outils .filtre{flex:1 1 100%;max-width:none}
+  .pr-selp{margin-left:0;flex:1 1 100%}
+  .pr-ident .ident-nom h1{font-size:26px}
+  .pr-hero-n{font-size:44px}
+  .pr-ronds{grid-template-columns:repeat(2,1fr)}
+  .pr-etab th:first-child,.pr-etab td:first-child{padding-left:0}
+}

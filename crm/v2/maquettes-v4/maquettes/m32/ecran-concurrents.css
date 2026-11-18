@@ -1,0 +1,123 @@
+/* Styles de l'écran Concurrents (#concurrents) et de la fiche d'un acteur (#concurrents-detail). Préfixe .cc- ; composants communs dans style.css. */
+.cc-avert{display:inline-flex;align-items:center;gap:10px;min-height:44px;padding:0 14px 0 10px;border-radius:var(--r2);background:rgba(0,28,110,.45);border:1px solid rgba(255,255,255,.3);color:#EAF1FF;font-size:14px;font-weight:600;line-height:1.3;max-width:100%}
+.cc-avert .ico{color:#fff;flex:none}
+.cc .bandeau .eyebrow .ico{width:16px;height:16px;vertical-align:-3px;margin-right:6px;color:#fff}
+.cc-regle{display:flex;align-items:flex-start;gap:8px;margin-top:14px}.cc-regle .ico{width:18px;height:18px;color:var(--ink3)}
+.cc-sousnav{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;margin:18px 0 14px}
+.cc-question{font-size:15px;color:var(--ink2);font-weight:600}
+.cc-vp{margin:0 2px 14px}
+/* ---------- carte des implantations + « Qui est qui ? » ---------- */
+.cc-deux{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}
+.cc-cartebox{padding:10px 10px 12px}
+.cc-map{position:relative;border-radius:var(--r2);overflow:clip;border:1px solid var(--filet);background:radial-gradient(60% 40% at 26% 8%,#EFF3F7,#D9E1EB);box-shadow:0 1px 0 #fff inset}
+.cc-dessin{min-height:320px;display:block}
+.cc-svg{display:block;width:100%;height:auto}
+.cc-pt{cursor:pointer;outline:none}
+.cc-pt .cc-pp{transition:r .2s var(--ease)}
+.cc-pt:hover .cc-pp,.cc-pt:focus-visible .cc-pp{stroke:#1A2030}
+.cc-pt.loin .cc-pp{fill:#C5CBD6}
+.cc-pt.loin circle:nth-child(2){fill:transparent}
+.cc-tip{position:absolute;z-index:3;pointer-events:none;padding:8px 12px;border-radius:var(--r3);background:#1A2030;color:#fff;font-size:14px;line-height:1.3;box-shadow:0 8px 20px rgba(26,32,48,.3);max-width:260px}
+.cc-tip b{display:block;font-size:14px}
+.cc-tip span{display:block;color:#D3DAE8;font-size:13px}
+.cc-note{margin:10px 8px 0}
+.cc-note b{color:var(--ink)}
+.cc-leg{padding:20px 18px 16px}
+.cc-gs{display:grid;gap:4px}
+.cc-g{display:flex;gap:12px;align-items:flex-start;width:100%;min-height:56px;padding:10px 10px 10px 12px;border-radius:var(--r2);border:1px solid transparent;background:transparent;text-align:left;color:var(--ink);transition:background .2s,box-shadow .25s var(--ease),transform .25s var(--ease)}
+.cc-g:hover{background:var(--creux)}
+.cc-g.on{background:#fff;border-color:var(--filet);box-shadow:var(--ombre-2);transform:translateY(-2px)}
+.cc-g .puce{margin-top:6px}
+.cc-gt{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.cc-gt>b{font-size:16px;font-weight:750;letter-spacing:-.01em}
+.cc-gp{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:6px}
+.cc-gp .bar12{width:110px}
+.cc-gp>b{font-size:15px}
+.cc-gp .sub{width:100%}
+.cc-tout{margin-top:12px;width:100%}
+/* ---------- tableaux (annuaire, prix, actualité, sources) ---------- */
+.cc-tab{padding:20px 22px 14px}
+.cc-tab+.cc-tab{margin-top:18px}
+.cc-gn{display:flex;align-items:flex-start;gap:10px}
+.cc-gn .puce{margin-top:7px}
+.cc-gn b{display:block;font-size:16px;font-weight:750}
+.cc-gb{border:0;background:transparent;padding:4px 8px 4px 0;margin:-4px 0;min-height:44px;text-align:left;color:var(--ink);border-radius:var(--r3);cursor:pointer}
+.cc-gb:hover{background:var(--bleu-fond2)}
+.cc-gb:hover b{color:var(--bleu-d)}
+.cc-acts{display:flex;flex-wrap:wrap;gap:8px}
+.cc-act .ico{width:18px;height:18px;color:var(--ink3);margin-right:-4px}
+.cc-part{display:inline-flex;align-items:center;gap:10px;font-weight:700;font-size:15px;justify-content:flex-end}
+.cc-part b{min-width:3.4em;text-align:right}
+.cc-pn{display:block;font-size:15px;font-weight:650;line-height:1.3}
+.cc-fams{margin:12px 0 6px}
+.chip.on{background:var(--bleu);border-color:var(--bleu);color:#fff;box-shadow:0 8px 16px -8px rgba(0,80,230,.7)}
+.chip.cc-vide{color:var(--ink3);border-color:var(--filet)}
+.cc-cmp{font-size:14px}
+.cc-cmp th,.cc-cmp td{padding-left:8px;padding-right:8px}
+.cc-cmp td{white-space:nowrap}
+.cc-cmp td:first-child{white-space:normal;min-width:200px}
+.cc-thn,.cc-tdn{background:var(--bleu-fond2)}
+.cc-prix{display:inline-flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums}
+.cc-prix.nous{font-weight:800;font-size:15px}
+.cc-prix.min{font-weight:800;color:var(--ink)}
+.cc-prix .puce{width:8px;height:8px}
+.cc-abs{color:var(--ink3)}   /* « — » prix absent : lisible (4,5:1 au moins) */
+.cc-pied{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--filet)}
+.cc-pied .lbl{font-weight:700;color:var(--ink2);font-size:14px;margin-right:4px}
+.cc-pied .chip{font-size:14px;padding:0 14px}
+.cc-circ{font-size:13px;font-weight:500;color:var(--ink3)}
+.cc-pied .chip .ico{width:18px;height:18px}
+.cc-lr{cursor:pointer}
+.cc-lr:focus-visible{outline:3px solid var(--bleu);outline-offset:-3px}
+.cc-quoi{font-size:14px;color:var(--ink2);line-height:1.4}
+.tabl td.cc-chev{width:36px;padding-left:0;padding-right:0;color:var(--ink3)}
+.tabl .cc-q{white-space:nowrap;width:1%;text-align:left}
+/* ---------- liens : qui détient qui ---------- */
+.cc-liens{display:grid;gap:10px}
+.cc-lg{display:grid;grid-template-columns:220px minmax(0,1fr);gap:8px 20px;padding:14px 14px;border-radius:var(--r2);border:1px solid var(--filet);background:linear-gradient(180deg,#fff,#FBFBFD);box-shadow:var(--ombre-1)}
+.cc-ln{display:flex;gap:10px;align-items:flex-start;min-height:44px}
+.cc-ln .puce{margin-top:7px}
+.cc-ln b{display:block;font-size:16px;font-weight:750}
+.cc-lrs{display:flex;flex-direction:column;gap:8px;padding-left:18px;border-left:2px solid var(--enc-5)}
+.cc-lr2{display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:relative}
+.cc-lr2::before{content:"";position:absolute;left:-18px;top:50%;width:14px;border-top:2px solid var(--enc-5)}
+.cc-lk{font-size:14px;color:var(--ink3);font-weight:600;font-style:italic;min-width:110px}
+/* ---------- #concurrents-detail ---------- */
+.cc-outils{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px}
+.cc-autre{min-width:240px;flex:0 1 360px}
+.cc-pn,.li-pn{display:flex;gap:8px}
+.cc-id{box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 2px 4px rgba(26,32,48,.06),0 28px 56px -22px rgba(0,30,120,.45)}
+.cc-gm{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--ink2);font-weight:600}
+.cc-suite{margin-top:18px}
+.cc-mini .cc-dessin{min-height:220px}
+.cc-dl{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:6px}
+.cc-dl li{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;min-height:32px}
+.cc-cat{margin-top:18px}
+/* ---------- ordinateur étroit et téléphone ---------- */
+@media (max-width:1100px){.cc-deux{grid-template-columns:1fr}.cc-lg{grid-template-columns:1fr}.cc-lrs{padding-left:14px}}
+@media (max-width:760px){
+  .cc-sousnav{margin:12px 0 10px}
+  .cc-ong{grid-template-columns:repeat(5,auto);overflow-x:auto}
+  .cc-ong .ico{display:none}
+  .cc-ong button{padding:0 9px;font-size:14px}
+  .cc-question{font-size:14px}
+  .cc-cartebox{padding:6px 6px 10px}
+  .cc-dessin{min-height:240px}
+  .cc-leg,.cc-tab{padding:16px 14px 10px}
+  .cc-gp .bar12{width:80px}
+  .cc-tab thead{display:none}
+  .cc-tab table,.cc-tab tbody,.cc-tab tr{display:block;width:100%}
+  .cc-tab tr{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;padding:12px 2px;border-bottom:1px solid var(--filet)}
+  .cc-tab td{display:block;border:0;padding:3px 0;text-align:left;white-space:normal}
+  .cc-tab td[data-l="Produit"],.cc-tab td[data-l="Groupe"],.cc-tab td[data-l="Acteurs"],.cc-tab td[data-l="Source"],.cc-tab td[data-l="Ce qu’est"],.cc-tab td[data-l="Quoi"],.cc-tab td[data-l="Ce qu’on y lit"]{grid-column:1 / -1}
+  .cc-tab td:not([data-l="Produit"]):not([data-l="Groupe"]):not([data-l="Source"]):not([data-l="Quoi"]):not(.cc-chev)::before{content:attr(data-l);display:block;font-size:13px;color:var(--lib);font-weight:500;margin-bottom:1px}
+  .cc-tab td.num{text-align:left}
+  .cc-tab td.cc-chev{display:none}
+  .cc-tdn{background:transparent}
+  .cc-cmp td:first-child{min-width:0}
+  .cc-part{justify-content:flex-start}
+  .cc-part b{min-width:0;text-align:left}
+  .cc-pied .lbl{width:100%}
+  .cc-outils .filtre{flex:1 1 100%;max-width:none}
+  .cc-det .ident .ronds{grid-template-columns:repeat(3,1fr)}
+}

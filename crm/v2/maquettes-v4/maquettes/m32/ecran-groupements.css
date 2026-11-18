@@ -1,0 +1,115 @@
+/* Groupements (#groupements, #groupements-detail) et le composant partagé « Liste d'achats idéale » (.gr-la), repris par Mes listes. Préfixe .gr-. */
+.gr-sousnav{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:18px 0 12px}
+.gr-def{margin:0 2px 14px;font-size:14px;color:var(--ink3);line-height:1.45}
+.gr-vp{margin:0 2px 14px}
+.gr-det .gr-vp{margin:14px 2px 0}
+/* ---------- trois cartes à grand chiffre ---------- */
+.gr-synth{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:18px}
+.stat.gr-seul .evo{align-items:flex-start;text-align:left}   /* carte sans mini-courbe : « × N la moyenne » calé à gauche, sous la note */
+/* ---------- répartition : barre empilée fine, le premier groupe en couleur, les autres en gris ---------- */
+.gr-rep{padding:20px 22px 16px}
+.gr-empile{display:flex;height:12px;border-radius:6px;overflow:hidden;background:#E8ECF4;gap:2px}
+.gr-empile i{display:block;height:100%;transform-origin:left;animation:poussex .9s var(--ease) both}
+.gr-leg{margin-top:12px}
+.gr-leg b{color:var(--ink);margin-left:2px}
+/* ---------- tableau des groupements, lignes d'officines ---------- */
+.gr-tabbox{margin-top:18px;padding:6px 18px 14px}
+.gr-tabbox .tabl th:first-child,.gr-tabbox .tabl td:first-child{padding-left:6px}
+.gr-lg,.gr-lo{cursor:pointer;animation:monte .6s var(--ease) both;animation-delay:calc(var(--i,0)*35ms)}
+.gr-lg:focus-visible,.gr-lo:focus-visible{outline:3px solid var(--bleu);outline-offset:-3px}
+.gr-oid{display:flex;align-items:center;gap:14px;min-width:220px}
+.gr-av{width:44px;height:44px;border-radius:50%;flex:none;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:var(--bleu-d);background:linear-gradient(180deg,#fff,#EEF2F9);border:1px solid var(--filet);box-shadow:var(--ombre-1)}
+.gr-otx{display:flex;flex-direction:column;gap:3px;min-width:0}
+.gr-otx>b{font-size:16px;font-weight:750;letter-spacing:-.01em;line-height:1.2}
+.gr-ometa{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px}
+.gr-ometa .etat{padding:2px 10px 2px 6px;font-size:13px}
+.gr-ometa .etat .ico{width:16px;height:16px}
+.gr-vide{color:var(--ink3);font-size:14px}
+.gr-dix{display:flex;align-items:center;gap:10px}
+.gr-dix .spark{width:110px;height:34px;flex:none}
+.gr-dix .evo{white-space:nowrap}
+.gr-score{display:inline-flex;align-items:center;gap:8px;justify-content:flex-end}
+.gr-score b{font-size:17px;font-weight:750;display:block;line-height:1.15}
+.tabl td.gr-chev{width:36px;padding-left:0;padding-right:0;color:var(--ink3)}
+.gr-vide-l{padding:24px 6px}
+/* ---------- page d'un groupement ---------- */
+.gr-outils-b{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px}
+.gr-pnv{display:flex;gap:8px}
+.gr-autre{min-width:240px;flex:0 1 360px}
+.gr-id{box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 2px 4px rgba(26,32,48,.06),0 28px 56px -22px rgba(0,30,120,.45)}
+.gr-id .ident-meta .sub{display:inline}
+.gr-id .kv .fois{display:inline;font-size:13px;color:var(--ink3);font-weight:500;margin-left:4px}
+.gr-membres{margin-top:18px;padding:20px 18px 14px}
+.gr-membres .tabl th:first-child,.gr-membres .tabl td:first-child{padding-left:6px}
+/* ---------- liste d'achats idéale (partagée) ---------- */
+.gr-la .titre-s{margin-top:26px}
+.gr-outils{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin:0 0 14px}
+.gr-rech{flex:1 1 320px;max-width:560px}
+.gr-ronds{display:flex;gap:4px 10px;margin-left:auto}
+.gr-cat{padding:6px 18px 10px}
+.gr-det summary{display:flex;align-items:center;gap:14px;min-height:64px;padding:8px 2px;cursor:pointer;list-style:none}
+.gr-det summary::-webkit-details-marker{display:none}
+.gr-cn{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.gr-cn b{font-size:18px;font-weight:750;letter-spacing:-.01em}
+.gr-voir{flex:none}
+.gr-det .gr-v2,.gr-det[open] .gr-v1{display:none}
+.gr-det[open] .gr-v2{display:inline}
+.gr-tab{margin-top:4px}
+.gr-tab th.gr-ck,.gr-tab td.gr-ck{width:44px;padding-left:4px;padding-right:0}
+/* case à cocher : cible de 44 px (l'élément lui-même), case visible de 22 px dessinée dedans */
+.gr-tab input[type="checkbox"]{-webkit-appearance:none;appearance:none;position:relative;width:44px;height:44px;margin:0 0 0 -11px;border:0;background:transparent;cursor:pointer;display:block;font-size:16px;border-radius:12px}
+.gr-tab input[type="checkbox"]::before{content:"";position:absolute;left:11px;top:11px;width:22px;height:22px;border-radius:6px;border:1.5px solid var(--enc-4);background:#fff;transition:background .2s,border-color .2s}
+.gr-tab input[type="checkbox"]:hover::before{border-color:var(--bleu)}
+.gr-tab input[type="checkbox"]:checked::before{background:var(--bleu);border-color:var(--bleu)}
+.gr-tab input[type="checkbox"]:checked::after{content:"";position:absolute;left:19px;top:14px;width:6px;height:12px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.gr-tab input[type="checkbox"]:focus-visible{outline:3px solid var(--bleu);outline-offset:-4px}
+.gr-tab td.gr-ck{height:44px}
+.gr-n{color:var(--ink3);width:40px}
+.gr-pn{display:block;font-size:15px;font-weight:650;line-height:1.3}
+.gr-cip{color:var(--ink2);font-size:14px;white-space:nowrap}
+.gr-part{display:inline-flex;align-items:center;gap:10px;font-weight:700;font-size:15px;justify-content:flex-end}
+.gr-tab tr.sel{background:var(--bleu-fond2)}
+.gr-panier{position:sticky;bottom:14px;z-index:20;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-top:18px;padding:10px 12px 10px 18px;border-radius:var(--r1);background:#fff;border:1px solid var(--filet);box-shadow:0 4px 10px rgba(26,32,48,.08),0 18px 40px -10px rgba(26,32,48,.35);animation:monte .35s var(--ease) both}
+.gr-panier.vide{display:none}
+.gr-pt{display:inline-flex;align-items:center;gap:10px;font-size:15px;color:var(--ink2);flex:1;min-width:200px}
+.gr-pt .ico{color:var(--bleu)}
+.gr-pt b{color:var(--ink);font-weight:800}
+/* ---------- ordinateur étroit et téléphone ---------- */
+@media (max-width:1100px){.gr-oid{min-width:180px}.gr-synth{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:760px){
+  .gr-sousnav{margin:12px 0 10px}
+  .gr-synth{grid-template-columns:1fr;gap:10px}
+  .gr-rep,.gr-membres{padding:16px 14px 12px}
+  .gr-tabbox{padding:4px 12px 12px}
+  .gr-tabbox thead,.gr-membres thead{display:none}
+  .gr-tabbox table,.gr-tabbox tbody,.gr-tabbox tr,.gr-membres table,.gr-membres tbody,.gr-membres tr{display:block;width:100%}
+  .gr-tabbox tr,.gr-membres tr{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;padding:12px 4px;border-bottom:1px solid var(--filet)}
+  .gr-tabbox td,.gr-membres td{display:block;border:0;padding:4px 0;text-align:left}
+  .gr-tabbox td[data-l="Groupement"],.gr-membres td[data-l="Officine"]{grid-column:1 / -1}
+  .gr-tabbox td:not([data-l="Groupement"]):not(.gr-chev)::before,.gr-membres td:not([data-l="Officine"]):not(.gr-chev)::before{content:attr(data-l);display:block;font-size:13px;color:var(--lib);font-weight:500;margin-bottom:2px}
+  .gr-tabbox td.num,.gr-membres td.num{text-align:left}
+  .gr-tabbox td.gr-chev,.gr-membres td.gr-chev{display:none}
+  .gr-score{justify-content:flex-start}
+  .gr-dix .spark{width:84px}
+  .gr-la .titre-s{flex-wrap:wrap;gap:4px 10px}
+  .gr-la .titre-s .st{flex:1 1 100%;margin-left:0}
+  .gr-outils-b .filtre{flex:1 1 100%;max-width:none}
+  .gr-ronds{margin-left:0;width:100%}
+  .gr-cat{padding:4px 12px 8px}
+  .gr-det summary{gap:10px}
+  .gr-cn b{font-size:16px}
+  .gr-voir{display:none}
+  .gr-tab thead{display:none}
+  .gr-tab,.gr-tab tbody,.gr-tab tr{display:block;width:100%}
+  .gr-tab tr{display:grid;grid-template-columns:44px 1fr 1fr;gap:4px 10px;padding:10px 0;border-bottom:1px solid var(--filet);align-items:start}
+  .gr-tab td{display:block;border:0;padding:2px 0;text-align:left}
+  .gr-tab td.gr-ck{grid-row:1 / span 3;padding-top:4px}
+  .gr-tab td[data-l="Produit"]{grid-column:2 / -1}
+  .gr-tab td.gr-n{display:none}
+  .gr-tab td:not([data-l="Produit"]):not(.gr-ck):not(.gr-n)::before{content:attr(data-l);display:block;font-size:13px;color:var(--lib);font-weight:500}
+  .gr-tab td.num{text-align:left}
+  .gr-part{justify-content:flex-start}
+  .gr-part .bar12{width:60px}
+  .gr-panier{bottom:92px;padding:10px 12px}
+  .gr-panier .pil{flex:1 1 auto}
+}

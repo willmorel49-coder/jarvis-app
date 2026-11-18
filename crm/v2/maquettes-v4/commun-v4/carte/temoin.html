@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="fr" data-m="00" data-ref="Page témoin carte v4">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Témoin — fond de carte local</title>
+<link rel="stylesheet" href="../leaflet/leaflet.css?v=1">
+<link rel="stylesheet" href="../couleurs.css?v=1">
+<style>
+body{margin:0;font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--enc-1);background:var(--fond-page)}
+main{max-width:1240px;margin:0 auto;padding:20px 16px;overflow-x:clip}
+h1{font-size:22px;margin:0 0 4px} p{margin:4px 0 16px;color:var(--enc-3)}
+.deux{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:800px){.deux{grid-template-columns:1fr}}
+.carte{background:var(--fond-carte);border:1px solid var(--filet);border-radius:14px;box-shadow:var(--ombre-carte);padding:12px}
+.carte h2{font-size:16px;margin:0 0 8px}
+#leaf{height:420px;border-radius:10px;background:var(--fond-creux)}
+#svg{width:100%;height:420px;display:block;border-radius:10px;background:var(--fond-creux)}
+#preuve{margin-top:16px;font-weight:600}
+.leaflet-container{font:inherit}
+</style></head>
+<body><main>
+<h1>Fond de carte local : deux façons, aucun appel réseau</h1>
+<p>Contours des 6 départements (04, 05, 06, 13, 83, 84), 300 points fictifs, 15 villes. À gauche Leaflet sans tuiles (SVG), à droite un dessin SVG à la main.</p>
+<div class="deux">
+ <section class="carte"><h2>Leaflet, sans tuiles</h2><div id="leaf" data-point-zone></div></section>
+ <section class="carte"><h2>SVG à la main</h2><svg id="svg" viewBox="0 0 700 420" role="img" aria-label="Carte du secteur"></svg></section>
+</div>
+<div id="preuve" data-preuve>Mesure en cours…</div>
+</main>
+<script src="../leaflet/leaflet.js?v=1"></script>
+<script src="paca.geojson.js?v=1"></script>
+<script src="villes.js?v=1"></script>
+<script src="../donnees-v4.js?v=1"></script>
+<script>
+(function(){
+ var css=getComputedStyle(document.documentElement);
+ var COUL={'cliente':css.getPropertyValue('--c-ca').trim(),'à rappeler':css.getPropertyValue('--e-attention').trim(),'prospect':css.getPropertyValue('--enc-4').trim(),'aucune vente':css.getPropertyValue('--enc-5').trim()};
+ var P=window.DONNEES_V4.carte.points;
+ // 1) Leaflet, sans tuiles, rendu SVG
+ var map=L.map('leaf',{attributionControl:false,zoomSnap:0.25,preferCanvas:false});
+ var fond=L.geoJSON(window.FOND_PACA,{style:{color:'#C5CBD6',weight:1.2,fillColor:'#FFFFFF',fillOpacity:1}}).addTo(map);
+ map.fitBounds(fond.getBounds(),{padding:[10,10]});
+ P.forEach(function(p){ L.circleMarker([p.lat,p.lng],{radius:p.segment==='Client A'?6:4.5,color:'#fff',weight:1,fillColor:COUL[p.statut],fillOpacity:1}).addTo(map); });
+ window.VILLES_PACA.filter(function(v){return v.rang<=2}).forEach(function(v){ L.marker([v.lat,v.lng],{icon:L.divIcon({className:'',html:'<span style="font-size:13px;font-weight:600;color:#3B4357;white-space:nowrap">'+v.nom+'</span>'}),interactive:false}).addTo(map); });
+ // 2) SVG à la main : projection équirectangulaire corrigée à 43,7° N
+ var B=window.FOND_PACA_BBOX, K=190, C=Math.cos(43.7*Math.PI/180), W=700,H=420;
+ var w=(B.est-B.ouest)*C*K, h=(B.nord-B.sud)*K, ox=(W-w)/2, oy=(H-h)/2;
+ var X=function(lng){return ox+(lng-B.ouest)*C*K}, Y=function(lat){return oy+(B.nord-lat)*K};
+ var s='';
+ window.FOND_PACA.features.forEach(function(f){
+  var polys=f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.coordinates;
+  s+='<path d="'+polys.map(function(pl){return pl.map(function(r){return 'M'+r.map(function(c){return X(c[0]).toFixed(1)+' '+Y(c[1]).toFixed(1)}).join('L')+'Z'}).join('')}).join('')+'" fill="#fff" stroke="#C5CBD6" stroke-width="1.2"/>';
+ });
+ P.forEach(function(p){ s+='<circle cx="'+X(p.lng).toFixed(1)+'" cy="'+Y(p.lat).toFixed(1)+'" r="'+(p.segment==='Client A'?5:3.6)+'" fill="'+COUL[p.statut]+'" stroke="#fff" stroke-width="1" data-point="'+p.id+'"/>'; });
+ window.VILLES_PACA.filter(function(v){return v.rang<=2}).forEach(function(v){ s+='<text x="'+(X(v.lng)+8)+'" y="'+(Y(v.lat)-6)+'" font-size="13" font-weight="600" fill="#3B4357">'+v.nom+'</text>'; });
+ document.getElementById('svg').innerHTML=s;
+ // 3) Preuve : tout ce que la page a chargé vient d'ici
+ setTimeout(function(){
+  var ext=performance.getEntriesByType('resource').filter(function(r){return r.name.indexOf(location.origin)!==0 && r.name.indexOf('data:')!==0});
+  document.getElementById('preuve').textContent='Ressources chargées hors de ce serveur : '+ext.length+' · points dessinés : '+P.length+' (Leaflet) et '+document.querySelectorAll('#svg circle').length+' (SVG) · tuiles Leaflet : '+document.querySelectorAll('.leaflet-tile').length;
+  document.documentElement.dataset.pret='1';
+ },600);
+})();
+</script></body></html>

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr" data-m="31" data-version="v4" data-ref="JARVIS">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Officines — m31 JARVIS, gros upgrade</title>
+<link rel="stylesheet" href="../../commun/jarvis.css?v=4">
+<link rel="stylesheet" href="../../commun-v4/couleurs.css?v=4">
+<link rel="stylesheet" href="style.css?v=4">
+</head>
+<body data-vue-courante="integral" data-ecran-actif="liste">
+<div class="bandeau" data-risque>Référence : le JARVIS actuel, en gros upgrade. Risque : on reconnaît JARVIS, donc moins de surprise que les autres maquettes ; les chiffres écrits passent en encre (plus de bleu ni de vert sur les montants) et la page est plus dense qu’une appli grand public. Données fictives.</div>
+<header class="haut" id="haut">
+  <div class="haut-in">
+    <button type="button" class="b-ret" data-action="retour" aria-label="Retour" hidden><span class="ico" data-ico="back"></span><b>Retour</b></button>
+    <a href="#liste" class="b-home" data-nav="officines" aria-label="Accueil Officines"><span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10 3h4v7h7v4h-7v7h-4v-7H3v-4h7z" fill="currentColor"/></svg></span><span class="marque">JARVIS</span></a>
+    <nav class="menu" aria-label="Navigation">
+      <a href="#liste" data-nav="officines"><span class="ico" data-ico="home"></span>Officines</a>
+      <a href="#pilotage" data-nav="pilotage"><span class="ico" data-ico="chart"></span>Pilotage</a>
+      <a href="#carte" data-nav="carte"><span class="ico" data-ico="pin"></span>Carte du secteur</a>
+    </nav>
+    <label class="rech"><span class="ico" data-ico="search"></span><input id="rech-globale" type="search" placeholder="Rechercher" aria-label="Rechercher une officine"><kbd aria-hidden="true">⌘K</kbd></label>
+    <button type="button" class="b-rond" data-stub="Les idées ne sont pas dessinées dans cette maquette." aria-label="Idées"><span class="ico" data-ico="bulb"></span></button>
+    <button type="button" class="b-rond b-plus" data-stub="La création n’est pas dessinée dans cette maquette." aria-label="Créer"><span class="ico" data-ico="plus"></span></button>
+    <span class="avatar" aria-hidden="true">CT</span>
+  </div>
+</header>
+<main>
+  <section data-ecran="liste" id="ecran-liste"></section>
+  <section data-ecran="fiche" id="ecran-fiche" hidden></section>
+  <section data-ecran="pilotage" id="ecran-pilotage" hidden></section>
+  <section data-ecran="carte" id="ecran-carte" hidden></section>
+</main>
+<nav class="onglets" aria-label="Navigation du téléphone">
+  <a href="#liste" data-nav="officines"><span class="ico" data-ico="home"></span>Officines</a>
+  <a href="#pilotage" data-nav="pilotage"><span class="ico" data-ico="chart"></span>Pilotage</a>
+  <a href="#carte" data-nav="carte"><span class="ico" data-ico="pin"></span>Carte</a>
+</nav>
+<div id="toast" class="toast" role="status" hidden></div>
+<script src="../../commun/donnees.js?v=4"></script>
+<script src="../../commun-v4/donnees-v4.js?v=4"></script>
+<script src="../../commun-v4/noms-v4.js?v=4"></script>
+<script src="../../commun-v4/carte/paca.geojson.js?v=4"></script>
+<script src="../../commun-v4/carte/villes.js?v=4"></script>
+<script src="outils.js?v=4"></script>
+<script src="dessins.js?v=4"></script>
+<script src="liste.js?v=4"></script>
+<script src="fiche.js?v=4"></script>
+<script src="fiche-suite.js?v=4"></script>
+<script src="pilotage.js?v=4"></script>
+<script src="carte.js?v=4"></script>
+<script src="app.js?v=4"></script>
+<script src="../../risque-v4.js?v=4"></script></body>
+</html>

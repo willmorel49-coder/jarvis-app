@@ -1,0 +1,84 @@
+/* Mes listes (#listes, #listes-detail). Préfixe .li- ; la liste d'achats idéale (.gr-la) et les lignes d'officine (.gr-lo) viennent d'ecran-groupements.css (composant partagé). */
+.li-sousnav{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:18px 0 14px}
+.li-vp{margin:0 2px 14px}
+.li-det .li-vp{margin:14px 2px 0}
+.li-synth{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:18px}
+.stat.li-seul .evo{align-items:flex-start;text-align:left}
+.li-form{margin-bottom:18px;padding:20px 22px 18px}
+.li-ligne{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.li-champ{flex:1 1 320px;max-width:520px}
+/* ---------- tableau des listes ---------- */
+.li-tabbox{padding:6px 18px 14px}
+.li-tabbox .tabl th:first-child,.li-tabbox .tabl td:first-child{padding-left:6px}
+.li-tabbox>.note{margin:14px 6px 2px}
+.li-l{cursor:pointer;animation:monte .6s var(--ease) both;animation-delay:calc(var(--i,0)*35ms)}
+.li-l:focus-visible{outline:3px solid var(--bleu);outline-offset:-3px}
+.li-oid{display:flex;align-items:center;gap:14px;min-width:220px}
+.li-av{width:44px;height:44px;border-radius:50%;flex:none;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:var(--bleu-d);background:linear-gradient(180deg,#fff,#EEF2F9);border:1px solid var(--filet);box-shadow:var(--ombre-1)}
+.li-av .ico{width:20px;height:20px;color:var(--bleu)}
+.li-otx{display:flex;flex-direction:column;gap:3px;min-width:0}
+.li-otx>b{font-size:16px;font-weight:750;letter-spacing:-.01em;line-height:1.2}
+.li-vide{color:var(--ink3);font-size:14px}
+.li-dix{display:flex;align-items:center;gap:10px}
+.li-dix .spark{width:110px;height:34px;flex:none}
+.li-dix .evo{white-space:nowrap}
+.tabl td.li-chev{width:36px;padding-left:0;padding-right:0;color:var(--ink3)}
+.li-vide-l{padding:24px 6px}
+.li-vide-c{display:flex;flex-wrap:wrap;align-items:center;gap:18px;padding:26px 28px}
+.li-vide-c>div{flex:1;min-width:260px}
+.li-vide-c h2{font-size:22px;font-weight:800;margin-bottom:6px}
+/* ---------- détail d'une liste ---------- */
+.li-outils{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px}
+.li-autre{min-width:240px;flex:0 1 360px}
+.li-pn{display:flex;gap:8px}
+.li-id{box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 2px 4px rgba(26,32,48,.06),0 28px 56px -22px rgba(0,30,120,.45)}
+.li-id .ident-meta .sub{display:inline}
+.li-id .kv .fois{display:inline;font-size:13px;color:var(--ink3);font-weight:500;margin-left:4px}
+.li-bas{margin-top:14px}
+.li-ren{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.li-ren input{flex:1 1 220px;min-height:48px;padding:0 14px;border-radius:var(--r2);border:1px solid var(--bleu);font-size:22px;font-weight:800;letter-spacing:-.02em;outline:none;box-shadow:0 0 0 3px rgba(0,80,230,.14);min-width:0}
+.li-suppr{margin-top:18px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;padding:20px 22px;border-color:#E5C9C7}
+.li-suppr h2{font-size:18px}
+.li-picker{margin-top:18px;padding:20px 22px 16px}
+.li-pf{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+.li-pf .filtre{flex:1 1 260px;max-width:420px}
+.li-pf .pil[disabled]{color:var(--ink3);cursor:default;transform:none;box-shadow:none;background:var(--creux);border-color:var(--filet)}
+.li-choix{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-height:420px;overflow:auto;padding:2px}
+.li-ck{display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 12px 8px 10px;border-radius:var(--r2);border:1px solid var(--filet);background:#fff;cursor:pointer;transition:background .2s,box-shadow .25s var(--ease)}
+.li-ck:hover{box-shadow:var(--ombre-1)}
+.li-ck.on{background:var(--bleu-fond2);border-color:#CFDDF8}
+/* case à cocher : cible de 44 px (l'élément lui-même, comme dans la liste d'achats), case visible de 22 px dessinée dedans ; la ligne entière coche aussi */
+.li-ck input{-webkit-appearance:none;appearance:none;position:relative;width:44px;height:44px;margin:0 -8px 0 -11px;border:0;background:transparent;cursor:pointer;flex:none;font-size:16px;border-radius:12px}
+.li-ck input::before{content:"";position:absolute;left:11px;top:11px;width:22px;height:22px;border-radius:6px;border:1.5px solid var(--enc-4);background:#fff;transition:background .2s,border-color .2s}
+.li-ck:hover input::before{border-color:var(--bleu)}
+.li-ck input:checked::before{background:var(--bleu);border-color:var(--bleu)}
+.li-ck input:checked::after{content:"";position:absolute;left:19px;top:14px;width:6px;height:12px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.li-ck input:focus-visible{outline:3px solid var(--bleu);outline-offset:-4px}
+.li-ck .li-av{width:38px;height:38px;font-size:13px}
+.li-membres{margin-top:18px;padding:20px 18px 14px}
+.li-membres .tabl th:first-child,.li-membres .tabl td:first-child{padding-left:6px}
+.tabl td.li-ret{width:52px;padding-left:4px;padding-right:0}
+.li-ret .b-rond{color:var(--ink3)}
+.li-ret .b-rond:hover{color:var(--e-alerte)}
+/* ---------- ordinateur étroit et téléphone ---------- */
+@media (max-width:1100px){.li-choix{grid-template-columns:repeat(2,minmax(0,1fr))}.li-oid{min-width:180px}}
+@media (max-width:760px){
+  .li-sousnav{margin:12px 0 10px}
+  .li-synth{grid-template-columns:1fr;gap:10px}
+  .li-form,.li-picker,.li-membres{padding:16px 14px 12px}
+  .li-tabbox{padding:4px 12px 12px}
+  .li-tabbox thead,.li-membres thead{display:none}
+  .li-tabbox table,.li-tabbox tbody,.li-tabbox tr,.li-membres table,.li-membres tbody,.li-membres tr{display:block;width:100%}
+  .li-tabbox tr,.li-membres tr{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;padding:12px 4px;border-bottom:1px solid var(--filet)}
+  .li-tabbox td,.li-membres td{display:block;border:0;padding:4px 0;text-align:left}
+  .li-tabbox td[data-l="Liste"],.li-membres td[data-l="Officine"]{grid-column:1 / -1}
+  .li-tabbox td:not([data-l="Liste"]):not(.li-chev)::before,.li-membres td:not([data-l="Officine"]):not(.gr-chev):not(.li-ret)::before{content:attr(data-l);display:block;font-size:13px;color:var(--lib);font-weight:500;margin-bottom:2px}
+  .li-tabbox td.num,.li-membres td.num{text-align:left}
+  .li-tabbox td.li-chev,.li-membres td.gr-chev{display:none}
+  .li-membres td.li-ret{grid-column:1 / -1;width:auto;display:flex;justify-content:flex-end}
+  .li-dix .spark{width:84px}
+  .li-outils .filtre{flex:1 1 100%;max-width:none}
+  .li-choix{grid-template-columns:1fr;max-height:360px}
+  .li-vide-c{padding:20px 16px}
+  .li-ren input{font-size:20px}
+}

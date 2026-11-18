@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="fr" data-m="29" data-version="v4" data-ref="Revolut">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Officines — m29 Revolut</title>
+<link rel="stylesheet" href="../../commun-v4/couleurs.css?v=4">
+<link rel="stylesheet" href="style.css?v=4">
+</head>
+<body data-vue-courante="integral">
+<div class="bandeau" data-risque>Référence : Revolut, en clair. Risque : référence maigre (4 visuels sombres, sans graphique ni carte) ; graphiques, Pilotage et carte inventés ; colonne étroite sur grand écran. Données fictives.</div>
+<div class="app">
+  <header class="haut">
+    <span class="avatar" aria-hidden="true">CT</span>
+    <label class="rech"><span class="ico" data-ico="search"></span><input id="rech-globale" type="search" placeholder="Rechercher une officine" aria-label="Rechercher une officine"></label>
+    <span class="logo" aria-hidden="true">J</span>
+  </header>
+  <main>
+    <section data-ecran="liste" id="ecran-liste"></section>
+    <section data-ecran="fiche" id="ecran-fiche" hidden></section>
+    <section data-ecran="pilotage" id="ecran-pilotage" hidden></section>
+    <section data-ecran="carte" id="ecran-carte" hidden></section>
+  </main>
+</div>
+<nav class="onglets" aria-label="Navigation">
+  <a href="#liste" data-nav="officines"><span class="ico" data-ico="bank"></span>Officines</a>
+  <a href="#pilotage" data-nav="pilotage"><span class="ico" data-ico="chart"></span>Pilotage</a>
+  <a href="#carte" data-nav="carte"><span class="ico" data-ico="pin"></span>Carte du secteur</a>
+</nav>
+<div id="toast" class="toast" role="status" hidden></div>
+<script src="../../commun/donnees.js?v=4"></script>
+<script src="../../commun-v4/donnees-v4.js?v=4"></script>
+<script src="../../commun-v4/noms-v4.js?v=4"></script>
+<script src="../../commun-v4/carte/paca.geojson.js?v=4"></script>
+<script src="../../commun-v4/carte/villes.js?v=4"></script>
+<script src="app.js?v=4"></script>
+<script src="../../risque-v4.js?v=4"></script></body>
+</html>

@@ -1,0 +1,231 @@
+/* m29 — Revolut transposé en clair. Colonne d'appli mobile, solde géant centré, boutons ronds à libellé, cartes de lignes sans filet. */
+:root{
+  --m-libelle:#5B6478; --m-second:#3B4357; --rond:#E9ECF2; --rond-h:#DDE1EA; --carte-r:20px;
+  --pile:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:var(--pile);color:var(--enc-1);background:var(--fond-page);background-attachment:fixed;font-size:16px;line-height:1.35;min-height:100vh}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:inherit;text-decoration:none}
+svg{display:block}
+.ico{display:inline-flex;width:22px;height:22px;flex:none;align-items:center;justify-content:center}
+.ico svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.num{font-variant-numeric:tabular-nums}
+.sub,.note{color:var(--m-libelle);font-size:13px;line-height:1.35}
+.note{margin:6px 0 0}
+.bandeau{max-width:720px;margin:0 auto;padding:10px 20px 0;font-size:13px;color:var(--m-libelle)}
+.app{max-width:720px;margin:0 auto;padding:0 16px}
+main{overflow-x:clip;padding-bottom:120px}
+[hidden]{display:none!important}
+
+/* barre du haut : avatar, recherche en pilule, logo */
+.haut{display:flex;align-items:center;gap:12px;padding:12px 0 8px}
+.avatar,.logo{width:44px;height:44px;border-radius:50%;background:var(--rond);display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex:none}
+.logo{background:var(--enc-1);color:#fff}
+.rech{flex:1;display:flex;align-items:center;gap:8px;background:var(--rond);border-radius:999px;padding:0 14px;height:44px}
+.rech input{flex:1;border:0;background:transparent;font-size:16px;min-width:0;height:44px;outline:none}
+.rech .ico{width:20px;height:20px;color:var(--m-libelle)}
+
+/* barre d'onglets du bas */
+.onglets{position:fixed;left:50%;transform:translateX(-50%);bottom:12px;z-index:30;width:min(520px,calc(100% - 24px));display:flex;background:var(--fond-carte);border-radius:28px;padding:6px;box-shadow:var(--ombre-carte),0 12px 32px -10px rgba(26,32,48,.22)}
+.onglets a{flex:1;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13px;color:var(--m-libelle);border-radius:22px}
+.onglets a .ico{width:22px;height:22px}
+.onglets a.on{color:var(--enc-1);font-weight:600;background:var(--fond-creux)}
+.onglets a.on .ico{color:var(--bleu-action)}
+
+/* solde géant centré */
+.hero{position:relative;text-align:center;padding:30px 16px 26px;border-radius:28px;margin-top:6px;background:radial-gradient(520px 260px at 28% -10%,#FFFFFF 0%,rgba(255,255,255,0) 70%),radial-gradient(420px 220px at 100% 100%,#E4EAF6 0%,rgba(228,234,246,0) 70%),#EFF1F6;box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 1px 2px rgba(26,32,48,.06)}
+.hero .lib{font-size:14px;color:var(--m-second)}
+.hero .geant{font-size:clamp(40px,11vw,56px);font-weight:600;letter-spacing:-.02em;line-height:1.1;margin:6px 0 12px}
+.hero .geant small{font-size:.5em;font-weight:500;margin-left:4px;color:var(--m-second)}
+.pilule{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border-radius:999px;border:0;background:rgba(255,255,255,.85);box-shadow:0 1px 2px rgba(26,32,48,.1);font-size:15px;font-weight:500}
+.pilule .ico{width:18px;height:18px}
+.hero .evo{display:block;margin-top:10px}
+
+/* rangée de boutons ronds à libellé */
+.ronds{display:flex;justify-content:space-around;gap:8px;padding:18px 0 8px}
+.rond{display:flex;flex-direction:column;align-items:center;gap:8px;background:none;border:0;padding:0;min-width:64px;font-size:14px;font-weight:500;color:var(--enc-1);text-align:center}
+.rond .c{width:56px;height:56px;border-radius:50%;background:var(--rond);display:flex;align-items:center;justify-content:center;transition:transform .2s,background .2s}
+.rond .c .ico{width:24px;height:24px}
+.rond:hover .c{background:var(--rond-h);transform:translateY(-2px)}
+.rond.plein .c{background:var(--bleu-action);color:#fff}
+.rond.plein:hover .c{background:#0042C2}
+
+/* cartes et lignes */
+.carte{background:var(--fond-carte);border-radius:var(--carte-r);box-shadow:var(--ombre-carte);padding:8px;margin-top:16px}
+.carte>h2,.carte>.ent{margin:0;padding:14px 14px 6px;font-size:18px;font-weight:600;letter-spacing:-.01em}
+.carte>.ent h2{margin:0;font-size:18px;font-weight:600}
+.carte>.ent{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.carte>.note{padding:0 14px 6px}
+.titre-s{font-size:20px;font-weight:600;margin:28px 4px 0;letter-spacing:-.01em}
+.ligne{display:flex;align-items:center;gap:14px;min-height:62px;padding:10px 12px;border-radius:14px;border:0;background:none;width:100%;text-align:left;transition:background .15s}
+a.ligne:hover,button.ligne:hover{background:var(--fond-creux)}
+.past{width:40px;height:40px;border-radius:50%;background:var(--rond);display:inline-flex;align-items:center;justify-content:center;flex:none;font-weight:600;font-size:14px;color:var(--enc-2)}
+.past .ico{width:20px;height:20px}
+.txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.txt b{font-weight:500;font-size:16px;overflow-wrap:anywhere}
+.droite{display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right;flex:none}
+.droite .mont{font-size:16px;font-weight:500}
+.mont small{font-size:.8em;margin-left:2px}
+.voir-tout{display:flex;justify-content:center;padding:6px 0 10px}
+.btn-texte{background:none;border:0;min-height:44px;padding:0 24px;font-size:16px;font-weight:500;color:var(--enc-1);border-radius:999px}
+.btn-texte:hover{background:var(--fond-creux)}
+.pil{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:999px;border:0;background:var(--rond);font-size:15px;font-weight:500}
+.pil:hover{background:var(--rond-h)}
+.pil.plein{background:var(--bleu-action);color:#fff}
+.pil .ico{width:18px;height:18px}
+.chev{width:18px;height:18px;color:var(--enc-4)}
+.etat{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--m-second)}
+.etat .ico{width:16px;height:16px}
+.evo{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--m-second)}
+.evo .ico{width:16px;height:16px}
+.anneau{width:24px;height:24px;flex:none}
+.prop{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--m-second)}
+.spark{display:block}
+.trace{stroke-dasharray:1;stroke-dashoffset:0;animation:trace 1.1s ease-out both}
+@keyframes trace{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes monte{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.hero,.carte,.ronds,.tuiles{animation:monte .5s ease-out backwards}
+.carte:nth-of-type(2){animation-delay:.08s}
+.carte:nth-of-type(3){animation-delay:.16s}
+.puce{display:inline-block;width:10px;height:10px;border-radius:50%;flex:none}
+.trait{display:inline-block;width:18px;height:0;border-top:2px dashed var(--c-moyenne)}
+
+/* filtres : pilules */
+.filtres{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:18px 0 0}
+.seg{display:inline-flex;background:var(--rond);border-radius:999px;padding:4px;gap:2px;max-width:100%;flex-wrap:wrap}
+.seg button{min-height:44px;padding:0 16px;border:0;border-radius:999px;background:transparent;font-size:15px;font-weight:500;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:#fff;box-shadow:0 1px 3px rgba(26,32,48,.14);font-weight:600}
+.filtre{display:inline-flex;align-items:center;gap:8px;background:var(--rond);border-radius:999px;padding:0 14px;min-height:44px;font-size:14px;color:var(--m-second)}
+.filtre select,.filtre input{border:0;background:transparent;min-height:44px;font-size:16px;font-weight:500;outline:none;color:var(--enc-1);max-width:190px}
+.filtre input{min-width:0;width:230px;max-width:100%}
+.filtre .ico{width:18px;height:18px}
+
+/* tuiles (« Saved this month / Earned this month ») */
+.tuiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.tuile{background:var(--fond-carte);border-radius:var(--carte-r);box-shadow:var(--ombre-carte);padding:16px;display:flex;flex-direction:column;gap:6px;border:0;text-align:left;min-width:0;width:100%}
+button.tuile{cursor:pointer}
+button.tuile:hover{background:var(--fond-creux)}
+.tuile .lib{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--m-second)}
+.tuile .val{font-size:28px;font-weight:600;letter-spacing:-.02em;line-height:1.1;overflow-wrap:anywhere}
+.tuile .val small{font-size:.5em;font-weight:500;margin-left:3px}
+.tuile .spark{margin-top:4px;max-width:100%}
+
+/* graphiques : courbe lisse, lecteur */
+.graph{padding:6px 10px 10px}
+.graph h3{margin:6px 4px 2px;font-size:18px;font-weight:600;line-height:1.25}
+.graph .courbe{width:100%}
+.graph svg{width:100%;height:auto}
+.lecteur{margin:2px 4px 6px;min-height:20px;font-size:15px;color:var(--enc-1)}
+.leg{display:flex;flex-wrap:wrap;gap:6px 16px;padding:0 4px 4px;font-size:13px;color:var(--m-second)}
+.leg span{display:inline-flex;align-items:center;gap:6px}
+.sel-g{display:flex;justify-content:center;padding:4px 0 8px}
+.tabm{margin:4px 4px 8px}
+.tabm summary{min-height:44px;display:flex;align-items:center;font-size:15px;font-weight:500;cursor:pointer}
+.tab{width:100%;border-collapse:collapse;font-size:14px}
+.tab th,.tab td{text-align:left;padding:8px 6px}
+.tab td.num,.tab th:not(:first-child){text-align:right}
+.tab tr.cumul td{font-weight:600}
+.pt-lect{cursor:pointer}
+
+/* barres fines et frises */
+.barre12{display:block;height:8px;border-radius:4px;background:var(--fond-creux);position:relative;overflow:hidden;min-width:80px}
+.barre12 i{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+.barre12.gris i{background:var(--enc-5)}
+.lig-bar{display:flex;align-items:center;gap:10px}
+.frise-m{display:flex;gap:3px}
+.frise-m i{width:10px;height:10px;border-radius:3px;background:var(--enc-5)}
+.frise-m i.plein{background:var(--c-ca)}
+.posit{padding:6px 14px 14px}
+.frise{position:relative;height:44px}
+.frise .base{position:absolute;left:0;right:0;top:20px;height:3px;border-radius:2px;background:var(--enc-5)}
+.frise .pt{position:absolute;top:13px;width:16px;height:16px;margin-left:-8px;border-radius:50%;background:var(--c-ca);box-shadow:0 0 0 4px #fff}
+
+/* coordonnées */
+.co{display:flex;justify-content:space-between;gap:16px;padding:10px 12px;font-size:15px}
+.co-l{color:var(--m-libelle);font-size:14px;flex:none}
+.co-v{text-align:right;overflow-wrap:anywhere}
+.savoir{padding:10px 12px}
+.savoir p{margin:4px 0 0;font-size:15px}
+.tete-f{text-align:center;padding:0 0 4px}
+.barre-f{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 0 0}
+.vuenote{text-align:center;margin:10px 0 0}
+.cpt7{display:inline-flex;min-width:22px;height:22px;border-radius:11px;background:var(--enc-1);color:#fff;font-size:13px;align-items:center;justify-content:center;padding:0 6px}
+
+/* pilotage */
+.eyebrow{margin:12px 4px 0;text-align:center}
+.titre{margin:4px 0 0;text-align:center;font-size:28px;font-weight:600;letter-spacing:-.02em}
+.lede{margin:10px 8px 0;text-align:center;font-size:17px;line-height:1.4;color:var(--enc-2)}
+.alerte-n{display:flex;gap:8px;align-items:flex-start;margin:14px 4px 0;font-size:13px;color:var(--m-second)}
+.alerte-n .ico{width:18px;height:18px}
+.dispos{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:14px 0 0}
+.mes-v{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.sp2{padding:0 14px 4px}
+.par-l{display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;padding:10px 12px}
+.par-l .sp{grid-column:2/4}
+.detail-b{display:flex;flex-direction:column;align-items:center;gap:8px;padding:22px 0 0}
+
+/* feuille (panneau qui monte du bas, comme les feuilles de l'appli) */
+.feuille{position:fixed;left:0;right:0;margin:0 auto;bottom:0;z-index:40;width:min(640px,100%);max-height:78vh;overflow:auto;background:var(--fond-carte);border-radius:28px 28px 0 0;box-shadow:0 -10px 40px -10px rgba(26,32,48,.28);padding:14px 16px 24px;animation:monte .35s ease-out backwards}
+.feuille .poignee{width:44px;height:5px;border-radius:3px;background:var(--enc-5);margin:0 auto 10px}
+.feuille .f-t{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:2px 0 8px}
+.feuille .f-t h2{margin:0;font-size:20px;font-weight:600}
+.feuille .ferme{width:44px;height:44px;border-radius:50%;border:0;background:var(--rond);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.feuille .ferme .ico{width:20px;height:20px}
+.trois{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px 0}
+.trois .val{font-size:20px;font-weight:600;margin-top:2px}
+.pastilles{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0 8px}
+.chip{display:inline-flex;align-items:center;min-height:28px;padding:0 12px;border-radius:999px;background:var(--rond);font-size:13px;color:var(--m-second)}
+.mini-b{display:flex;gap:6px;align-items:flex-end;height:80px}
+.mini-b .mb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:100%}
+.mini-b .mb i{display:block;width:100%;max-width:18px;border-radius:5px 5px 2px 2px;background:var(--c-ca)}
+.mini-b .mb em{font-style:normal;font-size:13px;color:var(--m-libelle)}
+.feuille h3{margin:14px 0 4px;font-size:16px;font-weight:600}
+.feuille .actions{display:flex;flex-wrap:wrap;gap:8px;padding-top:12px}
+
+/* carte du secteur */
+.carte-c{position:relative;padding:0;overflow:hidden;border-radius:28px}
+.carte-c svg{width:100%;height:auto;background:radial-gradient(520px 300px at 20% 0,#FFFFFF 0%,rgba(255,255,255,0) 70%),#EEF1F6}
+.carte-c [data-point]{cursor:pointer}
+.carte-c [data-point][data-sel]{stroke:var(--enc-1);stroke-width:2.5}
+.legende{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;padding:12px 16px;font-size:13px;color:var(--m-second)}
+.legende span{display:inline-flex;align-items:center;gap:6px}
+.dot{display:inline-block;border-radius:50%;flex:none}
+.cpt-pil{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;font-size:15px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;z-index:60;background:var(--enc-1);color:#fff;padding:12px 18px;border-radius:999px;font-size:14px;max-width:calc(100% - 32px)}
+.fict{text-align:center;color:var(--m-libelle);font-size:13px;margin:24px 0 0}
+
+@media (min-width:900px){
+  .app,.bandeau{max-width:760px}
+  .feuille{border-radius:28px;bottom:104px;max-height:62vh;left:auto;right:calc(50% - 380px);margin:0;width:400px}
+}
+@media (max-width:420px){
+  .tuile .val{font-size:24px}
+  .seg button{padding:0 12px;font-size:14px}
+  .trois .val{font-size:17px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+/* ajouts : ligne d'officine en grille, vue pharmacien */
+[data-vue-courante="pharmacien"] [data-interne]{display:none!important}
+.l-off{display:grid;grid-template-columns:40px 1fr auto;grid-template-areas:"p t d" ". b b";column-gap:14px;row-gap:6px;align-items:start;padding:14px 12px}
+.l-off .past{grid-area:p}.l-off .txt{grid-area:t}.l-off .droite{grid-area:d}
+.l-off .bas{grid-area:b;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}
+.l-off .sp{display:inline-block}
+.l-off .droite .sub{max-width:150px}
+.l-off .sub i{font-style:normal}
+.mont small{font-size:13px}
+.tuile .val small,.trois .val small{font-size:14px}
+.filtre select{-webkit-appearance:none;appearance:none;height:44px;padding:0 22px 0 4px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%235B6478' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 4px center}
+.past svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.hero .evo{display:flex;justify-content:center;text-align:center}
+.l-off .droite .sub{max-width:190px}
+.l-off .txt b{overflow-wrap:normal}
+@media (max-width:560px){
+  .l-off{grid-template-columns:40px 1fr;grid-template-areas:"p t" "p d" ". b"}
+  .l-off .droite{align-items:flex-start;text-align:left;flex-direction:row;flex-wrap:wrap;gap:2px 8px;align-items:baseline}
+  .l-off .droite .sub{max-width:none}
+}

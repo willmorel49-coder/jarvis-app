@@ -1,0 +1,86 @@
+/* Styles de l'écran « Tournées », préfixés .tn-. Les composants communs vivent dans style.css.
+   Couleur des chiffres sur traits fins seulement : --c-ca (chiffre d'affaires, familles, route), --c-nous (rentabilité), --c-cmd (nuage) ; états sur l'icône seule. */
+.tn-corps{margin-top:18px;display:grid;gap:18px}
+.tn-vp{display:block;margin:18px 0 0;font-size:15px;color:var(--ink2)}
+.tn-vp .pil{margin-left:10px;vertical-align:middle}
+.tn-synth{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+/* la réponse : texte à gauche, barres à droite */
+.tn-reco{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:18px 36px;align-items:start;padding:24px 26px}
+.tn-reco .eyebrow{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3)}
+.tn-reco h2{font-size:24px;letter-spacing:-.02em;margin-top:4px}
+.tn-reco .note{margin-top:10px;font-size:15px}
+.tn-reco-act{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.tn-reco-chart h3{font-size:15px}
+.tn-chart{min-height:120px}
+.tn-chart-b{min-height:290px;margin-top:8px}
+.tn-chart-r{min-height:96px;margin:14px 0 16px}
+.tn-barres,.tn-nuage,.tn-route{display:block;max-width:100%;height:auto;overflow:visible}
+.tn-bar-x{animation:poussex .9s var(--ease) both}
+/* tableau du classement et des clientes */
+.tn-tab{padding:18px 20px 14px}
+.tn-tab .tete{margin-bottom:8px}
+.tn-tab .tabl th:first-child,.tn-tab .tabl td:first-child{padding-left:6px}
+.tn-tab .tabl td.tn-vide{text-align:center;color:var(--ink3);padding:30px}
+.tn-l{cursor:pointer;animation:monte .6s var(--ease) both;animation-delay:calc(var(--i,0)*35ms)}
+.tn-l:focus-visible{outline:3px solid var(--bleu);outline-offset:-3px}
+.tn-rang b{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.tn-id{display:flex;align-items:center;gap:14px;min-width:240px}
+/* pastille de code ou d'initiales */
+.tn-av{width:44px;height:44px;border-radius:50%;flex:none;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;letter-spacing:.02em;color:var(--bleu-d);background:linear-gradient(180deg,#fff,#EEF2F9);border:1px solid var(--filet);box-shadow:var(--ombre-1)}
+.tn-txt{display:flex;flex-direction:column;gap:3px;min-width:0}
+.tn-nom{font-size:16px;font-weight:750;letter-spacing:-.01em;line-height:1.2}
+.tn-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:14px;color:var(--ink3)}
+.tn-meta .etat{padding:2px 10px 2px 6px;font-size:13px}
+.tn-meta .etat .ico{width:16px;height:16px}
+.tn-dix{display:flex;align-items:center;gap:10px}
+.tn-dix .evo{white-space:nowrap}
+.tn-dix .spark{width:110px;height:34px;flex:none}
+.tn-chev{width:36px;padding-left:0!important;padding-right:0!important;color:var(--ink3)}
+.tn-kmc .fois{white-space:nowrap}
+/* détail */
+.tn-outils{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px}
+.tn-pn{display:flex;gap:8px}
+.tn-autre{min-width:260px;flex:1 1 260px;max-width:420px}
+.tn-ban-det .ban-tete>div:first-child{flex-basis:auto}
+.tn-outils-i{display:contents}
+/* carte d'identité de la tournée (classe passée à J.identite : les autres écrans ne sont pas touchés) */
+.tn-ident{box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 2px 4px rgba(26,32,48,.06),0 28px 56px -22px rgba(0,30,120,.45)}
+.tn-ident .ident-kv .fois{display:inline;font-size:13px;color:var(--ink3);font-weight:500;margin-left:6px}
+.tn-mois-c{padding:24px}
+.tn-cbs{display:grid;gap:16px;margin-top:6px}
+.tn-trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:4px 0 18px}
+.tn-trio .co-l{display:block;font-size:13px;font-weight:650;color:var(--ink3)}
+.tn-grand{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.tn-km{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:4px 0 6px}
+.tn-km b{font-size:44px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.tn-km span{font-size:15px;color:var(--ink2);font-weight:600}
+.tn-km .fois{display:block;font-size:13px;color:var(--ink3);font-weight:500}
+.tn-cl{scroll-margin-top:90px}
+/* ---------- ordinateur étroit et téléphone ---------- */
+@media (max-width:1100px){.tn-synth{grid-template-columns:repeat(2,minmax(0,1fr))}.tn-id{min-width:200px}}
+@media (max-width:900px){.tn-reco{grid-template-columns:1fr}.tn-trio{grid-template-columns:1fr}}
+@media (max-width:760px){
+  .tn-corps{margin-top:14px;gap:14px}
+  .tn-synth{grid-template-columns:1fr}
+  .tn-reco{padding:20px 18px}
+  .tn-reco h2{font-size:21px}
+  .tn-reco-act .pil{flex:1 1 auto}
+  .tn-tab{padding:4px 12px 12px}
+  .tn-tab .tete{margin:10px 0 6px}
+  .tn-tab thead{display:none}
+  .tn-tab table,.tn-tab tbody,.tn-tab tr{display:block;width:100%}
+  .tn-tab tbody tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 12px;padding:12px 4px;border-bottom:1px solid var(--filet)}
+  .tn-tab td{display:block;border:0;padding:4px 0;text-align:left}
+  .tn-tab td[data-l="Tournée"],.tn-tab td[data-l="Officine"]{grid-column:1 / -1}
+  .tn-tab td:not([data-l="Tournée"]):not([data-l="Officine"]):not(.tn-chev)::before{content:attr(data-l);display:block;font-size:13px;color:var(--lib);font-weight:500;margin-bottom:2px}
+  .tn-tab td.num{text-align:left}
+  .tn-tab td.tn-chev{display:none}
+  .tn-tab td.tn-rang{grid-column:1 / -1;display:flex;align-items:baseline;gap:8px}
+  .tn-tab td.tn-rang::before{margin:0}
+  .tn-dix{flex-wrap:wrap;gap:2px 10px}
+  .tn-dix .spark{width:72px}
+  .tn-outils .filtre{flex:1 1 100%;max-width:none}
+  .tn-mois-c{padding:18px 14px 14px}
+  .tn-km b{font-size:38px}
+  .tn-vp .pil{margin:8px 0 0}
+}

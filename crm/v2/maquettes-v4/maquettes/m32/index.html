@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="fr" data-m="32" data-version="v5" data-ref="Pappers + JARVIS">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JARVIS — m32 Pappers + JARVIS (toute l’appli)</title>
+<link rel="stylesheet" href="../../commun/jarvis.css?v=5">
+<link rel="stylesheet" href="../../commun-v4/couleurs.css?v=5">
+<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="ecran-officines.css?v=5">
+<link rel="stylesheet" href="ecran-accueil.css?v=5">
+<link rel="stylesheet" href="ecran-infos.css?v=5">
+<link rel="stylesheet" href="ecran-todo.css?v=5">
+<link rel="stylesheet" href="ecran-pilotage.css?v=5">
+<link rel="stylesheet" href="ecran-carte.css?v=5">
+<link rel="stylesheet" href="ecran-produits.css?v=5">
+<link rel="stylesheet" href="ecran-biosimilaires.css?v=5">
+<link rel="stylesheet" href="ecran-lgo.css?v=5">
+<link rel="stylesheet" href="ecran-marketing.css?v=5">
+<link rel="stylesheet" href="ecran-documents.css?v=5">
+<link rel="stylesheet" href="ecran-offilog.css?v=5">
+<link rel="stylesheet" href="ecran-rdv.css?v=5">
+<link rel="stylesheet" href="ecran-concurrents.css?v=5">
+<link rel="stylesheet" href="ecran-groupements.css?v=5">
+<link rel="stylesheet" href="ecran-listes.css?v=5">
+<link rel="stylesheet" href="ecran-appro.css?v=5">
+<link rel="stylesheet" href="ecran-tournees.css?v=5">
+<link rel="stylesheet" href="ecran-qg.css?v=5">
+<link rel="stylesheet" href="ecran-blocnotes.css?v=5">
+<link rel="stylesheet" href="ecran-mallette.css?v=5">
+<link rel="stylesheet" href="ecran-marche.css?v=5">
+<link rel="stylesheet" href="ecran-carte-groupements.css?v=5">
+<link rel="stylesheet" href="motion.css?v=m16">
+</head>
+<body data-vue="integral" data-ecran-actif="liste">
+<p class="risque" data-risque>Maquette de présentation : tout est inventé, sauf les noms de produits et de villes.</p>
+<header class="haut" id="haut">
+  <div class="haut-in">
+    <button type="button" class="b-ret" data-action="retour" aria-label="Retour" hidden><span class="ico" data-ico="back"></span><b>Retour</b></button>
+    <a href="#accueil" class="b-home" aria-label="JARVIS, accueil"><span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M10 3h4v7h7v4h-7v7h-4v-7H3v-4h7z" fill="currentColor"/></svg></span><span class="marque">JARVIS</span></a>
+    <nav class="menu" aria-label="Navigation principale">
+      <a href="#accueil" data-nav="accueil"><span class="ico" data-ico="home"></span>Accueil</a>
+      <a href="#liste" data-nav="officines"><span class="ico" data-ico="pharma"></span>Officines</a>
+      <a href="#pilotage" data-nav="pilotage"><span class="ico" data-ico="chart"></span>Pilotage</a>
+      <a href="#carte" data-nav="carte"><span class="ico" data-ico="pin"></span>La carte</a>
+      <a href="#infos" data-nav="infos"><span class="ico" data-ico="infos"></span><span><span class="nav-marque">JARVIS </span>DAILY</span></a>
+      <a href="#offilog" data-nav="offilog"><span class="ico" data-ico="box"></span>Offilog</a>
+      <button type="button" data-nav="outils" data-outils aria-haspopup="dialog" aria-expanded="false" aria-controls="outils"><span class="ico" data-ico="grille"></span>Outils</button>
+    </nav>
+    <label class="rech"><span class="ico" data-ico="search"></span><input id="rech-globale" type="search" placeholder="Rechercher" aria-label="Rechercher une officine, un produit, un outil" autocomplete="off"><kbd aria-hidden="true">⌘K</kbd></label>
+    <button type="button" class="b-rond b-plus" data-plus aria-label="Actions rapides" aria-haspopup="menu" aria-expanded="false"><span class="ico" data-ico="plus"></span></button>
+    <button type="button" class="avatar" data-compte aria-label="Mon compte, Claire Tessier">CT</button>
+  </div>
+</header>
+<main id="main">
+  <section data-ecran="liste" id="ecran-liste" aria-label="Officines"></section>
+  <section data-ecran="fiche" id="ecran-fiche" data-adresses="fiche-pharmacien,fiche-p353,fiche-p271" hidden aria-label="Fiche d’une officine"></section>
+  <section data-ecran="groupements" id="ecran-groupements" data-adresses="groupements-detail" hidden aria-label="Groupements"></section>
+  <section data-ecran="listes" id="ecran-listes" data-adresses="listes-detail" hidden aria-label="Mes listes"></section>
+  <section data-ecran="carte-secteur" id="ecran-carte-secteur" hidden aria-label="Carte secteur"></section>
+  <section data-ecran="pilotage" id="ecran-pilotage" data-adresses="pilotage-detail" hidden aria-label="Pilotage"></section>
+  <section data-ecran="carte" id="ecran-carte" data-adresses="carte-fiche" hidden aria-label="La carte"></section>
+  <section data-ecran="accueil" id="ecran-accueil" data-adresses="accueil-fiche,accueil-tournee,accueil-proximite,accueil-info-g1" hidden aria-label="Accueil, JARVIS GPS"></section>
+  <section data-ecran="infos" id="ecran-infos" data-adresses="infos-detail" hidden aria-label="JARVIS DAILY"></section>
+  <section data-ecran="todo" id="ecran-todo" hidden aria-label="To do list"></section>
+  <section data-ecran="produits" id="ecran-produits" data-adresses="produits-detail" hidden aria-label="Catalogue produits"></section>
+  <section data-ecran="biosimilaires" id="ecran-biosimilaires" hidden aria-label="Biosimilaires"></section>
+  <section data-ecran="lgo" id="ecran-lgo" data-adresses="lgo-detail" hidden aria-label="Logiciels officine"></section>
+  <section data-ecran="marketing" id="ecran-marketing" data-adresses="marketing-detail" hidden aria-label="Marketing"></section>
+  <section data-ecran="documents" id="ecran-documents" hidden aria-label="Documents"></section>
+  <section data-ecran="offilog" id="ecran-offilog" data-adresses="offilog-detail" hidden aria-label="Offilog"></section>
+  <section data-ecran="rdv" id="ecran-rdv" data-adresses="rdv-detail,rdv-planning,rdv-suivi" hidden aria-label="Rendez-vous"></section>
+  <section data-ecran="concurrents" id="ecran-concurrents" data-adresses="concurrents-detail,concurrents-annuaire,concurrents-prix,concurrents-actu,concurrents-liens" hidden aria-label="Concurrents"></section>
+  <section data-ecran="appro" id="ecran-appro" data-adresses="appro-detail" hidden aria-label="Appro"></section>
+  <section data-ecran="blocnotes" id="ecran-blocnotes" hidden aria-label="Bloc-notes"></section>
+  <section data-ecran="qg" id="ecran-qg" data-adresses="qg-detail" hidden aria-label="QG"></section>
+  <section data-ecran="marche" id="ecran-marche" data-adresses="marche-detail" hidden aria-label="Marché"></section>
+  <section data-ecran="carte-groupements" id="ecran-carte-groupements" hidden aria-label="Carte des groupements"></section>
+  <section data-ecran="mallette" id="ecran-mallette" data-adresses="mallette-detail" hidden aria-label="Mallette"></section>
+  <section data-ecran="tournees" id="ecran-tournees" data-adresses="tournees-detail" hidden aria-label="Tournées"></section>
+</main>
+<nav class="onglets" aria-label="Navigation du téléphone">
+  <a href="#accueil" data-nav="accueil"><span class="ico" data-ico="home"></span>Accueil</a>
+  <a href="#liste" data-nav="officines"><span class="ico" data-ico="pharma"></span>Officines</a>
+  <a href="#pilotage" data-nav="pilotage"><span class="ico" data-ico="chart"></span>Pilotage</a>
+  <a href="#carte" data-nav="carte"><span class="ico" data-ico="pin"></span>Carte</a>
+  <button type="button" data-nav="outils" data-outils aria-haspopup="dialog" aria-expanded="false" aria-controls="outils"><span class="ico" data-ico="grille"></span>Outils</button>
+</nav>
+<div class="voile" id="voile" hidden></div>
+<aside class="outils" id="outils" role="dialog" aria-modal="true" aria-label="Tous les outils" hidden></aside>
+<div class="menu-plus" id="menu-plus" role="menu" aria-label="Actions rapides" hidden></div>
+<div id="toast" class="toast" role="status" hidden></div>
+<script src="../../commun/donnees.js?v=5"></script>
+<script src="../../commun-v4/donnees-v4.js?v=5"></script>
+<script src="../../commun-v4/noms-v4.js?v=5"></script>
+<script src="../../commun-v5/donnees-v5.js?v=5"></script>
+<script src="donnees-gps-daily.js?v=5"></script>
+<script src="../../commun-v4/carte/paca.geojson.js?v=5"></script>
+<script src="../../commun-v4/carte/villes.js?v=5"></script>
+<script src="app.js?v=5"></script>
+<script src="ecran-officines.js?v=5"></script>
+<script src="ecran-accueil.js?v=5"></script>
+<script src="ecran-infos.js?v=5"></script>
+<script src="ecran-todo.js?v=5"></script>
+<script src="ecran-pilotage.js?v=5"></script>
+<script src="ecran-carte.js?v=5"></script>
+<script src="ecran-produits.js?v=5"></script>
+<script src="ecran-biosimilaires.js?v=5"></script>
+<script src="ecran-lgo.js?v=5"></script>
+<script src="ecran-marketing.js?v=5"></script>
+<script src="ecran-documents.js?v=5"></script>
+<script src="ecran-offilog.js?v=5"></script>
+<script src="ecran-rdv.js?v=5"></script>
+<script src="ecran-concurrents.js?v=5"></script>
+<script src="ecran-groupements.js?v=5"></script>
+<script src="ecran-listes.js?v=5"></script>
+<script src="ecran-appro.js?v=5"></script>
+<script src="ecran-tournees.js?v=5"></script>
+<script src="ecran-qg.js?v=5"></script>
+<script src="ecran-blocnotes.js?v=5"></script>
+<script src="ecran-mallette.js?v=5"></script>
+<script src="ecran-marche.js?v=5"></script>
+<script src="ecran-carte-groupements.js?v=5"></script>
+<script src="motion.js?v=m16"></script>
+<script>window.J32.demarrer();</script>
+<script src="../../risque-v4.js?v=4"></script></body>
+</html>

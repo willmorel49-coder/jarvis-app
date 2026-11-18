@@ -1,0 +1,21 @@
+/* V3 « visuelle » — couleurs des chiffres, communes aux trois maquettes (17/11/2026).
+   Une couleur = un chiffre, la même partout (liste, fiche, graphique, tuile, légende).
+   Palette validée (validate_palette.js, mode clair : toutes les vérifications passent ;
+   aqua, jaune et rose sous 3:1 → toujours une étiquette écrite à côté). */
+:root{
+  /* Les chiffres */
+  --c-ca:#0050E6;        --c-ca-fond:#E6EEFF;      /* Chiffre d'affaires (bleu Intégral) */
+  --c-nous:#EB6834;      --c-nous-fond:#FDEDE6;    /* Notre marge Intégral (interne) */
+  --c-pharma:#1BAF7A;    --c-pharma-fond:#E3F6EE;  /* Marge du pharmacien */
+  --c-cmd:#6250D6;       --c-cmd-fond:#ECE9FB;     /* Commandes */
+  --c-moyenne:#1D2433;                              /* Trait « moyenne de nos clients » */
+  /* Catégories de produits : toujours dans cet ordre, jamais recyclées */
+  --cat-1:#0050E6; --cat-2:#EB6834; --cat-3:#1BAF7A; --cat-4:#EDA100;
+  --cat-5:#E87BA4; --cat-6:#008300; --cat-7:#6250D6; --cat-8:#E34948;
+  --cat-autre:#9AA1AE;
+  /* États : toujours pastille + icône + mot, jamais la couleur seule */
+  --e-bien:#0A7F0A;     --e-bien-fond:#E3F5E3;     /* Cliente, hausse */
+  --e-attention:#9A5B00;--e-attention-fond:#FFF1D6;/* À rappeler */
+  --e-alerte:#C42B2B;   --e-alerte-fond:#FDE7E7;   /* Baisse */
+  --e-neutre:#4F5668;   --e-neutre-fond:#EEF0F4;   /* Prospect */
+}

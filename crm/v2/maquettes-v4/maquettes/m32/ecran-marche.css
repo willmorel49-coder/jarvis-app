@@ -1,0 +1,79 @@
+/* Styles de l'écran Le marché (#marche, #marche-detail). Préfixe .mr-. Les composants communs (bandeau, sous-bandeau, ident, kv, tabl, cb,
+   seg, pil, rond, chip, leg, lecteur) vivent dans style.css. Les boîtes du marché n'ont pas de couleur de chiffre (couleurs.css ne connaît que
+   ceux du réseau) : barres de 10 px en gris, la seule région regardée en bleu d'action, le gris « moyenne » en trait de 3 px ; les états sur l'icône ; aucun fond
+   teinté, aucun chiffre écrit en couleur. Aucune des propriétés qui font figer Safari. */
+.mr-vp{display:block;margin-top:18px}
+.mr-vp .pil{margin-left:10px;vertical-align:middle}
+/* vue pharmacien : la carte d'identité est masquée, le bandeau se referme (pas de bas carré ni de bleu vide) */
+body[data-vue="pharmacien"] .mr-page .bandeau.deborde{padding-bottom:28px;border-radius:28px}
+/* la région ouverte : rangée d'outils (retour, précédente / suivante, autre région) */
+.mr-outils{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px}
+.mr-pn{display:flex;gap:8px}
+.mr-autre{min-width:260px;flex:1 1 260px;max-width:420px}
+.mr-stack{margin-top:18px}
+.mr-ident{box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 2px 4px rgba(26,32,48,.06),0 28px 56px -22px rgba(0,30,120,.45)}
+.mr-ident .ident-meta>span:not(.etat){font-size:14px;color:var(--ink3)}
+.mr-ident .ident-mois .sub{margin-top:4px}
+.mr-ident .ident-mois .evo{margin-top:4px}
+/* ---------- les régions : tableau à barres fines, repère France ---------- */
+.mr-regions{padding:22px 22px 16px}
+.mr-regions .tete{align-items:center}
+.mr-tri{display:flex;align-items:center;gap:10px}
+.mr-tri .lbl{font-size:14px;font-weight:650;color:var(--ink2);white-space:nowrap}
+.mr-l{cursor:pointer;animation:monte .5s var(--ease) both;animation-delay:calc(var(--i,0)*30ms)}
+.mr-l:focus-visible{outline:3px solid var(--bleu);outline-offset:-3px}
+.mr-tab tbody tr.moi{background:var(--bleu-fond2)}
+.mr-tab tbody tr.moi:hover{background:var(--bleu-fond)}
+.mr-nom{display:block;font-size:15px;font-weight:700;line-height:1.3}
+.mr-cell{display:inline-flex;align-items:center;gap:12px;justify-content:flex-end}
+.tabl td.num .mr-cell b{min-width:3.2ch;text-align:right}
+.mr-piste{position:relative;display:inline-block;width:150px;height:10px;border-radius:5px;background:#E8ECF4;flex:none}
+.mr-b{position:absolute;left:0;top:0;bottom:0;border-radius:5px;transform-origin:left;animation:poussex .9s var(--ease) both}
+.mr-m{position:absolute;top:-4px;bottom:-4px;width:3px;border-radius:2px;background:var(--c-moyenne);transform:translateX(-1px)}
+.mr-m-leg{position:static;display:inline-block;width:3px;height:16px;transform:none;vertical-align:middle}
+.mr-tab td.mr-chev{width:36px;padding-left:0;padding-right:0;color:var(--ink3)}
+.mr-leg{margin-top:14px}
+.mr-leg b{color:var(--ink)}
+/* ---------- dispositifs médicaux et signaux ---------- */
+.mr-dm{display:grid;gap:16px;margin-top:6px}
+.mr-dm .cb{animation:monte .5s var(--ease) both;animation-delay:calc(var(--i,0)*60ms)}
+.mr-sig{list-style:none;margin:6px 0 0;padding:0;display:grid}
+.mr-sig li{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--filet);animation:monte .5s var(--ease) both;animation-delay:calc(var(--i,0)*60ms)}
+.mr-sig li:first-child{border-top:0}
+.mr-sig .rond{width:44px;height:44px}
+.mr-sig-t{flex:1;min-width:180px;font-size:15px;font-weight:600;line-height:1.4}
+.mr-sig .chip{font-size:14px;padding:0 12px}
+/* ---------- une région ouverte : frise des régions ---------- */
+.mr-frise{display:grid;gap:4px;margin-top:8px}
+.mr-fb{display:grid;grid-template-columns:200px minmax(0,1fr);align-items:center;gap:12px;min-height:44px;padding:4px 10px;border:0;border-radius:var(--r3);background:transparent;text-align:left;font:inherit;color:var(--ink2);cursor:pointer;transition:background .2s}
+.mr-fb:hover,.mr-fb.lu{background:var(--bleu-fond2)}
+.mr-fb.moi{color:var(--ink);font-weight:700}
+.mr-fb-n{font-size:14px;line-height:1.3}
+.mr-fb .mr-piste{width:100%;display:block}
+.mr-off tr[data-officine]{cursor:pointer}
+.mr-off tr[data-officine]:focus-visible{outline:3px solid var(--bleu);outline-offset:-3px}
+/* ---------- ordinateur étroit et téléphone ---------- */
+@media (max-width:1100px){.mr-piste{width:110px}}
+@media (max-width:760px){
+  .mr-vp{margin-top:14px}
+  .mr-vp .pil{margin:8px 0 0}
+  body[data-vue="pharmacien"] .mr-page .bandeau.deborde{padding-bottom:22px;border-radius:24px}
+  .mr-outils .filtre{flex:1 1 100%;max-width:none;min-width:0}
+  .mr-stack{margin-top:14px}
+  .mr-regions{padding:14px 12px 12px}
+  .mr-regions .tete .mr-tri{width:100%}
+  .mr-regions .tete .seg{width:100%;min-width:0}
+  .mr-regions .tete .seg button{flex:1;justify-content:center;padding:0 8px;font-size:14px}
+  .mr-tab thead{display:none}
+  .mr-tab,.mr-tab tbody,.mr-tab tr{display:block;width:100%}
+  .mr-tab tr.mr-l{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;padding:12px 6px;border-bottom:1px solid var(--filet);border-radius:var(--r3)}
+  .mr-tab td{display:block;border:0;padding:2px 0;text-align:left}
+  .mr-tab td[data-l="Région"]{grid-column:1 / -1}
+  .mr-tab td:not([data-l="Région"]):not(.mr-chev)::before{content:attr(data-l);display:block;font-size:13px;color:var(--lib);font-weight:500;margin-bottom:2px}
+  .mr-tab td.num{text-align:left}
+  .mr-tab td.mr-chev{display:none}
+  .mr-cell{justify-content:flex-start;gap:10px}
+  .mr-piste{width:90px}
+  .mr-fb{grid-template-columns:1fr;gap:4px;min-height:52px}
+  .mr-off td{padding:10px 6px}
+}

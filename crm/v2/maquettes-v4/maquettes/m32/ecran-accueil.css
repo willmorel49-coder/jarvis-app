@@ -1,0 +1,294 @@
+/* L'ACCUEIL = JARVIS GPS (+ JARVIS DAILY, le résumé en 60 secondes). Les composants communs (bandeau, pil, b-rond, etat, kv, tabl, ronds,
+   chip, filtre, seg) vivent dans style.css ; le moteur de carte et ses classes ca-svg / ca-ville / ca-tip dans ecran-carte.css. Couleur nuancée : la couleur ne vit que sur
+   les points de la carte, les pastilles de légende, les tracés et les icônes ; aucun fond teinté, aucun chiffre écrit en couleur. Aucune des propriétés qui font figer
+   Safari ; aucune opacité sur du texte ; mouvement léger (entrée des points, tracé qui se dessine, halo lent), coupé par « réduire le mouvement ».
+   La carte occupe le premier écran (bandeau compact, résumé DAILY replié dans le bandeau). */
+/* ---------- bandeau compact : titre et phrase à gauche ; champ de recherche et pli JARVIS DAILY à droite ---------- */
+.ac-page{padding-top:12px}
+.ac-ban{padding:16px 24px}
+.ac-ban h1{font-size:28px;margin-top:2px}
+.ac-ban .lede{margin-top:4px;font-size:15px;line-height:1.5;max-width:none}
+.ac-ban .ban-tete{align-items:center;flex-wrap:nowrap;gap:12px 24px}
+.bandeau.avec-croix.ac-ban .ban-tete>div:first-child{padding-right:0;flex:1 1 380px}
+.ac-ban .croix{transform:scale(.55);transform-origin:100% 0;right:20px;top:14px}
+.ac-ban .ban-act{flex:0 1 480px;min-width:360px;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:8px;margin-right:58px}
+.ac-ban .rech-g{margin-top:0;min-height:50px;max-width:none}
+/* les styles communs posent les actions de tout bandeau en haut à droite (22 px plus bas, 112 px avant la croix) et peignent en blanc le
+   bouton plein du bandeau. Le bandeau compact du GPS garde sa propre mise en page (champ et pli centrés, croix réduite : 58 px suffisent) et son « Écouter »
+   bleu, posé sur la carte blanche du pli (en blanc sur blanc, il ne se distinguait plus). */
+.bandeau.avec-croix.ac-ban .ban-act{align-self:center;margin-top:0;margin-right:58px}
+@media (max-width:880px){ .bandeau.avec-croix.ac-ban .ban-act{margin-right:0} }
+.bandeau .ac-dpli .pil.plein{background:linear-gradient(170deg,#0A5BF0,#0043C8);border-color:#0036A8;color:#fff;box-shadow:0 8px 18px -8px rgba(0,80,230,.7),0 1px 0 rgba(255,255,255,.3) inset}
+.bandeau .ac-dpli .pil.plein .ico{color:#fff}
+.ac-bn{display:inline-block;padding:12px 1px;margin:-12px 0;border:0;background:none;color:#fff;font:inherit;font-weight:800;text-decoration:underline;text-decoration-thickness:1.5px;text-decoration-color:rgba(255,255,255,.55);text-underline-offset:4px;cursor:pointer}
+.ac-bn:hover{text-decoration-color:#fff}
+.ac-bn:focus-visible{outline:2px solid #fff;outline-offset:2px;border-radius:4px}
+/* le pli JARVIS DAILY : une ligne blanche sous le champ (« Écouter » sans rien ouvrir, la phrase en cours défile pendant la lecture) */
+.ac-dpli{display:flex;align-items:center;gap:10px;min-height:52px;padding:4px 4px 4px 10px;border-radius:var(--r2);background:#fff;color:var(--ink);box-shadow:0 10px 28px -8px rgba(0,20,80,.45),0 1px 0 rgba(255,255,255,.9) inset}
+.ac-dpico{flex:none;width:34px;height:34px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;background:var(--creux);border:1px solid var(--filet);color:var(--bleu)}
+.ac-dpico .ico{width:18px;height:18px}
+.ac-dptx{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:1px;min-height:44px;line-height:1.25;color:inherit;text-decoration:none;border-radius:var(--r3)}   /* un lien vers le brief complet (#infos) : zone d'au moins 44 px */
+.ac-dptx:hover .ac-dpe{color:var(--bleu)}
+.ac-dpe{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ac-dptx b{font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ac-dpb{flex:none;min-height:44px;padding:0 14px}
+.ac-ban .ac-dpli .pil{flex:none}   /* les styles communs font grandir les boutons du bandeau au téléphone : pas celui-ci */
+.ac-d60b{flex:none}
+.ac-d60b .ico{transition:transform .3s var(--ease)}
+.ac-d60b[aria-expanded="true"] .ico{transform:rotate(180deg)}
+/* ---------- JARVIS DAILY déplié : les cinq informations, chacune sourcée et datée ---------- */
+#ac-dpan:empty{display:none}
+.ac-daily{margin-top:12px;padding:16px 20px;display:grid;grid-template-columns:minmax(230px,.8fr) minmax(0,2.2fr);gap:12px 22px;align-items:start}
+.ac-dt{display:flex;flex-direction:column;gap:10px}
+.ac-dtt .eyebrow{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3)}
+.ac-dtt h2{font-size:20px;letter-spacing:-.015em;margin-top:2px}
+.ac-dtt .sub{margin-top:3px}
+.ac-dact{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ac-dact .pil{min-height:44px;padding:0 14px}
+.ac-d60{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.ac-d60>li{animation:monte .5s var(--ease) both;animation-delay:calc(var(--i,0)*50ms)}
+.ac-d60 li button{position:relative;display:flex;flex-direction:column;gap:5px;width:100%;height:100%;min-height:44px;padding:10px 12px 12px;border:1px solid var(--filet);border-radius:var(--r2);background:linear-gradient(180deg,#fff,#F7F9FD);text-align:left;color:var(--ink);box-shadow:var(--ombre-1);transition:transform .25s var(--ease),box-shadow .25s,border-color .25s}
+.ac-d60 li button:hover{transform:translateY(-2px);box-shadow:var(--ombre-2)}
+.ac-d60 li button[aria-pressed="true"]{border-color:var(--bleu);box-shadow:0 0 0 2px rgba(0,80,230,.18),var(--ombre-1)}
+.ac-d60 li[aria-current="true"] button{border-color:var(--bleu);box-shadow:0 0 0 3px rgba(0,80,230,.14),var(--ombre-1)}
+.ac-dr{display:block;font-size:13px;font-weight:650;color:var(--ink3);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ac-dp{font-size:14px;line-height:1.35;font-weight:550;color:var(--ink);overflow-wrap:break-word;hyphens:auto}
+.ac-ds{margin-top:auto;font-size:13px;font-weight:500;color:var(--ink3);line-height:1.3}
+.ac-dnote{grid-column:1 / -1;margin-top:2px}
+/* ---------- la zone de carte : cadre arrondi, hauteur de la fenêtre, contrôles flottants ---------- */
+.ac-zone{position:relative;height:var(--ac-h,520px);min-height:460px;margin-top:12px;border-radius:28px;overflow:hidden;background:#D5E2EF;border:1px solid var(--filet);box-shadow:var(--ombre-2);touch-action:pan-y}
+.ac-flot{position:absolute;z-index:5;display:flex;gap:10px;align-items:center}
+.ac-flot .pil,.ac-flot .b-rond,.ac-flot.pil{box-shadow:var(--ombre-flot)}
+.ac-mob{display:none}
+.ac-couches{left:16px;top:16px;width:256px;flex-direction:column;align-items:stretch;gap:0;padding:6px 8px 8px;background:#fff;border:1px solid var(--filet);border-radius:18px;box-shadow:var(--ombre-flot)}
+.ac-ctr{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 0 2px 10px}
+.ac-ct{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+.ac-ct .ico{width:16px;height:16px}
+.ac-tout{min-height:44px;padding:0 12px;border:1px solid var(--filet);border-radius:999px;background:#fff;font-size:13px;font-weight:700;color:var(--ink2);white-space:nowrap;transition:background .2s}
+.ac-tout[aria-pressed="true"]{background:var(--bleu-fond);border-color:transparent;color:var(--ink)}
+.ac-couche{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;border:0;border-radius:var(--r3);background:transparent;text-align:left;font-size:14px;font-weight:600;color:var(--ink2);width:100%;transition:background .2s}
+.ac-couche:hover{background:var(--creux)}
+.ac-couche[aria-pressed="true"]{background:var(--bleu-fond);color:var(--ink)}
+.ac-cn{flex:1;min-width:0;line-height:1.2}
+.ac-couche b{margin-left:auto;font-size:14px;font-weight:800;color:var(--ink)}
+.ac-cache .ico{width:16px;height:16px;margin-left:6px;color:var(--ink3);flex:none}
+.ac-puce{display:inline-block;width:12px;height:12px;border-radius:50%;flex:none;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(26,32,48,.14)}
+.ac-puce-anneau{background:#fff;border:2.6px solid;box-shadow:none}
+.ac-puce-autre{background:#CDD3DD;width:9px;height:9px;margin:0 1.5px}
+.ac-autres[aria-pressed="false"] .ac-puce-autre{background:#fff;border:1.5px dashed #9AA1AE;box-shadow:none}
+.ac-autres{margin-top:4px;border-top:1px solid var(--filet);border-radius:0;font-weight:500;color:var(--ink3)}
+.ac-autres[aria-pressed="true"]{background:transparent}
+.ac-grpl{display:flex;align-items:center;gap:8px;padding:0 4px 4px 32px}
+.ac-vis{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ac-sel{flex:1;min-width:0;font-size:16px;min-height:44px;padding-left:10px}
+.ac-zoom{left:288px;top:16px;gap:8px}
+.ac-bas{left:288px;bottom:16px;align-items:flex-end;gap:10px;max-width:calc(100% - 740px)}
+.ac-ech{flex:none;display:inline-flex;flex-direction:column;gap:2px;font-size:13px;font-weight:650;color:var(--ink2);padding:4px 8px;background:#fff;border:1px solid var(--filet);border-radius:8px}
+.ac-ech i{display:block;height:6px;border:2px solid var(--ink2);border-top:0;width:60px}
+.ac-ech em{font-style:normal}
+.ac-def{margin:0;padding:6px 10px;font-size:13px;line-height:1.35;color:var(--ink2);background:#fff;border:1px solid var(--filet);border-radius:10px;min-width:0}
+.ac-def:empty{display:none}
+.ac-haut{right:16px;top:16px}
+/* textes posés sur la carte (numéros d'arrêts, « Vous êtes ici ») : du HTML au-dessus du SVG, 13 px réels à tout zoom */
+.ac-labs{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden}
+.ac-mk{position:absolute;transform:translate(-50%,-50%);font-size:13px;font-weight:800;line-height:1;color:var(--ink)}
+.ac-mk-d{color:#fff}
+.ac-lab{position:absolute;transform:translate(-50%,calc(-100% - 30px));white-space:nowrap;font-size:13px;font-weight:700;line-height:1.3;color:var(--ink);background:#fff;border:1px solid var(--filet);border-radius:999px;padding:3px 10px;box-shadow:var(--ombre-1)}
+.ac-haut .cpt7{margin-left:4px}
+/* l'entrée du territoire et les calques : les points montent en cascade depuis le dépôt, le tracé se dessine, un halo lent sur les trois arrêts proposés */
+#ac-pts circle.ac-in{transform-box:fill-box;transform-origin:center;animation:ac-pop .5s var(--ease) both}
+@keyframes ac-pop{from{transform:scale(0);opacity:0}to{transform:none;opacity:1}}
+.ac-zone .ac-pulse{transform-box:fill-box;transform-origin:center;animation:ac-pulse 2.2s ease-out infinite}
+.ac-zone .ac-halo{animation-duration:2.8s}
+@keyframes ac-pulse{0%{transform:scale(.5);opacity:1}70%{transform:scale(1.5);opacity:.35}100%{transform:scale(1.6);opacity:0}}
+/* ---------- le volet : à droite sur ordinateur, tiroir à trois crans au téléphone ; un fondu dit que la suite défile ---------- */
+.ac-volet{position:absolute;top:76px;right:16px;bottom:16px;width:400px;overflow:auto;z-index:6;padding:18px 20px 18px;border-radius:24px;background-color:#fff;background-image:linear-gradient(#fff 30%,rgba(255,255,255,0)),linear-gradient(rgba(255,255,255,0),#fff 70%),radial-gradient(farthest-side at 50% 0,rgba(26,32,48,.16),rgba(26,32,48,0)),radial-gradient(farthest-side at 50% 100%,rgba(26,32,48,.16),rgba(26,32,48,0));background-position:0 0,0 100%,0 0,0 100%;background-repeat:no-repeat;background-size:100% 40px,100% 40px,100% 14px,100% 14px;background-attachment:local,local,scroll,scroll;border:1px solid var(--filet);box-shadow:0 4px 10px rgba(26,32,48,.06),0 24px 56px -12px rgba(26,32,48,.35);animation:glisse .4s var(--ease) both}
+.ac-grab{display:none}
+.ac-vt{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px}
+.ac-vt>div{flex:1;min-width:0}
+.ac-vt h2{font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+.ac-vt h2.ac-h2p{font-size:17px;line-height:1.25}
+.ac-vt .eyebrow{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:3px}
+.ac-meta{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 12px}
+.ac-per{grid-column:1 / -1;font-size:13px;color:var(--ink3);margin:0 0 -4px}
+.ac-l{display:block;font-size:13px;font-weight:650;color:var(--ink3);line-height:1.3}
+.ac-ch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px;margin:0 0 8px}
+.ac-ch1{grid-column:1 / -1;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
+.ac-ch1 .ac-l{flex:1 1 100%}
+.ac-ch1 .evo{font-size:13px}
+.ac-ch b.num{display:block;font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.15;margin-top:2px;overflow-wrap:anywhere}
+.ac-ch1 b.num{display:inline-block}
+.ac-ch b small{font-size:13px;color:var(--ink3);font-weight:600;margin-left:.1em}
+.ac-spark{grid-column:1 / -1;height:48px;margin:-4px 0 2px}
+.ac-spark .spark{width:100%;height:48px}
+.ac-reserve{margin:4px 0 12px;padding:10px 14px;border-radius:var(--r3);background:var(--creux);border:1px solid var(--filet)}
+.ac-ronds{grid-template-columns:repeat(4,minmax(0,1fr));margin:12px 0 8px}
+.ac-ronds .rond-act{color:var(--ink)}
+.ac-motif{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:var(--r3);background:var(--creux);border:1px solid var(--filet);font-size:14px;line-height:1.4;color:var(--ink2);margin:0 0 8px}
+.ac-motif .ico{color:var(--bleu);width:20px;height:20px;flex:none}
+.ac-motif b{color:var(--ink)}
+.ac-cre .ico{color:var(--e-bien)}
+.ac-cre.hors .ico{color:var(--e-attention)}
+.ac-prop,.ac-vsup{margin:12px 0 6px;padding:12px 12px 10px;border:1px solid var(--filet);border-radius:var(--r2);background:#fff;box-shadow:var(--ombre-1)}
+.ac-prop .eyebrow,.ac-vsup .eyebrow{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.ac-prop .eyebrow .ico,.ac-vsup .eyebrow .ico{width:16px;height:16px;color:var(--bleu)}
+.ac-propt{font-size:15px;font-weight:650;line-height:1.35;margin:4px 0 4px;color:var(--ink)}
+.ac-vsup .ac-frise{margin-top:4px}
+.ac-vsup .ac-fb .ico,.ac-vsup .ac-fb svg{width:16px;height:16px}
+.ac-volet h3,.ac-dcarte h3{margin-top:16px;margin-bottom:6px;font-size:15px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.ac-volet h3 .st{margin:0;font-size:13px;font-weight:400}
+.ac-volet .kv{margin-top:4px}
+.ac-inl{display:inline;font-size:13px}
+.ac-tel{display:inline-flex;align-items:center;min-height:44px;margin:-6px 0;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--enc-4)}
+.ac-dres{font-size:14px;line-height:1.45;color:var(--ink2);margin:0 0 6px}
+.ac-opps{list-style:none;margin:0;padding:0;display:grid}
+.ac-opps li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--filet)}
+.ac-opps li:first-child{border-top:0}
+.ac-oppi{width:34px;height:34px;border-radius:10px;background:var(--creux);border:1px solid var(--filet);display:inline-flex;align-items:center;justify-content:center;color:var(--c-pharma);flex:none}
+.ac-oppi .ico{width:18px;height:18px}
+.ac-opps li>div{flex:1;min-width:0}
+.ac-opps b{display:block;font-size:14px;line-height:1.3}
+.ac-pot{flex:none;font-size:15px;font-weight:750;padding-top:2px;white-space:nowrap}
+.ac-tp td{padding:8px 6px;vertical-align:top}
+.ac-tp td b{font-weight:700;font-size:14px;line-height:1.3}
+.ac-tp td.num b{font-size:15px;white-space:nowrap}
+.ac-tp .sub{font-size:13px}
+.ac-actu{list-style:none;margin:0;padding:0}
+.ac-actu li button{position:relative;display:block;width:100%;min-height:48px;padding:8px 32px 8px 6px;border:0;border-top:1px solid var(--filet);background:transparent;text-align:left;color:var(--ink);border-radius:var(--r3)}
+.ac-actu li:first-child button{border-top:0}
+.ac-actu li button:hover{background:var(--bleu-fond2)}
+.ac-actu li button b{display:block;font-size:14px;line-height:1.3}
+.ac-actu .ac-pq{margin-top:2px}
+.ac-actu li button>.ico{position:absolute;right:6px;top:50%;margin-top:-11px;color:var(--ink3)}
+.ac-lien{display:inline-flex;align-items:center;min-height:44px;padding:0 6px;border:0;background:none;font:inherit;font-weight:700;color:var(--bleu-d);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.ac-pnote .ac-lien{min-height:0;padding:12px 4px;margin:-12px 0}
+/* lignes de liste (proposition, proximité, information, liste, résultats) */
+.ac-liste{display:grid}
+.ac-l{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--filet)}
+.ac-liste .ac-l:first-child{border-top:0}
+.ac-ln{flex:1;min-width:0;min-height:44px;padding:6px 8px;border:0;background:transparent;text-align:left;border-radius:var(--r3);color:var(--ink)}
+.ac-ln:hover{background:var(--bleu-fond2)}
+.ac-ln b{display:block;font-size:15px;line-height:1.25}
+.ac-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin-right:6px;border-radius:50%;border:2px solid #1D4CA8;background:#fff;font-size:13px;font-weight:800;color:var(--ink);vertical-align:-5px}
+.ac-tags{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:4px}
+.ac-tags .etat{padding:1px 8px 1px 6px;font-size:13px}
+.ac-tags .etat .ico{width:16px;height:16px}
+.ac-la{display:flex;gap:6px;flex:none;align-items:center}
+.ac-la .chip{min-height:44px;padding:0 14px;font-size:14px}
+.ac-l-chip{flex-wrap:wrap}
+.ac-l-chip .ac-la{margin-left:auto}
+.ac-geste{width:100%;margin-top:10px}
+.ac-volet .ac-p0 + .ac-geste{position:sticky;bottom:0;z-index:1;box-shadow:0 -12px 16px -8px #fff}   /* le bouton reste entier en bas du volet, la liste défile dessous */
+.ac-vu,.ac-vx{white-space:nowrap}
+/* le volet par défaut tient dans la carte à 1280 × 800 : noms resserrés, un seul bouton par ligne, les deux portes vivent déjà sur la carte (« Rendez-vous terminé plus tôt ? », « Ma tournée ») */
+.ac-p0 .ac-ln b{font-size:14px}
+.ac-volet .ac-portes{display:none}
+.ac-vx{display:inline-flex;align-items:center;gap:3px}
+.ac-vx .ico{width:15px;height:15px;color:var(--e-attention)}
+@media (min-width:761px){ .ac-p0 [data-loc]{display:none} }
+.ac-portes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+.ac-porte{display:flex;align-items:flex-start;gap:10px;width:100%;min-height:56px;padding:10px;border:1px solid var(--filet);border-radius:var(--r2);background:linear-gradient(180deg,#fff,#F7F9FD);text-align:left;color:var(--ink);box-shadow:var(--ombre-1);transition:transform .25s var(--ease),box-shadow .25s}
+.ac-porte:hover{transform:translateY(-2px);box-shadow:var(--ombre-2)}
+.ac-porte .rond{width:36px;height:36px;flex:none}
+.ac-porte .rond .ico{width:18px;height:18px}
+.ac-porte-t{flex:1;min-width:0}
+.ac-porte-t .eyebrow{display:block;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.ac-porte-t b{display:block;font-size:14px;line-height:1.25}
+.ac-porte-t .sub{margin-top:1px}
+/* Ma tournée : chiffres, frise de la journée */
+.ac-4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px;margin:4px 0 6px}
+.ac-4 b{display:block;font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.15;margin-top:2px}
+.ac-frise{list-style:none;margin:8px 0 0;padding:0;display:grid}
+.ac-frise li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--filet)}
+.ac-frise li.ac-ft{border-top:0;padding:0 0 0 62px;font-size:13px;color:var(--ink3);align-items:center;gap:6px;min-height:22px}
+.ac-ft .ico{width:16px;height:16px}
+.ac-fh{flex:none;width:52px;font-weight:700;font-size:14px;padding-top:8px}
+.ac-fb{flex:none;width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#fff;border:2px solid var(--c-ca);font-weight:800;font-size:13px;margin-top:4px}
+.ac-fb.dep{background:var(--ink);border-color:var(--ink);color:#fff}
+.ac-frise li>div{flex:1;min-width:0}
+.ac-frise li b{display:block;font-size:15px;line-height:1.25}
+.ac-frise a.b-rond{color:var(--bleu)}
+.ac-pact{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.ac-pact .pil{flex:1 1 auto}
+/* opportunités géographiques : rayon, les six filtres, paramètre */
+.ac-ray{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0 8px}
+.ac-ray .ac-l{margin-right:4px}
+.ac-chip{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 12px;border-radius:999px;border:1px solid var(--filet);background:#fff;font-weight:650;font-size:14px;color:var(--ink2);box-shadow:var(--ombre-1);transition:background .2s,color .2s}
+.ac-chip[aria-pressed="true"]{background:var(--bleu);color:#fff;border-color:var(--bleu)}
+.ac-frows{display:grid;gap:2px;margin:4px 0 6px}
+.ac-frow{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;border:0;border-radius:var(--r3);background:transparent;text-align:left;font-size:14px;font-weight:600;color:var(--ink2);width:100%;transition:background .2s}
+.ac-frow .ico{width:20px;height:20px;color:var(--bleu);flex:none}
+.ac-frow span{flex:1;min-width:0;line-height:1.25}
+.ac-frow b{font-size:14px;font-weight:800;color:var(--ink);min-width:24px;text-align:right}
+.ac-frow:hover{background:var(--creux)}
+.ac-frow[aria-pressed="true"]{background:var(--bleu-fond);color:var(--ink)}
+.ac-fparam{margin:4px 0 6px 40px;width:calc(100% - 40px)}
+.ac-fparam select{flex:1}
+/* liste et résultats */
+.ac-pf{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px}
+.ac-pf .filtre{flex:1 1 200px}
+.ac-pf .seg button{padding:0 12px}
+.ac-dessous{display:none}
+.ac-dcarte{margin-top:14px;padding:18px}
+.ac-note{margin:12px 2px 0;font-size:13px}
+/* vue pharmacien : l'écran entier est interne, une note le dit (les styles communs cachent la note en vue Intégral) */
+.ac-vp{margin:14px 2px 0;align-items:center;gap:12px;flex-wrap:wrap}
+body[data-vue="pharmacien"] .ac-vp{display:flex}
+/* ---------- ordinateur étroit : légende en rangée de pastilles, volet plus bas ---------- */
+@media (max-width:1100px){
+  .ac-couches{left:16px;right:16px;top:12px;width:auto;max-width:none;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;padding:6px;gap:4px;border-radius:999px;align-items:center;scrollbar-width:none}
+  .ac-couches::-webkit-scrollbar{display:none}
+  .ac-ctr{display:contents}
+  .ac-ct,.ac-vis{display:none}
+  .ac-tout,.ac-couche{flex:none}
+  .ac-couche{white-space:nowrap;padding:0 12px;border-radius:999px;width:auto}
+  .ac-couche b{margin-left:6px}
+  .ac-grpl{padding:0 4px;flex:none}
+  .ac-sel{width:180px;flex:none}
+  .ac-autres{margin:0;border-top:0}
+  .ac-zoom{left:16px;top:70px}
+  .ac-haut{top:70px}
+  .ac-volet{top:124px;width:360px}
+  .ac-bas{left:16px;max-width:calc(100% - 420px)}
+  .ac-daily{grid-template-columns:1fr}
+  .ac-d60{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:8px;padding:2px 2px 8px;margin:0 -2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .ac-d60::-webkit-scrollbar{display:none}
+  .ac-d60>li{flex:0 0 250px;scroll-snap-align:start}
+}
+@media (max-width:880px){ .ac-ban .ban-tete{flex-wrap:wrap} .ac-ban .ban-act{flex:1 1 100%;min-width:0;margin-right:0} .bandeau.avec-croix.ac-ban .ban-tete>div:first-child{padding-right:60px} }
+/* ---------- téléphone : bandeau resserré, carte juste dessous, tiroir à crans ---------- */
+@media (max-width:760px){
+  .ac-page{padding-top:10px}
+  .ac-ban{padding:16px 16px 16px}
+  .ac-ban h1{font-size:24px}
+  .ac-ban .lede{font-size:15px;line-height:1.45}
+  .bandeau.avec-croix.ac-ban .ban-tete>div:first-child{padding-right:40px}
+  .ac-ban .croix{transform:scale(.4);right:12px;top:12px}
+  .ac-ban .rech-g{min-height:50px}
+  .ac-dsk{display:none}
+  .ac-mob{display:inline-flex}
+  .ac-dpico{display:none}
+  .ac-dpli{padding-left:12px;gap:8px}
+  .ac-dpb{padding:0 12px}
+  .ac-daily{padding:14px 14px 10px}
+  .ac-zone{min-height:460px;border-radius:22px;margin-top:10px}
+  .ac-couches{left:12px;right:12px;top:12px}
+  .ac-fprox{top:70px;right:12px;left:auto;padding:0 14px;min-height:44px;font-size:14px}
+  .ac-zoom{left:auto;right:12px;bottom:12px;top:auto;flex-direction:column}
+  .ac-bas{display:none}
+  .ac-haut{top:auto;bottom:12px;left:12px;right:auto;gap:8px}
+  .ac-haut .pil{padding:0 14px;min-width:44px}
+  .ac-volet{position:fixed;top:auto;left:8px;right:8px;bottom:92px;width:auto;max-height:40vh;max-height:40dvh;border-radius:22px;padding:0 14px 18px;animation:monte .4s var(--ease) both;z-index:57}
+  .ac-volet[data-cran="2"]{max-height:calc(100vh - 292px);max-height:calc(100dvh - 292px)}
+  .ac-volet[data-cran="3"]{max-height:calc(100vh - 162px);max-height:calc(100dvh - 162px)}
+  .ac-grab{display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;border:0;background:linear-gradient(180deg,#fff,rgba(255,255,255,0));position:sticky;top:0;z-index:2}
+  .ac-grab i{display:block;width:44px;height:5px;border-radius:3px;background:var(--enc-5)}
+  .ac-dessous{display:block}
+  .ac-dessous .ac-grab,.ac-dessous .ac-vt .b-rond{display:none}
+  .ac-ronds{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .ac-portes{grid-template-columns:1fr}
+  .ac-ch{grid-template-columns:1fr 1fr}
+  .ac-pf .seg{width:100%}
+  .ac-pf .seg button{flex:1;justify-content:center}
+}
+@media (prefers-reduced-motion:reduce){ #ac-pts circle.ac-in,.ac-zone .ac-pulse{animation:none} }

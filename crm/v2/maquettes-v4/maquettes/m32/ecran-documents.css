@@ -1,0 +1,64 @@
+/* Styles propres à l'écran Documents (#documents). Préfixe .dc- ; les composants communs vivent dans style.css. */
+.dc-eye{display:inline-flex;align-items:center;gap:8px}
+.dc-eye .ico{width:18px;height:18px}
+/* le filtre par type dans le bandeau : pastilles sombres translucides, la choisie en blanc ; le picto du type garde sa couleur quand la pastille est blanche */
+.dc-types .chip{background:rgba(0,28,110,.45);border-color:rgba(255,255,255,.3);color:#fff;box-shadow:none}
+.dc-types .chip:hover{background:rgba(0,28,110,.6)}
+.dc-types .chip[aria-pressed="true"]{background:#fff;border-color:#fff;color:var(--ink)}
+.dc-types .chip .cnt{font-size:14px;font-weight:800;border-radius:10px;padding:2px 8px;background:rgba(255,255,255,.18);color:#fff}
+.dc-types .chip[aria-pressed="true"] .cnt{background:var(--bleu-fond);color:var(--bleu-d)}
+.dc-types .chip .ico{width:18px;height:18px}
+.dc .ban-bas .lbl{display:inline}   /* annule ici la règle d'un autre écran (≤ 760 px : .ban-bas .lbl{display:none}) qui masquerait ce libellé */
+.dc-type-m{display:none}   /* le mot du type n'est écrit qu'une fois : sur la feuille ; au téléphone, la feuille le cache et la ligne le reprend */
+.dc-cpt{margin:20px 2px 4px;font-size:15px;color:var(--ink2)}
+.dc-cpt b{color:var(--ink)}
+.dc-vp{display:block;margin:14px 2px 0;padding:14px 16px;border-radius:var(--r2);background:#fff;border:1px solid var(--filet)}
+/* ---------- étagères ---------- */
+.dc-etagere{margin-top:14px;padding-bottom:18px}
+.dc-etagere .tete .st b{color:var(--ink)}
+.dc-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.dc-doc{position:relative;display:flex;flex-direction:column;gap:10px;padding:10px 10px 10px;border-radius:var(--r2);border:1px solid var(--filet);background:#fff;box-shadow:var(--ombre-1);transition:transform .25s var(--ease),box-shadow .25s;animation:monte .5s var(--ease) both;animation-delay:calc(var(--i,0)*40ms)}
+.dc-doc:hover{transform:translateY(-2px);box-shadow:var(--ombre-2)}
+/* la feuille : un creux clair, une page blanche au coin plié, le picto du type au centre, le mot du type dessous */
+.dc-feuille{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;height:104px;border-radius:10px;background:linear-gradient(180deg,#F1F4FA,#E9EDF5);border:1px solid var(--filet);overflow:hidden}
+.dc-feuille::before{content:"";position:absolute;left:50%;top:14px;width:58px;height:76px;transform:translateX(-50%);background:#fff;border:1px solid var(--filet);border-radius:4px;box-shadow:0 6px 14px -8px rgba(26,32,48,.3);clip-path:polygon(0 0,74% 0,100% 20%,100% 100%,0 100%)}
+.dc-feuille::after{content:"";position:absolute;left:calc(50% + 14px);top:14px;width:15px;height:15px;background:linear-gradient(225deg,#E9EDF5 50%,#D5DCE8 50%);border-bottom-left-radius:3px}
+.dc-feuille .ico,.dc-feuille em{position:relative;z-index:1}
+.dc-feuille .ico{width:26px;height:26px}
+.dc-feuille em{font-style:normal;font-size:13px;font-weight:700;color:var(--ink2);letter-spacing:.02em}
+.dc-feuille-img::before,.dc-feuille-img::after{display:none}
+.dc-img{position:absolute;inset:8px;border-radius:6px;background:radial-gradient(circle at 74% 28%,#fff 7px,rgba(255,255,255,0) 8px),radial-gradient(75% 60% at 18% 112%,#9AA8C0 96%,rgba(154,168,192,0) 100%),radial-gradient(85% 62% at 86% 118%,#7F90AD 96%,rgba(127,144,173,0) 100%),linear-gradient(180deg,#E4EAF4 0%,#D3DCEB 100%);border:1px solid rgba(26,32,48,.08)}   /* un petit paysage dessiné (soleil, deux collines) à la place d'un aplat gris */
+.dc-feuille-img em{margin-top:auto;margin-bottom:0;background:#fff;border-radius:6px;padding:1px 8px;border:1px solid var(--filet)}
+.dc-t{min-width:0;flex:1}
+.dc-t b{display:block;font-size:15px;font-weight:700;line-height:1.3;overflow-wrap:anywhere}
+.dc-act{display:flex;gap:8px;align-items:center}
+.dc-act .pil{flex:1;justify-content:center}
+.dc-conf{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;justify-content:center;gap:12px;padding:16px;border-radius:var(--r2);background:#fff;border:1px solid var(--bleu);box-shadow:var(--ombre-2);font-size:15px;animation:monte .3s var(--ease) both}
+.dc-conf-b{display:flex;gap:8px}
+.dc-conf-b .pil{flex:1;justify-content:center}
+.dc-vide{margin-top:14px;text-align:center;padding:36px 22px;display:flex;flex-direction:column;align-items:center;gap:14px;font-size:16px;color:var(--ink2)}
+/* ---------- documents retirés ---------- */
+.dc-retires-c{margin-top:18px}
+.dc-retires-c .tete{margin-bottom:0}
+.dc-retires-c .tete .pil b{margin-right:2px}
+.dc-rl{margin-top:14px;display:grid;gap:8px}
+.dc-r{display:flex;align-items:center;gap:12px;padding:8px 8px 8px 10px;border-radius:var(--r2);border:1px solid var(--filet);background:var(--creux)}
+.dc-r-ico{width:44px;height:44px;border-radius:12px;background:#fff;border:1px solid var(--filet);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.dc-note{margin:18px 2px 0}
+/* ---------- téléphone ---------- */
+@media (max-width:760px){
+  .dc-types{width:100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}   /* une seule ligne qui défile au doigt, au lieu de quatre lignes de pastilles */
+  .dc-types::-webkit-scrollbar{display:none}
+  .dc-types .chip{flex:none}
+  .dc-type-m{display:inline}
+  .dc-grille{grid-template-columns:1fr}
+  .dc-doc{display:grid;grid-template-columns:96px minmax(0,1fr);grid-template-rows:auto auto;gap:6px 12px;align-items:center}
+  .dc-feuille{grid-row:1 / span 2;height:96px}
+  .dc-feuille::before{width:46px;height:62px;top:10px}
+  .dc-feuille::after{left:calc(50% + 11px);top:10px;width:12px;height:12px}
+  .dc-feuille em{display:none}
+  .dc-act{grid-column:2}
+  .dc-etagere .tete .pil{width:100%}
+  .dc-r{flex-wrap:wrap}
+  .dc-r .pil{flex:1 1 100%}
+}

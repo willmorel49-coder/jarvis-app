@@ -1,0 +1,65 @@
+/* Styles de l'écran « Le QG », préfixés .qg-. Les composants communs vivent dans style.css.
+   Aucune couleur de chiffre : les états (À l'étude, Prévu, Écarté) vivent sur l'icône seule ; mes messages reprennent l'avatar de la barre du haut. */
+.qg-corps{margin-top:18px}
+.qg-vp{display:block;margin:18px 0 0;font-size:15px;color:var(--ink2)}
+.qg-vp .pil{margin-left:10px;vertical-align:middle}
+.qg-haut{align-items:start}
+/* fil : avatar, nom et heure, texte ; champ d'écriture en bas */
+.qg-fil{padding:22px 24px 20px}
+.qg-msgs{display:grid;gap:14px;margin-top:6px}
+.qg-msg{display:flex;align-items:flex-start;gap:12px}
+/* pastille d'initiales */
+.qg-av{width:44px;height:44px;border-radius:50%;flex:none;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:var(--bleu-d);background:linear-gradient(180deg,#fff,#EEF2F9);border:1px solid var(--filet);box-shadow:var(--ombre-1)}
+.qg-msg .qg-av,.qg-msg .avatar{width:40px;height:40px;font-size:13px;flex:none}
+.qg-m{flex:1;min-width:0;padding:10px 14px 12px;border-radius:var(--r2);border:1px solid var(--filet);background:linear-gradient(180deg,#fff,#FBFBFD);box-shadow:0 1px 2px rgba(26,32,48,.05)}
+.qg-msg.moi .qg-m{background:var(--bleu-fond2);border-color:#CFDDF8}
+.qg-m-t{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px;font-size:14px}
+.qg-m-t b{font-size:15px}
+.qg-h{color:var(--ink3);font-size:13px}
+.qg-m p{margin-top:4px;font-size:15px;line-height:1.45}
+.qg-ecrire,.qg-nouveau{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px}
+.qg-champ{flex:1 1 240px;min-width:0}
+.qg-nouveau{margin:4px 0 14px;padding:14px;border-radius:var(--r2);background:var(--creux);border:1px solid var(--filet)}
+/* sujets : une ligne par sujet, avatar de l'auteur, titre, sous-ligne */
+.qg-sujets{padding:22px 20px 16px}
+.qg-liste{display:grid;gap:4px;margin-top:4px}
+.qg-sujet{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:8px 10px;border:0;border-radius:var(--r2);background:transparent;text-align:left;color:var(--ink);animation:monte .6s var(--ease) both;animation-delay:calc(var(--i,0)*45ms);transition:background .2s}
+.qg-sujet:hover{background:var(--bleu-fond2)}
+.qg-sujet .qg-av,.qg-sujet .avatar{width:40px;height:40px;font-size:13px}
+.qg-s-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.qg-s-t b{font-size:15px;line-height:1.3}
+.qg-sujet>.ico{color:var(--ink3)}
+/* remontées : tableau */
+.qg-rem{padding:22px 20px 14px}
+.qg-tab{margin-top:4px}
+.qg-tab th:first-child,.qg-tab td:first-child{padding-left:6px}
+.qg-idee-t{font-size:15px;font-weight:650}
+.qg-act{width:1%;white-space:nowrap;text-align:right}
+.qg-tab td.qg-vide{text-align:center;color:var(--ink3);padding:30px}
+.qg-tab tbody tr{animation:monte .6s var(--ease) both;animation-delay:calc(var(--i,0)*35ms)}
+/* détail */
+.qg-outils{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px}
+.qg-pn{display:flex;gap:8px}
+.qg-autre{min-width:260px;flex:1 1 260px;max-width:460px}
+.qg-ban-det .ban-tete>div:first-child{flex-basis:auto}
+.qg-outils-i{display:contents}
+/* carte d'identité du sujet (classe passée à J.identite : les autres écrans ne sont pas touchés) */
+.qg-ident{box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 2px 4px rgba(26,32,48,.06),0 28px 56px -22px rgba(0,30,120,.45)}
+.qg-ident .ident-nom h1{overflow-wrap:anywhere}
+/* ---------- ordinateur étroit et téléphone ---------- */
+@media (max-width:760px){
+  .qg-corps{margin-top:14px}
+  .qg-fil,.qg-sujets,.qg-rem{padding:18px 14px 14px}
+  .qg-ecrire .pil,.qg-nouveau .pil{flex:1 1 100%}
+  .qg-tab thead{display:none}
+  .qg-tab,.qg-tab tbody,.qg-tab tr{display:block;width:100%}
+  .qg-tab tbody tr{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;padding:12px 4px;border-bottom:1px solid var(--filet)}
+  .qg-tab td{display:block;border:0;padding:4px 0;text-align:left}
+  .qg-tab td[data-l="Idée"],.qg-tab td.qg-act{grid-column:1 / -1}
+  .qg-tab td:not([data-l="Idée"]):not(.qg-act)::before{content:attr(data-l);display:block;font-size:13px;color:var(--lib);font-weight:500;margin-bottom:2px}
+  .qg-tab td.num{text-align:left}
+  .qg-tab td.qg-act{text-align:left;white-space:normal;width:auto}
+  .qg-tab td.qg-act .pil{width:100%}
+  .qg-outils .filtre{flex:1 1 100%;max-width:none}
+  .qg-vp .pil{margin:8px 0 0}
+}

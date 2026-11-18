@@ -1,0 +1,47 @@
+:root{
+  --ip-blue:#0050E6;
+  --ip-blue-d:#0034A0;
+  --halo:#E9F0FF;
+  --blue-tint:#E9F0FF;      /* teinte claire : fond de pastille/choix (= --halo) */
+  --blue-tint-2:#F2F6FF;    /* teinte très claire : survol, ligne choisie (dérivée du halo) */
+  /* Encres, 3 niveaux — --ip-ink, --ip-ink-2, --muted */
+  --ink:#10131C;
+  --ink-2:#2A2F3C;
+  --ink-3:#737A8C;
+  --ink-4:#8A91A4;
+  /* Fonds — --paper, --card, --card-2, --surf-sunken */
+  --paper:#FBFCFE;
+  --card:#FFFFFF;
+  --card-2:#F7F9FC;
+  --sunken:#F4F6FB;         /* creux : pistes de barres, champs */
+  /* Filets — --line, --line-2, --line-strong */
+  --line:rgba(16,19,28,.07);
+  --line-2:rgba(16,19,28,.04);
+  --line-strong:rgba(16,19,28,.12);
+  /* Couleurs de sens (bon / moyen / mauvais) — --c-mint, --c-amber, --c-rose et teintes texte AA */
+  --ok:#1E9E6A;   --ok-txt:#0F7A52;    --ok-bg:#E6F6EE;
+  --warn:#C7791A; --warn-txt:#9A5B12;  --warn-bg:#FBF0DE;
+  --bad:#E0556E;  --bad-txt:#C7283D;   --bad-bg:#FCE9ED;
+  /* Rayons — --r-card, --r-md, --r-sm, --r-pill */
+  --r-card:20px; --r-md:14px; --r-btn:12px; --r-sm:10px; --r-pill:999px;
+  /* Espacement base 4 — --sp-1 à --sp-8 */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-7:32px; --sp-8:48px;
+  --tap:44px;               /* --tap-min */
+  /* Ombres en couches, lumière du haut — --sh-1/2/3, --sh-blue */
+  --sh-1:0 1px 1.5px rgba(16,19,28,.045),0 2px 5px rgba(16,19,28,.04),0 1px 0 rgba(255,255,255,.6) inset;
+  --sh-2:0 1px 2px rgba(16,19,28,.05),0 4px 10px rgba(16,19,28,.05),0 12px 24px rgba(16,19,28,.05),0 1px 0 rgba(255,255,255,.7) inset;
+  --sh-3:0 4px 10px rgba(16,19,28,.06),0 14px 26px rgba(16,19,28,.09),0 32px 60px rgba(16,19,28,.10),0 1px 0 rgba(255,255,255,.85) inset;
+  --sh-blue:0 4px 12px rgba(0,80,230,.26),0 8px 24px rgba(0,52,160,.14),0 1px 0 rgba(255,255,255,.22) inset;
+  /* Mouvement — --ease, --ease-soft, --mo-dur */
+  --ease:cubic-bezier(.32,.72,0,1);
+  --ease-soft:cubic-bezier(.33,.02,0,.98);
+  --dur:300ms;
+  /* Police : pile système */
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,monospace;
+}
+/* Petite base, aucune mise en page */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.45;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}

@@ -1,0 +1,22 @@
+:root{
+  /* Les chiffres, version trait */
+  --c-ca:#2A63CC;      --c-ca-voile:rgba(42,99,204,.09);     /* Chiffre d'affaires */
+  --c-nous:#D9703F;    --c-nous-voile:rgba(217,112,63,.10);  /* Notre marge (interne) */
+  --c-pharma:#25998A;  --c-pharma-voile:rgba(37,153,138,.10);/* Marge du pharmacien */
+  --c-cmd:#6B5BC2;     --c-cmd-voile:rgba(107,91,194,.10);   /* Commandes */
+  --c-moyenne:#4A5265;                                       /* Trait « moyenne de nos clients » */
+  --bleu-action:#0050E6;                                     /* seul bouton plein : bleu Intégral */
+  /* Catégories, ordre fixe, jamais recyclées */
+  --cat-1:#2A63CC; --cat-2:#D9703F; --cat-3:#25998A; --cat-4:#6B5BC2;
+  --cat-5:#B8891A; --cat-6:#C9648E; --cat-7:#4D4F9E; --cat-8:#B5483F; --cat-autre:#9AA1AE;
+  /* États : mot + icône ; la couleur ne sert QUE l'icône (le mot reste en encre) */
+  --e-bien:#2F8A4A; --e-attention:#A8700A; --e-alerte:#C0443D; --e-neutre:#6B7385;
+  /* Neutres : cinq gris d'encre */
+  --enc-1:#1A2030; --enc-2:#3B4357; --enc-3:#5B6478; --enc-4:#8A93A5; --enc-5:#C5CBD6;
+  /* Trois fonds avec lumière (halo doux en haut à gauche, jamais un aplat) */
+  --fond-page:radial-gradient(1100px 520px at 12% -8%, #FFFFFF 0%, rgba(255,255,255,0) 70%),#F6F7F9;
+  --fond-carte:linear-gradient(180deg,#FFFFFF 0%,#FBFBFC 100%);
+  --fond-creux:#EFF1F5;
+  --filet:#E3E6EC;
+  --ombre-carte:0 1px 0 rgba(255,255,255,.9) inset,0 1px 2px rgba(26,32,48,.06),0 8px 24px -12px rgba(26,32,48,.12);
+}

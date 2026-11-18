@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="fr" data-m="22" data-version="v4" data-ref="Strava">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Officines — m22 Strava</title>
+<link rel="stylesheet" href="../../commun/jarvis.css?v=4">
+<link rel="stylesheet" href="../../commun-v4/couleurs.css?v=4">
+<link rel="stylesheet" href="style.css?v=4">
+</head>
+<body data-vue-courante="integral" data-ecran-actif="liste">
+<div class="bandeau" data-risque>Référence : Strava (vitrine noire transposée en clair). Risque : les graphiques sans axes se lisent par leurs deux grands chiffres et l’infobulle, pas par une échelle ; la carte plein cadre laisse peu de place aux filtres. Données fictives.</div>
+<header class="top">
+  <a class="logo" href="#liste" aria-label="JARVIS, accueil"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path d="M5 25l7-16 5 10 3-6 7 12" fill="none" stroke="var(--c-ca)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="logo-t">JARVIS</span></a>
+  <nav class="nav" aria-label="Navigation">
+    <a href="#liste" data-nav="officines"><span class="ico" data-ico="officines"></span><span>Officines</span></a>
+    <a href="#pilotage" data-nav="pilotage"><span class="ico" data-ico="chart"></span><span>Pilotage</span></a>
+    <a href="#carte" data-nav="carte"><span class="ico" data-ico="pin"></span><span>Carte du secteur</span></a>
+  </nav>
+  <label class="rech-top"><span class="ico" data-ico="search"></span><input id="rech-globale" type="search" placeholder="Rechercher une officine" aria-label="Rechercher une officine"></label>
+  <span class="avatar" aria-hidden="true">CT</span>
+</header>
+<main>
+  <section data-ecran="liste" id="ecran-liste"></section>
+  <section data-ecran="fiche" id="ecran-fiche" hidden></section>
+  <section data-ecran="pilotage" id="ecran-pilotage" hidden></section>
+  <section data-ecran="carte" id="ecran-carte" hidden></section>
+  <div class="signets-c" hidden><div id="signets"></div></div>
+</main>
+<div id="toast" class="toast" role="status" hidden></div>
+<script src="../../commun/donnees.js?v=4"></script>
+<script src="../../commun-v4/donnees-v4.js?v=4"></script>
+<script src="../../commun-v4/noms-v4.js?v=4"></script>
+<script src="../../commun-v4/carte/paca.geojson.js?v=4"></script>
+<script src="../../commun-v4/carte/villes.js?v=4"></script>
+<script src="app.js?v=4"></script>
+<script src="../../risque-v4.js?v=4"></script></body>
+</html>

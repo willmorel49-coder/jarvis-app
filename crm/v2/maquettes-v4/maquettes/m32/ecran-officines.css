@@ -1,0 +1,118 @@
+/* Officines : liste en tableau et fiche. Les composants communs vivent dans style.css. */
+/* ---------- LISTE ---------- */
+.sousnav{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:18px 0 14px}
+.synth{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.hb{display:flex;gap:18px;margin-top:8px;font-size:15px;color:var(--ink2)}
+.hb span{display:inline-flex;align-items:center;gap:6px}
+.hb b{font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--ink)}
+.hb-bar{height:10px;border-radius:5px;background:#E8ECF4;overflow:hidden;margin-top:10px}
+.hb-bar i{display:block;height:100%;border-radius:5px;background:var(--e-bien);transform-origin:left;animation:poussex .9s var(--ease) both}
+.rappel{margin-top:14px;padding:18px 20px 14px}
+.rap-liste{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x proximity}
+.rap{flex:none;scroll-snap-align:start;display:flex;align-items:center;gap:10px;min-height:56px;padding:6px 14px 6px 10px;border-radius:var(--r2);border:1px solid var(--filet);background:#fff;text-align:left;box-shadow:var(--ombre-1);transition:transform .25s var(--ease),box-shadow .25s}
+.rap:hover{transform:translateY(-2px);box-shadow:var(--ombre-2)}
+.rap b{display:block;font-size:15px}
+.cpt{margin:22px 2px 2px;font-size:15px;color:var(--ink2)}
+.legl{margin:2px 2px 14px;font-size:14px;color:var(--ink3)}
+.legl b{color:var(--ink)}
+.tab-of{padding:6px 18px 14px}
+.tab-of .tabl th:first-child,.tab-of .tabl td:first-child{padding-left:6px}
+.of-l{cursor:pointer;animation:monte .6s var(--ease) both;animation-delay:calc(var(--i,0)*35ms)}
+.of-l:focus-visible{outline:3px solid var(--bleu);outline-offset:-3px}
+.of-id{display:flex;align-items:center;gap:14px;min-width:260px}
+.av{width:44px;height:44px;border-radius:50%;flex:none;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:var(--bleu-d);background:linear-gradient(180deg,#fff,#EEF2F9);border:1px solid var(--filet);box-shadow:var(--ombre-1)}
+.of-txt{display:flex;flex-direction:column;gap:3px;min-width:0}
+.of-nom{font-size:16px;font-weight:750;letter-spacing:-.01em;line-height:1.2}
+.of-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:14px;color:var(--ink3)}
+.of-meta .etat{padding:2px 10px 2px 6px;font-size:13px}
+.of-meta .etat .ico{width:16px;height:16px}
+.of-ville{font-size:14px;color:var(--ink3)}
+.vide-c{color:var(--ink3);font-size:14px}
+.of-dix{display:flex;align-items:center;gap:10px}
+.of-dix .evo{white-space:nowrap}
+.of-dix .spark{width:110px;height:34px;flex:none}
+.of-score{display:inline-flex;align-items:center;gap:8px;justify-content:flex-end}
+.of-score b{font-size:17px;font-weight:750;display:block;line-height:1.15}
+.tabl td.chev{width:36px;padding-left:0;padding-right:0;color:var(--ink3)}
+.tabl td.vide{text-align:center;color:var(--ink3);padding:30px}
+.pied-l{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px;margin:20px 0 4px}
+/* ---------- FICHE ---------- */
+.ban-fiche .ban-tete>div:first-child{flex-basis:auto}
+.f-outils{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px}
+.f-pn{display:flex;gap:8px}
+.f-autre{min-width:260px;flex:1 1 260px;max-width:420px}
+.f-brief{margin-left:auto}
+.vuebar{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;width:100%;padding:10px 12px;border-radius:var(--r1);background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);color:#fff}
+.vuebar.pharm{background:rgba(37,153,138,.34);border-color:rgba(255,255,255,.4)}
+.vb-ico{width:44px;height:44px;border-radius:var(--r2);background:#fff;display:inline-flex;align-items:center;justify-content:center;color:var(--bleu);box-shadow:var(--ombre-1)}
+.vuebar.pharm .vb-ico{color:var(--c-pharma)}
+.vb-t{flex:1;min-width:220px;display:flex;flex-direction:column}
+.vb-t b{font-size:16px}.vb-t span{font-size:14px;color:#EAF1FF}
+.vuebar.pharm .seg button[aria-pressed="true"]{color:#0E6B5E}
+.ident{box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 2px 4px rgba(26,32,48,.06),0 28px 56px -22px rgba(0,30,120,.45)}
+.ident-meta .pil{margin-left:0}
+.f-chips{margin-top:18px}
+.liste-prop .lp-tete{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.liste-prop .lp-tete>div:nth-child(2){flex:1;min-width:160px}
+.lp-n{text-align:right;line-height:1.1}
+.lp-n b{display:block;font-size:30px;font-weight:800;letter-spacing:-.02em}
+.lp-n span{font-size:13px;color:var(--ink3)}
+.lp-ronds{display:flex;flex-wrap:wrap;align-items:flex-start;gap:6px 10px;margin:14px 0 6px}
+.lp-ronds .lp-ouvre{margin-left:auto;align-self:center}
+.lp-nom{display:block;font-size:15px;font-weight:650;line-height:1.3}
+.lp-bar{display:inline-flex;align-items:center;gap:10px;font-weight:700;font-size:15px;justify-content:flex-end;flex-wrap:wrap}
+.lp-bar .fois{display:block;width:100%;text-align:right}
+.lp-tab{margin-top:4px}
+.c-chiffres{padding:24px}
+.hero{margin:6px 0 6px;padding:26px 16px 20px;border-radius:var(--r1);text-align:center;background:radial-gradient(560px 220px at 50% -20%,rgba(0,80,230,.11),rgba(0,80,230,0) 70%),linear-gradient(180deg,#FBFCFF,#F3F6FC);border:1px solid var(--filet);box-shadow:0 1px 0 #fff inset}
+.hero-l{font-size:15px;font-weight:650;color:var(--ink2)}
+.hero-n{font-size:64px;font-weight:800;letter-spacing:-.04em;line-height:1.05;margin-top:4px}
+.hero-n small{font-size:.38em;margin-left:.2em;color:var(--ink3)}
+.hero-p{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:12px}
+.mot{display:inline-flex;align-items:center;min-height:32px;padding:0 14px;border-radius:999px;background:#fff;border:1px solid var(--filet);font-weight:650;font-size:14px;box-shadow:0 1px 2px rgba(26,32,48,.05)}
+.cbs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 34px;margin-top:20px}
+.duo{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:4px 0 14px}
+.co-l{display:block;font-size:13px;font-weight:650;color:var(--ink3)}
+.grand{font-size:26px;font-weight:800;letter-spacing:-.02em}
+.grand.gris{color:var(--ink2)}
+.posit{margin-top:22px;padding-top:18px;border-top:1px solid var(--filet)}
+.frise-d{position:relative;height:84px;margin-top:10px}
+.fb{position:absolute;bottom:0;width:1.1%;border-radius:3px 3px 0 0;background:#CDD5E4}
+.fb.moi{background:var(--c-ca);width:1.6%;box-shadow:0 0 0 3px rgba(42,99,204,.18)}
+.frise-ax{display:flex;justify-content:space-between;font-size:13px;color:var(--ink3);margin:6px 0 4px}
+.frise-m{display:inline-flex;gap:3px;flex:none}
+.frise-m i{width:12px;height:18px;border-radius:4px;border:1.5px solid var(--enc-5);background:#fff}
+.frise-m i.plein{background:var(--enc-2);border-color:var(--enc-2)}
+.rdv{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin:4px 0 18px}
+.rdv>div{flex:1;min-width:200px}
+.nt{margin:10px 0;font-size:15px;line-height:1.4}
+.nt .co-l{display:inline;margin-right:8px}
+.tk{display:flex;gap:8px;align-items:flex-start}
+.tk .ico{margin-top:1px}
+.h-tk{margin-top:18px}
+.carte h3+.nt{margin-top:8px}
+/* ---------- ordinateur étroit et téléphone ---------- */
+@media (max-width:1100px){.synth{grid-template-columns:repeat(2,minmax(0,1fr))}.cbs{grid-template-columns:1fr}.of-id{min-width:200px}}
+@media (max-width:900px){.duo{grid-template-columns:1fr}.hero-n{font-size:48px}}
+@media (max-width:760px){
+  .sousnav{margin:12px 0 10px}
+  .synth{grid-template-columns:1fr}
+  .tab-of{padding:4px 12px 12px}
+  .tab-of thead{display:none}
+  .tab-of table,.tab-of tbody,.tab-of tr{display:block;width:100%}
+  .tab-of tr.of-l{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;padding:12px 4px;border-bottom:1px solid var(--filet)}
+  .tab-of td{display:block;border:0;padding:4px 0;text-align:left}
+  .tab-of td[data-l="Officine"]{grid-column:1 / -1}
+  .tab-of td:not([data-l="Officine"]):not(.chev)::before{content:attr(data-l);display:block;font-size:13px;color:var(--lib);font-weight:500;margin-bottom:2px}
+  .tab-of td.num{text-align:left}
+  .tab-of td.chev{display:none}
+  .of-score{justify-content:flex-start}
+  .of-dix .spark{width:96px}
+  .hero-n{font-size:44px}
+  .f-outils .filtre{flex:1 1 100%;max-width:none}
+  .f-brief{margin-left:0;flex:1 1 100%}
+  .vuebar .seg{width:100%}.vuebar .seg button{flex:1;justify-content:center}
+  .lp-ronds .lp-ouvre{margin-left:0;flex:1 1 100%}
+  .lp-bar .bar12{width:60px}
+  .ident-meta .pil{margin-left:0}
+}

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les nouvelles maquettes de JARVIS</title>
+<style>
+:root{--ip-blue:#0050E6;--ip-blue-d:#0034A0;--halo:#E9F0FF;--ink:#10131C;--ink-2:#2A2F3C;--ink-3:#5B6478;--paper:#FBFCFE;--card:#fff;--line:rgba(16,19,28,.09);--line-strong:rgba(16,19,28,.16);--sunken:#F4F6FB;
+--font:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--ease:cubic-bezier(.32,.72,0,1);
+--sh-1:0 1px 2px rgba(16,19,28,.05),0 4px 10px rgba(16,19,28,.05);--sh-3:0 4px 10px rgba(16,19,28,.06),0 14px 26px rgba(16,19,28,.09),0 32px 60px rgba(16,19,28,.10)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:light}}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.45;min-height:100vh;
+background-image:radial-gradient(900px 420px at 12% -80px,#DCE8FF 0,rgba(220,232,255,0) 70%),radial-gradient(700px 360px at 100% 0,#EEF3FF 0,rgba(238,243,255,0) 70%);background-repeat:no-repeat}
+main{overflow-x:clip;max-width:1400px;margin:0 auto;padding:0 16px 40px}
+.haut{padding-top:16px;padding-bottom:4px}
+.retour{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px 0 10px;border-radius:12px;border:1px solid var(--line-strong);background:var(--card);color:var(--ink-2);font-size:15px;font-weight:600;text-decoration:none;box-shadow:var(--sh-1);transition:transform .25s var(--ease),box-shadow .25s var(--ease)}
+.retour:hover{transform:translateY(-2px);box-shadow:var(--sh-3)}
+h1{margin:14px 0 6px;font-size:clamp(26px,4vw,38px);line-height:1.12;letter-spacing:-.02em;font-weight:760}
+.phrase{margin:0 0 16px;color:var(--ink-3);font-size:16px;max-width:720px}
+.barre{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.onglets{display:flex;gap:8px;flex-wrap:wrap}
+.onglet,.mode button{min-height:44px;padding:0 18px;border-radius:999px;border:1px solid var(--line-strong);background:var(--card);color:var(--ink-2);font:inherit;font-size:15px;font-weight:650;cursor:pointer;box-shadow:var(--sh-1);transition:transform .25s var(--ease),background .2s}
+.onglet:hover,.mode button:hover{transform:translateY(-2px)}
+.onglet[aria-selected="true"],.mode button[aria-pressed="true"]{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff;box-shadow:0 4px 12px rgba(0,80,230,.26),0 8px 24px rgba(0,52,160,.14)}
+.onglet:focus-visible,.mode button:focus-visible,.retour:focus-visible,.ouvrir:focus-visible{outline:3px solid #7FA8FF;outline-offset:2px}
+.mode{display:flex;gap:8px}
+.corps{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;margin-top:16px;align-items:start}
+.scene{background:var(--sunken);border:1px solid var(--line);border-radius:20px;padding:16px;box-shadow:inset 0 1px 0 #fff,var(--sh-1);min-width:0}
+.cadre{margin:0 auto;width:100%;background:#fff;border-radius:12px;overflow:hidden;border:1px solid var(--line-strong);box-shadow:var(--sh-3);transition:width .4s var(--ease)}
+.scene.tel .cadre{box-sizing:content-box;width:390px;max-width:calc(100% - 16px);border-radius:36px;border:8px solid #1b2030;background:#1b2030}
+.scene.tel iframe{border-radius:26px}
+iframe{display:block;width:100%;height:min(78vh,900px);min-height:560px;border:0;background:#fff}
+.info{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:var(--sh-1);background-image:radial-gradient(260px 140px at 0 0,var(--halo) 0,rgba(233,240,255,0) 80%)}
+.info h2{margin:0 0 4px;font-size:20px;letter-spacing:-.01em}
+.info .ref{margin:0 0 12px;color:var(--ink-3);font-size:14px}
+.info h3{margin:14px 0 6px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.info ul{margin:0;padding:0 0 0 18px;font-size:15px;color:var(--ink-2)}
+.info li{padding:3px 0}
+.ouvrir{display:inline-flex;align-items:center;min-height:44px;margin-top:14px;padding:0 16px;border-radius:12px;background:var(--ip-blue);color:#fff;font-weight:650;font-size:15px;text-decoration:none;box-shadow:0 4px 12px rgba(0,80,230,.26)}
+.fictif{margin-top:12px;font-size:14px;color:var(--ink-3)}
+.corps:has(.scene:not(.tel)){grid-template-columns:minmax(0,1fr)}
+.corps:has(.scene:not(.tel)) .info ul{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px 28px}
+@media (max-width:1000px){.corps{grid-template-columns:minmax(0,1fr)}.info{order:-1}}
+@media (max-width:700px){.mode{display:none}.scene{padding:8px}.scene.tel .cadre{border:0;border-radius:12px;background:#fff}iframe{height:78vh}.onglet{flex:1 1 calc(50% - 8px);padding:0 10px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+<div class="haut"><a class="retour" href="../#marketing"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Retour au Marketing</a></div>
+<h1>Les nouvelles maquettes de JARVIS</h1>
+<p class="phrase">En premier, toute l’application dans le mélange retenu, puis les quatre pistes de départ. Les cinq maquettes sont vivantes : on y navigue d’un écran à l’autre. Toutes les données sont fictives.</p>
+<div class="barre">
+<div class="onglets" role="tablist" aria-label="Les cinq maquettes" id="onglets"></div>
+<div class="mode" role="group" aria-label="Format d’affichage"><button type="button" data-mode="pc" aria-pressed="true">Ordinateur</button><button type="button" data-mode="tel" aria-pressed="false">Téléphone</button></div>
+</div>
+<div class="corps">
+<div class="scene" id="scene"><div class="cadre"><iframe id="cadre" title="Maquette" src="about:blank"></iframe></div></div>
+<aside class="info" id="info" aria-live="polite"></aside>
+</div>
+</main>
+<script>
+(function(){
+var M=[
+{id:'m32',t:'JARVIS — toute l’appli',ref:'Le mélange retenu de Pappers et du JARVIS gros upgrade, sur toute l’application : JARVIS GPS en accueil, JARVIS DAILY dans Infos, un mouvement léger.',src:'maquettes/m32/index.html?v=20261118mv5#accueil',
+ l:['Tous les écrans de l’application, pas seulement Officines, Pilotage et la carte : les menus du haut et le bouton « Outils » mènent partout.','Accueil : on touche une pharmacie sur la carte, sa fiche s’ouvre à côté sans quitter la carte ; JARVIS propose une action et prépare la tournée.','Infos : le brief du marché officinal, avec le résumé en 60 secondes et, pour chaque information, pourquoi c’est important.','Pappers pour la lecture (bandeau bleu avec la recherche d’abord, fiches d’identité, tableaux nets), le JARVIS gros upgrade pour la structure (barre du haut, grands chiffres, boutons ronds).']},
+{id:'m31',t:'JARVIS, gros upgrade',ref:'Le JARVIS actuel, un cran au-dessus',src:'maquettes/m31/index.html?v=20261118mv5',
+ l:['Liste : bandeau à halo, trois repères (moyenne de nos clients, à rappeler, secteur) et cartes avec la courbe des 10 mois face à la moyenne.','Fiche : colonne d’identité avec six boutons ronds d’actions, les deux listes « À proposer » ouvertes d’emblée.','Fiche : un grand chiffre centré, des barres avec repère « moyenne » et courbe des ventes visible sans clic.','Pilotage : bandeau bleu avec la phrase-réponse, deux grands chiffres (période et période d’avant), colonnes sans axes.','Carte du secteur plein cadre, avec un volet à droite pour la fiche de l’officine.']},
+{id:'m01d',t:'D’après Pappers',ref:'Pappers, fiche d’entreprise',src:'maquettes/m01d/index.html?v=20261118mv5',
+ l:['Barre blanche en haut avec la navigation, bandeau bleu et carte d’identité blanche qui flotte dessus.','Les chiffres sont en encre, l’état est dit par une icône colorée et un mot.','Cartes côte à côte, informations en listes à filets.','Pilotage : chiffre d’affaires en histogramme, mesures en listes.','Carte du secteur avec volet à droite.']},
+{id:'m22',t:'D’après Strava',ref:'Strava, fil d’activité et cartes',src:'maquettes/m22/index.html?v=20261118mv5',
+ l:['La liste devient un fil d’activité : une vignette porte la courbe des dix derniers mois.','Graphique sans axes : on lit les grands chiffres, et la valeur au survol.','Classement des clients, la ligne de l’officine est la seule mise en relief.','Carte plein cadre avec boutons ronds et bouton « Ma tournée ».','Sur téléphone, la navigation passe en barre d’onglets en bas.']},
+{id:'m29',t:'D’après Revolut',ref:'Revolut, application bancaire',src:'maquettes/m29/index.html?v=20261118mv5',
+ l:['Un solde géant au centre : ici le chiffre d’affaires de l’officine.','Quatre boutons ronds : appeler, écrire, noter, plus.','Lignes de réglages et de listes dans une carte arrondie, sans filets.','Courbe lisse visible sans clic, moyenne des clients en pointillé gris.','Colonne étroite façon application mobile.']}
+];
+var ong=document.getElementById('onglets'),cad=document.getElementById('cadre'),info=document.getElementById('info'),scene=document.getElementById('scene'),cur=-1;
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+M.forEach(function(m,i){var b=document.createElement('button');b.type='button';b.className='onglet';b.setAttribute('role','tab');b.textContent=m.t;b.onclick=function(){go(i,true)};ong.appendChild(b)});
+function go(i,maj){
+ if(i<0||i>=M.length)i=0;var m=M[i];cur=i;
+ Array.prototype.forEach.call(ong.children,function(b,k){b.setAttribute('aria-selected',k===i?'true':'false')});
+ cad.title='Maquette : '+m.t;cad.src=m.src;
+ info.innerHTML='<h2>'+esc(m.t)+'</h2><p class="ref">'+esc(m.ref)+'</p><h3>Ce qui change</h3><ul>'+m.l.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul><a class="ouvrir" href="'+m.src+'" target="_blank" rel="noopener">Ouvrir en plein écran</a><p class="fictif">Données fictives.</p>';
+ if(maj){try{history.replaceState(null,'','#'+m.id)}catch(e){}}
+}
+document.querySelector('.mode').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var tel=b.getAttribute('data-mode')==='tel';scene.classList.toggle('tel',tel);Array.prototype.forEach.call(this.children,function(x){x.setAttribute('aria-pressed',x===b?'true':'false')})});
+var h=(location.hash||'').slice(1),k=0;M.forEach(function(m,i){if(m.id===h)k=i});go(k,false);
+})();
+</script>
+</body>
+</html>

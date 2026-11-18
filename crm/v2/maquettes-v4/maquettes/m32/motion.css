@@ -1,0 +1,163 @@
+/* Couche de mouvement. Chargée APRÈS la dernière feuille d'écran.
+   Toute règle commence par .m-on (posée par motion.js) : sans le script, ou avec ?motion=0, la page s'affiche sans cette couche.
+   Aucune des propriétés qui font figer Safari. Un bloc qui porte du texte entre par un décalage (transform), jamais par un fondu.
+   Les recettes vivent sous prefers-reduced-motion:no-preference ; en mouvement réduit ne restent que le repli et la barre de sélection centrée. */
+
+/* ---------- A. jetons et repli ---------- */
+:root{
+  --m-ease:var(--ease,cubic-bezier(.32,.72,0,1));   /* la même courbe que --ease (style.css) */
+  --m-doux:cubic-bezier(.33,.02,0,.98);             /* couleur, ombre, opacité */
+  --m-vite:140ms; --m-court:200ms; --m-norm:300ms; --m-ample:380ms;
+  --m-pas:40ms; --m-trait:800ms; --m-barre:700ms;
+}
+@media (prefers-reduced-motion:reduce){
+  .m-on *,.m-on *::before,.m-on *::after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important;
+    transition-duration:.01ms!important;transition-delay:0s!important;scroll-behavior:auto!important}
+}
+
+/* ---------- B. l'arrivée : le bandeau à 0 ms, puis 7 blocs au plus, 40 ms d'écart, 300 ms chacun, 12 px, transform seul ---------- */
+@keyframes m-monte{from{transform:translateY(12px)}to{transform:none}}
+@media (prefers-reduced-motion:no-preference){
+  /* la cascade de style.css et les entrées de lignes des écrans ne jouent plus d'elles-mêmes (rejouées à chaque redessin, sans plafond, en fondu, en both) */
+  .m-on .entre>*,
+  .m-on [data-ecran] :where(.of-l,.pr-l,.gr-lg,.gr-lo,.li-l,.ap-l,.tn-l,.td-l,.mr-l,.mr-dm .cb,.mr-sig li,.cg-l,.ml-l,.qg-sujet,.qg-tab tbody tr,.bs-mol,.bn-prop,.dc-doc,.lg-etape,.mk-l,.og-l,.rv-barre .rv-ronds){animation:none}
+  /* seuls bougent les blocs retenus par motion.js (data-m-r : 0 = le premier, d'ordinaire le bandeau) */
+  .m-on .m-arrive [data-m-r]{animation:m-monte var(--m-norm) var(--m-ease) backwards;animation-delay:calc(var(--m-r,0) * var(--m-pas))}
+  /* la tâche cochée de la To do garde sa sortie (la règle « none » ci-dessus l'éteignait) */
+  .m-on .td-l.td-out{animation:td-sort .28s var(--ease) both}
+}
+
+/* ---------- I. la lueur lente derrière la croix verte du bandeau (ordinateur seulement : 1024 px et plus) ----------
+   Une source de lumière qui a une raison d'être là : elle naît derrière la croix et descend le long du bord droit, dans la colonne vide sous la croix,
+   loin des textes et des boutons du bandeau. Blanc 15 % au plus au pic, 11 s, translate3d + scale + opacité seulement ; en pause hors écran (.m-hors)
+   et onglet caché (html.m-pause).
+   Seulement sur un bandeau qui porte la croix (.avec-croix) : les pages de détail, la fiche, le détail du Marketing, la Mallette
+   et le Planning n'ont pas de croix, donc pas de lueur ; dès 1024 px (en dessous, des titres perdaient du contraste) ; disque de 280 px qui voyage de 80 px. */
+@keyframes m-lueur{
+  0%,100%{transform:translate3d(8px,-24px,0) scale(.9);opacity:.5}
+  50%{transform:translate3d(-6px,58px,0) scale(1.05);opacity:1}
+}
+@media (prefers-reduced-motion:no-preference) and (min-width:1024px){
+  .m-on .bandeau{isolation:isolate}
+  .m-on .bandeau.avec-croix::before{content:"";position:absolute;z-index:-1;right:-96px;top:-60px;width:280px;height:280px;border-radius:50%;pointer-events:none;
+    background:radial-gradient(closest-side,rgba(255,255,255,.15),rgba(255,255,255,.075) 38%,rgba(255,255,255,0) 76%);
+    animation:m-lueur 11s ease-in-out infinite;will-change:transform,opacity}
+  .m-on .bandeau.m-hors::before,.m-on.m-pause .bandeau::before{animation-play-state:paused}
+}
+
+/* ---------- C. les graphiques se dessinent à l'arrivée seulement : ceux des blocs qui arrivent, et le tracé de la tournée du GPS ----------
+   motion.js marque au premier passage (data-m-g) ; un graphique redessiné ensuite (filtre, segment, redimensionnement, dessin tardif) se pose fini.
+   Les surfaces de geste (volets, feuille d'une mesure) gardent leurs tracés d'aujourd'hui, à chaque ouverture. Aucun graphique ne porte de texte. */
+@keyframes m-fond{from{opacity:0}}
+@keyframes m-pop{from{transform:scale(.4)}}
+@media (prefers-reduced-motion:no-preference){
+  .m-on [data-ecran] :where(.bar12 i,.cb-b,.hb-bar i,.bs-prop i,.ap-pist i,.lg-pile i,.gr-empile i,.mr-b,.pi-cmpb i,.tn-bar-x,.bar,.trace,.anneau .arc):not(:where(.ca-volet,.ca-pan,.pi-feuille,.ac-volet,.dy-volet) *){animation:none}
+  /* .m-arrive : graphiques du premier écran, à l'arrivée ; .m-dessine : graphique situé plus bas, la PREMIÈRE fois qu'il entre à l'écran
+     (motion.js, IntersectionObserver ; une fois par page, jamais au retour en moins de 8 s ; aucun bloc ne bouge, aucun texte n'est caché) */
+  .m-on :is(.m-arrive,.m-dessine) [data-m-g="b"]{animation:poussex var(--m-barre) var(--m-ease) backwards}   /* barres : 700 ms */
+  .m-on :is(.m-arrive,.m-dessine) [data-m-g="c"]{animation:pousse 600ms var(--m-ease) backwards}             /* colonnes : 600 ms ; leur retard i × 40 ms (en ligne, J.colonnes) est gardé */
+  .m-on :is(.m-arrive,.m-dessine) [data-m-g="t"]{animation:trace var(--m-trait) var(--m-ease) backwards}     /* traits : 800 ms */
+  .m-on :is(.m-arrive,.m-dessine) [data-m-g="a"]{animation:arc var(--m-trait) var(--m-ease) backwards}       /* anneaux : 800 ms */
+  .m-on :is(.m-arrive,.m-dessine) [data-m-g="aire"]{animation:m-fond 400ms var(--m-doux) 500ms backwards}    /* l'aire sous la courbe, après le trait */
+  .m-on :is(.m-arrive,.m-dessine) [data-m-g="pt"]{transform-box:fill-box;transform-origin:center;animation:m-pop var(--m-norm) var(--m-ease) 700ms backwards}   /* points de la courbe */
+  .m-on :is(.m-arrive,.m-dessine) [data-m-g="ps"]{transform-box:fill-box;transform-origin:center;animation:m-pop var(--m-norm) var(--m-ease) 600ms backwards}   /* point final des sparks */
+}
+
+/* ---------- D. le toucher : l'appui s'enfonce en 140 ms (aucun rebond) ; la transition de transform est ajoutée là où elle manquait ----------
+   (sinon l'appui et son relâchement seraient instantanés ; listes recopiées de style.css:61, 87, 284, 336) */
+@media (prefers-reduced-motion:no-preference){
+  /* la couleur du texte suit la même courbe et la même durée que le repère (250 ms, --m-ease) : à mi-course, plus d'étiquette coupée en deux */
+  .m-on :is(.menu a,.menu button){transition:background .25s var(--ease),color 250ms var(--m-ease),box-shadow .25s,transform var(--m-vite) var(--m-ease)}
+  .m-on :is(.seg button,.seg a){transition:background .25s var(--ease),box-shadow .25s,color 250ms var(--m-ease),transform var(--m-vite) var(--m-ease)}
+  .m-on :is(.vues a,.vues button,.onglets a,.onglets button){transition:color .25s var(--ease),transform var(--m-vite) var(--m-ease)}
+  .m-on .rond-act{transition:transform var(--m-vite) var(--m-ease)}
+}
+/* au doigt, aucun soulèvement ne reste collé après un toucher (écrit AVANT l'appui, qui gagne) */
+@media (hover:none){
+  .m-on :is(.pil,.chip,.b-rond,.pr-porte,.og-porte,.og-mini,.mk-porte,.mk-rep,.mk-page,.dc-doc,.rv-r,.pi-mes,.pi-mol,.ac-porte,.dy-art,.dy-b,.dy-grp,.rap,.ac-d60 li button):hover,
+  .m-on .rond-act:hover .rond,.m-on .ml-cb:hover i,.m-on .td-chk:hover .ico{transform:none}
+}
+@media (prefers-reduced-motion:no-preference){
+  .m-on :is(.pil,.chip,.b-rond,.rond-act,.seg button,.seg a,.vues a,.vues button,.menu a,.menu button,.onglets a,.onglets button,.dy-b,.dy-grp):active{transform:scale(.97);transition-duration:var(--m-vite)}
+  .m-on :is(.pr-porte,.og-porte,.og-mini,.mk-porte,.mk-rep,.mk-page,.dc-doc,.rv-r,.rap,.pi-mes,.dy-art,.pi-mol,.ac-porte,.ac-d60 li button):active{transform:scale(.985);transition-duration:var(--m-vite)}
+}
+/* une lumière douce suit le pointeur sur les cartes cliquables en entier (souris seulement), DERRIÈRE leur texte */
+@media (prefers-reduced-motion:no-preference) and (hover:hover) and (pointer:fine){
+  .m-on :is(.pr-porte,.og-porte,.mk-porte,.ac-porte){position:relative}
+  .m-on :is(.pr-porte,.og-porte,.mk-porte,.pi-mes,.ac-porte){isolation:isolate}
+  .m-on :is(.pr-porte,.og-porte,.mk-porte,.pi-mes,.ac-porte)::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;opacity:0;
+    background:radial-gradient(240px circle at var(--mx,50%) var(--my,0%),rgba(0,80,230,.09),rgba(0,80,230,0) 70%);transition:opacity var(--m-court) var(--m-doux)}
+  .m-on :is(.pr-porte,.og-porte,.mk-porte,.pi-mes,.ac-porte):hover::before{opacity:1}
+}
+
+/* ---------- E. le repère qui glisse (navigation, segments, vues) : 250 ms, la durée du changement de couleur du texte (style.css:61) ----------
+   motion.js pose un <i class="m-repere"> qui porte le fond, l'ombre et les coins de l'élément actif. Sur un contrôle que l'écran vient de recréer
+   (moins d'1 s après un clic), le repère part de l'ancienne place et le texte change de couleur pendant le même trajet (transition de color, point D). */
+@media (prefers-reduced-motion:no-preference){
+  .m-on .m-repere{position:absolute;left:0;top:0;z-index:0;pointer-events:none;transition:transform 250ms var(--m-ease),width 250ms var(--m-ease)}   /* la largeur d'un élément absolu sans enfant : seule exception permise */
+  .m-on .m-repere.m-pose{transition:none}
+  .m-on .a-repere>:is(a,button){position:relative;z-index:1}
+  .m-on .a-repere>:is(.on,[aria-pressed="true"]){background:transparent!important;box-shadow:none!important}
+}
+
+/* ---------- F. les sorties douces (feuille Outils et son voile, menu « + », notification) ; la barre de sélection du catalogue reste centrée ----------
+   Entrées de 200 à 350 ms, sorties plus courtes (140 à 200 ms) ; le fondu est permis ici : ce sont des surfaces qui s'ouvrent et se ferment sur un geste. */
+@keyframes m-fondu{from{opacity:0}}
+@keyframes m-voile-sort{to{opacity:0}}
+@keyframes m-feuille-sort{to{opacity:0;transform:translateX(18px)}}
+@keyframes m-menu{from{opacity:0;transform:translateY(-6px) scale(.97)}}
+@keyframes m-menu-sort{to{opacity:0;transform:translateY(-6px) scale(.97)}}
+@keyframes m-toast{from{opacity:0;transform:translateX(-50%) translateY(10px)}}
+@keyframes m-toast-sort{to{opacity:0;transform:translateX(-50%) translateY(6px)}}
+@keyframes m-selbar{from{transform:translateX(-50%) translateY(10px)}to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:no-preference){
+  .m-on #voile:not([hidden]){animation:m-fondu var(--m-norm) linear backwards}
+  .m-on #voile.m-sort{animation:m-voile-sort var(--m-court) linear forwards}
+  .m-on #outils.m-sort{animation:m-feuille-sort var(--m-court) var(--m-ease) forwards}
+  .m-on #menu-plus{transform-origin:100% 0;animation:m-menu var(--m-court) var(--m-ease) backwards}
+  .m-on #menu-plus.m-sort{animation:m-menu-sort var(--m-vite) var(--m-ease) forwards}
+  .m-on #toast:not([hidden]){animation:m-toast var(--m-court) var(--m-ease) backwards}
+  .m-on #toast.m-sort{animation:m-toast-sort var(--m-vite) var(--m-ease) forwards}
+}
+/* ecran-produits.css:68 : centrée par translateX(-50 %) mais animée par « monte … both », qui finit sur transform:none (mesuré : centre à 235 px du milieu).
+   Aussi en mouvement réduit, sinon le repli la décentre aussi. */
+.m-on .pr-selbar{animation:m-selbar .35s var(--m-ease) backwards}
+
+/* ---------- G. le dépliant : le contenu d'un <details> ouvert par la personne glisse de 6 px en 200 ms (pas un <details> rendu déjà ouvert,
+   ni à chaque redessin) ; le pli DAILY de l'accueil suit le même geste au clic sur son bouton (transform seul, 40 ms d'écart) ---------- */
+@keyframes m-deplie{from{transform:translateY(-6px)}to{transform:none}}
+@media (prefers-reduced-motion:no-preference){
+  .m-on details.m-ouvre[open]>:not(summary){animation:m-deplie var(--m-court) var(--m-ease) backwards}
+  .m-on .ac-d60>li{animation:none}
+  .m-on .m-ouvre .ac-d60>li{animation:m-deplie var(--m-court) var(--m-ease) backwards;animation-delay:calc(min(var(--i,0),7) * var(--m-pas))}
+}
+
+/* ---------- H. la confirmation : la valeur copiée s'éclaire (fond bleu très pâle vers son fond naturel, 900 ms) ---------- */
+@keyframes m-eclaire{from{background-color:var(--bleu-fond,#E9F0FF)}}
+@media (prefers-reduced-motion:no-preference){
+  .m-on .m-change{animation:m-eclaire 900ms var(--m-doux)}
+}
+
+/* ---------- J. GPS : les halos des trois arrêts proposés passent en relais ;
+   la vague des points ne joue qu'à la première arrivée de la page ; le point « Vous êtes ici » (c'est l'information) se met en pause hors écran
+   et onglet caché.
+   Les halos passent en RELAIS, dans l'ordre de la tournée proposée (1 → 2 → 3) : un seul halo visible à la fois (1,2 s chacun), puis 2,4 s de
+   repos ; cycle de 6 s. Avec la lueur : 2 effets visibles à la fois au plus. Les halos sont aussi des .ac-pulse : la pause ci-dessous les prend. ---------- */
+@keyframes m-relais{0%{transform:scale(.55);opacity:0}4%{transform:scale(.7);opacity:.6}20%{transform:scale(1.6);opacity:0}100%{transform:scale(1.6);opacity:0}}
+@media (prefers-reduced-motion:no-preference){
+  .m-on .ac-zone .ac-halo{animation:m-relais 6s ease-out infinite backwards}
+  .m-on .ac-zone .ac-halo~.ac-halo{animation-delay:1.2s}
+  .m-on .ac-zone .ac-halo~.ac-halo~.ac-halo{animation-delay:2.4s}
+  .m-on .ac-zone .ac-halo~.ac-halo~.ac-halo~.ac-halo{animation-delay:3.6s}
+  /* le volet « JARVIS vous propose » ouvert à l'arrivée : il glisse sans fondu (personne ne l'a ouvert ; un texte n'entre jamais par un fondu).
+     Même animation que ecran-accueil.css (glisse, ou monte au téléphone) : elle continue sans rejouer quand .m-arrive s'en va ; m-plein tient l'opacité à 1. */
+  .m-on .m-arrive .ac-volet{animation:glisse .4s var(--ease) both,m-plein .4s both}
+}
+@keyframes m-plein{from,to{opacity:1}}
+@media (prefers-reduced-motion:no-preference) and (max-width:760px){
+  .m-on .m-arrive .ac-volet{animation:monte .4s var(--ease) both,m-plein .4s both}
+}
+.m-on #ecran-accueil.m-deja #ac-pts circle.ac-in{animation:none}
+.m-on .ac-zone.m-hors .ac-pulse,.m-on.m-pause .ac-zone .ac-pulse{animation-play-state:paused}
+/* les ondes de la dictée (la seule autre boucle) : en pause quand l'onglet est caché */
+.m-on.m-pause .bn-ondes i{animation-play-state:paused}

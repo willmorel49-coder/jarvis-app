@@ -1,0 +1,72 @@
+/* Base biosimilaires. Classes préfixées .bs- ; les composants communs (bandeau, stat, carte, kv, tabl, rond) sont dans style.css. */
+/* ---------- pastilles-filtres sous le bandeau, quatre grands chiffres, téléchargements ---------- */
+.bs-chips{margin:0}
+/* dans le bandeau bleu : filtre éteint = pastille translucide, filtre allumé = pastille blanche cochée (comme le segment) */
+.bandeau .bs-chip{background:rgba(0,28,110,.45);border-color:rgba(255,255,255,.3);color:#fff;box-shadow:none}
+.bandeau .bs-chip .ico{color:#fff}
+.bandeau .bs-chip[aria-pressed="true"]{background:#fff;color:var(--ink);border-color:#fff;box-shadow:none}
+.bandeau .bs-chip[aria-pressed="true"] .ico{color:var(--bleu)}
+.bs-chip .ico{color:var(--bleu)}
+.bs-chip[aria-pressed="true"]{background:var(--bleu);color:#fff;border-color:var(--bleu);box-shadow:0 8px 16px -8px rgba(0,80,230,.7)}
+.bs-chip[aria-pressed="true"] .ico{color:#fff}
+.bs-synth{margin-top:16px}
+.bs-prop{display:block;width:min(100%,220px);height:8px;border-radius:4px;background:#E8ECF4;overflow:hidden;margin:8px 0 6px}
+.bs-prop i{display:block;height:100%;border-radius:4px;background:var(--c-ca);transform-origin:left;animation:poussex .9s var(--ease) both}
+.bs-telech{margin-top:18px;padding:18px 22px 8px}
+.bs-telech .tete{margin-bottom:6px}
+.bs-ronds{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px 6px;margin:0}
+.bs-ronds .rond-act{min-width:0;padding-left:6px;padding-right:6px}
+/* ---------- compteur et cartes de molécule (fiche d'identité dépliable : résumé toujours visible, tableau replié) ---------- */
+.bs-cpt{margin:22px 2px 10px;font-size:15px;color:var(--ink2)}
+.bs-liste{gap:12px}
+.bs-mol{padding:0;animation:monte .6s var(--ease) both;animation-delay:calc(var(--i,0)*45ms)}
+.bs-mol summary{display:block;list-style:none;cursor:pointer;padding:18px 22px;border-radius:var(--r1);transition:background .2s}
+.bs-mol summary::-webkit-details-marker{display:none}
+.bs-mol summary:hover{background:rgba(0,80,230,.04)}
+.bs-mol summary:focus-visible{outline:3px solid var(--bleu);outline-offset:-3px}
+.bs-mol[open] summary{border-bottom:1px solid var(--filet);border-radius:var(--r1) var(--r1) 0 0}
+.bs-sum{display:grid;grid-template-columns:minmax(240px,1.3fr) minmax(220px,1fr) auto 44px;gap:14px 26px;align-items:center}
+.bs-nom h2{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.bs-nom>.sub{margin-top:3px;font-size:14px}
+.bs-tags{display:flex;flex-wrap:wrap;gap:6px 8px;margin-top:10px}
+.bs-tags .etat{padding:2px 10px 2px 6px;font-size:13px}
+.bs-tags .etat .ico{width:16px;height:16px}
+.bs-pen{display:flex;flex-direction:column;gap:6px}
+.bs-lib{font-size:13px;font-weight:650;color:var(--ink3)}
+.bs-pbar{display:inline-flex;align-items:center;gap:10px}
+.bs-pbar .bar12{width:150px;height:10px}
+.bs-pbar b{font-size:18px;font-weight:750;letter-spacing:-.01em}
+.bs-n{text-align:right;line-height:1.1;min-width:96px}
+.bs-n b{display:block;font-size:30px;font-weight:800;letter-spacing:-.02em}
+.bs-n span{font-size:13px;color:var(--ink3)}
+.bs-chev{width:44px;height:44px;border-radius:50%;border:1px solid var(--filet);background:#fff;color:var(--ink3);box-shadow:var(--ombre-1);justify-self:end;transition:transform .3s var(--ease)}
+.bs-chev svg{width:22px;height:22px}
+.bs-mol[open] .bs-chev{transform:rotate(180deg)}
+.bs-corps{padding:18px 22px 20px}
+.bs-deux{display:grid;grid-template-columns:minmax(260px,.85fr) minmax(0,1.5fr);gap:18px 32px;align-items:start}
+.bs-tab{margin-top:-6px}
+.bs-tab td b{font-size:16px;font-weight:700}
+.bs-marque{display:block;font-size:15px;font-weight:700;line-height:1.3}
+.bs-non{color:var(--ink3);font-size:14px}
+.bs-legende{margin-top:18px}
+/* ---------- ordinateur étroit et téléphone ---------- */
+@media (max-width:1100px){.bs-ronds{grid-template-columns:repeat(3,minmax(0,1fr))}.bs-sum{grid-template-columns:minmax(0,1fr) auto 44px}.bs-pen{grid-column:1 / -1}}
+@media (max-width:900px){.bs-deux{grid-template-columns:1fr}}
+@media (max-width:760px){
+  .bs-ronds{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .bs-mol summary{padding:16px 16px}
+  .bs-sum{gap:12px 14px}
+  .bs-chip{white-space:normal;text-align:left;line-height:1.25;padding-top:8px;padding-bottom:8px}   /* « Partenaires · … » passe à la ligne au lieu de dépasser du bandeau */
+  .bs-nom h2{font-size:20px}
+  .bs-pbar .bar12{width:120px}
+  .bs-n b{font-size:26px}
+  .bs-corps{padding:14px 16px 16px}
+  .bs-tab thead{display:none}
+  .bs-tab,.bs-tab tbody,.bs-tab tr{display:block;width:100%}
+  .bs-tab tr{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;padding:12px 0;border-bottom:1px solid var(--filet)}
+  .bs-tab td{display:block;border:0;padding:2px 0;text-align:left}
+  .bs-tab td[data-l="Biosimilaire"]{grid-column:1 / -1}
+  .bs-tab td:not([data-l="Biosimilaire"])::before{content:attr(data-l);display:block;font-size:13px;color:var(--lib);font-weight:500;margin-bottom:2px}
+  .bs-tab td.num{text-align:left}
+  .bs-tab td.num b{display:inline}
+}

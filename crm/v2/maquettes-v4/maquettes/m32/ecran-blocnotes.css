@@ -1,0 +1,66 @@
+/* Styles de l'écran Bloc-notes (#blocnotes). Préfixe .bn-. Les composants communs (bandeau, seg, pil, chip, etat, rond, carte, lecteur,
+   colonnes) vivent dans style.css. Aucune couleur de chiffre sur cet écran (il n'en montre aucun) ; le bleu d'action sur les boutons
+   pleins et les ondes de la dictée en cours ; les états en icône seule ; aucun fond teinté. Aucune des propriétés qui font figer Safari ; aucune opacité sur du texte. */
+.bn-grille{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:18px;margin-top:18px;align-items:start}
+.bn-col{display:grid;gap:18px}
+.bn-vp{display:block;margin-top:18px}
+.bn-vp .pil{margin-left:10px;vertical-align:middle}
+.bn-eyebrow{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin-bottom:2px}
+/* ---------- le composeur : écrire ou dicter ---------- */
+.bn-comp-t{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.bn-comp textarea{display:block;width:100%;min-height:104px;padding:12px 14px;border-radius:var(--r2);border:1px solid var(--filet);background:#fff;font-size:16px;line-height:1.5;resize:vertical;box-shadow:0 1px 2px rgba(26,32,48,.04) inset}
+.bn-comp textarea::placeholder{color:var(--ink3)}
+.bn-comp textarea:focus{outline:none;border-color:var(--bleu);box-shadow:0 0 0 3px rgba(0,80,230,.14)}
+.bn-dict{display:flex;align-items:center;gap:12px;margin-top:10px;min-height:44px;padding:8px 14px;border-radius:var(--r2);background:var(--creux);border:1px solid var(--filet);font-size:14px;color:var(--ink2);animation:monte .4s var(--ease) both}
+.bn-ondes{display:inline-flex;align-items:center;gap:3px;height:24px;flex:none}
+.bn-ondes i{display:block;width:3px;height:100%;border-radius:2px;background:var(--bleu);transform-origin:center;animation:bn-onde 1.1s ease-in-out infinite}
+.bn-ondes i:nth-child(2){animation-delay:.12s}.bn-ondes i:nth-child(3){animation-delay:.24s}.bn-ondes i:nth-child(4){animation-delay:.36s}
+.bn-ondes i:nth-child(5){animation-delay:.48s}.bn-ondes i:nth-child(6){animation-delay:.6s}.bn-ondes i:nth-child(7){animation-delay:.72s}
+@keyframes bn-onde{0%,100%{transform:scaleY(.22)}50%{transform:scaleY(1)}}
+.bn-comp-act{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px}
+.bn-prive{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--ink3);margin-left:auto}
+.bn-prive .ico{width:18px;height:18px;color:var(--ink3)}
+/* ---------- les notes, jour par jour ---------- */
+.bn-jour h3{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:700;color:var(--ink2);padding:16px 0 6px;border-bottom:1px solid var(--filet)}
+.bn-jour:first-child h3{padding-top:4px}
+.bn-auj{font-size:13px;font-weight:800;color:var(--bleu-d);background:var(--bleu-fond);border-radius:10px;padding:2px 8px;letter-spacing:0}
+.bn-liste{list-style:none;margin:0;padding:0}
+.bn-note{display:grid;grid-template-columns:72px minmax(0,1fr) 44px;gap:8px 14px;align-items:start;padding:12px 0;border-bottom:1px solid var(--filet)}
+.bn-note:last-child{border-bottom:0}
+.bn-h{font-size:15px;font-weight:700;color:var(--ink2);padding-top:3px}
+.bn-txt{font-size:16px;line-height:1.45;color:var(--ink)}
+.bn-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px}
+.bn-mode{padding:2px 10px 2px 6px;font-size:13px}
+.bn-mode .ico{width:16px;height:16px}
+.bn-chip{font-size:14px;padding:6px 12px;white-space:normal;max-width:100%;text-align:left;line-height:1.3}
+.bn-more{color:var(--ink3)}
+.bn-more svg{stroke-width:3.6;stroke:var(--enc-1)}
+.bn-vide{padding:20px 0 8px;color:var(--ink3)}
+/* ---------- propositions du robot du soir ---------- */
+.bn-props{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:10px}
+.bn-prop{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 14px;align-items:start;padding:14px;border-radius:var(--r2);border:1px solid var(--filet);background:linear-gradient(180deg,#fff,#FBFBFD);box-shadow:var(--ombre-1);animation:monte .5s var(--ease) both}
+.bn-prop .rond{width:44px;height:44px}
+.bn-pt b{display:block;font-size:15px;line-height:1.4;font-weight:650}
+.bn-pt .sub{margin-top:4px}
+.bn-fait{color:var(--ink);font-weight:700}
+.bn-prop-act{grid-column:2;display:flex;flex-wrap:wrap;gap:8px}
+.bn-prop.non .bn-pt b{color:var(--ink3);text-decoration:line-through}
+.bn-tout{display:flex;align-items:center;gap:8px;margin-top:12px;font-weight:650}
+/* ---------- ordinateur étroit et téléphone ---------- */
+@media (max-width:1100px){
+  /* une seule colonne : les propositions du soir suivent la zone de saisie, avant la liste des notes */
+  .bn-grille{display:flex;flex-direction:column;align-items:stretch;gap:18px}
+  .bn-grille>.bn-col:first-child{display:contents}
+  .bn-grille>.bn-col:first-child>.entre{order:1}
+  .bn-droite{order:2}
+  .bn-jours{order:3}
+}
+@media (max-width:760px){
+  .bn-grille{margin-top:14px;gap:14px}
+  .bn-vp .pil{margin:8px 0 0}
+  .bn-note{grid-template-columns:56px minmax(0,1fr) 44px;gap:6px 10px}
+  .bn-txt{font-size:15px}
+  .bn-prive{margin-left:0;flex-basis:100%}
+  .bn-comp-act .pil{flex:1 1 auto}
+  .bn-prop-act .pil{flex:1 1 auto}
+}

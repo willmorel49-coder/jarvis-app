@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="fr" data-m="01" data-version="v4" data-ref="Pappers">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Officines — m01d Pappers nuancée</title>
+<link rel="stylesheet" href="../../commun/jarvis.css?v=4">
+<link rel="stylesheet" href="../../commun-v4/couleurs.css?v=4">
+<link rel="stylesheet" href="style.css?v=4">
+</head>
+<body data-mode="integral" data-etat="liste">
+<p class="risque" data-risque>Référence : Pappers. Risque : fidèle à Pappers, donc sérieux et un peu administratif ; la couleur reste sur les traits fins, ce qui peut sembler discret. Données fictives.</p>
+<header class="haut" id="haut">
+  <div class="wrap haut-in">
+    <a class="logo" href="#liste" aria-label="JARVIS, Officines"><span class="logo-m">JARVIS</span><span class="logo-t">Intégral</span></a>
+    <label class="rech-g"><span data-ico="search"></span><input id="rech-globale" type="search" placeholder="Entrer un nom d’officine, une ville, un titulaire…" autocomplete="off" aria-label="Rechercher une officine"></label>
+    <nav class="menu" aria-label="Navigation">
+      <a href="#liste" data-nav="officines">Officines</a>
+      <a href="#pilotage" data-nav="pilotage">Pilotage</a>
+      <a href="#carte" data-nav="carte">Carte<span class="long">&nbsp;du&nbsp;secteur</span></a>
+    </nav>
+    <span class="compte-h"><span class="fict">Données fictives</span><span class="avatar" aria-hidden="true">CT</span></span>
+  </div>
+</header>
+<main>
+
+<!-- ============ LISTE ============ -->
+<div data-ecran="liste">
+  <header class="bandeau bandeau--liste">
+    <div class="wrap">
+      <p class="maj">Ventes à jour au 31 octobre 2026</p>
+      <div class="hero">
+        <div>
+          <p class="sur">Mon secteur</p>
+          <h1>Mes officines</h1>
+          <p class="hsous"><b id="nb-secteur">2 388</b> clientes dans votre secteur</p>
+        </div>
+        <div class="hero-act">
+          <button class="btn btn--blanc" type="button" data-stub="Exportation non dessinée dans cette maquette."><span data-ico="down"></span><span>Exporter<span class="long"> mes clients</span> en Excel</span></button>
+          <button class="btn btn--blanc" type="button" data-stub="Création non dessinée dans cette maquette."><span data-ico="plus"></span>Créer un prospect</button>
+        </div>
+      </div>
+      <label class="recherche"><span data-ico="search"></span><input id="q" type="search" placeholder="Nom, titulaire, ville ou code postal…" autocomplete="off" aria-label="Rechercher une officine"></label>
+    </div>
+  </header>
+
+  <div class="wrap pile">
+    <div class="barre">
+      <div class="onglets" role="tablist" aria-label="Vues">
+        <button type="button" class="on" aria-current="page">Officines</button>
+        <button type="button" data-stub="Groupements : non dessiné dans cette maquette.">Groupements</button>
+        <button type="button" data-stub="Mes listes : non dessiné dans cette maquette.">Mes listes</button>
+        <button type="button" data-aller="#carte">Carte secteur</button>
+      </div>
+      <div class="bascule" role="group" aria-label="Afficher">
+        <span class="lbl">Afficher :</span>
+        <button type="button" id="b-clients" class="on" aria-pressed="true">Clients <i id="c-clients">2 388</i></button>
+        <button type="button" id="b-prospects" aria-pressed="false"><span>Prospects<span class="long"> de mon secteur</span></span> <i id="c-prospects">341</i></button>
+      </div>
+      <label class="commercial"><span class="lbl">Commercial</span>
+        <select aria-label="Commercial"><option>Tous</option><option>Claire Tessier</option></select></label>
+    </div>
+
+    <section class="carte rappel" id="rappel" aria-label="À rappeler cette semaine"></section>
+
+    <section class="bande" id="bande" aria-label="Le secteur en un coup d’œil"></section>
+    <p class="compte" id="compte"></p>
+    <div class="legende-gr" id="legende-gr" aria-label="Groupements"></div>
+    <div class="entete" id="entete" aria-hidden="true">
+      <span>Officine</span>
+      <span class="num"><b><i class="dot" style="--k:var(--c-ca)"></i>Chiffre d’affaires</b><small>cumul janv.–oct. 2026</small></span>
+      <span class="num"><b>10 mois</b><small>sur un mois</small></span>
+      <span class="num" data-interne><b><i class="dot" style="--k:var(--c-nous)"></i>Notre marge Intégral</b><small>janv.–oct. · estimation</small></span>
+      <span class="num"><b><i class="dot" style="--k:var(--c-pharma)"></i>Marge du pharmacien</b><small>cumul janv.–oct. 2026</small></span>
+      <span class="num"><b>À lui proposer</b><small>sur les 100 plus vendus</small></span>
+      <span></span>
+    </div>
+    <div class="resultats cascade" id="liste"></div>
+  </div>
+</div>
+
+<!-- ============ FICHE ============ -->
+<div data-ecran="fiche" hidden>
+  <header class="bandeau bandeau--fiche">
+    <div class="wrap">
+      <div class="outils">
+        <button class="btn btn--blanc" type="button" data-action="retour"><span data-ico="back"></span>Officines</button>
+        <button class="btn btn--blanc btn--icone" type="button" data-voisin="prec" aria-label="Officine précédente"><span data-ico="back"></span></button>
+        <button class="btn btn--blanc btn--icone" type="button" data-voisin="suiv" aria-label="Officine suivante"><span data-ico="next"></span></button>
+        <label class="autre"><span data-ico="search"></span><input id="autre" list="autres" placeholder="Autre officine…" aria-label="Autre officine" autocomplete="off"><datalist id="autres"></datalist></label>
+        <button class="btn btn--blanc btn--brief" type="button" data-interne aria-label="Voir le brief du jour, 7" data-stub="Brief du jour non dessiné dans cette maquette."><span data-ico="brief"></span><span class="t">Voir le brief du jour</span> <b>7</b></button>
+      </div>
+      <div class="vues">
+        <p class="maj" id="phrase-vue"></p>
+        <div class="seg" role="group" aria-label="Vue">
+          <button type="button" data-vue="integral" aria-pressed="true">Vue Intégral</button>
+          <button type="button" data-vue="pharmacien" aria-pressed="false">Vue pharmacien</button>
+        </div>
+      </div>
+    </div>
+  </header>
+  <div class="collante" id="collante" aria-hidden="true"></div>
+  <div class="wrap fiche" id="fiche"></div>
+</div>
+
+<!-- ============ PILOTAGE ============ -->
+<div data-ecran="pilotage" id="ecran-pilotage" hidden></div>
+
+<!-- ============ CARTE DU SECTEUR ============ -->
+<div data-ecran="carte" id="ecran-carte" hidden></div>
+
+</main>
+<div id="panneau" class="panneau" hidden role="dialog" aria-label="Détail"></div>
+<script src="../../commun/donnees.js?v=4"></script>
+<script src="../../commun-v4/donnees-v4.js?v=4"></script>
+<script src="../../commun-v4/noms-v4.js?v=4"></script>
+<script src="../../commun-v4/carte/paca.geojson.js?v=4"></script>
+<script src="../../commun-v4/carte/villes.js?v=4"></script>
+<script src="../../commun-v3/chart.umd.min.js?v=4"></script>
+<script src="app.js?v=4"></script>
+<script src="pilotage.js?v=4"></script>
+<script src="pilotage-detail.js?v=4"></script>
+<script src="carte.js?v=4"></script>
+<script src="route.js?v=4"></script>
+<script src="../../risque-v4.js?v=4"></script></body>
+</html>

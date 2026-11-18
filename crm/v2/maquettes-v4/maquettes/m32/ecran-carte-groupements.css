@@ -1,0 +1,66 @@
+/* Styles de l'écran Carte des groupements (#carte-groupements). Préfixe .cg-. Le moteur de La carte pose ses propres classes
+   (.ca-svg, .ca-terre, .ca-ville, .ca-tip : ecran-carte.css) ; tout le reste est ici. Une seule teinte (les bleus de La carte) en clartés sur les
+   ronds, le gris pour les prospects, l'ambre seulement sur l'anneau « À rappeler » et la pastille de légende ; aucun fond teinté, aucun chiffre écrit en
+   couleur. Aucune des propriétés qui font figer Safari ; aucune opacité sur du texte. */
+.cg-vp{display:block;margin-top:18px}
+.cg-vp .pil{margin-left:10px;vertical-align:middle}
+.cg-choix{display:flex;max-width:560px}   /* le choix du groupement : un menu du bandeau (comme « Commercial » sur La carte), sous le vrai champ de recherche */
+.cg-choix-l{font-weight:700;white-space:nowrap}.cg-choix select{flex:1;min-width:0;font-weight:650;cursor:pointer;text-overflow:ellipsis}
+.cg-liens{display:flex;flex-wrap:wrap;gap:10px;margin-left:auto}
+/* ---------- la carte : cadre arrondi, contrôles flottants, légende, bulle ---------- */
+.cg-grille{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(320px,1fr);gap:18px;margin-top:18px;align-items:start}
+.cg-zone{position:relative;height:var(--cg-h,560px);min-height:420px;border-radius:28px;overflow:hidden;background:#D5E2EF;border:1px solid var(--filet);box-shadow:var(--ombre-2);touch-action:pan-y}
+.cg-zone.zoome .ca-svg{touch-action:none;cursor:grab}
+.cg-flot{position:absolute;z-index:5;display:flex;gap:10px;align-items:center}
+.cg-flot .b-rond{box-shadow:var(--ombre-flot)}
+.cg-ronds{left:16px;top:16px;flex-direction:column}
+.cg-leg{left:16px;bottom:16px;flex-wrap:wrap;gap:6px 14px;max-width:calc(100% - 32px);padding:10px 16px;background:#fff;border:1px solid var(--filet);border-radius:18px;box-shadow:var(--ombre-flot);font-size:14px;color:var(--ink2)}
+.cg-leg b{display:block;width:100%;color:var(--ink)}
+.cg-leg span{display:inline-flex;align-items:center;gap:7px}
+.cg-dot{display:inline-block;border-radius:50%;flex:none;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(26,32,48,.14)}
+.cg-anneau{width:12px;height:12px;border:2.6px solid #A8700A;box-shadow:none;background:#fff}
+.cg-bulle{position:absolute;z-index:8;width:min(300px,calc(100% - 16px));padding:14px 46px 12px 16px;border-radius:18px;background:#fff;border:1px solid var(--filet);box-shadow:var(--ombre-flot);font-size:14px;color:var(--ink2);animation:monte .3s var(--ease) both}
+.cg-bulle>b{display:block;font-size:16px;color:var(--ink);line-height:1.25}
+.cg-bulle>span{display:block;margin-top:2px}
+.cg-bulle .cg-bl{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-top:8px}
+.cg-bg{color:var(--ink3)}
+.cg-bca{margin-top:8px}
+.cg-bca b{color:var(--ink)}
+.cg-bx{position:absolute;right:6px;top:6px;border-color:transparent;box-shadow:none;color:var(--ink3)}
+.cg-blien{display:inline-flex;align-items:center;min-height:44px;margin-top:4px;padding:0 4px;border:0;background:transparent;font:inherit;font-size:15px;font-weight:750;color:var(--bleu-d);cursor:pointer}
+/* ---------- la liste à droite ---------- */
+.cg-liste .carte{padding:18px 18px 12px;max-height:var(--cg-h,560px);overflow:auto}
+.cg-liste .tete{margin-bottom:6px}
+.cg-l{cursor:pointer;animation:monte .5s var(--ease) both;animation-delay:calc(var(--i,0)*30ms)}
+.cg-l:focus-visible{outline:3px solid var(--bleu);outline-offset:-3px}
+.cg-nom{display:block;font-size:15px;font-weight:700;line-height:1.3}
+.cg-vide{color:var(--ink3)}
+.cg-vide-l{text-align:center;color:var(--ink3);padding:24px 8px}
+.cg-pied{display:flex;justify-content:center;padding:14px 0 4px}
+.cg-g{display:flex;align-items:center;gap:12px}
+.cg-av{width:40px;height:40px;border-radius:12px;flex:none;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:var(--bleu-d);background:linear-gradient(180deg,#fff,#EEF2F9);border:1px solid var(--filet)}
+.cg-etat{display:block;margin-top:6px}
+.cg-t td.num{white-space:nowrap}
+.cg-bar{display:inline-flex;align-items:center;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.cg-bar .bar12{width:70px}
+.cg-bar .fois{width:100%;text-align:right}
+.cg-t .etat{font-size:13px;padding:2px 10px 2px 6px}
+.cg-t .etat .ico{width:16px;height:16px}
+.cg-note{margin-top:14px}
+/* ---------- ordinateur étroit et téléphone ---------- */
+@media (max-width:1100px){.cg-grille{grid-template-columns:1fr}.cg-liste .carte{max-height:none;overflow:visible}}
+@media (max-width:760px){
+  .cg-vp{margin-top:14px}
+  .cg-vp .pil{margin:8px 0 0}
+  .cg-grille{margin-top:14px;gap:14px}
+  .cg-zone{border-radius:22px;min-height:400px}
+  .cg-ronds{left:12px;top:12px}
+  .cg-leg{left:12px;right:12px;bottom:12px;max-width:none;padding:8px 12px;font-size:13px;gap:4px 10px}
+  .cg-liens{margin-left:0;width:100%}
+  .cg-liens .pil{flex:1 1 auto;justify-content:center}
+  .cg-liste .carte{padding:14px 12px 10px}
+  .cg-t td{padding:10px 6px}
+  .cg-t .etat{padding:2px 8px 2px 4px}
+  .cg-bar .bar12{width:50px}
+  .cg-bar{flex-wrap:wrap;justify-content:flex-start}
+}
