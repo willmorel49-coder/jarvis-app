@@ -6427,14 +6427,10 @@
     });
     return its;
   }
-  // Prospect (23/09/2026), puis client (24/09) : chacun choisit le style de ses listings PDF parmi 5 (v2-pdf-prospect.js)
+  // 17/11/2026 (Will) : plus de choix de style (toujours le style 1) ; il ne reste que « Voir l'aperçu » (v2-pdf-prospect.js)
   function txStyleHtml(listings) {
-    if (!listings.length || !V2.prospectPdfStyles || !V2.prospectPdfStyle) return '';
-    var cur = V2.prospectPdfStyle();
-    return '<div class="tx-style"><span class="tx-gs">Style des listings PDF</span><div class="tx-style-b">' +
-      V2.prospectPdfStyles.map(function (s) {
-        return '<button type="button" class="v2-seg' + (s.id === cur ? ' on' : '') + '" data-s="' + s.id + '"' + (tx.busy ? ' disabled' : '') + ' onclick="V2.pharmaTxStyle(' + s.id + ')">' + s.id + ' · ' + esc(s.nom) + '</button>';
-      }).join('') + '</div>' +
+    if (!listings.length) return '';
+    return '<div class="tx-style">' +
       '<button type="button" class="v2-btn v2-btn-ghost tx-apercu"' + (tx.busy ? ' disabled' : '') + ' onclick="V2.pharmaTxApercu()">' + ICO('fiche', 15, 2) + 'Voir l\'aperçu</button></div>';
   }
   function txRender() {
@@ -6624,7 +6620,6 @@
   };
   V2.pharmaTxClose = function () { var bd = document.getElementById('tx-modal'); if (bd) bd.classList.remove('open'); };
   V2.pharmaTxReset = function () { tx.files = null; txRender(); };
-  V2.pharmaTxStyle = function (n) { if (!tx.busy && V2.prospectPdfStyle) V2.prospectPdfStyle(n); };
   V2.pharmaTxApercu = function () {
     if (tx.busy || !tx.pid) return;
     var ls = txItems(tx.pid).filter(function (i) { return i.grp === 'listing' && i.k.indexOf('L:') === 0; });
@@ -6685,12 +6680,6 @@
       return (r && r.data && !r.error) ? new File([r.data], txPretty(name), { type: txMime(name) }) : null;
     });
   }
-  // 24/09/2026 : le style du listing (prospect ou client) est écrit dans la trace (savoir lequel l'équipe utilise)
-  function txStyleNote(pid, k) {
-    if (k.indexOf('L:') !== 0 || !V2.prospectPdfStyle || !V2.prospectPdfStyles) return '';
-    var n = V2.prospectPdfStyle(), s = V2.prospectPdfStyles.find(function (x) { return x.id === n; });
-    return s ? ' (style ' + s.id + ' · ' + s.nom + ')' : '';
-  }
   // Deux temps (Préparer puis Envoyer) : Safari n'ouvre la feuille de partage que
   // dans le clic lui-même — après plusieurs secondes de génération, il la refuse.
   V2.pharmaTxPrepare = function () {
@@ -6705,7 +6694,7 @@
         tx.step++; txRender();
         return txFetch(pid, it.k).then(function (f) {
           if (Array.isArray(f)) { if (f.length) out.push.apply(out, f); else fails.push(it.label); }
-          else if (f) { f.txLabel = it.label + txStyleNote(pid, it.k); out.push(f); } else fails.push(it.label);
+          else if (f) { f.txLabel = it.label; out.push(f); } else fails.push(it.label);
         },
           function () { fails.push(it.label); });
       });
@@ -7640,8 +7629,6 @@
       '.tx-empty{font-size:12.5px;color:var(--muted);padding:6px 2px 10px}',
       '.tx-style{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:6px 0 4px}',
       '.tx-style-b{display:flex;flex-wrap:wrap;gap:6px;width:100%}',
-      '.tx-style .v2-seg{padding:6px 11px;font-size:12px;font-weight:700;cursor:pointer}',
-      '.tx-style .v2-seg[disabled]{opacity:.45;pointer-events:none}',
       '.tx-upl{min-height:44px;gap:7px}',
       '.tx-upl.is-busy{opacity:.6;pointer-events:none}',
       '.tx-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 18px;border-top:1px solid var(--line);background:var(--card)}',
