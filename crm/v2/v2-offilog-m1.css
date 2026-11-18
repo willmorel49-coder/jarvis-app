@@ -339,7 +339,7 @@
 .olm .olp-synth>div{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border:1px solid var(--o-filet);border-radius:12px;background:#fff;min-width:0}
 .olm .olp-synth .olo-v{font-size:18px}
 @media (max-width:760px){
-  .olm .olp-r{grid-template-columns:52px minmax(0,1fr) minmax(0,1fr)}
+  .olm .olp-r{grid-template-columns:repeat(3,minmax(0,1fr))}
   .olm .olp-r .olo-prod{grid-column:2/-1}
   .olm .olp-r .olp-ph{grid-row:1;grid-column:1}
   .olm .olp-synth{grid-template-columns:repeat(2,minmax(0,1fr))}
