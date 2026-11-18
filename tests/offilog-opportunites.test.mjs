@@ -21,10 +21,12 @@ const DONNEES = {
   pluscher: [['4', 'PUR', 'Sirop Test', 6.86, 'Pharmazon', 4.5, '2026-09', 52.4, 8.99, 'Leclerc', 12, 'oui', 'Offilog moins cher que toutes les autres sources', 2]],
 };
 
-function rendre({ opso = false, donnees = DONNEES, onglet = 'opp', filtre = null, q = null }) {
+function rendre({ opso = false, donnees = DONNEES, onglet = 'opp', filtre = null, q = null, sel = null, espion = false }) {
   const noop = () => '';
   const fauxEl = () => new Proxy(function () {}, { get: (t, k) => (k === 'style' ? {} : k === 'dataset' ? {} : fauxEl()), apply: () => fauxEl(), set: () => true });
-  const doc = { currentScript: null, head: fauxEl(), body: fauxEl(), createElement: fauxEl, getElementById: () => null, querySelector: () => null, querySelectorAll: () => [], addEventListener: noop };
+  const poses = [], volet = { volet: true };
+  const corps = espion ? new Proxy(fauxEl(), { get: (t, k) => (k === 'appendChild' ? (el) => { poses.push(el); } : k === 'querySelector' ? () => null : t[k]) }) : fauxEl();
+  const doc = { currentScript: null, head: fauxEl(), body: corps, createElement: fauxEl, getElementById: () => null, querySelector: () => null, querySelectorAll: () => [], addEventListener: noop };
   const V2 = new Proxy({
     esc: (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'),
     fmtEur: (n) => 'EUR' + Number(n).toFixed(2), fmtNum: (n) => String(n),
@@ -45,9 +47,10 @@ function rendre({ opso = false, donnees = DONNEES, onglet = 'opp', filtre = null
   win.V2.offOppOnglet(onglet);
   if (filtre) win.V2.offOppFiltre(filtre);
   if (q != null) { win.V2.offOppSearch(q); }
-  const root = { innerHTML: '', querySelector: () => null, querySelectorAll: () => [] };
+  if (sel) win.V2.offSelect(sel);
+  const root = { innerHTML: '', querySelector: (s) => (espion && s === '.off-insp' ? volet : null), querySelectorAll: () => [] };
   win.V2.pages.offilog.render(root, '');
-  return root.innerHTML;
+  return espion ? { h: root.innerHTML, poses, volet } : root.innerHTML;
 }
 
 test('l\'onglet porte la date de la photo, la phrase sur les fragiles et les 4 filtres comptés depuis les données', () => {
@@ -98,4 +101,10 @@ test('fichier de données jamais suivi par git, protégé dans les trois tables 
   assert.ok(!suivis.includes('crm/v2/offilog-opportunites.js'));
   const boot = fs.readFileSync(path.join(RACINE, 'crm/v2/v2-boot.js'), 'utf8');
   assert.equal((boot.match(/offilogopp:/g) || []).length, 3);
+});
+
+test('fiche ouverte depuis une ligne : le volet vit sous <body> (dans la racine, il se calerait sur la page et non sur l\'écran)', () => {
+  const { h, poses, volet } = rendre({ sel: '1', espion: true });
+  assert.match(h, /class="off-insp open"/);
+  assert.ok(poses.includes(volet));
 });

@@ -2140,10 +2140,11 @@
   }
 
   // ── PAGE ──────────────────────────────────────
-  // La barre de sélection est posée sur <body> (voir la fin de render) : elle part avec l'écran.
+  // La barre de sélection et le volet de la fiche sont posés sur <body> (voir la fin de render) : ils partent avec l'écran.
   window.addEventListener('hashchange', function () {
     if (/^#offilog(\/|$)/.test(location.hash || '')) return;
     var b = document.body.querySelector(':scope > #off-mktbar'); if (b) document.body.removeChild(b);
+    var v = document.body.querySelector(':scope > .off-insp'); if (v) document.body.removeChild(v);
   });
   V2.pages.offilog = {
     render: function (root, param) {
@@ -2413,6 +2414,12 @@
       if (barVieille) document.body.removeChild(barVieille);
       var barNeuve = root.querySelector('#off-mktbar');
       if (barNeuve) document.body.appendChild(barNeuve);
+      // Le volet de la fiche produit suit la même règle, pour la même raison — mesuré sous WebKit le 18/11/2026 :
+      // fiche ouverte depuis le bas de la liste « Opportunités », volet resté en haut de la page, hors de vue.
+      var voletVieux = document.body.querySelector(':scope > .off-insp');
+      if (voletVieux) document.body.removeChild(voletVieux);
+      var voletNeuf = root.querySelector('.off-insp');
+      if (voletNeuf) document.body.appendChild(voletNeuf);
 
       // ── Motion « façon Framer Motion » (discret, 150–300ms, RM-safe via l'API) ──
       var mo = V2.motion;
