@@ -2063,6 +2063,9 @@
   }
   function oppNb(x, dec) { return Number(x).toFixed(dec == null ? 1 : dec).replace('.', ',').replace('-', '−'); }
   function oppDate(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : (iso || ''); }
+  // Date du prix concurrent, en français : « 2026-06-04 » → « 04/06/2026 » ; « 2026-09-03/05-14 » (relevé Pharmazon complété
+  // par son catalogue) → « 03/09 ou 14/05/2026 » ; « 2025 » ou toute autre forme : telle quelle.
+  function oppDateC(s) { var m = /^(\d{4})-(\d{2})-(\d{2})(?:\/(\d{2})-(\d{2}))?$/.exec(s || ''); return m ? m[3] + '/' + m[2] + (m[4] ? ' ou ' + m[5] + '/' + m[4] : '') + '/' + m[1] : (s || ''); }
   function oppNorm(t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
   function oppLigne(r, sec) {
     var existe = !!(itemsById && itemsById.get(String(r.id)));
@@ -2074,7 +2077,7 @@
     return '<div class="olo-r' + (existe ? ' cl' : '') + '"' + (existe ? ' role="button" tabindex="0" onclick="V2.offSelect(\'' + esc(r.id) + '\')" onkeydown="if(event.target===this&&(event.key===\'Enter\'||event.key===\' \')){event.preventDefault();V2.offSelect(\'' + esc(r.id) + '\')}"' : '') + '>' +
       '<div class="olo-c olo-prod"><span class="olo-marque">' + esc(r.marque || '') + '</span><span class="olo-nom">' + esc(r.produit) + '</span></div>' +
       '<div class="olo-c" data-l="Prix Offilog HT"><b class="olo-v">' + V2.fmtEur(r.prix_offilog) + '</b></div>' +
-      '<div class="olo-c" data-l="Meilleur concurrent"><b class="olo-v">' + V2.fmtEur(r.prix_concurrent) + '</b><span class="olo-sous">' + esc(r.concurrent || '') + (r.date_concurrent ? ' · ' + esc(r.date_concurrent) : '') + '</span></div>' +
+      '<div class="olo-c" data-l="Meilleur concurrent"><b class="olo-v">' + V2.fmtEur(r.prix_concurrent) + '</b><span class="olo-sous">' + esc(r.concurrent || '') + (r.date_concurrent ? ' · ' + esc(oppDateC(r.date_concurrent)) : '') + '</span></div>' +
       '<div class="olo-c" data-l="Écart">' + ecart + '</div>' +
       '<div class="olo-c" data-l="Prix public le plus bas">' + pub + '</div>' +
       '<div class="olo-c" data-l="Marge">' + marge + '</div>' + promo + '</div>';
