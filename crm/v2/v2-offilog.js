@@ -1279,8 +1279,14 @@
   V2.offSort = function (v) { S.sort = v; S.page = 0; S.liste = true; V2.render(); };
   V2.offPage = function (p) { S.page = p; V2.render(); try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch (e) {} };
   V2.offSelect = function (id) {
+    // Onglet « Opportunités » : la ligne cliquée (ou celle dont on ferme la fiche) reste à sa place à l'écran. Le volet resserre
+    // la page au-dessus de 1100 px, le haut s'allonge et la liste glissait de ~400 px (mesuré sous WebKit à 1429 px le 18/11/2026).
+    var a = id != null ? id : S.sel, q = a == null ? null : '.olo-r[data-opp="' + (window.CSS && CSS.escape ? CSS.escape(String(a)) : String(a)) + '"]';
+    var el = q && document.querySelector(q), y0 = el ? el.getBoundingClientRect().top : null;
     S.sel = (id == null || (S.sel != null && String(S.sel) === String(id))) ? null : id;
     V2.render();
+    var el2 = y0 != null && document.querySelector(q);
+    if (el2) { try { window.scrollBy(0, el2.getBoundingClientRect().top - y0); } catch (e) {} }
   };
   function rerenderKeepFocus() {
     V2.render();
@@ -2074,7 +2080,7 @@
     var promo = (sec === 'pluscher' && r.promo_pz) ? '<p class="olo-promo"><b>Promotion Pharmazon.</b>' + (r.sans_promo ? ' Sans la promotion Pharmazon : ' + esc(r.sans_promo) + '.' : '') + '</p>' : '';
     var pub = r.public_min != null ? '<b class="olo-v">' + V2.fmtEur(r.public_min) + '</b>' + (r.public_min_ou ? '<span class="olo-sous">' + esc(r.public_min_ou) + '</span>' : '') : '<span class="olo-nd">Aucun prix public relevé</span>';
     var marge = r.marge_pct != null ? '<b class="olo-v">' + oppNb(r.marge_pct) + ' %</b>' : '<span class="olo-nd">Non calculée</span>';
-    return '<div class="olo-r' + (existe ? ' cl' : '') + '"' + (existe ? ' role="button" tabindex="0" onclick="V2.offSelect(\'' + esc(r.id) + '\')" onkeydown="if(event.target===this&&(event.key===\'Enter\'||event.key===\' \')){event.preventDefault();V2.offSelect(\'' + esc(r.id) + '\')}"' : '') + '>' +
+    return '<div class="olo-r' + (existe ? ' cl' : '') + '"' + (existe ? ' data-opp="' + esc(r.id) + '" role="button" tabindex="0" onclick="V2.offSelect(\'' + esc(r.id) + '\')" onkeydown="if(event.target===this&&(event.key===\'Enter\'||event.key===\' \')){event.preventDefault();V2.offSelect(\'' + esc(r.id) + '\')}"' : '') + '>' +
       '<div class="olo-c olo-prod"><span class="olo-marque">' + esc(r.marque || '') + '</span><span class="olo-nom">' + esc(r.produit) + '</span></div>' +
       '<div class="olo-c" data-l="Prix Offilog HT"><b class="olo-v">' + V2.fmtEur(r.prix_offilog) + '</b></div>' +
       '<div class="olo-c" data-l="Meilleur concurrent"><b class="olo-v">' + V2.fmtEur(r.prix_concurrent) + '</b><span class="olo-sous">' + esc(r.concurrent || '') + (r.date_concurrent ? ' · ' + esc(oppDateC(r.date_concurrent)) : '') + '</span></div>' +
