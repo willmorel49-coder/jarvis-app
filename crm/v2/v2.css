@@ -831,3 +831,26 @@ html:root:root:root :is(.pha-btn,.pha-btn-w,.pha-btn-pri,.pha-edit,.pha-prop-b,.
 @media (prefers-reduced-motion:reduce){
   html:root:root:root :is(.pha-btn,.pha-btn-w,.pha-btn-pri,.pha-edit,.pha-prop-b,.fi-cap,.vv-band-b,.bo-open,.phf-nmedit-btn,.pha-tab,.pha-part-btn,.pa-segb)[aria-busy="true"]::before{animation:none;border-top-color:currentColor;border-style:dotted}
 }
+
+/* ═══ COUP DE NEUF — temps 1 (18/11/2026) : le style de la maquette m32 posé sur les réglages centraux.
+   Habillage par défaut (« bleu », html sans data-hab) SEULEMENT : les 8 habillages restent tels quels.
+   Police Archivo (hab/archivo.woff2, OFL, déjà dans l'app et gardée hors ligne par sw.js), encre plus douce,
+   fond de page éclairé en haut à droite, filets plus nets (restés transparents : invisibles sur fond sombre),
+   ombres diffuses bleutées, boutons à l'arrondi de m32 (14 px). Rien d'autre ne change.
+   Spécificité html:not([data-hab]) (0,1,1) > :root (0,1,0) : gagne sur les :root des feuilles chargées après. ═══ */
+@font-face{font-family:'Archivo';src:url('hab/archivo.woff2') format('woff2');font-weight:100 900;font-display:swap}
+html:not([data-hab]){
+  --font:'Archivo','Satoshi','Inter',system-ui,-apple-system,sans-serif;
+  --ip-ink:#1A2030; --ip-ink-2:#3B4357; --ip-ink-3:#4A5265;
+  --muted:#5B6478; --muted-2:#646B80;
+  --paper:#F3F5F9; --surf-sunken:#F1F4FA;
+  --line:rgba(26,32,48,.11); --line-2:rgba(26,32,48,.06); --line-strong:rgba(26,32,48,.17);
+  --r-btn:14px;
+  --sh-1:0 1px 0 rgba(255,255,255,.95) inset,0 1px 2px rgba(26,32,48,.06),0 10px 28px -14px rgba(26,32,48,.14);
+  --sh-2:0 1px 0 rgba(255,255,255,.95) inset,0 2px 4px rgba(26,32,48,.06),0 18px 38px -14px rgba(0,52,160,.22);
+  --sh-3:0 1px 0 rgba(255,255,255,.95) inset,0 4px 10px rgba(26,32,48,.07),0 28px 56px -18px rgba(0,52,160,.26);
+  --sh-blue:0 8px 18px -8px rgba(0,80,230,.7),0 1px 0 rgba(255,255,255,.3) inset;
+  --sh-blue-h:0 12px 24px -8px rgba(0,80,230,.75),0 1px 0 rgba(255,255,255,.32) inset;
+}
+/* la lumière de m32 : halo bleuté en haut à droite, halo blanc en haut à gauche (propriétés séparées, jamais « a, b, couleur ») */
+html:not([data-hab]) body{background-color:var(--paper);background-image:radial-gradient(900px 520px at 88% -6%,#D9E6FF 0%,rgba(217,230,255,0) 70%),radial-gradient(1100px 560px at 6% -10%,#FFFFFF 0%,rgba(255,255,255,0) 70%);background-repeat:no-repeat;font-feature-settings:"liga","kern"}
