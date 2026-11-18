@@ -342,5 +342,6 @@
   .olm .olp-r{grid-template-columns:repeat(3,minmax(0,1fr))}
   .olm .olp-r .olo-prod{grid-column:2/-1}
   .olm .olp-r .olp-ph{grid-row:1;grid-column:1}
+  .olm .olp-r>.olo-c:last-child{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;align-items:baseline;column-gap:8px}
   .olm .olp-synth{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
