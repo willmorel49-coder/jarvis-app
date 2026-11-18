@@ -186,3 +186,17 @@ test('Comparer à, sans concurrent choisi : « plus / moins cher » = au moins u
   assert.match(h, /data-cmp-sens="plus"[^>]*>Plus cher que nous<span class="cnt">2</);   // E1 (Farmaline) et E2 (Maxi Para)
   assert.match(h, /data-cmp-sens="tous"[^>]*>Tous<span class="cnt">3</);
 });
+
+test('Sagitta : un produit connu seulement par son CIP13 a son prix sur tout l\'écran ; l\'EAN passe avant ; rien côté OPSO (18/11/2026)', () => {
+  const cip = rendre({ selection: false, extra: { SAGITTA_PRIX: {}, SAGITTA_PRIX_CIP: { [E1]: 9 } } }).html;
+  assert.match(cip, /Sagitta EUR9\.00/, 'trouvé par le CIP13');
+  assert.match(cip, /off-card-pz win[^>]*>Sagitta/, '9 contre 10 : marqué moins cher que notre prix');
+  const fiche = rendre({ extra: { SAGITTA_PRIX: {}, SAGITTA_PRIX_CIP: { [E1]: 9 } } }).html;
+  assert.match(fiche.slice(fiche.indexOf('id="off-achat"')), /data-achat="Sagitta"/, 'présent aussi dans le bloc « Prix d\'achat » de la fiche');
+  const lesDeux = rendre({ selection: false, extra: { SAGITTA_PRIX: { [E1]: [8, 10, 20] }, SAGITTA_PRIX_CIP: { [E1]: 9 } } }).html;
+  assert.match(lesDeux, /Sagitta EUR8\.00/);
+  assert.doesNotMatch(lesDeux, /Sagitta EUR9\.00/, 'le prix par EAN (avec tarif et remise) passe avant');
+  // contrôle de l'outil : sans entrée CIP, aucun prix Sagitta
+  assert.doesNotMatch(rendre({ selection: false, extra: { SAGITTA_PRIX: {}, SAGITTA_PRIX_CIP: {} } }).html, /Sagitta EUR/);
+  assert.doesNotMatch(rendre({ opso: true, selection: false, extra: { SAGITTA_PRIX: {}, SAGITTA_PRIX_CIP: { [E1]: 9 } } }).html, /Sagitta EUR/, 'jamais côté OPSO');
+});

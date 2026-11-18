@@ -612,6 +612,9 @@
       // tarif d'achat Sagitta (grossiste) par EAN : {ean: [net] ou [net, tarif, remise %]}
       // — fichier protégé (conditions d'un tiers), chargé par adresse signée.
       var sgv = (!SANS_SAGITTA && window.SAGITTA_PRIX && b.ean) ? window.SAGITTA_PRIX[String(b.ean)] : null;
+      // Sagitta référence une partie de la parapharmacie par son seul CIP13 (souvent égal au code-barres) : 108 produits
+      // du catalogue du 18/11 n'étaient trouvés que là (mesuré sous WebKit le 18/11/2026). Ce repli n'a que le prix net.
+      if (!sgv && !SANS_SAGITTA && window.SAGITTA_PRIX_CIP && b.ean) { var sgc = numOr0(window.SAGITTA_PRIX_CIP[ean13(b.ean)]); if (sgc > 0) sgv = [sgc]; }
       var sg = sgv ? { price: numOr0(sgv[0]), tarif: numOr0(sgv[1]), remise: numOr0(sgv[2]) } : null;
       var sgCheaper = !!(sg && sg.price > 0 && price > 0 && sg.price < price);
       // catalogue OCP « Les Incontournables » par code 13 : {code: [net, ppht, remise %]}
@@ -2163,10 +2166,8 @@
     if (L) {
       out = [];
       L.forEach(function (x) {
+        // it.sg porte aussi le prix Sagitta trouvé par CIP13 (repli de buildIndex, 18/11/2026).
         var it = x.it, p = it.price, s = it.sg && it.sg.price > 0 ? it.sg.price : 0, z = it.pz && it.pz.price > 0 ? it.pz.price : 0;
-        // Sagitta référence une partie de la parapharmacie par son seul CIP13 (souvent égal au code-barres) : 108 produits du catalogue du
-        // 18/11 n'étaient trouvés que là (mesuré sous WebKit le 18/11/2026). Le reste de l'écran ne cherche que par EAN : non touché ici.
-        if (!s && window.SAGITTA_PRIX_CIP) { var sc = Number(window.SAGITTA_PRIX_CIP[ean13(it.ean)]); if (sc > 0) s = sc; }
         if (!(p > 0) || !s || !z || s / p < PLC_LO || s / p > PLC_HI || z / p < PLC_LO || z / p > PLC_HI) return;
         var m = Math.min(s, z), e = (p - m) / m;
         if (!(e < 0)) return;
