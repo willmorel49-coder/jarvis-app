@@ -257,7 +257,7 @@
       : '';
     // 18/11/2026 — coup de neuf, temps 2 (Will : « la barre de menu en haut […] qui permet de passer d'une feature à l'autre ») : sur un écran
     // interne, les outils de l'accueil en pastilles, dans l'ordre de l'accueil (V2.accueilCinq.barre). Mêmes écrans, aucun lien nouveau.
-    // Jamais côté OPSO. Affichée sur ordinateur et avec l'habillage par défaut seulement (v2.css, bloc « temps 2 ») : ailleurs, rien ne change.
+    // Jamais côté OPSO. Affichée sur ordinateur seulement, dans tous les habillages (v2.css, blocs « temps 2 » et « douze habillages ») : ailleurs, rien ne change.
     var menu = '';
     if (back && !(window.V2_BRAND && window.V2_BRAND.opso) && V2.accueilCinq && V2.accueilCinq.barre) {
       try {
@@ -267,6 +267,17 @@
           return '<a class="tp-m' + (on ? ' on' : '') + '" href="' + esc(t.href) + '" data-tp-act="' + esc(t.act) + '"' + (on ? ' aria-current="page"' : '') + ' onclick="return V2.topAller(event,this)">' + esc(t.nom) + '</a>';
         });
         if (lm.length) menu = '<nav class="tp-menu" aria-label="Outils">' + lm.join('') + '</nav>';
+      } catch (e) { menu = ''; }
+    }
+    // 19/11/2026 — l'accueil à l'ordinateur : les sept premières rubriques + « Autres outils » (le rail et les widgets sont cachés par v2.css, bloc « accueil sobre »).
+    // Toujours rendue ; seul le CSS décide (> 1000 px, tous les habillages). Aucune pastille `.on` : on est à l'accueil. Jamais côté OPSO.
+    if (!back && !(window.V2_BRAND && window.V2_BRAND.opso) && V2.route && V2.route.name === 'home' && V2.accueilCinq && V2.accueilCinq.barre) {
+      try {
+        var la = V2.accueilCinq.barre().slice(0, 7).map(function (t) {
+          return '<a class="tp-m" href="' + esc(t.href) + '" data-tp-act="' + esc(t.act) + '" onclick="return V2.topAller(event,this)">' + esc(t.nom) + '</a>';
+        });
+        if (la.length) menu = '<nav class="tp-menu tp-menu-acc" aria-label="Outils">' + la.join('') +
+          '<button type="button" class="tp-autres" aria-haspopup="menu" aria-expanded="false" onclick="V2.autresOutils(this)">Autres outils' + u2Ic('chev', 16, 'car') + '</button></nav>';
       } catch (e) { menu = ''; }
     }
     return '' +
@@ -449,6 +460,8 @@
       '</div>' +
       (installed ? '' : '<button class="v2-um-item" role="menuitem" onclick="V2.installApp()">' + ICO('plus', 16, 2) + 'Installer l\'app</button>') +
       (window.V2HAB && !(window.V2_BRAND && window.V2_BRAND.escale) ? '<button class="v2-um-item" role="menuitem" onclick="V2HAB.menu()">' + u2Ic('palette', 16) + 'Mon habillage</button>' : '') +
+      // 19/11/2026 — le rail (qui portait « Espace ») disparaît de l'accueil à l'ordinateur : la bascule Intégral ↔ Escale passe par ce menu (au-delà de 600 px ; en dessous, le panneau « Mon espace » la porte)
+      ((V2.basculeEspace && V2.basculeEspace() && window.innerWidth > 600) ? '<button class="v2-um-item" role="menuitem" onclick="V2.goSpace(\'' + V2.basculeEspace().to + '\')">' + u2Ic('espace', 16) + 'Passer à l\'espace ' + esc(V2.basculeEspace().label) + '</button>' : '') +
       '<button class="v2-um-item" role="menuitem" onclick="V2.signOut()">' + ICO('logout', 16, 2) + 'Se déconnecter</button>' +
       // 24/08/2026 — information de l'équipe sur la mesure d'usage (obligation
       // CNIL dès lors qu'elle est nominative). Volontairement factuelle et
@@ -1840,6 +1853,45 @@
     if (!e || e.button > 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return true;
     e.preventDefault(); qAgir(a.getAttribute('data-tp-act') || ''); return false;
   };
+  // 19/11/2026 — « Autres outils » (barre de l'accueil à l'ordinateur) : menu ancré sous le bouton. D'abord les entrées de la barre au-delà des sept premières,
+  // puis le groupe « Outils » (direct), puis « En développement » replié. Mêmes filtres que le rail (u2OutilsHtml) : hors mode réglage, un outil masqué n'y figure pas.
+  function aoLien(t, k) {
+    return '<a class="v2-um-item tp-ao-it" role="menuitem" href="' + esc(t.href) + '"' + (t.ext ? ' target="_blank" rel="noopener"' : ' data-tp-act="' + esc(t.act) + '"') + ' data-tool="' + esc(k) + '" onclick="return V2.autresAller(event,this)">' +
+      u2Ic(k, 18) + '<span>' + esc(t.nom) + '</span>' + (t.ext ? '<span class="u2-sr">, s\'ouvre dans un nouvel onglet</span>' : '') + '</a>';
+  }
+  V2.autresAller = function (e, a) {
+    var m = document.getElementById('v2-autresmenu');
+    if (m) { if (m._off) m._off(); if (m.parentNode) m.parentNode.removeChild(m); }
+    var b = document.querySelector('.tp-autres'); if (b) b.setAttribute('aria-expanded', 'false');
+    return a.hasAttribute('data-tp-act') ? V2.topAller(e, a) : true;
+  };
+  V2.autresOutils = function (btn) {
+    var etat = u2Etat(), reg = !!(V2.accueilWidgets && V2.accueilWidgets.regle && V2.accueilWidgets.regle());
+    var fams = reg ? etat.tous : etat.fams, h = '';
+    (V2.accueilCinq && V2.accueilCinq.barre ? V2.accueilCinq.barre() : []).slice(7).forEach(function (t) {
+      h += aoLien({ href: t.href, act: t.act, nom: t.nom }, t.k);
+    });
+    fams.forEach(function (f) {
+      if (f.k !== 'direct') return;
+      h += f.cles.map(function (k) { return aoLien(u2Outil(k), k); }).join('');
+    });
+    fams.forEach(function (f) {
+      if (f.k !== 'dev') return;
+      h += '<button type="button" class="v2-um-item tp-ao-dev" aria-expanded="false" data-ao-dev>' + u2Ic('chev', 16, 'car') + '<span>' + esc(f.nom) + '</span><span class="n">' + f.cles.length + '</span></button>' +
+        '<div class="tp-ao-l" hidden><p class="tp-ao-s">Ces outils marchent, mais ils ne sont pas encore au point.</p>' + f.cles.map(function (k) { return aoLien(u2Outil(k), k); }).join('') + '</div>';
+    });
+    if (!h) return;
+    var m = menuBarre('v2-autresmenu', btn, h);
+    if (!m) return;
+    m.classList.add('tp-ao');
+    var r = btn.getBoundingClientRect();
+    m.style.right = 'auto'; m.style.left = Math.max(12, Math.round(Math.min(r.left, window.innerWidth - 300))) + 'px';
+    m.addEventListener('click', function (e) {
+      var d = e.target.closest && e.target.closest('[data-ao-dev]'); if (!d) return;
+      var ouvert = d.getAttribute('aria-expanded') !== 'true';
+      d.setAttribute('aria-expanded', String(ouvert)); d.nextElementSibling.hidden = !ouvert;
+    });
+  };
   function qAgir(act) {
     var i = act.indexOf(':'), t = act.slice(0, i), v = act.slice(i + 1);
     if (t === 'go') { var p = v.split('/'); if (p[1]) V2.go(p[0], p[1]); else V2.go(p[0]); }
@@ -1918,6 +1970,14 @@
     u2Poser('u2-compte', u2CompteHtml(m), 'compte');
     u2MajCentre(); u2MajWidgets();
   }
+  // 19/11/2026 — la citation du jour : même texte pour toute l'équipe le même jour (jours écoulés depuis le 01/01/1970 de la date LOCALE, modulo la longueur), change à minuit.
+  // Visible seulement à l'ordinateur, dans tous les habillages (v2.css, « accueil sobre » et « douze habillages ») ; jamais côté OPSO.
+  function u2Citation() {
+    var L = window.V2_CITATIONS;
+    if (!L || !L.length || (window.V2_BRAND && window.V2_BRAND.opso)) return '';
+    var d = new Date(), j = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000), c = L[((j % L.length) + L.length) % L.length];
+    return '<figure class="u2-cit" id="u2-citation"><blockquote><p>«\u00a0' + esc(c.t) + '\u00a0»</p></blockquote><figcaption>' + esc(c.a) + '</figcaption></figure>';
+  }
   function u2Accueil(root, m) {
     if (_u2.monte && root.querySelector('.u2-page')) { u2Maj(m); return; }
     u2S(); g4ChargerOrdre(); qInfosCharger();
@@ -1926,11 +1986,13 @@
     _u2.entree = true; _u2.ouvert = false; _u2.opener = null; _u2.sec = null; _u2.sig = {}; _u2.mode = u2Mode(); _u2.sig.rtools = u2OutilsHtml([]);
     u2Verrou(false);
     var etat = u2Etat();
-    root.innerHTML = '<div class="u2-page' + (cascade ? ' u2-cascade' : '') + '"' + u2StyleAttr() + '>' +
+    var barreAcc = !(window.V2_BRAND && window.V2_BRAND.opso);   // marqueur de l'accueil sobre (v2.css) ; OPSO strictement inchangé
+    root.innerHTML = '<div class="u2-page' + (cascade ? ' u2-cascade' : '') + (barreAcc ? ' u2-barre' : '') + '"' + u2StyleAttr() + '>' +
       '<button type="button" class="u2-skip" data-u2-skip>Aller aux outils</button>' + topbar() +
       '<div class="pb-band" id="pb-band" role="region" aria-label="Personnaliser mon accueil" hidden></div>' +
       '<div class="u2-grille">' +
         '<main class="u2-centre" id="u2-centre" tabindex="-1">' + u2CentreHtml(m, etat) + '</main>' +
+        u2Citation() +
         '<aside class="u2-droite" id="u2-droite" aria-label="Mes widgets">' + u2DroiteHtml() + '</aside>' +
         (V2.accueilCinq && V2.accueilCinq.autresBloc ? V2.accueilCinq.autresBloc(etat) : '') +
       '</div>' +
@@ -1938,7 +2000,7 @@
     // Le fond et le tiroir vivent sur <body> : la racine de l'app porte une transformation d'entrée (v2-motion.js, mo-view-in)
     // qui ferait de chaque élément « fixed » un élément collé à la PAGE entière, et non à la fenêtre.
     var vieux = document.getElementById('u2-hors'); if (vieux && vieux.parentNode) vieux.parentNode.removeChild(vieux);
-    var hors = document.createElement('div'); hors.id = 'u2-hors'; hors.className = 'u2-hors';
+    var hors = document.createElement('div'); hors.id = 'u2-hors'; hors.className = 'u2-hors' + (barreAcc ? ' u2-barre' : '');
     var sty = u2StyleAttr(); if (sty) hors.setAttribute('style', sty.replace(/^ style="|"$/g, ''));
     // 30/10/2026 — le rail vit lui aussi sur <body> (comme le tiroir) : la racine de l'écran garde une transformation d'entrée, qui collerait un rail « fixe » à la page entière
     hors.innerHTML = '<nav class="u2-rail" aria-label="Mon espace" id="u2-rail">' + u2RailHtml() + '</nav><div class="u2-fond" id="u2-fond"></div>' +

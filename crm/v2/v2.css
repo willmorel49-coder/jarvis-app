@@ -858,7 +858,7 @@ html:not([data-hab]) body{background-color:var(--paper);background-image:radial-
 /* ═══ COUP DE NEUF — temps 2 (18/11/2026) : ce qui est « facile » dans la maquette m32, posé sur la vraie appli.
    Will : « toute les améliorations faciles en design de graphiques par exemple ou la barre de menu en haut […] fais-le dans l'app ».
    Style seulement (aucun calcul, aucune donnée) + le menu de la barre du haut (topbar, v2-app.js : les liens de l'accueil, même ordre).
-   Habillage par défaut seulement (html sans data-hab) : les 8 habillages restent tels quels, et le menu y reste caché.
+   Habillage par défaut seulement (html sans data-hab) ; depuis le 19/11/2026 les 12 habillages ont aussi le menu (bloc « douze habillages », plus bas).
    Fonds : propriétés séparées (jamais « a, b, couleur »), ni flou ni backdrop-filter, aucune opacité sur du texte. ═══ */
 
 /* ── La barre du haut : blanc franc, filet et ombre de m32 ── */
@@ -896,6 +896,111 @@ html:not([data-hab]) .tp-avb .v2-av{width:44px;height:44px;background-color:#9E4
   html:not([data-hab]) .tp-avec-menu .v2-top-search kbd{display:inline-block}
 }
 @media (prefers-reduced-motion:reduce){ html:not([data-hab]) .tp-m{transition:none} }
+
+/* ═══ ACCUEIL SOBRE (19/11/2026) — à l'ordinateur seulement (> 1000 px, habillage par défaut : exactement là où la barre des rubriques existe sur les autres écrans).
+   L'accueil rend tout comme avant ; ici le CSS cache le rail, les cartes et les widgets, et montre la barre de rubriques, « Autres outils » et la citation du jour.
+   Ailleurs (≤ 1000 px, téléphone, tablette, tout habillage posé, OPSO) : rien ne change. Fonds en propriétés séparées, aucune opacité sur du texte, ni flou ni backdrop-filter. ═══ */
+.u2-cit{display:none}
+.tp-autres{display:none}
+@media (min-width:1001px){
+  html:not([data-hab]) .u2-hors.u2-barre .u2-rail{display:none}
+  html:not([data-hab]) .u2-page.u2-barre .u2-grille{margin-left:0}
+  html:not([data-hab]) .u2-page.u2-barre .u2-centre .m1-wrap>:not(#aube-acc),
+  html:not([data-hab]) .u2-page.u2-barre .u2-grille>:not(#u2-centre):not(#u2-citation),
+  html:not([data-hab]) .u2-page.u2-barre #pb-band{display:none}
+  /* la barre : les sept rubriques et « Autres outils » toujours visibles (le décompte nth-child des autres écrans ne s'applique pas ici) */
+  html:not([data-hab]) .u2-page.u2-barre .tp-menu-acc .tp-m{display:inline-flex;padding:0 10px}
+  html:not([data-hab]) .u2-page.u2-barre .tp-menu-acc .tp-autres{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 10px 0 12px;border:0;border-radius:14px;background-color:transparent;font:600 14.5px/1 var(--font);color:#3B4357;white-space:nowrap;cursor:pointer;transition:background-color .25s cubic-bezier(.32,.72,0,1),color .25s,box-shadow .25s}
+  html:not([data-hab]) .u2-page.u2-barre .tp-menu-acc .tp-autres:hover,html:not([data-hab]) .u2-page.u2-barre .tp-menu-acc .tp-autres[aria-expanded="true"]{background-color:#fff;color:#1A2030;box-shadow:var(--sh-1)}
+  html:not([data-hab]) .u2-page.u2-barre .tp-menu-acc .tp-autres:focus-visible{outline:2px solid #0050E6;outline-offset:2px}
+  html:not([data-hab]) .u2-page.u2-barre .tp-autres .car{width:16px;height:16px;transition:transform .25s cubic-bezier(.32,.72,0,1)}
+  html:not([data-hab]) .u2-page.u2-barre .tp-autres[aria-expanded="true"] .car{transform:rotate(90deg)}
+  /* l'accueil compacte sa barre : le logo reste, son nom s'efface (le logo ramène à l'accueil) */
+  html:not([data-hab]) .u2-page.u2-barre .v2-brand>span:not(.v2-logo){display:none}
+  /* la citation du jour */
+  html:not([data-hab]) .u2-page.u2-barre .u2-cit{display:block;max-width:760px;margin:8px auto 0;padding:8px 24px 40px;text-align:center}
+  html:not([data-hab]) .u2-page.u2-barre .u2-cit::before{content:"";display:block;width:44px;height:3px;margin:0 auto 20px;border-radius:2px;background-color:#0050E6}
+  html:not([data-hab]) .u2-page.u2-barre .u2-cit blockquote{margin:0}
+  html:not([data-hab]) .u2-page.u2-barre .u2-cit p{margin:0;font:500 22px/1.45 var(--font);color:#1A2030;text-wrap:balance}
+  html:not([data-hab]) .u2-page.u2-barre .u2-cit figcaption{margin-top:12px;font:600 14.5px/1.3 var(--font);letter-spacing:.02em;color:#3B4357}
+}
+/* 1001 à 1180 px : la barre de l'accueil se resserre pour tenir sur une ligne avec ses huit boutons (mesuré sous WebKit à 1001, 1100, 1180) */
+@media (min-width:1001px) and (max-width:1180px){
+  html:not([data-hab]) .u2-page.u2-barre .v2-top{padding-left:16px;padding-right:16px;column-gap:8px}
+  html:not([data-hab]) .u2-page.u2-barre .tp-menu-acc{gap:0;padding:3px}
+  html:not([data-hab]) .u2-page.u2-barre .tp-menu-acc .tp-m{padding:0 8px;font-size:13px}
+  html:not([data-hab]) .u2-page.u2-barre .tp-menu-acc .tp-autres{padding:0 6px 0 10px;font-size:13px;gap:3px}
+  html:not([data-hab]) .u2-page.u2-barre .tp-d{gap:6px}
+}
+/* « Autres outils » ouvert : un menu ancré sous le bouton (menuBarre, v2-app.js) */
+.v2-usermenu.tp-ao{min-width:290px;max-width:340px;max-height:calc(100vh - 96px);overflow-y:auto;transform-origin:top left}
+.tp-ao .tp-ao-it,.tp-ao .tp-ao-dev{text-decoration:none;color:var(--ip-ink);font:600 14.5px/1.2 var(--font);padding:0 16px;text-align:left}
+.tp-ao .tp-ao-it:hover,.tp-ao .tp-ao-dev:hover{background-color:var(--card-2);color:var(--ip-ink)}
+.tp-ao .tp-ao-it svg,.tp-ao .tp-ao-dev svg,.tp-ao .tp-ao-it:hover svg{color:var(--ip-blue)}
+.tp-ao .tp-ao-dev{border-top:1px solid var(--line)}
+.tp-ao .tp-ao-dev .n{margin-left:auto;font-weight:700;color:var(--muted-d,#4A5265)}
+.tp-ao .tp-ao-dev .car{width:16px;height:16px;transition:transform .2s}
+.tp-ao .tp-ao-dev[aria-expanded="true"] .car{transform:rotate(90deg)}
+.tp-ao .tp-ao-l[hidden]{display:none}
+.tp-ao .tp-ao-s{margin:0;padding:8px 16px 4px;font:500 13px/1.4 var(--font);color:#4A5265}
+.tp-ao :focus-visible{outline:2px solid #0050E6;outline-offset:-3px}
+
+/* ═══ LA BARRE DES RUBRIQUES DANS LES DOUZE HABILLAGES (19/11/2026) — choix cliqué de Will : la barre s'étend à TOUS les écrans dans CHAQUE habillage, aux couleurs de l'habillage.
+   Ordinateur seulement (> 1000 px) ; téléphone et ≤ 1000 px inchangés. Même mise en page que le Bleu (blocs « temps 2 » et « accueil sobre » ci-dessus), mêmes seuils mesurés :
+   les libellés gardent la police Archivo du Bleu, pour que les largeurs restent celles qui ont été mesurées. Couleurs : 7 à matière = variables de leur barre (--h-top-*) ;
+   5 anciennes teintes = leur accent sur la barre claire d'origine. Pastille active = accent de l'habillage. Fonds en propriétés séparées, ni flou ni backdrop-filter, aucune opacité sur du texte. ═══ */
+html[data-hab]{--tb-fond:var(--halo);--tb-fil:var(--line-strong);--tb-ink:var(--ip-ink);--tb-survol:var(--card);--tb-on:var(--ip-blue);--tb-on-ink:#fff;--tb-focus:var(--ip-blue);--tb-police:'Archivo','Satoshi','Inter',system-ui,-apple-system,sans-serif}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])){--tb-fond:var(--h-top-field);--tb-fil:var(--h-top-line);--tb-ink:var(--h-top-ink);--tb-survol:color-mix(in srgb,var(--h-top-ink) 16%,transparent);--tb-focus:var(--h-top-ink)}
+@media (min-width:1001px){
+  html[data-hab] .tp-avec-menu .tp-g{flex:none}
+  html[data-hab] .tp-avec-menu .tp-nom{display:none}
+  html[data-hab] .tp-avec-menu .v2-top-search{min-width:0;width:44px;padding:0;justify-content:center}
+  html[data-hab] .tp-avec-menu .v2-top-search :is(.txt,kbd){display:none}
+  html[data-hab] .tp-menu{display:flex;align-items:center;gap:2px;flex:0 0 auto;margin:0 auto 0 0;padding:4px;border-radius:18px;background-color:var(--tb-fond);background-image:none;border:1px solid var(--tb-fil)}
+  html[data-hab] .tp-m{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;border-radius:14px;font:600 14.5px/1 var(--tb-police);color:var(--tb-ink);white-space:nowrap;text-decoration:none;cursor:pointer;transition:background-color .25s cubic-bezier(.32,.72,0,1),color .25s,box-shadow .25s}
+  html[data-hab] .tp-m:hover{background-color:var(--tb-survol);color:var(--tb-ink)}
+  html[data-hab] .tp-m.on,html[data-hab] .tp-m.on:hover{background-color:var(--tb-on);background-image:none;color:var(--tb-on-ink);box-shadow:var(--sh-blue)}
+  html[data-hab] .tp-m:focus-visible{outline:2px solid var(--tb-focus);outline-offset:2px}
+  html[data-hab] .tp-m:nth-child(n+6){display:none}
+  /* l'accueil : rail, cartes et widgets cachés, sept rubriques + « Autres outils », citation du jour sur une plaque pleine (jamais de texte posé sur une matière) */
+  html[data-hab] .u2-hors.u2-barre .u2-rail{display:none}
+  html[data-hab] .u2-page.u2-barre .u2-grille{margin-left:0}
+  html[data-hab] .u2-page.u2-barre .u2-centre .m1-wrap>:not(#aube-acc),
+  html[data-hab] .u2-page.u2-barre .u2-grille>:not(#u2-centre):not(#u2-citation),
+  html[data-hab] .u2-page.u2-barre #pb-band{display:none}
+  html[data-hab] .u2-page.u2-barre .tp-menu-acc .tp-m{display:inline-flex;padding:0 10px}
+  html[data-hab] .u2-page.u2-barre .tp-menu-acc .tp-autres{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 10px 0 12px;border:0;border-radius:14px;background-color:transparent;background-image:none;font:600 14.5px/1 var(--tb-police);color:var(--tb-ink);white-space:nowrap;cursor:pointer;transition:background-color .25s cubic-bezier(.32,.72,0,1),color .25s,box-shadow .25s}
+  html[data-hab] .u2-page.u2-barre .tp-menu-acc .tp-autres:hover,html[data-hab] .u2-page.u2-barre .tp-menu-acc .tp-autres[aria-expanded="true"]{background-color:var(--tb-survol);color:var(--tb-ink)}
+  html[data-hab] .u2-page.u2-barre .tp-menu-acc .tp-autres:focus-visible{outline:2px solid var(--tb-focus);outline-offset:2px}
+  html[data-hab] .u2-page.u2-barre .tp-autres .car{width:16px;height:16px;transition:transform .25s cubic-bezier(.32,.72,0,1)}
+  html[data-hab] .u2-page.u2-barre .tp-autres[aria-expanded="true"] .car{transform:rotate(90deg)}
+  html[data-hab] .u2-page.u2-barre .v2-brand>span:not(.v2-logo){display:none}
+  html[data-hab] .u2-page.u2-barre .u2-cit{display:block;max-width:760px;margin:8px auto 40px;padding:24px 32px 22px;text-align:center;border-radius:22px;background-color:var(--card);background-image:none;border:1px solid var(--line-strong);box-shadow:var(--sh-1)}
+  html[data-hab] .u2-page.u2-barre .u2-cit::before{content:"";display:block;width:44px;height:3px;margin:0 auto 18px;border-radius:2px;background-color:var(--ip-blue)}
+  html[data-hab] .u2-page.u2-barre .u2-cit blockquote{margin:0}
+  html[data-hab] .u2-page.u2-barre .u2-cit p{margin:0;font:500 22px/1.45 var(--h-titre,var(--font));color:var(--ip-ink);text-wrap:balance}
+  html[data-hab] .u2-page.u2-barre .u2-cit figcaption{margin-top:12px;font:600 14.5px/1.3 var(--font);letter-spacing:.02em;color:var(--ip-ink-2,var(--ip-ink))}
+}
+@media (min-width:1001px) and (max-width:1180px){
+  html[data-hab] .u2-page.u2-barre .v2-top{padding-left:16px;padding-right:16px;column-gap:8px}
+  html[data-hab] .u2-page.u2-barre .tp-menu-acc{gap:0;padding:3px}
+  html[data-hab] .u2-page.u2-barre .tp-menu-acc .tp-m{padding:0 8px;font-size:13px}
+  html[data-hab] .u2-page.u2-barre .tp-menu-acc .tp-autres{padding:0 6px 0 10px;font-size:13px;gap:3px}
+  html[data-hab] .u2-page.u2-barre .tp-d{gap:6px}
+}
+@media (min-width:1120px){ html[data-hab] .tp-m:nth-child(6){display:inline-flex} }
+@media (min-width:1200px){ html[data-hab] .tp-m:nth-child(7){display:inline-flex} }
+@media (min-width:1290px){ html[data-hab] .tp-m:nth-child(8){display:inline-flex} }
+@media (min-width:1370px){ html[data-hab] .tp-m:nth-child(9){display:inline-flex} }
+@media (min-width:1480px){ html[data-hab] .tp-m:nth-child(10){display:inline-flex} }
+@media (min-width:1570px){ html[data-hab] .tp-m:nth-child(11){display:inline-flex} }
+@media (min-width:1680px){ html[data-hab] .tp-m:nth-child(n+12){display:inline-flex} }
+@media (min-width:1800px){
+  html[data-hab] .tp-avec-menu .v2-top-search{width:220px;padding:0 10px 0 14px;justify-content:flex-start}
+  html[data-hab] .tp-avec-menu .v2-top-search .txt{display:inline}
+  html[data-hab] .tp-avec-menu .v2-top-search kbd{display:inline-block}
+}
+@media (prefers-reduced-motion:reduce){ html[data-hab] .tp-m{transition:none} }
 
 /* ── Graphiques (SVG faits main : une règle CSS bat l'attribut, les calculs ne bougent pas) ── */
 /* fiche officine : trait de 3 px, repère « moyenne » en pointillé fin, grille plus douce, halo blanc derrière les valeurs */
