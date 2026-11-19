@@ -1,8 +1,21 @@
 {
- "generated_at": "2026-11-18T15:47:56.940121+00:00",
+ "generated_at": "2026-11-19T15:52:52.121872+00:00",
  "source": "Journal officiel · open data DILA",
- "count": 5,
+ "count": 6,
  "items": [
+  {
+   "id": "JORFTEXT000055102139",
+   "titre": "Décret n° 2026-1059 du 17 novembre 2026 relatif aux seuils de prix applicables à certaines spécialités pharmaceutiques pour le calcul de la contribution due au titre de la clause de sauvegarde et de la contribution supplémentaire",
+   "url": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055102139",
+   "jo": "2026-11-19",
+   "signe_le": "2026-11-17",
+   "motifs": [
+    "clause de sauvegarde"
+   ],
+   "resume": null,
+   "date_effet": null,
+   "a_venir": false
+  },
   {
    "id": "JORFTEXT000055029771",
    "titre": "Arrêté du 29 octobre 2026 relatif à la prise en compte, dans les prix maximum des gazoles routiers et non routiers en Guadeloupe, en Guyane, en Martinique, à La Réunion et à Mayotte, de l'avantage résultant des conditions économiques de libération de stocks stratégiques de gazole",
