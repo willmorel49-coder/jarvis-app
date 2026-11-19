@@ -10,7 +10,7 @@
 
    ⚠️ Bumper VER à chaque déploiement (aligné sur le ?v= de index.html).
    ═══════════════════════════════════════════════════════════════════ */
-var VER = '20261119h';
+var VER = '20261119i';
 var CACHE = 'jarvis-' + VER;
 
 /* 11/09/2026 (perf, phase 3) — le SOCLE est rangé dès l'installation : les
@@ -26,7 +26,7 @@ var SOCLE = [
   'vendor/leaflet/leaflet.css', 'vendor/leaflet/MarkerCluster.css', 'vendor/leaflet/MarkerCluster.Default.css',
   'vendor/supabase/supabase-2.112.2.min.js',
   'v2-icons.js', 'groupement-alias.js', 'v2-hors-ligne.js', 'v2-boot.js', 'v2-profil.js',
-  'v2-accueil-cinq.js', 'v2-accueil-widgets.js', 'v2-app.js', 'v2-motion.js', 'v2-bg.js', 'v2-hab.js',
+  'v2-accueil-cinq.js', 'v2-accueil-widgets.js', 'v2-app.js', 'v2-motion.js', 'v2-aube.js', 'v2-bg.js', 'v2-hab.js',
   'manifest.webmanifest'
 ];
 

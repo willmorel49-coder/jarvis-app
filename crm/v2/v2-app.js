@@ -2679,6 +2679,16 @@
     function scrollSel() { var s = bd.querySelector('.v2-cmdk-item.sel'); if (s) s.scrollIntoView({ block: 'nearest' }); }
   }
   V2.invalidateCmdk = function () { cmdkIdx = null; };
+  // 19/11/2026 (l'aube) — l'accueil pose sa propre zone de recherche : mêmes résultats et mêmes gestes que le ⌘K (rien de dupliqué)
+  V2.cmdkChercher = function (q) {
+    if (!V2.user) return [];
+    return cmdkSearch(q).map(function (x) { return { grp: x.grp, label: x.label, meta: x.meta || '', ico: ICO(x.ico || 'chev', 17), action: x.action }; });
+  };
+  V2.cmdkPreparer = function (suite) {
+    loadNewProspects();
+    if (window.PHARMA_FR || !V2.ensurePharmaFr) return;
+    V2.ensurePharmaFr(function () { if (suite) suite(); });
+  };
 
   // raccourci clavier global ⌘K / Ctrl+K
   document.addEventListener('keydown', function (e) {

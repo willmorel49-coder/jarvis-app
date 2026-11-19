@@ -1031,124 +1031,219 @@ html:not([data-hab]) .gr-tabs .v2-tab.on,html:not([data-hab]) .gr-tabs .v2-tab.o
 html:not([data-hab]) .cn-fb-btn:not(.on) .cn-fb-car{opacity:1;color:#5B6478}
 /* ═══ fin du temps 4 ═══ */
 
-/* ═══ COUP DE NEUF — temps 5 (19/11/2026) : lumière et profondeur, mouvement, relief et hiérarchie, accueil et écrans de la barre SEULEMENT.
-   Une source de lumière en haut à gauche, sur tout le périmètre.
-   CSS seul, habillage par défaut seul. Fonds en propriétés séparées (jamais « a, b, couleur ») ; les reflets sont des ombres
-   INTÉRIEURES, peintes sous le texte (aucun voile sur les lettres) ; ni flou, ni backdrop-filter, ni opacité sur du texte. ═══ */
-html:not([data-hab]){--cn5:1;
-  --cn5-c:inset 0 1px 0 #fff,inset 0 -34px 44px -34px rgba(0,80,230,.17),0 1px 2px rgba(16,24,48,.09),0 8px 16px -6px rgba(16,24,48,.12),0 38px 66px -26px rgba(0,52,160,.46);
-  --cn5-ch:inset 0 1px 0 #fff,inset 0 -34px 44px -34px rgba(0,80,230,.22),0 1px 2px rgba(16,24,48,.09),0 14px 24px -8px rgba(16,24,48,.15),0 50px 82px -28px rgba(0,52,160,.54);
-  --cn5-b:inset 0 1px 0 rgba(255,255,255,.55),inset 0 70px 80px -70px rgba(255,255,255,.07),inset 0 -70px 90px -66px rgba(0,10,56,.50),0 3px 8px rgba(0,40,140,.24),0 44px 76px -28px rgba(0,60,210,.70);
+
+/* ═══ L'AUBE (19/11/2026) — direction « l'aube » posée sur les écrans réels. Remplace le bloc « temps 5 » de v2.css.
+   Source : maquettes/e1.css (accueil). Un ASTRE se lève derrière le titre, trois ANNEAUX respirent, un HORIZON se trace, un SOL éclairé en dessous.
+   Tout en dégradés OPAQUES et en transformations CSS : ni canvas, ni flou, ni backdrop-filter, aucune opacité sur du texte.
+   Les couleurs passent par les variables --au-* : valeurs de l'aube sur l'habillage par défaut, redéfinies à partir des variables de chaque habillage
+   (--ip-blue, --card, --halo…) pour les sept autres. Les règles de STRUCTURE visent tous les habillages. ═══ */
+html{--banc-aube:1}
+@keyframes aube-leve{from{transform:translate3d(0,104%,0)}}
+@keyframes aube-trait{from{transform:scaleX(0)}}
+@keyframes aube-fondu{from{opacity:0}}
+@keyframes aube-respire{to{scale:1.06}}
+@keyframes aube-nait{from{opacity:0;transform:scale(.72)}}
+@keyframes aube-onde{from{transform:scale(1);opacity:.9}to{transform:scale(1.9);opacity:0}}
+@keyframes aube-lettre{0%{transform:translate3d(0,.45em,0);visibility:hidden}1%{transform:translate3d(0,.45em,0);visibility:visible}100%{transform:none;visibility:visible}}
+
+/* ── 1. Les couleurs : défaut = l'aube ── */
+html:not([data-hab]){
+  --au-ink:#1A2030; --au-ink2:#3B4357; --au-ink3:#4A5265; --au-accent:#0050E6; --au-accent-d:#0034A0;
+  --au-fond:#F3F5F9; --au-ciel:#F3F5F9;
+  --au-astre-a:#FFFFFF; --au-astre-b:#F0F5FF; --au-astre-c:#D5E2FF; --au-lisere:#BDD0F8; --au-lueur:rgba(0,80,230,.30);
+  --au-an1:#C6D6F8; --au-an2:#D3DFF7; --au-an3:#DEE6F6; --au-horizon:#B7C9EF;
+  --au-sol-a:#E3ECFB; --au-sol-b:#EDF2FA; --au-sol-c:#F3F5F9;
+  --au-halo-a:#FFFFFF; --au-halo-b:#F4F8FF; --au-halo-c:#E7EFFD; --au-halo-d:#F3F5F9; --au-reflet-b:#F1F6FE;
+  --au-carte-a:#FFFFFF; --au-carte-b:#F7F9FD; --au-fil:#DEE6F6; --au-surv-a:#EAF1FF; --au-surv-b:#FFFFFF;
+  --au-pastille:#E7EFFD; --au-onde:#8FB2FF; --au-ombre:rgba(26,32,48,.07); --au-ombre-l:rgba(0,52,160,.22);
 }
+/* ── les sept habillages (et les anciennes teintes) : mêmes noms, valeurs tirées de leurs variables ── */
+html[data-hab]{
+  --au-ink:var(--ip-ink); --au-ink2:var(--ip-ink-2); --au-ink3:var(--ip-ink-2); --au-accent:var(--ip-blue); --au-accent-d:var(--ip-blue-d);
+  --au-fond:var(--card-2); --au-ciel:var(--card-2);
+  --au-astre-a:var(--card); --au-astre-b:var(--halo); --au-astre-c:color-mix(in srgb,var(--ip-blue) 16%,var(--halo));
+  --au-lisere:color-mix(in srgb,var(--ip-blue) 38%,var(--card)); --au-lueur:color-mix(in srgb,var(--ip-blue) 30%,transparent);
+  --au-an1:color-mix(in srgb,var(--ip-blue) 30%,var(--card-2)); --au-an2:color-mix(in srgb,var(--ip-blue) 22%,var(--card-2)); --au-an3:color-mix(in srgb,var(--ip-blue) 15%,var(--card-2));
+  --au-horizon:color-mix(in srgb,var(--ip-blue) 46%,var(--card-2));
+  --au-sol-a:color-mix(in srgb,var(--ip-blue) 13%,var(--card-2)); --au-sol-b:color-mix(in srgb,var(--ip-blue) 7%,var(--card-2)); --au-sol-c:var(--card-2);
+  --au-halo-a:var(--card); --au-halo-b:color-mix(in srgb,var(--halo) 55%,var(--card)); --au-halo-c:var(--halo); --au-halo-d:var(--card-2); --au-reflet-b:color-mix(in srgb,var(--halo) 45%,var(--card));
+  --au-carte-a:var(--card); --au-carte-b:var(--card-2); --au-fil:color-mix(in srgb,var(--ip-blue) 20%,var(--card)); --au-surv-a:var(--halo); --au-surv-b:var(--card);
+  --au-pastille:color-mix(in srgb,var(--ip-blue) 12%,var(--card)); --au-onde:color-mix(in srgb,var(--ip-blue) 60%,var(--card)); --au-ombre:rgba(0,0,0,.12); --au-ombre-l:rgba(0,0,0,.25);
+}
+html[data-hab="velours"]{--au-astre-b:#F6E2DA;--au-astre-c:#EBC4BC;--au-horizon:#C98E96;--au-an1:#D9A9AE;--au-an2:#E5C0C0;--au-an3:#EBD0CB}
+html[data-hab="marbre"],html[data-hab="foret"]{--au-ombre:rgba(0,0,0,.18)}
+html:root{--au-ease:cubic-bezier(.32,.72,0,1);--au-sortie:cubic-bezier(.33,1,.68,1)}
 
-/* ── Fond de page : halo bleu franc en haut à droite, halo blanc en haut à gauche, sur un dégradé vertical ── */
-html:not([data-hab]) body{background-color:#E6ECF6;background-image:radial-gradient(1200px 700px at 96% -12%,#B9D0FF 0%,rgba(185,208,255,0) 64%),radial-gradient(1100px 680px at -2% -16%,#FFFFFF 0%,rgba(255,255,255,0) 66%),linear-gradient(180deg,#DCE6F8 0px,#E8EDF6 760px);background-repeat:no-repeat}
+/* ── 2. Fond de page (habillage par défaut seulement : les autres gardent leur matière) ── */
+html:not([data-hab]):root:root body{background-color:#F3F5F9;background-image:radial-gradient(1200px 640px at 26% -10%,#FFFFFF 0%,#F8FAFD 38%,#F3F5F9 100%)}
+html:not([data-hab]):root:root body .of-m1::before{background-image:none;background-color:transparent}
+html:not([data-hab]):root:root .v2-halo{background-image:none}
 
-/* ── Barre du haut : elle flotte au-dessus de la page ── */
-html:not([data-hab]) .v2-top{box-shadow:0 1px 0 #fff inset,0 1px 0 rgba(26,32,48,.04),0 16px 36px -20px rgba(0,52,160,.32)}
+/* ── 3. Les bandeaux : clairs. L'astre se lève derrière le titre (13 écrans : of, td, fi, inf, gr, olm, cpd, mkb, pilotage, tournées, documents, carte) ── */
+html:root:root body :is(.of-hd,.pha-id.fi-hd,.td-hd,.inf-hd,.gr-hd,.olm-hd,.cpd-head,.mkb-tete,.aube-tete,.trn-hd,.dc-tete,.cn-fb,.ac-c-pharma,.aube-acc){isolation:isolate;color:var(--au-ink);background-color:var(--au-ciel);background-image:none;text-shadow:none}
+html:root:root body :is(.of-hd,.pha-id.fi-hd,.td-hd,.inf-hd,.gr-hd,.olm-hd,.cpd-head,.mkb-tete,.aube-tete,.trn-hd,.dc-tete,.cn-fb,.ac-c-pharma){overflow:hidden;border:1px solid var(--au-fil);box-shadow:0 1px 2px var(--au-ombre),0 24px 40px -30px var(--au-ombre-l)}
+html:root:root body :is(.mkb-tete,.aube-tete,.trn-hd,.dc-tete){padding:18px 24px 20px;border-radius:20px;margin-bottom:16px}
+html:root:root body .cpd-head{border-radius:20px}
+html:root:root body .cpd-head .cpd-bar{display:none}
+html:root:root body .cn-fb{overflow:visible;border-radius:0}
+html:root:root body :is(.of-hd,.pha-id.fi-hd,.td-hd,.inf-hd,.gr-hd,.olm-hd,.cpd-head,.mkb-tete,.aube-tete,.trn-hd,.dc-tete,.cn-fb,.aube-acc) :is(.of-lu,.of-croix,.of-halo,.fi-lu,.td-lu,.inf-lu,.gr-lu,.olm-lu){display:none}
+html:root:root body :is(.of-hd,.pha-id.fi-hd,.td-hd,.inf-hd,.gr-hd,.olm-hd,.cpd-head,.mkb-tete,.aube-tete,.trn-hd,.dc-tete,.cn-fb,.ac-c-pharma)::after{display:none}
+html:root:root body .aube-scene{--d0:clamp(250px,24vw,400px);--hy:74%;--hx:30%;position:absolute;left:0;top:0;right:0;bottom:0;z-index:-1;pointer-events:none;overflow:clip;border-radius:inherit}
+html:root:root body .pha-id .aube-scene{--d0:230px;--hx:50%}
+html:root:root body .cn-fb .aube-scene{--d0:90px;--hx:44px}
+html:root:root body .aube-acc .aube-scene{--d0:min(440px,86vw);--hx:50%;--hy:50%}
+@media (max-width:700px){html:root:root body .aube-scene{--d0:min(250px,70vw);--hx:50%;--hy:78%}html:root:root body .aube-acc .aube-scene{--d0:min(440px,86vw);--hy:50%}html:root:root body .cn-fb .aube-scene{--d0:80px;--hx:44px;--hy:50%}}
+/* le disque visible (62 % de son diamètre, le reste sous l'horizon) tient entre le haut du bandeau et l'horizon : --dmax posé par le script */
+html:root:root body .aube-scene{--d:min(var(--d0),var(--dmax,9999px))}
+.aube-ciel{position:absolute;left:0;right:0;top:0;height:var(--hy);overflow:clip}
+.aube-sol{position:absolute;left:0;right:0;top:var(--hy);bottom:0;overflow:clip;background-color:var(--au-sol-c);background-image:linear-gradient(180deg,var(--au-sol-a) 0%,var(--au-sol-b) 40%,var(--au-sol-c) 100%);animation:aube-fondu 1.6s ease-out backwards calc(.5s - var(--au-off,0ms))}
+.aube-horizon{position:absolute;left:0;right:0;top:var(--hy);height:1px;background-color:var(--au-horizon);transform-origin:var(--hx,50%) 50%;animation:aube-trait 1.3s var(--au-ease) backwards calc(.1s - var(--au-off,0ms))}
+.aube-halo,.aube-an,.aube-astre,.aube-onde,.aube-reflet{position:absolute;border-radius:50%;left:calc(var(--hx) + var(--dx,0px))}
+.aube-halo{bottom:calc(var(--d)*.12);width:calc(var(--d)*2.7);height:calc(var(--d)*2.7);background-color:var(--au-halo-d);background-image:radial-gradient(closest-side,var(--au-halo-a) 0%,var(--au-halo-b) 26%,var(--au-halo-c) 48%,var(--au-halo-d) 100%);
+  translate:calc(-50% + var(--px,0)*-10px) calc(50% + var(--py,0)*-6px);animation:aube-fondu 2.2s ease-out backwards calc(.2s - var(--au-off,0ms)),aube-respire 9s ease-in-out calc(2.4s - var(--au-off,0ms)) infinite alternate}
+.aube-an{bottom:calc(var(--d)*.12);border:1px solid var(--au-an1);translate:calc(-50% + var(--px,0)*-14px) calc(50% + var(--py,0)*-7px);animation:aube-nait 1.8s var(--au-ease) backwards,aube-respire 9s ease-in-out infinite alternate}
+.aube-a1{width:calc(var(--d)*1.3);height:calc(var(--d)*1.3);animation-delay:calc(.7s - var(--au-off,0ms)),calc(2.5s - var(--au-off,0ms))}
+.aube-a2{width:calc(var(--d)*1.68);height:calc(var(--d)*1.68);border-color:var(--au-an2);animation-delay:calc(.85s - var(--au-off,0ms)),calc(3.4s - var(--au-off,0ms))}
+.aube-a3{width:calc(var(--d)*2.14);height:calc(var(--d)*2.14);border-color:var(--au-an3);animation-delay:calc(1s - var(--au-off,0ms)),calc(4.3s - var(--au-off,0ms))}
+.aube-astre{bottom:0;width:var(--d);height:var(--d);margin-left:calc(var(--d)/-2);background-color:var(--au-astre-b);background-image:linear-gradient(180deg,var(--au-astre-a) 0%,var(--au-astre-b) 46%,var(--au-astre-c) 100%);
+  box-shadow:0 0 0 1px var(--au-lisere),inset 0 3px 0 var(--au-astre-a),0 -18px 50px -18px var(--au-lueur);
+  transform:translate3d(calc(var(--px,0)*26px),calc(38% + var(--py,0)*10px),0);transition:translate .8s var(--au-ease),box-shadow .5s var(--au-ease);animation:aube-leve 2s var(--au-ease) backwards calc(.2s - var(--au-off,0ms))}
+.aube-foc .aube-astre{translate:0 -7%;box-shadow:0 0 0 2px var(--au-accent),inset 0 3px 0 var(--au-astre-a),0 -22px 60px -16px var(--au-lueur)}
+.aube-onde{bottom:calc(var(--d)*.12);width:calc(var(--d)*1.02);height:calc(var(--d)*1.02);border:2px solid var(--au-onde);translate:-50% 50%;animation:aube-onde 1s var(--au-sortie) forwards}
+.aube-reflet{top:-46px;width:calc(var(--d)*1.25);height:92px;background-color:var(--au-sol-a);background-image:radial-gradient(closest-side,var(--au-halo-a) 0%,var(--au-reflet-b) 45%,var(--au-sol-a) 100%);translate:calc(-50% + var(--px,0)*26px) 0;animation:aube-fondu 1.8s ease-out backwards calc(1.2s - var(--au-off,0ms))}
+/* un bandeau redessiné par l'appli (données qui arrivent) reprend l'animation là où elle en était : --au-off (posé par le script) décale tous les délais */
+.aube-hors .aube-scene *,.aube-cache .aube-scene *{animation-play-state:paused}
 
-/* ── Cartes blanches : arête haute éclairée, base plus sombre, ombre en trois couches (contact, proche, longue bleutée), reflet bleu en bas ── */
-html:not([data-hab]):root:root body :is(.ac-c:not(.ac-c-pharma),.m1-c.m1-p,a.of-c,.v2-card.dr,.pha-nav,.pha-kpi,.pha-card,.fbk-b:not(.pri),.v2-todo-add,.v2-todo-empty,.v2-todo-list,.inf-c-porte,.gr-une,.gr-carte,.gr-bar,.olm-porte:not(.on),.cpd-door,.cpd-head,.mkb-porte){border-top-color:#fff;border-bottom-color:#CCD5E6;box-shadow:var(--cn5-c)}
-html:not([data-hab]):root:root body :is(.ac-c:not(.ac-c-pharma),.m1-c.m1-p,a.of-c,.fbk-b:not(.pri),.inf-c-porte,.gr-une,.gr-carte,.olm-porte:not(.on),.cpd-door,.mkb-porte):hover{box-shadow:var(--cn5-ch)}
+/* la carte Officines de l'accueil : claire, comme les bandeaux (texte en encre, accents bleus sur les barres et le lien) */
+html:root:root body .ac-c-pharma{color:var(--au-ink);background-color:var(--au-ciel)}
+html:root:root body .m1-bento .m1-c.m1-off>.ac-fond{display:none}
+html:root:root body .ac-c-pharma :is(.m1-lab,.m1-big b,.m1-sub b,.m1-vs-r b,.m1-vente b,.m1-rel-h,.m1-chip b){color:var(--au-ink)}
+html:root:root body .ac-c-pharma :is(.m1-big small,.m1-sub,.m1-vs-h,.m1-vs-r span,.m1-per,.m1-vente,.m1-vide,.m1-chip span){color:var(--au-ink2)}
+html:root:root body .ac-c-pharma :is(.m1-foot h3,.m1-arrow,.m1-go){color:var(--au-accent-d)}
+html:root:root body .ac-c-pharma .m1-ico{background-color:var(--au-pastille);border-color:var(--au-lisere);color:var(--au-accent)}
+html:root:root body .ac-c-pharma .m1-ico .u2-ic{stroke:var(--au-accent)}
+html:root:root body .ac-c-pharma .m1-trk{background-color:var(--au-pastille)}
+html:root:root body .ac-c-pharma .m1-fill{background-color:var(--au-accent)}
+html:root:root body .ac-c-pharma .m1-fill.m1-grey{background-color:var(--au-an1)}
+html:root:root body .ac-c-pharma .m1-chip{background-color:var(--au-astre-b);background-image:linear-gradient(180deg,var(--au-astre-a),var(--au-astre-b));border-color:var(--au-lisere)}
+html:root:root body .ac-c-pharma .m1-chip:hover{background-image:linear-gradient(180deg,var(--au-astre-a),var(--au-astre-c));border-color:var(--au-accent)}
+html:root:root body .ac-c-pharma .m1-scn-off{box-shadow:0 0 0 1px var(--au-lisere),0 6px 12px -8px var(--au-ombre-l)}
+html:root:root body .ac-c-pharma .aube-scene{--d0:150px;--hx:84%}
 
-/* ── Bandeaux bleus : ombre colorée profonde, lumière qui tombe du haut, base plus sombre (ombres intérieures = sous le texte) ── */
-html:not([data-hab]):root:root body :is(.ac-c-pharma,.of-hd,.pha-id.fi-hd,.td-hd,.inf-hd,.gr-hd,.olm-hd,.fbk-b.pri),
-html:not([data-hab]):root:root body .fbk-b.pri:hover{box-shadow:var(--cn5-b)}
-/* accueil : le fond peint de la carte Officines est un calque à part (.ac-fond, sans texte) : la lumière se pose sur lui */
-html:not([data-hab]):root:root body .ac-c-pharma .ac-fond{box-shadow:inset 0 1px 0 rgba(255,255,255,.45),inset 0 130px 140px -120px rgba(255,255,255,.40),inset 0 -70px 90px -66px rgba(0,10,56,.48)}
+/* ── 4. Textes des bandeaux : tous en encre (aucun blanc, aucune ombre de texte) ── */
+html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.inf-hd,.gr-hd,.olm-hd) :is(.of-eye,.td-eye,.fi-eye,.pha-code,.inf-eye,.gr-eye,.olm-eye){color:var(--au-ink3)}
+html:root:root body :is(.of-hd,.pha-id.fi-hd,.td-hd,.inf-hd,.gr-hd,.olm-hd,.cpd-head,.mkb-tete,.aube-tete,.trn-hd,.dc-tete,.cn-fb,.aube-acc) :is(.of-h1,.td-h1,.pha-name,.inf-h1,.gr-h1,.cpd-h1,.mkb-h1,.cn-h1,h1,.v2-page-title){color:var(--au-ink);text-shadow:none;font-family:var(--font,'Archivo',system-ui,sans-serif);font-weight:800;letter-spacing:-.035em}
+html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.inf-hd,.gr-hd,.olm-hd,.cpd-head,.mkb-tete,.aube-tete,.trn-hd,.dc-tete) :is(.of-phrase,.td-phrase,.fi-phrase,.td-expl,.pha-sub,.inf-phrase,.inf-ed,.gr-phrase,.gr-def,.olm-phrase,.cl1-et,.cpd-sub,.mkb-sous,.v2-page-sub,p){color:var(--au-ink2);text-shadow:none}
+html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.inf-hd,.gr-hd,.olm-hd) :is(.of-phrase,.td-phrase,.inf-phrase,.inf-ed,.gr-phrase,.olm-phrase) b,html:root:root body .td-hd .td-local,html:root:root body :is(.cpd-stat,.inf-hd) b{color:var(--au-ink)}
+html:root:root body :is(.cpd-stat) :is(span,small){color:var(--au-ink2)}
+html:root:root body .pha-id.fi-hd .pha-kv span:nth-child(odd){color:var(--au-ink3)}
+html:root:root body .pha-id.fi-hd .pha-kv span:nth-child(even){color:var(--au-ink)}
+html:root:root body .pha-id.fi-hd .pha-kv :is(.pha-empty,.pha-grpinfo){color:var(--au-ink2)}
+html:root:root body .pha-id.fi-hd .pha-kv .pha-probable{color:#7A4300}
+html:root:root body .v2-past-l{color:var(--au-ink2)}
+html:root:root body .td-hd .td-local{background-color:var(--au-pastille);background-image:none;border:1px solid var(--au-lisere);color:var(--au-ink)}
+@media (min-width:1001px){
+  html:root:root body :is(.of-h1,.td-h1){font-size:48px;line-height:1.04}
+  html:root:root body .pha-id.fi-hd .pha-name{font-size:34px;line-height:1.08}
+  html:root:root body :is(.cpd-h1,.mkb-h1,.aube-tete .v2-page-title){font-size:40px;line-height:1.05}
+}
+.aube-mot{display:inline-block;white-space:nowrap}
+.aube-l{display:inline-block;animation:aube-lettre .5s var(--au-sortie) backwards;animation-delay:calc(var(--i)*50ms + 700ms - var(--au-off,0ms))}
 
-/* ── Pastilles d'icône bleues (Offilog, Catalogue produits) : même lumière que les bandeaux ── */
-html:not([data-hab]):root:root body :is(.olm-p-ic,.cpd-ic){box-shadow:inset 0 1px 0 rgba(255,255,255,.45),inset 0 -12px 18px -12px rgba(0,16,80,.5),0 12px 20px -10px rgba(0,60,200,.6)}
+/* ── 5. Boutons, onglets, pastilles : le disque de l'astre (dans les couleurs de chaque habillage). Actif = --au-accent plein, texte blanc ── */
+html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.inf-hd,.gr-hd,.olm-hd) :is(.v2-btn-ghost,.v2-btn-primary,.pha-btn:not(.pha-btn-pri),.pha-edit,.v2-seg:not(.on),.td-cap:not(.is-on),.inf-copie,.gr-cap,.gr-tabs .v2-tab:not(.on)){
+  background-color:var(--au-astre-b);background-image:linear-gradient(180deg,var(--au-astre-a),var(--au-astre-b));border:1px solid var(--au-lisere);color:var(--au-ink);box-shadow:0 1px 0 var(--au-astre-a) inset,0 6px 14px -10px var(--au-ombre-l)}
+html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.inf-hd,.gr-hd,.olm-hd) :is(.v2-btn-ghost,.v2-btn-primary,.pha-btn:not(.pha-btn-pri),.pha-edit,.v2-seg:not(.on),.td-cap:not(.is-on),.inf-copie,.gr-cap,.gr-tabs .v2-tab:not(.on)):hover{background-image:linear-gradient(180deg,var(--au-astre-a),var(--au-astre-c));border-color:var(--au-accent);color:var(--au-ink);transform:none}
+html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.inf-hd,.gr-hd,.olm-hd) :is(.v2-btn-ghost,.v2-btn-primary,.pha-btn:not(.pha-btn-pri),.pha-edit,.inf-copie,.gr-tabs .v2-tab) svg{color:var(--au-accent)}
+html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.inf-hd,.gr-hd,.olm-hd) :is(.v2-seg.on,.td-cap.is-on,.pha-btn-pri,.gr-tabs .v2-tab.on){background-color:var(--au-accent);background-image:none;border-color:var(--au-accent);color:#fff;box-shadow:0 8px 16px -8px var(--au-lueur),0 1px 0 rgba(255,255,255,.25) inset}
+html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.inf-hd,.gr-hd,.olm-hd) :is(.v2-seg.on,.td-cap.is-on,.pha-btn-pri,.gr-tabs .v2-tab.on) :is(svg,span:not(.of-cnt):not(.td-cnt),b:not(.td-cnt)){color:#fff}
+html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.inf-hd,.gr-hd,.olm-hd) .pha-btn-pri:hover{background-color:var(--au-accent-d);background-image:none;color:#fff}
+html:root:root body :is(.of-hd,.td-hd) :is(.of-cnt,.td-cnt){background-color:var(--au-pastille);color:var(--au-ink)}
+html:root:root body :is(.of-hd,.td-hd) :is(.v2-seg.on,.td-cap.is-on) :is(.of-cnt,.td-cnt){background-color:#fff;color:var(--au-accent-d)}
+html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.inf-hd,.gr-hd,.olm-hd) :is(.v2-btn,.pha-btn,.pha-edit,.v2-seg,.td-cap,.inf-copie,.gr-cap,.v2-tab):focus-visible{outline:2px solid var(--au-accent);outline-offset:2px}
+html:root:root body .olm-hd .olm-pastille{border:1px solid var(--au-lisere);box-shadow:0 1px 2px var(--au-ombre)}
 
-/* ── Titres de page : gravés sur fond clair, portés par une ombre profonde sur fond bleu ── */
-html:not([data-hab]):root:root body :is(#u2-salut,.mkb-h1,.cpd-h1){text-shadow:0 1px 0 #fff,0 14px 34px rgba(0,52,160,.16)}
-html:not([data-hab]):root:root body :is(.of-h1,.td-h1,.inf-h1,.gr-h1,.pha-name){text-shadow:0 1px 1px rgba(0,16,80,.30),0 14px 36px rgba(0,16,80,.38)}
-
-/* ── Mouvement — peu d'éléments, mais qui vivent.
-   Tout le mouvement est transform / opacity sur des éléments SANS texte (lumières, pastilles d'icône, flèches) ;
-   les cartes ne bougent qu'au survol et à l'appui. Repli prefers-reduced-motion complet ; l'accueil se met en pause avec .m1-pause.
-   La lumière d'origine des bandeaux (of-lu, gr-lu… déjà animée) n'est pas touchée : une seconde lumière s'ajoute en bas à gauche. ═══ */
-@keyframes cn5-derive{0%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(48%,-16%,0) scale(1.16)}100%{transform:translate3d(96%,4%,0) scale(.94)}}
-@keyframes cn5-pop{0%{opacity:0;transform:translate3d(0,10px,0) scale(.7) rotate(-10deg)}65%{opacity:1;transform:translate3d(0,-2px,0) scale(1.06) rotate(2deg)}100%{opacity:1;transform:none}}
-@keyframes cn5-glisse{0%{opacity:0;transform:translate3d(-10px,0,0)}100%{opacity:1;transform:none}}
-
-/* ── Bandeaux bleus : une seconde lumière, bleu clair, qui traverse lentement le bandeau (22 s, aller-retour) ── */
-html:not([data-hab]):root:root body :is(.ac-c-pharma,.of-hd,.pha-id.fi-hd,.td-hd,.inf-hd,.gr-hd,.olm-hd)::after{content:"";position:absolute;z-index:-1;left:-14%;bottom:-62%;width:60%;aspect-ratio:1;border-radius:50%;background-image:radial-gradient(closest-side,rgba(150,196,255,.34),rgba(150,196,255,0));pointer-events:none;animation:cn5-derive 22s ease-in-out infinite alternate;will-change:transform}
-html:not([data-hab]):root:root body .pha-id.fi-hd::after{width:120%;left:-50%;bottom:-30%}
-html:not([data-hab]):root:root body .m1-pause .ac-c-pharma::after{animation-play-state:paused}
-
-/* ── Arrivée : les pastilles d'icône éclosent l'une après l'autre, les flèches glissent en place (une seule fois, à l'ouverture de l'écran) ── */
-html:not([data-hab]):root:root body :is(.olm-p-ic,.cpd-ic,.fbk-ic,.inf-c-pic){animation:cn5-pop .8s cubic-bezier(.2,.8,.2,1) .15s backwards}
-html:not([data-hab]):root:root body :is(.olm-porte,.cpd-door,.fbk-b,.inf-c-porte):nth-child(2) :is(.olm-p-ic,.cpd-ic,.fbk-ic,.inf-c-pic){animation-delay:.27s}
-html:not([data-hab]):root:root body :is(.olm-porte,.cpd-door,.fbk-b,.inf-c-porte):nth-child(3) :is(.olm-p-ic,.cpd-ic,.fbk-ic,.inf-c-pic){animation-delay:.39s}
-html:not([data-hab]):root:root body :is(.olm-porte,.cpd-door,.fbk-b,.inf-c-porte):nth-child(4) :is(.olm-p-ic,.cpd-ic,.fbk-ic,.inf-c-pic){animation-delay:.51s}
-html:not([data-hab]):root:root body :is(.inf-c-chev,.cpd-go i){animation:cn5-glisse .6s cubic-bezier(.2,.8,.2,1) .55s backwards}
-
-/* ── Survol (souris seulement) : la carte se soulève, son ombre grandit, la flèche avance, l'icône se penche ── */
+/* ── 6. Cartes : liseré fin, reflet haut, ombre douce (tous les habillages) ; blanc à reflet haut (habillage par défaut seulement : les autres gardent leur matière) ;
+      au survol, la lumière de l'astre suit le pointeur (variables posées par le script) ── */
+html:root:root body :is(.ac-c:not(.ac-c-pharma),.m1-c.m1-p,a.of-c,.v2-card,.pha-nav,.pha-kpi,.pha-card,.fbk-b:not(.pri),.v2-todo-add,.v2-todo-empty,.v2-todo-list,.v2-kpi,.inf-c-porte,.gr-une,.gr-carte,.olm-porte:not(.on),.cpd-door,.mkb-porte,.mkb-repere,.pr-card,.pa-card,.pa-kpi,.dc-card,.trn-card){border-color:var(--au-fil);box-shadow:0 1px 0 var(--au-astre-a) inset,0 1px 2px var(--au-ombre),0 14px 28px -18px var(--au-ombre-l)}
+html:not([data-hab]):root:root body :is(.ac-c:not(.ac-c-pharma),.m1-c.m1-p,a.of-c,.v2-card,.pha-nav,.pha-kpi,.pha-card,.fbk-b:not(.pri),.v2-todo-add,.v2-todo-empty,.v2-todo-list,.v2-kpi,.inf-c-porte,.gr-une,.gr-carte,.olm-porte:not(.on),.cpd-door,.mkb-porte,.mkb-repere,.pr-card,.pa-card,.pa-kpi,.dc-card,.trn-card){background-color:#FFFFFF;background-image:linear-gradient(180deg,var(--au-carte-a) 0%,var(--au-carte-b) 100%)}
 @media (hover:hover) and (pointer:fine){
-  html:not([data-hab]):root:root body :is(.ac-c,.m1-c.m1-p,a.of-c,.fbk-b,.inf-c-porte,.gr-une,.gr-carte,.olm-porte:not(.on),.cpd-door,.mkb-porte){transition:transform .5s cubic-bezier(.22,1,.36,1),box-shadow .5s cubic-bezier(.2,.8,.2,1)}
-  html:not([data-hab]):root:root body :is(.ac-c,.m1-c.m1-p,a.of-c,.fbk-b,.inf-c-porte,.gr-une,.gr-carte,.olm-porte:not(.on),.cpd-door,.mkb-porte):hover{transform:translate3d(0,-5px,0)}
-  html:not([data-hab]):root:root body :is(.m1-arrow,.inf-c-chev,.cpd-go i,.olm-p-go svg,.m1-ico,.olm-p-ic,.cpd-ic,.fbk-ic,.inf-c-pic){transition:transform .45s cubic-bezier(.22,1,.36,1)}
-  html:not([data-hab]):root:root body :is(.ac-c,.m1-c.m1-p,.inf-c-porte,.olm-porte,.cpd-door):hover :is(.m1-arrow,.inf-c-chev,.cpd-go i,.olm-p-go svg){transform:translate3d(4px,0,0)}
-  html:not([data-hab]):root:root body :is(.ac-c,.m1-c.m1-p,.fbk-b,.inf-c-porte,.olm-porte,.cpd-door):hover :is(.m1-ico,.olm-p-ic,.cpd-ic,.fbk-ic,.inf-c-pic){transform:translate3d(0,-3px,0) rotate(-6deg) scale(1.06)}
+  html:root:root body :is(.ac-c:not(.ac-c-pharma),.m1-c.m1-p,a.of-c,.v2-card,.pha-nav,.pha-kpi,.pha-card,.fbk-b:not(.pri),.v2-todo-add,.v2-todo-list,.v2-kpi,.inf-c-porte,.gr-une,.gr-carte,.olm-porte:not(.on),.cpd-door,.mkb-porte,.mkb-repere,.pr-card,.pa-card,.pa-kpi,.dc-card,.trn-card):hover{background-color:var(--au-carte-a);background-image:radial-gradient(circle 300px at var(--au-mx,50%) var(--au-my,0%),var(--au-surv-a) 0%,var(--au-carte-a) 100%);border-color:var(--au-lisere)}
 }
-/* ── Appui (souris et doigt) : la carte et les boutons s'enfoncent ── */
-html:not([data-hab]):root:root body :is(.v2-btn,.pha-btn,.pha-edit,.vv-b,.fi-cap,.bo-open,.tp-m,.v2-tab,.v2-seg){transition:transform .15s cubic-bezier(.2,.8,.2,1)}
-html:not([data-hab]):root:root body :is(.ac-c,.m1-c.m1-p,a.of-c,.fbk-b,.inf-c-porte,.gr-une,.gr-carte,.olm-porte,.cpd-door,.mkb-porte):active{transform:scale(.985);transition-duration:.12s}
-html:not([data-hab]):root:root body :is(.v2-btn,.pha-btn,.pha-edit,.vv-b,.fi-cap,.bo-open,.tp-m,.v2-tab,.v2-seg):active{transform:scale(.97)}
 
-/* ── Mouvement réduit : rien ne bouge, rien ne glisse ── */
+/* ── 7. Boutons blancs, onglets et pastilles hors bandeau : le disque de l'astre ; l'actif en --au-accent plein, texte blanc ── */
+html:root:root body :is(.u2-page,.of-m1,.fi-m1,.td-m1,.inf2,.gr-m1,.olm,.cpd,.pa-root,.mkb,.cn-shell,.trn-page,.dc-wrap,.v2-wrap) :is(.v2-btn-ghost,.pha-btn:not(.pha-btn-pri),.pha-edit,.vv-b,.fi-cap,.v2-seg:not(.on),.v2-tabs:not(.gr-tabs) .v2-tab:not(.on),.v2-todo-seg button:not(.is-on),.m1-btn,.cn-fb-btn:not(.on),.cn-seg button:not(.on),.mk-pill:not(.on),.v2-chip:not(.on)){
+  background-color:var(--au-astre-b);background-image:linear-gradient(180deg,var(--au-astre-a),var(--au-astre-b));border:1px solid var(--au-lisere);color:var(--au-ink);box-shadow:0 1px 0 var(--au-astre-a) inset,0 6px 14px -10px var(--au-ombre-l)}
+html:root:root body :is(.u2-page,.of-m1,.fi-m1,.td-m1,.inf2,.gr-m1,.olm,.cpd,.pa-root,.mkb,.cn-shell,.trn-page,.dc-wrap,.v2-wrap) :is(.v2-btn-ghost,.pha-btn:not(.pha-btn-pri),.pha-edit,.vv-b,.fi-cap,.v2-seg:not(.on),.v2-tabs:not(.gr-tabs) .v2-tab:not(.on),.v2-todo-seg button:not(.is-on),.m1-btn,.cn-fb-btn:not(.on),.cn-seg button:not(.on)):hover{background-image:linear-gradient(180deg,var(--au-astre-a),var(--au-astre-c));border-color:var(--au-accent)}
+html:root:root body :is(.of-m1,.fi-m1,.td-m1,.u2-page,.inf2,.olm,.cpd,.pa-root,.mkb,.cn-shell,.trn-page,.dc-wrap,.v2-wrap) :is(.v2-tabs:not(.gr-tabs),.v2-todo-seg,.cn-seg){background-color:var(--au-pastille);background-image:none;border-color:var(--au-fil);box-shadow:none}
+html:root:root body :is(.v2-seg.on,.v2-tab.on,.v2-todo-seg button.is-on,.cn-seg button.on){background-color:var(--au-accent);background-image:none;border-color:var(--au-accent);color:#fff}
+
+/* ── 8. Tableaux et filets ── */
+html:root:root body :is(.v2-table thead th,.v2-table tbody td,.v2-row,.v2-card-head,.pha-table td,.pha-table th){border-bottom-color:var(--au-fil)}
+html:root:root body :is(.v2-table tbody tr,.v2-row):hover{background-color:var(--au-pastille)}
+
+/* ── 10. L'accueil : le lever du jour. Salut + recherche posée sur l'horizon ; la date, la phrase et « Reprendre » restent là ── */
+html:root:root body .aube-acc.u2-salut{display:flex;flex-direction:column;align-items:stretch;justify-content:center;position:relative;z-index:3;min-height:clamp(400px,calc(100dvh - 260px),640px);margin:0 0 20px;padding:0;gap:0;border:1px solid var(--au-fil);border-radius:24px;box-shadow:0 1px 2px var(--au-ombre),0 24px 40px -30px var(--au-ombre-l)}
+html:root:root body .aube-acc .aube-acc-bloc{position:relative;margin:auto;width:min(680px,calc(100% - 32px));padding:26px 0 7vh;text-align:center}
+html:root:root body .aube-acc .m1-eye{margin:0 0 12px;text-align:center;color:var(--au-ink3)}
+html:root:root body .aube-acc h1.v2-titre{margin:0 0 30px;font-size:clamp(38px,4.6vw,58px);line-height:1.02;text-align:center}
+html:root:root body .aube-acc .m1-phrase{margin:26px auto 0;max-width:46ch;text-align:center;color:var(--au-ink2)}
+html:root:root body .aube-acc .m1-phrase b{color:var(--au-ink)}
+html:root:root body .aube-acc .m1-hd-a{position:relative;margin:0 auto 26px;width:auto}
+html:root:root body .aube-acc .m1-hd-a .m1-btn{width:auto}
+.aube-champ{position:relative;display:flex;align-items:center;height:60px;border-radius:30px;animation:aube-monte .7s var(--au-ease) backwards calc(1.25s - var(--au-off,0ms))}
+@keyframes aube-monte{from{opacity:0;transform:translateY(16px)}}
+.aube-champ-fond{position:absolute;left:0;top:0;right:0;bottom:0;border-radius:inherit;background-color:var(--au-astre-a);box-shadow:0 0 0 1px var(--au-lisere),0 2px 8px var(--au-ombre),0 26px 60px -22px var(--au-ombre-l);transition:box-shadow .25s var(--au-ease),transform .25s var(--au-ease)}
+.aube-champ:hover .aube-champ-fond{box-shadow:0 0 0 1px var(--au-accent),0 4px 12px var(--au-ombre),0 34px 70px -22px var(--au-ombre-l);transform:translateY(-1px)}
+.aube-champ:focus-within .aube-champ-fond{box-shadow:0 0 0 2px var(--au-accent),0 0 0 7px var(--au-pastille),0 34px 70px -22px var(--au-ombre-l);transform:none}
+.aube-loupe{position:relative;display:flex;margin-left:22px;color:var(--au-accent);flex:none}
+html:root:root body .aube-q{position:relative;flex:1 1 auto;min-width:0;height:100%;border:0;outline:0;margin:0;padding:0 12px;background:transparent;box-shadow:none;border-radius:0;-webkit-appearance:none;appearance:none;font-family:var(--font,'Archivo',system-ui,sans-serif);font-weight:500;font-size:17px;line-height:1.2;color:var(--au-ink);text-overflow:ellipsis}
+html:root:root body .aube-q:focus-visible{box-shadow:none;border-radius:0;outline:0}
+.aube-q::placeholder{color:var(--au-ink3);opacity:1}
+.aube-raz{position:relative;flex:none;width:44px;height:44px;margin-right:8px;border:0;border-radius:50%;background:transparent;color:var(--au-ink3);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.aube-raz[hidden]{display:none}
+.aube-raz:hover{background-color:var(--au-pastille);color:var(--au-ink)}
+.aube-res{position:absolute;left:0;right:0;top:calc(100% + 10px);z-index:5;padding:8px;border-radius:20px;background-color:var(--au-astre-a);text-align:left;box-shadow:0 0 0 1px var(--au-lisere),0 34px 70px -22px var(--au-ombre-l);max-height:min(50vh,440px);overflow:auto;-webkit-overflow-scrolling:touch;transform-origin:50% 0;animation:aube-ouvre .28s var(--au-ease)}
+.aube-res[hidden]{display:none}
+@keyframes aube-ouvre{from{opacity:0;transform:translateY(-8px) scale(.97)}}
+.aube-gt{display:flex;justify-content:space-between;margin:10px 10px 4px;font-weight:700;font-size:13px;line-height:1.2;color:var(--au-ink3)}
+.aube-r{display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 10px;border-radius:12px;cursor:pointer}
+.aube-r.aube-sel{background-color:var(--au-pastille)}
+.aube-ic{flex:none;width:36px;height:36px;border-radius:10px;background-color:var(--au-pastille);color:var(--au-accent);display:flex;align-items:center;justify-content:center}
+.aube-r.aube-sel .aube-ic{background-color:var(--au-astre-a)}
+.aube-tx{min-width:0;display:flex;flex-direction:column;gap:2px}
+.aube-tx b,.aube-tx small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.aube-tx b{font-weight:700;font-size:15px;line-height:1.25;color:var(--au-ink)}
+.aube-tx small{font-weight:500;font-size:13px;line-height:1.25;color:var(--au-ink2)}
+mark.aube-m{background-color:var(--au-pastille);color:inherit;border-radius:3px}
+.aube-aucun{margin:10px;font-size:14px;line-height:1.45;color:var(--au-ink2)}
+@media (max-width:600px){.aube-champ{height:56px;border-radius:28px}.aube-loupe{margin-left:18px}html:root:root body .aube-q{font-size:16px;padding:0 10px}html:root:root body .aube-acc.u2-salut{border-radius:18px}}
+
+/* ── 9. Mouvement réduit : tout figé et COMPLET (astre levé, horizon entier, lettres visibles) ── */
 @media (prefers-reduced-motion:reduce){
-  html:not([data-hab]):root:root body :is(.ac-c-pharma,.of-hd,.pha-id.fi-hd,.td-hd,.inf-hd,.gr-hd,.olm-hd)::after{animation:none}
-  html:not([data-hab]):root:root body :is(.olm-p-ic,.cpd-ic,.fbk-ic,.inf-c-pic,.inf-c-chev,.cpd-go i){animation:none}
-  html:not([data-hab]):root:root body :is(.ac-c,.m1-c.m1-p,a.of-c,.fbk-b,.inf-c-porte,.gr-une,.gr-carte,.olm-porte,.cpd-door,.mkb-porte,.m1-arrow,.inf-c-chev,.cpd-go i,.olm-p-go svg,.m1-ico,.olm-p-ic,.cpd-ic,.fbk-ic,.inf-c-pic,.v2-btn,.pha-btn,.pha-edit,.vv-b,.fi-cap,.bo-open,.tp-m,.v2-tab,.v2-seg){transition:none}
-  html:not([data-hab]):root:root body :is(.ac-c,.m1-c.m1-p,a.of-c,.fbk-b,.inf-c-porte,.gr-une,.gr-carte,.olm-porte,.cpd-door,.mkb-porte):is(:hover,:active),
-  html:not([data-hab]):root:root body :is(.ac-c,.m1-c.m1-p,.fbk-b,.inf-c-porte,.olm-porte,.cpd-door):hover :is(.m1-arrow,.inf-c-chev,.cpd-go i,.olm-p-go svg,.m1-ico,.olm-p-ic,.cpd-ic,.fbk-ic,.inf-c-pic){transform:none}
+  .aube-scene *,.aube-l{animation:none!important;transition:none!important}
+  .aube-onde{display:none}
 }
-
-/* ── Relief et hiérarchie — on sait d'un coup d'œil ce qui compte.
-   Titres de page plus grands, chiffres plus gras, boutons en léger relief qui s'enfoncent à l'appui.
-   Les cartes gardent toutes la lumière posée plus haut (pas de panneaux à plat : choix de Will). Boutons et onglets : périmètre seulement.
-   CSS seul, habillage par défaut seul ; Archivo est large : les titres agrandis sont remesurés à 1280 et à 1024. ═══ */
-
-/* ── Titres : page 40 → 48 px (sauf Catalogue produits : à 48 px ses trois chiffres passaient sous le titre, en-tête 108 → 193 px), section 22 → 26 px avec plus d'air au-dessus (ordinateur ; le téléphone garde les siens) ── */
-@media (min-width:1001px){
-  html:not([data-hab]):root:root body :is(#u2-salut,.of-h1,.td-h1,.inf-h1,.gr-h1,.mkb-h1){font-size:48px;font-weight:850;letter-spacing:-.035em;line-height:1.04}
-  html:not([data-hab]):root:root body :is(.olm-q,.cpd-q>h2,.fbk-h>h2,.v2-section-head>h2){font-size:26px;font-weight:800;letter-spacing:-.022em;padding-top:8px}
-  html:not([data-hab]):root:root body h2.dr-titre{font-size:20px;letter-spacing:-.015em}
+/* ── 11. Correctifs vus sur les planches ── */
+html:root:root body .mkb-tete{display:block;width:auto;max-width:none}
+/* ── 12. Corrections demandées après relecture des planches (textes qui suivent leur surface ; bleu = accent de l'habillage) ── */
+/* textes posés directement sur le fond sombre des habillages sombres : même plaque et même encre claire que les autres textes libres de v2-hab.css (ligne « texte libre des autres écrans ») */
+:is([data-hab="marbre"],[data-hab="foret"],[data-hab="velours"]):root:root body :is(.fbk-h h2,.td-choix-l,.v2-todo-mh h2,.v2-todo-mh p,.olm-q,.cpd-q h2,.cpd-q p,.cpd-link,.pr-liens a){
+  background:var(--h-pl);color:var(--h-pl-ink,#F5EDDC);padding:2px 10px 3px;border-radius:10px;-webkit-box-decoration-break:clone;box-decoration-break:clone;box-shadow:var(--h-pl-sh,none)}
+/* état vide posé dans une carte claire : encre de l'habillage, sans plaque sombre (la plaque ne se justifie que sur le fond de page) */
+html:root:root body :is(.v2-card,.v2-card-b) :is(.v2-empty-t,.v2-empty-d){background:none;box-shadow:none;padding:0;border-radius:0}
+html:root:root body :is(.v2-card,.v2-card-b) .v2-empty-t{color:var(--au-ink)}
+html:root:root body :is(.v2-card,.v2-card-b) .v2-empty-d{color:var(--au-ink2)}
+/* « Type de tâche : » est posé dans la carte claire du formulaire (pas sur le fond de page) : encre de l'habillage, sans plaque (marbre, forêt : 1,04 mesuré avec l'encre claire) */
+html:root:root body :is(.v2-card,.v2-card-b) .td-choix-l{background:none;box-shadow:none;padding:0;border-radius:0;color:var(--au-ink2)}
+/* pastilles d'icône d'Infos et monogrammes de Groupements : le bleu codé en dur devient l'accent de l'habillage */
+html[data-hab]:root:root body .inf-c-pic{background-image:linear-gradient(160deg,color-mix(in srgb,var(--ip-blue) 80%,#fff),var(--ip-blue) 55%,var(--ip-blue-d))}
+html[data-hab]:root:root body :is(.gr-m1 .grp-logo-x,.gr-pastille .grp-logo-x){background-image:linear-gradient(160deg,color-mix(in srgb,var(--ip-blue) 80%,#fff),var(--ip-blue-d))}
+html[data-hab]:root:root body .gr-tri-l{color:var(--au-ink2)}
+html:root:root body .aube-acc .aube-acc-bloc :is(.m1-eye,h1.v2-titre){display:block;width:100%;max-width:none;margin-left:0;margin-right:0;padding-left:0;padding-right:0;text-align:center}
+/* Catalogue « Trois portes. Chacune ouvre son volet… » : posé sur le fond de page de l'habillage, il prenait le gris fixe du Comptoir (#5B6272) : léopard 4,16, nacre 4,25, terracotta 3,49, glacier 4,45 (seuil 4,5). Il prend l'encre de l'habillage ; les habillages sombres gardent leur plaque (règle du § 12) */
+html[data-hab]:not([data-hab="marbre"],[data-hab="foret"],[data-hab="velours"]):root:root body .cpd-q p{color:var(--au-ink2)}
+/* « Afficher : » de To do au téléphone (marbre, forêt, velours) : la plaque du § 12 ajoutait 20 px, le libellé se coupait avant ses deux-points et le nombre des onglets passait dessous. Il reste 61 px à 390 : au téléphone le libellé garde son encre claire, sans plaque, comme dans les autres habillages. */
+@media (max-width:600px){
+  :is([data-hab="marbre"],[data-hab="foret"],[data-hab="velours"]):root:root body .v2-todo-tools .td-choix-l{background:none;box-shadow:none;padding:0;border-radius:0}
 }
-
-/* ── Chiffres : plus grands, plus gras, alignés ── */
-html:not([data-hab]):root:root body :is(.of-ca-b,.pha-kval,.v2-kpi-v,.inf-c-cpt>b,.cpd-head b){font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
-html:not([data-hab]):root:root body .of-ca-b{font-size:40px;font-weight:850;letter-spacing:-.03em}
-html:not([data-hab]):root:root body .pha-kval{font-size:28px;font-weight:850;letter-spacing:-.025em}
-html:not([data-hab]):root:root body .inf-c-cpt>b{font-size:36px;font-weight:850;letter-spacing:-.03em}
-
-
-/* ── Boutons blancs : léger relief (dégradé, filet, base plus sombre), ils descendent d'1 px à l'appui ── */
-html:not([data-hab]):root:root body :is(.u2-page,.of-m1,.fi-m1,.td-m1,.inf2,.gr-m1,.olm,.cpd,.pa-root,.mkb,.cn-shell,.trn-page,.dc-wrap) :is(.v2-btn-ghost,.pha-btn:not(.pha-btn-pri),.pha-edit,.vv-b,.fi-cap),
-html:not([data-hab]):root:root body .vv-band :is(.vv-b){background-color:#fff;background-image:linear-gradient(180deg,#FFFFFF 0%,#F1F4FA 100%);border:1px solid #D3DAE6;border-bottom-color:#BAC4D6;box-shadow:inset 0 1px 0 #fff,0 1px 0 rgba(16,24,48,.05),0 3px 6px -2px rgba(16,24,48,.14);transition:transform .12s,box-shadow .12s}
-html:not([data-hab]):root:root body :is(.u2-page,.of-m1,.fi-m1,.td-m1,.inf2,.gr-m1,.olm,.cpd,.pa-root,.mkb,.cn-shell,.trn-page,.dc-wrap) :is(.v2-btn-ghost,.pha-btn:not(.pha-btn-pri),.pha-edit,.vv-b,.fi-cap):hover,
-html:not([data-hab]):root:root body .vv-band .vv-b:hover{background-image:linear-gradient(180deg,#FFFFFF 0%,#E8EFFC 100%);border-color:#BFD0F0;border-bottom-color:#A9BBE0}
-html:not([data-hab]):root:root body :is(.u2-page,.of-m1,.fi-m1,.td-m1,.inf2,.gr-m1,.olm,.cpd,.pa-root,.mkb,.cn-shell,.trn-page,.dc-wrap) :is(.v2-btn-ghost,.pha-btn:not(.pha-btn-pri),.pha-edit,.vv-b,.fi-cap):active,
-html:not([data-hab]):root:root body .vv-band .vv-b:active{transform:translateY(1px);box-shadow:inset 0 1px 2px rgba(16,24,48,.12)}
-
-/* ── Boutons bleus : double arête (haut clair, bas sombre), ils descendent d'1 px à l'appui ── */
-html:not([data-hab]):root:root body :is(.u2-page,.of-m1,.fi-m1,.td-m1,.inf2,.gr-m1,.olm,.cpd,.pa-root,.mkb,.cn-shell,.trn-page,.dc-wrap) :is(.v2-btn-primary,.pha-btn-pri),
-html:not([data-hab]):root:root body :is(.bo-open,.tp-plus){box-shadow:inset 0 1px 0 rgba(255,255,255,.38),inset 0 -2px 0 rgba(0,18,90,.38),0 1px 0 rgba(0,30,120,.45),0 10px 20px -10px rgba(0,80,230,.75);transition:transform .12s,box-shadow .12s}
-html:not([data-hab]):root:root body :is(.u2-page,.of-m1,.fi-m1,.td-m1,.inf2,.gr-m1,.olm,.cpd,.pa-root,.mkb,.cn-shell,.trn-page,.dc-wrap) :is(.v2-btn-primary,.pha-btn-pri):active,
-html:not([data-hab]):root:root body :is(.bo-open,.tp-plus):active{transform:translateY(1px);box-shadow:inset 0 1px 0 rgba(255,255,255,.25),inset 0 2px 4px rgba(0,18,90,.35),0 4px 10px -6px rgba(0,80,230,.6)}
-
-/* ── Onglets : la piste est creusée, l'onglet allumé est en relief (même geste dans la barre, la page et la to do) ── */
-html:not([data-hab]):root:root body :is(.u2-page,.of-m1,.fi-m1,.td-m1,.inf2,.olm,.cpd,.pa-root,.mkb,.cn-shell,.trn-page,.dc-wrap) .v2-tabs:not(.gr-tabs),
-html:not([data-hab]):root:root body .td-m1 .v2-todo-seg{box-shadow:inset 0 1px 3px rgba(16,24,48,.10),inset 0 -1px 0 #fff}
-html:not([data-hab]):root:root body :is(.u2-page,.of-m1,.fi-m1,.td-m1,.inf2,.olm,.cpd,.pa-root,.mkb,.cn-shell,.trn-page,.dc-wrap) .v2-tabs:not(.gr-tabs) .v2-tab.on,
-html:not([data-hab]):root:root body .td-m1 .v2-todo-seg button.is-on{box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -2px 0 rgba(0,18,90,.35),0 6px 14px -6px rgba(0,80,230,.6)}
-@media (min-width:1001px){
-  html:not([data-hab]):root:root body .tp-menu{box-shadow:inset 0 1px 3px rgba(16,24,48,.10),inset 0 -1px 0 #fff}
-  html:not([data-hab]):root:root body :is(.tp-m.on,.tp-m.on:hover){box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -2px 0 rgba(0,18,90,.35),0 6px 14px -6px rgba(0,80,230,.6)}
-}
-@media (prefers-reduced-motion:reduce){
-  html:not([data-hab]):root:root body :is(.v2-btn-ghost,.pha-btn,.pha-edit,.vv-b,.fi-cap,.v2-btn-primary,.bo-open,.tp-plus){transition:none}
-}
-/* ═══ fin du temps 5 ═══ */

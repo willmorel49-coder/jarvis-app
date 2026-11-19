@@ -525,8 +525,16 @@
     return '<a class="m1-btn" href="#pharma/' + id + '" data-u2-act="rel:' + id + '">Reprendre : ' + esc(court(f.nom)) + chev(16) + '</a>';
   }
   function entete(ctx) {
-    return '<div class="u2-salut m1-hd ac-in" style="--i:0"><div class="m1-hd-t"><p class="v2-sous m1-eye">' + esc(dateLongue()) + '</p>' +
+    // 19/11/2026 (l'aube) : l'accueil = le lever du jour (maquette e1). Salut + zone de recherche posée sur l'horizon ; la date, la phrase et « Reprendre » restent là.
+    // Le comportement (scène, lettres, recherche) vit dans v2-aube.js ; ici seulement la structure, avec les vraies données.
+    var loupe = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>';
+    var croix = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+    return '<div class="u2-salut m1-hd ac-in aube-acc" id="aube-acc" style="--i:0"><div class="m1-hd-t aube-acc-bloc"><p class="v2-sous m1-eye">' + esc(dateLongue()) + '</p>' +
       '<h1 class="v2-titre" id="u2-salut">' + esc(P().salut()) + '</h1>' +
+      '<div class="aube-champ" id="aube-champ" role="search"><span class="aube-champ-fond" aria-hidden="true"></span><span class="aube-loupe">' + loupe + '</span>' +
+      '<input class="aube-q" id="aube-q" type="text" inputmode="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="' + (window.matchMedia && window.matchMedia('(max-width:600px)').matches ? 'Officine, produit ou page' : 'Rechercher une officine, un produit, une page') + '" aria-label="Rechercher une officine, un produit ou une page" role="combobox" aria-expanded="false" aria-controls="aube-res" aria-autocomplete="list">' +
+      '<button type="button" class="aube-raz" id="aube-raz" hidden aria-label="Effacer la recherche">' + croix + '</button>' +
+      '<div class="aube-res" id="aube-res" role="listbox" aria-label="Résultats" hidden></div></div>' +
       '<p class="v2-sous m1-phrase" data-slot="h.phrase">' + slot('h.phrase', ctx) + '</p></div>' +
       '<span class="m1-hd-a" data-slot="h.reprendre">' + slot('h.reprendre', ctx) + '</span></div>';
   }
