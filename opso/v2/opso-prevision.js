@@ -35,6 +35,8 @@
     + '.opv-onglets button{border:0;background:transparent;min-height:48px;padding:0 14px;font-size:15px;font-weight:600;color:var(--opv-muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px}'
     + '.opv-onglets button[aria-selected="true"]{color:var(--opv-encre);border-color:var(--opv-vert-d)}'
     + '.opv-haut{position:sticky;top:0;z-index:10;margin:0 -16px 14px;padding:10px 16px;background:rgba(247,250,248,.97);border-bottom:1px solid var(--opv-ligne);display:grid;grid-template-columns:repeat(3,1fr);gap:8px}'
+    // sous 640 px, .v2-wrap n'a plus que 14 px de marge : la marge négative doit valoir EXACTEMENT 14 px, sinon la page défile de côté (sonde prod 19/11 : 392 px pour 390)
+    + '@media(max-width:640px){.opv-haut{margin:0 -14px 14px;padding:10px 14px}}'
     + '.opv-haut b{display:block;font-family:ui-rounded,"SF Pro Rounded",-apple-system,system-ui,sans-serif;font-size:19px}.opv-haut span{font-size:13px;color:var(--opv-muted)}'
     + '.opv-haut .opv-d{font-size:13px;font-weight:600}.opv-d.opv-p{color:var(--opv-vert-dd)}.opv-d.opv-m{color:var(--opv-rose)}'
     + '.opv-cols{display:grid;gap:14px}.opv-cols>*,.opv-grid>*{min-width:0}@media(min-width:960px){.opv-cols{grid-template-columns:400px minmax(0,1fr);align-items:start}.opv-cols>:last-child{position:sticky;top:90px}}'
