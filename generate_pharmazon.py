@@ -4,7 +4,8 @@
 Scrape Pharmazon (sra-pharmazon.com, Magento) — connecté.
 Pour chaque laboratoire : produits (sku, id, nom, image) + prix via l'API
 /groupementprice/ajax/getprices/ (prix_final, prix_catalogue, remise, promo,
-paliers) + EAN13 via la fiche produit.
+paliers) + EAN13 via la fiche produit, puis complément par recherche des codes
+Offilog encore sans prix (produits épuisés, absents des pages labo).
 Sortie : crm/v2/pharmazon-data.js  (const PHARMAZON = [...])
 Utilise curl (TLS compatible) ; checkpoints réguliers.
 """
@@ -47,10 +48,11 @@ EMAIL, PWD = _identifiants()
 
 def log(*a): print(*a, flush=True)
 
-def curl(url, xhr=False, timeout=50, post=None, referer=None):
+def curl(url, xhr=False, timeout=50, post=None, referer=None, fin=False):
     # --compressed : une fiche produit pèse 2,3 Mo brute, 0,26 Mo compressée (mesuré le 18/11/2026)
     cmd = ["curl", "-sL", "--compressed", "--connect-timeout", "20", "--max-time", str(timeout), "-A", UA, "-b", JAR, "-c", JAR]
     if xhr: cmd += ["-H", "X-Requested-With: XMLHttpRequest"]
+    if fin: cmd += ["-w", "\n@@%{url_effective}"]  # adresse d'arrivée après les renvois, ajoutée en fin de réponse
     if referer: cmd += ["-e", referer]
     if post:
         for kv in post: cmd += ["--data-urlencode", kv]
@@ -166,6 +168,72 @@ def fetch_codes(pid):
         return (m.group(1) if m else ""), ""
     return (ean or cip), (cip if cip and cip != (ean or cip) else "")
 
+# ── 6. COMPLÉMENT : les produits ÉPUISÉS, absents des pages labo ──
+# 18/11/2026 : les pages par laboratoire cachent les produits épuisés (SVR Topialyse Éco-Recharge, « Disponibilité :
+# Épuisé »). La recherche par code-barres, elle, renvoie droit sur leur fiche : 117 produits Offilog retrouvés ainsi ce
+# jour-là, dont 60 épuisés. Sans cette étape, chaque relevé les reperd.
+OFFILOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "crm", "v2", "offilog-bestsellers-data.js")
+
+def codes_offilog():
+    """Codes-barres du catalogue Offilog (OFFILOG_BEST) ; liste vide, signalée, si le fichier manque ou se lit mal."""
+    try:
+        with open(OFFILOG, encoding="utf-8") as f:
+            m = re.search(r"const OFFILOG_BEST = (\[.*\]);", f.read(), re.S)
+        return [str(b.get("ean") or "") for b in json.loads(m.group(1))]
+    except Exception as e:
+        log("⚠️ Catalogue Offilog illisible (%s) : complément par recherche SAUTÉ" % e)
+        return []
+
+def chercher_code(code):
+    """Recherche Pharmazon d'un code-barres. Trouvé = le site renvoie sur une fiche qui porte CE code."""
+    u = curl(BASE + "/catalogsearch/result/?q=" + code, timeout=45, fin=True)
+    h, adr = u.rsplit("\n@@", 1) if "\n@@" in u else ("", "")
+    if "/customer/account/login" in adr: return {"etat": "deconnecte"}
+    if not adr: return {"etat": "erreur"}
+    if "catalogsearch/result" in adr:
+        return {"etat": "aucun" if re.search(r"ne renvoie aucun|aucun résultat", h, re.I) else "liste"}
+    m = re.search(r'"ProductID":"(\d+)","Name":"((?:[^"\\]|\\.)*)","SKU":"([^"]+)"', h)
+    c = codes_fiche(h)
+    if not m: return {"etat": "fiche-illisible"}
+    if code not in c.values(): return {"etat": "autre-code"}
+    t = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", h))
+    lab = re.search(r"Laboratoire : (.{2,60}?) (?:Gamme|Disponibilit)", t)
+    ean = c.get("ean") or code
+    cip = c.get("cip13") if c.get("cip13") and c.get("cip13") != ean else ""
+    return {"etat": "trouve", "id": m.group(1), "name": json.loads('"' + m.group(2) + '"'), "sku": m.group(3), "ean": ean,
+            "cip": cip, "labo": lab.group(1).strip() if lab else "", "epuise": bool(re.search(r"Disponibilité : Épuisé", t))}
+
+def complement(products, codes):
+    """Cherche chaque code Offilog encore sans prix Pharmazon ; ajoute à products ceux qu'il manque. Rend le bilan."""
+    couverts = set()
+    for p in products:
+        if p.get("ean") and p.get("prix_final") is not None:
+            couverts.add(str(p["ean"]))
+            if p.get("cip"): couverts.add(str(p["cip"]))
+    cible = [c for c in dict.fromkeys(codes) if c and c not in couverts]
+    log("Complément : %d codes Offilog sans prix Pharmazon à chercher" % len(cible))
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        fait = dict(zip(cible, ex.map(chercher_code, cible)))
+    coupes = [c for c, r in fait.items() if r["etat"] == "deconnecte"]
+    if coupes:
+        log("  %d recherches tombées sur une déconnexion : reconnexion et 2e essai" % len(coupes))
+        if login():
+            for c in coupes: fait[c] = chercher_code(c)
+    deja = {str(p.get("id")) for p in products}
+    trouves = {}
+    for r in fait.values():
+        if r["etat"] == "trouve" and r["id"] not in deja: trouves.setdefault(r["id"], r)
+    prices = fetch_prices(list(dict.fromkeys(r["sku"] for r in trouves.values())))
+    for r in trouves.values():
+        pr = prices.get(r["sku"], {})
+        products.append({"sku": r["sku"], "id": r["id"], "name": r["name"], "img": "", "labo": r["labo"], "ean": r["ean"], "cip": r["cip"],
+                         "prix_final": pr.get("prix_final"), "prix_catalogue": pr.get("prix_catalogue"), "remise": pr.get("groupement_remise")})
+    etats = {}
+    for r in fait.values(): etats[r["etat"]] = etats.get(r["etat"], 0) + 1
+    return {"cherches": len(fait), "etats": etats, "ajoutes": len(trouves),
+            "avecPrix": sum(1 for r in trouves.values() if prices.get(r["sku"], {}).get("prix_final") is not None),
+            "epuises": sum(1 for r in trouves.values() if r["epuise"])}
+
 def write_out(rows, partial=False):
     # ⚠️ 03/09/2026 — les prix négociés Pharmazon sont les conditions d'un
     # TIERS : ils ne vont JAMAIS dans OUT, qui part dans un dépôt PUBLIC
@@ -245,6 +313,11 @@ def main():
         return None
     with ThreadPoolExecutor(max_workers=10) as ex:
         list(ex.map(work, ids))
+    write_out(products, partial=True)  # checkpoint avec EAN, avant le complément
+    bilan = complement(products, codes_offilog())
+    log("Complément :", json.dumps(bilan, ensure_ascii=False))
+    restants = bilan["etats"].get("deconnecte", 0)
+    if restants: log("⚠️ %d codes non cherchés (déconnexion persistante) : relancer le relevé pour les retrouver" % restants)
     write_out(products, partial=False)
     log("OK ->", OUT, "(%.1f Mo, %d produits)" % (os.path.getsize(OUT) / 1024 / 1024, len(products)))
 

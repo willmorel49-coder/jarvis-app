@@ -10,6 +10,7 @@ Lancer : python3 tests/pharmazon-releve.test.py
 """
 import datetime
 import importlib.util
+import json
 import os
 import re
 import sys
@@ -97,4 +98,72 @@ with tempfile.TemporaryDirectory() as d:
 conc = open(os.path.join(RACINE, "crm", "v2", "v2-concurrents.js"), encoding="utf-8").read()
 bloc = conc[conc.index("pharmazon: {"):conc.index("etradi: {")]
 assert "window.PHARMAZON_MAJ" in bloc and not re.search(r"maj: function \(\) \{ return '\d{4}-", bloc), "date Pharmazon écrite en dur"
+
+# ── 4. relevé ENTIER (main) : les produits épuisés, absents des pages labo, sont retrouvés par la recherche ──
+# Le 18/11/2026, 117 produits Offilog n'ont été retrouvés que par la recherche Pharmazon (dont 60 épuisés, que les pages
+# labo cachent : SVR Topialyse Éco-Recharge). Ce complément vivait hors du dépôt : le relevé suivant les aurait reperdus.
+B = g.BASE
+EAN_PRIX, EAN_SANS_PRIX, EAN_EPUISE = "3401560221473", "3282770147797", "3337875597388"
+EAN_AUCUN, EAN_AUTRE, EAN_COUPE = "3700000000001", "3700000000002", "3700000000003"
+cherches, connexions, coupe = [], [0], [0]
+
+
+def trouvee(pid, nom, sku, codes, labo, epuise):
+    tete = ('<script>{"ProductID":"%s","Name":"%s","SKU":"%s"}</script><div>Laboratoire : <a>%s</a></div><div>Gamme : X</div>'
+            '<div>Disponibilité : %s</div>' % (pid, nom, sku, labo, "Épuisé" if epuise else "En stock"))
+    return fiche(codes, tete=tete)
+
+
+def site(url, **k):
+    if "/catalogsearch/result/?q=" in url:
+        code = url.rsplit("=", 1)[1]
+        cherches.append(code)
+        if code == EAN_COUPE and not coupe[0]:
+            coupe[0] = 1
+            return "<p>Connexion client</p>\n@@" + B + "/customer/account/login/"
+        rep = {EAN_SANS_PRIX: (trouvee("102", "Spray", "S2", [("ean", EAN_SANS_PRIX)], "LABO", False), "/spray.html"),
+               EAN_EPUISE: (trouvee("201", "SVR Topialyse \\u00c9co-Recharge", "S201", [("ean", EAN_EPUISE)], "SVR", True), "/topialyse.html"),
+               EAN_AUTRE: (trouvee("203", "Autre", "S203", [("ean", "3700000009999")], "LABO", False), "/autre.html"),
+               EAN_COUPE: (trouvee("202", "Baume", "S202", [("ean", EAN_COUPE), ("cip13", "3401000000003")], "NUXE", False), "/baume.html")}
+        h, adr = rep.get(code, ("<p>Votre recherche ne renvoie aucun résultat.</p>", "/catalogsearch/result/?q=" + code))
+        return h + "\n@@" + B + adr
+    if "/catalog/product/view/id/" in url:
+        return {"101": fiche([("ean", EAN_PRIX)]), "102": fiche([("ean", EAN_SANS_PRIX)])}[url.rstrip("/").rsplit("/", 1)[1]]
+    if "/groupementprice/ajax/getprices/" in url:
+        tarifs = {"S1": 4.37, "S201": 9.9, "S202": 7.5}  # S2 sans prix ce jour-là
+        demandes = re.findall(r"skus\[\]=([^&]+)", url)
+        return json.dumps({"prices": {s: {"prix_final": tarifs[s], "prix_catalogue": 12.5, "groupement_remise": 20.8}
+                                      for s in demandes if s in tarifs}})
+    if "/laboratoire/labo/index/code/62/" in url:
+        return ('<form data-sku="S1"><input name="product" value="101"><a class="product-item-link">Gel</a></form>'
+                '<form data-sku="S2"><input name="product" value="102"><a class="product-item-link">Spray</a></form>')
+    if url == B + "/customer/account/":
+        connexions[0] += 1
+        return PAGE_COMPTE
+    if url == B + "/":
+        return '<a href="/laboratoire/labo/index/code/62/">LABO</a>'
+    return PAGE_CONNEXION
+
+
+with tempfile.TemporaryDirectory() as d:
+    g.OUT = os.path.join(d, "pharmazon-data.js")
+    g.OFFILOG = os.path.join(d, "offilog-bestsellers-data.js")
+    with open(g.OFFILOG, "w", encoding="utf-8") as f:
+        f.write("const OFFILOG_BEST = %s;\n" % json.dumps([{"ean": e} for e in
+                [EAN_PRIX, EAN_SANS_PRIX, EAN_EPUISE, EAN_AUCUN, EAN_AUTRE, EAN_COUPE, EAN_EPUISE, "", None]]))
+    g.curl = site
+    g.main()
+    pub = open(g.OUT, encoding="utf-8").read()
+    prods = {p["id"]: p for p in json.loads(re.search(r"const PHARMAZON = (\[.*\]);", pub).group(1))}
+    prix = open(os.path.join(d, "pharmazon-prix.js"), encoding="utf-8").read()
+    assert "201" in prods, "produit épuisé (absent des pages labo) non retrouvé par la recherche"
+    assert prods["201"] == {"sku": "S201", "id": "201", "name": "SVR Topialyse Éco-Recharge", "img": "", "labo": "SVR", "ean": EAN_EPUISE}, prods["201"]
+    assert '"%s": [9.9, 12.5, 20.8]' % EAN_EPUISE in prix, "prix du produit retrouvé absent du fichier protégé"
+    assert prods.get("202", {}).get("cip") == "3401000000003", "produit perdu sur une déconnexion en cours de recherche"
+    assert connexions[0] == 2, "pas de reconnexion après la déconnexion (%d connexions)" % connexions[0]
+    assert "203" not in prods, "fiche d'un AUTRE code ajoutée"
+    assert sorted(prods) == ["101", "102", "201", "202"], sorted(prods)
+    assert EAN_PRIX not in cherches, "produit déjà relevé avec son prix cherché pour rien"
+    assert cherches.count(EAN_EPUISE) == 1 and cherches.count(EAN_COUPE) == 2, cherches
+    assert not re.search(r"prix_final|9\.9|12\.5", pub), "un prix Pharmazon dans le fichier PUBLIC"
 print("pharmazon-releve.test.py : OK")
