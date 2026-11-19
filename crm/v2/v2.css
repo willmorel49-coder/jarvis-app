@@ -1030,3 +1030,125 @@ html:not([data-hab]) .gr-tabs .v2-tab.on,html:not([data-hab]) .gr-tabs .v2-tab.o
 /* ── La carte : la flèche des filtres était l'encre à 60 % d'opacité (4,26:1) ; couleur pleine, même teinte ── */
 html:not([data-hab]) .cn-fb-btn:not(.on) .cn-fb-car{opacity:1;color:#5B6478}
 /* ═══ fin du temps 4 ═══ */
+
+/* ═══ COUP DE NEUF — temps 5 (19/11/2026) : lumière et profondeur, mouvement, relief et hiérarchie, accueil et écrans de la barre SEULEMENT.
+   Une source de lumière en haut à gauche, sur tout le périmètre.
+   CSS seul, habillage par défaut seul. Fonds en propriétés séparées (jamais « a, b, couleur ») ; les reflets sont des ombres
+   INTÉRIEURES, peintes sous le texte (aucun voile sur les lettres) ; ni flou, ni backdrop-filter, ni opacité sur du texte. ═══ */
+html:not([data-hab]){--cn5:1;
+  --cn5-c:inset 0 1px 0 #fff,inset 0 -34px 44px -34px rgba(0,80,230,.17),0 1px 2px rgba(16,24,48,.09),0 8px 16px -6px rgba(16,24,48,.12),0 38px 66px -26px rgba(0,52,160,.46);
+  --cn5-ch:inset 0 1px 0 #fff,inset 0 -34px 44px -34px rgba(0,80,230,.22),0 1px 2px rgba(16,24,48,.09),0 14px 24px -8px rgba(16,24,48,.15),0 50px 82px -28px rgba(0,52,160,.54);
+  --cn5-b:inset 0 1px 0 rgba(255,255,255,.55),inset 0 70px 80px -70px rgba(255,255,255,.07),inset 0 -70px 90px -66px rgba(0,10,56,.50),0 3px 8px rgba(0,40,140,.24),0 44px 76px -28px rgba(0,60,210,.70);
+}
+
+/* ── Fond de page : halo bleu franc en haut à droite, halo blanc en haut à gauche, sur un dégradé vertical ── */
+html:not([data-hab]) body{background-color:#E6ECF6;background-image:radial-gradient(1200px 700px at 96% -12%,#B9D0FF 0%,rgba(185,208,255,0) 64%),radial-gradient(1100px 680px at -2% -16%,#FFFFFF 0%,rgba(255,255,255,0) 66%),linear-gradient(180deg,#DCE6F8 0px,#E8EDF6 760px);background-repeat:no-repeat}
+
+/* ── Barre du haut : elle flotte au-dessus de la page ── */
+html:not([data-hab]) .v2-top{box-shadow:0 1px 0 #fff inset,0 1px 0 rgba(26,32,48,.04),0 16px 36px -20px rgba(0,52,160,.32)}
+
+/* ── Cartes blanches : arête haute éclairée, base plus sombre, ombre en trois couches (contact, proche, longue bleutée), reflet bleu en bas ── */
+html:not([data-hab]):root:root body :is(.ac-c:not(.ac-c-pharma),.m1-c.m1-p,a.of-c,.v2-card.dr,.pha-nav,.pha-kpi,.pha-card,.fbk-b:not(.pri),.v2-todo-add,.v2-todo-empty,.v2-todo-list,.inf-c-porte,.gr-une,.gr-carte,.gr-bar,.olm-porte:not(.on),.cpd-door,.cpd-head,.mkb-porte){border-top-color:#fff;border-bottom-color:#CCD5E6;box-shadow:var(--cn5-c)}
+html:not([data-hab]):root:root body :is(.ac-c:not(.ac-c-pharma),.m1-c.m1-p,a.of-c,.fbk-b:not(.pri),.inf-c-porte,.gr-une,.gr-carte,.olm-porte:not(.on),.cpd-door,.mkb-porte):hover{box-shadow:var(--cn5-ch)}
+
+/* ── Bandeaux bleus : ombre colorée profonde, lumière qui tombe du haut, base plus sombre (ombres intérieures = sous le texte) ── */
+html:not([data-hab]):root:root body :is(.ac-c-pharma,.of-hd,.pha-id.fi-hd,.td-hd,.inf-hd,.gr-hd,.olm-hd,.fbk-b.pri),
+html:not([data-hab]):root:root body .fbk-b.pri:hover{box-shadow:var(--cn5-b)}
+/* accueil : le fond peint de la carte Officines est un calque à part (.ac-fond, sans texte) : la lumière se pose sur lui */
+html:not([data-hab]):root:root body .ac-c-pharma .ac-fond{box-shadow:inset 0 1px 0 rgba(255,255,255,.45),inset 0 130px 140px -120px rgba(255,255,255,.40),inset 0 -70px 90px -66px rgba(0,10,56,.48)}
+
+/* ── Pastilles d'icône bleues (Offilog, Catalogue produits) : même lumière que les bandeaux ── */
+html:not([data-hab]):root:root body :is(.olm-p-ic,.cpd-ic){box-shadow:inset 0 1px 0 rgba(255,255,255,.45),inset 0 -12px 18px -12px rgba(0,16,80,.5),0 12px 20px -10px rgba(0,60,200,.6)}
+
+/* ── Titres de page : gravés sur fond clair, portés par une ombre profonde sur fond bleu ── */
+html:not([data-hab]):root:root body :is(#u2-salut,.mkb-h1,.cpd-h1){text-shadow:0 1px 0 #fff,0 14px 34px rgba(0,52,160,.16)}
+html:not([data-hab]):root:root body :is(.of-h1,.td-h1,.inf-h1,.gr-h1,.pha-name){text-shadow:0 1px 1px rgba(0,16,80,.30),0 14px 36px rgba(0,16,80,.38)}
+
+/* ── Mouvement — peu d'éléments, mais qui vivent.
+   Tout le mouvement est transform / opacity sur des éléments SANS texte (lumières, pastilles d'icône, flèches) ;
+   les cartes ne bougent qu'au survol et à l'appui. Repli prefers-reduced-motion complet ; l'accueil se met en pause avec .m1-pause.
+   La lumière d'origine des bandeaux (of-lu, gr-lu… déjà animée) n'est pas touchée : une seconde lumière s'ajoute en bas à gauche. ═══ */
+@keyframes cn5-derive{0%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(48%,-16%,0) scale(1.16)}100%{transform:translate3d(96%,4%,0) scale(.94)}}
+@keyframes cn5-pop{0%{opacity:0;transform:translate3d(0,10px,0) scale(.7) rotate(-10deg)}65%{opacity:1;transform:translate3d(0,-2px,0) scale(1.06) rotate(2deg)}100%{opacity:1;transform:none}}
+@keyframes cn5-glisse{0%{opacity:0;transform:translate3d(-10px,0,0)}100%{opacity:1;transform:none}}
+
+/* ── Bandeaux bleus : une seconde lumière, bleu clair, qui traverse lentement le bandeau (22 s, aller-retour) ── */
+html:not([data-hab]):root:root body :is(.ac-c-pharma,.of-hd,.pha-id.fi-hd,.td-hd,.inf-hd,.gr-hd,.olm-hd)::after{content:"";position:absolute;z-index:-1;left:-14%;bottom:-62%;width:60%;aspect-ratio:1;border-radius:50%;background-image:radial-gradient(closest-side,rgba(150,196,255,.34),rgba(150,196,255,0));pointer-events:none;animation:cn5-derive 22s ease-in-out infinite alternate;will-change:transform}
+html:not([data-hab]):root:root body .pha-id.fi-hd::after{width:120%;left:-50%;bottom:-30%}
+html:not([data-hab]):root:root body .m1-pause .ac-c-pharma::after{animation-play-state:paused}
+
+/* ── Arrivée : les pastilles d'icône éclosent l'une après l'autre, les flèches glissent en place (une seule fois, à l'ouverture de l'écran) ── */
+html:not([data-hab]):root:root body :is(.olm-p-ic,.cpd-ic,.fbk-ic,.inf-c-pic){animation:cn5-pop .8s cubic-bezier(.2,.8,.2,1) .15s backwards}
+html:not([data-hab]):root:root body :is(.olm-porte,.cpd-door,.fbk-b,.inf-c-porte):nth-child(2) :is(.olm-p-ic,.cpd-ic,.fbk-ic,.inf-c-pic){animation-delay:.27s}
+html:not([data-hab]):root:root body :is(.olm-porte,.cpd-door,.fbk-b,.inf-c-porte):nth-child(3) :is(.olm-p-ic,.cpd-ic,.fbk-ic,.inf-c-pic){animation-delay:.39s}
+html:not([data-hab]):root:root body :is(.olm-porte,.cpd-door,.fbk-b,.inf-c-porte):nth-child(4) :is(.olm-p-ic,.cpd-ic,.fbk-ic,.inf-c-pic){animation-delay:.51s}
+html:not([data-hab]):root:root body :is(.inf-c-chev,.cpd-go i){animation:cn5-glisse .6s cubic-bezier(.2,.8,.2,1) .55s backwards}
+
+/* ── Survol (souris seulement) : la carte se soulève, son ombre grandit, la flèche avance, l'icône se penche ── */
+@media (hover:hover) and (pointer:fine){
+  html:not([data-hab]):root:root body :is(.ac-c,.m1-c.m1-p,a.of-c,.fbk-b,.inf-c-porte,.gr-une,.gr-carte,.olm-porte:not(.on),.cpd-door,.mkb-porte){transition:transform .5s cubic-bezier(.22,1,.36,1),box-shadow .5s cubic-bezier(.2,.8,.2,1)}
+  html:not([data-hab]):root:root body :is(.ac-c,.m1-c.m1-p,a.of-c,.fbk-b,.inf-c-porte,.gr-une,.gr-carte,.olm-porte:not(.on),.cpd-door,.mkb-porte):hover{transform:translate3d(0,-5px,0)}
+  html:not([data-hab]):root:root body :is(.m1-arrow,.inf-c-chev,.cpd-go i,.olm-p-go svg,.m1-ico,.olm-p-ic,.cpd-ic,.fbk-ic,.inf-c-pic){transition:transform .45s cubic-bezier(.22,1,.36,1)}
+  html:not([data-hab]):root:root body :is(.ac-c,.m1-c.m1-p,.inf-c-porte,.olm-porte,.cpd-door):hover :is(.m1-arrow,.inf-c-chev,.cpd-go i,.olm-p-go svg){transform:translate3d(4px,0,0)}
+  html:not([data-hab]):root:root body :is(.ac-c,.m1-c.m1-p,.fbk-b,.inf-c-porte,.olm-porte,.cpd-door):hover :is(.m1-ico,.olm-p-ic,.cpd-ic,.fbk-ic,.inf-c-pic){transform:translate3d(0,-3px,0) rotate(-6deg) scale(1.06)}
+}
+/* ── Appui (souris et doigt) : la carte et les boutons s'enfoncent ── */
+html:not([data-hab]):root:root body :is(.v2-btn,.pha-btn,.pha-edit,.vv-b,.fi-cap,.bo-open,.tp-m,.v2-tab,.v2-seg){transition:transform .15s cubic-bezier(.2,.8,.2,1)}
+html:not([data-hab]):root:root body :is(.ac-c,.m1-c.m1-p,a.of-c,.fbk-b,.inf-c-porte,.gr-une,.gr-carte,.olm-porte,.cpd-door,.mkb-porte):active{transform:scale(.985);transition-duration:.12s}
+html:not([data-hab]):root:root body :is(.v2-btn,.pha-btn,.pha-edit,.vv-b,.fi-cap,.bo-open,.tp-m,.v2-tab,.v2-seg):active{transform:scale(.97)}
+
+/* ── Mouvement réduit : rien ne bouge, rien ne glisse ── */
+@media (prefers-reduced-motion:reduce){
+  html:not([data-hab]):root:root body :is(.ac-c-pharma,.of-hd,.pha-id.fi-hd,.td-hd,.inf-hd,.gr-hd,.olm-hd)::after{animation:none}
+  html:not([data-hab]):root:root body :is(.olm-p-ic,.cpd-ic,.fbk-ic,.inf-c-pic,.inf-c-chev,.cpd-go i){animation:none}
+  html:not([data-hab]):root:root body :is(.ac-c,.m1-c.m1-p,a.of-c,.fbk-b,.inf-c-porte,.gr-une,.gr-carte,.olm-porte,.cpd-door,.mkb-porte,.m1-arrow,.inf-c-chev,.cpd-go i,.olm-p-go svg,.m1-ico,.olm-p-ic,.cpd-ic,.fbk-ic,.inf-c-pic,.v2-btn,.pha-btn,.pha-edit,.vv-b,.fi-cap,.bo-open,.tp-m,.v2-tab,.v2-seg){transition:none}
+  html:not([data-hab]):root:root body :is(.ac-c,.m1-c.m1-p,a.of-c,.fbk-b,.inf-c-porte,.gr-une,.gr-carte,.olm-porte,.cpd-door,.mkb-porte):is(:hover,:active),
+  html:not([data-hab]):root:root body :is(.ac-c,.m1-c.m1-p,.fbk-b,.inf-c-porte,.olm-porte,.cpd-door):hover :is(.m1-arrow,.inf-c-chev,.cpd-go i,.olm-p-go svg,.m1-ico,.olm-p-ic,.cpd-ic,.fbk-ic,.inf-c-pic){transform:none}
+}
+
+/* ── Relief et hiérarchie — on sait d'un coup d'œil ce qui compte.
+   Titres de page plus grands, chiffres plus gras, boutons en léger relief qui s'enfoncent à l'appui.
+   Les cartes gardent toutes la lumière posée plus haut (pas de panneaux à plat : choix de Will). Boutons et onglets : périmètre seulement.
+   CSS seul, habillage par défaut seul ; Archivo est large : les titres agrandis sont remesurés à 1280 et à 1024. ═══ */
+
+/* ── Titres : page 40 → 48 px (sauf Catalogue produits : à 48 px ses trois chiffres passaient sous le titre, en-tête 108 → 193 px), section 22 → 26 px avec plus d'air au-dessus (ordinateur ; le téléphone garde les siens) ── */
+@media (min-width:1001px){
+  html:not([data-hab]):root:root body :is(#u2-salut,.of-h1,.td-h1,.inf-h1,.gr-h1,.mkb-h1){font-size:48px;font-weight:850;letter-spacing:-.035em;line-height:1.04}
+  html:not([data-hab]):root:root body :is(.olm-q,.cpd-q>h2,.fbk-h>h2,.v2-section-head>h2){font-size:26px;font-weight:800;letter-spacing:-.022em;padding-top:8px}
+  html:not([data-hab]):root:root body h2.dr-titre{font-size:20px;letter-spacing:-.015em}
+}
+
+/* ── Chiffres : plus grands, plus gras, alignés ── */
+html:not([data-hab]):root:root body :is(.of-ca-b,.pha-kval,.v2-kpi-v,.inf-c-cpt>b,.cpd-head b){font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+html:not([data-hab]):root:root body .of-ca-b{font-size:40px;font-weight:850;letter-spacing:-.03em}
+html:not([data-hab]):root:root body .pha-kval{font-size:28px;font-weight:850;letter-spacing:-.025em}
+html:not([data-hab]):root:root body .inf-c-cpt>b{font-size:36px;font-weight:850;letter-spacing:-.03em}
+
+
+/* ── Boutons blancs : léger relief (dégradé, filet, base plus sombre), ils descendent d'1 px à l'appui ── */
+html:not([data-hab]):root:root body :is(.u2-page,.of-m1,.fi-m1,.td-m1,.inf2,.gr-m1,.olm,.cpd,.pa-root,.mkb,.cn-shell,.trn-page,.dc-wrap) :is(.v2-btn-ghost,.pha-btn:not(.pha-btn-pri),.pha-edit,.vv-b,.fi-cap),
+html:not([data-hab]):root:root body .vv-band :is(.vv-b){background-color:#fff;background-image:linear-gradient(180deg,#FFFFFF 0%,#F1F4FA 100%);border:1px solid #D3DAE6;border-bottom-color:#BAC4D6;box-shadow:inset 0 1px 0 #fff,0 1px 0 rgba(16,24,48,.05),0 3px 6px -2px rgba(16,24,48,.14);transition:transform .12s,box-shadow .12s}
+html:not([data-hab]):root:root body :is(.u2-page,.of-m1,.fi-m1,.td-m1,.inf2,.gr-m1,.olm,.cpd,.pa-root,.mkb,.cn-shell,.trn-page,.dc-wrap) :is(.v2-btn-ghost,.pha-btn:not(.pha-btn-pri),.pha-edit,.vv-b,.fi-cap):hover,
+html:not([data-hab]):root:root body .vv-band .vv-b:hover{background-image:linear-gradient(180deg,#FFFFFF 0%,#E8EFFC 100%);border-color:#BFD0F0;border-bottom-color:#A9BBE0}
+html:not([data-hab]):root:root body :is(.u2-page,.of-m1,.fi-m1,.td-m1,.inf2,.gr-m1,.olm,.cpd,.pa-root,.mkb,.cn-shell,.trn-page,.dc-wrap) :is(.v2-btn-ghost,.pha-btn:not(.pha-btn-pri),.pha-edit,.vv-b,.fi-cap):active,
+html:not([data-hab]):root:root body .vv-band .vv-b:active{transform:translateY(1px);box-shadow:inset 0 1px 2px rgba(16,24,48,.12)}
+
+/* ── Boutons bleus : double arête (haut clair, bas sombre), ils descendent d'1 px à l'appui ── */
+html:not([data-hab]):root:root body :is(.u2-page,.of-m1,.fi-m1,.td-m1,.inf2,.gr-m1,.olm,.cpd,.pa-root,.mkb,.cn-shell,.trn-page,.dc-wrap) :is(.v2-btn-primary,.pha-btn-pri),
+html:not([data-hab]):root:root body :is(.bo-open,.tp-plus){box-shadow:inset 0 1px 0 rgba(255,255,255,.38),inset 0 -2px 0 rgba(0,18,90,.38),0 1px 0 rgba(0,30,120,.45),0 10px 20px -10px rgba(0,80,230,.75);transition:transform .12s,box-shadow .12s}
+html:not([data-hab]):root:root body :is(.u2-page,.of-m1,.fi-m1,.td-m1,.inf2,.gr-m1,.olm,.cpd,.pa-root,.mkb,.cn-shell,.trn-page,.dc-wrap) :is(.v2-btn-primary,.pha-btn-pri):active,
+html:not([data-hab]):root:root body :is(.bo-open,.tp-plus):active{transform:translateY(1px);box-shadow:inset 0 1px 0 rgba(255,255,255,.25),inset 0 2px 4px rgba(0,18,90,.35),0 4px 10px -6px rgba(0,80,230,.6)}
+
+/* ── Onglets : la piste est creusée, l'onglet allumé est en relief (même geste dans la barre, la page et la to do) ── */
+html:not([data-hab]):root:root body :is(.u2-page,.of-m1,.fi-m1,.td-m1,.inf2,.olm,.cpd,.pa-root,.mkb,.cn-shell,.trn-page,.dc-wrap) .v2-tabs:not(.gr-tabs),
+html:not([data-hab]):root:root body .td-m1 .v2-todo-seg{box-shadow:inset 0 1px 3px rgba(16,24,48,.10),inset 0 -1px 0 #fff}
+html:not([data-hab]):root:root body :is(.u2-page,.of-m1,.fi-m1,.td-m1,.inf2,.olm,.cpd,.pa-root,.mkb,.cn-shell,.trn-page,.dc-wrap) .v2-tabs:not(.gr-tabs) .v2-tab.on,
+html:not([data-hab]):root:root body .td-m1 .v2-todo-seg button.is-on{box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -2px 0 rgba(0,18,90,.35),0 6px 14px -6px rgba(0,80,230,.6)}
+@media (min-width:1001px){
+  html:not([data-hab]):root:root body .tp-menu{box-shadow:inset 0 1px 3px rgba(16,24,48,.10),inset 0 -1px 0 #fff}
+  html:not([data-hab]):root:root body :is(.tp-m.on,.tp-m.on:hover){box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -2px 0 rgba(0,18,90,.35),0 6px 14px -6px rgba(0,80,230,.6)}
+}
+@media (prefers-reduced-motion:reduce){
+  html:not([data-hab]):root:root body :is(.v2-btn-ghost,.pha-btn,.pha-edit,.vv-b,.fi-cap,.v2-btn-primary,.bo-open,.tp-plus){transition:none}
+}
+/* ═══ fin du temps 5 ═══ */
