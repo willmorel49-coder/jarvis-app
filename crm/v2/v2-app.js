@@ -600,7 +600,7 @@
     // 14/10/2026 — même teal que la tuile d'accueil (halo de tête de la carte des grossistes)
     concurrents: '#0E7C86',
     // 29/09/2026 — écrans OPSO « Pharmacies » et « Meilleurs achats » (opso-pharmacies.js)
-    opsopharmacies: 'var(--pil-opp)', opsoachats: 'var(--pil-cat)', opsobord: 'var(--pil-pilo)', opsoprix: 'var(--pil-fiche)'
+    opsopharmacies: 'var(--pil-opp)', opsoachats: 'var(--pil-cat)', opsobord: 'var(--pil-pilo)', opsoprix: 'var(--pil-fiche)', opsoprevision: 'var(--pil-fiche)'
   };
   function accentFor(name) {
     if (name === 'marketing') return (window.V2_BRAND && window.V2_BRAND.opso) ? 'var(--pil-fiche)' : 'var(--pil-rose)';
@@ -2167,6 +2167,10 @@
           && V2.PLAN_OPSO_ACCES.indexOf(String((V2.user && V2.user.email) || '').toLowerCase()) >= 0) {
         P.push({ k: 'planOpso2027', doc: 'planOpso2027', cls: 'p2', accent: 'var(--pil-fiche)', ico: 'fiche', tag: 'Interne', t: 'Plan du contrat 2027', d: 'Le document interne : le barème de RFA proposé, ce qu\'il rend à OPSO et ce qu\'il nous reste, palier par palier.', go: 'Ouvrir le document' });
       }
+      // 19/11/2026 — écran « Prévision du contrat » : même public que le plan (V2.PLAN_OPSO_ACCES), tuile à côté de lui.
+      if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsoprevision && V2.opsoPrevisionOk && V2.opsoPrevisionOk()) {
+        P.push({ k: 'opsoprevision', cls: 'p2', accent: 'var(--pil-fiche)', ico: 'grid', tag: 'Interne', t: 'Prévision du contrat 2027', d: 'Les curseurs de négociation, les simulations par palier et le suivi réel mois par mois.', go: 'Ouvrir la prévision' });
+      }
       function tile(p) {
         var nav = p.doc ? ('V2.ouvrirDocProtege(\'' + p.doc + '\')') : p.route ? ('V2.go(\'' + p.route.name + '\'' + (p.route.param ? ',\'' + p.route.param + '\'' : '') + ')') : ('V2.go(\'' + p.k + '\')');
         return '<a class="v2-pil ' + p.cls + '"' + (p.accent ? ' style="--accent:' + p.accent + '"' : '') + ' onmousemove="V2.homeSpot(event,this)" onclick="' + nav + '">' +
@@ -2254,6 +2258,8 @@
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsopharmacies) PAGES.push(['opsopharmacies', 'Pharmacies · évolution par officine', 'pharma']);
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsoachats) PAGES.push(['opsoachats', 'Meilleurs achats · classement par nombre de pharmacies', 'cat']);
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsoprix) PAGES.push(['opsoprix', 'Offre Privilège OPSO Santé · PFHT, prix habituel, prix négocié', 'cat']);
+    // 19/11/2026 — Prévision du contrat : absente de la palette pour tout compte hors V2.PLAN_OPSO_ACCES
+    if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsoprevision && V2.opsoPrevisionOk && V2.opsoPrevisionOk()) PAGES.push(['opsoprevision', 'Prévision du contrat · curseurs, simulations et suivi réel', 'grid']);
     // Une seule entrée « La carte » (l'entrée « Copilote » en doublon est retirée le 27/08/2026).
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.carte) PAGES.splice(1, 0, ['carte', 'La carte · officines, clients, prospects, tournée', 'pharma']);
     if (!(window.V2_BRAND && window.V2_BRAND.opso) && V2.pages.infos) PAGES.splice(1, 0, ['infos', 'Infos du matin', 'spark']);

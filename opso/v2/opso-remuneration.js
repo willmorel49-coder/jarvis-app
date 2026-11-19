@@ -394,5 +394,40 @@
   }
   if (document.body) demarrer(); else document.addEventListener('DOMContentLoaded', demarrer);
 
-  V2.opsoRemuneration = { compute: compute, tick: tick, appliquerTranches: appliquerTranches };
+  // ── Mois COMPLETS d'une année, pour l'écran « Prévision du contrat » (opso-prevision.js) ──
+  // Même définition du CA compté que la rémunération : ventes HT nettes (avoirs déduits), moins les motifs que le réglage
+  // exclut de la dernière tranche. Un mois est complet quand un mois PLUS RÉCENT existe dans les ventes (le dernier mois
+  // du fichier peut être partiel). Pharmacies actives = lignes réelles (hors « stats officine » injectées) avec des boîtes ;
+  // nouvelles = premier achat réel de l'année, sans aucun achat les années d'avant.
+  // Rend null tant que le réglage ou le catalogue ne sont pas là ; sinon { complets: k, mois: [{retenu, actives, nouvelles}] } (k mois d'affilée depuis janvier).
+  function moisComplets(annee) {
+    var C = reglage(); if (!C) return null;
+    var sales = V2.sales || []; if (!sales.length) return null;
+    if (C.ordre.some(function (k) { return C.motifs[k] && C.motifs[k].categorie; }) && !(window.PROD_STATS && window.PROD_STATS.length)) return null;
+    var ix = indexes();
+    var excl = (C.tranches[C.tranches.length - 1].exclut) || [];
+    var dernier = 0, M = {}, premier = {}, avant = {};
+    sales.forEach(function (s) {
+      if (!s.year || !s.month) return;
+      var cle = s.year * 12 + s.month; if (cle > dernier) dernier = cle;
+      if (s.year < annee) { avant[String(s.pharmacyId)] = 1; return; }
+      if (s.year !== annee) return;
+      var o = M[s.month] || (M[s.month] = { retenu: 0, ph: {} }), v = s.mntNetHt || 0;
+      var k = motifDe(C, ix, s.artCode, s.artDesignation);
+      if (!(k && excl.indexOf(k) >= 0)) o.retenu += v;
+      if (typeof s.commercial !== 'undefined') {
+        if ((s.qte || 0) > 0) o.ph[String(s.pharmacyId)] = 1;
+        if (v > 0) { var id = String(s.pharmacyId); if (!premier[id] || s.month < premier[id]) premier[id] = s.month; }
+      }
+    });
+    var neuf = {};
+    Object.keys(premier).forEach(function (id) { if (!avant[id]) neuf[premier[id]] = (neuf[premier[id]] || 0) + 1; });
+    var mois = [];
+    for (var m = 1; m <= 12 && M[m] && annee * 12 + m < dernier; m++) {
+      mois.push({ retenu: M[m].retenu, actives: Object.keys(M[m].ph).length, nouvelles: neuf[m] || 0 });
+    }
+    return { complets: mois.length, mois: mois };
+  }
+
+  V2.opsoRemuneration = { compute: compute, tick: tick, appliquerTranches: appliquerTranches, moisComplets: moisComplets };
 })();

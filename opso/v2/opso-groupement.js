@@ -532,7 +532,8 @@
     opsopharmacies: 'L\'évolution de chaque officine',
     opsoachats: 'Les références les plus commandées',
     opsoprix: 'PFHT, prix habituel et prix négocié',
-    planOpso2027: 'Barème de RFA et ce qui nous reste (interne)'
+    planOpso2027: 'Barème de RFA et ce qui nous reste (interne)',
+    opsoprevision: 'Curseurs, simulations et suivi réel (interne)'
   };
   // Mini-aperçu de chaque espace : un chiffre réel ou une forme, jamais une phrase.
   function apercu(k, DATA) {

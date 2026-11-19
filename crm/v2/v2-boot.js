@@ -848,6 +848,8 @@
     opsostats: 'opso-stats-data.js',
     // 30/09/2026 — liste des 129 adhérents OPSO (titulaire, e-mail, tél.) : sortie du dépôt public.
     opsolisting: 'opso-listing-2026.js',
+    // 19/11/2026 — plan du contrat 2027 (écran Prévision, comptes de V2.PLAN_OPSO_ACCES seulement) : fichier protégé, jamais dans le dépôt.
+    opsoprevision: 'opso-prevision-2027-data.js',
     // potentiel commercial + CA par pharmacie (fiches clients)
     clientscond: 'clients-cond.js',
     // 10/09/2026 — base clients (export « clients actifs ») : tel, mail, contact,
@@ -973,7 +975,9 @@
     // 30/09/2026 — accès de test Offilog affiché sur l'écran Offilog d'OPSO (window.OPSO_OFFILOG_ACCES).
     opsooffilogacces: 'opso-offilog-acces.js',
     // 30/09/2026 — liste des 129 adhérents OPSO : lisible par les comptes de l'espace OPSO seuls.
-    opsolisting: 'opso-listing-2026.js'
+    opsolisting: 'opso-listing-2026.js',
+    // 19/11/2026 — plan du contrat 2027 : lisible par jarvis_acces_plan_opso() seul (Will, Pascale, Alexandre), chargé à l'ouverture de l'écran Prévision.
+    opsoprevision: 'opso-prevision-2027-data.js'
   };
   // 30/09/2026 — espace OPSO : versions réduites (prix IP sans nos ventes nationales ; CIP
   // Sagitta sans prix). Ce sont les seules que le rôle opso peut lire (jarvis_peut_lire_protege).
@@ -1630,6 +1634,7 @@
     biosimcomplet: 'BIOSIMILAIRES_COMPLET',
     mktnr: 'MKT_NR',
     opsostats: 'OPSO_STATS_SALES',
+    opsoprevision: 'OPSO_PREVISION',
     clientscond: 'CLIENTS_COND',
     clientsactifs: 'CLIENTS_ACTIFS',
     margeprive: 'MARGE_REGLES_PRIVE',
