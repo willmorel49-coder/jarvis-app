@@ -466,6 +466,12 @@
     s.textContent = [
       '.trn-page{max-width:1240px;margin:0 auto;padding:18px 24px 96px;color:var(--ip-ink);font-variant-numeric:tabular-nums}',
       '.trn-hd{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:12px}',
+      // 19/11/2026 : bascule « Classement / Carte » mise en forme ICI (elle vivait dans v2-tournees-carte.js, posée seulement à l'ouverture de la carte :
+      // jusqu'au premier clic sur « Carte », le classement montrait deux petits boutons bruts)
+      '.trn-bascule{display:inline-flex;gap:6px;margin:0 0 12px;padding:4px;background:var(--surf-sunken,#EEF0F4);border:1px solid var(--line);border-radius:var(--r-pill,999px)}',
+      '.trn-bascule button{font:inherit;font-size:14px;font-weight:700;min-height:44px;min-width:110px;padding:0 18px;border:0;border-radius:var(--r-pill,999px);background:transparent;color:var(--ip-ink);cursor:pointer}',
+      '.trn-bascule button.on{background:var(--ip-blue,#0057FF);color:#fff}',
+      '@media(max-width:760px){.trn-bascule{display:flex}.trn-bascule button{flex:1;min-width:0}}',
       // 11/11/2026 : dans les habillages sombres de l'app (data-hab), le texte posé sur le fond de page était illisible : l'en-tête passe sur une plaque
       'html[data-hab] .trn-hd,html[data-hab] .trn-tb-top{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2);padding:14px 18px}',
       '.trn-hd h1{font-size:28px;font-weight:800;letter-spacing:-.03em;line-height:1.1;margin:0}',

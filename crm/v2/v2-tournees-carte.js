@@ -624,16 +624,12 @@
       '.tcm-petit .tcm-num{transform:scale(.5);font-size:0}',
       '.tcm-num-l{display:inline-block;grid-row:1/4;width:28px;height:28px;line-height:24px;font-size:13px;flex:none}',
       '.tcm-depot{box-sizing:border-box;width:64px;height:24px;line-height:24px;text-align:center;font-size:11.5px;font-weight:800;color:#fff;background:#10131C;border:2px solid #fff;border-radius:6px;box-shadow:0 3px 10px rgba(16,19,28,.4)}',
-      '.trn-bascule{display:inline-flex;gap:6px;margin:0 0 12px;padding:4px;background:var(--surf-sunken,#EEF0F4);border:1px solid var(--line);border-radius:var(--r-pill,999px)}',
-      '.trn-bascule button{font:inherit;font-size:14px;font-weight:700;min-height:44px;min-width:110px;padding:0 18px;border:0;border-radius:var(--r-pill,999px);background:transparent;color:var(--ip-ink);cursor:pointer}',
-      '.trn-bascule button.on{background:var(--ip-blue,#0057FF);color:#fff}',
       '@media(max-width:760px){',
         '.tcm-body{flex-direction:column;height:auto;min-height:0;max-height:none}',
         '.tcm-map{flex:none;height:340px}',
         '.tcm-rail{flex:none;max-height:none;overflow:visible}',
         '.tcm-scroll{overflow:visible}',
         '.tcm-curs{flex-basis:100%}',
-        '.trn-bascule{display:flex}.trn-bascule button{flex:1;min-width:0}',
       '}'
     ].join('\n');
     document.head.appendChild(s);
