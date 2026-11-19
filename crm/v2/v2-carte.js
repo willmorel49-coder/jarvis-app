@@ -15,7 +15,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
 
-  var CB = '?v=20261119c';
+  var CB = '?v=20261119d';
   var map = null, cluster = null, markers = null, D = null, canvas = null;
   var displayMode = 'points';    // points | bulles (taille = CA)
   var tourLayer = null;          // tracé de la tournée (polyline + n° d'arrêts)
@@ -70,21 +70,8 @@
   // 26/10/2026 — couleur « Suivi des prospects » (Pauline S., 4 états choisis par Will). Priorité rouge > vert > gris > bleu ;
   // les clientes restent pâles : ce mode sert à choisir où prospecter.
   var SUIVI_COL = { rouge: '#D92D20', vert: '#12A150', gris: '#8B93A3', bleu: '#2563EB', client: '#E1E5EC', attente: '#C9CFD9' };
-  // 26/10/2026 — mode « Prospection » (v2-carte-prospection.js, Will seul) : la carte lui prête ses couleurs et sa carte, rien d'autre.
-  var prospOn = false, prospARouvrir = false;
-  V2.carteInterne = function () { return { map: map, canvas: canvas, SUIVI_COL: SUIVI_COL, mode: prospMode }; };
-  function prospMode(on) {
-    prospOn = !!on;
-    var sh = document.querySelector('.cn-shell'); if (sh) { sh.classList.toggle('cn-prosp', prospOn); if (!prospOn) sh.classList.remove('cn-fiche-on'); }
-    if (prospOn) {
-      if (zonesOn) V2.carteZones(false);
-      if (cluster && map) map.removeLayer(cluster);
-      V2.carteFicheClose();
-    } else rebuild();
-    var lg = document.getElementById('carte-legend'); if (lg) lg.innerHTML = legendHtml();
-    renderFbRow();
-    if (map) setTimeout(function () { if (map) map.invalidateSize(); }, 40);
-  }
+  // 19/11/2026 — le mode « Prospection » a déménagé dans l'écran Tournées (v2-tournees-carte.js) : il lui faut seulement ces couleurs.
+  V2.carteSuiviCol = SUIVI_COL;
   var suivi = null;   // { pret, vu, rdv: { cip: date } | null, rouge: { cip: 1 } | null } — lu au choix du mode
   function suiviEtat(p) {
     if (isClient(p)) return 'client';
@@ -293,7 +280,7 @@
     return { renderer: canvas, radius: t ? 8 : caRadius(caOf(p)), color: t ? '#10131C' : '#0050E6', weight: t ? 2 : 0.6, fillColor: '#0050E6', fillOpacity: 0.32 };
   }
   function rebuild() {
-    if (!map || prospOn) return;
+    if (!map) return;
     if (zonesOn) {   // zones affichées : pas de marqueurs sur la carte, on tient juste le compteur à jour
       if (cluster) { map.removeLayer(cluster); cluster = null; }
       var n0 = 0;
@@ -1509,7 +1496,6 @@
   }
 
   function legendHtml() {
-    if (prospOn) return '';
     var lg = function (c, t) { return '<span class="cn-lg"><i style="background:' + c + '"></i>' + esc(t) + '</span>'; };
     if (zonesOn) {
       if (zoneMetric === 'quartiers' && !qPS()) return '<span class="cn-lg-txt">' + (qAttente ? 'Chargement des quartiers…' : 'Données des quartiers non chargées. Réessayez.') + '</span>';
@@ -1655,6 +1641,8 @@
       '.cn-lg{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--ip-ink-2,#2A2F3C)}',
       '.cn-lg i{width:11px;height:11px;border-radius:50%;display:inline-block}',
       '.cn-lg-txt{font-size:12px;color:var(--muted);font-weight:600}',
+      '.cn-body{display:flex;flex:1 1 auto;min-height:0}',
+      '.cn-body>.cn-maparea{flex:1 1 auto;min-width:0}',
       '.cn-maparea{position:relative;flex:1 1 auto;min-height:0}',
       '#carte-map{position:absolute;inset:0;background:#F2F3F5}',
       '.leaflet-container .leaflet-control-attribution{font-size:12px;color:#6b7280;background:rgba(255,255,255,.7)}',
@@ -1867,7 +1855,6 @@
     try { var dp = JSON.parse(localStorage.getItem('jarvis_depot_v1') || 'null'); if (dp && dp.lat) depot = dp; } catch (e) {}
     root.querySelector('#carte-legend').innerHTML = legendHtml();
     renderFbRow(); renderFbChips();   // barre de filtres Direction 2
-    if (V2.carteProspection && V2.carteProspection.verifier) V2.carteProspection.verifier().then(function (ok) { if (ok && !prospOn && document.getElementById('cn-fbacts')) renderFbRow(); });   // le bouton « Prospection » n'apparaît que sur un OUI de la base
     // Nettoie une éventuelle carte précédente (évite l'accumulation d'instances Leaflet au fil des visites).
     if (map) { try { map.remove(); } catch (e) {} map = null; cluster = null; markers = null; }
     qLayer = null; qLayers = {}; qSel = null;
@@ -1880,7 +1867,7 @@
     // Filet : quel que soit l'état du plugin de paquets, un clic à ≤ 10 px d'un point ouvre sa fiche.
     // (Le clic « officiel » du marqueur passe par openPop ; s'il a déjà ouvert la même fiche, ceci ne fait que la re-rendre.)
     map.on('click', function (e) {
-      if (prospOn || pickDepotMode || zonesOn || !markers || !markers.length || !e.containerPoint) return;
+      if (pickDepotMode || zonesOn || !markers || !markers.length || !e.containerPoint) return;
       var best = null, bd = Infinity;
       for (var k = 0; k < markers.length; k++) {
         var m = markers[k], ll = m.getLatLng && m.getLatLng(); if (!ll) continue;
@@ -1904,7 +1891,6 @@
     // alors). Même garde que le écouteur resize juste en dessous.
     setTimeout(function () { if (map && surCarte() && document.getElementById('carte-map')) { map.invalidateSize(); rebuild(); if (zonesOn) drawZones(); updateTourBar(); drawTourLine(); homeView(); } }, 60);
     setTimeout(function () { if (map && surCarte() && document.getElementById('carte-map')) map.invalidateSize(); }, 420);
-    if (prospARouvrir) { prospARouvrir = false; setTimeout(function () { if (map && surCarte() && document.getElementById('carte-map') && V2.carteProspection && V2.carteProspection.reprendre) V2.carteProspection.reprendre(); }, 90); }   // après le homeView() de 60 ms
     if (!V2._carteResize) { V2._carteResize = true; window.addEventListener('resize', function () { if (map && surCarte()) { map.invalidateSize(); renderFbRow(); } }); }
   }
   // Fond de carte. CARTO (light_all) exige une clé d'API depuis août 2026 : chaque
@@ -2007,7 +1993,6 @@
   function fbIsOpen() { return fbMore || (!fbEtroit() && fbSecondaryActive()); }
   function renderFbRow() {
     var el = document.getElementById('cn-fbrow'); if (!el) return;
-    if (prospOn && V2.carteProspection) { V2.carteProspection.barre(); return; }
     var narrow = window.matchMedia && window.matchMedia('(max-width:760px)').matches;
     var commItem = fbItem('comm', commFocus.length === 1 ? commFocus[0] : commFocus.length ? commFocus.length + ' commerciaux' : 'Commercial', commFocus.length > 0);
     var grpItem = fbItem('grp', grpFocus.length === 1 ? grpFocus[0] : grpFocus.length ? grpFocus.length + ' groupements' : 'Groupement', grpFocus.length > 0);
@@ -2022,7 +2007,6 @@
     if (acts) acts.innerHTML =
       '<button class="cn-fb-btn cn-fb-act" onclick="V2.carteListOpen()">' + ICO('list', 14) + '<span>Liste</span></button>' +
       '<button class="cn-fb-btn cn-fb-act" title="Extraire les officines du filtre dans un fichier Excel" aria-label="Extraire en Excel" onclick="V2.carteExportXlsx()">' + ICO('download', 14) + '<span>Excel</span></button>' +
-      (V2.carteProspection && V2.carteProspection.bouton ? V2.carteProspection.bouton() : '') +
       '<button class="cn-fb-btn cn-fb-act cn-fb-tour" onclick="V2.carteTourOpen()">' + ICO('pharma', 14) + '<span>Ma tournée</span><b id="cn-fb-tourn"' + (tour.length ? '' : ' style="display:none"') + '>' + tour.length + '</b></button>';
     var el2 = document.getElementById('cn-fbrow2'); if (!el2) return;
     el2.style.display = more ? '' : 'none';
@@ -2131,11 +2115,6 @@
   V2.pages.carte = {
     render: function (root) {
       injectCss();
-      // 26/10/2026 — un redessin DIFFÉRÉ de la même page (v2-probable.js à la 1re fiche, arrivée des relances…) rebâtit
-      // toute la carte : constaté en production, le mode Prospection se refermait 2 s après le choix d'un prospect.
-      // Si l'écran affiché EST La carte en mode Prospection, on le rouvre sur la carte neuve (même vue, même prospect).
-      prospARouvrir = prospOn && !!root.querySelector('.cn-shell.cn-prosp');
-      prospOn = false; if (V2.carteProspection && V2.carteProspection.reset) V2.carteProspection.reset(prospARouvrir);
       // ══ LA CARTE (27/08/2026, Will : « beaucoup plus simple, là c'est le bordel ») ══
       // Avant : barre de 8 filtres + colonne de réglages à gauche + liste de 19 671
       // officines à droite + deux boutons « Organisateur de tournée » + un bandeau.
@@ -2163,7 +2142,7 @@
             '<button onclick="V2.carteTourOpen()">Voir</button>' +
             '<button class="cn-tourbar-gps" onclick="V2.carteTourItinerary()">Google Maps</button></div>' +
           '<div class="cn-load" id="carte-load"><div class="v2-spinner"></div><div>Chargement de la carte…</div></div>' +
-        '</div><aside class="pp-rail" id="pp-rail" aria-label="Prospection"></aside></div>' +
+        '</div></div>' +
         '</div>';
       // Fermer le menu ouvert au clic hors de la barre (une seule fois par session de page)
       if (!V2._fbDocClick) {
@@ -2394,7 +2373,7 @@
     var pr = V2.loadFiles ? V2.loadFiles(['clientsactifs', 'officinesinfos']) : null, fin = function () { ensureDetail(function () { renderFiche(i); }); };
     if (pr && pr.then) pr.then(fin, fin); else fin();
   };
-  V2.carteFicheClose = function () { ficheIdx = null; var el = document.getElementById('cn-fiche'); if (el) el.remove(); if (V2.carteProspection && V2.carteProspection.ficheFermee) V2.carteProspection.ficheFermee(); };
+  V2.carteFicheClose = function () { ficheIdx = null; var el = document.getElementById('cn-fiche'); if (el) el.remove(); };
   // Libellés des mois RÉELLEMENT couverts par les exports (WML_MOIS, écrit par le
   // générateur). Écrits en dur, un mois ajouté à la base sortait une barre sans étiquette.
   var _MAB = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];

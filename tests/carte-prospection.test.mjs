@@ -69,16 +69,15 @@ function faux(reponses, journal) {
 async function essai(reponses, fichier) {
   const j = []; const S = C.etatInterne;
   S.ok = null; S.verif = null;
-  delete globalThis.PROSPECTION_TOURNEES;
   V2.user = { id: 'u' }; V2.sb = () => faux(reponses, j);
-  V2.loadFiles = (cles) => { j.push('fichier:' + cles.join(',')); if (fichier) globalThis.PROSPECTION_TOURNEES = fichier; return Promise.resolve(); };
+  // le fichier privé de prospection n'est plus jamais demandé (19/11/2026) : tout appel au chargeur serait noté
+  V2.loadFiles = (cles) => { j.push('fichier:' + cles.join(',')); return Promise.resolve(); };
   const ok = await C.verifier(true);
-  return { ok, j, bouton: C.bouton() };
+  return { ok, j };
 }
-test('verrou : réponse « non » → pas de bouton, le fichier des tournées n\'est jamais demandé', async () => {
-  const r = await essai({ [ACCES]: { data: false } }, { tournees: { T1: {} } });
-  assert.equal(r.ok, false); assert.equal(C.ok(), false); assert.equal(r.bouton, '');
-  await assert.rejects(C.demanderDonnees());
+test('verrou : réponse « non » → refus ; aucun fichier demandé', async () => {
+  const r = await essai({ [ACCES]: { data: false } });
+  assert.equal(r.ok, false); assert.equal(C.ok(), false);
   assert.deepEqual(r.j, ['rpc:' + ACCES]);
 });
 test('verrou : erreur de la base ou rejet → NON (jamais « oui » par défaut)', async () => {
@@ -90,14 +89,11 @@ test('verrou : pas de session → non, aucun appel', async () => {
   C.etatInterne.verif = null; delete V2.user; const j = []; V2.sb = () => faux({}, j);
   assert.equal(await C.verifier(true), false); assert.deepEqual(j, []);
 });
-test('verrou : « oui » → bouton ; les tournées ne se demandent qu\'ensuite ; fichier absent ou vide = erreur', async () => {
-  let r = await essai({ [ACCES]: { data: true } }, { tournees: { T1: {} }, clientes: [] });
-  assert.equal(r.ok, true); assert.match(r.bouton, /Prospection/);
-  assert.deepEqual(r.j, ['rpc:' + ACCES]);   // rien d'autre tant qu'on n'ouvre pas le mode
-  assert.deepEqual((await C.demanderDonnees()).tournees, { T1: {} });
-  assert.deepEqual(r.j, ['rpc:' + ACCES, 'fichier:prospection']);
-  await essai({ [ACCES]: { data: true } }, null);
-  await assert.rejects(C.demanderDonnees());
+test('verrou : « oui » → accès accordé, et rien d\'autre n\'est demandé (ni fichier privé, ni table)', async () => {
+  const r = await essai({ [ACCES]: { data: true } });
+  assert.equal(r.ok, true); assert.equal(C.ok(), true);
+  assert.deepEqual(r.j, ['rpc:' + ACCES]);
+  assert.equal(typeof C.bouton, 'undefined'); assert.equal(typeof C.demanderDonnees, 'undefined'); assert.equal(typeof C.charger, 'undefined');
 });
 
 // ── Suivi : une ligne `profils` par utilisateur (modèle u2ScopeId), relue avant d'être réécrite ──

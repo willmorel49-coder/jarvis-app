@@ -439,7 +439,7 @@
   var LCOLS = [['ca', 'CA', eurF], ['marge', 'Notre marge', eurF], ['taux', 'Taux de marge', C.pct], ['cmd', 'Commandes', C.ent], ['cmd_mois', 'Commandes par mois', C.dec1],
     ['marge_cmd', 'Marge par commande', eurF], ['cout', 'Coût des livraisons', eurF], ['renta', 'Rentabilité', eurF], ['renta_mois', 'Rentabilité par mois', eurF]];
   var S = { d: null, A: null, erreur: '', charge: false, etab: 'OPS', open: null, sortK: 'rentabilite_mois', sortDir: -1, map: null, cur: null, pf: null, root: null,
-    tb: null, tbCode: null, mes: 'ca', pid: null, lk: 'n', ld: 1, rz: false, larg: 0, marq: {} };
+    vue: 'classement', tb: null, tbCode: null, mes: 'ca', pid: null, lk: 'n', ld: 1, rz: false, larg: 0, marq: {} };
 
   function interdit() {
     var b = glob.V2_BRAND, u = V2.user;
@@ -700,16 +700,33 @@
     return 'Jours de livraison provisoires (planning de février), à confirmer.' + (sans ? ' ' + sans + (sans > 1 ? ' tournées sans jour connu : jours à préciser.' : ' tournée sans jour connu : jours à préciser.') : '');
   }
 
+  // Bascule « Classement / Carte » (19/11/2026) : #tournees (classement, par défaut) ou #tournees/carte
+  function bascule() {
+    var b = function (v, lib) { var on = (S.vue === 'carte') === (v === 'carte'); return '<button type="button" data-vue="' + v + '" aria-pressed="' + on + '"' + (on ? ' class="on"' : '') + '>' + lib + '</button>'; };
+    return '<div class="trn-bascule" id="trn-bascule" role="group" aria-label="Afficher">' + b('classement', 'Classement') + b('carte', 'Carte') + '</div>';
+  }
+  function demonterCarte() { if (V2.tourneesCarte && V2.tourneesCarte.demonter) V2.tourneesCarte.demonter(); }
   function dessiner() {
     var root = S.root; if (!root) return;
-    if (S.open && S.A[S.open]) { tableauDeBord(S.open); return; }
+    if (S.open && S.A[S.open]) { demonterCarte(); tableauDeBord(S.open); return; }
     var e = etabCourant(), b = C.bilan(S.A);
     var actif = !!(e && e.actif);
+    var carteOn = actif && S.vue === 'carte' && !!V2.tourneesCarte && !!V2.tourneesCarte.monter;
     var h = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' });
+    if (carteOn) {   // 19/11/2026 : la carte des tournées et des prospects (ex-« Prospection » de La carte)
+      h += '<div class="trn-page" id="trn-page"><div class="trn-hd"><div><h1>La carte des tournées</h1><p>' + esc(e.nom) + ' · les ' + b.n + ' tournées de livraison sur la route, et les pharmacies prospects qui sont sur le chemin.</p></div></div>' + bascule() +
+        '<div class="trn-etabs" id="trn-etabs"></div><div id="trn-corps"></div></div>';
+      root.innerHTML = h;
+      dessinerEtabs();
+      V2.tourneesCarte.monter(document.getElementById('trn-corps'), { d: S.d, A: S.A, nom: nomPF, leaflet: ensureLeaflet, tactile: tactile });
+      return;
+    }
+    demonterCarte();
     h += '<div class="trn-page" id="trn-page"><div class="trn-hd"><div><h1>Quelle tournée travailler en premier&nbsp;?</h1>' +
       '<p>' + (e ? esc(e.nom) + ' · ' : '') + (actif ? b.n + ' tournées classées. Cliquez une ligne pour ouvrir le tableau de bord de la tournée : CA, Notre marge et commandes de chaque cliente, mois par mois, carte et prospects.' : 'Tournées à recevoir.') + '</p></div>' +
       (actif ? '<div class="trn-bil"><div><b>' + eur(b.rentabilite_mois) + '</b><span>rentabilité par mois, ' + b.n + ' tournées</span></div><div><b>' + eurSigne(b.potentiel) + '</b><span>potentiel par mois</span></div></div>' : '') + '</div>';
     if (actif) h += '<div class="trn-note" role="note"><span>' + esc(noteJours()) + (S.d.periode ? ' Chiffres : ' + esc(S.d.periode) + ', une livraison comptée ' + eur(S.d.cout_livraison) + '.' : '') + '</span></div>';
+    if (actif) h += bascule();
     h += '<div class="trn-etabs" id="trn-etabs"></div><div id="trn-corps"></div></div>';
     root.innerHTML = h;
     dessinerEtabs();
@@ -1191,6 +1208,7 @@
       var t = ev.target, b;
       if (!t.closest) return;
       if (t.closest('.leaflet-container')) return;   // la carte gère ses propres clics (arrêts)
+      if ((b = t.closest('#trn-bascule button'))) { V2.go('tournees', b.getAttribute('data-vue') === 'carte' ? 'carte' : ''); return; }
       if ((b = t.closest('.trn-pill'))) { S.etab = b.getAttribute('data-s'); S.open = null; dessiner(); return; }
       if ((b = t.closest('.trn-th button'))) {
         var k = b.getAttribute('data-k');
@@ -1247,6 +1265,7 @@
       }
       if (S.d && S.A) {
         S.open = (param && S.A[param]) ? param : null;
+        S.vue = (param === 'carte') ? 'carte' : 'classement';
         dessiner(); return;
       }
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) + '<div class="trn-page">' +
@@ -1260,8 +1279,9 @@
         // l'adresse #tournees/Txx ouvre directement le tableau de bord de la tournée ; #tournees seul, le classement
         var p = V2.route && V2.route.name === 'tournees' ? V2.route.param : param;
         S.open = (p && S.A[p]) ? p : null;
+        S.vue = (p === 'carte') ? 'carte' : 'classement';
         if (V2.route && V2.route.name === 'tournees') dessiner();
-        if (V2.ensurePharmaFr && !glob.PHARMA_FR) V2.ensurePharmaFr(function () { S.pf = null; if (V2.route && V2.route.name === 'tournees' && S.open && S.d && document.getElementById('trn-route')) route(S.open); });
+        if (V2.ensurePharmaFr && !glob.PHARMA_FR) V2.ensurePharmaFr(function () { S.pf = null; if (V2.route && V2.route.name === 'tournees' && S.vue === 'carte' && !S.open && V2.tourneesCarte && V2.tourneesCarte.majNoms) V2.tourneesCarte.majNoms(); if (V2.route && V2.route.name === 'tournees' && S.open && S.d && document.getElementById('trn-route')) route(S.open); });
       }).catch(function (e) {
         S.charge = false; S.erreur = 'Le fichier des tournées n’a pas pu être lu (' + (e && e.message ? e.message : 'erreur') + '). Rien n’est affiché plutôt que des chiffres faux.';
         if (V2.route && V2.route.name === 'tournees') V2.render();
