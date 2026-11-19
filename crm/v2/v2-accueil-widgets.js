@@ -356,7 +356,7 @@
   /* ═══ La bande du haut : couleur, retour à l'origine, Terminé ═══ */
   function bandeHtml() {
     var p = P(), cur = p.teinte(), h = '<div class="pb-bd"><div class="pb-bd-t"><b>Personnaliser votre accueil</b><span>Tirez un widget pour le déplacer. Tout est gardé tout de suite.</span></div>';
-    if (!p.escale()) {
+    if (!p.escale() && !(window.V2HAB && V2HAB.seulBleu)) {   // 20/11/2026 : seul le Bleu reste, plus de choix de couleur
       // 16/10/2026 — « La garde-robe » : la rangée d'aperçus vivants remplace les pastilles (montée par V2HAB.monter dans bande())
       if (window.V2HAB) h += '<div class="hab-band" data-hab-rangee="band"></div>';
       else h += '<div class="pb-col" role="radiogroup" aria-label="Couleur de votre accueil"><span class="pb-col-l">Couleur</span>' + p.teintes.map(function (t) {

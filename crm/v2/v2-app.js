@@ -459,7 +459,7 @@
         (V2.user && V2.user.email ? '<div class="v2-um-mail">' + esc(V2.user.email) + '</div>' : '') +
       '</div>' +
       (installed ? '' : '<button class="v2-um-item" role="menuitem" onclick="V2.installApp()">' + ICO('plus', 16, 2) + 'Installer l\'app</button>') +
-      (window.V2HAB && !(window.V2_BRAND && window.V2_BRAND.escale) ? '<button class="v2-um-item" role="menuitem" onclick="V2HAB.menu()">' + u2Ic('palette', 16) + 'Mon habillage</button>' : '') +
+      (window.V2HAB && !V2HAB.seulBleu && !(window.V2_BRAND && window.V2_BRAND.escale) ? '<button class="v2-um-item" role="menuitem" onclick="V2HAB.menu()">' + u2Ic('palette', 16) + 'Mon habillage</button>' : '') +
       // 19/11/2026 — le rail (qui portait « Espace ») disparaît de l'accueil à l'ordinateur : la bascule Intégral ↔ Escale passe par ce menu (au-delà de 600 px ; en dessous, le panneau « Mon espace » la porte)
       ((V2.basculeEspace && V2.basculeEspace() && window.innerWidth > 600) ? '<button class="v2-um-item" role="menuitem" onclick="V2.goSpace(\'' + V2.basculeEspace().to + '\')">' + u2Ic('espace', 16) + 'Passer à l\'espace ' + esc(V2.basculeEspace().label) + '</button>' : '') +
       '<button class="v2-um-item" role="menuitem" onclick="V2.signOut()">' + ICO('logout', 16, 2) + 'Se déconnecter</button>' +
@@ -1397,7 +1397,7 @@
   // ── La couleur : posée sur .u2-page et .u2-hors (le tiroir vit sur <body>), lue dans le navigateur AVANT le premier dessin ──
   // Jamais en Escale (son thème impose ses couleurs) ; le bleu d'origine ne pose aucune surcharge.
   function u2Teinte() {
-    if (u2Escale()) return U2_TEINTES[0];
+    if (u2Escale() || (window.V2HAB && V2HAB.seulBleu)) return U2_TEINTES[0];   // 20/11/2026 : seul le Bleu reste (v2-hab.js)
     var k = u2S().couleur;
     return U2_TEINTES.filter(function (t) { return t.k === k; })[0] || U2_TEINTES[0];
   }
@@ -1734,7 +1734,7 @@
   function u2BlocPerso() {
     return '<section class="u2-mon-b"><h3>Mon accueil</h3><p class="u2-note u2-note-h">Couleur, widgets et outils se règlent directement sur l\'accueil. C\'est gardé pour vous.</p>' +
       '<button type="button" class="v2-btn v2-btn-primary pb-ouv" data-pb="ouvrir">' + u2Ic('palette') + 'Personnaliser mon accueil</button>' +
-      (window.V2HAB && !u2Escale() ? '<button type="button" class="v2-btn pb-ouv" style="margin-top:8px" onclick="V2.accueilPont.fermer();V2HAB.ouvrir()">' + u2Ic('palette') + 'Mon habillage</button>' : '') + '</section>';
+      (window.V2HAB && !V2HAB.seulBleu && !u2Escale() ? '<button type="button" class="v2-btn pb-ouv" style="margin-top:8px" onclick="V2.accueilPont.fermer();V2HAB.ouvrir()">' + u2Ic('palette') + 'Mon habillage</button>' : '') + '</section>';
   }
   // Les mêmes gestes que le menu du compte de la barre (V2.userMenu), et seulement ceux qui existent sur cet appareil.
   function u2BlocCompte() {

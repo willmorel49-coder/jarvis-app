@@ -24,6 +24,9 @@
   var H = document.documentElement;
   var memo = { ouvert: false, dock: null, opener: null, sx: { band: 0, dock: 0 } };
 
+  // 20/11/2026, décision de Will (question cliquée) : seul le Bleu reste. Les 11 autres habillages ne se posent plus,
+  // quel que soit le choix enregistré (navigateur ou ligne `profils`, laissés tels quels), et aucun sélecteur ne s'affiche.
+  var SEUL_BLEU = true;
   function escale() { return !!(window.V2_BRAND && window.V2_BRAND.escale); }
   function calme() { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } }
   function connu(k) { return GARDE.some(function (g) { return g.k === k; }) || ANCIENNES.indexOf(k) >= 0; }
@@ -34,7 +37,7 @@
 
   // Pose l'habillage sur <html> sans animation. Le bleu d'origine retire tout : l'app est alors celle d'aujourd'hui, pixel pour pixel.
   function poser(k) {
-    if (escale() || !k || k === 'bleu' || !connu(k)) { H.removeAttribute('data-hab'); H.removeAttribute('data-hab-ton'); k = 'bleu'; }
+    if (SEUL_BLEU || escale() || !k || k === 'bleu' || !connu(k)) { H.removeAttribute('data-hab'); H.removeAttribute('data-hab-ton'); k = 'bleu'; }
     else { H.setAttribute('data-hab', k); H.setAttribute('data-hab-ton', CLAIRS[k] || ANCIENNES.indexOf(k) >= 0 ? 'clair' : 'sombre'); }
     try { var m = document.querySelector('meta[name="theme-color"]'); if (m && !escale()) m.setAttribute('content', { leopard: '#C99443', marbre: '#16171B', nacre: '#EDE6F2', foret: '#10231C', terracotta: '#C9683F', glacier: '#DCEBF5', velours: '#3A0D1A' }[k] || '#0050E6'); } catch (e) {}
     ecrire(k);
@@ -186,7 +189,7 @@
   // Appelée par la ligne du menu du compte : ferme d'abord le menu.
   function menu() { var m = document.getElementById('v2-usermenu'); if (m && m._off) m._off(); if (m && m.parentNode) m.parentNode.removeChild(m); ouvrir(document.querySelector('.tp-avb')); }
 
-  window.V2HAB = { liste: GARDE, anciennes: ANCIENNES, courant: courant, sync: sync, choisir: choisir, monter: monter, ouvrir: ouvrir, fermer: fermer, menu: menu, escale: escale, lampe: function () { return { present: !!lampe.el, rafActif: !!lampe.raf, transform: lampe.el ? lampe.el.style.transform : null }; } };
+  window.V2HAB = { seulBleu: SEUL_BLEU, liste: GARDE, anciennes: ANCIENNES, courant: courant, sync: sync, choisir: choisir, monter: monter, ouvrir: ouvrir, fermer: fermer, menu: menu, escale: escale, lampe: function () { return { present: !!lampe.el, rafActif: !!lampe.raf, transform: lampe.el ? lampe.el.style.transform : null }; } };
   // le banc de l'atelier (16/10) pose un habillage sans animation, et l'attend
   window.__atelierHabillage = function (k) { return choisir(k, { instant: true, force: true }); };
 })();
