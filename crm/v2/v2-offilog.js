@@ -2080,6 +2080,9 @@
   // par son catalogue) → « 03/09 ou 14/05/2026 » ; « 2025 » ou toute autre forme : telle quelle.
   function oppDateC(s) { var m = /^(\d{4})-(\d{2})-(\d{2})(?:\/(\d{2})-(\d{2}))?$/.exec(s || ''); return m ? m[3] + '/' + m[2] + (m[4] ? ' ou ' + m[5] + '/' + m[4] : '') + '/' + m[1] : (s || ''); }
   function oppNorm(t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+  // Recherche « mot par mot » (choix de Will, 18/11/2026) : chaque mot tapé doit se trouver quelque part dans le texte,
+  // dans n'importe quel ordre (« neutraderm baby » trouve « NEUTRADERM · Neutraderm – Baby liniment »). q est déjà normalisé.
+  function oppTrouve(texte, q) { var t = oppNorm(texte); return q.split(/\s+/).every(function (m) { return t.indexOf(m) >= 0; }); }
   function oppLigne(r, sec) {
     var existe = !!(itemsById && itemsById.get(String(r.id)));
     var ecart = r.ecart_pct == null ? '' : '<span class="olo-ecart ' + (r.ecart_pct <= 0 ? 'bon' : 'mauvais') + '">' + (r.ecart_pct > 0 ? '+' : '') + oppNb(r.ecart_pct) + ' %</span>' +
@@ -2101,9 +2104,9 @@
       return '<p class="olo-etat" role="status">' + (oppEtat === 'echec' ? 'Les opportunités ne sont pas disponibles pour le moment. Rouvrez l\'écran dans un instant.' : 'Chargement des opportunités…') + '</p>';
     }
     var k = S.oppF || 'solides';
-    var q = oppNorm(S.oppQ || '');
+    var q = oppNorm(S.oppQ || '').trim();
     var tout = oppLignes(k);
-    var lignes = q ? tout.filter(function (r) { return oppNorm((r.marque || '') + ' ' + r.produit).indexOf(q) >= 0; }) : tout;
+    var lignes = q ? tout.filter(function (r) { return oppTrouve((r.marque || '') + ' ' + r.produit, q); }) : tout;
     var n = S.oppN || 50;
     var segs = OPP_F.map(function (f) {
       return '<button type="button" class="v2-seg olo-seg' + (f.k === k ? ' on' : '') + '" role="tab" aria-selected="' + (f.k === k) + '" onclick="V2.offOppFiltre(\'' + f.k + '\')">' + esc(f.label) + '<span class="cnt">' + V2.fmtNum((d[f.k] || []).length) + '</span></button>';
@@ -2211,8 +2214,8 @@
     }
     var f = plcSeuil(S.plcF || '10');
     var garde = plcGarde(tout, f);
-    var q = oppNorm(S.plcQ || '');
-    var lignes = q ? garde.filter(function (x) { return oppNorm((x.marque || '') + ' ' + (x.nom || '') + ' ' + (x.it.name || '')).indexOf(q) >= 0; }) : garde;
+    var q = oppNorm(S.plcQ || '').trim();
+    var lignes = q ? garde.filter(function (x) { return oppTrouve((x.marque || '') + ' ' + (x.nom || '') + ' ' + (x.it.name || ''), q); }) : garde;
     var n = S.plcN || 50;
     var M = window.OFFILOG_MARCHE || {}, rel = M.releves || [], der = rel.length ? rel[rel.length - 1] : (M.maj || '');
     var C = window.OFFILOG_CATALOGUE;

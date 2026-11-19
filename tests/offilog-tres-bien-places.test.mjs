@@ -87,6 +87,11 @@ test('la synthèse et la recherche suivent le filtre choisi', () => {
   assert.match(rendre({ q: 'introuvable' }), /Aucun produit ne correspond/);
 });
 
+test('recherche mot par mot : chaque mot tapé, n\'importe où dans marque + libellé, ordre libre (choix de Will, 18/11/2026)', () => {
+  assert.deepEqual(ids(rendre({ q: '  F   zz ' })), ['f']);
+  assert.match(rendre({ q: 'zz introuvable' }), /Aucun produit ne correspond/);
+});
+
 test('OPSO : aucun onglet « Très bien placés » (conditions de tiers)', () => {
   // 1) tel quel : OPSO garde l'ancien en-tête, sans portes (marqueur positif : la recherche d'OPSO est bien là)
   const h = rendre({ opso: true });

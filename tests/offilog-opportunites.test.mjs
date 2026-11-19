@@ -84,6 +84,18 @@ test('recherche par marque ou produit (sans tenir compte des accents)', () => {
   assert.doesNotMatch(h, /Produit A/);
 });
 
+test('recherche mot par mot : chaque mot tapé, n\'importe où dans marque + libellé, ordre libre (choix de Will, 18/11/2026)', () => {
+  // Cas réel : « neutraderm baby » ne trouvait pas « NEUTRADERM · Neutraderm – Baby liniment » (suite exacte cherchée).
+  const reel = { ...DONNEES, solides: [['44905', 'NEUTRADERM', 'Neutraderm – Baby liniment', 2.91, 'CERP', 3.5, '2026-09', -16.9, 4.2, 'Leclerc', 30, null, null, 2], ...DONNEES.solides] };
+  const h = rendre({ donnees: reel, q: 'neutraderm baby' });
+  assert.match(h, /Baby liniment/);
+  assert.doesNotMatch(h, /Produit A/);
+  const desordre = rendre({ q: '  Inconnu   marque ' });
+  assert.match(desordre, /Produit inconnu/);
+  assert.doesNotMatch(desordre, /Produit A/);
+  assert.match(rendre({ q: 'marque introuvable' }), /Aucun produit ne correspond/);
+});
+
 test('l\'onglet « Face aux plateformes » garde le comparatif d\'avant', () => {
   const h = rendre({ onglet: 'plateformes' });
   assert.match(h, /data-onglet="opp"/);
