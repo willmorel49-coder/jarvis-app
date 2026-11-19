@@ -103,6 +103,34 @@
     + '.opv-ptot{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:12px 0 4px;font-weight:700;font-variant-numeric:tabular-nums}.opv-ptot .opv-r{text-align:right}.opv-ptot .opv-s{grid-column:1/-1;font-weight:500;font-size:13px;color:var(--opv-muted)}'
     + '@media(min-width:960px){.opv-calc{padding:20px 24px}.opv-casc li{grid-template-columns:34px minmax(0,1fr) 220px}.opv-casc .opv-v{grid-column:3;grid-row:1/3;display:block;text-align:right}.opv-casc .opv-v small{display:block}.opv-casc .opv-det{grid-column:2/3}'
     + '.opv-pr{grid-template-columns:minmax(0,1fr) 300px 110px 110px;align-items:baseline}.opv-pr .opv-src{grid-column:1/2}.opv-pr .opv-f{grid-row:1;grid-column:2}}'
+    // onglet « Le contrat pas à pas » (19/11/2026)
+    + '.opv-lire{display:grid;gap:14px}.opv-et{padding:16px}@media(min-width:960px){.opv-et{padding:20px 24px}}'
+    + '.opv-et-t{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;align-items:start;margin-bottom:8px}.opv-et h2{font-size:18px;margin:4px 0 2px}.opv-et h3{font-size:15px;margin:16px 0 6px}'
+    + '.opv-no{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--opv-vert-d);color:#fff;font-weight:800;font-size:15px;font-family:ui-rounded,"SF Pro Rounded",-apple-system,system-ui,sans-serif;box-shadow:0 4px 10px -4px rgba(62,127,89,.55),0 1px 0 rgba(255,255,255,.25) inset}'
+    + '.opv-etiq{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:var(--opv-pill);font-size:12px;font-weight:700;vertical-align:2px;background:var(--opv-fond);color:var(--opv-muted)}.opv-etiq.opv-prevu{background:var(--opv-vert-cl);color:var(--opv-vert-dd)}'
+    + '.opv-q3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}@media(min-width:640px){.opv-q3{gap:10px}}'
+    + '.opv-qc{min-width:0;display:grid;gap:3px;align-content:start;padding:10px 9px;border-radius:var(--opv-r-md);background:var(--opv-fond);font-size:13px;color:var(--opv-muted)}@media(min-width:640px){.opv-qc{padding:12px 14px}}'
+    + '.opv-qc.opv-prevu{background:var(--opv-vert-cl2);box-shadow:inset 0 0 0 1px var(--opv-ligne-2)}.opv-qc .opv-qn{font-weight:600}.opv-qc b{color:var(--opv-encre);font-weight:600}'
+    + '.opv-qc .opv-gros{font-family:ui-rounded,"SF Pro Rounded",-apple-system,system-ui,sans-serif;font-size:19px;font-weight:700;white-space:nowrap}@media(min-width:640px){.opv-qc .opv-gros{font-size:24px}}'
+    + '.opv-somme{margin:10px 0 0;font-size:14px;line-height:1.5}.opv-somme b{font-variant-numeric:tabular-nums}'
+    + '.opv-t3{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px;font-variant-numeric:tabular-nums}.opv-t3 caption{text-align:left;font-size:13px;color:var(--opv-muted);padding:0 0 6px}'
+    + '.opv-t3 th,.opv-t3 td{padding:8px 4px;border-top:1px solid var(--opv-ligne);text-align:right;vertical-align:top}.opv-t3 thead th{border-top:0;font-weight:600;color:var(--opv-encre)}.opv-t3 thead small{display:block;font-weight:500;color:var(--opv-muted)}'
+    + '.opv-t3 th:first-child{text-align:left;width:64px}.opv-t3 tbody th{color:var(--opv-vert-dd);font-size:14px}.opv-t3 td b{display:block;font-size:14px}.opv-t3 td small{display:block;color:var(--opv-muted)}'
+    + '@media(min-width:640px){.opv-t3{font-size:14px}.opv-t3 th:first-child{width:110px}.opv-t3 th,.opv-t3 td{padding:9px 10px}}'
+    + '.opv-impot{margin:10px 0 0;padding:10px 12px;border-radius:var(--opv-r-md);background:var(--opv-fond);font-size:13px;line-height:1.5}.opv-impot b{color:var(--opv-encre)}'
+    + '.opv-vt{display:none}.opv-v7{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 10px;width:100%;margin:0;padding:11px 10px;border:0;border-top:1px solid var(--opv-ligne);background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;min-height:44px}'
+    + '.opv-v7:hover{background:var(--opv-fond)}.opv-v7[aria-pressed="true"]{background:var(--opv-vert-cl2);border-radius:var(--opv-r-md);border-top-color:transparent;box-shadow:inset 0 0 0 1px var(--opv-ligne-2)}.opv-v7[aria-pressed="true"] .opv-n b{color:var(--opv-vert-dd)}'
+    + '.opv-v7 .opv-n{grid-column:1/-1;display:flex;justify-content:space-between;align-items:baseline;gap:4px 8px;flex-wrap:wrap}.opv-v7 .opv-n b{font-size:15px}.opv-v7 .opv-n span{font-size:13px;color:var(--opv-muted)}'
+    + '.opv-v7 .opv-c{min-width:0}.opv-v7 .opv-c .opv-l{display:block;font-size:12px;color:var(--opv-muted)}.opv-v7 .opv-c b{font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}.opv-v7 .opv-c small{display:block;font-size:12px;color:var(--opv-muted)}'
+    + '.opv-v7 .opv-tot b{color:var(--opv-vert-dd)}'
+    + '@media(min-width:960px){.opv-vt,.opv-v7{grid-template-columns:minmax(0,1.5fr) repeat(6,minmax(0,1fr));align-items:baseline}.opv-vt{display:grid;gap:6px 10px;padding:0 10px 6px;font-size:13px;font-weight:600;color:var(--opv-muted)}.opv-vt span{text-align:right}.opv-vt small{display:block;font-weight:500}'
+    + '.opv-v7 .opv-n{grid-column:auto;display:block}.opv-v7 .opv-n span{display:block}.opv-v7 .opv-c{text-align:right}.opv-v7 .opv-c .opv-l{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}}'
+    + '.opv-choix{display:grid;gap:8px;margin:4px 0 10px}'
+    + '.opv-tr{list-style:none;margin:0;padding:0;border-top:1px solid var(--opv-ligne)}.opv-tr li{display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:2px 10px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--opv-ligne);font-size:14px;font-variant-numeric:tabular-nums}'
+    + '.opv-tr .opv-tx{font-weight:700;color:var(--opv-vert-dd)}.opv-tr .opv-mt{text-align:right;font-weight:700;white-space:nowrap}.opv-tr small{display:block;font-size:13px;color:var(--opv-muted)}'
+    + '.opv-tr li.opv-non{color:var(--opv-muted)}.opv-tr li.opv-non .opv-tx{color:var(--opv-muted)}'
+    + '.opv-verse{display:flex;justify-content:space-between;align-items:baseline;gap:6px 12px;flex-wrap:wrap;margin-top:10px;padding:12px 14px;border-radius:var(--opv-r-md);background:var(--opv-vert-cl2);box-shadow:inset 0 0 0 1px var(--opv-ligne-2)}'
+    + '.opv-verse b{font-family:ui-rounded,"SF Pro Rounded",-apple-system,system-ui,sans-serif;font-size:22px;font-variant-numeric:tabular-nums;color:var(--opv-vert-dd);white-space:nowrap}.opv-verse span{font-size:14px}.opv-verse small{display:block;font-size:13px;color:var(--opv-muted)}'
     + '.opv-msg{padding:28px 16px;text-align:center;color:var(--opv-muted)}';
   function injectStyle() {
     if (document.getElementById('opv-style')) return;
@@ -110,7 +138,7 @@
   }
 
   // ── État de l'écran ──
-  var E = { o: null, B: null, tab: 'neg', qCh: 0, tri: 'ca', tout: false, q: '', M: null, charge: false, echec: false, suiviEssais: 0, contratAsk: false };
+  var E = { o: null, B: null, tab: 'lire', lk: 4, lq: 0, qCh: 0, tri: 'ca', tout: false, q: '', M: null, charge: false, echec: false, suiviEssais: 0, contratAsk: false };
   var calme = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   function roule(el, val, fmt) {
@@ -186,8 +214,9 @@
     var html = ''
       + '<span class="opv-verrou"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="2"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>Will · Pascale · Alexandre</span>'
       + '<h1 class="opv-titre">Prévision du contrat ' + D.annee + '</h1>'
-      + '<p class="opv-sous">La table de négociation : les curseurs d\'abord, le suivi réel dans le second onglet.</p>'
-      + '<div class="opv-onglets" role="tablist"><button type="button" role="tab" aria-selected="' + (E.tab === 'neg') + '" data-t="neg">Négocier</button><button type="button" role="tab" aria-selected="' + (E.tab === 'sui') + '" data-t="sui">Où on en est</button></div>'
+      + '<p class="opv-sous">Le contrat pas à pas : 2026 réel, 2027 prévu, ce qui est versé à OPSO après chaque quadrimestre.</p>'
+      + '<div class="opv-onglets" role="tablist"><button type="button" role="tab" aria-selected="' + (E.tab === 'lire') + '" data-t="lire">Le contrat pas à pas</button><button type="button" role="tab" aria-selected="' + (E.tab === 'neg') + '" data-t="neg">Négocier</button><button type="button" role="tab" aria-selected="' + (E.tab === 'sui') + '" data-t="sui">Où on en est</button></div>'
+      + '<div id="opv-lire" class="opv-lire"></div>'
       + '<div class="opv-haut">'
       + '<div><span>Versé à OPSO</span><b class="opv-num" id="opv-h-rfa"></b><span class="opv-d" id="opv-h-rfa-d"></span></div>'
       + '<div><span>CA ' + D.annee + ' compté</span><b class="opv-num" id="opv-h-ca"></b><span class="opv-d" id="opv-h-ca-d"></span></div>'
@@ -272,9 +301,121 @@
       $('qsel').appendChild(bt);
     });
 
+    // ── Onglet « Le contrat pas à pas » (19/11/2026, Will : « structuré et hyper compréhensible pour Pascale ») ──
+    // Toujours les chiffres du PLAN (réglage par défaut), jamais ceux des curseurs : 2026 réel, 2027 prévu, barème, versements, un calcul détaillé.
+    var PLANS = P.BUD.map(function (b, k) { return M.annee(Object.assign(M.defauts(), { b: b, palier: k }), []); });
+    var nf1 = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 });
+    // Le barème lu comme l'impôt sur le revenu : même résultat que M.rfa (taux sur la seule part au-dessus de chaque seuil)
+    function tranches(ca, nq, s, t) {
+      return t.map(function (tx, i) {
+        var lo = nq * s[i], hi = i + 1 < t.length ? nq * s[i + 1] : Infinity, base = Math.max(0, Math.min(ca, hi) - lo);
+        return { lo: lo, hi: hi, base: base, taux: tx, rfa: base * tx, atteint: i === 0 || ca > lo };
+      });
+    }
+    function nomP(k) { return 'Palier ' + M.pct(P.TAUX[k]); }
+    function lecture() {
+      var Dft = M.defauts(), B = D.base2026, bm = B.mois, der = P.TAUX.length - 1, p0 = PLANS[0];
+      function carte(cls, nom, gros, l1, l2) {
+        return '<div class="opv-qc ' + cls + '"><span class="opv-qn">' + nom + '</span><b class="opv-gros opv-num">' + gros + '</b><span>' + l1 + '</span>' + (l2 ? '<span>' + l2 + '</span>' : '') + '</div>';
+      }
+      function etape(no, titre, intro, corps) {
+        return '<section class="opv-carte opv-et" aria-labelledby="opv-et' + no + '"><div class="opv-et-t"><span class="opv-no" aria-hidden="true">' + no + '</span><div><h2 id="opv-et' + no + '">' + titre + '</h2>'
+          + '<p class="opv-effet">' + intro + '</p></div></div>' + corps + '</section>';
+      }
+      function debut(q) { return q.de === 1 ? P.P0 : p0.mois[q.de - 2].fin; }
+
+      // 1. 2026 réel
+      var tot26 = bm.reduce(function (s, x) { return s + x.retenu; }, 0), d26 = bm[bm.length - 1];
+      var c26 = P.quads.map(function (q, qi) {
+        var ms = bm.slice(q.de - 1, q.a);
+        if (!ms.length) return carte('', qNoms[qi], '—', 'pas encore connu');
+        var ca = ms.reduce(function (s, x) { return s + x.retenu; }, 0), act = ms.reduce(function (s, x) { return s + x.actives; }, 0), fin = ms[ms.length - 1];
+        var nom = fin.m < q.a ? M.MOIS[q.de - 1] + '–' + M.MOIS[fin.m - 1].toLowerCase() : qNoms[qi];
+        return carte('', nom, M.kE(ca), 'CA compté', '<b>' + ms[0].actives + ' → ' + fin.actives + '</b> pharmacies', '') .replace('</div>', '<span>' + M.eur(ca / act) + ' par pharmacie et par mois</span></div>');
+      }).join('');
+      var h = etape(1, B.annee + ' : ce qui s\'est vraiment passé <span class="opv-etiq">Réel</span>',
+        'Mesuré dans les ventes de l\'app, de janvier à ' + M.MOIS_L[d26.m - 1] + ' ' + B.annee + '. CA compté pour la RFA : hors ' + esc(D.textes.horsRfa) + '.',
+        '<div class="opv-q3">' + c26 + '</div><p class="opv-somme">Sur ' + bm.length + ' mois : <b>' + M.kE(tot26) + '</b> comptés, de <b>' + bm[0].actives + ' à ' + d26.actives + ' pharmacies</b> ('
+          + nf1.format((d26.actives - bm[0].actives) / Math.max(1, bm.length - 1)) + ' nouvelle par mois), <b>' + M.eur(B.parPharma) + '</b> par pharmacie et par mois en moyenne.</p>');
+
+      // 2. 2027 prévu
+      var c27 = P.quads.map(function (q, qi) {
+        var fin = p0.mois[q.a - 1].fin;
+        return carte('opv-prevu', qNoms[qi], debut(q) + ' → ' + fin, 'pharmacies (+' + M.nb(fin - debut(q)) + ')',
+          'CA compté : <b>' + M.kE(PLANS[0].quads[qi].ca) + ' à ' + M.kE(PLANS[der].quads[qi].ca) + '</b> selon le palier');
+      }).join('');
+      h += etape(2, D.annee + ' : la progression prévue <span class="opv-etiq opv-prevu">Prévu</span>',
+        '<b>' + P.P0 + ' pharmacies en janvier, ' + P.NEUF + ' nouvelles chaque mois, ' + p0.tot.finDec + ' fin décembre</b> (' + d26.actives + ' fin ' + M.MOIS_L[d26.m - 1] + ' ' + B.annee + ').',
+        '<div class="opv-q3">' + c27 + '</div><p class="opv-somme">Le panier compté par pharmacie va de <b>' + M.eur(P.BUD[0]) + '</b> (' + nomP(0).toLowerCase() + ') à <b>' + M.eur(P.BUD[der]) + '</b> ('
+          + nomP(der).toLowerCase() + ') par mois, contre ' + M.eur(B.parPharma) + ' en ' + B.annee + ' : le catalogue OPSO s\'ajoute à ce qu\'elles achètent déjà.</p>');
+
+      // 3. le barème
+      var th = P.quads.map(function (q, qi) { return '<th scope="col">' + qNoms[qi] + '<small>' + p0.mois[q.a - 1].fin + ' pharmacies à la fin</small></th>'; }).join('');
+      var lignes = P.TAUX.map(function (t, k) {
+        return '<tr><th scope="row">' + M.pct(t) + '</th>' + P.quads.map(function (q, qi) {
+          var s = Dft.seuils[qi][k], nq = q.a - q.de + 1;
+          return k === 0 || !s ? '<td><b>dès le 1er euro</b></td>' : '<td><b>' + M.kE(nq * s) + '</b><small>' + M.kE(s) + ' / mois</small></td>';
+        }).join('') + '</tr>';
+      }).join('');
+      h += etape(3, 'Le barème : ' + P.TAUX.length + ' paliers de RFA',
+        'Après chaque quadrimestre, OPSO touche un pourcentage du CA compté. Le taux monte par paliers, de ' + M.pct(P.TAUX[0]) + ' à ' + M.pct(P.TAUX[der]) + ', et les seuils montent avec le nombre de pharmacies.',
+        '<table class="opv-t3"><caption>CA du quadrimestre à dépasser pour chaque taux (4 mois)</caption><thead><tr><th scope="col">Taux</th>' + th + '</tr></thead><tbody>' + lignes + '</tbody></table>'
+          + '<p class="opv-impot"><b>Comme l\'impôt sur le revenu :</b> chaque taux ne porte que sur la part du CA au-dessus de son seuil. Un CA qui passe un seuil ne change rien à ce qui est en dessous. Seuil du quadrimestre = seuil par mois × 4.</p>');
+
+      // 4. les versements, palier par palier
+      var tete = '<div class="opv-vt" aria-hidden="true"><span style="text-align:left">Palier tenu toute l\'année</span>' + P.quads.map(function (q, qi) { return '<span>' + qNoms[qi] + '<small>versé le ' + esc(q.echeance) + '</small></span>'; }).join('')
+        + '<span>Total versé</span><span>CA ' + D.annee + ' compté</span><span>Il nous reste</span></div>';
+      var rangs = PLANS.map(function (r, k) {
+        function c(l, v, cls, sous) { return '<span class="opv-c ' + (cls || '') + '"><span class="opv-l">' + l + '</span><b>' + v + '</b>' + (sous ? '<small>' + sous + '</small>' : '') + '</span>'; }
+        return '<button type="button" class="opv-v7" data-k="' + k + '" aria-pressed="' + (k === E.lk) + '"><span class="opv-n"><b>' + nomP(k) + '</b><span>panier ' + M.eur(P.BUD[k]) + ' / pharmacie / mois</span></span>'
+          + r.quads.map(function (q, qi) { return c(qNoms[qi] + ' · le ' + esc(q.echeance), M.eur(q.rfa)); }).join('')
+          + c('Total versé', M.eur(r.tot.rfa), 'opv-tot', M.pct(r.tot.rfa / r.tot.ca) + ' du CA') + c('CA ' + D.annee, M.kE(r.tot.ca)) + c('Il nous reste', M.eur(r.tot.reste)) + '</button>';
+      }).join('');
+      h += etape(4, 'Ce qui est versé à OPSO, quadrimestre par quadrimestre',
+        'Une ligne par palier : si OPSO tient ce palier toute l\'année, voici chaque versement. Touchez une ligne pour voir son calcul juste en dessous.',
+        tete + '<div id="opv-l-vers">' + rangs + '</div>');
+
+      // 5. un versement calculé pas à pas
+      h += etape(5, 'Un versement calculé pas à pas', 'Choisissez un palier et un quadrimestre : chaque chiffre se refait à la main.',
+        '<div class="opv-choix"><div class="opv-puces" id="opv-l-pk" role="group" aria-label="Palier">' + P.TAUX.map(function (t, k) { return '<button type="button" class="opv-puce" data-k="' + k + '" aria-pressed="' + (k === E.lk) + '">' + M.pct(t) + '</button>'; }).join('') + '</div>'
+          + '<div class="opv-seg opv-qsel" id="opv-l-q" role="group" aria-label="Quadrimestre">' + qNoms.map(function (n, qi) { return '<button type="button" data-q="' + qi + '" aria-pressed="' + (qi === E.lq) + '">' + n + '</button>'; }).join('') + '</div></div>'
+          + '<div id="opv-l-calc"></div><div class="opv-actions"><button type="button" class="opv-btn opv-btn-doux" id="opv-pdf2">Ouvrir le document du plan (PDF)</button>'
+          + '<button type="button" class="opv-btn opv-btn-doux" id="opv-l-neg">Tester d\'autres chiffres</button></div>'
+          + '<button type="button" class="opv-lien" id="opv-l-dou">D\'où vient le panier de chaque palier (catalogue OPSO × rotation)</button>');
+      $('lire').innerHTML = h;
+
+      function calcul() {
+        var k = E.lk, qi = E.lq, q = P.quads[qi], r = PLANS[k], Q = r.quads[qi], nq = q.a - q.de + 1;
+        var phm = r.mois.slice(q.de - 1, q.a).reduce(function (s, x) { return s + x.eff; }, 0);
+        var T = tranches(Q.ca, nq, Dft.seuils[qi], P.TAUX), somme = T.reduce(function (s, x) { return s + x.rfa; }, 0);
+        $('l-calc').innerHTML = '<ol class="opv-casc">'
+          + '<li><span class="opv-op">1</span><div class="opv-q"><b>Les pharmacies</b><span>' + debut(q) + ' → ' + r.mois[q.a - 1].fin + ' sur ' + qNoms[qi].toLowerCase() + ' : en moyenne ' + nf1.format(phm / nq) + ' pharmacies × ' + nq + ' mois</span></div><div class="opv-v">' + nf1.format(phm) + ' <small>mois de pharmacie</small></div></li>'
+          + '<li><span class="opv-op">×</span><div class="opv-q"><b>Le panier compté du ' + nomP(k).toLowerCase() + '</b><span>par pharmacie et par mois</span></div><div class="opv-v">' + M.e2(P.BUD[k]) + '</div></li>'
+          + '<li class="opv-fort"><span class="opv-op">=</span><div class="opv-q"><b>CA compté du quadrimestre</b><span>' + esc(q.nom) + '</span></div><div class="opv-v">' + M.eur(Q.ca) + '</div></li></ol>'
+          + '<h3>Le barème, tranche par tranche</h3><ul class="opv-tr">' + T.map(function (x) {
+            if (!x.atteint) return '<li class="opv-non"><span class="opv-tx">' + M.pct(x.taux) + '</span><span>au-delà de ' + M.eur(x.lo) + '<small>non atteint : il manque ' + M.eur(x.lo - Q.ca) + '</small></span><span class="opv-mt">—</span></li>';
+            var plein = Q.ca >= x.hi;
+            return '<li><span class="opv-tx">' + M.pct(x.taux) + '</span><span>de ' + M.eur(x.lo) + ' à ' + M.eur(plein ? x.hi : Q.ca) + (plein ? '' : ' (le CA)') + '<small>' + M.eur(x.base) + ' × ' + M.pct(x.taux) + '</small></span><span class="opv-mt">' + M.e2(x.rfa) + '</span></li>';
+          }).join('') + '</ul>'
+          + '<div class="opv-verse"><span>Versé à OPSO le <b style="font-size:inherit;font-family:inherit">' + esc(q.echeance) + '</b><small>soit ' + M.pct(somme / Q.ca) + ' du CA du quadrimestre</small></span><b>' + M.e2(somme) + '</b></div>';
+        $('l-pk').querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', +b.getAttribute('data-k') === k); });
+        $('l-q').querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', +b.getAttribute('data-q') === qi); });
+        $('l-vers').querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', +b.getAttribute('data-k') === k); });
+      }
+      $('l-vers').onclick = function (e) { var x = e.target.closest('[data-k]'); if (!x) return; E.lk = +x.getAttribute('data-k'); calcul(); $('et5').scrollIntoView({ behavior: calme ? 'auto' : 'smooth', block: 'start' }); };
+      $('l-pk').onclick = function (e) { var x = e.target.closest('[data-k]'); if (!x) return; E.lk = +x.getAttribute('data-k'); calcul(); };
+      $('l-q').onclick = function (e) { var x = e.target.closest('[data-q]'); if (!x) return; E.lq = +x.getAttribute('data-q'); calcul(); };
+      $('pdf2').onclick = function () { V2.ouvrirDocProtege('planOpso2027'); };
+      $('l-neg').onclick = function () { E.tab = 'neg'; montrerOnglet(); window.scrollTo(0, 0); };
+      $('l-dou').onclick = function () { E.tab = 'neg'; montrerOnglet(); $('calc').scrollIntoView({ block: 'start' }); };
+      calcul();
+    }
+    lecture();
+
     // ── onglets, boutons ──
     function montrerOnglet() {
       $('neg').hidden = E.tab !== 'neg'; $('calc').hidden = E.tab !== 'neg'; $('sui').hidden = E.tab !== 'sui';
+      $('lire').hidden = E.tab !== 'lire'; root.querySelector('.opv-haut').hidden = E.tab === 'lire';   // le bandeau suit les curseurs : rien à y lire ici
       root.querySelectorAll('.opv-onglets button').forEach(function (y) { y.setAttribute('aria-selected', y.getAttribute('data-t') === E.tab); });
     }
     root.querySelector('.opv-onglets').onclick = function (e) {
