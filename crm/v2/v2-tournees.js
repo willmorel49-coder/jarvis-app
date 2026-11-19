@@ -400,7 +400,7 @@
       if (!c.m) return;
       c.m.forEach(function (x, i) { if (x) cm.push([c.n, C.joli(c.nom), cap0(C.moisLong(mois[i])), x[0], x[1], x[2], r2(x[1] - x[2] * cout), couv[mois[i]] ? 'Incomplet' : 'Complet']); });
     });
-    var pr = [['Rang', 'Pharmacie', 'Ville', 'Position sur la route', 'Détour (km)', 'Km depuis le dépôt sur la route', 'Position']];
+    var pr = [['Rang', 'Pharmacie', 'Ville', 'Position sur la route', 'Détour (km)', 'Distance à la route (km)', 'Position']];
     a.prospects.forEach(function (p, i) { var n = nomDe ? nomDe(p.cip) : { nom: '', ville: '' }; pr.push([i + 1, n.nom, n.ville, C.position(p).replace(/ /g, ' '), v(p.detour), v(p.km_route), p.fiable ? 'Fiable' : 'À vérifier']); });
     var lire = [['Tournée', tb.code + ' · ' + tb.nom], ['Établissement', etab || ''], ['Période', d.periode || ''], ['Coût d’une livraison (€)', cout],
       ['Extrait le', quand || ''], [], ['Règles de calcul', ''],

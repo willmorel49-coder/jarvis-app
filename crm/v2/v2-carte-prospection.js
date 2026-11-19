@@ -12,8 +12,8 @@
    - DONNÉES DES TOURNÉES (tracés, clientes, positions) : PAS dans le dépôt (public). Elles vivent dans un fichier du seau
      privé `donnees-protegees`, à sa RACINE, nommé `connexions-jarvis-prospection.js`. CE NOM EST VOULU : la fonction de la base
      jarvis_peut_lire_protege() réserve tout objet `connexions-jarvis%` à jarvis_acces_connexions() (branche placée en tête,
-     connexions.sql) ; un autre nom serait lisible par tout compte connecté. On le charge avec le chargeur de fichiers protégés
-     de l'app (V2.loadFiles, clé « prospection » de v2-boot.js : adresse signée), SEULEMENT après le « oui » ci-dessus.
+     connexions.sql) ; un autre nom serait lisible par tout compte connecté. Il était chargé par V2.loadFiles (clé « prospection »
+     de v2-boot.js), SEULEMENT après le « oui » ci-dessus ; clé retirée le 19/11/2026 (plus rien ne le demande), le fichier reste dans le seau.
    - Prospects = officines de PHARMA_FR des 8 départements du secteur qui ne sont pas dans CLIENTS_ACTIFS
      (cliente de n'importe quel commercial). Distance au tracé le plus proche calculée ICI, dans le
      navigateur : projection plane locale, mêmes constantes que donnees.py (xy / d_seg / d_trace).
