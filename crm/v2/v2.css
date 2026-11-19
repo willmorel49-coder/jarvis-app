@@ -939,7 +939,10 @@ html:not([data-hab]) .v2-tab.on,html:not([data-hab]) .v2-tab.on:hover{background
 
 /* ── Pastilles de filtre et étiquettes ── */
 html:not([data-hab]) .v2-seg{min-height:44px;padding:0 16px;border-radius:999px;border-color:#CFDDF8;font-size:15px;font-weight:650;color:#0034A0}
-html:not([data-hab]) .v2-seg:hover{background-color:#F2F6FF}
+html:not([data-hab]) .v2-seg:not(.on):hover{background-color:#F2F6FF}
+/* 19/11/2026 : sans elle, la pastille CHOISIE gardait le texte #0034A0 sur son fond bleu (1,65:1, « Comparer nos prix »).
+   :where garde la force de la règle ci-dessus : les écrans qui habillent eux-mêmes leur pastille choisie l'emportent toujours. */
+html:not([data-hab]) .v2-seg:where(.on){color:#fff}
 html:not([data-hab]) .v2-chip{font-size:13px;padding:4px 10px}
 
 /* ── Tableaux et listes : en-têtes en casse normale, filets nets, survol bleuté ── */
