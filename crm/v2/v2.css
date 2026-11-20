@@ -1820,4 +1820,7 @@ html:root:root body .fdr-on .fdr-sw .vv-b{padding:0 18px;flex:0 0 auto}
 @media (max-width:640px){#v2-root.mo-view-in:has(.pha-wrap.fdr-on){animation:none}}
 /* au téléphone, la ligne du haut (CIP · cliente · commercial en vue Intégral) tient sur une ligne : sinon la bascule décale le nom de 21 px */
 @media (max-width:640px){.fdr-on .fdr-eye{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+/* 20/11/2026 — fiches de prospect au même habillage (fdrProspect) : boutons d'action en rangée */
+.fdr-on .fdr-pro-acts{display:flex;flex-wrap:wrap;gap:10px}
+.fdr-on .fdr-pro .v2-prospect-hd{padding:16px 18px}
 /* ═══ fin fiche officine « Le rendez-vous » ═══ */

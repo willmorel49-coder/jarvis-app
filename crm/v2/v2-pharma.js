@@ -1546,39 +1546,31 @@
     var kvC = feKv('Ville', esc([cpA, sv('ville')].filter(function (x) { return x; }).join(' '))) + feKv('Adresse', sv('adresse') ? esc(sv('adresse')) : '') + feKv('Titulaire', esc(sv('titulaire'))) +
       (sv('interlocuteur') ? feKv('Interlocuteur', esc(sv('interlocuteur'))) : '') + feKv('Groupement', esc(sv('groupement'))) +
       feKv('Téléphone', sv('tel') ? esc(sv('tel')) : '') + (sv('portable') ? feKv('Portable', esc(sv('portable'))) : '') + feKv('E-mail', sv('email') ? esc(sv('email')) : '');
-    var idCardC = '<div class="pha-id">' +
-      '<div class="pha-id-top"><div class="pha-code mono">PROSPECT CRÉÉ À LA MAIN</div>' + fe.bouton + '</div>' +
-      '<div class="pha-name"><span class="v2-prospect-n">' + esc(nomA || 'Nouvelle fiche prospect') + '</span></div>' +
-      '<div class="pha-kv">' + kvC + '</div>' +
-      ((sv('tel') || sv('email')) ? '<div class="pha-acts">' +
-        (sv('tel') ? '<a class="pha-btn" href="tel:' + esc(sv('tel').replace(/[^+0-9]/g, '')) + '">' + (V2.ICO ? V2.ICO('phone', 15) : '') + 'Appeler</a>' : '') +
-        (sv('email') ? '<a class="pha-btn" href="mailto:' + esc(sv('email')) + '">' + (V2.ICO ? V2.ICO('mail', 15) : '') + 'E-mail</a>' : '') + '</div>' : '') +
-      '</div>';
+    var notesC = (V2.rdvPrepa ? V2.rdvPrepa.section(pid) : '') + (V2.notes ? V2.notes.section('client', pid) : '');
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
-      '<div class="v2-wrap v2-prospect pha-wrap"><div class="pha">' +
-        '<div class="pha-rail">' + idCardC + fe.panneau +
-        '<div class="v2-card v2-prospect-hd">' +
-          '<p class="v2-prospect-note" style="margin-top:0">Renseignez l\'identité et les coordonnées avec le bouton « Modifier » ou dans les formulaires de la fiche. Nouvelle officine — indiquez son nom, son code postal, ses coordonnées, vos infos et vos notes. Chaque champ est enregistré dès que vous le quittez, partagé avec l\'équipe, et la fiche se retrouve dans Officines, onglet Prospects.</p>' +
-        '</div></div>' +
-        '<div class="pha-main">' +
-        (V2.profil ? V2.profil.newProspectSection(pid, seed) : '') +
-        (V2.profil ? V2.profil.section('client', pid) : '') +
-        (V2.rdvPrepa ? V2.rdvPrepa.section(pid) : '') +
-        (V2.notes ? V2.notes.section('client', pid) : '') +
-        '<div class="v2-card v2-prospect-acts">' + txProspectBtn(pid) +
-          '<button type="button" class="v2-btn v2-btn-ghost" id="of-archiver" onclick="V2.pharmaArchiverProspect(\'' + esc(String(pid).replace(/[^0-9A-Za-z_-]/g, '')) + '\')" title="La fiche sort des listes, rien n\'est effacé">Archiver cette fiche</button></div>' +
-      '</div></div></div>';
+      '<div class="v2-wrap v2-prospect pha-wrap fdr-on">' + fdrProspect({
+        eye: 'Prospect créé à la main', nom: nomA || 'Nouvelle fiche prospect', tel: sv('tel'), mail: sv('email'),
+        sous: [[cpA, sv('ville')].filter(function (x) { return x; }).join(' '), sv('groupement'), sv('titulaire')],
+        ch: [
+          ['Coordonnées et informations', 'Coordonnées', fdrProInfos(kvC, fe.panneau + (V2.profil ? V2.profil.newProspectSection(pid, seed) + V2.profil.section('client', pid) : ''), !nomA),
+            'Chaque champ est enregistré dès que vous le quittez et partagé avec l’équipe ; la fiche se retrouve dans Officines, onglet Prospects.'],
+          ['Notes et préparation du rendez-vous', 'Notes', notesC ? '<div class="fdr-bloc fdr-nt"><div class="pha-notes">' + notesC + '</div></div>' : ''],
+          ['Actions', 'Actions', '<div class="fdr-bloc fdr-act"><div class="fdr-pro-acts">' + txProspectBtn(pid) +
+            '<button type="button" class="v2-btn v2-btn-ghost" id="of-archiver" onclick="V2.pharmaArchiverProspect(\'' + esc(String(pid).replace(/[^0-9A-Za-z_-]/g, '')) + '\')" title="La fiche sort des listes, rien n\'est effacé">Archiver cette fiche</button></div></div>']
+        ] }) +
+      '</div>';
     if (V2.profil) V2.profil.hydrate();
     if (V2.notes) V2.notes.hydrate();
     if (V2.rdvPrepa) V2.rdvPrepa.hydrate();
     V2.pharmaFiche.apres(pid);
+    fdrInit(root);
     // Fiche déjà remplie : son nom en titre, pas « Nouvelle fiche prospect ».
     if (V2.profil && V2.profil.charger) V2.profil.charger('client', pid).then(function (d) {
       if (!V2.route || String(V2.route.param) !== String(pid)) return;
       var b = root.querySelector('#of-archiver');
       if (b && d.archive) b.textContent = 'Rétablir cette fiche';
       if (!d.nom) return;
-      var n = root.querySelector('.v2-prospect-n'), a = root.querySelector('.v2-prospect-a');
+      var n = root.querySelector('#fdr-haut .pha-name'), a = root.querySelector('.v2-prospect-a');
       if (n) n.textContent = d.nom;
       if (a) a.textContent = [cpDe(d), d.ville].filter(function (x) { return x; }).join(' ') || 'Fiche créée à la main';
     });
@@ -1905,14 +1897,6 @@
     var kvP = feKv('Ville', esc([cpA, villeA].filter(function (x) { return x; }).join(' '))) + feKv('Adresse', adrA ? esc(adrA) : '') + feKv('Titulaire', esc(titA)) +
       (sv('interlocuteur') ? feKv('Interlocuteur', esc(sv('interlocuteur'))) : '') + feKv('Groupement', esc(grpA)) +
       feKv('Téléphone', telA ? esc(telA) : '') + (sv('portable') ? feKv('Portable', esc(sv('portable'))) : '') + feKv('E-mail', mailA ? esc(mailA) : '');
-    var idCardP = '<div class="pha-id">' +
-      '<div class="pha-id-top"><div class="pha-code mono">' + esc(String(caSV ? 'Client' : seg).toUpperCase()) + (uga ? ' · UGA ' + esc(uga) : '') + '</div>' + fe.bouton + '</div>' +
-      '<div class="pha-name">' + esc(nameOf(pid, p[6] || p[10]) || 'Pharmacie') + '</div>' +
-      '<div class="pha-kv">' + kvP + '</div>' +
-      ((telA || mailA) ? '<div class="pha-acts">' +
-        (telA ? '<a class="pha-btn" href="tel:' + esc(telA.replace(/[^+0-9]/g, '')) + '">' + (V2.ICO ? V2.ICO('phone', 15) : '') + 'Appeler</a>' : '') +
-        (mailA ? '<a class="pha-btn" href="mailto:' + esc(mailA) + '">' + (V2.ICO ? V2.ICO('mail', 15) : '') + 'E-mail</a>' : '') + '</div>' : '') +
-      '</div>';
     var secteurDe = (ugaCommMap()[p[2]] || []).join(', ');   // commerciaux présents dans son UGA
     var badge = function (t, cls) { return t ? '<span class="v2-chip' + (cls ? ' ' + cls : '') + '">' + esc(t) + '</span>' : ''; };
     // 23/09/2026 — un prospect n'a jamais de grossiste/génériqueur connu (base clients
@@ -1923,12 +1907,7 @@
         (probable.grossiste ? '<span>Grossiste probable</span><b>' + esc(V2.probableTexte(probable.grossiste, probable.groupement)) + '</b>' : '') +
         (probable.generiqueur ? '<span>Génériqueur probable</span><b>' + esc(V2.probableTexte(probable.generiqueur, probable.groupement)) + '</b>' : '') +
       '</div>' : '';
-    root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
-      // 16/10/2026 — deux colonnes comme la fiche cliente : à gauche la carte bleue (nom, infos, crayon) puis les pastilles et lignes d'avant ;
-      // à droite le reste, dans le même ordre qu'avant. Sous 900 px la carte passe en haut (règles de `.pha`).
-      '<div class="v2-wrap v2-prospect pha-wrap"><div class="pha">' +
-        '<div class="pha-rail">' + idCardP + fe.panneau +
-        '<div class="v2-card v2-prospect-hd">' +
+    var saitP = '<div class="fdr-bloc v2-prospect-hd">' +
           '<div class="v2-prospect-top">' +
             '<div style="flex:1;min-width:0">' +
               '<div class="v2-prospect-badges">' + badge(caSV ? 'Client' : seg, 'pr') + badge(offilogDe(pid) && offilogDe(pid).oui ? 'Client Offilog' : '') + badge(grpA) + badge(uga ? 'UGA ' + uga : '') + badge(secteurDe ? 'Secteur de ' + secteurDe : '') + '</div>' +
@@ -1949,25 +1928,33 @@
           '</div>' +
           (caSV ? '<p class="v2-prospect-note">Cliente de la base clients' + (caSV[3] ? ' (' + esc(caSV[3]) + ')' : '') + ' — aucune vente sur la période. Ses coordonnées, infos et notes se complètent ici. Tout est sauvegardé.</p>'
                 : '<p class="v2-prospect-note">Officine non cliente — complétez ses coordonnées, infos et notes pour la suivre comme un futur client. Tout est sauvegardé.</p>') +
-        '</div></div>' +
-        '<div class="pha-main">' +
-        '<div class="v2-card" style="padding:12px 16px 14px">' + nameEditor(pid, p[6] || '') + '</div>' +
-        (V2.profil ? V2.profil.coordSection(pid, seed) : '') +
-        (V2.profil ? V2.profil.section('client', pid) : '') +
-        (V2.rdvPrepa ? V2.rdvPrepa.section(pid) : '') +
-        (V2.notes ? V2.notes.section('client', pid) : '') +
-        '<div class="v2-card v2-prospect-acts">' +
+        '</div>';
+    var notesP = (V2.rdvPrepa ? V2.rdvPrepa.section(pid) : '') + (V2.notes ? V2.notes.section('client', pid) : '');
+    var formsP = fe.panneau + '<div class="v2-card" style="padding:12px 16px 14px">' + nameEditor(pid, p[6] || '') + '</div>' +
+        (V2.profil ? V2.profil.coordSection(pid, seed) + V2.profil.section('client', pid) : '');
+    var actsP = '<div class="fdr-bloc fdr-act"><div class="fdr-pro-acts">' +
           ((V2.promoted && V2.promoted[String(pid)])
             ? '<span class="v2-btn v2-btn-ghost" style="cursor:default;color:var(--c-opp);border-color:var(--c-opp)">✓ Passé en client</span>'
             : '<button class="v2-btn v2-btn-primary" onclick="V2.promoteToClient(\'' + esc(String(pid)) + '\')">➕ Passer en client</button>') +
           txProspectBtn(pid) +
           '<a class="v2-btn v2-btn-ghost" href="https://www.google.com/maps/search/?api=1&query=' + q + '" target="_blank" rel="noopener">Voir sur Google Maps</a>' +
-        '</div>' +
-      '</div></div></div>';
+        '</div></div>';
+    root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
+      '<div class="v2-wrap v2-prospect pha-wrap fdr-on">' + fdrProspect({
+        eye: String(caSV ? 'Client' : seg).toUpperCase() + (uga ? ' · UGA ' + uga : ''), nom: nameOf(pid, p[6] || p[10]) || 'Pharmacie', tel: telA, mail: mailA,
+        sous: [[cpA, villeA].filter(function (x) { return x; }).join(' '), grpA, titA],
+        ch: [
+          ['Ce que l’on sait de cette officine', 'Ce qu’on sait', saitP],
+          ['Notes et préparation du rendez-vous', 'Notes', notesP ? '<div class="fdr-bloc fdr-nt"><div class="pha-notes">' + notesP + '</div></div>' : ''],
+          ['Coordonnées et informations', 'Coordonnées', fdrProInfos(kvP, formsP, false), 'Tout est enregistré dès que vous quittez un champ, et partagé avec l’équipe.'],
+          ['Actions', 'Actions', actsP]
+        ] }) +
+      '</div>';
     if (V2.profil) V2.profil.hydrate();
     if (V2.notes) V2.notes.hydrate();
     if (V2.rdvPrepa) V2.rdvPrepa.hydrate();
     V2.pharmaFiche.apres(pid);
+    fdrInit(root);
   }
 
   var _clientsAsked = false;   // évite de redemander clients-data.js à chaque rendu
@@ -3985,8 +3972,8 @@
     '</div>';
   }
   // Une section à titre h2 + grand chiffre, et son corps
-  function fdrChapitre(n, corps, sous, cls) {
-    var titre = FDR_CH[n - 1][1];
+  function fdrChapitre(n, corps, sous, cls, t) {
+    var titre = t || FDR_CH[n - 1][1];   // t : titre propre (fiches de prospect, fdrProspect)
     return '<section class="fdr-ch fdr-rv' + (cls ? ' ' + cls : '') + '" id="fdr-c' + n + '" aria-labelledby="fdr-h' + n + '">' +
       '<header class="fdr-ch-h"><span class="fdr-num" aria-hidden="true">' + n + '</span><div class="fdr-ch-t"><h2 id="fdr-h' + n + '">' + esc(titre) + '</h2>' + (sous ? '<p class="fdr-ch-s">' + sous + '</p>' : '') + '</div></header>' +
       '<div class="fdr-ch-c">' + corps + '</div></section>';
@@ -4008,8 +3995,36 @@
       (A.n >= 2 ? '<div class="fdr-sc">' + caChartSvg(A.pts, 820, 250, true) + '</div>' : '<p class="fdr-leg">Pas assez de mois pour tracer une courbe.</p>') +
       m5Replie('fdr-mois', 'Tableau mois par mois', analyseMoisTableau(A, true)) + '</div>';
   }
+  // 20/11/2026 — défaut 13 de l'audit : les deux fiches de prospect (créée à la main, base nationale) prennent l'habillage de la fiche
+  // « Le rendez-vous » : même en-tête (aube), sommaire collant, chapitres numérotés. Rien n'est retiré : les formulaires (identité, coordonnées,
+  // infos) passent derrière « Modifier les informations », comme sur la fiche cliente (fini la redite carte ↔ formulaire).
+  // Pas de bascule de vue : un prospect n'a pas de ventes à montrer. o.ch = [[titre, mot du sommaire, corps, sous-titre]] ; corps vide = chapitre absent.
+  function fdrProspect(o) {
+    var r = [];
+    if (o.tel) r.push(fdrRond('a', 'href="tel:' + esc(o.tel.replace(/[^+0-9]/g, '')) + '"', 'tel', 'Appeler', true));
+    if (o.mail) r.push(fdrRond('a', 'href="mailto:' + esc(o.mail) + '"', 'mel', 'E-mail'));
+    if (V2.notes) r.push(fdrRond('button', 'type="button" onclick="V2.pharmaNav.noter()" title="Aller à la note personnelle"', 'pdf', 'Note'));
+    var sous = o.sous.filter(function (x) { return x; }).map(esc).join('<span class="fdr-pt" aria-hidden="true"> · </span>');
+    var ch = o.ch.filter(function (c) { return c[2]; });
+    return '<div class="fdr fdr-pro">' +
+      '<header class="fdr-head" id="fdr-haut"><i class="fdr-astre" aria-hidden="true"></i>' +
+        '<div class="fdr-id"><div class="fdr-id-t"><div class="fdr-eye mono">' + esc(o.eye) + '</div>' +
+          '<h1 class="pha-name">' + esc(o.nom) + '</h1>' + (sous ? '<p class="fdr-sub">' + sous + '</p>' : '') +
+        '</div>' + (r.length ? '<div class="fdr-ronds">' + r.join('') + '</div>' : '') + '</div></header>' +
+      '<nav class="fdr-som" id="fdr-som" aria-label="Aller à un chapitre">' + ch.map(function (c, i) {
+        return '<button type="button" class="fdr-pil" data-ch="' + (i + 1) + '" onclick="V2.fdrAller(' + (i + 1) + ')"><b>' + (i + 1) + '</b><span>' + esc(c[1]) + '</span></button>';
+      }).join('') + '</nav>' +
+      ch.map(function (c, i) { return fdrChapitre(i + 1, c[2], c[3] || '', '', c[0]); }).join('') + '</div>';
+  }
+  // Bloc « Coordonnées » : ce qui est connu, en lecture ; tous les formulaires d'avant derrière « Modifier les informations » (ouverts d'office sur une fiche vide)
+  function fdrProInfos(kv, forms, ouvert) {
+    return '<div class="fdr-bloc fdr-infos"><div class="fdr-bl-h"><h3>Coordonnées</h3>' +
+      '<button type="button" class="fdr-btn" id="fdr-modif" aria-expanded="' + (ouvert ? 'true' : 'false') + '" aria-controls="fdr-edit" onclick="V2.fdrModifier()">' + (ouvert ? 'Fermer les formulaires' : 'Modifier les informations') + '</button></div>' +
+      '<div class="pha-kv fdr-kv">' + kv + '</div>' +
+      '<div class="fdr-edit" id="fdr-edit"' + (ouvert ? '' : ' hidden') + '>' + forms + '</div></div>';
+  }
   function fdrPage(c) {
-    var vues = '<div class="fdr-sw vv-sel vv-ui" role="group" aria-label="Vue de la fiche">' + viBouton('pharmacien', 'Vue pharmacien') + viBouton('integral', 'Vue Intégral') + '</div>';
+    var vues ='<div class="fdr-sw vv-sel vv-ui" role="group" aria-label="Vue de la fiche">' + viBouton('pharmacien', 'Vue pharmacien') + viBouton('integral', 'Vue Intégral') + '</div>';
     var sous = [c.loc, c.grp, c.titulaire].filter(function (x) { return x; }).map(esc).join('<span class="fdr-pt" aria-hidden="true"> · </span>');
     var tete = '<header class="fdr-head" id="fdr-haut"><i class="fdr-astre" aria-hidden="true"></i>' +
       '<div class="fdr-bar"><div class="fdr-nav vi-int">' + phaNavHtml(c.pid) + '</div>' + vues + '</div>' +
@@ -7308,7 +7323,6 @@
       '.v2-prospect{display:flex;flex-direction:column;gap:0}',
       '.v2-prospect-hd{padding:18px 20px}',
       '.v2-prospect-top{display:flex;align-items:center;gap:14px}',
-      '.v2-prospect-n{font-size:18px;font-weight:800;letter-spacing:-.01em;line-height:1.2}',
       '.v2-prospect-a{color:var(--muted);font-size:13px;margin-top:2px}',
       '.v2-prospect-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}',
       '.v2-prospect-extra{margin-top:6px;font-size:12px;color:var(--muted);overflow-wrap:anywhere}',
