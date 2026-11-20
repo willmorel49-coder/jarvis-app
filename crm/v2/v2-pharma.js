@@ -1172,7 +1172,7 @@
     function trier(list, pros) {
       var k = ofl.tri, d = ofl.sens;
       if (pros && k !== 'nom' && k !== 'tourn') return list;
-      // clé de tri « annuaire » : sans « PHARMACIE », « SELARL »… ni article au début (« PHARMACIE DU MONT DE FACHES » se range à M)
+      // clé de tri « annuaire » : sans « PHARMACIE », « SELARL »… ni article au début (« PHARMACIE DU FICTIVE C » se range à F)
       var nom = function (x) {
         var n = String(x.p.name || '').toLocaleUpperCase('fr-FR').replace(/[’']/g, ' ').trim(), avant;
         do { avant = n; n = n.replace(/^(SELARL|SELAS|SELURL|SARL|EURL|SNC|GRANDE|PHARMACIE|PHARMACEUTIQUE|PHIE|DE LA|DE L|DES|DU|DE|D|LA|LE|LES|L|AUX|AU|ET)\s+/, ''); } while (n !== avant && n);

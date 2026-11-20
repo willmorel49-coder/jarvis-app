@@ -46,9 +46,9 @@ function trieur(ofl, marges = {}, rap = {}) {
     ofl, (p) => (p.t ? [p.t] : []), (id) => marges[id], rap);
 }
 const L = [
-  { p: { id: 1, name: 'PHARMACIE DU MONT DE FACHES', t: 'T12' }, ca: 500, marge: 50 },
-  { p: { id: 2, name: 'Pharmacie Bastide' }, ca: 900, marge: 10 },
-  { p: { id: 3, name: 'SELARL PHARMACIE CENTRALE', t: 'T10' }, ca: 100, marge: 90 },
+  { p: { id: 1, name: 'PHARMACIE DU FICTIVE C', t: 'T12' }, ca: 500, marge: 50 },
+  { p: { id: 2, name: 'Pharmacie Fictive A' }, ca: 900, marge: 10 },
+  { p: { id: 3, name: 'SELARL PHARMACIE FICTIVE B', t: 'T10' }, ca: 100, marge: 90 },
 ];
 const ids = (l) => l.map((x) => x.p.id);
 
@@ -57,7 +57,7 @@ test('tri : chiffre d’affaires décroissant par défaut', () => {
 });
 
 test('tri : par nom « annuaire » (sans PHARMACIE, SELARL, article), dans les deux sens', () => {
-  assert.deepEqual(ids(trieur({ tri: 'nom', sens: 1 })(L)), [2, 3, 1], 'Bastide, Centrale, Mont de Faches');
+  assert.deepEqual(ids(trieur({ tri: 'nom', sens: 1 })(L)), [2, 3, 1], 'Fictive A, B, C');
   assert.deepEqual(ids(trieur({ tri: 'nom', sens: -1 })(L)), [1, 3, 2]);
 });
 
