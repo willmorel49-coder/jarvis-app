@@ -39,6 +39,8 @@
 .pa-rap label,.pa-ch{display:grid;gap:6px;font-weight:700;font-size:15px;color:var(--au-ink2,#3B4F43)}
 .pa input[type=date],.pa input[type=text],.pa select,.pa textarea{min-height:48px;padding:8px 12px;border:1px solid var(--au-fil,#D8E7DD);border-radius:12px;background-color:#fff;font-size:16px;font-weight:500;color:var(--au-ink,#16281E);max-width:100%}
 .pa textarea{width:100%;resize:vertical}
+/* WebKit ignore la hauteur d'une liste native : on la redessine (flèche en image, pas de dégradé ni de flou) */
+.pa select{-webkit-appearance:none;appearance:none;padding-right:38px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231A3A2E' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:18px}
 .pa-dit{margin:10px 0 0;font-size:16px;line-height:1.4;font-weight:600;color:var(--au-ink2,#3B4F43)}
 .pa-dit:empty{display:none}
 .pa-flash{margin:0 0 14px;padding:12px 16px;border-radius:14px;background-color:var(--au-surv-a,#E7F3EB);font-weight:700;font-size:16px;line-height:1.4}
