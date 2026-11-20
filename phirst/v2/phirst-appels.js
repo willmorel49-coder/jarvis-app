@@ -167,12 +167,14 @@
       return t ? chargerTelepro(tok, base) : chargerMembre(tok, base, u);
     }).then(null, function () { if (tok === S.jeton) { S.erreur = true; dessiner(); } });
   }
+  /* Ses pistes = les étapes où elle peut agir (et « perdu », en lecture) : un devis ou un chantier reste à Yann, la base y refuse ses écritures. */
+  function sienne(f) { return ['a_qualifier', 'a_rappeler', 'rdv_fixe', 'perdu'].indexOf(f.stage) >= 0; }
   /* Téléprospectrice : ses pistes, le journal de son espace (pour « déjà appelée »), la liste du robot, l'équipe. Tout par les fonctions. */
   function chargerTelepro(tok, base) {
     return Promise.all([base.rpc('telepro_pistes'), base.rpc('telepro_journal', { p_prospect: null }), window.PHIRST_DONNEES.ligne(), EQUIPE.lire()]).then(function (r) {
       if (!r[0] || r[0].error || !Array.isArray(r[0].data) || !r[1] || r[1].error || !Array.isArray(r[1].data)) throw new Error('fiches');
       if (tok !== S.jeton) return;
-      S.ws = null; S.fiches = r[0].data; S.appelAu = P.dernierAppelParFiche(r[1].data, versJourParis);
+      S.ws = null; S.fiches = r[0].data.filter(sienne); S.appelAu = P.dernierAppelParFiche(r[1].data, versJourParis);
       S.robot = r[2]; S.charge = true; dessiner();
     });
   }
@@ -305,7 +307,7 @@
       if (u.error) return u;
       return base.rpc('telepro_pistes').then(function (l) {
         if (l.error || !Array.isArray(l.data)) return { error: l.error || { message: '' } };
-        S.fiches = l.data;
+        S.fiches = l.data.filter(sienne);
         var x = l.data.filter(function (y) { return y.id === id; })[0];
         return x ? { data: x } : { error: { message: '' } };
       });
