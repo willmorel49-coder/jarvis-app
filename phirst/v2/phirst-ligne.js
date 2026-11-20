@@ -56,8 +56,8 @@
      VIDE et GESTE ; boutons de chosesDuJour de la V1) : changer un texte là-bas = revoir sa page ici.
      Consigne d'un moment vide : « Ouvrir la Veille », « Ouvrir un dossier », « Voir mes dossiers », « Voir mes chantiers ».
      Chose n° 1 : le geste du moment (« Voir la fiche et appeler », « Ouvrir le dossier », « Voir le chantier », « Noter un paiement »).
-     « L'ajouter à mes pistes » (chose de la veille) n'ouvre aucune page : il créera la fiche comme ajouterAuPipeline de la V1,
-     ce qui écrit dans la base de Yann — pas branché sans l'accord de Will. Une page absente du menu = pas de lien. */
+     « L'ajouter à mes pistes » (chose de la veille) n'ouvre aucune page : il crée la fiche (ajouter, plus bas ; décision de
+     Will du 20/11/2026). Une page absente du menu = pas de lien. */
   var VIDE_VERS = { trouver: 'veille', preparer: 'dossiers', chantier: 'dossiers', encaisser: 'chantiers' };
   var GESTE_VERS = { trouver: 'appels', preparer: 'dossiers', chantier: 'chantiers', encaisser: 'encaisser' };
   function vers(p) { return p && window.V2 && V2.pages && V2.pages[p] ? ' data-vers="' + esc(p) + '"' : ''; }
@@ -78,9 +78,39 @@
         '<button type="button" class="lg-gros"' + vers(VIDE_VERS[s.cle]) + '>' + esc(s.vide.bouton) + FL + '</button></div></div>';
     h += '<p class="lg-sur"><i></i>' + (c ? 'La chose n° 1 · ' : '') + esc(s.mot) + '</p>';
     var det = c && (c.parution ? 'Paru au BODACC ' + depuis(c.parution) + '.' : c.detail);
-    if (c) h += '<p class="lg-titre">' + esc(c.titre) + '</p><p class="lg-det">' + esc(c.heure) + (det ? ' · ' + esc(det) : '') + '</p><button type="button" class="lg-gros"' + (c.type === 'veille' ? '' : vers(GESTE_VERS[s.cle])) + '>' + esc(c.bouton) + FL + '</button>';
+    if (c) h += '<p class="lg-titre">' + esc(c.titre) + '</p><p class="lg-det">' + esc(c.heure) + (det ? ' · ' + esc(det) : '') + '</p><button type="button" class="lg-gros"' + (c.type === 'veille' ? (c.piste ? ' data-piste="1"' : '') : vers(GESTE_VERS[s.cle])) + '>' + esc(c.bouton) + FL + '</button>' +
+      (c.type === 'veille' ? '<p class="lg-dit" role="status"></p>' : '');
     h += '</div><div class="lg-liste"><p class="lg-lt">' + n + ' pharmacie' + (n > 1 ? 's' : '') + ' à ce moment</p><ul>' + lignes(s.pharmacies);
     return h + '</ul>' + (s.autres ? '<button type="button" class="lg-autres"' + vers(s.source === 'veille' || s.cle === 'trouver' ? 'veille' : VIDE_VERS[s.cle]) + '>' + esc(s.autres) + FL + '</button>' : '') + '</div></div>';
+  }
+  /* « L'ajouter à mes pistes » : crée la fiche comme ajouterAuPipeline de la V1 (~/phirst-studio/app/crm/actions.ts l. 56-114) —
+     dans SON espace, pas de doublon par nom + ville (toute étape, archivées comprises), étape « à qualifier », source « transfert »,
+     la note de la veille dans crm_activities. Champs fournis par le robot (chose.piste). Le bouton dit ce qui s'est passé. */
+  var PAS = 'Pas enregistré : réessayez dans un instant.';
+  function norm(v) { return String(v == null ? '' : v).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+  function ajouter(btn) {
+    var s = D && D.filter(function (x) { return x.cle === cle; })[0], p = s && s.chose && s.chose.piste;
+    var V2 = window.V2, u = V2 && V2.user, sb = u && typeof V2.sb === 'function' ? V2.sb() : null;
+    var dit = btn.parentNode.querySelector('.lg-dit');
+    function dire(t) { if (dit) dit.textContent = t; btn.disabled = false; }
+    if (!p || !sb) return dire(PAS);
+    btn.disabled = true; if (dit) dit.textContent = '';
+    sb.from('crm_members').select('workspace_id').eq('user_id', u.id).limit(1).maybeSingle().then(function (m) {
+      var ws = m && !m.error && m.data && m.data.workspace_id;
+      if (!ws) return dire(PAS);
+      return sb.from('crm_prospects').select('id,nom,ville').eq('workspace_id', ws).then(function (f) {
+        if (f.error) return dire(PAS);
+        var k = norm(p.nom) + '|' + norm(p.ville);
+        if ((f.data || []).some(function (x) { return norm(x.nom) + '|' + norm(x.ville) === k; })) return dire('Déjà dans vos pistes.');
+        return sb.from('crm_prospects').insert({ workspace_id: ws, nom: p.nom, ville: p.ville, cp: p.cp, departement: p.departement,
+          stage: 'a_qualifier', source: 'transfert', lat: p.lat, lon: p.lon }).select('id').single().then(function (n) {
+          if (n.error || !n.data) return dire(PAS);
+          function fin() { dire('Ajoutée à vos pistes.'); }
+          if (!p.note) return fin();
+          return sb.from('crm_activities').insert({ prospect_id: n.data.id, type: 'note', body: p.note }).then(fin, fin);
+        });
+      });
+    }).then(null, function () { dire(PAS); });
   }
   /* l'astre (et son halo, ses anneaux, son reflet) glisse au-dessus du moment choisi */
   function soleil() {
@@ -103,6 +133,7 @@
     el.addEventListener('click', function (ev) {
       var g = ev.target.closest('[data-vers]');
       if (g) { if (window.V2 && typeof V2.go === 'function') V2.go(g.getAttribute('data-vers')); return; }
+      var a = ev.target.closest('[data-piste]'); if (a) { ajouter(a); return; }
       var b = ev.target.closest('[data-k]'); if (!b) return;
       cle = b.getAttribute('data-k'); dessiner(el);
     });

@@ -22,6 +22,7 @@
 .lg-sur i{width:10px;height:10px;border-radius:50%;background-color:#12A567;box-shadow:0 0 0 4px #DCF0E3}
 .lg-titre{margin:0 0 8px;font-weight:800;font-size:30px;line-height:1.1;letter-spacing:-.03em;text-wrap:balance}
 .lg-det{margin:0 0 20px;font-size:16.5px;line-height:1.5;color:var(--au-ink2)}
+.lg-dit{margin:12px 0 0;font-size:16px;line-height:1.4;font-weight:600;color:var(--au-ink2)}.lg-dit:empty{display:none}
 .lg-gros{display:inline-flex;align-items:center;gap:10px;min-height:52px;padding:0 24px;border:0;border-radius:16px;background-color:var(--au-accent);background-image:linear-gradient(180deg,#24503F,#1A3A2E);color:#fff!important;font-weight:700!important;font-size:16px!important;box-shadow:0 10px 24px -10px var(--au-ombre-l),inset 0 1px 0 rgba(255,255,255,.14);transition:transform .3s var(--lg-ease)}
 .lg-gros:hover{transform:translateY(-1px)}
 .lg-gros svg{width:20px;height:20px}
