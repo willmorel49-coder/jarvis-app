@@ -1370,6 +1370,8 @@ html:root:root body .v2-wrap.narrow:has(>.td-m1){max-width:1232px}
 html:root:root body .v2-wrap.olm{max-width:1232px}
 html:root:root body .v2-wrap.pr-wrap{max-width:1232px}
 html:root:root body .v2-wrap.pa-wrap{max-width:1232px}
+/* 20/11/2026 (Will) : Infos du matin à la même largeur (v2-infos.js:1773 .v2-wrap.inf2.pp 1272) */
+html:root:root body .v2-wrap.inf2.pp{max-width:1232px}
 /* 2. Chiffres en encre, le bleu réservé aux actions (v2-officines-m1.css:88) */
 html:root:root body .of-c-ca b{color:var(--au-ink,#1A2030)}
 html:root:root body .of-c-ca.of-c-nd b{color:var(--txt-2,#454B5C)}

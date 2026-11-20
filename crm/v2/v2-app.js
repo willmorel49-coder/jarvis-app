@@ -261,7 +261,9 @@
     var menu = '';
     if (back && !(window.V2_BRAND && window.V2_BRAND.opso) && V2.accueilCinq && V2.accueilCinq.barre) {
       try {
-        var rt = V2.route || {}, grp = rt.name === 'pharma' && rt.param === 'groupements';
+        // 20/11/2026 — l'écran Officines efface « groupements » de V2.route.param dès l'arrivée (v2-pharma.js, render) : on lit aussi la vue ouverte,
+        // sinon la barre allumait « Officines » sur Groupements.
+        var rt = V2.route || {}, grp = rt.name === 'pharma' && (rt.param === 'groupements' || (!rt.param && !!V2.pharmaVue && V2.pharmaVue() === 'groupements'));
         var lm = V2.accueilCinq.barre().map(function (t) {
           var on = t.k === 'groupements' ? grp : (rt.name === t.k && !(t.k === 'pharma' && grp));
           return '<a class="tp-m' + (on ? ' on' : '') + '" href="' + esc(t.href) + '" data-tp-act="' + esc(t.act) + '"' + (on ? ' aria-current="page"' : '') + ' onclick="return V2.topAller(event,this)">' + esc(t.nom) + '</a>';
@@ -1487,6 +1489,9 @@
     var d = G4_PORTES[k];
     var o = { k: k, nom: d.nom, ph: (u2Escale() && _g4Esc[k]) ? _g4Esc[k] : d.ph, act: 'go:' + k, href: '#' + k };
     if (k === 'academy') { o.act = ''; o.href = Q_ACADEMY; o.ext = true; }
+    // 20/11/2026 (Will : « officine faut que ça ouvre officines et pas groupement ») : l'écran Officines garde en mémoire sa dernière vue ;
+    // le lien Officines (accueil, barre du haut, menus) demande donc toujours la vue Officines, jamais celle laissée ouverte (Groupements).
+    if (k === 'pharma') { o.act = 'go:pharma/officines'; o.href = '#pharma/officines'; }
     return o;
   }
   function u2Fam(f, cles) {

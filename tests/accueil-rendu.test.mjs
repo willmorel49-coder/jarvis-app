@@ -133,7 +133,8 @@ test('accueil : chaque outil mene quelque part (lien #cle, ou adresse externe)',
     if (REG[l.k] && REG[l.k].page === null) {
       assert.ok(/^https:\/\//.test(l.href), `${l.k} : lien externe attendu, trouve « ${l.href} »`);
     } else {
-      assert.equal(l.href, '#' + l.k, `${l.k} : le lien ne mene plus a son ecran`);
+      // 20/11/2026 (Will) : Officines demande toujours sa vue Officines, jamais la derniere laissee ouverte (Groupements)
+      assert.equal(l.href, l.k === 'pharma' ? '#pharma/officines' : '#' + l.k, `${l.k} : le lien ne mene plus a son ecran`);
     }
   }
 });

@@ -1216,7 +1216,7 @@
       '<div class="v2-wrap v2-u' + (m1 ? ' of-m1 of-m1-cartes' + (arrivee ? ' of-ent' : '') + '" id="of-m1' : '') + '">' +
         (m1 ? enteteM1(nbSect != null ? nbSect : nbCli, nbProsp, actions, secteurBar)
             : teteOfficines('Les officines de votre secteur et leurs opportunités.', actions)) +
-        (m1 ? '<div class="of-rang">' : '') + pharmaTabs('officines') + (m1 ? '' : counterHtml) +
+        (m1 ? '<div class="of-rang">' : '') + (m1 ? '' : counterHtml) +
         '<div class="of-bar">' + commBar + (m1 ? '' : secteurBar) + opsoFilterBar + (m1 ? rech : '') + '</div>' + (m1 ? '</div>' : '') +
         drBloc +
         (m1 ? '' : rech) +
@@ -4968,15 +4968,11 @@
   // SOUS-ONGLET GROUPEMENTS — listes d'achats idéales par groupement
   // (produits commandés, triés par nb de pharmacies qui commandent)
   // ═══════════════════════════════════════════════════════════════
-  function pharmaTabs(active, cls) {
-    // 02/10/2026 — pièce commune « onglets » (.v2-tabs), la même que sur les autres écrans alignés
-    var t = function (val, ico, label) {
-      return '<button type="button" role="tab" class="v2-tab' + (active === val ? ' on' : '') + '" aria-selected="' + (active === val) + '" onclick="V2.pharmaView(\'' + val + '\')">' + ICO(ico, 18, 2) + label + '</button>';
-    };
-    return '<div class="v2-tabs ph-v4' + (cls ? ' ' + cls : '') + '" role="tablist" aria-label="Vues des officines">' +
-      t('officines', 'pharma', 'Officines') + t('groupements', 'opp', 'Groupements') + t('listes', 'fiche', 'Mes listes') + t('carte', 'grid', 'Carte secteur') +
-    '</div>';
-  }
+  // 20/11/2026 (Will) : plus de sous-menu commun « Officines · Groupements · Mes listes · Carte secteur ». Officines et Groupements sont deux
+  // écrans séparés (barre du haut, accueil) ; « Mes listes » et « Carte secteur » ne servent plus. Leurs vues restent joignables par leur
+  // ancienne adresse (#pharma/listes, #pharma/carte), sans lien dans l'appli.
+  // Vue ouverte, lue par la barre du haut (v2-app.js) pour allumer « Groupements » : V2.route.param est effacé à l'arrivée (render, plus bas).
+  V2.pharmaVue = function () { return pharmaView; };
   // Titre d'écran commun aux quatre vues (pièce .v2-tete) : un seul titre, un sous-titre, une action à droite.
   function teteOfficines(sous, action) {
     return '<div class="v2-tete"><div><h1 class="v2-titre">Mes officines</h1><p class="v2-sous">' + sous + '</p></div>' + (action || '') + '</div>';
@@ -5287,7 +5283,6 @@
           '<div class="gr-hd-t"><p class="gr-eye">Mes officines · vue d\'équipe</p><h1 class="gr-h1">Groupements</h1>' +
             '<p class="gr-phrase" id="gr-phrase" aria-live="polite">' + grPhrase(list) + '</p>' +
             '<p class="gr-def">Active : a commandé au moins une fois ' + (cl1PerVDe() || 'sur la période chargée') + ' (toute la période, pas le dernier mois). Chaque pourcentage est la part des officines du groupement qui sont actives.</p></div>' +
-          '<div class="gr-caps">' + pharmaTabs('groupements', 'gr-tabs') + '</div>' +
           '<div class="gr-top" id="gr-top"' + (haut.length ? '' : ' hidden') + '>' + haut.map(grUne).join('') + '</div>' +
         '</header>' +
         sortBar +
@@ -5418,7 +5413,6 @@
   }
 
   // ── Handlers groupements ──
-  V2.pharmaView = function (v) { pharmaView = v; selGroup = null; selList = null; V2.render(); };
   V2.pharmaGroup = function (enc) {
     try { selGroup = decodeURIComponent(enc); } catch (e) { selGroup = enc; }
     grDetArr = true;
@@ -6910,7 +6904,6 @@
       '<div class="v2-wrap v2-u">' +
         teteOfficines('Vos listes sur mesure : des pharmacies que vous regroupez vous-même.',
           '<button type="button" class="v2-btn v2-btn-primary" onclick="V2.pharmaListNew()">' + ICO('plus', 18) + 'Nouvelle liste</button>') +
-        pharmaTabs('listes') +
         (lists.length ? '<div class="v2-card">' + cards + '</div>' : empty) +
       '</div>';
   }
@@ -7076,7 +7069,7 @@
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
       '<div class="v2-wrap v2-u">' +
         teteOfficines('La carte de votre secteur · ' + V2.fmtNum(withGeo.length) + ' officine' + (withGeo.length > 1 ? 's' : '') + ' localisée' + (withGeo.length > 1 ? 's' : '')) +
-        pharmaTabs('carte') + (commBar ? '<div class="of-bar">' + commBar + '</div>' : '') +
+        (commBar ? '<div class="of-bar">' + commBar + '</div>' : '') +
         '<div class="sec-mapwrap"><div class="sec-map" id="sec-map"></div>' +
           '<div class="sec-legend">' +
             '<div class="sec-legend-t">Chiffre d\'affaires</div>' +
