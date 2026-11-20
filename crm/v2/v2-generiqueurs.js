@@ -140,6 +140,27 @@
       anTot = ra.total * k12; an = opts.annuel;
     }
     var maxRows = opts.max || 12;
+    // 20/11/2026 — fiche « Le rendez-vous » (opts.fdr) : un montant par ligne, sa part du total en barre (la part s'écrit au survol et pour les lecteurs d'écran),
+    // les génériqueurs sous 1 % du total regroupés en « Autres », noms entiers, estimation annuelle écrite une seule fois.
+    if (opts.fdr) {
+      var gros = [], petits = [], pSom = 0;
+      r.rows.forEach(function (o) { if (r.total && o.ca / r.total >= 0.01 && gros.length < maxRows) gros.push(o); else { petits.push(o); pSom += o.ca; } });
+      var ligneF = function (nom, ca, i, titre) {
+        var part = r.total ? ca / r.total * 100 : 0, txt = Math.round(part) + ' % du total';
+        return '<div class="gnq-row gnq-fdr"><span class="gnq-lab" title="' + esc(titre || nom) + '">' + esc(nom) + '</span>' +
+          '<span class="gnq-bar" role="img" aria-label="' + txt + '" title="' + txt + '"><i style="width:' + Math.max(2, Math.round(part)) + '%;background:' + BAR[i % BAR.length] + '"></i></span>' +
+          '<span class="gnq-val">' + eur(ca) + '</span></div>';
+      };
+      var corpsF = gros.map(function (o, i) { return ligneF(cleanLab(o.lab), o.ca, i, o.lab); }).join('') +
+        (petits.length ? ligneF('Autres ' + qui + 's (' + petits.length + ')', pSom, gros.length, petits.map(function (o) { return o.lab; }).join(', ')) : '');
+      return '<div class="gnq-card gnq-card-fdr' + (an ? ' gnq-12' : '') + '">' +
+        '<div class="gnq-h"><h3 class="gnq-t">' + esc(opts.title || 'Chiffre d’affaires par génériqueur') + '</h3>' +
+          '<span class="gnq-tot">' + eur(r.total) + ' au total · ' + r.rows.length + ' ' + qui + (r.rows.length > 1 ? 's' : '') + '</span></div>' +
+        (opts.periode ? '<div class="gnq-per">' + esc(opts.periode) + ' · la barre montre la part du total</div>' : '') +
+        corpsF +
+        (an ? '<div class="gnq-note gnq-note-fdr">Estimation sur 12 mois : moyenne des ' + an.mois + ' mois × 12, soit <b>≈ ' + eur(anTot) + ' sur l’année</b>.</div>' : '') +
+      '</div>';
+    }
     var shown = r.rows.slice(0, maxRows);
     var maxCa = shown[0].ca || 1;
     var body = shown.map(function (o, i) {

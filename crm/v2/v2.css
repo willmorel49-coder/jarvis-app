@@ -1537,3 +1537,287 @@ html:root:root body .ofl .ofl-n { margin: 0; padding: 9px 20px 8px; color: var(-
   .ofl-r-pros .ofl-sous { grid-column: 1 / -1; }
 }
 /* ═══ fin écran Officines « Le répertoire » ═══ */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Fiche officine — version « Le rendez-vous » (v1, 20/11/2026). Préfixe : fdr-
+   Une colonne centrée, en-tête à la lumière de l'aube, sommaire collant 1-6, chapitres numérotés, chapitre 6 interne.
+   Règles tenues : aucune barre de couleur sur un seul côté, ni backdrop-filter, ni flou, ni opacity sur du texte, ni dégradé sur du texte ;
+   dégradés opaques ; mouvement réduit respecté. Échelle de texte : 13 · 15 · 17 · 28 · 34 · 44 · 64 (et 13 dans les graphiques).
+   ═══════════════════════════════════════════════════════════════════════════ */
+.pha-wrap.fdr-on{max-width:1100px;margin:0 auto;padding:18px 20px 90px;--fdr-bleu:var(--ip-blue,#0050E6);--fdr-encre:#1A2030;--fdr-trait:#E3E6EC}
+.fdr-on .fdr{display:block;color:var(--fdr-encre);font-size:15px;line-height:1.45}
+.fdr-on .fdr *{box-sizing:border-box}
+.fdr-on .fdr-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ── En-tête : l'aube ─────────────────────────────────────────────── */
+.fdr-on .fdr-head{position:relative;overflow:hidden;border-radius:var(--r-card,20px);border:1px solid var(--fdr-trait);padding:14px 28px 26px;
+  background:radial-gradient(760px 300px at 96% -40%,#FFE9C2 0,#F1F2FB 52%,#F4F7FF 100%)}
+.fdr-on .fdr-astre{position:absolute;right:-70px;top:-130px;width:330px;height:330px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 50% 50%,#FFF7E3 0,#FFEBC6 48%,#FFE0AE 100%);border:1px solid #FFE3B5;animation:fdr-souffle 9s ease-in-out infinite alternate;transform-origin:50% 50%}
+.fdr-on .fdr-astre::after{content:"";position:absolute;inset:-46px;border-radius:50%;border:1px solid #F7E4C4}
+@keyframes fdr-souffle{from{transform:scale(1)}to{transform:scale(1.06)}}
+.fdr-on .fdr-head.fdr-hors .fdr-astre,.fdr-on .fdr-pause .fdr-astre{animation-play-state:paused}
+.fdr-on .fdr-bar,.fdr-on .fdr-id{position:relative;z-index:1}
+.fdr-on .fdr-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;height:52px}
+.fdr-on .fdr-nav{min-width:0;flex:1 1 auto}
+.fdr-on .fdr-nav .pha-nav{display:flex;align-items:center;gap:10px;padding:0;border:0;background:transparent;box-shadow:none;margin:0;position:relative;flex-wrap:wrap}
+.fdr-on .fdr-nav .pha-nav-l{display:flex;align-items:center;gap:6px}
+.fdr-on .fdr-nav .pha-nav-b{min-height:40px;padding:0 12px;font-size:13px;border-radius:999px}
+.fdr-on .fdr-nav .pha-nav-n{font-size:13px;color:var(--muted)}
+.fdr-on .fdr-nav .pha-nav-champ{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;border:1px solid var(--fdr-trait);border-radius:999px;background:#fff;width:230px;max-width:100%}
+.fdr-on .fdr-nav .pha-nav-champ input{border:0;outline:0;background:transparent;font:inherit;font-size:15px;min-width:0;width:100%}
+.fdr-on .fdr-nav .pha-nav-res{position:absolute;top:44px;left:0;z-index:5;width:min(340px,100%)}
+.fdr-on .fdr-nav .pha-nav-res:empty{display:none}
+/* l'interrupteur de vue : petit, discret */
+.fdr-on .fdr-sw{display:inline-flex;flex:0 0 auto;gap:2px;padding:3px;border-radius:999px;background:#fff;border:1px solid var(--fdr-trait);margin-left:auto}
+html:root:root body .fdr-on .fdr-sw .vv-b{min-height:40px;padding:0 14px;border:0 !important;box-shadow:none !important;border-radius:999px;background:transparent none !important;font-family:inherit;font-weight:700;font-size:13px;line-height:1;color:#3A4256;cursor:pointer;white-space:nowrap}
+html:root:root body .fdr-on .fdr-sw .vv-b[aria-pressed="true"]{background:var(--fdr-bleu) none !important;color:#fff !important}
+.fdr-on .fdr-sw .vv-b:focus-visible,.fdr-on .fdr-pil:focus-visible,.fdr-on .fdr-rond:focus-visible,.fdr-on .fdr-gb:focus-visible,.fdr-on .fdr-btn:focus-visible{outline:3px solid #7FA7F5;outline-offset:2px}
+.fdr-on .fdr-id{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-top:10px}
+.fdr-on .fdr-id-t{min-width:0;flex:1 1 auto}
+.fdr-on .fdr-eye{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#3A4256;font-weight:700;min-height:20px;display:block}
+.fdr-on .pha-name.pha-name{margin:4px 0 6px;font-size:34px;line-height:1.08;letter-spacing:-.03em;text-transform:none;color:var(--fdr-encre);font-weight:800;overflow-wrap:anywhere}
+.fdr-on .fdr-sub{margin:0;font-size:17px;font-weight:600;color:#2A2F3C}
+.fdr-on .fdr-pt{color:#7A8299}
+/* actions rondes (internes) */
+.fdr-on .fdr-ronds{display:flex;gap:10px;flex:0 0 auto;flex-wrap:wrap;justify-content:flex-end}
+.fdr-on .fdr-rond{display:flex;flex-direction:column;align-items:center;gap:5px;width:76px;padding:0;border:0;background:transparent;color:#2A2F3C;font-family:inherit;font-weight:600;font-size:13px;line-height:1.15;text-decoration:none;cursor:pointer;text-align:center}
+.fdr-on .fdr-rond-i{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:#fff;border:1px solid var(--fdr-trait);color:var(--fdr-bleu);transition:transform .2s ease,background-color .2s ease}
+.fdr-on .fdr-rond.pri .fdr-rond-i{background:var(--fdr-bleu);border-color:var(--fdr-bleu);color:#fff}
+.fdr-on .fdr-rond:hover .fdr-rond-i{transform:translateY(-2px)}
+.fdr-on .fdr-rond-l{white-space:nowrap}
+
+/* ── Sommaire collant ─────────────────────────────────────────────── */
+.fdr-on .fdr-som{position:sticky;top:var(--fdr-top,0px);z-index:30;display:flex;gap:4px;width:max-content;max-width:100%;overflow-x:auto;margin:14px auto 4px 0;padding:4px;border-radius:999px;background:#fff;border:1px solid var(--fdr-trait);box-shadow:0 6px 18px rgba(26,32,48,.08);scrollbar-width:none}
+.fdr-on .fdr-som::-webkit-scrollbar{display:none}
+.fdr-on .fdr-pil{flex:0 0 auto;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px 0 6px;border:0;border-radius:999px;background:transparent;font-family:inherit;font-weight:700;font-size:15px;line-height:1;color:#2A2F3C;cursor:pointer;white-space:nowrap}
+.fdr-on .fdr-pil span{font-size:15px;font-weight:700}
+.fdr-on .fdr-pil b{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:#E9F0FF;color:var(--ip-blue-d,#0034A0);font-size:15px;font-weight:800}
+.fdr-on .fdr-pil[aria-current="true"]{background:var(--fdr-bleu);color:#fff}
+.fdr-on .fdr-pil[aria-current="true"] b{background:#fff;color:var(--fdr-bleu)}
+.fdr-on .fdr-pil:hover{background:#F1F4FB}.fdr-pil[aria-current="true"]:hover{background:var(--fdr-bleu)}
+
+/* ── Chapitres ────────────────────────────────────────────────────── */
+.fdr-on .fdr-ch{margin-top:30px;scroll-margin-top:80px}
+.fdr-on .fdr-ch-h{display:flex;align-items:center;gap:16px;margin-bottom:14px}
+.fdr-on .fdr-num{flex:0 0 auto;display:grid;place-items:center;width:64px;height:64px;border-radius:20px;font:800 44px/1 var(--font,'Archivo',system-ui,sans-serif);letter-spacing:-.04em;color:var(--fdr-bleu);
+  background:radial-gradient(60px 60px at 100% 0,#FFE9C2 0,#EDF2FF 70%,#E9F0FF 100%);border:1px solid #D5E0F7;font-variant-numeric:tabular-nums}
+.fdr-on .fdr-ch-t{min-width:0}
+.fdr-on .fdr-ch-t h2{margin:0;font-size:28px;line-height:1.12;letter-spacing:-.025em;font-weight:800;color:var(--fdr-encre)}
+.fdr-on .fdr-ch-s{margin:3px 0 0;font-size:15px;color:var(--muted)}
+.fdr-on .fdr-ch-c > .v2-card,.fdr-on .fdr-bloc{margin:0}
+.fdr-on .fdr-ch-c > * + *{margin-top:14px}
+.fdr-on .fdr h3{margin:0;font-size:17px;line-height:1.25;letter-spacing:-.01em;font-weight:800;color:var(--fdr-encre)}
+.fdr-on .fdr-bloc{background:#fff;border:1px solid var(--fdr-trait);border-radius:var(--r-card,20px);padding:18px 20px}
+.fdr-on .fdr-leg{margin:4px 0 12px;font-size:13px;line-height:1.45;color:var(--muted)}
+/* arrivée douce : un chapitre « armé » est légèrement plus bas et plus clair ; jamais armé sans IntersectionObserver ni si le mouvement réduit est demandé */
+.fdr-on .fdr-rv{transition:transform .55s ease}
+.fdr-on .fdr-rv.fdr-arme{transform:translateY(16px)}
+@media (prefers-reduced-motion:reduce){.fdr-on .fdr-rv,.fdr-on .fdr-rv.fdr-arme{transition:none;transform:none}.fdr-on .fdr-astre{animation:none}.fdr-on .fdr-rond-i,.fdr-on .fdr-chev{transition:none}}
+
+/* ── 1. Chiffres ──────────────────────────────────────────────────── */
+.fdr-on .fdr-c1{display:grid;grid-template-columns:minmax(290px,340px) minmax(0,1fr);gap:14px;align-items:stretch}
+.fdr-on .fdr-ms{display:grid;grid-template-columns:1fr;gap:10px;align-content:stretch}
+.fdr-on .fdr-m{position:relative;overflow:hidden;background:#fff;border:1px solid var(--fdr-trait);border-radius:var(--r-card,20px);padding:12px 18px 12px;display:flex;flex-direction:column;justify-content:center}
+.fdr-on .fdr-m:first-child{background:radial-gradient(380px 200px at 100% 0,#FFEBC9 0,#EAF1FF 55%,#E9F0FF 100%);border-color:#D5E0F7}
+.fdr-on .fdr-m-l{font-size:15px;font-weight:700;color:#2A2F3C}
+.fdr-on .fdr-m-v{margin:2px 0 2px;font-size:44px;line-height:1.05;font-weight:800;letter-spacing:-.035em;color:var(--ip-blue-d,#0034A0);white-space:nowrap;font-variant-numeric:tabular-nums}
+.fdr-on .fdr-m-d{font-size:13px;color:var(--muted)}
+.fdr-on .fdr-m-d .pha-sub{font-size:13px;display:inline}
+.fdr-on .fdr-courbe{padding:18px 20px 14px}
+.fdr-on .fdr-sc{margin:6px -4px 0}
+.fdr-on .fdr-sc svg{display:block;width:100%;height:auto}
+.fdr-on .fdr-courbe .pha-m5-det{margin-top:8px}
+
+/* ── Détails repliés (même habillage partout) ─────────────────────── */
+.fdr-on .pha-m5-det,.fdr-on .fdr-det{border-top:1px solid var(--fdr-trait);margin-top:10px;padding-top:2px}
+.fdr-on .pha-m5-det > summary,.fdr-on .fdr-det > summary{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;font-size:15px;font-weight:700;color:var(--fdr-bleu);cursor:pointer;list-style:none}
+.fdr-on .pha-m5-det > summary::-webkit-details-marker,.fdr-on .fdr-det > summary::-webkit-details-marker{display:none}
+.fdr-on .pha-m5-det[open] > summary svg{transform:rotate(180deg)}
+.fdr-on .fdr-chev{width:10px;height:10px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);margin-right:6px;transition:transform .2s ease}
+.fdr-on .fdr-det[open] > summary .fdr-chev{transform:rotate(-135deg)}
+.fdr-on .pha-mois-wrap{margin-top:4px}
+
+/* ── Tableaux (comparaison, tranches) : mêmes tailles partout ─────── */
+.fdr-on .fdr-tw{overflow-x:auto;margin-top:6px}
+.fdr-on .fdr-tbl{width:100%;border-collapse:collapse;font-size:15px;font-variant-numeric:tabular-nums}
+.fdr-on .fdr-tbl th,.fdr-on .fdr-tbl td{padding:10px 8px;border-bottom:1px solid var(--fdr-trait);text-align:left;vertical-align:middle}
+.fdr-on .fdr-tbl thead th{font-size:13px;font-weight:700;color:var(--muted);white-space:nowrap}
+.fdr-on .fdr-tbl tbody th{font-weight:600;color:var(--fdr-encre)}
+.fdr-on .fdr-tbl .num{text-align:right;white-space:nowrap}
+.fdr-on .fdr-tbl .fdr-moy{color:var(--muted)}
+.fdr-on .fdr-tbl tbody tr:last-child th,.fdr-on .fdr-tbl tbody tr:last-child td{border-bottom:0}
+.fdr-on .fdr-ec{display:inline-block;min-width:76px;padding:4px 10px;border-radius:999px;font-size:13px;font-weight:800;text-align:center;white-space:nowrap}
+.fdr-on .fdr-ec small{font-size:13px;font-weight:600}
+.fdr-on .fdr-ec-ok{background:#DFF3EA;color:#0F6B47}
+.fdr-on .fdr-ec-bad{background:#FBE3E7;color:#B0243A}
+.fdr-on .fdr-ec-n{background:#EEF1F7;color:#3A4256}
+.fdr-on .fdr-ec-0{color:var(--muted)}
+.fdr-on .fdr-rang{margin:8px 0 0;font-size:15px}
+.fdr-on .fdr-rang b{font-size:17px}
+
+/* ── 2. À proposer (les deux listes) ──────────────────────────────── */
+.fdr-on #pha-proposer{margin:0}
+.fdr-on #pha-proposer .pha-ch{margin-bottom:6px}
+.fdr-on .pha-prop{gap:20px 36px}
+
+/* ── 4. Tranches, top 10 : titres et textes à l'échelle ───────────── */
+.fdr-on .fdr .pha-card,.fdr-on .fdr .v2-card{border-radius:var(--r-card,20px);border:1px solid var(--fdr-trait);box-shadow:none;background:#fff}
+.fdr-on .fdr .pha-ch h3{font-size:17px;font-weight:800}
+.fdr-on .fdr .pha-ch .pha-sub,.fdr-on .fdr .pha-sub{font-size:13px;line-height:1.45}
+
+/* ── 5. Génériqueurs : un montant + sa part en barre ──────────────── */
+.fdr-on .fdr-gnq{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+.fdr-on .gnq-card + .gnq-card{margin-top:0}
+.fdr-on .gnq-card-fdr{padding:18px 20px;border-radius:var(--r-card,20px)}
+.fdr-on .gnq-card-fdr .gnq-h{display:block;margin-bottom:4px}
+.fdr-on .gnq-card-fdr .gnq-t{display:block;font-size:17px;font-weight:800;margin:0}
+.fdr-on .gnq-card-fdr .gnq-tot{display:block;font-size:15px;font-weight:700;margin-top:2px}
+.fdr-on .gnq-card-fdr .gnq-per{font-size:13px;margin:0 0 10px}
+.fdr-on .gnq-row.gnq-fdr{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) auto;gap:6px 12px;align-items:center;padding:6px 0;border-bottom:1px solid #EEF0F5}
+.fdr-on .gnq-row.gnq-fdr .gnq-lab{white-space:normal;overflow:visible;text-overflow:clip;font-size:15px;font-weight:700;line-height:1.25;overflow-wrap:anywhere}
+.fdr-on .gnq-row.gnq-fdr .gnq-bar{height:10px}
+.fdr-on .gnq-row.gnq-fdr .gnq-val{font-size:15px;align-items:flex-end}
+.fdr-on .gnq-note-fdr{font-size:13px;margin:10px 0 0}
+
+/* ── 6. Côté Intégral ────────────────────────────────────────────── */
+.fdr-on .fdr-int .fdr-ch-h .fdr-num{background:#1A2030;border-color:#1A2030;color:#fff}
+.fdr-on .fdr-int{padding-top:26px;border-top:2px dashed #CBD3E4}
+.fdr-on .fdr-duo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:stretch}
+.fdr-on .fdr-duo .pha-kpi{margin:0;height:100%}
+.fdr-on .fdr-bl-h{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.fdr-on .fdr-btn,.fdr-on .fdr-gb{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:44px;padding:0 18px;border-radius:999px;border:1px solid #BFD0F5;background:#fff;color:var(--fdr-bleu);font-family:inherit;font-weight:700;font-size:15px;line-height:1;cursor:pointer}
+.fdr-on .fdr-btn:hover,.fdr-on .fdr-gb:hover{background:#EEF3FF}
+.fdr-on .fdr-gbs{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.fdr-on .fdr-gb.pri{background:var(--fdr-bleu);border-color:var(--fdr-bleu);color:#fff}.fdr-gb.pri:hover{background:var(--ip-blue-d,#0034A0)}
+.fdr-on .fdr-kv{display:grid;grid-template-columns:150px minmax(0,1fr) 150px minmax(0,1fr);gap:0 18px;align-items:start}
+.fdr-on .fdr-kv > span{padding:8px 0;border-bottom:1px solid #EEF0F5;font-size:15px;min-width:0;overflow-wrap:anywhere}
+.fdr-on .fdr-kv > span:nth-child(odd){color:var(--muted);font-size:13px;padding-top:11px}
+.fdr-on .fdr-kv > span:nth-child(even){font-weight:700;color:var(--fdr-encre)}
+.fdr-on .fdr-kv .pha-empty{font-weight:500;color:var(--muted)}
+.fdr-on .fdr-kv a{color:var(--fdr-bleu)}
+.fdr-on .fdr-edit{margin-top:14px;padding-top:6px;border-top:1px solid var(--fdr-trait)}
+.fdr-on .fdr-edit[hidden]{display:none}
+.fdr-on .fdr-edit .pha-fe{margin:12px 0;box-shadow:none}
+/* formulaires ouverts : menus habillés (plus le gris natif de Safari), champs ≥ 16 px */
+.fdr-on .fdr-edit select{-webkit-appearance:none;appearance:none;min-height:44px;padding:0 38px 0 12px;border:1px solid var(--line-strong);border-radius:12px;font:inherit;font-size:16px;color:var(--fdr-encre);cursor:pointer;
+  background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9' fill='none' stroke='%230050E6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.5l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 14px center}
+.fdr-on .fdr-edit input,.fdr-on .fdr-edit textarea{font-size:16px;min-height:44px;border-radius:12px}
+.fdr-on .fdr-rot .ph-section{margin:0}
+
+
+/* ── Compacité : chapitres 2 à 4 ─────────────────────────────────── */
+.fdr-on #pha-proposer .pha-prop-b{min-height:40px;font-size:13px}
+.fdr-on #pha-proposer .pha-prop-top{margin:2px 0 6px}
+.fdr-on #pha-proposer .cl1-prop-r{padding:6px 0}
+.fdr-on #pha-proposer .pha-prop-pn{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 10px}
+.fdr-on #pha-proposer .cl1-prop-r b small{display:none}
+.fdr-on .pha-np .cl1-np{padding:8px 0}
+.fdr-on .pha-np .cl1-np b small{white-space:nowrap}
+.fdr-on .pha-table th,.fdr-on .pha-table td{padding:7px 10px}
+.fdr-on .pha-table td{font-size:15px}
+.fdr-on .pha-lu{padding:6px 18px 12px !important}
+.fdr-on .pha-nm-det{margin-top:8px}.fdr-on .pha-nm-det > summary{min-height:44px;display:flex;align-items:center;font-size:13px;font-weight:700;color:var(--fdr-bleu);cursor:pointer}
+/* ── 6 : grille interne ──────────────────────────────────────────── */
+.fdr-on .fdr-ig{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:14px;align-items:start}
+.fdr-on .fdr-ig2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.fdr-on .fdr-ig-b,.fdr-on .fdr-ig-a{display:flex;flex-direction:column;gap:14px;min-width:0}
+.fdr-on .fdr-ig-a .fdr-gbs{margin-top:8px}
+.fdr-on .fdr-ig-b > .pha-kpi{margin:0}
+.fdr-on .fdr-int .fdr-bloc.fdr-nt{padding:2px 20px}
+.fdr-on .fdr-bj #brief-off{box-shadow:none;border:0;padding:0;margin:8px 0 0;background:transparent}
+.fdr-on .fdr-kv > span:nth-child(even){text-align:left}
+
+/* ── Échelle de texte unique : 13 · 15 · 17 · 28 · 34 · 44 (aucune autre taille dans la fiche, graphiques compris) ── */
+.fdr-on .fdr :is(div,span,p,a,b,strong,i,em,small,td,th,li,label,button,summary,input,select,textarea,dt,dd){font-size:15px}
+.fdr-on .fdr :is(small,th,.pha-sub,.pha-kd,.pha-np-s,.phf-cip,.phf-psub,.phf-foot,.phf-rf,.phf-sortie-n,.phf-price,.phf-rem,.phf-mk,.pha-part-sub,.pha-part-sub *,.pha-legend,.gnq-per,.gnq-note,.gnq-an,.fdr-leg,.fdr-eye,.fdr-m-d,.fdr-m-d *,.cl1-def,.cl1-bouts,.cl1-bouts *,.pha-nm-l,.pha-nm-l *,.pha-lu,.pha-lu *,.pha-flat,.pha-dn,.pha-up,.cl1-prop-h,.cl1-prop-h span,.pha-tabs .v2-past-l,.pha-part-seg .v2-past-l,.v2-compte,.pha-nm-n,.pha-nm-det > summary,.pha-prop-top .pha-sub,.pha-nav-n,.fdr-rond-l,.fdr-sw .vv-b,.fdr-ec,.fdr-ec *,.fdr-tbl thead th,.fdr-kv > span:nth-child(odd),.v2-notes-box small,.pha-part-btn,.pha-prop-b,.fdr-edit label,.pha-fe-f label,.phf-rf){font-size:13px}
+.fdr-on .fdr :is(h3,.fdr-sub,.fdr-pt,.gnq-t,.pha-part-v,.pha-part-v *,.fdr-rang b,.pha-prop-nom){font-size:17px}
+.fdr-on .fdr :is(h2,.pha-kval,.pha-kval *,.pha-prop-n){font-size:28px}
+.fdr-on .fdr .pha-name,.fdr-on .fdr .pha-name *{font-size:34px}
+.fdr-on .fdr .fdr-m-v,.fdr-on .fdr .fdr-num{font-size:44px}
+.fdr-on .fdr .fdr-num{font-size:44px}
+.fdr-on .fdr .fdr-pil b{font-size:15px}
+.fdr-on .fdr input,.fdr-on .fdr select,.fdr-on .fdr textarea{font-size:16px}
+
+html .fdr-on .fdr td{font-size:15px}
+html .fdr-on .fdr th{font-size:13px}
+html .fdr-on .fdr .fdr-tbl tbody th{font-size:15px}
+
+.fdr-on .fdr-rep{padding:0 20px}
+.fdr-on .fdr-rep .pha-m5-det{border-top:0}.fdr-on .fdr-rep .pha-m5-det + .pha-m5-det{border-top:1px solid var(--fdr-trait)}
+.fdr-on .fdr-rep .pha-m5-det > .v2-card,.fdr-on .fdr-rep .pha-m5-det > .pha-parts,.fdr-on .fdr-rep .pha-m5-det > div > .v2-card{border:0;border-radius:0;padding:0 0 14px;background:transparent}
+.fdr-on .fdr-rep .pha-m5-det > .v2-card .pha-ch{display:none}
+.fdr-on .fdr-rep .pha-m5-det > .v2-card.pha-card .pha-parts{margin-top:4px}
+.fdr-on .fdr-np-plus{margin-top:6px}
+
+.fdr-on .pha-table td:first-child b + .pha-sub{display:inline;margin-left:8px}
+.fdr-on .pha-table td{padding-top:4px;padding-bottom:4px}
+.fdr-on .pha-table .pha-bar{height:3px;margin-top:1px}
+.fdr-on .pha-table .pha-bar i{height:3px}
+.fdr-on .fdr-ch{margin-top:22px}
+.fdr-on .fdr-ch-h{margin-bottom:10px;gap:14px}
+.fdr-on .fdr-num{width:52px;height:52px;border-radius:16px}
+.fdr-on .fdr-head{padding-top:10px;padding-bottom:20px}
+.fdr-on .fdr-id{margin-top:4px}
+.fdr-on .pha-name.pha-name{margin:2px 0 4px}
+
+.fdr-on .fdr-comp .fdr-tbl tbody th{width:46%}
+.fdr-on .fdr-comp .fdr-tbl th,.fdr-on .fdr-comp .fdr-tbl td{padding:7px 8px}
+.fdr-on .fdr-ec{min-width:72px;padding:3px 8px}
+
+.fdr-on .fdr-c1 > *,.fdr-on .fdr-ig > *,.fdr-on .fdr-ig-b > *{min-width:0}
+html .fdr-on .fdr .pha-mois td,html .fdr-on .fdr .pha-mois th{font-size:15px}
+
+/* ── Téléphone : 390 px ───────────────────────────────────────────── */
+@media (max-width:900px){
+  .fdr-on .fdr-c1{grid-template-columns:minmax(0,1fr)}
+  .fdr-on .fdr-ms{grid-template-columns:1fr 1fr}.fdr-on .fdr-ms .fdr-m:first-child{grid-column:1 / -1}
+  .fdr-on .fdr-ig,.fdr-on .fdr-ig2{grid-template-columns:minmax(0,1fr)}
+  .fdr-on .fdr-gnq,.fdr-on .fdr-duo{grid-template-columns:minmax(0,1fr)}
+  .fdr-on .fdr-kv{grid-template-columns:130px minmax(0,1fr)}
+}
+@media (max-width:640px){
+  .pha-wrap.fdr-on{padding:10px 12px 90px}
+  .fdr-on .fdr-head{padding:10px 16px 18px;border-radius:18px}
+  .fdr-on .fdr-bar{min-height:44px}
+  .fdr-on .fdr-nav{display:none}
+  .fdr-on .fdr-sw{margin-left:0;width:100%}.fdr-sw .vv-b{flex:1 1 0;padding:0 8px}
+  .fdr-on .fdr-id{flex-direction:column;align-items:stretch;gap:12px;margin-top:6px}
+  .fdr-on .fdr-sub{font-size:15px}
+  /* 20/11/2026 : en flux, les ronds (vue Intégral seulement) poussaient la page de ~100 px à la bascule ; hors du flux, en barre fixe en bas d'écran, rien ne bouge */
+  .fdr-on .fdr-ronds{position:fixed;left:0;right:0;bottom:0;z-index:110;flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;gap:4px;margin:0;
+    padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:#fff;box-shadow:0 -6px 18px rgba(16,19,28,.10);scrollbar-width:none}
+  .fdr-on .fdr-ronds::-webkit-scrollbar{display:none}
+  .fdr-on .fdr-rond{width:auto;min-width:60px;min-height:44px;flex:0 0 auto;padding:0 4px}
+  .fdr-on .fdr-som{width:100%;margin-top:10px}
+  .fdr-on .fdr-pil{padding:0 6px}.fdr-pil span{display:none}.fdr-pil[aria-current="true"]{padding:0 14px 0 6px}.fdr-pil[aria-current="true"] span{display:inline}
+  .fdr-on .fdr-ch{margin-top:24px}
+  .fdr-on .fdr-num{width:48px;height:48px;border-radius:15px}
+  .fdr-on .fdr-ms{grid-template-columns:1fr;gap:10px}
+  .fdr-on .fdr-m{padding:14px 16px 12px}
+  .fdr-on .fdr-m-v{margin:4px 0 2px}
+  .fdr-on .fdr-bloc{padding:14px 14px}
+  .fdr-on .fdr-sc{overflow-x:auto;margin:6px -6px 0}.fdr-sc svg{min-width:620px}
+  .fdr-on .fdr-kv{grid-template-columns:1fr}
+  .fdr-on .fdr-kv > span:nth-child(odd){border-bottom:0;padding-bottom:0}
+  .fdr-on .fdr-gbs .fdr-gb{width:100%}
+  .fdr-on .gnq-row.gnq-fdr{grid-template-columns:minmax(0,1fr) auto}.fdr-on .gnq-row.gnq-fdr .gnq-bar{grid-column:1 / -1}
+}
+@media (max-width:640px){
+  .fdr-on .fdr .pha-name,.fdr-on .fdr .pha-name *{font-size:28px}
+  .fdr-on .fdr .fdr-m-v{font-size:34px}
+  .fdr-on .fdr .fdr-num{font-size:28px}
+  .fdr-on .fdr .fdr-pil b{font-size:15px}
+}
+@media print{.fdr-on .fdr-som,.fdr-on .fdr-astre{display:none}.fdr-on .fdr-rv,.fdr-on .fdr-rv.fdr-arme{transform:none}}
+.fdr-on .fdr-id{min-height:112px}
+@media (max-width:640px){.fdr-on .fdr-id{min-height:0}}
+html:root:root body .fdr-on .fdr-sw .vv-b{padding:0 18px;flex:0 0 auto}
+.fdr-on .fdr .pha-tabs .v2-past-l{flex:1 0 100%}
+@media (max-width:640px){html:root:root body .fdr-on .fdr-sw .vv-b{flex:1 1 0;padding:0 8px}}
+/* la racine de l'app garde la transformation de son entrée (mo-view-in, animation « both ») : un élément fixed y serait piégé en bas de page.
+   Même parade que l'écran marketing (v2-mkt-socle.js) : pas d'animation d'entrée pour la fiche au téléphone, la barre des ronds reste collée au bas de l'écran. */
+@media (max-width:640px){#v2-root.mo-view-in:has(.pha-wrap.fdr-on){animation:none}}
+/* au téléphone, la ligne du haut (CIP · cliente · commercial en vue Intégral) tient sur une ligne : sinon la bascule décale le nom de 21 px */
+@media (max-width:640px){.fdr-on .fdr-eye{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+/* ═══ fin fiche officine « Le rendez-vous » ═══ */
