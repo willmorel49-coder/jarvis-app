@@ -139,6 +139,7 @@ ALIAS_NOM = {"BIOGARAN": ["BGR"], "EUROGENERICS": ["EG"], "EG LABO": ["EG"], "SU
 # est retenu. TADALAFIL LILLY reste Lilly (vendu par Lilly, absent de la liste).
 # Les marques (GENERIQUEURS_MARQUES) gardent leur titulaire.
 VENDEUR_NOM = {"BIOGARAN": "Biogaran", "BGR": "Biogaran", "ZENTIVA": "Zentiva", "EG": "EG Labo",
+               "EUROGENERICS": "EG Labo",   # NICOTINE EUROGENERICS etait chez Fertin (Will, 20/11/2026)
                "VIATRIS": "Viatris", "MYLAN": "Viatris", "ARROW": "Arrow", "TEVA": "Teva",
                "SANDOZ": "Sandoz", "CRISTERS": "Cristers", "ZYDUS": "Zydus", "ACCORD": "Accord",
                "KRKA": "Krka", "ALMUS": "Almus", "EVOLUGEN": "Evolupharm"}

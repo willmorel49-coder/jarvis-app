@@ -57,6 +57,7 @@ import openpyxl
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ROOT)
+from generate_generiqueurs import vendeur_du_nom  # noqa: E402  (même lecture du nom que la table)
 from source_prix import source_prix, colonne_repli, ppht_reference  # noqa: E402  (choix de source commun, 14/10/2026)
 XLSX = source_prix()
 PPHT_REF = ppht_reference()
@@ -242,6 +243,7 @@ def lire_catalogue():
 # ses produits. Mesure et décision : ~/jarvis-preuves/associations-catalogue-2026-10-22/.
 BDPM_BASE = 'https://base-donnees-publique.medicaments.gouv.fr/download/file/'  # comme generate_generiques_bdpm.py
 BDPM_LOCAL = os.path.expanduser('~/bdpm-historique/data')  # copie de secours (le site répondait 503 le 22/10)
+CIS_NOM = {}  # {cis: nom officiel}, rempli par lire_bdpm()
 BDPM_FICHIERS = ('CIS_CIP_bdpm.txt', 'CIS_COMPO_bdpm.txt', 'CIS_bdpm.txt')
 BDPM_AGE_MAX_J = 120        # la base se met à jour chaque mois : au-delà, elle est figée
 CHANGEMENTS_MAX = 1500      # 917 associations mal nommées + variantes d'écriture mesurées le 22/10
@@ -346,6 +348,8 @@ def lire_bdpm():
                 if all(c != code for c, _, _ in compo[cis]):
                     compo[cis].append((code, r[3].strip(), ft.get((cis, r[1].strip(), r[7].strip()))))
         homeo = {r[0].strip() for r in cis_l if len(r) > 5 and 'homéo' in r[5].lower()}
+        global CIS_NOM
+        CIS_NOM = {r[0].strip(): r[1].strip() for r in cis_l if len(r) > 1}
         print('  [bdpm] %s · contenu au %s · %d présentations · %d compositions'
               % (nom, dern, len(cip2cis), len(compo)))
         return cip2cis, dict(compo), homeo, 'BDPM (%s) au %s' % (nom.split(' /')[0].split(' ~')[0], dern)
@@ -523,6 +527,39 @@ def lire_repertoire():
     return set(json.loads(s[s.index('{'):s.rindex('}') + 1]).keys())
 
 
+def labo_de_la_boite(cat, cip2cis):
+    """Choix de Will (20/11/2026) : un générique (table des génériqueurs, hors
+    marques) affiche le labo écrit sur la boîte, pas l'`artcollection` du fichier
+    grossiste (Pravastatine Viatris y est rangée BIOGARAN). Seulement quand la table
+    a LU ce labo dans le nom officiel (vendeur_du_nom, comme la table) : là où elle
+    garde le titulaire de l'AMM (Almotriptan Zydus -> Sandoz), le fichier dit mieux. Le nom
+    reprend l'écriture majoritaire de ce labo dans le catalogue (« ZENTIVA FRANCE »,
+    pas « Zentiva »), à défaut le nom de la table en capitales. Les princeps ne
+    bougent pas. Rend {cip: labo affiché} pour les seuls CIP qui changent."""
+    s = open(GENERIQUEURS, encoding='utf-8').read()
+    table = json.loads(re.search(r"window\.GENERIQUEURS\s*=\s*(\{.*?\});", s, re.S).group(1))
+    marques = set(json.loads(re.search(r"window\.GENERIQUEURS_MARQUES\s*=\s*(\[.*?\]);", s, re.S).group(1)))
+
+    def colle(nom, lab):
+        n, l = nom.upper(), lab.upper().split()[0]
+        return l in n or (l == 'VIATRIS' and 'MYLAN' in n)
+
+    ecriture = defaultdict(Counter)
+    for cip, lab in table.items():
+        o = cat.get(cip)
+        if o and o['labo'] and cip not in marques and colle(o['labo'], lab):
+            ecriture[lab][o['labo']] += 1
+    out = {}
+    for cip, lab in table.items():
+        o = cat.get(cip)
+        if not o or cip in marques or (o['labo'] and colle(o['labo'], lab)):
+            continue
+        if vendeur_du_nom(CIS_NOM.get(cip2cis.get(cip, ''))) != lab:
+            continue
+        out[cip] = ecriture[lab].most_common(1)[0][0] if ecriture[lab] else lab.upper()
+    return out
+
+
 def labos_generiqueurs(cat, repertoire, part=0.80, mini=20):
     """Les laboratoires qui ne vendent QUE du générique, DÉDUITS des données :
     part de leurs remboursables présents au répertoire officiel. Rien n'est
@@ -560,6 +597,8 @@ def main():
     ps = lire_prod_stats()
     repertoire = lire_repertoire()
     generiqueurs = labos_generiqueurs(cat, repertoire)
+    boite = labo_de_la_boite(cat, cip2cis)
+    print('génériques rangés au labo écrit sur la boîte : %d' % len(boite))
     print('catalogue : %d références · stats réseau : %d · répertoire génériques : %d'
           % (len(cat), len(ps), len(repertoire)))
     print('laboratoires 100 %% générique déduits des données : %d (%s…)'
@@ -616,7 +655,8 @@ def main():
             net = r2(ppht - abandon_ip(ppht)) if porte_abandon(f) else ppht
 
 
-        li = labos.setdefault(o['labo'], len(labos)) if o['labo'] else -1
+        lab = boite.get(cip, o['labo'])   # labo AFFICHÉ ; la famille garde le labo du fichier
+        li = labos.setdefault(lab, len(labos)) if lab else -1
         mi = mols.setdefault(o['mol'], len(mols)) if o['mol'] else -1
         st = ps.get(cip)
         rows.append([
