@@ -33,6 +33,57 @@
     oublier: function () { cacheLigne = { pour: null, p: null }; }
   };
 
+  /* ── Les rendez-vous de l'espace : lus ici, partagés avec l'écran Agenda (phirst-agenda.js) ──
+     Un rendez-vous = une ligne `crm_activities` de type « rdv » (format de la V1, voir phirst-pur.js). On AJOUTE, on ne modifie
+     ni ne supprime jamais. Aucun compte n'a encore le rôle téléprospectrice : estTelepro rend toujours false (le paramètre reste). */
+  var RDV = window.PHIRST_RDV = {
+    estTelepro: function () { return false; },
+    /* Relit tout : les fiches de l'espace (non archivées ou non) puis leurs lignes rdv. Rend { fiches, rdvs }. */
+    lire: function (base, ws) {
+      return base.from('crm_prospects').select('id,nom,ville,cp,lat,lon,stage').eq('workspace_id', ws).then(function (f) {
+        if (f.error) throw new Error('fiches');
+        var fiches = f.data || [], ids = fiches.map(function (x) { return x.id; }), lots = [];
+        for (var i = 0; i < ids.length; i += 80) lots.push(ids.slice(i, i + 80));
+        return Promise.all(lots.map(function (l) {
+          return base.from('crm_activities').select('id,prospect_id,author_id,created_at,body').eq('type', 'rdv').in('prospect_id', l).limit(1000);
+        })).then(function (rs) {
+          var lignes = [];
+          rs.forEach(function (r) { if (r.error) throw new Error('rdv'); lignes = lignes.concat(r.data || []); });
+          return { fiches: fiches, rdvs: P.etatsDesRdv(lignes, RDV.estTelepro) };
+        });
+      });
+    },
+    /* Ce qui occupe Yann, pour calculer les créneaux : un rendez-vous non annulé, avec le lieu de sa pharmacie. */
+    occupations: function (rdvs, fiches) {
+      var par = {}; fiches.forEach(function (f) { par[f.id] = f; });
+      return rdvs.filter(P.occupe).map(function (r) {
+        var f = par[r.prospect_id] || {};
+        return { debut: r.debut, fin: r.fin, commune: f.ville || null, lat: f.lat == null ? null : f.lat, lon: f.lon == null ? null : f.lon };
+      });
+    },
+    /* Ajoute UNE ligne rdv. extra : debut, duree_min, lieu, objet. */
+    ecrire: function (base, prospectId, quoi, rdvId, extra) {
+      return base.from('crm_activities').insert({ prospect_id: prospectId, type: 'rdv', body: P.corpsRdv(quoi, rdvId, V2.user.id, extra) });
+    },
+    /* Les trois meilleurs créneaux de Yann sur les 10 prochains jours ouvrés. */
+    propositions: function (rdvs, fiches, cible, sauf) {
+      var occ = RDV.occupations(rdvs.filter(function (r) { return r.id !== sauf; }), fiches);
+      return P.meilleursCreneaux({ jours: P.joursProposes(P.aujourdhui()), occupations: occ, cible: cible, maintenant: P.maintenantParis(), combien: 3 });
+    },
+    /* La route dite en clair sous un créneau proposé. */
+    detail: function (c) {
+      var a = c.trajetAvant ? 'environ ' + P.dureeFr(c.trajetAvant) + ' de route depuis ' + c.depuis : 'départ de ' + c.depuis;
+      return (c.dansLeSecteur ? 'Vous êtes déjà dans le secteur · ' : '') + (c.vers && c.trajetApres ? a + ', puis ' + c.vers : a);
+    },
+    /* Une heure choisie à la main : « AAAA-MM-JJ » + « HH:MM », par pas de 30 minutes. */
+    heureLibre: function (jr, hm) {
+      if (!P.estJour(jr) || !/^\d{2}:\d{2}$/.test(hm || '')) return { erreur: 'Choisissez un jour et une heure.' };
+      var pas = P.REGLAGES_AGENDA.pasMin;
+      if (Number(hm.slice(3)) % pas !== 0) return { erreur: 'Choisissez une heure ronde ou à la demie : 9 h, 9 h 30…' };
+      return { debut: jr + 'T' + hm };
+    }
+  };
+
   /* ── État de l'écran ── */
   var S = { racine: null, jeton: 0, onglet: 'jour', fiche: null, ws: null, fiches: [], appelAu: {}, robot: null, avis: '', flash: '', charge: false, erreur: false };
   var COLS = 'id,nom,ville,cp,departement,telephone,email,pharmacien,stage,source,next_action,next_action_date,lat,lon,updated_at';
@@ -89,7 +140,7 @@
       '<div class="pa-bs"><button type="button" class="pa-b" data-res="rdv">RDV obtenu</button><button type="button" class="pa-b" data-res="rappeler">À rappeler</button>' +
       '<button type="button" class="pa-b" data-res="injoignable">Injoignable</button><button type="button" class="pa-b" data-res="non">Pas intéressé</button></div>' +
       '<div class="pa-rap" hidden><label>Rappeler le <input type="date" class="pa-date" min="' + jour() + '" value="' + P.ajouterJours(jour(), 7) + '"></label><button type="button" class="pa-b pa-ok" data-res="rappeler-ok">Noter le rappel</button></div>' +
-      '<p class="pa-dit" role="status"></p></li>';
+      '<div class="pa-quand" hidden></div><p class="pa-dit" role="status"></p></li>';
   }
   function vueJour() {
     var l = liste(), h = '';
@@ -156,16 +207,17 @@
   }
 
   /* ── Écritures : les mêmes que logCall (V1) ── */
-  function noter(r, resultat, choisie, li) {
+  function noter(r, resultat, choisie, li, debutRdv) {
     var base = sb(), dit = li.querySelector('.pa-dit'), jr = jour();
     function dire(t) { dit.textContent = t; li.querySelectorAll('button').forEach(function (b) { b.disabled = false; }); }
     li.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
     dit.textContent = '';
     var suite = P.suiteAppel(resultat, jr, choisie, '');
+    if (debutRdv) suite.maj.next_action_date = debutRdv.slice(0, 10); // la prochaine action tombe le jour du rendez-vous
     var fiche = (r.prospectId && S.fiches.filter(function (f) { return f.id === r.prospectId; })[0]) ||
       (function () { var c = P.cle(r.nom, r.ville); var t = S.fiches.filter(function (f) { return P.cle(f.nom, f.ville) === c; }); return t.filter(function (f) { return f.stage !== 'archive'; })[0] || t[0] || null; })();
     if (fiche && fiche.stage === 'archive') return dire('Cette pharmacie est archivée : rouvrez sa piste depuis « Mes pistes ».');
-    var avoir = fiche ? Promise.resolve(fiche) : base.from('crm_prospects').insert({
+    function avoirFiche() { return fiche ? Promise.resolve(fiche) : base.from('crm_prospects').insert({
       workspace_id: S.ws, nom: r.nom, ville: r.ville || null, cp: r.cp || null, departement: r.dep || (r.cp ? String(r.cp).slice(0, 2) : null),
       pharmacien: r.pharmacien || null, telephone: r.telephone || null, email: r.email || null, stage: 'a_qualifier', source: r.origine || 'annuaire',
       lat: r.lat == null ? null : r.lat, lon: r.lon == null ? null : r.lon
@@ -173,9 +225,18 @@
       if (n.error || !n.data) throw new Error('creer');
       var raisons = (r.raisons || []).join(' · ').slice(0, 1200);
       return (raisons ? base.from('crm_activities').insert({ prospect_id: n.data.id, type: 'note', body: raisons }).then(function () { return n.data; }, function () { return n.data; }) : n.data);
-    });
-    avoir.then(function (f) {
-      return base.from('crm_activities').insert({ prospect_id: f.id, type: 'appel', body: suite.body }).then(function (a) {
+    }); }
+    /* « RDV obtenu » avec une heure : on RELIT les rendez-vous juste avant d'écrire (heure passée ou créneau pris = refus, rien n'est écrit). */
+    var verif = debutRdv ? RDV.lire(base, S.ws).then(function (x) {
+      var m = P.heureValide(debutRdv, P.maintenantParis()) || (P.dejaPris(x.rdvs, debutRdv, P.REGLAGES_AGENDA.dureeMin) ? P.MSG_PRIS : null);
+      if (m) { var e = new Error('refus'); e.refus = m; throw e; }
+    }) : Promise.resolve();
+    var rdvPose = false;
+    verif.then(avoirFiche).then(function (f) {
+      var avant = debutRdv ? RDV.ecrire(base, f.id, 'creer', crypto.randomUUID(), {
+        debut: debutRdv, duree_min: P.REGLAGES_AGENDA.dureeMin, lieu: P.lieuPharmacie({ nom: f.nom, adresse: f.adresse, ville: f.ville }), objet: 'Premier rendez-vous'
+      }).then(function (w) { if (w.error) throw new Error('rdv'); rdvPose = true; }) : Promise.resolve();
+      return avant.then(function () { return base.from('crm_activities').insert({ prospect_id: f.id, type: 'appel', body: suite.body }); }).then(function (a) {
         if (a.error) throw new Error('appel');
         return base.from('crm_prospects').update(suite.maj).eq('id', f.id).eq('workspace_id', S.ws).select(COLS).single();
       }).then(function (u) {
@@ -183,11 +244,12 @@
         var i = S.fiches.map(function (x) { return x.id; }).indexOf(u.data.id);
         if (i < 0) S.fiches.push(u.data); else S.fiches[i] = u.data;
         S.appelAu[u.data.id] = jr;
+        if (debutRdv) { S.flash = 'Rendez-vous posé : ' + P.quandFr(debutRdv) + ' chez ' + r.nom + '.'; dessiner(); return; }
         S.flash = 'Noté : ' + r.nom + ' — ' + { rdv: 'rendez-vous obtenu', rappeler: 'à rappeler', injoignable: 'injoignable', non: 'pas intéressé' }[resultat] + '.' +
           (suite.maj.next_action_date ? ' Prochaine action le ' + P.jourFr(suite.maj.next_action_date) + '.' : ' La piste passe dans les perdues.');
         dessiner();
       });
-    }).then(null, function () { dire(PAS); });
+    }).then(null, function (e) { dire(e && e.refus ? e.refus : rdvPose ? 'Le rendez-vous est posé, mais l’appel n’a pas pu être noté : ouvrez la fiche dans « Mes pistes ».' : PAS); });
   }
 
   function majFiche(id, champs, dit, ok) {
@@ -196,6 +258,28 @@
       var i = S.fiches.map(function (x) { return x.id; }).indexOf(id); if (i >= 0) S.fiches[i] = u.data;
       dit.textContent = ok;
     }, function () { dit.textContent = PAS; });
+  }
+
+  /* « RDV obtenu » : le panneau « Quand ? » (les 3 meilleurs créneaux de Yann, ou une autre heure). Rien n'est écrit avant le choix. */
+  function ouvrirQuand(r, li) {
+    var z = li.querySelector('.pa-quand'), base = sb();
+    if (!z.hidden) { z.hidden = true; return; }
+    z.hidden = false; z.innerHTML = '<p class="pa-avis" role="status">Recherche des meilleurs créneaux…</p>';
+    RDV.lire(base, S.ws).then(function (x) {
+      var f = (r.prospectId && x.fiches.filter(function (y) { return y.id === r.prospectId; })[0]) ||
+        x.fiches.filter(function (y) { return P.cle(y.nom, y.ville) === P.cle(r.nom, r.ville); })[0] || null;
+      var lat = f && f.lat != null ? f.lat : r.lat, lon = f && f.lon != null ? f.lon : r.lon;
+      var cible = lat != null && lon != null ? { lat: lat, lon: lon } : null;
+      var cren = RDV.propositions(x.rdvs, x.fiches, cible);
+      var h = '<p class="pa-q">Quand ?</p>';
+      h += cren.length ? '<div class="pa-cren">' + cren.map(function (c) {
+        return '<button type="button" class="pa-b pa-cr" data-res="quand" data-debut="' + esc(c.debut) + '"><b>' + esc(P.maj(P.quandFr(c.debut))) + '</b><small>' + esc(RDV.detail(c)) + '</small></button>';
+      }).join('') + '</div>' : '<p class="pa-avis">Aucun créneau libre dans les dix prochains jours ouvrés : choisissez une autre heure.</p>';
+      h += '<div class="pa-rap"><span class="pa-qt">Une autre heure</span><label>Le <input type="date" class="pa-qdate" min="' + jour() + '" value="' + P.joursProposes(jour())[0] + '"></label>' +
+        '<label>À <input type="time" class="pa-qheure" step="1800" value="09:00"></label><button type="button" class="pa-b pa-ok" data-res="quand-ok">Choisir cette heure</button></div>' +
+        '<button type="button" class="pa-b" data-res="quand-fermer">Fermer</button>';
+      z.innerHTML = h;
+    }, function () { z.innerHTML = '<p class="pa-avis">Les rendez-vous n’ont pas pu être lus : réessayez dans un instant.</p><button type="button" class="pa-b" data-res="quand-fermer">Fermer</button>'; });
   }
 
   function clic(ev) {
@@ -210,6 +294,14 @@
       var r = liste()[+li.getAttribute('data-i')], res = b.getAttribute('data-res');
       if (!r) return;
       if (res === 'rappeler') { var z = li.querySelector('.pa-rap'); z.hidden = !z.hidden; if (!z.hidden) li.querySelector('.pa-date').focus(); return; }
+      if (res === 'rdv') { ouvrirQuand(r, li); return; }
+      if (res === 'quand-fermer') { li.querySelector('.pa-quand').hidden = true; return; }
+      if (res === 'quand') { noter(r, 'rdv', null, li, b.getAttribute('data-debut')); return; }
+      if (res === 'quand-ok') {
+        var hl = RDV.heureLibre(li.querySelector('.pa-qdate').value, li.querySelector('.pa-qheure').value);
+        if (hl.erreur) { li.querySelector('.pa-dit').textContent = hl.erreur; return; }
+        noter(r, 'rdv', null, li, hl.debut); return;
+      }
       if (res === 'rappeler-ok') { noter(r, 'rappeler', li.querySelector('.pa-date').value, li); return; }
       noter(r, res, null, li); return;
     }

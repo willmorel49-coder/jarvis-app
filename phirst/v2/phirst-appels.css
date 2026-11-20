@@ -85,3 +85,44 @@
   .pa-suite .pa-b{width:100%}
   .pa-o{flex:1 1 100%}
 }
+
+/* ── Lot 2 (21/11/2026) : panneau « Quand ? » de « RDV obtenu » et écran Agenda. Mêmes couleurs, mêmes pastilles. ── */
+.pa input[type=time]{min-height:48px;padding:8px 12px;border:1px solid var(--au-fil,#D8E7DD);border-radius:12px;background-color:#fff;font-size:16px;font-weight:500;color:var(--au-ink,#16281E);max-width:100%}
+.pa-quand{margin-top:12px;padding:12px;border-radius:14px;background-color:#F3F6F4;display:grid;gap:10px}
+.pa-quand[hidden]{display:none}
+.pa-quand .pa-q{margin:0}
+.pa-cren{display:grid;gap:8px}
+.pa-cr{display:block;min-height:56px;padding:8px 14px;text-align:left}
+.pa-cr b{display:block;font-size:16px;line-height:1.3}
+.pa-cr small{display:block;font-size:14px;font-weight:500;line-height:1.35;color:var(--au-ink2,#3B4F43)}
+.pa-qt{flex:1 1 100%;font-weight:800;font-size:15px;color:var(--au-ink2,#3B4F43)}
+.pa-quand .pa-rap,.ag-zone .pa-rap{margin-top:0;background-color:var(--au-surv-a,#E7F3EB)}
+.ag-zone{display:grid;gap:10px;margin-top:12px;padding:12px;border-radius:14px;background-color:#F3F6F4}
+.ag-zone .pa-q{margin:0}
+.ag-zone .pa-avis{margin:0}
+.ag-conf{margin:0 0 18px}
+.ag-conf h2,.ag-jt{margin:0 0 10px;font-size:20px;font-weight:800;letter-spacing:-.01em}
+.ag-jt{margin-top:18px}
+.ag-sh{margin:18px 0 8px;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--au-ink3,#4A5D51)}
+.ag-ens{margin:0 0 16px;padding:18px;border-radius:20px;background-color:var(--au-accent,#1A3A2E);color:#fff;box-shadow:0 18px 36px -28px var(--au-ombre-l,rgba(18,60,40,.22))}
+.ag-ens p{margin:0}
+.ag-ens-m{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#CFE6D8}
+.ag-ens-t{margin-top:4px;font-size:26px;font-weight:800;line-height:1.15;letter-spacing:-.02em}
+.ag-ens-d{margin-top:6px;font-size:16px;line-height:1.45;color:#E6F2EB}
+.ag-jours{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin:0 0 10px}
+.ag-jour{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60px;padding:6px 4px;border:1px solid var(--au-fil,#D8E7DD);border-radius:14px;background-color:#fff;font-weight:800;font-size:16px;color:var(--au-ink2,#3B4F43)}
+.ag-jour small{font-size:13px;font-weight:600;line-height:1.25;text-align:center}
+.ag-jour[aria-pressed="true"]{background-color:var(--au-accent,#1A3A2E);border-color:var(--au-accent,#1A3A2E);color:#fff}
+.ag-jour:focus-visible,.ag-lien:focus-visible{outline:2px solid var(--au-accent,#1A3A2E);outline-offset:2px}
+.ag-periode{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 6px}
+.ag-lien{min-height:48px;padding:0 14px;border:0;border-radius:12px;background-color:transparent;font-weight:700;font-size:16px;color:var(--au-accent,#1A3A2E);cursor:pointer}
+.ag-alerte{margin:10px 0 0;padding:10px 12px;border-radius:12px;background-color:#FBE2DF;color:#9B2C24;font-weight:700;font-size:15px;line-height:1.4}
+.ag-annule b{text-decoration:line-through}
+.ag-rdv .pa-bs{margin-top:12px}
+@media (max-width:700px){
+  .ag-jours{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .ag-ens-t{font-size:23px}
+  .pa-quand .pa-rap label{flex:1 1 100%}
+  .ag-zone .pa-rap label{flex:1 1 100%}
+  .pa-quand .pa-b.pa-ok,.ag-zone .pa-b.pa-ok{width:100%}
+}
