@@ -2397,7 +2397,13 @@
     pdf: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
     excel: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/>',
     envoi: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
-    x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'
+    x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    // 20/11/2026 — ronds de la carte d'identité (m32)
+    tel: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+    mel: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+    rdv: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
+    prod: '<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 2.004 0L20.7 7"/><path d="m7.5 4.27 9 5.15"/>',
+    d2p: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>'
   };
   function fbIc(n, s) { return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + FB_IC[n] + '</svg>'; }
   function fbNb(n) { return V2.fmtNum(n) + ' produit' + (n > 1 ? 's' : ''); }
@@ -2412,21 +2418,48 @@
     var pidS = String(pid).replace(/[^0-9A-Za-z_-]/g, '');
     var avecLgo = !isEscale() && !isOpso();
     var c = fbC = { pid: pidS, pidBrut: pid, A: A, d: d, grp: A.grpName, n: (tx.lgo && tx.lgo.pid === pidS) ? tx.lgo.n : 300, lgo: avecLgo ? txLgoDetect(pid, null) : '', sel: '' };
-    var h = '<section class="fbk" aria-labelledby="fbk-t"><div class="fbk-h"><h2 id="fbk-t">À proposer</h2></div><div class="fbk-row">';
+    // 20/11/2026 — m32 : logiciel, liste de tâches et Transmettre passent en grands boutons dans la carte d'identité (fiActions) ;
+    // ici restent les deux listings. Sans listing, pas de bloc (fbC reste posé : les grands boutons de la carte s'en servent).
+    var h = '';
     if (d.nR > 0) h += fbBtn('reseau', 'reseau', 'Ouvrir le listing réseau', 'Réseau Intégral', fbNb(d.nR));
     if (d.hasGrp && d.nG > 0) h += fbBtn('groupement', 'groupe', 'Ouvrir le listing du groupe d’achat', esc(c.grp), fbNb(d.nG));
-    if (avecLgo) h += fbBtn('logiciel', 'logiciel', 'Préparer le catalogue pour son logiciel', c.lgo ? esc(txLgoNom(c.lgo)) : 'Logiciel à choisir', 'TOP ' + c.n);
-    if (V2.todo && V2.todo.menu) h += fbBtn('todo', 'todo', 'Ouvrir la liste de tâches', 'Ajouter une tâche', '');
-    h += fbBtn('tx', 'tx', 'Choisir quoi lui transmettre', 'Documents et catalogues', '', true);
-    h += '</div></section>';
+    if (h) h = '<section class="fbk" aria-labelledby="fbk-t"><div class="fbk-h"><h2 id="fbk-t">À proposer</h2></div><div class="fbk-row">' + h + '</div></section>';
     // le logiciel saisi par l'équipe (lu en différé) fait foi, comme dans Transmettre
     if (avecLgo && V2.profil && V2.profil.charger) V2.profil.charger('client', pid).then(function (dd) {
       if (fbC !== c) return;
       var s = txLgoDetect(pid, dd); if (s === c.lgo) return;
       c.lgo = s;
-      var b = document.querySelector('.fbk-b[data-k="logiciel"] .fbk-bs'); if (b) b.textContent = s ? txLgoNom(s) : 'Logiciel à choisir';
+      var b = document.querySelector('.fi-gb[data-k="logiciel"] .fi-gb-t'); if (b) b.textContent = fiLgoTitre(s);
     }, function () {});
     return h;
+  }
+  // ── 20/11/2026 — m32 (choix de Will, question cliquée du 20/11) : les actions de la carte d'identité en ronds à icône,
+  // le nom dessous (grille de 3, Appeler en bleu plein), puis les grands boutons, sous le nom de l'officine.
+  // Fiche « plus clair » seulement ; fiche « menu », OPSO et prospects gardent leurs boutons. Préfixe CSS : fi-rond / fi-gb.
+  function fiLgoTitre(s) { return s ? 'Catalogue pour ' + txLgoNom(s) : 'Catalogue pour son logiciel'; }
+  function fiRond(tag, attrs, ic, nom, pri) {
+    return '<' + tag + ' class="fi-rond' + (pri ? ' pri' : '') + '" ' + attrs + '><span class="fi-rond-i">' + fbIc(ic, 20) + '</span><span class="fi-rond-l">' + nom + '</span></' + tag + '>';
+  }
+  function fiActions(pid, pidSafe, tel, mail, voitVentes) {
+    var r = [];
+    if (tel) r.push(fiRond('a', 'href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) + '"', 'tel', 'Appeler', true));
+    if (mail) r.push(fiRond('a', 'href="mailto:' + esc(mail) + '"', 'mel', 'E-mail'));
+    if (mail && V2.rdv) r.push(fiRond('button', 'type="button" onclick="V2.rdv.proposer(\'' + pidSafe + '\')" title="Elle choisit son créneau, calé sur la géographie de votre journée"', 'rdv', 'Rendez-vous'));
+    if (V2.notes) r.push(fiRond('button', 'type="button" onclick="V2.pharmaNav.noter()" title="Aller à la note personnelle"', 'pdf', 'Note'));
+    if (V2.pages.produits) r.push(fiRond('button', 'type="button" onclick="V2.go(\'produits\', \'' + pidSafe + '\')" title="Le Catalogue pour cette officine"', 'prod', 'Produits'));
+    if (voitVentes && !isOpso() && !isEscale() && V2.d2pRender) r.push(fiRond('button', 'type="button" onclick="V2.go(\'concurrents\', \'d2p/' + pidSafe + '\')" title="Ce que D2P Pharma lui aurait rendu sur ses princeps"', 'd2p', 'Comparer D2P'));
+    var h = r.length ? '<div class="fi-ronds">' + r.join('') + '</div>' : '';
+    if (!tel && !mail) h += '<p class="fi-acts-vide">Téléphone et e-mail à renseigner dans « Infos officine »</p>';
+    // grands boutons : seulement là où le bloc « À proposer » (fbBloc) les a cédés ; ailleurs la carte « Listes à proposer » les garde
+    if (voitVentes) {
+      var lgo = (!isEscale() && !isOpso()) ? txLgoDetect(pid, null) : null;
+      h += '<div class="fi-gbs">' +
+        '<button type="button" class="fi-gb pri" onclick="V2.fbOuvre(\'tx\',this)" title="catalogues, documents de l\'équipe — en pièces jointes">' + fbIc('tx', 18) + '<span class="fi-gb-t">Choisir quoi lui transmettre</span></button>' +
+        (V2.todo && V2.todo.menu ? '<button type="button" class="fi-gb" onclick="V2.fbOuvre(\'todo\',this)" title="demande de rendez-vous, suite de rendez-vous, ouverture de compte…">' + fbIc('todo', 18) + '<span class="fi-gb-t">Ouvrir la liste de tâches</span></button>' : '') +
+        (lgo !== null ? '<button type="button" class="fi-gb" data-k="logiciel" aria-haspopup="dialog" onclick="V2.fbOuvre(\'logiciel\',this)" title="Les produits les plus commandés du réseau, hors génériques, au format de son logiciel">' + fbIc('logiciel', 18) + '<span class="fi-gb-t">' + esc(fiLgoTitre(lgo)) + '</span></button>' : '') +
+      '</div>';
+    }
+    return h ? '<div class="fi-acts vi-int">' + h + '</div>' : '';
   }
   function fbFeuilleListe(k) {
     var c = fbC, g = k === 'groupement', n = g ? c.d.nG : c.d.nR, data = g ? c.d.dataG : c.d.dataR;
@@ -4157,9 +4190,9 @@
       '<div class="pha-id' + (fi ? ' fi-hd' : '') + '">' + (fi ? '<i class="fi-lu" aria-hidden="true"></i>' : '') + viSelecteur() +
         '<div class="pha-id-top">' + (fi ? '<div class="fi-eye vi-ph">Fiche officine</div>' : '') + '<div class="pha-code mono vi-int">' + (pharma.code ? 'CIP ' + esc(String(pharma.code)) + ' · ' : '') + (isEscale() ? 'CLIENTE ESCALE' : 'CLIENTE INTÉGRAL') + (comms ? ' · ' + esc(comms.toUpperCase()) : '') + '</div>' + fe.bouton + '</div>' +
         '<div class="pha-name">' + esc(nameOf(pid, pharma.name)) + '<span class="vi-int">' + ficheBadge + repriseBadge + '</span></div>' +
-        (fi ? '<p class="fi-phrase">' + esc(fiPh) + '</p>' : '') +
+        (fi ? '<p class="fi-phrase">' + esc(fiPh) + '</p>' + fiActions(pid, pidSafe, tel, mail, voitVentes) : '') +
         '<div class="pha-kv vi-int">' + kvHtml + '</div><div class="pha-kv vi-ph">' + kvPh + '</div>' +
-        '<div class="pha-acts vi-int">' +
+        (fi ? '' : '<div class="pha-acts vi-int">' +
           (tel ? '<a class="pha-btn" href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) + '">' + ICO('phone', 15) + 'Appeler</a>' : '') +
           (mail ? '<a class="pha-btn" href="mailto:' + esc(mail) + '">' + ICO('mail', 15) + 'Écrire un e-mail</a>' : '') +
           // 26/10/2026 — v2 « Tout dans la carte » : « Produits » (le Catalogue pour cette officine) et « Noter » (défile jusqu'à la note)
@@ -4168,7 +4201,7 @@
           (voitVentes && !isOpso() && !isEscale() && V2.d2pRender ? '<button class="pha-btn" onclick="V2.go(\'concurrents\', \'d2p/' + pidSafe + '\')" title="Ce que D2P Pharma lui aurait rendu sur ses princeps">' + ICO('cat', 15, 2) + 'Comparer avec D2P</button>' : '') +
           (mail && V2.rdv ? '<button class="pha-btn pha-btn-pri" onclick="V2.rdv.proposer(\'' + pidSafe + '\')" title="Elle choisit son créneau, calé sur la géographie de votre journée">' + ICO('cal', 15) + 'Proposer un rendez-vous</button>' : '') +
           (!tel && !mail ? '<span class="pha-sub" style="color:rgba(255,255,255,.7)">Téléphone et e-mail à renseigner dans « Infos officine »</span>' : '') +
-        '</div>' +
+        '</div>') +
       '</div>';
 
     // ── Listes à proposer (PDF réseau / groupement + écran Produits calé sur elle) ──
@@ -4260,7 +4293,7 @@
     // la carte « À proposer » reste montrée au pharmacien tel quel (vue pharmacien : décisions de Will des 12/10 et 29/10). Fiche « menu » et officine d'un collègue : comme avant.
     var proposer = retourProposer(pid, A, { dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp });
     var blocA = fi && voitVentes ? fbBloc(pid, A, { dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp }) : '';
-    if (blocA) proposer = viW(blocA, 'vi-int') + viW(proposer, 'vi-ph');
+    if (fi && voitVentes) proposer = viW(blocA, 'vi-int') + viW(proposer, 'vi-ph');   // 20/11 : blocA peut être vide (sans listing), l'ancienne carte reste au pharmacien seul
     var chiffres = proposer + viW(chiffresInt, 'vi-int') + viW(chiffresPh, 'vi-ph') + analyseTop5(A) + analyseNePlus(pid);
     // 09/10/2026 — maquette 8 « Le menu » (remplace la 1b, jugée « trop complexe ») : l'état de la fiche est posé ici,
     // la page est assemblée plus bas (carte d'identité courte, menu, une rubrique à la fois).
