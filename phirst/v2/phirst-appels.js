@@ -3,7 +3,10 @@
    ligne_accueil.donnees[0].appels) + relances dues lues en direct ; les quatre boutons après l'appel = logCall
    (app/crm/actions.ts) ; fiche = moveStage, setNextAction, addActivity. Logique pure dans phirst-pur.js (testée).
    Écritures : SEULEMENT dans l'espace du compte connecté (crm_members), jamais de suppression.
-   Charge aussi l'accès à la ligne du compte (window.PHIRST_DONNEES) que l'écran Veille réutilise. */
+   Charge aussi l'accès à la ligne du compte (window.PHIRST_DONNEES) que l'écran Veille réutilise.
+   21/11/2026 — téléprospectrice : elle n'est PAS membre de l'espace ; tout passe par les fonctions de la base (acces-telepro.sql :
+   telepro_pistes, telepro_journal, telepro_ligne, telepro_ecrire, telepro_suite, telepro_creer_piste, telepro_agenda, phirst_equipe).
+   Son rôle se lit dans la session (window.PHIRST_ROLE), pour l'AFFICHAGE seulement : la base filtre de toute façon. */
 (function () {
   'use strict';
   var P = window.PHIRST_PUR, V2 = window.V2;
@@ -14,6 +17,47 @@
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function sb() { return typeof V2.sb === 'function' ? V2.sb() : null; }
 
+  /* ── Son rôle : lu dans la session (app_metadata, écrit par la clé de service seule), JAMAIS user_metadata. En cache par
+     identifiant ; une lecture qui échoue (pas de session, panne) ne se garde pas. ── */
+  var cacheRole = { pour: null, p: null };
+  window.PHIRST_ROLE = {
+    estTelepro: function () {
+      var u = V2.user, b = sb();
+      if (!u || !b) return Promise.resolve(false);
+      if (cacheRole.pour === u.id && cacheRole.p) return cacheRole.p;
+      var pour = u.id, p;
+      function oublier(v) { if (cacheRole.p === p) cacheRole = { pour: null, p: null }; return v; }
+      p = b.auth.getSession().then(function (r) {
+        var s = r && r.data && r.data.session, m = s && s.user && s.user.app_metadata;
+        if (!m || s.user.id !== pour) return oublier(false);
+        return m.phirst_role === 'telepro';
+      }, function () { return oublier(false); });
+      cacheRole = { pour: pour, p: p };
+      return p;
+    },
+    oublier: function () { cacheRole = { pour: null, p: null }; }
+  };
+  var ROLE = window.PHIRST_ROLE;
+
+  /* ── Les personnes de l'espace (phirst_equipe, ouverte à Yann comme à elle) : « qui a appelé », et qui est téléprospectrice. ── */
+  var cacheEquipe = { pour: null, p: null }, equipeCourante = {};
+  var EQUIPE = window.PHIRST_EQUIPE = {
+    lire: function () {
+      var u = V2.user, b = sb();
+      if (!u || !b) return Promise.resolve({});
+      if (cacheEquipe.pour === u.id && cacheEquipe.p) return cacheEquipe.p;
+      var p;
+      function oublier() { if (cacheEquipe.p === p) cacheEquipe = { pour: null, p: null }; equipeCourante = {}; return {}; }
+      p = b.rpc('phirst_equipe').then(function (r) {
+        if (!r || r.error || !Array.isArray(r.data)) return oublier();
+        equipeCourante = P.equipeParId(r.data); return equipeCourante;
+      }, oublier);
+      cacheEquipe = { pour: u.id, p: p };
+      return p;
+    },
+    estTelepro: function (id) { return P.estTelepro(equipeCourante, id); }
+  };
+
   /* ── La ligne du compte : « trouver » porte appels et veille. Posée d'avance (sondes) ou lue en base. ── */
   var cacheLigne = { pour: null, p: null };
   window.PHIRST_DONNEES = {
@@ -23,11 +67,14 @@
       if (!u || !sb()) return Promise.resolve({ trouver: null, frais: false });
       if (cacheLigne.pour === u.id && cacheLigne.p) return cacheLigne.p;
       cacheLigne.pour = u.id;
-      cacheLigne.p = sb().from('ligne_accueil').select('donnees,calcule_le').eq('user_id', u.id).maybeSingle().then(function (r) {
-        var x = r && !r.error && r.data;
-        if (!x || !Array.isArray(x.donnees)) return { trouver: null, frais: false };
-        return { trouver: x.donnees[0] || null, frais: Date.now() - Date.parse(x.calcule_le) <= AGE_MAX };
-      }, function () { return { trouver: null, frais: false }; });
+      cacheLigne.p = ROLE.estTelepro().then(function (t) {
+        if (t) return sb().rpc('telepro_ligne').then(function (r) { return r && !r.error ? P.ligneDeTelepro(r.data, Date.now()) : { trouver: null, frais: false }; });
+        return sb().from('ligne_accueil').select('donnees,calcule_le').eq('user_id', u.id).maybeSingle().then(function (r) {
+          var x = r && !r.error && r.data;
+          if (!x || !Array.isArray(x.donnees)) return { trouver: null, frais: false };
+          return { trouver: x.donnees[0] || null, frais: Date.now() - Date.parse(x.calcule_le) <= AGE_MAX };
+        });
+      }).then(null, function () { return { trouver: null, frais: false }; });
       return cacheLigne.p;
     },
     oublier: function () { cacheLigne = { pour: null, p: null }; }
@@ -35,11 +82,22 @@
 
   /* ── Les rendez-vous de l'espace : lus ici, partagés avec l'écran Agenda (phirst-agenda.js) ──
      Un rendez-vous = une ligne `crm_activities` de type « rdv » (format de la V1, voir phirst-pur.js). On AJOUTE, on ne modifie
-     ni ne supprime jamais. Aucun compte n'a encore le rôle téléprospectrice : estTelepro rend toujours false (le paramètre reste). */
+     ni ne supprime jamais. estTelepro lit phirst_equipe (ligne d'équipe de l'auteur, telepro = true) : un rendez-vous pris par
+     elle arrive « À confirmer » chez Yann. Pour elle, tout vient de telepro_agenda et telepro_ecrire. */
+  function lireTelepro(base) {
+    return base.rpc('telepro_agenda').then(function (r) {
+      if (!r || r.error || !Array.isArray(r.data)) throw new Error('agenda');
+      var a = P.agendaDeTelepro(r.data);
+      return { fiches: a.fiches, rdvs: P.etatsDesRdv(a.lignes, RDV.estTelepro) };
+    });
+  }
   var RDV = window.PHIRST_RDV = {
-    estTelepro: function () { return false; },
-    /* Relit tout : les fiches de l'espace (non archivées ou non) puis leurs lignes rdv. Rend { fiches, rdvs }. */
+    estTelepro: function (id) { return EQUIPE.estTelepro(id); },
+    /* Relit tout (l'équipe d'abord, pour savoir qui est téléprospectrice) : les fiches de l'espace puis leurs lignes rdv. Rend { fiches, rdvs }. */
     lire: function (base, ws) {
+      return Promise.all([ROLE.estTelepro(), EQUIPE.lire()]).then(function (x) { return x[0] ? lireTelepro(base) : RDV.lireMembre(base, ws); });
+    },
+    lireMembre: function (base, ws) {
       return base.from('crm_prospects').select('id,nom,ville,cp,lat,lon,stage').eq('workspace_id', ws).then(function (f) {
         if (f.error) throw new Error('fiches');
         var fiches = f.data || [], ids = fiches.map(function (x) { return x.id; }), lots = [];
@@ -63,7 +121,10 @@
     },
     /* Ajoute UNE ligne rdv. extra : debut, duree_min, lieu, objet. */
     ecrire: function (base, prospectId, quoi, rdvId, extra) {
-      return base.from('crm_activities').insert({ prospect_id: prospectId, type: 'rdv', body: P.corpsRdv(quoi, rdvId, V2.user.id, extra) });
+      var corps = P.corpsRdv(quoi, rdvId, V2.user.id, extra);
+      return ROLE.estTelepro().then(function (t) {
+        return t ? base.rpc('telepro_ecrire', { p_prospect: prospectId, p_type: 'rdv', p_body: corps }) : base.from('crm_activities').insert({ prospect_id: prospectId, type: 'rdv', body: corps });
+      });
     },
     /* Les trois meilleurs créneaux de Yann sur les 10 prochains jours ouvrés. */
     propositions: function (rdvs, fiches, cible, sauf) {
@@ -85,7 +146,7 @@
   };
 
   /* ── État de l'écran ── */
-  var S = { racine: null, jeton: 0, onglet: 'jour', fiche: null, ws: null, fiches: [], appelAu: {}, robot: null, avis: '', flash: '', charge: false, erreur: false };
+  var S = { racine: null, jeton: 0, telepro: false, onglet: 'jour', fiche: null, ws: null, fiches: [], appelAu: {}, robot: null, avis: '', flash: '', charge: false, erreur: false };
   var COLS = 'id,nom,ville,cp,departement,telephone,email,pharmacien,stage,source,next_action,next_action_date,lat,lon,updated_at';
   var MOTIFS = {
     relance: ['Relance promise', 'rouge'], procedure: ['Procédure collective', 'rouge'], cession: ['Cession d’officine', 'orange'],
@@ -100,7 +161,23 @@
     S.charge = false; S.erreur = false;
     if (!u || !base) { S.erreur = true; dessiner(); return; }
     dessiner();
-    Promise.all([
+    ROLE.estTelepro().then(function (t) {
+      if (tok !== S.jeton) return;
+      S.telepro = t;
+      return t ? chargerTelepro(tok, base) : chargerMembre(tok, base, u);
+    }).then(null, function () { if (tok === S.jeton) { S.erreur = true; dessiner(); } });
+  }
+  /* Téléprospectrice : ses pistes, le journal de son espace (pour « déjà appelée »), la liste du robot, l'équipe. Tout par les fonctions. */
+  function chargerTelepro(tok, base) {
+    return Promise.all([base.rpc('telepro_pistes'), base.rpc('telepro_journal', { p_prospect: null }), window.PHIRST_DONNEES.ligne(), EQUIPE.lire()]).then(function (r) {
+      if (!r[0] || r[0].error || !Array.isArray(r[0].data) || !r[1] || r[1].error || !Array.isArray(r[1].data)) throw new Error('fiches');
+      if (tok !== S.jeton) return;
+      S.ws = null; S.fiches = r[0].data; S.appelAu = P.dernierAppelParFiche(r[1].data, versJourParis);
+      S.robot = r[2]; S.charge = true; dessiner();
+    });
+  }
+  function chargerMembre(tok, base, u) {
+    return Promise.all([
       base.from('crm_members').select('workspace_id').eq('user_id', u.id).limit(1).maybeSingle(),
       window.PHIRST_DONNEES.ligne()
     ]).then(function (r) {
@@ -116,7 +193,7 @@
           S.robot = r[1]; S.charge = true; dessiner();
         });
       });
-    }).then(null, function () { if (tok === S.jeton) { S.erreur = true; dessiner(); } });
+    });
   }
 
   /* ── Affichage ── */
@@ -162,7 +239,12 @@
       }).join('') + '</ul></section>';
     }).join('');
   }
-  var JOURNAL = { id: null, lignes: null };
+  var JOURNAL = { id: null, lignes: null, equipe: {} };
+  /* Elle lit l'étape et la prochaine action, elle ne les modifie pas : elles se règlent par « Après l'appel ». */
+  function suiteEnTexte(f) {
+    return '<dl class="pa-coord"><div><dt>Étape</dt><dd>' + esc(P.nomEtape(f.stage)) + '</dd></div><div><dt>Prochaine action</dt><dd>' +
+      (f.next_action ? esc(f.next_action) + (f.next_action_date ? ' le ' + esc(P.jourFr(f.next_action_date)) : '') : 'Aucune pour le moment') + '</dd></div></dl>';
+  }
   function vueFiche() {
     var f = S.fiches.filter(function (x) { return x.id === S.fiche; })[0];
     if (!f) return '<p class="pa-avis">Cette piste n’existe plus.</p><button type="button" class="pa-b" data-retour="1">Retour aux pistes</button>';
@@ -170,9 +252,9 @@
     var h = '<button type="button" class="pa-retour" data-retour="1">← Mes pistes</button><div class="pa-fiche"><h2>' + esc(f.nom) + '</h2><p class="pa-sub">' + esc(P.nomEtape(f.stage)) + '</p>' +
       '<dl class="pa-coord"><div><dt>Adresse</dt><dd>' + (esc(adr) || 'Non renseignée') + '</dd></div><div><dt>Téléphone</dt><dd>' + (f.telephone ? tel(f.telephone) : 'Non renseigné') + '</dd></div>' +
       '<div><dt>E-mail</dt><dd>' + (f.email ? '<a href="mailto:' + esc(f.email) + '">' + esc(f.email) + '</a>' : 'Non renseigné') + '</dd></div><div><dt>Titulaire</dt><dd>' + (esc(f.pharmacien) || 'Non renseigné') + '</dd></div></dl>' +
-      '<label class="pa-ch">Étape<select id="pa-etape">' + P.ETAPES.map(function (e) { return '<option value="' + e.cle + '"' + (e.cle === f.stage ? ' selected' : '') + '>' + esc(e.nom) + '</option>'; }).join('') + (f.stage === 'archive' ? '<option value="archive" selected>Archivée</option>' : '') + '</select></label>' +
+      (S.telepro ? suiteEnTexte(f) : '<label class="pa-ch">Étape<select id="pa-etape">' + P.ETAPES.map(function (e) { return '<option value="' + e.cle + '"' + (e.cle === f.stage ? ' selected' : '') + '>' + esc(e.nom) + '</option>'; }).join('') + (f.stage === 'archive' ? '<option value="archive" selected>Archivée</option>' : '') + '</select></label>' +
       '<div class="pa-suite"><label class="pa-ch">Prochaine action<input type="text" id="pa-act" maxlength="120" value="' + esc(f.next_action || '') + '" placeholder="Par exemple : Rappeler"></label>' +
-      '<label class="pa-ch">Pour le<input type="date" id="pa-actdate" value="' + esc(f.next_action_date || '') + '"></label><button type="button" class="pa-b" id="pa-actok">Enregistrer</button></div><p class="pa-dit" id="pa-dit-fiche" role="status"></p>' +
+      '<label class="pa-ch">Pour le<input type="date" id="pa-actdate" value="' + esc(f.next_action_date || '') + '"></label><button type="button" class="pa-b" id="pa-actok">Enregistrer</button></div><p class="pa-dit" id="pa-dit-fiche" role="status"></p>') +
       '<h3>Journal</h3><div id="pa-journal">' + (JOURNAL.id === f.id && JOURNAL.lignes ? journalHtml() : '<p class="pa-avis">Chargement du journal…</p>') + '</div>' +
       '<label class="pa-ch">Ajouter une note<textarea id="pa-note" rows="3" maxlength="1200" placeholder="Ce qui s’est dit, ce qu’il faut retenir…"></textarea></label><button type="button" class="pa-b pa-ok" id="pa-noteok">Ajouter la note</button><p class="pa-dit" id="pa-dit-note" role="status"></p></div>';
     return h;
@@ -180,14 +262,16 @@
   function journalHtml() {
     if (!JOURNAL.lignes.length) return '<p class="pa-avis">Rien n’est encore noté sur cette piste. Écrivez la première note ci-dessous.</p>';
     return '<ul class="pa-jour">' + JOURNAL.lignes.map(function (a) {
-      return '<li><span>' + esc(P.jourFr(versJourParis(a.created_at))) + '</span><p>' + esc(P.phraseJournal(a.type, a.body)) + '</p></li>';
+      return '<li><span>' + esc(P.jourFr(versJourParis(a.created_at))) + '</span><p>' + esc(P.avecAuteur(P.phraseJournal(a.type, a.body), P.nomAuteur(JOURNAL.equipe, a.author_id))) + '</p></li>';
     }).join('') + '</ul>';
   }
   function chargerJournal(id) {
-    JOURNAL = { id: id, lignes: null };
-    sb().from('crm_activities').select('type,body,created_at').eq('prospect_id', id).order('created_at', { ascending: false }).limit(100).then(function (r) {
+    JOURNAL = { id: id, lignes: null, equipe: {} };
+    var q = S.telepro ? sb().rpc('telepro_journal', { p_prospect: id }) : sb().from('crm_activities').select('author_id,type,body,created_at').eq('prospect_id', id).order('created_at', { ascending: false }).limit(100);
+    Promise.all([q, EQUIPE.lire()]).then(function (x) {
+      var r = x[0];
       if (S.fiche !== id) return;
-      JOURNAL = { id: id, lignes: r && !r.error ? (r.data || []) : [] };
+      JOURNAL = { id: id, lignes: r && !r.error ? (r.data || []) : [], equipe: x[1] || {} };
       var z = document.getElementById('pa-journal'); if (z) z.innerHTML = journalHtml();
     });
   }
@@ -208,6 +292,35 @@
   }
 
   /* ── Écritures : les mêmes que logCall (V1) ── */
+  /* Une erreur qui porte, pour elle, le message en français de la base (« Pas de somme dans le journal. »). */
+  function erreurBase(r, code) { var e = new Error(code); if (S.telepro) e.base = P.messageDeLaBase(r && r.error); return e; }
+  function ecrireJournal(id, type, body) {
+    return S.telepro ? sb().rpc('telepro_ecrire', { p_prospect: id, p_type: type, p_body: body }) : sb().from('crm_activities').insert({ prospect_id: id, type: type, body: body });
+  }
+  /* L'étape et la prochaine action après un appel ; elle, par telepro_suite puis relecture de ses pistes. Rend { data: la fiche } ou { error }. */
+  function majSuite(id, maj) {
+    var base = sb();
+    if (!S.telepro) return base.from('crm_prospects').update(maj).eq('id', id).eq('workspace_id', S.ws).select(COLS).single();
+    return base.rpc('telepro_suite', { p_prospect: id, p_stage: maj.stage || null, p_next_action: maj.next_action == null ? null : maj.next_action, p_next_action_date: maj.next_action_date || null }).then(function (u) {
+      if (u.error) return u;
+      return base.rpc('telepro_pistes').then(function (l) {
+        if (l.error || !Array.isArray(l.data)) return { error: l.error || { message: '' } };
+        S.fiches = l.data;
+        var x = l.data.filter(function (y) { return y.id === id; })[0];
+        return x ? { data: x } : { error: { message: '' } };
+      });
+    });
+  }
+  /* Une pharmacie de la liste du jour qui n'a pas encore de fiche : telepro_creer_piste, puis les raisons du signal en note. */
+  function creerParTelepro(r, base) {
+    return base.rpc('telepro_creer_piste', { p_nom: r.nom, p_ville: r.ville || null, p_cp: r.cp || null, p_departement: r.dep || (r.cp ? String(r.cp).slice(0, 2) : null),
+      p_telephone: r.telephone || null, p_email: r.email || null, p_pharmacien: r.pharmacien || null, p_lat: r.lat == null ? null : r.lat, p_lon: r.lon == null ? null : r.lon,
+      p_source: r.origine || 'annuaire' }).then(function (n) {
+      if (n.error || !n.data) throw erreurBase(n, 'creer');
+      var f = { id: n.data, nom: r.nom, ville: r.ville || null, cp: r.cp || null, stage: 'a_qualifier' }, raisons = (r.raisons || []).join(' · ').slice(0, 1200);
+      return raisons ? base.rpc('telepro_ecrire', { p_prospect: f.id, p_type: 'note', p_body: raisons }).then(function () { return f; }, function () { return f; }) : f;
+    });
+  }
   function noter(r, resultat, choisie, li, debutRdv) {
     var base = sb(), dit = li.querySelector('.pa-dit'), jr = jour();
     function dire(t) { dit.textContent = t; li.querySelectorAll('button').forEach(function (b) { b.disabled = false; }); }
@@ -218,7 +331,7 @@
     var fiche = (r.prospectId && S.fiches.filter(function (f) { return f.id === r.prospectId; })[0]) ||
       (function () { var c = P.cle(r.nom, r.ville); var t = S.fiches.filter(function (f) { return P.cle(f.nom, f.ville) === c; }); return t.filter(function (f) { return f.stage !== 'archive'; })[0] || t[0] || null; })();
     if (fiche && fiche.stage === 'archive') return dire('Cette pharmacie est archivée : rouvrez sa piste depuis « Mes pistes ».');
-    function avoirFiche() { return fiche ? Promise.resolve(fiche) : base.from('crm_prospects').insert({
+    function avoirFiche() { return fiche ? Promise.resolve(fiche) : S.telepro ? creerParTelepro(r, base) : base.from('crm_prospects').insert({
       workspace_id: S.ws, nom: r.nom, ville: r.ville || null, cp: r.cp || null, departement: r.dep || (r.cp ? String(r.cp).slice(0, 2) : null),
       pharmacien: r.pharmacien || null, telephone: r.telephone || null, email: r.email || null, stage: 'a_qualifier', source: r.origine || 'annuaire',
       lat: r.lat == null ? null : r.lat, lon: r.lon == null ? null : r.lon
@@ -236,12 +349,12 @@
     verif.then(avoirFiche).then(function (f) {
       var avant = debutRdv ? RDV.ecrire(base, f.id, 'creer', crypto.randomUUID(), {
         debut: debutRdv, duree_min: P.REGLAGES_AGENDA.dureeMin, lieu: P.lieuPharmacie({ nom: f.nom, adresse: f.adresse, ville: f.ville }), objet: 'Premier rendez-vous'
-      }).then(function (w) { if (w.error) throw new Error('rdv'); rdvPose = true; }) : Promise.resolve();
-      return avant.then(function () { return base.from('crm_activities').insert({ prospect_id: f.id, type: 'appel', body: suite.body }); }).then(function (a) {
-        if (a.error) throw new Error('appel');
-        return base.from('crm_prospects').update(suite.maj).eq('id', f.id).eq('workspace_id', S.ws).select(COLS).single();
+      }).then(function (w) { if (w.error) throw erreurBase(w, 'rdv'); rdvPose = true; }) : Promise.resolve();
+      return avant.then(function () { return ecrireJournal(f.id, 'appel', suite.body); }).then(function (a) {
+        if (a.error) throw erreurBase(a, 'appel');
+        return majSuite(f.id, suite.maj);
       }).then(function (u) {
-        if (u.error || !u.data) throw new Error('maj');
+        if (u.error || !u.data) throw erreurBase(u, 'maj');
         var i = S.fiches.map(function (x) { return x.id; }).indexOf(u.data.id);
         if (i < 0) S.fiches.push(u.data); else S.fiches[i] = u.data;
         S.appelAu[u.data.id] = jr;
@@ -250,7 +363,7 @@
           (suite.maj.next_action_date ? ' Prochaine action le ' + P.jourFr(suite.maj.next_action_date) + '.' : ' La piste passe dans les perdues.');
         dessiner();
       });
-    }).then(null, function (e) { dire(e && e.refus ? e.refus : rdvPose ? 'Le rendez-vous est posé, mais l’appel n’a pas pu être noté : ouvrez la fiche dans « Mes pistes ».' : PAS); });
+    }).then(null, function (e) { dire(e && e.refus ? e.refus : rdvPose ? 'Le rendez-vous est posé, mais l’appel n’a pas pu être noté : ouvrez la fiche dans « Mes pistes ».' : e && e.base ? e.base : PAS); });
   }
 
   function majFiche(id, champs, dit, ok) {
@@ -268,7 +381,8 @@
     z.hidden = false; z.innerHTML = '<p class="pa-avis" role="status">Recherche des meilleurs créneaux…</p>';
     RDV.lire(base, S.ws).then(function (x) {
       var f = (r.prospectId && x.fiches.filter(function (y) { return y.id === r.prospectId; })[0]) ||
-        x.fiches.filter(function (y) { return P.cle(y.nom, y.ville) === P.cle(r.nom, r.ville); })[0] || null;
+        x.fiches.filter(function (y) { return P.cle(y.nom, y.ville) === P.cle(r.nom, r.ville); })[0] ||
+        S.fiches.filter(function (y) { return P.cle(y.nom, y.ville) === P.cle(r.nom, r.ville); })[0] || null;   // elle : ses pistes sans rendez-vous ne sont pas dans l'agenda
       var lat = f && f.lat != null ? f.lat : r.lat, lon = f && f.lon != null ? f.lon : r.lon;
       var cible = lat != null && lon != null ? { lat: lat, lon: lon } : null;
       var cren = RDV.propositions(x.rdvs, x.fiches, cible);
@@ -314,11 +428,11 @@
       var n = document.getElementById('pa-note'), txt = n.value.trim(), dn = document.getElementById('pa-dit-note'), id = S.fiche;
       if (!txt) { dn.textContent = 'Écrivez d’abord la note.'; return; }
       t.disabled = true;
-      sb().from('crm_activities').insert({ prospect_id: id, type: 'note', body: txt }).then(function (r) {
+      ecrireJournal(id, 'note', txt).then(function (r) {
         t.disabled = false;
-        if (r.error) { dn.textContent = PAS; return; }
+        if (r.error) { dn.textContent = (S.telepro && P.messageDeLaBase(r.error)) || PAS; return; }
         n.value = ''; dn.textContent = 'Note ajoutée.';
-        JOURNAL.lignes = [{ type: 'note', body: txt, created_at: new Date().toISOString() }].concat(JOURNAL.lignes || []);
+        JOURNAL.lignes = [{ author_id: V2.user && V2.user.id, type: 'note', body: txt, created_at: new Date().toISOString() }].concat(JOURNAL.lignes || []);
         var z = document.getElementById('pa-journal'); if (z) z.innerHTML = journalHtml();
       }, function () { t.disabled = false; dn.textContent = PAS; });
     }

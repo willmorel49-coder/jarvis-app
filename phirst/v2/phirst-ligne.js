@@ -93,6 +93,26 @@
   function ajouterPiste(p) {
     var V2 = window.V2, u = V2 && V2.user, sb = u && typeof V2.sb === 'function' ? V2.sb() : null;
     if (!p || !sb) return Promise.resolve(PAS);
+    var R = window.PHIRST_ROLE;
+    return (R ? R.estTelepro() : Promise.resolve(false)).then(function (t) { return t ? ajouterParTelepro(p, sb) : ajouterParMembre(p, u, sb); }, function () { return PAS; });
+  }
+  /* Téléprospectrice (21/11/2026) : pas membre de l'espace ; ses pistes par telepro_pistes, la création par telepro_creer_piste
+     (source « transfert »), la note de la veille par telepro_ecrire. Même comparaison nom + ville, mêmes messages. */
+  function ajouterParTelepro(p, sb) {
+    return sb.rpc('telepro_pistes').then(function (f) {
+      if (f.error || !Array.isArray(f.data)) return PAS;
+      var k = norm(p.nom) + '|' + norm(p.ville);
+      if (f.data.some(function (x) { return norm(x.nom) + '|' + norm(x.ville) === k; })) return 'Déjà dans vos pistes.';
+      return sb.rpc('telepro_creer_piste', { p_nom: p.nom, p_ville: p.ville || null, p_cp: p.cp || null, p_departement: p.departement || null, p_telephone: null, p_email: null,
+        p_pharmacien: null, p_lat: p.lat == null ? null : p.lat, p_lon: p.lon == null ? null : p.lon, p_source: 'transfert' }).then(function (n) {
+        if (n.error || !n.data) return PAS;
+        function fin() { return 'Ajoutée à vos pistes.'; }
+        if (!p.note) return fin();
+        return sb.rpc('telepro_ecrire', { p_prospect: n.data, p_type: 'note', p_body: p.note }).then(fin, fin);
+      });
+    }).then(null, function () { return PAS; });
+  }
+  function ajouterParMembre(p, u, sb) {
     return sb.from('crm_members').select('workspace_id').eq('user_id', u.id).limit(1).maybeSingle().then(function (m) {
       var ws = m && !m.error && m.data && m.data.workspace_id;
       if (!ws) return PAS;

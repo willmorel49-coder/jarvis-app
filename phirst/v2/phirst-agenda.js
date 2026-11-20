@@ -13,16 +13,20 @@
   function sb() { return typeof V2.sb === 'function' ? V2.sb() : null; }
   function jour() { return P.aujourdhui(); }
 
-  var S = { racine: null, jeton: 0, ws: null, fiches: [], rdvs: [], jour: null, flash: '', charge: false, erreur: false, ouvert: null, mode: null, props: null };
+  var S = { racine: null, jeton: 0, telepro: false, ws: null, fiches: [], rdvs: [], jour: null, flash: '', charge: false, erreur: false, ouvert: null, mode: null, props: null };
 
   function charger(garder) {
     var u = V2.user, tok = ++S.jeton, base = sb();
     if (!garder) { S.charge = false; S.erreur = false; }
     if (!u || !base) { S.erreur = true; dessiner(); return Promise.resolve(); }
     if (!garder) dessiner();
-    return base.from('crm_members').select('workspace_id').eq('user_id', u.id).limit(1).maybeSingle().then(function (m) {
+    /* Elle n'est pas membre de l'espace : pas de lecture de crm_members, tout vient de telepro_agenda (RDV.lire). */
+    return window.PHIRST_ROLE.estTelepro().then(function (t) {
+      S.telepro = t;
+      return t ? { data: { workspace_id: null } } : base.from('crm_members').select('workspace_id').eq('user_id', u.id).limit(1).maybeSingle();
+    }).then(function (m) {
       var ws = m && !m.error && m.data && m.data.workspace_id;
-      if (!ws) throw new Error('espace');
+      if (!ws && !S.telepro) throw new Error('espace');
       return RDV.lire(base, ws).then(function (x) {
         if (tok !== S.jeton) return;
         S.ws = ws; S.fiches = x.fiches; S.rdvs = x.rdvs; S.charge = true; S.erreur = false; dessiner();
@@ -37,12 +41,14 @@
     var ton = r.statut === 'propose' || r.statut === 'reporte' ? 'orange' : r.statut === 'annule' ? '' : 'vert';
     return '<em class="lg-et"' + (ton ? ' data-ton="' + ton + '"' : '') + '>' + esc(P.maj(P.STATUTS_RDV[r.statut])) + '</em>';
   }
+  function role() { return S.telepro ? 'telepro' : 'patron'; }
   function boutonsRdv(e, maintenant) {
     var r = e.rdv, b = '';
-    if (P.gestePermis(r, 'confirmer', 'patron')) b += '<button type="button" class="pa-b pa-ok" data-ag="confirmer" data-rdv="' + esc(r.id) + '">Confirmer</button>';
-    if (P.gestePermis(r, 'deplacer', 'patron')) b += '<button type="button" class="pa-b" data-ag="deplacer" data-rdv="' + esc(r.id) + '">Déplacer</button>';
-    if (P.gestePermis(r, 'fait', 'patron') && P.minutes(r.debut) < P.minutes(maintenant)) b += '<button type="button" class="pa-b" data-ag="fait" data-rdv="' + esc(r.id) + '">C’est fait</button>';
-    if (P.gestePermis(r, 'annuler', 'patron')) b += '<button type="button" class="pa-b" data-ag="annuler" data-rdv="' + esc(r.id) + '">Annuler</button>';
+    if (e.fiche.occupe) return '';   // un rendez-vous de Yann qui n'est pas le sien : « Yann est occupé », sans bouton
+    if (P.gestePermis(r, 'confirmer', role())) b += '<button type="button" class="pa-b pa-ok" data-ag="confirmer" data-rdv="' + esc(r.id) + '">Confirmer</button>';
+    if (P.gestePermis(r, 'deplacer', role())) b += '<button type="button" class="pa-b" data-ag="deplacer" data-rdv="' + esc(r.id) + '">Déplacer</button>';
+    if (P.gestePermis(r, 'fait', role()) && P.minutes(r.debut) < P.minutes(maintenant)) b += '<button type="button" class="pa-b" data-ag="fait" data-rdv="' + esc(r.id) + '">C’est fait</button>';
+    if (P.gestePermis(r, 'annuler', role())) b += '<button type="button" class="pa-b" data-ag="annuler" data-rdv="' + esc(r.id) + '">Annuler</button>';
     return b ? '<div class="pa-bs">' + b + '</div>' : '';
   }
   /* La zone ouverte sous un rendez-vous : déplacer (créneaux + autre heure) ou confirmation d'annulation. */
@@ -68,8 +74,9 @@
   }
   function carteRdv(e, maintenant) {
     var r = e.rdv, f = e.fiche, ligne2 = [r.lieu, r.objet].filter(Boolean).join(' · ');
-    return '<li class="pa-l ag-rdv' + (r.statut === 'annule' ? ' ag-annule' : '') + '" data-rdv="' + esc(r.id) + '"><div class="pa-ht"><div><b>' + esc(hh(r.debut)) + ' – ' + esc(hh(r.fin)) + ' · ' + esc(f.nom) + '</b>' +
-      '<small>' + esc(ligne2 || f.ville || '') + '</small></div>' + etatBadge(r) + '</div>' +
+    var titre = f.occupe ? f.nom + (f.ville ? ' · ' + f.ville : '') : f.nom;   // « Yann est occupé · commune »
+    return '<li class="pa-l ag-rdv' + (r.statut === 'annule' ? ' ag-annule' : '') + '" data-rdv="' + esc(r.id) + '"><div class="pa-ht"><div><b>' + esc(hh(r.debut)) + ' – ' + esc(hh(r.fin)) + ' · ' + esc(titre) + '</b>' +
+      '<small>' + esc(f.occupe ? '' : ligne2 || f.ville || '') + '</small></div>' + (f.occupe && r.statut !== 'annule' ? '' : etatBadge(r)) + '</div>' +
       (e.chevauche ? '<p class="ag-alerte" role="alert">Attention : deux rendez-vous se chevauchent à cette heure-là.</p>' : '') +
       (r.statut === 'annule' ? '' : boutonsRdv(e, maintenant)) + zoneOuverte(e) + '<p class="pa-dit" role="status"></p></li>';
   }
@@ -89,9 +96,9 @@
     // À confirmer
     var conf = els.filter(function (e) { return e.aConfirmer && P.minutes(e.rdv.fin) >= P.minutes(maint); });
     if (conf.length) {
-      h += '<section class="ag-conf" aria-label="À confirmer"><h2>À confirmer</h2><ul class="pa-liste">' + conf.map(function (e) {
+      h += '<section class="ag-conf" aria-label="' + (S.telepro ? 'En attente de Yann' : 'À confirmer') + '"><h2>' + (S.telepro ? 'En attente de Yann' : 'À confirmer') + '</h2><ul class="pa-liste">' + conf.map(function (e) {
         return '<li class="pa-l" data-rdv="' + esc(e.rdv.id) + '"><div class="pa-ht"><div><b>' + esc(e.fiche.nom) + '</b><small>' + esc(P.maj(P.quandFr(e.rdv.debut))) + (e.fiche.ville ? ' · ' + esc(e.fiche.ville) : '') + '</small></div>' + etatBadge(e.rdv) + '</div>' +
-          '<div class="pa-bs"><button type="button" class="pa-b pa-ok" data-ag="confirmer" data-rdv="' + esc(e.rdv.id) + '">Confirmer</button><button type="button" class="pa-b" data-ag="deplacer" data-rdv="' + esc(e.rdv.id) + '">Déplacer</button></div>' +
+          '<div class="pa-bs">' + (S.telepro ? '' : '<button type="button" class="pa-b pa-ok" data-ag="confirmer" data-rdv="' + esc(e.rdv.id) + '">Confirmer</button>') + '<button type="button" class="pa-b" data-ag="deplacer" data-rdv="' + esc(e.rdv.id) + '">Déplacer</button></div>' +
           zoneOuverte(e) + '<p class="pa-dit" role="status"></p></li>';
       }).join('') + '</ul></section>';
     }
@@ -128,7 +135,7 @@
     RDV.lire(base, S.ws).then(function (x) {
       var r = x.rdvs.filter(function (t) { return t.id === id; })[0];
       if (!r) return dire('Ce rendez-vous n’a pas pu être retrouvé.');
-      if (!P.gestePermis(r, quoi, 'patron')) return dire(quoi === 'confirmer' ? 'Seul Yann confirme un rendez-vous.' : 'Ce rendez-vous est déjà clos.');
+      if (!P.gestePermis(r, quoi, role())) return dire(quoi === 'confirmer' ? 'Seul Yann confirme un rendez-vous.' : 'Ce rendez-vous est déjà clos.');
       var extra = null;
       if (quoi === 'deplacer') {
         var faux = P.heureValide(debut, P.maintenantParis());
@@ -138,14 +145,14 @@
         extra = { debut: debut, duree_min: r.duree_min };
       }
       return RDV.ecrire(base, r.prospect_id, quoi, r.id, extra).then(function (w) {
-        if (w.error) throw new Error('ecrire');
+        if (w.error) { var eb = new Error('ecrire'); eb.base = S.telepro ? P.messageDeLaBase(w.error) : ''; throw eb; }
         var f = x.fiches.filter(function (y) { return y.id === r.prospect_id; })[0] || { nom: 'la pharmacie' };
         S.flash = { confirmer: 'Rendez-vous confirmé', deplacer: 'Rendez-vous déplacé : ' + P.quandFr(debut), annuler: 'Rendez-vous annulé', fait: 'Noté : le rendez-vous est fait' }[quoi] + ' (' + f.nom + ').';
         if (quoi === 'deplacer') S.jour = debut.slice(0, 10);
         S.ouvert = null; S.mode = null; S.props = null;
         return charger(true);
       });
-    }).then(null, function () { dire(PAS); });
+    }).then(null, function (e) { dire(e && e.base ? e.base : PAS); });
   }
   function ouvrirDeplacer(id) {
     S.ouvert = id; S.mode = 'deplacer'; S.props = null; dessiner();
