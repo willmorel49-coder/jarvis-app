@@ -1,0 +1,114 @@
+/* PHIRST · accueil « La course du soleil » (n° 6, choisie par Will le 20/11/2026) et téléphone A « le rail » (20/11/2026).
+   Portée depuis la galerie de l'aperçu (_ligne/ligne.css v=5 + ligne-tel.css v=3), variantes non retenues retirées.
+   Aucune opacité sur du texte, ni flou ni backdrop-filter. Mouvement réduit respecté. */
+
+/* ── 2. Pièces communes ── */
+.lg{--lg-ease:cubic-bezier(.32,.72,0,1);font-family:var(--font);color:var(--au-ink)}
+.lg *{box-sizing:border-box}
+.lg button{font:inherit;color:inherit;cursor:pointer}
+.lg-st{position:relative;display:grid;justify-items:center;gap:6px;min-width:96px;min-height:44px;padding:8px 10px 10px;border:0;border-radius:18px;background-color:transparent;transition:background-color .3s var(--lg-ease)}
+.lg-st:hover{background-color:var(--au-surv-a)}
+.lg-st:focus-visible{outline:2px solid var(--au-accent);outline-offset:2px}
+.lg-n{position:relative;z-index:1;display:grid;place-items:center;width:52px;height:52px;border-radius:50%;border:2px solid var(--au-accent);background-color:#fff;font-weight:800;font-size:22px;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--au-accent);transition:background-color .35s var(--lg-ease),color .35s var(--lg-ease),transform .5s var(--lg-ease)}
+.lg-m{font-weight:700;font-size:15px;color:var(--au-ink2)}
+.lg-st[aria-pressed="true"] .lg-n{background-color:var(--au-accent);color:#fff;transform:scale(1.08);box-shadow:0 0 0 6px var(--au-pastille)}
+.lg-st[aria-pressed="true"] .lg-m{color:var(--au-ink)}
+.lg-rail{position:relative;display:flex;justify-content:space-between;list-style:none;margin:0;padding:0}
+.lg-rail li{display:flex;justify-content:center}
+
+.lg-pan{display:grid;gap:28px;animation:lg-pan .55s var(--lg-ease) both}
+@keyframes lg-pan{from{transform:translateY(10px);clip-path:inset(0 0 100% 0)}to{transform:none;clip-path:inset(0 0 0 0)}}
+.lg-sur{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-weight:800;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--au-accent)}
+.lg-sur i{width:10px;height:10px;border-radius:50%;background-color:#12A567;box-shadow:0 0 0 4px #DCF0E3}
+.lg-titre{margin:0 0 8px;font-weight:800;font-size:30px;line-height:1.1;letter-spacing:-.03em;text-wrap:balance}
+.lg-det{margin:0 0 20px;font-size:16.5px;line-height:1.5;color:var(--au-ink2)}
+.lg-gros{display:inline-flex;align-items:center;gap:10px;min-height:52px;padding:0 24px;border:0;border-radius:16px;background-color:var(--au-accent);background-image:linear-gradient(180deg,#24503F,#1A3A2E);color:#fff!important;font-weight:700!important;font-size:16px!important;box-shadow:0 10px 24px -10px var(--au-ombre-l),inset 0 1px 0 rgba(255,255,255,.14);transition:transform .3s var(--lg-ease)}
+.lg-gros:hover{transform:translateY(-1px)}
+.lg-gros svg{width:20px;height:20px}
+.lg-lt{margin:0 0 8px;font-weight:800;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--au-ink3)}
+.lg-liste ul{list-style:none;margin:0;padding:0}
+.lg-liste li{display:grid;grid-template-columns:48px minmax(0,1fr);gap:14px;align-items:center;min-height:64px;padding:8px 0;border-top:1px solid var(--au-fil)}
+.lg-liste li:first-child{border-top:0}
+.lg-liste b{display:block;font-size:16px;line-height:1.3}
+.lg-liste small{display:block;font-size:14px;color:var(--au-ink3)}
+.lg-et{display:inline-block;margin-top:4px;padding:3px 10px;border-radius:999px;font-style:normal;font-weight:700;font-size:13px;background-color:#EEF2EF;color:#3B4F43}
+.lg-et[data-ton="orange"]{background-color:#FBEBD8;color:#8A4A0E}
+.lg-et[data-ton="vert"]{background-color:#E0F2E7;color:#0E6B43}
+.lg-et[data-ton="rouge"]{background-color:#FBE2DF;color:#9B2C24}
+
+/* l'accueil sobre cache tout ce qui n'est pas l'aube : on rend la ligne visible */
+html[data-ligne] #lg-ligne{display:block!important}
+
+
+
+
+
+/* ── 7. Variante 6 : la course du soleil — l'astre glisse au-dessus du moment choisi ── */
+html[data-ligne="6"] #aube-acc .m1-phrase{display:none}
+html[data-ligne="6"] #aube-acc .aube-scene{--dx:var(--lg-dx,0px)!important}
+html[data-ligne="6"] #aube-acc :is(.aube-astre,.aube-halo,.aube-an,.aube-reflet){transition:left 1.2s var(--au-ease)}
+.lg-v6{width:min(1000px,calc(100% - 64px));margin:26px auto 36px}
+.lg-v6 .lg-rail{max-width:720px;margin:0 auto}
+.lg-v6 .lg-st{gap:2px;min-width:120px;padding:10px 14px 12px}
+.lg-v6 .lg-st:hover{background-color:transparent}
+.lg-v6 .lg-st .lg-n{width:auto;height:auto;border:0;border-radius:0;background:none;font-size:44px;line-height:1;letter-spacing:-.04em;color:var(--au-ink3)}
+.lg-v6 .lg-st .lg-m{font-size:15px;color:var(--au-ink3)}
+.lg-v6 .lg-st::after{content:"";position:absolute;left:50%;bottom:0;width:28px;height:3px;margin-left:-14px;border-radius:2px;background-color:var(--au-accent);transform:scaleX(0);transition:transform .5s var(--lg-ease)}
+.lg-v6 .lg-st[aria-pressed="true"] .lg-n{background:none;color:var(--au-accent);transform:translateY(-4px);box-shadow:none}
+.lg-v6 .lg-st[aria-pressed="true"] .lg-m{color:var(--au-ink)}
+.lg-v6 .lg-st[aria-pressed="true"]::after{transform:scaleX(1)}
+.lg-v6 .lg-pan{margin-top:30px;justify-items:center;text-align:center}
+.lg-v6 .lg-une{max-width:640px}
+.lg-v6 .lg-titre{font-size:34px}
+.lg-v6 .lg-liste{width:100%}
+.lg-v6 .lg-liste ul{display:flex;justify-content:center;gap:14px;flex-wrap:wrap}
+.lg-v6 .lg-liste li{grid-template-columns:44px auto;min-height:0;padding:10px 16px 10px 10px;border:1px solid var(--au-fil);border-radius:18px;background-color:#fff;text-align:left}
+.lg-v6 .lg-liste li:first-child{border-top:1px solid var(--au-fil)}
+
+/* ── 8. Premier jour (&donnees=reelles) : pastille sans photo, moment « à venir », consigne, « autres » ── */
+.lg-ini{display:inline-grid;place-items:center;flex:none;border-radius:50%;background-color:#1A3A2E;background-image:linear-gradient(155deg,#3A7A5E 0%,#1A3A2E 72%);color:#fff;font-weight:800;font-size:18px;line-height:1;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 2px 6px -2px var(--au-ombre-l)}
+.lg-v6 .lg-st .lg-n.lg-avenir{display:grid;place-items:end center;height:44px;font-size:20px;font-weight:700;letter-spacing:0}
+.lg-consigne{max-width:560px;margin:0 auto 22px;font-weight:700;font-size:22px;line-height:1.35;letter-spacing:-.01em;color:var(--au-ink);text-wrap:balance}
+/* la colonne de l'aube ne fait qu'environ 640 px : la liste en sort pour tenir en deux rangées de trois (premier écran)
+   (seule la rangée déborde, par des marges négatives : le panneau garde sa largeur ; la découpe de l'animation est élargie d'autant) */
+html[data-donnees="reelles"] .lg-v6 .lg-pan{gap:22px;margin-top:24px;animation-name:lg-pan-large}
+@keyframes lg-pan-large{from{transform:translateY(10px);clip-path:inset(0 -50vw 100% -50vw)}to{transform:none;clip-path:inset(0 -50vw 0 -50vw)}}
+html[data-donnees="reelles"] .lg-v6 .lg-liste ul{margin-inline:calc((100% - min(1040px,100vw - 260px)) / 2)}
+.lg .lg-autres{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin:8px 0 0;padding:0 14px;border:0;border-radius:12px;background-color:transparent;font-weight:700;font-size:15px;color:var(--au-accent)}
+.lg-autres:hover{background-color:var(--au-surv-a)}
+.lg-autres:focus-visible{outline:2px solid var(--au-accent);outline-offset:2px}
+.lg-autres svg{width:18px;height:18px}
+
+@media (prefers-reduced-motion:reduce){
+  .lg-pan{animation:none}
+  .lg *,html[data-ligne="6"] #aube-acc :is(.aube-astre,.aube-halo,.aube-an,.aube-reflet){transition:none!important}
+}
+
+/* ── 9. Téléphone et tablette (≤ 1000 px) : maquette A « le rail », quatre colonnes, la liste dessous en une carte claire ── */
+@media (max-width:1000px){
+
+  /* ── maquette A ── */
+  /* l'aube centre son bloc (marge haute automatique) sous sa hauteur minimale : un moment court ferait descendre « Bonjour Yann » → calé en haut */
+  html[data-tel] #aube-acc>.aube-acc-bloc{margin-top:0!important}
+  html[data-tel] .lg-v6{width:auto;margin:16px 0 4px}
+  html[data-tel][data-donnees] .lg-v6 .lg-pan{gap:18px;margin-top:18px;justify-items:stretch;text-align:left;animation-name:lg-pan}
+  html[data-tel] .lg-v6 .lg-une{max-width:none}
+  html[data-tel] .lg .lg-titre{font-size:27px;line-height:1.12}
+  html[data-tel] .lg .lg-det{margin-bottom:16px;font-size:16px}
+  html[data-tel] .lg .lg-consigne{max-width:none;margin:0 0 18px;font-size:20px;text-wrap:pretty}
+  html[data-tel] .lg .lg-gros{width:100%;justify-content:center}
+  html[data-tel] .lg .lg-autres{width:100%;justify-content:center;margin-top:6px}
+  /* le rail en quatre colonnes égales */
+  html[data-tel] .lg-v6 .lg-rail{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));max-width:none}
+  html[data-tel] .lg-v6 .lg-st{min-width:0;width:100%;padding:8px 0 12px}
+  html[data-tel] .lg-v6 .lg-st .lg-n{font-size:38px}
+  html[data-tel] .lg-v6 .lg-st .lg-n.lg-avenir{height:38px;font-size:15px}
+  html[data-tel] .lg-v6 .lg-st .lg-m{font-size:14px}
+  /* la liste : une seule carte claire, une ligne par pharmacie */
+  html[data-tel][data-donnees] .lg .lg-liste ul{display:block;margin:0;padding:2px 14px;border:1px solid var(--au-fil);border-radius:20px;background-color:#fff;background-image:linear-gradient(180deg,var(--au-carte-a),var(--au-carte-b));box-shadow:0 14px 30px -24px var(--au-ombre-l)}
+  html[data-tel] .lg .lg-liste li,html[data-tel] .lg .lg-liste li:first-child{grid-template-columns:44px minmax(0,1fr);gap:12px;min-height:72px;padding:12px 0;border:0;border-top:1px solid var(--au-fil);border-radius:0;background:none}
+  html[data-tel] .lg .lg-liste li:first-child{border-top:0}
+  html[data-tel] .lg .lg-liste .lg-ini{width:44px!important;height:44px!important;font-size:17px}
+
+
+}

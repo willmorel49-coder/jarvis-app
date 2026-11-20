@@ -39,11 +39,12 @@ for servis in ({'20261103a'}, {'20261103y', '20261103za'}, {'20261103zzz', '2026
 diff = "-var VER = '20261103cpw';\n+var VER = '20261103cpx';\n var CACHE = 'jarvis-' + VER;\n"
 assert J.jetons_du_diff(diff) == {'20261103cpw', '20261103cpx'}, J.jetons_du_diff(diff)
 
-# 3. Les cinq fichiers, avec un opso/v2 resté en arrière comme du 16 au 19/10
+# 3. Les six fichiers, avec un opso/v2 resté en arrière comme du 16 au 19/10 (phirst/v2, à jour, ajouté le 20/11/2026)
 FICHIERS = {
     'crm/v2/index.html': '<link href="v2.css?v=20261103b"><script src="v2-boot.js?v=20261103b"></script>',
     'opso/v2/index.html': '<script src="a.js?v=20261103b"></script><script src="b.js?v=20261016pla"></script>'
                           '<script src="c.js?v=20261008d"></script>',
+    'phirst/v2/index.html': '<link href="../../crm/v2/v2.css?v=20261103b"><script src="phirst-ligne.js?v=20261103b"></script>',
     'crm/v2/sw.js': "var VER = '20261103b';\nvar CACHE = 'jarvis-' + VER;\n",
     'crm/v2/v2-boot.js': "var V = '?v=20261103b' + (window.V2_VER || '20260915g');\n"
                          "base + '?v=';\n    var V = '?v=20261103b';\n",
@@ -61,9 +62,10 @@ def dossier(fichiers):
 
 d = dossier(FICHIERS)
 assert J.ecarts(d, '20261103b') == ['crm/v2/v2-carte.js', 'opso/v2/index.html'], J.ecarts(d, '20261103b')
-assert J.poser(d, '20261103c') == 2 + 3 + 1 + 2 + 1
+assert J.poser(d, '20261103c') == 2 + 3 + 2 + 1 + 2 + 1
 assert J.ecarts(d, '20261103c') == []
 assert '20261016pla' not in J.lire(d, 'opso/v2/index.html')
+assert J.lire(d, 'phirst/v2/index.html').count('?v=20261103c') == 2
 boot = J.lire(d, 'crm/v2/v2-boot.js')
 assert "(window.V2_VER || '20260915g')" in boot and "base + '?v=';" in boot, boot  # le reste ne bouge pas
 

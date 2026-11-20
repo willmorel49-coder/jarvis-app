@@ -11,7 +11,7 @@ du 16 au 19/10/2026, 13 suffixes y sont restés figés pendant 13 mises en ligne
 
 Usage, depuis un worktree, juste après `git pull --rebase origin main` :
   python3 scripts/jeton.py              avance le jeton
-  python3 scripts/jeton.py --verifier   contrôle seulement que les 5 fichiers sont alignés
+  python3 scripts/jeton.py --verifier   contrôle seulement que les 6 fichiers sont alignés
 Hors périmètre, à monter à la main si besoin : rdv.html (ROBOT.md §8), les ?v= propres
 à un fichier de données (pharmazon-data.js…), V2_DATAV, et PROTEGE_VER d'opso/ et
 essentiels-pharma/ (skill donnees-protegees-jarvis).
@@ -24,7 +24,8 @@ from datetime import datetime
 
 RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Chaque ?v= de ces pages est remplacé.
-TOUS_LES_V = ['crm/v2/index.html', 'opso/v2/index.html']
+# phirst/v2 (Yann, 20/11/2026) charge le socle crm/v2 comme OPSO : sans son jeton, Safari garderait l'ancien socle.
+TOUS_LES_V = ['crm/v2/index.html', 'opso/v2/index.html', 'phirst/v2/index.html']
 # Ici, seul le jeton de la ligne visée (v2-boot.js en a deux : code et données).
 MOTIFS = {
     'crm/v2/sw.js': r"(var VER\s*=\s*')([^']*)(')",

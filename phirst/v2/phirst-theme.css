@@ -1,0 +1,29 @@
+/* PHIRST · thème par-dessus crm/v2 (aperçu 20/11/2026) — modèle : escale/v2/escale-theme.css.
+   Ne touche PAS la mise en page : seulement l'accent et la lumière. Vert forêt + vert vif de Phirst. */
+:root { --ip-blue:#1a3a2e; --ip-blue-d:#12281f; --halo:#E4EFE8; --c-fiche:#1a3a2e; --accent:#12a567; }
+.v2-halo { background: radial-gradient(ellipse 60% 100% at 50% 0%, #E4EFE8, transparent 70%),
+  radial-gradient(ellipse 32% 42% at 86% 6%, rgba(18,165,103,.12), transparent 70%) !important; }
+.v2-logo { background: linear-gradient(150deg,#1f4a3a,#12281f) !important; box-shadow: 0 4px 12px rgba(26,58,46,.28) !important; }
+.v2-brand-dot, .v2-spinner { border-top-color:#12a567 !important; }
+.ph-apercu { max-width:760px; margin:24px auto; padding:28px; border-radius:22px; background:var(--card,#fff);
+  box-shadow:inset 0 1px 0 #fff,0 10px 30px rgba(18,40,31,.10); font-family:var(--font); color:var(--ip-ink,#16281e); }
+.ph-apercu h1 { margin:0 0 8px; font-size:26px; letter-spacing:-.02em; }
+.ph-apercu p { margin:0 0 10px; font-size:15.5px; line-height:1.5; color:var(--ip-ink-2,#45564b); }
+.ph-apercu .ph-tag { display:inline-block; padding:5px 10px; border-radius:999px; background:#E4EFE8; color:#12281f; font-size:12.5px; font-weight:700; }
+
+/* L'aube teintée Phirst (accueil n° 6, 20/11/2026) : mêmes noms de couleurs que l'aube de JARVIS, valeurs vert forêt.
+   <html data-teinte="phirst"> est posé dans index.html. */
+html[data-teinte="phirst"]:not([data-hab]){
+  --au-ink:#16281E; --au-ink2:#3B4F43; --au-ink3:#4A5D51; --au-accent:#1A3A2E; --au-accent-d:#12281F;
+  --au-fond:#F3F6F4; --au-ciel:#F3F6F4;
+  --au-astre-a:#FFFFFF; --au-astre-b:#F0F7F2; --au-astre-c:#D2E8DA; --au-lisere:#B6D6C2; --au-lueur:rgba(18,120,72,.28);
+  --au-an1:#C2DBCB; --au-an2:#D0E3D6; --au-an3:#DCE9E0; --au-horizon:#ACCBB8;
+  --au-sol-a:#E0EEE5; --au-sol-b:#EBF3EE; --au-sol-c:#F3F6F4;
+  --au-halo-a:#FFFFFF; --au-halo-b:#F4FAF6; --au-halo-c:#E4F1E8; --au-halo-d:#F3F6F4; --au-reflet-b:#EFF7F2;
+  --au-carte-a:#FFFFFF; --au-carte-b:#F7FAF8; --au-fil:#D8E7DD; --au-surv-a:#E7F3EB; --au-surv-b:#FFFFFF;
+  --au-pastille:#E4F1E8; --au-onde:#86C4A0; --au-ombre:rgba(22,40,30,.07); --au-ombre-l:rgba(18,60,40,.22);
+}
+@media (min-width:1001px){
+  html[data-teinte="phirst"]:not([data-hab]) .u2-page.u2-barre .u2-cit::before{background-color:#1A3A2E}
+}
+html[data-teinte="phirst"] body{background-color:#F3F6F4}
