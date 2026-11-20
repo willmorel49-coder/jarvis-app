@@ -1244,6 +1244,8 @@ html:root:root body :is(.cpd-stat) :is(span,small){color:var(--au-ink2)}
 html:root:root body .pha-id.fi-hd .pha-kv span:nth-child(odd){color:var(--au-ink3)}
 html:root:root body .pha-id.fi-hd .pha-kv span:nth-child(even){color:var(--au-ink)}
 html:root:root body .pha-id.fi-hd .pha-kv :is(.pha-empty,.pha-grpinfo){color:var(--au-ink2)}
+/* 20/11/2026 — liens de la carte claire (site du groupement, « Dirige aussi », « voir l'annonce ») : restaient blancs (#fff de v2-pharma.js, carte bleue d'avant) */
+html:root:root body .pha-id.fi-hd .pha-kv .pha-grpinfo a{color:var(--au-accent-d)}
 html:root:root body .pha-id.fi-hd .pha-kv .pha-probable{color:#7A4300}
 html:root:root body .v2-past-l{color:var(--au-ink2)}
 html:root:root body .td-hd .td-local{background-color:var(--au-pastille);background-image:none;border:1px solid var(--au-lisere);color:var(--au-ink)}
