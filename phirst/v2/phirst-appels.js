@@ -150,8 +150,8 @@
     else if (S.fiche) corps = vueFiche();
     else corps = (S.flash ? '<p class="pa-flash" role="status">' + esc(S.flash) + '</p>' : '') + (S.onglet === 'jour' ? vueJour() : vuePistes());
     el.innerHTML = '<section class="pa" aria-label="Appels"><header class="pa-tete"><h1>Appels</h1><p>Qui appeler aujourd’hui, et où en sont vos pistes.</p></header>' +
-      (S.fiche ? '' : '<div class="pa-ong" role="tablist"><button type="button" role="tab" class="pa-o" data-ong="jour" aria-selected="' + (S.onglet === 'jour') + '">À appeler aujourd’hui' + (n != null ? ' <span>' + n + '</span>' : '') + '</button>' +
-        '<button type="button" role="tab" class="pa-o" data-ong="pistes" aria-selected="' + (S.onglet === 'pistes') + '">Mes pistes' + (np != null ? ' <span>' + np + '</span>' : '') + '</button></div>') +
+      (S.fiche ? '' : '<div class="pa-ong" role="tablist"><button type="button" role="tab" class="pa-o" data-ong="jour" aria-selected="' + (S.onglet === 'jour') + '">À appeler aujourd’hui' + (n ? ' <span>' + n + '</span>' : '') + '</button>' +
+        '<button type="button" role="tab" class="pa-o" data-ong="pistes" aria-selected="' + (S.onglet === 'pistes') + '">Mes pistes' + (np ? ' <span>' + np + '</span>' : '') + '</button></div>') +
       '<div class="pa-corps">' + corps + '</div></section>';
   }
 
