@@ -9,9 +9,9 @@
   <!-- PHIRST (Yann) sur le socle de JARVIS, modèle opso/v2/index.html (décision de Will du 20/11/2026 : un seul code).
        Les feuilles du socle suivent l'ORDRE de crm/v2/index.html : chargées dans un autre ordre, l'ancienne grille
        de v2-accueil.css gagne et le centre de l'accueil tombe à 0 px de large (mesuré le 20/11/2026).
-       Volontairement ABSENTS tant que la base Phirst n'a pas les tables du socle :
-       - l'adresse de la base (SUPABASE_URL), jamais celle d'Intégral ;
-       - V2_DATA_BASE : les fichiers de données d'Intégral (crm/) ne se chargent jamais depuis cette page. -->
+       Base : celle de PHIRST (xqdyzmzsaizenacttapf), jamais celle d'Intégral. Tables du socle créées le 20/11/2026
+       (user_profiles, profils, usage_ecran + 4 fonctions de droits), accord de Will.
+       Volontairement ABSENT : V2_DATA_BASE, les fichiers de données d'Intégral (crm/) ne se chargent jamais depuis cette page. -->
   <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../crm/v2/v2.css?v=20261120s" />
   <link rel="stylesheet" href="../../crm/v2/v2-pieces.css?v=20261120s" />
@@ -55,6 +55,12 @@
       vitrine:   { fam: 'dev',     ico: 'marketing', nom: 'Vitrine', ph: 'Ce que voit un pharmacien', page: 'vitrine' },
       reglages:  { fam: 'dev',     ico: 'grille',    nom: 'Réglages', ph: 'Compte, accès, préférences', page: 'reglages' }
     } };
+  </script>
+  <!-- Même copie épinglée de la bibliothèque que crm/v2/index.html (même origine : traces d'erreur complètes). -->
+  <script src="../../crm/v2/vendor/supabase/supabase-2.112.2.min.js?v=20261120s"></script>
+  <script>
+    window.SUPABASE_URL = 'https://xqdyzmzsaizenacttapf.supabase.co';
+    window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxZHl6bXpzYWl6ZW5hY3R0YXBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MDcwNzcsImV4cCI6MjA5OTE4MzA3N30.gubLlLhSsf6w7fHlovfCSxkwBp_W4ass30M66Ahn8xY';   // clé publique (rôle anon) : les droits sont tenus par la base, ligne par ligne
   </script>
   <link rel="stylesheet" href="../../crm/v2/v2-hab.css?v=20261120s" />
   <script src="../../crm/v2/v2-hab.js?v=20261120s"></script>
