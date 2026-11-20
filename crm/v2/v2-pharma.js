@@ -1227,10 +1227,13 @@
       // 19/10/2026 — téléphone, vue Tous : 50 lignes à la fois (voir ofActif)
       ofRaz();   // la clé change même quand la règle ne s'applique pas (recherche à 0 résultat) : effacer la recherche repart bien de 50
       if (ofActif(filtered.length)) { var o = ofCarte(filtered); if (!m1) nAff = nAff + ' · ' + V2.fmtNum(Math.min(ofVues, filtered.length)) + ' affichées'; return o.html; }
+      // 20/11/2026 — « À rappeler » sans relevé (aucun commercial choisi, ou ventes encore en chargement) : on le dit, comme l'ancien bloc, au lieu d'une liste vide.
+      var rapSans = m1 && ofl.rap && V2.decrochageUI && V2.decrochageUI.compte() == null;
+      var quiRap = V2.commFilter || (V2.user && V2.user.commercial);
       return filtered.length
         ? filtered.map(ligneOuCarte).join('')
         : '<div class="v2-empty"><div class="v2-empty-t">Aucune officine</div><div class="v2-empty-d">' +
-          (searchQuery ? 'Aucun résultat pour « ' + V2.esc(searchQuery) + ' ».' : (m1 && (ofl.tourn || ofl.rap) ? 'Aucune officine ne correspond à ces filtres.' : 'Aucune pharmacie chargée.')) +
+          (rapSans ? (quiRap ? 'Les officines à rappeler sont en cours de calcul.' : 'Choisissez un commercial dans le menu ci-dessus pour voir ses officines à rappeler.') : searchQuery ?'Aucun résultat pour « ' + V2.esc(searchQuery) + ' ».' : (m1 && (ofl.tourn || ofl.rap) ? 'Aucune officine ne correspond à ces filtres.' : 'Aucune pharmacie chargée.')) +
           '</div></div>';
     }
 

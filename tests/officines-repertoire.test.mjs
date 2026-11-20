@@ -101,3 +101,9 @@ test('gestes du tableau : chaque nom V2.ofl… est défini une seule fois', () =
     assert.equal(defs.length, 1, n + ' : ' + defs.length + ' définition(s)');
   }
 });
+
+test('« À rappeler » sans relevé : la phrase de l’ancien bloc, pas une liste vide muette', () => {
+  const bloc = tranche('var rapSans = ', '</div></div>');
+  assert.match(bloc, /V2\.decrochageUI\.compte\(\) == null/);
+  assert.match(bloc, /Choisissez un commercial dans le menu ci-dessus pour voir ses officines à rappeler\./);
+});
