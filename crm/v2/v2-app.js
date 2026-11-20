@@ -261,9 +261,9 @@
     var menu = '';
     if (back && !(window.V2_BRAND && window.V2_BRAND.opso) && V2.accueilCinq && V2.accueilCinq.barre) {
       try {
-        // 20/11/2026 — l'écran Officines efface « groupements » de V2.route.param dès l'arrivée (v2-pharma.js, render) : on lit aussi la vue ouverte,
+        // 20/11/2026 — l'écran Officines efface « groupements » de V2.route.param dès l'arrivée (v2-pharma.js, render) : on lit aussi la vue ouverte (V2.pharmaVueOuverte),
         // sinon la barre allumait « Officines » sur Groupements.
-        var rt = V2.route || {}, grp = rt.name === 'pharma' && (rt.param === 'groupements' || (!rt.param && !!V2.pharmaVue && V2.pharmaVue() === 'groupements'));
+        var rt = V2.route || {}, grp = rt.name === 'pharma' && (rt.param === 'groupements' || (!rt.param && !!V2.pharmaVueOuverte && V2.pharmaVueOuverte() === 'groupements'));
         var lm = V2.accueilCinq.barre().map(function (t) {
           var on = t.k === 'groupements' ? grp : (rt.name === t.k && !(t.k === 'pharma' && grp));
           return '<a class="tp-m' + (on ? ' on' : '') + '" href="' + esc(t.href) + '" data-tp-act="' + esc(t.act) + '"' + (on ? ' aria-current="page"' : '') + ' onclick="return V2.topAller(event,this)">' + esc(t.nom) + '</a>';

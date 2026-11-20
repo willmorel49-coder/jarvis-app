@@ -4972,7 +4972,7 @@
   // écrans séparés (barre du haut, accueil) ; « Mes listes » et « Carte secteur » ne servent plus. Leurs vues restent joignables par leur
   // ancienne adresse (#pharma/listes, #pharma/carte), sans lien dans l'appli.
   // Vue ouverte, lue par la barre du haut (v2-app.js) pour allumer « Groupements » : V2.route.param est effacé à l'arrivée (render, plus bas).
-  V2.pharmaVue = function () { return pharmaView; };
+  V2.pharmaVueOuverte = function () { return pharmaView; };   // ⚠️ pas V2.pharmaVue : c'est la bascule vue Intégral / vue pharmacien (plus haut)
   // Titre d'écran commun aux quatre vues (pièce .v2-tete) : un seul titre, un sous-titre, une action à droite.
   function teteOfficines(sous, action) {
     return '<div class="v2-tete"><div><h1 class="v2-titre">Mes officines</h1><p class="v2-sous">' + sous + '</p></div>' + (action || '') + '</div>';
