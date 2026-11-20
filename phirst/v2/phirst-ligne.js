@@ -52,6 +52,15 @@
   }
   var FL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  /* où mène chaque bouton (pages de phirst-portes.js), 20/11/2026. Les textes viennent du robot (~/phirst-ligne/ligne-vers-base.mjs,
+     VIDE et GESTE ; boutons de chosesDuJour de la V1) : changer un texte là-bas = revoir sa page ici.
+     Consigne d'un moment vide : « Ouvrir la Veille », « Ouvrir un dossier », « Voir mes dossiers », « Voir mes chantiers ».
+     Chose n° 1 : le geste du moment (« Voir la fiche et appeler », « Ouvrir le dossier », « Voir le chantier », « Noter un paiement »).
+     « L'ajouter à mes pistes » (chose de la veille) n'ouvre aucune page : il créera la fiche comme ajouterAuPipeline de la V1,
+     ce qui écrit dans la base de Yann — pas branché sans l'accord de Will. Une page absente du menu = pas de lien. */
+  var VIDE_VERS = { trouver: 'veille', preparer: 'dossiers', chantier: 'dossiers', encaisser: 'chantiers' };
+  var GESTE_VERS = { trouver: 'appels', preparer: 'dossiers', chantier: 'chantiers', encaisser: 'encaisser' };
+  function vers(p) { return p && window.V2 && V2.pages && V2.pages[p] ? ' data-vers="' + esc(p) + '"' : ''; }
   function pastille(p, n) { return '<span class="lg-ini" aria-hidden="true" style="width:' + n + 'px;height:' + n + 'px">' + esc(initiale(p.nom)) + '</span>'; }
   function station(s) {
     var n = nb(s), av = avenir(s);
@@ -66,12 +75,12 @@
     var c = s.chose, n = nb(s), h = '<div class="lg-pan" aria-live="polite"><div class="lg-une">';
     if (!c && avenir(s)) /* moment vide : ce qu'il faut faire pour qu'il se remplisse, et le bouton pour le faire */
       return h + '<p class="lg-sur"><i></i>' + esc(s.mot) + ' · à venir</p><p class="lg-consigne">' + esc(s.vide.texte) + '</p>' +
-        '<button type="button" class="lg-gros">' + esc(s.vide.bouton) + FL + '</button></div></div>';
+        '<button type="button" class="lg-gros"' + vers(VIDE_VERS[s.cle]) + '>' + esc(s.vide.bouton) + FL + '</button></div></div>';
     h += '<p class="lg-sur"><i></i>' + (c ? 'La chose n° 1 · ' : '') + esc(s.mot) + '</p>';
     var det = c && (c.parution ? 'Paru au BODACC ' + depuis(c.parution) + '.' : c.detail);
-    if (c) h += '<p class="lg-titre">' + esc(c.titre) + '</p><p class="lg-det">' + esc(c.heure) + (det ? ' · ' + esc(det) : '') + '</p><button type="button" class="lg-gros">' + esc(c.bouton) + FL + '</button>';
+    if (c) h += '<p class="lg-titre">' + esc(c.titre) + '</p><p class="lg-det">' + esc(c.heure) + (det ? ' · ' + esc(det) : '') + '</p><button type="button" class="lg-gros"' + (c.type === 'veille' ? '' : vers(GESTE_VERS[s.cle])) + '>' + esc(c.bouton) + FL + '</button>';
     h += '</div><div class="lg-liste"><p class="lg-lt">' + n + ' pharmacie' + (n > 1 ? 's' : '') + ' à ce moment</p><ul>' + lignes(s.pharmacies);
-    return h + '</ul>' + (s.autres ? '<button type="button" class="lg-autres">' + esc(s.autres) + FL + '</button>' : '') + '</div></div>';
+    return h + '</ul>' + (s.autres ? '<button type="button" class="lg-autres"' + vers(s.source === 'veille' || s.cle === 'trouver' ? 'veille' : VIDE_VERS[s.cle]) + '>' + esc(s.autres) + FL + '</button>' : '') + '</div></div>';
   }
   /* l'astre (et son halo, ses anneaux, son reflet) glisse au-dessus du moment choisi */
   function soleil() {
@@ -92,6 +101,8 @@
     var el = document.createElement('section'); el.id = 'lg-ligne'; el.className = 'lg lg-v6'; el.setAttribute('aria-label', 'Vos pharmacies en route');
     champ.parentNode.insertBefore(el, champ.nextSibling);
     el.addEventListener('click', function (ev) {
+      var g = ev.target.closest('[data-vers]');
+      if (g) { if (window.V2 && typeof V2.go === 'function') V2.go(g.getAttribute('data-vers')); return; }
       var b = ev.target.closest('[data-k]'); if (!b) return;
       cle = b.getAttribute('data-k'); dessiner(el);
     });
