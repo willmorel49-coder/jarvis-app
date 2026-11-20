@@ -93,12 +93,13 @@
       '.d2p-note{font-size:13px;color:var(--muted);line-height:1.5;margin:8px 4px 0}',
       '.d2p-alerte{border:1px solid rgba(199,121,26,.35);background:#FFF7EA;border-radius:12px;padding:10px 14px;font-size:13px;color:#7A4A0B;margin:0 0 14px;line-height:1.5}',
       '.d2p-choix{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 18px}.d2p-choix label{font-size:13px;font-weight:700;color:var(--ip-ink-2)}',
-      '.d2p-choix select{min-height:48px;min-width:0;max-width:100%;flex:1 1 260px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--card);padding:0 12px;font:inherit;font-size:16px;color:var(--ip-ink)}',
+      '.d2p-choix select{min-height:48px;min-width:0;max-width:100%;flex:1 1 260px;overflow:hidden;text-overflow:ellipsis;border:1px solid var(--line);border-radius:var(--r-md);background:var(--card);padding:0 12px;font:inherit;font-size:16px;color:var(--ip-ink)}',
       '.d2p-ligne{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 14px;align-items:baseline;padding:10px 0;border-top:1px solid var(--line);font-size:14px}.d2p-ligne:first-of-type{border-top:0}.d2p-ligne b{font-size:16px;font-weight:800;white-space:nowrap}.d2p-ligne small{grid-column:1/-1;color:var(--muted);font-size:13px}',
       '.d2p-jauge{height:10px;border-radius:6px;background:#EEF0F4;overflow:hidden;margin:10px 0 6px}.d2p-jauge i{display:block;height:100%;background:var(--ip-blue);border-radius:6px}',
       '.d2p-tot td{font-weight:800;background:#F4F7FD}',
       '.d2p-win{color:#10915E;font-weight:700}.d2p-lose{color:#C8385A;font-weight:700}',
       '.d2p-cart2{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:0 0 8px}',
+      // 20/11/2026 — WebKit compte dans la page la largeur du plus long nom d'officine du select (560 px) : overflow:hidden (.d2p-choix select) l'empêche de déborder à 390 px.
       '.d2p-cmp{display:flex;gap:8px 12px;align-items:center;flex-wrap:wrap;margin:0 0 16px}.d2p-cmp-l{font-size:13px;font-weight:700;color:var(--ip-ink-2)}.d2p-cmp .v2-segs{margin:0;gap:8px}.d2p-cmp .v2-seg{min-height:44px;font-weight:700}',
       // 09/11/2026 — sur téléphone chaque ligne devient une fiche (v2-concurrents.js) : une case vide (ligne total) n'y affiche pas son intitulé seul.
       '@media (max-width:700px){.d2p-cart2{grid-template-columns:1fr 1fr;gap:10px}.d2p-ligne{grid-template-columns:1fr}.d2p-sec h2{font-size:18px}.cc-table td.d2p-vide{display:none}}'
