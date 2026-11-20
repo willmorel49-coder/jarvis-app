@@ -151,7 +151,7 @@
     { cle: 'creation_pharmacie', nom: 'Créations', un: 'Création' },
     { cle: 'procedure_collective', nom: 'Procédures collectives', un: 'Procédure collective' }
   ];
-  function nomFamille(c) { for (var i = 0; i < FAMILLES.length; i++) if (FAMILLES[i].cle === c) return FAMILLES[i].nom; return ''; }
+  function nomFamille(c) { for (var i = 0; i < FAMILLES.length; i++) if (FAMILLES[i].cle === c) return FAMILLES[i].un; return ''; }
   function trierVeille(items) {
     return (items || []).slice().sort(function (a, b) {
       return rang(a.dep) - rang(b.dep) || (String(b.date || '') < String(a.date || '') ? -1 : String(b.date || '') > String(a.date || '') ? 1 : 0) ||
