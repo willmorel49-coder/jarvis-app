@@ -28,10 +28,11 @@
   var PHASE = { pharma: '0s', infos: '-2.1s', todo: '-4.2s', groupements: '-1.3s', offilog: '-3.4s' };
   // La cinquième porte n'existe pas parmi les outils (c'est une vue de l'écran Officines) : son nom et sa phrase sont ici.
   var GRP = { nom: 'Groupements', ph: 'Ce que commandent les adhérents de chaque groupement', act: 'go:pharma/groupements', href: '#pharma/groupements' };
-  var CINQ = ['pharma', 'infos', 'todo', 'groupements', 'offilog'];
+  // 20/11/2026 — Phirst (phirst/v2) choisit ses portes par window.V2_BRAND.cinq / .neuf ; sans ce réglage (JARVIS, Escale, OPSO), rien ne change.
+  var CINQ = (window.V2_BRAND && window.V2_BRAND.cinq) || ['pharma', 'infos', 'todo', 'groupements', 'offilog'];
   // 10/11/2026 (Will) — cinq outils de plus au centre, en 2e rangée, plus compacts : Catalogue produits, Pilotage, Marketing, La carte, Documents (10/11 : Documents ajouté à la demande de Will).
   // Ni scène animée, ni chiffre : un lien vers l'écran (une case dont l'écran n'est pas chargé, ou que la personne a masquée, n'apparaît pas : voir etat.vis).
-  var NEUF = ['produits', 'pilotage', 'marketing', 'carte', 'tournees', 'documents'];   // documents : seulement si docOk() (filtré par u2Cles, donc par etat.vis)
+  var NEUF = (window.V2_BRAND && window.V2_BRAND.neuf) || ['produits', 'pilotage', 'marketing', 'carte', 'tournees', 'documents'];   // documents : seulement si docOk() (filtré par u2Cles, donc par etat.vis)
 
   /* ── Les données réelles ── */
   // Dernières fiches ouvertes : l'app n'en gardait aucune trace. On la tient ici, sur cet appareil et pour cette personne (aucune table, aucune requête).
