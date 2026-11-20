@@ -256,3 +256,44 @@ describe('textes et journal', () => {
     assert.notEqual(P.lireRdv(JSON.stringify(o)), null)
   })
 })
+
+describe('la journée de l’agenda', () => {
+  const fiches = [{ id: P1, nom: 'Pharmacie du Port', ville: 'Vannes', ...vannes }, { id: P2, nom: 'Pharmacie Centrale', ville: 'Rennes', ...rennes }]
+  const rdvs = P.etatsDesRdv([
+    ev('creer', { debut: '2026-11-26T10:00', objet: 'Premier rendez-vous' }, { rdv: R1 }),
+    ev('creer', { debut: '2026-11-26T14:00' }, { rdv: R2, fiche: P2 })
+  ], estTelepro)
+  const els = P.lierRdv(rdvs, fiches)
+  test('six puces : aujourd’hui même un samedi, puis les jours ouvrés', () => {
+    assert.deepEqual(P.fenetreJours('2026-11-21', '2026-11-21'), ['2026-11-21', '2026-11-23', '2026-11-24', '2026-11-25', '2026-11-26', '2026-11-27'])
+    assert.equal(P.fenetreJours('2026-12-10', '2026-11-21')[0], '2026-12-10')
+    assert.equal(P.decalages(P.fenetreJours('2026-11-21', '2026-11-21'), '2026-11-21').montrerAujourdhui, false)
+  })
+  test('nombre de rendez-vous par jour, sans les annulés', () => {
+    const c = P.comptesParJour(els, ['2026-11-25', '2026-11-26'])
+    assert.deepEqual(c, { '2026-11-25': 0, '2026-11-26': 2 })
+    assert.equal(P.sousPuce('2026-11-25', '2026-11-21', 0), 'rien')
+    assert.equal(P.sousPuce('2026-11-26', '2026-11-21', 2), '2 rendez-vous')
+    assert.equal(P.sousPuce('2026-11-21', '2026-11-21', 0), 'aujourd’hui')
+  })
+  test('carte « Ensuite » : le premier rendez-vous pas fini, avec la route', () => {
+    const c = P.carteEnsuite({ elements: els, jour: '2026-11-26', aujourdhui: '2026-11-26', maintenant: '2026-11-26T10:30', libres: 3 })
+    assert.equal(c.maint, 'Ensuite'); assert.equal(c.titre, '10 h · Vannes')
+    assert.match(c.detail, /Pharmacie du Port · Premier rendez-vous\. Environ .* de route depuis La Baule-Escoublac\./)
+    const apres = P.carteEnsuite({ elements: els, jour: '2026-11-26', aujourdhui: '2026-11-26', maintenant: '2026-11-26T11:30', libres: 3 })
+    assert.equal(apres.titre, '14 h · Rennes'); assert.match(apres.detail, /depuis Vannes/)
+    const vide = P.carteEnsuite({ elements: els, jour: '2026-11-25', aujourdhui: '2026-11-21', maintenant: '2026-11-21T09:00', libres: 14 })
+    assert.equal(vide.titre, 'Rien de prévu'); assert.equal(vide.detail, '14 créneaux d’une heure libres.')
+  })
+  test('plages libres réunies', () => {
+    const l = P.creneauxLibres({ jour: '2026-11-25', occupations: [], cible: null, maintenant: '2026-11-21T09:00' })
+    assert.deepEqual(P.plagesLibres(l), ['de 8 h 30 à 12 h 30', 'de 14 h à 18 h'])
+    assert.equal(P.phraseEtat(P.duJour(els, '2026-11-26'), 2), 'Vous êtes à Vannes · 2 créneaux d’une heure libres')
+    assert.equal(P.phraseEtat([], 0), 'Rien de prévu')
+  })
+  test('deux rendez-vous qui se chevauchent sont signalés', () => {
+    const r = P.etatsDesRdv([ev('creer', { debut: '2026-11-26T10:00' }, { rdv: R1 }), ev('creer', { debut: '2026-11-26T10:30' }, { rdv: R2, fiche: P2 })], estTelepro)
+    assert.deepEqual(P.lierRdv(r, fiches).map((e) => e.chevauche), [true, true])
+    assert.deepEqual(els.map((e) => e.chevauche), [false, false])
+  })
+})

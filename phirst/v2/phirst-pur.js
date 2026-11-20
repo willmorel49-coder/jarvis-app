@@ -459,6 +459,69 @@
     return JSON.stringify(o);
   }
 
+  /* ── L'écran Agenda : la journée (lib/journee.ts de la V1, maquette « Agenda m1 · La journée ») ── */
+  var NB_PUCES = 6;
+  function ajouterJoursIso(iso, n) { return new Date(Date.parse(String(iso).slice(0, 10) + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10); }
+  function reculerOuvres(jour, n) { var j = jour, reste = n; while (reste > 0) { j = ajouterJoursIso(j, -1); if (estJourOuvre(j)) reste--; } return j; }
+  /* Les 6 puces : aujourd'hui (toujours, même un samedi) puis les jours ouvrés suivants ; si le jour affiché n'y est pas, elles partent de lui. */
+  function fenetreJours(affiche, auj) {
+    var parDefaut = [auj].concat(joursOuvres(ajouterJoursIso(auj, 1), NB_PUCES - 1));
+    return parDefaut.indexOf(affiche) >= 0 ? parDefaut : joursOuvres(affiche, NB_PUCES);
+  }
+  function decalages(fenetre, auj) {
+    return { avant: reculerOuvres(fenetre[0], NB_PUCES), apres: joursOuvres(ajouterJoursIso(fenetre[fenetre.length - 1], 1), 1)[0], montrerAujourdhui: fenetre.indexOf(auj) < 0 };
+  }
+  /* « jeu. 26 » */
+  function jourCourt(jour) { return new Date(Date.parse(jour + 'T12:00:00Z')).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', timeZone: 'UTC' }); }
+  /* Chaque rendez-vous relié à sa pharmacie : { rdv, fiche, chevauche, aConfirmer }. */
+  function lierRdv(rdvs, fiches) {
+    var par = {}, ch = chevauchements(rdvs); (fiches || []).forEach(function (f) { par[f.id] = f; });
+    return (rdvs || []).map(function (r) { return { rdv: r, fiche: par[r.prospect_id] || { nom: 'Pharmacie', ville: null }, chevauche: !!ch[r.id], aConfirmer: aConfirmer(r) }; });
+  }
+  /* Les rendez-vous d'un jour, du plus tôt au plus tard (annulés compris : l'écran les range à part). */
+  function duJour(els, jour) {
+    return (els || []).filter(function (e) { return e.rdv.debut.slice(0, 10) === jour; }).sort(function (a, b) { return minutes(a.rdv.debut) - minutes(b.rdv.debut); });
+  }
+  function comptesParJour(els, jours) {
+    var o = {}; jours.forEach(function (j) { o[j] = duJour(els, j).filter(function (e) { return e.rdv.statut !== 'annule'; }).length; }); return o;
+  }
+  function sousPuce(jour, auj, n) {
+    if (jour === auj) return n ? 'aujourd’hui · ' + n : 'aujourd’hui';
+    return n === 0 ? 'rien' : n === 1 ? '1 rendez-vous' : n + ' rendez-vous';
+  }
+  function phraseLibres(n) { return n + ' créneau' + (n > 1 ? 'x' : '') + ' d’une heure libre' + (n > 1 ? 's' : ''); }
+  /* Les créneaux libres d'un jour réunis en plages : « de 8 h 30 à 12 h 30 », « de 14 h à 18 h ». */
+  function plagesLibres(creneaux) {
+    var out = [];
+    (creneaux || []).forEach(function (c) {
+      var dern = out[out.length - 1];
+      if (dern && minutes(c.debut) <= minutes(dern.fin)) dern.fin = c.fin; else out.push({ debut: c.debut, fin: c.fin });
+    });
+    return out.map(function (p) { return 'de ' + heureFr(p.debut.slice(11)) + ' à ' + heureFr(p.fin.slice(11)); });
+  }
+  /* La carte « Ensuite » : aujourd'hui, le premier rendez-vous pas encore fini ; un autre jour, le premier du jour. Annulés et faits ignorés. */
+  function carteEnsuite(o) {
+    var auj = o.jour === o.aujourdhui;
+    var tous = duJour(o.elements, o.jour).filter(function (e) { return e.rdv.statut !== 'annule'; });
+    var e = null;
+    for (var i = 0; i < tous.length; i++) { var x = tous[i]; if (x.rdv.statut !== 'fait' && (!auj || minutes(x.rdv.fin) > minutes(o.maintenant))) { e = x; break; } }
+    if (!e) return { maint: auj ? 'Aujourd’hui' : 'Ce jour-là', titre: 'Rien de prévu', detail: o.libres > 0 ? phraseLibres(o.libres) + '.' : 'Aucun créneau d’une heure libre.' };
+    var prev = null; tous.forEach(function (x) { if (minutes(x.rdv.fin) <= minutes(e.rdv.debut)) prev = x; });
+    var de = prev ? pointDe(prev.fiche) : REGLAGES_AGENDA.base, vers = pointDe(e.fiche);
+    var route = de && vers ? ' Environ ' + dureeFr(trajetMin(de, vers)) + ' de route depuis ' + (prev ? (prev.fiche.ville || 'le rendez-vous d’avant') : REGLAGES_AGENDA.base.commune) + '.' : '';
+    return {
+      maint: auj ? 'Ensuite' : 'Premier rendez-vous',
+      titre: [heureFr(e.rdv.debut.slice(11)), e.fiche.ville].filter(Boolean).join(' · '),
+      detail: [e.fiche.nom, e.rdv.objet].filter(Boolean).join(' · ') + '.' + route
+    };
+  }
+  /* « Vous êtes à Batz » / « Rien de prévu », + créneaux libres. */
+  function phraseEtat(els, libres) {
+    var premier = null; for (var i = 0; i < els.length; i++) if (els[i].rdv.statut !== 'annule') { premier = els[i]; break; }
+    var debut = premier && premier.fiche.ville ? 'Vous êtes à ' + premier.fiche.ville : premier ? 'Un rendez-vous est prévu' : 'Rien de prévu';
+    return debut + (libres > 0 ? ' · ' + phraseLibres(libres) : '');
+  }
+
   return {
     SECTEUR: SECTEUR, rang: rang, dansSecteur: dansSecteur, primeSecteur: primeSecteur, norm: norm, cle: cle,
     aujourdhui: aujourdhui, ajouterJours: ajouterJours, joursEntre: joursEntre, estJour: estJour, jourFr: jourFr,
@@ -473,6 +536,8 @@
     STATUTS_RDV: STATUTS_RDV, DUREE_RDV_DEFAUT: DUREE_RDV_DEFAUT, lireRdv: lireRdv, etatsDesRdv: etatsDesRdv, occupe: occupe,
     aConfirmer: aConfirmer, chevauchements: chevauchements, gestePermis: gestePermis, rdvDeLaTelepro: rdvDeLaTelepro,
     MSG_PRIS: MSG_PRIS, heureValide: heureValide, dejaPris: dejaPris, dateLongue: dateLongue, heureFr: heureFr, quandFr: quandFr,
-    maj: maj, dureeFr: dureeFr, lieuPharmacie: lieuPharmacie, phraseRdv: phraseRdv, joursProposes: joursProposes, corpsRdv: corpsRdv
+    maj: maj, dureeFr: dureeFr, lieuPharmacie: lieuPharmacie, phraseRdv: phraseRdv, joursProposes: joursProposes, corpsRdv: corpsRdv,
+    NB_PUCES: NB_PUCES, fenetreJours: fenetreJours, decalages: decalages, jourCourt: jourCourt, lierRdv: lierRdv, duJour: duJour,
+    comptesParJour: comptesParJour, sousPuce: sousPuce, phraseLibres: phraseLibres, plagesLibres: plagesLibres, carteEnsuite: carteEnsuite, phraseEtat: phraseEtat
   };
 });
