@@ -979,6 +979,7 @@
         '<div class="v2-wrap narrow">' + tdOuvre() +
           tdEntete(phrase, '<p class="td-expl">Demandes de rendez-vous à envoyer, suites de rendez-vous, ouvertures de compte, et tout le reste. Personnelle : chacun voit la sienne.' +
             (st.backend === 'local' ? ' <b class="td-local">Gardée sur cet appareil seulement.</b>' : '') + '</p>', onglets, bandeau) +
+          tdTuiles(ouv, faits) +
           (st.formOuvert ? '' : '<button class="v2-btn v2-btn-primary v2-todo-ajbtn" onclick="V2.todo.ouvrirForm()">' + ICO('plus', 16, 2) + 'Ajouter une tâche</button>') +
           '<div class="v2-card v2-todo-add' + (st.formOuvert ? '' : ' is-ferme') + '">' +
             '<div class="v2-todo-fh"><button class="v2-btn v2-btn-ghost v2-todo-fermer" onclick="V2.todo.fermerForm()">Fermer</button></div>' +
@@ -1021,6 +1022,18 @@
     ouv.forEach(function (x) { var d = joursAvant(x); if (d === 0) j++; else if (d != null && d < 0) r++; });
     if (!j && !r) return 'Rien d\'urgent aujourd\'hui, ' + tdPl(ouv.length, 'tâche', 'tâches') + ' à faire en tout.';
     return (j ? tdPl(j, 'tâche pour aujourd\'hui', 'tâches pour aujourd\'hui') + (r ? ', ' + tdN(r) + ' en retard' : '') : tdPl(r, 'tâche en retard', 'tâches en retard')) + ', ' + tdN(ouv.length) + ' à faire en tout.';
+  }
+  // 20/11/2026 — maquette m32 : le point en trois tuiles, calculé sur la même liste que la phrase de l'en-tête (jamais d'autre source).
+  function tdTuiles(ouv, faits) {
+    if (!ouv.length && !faits.length) return '';
+    var auj = 0, ret = 0, sans = 0;
+    ouv.forEach(function (x) { var d = joursAvant(x); if (d == null) sans++; else if (d === 0) auj++; else if (d < 0) ret++; });
+    var ven = ouv.length - auj - ret;
+    function t(l, n, note) { return '<div class="td-tu"><p class="td-tu-l">' + l + '</p><p class="td-tu-v">' + n + '</p><p class="td-tu-n">' + note + '</p></div>'; }
+    return '<div class="td-tus" role="group" aria-label="Le point sur la liste">' +
+      t('À faire aujourd\'hui', auj + ret, ret ? 'dont ' + ret + ' en retard' : 'rien en retard') +
+      t('À venir', ven, sans ? sans + (sans > 1 ? ' tâches sans date' : ' tâche sans date') : 'sur les prochains jours') +
+      t('Faites', faits.length, 'encore dans la liste') + '</div>';
   }
   function tdOuvre() {
     if (!TD.vu) { TD.t = Date.now(); TD.stop = false; }

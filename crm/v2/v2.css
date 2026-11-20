@@ -1352,3 +1352,46 @@ html[data-hab]:not([data-hab="marbre"],[data-hab="foret"],[data-hab="velours"]):
 @media (max-width:600px){
   :is([data-hab="marbre"],[data-hab="foret"],[data-hab="velours"]):root:root body .v2-todo-tools .td-choix-l{background:none;box-shadow:none;padding:0;border-radius:0}
 }
+
+/* ═══ M32 SUR L'APPLI — lot 1 (20/11/2026), DA Bleu actuelle gardée, rien ne change de place ═══ */
+/* 1. (retiré le 20/11 : Will garde les noms d'officine en capitales, comme dans ses fichiers) */
+/* 2. Fiche : carte d'identité en tableau à filets (libellé à gauche, valeur alignée à gauche), comme m32 */
+html:root:root body .pha-id.fi-hd .pha-kv{column-gap:16px;row-gap:0}
+html:root:root body .pha-id.fi-hd .pha-kv>span{padding:9px 0;border-bottom:1px solid var(--au-fil,rgba(26,32,48,.11));text-align:left;justify-self:stretch}
+html:root:root body .pha-id.fi-hd .pha-kv>span:nth-child(odd){font-size:14px;font-weight:500}
+html:root:root body .pha-id.fi-hd .pha-kv>span:nth-child(even){font-size:15px;font-weight:600}
+/* 3. Chiffres des tuiles en encre, l'accent bleu réservé aux actions (m32 : « 36 900 € » en noir) */
+html:root:root body .pha-kpis .pha-kval{color:var(--au-ink,#1A2030)}
+/* ═══ fin m32 lot 1 ═══ */
+
+/* ═══ M32 SUR L'APPLI — lot 2 (20/11/2026) : mêmes réglages sur les autres écrans, rien ne change de place ═══ */
+/* 1. Même largeur de colonne que Mes officines (1232 px) : To do (v2.css:193 .narrow 880), Offilog / Catalogue produits / Pilotage (v2.css:189 .v2-wrap 1080 ; v2-pilotage-apple.css:5 .pa-wrap 1040) */
+html:root:root body .v2-wrap.narrow:has(>.td-m1){max-width:1232px}
+html:root:root body .v2-wrap.olm{max-width:1232px}
+html:root:root body .v2-wrap.pr-wrap{max-width:1232px}
+html:root:root body .v2-wrap.pa-wrap{max-width:1232px}
+/* 2. Chiffres en encre, le bleu réservé aux actions (v2-officines-m1.css:88) */
+html:root:root body .of-c-ca b{color:var(--au-ink,#1A2030)}
+html:root:root body .of-c-ca.of-c-nd b{color:var(--txt-2,#454B5C)}
+/* 3. Pastilles d'état blanches (v2-accueil-m1.css:105-106, v2-groupements-m1.css:91) : le texte garde sa couleur */
+html:root:root body .of-c-top .m1-pill.m1-ok,html:root:root body .of-c-top .m1-pill.m1-info,html:root:root body .gr-act{background-color:#fff;border:1px solid #E3E6EC;border-radius:999px;font-weight:700;box-shadow:0 1px 2px rgba(26,32,48,.05)}
+/* 4. To do : titre de groupe « Ensuite » en petites capitales + filet (v2-todo-m1.css:130) */
+html:root:root body .td-m1 .td-suite,html:root:root body .td-suite{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#5B6478)}
+html:root:root body .td-suite::after{content:"";flex:1;height:1px;background-color:#E3E6EC}
+/* 5. To do : « Pour aujourd'hui » était blanc sur bleu très pâle, presque illisible : en encre */
+html:root:root body .td-m1 .td-jour-h,html:root:root body .td-jour-h{color:var(--au-ink,#1A2030)}
+/* 6. To do : le point en trois tuiles, comme m32 (.stat) : À faire aujourd'hui · À venir · Faites (v2-todo.js tdTuiles) */
+html:root:root body .td-tus{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}
+html:root:root body .td-tu{min-width:0;padding:18px 20px;border-radius:14px;border:1px solid #E3E6EC;background-color:#fff;background-image:linear-gradient(180deg,#fff,#FBFBFD);box-shadow:var(--sh-1)}
+html:root:root body .td-tu p{margin:0}
+html:root:root body .td-tu .td-tu-l{font-size:14px;font-weight:650;line-height:1.3;color:var(--ip-ink-2,#3B4357)}
+html:root:root body .td-tu .td-tu-v{margin-top:4px;font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1.1;color:var(--au-ink,#1A2030);font-variant-numeric:tabular-nums}
+html:root:root body .td-tu .td-tu-n{margin-top:4px;font-size:13px;line-height:1.35;color:var(--muted,#5B6478)}
+@media (max-width:600px){
+  html:root:root body .td-tus{gap:8px;margin:12px 0}
+  html:root:root body .td-tu{padding:12px}
+  html:root:root body .td-tu .td-tu-l{font-size:12.5px}
+  html:root:root body .td-tu .td-tu-v{font-size:28px}
+  html:root:root body .td-tu .td-tu-n{font-size:12px}
+}
+/* ═══ fin m32 lot 2 ═══ */
