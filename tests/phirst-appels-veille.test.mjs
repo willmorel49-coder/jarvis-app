@@ -116,3 +116,15 @@ test('lienSur : http et https gardés, le reste refusé', () => {
   assert.equal(P.lienSur(null), '')
   assert.equal(P.lienSur('texte quelconque'), '')
 })
+
+test('liste du jour : la fiche créée depuis l’écran (nom de vue) est reconnue même si la clé du robot porte le nom brut', () => {
+  // le robot garde la clé de la V1 (« Pharmacie le Roch - Lorient|lorient ») ; la fiche porte le nom affiché
+  const r = { cle: 'pharmacie le roch - lorient|lorient', nom: 'Pharmacie le Roch', ville: 'Lorient', dep: '56', motif: 'omnicell', score: 90, raisons: ['x'] }
+  const ouverte = [{ id: 'r1', nom: 'Pharmacie le Roch', ville: 'Lorient', stage: 'a_qualifier' }]
+  assert.equal(P.listeDuJour([r], ouverte, { r1: '2026-11-20' }, '2026-11-20').length, 0, 'appelée aujourd’hui : sort de la liste')
+  const archivee = [{ id: 'r1', nom: 'Pharmacie le Roch', ville: 'Lorient', stage: 'archive' }]
+  assert.equal(P.listeDuJour([r], archivee, {}, '2026-11-20').length, 0, 'fiche archivée : sort de la liste')
+  const l = P.listeDuJour([r], ouverte, {}, '2026-11-20')
+  assert.equal(l.length, 1)
+  assert.equal(l[0].prospectId, 'r1', 'reliée à la fiche ouverte')
+})

@@ -105,7 +105,8 @@
     var par = {};
     function poser(r) { par[r.cle] = r; }
     (appelsRobot || []).forEach(function (r) {
-      var f = (r.prospectId && parId[r.prospectId]) || parCle[r.cle || cle(r.nom, r.ville)] || null;
+      // nom de vue d'abord (celui de la fiche créée depuis l'écran), puis la clé de la V1 (nom brut : « Pharmacie le Roch - Lorient »)
+      var f = (r.prospectId && parId[r.prospectId]) || parCle[cle(r.nom, r.ville)] || (r.cle && parCle[r.cle]) || null;
       if (f) {
         if (CLOSES[f.stage]) return;
         if (dueId[f.id]) return; // remplacée par la relance lue en direct
