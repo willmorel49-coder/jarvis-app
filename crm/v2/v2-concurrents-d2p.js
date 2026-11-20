@@ -51,6 +51,22 @@
     return { T: T, prods: prods, mois: mois, nbMois: ks.length, moyenneMensuelle: ks.length ? somme / ks.length : 0 };
   };
 
+  // 20/11/2026 — la même pharmacie face à un des 6 du comparateur (Will : « comparer d'autres concurrents que D2P »).
+  // lignes : [{ cip, q }] ; prix(cip) → { nous, eux, d, exclu } ou null (v2-concurrents.js, V2.ccPrixOfficine.prix).
+  // Seuls les produits qu'elle achète chez nous ET dont on connaît le prix chez eux ; génériques et biosimilaires hors calcul.
+  V2.faceCalcul = function (lignes, prix) {
+    var par = {}, achetes = 0, T = { nous: 0, eux: 0, boites: 0, gain: 0 }, prods = [];
+    lignes.forEach(function (l) { var q = +l.q; if (!(q > 0)) return; var c = String(l.cip); if (!(c in par)) { par[c] = 0; achetes++; } par[c] += q; });
+    Object.keys(par).forEach(function (c) {
+      var p = prix(c); if (!p || p.exclu || !(p.nous > 0) || !(p.eux > 0)) return;
+      var q = par[c], x = { cip: c, nom: p.d || c, q: q, nous: p.nous, eux: p.eux, ecart: p.eux - p.nous, totNous: q * p.nous, totEux: q * p.eux };
+      x.gain = x.totEux - x.totNous;                             // > 0 : Intégral moins cher sur la période
+      T.nous += x.totNous; T.eux += x.totEux; T.boites += q; prods.push(x);
+    });
+    T.gain = T.eux - T.nous;
+    return { T: T, prods: prods, achetes: achetes };
+  };
+
   // Les ventes d'une pharmacie, telles que la fiche les lit (déjà bornées au secteur du commercial connecté).
   function ventesDe(pid) {
     var b = V2.pharmaVentesDe ? V2.pharmaVentesDe(pid) : [];
@@ -83,6 +99,7 @@
       '.d2p-tot td{font-weight:800;background:#F4F7FD}',
       '.d2p-win{color:#10915E;font-weight:700}.d2p-lose{color:#C8385A;font-weight:700}',
       '.d2p-cart2{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:0 0 8px}',
+      '.d2p-cmp{display:flex;gap:8px 12px;align-items:center;flex-wrap:wrap;margin:0 0 16px}.d2p-cmp-l{font-size:13px;font-weight:700;color:var(--ip-ink-2)}.d2p-cmp .v2-segs{margin:0;gap:8px}.d2p-cmp .v2-seg{min-height:44px;font-weight:700}',
       // 09/11/2026 — sur téléphone chaque ligne devient une fiche (v2-concurrents.js) : une case vide (ligne total) n'y affiche pas son intitulé seul.
       '@media (max-width:700px){.d2p-cart2{grid-template-columns:1fr 1fr;gap:10px}.d2p-ligne{grid-template-columns:1fr}.d2p-sec h2{font-size:18px}.cc-table td.d2p-vide{display:none}}'
     ].join('\n');
@@ -114,7 +131,20 @@
     return '<div class="d2p-choix"><label for="d2p-sel">Pharmacie</label><select id="d2p-sel" onchange="V2.d2pChoisir(this.value)"><option value="">Choisir une pharmacie…</option>' +
       l.map(function (p) { return '<option value="' + esc(p.id) + '"' + (String(p.id) === String(code) ? ' selected' : '') + '>' + esc(p.name) + (p.ville ? ' · ' + esc(p.ville) : '') + '</option>'; }).join('') + '</select></div>';
   }
-  V2.d2pChoisir = function (id) { if (id) V2.go('concurrents', 'd2p/' + id); else V2.go('concurrents', 'd2p'); };
+  // 20/11/2026 — `cible` = le concurrent affiché ('d2p' ou une colonne du comparateur), `courant` = la pharmacie : changer l'un garde l'autre.
+  var cible = 'd2p', courant = '';
+  function adresse(code, k) { return k === 'd2p' ? 'd2p/' + code : 'face/' + code + '/' + k; }
+  V2.d2pChoisir = function (id) { if (id) V2.go('concurrents', adresse(id, cible)); else V2.go('concurrents', 'd2p'); };
+  V2.d2pComparer = function (k) { if (courant) V2.go('concurrents', adresse(courant, k)); };
+  // Ordre donné par Will le 20/11 : D2P · OCP · Alliance · CERP · Sagitta · Pharmafit · Pharmazon.
+  var ORDRE = ['ocp', 'alliance', 'cerp', 'sagitta', 'pharmafit', 'pharmazon'];
+  function choixHtml(actif) {
+    var P = V2.ccPrixOfficine; if (!P) return '';
+    var ks = ['d2p'].concat(ORDRE.filter(function (k) { return P.cols.indexOf(k) >= 0; }));
+    return '<div class="d2p-cmp" role="group" aria-label="Comparer à"><span class="d2p-cmp-l">Comparer à</span><div class="v2-segs">' + ks.map(function (k) {
+      return '<button type="button" class="v2-seg' + (k === actif ? ' on' : '') + '" aria-pressed="' + (k === actif) + '" data-k="' + k + '" onclick="V2.d2pComparer(\'' + k + '\')">' + esc(k === 'd2p' ? 'D2P' : P.nom[k]) + '</button>';
+    }).join('') + '</div></div>';
+  }
 
   // ── Écran réseau (interne) ───────────────────────────────────────────
   function reseauHtml(D) {
@@ -169,7 +199,7 @@
     var lignes = voit ? ventesDe(code) : [];
     var h = '<section class="cc-fiche"><div class="cc-head"><div><span class="cc-eyebrow"><i class="dot"></i>Face à D2P Pharma</span><h1 class="v2-page-title">' + esc(nom) + '</h1>' +
       '<p class="v2-page-sub">Ce que vos achats de princeps vous ont rendu chez Intégral, et ce qu\'un autre grossiste vous aurait rendu sur les mêmes boîtes.</p></div></div>';
-    h += selecteur(code);
+    h += choixHtml('d2p') + selecteur(code);
     if (!voit || !lignes.length) return h + etat('Aucune vente à montrer', voit ? 'Aucun achat n\'est chargé pour cette pharmacie.' : 'Cette pharmacie n\'est pas dans votre secteur.') + '</section>';
     var C = V2.d2pCalcul(lignes, D), T = C.T, per = periodeDe(lignes);
     var mens = C.moyenneMensuelle, seuil = D.seuil_mensuel, pct = Math.max(0, Math.min(100, Math.round(mens / seuil * 100)));
@@ -200,15 +230,68 @@
     return h + '</section>';
   }
 
+  // ── La même pharmacie face à un des 6 du comparateur (écran INTERNE) ─
+  var SQUELETTE = '<div class="cc-sk" aria-busy="true"><div class="cc-sk-l" style="width:38%"></div><div class="cc-sk-l" style="width:92%"></div><div class="cc-sk-l" style="width:84%"></div></div>';
+  function faceHtml(code, k) {
+    var P = V2.ccPrixOfficine, nomC = esc(P.nom[k]);
+    var ph = (V2.pharmacies || []).filter(function (p) { return String(p.id) === String(code); })[0];
+    var nom = ph ? ph.name : 'Pharmacie ' + code;
+    var voit = !V2.voitVentesDe || V2.voitVentesDe(code);
+    var lignes = voit ? ventesDe(code) : [];
+    var h = '<section class="cc-fiche d2p-face" data-k="' + k + '"><div class="cc-head"><div><span class="cc-eyebrow"><i class="dot"></i>Face à ' + nomC + '</span><h1 class="v2-page-title">' + esc(nom) + '</h1>' +
+      '<p class="v2-page-sub">Les produits qu\'elle achète chez Intégral et dont on connaît le prix chez ' + nomC + ' : notre net d\'aujourd\'hui face au leur, sur les quantités qu\'elle a achetées.</p></div></div>';
+    h += choixHtml(k) + selecteur(code);
+    h += '<div class="d2p-alerte">Écran interne. Les prix de ' + nomC + ' sont ceux d\'un tiers : ils ne se remettent à aucune pharmacie, ne s\'impriment pas et ne se recopient sur aucun support.</div>';
+    if (!voit || !lignes.length) return h + etat('Aucune vente à montrer', voit ? 'Aucun achat n\'est chargé pour cette pharmacie.' : 'Cette pharmacie n\'est pas dans votre secteur.') + '</section>';
+    if (!P.pret(k)) {
+      var rate = P.rate(k);
+      return h + (rate ? etat('Données protégées non chargées', 'Il faut être connecté et en ligne. Réessayez dans un instant.', '<button class="v2-btn v2-btn-primary" onclick="V2.ccRetry(\'' + rate + '\')">Réessayer</button>') : SQUELETTE) + '</section>';
+    }
+    var C = V2.faceCalcul(lignes, function (c) { return P.prix(k, c); }), T = C.T;
+    h += '<p class="d2p-note d2p-date" style="margin:0 0 14px">Prix de ' + nomC + ' : <b>' + esc(P.source(k)) + '</b>. Ses achats : <b>' + esc(periodeDe(lignes)) + '</b>. Notre net : celui d\'aujourd\'hui. Génériques et biosimilaires hors calcul.</p>';
+    if (!C.prods.length) return h + etat('Aucun produit à comparer', 'Aucun des ' + fr(C.achetes) + ' produits qu\'elle achète chez nous n\'a de prix connu chez ' + P.nom[k] + '.') + '</section>';
+    var gagne = T.gain >= 0.005, perd = T.gain <= -0.005;
+    h += '<div class="cc-cart four">' +
+      cart('Chez Intégral', eur(T.nous), fr(T.boites) + ' boîtes, à notre net', 'ok') +
+      cart('Chez ' + nomC, eur(T.eux), 'les mêmes boîtes, à son prix') +
+      cart(gagne ? 'Intégral moins cher de' : perd ? nomC + ' moins cher de' : 'Écart', eur(Math.abs(T.gain)), 'sur ces achats', gagne ? 'ok' : (perd ? 'bad' : 'eq')) +
+      cart('Produits comparés', fr(C.prods.length) + ' sur ' + fr(C.achetes), 'achetés chez nous, prix connu chez ' + nomC) + '</div>';
+
+    var avec = C.prods.filter(function (x) { return x.ecart >= 0.005; }).sort(function (a, b) { return b.gain - a.gain; });
+    var contre = C.prods.filter(function (x) { return x.ecart <= -0.005; }).sort(function (a, b) { return a.gain - b.gain; });
+    var egal = C.prods.length - avec.length - contre.length;
+    var cols = ['Produit', 'Boîtes', 'Intégral / boîte', P.nom[k] + ' / boîte', 'Écart / boîte', 'Écart sur ses achats'];
+    function bloc(l, cls) {
+      var somme = function (f) { return l.reduce(function (a, x) { return a + f(x); }, 0); };
+      return table(cols, l.slice(0, 40).map(function (x) { return [esc(x.nom), fr(x.q), eur(x.nous), eur(x.eux), '<span class="' + cls + '">' + eur(Math.abs(x.ecart)) + '</span>', '<span class="' + cls + '">' + eur(Math.abs(x.gain)) + '</span>']; }),
+        l.length > 1 ? ['Total des ' + fr(l.length) + ' produits', fr(somme(function (x) { return x.q; })), '', '', '', eur(Math.abs(somme(function (x) { return x.gain; })))] : null) +
+        (l.length > 40 ? '<p class="d2p-note">40 premiers produits sur ' + fr(l.length) + ' ; le total les compte tous.</p>' : '');
+    }
+    h += '<div class="d2p-sec"><h2>Moins cher chez Intégral (' + fr(avec.length) + ' produit' + (avec.length > 1 ? 's' : '') + ')</h2><p>' + (avec.length ? 'Classés par écart sur ses achats.' : 'Aucun de ses produits comparés.') + '</p></div>' + (avec.length ? bloc(avec, 'd2p-win') : '');
+    h += '<div class="d2p-sec"><h2>Moins cher chez ' + nomC + ' (' + fr(contre.length) + ' produit' + (contre.length > 1 ? 's' : '') + ')</h2><p>' + (contre.length ? 'Classés par écart sur ses achats.' : 'Aucun : sur ses produits comparés, Intégral est moins cher ou au même prix.') + '</p></div>' + (contre.length ? bloc(contre, 'd2p-lose') : '');
+    if (egal) h += '<p class="d2p-note">' + fr(egal) + ' produit' + (egal > 1 ? 's' : '') + ' au même prix chez les deux.</p>';
+    return h + '</section>';
+  }
+
   // ── Point d'entrée, appelé par v2-concurrents.js ─────────────────────
   // Rend la page dans `root`. `nav` = barre d'onglets Concurrents (écran interne seulement).
   V2.d2pRender = function (root, param, nav) {
     injectCss();
-    var code = String(param || '').replace(/^d2p\/?/, '');
+    // 20/11/2026 — « d2p/<code> » ou « face/<code>/<k> » (k = une colonne du comparateur ; inconnue → D2P).
+    var p = String(param || ''), k = 'd2p', code, P = V2.ccPrixOfficine;
+    if (/^face\//.test(p)) { var r = p.slice(5), i = r.lastIndexOf('/'); code = i > 0 ? r.slice(0, i) : r; k = i > 0 ? r.slice(i + 1) : ''; }
+    else code = p.replace(/^d2p\/?/, '');
+    if (k !== 'd2p' && !(code && P && P.cols.indexOf(k) >= 0)) k = 'd2p';
+    cible = k; courant = code;
     // 09/11/2026 — V2.go encode le « / » (#concurrents/d2p%2F<code>) : on réécrit l'adresse propre, comme v2-concurrents-carte.js pour g/ et gr/.
-    if (code) { try { var propre = '#concurrents/d2p/' + encodeURIComponent(code); if (location.hash !== propre) history.replaceState(null, '', propre); } catch (e) {} }
+    if (code) { try { var propre = '#concurrents/' + adresse(encodeURIComponent(code), k); if (location.hash !== propre) history.replaceState(null, '', propre); } catch (e) {} }
     var corps;
     if (SANS) corps = etat('Indisponible', 'Ce dossier n\'existe pas dans cet espace.');
+    else if (k !== 'd2p') {
+      corps = faceHtml(code, k);
+      // Relevés ou nos nets absents → demandés une fois (V2.ccPrixOfficine.charger ne redemande rien), redessin à chaque arrivée.
+      if (!P.pret(k) && !P.rate(k)) P.charger(k, function () { if (V2.route && V2.route.name === 'concurrents' && /^face\//.test(V2.route.param || '')) V2.render(); });
+    }
     else if (!window.D2P_DATA) {
       var ko = V2.donneesProtegeesKO && V2.donneesProtegeesKO().indexOf('concd2p') >= 0;
       if (!essaye && V2.loadFiles) { essaye = true; try { V2.loadFiles(['concd2p']).then(function () { if (V2.route && V2.route.name === 'concurrents') V2.render(); }); } catch (e) {} }

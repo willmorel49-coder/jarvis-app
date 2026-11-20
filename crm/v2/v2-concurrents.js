@@ -1108,6 +1108,27 @@
   }
   function lstSrcTxt(k) { var d = lstDate(k); return (COL_SOUS[k] || 'prix net') + (d ? ' · relevé du ' + dateFr(d) : ''); }
 
+  // 20/11/2026 — demande de Will : la fiche d'une officine se compare aussi aux 6 colonnes du comparateur, pas seulement à D2P.
+  // L'écran vit dans v2-concurrents-d2p.js (#concurrents/face/<code>/<k>) ; il lit ici les mêmes prix que le comparateur (cmpLignes).
+  var poBench = false;
+  V2.ccPrixOfficine = {
+    cols: CMP_COL.slice(), nom: COL_NOM, source: lstSrcTxt, pret: lstPret,
+    rate: function (k) { return lstSources(k).filter(echec)[0] || ''; },
+    // Demande ce qui manque (relevés du concurrent, nos nets), puis `cb` à chaque arrivée. Rien n'est redemandé (tried[], poBench).
+    charger: function (k, cb) {
+      if (SANS || CMP_COL.indexOf(k) < 0) return;
+      if (!poBench && V2.loadFiles && !(window.PROD_STATS && window.BENCHMARK)) { poBench = true; try { V2.loadFiles(['bench', 'prodstats']).then(cb); } catch (e) {} }
+      lstSources(k).forEach(function (x) { if (!SRC[x].charge()) charger(x, cb); });
+    },
+    // { nous, eux, d, exclu } pour un CIP, ou null s'il n'est pas dans nos produits.
+    prix: function (k, cip) {
+      var C = cmpLignes();
+      if (!CMPC.idx) { CMPC.idx = {}; C.forEach(function (x) { CMPC.idx[x.c] = x; }); }
+      var x = CMPC.idx[String(cip)];
+      return x ? { nous: x.ip, eux: x.px[k] || null, d: x.d, exclu: x.exclu } : null;
+    }
+  };
+
   // Bloc de cartes, en haut du comparateur.
   function lstCartes() {
     var cartes = CMP_COL.map(function (k) {
@@ -1381,7 +1402,8 @@
       if (p === 'comparateur') p = 'prix';
       // 15/10/2026 : #concurrents/listing/<k> = l'éditeur de listing face au concurrent k (k = une colonne du comparateur).
       // 09/11/2026 : #concurrents/d2p (réseau, interne) et #concurrents/d2p/<code> (vue d'une pharmacie) — v2-concurrents-d2p.js.
-      if (/^d2p(\/|$)/.test(p) && V2.d2pRender) {
+      // 20/11/2026 : #concurrents/face/<code>/<k> — la même pharmacie face à une colonne du comparateur (même module).
+      if (/^(d2p(\/|$)|face\/)/.test(p) && V2.d2pRender) {
         fermerTout(); S.src = '';
         V2.d2pRender(root, p, '<div class="cc-tete-d2p">' + kickerHtml('prix', true) + '</div>');
         return;

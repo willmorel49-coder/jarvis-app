@@ -2480,7 +2480,7 @@
     if (mail && V2.rdv) r.push(fiRond('button', 'type="button" onclick="V2.rdv.proposer(\'' + pidSafe + '\')" title="Elle choisit son créneau, calé sur la géographie de votre journée"', 'rdv', 'Rendez-vous'));
     if (V2.notes) r.push(fiRond('button', 'type="button" onclick="V2.pharmaNav.noter()" title="Aller à la note personnelle"', 'pdf', 'Note'));
     if (V2.pages.produits) r.push(fiRond('button', 'type="button" onclick="V2.go(\'produits\', \'' + pidSafe + '\')" title="Le Catalogue pour cette officine"', 'prod', 'Produits'));
-    if (voitVentes && !isOpso() && !isEscale() && V2.d2pRender) r.push(fiRond('button', 'type="button" onclick="V2.go(\'concurrents\', \'d2p/' + pidSafe + '\')" title="Ce que D2P Pharma lui aurait rendu sur ses princeps"', 'd2p', 'Comparer D2P'));
+    if (voitVentes && !isOpso() && !isEscale() && V2.d2pRender) r.push(fiRond('button', 'type="button" onclick="V2.go(\'concurrents\', \'d2p/' + pidSafe + '\')" title="Ses prix face à D2P, OCP, Alliance, CERP, Sagitta, Pharmafit ou Pharmazon (écran interne)"', 'd2p', 'Comparer'));
     var h = r.length ? '<div class="fi-ronds">' + r.join('') + '</div>' : '';
     if (!tel && !mail) h += '<p class="fi-acts-vide">Téléphone et e-mail à renseigner dans « Infos officine »</p>';
     // grands boutons : seulement là où le bloc « À proposer » (fbBloc) les a cédés ; ailleurs la carte « Listes à proposer » les garde
@@ -3922,7 +3922,7 @@
     if (mail && V2.rdv) r.push(fdrRond('button', 'type="button" onclick="V2.rdv.proposer(\'' + pidSafe + '\')" title="Le pharmacien choisit son créneau, calé sur la géographie de votre journée"', 'rdv', 'Rendez-vous'));
     if (V2.notes) r.push(fdrRond('button', 'type="button" onclick="V2.pharmaNav.noter()" title="Aller à la note personnelle"', 'pdf', 'Note'));
     if (V2.pages.produits) r.push(fdrRond('button', 'type="button" onclick="V2.go(\'produits\', \'' + pidSafe + '\')" title="Le Catalogue pour cette officine"', 'prod', 'Produits'));
-    if (voitVentes && !isOpso() && !isEscale() && V2.d2pRender) r.push(fdrRond('button', 'type="button" onclick="V2.go(\'concurrents\', \'d2p/' + pidSafe + '\')" title="Ce que D2P Pharma aurait rendu sur les princeps"', 'd2p', 'Comparer D2P'));
+    if (voitVentes && !isOpso() && !isEscale() && V2.d2pRender) r.push(fdrRond('button', 'type="button" onclick="V2.go(\'concurrents\', \'d2p/' + pidSafe + '\')" title="Ses prix face à D2P, OCP, Alliance, CERP, Sagitta, Pharmafit ou Pharmazon (écran interne)"', 'd2p', 'Comparer'));
     return r.length ? '<div class="fdr-ronds vi-int">' + r.join('') + '</div>' : '';
   }
   // les trois grands boutons d'action (la feuille s'ouvre par V2.fbOuvre, état posé par fbBloc)
