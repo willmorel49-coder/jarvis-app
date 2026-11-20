@@ -522,6 +522,58 @@
     return debut + (libres > 0 ? ' · ' + phraseLibres(libres) : '');
   }
 
+  /* ════ TÉLÉPROSPECTRICE (21/11/2026) ════
+     Elle n'est pas membre de l'espace : tout lui vient de fonctions de la base (acces-telepro.sql). Ici, seulement le
+     passage de ce qu'elles rendent au format que les écrans lisent déjà. */
+
+  /* phirst_equipe() : [{ user_id, nom, telepro }] → { user_id: { nom, telepro } } */
+  function equipeParId(lignes) {
+    var o = {};
+    (lignes || []).forEach(function (l) { if (l && l.user_id) o[l.user_id] = { nom: typeof l.nom === 'string' ? l.nom.trim() : '', telepro: l.telepro === true }; });
+    return o;
+  }
+  /* Vrai seulement si la ligne d'équipe de cet auteur dit « télépro » : inconnu = faux. */
+  function estTelepro(equipe, id) { return !!(id && equipe && equipe[id] && equipe[id].telepro === true); }
+  /* Le nom de l'auteur, ou '' s'il est inconnu (jamais « undefined »). */
+  function nomAuteur(equipe, id) { var e = id && equipe && equipe[id]; return e && e.nom ? e.nom : ''; }
+  function avecAuteur(phrase, nom) { return nom ? phrase + ' — par ' + nom : phrase; }
+
+  /* telepro_ligne() → le format de la ligne du compte { trouver: { appels, veille }, frais } (frais : calculée il y a moins de 36 h). */
+  var AGE_LIGNE_MAX = 36 * 3600 * 1000;
+  function ligneDeTelepro(j, maintenant) {
+    if (!j || typeof j !== 'object') return { trouver: null, frais: false };
+    var t = Date.parse(j.calcule_le);
+    return {
+      trouver: { cle: 'trouver', appels: Array.isArray(j.appels) ? j.appels : [], veille: Array.isArray(j.veille) ? j.veille : [], appelsTotal: j.appelsTotal == null ? null : j.appelsTotal },
+      frais: isFinite(t) && maintenant - t <= AGE_LIGNE_MAX
+    };
+  }
+
+  /* telepro_agenda() → { fiches, lignes } pour etatsDesRdv et lierRdv. Une ligne « sienne » garde sa fiche ; les autres
+     (prospect_id et auteur vides) reçoivent une fiche par rendez-vous : « Yann est occupé », ville = la commune. */
+  function agendaDeTelepro(lignes) {
+    var fiches = [], vues = {}, out = [];
+    (lignes || []).forEach(function (l) {
+      var o = null; try { o = JSON.parse(String(l.body == null ? '' : l.body)); } catch (e) { o = null; }
+      if (!o || typeof o !== 'object') return;
+      var pid, sien = l.sien === true && !!l.prospect_id;
+      if (sien) {
+        pid = l.prospect_id;
+        if (!vues[pid]) { vues[pid] = true; fiches.push({ id: pid, nom: l.nom || 'Pharmacie', ville: l.ville || null, cp: l.cp || null, lat: l.lat == null ? null : l.lat, lon: l.lon == null ? null : l.lon, stage: l.stage || null, occupe: false }); }
+      } else {
+        var rid = String(o.rdv == null ? '' : o.rdv); if (!rid) return;
+        pid = 'occ-' + rid;
+        if (!vues[pid]) { vues[pid] = true; fiches.push({ id: pid, nom: 'Yann est occupé', ville: l.ville || null, cp: null, lat: l.lat == null ? null : l.lat, lon: l.lon == null ? null : l.lon, stage: null, occupe: true }); }
+      }
+      out.push({ id: l.id, prospect_id: pid, author_id: sien ? l.author_id : null, created_at: l.created_at, body: l.body });
+    });
+    return { fiches: fiches, lignes: out };
+  }
+  /* Un refus écrit EN FRANÇAIS par la base (erreurs 42501 et 22023 de ses fonctions) se montre tel quel ; toute autre panne, non. */
+  function messageDeLaBase(erreur) {
+    return erreur && (erreur.code === '42501' || erreur.code === '22023') && typeof erreur.message === 'string' && erreur.message.trim() ? erreur.message.trim() : '';
+  }
+
   return {
     SECTEUR: SECTEUR, rang: rang, dansSecteur: dansSecteur, primeSecteur: primeSecteur, norm: norm, cle: cle,
     aujourdhui: aujourdhui, ajouterJours: ajouterJours, joursEntre: joursEntre, estJour: estJour, jourFr: jourFr,
@@ -538,6 +590,7 @@
     MSG_PRIS: MSG_PRIS, heureValide: heureValide, dejaPris: dejaPris, dateLongue: dateLongue, heureFr: heureFr, quandFr: quandFr,
     maj: maj, dureeFr: dureeFr, lieuPharmacie: lieuPharmacie, phraseRdv: phraseRdv, joursProposes: joursProposes, corpsRdv: corpsRdv,
     NB_PUCES: NB_PUCES, fenetreJours: fenetreJours, decalages: decalages, jourCourt: jourCourt, lierRdv: lierRdv, duJour: duJour,
-    comptesParJour: comptesParJour, sousPuce: sousPuce, phraseLibres: phraseLibres, plagesLibres: plagesLibres, carteEnsuite: carteEnsuite, phraseEtat: phraseEtat
+    comptesParJour: comptesParJour, sousPuce: sousPuce, phraseLibres: phraseLibres, plagesLibres: plagesLibres, carteEnsuite: carteEnsuite, phraseEtat: phraseEtat,
+    equipeParId: equipeParId, estTelepro: estTelepro, nomAuteur: nomAuteur, avecAuteur: avecAuteur, ligneDeTelepro: ligneDeTelepro, agendaDeTelepro: agendaDeTelepro, messageDeLaBase: messageDeLaBase
   };
 });
