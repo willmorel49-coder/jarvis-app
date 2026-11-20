@@ -19,7 +19,7 @@
   Object.keys(E).forEach(function (k) {
     V2.pages[k] = { needs: [], render: function (root) {
       root.innerHTML = '<section class="ph-apercu"><span class="ph-tag">Aperçu Phirst · socle JARVIS</span><h1>' + E[k][0] +
-        '</h1><p>' + E[k][1] + '.</p><p>Écran à porter dans la base commune. Référence choisie par Will : ' + E[k][2] + '.</p></section>';
+        '</h1><p>' + E[k][1] + '.</p><p>Cet écran arrive bientôt.</p></section>';
     } };
   });
 })();
