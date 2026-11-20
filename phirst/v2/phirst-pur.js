@@ -171,6 +171,11 @@
     var n = {}; (items || []).forEach(function (v) { n[v.famille] = (n[v.famille] || 0) + 1; }); return n;
   }
 
+  /* Un lien n'est affiché que s'il est en http ou https (jamais javascript: ni texte quelconque) : '' sinon, et le bouton n'apparaît pas. */
+  function lienSur(u) {
+    try { var x = new URL(String(u == null ? '' : u)); return (x.protocol === 'https:' || x.protocol === 'http:') ? x.href : ''; } catch (e) { return ''; }
+  }
+
   /* « aujourd'hui », « hier », « il y a 3 jours » pour une date AAAA-MM-JJ */
   function age(iso, jour) {
     if (!estJour(String(iso).slice(0, 10))) return '';
@@ -205,6 +210,6 @@
     relancesDues: relancesDues, dernierAppelParFiche: dernierAppelParFiche, listeDuJour: listeDuJour,
     SUITES: SUITES, suiteAppel: suiteAppel,
     FAMILLES: FAMILLES, nomFamille: nomFamille, trierVeille: trierVeille, filtrerVeille: filtrerVeille,
-    departementsDe: departementsDe, compterFamilles: compterFamilles, age: age, phraseJournal: phraseJournal
+    departementsDe: departementsDe, compterFamilles: compterFamilles, age: age, lienSur: lienSur, phraseJournal: phraseJournal
   };
 });

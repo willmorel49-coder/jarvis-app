@@ -106,3 +106,13 @@ test('journal : texte V1 ancien, JSON V1 récent, note', () => {
   assert.equal(P.phraseJournal('note', 'Cession d’officine'), 'Cession d’officine')
   assert.equal(P.phraseJournal('note', ''), 'Note')
 })
+test('lienSur : http et https gardés, le reste refusé', () => {
+  assert.equal(P.lienSur('https://www.bodacc.fr/a?q=1'), 'https://www.bodacc.fr/a?q=1')
+  assert.equal(P.lienSur('http://exemple.fr/x'), 'http://exemple.fr/x')
+  assert.equal(P.lienSur('javascript:alert(1)'), '')
+  assert.equal(P.lienSur('JaVaScRiPt:alert(1)'), '')
+  assert.equal(P.lienSur('data:text/html,<b>x</b>'), '')
+  assert.equal(P.lienSur(''), '')
+  assert.equal(P.lienSur(null), '')
+  assert.equal(P.lienSur('texte quelconque'), '')
+})

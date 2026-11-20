@@ -84,7 +84,7 @@
       '<em class="lg-et"' + (m[1] ? ' data-ton="' + m[1] + '"' : '') + '>' + esc(m[0]) + '</em></div>' +
       '<p class="pa-r">' + esc((r.raisons || [])[0] || '') + '</p>' +
       (autres.length ? '<ul class="pa-au">' + autres.map(function (a) { return '<li>' + esc(a) + '</li>'; }).join('') + '</ul>' : '') +
-      '<p class="pa-nu">' + (r.telephone ? tel(r.telephone) : '<span>Numéro à chercher avant d’appeler</span>') + (r.lien ? ' <a class="pa-lien" href="' + esc(r.lien) + '" target="_blank" rel="noopener">Voir la source</a>' : '') + '</p>' +
+      '<p class="pa-nu">' + (r.telephone ? tel(r.telephone) : '<span>Numéro à chercher avant d’appeler</span>') + (P.lienSur(r.lien) ? ' <a class="pa-lien" href="' + esc(P.lienSur(r.lien)) + '" target="_blank" rel="noopener">Voir la source</a>' : '') + '</p>' +
       '<p class="pa-q">Après l’appel :</p>' +
       '<div class="pa-bs"><button type="button" class="pa-b" data-res="rdv">RDV obtenu</button><button type="button" class="pa-b" data-res="rappeler">À rappeler</button>' +
       '<button type="button" class="pa-b" data-res="injoignable">Injoignable</button><button type="button" class="pa-b" data-res="non">Pas intéressé</button></div>' +

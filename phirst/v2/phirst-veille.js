@@ -25,7 +25,7 @@
       '<em class="lg-et" data-ton="' + (v.famille === 'procedure_collective' ? 'rouge' : 'orange') + '">' + esc(P.nomFamille(v.famille)) + '</em></div>' +
       '<p class="pa-r">Paru au BODACC ' + esc(P.age(v.date, P.aujourdhui())) + ' (' + esc(P.jourFr(v.date)) + ').</p>' +
       '<div class="pa-bs"><button type="button" class="pa-b pa-ok" data-ajout="1"' + (FAIT.indexOf(f) >= 0 ? ' disabled' : '') + '>L’ajouter à mes pistes</button>' +
-      (v.lien ? '<a class="pa-b pa-lienb" href="' + esc(v.lien) + '" target="_blank" rel="noopener">Voir l’annonce</a>' : '') + '</div>' +
+      (P.lienSur(v.lien) ? '<a class="pa-b pa-lienb" href="' + esc(P.lienSur(v.lien)) + '" target="_blank" rel="noopener">Voir l’annonce</a>' : '') + '</div>' +
       '<p class="pa-dit" role="status">' + esc(f || '') + '</p></li>';
   }
   function visibles() { return P.filtrerVeille(S.items, S.famille, S.dep); }
