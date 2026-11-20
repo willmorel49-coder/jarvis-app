@@ -39,7 +39,8 @@
   function hh(local) { return P.heureFr(String(local).slice(11)); }
   function etatBadge(r) {
     var ton = r.statut === 'propose' || r.statut === 'reporte' ? 'orange' : r.statut === 'annule' ? '' : 'vert';
-    return '<em class="lg-et"' + (ton ? ' data-ton="' + ton + '"' : '') + '>' + esc(P.maj(P.STATUTS_RDV[r.statut])) + '</em>';
+    var mot = S.telepro && P.aConfirmer(r) ? 'En attente de Yann' : P.maj(P.STATUTS_RDV[r.statut]);   // elle ne confirme pas : c'est Yann qui le fait
+    return '<em class="lg-et"' + (ton ? ' data-ton="' + ton + '"' : '') + '>' + esc(mot) + '</em>';
   }
   function role() { return S.telepro ? 'telepro' : 'patron'; }
   function boutonsRdv(e, maintenant) {
