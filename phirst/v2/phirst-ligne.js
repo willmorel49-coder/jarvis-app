@@ -88,29 +88,36 @@
      la note de la veille dans crm_activities. Champs fournis par le robot (chose.piste). Le bouton dit ce qui s'est passé. */
   var PAS = 'Pas enregistré : réessayez dans un instant.';
   function norm(v) { return String(v == null ? '' : v).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim(); }
-  function ajouter(btn) {
-    var s = D && D.filter(function (x) { return x.cle === cle; })[0], p = s && s.chose && s.chose.piste;
+  /* La création elle-même, partagée avec l'écran Veille (window.PHIRST_PISTE.ajouter) : rend une promesse du message à dire.
+     p = { nom, ville, cp, departement, lat, lon, note }. */
+  function ajouterPiste(p) {
     var V2 = window.V2, u = V2 && V2.user, sb = u && typeof V2.sb === 'function' ? V2.sb() : null;
-    var dit = btn.parentNode.querySelector('.lg-dit');
-    function dire(t) { if (dit) dit.textContent = t; btn.disabled = false; }
-    if (!p || !sb) return dire(PAS);
-    btn.disabled = true; if (dit) dit.textContent = '';
-    sb.from('crm_members').select('workspace_id').eq('user_id', u.id).limit(1).maybeSingle().then(function (m) {
+    if (!p || !sb) return Promise.resolve(PAS);
+    return sb.from('crm_members').select('workspace_id').eq('user_id', u.id).limit(1).maybeSingle().then(function (m) {
       var ws = m && !m.error && m.data && m.data.workspace_id;
-      if (!ws) return dire(PAS);
+      if (!ws) return PAS;
       return sb.from('crm_prospects').select('id,nom,ville').eq('workspace_id', ws).then(function (f) {
-        if (f.error) return dire(PAS);
+        if (f.error) return PAS;
         var k = norm(p.nom) + '|' + norm(p.ville);
-        if ((f.data || []).some(function (x) { return norm(x.nom) + '|' + norm(x.ville) === k; })) return dire('Déjà dans vos pistes.');
+        if ((f.data || []).some(function (x) { return norm(x.nom) + '|' + norm(x.ville) === k; })) return 'Déjà dans vos pistes.';
         return sb.from('crm_prospects').insert({ workspace_id: ws, nom: p.nom, ville: p.ville, cp: p.cp, departement: p.departement,
           stage: 'a_qualifier', source: 'transfert', lat: p.lat, lon: p.lon }).select('id').single().then(function (n) {
-          if (n.error || !n.data) return dire(PAS);
-          function fin() { dire('Ajoutée à vos pistes.'); }
+          if (n.error || !n.data) return PAS;
+          function fin() { return 'Ajoutée à vos pistes.'; }
           if (!p.note) return fin();
           return sb.from('crm_activities').insert({ prospect_id: n.data.id, type: 'note', body: p.note }).then(fin, fin);
         });
       });
-    }).then(null, function () { dire(PAS); });
+    }).then(null, function () { return PAS; });
+  }
+  window.PHIRST_PISTE = { ajouter: ajouterPiste, norm: norm };
+  function ajouter(btn) {
+    var s = D && D.filter(function (x) { return x.cle === cle; })[0], p = s && s.chose && s.chose.piste;
+    var dit = btn.parentNode.querySelector('.lg-dit');
+    function dire(t) { if (dit) dit.textContent = t; btn.disabled = false; }
+    if (!p) return dire(PAS);
+    btn.disabled = true; if (dit) dit.textContent = '';
+    ajouterPiste(p).then(dire);
   }
   /* l'astre (et son halo, ses anneaux, son reflet) glisse au-dessus du moment choisi */
   function soleil() {
