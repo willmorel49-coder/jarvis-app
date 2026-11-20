@@ -131,6 +131,27 @@ GENERIQUEUR_WHITELIST = [
 ALIAS_NOM = {"BIOGARAN": ["BGR"], "EUROGENERICS": ["EG"], "EG LABO": ["EG"], "SUN PHARMA": ["SUN"],
              "MYLAN": ["VIATRIS"], "VIATRIS": ["MYLAN"], "TEVA": ["RATIOPHARM"], "EVOLUPHARM": ["EVOLUGEN"]}
 
+# 20/11/2026, choix de Will : « labo ecrit sur la boite ». La BDPM range un
+# generique chez le TITULAIRE de l'AMM, pas chez celui qui le vend :
+# AMOXICILLINE ZENTIVA LAB est a Glaxosmithkline, IRBESARTAN ZENTIVA a Sanofi,
+# DOMPERIDONE ALMUS a Biogaran. Passage 3 : si le nom du medicament (avant la
+# 1re virgule, mot entier) porte le nom d'un de ces generiqueurs, c'est lui qui
+# est retenu. TADALAFIL LILLY reste Lilly (vendu par Lilly, absent de la liste).
+# Les marques (GENERIQUEURS_MARQUES) gardent leur titulaire.
+VENDEUR_NOM = {"BIOGARAN": "Biogaran", "BGR": "Biogaran", "ZENTIVA": "Zentiva", "EG": "EG Labo",
+               "VIATRIS": "Viatris", "MYLAN": "Viatris", "ARROW": "Arrow", "TEVA": "Teva",
+               "SANDOZ": "Sandoz", "CRISTERS": "Cristers", "ZYDUS": "Zydus", "ACCORD": "Accord",
+               "KRKA": "Krka", "ALMUS": "Almus", "EVOLUGEN": "Evolupharm"}
+
+
+def vendeur_du_nom(nom):
+    """Generiqueur ecrit dans le nom du medicament (le premier trouve), ou None."""
+    for mot in re.findall(r"[A-Z]+", (nom or "").upper().split(",")[0]):
+        if mot in VENDEUR_NOM:
+            return VENDEUR_NOM[mot]
+    return None
+
+
 # Suffixes juridiques a retirer en fin de nom (pour les titulaires non mappes).
 JURIDIC_SUFFIXES = [
     "LABORATOIRES", "LABORATOIRE", "LABO", "PHARMACEUTICALS", "PHARMACEUTICAL",
@@ -208,6 +229,7 @@ def build():
     cis_titulaire = {}     # cis -> nom normalise
     cis_is_gennaire = {}   # cis -> True si titulaire = generiqueur whitelist
     cis_copie = {}         # cis -> True si le nom du medicament porte le nom du labo
+    cis_nom = {}           # cis -> nom du medicament (passage 3)
     for cols in read_rows(p_cis):
         if len(cols) < 11:
             continue
@@ -216,6 +238,7 @@ def build():
         if not cis:
             continue
         cis_titulaire[cis] = normalize_titulaire(titulaire)
+        cis_nom[cis] = cols[1]
         up = (titulaire or "").upper()
         cis_is_gennaire[cis] = any(k in up for k in GENERIQUEUR_WHITELIST)
         nom = (cols[1] or "").upper()
@@ -232,6 +255,7 @@ def build():
     n_cip_rows = 0
     n_ext = 0
     marques = set()
+    cip_cis = {}
     for cols in read_rows(p_cip):
         if len(cols) < 7:
             continue
@@ -245,14 +269,26 @@ def build():
         if cis in generic_cis:
             n_cip_rows += 1
             result[cip13] = lab
+            cip_cis[cip13] = cis
         elif cis_is_gennaire.get(cis):
             n_ext += 1
             if cip13 not in result:
                 result[cip13] = lab
+                cip_cis[cip13] = cis
                 if cis in gener_cis or not cis_copie.get(cis):
                     marques.add(cip13)
 
-    return generic_cis, result, n_cip_rows, n_ext, marques
+    #    Passage 3 : labo ecrit sur la boite (voir VENDEUR_NOM), hors marques.
+    n_boite = 0
+    for cip13, cis in cip_cis.items():
+        if cip13 in marques:
+            continue
+        vendeur = vendeur_du_nom(cis_nom.get(cis))
+        if vendeur and vendeur != result[cip13]:
+            result[cip13] = vendeur
+            n_boite += 1
+
+    return generic_cis, result, n_cip_rows, n_ext, marques, n_boite
 
 
 # --------------------------------------------------------------------------
@@ -306,7 +342,7 @@ def write_js(result, marques):
 
 
 def main():
-    generic_cis, result, n_cip_rows, n_ext, marques = build()
+    generic_cis, result, n_cip_rows, n_ext, marques, n_boite = build()
     size = write_js(result, marques)
 
     # Stats
@@ -319,6 +355,7 @@ def main():
     print("Lignes CIP13 de generiques    : %d" % n_cip_rows)
     print("CIP13 rattrapes (titulaire)   : %d" % n_ext)
     print("  dont marques/princeps        : %d (hors cartes)" % len(marques))
+    print("CIP13 ranges au labo de la boite : %d (passage 3)" % n_boite)
     print("CIP13 mappes                  : %d" % len(result))
     print("Generiqueurs distincts        : %d" % len(labs))
     print("Fichier .js                   : %s (%d octets)" % (OUT_JS, size))
