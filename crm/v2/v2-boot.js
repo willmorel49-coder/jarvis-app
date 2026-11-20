@@ -643,7 +643,12 @@
   };
 
   // ── DONNÉES : WML (source de vérité) sinon Supabase ────
+  // 20/11/2026 — une app SANS ventes réseau (Phirst : `V2_BRAND.ventes === false`) ne demande
+  // aucun fichier de données d'Intégral et ne lit pas les anciennes tables (`sales`…) : rien à
+  // charger, rien à attendre. JARVIS, Escale et OPSO n'ont pas ce réglage : inchangés.
+  V2.sansVentes = function () { return !!(window.V2_BRAND && window.V2_BRAND.ventes === false); };
   V2.loadData = async function () {
+    if (V2.sansVentes()) { V2.pharmacies = []; V2.imports = []; V2.sales = []; V2.donneesSecours = false; V2.ready = true; return; }
     // Source de vérité = fichiers WML (officines + ventes, 5 mois) générés
     // depuis WML_pharmacies + WML_01..05. Chargés en statique avant le boot.
     if (window.WML_OFFICINES && window.WML_SALES) {
@@ -1980,6 +1985,7 @@
   }
 
   V2.loadFiles = function (keys) {
+    if (V2.sansVentes && V2.sansVentes()) return Promise.resolve();   // app sans ventes : aucun fichier demandé
     // Le catalogue Offilog et ses conditions commerciales ne se demandent
     // jamais l'un sans l'autre : sinon un écran afficherait un catalogue
     // complet avec des prix d'achat vides, sans que personne comprenne.
@@ -2283,6 +2289,7 @@
     }));
   };
   V2.dataLoaded = function (key) {
+    if (V2.sansVentes && V2.sansVentes()) return true;   // app sans ventes : rien à attendre (sinon l'écran attendrait sans fin)
     // ⚠️ La base doit être la MÊME que celle utilisée pour charger le fichier.
     // Elle était écrite en dur ('../'), or l'app OPSO charge depuis
     // '../../crm/' : la clé cherchée ne correspondait à rien, `dataLoaded`
