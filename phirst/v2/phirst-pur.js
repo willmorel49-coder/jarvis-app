@@ -196,12 +196,267 @@
         var suite = [o.raison, o.rappel ? 'rappel le ' + jourFr(String(o.rappel).slice(0, 10)) : '', o.note].filter(Boolean);
         return suite.length ? t + ' — ' + suite.join(' · ') : t;
       }
+      if (type === 'rdv') return phraseRdv(b);
       if (type === 'qualif') return o.q && o.r ? o.q + ' : ' + o.r : 'Qualification';
       return b ? 'Mise à jour' : 'Note';
     }
+    if (type === 'rdv') return phraseRdv(b);
     if (type === 'fait') return 'C’est fait';
     if (type === 'relance') return 'Relance envoyée';
     return b || (type === 'appel' ? 'Appel' : 'Note');
+  }
+
+  /* ════ AGENDA : créneaux et rendez-vous (lot 2, 21/11/2026) ════
+     Portés de la V1 (~/phirst-studio/lib/creneaux.ts, lib/rdv.ts, lib/tournee.ts, lib/journal.ts) SANS changer une règle.
+     Toutes les heures sont des textes « AAAA-MM-JJTHH:MM » à l'heure de Paris, sans fuseau : on les compare et on les décale,
+     on ne les convertit jamais. La V1 et la V2 partagent la même base : le format d'un rendez-vous est celui de la V1. */
+
+  /* Les disponibilités de Yann : UNE constante, lue partout, jamais recopiée ailleurs. */
+  var REGLAGES_AGENDA = {
+    base: { commune: 'La Baule-Escoublac', lat: 47.2863, lon: -2.393 },
+    plages: [{ debut: '08:30', fin: '12:30' }, { debut: '14:00', fin: '18:00' }],
+    dureeMin: 60,
+    pasMin: 30,
+    margeInconnueMin: 20,
+    secteurMin: 45
+  };
+
+  var HEURE = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})$/;
+  function minutes(local) {
+    var m = HEURE.exec(String(local == null ? '' : local));
+    if (!m) return NaN;
+    var d = m[1].split('-').map(Number);
+    return Date.UTC(d[0], d[1] - 1, d[2], Number(m[2]), Number(m[3])) / 60000;
+  }
+  function versLocal(min) { return new Date(min * 60000).toISOString().slice(0, 16); }
+  function estHeureLocale(s) { return typeof s === 'string' && isFinite(minutes(s)); }
+  function ajouterMinutes(local, n) { return versLocal(minutes(local) + n); }
+  /* 0 = dimanche … 6 = samedi */
+  function jourDeSemaine(j) { return new Date(Date.parse(String(j).slice(0, 10) + 'T12:00:00Z')).getUTCDay(); }
+  function estJourOuvre(j) { var d = jourDeSemaine(j); return d !== 0 && d !== 6; }
+  /* « maintenant » à l'heure de Paris : AAAA-MM-JJTHH:MM (lib/dates.ts maintenantParis) */
+  function maintenantParis(d) {
+    var p = {};
+    new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+      .formatToParts(d || new Date()).forEach(function (x) { p[x.type] = x.value; });
+    return p.year + '-' + p.month + '-' + p.day + 'T' + p.hour + ':' + p.minute;
+  }
+
+  function kmEntre(a, b) {
+    var r = function (x) { return x * Math.PI / 180; };
+    var dLat = r(b.lat - a.lat), dLon = r(b.lon - a.lon);
+    var h = Math.pow(Math.sin(dLat / 2), 2) + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.pow(Math.sin(dLon / 2), 2);
+    return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(h)));
+  }
+  /* Minutes de route estimées (70 km/h à vol d'oiseau + 15 min), aux 5 min. */
+  function trajetMin(a, b) { return Math.ceil((kmEntre(a, b) / 70 * 60 + 15) / 5) * 5; }
+  function pointDe(o) { return o && typeof o.lat === 'number' && typeof o.lon === 'number' ? { lat: o.lat, lon: o.lon } : null; }
+
+  /* Les créneaux libres d'un jour pour un rendez-vous à `cible` (le lieu de la pharmacie s'il est connu). */
+  function creneauxLibres(opts) {
+    var r = opts.reglages || REGLAGES_AGENDA, jr = String(opts.jour).slice(0, 10);
+    if (!estJourOuvre(jr)) return [];
+    var els = (opts.occupations || []).filter(function (o) { return String(o.debut).slice(0, 10) === jr; })
+      .map(function (o) { return Object.assign({}, o, { d: minutes(o.debut), f: minutes(o.fin) }); })
+      .filter(function (o) { return isFinite(o.d) && isFinite(o.f); })
+      .sort(function (a, b) { return a.d - b.d; });
+    var maint = minutes(opts.maintenant), cible = opts.cible || null;
+    function marge(o) { var p = pointDe(o); return p && cible ? trajetMin(p, cible) : r.margeInconnueMin; }
+    var dansLeSecteur = !!cible && els.some(function (o) { var p = pointDe(o); return !!p && trajetMin(p, cible) <= r.secteurMin; });
+    var ouverture = minutes(jr + 'T' + r.plages[0].debut), out = [];
+    r.plages.forEach(function (plage) {
+      var p0 = minutes(jr + 'T' + plage.debut), p1 = minutes(jr + 'T' + plage.fin);
+      for (var s = p0; s + r.dureeMin <= p1; s += r.pasMin) {
+        var e = s + r.dureeMin;
+        if (s < maint) continue;
+        if (els.some(function (o) { return o.d < e && o.f > s; })) continue;
+        var avants = els.filter(function (o) { return o.f <= s; }), avant = avants.length ? avants[avants.length - 1] : null;
+        var apres = null; for (var i = 0; i < els.length; i++) if (els[i].d >= e) { apres = els[i]; break; }
+        var trajetAvant = avant ? marge(avant) : cible ? trajetMin(r.base, cible) : 0;
+        // On ne part pas avant la fin de ce qui précède, ni avant maintenant.
+        if (s < Math.max(avant ? avant.f : ouverture, maint) + trajetAvant) continue;
+        var trajetApres = apres ? marge(apres) : null;
+        if (apres && trajetApres !== null && e + trajetApres > apres.d) continue;
+        out.push({
+          debut: versLocal(s), fin: versLocal(e),
+          trajetAvant: cible || avant ? trajetAvant : null,
+          depuis: avant ? (avant.commune || 'le rendez-vous d’avant') : r.base.commune,
+          trajetApres: trajetApres,
+          vers: apres ? (apres.commune || 'le rendez-vous d’après') : null,
+          dansLeSecteur: dansLeSecteur
+        });
+      }
+    });
+    return out;
+  }
+
+  /* Les 3 meilleurs créneaux : au plus un par jour, ceux où Yann est déjà dans le secteur en tête, puis le plus tôt ;
+     dans un jour, celui qui ajoute le moins de route. */
+  function meilleursCreneaux(opts) {
+    var parJour = [];
+    (opts.jours || []).forEach(function (jour) {
+      var l = creneauxLibres(Object.assign({}, opts, { jour: jour }));
+      if (!l.length) return;
+      var route = function (c) { return (c.trajetAvant || 0) + (c.trajetApres || 0); };
+      parJour.push(l.reduce(function (m, c) { return route(c) < route(m) ? c : m; }, l[0]));
+    });
+    return parJour.sort(function (a, b) { return Number(b.dansLeSecteur) - Number(a.dansLeSecteur) || minutes(a.debut) - minutes(b.debut); })
+      .slice(0, opts.combien || 3);
+  }
+
+  /* Les n jours ouvrés à partir de `jour` (inclus s'il est ouvré). */
+  function joursOuvres(jour, n) {
+    var out = [], t = Date.parse(String(jour).slice(0, 10) + 'T12:00:00Z');
+    while (out.length < n) { var j = new Date(t).toISOString().slice(0, 10); if (estJourOuvre(j)) out.push(j); t += 864e5; }
+    return out;
+  }
+
+  /* ── Les rendez-vous : des ÉVÉNEMENTS ajoutés, jamais réécrits (lib/rdv.ts) ── */
+  var STATUTS_RDV = { propose: 'à confirmer', confirme: 'confirmé', reporte: 'déplacé, à reconfirmer', fait: 'fait', annule: 'annulé' };
+  var DUREE_RDV_DEFAUT = 60;
+  var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  var QUOI = ['creer', 'confirmer', 'deplacer', 'annuler', 'fait'];
+  function court(v, n) { return typeof v === 'string' ? v.trim().slice(0, n) : ''; }
+
+  /* Le corps d'un événement, validé ; null s'il est inutilisable. */
+  function lireRdv(body) {
+    var o;
+    try { o = JSON.parse(String(body == null ? '' : body)); } catch (e) { return null; }
+    if (!o || typeof o !== 'object' || o.v !== 1) return null;
+    var quoi = o.quoi;
+    if (QUOI.indexOf(quoi) < 0 || !UUID.test(String(o.rdv == null ? '' : o.rdv))) return null;
+    var avecHeure = quoi === 'creer' || quoi === 'deplacer';
+    if (avecHeure && !estHeureLocale(o.debut)) return null;
+    var duree = Number(o.duree_min), c = { v: 1, rdv: String(o.rdv), quoi: quoi };
+    if (avecHeure) c.debut = String(o.debut);
+    if (isFinite(duree) && Math.floor(duree) === duree && duree >= 15 && duree <= 480) c.duree_min = duree;
+    if (court(o.lieu, 120)) c.lieu = court(o.lieu, 120);
+    if (court(o.objet, 300)) c.objet = court(o.objet, 300);
+    c.pour = 'yann';
+    c.prisPar = court(o.prisPar, 64);
+    if (court(o.passation, 2000)) c.passation = court(o.passation, 2000);
+    return c;
+  }
+  /* Ordre de rejeu : l'heure d'écriture, puis l'identifiant (départage stable). */
+  function ordreRejeu(a, b) {
+    var ta = Date.parse(a.created_at), tb = Date.parse(b.created_at);
+    if (ta !== tb) return ta - tb;
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+  }
+  /* Rejoue les événements et rend l'état de chaque rendez-vous, du plus tôt au plus tard. `estTelepro(author_id)` vient de
+     l'appelant (aucun compte n'a encore ce rôle : l'écran passe une fonction qui rend toujours false). */
+  function etatsDesRdv(lignes, estTelepro) {
+    var parId = {}, ids = [];
+    (lignes || []).slice().sort(ordreRejeu).forEach(function (l) {
+      var c = lireRdv(l.body); if (!c) return;
+      var parTelepro = !!estTelepro(l.author_id), r = parId[c.rdv];
+      if (c.quoi === 'creer') {
+        if (r) return; // déjà créé : le premier fait foi
+        var duree = c.duree_min || DUREE_RDV_DEFAUT;
+        parId[c.rdv] = {
+          id: c.rdv, prospect_id: l.prospect_id, debut: c.debut, fin: ajouterMinutes(c.debut, duree), duree_min: duree,
+          lieu: c.lieu || '', objet: c.objet || '', statut: parTelepro ? 'propose' : 'confirme', prisParTelepro: parTelepro,
+          creePar: l.author_id, creeLe: l.created_at, passation: c.passation || '',
+          dernier: { quoi: 'creer', parTelepro: parTelepro, le: l.created_at }
+        };
+        ids.push(c.rdv);
+        return;
+      }
+      if (!r || r.prospect_id !== l.prospect_id) return; // geste sans création, ou sur une autre fiche
+      if (r.statut === 'annule' || r.statut === 'fait') return;
+      if (c.quoi === 'deplacer') {
+        r.debut = c.debut;
+        if (c.duree_min) r.duree_min = c.duree_min;
+        r.fin = ajouterMinutes(r.debut, r.duree_min);
+        if (c.lieu) r.lieu = c.lieu;
+        r.statut = parTelepro ? 'reporte' : 'confirme';
+      } else if (c.quoi === 'confirmer') r.statut = 'confirme';
+      else if (c.quoi === 'annuler') r.statut = 'annule';
+      else if (c.quoi === 'fait') r.statut = 'fait';
+      if (c.passation) r.passation = c.passation;
+      r.dernier = { quoi: c.quoi, parTelepro: parTelepro, le: l.created_at };
+    });
+    return ids.map(function (i) { return parId[i]; }).sort(function (a, b) { return minutes(a.debut) - minutes(b.debut) || (a.id < b.id ? -1 : 1); });
+  }
+  function occupe(r) { return r.statut !== 'annule'; }
+  function aConfirmer(r) { return r.statut === 'propose' || r.statut === 'reporte'; }
+  /* Les rendez-vous qui se chevauchent : { id: true }. */
+  function chevauchements(rdvs) {
+    var l = (rdvs || []).filter(occupe), out = {};
+    for (var i = 0; i < l.length; i++) for (var j = i + 1; j < l.length; j++) {
+      var a = l[i], b = l[j];
+      if (minutes(a.debut) < minutes(b.fin) && minutes(b.debut) < minutes(a.fin)) { out[a.id] = true; out[b.id] = true; }
+    }
+    return out;
+  }
+  /* Qui peut faire quoi : confirmer et « c'est fait » sont des gestes de Yann ; role = 'patron' | 'telepro'. */
+  function gestePermis(r, quoi, role) {
+    if (r.statut === 'annule' || r.statut === 'fait') return false;
+    if (quoi === 'confirmer') return role === 'patron' && aConfirmer(r);
+    if (quoi === 'fait') return role === 'patron';
+    return true;
+  }
+  var ETAPES_PISTE = ['a_qualifier', 'a_rappeler', 'rdv_fixe'];
+  function rdvDeLaTelepro(r, etape) { return !!r.prisParTelepro || ETAPES_PISTE.indexOf(etape || '') >= 0; }
+
+  /* ── Vérifications d'avant écriture (app/agenda/actions.ts de la V1 : mêmes messages) ── */
+  var MSG_PRIS = 'Yann a déjà un rendez-vous à cette heure-là : choisissez un autre créneau.';
+  function heureValide(debut, maintenant) {
+    if (!estHeureLocale(debut)) return 'Heure du rendez-vous illisible.';
+    if (minutes(debut) < minutes(maintenant)) return 'Cette heure est déjà passée.';
+    return null;
+  }
+  /* Yann a-t-il déjà un rendez-vous sur ce créneau (hors celui qu'on déplace) ? `rdvs` = états rejoués. */
+  function dejaPris(rdvs, debut, duree, sauf) {
+    var d = minutes(debut), f = d + duree;
+    return (rdvs || []).some(function (r) { return r.id !== sauf && occupe(r) && minutes(r.debut) < f && minutes(r.fin) > d; });
+  }
+
+  /* ── Textes en français (lib/journal.ts, lib/dates.ts) ── */
+  function dateLongue(iso) {
+    return new Date(Date.parse(String(iso).slice(0, 10) + 'T12:00:00Z')).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+  }
+  /* « 14 h », « 14 h 30 » */
+  function heureFr(hhmm) {
+    var m = /^(\d{1,2}):(\d{2})/.exec(String(hhmm)); if (!m) return '';
+    return m[2] === '00' ? Number(m[1]) + ' h' : Number(m[1]) + ' h ' + m[2];
+  }
+  /* « mardi 3 novembre à 14 h » depuis « 2026-11-03T14:00 » */
+  function quandFr(local) {
+    var m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(String(local == null ? '' : local));
+    return m ? dateLongue(m[1]) + ' à ' + heureFr(m[2]) : '';
+  }
+  function maj(s) { s = String(s == null ? '' : s); return s.charAt(0).toUpperCase() + s.slice(1); }
+  /* « 45 min », « 2 h 15 » */
+  function dureeFr(min) {
+    if (min < 60) return min + ' min';
+    var r = min % 60; return Math.floor(min / 60) + ' h' + (r ? ' ' + ('0' + r).slice(-2) : '');
+  }
+  /* Le lieu écrit dans un rendez-vous : nom de la pharmacie + adresse si connue + ville, 120 caractères au plus. */
+  function lieuPharmacie(f) {
+    var vus = {}, morceaux = [f.nom, f.adresse, f.ville].filter(function (x) {
+      var t = String(x == null ? '' : x).trim(); if (!t || vus[norm(t)]) return false; vus[norm(t)] = true; return true;
+    }).map(function (x) { return String(x).trim(); });
+    return morceaux.join(', ').slice(0, 120);
+  }
+  /* La phrase du journal pour une ligne `rdv` : jamais de JSON brut. */
+  function phraseRdv(body) {
+    var c = lireRdv(body); if (!c) return 'Rendez-vous';
+    var q = c.debut ? quandFr(c.debut) : '';
+    if (c.quoi === 'creer') return q ? 'Rendez-vous posé pour le ' + q : 'Rendez-vous posé';
+    if (c.quoi === 'deplacer') return q ? 'Rendez-vous déplacé au ' + q : 'Rendez-vous déplacé';
+    if (c.quoi === 'confirmer') return 'Rendez-vous confirmé';
+    if (c.quoi === 'annuler') return 'Rendez-vous annulé';
+    return 'Rendez-vous fait';
+  }
+  /* Les 10 prochains jours ouvrés, pour proposer des créneaux. */
+  function joursProposes(auj) { return joursOuvres(auj, 10); }
+  /* Un corps de ligne `rdv` (le format de la V1, à l'identique). */
+  function corpsRdv(quoi, rdvId, moi, extra) {
+    var o = { v: 1, rdv: rdvId, quoi: quoi };
+    Object.keys(extra || {}).forEach(function (k) { o[k] = extra[k]; });
+    o.pour = 'yann'; o.prisPar = moi;
+    return JSON.stringify(o);
   }
 
   return {
@@ -211,6 +466,13 @@
     relancesDues: relancesDues, dernierAppelParFiche: dernierAppelParFiche, listeDuJour: listeDuJour,
     SUITES: SUITES, suiteAppel: suiteAppel,
     FAMILLES: FAMILLES, nomFamille: nomFamille, trierVeille: trierVeille, filtrerVeille: filtrerVeille,
-    departementsDe: departementsDe, compterFamilles: compterFamilles, age: age, lienSur: lienSur, phraseJournal: phraseJournal
+    departementsDe: departementsDe, compterFamilles: compterFamilles, age: age, lienSur: lienSur, phraseJournal: phraseJournal,
+    REGLAGES_AGENDA: REGLAGES_AGENDA, minutes: minutes, versLocal: versLocal, estHeureLocale: estHeureLocale, ajouterMinutes: ajouterMinutes,
+    jourDeSemaine: jourDeSemaine, estJourOuvre: estJourOuvre, maintenantParis: maintenantParis, kmEntre: kmEntre, trajetMin: trajetMin,
+    creneauxLibres: creneauxLibres, meilleursCreneaux: meilleursCreneaux, joursOuvres: joursOuvres,
+    STATUTS_RDV: STATUTS_RDV, DUREE_RDV_DEFAUT: DUREE_RDV_DEFAUT, lireRdv: lireRdv, etatsDesRdv: etatsDesRdv, occupe: occupe,
+    aConfirmer: aConfirmer, chevauchements: chevauchements, gestePermis: gestePermis, rdvDeLaTelepro: rdvDeLaTelepro,
+    MSG_PRIS: MSG_PRIS, heureValide: heureValide, dejaPris: dejaPris, dateLongue: dateLongue, heureFr: heureFr, quandFr: quandFr,
+    maj: maj, dureeFr: dureeFr, lieuPharmacie: lieuPharmacie, phraseRdv: phraseRdv, joursProposes: joursProposes, corpsRdv: corpsRdv
   };
 });
