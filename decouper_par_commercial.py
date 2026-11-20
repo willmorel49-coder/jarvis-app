@@ -56,7 +56,7 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 V2 = os.path.join(BASE, 'crm', 'v2')
 SORTIE = os.path.join(V2, 'ventes')
 TAILLE_TRANCHE = 1_500_000
-ESCALE_COMMS = ['Guy', 'Tiffany', 'Philippe', 'Germain']   # = V2.ESCALE_COMMS (v2-boot.js)
+ESCALE_COMMS = ['Guy', 'Tiffany', 'Philippe', 'Germain']   # = V2_COMPTES.escale (crm/v2/v2-comptes.js)
 OPSO = 'OPSO'   # valeur `commercial` du compte OPSO (Emmanuel Noblanc) : jeu à part, jeu_opso()
 PROJET = 'iyvavhnlhxksokkerkos'
 CLE = os.path.expanduser('~/.config/jarvis/service-role-key')

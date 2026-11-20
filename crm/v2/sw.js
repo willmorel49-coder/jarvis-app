@@ -25,7 +25,7 @@ var SOCLE = [
   'v2.css', 'v2-pieces.css', 'v2-accueil.css', 'v2-accueil-cinq.css', 'v2-accueil-widgets.css', 'v2-accueil-m1.css', 'v2-accueil-m1-lumiere.css', 'v2-accueil-m1-mouvement.css', 'v2-accueil-m1-bleu.css', 'v2-motion.css', 'v2-officines-m1.css', 'v2-fiche-m1.css', 'v2-infos-m1.css', 'v2-todo-m1.css', 'v2-groupements-m1.css', 'v2-offilog-m1.css', 'v2-pilotage-apple.css', 'v2-verriere.css', 'v2-hab.css',
   'vendor/leaflet/leaflet.css', 'vendor/leaflet/MarkerCluster.css', 'vendor/leaflet/MarkerCluster.Default.css',
   'vendor/supabase/supabase-2.112.2.min.js',
-  'v2-icons.js', 'groupement-alias.js', 'v2-hors-ligne.js', 'v2-boot.js', 'v2-profil.js',
+  'v2-icons.js', 'groupement-alias.js', 'v2-hors-ligne.js', 'v2-comptes.js', 'v2-boot.js', 'v2-profil.js',
   'v2-accueil-cinq.js', 'v2-accueil-widgets.js', 'v2-app.js', 'v2-motion.js', 'v2-aube.js', 'v2-citations-data.js', 'v2-bg.js', 'v2-hab.js',
   'manifest.webmanifest'
 ];

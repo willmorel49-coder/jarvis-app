@@ -401,7 +401,7 @@
     location.href = dest === 'escale' ? '../../crm/v2/index.html?espace=escale' : '../../crm/v2/index.html';
   };
   // Qui a la bascule, et vers où (topbar + barre du Marketing, v2-mkt-socle.js) :
-  // - un commercial Escale nommé (Guy, Tiffany, Philippe, Germain) : dans les deux sens ;
+  // - un commercial Escale nommé (V2.ESCALE_COMMS) : dans les deux sens ;
   // - un compte @escalepharma.fr : vers Escale toujours, vers Intégral seulement
   //   s'il a l'accès total (`voitTousReel`) — pas le compte générique 'Escale'.
   V2.basculeEspace = function () {
@@ -644,7 +644,7 @@
   // segmentation, la base nationale ne dit plus qui est client — les filtres de La
   // carte et la cible des campagnes rendraient vide.
   V2.NEEDS_DEFAUT = ['bench', 'sagitta', 'prodstatscond', 'pharmafrca', 'pharmafrseg', 'pharmafrcomm', 'mktipprix', 'wmlca', 'biosimcomplet'];
-  // 30/09/2026 — Will : « Emmanuel doit voir uniquement ce qui concerne OPSO ». L'espace OPSO
+  // 30/09/2026 — Will : « [le client OPSO] doit voir uniquement ce qui concerne OPSO ». L'espace OPSO
   // ne demande que ce que ses écrans lisent (carte-opso-donnees.md) ; le reste lui est refusé
   // côté Supabase (jarvis_peut_lire_protege) : le demander afficherait « chiffres non téléchargés ».
   if (window.V2_BRAND && window.V2_BRAND.opso) V2.NEEDS_DEFAUT = ['bench', 'sagitta', 'wmlca'];
@@ -995,7 +995,7 @@
   // Le groupe restreint (Documents ouvert par documents_acces_ok()) voit UNE fois par appareil, à l'accueil, ce qui s'est ouvert pour lui.
   // Aucun nom écrit ici : chaque ligne n'apparaît que si la base dit oui (Documents, voit_tous_commerciaux, jarvis_acces_marge_produits()).
   // Will, qui a ouvert ces accès, ne le voit pas. Toute fermeture le range (clé locale par utilisateur).
-  // 30/10/2026 — Pascale Prieto (DR) non plus : Documents s'ouvre pour elle, mais elle voit déjà tout, et « Will vous a ouvert… » serait faux.
+  // 30/10/2026 — la direction régionale (DR) non plus : Documents s'ouvre pour elle, mais elle voit déjà tout, et « Will vous a ouvert… » serait faux.
   var BV_CLE = 'jarvis_bienvenue_groupe_20261016:';
   var BV_SANS = '68143788-cd36-4b56-a827-09a0820e04c6';
   var _bvEnCours = false;
@@ -1120,8 +1120,8 @@
   };
   // 20/11/2026 — Phirst (phirst/v2) donne ses propres portes par window.V2_BRAND.portes ; sans ce réglage (JARVIS, Escale, OPSO), rien ne change.
   if (window.V2_BRAND && window.V2_BRAND.portes) { G4_PORTES = window.V2_BRAND.portes; G4_REPLI = Object.keys(G4_PORTES); }
-  // 10/11/2026 (Will) — équipe OPS : Will, Alexandre Morel (même accès que Will), Arthur Lehouerou, Valérie Morlaix, Karine (KV). Écran ouvert à tout compte connecté hors rôle opso ; ceci ne décide QUE de l'endroit de l'entrée.
-  var TOURN_EQUIPE = ['william.morel@me.com', 'alexandre.morel@me.com', 'arthur.lehouerou@integralpharma.fr', 'valerie.morlaix@integralpharma.fr', 'karine.vezzaro@integralpharma.fr'];
+  // 10/11/2026 (Will) — équipe OPS : liste dans v2-comptes.js depuis le 20/11/2026 (absente sous Phirst : liste vide). Écran ouvert à tout compte connecté hors rôle opso ; ceci ne décide QUE de l'endroit de l'entrée.
+  var TOURN_EQUIPE = (window.V2_COMPTES && window.V2_COMPTES.tournees) || [];
   V2.tourneesEquipe = function () { return !!(V2.user && TOURN_EQUIPE.indexOf(String(V2.user.email || '').toLowerCase()) >= 0); };
   function tournInterdit() { return !!((window.V2_BRAND && window.V2_BRAND.opso) || (V2.user && (V2.user.opsoOnly || V2.user.role === 'opso'))); }
   if (G4_PORTES.tournees) Object.defineProperty(G4_PORTES.tournees, 'fam', { enumerable: true, get: function () { return V2.tourneesEquipe() ? 'accueil' : 'dev'; } });

@@ -27,22 +27,13 @@
   V2.sales = [];
   V2.ready = false;
   V2.commFilter = '';   // '' = tous | 'Will' | 'Pauline'
-  // 11/09/2026 — ESCALE PHARMA (Chilly-Mazarin, établissement du groupe) a son
-  // propre espace (crm/v2/index.html?espace=escale depuis le 24/09) : le responsable Escale et ses quatre commerciaux. Le
-  // périmètre, c'est LEURS officines (prénoms exacts des données de ventes).
-  // Pas de colonne dédiée dans user_profiles (pas de DDL possible) : un compte
-  // Escale se reconnaît à `commercial` ∈ cette liste, ou = 'Escale' (Alexandre).
-  V2.ESCALE_COMMS = ['Guy', 'Tiffany', 'Philippe', 'Germain'];
-  // 30/09/2026 — seuls comptes admis dans l'espace OPSO (opso/v2). claude-test = compte des preuves.
-  // 01/10/2026 — Will : « Pascale Prieto doit avoir accès à l'app OPSO » (direction régionale).
-  // 13/10/2026 — Will : Arthur Le Houerou y entre avec son compte du CRM (même e-mail, même mot de passe).
-  // 15/10/2026 — Will : Guy Bourdon y entre aussi, avec son compte du CRM.
-  // 03/11/2026 — Will : Alexandre Morel a le même accès que lui, partout.
-  V2.OPSO_ACCES = ['emmanuel.noblanc@normandiepharma.fr', 'william.morel@me.com', 'alexandre.morel@me.com', 'pascale.prieto@integralpharma.fr', 'arthur.lehouerou@integralpharma.fr', 'guy.bourdon@integralpharma.fr', 'claude-test@integralpharma.fr'];
-  // 17/11/2026 — Will : « qu'on le voie moi et Pascale sur l'appli OPSO ». Plan du contrat OPSO 2027 (PDF interne) :
-  // Will, Pascale, Alexandre (même accès que Will), claude-test (preuves). Ni Emmanuel (OPSO, le client), ni Arthur, ni Guy.
-  // Le verrou réel est côté serveur (jarvis_acces_plan_opso, crm/v2/_sql/plan-opso-2027.sql) : cette liste ne fait qu'afficher la tuile.
-  V2.PLAN_OPSO_ACCES = ['william.morel@me.com', 'pascale.prieto@integralpharma.fr', 'alexandre.morel@me.com', 'claude-test@integralpharma.fr'];
+  // 20/11/2026 — les comptes nommés (commerciaux d'Escale, accès à l'espace OPSO, plan OPSO 2027) sont
+  // dans v2-comptes.js, chargé avant ce fichier par JARVIS, Escale et OPSO, jamais par Phirst.
+  // Sans lui, listes vides : personne n'entre dans OPSO, aucun commercial Escale reconnu.
+  var COMPTES = window.V2_COMPTES || {};
+  V2.ESCALE_COMMS = COMPTES.escale || [];
+  V2.OPSO_ACCES = COMPTES.opso || [];
+  V2.PLAN_OPSO_ACCES = COMPTES.planOpso || [];
   V2.estCommEscale = function (c) { c = String(c || ''); return c === 'Escale' || V2.ESCALE_COMMS.indexOf(c) >= 0; };
   // ventes du commercial filtré (ou toutes)
   // 11/09/2026 — perf : mémorisé sur (V2.sales, V2.commFilter). Le Pilotage
@@ -386,13 +377,13 @@
       // Utilisateur « OPSO seulement » (ex. Normandie Pharma) : n'a pas accès au CRM Intégral.
       // S'il ouvre l'app Intégral (brand non-opso), on le renvoie vers son espace OPSO.
       // 30/09/2026 — la colonne `opso_only` n'existe pas en base : c'est le rôle
-      // 'opso' (Emmanuel Noblanc) qui dit « OPSO seulement ».
+      // 'opso' (le compte du client OPSO) qui dit « OPSO seulement ».
       var opsoSeul = pr.data.opso_only || pr.data.role === 'opso';
       if (opsoSeul && !(window.V2_BRAND && window.V2_BRAND.opso)) {
         try { location.replace('../../opso/v2/index.html'); } catch (e) {}
         return false;
       }
-      // 30/09/2026 — Will : l'espace OPSO, « il doit y avoir que Emmanuel Noblanc
+      // 30/09/2026 — Will : l'espace OPSO, « il doit y avoir que [le compte du client OPSO]
       // et moi qui y ont accès ». Les autres comptes repartent vers le CRM.
       // Même liste côté Supabase : jarvis_acces_opso() (_sql/opso-acces-restreint.sql).
       if (window.V2_BRAND && window.V2_BRAND.opso && V2.OPSO_ACCES.indexOf(String(user.email || '').toLowerCase()) < 0) {
@@ -439,7 +430,7 @@
       // d'accès (docs/supabase/ventes-par-commercial.sql) lui refuse les fichiers complets.
       // Même critère que cette règle : `commercial` BRUT non vide et pas voit_tous_commerciaux.
       V2._dossierVentes = null; V2._dossierVentesConnu = false;
-      // 13/10/2026 — Will : dans l'espace OPSO, Arthur voit « tout, comme Emmanuel ». Un commercial
+      // 13/10/2026 — Will : dans l'espace OPSO, [un commercial de V2.OPSO_ACCES] voit « tout, comme [le client OPSO] ». Un commercial
       // restreint y charge donc le jeu OPSO (les adhérents), pas le sien ; dans le CRM, rien ne change.
       // Même règle côté Supabase : jarvis_peut_lire_protege (_sql/opso-liste-blanche.sql).
       var commJeu = (window.V2_BRAND && window.V2_BRAND.opso) ? 'OPSO' : commProfil;
@@ -623,7 +614,7 @@
 
   // ── Périmètre ESCALE PHARMA (crm/v2/index.html?espace=escale) ─────────────────────────────
   // Même mécanique que l'OPSO : V2.pharmacies réduit aux officines suivies par
-  // Guy, Tiffany, Philippe ou Germain, puis V2.sales aux ventes de CES officines
+  // les commerciaux de V2.ESCALE_COMMS, puis V2.sales aux ventes de CES officines
   // faites par CES commerciaux. Hors app Escale : ne touche à rien.
   V2.estOfficineEscale = function (p) {
     return (p && p.comms || []).some(function (c) { return V2.ESCALE_COMMS.indexOf(c) >= 0; });
@@ -987,7 +978,7 @@
     opsooffilogacces: 'opso-offilog-acces.js',
     // 30/09/2026 — liste des 129 adhérents OPSO : lisible par les comptes de l'espace OPSO seuls.
     opsolisting: 'opso-listing-2026.js',
-    // 19/11/2026 — plan du contrat 2027 : lisible par jarvis_acces_plan_opso() seul (Will, Pascale, Alexandre), chargé à l'ouverture de l'écran Prévision.
+    // 19/11/2026 — plan du contrat 2027 : lisible par jarvis_acces_plan_opso() seul (comptes de V2.PLAN_OPSO_ACCES), chargé à l'ouverture de l'écran Prévision.
     opsoprevision: 'opso-prevision-2027-data.js'
   };
   // 30/09/2026 — espace OPSO : versions réduites (prix IP sans nos ventes nationales ; CIP
@@ -1374,7 +1365,7 @@
       fichier: 'base-biosimilaires.xlsx',
       titre: 'Base Biosimilaires · Excel', type: 'fichier'
     },
-    // 17/11/2026 — plan du contrat OPSO 2027, document INTERNE (Will, Pascale, Alexandre seulement : verrou serveur
+    // 17/11/2026 — plan du contrat OPSO 2027, document INTERNE (comptes de V2.PLAN_OPSO_ACCES seulement : verrou serveur
     // jarvis_acces_plan_opso). Aucun chiffre du plan dans le dépôt, seulement le nom du fichier.
     planOpso2027: {
       fichier: 'opso-plan-contrat-2027-interne.pdf',
