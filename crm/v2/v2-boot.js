@@ -47,12 +47,16 @@
   // ventes du commercial filtré (ou toutes)
   // 11/09/2026 — perf : mémorisé sur (V2.sales, V2.commFilter). Le Pilotage
   // l'appelle à chaque rendu (5 rendus par clic) : une passe complète à chaque fois.
+  // 20/11/2026 — responsable d'établissement (V2.user.equipe, plus bas) : sans filtre, c'est SON équipe
+  // (les commerciaux ouverts sur son profil, additionnés), jamais le reste du réseau que porte son jeu.
   V2.commSales = function () {
-    if (!V2.commFilter) return V2.sales;
+    var eq = !V2.commFilter && V2.user && V2.user.equipe ? V2.user.voitAussi : null;
+    if (!V2.commFilter && !eq) return V2.sales;
+    var f = eq ? '+' + eq.join('+') : V2.commFilter;
     var m = V2.commSales._m;
-    if (m && m.ref === V2.sales && m.f === V2.commFilter) return m.val;
-    var val = V2.sales.filter(function (s) { return s.commercial === V2.commFilter; });
-    V2.commSales._m = { ref: V2.sales, f: V2.commFilter, val: val };
+    if (m && m.ref === V2.sales && m.f === f) return m.val;
+    var val = V2.sales.filter(eq ? function (s) { return eq.indexOf(s.commercial) >= 0; } : function (s) { return s.commercial === V2.commFilter; });
+    V2.commSales._m = { ref: V2.sales, f: f, val: val };
     return val;
   };
   // y a-t-il plusieurs commerciaux dans les données ?
@@ -451,6 +455,12 @@
       // ventes (déjà borné aux adhérents). Ce n'est le prénom d'aucun commercial : gardé, il viderait
       // le Pilotage et l'accueil (« 0 officines actives »). Dans l'espace OPSO il voit tout le périmètre.
       if (window.V2_BRAND && window.V2_BRAND.opso) { V2.user.commercial = ''; V2.user.voitAussi = []; }
+      // 20/11/2026 — Will, pour Aurélie (CPR) : « elle a pas de pilotage a elle cest pas une commercial elle est
+      // responsable de l'établissement ». Profil « Prénom (ÉTAB)+A+B… » : le premier nom reste « moi » (RDV,
+      // campagnes, carte) mais n'a aucune vente ; ÉTAB = son équipe, les noms suivants. Le Pilotage s'ouvre
+      // sur l'équipe entière (pas de « Mon secteur »). Le jeu de ventes ne change pas (même `commercial`).
+      var mEtab = /\(([^()]+)\)$/.exec(V2.user.commercial);
+      V2.user.equipe = (mEtab && V2.user.voitAussi.length && !V2.user.voitTous) ? mEtab[1].trim() : '';
       // 24/08/2026 — l'écran de DÉPART ne passe pas par V2.go() : sans cette
       // ligne, l'accueil (l'écran le plus ouvert de tous) serait le seul
       // à n'être jamais mesuré.

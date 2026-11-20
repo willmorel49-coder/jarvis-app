@@ -1358,15 +1358,22 @@
     });
     return liste;
   }
+  // 20/11/2026 — responsable d'établissement (V2.user.equipe, v2-boot.js) : filtre vide = son équipe
+  // entière (les commerciaux ouverts sur son profil, additionnés), jamais le réseau. paNoms() = ce qui est
+  // regardé : un prénom, la liste de l'équipe, ou '' (le réseau).
+  function paEquipe() { return (!V2.commFilter && V2.user && V2.user.equipe) ? String(V2.user.equipe) : ''; }
+  function paNoms() { return V2.commFilter ? String(V2.commFilter) : (paEquipe() ? V2.user.voitAussi.slice() : ''); }
   function psSecteur(MC, nom, fen) {
-    var ci = MC.c.indexOf(nom); if (ci < 0) return null;
-    var cle = nom + '|' + fen[0].m + '|' + fen[fen.length - 1].m;
+    var noms = [].concat(nom), cis = {}, nci = 0;
+    noms.forEach(function (n) { var i = MC.c.indexOf(n); if (i >= 0 && !cis[i]) { cis[i] = 1; nci++; } });
+    if (!nci) return null;
+    var cle = noms.join('+') + '|' + fen[0].m + '|' + fen[fen.length - 1].m;
     if (PS_MEMO[cle] !== undefined && PS_MEMO.ref === MC) return PS_MEMO[cle];
     if (PS_MEMO.ref !== MC) PS_MEMO = { ref: MC };
     var ok = {}; fen.forEach(function (f) { ok[f.an] = 1; });
     var cout = (MC.livraison && +MC.livraison.cout) || 0, off = {};
     MC.r.forEach(function (l) {
-      if (l[0] !== ci || !ok[l[2]]) return;
+      if (!cis[l[0]] || !ok[l[2]]) return;
       var id = MC.o[l[1]], x = off[id] || (off[id] = { ca: 0, mg: 0, j: {} });
       x.ca += l[3]; x.mg += l[4];
       if ((l[13] || 0) > (x.j[l[2]] || 0)) x.j[l[2]] = l[13] || 0;
@@ -1417,14 +1424,14 @@
   function psBloc(pf) {
     var MC = window.MARGE_CLIENTS, PM = MC && MC.pilotageMoy;
     if (!MC || !MC.r || !PM || !PM.f || !pf) return null;
-    var fen = psFenetre(pf), nom = V2.commFilter ? String(V2.commFilter) : '';
+    var fen = psFenetre(pf), nom = paNoms(), eqB = paEquipe();
     if (!fen || !fen.length) return { vide: 'Pas encore de chiffres de marge pour ' + esc(pf.label) };
     var M = PM.f[fen[0].m + '|' + fen[fen.length - 1].m];
     if (!M) return null;
     var S = null;
-    if (nom) { S = psSecteur(MC, nom, fen); if (!S) return { vide: 'Pas encore de chiffres de marge pour ' + esc(nom) + ' sur ' + esc(pf.label) }; }
+    if (nom) { S = psSecteur(MC, nom, fen); if (!S) return { vide: 'Pas encore de chiffres de marge pour ' + (eqB ? 'l’équipe ' + esc(eqB) : esc(nom)) + ' sur ' + esc(pf.label) }; }
     var moi = nom && V2.user && V2.user.commercial && String(V2.user.commercial) === nom;
-    var titre = !nom ? 'Moyenne Intégral par client' : moi ? 'Mon secteur comparé à la moyenne Intégral' : 'Secteur de ' + esc(nom.split(' ')[0]) + ' comparé à la moyenne Intégral';
+    var titre = !nom ? 'Moyenne Intégral par client' : eqB ? 'L’équipe ' + esc(eqB) + ' comparée à la moyenne Intégral' : moi ? 'Mon secteur comparé à la moyenne Intégral' : 'Secteur de ' + esc(nom.split(' ')[0]) + ' comparé à la moyenne Intégral';
     var sous = esc(psLibMois(fen)) + ' · par client, sur tout le réseau Intégral';
     var L = function (cle, lib, fmt) { return psLigne(lib, S ? S[cle] : null, M[cle], fmt, fmt, 'Moy. Intégral', !S); };
     var act = S ? psLigne('Clients actifs', S.n, M.nSect, psEnt, psDec, 'Secteur moyen Intégral', false)
@@ -1582,7 +1589,7 @@
 
   // ── Les mesures de l’écran
   function paMesures(c) {
-    var pf = c.pf, MC = window.MARGE_CLIENTS, PM = MC && MC.pilotageMoy, fen = psFenetre(pf), nom = V2.commFilter ? String(V2.commFilter) : '';
+    var pf = c.pf, MC = window.MARGE_CLIENTS, PM = MC && MC.pilotageMoy, fen = psFenetre(pf), nom = paNoms();
     var ser = paSeries(c), ks = ser.ks, n = pf.au - pf.du + 1;
     var M = null, S = null;
     if (PM && PM.f && fen && fen.length) { M = PM.f[fen[0].m + '|' + fen[fen.length - 1].m] || null; if (nom && M) S = psSecteur(MC, nom, fen); }
@@ -1656,6 +1663,7 @@
   }
   function paSujet(c) {
     var nom = V2.commFilter ? String(V2.commFilter) : '';
+    if (paEquipe()) return 'l’équipe ' + esc(paEquipe());
     if (!nom) return 'le réseau Intégral';
     var moi = V2.user && V2.user.commercial && String(V2.user.commercial) === nom;
     return moi ? 'votre secteur' : 'le secteur de ' + esc(nom.split(' ')[0]);
@@ -1682,8 +1690,8 @@
     return '<div class="pa-duel">' + ligne(labA, vA, 'a', colA || m.col) + ligne(labB, vB, 'b') + '</div>';
   }
   function paFaits(c) {
-    var F = [], sect = !!V2.commFilter, moi = sect && V2.user && V2.user.commercial && String(V2.user.commercial) === String(V2.commFilter);
-    var qui = moi ? 'Votre secteur' : (sect ? 'Le secteur' : 'Réseau'), sj = moi ? 'un client de votre secteur' : 'un client de ce secteur';
+    var eqF = paEquipe(), F = [], sect = !!V2.commFilter || !!eqF, moi = !!V2.commFilter && V2.user && V2.user.commercial && String(V2.user.commercial) === String(V2.commFilter);
+    var qui = eqF ? 'Équipe ' + esc(eqF) : moi ? 'Votre secteur' : (sect ? 'Le secteur' : 'Réseau'), sj = eqF ? 'un client de l’équipe' : moi ? 'un client de votre secteur' : 'un client de ce secteur';
     var ec = function (e, apres) { return e.cls === 'eq' ? 'autant que' : '<b class="' + e.cls + '">' + paNb(Math.abs(e.p), Math.abs(e.p) < 10 ? 1 : 0) + '\u00a0% de ' + (e.p > 0 ? 'plus' : 'moins') + '</b> ' + (apres ? paQue(apres) : 'que'); };
     var pf = c.pf;
     if (sect) {
@@ -1971,19 +1979,24 @@
     c.pf = Object.assign({}, c.pf, { label: paLab(c.pf) });
     c.mes = paMesures(c); c.fm = { S: c.mes.S, M: c.mes.M };
     // 11/11/2026 — Façon 1 : « le mien » = le secteur de la personne connectée (jamais celui d'un collègue), mêmes mois, même calcul que psSecteur
-    var mienNom = V2.user && V2.user.commercial ? String(V2.user.commercial) : '';
+    var mienNom = V2.user && V2.user.commercial && !V2.user.equipe ? String(V2.user.commercial) : '';   // 20/11/2026 : un responsable d'établissement n'a pas de secteur à lui
     if (!V2.commFilter && mienNom && c.mes.M && c.mes.fen && c.mes.fen.length && window.MARGE_CLIENTS) {
       var Sm = psSecteur(window.MARGE_CLIENTS, mienNom, c.mes.fen);
       if (Sm) { c.mien = { caCl: Sm.caCl, mgCl: Sm.mgCl, jm: Sm.jm, parJour: Sm.parJour, renta: Sm.renta }; c.mienNom = mienNom.split(' ')[0]; }
     }
     var nomC = V2.commFilter ? String(V2.commFilter) : '', moi = nomC && V2.user && V2.user.commercial && String(V2.user.commercial) === nomC;
-    c.sujetCourt = !nomC ? 'Réseau' : moi ? 'Votre secteur' : esc(nomC.split(' ')[0]);
+    c.sujetCourt = !nomC ? (paEquipe() ? 'Équipe ' + esc(paEquipe()) : 'Réseau') : moi ? 'Votre secteur' : esc(nomC.split(' ')[0]);
     c.ks = c.mes.ks;
     if (!PA_REG[PA_SEL]) PA_SEL = 'ca';
     var pf = c.pf, seg = function (mode, lbl) { return '<button type="button" class="pa-segb' + (PERIOD === mode ? ' on' : '') + '" data-p="' + mode + '" aria-pressed="' + (PERIOD === mode) + '">' + lbl + '</button>'; };
     var menu = '';
     if (!c.opso) {
-      if (c.myComm && !c.voitTous) {
+      var eqM = V2.user && V2.user.equipe ? String(V2.user.equipe) : '';
+      if (c.myComm && !c.voitTous && eqM) {
+        // 20/11/2026 — responsable d'établissement : son équipe entière, puis chacun de ses commerciaux ; aucun « Mon secteur »
+        menu = '<select class="pa-comm" aria-label="Secteur regardé"><option value=""' + (!V2.commFilter ? ' selected' : '') + '>Équipe ' + esc(eqM) + '</option>' +
+          c.voitAussi.map(function (x) { return '<option value="' + esc(x) + '"' + (V2.commFilter === x ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join('') + '</select>';
+      } else if (c.myComm && !c.voitTous) {
         if (c.voitAussi.length) menu = '<select class="pa-comm" aria-label="Secteur regardé"><option value="' + esc(c.myComm) + '"' + (V2.commFilter === c.myComm ? ' selected' : '') + '>Mon secteur</option>' +
           c.voitAussi.map(function (x) { return '<option value="' + esc(x) + '"' + (V2.commFilter === x ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join('') + '</select>';
       } else if (c.comms.length > 1) {
@@ -2075,7 +2088,12 @@
       // 11/09/2026 — collègues explicitement ouverts sur le profil (« Guillaume+Nicolas »)
       var voitAussi = (V2.user && V2.user.voitAussi) || [];
       var mesComms = myComm ? [myComm].concat(voitAussi) : [];
-      if (myComm && !voitTous) {
+      var equipe = (V2.user && V2.user.equipe) ? String(V2.user.equipe) : '';
+      if (myComm && !voitTous && equipe) {
+        // 20/11/2026 — responsable d'établissement : atterrit sur l'équipe entière ('' = les commerciaux ouverts,
+        // additionnés : V2.commSales), ou l'un d'eux ; jamais un « Mon secteur » vide, jamais le réseau.
+        if (V2.commFilter && voitAussi.indexOf(V2.commFilter) < 0) V2.commFilter = '';
+      } else if (myComm && !voitTous) {
         if (!V2._piloScopedInit) { V2.commFilter = myComm; V2._piloScopedInit = true; }   // atterrit sur « Moi »
         // 25/09/2026 — plus de « Global » non plus : dans l'espace Escale (4 commerciaux), le total
         // revenait à montrer le CA des collègues (Will, sur le compte de Philippe : « il a accès à des
@@ -2322,7 +2340,7 @@
           moisPer.forEach(function (k) { var rs = couvert[k] ? NM.reserve(cleMk(k)) : ''; if (rs) notesM.push(maj(nomMois(k)) + ' : ' + rs); });
           if (horsFic.length) notesM.push(maj(horsFic.map(nomMois).join(', ')) + ' : règle de secours (pas encore dans le fichier)');
         }
-        var vueTous = !V2.commFilter && !(myComm && !voitTous);
+        var vueTous = !V2.commFilter && (!(myComm && !voitTous) || !!equipe);   // 20/11/2026 : l'équipe d'un responsable = classement de ses commerciaux
         var classement = '';
         if (vueTous && comms.length > 1) {
           // Classement : chaque commercial sur la MÊME période (V2.sales, pas le
@@ -2364,7 +2382,7 @@
                 ? 'Notre marge — ce que les ventes rapportent à ' + V2.notreMarge.marque()
                 : 'Notre marge — règle de secours') + '</div>' +
                 '<div class="pilo-marge-sub">' + (pf ? esc(pf.label) : '') + ' · ' +
-                  (V2.commFilter ? esc(V2.commFilter) : (vueTous ? 'tous les commerciaux' : 'mon périmètre')) +
+                  (V2.commFilter ? esc(V2.commFilter) : equipe ? 'l’équipe ' + esc(equipe) : (vueTous ? 'tous les commerciaux' : 'mon périmètre')) +
                   (surFichier ? ' · répartie par famille de produits : chaque pourcentage est une part de notre marge de la période' : '') + '</div>' +
                 notesM.map(function (n) { return '<div class="pilo-marge-partiel">' + esc(n) + '</div>'; }).join('') + '</div>' +
               (sansRedite ? '' : '<div class="pilo-marge-total"><span class="mono pilo-marge-v" data-count>' + V2.fmtEur(totalCarte) + '</span>' +
@@ -2945,6 +2963,8 @@
       if (opso) {
         // Mode OPSO (Normandie Pharma) : pas de découpage par commercial Intégral
         commSeg = '';
+      } else if (myComm && !voitTous && equipe) {
+        commSeg = '<div class="pilo-seg" style="margin-right:8px">' + cb('', 'Équipe ' + equipe) + voitAussi.map(function (cm) { return cb(cm, cm); }).join('') + '</div>';
       } else if (myComm && !voitTous) {
         // Restreint : uniquement son périmètre et les collègues ouverts sur son profil (ni collègue nommé, ni global)
         commSeg = voitAussi.length ? '<div class="pilo-seg" style="margin-right:8px">' + cb(myComm, 'Moi') + voitAussi.map(function (cm) { return cb(cm, cm); }).join('') + '</div>' : '';
@@ -2972,7 +2992,7 @@
         '<div class="pilo-head">' +
           '<div>' +
             '<div class="v2-page-title">Pilotage</div>' +
-            '<div class="v2-page-sub" style="margin-bottom:0">' + (pf ? esc(pf.label) : '') + (V2.commFilter ? ' · ' + esc(V2.commFilter) : (opso ? ' · Groupement OPSO Santé' : ' · votre tableau de bord commercial')) + '</div>' +
+            '<div class="v2-page-sub" style="margin-bottom:0">' + (pf ? esc(pf.label) : '') + (V2.commFilter ? ' · ' + esc(V2.commFilter) : (opso ? ' · Groupement OPSO Santé' : equipe ? ' · équipe ' + esc(equipe) : ' · votre tableau de bord commercial')) + '</div>' +
             // Un mois écarté doit se DIRE : sinon l'écran a l'air de couvrir
             // une période qu'il ne couvre pas.
             (PERIOD === 'custom'
