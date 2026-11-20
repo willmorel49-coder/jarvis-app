@@ -309,24 +309,6 @@
     if (j && j < au) au = j;
     return cl1Per(mv.du, au);
   }
-  // Barres « étiquette » : titre + période donnés par l'appelant ; une SEULE échelle pour tout le graphique.
-  //  mode 'fois' : unités différentes d'une ligne à l'autre → la barre se lit en nombre de fois la moyenne ; le trait de la moyenne tombe au même endroit sur chaque ligne.
-  //  mode 'val'  : même unité → la plus grande valeur, moyenne comprise, fixe la longueur pleine ; chaque ligne a son trait de moyenne.
-  // lignes : [{ n: libellé (HTML sûr), v, moy, fmt, sens, mots }]
-  function cl1Barres(lignes, mode) {
-    var L = lignes.filter(function (r) { return r.v != null && isFinite(r.v); });
-    var lg = function (r) { return mode === 'fois' ? (r.moy > 0 ? r.v / r.moy : 0) : r.v; };
-    var lm = function (r) { return mode === 'fois' ? (r.moy > 0 ? 1 : null) : (r.moy != null && isFinite(r.moy) ? r.moy : null); };
-    var max = 0; L.forEach(function (r) { max = Math.max(max, lg(r), lm(r) || 0); }); max = max || 1;
-    var pc = function (x) { return Math.max(0, Math.min(100, x / max * 100)).toFixed(1); };
-    return L.map(function (r) {
-      var w = pc(lg(r)), m = lm(r), x = m == null ? null : pc(m);
-      return '<div class="cl1-l"><div class="cl1-l-h"><span class="cl1-l-n">' + r.n + '</span>' + V2.cl1Mot(r.v, r.moy, r) + '</div>' +
-        '<div class="cl1-tr"><span class="cl1-b" style="width:' + w + '%"></span>' + (x != null ? '<span class="cl1-m" style="left:' + x + '%"></span>' : '') +
-          '<b class="cl1-v' + (r.v < 0 ? ' cl1-neg' : '') + '" style="left:' + w + '%">' + r.fmt(r.v) + '</b></div>' +
-        (x != null ? '<div class="cl1-ml' + (+x > 55 ? ' cl1-ml-d' : '') + '"><span style="left:' + x + '%">moyenne : ' + r.fmt(r.moy) + '</span></div>' : '') + '</div>';
-    }).join('');
-  }
 
   // ── Classement d'un produit benchmark dans une des 8 catégories ──
   // Priorité : NR (sauf froid) > biosim > gen.part > gen > froid > princeps(pp/mi/ch)
@@ -2056,7 +2038,6 @@
   // officine, gardée en mémoire, puis un re-rendu.
   var _coordSaisie = {};       // pid -> { tel, email, adresse } | null tant qu'on lit
 
-
   // ══ Fiche d'ANALYSE (27/08/2026) — disposition « Cockpit » (ordinateur : l'humain à gauche,
   // les chiffres à droite) et « Terrain » (téléphone : notes et infos d'abord, chiffres ensuite).
   // Demande Will : CA par mois et évolution · CA par tranche + top 5 · détail par tranche face à
@@ -2210,7 +2191,7 @@
       rank: rank, nOff: net.R ? net.R.no : net.ranking.length, grpName: grpName, grpRank: grpRank, nGrp: grpPids.length };
   }
 
-  // 12/10/2026 — retour à la fiche du 8 octobre : ces trois fonctions (caChartSvg, analyseKpis, analyseChart) sont reprises
+  // 12/10/2026 — retour à la fiche du 8 octobre : caChartSvg est repris
   // telles quelles de ae4ab0fa ; seule différence, le cumul se lit sur les mois d'activité de l'officine (A.nAct), comme la colonne « CA … mois » du tableau par tranche.
   // Courbe CA par mois : trait plein = l'officine, pointillé = officine moyenne du réseau.
   function caChartSvg(pts, w, h, ph) {
@@ -2245,16 +2226,6 @@
   function cl1CleK(k) { var mm = ((k % 12) + 12) % 12 + 1; return Math.floor(k / 12) + '-' + (mm < 10 ? '0' : '') + mm; }
   function cl1PerA(A) { return A && A.debut && A.last ? cl1PerDe(cl1CleK(A.debut.mk), cl1CleK(A.last.mk)) : ''; }   // « de janv. à août 2026 » : les mois de la fiche
   function cl1MoisK(k, long) { return k == null ? '' : (long ? CL1_ML : CL1_MC)[((k % 12) + 12) % 12] + ' ' + Math.floor(k / 12); }
-  function analyseKpis(A, marge, nbRefs, ph) {
-    var lastLbl = A.last ? cl1MoisK(A.last.mk, true) : '', prevLbl = A.prev ? cl1MoisK(A.prev.mk).replace(/ \d+$/, '') : 'le mois précédent';
-    var cumul = A.debut && A.last ? cl1PerDe(cl1CleK(A.debut.mk), cl1CleK(A.last.mk)) : '';
-    return '<div class="pha-kpis' + (ph ? ' pha-kpis-3' : '') + '">' +
-      '<div class="pha-kpi" style="--a:var(--ip-blue)"><div class="pha-kl">' + (ph ? 'Votre chiffre d’affaires' : 'Chiffre d’affaires') + (lastLbl ? ' en ' + esc(lastLbl) : '') + '</div><div class="pha-kval cl1-num">' + (A.last ? V2.fmtEur(A.last.ca) : '—') + '</div><div class="pha-kd">' + evoHtml(A.evoM) + ' <span class="pha-sub">par rapport à ' + esc(prevLbl) + '</span></div></div>' +
-      '<div class="pha-kpi" style="--a:var(--c-opp)"><div class="pha-kl">' + (ph ? 'Votre chiffre d’affaires par mois' : 'Son chiffre d’affaires par mois') + '</div><div class="pha-kval cl1-num">' + V2.fmtEur(A.caMoy) + '</div><div class="pha-kd">' + (ph ? '<span class="pha-sub">en moyenne sur vos ' + A.nAct + ' mois d’activité</span>' : evoHtml(pctOf(A.caMoy, A.netMoy)) + ' <span class="pha-sub">par rapport à l’officine moyenne du réseau (' + V2.fmtEur(A.netMoy) + ' par mois)</span>') + '</div></div>' +
-      '<div class="pha-kpi" style="--a:var(--c-amber)"><div class="pha-kl">Cumul' + (cumul ? ' ' + esc(cumul) : ' ' + A.nAct + ' mois') + '</div><div class="pha-kval cl1-num">' + V2.fmtEur(A.caTot) + '</div><div class="pha-kd"><span class="pha-sub">' + V2.fmtNum(nbRefs) + ' produits différents achetés</span></div></div>' +
-      (ph ? '' : '<div class="pha-kpi" style="--a:var(--c-cat)"><div class="pha-kl">Place dans le réseau</div><div class="pha-kval cl1-num">' + (A.rank ? V2.fmtNum(A.rank) + (A.rank === 1 ? 're' : 'e') + '<small> sur ' + V2.fmtNum(A.nOff) + '</small>' : '—') + '</div><div class="pha-kd"><span class="pha-sub">officines actives ' + esc(cl1PerVDe()) + ', classées par chiffre d’affaires' + (A.grpRank ? ' · ' + A.grpRank + 'e sur ' + A.nGrp + ' chez ' + esc(A.grpName) : '') + '</span></div></div>') +
-    '</div>';
-  }
 
   // 27/10/2026 — « Marge pharmacien » (choix de Will) : son propre bloc, aussi visible que « Notre marge » et juste au-dessus de lui
   // (côte à côte, « Notre marge » tombait en demi-largeur sur 520 px de haut et ce bloc s'étirait à vide),
@@ -2286,7 +2257,6 @@
       '<details class="pha-nm-det"><summary>Notes sur le calcul</summary><div class="pha-sub pha-nm-n">' + notes.map(esc).join(' · ') + '</div></details></div>';
   }
 
-
   // 28/10/2026 — rentabilité d'un client, livraisons déduites (Will, version 4 « Les chiffres ») : « Notre marge » (méthode direction,
   // génériques à zéro) moins ses livraisons × le coût d'une livraison (réglage privé, jamais en dur). Une livraison = un jour avec au moins une
   // facture (FC), au plus 1 par jour (Will, 11/11/2026, remplace « 1 facture = 1 livraison » du 28/10) ; « par mois » = sur les mois où elle a été livrée. Mêmes mois et même visibilité que « Notre marge ».
@@ -2299,19 +2269,6 @@
     if (!J.jours) return null;
     var cout = +L.cout;
     return { jours: J.jours, nm: J.nm, cout: cout, parJour: r.tot / J.jours, jm: J.jours / J.nm, renta: (r.tot - J.jours * cout) / J.nm, moy: L.moy };
-  }
-  // 11/11/2026 — Façon 1 « L'étiquette » : une seule échelle pour le bloc (unités différentes : en nombre de fois la moyenne de nos clients),
-  // valeur au bout de chaque barre, trait de la moyenne nommé, mot face à la moyenne. Plus de livraisons coûte plus : le mot le dit sans couleur de jugement.
-  function rentaChiffres(pid) {
-    var R = rentabiliteDe(pid); if (!R) return '';
-    var M = R.moy, per = cl1PerOff(pid, true);
-    return '<div class="pha-kpi pha-nm pha-rt pha-r4 cl1-g" style="--a:var(--c-mint,#1E9E6A)"><div class="pha-kl cl1-t">Ce que ses livraisons nous coûtent et nous rapportent</div>' +
-      '<p class="cl1-s">' + esc(per) + ' · par mois, ' + cl1SurMois(R.nm) + ' · même échelle pour tout le bloc, en nombre de fois la moyenne de nos clients</p>' +
-      cl1Barres([
-        { n: 'Livraisons par mois', v: R.jm, moy: M.jm, fmt: rentaDec, sens: 0, mots: ['plus de livraisons que la moyenne', 'moins de livraisons que la moyenne'] },
-        { n: 'Notre marge par livraison', v: R.parJour, moy: M.parJour, fmt: V2.fmtEur },
-        { n: 'Notre marge par mois, moins le coût de ses livraisons', v: R.renta, moy: M.renta, fmt: V2.fmtEur }
-      ], 'fois') + '</div>';
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -2412,49 +2369,10 @@
     return '<details class="pha-m5-det"' + (m5Det[cle] ? ' open' : '') + ' ontoggle="V2.pharmaM5Ouvert(\'' + cle + '\',this.open)"><summary><span>' + esc(titre) + '</span>' + ICO('chev', 14) + '</summary>' + corps + '</details>';
   }
 
-  // 11/11/2026 — Façon 1 « L'étiquette » : le bloc dit ce qu'il compare et sur quels mois ; une seule échelle (en nombre de fois la moyenne,
-  // les unités changent d'une ligne à l'autre) : la barre de l'officine n'est plus toujours pleine. Place dans le réseau écrite avec son critère.
-  function m5Bloc(A, S, pid) {
-    var M = S.moy, NM = V2.notreMarge, per = cl1PerOff(pid, true);
-    var rang = A.rank ? '<p class="cl1-rk"><b>' + V2.fmtNum(A.rank) + (A.rank === 1 ? 're' : 'e') + '</b> sur ' + V2.fmtNum(A.nOff) + ' officines actives ' + esc(cl1PerVDe()) +
-      ' (au moins une commande), classées par chiffre d’affaires' + (A.grpRank ? ' · ' + V2.fmtNum(A.grpRank) + (A.grpRank === 1 ? 're' : 'e') + ' sur ' + V2.fmtNum(A.nGrp) + ' chez ' + esc(A.grpName) : '') + '</p>' : '';
-    return '<div class="pha-kpi pha-nm pha-rt pha-r4 pha-m5 cl1-g" style="--a:var(--ip-blue)">' +
-      '<div class="pha-kl cl1-t">Ses chiffres, comparés à la moyenne de nos clients</div>' + rang +
-      '<p class="cl1-s">' + esc(per) + ' · montants par mois et part des génériques, ' + cl1SurMois(S.nm) + ' · même échelle pour tout le bloc, en nombre de fois la moyenne' + (M.n ? ' de nos ' + V2.fmtNum(M.n) + ' clients' : '') + '</p>' +
-      cl1Barres([
-        { n: 'Chiffre d’affaires par mois', v: S.ca, moy: M.caMois, fmt: V2.fmtEur },
-        { n: 'Notre marge Intégral par mois', v: S.mg, moy: M.mgMois, fmt: V2.fmtEur },
-        { n: 'Marge du pharmacien par mois', v: S.mp, moy: M.mpMois, fmt: V2.fmtEur },
-        { n: 'Produits différents achetés ' + esc(cl1PerA(A)), v: S.refs, moy: M.refs, fmt: V2.fmtNum },
-        { n: 'Part des génériques dans ses achats', v: S.gen, moy: M.partGen, fmt: m5Pct, sens: 0 }
-      ], 'fois') +
-      '<div class="pha-sub pha-m5-n">Notre marge : ' + esc(NM.libelleDate()) + ', génériques comptés à zéro.</div></div>';
-  }
-
   // 11/11/2026 — Façon 1 : « Notre marge par tranche de prix » → par famille de produits (le froid et les non remboursés ne sont pas des tranches),
   // chaque ligne dit ce qu'elle contient, le total est écrit ; même unité partout : la plus grande valeur, moyenne comprise, fixe la longueur pleine.
   var CL1_FAM = { p: 'Petits prix : boîte à moins de 4,33 €', p1: 'Boîte à moins de 3,17 €', p2: 'Boîte de 3,17 à 4,33 €', i: 'Boîte de 4,33 à 468 €',
     c: 'Boîte à plus de 468 €', fr: 'Chaîne du froid, quel que soit le prix', nr: 'Non remboursés, quel que soit le prix' };
-  function m5Tranches(S, pid) {
-    var NM = V2.notreMarge, M = S.moy, F = M.fam || {}, L = [];
-    NM.FAMILLES.forEach(function (f) {
-      if (Math.round((S.fam[f] || 0) * 100) === 0 && Math.round((F[f] || 0) * 100) === 0) return;
-      L.push({ n: esc(CL1_FAM[f] || NM.LIBELLES[f]), v: S.fam[f] || 0, moy: F[f] || 0, fmt: V2.fmtEur });
-    });
-    if (!L.length) return '';
-    return '<div class="pha-kpi pha-nm pha-rt pha-r4 pha-m5 cl1-g" style="--a:var(--c-mint,#1E9E6A)">' +
-      '<div class="pha-kl cl1-t">Notre marge Intégral par mois, famille par famille</div>' +
-      '<p class="cl1-s">' + esc(cl1PerOff(pid, true)) + ' · ' + cl1SurMois(S.nm) + ' · même échelle pour tout le bloc, en euros</p>' +
-      '<p class="cl1-tot">Total : <b>' + V2.fmtEur(S.mg) + ' par mois</b>' + (M.mgMois != null ? ' · moyenne de nos clients : ' + V2.fmtEur(M.mgMois) + ' ' + V2.cl1Mot(S.mg, M.mgMois) : '') + '</p>' +
-      cl1Barres(L, 'val') + '</div>';
-  }
-  function analyseChart(A, ph) {
-    var per = A.debut && A.last ? cl1PerDe(cl1CleK(A.debut.mk), cl1CleK(A.last.mk)) : '';   // 11/11/2026 — Façon 1 : quoi · période
-    return '<div class="v2-card pha-card"><div class="pha-ch"><h3>' + (ph ? 'Ce que vous commandez par mois' : 'Ce qu\'elle commande par mois') + '</h3><span class="pha-sub">chiffre d’affaires net hors taxes, ' + esc(per) + (A.last ? ' · ' + esc(cl1MoisK(A.last.mk, true)) + ' = dernier mois reçu' : '') + '</span></div>' +
-      (A.n >= 2 ? caChartSvg(A.pts, 820, 250, ph) : '<div class="v2-cat-empty" style="border:none">Pas assez de mois pour tracer une courbe.</div>') +
-      (ph ? '' : '<div class="pha-legend"><span><i style="background:#0050E6"></i>Cette officine</span><span><i style="background:#B9C4DB"></i>Officine moyenne du réseau (' + V2.fmtNum(A.nOff) + ')</span></div>') +
-      analyseMoisTableau(A, ph) + '</div>';
-  }
   // 14/10/2026 — « CA exact par mois » (remontée d'une commerciale) : un tableau mois par mois en euros EXACTS sous la courbe, visible sans dépliage.
   // Mêmes mois que la courbe, depuis le premier mois d'activité (A.i0) ; l'évolution se lit face au mois d'avant.
   function analyseMoisTableau(A, ph) {
@@ -2924,39 +2842,6 @@
   function l1PeriodeMoy(A) { return 'en moyenne par mois, ' + l1Fenetre(A); }
   function l1PeriodeCumul(A) { return 'en cumul sur ' + l1Pl(A.nAct, 'mois', 'mois'); }
 
-  // ── Repère « groupement d'achat » ──
-  // Même définition que le réseau : par mois, la moyenne des officines du groupement qui ont commandé
-  // CE mois-là (au moins 2). Non proposé si on ne peut pas le compter honnêtement : jeu d'un commercial
-  // restreint (le reste du réseau n'y est qu'un total), groupement d'une seule officine, ou un mois de
-  // la fenêtre où moins de 2 officines du groupement ont commandé. Jamais un chiffre approché.
-  var _l1GrpMemo = { ref: null, par: {} };
-  function l1Groupe(pid, A) {
-    if (networkByCat().R || !A.nAct) return null;
-    var g = groupementPids(pid); if (!g.set || g.set.size < 2) return null;
-    if (_l1GrpMemo.ref !== V2.sales) _l1GrpMemo = { ref: V2.sales, par: {} };
-    var gcle = g.name + '|' + A.pts.length + '|' + (A.last ? A.last.mk : 0), G = _l1GrpMemo.par[gcle];
-    if (!G) {
-      var idx = salesIndex(), act = {}, tot = {};
-      g.set.forEach(function (p) {
-        if (V2.estReste(p)) return;
-        var rows = idx[p]; if (!rows) return;
-        for (var j = 0; j < rows.length; j++) {
-          var s = rows[j]; if (!s.month || !s.year) continue;
-          var mk = s.year * 12 + (s.month - 1);
-          (act[mk] || (act[mk] = {}))[p] = 1;
-          tot[mk] = (tot[mk] || 0) + (s.mntNetHt || 0);
-        }
-      });
-      G = { name: g.name, set: g.set, mks: A.pts.map(function (p) { return p.mk; }), n: [], avg: [], cat: null };
-      A.pts.forEach(function (pt, i) {
-        var c = act[pt.mk] ? Object.keys(act[pt.mk]).length : 0;
-        G.n[i] = c; G.avg[i] = c >= 2 ? tot[pt.mk] / c : null;
-      });
-      _l1GrpMemo.par[gcle] = G;
-    }
-    for (var i = A.i0; i < A.n; i++) { if (!(G.n[i] >= 2)) return null; }
-    return G;
-  }
   // Par catégorie : calculé à la première demande seulement (classer chaque ligne coûte).
   function l1GroupeCats(G) {
     if (G.cat) return G.cat;
@@ -2994,25 +2879,6 @@
     };
   }
 
-  // ── Ce qu'elle ne commande plus : mêmes règles que « Ses achats » du brief et que le bloc replié ──
-  function l1NePlus(pid) {
-    if (!V2.briefOfficine || !V2.briefOfficine.nePlusCommandes) return null;
-    var ventes = pharmaSalesAll(pid); if (!ventes.length) return null;
-    var np = V2.briefOfficine.nePlusCommandes(ventes);
-    if (!np.connu) return { connu: false, avant: np.avant.length, fin: np.fin, lignes: [] };
-    var bIdx = benchIndex(), suivi = {}, ca = {};
-    np.lignes.forEach(function (l) { suivi[l.cip] = 1; });
-    ventes.forEach(function (s) { var c = String(s.artCode || ''); if (suivi[c]) ca[c] = (ca[c] || 0) + (s.mntNetHt || 0); });
-    var lignes = [], cc = V2.produits && V2.produits.catalogueIndex ? V2.produits.catalogueIndex() : null;
-    np.lignes.forEach(function (l) {
-      var b = bIdx.get(l.cip), cat = classify(b, l.cip);
-      if (!cat) return;
-      var nb = Math.max(1, Object.keys(l.mois).length);
-      lignes.push({ nom: (b && b.designation) || (cc && cc[l.cip] && cc[l.cip].d) || l.cip, cat: cat, dernier: l.dernier, caMois: (ca[l.cip] || 0) / nb });
-    });
-    lignes.sort(function (x, y) { return y.caMois - x.caMois; });
-    return { connu: true, avant: np.avant.length, fin: np.fin, total: np.lignes.length, lignes: lignes };
-  }
   function l1CatLabel(key) { for (var i = 0; i < CATS.length; i++) { if (CATS[i].key === key) return CATS[i].label; } return key; }
 
   // ── Les 5 premiers produits d'une liste, toutes catégories confondues ──
@@ -3028,7 +2894,7 @@
 
   // ═════════ Rendu « menu » (maquette 8 retenue par Will, 09/10/2026) — préfixe l8- ═════════
   // Une carte d'identité courte, un menu de rubriques à gauche, UNE rubrique à droite, à plat.
-  // Aucun calcul ne change : les fonctions de données (analyseData, l1Ref, l1NePlus, listes) servent telles quelles.
+  // Aucun calcul ne change : les fonctions de données (analyseData, l1Ref, listes) servent telles quelles.
   var L8_IC = {
     resume: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
     proposer: '<circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>',
@@ -3050,7 +2916,6 @@
   function l8Ic(k, s) { s = s || 20; return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + L8_IC[k] + '</svg>'; }
   // Les rubriques, dans l'ordre du menu. [clé, mot, interne ?]
   var L8_RUB = [['resume', 'Résumé'], ['proposer', 'À proposer'], ['commandes', 'Commandes'], ['categories', 'Catégories'], ['neplus', 'Ne commande plus'], ['meilleurs', 'Meilleurs produits'], ['tout', 'Tout le détail', 1]];
-  var L8_PROFIL = [['gros1', 'Grossiste n°1'], ['gros2', 'Grossiste n°2'], ['gros3', 'Grossiste n°3'], ['gros4', 'Grossiste n°4'], ['gen1', 'Génériqueur n°1'], ['gen2', 'Génériqueur n°2'], ['gen3', 'Génériqueur n°3'], ['biosim', 'Partenaire biosimilaires'], ['lgo', 'Logiciel (LGO)'], ['robot', 'Robot / automate'], ['tel_perso', 'Tél perso (titulaire)'], ['cle_crypto', 'Clé de cryptage'], ['autre', 'Autre info']];
 
   // Écart d'une valeur face à un repère (règle R7) : rapport ≥ 2 → « 6,3 fois plus » ; sinon « + 23 % » / « − 17 % ».
   function l8Ecart(a, ref) {
@@ -3851,85 +3716,6 @@
     return h;
   }
 
-  // Menu : les compteurs (mêmes sources que les rubriques)
-  function l8Compte(k) {
-    var A = L1.A;
-    if (k === 'proposer') return '<b>' + l1Nb(L1.nR) + '</b>' + (L1.hasGrp ? NB + '·' + NB + '<b>' + l1Nb(L1.nG) + '</b>' : '');
-    if (k === 'categories') return String(A.cats.filter(function (c) { return c.ca > 0 || c.netMoy > 0; }).length);
-    if (k === 'neplus') return (L1.np && L1.np.connu && L1.np.lignes.length) ? String(L1.np.lignes.length) : '';
-    if (k === 'meilleurs') { var n = l8TopTous().length; return n ? String(n) : ''; }
-    return '';
-  }
-
-  // L'onglet « Infos », en lecture : à gauche les coordonnées puis les notes, à droite le marché et le reste. Chaque ligne de la fiche paraît une fois.
-  // Les formulaires existants (« Infos officine ») n'apparaissent qu'avec « Modifier ».
-  function l8InfosHtml(c) {
-    var coord = ['Titulaire', 'Téléphone', 'E-mail', 'Adresse', 'Commercial', 'Prochaine relance'], g = [], marche = [], ga = null;
-    // Une note sans libellé (la description du groupement d'achat) reste sous la ligne qu'elle complète.
-    var dern = null;
-    c.rows.forEach(function (r) {
-      if (!r.l && dern) { dern.n.push(r); return; }
-      dern = { r: r, n: [] };
-      if (coord.indexOf(r.l) >= 0) g.push(dern); else if (r.l === 'Groupement d’achat' && !ga) ga = dern; else marche.push(dern);
-    });
-    g.sort(function (a, b) { return coord.indexOf(a.r.l) - coord.indexOf(b.r.l); });
-    if (ga) marche.unshift(ga);
-    var note = function (r) { return '<p class="l8-fnote">' + r.v + '</p>'; };
-    var ligne = function (x) { var r = x.r; return (r.l ? '<div class="l8-fr"><dt>' + r.l + '</dt><dd' + (r.c ? ' class="' + r.c + '"' : '') + '>' + r.v + '</dd></div>' : note(r)) + x.n.map(note).join(''); };
-    var h = l8Tete('Infos', '<button type="button" class="l8-btn l8-interne" id="l8-modif" onclick="V2.pharmaL.modifier()">' + (L1.edit ? 'Terminer' : 'Modifier') + '</button>');
-    h += '<div class="l8-forms">' + c.infos + '</div>';
-    h += '<div class="l8-icols"><div class="l8-icol"><div class="l8-lect"><h3 class="l8-gt">Coordonnées</h3><dl class="l8-fl-l" data-n="' + g.length + '">' + g.map(ligne).join('') + '</dl></div>' +
-      '<h3 class="l8-gt l8-gt-suite" id="l8-notes-t">Notes de l’équipe</h3>' + c.notes + '</div>' +
-      '<div class="l8-icol l8-lect"><h3 class="l8-gt">Marché et autres</h3><dl class="l8-fl-l" data-n="' + marche.length + '">' + marche.map(ligne).join('') + '</dl></div></div>';
-    return h;
-  }
-
-  // Assemble la page : carte d'identité courte, menu, rubriques. c = ce que renderDetail a calculé.
-  function l8Page(c) {
-    var pid = esc(c.pidSafe);
-    var acts = (c.tel ? '<a class="l8-act" href="tel:' + esc(c.tel.replace(/[^+0-9]/g, '')) + '"><span class="l8-rond">' + l8Ic('tel', 22) + '</span>Appeler</a>' : '') +
-      (c.mail ? '<a class="l8-act" href="mailto:' + esc(c.mail) + '"><span class="l8-rond">' + l8Ic('mail', 22) + '</span>E-mail</a>' : '') +
-      (c.mail && V2.rdv ? '<button type="button" class="l8-act" onclick="V2.rdv.proposer(\'' + pid + '\')" title="Elle choisit son créneau, calé sur la géographie de votre journée"><span class="l8-rond">' + l8Ic('rdv', 22) + '</span>Rendez-vous</button>' : '');
-    // Deuxième rangée : les trois actions qui étaient derrière « Autres actions » (le catalogue n'existe que si le logiciel est reconnu : c.lgo)
-    var acts2 = (V2.todo ? '<button type="button" class="l8-act" title="Ajouter à la to do list" aria-label="Ajouter à la to do list" onclick="V2.todo.menu(\'' + pid + '\')"><span class="l8-rond">' + l8Ic('todo', 22) + '</span>To do list</button>' : '') +
-      '<button type="button" class="l8-act" title="Choisir quoi lui transmettre" aria-label="Choisir quoi lui transmettre" onclick="V2.pharmaTransmettre(\'' + pid + '\')"><span class="l8-rond">' + l8Ic('joint', 22) + '</span>Transmettre</button>' + (c.lgo || '');
-    var menu = L8_RUB.map(function (m) {
-      var k = m[0];
-      return '<button type="button" class="l8-row' + (m[2] ? ' l8-interne' : '') + '" data-r="' + k + '"' + (k === L1.rub ? ' aria-current="page"' : '') + ' onclick="V2.pharmaL.go(\'' + k + '\')"><span class="l8-tuile">' + l8Ic(k, 18) + '</span><span class="l8-mot">' + m[1] + '</span><span class="l8-cpt" id="l8-cpt-' + k + '">' + l8Compte(k) + '</span><span class="l8-chev">' + l8Ic('chev', 18) + '</span></button>';
-    }).join('');
-    // Les sept rubriques à la suite : les six de chiffres se construisent dans l8Afficher ; « Tout le détail » est repliée
-    var rubs = L8_RUB.map(function (m) {
-      var k = m[0], inner = '';
-      if (k === 'tout') inner = '<button type="button" class="l8-lg-b" id="l8-tout-btn" aria-expanded="false" onclick="V2.pharmaL.detail()"><span class="l8-ln">Tout le détail<small>Brief du jour, détail produit par produit, CA par génériqueur</small></span><span class="l8-cc">' + l8Ic('chev', 18) + '</span></button><div id="l8-tout-corps" hidden>' + c.tout + '</div>';
-      return '<section class="l8-rub' + (m[2] ? ' l8-interne' : '') + '" id="l8-v-' + k + '" data-k="' + k + '" aria-label="' + m[1] + '">' + inner + '</section>';
-    }).join('');
-    var ong = function (k, mot) { var on = L1.ong === k; return '<button type="button" class="l8-ong" role="tab" id="l8-t-' + k + '" aria-controls="l8-p-' + k + '" data-ong="' + k + '" aria-selected="' + on + '" tabindex="' + (on ? '0' : '-1') + '" onclick="V2.pharmaL.onglet(\'' + k + '\')">' + mot + '</button>'; };
-    return '<div class="pha l8" data-ong="' + L1.ong + '">' +
-      '<div class="pha-rail l8-rail">' +
-        '<header class="l8-id"><h1 class="l8-nom">' + c.nom + '</h1><p class="l8-sous">' + esc(c.sous) + '</p>' + (acts ? '<div class="l8-acts l8-interne">' + acts + '</div>' : '') + '<div class="l8-acts l8-acts-2 l8-interne">' + acts2 + '</div></header>' +
-        '<div class="l8-ongs l8-interne" role="tablist" aria-label="Stats ou infos de l’officine" onkeydown="V2.pharmaL.touche(event)">' + ong('stats', 'Stats') + ong('infos', 'Infos') + '</div>' +
-        '<nav class="l8-menu" aria-label="Rubriques"><span class="l8-gliss" aria-hidden="true"></span>' + menu + '</nav>' +
-        '<div class="l8-pied"><button type="button" class="l8-lien gris l8-interne" onclick="V2.pharmaL.vue()">' + l8Ic('oeil', 18) + '<span>À montrer au pharmacien</span></button>' +
-'</div>' +
-      '</div>' +
-      '<div class="pha-main l8-main">' +
-        '<div class="l8-vpbar"><span>Vue à montrer au pharmacien</span><button type="button" class="l8-lien" onclick="V2.pharmaL.vue()">Revenir à ma vue</button></div>' +
-        '<div class="l8-vpid">' + c.vpid + '</div>' +
-        '<div class="l8-pan" id="l8-p-stats" role="tabpanel" aria-labelledby="l8-t-stats"' + (L1.ong === 'stats' ? '' : ' hidden') + '><div id="l8-stat-tete">' + l8TeteStats() + '</div>' + rubs + '</div>' +
-        '<div class="l8-pan l8-interne" id="l8-p-infos" role="tabpanel" aria-labelledby="l8-t-infos" data-edit="' + (L1.edit ? '1' : '0') + '"' + (L1.ong === 'infos' ? '' : ' hidden') + '>' + l8InfosHtml(c) + '</div>' +
-      '</div></div>';
-  }
-
-  // État de la fiche : remis à zéro quand on change d'officine (la vue pharmacien n'est PAS retenue)
-  function l8Init(pid, A, o) {
-    if (String(L1.pid) !== String(pid)) { L1.b = 'reseau'; L1.ouv = {}; L1.vu = {}; L1.vue = 'commercial'; L1.rub = 'resume'; L1.ong = 'stats'; L1.tous = { neplus: false, meilleurs: false }; L1.edit = false; }
-    L1.pid = String(pid); L1.A = A; L1.marge = o.marge; L1.dataR = o.dataR; L1.dataG = o.dataG; L1.nR = o.nR; L1.nG = o.nG; L1.hasGrp = o.hasGrp;
-    L1.G = l1Groupe(pid, A);
-    if (!L1.G) L1.b = 'reseau';
-    L1.np = l1NePlus(pid);
-    L1.k = (L1.k || 0) + 1;       // un rendu complet invalide les rubriques construites à la demande
-  }
-
   // Construit (ou reconstruit) les six rubriques de chiffres, l'une sous l'autre, sans jamais refaire la fiche.
   // garde = rubriques déjà construites qu'on ne touche pas (« Face à » : leur repère glisse, rien n'est redessiné) ;
   // dans ce cas les autres sont refaites sans mouvement.
@@ -4205,7 +3991,7 @@
       '<header class="fdr-ch-h"><span class="fdr-num" aria-hidden="true">' + n + '</span><div class="fdr-ch-t"><h2 id="fdr-h' + n + '">' + esc(titre) + '</h2>' + (sous ? '<p class="fdr-ch-s">' + sous + '</p>' : '') + '</div></header>' +
       '<div class="fdr-ch-c">' + corps + '</div></section>';
   }
-  // 3 grands montants (mêmes calculs que analyseKpis : CA du dernier mois, CA moyen par mois, cumul)
+  // 3 grands montants (mêmes calculs que l’ancienne fiche : CA du dernier mois, CA moyen par mois, cumul)
   function fdrMontants(A, nbRefs) {
     var lastLbl = A.last ? cl1MoisK(A.last.mk, true) : '', prevLbl = A.prev ? cl1MoisK(A.prev.mk).replace(/ \d+$/, '') : 'le mois précédent';
     var cumul = A.debut && A.last ? cl1PerDe(cl1CleK(A.debut.mk), cl1CleK(A.last.mk)) : '';
@@ -4603,27 +4389,10 @@
 
     // ── Colonne « chiffres » ──
     var S = sesChiffresDe(pid, marge, nbRefs);
-    var detail = analyseKpis(A, marge, nbRefs) + '<div class="pha-marges">' + analyseMargePharma(A, marge) + analyseNotreMarge(pid) + '</div>';
-    // 29/10/2026 — deux jeux de blocs : « Intégral » = exactement l'écran d'avant (vi-int) ; « pharmacien » = les cartes d'avant le 29/10, dépliées, sans l'interne (vi-ph).
-    // Top 10 et « Ne commande plus » (ses propres achats) sont communs aux deux vues, ainsi que « À proposer » (29/10, demande de Will : les listes groupement et Intégral se montrent au pharmacien).
-    var chiffresInt = (S ? '<div class="pha-marges">' + m5Bloc(A, S, pid) + rentaChiffres(pid) + m5Tranches(S, pid) + '</div>' + m5Replie('chiffres', 'Cumul, dernier mois et marges en détail', detail)
-           : analyseKpis(A, marge, nbRefs) + '<div class="pha-marges">' + analyseMargePharma(A, marge) + analyseNotreMarge(pid) + rentaChiffres(pid) + '</div>') +
-      analyseChart(A) + (S ? m5Replie('tranches', 'Son chiffre d’affaires par tranche, tableau détaillé', analyseTranches(A)) + m5Replie('parts', 'Par catégorie, mois par mois', analyseParts(A)) : analyseTranches(A) + analyseParts(A));
-    var chiffresPh = analyseKpis(A, marge, nbRefs, true) + '<div class="pha-marges">' + analyseMargePharma(A, marge, true) + '</div>' +
-      analyseChart(A, true) + analyseTranches(A, true) + analyseParts(A, true);
-    // 06/11/2026 — fiche « plus clair » cliente : le bloc A « La rangée de boutons » (vue Intégral) remplace les cartes « À proposer » et « Listes à proposer » ;
-    // la carte « À proposer » reste montrée au pharmacien tel quel (vue pharmacien : décisions de Will des 12/10 et 29/10). Fiche « menu » et officine d'un collègue : comme avant.
-    var proposer = retourProposer(pid, A, { dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp });
-    var proposerFdr = proposer;   // 20/11/2026 — fiche « Le rendez-vous » : la même carte, dans le chapitre 2, pour les deux vues
-    var blocA = fi && voitVentes ? fbBloc(pid, A, { dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp }) : '';
-    if (fi && voitVentes) proposer = viW(blocA, 'vi-int') + viW(proposer, 'vi-ph');   // 20/11 : blocA peut être vide (sans listing), l'ancienne carte reste au pharmacien seul
-    var chiffres = proposer + viW(chiffresInt, 'vi-int') + viW(chiffresPh, 'vi-ph') + analyseTop5(A) + analyseNePlus(pid);
-    // 09/10/2026 — maquette 8 « Le menu » (remplace la 1b, jugée « trop complexe ») : l'état de la fiche est posé ici,
-    // la page est assemblée plus bas (carte d'identité courte, menu, une rubrique à la fois).
-    if (menu) l8Init(pid, A, { marge: marge, dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp });
-    // 24/09/2026 — officine d'un collègue (commercial restreint) : aucun chiffre de vente,
-    // ni « déjà commandé / à pousser » (ça dirait ce qu'elle achète), ni audit de marge.
-    if (!voitVentes) chiffres = viW('<div class="v2-card pha-card"><div class="pha-sub" style="padding:16px 18px">Les chiffres de vente de cette officine sont réservés à son commercial' + (pharma.comms && pharma.comms.length ? ' (' + esc(pharma.comms.join(', ')) + ')' : '') + '.</div></div>', 'vi-int');
+    // 20/11/2026 — fiche « Le rendez-vous » : la carte « À proposer », dans le chapitre 2, pour les deux vues
+    var proposerFdr = retourProposer(pid, A, { dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp });
+    // fbBloc ne s'affiche plus, mais il pose l'état (fbC) que lisent les grands boutons du chapitre 6 (fdrGrandsBoutons) : l'appel reste.
+    if (fi && voitVentes) fbBloc(pid, A, { dataR: dataR, dataG: dataG, nR: nReseau, nG: nGrp, hasGrp: hasGrp });
     // 27/10/2026 (Will) : « Ce que cette officine devrait vendre » retiré partout — « ça sert à rien » (ajouté le 27/09, 8278c252).
 
     // Best rotations du groupement / réseau : détail produit par produit, replié (inchangé)
@@ -4694,48 +4463,16 @@
     // Vue « À montrer au pharmacien » (liste blanche en CSS, voir .pha-wrap[data-vue]) : son nom, son adresse,
     // son titulaire, son groupement d'achat et les rubriques sans leurs éléments internes.
     var vue = menu ? L1.vue : viLire();   // 29/10/2026 : la vue retenue par l'appareil (par défaut : pharmacien)
-    var apercu;
-    if (menu) {
-      // La rubrique Fiche lit les lignes de la carte d'avant (mêmes valeurs, même ordre) ; « Modifier » ouvre les formulaires existants.
-      var fRows = [], tmpK = document.createElement('div');
-      tmpK.innerHTML = kvHtml;
-      for (var q = 0; q + 1 < tmpK.children.length; q += 2) {
-        var lab = tmpK.children[q].textContent, vs = tmpK.children[q + 1];
-        fRows.push({ l: lab === 'Groupement' ? 'Groupement d’achat' : lab, v: vs.innerHTML, c: vs.className });
-      }
-      fRows.forEach(function (r) {
-        if (r.l === 'Téléphone' && tel) r.v = '<a href="tel:' + esc(tel.replace(/[^+0-9]/g, '')) + '">' + r.v + '</a>';
-        if (r.l === 'E-mail' && mail) { var mailAff = mail.replace(/[\s;,]+$/, ''); r.v = '<a href="mailto:' + esc(mailAff) + '">' + esc(mailAff) + '</a>'; }
-      });
-      var avant = [];
-      if (pharma.code) avant.push({ l: 'CIP', v: '<span class="mono">' + esc(String(pharma.code)) + '</span>', c: '' });
-      avant.push({ l: 'Statut', v: (isEscale() ? 'Cliente Escale' : 'Cliente Intégral') + ficheBadge, c: '' });
-      if (comms) avant.push({ l: 'Commercial', v: esc(comms), c: '' });
-      if (window.REPRISES && REPRISES[String(pid)]) avant.push({ l: 'Reprise récente', v: 'Le titulaire a changé récemment : moment clé pour (re)capter la relation', c: '' });
-      var rel = ''; try { if (saisi.relance_date) rel = new Date(saisi.relance_date + 'T12:00:00').toLocaleDateString('fr-FR'); } catch (e) {}
-      var apres = [{ l: 'Prochaine relance', v: rel || 'à compléter', c: rel ? '' : 'pha-empty' }];
-      L8_PROFIL.forEach(function (p) { if (saisi[p[0]]) apres.push({ l: p[1], v: esc(String(saisi[p[0]])), c: '' }); });
-      fRows = avant.concat(fRows, apres);
-      var ctx = {
-        pidSafe: pidSafe, nom: esc(nameOf(pid, pharma.name)), sous: [villeV || '', (pharma.groupement && pharma.groupement !== '—') ? canonG(pharma.groupement) : ''].filter(function (x) { return x; }).join(' · '),
-        tel: tel, mail: mail, lgo: btnLgo, rows: fRows, infos: infos, notes: '<div class="l8-notes">' + notes + '</div>',
-        tout: l1ToutSection(pid, A) + briefOff + listing + generiqueurSec,
-        vpid: '<p>' + esc([adresse, loc].filter(function (x) { return x; }).join(', ')) + '</p><p>Titulaire : ' + esc(titulaire || dirigeantsDe(oi) || '—') + '</p>' +
-          '<p>Groupement d’achat : ' + esc((pharma.groupement && pharma.groupement !== '—') ? canonG(pharma.groupement) : '—') + '</p>'
-      };
-      apercu = l8Page(ctx);
-    } else {
-      // 20/11/2026 — fiche « Le rendez-vous » : une colonne, chapitres 1-5 communs aux deux vues, chapitre 6 interne (vi-int). Rien n'est ajouté au rendu : la bascule ne fait que cacher / montrer.
-      apercu = fdrPage({
-        pid: pid, pidSafe: pidSafe, pharma: pharma, nom: nameOf(pid, pharma.name), badges: ficheBadge + repriseBadge, comms: comms, loc: loc,
-        grp: (pharma.groupement && pharma.groupement !== '—') ? canonG(pharma.groupement) : '', titulaire: titulaire || dirigeantsDe(oi),
-        tel: tel, mail: mail, voitVentes: voitVentes, A: A, S: S, marge: marge, nbRefs: nbRefs,
-        proposer: proposerFdr, nePlus: analyseNePlus(pid), tranches: analyseTranches(A, true), top5: analyseTop5(A), generiqueurs: generiqueurSec,
-        decrochage: (voitVentes && !isOpso() && V2.decrochageUI) ? V2.decrochageUI.bandeau(pid) : '',
-        kvHtml: kvHtml, fe: fe, infos: infos, notes: notes, briefOff: briefOff, listing: listing,
-        reserve: '<div class="v2-card pha-card"><div class="pha-sub" style="padding:16px 18px">Les chiffres de vente de cette officine sont réservés à son commercial' + (pharma.comms && pharma.comms.length ? ' (' + esc(pharma.comms.join(', ')) + ')' : '') + '.</div></div>'
-      });
-    }
+    // 20/11/2026 — fiche « Le rendez-vous » : une colonne, chapitres 1-5 communs aux deux vues, chapitre 6 interne (vi-int). Rien n'est ajouté au rendu : la bascule ne fait que cacher / montrer.
+    var apercu = fdrPage({
+      pid: pid, pidSafe: pidSafe, pharma: pharma, nom: nameOf(pid, pharma.name), badges: ficheBadge + repriseBadge, comms: comms, loc: loc,
+      grp: (pharma.groupement && pharma.groupement !== '—') ? canonG(pharma.groupement) : '', titulaire: titulaire || dirigeantsDe(oi),
+      tel: tel, mail: mail, voitVentes: voitVentes, A: A, S: S, marge: marge, nbRefs: nbRefs,
+      proposer: proposerFdr, nePlus: analyseNePlus(pid), tranches: analyseTranches(A, true), top5: analyseTop5(A), generiqueurs: generiqueurSec,
+      decrochage: (voitVentes && !isOpso() && V2.decrochageUI) ? V2.decrochageUI.bandeau(pid) : '',
+      kvHtml: kvHtml, fe: fe, infos: infos, notes: notes, briefOff: briefOff, listing: listing,
+      reserve: '<div class="v2-card pha-card"><div class="pha-sub" style="padding:16px 18px">Les chiffres de vente de cette officine sont réservés à son commercial' + (pharma.comms && pharma.comms.length ? ' (' + esc(pharma.comms.join(', ')) + ')' : '') + '.</div></div>'
+    });
     if (!voitVentes) { listing = ''; generiqueurSec = ''; }
     // 02/10/2026 — l'onglet « Audit marge » est retiré (décision de Will) : plus d'onglets, la fiche n'a que l'analyse.
     var tabs = '';
@@ -4750,7 +4487,6 @@
         '<div id="phft-c-apercu">' + apercu + '</div>' +
       '</div>';
     document.body.classList.toggle('l8-vp', vue === 'pharmacien' && VI_FORME === 'ecran');   // 29/10 : seule la v3 cache aussi la barre de l'application
-    if (menu) l8Afficher();
     if (V2.profil) V2.profil.hydrate();
     if (V2.notes) V2.notes.hydrate();
     if (V2.rdvPrepa) V2.rdvPrepa.hydrate();
@@ -4872,7 +4608,6 @@
   };
   // 11/11/2026 — texte commun aux deux vues : « ses… » côté Intégral, « vos… » côté pharmacien (les deux versions sont posées, la bonne se montre par vi-int / vi-ph).
   function vv(i, p) { return i === p ? i : '<span class="vi-int">' + i + '</span><span class="vi-ph">' + p + '</span>'; }
-  function cl1SurMois(n) { return n > 1 ? vv('sur ses ' + n + ' mois livrés', 'sur vos ' + n + ' mois livrés') : vv('sur son seul mois livré', 'sur votre seul mois livré'); }   // « 1 mois livrés » : accord au singulier
   function phaLib(nom) {
     var l = PHA_LIB[nom]; if (!l) return esc(nom);
     return l[0] === l[1] ? esc(l[0]) : '<span class="vi-int">' + esc(l[0]) + '</span><span class="vi-ph">' + esc(l[1]) + '</span>';
