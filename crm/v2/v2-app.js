@@ -1118,11 +1118,13 @@
     // 10/11/2026 — Tournées : le classement des tournées de livraison (v2-tournees.js). Le groupe (`fam`) dépend de la personne : l'équipe OPS l'a sur l'accueil, tous les autres comptes (hors rôle opso) dans « En développement ».
     tournees: { fam: 'dev', ico: 'tournees', nom: 'Tournées', ph: 'Quelle tournée de livraison travailler en premier', page: 'tournees' }
   };
+  // 20/11/2026 — Phirst (phirst/v2) donne ses propres portes par window.V2_BRAND.portes ; sans ce réglage (JARVIS, Escale, OPSO), rien ne change.
+  if (window.V2_BRAND && window.V2_BRAND.portes) { G4_PORTES = window.V2_BRAND.portes; G4_REPLI = Object.keys(G4_PORTES); }
   // 10/11/2026 (Will) — équipe OPS : Will, Alexandre Morel (même accès que Will), Arthur Lehouerou, Valérie Morlaix, Karine (KV). Écran ouvert à tout compte connecté hors rôle opso ; ceci ne décide QUE de l'endroit de l'entrée.
   var TOURN_EQUIPE = ['william.morel@me.com', 'alexandre.morel@me.com', 'arthur.lehouerou@integralpharma.fr', 'valerie.morlaix@integralpharma.fr', 'karine.vezzaro@integralpharma.fr'];
   V2.tourneesEquipe = function () { return !!(V2.user && TOURN_EQUIPE.indexOf(String(V2.user.email || '').toLowerCase()) >= 0); };
   function tournInterdit() { return !!((window.V2_BRAND && window.V2_BRAND.opso) || (V2.user && (V2.user.opsoOnly || V2.user.role === 'opso'))); }
-  Object.defineProperty(G4_PORTES.tournees, 'fam', { enumerable: true, get: function () { return V2.tourneesEquipe() ? 'accueil' : 'dev'; } });
+  if (G4_PORTES.tournees) Object.defineProperty(G4_PORTES.tournees, 'fam', { enumerable: true, get: function () { return V2.tourneesEquipe() ? 'accueil' : 'dev'; } });
   var G4_CLE_ORDRE = 'jarvis_accueil_ordre2';
   var _g4Ordre = null;        // [{e, o, p}] : écran, ouvertures, personnes (jamais affichés)
   var _g4Demande = false;     // un seul appel réseau par chargement de page
@@ -1486,7 +1488,7 @@
     }));
   }
   function u2Outil(k) {
-    var d = G4_PORTES[k];
+    var d = G4_PORTES[k] || { nom: '', ph: '', page: k };   // 20/11/2026 : une porte absente de V2_BRAND.portes (Phirst) ne fait plus planter l'accueil
     var o = { k: k, nom: d.nom, ph: (u2Escale() && _g4Esc[k]) ? _g4Esc[k] : d.ph, act: 'go:' + k, href: '#' + k };
     if (k === 'academy') { o.act = ''; o.href = Q_ACADEMY; o.ext = true; }
     // 20/11/2026 (Will : « officine faut que ça ouvre officines et pas groupement ») : l'écran Officines garde en mémoire sa dernière vue ;
