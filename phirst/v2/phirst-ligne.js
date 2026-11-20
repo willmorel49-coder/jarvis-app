@@ -3,16 +3,44 @@
    glisse au-dessus du moment choisi. Téléphone (≤ 1000 px) : maquette A « le rail » (choix de Will, 20/11/2026), tout
    entière dans phirst-ligne.css.
    Données : window.PHIRST_LIGNE = [{ cle, mot, pharmacies: [{ nom, ville, etiquette: { t, ton } }], total, autres,
-   chose: { titre, heure, detail, bouton }, vide: { texte, bouton } }] — chaque moment qui peut être vide porte « vide ».
-   Elles viennent de la base Phirst, JAMAIS d'un fichier du dépôt. Sans données, rien ne s'affiche : l'accueil sobre
-   reste tel quel. Un moment vide dit quoi faire pour se remplir, jamais « 0 » ni « rien de prévu » (Will, 20/11/2026). */
+   chose: { titre, heure, detail, parution, bouton }, vide: { texte, bouton } }] — chaque moment qui peut être vide porte « vide ».
+   Elles viennent de la base Phirst, JAMAIS d'un fichier du dépôt : table ligne_accueil, SA ligne seule, recalculée chaque
+   matin par le robot du Mac (~/phirst-ligne/, choix de Will du 20/11/2026). Posées d'avance dans window.PHIRST_LIGNE
+   (sondes), elles ne sont pas relues. Sans données, ligne illisible ou calculée il y a plus de 36 h (ses « J-5 » seraient
+   faux), rien ne s'affiche : l'accueil sobre reste tel quel. Un moment vide dit quoi faire pour se remplir, jamais « 0 »
+   ni « rien de prévu » (Will, 20/11/2026). */
 (function () {
   'use strict';
-  var D = window.PHIRST_LIGNE;
-  if (!Array.isArray(D) || !D.length) return;
-  var R = document.documentElement, cle = D[0].cle;
-  /* crochets de la galerie du 20/11/2026, gardés tels quels : la feuille reste celle qui a été prouvée */
-  R.setAttribute('data-ligne', '6'); R.setAttribute('data-donnees', 'reelles'); R.setAttribute('data-tel', 'a');
+  var R = document.documentElement, D = null, cle = null, pour = null, AGE_MAX = 36 * 3600 * 1000;
+  function poser(d) {
+    if (!Array.isArray(d) || !d.length) return false;
+    D = d; cle = D[0].cle;
+    /* crochets de la galerie du 20/11/2026, gardés tels quels : la feuille reste celle qui a été prouvée */
+    R.setAttribute('data-ligne', '6'); R.setAttribute('data-donnees', 'reelles'); R.setAttribute('data-tel', 'a');
+    return true;
+  }
+  var DAVANCE = poser(window.PHIRST_LIGNE);
+  /* une fois par compte connecté : SA ligne (la règle de la base ne rend que celle-là) */
+  function charger() {
+    var V2 = window.V2, u = V2 && V2.user;
+    if (DAVANCE || !u || pour === u.id || typeof V2.sb !== 'function') return;
+    var sb = V2.sb(); if (!sb) return;
+    if (pour) { D = null; var vieux = document.getElementById('lg-ligne'); if (vieux) vieux.remove(); }
+    pour = u.id;
+    sb.from('ligne_accueil').select('donnees,calcule_le').eq('user_id', u.id).maybeSingle().then(function (r) {
+      var x = r && !r.error && r.data;
+      if (!x || !(Date.now() - Date.parse(x.calcule_le) <= AGE_MAX)) return;
+      if (window.V2.user && window.V2.user.id === u.id && poser(x.donnees)) monter();
+    }, function () {});
+  }
+  /* « aujourd'hui », « hier » ou « le 17 novembre » (même format que dateCourte de la V1), à l'heure de Paris */
+  function depuis(iso) {
+    var p = {}, j0 = String(iso).slice(0, 10);
+    new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' })
+      .formatToParts(new Date()).forEach(function (x) { p[x.type] = x.value; });
+    var j = Math.round((Date.UTC(+p.year, +p.month - 1, +p.day) - Date.parse(j0)) / 864e5);
+    return j <= 0 ? 'aujourd’hui' : j === 1 ? 'hier' : 'le ' + new Date(j0).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' });
+  }
   /* nombre de pharmacies d'un moment : « total » quand la liste n'en montre qu'une partie (veille), sinon la liste */
   function nb(s) { return s.total != null ? s.total : s.pharmacies.length; }
   function avenir(s) { return nb(s) === 0 && !!s.vide; }
@@ -40,7 +68,8 @@
       return h + '<p class="lg-sur"><i></i>' + esc(s.mot) + ' · à venir</p><p class="lg-consigne">' + esc(s.vide.texte) + '</p>' +
         '<button type="button" class="lg-gros">' + esc(s.vide.bouton) + FL + '</button></div></div>';
     h += '<p class="lg-sur"><i></i>' + (c ? 'La chose n° 1 · ' : '') + esc(s.mot) + '</p>';
-    if (c) h += '<p class="lg-titre">' + esc(c.titre) + '</p><p class="lg-det">' + esc(c.heure) + (c.detail ? ' · ' + esc(c.detail) : '') + '</p><button type="button" class="lg-gros">' + esc(c.bouton) + FL + '</button>';
+    var det = c && (c.parution ? 'Paru au BODACC ' + depuis(c.parution) + '.' : c.detail);
+    if (c) h += '<p class="lg-titre">' + esc(c.titre) + '</p><p class="lg-det">' + esc(c.heure) + (det ? ' · ' + esc(det) : '') + '</p><button type="button" class="lg-gros">' + esc(c.bouton) + FL + '</button>';
     h += '</div><div class="lg-liste"><p class="lg-lt">' + n + ' pharmacie' + (n > 1 ? 's' : '') + ' à ce moment</p><ul>' + lignes(s.pharmacies);
     return h + '</ul>' + (s.autres ? '<button type="button" class="lg-autres">' + esc(s.autres) + FL + '</button>' : '') + '</div></div>';
   }
@@ -56,6 +85,8 @@
     soleil();
   }
   function monter() {
+    charger();
+    if (!D) return;
     var champ = document.getElementById('aube-champ');
     if (!champ || !document.getElementById('aube-acc') || document.getElementById('lg-ligne')) return;
     var el = document.createElement('section'); el.id = 'lg-ligne'; el.className = 'lg lg-v6'; el.setAttribute('aria-label', 'Vos pharmacies en route');
