@@ -83,7 +83,7 @@ test('tri : la liste d’origine n’est pas modifiée', () => {
 });
 
 test('ligne : nom et ville en capitales dans la donnée (pas seulement en CSS)', () => {
-  const ligne = tranche('function ligneOfl(x) {', 'function carteHtml');
+  const ligne = tranche('function ligneOfl(x) {', '// ── Secteur : UGA');
   assert.match(ligne, /String\(p\.name \|\| ''\)\.toLocaleUpperCase\('fr-FR'\)/);
   assert.match(ligne, /String\(p\.ville \|\| ''\)\.toLocaleUpperCase\('fr-FR'\)/);
 });
