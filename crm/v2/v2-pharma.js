@@ -958,10 +958,12 @@
     return { oui: v[0] === 1, date: /^\d{4}-\d{2}-\d{2}$/.test(d) ? d.slice(8) + '/' + d.slice(5, 7) + '/' + d.slice(0, 4) : '' };
   }
   function offilogTexte(pid) {
-    // 06/11/2026 — vrai CA Offilog par mois (HT) quand le fichier de ventes est chargé ; sinon le texte d'avant.
-    var ventes = V2.offVentes && V2.offVentes.texteFiche(pid, (window.WML_OFF_CA || {}).off);
-    if (ventes) return ventes;
-    var o = offilogDe(pid);
+    // 20/11/2026 — les montants par mois vivent au chapitre 1 (bloc « Offilog, mois par mois », fdrOffilog) : ici le statut seul, sans doublon.
+    // Notée cliente sans achat : « Aucun achat en <période> · notée cliente au … » (texteFiche) ; sinon le statut du fichier de géolocalisation.
+    var off = (window.WML_OFF_CA || {}).off, OV = V2.offVentes, o = offilogDe(pid);
+    if (OV && OV.moisFiche && OV.moisFiche(pid, off)) return 'Cliente' + (o && o.oui && o.date ? ' · au ' + o.date : '');
+    var sans = OV && off && !(off.v && off.v[String(pid)]) ? OV.texteFiche(pid, off) : '';
+    if (sans) return sans;
     return o ? (o.oui ? 'Cliente' : 'Non cliente') + (o.date ? ' · au ' + o.date : '') : '';
   }
   // 16/10/2026 — offre Sanofi / UPSA (colonne TIRBRANCHE), même table protégée : off.b = {code:[0 aucun|1 Sanofi|2 UPSA|3 les deux, rang de la date]},
@@ -3995,6 +3997,16 @@
       (A.n >= 2 ? '<div class="fdr-sc">' + caChartSvg(A.pts, 820, 250, true) + '</div>' : '<p class="fdr-leg">Pas assez de mois pour tracer une courbe.</p>') +
       m5Replie('fdr-mois', 'Tableau mois par mois', analyseMoisTableau(A, true)) + '</div>';
   }
+  // 20/11/2026 — demande de Will : « voir son CA offilog si elle en a, mois par mois ». Vu du pharmacien (pas de vi-int), à côté du CA Intégral.
+  // Rien si l'officine n'a aucun achat Offilog (V2.offVentes.moisFiche rend null). La prime du commercial n'apparaît jamais.
+  function fdrOffilog(pid) {
+    var OV = V2.offVentes, F = OV && OV.moisFiche && OV.moisFiche(pid, (window.WML_OFF_CA || {}).off);
+    if (!F) return '';
+    var c = function (lbl, v, cls) { return '<div class="fdr-off-m' + (cls ? ' ' + cls : '') + '"><span class="fdr-off-l">' + esc(lbl) + '</span><b class="fdr-off-v">' + OV.eur(v) + '</b></div>'; };
+    return '<div class="fdr-bloc fdr-off" id="fdr-offilog"><h3>Offilog, mois par mois</h3>' +
+      '<p class="fdr-leg">achats sur Offilog, hors taxes, avoirs déduits · ' + esc(F.periode) + '</p><div class="fdr-off-ms">' +
+      F.mois.map(function (m) { return c(m.lib, m.ht); }).join('') + (F.mois.length > 1 ? c('Total ' + F.periode, F.total, 'fdr-off-t') : '') + '</div></div>';
+  }
   // 20/11/2026 — défaut 13 de l'audit : les deux fiches de prospect (créée à la main, base nationale) prennent l'habillage de la fiche
   // « Le rendez-vous » : même en-tête (aube), sommaire collant, chapitres numérotés. Rien n'est retiré : les formulaires (identité, coordonnées,
   // infos) passent derrière « Modifier les informations », comme sur la fiche cliente (fini la redite carte ↔ formulaire).
@@ -4041,7 +4053,7 @@
       h = '<section class="fdr-ch"><div class="fdr-ch-c">' + c.reserve + '</div></section>';
       return '<div class="fdr">' + tete + h + '</div>';
     }
-    h += fdrChapitre(1, '<div class="fdr-c1">' + fdrMontants(A, c.nbRefs) + fdrCourbe(A) + '</div>', '');
+    h += fdrChapitre(1, '<div class="fdr-c1">' + fdrMontants(A, c.nbRefs) + fdrCourbe(A) + fdrOffilog(c.pid) + '</div>', '');
     h += fdrChapitre(2, c.proposer, '');
     h += fdrChapitre(3, c.nePlus || '<p class="fdr-leg">Rien à signaler.</p>', '');
     h += fdrChapitre(4, c.tranches + '<div class="fdr-bloc fdr-rep">' + m5Replie('fdr-top5', 'Top 10 par catégorie', c.top5) + m5Replie('fdr-parts', 'Par catégorie, mois par mois', analyseParts(A, true)) + '</div>', '');

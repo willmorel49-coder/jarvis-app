@@ -55,6 +55,16 @@
     }
     return '';
   }
+  // 20/11/2026 — bloc « Offilog, mois par mois » du chapitre 1 de la fiche (vu du pharmacien) : un montant HT par mois du fichier,
+  // le total de la période. null si l'officine n'a aucun achat (pas de ligne, ou que des mois à 0). Jamais la prime (`pr`).
+  function moisFiche(pid, off) {
+    if (!off || !off.vm || !off.vm.length || !off.v) return null;
+    var v = off.v[String(pid)];
+    if (!v) return null;
+    var mois = off.vm.map(function (ym, i) { return { ym: ym, lib: moisLong(ym), ht: r2(+v[i] || 0) }; });
+    if (!mois.some(function (m) { return m.ht !== 0; })) return null;
+    return { mois: mois, total: r2(mois.reduce(function (s, m) { return s + m.ht; }, 0)), periode: periode(off.vm) };
+  }
 
   // ── 2. Périmètre ─────────────────────────────────────────────────────────
   // ctx = { commFilter: '' | prénom, restreint: bool, mes: [prénoms du commercial et collègues ouverts] }
@@ -276,7 +286,7 @@
   }
 
   var O = {
-    texteFiche: texteFiche, portee: portee, classement: classement, prime: prime, aRelancer: aRelancer,
+    texteFiche: texteFiche, moisFiche: moisFiche, portee: portee, classement: classement, prime: prime, aRelancer: aRelancer,
     bloc: bloc, lier: lier, eur: eur, periode: periode, moisCourt: moisCourt, estHors: estHors,
     choisirMois: function (ym) { ETAT.mois = ym; },
     _reset: function () { ETAT.mois = null; _idx = null; }

@@ -36,6 +36,21 @@ test('fiche : notée cliente sans achat, et sinon rien (le texte d\'avant repren
   assert.equal(O.texteFiche('4', { ...OFF, vm: ['2026-09', '2027-01'] }), 'Aucun achat en sept. 2026–janv. 2027 · notée cliente au 02/10/2026');
 });
 
+test('fiche, chapitre 1 : un montant par mois, le total de la période, jamais la prime', () => {
+  const f = O.moisFiche('1', OFF);
+  assert.deepEqual(f, { mois: [{ ym: '2026-09', lib: 'sept. 2026', ht: 150 }, { ym: '2026-10', lib: 'oct. 2026', ht: 3121.4 }], total: 3271.4, periode: 'sept.–oct. 2026' });   // 150 + 3121,4
+  assert.equal(O.moisFiche('3', OFF).total, 300);              // 300 + 0 : un mois vide reste affiché à 0
+  assert.equal(O.moisFiche('8', OFF).total, -50);              // avoirs > factures : montant réel, négatif
+  assert.ok(!JSON.stringify(O.moisFiche('1', OFF)).includes('"s"') && !('pr' in O.moisFiche('1', OFF)));
+});
+test('fiche, chapitre 1 : rien si l\'officine n\'a aucun achat', () => {
+  assert.equal(O.moisFiche('4', OFF), null);                   // notée cliente, aucune ligne de vente
+  assert.equal(O.moisFiche('404', OFF), null);                 // inconnue
+  assert.equal(O.moisFiche('10', { ...OFF, v: { 10: [0, 0] } }), null);   // que des mois à 0
+  assert.equal(O.moisFiche('1', { d: OFF.d, m: OFF.m }), null);           // table d'avant (pas de vm)
+  assert.equal(O.moisFiche('1', null), null);
+});
+
 test('classement : par commercial, JARVIS d\'abord, hors JARVIS et sans commercial à part', () => {
   const c = O.classement(OFF, OFFICINES, TOUS, '2026-09');
   // sept : Anne = 150 + 300 - 50 = 400 (2 pharmacies > 0 : P1, P3) ; Béa = 90 (1) ; hors = 400 (1) ; sans = 120 (1)

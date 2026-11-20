@@ -1628,6 +1628,13 @@ html:root:root body .fdr-on .fdr-sw .vv-b[aria-pressed="true"]{background:var(--
 .fdr-on .fdr-sc{margin:6px -4px 0}
 .fdr-on .fdr-sc svg{display:block;width:100%;height:auto}
 .fdr-on .fdr-courbe .pha-m5-det{margin-top:8px}
+/* 20/11/2026 — Offilog, mois par mois (sous les montants et la courbe, toute la largeur) ; le total prend la lumière du 1er montant */
+.fdr-on .fdr-off{grid-column:1 / -1}
+.fdr-on .fdr-off-ms{display:flex;flex-wrap:wrap;gap:10px}
+.fdr-on .fdr-off-m{flex:1 1 160px;min-width:0;display:flex;flex-direction:column;gap:2px;padding:10px 16px;border:1px solid var(--fdr-trait);border-radius:16px;background:#fff}
+.fdr-on .fdr-off-t{background:radial-gradient(300px 160px at 100% 0,#FFEBC9 0,#EAF1FF 55%,#E9F0FF 100%);border-color:#D5E0F7}
+.fdr-on .fdr-off-l{font-size:13px;font-weight:700;color:#2A2F3C}
+.fdr-on .fdr-off-v{font-size:28px;line-height:1.1;font-weight:800;letter-spacing:-.025em;color:var(--ip-blue-d,#0034A0);white-space:nowrap;font-variant-numeric:tabular-nums}
 
 /* ── Détails repliés (même habillage partout) ─────────────────────── */
 .fdr-on .pha-m5-det,.fdr-on .fdr-det{border-top:1px solid var(--fdr-trait);margin-top:10px;padding-top:2px}
