@@ -126,3 +126,4 @@
   .ag-zone .pa-rap label{flex:1 1 100%}
   .pa-quand .pa-b.pa-ok,.ag-zone .pa-b.pa-ok{width:100%}
 }
+.ag-annules>summary.ag-sh{min-height:44px;box-sizing:border-box;padding:12px 0;margin:10px 0 0;cursor:pointer}

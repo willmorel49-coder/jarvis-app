@@ -113,7 +113,8 @@
     } else {
       h += '<p class="pa-avis">' + esc(P.phraseEtat(duJ, libresJ.length)) + '</p><ul class="pa-liste">' + actifs.map(function (e) { return carteRdv(e, maint); }).join('') + '</ul>';
     }
-    if (annules.length) h += '<h3 class="ag-sh">Annulés ce jour (' + annules.length + ')</h3><ul class="pa-liste">' + annules.map(function (e) { return carteRdv(e, maint); }).join('') + '</ul>';
+    // Repliés : quelques annulations ne doivent pas repousser la journée hors de vue.
+    if (annules.length) h += '<details class="ag-annules"><summary class="ag-sh">Annulés ce jour (' + annules.length + ')</summary><ul class="pa-liste">' + annules.map(function (e) { return carteRdv(e, maint); }).join('') + '</ul></details>';
     return h;
   }
 
