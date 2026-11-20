@@ -27,21 +27,39 @@
   // 19/10/2026 — « Mes officines » au téléphone, vue Tous : 2 391 lignes d'un coup = page de 178 000 px. On n'en montre que 50 à la fois.
   // Actif seulement : téléphone + JARVIS + aucun commercial choisi + pas un commercial restreint + plus de 50 lignes. Sinon rendu inchangé.
   // 30/10/2026 — « plus clair » : sur « Mes officines » (hors OPSO), des cartes : 30 à la fois, à toutes les largeurs
-  var OF_PAR = 30, ofVues = OF_PAR, ofCle = '', ofRedessine = null;
+  var OF_PAR = 50, ofVues = OF_PAR, ofCle = '', ofRedessine = null;
+  // ── 20/11/2026 — « Le répertoire » : l'écran Officines devient un tableau (une ligne par officine) ──
+  // État du tableau : tournée choisie (code, « » = toutes), seulement les officines à rappeler, colonne de tri et son sens (1 croissant, -1 décroissant).
+  var ofl = { tourn: '', rap: false, tri: 'ca', sens: -1, trnDemande: false };
+  var OFL_TRIS = { ca: ['Chiffre d’affaires', -1], nom: ['Nom', 1], nm: ['Notre marge Intégral', -1], marge: ['Marge du pharmacien', -1], rap: ['À rappeler d’abord', -1], tourn: ['Tournée', 1] };
+  // Tournée de livraison de chaque officine : même règle que « ficheDe » de v2-tournees.js (son code, sinon la fiche reliée). Recalculée quand le fichier arrive.
+  var _trnRef = null, _trnIdx = null;
+  function trnIdx() {
+    var T = window.TOURNEES_ECRAN; if (!T || !T.tournees) return null;
+    if (_trnRef === T) return _trnIdx;
+    var m = {};
+    Object.keys(T.tournees).forEach(function (k) {
+      (T.tournees[k].arrets || []).forEach(function (a) {
+        [a.id, a.fi].forEach(function (id) { if (id == null || id === '') return; var l = m[String(id)] || (m[String(id)] = []); if (l.indexOf(k) < 0) l.push(k); });
+      });
+    });
+    _trnRef = T; _trnIdx = m; return m;
+  }
+  function trnDe(p) { var m = trnIdx(); return (m && m[String(p.id)]) || []; }
   function ofActif(n) { return n > OF_PAR && !isOpso(); }
-  function ofRaz() {   // la clé change (commercial, onglet, recherche) → retour aux 50 premières
-    var cle = (V2.commFilter || '') + '|' + secteurTab + '|' + searchQuery;
+  function ofRaz() {   // la clé change (commercial, onglet, recherche, tournée, filtre, tri) → retour aux 50 premières
+    var cle = (V2.commFilter || '') + '|' + secteurTab + '|' + searchQuery + '|' + ofl.tourn + '|' + ofl.rap + '|' + ofl.tri + '|' + ofl.sens;
     if (cle !== ofCle) { ofCle = cle; ofVues = OF_PAR; }
   }
   // 50 lignes, puis un bouton « Voir les 50 suivantes » ; chaque appui en ajoute 50.
-  function ofCarte(filtered) {
+  function ofCarte(filtered, masc) {
     ofRaz();
     var vues = Math.min(ofVues, filtered.length), reste = filtered.length - vues;
     return {
       n: V2.fmtNum(filtered.length) + ' officines · ' + V2.fmtNum(vues) + ' affichées',
       html: filtered.slice(0, vues).map(ligneOuCarte).join('') +
         (reste > 0 ? '<div class="of-suite"><button type="button" class="v2-btn v2-btn-ghost" onclick="V2.pharmaOfPlus()">Voir les ' + Math.min(reste, OF_PAR) +
-          ' suivantes</button><span class="of-reste">(' + V2.fmtNum(reste) + ' restantes)</span></div>' : '')
+          (masc ? ' suivants' : ' suivantes') + '</button><span class="of-reste">(' + V2.fmtNum(reste) + (masc ? ' restants)' : ' restantes)') + '</span></div>' : '')
     };
   }
   var _chartBind = null;   // bind du chart 13 mois (homogénéisé avec Pilotage), appelé après render
@@ -855,7 +873,47 @@
 
   // ── 30/10/2026 — « plus clair » : l'écran Officines dans la veine de l'accueil (maquette 1). Hors OPSO. Aucun calcul nouveau : on ne fait que lire ce que l'app calcule déjà.
   var _rap = {};   // officines « à rappeler » (v2-decrochage.js) : pid → { pct }
-  function ligneOuCarte(x) { return (!isOpso()) ? carteHtml(x) : listRowHtml(x); }
+  function ligneOuCarte(x) { return (!isOpso()) ? ligneOfl(x) : listRowHtml(x); }
+  // Période de la colonne « Notre marge Intégral » : celle des ventes, bornée au dernier mois du fichier de notre marge (estimation).
+  function oflPerMarge() {
+    var mv = moisVentes(), j = V2.notreMarge && V2.notreMarge.jusqua ? V2.notreMarge.jusqua() : '', au = mv.au;
+    if (j && j < au) au = j;
+    return cl1Per(mv.du, au);
+  }
+  // 20/11/2026 — une ligne du tableau. Les explications (période, estimation) sont dites une fois, dans l'en-tête de colonne ;
+  // seule une période DIFFÉRENTE de celle de l'en-tête s'écrit sous le chiffre (un secteur dont les fichiers s'arrêtent plus tôt).
+  function ligneOfl(x) {
+    var p = x.p, pid = String(p.id), voit = V2.voitVentesDe(p.id), ev = _rap[pid], pros = !!p._prospect;
+    var nom = V2.esc(String(p.name || '').toLocaleUpperCase('fr-FR'));
+    var ville = V2.esc([String(p.ville || '').toLocaleUpperCase('fr-FR'), cpDe(p)].filter(Boolean).join(' · '));
+    var trn = trnDe(p), t = trn.length ? '<span class="ofl-t">' + V2.esc(trn.join(', ')) + '</span>' : '';
+    var onclick = 'onclick="V2.pharmaNav.va(\'' + V2.esc(pid) + '\',1)" onkeydown="if(event.key===\'Enter\')this.click()"';
+    if (pros) {
+      var st = p._cree ? (p._archive ? 'archivée' : 'créé à la main') : 'Prospect';
+      return '<a class="ofl-r ofl-r-pros" role="row" tabindex="0" ' + onclick + '>' +
+        '<span class="ofl-c-nom"><b class="ofl-nom">' + nom + '</b><span class="ofl-sous"><span class="ofl-ville">' + ville + '</span>' + t + '</span></span>' +
+        '<span class="ofl-c-t">' + t + '</span><span class="ofl-c-rap"><span class="ofl-pill ofl-pill-p">' + st + '</span></span></a>';
+    }
+    var sv = !!p._sansVente, nm = (V2.notreMarge && V2.notreMarge.dispo()) ? notreMargeDe(p.id) : undefined;
+    var perV = cl1PerV(), perM = oflPerMarge();
+    var cell = function (txt, per, ref, cls) {
+      return '<span class="ofl-c-n ' + cls + '"><b>' + txt + '</b>' + (per && per !== ref ? '<small>' + per + '</small>' : '') + '</span>';
+    };
+    var pOff = voit ? cl1PerOff(p.id) : '', pOffM = voit ? cl1PerOff(p.id, true) : '';
+    var pct = ev && ev.pct != null && !sv ? Math.round(ev.pct * 100) : null;
+    var rap = ev && !sv ? '<span class="ofl-pill ofl-pill-w" title="Achats en baisse sur trois mois">À rappeler</span>' + (pct ? '<small>−' + pct + ' % en 3 mois</small>' : '')
+      : sv ? '<span class="ofl-pill ofl-pill-p">Aucune vente</span>' : '';
+    var caTxt = voit ? V2.fmtEur(x.ca) : '—', nmTxt = nm ? V2.fmtEur(nm.tot) : '—', mgTxt = voit ? V2.fmtEur(x.marge) : '—';
+    return '<a class="ofl-r" role="row" tabindex="0" ' + onclick + '>' +
+      '<span class="ofl-c-nom"><b class="ofl-nom">' + nom + '</b><span class="ofl-sous"><span class="ofl-ville">' + ville + '</span>' + t +
+        (rap ? '<span class="ofl-m-rap">' + (ev && !sv ? '<span class="ofl-pill ofl-pill-w">À rappeler</span>' : '<span class="ofl-pill ofl-pill-p">Aucune vente</span>') + '</span>' : '') +
+        (nm !== undefined ? '<span class="ofl-m-nm">marge ' + nmTxt + '</span>' : '') + '</span></span>' +
+      '<span class="ofl-c-t">' + t + '</span>' +
+      cell(caTxt, pOff, perV, 'ofl-c-ca') +
+      (nm !== undefined ? cell(nmTxt, pOffM, perM, 'ofl-c-nm') : '') +
+      cell(mgTxt, pOff, perV, 'ofl-c-mg') +
+      '<span class="ofl-c-rap">' + rap + '</span></a>';
+  }
   function carteHtml(x) {
     var p = x.p, voit = V2.voitVentesDe(p.id), ev = _rap[String(p.id)];
     var etat = p._prospect ? ['Prospect', 'm1-info'] : p._sansVente ? ['Aucune vente', 'm1-info'] : ev ? ['À rappeler', 'm1-warn'] : ['Cliente', 'm1-ok'];
@@ -1057,7 +1115,7 @@
   function renderList(root) {
     document.body.classList.remove('l8-vp');   // 29/10/2026 : liste = application normale (la vue « écran tourné » ne vit que sur une fiche)
     var marketReady = !!window.OPS_AGGREGATE;
-    var m1 = !isOpso(), arrivee = m1 && ofArrivee();   // 30/10/2026 — « plus clair » : tout passe par !isOpso()
+    var m1 = !isOpso();   // 30/10/2026 — « plus clair » : tout passe par !isOpso()
     if (m1) { _rap = {}; try { ((V2.decrochageUI && V2.decrochageUI.liste && V2.decrochageUI.liste(500)) || []).forEach(function (o) { _rap[o.pid] = o; }); } catch (e) {} }
     var phs = (V2.pharmacies || []).map(function (p) {
       var sales = pharmaSales(p.id);
@@ -1102,31 +1160,77 @@
       phs.forEach(function (x) { if (x.p.inDb) nbClientes++; else nbProspects++; });
     }
 
+    // 20/11/2026 — le fichier des tournées n'est pas chargé au démarrage : on le demande UNE fois, puis on redessine (jamais en boucle s'il n'arrive pas).
+    if (m1 && !window.TOURNEES_ECRAN && !ofl.trnDemande && V2.loadFiles) {
+      ofl.trnDemande = true;
+      Promise.resolve(V2.loadFiles(['tournees'])).then(function () {
+        if (window.TOURNEES_ECRAN && V2.route && V2.route.name === 'pharma' && !V2.route.param) V2.render();
+      }).catch(function () {});
+    }
+    var tournOk = function (x) { return !ofl.tourn || trnDe(x.p).indexOf(ofl.tourn) >= 0; };
+    // Tri du tableau. Prospects : seuls le nom et la tournée trient, sinon l'ordre du secteur est gardé.
+    function trier(list, pros) {
+      var k = ofl.tri, d = ofl.sens;
+      if (pros && k !== 'nom' && k !== 'tourn') return list;
+      // clé de tri « annuaire » : sans « PHARMACIE », « SELARL »… ni article au début (« PHARMACIE DU MONT DE FACHES » se range à M)
+      var nom = function (x) {
+        var n = String(x.p.name || '').toLocaleUpperCase('fr-FR').replace(/[’']/g, ' ').trim(), avant;
+        do { avant = n; n = n.replace(/^(SELARL|SELAS|SELURL|SARL|EURL|SNC|GRANDE|PHARMACIE|PHARMACEUTIQUE|PHIE|DE LA|DE L|DES|DU|DE|D|LA|LE|LES|L|AUX|AU|ET)\s+/, ''); } while (n !== avant && n);
+        return n || String(x.p.name || '');
+      };
+      var cmpNom = function (a, b) { return nom(a).localeCompare(nom(b), 'fr'); };
+      var val = {
+        ca: function (x) { return x.ca; },
+        marge: function (x) { return x.marge; },
+        nm: function (x) { var n = notreMargeDe(x.p.id); return n ? n.tot : -Infinity; },
+        rap: function (x) { var e = _rap[String(x.p.id)]; return e && !x.p._sansVente ? 1 + (e.pct || 0) : 0; }
+      };
+      return list.slice().sort(function (a, b) {
+        if (k === 'nom') return d * cmpNom(a, b);
+        if (k === 'tourn') {
+          var ta = trnDe(a.p)[0] || '', tb = trnDe(b.p)[0] || '';
+          if (!ta !== !tb) return ta ? -1 : 1;   // sans tournée : toujours en dernier
+          return d * (ta < tb ? -1 : ta > tb ? 1 : 0) || cmpNom(a, b);
+        }
+        var f = val[k] || val.ca;
+        return d * (f(a) - f(b)) || (b.ca - a.ca) || cmpNom(a, b);
+      });
+    }
     function applyFilters(list) {
       var q = searchQuery.trim().toLowerCase();
-      return list.filter(function (x) {
+      return trier(list.filter(function (x) {
         if (V2.commFilter && !x.p._promu && !x.p._sansVente && (x.p.comms || []).indexOf(V2.commFilter) < 0) return false;
         if (q && !correspond(x.p, q)) return false;
         if (isOpso() && opsoFilter === 'cliente' && !x.p.inDb) return false;
         if (isOpso() && opsoFilter === 'prospect' && x.p.inDb) return false;
+        if (m1 && !tournOk(x)) return false;
+        if (m1 && ofl.rap && !(_rap[String(x.p.id)] && !x.p._sansVente)) return false;
         return true;
-      });
+      }));
     }
 
     var commBar = commSelect();
     var nAff = '';   // « 128 officines » : le compte de ce qui est affiché, écrit par listBody()
     var pl = function (n, mot) { return V2.fmtNum(n) + ' ' + mot + (n > 1 ? 's' : ''); };
 
+    // Une seule ligne de compte, au-dessus du tableau : le nombre affiché, le tri en clair, et de quoi effacer les filtres.
+    var OFL_TXT = { ca: 'chiffre d’affaires', nom: 'nom', nm: 'notre marge Intégral', marge: 'marge du pharmacien', rap: 'à rappeler en premier', tourn: 'tournée' };
+    function oflCompte(n, mot) {
+      var pros = secteurTab === 'prospects', k = ofl.tri;
+      var tri = pros ? ((k === 'nom' || k === 'tourn') ? 'trié par ' + OFL_TXT[k] : '') : 'trié par ' + (OFL_TXT[k] || OFL_TXT.ca);
+      return '<b>' + V2.fmtNum(n) + '</b> ' + mot + (n > 1 ? 's' : '') + (tri ? ' · ' + tri : '') +
+        (ofl.tourn || ofl.rap || searchQuery.trim() ? ' · <button type="button" class="ofl-raz" onclick="V2.oflRaz()">Effacer les filtres</button>' : '');
+    }
     function cardHtml(filtered) {
-      nAff = pl(filtered.length, 'officine') + (m1 && filtered.length > 1 && cl1PerVDe() ? ', classées par chiffre d’affaires ' + cl1PerVDe() : '');   // 11/11/2026 — Façon 1 : l'ordre dit en clair
+      nAff = m1 ? oflCompte(filtered.length, 'officine') : pl(filtered.length, 'officine');   // le nombre s'écrit UNE fois, au-dessus du tableau
       V2._ordreMesOff = filtered.map(function (x) { return String(x.p.id); });   // 26/10/2026 — v2 : l'ordre de la liste d'où l'on vient (« Précédente / Suivante » de la fiche)
       // 19/10/2026 — téléphone, vue Tous : 50 lignes à la fois (voir ofActif)
       ofRaz();   // la clé change même quand la règle ne s'applique pas (recherche à 0 résultat) : effacer la recherche repart bien de 50
-      if (ofActif(filtered.length)) { var o = ofCarte(filtered); nAff = nAff + ' · ' + V2.fmtNum(Math.min(ofVues, filtered.length)) + ' affichées'; return o.html; }
+      if (ofActif(filtered.length)) { var o = ofCarte(filtered); if (!m1) nAff = nAff + ' · ' + V2.fmtNum(Math.min(ofVues, filtered.length)) + ' affichées'; return o.html; }
       return filtered.length
         ? filtered.map(ligneOuCarte).join('')
         : '<div class="v2-empty"><div class="v2-empty-t">Aucune officine</div><div class="v2-empty-d">' +
-          (searchQuery ? 'Aucun résultat pour « ' + V2.esc(searchQuery) + ' ».' : 'Aucune pharmacie chargée.') +
+          (searchQuery ? 'Aucun résultat pour « ' + V2.esc(searchQuery) + ' ».' : (m1 && (ofl.tourn || ofl.rap) ? 'Aucune officine ne correspond à ces filtres.' : 'Aucune pharmacie chargée.')) +
           '</div></div>';
     }
 
@@ -1186,45 +1290,125 @@
               lienArch('Revenir aux prospects', 'false');
           }
           var archLien = archs.length ? lienArch('Voir ' + (archs.length > 1 ? 'les ' + V2.fmtNum(archs.length) + ' fiches archivées' : 'la fiche archivée'), 'true') : '';
-          var crees = creesRows(q), creesHtml = crees.map(ligneOuCarte).join('');
+          var crees = creesRows(q).filter(tournOk), creesHtml = crees.map(ligneOuCarte).join('');
           if (crees.length) nAff = pl(crees.length, 'prospect');
           // 25/09/2026 — un commercial n'a pas de barre de choix (un seul nom dans ses ventes) : ses UGA d'office.
           var qui = V2.commFilter || (V2.mesComms ? V2.mesComms() : []);
           if (!qui.length) return creesHtml + '<div class="v2-empty"><div class="v2-empty-t">Choisissez un commercial</div><div class="v2-empty-d">Sélectionnez un commercial dans le menu au-dessus pour voir les prospects de son secteur (UGA).</div></div>' + archLien;
           if (!window.PHARMA_FR) return creesHtml + '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement des prospects…</div></div>' + archLien;
-          var pr = commercialProspects(qui, 300, q);
-          var rows = crees.concat(pr.rows);
-          nAff = pr.total > pr.rows.length ? pl(rows.length, 'prospect') + ' affichés sur ' + V2.fmtNum(pr.total + crees.length) : pl(rows.length, 'prospect');
+          // 20/11/2026 — tous les prospects du secteur sont lus (plus de plafond à 300 ni de lien vers la carte) : « Voir les suivants » les affiche 50 par 50.
+          var pr = commercialProspects(qui, 1000000, q);
+          var rows = trier(crees.concat(pr.rows.filter(tournOk)), true);
+          nAff = oflCompte(rows.length, 'prospect');
           if (!rows.length) return '<div class="v2-empty"><div class="v2-empty-t">Aucun prospect</div><div class="v2-empty-d">' + (q ? 'Aucun résultat.' : 'Aucun prospect dans les UGA de ce commercial.') + '</div></div>' + archLien;
-          var more = (pr.total > pr.rows.length) ? '<a class="v2-row" style="justify-content:center;color:var(--muted);cursor:pointer" onclick="V2.go(\'pharma\',\'carte\')">+ ' + (pr.total - pr.rows.length) + ' autres prospects · voir sur la carte</a>' : '';
-          if (!isOpso()) { var oc = ofCarte(rows); nAff = (pr.total > pr.rows.length ? pl(rows.length, 'prospect') + ' sur ' + V2.fmtNum(pr.total + crees.length) : pl(rows.length, 'prospect')) + ' · ' + V2.fmtNum(Math.min(ofVues, rows.length)) + ' affichés'; return oc.html + more + archLien; }
-          return rows.map(ligneOuCarte).join('') + more + archLien;
+          var oc = ofCarte(rows, true); return oc.html + archLien;
         }
       } catch (e) { return '<div class="v2-empty"><div class="v2-empty-t">Prospects indisponibles</div><div class="v2-empty-d">Réessayez plus tard.</div></div>'; }
       return cardHtml(applyFilters(phs));
     }
 
     var corps = listBody();
-    var actions = isOpso() ? '' : '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
-      (secteurTab === 'clients' ? '<button type="button" class="v2-btn v2-btn-ghost" onclick="V2.pharmaClientsXlsx()">' + ICO('download', 18) + 'Exporter mes clients en Excel</button>' : '') +
-      '<button type="button" class="v2-btn v2-btn-ghost" id="of-creer" onclick="V2.pharmaCreerProspect()">' + ICO('plus', 18) + 'Créer un prospect</button></div>';
     var rech = '<label class="v2-champ of-recherche">' + ICO('search', 20, 2) +
       '<input id="v2-pharma-search" type="text" placeholder="Nom, titulaire, ville ou code postal…" aria-label="Rechercher une officine par son nom, son titulaire, sa ville ou son code postal" autocomplete="off" value="' +
       V2.esc(searchQuery) + '"></label>';
-    var drBloc = (!isOpso() && secteurTab === 'clients' && V2.decrochageUI ? V2.decrochageUI.bloc() : '');   // 28/10/2026 — « À rappeler cette semaine », en tête de l'onglet Clients
-    root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
-      '<div class="v2-wrap v2-u' + (m1 ? ' of-m1 of-m1-cartes' + (arrivee ? ' of-ent' : '') + '" id="of-m1' : '') + '">' +
-        (m1 ? enteteM1(nbSect != null ? nbSect : nbCli, nbProsp, actions, secteurBar)
-            : teteOfficines('Les officines de votre secteur et leurs opportunités.', actions)) +
-        (m1 ? '<div class="of-rang">' : '') + (m1 ? '' : counterHtml) +
-        '<div class="of-bar">' + commBar + (m1 ? '' : secteurBar) + opsoFilterBar + (m1 ? rech : '') + '</div>' + (m1 ? '</div>' : '') +
-        drBloc +
-        (m1 ? '' : rech) +
-        '<p class="of-n" id="v2-pharma-n" aria-live="polite">' + nAff + '</p>' +
-        cl1Legende(m1 && secteurTab === 'clients') +
-        '<div class="v2-card" id="v2-pharma-card">' + corps + '</div>' +
-      '</div>';
-    if (m1) { ofVeille(root); if (arrivee) ofJoue(root); }
+
+    // ── 20/11/2026 — « Le répertoire » : recherche, une ligne de filtres en capsules, puis le tableau (hors OPSO) ──
+    var chev = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+    var JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+    // Menu des tournées, groupé par jours de livraison (les jours viennent du fichier des tournées).
+    function oflTournSelect() {
+      var T = window.TOURNEES_ECRAN, cl = 'ofl-sel' + (ofl.tourn ? ' ofl-on' : '');
+      if (!T || !T.tournees) return '<label class="' + cl + ' ofl-off"><select disabled aria-label="Tournée de livraison"><option>Tournées en chargement…</option></select>' + chev + '</label>';
+      var g = {};
+      Object.keys(T.tournees).sort().forEach(function (k) {
+        var t = T.tournees[k], j = (t.jours || []).slice().sort(function (a, b) { return JOURS.indexOf(a) - JOURS.indexOf(b); });
+        var cle = j.map(function (d) { return JOURS.indexOf(d); }).join(',');
+        (g[cle] || (g[cle] = { j: j, l: [] })).l.push(t);
+      });
+      var groupes = Object.keys(g).sort(function (a, b) {
+        var A = a ? a.split(',').map(Number) : [99], B = b ? b.split(',').map(Number) : [99];
+        for (var i = 0; i < Math.max(A.length, B.length); i++) { if (A[i] == null) return 1; if (B[i] == null) return -1; if (A[i] !== B[i]) return A[i] - B[i]; }
+        return 0;
+      });
+      return '<label class="' + cl + '"><select aria-label="Tournée de livraison" onchange="V2.oflTourn(this.value)">' +
+        '<option value="">Tournée : toutes</option>' +
+        groupes.map(function (cle) {
+          var j = g[cle].j, lib = !j.length ? 'Jours à préciser' : 'Livrées ' + j.join(' · ');
+          return '<optgroup label="' + V2.esc(lib) + '">' + g[cle].l.map(function (t) {
+            return '<option value="' + V2.esc(t.code) + '"' + (ofl.tourn === t.code ? ' selected' : '') + '>' + V2.esc(t.code + ' · ' + t.nom) + '</option>';
+          }).join('') + '</optgroup>';
+        }).join('') +
+        '<optgroup label="Autres établissements"><option disabled>Tournées des autres établissements : pas encore reçues</option></optgroup>' +
+        '</select>' + chev + '</label>';
+    }
+    var OFL_OPT = { ca: 'chiffre d’affaires', nom: 'nom', nm: 'notre marge Intégral', marge: 'marge du pharmacien', rap: 'à rappeler d’abord', tourn: 'tournée' };
+    function oflTriSelect() {
+      var pros = secteurTab === 'prospects', nmOk = V2.notreMarge && V2.notreMarge.dispo();
+      var ks = pros ? ['nom', 'tourn'] : ['ca', 'nom', 'nm', 'marge', 'rap', 'tourn'].filter(function (k) { return k !== 'nm' || nmOk; });
+      var cur = ks.indexOf(ofl.tri) >= 0 ? ofl.tri : (pros ? '' : 'ca');
+      return '<label class="ofl-sel"><select aria-label="Trier les officines" onchange="V2.oflTri(this.value)">' +
+        (pros ? '<option value=""' + (cur === '' ? ' selected' : '') + '>Tri : ordre du secteur</option>' : '') +
+        ks.map(function (k) { return '<option value="' + k + '"' + (cur === k ? ' selected' : '') + '>Tri : ' + OFL_OPT[k] + '</option>'; }).join('') +
+        '</select>' + chev + '</label>';
+    }
+    function oflFiltres() {
+      var nbRap = null;
+      if (secteurTab === 'clients' && V2.decrochageUI && V2.decrochageUI.compte() != null) {
+        nbRap = phs.filter(function (x) { return _rap[String(x.p.id)] && !x.p._sansVente && !(V2.commFilter && !x.p._promu && (x.p.comms || []).indexOf(V2.commFilter) < 0); }).length;
+      }
+      // La bascule Clients / Prospects garde ses libellés, sans les compteurs : le nombre s'écrit une seule fois, au-dessus du tableau.
+      var bascule = secteurBar.replace('<span class="v2-past-l">Afficher :</span>', '').replace(/<span class="of-cnt">[^<]*<\/span>/g, '').replace(/v2-segs/g, 'ofl-segs').replace(/v2-seg\b/g, 'ofl-seg');
+      return bascule + commBar + oflTournSelect() +
+        (secteurTab === 'clients' ? '<button type="button" class="ofl-chip' + (ofl.rap ? ' ofl-on' : '') + '" aria-pressed="' + ofl.rap + '" onclick="V2.oflRap()">À rappeler' + (nbRap != null ? ' (' + V2.fmtNum(nbRap) + ')' : '') + '</button>' : '') +
+        oflTriSelect() +
+        '<span class="ofl-act">' +
+          (secteurTab === 'clients' ? '<button type="button" class="ofl-btn ofl-btn-x" title="Exporter mes clients en Excel" aria-label="Exporter mes clients en Excel" onclick="V2.pharmaClientsXlsx()">' + ICO('download', 16) + '<span>Excel</span></button>' : '') +
+          '<button type="button" class="ofl-btn" id="of-creer" title="Créer un prospect" aria-label="Créer un prospect" onclick="V2.pharmaCreerProspect()">' + ICO('plus', 16) + '<span>Créer un prospect</span></button></span>';
+    }
+    // En-tête du tableau : l'explication de chaque chiffre (période, estimation) est écrite ICI, une seule fois.
+    function oflEntete() {
+      var pros = secteurTab === 'prospects', perV = cl1PerV(), perM = oflPerMarge();
+      var th = function (k, lib, sous, cls) {
+        var cur = ofl.tri === k, fl = cur ? '<svg class="ofl-fl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + (ofl.sens > 0 ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6') + '"/></svg>' : '';
+        return '<span class="ofl-th ' + cls + '" role="columnheader"' + (cur ? ' aria-sort="' + (ofl.sens > 0 ? 'ascending' : 'descending') + '"' : '') + '>' +
+          '<button type="button" onclick="V2.oflTrier(\'' + k + '\')"><span class="ofl-th-l">' + lib + fl + '</span>' + (sous ? '<small>' + sous + '</small>' : '') + '</button></span>';
+      };
+      if (pros) return th('nom', 'Nom', 'ville · code postal', 'ofl-th-nom') + th('tourn', 'Tournée', '', 'ofl-th-t') + '<span class="ofl-th ofl-th-rap" role="columnheader"><span class="ofl-th-l">Statut</span></span>';
+      var nmOk = V2.notreMarge && V2.notreMarge.dispo();
+      return th('nom', 'Nom', 'ville · code postal', 'ofl-th-nom') + th('tourn', 'Tournée', '', 'ofl-th-t') +
+        th('ca', 'Chiffre d’affaires', perV, 'ofl-th-ca') +
+        (nmOk ? th('nm', 'Notre marge Intégral', 'estimation · ' + perM, 'ofl-th-nm') : '') +
+        th('marge', 'Marge du pharmacien', perV, 'ofl-th-mg') +
+        th('rap', 'À rappeler', 'achats en baisse sur 3 mois', 'ofl-th-rap');
+    }
+    // Rappel unique pour le téléphone, où il n'y a pas d'en-tête de colonnes.
+    function oflLegende() {
+      if (secteurTab !== 'clients') return '';
+      var nmOk = V2.notreMarge && V2.notreMarge.dispo();
+      return '<p class="ofl-leg">Chiffre d’affaires ' + cl1PerV() + (nmOk ? ' · marge : notre marge Intégral, estimation ' + oflPerMarge() : '') + '</p>';
+    }
+    if (m1) {
+      root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
+        '<div class="v2-wrap v2-u ofl" id="ofl">' +
+          '<h1 class="ofl-h1">Mes officines</h1>' + rech.replace('of-recherche', 'ofl-rech') +
+          '<div class="ofl-filtres" id="ofl-filtres">' + oflFiltres() + '</div>' +
+          '<div class="ofl-tab' + (secteurTab === 'prospects' ? ' ofl-pros' : '') + (V2.notreMarge && V2.notreMarge.dispo() ? '' : ' ofl-sansnm') + '" id="ofl-tab">' +
+            '<p class="ofl-n" id="v2-pharma-n" aria-live="polite">' + nAff + '</p>' + oflLegende() +
+            '<div class="ofl-grille" role="table" aria-label="Officines"><div class="ofl-ent" id="ofl-ent" role="row">' + oflEntete() + '</div>' +
+              '<div class="ofl-body" id="v2-pharma-card" role="rowgroup">' + corps + '</div></div>' +
+          '</div>' +
+        '</div>';
+    } else {
+      root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
+        '<div class="v2-wrap v2-u">' +
+          teteOfficines('Les officines de votre secteur et leurs opportunités.', '') +
+          counterHtml +
+          '<div class="of-bar">' + commBar + opsoFilterBar + '</div>' +
+          rech +
+          '<p class="of-n" id="v2-pharma-n" aria-live="polite">' + nAff + '</p>' +
+          '<div class="v2-card" id="v2-pharma-card">' + corps + '</div>' +
+        '</div>';
+    }
 
     // Recherche live : on ne re-render QUE la liste pour préserver le focus
     var inp = document.getElementById('v2-pharma-search');
@@ -1234,7 +1418,7 @@
         var card = document.getElementById('v2-pharma-card');
         if (!card) return;
         card.innerHTML = listBody();
-        var n = document.getElementById('v2-pharma-n'); if (n) n.textContent = nAff;
+        var n = document.getElementById('v2-pharma-n'); if (n) n.innerHTML = nAff;
       });
     }
     // 19/10/2026 — redessin de la carte seule (comme la recherche), appelé par V2.pharmaOfPlus
@@ -1242,7 +1426,14 @@
       var card = document.getElementById('v2-pharma-card');
       if (!card) return;
       card.innerHTML = listBody();
-      var n = document.getElementById('v2-pharma-n'); if (n) n.textContent = nAff;
+      var n = document.getElementById('v2-pharma-n'); if (n) n.innerHTML = nAff;
+    };
+    // Filtres, en-tête et liste redessinés ensemble (la recherche, elle, n'est jamais touchée : son focus reste).
+    oflMaj = function () {
+      var f = document.getElementById('ofl-filtres'), e = document.getElementById('ofl-ent');
+      if (f) f.innerHTML = oflFiltres();
+      if (e) e.innerHTML = oflEntete();
+      ofRedessine();
     };
   }
 
@@ -4736,6 +4927,13 @@
   };
   V2.pharmaSecteurTab = function (v) { secteurTab = v || 'clients'; voirArchives = false; V2.render(); };
   // 19/10/2026 — « Voir les 50 suivantes » (liste des officines au téléphone) : 50 lignes de plus, la liste est redessinée, la position à l'écran ne bouge pas.
+  // 20/11/2026 — gestes du tableau Officines : chacun ne redessine que filtres + en-tête + liste (jamais la recherche).
+  var oflMaj = null;
+  V2.oflTourn = function (code) { ofl.tourn = code || ''; if (oflMaj) oflMaj(); };
+  V2.oflRap = function () { ofl.rap = !ofl.rap; if (oflMaj) oflMaj(); };
+  V2.oflTri = function (k) { if (!k) { ofl.tri = 'ca'; ofl.sens = -1; } else { ofl.tri = k; ofl.sens = OFL_TRIS[k][1]; } if (oflMaj) oflMaj(); };
+  V2.oflTrier = function (k) { if (ofl.tri === k) ofl.sens = -ofl.sens; else { ofl.tri = k; ofl.sens = OFL_TRIS[k][1]; } if (oflMaj) oflMaj(); };
+  V2.oflRaz = function () { ofl.tourn = ''; ofl.rap = false; searchQuery = ''; var i = document.getElementById('v2-pharma-search'); if (i) i.value = ''; if (oflMaj) oflMaj(); };
   V2.pharmaOfPlus = function () { ofVues += OF_PAR; if (ofRedessine) ofRedessine(); };
   V2.pharmaVoirArchives = function (on) { voirArchives = !!on; V2.render(); };
   V2.promoteToClient = function (pid) {

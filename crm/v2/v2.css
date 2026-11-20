@@ -1423,3 +1423,117 @@ html:root:root body .pha-id.fi-hd .fi-acts-vide{margin:12px 0 0;font-size:13px;l
   html:root:root body .pha-id.fi-hd .fi-gb.pri:hover{background-color:var(--au-accent-d,#0034A0)}
 }
 /* ═══ fin m32 lot 3 ═══ */
+
+/* ═══ ÉCRAN OFFICINES « LE RÉPERTOIRE » (20/11/2026, v1 choisie par Will) ═══ */
+/* Écran Officines — version 1 « Le répertoire » (20/11/2026). Un annuaire dense : recherche, une ligne de filtres en capsules, tableau.
+   Préfixe ofl-. Variables de v2.css uniquement. Aucun effet interdit sous Safari (pas de flou, pas de barre de couleur d'un seul côté, pas d'opacity sur du texte). */
+html:root:root body .ofl { max-width: 1280px; padding: 12px 20px 70px; }
+.ofl-h1 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: 0; }
+
+/* ── Recherche : le premier élément, grand, pleine largeur ── */
+html:root:root body .ofl .ofl-rech { display: flex; align-items: center; gap: 12px; width: 100%; box-sizing: border-box; height: 52px; padding: 0 20px; margin: 0 0 10px;
+  background: var(--card); border: 1.5px solid var(--line); border-radius: var(--r-card); box-shadow: var(--sh-2); cursor: text; }
+html:root:root body .ofl .ofl-rech svg { flex: none; color: var(--ip-blue); }
+html:root:root body .ofl .ofl-rech input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; color: var(--ip-ink); font: 500 18px/1.2 var(--font); }
+html:root:root body .ofl .ofl-rech input::placeholder { color: var(--ip-ink-3); }
+html:root:root body .ofl .ofl-rech:focus-within { border-color: var(--ip-blue); box-shadow: 0 0 0 3px rgba(0, 80, 230, .14); }
+
+/* ── Une seule ligne de filtres en capsules ── */
+.ofl-filtres { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 12px; }
+.ofl-segs { display: inline-flex; gap: 2px; padding: 3px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-pill); }
+html:root:root body .ofl .ofl-seg { height: 34px; padding: 0 14px; border: 0; border-radius: var(--r-pill); background: transparent; color: var(--ip-ink-2); font: 600 14px/1 var(--font); cursor: pointer; white-space: nowrap; }
+html:root:root body .ofl .ofl-seg.on { background: var(--ip-blue); color: #fff; }
+html:root:root body .ofl .ofl-seg:focus-visible, .ofl-chip:focus-visible, .ofl-btn:focus-visible, .ofl-th button:focus-visible, .ofl-raz:focus-visible, .ofl-r:focus-visible { outline: 2px solid var(--ip-blue); outline-offset: 2px; }
+.ofl-chip, .ofl-sel, html:root:root body .ofl .v2-select { height: 40px; box-sizing: border-box; border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--card); color: var(--ip-ink-2); font: 600 14px/1 var(--font); }
+.ofl-chip { padding: 0 14px; cursor: pointer; white-space: nowrap; }
+.ofl-chip:hover, .ofl-sel:hover { border-color: var(--ip-blue); }
+.ofl-chip.ofl-on, .ofl-sel.ofl-on { background: var(--ip-blue); border-color: var(--ip-blue); color: #fff; }
+.ofl-sel, html:root:root body .ofl .v2-select { position: relative; display: inline-flex; align-items: center; margin: 0; min-width: 0; }
+.ofl-sel select, html:root:root body .ofl .v2-select select { appearance: none; -webkit-appearance: none; height: 100%; width: var(--ofl-w, auto); max-width: 250px; padding: 0 32px 0 14px; text-overflow: ellipsis; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; border-radius: var(--r-pill); }
+.ofl-sel svg, html:root:root body .ofl .v2-select svg { position: absolute; right: 12px; top: 50%; width: 16px; height: 16px; margin-top: -8px; pointer-events: none; }
+.ofl-sel.ofl-on svg { color: #fff; }
+.ofl-sel.ofl-on select option, .ofl-sel.ofl-on select optgroup { color: var(--ip-ink); }
+.ofl-off { cursor: default; }
+.ofl-filtres > .ofl-sel, html:root:root body .ofl .ofl-filtres > .v2-select { --ofl-w: 100%; width: 168px; }
+.ofl-filtres > .ofl-sel:nth-last-of-type(1) { width: 176px; }
+.ofl-btn-x { padding: 0 11px; }
+.ofl-off:hover { border-color: var(--line); }
+.ofl-act { margin-left: auto; display: inline-flex; gap: 8px; }
+.ofl-btn { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 14px; border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--card); color: var(--ip-blue); font: 600 13px/1 var(--font); cursor: pointer; white-space: nowrap; }
+.ofl-btn:hover { border-color: var(--ip-blue); }
+
+/* ── Le tableau ── */
+.ofl-tab { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-card); box-shadow: var(--sh-2); overflow: hidden; }
+html:root:root body .ofl .ofl-n { margin: 0; padding: 9px 20px 8px; color: var(--ip-ink-3); font: 500 14px/1.3 var(--font); }
+.ofl-n b { color: var(--ip-ink); font-weight: 800; font-size: 16px; font-variant-numeric: tabular-nums; }
+.ofl-raz { padding: 0; border: 0; background: none; color: var(--ip-blue); font: 600 14px/1 var(--font); cursor: pointer; text-decoration: underline; }
+.ofl-leg { display: none; }
+.ofl-ent, .ofl-r { display: grid; grid-template-columns: minmax(0, 1fr) 72px 150px 158px 150px 150px; column-gap: 16px; align-items: center; padding: 0 20px; }
+.ofl-pros .ofl-ent, .ofl-pros .ofl-r { grid-template-columns: minmax(0, 1fr) 72px 150px; }
+.ofl-sansnm .ofl-ent, .ofl-sansnm .ofl-r { grid-template-columns: minmax(0, 1fr) 72px 150px 150px 150px; }
+.ofl-ent { align-items: start; padding-top: 6px; padding-bottom: 4px; min-height: 48px; background: var(--card-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.ofl-th { min-width: 0; }
+.ofl-th button { display: block; width: 100%; padding: 6px 0; border: 0; background: none; color: var(--ip-ink-3); font: inherit; text-align: inherit; cursor: pointer; }
+.ofl-th-l { display: inline-flex; align-items: center; gap: 4px; color: var(--ip-ink-2); font: 700 13px/1.25 var(--font); }
+.ofl-th small { display: block; margin-top: 2px; color: var(--ip-ink-3); font: 500 11.5px/1.25 var(--font); }
+.ofl-th[aria-sort] .ofl-th-l { color: var(--ip-blue); }
+.ofl-fl { width: 14px; height: 14px; flex: none; }
+.ofl-th-ca, .ofl-th-nm, .ofl-th-mg { text-align: right; }
+.ofl-th-ca .ofl-th-l, .ofl-th-nm .ofl-th-l, .ofl-th-mg .ofl-th-l { justify-content: flex-end; }
+.ofl-th-t .ofl-th-l { white-space: nowrap; }
+.ofl-th-rap { text-align: left; }
+.ofl-body { background: var(--card); }
+.ofl-r { min-height: 46px; padding-top: 5px; padding-bottom: 5px; box-sizing: border-box; border-bottom: 1px solid var(--line); color: var(--ip-ink); text-decoration: none; cursor: pointer; }
+.ofl-r:hover { background: var(--card-2); }
+.ofl-c-nom { min-width: 0; display: block; }
+.ofl-nom { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ip-ink); font: 700 14px/1.3 var(--font); letter-spacing: .01em; }
+.ofl-sous { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ofl-ville { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ip-ink-3); font: 500 12.5px/1.3 var(--font); }
+.ofl-sous .ofl-t, .ofl-m-rap, .ofl-m-nm { display: none; }
+.ofl-t { display: inline-block; padding: 2px 8px; border-radius: var(--r-pill); background: var(--card-2); border: 1px solid var(--line); color: var(--ip-ink-2); font: 700 12px/1.3 var(--font-mono, var(--mono)); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ofl-c-t { min-width: 0; }
+.ofl-c-n { display: block; text-align: right; font-variant-numeric: tabular-nums; }
+.ofl-c-n b { display: block; font: 700 14.5px/1.3 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -.02em; color: var(--ip-ink); white-space: nowrap; }
+.ofl-c-mg b { color: var(--c-opp, #0B7A4B); }
+.ofl-c-n small { display: block; color: var(--ip-ink-3); font: 500 11px/1.25 var(--font); }
+.ofl-c-rap small { display: block; margin-top: 2px; color: var(--ip-ink-3); font: 500 11.5px/1.25 var(--font); }
+.ofl-pill { display: inline-block; padding: 3px 10px; border-radius: var(--r-pill); font: 700 12px/1.3 var(--font); white-space: nowrap; }
+.ofl-pill-w { background: #FFF1D6; color: #8A4B00; }
+.ofl-pill-p { background: var(--card-2); border: 1px solid var(--line); color: var(--ip-ink-2); }
+.ofl-body .of-suite { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 16px; }
+.ofl-body .v2-empty { padding: 36px 20px; }
+
+/* ── Téléphone : le tableau devient une liste de lignes sur deux niveaux ── */
+@media (max-width: 640px) {
+  html:root:root body .ofl { padding: 8px 12px 70px; }
+  .ofl-filtres > .ofl-sel, .ofl-filtres > .ofl-sel:nth-last-of-type(1) { width: auto; }
+  html:root:root body .ofl .ofl-rech { height: 52px; padding: 0 14px; margin-bottom: 8px; }
+  html:root:root body .ofl .ofl-rech input { font-size: 16px; }
+  .ofl-filtres { gap: 6px; margin-bottom: 10px; }
+  .ofl-segs { width: 100%; box-sizing: border-box; }
+  html:root:root body .ofl .ofl-seg { flex: 1; height: 44px; padding: 0 8px; }
+  .ofl-chip, .ofl-sel, html:root:root body .ofl .v2-select { height: 46px; font-size: 14px; }
+  .ofl-sel, html:root:root body .ofl .v2-select { flex: 1 1 calc(50% - 6px); }
+  .ofl-sel select, html:root:root body .ofl .v2-select select { width: 100%; max-width: none; font-size: 14px; padding: 0 26px 0 12px; }
+  .ofl-chip { flex: 0 0 auto; }
+  .ofl-act { margin-left: 0; flex: 1 1 100%; display: flex; }
+  .ofl-btn { flex: 1; justify-content: center; height: 44px; }
+  .ofl-ent { display: none; }
+  html:root:root body .ofl .ofl-n { padding: 12px 14px 4px; }
+  .ofl-leg { display: block; margin: 0; padding: 0 14px 8px; color: var(--ip-ink-3); font: 500 12px/1.35 var(--font); }
+  .ofl-tab { border-radius: var(--r-card); }
+  .ofl-r, .ofl-pros .ofl-r, .ofl-sansnm .ofl-r { grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; min-height: 60px; padding: 8px 14px; border-top: 0; }
+  .ofl-c-nom { display: contents; }
+  .ofl-nom { grid-column: 1; grid-row: 1; font-size: 14px; }
+  .ofl-sous { grid-column: 1 / -1; grid-row: 2; gap: 6px; }
+  .ofl-c-ca { grid-column: 2; grid-row: 1; align-self: start; }
+  .ofl-c-n small, .ofl-c-nm, .ofl-c-mg, .ofl-c-t, .ofl-c-rap { display: none; }
+  .ofl-c-ca b { font-size: 14px; }
+  .ofl-sous .ofl-t { display: inline-block; flex: none; }
+  .ofl-m-rap { display: inline-flex; flex: none; }
+  .ofl-m-rap .ofl-pill { padding: 1px 8px; font-size: 11px; }
+  .ofl-m-nm { display: inline; flex: none; color: var(--ip-ink-2); font: 600 12.5px/1.3 var(--font); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ofl-pros .ofl-r-pros .ofl-nom { grid-column: 1 / -1; }
+  .ofl-r-pros .ofl-sous { grid-column: 1 / -1; }
+}
+/* ═══ fin écran Officines « Le répertoire » ═══ */
