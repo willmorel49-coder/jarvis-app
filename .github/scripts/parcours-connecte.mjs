@@ -33,7 +33,8 @@ const base = `http://localhost:${PORT}/crm/v2/index.html`;
 // Écrans principaux de l'équipe (accueil + 5), chacun avec son marqueur propre.
 // `selecteur` + `texte` : l'élément précis qui doit contenir le texte (pas n'importe où dans la page).
 const ECRANS = [
-  { route: 'pharma',   nom: 'Officines',    selecteur: 'h1.of-h1',        texte: 'Mes officines' },
+  // 20/11/2026 — écran « Le répertoire » : le titre est h1.ofl-h1 (lu par les lecteurs d'écran), l'ancien h1.of-h1 n'est plus affiché.
+  { route: 'pharma',   nom: 'Officines',    selecteur: 'h1.ofl-h1',       texte: 'Mes officines' },
   { route: 'pilotage', nom: 'Pilotage',     selecteur: '.v2-page-title',  texte: 'Pilotage' },
   { route: 'produits', nom: 'Produits',     selecteur: '.v2-page-title',  texte: 'Produits' },
   { route: 'infos',    nom: 'Infos du jour', selecteur: 'h1',             texte: 'Infos du jour' },
