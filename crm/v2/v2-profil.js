@@ -18,7 +18,7 @@
   // Listes PRÉCISES (pas de « Autre » : le bouton « ➕ préciser… » ajoute une valeur exacte au besoin).
   // Intégral Pharma en tête (savoir si l'officine travaille déjà avec nous), puis les majors nationaux,
   // puis les grossistes/short-liners régionaux concurrents (Ouest surtout). Complétable via « ➕ préciser… ».
-  var GROS = ['Intégral Pharma', 'OCP', 'CERP Rouen', 'CERP RRM', 'CERP Bretagne Atlantique', 'Alliance Healthcare', 'Phoenix Pharma', 'Cophana', 'Sagitta', 'Sogiphar', 'CIP Pharma', 'Welcoop', 'Giphar Répartition', 'Anjou Santé', 'Mezegel', 'Epsilon', 'Pharmest', 'Axipharm', 'Comptoir pharmaceutique de Monaco (CPM)'];
+  var GROS = ['Intégral Pharma', 'OCP', 'CERP Rouen', 'CERP RRM', 'CERP Bretagne Atlantique', 'Alliance Healthcare', 'Phoenix Pharma', 'Cophana', 'Sagitta', 'Sogiphar', 'CIP Pharma', 'Welcoop', 'Giphar Répartition', 'Anjou Santé', 'Mezegel', 'Epsilon', 'Pharmest', 'Axipharm', 'CPM Monaco'];
   var GEN = ['Biogaran', 'Viatris (Mylan)', 'EG Labo', 'Teva', 'Sandoz', 'Zentiva', 'Arrow', 'Cristers', 'Zydus', 'Bouchara-Recordati', 'Sun Pharma', 'Substipharm'];
   var LGO = ['Winpharma', 'LGPI', 'Smart Rx', 'Léo', 'Pharmaland', 'Caduciel', 'Péripharm', 'Pharmavitale', 'Santé Cegedim', 'Pharmony'];
   var ROBOT = ['Aucun', 'Riedl', 'BD Rowa', 'Mekapharm', 'Meditech', 'Sinteco', 'Willach', 'Tecny-Farma', 'Apostore', 'Omnicell'];
