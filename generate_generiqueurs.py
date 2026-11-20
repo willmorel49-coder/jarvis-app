@@ -331,6 +331,33 @@ def validate(result):
 # --------------------------------------------------------------------------
 # Ecriture du .js
 # --------------------------------------------------------------------------
+def garder_les_sortis(result, marques):
+    """Choix de Will (20/11/2026) : un CIP sorti de la BDPM (AMM retiree) reste
+    dans la table avec sa derniere etiquette, sinon ses ventes passees
+    disparaitraient des cartes. Meme regle pour un generique dont l'AMM est
+    archivee : sorti des groupes generiques de la BDPM, il basculerait en
+    « marque » (hors cartes) -> il garde son ancien rangement (Celiprolol Almus,
+    Bisoce, 20/11/2026). On relit la table actuelle AVANT de l'ecraser."""
+    if not os.path.isfile(OUT_JS):
+        return 0, 0
+    t = open(OUT_JS, encoding="utf-8").read()
+    ancien = json.loads(re.search(r"window\.GENERIQUEURS\s*=\s*(\{.*?\});", t, re.S).group(1))
+    m = re.search(r"window\.GENERIQUEURS_MARQUES\s*=\s*(\[.*?\]);", t, re.S)
+    anciennes_marques = set(json.loads(m.group(1))) if m else set()
+    n, n_gen = 0, 0
+    for cip, lab in ancien.items():
+        if cip not in result:
+            result[cip] = lab
+            if cip in anciennes_marques:
+                marques.add(cip)
+            n += 1
+        elif cip in marques and cip not in anciennes_marques:
+            result[cip] = lab
+            marques.discard(cip)
+            n_gen += 1
+    return n, n_gen
+
+
 def write_js(result, marques):
     # tri par cle pour un diff stable
     ordered = {k: result[k] for k in sorted(result.keys())}
@@ -343,6 +370,7 @@ def write_js(result, marques):
 
 def main():
     generic_cis, result, n_cip_rows, n_ext, marques, n_boite = build()
+    n_gardes, n_gen_gardes = garder_les_sortis(result, marques)
     size = write_js(result, marques)
 
     # Stats
@@ -356,6 +384,8 @@ def main():
     print("CIP13 rattrapes (titulaire)   : %d" % n_ext)
     print("  dont marques/princeps        : %d (hors cartes)" % len(marques))
     print("CIP13 ranges au labo de la boite : %d (passage 3)" % n_boite)
+    print("CIP13 sortis de la BDPM gardes : %d" % n_gardes)
+    print("Generiques archives gardes     : %d (pas bascules en marque)" % n_gen_gardes)
     print("CIP13 mappes                  : %d" % len(result))
     print("Generiqueurs distincts        : %d" % len(labs))
     print("Fichier .js                   : %s (%d octets)" % (OUT_JS, size))

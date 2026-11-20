@@ -20,3 +20,20 @@ test('Irbésartan Zentiva (titulaire Sanofi) est chez Zentiva', () => {
 test('Tadalafil Lilly reste chez Lilly : il est vraiment vendu par Lilly', () => {
   assert.match(G['3400930087442'], /Lilly/);
 });
+
+// Appro lit labo-cip.json AVANT la table : il doit dire la même chose (choix de Will « tout aligner », 20/11/2026).
+const LC = JSON.parse(readFileSync(new URL('../crm/v2/labo-cip.json', import.meta.url), 'utf8')).data;
+
+test('Appro (labo-cip.json) range aussi Amoxicilline et Irbésartan Zentiva chez ZENTIVA', () => {
+  for (const cip of ['3400927929045', '3400922161587']) assert.equal(LC[cip], 'ZENTIVA', cip);
+});
+
+// Choix de Will (20/11/2026) : un produit ne sort jamais de la table. Céliprolol Almus a vu son AMM
+// archivée : il reste un générique rangé chez Almus, sinon ses ventes passées quittent les cartes.
+test('Un générique à AMM archivée garde son rangement (Céliprolol Almus)', () => {
+  const M = new Set(w.GENERIQUEURS_MARQUES);
+  for (const cip of ['3400930153062', '3400937576666']) {
+    assert.equal(G[cip], 'Almus', cip);
+    assert.ok(!M.has(cip), cip + ' ne doit pas basculer en marque');
+  }
+});

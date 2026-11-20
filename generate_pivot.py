@@ -30,6 +30,7 @@ OUT = os.path.join(HERE, "crm", "v2", "pivot.json")
 OUT_IDX = os.path.join(HERE, "crm", "v2", "pivot-index.json")
 OUT_LABO = os.path.join(HERE, "crm", "v2", "labo-cip.json")
 PRODSTATS = os.path.join(HERE, "crm", "v2", "prod-stats-data.js")
+GENERIQUEURS = os.path.join(HERE, "crm", "v2", "generiqueurs-data.js")
 
 _LABO_STRIP = re.compile(r"\s+(AG|SA|SAS|SANTE|SANTÉ|EUROPE|EUROPHARM|PHARMA|INDUSTRIE|GMBH|LTD|BV|NEDERLAND|FRANCE)$", re.I)
 
@@ -49,6 +50,55 @@ def catalogue_cips():
         return set(str(p.get("c")) for p in arr if p.get("c"))
     except Exception:
         return set()
+
+
+def labo_de_la_boite(labo):
+    """Choix de Will (20/11/2026) : un générique est rangé chez le labo écrit sur
+    la boîte (generiqueurs-data.js, hors marques), pas chez le titulaire de l'AMM
+    (Amoxicilline Zentiva : GLAXOSMITHKLINE -> ZENTIVA). Le nom reprend l'écriture
+    majoritaire de ce labo dans labo-cip, sinon Appro ferait un 2e groupe
+    (« ZENTIVA » et « Zentiva »). Pas d'écriture claire -> on ne touche à rien."""
+    try:
+        t = io.open(GENERIQUEURS, encoding="utf-8").read()
+        table = json.loads(re.search(r"window\.GENERIQUEURS\s*=\s*(\{.*?\});", t, re.S).group(1))
+        marques = set(json.loads(re.search(r"window\.GENERIQUEURS_MARQUES\s*=\s*(\[.*?\]);", t, re.S).group(1)))
+    except Exception as e:
+        print("  ⚠ generiqueurs-data.js illisible, labo-cip garde les titulaires :", e)
+        return 0
+    from collections import Counter, defaultdict
+    def colle(nom, lab):
+        n, l = nom.upper(), lab.upper().split()[0]
+        return l in n or (l == "VIATRIS" and "MYLAN" in n)
+    ecriture = defaultdict(Counter)
+    for cip, lab in table.items():
+        if cip in labo and cip not in marques:
+            ecriture[lab][labo[cip]] += 1
+    n = 0
+    for cip, lab in table.items():
+        if cip not in labo or cip in marques or colle(labo[cip], lab) or not ecriture[lab]:
+            continue
+        nom = ecriture[lab].most_common(1)[0][0]
+        if colle(nom, lab):
+            labo[cip] = nom
+            n += 1
+    return n
+
+
+def ecrire_labo_cip(pivot, today):
+    # labo-cip.json : fournisseur (labo court) par CIP13 du catalogue → groupement fournisseur du calendrier appro
+    cat = catalogue_cips()
+    labo = {}
+    for cip, row in pivot.items():
+        if cat and cip not in cat:
+            continue
+        sl = short_labo(row.get("labo"))
+        if sl:
+            labo[cip] = sl
+    n_boite = labo_de_la_boite(labo)
+    with io.open(OUT_LABO, "w", encoding="utf-8") as f:
+        json.dump({"generated": today, "n": len(labo), "data": labo}, f, ensure_ascii=False, separators=(",", ":"))
+    print("labo-cip : %d CIP13 · %d génériques rangés au labo écrit sur la boîte" % (len(labo), n_boite))
+    return labo
 
 
 def fetch_json(url):
@@ -108,17 +158,7 @@ def main():
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
     with io.open(OUT_IDX, "w", encoding="utf-8") as f:
         json.dump(idx, f, ensure_ascii=False, separators=(",", ":"))
-    # labo-cip.json : fournisseur (labo court) par CIP13 du catalogue → groupement fournisseur du calendrier appro
-    cat = catalogue_cips()
-    labo = {}
-    for cip, row in pivot.items():
-        if cat and cip not in cat:
-            continue
-        sl = short_labo(row.get("labo"))
-        if sl:
-            labo[cip] = sl
-    with io.open(OUT_LABO, "w", encoding="utf-8") as f:
-        json.dump({"generated": today, "n": len(labo), "data": labo}, f, ensure_ascii=False, separators=(",", ":"))
+    labo = ecrire_labo_cip(pivot, today)
     print("OK · pivot CIP13=%d · groupes=%d · molécules=%d · labo-cip=%d" % (len(pivot), len(idx_grp), len(idx_dci), len(labo)))
     print("→ %s (%d Ko) · %s (%d Ko)" % (OUT, os.path.getsize(OUT) // 1024, OUT_IDX, os.path.getsize(OUT_IDX) // 1024))
 
