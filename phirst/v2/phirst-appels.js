@@ -194,6 +194,7 @@
 
   function dessiner() {
     var el = S.racine; if (!el) return;
+    if (V2.route && V2.route.name !== 'appels') return; // une écriture qui finit après un changement d'écran ne redessine pas l'ancien écran par-dessus le nouveau (la racine est commune)
     var n = S.charge ? liste().length : null, np = S.charge ? S.fiches.filter(function (f) { return f.stage !== 'archive'; }).length : null;
     var corps;
     if (S.erreur) corps = '<div class="pa-vide"><p>Les appels ne se sont pas chargés.</p><p>Vérifiez votre connexion puis réessayez.</p><button type="button" class="lg-gros" data-reessayer="1">Réessayer</button></div>';

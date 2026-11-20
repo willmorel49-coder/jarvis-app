@@ -75,6 +75,7 @@
   }
   function dessiner() {
     var el = S.racine; if (!el) return;
+    if (V2.route && V2.route.name !== 'agenda') return; // la racine est commune à tous les écrans : jamais de redessin par-dessus un autre écran
     var corps;
     if (S.erreur) corps = '<div class="pa-vide"><p>L’agenda ne s’est pas chargé.</p><p>Vérifiez votre connexion puis réessayez.</p><button type="button" class="lg-gros" data-ag="reessayer">Réessayer</button></div>';
     else if (!S.charge) corps = '<p class="pa-avis">Chargement…</p>';
