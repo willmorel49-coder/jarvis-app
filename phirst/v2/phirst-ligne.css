@@ -113,3 +113,6 @@ html[data-donnees="reelles"] .lg-v6 .lg-liste ul{margin-inline:calc((100% - min(
 
 
 }
+/* Un seul moment (accueil de la téléprospectrice) : la station est centrée, sous l'astre. Chez Yann (4 moments) : sans effet. */
+.lg-v6.lg-seul .lg-rail{justify-content:center}
+@media (max-width:1000px){html[data-tel] .lg-v6.lg-seul .lg-rail{grid-template-columns:minmax(0,1fr)}}

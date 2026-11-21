@@ -130,3 +130,46 @@ describe('les refus de la base', () => {
     assert.equal(P.messageDeLaBase(null), ''); assert.equal(P.messageDeLaBase(undefined), '')
   })
 })
+
+describe('accueil de la téléprospectrice : le seul moment « Trouver » (momentDeTelepro)', () => {
+  const NOW = Date.parse('2026-11-21T08:00:00Z')
+  const ap = (i, motif) => ({ nom: 'Pharmacie ' + i, ville: 'Ville ' + i, motif: motif || 'cession', raisons: ['Raison ' + i] })
+  const ligne = (j, quand) => P.ligneDeTelepro(Object.assign({ calcule_le: quand || '2026-11-21T05:00:00Z' }, j), NOW)
+  test('plus de 6 appels : 6 pharmacies, total = appelsTotal, « autres » mène à Appels, chose = le 1er appel', () => {
+    const m = P.momentDeTelepro(ligne({ appels: [1, 2, 3, 4, 5, 6, 7, 8].map((i) => ap(i)), appelsTotal: 30, veille: [] }))
+    assert.equal(m.length, 1); assert.equal(m[0].cle, 'trouver')
+    assert.equal(m[0].pharmacies.length, 6); assert.equal(m[0].total, 30)
+    assert.equal(m[0].autres, 'Voir les 24 autres dans Appels'); assert.equal(m[0].source, 'appels')
+    assert.deepEqual(m[0].pharmacies[0].etiquette, { t: 'Cession d’officine', ton: 'orange' })
+    assert.equal(m[0].chose.bouton, 'Voir la fiche et appeler'); assert.equal(m[0].chose.type, undefined)
+    assert.equal(m[0].vide, null)
+  })
+  test('appelsTotal absent : le total est le nombre d’appels, pas de « autres » sous 7', () => {
+    const m = P.momentDeTelepro(ligne({ appels: [ap(1, 'relance'), ap(2)], veille: [] }))[0]
+    assert.equal(m.total, 2); assert.equal(m.autres, null); assert.equal(m.pharmacies[0].etiquette.ton, 'rouge')
+  })
+  test('aucun appel mais une veille : la 1re veille, bouton « L’ajouter à mes pistes », piste reprise telle quelle', () => {
+    const piste = { nom: 'Pharmacie V', ville: 'Caen', note: 'Cession d’officine (BODACC)' }
+    const m = P.momentDeTelepro(ligne({ appels: [], veille: [{ nom: 'Pharmacie V', ville: 'Caen', famille: 'cession_pharmacie', date: '2026-11-19', piste }] }))[0]
+    assert.equal(m.chose.type, 'veille'); assert.equal(m.chose.bouton, 'L’ajouter à mes pistes'); assert.deepEqual(m.chose.piste, piste)
+    assert.equal(m.chose.parution, '2026-11-19'); assert.equal(m.total, 1); assert.equal(m.pharmacies[0].etiquette.t, 'Vient d’être vendue')
+  })
+  test('tout vide : le texte et le bouton « Ouvrir la Veille », jamais « 0 »', () => {
+    const m = P.momentDeTelepro(ligne({ appels: [], veille: [] }))[0]
+    assert.equal(m.total, 0); assert.equal(m.chose, null); assert.equal(m.vide.bouton, 'Ouvrir la Veille')
+    assert.match(m.vide.texte, /veille du BODACC/)
+  })
+  test('ligne absente, illisible ou vieille de plus de 36 h : rien', () => {
+    assert.equal(P.momentDeTelepro(null), null); assert.equal(P.momentDeTelepro(undefined), null)
+    assert.equal(P.momentDeTelepro({ trouver: null, frais: false }), null)
+    assert.equal(P.momentDeTelepro(P.ligneDeTelepro('abc', NOW)), null)
+    assert.equal(P.momentDeTelepro(ligne({ appels: [ap(1)], veille: [] }, '2026-11-19T08:00:00Z')), null)
+  })
+  test('jamais Préparer, Chantier, Encaisser ni aucune somme', () => {
+    for (const j of [{ appels: [ap(1)], appelsTotal: 9, veille: [] }, { appels: [], veille: [{ nom: 'V', ville: 'X', famille: 'creation_pharmacie', date: '2026-11-20', piste: { nom: 'V' } }] }, { appels: [], veille: [] }]) {
+      const m = P.momentDeTelepro(ligne(j)); const txt = JSON.stringify(m)
+      assert.equal(m.length, 1); assert.deepEqual(m.map((x) => x.cle), ['trouver'])
+      assert.doesNotMatch(txt, /€|euro|preparer|chantier|encaisser/i)
+    }
+  })
+})

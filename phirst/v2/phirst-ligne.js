@@ -27,11 +27,20 @@
     var sb = V2.sb(); if (!sb) return;
     if (pour) { D = null; var vieux = document.getElementById('lg-ligne'); if (vieux) vieux.remove(); }
     pour = u.id;
-    sb.from('ligne_accueil').select('donnees,calcule_le').eq('user_id', u.id).maybeSingle().then(function (r) {
-      var x = r && !r.error && r.data;
-      if (!x || !(Date.now() - Date.parse(x.calcule_le) <= AGE_MAX)) return;
-      if (window.V2.user && window.V2.user.id === u.id && poser(x.donnees)) monter();
-    }, function () {});
+    /* Téléprospectrice (21/11/2026) : pas de ligne_accueil (la base la lui rend vide) ; le SEUL moment « Trouver » est fabriqué
+       avec telepro_ligne (phirst-pur.js, momentDeTelepro) : jamais Préparer, Chantier, Encaisser ni somme. */
+    var RL = window.PHIRST_ROLE, P = window.PHIRST_PUR;
+    (RL && P && P.momentDeTelepro ? RL.estTelepro() : Promise.resolve(false)).then(function (t) {
+      if (t) return sb.rpc('telepro_ligne').then(function (r) {
+        var m = r && !r.error ? P.momentDeTelepro(P.ligneDeTelepro(r.data, Date.now())) : null;
+        if (m && window.V2.user && window.V2.user.id === u.id && poser(m)) monter();
+      });
+      return sb.from('ligne_accueil').select('donnees,calcule_le').eq('user_id', u.id).maybeSingle().then(function (r) {
+        var x = r && !r.error && r.data;
+        if (!x || !(Date.now() - Date.parse(x.calcule_le) <= AGE_MAX)) return;
+        if (window.V2.user && window.V2.user.id === u.id && poser(x.donnees)) monter();
+      });
+    }).then(null, function () {});
   }
   /* « aujourd'hui », « hier » ou « le 17 novembre » (même format que dateCourte de la V1), à l'heure de Paris */
   function depuis(iso) {
@@ -81,7 +90,7 @@
     if (c) h += '<p class="lg-titre">' + esc(c.titre) + '</p><p class="lg-det">' + esc(c.heure) + (det ? ' · ' + esc(det) : '') + '</p><button type="button" class="lg-gros"' + (c.type === 'veille' ? (c.piste ? ' data-piste="1"' : '') : vers(GESTE_VERS[s.cle])) + '>' + esc(c.bouton) + FL + '</button>' +
       (c.type === 'veille' ? '<p class="lg-dit" role="status"></p>' : '');
     h += '</div><div class="lg-liste"><p class="lg-lt">' + n + ' pharmacie' + (n > 1 ? 's' : '') + ' à ce moment</p><ul>' + lignes(s.pharmacies);
-    return h + '</ul>' + (s.autres ? '<button type="button" class="lg-autres"' + vers(s.source === 'veille' || s.cle === 'trouver' ? 'veille' : VIDE_VERS[s.cle]) + '>' + esc(s.autres) + FL + '</button>' : '') + '</div></div>';
+    return h + '</ul>' + (s.autres ? '<button type="button" class="lg-autres"' + vers(s.source === 'appels' ? 'appels' : s.source === 'veille' || s.cle === 'trouver' ? 'veille' : VIDE_VERS[s.cle]) + '>' + esc(s.autres) + FL + '</button>' : '') + '</div></div>';
   }
   /* « L'ajouter à mes pistes » : crée la fiche comme ajouterAuPipeline de la V1 (~/phirst-studio/app/crm/actions.ts l. 56-114) —
      dans SON espace, pas de doublon par nom + ville (toute étape, archivées comprises), étape « à qualifier », source « transfert »,
@@ -155,7 +164,7 @@
     if (!D) return;
     var champ = document.getElementById('aube-champ');
     if (!champ || !document.getElementById('aube-acc') || document.getElementById('lg-ligne')) return;
-    var el = document.createElement('section'); el.id = 'lg-ligne'; el.className = 'lg lg-v6'; el.setAttribute('aria-label', 'Vos pharmacies en route');
+    var el = document.createElement('section'); el.id = 'lg-ligne'; el.className = 'lg lg-v6' + (D.length === 1 ? ' lg-seul' : '');   /* un seul moment (téléprospectrice) : station centrée */ el.setAttribute('aria-label', 'Vos pharmacies en route');
     champ.parentNode.insertBefore(el, champ.nextSibling);
     el.addEventListener('click', function (ev) {
       var g = ev.target.closest('[data-vers]');

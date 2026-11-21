@@ -549,6 +549,54 @@
     };
   }
 
+  /* Les étiquettes des motifs d'appel (une seule table, lue par l'écran Appels et par l'accueil de la téléprospectrice). */
+  var MOTIFS = {
+    relance: ['Relance promise', 'rouge'], procedure: ['Procédure collective', 'rouge'], cession: ['Cession d’officine', 'orange'],
+    creation: ['Création d’officine', 'orange'], omnicell: ['Robot Omnicell abandonné', 'orange'], pda: ['Marché public PDA', ''],
+    robot: ['Robot concurrent', ''], ehpad: ['Fournisseur d’EHPAD', ''], pmr: ['Accessibilité PMR', '']
+  };
+  /* Veille : mêmes mots que le robot de l'accueil de Yann (ligne-vers-base.mjs, SIGNAL). */
+  var SIGNAL_VEILLE = {
+    procedure_collective: { t: 'En difficulté', ton: 'rouge', phrase: 'est en procédure collective' },
+    cession_pharmacie: { t: 'Vient d’être vendue', ton: 'orange', phrase: 'vient d’être vendue' },
+    creation_pharmacie: { t: 'Vient d’ouvrir', ton: 'orange', phrase: 'vient d’ouvrir' }
+  };
+  var MONTRES_ACCUEIL = 6;
+  /* Accueil de la téléprospectrice : UN seul moment « trouver », au format de window.PHIRST_LIGNE, fabriqué avec ce que rend
+     telepro_ligne (déjà converti par ligneDeTelepro). Jamais Préparer, Chantier ni Encaisser, jamais de somme.
+     Rend [moment] ou null (ligne absente, illisible ou vieille de plus de 36 h : l'accueil reste sobre). */
+  function momentDeTelepro(ligne) {
+    var t = ligne && ligne.frais === true && ligne.trouver;
+    if (!t || typeof t !== 'object') return null;
+    var appels = Array.isArray(t.appels) ? t.appels : [], veille = Array.isArray(t.veille) ? t.veille : [];
+    var m = { cle: 'trouver', mot: 'Trouver', pharmacies: [], total: 0, chose: null, vide: null, autres: null, source: 'appels' };
+    if (appels.length) {
+      m.pharmacies = appels.slice(0, MONTRES_ACCUEIL).map(function (a) {
+        var e = MOTIFS[a.motif] || ['Signal', ''];
+        return { nom: a.nom, ville: a.ville, etiquette: { t: e[0], ton: e[1] } };
+      });
+      m.total = typeof t.appelsTotal === 'number' && t.appelsTotal >= appels.length ? t.appelsTotal : appels.length;
+      if (m.total > MONTRES_ACCUEIL) m.autres = 'Voir les ' + (m.total - MONTRES_ACCUEIL) + ' autres dans Appels';
+      var a0 = appels[0];
+      m.chose = { heure: 'Appels', titre: a0.nom + (a0.ville ? ', à ' + a0.ville : ''), detail: (a0.raisons && a0.raisons[0]) || (MOTIFS[a0.motif] || ['Signal'])[0], bouton: 'Voir la fiche et appeler' };
+      return [m];
+    }
+    if (veille.length) {
+      m.pharmacies = veille.slice(0, MONTRES_ACCUEIL).map(function (v) {
+        var e = SIGNAL_VEILLE[v.famille] || { t: 'Signal', ton: '' };
+        return { nom: v.nom, ville: v.ville, etiquette: { t: e.t, ton: e.ton } };
+      });
+      m.total = veille.length; m.source = 'veille';
+      if (veille.length > MONTRES_ACCUEIL) m.autres = 'Voir les ' + (veille.length - MONTRES_ACCUEIL) + ' autres dans la Veille';
+      var v0 = veille[0], s0 = SIGNAL_VEILLE[v0.famille] || { phrase: 'est sur la veille' };
+      m.chose = { heure: 'Veille', titre: v0.nom + (v0.ville ? ', à ' + v0.ville : '') + ' ' + s0.phrase, detail: null, parution: v0.date || null, bouton: 'L’ajouter à mes pistes', type: 'veille', piste: v0.piste || null };
+      return [m];
+    }
+    m.vide = { texte: 'Chaque matin, la veille du BODACC de votre secteur arrive ici\u00a0: pharmacies vendues, ouvertes ou en difficulté.', bouton: 'Ouvrir la Veille' };
+    m.source = 'veille';
+    return [m];
+  }
+
   /* telepro_agenda() → { fiches, lignes } pour etatsDesRdv et lierRdv. Une ligne « sienne » garde sa fiche ; les autres
      (prospect_id et auteur vides) reçoivent une fiche par rendez-vous : « Yann est occupé », ville = la commune. */
   function agendaDeTelepro(lignes) {
@@ -591,6 +639,6 @@
     maj: maj, dureeFr: dureeFr, lieuPharmacie: lieuPharmacie, phraseRdv: phraseRdv, joursProposes: joursProposes, corpsRdv: corpsRdv,
     NB_PUCES: NB_PUCES, fenetreJours: fenetreJours, decalages: decalages, jourCourt: jourCourt, lierRdv: lierRdv, duJour: duJour,
     comptesParJour: comptesParJour, sousPuce: sousPuce, phraseLibres: phraseLibres, plagesLibres: plagesLibres, carteEnsuite: carteEnsuite, phraseEtat: phraseEtat,
-    equipeParId: equipeParId, estTelepro: estTelepro, nomAuteur: nomAuteur, avecAuteur: avecAuteur, ligneDeTelepro: ligneDeTelepro, agendaDeTelepro: agendaDeTelepro, messageDeLaBase: messageDeLaBase
+    equipeParId: equipeParId, estTelepro: estTelepro, nomAuteur: nomAuteur, avecAuteur: avecAuteur, ligneDeTelepro: ligneDeTelepro, momentDeTelepro: momentDeTelepro, MOTIFS: MOTIFS, agendaDeTelepro: agendaDeTelepro, messageDeLaBase: messageDeLaBase
   };
 });

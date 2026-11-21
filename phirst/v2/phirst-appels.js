@@ -148,11 +148,7 @@
   /* ── État de l'écran ── */
   var S = { racine: null, jeton: 0, telepro: false, onglet: 'jour', fiche: null, ws: null, fiches: [], appelAu: {}, robot: null, avis: '', flash: '', charge: false, erreur: false };
   var COLS = 'id,nom,ville,cp,departement,telephone,email,pharmacien,stage,source,next_action,next_action_date,lat,lon,updated_at';
-  var MOTIFS = {
-    relance: ['Relance promise', 'rouge'], procedure: ['Procédure collective', 'rouge'], cession: ['Cession d’officine', 'orange'],
-    creation: ['Création d’officine', 'orange'], omnicell: ['Robot Omnicell abandonné', 'orange'], pda: ['Marché public PDA', ''],
-    robot: ['Robot concurrent', ''], ehpad: ['Fournisseur d’EHPAD', ''], pmr: ['Accessibilité PMR', '']
-  };
+  var MOTIFS = P.MOTIFS;
   function jour() { return P.aujourdhui(); }
   function versJourParis(iso) { return P.aujourdhui(new Date(iso)); }
 
