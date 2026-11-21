@@ -14,13 +14,13 @@
   // Bandeaux : [sélecteur, ancre (le dernier élément du ciel, l'horizon se pose juste dessous), plus petit diamètre d'astre]
   var BANDES = [
     ['.of-hd', '.of-hd-t', 120], ['.td-hd', '.td-expl,.td-phrase', 120], ['.pha-id.fi-hd', '.fi-phrase,.pha-name', 120],
-    ['.inf-hd', '.inf-ed,.inf-phrase', 120], ['.gr-hd', '.gr-def,.gr-phrase', 120], ['.olm-hd', '.cl1-et,.olm-phrase', 120],
+    ['.gr-hd', '.gr-def,.gr-phrase', 120], ['.olm-hd', '.cl1-et,.olm-phrase', 120],
     ['.cpd-head', '.cpd-sub', 120], ['.ac-c-pharma', '.m1-off-b', 120], ['.mkb-tete', '.mkb-sous', 120], ['.aube-tete', '.v2-page-sub,.v2-page-title', 120],
     ['.trn-hd', 'p,h1', 120], ['.dc-tete', 'p,h1', 120], ['.cn-fb', '.cn-fbtop', 44]
   ];
   var HD = BANDES.map(function (b) { return b[0]; }).join(',') + ',#aube-acc';
-  var TITRES = '.of-h1,.td-h1,.pha-name,.inf-h1,.gr-h1,.cpd-h1,.mkb-h1,.cn-h1,.trn-hd h1,.dc-tete h1,.aube-tete .v2-page-title,#u2-salut';
-  var CARTES = '.ac-c:not(.ac-c-pharma),.m1-c.m1-p,a.of-c,.v2-card,.pha-nav,.pha-kpi,.pha-card,.fbk-b,.v2-todo-add,.v2-todo-list,.v2-kpi,.inf-c-porte,.gr-une,.gr-carte,.olm-porte,.cpd-door,.mkb-porte,.pr-card,.pa-card,.pa-kpi,.dc-card,.trn-card';
+  var TITRES = '.of-h1,.td-h1,.pha-name,.gr-h1,.cpd-h1,.mkb-h1,.cn-h1,.trn-hd h1,.dc-tete h1,.aube-tete .v2-page-title,#u2-salut';
+  var CARTES = '.ac-c:not(.ac-c-pharma),.m1-c.m1-p,a.of-c,.v2-card,.pha-nav,.pha-kpi,.pha-card,.fbk-b,.v2-todo-add,.v2-todo-list,.v2-kpi,.gr-une,.gr-carte,.olm-porte,.cpd-door,.mkb-porte,.pr-card,.pa-card,.pa-kpi,.dc-card,.trn-card';
   var SCENE = '<i class="aube-ciel"><i class="aube-halo"></i><i class="aube-an aube-a3"></i><i class="aube-an aube-a2"></i><i class="aube-an aube-a1"></i><i class="aube-astre"></i></i><i class="aube-sol"><i class="aube-reflet"></i></i><i class="aube-horizon"></i>';
   var vus = {}, hotes = [], io = null, racine = null, mo = null, planifie = 0, derniere = 0, boucle = 0;
 

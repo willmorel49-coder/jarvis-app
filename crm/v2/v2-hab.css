@@ -401,10 +401,8 @@ html[data-hab] :is(.mk-fond,.pp-ciel){background:none}
 html[data-hab] :is(.mk-verriere,.mk-grain){display:none}
 
 /* ── INFOS DU MATIN : les jetons --pp-* lisent ceux de l'habillage ── */
-html[data-hab] :is(.pp,#pp-pan,#x13-sheet,#x13-voile){--pp-encre:var(--ip-ink);--pp-encre2:var(--ip-ink-2);--pp-encre3:var(--muted);--pp-bleu:var(--ip-blue);--pp-bleu-f:var(--ip-blue-d);--pp-halo:var(--halo)}
+html[data-hab] :is(.pp,#pp-pan){--pp-encre:var(--ip-ink);--pp-encre2:var(--ip-ink-2);--pp-encre3:var(--muted);--pp-bleu:var(--ip-blue);--pp-bleu-f:var(--ip-blue-d);--pp-halo:var(--halo)}
 html[data-hab] .pp{--pp-ombre:var(--h-ombre)}
-html[data-hab] .x13{--x13-bord:var(--h-cadre);--x13-fond:var(--h-plaque)}
-html[data-hab] .x13-tendances li+li{border-top-color:var(--line)}
 
 /* ── MARKETING : les jetons --mk-* lisent ceux de l'habillage ── */
 html[data-hab] .mk-espace{--mk-page:var(--paper);--mk-carte:var(--card);--mk-encre:var(--ip-ink);--mk-encre2:var(--ip-ink-2);--mk-attenue:var(--muted);--mk-filet:var(--muted-2);
@@ -421,11 +419,8 @@ html[data-hab] .mk-espace .mk-btn.mk-plein{background:var(--h-ruban);box-shadow:
 [data-hab="marbre"]{--h-pl-acc:#E6C177}
 [data-hab="foret"]{--h-pl-acc:#CFE3A0}
 [data-hab="velours"]{--h-pl-acc:#F2B8BE}
-:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"],[data-hab="nacre"],[data-hab="glacier"]) :is(.x13 h1,.x13-h:not(.x13-sr),.pp-pied>span,.mkb-tete,.mkb-cap,.mkb-ameliorer){
+:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"],[data-hab="nacre"],[data-hab="glacier"]) :is(.pp-pied>span,.mkb-tete,.mkb-cap,.mkb-ameliorer){
   background:var(--h-pl);box-shadow:var(--h-pl-sh,none);border-radius:13px;width:fit-content;max-width:100%;color:var(--h-pl-ink,var(--ip-ink));position:relative;z-index:1}
-:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"],[data-hab="nacre"],[data-hab="glacier"]) .x13 h1{padding:8px 18px 10px}
-:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"],[data-hab="nacre"],[data-hab="glacier"]) .x13 .x13-h:not(.x13-sr){padding:8px 14px 9px;margin:0 0 10px;color:var(--h-pl-acc)}
-:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"],[data-hab="nacre"],[data-hab="glacier"]) .x13-h1b{color:var(--h-pl-ink2,var(--muted))}
 :is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"],[data-hab="nacre"],[data-hab="glacier"]) .pp-pied>span{padding:7px 14px}
 :is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"],[data-hab="nacre"],[data-hab="glacier"]) .mkb-tete{padding:14px 20px 16px;margin-bottom:28px}
 :is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"],[data-hab="nacre"],[data-hab="glacier"]) .mkb-sous{color:var(--h-pl-ink2,var(--muted))}
@@ -919,11 +914,8 @@ html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard
 /* ── 11. Contraste Infos du matin / Marketing avec la lumière douce (17/10/2026) ──
    La plaque derrière ces titres est devenue transparente (--h-pl:transparent) : le texte pose sur la lumière douce, dont le pixel le plus sombre
    est mesuré par le banc. On fonce (ou éclaircit sur velours) la couleur du texte, jamais de fond ajouté. Le bleu n'est pas concerné (aucune règle sans data-hab). */
-html[data-hab="leopard"] .x13 .x13-h:not(.x13-sr),
 html[data-hab="leopard"] .mk-espace .mk-btn.mk-texte.mkb-ameliorer{color:#603608}
-html[data-hab="terracotta"] .x13 .x13-h:not(.x13-sr),
 html[data-hab="terracotta"] .mk-espace .mk-btn.mk-texte.mkb-ameliorer{color:#5A1E08}
 html[data-hab="terracotta"] .mkb-reperes>.mkb-cap{color:#5A2E18}
-html[data-hab="nacre"] .x13 .x13-h:not(.x13-sr),
 html[data-hab="nacre"] .mk-espace .mk-btn.mk-texte.mkb-ameliorer{color:#78325A}
 html[data-hab="velours"] :is(.mkb-cap,.mkb-sous,.lpo-phrase,.lpo-nb,.lpo-cap){color:#FBEFEB}

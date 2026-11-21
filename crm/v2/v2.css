@@ -573,8 +573,6 @@ html.v2-nav .v2-top::before{content:"";position:absolute;left:0;bottom:-1px;heig
   html .cp-tete .cp-chips:not(.cp-chips-w){flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px}
   /* noms entiers : produits Offilog, titres d'Infos du jour, documents de la Mallette, régions du Marché */
   html .off-card-name{-webkit-line-clamp:5;min-height:0}
-  html .x13-ut{-webkit-line-clamp:6}
-  html .x13-t,html .x13-tt{-webkit-line-clamp:4}
   html .ml-sh-t{-webkit-line-clamp:6;overflow-wrap:anywhere}
   html .ml-doc .ml-so{-webkit-line-clamp:4;min-height:0}
   html .mfr-b span:first-child,html .mfr-res .c{white-space:normal;overflow:visible;text-overflow:clip}
@@ -1076,21 +1074,19 @@ html:not([data-hab]) .v2-btn-primary:hover{box-shadow:0 12px 24px -8px rgba(0,80
    boutons bleus plats sur la fiche, sélecteur « Afficher » de la to do différent des onglets. CSS seul, habillage par défaut seul. ═══ */
 
 /* ── Une seule police : Archivo (Infos et Marketing avaient la leur) ; la ligne « CIP » de la fiche quitte la chasse fixe ── */
-html:not([data-hab]) :is(.pp,#pp-pan,#pp-voile,#x13-sheet,#x13-voile,#f3-ban){--pp-sans:var(--font)}
+html:not([data-hab]) :is(.pp,#pp-pan,#pp-voile){--pp-sans:var(--font)}
 html:not([data-hab]) body .mk-espace{font-family:var(--font)}
 html:not([data-hab]):root:root:root .pha-code{font-family:var(--font);letter-spacing:.08em;font-weight:700}
 /* Infos : Archivo est plus large, « Votre secteur » passait sur 2 lignes → titres de colonne à 22 px, 20 px au téléphone
    (mesuré sous WebKit : 142 px de texte pour 150 px de place à l'ordinateur, 129 pour 140 au téléphone) */
-html:not([data-hab]) body .inf-c-ptitre{font-size:22px}
-@media (max-width:700px){html:not([data-hab]) body .inf-c-ptitre{font-size:20px}}
 
 /* ── Titres de page : une seule taille sur ordinateur (le téléphone garde les siennes) ; La carte garde son en-tête compact ── */
 @media (min-width:1001px){
-  html:not([data-hab]) body :is(#u2-salut,.of-h1,.td-h1,.inf-h1,.gr-h1,.mkb-h1,.cpd-h1){font-size:40px;font-weight:800;letter-spacing:-.025em;line-height:1.08}
+  html:not([data-hab]) body :is(#u2-salut,.of-h1,.td-h1,.gr-h1,.mkb-h1,.cpd-h1){font-size:40px;font-weight:800;letter-spacing:-.025em;line-height:1.08}
 }
 
 /* ── Cartes et panneaux : l'arrondi commun (--r-card, 20 px, celui de m32) ; les tuiles chiffrées gardent 14 px (temps 2) ── */
-html:not([data-hab]) body :is(.ac-c,.u2-wid,.v2-card.dr,.v2-todo-add,.v2-todo-empty,.v2-todo-list,.inf-c-porte,.f3-fil,.gr-carte,.cpd-head,.cpd-door,.olm-porte,.fbk-b){border-radius:var(--r-card)}
+html:not([data-hab]) body :is(.ac-c,.u2-wid,.v2-card.dr,.v2-todo-add,.v2-todo-empty,.v2-todo-list,.gr-carte,.cpd-head,.cpd-door,.olm-porte,.fbk-b){border-radius:var(--r-card)}
 html:not([data-hab]):root:root:root :is(.pha-nav,.pha-card){border-radius:var(--r-card);border-color:#E3E6EC}
 html:not([data-hab]) body .v2-card.dr{border-color:#E3E6EC}
 
@@ -1185,14 +1181,14 @@ html:not([data-hab]):root:root body .of-m1::before{background-image:none;backgro
 html:not([data-hab]):root:root .v2-halo{background-image:none}
 
 /* ── 3. Les bandeaux : clairs. L'astre se lève derrière le titre (13 écrans : of, td, fi, inf, gr, olm, cpd, mkb, pilotage, tournées, documents, carte) ── */
-html:root:root body :is(.of-hd,.pha-id.fi-hd,.td-hd,.inf-hd,.gr-hd,.olm-hd,.cpd-head,.mkb-tete,.aube-tete,.trn-hd,.dc-tete,.cn-fb,.ac-c-pharma,.aube-acc){isolation:isolate;color:var(--au-ink);background-color:var(--au-ciel);background-image:none;text-shadow:none}
-html:root:root body :is(.of-hd,.pha-id.fi-hd,.td-hd,.inf-hd,.gr-hd,.olm-hd,.cpd-head,.mkb-tete,.aube-tete,.trn-hd,.dc-tete,.cn-fb,.ac-c-pharma){overflow:hidden;border:1px solid var(--au-fil);box-shadow:0 1px 2px var(--au-ombre),0 24px 40px -30px var(--au-ombre-l)}
+html:root:root body :is(.of-hd,.pha-id.fi-hd,.td-hd,.gr-hd,.olm-hd,.cpd-head,.mkb-tete,.aube-tete,.trn-hd,.dc-tete,.cn-fb,.ac-c-pharma,.aube-acc){isolation:isolate;color:var(--au-ink);background-color:var(--au-ciel);background-image:none;text-shadow:none}
+html:root:root body :is(.of-hd,.pha-id.fi-hd,.td-hd,.gr-hd,.olm-hd,.cpd-head,.mkb-tete,.aube-tete,.trn-hd,.dc-tete,.cn-fb,.ac-c-pharma){overflow:hidden;border:1px solid var(--au-fil);box-shadow:0 1px 2px var(--au-ombre),0 24px 40px -30px var(--au-ombre-l)}
 html:root:root body :is(.mkb-tete,.aube-tete,.trn-hd,.dc-tete){padding:18px 24px 20px;border-radius:20px;margin-bottom:16px}
 html:root:root body .cpd-head{border-radius:20px}
 html:root:root body .cpd-head .cpd-bar{display:none}
 html:root:root body .cn-fb{overflow:visible;border-radius:0}
-html:root:root body :is(.of-hd,.pha-id.fi-hd,.td-hd,.inf-hd,.gr-hd,.olm-hd,.cpd-head,.mkb-tete,.aube-tete,.trn-hd,.dc-tete,.cn-fb,.aube-acc) :is(.of-lu,.of-croix,.of-halo,.fi-lu,.td-lu,.inf-lu,.gr-lu,.olm-lu){display:none}
-html:root:root body :is(.of-hd,.pha-id.fi-hd,.td-hd,.inf-hd,.gr-hd,.olm-hd,.cpd-head,.mkb-tete,.aube-tete,.trn-hd,.dc-tete,.cn-fb,.ac-c-pharma)::after{display:none}
+html:root:root body :is(.of-hd,.pha-id.fi-hd,.td-hd,.gr-hd,.olm-hd,.cpd-head,.mkb-tete,.aube-tete,.trn-hd,.dc-tete,.cn-fb,.aube-acc) :is(.of-lu,.of-croix,.of-halo,.fi-lu,.td-lu,.gr-lu,.olm-lu){display:none}
+html:root:root body :is(.of-hd,.pha-id.fi-hd,.td-hd,.gr-hd,.olm-hd,.cpd-head,.mkb-tete,.aube-tete,.trn-hd,.dc-tete,.cn-fb,.ac-c-pharma)::after{display:none}
 html:root:root body .aube-scene{--d0:clamp(250px,24vw,400px);--hy:74%;--hx:30%;position:absolute;left:0;top:0;right:0;bottom:0;z-index:-1;pointer-events:none;overflow:clip;border-radius:inherit}
 html:root:root body .pha-id .aube-scene{--d0:230px;--hx:50%}
 html:root:root body .cn-fb .aube-scene{--d0:90px;--hx:44px}
@@ -1236,10 +1232,10 @@ html:root:root body .ac-c-pharma .m1-scn-off{box-shadow:0 0 0 1px var(--au-liser
 html:root:root body .ac-c-pharma .aube-scene{--d0:150px;--hx:84%}
 
 /* ── 4. Textes des bandeaux : tous en encre (aucun blanc, aucune ombre de texte) ── */
-html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.inf-hd,.gr-hd,.olm-hd) :is(.of-eye,.td-eye,.fi-eye,.pha-code,.inf-eye,.gr-eye,.olm-eye){color:var(--au-ink3)}
-html:root:root body :is(.of-hd,.pha-id.fi-hd,.td-hd,.inf-hd,.gr-hd,.olm-hd,.cpd-head,.mkb-tete,.aube-tete,.trn-hd,.dc-tete,.cn-fb,.aube-acc) :is(.of-h1,.td-h1,.pha-name,.inf-h1,.gr-h1,.cpd-h1,.mkb-h1,.cn-h1,h1,.v2-page-title){color:var(--au-ink);text-shadow:none;font-family:var(--font,'Archivo',system-ui,sans-serif);font-weight:800;letter-spacing:-.035em}
-html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.inf-hd,.gr-hd,.olm-hd,.cpd-head,.mkb-tete,.aube-tete,.trn-hd,.dc-tete) :is(.of-phrase,.td-phrase,.fi-phrase,.td-expl,.pha-sub,.inf-phrase,.inf-ed,.gr-phrase,.gr-def,.olm-phrase,.cl1-et,.cpd-sub,.mkb-sous,.v2-page-sub,p){color:var(--au-ink2);text-shadow:none}
-html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.inf-hd,.gr-hd,.olm-hd) :is(.of-phrase,.td-phrase,.inf-phrase,.inf-ed,.gr-phrase,.olm-phrase) b,html:root:root body .td-hd .td-local,html:root:root body :is(.cpd-stat,.inf-hd) b{color:var(--au-ink)}
+html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.gr-hd,.olm-hd) :is(.of-eye,.td-eye,.fi-eye,.pha-code,.gr-eye,.olm-eye){color:var(--au-ink3)}
+html:root:root body :is(.of-hd,.pha-id.fi-hd,.td-hd,.gr-hd,.olm-hd,.cpd-head,.mkb-tete,.aube-tete,.trn-hd,.dc-tete,.cn-fb,.aube-acc) :is(.of-h1,.td-h1,.pha-name,.gr-h1,.cpd-h1,.mkb-h1,.cn-h1,h1,.v2-page-title){color:var(--au-ink);text-shadow:none;font-family:var(--font,'Archivo',system-ui,sans-serif);font-weight:800;letter-spacing:-.035em}
+html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.gr-hd,.olm-hd,.cpd-head,.mkb-tete,.aube-tete,.trn-hd,.dc-tete) :is(.of-phrase,.td-phrase,.fi-phrase,.td-expl,.pha-sub,.gr-phrase,.gr-def,.olm-phrase,.cl1-et,.cpd-sub,.mkb-sous,.v2-page-sub,p){color:var(--au-ink2);text-shadow:none}
+html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.gr-hd,.olm-hd) :is(.of-phrase,.td-phrase,.gr-phrase,.olm-phrase) b,html:root:root body .td-hd .td-local,html:root:root body :is(.cpd-stat) b{color:var(--au-ink)}
 html:root:root body :is(.cpd-stat) :is(span,small){color:var(--au-ink2)}
 html:root:root body .pha-id.fi-hd .pha-kv span:nth-child(odd){color:var(--au-ink3)}
 html:root:root body .pha-id.fi-hd .pha-kv span:nth-child(even){color:var(--au-ink)}
@@ -1258,24 +1254,24 @@ html:root:root body .td-hd .td-local{background-color:var(--au-pastille);backgro
 .aube-l{display:inline-block;animation:aube-lettre .5s var(--au-sortie) backwards;animation-delay:calc(var(--i)*50ms + 700ms - var(--au-off,0ms))}
 
 /* ── 5. Boutons, onglets, pastilles : le disque de l'astre (dans les couleurs de chaque habillage). Actif = --au-accent plein, texte blanc ── */
-html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.inf-hd,.gr-hd,.olm-hd) :is(.v2-btn-ghost,.v2-btn-primary,.pha-btn:not(.pha-btn-pri),.pha-edit,.v2-seg:not(.on),.td-cap:not(.is-on),.inf-copie,.gr-cap,.gr-tabs .v2-tab:not(.on)){
+html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.gr-hd,.olm-hd) :is(.v2-btn-ghost,.v2-btn-primary,.pha-btn:not(.pha-btn-pri),.pha-edit,.v2-seg:not(.on),.td-cap:not(.is-on),.gr-cap,.gr-tabs .v2-tab:not(.on)){
   background-color:var(--au-astre-b);background-image:linear-gradient(180deg,var(--au-astre-a),var(--au-astre-b));border:1px solid var(--au-lisere);color:var(--au-ink);box-shadow:0 1px 0 var(--au-astre-a) inset,0 6px 14px -10px var(--au-ombre-l)}
-html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.inf-hd,.gr-hd,.olm-hd) :is(.v2-btn-ghost,.v2-btn-primary,.pha-btn:not(.pha-btn-pri),.pha-edit,.v2-seg:not(.on),.td-cap:not(.is-on),.inf-copie,.gr-cap,.gr-tabs .v2-tab:not(.on)):hover{background-image:linear-gradient(180deg,var(--au-astre-a),var(--au-astre-c));border-color:var(--au-accent);color:var(--au-ink);transform:none}
-html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.inf-hd,.gr-hd,.olm-hd) :is(.v2-btn-ghost,.v2-btn-primary,.pha-btn:not(.pha-btn-pri),.pha-edit,.inf-copie,.gr-tabs .v2-tab) svg{color:var(--au-accent)}
-html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.inf-hd,.gr-hd,.olm-hd) :is(.v2-seg.on,.td-cap.is-on,.pha-btn-pri,.gr-tabs .v2-tab.on){background-color:var(--au-accent);background-image:none;border-color:var(--au-accent);color:#fff;box-shadow:0 8px 16px -8px var(--au-lueur),0 1px 0 rgba(255,255,255,.25) inset}
-html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.inf-hd,.gr-hd,.olm-hd) :is(.v2-seg.on,.td-cap.is-on,.pha-btn-pri,.gr-tabs .v2-tab.on) :is(svg,span:not(.of-cnt):not(.td-cnt),b:not(.td-cnt)){color:#fff}
-html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.inf-hd,.gr-hd,.olm-hd) .pha-btn-pri:hover{background-color:var(--au-accent-d);background-image:none;color:#fff}
+html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.gr-hd,.olm-hd) :is(.v2-btn-ghost,.v2-btn-primary,.pha-btn:not(.pha-btn-pri),.pha-edit,.v2-seg:not(.on),.td-cap:not(.is-on),.gr-cap,.gr-tabs .v2-tab:not(.on)):hover{background-image:linear-gradient(180deg,var(--au-astre-a),var(--au-astre-c));border-color:var(--au-accent);color:var(--au-ink);transform:none}
+html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.gr-hd,.olm-hd) :is(.v2-btn-ghost,.v2-btn-primary,.pha-btn:not(.pha-btn-pri),.pha-edit,.gr-tabs .v2-tab) svg{color:var(--au-accent)}
+html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.gr-hd,.olm-hd) :is(.v2-seg.on,.td-cap.is-on,.pha-btn-pri,.gr-tabs .v2-tab.on){background-color:var(--au-accent);background-image:none;border-color:var(--au-accent);color:#fff;box-shadow:0 8px 16px -8px var(--au-lueur),0 1px 0 rgba(255,255,255,.25) inset}
+html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.gr-hd,.olm-hd) :is(.v2-seg.on,.td-cap.is-on,.pha-btn-pri,.gr-tabs .v2-tab.on) :is(svg,span:not(.of-cnt):not(.td-cnt),b:not(.td-cnt)){color:#fff}
+html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.gr-hd,.olm-hd) .pha-btn-pri:hover{background-color:var(--au-accent-d);background-image:none;color:#fff}
 html:root:root body :is(.of-hd,.td-hd) :is(.of-cnt,.td-cnt){background-color:var(--au-pastille);color:var(--au-ink)}
 html:root:root body :is(.of-hd,.td-hd) :is(.v2-seg.on,.td-cap.is-on) :is(.of-cnt,.td-cnt){background-color:#fff;color:var(--au-accent-d)}
-html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.inf-hd,.gr-hd,.olm-hd) :is(.v2-btn,.pha-btn,.pha-edit,.v2-seg,.td-cap,.inf-copie,.gr-cap,.v2-tab):focus-visible{outline:2px solid var(--au-accent);outline-offset:2px}
+html:root:root body :is(.of-hd,.td-hd,.pha-id.fi-hd,.gr-hd,.olm-hd) :is(.v2-btn,.pha-btn,.pha-edit,.v2-seg,.td-cap,.gr-cap,.v2-tab):focus-visible{outline:2px solid var(--au-accent);outline-offset:2px}
 html:root:root body .olm-hd .olm-pastille{border:1px solid var(--au-lisere);box-shadow:0 1px 2px var(--au-ombre)}
 
 /* ── 6. Cartes : liseré fin, reflet haut, ombre douce (tous les habillages) ; blanc à reflet haut (habillage par défaut seulement : les autres gardent leur matière) ;
       au survol, la lumière de l'astre suit le pointeur (variables posées par le script) ── */
-html:root:root body :is(.ac-c:not(.ac-c-pharma),.m1-c.m1-p,a.of-c,.v2-card,.pha-nav,.pha-kpi,.pha-card,.fbk-b:not(.pri),.v2-todo-add,.v2-todo-empty,.v2-todo-list,.v2-kpi,.inf-c-porte,.gr-une,.gr-carte,.olm-porte:not(.on),.cpd-door,.mkb-porte,.mkb-repere,.pr-card,.pa-card,.pa-kpi,.dc-card,.trn-card){border-color:var(--au-fil);box-shadow:0 1px 0 var(--au-astre-a) inset,0 1px 2px var(--au-ombre),0 14px 28px -18px var(--au-ombre-l)}
-html:not([data-hab]):root:root body :is(.ac-c:not(.ac-c-pharma),.m1-c.m1-p,a.of-c,.v2-card,.pha-nav,.pha-kpi,.pha-card,.fbk-b:not(.pri),.v2-todo-add,.v2-todo-empty,.v2-todo-list,.v2-kpi,.inf-c-porte,.gr-une,.gr-carte,.olm-porte:not(.on),.cpd-door,.mkb-porte,.mkb-repere,.pr-card,.pa-card,.pa-kpi,.dc-card,.trn-card){background-color:#FFFFFF;background-image:linear-gradient(180deg,var(--au-carte-a) 0%,var(--au-carte-b) 100%)}
+html:root:root body :is(.ac-c:not(.ac-c-pharma),.m1-c.m1-p,a.of-c,.v2-card,.pha-nav,.pha-kpi,.pha-card,.fbk-b:not(.pri),.v2-todo-add,.v2-todo-empty,.v2-todo-list,.v2-kpi,.gr-une,.gr-carte,.olm-porte:not(.on),.cpd-door,.mkb-porte,.mkb-repere,.pr-card,.pa-card,.pa-kpi,.dc-card,.trn-card){border-color:var(--au-fil);box-shadow:0 1px 0 var(--au-astre-a) inset,0 1px 2px var(--au-ombre),0 14px 28px -18px var(--au-ombre-l)}
+html:not([data-hab]):root:root body :is(.ac-c:not(.ac-c-pharma),.m1-c.m1-p,a.of-c,.v2-card,.pha-nav,.pha-kpi,.pha-card,.fbk-b:not(.pri),.v2-todo-add,.v2-todo-empty,.v2-todo-list,.v2-kpi,.gr-une,.gr-carte,.olm-porte:not(.on),.cpd-door,.mkb-porte,.mkb-repere,.pr-card,.pa-card,.pa-kpi,.dc-card,.trn-card){background-color:#FFFFFF;background-image:linear-gradient(180deg,var(--au-carte-a) 0%,var(--au-carte-b) 100%)}
 @media (hover:hover) and (pointer:fine){
-  html:root:root body :is(.ac-c:not(.ac-c-pharma),.m1-c.m1-p,a.of-c,.v2-card,.pha-nav,.pha-kpi,.pha-card,.fbk-b:not(.pri),.v2-todo-add,.v2-todo-list,.v2-kpi,.inf-c-porte,.gr-une,.gr-carte,.olm-porte:not(.on),.cpd-door,.mkb-porte,.mkb-repere,.pr-card,.pa-card,.pa-kpi,.dc-card,.trn-card):hover{background-color:var(--au-carte-a);background-image:radial-gradient(circle 300px at var(--au-mx,50%) var(--au-my,0%),var(--au-surv-a) 0%,var(--au-carte-a) 100%);border-color:var(--au-lisere)}
+  html:root:root body :is(.ac-c:not(.ac-c-pharma),.m1-c.m1-p,a.of-c,.v2-card,.pha-nav,.pha-kpi,.pha-card,.fbk-b:not(.pri),.v2-todo-add,.v2-todo-list,.v2-kpi,.gr-une,.gr-carte,.olm-porte:not(.on),.cpd-door,.mkb-porte,.mkb-repere,.pr-card,.pa-card,.pa-kpi,.dc-card,.trn-card):hover{background-color:var(--au-carte-a);background-image:radial-gradient(circle 300px at var(--au-mx,50%) var(--au-my,0%),var(--au-surv-a) 0%,var(--au-carte-a) 100%);border-color:var(--au-lisere)}
 }
 
 /* ── 7. Boutons blancs, onglets et pastilles hors bandeau : le disque de l'astre ; l'actif en --au-accent plein, texte blanc ── */
@@ -1344,7 +1340,6 @@ html:root:root body :is(.v2-card,.v2-card-b) .v2-empty-d{color:var(--au-ink2)}
 /* « Type de tâche : » est posé dans la carte claire du formulaire (pas sur le fond de page) : encre de l'habillage, sans plaque (marbre, forêt : 1,04 mesuré avec l'encre claire) */
 html:root:root body :is(.v2-card,.v2-card-b) .td-choix-l{background:none;box-shadow:none;padding:0;border-radius:0;color:var(--au-ink2)}
 /* pastilles d'icône d'Infos et monogrammes de Groupements : le bleu codé en dur devient l'accent de l'habillage */
-html[data-hab]:root:root body .inf-c-pic{background-image:linear-gradient(160deg,color-mix(in srgb,var(--ip-blue) 80%,#fff),var(--ip-blue) 55%,var(--ip-blue-d))}
 html[data-hab]:root:root body :is(.gr-m1 .grp-logo-x,.gr-pastille .grp-logo-x){background-image:linear-gradient(160deg,color-mix(in srgb,var(--ip-blue) 80%,#fff),var(--ip-blue-d))}
 html[data-hab]:root:root body .gr-tri-l{color:var(--au-ink2)}
 html:root:root body .aube-acc .aube-acc-bloc :is(.m1-eye,h1.v2-titre){display:block;width:100%;max-width:none;margin-left:0;margin-right:0;padding-left:0;padding-right:0;text-align:center}

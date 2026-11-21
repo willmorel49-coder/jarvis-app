@@ -612,30 +612,23 @@
     // PP_REG n'est PAS vidé ici : la vue vient d'y inscrire ses lignes ; ppFermer() le vide
     if (!pan.classList.contains('ouvert')) { PP_PILE = []; PP_FOCUS = document.activeElement; }
     else if (PP_PILE.length) PP_PILE[PP_PILE.length - 1].scroll = corps.scrollTop;
-    // 09/11/2026 — ouvert depuis une porte de l'écran Infos : le panneau est rangé DANS la page (#inf-volet), sans voile ni blocage du défilement
-    var volet = INF.porte ? document.getElementById('inf-volet') : null;
-    if (volet) { if (pan.parentNode !== volet) volet.appendChild(pan); pan.classList.add('en-volet'); }
-    else if (pan.classList.contains('en-volet')) { pan.classList.remove('en-volet'); document.body.appendChild(pan); }
     PP_PILE.push(v); ppAfficher(v);
     pan.classList.add('ouvert'); pan.setAttribute('aria-hidden', 'false');
-    if (volet) { if (PP_PILE.length > 1) { var tv = document.querySelector('.inf-c-vtete'); if (tv && tv.getBoundingClientRect().top < 0) try { tv.scrollIntoView({ block: 'start' }); } catch (e) {} } return; }
     document.getElementById('pp-voile').classList.add('ouvert'); document.documentElement.classList.add('pp-fige');
     setTimeout(function () { var f = pan.querySelector('[data-pp-fermer]'); if (f) try { f.focus({ preventScroll: true }); } catch (e) {} }, 60);
   }
   function ppFermer() {
     var pan = document.getElementById('pp-pan'); if (!pan) return;
-    var enVolet = pan.classList.contains('en-volet');
     pan.classList.remove('ouvert'); document.getElementById('pp-voile').classList.remove('ouvert');
     pan.setAttribute('aria-hidden', 'true'); document.documentElement.classList.remove('pp-fige');
     PP_PILE = []; PP_REG = [];
-    if (enVolet) { pan.classList.remove('en-volet'); document.body.appendChild(pan); infSortie(); return; }   // fermer le volet = revenir aux trois portes
     if (PP_FOCUS && PP_FOCUS.focus && PP_FOCUS.isConnected) try { PP_FOCUS.focus({ preventScroll: true }); } catch (e) {}
   }
   function ppRetour() { if (PP_PILE.length < 2) { ppFermer(); return; } PP_PILE.pop(); ppAfficher(PP_PILE[PP_PILE.length - 1]); }
   function ppOuvert() { var p = document.getElementById('pp-pan'); return !!(p && p.classList.contains('ouvert')); }
   if (!V2._ppEchap) {
     V2._ppEchap = true;
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && ppOuvert() && !(INF.porte && x13OuvertQ())) ppFermer(); });   // volet ouvert : Échap referme d'abord la feuille de lecture
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && ppOuvert()) ppFermer(); });
     // quitter la page (lien, bouton Retour du navigateur) referme le panneau
     // on lit l'adresse elle-même : cet écouteur passe AVANT celui du routeur (v2-app.js), V2.route date encore de l'écran quitté
     window.addEventListener('hashchange', function () {
@@ -703,7 +696,7 @@
       boutons: (tag.ficheId ? '<button type="button" class="pp-btn pp-btn-blanc" onclick="V2.ppFiche(\'' + esc(tag.ficheId) + '\')">' + ppIco('fiche', 18) + 'Ouvrir la fiche officine</button>' : '') +
         '<button type="button" class="pp-btn pp-btn-blanc" onclick="V2.ppNonLu(\'' + esc(e.id) + '\',this)">Marquer comme non lue</button>' };
   }
-  V2.ppFiche = function (id) { if (!id) return; ppFermer(); x13Reset(); V2.go('pharma', id); };
+  V2.ppFiche = function (id) { if (!id) return; ppFermer(); V2.go('pharma', id); };
   V2.ppNonLu = function (id, b) { delete SCT_LU[id]; sctSaveLu(); if (b) { b.textContent = 'Marquée comme non lue'; b.disabled = true; } };
   function ppArtRupt(r) {
     var nom = String(r.spec || '').split(/ – | - /)[0];
@@ -971,239 +964,8 @@
     ppOuvrirPan({ sur: 'Sources de l’édition', html: h });
   };
 
-  /* ════════════════ LA UNE (08/10/2026, choix de Will · maquette 13) ════════════════
-     Calquée sur Apple News : la date en grand, UNE grande carte, quatre cartes compactes,
-     « Tendances » numérotées, « Tout voir ». Une carte touchée s'agrandit en feuille de
-     lecture (posée dans <body>, comme le panneau, pour qu'aucun parent animé ne casse son
-     position:fixed). Les neuf instruments du poste de pilotage sont gardés tels quels dans
-     le panneau : on y entre par les pastilles « Rubriques », repliées en bas de page.
-     Tout est calculé ICI à chaque rendu depuis ppDonnees() ; les faits concurrents vérifiés
-     sont chargés pendant load() (VERIFS) pour que la page se dessine une seule fois. */
-  var X13_RUB = { regle: 'Prix et règles', rupture: 'Ruptures', rappel: 'Rappels de lot', officine: 'Officines', actu: 'Actualité', concurrent: 'Concurrents' };
-  var X13_SRC = { regle: 'Journal officiel', rupture: 'Agence du médicament', rappel: 'Agence du médicament', officine: 'Annonces légales', actu: '', concurrent: '' };
-  var X13_ICO = { regle: 'loi', rupture: 'rupture', rappel: 'rappel', officine: 'cession', concurrent: 'concurrent', actu: 'journal' };
-  var X13 = { liste: [], orig: null, fin: 0, tx: null };
-  var INF = { vu: false, t: 0, stop: false, obs: null, porte: null, y: 0, opener: null, garde: null, html: '', france: [] };   // porte : la porte ouverte (null = les trois portes) ; garde : #pp-pan mis de côté pendant qu'on redessine la page
-  function x13T(s) { return esc(String(s == null ? '' : s).replace(/\btes\b/g, 'vos').replace(/\bton\b/g, 'votre')); }
-  function x13N2(t) { return norm(t).replace(/[^a-z0-9]+/g, ' ').trim(); }
-  function x13NomRupt(r) { return String(r.spec || '').split(/ – | - /)[0] || String(r.dci || ''); }
   function x13Jour() { try { return new Date().toISOString().slice(0, 10); } catch (e) { return ''; } }
 
-  /* les événements du jour, dédoublonnés, chacun avec sa rubrique et son article (ppArt*) */
-  function x13Evenements(D) {
-    var vus = {}, out = [], auj = x13Jour();
-    function add(o) { var k = x13N2(o.t).slice(0, 38); if (!o.t || vus[k]) return; vus[k] = 1; out.push(o); }
-    D.avenir.concat(D.passe).forEach(function (e) { add({ rub: 'regle', t: e.t, d: e.effet, j: e.j, item: ppArtEp(e), pri: e.j >= 0 && e.j <= 7 ? 1 : 6 }); });
-    D.signaux.forEach(function (e) { add({ rub: e.motif === 'amont' ? 'rupture' : 'officine', t: e.t, d: e.d, item: ppArtEp(e), pri: e.motif === 'amont' ? 5 : 4 }); });
-    D.rupt.forEach(function (r) { add({ rub: 'rupture', t: x13NomRupt(r), d: r.since && ppJ(r.since) >= 0 ? r.since : auj, item: ppArtRupt(r), pri: 2 }); });
-    D.lots.forEach(function (r) { add({ rub: 'rappel', t: r.t, d: r.d, item: ppArtLot(r), pri: 3 }); });
-    // Rappel Conso (cosmétiques grand public, encres de tatouage…) : pas sur la page, seulement dans la rubrique « Rappels » (22/10/2026)
-    D.cinq.forEach(function (c) {
-      if (D.lots.some(function (l) { return norm(c.t).indexOf(x13N2(l.t).slice(0, 38)) >= 0; })) return;
-      add({ rub: 'actu', t: c.t, d: c.d, item: ppArt(c), pri: 7 });
-    });
-    D.fil.forEach(function (a) { add({ rub: 'actu', t: a.t, d: a.d, item: ppArt(a), pri: 9, neuf: a.neuf }); });
-    var S = ppScope();
-    if (S.deps || S.dir) ppAnnonces(S.deps).filter(function (e) { return ppJ(e.d) <= 14; }).forEach(function (e) {
-      var fam = SCT_FAM[e.f] || SCT_FAM.dirigeant;
-      add({ rub: 'officine', t: sctJoli(e.nom) + ' — ' + fam.l1.toLowerCase() + ' · ' + sctJoli(e.ville), d: e.d, item: ppArtBodPret(e), pri: 4, bod: e, fam: fam.l1 });
-    });
-    return out;
-  }
-  /* la une, quatre compactes (une par rubrique de terrain), quatre tendances (l'actualité qui n'est pas déjà ailleurs), le reste */
-  function x13Pile(D) {
-    var tout = x13Evenements(D);
-    (VERIFS || []).forEach(function (v) { tout.push({ rub: 'concurrent', t: v.titre, d: v.date, s: v.source, pri: 5.5, item: ppArtVer(v) }); });
-    tout.forEach(function (e, i) { e.o = i; });
-    tout.sort(function (a, b) { return (a.pri - b.pri) || (String(b.d || '').localeCompare(String(a.d || ''))) || (a.o - b.o); });
-    var lots = D.lots.map(function (l) { return x13N2(l.t).slice(0, 22); });
-    var mols = D.rupt.map(function (r) { return x13N2(x13NomRupt(r)).split(' ')[0]; }).filter(function (w) { return w.length > 4; });
-    var lire = tout.filter(function (e) {
-      if (e.rub !== 'actu') return false;
-      var t = x13N2(e.t), tt = x13N2(e.t + ' ' + (e.item.paras || []).join(' '));
-      return !lots.some(function (l) { return t.indexOf(l) >= 0; }) && !mols.some(function (w) { return tt.indexOf(w) >= 0; });
-    });
-    var une = tout.filter(function (e) { return e.pri === 1; })[0] || tout[0], pris = une ? [une] : [], cmp = [], tend = [];
-    ['rupture', 'rappel', 'officine', 'concurrent'].forEach(function (r) {
-      var e = tout.filter(function (x) { return x.rub === r && pris.indexOf(x) < 0; })[0];
-      if (e) { cmp.push(e); pris.push(e); }
-    });
-    lire.slice().sort(function (a, b) { return (a.pri - b.pri) || String(b.d || '').localeCompare(String(a.d || '')); }).forEach(function (e) {
-      if (tend.length < 4 && pris.indexOf(e) < 0) { tend.push(e); pris.push(e); }
-    });
-    var reste = tout.filter(function (e) { return pris.indexOf(e) < 0 && (e.rub !== 'actu' || lire.indexOf(e) >= 0); });
-    return { une: une, cmp: cmp, tend: tend, reste: reste };
-  }
-  function x13Source(e) {
-    if (e.rub === 'rappel' && /Rappel Conso/.test((e.item && e.item.sur) || '')) return 'Rappel Conso';
-    if (e.rub === 'actu' || e.rub === 'concurrent') {
-      var m = e.rub === 'concurrent' ? String(e.s || '').split(',')[0] : String((e.item && e.item.meta) || '').split(' · ')[0];
-      return m || 'Actualité';
-    }
-    return X13_SRC[e.rub];
-  }
-  function x13JoursTxt(j) { return j > 1 ? 'dans ' + j + ' jours' : j === 1 ? 'demain' : 'aujourd’hui'; }
-  function x13Age(e) {
-    if (e.rub === 'regle' && e.j != null && e.j >= 0) return x13JoursTxt(e.j);
-    return e.d ? sctQuand(String(e.d).slice(0, 10)) : '';
-  }
-  function x13Neuf(e) { var n = ppJ(e.d); return !!e.neuf || (n >= 0 && n <= 1); }
-  /* le chiffre de l'info, quand elle en a un ; sinon le pictogramme de la rubrique */
-  function x13Chiffre(e) {
-    if (e.rub === 'regle' && e.j != null && e.j >= 0) return { n: String(e.j), u: e.j > 1 ? 'jours' : 'jour' };
-    var c = e.item && e.item.chiffres && e.item.chiffres[0];
-    if (c && String(c.v).length <= 9) { var p = String(c.v).split(' '); return { n: p[0], u: p.slice(1).join(' ') }; }
-    return null;
-  }
-  function x13Couv(e, grand) {
-    var c = x13Chiffre(e);
-    return '<span class="x13-cv x13-k-' + e.rub + '" aria-hidden="true">' +
-      (c ? '<span class="x13-cn"><b>' + esc(c.n) + '</b>' + (c.u ? '<i>' + esc(c.u) + '</i>' : '') + '</span>' : '<span class="x13-ci">' + ppIco(X13_ICO[e.rub] || 'journal', grand ? 64 : 34) + '</span>') + '</span>';
-  }
-  function x13Ligne(e, sans) {
-    var a = x13Age(e);
-    return '<span class="x13-m"><span class="x13-src">' + esc(x13Source(e)) + '</span>' + (a ? '<span class="x13-age">' + esc(a) + '</span>' : '') + (!sans && x13Neuf(e) ? '<span class="x13-neuf">Nouveau</span>' : '') + '</span>';
-  }
-  function x13Compacte(e, i, d) {
-    X13.liste[i] = e;
-    return '<button type="button" class="x13-c" style="--i:' + d + '" data-x13-i="' + i + '"><span class="x13-ct"><span class="x13-rl"><span class="x13-ru x13-t-' + e.rub + '">' + esc(X13_RUB[e.rub]) + '</span>' + (x13Neuf(e) ? '<span class="x13-neuf">Nouveau</span>' : '') + '</span><span class="x13-t">' + x13T(e.t) + '</span>' + x13Ligne(e, true) + '</span>' + x13Couv(e, false) + '</button>';
-  }
-  /* ════════════════ LE HAUT EN « TROIS PORTES » (09/11/2026, choix de Will · direction C) ════════════════
-     Maquette : ~/jarvis-preuves/maquettes-infos-2026-11-09/c.html (d'après le Catalogue produits et Offilog).
-     Le bandeau bleu (date de l'ÉDITION, phrase, « Copier le brief ») puis trois portes :
-       « Votre secteur » (3 annonces d'officines au plus, moins de 14 jours, chacune avec sa phrase « À dire en rendez-vous »),
-       « En France » (3 infos au plus),
-       « Tout le reste » (une ligne par rubrique, avec son compteur).
-     Une porte ou une ligne ouvre le panneau EXISTANT (PP_VUES) dans la page, à la place des portes, sous la pilule
-     « ← Les trois portes » : ppOuvrirPan range alors #pp-pan dans #inf-volet au lieu de le faire glisser par-dessus la page.
-     Les 11 panneaux restent atteignables : le secteur par la porte 1, les dix autres par la porte 3. */
-  var INF_RUB = [   // porte 3 : clé du panneau, libellé, pictogramme, couleur
-    ['echeances', 'Échéances', 'horloge', '#C7791A'], ['ruptures', 'Ruptures', 'rupture', '#E0556E'], ['rappels', 'Rappels de lot', 'rappel', '#C7791A'],
-    ['concurrents', 'Concurrents', 'concurrent', '#00B5D8'], ['radar', 'Le radar', 'europe', '#0050E6'], ['une', 'La une', 'etoile', '#E0556E'],
-    ['cinq', 'Les cinq', 'liste', '#6D4FC4'], ['mur', 'Toute l’actu', 'journal', '#0050E6'], ['archive', 'Les matins d’avant', 'archive', '#465066'], ['sources', 'Sources', 'lien', '#1E9E6A']];
-  var INF_COUL = { regle: '#6D4FC4', rupture: '#E0556E', rappel: '#C7791A', concurrent: '#00B5D8', actu: '#0050E6', officine: '#0050E6' };
-  var INF_PORTE_IC = {
-    secteur: '<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/>',
-    france: PP_IC.europe,
-    reste: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>' };
-  function infChev(s) { return sctSvg('<path d="M9 5l7 7-7 7"/>', s || 18); }
-
-  /* Porte 1 : les annonces d'OFFICINES du secteur (Bodacc / FINESS), moins de 14 jours (x13Evenements) ; un client d'abord, puis les plus récentes ; 3 au plus ; sans doublon de nom.
-     Un arrêté du Journal officiel qui parle d'officines n'est pas une annonce d'officine : il reste dans « À ne pas manquer » et dans le fil. */
-  function infSecteur(tout) {
-    var vu = {}, sec = tout.filter(function (e) {
-      if (e.rub !== 'officine' || !e.bod) return false;
-      var k = x13N2(e.bod.nom).slice(0, 18); if (vu[k]) return false; vu[k] = 1; return true;
-    });
-    sec.sort(function (a, b) {
-      var ca = sctTag(a.bod).t === 'client' ? 0 : 1, cb = sctTag(b.bod).t === 'client' ? 0 : 1;
-      return (ca - cb) || String(b.d || '').localeCompare(String(a.d || ''));
-    });
-    return sec.slice(0, 3);
-  }
-  /* Porte 2 : une règle, une rupture, un rappel (le premier de chaque), complétés par le suivant le plus important ; 3 au plus */
-  function infFrance(tout) {
-    var fr = tout.filter(function (e) { return /^(regle|rupture|rappel|concurrent)$/.test(e.rub); }), pris = [];
-    ['regle', 'rupture', 'rappel'].forEach(function (r) { var e = fr.filter(function (x) { return x.rub === r; })[0]; if (e) pris.push(e); });
-    pris.sort(function (a, b) { return a.pri - b.pri; });
-    fr.forEach(function (e) { if (pris.length < 3 && pris.indexOf(e) < 0) pris.push(e); });
-    pris = pris.slice(0, 3);
-    pris.sort(function (a, b) { return a.pri - b.pri; });
-    return pris;
-  }
-  /* Porte 3 : les dix rubriques qui ne sont pas le secteur, chacune avec son compteur (null = pas de nombre à dire) */
-  function infRubriques(D, J) {
-    var rad = D.rad.ruptures, nSrc = (D.C.sources_lues || []).length || D.C.fichiers || 0;
-    var n = { echeances: D.ep.length, ruptures: rad ? rad.v : null, rappels: D.rappels, concurrents: VERIFS ? VERIFS.length : null, radar: (BRIEF.radar || []).length,
-      une: BRIEF.une ? 1 : null, cinq: D.cinq.length, mur: D.fil.length, archive: J.length || null, sources: nSrc || null };
-    // 12/11/2026 — Façon 1 (lot A) : chaque compteur dit ce qu'il compte ; « ruptures » et « rappels » aussi leur source et leur période, une seule fois (ici).
-    var u = { echeances: 'échéances de prix et de règles', ruptures: rad ? rad.l + ' à la date de l’édition · Agence du médicament' : 'produits en rupture ou tension · Agence du médicament', rappels: 'rappels en cours · médicaments (Agence du médicament) et parapharmacie (Rappel Conso)',
-      concurrents: 'faits concurrents vérifiés', radar: 'repères du jour', une: '', cinq: 'infos essentielles du jour', mur: 'infos lues dans la presse professionnelle', archive: 'éditions passées', sources: 'sources lues' };
-    return INF_RUB.filter(function (r) { return r[0] !== 'une' || BRIEF.une; }).map(function (r) { return { cle: r[0], lib: r[1], ico: r[2], c: r[3], n: n[r[0]], u: u[r[0]] }; });   // « La une » sans sujet du jour n'ouvrirait rien
-  }
-  function infKick(c) { return 'color:color-mix(in srgb,' + c + ' 58%,#000)'; }
-  /* une ligne de porte : pastille de rubrique + âge, titre, et pour une annonce du secteur la phrase « À dire en rendez-vous » (sctGeste, la même que dans la fiche) */
-  function infLigne(e, i) {
-    X13.liste[i] = e;
-    var tag = e.bod ? sctTag(e.bod).t : '', a = x13Age(e), c = e.bod ? (PP_FC[e.bod.f] || INF_COUL.officine) : (INF_COUL[e.rub] || '#0050E6');
-    var kick = e.bod ? e.fam : X13_RUB[e.rub];
-    var titre = e.bod ? sctJoli(e.bod.nom) + ' · ' + sctJoli(e.bod.ville) : e.t;
-    var dire = e.bod ? '<span class="inf-c-dire"><b>À dire en rendez-vous</b> ' + esc(sctGeste(e.bod, tag)) + '</span>' : '';
-    return '<li class="inf-c-li"><button type="button" class="inf-c-l" data-x13-i="' + i + '" data-info="' + esc(e.bod ? e.bod.id : x14Cle(e.t)) + '" style="--c:' + c + '">' +
-      '<span class="inf-c-k" style="' + infKick(c) + '"><i aria-hidden="true"></i><span>' + esc(kick) + '</span>' + (tag === 'client' ? '<span class="x13-neuf">Votre client</span>' : '') +
-      '<em>' + esc(e.bod ? (a || 'Annonces légales') : (a ? a + ' · ' : '') + String(x13Source(e))) + '</em></span>' +
-      '<span class="inf-c-lt">' + x13T(titre) + '</span>' + dire + '</button></li>';
-  }
-  function infPorteTete(cle, titre, sous, n, lib) {
-    return '<div class="inf-c-pt"><span class="inf-c-pic" aria-hidden="true">' + sctSvg(INF_PORTE_IC[cle], 24) + '</span><h2 class="inf-c-ptitre">' + esc(titre) + '</h2>' +
-      (n != null ? '<div class="inf-c-cpt"><b>' + esc(n) + '</b><span>' + esc(lib) + '</span></div>' : '') + '</div>' + (sous ? '<p class="inf-c-sous">' + esc(sous) + '</p>' : '');
-  }
-  function infPortes(S, sec, pris, rub, nSec) {
-    var i = 0, noms = S.deps ? S.deps.map(function (d) { return SCT_DEPNOMS[d] || d; }).sort(function (a, b) { return a.localeCompare(b, 'fr'); }).join(' · ') : '';
-    var titreSec = S.deps ? 'Votre secteur' : 'Les officines · toute la France';
-    var sousSec = S.deps ? noms : 'Vue direction : aucun secteur propre, toutes les annonces des 14 derniers jours';
-    var piedSec = nSec == null ? '' : '<button type="button" class="inf-c-pied" data-ouvre="secteur"><span>' + (S.dir ? 'Voir les ' + nSec + ' annonces, la carte, changer de secteur' : 'Voir les ' + nSec + ' annonces des 3 derniers mois, et la carte') + '</span><span class="inf-c-chev" aria-hidden="true">' + infChev() + '</span></button>';
-    var p1 = '<article class="inf-c-porte" data-porte="secteur">' + infPorteTete('secteur', titreSec, sousSec, nSec, 'annonces en 3\u00a0mois') +
-      (sec.length ? '<ul class="inf-c-ls">' + sec.map(function (e) { return infLigne(e, i++); }).join('') + '</ul>' :
-        '<p class="inf-c-vide">Rien de neuf ces 14 derniers jours dans ' + (S.deps ? 'votre secteur' : 'les officines') + '.</p>') + piedSec + '</article>';
-    var p2 = '<article class="inf-c-porte" data-porte="france">' + infPorteTete('france', 'En France', 'Ce qui touche toutes les officines.', pris.length, pris.length > 1 ? 'infos à retenir' : 'info à retenir') +
-      (pris.length ? '<ul class="inf-c-ls">' + pris.map(function (e) { return infLigne(e, i++); }).join('') + '</ul>' : '<p class="inf-c-vide">Rien de neuf en France aujourd’hui.</p>') +
-      (pris.length ? '<button type="button" class="inf-c-pied" data-porte-ouvre="france"><span>Lire ' + (pris.length > 1 ? 'les ' + pris.length + ' infos' : 'l’info') + '</span><span class="inf-c-chev" aria-hidden="true">' + infChev() + '</span></button>' : '') + '</article>';
-    var p3 = '<article class="inf-c-porte" data-porte="reste">' + infPorteTete('reste', 'Tout le reste', 'Les autres rubriques, une ligne chacune.', rub.length, 'rubriques') +
-      '<div class="inf-c-reste">' + rub.map(function (r) {
-        return '<button type="button" class="inf-c-rub" data-ouvre="' + r.cle + '" style="--c:' + r.c + '"><span class="inf-c-ri" aria-hidden="true">' + ppIco(r.ico, 17) + '</span><span class="inf-c-rt"><span class="inf-c-rl">' + esc(r.lib) + '</span>' + (r.n != null && r.u ? '<span class="inf-c-ru">' + esc(r.u) + '</span>' : '') + '</span>' +
-          (r.n != null ? '<span class="inf-c-rn">' + esc(r.n) + '</span>' : '') + '<span class="inf-c-rc" aria-hidden="true">' + infChev(16) + '</span></button>';
-      }).join('') + '</div></article>';
-    return '<div class="inf-c-portes">' + p1 + p2 + p3 + '</div>';
-  }
-  /* Le volet : la pilule de retour, puis la place où ppOuvrirPan range #pp-pan */
-  function infVoletCoque(cle) {
-    var lib = cle === 'secteur' ? 'Porte 1 · ' + (ppScope().deps ? 'Votre secteur' : 'Les officines') : cle === 'france' ? 'Porte 2 · En France' : 'Porte 3 · Tout le reste · ' + (INF_RUB.filter(function (r) { return r[0] === cle; })[0] || ['', ''])[1];
-    return '<div class="inf-c-vtete"><button type="button" class="inf-c-retour" data-revenir>' + ppIco('retour', 18) + ' Les trois portes</button><p>' + esc(lib) + '</p></div><div class="inf-c-volet" id="inf-volet"></div>';
-  }
-  /* La porte 2 ouverte : les infos de France avec leur résumé, dans le même panneau que les autres */
-  function infVoletFrance() {
-    var L = INF.france || [];
-    ppOuvrirPan({ sur: 'En France · ' + ppPl(L.length, 'info'), html: '<h2>En France</h2><div class="pp-chapo">Ce qui touche toutes les officines, quel que soit le secteur.</div><div class="pp-bloc" style="margin-top:14px">' +
-      (L.length ? L.map(function (e) {
-        var p0 = (e.item.paras || []).filter(Boolean)[0] || '', a = x13Age(e);
-        return ppLigne({ item: e.item, c: INF_COUL[e.rub] || '#0050E6', ico: X13_ICO[e.rub] || 'journal', t: x13T(e.t), s: esc(p0.length > 200 ? p0.slice(0, 197).replace(/\s+\S*$/, '') + '…' : p0), d: esc([x13Source(e), a].filter(Boolean).join(' · ')) });
-      }).join('') : '<div class="pp-vide">Rien de neuf en France aujourd’hui.</div>') + '</div>' });
-  }
-  function infOuvrir(cle, origine) {
-    var z = document.getElementById('inf-zone'), racine = z && z.closest('.inf-m1');
-    if (!z || (cle !== 'france' && !PP_VUES[cle])) return;
-    INF.porte = cle; INF.y = window.pageYOffset || 0; INF.opener = origine || null;
-    z.innerHTML = infVoletCoque(cle); racine.classList.add('inf-c-ouvert');
-    if (cle === 'france') infVoletFrance(); else PP_VUES[cle]();
-    var v = document.getElementById('inf-volet'), calme = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    window.scrollTo(0, 0);
-    if (v && v.animate && !calme) {   // le volet naît de l'élément touché
-      var r = origine && origine.getBoundingClientRect ? origine.getBoundingClientRect() : null, b = v.getBoundingClientRect();
-      v.style.transformOrigin = r && b.width ? Math.max(0, Math.min(100, (r.left + r.width / 2 - b.left) / b.width * 100)) + '% ' + Math.max(0, Math.min(100, (r.top + r.height / 2 - b.top) / b.height * 100)) + '%' : '50% 0';
-      v.animate([{ opacity: 0, transform: 'scale(.94)' }, { opacity: 1, transform: 'none' }], { duration: 280, easing: 'cubic-bezier(.32,.72,0,1)' });
-    }
-    var rb = z.querySelector('[data-revenir]'); if (rb) { try { rb.focus({ preventScroll: true }); } catch (er) {} }
-  }
-  /* revenir aux trois portes : on referme le panneau, qui rend lui-même les portes (ppFermer → infSortie) */
-  function infRevenir() { if (ppOuvert()) ppFermer(); else infSortie(); }
-  function infSortie() {
-    var z = document.getElementById('inf-zone'), racine = z && z.closest('.inf-m1'), o = INF.opener, y = INF.y;
-    INF.porte = null; INF.opener = null;
-    if (!z) return;
-    z.innerHTML = INF.html; if (racine) racine.classList.remove('inf-c-ouvert');
-    window.scrollTo(0, y);
-    var cible = o && document.body.contains(o) ? o : (o && o.getAttribute ? z.querySelector('[data-ouvre="' + o.getAttribute('data-ouvre') + '"],[data-porte-ouvre="' + o.getAttribute('data-porte-ouvre') + '"]') : null);
-    if (cible) { try { cible.focus({ preventScroll: true }); } catch (er) {} }
-  }
-  /* la date : celle de l'ÉDITION (clé jour du fichier), jamais l'horloge ; dite en clair quand ce n'est pas celle du jour */
-  function infEdition(jour, nSrc) {
-    var auj = ''; try { auj = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }); } catch (e) {}
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(auj)) auj = x13Jour();
-    var h = ''; try { var g = new Date(BRIEF.genere); if (!isNaN(g.getTime())) h = g.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }).replace(':', ' h '); } catch (e) {}
-    var jl = PP_JS[new Date(jour + 'T12:00:00').getDay()] + ' ' + ppDc(jour), duJour = jour === auj;
-    return { eye: duJour ? jl : 'Édition du ' + jl, ligne: '<b>' + (h ? 'Édition de ' + h : 'Édition du matin') + '</b>' + (duJour ? '' : ' · celle d’aujourd’hui n’est pas encore composée') + (nSrc ? ' · ' + ppPl(nSrc, 'source') + (nSrc > 1 ? ' lues' : ' lue') : '') };
-  }
   /* ════════════════ « À FAIRE AVEC LES INFOS » (21/11/2026, maquette C choisie par Will, comme la vue « Aujourd'hui » de Things 3) ════════════════
      Remplace TOUT le haut de l'écran : le bandeau bleu, les trois portes, le fil Discover et les Gardées
      (choix cliqué de Will du 21/11 : le fil et les Gardées disparaissent ; les choix déjà gardés dans `profils` restent, on cesse de les afficher).
@@ -1377,208 +1139,15 @@
   }
   if (!V2._itEcoute) { V2._itEcoute = true; document.addEventListener('click', itEcoute); document.addEventListener('keydown', itEcoute); }
 
-  function x13Page(D, jour, J) {
-    var P = x13Pile(D), S = ppScope();
-    X13.liste = [];
-    var tout = [P.une].concat(P.cmp, P.tend, P.reste).filter(Boolean);
-    var sec = infSecteur(tout), pris = infFrance(tout), rub = infRubriques(D, J);
-    var nSec = SECTEUR && (SECTEUR.ev || []).length && (S.deps || S.dir) ? ppAnnonces(S.deps).length : null;
-    INF.france = pris;
-    INF.html = infPortes(S, sec, pris, rub, nSec);   // remplit X13.liste : x14Fil écarte ce que le haut affiche déjà
-    x14Fil(D, J);
-    var arr = !INF.vu || Date.now() - INF.t < 900; if (!INF.vu) INF.t = Date.now(); INF.vu = true; INF.stop = false;   // l'arrivée ne joue qu'une fois par ouverture de l'écran ; un second dessin dans les 900 ms la poursuit là où elle en est
-    var sk = Date.now() - INF.t;
-    var nFil = X14.liste.length, fil = x14Rend(), ed = infEdition(jour, (D.C.sources_lues || []).length || D.C.fichiers || 0);
-    return '<div class="w-page x13 x13v3 inf-m1 inf-c' + (INF.porte ? ' inf-c-ouvert' : '') + (arr ? ' inf-ent' : '') + '"' + (arr && sk > 30 ? ' style="--inf-sk:-' + sk + 'ms"' : '') + '>' +
-      infEntete(esc(ed.eye), infPhrase(S, sec, pris, nFil), ed.ligne) +
-      '<div class="inf-c-zone" id="inf-zone">' + (INF.porte ? infVoletCoque(INF.porte) : INF.html) + '</div>' + fil + '</div>';
-  }
-  /* ── l'en-tête bleu : date de l'édition, titre, UNE phrase calculée sur les lignes affichées, « Copier le brief » ── */
-  function infNum(n, att) { return '<span class="inf-num"' + (att || '') + '>' + n + '</span>'; }
-  function infPhrase(S, sec, pris, nFil) {
-    var n = sec.length, cpt = {}, fr = [], court, long;
-    pris.forEach(function (e) { cpt[e.rub] = (cpt[e.rub] || 0) + 1; });
-    [['regle', 'règle de prix', 'règles de prix'], ['rupture', 'rupture', 'ruptures'], ['rappel', 'rappel de lot', 'rappels de lot'], ['concurrent', 'info concurrent', 'infos concurrent']].forEach(function (r) {
-      if (cpt[r[0]]) fr.push('<b>' + infNum(cpt[r[0]]) + '</b> ' + (cpt[r[0]] > 1 ? r[2] : r[1]));
-    });
-    var lieu = S.deps ? 'votre secteur' : 'les officines';
-    var a = n ? '<b>' + infNum(n) + '</b> ' + (S.deps ? (n > 1 ? 'annonces' : 'annonce') + ' des 14 derniers jours dans votre secteur' : (n > 1 ? 'annonces' : 'annonce') + ' d’officines sur les 14 derniers jours') : 'Rien de neuf ces 14 derniers jours dans ' + lieu;
-    long = fr.length ? (fr.length > 1 ? fr.slice(0, -1).join(', ') + ' et ' + fr[fr.length - 1] : fr[0]) + ' à retenir en France' : 'rien de neuf en France';
-    court = pris.length ? '<b>' + infNum(pris.length) + '</b> ' + (pris.length > 1 ? 'infos' : 'info') + ' à retenir en France' : 'rien de neuf en France';
-    var c = nFil ? '<b>' + infNum(nFil, ' data-inf-fil') + '</b> ' + (nFil > 1 ? 'infos' : 'info') + ' dans le fil' : 'le fil est vide pour l’instant';
-    var f = function (x) { return a + ', ' + x + ', ' + c + '.'; };
-    var s = f(long); if (s.replace(/<[^>]+>/g, '').length > 110) s = f(court);
-    return s;
-  }
-  function infEntete(date, phrase, ligne) {
-    return '<header class="inf-hd"><span class="inf-lu" aria-hidden="true"></span><div class="inf-hd-t"><p class="inf-eye">' + date + '</p><h1 class="inf-h1">Infos du jour</h1><p class="inf-phrase">' + phrase + '</p><p class="inf-ed">' + ligne + '</p></div>' +
-      '<button type="button" class="inf-copie" data-lbl="Copier le brief" onclick="V2.infosCopyBrief(this)">' + ppIco('copier', 18) + 'Copier le brief</button></header>';
-  }
-  function infMaj() {   // le fil a été recalculé (source masquée) : les deux nombres du fil suivent
-    var n = X14.liste.length, ns = document.querySelectorAll('[data-inf-fil]'), i;
-    for (i = 0; i < ns.length; i++) ns[i].textContent = n;
-  }
-  function infStop() { INF.stop = true; var r = document.querySelector('.inf-ent'); if (r) r.classList.remove('inf-ent'); }
-  function infApres(root) {   // après le dessin : compteurs qui comptent à l'arrivée, scène en pause hors écran
-    var r = root.querySelector('.inf-m1'), h = r && r.querySelector('.inf-hd'); if (!r || !h) return;
-    if (INF.obs) INF.obs.disconnect();
-    if (window.IntersectionObserver) { INF.obs = new IntersectionObserver(function (es) { es.forEach(function (x) { h.classList.toggle('inf-hors', !x.isIntersecting); }); }); INF.obs.observe(h); }
-    if (!r.classList.contains('inf-ent')) return;
-    var calme = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!calme) [].slice.call(r.querySelectorAll('.inf-num,.inf-cnt')).forEach(function (el) {
-      var fin = +el.textContent, t0 = 0, sk = Date.now() - INF.t; if (!(fin > 0)) return;
-      el.textContent = '0';
-      requestAnimationFrame(function pas(ts) {
-        t0 = t0 || ts - sk; var p = Math.min((ts - t0) / 600, 1);
-        if (INF.stop || p >= 1) { el.textContent = el.hasAttribute('data-f3-n') ? x15N() : el.hasAttribute('data-inf-fil') ? X14.liste.length : fin; return; }
-        el.textContent = Math.round(fin * (1 - Math.pow(1 - p, 3))); requestAnimationFrame(pas);
-      });
-    });
-    setTimeout(function () { r.classList.remove('inf-ent'); }, Math.max(0, 900 - (Date.now() - INF.t)));
-  }
-  document.addEventListener('visibilitychange', function () { var h = document.querySelector('.inf-hd'); if (h) h.classList.toggle('inf-pause', document.hidden); });
-
-  /* ── la feuille de lecture : naît de la carte touchée ── */
-  function x13Feuille() {
-    var sh = document.getElementById('x13-sheet');
-    if (sh) return sh;
-    var w = document.createElement('div');
-    w.innerHTML = '<div class="x13-voile" id="x13-voile" hidden></div><div class="x13-sheet" id="x13-sheet" role="dialog" aria-modal="true" tabindex="-1" hidden></div>';
-    while (w.firstChild) document.body.appendChild(w.firstChild);
-    return document.getElementById('x13-sheet');
-  }
-  function x13OuvertQ() { var s = document.getElementById('x13-sheet'); return !!(s && !s.hidden); }
-  /* les « points » qui répètent déjà le résumé ne s'affichent pas deux fois (comme dans la maquette) */
-  function x13Item(it) {
-    if (it && it.paresseux) it = ppArtBod(it.paresseux);   // une annonce se marque « lue » à l'ouverture
-    var ps = (it.paras || []).filter(Boolean), r0 = norm(ps[0] || '');
-    var o = {}; for (var k in it) o[k] = it[k];
-    o.paras = ps.filter(function (p, i) { return !i || r0.indexOf(norm(p).slice(0, 60)) < 0; });
-    return o;
-  }
-  function x13Feuillet(e) {
-    var c = x13Chiffre(e);
-    return '<div class="x13-s-cv x13-k-' + e.rub + '"><button type="button" class="x13-retour" data-x13-ferme aria-label="Fermer l’article">' + ppIco('retour', 22) + '</button>' +
-      '<div class="x13-s-tt">' + (c ? '<span class="x13-s-n" aria-hidden="true"><b>' + esc(c.n) + '</b>' + (c.u ? '<i>' + esc(c.u) + '</i>' : '') + '</span>' : '<span class="x13-s-i" aria-hidden="true">' + ppIco(X13_ICO[e.rub] || 'journal', 72) + '</span>') +
-      '<span class="x13-s-ru">' + esc(X13_RUB[e.rub]) + '</span><h2>' + x13T(e.t) + '</h2><span class="x13-s-m">' + esc(x13Source(e)) + (x13Age(e) ? ' · ' + esc(x13Age(e)) : '') + '</span></div></div>' +
-      '<div class="x13-s-corps">' + ppLecture(x13Item(e.item), true) + '</div>';
-  }
-  /* on ne laisse voir que le coin haut gauche de la feuille, posé exactement sur la carte, puis il grandit */
-  function x13Depart(sh, r, box) {
-    sh.style.clipPath = 'inset(0px ' + Math.max(0, box.width - r.width) + 'px ' + Math.max(0, box.height - r.height) + 'px 0px round 22px)';
-    sh.style.transform = 'translate(' + Math.round(r.left - box.left) + 'px,' + Math.round(r.top - box.top) + 'px)';
-  }
-  function x13Ouvre(card, ent) {   // ent (facultatif) : l'info à ouvrir, quand elle ne vient pas de X13.liste (le fil, x14Ouvre)
-    var e = ent || X13.liste[+card.getAttribute('data-x13-i')]; if (!e) return;
-    var sh = x13Feuille(), vo = document.getElementById('x13-voile');
-    clearTimeout(X13.fin); X13.orig = card;
-    sh.innerHTML = x13Feuillet(e); sh.hidden = false; vo.hidden = false; sh.scrollTop = 0;
-    sh.setAttribute('aria-label', e.t);
-    var box = sh.getBoundingClientRect(), r = card.getBoundingClientRect();
-    sh.style.transition = 'none'; x13Depart(sh, r, box);
-    void sh.offsetWidth;
-    sh.style.transition = ''; sh.style.clipPath = ''; sh.style.transform = ''; sh.classList.add('ouvert'); vo.classList.add('ouvert');
-    document.documentElement.classList.add('x13-fige');
-    var b = sh.querySelector('.x13-retour'); try { b.focus({ preventScroll: true }); } catch (er) {}
-  }
-  function x13Ferme() {
-    var sh = document.getElementById('x13-sheet'), vo = document.getElementById('x13-voile');
-    if (!sh || sh.hidden) return;
-    var o = X13.orig, r = o && document.body.contains(o) ? o.getBoundingClientRect() : null, box = sh.getBoundingClientRect();
-    sh.classList.remove('ouvert'); vo.classList.remove('ouvert');
-    if (r) x13Depart(sh, r, box);
-    document.documentElement.classList.remove('x13-fige');
-    clearTimeout(X13.fin);
-    X13.fin = setTimeout(function () {
-      sh.hidden = true; vo.hidden = true; sh.style.clipPath = ''; sh.style.transform = ''; sh.innerHTML = '';
-      if (o && document.body.contains(o)) { try { o.focus({ preventScroll: true }); } catch (er) {} }
-    }, 560);
-  }
-  /* fermeture immédiate, sans animation ni focus : on quitte la page, on ouvre une fiche, la page est redessinée */
-  function x13Reset() {
-    clearTimeout(X13.fin);
-    document.documentElement.classList.remove('x13-fige');
-    var sh = document.getElementById('x13-sheet'), vo = document.getElementById('x13-voile');
-    if (sh) { sh.classList.remove('ouvert'); sh.hidden = true; sh.style.clipPath = ''; sh.style.transform = ''; sh.innerHTML = ''; }
-    if (vo) { vo.classList.remove('ouvert'); vo.hidden = true; }
-  }
-
-  /* ════════════════ LE SOCLE DU FIL D'INFOS VISUEL (22/10/2026) ════════════════
-     Commun aux trois mises en page du fil (Apple News, Flipboard, Discover) : elles ne diffèrent
-     QUE par le dessin. Rien ne s'affiche ici.
-       x14Fil(D, J)          → la liste ordonnée des infos du fil (12 à 18, la plus récente d'abord).
-                               À appeler APRÈS x13Page() dans le même rendu : elle écarte ce que la v3 affiche déjà.
-       x14Image(it, i, prec) → l'adresse de l'image d'une info (la sienne, sinon une photo libre du thème).
-       x14Ouvre(el)          → ouvre la feuille de lecture de l'info dont l'élément porte data-fil-i="<index>".
-     Les éléments du fil portent data-fil-i (PAS data-x13-i) ; le clic est déjà écouté (x13Ecoute) dans .x13. */
-  var X14 = { liste: [] };
-  var X14_PHOTOS = { officine: 3, generique: 2, marge: 3, remboursement: 2, rupture: 3, concurrence: 3, rappel: 2, defaut: 2 };
-  var X14_THEMES = { marge: 'marge', remboursement: 'remboursement', generique: 'generique', rupture: 'rupture', concurrence: 'concurrence', officine: 'officine', rappel: 'rappel', securite: 'rappel' };
-  var X14_ETRANGER = /\b(japon|chine|etats-unis|etats unis|usa|royaume-uni|inde|bresil|canada|allemagne|italie|espagne|suisse|belgique|afrique|australie|coree|mexique|argentine|russie)\b/;
-  var X14_FRANCE = /\b(france|francais|francaise|cnam|assurance maladie|ansm|fspf|uspo|officine|pharmacie|pharmacien)/;
-  function x14Cle(t) { return x13N2(t).slice(0, 38); }
-  function x14Theme(e) { return X14_THEMES[e] || ''; }
-  /* la pertinence : thème utile, parle de la France, une officine parle de pharmacie, ni Rappel Conso, ni annonce légale hors sujet */
-  function x14Garde(e) {
-    var th = x14Theme(e.theme); if (!th) return false;
-    if (/rappel conso/i.test(String(e.s || '') + ' ' + (e.srcs || []).join(' '))) return false;
-    var tt = norm(e.t + ' ' + (e.societe || '')), tout = norm(e.t + ' ' + (e.r || ''));
-    if (ppEstAnnonceLegale(e)) {
-      if (!ppDansSecteur(e) || !sctDepDeCP(e.ville)) return false;   // hors secteur ou sans département
-      if (/laboratoire|repartition|grossiste|distribution/.test(tt)) return false;   // annonce d'un labo ou d'un grossiste
-    }
-    if (X14_ETRANGER.test(tt) && !X14_FRANCE.test(tt)) return false;
-    if (th === 'officine' && !/pharmac|officine/.test(tout)) return false;
-    return true;
-  }
-  function x14Fil(D, J) {
-    D = D || ppDonnees();
-    if (!X13.liste.length) x13Page(D, (BRIEF && BRIEF.jour) || x13Jour(), J || (ARCHIVE && ARCHIVE.jours) || []);
-    var vusC = {}, vusU = {}, out = [];
-    X13.liste.forEach(function (e) { if (!e) return; vusC[x14Cle(e.bod ? e.bod.nom : e.t)] = 1; var u = e.item && e.item.url; if (u) vusU[u] = 1; });
-    function add(o, src) {
-      var k = x14Cle(o.t); if (!o.t || vusC[k] || (src.u && vusU[src.u])) return;
-      if (!x14Garde(src)) return;
-      if (x15Masque(x13Source(o))) return;   // « Ne plus voir cette source » (choix de la personne)
-      vusC[k] = 1; if (src.u) vusU[src.u] = 1;
-      o.theme = x14Theme(src.theme); o.img = urlSure(src.img || '') === '#' ? '' : src.img; o.u = src.u || ''; o.o = out.length; out.push(o);
-    }
-    D.ep.forEach(function (e) {
-      var amont = e.motif === 'amont';
-      add({ rub: e.j != null ? 'regle' : (amont ? 'rupture' : 'officine'), t: e.t, d: e.d, j: e.j, item: ppArtEp(e) }, e);
-    });
-    D.cinq.forEach(function (c) { add({ rub: 'actu', t: c.t, d: c.d, item: ppArt(c) }, c); });
-    D.fil.forEach(function (a) { add({ rub: 'actu', t: a.t, d: a.d, item: ppArt(a), neuf: a.neuf }, a); });
-    out.sort(function (a, b) { return String(b.d || '').localeCompare(String(a.d || '')) || ((b.neuf ? 1 : 0) - (a.neuf ? 1 : 0)) || (a.o - b.o); });
-    X14.liste = out.slice(0, 18);
-    var cpt = {}; X14.liste.forEach(function (e) { cpt[e.theme] = (cpt[e.theme] || 0); e.rang = cpt[e.theme]++; });   // rang de l'info dans son thème : répartit les photos
-    return X14.liste;
-  }
-  function x14Image(it, i, prec) {
-    /* 23/10/2026 « Les objets » : l'objet de la rubrique remplace la photo de presse (it.img ignorée), tout le fil porte la signature JARVIS */
-    var th = it && X14_PHOTOS[it.theme] ? it.theme : 'defaut', n = X14_PHOTOS[th], r0 = it && it.rang != null ? it.rang : (i || 0), k, u;
-    for (k = 0; k < n; k++) { u = 'img/infos/' + th + '-' + ((r0 + k) % n + 1) + '.webp'; if (u !== prec) return u; }
-    return u;
-  }
-  function x14Ouvre(el) { var e = X14.liste[+el.getAttribute('data-fil-i')]; if (e) x13Ouvre(el.closest('.f3-c') || el, e); }
-  V2.x14 = { fil: x14Fil, image: x14Image, ouvre: x14Ouvre, theme: x14Theme };
-
-  /* ── LE FIL « DISCOVER » (f3, 22/10/2026) : grandes cartes 16:9, cartes compactes à vignette, ligne de source ── */
-  /* ── LE FIL « DISCOVER » + CŒUR ET « ⋮ » (22/10/2026, maquette g1 « Discover ») ──
-     Le cœur garde l'info (« Mes infos gardées »), « ⋮ » ouvre un menu (garder / ne plus voir cette source / annuler).
-     Les choix sont gardés PAR PERSONNE, comme les réglages de l'accueil : navigateur tout de suite (jarvis_infos_choix_v1:<id>),
-     puis la ligne de la table `profils` (scope 'groupement', scope_id '__infos_<id>__'), 800 ms après le dernier geste.
-     Forme : { v:1, g:{ <cléInfo>:{ le, off, e:<copie> } }, m:{ <nomSource>:{ le, off } } } ; fusion clé par clé, le `le` le plus récent gagne.
-     « ⋮ » ouvre un petit menu sous le bouton ; les infos gardées sont dans l'onglet « Gardées » en tête du fil. */
-  var F3_COEUR = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/></svg>';
-  var F3_MENU = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="12" cy="5.5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="18.5" r="1.8"/></svg>';
+  /* ── les choix gardés (zone f : tâches « Fait » ; zones g et m : anciens choix, conservés dans `profils` mais plus affichés) ──
+     Gardés PAR PERSONNE : navigateur tout de suite (jarvis_infos_choix_v1:<id>), puis la ligne de la table `profils` (scope 'groupement', scope_id '__infos_<id>__'), 800 ms après le dernier geste.
+     Forme : { v:1, g:{ … }, m:{ … }, f:{ <id tâche>:{ le, off } } } ; fusion clé par clé, le `le` le plus récent gagne. */
 
   /* ── l'état des choix (x15) ── */
   var X15 = { S: null, id: null, timer: 0, modifie: false, dist: false, menu: null, ban: null, banT: 0, vue: 'fil' };
   function x15Id() { return (V2.user && V2.user.id) || 'local'; }
   function x15Cle() { return 'jarvis_infos_choix_v1:' + x15Id(); }
   function x15Scope() { return '__infos_' + x15Id() + '__'; }
-  function x15K(it) { return it.u ? 'u:' + it.u : 't:' + x14Cle(it.t); }
   function x15Net(raw) {
     var S = { v: 1, g: {}, m: {}, f: {} };   // f (21/11/2026) : les tâches cochées « Fait » de la liste C, { <id tâche>: { le, off } }
     if (!raw || typeof raw !== 'object') return S;
@@ -1642,230 +1211,10 @@
       }, function () {});
     } catch (e) {}
   }
-  function x15Garde(k) { var o = x15S().g[k]; return !!(o && !o.off && o.e); }
-  function x15Masque(nom) { var o = x15S().m[nom]; return !!(o && !o.off); }
-  function x15Liste() {   // les infos gardées, la plus récemment gardée d'abord
-    var g = x15S().g; return Object.keys(g).filter(function (k) { return !g[k].off && g[k].e; })
-      .sort(function (a, b) { return g[b].le - g[a].le; }).map(function (k) { var e = g[k].e, o = {}; for (var p in e) o[p] = e[p]; o.k = k; return o; });
-  }
-  function x15N() { return x15Liste().length; }
-  function x15Masquees() { var m = x15S().m; return Object.keys(m).filter(function (n) { return !m[n].off; }).sort(function (a, b) { return a.localeCompare(b, 'fr'); }); }
-  function x15Copie(it) {   // pas de `j` (périmé), ni `html` ni `badges` (nom de client, CIP) : rien de cela ne part dans la base
-    var i = it.item || {}, o = { sur: i.sur, t: i.t, meta: i.meta, paras: i.paras, chiffres: i.chiffres, geste: i.geste, url: i.url, lien: i.lien };
-    return { rub: it.rub, t: it.t, d: it.d, theme: it.theme, img: it.img, u: it.u, src: x15Nom(it), item: JSON.parse(JSON.stringify(o)) };
-  }
-  function x15Info(k) {
-    var L = X14.liste || [], i;
-    for (i = 0; i < L.length; i++) if (x15K(L[i]) === k) return L[i];
-    var o = x15S().g[k]; return o && o.e ? o.e : null;
-  }
-  function x15Nom(it) { return it.src || x13Source(it) || 'Actualité'; }
-  function x15KDe(el) { var n = el && el.closest ? el.closest('[data-f3-k]') : null; return n ? n.getAttribute('data-f3-k') : null; }
-  function x15Ouvrable(k) {   // l'info gardée sous la forme que la feuille de lecture attend
-    var o = x15S().g[k]; if (!o || !o.e) return null;
-    var e = o.e; return { rub: e.rub, t: e.t, d: e.d, theme: e.theme, img: e.img, u: e.u, item: e.item };
-  }
 
-  /* ── mise à jour SUR PLACE : cœurs, petits cœurs, compteurs, panneau (la carte n'est pas redessinée, le focus reste) ── */
-  function x15Maj(k) {
-    var on = x15Garde(k), n = x15N(), i, b;
-    var cs = document.querySelectorAll('[data-f3="coeur"]');
-    for (i = 0; i < cs.length; i++) {
-      b = cs[i]; if (x15KDe(b) !== k) continue;
-      b.setAttribute('aria-pressed', on ? 'true' : 'false');
-      b.setAttribute('aria-label', on ? 'Retirer de mes infos gardées' : 'Garder cette info');
-    }
-    var ps = document.querySelectorAll('.f3-pc');
-    for (i = 0; i < ps.length; i++) if (x15KDe(ps[i]) === k) ps[i].hidden = !on;
-    var ns = document.querySelectorAll('[data-f3-n]'); for (i = 0; i < ns.length; i++) ns[i].textContent = n;
-  }
-  function x15Pose(k, on, info) {
-    var S = x15S(), now = Date.now();
-    if (on) S.g[k] = { le: now, off: 0, e: x15Copie(info) }; else S.g[k] = { le: now, off: 1 };
-    x15Garder(); x15Maj(k);
-  }
-  function x15Bascule(k) {
-    var info = x15Info(k); if (!info) return;
-    var on = !x15Garde(k);
-    x15Pose(k, on, info);
-    x15Ban(on ? 'Info gardée dans « Mes infos gardées ».' : 'Info retirée de vos infos gardées.', function () { x15Pose(k, !on, info); });   // « Annuler » : le geste inverse
-  }
-  function x15Masquer(nom) {
-    var S = x15S(), now = Date.now(); S.m[nom] = { le: now, off: 0 }; x15Garder();
-    x15Redessine();
-    x15Ban('Vous ne verrez plus les infos de\u00a0«\u00a0' + nom + '\u00a0».', function () { x15Revoir(nom); });   // relire l'état : l'envoi vers la base a pu le remplacer depuis
-  }
-  function x15Revoir(nom) {
-    var S = x15S(); S.m[nom] = { le: Date.now(), off: 1 }; x15Garder();
-    x15Redessine();
-  }
-
-  /* ── le bandeau (« Annuler » défait), au-dessus du rond « + » ── */
-  function x15Ban(msg, undo) {
-    var b = document.getElementById('f3-ban');
-    if (!b) { b = document.createElement('div'); b.id = 'f3-ban'; b.className = 'f3-ban'; b.setAttribute('role', 'status'); document.body.appendChild(b); }
-    b.innerHTML = '<span class="f3-ban-t">' + esc(msg) + '</span><button type="button" class="f3-ban-b" data-f3="defaire">Annuler</button>';
-    b.hidden = false; X15.ban = undo; clearTimeout(X15.banT); X15.banT = setTimeout(x15BanOff, 6000);
-  }
-  function x15BanOff() { var b = document.getElementById('f3-ban'); if (b) b.hidden = true; X15.ban = null; clearTimeout(X15.banT); }
-  function x15Defaire() { var f = X15.ban; x15BanOff(); if (f) f(); }
-
-  /* ── le menu « ⋮ » : petit menu accroché sous le bouton ── */
-  function x15MenuHtml(k, info) {
-    var on = x15Garde(k), nom = x15Nom(info);
-    var it = function (a, t) { return '<button type="button" class="f3-mi" role="menuitem" data-f3="' + a + '">' + t + '</button>'; };
-    return it('garder', on ? 'Retirer de mes infos gardées' : 'Garder cette info') + it('masquer', 'Ne plus voir : ' + esc(nom)) + it('annuler', 'Annuler');
-  }
-  function x15OuvreMenu(btn) {
-    x15FermeMenu(false); x15BanOff();   // le bandeau ne doit pas masquer le menu
-    var card = btn.closest('.f3-c'), k = card && card.getAttribute('data-f3-k'), info = k && x15Info(k); if (!info) return;
-    var el, li = btn.closest('.f3-li');
-    el = document.createElement('div'); el.className = 'f3-mn'; el.setAttribute('role', 'menu'); el.setAttribute('aria-label', 'Actions sur cette info'); el.setAttribute('data-f3-mn', '1');
-    el.innerHTML = x15MenuHtml(k, info); li.appendChild(el); li.classList.add('f3-ouvert');
-    var bR = btn.getBoundingClientRect(), lR = li.getBoundingClientRect(), mh = el.offsetHeight;
-    el.style.right = Math.max(0, Math.round(lR.right - bR.right)) + 'px';
-    var bas = bR.bottom + 4 + mh > window.innerHeight - 8 && bR.top - 4 - mh > 8;   // pas la place dessous : au-dessus du bouton
-    el.style.top = Math.round((bas ? bR.top - mh - 4 : bR.bottom + 4) - lR.top) + 'px';
-    btn.setAttribute('aria-expanded', 'true'); X15.menu = { k: k, btn: btn, el: el, li: li };
-    var p = el.querySelector('[role="menuitem"]'); if (p) { try { p.focus({ preventScroll: true }); } catch (er) {} }
-  }
-  function x15FermeMenu(rendre) {
-    var m = X15.menu; if (!m) return; X15.menu = null;
-    if (m.el.parentNode) m.el.parentNode.removeChild(m.el); if (m.li) m.li.classList.remove('f3-ouvert');
-    if (m.btn) m.btn.setAttribute('aria-expanded', 'false');
-    if (rendre && m.btn && m.btn.isConnected) { try { m.btn.focus({ preventScroll: true }); } catch (er) {} }
-  }
-  function x15Clavier(e) {   // Échap ferme le menu d'abord ; flèches dans le menu ; Tab sort du menu
-    var m = X15.menu; if (!m) return false;
-    if (e.key === 'Escape') { e.preventDefault(); x15FermeMenu(true); return true; }
-    if (e.key === 'Tab') { x15FermeMenu(false); return false; }
-    var f = [].slice.call(m.el.querySelectorAll('[role="menuitem"]')), i = f.indexOf(document.activeElement);
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Home' || e.key === 'End') {
-      e.preventDefault();
-      i = e.key === 'Home' ? 0 : e.key === 'End' ? f.length - 1 : e.key === 'ArrowDown' ? (i + 1) % f.length : (i <= 0 ? f.length - 1 : i - 1);
-      f[i].focus(); return true;
-    }
-    return false;
-  }
-
-  /* ── les gestes : un attribut unique data-f3, lu avant [data-fil-i] et avant .x13 (le bandeau et le panneau sont hors .x13) ── */
-  function x15Clic(e) {
-    var t = e.target.closest('[data-f3]'), a = t ? t.getAttribute('data-f3') : '';
-    if (X15.menu && a !== 'menu' && !e.target.closest('[data-f3-mn]')) {   // clic ailleurs : le menu se ferme, le clic ne fait rien d'autre
-      x15FermeMenu(false);
-      if (!t) return true;
-    }
-    if (!t) return false;
-    var k = x15KDe(t) || (X15.menu && X15.menu.k), v = t.getAttribute('data-f3-v'), info;
-    if (a === 'coeur') { if (k) x15Bascule(k); }
-    else if (a === 'menu') { if (X15.menu && X15.menu.btn === t) x15FermeMenu(true); else x15OuvreMenu(t); }
-    else if (a === 'garder') { x15FermeMenu(true); if (k) x15Bascule(k); }
-    else if (a === 'masquer') { info = k && x15Info(k); x15FermeMenu(false); if (info) x15Masquer(x15Nom(info)); }
-    else if (a === 'annuler') x15FermeMenu(true);
-    else if (a === 'revoir') { if (v) x15Revoir(v); }
-    else if (a === 'defaire') x15Defaire();
-    else if (a === 'vue') {
-      X15.vue = v === 'gardees' ? 'gardees' : 'fil'; x15Redessine(); var o = document.querySelector('.f3-ong [data-f3-v="' + X15.vue + '"]'); if (o) { try { o.focus({ preventScroll: true }); } catch (er) {} }
-    }
-    return true;
-  }
-  function x15Redessine() {   // le fil est recalculé (sources masquées) et la section redessinée ; les cartes, elles, ne bougent pas quand on garde
+  function x15Redessine() {   // la ligne `profils` relue : la liste C est redessinée si cela change ce qui est coché
     // 21/11/2026 — liste C : la ligne `profils` relue a pu cocher « Fait » ailleurs ; la page n'est redessinée que si cela change ce qui est coché
     if (document.querySelector('.inf-t')) { var sig = IT.L.filter(function (t) { return itFait(t.id); }).map(function (t) { return t.id; }).join('|'); if (sig !== IT.sig && V2.route && V2.route.name === 'infos' && V2.render) V2.render(); return; }
-    var s = document.querySelector('.f3-fil'); if (!s) return;
-    x15FermeMenu(false); x14Fil(); s.outerHTML = x14Rend(); infMaj();
-  }
-
-  /* ── la liste « Sources masquées » (sous l'onglet « Gardées ») ── */
-  function x15MasqueesHtml(titre) {
-    var M = x15Masquees(); if (!M.length) return '';
-    return '<section class="f3-mq" aria-label="Sources masquées"><' + titre + ' class="f3-mq-h">Sources masquées</' + titre + '><ul>' + M.map(function (n) {
-      return '<li><span class="f3-mq-n">' + esc(n) + '</span><button type="button" class="f3-mq-b" data-f3="revoir" data-f3-v="' + esc(n) + '" aria-label="Revoir les infos de ' + esc(n) + '">Revoir</button></li>';
-    }).join('') + '</ul></section>';
-  }
-
-  /* ── le dessin d'une carte : un <div>, avec UN bouton pour ouvrir (son ::after couvre toute la carte) et de vrais boutons cœur / « ⋮ » ── */
-  function f3Carte(it, i, compact, src, garde) {
-    var k = x15K(it), on = x15Garde(k);
-    var rep = x14Image({ theme: it.theme, rang: it.rang }, i, ''), nom = x15Nom(it).replace(/^ANSM$/, 'Agence du médicament');
-    var age = x13Age(it).replace(/^il y a /, '');   // « 5 jours », « 1 semaine » : tient sur la ligne de la source
-    if (compact && /^img\/infos\/[a-z]+-\d\.webp$/.test(src)) { rep = src; src = src.replace(/\.webp$/, '-c.webp'); }   // 28/10/2026 : la vignette prend l'objet recadré en carré (-c), l'image 16:9 en secours
-    var img = '<img class="f3-im" src="' + esc(src) + '" data-fb="' + esc(rep) + '" alt="" loading="lazy" decoding="async" width="' + (compact ? 240 : 1200) + '" height="' + (compact ? 240 : 675) + '" onerror="if(this.getAttribute(\'data-fb\')&&this.src.indexOf(this.getAttribute(\'data-fb\'))<0){this.src=this.getAttribute(\'data-fb\')}else{this.onerror=null}">';
-    var ouv = '<button type="button" class="f3-ouv" ' + (garde ? 'data-garde-i="' + esc(k) + '"' : 'data-fil-i="' + i + '"') + '><span class="f3-t">' + x13T(x15Nom(it) === 'FSPF' && String(it.t || '').replace(/\s*[–-]?\s*20\d\d-\d{1,3}\s*$/, '') || it.t) + '</span></button>';   // FSPF : sans la référence de circulaire finale (« Rupture de quétiapine – 2026-42 ») ; titre entier s'il ne restait rien
-    var coeur = compact ? '' : '<button type="button" class="f3-b f3-coeur" data-f3="coeur" aria-pressed="' + (on ? 'true' : 'false') + '" aria-label="' + (on ? 'Retirer de mes infos gardées' : 'Garder cette info') + '">' + F3_COEUR + '</button>';
-    var menu = '<button type="button" class="f3-b f3-men" data-f3="menu" aria-haspopup="menu" aria-expanded="false" aria-label="Plus d’actions sur cette info">' + F3_MENU + '</button>';
-    var pied = '<div class="f3-pied"><span class="f3-qui"><span class="f3-src">' + esc(nom) + (age && !compact ? '<span aria-hidden="true">\u00a0·</span>' : '') + '</span>' + (age ? '<span class="f3-age">' + esc(age) + '</span>' : '') + '</span>' +
-      (compact ? '<span class="f3-pc" role="img" aria-label="Info gardée"' + (on ? '' : ' hidden') + '>' + F3_COEUR + '</span>' : '') +
-      '<span class="f3-act">' + coeur + menu + '</span></div>';
-    return '<li class="f3-li"><div class="f3-c ' + (compact ? 'f3-pet' : 'f3-gr') + '" tabindex="-1" data-f3-k="' + esc(k) + '">' +
-      (compact ? '<div class="f3-txt">' + ouv + pied + '</div><span class="f3-vig">' + img + '</span>'
-               : '<span class="f3-vig">' + img + '</span><div class="f3-txt">' + ouv + pied + '</div>') + '</div></li>';
-  }
-  function f3Cartes(L, garde) {
-    var prec = '';
-    return L.map(function (it, i) { var src = x14Image(it, i, prec); prec = src; return f3Carte(it, i, i % 3 === 2, src, garde); }).join('');
-  }
-  function x14Rend() {
-    x15FermeMenu(false);
-    var L = X14.liste || [], G = x15Liste(), M = x15Masquees(); if (!L.length && !G.length && !M.length) return '';
-    x15Distant();
-    var gv = X15.vue === 'gardees', corps;
-    if (gv) corps = (G.length ? '<ul class="f3-ls">' + f3Cartes(G, true) + '</ul>' : '<p class="f3-vide">Touchez le cœur d’une info pour la retrouver ici.</p>') + x15MasqueesHtml('h3');
-    else corps = (L.length ? '<ul class="f3-ls">' + f3Cartes(L, false) + '</ul>' : '<p class="f3-vide">Plus aucune info à afficher pour l’instant.</p>');
-    var tete = '<header class="f3-tete"><h2 id="f3-h" tabindex="-1">Le fil du jour</h2><p>L’actualité qui compte pour vos officines, une carte à la fois</p>' +
-      '<div class="f3-ong" role="group" aria-label="Affichage"><button type="button" data-f3="vue" data-f3-v="fil" aria-pressed="' + (gv ? 'false' : 'true') + '">Le fil du jour</button>' +
-      '<button type="button" data-f3="vue" data-f3-v="gardees" aria-pressed="' + (gv ? 'true' : 'false') + '">Gardées · <span data-f3-n>' + G.length + '</span></button></div></header>';
-    return '<section class="f3-fil" aria-labelledby="f3-h">' + tete + corps + '<p class="f3-cred"><a href="img/infos/credits.html" target="_blank" rel="noopener">Crédits des images</a></p></section>';
-  }
-  function x13Ecoute(e) {
-    if (e.type === 'keydown') {
-      if (X15.menu && x15Clavier(e)) return;   // Échap ferme d'abord le menu « ⋮ »
-      if (!x13OuvertQ()) return;
-      if (e.key === 'Escape') x13Ferme();
-      else if (e.key === 'Tab') {
-        /* le focus tourne dans la feuille, à la main : Safari saute boutons et liens avec Tab, le focus partirait sur la page derrière */
-        var f = [].slice.call(document.getElementById('x13-sheet').querySelectorAll('button,a[href]'));
-        if (f.length) {
-          e.preventDefault();
-          var i = f.indexOf(document.activeElement);
-          i = e.shiftKey ? (i <= 0 ? f.length - 1 : i - 1) : (i + 1) % f.length;
-          f[i].focus();
-        }
-      }
-      return;
-    }
-    if (e.type === 'touchstart') { var t0 = e.touches[0]; X13.tx = (t0 && e.target.closest && e.target.closest('.x13-sheet')) ? { x: t0.clientX, y: t0.clientY } : null; return; }
-    if (e.type === 'touchend') {
-      var t1 = e.changedTouches && e.changedTouches[0];
-      if (X13.tx && t1) { var dx = t1.clientX - X13.tx.x, dy = Math.abs(t1.clientY - X13.tx.y); if (dx > 90 && dy < 60 && X13.tx.x < 60) x13Ferme(); }
-      X13.tx = null; return;
-    }
-    if (!e.target.closest) return;
-    infStop();
-    if (x15Clic(e)) return;   // cœur, « ⋮ », bandeau, panneau : un seul attribut data-f3, lu AVANT .x13 (le bandeau et le panneau sont hors .x13)
-    if (e.target.closest('[data-x13-ferme]') || (e.target.classList && e.target.classList.contains('x13-voile'))) { x13Ferme(); return; }
-    var root = e.target.closest('.x13'); if (!root) return;
-    var t;
-    if ((t = e.target.closest('[data-revenir]'))) { infRevenir(); return; }
-    if ((t = e.target.closest('[data-ouvre]'))) { infOuvrir(t.getAttribute('data-ouvre'), t); return; }
-    if ((t = e.target.closest('[data-porte-ouvre]'))) { infOuvrir(t.getAttribute('data-porte-ouvre'), t); return; }
-    if ((t = e.target.closest('[data-x13-tout]'))) {
-      var z = root.querySelector('.x13-reste'); z.hidden = false; t.setAttribute('aria-expanded', 'true'); t.hidden = true;
-      var p1 = z.querySelector('.x13-c'); if (p1) { try { p1.focus({ preventScroll: true }); } catch (er) {} }
-      return;
-    }
-    if ((t = e.target.closest('[data-garde-i]'))) { var og = x15Ouvrable(t.getAttribute('data-garde-i')); if (og) x13Ouvre(t.closest('.f3-c') || t, og); return; }   // une info gardée (onglet Gardées) : la feuille de lecture, avec sa copie
-    if ((t = e.target.closest('[data-fil-i]'))) { x14Ouvre(t); return; }   // le fil d'infos visuel (socle 22/10/2026)
-    if ((t = e.target.closest('.x13-c,.x13-une,.x13-tr,.x13-l,.inf-c-l'))) x13Ouvre(t);
-  }
-  if (!V2._x13Ecoute) {
-    V2._x13Ecoute = true;
-    document.addEventListener('click', x13Ecoute);
-    document.addEventListener('keydown', x13Ecoute);
-    document.addEventListener('touchstart', x13Ecoute, { passive: true });
-    document.addEventListener('touchend', x13Ecoute, { passive: true });
-    // on lit l'adresse elle-même : cet écouteur passe AVANT celui du routeur (v2-app.js), V2.route date encore de l'écran quitté
-    window.addEventListener('hashchange', function () { if ((location.hash || '').replace(/^#/, '').split('/')[0] !== 'infos') { x13Reset(); INF.porte = null; INF.opener = null; INF.vu = false; } });
   }
 
   /* ════════════════════════════ RENDU ════════════════════════════ */
@@ -1900,21 +1249,14 @@
         gen = 'Édition composée le ' + g.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' }).replace(/^1 /, '1er ') + ' à ' + g.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }).replace(':', ' h ') +
           ' à partir de <b>' + ppPl(nSrc, 'source') + '</b>' + (SECTEUR && SECTEUR.maj ? ' · Bodacc à jour du ' + esc(ppDc(SECTEUR.maj)) : '') + '.';
       } catch (e) {}
-      var J = (ARCHIVE && ARCHIVE.jours) || [];
 
-      x13Reset();   // la page est redessinée : une feuille restée ouverte n'a plus sa carte
-      // un volet ouvert survit au redessin (changement de secteur, arrivée d'un fichier) : le panneau est mis de côté puis remis dans le volet neuf
-      var pan0 = document.getElementById('pp-pan');
-      INF.garde = INF.porte && pan0 && pan0.classList.contains('en-volet') ? pan0 : null;
-      if (INF.garde) { if (INF.garde.parentNode) INF.garde.parentNode.removeChild(INF.garde); } else INF.porte = null;
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="v2-wrap inf2 pp">' +
           '<span class="pp-ciel" aria-hidden="true"></span>' +
-          itPage(D, jour) +   // 21/11/2026 : la liste C remplace le bandeau, les trois portes, le fil et les Gardées (x13Page n'est plus appelée)
+          itPage(D, jour) +   // 21/11/2026 : la liste C remplace le bandeau, les trois portes, le fil et les Gardées (retirés le 21/11/2026)
           '<footer class="pp-pied"><span>' + gen + '</span></footer>' +
         '</div>';
       itApres();
-      var vz = document.getElementById('inf-volet'); if (INF.garde) { if (vz) vz.appendChild(INF.garde); else document.body.appendChild(INF.garde); INF.garde = null; }
 
       // venu de l'ancienne feature « Concurrents » (#infos/concurrents) : ouvrir directement son panneau
       if (V2.route && V2.route.param === 'concurrents' && !PP_CONC_AUTO) { PP_CONC_AUTO = true; if (!ppOuvert()) PP_VUES.concurrents(); }
@@ -1941,10 +1283,7 @@
          l'arête de chaque tuile, reflet qui suit la souris, horizon lumineux sous le titre.
          Onest pour le texte, Martian Mono pour les chiffres (chargées dans index.html).
          Aucune des propriétés qui font figer Safari : que des dégradés, des ombres et une rotation. */
-      '.pp,#pp-pan,#pp-voile,#x13-sheet,#x13-voile{--pp-fond:#DFE4EC;--pp-encre:#0F1420;--pp-encre2:#465066;--pp-encre3:#5E677A;--pp-bleu:#0050E6;--pp-bleu-f:#003FB8;--pp-halo:#E9F0FF;' +
-        '--pp-vert:#1E9E6A;--pp-vert-f:#157A51;--pp-ambre:#C7791A;--pp-ambre-f:#9A5A0C;--pp-rose:#E0556E;--pp-rose-f:#BE3450;--pp-violet:#6D4FC4;--pp-cyan:#00B5D8;' +
-        '--pp-r:26px;--pp-mono:"Martian Mono",ui-monospace,Menlo,monospace;--pp-sans:"Onest",-apple-system,"Helvetica Neue",Arial,sans-serif;' +
-        '--pp-ombre:0 1px 0 rgba(255,255,255,.95) inset,0 -1px 0 rgba(15,20,32,.035) inset,0 1px 2px rgba(15,20,32,.06),0 22px 40px -22px rgba(0,48,140,.32)}',
+      '.pp,#pp-pan,#pp-voile{--pp-fond:#DFE4EC;--pp-encre:#0F1420;--pp-encre2:#465066;--pp-encre3:#5E677A;--pp-bleu:#0050E6;--pp-bleu-f:#003FB8;--pp-halo:#E9F0FF;--pp-vert:#1E9E6A;--pp-vert-f:#157A51;--pp-ambre:#C7791A;--pp-ambre-f:#9A5A0C;--pp-rose:#E0556E;--pp-rose-f:#BE3450;--pp-violet:#6D4FC4;--pp-cyan:#00B5D8;--pp-r:26px;--pp-mono:"Martian Mono",ui-monospace,Menlo,monospace;--pp-sans:"Onest",-apple-system,"Helvetica Neue",Arial,sans-serif;--pp-ombre:0 1px 0 rgba(255,255,255,.95) inset,0 -1px 0 rgba(15,20,32,.035) inset,0 1px 2px rgba(15,20,32,.06),0 22px 40px -22px rgba(0,48,140,.32)}',
       '.v2-wrap.inf2.pp{position:relative;max-width:1272px;padding:0 16px 8px;color:var(--pp-encre);font:400 15px/1.45 var(--pp-sans);font-feature-settings:"tnum" 1}',
       /* 25/09 — le rond « + » flottant (.v2-fab, 58 px, bas droite) couvrait au bureau le bouton « Voir la fraîcheur des sources » en fin de page : le bas défile au-delà, à toutes les largeurs */
       'body:has(.v2-fab:not([hidden])) .v2-wrap.inf2.pp{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}',
@@ -2000,13 +1339,13 @@
       '#pp-pan h3 b{font-weight:600;color:var(--pp-encre)}',
       '#pp-pan .pp-h3-s{text-transform:none;letter-spacing:0;font-weight:500;color:var(--pp-encre3);font-size:13px}',
       '#pp-pan p{margin:10px 0 0;font-size:16px;line-height:1.55}',
-      '#pp-pan .pp-meta,#x13-sheet .pp-meta{margin-top:8px;font-size:14px;color:var(--pp-encre2)}',
+      '#pp-pan .pp-meta{margin-top:8px;font-size:14px;color:var(--pp-encre2)}',
       '#pp-pan .pp-chapo{font-size:16px;color:var(--pp-encre2);margin-top:8px}',
       '#pp-pan .pp-note{font-size:13px;color:var(--pp-encre3);margin-top:6px;line-height:1.45}',
-      '#pp-pan .pp-geste,#x13-sheet .pp-geste{margin-top:18px;padding:14px 16px;border-radius:18px;background:linear-gradient(135deg,#F4F8FF,var(--pp-halo));border:1px solid #D6E3FF;font-size:15px;line-height:1.45}',
-      '#pp-pan .pp-geste b,#x13-sheet .pp-geste b{display:block;font:650 13px var(--pp-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--pp-bleu-f);margin-bottom:4px}',
-      '#pp-pan .pp-geste.pp-alerte,#x13-sheet .pp-geste.pp-alerte{background:linear-gradient(135deg,#FFF6F7,#FCE8EC);border-color:#F6C6D0}',
-      '#pp-pan .pp-geste.pp-alerte b,#x13-sheet .pp-geste.pp-alerte b{color:var(--pp-rose-f)}',
+      '#pp-pan .pp-geste{margin-top:18px;padding:14px 16px;border-radius:18px;background:linear-gradient(135deg,#F4F8FF,var(--pp-halo));border:1px solid #D6E3FF;font-size:15px;line-height:1.45}',
+      '#pp-pan .pp-geste b{display:block;font:650 13px var(--pp-sans);letter-spacing:.06em;text-transform:uppercase;color:var(--pp-bleu-f);margin-bottom:4px}',
+      '#pp-pan .pp-geste.pp-alerte{background:linear-gradient(135deg,#FFF6F7,#FCE8EC);border-color:#F6C6D0}',
+      '#pp-pan .pp-geste.pp-alerte b{color:var(--pp-rose-f)}',
       '#pp-pan .pp-bloc{background:#fff;border-radius:20px;box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(15,20,32,.05),0 10px 24px -18px rgba(0,48,140,.3);overflow:hidden}',
       '#pp-pan .pp-ligne{display:flex;align-items:flex-start;gap:12px;width:100%;min-height:56px;margin:0;padding:12px 14px;border:0;border-top:1px solid #EDF0F5;background:none;text-align:left;font:inherit;color:var(--pp-encre)}',
       '#pp-pan .pp-bloc>.pp-ligne:first-child,#pp-pan .pp-bloc>div[hidden]+.pp-ligne{border-top:0}',
@@ -2020,11 +1359,11 @@
       '#pp-pan .pp-ld{flex:none;max-width:92px;font:500 13px/1.3 var(--pp-mono);color:var(--pp-encre2);padding-top:2px;text-align:right}',
       '#pp-pan .pp-ld.chaud{color:var(--pp-ambre-f)}',
       '#pp-pan .pp-ld.urgent{color:var(--pp-rose-f)}',
-      '#pp-pan .pp-badge,#x13-sheet .pp-badge{display:inline-block;font:600 13px/1 var(--pp-sans);padding:4px 7px;border-radius:7px;background:var(--pp-halo);color:var(--pp-bleu-f);vertical-align:1px;margin-right:4px}',
-      '#pp-pan .pp-badge.vert,#x13-sheet .pp-badge.vert{background:#E2F4EC;color:var(--pp-vert-f)}',
-      '#pp-pan .pp-badge.rose,#x13-sheet .pp-badge.rose{background:#FCE8EC;color:var(--pp-rose-f)}',
-      '#pp-pan .pp-badge.ambre,#x13-sheet .pp-badge.ambre{background:#FBF0E1;color:var(--pp-ambre-f)}',
-      '#pp-pan .pp-badge.gris,#x13-sheet .pp-badge.gris{background:#EEF1F6;color:var(--pp-encre2)}',
+      '#pp-pan .pp-badge{display:inline-block;font:600 13px/1 var(--pp-sans);padding:4px 7px;border-radius:7px;background:var(--pp-halo);color:var(--pp-bleu-f);vertical-align:1px;margin-right:4px}',
+      '#pp-pan .pp-badge.vert{background:#E2F4EC;color:var(--pp-vert-f)}',
+      '#pp-pan .pp-badge.rose{background:#FCE8EC;color:var(--pp-rose-f)}',
+      '#pp-pan .pp-badge.ambre{background:#FBF0E1;color:var(--pp-ambre-f)}',
+      '#pp-pan .pp-badge.gris{background:#EEF1F6;color:var(--pp-encre2)}',
       '#pp-pan .pp-plus{display:flex;width:100%;align-items:center;justify-content:center;gap:6px;min-height:52px;border:0;border-top:1px solid #EDF0F5;background:#FBFCFE;color:var(--pp-bleu);font-weight:600;font-size:15px}',
       '#pp-pan .pp-puces{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}',
       '#pp-pan .pp-puce{display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:0 14px;border-radius:22px;border:1px solid #DCE3EE;background:#fff;font-size:14px;font-weight:600;color:var(--pp-encre)}',
@@ -2051,287 +1390,14 @@
       /* blocs des modules concurrents montés dans le panneau : rien sous 13 px */
       '#pp-pan .cnc-angle b,#pp-pan .gr-vf-k,#pp-pan .gr-vf-m,#pp-pan .gr-vf-d,#pp-pan .gr-vf-t,#pp-pan .gr-vf-s,#pp-pan .gr-vf-nc,#pp-pan .gr-vf-plus summary,#pp-pan .gr-vf-rien,' +
         '#pp-pan .gr-actutag,#pp-pan .gr-actumaj,#pp-pan .gr-actu-meta,#pp-pan .gr-actu-res,#pp-pan .gr-actu-acc{font-size:13px}',
-      '#pp-pan .pp-chiffres,#x13-sheet .pp-chiffres{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}',
-      '#pp-pan .pp-chiffres div,#x13-sheet .pp-chiffres div{background:#fff;border-radius:18px;padding:14px;box-shadow:0 1px 2px rgba(15,20,32,.05)}',
-      '#pp-pan .pp-chiffres b,#x13-sheet .pp-chiffres b{display:block;font:600 26px/1 var(--pp-mono);letter-spacing:-.04em}',
-      '#pp-pan .pp-chiffres span,#x13-sheet .pp-chiffres span{display:block;font-size:13px;color:var(--pp-encre2);margin-top:6px;line-height:1.3}',
-      '#pp-pan .pp-actions,#x13-sheet .pp-actions{display:flex;flex-direction:column;gap:10px;margin-top:22px}',
-      '#pp-pan .pp-actions .pp-btn,#x13-sheet .pp-actions .pp-btn{width:100%;white-space:normal;text-align:center}',
+      '#pp-pan .pp-chiffres{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}',
+      '#pp-pan .pp-chiffres div{background:#fff;border-radius:18px;padding:14px;box-shadow:0 1px 2px rgba(15,20,32,.05)}',
+      '#pp-pan .pp-chiffres b{display:block;font:600 26px/1 var(--pp-mono);letter-spacing:-.04em}',
+      '#pp-pan .pp-chiffres span{display:block;font-size:13px;color:var(--pp-encre2);margin-top:6px;line-height:1.3}',
+      '#pp-pan .pp-actions{display:flex;flex-direction:column;gap:10px;margin-top:22px}',
+      '#pp-pan .pp-actions .pp-btn{width:100%;white-space:normal;text-align:center}',
       '#pp-pan .pp-vide{padding:18px 14px;font-size:14px;color:var(--pp-encre2)}',
       'html.pp-fige{overflow:hidden}',
-
-      /* ══════════ LA UNE (maquette 13, 08/10/2026) ══════════
-         Reprise de la maquette 13 sous le préfixe .x13 ; la feuille et son voile sont dans <body>. */
-      '/* ── vue 13 : « La une », modèle Apple News (préfixe x13-) ── */',
-      '.x13{max-width:1180px;margin:0 auto;padding:14px 0 12px;--x13-r:22px;--x13-bord:1px solid rgba(255,255,255,.85);--x13-fond:linear-gradient(180deg,#fff 0%,#FBFCFE 60%,#F3F6FB 100%)}',
-      '.x13-k-regle{--c:#C7791A;--l:#E9A850;--d:#7A4608}',
-      '.x13-k-rupture{--c:#E0556E;--l:#F58AA0;--d:#A22640}',
-      '.x13-k-rappel{--c:#BE3450;--l:#E0728A;--d:#8A1B34}',
-      '.x13-k-officine{--c:#0050E6;--l:#5A8CFF;--d:#0A32A0}',
-      '.x13-k-concurrent{--c:#6D4FC4;--l:#A68CF0;--d:#46309A}',
-      '.x13-k-actu{--c:#0A7F99;--l:#45C0D8;--d:#04556A}',
-      '.x13-t-regle{color:#8A500A}.x13-t-rupture{color:#B02A46}.x13-t-rappel{color:#8E1C36}.x13-t-officine{color:#0042C0}.x13-t-concurrent{color:#5B3FB0}.x13-t-actu{color:#07687E}',
-      '/* en-tête : le nom de l\'écran noir, la date grise, les deux en très gros (comme « News / September 22 ») */',
-      '.x13-tete{padding:2px 2px 0}',
-      '.x13 h1{margin:0;display:flex;flex-direction:column;font:800 clamp(32px,9.2vw,38px)/1.0 var(--pp-sans);letter-spacing:-.04em;color:var(--pp-encre)}',
-      '.x13-h1b{color:#525B6E}',
-      '.x13-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}',
-      '.x13-h{margin:0 0 6px;padding:0 2px;font:800 22px/1.1 var(--pp-sans);letter-spacing:-.025em;color:var(--pp-bleu-f)}',
-      '.x13{display:grid;grid-template-columns:minmax(0,1fr);gap:0}',
-      '.x13>section{margin-top:10px}',
-      '/* la une */',
-      '.x13-une{position:relative;display:block;width:100%;padding:0;margin:0;overflow:hidden;text-align:left;font:inherit;color:inherit;cursor:pointer;border-radius:var(--x13-r);border:var(--x13-bord);background:var(--x13-fond);box-shadow:var(--pp-ombre);-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent;transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s ease;animation:x13-in .5s cubic-bezier(.2,.8,.2,1) backwards}',
-      '.x13-une .x13-cv{display:block;height:min(36vw,148px);min-height:136px;border-radius:0}',
-      '.x13-cap{display:flex;flex-direction:column;gap:4px;padding:10px 16px 12px}',
-      '.x13-ut{font:800 23px/1.17 var(--pp-sans);letter-spacing:-.022em;color:var(--pp-encre);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}',
-      '.x13-ru{font:700 13px/1.2 var(--pp-sans);letter-spacing:.06em;text-transform:uppercase}',
-      '.x13-rl{display:flex;align-items:center;gap:8px;min-height:18px}',
-      '.x13-c .x13-m{flex-wrap:nowrap;white-space:nowrap;overflow:hidden}',
-      '.x13-c .x13-src{overflow:hidden;text-overflow:ellipsis;min-width:0}',
-      '.x13-c .x13-age{flex:none}',
-      '.x13-m{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;font:500 13px/1.3 var(--pp-sans);color:#566074}',
-      '.x13-src{font-weight:650;color:var(--pp-encre2)}',
-      '.x13-age::before{content:"·";margin-right:8px;color:#8A93A4}',
-      '.x13-neuf{display:inline-flex;align-items:center;min-height:22px;padding:0 9px;border-radius:11px;background:var(--pp-halo);box-shadow:inset 0 0 0 1px #CFE0FF;color:var(--pp-bleu-f);font:700 13px/1 var(--pp-sans)}',
-      '/* couverture : un aplat de la couleur de la rubrique, la lumière en haut à gauche, le plus dense en bas à droite */',
-      '.x13-cv,.x13-s-cv{position:relative;display:block;overflow:hidden;color:#fff;background:radial-gradient(130% 95% at 0% 0%,var(--l) 0%,var(--c) 30%,var(--d) 72%,var(--d) 100%)}',
-      '.x13-cv::after,.x13-s-cv::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(60% 70% at 100% 110%,rgba(0,0,0,.22),rgba(0,0,0,0) 70%);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}',
-      '.x13-cn{position:absolute;left:16px;bottom:10px;display:flex;align-items:baseline;gap:8px;z-index:1}',
-      '.x13-cn b{font:800 68px/.9 var(--pp-sans);letter-spacing:-.05em;font-variant-numeric:tabular-nums}',
-      '.x13-cn i{font:700 24px/1 var(--pp-sans);font-style:normal;letter-spacing:-.01em}',
-      '.x13-ci{position:absolute;left:16px;bottom:14px;z-index:1;display:block;line-height:0}',
-      '/* cartes compactes : le titre à gauche, la petite couverture carrée à droite */',
-      '.x13-liste{display:flex;flex-direction:column;gap:10px}',
-      '.x13-c{position:relative;display:flex;align-items:stretch;gap:14px;width:100%;margin:0;padding:10px 12px 10px 16px;text-align:left;font:inherit;color:inherit;cursor:pointer;border-radius:var(--x13-r);border:var(--x13-bord);background:var(--x13-fond);box-shadow:var(--pp-ombre);min-height:92px;-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent;transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s ease;animation:x13-in .46s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i) * 70ms)}',
-      '.x13-ct{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;justify-content:center}',
-      '.x13-t{font:700 17px/1.22 var(--pp-sans);letter-spacing:-.012em;color:var(--pp-encre);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}',
-      '.x13-c .x13-cv{flex:none;width:76px;height:76px;align-self:center;border-radius:14px}',
-      '.x13-c .x13-ci{left:50%;top:50%;bottom:auto;transform:translate(-50%,-50%)}',
-      '.x13-c .x13-cn{left:8px;bottom:6px}',
-      '.x13-c .x13-cn b{font-size:34px}',
-      '.x13-c .x13-cn i{font-size:13px}',
-      '/* « Tout voir » */',
-      '.x13-tout{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:46px;margin:10px 0 0;padding:0 8px 0 18px;border-radius:26px;border:var(--x13-bord);background:var(--x13-fond);box-shadow:var(--pp-ombre);font:700 16px/1.2 var(--pp-sans);color:var(--pp-bleu-f);cursor:pointer;text-align:left;-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent;transition:transform .2s ease}',
-      '.x13-tout b{margin-left:10px;font:500 14px/1 var(--pp-sans);color:var(--pp-encre2)}',
-      '.x13-tout-f{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--pp-halo);color:var(--pp-bleu)}',
-      '.x13-reste{margin-top:10px}',
-      '.x13-reste:not([hidden]) .x13-c{animation:x13-in .4s cubic-bezier(.2,.8,.2,1) backwards}',
-      '/* tendances : titres numérotés */',
-      '.x13-tendances{margin:0;padding:4px 0;list-style:none;border-radius:var(--x13-r);border:var(--x13-bord);background:var(--x13-fond);box-shadow:var(--pp-ombre);overflow:hidden}',
-      '.x13-tendances li+li{border-top:1px solid #E3E8F1;margin:0 16px}',
-      '.x13-tr{display:flex;align-items:center;gap:14px;width:100%;min-height:56px;margin:0;padding:6px 16px;text-align:left;font:inherit;color:inherit;background:none;border:0;cursor:pointer;-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent;transition:background .15s ease;animation:x13-in .46s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i) * 70ms)}',
-      '.x13-tendances li+li .x13-tr{margin:0 -16px;width:calc(100% + 32px)}',
-      '.x13-tn{flex:none;width:26px;font:800 32px/1 var(--pp-sans);letter-spacing:-.04em;font-variant-numeric:tabular-nums;text-align:center}',
-      '.x13-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}',
-      '.x13-tsrc{font:650 13px/1.25 var(--pp-sans);color:#566074}',
-      '.x13-tt{font:700 16px/1.22 var(--pp-sans);letter-spacing:-.01em;color:var(--pp-encre);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}',
-      '.x13-une:active,.x13-c:active{transform:scale(.982)}',
-      '.x13-tr:active{background:#E9F0FF}',
-      '.x13-tout:active{transform:scale(.985)}',
-      '.x13-une:focus-visible,.x13-c:focus-visible,.x13-tr:focus-visible,.x13-tout:focus-visible,.x13-rb:focus-visible,.x13-retour:focus-visible{outline:3px solid rgba(0,80,230,.55);outline-offset:2px}',
-      '@media (hover:hover){',
-      '  .x13-une:hover,.x13-c:hover{transform:translateY(-3px);box-shadow:0 1px 0 #fff inset,0 2px 4px rgba(15,20,32,.08),0 26px 44px -20px rgba(0,48,140,.42)}',
-      '  .x13-tr:hover{background:#F1F6FF}',
-      '  .x13-rb:hover{transform:translateY(-2px);box-shadow:0 1px 0 #fff inset,0 2px 4px rgba(15,20,32,.08),0 18px 30px -18px rgba(0,48,140,.42)}',
-      '  .x13-cv{transition:filter 0s}',
-      '}',
-      '/* rubriques : les pastilles qui ouvrent les panneaux du poste de pilotage (elles passent à la ligne, jamais de défilement latéral) */',
-      '.x13-tout[hidden],.x13-reste[hidden],.x13-voile[hidden],.x13-sheet[hidden]{display:none}',
-      '.x13-rubs{display:flex;flex-wrap:wrap;gap:10px}',
-      '.x13-rb{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin:0;padding:0 16px 0 14px;border-radius:22px;border:var(--x13-bord);background:var(--x13-fond);box-shadow:var(--pp-ombre);font:700 15px/1.2 var(--pp-sans);color:var(--pp-bleu-f);cursor:pointer;text-align:left;-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent;transition:transform .2s ease,box-shadow .2s ease}',
-      '.x13-rb svg{flex:none;color:var(--pp-bleu)}',
-      '.x13-rb b{font:500 14px/1 var(--pp-sans);color:var(--pp-encre2);font-variant-numeric:tabular-nums}',
-      '.x13-rb:active{transform:scale(.985)}',
-      '/* le bas de page replié : un seul bouton, les rubriques et les deux outils dessous */',
-      '.x13-rub-z{margin-top:12px;scroll-margin-bottom:88px}',
-      '.x13-rub-z:not([hidden]){animation:x13-in .4s cubic-bezier(.2,.8,.2,1) backwards}',
-      '.x13-rub-z .pp-pied-btns{margin-top:14px}',
-      '.x13-plus .x13-tout-f{transition:transform .25s ease}',
-      '.x13-plus[aria-expanded="true"] .x13-tout-f{transform:rotate(180deg)}',
-      '.x13-sheet *{box-sizing:border-box}',
-      '.x13-sheet button{font-family:inherit;cursor:pointer}',
-      '.x13-s-corps p{margin:10px 0 0;font-size:16px;line-height:1.55}',
-      '.pp-pied-btns{display:flex;flex-wrap:wrap;gap:10px}',
-      '/* feuille de lecture : naît de la carte touchée */',
-      '.x13-voile{position:fixed;inset:0;z-index:9440;background:rgba(15,20,32,.5);opacity:0;transition:opacity .4s ease}',
-      '.x13-voile.ouvert{opacity:1}',
-      '.x13-sheet{position:fixed;z-index:9450;inset:0;font:400 15px/1.45 var(--pp-sans);color:var(--pp-encre);overflow-y:auto;overscroll-behavior:contain;background:#F6F8FC;transition:clip-path var(--x13-dur,.5s) cubic-bezier(.2,.75,.2,1),transform var(--x13-dur,.5s) cubic-bezier(.2,.75,.2,1);-webkit-overflow-scrolling:touch}',
-      '.x13-sheet.ouvert{clip-path:inset(0 0 0 0 round 0)}',
-      '.x13-s-cv{min-height:46vh;display:flex;flex-direction:column;justify-content:flex-end}',
-      '.x13-s-cv{background:radial-gradient(55% 90px at 0% 0%,var(--l) 0%,rgba(255,255,255,0) 100%),radial-gradient(60% 55% at 100% 35%,rgba(255,255,255,.07),rgba(255,255,255,0) 100%),linear-gradient(180deg,var(--c) 0,var(--d) 90px,var(--d) 100%)}',
-      '.x13-retour{position:absolute;z-index:3;top:max(14px,env(safe-area-inset-top));left:14px;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.55);background:rgba(15,20,32,.28);color:#fff;display:grid;place-items:center;cursor:pointer;-webkit-appearance:none;appearance:none}',
-      '.x13-s-n{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}',
-      '.x13-s-n b{font:800 84px/.9 var(--pp-sans);letter-spacing:-.05em;font-variant-numeric:tabular-nums}',
-      '.x13-s-n i{font:700 26px/1 var(--pp-sans);font-style:normal}',
-      '.x13-s-i{display:block;line-height:0;margin-bottom:8px}',
-      '.x13-s-tt{position:relative;z-index:2;padding:76px 20px 20px;display:flex;flex-direction:column;gap:8px}',
-      '.x13-s-ru{font:700 13px/1.2 var(--pp-sans);letter-spacing:.07em;text-transform:uppercase}',
-      '.x13-s-tt h2{margin:0;font:800 30px/1.14 var(--pp-sans);letter-spacing:-.03em;color:#fff;overflow-wrap:anywhere}',
-      '.x13-s-m{font:600 14px/1.3 var(--pp-sans)}',
-      '.x13-s-corps{padding:18px 20px 40px;font-size:16px;line-height:1.55;color:var(--pp-encre)}',
-      'html.x13-fige{overflow:hidden}',
-      '/* entrée : décalée, transform seul */',
-      '@keyframes x13-in{from{transform:translateY(18px) scale(.985)}to{transform:none}}',
-      '/* ── v3 « Votre secteur d’abord » : deux blocs, une seule forme de ligne ── */',
-      '.f3-fil{margin:26px -4px 0;padding:22px 14px 26px;border-radius:28px;background:radial-gradient(120% 70% at 12% 0%,#FFFFFF 0%,#EEF3FC 46%,#E6EDF9 100%);box-shadow:0 1px 0 rgba(255,255,255,.95) inset,0 24px 50px -32px rgba(0,48,140,.35)}',
-      '.f3-tete{padding:0 6px 16px}.f3-tete h2{margin:0;font:800 26px/1.1 var(--pp-sans);letter-spacing:-.025em;color:var(--pp-encre)}',
-      '.f3-tete p{margin:6px 0 0;font:500 15px/1.35 var(--pp-sans);color:var(--pp-encre2)}',
-      '.f3-ls{margin:0;padding:0;list-style:none;display:block}',
-      '.f3-li{margin:0 0 18px;break-inside:avoid;-webkit-column-break-inside:avoid;page-break-inside:avoid}',
-      '.f3-c{display:block;width:100%;margin:0;padding:0;text-align:left;font:inherit;color:inherit;background:#fff;border:0;border-radius:22px;overflow:hidden;cursor:pointer;-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent;box-shadow:0 1px 2px rgba(15,20,32,.08),0 14px 30px -18px rgba(0,48,140,.38)}',
-      '.f3-c:active{background:#F4F7FD}',
-      '.f3-c:focus-visible{outline:3px solid rgba(0,80,230,.6);outline-offset:2px}',
-      '.f3-vig{display:block;background:#DCE4F2;overflow:hidden}',
-      '.f3-im{display:block;width:100%;height:100%;object-fit:cover}',
-      '.f3-gr .f3-vig{aspect-ratio:16/9}',
-      '.f3-txt{display:flex;flex-direction:column;gap:14px;padding:16px 14px 12px 18px}',
-      '.f3-t{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;font:700 20px/1.27 var(--pp-sans);letter-spacing:-.015em;color:var(--pp-encre)}',
-      '.f3-pied{display:flex;align-items:center;gap:6px;min-height:44px;min-width:0;white-space:nowrap}',
-      '.f3-src{min-width:0;overflow:hidden;text-overflow:ellipsis;font:600 13.5px/1.2 var(--pp-sans);color:var(--pp-encre)}',
-      '.f3-age{flex:none;font:500 13.5px/1.2 var(--pp-sans);color:#566074}',
-      '.f3-age::before{content:"\\00b7";margin-right:6px}',
-      '.f3-cred{margin:18px 0 0;text-align:center;font:500 13px/1.3 var(--pp-sans)}',
-      '.f3-cred a{display:inline-block;padding:12px 8px;color:#566074;text-decoration:underline;text-underline-offset:3px}',
-      '.f3-act{margin-left:auto;flex:none;display:flex;gap:0;color:#566074}',
-      '.f3-act span{display:grid;place-items:center;width:30px;height:34px}',
-      '.f3-pet{display:flex;align-items:stretch}',
-      '.f3-pet .f3-txt{flex:1;min-width:0;justify-content:space-between;gap:6px;padding:14px 0 6px 16px}',
-      '.f3-pet .f3-t{font-size:17px;line-height:1.28;-webkit-line-clamp:4}',
-      '.f3-pet .f3-src{max-width:9em}',
-      '.f3-pet .f3-age{display:none}',
-      '.f3-pet .f3-act span:first-child{display:none}',
-      '.f3-pet .f3-vig{flex:none;width:112px;height:112px;margin:14px 14px 14px 12px;border-radius:16px;align-self:flex-start}',
-      '@media (hover:hover){.f3-c{transition:box-shadow .2s ease}.f3-c:hover{box-shadow:0 1px 2px rgba(15,20,32,.1),0 20px 38px -16px rgba(0,48,140,.5)}}',
-      '@media (min-width:900px){',
-      '  .f3-fil{margin:34px 0 0;padding:32px 28px 18px}',
-      '  .f3-tete{padding:0 4px 22px}.f3-tete h2{font-size:34px}.f3-tete p{font-size:16px}',
-      '  .f3-ls{column-count:3;column-gap:24px}',
-      '  .f3-li{margin-bottom:0;padding-bottom:24px}',   /* une marge fausse l\'équilibre des colonnes dans Safari (178 px de vide mesurés), un espace intérieur non */
-      '}',
-      '/* ── cœur et « ⋮ » : la carte est un div, un bouton l\'ouvre en entier, les boutons cœur / ⋮ passent par-dessus ── */',
-      '.f3-li{position:relative}.f3-li.f3-ouvert{z-index:5}',
-      '.f3-c{position:relative;isolation:isolate;cursor:default}',
-      '.f3-c:focus{outline:none}',
-      '.f3-ouv{display:block;width:100%;margin:0;padding:0;border:0;background:none;text-align:left;font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent}',
-      '.f3-ouv::after{content:"";position:absolute;top:0;right:0;bottom:0;left:0;z-index:1;border-radius:22px}',
-      '.f3-ouv:focus{outline:none}',
-      '.f3-ouv:focus-visible::after{outline:3px solid rgba(0,80,230,.6);outline-offset:-3px}',
-      '.f3-ouv:active::after{background:rgba(0,80,230,.06)}',
-      '.f3-pied{white-space:normal;gap:6px;min-height:44px}',
-      '.f3-src{flex:0 1 auto;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:clip;overflow-wrap:anywhere;font-size:13.5px;line-height:1.2}',
-      '.f3-age{white-space:nowrap}',
-      '.f3-qui .f3-age::before{content:none}',   /* le « · » suit le nom de la source (jamais seul en début de ligne quand l'âge passe dessous) */
-      '.f3-qui{flex:1 1 auto;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 0}.f3-qui .f3-src{max-width:100%}.f3-qui .f3-age{margin-left:6px}',
-      '.f3-act{margin:0 -8px 0 auto;flex:none;display:flex;align-items:center}',
-      '.f3-b{position:relative;z-index:2;flex:none;display:grid;place-items:center;width:44px;height:44px;margin:0;padding:0;border:0;border-radius:50%;background:none;color:#566074;cursor:pointer;-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent}',
-      '.f3-b:focus-visible{outline:3px solid rgba(0,80,230,.6);outline-offset:-3px}',
-      '.f3-b:active{background:var(--pp-halo)}',
-      '.f3-coeur[aria-pressed="true"]{color:var(--pp-bleu)}.f3-coeur[aria-pressed="true"] svg{fill:var(--pp-bleu)}',
-      '.f3-pc{flex:none;display:grid;place-items:center;width:16px;height:16px;color:var(--pp-bleu)}.f3-pc[hidden]{display:none}.f3-pc svg{width:14px;height:14px;fill:var(--pp-bleu)}',
-      '.f3-pet .f3-act{margin-right:-4px}',
-      '.f3-pet .f3-txt{padding-right:4px}',
-      '.f3-pet .f3-src{max-width:none;-webkit-line-clamp:3}',
-      '@media (hover:hover){.f3-b:hover{background:var(--pp-halo);color:var(--pp-bleu-f)}}',
-      '.f3-mn{position:absolute;z-index:6;width:min(272px,calc(100% - 12px));box-sizing:border-box;padding:6px;border-radius:16px;background:#fff;box-shadow:0 0 0 1px rgba(15,20,32,.06),0 3px 8px rgba(15,20,32,.1),0 22px 44px -10px rgba(0,48,140,.4)}',
-      '.f3-mi{display:flex;align-items:center;width:100%;min-height:48px;margin:0;padding:8px 14px;border:0;border-radius:12px;background:none;text-align:left;font:600 15px/1.25 var(--pp-sans);color:var(--pp-encre);cursor:pointer;-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent}',
-      '.f3-mi:focus-visible,.f3-mi:active{outline:none;background:var(--pp-halo)}',
-      '@media (hover:hover){.f3-mi:hover{background:var(--pp-halo)}}',
-      '#f3-ban{--pp-encre:#0F1420;--pp-bleu:#0050E6;--pp-bleu-f:#003FB8;--pp-halo:#E9F0FF;--pp-sans:"Onest",-apple-system,"Helvetica Neue",Arial,sans-serif}',
-      '.f3-ban{position:fixed;z-index:9300;left:12px;right:12px;bottom:96px;box-sizing:border-box;max-width:460px;margin:0 auto;display:flex;align-items:center;gap:8px;padding:6px 6px 6px 18px;border-radius:18px;background:#0F1420;color:#fff;font:600 14.5px/1.3 var(--pp-sans);box-shadow:0 18px 40px -12px rgba(0,20,60,.6)}',
-      '.f3-ban[hidden]{display:none}.f3-ban-t{flex:1;min-width:0}',
-      '.f3-ban-b{flex:none;min-width:44px;min-height:44px;margin:0;padding:0 16px;border:0;border-radius:13px;background:#fff;color:#0F1420;font:700 14.5px/1 var(--pp-sans);cursor:pointer;-webkit-appearance:none;appearance:none}',
-      '.f3-ban-b:focus-visible{outline:3px solid #8FB4FF;outline-offset:2px}',
-      '@media (min-width:900px){.f3-ban{bottom:28px}}',
-      '.f3-ong{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0}',
-      '.f3-ong button{min-height:44px;margin:0;padding:0 18px;border:1px solid #C9D5EA;border-radius:22px;background:#fff;color:var(--pp-encre);font:700 15px/1 var(--pp-sans);cursor:pointer;-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent}',
-      '.f3-ong button[aria-pressed="true"]{background:var(--pp-bleu);border-color:var(--pp-bleu);color:#fff}',
-      '.f3-ong button:focus-visible,.f3-mq-b:focus-visible{outline:3px solid rgba(0,80,230,.6);outline-offset:2px}',
-      '.f3-vide{margin:4px 6px 10px;padding:16px 18px;border-radius:16px;background:#fff;font:650 16px/1.4 var(--pp-sans);color:var(--pp-bleu-f)}',
-      '.f3-mq{margin:22px 0 4px}.f3-mq-h{margin:0 6px 10px;font:800 18px/1.2 var(--pp-sans);color:var(--pp-encre)}',
-      '.f3-mq ul{margin:0;padding:0;list-style:none;border-radius:18px;background:#fff;overflow:hidden}',
-      '.f3-mq li{display:flex;align-items:center;gap:10px;min-height:52px;padding:4px 6px 4px 16px;border-top:1px solid #EDF0F5}.f3-mq li:first-child{border-top:0}',
-      '.f3-mq-n{flex:1;min-width:0;overflow-wrap:anywhere;font:600 15px/1.25 var(--pp-sans);color:var(--pp-encre)}',
-      '.f3-mq-b{flex:none;min-width:44px;min-height:44px;margin:0;padding:0 14px;border:0;border-radius:22px;background:var(--pp-halo);color:var(--pp-bleu-f);font:700 14.5px/1 var(--pp-sans);cursor:pointer;-webkit-appearance:none;appearance:none}',
-      '.x13.x13v3{display:block;max-width:1180px}',
-      '.x13v3 .x13-tete{padding:2px 2px 12px}',
-      '.x13v3 h1{font-size:clamp(30px,8.4vw,36px)}',
-      '.x13v3 .x13-deux{display:flex;flex-direction:column;gap:14px}',
-      '.x13v3 .x13-bl{margin:0;padding:12px 6px 6px;border-radius:var(--x13-r);border:var(--x13-bord);background:var(--x13-fond);box-shadow:var(--pp-ombre)}',
-      '.x13v3 .x13-bl-sec{background:linear-gradient(180deg,#fff 0%,#F2F7FF 100%)}',
-      '.x13v3 .x13-h{margin:0;padding:0 12px;font:800 22px/1.1 var(--pp-sans);letter-spacing:-.025em;color:var(--pp-bleu-f)}',
-      '.x13v3 .x13-bl-fr .x13-h{color:var(--pp-encre)}',
-      '.x13v3 .x13-sous{margin:3px 0 4px;padding:0 12px;font:600 14px/1.35 var(--pp-sans);color:var(--pp-encre2)}',
-      '.x13v3 .x13-ls{margin:0;padding:0;list-style:none}',
-      '.x13v3 .x13-ls li+li{border-top:1px solid #E3E8F1;margin:0 12px}',
-      '.x13v3 .x13-l{display:flex;align-items:center;gap:10px;width:100%;min-height:68px;margin:0;padding:9px 12px;text-align:left;font:inherit;color:inherit;background:none;border:0;border-radius:16px;cursor:pointer;-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent}',
-      '.x13v3 .x13-ls li+li .x13-l{margin:0 -12px;width:calc(100% + 24px)}',
-      '.x13v3 .x13-lt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}',
-      '.x13v3 .x13-lk{display:flex;align-items:center;gap:8px;min-height:20px;white-space:nowrap;overflow:hidden}',
-      '.x13v3 .x13-lm{font:500 13px/1.3 var(--pp-sans);color:#566074;overflow:hidden;text-overflow:ellipsis;min-width:0}',
-      '.x13v3 .x13-ltit{font:700 17px/1.22 var(--pp-sans);letter-spacing:-.012em;color:var(--pp-encre);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}',
-      '.x13v3 .x13-lf{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--pp-halo);color:var(--pp-bleu);transform:rotate(-90deg)}',
-      '.x13v3 .x13-vide{margin:10px 12px 12px;padding:14px 16px;border-radius:16px;background:var(--pp-halo);font:650 16px/1.35 var(--pp-sans);color:var(--pp-bleu-f)}',
-      '.x13v3 .x13-l:active{background:#E9F0FF}',
-      '.x13v3 .x13-l:focus-visible{outline:3px solid rgba(0,80,230,.55);outline-offset:-3px}',
-      '.x13v3 .x13-s-rub{margin-top:10px}',
-      '.x13v3 .x13-lien{width:auto;min-width:0;gap:8px;min-height:44px;margin:0;padding:0 4px 0 6px;border:0;background:none;box-shadow:none;border-radius:22px;font:700 15px/1.2 var(--pp-sans);color:var(--pp-bleu-f);display:inline-flex}',
-      '.x13v3 .x13-lien .x13-tout-f{width:30px;height:30px}',
-      '@media (hover:hover){.x13v3 .x13-l:hover{background:#F1F6FF}}',
-      '@media (min-width:900px){',
-      '  .x13.x13v3{display:block}',
-      '  .x13v3 .x13-deux{flex-direction:row;align-items:stretch;gap:22px}',
-      '  .x13v3 .x13-bl{flex:1 1 0;min-width:0;padding:16px 8px 8px}',
-      '  .x13v3 .x13-bl-sec{flex:1.25 1 0}',
-      '  .x13v3 h1{font-size:40px;flex-direction:row;align-items:baseline;gap:14px}',
-      '  .x13v3 .x13-h{font-size:26px;padding:0 14px}.x13v3 .x13-sous{padding:0 14px;margin-bottom:8px}',
-      '  .x13v3 .x13-l{padding:12px 14px;min-height:84px}.x13v3 .x13-ls li+li{margin:0 14px}.x13v3 .x13-ls li+li .x13-l{margin:0 -14px;width:calc(100% + 28px)}',
-      '  .x13v3 .x13-ltit{font-size:19px}',
-      '}',
-      '/* bureau : la une large à gauche, les compactes à droite */',
-      '@media (max-width:899px){',
-      '  .x13-s-cmp{display:contents}',
-      '  .x13-s-tend{order:1}',
-      '  .x13-tout,.x13-reste{order:2}',
-      '  .x13>.x13-s-rub{order:3}',
-      '  .x13-liste{margin-top:10px}',
-      '}',
-      '@media (min-width:900px){',
-      '  .x13{grid-template-columns:minmax(0,1.62fr) minmax(0,1fr);grid-template-areas:"tete cmp" "une cmp" "tend cmp" "rub rub";column-gap:26px;align-content:start}',
-      '  .x13>section{margin-top:0}',
-      '  .x13-tete{grid-area:tete;padding-bottom:10px}',
-      '  .x13 h1{font-size:44px}',
-      '  .x13>.x13-s-rub{grid-area:rub;margin-top:26px}',
-      '  .x13-plus{display:inline-flex;width:auto;min-width:320px;margin-top:0}',
-      '  .x13-s-une{grid-area:une}.x13-s-cmp{grid-area:cmp;padding-top:8px;display:flex;flex-direction:column}',
-      '  .x13-s-cmp>.x13-liste{flex:1}',
-      '  .x13-s-cmp>.x13-liste>.x13-c{flex:1}.x13-s-tend{grid-area:tend;margin-top:18px}',
-      '  .x13-une .x13-cv{height:260px}',
-      '  .x13-cap{padding:16px 22px 20px;gap:7px}',
-      '  .x13-ut{font-size:31px;line-height:1.14}',
-      '  .x13-cn b{font-size:112px}.x13-cn i{font-size:32px}',
-      '  .x13-cn{left:22px;bottom:14px}',
-      '  .x13-ci{left:22px;bottom:20px}',
-      '  .x13-tendances{display:grid;grid-template-columns:1fr 1fr}',
-      '  .x13-tendances li+li{border-top:0;margin:0}',
-      '  .x13-tendances li:nth-child(n+3){border-top:1px solid #E3E8F1}',
-      '  .x13-tendances li+li .x13-tr{margin:0;width:100%}',
-      '  .x13-tendances li:nth-child(odd){border-right:1px solid #E3E8F1}',
-      '  .x13-c{min-height:104px;padding:14px 14px 14px 20px}',
-      '  .x13-c .x13-t{font-size:19px}',
-      '  .x13-c .x13-cv{width:104px;height:104px;border-radius:16px}',
-      '  .x13-s-cmp .x13-liste{gap:9px}',
-      '  .x13-sheet{inset:3vh auto auto 50%;max-height:94vh;width:min(780px,92vw);margin-left:calc(min(780px,92vw) / -2);border-radius:28px;box-shadow:0 40px 90px -30px rgba(0,20,70,.6)}',
-      '  .x13-s-tt{padding:84px 36px 28px}',
-      '  .x13-s-tt h2{font-size:38px}',
-      '  .x13-s-corps{padding:26px 36px 48px}',
-      '  .x13-s-n b{font-size:120px}',
-      '  .x13-s-cv{min-height:0}',
-      '  .x13-sheet.ouvert{clip-path:inset(0 0 0 0 round 28px)}',
-      '}',
-      '@media (prefers-reduced-motion:reduce){',
-      '  .x13-une,.x13-c,.x13-tr,.x13-reste .x13-c{animation:none}',
-      '  .x13-sheet,.x13-voile,.x13-une,.x13-c,.x13-tout,.x13-rb{transition-duration:.01ms}',
-      '}',
       '@media (prefers-reduced-motion:reduce){.pp *,.pp *::before,.pp *::after,#pp-pan,#pp-pan *,#pp-voile{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}'
     ].join('\n');
     document.head.appendChild(st);
