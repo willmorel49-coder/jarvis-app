@@ -36,6 +36,16 @@
     Object.defineProperty(d, 'page', { enumerable: true, configurable: true, get: function () { return telepro ? 'reserve-a-yann' : vraie; } });
   });
   /* Le rôle n'est connu qu'une fois la session ouverte : on le lit dès que V2.user change, et on redessine si cela change les portes. */
+  /* La barre du haut de l'accueil est dessinée avant que son rôle soit connu, et V2.render() ne la redessine pas (mesuré en ligne
+     le 21/11/2026 : « Dossiers de projet » et « Chantiers » y restaient). Pour elle, on retire aussi les liens déjà affichés vers
+     ces trois écrans, et ceux de chaque rendu suivant. */
+  function retirer() {
+    if (!telepro) return;
+    RESERVE.forEach(function (k) {
+      document.querySelectorAll('[data-tp-act="go:' + k + '"], a[href="#' + k + '"]').forEach(function (a) { a.remove(); });
+    });
+  }
+  new MutationObserver(retirer).observe(document.documentElement, { childList: true, subtree: true });
   var vu = null;
   setInterval(function () {
     var id = V2.user && V2.user.id; if (id === vu) return;
@@ -45,6 +55,7 @@
     window.PHIRST_ROLE.estTelepro().then(function (t) {
       if (!V2.user || V2.user.id !== id || t === telepro) return;
       telepro = t;
+      retirer();
       if (typeof V2.render === 'function') V2.render();
     });
   }, 150);
