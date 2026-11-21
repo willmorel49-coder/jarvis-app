@@ -10,9 +10,10 @@
   var V2 = window.V2 = window.V2 || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); };
 
-  // Palette barres (dégradé bleu→ambre, cohérent app)
+  // Palette barres : tons froids seulement (21/11/2026, choix de Will : plus de jaune, orange, rouge ni rose, comme l'aube de l'accueil).
+  // Du 7e au 11e : clair et foncé alternés, chaque teinte écartée de ses voisines (contrôle de palette : vue normale ΔE ≥ 15, daltonisme ≥ 8).
   var BAR = ['#0050E6', '#1E6FE6', '#2C86D8', '#00A9B5', '#0F9E6A', '#5BA83C',
-    '#C7A11A', '#E08A1B', '#EA6A2C', '#D9553F', '#B4476B', '#7C4FC4'];
+    '#21539C', '#3FC0C0', '#006C98', '#9793E6', '#00734D', '#7C4FC4'];
 
   function eur(n) { return V2.fmtEur ? V2.fmtEur(n) : (Math.round(n || 0).toLocaleString('fr') + ' €'); }
 
