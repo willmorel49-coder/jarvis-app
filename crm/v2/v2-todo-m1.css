@@ -133,7 +133,7 @@
 /* ═══ Ordinateur ═══ */
 @media (min-width:761px){
   .td-m1 .td-hd{padding:26px 30px 26px;gap:22px;border-radius:22px}
-  .td-m1 .td-hd .td-h1{font-size:44px}
+  .td-m1 .td-hd .td-h1{font-size:40px} /* 21/11/2026 (Will, choix cliqué) : 40 px comme les autres écrans ; 44 px avant, visibles de 761 à 1 000 px */
   .td-m1 .td-phrase{font-size:19px;line-height:1.36}
   .td-m1 .td-caps{margin-top:20px}
   /* bandeau : toutes les lignes repliées sur le même gabarit (libellé et échéance à droite, puis mail et Plus dessous) */
