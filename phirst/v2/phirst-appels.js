@@ -131,10 +131,10 @@
       var occ = RDV.occupations(rdvs.filter(function (r) { return r.id !== sauf; }), fiches);
       return P.meilleursCreneaux({ jours: P.joursProposes(P.aujourdhui()), occupations: occ, cible: cible, maintenant: P.maintenantParis(), combien: 3 });
     },
-    /* La route dite en clair sous un créneau proposé. */
-    detail: function (c) {
+    /* La route dite en clair sous un créneau proposé (pour la téléprospectrice, c'est Yann qui est dans le secteur). */
+    detail: function (c, pourTelepro) {
       var a = c.trajetAvant ? 'environ ' + P.dureeFr(c.trajetAvant) + ' de route depuis ' + c.depuis : 'départ de ' + c.depuis;
-      return (c.dansLeSecteur ? 'Vous êtes déjà dans le secteur · ' : '') + (c.vers && c.trajetApres ? a + ', puis ' + c.vers : a);
+      return (c.dansLeSecteur ? (pourTelepro ? 'Yann est déjà dans le secteur · ' : 'Vous êtes déjà dans le secteur · ') : '') + (c.vers && c.trajetApres ? a + ', puis ' + c.vers : a);
     },
     /* Une heure choisie à la main : « AAAA-MM-JJ » + « HH:MM », par pas de 30 minutes. */
     heureLibre: function (jr, hm) {
@@ -390,7 +390,7 @@
       var cren = RDV.propositions(x.rdvs, x.fiches, cible);
       var h = '<p class="pa-q">Quand ?</p>';
       h += cren.length ? '<div class="pa-cren">' + cren.map(function (c) {
-        return '<button type="button" class="pa-b pa-cr" data-res="quand" data-debut="' + esc(c.debut) + '"><b>' + esc(P.maj(P.quandFr(c.debut))) + '</b><small>' + esc(RDV.detail(c)) + '</small></button>';
+        return '<button type="button" class="pa-b pa-cr" data-res="quand" data-debut="' + esc(c.debut) + '"><b>' + esc(P.maj(P.quandFr(c.debut))) + '</b><small>' + esc(RDV.detail(c, S.telepro)) + '</small></button>';
       }).join('') + '</div>' : '<p class="pa-avis">Aucun créneau libre dans les dix prochains jours ouvrés : choisissez une autre heure.</p>';
       h += '<div class="pa-rap"><span class="pa-qt">Une autre heure</span><label>Le <input type="date" class="pa-qdate" min="' + jour() + '" value="' + P.joursProposes(jour())[0] + '"></label>' +
         '<label>À <input type="time" class="pa-qheure" step="1800" value="09:00"></label><button type="button" class="pa-b pa-ok" data-res="quand-ok">Choisir cette heure</button></div>' +

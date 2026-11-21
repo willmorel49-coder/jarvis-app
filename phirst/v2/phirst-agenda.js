@@ -64,7 +64,7 @@
       if (!S.props) h += '<p class="pa-avis" role="status">Recherche des meilleurs créneaux…</p>';
       else {
         h += S.props.length ? '<div class="pa-cren">' + S.props.map(function (c) {
-          return '<button type="button" class="pa-b pa-cr" data-ag="deplacer-ok" data-rdv="' + esc(e.rdv.id) + '" data-debut="' + esc(c.debut) + '"><b>' + esc(P.maj(P.quandFr(c.debut))) + '</b><small>' + esc(RDV.detail(c)) + '</small></button>';
+          return '<button type="button" class="pa-b pa-cr" data-ag="deplacer-ok" data-rdv="' + esc(e.rdv.id) + '" data-debut="' + esc(c.debut) + '"><b>' + esc(P.maj(P.quandFr(c.debut))) + '</b><small>' + esc(RDV.detail(c, S.telepro)) + '</small></button>';
         }).join('') + '</div>' : '<p class="pa-avis">Aucun créneau libre dans les dix prochains jours ouvrés : choisissez une autre heure.</p>';
         h += '<div class="pa-rap"><span class="pa-qt">Une autre heure</span><label>Le <input type="date" class="pa-qdate" min="' + jour() + '" value="' + esc(P.joursProposes(jour())[0]) + '"></label>' +
           '<label>À <input type="time" class="pa-qheure" step="1800" value="09:00"></label><button type="button" class="pa-b pa-ok" data-ag="autre-heure" data-rdv="' + esc(e.rdv.id) + '">Choisir cette heure</button></div>';
@@ -117,9 +117,9 @@
     h += '<h2 class="ag-jt">' + esc(P.maj(P.dateLongue(J))) + '</h2>';
     if (!actifs.length) {
       h += '<div class="pa-vide ag-vide"><p>Rien de prévu ce jour-là.</p><p>' + (!P.estJourOuvre(J) ? 'C’est le week-end : aucun rendez-vous n’est proposé.' :
-        libresJ.length ? 'Vous êtes libre ' + esc(P.plagesLibres(libresJ).join(' et ')) + ' (' + esc(P.phraseLibres(libresJ.length)) + ').' : 'Il ne reste plus de créneau d’une heure libre ce jour-là.') + '</p></div>';
+        libresJ.length ? (S.telepro ? 'Yann est libre ' : 'Vous êtes libre ') + esc(P.plagesLibres(libresJ).join(' et ')) + ' (' + esc(P.phraseLibres(libresJ.length)) + ').' : 'Il ne reste plus de créneau d’une heure libre ce jour-là.') + '</p></div>';
     } else {
-      h += '<p class="pa-avis">' + esc(P.phraseEtat(duJ, libresJ.length)) + '</p><ul class="pa-liste">' + actifs.map(function (e) { return carteRdv(e, maint); }).join('') + '</ul>';
+      h += '<p class="pa-avis">' + esc(P.phraseEtat(duJ, libresJ.length, S.telepro)) + '</p><ul class="pa-liste">' + actifs.map(function (e) { return carteRdv(e, maint); }).join('') + '</ul>';
     }
     // Repliés : quelques annulations ne doivent pas repousser la journée hors de vue.
     if (annules.length) h += '<details class="ag-annules"><summary class="ag-sh">Annulés ce jour (' + annules.length + ')</summary><ul class="pa-liste">' + annules.map(function (e) { return carteRdv(e, maint); }).join('') + '</ul></details>';

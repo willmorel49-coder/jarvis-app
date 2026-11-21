@@ -290,6 +290,9 @@ describe('la journée de l’agenda', () => {
     assert.deepEqual(P.plagesLibres(l), ['de 8 h 30 à 12 h 30', 'de 14 h à 18 h'])
     assert.equal(P.phraseEtat(P.duJour(els, '2026-11-26'), 2), 'Vous êtes à Vannes · 2 créneaux d’une heure libres')
     assert.equal(P.phraseEtat([], 0), 'Rien de prévu')
+    // la téléprospectrice lit l'agenda de Yann : jamais « Vous êtes à … » chez elle (21/11/2026)
+    assert.equal(P.phraseEtat(P.duJour(els, '2026-11-26'), 2, true), 'Yann est à Vannes · 2 créneaux d’une heure libres')
+    assert.equal(P.phraseEtat([], 0, true), 'Rien de prévu')
   })
   test('deux rendez-vous qui se chevauchent sont signalés', () => {
     const r = P.etatsDesRdv([ev('creer', { debut: '2026-11-26T10:00' }, { rdv: R1 }), ev('creer', { debut: '2026-11-26T10:30' }, { rdv: R2, fiche: P2 })], estTelepro)

@@ -515,10 +515,10 @@
       detail: [e.fiche.nom, e.rdv.objet].filter(Boolean).join(' · ') + '.' + route
     };
   }
-  /* « Vous êtes à Batz » / « Rien de prévu », + créneaux libres. */
-  function phraseEtat(els, libres) {
+  /* « Vous êtes à Batz » / « Rien de prévu », + créneaux libres. Pour la téléprospectrice : « Yann est à Batz » (c'est son agenda à lui). */
+  function phraseEtat(els, libres, pourTelepro) {
     var premier = null; for (var i = 0; i < els.length; i++) if (els[i].rdv.statut !== 'annule') { premier = els[i]; break; }
-    var debut = premier && premier.fiche.ville ? 'Vous êtes à ' + premier.fiche.ville : premier ? 'Un rendez-vous est prévu' : 'Rien de prévu';
+    var debut = premier && premier.fiche.ville ? (pourTelepro ? 'Yann est à ' : 'Vous êtes à ') + premier.fiche.ville : premier ? 'Un rendez-vous est prévu' : 'Rien de prévu';
     return debut + (libres > 0 ? ' · ' + phraseLibres(libres) : '');
   }
 
