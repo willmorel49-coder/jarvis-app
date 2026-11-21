@@ -1369,6 +1369,23 @@ html:root:root body .v2-wrap.pr-wrap{max-width:1232px}
 html:root:root body .v2-wrap.pa-wrap{max-width:1232px}
 /* 20/11/2026 (Will) : Infos du matin à la même largeur (v2-infos.js:1773 .v2-wrap.inf2.pp 1272) */
 html:root:root body .v2-wrap.inf2.pp{max-width:1232px}
+/* 21/11/2026 soir — MÊME HAUT (Will, choix cliqué) : sur Infos, To do, Offilog, Catalogue produits et Pilotage, le bandeau commence à la même
+   hauteur sous la barre d'onglets = la marge haute de la colonne commune (.v2-wrap, v2.css:189 et :455 : 32 px, 18 px au téléphone), rien d'autre.
+   Mesuré avant sous WebKit (écart sous la barre, 1 280 / 390) : Infos 32/18 · To do 34/20 (v2-todo-m1.css:14 margin 2 px) ·
+   Offilog 16/16 (v2-offilog-m1.css:12 padding-top 16 px) · Catalogue 40/26 (v2-comptoir.js .cpd-head margin-top 8 px) · Pilotage 38/24 (v2-pilotage-apple.css .pa-root padding-top 6 px).
+   Officines (la liste) et Groupements (la carte) gardent leur haut à eux (choix de Will). */
+html:root:root body .v2-wrap.olm{padding-top:32px}
+@media (max-width:640px){html:root:root body .v2-wrap.olm{padding-top:18px}}
+html:root:root body :is(.td-m1 .td-hd,.cpd-head,.pa-top.aube-tete){margin-top:0}
+html:root:root body .pa-root{padding-top:0}
+/* Pilotage (vraie page et page vide) : le bandeau commun, titre de 40 px (35 px au téléphone, comme Infos et To do), phrase dessous ;
+   sur la vraie page, période et secteur à droite dans le bandeau, comme les chiffres du Catalogue produits (au téléphone : dessous, pleine largeur) */
+html:root:root body .pa-wrap .aube-tete .v2-page-title{margin:0;font-size:clamp(32px,9vw,40px);line-height:1.05}
+html:root:root body .pa-wrap .aube-tete .v2-page-sub{margin:6px 0 0;max-width:none;font:600 15px/1.35 var(--font);letter-spacing:-.01em}
+@media (min-width:701px){html:root:root body .pa-top.aube-tete .pa-bar{align-items:center}}
+/* au téléphone, les quatre périodes tiennent sur une ligne dans le bandeau (48 px de moins qu'avant : « Au choix » se coupait en velours) */
+@media (max-width:700px){html:root:root:root body .pa-top.aube-tete .pa-segb{white-space:nowrap;padding:0 4px;font-size:14px}}
+html:root:root body .pa-top.aube-tete .pa-perpick{margin-top:14px}
 /* 2. Chiffres en encre, le bleu réservé aux actions (v2-officines-m1.css:88) */
 html:root:root body .of-c-ca b{color:var(--au-ink,#1A2030)}
 html:root:root body .of-c-ca.of-c-nd b{color:var(--txt-2,#454B5C)}

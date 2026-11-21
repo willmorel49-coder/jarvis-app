@@ -7,9 +7,7 @@
   --pa-ink:#10131C;--pa-mut:#5B6377;--pa-line:rgba(16,19,28,.08);--pa-up:#0B6E4A;--pa-dn:#B4232F;--pa-blue:#0050E6;
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",system-ui,"Helvetica Neue",Arial,sans-serif;
   font-variant-numeric:tabular-nums;color:var(--pa-ink);position:relative;padding-top:6px;-webkit-font-smoothing:antialiased}
-/* la source de lumière : un halo bleu clair en haut à gauche, un reflet turquoise à droite */
-.pa-wrap::before{content:"";position:absolute;z-index:-1;left:0;right:0;top:-40px;height:520px;pointer-events:none;
-  background:radial-gradient(42% 360px at 30% 0%,rgba(0,80,230,.14),rgba(0,80,230,0) 70%),radial-gradient(30% 300px at 78% 0%,rgba(0,181,216,.10),rgba(0,181,216,0) 70%)}
+/* 21/11/2026 soir : le halo propre à Pilotage est retiré, la lumière vient du bandeau commun de l'aube (.pa-top.aube-tete, v2.css « MÊME HAUT ») */
 .pa-root *{box-sizing:border-box}
 :where(.pa-root) :where(h1,h2,h3,p,ul){margin:0}
 .pa-root button{font-family:inherit;-webkit-tap-highlight-color:transparent}

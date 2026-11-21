@@ -2007,7 +2007,9 @@
     var t = (PMx && c.mes.fen && c.mes.fen.length) ? psCouvT(PMx, c.mes.fen) : '';
     if (!t && c.anc && c.anc.ecartes && c.anc.ecartes.length) t = phraseEcart(c.anc);   // 11/11/2026 — Façon 1 : dit une fois, ici (plus dans le détail)
     if (t) note = '<p class="pa-note" role="note">' + esc(t) + '</p>';
-    var tete = '<header class="pa-top"><div class="pa-bar"><h1 class="pa-title">Pilotage</h1><div class="pa-ctl">' + menu +
+    // 21/11/2026 soir (Will, choix cliqué) : le bandeau commun des écrans (.aube-tete, scène de v2-aube.js), titre et phrase à gauche, période et secteur à droite, comme les chiffres du Catalogue produits.
+    // .v2-page-title « Pilotage » = marqueur de la CI (.github/scripts/parcours-connecte.mjs) : garder la classe et le texte.
+    var tete = '<header class="pa-top aube-tete"><div class="pa-bar"><div><h1 class="pa-title v2-page-title">Pilotage</h1><p class="v2-page-sub">Votre chiffre d\'affaires, votre marge pharmacien et vos familles produits.</p></div><div class="pa-ctl">' + menu +
       '<span class="v2-past-l">Période :</span><div class="pa-seg" role="group" aria-label="Période">' + seg('current', 'Mois') + seg('3m', '3 mois') + seg('year', 'Année') + seg('custom', 'Au choix') + '</div></div></div>' + (c.perPick ? c.perPick.replace('pilo-perpick', 'pilo-perpick pa-perpick') : '') + '</header>';
     var corps;
     var ca = PA_REG.ca, f0 = paFmt(ca, ca.val);
@@ -2109,7 +2111,7 @@
       // ── Empty state ──
       if (!sales.length) {
         root.innerHTML = top +
-          '<div class="v2-wrap">' +
+          '<div class="v2-wrap pa-wrap">' +   // 21/11/2026 soir : même colonne (1 180 px à 1 280) et même haut que la vraie page
             '<div class="v2-page-title">Pilotage</div>' +
             '<div class="v2-page-sub">' + (opso ? 'Tableau de bord groupement OPSO Santé.' : 'Votre chiffre d\'affaires, votre marge pharmacien et vos familles produits.') + '</div>' +
             '<div class="v2-card"><div class="v2-empty">' +
