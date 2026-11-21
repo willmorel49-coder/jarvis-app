@@ -1539,17 +1539,19 @@ html:root:root body .ofl .ofl-n { margin: 0; padding: 9px 20px 8px; color: var(-
    Règles tenues : aucune barre de couleur sur un seul côté, ni backdrop-filter, ni flou, ni opacity sur du texte, ni dégradé sur du texte ;
    dégradés opaques ; mouvement réduit respecté. Échelle de texte : 13 · 15 · 17 · 28 · 34 · 44 · 64 (et 13 dans les graphiques).
    ═══════════════════════════════════════════════════════════════════════════ */
-.pha-wrap.fdr-on{max-width:1100px;margin:0 auto;padding:18px 20px 90px;--fdr-bleu:var(--ip-blue,#0050E6);--fdr-encre:#1A2030;--fdr-trait:#E3E6EC}
+.pha-wrap.fdr-on{max-width:1100px;margin:0 auto;padding:18px 20px 90px;--fdr-bleu:var(--ip-blue,#0050E6);--fdr-encre:#1A2030;--fdr-trait:rgba(26,32,48,.11)}
 .fdr-on .fdr{display:block;color:var(--fdr-encre);font-size:15px;line-height:1.45}
 .fdr-on .fdr *{box-sizing:border-box}
 .fdr-on .fdr-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
 /* ── En-tête : l'aube ─────────────────────────────────────────────── */
-.fdr-on .fdr-head{position:relative;overflow:hidden;border-radius:var(--r-card,20px);border:1px solid var(--fdr-trait);padding:14px 28px 26px;
-  background:radial-gradient(760px 300px at 96% -40%,#FFE9C2 0,#F1F2FB 52%,#F4F7FF 100%)}
+.fdr-on .fdr-head{position:relative;overflow:hidden;border-radius:var(--r-card,20px);border:1px solid var(--fdr-trait);padding:14px 28px 26px;box-shadow:0 12px 32px rgba(0,80,230,.07);
+  background:radial-gradient(300px 232px at 78% 0,#FFFFFF 0,#F8FAFD 100%) top left/100% 232px no-repeat,linear-gradient(180deg,#E3ECFB 232px,#EDF2FA 45%,#F3F5F9 100%)}
 .fdr-on .fdr-astre{position:absolute;right:-70px;top:-130px;width:330px;height:330px;border-radius:50%;pointer-events:none;
-  background:radial-gradient(circle at 50% 50%,#FFF7E3 0,#FFEBC6 48%,#FFE0AE 100%);border:1px solid #FFE3B5;animation:fdr-souffle 9s ease-in-out infinite alternate;transform-origin:50% 50%}
-.fdr-on .fdr-astre::after{content:"";position:absolute;inset:-46px;border-radius:50%;border:1px solid #F7E4C4}
+  background:radial-gradient(circle at 50% 22%,#FFFFFF 0,#F0F5FF 52%,#D5E2FF 100%);border:1px solid #BDD0F8;
+  box-shadow:0 0 34px 6px rgba(0,80,230,.16),inset 0 2px 0 rgba(255,255,255,.9);outline:2px solid #DEE6F6;outline-offset:86px;clip-path:inset(-300px -300px 0 -300px);animation:fdr-souffle 9s ease-in-out infinite alternate;transform-origin:50% 50%}
+.fdr-on .fdr-astre::after{content:"";position:absolute;inset:-30px;border-radius:50%;border:2px solid #C6D6F8}
+.fdr-on .fdr-astre::before{content:"";position:absolute;inset:-58px;border-radius:50%;border:2px solid #D3DFF7;pointer-events:none}
 @keyframes fdr-souffle{from{transform:scale(1)}to{transform:scale(1.06)}}
 .fdr-on .fdr-head.fdr-hors .fdr-astre,.fdr-on .fdr-pause .fdr-astre{animation-play-state:paused}
 .fdr-on .fdr-bar,.fdr-on .fdr-id{position:relative;z-index:1}
@@ -1587,16 +1589,16 @@ html:root:root body .fdr-on .fdr-sw .vv-b[aria-pressed="true"]{background:var(--
 .fdr-on .fdr-som::-webkit-scrollbar{display:none}
 .fdr-on .fdr-pil{flex:0 0 auto;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px 0 6px;border:0;border-radius:999px;background:transparent;font-family:inherit;font-weight:700;font-size:15px;line-height:1;color:#2A2F3C;cursor:pointer;white-space:nowrap}
 .fdr-on .fdr-pil span{font-size:15px;font-weight:700}
-.fdr-on .fdr-pil b{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:#E9F0FF;color:var(--ip-blue-d,#0034A0);font-size:15px;font-weight:800}
+.fdr-on .fdr-pil b{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:#E6EEFF;color:var(--ip-blue-d,#0034A0);font-size:15px;font-weight:800}
 .fdr-on .fdr-pil[aria-current="true"]{background:var(--fdr-bleu);color:#fff}
 .fdr-on .fdr-pil[aria-current="true"] b{background:#fff;color:var(--fdr-bleu)}
-.fdr-on .fdr-pil:hover{background:#F1F4FB}.fdr-pil[aria-current="true"]:hover{background:var(--fdr-bleu)}
+.fdr-on .fdr-pil:hover{background:#EEF4FF}.fdr-pil[aria-current="true"]:hover{background:var(--fdr-bleu)}
 
 /* ── Chapitres ────────────────────────────────────────────────────── */
 .fdr-on .fdr-ch{margin-top:30px;scroll-margin-top:80px}
 .fdr-on .fdr-ch-h{display:flex;align-items:center;gap:16px;margin-bottom:14px}
 .fdr-on .fdr-num{flex:0 0 auto;display:grid;place-items:center;width:64px;height:64px;border-radius:20px;font:800 44px/1 var(--font,'Archivo',system-ui,sans-serif);letter-spacing:-.04em;color:var(--fdr-bleu);
-  background:radial-gradient(60px 60px at 100% 0,#FFE9C2 0,#EDF2FF 70%,#E9F0FF 100%);border:1px solid #D5E0F7;font-variant-numeric:tabular-nums}
+  background:radial-gradient(60px 60px at 100% 0,#FFFFFF 0,#EEF4FF 70%,#E6EEFF 100%);border:1px solid #CFDCF6;font-variant-numeric:tabular-nums}
 .fdr-on .fdr-ch-t{min-width:0}
 .fdr-on .fdr-ch-t h2{margin:0;font-size:28px;line-height:1.12;letter-spacing:-.025em;font-weight:800;color:var(--fdr-encre)}
 .fdr-on .fdr-ch-s{margin:3px 0 0;font-size:15px;color:var(--muted)}
@@ -1614,7 +1616,7 @@ html:root:root body .fdr-on .fdr-sw .vv-b[aria-pressed="true"]{background:var(--
 .fdr-on .fdr-c1{display:grid;grid-template-columns:minmax(290px,340px) minmax(0,1fr);gap:14px;align-items:stretch}
 .fdr-on .fdr-ms{display:grid;grid-template-columns:1fr;gap:10px;align-content:stretch}
 .fdr-on .fdr-m{position:relative;overflow:hidden;background:#fff;border:1px solid var(--fdr-trait);border-radius:var(--r-card,20px);padding:12px 18px 12px;display:flex;flex-direction:column;justify-content:center}
-.fdr-on .fdr-m:first-child{background:radial-gradient(380px 200px at 100% 0,#FFEBC9 0,#EAF1FF 55%,#E9F0FF 100%);border-color:#D5E0F7}
+.fdr-on .fdr-m:first-child{background:radial-gradient(380px 200px at 100% 0,#FFFFFF 0,#EEF4FF 55%,#E6EEFF 100%);border-color:#CFDCF6}
 .fdr-on .fdr-m-l{font-size:15px;font-weight:700;color:#2A2F3C}
 .fdr-on .fdr-m-v{margin:2px 0 2px;font-size:44px;line-height:1.05;font-weight:800;letter-spacing:-.035em;color:var(--ip-blue-d,#0034A0);white-space:nowrap;font-variant-numeric:tabular-nums}
 .fdr-on .fdr-m-d{font-size:13px;color:var(--muted)}
@@ -1627,7 +1629,7 @@ html:root:root body .fdr-on .fdr-sw .vv-b[aria-pressed="true"]{background:var(--
 .fdr-on .fdr-off{grid-column:1 / -1}
 .fdr-on .fdr-off-ms{display:flex;flex-wrap:wrap;gap:10px}
 .fdr-on .fdr-off-m{flex:1 1 160px;min-width:0;display:flex;flex-direction:column;gap:2px;padding:10px 16px;border:1px solid var(--fdr-trait);border-radius:16px;background:#fff}
-.fdr-on .fdr-off-t{background:radial-gradient(300px 160px at 100% 0,#FFEBC9 0,#EAF1FF 55%,#E9F0FF 100%);border-color:#D5E0F7}
+.fdr-on .fdr-off-t{background:radial-gradient(300px 160px at 100% 0,#FFFFFF 0,#EEF4FF 55%,#E6EEFF 100%);border-color:#CFDCF6}
 .fdr-on .fdr-off-l{font-size:13px;font-weight:700;color:#2A2F3C}
 .fdr-on .fdr-off-v{font-size:28px;line-height:1.1;font-weight:800;letter-spacing:-.025em;color:var(--ip-blue-d,#0034A0);white-space:nowrap;font-variant-numeric:tabular-nums}
 
@@ -1826,3 +1828,162 @@ html:root:root body .fdr-on .fdr-sw .vv-b{padding:0 18px;flex:0 0 auto}
 .fdr-on .fdr-pro-acts{display:flex;flex-wrap:wrap;gap:10px}
 .fdr-on .fdr-pro .v2-prospect-hd{padding:16px 18px}
 /* ═══ fin fiche officine « Le rendez-vous » ═══ */
+
+/* ═══ 21/11/2026 — Fiche officine « Le dossier » (choisie par Will), couleurs « L'horizon » (l'aube de l'accueil). Préfixe : fdo-
+   Deux colonnes à partir de 1 000 px : colonne d'identité qui reste à l'écran (à gauche), chiffres à droite.
+   En dessous : tout à la suite ; les coordonnées et Offilog viennent juste après le chapitre des chiffres.
+   Règles tenues : pas de barre de couleur sur un côté, pas de flou, pas d'opacité sur du texte, dégradés opaques. */
+.pha-wrap.fdr-on:has(.fdo-g){max-width:1280px;padding-left:24px;padding-right:24px}
+
+/* ── Mise en page de base (petits écrans) : flux unique ordonné ─────── */
+.fdr-on .fdo-g{display:flex;flex-direction:column;gap:0}
+.fdr-on .fdo-side,.fdr-on .fdo-main{display:contents}
+.fdr-on .fdo-a{order:0}
+.fdr-on .fdo-g .fdr-som{order:1;width:100%;margin:12px 0 0}
+.fdr-on .fdo-g #fdr-c1{order:2}
+.fdr-on .fdo-g .fdo-b{order:3;margin-top:22px}
+.fdr-on .fdo-g .fdr-ch{order:4}
+.fdr-on .fdo-g .fdo-b2{order:9}
+
+/* ── Colonne d'identité ──────────────────────────────────────────── */
+.fdr-on .fdo-a{border-radius:var(--r-card,20px);padding:12px 20px 18px}
+.fdr-on .fdo-a .fdr-bar{height:auto;min-height:48px}
+.fdr-on .fdo-a .fdr-sw{margin-left:0;width:100%}
+.fdr-on .fdo-a .fdr-sw .vv-b{flex:1 1 0;padding:0 8px}
+.fdr-on .fdo-a .fdr-id{flex-direction:column;align-items:stretch;gap:14px;margin-top:8px}
+.fdr-on .fdo-a .pha-name.pha-name{font-size:28px}
+.fdr-on .fdr .fdo-a .pha-name,.fdr-on .fdr .fdo-a .pha-name *{font-size:28px}
+.fdr-on .fdo-a .fdr-sub{font-size:15px}
+.fdr-on .fdr .fdo-a .fdr-sub{font-size:15px}
+.fdr-on .fdo-a .fdr-astre{width:220px;height:220px;right:-30px;top:12px}
+.fdr-on .fdo-a::before{content:"";position:absolute;left:0;right:0;top:232px;height:1px;background:#B7C9EF;pointer-events:none}
+
+/* actions rondes en grille de 3 */
+@media (min-width:641px){
+  .fdr-on .fdo-a .fdr-ronds{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 6px;justify-content:stretch}
+  .fdr-on .fdo-a .fdr-rond{width:auto;min-width:0}
+}
+
+/* coordonnées : trois lignes courtes */
+.fdr-on .fdo-coords{padding:16px 18px 10px}
+.fdr-on .fdo-cos{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:2px}
+.fdr-on .fdo-co{display:flex;align-items:flex-start;gap:10px;min-height:36px;padding:5px 0}
+.fdr-on .fdo-co-i{flex:0 0 auto;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#fff;border:1px solid var(--fdr-trait);color:var(--fdr-bleu)}
+.fdr-on .fdo-co-i svg{width:15px;height:15px}
+.fdr-on .fdo-co-t{min-width:0;overflow-wrap:anywhere;font-weight:600;line-height:1.35;padding-top:3px}
+.fdr-on .fdo-co-t a{color:var(--fdr-encre);text-decoration:none}
+.fdr-on .fdo-co-t a:hover{color:var(--fdr-bleu);text-decoration:underline}
+
+/* Offilog compact */
+.fdr-on .fdo-off{padding:16px 18px}
+.fdr-on .fdo-off .fdr-leg{margin:2px 0 8px}
+.fdr-on .fdo-off-l{margin:0;display:flex;flex-direction:column}
+.fdr-on .fdo-off-l > div{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #EEF0F5}
+.fdr-on .fdo-off-l dt{margin:0;font-weight:600;color:#2A2F3C}
+.fdr-on .fdo-off-l dd{margin:0;font-weight:800;color:var(--ip-blue-d,#0034A0);font-variant-numeric:tabular-nums;white-space:nowrap}
+.fdr-on .fdo-off-l .fdo-off-t{border-bottom:0;padding:10px 12px;margin-top:6px;border-radius:12px;background:radial-gradient(260px 120px at 100% 0,#FFFFFF 0,#EEF4FF 60%,#E6EEFF 100%)}
+.fdr-on .fdo-off-l .fdo-off-t dd{font-size:17px}
+.fdr-on .fdr .fdo-off-l .fdo-off-t dd{font-size:17px}
+.fdr-on .fdo-bref{display:none}
+.fdr-on .fdo-nav{padding:10px 14px}
+.fdr-on .fdo-nav .fdr-nav .pha-nav-champ{width:100%}
+.fdr-on .fdo-nav .fdr-nav{display:block}
+
+/* ── Téléphone : le nom d'abord, les montants au premier écran ───── */
+@media (max-width:640px){
+  .fdr-on .fdo-a{padding:10px 16px 14px}
+  .fdr-on .fdo-a .fdr-bar{min-height:44px}
+  .fdr-on .fdo-a .fdr-id{gap:8px}
+  .fdr-on .fdo-nav{display:none}
+}
+
+/* ── Deux colonnes ───────────────────────────────────────────────── */
+@media (min-width:1000px){
+  .fdr-on .fdo-g{display:grid;grid-template-columns:340px minmax(0,1fr);gap:0 24px;align-items:start}
+  .fdr-on .fdo-side{display:flex;flex-direction:column;gap:14px;position:sticky;top:calc(var(--fdr-top,0px) + 12px);max-height:calc(100vh - var(--fdr-top,0px) - 24px);overflow-y:auto;overflow-x:hidden;scrollbar-width:none;padding-bottom:2px;z-index:2}
+  .fdr-on .fdo-side::-webkit-scrollbar{display:none}
+  .fdr-on .fdo-main{display:block;min-width:0}
+  .fdr-on .fdo-g .fdr-som{width:max-content;max-width:100%;margin:0 0 6px;top:calc(var(--fdr-top,0px) + 12px)}
+  .fdr-on .fdo-g .fdo-b{margin-top:0}
+  .fdr-on .fdo-side{min-height:calc(100vh - var(--fdr-top,0px) - 24px)}
+  .fdr-on .fdo-bref{display:block;flex:1 1 auto;background:radial-gradient(360px 220px at 50% 115%,#E6EEFF 0,#EEF4FF 60%,#F5F8FF 100%)}
+  .fdr-on .fdo-bref .fdo-off-l{margin-top:8px}
+  .fdr-on .fdo-g .fdr-ch{margin-top:22px;scroll-margin-top:90px}
+  .fdr-on .fdo-main > .fdr-som + .fdr-ch{margin-top:14px}
+  /* les trois montants en rangée, la courbe dessous : les chiffres restent le centre de la page */
+  .fdr-on .fdo-g .fdr-c1{grid-template-columns:minmax(0,1fr);gap:14px}
+  .fdr-on .fdo-g .fdr-ms{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .fdr-on .fdo-g .fdr-ms .fdr-m:first-child{grid-column:auto}
+  .fdr-on .fdr.fdo-g .fdr-m-v{font-size:34px}
+  .fdr-on .fdo-g .fdr-m{padding:14px 16px}
+  .fdr-on .fdo-g .fdr-ig,.fdr-on .fdo-g .fdr-ig2{grid-template-columns:minmax(0,1fr)}
+  .fdr-on .fdo-g .fdr-kv{grid-template-columns:130px minmax(0,1fr) 130px minmax(0,1fr)}
+}
+@media (min-width:1000px) and (max-width:1180px){
+  .fdr-on .fdo-g{grid-template-columns:300px minmax(0,1fr);gap:0 18px}
+  .fdr-on .fdr.fdo-g .fdr-m-v{font-size:28px}
+}
+@media (prefers-reduced-motion:reduce){.fdr-on .fdo-a .fdr-astre{animation:none}}
+
+/* 21/11/2026 — commun aux versions : « Côté Intégral » (notre marge par tranche) + boutons outils et leurs fenêtres */
+.fdr-outils{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;align-items:center}
+.fdr-outils .fdr-gbs{display:contents}
+.fdr-outil,.fdr-outils .fdr-gb{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--line,#E3E8F2);background:linear-gradient(180deg,#FFFFFF,#F5F8FE);color:#0B1B3F;font:600 14px/1.2 Inter,system-ui,sans-serif;cursor:pointer;box-shadow:0 1px 2px rgba(11,27,63,.06);width:auto;flex:0 0 auto;text-align:left}
+.fdr-outils .fdr-gb.pri{background:linear-gradient(180deg,#1A63F0,#0050E6);color:#fff;border-color:#0050E6}
+.fdr-outils .fdr-gb svg{flex:0 0 auto}
+.fdr-outil:hover,.fdr-outils .fdr-gb:hover{border-color:#B9CBF2}
+.fdr-outil:focus-visible,.fdr-outils .fdr-gb:focus-visible,.fdr-dlg-x:focus-visible{outline:2px solid #0050E6;outline-offset:2px}
+.fdr-dlg{border:0;padding:0;border-radius:var(--r-card,20px);width:min(760px,calc(100vw - 24px));max-height:calc(100vh - 48px);background:#FFFFFF;color:var(--ink,#1A2030);box-shadow:0 24px 64px rgba(11,27,63,.22);overflow:auto}
+.fdr-dlg::backdrop{background:rgba(11,27,63,.38)}
+.fdr-dlg-h{position:sticky;top:0;z-index:1;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 20px;background:linear-gradient(180deg,#F1F6FF,#FFFFFF);border-bottom:1px solid var(--line,#E3E8F2)}
+.fdr-dlg-h h2{margin:0;font:700 20px/1.25 Inter,system-ui,sans-serif;color:#0B1B3F}
+.fdr-dlg-x{width:44px;height:44px;border-radius:999px;border:1px solid var(--line,#E3E8F2);background:#fff;font:400 24px/1 Inter,system-ui,sans-serif;color:#0B1B3F;cursor:pointer}
+.fdr-dlg-c{padding:16px 20px 22px}
+.fdr-dlg-c .fdr-bloc{margin:0;box-shadow:none;border:0;padding:0;background:none}
+@media (max-width:640px){
+  .fdr-dlg{width:100vw;max-width:100vw;max-height:88vh;margin:auto 0 0;border-radius:20px 20px 0 0}
+  .fdr-outils{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+}
+.fdr-int2{display:grid;gap:14px}
+.fdr-mt-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.fdr-mt-h h3{margin:0}
+.fdr-mt-tot{display:flex;align-items:baseline;gap:10px}
+.fdr-mt-tot b{font:800 26px/1 Inter,system-ui,sans-serif;color:#0B1B3F;font-variant-numeric:tabular-nums}
+.fdr-mt-tot span{font:600 14px/1.3 Inter,system-ui,sans-serif;color:#4A5672}
+.fdr-mt-t{display:grid}
+.fdr-mt-r{display:grid;grid-template-columns:minmax(140px,1.1fr) minmax(90px,.7fr) minmax(220px,2fr) 70px;gap:14px;align-items:center;padding:11px 0;border-top:1px solid var(--line,#E3E8F2);font:500 15px/1.3 Inter,system-ui,sans-serif;color:var(--ink,#1A2030)}
+.fdr-mt-th{border-top:0;padding-top:0;font:600 13px/1.2 Inter,system-ui,sans-serif;color:#4A5672}
+.fdr-mt-m{font-weight:700;text-align:right}
+.fdr-mt-th span:nth-child(2){text-align:right}
+.fdr-mt-x{display:grid;grid-template-columns:58px 1fr 58px;gap:10px;align-items:center}
+.fdr-mt-nat{color:#4A5672;text-align:right}
+.fdr-mt-b{position:relative;display:block;height:10px;border-radius:999px;background:#EEF2F9}
+.fdr-mt-b i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,#5B8DF5,#0050E6)}
+.fdr-mt-b b{position:absolute;top:-4px;width:3px;height:18px;margin-left:-1.5px;border-radius:2px;background:#5D6782}
+.fdr-mt-e{font:700 14px/1 Inter,system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.fdr-mt-up{color:#11804F}.fdr-mt-dn{color:#B4231B}.fdr-mt-n{color:#4A5672}
+.fdr-mt-leg{display:flex;gap:18px;flex-wrap:wrap;margin:10px 0 0}
+.fdr-mt-k{display:inline-flex;align-items:center;gap:6px}
+.fdr-mt-k i{display:inline-block;width:18px;height:8px;border-radius:999px;background:#0050E6}
+.fdr-mt-k b{display:inline-block;width:3px;height:14px;border-radius:2px;background:#5D6782}
+@media (max-width:700px){
+  .fdr-mt-r{grid-template-columns:1fr auto;gap:6px 12px}
+  .fdr-mt-th{display:none}
+  .fdr-mt-x{grid-column:1 / -1;grid-template-columns:52px 1fr 52px}
+  .fdr-mt-r > span:last-child{grid-column:2;grid-row:1;justify-self:end}
+  .fdr-mt-m{grid-column:1;grid-row:2;text-align:left}
+}
+
+/* 21/11/2026 — la rangée de boutons passe sur SA ligne, en pleine largeur, sous le nom et les boutons ronds (sinon le nom se coupe mot par mot) */
+@media (min-width:641px){
+  .fdr-on .fdr-id:has(> .fdr-outils){flex-wrap:wrap}
+  .fdr-on .fdr-id > .fdr-outils{flex:0 0 auto;width:100%;margin-top:16px}
+}
+.fdr-int2{grid-template-columns:minmax(0,1fr)}
+.fdr-int2 > *{min-width:0}
+
+/* 21/11/2026 — la colonne de gauche ne tasse plus ses cartes (le bouton « Catalogue pour son logiciel » était coupé, impossible à cliquer) : elle défile si elle est plus haute que la fenêtre */
+.fdr-on .fdo-side > *{flex-shrink:0}
+/* fond de page : la lumière du haut de l'accueil, et blancs francs sous les cartes */
+html:has(.fdr-on) body{background:radial-gradient(1200px 640px at 26% -10%,#FFFFFF 0%,#F8FAFD 38%,#F3F5F9 100%) no-repeat #F3F5F9}
+.fdr-on .fdr-bloc,.fdr-on .fdr-m,.fdr-on .fdr-off-m{background-color:#fff}

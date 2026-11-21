@@ -652,6 +652,23 @@ check("sources absentes : lignes de ventes manquantes pour la fiche ET les produ
       any('lignes de ventes' in x for x in _mx['fiche']) and any('lignes de ventes' in x for x in _mx['produits']) and 'national.json' in _mx['produits']
       and any('sagitta' in x for x in _mx['fiche']) and not any('sagitta' in x for x in _mx['produits']), _mx)
 
+# ── 21/11/2026 : taux national par tranche (livraison.moy.tauxFam / tauxTot), chapitre « Côté Intégral » de la fiche ──
+#    r = [ci, oi, ym, ca, tot, p, p1, p2, i, c, fr, nr, caGen, jours, caP, caP1, caP2, caI, caC, caFr, caNr] ; tot = Σ des 7 familles (disjointes)
+_dt21 = {'mois': ['2026-01', '2026-02'], 'r': [
+    [0, 0, 202601, 1200.0, 40.0, 10.0, 4.0, 6.0, 20.0, 0.0, 0.0, 0.0, 100.0, 2, 200.0, 80.0, 120.0, 700.0, 0.0, 0.0, 0.0],
+    [1, 1, 202602, 550.0, 20.0, 2.0, 2.0, 0.0, 10.0, 0.0, 0.0, 6.0, 0.0, 1, 50.0, 50.0, 0.0, 250.0, 0.0, 0.0, 200.0],
+    [1, 1, 202603, 9999.0, 999.0, 999.0, 0.0, 999.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1, 9999.0, 0.0, 9999.0, 0.0, 0.0, 0.0, 0.0]]}
+_tn = gm.taux_national(_dt21)
+check("taux national : Σ marge / Σ CA de la tranche sur TOUTES les officines (petits prix 12 / 250 = 4,8 % ; 4,33-468 € 30 / 950)",
+      _tn and proche(_tn['tauxFam']['p'], 4.8) and proche(_tn['tauxFam']['i'], round(30 / 950 * 100, 4)) and proche(_tn['tauxFam']['nr'], 3.0), _tn)
+check("taux national : un mois hors du fichier (mars) n'entre pas dans le calcul", _tn and proche(_tn['tauxFam']['p2'], 5.0), _tn)
+check("taux national : tranche sans chiffre d'affaires = None (« — » sur la fiche), jamais 0 %", _tn and _tn['tauxFam']['c'] is None and _tn['tauxFam']['fr'] is None, _tn)
+check("taux national : toutes tranches = Σ marge / Σ des 7 CA de famille (génériques exclus, comme la page) = 60 / 1650",
+      _tn and proche(_tn['tauxTot'], round(60 / 1650 * 100, 4)), _tn)
+check("taux national : un fichier d'avant le 17/11 (lignes sans CA par famille) = None, rien d'écrit",
+      gm.taux_national({'mois': ['2026-01'], 'r': [r[:14] for r in _dt21['r'][:1]]}) is None)
+check("taux national : clés exactes lues par la page (fdrNational)", _tn and sorted(_tn) == ['tauxFam', 'tauxTot'] and sorted(_tn['tauxFam']) == sorted(gm.FAMS_MOY), _tn)
+
 print()
 if ECHECS:
     print("ÉCHECS (%d) : %s" % (len(ECHECS), ", ".join(ECHECS)))

@@ -1,5 +1,6 @@
 // 20/11/2026 — fiche d'une officine « Le rendez-vous » (v1 choisie par Will) : une seule fiche, la bascule ne fait que cacher l'interne.
-// Ce que ce test garde : l'ordre des chapitres du rendez-vous, l'interne regroupé en dernier (chapitre 6, vi-int),
+// 21/11/2026 — « Le dossier » (choisie par Will) : plus de « Produits à proposer » (déjà dans les listes), donc 5 chapitres.
+// Ce que ce test garde : l'ordre des chapitres du rendez-vous, l'interne regroupé en dernier (chapitre 5, vi-int),
 // aucun bloc réservé à la vue pharmacien (vi-ph), des noms globaux définis une seule fois, et deux règles de la feuille :
 // pas d'opacity (le texte garde son contraste pendant l'arrivée), et au téléphone les ronds internes hors du flux (la bascule ne décale rien).
 import { test } from 'node:test';
@@ -26,13 +27,15 @@ test('fiche : chapitres dans l ordre du rendez-vous, l interne en dernier', () =
   const m = js.match(/var FDR_CH = (\[\[.*?\]\]);/);
   assert.ok(m, 'FDR_CH introuvable');
   const titres = JSON.parse(m[1].replace(/'/g, '"')).map((c) => c[1]);
-  assert.deepEqual(titres, ['Chiffres', 'Produits à proposer', 'Produits qui ne sont plus commandés',
+  assert.deepEqual(titres, ['Chiffres', 'Produits qui ne sont plus commandés',
     'Par catégorie et tranche de prix', 'Génériqueurs et biosimilaires', 'Côté Intégral']);
   const page = corps('fdrPage');
-  const ordre = [1, 2, 3, 4, 5, 6].map((n) => page.indexOf('fdrChapitre(' + n + ','));
+  const ordre = [1, 2, 3, 4, 5].map((n) => page.indexOf('fdrChapitre(' + n + ','));
   ordre.forEach((p, k) => assert.ok(p > 0 && (k === 0 || p > ordre[k - 1]), 'chapitre ' + (k + 1) + ' hors ordre'));
-  assert.match(page.slice(ordre[5]), /'vi-int fdr-int'/, 'le chapitre 6 doit être interne (vi-int)');
-  assert.match(page, /fdr-pil' \+ \(i === 5 \? ' vi-int'/, 'la pastille 6 du sommaire doit être interne');
+  assert.ok(!/fdrChapitre\(6,/.test(page), 'un 6e chapitre est revenu');
+  assert.match(page.slice(ordre[4]), /'vi-int fdr-int'/, 'le chapitre 5 doit être interne (vi-int)');
+  assert.match(page, /fdr-pil' \+ \(i === FDR_SOM\.length - 1 \? ' vi-int'/, 'la dernière pastille du sommaire doit être interne');
+  assert.ok(!/Produits à proposer|c\.proposer/.test(page), '« Produits à proposer » ne revient pas sur la fiche');
 });
 
 test('fiche : une seule fiche — aucun bloc réservé à la vue pharmacien (vi-ph) dans la page', () => {

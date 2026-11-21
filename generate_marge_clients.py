@@ -47,7 +47,8 @@ n'est ecrit). Le bareme des grossistes est une loi : il reste dans le code.
 
 SORTIE (gitignoree, JAMAIS commitee) : marge-clients.js a la racine du depot.
   window.MARGE_CLIENTS = {v:1, fait, jusqua, mois, reserves, fam, c:[prenoms], o:[pharmacyId],
-                          livraison:{cout, moy:{n, jm, parJour, renta, caMois, mgMois, mpMois, refs, partGen, fam:{p, p1, p2, i, c, fr, nr}}},
+                          livraison:{cout, moy:{n, jm, parJour, renta, tauxFam:{p, p1, p2, i, c, fr, nr}, tauxTot,
+                                                caMois, mgMois, mpMois, refs, partGen, fam:{p, p1, p2, i, c, fr, nr}}},
                           pilotageMoy:{f:{'AAAA-MM|AAAA-MM':{n, jm, parJour, renta, caCl, mgCl, nSect, secteurs}, ...},
                                        couv:{'AAAA-MM':[secteurs complets, secteurs attendus], ...}},
                           r:[[ci, oi, ym, ca, tot, p, p1, p2, i, c, fr, nr, caGen, jours, caP, caP1, caP2, caI, caC, caFr, caNr], ...]}
@@ -68,6 +69,9 @@ SORTIE (gitignoree, JAMAIS commitee) : marge-clients.js a la racine du depot.
   pilotageMoy (28/10/2026) = la meme officine moyenne pour CHAQUE fenetre [du, au] de mois du fichier (45 fenetres sur 9 mois),
   pour le bloc « Mon secteur compare a la moyenne Integral » du Pilotage : calculee ici sur le jeu COMPLET, recopiee telle
   quelle dans chaque jeu, jamais recalculee dans la page. Presente seulement si livraison l'est (la rentabilite en depend).
+  moy.tauxFam, moy.tauxTot (21/11/2026) = taux de notre marge par tranche de prix (et toutes tranches) de TOUTES nos officines clientes,
+  en % : somme r[5+f] / somme r[14+f] x 100 sur toutes les lignes des mois de d['mois'] (meme calcul que V2.notreMarge.somme() sur le
+  fichier complet) ; le chapitre « Cote Integral » de la fiche le compare au taux de l'officine. None = aucun CA dans la tranche.
   moy.caMois ... fam (29/10/2026) = les six moyennes « Moy. clients » du reste de la fiche (CA, marge, marge pharmacien par mois, references,
   part de generiques, marge par tranche de prix), meme fenetre et memes officines que moy ; produitsMoy (29/10/2026, champ de premier niveau
   {mois, secteurs, seuil, g}) = la moyenne Integral de l'ecran Produits, partie globale seulement. Elles demandent les lignes de ventes
@@ -830,6 +834,23 @@ def refs_et_marge_pharmacien(lignes, d_off, d_pro, compteurs, princeps):
     return {p: len(v) for p, v in refs.items()}, mp
 
 
+def taux_national(d):
+    """21/11/2026 — taux de notre marge par tranche de prix de TOUTES nos officines clientes (fiche, chapitre « Côté Intégral ») :
+    Σ marge de la famille / Σ CA net HT de la famille x 100 (r[5+f] / r[14+f]) sur toutes les lignes des mois de d['mois'], sommes arrondies
+    au centime comme V2.notreMarge.somme() ; tauxTot = Σ marge / Σ des 7 CA de famille (génériques exclus, comme la page).
+    Calculé ici : la page d'un commercial ne charge que SES officines et ne peut pas le refaire.
+    -> {'tauxFam': {p..nr: % ou None}, 'tauxTot': % ou None}, ou None si une ligne ne porte pas le CA par famille (fichier d'avant)."""
+    ym = {int(m[:4] + m[5:7]) for m in d['mois']}
+    L = [r for r in d['r'] if r[2] in ym]
+    if not L or any(len(r) < 21 for r in L):
+        return None
+    mg = [arrondi_js(sum(r[5 + f] for r in L)) for f in range(7)]
+    ca = [arrondi_js(sum(r[14 + f] or 0 for r in L)) for f in range(7)]
+    tot, caT = arrondi_js(sum(r[4] for r in L)), sum(ca)
+    return {'tauxFam': {FAMS_MOY[f]: (round(mg[f] / ca[f] * 100, 4) if ca[f] > 0 else None) for f in range(7)},
+            'tauxTot': round(tot / caT * 100, 4) if caT > 0 else None}
+
+
 def moyennes_fiche(d, refs, mp):
     """L'officine moyenne de TOUS les clients pour le reste de la fiche (atelier fiche/moyennes_fiche.py, 28/10/2026) : mêmes officines et
     même fenêtre que moyenne_livraison (tous les mois de d['mois'], au moins un mois avec des livraisons r[13] > 0 ; nm = mois avec
@@ -1336,6 +1357,13 @@ def main():
     moy = moyenne_livraison(d, vus, cout) if cout else None
     if moy:
         d['livraison'] = {'cout': cout, 'moy': moy}
+        tn = taux_national(d)
+        if tn:
+            moy.update(tn)
+            print('Taux national : notre marge = %.2f %% du CA de nos officines clientes (toutes tranches) — %s'
+                  % (tn['tauxTot'] or 0, ' · '.join('%s %s' % (f, '—' if v is None else '%.2f %%' % v) for f, v in tn['tauxFam'].items())))
+        else:
+            print('Taux national : lignes sans CA par famille — tauxFam non écrit (la fiche affiche « — »).')
         print('Livraison : coût %.2f € · officine moyenne de %d clients : %.2f livraisons par mois · %.2f € par livraison · %.2f € par mois livraisons déduites'
               % (cout, moy['n'], moy['jm'], moy['parJour'], moy['renta']))
         # Moyenne du Pilotage par fenêtre : la fenêtre entière DOIT retomber sur la moyenne de la fiche, sinon rien n'est écrit.
