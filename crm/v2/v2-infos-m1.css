@@ -79,10 +79,9 @@
 .inf-t-todo:disabled{cursor:progress}
 .inf-t-voir{min-height:44px;padding:0 6px;margin-left:-6px;display:inline-flex;align-items:center;gap:6px;border:0;background:none;border-radius:12px;font-weight:700;font-size:15px;color:var(--it-blue-d)}
 .inf-t-voir:hover{background-color:var(--it-blue-pale)}
-/* replis : Fait et Tout le reste */
-.inf-t-fait,.inf-t-reste{margin-top:22px}
+/* repli : Fait */
+.inf-t-fait{margin-top:22px}
 .inf-t-fait[hidden]{display:none}
-.inf-t-reste{margin-top:30px;padding-top:6px;border-top:1px solid var(--it-line)}
 .inf-t-rep{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 6px;margin-left:-6px;border:0;background:none;border-radius:12px;font-weight:700;font-size:15px;color:var(--it-blue-d);transition-property:background-color;transition-duration:.15s}
 .inf-t-rep:hover{background-color:var(--it-blue-pale)}
 .inf-t-fait .inf-t-rep{color:var(--it-muted)}
@@ -98,7 +97,6 @@
 .inf-t-rt{flex:1;min-width:0}
 .inf-t-rl b{display:block;font-size:16px;font-weight:600;color:var(--it-ink)}
 .inf-t-rl small{display:block;margin-top:2px;font-size:14px;color:var(--it-muted)}
-.inf-t-n{font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--it-ink);font-variant-numeric:tabular-nums}
 .inf-t button:focus-visible,.inf-t a:focus-visible{outline:3px solid #7FA8F5;outline-offset:2px}
 @media (max-width:600px){
   .inf-t-feuille{padding:26px 16px 22px;border-radius:20px}
@@ -112,3 +110,12 @@
   .inf-t-case{margin-left:-10px}
 }
 @media (prefers-reduced-motion:reduce){.inf-t *,.inf-t-feuille{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* 21/11 : les annonces Bodacc à la suite des tâches (secteur, puis France pour la direction) */
+.inf-t-ann{margin-top:30px}
+.inf-t-ann-p{font-weight:600;color:var(--it-muted);white-space:nowrap}
+.inf-t-ann .inf-t-rls{animation:none;margin-top:0}
+.inf-t-ann .inf-t-tag{margin-top:0}
+.inf-t-ann-v b{color:var(--it-blue)}
+.inf-t-ann + .inf-t-ann{margin-top:34px}
+#inf-t-annfr-b{margin-top:6px}

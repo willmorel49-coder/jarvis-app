@@ -974,8 +974,8 @@
      (Pourquoi ça compte, À dire en rendez-vous, Lieu, Source, « Mettre dans ma To do », « Voir tout » → le panneau existant du type) ;
      Échap referme ; cocher = barré, puis rangé dans « Fait · n » après 1 s ; décocher = retour à sa place.
      « Fait » est gardé PAR PERSONNE dans la zone `f` des choix x15 (navigateur, puis la ligne `profils`) : aucune table neuve.
-     « Tout le reste » = UN lien qui déplie 4 lignes vers les panneaux existants (ruptures, rappels, secteur avec la carte, mur). */
-  var IT = { L: [], par: {}, ordre: {}, ouvert: null, min: {}, sig: '' };
+     Sous les tâches : les annonces Bodacc des 3 derniers mois (itAnnonces) ; « Tout le reste » est retiré (Will, 21/11). */
+  var IT = { L: [], par: {}, ordre: {}, ouvert: null, min: {}, sig: '', ann: [] };
   var IT_COCHE = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
   var IT_COCHE_TODO = '<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5l4 4 8-9"/></svg>';
   var IT_CHEV = '<svg class="inf-t-chev" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>';
@@ -1027,16 +1027,44 @@
           (IT_VOIR[t.vue] && PP_VUES[t.vue] ? '<button class="inf-t-voir" type="button" data-it-vue="' + esc(t.vue) + '"><span>' + esc(IT_VOIR[t.vue]) + '</span>' + IT_CHEV + '</button>' : '') + '</div>' +
       '</div></li>';
   }
-  function itReste(D, S) {
-    var r = D.rad.ruptures, L = [];
-    L.push({ v: 'ruptures', l: 'Médicaments qui manquent', n: r ? r.v : null, s: D.rupt.length ? D.rupt.length + (D.rupt.length > 1 ? ' nouveaux' : ' nouveau') + ' depuis hier' : 'selon l’Agence du médicament' });
-    L.push({ v: 'rappels', l: 'Produits rappelés', n: D.rappels, s: 'médicaments et parapharmacie' });
-    if (SECTEUR && (SECTEUR.ev || []).length && (S.deps || S.dir)) L.push({ v: 'secteur', l: S.deps ? 'Annonces de votre secteur' : 'Annonces des officines, toute la France', n: ppAnnonces(S.deps).length, s: 'sur 3 mois, avec la carte' });
-    L.push({ v: 'mur', l: 'Autres actualités', n: D.fil.length, s: 'presse professionnelle' });
-    return L.map(function (x) {
-      return '<li><button type="button" class="inf-t-rl" data-it-vue="' + x.v + '"><span class="inf-t-rt"><b>' + esc(x.l) + '</b><small>' + itE(x.s) + '</small></span>' +
-        (x.n != null ? '<span class="inf-t-n">' + esc(x.n) + '</span>' : '') + IT_CHEV + '</button></li>';
-    }).join('');
+  /* Will, 21/11 : « tout le reste on le masque, on garde les annonces sur le secteur et en France, ce qui est intéressant
+     c'est les rachats, les ventes », puis au go : « les commerciaux c'est surtout leur secteur et ensuite pour la France
+     c'est les grosses infos générales ». Sous les tâches, les annonces Bodacc des 3 derniers mois :
+     Secteur : toutes les familles, ventes et rachats d'abord, sans celles déjà en tâche, 5 visibles + la liste entière avec la carte.
+     France (hors secteur), DIRECTION SEULEMENT : ventes et rachats, les plus récents, 5 visibles + les autres dépliables.
+     Un commercial n'a pas cette liste : sa France, ce sont les tâches « En France » (règle du 22/10 : Bodacc = son secteur). */
+  var IT_RANG = { cession: 0, rachat: 0, procedure: 1, fermeture: 2, creation: 3, dirigeant: 4 };
+  function itRachat(e) { return e.f === 'creation' && (/SPFPL|HOLDING/i.test(e.nom || '') || /holding/i.test(e.detail || '')); }
+  function itAnnLi(e) {
+    var fam = SCT_FAM[e.f] || SCT_FAM.dirigeant, t = sctTag(e).t, i = IT.ann.push(e) - 1;
+    return '<li><button type="button" class="inf-t-rl" data-it-ann="' + i + '"><span class="inf-t-rt"><b>' + itE(sctJoli(e.nom)) + '</b><small>' +
+      itE((itRachat(e) ? 'Rachat en préparation' : fam.l1) + ' · ' + sctJoli(e.ville) + ' (' + e.dep + ') · ') + '<span class="inf-t-nw">' + itE(sctQuand(e.d)) + '</span></small></span>' +
+      (t === 'client' || t === 'prospect' ? '<span class="inf-t-tag inf-t-' + (t === 'client' ? 'vert' : 'bleu') + '">' + esc(SCT_TAG_L[t]) + '</span>' : '') + IT_CHEV + '</button></li>';
+  }
+  function itAnnonces(S, L) {
+    IT.ann = [];
+    if (!SECTEUR || !(SECTEUR.ev || []).length) return '';
+    var recent = function (a, b) { return a.d < b.d ? 1 : a.d > b.d ? -1 : 0; }, rg = function (e) { return itRachat(e) ? 0 : (e.f in IT_RANG ? IT_RANG[e.f] : 5); };
+    var h = '';
+    if (S.deps || S.dir) {
+      var deja = {}, sec = ppAnnonces(S.deps);
+      L.forEach(function (t) { deja[t.id] = 1; });
+      var nrm = function (s) { return String(s == null ? '' : s).replace(/\s+/g, ' ').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); };
+      var A = sec.filter(function (e) { return !deja['b-' + nrm(e.id || e.nom + '-' + e.d)]; }).sort(function (a, b) { return (rg(a) - rg(b)) || recent(a, b); }).slice(0, 5);
+      h += '<section class="inf-t-groupe inf-t-ann" aria-labelledby="inf-t-h-ann"><h2 id="inf-t-h-ann">' + (S.deps ? 'Annonces de votre secteur' : 'Annonces des officines, toute la France') + ' <span class="inf-t-ann-p">· 3 derniers mois</span></h2>' +
+        '<ul class="inf-t-rls">' + A.map(itAnnLi).join('') + '<li><button type="button" class="inf-t-rl inf-t-ann-v" data-it-vue="secteur"><span class="inf-t-rt"><b>Voir les ' + sec.length + ' annonces et la carte</b></span>' + IT_CHEV + '</button></li></ul></section>';
+    }
+    if (S.deps && S.dir) {
+      var F = ppAnnonces(null).filter(function (e) { return S.deps.indexOf(e.dep) < 0 && (e.f === 'cession' || itRachat(e)); }).sort(recent);
+      if (F.length) {
+        var vu = F.slice(0, 5), plus = F.slice(5);
+        h += '<section class="inf-t-groupe inf-t-ann" aria-labelledby="inf-t-h-annfr"><h2 id="inf-t-h-annfr">Ventes et rachats en France <span class="inf-t-ann-p">· 3 derniers mois</span></h2>' +
+          '<ul class="inf-t-rls">' + vu.map(itAnnLi).join('') + '</ul>' +
+          (plus.length ? '<ul class="inf-t-rls" id="inf-t-annfr-l" hidden>' + plus.map(itAnnLi).join('') + '</ul>' +
+            '<button class="inf-t-rep" id="inf-t-annfr-b" type="button" aria-expanded="false" aria-controls="inf-t-annfr-l">' + IT_CHEV + '<span>Voir les ' + plus.length + ' autres</span></button>' : '') + '</section>';
+      }
+    }
+    return h;
   }
   function itPage(D, jour) {
     var S = ppScope(), L = itTaches(S);
@@ -1060,8 +1088,7 @@
       h +
       '<section class="inf-t-fait" id="inf-t-fait"' + (nF ? '' : ' hidden') + '><button class="inf-t-rep" id="inf-t-fait-b" type="button" aria-expanded="false" aria-controls="inf-t-fait-l">' + IT_CHEV + '<span id="inf-t-fait-t">Fait · ' + nF + '</span></button>' +
         '<ul class="inf-t-liste" id="inf-t-fait-l" hidden>' + faits.map(itLi).join('') + '</ul></section>' +
-      '<section class="inf-t-reste"><button class="inf-t-rep" id="inf-t-reste-b" type="button" aria-expanded="false" aria-controls="inf-t-reste-l">' + IT_CHEV + '<span>Tout le reste</span></button>' +
-        '<ul class="inf-t-rls" id="inf-t-reste-l" hidden>' + itReste(D, S) + '</ul></section>' +
+      itAnnonces(S, L) +
       '</article></div>';
   }
   function itEl(id) { var L = document.querySelectorAll('.inf-t-tache'), i; for (i = 0; i < L.length; i++) if (L[i].getAttribute('data-it') === id) return L[i]; return null; }
@@ -1130,7 +1157,8 @@
     if (!e.target.closest || !e.target.closest('.inf-t')) return;
     var b;
     if ((b = e.target.closest('[data-it-vue]'))) { ppOuvrirVue(b.getAttribute('data-it-vue')); return; }
-    if ((b = e.target.closest('#inf-t-fait-b,#inf-t-reste-b'))) { var o = b.getAttribute('aria-expanded') !== 'true', ul = document.getElementById(b.getAttribute('aria-controls')); b.setAttribute('aria-expanded', o ? 'true' : 'false'); if (ul) ul.hidden = !o; return; }
+    if ((b = e.target.closest('[data-it-ann]'))) { var an = IT.ann[+b.getAttribute('data-it-ann')]; if (an) ppLire(ppArtBodPret(an)); return; }
+    if ((b = e.target.closest('#inf-t-fait-b,#inf-t-annfr-b'))) { var o = b.getAttribute('aria-expanded') !== 'true', ul = document.getElementById(b.getAttribute('aria-controls')); b.setAttribute('aria-expanded', o ? 'true' : 'false'); if (ul) ul.hidden = !o; return; }
     var li = e.target.closest('.inf-t-tache'); if (!li) return;
     var tid = li.getAttribute('data-it');
     if (e.target.closest('.inf-t-case')) { itBascule(tid); return; }

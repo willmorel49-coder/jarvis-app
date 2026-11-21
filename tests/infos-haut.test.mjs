@@ -8,7 +8,11 @@
      - « En France » : 3 tâches au plus, une par type, dans l'ordre arrêté (rappel de lot, règle, médicament qui manque) ;
      - chaque ligne a « À dire en rendez-vous », « Mettre dans ma To do » et « Voir tout » vers SON panneau ;
      - la phrase sous le titre compte exactement les tâches qui restent, et dit l'heure de l'édition, jamais l'horloge ;
-     - « Tout le reste » : 4 lignes vers les panneaux existants, avec les nombres des données ;
+     - « Tout le reste » n'existe plus (Will, 21/11 : « on le masque ») ;
+     - à la suite des tâches, « Annonces de votre secteur · 3 derniers mois » : ventes et rachats d'abord, sans celles déjà
+       en tâche, 5 au plus, puis « Voir les N annonces et la carte » ;
+     - « Ventes et rachats en France · 3 derniers mois » pour la DIRECTION seulement (Will, au go du 21/11 : « les commerciaux
+       c'est surtout leur secteur ») : hors secteur, ventes et rachats seulement, 5 visibles puis le reste replié ;
      - « Fait » (zone f des choix x15) : une tâche cochée se range dans « Fait · n », une décochée (off) revient ;
        la fusion avec la ligne `profils` garde le geste le plus récent, clé par clé, sans toucher aux zones g et m.
    Lancer : node --test tests/infos-haut.test.mjs */
@@ -152,16 +156,55 @@ test('la phrase sous le titre compte les tâches qui restent et dit l\'heure de 
   assert.match(veille, /· mis à jour hier à \d{1,2} h \d{2}$/);
 });
 
-test('« Tout le reste » : UN lien, 4 lignes vers les panneaux existants, avec les nombres des données', async () => {
+const annSection = (html, id) => { const m = new RegExp('<section class="inf-t-groupe inf-t-ann" aria-labelledby="' + id + '"><h2 id="' + id + '">([\\s\\S]*?)</h2>([\\s\\S]*?)</section>').exec(html); return m && { titre: texte(m[1]), corps: m[2] }; };
+const annLignes = (corps) => corps.split('<li>').slice(1).filter((l) => /data-it-ann=/.test(l)).map((l) => ({ i: +/data-it-ann="(\d+)"/.exec(l)[1], nom: texte(/<b>([\s\S]*?)<\/b>/.exec(l)[1]), sous: texte(/<small>([\s\S]*?)<\/small>/.exec(l)[1]) }));
+
+test('« Tout le reste » n\'existe plus (Will, 21/11 : « on le masque »)', async () => {
   const html = await rendre();
-  assert.equal((html.match(/id="inf-t-reste-b"/g) || []).length, 1, 'un seul lien');
-  const R = /<ul class="inf-t-rls" id="inf-t-reste-l" hidden>([\s\S]*?)<\/ul>/.exec(html)[1];
-  const lignes = R.split('<li>').slice(1).map((l) => ({ v: /data-it-vue="([a-z]+)"/.exec(l)[1], t: texte(l) }));
-  assert.deepEqual(lignes.map((l) => l.v), ['ruptures', 'rappels', 'secteur', 'mur']);
-  assert.equal(lignes[0].t, 'Médicaments qui manquent 1 nouveau depuis hier 292');
-  assert.equal(lignes[1].t, 'Produits rappelés médicaments et parapharmacie 1');
-  assert.equal(lignes[2].t, 'Annonces de votre secteur sur 3 mois, avec la carte 6', 'b1 à b6 dans le secteur (b6 à 40 jours), pas b7');
-  assert.equal(lignes[3].t, 'Autres actualités presse professionnelle 3');
+  assert.doesNotMatch(html, /inf-t-reste|Tout le reste|Autres actualités|presse professionnelle/, 'ni le lien, ni ses lignes');
+});
+
+test('commercial : « Annonces de votre secteur » à la suite des tâches, ventes d\'abord, sans celles déjà en tâche ; PAS de liste France', async () => {
+  const html = await rendre();
+  const A = annSection(html, 'inf-t-h-ann');
+  assert.ok(A, 'la section des annonces du secteur est là');
+  assert.equal(A.titre, 'Annonces de votre secteur · 3 derniers mois');
+  assert.ok(html.indexOf('id="inf-t-h-ann"') > html.indexOf('id="inf-t-fait"'), 'à la suite des tâches et de « Fait »');
+  // b1, b2, b3 sont déjà des tâches ; restent b6 (vente, 40 jours), b5 (procédure), b4 (création) ; b7 (Lille) est hors secteur
+  assert.deepEqual(annLignes(A.corps).map((l) => l.nom), ['Pharmacie Trop Ancienne', 'Pharmacie de la Poste', 'Pharmacie du Port']);
+  assert.deepEqual(annLignes(A.corps).map((l) => l.sous), ['Vente de l’officine · Angers (49) · il y a 5 semaines', 'Procédure au tribunal · Angers (49) · il y a 6 jours', 'Nouvelle société · Angers (49) · il y a 4 jours']);
+  assert.deepEqual(annLignes(A.corps).map((l) => l.i), [0, 1, 2], 'le clic retrouve la bonne annonce par son rang');
+  assert.match(A.corps, /<button type="button" class="inf-t-rl inf-t-ann-v" data-it-vue="secteur"><span class="inf-t-rt"><b>Voir les 6 annonces et la carte<\/b>/, 'b1 à b6 sur 3 mois, pas b7');
+  assert.doesNotMatch(html, /inf-t-h-annfr|inf-t-annfr-b|Ventes et rachats en France/, 'un commercial n\'a pas la liste France');
+  assert.doesNotMatch(texte(html), /Lille/, 'aucune annonce hors de son secteur');
+});
+
+test('direction avec un secteur : « Ventes et rachats en France », hors secteur, ventes et rachats seulement, 5 visibles puis le reste replié', async () => {
+  const fx = fixtures();
+  const ev = (id, nom, ville, jours, f, dep) => ({ id, nom, ville, cp: dep + '000', dep, d: iso(-jours), f, detail: '', url: 'https://www.bodacc.fr/' + id, depNom: '' });
+  fx['bodacc-secteur.json'].ev.push(
+    ev('r1', 'SPFPL GRAND OUEST', 'NANTES', 1, 'creation', '44'),          // rachat en préparation : gardé
+    ev('f1', 'PHARMACIE UN', 'LYON', 3, 'cession', '69'), ev('f2', 'PHARMACIE DEUX', 'LYON', 4, 'cession', '69'),
+    ev('f3', 'PHARMACIE TROIS', 'LYON', 5, 'cession', '69'), ev('f4', 'PHARMACIE QUATRE', 'LYON', 6, 'cession', '69'),
+    ev('f5', 'PHARMACIE CINQ', 'LYON', 8, 'cession', '69'),
+    ev('x1', 'PHARMACIE FERMEE', 'ROUBAIX', 1, 'fermeture', '59'),         // fermeture hors secteur : écartée
+    ev('x2', 'PHARMACIE NOUVELLE', 'PARIS', 1, 'creation', '75'),          // création ordinaire : écartée
+    ev('x3', 'PHARMACIE TROP VIEILLE', 'LYON', 100, 'cession', '69'));     // plus de 3 mois : écartée
+  const sb = monter(fx);
+  sb.V2.user.voitTousReel = true;                                            // la direction, avec son secteur (49)
+  const html = await rendreSb(sb);
+  assert.equal(annSection(html, 'inf-t-h-ann').titre, 'Annonces de votre secteur · 3 derniers mois');
+  const F = annSection(html, 'inf-t-h-annfr');
+  assert.ok(F, 'la liste France est là pour la direction');
+  assert.equal(F.titre, 'Ventes et rachats en France · 3 derniers mois');
+  const vus = /^<ul class="inf-t-rls">([\s\S]*?)<\/ul>/.exec(F.corps)[1], caches = /<ul class="inf-t-rls" id="inf-t-annfr-l" hidden>([\s\S]*?)<\/ul>/.exec(F.corps)[1];
+  assert.deepEqual(annLignes(vus).map((l) => l.nom), ['SPFPL Grand Ouest', 'Pharmacie de Lille', 'Pharmacie Un', 'Pharmacie Deux', 'Pharmacie Trois'], 'les plus récentes d\'abord');
+  assert.match(annLignes(vus)[0].sous, /^Rachat en préparation · Nantes \(44\)/);
+  assert.deepEqual(annLignes(caches).map((l) => l.nom), ['Pharmacie Quatre', 'Pharmacie Cinq']);
+  assert.match(F.corps, /<button class="inf-t-rep" id="inf-t-annfr-b" type="button" aria-expanded="false" aria-controls="inf-t-annfr-l">[\s\S]*?<span>Voir les 2 autres<\/span><\/button>/);
+  assert.doesNotMatch(texte(F.corps), /Fermee|Nouvelle|Trop Vieille|Angers/, 'ni fermeture, ni création ordinaire, ni plus de 3 mois, ni le secteur');
+  const tous = [...html.matchAll(/data-it-ann="(\d+)"/g)].map((m) => +m[1]);
+  assert.deepEqual(tous, tous.map((_, k) => k), 'les rangs se suivent sur toute la page : chaque clic ouvre SA fiche');
 });
 
 test('« Fait » (zone f) : cochée → rangée dans « Fait · 1 », décochée (off) → revient à sa place', async () => {
@@ -204,6 +247,7 @@ test('vue direction : « Les officines, toute la France », 3 tâches au plus, s
   assert.ok(L.length >= 1 && L.length <= 3);
   assert.doesNotMatch(texte(groupe(html, 'secteur')), /Arrêté du 5 novembre/);
   assert.match(html, /Annonces des officines, toute la France/);
+  assert.doesNotMatch(html, /inf-t-h-annfr/, 'sans secteur, pas de « hors secteur » : la liste du dessus couvre déjà la France');
 });
 
 test('sans annonce de moins de 14 jours : la liste le dit, elle n\'invente rien', async () => {
