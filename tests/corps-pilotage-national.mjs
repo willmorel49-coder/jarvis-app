@@ -230,8 +230,10 @@ function avecVentes(ventes, f) {
   V2.sales = ventes;
   try { return f(); } finally { V2.sales = avant; }
 }
-const noteDe = (h) => (h.match(/class="(?:pa|dkp)-note"[^>]*>([^<]*)</) || [])[1] || '';   // la refonte d4 la rend en dkp-note
-const oeilDe = (h) => (h.match(/class="dk-eyebrow"[^>]*>([^<]*)</) || [])[1] || '';
+// 21/11/2026 : JARVIS remis comme le 16/11 au matin (5f4a8fe7, 17/11) = note « pa-note cl1-note », période dans « pa-hl » (« Chiffre d’affaires · Septembre 2026 ») ;
+// la refonte d4 retirée écrivait « dkp-note » et « dk-eyebrow ». Les deux lectures acceptent les deux rendus.
+const noteDe = (h) => (h.match(/class="(?:pa|dkp)-note(?: [^"]*)?"[^>]*>([^<]*)</) || [])[1] || '';
+const oeilDe = (h) => (h.match(/class="(?:dk-eyebrow|pa-hl)"[^>]*>([^<]*)</) || [])[1] || '';
 const MOIS_LONGS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 
 test('un fichier qui MANQUE ecarte le mois ; le reseau complet ne l ecarte pas', () => {
