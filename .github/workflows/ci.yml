@@ -77,7 +77,7 @@ jobs:
     # file « publication » : rien d'autre ne se publiait. D'habitude 2 à 3 min.
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Chaque robot qui pousse est dans la liste workflow_run
         run: |
@@ -94,7 +94,7 @@ jobs:
           [ "$manque" = 0 ] && echo "✅ Tous les robots qui poussent déclenchent la publication"
           exit $manque
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '20'
 
@@ -244,14 +244,14 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       # include-hidden-files : comme l'ancienne publication depuis la branche
       # (.nojekyll, .gitignore… restaient servis ; .git et .github jamais).
-      - uses: actions/upload-pages-artifact@v5
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: '.'
           include-hidden-files: true
 
       - id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

@@ -1,0 +1,17 @@
+# Suivi des actions GitHub verrouillées par empreinte (21/11/2026).
+# Une fois par mois, Dependabot propose les mises à jour des actions, regroupées en une seule proposition.
+# Rien ne s'applique tout seul : la proposition s'accepte dans une séance, après relecture et chaîne verte.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    # une version publiée depuis moins de 7 jours n'est pas proposée (conseil de zizmor : laisse le
+    # temps qu'une version piégée soit repérée et retirée)
+    cooldown:
+      default-days: 7
+    groups:
+      actions-github:
+        patterns:
+          - "*"
