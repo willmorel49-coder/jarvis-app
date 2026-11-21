@@ -1082,9 +1082,11 @@
         '<ul class="inf-t-liste" id="inf-t-g-' + g[0] + '">' + reste.map(itLi).join('') + '</ul>' +
         '<p class="inf-t-vide" id="inf-t-v-' + g[0] + '" data-vide="' + esc(vide0[g[0]]) + '"' + (reste.length ? ' hidden' : '') + '>' + esc(tout.length ? 'Tout est fait ici.' : vide0[g[0]]) + '</p></section>';
     }).join('');
-    return '<div class="w-page inf-t"><article class="inf-t-feuille" aria-labelledby="inf-t-titre">' +
-      '<header class="inf-t-tete"><span class="inf-t-pastille" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>' +
-        '<div><h1 id="inf-t-titre">Aujourd’hui</h1><p class="inf-t-sous" id="inf-t-sous" aria-live="polite" data-jour="' + esc(jour) + '">' + itE(itSous(L.length - nF, L.length, jour)) + '</p></div></header>' +
+    // 21/11/2026 soir : le bandeau commun des écrans (.aube-tete, comme To do) au-dessus de la feuille, sur toute la largeur
+    var dj = ''; try { dj = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Paris' }).replace(/ 1 /, ' 1er '); } catch (e) {}
+    return '<div class="w-page inf-t"><header class="aube-tete inf-t-tete">' + (dj ? '<p class="inf-t-eye">' + esc(dj) + '</p>' : '') +
+        '<h1 id="inf-t-titre" class="v2-page-title">Infos du matin</h1><p class="inf-t-sous v2-page-sub" id="inf-t-sous" aria-live="polite" data-jour="' + esc(jour) + '">' + itE(itSous(L.length - nF, L.length, jour)) + '</p></header>' +
+      '<article class="inf-t-feuille" aria-labelledby="inf-t-titre">' +
       h +
       '<section class="inf-t-fait" id="inf-t-fait"' + (nF ? '' : ' hidden') + '><button class="inf-t-rep" id="inf-t-fait-b" type="button" aria-expanded="false" aria-controls="inf-t-fait-l">' + IT_CHEV + '<span id="inf-t-fait-t">Fait · ' + nF + '</span></button>' +
         '<ul class="inf-t-liste" id="inf-t-fait-l" hidden>' + faits.map(itLi).join('') + '</ul></section>' +
@@ -1280,7 +1282,6 @@
 
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="v2-wrap inf2 pp">' +
-          '<span class="pp-ciel" aria-hidden="true"></span>' +
           itPage(D, jour) +   // 21/11/2026 : la liste C remplace le bandeau, les trois portes, le fil et les Gardées (retirés le 21/11/2026)
           '<footer class="pp-pied"><span>' + gen + '</span></footer>' +
         '</div>';
@@ -1312,17 +1313,13 @@
          Onest pour le texte, Martian Mono pour les chiffres (chargées dans index.html).
          Aucune des propriétés qui font figer Safari : que des dégradés, des ombres et une rotation. */
       '.pp,#pp-pan,#pp-voile{--pp-fond:#DFE4EC;--pp-encre:#0F1420;--pp-encre2:#465066;--pp-encre3:#5E677A;--pp-bleu:#0050E6;--pp-bleu-f:#003FB8;--pp-halo:#E9F0FF;--pp-vert:#1E9E6A;--pp-vert-f:#157A51;--pp-ambre:#C7791A;--pp-ambre-f:#9A5A0C;--pp-rose:#E0556E;--pp-rose-f:#BE3450;--pp-violet:#6D4FC4;--pp-cyan:#00B5D8;--pp-r:26px;--pp-mono:"Martian Mono",ui-monospace,Menlo,monospace;--pp-sans:"Onest",-apple-system,"Helvetica Neue",Arial,sans-serif;--pp-ombre:0 1px 0 rgba(255,255,255,.95) inset,0 -1px 0 rgba(15,20,32,.035) inset,0 1px 2px rgba(15,20,32,.06),0 22px 40px -22px rgba(0,48,140,.32)}',
-      '.v2-wrap.inf2.pp{position:relative;max-width:1272px;padding:0 16px 8px;color:var(--pp-encre);font:400 15px/1.45 var(--pp-sans);font-feature-settings:"tnum" 1}',
+      '.v2-wrap.inf2.pp{position:relative;max-width:1272px;padding:32px 26px 8px;color:var(--pp-encre);font:400 15px/1.45 var(--pp-sans);font-feature-settings:"tnum" 1}',
       /* 25/09 — le rond « + » flottant (.v2-fab, 58 px, bas droite) couvrait au bureau le bouton « Voir la fraîcheur des sources » en fin de page : le bas défile au-delà, à toutes les largeurs */
       'body:has(.v2-fab:not([hidden])) .v2-wrap.inf2.pp{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}',
+      '@media (max-width:640px){.v2-wrap.inf2.pp{padding-top:18px;padding-left:14px;padding-right:14px}}',
       '.pp *,#pp-pan *{box-sizing:border-box}',
       '.pp button,#pp-pan button,#pp-pan select{font-family:inherit;cursor:pointer}',
       '#pp-pan .pp-onglets button{color:var(--pp-encre)}',
-      '.pp-ciel{position:fixed;inset:0;z-index:-1;pointer-events:none;' +
-        'background:radial-gradient(900px 620px at 8% -8%,rgba(255,255,255,.98),rgba(255,255,255,0) 62%),' +
-        'radial-gradient(700px 520px at 100% 0%,rgba(0,80,230,.13),rgba(0,80,230,0) 64%),' +
-        'radial-gradient(900px 700px at 50% 110%,rgba(0,181,216,.10),rgba(0,181,216,0) 60%),' +
-        'linear-gradient(180deg,#E8ECF3 0%,#DFE4EC 38%,#D7DDE8 100%)}',
       '.pp .pp-mono{font-family:var(--pp-mono);font-feature-settings:"tnum" 1,"zero" 1}',
 
       /* boutons (pied de page, feuilles et panneau) */

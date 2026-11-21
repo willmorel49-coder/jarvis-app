@@ -15,18 +15,20 @@
   --it-sh-1:0 1px 0 rgba(255,255,255,.95) inset,0 1px 2px rgba(26,32,48,.06),0 10px 28px -14px rgba(26,32,48,.14);
   --it-sh-2:0 1px 0 rgba(255,255,255,.95) inset,0 2px 4px rgba(26,32,48,.06),0 18px 38px -14px rgba(0,52,160,.22);
   --it-sh-blue:0 8px 18px -8px rgba(0,80,230,.7),0 1px 0 rgba(255,255,255,.3) inset;
-  max-width:900px;margin:0 auto;font-family:var(--pp-sans,inherit);color:var(--it-ink);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+  margin:0 auto;font-family:var(--pp-sans,inherit);color:var(--it-ink);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
 .inf-t ::selection{background-color:#CFDDFB;color:var(--it-ink)}
 .inf-t button{font-family:inherit;touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:pointer}
-.inf-t-feuille{max-width:760px;margin:6px auto 0;padding:44px 48px 36px;border-radius:24px;background-color:#fff;
+.inf-t-feuille{margin:0;padding:4px 32px 32px;border-radius:var(--r-card,20px);background-color:#fff;
   background-image:radial-gradient(520px 220px at 12% 0%,#EEF4FF 0%,rgba(238,244,255,0) 75%);background-repeat:no-repeat;
   border:1px solid var(--it-line-2);box-shadow:var(--it-sh-1);animation:inf-t-entree .3s var(--it-ease) both}
 @keyframes inf-t-entree{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.inf-t-tete{display:flex;align-items:center;gap:18px;margin-bottom:30px}
-.inf-t-pastille{flex:none;width:56px;height:56px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
-  background-color:#0040C2;background-image:linear-gradient(160deg,#2A74F5,#0040C2);box-shadow:var(--it-sh-blue)}
-.inf-t-tete h1{margin:0;font-size:36px;line-height:1.1;font-weight:800;letter-spacing:-.035em;color:var(--it-ink);text-wrap:balance}
-.inf-t-sous{margin:6px 0 0;font-size:15px;color:var(--it-muted);font-variant-numeric:tabular-nums;text-wrap:pretty}
+/* 21/11/2026 soir — Will : « homogénéité de info du jour comme les autres feature […] pas la même taille ni le même bandeau en haut ».
+   L'en-tête est le bandeau commun de l'aube (.aube-tete, scène posée par v2-aube.js, couleurs du bloc « aube » de v2.css),
+   comme To do, Offilog, Catalogue produits et Pilotage : date en petites capitales, titre de 40 px, phrase dessous. */
+html:root:root body .aube-tete.inf-t-tete{margin:0 0 18px}
+html:root:root body .aube-tete.inf-t-tete .inf-t-eye{margin:0 0 4px;font:700 13px/1.3 var(--font);letter-spacing:.07em;text-transform:uppercase;color:var(--au-ink3)}
+html:root:root body .aube-tete.inf-t-tete .v2-page-title{margin:0;font-size:clamp(32px,9vw,40px);line-height:1.05;text-wrap:balance}
+html:root:root body .aube-tete.inf-t-tete .inf-t-sous{margin:10px 0 0;max-width:60ch;font:500 17px/1.4 var(--font);color:var(--au-ink2);font-variant-numeric:tabular-nums;text-wrap:pretty}
 .inf-t-groupe{margin-top:26px}
 .inf-t-groupe h2{margin:0;padding:0 0 8px;font-size:17px;font-weight:800;letter-spacing:-.01em;color:var(--it-blue);border-bottom:1px solid var(--it-line)}
 .inf-t-liste,.inf-t-rls{list-style:none;margin:0;padding:0}
@@ -99,9 +101,9 @@
 .inf-t-rl small{display:block;margin-top:2px;font-size:14px;color:var(--it-muted)}
 .inf-t button:focus-visible,.inf-t a:focus-visible{outline:3px solid #7FA8F5;outline-offset:2px}
 @media (max-width:600px){
-  .inf-t-feuille{padding:26px 16px 22px;border-radius:20px}
-  .inf-t-tete h1{font-size:30px}.inf-t-tete{gap:14px;margin-bottom:22px}.inf-t-pastille{width:48px;height:48px}
-  .inf-t-sous,.inf-t-infos,.inf-t-rl small{font-size:15px}
+  .inf-t-feuille{padding:2px 16px 22px}
+  html:root:root body .aube-tete.inf-t-tete{margin-bottom:14px}
+  .inf-t-infos,.inf-t-rl small{font-size:15px}
   .inf-t-corps{grid-template-columns:1fr;grid-template-areas:"action" "meta" "tag"}
   .inf-t-tag{justify-self:start;margin-top:8px}
   .inf-t-tache{margin:0 -6px;padding:0 6px}

@@ -96,7 +96,10 @@ async function rendreSb(sb) {
   for (let i = 0; i < 8; i++) await attendre();
   const html = sb.__racine.html;
   assert.match(html, /<div class="w-page inf-t">/, 'la page est bien la liste C (marqueur positif)');
-  assert.match(html, /<h1 id="inf-t-titre">Aujourd’hui<\/h1>/, 'le titre de la maquette');
+  // 21/11/2026 soir (Will : « homogénéité […] pas la même taille ni le même bandeau en haut ») : le bandeau commun des écrans, au-dessus de la feuille
+  assert.match(html, /<div class="w-page inf-t"><header class="aube-tete inf-t-tete">(<p class="inf-t-eye">[^<]+<\/p>)?<h1 id="inf-t-titre" class="v2-page-title">Infos du matin<\/h1>/, 'le bandeau commun (.aube-tete) et le titre de l\'onglet');
+  assert.match(html, /<\/header><article class="inf-t-feuille"/, 'le bandeau est hors de la feuille, sur toute la largeur');
+  assert.doesNotMatch(html, /inf-t-pastille|pp-ciel/, 'ni la pastille ni le ciel propres à l\'ancien en-tête');
   assert.doesNotMatch(html, /Composition de l'édition|n'a pas pu s'afficher|Pas encore d'édition/, 'ni attente ni page d\'erreur');
   return html;
 }
@@ -105,7 +108,7 @@ const texte = (h) => h.replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/
 const groupe = (html, g) => { const m = new RegExp('<ul class="inf-t-liste" id="inf-t-g-' + g + '">([\\s\\S]*?)</ul><p class="inf-t-vide"').exec(html); assert.ok(m, 'groupe ' + g + ' présent'); return m[1]; };
 const taches = (h) => h.split('<li class="inf-t-tache').slice(1);
 const action = (l) => texte(/<span class="inf-t-action">([\s\S]*?)<\/span><span class="inf-t-meta">/.exec(l)[1]);
-const sous = (html) => texte(/<p class="inf-t-sous"[^>]*>([\s\S]*?)<\/p>/.exec(html)[1]);
+const sous = (html) => texte(/<p class="inf-t-sous[^"]*"[^>]*>([\s\S]*?)<\/p>/.exec(html)[1]);
 const faitListe = (html) => /<ul class="inf-t-liste" id="inf-t-fait-l" hidden>([\s\S]*?)<\/ul><\/section>/.exec(html)[1];
 const CLE = 'jarvis_infos_choix_v1:local';
 

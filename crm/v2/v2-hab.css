@@ -397,7 +397,7 @@ html[data-hab]{--c-mint:#0B6B47;--c-opp:#0B6B47;--c-mint-txt:#0B6B47}
 :is([data-hab="indigo"],[data-hab="emeraude"],[data-hab="canard"],[data-hab="ambre"],[data-hab="prune"]){--h-cadre:1px solid var(--line);--h-plaque:var(--card);--h-ombre:var(--sh-2)}
 
 /* les grands fonds propres à ces écrans s'effacent : la matière de l'habillage et sa lumière reprennent la place */
-html[data-hab] :is(.mk-fond,.pp-ciel){background:none}
+html[data-hab] .mk-fond{background:none}
 html[data-hab] :is(.mk-verriere,.mk-grain){display:none}
 
 /* ── INFOS DU MATIN : les jetons --pp-* lisent ceux de l'habillage ── */

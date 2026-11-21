@@ -37,8 +37,8 @@ const ECRANS = [
   { route: 'pharma',   nom: 'Officines',    selecteur: 'h1.ofl-h1',       texte: 'Mes officines' },
   { route: 'pilotage', nom: 'Pilotage',     selecteur: '.v2-page-title',  texte: 'Pilotage' },
   { route: 'produits', nom: 'Produits',     selecteur: '.v2-page-title',  texte: 'Produits' },
-  // 21/11/2026 — écran « À faire avec les infos » (maquette C) : le titre est h1#inf-t-titre « Aujourd’hui », l'ancien h1 « Infos du jour » n'est plus affiché.
-  { route: 'infos',    nom: 'Infos du jour', selecteur: 'h1#inf-t-titre', texte: 'Aujourd’hui' },
+  // 21/11/2026 — écran « À faire avec les infos » (maquette C) : le titre est h1#inf-t-titre ; depuis le 21/11 au soir (bandeau commun), il dit « Infos du matin » comme l'onglet.
+  { route: 'infos',    nom: 'Infos du jour', selecteur: 'h1#inf-t-titre', texte: 'Infos du matin' },
   { route: 'todo',     nom: 'To do list',   selecteur: 'h1',             texte: 'To do list' },
 ];
 const DELAI = 90000;
