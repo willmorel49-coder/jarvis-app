@@ -575,10 +575,11 @@
         var e = MOTIFS[a.motif] || ['Signal', ''];
         return { nom: a.nom, ville: a.ville, etiquette: { t: e[0], ton: e[1] } };
       });
-      m.total = typeof t.appelsTotal === 'number' && t.appelsTotal >= appels.length ? t.appelsTotal : appels.length;
+      // le total = ce que l'écran Appels lui montre vraiment (appelsTotal compte tout le plan de la V1, qu'elle ne voit nulle part)
+      m.total = appels.length;
       if (m.total > MONTRES_ACCUEIL) m.autres = 'Voir les ' + (m.total - MONTRES_ACCUEIL) + ' autres dans Appels';
       var a0 = appels[0];
-      m.chose = { heure: 'Appels', titre: a0.nom + (a0.ville ? ', à ' + a0.ville : ''), detail: (a0.raisons && a0.raisons[0]) || (MOTIFS[a0.motif] || ['Signal'])[0], bouton: 'Voir la fiche et appeler' };
+      m.chose = { heure: (MOTIFS[a0.motif] || ['Signal'])[0], titre: a0.nom + (a0.ville ? ', à ' + a0.ville : ''), detail: (a0.raisons && a0.raisons[0]) || null, bouton: 'Voir la fiche et appeler' };   // comme chez Yann : l'étiquette du motif, puis la raison
       return [m];
     }
     if (veille.length) {

@@ -135,11 +135,12 @@ describe('accueil de la téléprospectrice : le seul moment « Trouver » (momen
   const NOW = Date.parse('2026-11-21T08:00:00Z')
   const ap = (i, motif) => ({ nom: 'Pharmacie ' + i, ville: 'Ville ' + i, motif: motif || 'cession', raisons: ['Raison ' + i] })
   const ligne = (j, quand) => P.ligneDeTelepro(Object.assign({ calcule_le: quand || '2026-11-21T05:00:00Z' }, j), NOW)
-  test('plus de 6 appels : 6 pharmacies, total = appelsTotal, « autres » mène à Appels, chose = le 1er appel', () => {
-    const m = P.momentDeTelepro(ligne({ appels: [1, 2, 3, 4, 5, 6, 7, 8].map((i) => ap(i)), appelsTotal: 30, veille: [] }))
+  test('plus de 6 appels : 6 pharmacies, total = les appels que montre l’écran Appels (pas appelsTotal), « autres » mène à Appels', () => {
+    const m = P.momentDeTelepro(ligne({ appels: [1, 2, 3, 4, 5, 6, 7, 8].map((i) => ap(i)), appelsTotal: 345, veille: [] }))
     assert.equal(m.length, 1); assert.equal(m[0].cle, 'trouver')
-    assert.equal(m[0].pharmacies.length, 6); assert.equal(m[0].total, 30)
-    assert.equal(m[0].autres, 'Voir les 24 autres dans Appels'); assert.equal(m[0].source, 'appels')
+    assert.equal(m[0].pharmacies.length, 6); assert.equal(m[0].total, 8)
+    assert.equal(m[0].autres, 'Voir les 2 autres dans Appels'); assert.equal(m[0].source, 'appels')
+    assert.equal(m[0].chose.heure, 'Cession d’officine'); assert.equal(m[0].chose.detail, 'Raison 1')
     assert.deepEqual(m[0].pharmacies[0].etiquette, { t: 'Cession d’officine', ton: 'orange' })
     assert.equal(m[0].chose.bouton, 'Voir la fiche et appeler'); assert.equal(m[0].chose.type, undefined)
     assert.equal(m[0].vide, null)
