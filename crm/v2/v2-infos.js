@@ -1204,6 +1204,179 @@
     var jl = PP_JS[new Date(jour + 'T12:00:00').getDay()] + ' ' + ppDc(jour), duJour = jour === auj;
     return { eye: duJour ? jl : 'Édition du ' + jl, ligne: '<b>' + (h ? 'Édition de ' + h : 'Édition du matin') + '</b>' + (duJour ? '' : ' · celle d’aujourd’hui n’est pas encore composée') + (nSrc ? ' · ' + ppPl(nSrc, 'source') + (nSrc > 1 ? ' lues' : ' lue') : '') };
   }
+  /* ════════════════ « À FAIRE AVEC LES INFOS » (21/11/2026, maquette C choisie par Will, comme la vue « Aujourd'hui » de Things 3) ════════════════
+     Remplace TOUT le haut de l'écran : le bandeau bleu, les trois portes, le fil Discover et les Gardées
+     (choix cliqué de Will du 21/11 : le fil et les Gardées disparaissent ; les choix déjà gardés dans `profils` restent, on cesse de les afficher).
+     Chaque info = UNE chose à faire, écrite par les règles de v2-infos-taches.js (V2.infosTaches), jamais à la main.
+     Deux intertitres « Dans votre secteur » / « En France », 3 tâches au plus chacun. Un clic ouvre la ligne sur place
+     (Pourquoi ça compte, À dire en rendez-vous, Lieu, Source, « Mettre dans ma To do », « Voir tout » → le panneau existant du type) ;
+     Échap referme ; cocher = barré, puis rangé dans « Fait · n » après 1 s ; décocher = retour à sa place.
+     « Fait » est gardé PAR PERSONNE dans la zone `f` des choix x15 (navigateur, puis la ligne `profils`) : aucune table neuve.
+     « Tout le reste » = UN lien qui déplie 4 lignes vers les panneaux existants (ruptures, rappels, secteur avec la carte, mur). */
+  var IT = { L: [], par: {}, ordre: {}, ouvert: null, min: {}, sig: '' };
+  var IT_COCHE = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  var IT_COCHE_TODO = '<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5l4 4 8-9"/></svg>';
+  var IT_CHEV = '<svg class="inf-t-chev" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>';
+  var IT_VOIR = { secteur: 'Voir toutes les annonces et la carte', ruptures: 'Voir tous les médicaments qui manquent', echeances: 'Voir toutes les échéances', rappels: 'Voir tous les rappels' };
+  var IT_RE_NB = new RegExp('(\\d) (jours?|semaines?|mois|mg|' + PP_MOIS.join('|') + ')', 'g');
+  /* typographie de la maquette : espace insécable avant « : ; ? ! % € », après « « », entre un nombre et son unité ; mots à trait d'union insécables */
+  function itNb(s) { return String(s == null ? '' : s).replace(/ ([:;?!»%€])/g, ' $1').replace(/« /g, '« ').replace(IT_RE_NB, '$1 $2'); }
+  function itE(s) { return esc(itNb(s)); }
+  function itH(s) { return itE(s).replace(/([0-9A-Za-zÀ-ÖØ-öø-ÿ]+(?:-[0-9A-Za-zÀ-ÖØ-öø-ÿ]+)+)/g, '<span class="inf-t-nw">$1</span>'); }
+  function itAuj() { var a = ''; try { a = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }); } catch (e) {} return /^\d{4}-\d{2}-\d{2}$/.test(a) ? a : x13Jour(); }
+  function itFait(id) { var o = x15S().f[id]; return !!(o && !o.off); }   // relu à chaque fois : jamais un état gardé dans une fermeture
+  function itDansTodo(id) { try { return !!(V2.todo && V2.todo.tous && V2.todo.tous().some(function (x) { return x.id === 'inf-' + id; })); } catch (e) { return false; } }
+  /* « mis à jour hier à 20 h 59 » : l'heure de composition de l'édition (BRIEF.genere), jamais l'horloge */
+  function itMajTxt(jour) {
+    var g = new Date(BRIEF && BRIEF.genere), auj = itAuj();
+    if (isNaN(g.getTime())) return jour === auj ? 'édition du matin' : 'édition du ' + ppDc(jour);
+    var j = '', h = '';
+    try { j = g.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }); h = g.toLocaleTimeString('fr-FR', { hour: 'numeric', minute: '2-digit', timeZone: 'Europe/Paris' }).replace(':', ' h '); } catch (e) {}
+    var n = Math.round((Date.parse(auj + 'T12:00:00Z') - Date.parse(j + 'T12:00:00Z')) / 864e5);
+    return 'mis à jour ' + (n === 0 ? 'aujourd’hui' : n === 1 ? 'hier' : 'le ' + ppDc(j)) + (h ? ' à ' + h : '');
+  }
+  function itSous(nReste, nTout, jour) {
+    return (nReste ? nReste + (nReste > 1 ? ' choses à faire' : ' chose à faire') + ' après les infos du matin' : nTout ? 'Tout est fait' : 'Rien à faire ce matin') + ' · ' + itMajTxt(jour);
+  }
+  /* les tâches du jour : le secteur (annonces Bodacc de moins de 14 jours) puis la France ; une règle en défaut ne vide jamais la page */
+  function itTaches(S) {
+    var R = V2.infosTaches, auj = itAuj(), sec = [], fr = [];
+    if (R) {
+      try { if (SECTEUR && (S.deps || S.dir)) sec = R.secteur(ppAnnonces(S.deps).filter(function (e) { return ppJ(e.d) <= 14; }), { auj: auj, tag: sctTag, geste: sctGeste }); } catch (e) { sec = []; }
+      try { fr = R.france(BRIEF || {}, { auj: auj }); } catch (e) { fr = []; }
+    }
+    return sec.concat(fr);
+  }
+  function itLi(t) {
+    var fait = itFait(t.id), todo = itDansTodo(t.id), id = esc(t.id), u = urlSure(t.url);
+    return '<li class="inf-t-tache' + (fait ? ' fait' : '') + '" data-it="' + id + '">' +
+      '<div class="inf-t-ligne">' +
+        '<button class="inf-t-case" type="button" role="checkbox" aria-checked="' + fait + '" aria-label="Cocher : ' + itE(t.action) + '"><span class="inf-t-rond">' + IT_COCHE + '</span></button>' +
+        '<button class="inf-t-corps" type="button" aria-expanded="false" aria-controls="inf-t-f-' + id + '">' +
+          '<span class="inf-t-action">' + itH(t.action) + '</span>' +
+          '<span class="inf-t-meta">' + itH(t.titre) + (t.quand ? ' · <span class="inf-t-q">' + itH(t.quand) + '</span>' : '') + '</span>' +
+          '<span class="inf-t-tag inf-t-' + esc(t.ton) + '">' + itE(t.etiquette) + '</span></button></div>' +
+      '<div class="inf-t-fiche" id="inf-t-f-' + id + '" hidden>' +
+        '<h3>Pourquoi ça compte</h3><p>' + itH(t.pourVous) + '</p>' +
+        '<div class="inf-t-dire"><h3>À dire en rendez-vous</h3><p>' + itH(t.aDire) + '</p></div>' +
+        '<div class="inf-t-infos"><span><b>Lieu</b> ' + itH(t.lieu) + '</span><span><b>Source</b> ' +
+          (u !== '#' ? '<a href="' + esc(u) + '" target="_blank" rel="noopener">' + itH(t.source) + '</a>' : itH(t.source)) + '</span></div>' +
+        '<div class="inf-t-gestes"><button class="inf-t-todo" type="button" aria-pressed="' + todo + '">' + IT_COCHE_TODO + '<span>' + (todo ? 'Dans votre To do' : 'Mettre dans ma To do') + '</span></button>' +
+          (IT_VOIR[t.vue] && PP_VUES[t.vue] ? '<button class="inf-t-voir" type="button" data-it-vue="' + esc(t.vue) + '"><span>' + esc(IT_VOIR[t.vue]) + '</span>' + IT_CHEV + '</button>' : '') + '</div>' +
+      '</div></li>';
+  }
+  function itReste(D, S) {
+    var r = D.rad.ruptures, L = [];
+    L.push({ v: 'ruptures', l: 'Médicaments qui manquent', n: r ? r.v : null, s: D.rupt.length ? D.rupt.length + (D.rupt.length > 1 ? ' nouveaux' : ' nouveau') + ' depuis hier' : 'selon l’Agence du médicament' });
+    L.push({ v: 'rappels', l: 'Produits rappelés', n: D.rappels, s: 'médicaments et parapharmacie' });
+    if (SECTEUR && (SECTEUR.ev || []).length && (S.deps || S.dir)) L.push({ v: 'secteur', l: S.deps ? 'Annonces de votre secteur' : 'Annonces des officines, toute la France', n: ppAnnonces(S.deps).length, s: 'sur 3 mois, avec la carte' });
+    L.push({ v: 'mur', l: 'Autres actualités', n: D.fil.length, s: 'presse professionnelle' });
+    return L.map(function (x) {
+      return '<li><button type="button" class="inf-t-rl" data-it-vue="' + x.v + '"><span class="inf-t-rt"><b>' + esc(x.l) + '</b><small>' + itE(x.s) + '</small></span>' +
+        (x.n != null ? '<span class="inf-t-n">' + esc(x.n) + '</span>' : '') + IT_CHEV + '</button></li>';
+    }).join('');
+  }
+  function itPage(D, jour) {
+    var S = ppScope(), L = itTaches(S);
+    IT.L = L; IT.par = {}; IT.ordre = {}; IT.ouvert = null;
+    L.forEach(function (t, i) { IT.par[t.id] = t; IT.ordre[t.id] = i; });
+    IT.sig = L.filter(function (t) { return itFait(t.id); }).map(function (t) { return t.id; }).join('|');
+    var vide0 = {
+      secteur: !SECTEUR ? 'Les annonces légales ne sont pas disponibles pour l’instant.' : !S.deps && !S.dir ? 'Votre secteur n’est pas encore connu : il se calcule à partir des officines de votre fichier.' : 'Rien de neuf ces 14 derniers jours dans ' + (S.deps ? 'votre secteur' : 'les officines') + '.',
+      france: 'Rien à faire en France aujourd’hui.' };
+    var G = [['secteur', S.deps || !S.dir ? 'Dans votre secteur' : 'Les officines, toute la France'], ['france', 'En France']];
+    var faits = L.filter(function (t) { return itFait(t.id); }), nF = faits.length;
+    var h = G.map(function (g) {
+      var tout = L.filter(function (t) { return t.groupe === g[0]; }), reste = tout.filter(function (t) { return !itFait(t.id); });
+      return '<section class="inf-t-groupe" aria-labelledby="inf-t-h-' + g[0] + '"><h2 id="inf-t-h-' + g[0] + '">' + esc(g[1]) + '</h2>' +
+        '<ul class="inf-t-liste" id="inf-t-g-' + g[0] + '">' + reste.map(itLi).join('') + '</ul>' +
+        '<p class="inf-t-vide" id="inf-t-v-' + g[0] + '" data-vide="' + esc(vide0[g[0]]) + '"' + (reste.length ? ' hidden' : '') + '>' + esc(tout.length ? 'Tout est fait ici.' : vide0[g[0]]) + '</p></section>';
+    }).join('');
+    return '<div class="w-page inf-t"><article class="inf-t-feuille" aria-labelledby="inf-t-titre">' +
+      '<header class="inf-t-tete"><span class="inf-t-pastille" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>' +
+        '<div><h1 id="inf-t-titre">Aujourd’hui</h1><p class="inf-t-sous" id="inf-t-sous" aria-live="polite" data-jour="' + esc(jour) + '">' + itE(itSous(L.length - nF, L.length, jour)) + '</p></div></header>' +
+      h +
+      '<section class="inf-t-fait" id="inf-t-fait"' + (nF ? '' : ' hidden') + '><button class="inf-t-rep" id="inf-t-fait-b" type="button" aria-expanded="false" aria-controls="inf-t-fait-l">' + IT_CHEV + '<span id="inf-t-fait-t">Fait · ' + nF + '</span></button>' +
+        '<ul class="inf-t-liste" id="inf-t-fait-l" hidden>' + faits.map(itLi).join('') + '</ul></section>' +
+      '<section class="inf-t-reste"><button class="inf-t-rep" id="inf-t-reste-b" type="button" aria-expanded="false" aria-controls="inf-t-reste-l">' + IT_CHEV + '<span>Tout le reste</span></button>' +
+        '<ul class="inf-t-rls" id="inf-t-reste-l" hidden>' + itReste(D, S) + '</ul></section>' +
+      '</article></div>';
+  }
+  function itEl(id) { var L = document.querySelectorAll('.inf-t-tache'), i; for (i = 0; i < L.length; i++) if (L[i].getAttribute('data-it') === id) return L[i]; return null; }
+  function itMaj() {
+    var nT = IT.L.length, nF = IT.L.filter(function (t) { return itFait(t.id); }).length, $ = function (i) { return document.getElementById(i); };
+    var s = $('inf-t-sous'); if (s) s.textContent = itNb(itSous(nT - nF, nT, s.getAttribute('data-jour') || ''));
+    ['secteur', 'france'].forEach(function (g) {
+      var ul = $('inf-t-g-' + g), v = $('inf-t-v-' + g); if (!ul || !v) return;
+      v.hidden = ul.children.length > 0;
+      v.textContent = IT.L.some(function (t) { return t.groupe === g; }) ? 'Tout est fait ici.' : v.getAttribute('data-vide');
+    });
+    var fb = $('inf-t-fait'), ft = $('inf-t-fait-t'), fl = $('inf-t-fait-l'), bt = $('inf-t-fait-b');
+    if (fb) fb.hidden = $('inf-t-fait-l').children.length === 0;
+    if (ft) ft.textContent = 'Fait · ' + (fl ? fl.children.length : nF);
+    if (fl && !fl.children.length) { fl.hidden = true; if (bt) bt.setAttribute('aria-expanded', 'false'); }
+  }
+  function itPlace(li, ul) {
+    if (!li || !ul) return;
+    var o = IT.ordre[li.getAttribute('data-it')], sui = null;
+    [].forEach.call(ul.children, function (c) { if (!sui && IT.ordre[c.getAttribute('data-it')] > o) sui = c; });
+    ul.insertBefore(li, sui);
+  }
+  function itOuvrir(id, oui) {
+    var o = IT.ouvert ? itEl(IT.ouvert) : null;
+    if (o && (IT.ouvert !== id || !oui)) { o.classList.remove('ouvert'); o.querySelector('.inf-t-fiche').hidden = true; o.querySelector('.inf-t-corps').setAttribute('aria-expanded', 'false'); }
+    if (IT.ouvert !== id || !oui) IT.ouvert = null;
+    var l = oui ? itEl(id) : null;
+    if (l) { l.classList.add('ouvert'); l.querySelector('.inf-t-fiche').hidden = false; l.querySelector('.inf-t-corps').setAttribute('aria-expanded', 'true'); IT.ouvert = id; }
+  }
+  function itBascule(id) {
+    var li = itEl(id), t = IT.par[id]; if (!li || !t) return;
+    var on = !itFait(id), c = li.querySelector('.inf-t-case');
+    x15S().f[id] = { le: Date.now(), off: on ? 0 : 1 }; x15Garder();
+    IT.sig = IT.L.filter(function (x) { return itFait(x.id); }).map(function (x) { return x.id; }).join('|');
+    clearTimeout(IT.min[id]);
+    if (on) {
+      li.classList.add('fait'); c.setAttribute('aria-checked', 'true'); itOuvrir(id, false);
+      IT.min[id] = setTimeout(function () { var l = itEl(id); if (l && itFait(id)) { itPlace(l, document.getElementById('inf-t-fait-l')); itMaj(); } }, 1000);
+    } else {
+      li.classList.remove('fait'); c.setAttribute('aria-checked', 'false');
+      itPlace(li, document.getElementById('inf-t-g-' + t.groupe));
+    }
+    itMaj();
+  }
+  function itTodoEtat(b, on) { b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.querySelector('span').textContent = on ? 'Dans votre To do' : 'Mettre dans ma To do'; }
+  function itTodo(id, b) {
+    var t = IT.par[id], toast = function (m) { if (V2.toast) V2.toast(m); }; if (!t) return;
+    if (b.getAttribute('aria-pressed') === 'true') { toast('Déjà dans votre To do.'); return; }
+    if (!V2.todo || !V2.todo.ajouterLigne) { toast('La To do n’est pas disponible pour l’instant.'); return; }
+    b.disabled = true;
+    V2.todo.ajouterLigne({ id: 'inf-' + id, k: 'libre', pid: t.pid || '', nom: '', note: t.action }).then(function (ok) {
+      b.disabled = false;
+      if (ok) { itTodoEtat(b, true); toast('Ajouté à votre To do : ' + t.action); }
+      else toast('Pas pu l’ajouter à votre To do. Réessayez dans un instant.');
+    }, function () { b.disabled = false; toast('Pas pu l’ajouter à votre To do. Réessayez dans un instant.'); });
+  }
+  function itApres() {   // après le dessin : la ligne `profils` (Fait) est relue une fois, la To do est relue pour l'état des boutons
+    x15Distant();
+    if (V2.todo && V2.todo.charger) try { V2.todo.charger().then(function () { [].forEach.call(document.querySelectorAll('.inf-t-tache'), function (li) { var b = li.querySelector('.inf-t-todo'); if (b) itTodoEtat(b, itDansTodo(li.getAttribute('data-it'))); }); }, function () {}); } catch (e) {}
+  }
+  function itEcoute(e) {
+    if (e.type === 'keydown') {
+      if (e.key === 'Escape' && IT.ouvert && !ppOuvert()) { var id = IT.ouvert, l = itEl(id); itOuvrir(id, false); if (l) try { l.querySelector('.inf-t-corps').focus(); } catch (er) {} }
+      return;
+    }
+    if (!e.target.closest || !e.target.closest('.inf-t')) return;
+    var b;
+    if ((b = e.target.closest('[data-it-vue]'))) { ppOuvrirVue(b.getAttribute('data-it-vue')); return; }
+    if ((b = e.target.closest('#inf-t-fait-b,#inf-t-reste-b'))) { var o = b.getAttribute('aria-expanded') !== 'true', ul = document.getElementById(b.getAttribute('aria-controls')); b.setAttribute('aria-expanded', o ? 'true' : 'false'); if (ul) ul.hidden = !o; return; }
+    var li = e.target.closest('.inf-t-tache'); if (!li) return;
+    var tid = li.getAttribute('data-it');
+    if (e.target.closest('.inf-t-case')) { itBascule(tid); return; }
+    if ((b = e.target.closest('.inf-t-todo'))) { itTodo(tid, b); return; }
+    if (e.target.closest('.inf-t-corps')) itOuvrir(tid, IT.ouvert !== tid);
+  }
+  if (!V2._itEcoute) { V2._itEcoute = true; document.addEventListener('click', itEcoute); document.addEventListener('keydown', itEcoute); }
+
   function x13Page(D, jour, J) {
     var P = x13Pile(D), S = ppScope();
     X13.liste = [];
@@ -1407,9 +1580,9 @@
   function x15Scope() { return '__infos_' + x15Id() + '__'; }
   function x15K(it) { return it.u ? 'u:' + it.u : 't:' + x14Cle(it.t); }
   function x15Net(raw) {
-    var S = { v: 1, g: {}, m: {} };
+    var S = { v: 1, g: {}, m: {}, f: {} };   // f (21/11/2026) : les tâches cochées « Fait » de la liste C, { <id tâche>: { le, off } }
     if (!raw || typeof raw !== 'object') return S;
-    ['g', 'm'].forEach(function (z) {
+    ['g', 'm', 'f'].forEach(function (z) {
       var s = raw[z]; if (!s || typeof s !== 'object') return;
       Object.keys(s).forEach(function (k) {
         var o = s[k]; if (!o || typeof o !== 'object' || !(+o.le > 0)) return;
@@ -1422,8 +1595,8 @@
   }
   /* fusion clé par clé : le geste le plus récent gagne ; un retrait reste noté off:1 pour ne pas revenir par la fusion */
   function x15Fusion(a, b) {
-    var A = x15Net(a), B = x15Net(b), R = { v: 1, g: {}, m: {} };
-    ['g', 'm'].forEach(function (z) {
+    var A = x15Net(a), B = x15Net(b), R = { v: 1, g: {}, m: {}, f: {} };
+    ['g', 'm', 'f'].forEach(function (z) {
       var ks = {}; Object.keys(A[z]).concat(Object.keys(B[z])).forEach(function (k) { ks[k] = 1; });
       Object.keys(ks).forEach(function (k) { var x = A[z][k], y = B[z][k]; R[z][k] = !x ? y : !y ? x : (y.le >= x.le ? y : x); });
     });
@@ -1597,6 +1770,8 @@
     return true;
   }
   function x15Redessine() {   // le fil est recalculé (sources masquées) et la section redessinée ; les cartes, elles, ne bougent pas quand on garde
+    // 21/11/2026 — liste C : la ligne `profils` relue a pu cocher « Fait » ailleurs ; la page n'est redessinée que si cela change ce qui est coché
+    if (document.querySelector('.inf-t')) { var sig = IT.L.filter(function (t) { return itFait(t.id); }).map(function (t) { return t.id; }).join('|'); if (sig !== IT.sig && V2.route && V2.route.name === 'infos' && V2.render) V2.render(); return; }
     var s = document.querySelector('.f3-fil'); if (!s) return;
     x15FermeMenu(false); x14Fil(); s.outerHTML = x14Rend(); infMaj();
   }
@@ -1735,10 +1910,10 @@
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="v2-wrap inf2 pp">' +
           '<span class="pp-ciel" aria-hidden="true"></span>' +
-          x13Page(D, jour, J) +
+          itPage(D, jour) +   // 21/11/2026 : la liste C remplace le bandeau, les trois portes, le fil et les Gardées (x13Page n'est plus appelée)
           '<footer class="pp-pied"><span>' + gen + '</span></footer>' +
         '</div>';
-      infApres(root);
+      itApres();
       var vz = document.getElementById('inf-volet'); if (INF.garde) { if (vz) vz.appendChild(INF.garde); else document.body.appendChild(INF.garde); INF.garde = null; }
 
       // venu de l'ancienne feature « Concurrents » (#infos/concurrents) : ouvrir directement son panneau
