@@ -1386,6 +1386,9 @@ html:root:root body .pa-wrap .aube-tete .v2-page-sub{margin:6px 0 0;max-width:no
 /* au téléphone, les quatre périodes tiennent sur une ligne dans le bandeau (48 px de moins qu'avant : « Au choix » se coupait en velours) */
 @media (max-width:700px){html:root:root:root body .pa-top.aube-tete .pa-segb{white-space:nowrap;padding:0 4px;font-size:14px}}
 html:root:root body .pa-top.aube-tete .pa-perpick{margin-top:14px}
+/* 21/11/2026 ~22 h 53 (Will, choix cliqué) : Catalogue produits, même taille de titre que Infos, To do et Pilotage à toutes les largeurs
+   (40 px, 35 px au téléphone) ; v2-comptoir.js le mettait à 26 px sous 1 001 px et 23 px sous 561 px */
+html:root:root body .cpd-head .cpd-h1{font-size:clamp(32px,9vw,40px);line-height:1.05}
 /* 2. Chiffres en encre, le bleu réservé aux actions (v2-officines-m1.css:88) */
 html:root:root body .of-c-ca b{color:var(--au-ink,#1A2030)}
 html:root:root body .of-c-ca.of-c-nd b{color:var(--txt-2,#454B5C)}
