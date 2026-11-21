@@ -12,10 +12,12 @@
 
   // Palette barres : tons froids seulement (21/11/2026, choix de Will : plus de jaune, orange, rouge ni rose, comme l'aube de l'accueil).
   // Du 7e au 11e : clair et foncé alternés, chaque teinte écartée de ses voisines (contrôle de palette : vue normale ΔE ≥ 15, daltonisme ≥ 8).
-  var BAR = ['#0050E6', '#1E6FE6', '#2C86D8', '#00A9B5', '#0F9E6A', '#5BA83C',
+  // 2e et 3e (21/11/2026, choix de Will « trois bleus écartés ») : bleu ciel et bleu azur, au lieu de deux bleus presque pareils au 1er (ΔE 7,6 et 6,9).
+  var BAR = ['#0050E6', '#63B9FE', '#0486F4', '#00A9B5', '#0F9E6A', '#5BA83C',
     '#21539C', '#3FC0C0', '#006C98', '#9793E6', '#00734D', '#7C4FC4'];
 
-  function eur(n) { return V2.fmtEur ? V2.fmtEur(n) : (Math.round(n || 0).toLocaleString('fr') + ' €'); }
+  // Euros entiers partout dans la carte (21/11/2026) : V2.fmtEur écrit les centimes sous 1 000 €, d'où « 424,00 € » à côté de « 12 345 € ».
+  function eur(n) { return (typeof n === 'number' && isFinite(n)) ? Math.round(n).toLocaleString('fr-FR') + ' €' : '—'; }
 
   // Nettoyage AFFICHAGE des noms de labos (certains titulaires BDPM sont longs/moches).
   // Uniquement cosmétique : ne change pas l'agrégation.
