@@ -22,10 +22,15 @@ test('téléphone : hors des feuilles Prix / Envoyer, tout le CSS ajouté vit so
   const sansCom = css.replace(/\/\*[\s\S]*?\*\//g, '');
   const i = sansCom.indexOf('@media (max-width:640px){');
   assert.ok(i > 0, 'bloc 640 px présent');
-  // fin du bloc : accolades équilibrées
-  let p = 0, fin = -1;
-  for (let k = i; k < sansCom.length; k++) { if (sansCom[k] === '{') p++; else if (sansCom[k] === '}') { p--; if (!p) { fin = k; break; } } }
-  const dehors = (sansCom.slice(0, i) + sansCom.slice(fin + 1)).match(/[^{}]+(?=\{)/g).map(s => s.trim());
+  // chaque bloc 640 px est retiré (accolades équilibrées) ; ce qui reste est le CSS « hors téléphone »
+  let reste = sansCom, j;
+  while ((j = reste.indexOf('@media (max-width:640px){')) >= 0) {
+    let p = 0, fin = -1;
+    for (let k = j; k < reste.length; k++) { if (reste[k] === '{') p++; else if (reste[k] === '}') { p--; if (!p) { fin = k; break; } } }
+    assert.ok(fin > j, 'bloc 640 px refermé');
+    reste = reste.slice(0, j) + reste.slice(fin + 1);
+  }
+  const dehors = reste.match(/[^{}]+(?=\{)/g).map(s => s.trim());
   for (const sel of dehors) assert.match(sel, /^(\.rv2-bandes,\.rv2-outils,\.rv2-barre|\.rv2-l[si][\w\s>:-]*|\.rv2-li-[it][\w\s]*|\.rv2-li > svg:last-child)$/, 'règle hors 640 px : ' + sel);
   assert.match(sansCom.slice(0, i), /\.rv2-bandes,\.rv2-outils,\.rv2-barre\{display:none\}/, 'au-dessus de 640 px, le HTML ajouté est caché');
   assert.doesNotMatch(css, /banc-pastille/, 'la pastille du banc de test ne part pas en ligne');
@@ -106,4 +111,54 @@ test('téléphone : un rechargement de Safari sur la même fiche garde la vue ph
 test('ordinateur : rien ne change, vue pharmacien par défaut et dernier choix retenu', () => {
   assert.equal(appareil(1280, {}).arrivee('2000251'), 'pharmacien');
   assert.equal(appareil(1280, { 'jarvis.fiche.vue': 'integral' }).arrivee('2000251'), 'integral');
+});
+
+// 22/11/2026 soir — « fais le meilleur UI UX sur tel » : les cinq gestes de la barre s'ouvrent dans la MÊME feuille du bas
+// (Noter et À faire étaient une fenêtre presque plein écran et une carte au milieu), et chaque feuille se ferme en la glissant vers le bas.
+const glisseCode = (() => { const a = src.indexOf('  function rv2Glisse('), b = src.indexOf('\n  }\n', a); return src.slice(a, b + 4); })();
+function feuille(largeur) {
+  const ec = {}, style = {};
+  const p = { style, addEventListener: (t, f) => { ec[t] = f; }, getBoundingClientRect: () => ({ top: 400 }) };
+  const window = { matchMedia: q => ({ matches: /max-width:640px/.test(q) && largeur <= 640 }) };
+  let fermee = 0, horloge = 0;
+  const Date = { now: () => horloge };
+  const setTimeout = (f) => f();   // la fermeture attend la fin du glissé : immédiate ici
+  const rv2Glisse = new Function('window', 'Date', 'setTimeout', glisseCode + '\nreturn rv2Glisse;')(window, Date, setTimeout);
+  const geste = (depuis, dy, ms, cible) => {
+    const t = cible || { closest: s => (s === '.fbs-h' ? {} : null) };
+    horloge = 0; ec.touchstart({ touches: [{ clientY: depuis }], target: t });
+    if (ec.touchmove) { horloge = ms; ec.touchmove({ touches: [{ clientY: depuis + dy }] }); }
+    ec.touchend && ec.touchend();
+  };
+  return { p, ec, style, poser: () => new Function('rv2Glisse', 'p', 'setTimeout', 'f', 'rv2Glisse(p, ".fbs-h", f);')(rv2Glisse, p, setTimeout, () => fermee++), geste, fermees: () => fermee };
+}
+test('téléphone : glisser une feuille vers le bas la ferme ; un petit geste lent la laisse revenir', () => {
+  assert.ok(glisseCode.startsWith('  function rv2Glisse(p, zone, fermer)') && glisseCode.trim().endsWith('}'), 'rv2Glisse extraite du code');
+  const f = feuille(390); f.poser();
+  f.geste(420, 40, 400);
+  assert.equal(f.fermees(), 0, 'petit geste lent : la feuille reste');
+  assert.equal(f.style.transform, '', 'et revient à sa place');
+  f.geste(420, 140, 300);
+  assert.equal(f.fermees(), 1, 'au-delà de 90 px : fermée');
+  assert.equal(f.style.transform + f.style.animation, '', 'remise en état pour la prochaine ouverture (la fenêtre Noter est réutilisée)');
+  f.geste(420, 50, 40);
+  assert.equal(f.fermees(), 2, 'geste vif : fermée');
+  f.geste(420, 200, 300, { closest: s => (/button/.test(s) ? {} : null) });
+  assert.equal(f.fermees(), 2, 'un geste parti d\'un bouton ne ferme rien');
+  f.geste(700, 200, 300, { closest: () => null });
+  assert.equal(f.fermees(), 2, 'un geste dans le contenu le fait défiler, il ne ferme pas la feuille');
+  const o = feuille(1280); o.poser();
+  assert.equal(Object.keys(o.ec).length, 0, 'à l\'ordinateur : aucun geste posé');
+});
+test('téléphone : Prix, Envoyer, Noter et À faire branchent le même geste ; Noter s ouvre par son haut', () => {
+  assert.match(src, /p\.focus\(\); rv2Glisse\(p, '\.fbs-h', function \(\) \{ fbFerme\(\); \}\);/, 'feuilles Prix / Envoyer');
+  assert.match(src, /d\.scrollTop = 0;[^\n]*\n\s*rv2Glisse\(d, '\.fdr-dlg-h', function \(\) \{ d\.close\(\); \}\);/, 'Noter : ouvert par son haut, glissé pour fermer');
+  assert.match(src, /tp\.classList\.add\('rv2-feuille'\); rv2Glisse\(tp\.querySelector\('\.v2-todo-pop'\), '\.v2-todo-pop-h'/, 'À faire depuis la fiche');
+  const tel = css.slice(css.indexOf('fais le meilleur UI UX sur tel'));
+  for (const sel of ['.pha-wrap.fdr-on .fdr-dlg{', '.v2-todo-ov.rv2-feuille .v2-todo-pop{'])
+    assert.match(tel, new RegExp(sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[^}]*border-radius:26px 26px 0 0'), 'même feuille du bas : ' + sel);
+  assert.match(tel, /\.fdr-dlg-x\{flex:none;[^}]*width:44px;height:44px/, 'la croix de Noter ne s\'écrase plus (44 px)');
+  assert.match(tel, /\.v2-todo-pop-h span\{[^}]*white-space:normal/, 'le nom de l\'officine n\'est plus coupé');
+  assert.match(tel, /\.pha-notes > \.v2-notes-box\[data-st\]\{order:-1\}/, 'Noter : la note rapide en premier (pas la préparation, qui porte aussi v2-notes-box)');
+  assert.doesNotMatch(tel, /backdrop-filter|filter:\s*blur/, 'aucun flou (Safari)');
 });

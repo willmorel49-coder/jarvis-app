@@ -2545,7 +2545,13 @@
   V2.fbOuvre = function (k, el) {
     var c = fbC; if (!c) return;
     if (k === 'tx') { V2.pharmaTransmettre(c.pid); return; }
-    if (k === 'todo') { V2.todo.menu(c.pid); return; }
+    if (k === 'todo') {
+      V2.todo.menu(c.pid);
+      // depuis la fiche, au téléphone : la même feuille du bas que Prix et Envoyer (v2-fiche-tel.css .rv2-feuille), qui se glisse pour fermer
+      var tp = document.getElementById('v2-todo-pop');
+      if (tp) { tp.classList.add('rv2-feuille'); rv2Glisse(tp.querySelector('.v2-todo-pop'), '.v2-todo-pop-h', function () { V2.todo.fermer(); }); }
+      return;
+    }
     var f;
     if (k === 'logiciel') { c.sel = c.lgo; f = fbFeuilleLogiciel(); } else f = fbFeuilleListe(k);
     fbPose(f, el);
@@ -2562,7 +2568,7 @@
     document.body.appendChild(o);
     fbOv = document.documentElement.style.overflow; document.documentElement.style.overflow = 'hidden';
     document.addEventListener('keydown', fbClav, true);
-    var p = o.querySelector('.fbs-p'); if (p) p.focus();
+    var p = o.querySelector('.fbs-p'); if (p) { p.focus(); rv2Glisse(p, '.fbs-h', function () { fbFerme(); }); }
   }
   function fbClav(e) {
     var p = document.querySelector('#fbs .fbs-p'); if (!p) return;
@@ -4184,6 +4190,8 @@
     var d = document.getElementById('fdr-d-' + id);
     if (!d) { if (id === 'notes' && V2.pharmaNav && V2.pharmaNav.noter) V2.pharmaNav.noter(); return; }   // fiche de prospect : les notes restent dans la page
     if (!d.open) { try { d.showModal(); } catch (e) { d.setAttribute('open', ''); } }
+    d.scrollTop = 0;   // la feuille s'ouvre toujours par son haut (titre + premier champ), jamais au milieu
+    rv2Glisse(d, '.fdr-dlg-h', function () { d.close(); });
     if (id === 'notes') {
       var ta = d.querySelector('.v2-notes-box[data-st] .v2-notes-add .v2-notes-ta') || d.querySelector('textarea');
       if (ta) { try { ta.focus({ preventScroll: true }); } catch (e) { ta.focus(); } }
@@ -4265,6 +4273,36 @@
       bt('rv2-envoi', 'envoi', 'Envoyer', 'onclick="V2.rv2Feuille(\'envoi\',this)" aria-haspopup="dialog"') + '</nav>';
   }
   function rv2Vue() { var w = document.querySelector('.pha-wrap.fdr-on'); return w ? w.getAttribute('data-vue') : 'pharmacien'; }
+  // 22/11/2026 soir — au téléphone, chaque feuille du bas se ferme aussi en la GLISSANT vers le bas, comme sur iPhone.
+  // Le geste part du haut de la feuille (poignée, titre : `zone`) ; le contenu garde son propre défilement.
+  // Au-delà de 90 px, ou d'un geste vif, la feuille se ferme ; sinon elle revient. L'animation d'entrée est coupée le temps du geste
+  // (une animation finie garde la main sur transform), et `fermer` remet la feuille en état pour une prochaine ouverture.
+  function rv2Glisse(p, zone, fermer) {
+    if (!p || p.__rv2g || !window.matchMedia || !window.matchMedia('(max-width:640px)').matches) return;
+    p.__rv2g = 1;
+    var y0 = 0, t0 = 0, dy = 0, actif = false;
+    p.addEventListener('touchstart', function (e) {
+      if (e.touches.length !== 1) return;
+      var t = e.target, haut = e.touches[0].clientY - p.getBoundingClientRect().top < 28;
+      if (!haut && !(t.closest && t.closest(zone))) return;
+      if (t.closest && t.closest('button,a,input,select,textarea,label')) return;
+      actif = true; y0 = e.touches[0].clientY; t0 = Date.now(); dy = 0;
+      p.style.animation = 'none'; p.style.transition = 'none';
+    }, { passive: true });
+    p.addEventListener('touchmove', function (e) {
+      if (!actif) return;
+      dy = Math.max(0, e.touches[0].clientY - y0);
+      p.style.transform = 'translateY(' + dy + 'px)';
+    }, { passive: true });
+    var fin = function () {
+      if (!actif) return; actif = false;
+      if (dy > 90 || (dy > 30 && dy / Math.max(1, Date.now() - t0) > 0.6)) {
+        p.style.transition = 'transform .18s ease-in'; p.style.transform = 'translateY(100%)';
+        setTimeout(function () { fermer(); p.style.transition = ''; p.style.transform = ''; p.style.animation = ''; }, 170);
+      } else { p.style.transition = 'transform .2s ease-out'; p.style.transform = ''; }
+    };
+    p.addEventListener('touchend', fin); p.addEventListener('touchcancel', fin);
+  }
   // Feuilles de la barre : « Prix » (Catalogue, Offilog, Transmettre + Comparer en vue Intégral) et « Envoyer » (Transmettre ; en vue Intégral aussi E-mail et Rendez-vous).
   V2.rv2Feuille = function (k, el) {
     var c = fbC; if (!c) return;

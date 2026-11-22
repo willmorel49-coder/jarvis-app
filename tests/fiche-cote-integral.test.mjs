@@ -40,6 +40,7 @@ function monde({ restreint = true, tauxFam = null, couverts = MOIS, caFam = true
     analyseNotreMarge: () => '<div class="ancien-bloc"></div>',
     fdrComparaison: () => '<div class="fdr-bloc fdr-cmp">COMPARAISON</div>',
     fbC: {}, isEscale: () => false, isOpso: () => false, txLgoDetect: () => 'lgo', fbIc: () => '', fiLgoTitre: () => 'Catalogue pour son logiciel',
+    rv2Glisse: () => {},   // geste « glisser pour fermer » du téléphone (testé dans fiche-telephone-barre-pouce.test.mjs)
     document: { getElementById: (id) => dialogs[id] || null }
   };
   ctx.esc = ctx.V2.esc; ctx.cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);

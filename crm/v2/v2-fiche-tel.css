@@ -83,3 +83,42 @@
 .rv2-li-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;font-size:17px;line-height:1.2;font-weight:800;letter-spacing:-.01em}
 .rv2-li-t small{font-size:14px;line-height:1.3;font-weight:500;color:#5B6377;overflow-wrap:anywhere;letter-spacing:0}
 .rv2-li > svg:last-child{flex:none;color:#5B6377}
+
+/* 22/11/2026 soir — « fais le meilleur UI UX sur tel » : les cinq gestes de la barre s'ouvrent TOUS dans la même feuille du bas
+   (avant : Prix et Envoyer montaient du bas, Noter descendait presque du haut avec un titre sur deux lignes et une croix écrasée,
+   À faire s'ouvrait en carte au milieu avec le nom de l'officine coupé). Modèle : la feuille de Prix (v2-fiche-m1.css .fbs-p).
+   Chaque feuille se ferme aussi en la glissant vers le bas (V2 rv2Glisse, v2-pharma.js). */
+@media (max-width:640px){
+  /* ── Noter (et Informations, Brief du jour) : la fenêtre de la fiche devient la même feuille du bas ── */
+  .pha-wrap.fdr-on .fdr-dlg{width:100vw;max-width:100vw;max-height:92vh;max-height:92dvh;margin:auto 0 0;border-radius:26px 26px 0 0;
+    background:radial-gradient(420px 220px at 100% 0%,rgba(0,80,230,.09),rgba(0,80,230,0) 72%),#FFFFFF;
+    box-shadow:0 -1px 0 rgba(255,255,255,.9) inset,0 -10px 40px rgba(16,19,28,.22);overscroll-behavior:contain}
+  .pha-wrap.fdr-on .fdr-dlg[open]{animation:fbsup .3s cubic-bezier(.22,1,.36,1) both}
+  .pha-wrap.fdr-on .fdr-dlg::backdrop{background:rgba(16,19,28,.46)}
+  .pha-wrap.fdr-on .fdr-dlg .fdr-dlg-h{flex-wrap:wrap;align-items:center;gap:0 12px;padding:22px 16px 10px 20px;background:#FFFFFF;border-bottom:1px solid #E3E8F2;
+    border-radius:26px 26px 0 0;touch-action:none}
+  .pha-wrap.fdr-on .fdr-dlg .fdr-dlg-h::before{content:"";position:absolute;top:8px;left:50%;width:40px;height:5px;margin-left:-20px;border-radius:3px;background:#C3CADA}
+  .pha-wrap.fdr-on .fdr-dlg .fdr-dlg-h h2{flex:1;min-width:0;margin:0;font:800 20px/1.2 Inter,system-ui,sans-serif;letter-spacing:-.02em;color:#10131C}
+  .pha-wrap.fdr-on .fdr-dlg .fdr-dlg-x{flex:none;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;border-radius:50%;background:#EEF1F7;
+    color:#3A4256;font:400 26px/1 Inter,system-ui,sans-serif}
+  .pha-wrap.fdr-on .fdr-dlg .fdr-dlg-c{padding:14px 16px calc(20px + env(safe-area-inset-bottom))}
+  /* Noter, pendant le rendez-vous : la note rapide (pastilles + champ) en PREMIER, là où le curseur se pose ;
+     la préparation et le compte rendu suivent. Le contenu reste le même, seul l'ordre change au téléphone. */
+  .pha-wrap.fdr-on .fdr-dlg .fdr-nt .pha-notes{display:flex;flex-direction:column;gap:12px}
+  .pha-wrap.fdr-on .fdr-dlg .fdr-nt .pha-notes > *{margin-top:0;margin-bottom:0}
+  .pha-wrap.fdr-on .fdr-dlg .fdr-nt .pha-notes > .v2-notes-box[data-st]{order:-1}   /* [data-st] : la note du client ; la préparation (.v2-rp-box) porte aussi v2-notes-box */
+
+  /* le haut de chaque feuille sert à la glisser : le doigt n'y fait pas défiler la page derrière */
+  .fbs-grab,.fbs-h{touch-action:none}
+
+  /* ── À faire, ouvert depuis la fiche : la carte du milieu devient la feuille du bas ── */
+  .v2-todo-ov.rv2-feuille{align-items:flex-end;padding:0}
+  .v2-todo-ov.rv2-feuille .v2-todo-pop{position:relative;width:100%;max-height:92vh;max-height:92dvh;padding:22px 10px calc(12px + env(safe-area-inset-bottom));
+    border-radius:26px 26px 0 0;background:radial-gradient(420px 220px at 100% 0%,rgba(0,80,230,.09),rgba(0,80,230,0) 72%),#FFFFFF;
+    box-shadow:0 -1px 0 rgba(255,255,255,.9) inset,0 -10px 40px rgba(16,19,28,.22);animation:fbsup .3s cubic-bezier(.22,1,.36,1) both;overscroll-behavior:contain}
+  .v2-todo-ov.rv2-feuille .v2-todo-pop::before{content:"";position:absolute;top:8px;left:50%;width:40px;height:5px;margin-left:-20px;border-radius:3px;background:#C3CADA}
+  .v2-todo-ov.rv2-feuille .v2-todo-pop-h{flex-wrap:wrap;gap:2px 12px;padding:4px 6px 10px 10px;touch-action:none}
+  .v2-todo-ov.rv2-feuille .v2-todo-pop-h b{flex:1;min-width:0;font-size:20px;line-height:1.2;letter-spacing:-.02em;color:#10131C}
+  .v2-todo-ov.rv2-feuille .v2-todo-pop-h .v2-todo-x{flex:none;order:1;width:44px;height:44px;border:0;border-radius:50%;background:#EEF1F7;color:#3A4256;font-size:26px}
+  .v2-todo-ov.rv2-feuille .v2-todo-pop-h span{order:2;flex:0 0 100%;white-space:normal;overflow:visible;font-size:14px;font-weight:500;color:#5B6377}
+}
