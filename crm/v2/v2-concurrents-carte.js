@@ -33,6 +33,11 @@
             sel: null, selG: null, param: '', sug: [], montage: 0, aliasOuvert: null };
 
   function norm(s) { s = String(s || '').toLowerCase(); return s.normalize ? s.normalize('NFD').replace(/[̀-ͯ]/g, '') : s; }
+  // 22/11/2026 : palette des groupes en tons froids (règle de Will : ni orange, ni rouge, ni rose dans une palette de catégories).
+  // Les couleurs du fichier de données (grossistes-data.js, généré) ne sont pas touchées : on remplace ici, au point d'usage.
+  // 9 groupes affichés : écart OKLab ≥ 14,3 entre deux d'entre eux (le maximum trouvé en tons froids seuls, mesuré le 22/11/2026).
+  var COUL_FROID = { integral: '#0050E6', astera: '#7C4FC4', phoenix: '#00A9B5', cencora: '#4A5878', independants: '#B8C2D6', 'cerp-ba': '#0E7A4F', 'lis-pharma': '#A08BE0', eurapharma: '#1A2030', atrilux: '#5BA83C', giphar: '#63B9FE', 'groupe-musetti': '#0486F4', 'zlz-holding': '#8A94A6', jalisambre: '#7A8CB8' }; // même table, par couleur d'origine, dans v2-concurrents-liens.js (FROID)
+  function couleurG(g) { return (g && (COUL_FROID[g.id] || g.couleur)) || '#607D8B'; }
   function grp(id) { var gs = S.info.groupes(); for (var i = 0; i < gs.length; i++) if (gs[i].id === id) return gs[i]; return null; }
   function fiche(id) { return S.info.byId(id); }
 
@@ -78,12 +83,12 @@
   // Un point coloré par site (9-10 px, liseré blanc). Groupe ou acteur choisi : ses points grossissent, les autres passent en gris clair.
   function surligne(p) { if (S.f.groupe) return p.groupe_id === S.f.groupe; if (S.sel) return p.id === S.sel; if (S.selG) return p.groupe_id === S.selG; return null; }
   function styleDe(p) {
-    var g = grp(p.groupe_id) || {}, col = g.couleur || '#607D8B', hi = surligne(p);
-    if (p.ferme) return { radius: 5, color: hi === false ? '#C9CFD9' : (p.nous ? '#F39A1B' : col), weight: 2, dashArray: '2 3', fillColor: '#FFFFFF', fillOpacity: 0.95 };
+    var g = grp(p.groupe_id) || {}, col = couleurG(g), hi = surligne(p);
+    if (p.ferme) return { radius: 5, color: hi === false ? '#C9CFD9' : (p.nous ? '#0050E6' : col), weight: 2, dashArray: '2 3', fillColor: '#FFFFFF', fillOpacity: 0.95 };
     if (hi === false) return { radius: 4.5, color: '#FFFFFF', weight: 1, fillColor: '#CDD3DD', fillOpacity: 0.9 };
-    if (p.nous) return { radius: 8, color: '#10131C', weight: 3, fillColor: '#F39A1B', fillOpacity: 1 };
-    if (hi) return { radius: 7.5, color: p.decisions ? '#FFC400' : '#10131C', weight: p.decisions ? 4 : 2, fillColor: col, fillOpacity: 1 };
-    return { radius: 5, color: p.decisions ? '#FFC400' : '#FFFFFF', weight: p.decisions ? 3.5 : 1.5, fillColor: col, fillOpacity: 0.95 };
+    if (p.nous) return { radius: 8, color: '#10131C', weight: 3, fillColor: '#0050E6', fillOpacity: 1 };
+    if (hi) return { radius: 7.5, color: p.decisions ? '#0486F4' : '#10131C', weight: p.decisions ? 4 : 2, fillColor: col, fillOpacity: 1 };
+    return { radius: 5, color: p.decisions ? '#0486F4' : '#FFFFFF', weight: p.decisions ? 3.5 : 1.5, fillColor: col, fillOpacity: 0.95 };
   }
   function visible(p) {
     var f = S.f, g = grp(p.groupe_id) || {};
@@ -268,7 +273,7 @@
     var tousG = gs.length, visG = S.legAll ? gs : gs.slice(0, 9);
     var chips = visG.map(function (g) {
       var on = S.f.groupe === g.id;
-      return '<span class="cm-chip' + (on ? ' on' : '') + '"><button type="button" class="cm-chip-m" onclick="V2.concFiltre(\'groupe\', \'' + esc(g.id) + '\')" aria-pressed="' + on + '" title="Filtrer la carte sur ce groupe"><i style="background:' + esc(g.couleur) + '"></i>' + esc(S.info.aff(g)) + ' <em>' + cpt[g.id] + '</em></button>' +
+      return '<span class="cm-chip' + (on ? ' on' : '') + '"><button type="button" class="cm-chip-m" onclick="V2.concFiltre(\'groupe\', \'' + esc(g.id) + '\')" aria-pressed="' + on + '" title="Filtrer la carte sur ce groupe"><i style="background:' + esc(couleurG(g)) + '"></i>' + esc(S.info.aff(g)) + ' <em>' + cpt[g.id] + '</em></button>' +
         '<button type="button" class="cm-chip-i" onclick="V2.concGroupe(\'' + esc(g.id) + '\')" aria-label="Ouvrir la fiche du groupe ' + esc(S.info.aff(g)) + '">' + ICO('chev', 14, 2.4) + '</button></span>';
     }).join('');
     CLES = '<span class="cm-cle"><i class="nous"></i>Intégral Pharma</span><span class="cm-cle"><i class="dec"></i>Décision officielle</span><span class="cm-cle"><i class="fer"></i>Site fermé</span>';
@@ -280,8 +285,8 @@
     var acteurs = {}; (S.pts || []).forEach(function (p) { if (!p.ferme && p.rep) acteurs[p.id] = 1; });
     var gs = S.info.groupes().filter(function (g) { return g.pdm_num > 0; }).sort(function (a, b) { return b.pdm_num - a.pdm_num; });
     var sum = gs.reduce(function (s, g) { return s + g.pdm_num; }, 0), autres = Math.max(0, Math.round((100 - sum) * 10) / 10);
-    var barre = gs.map(function (g) { return '<span style="width:' + g.pdm_num + '%;background:' + esc(g.couleur) + '" title="' + esc(S.info.aff(g)) + ' ' + g.pdm_num + ' %"></span>'; }).join('') + (autres > 0 ? '<span style="width:' + autres + '%;background:#CBD2DD" title="Autres"></span>' : '');
-    var leg = gs.map(function (g) { return '<span><i style="background:' + esc(g.couleur) + '"></i>' + esc(S.info.aff(g)) + ' ' + String(g.pdm_num).replace('.', ',') + ' %</span>'; }).join('');
+    var barre = gs.map(function (g) { return '<span style="width:' + g.pdm_num + '%;background:' + esc(couleurG(g)) + '" title="' + esc(S.info.aff(g)) + ' ' + g.pdm_num + ' %"></span>'; }).join('') + (autres > 0 ? '<span style="width:' + autres + '%;background:#CBD2DD" title="Autres"></span>' : '');
+    var leg = gs.map(function (g) { return '<span><i style="background:' + esc(couleurG(g)) + '"></i>' + esc(S.info.aff(g)) + ' ' + String(g.pdm_num).replace('.', ',') + ' %</span>'; }).join('');
     var sansHtml = ns ? '<details class="cm-sans"><summary>' + ns + ' site' + (ns > 1 ? 's' : '') + ' sans coordonnées (non placés sur la carte)</summary><ul>' + S.sans.map(function (p) { var fi = fiche(p.id) || {}; return '<li><button type="button" onclick="V2.grossisteOpen(\'' + esc(p.id) + '\')">' + esc(S.info.aff(fi)) + '</button> ' + esc(p.ville || '') + ' ' + esc(p.cp || '') + '</li>'; }).join('') + '</ul></details>' : '';
     return '<div class="cm-bas"><div class="cm-marche"><div class="cm-marche-t">Part de marché de chaque groupe</div>' +
       '<p class="cm-mdef">Part du chiffre d’affaires de la répartition pharmaceutique en France, estimée d’après les enquêtes du ' + esc(String((window.GROSSISTES_DATA && window.GROSSISTES_DATA.maj) || m.maj || '').split('-').reverse().join('/')) + '. Ce n’est pas le nombre de sites : la barre entière vaut 100 %.</p>' +
@@ -352,7 +357,7 @@
       var nq = norm(S.f.q).trim();
       if (nq.length < 2) { s.innerHTML = ''; s.classList.remove('on'); return; }
       var gs = S.info.data.grossistes.filter(function (g) { return !g.fusionne_dans && norm(g.nom + ' ' + g.id).indexOf(nq) >= 0; }).slice(0, 7);
-      s.innerHTML = gs.map(function (g) { var gr = grp(g.groupe_id) || {}; return '<button type="button" role="option" onclick="V2.concChoisir(\'' + esc(g.id) + '\')"><i style="background:' + esc(gr.couleur || '#607D8B') + '"></i><b>' + esc(S.info.aff(g)) + '</b><span>' + (g.nb_points || 0) + ' site' + ((g.nb_points || 0) > 1 ? 's' : '') + '</span></button>'; }).join('');
+      s.innerHTML = gs.map(function (g) { var gr = grp(g.groupe_id) || {}; return '<button type="button" role="option" onclick="V2.concChoisir(\'' + esc(g.id) + '\')"><i style="background:' + esc(couleurG(gr)) + '"></i><b>' + esc(S.info.aff(g)) + '</b><span>' + (g.nb_points || 0) + ' site' + ((g.nb_points || 0) > 1 ? 's' : '') + '</span></button>'; }).join('');
       s.classList.toggle('on', gs.length > 0);
     }, 120);
   };
@@ -422,7 +427,7 @@
       '.cm-chip-i{display:grid;place-items:center;width:34px;color:var(--muted);border-left:1px solid var(--line)!important}.cm-chip-i:hover{color:var(--ip-blue)}',
       '.cm-cles{position:absolute;left:12px;bottom:12px;z-index:450;display:flex;flex-wrap:wrap;gap:4px 14px;max-width:calc(100% - 90px);padding:7px 12px;border-radius:12px;background:#fff;border:1px solid var(--line);box-shadow:var(--sh-2);font-size:13px;font-weight:600;color:var(--ip-ink-2);pointer-events:none}',
       '.cm-cle{display:inline-flex;align-items:center;gap:6px}.cm-cle i{width:12px;height:12px;border-radius:50%;box-sizing:border-box;flex:none}',
-      '.cm-cle i.nous{background:#F39A1B;border:2.5px solid #10131C}.cm-cle i.dec{background:#9AA3B5;border:3px solid #FFC400}.cm-cle i.fer{background:#fff;border:2px dotted #6B7286}',
+      '.cm-cle i.nous{background:#0050E6;border:2.5px solid #10131C}.cm-cle i.dec{background:#9AA3B5;border:3px solid #0486F4}.cm-cle i.fer{background:#fff;border:2px dotted #6B7286}',
       /* scène : la carte est le héros de l'écran, lumière d'en haut (pas d'aplat) */
       '.cm-stage{display:flex;gap:16px;align-items:stretch;min-height:520px;height:calc(100vh - 330px);max-height:780px}',
       '.cm-mapwrap{position:relative;isolation:isolate;flex:1;min-width:0;border-radius:var(--r-card);overflow:hidden;border:1px solid var(--line);box-shadow:var(--sh-3),0 -40px 80px -40px color-mix(in srgb,var(--accent,var(--ip-blue)) 24%,transparent);background:#E9EDF3}',

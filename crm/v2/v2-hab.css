@@ -194,7 +194,7 @@ html[data-hab] .u2-salut{row-gap:6px}
 [data-hab="marbre"]{--h-pl:rgba(14,14,17,.92);--h-pl-sh:0 0 0 1px #6A4E1E}
 [data-hab="velours"]{--h-pl:rgba(30,6,14,.90);--h-pl-sh:0 0 0 1px #7A3A48}
 
-html[data-hab] .v2-av{color:#2B1606}
+html[data-hab] .v2-av{color:#fff}
 html[data-hab] :is(.pb-open,.ac-b){background:var(--card)}
 
 
@@ -882,8 +882,8 @@ html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard
 html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .u2-rail{box-shadow:6px 0 18px -12px rgba(var(--h-ombre-c,0,0,0),.4)}
 
 /* ——— détail précieux 2 : l'anneau de l'avatar est taillé dans la matière ——— */
-html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .v2-av{border:3px solid transparent;background:linear-gradient(150deg,#FFB347,#FF7A45) padding-box,var(--h-fond) 0 0/200px border-box}
-[data-hab="nacre"] .v2-av{background:linear-gradient(150deg,#FFB347,#FF7A45) padding-box,var(--h-peau) border-box}
+html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .v2-av{border:3px solid transparent;background:linear-gradient(150deg,#3A4766,#1A2030) padding-box,var(--h-fond) 0 0/200px border-box}
+[data-hab="nacre"] .v2-av{background:linear-gradient(150deg,#3A4766,#1A2030) padding-box,var(--h-peau) border-box}
 
 /* ——— détail précieux 3 : la signature, dans un coin du grand bandeau (le reste du bandeau est une teinte calme) ——— */
 html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) :is(.ac-fond,.pha-id){background:linear-gradient(90deg,rgb(var(--h-hero-teinte)) 0,rgb(var(--h-hero-teinte)) 52%,rgba(var(--h-hero-teinte),0) 86%),var(--h-fond) right top/520px no-repeat,rgb(var(--h-hero-teinte))}

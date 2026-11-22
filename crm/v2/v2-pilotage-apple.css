@@ -173,9 +173,9 @@ html.pa-noscroll,html.pa-noscroll body{overflow:hidden}
 .plm-duo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:16px}
 .plm-k{padding:20px 22px;border-radius:24px;background:radial-gradient(360px 200px at 100% 100%,rgba(0,80,230,.09),rgba(0,80,230,0) 72%),#fff;border:1px solid var(--pa-line);box-shadow:0 1px 2px rgba(16,19,28,.05),0 10px 26px rgba(0,50,160,.06)}
 .plm-k .pa-n{font-size:52px;line-height:1.05}.plm-k .pa-u{font-size:18px}
-.plm-k2 .pa-n{color:#8A4E0B}
+.plm-k2 .pa-n{color:#0034A0}
 .plm-kp{margin-top:10px}.plm-kt{font-size:14px;font-weight:600;color:var(--pa-mut)}
-.plm-ch{font-weight:800;color:#8A4E0B}
+.plm-ch{font-weight:800;color:#0034A0}
 .plm-cnt{display:inline-block;margin-left:6px;padding:2px 10px;border-radius:999px;background:#ECEFF5;font-size:14px;font-weight:700;color:#3A4256;vertical-align:2px}
 .plm-bloc{margin-top:34px}
 .plm-sec{margin-top:26px}

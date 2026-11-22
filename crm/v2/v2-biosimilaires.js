@@ -25,7 +25,8 @@
     if (!LOGO[nom]) return '';
     return '<img class="' + cls + '" src="' + LOGO[nom] + '" alt="' + esc(nom) + '" title="Partenaire Intégral · ' + esc(nom) + '">';
   }
-  var PURPLE = '#6D4FC4', GREEN = '#1E9E5A', ORANGE = '#E8722B', NAVY = '#0F2A47';
+  // 22/11/2026 : couleurs de l'aube (règle de Will : aucun ton chaud). BLEU remplace l'ancien orange des « partenaires » ; plus de violet (B-34 : trop de couleurs), aires en ardoise, % en encre.
+  var GREEN = '#0E7A4F', BLEU = '#0050E6', NAVY = '#1A2030';
 
   var S = { q: '', aire: '', canal: '', subOnly: false, partOnly: false, ipOnly: false, open: {} };
   try { var sv = JSON.parse(localStorage.getItem('biosim.S') || '{}'); ['q', 'aire', 'canal', 'subOnly', 'partOnly', 'ipOnly'].forEach(function (k) { if (sv[k] != null) S[k] = sv[k]; }); } catch (e) {}
@@ -46,66 +47,66 @@
         '.bs-sel{min-height:44px;height:44px;box-sizing:border-box}' +
       '}',
       '.bs-stat{background:#fff;border:1px solid #E6EAF0;border-radius:14px;padding:13px 15px}',
-      '.bs-stat .n{font-size:26px;font-weight:800;color:' + NAVY + ';font-family:"Geist Mono",monospace;line-height:1}',
+      '.bs-stat .n{font-size:26px;font-weight:800;color:' + NAVY + ';font-family:var(--font);line-height:1}',
       '.bs-stat .l{font-size:12px;color:#646B80;text-transform:uppercase;letter-spacing:.03em;margin-top:5px;font-weight:600}',
-      '.bs-stat.sub .n{color:' + GREEN + '}.bs-stat.part .n{color:' + ORANGE + '}',
+      '.bs-stat.sub .n{color:' + GREEN + '}.bs-stat.part .n{color:' + BLEU + '}',
       '.bs-filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0 4px}',
       '.bs-search{flex:1;min-width:180px;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #E6EAF0;border-radius:11px;padding:9px 13px}',
       '.bs-search input{border:0;outline:0;flex:1;font:inherit;font-size:14px;background:transparent}',
       '.bs-sel{background:#fff;border:1px solid #E6EAF0;border-radius:11px;padding:9px 12px;font:inherit;font-size:13px;color:' + NAVY + ';font-weight:600;cursor:pointer}',
-      '.bs-chip{border:1px solid #E6EAF0;background:#fff;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:700;color:#4A5568;cursor:pointer;transition:.15s;white-space:nowrap}',
+      '.bs-chip{border:1px solid #E6EAF0;background:#fff;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:700;color:#4A5878;cursor:pointer;transition:.15s;white-space:nowrap}',
       '.bs-chip:hover{border-color:#C3CCDA}',
       '.bs-chip.on{background:' + NAVY + ';color:#fff;border-color:' + NAVY + '}',
       '.bs-chip.sub.on{background:' + GREEN + ';border-color:' + GREEN + '}',
-      '.bs-chip.part.on{background:' + ORANGE + ';border-color:' + ORANGE + '}',
+      '.bs-chip.part.on{background:' + BLEU + ';border-color:' + BLEU + '}',
       '.bs-count{font-size:12.5px;color:#646B80;margin:10px 2px 4px;font-weight:600}',
       '.bs-card{background:#fff;border:1px solid #E6EAF0;border-radius:16px;margin-bottom:11px;overflow:hidden;transition:.15s}',
-      '.bs-card.ip{border-left:4px solid ' + PURPLE + '}',
+      '.bs-card.ip{background:#F5F8FF}',
       '.bs-card.hors{opacity:.82}',
       '.bs-head{display:flex;align-items:center;gap:12px;padding:15px 17px;cursor:pointer}',
       '.bs-head:hover{background:#FAFBFD}',
       '.bs-mol{flex:1;min-width:0}',
       '.bs-dci{font-size:17px;font-weight:800;color:' + NAVY + ';display:flex;align-items:center;gap:9px;flex-wrap:wrap}',
-      '.bs-atc{font-family:"Geist Mono",monospace;font-size:12px;font-weight:700;color:#647082;background:#F1F4F8;padding:2px 7px;border-radius:6px}',
+      '.bs-atc{font-family:var(--font);font-size:12px;font-weight:700;color:#646B80;background:#F1F4F8;padding:2px 7px;border-radius:6px}',
       '.bs-ref{font-size:12.5px;color:#646B80;margin-top:3px}',
-      '.bs-ref b{color:#4A5568}',
+      '.bs-ref b{color:#4A5878}',
       '.bs-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}',
       '.bs-pill{font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;letter-spacing:.01em}',
-      '.bs-pill.sub{background:#E4F6EC;color:#127A45}',
-      '.bs-pill.nosub{background:#F1F4F8;color:#647082}',
-      '.bs-pill.part{background:#FDECDD;color:#B24F14}',
-      '.bs-pill.canal{background:#EAF0FE;color:#2456C8}',
-      '.bs-pill.hosp{background:#FDECEC;color:#C0392B}',
-      '.bs-pill.aire{background:#F3EEFB;color:' + PURPLE + '}',
+      '.bs-pill.sub{background:#E4F6EC;color:#0E7A4F}',
+      '.bs-pill.nosub{background:#F1F4F8;color:#646B80}',
+      '.bs-pill.part{background:#E9F0FF;color:#0034A0}',
+      '.bs-pill.canal{background:#EAF0FE;color:#0034A0}',
+      '.bs-pill.hosp{background:#EEF1F6;color:#4A5878}',
+      '.bs-pill.aire{background:#EEF1F6;color:#4A5878}',
       '.bs-kpi{text-align:right;flex-shrink:0}',
-      '.bs-kpi .pv{font-size:22px;font-weight:800;color:' + PURPLE + ';font-family:"Geist Mono",monospace;line-height:1}',
-      '.bs-kpi .pl{font-size:12px;color:#647082;text-transform:uppercase;font-weight:700;margin-top:3px}',
+      '.bs-kpi .pv{font-size:22px;font-weight:800;color:' + NAVY + ';font-family:var(--font);line-height:1}',
+      '.bs-kpi .pl{font-size:12px;color:#646B80;text-transform:uppercase;font-weight:700;margin-top:3px}',
       '.bs-kpi .bx{font-size:12px;color:#646B80;margin-top:5px}',
-      '.bs-arrow{flex-shrink:0;color:#B4BECC;transition:.2s;font-size:15px}',
+      '.bs-arrow{flex-shrink:0;color:#8A94A6;transition:.2s;font-size:15px}',
       '.bs-card.open .bs-arrow{transform:rotate(90deg)}',
       '.bs-detail{padding:2px 17px 17px;border-top:1px solid #EEF1F5}',
-      '.bs-note{font-size:12px;color:#8A6D2F;background:#FCF6E6;border-radius:9px;padding:8px 11px;margin:12px 0 6px}',
+      '.bs-note{font-size:12px;color:#0034A0;background:#E9F0FF;border-radius:9px;padding:8px 11px;margin:12px 0 6px}',
       '.bs-tbl{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}',
-      '.bs-tbl th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:#647082;font-weight:700;padding:6px 8px;border-bottom:1.5px solid #EEF1F5}',
+      '.bs-tbl th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:#646B80;font-weight:700;padding:6px 8px;border-bottom:1.5px solid #EEF1F5}',
       '.bs-tbl td{padding:8px 8px;border-bottom:1px solid #F3F5F9;vertical-align:middle}',
       '.bs-tbl tr.princeps td{background:#F8F9FB}',
-      '.bs-tbl tr.part-row td{background:#FEF7F0}',
+      '.bs-tbl tr.part-row td{background:#F5F8FF}',
       '.bs-tbl .nom{font-weight:700;color:' + NAVY + '}',
       '.bs-tbl .labo{font-size:12px;color:#646B80}',
-      '.bs-tbl .mono{font-family:"Geist Mono",monospace;text-align:right;white-space:nowrap}',
+      '.bs-tbl .mono{font-family:var(--font);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}',
       '.bs-tag{font-size:12px;font-weight:800;padding:1.5px 6px;border-radius:5px;margin-left:5px;vertical-align:middle}',
-      '.bs-tag.part{background:' + ORANGE + ';color:#fff}',
-      '.bs-tag.ip{background:#EDE7FA;color:' + PURPLE + '}',
-      '.bs-tag.no{background:#F1F4F8;color:#67707F}',
-      '.bs-tag.pr{background:#E7ECF3;color:#5A6b80}',
+      '.bs-tag.part{background:' + BLEU + ';color:#fff}',
+      '.bs-tag.ip{background:#E9F0FF;color:#0034A0}',
+      '.bs-tag.no{background:#F1F4F8;color:#646B80}',
+      '.bs-tag.pr{background:#E7ECF3;color:#646B80}',
       '.bs-logo{height:15px;width:auto;vertical-align:middle;margin-left:7px}',
       '.bs-pill.part{display:inline-flex;align-items:center;gap:6px}',
       '.bs-pill.part .bs-logo{height:12px;margin-left:0}',
       '.bs-dls{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}',
       '.bs-dl{display:inline-flex;align-items:center;gap:7px;background:' + NAVY + ';color:#fff;border-radius:11px;padding:9px 15px;font-size:13px;font-weight:700;text-decoration:none}',
       '.bs-dl.alt{background:#fff;color:' + NAVY + ';border:1.5px solid ' + NAVY + '}',
-      '.bs-legend{font-size:12px;color:#647082;margin:14px 2px 0;line-height:1.7}',
-      '.bs-legend b{color:#5A6b80}'
+      '.bs-legend{font-size:12px;color:#646B80;margin:14px 2px 0;line-height:1.7}',
+      '.bs-legend b{color:#646B80}'
     ].join('');
     document.head.appendChild(css);
   }
@@ -176,7 +177,7 @@
     var cls = 'bs-card' + (m.referenced_ip ? ' ip' : ' hors') + (open ? ' open' : '');
     var kpi = m.penetration != null
       ? '<div class="pv">' + m.penetration + '%</div><div class="pl">biosim.</div><div class="bx">' + num(m.biosim_ameli_boxes) + ' boîtes</div>'
-      : '<div class="pv" style="color:#C0392B;font-size:14px">Hôpital</div><div class="bx">hors périmètre</div>';
+      : '<div class="pv" style="color:#4A5878;font-size:14px">Hôpital</div><div class="bx">hors périmètre</div>';
     var head = '<div class="bs-head" onclick="V2.pages.biosimilaires.toggle(' + JSON.stringify(m.dci).replace(/"/g, '&quot;') + ')">' +
       '<div class="bs-mol">' +
         '<div class="bs-dci">' + esc(m.dci) + ' <span class="bs-atc">' + esc(m.atc) + '</span></div>' +
@@ -258,7 +259,7 @@
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
         '<div class="v2-wrap bs-wrap">' +
           '<h1 style="font-size:26px;font-weight:800;color:' + NAVY + ';margin:8px 0 2px">Base Biosimilaires</h1>' +
-          '<p style="color:#646B80;font-size:14px;margin:0 0 4px">Tous les biosimilaires disponibles en France, croisés à vos ventes et stocks réseau. Les <b style="color:' + GREEN + '">substituables en officine</b> et les <b style="color:#E7712A">labos partenaires</b> en tête.</p>' +
+          '<p style="color:#646B80;font-size:14px;margin:0 0 4px">Tous les biosimilaires disponibles en France, croisés à vos ventes et stocks réseau. Les <b style="color:' + GREEN + '">substituables en officine</b> et les <b style="color:' + BLEU + '">labos partenaires</b> en tête.</p>' +
           '<div class="bs-dls">' +
             // 29/08/2026 — l'Excel porte aussi les prix nets : espace protégé, comme les PDF.
             '<a class="bs-dl" onclick="V2.ouvrirDocProtege(\'biosimExcel\')">' + ICO('fiche', 15) + ' Excel complet</a>' +
@@ -288,7 +289,7 @@
   }
   function renderList() {
     var f = filtered();
-    if (!f.length) return '<div style="text-align:center;padding:40px;color:#647082">Aucun résultat pour ces filtres.</div>';
+    if (!f.length) return '<div style="text-align:center;padding:40px;color:#646B80">Aucun résultat pour ces filtres.</div>';
     return f.map(card).join('');
   }
 })();

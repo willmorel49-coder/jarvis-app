@@ -24,6 +24,7 @@
 .gr-hd-t{min-width:0}
 .gr-eye{margin:0 0 4px;font-size:13px;font-weight:700;line-height:1.3;letter-spacing:.07em;text-transform:uppercase;color:#E3ECFF}
 .gr-h1{margin:0;font-size:clamp(30px,3.4vw,42px);line-height:1.06;letter-spacing:-.03em;font-weight:800;color:#fff;overflow-wrap:break-word}
+@media (max-width:1000px){.gr-h1{font-size:clamp(32px,9vw,40px)}} /* 22/11/2026 : comme .td-h1 et les autres titres (40 px à 768 et 900) ; au-delà de 1 000 px, v2.css pose déjà 40 px */
 .gr-phrase{margin:10px 0 0;max-width:74ch;font-size:16px;line-height:1.45;font-weight:500;color:#fff}
 .gr-phrase b{font-weight:800}
 .gr-num,.gr-cnt{font-variant-numeric:tabular-nums}
@@ -204,7 +205,7 @@
     radial-gradient(circle 130px at 100% -6%,color-mix(in srgb,var(--gr-bleu) 56%,#fff),transparent 72%),
     radial-gradient(ellipse 60% 150% at 3% -16%,color-mix(in srgb,var(--gr-bleu) 88%,var(--gr-nuit)),transparent 80%),
     linear-gradient(160deg,color-mix(in srgb,var(--gr-bleu) 74%,var(--gr-nuit)) 0%,color-mix(in srgb,var(--gr-bleu) 40%,var(--gr-nuit)) 55%,color-mix(in srgb,var(--gr-bleu) 52%,var(--gr-nuit)) 100%)}
-  .gr-h1{font-size:30px}
+  .gr-h1{font-size:clamp(32px,9vw,40px)} /* 22/11/2026 : même taille que les autres écrans (35,1 px à 390, 32,4 à 360) */
   .gr-phrase{font-size:15px}
   .gr-lu{width:260px;height:260px;right:-110px;top:-120px}
   .gr-tabs.v2-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}

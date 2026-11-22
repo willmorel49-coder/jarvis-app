@@ -48,7 +48,7 @@
   --line:rgba(16,19,28,.07); --line-2:rgba(16,19,28,.04); --line-strong:rgba(16,19,28,.12);
   --halo:#E9F0FF;
   /* accents piliers (sourds, sophistiqués) */
-  --c-opp:#1E9E6A; --c-fiche:#0050E6; --c-cat:#6D4FC4; --c-pilo:#C7791A;
+  --c-opp:#1E9E6A; --c-fiche:#0050E6; --c-cat:#6D4FC4; --c-pilo:#0486F4; /* 22/11/2026 lot 1 V3 : couleur du Pilotage en azur (était un ambre #C7791A, barre de chargement beige) */
   --c-rose:#E0556E; --c-mint:#1E9E6A; --c-amber:#C7791A;
   /* teintes texte accessibles (AA) pour signaux sur fond clair */
   --c-mint-txt:#0F7A52; --c-amber-txt:#9A5B12; --c-rose-txt:#C7283D;
@@ -153,8 +153,8 @@ border-bottom:1px solid var(--line)}
 .v2-top-search kbd{margin-left:auto;font-family:var(--mono);font-size:12px;background:#F1F3F8;
   padding:3px 7px;border-radius:6px;color:var(--ip-ink-2);font-weight:500}
 .v2-av{width:36px;height:36px;border-radius:50%;flex-shrink:0;cursor:pointer;
-  background:linear-gradient(150deg,#FFB347,#FF7A45);
-  box-shadow:0 3px 9px rgba(255,122,69,.28),0 1px 0 rgba(255,255,255,.3) inset;
+  background:linear-gradient(150deg,#3A4766,#1A2030); /* 22/11/2026 lot 1 V3 : encre de l'aube, plus d'orange (A-2) */
+  box-shadow:0 3px 9px rgba(26,32,48,.28),0 1px 0 rgba(255,255,255,.3) inset;
   display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12.5px}
 .v2-av:hover{transform:scale(1.05)}
 .v2-usermenu{position:fixed;top:60px;right:26px;z-index:120;min-width:210px;background:var(--card);border:1px solid var(--line);
@@ -863,7 +863,7 @@ html:not([data-hab]) body{background-color:var(--paper);background-image:radial-
 html:not([data-hab]) .v2-top{background-color:#fff;background-image:none;border-bottom:1px solid #E3E6EC;box-shadow:0 1px 0 #fff inset,0 8px 24px -16px rgba(26,32,48,.18)}
 html:not([data-hab]) .v2-logo{width:44px;height:44px;border-radius:14px;background-color:#0050E6;background-image:radial-gradient(90px 60px at 20% 0%,#4F8DFF 0%,rgba(79,141,255,0) 70%),linear-gradient(160deg,#0A5BF0,#003AB4);box-shadow:0 6px 14px -4px rgba(0,80,230,.5),0 1px 0 rgba(255,255,255,.35) inset}
 html:not([data-hab]) .tp-plus{background-color:#003AB4;background-image:linear-gradient(160deg,#0A5BF0,#003AB4);box-shadow:0 8px 18px -6px rgba(0,80,230,.6),0 1px 0 rgba(255,255,255,.3) inset}
-html:not([data-hab]) .tp-avb .v2-av{width:44px;height:44px;background-color:#9E4512;background-image:linear-gradient(150deg,#B14F17,#8A380A);color:#fff;box-shadow:0 6px 14px -6px rgba(138,56,10,.6),0 1px 0 rgba(255,255,255,.4) inset}
+html:not([data-hab]) .tp-avb .v2-av{width:44px;height:44px;background-color:#1A2030;background-image:linear-gradient(150deg,#3A4766,#1A2030);color:#fff;box-shadow:0 6px 14px -6px rgba(26,32,48,.55),0 1px 0 rgba(255,255,255,.3) inset} /* 22/11/2026 lot 1 V3 : encre de l'aube, plus d'orange (A-2) */
 /* le menu : caché partout par défaut (habillages, téléphone, tablette), en pilule sur ordinateur */
 .tp-menu{display:none}
 @media (min-width:1001px){

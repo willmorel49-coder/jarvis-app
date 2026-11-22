@@ -20,7 +20,7 @@
   var CY_URL = 'https://cdn.jsdelivr.net/npm/cytoscape@3.34.3/dist/cytoscape.min.js';
   // Empreinte du fichier exact (SRI) : un fichier modifié sur le CDN est refusé par le navigateur.
   var CY_SRI = 'sha384-qPKQxl9uMXOw7vSTUDAnpUilhLuulovw6P5Z4db4bqxW5VhumS7przEmHX0iM0Oc';
-  var ACCENT = '#0E7C86', ACCENT_D = '#09565D', INK = '#10131C', INK2 = '#2A2F3C', MUTED = '#646B80', ORANGE = '#F39A1B';
+  var ACCENT = '#0E7C86', ACCENT_D = '#09565D', INK = '#10131C', INK2 = '#2A2F3C', MUTED = '#646B80', NOUS = '#0050E6'; // 22/11/2026 lot 1 V3 : Intégral en bleu de la marque, plus d'orange
   var FR = new Intl.NumberFormat('fr-FR');
   var S = { host: null, d: null, N: null, out: null, inn: null, info: null, cy: null, montage: 0, st: { sel: null, min: 2 }, tel: null };
 
@@ -92,11 +92,15 @@
     return res;
   }
   function repGroupe(rep) { var l = S.inn[rep.id].filter(function (x) { return x.type === 'membre'; })[0]; return l ? S.N[l.de] : null; }
-  // Couleurs des groupes = celles de la légende de la carte (portées par le fichier) ; Intégral seul en orange.
+  // Couleurs des groupes = celles de la légende de la carte (portées par le fichier, passées en tons froids) ; Intégral en bleu.
+  // 22/11/2026 lot 1 V3 : les couleurs du fichier de données (grossistes-data.js, généré) passent en tons froids, comme la carte
+  // (table COUL_FROID de v2-concurrents-carte.js, ici par couleur d'origine) : ni orange, ni rouge, ni rose dans une palette de groupes.
+  var FROID = { '#F39A1B': '#0050E6', '#0E8F8A': '#7C4FC4', '#E30613': '#00A9B5', '#0033A0': '#4A5878', '#607D8B': '#B8C2D6', '#3C9A3C': '#0E7A4F', '#6F42C1': '#A08BE0', '#5D2E6E': '#1A2030', '#7C3AED': '#5BA83C', '#C2185B': '#63B9FE', '#B91C1C': '#0486F4', '#D946A6': '#8A94A6', '#E11D48': '#7A8CB8' };
+  function froid(c) { return FROID[String(c).toUpperCase()] || c; }
   function couleurDe(n) {
-    if (n.nous) return ORANGE;
-    if (n.couleur) return n.couleur;
-    if (n.type === 'repartiteur') { var g = repGroupe(n); if (g && g.couleur) return g.couleur; }
+    if (n.nous) return NOUS;
+    if (n.couleur) return froid(n.couleur);
+    if (n.type === 'repartiteur') { var g = repGroupe(n); if (g && g.couleur) return froid(g.couleur); }
     return '#94A3B8';
   }
   function ouvrirFiche(n) { if (n && n.fiche && V2.grossisteOpen) V2.grossisteOpen(n.fiche); }
@@ -136,7 +140,7 @@
       { selector: 'node[type="societe"]', style: { shape: 'rectangle', width: 'data(w)', height: 'data(h)', 'text-max-width': 'data(tw)', padding: 0, 'border-color': INK2, 'border-width': 1.4, 'font-size': 10.5 } },
       { selector: 'node[type="proprietaire"]', style: { shape: 'rectangle', width: 'data(w)', height: 'data(h)', 'text-max-width': 'data(tw)', padding: 0, 'border-color': INK, 'border-width': 2.6, 'font-weight': 800, 'font-size': 11.5 } },
       { selector: 'node[type="personne"]', style: { shape: 'ellipse', width: 15, height: 15, 'background-color': '#EEF1F6', 'border-color': INK2, 'border-width': 1.4, 'text-valign': 'bottom', 'text-margin-y': 4, 'font-size': 10, 'font-weight': 600, 'text-max-width': 84 } },
-      { selector: 'node.nous', style: { 'border-color': INK, 'border-width': 3, 'background-color': ORANGE, color: INK } },
+      { selector: 'node.nous', style: { 'border-color': INK, 'border-width': 3, 'background-color': NOUS, color: '#FFFFFF' } },
       { selector: 'edge', style: { 'curve-style': 'bezier', width: 1.3, 'line-color': '#B8C0CF', 'target-arrow-color': '#B8C0CF', 'target-arrow-shape': 'none', 'arrow-scale': 0.9 } },
       // « détient » : trait plein fléché ; « dirige » : tirets sans flèche (un œil doit distinguer « possède » de « dirige »)
       { selector: 'edge[type="detient"], edge[type="possede"]', style: { width: 2.2, 'line-color': '#6B7286', 'target-arrow-color': '#6B7286', 'target-arrow-shape': 'triangle' } },
@@ -426,7 +430,7 @@
       '.cl-lg{display:inline-flex;align-items:center;gap:7px}.cl-lg i{display:inline-block;flex:none;box-sizing:border-box}',
       '.lg-rep{width:20px;height:12px;border-radius:4px;background:#0E8F8A}.lg-soc{width:16px;height:12px;background:#fff;border:1.4px solid ' + INK2 + '}',
       '.lg-pro{width:16px;height:12px;background:#fff;border:2.6px solid ' + INK + '}.lg-per{width:12px;height:12px;border-radius:50%;background:#EEF1F6;border:1.4px solid ' + INK2 + '}',
-      '.lg-nous{width:20px;height:12px;border-radius:4px;background:' + ORANGE + ';border:2.5px solid ' + INK + '}',
+      '.lg-nous{width:20px;height:12px;border-radius:4px;background:' + NOUS + ';border:2.5px solid ' + INK + '}',
       '.lg-det{width:26px;height:0;border-top:2.4px solid #6B7286;position:relative}.lg-det:after{content:"";position:absolute;right:-1px;top:-5px;border-left:7px solid #6B7286;border-top:4px solid transparent;border-bottom:4px solid transparent}.lg-dir{width:26px;height:0;border-top:2px dashed #8A93A6}',
       '.cl-info{min-height:44px;padding:12px 16px;border-radius:var(--r-md);background:var(--card);border:1px solid var(--line);box-shadow:var(--sh-1);font-size:13.5px;line-height:1.55;color:var(--ip-ink-2)}.cl-info b{color:var(--ip-ink)}.cl-info:empty{display:none}',
       '.cl-liste-w{margin:0}',

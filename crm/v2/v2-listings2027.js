@@ -28,7 +28,7 @@
   var ICO = function (n, s, w) { return V2.ICO ? V2.ICO(n, s, w) : (window.ICO ? window.ICO(n, s, w) : ''); };
 
   // ── Réglages d'affichage (pas des données métier) ─────────────────
-  var COULEURS = { froid: '#0891B2', coeur: '#E0556E', cher: '#3A4A9C', entre: '#C7791A', sous: '#6D4FC4' };
+  var COULEURS = { froid: '#0891B2', coeur: '#0E7A4F', cher: '#3A4A9C', entre: '#63B9FE', sous: '#6D4FC4' };
   var ORDRE = ['sous', 'entre', 'coeur', 'cher', 'froid'];   // prix croissant, puis le froid
   // Noms affichés des familles : ceux du fichier (« Cher > 468 € », deux « Petit prix ») ne collent pas au seuil réel
   // (468,97 €) et servent aussi d'étiquette à « Notre marge par produit » : on ne les change pas là-bas, on les nomme ici.

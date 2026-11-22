@@ -105,7 +105,7 @@
       '<g class="ac-o-fen"><rect x="90" y="138" width="42" height="42" rx="4" fill="url(#yo-vit)"/><rect x="174" y="138" width="42" height="42" rx="4" fill="url(#yo-vit)"/>',
       '<path d="M94 160 h34 M94 170 h34 M178 160 h34 M178 170 h34" stroke="#fff" stroke-opacity=".7" stroke-width="2"/>',
       '<rect x="98" y="150" width="6" height="8" rx="1.5" fill="#fff" opacity=".9"/><rect x="108" y="148" width="6" height="10" rx="1.5" fill="#1E9E6A" opacity=".9"/><rect x="118" y="151" width="6" height="7" rx="1.5" fill="#fff" opacity=".9"/>',
-      '<rect x="182" y="150" width="6" height="8" rx="1.5" fill="#fff" opacity=".9"/><rect x="192" y="149" width="6" height="9" rx="1.5" fill="#C7791A" opacity=".9"/><rect x="202" y="151" width="6" height="7" rx="1.5" fill="#fff" opacity=".9"/></g>',
+      '<rect x="182" y="150" width="6" height="8" rx="1.5" fill="#fff" opacity=".9"/><rect x="192" y="149" width="6" height="9" rx="1.5" fill="#0486F4" opacity=".9"/><rect x="202" y="151" width="6" height="7" rx="1.5" fill="#fff" opacity=".9"/></g>',
       '<rect x="140" y="136" width="26" height="70" rx="3" fill="url(#yo-int)"/>',
       '<g class="ac-o-porte"><rect x="140" y="136" width="26" height="70" rx="3" fill="url(#yo-vit)"/><rect x="140" y="136" width="26" height="70" rx="3" fill="none" style="stroke:var(--ip-ink)" stroke-opacity=".18"/>',
       '<path d="M153 140 v62" stroke="#fff" stroke-opacity=".6"/><circle cx="149" cy="172" r="1.8" style="fill:var(--ip-ink)" opacity=".6"/></g>',
@@ -116,7 +116,7 @@
       '<g class="ac-o-croix-coeur"><rect x="56" y="34" width="12" height="56" rx="2" fill="#6DF2B0"/><rect x="34" y="56" width="56" height="12" rx="2" fill="#6DF2B0"/></g>',
       '<rect x="60" y="52" width="4" height="20" fill="#fff" opacity=".9"/><rect x="52" y="60" width="20" height="4" fill="#fff" opacity=".9"/>',
       '<path d="M62 94 v12 h12" stroke="#fff" stroke-opacity=".4" stroke-width="3" fill="none" stroke-linecap="round"/></g>',
-      '<path d="M246 206 h20 l-3-20 h-14 Z" fill="#C7791A"/>',
+      '<path d="M246 206 h20 l-3-20 h-14 Z" fill="#0486F4"/>',
       '<path d="M256 186 c-14-10 -16-28 -6-40 c10 10 12 26 6 40 Z M256 186 c 2-16 12-26 24-28 c-2 14 -12 24 -24 28 Z M256 186 c-8-14 -22-18 -32-14 c 6 12 20 16 32 14 Z" fill="#1E9E6A"/>',
       '<path d="M256 186 v-30" stroke="#13764E" stroke-width="2" stroke-linecap="round"/>',
       '</svg>'
@@ -137,10 +137,10 @@
       '</defs><rect width="240" height="150" fill="url(#yi-ciel)"/>',
       '<rect class="ac-i-aube" y="60" width="240" height="60" fill="url(#yi-ho)"/>',
       '<g class="ac-i-sun-w"><g class="ac-i-halo"><circle cx="120" cy="76" r="62" fill="url(#yi-so)"/></g>',
-      '<g class="ac-i-rays" stroke="#FFE9B0" stroke-width="1.4" stroke-linecap="round" opacity=".55">' + rays + '</g>',
+      '<g class="ac-i-rays" stroke="#C6D6F8" stroke-width="1.4" stroke-linecap="round" opacity=".55">' + rays + '</g>',
       '<circle cx="120" cy="76" r="20" fill="url(#yi-di)"/></g>',
       '<g style="fill:color-mix(in srgb,var(--ip-blue-d) 70%,#05070d)">' + t + '</g>',
-      '<g fill="#FFD27A">' + w + '</g></svg>'
+      '<g fill="#D5E2FF">' + w + '</g></svg>'
     ].join('');
   }
 

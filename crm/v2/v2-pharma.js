@@ -109,12 +109,12 @@
   var CATS = [
     { key: 'pp',     label: 'Princeps · Petits prix',    sub: '0 – 4,33 €',      color: '#1E9E6A', cap: 30 },
     { key: 'mi',     label: 'Princeps · Intermédiaires', sub: '4,33 – 468 €',    color: '#0050E6', cap: 30 },
-    { key: 'ch',     label: 'Princeps · Chers',          sub: '> 468 €',         color: '#C7791A', cap: 20 },
+    { key: 'ch',     label: 'Princeps · Chers',          sub: '> 468 €',         color: '#63B9FE', cap: 20 },
     { key: 'froid',  label: 'Froid',                     sub: 'chaîne du froid', color: '#00B5D8', cap: 30 },
     { key: 'gen',    label: 'Génériques',                sub: '',                color: '#737A8C', cap: 30 },
     { key: 'genp',   label: 'Génériques partenaires',    sub: '',                color: '#1E9E6A', cap: 30 },
     { key: 'biosim', label: 'Biosimilaires',             sub: '',                color: '#6D4FC4', cap: 20 },
-    { key: 'nr',     label: 'Non remboursés',            sub: 'marge libre',     color: '#C7791A', cap: 30 }
+    { key: 'nr',     label: 'Non remboursés',            sub: 'marge libre',     color: '#4A5878', cap: 30 }
   ];
 
   // ── Index BENCHMARK (Map cip13 → bench) — construit une seule fois ──

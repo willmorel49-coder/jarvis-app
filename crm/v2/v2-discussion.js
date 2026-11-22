@@ -31,7 +31,7 @@
   var EMOJIS = ['👍', '✅', '👀', '🙏'];
   var LIB_EMOJI = ['Pouce levé', 'Fait', 'Je regarde', 'Merci'];
   // Mêmes libellés et mêmes couleurs que v2-remontees.js
-  var STATUT = { nouveau: { l: 'Nouveau', c: 'var(--c-amber)' }, 'en cours': { l: 'En réflexion', c: 'var(--ip-blue)' }, fait: { l: 'Fait', c: 'var(--c-mint)' } };
+  var STATUT = { nouveau: { l: 'Nouveau', c: '#1A2030' }, 'en cours': { l: 'En réflexion', c: 'var(--ip-blue)' }, fait: { l: 'Fait', c: 'var(--c-mint)' } };
   var REP = { st: 'groupement', sid: '__remontees_reponses__' };
 
   var S = {

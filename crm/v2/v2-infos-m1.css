@@ -10,7 +10,7 @@
    valeurs identiques à celles de la maquette. Aucun color-mix, aucun flou, aucune opacité sur du texte, cibles ≥ 44 px.
    ═══════════════════════════════════════════════════════════════════ */
 .inf-t{--it-ink:#1A2030;--it-ink-2:#3B4357;--it-ink-3:#4A5265;--it-muted:#5B6478;--it-muted-2:#646B80;
-  --it-blue:#0050E6;--it-blue-d:#0034A0;--it-blue-pale:#E9F0FF;--it-vert:#0E7A4F;--it-vert-pale:#E3F4EC;--it-orange:#A4520B;--it-orange-pale:#FBEEDF;--it-rouge:#B3261E;--it-rouge-pale:#FBE7E5;
+  --it-blue:#0050E6;--it-blue-d:#0034A0;--it-blue-pale:#E9F0FF;--it-vert:#0E7A4F;--it-vert-pale:#E3F4EC;--it-orange:#0B6E7A;--it-orange-pale:#E2F4F6;/* ton « orange » devenu turquoise (22/11/2026, plus de chaud) */--it-rouge:#B3261E;--it-rouge-pale:#FBE7E5;
   --it-line:rgba(26,32,48,.11);--it-line-2:rgba(26,32,48,.06);--it-r-btn:14px;--it-ease:cubic-bezier(.32,.72,0,1);
   --it-sh-1:0 1px 0 rgba(255,255,255,.95) inset,0 1px 2px rgba(26,32,48,.06),0 10px 28px -14px rgba(26,32,48,.14);
   --it-sh-2:0 1px 0 rgba(255,255,255,.95) inset,0 2px 4px rgba(26,32,48,.06),0 18px 38px -14px rgba(0,52,160,.22);
