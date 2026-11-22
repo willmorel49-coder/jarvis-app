@@ -349,11 +349,14 @@ test('dernière page : les cinq lignes de Will, seuil de livraison lu dans le r�
   assert.equal((dos.match(/<li>/g) || []).length, 5);
 });
 
-test('pastille « Médiane » de l\'écran Offilog : pas de .dkl-note (son gris écrasait le blanc, 1,1:1 mesuré)', () => {
+test('écran Offilog : plus de pastille « Médiane », et aucune ligne de l\'écran ne reprend .dkl-note (son gris écrasait le blanc, 1,1:1 mesuré)', () => {
+  // 22/11/2026, v3 « Les trois onglets » : la pastille « Médiane » est supprimée volontairement (classe .olm-med retirée). La règle de contraste reste vraie
+  // pour tout l\'écran : aucune ligne qui produit du HTML .olm-* ne porte .dkl-note.
   const src = fs.readFileSync(path.join(RACINE, 'crm/v2/v2-offilog.js'), 'utf8');
-  const l = src.split('\n').find((x) => x.includes('olm-med'));
-  assert.ok(l, 'pastille trouvée');
-  assert.doesNotMatch(l, /dkl-note/);
+  const lignes = src.split('\n');
+  assert.ok(lignes.filter((x) => x.includes('olm-c-conc')).length > 0, 'marqueur positif : l\'écran v3 est bien dans le fichier');
+  assert.equal(lignes.filter((x) => x.includes('olm-med')).length, 0, 'plus de pastille Médiane');
+  assert.deepEqual(lignes.filter((x) => /olm-/.test(x) && /dkl-note/.test(x)), []);
 });
 
 test('index des détourages : chaque EAN de oimg-cut/liste.json a son WebP, et chaque WebP est dans l\'index', () => {

@@ -13,9 +13,10 @@ import { fileURLToPath } from 'node:url';
 
 const RACINE = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = fs.readFileSync(path.join(RACINE, 'crm/v2/v2-offilog.js'), 'utf8');
+const BOOT = fs.readFileSync(path.join(RACINE, 'crm/v2/v2-boot.js'), 'utf8');
 
 // Rend l'écran Offilog dans un faux navigateur et rend le HTML produit.
-function rendre({ opso, farmaline, maxipara, cap3000, citypharma = {}, accueil = false }) {
+function rendre({ opso, farmaline, maxipara, cap3000, citypharma = {}, fiche = false, comparer = false }) {
   const noop = () => '';
   const fauxEl = () => new Proxy(function () {}, { get: (t, k) => (k === 'style' ? {} : k === 'dataset' ? {} : fauxEl()), apply: () => fauxEl(), set: () => true });
   const doc = { currentScript: null, head: fauxEl(), body: fauxEl(), createElement: fauxEl, getElementById: () => null, querySelector: () => null, querySelectorAll: () => [], addEventListener: noop };
@@ -38,9 +39,14 @@ function rendre({ opso, farmaline, maxipara, cap3000, citypharma = {}, accueil =
   win.window = win;
   const ctx = vm.createContext(win);
   ctx.document = doc;
+  // 22/11/2026, v3 : dates en mots (« 10 septembre ») avec la vraie V2.dateEnMots de v2-boot.js.
+  vm.runInContext(BOOT.slice(BOOT.indexOf('V2.dateEnMots = function'), BOOT.indexOf('  V2.bestPrice = function')), ctx);
   vm.runInContext(SRC, ctx);
-  // 06/11/2026 : l'arrivée montre les trois portes ; les cartes se lisent dans la liste, ouverte ici par le tri par défaut.
-  if (!accueil) win.V2.offSort('ventes');
+  // 22/11/2026, v3 « Les trois onglets » : plus d'écran d'arrivée, l'onglet « Trouver » montre les cartes tout de suite.
+  // `fiche` ouvre la fiche du produit (tous les concurrents, datés) ; `comparer` ouvre l'onglet « Comparer nos prix ».
+  win.V2.offSort('ventes');
+  if (comparer) win.V2.offPorte('comparer');
+  if (fiche) win.V2.offSelect('1');
   const root = { innerHTML: '', querySelector: () => null, querySelectorAll: () => [] };
   win.V2.pages.offilog.render(root, '');
   return root.innerHTML;
@@ -48,12 +54,17 @@ function rendre({ opso, farmaline, maxipara, cap3000, citypharma = {}, accueil =
 
 const EAN = '3000000000001';
 
+const ligneFiche = (h, nom) => (h.slice(h.indexOf('id="off-achat"')).match(new RegExp('<div class="olm-f-r[^"]*" data-achat="' + nom + '">.*?</div>')) || [''])[0];
+
 test('CRM : les trois prix publics s\'affichent, même sous le prix Offilog', () => {
-  const h = rendre({ opso: false, farmaline: { [EAN]: 9 }, maxipara: { [EAN]: 8.5 }, cap3000: { [EAN]: 12 } });
-  assert.match(h, /Farmaline EUR9\.00/);
-  assert.match(h, /Maxi Para EUR8\.50/);
-  assert.match(h, /Cap 3000 EUR12\.00/);
-  assert.match(h, /relevé du 10\/09\/2026/);
+  // 22/11/2026, v3 : la carte montre le meilleur concurrent (une ligne), la fiche du produit les montre TOUS, avec la date de chaque relevé.
+  const h = rendre({ opso: false, farmaline: { [EAN]: 9 }, maxipara: { [EAN]: 8.5 }, cap3000: { [EAN]: 12 }, fiche: true });
+  assert.match(ligneFiche(h, 'Farmaline'), /EUR9\.00/);
+  assert.match(ligneFiche(h, 'Maxi Para'), /relevé du 15 avril/);
+  assert.match(ligneFiche(h, 'Maxi Para'), /EUR8\.50/);
+  assert.match(ligneFiche(h, 'Cap 3000'), /EUR12\.00/);
+  assert.match(ligneFiche(h, 'Farmaline'), /relevé du 10 septembre/);
+  assert.match(h, /olm-c-cn">Maxi Para<\/span><span class="olm-c-cv">EUR8\.50</, 'la carte montre le prix public le plus bas, même sous le prix Offilog');
 });
 
 test('OPSO : jamais moins cher que nous (< prix Offilog masqué, = ou > affiché)', () => {
@@ -68,18 +79,16 @@ test('OPSO : si aucun prix public n\'est >= au nôtre, rien n\'est affiché', ()
   assert.doesNotMatch(h, /Farmaline EUR|Maxi Para EUR|Cap 3000 EUR/);
 });
 
-test('arrivée CRM (06/11/2026) : trois portes, aucune carte ; « Comparer » ne cite que les plateformes qui ont un prix', () => {
-  const seul = rendre({ opso: false, farmaline: {}, maxipara: {}, cap3000: {}, citypharma: { [EAN]: 9 }, accueil: true });
-  assert.match(seul, /Que voulez-vous faire \?/);
-  assert.equal((seul.match(/class="olm-porte[^"]*" data-porte="(trouver|catalogue|comparer)"/g) || []).length, 3);
-  assert.doesNotMatch(seul, /Produit A/, 'les cartes restent derrière « Trouver un produit »');
-  assert.match(seul, /<span class="olm-p-pv">Citypharma<\/span>/);
+test('onglets CRM (22/11/2026, v3 ; remplace l\'arrivée à trois portes du 06/11) : trois onglets, les cartes tout de suite ; « Comparer » ne cite que les plateformes qui ont un prix', () => {
+  const seul = rendre({ opso: false, farmaline: {}, maxipara: {}, cap3000: {}, citypharma: { [EAN]: 9 }, comparer: true });
+  assert.equal((seul.match(/class="olm-onglet[^"]*" role="tab" id="olm-t-(trouver|catalogue|comparer)" data-porte="(trouver|catalogue|comparer)"/g) || []).length, 3);
+  const trouver = rendre({ opso: false, farmaline: {}, maxipara: {}, cap3000: {}, citypharma: { [EAN]: 9 } });
+  assert.match(trouver, /Produit A/, 'v3 : plus d\'écran d\'arrivée sans carte, l\'onglet « Trouver » les montre aussitôt');
+  const cites = (h) => [...h.matchAll(/class="olm-conc[^"]*"[^>]*data-cmp-src="([^"]+)"/g)].map((m) => m[1]).filter((k) => k !== 'tous');
+  assert.deepEqual(cites(seul), ['citypharma']);
   // contre-épreuve : deux plateformes chargées → les deux sont citées, celle sans prix ne l'est pas
-  const deux = rendre({ opso: false, farmaline: { [EAN]: 9 }, maxipara: {}, cap3000: {}, citypharma: { [EAN]: 9 }, accueil: true });
-  const pv = (deux.match(/<span class="olm-p-pv">([^<]*)<\/span>/) || [])[1] || '';
-  assert.match(pv, /Farmaline/);
-  assert.match(pv, /Citypharma/);
-  assert.doesNotMatch(pv, /Maxi Para|Cap 3000/);
+  const deux = rendre({ opso: false, farmaline: { [EAN]: 9 }, maxipara: {}, cap3000: {}, citypharma: { [EAN]: 9 }, comparer: true });
+  assert.deepEqual(cites(deux).sort(), ['citypharma', 'farmaline']);
 });
 
 test('contrôle de l\'outil : le faux navigateur voit bien la carte du produit', () => {
@@ -106,9 +115,11 @@ test('fichiers générés : seulement « EAN13 -> prix » et la date du relevé,
 
 // ── Citypharma (30/10/2026) ──
 test('Citypharma CRM : prix affiché même sous le prix Offilog, avec la date du relevé et la pastille-filtre', () => {
-  const h = rendre({ opso: false, farmaline: {}, maxipara: {}, cap3000: {}, citypharma: { [EAN]: 9 } });
-  assert.match(h, /Citypharma EUR9\.00/);
-  assert.match(h, /relevé du 30\/10\/2026/);
+  const h = rendre({ opso: false, farmaline: {}, maxipara: {}, cap3000: {}, citypharma: { [EAN]: 9 }, fiche: true });
+  // 22/11/2026, v3 : la ligne carte (une ligne concurrent) et la fiche (prix + « relevé du 30 octobre »)
+  assert.match(h, /olm-c-cn">Citypharma<\/span><span class="olm-c-cv">EUR9\.00</);
+  assert.match(ligneFiche(h, 'Citypharma'), /EUR9\.00/);
+  assert.match(ligneFiche(h, 'Citypharma'), /relevé du 30 octobre/);
   // la pastille-filtre vit dans le panneau « Filtres » (fermé au rendu) : on contrôle sa déclaration, son filtre et son compteur
   assert.match(SRC, /k: 'citypharmapub', label: 'Vendu chez Citypharma'/);
   assert.match(SRC, /if \(k === 'citypharmapub'\) return it\.pub\.citypharma > 0;/);

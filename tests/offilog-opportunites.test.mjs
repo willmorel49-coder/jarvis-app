@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 
 const RACINE = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = fs.readFileSync(path.join(RACINE, 'crm/v2/v2-offilog.js'), 'utf8');
+const BOOT = fs.readFileSync(path.join(RACINE, 'crm/v2/v2-boot.js'), 'utf8');
 const COLS = ['id', 'marque', 'produit', 'prix_offilog', 'concurrent', 'prix_concurrent', 'date_concurrent', 'ecart_pct', 'public_min', 'public_min_ou', 'marge_pct', 'promo_pz', 'sans_promo', 'nb_sources'];
 const DONNEES = {
   date: '2026-11-17', cols: COLS, fragiles_exclus: 7,
@@ -42,6 +43,8 @@ function rendre({ opso = false, donnees = DONNEES, onglet = 'opp', filtre = null
   win.window = win;
   const ctx = vm.createContext(win);
   ctx.document = doc;
+  // 22/11/2026, v3 : le CRM écrit toutes ses dates en mots (« 17 novembre ») avec la vraie V2.dateEnMots de v2-boot.js (lue ici, pas simulée).
+  vm.runInContext(BOOT.slice(BOOT.indexOf('V2.dateEnMots = function'), BOOT.indexOf('  V2.bestPrice = function')), ctx);
   vm.runInContext(SRC, ctx);
   win.V2.offPorte('comparer');
   win.V2.offOppOnglet(onglet);
@@ -55,7 +58,7 @@ function rendre({ opso = false, donnees = DONNEES, onglet = 'opp', filtre = null
 
 test('l\'onglet porte la date de la photo, la phrase sur les fragiles et les 4 filtres comptés depuis les données', () => {
   const h = rendre({});
-  assert.match(h, /Photo du 17\/11\/2026/);
+  assert.match(h, /Photo du 17 novembre</);   // 22/11/2026, v3 : « 17 novembre » (était « 17/11/2026 »), date lue dans le fichier
   assert.match(h, /7 produits « fragiles » sont écartés/);
   for (const [nom, n] of [['Opportunités solides', 2], ['Moins cher, sans prix public', 1], ['Moins cher, marge courte', 0], ['À ne pas pousser sur le prix', 1]]) {
     assert.match(h, new RegExp(nom + '<span class="cnt">' + n + '</span>'), nom);
@@ -99,7 +102,7 @@ test('recherche mot par mot : chaque mot tapé, n\'importe où dans marque + lib
 test('l\'onglet « Face aux plateformes » garde le comparatif d\'avant', () => {
   const h = rendre({ onglet: 'plateformes' });
   assert.match(h, /data-onglet="opp"/);
-  assert.doesNotMatch(h, /Photo du 17\/11\/2026/);
+  assert.doesNotMatch(h, /Photo du 17 novembre/);
 });
 
 test('OPSO : ni onglet ni opportunités (conditions de tiers)', () => {

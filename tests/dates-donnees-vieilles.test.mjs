@@ -80,7 +80,7 @@ function rendre({ cap3000Maj, drakkarsMaj, bestMaj, cmp = '', select = false }) 
   if (a > 0) vm.runInContext(BOOT.slice(a, BOOT.indexOf('  V2.bestPrice = function')), ctx);
   vm.runInContext(OFF, ctx);
   win.V2.offSort('ventes');
-  if (cmp) win.V2.offCmpSrc(cmp);
+  if (cmp) { win.V2.offPorte('comparer'); win.V2.offCmpSens('tous'); win.V2.offCmpSrc(cmp); }   // 22/11/2026, v3 : « Comparer à » est l'onglet « Comparer nos prix »
   if (select) win.V2.offSelect('1');
   const root = { innerHTML: '', querySelector: () => null, querySelectorAll: () => [] };
   win.V2.pages.offilog.render(root, '');
@@ -88,20 +88,27 @@ function rendre({ cap3000Maj, drakkarsMaj, bestMaj, cmp = '', select = false }) 
 }
 const hier = (() => { const d = new Date(Date.now() - 86400000); return d.toISOString().slice(0, 10); })();
 
+// 22/11/2026, v3 « Les trois onglets » : la carte n'a plus qu'UNE ligne concurrent (le meilleur) ; les autres vivent dans la fiche du produit (volet),
+// qui date tous les relevés (« relevé du 5 juin »). La règle des 30 jours reste vraie sur la carte : un vieux prix y dit sa date, un récent n'en porte pas.
 test('Offilog, carte : un prix de concurrent relevé il y a plus de 30 jours dit sa date', () => {
-  const h = rendre({ cap3000Maj: '2026-06-05', drakkarsMaj: '2026-09-30', bestMaj: hier });
-  assert.match(h, /Cap 3000 EUR12\.00 · relevé le 5 juin/);
-  assert.match(h, /Drakkars EUR11\.00 · relevé le 30 septembre/);
+  const h = rendre({ cap3000Maj: '2026-06-05', drakkarsMaj: '2026-09-30', bestMaj: hier, cmp: 'cap3000' });
+  assert.match(h, /olm-c-cn">Cap 3000<\/span><span class="olm-c-cv">EUR12\.00<\/span><span class="olm-c-cd">relevé le 5 juin</);
+  const d = rendre({ cap3000Maj: '2026-06-05', drakkarsMaj: '2026-09-30', bestMaj: hier, cmp: 'drakkars' });
+  assert.match(d, /olm-c-cn">Drakkars<\/span><span class="olm-c-cv">EUR11\.00<\/span><span class="olm-c-cd">relevé le 30 septembre</);
+  // la fiche du produit date chaque concurrent, vieux ou non
+  const f = rendre({ cap3000Maj: '2026-06-05', drakkarsMaj: '2026-09-30', bestMaj: hier, select: true });
+  assert.match(f, /data-achat="Cap 3000">.*?relevé du 5 juin/);
+  assert.match(f, /data-achat="Drakkars">.*?relevé du 30 septembre/);
 });
 test('Offilog, carte : un prix récent ne porte aucune mention (contre-épreuve)', () => {
-  const h = rendre({ cap3000Maj: hier, drakkarsMaj: hier, bestMaj: hier });
-  assert.match(h, /Cap 3000 EUR12\.00/);
-  assert.doesNotMatch(h, /· relevé le/);
+  const h = rendre({ cap3000Maj: hier, drakkarsMaj: hier, bestMaj: hier, cmp: 'cap3000' });
+  assert.match(h, /olm-c-cn">Cap 3000<\/span><span class="olm-c-cv">EUR12\.00<\/span>/);
+  assert.doesNotMatch(h, /olm-c-cd|relevé le /);
 });
 test('Offilog, « Comparer à » : la ligne de la carte et la note disent la date du relevé', () => {
   const h = rendre({ cap3000Maj: '2026-06-05', drakkarsMaj: hier, bestMaj: hier, cmp: 'cap3000' });
-  assert.match(h, /Cap 3000 public TTC EUR12\.00 · relevé le 5 juin/);
-  assert.match(h, /Les prix de Cap 3000 ont été relevés le 5 juin\./);
+  assert.match(h, /olm-c-cv">EUR12\.00<\/span><span class="olm-c-cd">relevé le 5 juin</);
+  assert.match(h, /avec un prix relevé chez <b>Cap 3000<\/b> \(relevé du 5 juin\)/);
 });
 test('Offilog, volet du produit : le rang tiré du classement d\'origine dit la date du classement', () => {
   const h = rendre({ cap3000Maj: hier, drakkarsMaj: hier, bestMaj: '2026-09-03', select: true });

@@ -509,38 +509,54 @@
     if (cssPose || !document.getElementById) return;
     cssPose = true;
     var st = document.createElement('style'); st.id = 'ovt-css';
+    // 22/11/2026 (V3) : la barre est claire (texte sombre sur fond blanc, boutons de 44 px) et la feuille entière tient à l'écran, y compris au téléphone (voir ajuster).
     st.textContent = [
-      '#ovt-modal{position:fixed;inset:0;z-index:130;display:none;flex-direction:column;background:#cfccc8}',
+      '#ovt-modal{position:fixed;inset:0;z-index:130;display:none;flex-direction:column;background:#E4E8F0}',
       '#ovt-modal.open{display:flex}',
-      '.ovt-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 16px;background:#1b1020;color:#fff}',
-      '.ovt-t{font-family:"Bodoni Moda",Georgia,serif;font-style:italic;font-size:18px;margin-right:6px}',
-      '.ovt-bar .v2-seg{color:#fff;border-color:rgba(255,255,255,.45);background:transparent}',
-      '.ovt-bar .v2-seg.on{background:#fff;color:#1b1020}',
-      '.ovt-info{margin-left:auto;font-size:13px;color:#e6dff0}',
-      '.ovt-bar .v2-btn{min-height:40px}',
-      // 17/11/2026 — sur l'écran d'avant la refonte, .v2-btn-ghost a un fond blanc : « Fermer » (texte blanc) devenait invisible
-      '.ovt-bar .v2-btn-ghost,.ovt-bar .v2-btn-ghost:hover{background:transparent;border-color:rgba(255,255,255,.45);color:#fff}',
-      '.ovt-frame{flex:1;border:0;width:100%;background:#cfccc8}',
-      '.ovt-msg{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;font-size:16px;color:#1d1620}'
+      '.ovt-bar{display:flex;align-items:center;flex-wrap:wrap;gap:10px 12px;padding:10px 16px;background:linear-gradient(180deg,#fff,#F3F6FC);border-bottom:1px solid #D7E0F0;box-shadow:0 10px 22px -18px rgba(0,26,104,.55);color:#1A2030}',
+      '.ovt-th{display:flex;flex-direction:column;gap:2px;margin-right:8px;min-width:0}',
+      '.ovt-t{font-family:var(--font,"Archivo",system-ui,sans-serif);font-weight:800;font-size:19px;letter-spacing:-.02em;line-height:1.2;color:#1A2030}',
+      '.ovt-info{font-size:14px;line-height:1.3;color:#3D4960}',
+      '.ovt-segs{display:flex;gap:8px}',
+      '.ovt-bar .v2-seg{min-height:44px;padding:0 16px;font-size:15px;font-weight:700;color:#1A2030;background:#fff;border:1px solid #BFCDE8}',
+      '.ovt-bar .v2-seg.on{background:#0050E6;border-color:#0050E6;color:#fff}',
+      '.ovt-bar .v2-btn{min-height:44px;padding:0 18px;font-size:15px;font-weight:700;white-space:nowrap}',
+      '.ovt-bar .v2-btn-primary{background:#0050E6;border-color:#0050E6;color:#fff}',
+      '.ovt-bar .v2-btn-ghost,.ovt-bar .v2-btn-ghost:hover{background:#fff;border:1px solid #BFCDE8;color:#1A2030}',
+      '.ovt-x{margin-left:auto}',
+      '.ovt-stage{position:relative;flex:1;min-height:0;overflow:hidden;display:flex}',
+      '.ovt-frame{position:absolute;left:0;top:0;width:100%;height:100%;border:0;background:#cfccc8;transform-origin:0 0}',
+      '.ovt-msg{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;font-size:16px;color:#1A2030}',
+      '@media(max-width:700px){.ovt-bar{gap:8px;padding:8px 12px 10px}.ovt-th{order:1;flex:1 1 0}.ovt-x{order:2;margin-left:0}.ovt-segs{order:3;flex:1 1 100%}.ovt-segs .v2-seg{flex:1;padding:0 6px}.ovt-seg-l{display:none}.ovt-b{order:4;flex:1 1 0}.ovt-bar .v2-btn{padding:0 8px}}'
     ].join('');
     document.head.appendChild(st);
   }
   function barre() {
     var segs = CHOIX.map(function (c) {
-      return '<button type="button" class="v2-seg' + (c === choix ? ' on' : '') + '" aria-pressed="' + (c === choix ? 'true' : 'false') + '" onclick="V2.offVitrineChoix(' + c + ')">' + c + ' produits</button>';
+      return '<button type="button" class="v2-seg' + (c === choix ? ' on' : '') + '" aria-pressed="' + (c === choix ? 'true' : 'false') + '" onclick="V2.offVitrineChoix(' + c + ')">' + c + '<span class="ovt-seg-l"> produits</span></button>';
     }).join('');
-    return '<div class="ovt-bar"><span class="ovt-t">Le catalogue Offilog</span><div class="v2-segs" role="group" aria-label="Nombre de produits">' + segs + '</div>' +
-      '<span class="ovt-info" id="ovt-info" aria-live="polite"></span>' +
-      '<button type="button" class="v2-btn v2-btn-primary" onclick="V2.offVitrineImprimer()">' + ICO('fiche', 15, 2) + ' Imprimer</button>' +
-      '<button type="button" class="v2-btn v2-btn-primary" onclick="V2.offVitrineMail()">' + ICO('spark', 15, 2) + ' Envoyer par mail</button>' +
-      '<button type="button" class="v2-btn v2-btn-ghost" style="color:#fff" onclick="V2.offVitrineFermer()">' + ICO('close', 15, 2) + ' Fermer</button></div>';
+    return '<div class="ovt-bar"><div class="ovt-th"><span class="ovt-t">Le catalogue Offilog</span><span class="ovt-info" id="ovt-info" aria-live="polite"></span></div>' +
+      '<div class="ovt-segs" role="group" aria-label="Nombre de produits">' + segs + '</div>' +
+      '<button type="button" class="v2-btn v2-btn-primary ovt-b" onclick="V2.offVitrineImprimer()">' + ICO('fiche', 15, 2) + ' Imprimer</button>' +
+      '<button type="button" class="v2-btn v2-btn-primary ovt-b" onclick="V2.offVitrineMail()">' + ICO('spark', 15, 2) + ' Envoyer par mail</button>' +
+      '<button type="button" class="v2-btn v2-btn-ghost ovt-x" onclick="V2.offVitrineFermer()">' + ICO('close', 15, 2) + ' Fermer</button></div>' +
+      '<div class="ovt-stage"></div>';
+  }
+  // La feuille A4 (210 mm) a une largeur fixe : sur un écran plus étroit, on la montre ENTIÈRE en la réduisant (l'iframe garde sa mise en page, donc l'impression et le PDF ne changent pas).
+  var LARGEUR_FEUILLE = 830;
+  function ajuster() {
+    if (!modal || !frame || !frame.classList.contains('ovt-frame')) return;
+    var st = modal.querySelector('.ovt-stage'); if (!st) return;
+    var W = st.clientWidth, H = st.clientHeight, k = Math.min(1, W / LARGEUR_FEUILLE);
+    if (k >= 1) { frame.style.width = '100%'; frame.style.height = '100%'; frame.style.transform = 'none'; return; }
+    frame.style.width = LARGEUR_FEUILLE + 'px'; frame.style.height = Math.ceil(H / k) + 'px'; frame.style.transform = 'scale(' + k.toFixed(4) + ')';
   }
   function info(t) { var e = document.getElementById('ovt-info'); if (e) e.textContent = t; }
   function message(html) {
     if (frame && frame.parentNode) frame.parentNode.removeChild(frame);
     frame = null;
     var m = modal.querySelector('.ovt-msg');
-    if (!m) { m = document.createElement('div'); m.className = 'ovt-msg'; modal.appendChild(m); }
+    if (!m) { m = document.createElement('div'); m.className = 'ovt-msg'; (modal.querySelector('.ovt-stage') || modal).appendChild(m); }
     m.innerHTML = html;
   }
   function retirerMessage() { var m = modal && modal.querySelector('.ovt-msg'); if (m && m.parentNode) m.parentNode.removeChild(m); }
@@ -565,7 +581,7 @@
       };
       f.onerror = ko;
       f.srcdoc = htmlDoc(D);
-      (visible ? modal : document.body).appendChild(f);
+      (visible ? (modal.querySelector('.ovt-stage') || modal) : document.body).appendChild(f);
     });
   }
 
@@ -577,7 +593,7 @@
       modal = document.createElement('div'); modal.id = 'ovt-modal';
       modal.setAttribute('role', 'dialog'); modal.setAttribute('aria-label', 'Le catalogue Offilog');
       document.body.appendChild(modal);
-      try { document.addEventListener('keydown', surCloture); } catch (e) {}
+      try { document.addEventListener('keydown', surCloture); window.addEventListener('resize', ajuster); } catch (e) {}
     }
     modal.innerHTML = barre();
     modal.classList.add('open');
@@ -601,7 +617,7 @@
       return monterFrame(D, true).then(function (f) {
         if (!modal.classList.contains('open') || n0 !== choix) { if (f.parentNode) f.parentNode.removeChild(f); return null; }
         retirerMessage();
-        frame = f; etat = { n: n0, D: D, pages: compterPages(f.contentDocument.getElementById('doc').innerHTML) };
+        frame = f; ajuster(); etat = { n: n0, D: D, pages: compterPages(f.contentDocument.getElementById('doc').innerHTML) };
         info(ent(D.produits.length) + ' produits · ' + ent(etat.pages) + ' pages' +
           (D.avec_tarif < D.produits.length ? ' · tarif labo connu pour ' + ent(D.avec_tarif) : ' · tarif labo connu pour tous'));
         if (opts.imprimer) { try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) { V2.toast('Impression impossible ici.', 'error'); } }
@@ -633,6 +649,7 @@
       var on = +b.getAttribute('data-vit-n') === choix; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
     if (modal && modal.classList.contains('open')) ouvrir(choix);
+    else if (V2.offVitrineVignette) V2.offVitrineVignette();
   };
 
   // ── Le PDF envoyé par mail : fabriqué ICI, page par page, dans l'iframe (c'est là que vit la feuille de style) ──
@@ -814,19 +831,41 @@
     });
   };
 
-  // ── La porte « Le catalogue Offilog » de l'écran Offilog : choix de la taille, puis Voir / Imprimer / Envoyer ──
+  // ── L'onglet « Le catalogue » de l'écran Offilog (V3) : la couverture en vignette, le choix 100 / 200 / 300, Voir, Imprimer, Envoyer ──
+  // La vignette est la VRAIE couverture, dans une petite iframe réduite : la même page que dans le catalogue, sans toucher à sa mise en page.
+  var vigJeton = 0;
   V2.offVitrinePanneau = function () {
     var segs = CHOIX.map(function (c) {
       return '<button type="button" class="v2-seg' + (c === choix ? ' on' : '') + '" data-vit-n="' + c + '" aria-pressed="' + (c === choix ? 'true' : 'false') + '" onclick="V2.offVitrineChoix(' + c + ')">' + c + ' produits</button>';
     }).join('');
     var M = window.OFFILOG_MARCHE, rel = (M && M.releves) || [], der = rel.length ? rel[rel.length - 1] : (M && M.maj) || '';
-    return '<p class="olm-pan-d" style="margin:0 0 14px;line-height:1.5">Un catalogue prêt à montrer ou à envoyer au pharmacien : les meilleures ventes d\'Offilog, avec le prix Offilog et, quand nous le connaissons, le tarif du laboratoire.' +
-      (der ? ' Classement des ventes du ' + esc(dl(der, true)) + '.' : '') + '</p>' +
-      '<div class="olm-pan-l">Combien de produits dans le catalogue ?</div><div class="v2-segs off-adv-segs">' + segs + '</div>' +
-      '<div class="olm-pan-l">Que voulez-vous en faire ?</div>' +
-      '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
-      '<button type="button" class="v2-btn v2-btn-primary" onclick="V2.offVitrine()">' + ICO('fiche', 15, 2) + ' Voir</button>' +
-      '<button type="button" class="v2-btn v2-btn-ghost" onclick="V2.offVitrineImprimer()">' + ICO('download', 15, 2) + ' Imprimer</button>' +
-      '<button type="button" class="v2-btn v2-btn-ghost" onclick="V2.offVitrineMail()">' + ICO('spark', 15, 2) + ' Envoyer par mail</button></div>';
+    return '<div class="olv">' +
+      '<div class="olv-vig" id="olv-vig" role="button" tabindex="0" aria-label="Voir le catalogue en grand" onclick="V2.offVitrine()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();V2.offVitrine()}">' +
+        '<span class="olv-vig-c" aria-hidden="true"></span><span class="olv-vig-t">Préparation de la couverture…</span></div>' +
+      '<div class="olv-txt"><h2 class="olv-h">Le catalogue Offilog</h2>' +
+        '<p class="olv-p">Un catalogue prêt à montrer ou à envoyer au pharmacien : les meilleures ventes d\'Offilog, avec le prix Offilog et, quand nous le connaissons, le tarif du laboratoire.' +
+        (der ? ' Classement des ventes du ' + esc(dl(der, true)) + '.' : '') + '</p>' +
+        '<div class="olm-pan-l">Combien de produits dans le catalogue ?</div><div class="v2-segs off-adv-segs">' + segs + '</div>' +
+        '<div class="olv-act">' +
+          '<button type="button" class="v2-btn v2-btn-primary" onclick="V2.offVitrine()">' + ICO('fiche', 15, 2) + ' Voir le catalogue</button>' +
+          '<button type="button" class="v2-btn v2-btn-ghost" onclick="V2.offVitrineImprimer()">' + ICO('download', 15, 2) + ' Imprimer</button>' +
+          '<button type="button" class="v2-btn v2-btn-ghost" onclick="V2.offVitrineMail()">' + ICO('spark', 15, 2) + ' Envoyer par mail</button></div></div></div>';
+  };
+  // Remplit la vignette : seule la première page (la couverture) du catalogue est montée.
+  V2.offVitrineVignette = function () {
+    var h = document.getElementById('olv-vig'); if (!h) return;
+    var j = ++vigJeton, n0 = choix, txt = h.querySelector('.olv-vig-t');
+    preparer(n0).then(function (D) {
+      if (j !== vigJeton || !document.body.contains(h)) return;
+      if (D.exclus_absent || !D.produits.length) { if (txt) txt.textContent = 'Couverture indisponible pour le moment'; return; }
+      var html = construire(D), a = html.indexOf('<section class="page'), b = html.indexOf('<section class="page', a + 10);
+      var couv = b > a ? html.slice(a, b) : html.slice(a);
+      var f = document.createElement('iframe');
+      f.title = 'Couverture du catalogue'; f.tabIndex = -1; f.setAttribute('aria-hidden', 'true'); f.setAttribute('scrolling', 'no');
+      f.srcdoc = htmlDoc(D).replace(/<body>[\s\S]*<\/body>/, function () { return '<body style="margin:0;background:transparent"><main id="doc" style="padding:0">' + couv + '</main></body>'; });
+      f.onload = function () { if (j === vigJeton && document.body.contains(h)) { h.classList.add('pret'); if (txt) txt.textContent = ''; } };
+      var c = h.querySelector('.olv-vig-c'); if (!c) return;
+      c.innerHTML = ''; c.appendChild(f);
+    }).catch(function () { if (txt) txt.textContent = 'Couverture indisponible pour le moment'; });
   };
 })();

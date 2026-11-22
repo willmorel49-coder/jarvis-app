@@ -43,13 +43,13 @@
   // Opportunités Offilog (prix d'achat de concurrents, photo du 17/11/2026) : conditions de tiers, jamais côté OPSO, fichier jamais demandé.
   var SANS_OPP = OPSO;
 
-  var S = { chip: 'all', q: '', page: 0, sel: null, sort: 'ventes', adv: false, sous: '', cmp: '', sens: 'tous', porte: '', liste: false };
-  // porte / liste : écran d'arrivée « trois portes » (M1 seulement). porte = porte ouverte ('trouver' | 'comparer' | ''), liste = l'utilisateur a choisi un rayon, un tri ou une comparaison.
+  var S = { chip: 'all', q: '', page: 0, nShow: 0, sel: null, sort: 'ventes', adv: false, sous: '', cmp: '', sens: 'tous', porte: '' };
+  // porte = onglet ouvert de l'écran du CRM (M1) : 'trouver' (par défaut, '' veut dire 'trouver') | 'comparer' | 'catalogue'. nShow = nombre de cartes montrées (0 = un lot, voir lot()).
   // Plancher du mouvement de rang, en places. Voir buildIndex : le seuil relatif
   // (20 %) ne suffit pas tout en haut du classement, où une place vaut 25 %.
   var SEUIL_PLACES = 5;
   var firstPaint = true; // cascade d'entrée réservée au 1er affichage de la grille
-  var M1 = !OPSO;     // côté OPSO l'en-tête d'aujourd'hui reste
+  var M1 = !OPSO;     // côté OPSO l'écran d'aujourd'hui reste ; le CRM a les trois onglets (renderV3)
   var PER_PAGE = 60;
 
   // Sélection pour la fiche marketing parapharma
@@ -250,6 +250,7 @@
   // date du relevé du catalogue OCP (portée par le fichier protégé)
   function majLabel(d) {
     if (!d) return '';
+    if (M1 && dateMots(d)) return dateMots(d);   // CRM : une seule façon d'écrire les dates (« 5 juin »)
     var p = String(d).split('-');
     return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : String(d);
   }
@@ -260,6 +261,7 @@
   // 12/11/2026 (clarté, façon 1) : dates écrites en français, lues dans le fichier du marché — jamais en dur.
   function cl1Date(d) {
     if (!d || String(d).length < 10) return '';
+    if (M1 && dateMots(d)) return dateMots(d);
     var MOIS = ['janv.', 'févr.', 'mars', 'avril', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
     return String(+String(d).slice(8, 10)).replace(/^1$/, '1er') + ' ' + (MOIS[+String(d).slice(5, 7) - 1] || '') + ' ' + String(d).slice(0, 4);
   }
@@ -538,8 +540,8 @@
       '<span class="off-card-cmp-v">' + esc(eti) + ' ' + V2.fmtEur(e.v) + (src.maj && vieilleDate(src.maj()) ? ' · relevé le ' + esc(vieilleDate(src.maj())) : '') + '</span>' +
       '<span class="off-pcat-pill">' + cmpEcartLabel(e) + '</span></div>';
   }
-  V2.offCmpSrc = function (k) { S.cmp = (S.cmp === k) ? '' : k; S.page = 0; S.liste = true; V2.render(); };
-  V2.offCmpSens = function (v) { S.sens = v; S.page = 0; S.liste = true; V2.render(); };
+  V2.offCmpSrc = function (k) { S.cmp = (S.cmp === k) ? '' : k; S.page = 0; S.nShow = 0; V2.render(); };
+  V2.offCmpSens = function (v) { S.sens = v; S.sensChoisi = true; S.page = 0; S.nShow = 0; V2.render(); };
   // Le bloc : concurrents (avec leur nombre de produits communs) puis sens (avec leurs nombres).
   function cmpBlock(list) {
     var L = cmpSources(), i, j;
@@ -1209,9 +1211,10 @@
     // Offilog = référence (mise en évidence), l'écart se lit contre lui. Classes du volet existantes, aucune couleur nouvelle.
     var pzBlock = achatBlock(it);
     var rkDate = (!it.mkt && it.hasRank) ? vieilleDate(window.OFFILOG_BEST_MAJ) : '';   // rang pris dans le classement d'origine (sans relevé du marché) : il porte sa date
+    var bc = function (c) { return M1 ? 'var(--ip-blue-d)' : c; };   // CRM : un seul accent, aucun badge chaud ni violet
     var badges = (it.hasRank ? '<span class="off-badge" style="--bc:var(--pil-froid)">#' + it.rank + ' ventes' + (rkDate ? ' <i style="font-weight:500">· classement du ' + esc(rkDate) + '</i>' : '') + '</span>' : '') +
-      (it.cat && CHIP_BY_KEY[it.cat] ? '<span class="off-badge" style="--bc:' + CHIP_BY_KEY[it.cat].sc + '">' + esc(CHIP_BY_KEY[it.cat].label) + '</span>' : '') +
-      (it.univers && it.univers !== 'Non classé' ? '<span class="off-badge" style="--bc:#6D4FC4">' + esc(it.univers) + '</span>' : '');
+      (it.cat && CHIP_BY_KEY[it.cat] ? '<span class="off-badge" style="--bc:' + bc(CHIP_BY_KEY[it.cat].sc) + '">' + esc(CHIP_BY_KEY[it.cat].label) + '</span>' : '') +
+      (it.univers && it.univers !== 'Non classé' ? '<span class="off-badge" style="--bc:' + bc('#6D4FC4') + '">' + esc(it.univers) + '</span>' : '');
     return '<div class="off-insp' + (S.sel != null ? ' open' : '') + '">' +
       '<div class="off-insp-head">' +
         '<div style="min-width:0"><div class="off-insp-name">' + esc(it.name) + '</div>' +
@@ -1227,12 +1230,12 @@
           kpi('Rayon', it.sousRayon ? esc(it.sousRayon) : '—') +
           // « Achat IP » = notre condition interne : jamais côté OPSO (brief §4).
           (OPSO ? '' : kpi('Achat IP (HT)', it.achat > 0 ? V2.fmtEur(it.achat) : '—', it.achat > 0 ? 'var(--ok)' : 'var(--muted-2)')) +
-          kpi('Concurrent mini', it.minConc > 0 ? V2.fmtEur(it.minConc) : '—', '') +
+          kpi('Concurrent le moins cher', it.minConc > 0 ? V2.fmtEur(it.minConc) : '—', '') +
         '</div>' +
         marcheBlock(it) +
         pcatBlock(it) +
-        pzBlock +
-        '<div class="off-cmp"><div class="off-cmp-l">Prix public concurrents <span>(TTC)</span></div>' + priceCmpRows(it) + '</div>' +
+        (M1 ? concFiche(it) : pzBlock +
+        '<div class="off-cmp"><div class="off-cmp-l">Prix public concurrents <span>(TTC)</span></div>' + priceCmpRows(it) + '</div>') +
         '<div class="off-insp-cta">' +
           (it.url ? '<a class="v2-btn v2-btn-ghost" href="' + esc(it.url) + '" target="_blank" rel="noopener" style="margin-top:8px">Voir sur Offilog</a>' : '') + '</div>' +
       '</div>' +
@@ -1260,13 +1263,13 @@
 
   V2.offSous = function (label) {
     S.sous = (S.sous === label) ? '' : label;   // re-cliquer désélectionne
-    S.page = 0;
+    S.page = 0; S.nShow = 0;
     V2.render();
   };
   V2.offFilter = function (k) {
     S.sous = '';
     captureCardRects(); // repositionnement fluide des cartes qui restent visibles
-    S.chip = k; S.page = 0; S.liste = true;
+    S.chip = k; S.page = 0; S.nShow = 0;
     // si on choisit une catégorie (hors verdicts), on ouvre les filtres avancés pour rester cohérent
     if (k !== 'all' && k !== 'alerte') S.adv = true;
     V2.render();
@@ -1274,22 +1277,24 @@
   V2.offToggleAdv = function () { S.adv = !S.adv; V2.render(); };
   // Écran d'arrivée : « Trouver », « Comparer » et « Le catalogue Offilog » ouvrent leur choix sous les portes.
   V2.offPorte = function (k) {
-    S.porte = (S.porte === k) ? '' : k; S._porteScroll = !!S.porte;
+    S.porte = (k === 'comparer' || k === 'catalogue') ? k : 'trouver'; S.nShow = 0;
+    if (S.porte === 'comparer' && S.sens === 'tous' && !S.sensChoisi) S.sens = 'moins';   // « Comparer » s'ouvre sur ce qui compte : où un concurrent est moins cher
+    if (S.porte !== 'comparer') { S.cmp = ''; if (!S.sensChoisi) S.sens = 'tous'; }
     V2.render();
   };
   // Retour aux trois portes : on efface ce qui avait été choisi (recherche, rayon, tri, comparaison).
   V2.offAccueil = function () {
-    S.chip = 'all'; S.q = ''; S.page = 0; S.sort = 'ventes'; S.sous = ''; S.cmp = ''; S.sens = 'tous'; S.adv = false; S.liste = false; S.porte = '';
+    S.chip = 'all'; S.q = ''; S.page = 0; S.nShow = 0; S.sort = 'ventes'; S.sous = ''; S.cmp = ''; S.sens = 'tous'; S.adv = false; S.porte = ''; S.sensChoisi = false;
     V2.render();
     try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch (e) {}
   };
   var _offSearchTimer = null;   // 11/09/2026 — perf : re-rendu 120 ms après la dernière touche
   V2.offSearch = function (val) {
-    S.q = val || ''; S.page = 0;
+    S.q = val || ''; S.page = 0; S.nShow = 0;
     clearTimeout(_offSearchTimer);
     _offSearchTimer = setTimeout(rerenderKeepFocus, 120);
   };
-  V2.offSort = function (v) { S.sort = v; S.page = 0; S.liste = true; V2.render(); };
+  V2.offSort = function (v) { S.sort = v; S.page = 0; S.nShow = 0; V2.render(); };
   V2.offPage = function (p) { S.page = p; V2.render(); try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch (e) {} };
   V2.offSelect = function (id) {
     // Onglet « Opportunités » : la ligne cliquée (ou celle dont on ferme la fiche) reste à sa place à l'écran. Le volet resserre
@@ -1961,106 +1966,283 @@
     olmObs.observe(h);
   }
   function olmNum(n) { return '<span class="olm-num">' + V2.fmtNum(n) + '</span>'; }
-  function olmLong(h) { return h.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').length; }
-  // UNE phrase, 110 caractères au plus, faite de nombres de produits que la page montre (jamais un prix ni un chiffre d'affaires).
-  function olmPhrase(list) {
-    var n = list.length, nOff = 0, nAl = 0, mq = Object.create(null), nm = 0;
-    for (var i = 0; i < list.length; i++) {
-      var it = list[i];
-      if (it.achat > 0) nOff++;
-      if (!OPSO && it.alert) nAl++;
-      if (it.brand && !mq[it.brand]) { mq[it.brand] = 1; nm++; }
+  // ── 22/11/2026 · V3 « Les trois onglets » (écran Offilog du CRM ; l'app OPSO garde son écran, voir M1) ──
+  // Plus d'écran d'arrivée : le bandeau de l'aube (titre « Offilog » + UNE phrase), trois onglets, et le contenu du premier onglet tout de suite.
+  // Aucun calcul nouveau : on relit les données que l'écran a déjà (items, cmpSources, cmpEcart). Les dates se LISENT dans les fichiers (V2.dateEnMots), jamais écrites ici.
+  var SORTS = [['ventes', 'Meilleures ventes'], ['mvt', 'Plus forte hausse au classement'], ['prix_asc', 'Prix croissant'], ['prix_desc', 'Prix décroissant'], ['ecart', 'Concurrent moins cher d\'abord'], ['pcat', 'Plus fort écart au prix catalogue']];
+  function sortLabel(v) { for (var i = 0; i < SORTS.length; i++) if (SORTS[i][0] === v) return SORTS[i][1]; return SORTS[0][1]; }
+  function dateMots(iso) { return V2.dateEnMots ? V2.dateEnMots(iso) : ''; }
+  function petitEcran() { try { return !!(window.matchMedia && window.matchMedia('(max-width:760px)').matches); } catch (e) { return false; } }
+  // Combien de produits d'un coup : un téléphone ne montre que 12 cartes (2 colonnes), la liste continue par « Voir plus ».
+  function lot() { return petitEcran() ? 12 : 30; }
+  function lotTable() { return petitEcran() ? 20 : 50; }
+
+  // Date du relevé de chaque concurrent, lue dans son fichier (ISO « 2026-06-05 »). Leclerc n'en porte pas : on le dit plutôt que de l'inventer.
+  var MAJ_SOURCE = {
+    pz: function () { return window.PHARMAZON_MAJ; }, sg: function () { return window.SAGITTA_PRIX_MAJ; }, ocp: function () { return window.OCP_PRIX_MAJ; },
+    drakkars: function () { return window.DRAKKARS_PUB_MAJ; }, farmaline: function () { return window.FARMALINE_PUB_MAJ; }, maxipara: function () { return window.MAXIPARA_PUB_MAJ; },
+    cap3000: function () { return window.CAP3000_PUB_MAJ; }, citypharma: function () { return window.CITYPHARMA_PUB_MAJ; }
+  };
+  function majSrc(k) { var f = MAJ_SOURCE[k]; var d = f ? f() : ''; return /^\d{4}-\d{2}-\d{2}/.test(String(d || '')) ? String(d) : ''; }
+
+  // Le meilleur prix concurrent d'un produit : la source dont l'écart relatif est le plus favorable au concurrent ; sans écart calculable, le prix le plus bas.
+  function concDe(it, src) {
+    var v = src.get(it);
+    return v > 0 ? { src: src, v: v, e: cmpEcart(it, src) } : null;
+  }
+  function concMeilleur(it) {
+    var L = cmpSources(), best = null, i, c;
+    for (i = 0; i < L.length; i++) {
+      c = concDe(it, L[i]);
+      if (!c) continue;
+      if (!best) { best = c; continue; }
+      if (c.e && best.e) { if (c.e.pct < best.e.pct || (c.e.pct === best.e.pct && c.e.d < best.e.d)) best = c; }
+      else if (c.e && !best.e) best = c;
+      else if (!c.e && !best.e && c.v < best.v) best = c;
     }
-    if (!n) return S.q ? 'Aucun produit pour « ' + esc(S.q.length > 22 ? S.q.slice(0, 21) + '…' : S.q) + ' ».' : 'Aucun produit pour ce filtre.';
-    var ray = '';
-    if (S.chip !== 'all') { var r = RAYONS.filter(function (x) { return x.k === S.chip; })[0]; ray = r ? r.label : ((CHIP_BY_KEY[S.chip] && CHIP_BY_KEY[S.chip].label) || ''); }
-    if (S.sous) ray += (ray ? ' · ' : '') + S.sous;
-    var q = S.q.length > 22 ? S.q.slice(0, 21) + '…' : S.q;
-    var filtre = !!(S.q || ray || S.cmp);
-    var tete = '<b>' + olmNum(n) + ' produit' + (n > 1 ? 's' : '') + (filtre ? '' : ' suivis') + '</b>' + (q ? ' pour « ' + esc(q) + ' »' : '') + (ray ? ' en ' + esc(ray) : '');
-    var a = cl1AchatsChargés() ? ', ' + olmNum(nOff) + ' dont nous connaissons le prix d\'achat' : ', prix d\'achat non chargés', m = ', ' + olmNum(nm) + ' marque' + (nm > 1 ? 's' : ''), c = nAl ? ' ; ' + olmNum(nAl) + ' moins cher' + (nAl > 1 ? 's' : '') + ' chez un concurrent en ligne.' : '.';
-    var cand = [tete + a + m + c, tete + a + m + (nAl ? ' ; ' + olmNum(nAl) + ' moins cher' + (nAl > 1 ? 's' : '') + ' chez un concurrent.' : '.'), tete + a + c, tete + c];
-    for (var k = 0; k < cand.length; k++) if (olmLong(cand[k]) <= 150) return cand[k];
-    return tete + '.';
+    return best;
   }
-  // Les quatre premières ventes montent dans le bleu : seulement « Tout », meilleures ventes, page 1, sans recherche ni comparaison.
-  function olmBandeauOk(total) { return M1 && S.chip === 'all' && S.sort === 'ventes' && S.page === 0 && !S.q && !S.sous && !S.cmp && total > 8; }
-  // Choix de Will (05/11/2026, vu avec les vrais prix) : la case garde l'essentiel. Toujours les prix qui battent Offilog
-  // (repères win/bad), complétés jusqu'à 3 par les moins chers ; les autres restent dans la fiche du produit, derrière le bouton.
-  var OLM_PRIX_MAX = 3;
-  function olmEssentiel(prix, id) {
-    var t = document.createElement('div'); t.innerHTML = prix;
-    var bloc = t.querySelector('.off-card-price'); if (!bloc) return prix;
-    var ch = [].slice.call(bloc.children).filter(function (e) { return /^off-card-(pz|lec|drk|pub)\b/.test(e.className); });
-    if (ch.length <= OLM_PRIX_MAX) return prix;
-    var val = function (e) { var m = e.textContent.replace(/\s/g, '').match(/(\d+(?:,\d+)?)€/); return m ? parseFloat(m[1].replace(',', '.')) : Infinity; };
-    var garde = ch.filter(function (e) { return /\b(win|bad)\b/.test(e.className); });
-    ch.filter(function (e) { return garde.indexOf(e) < 0; }).sort(function (a, b) { return val(a) - val(b); })
-      .forEach(function (e) { if (garde.length < OLM_PRIX_MAX) garde.push(e); });
-    var n = 0; ch.forEach(function (e) { if (garde.indexOf(e) < 0) { e.remove(); n++; } });
-    if (!n) return prix;
-    return t.innerHTML + '<button type="button" class="olm-plus" onclick="event.stopPropagation();V2.offSelect(\'' + id + '\')">' + (n > 1 ? 'Voir les ' + n + ' autres prix' : 'Voir l\'autre prix') + ' →</button>';
-  }
-  function olmUne(it) {
-    var sel = (S.sel != null && String(it.id) === String(S.sel)) ? ' sel' : '';
-    var id = esc(it.id), onMkt = mktSel.has(String(it.id));
-    var img = it.img ? '<img class="olm-une-img" data-imgprod src="' + esc(it.img) + '" alt="">' : '<span class="olm-une-noimg">' + ICO('pill', 30, 1.4) + '</span>';
-    // le prix et ses repères (concurrents, comparaison, prix catalogue) sont ceux de la carte, repris tels quels : rien ne se perd en montant dans le bleu
-    var ch = card(it), k = ch.indexOf('<div class="off-card-price'), prix = k >= 0 ? ch.slice(k, ch.lastIndexOf('</div></div>')) : '';
-    var rep = '';
-    if (it.alert) rep += '<span class="olm-rep bad">' + ICO('alert', 14, 2.2) + ' Concurrent moins cher' + (it.minConc > 0 ? ' · ' + V2.fmtEur(it.minConc) : '') + '</span>';
-    if (Math.abs(it.mvt) >= SEUIL_PLACES && (it.mvtPct >= 20 || it.mvtPct <= -20)) {
-      var up = it.mvtPct > 0, nb = Math.abs(it.mvt);
-      rep += '<span class="olm-rep ' + (up ? 'up' : 'down') + '">' + (up ? '▲ gagne ' : '▼ perd ') + V2.fmtNum(nb) + ' place' + (nb > 1 ? 's' : '') + '</span>';
-    }
-    return '<div class="olm-une' + sel + (it.alert ? ' alert' : '') + '" data-id="' + id + '" role="button" tabindex="0" onclick="V2.offSelect(\'' + id + '\')" onkeydown="if(event.target===this&&(event.key===\'Enter\'||event.key===\' \')){event.preventDefault();V2.offSelect(\'' + id + '\')}">' +
-      '<span class="olm-une-media">' + (it.hasRank ? '<span class="olm-rang-n mono">#' + it.rank + '</span>' : '') +
-        '<button type="button" class="off-mkt-add' + (onMkt ? ' on' : '') + '" onclick="event.stopPropagation();V2.offMktToggle(\'' + id + '\',this)" title="Ajouter à la fiche marketing" aria-label="Ajouter à la fiche marketing">' + ICO(onMkt ? 'check' : 'plus', 15) + '</button>' + img + '</span>' +
-      '<span class="olm-une-b">' + (it.brand ? '<span class="olm-une-brand">' + esc(it.brand) + '</span>' : '') +
-        '<span class="olm-une-name">' + esc(it.name) + '</span>' +
-        olmEssentiel(prix, id) + (rep ? '<span class="olm-reps">' + rep + '</span>' : '') + '</span></div>';
-  }
-  var OLM_LOGO = function () { return '<h1 class="olm-h1"><span class="olm-pastille"><img class="olm-logo" src="' + MOD_BASE + 'logos/offilog.png" width="444" height="70" alt="Offilog" decoding="async"></span></h1>'; };
-  // Étiquette du bandeau : ce que mesure chaque chiffre de la phrase, et sur quelle date.
-  function cl1Etiquette() {
-    var r = cl1Releves(), d = cl1Date(r.der);
-    return '<p class="cl1-et">Produits suivis : les meilleures ventes d\'Offilog' + (d ? ', classées d\'après les ventes de ses pharmacies clientes (relevé du ' + d + ')' : '') +
-      ' · Prix d\'achat : nos conditions chez Offilog · Concurrent moins cher : un prix public d\'un concurrent en ligne (TTC) est sous notre prix d\'achat, au dernier relevé.</p>';
-  }
-  function olmEntete(list) {
-    var st = brandStats();
-    var med = st.pcN > 0 ? '<p class="olm-med">Médiane : <b class="olm-num">' + Math.round(st.pcMed * 100) + '</b> % sous le prix catalogue, sur ' + V2.fmtNum(st.pcN) + ' produits</p>' : '';
-    return '<header class="olm-hd"><span class="olm-lu" aria-hidden="true"></span>' +
-      '<div class="olm-hd-t"><div class="olm-id">' + OLM_LOGO() + '<p class="olm-eye">La centrale parapharmacie d\'Intégral</p></div>' +
-        '<p class="olm-phrase" id="olm-phrase" aria-live="polite">' + olmPhrase(list) + '</p>' + cl1Etiquette() + med + '</div></header>';
+  function pctTxt(e) { return (e.d < 0 ? '−' : '+') + Math.abs(e.pct) + ' %'; }
+  // UNE seule ligne concurrent par carte : nom, prix, écart. L'écart se lit face à notre prix d'achat (prix publics) ou au prix Offilog (prix d'achat des plateformes) ; la couleur d'alerte ne sert que pour « concurrent moins cher ».
+  function concLigne(c, double) {
+    if (!c) return '<div class="olm-c-conc olm-c-aucun">Aucun prix concurrent relevé</div>';
+    var s = c.src, e = c.e, bas = !!(e && e.d < 0), maj = majSrc(s.k);
+    var tip = s.label + ' : ' + (s.kind === 'public' ? 'prix public TTC ' : 'prix d\'achat HT ') + V2.fmtEur(c.v) +
+      (e ? ', face à ' + V2.fmtEur(e.ref) + (s.kind === 'public' && !OPSO ? ' (notre prix d\'achat)' : ' (prix Offilog)') : '') + (maj ? ', relevé du ' + dateMots(maj) : '');
+    return '<div class="olm-c-conc mono' + (e ? (bas ? ' bas' : ' haut') : '') + '" data-cmp="' + esc(s.k) + '" title="' + esc(tip) + '">' +
+      '<span class="olm-c-cn">' + esc(s.label) + '</span><span class="olm-c-cv">' + colleEuro(V2.fmtEur(c.v)) + '</span>' +
+      // Règle des 30 jours (22/11/2026) : un prix relevé il y a plus de 30 jours dit sa date SUR la carte (le survol ne se voit pas au téléphone).
+      (vieilleDate(maj) ? '<span class="olm-c-cd">relevé le ' + esc(vieilleDate(maj)) + '</span>' : '') +
+      (e ? '<span class="olm-c-ce">' + pctTxt(e) + (double ? ' · ' + (e.d < 0 ? '−' : '+') + V2.fmtEur(Math.abs(e.d)) : '') + '</span>' : '') + '</div>';
   }
 
-  // ── 06/11/2026 — écran d'arrivée « bandeau bleu + 3 portes » (choix de Will) ──
-  // Sous l'en-tête : trois portes. « Trouver un produit » et « Comparer nos prix » ouvrent leur choix juste dessous ;
-  // « Le catalogue Offilog » ouvre le choix 100 / 200 / 300 produits (v2-offilog-vitrine.js). Dès qu'un rayon, un tri, une comparaison ou une recherche
-  // est choisi, la page redevient la liste d'aujourd'hui (voir enListe dans render). Aucun calcul nouveau.
-  function olmPorte(k, ic, titre, sous, pv, go) {
-    var ouv = S.porte === k;
-    return '<button type="button" class="olm-porte' + (ouv ? ' on' : '') + '" data-porte="' + k + '"' +
-      ' aria-expanded="' + (ouv ? 'true' : 'false') + '" aria-controls="olm-pan"' +
-      ' onclick="V2.offPorte(\'' + k + '\')">' +
-      '<span class="olm-p-ic">' + ICO(ic, 26, 1.9) + '</span>' +
-      '<span class="olm-p-t">' + titre + '</span>' +
-      '<span class="olm-p-s">' + sous + '</span>' +
-      (pv ? '<span class="olm-p-pv">' + pv + '</span>' : '') +
-      '<span class="olm-p-go">' + go + ICO('chev', 18, 2.2) + '</span></button>';
+  // Photo introuvable (le gestionnaire commun de v2-app.js pose une icône grise) : même repère sobre qu'une carte sans photo, jamais un trou ni une icône de gélule.
+  document.addEventListener('error', function (e) {
+    var t = e.target;
+    if (!t || t.tagName !== 'IMG' || !t.classList || !t.classList.contains('off-card-img')) return;
+    var m = t.closest ? t.closest('.olm-c-media') : null; if (!m || !m.parentNode) return;
+    var b = m.parentNode.querySelector('.off-card-brand') || m.parentNode.querySelector('.off-card-name');
+    var ph = document.createElement('span'); ph.className = 'olm-ph'; ph.setAttribute('aria-hidden', 'true');
+    ph.innerHTML = '<b>' + esc(String((b && b.textContent) || '?').trim().charAt(0).toUpperCase()) + '</b>';
+    t.parentNode.replaceChild(ph, t);
+  }, true);
+
+  // La carte amincie : photo (ou repère sobre = initiale de la marque), rang, nom, marque, prix Offilog, une ligne concurrent. Tout le reste est dans la fiche du produit.
+  function carteV3(it) {
+    var id = esc(it.id), sel = (S.sel != null && String(it.id) === String(S.sel)) ? ' sel' : '', onMkt = mktSel.has(String(it.id));
+    var ini = String(it.brand || it.name || '?').trim().charAt(0).toUpperCase();
+    var media = it.img ? '<img class="off-card-img" data-imgprod src="' + esc(it.img) + '" loading="lazy" alt="">'
+      : '<span class="olm-ph" aria-hidden="true"><b>' + esc(ini) + '</b></span>';
+    var ens = (S.porte === 'comparer'), c = null;
+    if (ens && S.cmp) { var sc = cmpSrc(S.cmp); c = sc ? concDe(it, sc) : null; } else c = concMeilleur(it);
+    return '<div class="off-card olm-c' + sel + '" data-id="' + id + '" role="button" tabindex="0" onclick="V2.offSelect(\'' + id + '\')" onkeydown="if(event.target===this&&(event.key===\'Enter\'||event.key===\' \')){event.preventDefault();V2.offSelect(\'' + id + '\')}">' +
+      '<div class="olm-c-media">' +
+        (it.hasRank ? '<span class="olm-c-rang mono" title="Rang au classement des ventes">#' + it.rank + '</span>' : '') +
+        '<button type="button" class="off-mkt-add' + (onMkt ? ' on' : '') + '" onclick="event.stopPropagation();V2.offMktToggle(\'' + id + '\',this)" title="Ajouter à la fiche marketing" aria-label="Ajouter à la fiche marketing">' + ICO(onMkt ? 'check' : 'plus', 15) + '</button>' +
+        media +
+      '</div>' +
+      '<div class="olm-c-body">' +
+        (it.brand ? '<div class="off-card-brand">' + esc(it.brand) + '</div>' : '') +
+        '<div class="off-card-name">' + esc(it.name) + '</div>' +
+        '<div class="off-card-price mono">' + colleEuro(it.price > 0 ? V2.fmtEur(it.price) + '<span class="cl1-lb">prix Offilog</span>' : '<span class="cl1-lb">prix Offilog non connu</span>') + '</div>' +
+        concLigne(c, ens) +
+      '</div></div>';
   }
-  function olmPortes(apercu) {
-    var ph = apercu.filter(function (it) { return it.img; }).slice(0, 4).map(function (it) { return '<span class="olm-p-ph"><img data-imgprod src="' + esc(it.img) + '" alt=""></span>'; }).join('');
-    // seulement les plateformes qui ont au moins un prix chargé (même règle que le bloc « Comparer à », cmpBlock)
-    var plats = cmpSources().filter(function (x) { for (var i = 0; i < (items || []).length; i++) if (x.get(items[i]) > 0) return true; return false; }).map(function (x) { return x.label; });
-    return '<h2 class="olm-q">Que voulez-vous faire ?</h2>' +
-      '<div class="olm-portes">' +
-        olmPorte('trouver', 'search', 'Trouver un produit', 'Par nom, marque ou code EAN, ou en parcourant un rayon.', ph ? '<span class="olm-p-phs">' + ph + '</span>' : '', 'Chercher') +
-        (OPSO ? '' : olmPorte('catalogue', 'fiche', 'Le catalogue Offilog', 'Les meilleures ventes d\'Offilog en catalogue, à montrer, imprimer ou envoyer au pharmacien.', '', 'Ouvrir le catalogue')) +
-        olmPorte('comparer', 'pilo', 'Comparer nos prix', 'Où un concurrent est moins cher que votre achat, et face à quelle plateforme.', plats.length ? esc(plats.join(' · ')) : '', 'Comparer') +
-      '</div>';
+
+  // Le bandeau commun de l'aube : « Offilog » en texte (40 px à l'ordinateur, 35,1 px au téléphone, comme les écrans refaits), UNE phrase, le logo OFFILOG en petit à droite.
+  // .olm-h1 est dans la liste TITRES de v2-aube.js : le titre entre lettre par lettre, comme les autres écrans.
+  function v3Phrase() {
+    var st = brandStats(), r = cl1Releves(), d = r.der ? dateMots(r.der) : '';
+    return '<b>' + olmNum(st.nProd) + '</b> produits suivis, <b>' + olmNum(st.nMarques) + '</b> marques' + (d ? ' ; classement des ventes du ' + esc(d) : '') + '.';
   }
+  function v3Entete() {
+    return '<header class="olm-hd"><div class="olm-hd-t"><p class="olm-eye">La centrale parapharmacie d\'Intégral</p>' +
+      '<h1 class="olm-h1">Offilog</h1>' +
+      '<p class="olm-phrase" id="olm-phrase">' + v3Phrase() + '</p></div>' +
+      '<img class="olm-logo" src="' + MOD_BASE + 'logos/offilog.png" width="444" height="70" alt="" aria-hidden="true" decoding="async"></header>';
+  }
+  var ONGLETS = [['trouver', 'search', 'Trouver un produit'], ['comparer', 'pilo', 'Comparer nos prix'], ['catalogue', 'fiche', 'Le catalogue']];
+  // Les trois onglets (data-porte : même attribut que les anciennes portes, lu par les contrôles du banc).
+  function v3Onglets(tab) {
+    return '<div class="olm-portes" role="tablist" aria-label="Ce que vous voulez faire">' + ONGLETS.map(function (o) {
+      var on = o[0] === tab;
+      return '<button type="button" class="olm-onglet' + (on ? ' on' : '') + '" role="tab" id="olm-t-' + o[0] + '" data-porte="' + o[0] + '" aria-selected="' + on + '" aria-controls="olm-corps" onclick="V2.offPorte(\'' + o[0] + '\')">' +
+        '<span class="olm-o-ic">' + ICO(o[1], 22, 1.9) + '</span><span class="olm-o-t">' + o[2] + '</span></button>';
+    }).join('') + '</div>';
+  }
+  function rayonsV3(c) {
+    function chip(k, l, n, on, extra) {
+      return '<button type="button" class="offr' + extra + (on ? ' on' : '') + '" aria-pressed="' + on + '" onclick="V2.offFilter(\'' + k + '\')"><span class="offr-l">' + esc(l) + '</span><span class="offr-n mono">' + V2.fmtNum(n) + '</span></button>';
+    }
+    var out = chip('all', 'Tout le rayon', c.all || 0, S.chip === 'all', ' offr-all');
+    RAYONS.forEach(function (r) { var n = c[r.k] || 0; if (n) out += chip(r.k, r.label, n, S.chip === r.k, ''); });
+    return '<div class="olm-rail"><div class="offr-w" role="group" aria-label="Rayons (nombre de produits)">' + out + '</div></div>';
+  }
+  function barreV3(total, ctx, c) {
+    var opts = SORTS.filter(function (o) { return !(o[0] === 'pcat' && (SANS_PCAT || !(c.avecpcat > 0))); }).map(function (o) {
+      return '<option value="' + o[0] + '"' + (S.sort === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
+    }).join('');
+    return '<div class="olm-bar"><p class="olm-nb" role="status"><b class="mono">' + V2.fmtNum(total) + '</b> produit' + (total > 1 ? 's' : '') + (ctx ? ' · ' + esc(ctx) : '') + ' · <span>trié par ' + esc(sortLabel(S.sort).toLowerCase()) + '</span></p>' +
+      '<label class="olm-tri"><span>Trier par</span><select id="olm-tri" onchange="V2.offSort(this.value)">' + opts + '</select></label></div>';
+  }
+  function grilleV3(liste, total) {
+    if (!total) return '<div class="v2-empty"><div class="v2-empty-ico">' + ICO('search', 64, 1.4) + '</div><div class="v2-empty-t">Aucun produit</div><div class="v2-empty-d">Rien ne correspond à cette recherche ni à ce choix.</div></div>';
+    var reste = total - liste.length;
+    return '<div class="off-grid olm-grid">' + liste.map(carteV3).join('') + '</div>' +
+      '<div class="olm-pl"><span class="olm-pl-i mono">' + V2.fmtNum(liste.length) + ' affichés sur ' + V2.fmtNum(total) + '</span>' +
+      (reste > 0 ? '<button type="button" class="olm-pl-b" onclick="V2.offPlus()">Voir ' + V2.fmtNum(Math.min(lot(), reste)) + ' produits de plus</button>' : '') + '</div>';
+  }
+  V2.offPlus = function () {
+    var y = window.pageYOffset || 0;
+    S.nShow = (S.nShow || lot()) + lot();
+    V2.render();
+    try { window.scrollTo(0, y); } catch (e) {}
+  };
+
+  // ── Comparer : un concurrent (une rangée sobre), la phrase qui dit ce qu'on voit et à quelle date, puis les cartes triées par écart ──
+  function concurrentsV3() {
+    var L = cmpSources(), i, j, avail = {};
+    L.forEach(function (x) { avail[x.k] = false; });
+    for (i = 0; i < items.length; i++) for (j = 0; j < L.length; j++) if (!avail[L[j].k] && L[j].get(items[i]) > 0) avail[L[j].k] = true;
+    return L.filter(function (x) { return avail[x.k]; });
+  }
+  function comparerV3(vis) {
+    if (S.cmp && !vis.some(function (x) { return x.k === S.cmp; })) S.cmp = '';
+    var n = {}, nTous = 0, i, j;
+    vis.forEach(function (x) { n[x.k] = 0; });
+    for (i = 0; i < items.length; i++) {
+      for (j = 0; j < vis.length; j++) if (cmpSens(items[i], vis[j], S.sens)) n[vis[j].k]++;
+      if (cmpPasse(items[i], '', S.sens) && (S.sens !== 'tous' || concMeilleur(items[i]))) nTous++;
+    }
+    var liste = items.filter(function (it) { return S.cmp ? cmpPasse(it, S.cmp, S.sens) : (cmpPasse(it, '', S.sens) && (S.sens !== 'tous' || !!concMeilleur(it))); });
+    return { n: n, nTous: nTous, liste: liste };
+  }
+  function triComparer(liste) {
+    var s = S.cmp ? cmpSrc(S.cmp) : null, cle = new Map();
+    liste.forEach(function (it) { var c = s ? concDe(it, s) : concMeilleur(it); cle.set(it, c && c.e ? c.e.pct : null); });
+    var signe = S.sens === 'plus' ? -1 : 1;
+    return liste.slice().sort(function (a, b) {
+      var x = cle.get(a), y = cle.get(b);
+      if (x === null && y === null) return (a.rank || 1e9) - (b.rank || 1e9);
+      if (x === null) return 1; if (y === null) return -1;
+      return (x - y) * signe || (a.rank || 1e9) - (b.rank || 1e9);
+    });
+  }
+  // « N produits moins chers chez <concurrent> que notre prix d'achat (relevé du …) »
+  function phraseCmp(n, vis) {
+    var s = S.cmp ? cmpSrc(S.cmp) : null;
+    var qui = s ? '<b>' + esc(s.label) + '</b>' : 'au moins un concurrent';
+    var base = s ? (s.kind === 'public' && !OPSO ? 'notre prix d\'achat' : 'le prix Offilog') : 'notre prix d\'achat ou le prix Offilog';
+    var d = '';
+    if (s) { var m = majSrc(s.k); d = m ? 'relevé du ' + dateMots(m) : (s.k === 'leclerc' ? 'date de relevé non indiquée' : ''); }
+    else {
+      var ds = vis.map(function (x) { return majSrc(x.k); }).filter(Boolean).sort();
+      if (ds.length > 1 && ds[0] !== ds[ds.length - 1]) d = 'relevés du ' + dateMots(ds[0]) + ' au ' + dateMots(ds[ds.length - 1]) + ', selon le concurrent';
+    }
+    var txt = S.sens === 'tous'
+      ? '<b>' + olmNum(n) + '</b> produit' + (n > 1 ? 's' : '') + ' avec un prix relevé chez ' + qui
+      : '<b>' + olmNum(n) + '</b> produit' + (n > 1 ? 's' : '') + (S.sens === 'moins' ? ' moins chers' : ' plus chers') + ' chez ' + qui + ' que ' + base;
+    return txt + (d ? ' (' + esc(d) + ')' : '') + '.';
+  }
+  function comparerHtml() {
+    var vis = concurrentsV3(), r = comparerV3(vis), liste = triComparer(r.liste), total = liste.length, k = Math.min(S.nShow || lot(), total);
+    function btn(on, click, label, nb, data) {
+      return '<button type="button" class="olm-conc' + (on ? ' on' : '') + '" aria-pressed="' + on + '" onclick="' + click + '" ' + data + '><span>' + esc(label) + '</span><span class="cnt mono">' + V2.fmtNum(nb) + '</span></button>';
+    }
+    var rang = '<div class="olm-rail"><div class="olm-concs" role="group" aria-label="Comparer à (nombre de produits)">' + btn(!S.cmp, "V2.offCmpSrc('')", 'Tous les concurrents', r.nTous, 'data-cmp-src="tous"') +
+      vis.map(function (x) { return btn(S.cmp === x.k, "V2.offCmpSrc('" + x.k + "')", x.label, r.n[x.k], 'data-cmp-src="' + x.k + '" title="' + esc(x.label + (x.kind === 'public' ? ' · prix public TTC' : ' · prix d\'achat HT')) + '"'); }).join('') + '</div></div>';
+    var sens = '<div class="olm-sens" role="group" aria-label="Sens de la comparaison">' + [['moins', 'Moins chers'], ['plus', 'Plus chers'], ['tous', 'Tous']].map(function (o) {
+      return '<button type="button" class="olm-sens-b' + (S.sens === o[0] ? ' on' : '') + '" aria-pressed="' + (S.sens === o[0]) + '" data-cmp-sens="' + o[0] + '" onclick="V2.offCmpSens(\'' + o[0] + '\')">' + o[1] + '</button>';
+    }).join('') + '</div>';
+    return rang + '<div class="olm-cmp"><p class="olm-cmp-p" role="status" aria-live="polite">' + phraseCmp(total, vis) + '</p>' + sens + '</div>' +
+      '<p class="olm-leg">Chaque carte montre le prix du concurrent et l\'écart avec nous, du plus favorable au concurrent au moins favorable. Prix publics en TTC, prix d\'achat des plateformes en HT.</p>' +
+      grilleV3(liste.slice(0, k), total);
+  }
+
+  // ── La fiche d'un produit : tous les concurrents, une seule grammaire, chacun avec la date de son relevé ──
+  function concFiche(it) {
+    var rows = [], L = cmpSources();
+    L.forEach(function (s) { var c = concDe(it, s); if (c) rows.push(c); });
+    rows.sort(function (a, b) {
+      if (a.e && b.e) return a.e.pct - b.e.pct;
+      if (a.e) return -1; if (b.e) return 1; return a.v - b.v;
+    });
+    function sous(c) {
+      var s = c.src, t = s.kind === 'public' ? 'prix public TTC' : 'prix d\'achat HT', m = majSrc(s.k);
+      if (s.k === 'paraph' && it.paraph) t = 'centrale d\'achat · catalogue ' + (it.paraph.annee || 'sans année') + ' · net HT';
+      if (m) t += ' · relevé du ' + dateMots(m);
+      else if (s.k === 'leclerc') t += ' · date de relevé non indiquée';
+      return t;
+    }
+    var lignes = rows.map(function (c) {
+      var e = c.e, bas = !!(e && e.d < 0);
+      return '<div class="olm-f-r' + (bas ? ' bas' : '') + '" data-achat="' + esc(c.src.label) + '"><span class="olm-f-n"><b>' + esc(c.src.label) + '</b><i>' + esc(sous(c)) + '</i></span>' +
+        '<span class="olm-f-p mono">' + colleEuro(V2.fmtEur(c.v)) + '</span>' +
+        '<span class="olm-f-e mono' + (e ? (bas ? ' bas' : ' haut') : '') + '">' + (e ? pctTxt(e) + ' · ' + (e.d < 0 ? '−' : '+') + colleEuro(V2.fmtEur(Math.abs(e.d))) : '') + '</span></div>';
+    }).join('');
+    if (it.cerp && it.cerp.price > 0) {
+      lignes += '<div class="olm-f-r neutre" data-achat="CERP"><span class="olm-f-n"><b>CERP</b><i>offre ' + esc(it.cerp.periode) + (it.cerp.qte > 0 ? ' dès ' + it.cerp.qte + ' unités' : '') + ' · net HT (repère, sans écart)</i></span><span class="olm-f-p mono">' + colleEuro(V2.fmtEur(it.cerp.price)) + '</span><span class="olm-f-e"></span></div>';
+    }
+    if (!lignes) lignes = '<p class="olm-f-vide">Aucun prix concurrent relevé pour ce produit.</p>';
+    var refs = (it.price > 0 ? '<div class="olm-f-r ref"><span class="olm-f-n"><b>Prix Offilog</b><i>prix en ligne HT</i></span><span class="olm-f-p mono">' + colleEuro(V2.fmtEur(it.price)) + '</span><span class="olm-f-e"></span></div>' : '') +
+      (!OPSO && it.achat > 0 ? '<div class="olm-f-r ref"><span class="olm-f-n"><b>Notre prix d\'achat</b><i>Intégral, HT</i></span><span class="olm-f-p mono">' + colleEuro(V2.fmtEur(it.achat)) + '</span><span class="olm-f-e"></span></div>' : '');
+    return '<div class="off-cmp olm-f" id="off-achat"><div class="off-cmp-l">Les concurrents <span>(écart face à notre prix d\'achat pour les prix publics, au prix Offilog pour les prix d\'achat)</span></div>' + refs + lignes + '</div>';
+  }
+
+  // ── L'écran : bandeau, onglets, contenu de l'onglet ouvert ──
+  function mktBarHtml() {
+    return '<div class="off-mktbar' + (mktSel.size ? '' : ' hidden') + '" id="off-mktbar">' +
+      '<span class="ic">' + ICO('spark', 18, 2) + '</span>' +
+      '<span class="n" id="off-mkt-n">' + mktSel.size + ' produit' + (mktSel.size > 1 ? 's' : '') + '</span>' +
+      micChamp('<input class="ttl" id="off-mkt-title" placeholder="Titre de la fiche marketing…" value="' + esc(mktTitle) + '" oninput="V2.offMktTitle(this.value)">', 'Dicter le titre à la voix') +
+      '<button class="v2-btn v2-btn-primary" onclick="V2.offMktPreview()">' + ICO('grid', 16, 2) + ' Aperçu de la fiche</button>' +
+      '<button class="clr" onclick="V2.offMktClear()" title="Vider" aria-label="Vider la sélection">' + ICO('close', 16, 2) + '</button>' +
+    '</div>';
+  }
+  function renderV3(root) {
+    var tab = (S.porte === 'comparer' || S.porte === 'catalogue') ? S.porte : 'trouver';
+    S.porte = tab;
+    var arr = olmArrivee(), corps = '', insHtml = '';
+    if (S.sel != null) {
+      var sp = byEan.get(String(S.sel)) || items.filter(function (x) { return String(x.id) === String(S.sel); })[0];
+      if (sp) insHtml = inspector(sp); else S.sel = null;
+    }
+    if (tab === 'trouver') {
+      var base = filteredBase(), c = counts(base), RAYON_K = {}; RAYONS.forEach(function (r) { RAYON_K[r.k] = 1; });
+      var filtered = (S.chip === 'all') ? base : base.filter(function (it) { return matchChip(it, S.chip); });
+      var sousDispo = {};
+      if (RAYON_K[S.chip]) {
+        filtered.forEach(function (it) { if (it.sousRayon) sousDispo[it.sousRayon] = (sousDispo[it.sousRayon] || 0) + 1; });
+        if (S.sous && !sousDispo[S.sous]) S.sous = '';
+        if (S.sous) filtered = filtered.filter(function (it) { return it.sousRayon === S.sous; });
+      } else if (S.sous) S.sous = '';
+      filtered = sorted(filtered);
+      var total = filtered.length, k = Math.min(S.nShow || lot(), total);
+      var ray = S.chip === 'all' ? '' : ((RAYONS.filter(function (r) { return r.k === S.chip; })[0] || CHIP_BY_KEY[S.chip] || {}).label || '');
+      var ctx = (S.q ? 'pour « ' + (S.q.length > 24 ? S.q.slice(0, 23) + '…' : S.q) + ' »' : '') + (ray ? (S.q ? ' · ' : '') + ray + (S.sous ? ' · ' + S.sous : '') : '');
+      corps = '<div class="off-search">' + ICO('search', 19, 2) + '<input id="off-search-input" type="search" autocomplete="off" aria-label="Rechercher un produit, une marque ou un code EAN" placeholder="Produit, marque ou code EAN…" value="' + S.q.replace(/"/g, '&quot;') + '" oninput="V2.offSearch(this.value)">' +
+          (S.q ? '<button type="button" class="clr" onclick="V2.offSearch(\'\')" aria-label="Effacer la recherche">' + ICO('close', 16, 2) + '</button>' : '') + '</div>' +
+        rayonsV3(c) + (RAYON_K[S.chip] && Object.keys(sousDispo).length > 1 ? '<div class="olm-rail">' + sousRayons(sousDispo) + '</div>' : '') +
+        barreV3(total, ctx, c) + grilleV3(filtered.slice(0, k), total);
+    } else if (tab === 'comparer') {
+      // Conditions de tiers : jamais côté OPSO (SANS_OPP), même si cet écran lui était un jour donné (garde reprise de l'ancien écran).
+      corps = SANS_OPP ? comparerHtml() : oppOnglets() + (S.oppTab === 'opp' ? oppHtml() : S.oppTab === 'plc' ? plcHtml() : comparerHtml());
+    } else {
+      corps = V2.offVitrinePanneau ? V2.offVitrinePanneau() : '';
+    }
+    root.innerHTML = V2.topbar({ back: true }) + '<div class="v2-wrap olm' + (arr ? ' olm-ent' : '') + (S.sel != null ? ' v2-detail-shift" style="--detw:392px"' : '"') + '>' +
+        (V2.priceTabs ? V2.priceTabs('offilog') : '') + v3Entete() + v3Onglets(tab) + bandeauCond() +
+        '<section class="olm-corps" id="olm-corps" role="tabpanel" aria-labelledby="olm-t-' + tab + '">' + corps + '</section>' +
+      '</div>' + insHtml + mktBarHtml();
+    // La barre de sélection et le volet vivent sous <body> : #v2-root garde la transformation de son animation d'entrée, qui décalerait un élément fixe.
+    var barVieille = document.body.querySelector(':scope > #off-mktbar'); if (barVieille) document.body.removeChild(barVieille);
+    var barNeuve = root.querySelector('#off-mktbar'); if (barNeuve) document.body.appendChild(barNeuve);
+    var voletVieux = document.body.querySelector(':scope > .off-insp'); if (voletVieux) document.body.removeChild(voletVieux);
+    var voletNeuf = root.querySelector('.off-insp'); if (voletNeuf) document.body.appendChild(voletNeuf);
+    olmVeille(root); if (arr) olmJoue(root);
+    if (tab === 'catalogue' && V2.offVitrineVignette) V2.offVitrineVignette();
+  }
+
   // ── 18/11/2026 — onglet « Opportunités » dans la porte « Comparer nos prix » ──
   // Photo datée du tableau unique des opportunités (fichier protégé `offilogopp`, window.OFFILOG_OPPORTUNITES).
   // Aucun recalcul : tout compte vient des données. Chargé seulement à l'ouverture de l'onglet.
@@ -2081,10 +2263,15 @@
     return oppCache[k];
   }
   function oppNb(x, dec) { return Number(x).toFixed(dec == null ? 1 : dec).replace('.', ',').replace('-', '−'); }
-  function oppDate(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : (iso || ''); }
+  function oppDate(iso) { return dateMots(iso) || (iso || ''); }
   // Date du prix concurrent, en français : « 2026-06-04 » → « 04/06/2026 » ; « 2026-09-03/05-14 » (relevé Pharmazon complété
   // par son catalogue) → « 03/09 ou 14/05/2026 » ; « 2025 » ou toute autre forme : telle quelle.
-  function oppDateC(s) { var m = /^(\d{4})-(\d{2})-(\d{2})(?:\/(\d{2})-(\d{2}))?$/.exec(s || ''); return m ? m[3] + '/' + m[2] + (m[4] ? ' ou ' + m[5] + '/' + m[4] : '') + '/' + m[1] : (s || ''); }
+  function oppDateC(s) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})(?:\/(\d{2})-(\d{2}))?$/.exec(s || '');
+    if (!m) return /^\d{4}$/.test(s || '') ? 'catalogue ' + s : (s || '');   // « 2025 » seul voulait dire « catalogue 2025 » sans le dire
+    var a = dateMots(m[1] + '-' + m[2] + '-' + m[3]);
+    return m[4] ? a + ' ou ' + dateMots(m[1] + '-' + m[4] + '-' + m[5]) : a;
+  }
   function oppNorm(t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
   // Recherche « mot par mot » (choix de Will, 18/11/2026) : chaque mot tapé doit se trouver quelque part dans le texte,
   // dans n'importe quel ordre (« neutraderm baby » trouve « NEUTRADERM · Neutraderm – Baby liniment »). q est déjà normalisé.
@@ -2113,7 +2300,7 @@
     var q = oppNorm(S.oppQ || '').trim();
     var tout = oppLignes(k);
     var lignes = q ? tout.filter(function (r) { return oppTrouve((r.marque || '') + ' ' + r.produit, q); }) : tout;
-    var n = S.oppN || 50;
+    var n = S.oppN || lotTable();
     var segs = OPP_F.map(function (f) {
       return '<button type="button" class="v2-seg olo-seg' + (f.k === k ? ' on' : '') + '" role="tab" aria-selected="' + (f.k === k) + '" onclick="V2.offOppFiltre(\'' + f.k + '\')">' + esc(f.label) + '<span class="cnt">' + V2.fmtNum((d[f.k] || []).length) + '</span></button>';
     }).join('');
@@ -2222,7 +2409,7 @@
     var garde = plcGarde(tout, f);
     var q = oppNorm(S.plcQ || '').trim();
     var lignes = q ? garde.filter(function (x) { return oppTrouve((x.marque || '') + ' ' + (x.nom || '') + ' ' + (x.it.name || ''), q); }) : garde;
-    var n = S.plcN || 50;
+    var n = S.plcN || lotTable();
     var M = window.OFFILOG_MARCHE || {}, rel = M.releves || [], der = rel.length ? rel[rel.length - 1] : (M.maj || '');
     var C = window.OFFILOG_CATALOGUE;
     var tete = '<div class="olo-photo"><p class="olo-date"><b>Usage interne</b> : prix d\'achat de tiers, ne se remet pas à un pharmacien.</p>' +
@@ -2250,11 +2437,11 @@
       '<p class="olo-nb" role="status"><b>' + V2.fmtNum(lignes.length) + '</b> produit' + (lignes.length > 1 ? 's' : '') + (q ? ' pour « ' + esc(S.plcQ) + ' »' : '') + ', dans l\'ordre des ventes</p>' +
       (lignes.length ? '<div class="olo-l olp-l" role="list"><div class="olo-h olp-h" aria-hidden="true"><span>Ventes</span><span></span><span>Produit</span><span>Offilog HT</span><span>Sagitta net HT</span><span>Pharmazon HT</span><span>Écart</span></div>' + corps + '</div>' + plus : '<p class="olo-etat">Aucun produit ne correspond.</p>');
   }
-  V2.offPlcFiltre = function (k) { S.plcF = k; S.plcN = 50; V2.render(); };
-  V2.offPlcPlus = function () { S.plcN = (S.plcN || 50) + 50; V2.render(); };
+  V2.offPlcFiltre = function (k) { S.plcF = k; S.plcN = 0; V2.render(); };
+  V2.offPlcPlus = function () { S.plcN = (S.plcN || lotTable()) + 50; V2.render(); };
   var _plcTimer = null;
   V2.offPlcSearch = function (v) {
-    S.plcQ = v || ''; S.plcN = 50;
+    S.plcQ = v || ''; S.plcN = 0;
     clearTimeout(_plcTimer);
     _plcTimer = setTimeout(function () {
       V2.render();
@@ -2262,11 +2449,11 @@
       if (inp) { inp.focus(); var l = inp.value.length; try { inp.setSelectionRange(l, l); } catch (e) {} }
     }, 120);
   };
-  V2.offOppFiltre = function (k) { S.oppF = k; S.oppN = 50; V2.render(); };
-  V2.offOppPlus = function () { S.oppN = (S.oppN || 50) + 50; V2.render(); };
+  V2.offOppFiltre = function (k) { S.oppF = k; S.oppN = 0; V2.render(); };
+  V2.offOppPlus = function () { S.oppN = (S.oppN || lotTable()) + 50; V2.render(); };
   var _oppTimer = null;
   V2.offOppSearch = function (v) {
-    S.oppQ = v || ''; S.oppN = 50;
+    S.oppQ = v || ''; S.oppN = 0;
     clearTimeout(_oppTimer);
     _oppTimer = setTimeout(function () {
       V2.render();
@@ -2274,11 +2461,6 @@
       if (inp) { inp.focus(); var l = inp.value.length; try { inp.setSelectionRange(l, l); } catch (e) {} }
     }, 120);
   };
-
-  function olmPan(titre, corps) {
-    return '<section class="olm-pan" id="olm-pan" aria-label="' + esc(titre) + '"><div class="olm-pan-h"><h3 class="olm-pan-t">' + esc(titre) + '</h3>' +
-      '<button type="button" class="olm-pan-x" onclick="V2.offPorte(\'' + S.porte + '\')" aria-label="Refermer le choix">' + ICO('close', 18, 2) + '</button></div>' + corps + '</section>';
-  }
 
   // ── PAGE ──────────────────────────────────────
   // La barre de sélection et le volet de la fiche sont posés sur <body> (voir la fin de render) : ils partent avec l'écran.
@@ -2291,7 +2473,7 @@
     render: function (root, param) {
       injectCss();
       // consommer le param de deep-link UNE fois (avant : re-forçait S.sel à chaque render → inspecteur inrefermable)
-      if (param != null && param !== '' && String(param) !== String(S._lastParam)) { S.sel = param; S.liste = true; }   // lien direct vers un produit : la liste reste derrière le volet
+      if (param != null && param !== '' && String(param) !== String(S._lastParam)) { S.sel = param; }   // lien direct vers un produit : la liste reste derrière le volet
       S._lastParam = param;
 
       // Données : meilleures ventes (requis) + OFFILOG (veille, optionnel, en fond)
@@ -2311,7 +2493,7 @@
         // titre générique puis saute sur le logo — un clignotement d'identité.
         root.innerHTML = V2.topbar({ back: true }) +
           '<div class="v2-wrap' + (M1 ? ' olm' : '') + '">' +
-            (M1 ? '<header class="olm-hd"><div class="olm-hd-t"><div class="olm-id">' + OLM_LOGO() + '<p class="olm-eye">La centrale parapharmacie d\'Intégral</p></div></div></header>'
+            (M1 ? '<header class="olm-hd"><div class="olm-hd-t"><p class="olm-eye">La centrale parapharmacie d\'Intégral</p><h1 class="olm-h1">Offilog</h1></div></header>'
               : '<div class="offb"><div class="offb-bar"></div><div class="offb-in">' +
               '<div class="offb-id">' +
                 '<img class="offb-logo" src="' + MOD_BASE + 'logos/offilog.png" width="444" height="70" alt="Offilog" decoding="async">' +
@@ -2397,6 +2579,7 @@
       if (V2.fusionnerPrixBest) { try { V2.fusionnerPrixBest(); } catch (e) {} }
       if (!SANS_PHARMAZON && V2.fusionnerPrixPharmazon) { try { V2.fusionnerPrixPharmazon(); } catch (e) {} }
       buildIndex();
+      if (M1) { renderV3(root); return; }   // l'écran du CRM : trois onglets (voir renderV3) ; ce qui suit est l'écran de l'app OPSO
 
       var base = filteredBase();
       var c = counts(base);
@@ -2419,15 +2602,10 @@
       var total = filtered.length;
       var pages = Math.max(1, Math.ceil(total / PER_PAGE));
       if (S.page >= pages) S.page = pages - 1;
-      if (S.page < 0) S.page = 0;
+      if (S.page < 0) S.page = 0; S.nShow = 0;
       var pageItems = filtered.slice(S.page * PER_PAGE, (S.page + 1) * PER_PAGE);
       var nbTotal = (window.OFFILOG_BEST || []).length;
-      // Écran d'arrivée (M1) : trois portes tant qu'aucun rayon, tri, comparaison ni recherche n'est choisi.
-      var enListe = !M1 || !!(S.liste || S.q || S.chip !== 'all' || S.sous || S.cmp || S.sens !== 'tous' || S.sort !== 'ventes' || S.page > 0);
-      var enAccueil = !enListe;
-      var haut = (enAccueil && S.porte === 'trouver' && olmBandeauOk(total)) ? pageItems.slice(0, 4) : [];   // les quatre meilleures ventes s'ouvrent avec la porte « Trouver un produit »
       var gridItems = pageItems;
-      var arr = M1 && olmArrivee();
 
       // Chips de CATÉGORIE uniquement (Santé, Beauté, Hygiène…) — repliés dans les
       // filtres avancés. Les « verdicts » (alerte / bien placé) vivent dans la
@@ -2501,32 +2679,11 @@
 
       var searchHtml = '<div class="off-search">' + ICO('search', 19, 2) +
             '<input id="off-search-input" autocomplete="off" placeholder="Rechercher par produit, marque ou EAN…" value="' + qVal + '" oninput="V2.offSearch(this.value)">' + clrBtn + '</div>';
-      var accueilHtml = '';
-      if (enAccueil) {
-        accueilHtml = olmPortes(pageItems);
-        if (S.porte === 'trouver') {
-          accueilHtml += olmPan('Trouver un produit', searchHtml +
-            (haut.length ? '<div class="olm-bande"><div class="olm-bande-t">Les ' + haut.length + ' meilleures ventes' + (cl1Releves().der ? ' · classement des pharmacies clientes d\'Offilog, relevé du ' + cl1Date(cl1Releves().der) : '') + '</div><div class="olm-top" id="olm-top">' + haut.map(olmUne).join('') + '</div></div>' : '') +
-            '<div class="olm-pan-l">Choisir un rayon (nombre de produits)</div>' + rayons(c) +
-            (mktChips ? '<div class="olm-pan-l">Le marché : ' + V2.fmtNum(c.monte || 0) + ' produits dont le rang s\'améliore d\'au moins 20 % au classement' + (cl1Releves().prec ? ' depuis le relevé du ' + cl1Date(cl1Releves().prec) : '') + '</div><div class="v2-segs off-adv-segs">' + mktChips + '</div>' : '') +
-            '<div class="olm-pan-l">Trier par</div><div class="off-sort olm-sort">' + sortBtn('ventes', 'Meilleures ventes') + sortBtn('mvt', 'Plus forte hausse au classement') + sortBtn('prix_asc', 'Prix croissant') + sortBtn('prix_desc', 'Prix décroissant') + '</div>');
-        } else if (S.porte === 'catalogue' && !OPSO) {
-          accueilHtml += olmPan('Le catalogue Offilog', V2.offVitrinePanneau ? V2.offVitrinePanneau() : '');
-        } else if (S.porte === 'comparer') {
-          if (!SANS_OPP && S.oppTab === 'opp') accueilHtml += olmPan('Comparer nos prix', oppOnglets() + oppHtml());
-          else if (!SANS_OPP && S.oppTab === 'plc') accueilHtml += olmPan('Comparer nos prix', oppOnglets() + plcHtml());
-          else accueilHtml += olmPan('Comparer nos prix', (SANS_OPP ? '' : oppOnglets()) + verdictBand(filtered) + cmpHtml +
-            (advChips ? '<div class="olm-pan-l">Repères concurrence (nombre de produits)</div><div class="v2-segs off-adv-segs">' + advChips + '</div>' : '') +
-            '<div class="olm-pan-l">Trier par</div><div class="off-sort olm-sort">' + sortBtn('ecart', 'Écart concurrent') + (!SANS_PCAT && (c.avecpcat || 0) > 0 ? sortBtn('pcat', 'Plus fort écart au prix catalogue') : '') + '</div>');
-        }
-      }
-      root.innerHTML = V2.topbar({ back: true }) +         '<div class="v2-wrap' + (M1 ? ' olm' + (arr ? ' olm-ent' : '') : '') + (S.sel != null ? ' v2-detail-shift" style="--detw:392px"' : '"') + '>' +
+      root.innerHTML = V2.topbar({ back: true }) + '<div class="v2-wrap' + (S.sel != null ? ' v2-detail-shift" style="--detw:392px"' : '"') + '>' +
           (V2.priceTabs ? V2.priceTabs('offilog') : '') +
-          (M1 ? olmEntete(filtered) : brandHead()) +
+          brandHead() +
           accesTest() +
           bandeauCond() +
-          (enAccueil ? accueilHtml :
-          (M1 ? '<button type="button" class="olm-retour" onclick="V2.offAccueil()">' + ICO('back', 16, 2.2) + ' Les trois portes</button>' : '') +
           rayons(c) +
           (RAYON_K[S.chip] ? sousRayons(sousDispo) : '') +
           searchHtml +
@@ -2540,15 +2697,9 @@
             advBtn +
           '</div>' +
           advPanel +
-          gridHtml) +
+          gridHtml +
         '</div>' + insHtml +
-        '<div class="off-mktbar' + (mktSel.size ? '' : ' hidden') + '" id="off-mktbar">' +
-          '<span class="ic">' + ICO('spark', 18, 2) + '</span>' +
-          '<span class="n" id="off-mkt-n">' + mktSel.size + ' produit' + (mktSel.size > 1 ? 's' : '') + '</span>' +
-          micChamp('<input class="ttl" id="off-mkt-title" placeholder="Titre de la fiche marketing…" value="' + esc(mktTitle) + '" oninput="V2.offMktTitle(this.value)">', 'Dicter le titre à la voix') +
-          '<button class="v2-btn v2-btn-primary" onclick="V2.offMktPreview()">' + ICO('grid', 16, 2) + ' Aperçu de la fiche</button>' +
-          '<button class="clr" onclick="V2.offMktClear()" title="Vider">' + ICO('close', 16, 2) + '</button>' +
-        '</div>';
+        mktBarHtml();
       // La barre vit sous <body> : #v2-root garde la transformation de son animation d'entrée (mo-view-in),
       // et un position:fixed placé dedans se cale sur la page au lieu de l'écran — mesuré sous WebKit le
       // 20/10/2026 : barre à 4 059 px du haut d'une fenêtre de 900, bouton « Aperçu » hors de vue.
@@ -2592,13 +2743,13 @@
         flipRects = null;
         // 2) Cascade d'entrée sur les premières cartes — seulement au 1er affichage
         //    (pas à chaque frappe de recherche / tri / pagination), et jamais pendant un FLIP.
-        if (grid && isFirst && !didFlip && !M1) {
+        if (grid && isFirst && !didFlip) {
           mo.stagger(grid.querySelectorAll('.off-card'), { step: 34, cap: 10, y: 8 });
         }
         // 3) Count-up des 2 chiffres verdict quand la bande arrive à l'écran —
         //    au 1er affichage seulement (pas à chaque frappe de recherche).
         var vwrap = root.querySelector('.off-verdict-wrap');
-        if (vwrap && isFirst && !M1) {
+        if (vwrap && isFirst) {
           mo.inView(vwrap, function (el) {
             var cs = el.querySelectorAll('[data-count]');
             for (var i = 0; i < cs.length; i++) mo.countUp(cs[i]);
@@ -2608,14 +2759,6 @@
         // 4) Tuile verdict rouge (le signal fort) rendue magnétique : elle « penche »
         //    de quelques px vers le curseur (physique alignée sur V2.motion, RM/touch-safe).
         bindVerdictMagnetic(mo);
-      }
-      if (M1) {
-        olmVeille(root); if (arr) olmJoue(root);
-        if (S._porteScroll) {   // on vient d'ouvrir une porte : son choix doit être à l'écran (sur téléphone il est sous les trois portes)
-          S._porteScroll = false;
-          var pan = root.querySelector('#olm-pan');
-          if (pan) { try { pan.scrollIntoView({ block: 'start', behavior: 'instant' }); } catch (e) {} }
-        }
       }
     }
   };
