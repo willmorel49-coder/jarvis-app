@@ -1,0 +1,78 @@
+/* ═══ TÉLÉPHONE (≤ 640 px) — la navigation d'en bas (22/11/2026) ═══
+   Demande de Will, sur son iPhone : l'accueil était « un fourre-tout » alors qu'il « devrait ressembler à sur PC, le menu et l'interactivité avec
+   une barre du bas doit être parfaite ». Deux choses, et seulement au téléphone :
+   1. une barre d'onglets en bas (#tb-bas, posée par V2.tbMaj, v2-app.js) : Accueil, les trois premières rubriques du menu de l'ordinateur, puis « Menu »
+      (feuille du bas : le reste des outils, comme « Autres outils » à l'ordinateur) ;
+   2. l'accueil de l'ordinateur (« accueil sobre », v2.css) : date, « Bonsoir… », recherche, tâches du jour, citation. Le rail du bas (Outils / Personnaliser / Compte) disparaît :
+      Outils = la case Menu, Compte = l'avatar du haut, Personnaliser = « Mon espace » de l'avatar.
+   Tout vit sous `body.bnav-on` (posée par JS seulement connecté et hors OPSO) : l'ordinateur, la tablette et OPSO ne changent pas d'un pixel.
+   La barre s'efface là où l'écran a déjà SA barre du bas : la fiche officine (barre du pouce) et l'éditeur Marketing (.mk-onglets-bas).
+   Variable --bnav-h = place prise par la barre (0 quand elle est absente) : tout ce qui est fixé en bas s'en sert pour remonter.
+   Safari : fonds opaques, ni flou ni backdrop-filter, aucune opacité sur du texte. ═══ */
+.bnav{display:none}
+@media (max-width:640px){
+  body.bnav-on{--bnav-h:calc(64px + env(safe-area-inset-bottom,0px))}
+  body.bnav-on.mk-editeur,body.bnav-on:has(.pha-wrap.fdr-on){--bnav-h:0px}
+  body.bnav-on.mk-editeur .bnav,body.bnav-on:has(.pha-wrap.fdr-on) .bnav{display:none}
+
+  .bnav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:fixed;left:0;right:0;bottom:0;z-index:100;box-sizing:border-box;
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));min-height:var(--bnav-h,64px);
+    background:radial-gradient(360px 120px at 50% -30%,#FFFFFF 0,#F4F7FD 100%) #F4F7FD;border-top:1px solid #D5E0F6;box-shadow:0 -10px 28px rgba(16,19,28,.10)}
+  .bnav .bnav-c{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;min-width:0;min-height:52px;margin:0;padding:2px 0 0;border:0;border-radius:12px;
+    background:none;color:#4A5672;font:700 11.5px/1.15 Inter,system-ui,sans-serif;letter-spacing:0;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent;-webkit-appearance:none;appearance:none}
+  .bnav .bnav-i{display:grid;place-items:center;width:56px;height:30px;border-radius:15px;background-color:transparent}
+  .bnav .bnav-i .u2-ic{width:24px;height:24px;color:inherit}
+  .bnav .bnav-n{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
+  .bnav .bnav-c.on{color:#0050E6}
+  .bnav .bnav-c.on .bnav-i{background-color:#E6EDFB}
+  .bnav .bnav-c:active .bnav-i{background-color:#E6EDFB}
+  .bnav .bnav-c:focus-visible{outline:3px solid #8FB2F5;outline-offset:-2px}
+
+  /* le contenu ne finit pas caché sous la barre */
+  body.bnav-on #v2-root{padding-bottom:var(--bnav-h)}
+
+  /* le rond « noter un rendez-vous » ne repasse pas par-dessus la barre */
+  body.bnav-on:not(:has(.pha-wrap.fdr-on)) .v2-fab{display:none}
+
+  /* ce qui est fixé en bas remonte au-dessus de la barre */
+  body.bnav-on .v2-toast-host{bottom:calc(var(--bnav-h) + 12px)}
+  body.bnav-on .v2-appbar{bottom:calc(var(--bnav-h) + 12px)}
+  body.bnav-on .v2-cartbar{bottom:var(--bnav-h);padding-bottom:14px}
+  body.bnav-on .off-mktbar{bottom:calc(var(--bnav-h) + 12px)}
+  body.bnav-on .lis-toast{bottom:calc(var(--bnav-h) + 12px)}
+  body.bnav-on .ml-cap{bottom:calc(var(--bnav-h) + 12px)}
+  body.bnav-on .v2-sem-barre{bottom:var(--bnav-h)}
+  body.bnav-on #v2-horsligne,body.bnav-on:has(.u2-hors .u2-rail) #v2-horsligne{bottom:calc(var(--bnav-h) + 12px)}
+  body.bnav-on .mkf-voile{z-index:105}
+  body.bnav-on.mk-dans:not(.mk-editeur) .mkc-pdf-loge{bottom:var(--bnav-h)}
+  body.bnav-on.mk-dans:not(.mk-editeur) #lis-root{bottom:var(--bnav-h)}
+  body.bnav-on:not(.mk-editeur) .mks-action{bottom:var(--bnav-h)}
+
+  /* ── « Menu » : la feuille du bas (celle de la fiche) avec la liste des outils ── */
+  .bnav-menu{display:flex;flex-direction:column;gap:8px;padding-bottom:6px}
+  .bnav-menu .tp-ao-it.bnav-li{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:6px 14px 6px 8px;border:1px solid rgba(16,19,28,.09);border-radius:18px;
+    background:linear-gradient(180deg,#FFFFFF,#F5F8FE);color:#10131C;font:800 17px/1.2 Inter,system-ui,sans-serif;letter-spacing:-.01em;text-align:left;text-decoration:none;-webkit-tap-highlight-color:transparent}
+  .bnav-menu .tp-ao-it.bnav-li:active{transform:scale(.985)}
+  .bnav-menu .tp-ao-it.bnav-li svg{flex:none;box-sizing:border-box;width:44px!important;height:44px!important;padding:11px;border-radius:50%;background-color:#E6EDFB;color:#0050E6}
+  .bnav-menu .tp-ao-it.bnav-li span{flex:1;min-width:0}
+  .bnav-menu .tp-ao-dev{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;margin-top:6px;padding:0 14px;border:1px dashed #C3CADA;border-radius:18px;background-color:#FFFFFF;
+    color:#4A5672;font:700 15px/1.2 Inter,system-ui,sans-serif;text-align:left;cursor:pointer}
+  .bnav-menu .tp-ao-dev svg{color:#4A5672}
+  .bnav-menu .tp-ao-l{display:flex;flex-direction:column;gap:8px}
+  .bnav-menu .tp-ao-l[hidden]{display:none}
+  .bnav-menu .tp-ao-s{padding:4px 6px 0;font:500 14px/1.4 Inter,system-ui,sans-serif;color:#4A5672}
+
+  /* ── l'accueil de l'ordinateur (v2.css, « accueil sobre ») : date, « Bonsoir », recherche, tâches du jour, citation ── */
+  html:not([data-hab]) body.bnav-on .u2-hors.u2-barre .u2-rail{display:none}
+  html:not([data-hab]) body.bnav-on .u2-page.u2-barre .u2-grille{margin-left:0;padding-bottom:24px}
+  html:not([data-hab]) body.bnav-on .u2-page.u2-barre .u2-centre .m1-wrap>:not(#aube-acc),
+  html:not([data-hab]) body.bnav-on .u2-page.u2-barre .u2-grille>:not(#u2-centre):not(#u2-citation),
+  html:not([data-hab]) body.bnav-on .u2-page.u2-barre #pb-band{display:none}
+  html:not([data-hab]) body.bnav-on .u2-page.u2-barre .u2-cit{display:block;max-width:760px;margin:8px auto 0;padding:8px 8px 24px;text-align:center}
+  html:not([data-hab]) body.bnav-on .u2-page.u2-barre .u2-cit::before{content:"";display:block;width:44px;height:3px;margin:0 auto 20px;border-radius:2px;background-color:#0050E6}
+  html:not([data-hab]) body.bnav-on .u2-page.u2-barre .u2-cit blockquote{margin:0}
+  html:not([data-hab]) body.bnav-on .u2-page.u2-barre .u2-cit p{margin:0;font:500 18px/1.45 var(--font);color:#1A2030;text-wrap:balance}
+  html:not([data-hab]) body.bnav-on .u2-page.u2-barre .u2-cit figcaption{margin-top:12px;font:600 14.5px/1.3 var(--font);letter-spacing:.02em;color:#3B4357}
+  /* quel que soit l'habillage, le rail du bas (Outils / Personnaliser / Compte) laisse la place à la barre d'onglets */
+  body.bnav-on .u2-hors .u2-rail{display:none}
+}

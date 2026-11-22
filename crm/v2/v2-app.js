@@ -878,6 +878,7 @@
     // repose après chaque rendu, car il doit s'effacer quand une barre
     // flottante occupe déjà le bas, et sur les écrans où il ferait doublon.
     if (V2.rdvGeste) V2.rdvGeste.poser();
+    if (V2.tbMaj) V2.tbMaj();   // 22/11/2026 : la barre du bas du téléphone (v2-tel.css)
     if (window.__swUpdateReady && V2.showUpdateBanner) V2.showUpdateBanner();
   };
 
@@ -1293,6 +1294,7 @@
     doc: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/>',
     mallette: '<path d="M3.5 8h17v11.5h-17z"/><path d="M9 8V5.5h6V8"/><path d="M3.5 13.2h17M11 13.2h2"/>',
     documents: '<path d="M3.5 7.5V19h17V9H11L9.2 6.5H3.5z"/><path d="M3.5 11h17"/>',
+    maison: '<path d="M3.5 11L12 3.5l8.5 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5.5h4V20"/>',
     tournees: '<path d="M3 6.5h11v9H3z"/><path d="M14 9.5h3.8l2.7 3v3H14z"/><circle cx="7.5" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/>'
   };
   U2_IC.pharma = U2_IC.officines;
@@ -1918,9 +1920,9 @@
   };
   // 19/11/2026 — « Autres outils » (barre de l'accueil à l'ordinateur) : menu ancré sous le bouton. D'abord les entrées de la barre au-delà des sept premières,
   // puis le groupe « Outils » (direct), puis « En développement » replié. Mêmes filtres que le rail (u2OutilsHtml) : hors mode réglage, un outil masqué n'y figure pas.
-  function aoLien(t, k) {
-    return '<a class="v2-um-item tp-ao-it" role="menuitem" href="' + esc(t.href) + '"' + (t.ext ? ' target="_blank" rel="noopener"' : ' data-tp-act="' + esc(t.act) + '"') + ' data-tool="' + esc(k) + '" onclick="return V2.autresAller(event,this)">' +
-      u2Ic(k, 18) + '<span>' + esc(t.nom) + '</span>' + (t.ext ? '<span class="u2-sr">, s\'ouvre dans un nouvel onglet</span>' : '') + '</a>';
+  function aoLien(t, k, cls, ic) {
+    return '<a class="v2-um-item tp-ao-it' + (cls ? ' ' + cls : '') + '" role="menuitem" href="' + esc(t.href) + '"' + (t.ext ? ' target="_blank" rel="noopener"' : ' data-tp-act="' + esc(t.act) + '"') + ' data-tool="' + esc(k) + '" onclick="return V2.autresAller(event,this)">' +
+      u2Ic(ic || k, 18) + '<span>' + esc(t.nom) + '</span>' + (t.ext ? '<span class="u2-sr">, s\'ouvre dans un nouvel onglet</span>' : '') + '</a>';
   }
   V2.autresAller = function (e, a) {
     var m = document.getElementById('v2-autresmenu');
@@ -1928,32 +1930,101 @@
     var b = document.querySelector('.tp-autres'); if (b) b.setAttribute('aria-expanded', 'false');
     return a.hasAttribute('data-tp-act') ? V2.topAller(e, a) : true;
   };
-  V2.autresOutils = function (btn) {
+  // 22/11/2026 — la liste de « Autres outils » est fabriquée ICI, une seule fois, à partir d'un indice de départ : 7 à l'ordinateur (les sept premières rubriques sont dans la barre
+  // du haut), 3 au téléphone (la barre du bas porte Accueil + les trois premières rubriques ; « Menu » montre la suite). `lien` fabrique chaque ligne (aoLien par défaut).
+  function autresListe(debut, lien) {
     var etat = u2Etat(), reg = !!(V2.accueilWidgets && V2.accueilWidgets.regle && V2.accueilWidgets.regle());
     var fams = reg ? etat.tous : etat.fams, h = '';
-    (V2.accueilCinq && V2.accueilCinq.barre ? V2.accueilCinq.barre() : []).slice(7).forEach(function (t) {
-      h += aoLien({ href: t.href, act: t.act, nom: t.nom }, t.k);
+    lien = lien || aoLien;
+    (V2.accueilCinq && V2.accueilCinq.barre ? V2.accueilCinq.barre() : []).slice(debut).forEach(function (t) {
+      h += lien({ href: t.href, act: t.act, nom: t.nom }, t.k);
     });
     fams.forEach(function (f) {
       if (f.k !== 'direct') return;
-      h += f.cles.map(function (k) { return aoLien(u2Outil(k), k); }).join('');
+      h += f.cles.map(function (k) { return lien(u2Outil(k), k); }).join('');
     });
     fams.forEach(function (f) {
       if (f.k !== 'dev') return;
       h += '<button type="button" class="v2-um-item tp-ao-dev" aria-expanded="false" data-ao-dev>' + u2Ic('chev', 16, 'car') + '<span>' + esc(f.nom) + '</span><span class="n">' + f.cles.length + '</span></button>' +
-        '<div class="tp-ao-l" hidden><p class="tp-ao-s">Ces outils marchent, mais ils ne sont pas encore au point.</p>' + f.cles.map(function (k) { return aoLien(u2Outil(k), k); }).join('') + '</div>';
+        '<div class="tp-ao-l" hidden><p class="tp-ao-s">Ces outils marchent, mais ils ne sont pas encore au point.</p>' + f.cles.map(function (k) { return lien(u2Outil(k), k); }).join('') + '</div>';
     });
+    return h;
+  }
+  // le dépliage « En développement » : le même à l'ordinateur (menu déroulant) et au téléphone (feuille du bas)
+  function aoDepli(m) {
+    m.addEventListener('click', function (e) {
+      var d = e.target.closest && e.target.closest('[data-ao-dev]'); if (!d) return;
+      var ouvert = d.getAttribute('aria-expanded') !== 'true';
+      d.setAttribute('aria-expanded', String(ouvert)); d.nextElementSibling.hidden = !ouvert;
+    });
+  }
+  V2.autresOutils = function (btn) {
+    var h = autresListe(7);
     if (!h) return;
     var m = menuBarre('v2-autresmenu', btn, h);
     if (!m) return;
     m.classList.add('tp-ao');
     var r = btn.getBoundingClientRect();
     m.style.right = 'auto'; m.style.left = Math.max(12, Math.round(Math.min(r.left, window.innerWidth - 300))) + 'px';
-    m.addEventListener('click', function (e) {
-      var d = e.target.closest && e.target.closest('[data-ao-dev]'); if (!d) return;
-      var ouvert = d.getAttribute('aria-expanded') !== 'true';
-      d.setAttribute('aria-expanded', String(ouvert)); d.nextElementSibling.hidden = !ouvert;
+    aoDepli(m);
+  };
+
+  // 22/11/2026 — la barre du bas, au téléphone (≤ 640 px ; le CSS v2-tel.css décide, le HTML est toujours posé quand on est connecté, jamais côté OPSO).
+  // Elle reprend le menu du haut de l'ordinateur : Accueil, les trois premières rubriques de V2.accueilCinq.barre(), puis « Menu » (la suite + les outils directs + « En développement »).
+  var TB_COURT = { todo: 'To do', infos: 'Infos', produits: 'Catalogue' };   // libellés courts : cinq cases tiennent sur 360 px
+  function tbCase(cls, nom, ic, on, attrs, tag) {
+    return '<' + tag + ' class="bnav-c' + (on ? ' on' : '') + (cls ? ' ' + cls : '') + '"' + (on ? ' aria-current="page"' : '') + attrs + '>' +
+      '<span class="bnav-i">' + u2Ic(ic, 24) + '</span><span class="bnav-n">' + esc(nom) + '</span></' + tag + '>';
+  }
+  // rt = la route, grp = « on est sur Groupements », l = les trois rubriques ; rend le HTML des cinq cases
+  function tbHtml(rt, grp, l) {
+    var autre = false, h = tbCase('bnav-acc', 'Accueil', 'maison', rt.name === 'home', ' href="#home" onclick="return V2.tbAccueil(event)"', 'a');
+    l.slice(0, 3).forEach(function (t) {
+      var on = t.k === 'groupements' ? grp : (rt.name === t.k && !(t.k === 'pharma' && grp));
+      if (on) autre = true;
+      h += tbCase('', TB_COURT[t.k] || t.nom, t.k === 'groupements' ? 'carteGrp' : t.k, on, ' href="' + esc(t.href) + '" data-tp-act="' + esc(t.act) + '" onclick="return V2.topAller(event,this)"', 'a');
     });
+    return h + tbCase('bnav-men', 'Menu', 'grille', rt.name !== 'home' && !autre, ' type="button" aria-haspopup="dialog" onclick="V2.tbMenu(this)"', 'button');
+  }
+  V2.tbAccueil = function (e) {
+    if (e && (e.button > 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) return true;
+    if (e) e.preventDefault();
+    V2.go('home'); return false;
+  };
+  V2.tbMaj = function () {
+    var b = document.body, n = document.getElementById('tb-bas');
+    // sans v2-tel.css (Phirst charge ce fichier sans cette feuille), la barre s'afficherait sans style, même à l'ordinateur : on ne la pose pas
+    if (!V2.user || (window.V2_BRAND && window.V2_BRAND.opso) || !V2.accueilCinq || !V2.accueilCinq.barre || !document.querySelector('link[href*="v2-tel.css"]')) {
+      if (n && n.parentNode) n.parentNode.removeChild(n);
+      b.classList.remove('bnav-on'); return;
+    }
+    var rt = V2.route || {}, l = [], grp = rt.name === 'pharma' && (rt.param === 'groupements' || (!rt.param && !!V2.pharmaVueOuverte && V2.pharmaVueOuverte() === 'groupements'));
+    try { l = V2.accueilCinq.barre(); } catch (e) { l = []; }
+    var h = tbHtml(rt, grp, l);
+    if (!n) {
+      n = document.createElement('nav'); n.id = 'tb-bas'; n.className = 'bnav'; n.setAttribute('aria-label', 'Navigation principale');
+      document.body.appendChild(n);
+    }
+    if (n.getAttribute('data-h') !== h) { n.innerHTML = h; n.setAttribute('data-h', h); }
+    b.classList.add('bnav-on');
+  };
+  // « Menu » : la feuille du bas de la fiche (v2-pharma.js, chargée en différé) ; tant qu'elle n'est pas là, le menu déroulant de l'ordinateur
+  V2.tbMenu = function (btn) {
+    var h = autresListe(3, function (t, k) { return aoLien(t, k, 'bnav-li', k === 'groupements' ? 'carteGrp' : k); });
+    if (!h) return;
+    if (!V2.feuille) {
+      var m = menuBarre('v2-autresmenu', btn, h);
+      if (!m) return;
+      m.classList.add('tp-ao');
+      var r = btn.getBoundingClientRect();
+      m.style.top = 'auto'; m.style.bottom = Math.round(window.innerHeight - r.top + 8) + 'px'; m.style.left = '12px'; m.style.right = '12px';
+      aoDepli(m);
+      return;
+    }
+    V2.feuille({ t: 'Menu', s: 'Tous les outils', ic: 'grille', h: '<div class="tp-ao bnav-menu">' + h + '</div>' }, btn);
+    var z = document.querySelector('#fbs .bnav-menu'); if (!z) return;
+    aoDepli(z);
+    z.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('a.tp-ao-it') && V2.fbFerme) V2.fbFerme(); });
   };
   function qAgir(act) {
     var i = act.indexOf(':'), t = act.slice(0, i), v = act.slice(i + 1);

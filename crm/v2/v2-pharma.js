@@ -2454,6 +2454,7 @@
     note: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
     prix: '<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".6" fill="currentColor"/>',
     lien: '<path d="m9 18 6-6-6-6"/>',
+    grille: '<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>',
     d2p: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>'
   };
   function fbIc(n, s) { return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + FB_IC[n] + '</svg>'; }
@@ -4303,7 +4304,9 @@
     };
     p.addEventListener('touchend', fin); p.addEventListener('touchcancel', fin);
   }
-  // Feuilles de la barre : « Prix » (Catalogue, Offilog, Transmettre + Comparer en vue Intégral) et « Envoyer » (Transmettre ; en vue Intégral aussi E-mail et Rendez-vous).
+  // Feuilles de la barre. 22/11/2026 (Will : « entre transmettre dans prix et le bouton envoyer y a une redondance ») : chacune a UN sens.
+  // « Prix » = ce qu'on MONTRE (Catalogue, Offilog, + Comparer en vue Intégral) ; « Envoyer » = tout ce qu'on ENVOIE (en vue Intégral : Documents, E-mail,
+  // Proposer un rendez-vous ; en vue pharmacien, Envoyer ouvre directement la fenêtre Transmettre). « Transmettre » n'est plus dans Prix.
   V2.rv2Feuille = function (k, el) {
     var c = fbC; if (!c) return;
     var integral = rv2Vue() === 'integral';
@@ -4313,18 +4316,19 @@
     if (k === 'prix') {
       if (V2.pages.produits) l += li('prod', 'Catalogue', 'Les produits, pour cette officine', 'button', va('catalogue'));
       if (V2.pages.offilog) l += li('prix', 'Offilog', 'Le catalogue parapharmacie', 'button', va('offilog'));
-      l += li('tx', 'Transmettre', 'Choisir quoi lui envoyer', 'button', va('tx'));
       if (integral && !isOpso() && !isEscale() && V2.d2pRender) l += li('d2p', 'Comparer', 'Ses prix face aux concurrents', 'button', va('d2p'));
       f = { t: 'Prix', s: 'À lui montrer', ic: 'prix', h: '<div class="rv2-ls">' + l + '</div>' };
     } else {
       if (!integral) { V2.rv2Va('tx'); return; }   // vue pharmacien : un seul geste possible, on y va tout de suite
-      l += li('tx', 'Documents', 'Choisir quoi lui transmettre', 'button', va('tx'));
+      l += li('tx', 'Documents', 'Listings et catalogue pour son logiciel', 'button', va('tx'));
       if (rv2Mail) l += li('mel', 'E-mail', esc(rv2Mail), 'a', 'href="mailto:' + esc(rv2Mail) + '" onclick="V2.fbFerme()"');
-      if (rv2Mail && V2.rdv) l += li('rdv', 'Rendez-vous', 'Lui proposer des créneaux', 'button', va('rdv'));
+      if (rv2Mail && V2.rdv) l += li('rdv', 'Proposer un rendez-vous', 'Lui envoyer vos créneaux', 'button', va('rdv'));
       f = { t: 'Envoyer', s: 'Au pharmacien', ic: 'envoi', h: '<div class="rv2-ls">' + l + '</div>' };
     }
     fbPose(f, el);
   };
+  // 22/11/2026 — la feuille du bas de la fiche, offerte aux autres écrans (v2-app.js : « Menu » de la barre du bas au téléphone)
+  V2.feuille = function (f, el) { fbPose(f, el); };
   V2.rv2Va = function (a) {
     var c = fbC; fbFerme(true); if (!c) return;
     if (a === 'catalogue') V2.go('produits', c.pid);

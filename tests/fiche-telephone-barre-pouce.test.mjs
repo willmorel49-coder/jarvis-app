@@ -10,9 +10,9 @@ import { readFileSync } from 'node:fs';
 const lire = f => readFileSync(new URL('../crm/v2/' + f, import.meta.url), 'utf8');
 const src = lire('v2-pharma.js'), css = lire('v2-fiche-tel.css'), html = lire('index.html'), sw = lire('sw.js');
 
-test('téléphone : v2-fiche-tel.css est la dernière feuille de la page et le service worker la garde', () => {
+test('téléphone : v2-fiche-tel.css est l\'avant-dernière feuille de la page (v2-tel.css, 22/11/2026, vient juste après) et le service worker la garde', () => {
   const feuilles = [...html.split('</head>')[0].matchAll(/<link rel="stylesheet" href="([^"?]+)/g)].map(m => m[1]).filter(h => !/^https?:/.test(h));
-  assert.equal(feuilles[feuilles.length - 1], 'v2-fiche-tel.css', 'ordre : ' + feuilles.slice(-3).join(' → '));
+  assert.deepEqual(feuilles.slice(-2), ['v2-fiche-tel.css', 'v2-tel.css'], 'ordre : ' + feuilles.slice(-3).join(' → '));
   const vHab = (html.match(/v2-hab\.css\?v=([0-9a-z]+)/) || [])[1], vTel = (html.match(/v2-fiche-tel\.css\?v=([0-9a-z]+)/) || [])[1];
   assert.ok(vTel && vTel === vHab, 'même jeton ?v= que les autres feuilles');
   assert.match(sw, /'v2-hab\.css', 'v2-fiche-tel\.css'/);
