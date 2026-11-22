@@ -245,3 +245,136 @@
 .gr-det .v2-row-val.cl1-num{font-weight:700}
 .gr-det .v2-table td.mono{font-size:13px!important}
 @media (max-width:760px){.gr-leg{padding:10px 14px}}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Groupements — version 1 « Le répertoire » (22/11/2026). Préfixe grr-.
+   Même famille que l'écran Officines (ofl-) : recherche en tête, tri en capsules, une carte, une ligne par groupement.
+   Variables de v2.css uniquement. Le haut (.gr-hd) reste celui de l'écran actuel : l'aube, déjà en place.
+   Un seul accent (--ip-blue), aucun ton chaud. Dégradés opaques. Aucune barre de couleur sur un seul côté, aucun flou,
+   aucune opacité sur du texte. Mouvement réduit respecté.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.grr-m { padding-bottom: 70px; }
+.grr-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.grr-m .gr-hd { margin-bottom: 14px; padding-bottom: 34px; }   /* un peu de sol sous l'horizon de l'aube */
+
+/* ── Recherche : premier élément sous le titre, grand, pleine largeur ── */
+html:root:root body .grr-m .grr-rech { display: flex; align-items: center; gap: 12px; width: 100%; box-sizing: border-box; height: 52px; padding: 0 6px 0 20px; margin: 0 0 10px;
+  background: var(--card); border: 1.5px solid var(--line); border-radius: var(--r-card); box-shadow: var(--sh-2); cursor: text; }
+html:root:root body .grr-m .grr-rech svg { flex: none; color: var(--ip-blue); }
+html:root:root body .grr-m .grr-rech input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; box-shadow: none; color: var(--ip-ink); font: 500 18px/1.2 var(--font); }
+html:root:root body .grr-m .grr-rech input::placeholder { color: var(--ip-ink-3); }
+html:root:root body .grr-m .grr-rech:focus-within { border-color: var(--ip-blue); box-shadow: 0 0 0 3px rgba(0, 80, 230, .14); }
+
+/* ── Tri : trois capsules ── */
+.grr-filtres { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 0 0 12px; }
+.grr-tri-l { color: var(--ip-ink-2); font: 600 14px/1 var(--font); }
+.grr-segs { display: inline-flex; gap: 2px; padding: 3px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-pill); }
+html:root:root body .grr-m .grr-seg { height: 44px; padding: 0 18px; border: 0; border-radius: var(--r-pill); background: transparent; color: var(--ip-ink-2); font: 600 14px/1 var(--font); cursor: pointer; white-space: nowrap; transition: background .18s, color .18s; }
+@media (hover: hover) { html:root:root body .grr-m .grr-seg:not(.on):hover { background: #EAF1FF; color: var(--ip-ink); } }
+html:root:root body .grr-m .grr-seg.on { background: var(--ip-blue); color: #fff; }
+.grr-seg:focus-visible, .grr-r:focus-visible, .grr-plus:focus-visible { outline: 2px solid var(--ip-blue); outline-offset: 2px; }
+
+/* ── La carte : une source de lumière en haut à droite, comme l'astre de l'en-tête ── */
+.grr-tab { overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-card); box-shadow: var(--sh-2);
+  background: radial-gradient(620px 250px at 100% 0, #EEF4FF 0, #FFFFFF 100%); }
+html:root:root body .grr-m .grr-n { margin: 0; padding: 13px 20px 11px; color: var(--ip-ink-2); font: 500 14px/1.4 var(--font); }
+.grr-n b { color: var(--ip-ink); font-weight: 800; font-variant-numeric: tabular-nums; }
+.grr-tab .v2-empty { padding: 36px 20px; }
+
+.grr-th, .grr-r { display: grid; grid-template-columns: 44px minmax(0, 1fr) 92px 270px 104px 20px; column-gap: 16px; align-items: center; padding: 0 20px; }
+.grr-th { min-height: 40px; background: var(--card-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--ip-ink-2); font: 700 13px/1.2 var(--font); }
+.grr-th-r { text-align: right; }
+.grr-r { position: relative; min-height: 56px; box-sizing: border-box; padding-top: 6px; padding-bottom: 6px; border-bottom: 1px solid var(--line); color: var(--ip-ink); text-decoration: none; cursor: pointer; background: transparent; transition: background .16s; }
+@media (hover: hover) {
+  .grr-r:hover { background: #F2F7FF; }
+  .grr-r:hover .grr-ch { color: var(--ip-blue); transform: translateX(3px); }
+  .grr-r:hover .grr-barre { height: 8px; }
+}
+.grr-r:active { background: #E8F0FF; }
+
+/* pastille : UNE seule, tuile blanche à liseré fin ; logo s'il existe, sinon initiales en encre */
+.grr-pa { display: grid; place-items: center; }
+html:root:root body .grr-m .grr-pa .grp-logo { display: grid; place-items: center; width: 44px; height: 44px; box-sizing: border-box; padding: 5px; border-radius: 12px; overflow: hidden; background: #fff none; border: 1px solid #D5DFF0; box-shadow: 0 1px 2px rgba(26, 32, 48, .06); }
+html:root:root body .grr-m .grr-pa .grp-logo img { display: block; width: 100%; height: 100%; object-fit: contain; }
+html:root:root body .grr-m .grr-pa .grp-logo-x { padding: 0; background: #fff none; color: var(--ip-ink); font: 800 14px/1 var(--font); letter-spacing: .01em; }
+
+.grr-nm { min-width: 0; display: block; }
+.grr-nom { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ip-ink); font: 700 15px/1.3 var(--font); letter-spacing: .005em; }
+.grr-sous { display: none; color: var(--ip-ink-2); font: 500 13px/1.35 var(--font); font-variant-numeric: tabular-nums; }
+.grr-cl, .grr-nc { text-align: right; font-variant-numeric: tabular-nums; }
+.grr-cl b { font: 800 16px/1.2 var(--font); color: var(--ip-ink); }
+.grr-nc { color: var(--ip-ink-2); font: 600 15px/1.2 var(--font); }
+
+/* la part : une barre fine et son pourcentage */
+.grr-part { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.grr-barre { flex: 1; display: block; height: 6px; border-radius: 999px; background: #DCE6F8; overflow: hidden; transition: height .16s; }
+.grr-barre > i { display: block; height: 100%; min-width: 3px; border-radius: 999px; background: var(--ip-blue); transform-origin: 0 50%; }
+.grr-pc { flex: none; width: 48px; text-align: right; color: var(--ip-ink); font: 800 15px/1 var(--font); font-variant-numeric: tabular-nums; }
+.grr-inc, .grr-att { color: var(--ip-ink-2); font: 500 13px/1.3 var(--font); }
+.grr-c { display: none; }
+.grr-ch { display: grid; place-items: center; color: var(--ip-ink-3); transition: transform .18s, color .18s; }
+
+/* « Sans groupement » : une ligne à part, en fin de liste */
+.grr-sg { margin-top: 0; background: var(--card-2); border-top: 1px solid var(--line-strong); grid-template-columns: 44px minmax(0, 1fr) 20px; }
+@media (hover: hover) { .grr-sg:hover { background: #F2F7FF; } }
+.grr-sg .grr-nom { font-weight: 600; }
+.grr-sg .gr-num { font-weight: 800; font-variant-numeric: tabular-nums; }
+html:root:root body .grr-m .grr-sg .grp-logo-x { color: var(--ip-ink-3); font-size: 18px; }
+
+/* replis : « Afficher les N autres », « N groupements … sans aucune cliente » */
+.grr-plus { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 52px; padding: 0 20px; border: 0; border-bottom: 1px solid var(--line); background: var(--card); color: var(--ip-blue); font: 700 15px/1.2 var(--font); cursor: pointer; text-align: center; }
+@media (hover: hover) { .grr-plus:hover { background: #F2F7FF; } }
+.grr-plus svg { flex: none; transition: transform .2s; transform: rotate(90deg); }
+.grr-plus[aria-expanded="true"] svg { transform: rotate(-90deg); }
+.grr-plus-sc { justify-content: space-between; color: var(--ip-ink-2); font-weight: 600; border-bottom: 0; text-align: left; }
+.grr-sc { border-top: 1px solid var(--line-strong); }
+.grr-vide { grid-template-columns: 44px minmax(0, 1fr) auto; cursor: default; background: var(--card-2); }
+.grr-vide:last-child { border-bottom: 0; }
+.grr-taille { color: var(--ip-ink-2); font: 500 14px/1.3 var(--font); font-variant-numeric: tabular-nums; text-align: right; }
+
+/* ── L'arrivée : courte, une fois par ouverture de l'écran (.gr-ent est retirée à 900 ms) ── */
+@keyframes grr-barre { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: no-preference) {
+  .gr-ent .grr-rech, .gr-ent .grr-filtres, .gr-ent .grr-tab { animation: gr-monte .28s var(--ease) .1s both; }
+  .gr-ent .grr-tab { animation-delay: .17s; }
+  .gr-ent .grr-body .grr-r:nth-child(-n+14) .grr-barre > i { animation: grr-barre .55s var(--ease) .3s both; }
+}
+
+/* ── Tablette ── */
+@media (max-width: 900px) {
+  .grr-th, .grr-r { grid-template-columns: 44px minmax(0, 1fr) 84px 190px 20px; }
+  .grr-th > :nth-child(5), .grr-nc { display: none; }
+  .grr-sg, .grr-vide { grid-template-columns: 44px minmax(0, 1fr) 20px; }
+  .grr-vide { grid-template-columns: 44px minmax(0, 1fr) auto; }
+}
+
+/* ── Téléphone : une ligne compacte (pastille · nom et comptes · part) ── */
+@media (max-width: 640px) {
+  .grr-m .gr-hd { margin-bottom: 12px; }
+  html:root:root body .grr-m .grr-rech { height: 52px; padding: 0 4px 0 14px; margin-bottom: 8px; }
+  html:root:root body .grr-m .grr-rech input { font-size: 16px; }
+  .grr-filtres { margin-bottom: 10px; }
+  .grr-tri-l { display: none; }
+  .grr-segs { width: 100%; box-sizing: border-box; }
+  html:root:root body .grr-m .grr-seg { flex: 1 1 0; min-width: 0; height: 44px; padding: 0 4px; font-size: 14px; }
+  html:root:root body .grr-m .grr-n { padding: 12px 14px 8px; font-size: 13px; }
+  .grr-th { display: none; }
+  .grr-r { grid-template-columns: 44px minmax(0, 1fr) auto; column-gap: 12px; min-height: 64px; padding: 8px 14px; }
+  .grr-cl, .grr-nc, .grr-ch, .grr-th-r { display: none; }
+  .grr-sous { display: block; }
+  .grr-part { flex-direction: column; align-items: flex-end; gap: 6px; width: 72px; }
+  .grr-pc { width: auto; font-size: 16px; }
+  .grr-barre { flex: none; width: 100%; }
+  .grr-inc .grr-l { display: none; }
+  .grr-inc .grr-c { display: inline; font: 700 16px/1 var(--font); }
+  .grr-sg, .grr-vide { grid-template-columns: 44px minmax(0, 1fr); }
+  .grr-sg .grr-ch { display: grid; }
+  .grr-sg { grid-template-columns: 44px minmax(0, 1fr) 20px; }
+  .grr-vide { grid-template-columns: 44px minmax(0, 1fr) auto; }
+  .grr-taille { font-size: 13px; max-width: 120px; white-space: nowrap; }
+  .grr-plus { min-height: 52px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .grr-r, .grr-ch, .grr-barre, .grr-plus svg, .grr-seg { transition: none; }
+}

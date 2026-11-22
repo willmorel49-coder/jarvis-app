@@ -5265,14 +5265,14 @@
   }
   // Vue Groupements = vue d'équipe : TOUJOURS toutes les pharmacies des 4
   // commerciaux, sans tenir compte du filtre commercial.
-  var grpListSort = 'active';   // 'active' (par défaut, nb pharmacies actives) | 'name' (alphabétique)
+  var grpListSort = 'clientes';   // 'clientes' (par défaut, nos clientes du groupement) | 'part' (part chez nous) | 'name' (alphabétique)
   // Recherche du sous-écran « Listes d'achats à proposer » (Karine, 17/09/2026, aee2d602).
   // Variable de module (pas seulement la valeur du <input>) : elle survit à l'ouverture
   // d'un groupement puis au retour, tant que l'onglet Groupements reste ouvert.
   var grpListSearch = '';
   function grpSearchNorm(s) {
     s = String(s == null ? '' : s).toLowerCase();
-    return s.normalize ? s.normalize('NFD').replace(/[̀-ͯ]/g, '') : s;
+    return (s.normalize ? s.normalize('NFD').replace(/[̀-ͯ]/g, '') : s).replace(/[^a-z0-9]+/g, '');   // sans accents ni ponctuation : « pharmupp » trouve Pharm-UPP
   }
   function groupementList() {
     var byG = {};
@@ -5284,17 +5284,20 @@
       var o = byG[g];
       o.nb = o.members.length;
       o.active = o.members.filter(function (p) { return aDesVentes(p.id); }).length;
+      o.pp = o.name.charAt(0) === '—' ? null : grpPart(o.name, o.nb);
       return o;
     });
-    if (grpListSort === 'name') list.sort(function (a, b) { return a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }); });
-    else list.sort(function (a, b) { return b.active - a.active || b.nb - a.nb; });
+    var rangPart = function (g) { return g.pp && g.pp.etat === 'connu' ? g.pp.part : -1; }, parNom = function (a, b) { return a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }); };
+    if (grpListSort === 'name') list.sort(parNom);
+    else if (grpListSort === 'part') list.sort(function (a, b) { return rangPart(b) - rangPart(a) || b.nb - a.nb || parNom(a, b); });
+    else list.sort(function (a, b) { return b.nb - a.nb || parNom(a, b); });
     if (grpListSearch) {
       var q = grpSearchNorm(grpListSearch);
       list = list.filter(function (g) { return grpSearchNorm(g.name).indexOf(q) >= 0; });
     }
     return list;
   }
-  V2.grpListSortSet = function (mode) { grpListSort = mode === 'name' ? 'name' : 'active'; V2.render(); };
+  V2.grpListSortSet = function (mode) { grpListSort = mode === 'name' || mode === 'part' ? mode : 'clientes'; grMaj(); };
   // ── 03/11/2026 — « plus clair » : l'écran Groupements dans la veine de l'accueil (maquette 1). Aucun calcul nouveau : on lit ce que la liste calcule déjà.
   var grListVu = false, grDetArr = false, grObs = null;
   window.addEventListener('hashchange', function () { if ((location.hash || '').replace(/^#/, '').split('/')[0] !== 'pharma') grListVu = false; });
@@ -5305,33 +5308,103 @@
     if (e.target.closest && e.target.closest('.gr-det')) grDetArr = false; else grListVu = true;
   }, true);
   function grNum(n) { return '<span class="gr-num">' + V2.fmtNum(n) + '</span>'; }
-  function grPct(g) { return g.nb ? Math.round(g.active / g.nb * 100) : 0; }
   function grOuvre(g) { return 'V2.pharmaGroup(\'' + encodeURIComponent(g.name).replace(/'/g, '%27') + '\')'; }
-  // 12/11/2026 — Façon 1 (lot A) : « 41 / 92 actives » ne disait ni ce qu'est une active ni sur combien : « 41 actives sur 92 officines » ; la jauge écrit son pourcentage.
-  function grAct(g) { return '<span class="gr-act"><span class="cl1-num">' + g.active + '</span> actives sur ' + g.nb + ' officine' + (g.nb > 1 ? 's' : '') + '</span>'; }
-  function grJauge(g) { var p = grPct(g); return '<i class="gr-jauge" role="img" aria-label="' + p + ' % des officines actives"><i style="width:' + p + '%"></i></i><span class="gr-pc cl1-num">' + p + ' %</span>'; }
   function grSans(g) { return g.name.charAt(0) === '—'; }
-  // Une phrase, 110 caractères au plus, faite des nombres que la page montre plus bas (jamais un chiffre d'affaires).
+  // ── 22/11/2026 (lot 2 V3, v1 « Le répertoire ») — une ligne par groupement, comme l'écran Officines : recherche, tri, liste dense.
+  // Indicateur = part du groupement chez nous (grpPart, plus bas) ; des comptes seulement, jamais un montant.
+  var grrEtat = { reste: false, sans: false };   // replis ouverts par la personne : ils survivent à la frappe et au tri
+  var GRR_N = 30;                                // lignes montrées d'abord, le reste derrière « Afficher les N autres »
+  var GRR_TRIS = [['clientes', 'Clientes'], ['part', 'Part chez nous'], ['name', 'Nom (A→Z)']];
+  // Un logo entièrement blanc (Giropharm, Katalys) disparaît sur la tuile blanche : on le passe à l'encre.
+  var grrLogoFix = {};
+  function grrLogo(name) {
+    return grpLogo(name).replace(/src="(data:image\/svg\+xml;base64,)([^"]+)"/, function (m, pre, b64) {
+      var k = b64.length + ':' + b64.slice(0, 40) + b64.slice(-20);
+      if (grrLogoFix[k] === undefined) {
+        var s = ''; try { s = decodeURIComponent(escape(atob(b64))); } catch (e) {}
+        var autres = (s.match(/#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)|\b(?:white|black)\b/g) || []).filter(function (c) {
+          return !/^(#fff(?:fff)?|#ffffffff|white|rgb\(\s*255\s*,\s*255\s*,\s*255\s*\))$/i.test(c);
+        });
+        grrLogoFix[k] = (s && !autres.length && /#fff|white/i.test(s)) ? btoa(unescape(encodeURIComponent(s.replace(/#fff(?:fff)?\b|\bwhite\b/gi, '#1A2030')))) : '';
+      }
+      return grrLogoFix[k] ? 'src="' + pre + grrLogoFix[k] + '"' : m;
+    });
+  }
+  function grrS(n, mot) { return V2.fmtNum(n) + ' ' + mot + (n > 1 ? 's' : ''); }
+  // La phrase sous le titre : ce que compte l'écran, une seule fois (A-63, A-64).
   function grPhrase(list) {
-    var n = list.length, nb = 0, ac = 0, top = null;
+    var gs = list.filter(function (g) { return !grSans(g); }), n = gs.length, cl = 0;
+    gs.forEach(function (g) { cl += g.nb; });
     if (!n) return grpListSearch ? 'Aucun groupement ne correspond à « ' + esc(grpListSearch) + ' ».' : 'Aucun groupement pour le moment.';
-    list.forEach(function (g) { nb += g.nb; ac += g.active; if (!grSans(g) && (!top || g.active > top.active)) top = g; });
     var q = grpListSearch.length > 22 ? grpListSearch.slice(0, 21) + '…' : grpListSearch;
-    var tete = '<b>' + grNum(n) + ' groupement' + (n > 1 ? 's' : '') + '</b>' + (q ? ' pour « ' + esc(q) + ' »' : '') + ', ' + grNum(ac) + ' officine' + (ac > 1 ? 's' : '') + ' active' + (ac > 1 ? 's' : '') + ' sur ' + V2.fmtNum(nb);
-    var long = function (s) { return s.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').length; };
-    if (!top) return tete + '.';
-    var t1 = tete + ' ; le plus actif : ' + esc(top.name) + ', ' + top.active + ' actives.', t2 = tete + ' ; le plus actif : ' + esc(top.name) + '.';
-    return long(t1) <= 110 ? t1 : long(t2) <= 110 ? t2 : tete + '.';
+    if (q) return '<b>' + grNum(n) + ' groupement' + (n > 1 ? 's' : '') + '</b> pour « ' + esc(q) + ' », ' + grNum(cl) + ' cliente' + (cl > 1 ? 's' : '') + '.';
+    return '<b>' + grNum(n) + ' groupement' + (n > 1 ? 's' : '') + '</b> où vous avez au moins une cliente, pour ' + grNum(cl) + ' clientes au total.';
   }
-  // Le bandeau : les quatre plus actifs, seulement quand on voit la liste dans l'ordre d'activité et sans recherche.
-  function grHaut(list) { return (grpListSort === 'active' && !grpListSearch) ? list.filter(function (g) { return !grSans(g); }).slice(0, 4) : []; }
-  function grUne(g) {
-    var p = grPct(g);
-    return '<a class="gr-une" onclick="' + grOuvre(g) + '"><span class="gr-une-t">' + grpLogo(g.name, true) +
-      '<span class="gr-ring" role="img" aria-label="' + p + ' % des officines de ce groupement sont actives"><svg viewBox="0 0 60 60" aria-hidden="true"><circle class="gr-ring-f" cx="30" cy="30" r="25"/><circle class="gr-ring-v" cx="30" cy="30" r="25" pathLength="100" style="--p:' + p + '"/></svg><b><span class="gr-num">' + p + '</span> %</b></span></span>' +
-      '<span class="gr-nom">' + esc(g.name) + '</span>' + grAct(g) + '</a>';
+  function grrPart(g) {
+    var pp = g.pp;
+    if (!pp || pp.etat === 'attente') return '<span class="grr-part grr-att"><span class="grr-sr">Part chez nous en cours de calcul</span><span aria-hidden="true">…</span></span>';
+    if (pp.etat === 'inconnu') return '<span class="grr-part grr-inc" data-part="?"><span class="grr-l">taille du groupement inconnue</span><span class="grr-c" aria-hidden="true">—</span></span>';
+    return '<span class="grr-part" data-part="' + pp.part + '"><i class="grr-barre" aria-hidden="true"><i style="width:' + pp.part + '%"></i></i><b class="grr-pc">' + pp.part + ' %</b><span class="grr-sr"> de part chez nous</span></span>';
   }
-  function grCarte(g) { return '<a class="gr-carte" onclick="' + grOuvre(g) + '"><span class="gr-carte-t">' + grpLogo(g.name) + '<span class="gr-nom">' + esc(g.name) + '</span></span><span class="gr-carte-b">' + grAct(g) + grJauge(g) + '</span></a>'; }
+  function grrLigne(g) {
+    var pp = g.pp, connu = pp && pp.etat === 'connu', n = g.nb;
+    var sous = grrS(n, 'cliente') + (connu ? ' · ' + grrS(pp.autres, 'non cliente') : (pp && pp.etat === 'inconnu' ? ' · taille du groupement inconnue' : ''));
+    return '<a class="grr-r" role="link" tabindex="0" data-grp="' + esc(g.name) + '" onclick="' + grOuvre(g) + '" onkeydown="if(event.key===\'Enter\'){this.click()}">' +
+      '<span class="grr-pa">' + grrLogo(g.name) + '</span>' +
+      '<span class="grr-nm"><b class="grr-nom">' + esc(g.name) + '</b><span class="grr-sous">' + sous + '</span></span>' +
+      '<span class="grr-cl"><b>' + V2.fmtNum(n) + '</b></span>' + grrPart(g) +
+      '<span class="grr-nc">' + (connu ? V2.fmtNum(pp.autres) : '—') + '</span>' +
+      '<span class="grr-ch" aria-hidden="true">' + ICO('chev', 16) + '</span></a>';
+  }
+  // La ligne à part : les clientes qui n'ont pas de groupement ne forment pas un groupement (A-62).
+  function grrSans(g) {
+    return '<a class="grr-r grr-sg" role="link" tabindex="0" data-grp="' + esc(g.name) + '" onclick="' + grOuvre(g) + '" onkeydown="if(event.key===\'Enter\'){this.click()}">' +
+      '<span class="grr-pa"><span class="grp-logo grp-logo-x" aria-hidden="true">—</span></span>' +
+      '<span class="grr-nm"><b class="grr-nom"><span class="gr-num">' + V2.fmtNum(g.nb) + '</span> cliente' + (g.nb > 1 ? 's' : '') + ' sans groupement</b></span>' +
+      '<span class="grr-ch" aria-hidden="true">' + ICO('chev', 16) + '</span></a>';
+  }
+  function grrNomsClientes() { var m = {}; (V2.pharmacies || []).forEach(function (p) { m[groupName(p)] = 1; }); return m; }
+  function grrSansCliente() {
+    var l = grpSansCliente(grrNomsClientes()); if (!l) return null;
+    if (grpListSearch) { var q = grpSearchNorm(grpListSearch); l = l.filter(function (g) { return grpSearchNorm(g.name).indexOf(q) >= 0; }); }
+    return l;
+  }
+  function grrSansLigne(g) {
+    return '<div class="grr-r grr-vide"><span class="grr-pa">' + grrLogo(g.name) + '</span><span class="grr-nm"><b class="grr-nom">' + esc(g.name) + '</b></span>' +
+      '<span class="grr-taille">' + grrS(g.autres, 'officine') + '</span></div>';
+  }
+  // Un repli s'ouvre sans redessiner la liste : le focus reste sur le bouton.
+  V2.grrBascule = function (btn) {
+    var z = document.getElementById(btn.getAttribute('aria-controls')); if (!z) return;
+    var ouvre = z.hidden; z.hidden = !ouvre;
+    btn.setAttribute('aria-expanded', ouvre ? 'true' : 'false');
+    if (btn.getAttribute('data-ferme')) btn.firstElementChild.textContent = ouvre ? btn.getAttribute('data-ferme') : btn.getAttribute('data-ouvre');
+    grrEtat[btn.getAttribute('data-repli')] = ouvre;
+  };
+  function grrRepli(id, cle, ouvre, ferme, lignes, extra) {
+    var o = grrEtat[cle];
+    return '<button type="button" class="grr-plus' + (extra || '') + '" data-repli="' + cle + '" aria-controls="' + id + '" aria-expanded="' + (o ? 'true' : 'false') + '"' +
+        (ferme ? ' data-ouvre="' + esc(ouvre) + '" data-ferme="' + esc(ferme) + '"' : '') + ' onclick="V2.grrBascule(this)"><span>' + esc(ferme && o ? ferme : ouvre) + '</span>' + ICO('chev', 16) + '</button>' +
+      '<div id="' + id + '"' + (o ? '' : ' hidden') + '>' + lignes + '</div>';
+  }
+  // Le compteur, l'en-tête de colonnes, les lignes ; tout ce qui dépend de la recherche et du tri.
+  function grpListBody(list) {
+    list = list || groupementList();
+    var sans = list.filter(grSans)[0] || null, gs = list.filter(function (g) { return !grSans(g); });
+    var n = gs.length, tri = { clientes: 'clientes', part: 'part chez nous', name: 'nom' }[grpListSort] || 'clientes';
+    var tete = '<p class="grr-n">' + (grpListSearch ? '<b>' + grNum(n) + ' groupement' + (n > 1 ? 's' : '') + '</b> pour « ' + esc(grpListSearch) + ' » · ' : '') +
+      'Part chez nous : nos clientes sur les officines du groupement en France. Classés par ' + tri + '.</p>';
+    if (!gs.length && !sans) return tete + '<div class="v2-empty"><div class="v2-empty-d">' + (grpListSearch ? 'Aucun groupement ne correspond à « ' + esc(grpListSearch) + ' ».' : 'Aucun groupement.') + '</div></div>';
+    var nPre = grpListSearch ? gs.length : GRR_N, tous = gs.map(grrLigne);
+    var reste = tous.slice(nPre).join('');
+    var h = tete + (gs.length ? '<div class="grr-th" aria-hidden="true"><span></span><span>Groupement</span><span class="grr-th-r">Clientes</span><span>Part chez nous</span><span class="grr-th-r">Non clientes</span><span></span></div>' : '') +
+      '<div class="grr-body">' + tous.slice(0, nPre).join('') + '</div>' +
+      (reste ? grrRepli('grr-reste', 'reste', 'Afficher les ' + V2.fmtNum(tous.length - nPre) + ' autres', 'Réduire la liste', reste) : '');
+    if (sans) h += grrSans(sans);
+    var sc = grrSansCliente();
+    if (sc && sc.length) h += '<div class="grr-sc">' + grrRepli('grr-sc-l', 'sans', V2.fmtNum(sc.length) + ' groupement' + (sc.length > 1 ? 's' : '') + ' connu' + (sc.length > 1 ? 's' : '') + ' en France sans aucune cliente', '', sc.map(grrSansLigne).join(''), ' grr-plus-sc') + '</div>';
+    return h;
+  }
   // La lumière du bandeau s'arrête quand il sort de l'écran et quand l'onglet est caché.
   function grVeille(root) {
     var h = root.querySelector('.gr-hd'); if (!h || !window.IntersectionObserver) return;
@@ -5350,10 +5423,12 @@
   function grPret() { return (V2.pharmacies || []).length && !(V2.ventesProgres && V2.ventesProgres.total && V2.ventesProgres.n < V2.ventesProgres.total); }
   // Tout ce qui dépend de la recherche et du tri se redessine ICI, sans toucher au champ (il garde le focus).
   function grMaj() {
-    var list = groupementList(), card = document.getElementById('v2-grp-list-card'), ph = document.getElementById('gr-phrase'), top = document.getElementById('gr-top');
+    var list = groupementList(), card = document.getElementById('v2-grp-list-card'), ph = document.getElementById('gr-phrase');
     if (card) card.innerHTML = grpListBody(list);
     if (ph) ph.innerHTML = grPhrase(list);
-    if (top) { var h = grHaut(list); top.innerHTML = h.map(grUne).join(''); top.hidden = !h.length; }
+    [].slice.call(document.querySelectorAll('.grr-seg')).forEach(function (b) {
+      var on = b.getAttribute('data-tri') === grpListSort; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
   }
   V2.grAller = function (id) {
     var e = document.getElementById(id); if (!e) return;
@@ -5492,49 +5567,76 @@
     };
   }
 
-  // Compteur + lignes de la liste — extrait à part pour ne redessiner QUE ce
-  // bloc à chaque frappe dans la recherche (le champ garde le focus et le curseur).
-  function grpListBody(list) {
-    list = list || groupementList();
-    var n = list.length, haut = grHaut(list), reste = haut.length ? list.filter(function (g) { return haut.indexOf(g) < 0; }) : list;
-    var rows = reste.map(grCarte).join('');
-    var empty = grpListSearch
-      ? '<div class="v2-empty"><div class="v2-empty-d">Aucun groupement ne correspond à « ' + esc(grpListSearch) + ' ».</div></div>'
-      : '<div class="v2-empty"><div class="v2-empty-d">Aucun groupement.</div></div>';
-    return '<p class="v2-grp-count gr-n cl1-num">' + n + ' groupement' + (n > 1 ? 's' : '') +
-        (haut.length ? '<span class="gr-n-s">dont les ' + haut.length + ' plus actifs, en haut de page</span>' : '') +
-      '</p>' + (rows ? '<div class="gr-cartes">' + rows + '</div>' : empty);
+  // ── 22/11/2026 (lot 2 V3, défaut A-59) — « Part du groupement chez nous » = nos clientes / officines du groupement en France.
+  // L'ancien indicateur (« actives sur ») valait 100 % partout : on comptait nos clientes, qui ont toutes commandé.
+  // Base : la carte nationale (PHARMA_FR, réconciliée par V2.reconcilePharma, la même que la Carte des groupements). Des comptes, aucun montant.
+  // Officines du groupement en France = nos clientes du groupement (comptées comme la liste) + les officines NON clientes de la base nationale
+  // rangées dans ce groupement. Groupement sans aucune officine non cliente connue : taille inconnue → part = null, jamais « 100 % ».
+  var _grpFr = null, _grpFrRef = null, _grpFrN = -1;
+  function grpNomCanon(g) { g = String(g || '').trim(); var c = g ? canonG(g) : ''; return (!c || c === '—' || /PAS un groupement/.test(c)) ? '' : c; }
+  function grpFranceIndex() {
+    var D = window.PHARMA_FR;
+    if (D && D.p && !D._wmlRecon && V2.reconcilePharma) { try { V2.reconcilePharma(); } catch (e) {} }   // base arrivée avant nos officines : réconciliée maintenant
+    if (!D || !D.p || !D._wmlRecon) {
+      if (V2.ensurePharmaFr && !V2._grpFrDemande) {
+        V2._grpFrDemande = true;
+        V2.ensurePharmaFr(function () {
+          if (!(V2.route && V2.route.name === 'pharma')) return;
+          var a = document.activeElement;   // la recherche garde son focus : on ne redessine que ce qui en dépend
+          if (a && a.id === 'v2-grp-search' && typeof grMaj === 'function') grMaj(); else if (V2.render) V2.render();
+        });
+      }
+      return null;
+    }
+    if (_grpFr && _grpFrRef === D && _grpFrN === D.p.length) return _grpFr;
+    var m = {};
+    for (var i = 0; i < D.p.length; i++) {
+      var p = D.p[i];
+      if ((D.seg[p[4]] || '').indexOf('Client') === 0) continue;   // nos clientes se comptent depuis nos propres données (V2.pharmacies)
+      var g = grpNomCanon(D.grp[p[3]]); if (!g) continue;
+      m[g] = (m[g] || 0) + 1;
+    }
+    _grpFr = m; _grpFrRef = D; _grpFrN = D.p.length;
+    return m;
+  }
+  // nom = nom canonique affiché (groupName), clientes = nombre de nos clientes du groupement (o.nb de groupementList).
+  // etat : 'attente' (base nationale pas encore là), 'inconnu' (taille du groupement inconnue), 'connu'.
+  function grpPart(nom, clientes) {
+    var I = grpFranceIndex();
+    if (!I) return { clientes: clientes, autres: null, france: null, part: null, etat: 'attente' };
+    var autres = I[nom] || 0;
+    if (!autres) return { clientes: clientes, autres: 0, france: null, part: null, etat: 'inconnu' };
+    var france = clientes + autres, part = clientes / france * 100;
+    return { clientes: clientes, autres: autres, france: france, part: clientes > 0 ? Math.max(1, Math.round(part)) : 0, etat: 'connu' };
+  }
+  // Groupements de la base nationale où nous n'avons AUCUNE cliente (nomsAvecClientes = { nom: 1 }) : [{ name, autres }], du plus grand au plus petit.
+  // Explique l'écart avec la Carte des groupements, qui compte tous les groupements connus en France (A-64).
+  function grpSansCliente(nomsAvecClientes) {
+    var I = grpFranceIndex(); if (!I) return null;
+    return Object.keys(I).filter(function (g) { return !nomsAvecClientes[g]; }).map(function (g) { return { name: g, autres: I[g] }; })
+      .sort(function (a, b) { return b.autres - a.autres || a.name.localeCompare(b.name, 'fr'); });
   }
   function renderGroupementsList(root) {
     var list = groupementList(), arr = !grListVu && grPret();
-    var haut = grHaut(list);
-    var sortBar =
-      '<div class="gr-bar">' +
-        '<div class="gr-tri"><span class="gr-tri-l">Trier :</span>' +
-        '<div class="v2-segs">' +
-          '<button type="button" class="v2-seg' + (grpListSort === 'active' ? ' on' : '') + '" style="--sc:var(--ip-blue)" onclick="V2.grpListSortSet(\'active\')">Activité</button>' +
-          '<button type="button" class="v2-seg' + (grpListSort === 'name' ? ' on' : '') + '" style="--sc:var(--ip-blue)" onclick="V2.grpListSortSet(\'name\')">Nom (A→Z)</button>' +
-        '</div></div>' +
-        '<div class="v2-search gr-search">' + ICO('search', 18, 2) +
-          '<input id="v2-grp-search" placeholder="Rechercher un groupement…" autocomplete="off" value="' + esc(grpListSearch) + '">' +
-          '<button type="button" id="v2-grp-search-x" class="v2-grp-search-x" aria-label="Effacer la recherche" onclick="V2.grpListSearchClear()"' +
-            (grpListSearch ? '' : ' style="display:none"') + '>' + ICO('close', 16, 2) + '</button>' +
-        '</div>' +
-      '</div>';
-    // 03/11/2026 — même tête bleue que « Mes officines », « Infos du jour » et « To do list » ; les quatre onglets sont les capsules
+    var segs = GRR_TRIS.map(function (t) {
+      return '<button type="button" class="grr-seg' + (grpListSort === t[0] ? ' on' : '') + '" data-tri="' + t[0] + '" aria-pressed="' + (grpListSort === t[0] ? 'true' : 'false') + '" onclick="V2.grpListSortSet(\'' + t[0] + '\')">' + t[1] + '</button>';
+    }).join('');
+    // Même tête que Groupements avant (titre, surtitre, UNE phrase) ; dessous, la famille de l'écran Officines : recherche, tri, liste.
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
-      '<div class="v2-wrap v2-u gr-m1 gr-bandeau' + (arr ? ' gr-ent' : '') + '" id="gr-m1">' +
+      '<div class="v2-wrap v2-u gr-m1 grr-m' + (arr ? ' gr-ent' : '') + '" id="gr-m1">' +
         '<header class="gr-hd"><span class="gr-lu" aria-hidden="true"></span>' +
           '<div class="gr-hd-t"><p class="gr-eye">Mes officines · vue d\'équipe</p><h1 class="gr-h1">Groupements</h1>' +
-            '<p class="gr-phrase" id="gr-phrase" aria-live="polite">' + grPhrase(list) + '</p>' +
-            '<p class="gr-def">Active : a commandé au moins une fois ' + (cl1PerVDe() || 'sur la période chargée') + ' (toute la période, pas le dernier mois). Chaque pourcentage est la part des officines du groupement qui sont actives.</p></div>' +
-          '<div class="gr-top" id="gr-top"' + (haut.length ? '' : ' hidden') + '>' + haut.map(grUne).join('') + '</div>' +
+            '<p class="gr-phrase" id="gr-phrase" aria-live="polite">' + grPhrase(list) + '</p></div>' +
         '</header>' +
-        sortBar +
-        '<div class="v2-card gr-liste" id="v2-grp-list-card">' + grpListBody(list) + '</div>' +
+        '<label class="grr-rech">' + ICO('search', 20, 2) +
+          '<input id="v2-grp-search" type="text" aria-label="Rechercher un groupement" placeholder="Rechercher un groupement…" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" value="' + esc(grpListSearch) + '">' +
+          '<button type="button" id="v2-grp-search-x" class="v2-grp-search-x" aria-label="Effacer la recherche" onclick="V2.grpListSearchClear()"' + (grpListSearch ? '' : ' style="display:none"') + '>' + ICO('close', 16, 2) + '</button>' +
+        '</label>' +
+        '<div class="grr-filtres"><span class="grr-tri-l" id="grr-tri-l">Trier par</span><div class="grr-segs" role="group" aria-labelledby="grr-tri-l">' + segs + '</div></div>' +
+        '<div class="grr-tab" id="v2-grp-list-card">' + grpListBody(list) + '</div>' +
       '</div>';
     grVeille(root); if (arr) grJoue(root);
-    // Recherche live : on ne redessine que la liste, la phrase et le bandeau pour préserver le focus et le curseur du champ.
+    // Recherche live : on ne redessine que la liste et la phrase pour préserver le focus et le curseur du champ.
     var inp = document.getElementById('v2-grp-search');
     if (inp) {
       inp.addEventListener('input', function () {
@@ -5624,10 +5726,13 @@
       : '<div class="v2-empty"><div class="v2-empty-d">Aucun achat identifié pour ce groupement.</div></div>';
     // 03/11/2026 — l'en-tête bleu : le retour, le logo, le nom, la phrase, les trois boutons et les capsules qui mènent aux blocs
     var arr = grDetArr;
-    var uG = encodeURIComponent(grpName).replace(/'/g, '%27'), nPh = data.panel;
+    // 22/11/2026 (A-59) : la part du groupement chez nous remplace « actives sur » (qui valait 100 % partout).
+    var pt = grpPart(grpName, members.length), nM = members.length, phraseGrp = grNum(nM) + ' cliente' + (nM > 1 ? 's' : '') +
+      (pt.etat === 'connu' ? ' sur ' + grNum(pt.france) + ' officines du groupement en France, soit ' + pt.part + ' %' : pt.etat === 'inconnu' ? ' · taille du groupement inconnue' : '');
+    var uG = encodeURIComponent(grpName).replace(/'/g, '%27');
     var hero = '<header class="gr-hd gr-hd-d"><span class="gr-lu" aria-hidden="true"></span>' +
       '<div class="gr-id"><span class="gr-pastille">' + grpLogo(grpName, true) + '</span><div class="gr-hd-t"><p class="gr-eye">Groupement</p><h1 class="gr-h1">' + esc(grpName) + '</h1>' +
-        '<p class="gr-phrase">' + grNum(nPh) + ' officine' + (nPh > 1 ? 's' : '') + ' active' + (nPh > 1 ? 's' : '') + ' sur ' + grNum(members.length) + ' (au moins une commande ' + (cl1PerVDe() || 'sur la période chargée') + ') · ' + grNum(total) + ' produits différents commandés' + (/incomplet/.test(periodLabel()) ? ' · ' + periodLabel().replace(/^.*?(\()/, '$1').replace(/^\((.*)\)$/, '$1') + ' ; chiffres à lire avec prudence' : '') + '</p></div></div>' +
+        '<p class="gr-phrase">' + phraseGrp + ' · ' + grNum(total) + ' produits différents commandés' + (/incomplet/.test(periodLabel()) ? ' · ' + periodLabel().replace(/^.*?(\()/, '$1').replace(/^\((.*)\)$/, '$1') + ' ; chiffres à lire avec prudence' : '') + '</p></div></div>' +
       '<div class="gr-acts">' +
         '<button id="v2-opp-pdf" class="v2-btn v2-btn-primary" onclick="V2.grpDownloadPdf(\'' + uG + '\')">' +
           ICO('download', 17) + 'Télécharger la liste d\'achats (PDF)' + (selCips && selCips.size ? ' <span class="cl1-bc">' + selCips.size + ' produit' + (selCips.size > 1 ? 's' : '') + ' choisi' + (selCips.size > 1 ? 's' : '') + '</span>' : '') + '</button>' +
