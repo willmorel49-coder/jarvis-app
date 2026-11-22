@@ -28,6 +28,9 @@
 .td-m1 .td-expl{margin:10px 0 0;max-width:64ch;font:500 14px/1.5 var(--font);color:#fff}
 /* l'avertissement protège d'une perte : en plaque, bien lisible */
 .td-m1 .td-local{display:inline-block;margin:4px 0 0;padding:3px 11px;border-radius:999px;background:rgba(0,26,104,.62);border:1px solid rgba(255,255,255,.34);color:#fff;font-weight:700}
+/* 22/11/2026 — « Pas enregistré » : les deux gestes qui en sortent, à la taille du doigt */
+.td-m1 .td-hb-bs{display:flex;flex-wrap:wrap;gap:8px}
+.td-m1 .td-hb-b{margin:0;min-height:44px;padding:0 16px;font-family:inherit;font-size:14px;cursor:pointer}
 
 /* capsules = les trois onglets : plaque bleu nuit, compteur en pastille claire ; l'onglet ouvert passe en blanc */
 .td-m1 .td-caps{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0}

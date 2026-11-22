@@ -110,7 +110,9 @@
   // ne doivent pas s'écraser l'un l'autre. `fn` transforme la liste à jour.
   function ecrire(fn) {
     var c = sb(), s = scope();
-    if (!(c && V2.user && st.backend === 'supabase')) {
+    // 22/11/2026 — connecté mais liste non lue en base (session expirée, base muette) : on RETENTE la base à chaque
+    // geste au lieu de rester sur l'appareil en silence ; seul le mode sans compte (banc local) écrit sur l'appareil seul.
+    if (!(c && V2.user)) {
       st.items = fn(nettoie(st.items || localRead())); localWrite(st.items);
       return Promise.resolve(true);
     }
@@ -119,7 +121,7 @@
       var items = fn(nettoie(r.data && r.data.data && r.data.data.items));
       return c.from('profils').upsert({ scope_type: s.st, scope_id: s.sid, data: { items: items }, updated_by: V2.user.id,
         updated_by_name: V2.user.name || '', updated_at: new Date().toISOString() }, { onConflict: 'scope_type,scope_id' })
-        .then(function (u) { if (u.error) throw u.error; st.items = items; localWrite(items); return true; });
+        .then(function (u) { if (u.error) throw u.error; st.backend = 'supabase'; st.items = items; localWrite(items); return true; });
     }).catch(function () {
       // la base n'a pas répondu : on garde quand même sur cet appareil et on le dit
       st.items = fn(nettoie(st.items || localRead())); localWrite(st.items);
@@ -605,10 +607,17 @@
         if (x.rep) { x.ancre = pour; x.prec = ''; x.dernier = ''; }   // une tâche qui revient repart de sa nouvelle date
         return x;
       });
-    }).then(function () {
+    }).then(function (ok) {
       var d = new Date(pour + 'T00:00:00');
-      if (V2.toast) V2.toast('Déplacée : ' + (col === 'auj' ? 'aujourd’hui' : col === 'sem' ? 'demain, ' + JOURS[d.getDay()] + ' ' + dateFr(pour) : 'le ' + dateFr(pour)));
+      if (ok !== false && V2.toast) V2.toast('Déplacée : ' + (col === 'auj' ? 'aujourd’hui' : col === 'sem' ? 'demain, ' + JOURS[d.getDay()] + ' ' + dateFr(pour) : 'le ' + dateFr(pour)));
       rendre(); if (V2.todo.apresCoche) V2.todo.apresCoche();
+    });
+  };
+  // « Réessayer » de l'alerte « Pas enregistré » : relit la liste en base ; si elle répond, l'alerte part
+  V2.todo.reessayer = function () {
+    charger(true).then(function () {
+      if (st.backend === 'local' && V2.toast) V2.toast('La base ne répond toujours pas : reconnectez-vous', 'warn');
+      rendre();
     });
   };
   V2.todo.menuDep = function (b) {
@@ -1065,7 +1074,12 @@
         return '<button type="button" role="tab" aria-selected="' + (ong === o[0]) + '" class="td-cap' + (ong === o[0] ? ' is-on' : '') + '" onclick="V2.todo.onglet(\'' + o[0] + '\')">' + court + (o[3] != null ? '<b class="td-cnt">' + o[3] + '</b>' : '') + '</button>';
       }).join('') + '</div>' : '';
       var phrase = tdPhrase(ong, ouv, faits, nR, nC);
-      var local = st.backend === 'local' ? '<p class="td-expl"><b class="td-local">Gardée sur cet appareil seulement.</b></p>' : '';
+      // 22/11/2026 — connecté mais la base ne répond pas : le dire en clair, avec quoi faire (la pastille seule ne le disait pas)
+      var horsBase = st.backend === 'local' && sb() && V2.user, sansRes = V2.hl && V2.hl.sansReseau && V2.hl.sansReseau();
+      var local = st.backend !== 'local' ? '' : !horsBase ? '<p class="td-expl"><b class="td-local">Gardée sur cet appareil seulement.</b></p>'
+        : '<p class="td-expl" role="alert"><b class="td-local">Pas enregistré</b> JARVIS ne joint pas votre liste en ligne : ce que vous changez ici reste sur cet appareil et sera effacé au prochain chargement.</p>' +
+          '<p class="td-expl td-hb-bs"><button type="button" class="td-local td-hb-b" onclick="V2.todo.reessayer()">Réessayer</button>' +
+          (sansRes ? '' : '<button type="button" class="td-local td-hb-b" onclick="V2.signOut()">Se reconnecter</button>') + '</p>';
       if (ong !== 'taches') {
         root.innerHTML = top + '<div class="v2-wrap narrow">' + tdOuvre() + tdEntete(phrase, local, onglets, '') + R.html(ong) + '</div></div>';
         tdApres(root);
