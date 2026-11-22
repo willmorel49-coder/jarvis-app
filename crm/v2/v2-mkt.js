@@ -1169,7 +1169,7 @@
     h += '</ul>';
     if (m.tarif) h += '<p class="cg-src-n">Tarif : ' + esc(m.tarif.source || '') + ' du ' + esc(cgDateFr(m.tarif.date)) + (m.tarif.note ? ' · ' + esc(m.tarif.note) : '') + '.</p>';
     h += '<p class="cg-src-n">Classement : produits à photo d’abord, puis nombre de pharmacies.</p>' +
-      '<p class="cg-src-t">Pastilles</p><p class="cg-src-n"><span class="cg-s cg-s-ok">OPS</span> en stock · <span class="cg-s cg-s-zero">OPS</span> à 0 · <span class="cg-s cg-s-nd">OPS</span> pas de relevé</p>';
+      '<p class="cg-src-t">Pastilles</p><p class="cg-src-n"><span class="cg-s cg-s-ok">OPS</span> en stock · <span class="cg-s cg-s-zero">OPS</span> à 0 · <span class="cg-s cg-s-nd">OPS</span> pas de relevé' + (V2.stockDateTxt && V2.stockDateTxt() ? ' · ' + V2.stockDateTxt() : '') + '</p>';
     return h;
   }
   function cgResume() {

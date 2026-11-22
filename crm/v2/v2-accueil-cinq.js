@@ -687,7 +687,8 @@
   // ── Offilog : les trois premiers produits de la centrale (rang, marque, produit, rayon) ──
   function m1Offi() {
     var B = window.OFFILOG_BEST; if (!B || !B.length) B = _offiTop && _offiTop.top; if (!B || !B.length) return '<p class="m1-vide">Le classement Offilog se charge.</p>';
-    return '<p class="m1-sub cl1-ttl">Les trois produits les plus vendus sur Offilog, selon le classement du site</p><div class="m1-plist">' + B.slice(0, 3).map(function (b, j) {
+    var dcl = V2.dateDonneeVieille ? V2.dateDonneeVieille(window.OFFILOG_BEST_MAJ || (_offiTop && _offiTop.maj)) : '';   // classement de plus de 30 jours : on le dit
+    return '<p class="m1-sub cl1-ttl">Les trois produits les plus vendus sur Offilog, selon le classement du site' + (dcl ? ' (classement du ' + esc(dcl) + ')' : '') + '</p><div class="m1-plist">' + B.slice(0, 3).map(function (b, j) {
       var nm = String(b.name || ''), k = nm.indexOf(' – '), marque = k > 0 ? nm.slice(0, k) : (b.brand || ''), reste = k > 0 ? nm.slice(k + 3) : nm;
       return '<div class="m1-prow" style="--j:' + j + '"><b class="m1-rk">' + esc(b.rank) + '</b><div><b>' + esc(titre(marque)) + '</b><span>' + esc(reste) + '</span></div>' +
         (CATS[b.cat] ? '<span class="m1-pill m1-info">' + esc(CATS[b.cat]) + '</span>' : '') + '</div>';
@@ -710,7 +711,7 @@
       f.onload = function () {
         try {
           var B = f.contentWindow && f.contentWindow.OFFILOG_BEST;
-          if (B && B.length) { _offiTop = { n: B.length, top: B.slice(0, 3).map(function (b) { return { rank: b.rank, name: b.name, brand: b.brand, cat: b.cat }; }) }; }
+          if (B && B.length) { _offiTop = { n: B.length, maj: f.contentWindow.OFFILOG_BEST_MAJ, top: B.slice(0, 3).map(function (b) { return { rank: b.rank, name: b.name, brand: b.brand, cat: b.cat }; }) }; }
         } catch (e) {}
         fin(); if (_offiTop) maj();
       };

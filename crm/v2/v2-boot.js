@@ -358,6 +358,40 @@
       (a.vieux ? ' · à rafraîchir' : '') + '</span>';
   };
 
+  // ── Date d'une donnée qui vieillit (22/11/2026, V3 « socle des données ») ──
+  // Une donnée de plus de 30 jours (V2.TARIF_VIEUX_JOURS) porte sa date en clair, en mots simples : « 5 juin ».
+  // La date se LIT dans le fichier de la donnée (jamais écrite ici) ; illisible ou récente : '' et rien ne s'affiche.
+  // `maintenant` (facultatif, une Date) sert aux tests.
+  V2.dateEnMots = function (iso, maintenant) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso == null ? '' : iso));
+    if (!m) return '';
+    var n = maintenant || new Date();
+    var MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    return (+m[3] === 1 ? '1er' : String(+m[3])) + ' ' + (MOIS[+m[2] - 1] || '') + (+m[1] !== n.getFullYear() ? ' ' + m[1] : '');
+  };
+  V2.dateDonneeVieille = function (iso, maintenant) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso == null ? '' : iso));
+    if (!m) return '';
+    var n = maintenant || new Date();
+    var j = Math.floor((Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) - Date.UTC(+m[1], +m[2] - 1, +m[3])) / 86400000);
+    return j > V2.TARIF_VIEUX_JOURS ? V2.dateEnMots(iso, n) : '';
+  };
+  // « stock du 15 septembre » ou « stock du 15 septembre au 5 novembre » (sites relevés à des dates différentes).
+  // Lit les dates de chaque établissement (STOCK_IP.meta.siteDates, sinon ETAB_PRICES.siteDates, sinon STOCK_IP.meta.gen).
+  // '' si le plus ancien est récent ou si aucune date n'est lisible : un seul site périmé suffit à fausser la somme « en stock ».
+  V2.stockDateTxt = function (maintenant) {
+    var meta = window.STOCK_IP && window.STOCK_IP.meta;
+    var SD = (meta && meta.siteDates) || (window.ETAB_PRICES && window.ETAB_PRICES.siteDates) || null;
+    var ds = [], k;
+    if (SD) for (k in SD) if (Object.prototype.hasOwnProperty.call(SD, k) && /^\d{4}-\d{2}-\d{2}/.test(String(SD[k]))) ds.push(String(SD[k]).slice(0, 10));
+    if (!ds.length && meta && /^\d{4}-\d{2}-\d{2}/.test(String(meta.gen || ''))) ds.push(String(meta.gen).slice(0, 10));
+    if (!ds.length) return '';
+    ds.sort();
+    if (!V2.dateDonneeVieille(ds[0], maintenant)) return '';
+    var z = ds[ds.length - 1];
+    return 'stock du ' + V2.dateEnMots(ds[0], maintenant) + (z !== ds[0] ? ' au ' + V2.dateEnMots(z, maintenant) : '');
+  };
+
   V2.bestPrice = function (b) {
     if (!b) return { ip: null, ht: null, remise: 0, offre: false };
     var ht = (b.prix_ht != null && b.prix_ht > 0) ? b.prix_ht : 0;   // PPHT / tarif grossiste

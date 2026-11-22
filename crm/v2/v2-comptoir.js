@@ -2694,7 +2694,7 @@
         onglets[i][1] + ' <i>' + nbPorte(onglets[i][2], onglets[i][3]) + '</i></button>';
     }
     if (C.chg === 'rup') {
-      corps = '<p class="cpd-lead">Produits de notre catalogue que l\'ANSM signale en « Rupture de stock »' + (X.rupDate ? ' (relevé du ' + esc(dateFr(X.rupDate)) + ')' : '') +
+      corps = '<p class="cpd-lead">Produits de notre catalogue que l\'ANSM signale en « Rupture de stock »' + (X.rupDate ? ' (relevé du ' + esc(dateFr(X.rupDate)) + ')' : '') + (V2.stockDateTxt && V2.stockDateTxt() ? ' ; « en stock chez nous » : ' + esc(V2.stockDateTxt()) : '') +
         '. Les tensions d\'approvisionnement ne sont pas comptées ici ; elles figurent dans la fiche du produit.</p>';
       if (!X.rup) corps += '<div class="cp-vide">' + (X.rupAtt ? 'Le relevé de l\'ANSM arrive…' : 'Le relevé de l\'ANSM n\'est pas disponible pour le moment.') + '</div>';
       else corps += listePage(X.rup, function (l) {
@@ -2765,8 +2765,8 @@
     var chev = ICO('chev', 18, 2) || '›';
     return '<div class="cp cpd">' +
       '<section class="cpd-head"><div class="cpd-bar" aria-hidden="true"></div><div class="cpd-in">' +
-        '<div><h1 class="cpd-h1">Catalogue produits</h1><div class="cpd-sub">Prix et stock des ' + fr(e.etabs) + ' établissements</div></div>' +
-        '<div class="cpd-stats"><div class="cpd-stat"><b>' + fr(e.ref) + '</b><span>références</span><small>au catalogue Intégral</small></div><div class="cpd-stat"><b>' + fr(e.stock) + '</b><span>en stock</span><small>références du catalogue, tous sites réunis</small></div>' +
+        '<div><h1 class="cpd-h1">Catalogue produits</h1><div class="cpd-sub">Prix et stock des ' + fr(e.etabs) + ' établissements' + (V2.stockDateTxt && V2.stockDateTxt() ? ' (' + esc(V2.stockDateTxt()) + ')' : '') + '</div></div>' +
+        '<div class="cpd-stats"><div class="cpd-stat"><b>' + fr(e.ref) + '</b><span>références</span><small>au catalogue Intégral</small></div><div class="cpd-stat"><b>' + fr(e.stock) + '</b><span>en stock</span><small>références du catalogue, tous sites réunis' + (V2.stockDateTxt && V2.stockDateTxt() ? ' · ' + esc(V2.stockDateTxt()) : '') + '</small></div>' +
           '<div class="cpd-stat"><b>' + fr(e.etabs) + '</b><span>établissements</span><small>dont nous lisons prix et stock</small></div></div></div></section>' +
       '<div class="cpd-q"><h2>Que voulez-vous faire ?</h2><p>Trois portes. Chacune ouvre son volet ici même, rien d\'autre à lire avant.</p></div>' +
       '<div class="cpd-doors">' +

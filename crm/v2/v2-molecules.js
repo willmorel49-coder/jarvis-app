@@ -348,7 +348,7 @@
       } else {
         etabSelect = '<label class="mol-field"><span class="mol-field-l">Établissement</span><span class="mol-select mol-select-wait">Chargement des prix…</span></label>';
       }
-      var stockTgl = (ETABS.length && S.etab) ? ('<label class="mol-tgl"><input type="checkbox"' + (S.stockOnly ? ' checked' : '') + ' onchange="V2.molStockOnly(this.checked)"> En stock seulement</label>') : '';
+      var stockTgl = (ETABS.length && S.etab) ? ('<label class="mol-tgl"><input type="checkbox"' + (S.stockOnly ? ' checked' : '') + ' onchange="V2.molStockOnly(this.checked)"> En stock seulement' + (V2.stockDateTxt && V2.stockDateTxt() ? ' <small style="opacity:.65;font-weight:500">(' + esc(V2.stockDateTxt()) + ')</small>' : '') + '</label>') : '';
 
       // Panneau d'outils unique (façon Launcher) : recherche + établissement + action primaire PDF, familles en onglets dessous
       var qVal = S.q.replace(/"/g, '&quot;');

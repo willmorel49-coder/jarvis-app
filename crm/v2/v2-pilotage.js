@@ -2851,7 +2851,7 @@
                 '<span class="v2-card-link" style="color:var(--muted);cursor:default">' +
                   V2.fmtNum(nOffTotal) + ' officines · ' + (pf ? esc(pf.label) : '') + '</span></div>' +
               '<div class="pilo-legende">Ce que la France achète et que vos officines n\'ont pas commandé' + (pf ? ' sur ' + esc(pf.label) : '') + ' — ' +
-                'uniquement ce qu\'Intégral a en stock. Classé par euros, pas par nombre de boîtes : ' +
+                'uniquement ce qu\'Intégral a en stock' + (V2.stockDateTxt && V2.stockDateTxt() ? ' (' + esc(V2.stockDateTxt()) + ')' : '') + '. Classé par euros, pas par nombre de boîtes : ' +
                 'sinon les petits prix à gros volume écrasent tout et le gisement reste invisible.</div>' +
               chips +
               '<div class="opso-gauge-track" style="margin-top:2px"><div class="opso-gauge-fill" data-w="' + covBar + '" style="width:0"></div></div>' +

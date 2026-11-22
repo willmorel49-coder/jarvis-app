@@ -556,6 +556,11 @@
   }
 
   // ── Briques de rendu ───────────────────────────────────────────
+  // 22/11/2026 : « du 15 septembre au 5 novembre » sous « en stock » quand le stock a plus de 30 jours (dates lues dans les fichiers de stock).
+  function stockMention() {
+    var t = V2.stockDateTxt ? V2.stockDateTxt() : '';
+    return typeof t === 'string' && t ? ' <small style="opacity:.65;font-weight:500">' + esc(t.replace(/^stock /, '')) + '</small>' : '';
+  }
   function chiffre(v, lib, cls) {
     return '<div class="' + (cls || '') + '"><span>' + v + '</span><em>' + lib + '</em></div>';
   }
@@ -766,7 +771,7 @@
         chiffre(eur(l.potentiel), 'potentiel', 'pr-pot') +
         chiffre(f && f.net > 0 ? eur(f.net) : '—', 'prix net' + V2.tarifAgeHtml(l.cip)) +
         chiffre(abandon, 'abandon de marge') +
-        chiffre(num(l.stock), 'en stock') +
+        chiffre(num(l.stock), 'en stock' + stockMention()) +
       '</div>' + boutonSel(l.cip) + '</div>';
   }
   function rendreClient() {
@@ -955,7 +960,7 @@
         chiffre(eur(l.net), 'prix net', 'pr-pot') +
         chiffre(ab == null ? '—' : '+' + eur(ab), 'abandon de marge') +
         chiffre(eur(l.ppht), 'tarif') +
-        chiffre(num(l.stock), 'en stock') +
+        chiffre(num(l.stock), 'en stock' + stockMention()) +
       '</div>' + boutonSel(l.cip) + '</div>';
   }
   function rendreProspect() {
@@ -974,7 +979,7 @@
         escAttr(S.sm.nom) + '" oninput="V2.produits.smNom(this.value)">' +
       composeurHtml(r.dispo) +
       '<div class="pr-ctx"><span class="pr-ctx-pot">' + num(lignes.length) + ' produits dans la liste</span></div>' +
-      actionsHtml('catalogue Intégral · uniquement ce qui est en stock') +
+      actionsHtml('catalogue Intégral · uniquement ce qui est en stock' + (V2.stockDateTxt && V2.stockDateTxt() ? ' (' + V2.stockDateTxt() + ')' : '')) +
       '</div>' + filtresHtml() + liste(lignes, rl.visibles, rl.corps) + panierHtml();
   }
 
@@ -996,7 +1001,7 @@
         (g ? ' · ' + esc(g) : '') + '</div>' +
       '<div class="pr-chiffres">' +
         chiffre(eur(l.potentiel), 'potentiel réseau', 'pr-pot') +
-        chiffre(num(l.stock), 'en stock') +
+        chiffre(num(l.stock), 'en stock' + stockMention()) +
         chiffre(esc(couv), 'couverture') +
         chiffre(f && f.net > 0 ? eur(f.net) : '—', 'prix net') +
       '</div></div>';

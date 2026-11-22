@@ -254,6 +254,9 @@
     return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : String(d);
   }
 
+  // 22/11/2026 (V3, lot dates) : « 5 juin » quand le relevé a plus de 30 jours, '' sinon. La date vient du fichier du relevé (…_MAJ).
+  function vieilleDate(d) { var t = V2.dateDonneeVieille ? V2.dateDonneeVieille(d) : ''; return typeof t === 'string' ? t : ''; }
+
   // 12/11/2026 (clarté, façon 1) : dates écrites en français, lues dans le fichier du marché — jamais en dur.
   function cl1Date(d) {
     if (!d || String(d).length < 10) return '';
@@ -488,9 +491,9 @@
     if (!SANS_OCP) L.push({ k: 'ocp', label: 'OCP', kind: 'achat', color: 'var(--ip-blue-d)', get: function (it) { return it.ocp && it.ocp.price > 0 ? it.ocp.price : 0; } });
     if (!SANS_PARAPH) L.push({ k: 'paraph', label: 'Paraph', kind: 'achat', color: 'var(--ip-blue-d)', get: function (it) { return it.paraph && it.paraph.price > 0 ? it.paraph.price : 0; } });
     L.push({ k: 'leclerc', label: 'E.Leclerc', kind: 'public', color: '#0066B3', get: function (it) { return it.leclerc > 0 ? it.leclerc : numOr0(it.conc['prix_leclerc']); } });
-    L.push({ k: 'drakkars', label: 'Drakkars', kind: 'public', color: '#5E6673', get: function (it) { return it.drakkars > 0 ? it.drakkars : 0; } });
+    L.push({ k: 'drakkars', label: 'Drakkars', kind: 'public', color: '#5E6673', maj: function () { return window.DRAKKARS_PUB_MAJ; }, get: function (it) { return it.drakkars > 0 ? it.drakkars : 0; } });
     PUBS.forEach(function (P) {
-      L.push({ k: P.k, label: P.label, kind: 'public', color: P.color, get: function (it) { return it.pub[P.k] > 0 ? it.pub[P.k] : 0; } });
+      L.push({ k: P.k, label: P.label, kind: 'public', color: P.color, maj: function () { return window[P.g + '_MAJ']; }, get: function (it) { return it.pub[P.k] > 0 ? it.pub[P.k] : 0; } });
     });
     cmpListe = L;
     return L;
@@ -532,7 +535,7 @@
     if (!e) return '';
     var eti = src.label + (src.kind === 'public' ? ' public TTC' : ' achat HT');
     return '<div class="off-card-cmp mono" data-cmp="' + esc(src.k) + '" title="' + esc(eti + ' ' + V2.fmtEur(e.v) + ' face à ' + V2.fmtEur(e.ref) + (src.kind === 'public' && !OPSO ? ' (notre prix d\'achat)' : ' (prix Offilog)')) + '">' +
-      '<span class="off-card-cmp-v">' + esc(eti) + ' ' + V2.fmtEur(e.v) + '</span>' +
+      '<span class="off-card-cmp-v">' + esc(eti) + ' ' + V2.fmtEur(e.v) + (src.maj && vieilleDate(src.maj()) ? ' · relevé le ' + esc(vieilleDate(src.maj())) : '') + '</span>' +
       '<span class="off-pcat-pill">' + cmpEcartLabel(e) + '</span></div>';
   }
   V2.offCmpSrc = function (k) { S.cmp = (S.cmp === k) ? '' : k; S.page = 0; S.liste = true; V2.render(); };
@@ -567,6 +570,8 @@
     sensL.push(['plus', 'Plus cher que nous']);
     var sensSegs = sensL.map(function (x) { return seg(S.sens === x[0], "V2.offCmpSens('" + x[0] + "')", x[1], nSens[x[0]], null, ' data-cmp-sens="' + x[0] + '"'); }).join('');
     var aide = S.cmp ? 'Chaque carte montre le prix du concurrent et l\'écart avec nous, du plus gros écart (en €) au plus petit. Les prix publics sont en TTC, les prix d\'achat en HT.' : '';
+    var csel = S.cmp ? cmpSrc(S.cmp) : null, cdate = csel && csel.maj ? vieilleDate(csel.maj()) : '';
+    if (aide && cdate) aide += ' Les prix de ' + csel.label + ' ont été relevés le ' + cdate + '.';
     return '<div class="off-cmpbar" id="off-cmpbar">' +
       '<div class="off-adv-l">Comparer à (nombre de produits avec un prix)</div><div class="v2-segs off-adv-segs">' + srcSegs + '</div>' +
       '<div class="off-adv-l">Sens</div><div class="v2-segs off-adv-segs">' + sensSegs + '</div>' +
@@ -1067,9 +1072,9 @@
           (it.cerp && it.cerp.price > 0 ? '<span class="off-card-pz" title="' + esc(cerpTip(it.cerp)) + '">' + esc(cerpLabel(it.cerp)) + '</span>' : '') +
           (it.paraph && it.paraph.price > 0 ? '<span class="off-card-pz' + (it.paraphCheaper ? ' win' : '') + '" title="Net HT de la centrale Paraph, catalogue ' + (it.paraph.annee || '') + ' · prix tarif ' + V2.fmtEur(it.paraph.ppht) + ' · net HT ' + V2.fmtEur(it.paraph.price) + '">' + esc(paraphLabel(it.paraph)) + '</span>' : '') +
           (it.leclerc > 0 ? '<span class="off-card-lec' + (it.achat > 0 && it.leclerc < it.achat ? ' bad' : '') + '" title="Prix de vente au public chez E.Leclerc (TTC)">prix public E.Leclerc ' + V2.fmtEur(it.leclerc) + '</span>' : '') +
-          (it.drakkars > 0 ? '<span class="off-card-drk" title="Prix de vente au public chez Pharmacie des Drakkars (TTC) · relevé du ' + esc(majLabel(window.DRAKKARS_PUB_MAJ)) + '">Drakkars ' + V2.fmtEur(it.drakkars) + '</span>' : '') +
+          (it.drakkars > 0 ? '<span class="off-card-drk" title="Prix de vente au public chez Pharmacie des Drakkars (TTC) · relevé du ' + esc(majLabel(window.DRAKKARS_PUB_MAJ)) + '">Drakkars ' + V2.fmtEur(it.drakkars) + (vieilleDate(window.DRAKKARS_PUB_MAJ) ? ' · relevé le ' + esc(vieilleDate(window.DRAKKARS_PUB_MAJ)) : '') + '</span>' : '') +
           PUBS.map(function (P) {
-            return it.pub[P.k] > 0 ? '<span class="off-card-pub" style="--c:' + P.color + '" title="' + P.tip + ' · relevé du ' + esc(majLabel(window[P.g + '_MAJ'])) + '">' + P.label + ' ' + V2.fmtEur(it.pub[P.k]) + '</span>' : '';
+            return it.pub[P.k] > 0 ? '<span class="off-card-pub" style="--c:' + P.color + '" title="' + P.tip + ' · relevé du ' + esc(majLabel(window[P.g + '_MAJ'])) + '">' + P.label + ' ' + V2.fmtEur(it.pub[P.k]) + (vieilleDate(window[P.g + '_MAJ']) ? ' · relevé le ' + esc(vieilleDate(window[P.g + '_MAJ'])) : '') + '</span>' : '';
           }).join('') +
           concBelow) + '</div>' + cmpLine(it) + pcatLine(it) +
       '</div>' +
@@ -1203,7 +1208,8 @@
     // Bloc « Prix d'achat » : une ligne par plateforme qui porte un prix pour CE produit, du moins cher au plus cher.
     // Offilog = référence (mise en évidence), l'écart se lit contre lui. Classes du volet existantes, aucune couleur nouvelle.
     var pzBlock = achatBlock(it);
-    var badges = (it.hasRank ? '<span class="off-badge" style="--bc:var(--pil-froid)">#' + it.rank + ' ventes</span>' : '') +
+    var rkDate = (!it.mkt && it.hasRank) ? vieilleDate(window.OFFILOG_BEST_MAJ) : '';   // rang pris dans le classement d'origine (sans relevé du marché) : il porte sa date
+    var badges = (it.hasRank ? '<span class="off-badge" style="--bc:var(--pil-froid)">#' + it.rank + ' ventes' + (rkDate ? ' <i style="opacity:.65;font-weight:500">· classement du ' + esc(rkDate) + '</i>' : '') + '</span>' : '') +
       (it.cat && CHIP_BY_KEY[it.cat] ? '<span class="off-badge" style="--bc:' + CHIP_BY_KEY[it.cat].sc + '">' + esc(CHIP_BY_KEY[it.cat].label) + '</span>' : '') +
       (it.univers && it.univers !== 'Non classé' ? '<span class="off-badge" style="--bc:#6D4FC4">' + esc(it.univers) + '</span>' : '');
     return '<div class="off-insp' + (S.sel != null ? ' open' : '') + '">' +
