@@ -1529,6 +1529,9 @@ html:root:root body .ofl .ofl-n { margin: 0; padding: 9px 20px 8px; color: var(-
   html:root:root body .ofl .ofl-seg { flex: 1; height: 44px; padding: 0 8px; }
   .ofl-chip, .ofl-sel, html:root:root body .ofl .v2-select { height: 46px; font-size: 14px; }
   .ofl-sel, html:root:root body .ofl .v2-select { flex: 1 1 calc(50% - 6px); }
+  /* 22/11/2026 (Will, iPhone) : « Commercial : Tous » était coupé à mi-ligne (137 px de texte pour 117 px à 360 px, « Christophe » en demande 183).
+     Le menu Commercial et le Tri prennent chacun une ligne entière ; Tournée partage la sienne avec « À rappeler ». */
+  html:root:root body .ofl .ofl-filtres > .v2-select, .ofl-filtres > .ofl-sel:nth-last-of-type(1) { flex-basis: 100%; }
   .ofl-sel select, html:root:root body .ofl .v2-select select { width: 100%; max-width: none; font-size: 14px; padding: 0 26px 0 12px; }
   .ofl-chip { flex: 0 0 auto; }
   .ofl-act { margin-left: 0; flex: 1 1 100%; display: flex; }
