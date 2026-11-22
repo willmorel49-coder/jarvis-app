@@ -33,12 +33,20 @@
   <link rel="stylesheet" href="../../crm/v2/v2-verriere.css?v=20261122p" />
   <link rel="stylesheet" href="../../crm/v2/v2-mallette.css?v=20261122p" />
   <link rel="stylesheet" href="../../crm/v2/v2-offilog-vitrine.css?v=20261122p" />
+  <link rel="stylesheet" href="../../crm/v2/v2-tel.css?v=20261122p" />
   <link rel="stylesheet" href="phirst-theme.css?v=20261122p" />
   <link rel="stylesheet" href="phirst-ligne.css?v=20261122p" />
   <link rel="stylesheet" href="phirst-appels.css?v=20261122p" />
+  <link rel="stylesheet" href="phirst-finitions.css?v=20261122p" />
   <script>
     window.V2_MODULES = ['../../crm/v2/v2-todo.js', '../../crm/v2/v2-bloc-notes.js'];   // adresses relatives à CETTE page : sans ../../crm/v2/, 404
     window.V2_BRAND = { name: 'Phirst', sub: 'Agencement de pharmacies', phirst: true, ventes: false,
+      // 22/11/2026 — la barre du bas du téléphone (V2.tbMaj) : Accueil + ces trois rubriques + « Menu », dans l'ordre de la prospection (sans ce réglage : les trois premières de la barre du haut).
+      barreBas: ['appels', 'agenda', 'veille'],
+      // La 3D reste dans l'ancienne version de Phirst (décision de Will, 22/11/2026) : adresse de la liste des dossiers, ouverte dans un nouvel onglet.
+      ancienne3d: 'https://phirst-studio.vercel.app/dossiers',
+      // Phrases de « rien à montrer » propres à Phirst (sans ce réglage, JARVIS garde les siennes) : chacune dit quoi faire.
+      vides: { relances: 'Vos relances s’affichent ici : ouvrez vos Appels pour en préparer.', aFaire: 'Votre liste est à jour : vos prochains appels sont dans les Appels.', modeles: 'Créez un modèle pour gagner du temps sur vos mails qui se répètent.' },
       cinq: ['dossiers', 'chantiers', 'agenda', 'officines', 'todo'],
       neuf: ['dossiers', 'chantiers', 'agenda', 'officines', 'carte', 'appels', 'veille', 'encaisser', 'atelier'],
       portes: {
@@ -49,7 +57,7 @@
       carte:     { fam: 'accueil', ico: 'carte',     nom: 'La carte', ph: 'Le secteur et les signaux d’achat', page: 'carte' },
       todo:      { fam: 'accueil', ico: 'todo',      nom: 'To do list', ph: 'Ce qu’il reste à faire', page: 'todo' },
       encaisser: { fam: 'accueil',  ico: 'pilotage',  nom: 'Encaisser', ph: 'Acomptes, situations et soldes', page: 'encaisser' },
-      appels:    { fam: 'accueil',  ico: 'rdv',       nom: 'Appels', ph: 'La liste du jour, le pipeline', page: 'appels' },
+      appels:    { fam: 'accueil',  ico: 'tel',       nom: 'Appels', ph: 'La liste du jour, le pipeline', page: 'appels' },
       veille:    { fam: 'accueil',  ico: 'infos',     nom: 'Veille', ph: 'Reprises (BODACC) et marchés (BOAMP)', page: 'veille' },
       atelier:   { fam: 'accueil',  ico: 'catalogue', nom: 'Atelier 3D', ph: 'Du plan 2D à la visite 3D', page: 'atelier' },
       blocnotes: { fam: 'direct',  ico: 'blocnotes', nom: 'Bloc-notes', ph: 'Écrire ou dicter au fil de la journée', page: 'blocnotes' },
@@ -77,6 +85,7 @@
   <script src="../../crm/v2/v2-accueil-cinq.js?v=20261122p"></script>
   <script src="../../crm/v2/v2-accueil-widgets.js?v=20261122p"></script>
   <script src="../../crm/v2/v2-citations-data.js?v=20261122p"></script>
+  <script src="phirst-ecran.js?v=20261122p"></script>
   <script src="phirst-portes.js?v=20261122p"></script>
   <script src="phirst-pur.js?v=20261122p"></script>
   <script src="phirst-appels.js?v=20261122p"></script>

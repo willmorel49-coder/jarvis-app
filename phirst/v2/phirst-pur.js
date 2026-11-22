@@ -505,7 +505,7 @@
     var tous = duJour(o.elements, o.jour).filter(function (e) { return e.rdv.statut !== 'annule'; });
     var e = null;
     for (var i = 0; i < tous.length; i++) { var x = tous[i]; if (x.rdv.statut !== 'fait' && (!auj || minutes(x.rdv.fin) > minutes(o.maintenant))) { e = x; break; } }
-    if (!e) return { maint: auj ? 'Aujourd’hui' : 'Ce jour-là', titre: 'Rien de prévu', detail: o.libres > 0 ? phraseLibres(o.libres) + '.' : 'Aucun créneau d’une heure libre.' };
+    if (!e) return { maint: auj ? 'Aujourd’hui' : 'Ce jour-là', titre: 'Rien de prévu', detail: o.libres > 0 ? phraseLibres(o.libres) + '.' : 'Aucun créneau d’une heure libre.', vide: true };
     var prev = null; tous.forEach(function (x) { if (minutes(x.rdv.fin) <= minutes(e.rdv.debut)) prev = x; });
     var de = prev ? pointDe(prev.fiche) : REGLAGES_AGENDA.base, vers = pointDe(e.fiche);
     var route = de && vers ? ' Environ ' + dureeFr(trajetMin(de, vers)) + ' de route depuis ' + (prev ? (prev.fiche.ville || 'le rendez-vous d’avant') : REGLAGES_AGENDA.base.commune) + '.' : '';
@@ -545,7 +545,8 @@
     var t = Date.parse(j.calcule_le);
     return {
       trouver: { cle: 'trouver', appels: Array.isArray(j.appels) ? j.appels : [], veille: Array.isArray(j.veille) ? j.veille : [], appelsTotal: j.appelsTotal == null ? null : j.appelsTotal },
-      frais: isFinite(t) && maintenant - t <= AGE_LIGNE_MAX
+      frais: isFinite(t) && maintenant - t <= AGE_LIGNE_MAX,
+      calculeLe: isFinite(t) ? j.calcule_le : null   // 22/11/2026 : l'écran dit « Mise à jour ce matin à 7 h 05 », lu ici, jamais écrit en dur
     };
   }
 
@@ -793,7 +794,34 @@
     return 'https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=' + fin.lat + ',' + fin.lon + '&waypoints=' + encodeURIComponent(way);
   }
 
+  /* 22/11/2026 — dates lisibles : l'année s'ajoute quand elle n'est pas celle du jour de référence (une date de 2023 ne se lit plus comme une date de cette année). */
+  var MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  function jourAvecAnnee(iso, ref) {
+    if (!estJour(iso)) return '';
+    var an = String(iso).slice(0, 4), r = String(ref || aujourdhui()).slice(0, 4);
+    return jourFr(iso) + (an === r ? '' : ' ' + an);
+  }
+  /* Dans une phrase du robot : « le 03/08/2023 » devient « le 3 août 2023 » ; « 03/08/2026 » devient « 3 août » quand c'est l'année du jour. */
+  function datesLisibles(texte, ref) {
+    return String(texte == null ? '' : texte).replace(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/g, function (tout, j, m, a) {
+      var jj = +j, mm = +m;
+      if (mm < 1 || mm > 12 || jj < 1 || jj > 31) return tout;
+      return jj + (jj === 1 ? 'er ' : ' ') + MOIS[mm - 1] + (a === String(ref || aujourdhui()).slice(0, 4) ? '' : ' ' + a);
+    });
+  }
+  /* « ce matin à 7 h 05 » / « hier à 7 h 05 » / « le 12 octobre à 7 h 05 » : l'heure du dernier passage du robot, à l'heure de Paris. */
+  function miseAJourFr(iso, maintenant) {
+    var t = Date.parse(iso); if (!isFinite(t)) return '';
+    var now = maintenant == null ? Date.now() : maintenant;
+    var jr = aujourdhui(new Date(t)), auj = aujourdhui(new Date(now));
+    var p = {}; new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', hour: 'numeric', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(t)).forEach(function (x) { p[x.type] = x.value; });
+    var h = +p.hour, heure = h + ' h' + (+p.minute ? ' ' + p.minute : '');
+    var quand = jr === auj ? (h < 12 ? 'ce matin' : 'aujourd’hui') : jr === ajouterJours(auj, -1) ? 'hier' : 'le ' + jourAvecAnnee(jr, auj);
+    return quand + ' à ' + heure;
+  }
+
   return {
+    jourAvecAnnee: jourAvecAnnee, datesLisibles: datesLisibles, miseAJourFr: miseAJourFr,
     SECTEUR: SECTEUR, rang: rang, dansSecteur: dansSecteur, primeSecteur: primeSecteur, norm: norm, cle: cle,
     aujourdhui: aujourdhui, ajouterJours: ajouterJours, joursEntre: joursEntre, estJour: estJour, jourFr: jourFr,
     ETAPES: ETAPES, nomEtape: nomEtape, grouperParEtape: grouperParEtape,

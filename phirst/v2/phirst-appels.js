@@ -72,7 +72,7 @@
         return sb().from('ligne_accueil').select('donnees,calcule_le').eq('user_id', u.id).maybeSingle().then(function (r) {
           var x = r && !r.error && r.data;
           if (!x || !Array.isArray(x.donnees)) return { trouver: null, frais: false };
-          return { trouver: x.donnees[0] || null, frais: Date.now() - Date.parse(x.calcule_le) <= AGE_MAX };
+          return { trouver: x.donnees[0] || null, frais: Date.now() - Date.parse(x.calcule_le) <= AGE_MAX, calculeLe: x.calcule_le || null };
         });
       }).then(null, function () { return { trouver: null, frais: false }; });
       return cacheLigne.p;
@@ -146,7 +146,7 @@
   };
 
   /* ── État de l'écran ── */
-  var S = { racine: null, jeton: 0, telepro: false, onglet: 'jour', fiche: null, ws: null, fiches: [], appelAu: {}, robot: null, avis: '', flash: '', charge: false, erreur: false };
+  var S = { racine: null, jeton: 0, telepro: false, onglet: 'jour', fiche: null, ouverte: null, ws: null, fiches: [], appelAu: {}, robot: null, avis: '', flash: '', charge: false, erreur: false };
   var COLS = 'id,nom,ville,cp,departement,telephone,email,pharmacien,stage,source,next_action,next_action_date,lat,lon,updated_at';
   var MOTIFS = P.MOTIFS;
   function jour() { return P.aujourdhui(); }
@@ -204,21 +204,30 @@
     var robot = (S.robot && S.robot.frais && S.robot.trouver && Array.isArray(S.robot.trouver.appels)) ? S.robot.trouver.appels : [];
     return P.listeDuJour(robot, S.fiches, S.appelAu, jour());
   }
+  /* 22/11/2026 — une ligne par pharmacie (nom, motif, raison n° 1) ; la pharmacie OUVERTE montre son numéro, les autres raisons et les 4 boutons « après l'appel ».
+     La première est ouverte d'office : elle appelle, note, et la suivante s'ouvre. */
   function ligneAppel(r, i) {
-    var m = MOTIFS[r.motif] || ['Signal', ''], autres = (r.raisons || []).slice(1);
-    return '<li class="pa-l" data-i="' + i + '"><div class="pa-ht"><div><b>' + esc(r.nom) + '</b><small>' + esc(r.ville) + (r.dep ? ' · ' + esc(r.dep) : '') + '</small></div>' +
-      '<em class="lg-et"' + (m[1] ? ' data-ton="' + m[1] + '"' : '') + '>' + esc(m[0]) + '</em></div>' +
-      '<p class="pa-r">' + esc((r.raisons || [])[0] || '') + '</p>' +
-      (autres.length ? '<ul class="pa-au">' + autres.map(function (a) { return '<li>' + esc(a) + '</li>'; }).join('') + '</ul>' : '') +
+    var m = MOTIFS[r.motif] || ['Signal', ''], autres = (r.raisons || []).slice(1), ouv = P.cle(r.nom, r.ville) === S.ouverte, id = 'pa-d' + i;
+    var raison = P.datesLisibles((r.raisons || [])[0] || '', jour());
+    return '<li class="pa-l' + (ouv ? ' pa-ouvert' : '') + '" data-i="' + i + '"><button type="button" class="pa-ligne" data-ouvrir="' + i + '" aria-expanded="' + ouv + '" aria-controls="' + id + '">' +
+      '<span class="pa-nom"><b>' + esc(r.nom) + '</b><small>' + esc(r.ville) + (r.dep ? ' · ' + esc(r.dep) : '') + '</small></span>' +
+      '<em class="lg-et"' + (m[1] ? ' data-ton="' + m[1] + '"' : '') + '>' + esc(m[0]) + '</em>' +
+      '<span class="pa-r1">' + esc(raison) + '</span><span class="pa-chev" aria-hidden="true"></span></button>' +
+      '<div class="pa-det" id="' + id + '"' + (ouv ? '' : ' hidden') + '><div class="pa-det-g">' +
       '<p class="pa-nu">' + (r.telephone ? tel(r.telephone) : '<span>Numéro à chercher avant d’appeler</span>') + (P.lienSur(r.lien) ? ' <a class="pa-lien" href="' + esc(P.lienSur(r.lien)) + '" target="_blank" rel="noopener">Voir la source</a>' : '') + '</p>' +
-      '<p class="pa-q">Après l’appel :</p>' +
+      (autres.length ? '<ul class="pa-au">' + autres.map(function (a) { return '<li>' + esc(P.datesLisibles(a, jour())) + '</li>'; }).join('') + '</ul>' : '') + '</div>' +
+      '<div class="pa-apres"><p class="pa-q">Après l’appel :</p>' +
       '<div class="pa-bs"><button type="button" class="pa-b" data-res="rdv">RDV obtenu</button><button type="button" class="pa-b" data-res="rappeler">À rappeler</button>' +
-      '<button type="button" class="pa-b" data-res="injoignable">Injoignable</button><button type="button" class="pa-b" data-res="non">Pas intéressé</button></div>' +
+      '<button type="button" class="pa-b" data-res="injoignable">Injoignable</button><button type="button" class="pa-b" data-res="non">Pas intéressé</button></div></div>' +
       '<div class="pa-rap" hidden><label>Rappeler le <input type="date" class="pa-date" min="' + jour() + '" value="' + P.ajouterJours(jour(), 7) + '"></label><button type="button" class="pa-b pa-ok" data-res="rappeler-ok">Noter le rappel</button></div>' +
-      '<div class="pa-quand" hidden></div><p class="pa-dit" role="status"></p></li>';
+      '<div class="pa-quand" hidden></div><p class="pa-dit" role="status"></p></div></li>';
+  }
+  function ouvrirParDefaut(l) {
+    if (!l.some(function (r) { return P.cle(r.nom, r.ville) === S.ouverte; })) S.ouverte = l.length ? P.cle(l[0].nom, l[0].ville) : null;
   }
   function vueJour() {
     var l = liste(), h = '';
+    ouvrirParDefaut(l);
     var r = S.robot, attend = !(r && r.frais && r.trouver && Array.isArray(r.trouver.appels));
     if (attend) h += '<p class="pa-avis">La liste arrive au prochain passage, à 7 h 05. En attendant, voici vos relances du jour.</p>';
     if (!l.length) {
@@ -233,7 +242,7 @@
     if (!g.length) return '<div class="pa-vide"><p>Vous n’avez pas encore de piste.</p><p>Une piste naît quand vous appelez une pharmacie de la liste du jour, ou quand vous en ajoutez une depuis la Veille.</p><button type="button" class="lg-gros" data-vers="veille">Ouvrir la Veille</button></div>';
     return g.map(function (e) {
       return '<section class="pa-et"><h2>' + esc(e.nom) + ' <span>' + e.fiches.length + '</span></h2><ul class="pa-pistes">' + e.fiches.map(function (f) {
-        return '<li><button type="button" class="pa-piste" data-fiche="' + esc(f.id) + '"><b>' + esc(f.nom) + '</b><small>' + esc(f.ville || '') + (f.next_action ? ' · ' + esc(f.next_action) + (f.next_action_date ? ' le ' + esc(P.jourFr(f.next_action_date)) : '') : '') + '</small></button></li>';
+        return '<li><button type="button" class="pa-piste" data-fiche="' + esc(f.id) + '"><b>' + esc(f.nom) + '</b><small>' + esc(f.ville || '') + (f.next_action ? ' · ' + esc(f.next_action) + (f.next_action_date ? ' le ' + esc(P.jourAvecAnnee(f.next_action_date, jour())) : '') : '') + '</small></button></li>';
       }).join('') + '</ul></section>';
     }).join('');
   }
@@ -241,26 +250,26 @@
   /* Elle lit l'étape et la prochaine action, elle ne les modifie pas : elles se règlent par « Après l'appel ». */
   function suiteEnTexte(f) {
     return '<dl class="pa-coord"><div><dt>Étape</dt><dd>' + esc(P.nomEtape(f.stage)) + '</dd></div><div><dt>Prochaine action</dt><dd>' +
-      (f.next_action ? esc(f.next_action) + (f.next_action_date ? ' le ' + esc(P.jourFr(f.next_action_date)) : '') : 'Aucune pour le moment') + '</dd></div></dl>';
+      (f.next_action ? esc(f.next_action) + (f.next_action_date ? ' le ' + esc(P.jourAvecAnnee(f.next_action_date, jour())) : '') : 'Aucune pour le moment') + '</dd></div></dl>';
   }
   function vueFiche() {
     var f = S.fiches.filter(function (x) { return x.id === S.fiche; })[0];
     if (!f) return '<p class="pa-avis">Cette piste n’existe plus.</p><button type="button" class="pa-b" data-retour="1">Retour aux pistes</button>';
     var adr = [f.cp, f.ville].filter(Boolean).join(' ');
-    var h = '<button type="button" class="pa-retour" data-retour="1">← Mes pistes</button><div class="pa-fiche"><h2>' + esc(f.nom) + '</h2><p class="pa-sub">' + esc(P.nomEtape(f.stage)) + '</p>' +
+    var h = '<button type="button" class="pa-retour" data-retour="1">← Mes pistes</button><div class="pa-fiche"><div class="pa-fg-t"><h2>' + esc(f.nom) + '</h2><p class="pa-sub">' + esc(P.nomEtape(f.stage)) + '</p></div><div class="pa-fg"><div class="pa-fg-a">' +
       '<dl class="pa-coord"><div><dt>Adresse</dt><dd>' + (esc(adr) || 'Non renseignée') + '</dd></div><div><dt>Téléphone</dt><dd>' + (f.telephone ? tel(f.telephone) : 'Non renseigné') + '</dd></div>' +
       '<div><dt>E-mail</dt><dd>' + (f.email ? '<a href="mailto:' + esc(f.email) + '">' + esc(f.email) + '</a>' : 'Non renseigné') + '</dd></div><div><dt>Titulaire</dt><dd>' + (esc(f.pharmacien) || 'Non renseigné') + '</dd></div></dl>' +
       (S.telepro ? suiteEnTexte(f) : '<label class="pa-ch">Étape<select id="pa-etape">' + P.ETAPES.map(function (e) { return '<option value="' + e.cle + '"' + (e.cle === f.stage ? ' selected' : '') + '>' + esc(e.nom) + '</option>'; }).join('') + (f.stage === 'archive' ? '<option value="archive" selected>Archivée</option>' : '') + '</select></label>' +
       '<div class="pa-suite"><label class="pa-ch">Prochaine action<input type="text" id="pa-act" maxlength="120" value="' + esc(f.next_action || '') + '" placeholder="Par exemple : Rappeler"></label>' +
-      '<label class="pa-ch">Pour le<input type="date" id="pa-actdate" value="' + esc(f.next_action_date || '') + '"></label><button type="button" class="pa-b" id="pa-actok">Enregistrer</button></div><p class="pa-dit" id="pa-dit-fiche" role="status"></p>') +
+      '<label class="pa-ch">Pour le<input type="date" id="pa-actdate" value="' + esc(f.next_action_date || '') + '"></label><button type="button" class="pa-b" id="pa-actok">Enregistrer</button></div><p class="pa-dit" id="pa-dit-fiche" role="status"></p>') + '</div><div class="pa-fg-b">' +
       '<h3>Journal</h3><div id="pa-journal">' + (JOURNAL.id === f.id && JOURNAL.lignes ? journalHtml() : '<p class="pa-avis">Chargement du journal…</p>') + '</div>' +
-      '<label class="pa-ch">Ajouter une note<textarea id="pa-note" rows="3" maxlength="1200" placeholder="Ce qui s’est dit, ce qu’il faut retenir…"></textarea></label><button type="button" class="pa-b pa-ok" id="pa-noteok">Ajouter la note</button><p class="pa-dit" id="pa-dit-note" role="status"></p></div>';
+      '<label class="pa-ch">Ajouter une note<textarea id="pa-note" rows="3" maxlength="1200" placeholder="Ce qui s’est dit, ce qu’il faut retenir…"></textarea></label><button type="button" class="pa-b pa-ok" id="pa-noteok">Ajouter la note</button><p class="pa-dit" id="pa-dit-note" role="status"></p></div></div></div>';
     return h;
   }
   function journalHtml() {
     if (!JOURNAL.lignes.length) return '<p class="pa-avis">Rien n’est encore noté sur cette piste. Écrivez la première note ci-dessous.</p>';
     return '<ul class="pa-jour">' + JOURNAL.lignes.map(function (a) {
-      return '<li><span>' + esc(P.jourFr(versJourParis(a.created_at))) + '</span><p>' + esc(P.avecAuteur(P.phraseJournal(a.type, a.body), P.nomAuteur(JOURNAL.equipe, a.author_id))) + '</p></li>';
+      return '<li><span>' + esc(P.jourAvecAnnee(versJourParis(a.created_at), jour())) + '</span><p>' + esc(P.avecAuteur(P.phraseJournal(a.type, a.body), P.nomAuteur(JOURNAL.equipe, a.author_id))) + '</p></li>';
     }).join('') + '</ul>';
   }
   function chargerJournal(id) {
@@ -283,10 +292,11 @@
     else if (!S.charge) corps = '<p class="pa-avis">Chargement…</p>';
     else if (S.fiche) corps = vueFiche();
     else corps = (S.flash ? '<p class="pa-flash" role="status">' + esc(S.flash) + '</p>' : '') + (S.onglet === 'jour' ? vueJour() : vuePistes());
-    el.innerHTML = '<section class="pa" aria-label="Appels"><header class="pa-tete"><h1>Appels</h1><p>Qui appeler aujourd’hui, et où en sont vos pistes.</p></header>' +
+    var maj = S.charge && S.robot && S.robot.calculeLe ? P.miseAJourFr(S.robot.calculeLe) : '';
+    el.innerHTML = window.PHIRST_ECRAN.cadre('<section class="pa" aria-label="Appels">' + window.PHIRST_ECRAN.tete('Appels', 'Qui appeler aujourd’hui, et où en sont vos pistes.', maj ? 'Liste mise à jour ' + maj + '.' : '') +
       (S.fiche ? '' : '<div class="pa-ong" role="tablist"><button type="button" role="tab" class="pa-o" data-ong="jour" aria-selected="' + (S.onglet === 'jour') + '">À appeler aujourd’hui' + (n ? ' <span>' + n + '</span>' : '') + '</button>' +
         '<button type="button" role="tab" class="pa-o" data-ong="pistes" aria-selected="' + (S.onglet === 'pistes') + '">Mes pistes' + (np ? ' <span>' + np + '</span>' : '') + '</button></div>') +
-      '<div class="pa-corps">' + corps + '</div></section>';
+      '<div class="pa-corps">' + corps + '</div></section>');
   }
 
   /* ── Écritures : les mêmes que logCall (V1) ── */
@@ -358,7 +368,7 @@
         S.appelAu[u.data.id] = jr;
         if (debutRdv) { S.flash = 'Rendez-vous posé : ' + P.quandFr(debutRdv) + ' chez ' + r.nom + '.'; dessiner(); return; }
         S.flash = 'Noté : ' + r.nom + ' — ' + { rdv: 'rendez-vous obtenu', rappeler: 'à rappeler', injoignable: 'injoignable', non: 'pas intéressé' }[resultat] + '.' +
-          (suite.maj.next_action_date ? ' Prochaine action le ' + P.jourFr(suite.maj.next_action_date) + '.' : ' La piste passe dans les perdues.');
+          (suite.maj.next_action_date ? ' Prochaine action le ' + P.jourAvecAnnee(suite.maj.next_action_date, jour()) + '.' : ' La piste passe dans les perdues.');
         dessiner();
       });
     }).then(null, function (e) { dire(e && e.refus ? e.refus : rdvPose ? 'Le rendez-vous est posé, mais l’appel n’a pas pu être noté : ouvrez la fiche dans « Mes pistes ».' : e && e.base ? e.base : PAS); });
@@ -402,6 +412,8 @@
     var o = t.closest('[data-ong]'); if (o) { S.onglet = o.getAttribute('data-ong'); S.flash = ''; dessiner(); return; }
     var pf = t.closest('[data-fiche]'); if (pf) { S.fiche = pf.getAttribute('data-fiche'); dessiner(); chargerJournal(S.fiche); window.scrollTo(0, 0); return; }
     if (t.closest('[data-retour]')) { S.fiche = null; S.onglet = 'pistes'; dessiner(); return; }
+    var ou = t.closest('[data-ouvrir]');
+    if (ou) { var rr = liste()[+ou.getAttribute('data-ouvrir')]; if (rr) { var cc = P.cle(rr.nom, rr.ville); S.ouverte = S.ouverte === cc ? null : cc; dessiner(); } return; }
     var b = t.closest('.pa-b[data-res]'), li = t.closest('.pa-l');
     if (b && li) {
       var r = liste()[+li.getAttribute('data-i')], res = b.getAttribute('data-res');

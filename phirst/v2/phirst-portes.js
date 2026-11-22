@@ -3,32 +3,43 @@
    depuis les maquettes choisies par Will les 28 et 29/10. */
 (function () {
   V2.pages = V2.pages || {};
+  /* 22/11/2026 — écrans pas encore construits : plus de notes internes. Chacun dit en une phrase où en est la chose, et propose le geste utile
+     d'aujourd'hui. [titre, phrase sous le titre, explication, [[écran, bouton], …]]. */
+  var AUJ = [['appels', 'Ouvrir les Appels'], ['agenda', 'Ouvrir l’Agenda']];
   var E = {
-    dossiers: ['Dossiers de projet', 'Chaque agencement, du premier relevé à la réception', 'Dossiers m1 + Fiche m1 (famille 4)'],
-    chantiers:['Chantiers', 'Ce qui se monte cette semaine, et ce qui bloque', 'Chantiers m4 (famille 1)'],
-    officines:['Officines', 'Trouver une pharmacie, sa fiche, son historique', 'Trouver m1 + Officines m1 + Fiche m1'],
-    carte:    ['La carte', 'Le secteur, les signaux d’achat, les chantiers', 'Carte m1 + Carte CRM m1 (famille 3)'],
-    encaisser:['Encaisser', 'Acomptes, situations et soldes', 'Encaisser m1 (famille 1)'],
-    appels:   ['Appels', 'La liste du jour et les rappels', 'Appels m3 + Pipeline m2 + Piste m2 (famille 2)'],
-    veille:   ['Veille', 'Reprises d’officines (BODACC) et marchés publics (BOAMP)', 'Veille m1 (famille 2)'],
-    atelier:  ['Atelier 3D', 'Du plan 2D à la maquette, puis la visite', 'Atelier, Visite, Viseur, Rendu m1 (famille 4)'],
-    vitrine:  ['Vitrine', 'Ce que voit un pharmacien', 'Vitrine m1 (famille 5)'],
-    reglages: ['Réglages', 'Compte, accès, préférences', 'Réglages m1 (famille 5)']
+    dossiers: ['Dossiers de projet', 'Chaque agencement, du premier relevé à la réception.', 'Cet écran se prépare. En attendant, vos pistes et vos rendez-vous sont dans les Appels et l’Agenda.', AUJ],
+    chantiers:['Chantiers', 'Ce qui se monte cette semaine, et ce qui bloque.', 'Cet écran se prépare. En attendant, les dates de pose se suivent dans l’Agenda.', [['agenda', 'Ouvrir l’Agenda'], ['appels', 'Ouvrir les Appels']]],
+    encaisser:['Encaisser', 'Acomptes, situations et soldes.', 'Cet écran se prépare. En attendant, retrouvez vos pistes et vos rendez-vous dans les Appels et l’Agenda.', AUJ],
+    vitrine:  ['Vitrine', 'Ce que voit un pharmacien.', 'Cet écran se prépare. En attendant, ouvrez vos Appels pour préparer les prochaines prises de contact.', AUJ],
+    reglages: ['Réglages', 'Compte, accès, préférences.', 'Cet écran se prépare. Votre compte et son menu restent accessibles par votre pastille en haut à droite.', AUJ]
   };
+  /* L'Atelier 3D reste dans l'ancienne version de Phirst (décision de Will, 22/11/2026) : l'adresse se lit dans le réglage de la marque. */
+  var ADRESSE_3D = (window.V2_BRAND && window.V2_BRAND.ancienne3d) || '';
+  function ecran(root, titre, phrase, expl, boutons, lien3d) {
+    var X = window.PHIRST_ECRAN;
+    root.innerHTML = X.cadre('<section class="pa pa-attente" aria-label="' + X.esc(titre) + '">' + X.tete(titre, phrase) +
+      '<div class="pa-vide"><p>' + X.esc(expl) + '</p><div class="pa-bs">' +
+      (lien3d ? '<a class="lg-gros" href="' + X.esc(lien3d) + '" target="_blank" rel="noopener noreferrer">Ouvrir la 3D<span class="u2-sr"> (s’ouvre dans un nouvel onglet)</span></a>' : '') +
+      boutons.map(function (b, i) { return '<button type="button" class="' + (i === 0 && !lien3d ? 'lg-gros' : 'pa-b') + '" data-vers="' + X.esc(b[0]) + '">' + X.esc(b[1]) + '</button>'; }).join('') +
+      '</div></div></section>');
+    if (!root.__pw) { root.__pw = true; root.addEventListener('click', function (ev) { var g = ev.target.closest('[data-vers]'); if (g) V2.go(g.getAttribute('data-vers')); }); }
+  }
+  Object.keys(E).forEach(function (k) {
+    V2.pages[k] = { needs: [], render: function (root) {
+      ecran(root, E[k][0], E[k][1], E[k][2], E[k][3]);
+      if (RESERVE.indexOf(k) >= 0 && window.PHIRST_ROLE) window.PHIRST_ROLE.estTelepro().then(function (t) {
+        if (t && V2.route && V2.route.name === k) ecran(root, E[k][0], E[k][1], 'Cet écran est réservé à Yann. Vos outils sont les Appels, l’Agenda et la Veille.', [['appels', 'Ouvrir mes Appels'], ['agenda', 'Ouvrir l’Agenda']]);
+      });
+    } };
+  });
+  V2.pages.atelier = { needs: [], render: function (root) {
+    ecran(root, 'Atelier 3D', 'Du plan 2D à la visite en 3D.', 'La 3D se fait dans la version précédente de Phirst : vos plans, vos rendus et vos visites s’y trouvent toujours, avec les mêmes identifiants. Elle s’ouvre dans un nouvel onglet.', [], ADRESSE_3D);
+  } };
   /* 21/11/2026 — la téléprospectrice ne voit ni Encaisser, ni Dossiers, ni Chantiers (écrans qui porteront des sommes) :
      l'écran dit « Cet écran est réservé à Yann. », et la porte quitte le menu et l'accueil. Le socle ne garde que les portes
      dont la page existe (V2.pages[porte.page]) : pour elle, `page` de ces trois portes pointe une page absente (même mécanisme
      que `fam` de la porte « tournees » dans v2-app.js). Rôle lu dans la session (window.PHIRST_ROLE, phirst-appels.js). */
   var RESERVE = ['dossiers', 'chantiers', 'encaisser'], telepro = false;
-  Object.keys(E).forEach(function (k) {
-    V2.pages[k] = { needs: [], render: function (root) {
-      root.innerHTML = '<section class="ph-apercu"><span class="ph-tag">Aperçu Phirst · socle JARVIS</span><h1>' + E[k][0] +
-        '</h1><p>' + E[k][1] + '.</p><p>Cet écran arrive bientôt.</p></section>';
-      if (RESERVE.indexOf(k) >= 0 && window.PHIRST_ROLE) window.PHIRST_ROLE.estTelepro().then(function (t) {
-        if (t) root.innerHTML = '<section class="ph-apercu"><h1>' + E[k][0] + '</h1><p>Cet écran est réservé à Yann.</p></section>';
-      });
-    } };
-  });
   var portes = window.V2_BRAND && window.V2_BRAND.portes;
   if (portes) RESERVE.forEach(function (k) {
     var d = portes[k]; if (!d) return;

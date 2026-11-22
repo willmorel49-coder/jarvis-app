@@ -1252,6 +1252,7 @@
 
   // ── Accueil u2 : les pictos (une seule famille, trait 1,75, tirés de la maquette validée) ──
   var U2_IC = {
+    tel: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',   // 22/11/2026 (Feather, MIT) : l'écran Appels de Phirst
     officines: '<path d="M4 9l1.5-5h13L20 9"/><path d="M4 9a2.5 2.5 0 005 0 2.5 2.5 0 005 0 2.5 2.5 0 005 0"/><path d="M5 12v8h14v-8"/><path d="M10 20v-4h4v4"/>',
     carte: '<path d="M12 21s7-6.2 7-11.5A7 7 0 005 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
     rdv: '<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/>',
@@ -1673,7 +1674,7 @@
   function u2WRelance() {
     var r = qRelances();
     if (!r.pret) return '<p class="u2-vide">Chargement des relances…</p>';
-    if (!r.l.length) return '<p class="u2-vide">Aucune relance à faire.</p>';
+    if (!r.l.length) return '<p class="u2-vide">' + ((window.V2_BRAND && window.V2_BRAND.vides && window.V2_BRAND.vides.relances) || 'Aucune relance à faire.') + '</p>';
     var h = r.l.slice(0, 3).map(function (x) {
       var q = qQuand(x.diff), pid = encodeURIComponent(String(x.pid));
       return '<a class="u2-rel" href="#pharma/' + pid + '" data-u2-act="rel:' + pid + '"><span class="u2-pt2' + (x.diff < 0 ? ' u2-tard' : x.diff === 0 ? ' u2-jour' : '') + '"></span>' +
@@ -1932,11 +1933,11 @@
   };
   // 22/11/2026 — la liste de « Autres outils » est fabriquée ICI, une seule fois, à partir d'un indice de départ : 7 à l'ordinateur (les sept premières rubriques sont dans la barre
   // du haut), 3 au téléphone (la barre du bas porte Accueil + les trois premières rubriques ; « Menu » montre la suite). `lien` fabrique chaque ligne (aoLien par défaut).
-  function autresListe(debut, lien) {
+  function autresListe(debut, lien, liste) {
     var etat = u2Etat(), reg = !!(V2.accueilWidgets && V2.accueilWidgets.regle && V2.accueilWidgets.regle());
     var fams = reg ? etat.tous : etat.fams, h = '';
     lien = lien || aoLien;
-    (V2.accueilCinq && V2.accueilCinq.barre ? V2.accueilCinq.barre() : []).slice(debut).forEach(function (t) {
+    (liste || (V2.accueilCinq && V2.accueilCinq.barre ? V2.accueilCinq.barre() : [])).slice(debut).forEach(function (t) {
       h += lien({ href: t.href, act: t.act, nom: t.nom }, t.k);
     });
     fams.forEach(function (f) {
@@ -1982,7 +1983,7 @@
     l.slice(0, 3).forEach(function (t) {
       var on = t.k === 'groupements' ? grp : (rt.name === t.k && !(t.k === 'pharma' && grp));
       if (on) autre = true;
-      h += tbCase('', TB_COURT[t.k] || t.nom, t.k === 'groupements' ? 'carteGrp' : t.k, on, ' href="' + esc(t.href) + '" data-tp-act="' + esc(t.act) + '" onclick="return V2.topAller(event,this)"', 'a');
+      h += tbCase('', TB_COURT[t.k] || t.nom, t.k === 'groupements' ? 'carteGrp' : ((window.V2_BRAND && window.V2_BRAND.portes && window.V2_BRAND.portes[t.k] && window.V2_BRAND.portes[t.k].ico) || t.k), on, ' href="' + esc(t.href) + '" data-tp-act="' + esc(t.act) + '" onclick="return V2.topAller(event,this)"', 'a');
     });
     return h + tbCase('bnav-men', 'Menu', 'grille', rt.name !== 'home' && !autre, ' type="button" aria-haspopup="dialog" onclick="V2.tbMenu(this)"', 'button');
   }
@@ -1999,7 +2000,7 @@
       b.classList.remove('bnav-on'); return;
     }
     var rt = V2.route || {}, l = [], grp = rt.name === 'pharma' && (rt.param === 'groupements' || (!rt.param && !!V2.pharmaVueOuverte && V2.pharmaVueOuverte() === 'groupements'));
-    try { l = V2.accueilCinq.barre(); } catch (e) { l = []; }
+    try { l = V2.tbRubriques ? V2.tbRubriques() : V2.accueilCinq.barre(); } catch (e) { l = []; }
     var h = tbHtml(rt, grp, l);
     if (!n) {
       n = document.createElement('nav'); n.id = 'tb-bas'; n.className = 'bnav'; n.setAttribute('aria-label', 'Navigation principale');
@@ -2008,9 +2009,19 @@
     if (n.getAttribute('data-h') !== h) { n.innerHTML = h; n.setAttribute('data-h', h); }
     b.classList.add('bnav-on');
   };
+  // 22/11/2026 — une marque (Phirst) choisit les trois rubriques de la barre du bas (V2_BRAND.barreBas : des clés) et le pictogramme de chaque porte (V2_BRAND.portes[k].ico) ;
+  // sans ces réglages (JARVIS, Escale), la barre garde l'ordre de la barre du haut et le pictogramme de la clé : rien ne change.
+  V2.tbRubriques = function () {
+    var l = V2.accueilCinq.barre(), pref = window.V2_BRAND && window.V2_BRAND.barreBas;
+    if (!pref || !pref.length) return l;
+    var tete = [], reste = l.slice();
+    pref.forEach(function (k) { for (var i = 0; i < reste.length; i++) if (reste[i].k === k) { tete.push(reste.splice(i, 1)[0]); break; } });
+    return tete.concat(reste);
+  };
+  function tbIco(k) { var p = window.V2_BRAND && window.V2_BRAND.portes; return (p && p[k] && p[k].ico) || k; }
   // « Menu » : la feuille du bas de la fiche (v2-pharma.js, chargée en différé) ; tant qu'elle n'est pas là, le menu déroulant de l'ordinateur
   V2.tbMenu = function (btn) {
-    var h = autresListe(3, function (t, k) { return aoLien(t, k, 'bnav-li', k === 'groupements' ? 'carteGrp' : k); });
+    var h = autresListe(3, function (t, k) { return aoLien(t, k, 'bnav-li', k === 'groupements' ? 'carteGrp' : tbIco(k)); }, V2.tbRubriques());
     if (!h) return;
     if (!V2.feuille) {
       var m = menuBarre('v2-autresmenu', btn, h);

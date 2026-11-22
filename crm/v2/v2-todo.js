@@ -713,7 +713,7 @@
                 (m.docs.length ? ' · ' + m.docs.length + ' document' + (m.docs.length > 1 ? 's' : '') + ' joint' + (m.docs.length > 1 ? 's' : '') : '') + '</small></span>' +
               '<span class="v2-todo-acts"><button class="v2-btn v2-btn-primary v2-todo-sm" onclick="V2.todo.preparer(\'m:' + m.id + '\')">Utiliser</button>' +
               '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.editerModele(\'m:' + m.id + '\')">Modifier</button></span></div>';
-          }).join('') : '<div class="v2-todo-empty">Aucun modèle pour l\'instant.</div>') +
+          }).join('') : '<div class="v2-todo-empty">' + ((window.V2_BRAND && window.V2_BRAND.vides && window.V2_BRAND.vides.modeles) || 'Aucun modèle pour l\'instant.') + '</div>') +
         '<div class="v2-todo-mod-add"><button class="v2-btn v2-btn-ghost" onclick="V2.todo.editerModele(\'\')">' + ICO('plus', 15, 2) + 'Créer un modèle</button></div>' +
       '</div>';
   }

@@ -48,7 +48,7 @@
     new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' })
       .formatToParts(new Date()).forEach(function (x) { p[x.type] = x.value; });
     var j = Math.round((Date.UTC(+p.year, +p.month - 1, +p.day) - Date.parse(j0)) / 864e5);
-    return j <= 0 ? 'aujourd’hui' : j === 1 ? 'hier' : 'le ' + new Date(j0).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' });
+    return j <= 0 ? 'aujourd’hui' : j === 1 ? 'hier' : 'le ' + new Date(j0).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' }) + (j0.slice(0, 4) === p.year ? '' : ' ' + j0.slice(0, 4));   // 22/11/2026 : l'année quand ce n'est pas celle du jour
   }
   /* nombre de pharmacies d'un moment : « total » quand la liste n'en montre qu'une partie (veille), sinon la liste */
   function nb(s) { return s.total != null ? s.total : s.pharmacies.length; }
@@ -86,7 +86,7 @@
       return h + '<p class="lg-sur"><i></i>' + esc(s.mot) + ' · à venir</p><p class="lg-consigne">' + esc(s.vide.texte) + '</p>' +
         '<button type="button" class="lg-gros"' + vers(VIDE_VERS[s.cle]) + '>' + esc(s.vide.bouton) + FL + '</button></div></div>';
     h += '<p class="lg-sur"><i></i>' + (c ? 'La chose n° 1 · ' : '') + esc(s.mot) + '</p>';
-    var det = c && (c.parution ? 'Paru au BODACC ' + depuis(c.parution) + '.' : c.detail);
+    var det = c && (c.parution ? 'Paru au BODACC ' + depuis(c.parution) + '.' : (window.PHIRST_PUR && c.detail ? window.PHIRST_PUR.datesLisibles(c.detail, window.PHIRST_PUR.aujourdhui()) : c.detail));
     if (c) h += '<p class="lg-titre">' + esc(c.titre) + '</p><p class="lg-det">' + esc(c.heure) + (det ? ' · ' + esc(det) : '') + '</p><button type="button" class="lg-gros"' + (c.type === 'veille' ? (c.piste ? ' data-piste="1"' : '') : vers(GESTE_VERS[s.cle])) + '>' + esc(c.bouton) + FL + '</button>' +
       (c.type === 'veille' ? '<p class="lg-dit" role="status"></p>' : '');
     h += '</div><div class="lg-liste"><p class="lg-lt">' + n + ' pharmacie' + (n > 1 ? 's' : '') + ' à ce moment</p><ul>' + lignes(s.pharmacies);

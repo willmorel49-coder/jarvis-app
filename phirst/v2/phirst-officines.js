@@ -197,12 +197,12 @@
   }
   V2.pages.officines = { needs: [], render: function (root) {
     S.racine = root;
-    root.innerHTML = '<section class="pa po" aria-label="Officines"><header class="pa-tete"><h1>Officines</h1>' +
+    root.innerHTML = window.PHIRST_ECRAN.cadre('<section class="pa po" aria-label="Officines"><header class="pa-tete"><h1>Officines</h1>' +
       '<p>Les pharmacies à appeler, du secteur de Yann d’abord. Celles que vous ajoutez arrivent dans vos pistes, à qualifier.</p></header>' +
       '<div class="po-grille" id="po-tuiles" role="group" aria-label="Listes d’officines"></div><div id="po-reglages"></div>' +
       '<form class="po-recherche" id="po-form" role="search"><input type="text" name="q" placeholder="Rechercher (nom, ville…)" aria-label="Rechercher" autocomplete="off" enterkeyhint="search" value="' + esc(S.q) + '">' +
       '<input type="text" name="dep" class="po-dep" placeholder="Dépt" aria-label="Filtrer par département" inputmode="numeric" autocomplete="off" maxlength="5" value="' + esc(S.dep) + '">' +
-      '<button type="submit" class="pa-b pa-ok">Filtrer</button></form><div id="po-liste"></div></section>';
+      '<button type="submit" class="pa-b pa-ok">Filtrer</button></form><div id="po-liste"></div></section>');
     if (!root.__po) { root.__po = true; root.addEventListener('click', clicOfficines); root.addEventListener('submit', soumettre); }
     S.tuiles = {}; S.faits = {};
     Promise.all([lireMeta(), lirePistes(true)]).then(function (r) {
@@ -395,9 +395,9 @@
   V2.pages.carte = { needs: [], render: function (root) {
     if (M.map) { try { M.map.remove(); } catch (e) { /* carte déjà démontée */ } M.map = null; }
     M.racine = root; M.groupes = {}; M.lignes = {}; M.totaux = {};
-    root.innerHTML = '<section class="pa po po-large" aria-label="La carte"><header class="pa-tete"><h1>La carte</h1><p>Vos fiches en épingles, les pharmacies du secteur en points. <span id="po-fiches"></span></p></header>' +
+    root.innerHTML = window.PHIRST_ECRAN.cadre('<section class="pa po po-large" aria-label="La carte"><header class="pa-tete"><h1>La carte</h1><p>Vos fiches en épingles, les pharmacies du secteur en points. <span id="po-fiches"></span></p></header>' +
       '<div class="pa-chips po-couches" id="po-couches" role="group" aria-label="Couches"></div><div class="pa-chips po-parc" id="po-parc" role="group" aria-label="Parc concurrent" hidden></div>' +
-      '<div class="po-carte"><div id="po-map" class="po-map" role="application" aria-label="Carte des pharmacies"></div><div id="po-bandeau" class="po-bandeau" role="status" hidden></div></div><div id="po-pipe" class="po-pipe"></div></section>';
+      '<div class="po-carte"><div id="po-map" class="po-map" role="application" aria-label="Carte des pharmacies"></div><div id="po-bandeau" class="po-bandeau" role="status" hidden></div></div><div id="po-pipe" class="po-pipe"></div></section>');
     if (!root.__pc) { root.__pc = true; root.addEventListener('click', clicCarte); }
     dessinerPuces();
     if (!sb()) { dire('alerte', 'Connectez-vous pour voir la carte.'); return; }

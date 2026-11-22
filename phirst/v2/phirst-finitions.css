@@ -1,0 +1,162 @@
+/* PHIRST · finitions des écrans (22/11/2026) — audit de production du 22/11 (A-1 à A-14), même degré de finition que JARVIS.
+   Pensé pour l'ORDINATEUR (1280-1440 px : la téléprospectrice appelle sur un écran de bureau) ; au téléphone : propre, sans débordement.
+   Aucun flou, aucune ombre portée lourde, aucune opacité sur du texte (Safari). Tout ce qui touche le socle commun est gardé par
+   html[data-teinte="phirst"] : JARVIS, Escale et OPSO ne changent pas d'un pixel. */
+
+/* ═══ 1. Le même haut partout (A-4, A-13) : barre du haut, titre de la taille de JARVIS (40 / 40 / 40 / 35,1 / 32,4 px), même largeur de contenu ═══ */
+.pa{width:min(1180px,calc(100% - 64px));margin:28px auto 64px}
+.pa .pa-tete h1{margin:0 0 8px;font:800 clamp(32px,9vw,40px)/1.04 var(--font);letter-spacing:-.03em;color:var(--au-ink,#16281E)}
+.pa .pa-tete p{margin:0 0 6px;font-size:17px;line-height:1.45}
+.pa .pa-tete{margin:0 0 20px}
+.pa .pa-tete .pa-maj{margin:2px 0 0;font-size:14px;font-weight:700;color:var(--au-ink3,#4A5D51)}
+@media (max-width:700px){
+  .pa{width:auto;margin:16px 16px 48px}
+  .pa .pa-tete h1{font-size:clamp(32px,9vw,40px)}
+}
+/* un écran qui a sa barre du haut n'a plus besoin de la marge d'avant */
+.v2-top + .pa{margin-top:24px}
+
+/* ═══ 2. Appels (A-5) : une ligne par pharmacie ; la pharmacie OUVERTE montre numéro, raisons et les 4 boutons ═══ */
+.pa-det[hidden]{display:none}
+.pa-l .pa-ligne{display:grid;grid-template-columns:minmax(0,1fr) auto 28px;grid-template-areas:"nom motif chev" "raison raison raison";gap:2px 12px;align-items:center;width:100%;min-height:64px;margin:0;padding:12px 14px;border:0;border-radius:18px;background-color:transparent;text-align:left;cursor:pointer;font:inherit;color:inherit}
+.pa-l .pa-ligne:focus-visible{outline:2px solid var(--au-accent,#1A3A2E);outline-offset:-2px}
+.pa-l .pa-nom{grid-area:nom;min-width:0}
+.pa-l .pa-nom b{display:block;font-size:18px;line-height:1.25;overflow-wrap:anywhere}
+.pa-l .pa-nom small{display:block;font-size:14px;color:var(--au-ink3,#4A5D51)}
+.pa-l .pa-ligne .lg-et{grid-area:motif;margin:0;justify-self:end;white-space:nowrap}
+.pa-l .pa-r1{grid-area:raison;display:block;margin:4px 0 0;font-size:16px;line-height:1.4;font-weight:600;color:var(--au-ink,#16281E);overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+.pa-l.pa-ouvert .pa-r1{-webkit-line-clamp:unset;display:block;overflow:visible}
+.pa-l .pa-chev{grid-area:chev;justify-self:end;width:10px;height:10px;margin-right:6px;border-right:2.5px solid var(--au-accent,#1A3A2E);border-bottom:2.5px solid var(--au-accent,#1A3A2E);transform:rotate(45deg);transition:transform .18s ease}
+.pa-l.pa-ouvert .pa-chev{transform:rotate(-135deg)}
+.pa-l.pa-ouvert{border-color:var(--au-accent,#1A3A2E);box-shadow:0 0 0 1px var(--au-accent,#1A3A2E),0 14px 30px -26px var(--au-ombre-l,rgba(18,60,40,.22))}
+.pa-l .pa-det{padding:0 14px 14px}
+.pa-l .pa-det-g .pa-nu{margin:0}
+.pa-l .pa-det-g .pa-au{margin:2px 0 0}
+.pa-l .pa-apres .pa-q{margin:10px 0 8px}
+.pa-liste>.pa-l:has(>.pa-ligne){padding:0;overflow:hidden}
+.pa-l .pa-det-g .pa-tel{margin-left:-4px}
+/* les lignes qui n'ont pas de bouton (Agenda, Veille) gardent leur forme d'avant */
+@media (min-width:1024px){
+  .pa-liste:has(.pa-ligne){gap:0;border:1px solid var(--au-fil,#D8E7DD);border-radius:16px;background-color:#fff;overflow:hidden}
+  .pa-liste:has(.pa-ligne) .pa-l{border:0;border-bottom:1px solid var(--au-fil,#D8E7DD);border-radius:0;box-shadow:none}
+  .pa-liste:has(.pa-ligne) .pa-l:last-child{border-bottom:0}
+  .pa-liste:has(.pa-ligne) .pa-l.pa-ouvert{box-shadow:none;background-color:#F6FAF7}
+  .pa-l .pa-ligne{grid-template-columns:minmax(220px,1.1fr) 200px minmax(0,2.4fr) 24px;grid-template-areas:"nom motif raison chev";gap:0 18px;min-height:60px;padding:8px 14px 8px 18px;border-radius:0}
+  .pa-l .pa-ligne:hover{background-color:#F6FAF7}
+  .pa-l .pa-ligne .lg-et{justify-self:start}
+  .pa-l .pa-r1{margin:0;font-size:15px;-webkit-line-clamp:1}
+  .pa-l.pa-ouvert .pa-r1{-webkit-line-clamp:unset}
+  .pa-l .pa-nom b{font-size:17px}
+  .pa-l .pa-det{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:24px;align-items:start;padding:2px 18px 14px}
+  .pa-l .pa-det-g{grid-column:1;grid-row:1}
+  .pa-l .pa-apres{grid-column:2;grid-row:1;min-width:0}
+  .pa-l .pa-apres .pa-q{margin:0 0 6px}
+  .pa-l .pa-apres .pa-bs{flex-wrap:nowrap}
+  .pa-l .pa-apres .pa-b{min-height:44px;padding:0 14px;white-space:nowrap}
+  .pa-l .pa-rap,.pa-l .pa-quand,.pa-l .pa-dit{grid-column:1 / -1}
+  .pa-l .pa-rap{margin-top:10px}
+  .pa-l .pa-quand{margin-top:10px}
+  .pa-l .pa-dit{margin:6px 0 0}
+  .pa-cren{grid-template-columns:repeat(3,minmax(0,1fr))}
+  /* Mes pistes : trois colonnes, comme une liste de travail */
+  .pa-pistes{grid-template-columns:repeat(3,minmax(0,1fr))}
+  /* la fiche d'une piste : à gauche ses coordonnées et la suite, à droite le journal et la note */
+  .pa-fiche{padding:22px 24px}
+  .pa-fg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:32px;align-items:start}
+  .pa-fg-a,.pa-fg-b{display:grid;gap:14px;align-content:start;min-width:0}
+}
+@media (max-width:1023px){
+  .pa-fg,.pa-fg-a,.pa-fg-b{display:grid;gap:14px}
+  .pa-fiche .pa-fg-t{display:grid;gap:14px}
+}
+.pa-fg-t{display:grid;gap:8px}
+.pa-fg-t h2,.pa-fg-t p{margin:0}
+.pa-fg-b h3{margin:0}
+
+/* un détail replié reste replié, quelle que soit la forme de la ligne */
+.pa-l .pa-det[hidden]{display:none}
+
+/* ═══ 3. Veille : une rangée par pharmacie à l'ordinateur (même forme que Officines) ═══ */
+@media (min-width:1024px){
+  .pv .pa-liste{gap:0;border:1px solid var(--au-fil,#D8E7DD);border-radius:16px;background-color:#fff;overflow:hidden}
+  .pv .pa-l{display:grid;grid-template-columns:minmax(0,1fr) 200px 330px;column-gap:16px;align-items:center;min-height:60px;padding:8px 14px 8px 18px;border:0;border-bottom:1px solid var(--au-fil,#D8E7DD);border-radius:0;box-shadow:none}
+  .pv .pa-l:last-child{border-bottom:0}
+  .pv .pa-l:hover{background-color:#F6FAF7}
+  .pv .pa-ht{display:contents}
+  .pv .pa-ht>div:first-child{grid-column:1;grid-row:1;min-width:0}
+  .pv .pa-ht b{font-size:17px;line-height:1.25}
+  .pv .pa-ht .lg-et{grid-column:2;grid-row:1;justify-self:start;max-width:none;margin:0}
+  .pv .pa-r{grid-column:1;grid-row:2;margin:2px 0 0;font-size:14px;font-weight:600}
+  .pv .pa-bs{grid-column:3;grid-row:1 / span 2;flex-wrap:nowrap;justify-content:flex-end}
+  .pv .pa-bs .pa-b{min-height:44px;white-space:nowrap}
+  .pv .pa-l .pa-dit{grid-column:1 / -1;grid-row:3;margin:4px 0 0}
+  .pv .pa-filtres{grid-template-columns:minmax(0,1fr) 280px;align-items:end}
+}
+
+/* ═══ 4. Agenda : un jour vide dit quoi faire ═══ */
+.ag-ens-c{margin:10px 0 0;font-size:16px;line-height:1.45;color:#E6F2EB}
+.ag-ens .ag-ens-b{margin-top:12px;border-color:#fff;background-color:#fff;color:var(--au-accent,#1A3A2E)}
+.ag-ens .ag-ens-b:hover{background-color:#E4F1E8}
+.ag-vide .lg-gros{margin-top:4px}
+@media (min-width:1024px){
+  .ag-jours{grid-template-columns:repeat(6,minmax(0,200px))}
+}
+
+/* ═══ 5. Écrans pas encore construits et Atelier 3D (A-3, A-7) ═══ */
+.pa-attente .pa-vide{padding:26px;border:1px solid var(--au-fil,#D8E7DD);border-style:solid}
+.pa-attente .pa-vide p:first-child{font-size:19px;font-weight:700;line-height:1.5}
+.pa-attente .pa-bs{margin-top:14px;gap:10px}
+.pa-attente a.lg-gros{text-decoration:none;color:#fff}
+@media (min-width:1024px){ .pa-attente .pa-vide{max-width:760px} }
+
+/* ═══ 6. Couleurs de Phirst (A-9, A-10) : plus de bleu JARVIS ni d'orange ═══
+   Variables de phirst-theme.css : --ip-blue #1A3A2E (vert forêt), --accent #12A567 (vert vif), halo #E4EFE8. */
+html[data-teinte="phirst"]:not([data-hab]) .tp-m.on,
+html[data-teinte="phirst"]:not([data-hab]) .tp-m.on:hover{background-color:var(--ip-blue);color:#fff;box-shadow:0 6px 14px -6px rgba(18,40,31,.5),0 1px 0 rgba(255,255,255,.2) inset}
+html[data-teinte="phirst"]:not([data-hab]) .tp-m:focus-visible,
+html[data-teinte="phirst"]:not([data-hab]) .u2-page.u2-barre .tp-menu-acc .tp-autres:focus-visible,
+html[data-teinte="phirst"] .tp-ao :focus-visible{outline-color:var(--ip-blue)}
+html[data-teinte="phirst"]:not([data-hab]) .tp-avb .v2-av{background-color:var(--ip-blue);background-image:linear-gradient(150deg,#2B5A47,var(--ip-blue-d));box-shadow:0 6px 14px -6px rgba(18,40,31,.55),0 1px 0 rgba(255,255,255,.22) inset}
+html[data-teinte="phirst"]:not([data-hab]) .v2-btn-primary,
+html[data-teinte="phirst"]:not([data-hab]):root:root:root :is(.bo-open,.phf-nmedit-btn){background-color:var(--ip-blue);background-image:linear-gradient(170deg,#24503F,var(--ip-blue));border-color:var(--ip-blue-d);box-shadow:0 8px 18px -8px rgba(18,40,31,.6),0 1px 0 rgba(255,255,255,.22) inset}
+html[data-teinte="phirst"]:not([data-hab]) .v2-tab.on,
+html[data-teinte="phirst"]:not([data-hab]) .v2-tab.on:hover,
+html[data-teinte="phirst"]:not([data-hab]) body .td-m1 .v2-todo-seg button.is-on,
+html[data-teinte="phirst"]:not([data-hab]) body .td-m1 .v2-todo-seg button.is-on:hover{background-color:var(--ip-blue);color:#fff;box-shadow:0 8px 16px -8px rgba(18,40,31,.6),0 1px 0 rgba(255,255,255,.22) inset}
+html[data-teinte="phirst"]:not([data-hab]) .v2-champ:focus-within,
+html[data-teinte="phirst"]:not([data-hab]) .v2-top-search:focus-visible{border-color:var(--ip-blue);box-shadow:0 0 0 3px rgba(26,58,46,.16)}
+html[data-teinte="phirst"] .td-m1 .tb-b-p:hover{background:var(--ip-blue-d)}
+html[data-teinte="phirst"] .td-m1{--td-filet:#D8E7DD;--td-ombre:0 1px 0 #fff inset,0 1px 2px rgba(15,20,32,.07),0 3px 8px rgba(15,20,32,.04),0 24px 44px -26px rgba(18,40,31,.34);--td-ombre-l:0 1px 0 #fff inset,0 1px 2px rgba(15,20,32,.07),0 3px 8px rgba(15,20,32,.035),0 18px 30px -20px rgba(18,40,31,.36)}
+html[data-teinte="phirst"] .pa-tete h1,html[data-teinte="phirst"] .td-m1 .td-hd .td-h1{color:var(--au-ink,#16281E)}
+/* la pastille « orange » devient une teinte froide de la palette (vert d'eau), contraste mesuré ≥ 4,5:1 */
+.lg-et[data-ton="orange"]{background-color:#DDF0EE;color:#0B5A54}
+.po-bandeau[data-ton="alerte"]{background-color:#E8F1EF;border-color:#B7D5CF}
+
+/* ═══ 7. Téléphone : la barre du bas du socle (v2-tel.css) aux couleurs de Phirst (A-1, A-2) ═══ */
+@media (max-width:640px){
+  html[data-teinte="phirst"] .bnav{background:#F3F6F4;border-top-color:#D8E7DD;box-shadow:0 -10px 28px rgba(18,40,31,.10)}
+  html[data-teinte="phirst"] .bnav .bnav-c{color:#3B4F43}
+  html[data-teinte="phirst"] .bnav .bnav-c.on{color:var(--ip-blue)}
+  html[data-teinte="phirst"] .bnav .bnav-c.on .bnav-i,
+  html[data-teinte="phirst"] .bnav .bnav-c:active .bnav-i{background-color:#E4F1E8}
+  html[data-teinte="phirst"] .bnav .bnav-c:focus-visible{outline-color:#86C4A0}
+  html[data-teinte="phirst"] .bnav-menu .tp-ao-it.bnav-li{background:linear-gradient(180deg,#FFFFFF,#F5F9F6);color:#16281E}
+  html[data-teinte="phirst"] .bnav-menu .tp-ao-it.bnav-li svg{background-color:#E4F1E8;color:var(--ip-blue)}
+  html[data-teinte="phirst"] .bnav-menu .tp-ao-dev,html[data-teinte="phirst"] .bnav-menu .tp-ao-dev svg,html[data-teinte="phirst"] .bnav-menu .tp-ao-s{color:#3B4F43}
+  html[data-teinte="phirst"]:not([data-hab]) body.bnav-on .u2-page.u2-barre .u2-cit::before{background-color:var(--ip-blue)}
+  html[data-teinte="phirst"]:not([data-hab]) body.bnav-on .u2-page.u2-barre .u2-cit p{color:#16281E}
+}
+
+/* ═══ 8. Cibles tactiles ≥ 44 px (A-11) ═══ */
+@media (pointer:coarse),(max-width:700px){
+  .u2-skip,.u2-skip:focus{min-height:44px}
+  .lg-liste li button,.lg-liste li a{min-height:44px}
+}
+
+/* ═══ 9. Détails : Bloc-notes, carte ═══ */
+html[data-teinte="phirst"] .bn-tete h1{color:var(--au-ink,#16281E)}
+/* la carte : boutons +/− à la taille du doigt (la feuille de Leaflet, plus précise, les remettait à 30 px), mentions légales lisibles, liens aux couleurs de Phirst */
+html body .leaflet-touch .leaflet-bar a,html body .leaflet-touch .leaflet-bar a:hover{width:44px;height:44px;line-height:44px}
+.leaflet-container .leaflet-control-attribution{font-size:13px;line-height:1.5}
+html body .leaflet-container .leaflet-control-attribution{font-size:13px}
+.leaflet-container a{color:var(--au-accent,#1A3A2E)}

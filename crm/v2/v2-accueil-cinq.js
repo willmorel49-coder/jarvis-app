@@ -601,7 +601,7 @@
   function m1Todo() {
     var l = todoListe();
     if (!l) return '<p class="m1-vide">Chargement de votre liste…</p>';
-    if (!l.length) return '<p class="m1-vide">Rien à faire pour l’instant.</p>';
+    if (!l.length) return '<p class="m1-vide">' + ((window.V2_BRAND && window.V2_BRAND.vides && window.V2_BRAND.vides.aFaire) || 'Rien à faire pour l’instant.') + '</p>';
     return '<div class="m1-tlist">' + l.map(function (x, j) {
       var on = !!_fait[x.id];
       return '<button type="button" class="m1-trow m1-above" role="checkbox" aria-checked="' + on + '" data-u2-a="todo" data-v="' + esc(x.id) + '" style="--j:' + j + '">' +

@@ -88,7 +88,11 @@
     if (S.erreur) corps = '<div class="pa-vide"><p>L’agenda ne s’est pas chargé.</p><p>Vérifiez votre connexion puis réessayez.</p><button type="button" class="lg-gros" data-ag="reessayer">Réessayer</button></div>';
     else if (!S.charge) corps = '<p class="pa-avis">Chargement…</p>';
     else corps = (S.flash ? '<p class="pa-flash" role="status">' + esc(S.flash) + '</p>' : '') + vue();
-    el.innerHTML = '<section class="pa ag" aria-label="Agenda"><header class="pa-tete"><h1>Agenda</h1><p>Vos rendez-vous, jour par jour.</p></header><div class="pa-corps">' + corps + '</div></section>';
+    el.innerHTML = window.PHIRST_ECRAN.cadre('<section class="pa ag" aria-label="Agenda">' + window.PHIRST_ECRAN.tete('Agenda', S.telepro ? 'Les rendez-vous de Yann, jour par jour.' : 'Vos rendez-vous, jour par jour.') + '<div class="pa-corps">' + corps + '</div></section>');
+  }
+  /* Un jour sans rendez-vous dit quoi faire et propose le geste (22/11/2026). `claire` = sur le fond vert de la carte « Ensuite ». */
+  function videAction(telepro, consigne, claire) {
+    return '<p class="ag-ens-c">' + esc(consigne) + '</p><button type="button" class="pa-b' + (claire ? ' ag-ens-b' : '') + '" data-vers="appels">Prendre un rendez-vous depuis les Appels</button>';
   }
   function vue() {
     var auj = jour(), maint = P.maintenantParis(), J = S.jour || auj, els = elements(), h = '';
@@ -105,7 +109,7 @@
     }
     // Ensuite
     var c = P.carteEnsuite({ elements: els, jour: J, aujourdhui: auj, maintenant: maint, libres: libresJ.length });
-    h += '<div class="ag-ens"><p class="ag-ens-m">' + esc(c.maint) + '</p><p class="ag-ens-t">' + esc(c.titre) + '</p><p class="ag-ens-d">' + esc(c.detail) + '</p></div>';
+    h += '<div class="ag-ens"><p class="ag-ens-m">' + esc(c.maint) + '</p><p class="ag-ens-t">' + esc(c.titre) + '</p><p class="ag-ens-d">' + esc(c.detail) + '</p>' + (c.vide ? videAction(S.telepro, 'Un rendez-vous obtenu au téléphone s’inscrit ici tout seul. Pour en prendre un, partez de l’appel.', true) : '') + '</div>';
     // puces de jour
     h += '<div class="ag-jours" role="group" aria-label="Jour affiché">' + fen.map(function (j) {
       return '<button type="button" class="ag-jour" data-ag="jour" data-jour="' + j + '" aria-pressed="' + (j === J) + '">' + esc(P.jourCourt(j)) + '<small>' + esc(P.sousPuce(j, auj, comptes[j])) + '</small></button>';
@@ -117,7 +121,8 @@
     h += '<h2 class="ag-jt">' + esc(P.maj(P.dateLongue(J))) + '</h2>';
     if (!actifs.length) {
       h += '<div class="pa-vide ag-vide"><p>Rien de prévu ce jour-là.</p><p>' + (!P.estJourOuvre(J) ? 'C’est le week-end : aucun rendez-vous n’est proposé.' :
-        libresJ.length ? (S.telepro ? 'Yann est libre ' : 'Vous êtes libre ') + esc(P.plagesLibres(libresJ).join(' et ')) + ' (' + esc(P.phraseLibres(libresJ.length)) + ').' : 'Il ne reste plus de créneau d’une heure libre ce jour-là.') + '</p></div>';
+        libresJ.length ? (S.telepro ? 'Yann est libre ' : 'Vous êtes libre ') + esc(P.plagesLibres(libresJ).join(' et ')) + ' (' + esc(P.phraseLibres(libresJ.length)) + ').' : 'Il ne reste plus de créneau d’une heure libre ce jour-là. Choisissez un autre jour ci-dessus.') + '</p>' +
+        '<button type="button" class="pa-b" data-vers="appels">Ouvrir les Appels</button></div>';
     } else {
       h += '<p class="pa-avis">' + esc(P.phraseEtat(duJ, libresJ.length, S.telepro)) + '</p><ul class="pa-liste">' + actifs.map(function (e) { return carteRdv(e, maint); }).join('') + '</ul>';
     }
@@ -169,6 +174,7 @@
   }
 
   function clic(ev) {
+    var v = ev.target.closest('[data-vers]'); if (v) { V2.go(v.getAttribute('data-vers')); return; }
     var b = ev.target.closest('[data-ag]'); if (!b) return;
     var a = b.getAttribute('data-ag'), id = b.getAttribute('data-rdv'), li = b.closest('li');
     if (a === 'reessayer') { charger(); return; }

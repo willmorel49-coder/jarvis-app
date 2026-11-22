@@ -176,7 +176,7 @@
       var lim = { retard: -1, jour: 0, deux: 2 }[w.o.horizon];
       if (lim == null) lim = 2;
       var tous = p.relancesAll().filter(function (x) { return x.diff <= lim; });
-      if (!tous.length) return vide(lim < 0 ? 'Aucune relance en retard.' : 'Aucune relance à faire.');
+      if (!tous.length) return vide(lim < 0 ? 'Aucune relance en retard.' : ((window.V2_BRAND && window.V2_BRAND.vides && window.V2_BRAND.vides.relances) || 'Aucune relance à faire.'));
       if (w.t === 'S') return chiffre(fr(tous.length), tous.length > 1 ? 'officines à relancer' : 'officine à relancer');
       var n = nbLignes(w.t, 0, 3, 6);
       var h = tous.slice(0, n).map(function (x) {
