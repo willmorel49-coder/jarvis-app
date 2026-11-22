@@ -98,7 +98,10 @@ async function rendreSb(sb) {
   assert.match(html, /<div class="w-page inf-t">/, 'la page est bien la liste C (marqueur positif)');
   // 21/11/2026 soir (Will : « homogénéité […] pas la même taille ni le même bandeau en haut ») : le bandeau commun des écrans, au-dessus de la feuille
   assert.match(html, /<div class="w-page inf-t"><header class="aube-tete inf-t-tete">(<p class="inf-t-eye">[^<]+<\/p>)?<h1 id="inf-t-titre" class="v2-page-title">Infos du matin<\/h1>/, 'le bandeau commun (.aube-tete) et le titre de l\'onglet');
-  assert.match(html, /<\/header><article class="inf-t-feuille"/, 'le bandeau est hors de la feuille, sur toute la largeur');
+  // 22/11/2026, v3 Le tableau : la feuille unique (article.inf-t-feuille) est remplacée par deux colonnes (.inf-t-cols) ; la même règle se lit là :
+  // le bandeau reste HORS du contenu, sur toute la largeur, et les colonnes viennent juste après lui.
+  assert.match(html, /<\/header><div class="inf-t-cols( is-seul)?" role="group" aria-labelledby="inf-t-titre">/, 'le bandeau est hors des colonnes, sur toute la largeur');
+  assert.doesNotMatch(html, /inf-t-feuille/, 'plus de feuille unique : deux colonnes');
   assert.doesNotMatch(html, /inf-t-pastille|pp-ciel/, 'ni la pastille ni le ciel propres à l\'ancien en-tête');
   assert.doesNotMatch(html, /Composition de l'édition|n'a pas pu s'afficher|Pas encore d'édition/, 'ni attente ni page d\'erreur');
   return html;
@@ -159,7 +162,8 @@ test('la phrase sous le titre compte les tâches qui restent et dit l\'heure de 
   assert.match(veille, /· mis à jour hier à \d{1,2} h \d{2}$/);
 });
 
-const annSection = (html, id) => { const m = new RegExp('<section class="inf-t-groupe inf-t-ann" aria-labelledby="' + id + '"><h2 id="' + id + '">([\\s\\S]*?)</h2>([\\s\\S]*?)</section>').exec(html); return m && { titre: texte(m[1]), corps: m[2] }; };
+// 22/11/2026, v3 Le tableau : la liste « Ventes et rachats en France » porte maintenant data-banc="infos-ventes-rachats" (marqueur de la sonde de production)
+const annSection = (html, id) => { const m = new RegExp('<section class="inf-t-groupe inf-t-ann"(?: data-banc="[^"]*")? aria-labelledby="' + id + '"><h2 id="' + id + '">([\\s\\S]*?)</h2>([\\s\\S]*?)</section>').exec(html); return m && { titre: texte(m[1]), corps: m[2] }; };
 const annLignes = (corps) => corps.split('<li>').slice(1).filter((l) => /data-it-ann=/.test(l)).map((l) => ({ i: +/data-it-ann="(\d+)"/.exec(l)[1], nom: texte(/<b>([\s\S]*?)<\/b>/.exec(l)[1]), sous: texte(/<small>([\s\S]*?)<\/small>/.exec(l)[1]) }));
 
 test('« Tout le reste » n\'existe plus (Will, 21/11 : « on le masque »)', async () => {
@@ -172,7 +176,13 @@ test('commercial : « Annonces de votre secteur » à la suite des tâches, vent
   const A = annSection(html, 'inf-t-h-ann');
   assert.ok(A, 'la section des annonces du secteur est là');
   assert.equal(A.titre, 'Annonces de votre secteur · 3 derniers mois');
-  assert.ok(html.indexOf('id="inf-t-h-ann"') > html.indexOf('id="inf-t-fait"'), 'à la suite des tâches et de « Fait »');
+  // 22/11/2026, v3 Le tableau : les annonces ne sont plus tout en bas, après « Fait » : elles sont sous les tâches DANS la colonne « Dans votre secteur »
+  // (la règle « à la suite des tâches » reste vraie ; « Fait » vient après les deux colonnes).
+  const col = html.split('<div class="inf-t-col">');
+  assert.equal(col.length, 3, 'deux colonnes : secteur puis France');
+  assert.ok(col[1].indexOf('id="inf-t-g-secteur"') >= 0 && col[1].indexOf('id="inf-t-h-ann"') > col[1].indexOf('id="inf-t-g-secteur"'), 'annonces du secteur sous les tâches du secteur, dans la colonne du secteur');
+  assert.ok(col[2].indexOf('id="inf-t-h-ann"') < 0, 'pas d\'annonces du secteur dans la colonne France');
+  assert.ok(html.indexOf('id="inf-t-fait"') > html.indexOf('id="inf-t-h-ann"'), '« Fait » vient après les colonnes');
   // b1, b2, b3 sont déjà des tâches ; restent b6 (vente, 40 jours), b5 (procédure), b4 (création) ; b7 (Lille) est hors secteur
   assert.deepEqual(annLignes(A.corps).map((l) => l.nom), ['Pharmacie Trop Ancienne', 'Pharmacie de la Poste', 'Pharmacie du Port']);
   assert.deepEqual(annLignes(A.corps).map((l) => l.sous), ['Vente de l’officine · Angers (49) · il y a 5 semaines', 'Procédure au tribunal · Angers (49) · il y a 6 jours', 'Nouvelle société · Angers (49) · il y a 4 jours']);
@@ -199,6 +209,9 @@ test('direction avec un secteur : « Ventes et rachats en France », hors secteu
   assert.equal(annSection(html, 'inf-t-h-ann').titre, 'Annonces de votre secteur · 3 derniers mois');
   const F = annSection(html, 'inf-t-h-annfr');
   assert.ok(F, 'la liste France est là pour la direction');
+  // 22/11/2026, v3 Le tableau : elle vit sous les tâches « En France », dans la colonne de droite
+  const colF = html.split('<div class="inf-t-col">')[2];
+  assert.ok(colF.indexOf('id="inf-t-h-annfr"') > colF.indexOf('id="inf-t-g-france"'), 'sous les tâches « En France », dans la colonne France');
   assert.equal(F.titre, 'Ventes et rachats en France · 3 derniers mois');
   const vus = /^<ul class="inf-t-rls">([\s\S]*?)<\/ul>/.exec(F.corps)[1], caches = /<ul class="inf-t-rls" id="inf-t-annfr-l" hidden>([\s\S]*?)<\/ul>/.exec(F.corps)[1];
   assert.deepEqual(annLignes(vus).map((l) => l.nom), ['SPFPL Grand Ouest', 'Pharmacie de Lille', 'Pharmacie Un', 'Pharmacie Deux', 'Pharmacie Trois'], 'les plus récentes d\'abord');

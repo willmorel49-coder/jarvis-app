@@ -519,7 +519,7 @@
   function badge(it) {
     var j = joursAvant(it); if (j == null) return null;
     if (j < 0) return { c: 'var(--c-rose)', t: j === -1 ? 'Retard : hier' : 'Retard : J' + j };
-    if (j === 0) return { c: 'var(--c-amber)', t: 'Aujourd\'hui' };
+    if (j === 0) return { c: 'var(--c-amber)', t: 'Aujourd’hui' };
     return { c: 'var(--c-mint)', t: 'Dans ' + j + ' j' };
   }
   function trier(a) {
@@ -534,30 +534,130 @@
   // ── PAGE ────────────────────────────────────────────────────────
   function rendre() { if (V2.route && V2.route.name === 'todo' && V2.render) V2.render(); }
   function faitAuj(it) { return !!(it.rep && !it.fait && it.dernier && isoDe(new Date(it.dernier)) === aujIso() && isoOk(it.prec)); }
-  // `jour` : ligne du bandeau — la précision, les documents et le rappel se déplient sous « Plus » (ouverts d'office quand une précision existe)
-  function ligne(it, jour) {
-    var K = KINDS[it.k], b = badge(it);
-    var ouv = jour && (TD.plus[it.id] != null ? TD.plus[it.id] : !!(it.note && it.k !== 'libre'));
+  // ── v3 « Le tableau » : trois colonnes (Aujourd'hui / Cette semaine / Plus tard), on glisse une carte pour la replacer ──
+  // La date de la carte (`pour`) est la seule chose qui change, au même format que partout : le rangement en colonnes se déduit d'elle.
+  var COLS = [['auj', 'Aujourd’hui'], ['sem', 'Cette semaine'], ['tard', 'Plus tard']];
+  var COL_VIDE = { auj: 'Rien d\'urgent aujourd’hui.', sem: 'Rien de prévu cette semaine.', tard: 'Rien de rangé pour plus tard.' };
+  var DATE_COL = { auj: 0, sem: 1, tard: 14 };   // glisser dans « Cette semaine » = demain, dans « Plus tard » = dans 14 jours ; « Choisir une date » affine
+  var KC = { rdv: 'Rendez-vous', merci: 'Remerciement', compte: 'Compte', libre: '' };   // libellé court de la carte (le long reste dans le formulaire)
+  function colDe(it) {
+    if (faitAuj(it)) return 'auj';
+    var j = joursAvant(it);
+    return j != null && j <= 0 ? 'auj' : j != null && j <= 7 ? 'sem' : 'tard';
+  }
+  function isoPlus(n) { var d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + n); return isoDe(d); }
+  function quand(it) {
+    if (it.fait) return it.faitLe ? 'Faite le ' + dateFr(it.faitLe.slice(0, 10)) : '';
+    var j = joursAvant(it); if (j == null) return 'Sans date';
+    if (j < 0) return 'En retard · ' + dateFr(it.pour);
+    if (j === 0) return '';
+    var d = new Date(it.pour + 'T00:00:00');
+    return j <= 7 ? JOURS[d.getDay()] + ' ' + d.getDate() : dateFr(it.pour);
+  }
+  var GRIP = '<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><circle cx="5.5" cy="3.5" r="1.3"/><circle cx="10.5" cy="3.5" r="1.3"/><circle cx="5.5" cy="8" r="1.3"/><circle cx="10.5" cy="8" r="1.3"/><circle cx="5.5" cy="12.5" r="1.3"/><circle cx="10.5" cy="12.5" r="1.3"/></svg>';
+  function carte(it) {
+    var K = KINDS[it.k], id = it.id, ouv = !!TD.plus[id], der = faitAuj(it), q = quand(it), kl = KC[it.k], b = badge(it);
     var qui = it.nom ? (it.pid ? '<a class="v2-todo-off" onclick="V2.go(\'pharma\',\'' + esc(it.pid) + '\')">' + esc(it.nom) + '</a>' : '<span class="v2-todo-off">' + esc(it.nom) + '</span>') : '';
-    var actes = it.fait ? '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.retirer(\'' + it.id + '\')">Retirer de la liste</button>'
-      : ((K.mail || it.nom ? '<button class="v2-btn v2-btn-primary v2-todo-sm" onclick="V2.todo.mail(\'' + it.id + '\')">' + ICO('fiche', 14, 2) + esc(K.mail || 'Écrire un mail') + '</button>' : '') +
-         (K.docs && it.pid ? '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.docs(\'' + it.id + '\')">' + ICO('download', 14, 2) + esc(K.docs) + '</button>' : '') +
-         '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.rappel(\'' + it.id + '\')">' + ICO('cal', 14, 2) + (it.pour || it.rep ? 'Modifier le rappel' : 'Ajouter un rappel') + '</button>' +
-         (jour ? '<button type="button" class="v2-btn v2-btn-ghost v2-todo-sm td-plus" aria-expanded="' + ouv + '" onclick="V2.todo.plus(this,\'' + it.id + '\')">' + ICO('chev', 14, 2) + '<span>' + (ouv ? 'Replier' : 'Plus') + '</span></button>' : ''));
-    var der = faitAuj(it);
-    return '<div class="v2-todo-it' + (it.fait ? ' is-fait' : '') + (jour ? ' td-jl' + (ouv ? ' td-ouv' : '') : '') + '">' +
-      '<label class="v2-todo-chk"><input type="checkbox"' + (it.fait ? ' checked' : '') + ' onchange="V2.todo.cocherVu(this,\'' + it.id + '\')" aria-label="' + (it.fait ? 'Remettre à faire' : it.rep ? 'Fait pour cette fois' : 'Marquer comme fait') + '"><span></span></label>' +
-      '<div class="v2-todo-c">' +
-        '<div class="v2-todo-l1"><span class="v2-todo-k">' + ICO(K.ico, 14, 2) + esc(K.l) + '</span>' + qui +
-          (it.rep && !it.fait ? '<span class="v2-todo-rep">↻ ' + esc(REP[it.rep]) + '</span>' : '') +
-          (b && !it.fait ? '<span class="v2-todo-b" style="color:' + b.c + '">' + b.t + (it.rep && b.t.indexOf('Dans') === 0 ? ' · ' + esc(dateFr(it.pour)) : '') + '</span>' : '') +
-          (it.fait && it.faitLe ? '<span class="v2-todo-b" style="color:var(--muted)">Fait le ' + esc(dateFr(it.faitLe.slice(0, 10))) + '</span>' : '') + '</div>' +
-        // « Autre chose » : la note EST la tâche — affichée en entier, jamais coupée dans un champ
-        (it.fait || (it.k === 'libre' && it.note) ? (it.note ? '<div class="v2-todo-n' + (it.k === 'libre' ? ' v2-todo-n-libre' : '') + '">' + esc(it.note) + '</div>' : '')
-                 : micChamp('<input class="v2-todo-n-in" type="text" value="' + esc(it.note) + '" placeholder="Une précision ? (facultatif)" onchange="V2.todo.note(\'' + it.id + '\',this)">', 'Dicter la précision à la voix')) +
-        (der ? '<div class="v2-todo-der">' + ICO('check', 13, 2) + 'Fait aujourd\'hui <button onclick="V2.todo.annulerFait(\'' + it.id + '\')">Annuler</button></div>' : '') +
-        (actes ? '<div class="v2-todo-acts">' + actes + '</div>' : '') +
-      '</div></div>';
+    var mail = K.mail || it.nom ? '<button type="button" class="tb-b tb-b-p" aria-label="' + esc(K.mail || 'Écrire un mail') + '" onclick="V2.todo.mail(\'' + id + '\')">' + ICO('fiche', 15, 2) + '<span>Écrire</span></button>' : '';
+    var acts = it.fait ? '<button type="button" class="tb-b" onclick="V2.todo.retirer(\'' + id + '\')"><span>Retirer de la liste</span></button>'
+      : mail +
+        '<button type="button" class="tb-b" aria-expanded="false" aria-controls="tb-dep-' + id + '" aria-label="Déplacer cette tâche" onclick="V2.todo.menuDep(this)">' + ICO('move', 15, 2) + '<span>Déplacer</span></button>' +
+        '<button type="button" class="tb-b td-plus" data-banc="todo-ligne-ouvrir" aria-expanded="' + ouv + '" aria-controls="tb-pl-' + id + '" onclick="V2.todo.plus(this,\'' + id + '\')">' + ICO('chev', 14, 2) + '<span>' + (ouv ? 'Replier' : 'Plus') + '</span></button>';
+    var dep = it.fait ? '' : '<div class="tb-dep" id="tb-dep-' + id + '" hidden role="group" aria-label="Déplacer vers">' + COLS.map(function (c) {
+      return '<button type="button" class="tb-dep-b"' + (colDe(it) === c[0] ? ' aria-current="true" disabled' : '') + ' onclick="V2.todo.deplacer(\'' + id + '\',\'' + c[0] + '\')">' + c[1] + '</button>';
+    }).join('') + '<button type="button" class="tb-dep-b" onclick="V2.todo.rappel(\'' + id + '\')">Choisir une date</button></div>';
+    var plus = it.fait ? '' : '<div class="tb-plus" id="tb-pl-' + id + '">' +
+      (it.k !== 'libre' ? micChamp('<input class="v2-todo-n-in" type="text" value="' + esc(it.note) + '" placeholder="Une précision (facultatif)…" aria-label="Précision" autocomplete="off" onchange="V2.todo.note(\'' + id + '\',this)">', 'Dicter la précision à la voix') : '') +
+      '<div class="tb-pl-b">' + (K.docs && it.pid ? '<button type="button" class="tb-b" aria-label="' + esc(K.docs) + '" onclick="V2.todo.docs(\'' + id + '\')">' + ICO('download', 15, 2) + '<span>Joindre</span></button>' : '') +
+        '<button type="button" class="tb-b" onclick="V2.todo.rappel(\'' + id + '\')">' + ICO('cal', 15, 2) + '<span>' + (it.pour || it.rep ? 'Modifier le rappel' : 'Ajouter un rappel') + '</span></button></div></div>';
+    var meta = [q ? '<span class="tb-q' + (b && b.t.indexOf('Retard') === 0 ? ' is-ret' : '') + '">' + esc(q) + '</span>' : '', it.rep && !it.fait ? '<span class="v2-todo-rep">↻ ' + esc(REP[it.rep]) + '</span>' : ''].filter(Boolean).join('');
+    return '<article class="v2-todo-it tb-c' + (it.fait ? ' is-fait' : '') + (ouv ? ' td-ouv' : '') + (it.fait || der ? ' tb-fige' : '') + '" data-id="' + id + '" data-banc="todo-ligne">' +
+      '<div class="tb-c1">' +
+        '<label class="v2-todo-chk"><input type="checkbox"' + (it.fait ? ' checked' : '') + ' onchange="V2.todo.cocherVu(this,\'' + id + '\')" aria-label="' + (it.fait ? 'Remettre à faire' : it.rep ? 'Fait pour cette fois' : 'Marquer comme fait') + '"><span></span></label>' +
+        '<div class="tb-main">' +
+          '<div class="tb-l1">' + (kl ? '<span class="tb-k">' + ICO(K.ico, 14, 2) + esc(kl) + '</span>' : '<span class="tb-k tb-k-i" role="img" aria-label="Autre tâche">' + ICO(K.ico, 14, 2) + '</span>') + qui + '</div>' +
+          (it.note ? '<p class="tb-n' + (it.k === 'libre' ? ' tb-n-l' : '') + '">' + esc(it.note) + '</p>' : '') +
+          (meta ? '<div class="tb-meta">' + meta + '</div>' : '') +
+          (der ? '<div class="v2-todo-der">' + ICO('check', 13, 2) + 'Fait aujourd’hui <button type="button" onclick="V2.todo.annulerFait(\'' + id + '\')">Annuler</button></div>' : '') +
+        '</div>' +
+        (it.fait || der ? '' : '<span class="tb-poi" title="Glisser pour déplacer" aria-hidden="true">' + GRIP + '</span>') +
+      '</div>' +
+      '<div class="tb-acts">' + acts + '</div>' + dep + plus + '</article>';
+  }
+  function tableau(ouv) {
+    var par = { auj: [], sem: [], tard: [] };
+    ouv.forEach(function (it) { par[colDe(it)].push(it); });
+    return '<div class="tb-tab" role="group" aria-label="Mes tâches par moment">' + COLS.map(function (c) {
+      var a = par[c[0]];
+      return '<section class="tb-col" aria-labelledby="tb-h-' + c[0] + '"><header class="tb-col-h"><h2 id="tb-h-' + c[0] + '">' + c[1] + '</h2><span class="tb-nb">' + a.length + '</span></header>' +
+        '<div class="tb-liste" data-col="' + c[0] + '">' + a.map(carte).join('') + (a.length ? '' : '<p class="tb-vide">' + COL_VIDE[c[0]] + '</p>') + '</div></section>';
+    }).join('') + '</div>';
+  }
+  // Déplacer : le même geste au glisser, au clic sur « Déplacer » et au clavier
+  V2.todo.deplacer = function (id, col) {
+    if (!Object.prototype.hasOwnProperty.call(DATE_COL, col)) return;
+    var pour = isoPlus(DATE_COL[col]), it0 = (st.items || []).find(function (x) { return x.id === id; });
+    if (!it0 || it0.fait) { rendre(); return; }
+    ecrire(function (items) {
+      return items.map(function (x) {
+        if (x.id !== id) return x;
+        x.pour = pour;
+        if (x.rep) { x.ancre = pour; x.prec = ''; x.dernier = ''; }   // une tâche qui revient repart de sa nouvelle date
+        return x;
+      });
+    }).then(function () {
+      var d = new Date(pour + 'T00:00:00');
+      if (V2.toast) V2.toast('Déplacée : ' + (col === 'auj' ? 'aujourd’hui' : col === 'sem' ? 'demain, ' + JOURS[d.getDay()] + ' ' + dateFr(pour) : 'le ' + dateFr(pour)));
+      rendre(); if (V2.todo.apresCoche) V2.todo.apresCoche();
+    });
+  };
+  V2.todo.menuDep = function (b) {
+    var c = b.closest('.tb-c'), m = c && c.querySelector('.tb-dep'); if (!m) return;
+    var o = m.hidden; m.hidden = !o; b.setAttribute('aria-expanded', o ? 'true' : 'false');
+    if (o) { var f = m.querySelector('button:not([disabled])'); if (f) try { f.focus(); } catch (e) {} }
+  };
+  // Formulaire : changer de type ne vide plus ce qui est déjà saisi
+  V2.todo.choisir = function (k) {
+    st.kind = k;
+    [].forEach.call(document.querySelectorAll('.v2-todo-kind'), function (b) { var on = b.getAttribute('data-k') === k; b.classList.toggle('is-on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+    var n = document.getElementById('v2-todo-note'); if (n) n.placeholder = k === 'libre' ? 'Ce qu\'il y a à faire…' : 'Une précision (facultatif)…';
+  };
+  V2.todo.dateRapide = function (b, j) {
+    var e = document.getElementById('v2-todo-pour'); if (!e) return;
+    e.value = j === '' ? '' : isoPlus(+j);
+    [].forEach.call(document.querySelectorAll('.tb-chip'), function (c) { c.setAttribute('aria-pressed', c === b ? 'true' : 'false'); });
+  };
+  // La brique SortableJS 1.15.6 (MIT, vendor/sortablejs/) : chargée à la première arrivée sur la To do, avec le même jeton ?v=
+  // que ce fichier (lu sur son propre <script>) pour qu'une mise en ligne ne laisse pas l'ancienne copie en cache.
+  var JETON = (function () { try { var s = document.currentScript; return s && s.src && s.src.indexOf('?') > -1 ? s.src.slice(s.src.indexOf('?')) : ''; } catch (e) { return ''; } })();
+  function chargerTri(cb) {
+    if (window.Sortable) { cb(); return; }
+    if (TD.triEnCours) { TD.triEnCours.push(cb); return; }
+    TD.triEnCours = [cb];
+    var sc = document.createElement('script'); sc.src = 'vendor/sortablejs/Sortable-1.15.6.min.js' + JETON; sc.async = true;
+    sc.onload = function () { var a = TD.triEnCours || []; TD.triEnCours = null; a.forEach(function (f) { f(); }); };
+    sc.onerror = function () { TD.triEnCours = null; };   // sans la brique, « Déplacer » reste là
+    document.head.appendChild(sc);
+  }
+  function initTri(root) {
+    if (!root || !root.querySelector('.tb-liste')) return;
+    chargerTri(function () {
+      if (!window.Sortable) return;
+      var doigt = window.matchMedia && matchMedia('(max-width:760px),(pointer:coarse)').matches;   // au doigt : on saisit par la poignée, pour que la page défile toujours
+      [].forEach.call(document.querySelectorAll('.tb-liste'), function (l) {
+        if (l._tri) return;
+        var opt = { group: 'tb-todo', sort: false, animation: 160, forceFallback: true, fallbackTolerance: 4, draggable: '.tb-c:not(.tb-fige)',
+          ghostClass: 'tb-ghost', chosenClass: 'tb-chosen', dragClass: 'tb-drag', fallbackClass: 'tb-fallback',
+          onStart: function () { document.body.classList.add('tb-glisse'); },
+          onEnd: function (e) {
+            document.body.classList.remove('tb-glisse');
+            if (e.from !== e.to) V2.todo.deplacer(e.item.getAttribute('data-id'), e.to.getAttribute('data-col'));
+          } };
+        if (doigt) opt.handle = '.tb-poi';
+        else { opt.filter = 'a,button,input,select,textarea,label,.v2-mic-wrap,.tb-dep,.tb-plus'; opt.preventOnFilter = false; }
+        l._tri = window.Sortable.create(l, opt);
+      });
+    });
   }
 
   // ── Les mails tout prêts (23/09, Will : « avoir des exemples de mail aussi préfaits ») ──
@@ -578,7 +678,7 @@
     if (st.mods == null) chargerMods().then(rendre);
     // 25/09, Will : « chacun doit pouvoir avoir des modèles de base et pouvoir les modifier pour lui
     // et que pour lui » → mêmes 3 modèles au départ pour tous, « Ma version » rangée avec ses modèles.
-    return '<div class="v2-todo-mh"><h2>Les mails tout prêts</h2><p>Les mêmes pour toute l\'équipe au départ. Vous pouvez les modifier à votre façon : votre version ne vaut que pour vous.</p></div>' +
+    return '<div class="tb-bas"><section class="tb-bas-c"><div class="v2-todo-mh"><h2>Les mails tout prêts</h2></div>' +
       '<div class="v2-card v2-todo-list">' + MODELES.map(function (m) {
         var x = modele(m.k), mien = !!(st.bases || {})[m.k];
         return '<details class="v2-todo-mail"' + ((st.ouverts || {})[m.k] ? ' open' : '') + ' ontoggle="window.V2&&V2.todo.plier(\'' + m.k + '\',this.open)"><summary><span class="v2-todo-ico">' + ICO(KINDS[m.k].ico, 16, 2) + '</span>' +
@@ -589,13 +689,13 @@
           '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.editerBase(\'' + m.k + '\')">' + ICO('plus', 14, 2) + (mien ? 'Modifier ma version' : 'Modifier ce modèle pour moi') + '</button>' +
           (mien ? '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.baseOrigine(\'' + m.k + '\')">Revenir au modèle d\'origine</button>' : '') +
           '<button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.todo.copierModele(\'' + m.k + '\')">' + ICO('check', 14, 2) + 'Copier le texte</button></div></div></details>';
-      }).join('') + '</div>' + mesModeles();
+      }).join('') + '</div></section><section class="tb-bas-c">' + mesModeles() + '</section></div>';
   }
   // ── Mes modèles (25/09, Will : « pouvoir mettre nous-mêmes des modèles et les enregistrer ») ──
   function mesModeles() {
     if (st.mods == null) { chargerMods().then(rendre); }
     var a = st.mods || [];
-    return '<div class="v2-todo-mh"><h2>Mes modèles</h2><p>Vos propres mails, avec leurs documents joints. Personnels : chacun a les siens.</p></div>' +
+    return '<div class="v2-todo-mh"><h2>Mes modèles</h2></div>' +
       '<div class="v2-card v2-todo-list">' +
         (st.mods == null ? '<div class="v2-todo-empty">Chargement…</div>'
           : a.length ? a.map(function (m) {
@@ -957,55 +1057,42 @@
       }
       var ouv = trier(V2.todo.ouverts()), faits = (st.items || []).filter(function (x) { return x.fait; })
         .sort(function (a, b) { return String(b.faitLe).localeCompare(String(a.faitLe)); });
-      // Bandeau : les tâches en retard, d'aujourd'hui, et la répétée cochée aujourd'hui (son « Annuler » reste où on l'a cochée) ; chacune n'apparaît qu'une fois.
-      var jour = ouv.filter(function (x) { var j = joursAvant(x); return (j != null && j <= 0) || faitAuj(x); });
-      var liste = st.filtre === 'fait' ? faits : ouv.filter(function (x) { return jour.indexOf(x) < 0; });
       // 16/10, Will : « dans la to do list, un truc relance et un truc prospects chauds ».
       var R = V2.relances, ong = R ? st.onglet : 'taches', nR = R ? R.nbARelancer() : null, nC = R ? R.nbChauds() : null;
-      // Les onglets SONT les capsules à compteurs de l'en-tête bleu.
-      var onglets = R ? '<div class="td-caps" role="tablist" aria-label="Ma liste">' + [['taches', 'Tâches à faire', ouv.length], ['relances', 'Prospects à relancer', nR], ['chauds', 'Prospects chauds', nC]].map(function (o) {
-        return '<button type="button" role="tab" aria-selected="' + (ong === o[0]) + '" class="td-cap' + (ong === o[0] ? ' is-on' : '') + '" onclick="V2.todo.onglet(\'' + o[0] + '\')"><span>' + o[1] + '</span>' + (o[2] != null ? '<b class="td-cnt">' + o[2] + '</b>' : '') + '</button>';
+      // Les onglets SONT les capsules à compteurs de l'en-tête ; au téléphone le libellé court tient les trois sur une rangée
+      var onglets = R ? '<div class="td-caps" role="tablist" aria-label="Ma liste">' + [['taches', 'Tâches à faire', 'Tâches', ouv.length], ['relances', 'Prospects à relancer', 'Relances', nR], ['chauds', 'Prospects chauds', 'Chauds', nC]].map(function (o) {
+        var court = '<span class="tb-long">' + o[1] + '</span><span class="tb-court" aria-hidden="true">' + o[2] + '</span>';
+        return '<button type="button" role="tab" aria-selected="' + (ong === o[0]) + '" class="td-cap' + (ong === o[0] ? ' is-on' : '') + '" onclick="V2.todo.onglet(\'' + o[0] + '\')">' + court + (o[3] != null ? '<b class="td-cnt">' + o[3] + '</b>' : '') + '</button>';
       }).join('') + '</div>' : '';
       var phrase = tdPhrase(ong, ouv, faits, nR, nC);
+      var local = st.backend === 'local' ? '<p class="td-expl"><b class="td-local">Gardée sur cet appareil seulement.</b></p>' : '';
       if (ong !== 'taches') {
-        root.innerHTML = top + '<div class="v2-wrap narrow">' + tdOuvre() + tdEntete(phrase, '', onglets, '') + R.html(ong) + '</div></div>';
+        root.innerHTML = top + '<div class="v2-wrap narrow">' + tdOuvre() + tdEntete(phrase, local, onglets, '') + R.html(ong) + '</div></div>';
         tdApres(root);
         return;
       }
-      var bandeau = ouv.length ? '<section class="td-jour" aria-labelledby="td-jour-h"><h2 class="td-jour-h" id="td-jour-h">Pour aujourd\'hui</h2>' +
-        (jour.length ? '<div class="td-jour-ls">' + jour.map(function (it) { return ligne(it, true); }).join('') + '</div>' : '<p class="td-jour-vide">Rien d\'urgent aujourd\'hui : toute la liste est juste dessous.</p>') + '</section>' : '';
       var noms = (V2.pharmacies || []).map(function (p) { return '<option value="' + esc(p.name || '') + '">'; }).join('');
-      root.innerHTML = top +
-        '<div class="v2-wrap narrow">' + tdOuvre() +
-          tdEntete(phrase, '<p class="td-expl">Demandes de rendez-vous à envoyer, suites de rendez-vous, ouvertures de compte, et tout le reste. Personnelle : chacun voit la sienne.' +
-            (st.backend === 'local' ? ' <b class="td-local">Gardée sur cet appareil seulement.</b>' : '') + '</p>', onglets, bandeau) +
-          tdTuiles(ouv, faits) +
-          (st.formOuvert ? '' : '<button class="v2-btn v2-btn-primary v2-todo-ajbtn" onclick="V2.todo.ouvrirForm()">' + ICO('plus', 16, 2) + 'Ajouter une tâche</button>') +
-          '<div class="v2-card v2-todo-add' + (st.formOuvert ? '' : ' is-ferme') + '">' +
-            '<div class="v2-todo-fh"><button class="v2-btn v2-btn-ghost v2-todo-fermer" onclick="V2.todo.fermerForm()">Fermer</button></div>' +
-            '<p class="td-choix-l td-choix-t">Type de tâche :</p>' +
-            '<div class="v2-todo-kinds">' + ORDER.map(function (k) {
-              return '<button class="v2-todo-kind' + (st.kind === k ? ' is-on' : '') + '" onclick="V2.todo.choisir(\'' + k + '\')">' + ICO(KINDS[k].ico, 15, 2) + '<span>' + esc(KINDS[k].l) + '</span></button>';
-            }).join('') + '</div>' +
-            '<div class="v2-todo-form">' +
-              '<label><span>Officine</span><input id="v2-todo-nom" list="v2-todo-noms" type="text" placeholder="Nom de l\'officine (ou rien)" autocomplete="off"><datalist id="v2-todo-noms">' + noms + '</datalist></label>' +
-              '<label><span>Pour le</span><input id="v2-todo-pour" type="date"></label>' +
-              '<label><span>Répéter</span><select id="v2-todo-rep">' + Object.keys(REP).map(function (k) { return '<option value="' + k + '">' + esc(REP[k]) + '</option>'; }).join('') + '</select></label>' +
-              '<label class="v2-todo-wide"><span>Note</span>' + micChamp('<input id="v2-todo-note" type="text" placeholder="' + (st.kind === 'libre' ? 'Ce qu\'il y a à faire' : 'Une précision (facultatif)') + '" onkeydown="if(event.key===\'Enter\')V2.todo.ajouter()">', 'Dicter la note à la voix') + '</label>' +
-              '<button class="v2-btn v2-btn-primary" onclick="V2.todo.ajouter()">' + ICO('plus', 15, 2) + 'Ajouter</button>' +
-            '</div>' +
-            '<div class="v2-todo-hint">Depuis une fiche officine, le bouton « Ajouter à la to do list » remplit l\'officine et son e-mail tout seul. ' +
-              '« Répéter » : la ligne revient chaque semaine ou chaque mois à partir de la date choisie (aujourd\'hui sinon) ; la cocher la repousse à la fois suivante.</div>' +
-          '</div>' +
-          // 12/11/2026 — Façon 1 (lot A) : pastilles de choix précédées d'un mot, compteurs hors du libellé, ce que contient chaque choix dit en clair
-          '<div class="v2-todo-tools"><span class="td-choix-l">Afficher :</span><div class="v2-todo-seg" role="group" aria-label="Afficher les tâches">' +
-            '<button class="' + (st.filtre !== 'fait' ? 'is-on' : '') + '" aria-pressed="' + (st.filtre !== 'fait') + '" onclick="V2.todo.filtrer(\'afaire\')">Tâches à faire <b class="td-cnt-s">' + ouv.length + '</b></button>' +
-            '<button class="' + (st.filtre === 'fait' ? 'is-on' : '') + '" aria-pressed="' + (st.filtre === 'fait') + '" onclick="V2.todo.filtrer(\'fait\')">Tâches faites <b class="td-cnt-s">' + faits.length + '</b></button></div></div>' +
-          (jour.length && st.filtre !== 'fait' && liste.length ? '<p class="td-suite">Ensuite</p>' : '') +
-          (liste.length ? '<div class="v2-card v2-todo-list td-taches">' + liste.map(function (it) { return ligne(it); }).join('') + '</div>'
-            : '<div class="v2-card v2-todo-empty">' + (st.filtre === 'fait' ? 'Rien de coché pour l\'instant.' : jour.length ? 'Rien d\'autre à faire pour l\'instant.' : 'Rien à faire pour l\'instant — la liste est vide.') + '</div>') +
-          mailsPrets() +
+      var voirFaits = st.filtre === 'fait';
+      var barre = st.formOuvert && !voirFaits ? '' : '<div class="tb-barre">' + (voirFaits ? '<button type="button" class="tb-lien" onclick="V2.todo.filtrer(\'afaire\')">' + ICO('chev', 14, 2) + '<span>Retour au tableau</span></button>' : '<span></span>') +
+        (st.formOuvert ? '' : '<button type="button" class="v2-btn v2-btn-primary v2-todo-ajbtn" onclick="V2.todo.ouvrirForm()">' + ICO('plus', 16, 2) + 'Ajouter une tâche</button>') + '</div>';
+      var form = !st.formOuvert ? '' : '<div class="v2-card v2-todo-add" data-banc="todo-formulaire" role="group" aria-label="Ajouter une tâche">' +
+        '<div class="v2-todo-fh"><h2 class="tb-add-t">Nouvelle tâche</h2><button type="button" class="v2-btn v2-btn-ghost v2-todo-fermer" onclick="V2.todo.fermerForm()">Fermer</button></div>' +
+        '<div class="v2-todo-kinds" role="group" aria-label="Type de tâche">' + ORDER.map(function (k) {
+          return '<button type="button" class="v2-todo-kind' + (st.kind === k ? ' is-on' : '') + '" data-k="' + k + '" aria-pressed="' + (st.kind === k) + '" onclick="V2.todo.choisir(\'' + k + '\')">' + ICO(KINDS[k].ico, 15, 2) + '<span>' + esc(KINDS[k].l) + '</span></button>';
+        }).join('') + '</div>' +
+        '<div class="v2-todo-form">' +
+          '<label><span>Officine</span><input id="v2-todo-nom" name="officine" list="v2-todo-noms" type="text" placeholder="Nom de l\'officine (ou rien)" autocomplete="off"><datalist id="v2-todo-noms">' + noms + '</datalist></label>' +
+          '<div class="tb-quand"><label><span>Pour le</span><input id="v2-todo-pour" name="pour" type="date" value="' + aujIso() + '"></label>' +
+            '<div class="tb-chips" role="group" aria-label="Date rapide"><button type="button" class="tb-chip" aria-pressed="true" onclick="V2.todo.dateRapide(this,0)">Aujourd’hui</button><button type="button" class="tb-chip" aria-pressed="false" onclick="V2.todo.dateRapide(this,1)">Demain</button><button type="button" class="tb-chip" aria-pressed="false" onclick="V2.todo.dateRapide(this,\'\')">Sans date</button></div></div>' +
+          '<label><span>Répéter</span><select id="v2-todo-rep" name="repeter">' + Object.keys(REP).map(function (k) { return '<option value="' + k + '">' + esc(REP[k]) + '</option>'; }).join('') + '</select></label>' +
+          '<label class="v2-todo-wide"><span>Note</span>' + micChamp('<input id="v2-todo-note" name="note" type="text" autocomplete="off" placeholder="' + (st.kind === 'libre' ? 'Ce qu\'il y a à faire…' : 'Une précision (facultatif)…') + '" onkeydown="if(event.key===\'Enter\')V2.todo.ajouter()">', 'Dicter la note à la voix') + '</label>' +
+          '<button type="button" class="v2-btn v2-btn-primary v2-todo-go" onclick="V2.todo.ajouter()">' + ICO('plus', 15, 2) + 'Ajouter</button>' +
         '</div></div>';
+      var corps = voirFaits
+        ? (faits.length ? '<div class="tb-faits">' + faits.map(carte).join('') + '</div>' : '<div class="v2-card v2-todo-empty">Rien de coché pour l\'instant.</div>')
+        : (ouv.length ? tableau(ouv) : '<div class="v2-card v2-todo-empty">' + (faits.length ? 'Tout est coché.' : 'La liste est vide.') + '</div>') +
+          (faits.length ? '<div class="tb-pied"><button type="button" class="tb-lien" onclick="V2.todo.filtrer(\'fait\')"><span>Tâches faites</span><b class="tb-nb">' + faits.length + '</b></button></div>' : '');
+      root.innerHTML = top + '<div class="v2-wrap narrow">' + tdOuvre() + tdEntete(phrase, local, onglets, '') + barre + form + corps + mailsPrets() + '</div></div>';
       tdApres(root);
     }
   };
@@ -1018,22 +1105,11 @@
     if (ong === 'relances') return nR == null ? 'Le suivi de vos envois aux prospects se prépare…' : nR ? tdPl(nR, 'prospect à relancer', 'prospects à relancer') + ' maintenant.' : 'Aucune relance à faire maintenant.';
     if (ong === 'chauds') return nC == null ? 'Le suivi de vos prospects se prépare…' : nC ? tdPl(nC, 'prospect chaud', 'prospects chauds') + ' : le moment de les pousser à tester.' : 'Aucun prospect chaud pour l\'instant.';
     if (!ouv.length) return faits.length ? 'Rien à faire pour l\'instant : tout est coché.' : 'Rien à faire pour l\'instant. Ajoutez votre première tâche.';
-    var j = 0, r = 0;
-    ouv.forEach(function (x) { var d = joursAvant(x); if (d === 0) j++; else if (d != null && d < 0) r++; });
-    if (!j && !r) return 'Rien d\'urgent aujourd\'hui, ' + tdPl(ouv.length, 'tâche', 'tâches') + ' à faire en tout.';
-    return (j ? tdPl(j, 'tâche pour aujourd\'hui', 'tâches pour aujourd\'hui') + (r ? ', ' + tdN(r) + ' en retard' : '') : tdPl(r, 'tâche en retard', 'tâches en retard')) + ', ' + tdN(ouv.length) + ' à faire en tout.';
-  }
-  // 20/11/2026 — maquette m32 : le point en trois tuiles, calculé sur la même liste que la phrase de l'en-tête (jamais d'autre source).
-  function tdTuiles(ouv, faits) {
-    if (!ouv.length && !faits.length) return '';
-    var auj = 0, ret = 0, sans = 0;
-    ouv.forEach(function (x) { var d = joursAvant(x); if (d == null) sans++; else if (d === 0) auj++; else if (d < 0) ret++; });
-    var ven = ouv.length - auj - ret;
-    function t(l, n, note) { return '<div class="td-tu"><p class="td-tu-l">' + l + '</p><p class="td-tu-v">' + n + '</p><p class="td-tu-n">' + note + '</p></div>'; }
-    return '<div class="td-tus" role="group" aria-label="Le point sur la liste">' +
-      t('À faire aujourd\'hui', auj + ret, ret ? 'dont ' + ret + ' en retard' : 'rien en retard') +
-      t('À venir', ven, sans ? sans + (sans > 1 ? ' tâches sans date' : ' tâche sans date') : 'sur les prochains jours') +
-      t('Faites', faits.length, 'encore dans la liste') + '</div>';
+    // v3 : une seule phrase, celle de la colonne « Aujourd'hui » ; le total est déjà dans l'onglet
+    var a = 0, r = 0;
+    ouv.forEach(function (x) { var d = joursAvant(x); if (d != null && d <= 0) a++; if (d != null && d < 0) r++; });
+    if (!a) return 'Rien d\'urgent aujourd’hui.';
+    return tdPl(a, 'tâche', 'tâches') + ' à faire aujourd’hui' + (r ? ', dont ' + tdN(r) + ' en retard' : '') + '.';
   }
   function tdOuvre() {
     if (!TD.vu) { TD.t = Date.now(); TD.stop = false; }
@@ -1049,6 +1125,7 @@
   }
   function tdStop() { TD.stop = true; var r = document.querySelector('.td-ent'); if (r) r.classList.remove('td-ent'); }
   function tdApres(root) {   // après le dessin : la scène en pause hors écran ; à l'arrivée, les compteurs comptent
+    initTri(root);
     var r = root.querySelector('.td-m1'), h = r && r.querySelector('.td-hd'); if (!r || !h) return;
     if (TD.obs) TD.obs.disconnect();
     if (window.IntersectionObserver) { TD.obs = new IntersectionObserver(function (es) { es.forEach(function (x) { h.classList.toggle('td-hors', !x.isIntersecting); }); }); TD.obs.observe(h); }
@@ -1084,21 +1161,17 @@
       '.v2-todo-kinds{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}',
       '.v2-todo-kind{display:flex;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--surf-sunken,#F4F6FA);font:inherit;font-size:13px;font-weight:700;color:var(--ip-ink);cursor:pointer;transition:background .15s var(--ease),border-color .15s var(--ease)}',
       '.v2-todo-kind.is-on{background:var(--halo,#E9F0FF);border-color:var(--ip-blue);color:var(--ip-blue);box-shadow:0 0 0 1px var(--ip-blue) inset}',
-      '.v2-todo-form{display:grid;grid-template-columns:1fr 160px 160px;gap:10px;align-items:end}',
+      '.v2-todo-form{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.3fr) minmax(0,.8fr);gap:12px;align-items:end}',
       '.v2-todo-form label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:700;color:var(--muted);min-width:0}',
       '.v2-todo-form input{min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:16px;background:#fff;color:var(--ip-ink);width:100%;box-sizing:border-box}',
       '.v2-todo-form select{min-height:44px;padding:8px 32px 8px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:16px;color:var(--ip-ink);width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2716%27 height=%2716%27 fill=%27none%27 stroke=%27%235B6475%27 stroke-width=%272%27%3E%3Cpath d=%27M4 6l4 4 4-4%27/%3E%3C/svg%3E") no-repeat right 10px center}',
       '.v2-todo-form input:focus,.v2-todo-form select:focus{outline:none;border-color:var(--ip-blue);box-shadow:0 0 0 3px var(--halo,#E9F0FF)}',
       '.v2-todo-wide{grid-column:1 / span 2}',
+      '.v2-todo-go{grid-column:3;grid-row:2}',
       '.v2-todo-form .v2-btn{min-height:44px;justify-content:center}',
       '.v2-todo-hint{margin-top:10px;font-size:13px;color:var(--muted)}',
       '.td-choix-l{font-size:13px;font-weight:700;color:var(--ip-ink-2);margin-right:8px}',
       '.td-choix-t{margin:0 0 8px}',
-      '.td-cnt-s{margin-left:6px;font-variant-numeric:tabular-nums;font-weight:800}',
-      '.v2-todo-tools{display:flex;align-items:center;justify-content:flex-start;margin-bottom:12px}',
-      '.v2-todo-seg{display:inline-flex;gap:2px;padding:3px;background:var(--surf-sunken,#F4F6FA);border:1px solid var(--line);border-radius:10px}',
-      '.v2-todo-seg button{border:none;background:none;min-height:38px;padding:6px 14px;border-radius:7px;font:inherit;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer}',
-      '.v2-todo-seg button.is-on{background:#fff;color:var(--ip-ink);box-shadow:0 1px 3px rgba(15,20,32,.12)}',
       '.v2-todo-list{padding:4px 0}',
       '.v2-todo-empty{padding:28px 18px;text-align:center;color:var(--muted);font-size:14px}',
       '.v2-todo-it{display:flex;gap:12px;padding:14px 18px;border-top:1px solid var(--line)}',
@@ -1123,7 +1196,7 @@
       '.v2-todo-acts{display:flex;flex-wrap:wrap;gap:8px}',
       '.v2-todo-sm{min-height:40px;font-size:13px;padding:6px 12px}',
       // Cible tactile ≥44px au doigt (mobile seulement) — la souris n'a pas ce besoin.
-      '@media(max-width:640px){.v2-todo-seg button{min-height:44px}.v2-todo-sm{min-height:44px;display:inline-flex;align-items:center}}',
+      '@media(max-width:640px){.v2-todo-sm{min-height:44px;display:inline-flex;align-items:center}}',
       '.v2-todo-ov{position:fixed;inset:0;z-index:130;background:rgba(16,19,28,.5);display:flex;align-items:center;justify-content:center;padding:16px}',
       '.v2-todo-pop{background:#fff;border-radius:18px;box-shadow:0 24px 60px rgba(15,20,32,.28);width:min(420px,100%);padding:8px;display:flex;flex-direction:column;gap:4px}',
       '.v2-todo-pop-h{display:flex;align-items:center;gap:8px;padding:10px 12px 6px;font-size:14px}',
@@ -1211,8 +1284,9 @@
       '@media(max-width:640px){.v2-todo-rp .v2-tc-f{flex-direction:column-reverse;align-items:stretch}.v2-todo-rp .v2-tc-f .v2-btn{justify-content:center}.v2-todo-rp .v2-tc-sup{margin-right:0}}',
       '@media (max-width:760px){.v2-todo-kinds{grid-template-columns:1fr 1fr}.v2-todo-form{grid-template-columns:1fr}.v2-todo-wide{grid-column:auto}.v2-todo-b{margin-left:0}}',
       // 19/10/2026, Will : au téléphone un grand bouton « Ajouter une tâche » déplie le formulaire ; sur ordinateur, ni bouton ni « Fermer » (le formulaire reste toujours visible).
-      '.v2-todo-ajbtn,.v2-todo-fh{display:none}',
-      '@media(max-width:640px){html .v2-todo-ajbtn{display:flex;width:100%;min-height:52px;justify-content:center;align-items:center;gap:8px;margin:0 0 16px;font-size:16px}html .v2-todo-add.is-ferme{display:none}html .v2-todo-fh{display:flex;justify-content:flex-end;margin:-6px 0 6px}html .v2-todo-fermer{min-height:44px;min-width:88px;justify-content:center}}'
+      '.v2-todo-fh{display:flex;align-items:center;justify-content:space-between;margin:0 0 10px}',
+      '.v2-todo-fermer{min-height:44px;min-width:88px;justify-content:center}',
+      '.v2-todo-ajbtn{min-height:44px;gap:8px}'
     ].join('\n');
     document.head.appendChild(s);
   }

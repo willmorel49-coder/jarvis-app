@@ -419,8 +419,8 @@
       var C = st.calc, intro, liste, vide, nE = 0;
       if (vue === 'chauds') {
         liste = chauds().sort(function (a, b) { return b.score - a.score || String(b.dernier).localeCompare(String(a.dernier)); });
-        intro = '<div class="v2-rl-intro"><p>Les prospects qui ont montré de l\'intérêt : rendez-vous pris ou fait, lien ouvert, formulaire d\'ouverture envoyé, réponse reçue. C\'est le moment de les pousser à tester.</p></div>';
-        vide = 'Aucun prospect chaud pour l\'instant. Marquez « Chaud » un prospect de l\'onglet À relancer pour le retrouver ici.';
+        intro = '';
+        vide = 'Marquez « Chaud » un prospect de l\'onglet À relancer pour le retrouver ici.';
       } else {
         var actifs = C.lignes.filter(function (s) { return s.etat !== 'ecarte'; });
         var ord = { due: 0, appeler: 1, attente: 2, repondu: 3 };
@@ -428,9 +428,8 @@
           .sort(function (a, b) { return (ord[a.etat] || 0) - (ord[b.etat] || 0) || a.dans - b.dans || String(a.nom).localeCompare(String(b.nom)); });
         var nD = aRelancer().length;
         nE = C.lignes.length - actifs.length;
-        intro = '<div class="v2-rl-intro"><p>Toutes les pharmacies prospects à qui vous avez écrit depuis JARVIS, qui ne sont pas clientes. Première relance 7 jours après le mail, puis 10, puis 14 jours.</p>' +
-          '<div class="v2-rl-kpis"><span><b>' + nD + '</b> à relancer maintenant</span><span><b>' + actifs.length + '</b> suivie' + (actifs.length > 1 ? 's' : '') + '</span>' +
-            (C.clientes ? '<span><b>' + C.clientes + '</b> devenue' + (C.clientes > 1 ? 's' : '') + ' cliente' + (C.clientes > 1 ? 's' : '') + ', retirée' + (C.clientes > 1 ? 's' : '') + '</span>' : '') + '</div></div>';
+        intro = '<div class="v2-rl-intro"><p>Première relance 7 jours après le mail, puis 10, puis 14 jours.' +
+          (C.clientes ? ' ' + C.clientes + (C.clientes > 1 ? ' officines sont devenues clientes et sont retirées du suivi.' : ' officine est devenue cliente et est retirée du suivi.') : '') + '</p></div>';
         vide = st.voirEcartes ? 'Aucune officine écartée.' : 'Aucun envoi à un prospect trouvé pour l\'instant. Les mails préparés depuis JARVIS apparaîtront ici ; ceux écrits ailleurs s\'ajoutent ci-dessous.';
       }
       var ko = st.ko.length ? '<div class="v2-rl-ko">Certains envois n\'ont pas pu être relus (' + esc(st.ko.join(', ')) + ') : la liste peut être incomplète. <button class="v2-btn v2-btn-ghost v2-todo-sm" onclick="V2.relances.actualiser()">Relire</button></div>' : '';
@@ -446,7 +445,7 @@
     if (s.etat === 'ecarte') return { c: 'var(--muted)', t: 'Écartée' };
     if (s.etat === 'repondu') return { c: 'var(--c-mint)', t: 'A répondu' };
     if (s.etat === 'appeler') return { c: 'var(--c-rose)', t: s.relances.length + ' relances sans réponse · un appel ?' };
-    if (s.etat === 'due') return { c: 'var(--c-amber)', t: s.relances.length ? 'Relance ' + (s.relances.length + 1) + ' à faire' : 'À relancer' };
+    if (s.etat === 'due') return { c: 'var(--ip-blue)', t: s.relances.length ? 'Relance ' + (s.relances.length + 1) + ' à faire' : 'À relancer' };
     return { c: 'var(--muted)', t: 'Prochaine relance ' + (s.dans === 1 ? 'demain' : 'dans ' + s.dans + ' j') };
   }
   function ligne(s, vue) {
@@ -455,7 +454,7 @@
     var lieu = [s.ville, s.grp].filter(Boolean).join(' · ');
     var hist = ORIGINES[s.origine.t].l + ' · ' + dateFr(String(s.origine.d).slice(0, 10)) +
       (s.contacts.length > 1 ? ' · ' + s.contacts.length + ' envois' : '') +
-      (s.origine.pasCoche ? ' (ligne de la to do list pas cochée : le mail est-il parti ?)' : '') +
+      (s.origine.pasCoche ? ' · à vérifier : le mail est-il bien parti ?' : '') +
       (s.relances.length ? ' · relancée ' + s.relances.length + ' fois, la dernière le ' + dateFr(s.relances[s.relances.length - 1].slice(0, 10)) : ' · pas encore relancée');
     var tel = String(s.tel || '').replace(/[^0-9+]/g, '');
     var auj0 = new Date().toISOString().slice(0, 10), relAuj = s.relances.length && s.relances[s.relances.length - 1].slice(0, 10) === auj0;
@@ -471,12 +470,12 @@
         '<button class="' + (s.st === 'chaud' ? 'is-on' : '') + '" aria-pressed="' + (s.st === 'chaud') + '" onclick="V2.relances.statut(\'' + id + '\',\'chaud\')">' + ICO('spark', 13, 2) + 'Chaud</button>' +
         '<button class="' + (s.st === 'repondu' ? 'is-on' : '') + '" aria-pressed="' + (s.st === 'repondu') + '" onclick="V2.relances.statut(\'' + id + '\',\'repondu\')">' + ICO('check', 13, 2) + 'A répondu</button>' +
         '<button onclick="V2.relances.statut(\'' + id + '\',\'non\')">Pas intéressée</button></div>';
-    return '<div class="v2-todo-it v2-rl-it" data-rl="' + id + '">' +
+    return '<div class="v2-todo-it v2-rl-it" data-rl="' + id + '" data-banc="relance-ligne">' +
       '<span class="v2-todo-ico v2-rl-ico' + (s.score >= SEUIL_CHAUD && s.etat !== 'ecarte' ? ' is-chaud' : '') + '">' + ICO(s.score >= SEUIL_CHAUD ? 'spark' : 'cal', 16, 2) + '</span>' +
       '<div class="v2-todo-c">' +
         '<div class="v2-todo-l1">' + nom + (lieu ? '<span class="v2-rl-lieu">' + esc(lieu) + '</span>' : '') +
           '<span class="v2-todo-b" style="color:' + b.c + '">' + esc(b.t) + '</span></div>' +
-        '<div class="v2-rl-hist">' + esc(hist) + (s.mail ? '' : ' · <b>aucune adresse e-mail connue</b>') + '</div>' +
+        '<div class="v2-rl-hist">' + esc(hist) + (s.mail ? '' : ' · <b>adresse e-mail à ajouter sur sa fiche</b>') + '</div>' +
         (s.notes.length ? '<div class="v2-todo-n">' + esc(s.notes.join(' · ')) + '</div>' : '') +
         (sig ? '<div class="v2-rl-sigs">' + sig + '</div>' : '') +
         '<div class="v2-todo-acts">' + actes + '</div>' + statuts +
@@ -500,21 +499,21 @@
       '.v2-rl-kpis{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}',
       '.v2-rl-kpis span{padding:6px 12px;border-radius:999px;background:var(--surf-sunken,#F4F6FA);border:1px solid var(--line);font-size:12.5px;color:var(--ip-ink-2)}',
       '.v2-rl-kpis b{color:var(--ip-ink);font-weight:800}',
-      '.v2-rl-ko{margin:0 0 12px;padding:10px 14px;border:1px dashed var(--c-amber);border-radius:12px;font-size:13px;color:var(--ip-ink);display:flex;flex-wrap:wrap;align-items:center;gap:8px}',
+      '.v2-rl-ko{margin:0 0 12px;padding:10px 14px;border:1px dashed #98A2B8;border-radius:12px;font-size:13px;color:var(--ip-ink);display:flex;flex-wrap:wrap;align-items:center;gap:8px}',
       '.v2-rl-ico{margin-top:-2px}',
-      '.v2-rl-ico.is-chaud{background:#FFF3E0;color:#B45309}',
+      '.v2-rl-ico.is-chaud{background:#E9F0FF;color:#0034A0}',
       '.v2-rl-libre{color:var(--ip-ink);cursor:default}',
-      '.v2-rl-lieu{font-size:12.5px;color:var(--ip-ink-2)}',
+      '.v2-rl-lieu{font-size:13px;color:var(--ip-ink-2)}',
       '.v2-rl-hist{font-size:13px;color:var(--ip-ink-2);line-height:1.45}',
-      '.v2-rl-hist b{color:var(--c-rose);font-weight:700}',
+      '.v2-rl-hist b{color:var(--ip-ink);font-weight:700}',
       '.v2-rl-sigs{display:flex;flex-wrap:wrap;gap:6px}',
-      '.v2-rl-sig{padding:3px 10px;border-radius:999px;background:#FFF3E0;color:#8A3B00;font-size:12px;font-weight:700}',
+      '.v2-rl-sig{padding:3px 10px;border-radius:999px;background:#E9F0FF;color:#0034A0;font-size:13px;font-weight:700}',
       '.v2-rl-it a.v2-btn{text-decoration:none}',
       '.v2-rl-sts{display:flex;flex-wrap:wrap;gap:6px}',
-      '.v2-rl-sts button{display:inline-flex;align-items:center;gap:5px;min-height:36px;padding:4px 12px;border:1px solid var(--line);border-radius:999px;background:var(--card,#fff);font:inherit;font-size:12.5px;font-weight:700;color:var(--ip-ink-2);cursor:pointer}',
-      '.v2-rl-sts button.is-on{background:#FFF3E0;border-color:#E8A15A;color:#8A3B00}',
+      '.v2-rl-sts button{display:inline-flex;align-items:center;gap:5px;min-height:44px;padding:4px 14px;border:1px solid var(--line);border-radius:999px;background:var(--card,#fff);font:inherit;font-size:13px;font-weight:700;color:var(--ip-ink-2);cursor:pointer}',
+      '.v2-rl-sts button.is-on{background:#E9F0FF;border-color:#0050E6;color:#0034A0}',
       '.v2-rl-sts button:focus-visible{outline:none;box-shadow:0 0 0 3px var(--halo,#E9F0FF)}',
-      '@media(max-width:640px){.v2-rl-sts button{min-height:44px}}',
+      
       '.v2-rl-annul{color:var(--ip-ink-2)}',
       '.v2-rl-bas{margin:12px 0 0}',
       '.v2-rl-add{margin-top:16px;padding:0}',

@@ -1011,10 +1011,10 @@
   }
   function itLi(t) {
     var fait = itFait(t.id), todo = itDansTodo(t.id), id = esc(t.id), u = urlSure(t.url);
-    return '<li class="inf-t-tache' + (fait ? ' fait' : '') + '" data-it="' + id + '">' +
+    return '<li class="inf-t-tache' + (fait ? ' fait' : '') + '" data-it="' + id + '" data-banc="infos-ligne">' +
       '<div class="inf-t-ligne">' +
-        '<button class="inf-t-case" type="button" role="checkbox" aria-checked="' + fait + '" aria-label="Cocher : ' + itE(t.action) + '"><span class="inf-t-rond">' + IT_COCHE + '</span></button>' +
-        '<button class="inf-t-corps" type="button" aria-expanded="false" aria-controls="inf-t-f-' + id + '">' +
+        '<button class="inf-t-case" type="button" role="checkbox" aria-checked="' + fait + '" aria-label="Marquer comme fait : ' + itE(t.action) + '" title="Marquer comme fait"><span class="inf-t-rond">' + IT_COCHE + '</span></button>' +
+        '<button class="inf-t-corps" type="button" aria-expanded="false" aria-controls="inf-t-f-' + id + '" data-banc="infos-ligne-ouvrir">' +
           '<span class="inf-t-action">' + itH(t.action) + '</span>' +
           '<span class="inf-t-meta">' + itH(t.titre) + (t.quand ? ' · <span class="inf-t-q">' + itH(t.quand) + '</span>' : '') + '</span>' +
           '<span class="inf-t-tag inf-t-' + esc(t.ton) + '">' + itE(t.etiquette) + '</span></button></div>' +
@@ -1024,6 +1024,7 @@
         '<div class="inf-t-infos"><span><b>Lieu</b> ' + itH(t.lieu) + '</span><span><b>Source</b> ' +
           (u !== '#' ? '<a href="' + esc(u) + '" target="_blank" rel="noopener">' + itH(t.source) + '</a>' : itH(t.source)) + '</span></div>' +
         '<div class="inf-t-gestes"><button class="inf-t-todo" type="button" aria-pressed="' + todo + '">' + IT_COCHE_TODO + '<span>' + (todo ? 'Dans votre To do' : 'Mettre dans ma To do') + '</span></button>' +
+          '<button class="inf-t-fait-l" type="button">' + IT_COCHE_TODO + '<span>' + (fait ? 'Remettre à faire' : 'Marquer comme fait') + '</span></button>' +
           (IT_VOIR[t.vue] && PP_VUES[t.vue] ? '<button class="inf-t-voir" type="button" data-it-vue="' + esc(t.vue) + '"><span>' + esc(IT_VOIR[t.vue]) + '</span>' + IT_CHEV + '</button>' : '') + '</div>' +
       '</div></li>';
   }
@@ -1043,7 +1044,8 @@
   }
   function itAnnonces(S, L) {
     IT.ann = [];
-    if (!SECTEUR || !(SECTEUR.ev || []).length) return '';
+    var cS = '', cF = '';
+    if (!SECTEUR || !(SECTEUR.ev || []).length) return { sec: '', fr: '' };
     var recent = function (a, b) { return a.d < b.d ? 1 : a.d > b.d ? -1 : 0; }, rg = function (e) { return itRachat(e) ? 0 : (e.f in IT_RANG ? IT_RANG[e.f] : 5); };
     var h = '';
     if (S.deps || S.dir) {
@@ -1051,20 +1053,20 @@
       L.forEach(function (t) { deja[t.id] = 1; });
       var nrm = function (s) { return String(s == null ? '' : s).replace(/\s+/g, ' ').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); };
       var A = sec.filter(function (e) { return !deja['b-' + nrm(e.id || e.nom + '-' + e.d)]; }).sort(function (a, b) { return (rg(a) - rg(b)) || recent(a, b); }).slice(0, 5);
-      h += '<section class="inf-t-groupe inf-t-ann" aria-labelledby="inf-t-h-ann"><h2 id="inf-t-h-ann">' + (S.deps ? 'Annonces de votre secteur' : 'Annonces des officines, toute la France') + ' <span class="inf-t-ann-p">· 3 derniers mois</span></h2>' +
+      cS = '<section class="inf-t-groupe inf-t-ann" aria-labelledby="inf-t-h-ann"><h2 id="inf-t-h-ann">' + (S.deps ? 'Annonces de votre secteur' : 'Annonces des officines, toute la France') + ' <span class="inf-t-ann-p">· 3 derniers mois</span></h2>' +
         '<ul class="inf-t-rls">' + A.map(itAnnLi).join('') + '<li><button type="button" class="inf-t-rl inf-t-ann-v" data-it-vue="secteur"><span class="inf-t-rt"><b>Voir les ' + sec.length + ' annonces et la carte</b></span>' + IT_CHEV + '</button></li></ul></section>';
     }
     if (S.deps && S.dir) {
       var F = ppAnnonces(null).filter(function (e) { return S.deps.indexOf(e.dep) < 0 && (e.f === 'cession' || itRachat(e)); }).sort(recent);
       if (F.length) {
         var vu = F.slice(0, 5), plus = F.slice(5);
-        h += '<section class="inf-t-groupe inf-t-ann" aria-labelledby="inf-t-h-annfr"><h2 id="inf-t-h-annfr">Ventes et rachats en France <span class="inf-t-ann-p">· 3 derniers mois</span></h2>' +
+        cF = '<section class="inf-t-groupe inf-t-ann" data-banc="infos-ventes-rachats" aria-labelledby="inf-t-h-annfr"><h2 id="inf-t-h-annfr">Ventes et rachats en France <span class="inf-t-ann-p">· 3 derniers mois</span></h2>' +
           '<ul class="inf-t-rls">' + vu.map(itAnnLi).join('') + '</ul>' +
           (plus.length ? '<ul class="inf-t-rls" id="inf-t-annfr-l" hidden>' + plus.map(itAnnLi).join('') + '</ul>' +
             '<button class="inf-t-rep" id="inf-t-annfr-b" type="button" aria-expanded="false" aria-controls="inf-t-annfr-l">' + IT_CHEV + '<span>Voir les ' + plus.length + ' autres</span></button>' : '') + '</section>';
       }
     }
-    return h;
+    return { sec: cS, fr: cF };
   }
   function itPage(D, jour) {
     var S = ppScope(), L = itTaches(S);
@@ -1076,22 +1078,22 @@
       france: 'Rien à faire en France aujourd’hui.' };
     var G = [['secteur', S.deps || !S.dir ? 'Dans votre secteur' : 'Les officines, toute la France'], ['france', 'En France']];
     var faits = L.filter(function (t) { return itFait(t.id); }), nF = faits.length;
-    var h = G.map(function (g) {
+    var A = itAnnonces(S, L), sansSecteur = !S.deps && !S.dir;   // un compte sans secteur : pas de colonne vide, « En France » prend la place
+    var col = G.map(function (g) {
       var tout = L.filter(function (t) { return t.groupe === g[0]; }), reste = tout.filter(function (t) { return !itFait(t.id); });
-      return '<section class="inf-t-groupe" aria-labelledby="inf-t-h-' + g[0] + '"><h2 id="inf-t-h-' + g[0] + '">' + esc(g[1]) + '</h2>' +
+      if (g[0] === 'secteur' && sansSecteur) return '';
+      return '<div class="inf-t-col"><section class="inf-t-groupe"' + (g[0] === 'secteur' ? ' data-banc="infos-secteur"' : '') + ' aria-labelledby="inf-t-h-' + g[0] + '"><h2 id="inf-t-h-' + g[0] + '">' + esc(g[1]) + '</h2>' +
         '<ul class="inf-t-liste" id="inf-t-g-' + g[0] + '">' + reste.map(itLi).join('') + '</ul>' +
-        '<p class="inf-t-vide" id="inf-t-v-' + g[0] + '" data-vide="' + esc(vide0[g[0]]) + '"' + (reste.length ? ' hidden' : '') + '>' + esc(tout.length ? 'Tout est fait ici.' : vide0[g[0]]) + '</p></section>';
+        '<p class="inf-t-vide" id="inf-t-v-' + g[0] + '" data-vide="' + esc(vide0[g[0]]) + '"' + (reste.length ? ' hidden' : '') + '>' + esc(tout.length ? 'Tout est fait ici.' : vide0[g[0]]) + '</p></section>' + (g[0] === 'secteur' ? A.sec : A.fr) + '</div>';
     }).join('');
     // 21/11/2026 soir : le bandeau commun des écrans (.aube-tete, comme To do) au-dessus de la feuille, sur toute la largeur
     var dj = ''; try { dj = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Paris' }).replace(/ 1 /, ' 1er '); } catch (e) {}
     return '<div class="w-page inf-t"><header class="aube-tete inf-t-tete">' + (dj ? '<p class="inf-t-eye">' + esc(dj) + '</p>' : '') +
         '<h1 id="inf-t-titre" class="v2-page-title">Infos du matin</h1><p class="inf-t-sous v2-page-sub" id="inf-t-sous" aria-live="polite" data-jour="' + esc(jour) + '">' + itE(itSous(L.length - nF, L.length, jour)) + '</p></header>' +
-      '<article class="inf-t-feuille" aria-labelledby="inf-t-titre">' +
-      h +
+      '<div class="inf-t-cols' + (sansSecteur ? ' is-seul' : '') + '" role="group" aria-labelledby="inf-t-titre">' + col + '</div>' +
       '<section class="inf-t-fait" id="inf-t-fait"' + (nF ? '' : ' hidden') + '><button class="inf-t-rep" id="inf-t-fait-b" type="button" aria-expanded="false" aria-controls="inf-t-fait-l">' + IT_CHEV + '<span id="inf-t-fait-t">Fait · ' + nF + '</span></button>' +
         '<ul class="inf-t-liste" id="inf-t-fait-l" hidden>' + faits.map(itLi).join('') + '</ul></section>' +
-      itAnnonces(S, L) +
-      '</article></div>';
+      '</div>';
   }
   function itEl(id) { var L = document.querySelectorAll('.inf-t-tache'), i; for (i = 0; i < L.length; i++) if (L[i].getAttribute('data-it') === id) return L[i]; return null; }
   function itMaj() {
@@ -1128,6 +1130,7 @@
     clearTimeout(IT.min[id]);
     if (on) {
       li.classList.add('fait'); c.setAttribute('aria-checked', 'true'); itOuvrir(id, false);
+      if (V2.toast) V2.toast('Rangée dans « Fait », en bas de la page.');
       IT.min[id] = setTimeout(function () { var l = itEl(id); if (l && itFait(id)) { itPlace(l, document.getElementById('inf-t-fait-l')); itMaj(); } }, 1000);
     } else {
       li.classList.remove('fait'); c.setAttribute('aria-checked', 'false');
@@ -1163,7 +1166,7 @@
     if ((b = e.target.closest('#inf-t-fait-b,#inf-t-annfr-b'))) { var o = b.getAttribute('aria-expanded') !== 'true', ul = document.getElementById(b.getAttribute('aria-controls')); b.setAttribute('aria-expanded', o ? 'true' : 'false'); if (ul) ul.hidden = !o; return; }
     var li = e.target.closest('.inf-t-tache'); if (!li) return;
     var tid = li.getAttribute('data-it');
-    if (e.target.closest('.inf-t-case')) { itBascule(tid); return; }
+    if (e.target.closest('.inf-t-case,.inf-t-fait-l')) { var fl = e.target.closest('.inf-t-fait-l'); itBascule(tid); if (fl) { var sp = fl.querySelector('span'); if (sp) sp.textContent = itFait(tid) ? 'Remettre à faire' : 'Marquer comme fait'; } return; }
     if ((b = e.target.closest('.inf-t-todo'))) { itTodo(tid, b); return; }
     if (e.target.closest('.inf-t-corps')) itOuvrir(tid, IT.ouvert !== tid);
   }
@@ -1275,9 +1278,8 @@
       var jour = /^\d{4}-\d{2}-\d{2}$/.test(BRIEF.jour || '') ? BRIEF.jour : new Date().toISOString().slice(0, 10);
       var gen = '';
       try {
-        var g = new Date(BRIEF.genere);
-        gen = 'Édition composée le ' + g.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' }).replace(/^1 /, '1er ') + ' à ' + g.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }).replace(':', ' h ') +
-          ' à partir de <b>' + ppPl(nSrc, 'source') + '</b>' + (SECTEUR && SECTEUR.maj ? ' · Bodacc à jour du ' + esc(ppDc(SECTEUR.maj)) : '') + '.';
+        // v3 (I-2) : l'heure de l'édition est déjà sous le titre (« mis à jour hier à 20 h 05 ») : le pied ne la répète pas
+        gen = 'Édition composée à partir de <b>' + ppPl(nSrc, 'source') + '</b>' + (SECTEUR && SECTEUR.maj ? ' · Bodacc à jour du ' + esc(ppDc(SECTEUR.maj)) : '') + '.';
       } catch (e) {}
 
       root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +

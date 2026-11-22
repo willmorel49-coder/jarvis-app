@@ -1,12 +1,12 @@
 /* ═══════════════════════════════════════════════════════════════════
    JARVIS · écran « To do list » dans la veine de l'accueil « maquette 1 » (03/11/2026).
-   En-tête bleu éclairé (date, titre, UNE phrase calculée, capsules-onglets à compteurs), cases blanches à tache de lumière, ombres en couches.
-   Les tâches en retard et d'aujourd'hui DANS le bleu, en lignes blanches ; au repos, une lueur dérive derrière le texte.
+   v3 « Le tableau » (22/11/2026) : l'en-tête commun (date, titre, UNE phrase, onglets à compteurs), puis trois colonnes éclairées
+   (Aujourd'hui / Cette semaine / Plus tard) où l'on glisse une carte pour la replacer (brique SortableJS, MIT).
    Mouvement : arrivée en 900 ms au plus, une fois par ouverture de l'écran (.td-ent, retirée au premier geste et à 900 ms) ; un geste n'a que son propre retour
    (la case qui se coche, la ligne qui se barre, en transitions : rien ne rejoue quand la page se redessine). prefers-reduced-motion : tout s'affiche à l'arrêt.
    Interdits tenus : aucune des propriétés qui font figer Safari ; aucune barre de couleur sur un seul côté ; aucune opacité sur du texte ; texte ≥ 13 px ; cibles ≥ 44 px.
    ═══════════════════════════════════════════════════════════════════ */
-.td-m1{--td-bleu:var(--ip-blue,#0050E6);--td-nuit:var(--ip-blue-d,#0034A0);--td-gris:#566074;--td-filet:#D7E0F0;
+.td-m1{--td-bleu:var(--ip-blue,#0050E6);--td-nuit:var(--ip-blue-d,#0034A0);--td-gris:#3B4357;--muted:#3B4357;--td-filet:#D7E0F0;
   --td-ombre:0 1px 0 #fff inset,0 1px 2px rgba(15,20,32,.07),0 3px 8px rgba(15,20,32,.04),0 24px 44px -26px rgba(0,48,140,.42);
   --td-ombre-l:0 1px 0 #fff inset,0 1px 2px rgba(15,20,32,.07),0 3px 8px rgba(15,20,32,.035),0 18px 30px -20px rgba(0,48,140,.44)}
 
@@ -56,46 +56,10 @@
 .td-m1 .v2-todo-form input,.td-m1 .v2-todo-form select{border-color:var(--td-filet);box-shadow:0 1px 2px rgba(15,20,32,.05) inset}
 .td-m1 .v2-todo-hint{font-size:13px;line-height:1.45;color:var(--td-gris)}
 .td-m1 ::placeholder{color:#697086}
-/* À faire · Fait */
-.td-m1 .v2-todo-tools{margin-bottom:14px}
-.td-m1 .v2-todo-seg{padding:4px;border-radius:14px;border-color:var(--td-filet);background:linear-gradient(180deg,#EEF2FA,#F6F8FD);box-shadow:0 1px 2px rgba(15,20,32,.07) inset}
-.td-m1 .v2-todo-seg button{min-height:40px;padding:6px 16px;border-radius:10px;font-size:14px;color:var(--td-gris);transition:background .18s,color .18s,box-shadow .18s}
-.td-m1 .v2-todo-seg button.is-on{background:#fff;color:var(--td-nuit);box-shadow:0 1px 0 #fff inset,0 2px 6px rgba(15,20,32,.1),0 8px 14px -10px rgba(0,48,140,.5)}
-.td-m1 .v2-todo-sm{font-size:13px}
-
-/* ═══ La liste des tâches : des lignes blanches éclairées, chacune sa case ═══ */
-.td-m1 .td-taches{display:flex;flex-direction:column;gap:10px;padding:0;border:0;border-radius:0;background:none;box-shadow:none;overflow:visible}
-.td-m1 .td-taches .v2-todo-it,.td-m1 .td-taches .v2-todo-it:first-child{padding:14px 18px;border:1px solid var(--td-filet);border-radius:16px;
-  background:radial-gradient(300px 190px at 100% 0%,color-mix(in srgb,var(--td-bleu) 10%,transparent),transparent 72%),#fff;box-shadow:var(--td-ombre-l);transition:background .3s,box-shadow .25s,transform .25s}
-@media (hover:hover){.td-m1 .td-taches .v2-todo-it:hover{transform:translateY(-2px);box-shadow:0 1px 0 #fff inset,0 2px 4px rgba(15,20,32,.08),0 24px 36px -20px rgba(0,48,140,.5)}}
-.td-m1 .v2-todo-k{font-size:14.5px}
-.td-m1 .v2-todo-off{font-weight:700;color:var(--td-bleu)}
-/* échéance colorée en pastille, foncée d'un cran pour tenir 4,5:1 mesuré (la couleur arrive en style en ligne) */
 .td-m1 .v2-todo-b{display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:999px;font-size:13px;font-weight:800;background:#EEF1F6}
 .td-m1 .v2-todo-b[style*="--c-rose"]{color:#B0243F!important;background:#FCECEF}
-.td-m1 .v2-todo-b[style*="--c-amber"]{color:#8F5208!important;background:#FBF1E3}
 .td-m1 .v2-todo-b[style*="--c-mint"]{color:#12704A!important;background:#E6F4EC}
 .td-m1 .v2-todo-b[style*="--muted"]{color:var(--td-gris)!important}
-.td-m1 .v2-todo-rep{font-size:13px;color:var(--td-nuit)}
-.td-m1 .v2-todo-der{font-size:13px;color:var(--ip-ink-2)}
-.td-m1 .v2-todo-der svg{color:#12704A}
-.td-m1 .v2-todo-n{font-size:14px;color:var(--td-gris)}
-.td-m1 .v2-todo-n-libre{font-size:15px;color:var(--ip-ink)}
-
-/* la case qui se coche, la ligne qui se barre : des transitions, qui ne rejouent pas quand la page se redessine */
-.td-m1 .v2-todo-chk span{border-color:#AEB9CF;border-radius:8px;background:linear-gradient(180deg,#fff,#F3F6FC);box-shadow:0 1px 2px rgba(15,20,32,.1) inset;transition:background .22s,border-color .22s,transform .3s var(--ease),box-shadow .22s}
-.td-m1 .v2-todo-chk span::after{content:"";width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:translateY(-1px) rotate(45deg) scale(.2);opacity:0;transition:transform .3s var(--ease) .04s,opacity .16s}
-.td-m1 .v2-todo-chk input:checked+span{background:radial-gradient(120% 120% at 25% 15%,color-mix(in srgb,var(--td-bleu) 62%,#fff),var(--td-bleu) 52%,var(--td-nuit));border-color:var(--td-bleu);transform:scale(1.1);box-shadow:0 4px 10px -3px rgba(0,48,140,.55)}
-.td-m1 .v2-todo-chk input:checked+span::after{transform:translateY(-1px) rotate(45deg) scale(1);opacity:1}
-@media (hover:hover){.td-m1 .v2-todo-chk:hover input:not(:checked)+span{border-color:var(--td-bleu);transform:scale(1.06)}}
-/* le trait ne se pose QUE sur la ligne cochée : posé transparent partout, WebKit le peignait quand même sur le lien de l'officine */
-.td-m1 .v2-todo-l1{transition:color .3s}
-.td-m1 .v2-todo-it:has(.v2-todo-chk input:checked) .v2-todo-l1{text-decoration:line-through;text-decoration-thickness:2px;text-decoration-color:currentColor}
-/* la ligne faite : couleur atténuée mesurée, jamais d'opacité */
-.td-m1 .v2-todo-it.is-fait .v2-todo-l1{opacity:1}
-.td-m1 .v2-todo-it:has(.v2-todo-chk input:checked) .v2-todo-l1,.td-m1 .v2-todo-it:has(.v2-todo-chk input:checked) .v2-todo-k,.td-m1 .v2-todo-it:has(.v2-todo-chk input:checked) .v2-todo-off,.td-m1 .v2-todo-it:has(.v2-todo-chk input:checked) .v2-todo-k svg{color:var(--td-gris)}
-.td-m1 .td-taches .v2-todo-it:has(.v2-todo-chk input:checked){background:linear-gradient(180deg,#F7F9FD,#F1F4FA);box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(15,20,32,.06)}
-
 /* ═══ Les mails tout prêts, Mes modèles ═══ */
 .td-m1 .v2-todo-mh{margin:30px 0 12px}
 .td-m1 .v2-todo-mh h2{font-size:20px;color:var(--ip-ink)}
@@ -108,61 +72,137 @@
 .td-m1 .v2-todo-corps{border-color:var(--td-filet);background:linear-gradient(180deg,#F7F9FD,#fff)}
 /* À relancer, Prospects chauds (dessinés par v2-relances.js) : mêmes cases, textes à 13 px au moins */
 .td-m1 .v2-rl-kpis span,.td-m1 .v2-rl-lieu,.td-m1 .v2-rl-sig,.td-m1 .v2-rl-sts button,.td-m1 .v2-rl-add-b label{font-size:13px}
-.td-m1 .v2-rl-intro p{font-size:14px}
-.td-m1 .v2-rl-hist b{color:#B0243F}
+.td-m1 .v2-rl-intro p{font-size:15px}
+.td-m1 .v2-todo-n{font-size:13px}
+.td-m1 .v2-rl-hist b{color:var(--ip-ink)}
 
-/* ═══ Version « bandeau » : les tâches du jour DANS le bleu, en lignes blanches ═══ */
-.td-m1-bandeau .td-hd{background:
-    radial-gradient(circle 150px at 100% 0%,color-mix(in srgb,var(--td-bleu) 62%,#fff),transparent 72%),
-    radial-gradient(circle 300px at 30% 108%,color-mix(in srgb,var(--td-bleu) 58%,#fff),transparent 72%),
-    radial-gradient(ellipse 60% 150% at 3% -16%,color-mix(in srgb,var(--td-bleu) 88%,var(--td-nuit)),transparent 80%),
-    linear-gradient(160deg,color-mix(in srgb,var(--td-bleu) 74%,var(--td-nuit)) 0%,color-mix(in srgb,var(--td-bleu) 40%,var(--td-nuit)) 55%,color-mix(in srgb,var(--td-bleu) 52%,var(--td-nuit)) 100%)}
-.td-jour{position:relative;min-width:0}
-.td-m1 .td-jour-h{margin:0 0 10px;font:800 21px/1.15 var(--font);letter-spacing:-.02em;color:#fff}
-.td-jour-ls{display:grid;gap:8px}
-.td-m1 .td-jl,.td-m1 .td-jl:first-child{padding:12px 14px 12px 12px;border:0;border-radius:15px;background:radial-gradient(260px 160px at 100% 0%,color-mix(in srgb,var(--td-bleu) 9%,transparent),transparent 72%),#fff;box-shadow:0 1px 0 #fff inset,0 14px 22px -14px rgba(0,16,80,.8),0 1px 2px rgba(0,16,80,.25);transition:background .3s}
-.td-m1 .td-jl:has(.v2-todo-chk input:checked){background:#F1F4FA}
-/* replié : la ligne garde son geste principal (le mail) ; « Plus » déplie la précision, les documents et le rappel */
-.td-jl:not(.td-ouv) .v2-mic-wrap,.td-jl:not(.td-ouv) .v2-todo-c>.v2-todo-n-in,.td-jl:not(.td-ouv) .v2-todo-acts .v2-btn-ghost:not(.td-plus){display:none}
-.td-m1 .td-plus{gap:6px}
+/* ═══ L'en-tête : une phrase, l'avertissement de stockage en plaque, mots d'onglet raccourcis au téléphone ═══ */
+.td-m1 .td-expl{margin:10px 0 0}
+.td-m1 .td-hd .td-h1{margin:0}
+.td-m1 .tb-court{display:none}
+.td-m1 .td-cap span{white-space:nowrap}
+
+/* ═══ La barre d'actions et le formulaire ═══ */
+.td-m1 .tb-barre{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;margin:0 0 16px}
+.td-m1 .v2-todo-ajbtn{min-height:44px;margin-left:auto;gap:8px;padding:0 20px;font-size:15px}
+.td-m1 .tb-lien{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px 0 12px;border:1px solid var(--td-filet);border-radius:999px;background:linear-gradient(180deg,#fff,#F3F6FC);box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(15,20,32,.07);font:700 15px/1 var(--font);color:var(--td-nuit);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .18s,box-shadow .18s,transform .18s}
+.td-m1 .tb-lien:active{transform:scale(.97)}
+.td-m1 .tb-lien:focus-visible,.td-m1 .tb-b:focus-visible,.td-m1 .tb-chip:focus-visible,.td-m1 .tb-dep-b:focus-visible{outline:3px solid #7FA8F5;outline-offset:2px}
+@media (hover:hover){.td-m1 .tb-lien:hover{background:linear-gradient(180deg,#fff,#E9F0FF)}}
+.td-m1 .tb-barre .tb-lien svg{transform:rotate(180deg)}
+.td-m1 .tb-pied .tb-lien{padding:0 10px 0 16px}
+.td-m1 .tb-pied{margin:16px 0 0}
+.td-m1 .tb-nb{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 9px;border-radius:999px;background:#fff;border:1px solid var(--td-filet);font:800 13px/1 var(--font);font-variant-numeric:tabular-nums;color:var(--td-nuit)}
+.td-m1 .v2-todo-fh h2.tb-add-t{margin:0;font:800 17px/1.2 var(--font);letter-spacing:-.02em;color:var(--ip-ink)}
+.td-m1 .v2-todo-form{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);align-items:end;gap:12px}
+.td-m1 .v2-todo-form>label:first-child{grid-column:1 / span 2;grid-row:1}
+.td-m1 .v2-todo-form>label:nth-child(3){grid-column:3;grid-row:1}
+.td-m1 .tb-quand{grid-column:1 / -1;grid-row:2;display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 14px}
+.td-m1 .tb-quand label{flex:0 1 200px;display:flex;flex-direction:column;gap:4px}
+.td-m1 .tb-quand input[type=date]{color:var(--ip-ink);font-variant-numeric:tabular-nums}
+.td-m1 .tb-chips{display:flex;flex-wrap:wrap;gap:8px}
+.td-m1 .tb-chip{min-height:44px;padding:0 16px;border:1px solid var(--td-filet);border-radius:999px;background:linear-gradient(180deg,#fff,#F3F6FC);font:700 15px/1 var(--font);color:var(--td-gris);cursor:pointer;transition:background .18s,border-color .18s,color .18s}
+.td-m1 .tb-chip[aria-pressed="true"]{background:radial-gradient(120% 140% at 20% 0%,#fff,var(--halo,#E9F0FF));border-color:var(--td-bleu);color:var(--td-nuit);box-shadow:0 0 0 1px var(--td-bleu) inset}
+.td-m1 .v2-todo-form>.v2-todo-wide{grid-column:1 / span 2;grid-row:3}
+.td-m1 .v2-todo-form>.v2-todo-go{grid-column:3;grid-row:3}
+.td-m1 .v2-todo-kind{font-size:15px}
+
+/* ═══ Le tableau : trois colonnes en creux, des cartes en relief ═══ */
+.td-m1 .tb-tab{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
+.td-m1 .tb-col{position:relative;min-width:0;padding:4px 14px 16px;border:1px solid #D6E0F3;border-radius:20px;
+  background:radial-gradient(ellipse 110% 60% at 0% 0%,#E8F0FF 0%,#F2F6FD 60%,#EBF0FA 100%);box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(15,20,32,.05),0 22px 38px -28px rgba(0,52,160,.36)}
+.td-m1 .tb-col:first-child{background:radial-gradient(ellipse 120% 64% at 0% 0%,#D8E6FF 0%,#EEF4FF 62%,#E8EFFC 100%)}
+.td-m1 .tb-col-h{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;padding:4px 2px 0;margin:0 0 6px}
+.td-m1 .tb-col-h h2{margin:0;font:800 17px/1.2 var(--font);letter-spacing:-.02em;color:var(--ip-ink)}
+.td-m1 .tb-liste{display:flex;flex-direction:column;gap:10px;min-height:84px;border-radius:14px}
+.td-m1 .tb-vide{margin:0;padding:26px 12px;border:1.5px dashed #BCCDEC;border-radius:14px;text-align:center;font-size:15px;line-height:1.4;color:var(--td-gris);text-wrap:balance}
+body.tb-glisse .tb-liste{box-shadow:0 0 0 2px #9DB8EE inset;background-color:#E3EDFE}
+
+.td-m1 .tb-c.v2-todo-it{position:relative;display:block;padding:10px 6px 12px 6px;border:1px solid var(--td-filet);border-radius:16px;
+  background:radial-gradient(ellipse 90% 70% at 100% 0%,#EDF3FF 0%,#FFFFFF 78%);box-shadow:var(--td-ombre-l);transition:box-shadow .22s,transform .22s,background-color .3s}
+@media (hover:hover){.td-m1 .tb-c.v2-todo-it:not(.tb-fige):hover{transform:translateY(-2px);box-shadow:0 1px 0 #fff inset,0 2px 4px rgba(15,20,32,.08),0 22px 34px -20px rgba(0,48,140,.5)}}
+.td-m1 .tb-c1{display:flex;align-items:flex-start;gap:2px}
+.td-m1 .tb-c .v2-todo-chk{position:relative;flex:none;margin:-2px 0 -2px 0}
+.td-m1 .tb-main{flex:1;min-width:0;padding:6px 0 0}
+.td-m1 .tb-l1{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;padding-right:34px;font-size:15px;line-height:1.35}
+.td-m1 .tb-k{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;color:var(--td-nuit)}
+.td-m1 .tb-k svg{color:var(--td-bleu)}
+.td-m1 .v2-todo-off{font-size:15px;font-weight:700;color:var(--td-bleu);overflow-wrap:anywhere}
+/* zone touchable de 44 px sans bouger la ligne */
+.td-m1 a.v2-todo-off{display:inline-block;line-height:20px;padding:12px 0;margin:-12px 0}
+.td-m1 .v2-todo-sm{min-height:44px}
+.td-m1 .v2-notes-mic{min-width:44px;min-height:44px}
+.td-m1 .tb-n{margin:4px 0 0;font-size:15px;line-height:1.45;color:var(--td-gris);overflow-wrap:anywhere;text-wrap:pretty}
+.td-m1 .tb-n-l{color:var(--ip-ink);font-weight:600}
+.td-m1 .tb-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin:6px 0 0;font-size:13px;line-height:1.3;color:var(--td-gris)}
+.td-m1 .tb-q{font-variant-numeric:tabular-nums}
+.td-m1 .tb-q.is-ret{font-weight:700;color:var(--ip-ink)}
+.td-m1 .tb-poi{position:absolute;top:2px;right:0;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;color:#8794B1;cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none;transition:color .18s}
+@media (hover:hover){.td-m1 .tb-c:hover .tb-poi{color:var(--td-bleu)}}
+.td-m1 .tb-acts{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 0 4px}
+.td-m1 .tb-b{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 14px;border:1px solid var(--td-filet);border-radius:12px;background:linear-gradient(180deg,#fff,#F3F6FC);box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(15,20,32,.07);font:700 13px/1 var(--font);color:var(--td-nuit);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .18s,box-shadow .18s,transform .18s}
+.td-m1 .tb-b:active{transform:scale(.97)}
+@media (hover:hover){.td-m1 .tb-b:hover{background:linear-gradient(180deg,#fff,#E9F0FF)}}
+.td-m1 .tb-b svg{flex:none;color:var(--td-bleu)}
+.td-m1 .tb-b-p{border-color:#0034A0;background:radial-gradient(120% 160% at 20% 0%,#2F7BFF,var(--td-bleu) 55%,#0040C2);color:#fff;box-shadow:0 1px 0 rgba(255,255,255,.3) inset,0 8px 16px -8px rgba(0,80,230,.7)}
+.td-m1 .tb-b-p svg{color:#fff}
+@media (hover:hover){.td-m1 .tb-b-p:hover{background:radial-gradient(120% 160% at 20% 0%,#4A8DFF,#0A5BF0 55%,#0048D6)}}
 .td-m1 .td-plus svg{transform:rotate(90deg);transition:transform .25s var(--ease)}
-.td-m1 .td-jl.td-ouv .td-plus svg{transform:rotate(-90deg)}
-.td-m1 .td-suite{margin:0 0 10px 4px;font:700 13px/1.3 var(--font);letter-spacing:.07em;text-transform:uppercase;color:var(--td-gris)}
-.td-m1 .td-jour-vide{margin:0;padding:13px 16px;border-radius:15px;background:rgba(0,26,104,.55);border:1px solid rgba(255,255,255,.3);color:#fff;font:600 15px/1.4 var(--font)}
+.td-m1 .tb-c.td-ouv .td-plus svg{transform:rotate(-90deg)}
+.td-m1 .tb-dep{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 0 4px;padding:8px;border-radius:14px;background:#EEF3FC;box-shadow:0 1px 3px rgba(15,20,32,.08) inset}
+.td-m1 .tb-dep[hidden]{display:none}
+.td-m1 .tb-dep-b{min-height:44px;padding:0 14px;border:1px solid var(--td-filet);border-radius:12px;background:#fff;font:700 13px/1 var(--font);color:var(--td-nuit);cursor:pointer}
+.td-m1 .tb-dep-b[disabled]{background:#E3EAF8;border-color:#E3EAF8;color:var(--td-gris);cursor:default}
+@media (hover:hover){.td-m1 .tb-dep-b:not([disabled]):hover{border-color:var(--td-bleu)}}
+.td-m1 .tb-plus{display:none;flex-direction:column;gap:8px;margin:10px 0 0 4px;padding:10px 0 0;border-top:1px solid var(--td-filet)}
+.td-m1 .tb-c.td-ouv .tb-plus{display:flex}
+.td-m1 .tb-plus .v2-todo-n-in{min-height:44px;border-color:var(--td-filet);background:#fff}
+.td-m1 .tb-pl-b{display:flex;flex-wrap:wrap;gap:8px}
+.td-m1 .tb-c .v2-todo-der{margin-top:6px;font-size:13px;color:var(--ip-ink-2)}
+.td-m1 .tb-c .v2-todo-der button{min-height:44px;margin:-10px 0}
+.td-m1 .tb-c .v2-todo-rep{font-size:13px;color:var(--td-nuit)}
+/* cochée : barrée et rangée, couleurs atténuées par la couleur, jamais par l'opacité */
+.td-m1 .tb-c:has(.v2-todo-chk input:checked) :is(.tb-n,.v2-todo-off,.tb-k){text-decoration:line-through;text-decoration-thickness:2px;color:var(--td-gris)}
+.td-m1 .tb-c.is-fait{background:linear-gradient(180deg,#F7F9FD,#F1F4FA);box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(15,20,32,.06)}
+.td-m1 .tb-faits{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;align-items:start}
+/* la carte qu'on glisse : l'emplacement d'origine devient un creux, la carte tenue prend une ombre longue */
+.td-m1 .tb-ghost.tb-c.v2-todo-it{border-style:dashed;border-color:#9DB8EE;background:#DCE8FC;box-shadow:none}
+.td-m1 .tb-ghost>*{visibility:hidden}
+.tb-fallback{box-shadow:0 1px 0 #fff inset,0 30px 44px -16px rgba(0,30,110,.5),0 4px 10px rgba(0,30,110,.18)!important;cursor:grabbing!important;z-index:200}
+.td-m1 .tb-chosen .tb-poi{color:var(--td-bleu);cursor:grabbing}
+body.tb-glisse{cursor:grabbing;-webkit-user-select:none;user-select:none}
 
-/* ═══ Ordinateur ═══ */
-@media (min-width:761px){
-  .td-m1 .td-hd{padding:26px 30px 26px;gap:22px;border-radius:22px}
-  .td-m1 .td-hd .td-h1{font-size:40px} /* 21/11/2026 (Will, choix cliqué) : 40 px comme les autres écrans ; 44 px avant, visibles de 761 à 1 000 px */
-  .td-m1 .td-phrase{font-size:19px;line-height:1.36}
-  .td-m1 .td-caps{margin-top:20px}
-  /* bandeau : toutes les lignes repliées sur le même gabarit (libellé et échéance à droite, puis mail et Plus dessous) */
-  .td-m1 .td-jl .v2-todo-c{flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px 14px}
-  .td-m1 .td-jl .v2-todo-l1{flex:1 1 100%;max-width:100%;min-width:0}
-  .td-m1 .td-jl .v2-todo-c>:not(.v2-todo-l1):not(.v2-todo-acts){flex:1 1 100%}
-  .td-m1 .td-jl .v2-todo-acts{flex:0 1 auto}
-  .td-m1 .td-jl .v2-todo-chk{margin-top:-6px}
+/* ═══ Les mails tout prêts et Mes modèles côte à côte ═══ */
+.td-m1 .tb-bas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px;align-items:start}
+.td-m1 .tb-bas-c{min-width:0}
+.td-m1 .v2-todo-mh h2{font-size:17px}
+.td-m1 .v2-todo-mt b,.td-m1 .v2-todo-obj,.td-m1 .v2-todo-corps{font-size:15px}
+.td-m1 .v2-todo-mod .v2-btn,.td-m1 .v2-todo-mail .v2-btn{font-size:13px;min-height:44px}
+.td-m1 .v2-todo-b[style*="--ip-blue"]{color:#0034A0!important;background:#E9F0FF}
+.td-m1 .v2-rl-intro p{margin:0 0 12px}
+
+/* ═══ Téléphone : les colonnes deviennent des sections, on saisit par la poignée ═══ */
+@media (max-width:900px){
+  .td-m1 .tb-bas{grid-template-columns:minmax(0,1fr)}
+  .td-m1 .tb-tab{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .td-m1 .tb-col:last-child{grid-column:1 / -1}
 }
-/* ═══ Téléphone ═══ */
 @media (max-width:760px){
-  .td-m1 .td-cap{padding:0 6px 0 14px;gap:8px}
-  .td-m1 .td-cap:not(:has(.td-cnt)){padding-right:14px}
-  .td-m1 .td-phrase{margin-top:12px}
-  .td-m1 .v2-todo-seg button{min-height:44px}
-  .td-m1 .td-taches .v2-todo-it,.td-m1 .td-taches .v2-todo-it:first-child{padding:12px 14px 14px 12px}
-  .td-m1 .td-hd{background:
-    radial-gradient(circle 100px at 100% -6%,color-mix(in srgb,var(--td-bleu) 62%,#fff),transparent 72%),
-    radial-gradient(ellipse 60% 150% at 3% -16%,color-mix(in srgb,var(--td-bleu) 88%,var(--td-nuit)),transparent 80%),
-    linear-gradient(160deg,color-mix(in srgb,var(--td-bleu) 74%,var(--td-nuit)) 0%,color-mix(in srgb,var(--td-bleu) 40%,var(--td-nuit)) 55%,color-mix(in srgb,var(--td-bleu) 52%,var(--td-nuit)) 100%)}
-  .td-lu{width:300px;height:300px;right:-100px;top:-110px}
-  .td-m1 .td-jl,.td-m1 .td-jl:first-child{position:relative;padding:10px 12px 12px 10px}
-  /* au téléphone, « Plus » devient le chevron rond du coin : la ligne garde une seule rangée d'actions (le mail) */
-  .td-m1 .td-jl .v2-todo-l1>.v2-todo-k{flex:0 0 calc(100% - 46px);min-height:34px}
-  .td-m1 .td-jl .td-plus{position:absolute;top:0;right:0;width:44px;min-height:44px;padding:0;border-radius:50%;justify-content:center}
-  .td-m1 .td-jl .td-plus span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-  /* au doigt : le nom de l'officine et « Annuler » prennent 44 px de haut sans bouger la ligne */
-  .td-m1 a.v2-todo-off{display:inline-block;padding:12px 0;margin:-12px 0}
-  .td-m1 .v2-todo-der button{min-height:44px;margin:-6px 0}
+  .td-m1 .tb-long{display:none}
+  .td-m1 .tb-court{display:inline}
+  .td-m1 .td-caps{gap:6px}
+  .td-m1 .td-cap{padding:0 5px 0 12px;gap:6px}
+  .td-m1 .td-cnt{min-width:26px;height:26px;padding:0 7px}
+  .td-m1 .td-hd{padding-bottom:14px}
+  .td-m1 .tb-barre{margin-bottom:12px}
+  .td-m1 .v2-todo-ajbtn{width:100%;min-height:52px;justify-content:center;font-size:16px}
+  .td-m1 .tb-tab{grid-template-columns:minmax(0,1fr);gap:12px}
+  .td-m1 .tb-col:last-child{grid-column:auto}
+  .td-m1 .tb-col{padding:2px 10px 12px}
+  .td-m1 .tb-faits{grid-template-columns:minmax(0,1fr)}
+  .td-m1 .v2-todo-form{grid-template-columns:minmax(0,1fr)}
+  .td-m1 .v2-todo-form>label:first-child,.td-m1 .v2-todo-form>label:nth-child(3),.td-m1 .tb-quand,.td-m1 .v2-todo-form>.v2-todo-wide,.td-m1 .v2-todo-form>.v2-todo-go{grid-column:auto;grid-row:auto}
+  .td-m1 .tb-quand label{flex:1 1 100%}
 }
 
 /* ═══ L'arrivée : 900 ms au plus, une fois par ouverture de l'écran ═══ */
@@ -172,16 +212,14 @@
   .td-ent .td-cap,.td-ent .td-local{animation:td-monte .3s var(--ease,ease-out) both}
   .td-ent .td-cap:nth-child(1){animation-delay:calc(110ms + var(--td-sk,0ms))}.td-ent .td-cap:nth-child(2){animation-delay:calc(160ms + var(--td-sk,0ms))}.td-ent .td-cap:nth-child(3){animation-delay:calc(210ms + var(--td-sk,0ms))}
   .td-ent .td-local{animation-delay:calc(90ms + var(--td-sk,0ms))}
-  .td-ent .td-jl,.td-ent .td-jour-vide{animation:td-monte .3s var(--ease,ease-out) both;animation-delay:calc(240ms + var(--td-sk,0ms))}
-  .td-ent .td-jl:nth-child(2){animation-delay:calc(290ms + var(--td-sk,0ms))}.td-ent .td-jl:nth-child(3){animation-delay:calc(340ms + var(--td-sk,0ms))}.td-ent .td-jl:nth-child(n+4){animation-delay:calc(390ms + var(--td-sk,0ms))}
-  .td-ent>.v2-todo-ajbtn,.td-ent>.v2-todo-add,.td-ent>.v2-todo-tools{animation:td-monte .3s var(--ease,ease-out) both;animation-delay:calc(260ms + var(--td-sk,0ms))}
-  .td-ent>.v2-todo-tools,.td-ent>.td-suite{animation:td-monte .3s var(--ease,ease-out) both;animation-delay:calc(320ms + var(--td-sk,0ms))}
-  .td-ent .td-taches .v2-todo-it:nth-child(-n+5){animation:td-monte .28s var(--ease,ease-out) both}
-  .td-ent .td-taches .v2-todo-it:nth-child(1){animation-delay:calc(380ms + var(--td-sk,0ms))}.td-ent .td-taches .v2-todo-it:nth-child(2){animation-delay:calc(430ms + var(--td-sk,0ms))}.td-ent .td-taches .v2-todo-it:nth-child(3){animation-delay:calc(480ms + var(--td-sk,0ms))}
-  .td-ent .td-taches .v2-todo-it:nth-child(4){animation-delay:calc(530ms + var(--td-sk,0ms))}.td-ent .td-taches .v2-todo-it:nth-child(5){animation-delay:calc(580ms + var(--td-sk,0ms))}
-  .td-ent>.v2-todo-empty,.td-ent>.v2-todo-mh,.td-ent>.v2-todo-list:not(.td-taches){animation:td-monte .3s var(--ease,ease-out) both;animation-delay:calc(560ms + var(--td-sk,0ms))}
+  .td-ent .tb-barre{animation:td-monte .3s var(--ease,ease-out) both;animation-delay:calc(240ms + var(--td-sk,0ms))}
+  .td-ent .tb-col{animation:td-monte .34s var(--ease,ease-out) both}
+  .td-ent .tb-col:nth-child(1){animation-delay:calc(300ms + var(--td-sk,0ms))}.td-ent .tb-col:nth-child(2){animation-delay:calc(380ms + var(--td-sk,0ms))}.td-ent .tb-col:nth-child(3){animation-delay:calc(460ms + var(--td-sk,0ms))}
+  .td-ent .tb-bas,.td-ent .tb-pied{animation:td-monte .3s var(--ease,ease-out) both;animation-delay:calc(560ms + var(--td-sk,0ms))}
 }
 @media (prefers-reduced-motion:reduce){
   .td-lu{animation:none}
-  .td-m1 .td-cap,.td-m1 .td-taches .v2-todo-it,.td-m1 .v2-todo-chk span,.td-m1 .v2-todo-chk span::after,.td-m1 .v2-todo-l1,.td-m1 .td-plus svg{transition-duration:.01ms}
+  .td-m1 .td-cap,.td-m1 .tb-c,.td-m1 .tb-b,.td-m1 .v2-todo-chk span,.td-m1 .v2-todo-chk span::after,.td-m1 .td-plus svg{transition-duration:.01ms}
 }
+
+.td-m1 :is(.tb-b,.tb-chip,.tb-lien,.tb-dep-b,.td-cap,.v2-todo-kind){touch-action:manipulation;-webkit-tap-highlight-color:transparent}

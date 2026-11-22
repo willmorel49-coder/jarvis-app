@@ -23,7 +23,15 @@
 .olm-phrase b{font-weight:800}
 .olm-num{font-variant-numeric:tabular-nums}
 .olm-logo{display:block;height:30px;width:auto;max-width:100%;padding:8px 14px;box-sizing:content-box;border-radius:14px;background:#fff;border:1px solid var(--au-fil,#D7E0F0);box-shadow:0 1px 2px rgba(15,20,32,.08)}
-@media (max-width:1000px){.olm-logo{display:none}.olm-hd{grid-template-columns:minmax(0,1fr)}}
+/* Téléphone et tablette : le logo reste, en petit, à droite du titre (Will, lot 4 : « garder en petit »). Le bloc de texte s'efface de la grille
+   (display:contents) pour que « Offilog » et le logo partagent une même rangée ; l'accroche et la phrase gardent toute la largeur. */
+@media (max-width:1000px){
+  .olm-hd{grid-template-columns:minmax(0,1fr) auto;column-gap:12px}
+  .olm-hd-t{display:contents}
+  .olm-eye,.olm-phrase{grid-column:1/-1}
+  .olm-h1{grid-column:1;grid-row:2;align-self:center}
+  .olm-logo{grid-column:2;grid-row:2;align-self:center;height:20px;padding:5px 10px;border-radius:12px}
+}
 @media (max-width:760px){.olm-hd{padding:18px 14px 30px;border-radius:16px}.olm-phrase{font-size:15px}.olm-eye{font-size:12px}}
 
 /* ═══ Les trois onglets ═══ */
@@ -80,7 +88,8 @@
 .olm-nb{margin:0;font-size:15px;line-height:1.4;color:var(--o-gris)}
 .olm-nb b{font-size:17px;color:var(--ip-ink)}
 .olm-tri{display:inline-flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--o-gris)}
-.olm-tri select{min-height:44px;padding:0 36px 0 14px;border:1px solid var(--au-fil,var(--o-filet));border-radius:12px;background-color:#fff;font:inherit;font-size:16px;font-weight:600;color:var(--ip-ink)}
+.olm-tri select{-webkit-appearance:none;appearance:none;min-height:44px;padding:0 38px 0 14px;border:1px solid var(--au-fil,var(--o-filet));border-radius:12px;background-color:#fff;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%230050E6' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;font:inherit;font-size:16px;font-weight:600;color:var(--ip-ink);box-shadow:var(--o-ombre-l);cursor:pointer}
+.olm-tri select:focus-visible{outline:3px solid var(--o-bleu);outline-offset:2px;border-color:var(--o-bleu)}
 @media (max-width:760px){.olm-bar{margin:2px 0 12px}.olm-tri span{display:none}.olm-tri{flex:1 1 100%}.olm-tri select{width:100%}.olm-nb{font-size:14px}}
 
 /* ═══ La carte amincie : photo, nom, marque, rang, prix Offilog, UNE ligne concurrent ═══ */
@@ -141,7 +150,8 @@
 .olm-sens-b.on{border-color:var(--o-nuit);background:var(--o-nuit);color:#fff}
 .olm-leg{margin:0 0 16px;font-size:13px;line-height:1.45;color:var(--o-gris)}
 @media (max-width:760px){.olm-cmp{padding:12px 14px;margin-top:2px}.olm-cmp-p{font-size:15px;flex-basis:100%}.olm-sens{width:100%;flex-wrap:nowrap}.olm-sens-b{flex:1 1 0;padding:0 6px}.olm-leg{display:none}
-  .olm .olo-onglets{flex-wrap:nowrap;overflow-x:auto;margin:0 -14px 10px;padding:2px 14px 4px;scrollbar-width:none}.olm .olo-onglets::-webkit-scrollbar{display:none}.olm .olo-onglets .v2-seg{flex:none}}
+  /* Les trois sous-onglets se lisent EN ENTIER : ils passent à la ligne au lieu de défiler de côté (« Très bien placés » était coupé à 390). */
+  .olm .olo-onglets{flex-wrap:wrap;overflow:visible;margin:0 0 10px;padding:0}.olm .olo-onglets .v2-seg{flex:1 1 auto;white-space:normal;text-align:center;justify-content:center;padding:0 12px}}
 
 /* ═══ L'onglet « Le catalogue » ═══ */
 .olv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:28px;align-items:center;padding:24px 26px;border:1px solid var(--au-fil,var(--o-filet));border-radius:22px;background:var(--o-carte);box-shadow:var(--o-ombre)}

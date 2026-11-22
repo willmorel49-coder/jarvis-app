@@ -9,7 +9,7 @@
    rien ici ne touche un autre écran. Les couleurs de la maquette sont déclarées SUR PLACE (le CRM n'a ni --ink ni --blue ni --vert),
    valeurs identiques à celles de la maquette. Aucun color-mix, aucun flou, aucune opacité sur du texte, cibles ≥ 44 px.
    ═══════════════════════════════════════════════════════════════════ */
-.inf-t{--it-ink:#1A2030;--it-ink-2:#3B4357;--it-ink-3:#4A5265;--it-muted:#5B6478;--it-muted-2:#646B80;
+.inf-t{--it-ink:#1A2030;--it-ink-2:#3B4357;--it-ink-3:#3B4357;--it-muted:#3B4357;--it-muted-2:#3B4357;/* une seule encre secondaire (celle de la barre du haut) */
   --it-blue:#0050E6;--it-blue-d:#0034A0;--it-blue-pale:#E9F0FF;--it-vert:#0E7A4F;--it-vert-pale:#E3F4EC;--it-orange:#0B6E7A;--it-orange-pale:#E2F4F6;/* ton « orange » devenu turquoise (22/11/2026, plus de chaud) */--it-rouge:#B3261E;--it-rouge-pale:#FBE7E5;
   --it-line:rgba(26,32,48,.11);--it-line-2:rgba(26,32,48,.06);--it-r-btn:14px;--it-ease:cubic-bezier(.32,.72,0,1);
   --it-sh-1:0 1px 0 rgba(255,255,255,.95) inset,0 1px 2px rgba(26,32,48,.06),0 10px 28px -14px rgba(26,32,48,.14);
@@ -18,9 +18,14 @@
   margin:0 auto;font-family:var(--pp-sans,inherit);color:var(--it-ink);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
 .inf-t ::selection{background-color:#CFDDFB;color:var(--it-ink)}
 .inf-t button{font-family:inherit;touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:pointer}
-.inf-t-feuille{margin:0;padding:4px 32px 32px;border-radius:var(--r-card,20px);background-color:#fff;
-  background-image:radial-gradient(520px 220px at 12% 0%,#EEF4FF 0%,rgba(238,244,255,0) 75%);background-repeat:no-repeat;
-  border:1px solid var(--it-line-2);box-shadow:var(--it-sh-1);animation:inf-t-entree .3s var(--it-ease) both}
+.inf-t-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}
+.inf-t-cols.is-seul{grid-template-columns:minmax(0,1fr);max-width:760px}
+/* chaque colonne = une carte éclairée : l'astre en haut à gauche, un sol plus clair en bas, un liseré de lumière sur le bord haut */
+.inf-t-col{position:relative;min-width:0;padding:2px 26px 22px;border-radius:var(--r-card,20px);border:1px solid #D6E0F3;
+  background-color:#fff;background-image:radial-gradient(ellipse 110% 62% at 0% 0%,#E6EFFF 0%,#F7FAFF 62%,#FFFFFF 100%);
+  box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(26,32,48,.06),0 22px 40px -26px rgba(0,52,160,.34);animation:inf-t-entree .38s var(--it-ease) both}
+.inf-t-col:nth-child(2){animation-delay:.08s}
+.inf-t-col::before{content:"";position:absolute;left:26px;right:26px;top:0;height:1px;background-color:#D3DFF6}
 @keyframes inf-t-entree{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 /* 21/11/2026 soir — Will : « homogénéité de info du jour comme les autres feature […] pas la même taille ni le même bandeau en haut ».
    L'en-tête est le bandeau commun de l'aube (.aube-tete, scène posée par v2-aube.js, couleurs du bloc « aube » de v2.css),
@@ -29,13 +34,14 @@ html:root:root body .aube-tete.inf-t-tete{margin:0 0 18px}
 html:root:root body .aube-tete.inf-t-tete .inf-t-eye{margin:0 0 4px;font:700 13px/1.3 var(--font);letter-spacing:.07em;text-transform:uppercase;color:var(--au-ink3)}
 html:root:root body .aube-tete.inf-t-tete .v2-page-title{margin:0;font-size:clamp(32px,9vw,40px);line-height:1.05;text-wrap:balance}
 html:root:root body .aube-tete.inf-t-tete .inf-t-sous{margin:10px 0 0;max-width:60ch;font:500 17px/1.4 var(--font);color:var(--au-ink2);font-variant-numeric:tabular-nums;text-wrap:pretty}
-.inf-t-groupe{margin-top:26px}
-.inf-t-groupe h2{margin:0;padding:0 0 8px;font-size:17px;font-weight:800;letter-spacing:-.01em;color:var(--it-blue);border-bottom:1px solid var(--it-line)}
+.inf-t-groupe{margin-top:22px}
+.inf-t-col>.inf-t-groupe:first-child{margin-top:20px}
+.inf-t-groupe h2{margin:0;padding:0 0 8px;font-family:var(--font,inherit);font-size:17px;font-weight:800;letter-spacing:-.02em;color:var(--it-blue);border-bottom:1px solid var(--it-line)}
 .inf-t-liste,.inf-t-rls{list-style:none;margin:0;padding:0}
 .inf-t-vide{margin:0;padding:14px 4px;font-size:15px;color:var(--it-muted)}
 .inf-t-vide[hidden]{display:none}
 /* une tâche */
-.inf-t-tache{position:relative;border-radius:0;margin:0 -12px;padding:0 12px;border-bottom:1px solid var(--it-line-2);transition-property:box-shadow,background-color;transition-duration:.2s;transition-timing-function:var(--it-ease)}
+.inf-t-tache{position:relative;border-radius:12px;margin:0 -12px;padding:0 12px;border-bottom:1px solid var(--it-line-2);transition-property:box-shadow,background-color;transition-duration:.2s;transition-timing-function:var(--it-ease)}
 .inf-t-tache:last-child{border-bottom-color:transparent}
 .inf-t-tache:not(.ouvert):hover{background-color:#F6F9FE}
 .inf-t-ligne{display:flex;align-items:flex-start;gap:2px}
@@ -46,32 +52,33 @@ html:root:root body .aube-tete.inf-t-tete .inf-t-sous{margin:10px 0 0;max-width:
 .inf-t-tache.fait .inf-t-rond{background-color:var(--it-blue);border-color:var(--it-blue)}
 .inf-t-tache.fait .inf-t-rond svg{opacity:1;transform:none;animation:inf-t-coche .26s var(--it-ease) both}
 @keyframes inf-t-coche{from{opacity:0;transform:scale(.3)}60%{transform:scale(1.18)}to{opacity:1;transform:scale(1)}}
-.inf-t-corps{flex:1;min-width:0;display:grid;grid-template-columns:1fr auto;grid-template-areas:"action tag" "meta tag";column-gap:14px;text-align:left;border:0;background:none;padding:12px 0 13px;min-height:44px;align-items:start}
+.inf-t-corps{flex:1;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"action action" "meta tag";column-gap:12px;text-align:left;border:0;background:none;padding:12px 0 13px;min-height:44px;align-items:start}
 .inf-t-action{grid-area:action;font-size:17px;font-weight:600;line-height:1.35;color:var(--it-ink);letter-spacing:-.005em;text-wrap:pretty}
 .inf-t-meta{grid-area:meta;margin-top:3px;font-size:15px;line-height:1.4;color:var(--it-ink-3);text-wrap:pretty}
 .inf-t-q,.inf-t-nw{white-space:nowrap}
-.inf-t-tag{grid-area:tag;align-self:start;margin-top:2px;display:inline-block;padding:4px 10px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap}
-.inf-t-vert{background-color:var(--it-vert-pale);color:var(--it-vert)}
-.inf-t-bleu{background-color:var(--it-blue-pale);color:var(--it-blue-d)}
-.inf-t-orange{background-color:var(--it-orange-pale);color:var(--it-orange)}
-.inf-t-rouge{background-color:var(--it-rouge-pale);color:var(--it-rouge)}
+.inf-t-tag{grid-area:tag;align-self:start;margin-top:4px;display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 8px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;background-color:#EAF1FF;color:var(--it-blue-d)}
+.inf-t-tag::before{content:"";flex:none;width:7px;height:7px;border-radius:50%;background-color:var(--it-blue)}
+/* un seul ton de texte pour les étiquettes ; le sens (vert, turquoise, rouge) tient dans le point de couleur */
+.inf-t-vert::before{background-color:#12936A}
+.inf-t-orange::before{background-color:#0B8A99}
+.inf-t-rouge::before{background-color:#D2384D}
 .inf-t-tache.fait .inf-t-action{text-decoration:line-through;color:var(--it-muted-2)}
 .inf-t-tache.fait .inf-t-tag{background-color:#EEF0F4;color:var(--it-muted)}
+.inf-t-tache.fait .inf-t-tag::before{background-color:#98A2B8}
 /* la ligne ouverte, comme une fiche Things */
-.inf-t-tache.ouvert{border-radius:16px;background-color:#fff;margin:14px -22px;padding:6px 22px 8px;border:1px solid var(--it-line-2);box-shadow:var(--it-sh-2)}
-.inf-t-tache.ouvert .inf-t-action{font-size:19px}
+.inf-t-tache.ouvert{border-radius:16px;background-color:#fff;margin:12px -16px;padding:6px 16px 8px;border:1px solid var(--it-line-2);box-shadow:var(--it-sh-2)}
 .inf-t-fiche{padding:2px 0 14px 46px}
 .inf-t-fiche[hidden]{display:none}
 .inf-t-tache.ouvert .inf-t-fiche{animation:inf-t-ouvre .22s var(--it-ease) both}
 @keyframes inf-t-ouvre{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 .inf-t-fiche h3{margin:12px 0 4px;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--it-muted)}
-.inf-t-fiche p{margin:0;font-size:16px;line-height:1.5;color:var(--it-ink-2);text-wrap:pretty}
+.inf-t-fiche p{margin:0;font-size:15px;line-height:1.55;color:var(--it-ink-2);text-wrap:pretty}
 .inf-t-dire{margin-top:14px;padding:12px 14px;border-radius:14px;background-color:var(--it-blue-pale);border:1px solid #D2E0FB}
 .inf-t-dire h3{margin:0 0 4px;color:var(--it-blue-d)}
 .inf-t-dire p{color:var(--it-ink);font-weight:600}
-.inf-t-infos{margin-top:12px;display:flex;flex-wrap:wrap;gap:4px 18px;font-size:14px;color:var(--it-muted)}
+.inf-t-infos{margin-top:12px;display:flex;flex-wrap:wrap;gap:2px 18px;font-size:15px;color:var(--it-muted)}
 .inf-t-infos b{font-weight:700;color:var(--it-ink-3)}
-.inf-t-infos a{color:var(--it-blue-d);text-decoration:underline;text-underline-offset:2px}
+.inf-t-infos a{display:inline-block;padding:13px 2px;margin:-13px -2px;color:var(--it-blue-d);text-decoration:underline;text-underline-offset:2px}
 .inf-t-gestes{margin-top:14px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px}
 .inf-t-todo{min-height:44px;padding:0 18px;display:inline-flex;align-items:center;gap:8px;border-radius:var(--it-r-btn);border:0;font-weight:700;font-size:15px;color:#fff;background-color:#003AB4;background-image:linear-gradient(160deg,#0A5BF0,#003AB4);box-shadow:var(--it-sh-blue);transition:transform .15s var(--it-ease)}
 .inf-t-todo:active{transform:scale(.97)}
@@ -79,10 +86,14 @@ html:root:root body .aube-tete.inf-t-tete .inf-t-sous{margin:10px 0 0;max-width:
 .inf-t-todo[aria-pressed="true"]{color:var(--it-blue-d);background-color:var(--it-blue-pale);background-image:none;box-shadow:none;border:1px solid #BFD2F7}
 .inf-t-todo[aria-pressed="true"] svg{display:inline-block}
 .inf-t-todo:disabled{cursor:progress}
+.inf-t-fait-l{min-height:44px;padding:0 16px;display:inline-flex;align-items:center;gap:8px;border-radius:var(--it-r-btn);border:1px solid #BFD2F7;background-color:#fff;font-weight:700;font-size:15px;color:var(--it-blue-d);transition-property:background-color,transform;transition-duration:.15s;transition-timing-function:var(--it-ease)}
+.inf-t-fait-l:hover{background-color:var(--it-blue-pale)}
+.inf-t-fait-l:active{transform:scale(.97)}
+.inf-t-fait-l svg{color:var(--it-blue)}
 .inf-t-voir{min-height:44px;padding:0 6px;margin-left:-6px;display:inline-flex;align-items:center;gap:6px;border:0;background:none;border-radius:12px;font-weight:700;font-size:15px;color:var(--it-blue-d)}
 .inf-t-voir:hover{background-color:var(--it-blue-pale)}
 /* repli : Fait */
-.inf-t-fait{margin-top:22px}
+.inf-t-fait{margin-top:18px;padding:0 6px}
 .inf-t-fait[hidden]{display:none}
 .inf-t-rep{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 6px;margin-left:-6px;border:0;background:none;border-radius:12px;font-weight:700;font-size:15px;color:var(--it-blue-d);transition-property:background-color;transition-duration:.15s}
 .inf-t-rep:hover{background-color:var(--it-blue-pale)}
@@ -97,13 +108,14 @@ html:root:root body .aube-tete.inf-t-tete .inf-t-sous{margin:10px 0 0;max-width:
 .inf-t-rl{width:100%;display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:44px;padding:12px 6px;margin:0 -6px;border:0;background:none;border-radius:12px;text-align:left;color:var(--it-muted)}
 .inf-t-rl:hover{background-color:#F6F9FE}
 .inf-t-rt{flex:1;min-width:0}
-.inf-t-rl b{display:block;font-size:16px;font-weight:600;color:var(--it-ink)}
-.inf-t-rl small{display:block;margin-top:2px;font-size:14px;color:var(--it-muted)}
+.inf-t-rl b{display:block;font-size:15px;font-weight:600;color:var(--it-ink)}
+.inf-t-rl small{display:block;margin-top:2px;font-size:13px;color:var(--it-muted)}
 .inf-t button:focus-visible,.inf-t a:focus-visible{outline:3px solid #7FA8F5;outline-offset:2px}
+@media (max-width:860px){.inf-t-cols{grid-template-columns:minmax(0,1fr);gap:14px}.inf-t-cols.is-seul{max-width:none}}
 @media (max-width:600px){
-  .inf-t-feuille{padding:2px 16px 22px}
+  .inf-t-col{padding:2px 16px 18px}
+  .inf-t-col::before{left:16px;right:16px}
   html:root:root body .aube-tete.inf-t-tete{margin-bottom:14px}
-  .inf-t-infos,.inf-t-rl small{font-size:15px}
   .inf-t-corps{grid-template-columns:1fr;grid-template-areas:"action" "meta" "tag"}
   .inf-t-tag{justify-self:start;margin-top:8px}
   .inf-t-tache{margin:0 -6px;padding:0 6px}
@@ -111,13 +123,13 @@ html:root:root body .aube-tete.inf-t-tete .inf-t-sous{margin:10px 0 0;max-width:
   .inf-t-fiche{padding-left:0}
   .inf-t-case{margin-left:-10px}
 }
-@media (prefers-reduced-motion:reduce){.inf-t *,.inf-t-feuille{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+@media (prefers-reduced-motion:reduce){.inf-t *,.inf-t-col{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 
 /* 21/11 : les annonces Bodacc à la suite des tâches (secteur, puis France pour la direction) */
 .inf-t-ann{margin-top:30px}
 .inf-t-ann-p{font-weight:600;color:var(--it-muted);white-space:nowrap}
 .inf-t-ann .inf-t-rls{animation:none;margin-top:0}
 .inf-t-ann .inf-t-tag{margin-top:0}
-.inf-t-ann-v b{color:var(--it-blue)}
+.inf-t-ann-v b{color:var(--it-blue-d)}
 .inf-t-ann + .inf-t-ann{margin-top:34px}
 #inf-t-annfr-b{margin-top:6px}
