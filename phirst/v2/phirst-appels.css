@@ -197,7 +197,7 @@
    à gauche ; le bouton « Ajouter à mes pistes » à droite sur la même rangée. Sous 1024 px : la forme empilée ci-dessus reste. */
 @media (min-width:1024px){
   .po .pa-liste{gap:0;border:1px solid var(--au-fil,#D8E7DD);border-radius:16px;background-color:#fff;overflow:hidden}
-  .po .pa-l{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,auto) auto;column-gap:16px;align-items:center;min-height:60px;padding:8px 14px 8px 18px;border:0;border-bottom:1px solid var(--au-fil,#D8E7DD);border-radius:0;box-shadow:none}
+  .po .pa-l{display:grid;grid-template-columns:minmax(0,1fr) 200px 300px;column-gap:16px;align-items:center;min-height:60px;padding:8px 14px 8px 18px;border:0;border-bottom:1px solid var(--au-fil,#D8E7DD);border-radius:0;box-shadow:none}
   .po .pa-l:last-child{border-bottom:0}
   .po .pa-l:hover{background-color:#F6FAF7}
   .po .pa-ht{display:contents}

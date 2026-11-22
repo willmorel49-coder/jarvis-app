@@ -142,9 +142,12 @@
     else if (S.total === null) h = '<p class="pa-avis">Chargement…</p>';
     else {
       var plus = P.libelleVoirPlus(S.total, S.lignes.length);
-      h = '<h2 class="po-h2">' + esc(P.nomAngle(S.angle)) + ' · ' + P.libelleResultats(S.total) + '</h2>' +
+      h = '<h2 class="po-h2">' + esc(P.nomAngle(S.angle)) + (S.total === 0 ? '' : ' · ' + P.libelleResultats(S.total)) + '</h2>' +
         (P.releveAffiche(S.meta.charge_le, P.aujourdhui()) ? '<p class="po-aide">' + esc(P.releveAffiche(S.meta.charge_le, P.aujourdhui())) + '</p>' : '') +
-        (S.total === 0 ? '<div class="pa-vide"><p>Aucun résultat.</p><button type="button" class="lg-gros" data-effacer="1">Effacer la recherche</button></div>'
+        (S.total === 0 ? '<div class="pa-vide"><p>' + (S.france ? 'Aucune pharmacie de France ne correspond à cette recherche. Essayez une partie du nom seulement, ou la ville.'
+            : 'Aucune pharmacie du secteur de Yann ne correspond. Elle est peut-être ailleurs en France.') + '</p>' +
+            (S.france ? '' : '<button type="button" class="lg-gros" data-france-q="1">Chercher dans toute la France</button> ') +
+            '<button type="button" class="' + (S.france ? 'lg-gros' : 'pa-b') + '" data-effacer="1">Effacer la recherche</button></div>'
           : '<ul class="pa-liste">' + S.lignes.map(htmlLigne).join('') + '</ul>') +
         (plus ? '<button type="button" class="pa-b po-plus" data-plus="1"' + (S.charge ? ' disabled' : '') + '>' + esc(plus) + '</button>' : '');
     }
@@ -172,6 +175,7 @@
     if ((g = t.closest('[data-angle]'))) { S.angle = g.getAttribute('data-angle'); S.fab = ''; S.q = ''; S.dep = ''; var f = S.racine.querySelector('#po-form'); if (f) { f.q.value = ''; f.dep.value = ''; } recharger(); return; }
     if ((g = t.closest('[data-sect]'))) { S.france = g.getAttribute('data-sect') === 'france'; S.fab = ''; S.q = ''; S.dep = ''; var f2 = S.racine.querySelector('#po-form'); if (f2) { f2.q.value = ''; f2.dep.value = ''; } recharger(); return; }
     if ((g = t.closest('[data-fab]'))) { S.fab = g.getAttribute('data-fab'); recharger(); return; }
+    if (t.closest('[data-france-q]')) { S.france = true; recharger(); return; }
     if (t.closest('[data-effacer]')) { S.q = ''; S.dep = ''; var f3 = S.racine.querySelector('#po-form'); if (f3) { f3.q.value = ''; f3.dep.value = ''; } recharger(); return; }
     if (t.closest('[data-reessayer]')) { S.erreur = ''; S.total = null; dessinerListe(); lirePage(S.lignes.length ? S.lignes.length : 0); return; }
     if (t.closest('[data-plus]')) { if (S.charge) return; S.charge = true; dessinerListe(); lirePage(S.lignes.length); return; }
