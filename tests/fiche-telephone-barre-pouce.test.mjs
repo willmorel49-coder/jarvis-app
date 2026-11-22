@@ -32,6 +32,15 @@ test('téléphone : hors des feuilles Prix / Envoyer, tout le CSS ajouté vit so
   assert.match(css, /env\(safe-area-inset-bottom\)/, 'la barre tient compte du bas de l\'iPhone');
 });
 
+test('téléphone : le sommaire numéroté collant est retiré sous 640 px, pas au-dessus (Will, 22/11/2026)', () => {
+  const sansCom = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const i = sansCom.indexOf('@media (max-width:640px){');
+  const j = sansCom.indexOf('.pha-wrap.fdr-on .fdr-som{display:none}');
+  assert.ok(i > 0 && j > i, 'la règle qui cache le sommaire est dans le bloc 640 px');
+  assert.doesNotMatch(sansCom.slice(0, i), /fdr-som/, 'à l\'ordinateur, le sommaire n\'est pas touché');
+  assert.match(src, /V2\.fdrAller = function \(n\) \{[\s\S]{0,200}som \? som\.offsetHeight : 0/, 'les liens « Détail » se calent même sans sommaire visible');
+});
+
 test('téléphone : chaque nouveau nom V2.rv2… n est défini qu une fois', () => {
   for (const n of ['rv2Feuille', 'rv2Va']) assert.equal((src.match(new RegExp('V2\\.' + n + '\\s*=', 'g')) || []).length, 1, n);
   for (const n of ['rv2Tendance', 'rv2Courbe', 'rv2NePlus', 'rv2Bandes', 'rv2Barre', 'fbPose', 'nePlusParCat', 'fdrOutilsBoutons'])

@@ -56,6 +56,10 @@
   .pha-wrap.fdr-on .rv2-outils{display:block;margin-top:10px}
   .pha-wrap.fdr-on .rv2-outils .fdr-outils{margin-top:0;padding-bottom:2px}
 
+  /* Sommaire numéroté collant (1 · 2 · 3…) retiré au téléphone : « elle sert à rien » (Will, 22/11/2026, sur son iPhone).
+     Les liens « Détail » des bandeaux mènent toujours aux chapitres ; à l'ordinateur le sommaire reste. */
+  .pha-wrap.fdr-on .fdr-som{display:none}
+
   /* ── La barre du pouce, fixe en bas d'écran (la racine #v2-root perd son animation sur la fiche : v2.css) ── */
   .pha-wrap.fdr-on .rv2-barre{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:6px;position:fixed;left:0;right:0;bottom:0;z-index:110;
     padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:radial-gradient(360px 120px at 50% -30%,#FFFFFF 0,#F4F7FD 100%) #F4F7FD;
