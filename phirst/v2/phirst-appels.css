@@ -127,3 +127,48 @@
   .pa-quand .pa-b.pa-ok,.ag-zone .pa-b.pa-ok{width:100%}
 }
 .ag-annules>summary.ag-sh{min-height:44px;box-sizing:border-box;padding:12px 0;margin:10px 0 0;cursor:pointer}
+
+/* ── Officines et Carte (21/11/2026) : mêmes couleurs que Appels / Veille ; aucun flou, aucune opacité sur du texte. ── */
+.po-grille{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:0 0 16px}
+.po-tuile{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:96px;padding:14px;border:1px solid var(--au-fil,#D8E7DD);border-radius:18px;background-color:#fff;text-align:left}
+.po-tuile[aria-pressed="true"]{background-color:var(--au-accent,#1A3A2E);border-color:var(--au-accent,#1A3A2E);color:#fff}
+.po-n{font-size:30px;line-height:1.05;font-weight:800;letter-spacing:-.03em}
+.po-nom{font-size:15px;font-weight:700;line-height:1.25}
+.po-sous{font-size:13px;line-height:1.3;color:var(--au-ink3,#4A5D51)}
+.po-tuile[aria-pressed="true"] .po-sous{color:#CFE6D8}
+.po-tuile:focus-visible{outline:2px solid var(--au-accent,#1A3A2E);outline-offset:2px}
+.po-secteur{margin:0 0 12px}
+.po-aide{margin:6px 0 10px;font-size:15px;line-height:1.45;color:var(--au-ink2,#3B4F43)}
+.po-savoir{margin:0 0 12px;padding:10px 14px;border:1px solid var(--au-fil,#D8E7DD);border-radius:14px;background-color:#fff}
+.po-savoir summary{min-height:44px;display:flex;align-items:center;font-weight:700;cursor:pointer}
+.po-savoir p{margin:0 0 8px;font-size:15px;line-height:1.45}
+.po-sf{margin:0 0 14px}
+.po-recherche{display:flex;gap:8px;margin:0 0 16px;flex-wrap:wrap}
+.po-recherche input[name=q]{flex:1 1 220px}
+.po-dep{width:96px}
+.po-h2{margin:0 0 10px;font-size:20px;font-weight:800;letter-spacing:-.01em}
+.po-et{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;max-width:48%}
+.po-fait{display:inline-flex;align-items:center;min-height:48px;font-weight:700;color:#0E6B43}
+.po-plus{margin-top:14px}
+.po-large{width:min(1200px,calc(100% - 32px))}
+.po-couches{align-items:center;margin:0 0 12px}
+.po-sep{width:12px}
+.po-carte{position:relative}
+.po-map{height:70vh;height:calc(100dvh - 300px);min-height:420px;border-radius:18px;border:1px solid var(--au-fil,#D8E7DD);overflow:hidden;background-color:#E4EFE8}
+.po-bandeau{position:absolute;left:12px;right:12px;bottom:28px;z-index:650;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-radius:14px;background-color:#fff;border:1px solid var(--au-fil,#D8E7DD);box-shadow:0 10px 24px -16px rgba(18,60,40,.4)}
+.po-bandeau[hidden]{display:none}
+.po-bandeau[data-ton="alerte"]{background-color:#FBEBD8;border-color:#E9C79B}
+.po-bandeau p{margin:0;font-size:15px;line-height:1.4;font-weight:700;color:#16281E}
+.po-bouton{flex:none;min-height:44px;padding:0 14px;border:0;border-radius:12px;background-color:var(--au-accent,#1A3A2E);color:#fff;font-weight:700;font-size:15px}
+.po-pop{display:grid;gap:6px;font-family:var(--font);color:#16281E}
+.po-pop small{font-size:13px;color:#4A5D51}
+.po-pop ul{margin:0;padding:0;list-style:none;font-size:13px}
+.po-pop p{margin:0;font-size:14px}
+.po-epingle span{display:block;width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background-color:#1A3A2E;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+@media (max-width:700px){
+  .po-grille{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .po-grille .po-tuile:first-child{grid-column:1 / -1}
+  .po-et{max-width:none;justify-content:flex-start}
+  .po-large{width:auto}
+  .po-bandeau{flex-direction:column;align-items:stretch}
+}

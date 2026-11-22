@@ -98,7 +98,7 @@
   var PAS = 'Pas enregistré : réessayez dans un instant.';
   function norm(v) { return String(v == null ? '' : v).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim(); }
   /* La création elle-même, partagée avec l'écran Veille (window.PHIRST_PISTE.ajouter) : rend une promesse du message à dire.
-     p = { nom, ville, cp, departement, lat, lon, note }. */
+     p = { nom, ville, cp, departement, lat, lon, note } ; l'écran Officines ajoute { source, pharmacien, telephone, email, groupement } (21/11/2026 ; sans eux : « transfert », comme avant). */
   function ajouterPiste(p) {
     var V2 = window.V2, u = V2 && V2.user, sb = u && typeof V2.sb === 'function' ? V2.sb() : null;
     if (!p || !sb) return Promise.resolve(PAS);
@@ -112,8 +112,8 @@
       if (f.error || !Array.isArray(f.data)) return PAS;
       var k = norm(p.nom) + '|' + norm(p.ville);
       if (f.data.some(function (x) { return norm(x.nom) + '|' + norm(x.ville) === k; })) return 'Déjà dans vos pistes.';
-      return sb.rpc('telepro_creer_piste', { p_nom: p.nom, p_ville: p.ville || null, p_cp: p.cp || null, p_departement: p.departement || null, p_telephone: null, p_email: null,
-        p_pharmacien: null, p_lat: p.lat == null ? null : p.lat, p_lon: p.lon == null ? null : p.lon, p_source: 'transfert' }).then(function (n) {
+      return sb.rpc('telepro_creer_piste', { p_nom: p.nom, p_ville: p.ville || null, p_cp: p.cp || null, p_departement: p.departement || null, p_telephone: p.telephone || null, p_email: p.email || null,
+        p_pharmacien: p.pharmacien || null, p_lat: p.lat == null ? null : p.lat, p_lon: p.lon == null ? null : p.lon, p_source: p.source || 'transfert' }).then(function (n) {
         if (n.error || !n.data) return PAS;
         function fin() { return 'Ajoutée à vos pistes.'; }
         if (!p.note) return fin();
@@ -130,7 +130,8 @@
         var k = norm(p.nom) + '|' + norm(p.ville);
         if ((f.data || []).some(function (x) { return norm(x.nom) + '|' + norm(x.ville) === k; })) return 'Déjà dans vos pistes.';
         return sb.from('crm_prospects').insert({ workspace_id: ws, nom: p.nom, ville: p.ville, cp: p.cp, departement: p.departement,
-          stage: 'a_qualifier', source: 'transfert', lat: p.lat, lon: p.lon }).select('id').single().then(function (n) {
+          stage: 'a_qualifier', source: p.source || 'transfert', lat: p.lat, lon: p.lon,
+          pharmacien: p.pharmacien || null, telephone: p.telephone || null, email: p.email || null, groupement: p.groupement || null }).select('id').single().then(function (n) {
           if (n.error || !n.data) return PAS;
           function fin() { return 'Ajoutée à vos pistes.'; }
           if (!p.note) return fin();

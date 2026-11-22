@@ -623,6 +623,125 @@
     return erreur && (erreur.code === '42501' || erreur.code === '22023') && typeof erreur.message === 'string' && erreur.message.trim() ? erreur.message.trim() : '';
   }
 
+  /* ── Écrans Officines et Carte (21/11/2026) : logique PURE portée de ~/phirst-studio (lib/officines.ts, lib/couchesZoom.ts,
+     lib/pharmacies.ts pour l'anti-doublon, lib/telepro.ts pour le retrait des sommes). Les lignes viennent de la table
+     phirst_officines (chargée par le Mac) ; ici aucun accès à la base ni à la page. ── */
+  var ANGLES = [
+    { cle: 'toutes', nom: 'Toutes les officines' }, { cle: 'robots', nom: 'Robots concurrents' }, { cle: 'ehpad', nom: 'Fournisseurs EHPAD' },
+    { cle: 'transferts', nom: 'Transferts / cessions' }, { cle: 'signaux', nom: 'Signaux d’achat' }
+  ];
+  var N_INITIAL = 10, PAS_LISTE = 30;
+  var FILTRES_SIGNAUX = [{ k: '', l: 'Tous les signaux' }, { k: 'cession', l: 'Vient de changer de main' }, { k: 'pmr', l: 'Accessibilité PMR à reprendre' },
+    { k: 'ehpad', l: 'EHPAD à proximité' }, { k: 'sansRobot', l: 'Sans automate' }];
+  var FILTRES_TRANSFERTS = [{ k: '', l: 'Tous' }, { k: 'Cession', l: 'Cessions (changement de main)' }, { k: 'Création', l: 'Créations (officine neuve)' }];
+  function nomAngle(c) { for (var i = 0; i < ANGLES.length; i++) if (ANGLES[i].cle === c) return ANGLES[i].nom; return ANGLES[0].nom; }
+  function angleValide(c) { for (var i = 0; i < ANGLES.length; i++) if (ANGLES[i].cle === c) return c; return 'toutes'; }
+
+  /* Un texte qui parle d'argent : MÊME expression que phirst_montant (acces-telepro.sql) et contientMontant (lib/telepro.ts). */
+  var MONTANT = /\d[\d\s .,]*\s?(?:[kM]\s?€|€|k?eur(?:o|os)?\b|ht\b|h\.t\.|ttc\b|t\.t\.c\.|k\b)|€\s?\d/i;
+  function contientMontant(t) { return MONTANT.test(String(t == null ? '' : t)); }
+
+  /* La recherche : sans accent ni majuscule comme la colonne `recherche` ; les signes qui casseraient un filtre REST sont retirés. */
+  function recherchePropre(q) { return norm(q).replace(/[*%_,()"\\]/g, ' ').replace(/\s+/g, ' ').trim(); }
+  function depPropre(d) { return String(d == null ? '' : d).replace(/[^0-9A-Za-z]/g, '').slice(0, 5).toUpperCase(); }
+
+  /* L'état de l'écran { angle, france, q, dep, fab } -> filtres [opération, colonne, valeur] à poser sur la table, dans l'ordre. */
+  function requeteOfficines(e) {
+    var a = angleValide(e && e.angle), f = [['eq', 'angle', a]];
+    if (!e || !e.france) f.push(['eq', 'dans_secteur', true]);
+    var q = recherchePropre(e && e.q); if (q) f.push(['ilike', 'recherche', '*' + q + '*']);
+    var d = depPropre(e && e.dep); if (d) f.push(['like', 'dep', d + '*']);
+    var k = String((e && e.fab) || '');
+    if (k) {
+      if (a === 'robots') f.push(k === 'omnicell' ? ['eq', 'cat', 'omnicell'] : ['eq', 'fab', k]);
+      else if (a === 'transferts') f.push(['eq', 'tt_type', k]);
+      else if (a === 'signaux') {
+        var col = { cession: 'f_cession', pmr: 'f_pmr', ehpad: 'f_ehpad', sansRobot: 'f_sans_robot' }[k];
+        if (col) f.push(['eq', col, true]);
+      }
+    }
+    return f;
+  }
+  function libelleResultats(n) { return n.toLocaleString('fr-FR') + ' résultat' + (n > 1 ? 's' : ''); }
+  function libelleVoirPlus(total, n) {
+    var reste = total - n;
+    if (reste <= 0) return null;
+    if (reste >= PAS_LISTE) return 'Voir ' + PAS_LISTE + ' de plus';
+    return reste === 1 ? 'Voir 1 de plus' : 'Voir les ' + reste + ' de plus';
+  }
+  function joindre() { return Array.prototype.slice.call(arguments).filter(Boolean).join(' · '); }
+  function telFr(t) { var n = String(t == null ? '' : t).replace(/\D/g, ''); return n.length === 10 ? n.replace(/(\d{2})(?=\d)/g, '$1 ') : (t == null ? '' : String(t)); }
+  function frDate(d) { if (!d) return ''; var p = String(d).split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : String(d); }
+  function libelleGroupements(l) { l = (l || []).filter(Boolean); return l.length <= 1 ? (l[0] || '') : l.slice(0, -1).join(', ') + ' et ' + l[l.length - 1]; }
+
+  /* Les sommes. La table lisible par la téléprospectrice n'en contient AUCUNE (le chargeur les range dans phirst_officines_montants,
+     que seuls les membres lisent). Un membre : on les remet à leur place. Elle : on retire par prudence tout ce qui en cite une,
+     même si la base en avait laissé passer. montants = { champ: texte } ('robot_modele', 'pourquoi:<rang>'). */
+  function fusionnerSommes(l, montants) {
+    var o = {}, k; for (k in l) o[k] = l[k];
+    var m = montants || {};
+    o.pourquoi = (l.pourquoi || []).map(function (r, i) { return r === '' && m['pourquoi:' + i] ? m['pourquoi:' + i] : r; });
+    if (m.robot_modele) o.robot_modele = m.robot_modele;
+    return o;
+  }
+  function sansSommes(l) {
+    var o = {}, k; for (k in l) o[k] = l[k];
+    o.pourquoi = (l.pourquoi || []).filter(function (r) { return r && !contientMontant(r); });
+    o.sieges = (l.sieges || []).filter(function (r) { return r && !contientMontant(r); });
+    if (contientMontant(l.robot_modele)) o.robot_modele = null;
+    if (l.angle === 'robots' && contientMontant(l.sous)) o.sous = String(l.sous).replace(/\s—\s.*$/, '');
+    return o;
+  }
+  /* « → … » sous une ligne de signal : les raisons puis les numéros de siège ; les raisons vides (d'argent, non rendues) sautent. */
+  function pourquoiAffiche(l) { return (l.pourquoi || []).filter(Boolean).concat((l.sieges || []).filter(Boolean)); }
+  /* La sous-ligne d'un robot se refait avec le modèle complet quand le membre le connaît. */
+  function sousAffiche(l) {
+    if (l.angle === 'robots' && l.robot_modele) return joindre(joindre(l.dep ? String(l.dep) : '', l.ville), l.fab + ' — ' + l.robot_modele);
+    return l.sous || '';
+  }
+
+  /* Source et note posées à l'ajout (champsRobot, champsTransfert, champsEhpad, champsSignal, sourceEtNoteToutes de lib/officines.ts). */
+  function noteRobot(fab, modele, omni) { return 'Robot concurrent : ' + fab + (modele ? ' — ' + modele : '') + (omni ? ' (parc Omnicell en détresse — cible n°1 Riedl)' : ''); }
+  function noteTransfert(type, date) { return type + ' d’officine (BODACC, ' + frDate(date) + ') — prospect agencement'; }
+  function noteEhpad(n, proches) { var p = (proches || []).slice(0, 3).join(', '); return n + ' EHPAD à proximité' + (p ? ' (' + p + '…)' : '') + ' — prospect PDA / Farmadosis'; }
+  function sourceEtNote(l) {
+    if (l.angle === 'robots') return { source: 'robot', note: noteRobot(l.fab, l.robot_modele, l.cat === 'omnicell') };
+    if (l.angle === 'transferts') return { source: 'transfert', note: noteTransfert(l.tt_type, l.tt_date) };
+    if (l.angle === 'ehpad') return { source: 'pda', note: noteEhpad(l.n_ehpad, l.ehpad_proches) };
+    if (l.angle === 'signaux') return { source: 'signal', note: (l.pourquoi || []).filter(Boolean).join(' · ') || undefined };
+    if (l.tt_type) return { source: 'transfert', note: noteTransfert(l.tt_type, l.tt_date) };
+    if (l.fab) return { source: 'robot', note: noteRobot(l.fab, l.robot_modele, false) };
+    if (l.n_ehpad) return { source: 'pda', note: l.n_ehpad + ' EHPAD à proximité — prospect PDA' };
+    return { source: 'annuaire', note: undefined };
+  }
+  /* La fiche à créer, au format de window.PHIRST_PISTE.ajouter (phirst-ligne.js). */
+  function pisteDeLigne(l) {
+    var sn = sourceEtNote(l), dep = l.angle === 'ehpad' ? '' : String(l.dep == null ? '' : l.dep);
+    if (dep.length > 3) dep = dep.slice(0, 2);
+    return { nom: l.nom, ville: l.ville || '', cp: l.cp || '', departement: dep, pharmacien: l.pharmacien || '', telephone: l.telephone || '', email: l.email || '',
+      groupement: libelleGroupements(l.groupements), lat: l.lat == null ? null : l.lat, lon: l.lon == null ? null : l.lon, source: sn.source, note: sn.note };
+  }
+
+  /* Anti-doublon : { 'nom|ville' : id } des fiches du compte ; une officine est « déjà suivie » si l'une de ses fiches y est. */
+  function indexPistes(fiches) {
+    var ix = {}; (fiches || []).forEach(function (f) { if (f && f.id) ix[cle(f.nom, f.ville)] = f.id; }); return ix;
+  }
+  function ficheSuivie(l, ix) {
+    var c = (l.cles && l.cles.length ? l.cles : [cle(l.nom, l.ville)]);
+    for (var i = 0; i < c.length; i++) if (ix && ix[c[i]]) return ix[c[i]];
+    return null;
+  }
+
+  /* Seuils de zoom de la carte, choix de Will du 29/10/2026 « Masquer et le dire » : sous le seuil les couches ne se dessinent pas, le bandeau le dit. */
+  var SEUIL_COUCHES = { only: 6, france: 8 };
+  function couchesMasquees(zoom, perim) { return isFinite(zoom) && zoom < SEUIL_COUCHES[perim === 'france' ? 'france' : 'only']; }
+  function listeFrancaise(n) { return n.length <= 1 ? (n[0] || '') : n.slice(0, -1).join(', ') + ' et ' + n[n.length - 1]; }
+  function groupesCouches(c) { return (c || []).filter(function (x) { return x.n > 0; }).map(function (x) { return x.n.toLocaleString('fr-FR') + ' ' + x.nom; }); }
+  function phraseCachee(c) { var g = groupesCouches(c); return g.length ? listeFrancaise(g) + ' cachés à cette échelle' : ''; }
+  function phraseToutAffiche(c) { var g = groupesCouches(c); return g.length ? 'Tout est affiché : ' + listeFrancaise(g) : ''; }
+  function phraseVue(c) { var g = groupesCouches(c); return g.length ? 'Dans cette vue : ' + listeFrancaise(g) : ''; }
+  function libelleBouton(perim) { return perim === 'france' ? 'Zoomer pour tout voir' : 'Zoomer sur mon secteur'; }
+
   return {
     SECTEUR: SECTEUR, rang: rang, dansSecteur: dansSecteur, primeSecteur: primeSecteur, norm: norm, cle: cle,
     aujourdhui: aujourdhui, ajouterJours: ajouterJours, joursEntre: joursEntre, estJour: estJour, jourFr: jourFr,
@@ -640,6 +759,11 @@
     maj: maj, dureeFr: dureeFr, lieuPharmacie: lieuPharmacie, phraseRdv: phraseRdv, joursProposes: joursProposes, corpsRdv: corpsRdv,
     NB_PUCES: NB_PUCES, fenetreJours: fenetreJours, decalages: decalages, jourCourt: jourCourt, lierRdv: lierRdv, duJour: duJour,
     comptesParJour: comptesParJour, sousPuce: sousPuce, phraseLibres: phraseLibres, plagesLibres: plagesLibres, carteEnsuite: carteEnsuite, phraseEtat: phraseEtat,
-    equipeParId: equipeParId, estTelepro: estTelepro, nomAuteur: nomAuteur, avecAuteur: avecAuteur, ligneDeTelepro: ligneDeTelepro, momentDeTelepro: momentDeTelepro, MOTIFS: MOTIFS, agendaDeTelepro: agendaDeTelepro, messageDeLaBase: messageDeLaBase
+    equipeParId: equipeParId, estTelepro: estTelepro, nomAuteur: nomAuteur, avecAuteur: avecAuteur, ligneDeTelepro: ligneDeTelepro, momentDeTelepro: momentDeTelepro, MOTIFS: MOTIFS, agendaDeTelepro: agendaDeTelepro, messageDeLaBase: messageDeLaBase,
+    ANGLES: ANGLES, N_INITIAL: N_INITIAL, PAS_LISTE: PAS_LISTE, FILTRES_SIGNAUX: FILTRES_SIGNAUX, FILTRES_TRANSFERTS: FILTRES_TRANSFERTS, nomAngle: nomAngle, angleValide: angleValide,
+    contientMontant: contientMontant, recherchePropre: recherchePropre, depPropre: depPropre, requeteOfficines: requeteOfficines, libelleResultats: libelleResultats, libelleVoirPlus: libelleVoirPlus,
+    telFr: telFr, frDate: frDate, libelleGroupements: libelleGroupements, fusionnerSommes: fusionnerSommes, sansSommes: sansSommes, pourquoiAffiche: pourquoiAffiche, sousAffiche: sousAffiche,
+    sourceEtNote: sourceEtNote, pisteDeLigne: pisteDeLigne, indexPistes: indexPistes, ficheSuivie: ficheSuivie,
+    SEUIL_COUCHES: SEUIL_COUCHES, couchesMasquees: couchesMasquees, phraseCachee: phraseCachee, phraseToutAffiche: phraseToutAffiche, phraseVue: phraseVue, libelleBouton: libelleBouton
   };
 });
