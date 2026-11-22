@@ -742,6 +742,51 @@
   function phraseVue(c) { var g = groupesCouches(c); return g.length ? 'Dans cette vue : ' + listeFrancaise(g) : ''; }
   function libelleBouton(perim) { return perim === 'france' ? 'Zoomer pour tout voir' : 'Zoomer sur mon secteur'; }
 
+  /* Tournée du jour de la carte du CRM (lib/tourneeCarte.ts de la V1, mêmes calculs) : fiches à action due, dans l'ordre de visite le plus court. */
+  function kmRoute(r) { var n = 0; for (var i = 1; i < r.length; i++) n += kmEntre(r[i - 1], r[i]); return n; }
+  function chaineProche(stops, depart) {
+    var rest = stops.filter(function (x) { return x !== depart; }), out = [depart], cur = depart;
+    while (rest.length) {
+      var bi = 0, bd = Infinity;
+      rest.forEach(function (x, k) { var d = kmEntre(cur, x); if (d < bd) { bd = d; bi = k; } });
+      cur = rest[bi]; out.push(cur); rest.splice(bi, 1);
+    }
+    return out;
+  }
+  function ordreTournee(stops) {
+    if (stops.length < 3) return stops.slice();
+    if (stops.length > 80) return chaineProche(stops, stops[0]);
+    var best = chaineProche(stops, stops[0]), bestKm = kmRoute(best);
+    stops.slice(1).forEach(function (st) { var r = chaineProche(stops, st), d = kmRoute(r); if (d < bestKm) { best = r; bestKm = d; } });
+    var mieux = true;
+    while (mieux) {
+      mieux = false;
+      for (var i = 0; i < best.length - 2 && !mieux; i++) {
+        for (var j = i + 2; j < best.length; j++) {
+          var cand = best.slice(0, i + 1).concat(best.slice(i + 1, j + 1).reverse(), best.slice(j + 1)), d = kmRoute(cand);
+          if (d < bestKm - 0.01) { best = cand; bestKm = d; mieux = true; break; }
+        }
+      }
+    }
+    return best;
+  }
+  /* Les fiches de la tournée : action due aujourd'hui ou avant, ni perdue ni signée, avec une adresse sur la carte. */
+  function tourneeDuJour(pistes, jour) {
+    var ok = (pistes || []).filter(function (p) {
+      var la = typeof p.lat === 'string' ? parseFloat(p.lat) : p.lat, lo = typeof p.lon === 'string' ? parseFloat(p.lon) : p.lon;
+      return p.next_action_date && String(p.next_action_date).slice(0, 10) <= jour && p.stage !== 'perdu' && p.stage !== 'signe' && p.stage !== 'archive' &&
+        isFinite(la) && isFinite(lo) && la !== null && lo !== null;
+    }).map(function (p) { var o = {}; for (var k in p) o[k] = p[k]; o.lat = +p.lat; o.lon = +p.lon; return o; });
+    return ordreTournee(ok);
+  }
+  /* Itinéraire Google Maps (10 points au plus, comme la V1) ; null s'il n'y a pas au moins deux arrêts. */
+  function lienTournee(stops) {
+    if (!stops || stops.length < 2) return null;
+    var pts = stops.slice(0, 10), fin = pts[pts.length - 1];
+    var way = pts.slice(0, -1).map(function (p) { return p.lat + ',' + p.lon; }).join('|');
+    return 'https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=' + fin.lat + ',' + fin.lon + '&waypoints=' + encodeURIComponent(way);
+  }
+
   return {
     SECTEUR: SECTEUR, rang: rang, dansSecteur: dansSecteur, primeSecteur: primeSecteur, norm: norm, cle: cle,
     aujourdhui: aujourdhui, ajouterJours: ajouterJours, joursEntre: joursEntre, estJour: estJour, jourFr: jourFr,
@@ -764,6 +809,7 @@
     contientMontant: contientMontant, recherchePropre: recherchePropre, depPropre: depPropre, requeteOfficines: requeteOfficines, libelleResultats: libelleResultats, libelleVoirPlus: libelleVoirPlus,
     telFr: telFr, frDate: frDate, libelleGroupements: libelleGroupements, fusionnerSommes: fusionnerSommes, sansSommes: sansSommes, pourquoiAffiche: pourquoiAffiche, sousAffiche: sousAffiche,
     sourceEtNote: sourceEtNote, pisteDeLigne: pisteDeLigne, indexPistes: indexPistes, ficheSuivie: ficheSuivie,
-    SEUIL_COUCHES: SEUIL_COUCHES, couchesMasquees: couchesMasquees, phraseCachee: phraseCachee, phraseToutAffiche: phraseToutAffiche, phraseVue: phraseVue, libelleBouton: libelleBouton
+    SEUIL_COUCHES: SEUIL_COUCHES, couchesMasquees: couchesMasquees, phraseCachee: phraseCachee, phraseToutAffiche: phraseToutAffiche, phraseVue: phraseVue, libelleBouton: libelleBouton,
+    ordreTournee: ordreTournee, tourneeDuJour: tourneeDuJour, lienTournee: lienTournee, kmRoute: kmRoute
   };
 });

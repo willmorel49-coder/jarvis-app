@@ -107,3 +107,30 @@ describe('carte : seuils de zoom « Masquer et le dire »', () => {
     assert.equal(P.libelleBouton('only'), 'Zoomer sur mon secteur'); assert.equal(P.libelleBouton('france'), 'Zoomer pour tout voir')
   })
 })
+
+describe('tournée du jour de la carte (port de lib/tourneeCarte.ts)', () => {
+  const pt = (id, lat, lon, extra) => ({ id, nom: id, lat, lon, stage: 'a_rappeler', next_action_date: '2026-11-22', ...extra })
+  test('ordre le plus court : un détour absurde est supprimé', () => {
+    const o = P.ordreTournee([pt('A', 48, 0), pt('C', 48, 2), pt('B', 48, 1)])
+    assert.match(o.map((x) => x.id).join(''), /^(ABC|CBA)$/)
+    assert.ok(P.kmRoute(o) <= P.kmRoute([pt('A', 48, 0), pt('C', 48, 2), pt('B', 48, 1)]))
+  })
+  test('moins de 3 arrêts : ordre inchangé', () => {
+    assert.deepEqual(P.ordreTournee([pt('B', 1, 1), pt('A', 2, 2)]).map((x) => x.id), ['B', 'A'])
+  })
+  test('ne garde que les actions dues, ni perdues ni signées ni archivées, avec adresse (lat/lon texte acceptés)', () => {
+    const t = P.tourneeDuJour([
+      pt('ok1', 47, -1), pt('ok2', '47.5', '-1.2', { next_action_date: '2026-11-20' }),
+      pt('futur', 47, -1, { next_action_date: '2026-11-23' }), pt('perdu', 47, -1, { stage: 'perdu' }), pt('signe', 47, -1, { stage: 'signe' }),
+      pt('arch', 47, -1, { stage: 'archive' }), pt('sansadr', null, null), pt('sansdate', 47, -1, { next_action_date: null })
+    ], '2026-11-22')
+    assert.deepEqual(t.map((x) => x.id).sort(), ['ok1', 'ok2'])
+    assert.equal(typeof t[0].lat, 'number')
+  })
+  test('lien Google Maps : 10 points au plus, absent sous 2 arrêts', () => {
+    assert.equal(P.lienTournee([pt('A', 1, 1)]), null)
+    const l = P.lienTournee(Array.from({ length: 12 }, (_, i) => pt('S' + i, 47 + i / 100, -1)))
+    assert.match(l, /^https:\/\/www\.google\.com\/maps\/dir\/\?api=1&travelmode=driving&destination=47\.09,-1&waypoints=/)
+    assert.equal(decodeURIComponent(l.split('waypoints=')[1]).split('|').length, 9)
+  })
+})

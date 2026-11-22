@@ -217,7 +217,7 @@
   var SECTEUR_BORNES = [[46.2, -5.3], [49.8, 1.2]];
   var CAP_PAGES = 4;
   var M = { racine: null, map: null, perim: 'only', on: { fiches: true, robots: true, transferts: true, ehpad: true, signaux: false, toutes: false },
-    groupes: {}, lignes: {}, ix: {}, pistes: [], sommes: null, jeton: 0, minuteur: 0, totaux: {}, vus: {}, plafond: false };
+    groupes: {}, lignes: {}, ix: {}, pistes: [], sommes: null, jeton: 0, minuteur: 0, totaux: {}, vus: {}, plafond: false, fab: '', meta: {} };
 
   function chargerLeaflet(cb) {
     function css(h) { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = h; document.head.appendChild(l); }
@@ -236,7 +236,7 @@
     });
   }
   function coordOk(la, lo) { return typeof la === 'number' && typeof lo === 'number' && la > -22 && la < 52 && lo > -64 && lo < 56; }
-  function filtresCouche(a) { var f = [['eq', 'angle', a]]; if (M.perim === 'only') f.push(['eq', 'dans_secteur', true]); return f; }
+  function filtresCouche(a) { return P.requeteOfficines({ angle: a, france: M.perim === 'france', fab: a === 'robots' ? M.fab : '' }); }
 
   /* Bandeau SUR la carte (choix m1) : dit ce que la vue trop large ne dessine pas, avec un bouton pour s'en approcher ; sinon ce qui est dans la vue. */
   function dire(ton, phrase, bouton) {
@@ -247,7 +247,7 @@
   }
   function couchesActives() { return ORDRE.filter(function (k) { return k !== 'fiches' && M.on[k]; }); }
   function totalCouche(a) {
-    var cle = M.perim + '|' + a;
+    var cle = M.perim + '|' + a + '|' + (a === 'robots' ? M.fab : '');
     if (M.totaux[cle] !== undefined) return Promise.resolve(M.totaux[cle]);
     return compter(filtresCouche(a)).then(function (n) { if (n !== null) M.totaux[cle] = n; return n || 0; });
   }
@@ -338,15 +338,44 @@
   }
   function dessinerPuces() {
     var z = M.racine && M.racine.querySelector('#po-couches'); if (!z) return;
-    z.innerHTML = ORDRE.map(function (k) { return '<button type="button" class="pa-chip" data-couche="' + k + '" aria-pressed="' + !!M.on[k] + '">' + esc(LIB_COUCHE[k]) + '</button>'; }).join('') +
+    var vivantes = (M.pistes || []).filter(function (p) { return p.stage !== 'archive'; }).length;
+    function nb(k) { var n = k === 'fiches' ? vivantes : M.totaux[M.perim + '|' + k + '|' + (k === 'robots' ? M.fab : '')]; return n == null ? '' : ' <span class="po-cn">' + n.toLocaleString('fr-FR') + '</span>'; }
+    z.innerHTML = ORDRE.map(function (k) { return '<button type="button" class="pa-chip" data-couche="' + k + '" aria-pressed="' + !!M.on[k] + '">' + esc(LIB_COUCHE[k]) + nb(k) + '</button>'; }).join('') +
       '<span class="po-sep"></span><button type="button" class="pa-chip" data-perim="only" aria-pressed="' + (M.perim === 'only') + '">Secteur de Yann</button>' +
       '<button type="button" class="pa-chip" data-perim="france" aria-pressed="' + (M.perim === 'france') + '">Toute la France</button>';
+    var f = M.racine.querySelector('#po-parc'); if (!f) return;
+    var fabs = M.meta.fabs || [];
+    if (!M.on.robots || !fabs.length) { f.hidden = true; f.innerHTML = ''; return; }
+    f.hidden = false;
+    f.innerHTML = '<span class="po-parc-t">Parc concurrent</span>' + [{ key: '', label: 'Tous' }].concat(fabs.map(function (x) { return { key: x.key, label: x.label + ' (' + x.n + ')' }; })).map(function (x) {
+      return '<button type="button" class="pa-chip" data-parc="' + esc(x.key) + '" aria-pressed="' + (M.fab === x.key) + '">' + esc(x.label) + '</button>'; }).join('');
+  }
+  function chargerTotaux() {
+    var jeton = M.perim + '|' + M.fab;
+    ORDRE.filter(function (k) { return k !== 'fiches'; }).forEach(function (k) { totalCouche(k).then(function () { if (M.racine && jeton === M.perim + '|' + M.fab) dessinerPuces(); }); });
+  }
+  /* « Ma tournée du jour » : les fiches dont l'action est due, dans l'ordre de visite le plus court (V1 : tournée de la carte du CRM). */
+  function dessinerTournee() {
+    var z = M.racine && M.racine.querySelector('#po-pipe'); if (!z) return;
+    var stops = P.tourneeDuJour(M.pistes, P.aujourdhui());
+    var lien = P.lienTournee(stops), km = Math.round(P.kmRoute(stops));
+    var lignes = stops.map(function (p, i) {
+      var d = i > 0 ? Math.round(P.kmEntre(stops[i - 1], p)) : null;
+      return '<li class="po-arret"><span class="po-num">' + (i + 1) + '</span><div><b>' + esc(p.nom) + '</b><small>' + esc([p.ville, p.next_action, d ? d + ' km du précédent' : ''].filter(Boolean).join(' · ')) + '</small></div>' +
+        (p.telephone ? '<a class="pa-b" href="tel:' + esc(String(p.telephone).replace(/\s/g, '')) + '" aria-label="Appeler ' + esc(p.nom) + '">Appeler</a>' : '') + '</li>';
+    });
+    z.innerHTML = '<h2 class="po-h2">Ma tournée du jour' + (stops.length ? ' · ' + stops.length + ' arrêt' + (stops.length > 1 ? 's' : '') + (stops.length > 1 ? ' · ' + km + ' km' : '') : '') + '</h2>' +
+      (stops.length ? '<ol class="po-arrets">' + lignes.slice(0, 5).join('') + '</ol>' +
+        (lignes.length > 5 ? '<details class="po-savoir"><summary>Voir les ' + (lignes.length - 5) + ' autres arrêts</summary><ol class="po-arrets">' + lignes.slice(5).join('') + '</ol></details>' : '') +
+        (lien ? '<a class="pa-b pa-ok" href="' + esc(lien) + '" target="_blank" rel="noopener">Ouvrir l’itinéraire</a>' : '')
+        : '<p class="pa-avis">Rien à visiter aujourd’hui. Fixez une date de relance sur une piste (écran Appels) : elle apparaît ici, rangée dans l’ordre de visite.</p>');
   }
   function clicCarte(ev) {
     var t = ev.target, g;
     if ((g = t.closest('[data-vers]'))) { V2.go(g.getAttribute('data-vers')); return; }
     if ((g = t.closest('[data-couche]'))) { var k = g.getAttribute('data-couche'); M.on[k] = !M.on[k]; if (!M.on[k]) vider(k); dessinerPuces(); actualiser(); return; }
-    if ((g = t.closest('[data-perim]'))) { M.perim = g.getAttribute('data-perim'); M.totaux = {}; ORDRE.forEach(vider); dessinerPuces(); cadrer(); actualiser(); return; }
+    if ((g = t.closest('[data-parc]'))) { M.fab = g.getAttribute('data-parc'); vider('robots'); dessinerPuces(); chargerTotaux(); actualiser(); return; }
+    if ((g = t.closest('[data-perim]'))) { M.perim = g.getAttribute('data-perim'); M.totaux = {}; ORDRE.forEach(vider); dessinerPuces(); chargerTotaux(); cadrer(); actualiser(); return; }
     if (t.closest('[data-zoomer]')) { if (M.perim === 'france') M.map.setZoom(Math.max(M.map.getZoom(), P.SEUIL_COUCHES.france)); else cadrer(); setTimeout(actualiser, 50); return; }
     if ((g = t.closest('[data-ajout-carte]'))) {
       var l = M.lignes[g.getAttribute('data-ajout-carte')], dit = g.parentNode.querySelector('.pa-dit');
@@ -354,7 +383,7 @@
       g.disabled = true; if (dit) dit.textContent = '';
       window.PHIRST_PISTE.ajouter(P.pisteDeLigne(l)).then(function (m) {
         if (dit) dit.textContent = m;
-        if (FAIT.indexOf(m) >= 0) lirePistes(true).then(function (p) { M.pistes = p || M.pistes; M.ix = P.indexPistes(M.pistes); tracerPistes(); }); else g.disabled = false;
+        if (FAIT.indexOf(m) >= 0) lirePistes(true).then(function (p) { M.pistes = p || M.pistes; M.ix = P.indexPistes(M.pistes); dessinerPuces(); dessinerTournee(); tracerPistes(); }); else g.disabled = false;
       });
     }
   }
@@ -362,8 +391,8 @@
     if (M.map) { try { M.map.remove(); } catch (e) { /* carte déjà démontée */ } M.map = null; }
     M.racine = root; M.groupes = {}; M.lignes = {}; M.totaux = {};
     root.innerHTML = '<section class="pa po po-large" aria-label="La carte"><header class="pa-tete"><h1>La carte</h1><p>Vos fiches en épingles, les cibles du secteur en points. <span id="po-fiches"></span></p></header>' +
-      '<div class="pa-chips po-couches" id="po-couches" role="group" aria-label="Couches"></div>' +
-      '<div class="po-carte"><div id="po-map" class="po-map" role="application" aria-label="Carte des pharmacies"></div><div id="po-bandeau" class="po-bandeau" role="status" hidden></div></div></section>';
+      '<div class="pa-chips po-couches" id="po-couches" role="group" aria-label="Couches"></div><div class="pa-chips po-parc" id="po-parc" role="group" aria-label="Parc concurrent" hidden></div>' +
+      '<div class="po-carte"><div id="po-map" class="po-map" role="application" aria-label="Carte des pharmacies"></div><div id="po-bandeau" class="po-bandeau" role="status" hidden></div></div><div id="po-pipe" class="po-pipe"></div></section>';
     if (!root.__pc) { root.__pc = true; root.addEventListener('click', clicCarte); }
     dessinerPuces();
     if (!sb()) { dire('alerte', 'Connectez-vous pour voir la carte.'); return; }
@@ -377,7 +406,9 @@
       cadrer();
       M.map.on('moveend', function () { clearTimeout(M.minuteur); M.minuteur = setTimeout(actualiser, 300); });
       setTimeout(function () { if (M.map) M.map.invalidateSize(); }, 50);
-      lirePistes(true).then(function (p) { M.pistes = p || []; M.ix = P.indexPistes(M.pistes); actualiser(); });
+      lireMeta().then(function (m) { M.meta = m || {}; dessinerPuces(); });
+      chargerTotaux();
+      lirePistes(true).then(function (p) { M.pistes = p || []; M.ix = P.indexPistes(M.pistes); dessinerPuces(); dessinerTournee(); actualiser(); });
     });
   } };
 })();
