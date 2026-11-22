@@ -132,7 +132,7 @@
       : '<button type="button" class="pa-b pa-ok" data-ajout="1" aria-label="Ajouter ' + esc(l.nom_affiche || l.nom) + ' à mes pistes">Ajouter à mes pistes</button>';
     return '<li class="pa-l" data-i="' + i + '"><div class="pa-ht"><div><b>' + esc(l.nom_affiche || l.nom) + '</b><small>' + esc(P.sousAffiche(l)) + '</small></div><div class="po-et">' + pastilles(l) + '</div></div>' +
       (pour.length ? '<ul class="pa-au">' + pour.map(function (r) { return '<li>→ ' + esc(r) + '</li>'; }).join('') + '</ul>' : '') +
-      '<div class="pa-bs">' + (l.annonce ? '<a class="pa-b" href="' + esc(l.annonce) + '" target="_blank" rel="noopener">Voir l’annonce</a>' : '') + action + '</div>' +
+      '<div class="pa-bs">' + (P.lienSur(l.annonce) ? '<a class="pa-b" href="' + esc(P.lienSur(l.annonce)) + '" target="_blank" rel="noopener">Voir l’annonce</a>' : '') + action + '</div>' +
       '<p class="pa-dit" role="status">' + (ficheId ? '' : esc(f)) + '</p></li>';
   }
   function dessinerListe() {
