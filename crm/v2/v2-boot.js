@@ -8,6 +8,61 @@
 
   var V2 = window.V2 = window.V2 || {};
 
+  // ── Garde commune des fichiers .json des robots (audit V3 du 22/11/2026, D10) ──
+  // 32 lectures se faisaient par un fetch direct, hors du chargeur : un fichier absent (404), une coupure ou une
+  // réponse tronquée donnait « aucune baisse », « aucune actualité »… indiscernable d'un vrai zéro, sans bandeau.
+  // Toute lecture GET d'un .json de crm/v2 passe désormais par ici : l'écran garde son comportement d'avant,
+  // mais l'échec est NOTÉ (V2.protegeEchec, clé = nom du fichier, ex. « prix.json ») et le bandeau le dit.
+  // Une coupure ou une erreur du serveur est réessayée une fois, en silence, avant d'être signalée.
+  // La lecture réussie d'un fichier efface son échec. Rien d'autre n'est touché (Supabase, autres sites, .js).
+  V2.protegeEchec = V2.protegeEchec || {};
+  (function () {
+    var natif = window.fetch;
+    if (typeof natif !== 'function' || natif.v2Garde) return;
+    function cleJson(entree, init) {
+      try {
+        var m = String((init && init.method) || (entree && entree.method) || 'GET').toUpperCase();
+        if (m !== 'GET') return null;
+        var u = new URL(typeof entree === 'string' ? entree : (entree && entree.url) || String(entree), location.href);
+        var i = u.pathname.indexOf('/crm/v2/');
+        if (u.origin !== location.origin || i < 0 || !/\.json$/.test(u.pathname)) return null;
+        return u.pathname.slice(i + 8);
+      } catch (e) { return null; }
+    }
+    function dire() { try { if (V2.bandeauDonneesManquantes) V2.bandeauDonneesManquantes(); } catch (e) { /* rien */ } }
+    function echec(cle) { V2.protegeEchec[cle] = true; dire(); }
+    function reussite(cle) { if (V2.protegeEchec[cle]) { delete V2.protegeEchec[cle]; dire(); } }
+    function garder(cle, r) {
+      if (!r || !r.ok) { echec(cle); return r; }
+      var lire = r.json;
+      try {
+        r.json = function () {
+          return lire.call(r).then(function (j) { reussite(cle); return j; }, function (e) { echec(cle); throw e; });
+        };
+      } catch (e) { reussite(cle); }
+      return r;
+    }
+    function garde(entree, init) {
+      var cle = cleJson(entree, init);
+      if (!cle) return natif.apply(window, arguments);
+      var args = arguments;
+      function essai(n) {
+        return natif.apply(window, args).then(function (r) {
+          if (n === 0 && r && r.status >= 500) return new Promise(function (ok) { setTimeout(ok, 1000); }).then(function () { return essai(1); });
+          return garder(cle, r);
+        }, function (err) {
+          if (err && err.name === 'AbortError') throw err;
+          if (n === 0) return new Promise(function (ok) { setTimeout(ok, 1000); }).then(function () { return essai(1); });
+          echec(cle);
+          throw err;
+        });
+      }
+      return essai(0);
+    }
+    garde.v2Garde = true;
+    window.fetch = garde;
+  })();
+
   // Officines en « reprise récente » (changement d'entité juridique FINESS+) — robot mensuel.
   // JSON fetché frais (cache-buster + no-store, comme infos-jour) → auto-actualisé sans re-déploiement.
   window.REPRISES = window.REPRISES || {};
@@ -988,7 +1043,8 @@
 
   // Fichiers protégés dont l'adresse a été refusée pour de bon. Lu par l'écran
   // pour PRÉVENIR au lieu d'afficher des zéros. Vidé dès qu'un essai réussit.
-  V2.protegeEchec = {};
+  // (créé plus haut par la garde des .json : ne pas l'écraser)
+  V2.protegeEchec = V2.protegeEchec || {};
   V2.donneesProtegeesKO = function () { return Object.keys(V2.protegeEchec); };
 
   function attendre(ms) {

@@ -54,11 +54,56 @@
   // zéros muets sur un CA, c'est pire que pas d'écran du tout : on les croit.
   // `wml` a déjà son écran plein (« Données non chargées ») ; ce bandeau couvre
   // les deux autres, qui échouaient sans un mot.
+  // 22/11/2026 (audit V3, D11) — le bandeau ne traduisait que 3 noms : pour les 46 autres fichiers il écrivait
+  // « (pharmafrca) », « (margeclients) »… au commercial. Chaque fichier a maintenant son nom en mots simples,
+  // y compris les fichiers des robots lus en direct (« prix.json »…, garde commune de v2-boot.js, D10).
+  // Un nom absent de la liste ne s'affiche JAMAIS tel quel : « d’autres informations ».
+  // tests/bandeau-donnees-mots-simples.test.mjs vérifie que chaque fichier connu a son nom ici.
   var LIB_PROTEGE = {
-    wml: 'les officines et leurs ventes',
-    establishments: 'le chiffre d’affaires par établissement',
-    sagitta: 'la sélection Sagitta'
+    wml: 'les officines et leurs ventes', wmlca: 'le chiffre d’affaires des officines',
+    establishments: 'le chiffre d’affaires par établissement', etabventes: 'les ventes par établissement',
+    grpagregats: 'les totaux par groupement', margeclients: 'notre marge par client', margeproduits: 'notre marge par produit',
+    margeprive: 'les règles de marge', clientscond: 'les conditions des clientes', clientsactifs: 'les clientes actives',
+    clients: 'les officines du secteur', grplogos: 'les logos des groupements', tournees: 'les tournées des établissements',
+    ppht: 'les prix du catalogue', tarifage: 'la date des prix', prodstats: 'les ventes par produit',
+    prodstatscond: 'les conditions par produit', catcomplet: 'le catalogue complet', catgroupe: 'le catalogue du groupe',
+    mktrayons: 'les rayons du catalogue', mktipprix: 'les prix Intégral du marketing', mktnr: 'les produits non remboursables du marketing',
+    biosimcomplet: 'les biosimilaires', officinesinfos: 'les fiches des officines (adresse, SIREN)',
+    pharmafrca: 'le chiffre d’affaires des officines de France', pharmafrseg: 'le classement des officines de France',
+    pharmafrcomm: 'les commerciaux des officines de France', secteursajoutes: 'les secteurs ajoutés',
+    bench: 'la comparaison des prix', benchcond: 'les conditions de la comparaison des prix',
+    sagitta: 'la sélection Sagitta', sagittaprix: 'les prix Sagitta', ocpprix: 'les prix OCP', pharmazonprix: 'les prix Pharmazon', pharmazon: 'les prix Pharmazon',
+    offilog: 'le catalogue Offilog', offilogcond: 'les conditions Offilog', offilogbestprix: 'les prix Offilog',
+    offilogopp: 'les opportunités Offilog', offilogprixcat: 'les prix du catalogue Offilog', offilogcatopso: 'le catalogue Offilog d’OPSO',
+    offilogcatalogue: 'les prix du catalogue Offilog', offilogexclus: 'les exclusions Offilog', offilognouv: 'les nouveautés Offilog',
+    offilogcats: 'les rayons Offilog', offiloglive: 'le catalogue Offilog en ligne', offiloglivprix: 'les prix Offilog en ligne',
+    offilogmarche: 'les ventes Offilog du marché', opsooffilogacces: 'l’accès Offilog',
+    concsagitta: 'la fiche concurrent Sagitta', concocp: 'la fiche concurrent OCP', concetudes: 'les études concurrents',
+    conccooper: 'la fiche concurrent Cooper', concfarmaline: 'la fiche concurrent Farmaline', concetradi: 'la fiche concurrent e-Tradi',
+    concalliance: 'la fiche concurrent Alliance', concpharmafit: 'la fiche concurrent Pharmafit', conccerp: 'la fiche concurrent CERP',
+    concd2p: 'la fiche concurrent D2P', concepsilon: 'la fiche concurrent Epsilon', concgroupements: 'les groupements concurrents',
+    drakkars: 'les prix Drakkars', cap3000: 'les prix Cap 3000', leclercpub: 'les prix publics Leclerc', drakkarspub: 'les prix publics Drakkars',
+    farmalinepub: 'les prix publics Farmaline', maxiparapub: 'les prix publics Maxipara', cap3000pub: 'les prix publics Cap 3000',
+    citypharmapub: 'les prix publics Citypharma',
+    opsostats: 'les chiffres OPSO', opsolisting: 'les adhérents OPSO', opsoprevision: 'le plan OPSO 2027', opsocontrat: 'le suivi OPSO',
+    'ansm-causes.json': 'les causes de rupture (ANSM)', 'ansm-dispo.json': 'les ruptures du jour (ANSM)', 'ansm-histo.json': 'l’historique des ruptures (ANSM)',
+    'appro-source.json': 'les fournisseurs des produits', 'labo-cip.json': 'les laboratoires des produits',
+    'bodacc-secteur.json': 'les annonces légales du secteur', 'brief-archive.json': 'les éditions précédentes du matin', 'brief-jour.json': 'l’édition du matin',
+    'calendrier-officine.json': 'le calendrier de l’officine', 'concurrents-implantations.json': 'les implantations des concurrents',
+    'correspondance-cles.json': 'la correspondance des codes', 'departements-contours.json': 'la carte des départements',
+    'ema-generiques.json': 'les génériques à venir (Europe)', 'ema-penuries.json': 'les pénuries européennes', 'epidemio.json': 'les épidémies en cours',
+    'generiques-bdpm.json': 'les nouveaux génériques', 'grossistes-actu.json': 'l’actualité des grossistes', 'grossistes-liens.json': 'les liens entre grossistes',
+    'grossistes-points.json': 'la carte des grossistes', 'grossistes-verifie.json': 'les fiches des grossistes', 'has-avis.json': 'les avis de la HAS',
+    'infos-jour.json': 'les infos du jour', 'marche-dm.json': 'le marché des dispositifs médicaux', 'marche-regional.json': 'le marché régional',
+    'mitm.json': 'les médicaments d’intérêt majeur', 'national.json': 'le marché France', 'odisse.json': 'les chiffres de santé publique',
+    'oimg-cut/liste.json': 'les photos de la vitrine', 'openmedic.json': 'les remboursements par produit', 'parc-officines.json': 'les ouvertures et fermetures d’officines',
+    'points.json': 'la carte des groupements', 'previsions.json': 'les prévisions du marché', 'prix-futurs-archive.json': 'les baisses de prix passées',
+    'prix-futurs.json': 'les baisses de prix à venir', 'prix.json': 'les baisses de prix', 'rappels-lots.json': 'les rappels de lots', 'rappels.json': 'les rappels de produits',
+    'reprises.json': 'les reprises d’officines', 'saison-cip.json': 'la saison des produits'
   };
+  V2.LIB_DONNEES = LIB_PROTEGE;
+  // Fichier lu par la garde commune des .json (v2-boot.js) : « Réessayer » ne sait pas le relancer.
+  function estJson(k) { return /\.json$/.test(k); }
   V2.bandeauDonneesManquantes = function () {
     ensureAppbarCss();
     var ex = document.getElementById('v2-databar');
@@ -70,21 +115,32 @@
       ex.className = 'v2-appbar v2-appbar-data';
       document.body.appendChild(ex);
     }
-    var quoi = ko.map(function (k) { return LIB_PROTEGE[k] || k; }).join(' et ');
+    var noms = [], inconnus = 0;
+    ko.forEach(function (k) {
+      var n = LIB_PROTEGE[k];
+      if (!n) { inconnus++; return; }
+      if (noms.indexOf(n) < 0) noms.push(n);
+    });
+    // Au plus 3 noms : au-delà, la phrase ne se lit plus.
+    var reste = Math.max(0, noms.length - 3) + inconnus;
+    var tete = noms.slice(0, 3);
+    if (reste) tete.push(noms.length ? 'd’autres informations' : 'une partie des informations');
+    var quoi = tete.length > 1 ? tete.slice(0, -1).join(', ') + ' et ' + tete[tete.length - 1] : tete[0];
+    var relancable = ko.some(function (k) { return !estJson(k); });
     ex.innerHTML =
       '<div class="v2-appbar-in">' +
-        '<span class="v2-appbar-lbl">Les chiffres n’ont pas pu être téléchargés (' + quoi +
-        '). Ce qui s’affiche est incomplet.</span>' +
-        '<button class="v2-btn v2-btn-primary v2-appbar-go" onclick="V2.rechargerDonneesProtegees()">Réessayer</button>' +
+        '<span class="v2-appbar-lbl">Pas pu être téléchargé : ' + quoi +
+        '. Ce qui s’affiche est incomplet.</span>' +
+        (relancable ? '<button class="v2-btn v2-btn-primary v2-appbar-go" onclick="V2.rechargerDonneesProtegees()">Réessayer</button>' : '') +
       '</div>';
     ex.classList.add('show');
   };
   V2.rechargerDonneesProtegees = function () {
-    var ko = (V2.donneesProtegeesKO && V2.donneesProtegeesKO()) || [];
+    var ko = ((V2.donneesProtegeesKO && V2.donneesProtegeesKO()) || []).filter(function (k) { return !estJson(k); });
     if (!ko.length || !V2.loadFiles) return;
     V2.toast('Nouvelle tentative…');
     V2.loadFiles(ko).then(function () {
-      var reste = (V2.donneesProtegeesKO && V2.donneesProtegeesKO()) || [];
+      var reste = ((V2.donneesProtegeesKO && V2.donneesProtegeesKO()) || []).filter(function (k) { return ko.indexOf(k) >= 0; });
       if (reste.length) V2.toast('Toujours indisponible — vérifiez votre connexion', 'error');
       else V2.toast('Chiffres récupérés');
       V2.render();
