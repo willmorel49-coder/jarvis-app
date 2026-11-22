@@ -5717,7 +5717,7 @@
     var membersCard =
       '<div class="v2-card" id="gr-membres" style="margin-bottom:22px">' +
         '<div class="v2-card-head"><div class="v2-card-t">' + ICO('pharma', 17) + 'Pharmacies du groupement</div>' +
-          '<span class="v2-card-link" style="cursor:default;color:var(--muted)">' + members.length + ' officine' + (members.length > 1 ? 's' : '') + ' dont ' + data.panel + ' active' + (data.panel > 1 ? 's' : '') + '</span></div>' +
+          '<span class="v2-card-link" style="cursor:default;color:var(--muted)">' + members.length + ' officine' + (members.length > 1 ? 's' : '') + '</span></div>' +   // 22/11/2026 (A-59) : « dont N actives » valait toujours N
         (memRows ? '<p class="gr-leg">Montant à droite : chiffre d’affaires net hors taxes de chaque officine ' + (cl1PerVDe() || 'sur la période chargée') + '. Classées des actives aux non actives, puis par chiffre d’affaires.</p>' : '') +
         (memRows || '<div class="v2-empty"><div class="v2-empty-d">Aucune pharmacie de ce groupement dans vos données.</div></div>') +
       '</div>';

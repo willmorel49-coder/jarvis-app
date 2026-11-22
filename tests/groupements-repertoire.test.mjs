@@ -133,3 +133,14 @@ test('liste et détail : plus de « actives sur », la part chez nous les rempla
   assert.match(inconnu, /taille du groupement inconnue/);
   assert.ok(!/%/.test(inconnu), 'aucun pourcentage quand la taille est inconnue');
 });
+
+// 22/11/2026, vu sur la photo de production du détail : « 127 officines dont 127 actives » (toujours N sur N) et le compteur des
+// deux capsules en blanc sur l'en-tête clair de l'aube (invisible).
+test('détail : plus de « dont N actives », compteurs des capsules lisibles sur l\'en-tête clair', () => {
+  assert.ok(!/' dont ' \+ data\.panel/.test(codeSeul), '« dont N actives » encore écrit dans la carte des pharmacies');
+  const css = readFileSync(new URL('../crm/v2/v2-groupements-m1.css', import.meta.url), 'utf8');
+  const regle = (css.match(/\.gr-cnt\{display[^}]*\}/) || [''])[0];
+  assert.ok(regle, 'règle .gr-cnt introuvable');
+  assert.ok(!/color:#fff/i.test(regle), 'compteur encore blanc : ' + regle);
+  assert.match(regle, /color:var\(--ip-blue-d\)/);
+});

@@ -41,7 +41,7 @@
 .gr-tabs .v2-tab:focus-visible,.gr-cap:focus-visible{outline:3px solid #fff;outline-offset:2px}
 @media (hover:hover){.gr-tabs .v2-tab:not(.on):hover,.gr-cap:hover{background:rgba(0,26,104,.82);border-color:rgba(255,255,255,.7);color:#fff;transform:translateY(-2px)}}
 .gr-cap{padding:0 8px 0 18px}
-.gr-cnt{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 9px;border-radius:999px;background:rgba(255,255,255,.24);color:#fff;font:800 14px/1 var(--font)}
+.gr-cnt{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 9px;border-radius:999px;background:var(--halo,#EAF0FF);color:var(--ip-blue-d);font:800 14px/1 var(--font)}   /* 22/11/2026 : blanc sur blanc depuis l'en-tête clair de l'aube */
 
 /* la scène du repos : une lueur qui dérive derrière le texte (liste, détail) ; aucun texte, transform et opacity seulement */
 .gr-lu{position:absolute;z-index:-1;right:-150px;top:-190px;width:500px;height:500px;border-radius:50%;pointer-events:none;background:radial-gradient(closest-side,rgba(255,255,255,.2),rgba(255,255,255,0));animation:gr-lu 11s ease-in-out infinite;will-change:transform,opacity}
