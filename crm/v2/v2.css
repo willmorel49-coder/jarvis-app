@@ -112,7 +112,7 @@
   --mo-dur:300ms; /* durée d'entrée alignée sur la famille .3s dominante (snappy) */
   /* typo */
   --font:'Satoshi','Inter',system-ui,-apple-system,sans-serif;
-  --mono:'Geist Mono',ui-monospace,monospace;
+  --mono:var(--font); /* 22/11/2026 : plus aucune police à chasse fixe à l'écran (choix de Will) ; les chiffres restent alignés par font-variant-numeric:tabular-nums */
 }
 
 *{margin:0;padding:0;box-sizing:border-box}
@@ -151,7 +151,7 @@ border-bottom:1px solid var(--line)}
 .v2-top-search:hover{border-color:color-mix(in srgb,var(--ip-blue) 30%,var(--line));box-shadow:0 0 0 3px color-mix(in srgb,var(--ip-blue) 12%,transparent),var(--sh-1)}
 .v2-top-search svg{color:var(--ip-blue)}
 .v2-top-search kbd{margin-left:auto;font-family:var(--mono);font-size:12px;background:#F1F3F8;
-  padding:3px 7px;border-radius:6px;color:var(--ip-ink-2);font-weight:500}
+  padding:3px 7px;border-radius:6px;color:var(--ip-ink-2);font-weight:500;font-variant-numeric:tabular-nums}
 .v2-av{width:36px;height:36px;border-radius:50%;flex-shrink:0;cursor:pointer;
   background:linear-gradient(150deg,#3A4766,#1A2030); /* 22/11/2026 lot 1 V3 : encre de l'aube, plus d'orange (A-2) */
   box-shadow:0 3px 9px rgba(26,32,48,.28),0 1px 0 rgba(255,255,255,.3) inset;
@@ -224,7 +224,7 @@ border-bottom:1px solid var(--line)}
   border:none;background:none;color:var(--muted-2);cursor:pointer;border-radius:50%;flex-shrink:0;padding:0}
 .v2-grp-search-x:hover{background:var(--card-2);color:var(--ip-ink)}
 .v2-search kbd{font-family:var(--mono);font-size:12px;background:#F1F3F8;padding:6px 10px;border-radius:9px;
-  color:var(--ip-ink-2);box-shadow:0 1px 0 rgba(16,19,28,.06),0 1px 2px rgba(16,19,28,.04) inset;font-weight:500}
+  color:var(--ip-ink-2);box-shadow:0 1px 0 rgba(16,19,28,.06),0 1px 2px rgba(16,19,28,.04) inset;font-weight:500;font-variant-numeric:tabular-nums}
 
 /* ─── Chips récents ─── */
 .v2-recent{display:flex;gap:9px;justify-content:center;margin-bottom:44px;flex-wrap:wrap}
@@ -264,7 +264,7 @@ border-bottom:1px solid var(--line)}
 .v2-pil:hover .v2-pil-ico{transform:scale(1.06) rotate(-2deg)}
 .v2-pil-num{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--accent);
   border:1px solid color-mix(in srgb,var(--accent) 24%,transparent);border-radius:8px;padding:4px 9px;
-  background:color-mix(in srgb,var(--accent) 7%,transparent)}
+  background:color-mix(in srgb,var(--accent) 7%,transparent);font-variant-numeric:tabular-nums}
 .v2-pil-t{font-size:18.5px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px}
 .v2-pil-d{font-size:13px;color:var(--muted);line-height:1.55;font-weight:450}
 .v2-pil-go{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;color:var(--accent);margin-top:16px}
@@ -291,7 +291,7 @@ border-bottom:1px solid var(--line)}
 .v2-kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent,var(--ip-blue))}
 .v2-kpi.k1{--accent:var(--c-fiche)} .v2-kpi.k2{--accent:var(--c-mint)} .v2-kpi.k3{--accent:var(--c-amber)} .v2-kpi.k4{--accent:var(--c-cat)}
 .v2-kpi-l{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
-.v2-kpi-v{font-family:var(--mono);font-size:27px;font-weight:700;letter-spacing:-.03em;margin-top:7px}
+.v2-kpi-v{font-family:var(--mono);font-size:27px;font-weight:700;letter-spacing:-.03em;margin-top:7px;font-variant-numeric:tabular-nums}
 .v2-kpi-d{font-size:12px;font-weight:600;margin-top:5px}
 .v2-kpi-d.up{color:var(--c-mint)} .v2-kpi-d.dn{color:var(--c-rose)}
 
@@ -303,7 +303,7 @@ border-bottom:1px solid var(--line)}
 .v2-row-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
 .v2-row-name{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .v2-row-meta{color:var(--muted);font-size:12px}
-.v2-row-val{font-family:var(--mono);font-weight:700}
+.v2-row-val{font-family:var(--mono);font-weight:700;font-variant-numeric:tabular-nums}
 .v2-row-chev{color:var(--muted-2);flex-shrink:0}
 
 /* ─── Chips/badges ─── */
@@ -358,7 +358,7 @@ border-bottom:1px solid var(--line)}
   transition:transform .18s var(--ease),border-color .18s var(--ease-soft),background .18s var(--ease-soft),box-shadow .2s var(--ease);box-shadow:var(--sh-1)}
 .v2-seg:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var(--sc,var(--ip-blue)) 40%,var(--line));box-shadow:var(--sh-2)}
 .v2-seg.on{background:var(--sc,var(--ip-blue));color:#fff;border-color:transparent;box-shadow:0 3px 10px color-mix(in srgb,var(--sc,var(--ip-blue)) 28%,transparent)}
-.v2-seg .cnt{font-family:var(--mono);font-size:12px;opacity:.8}
+.v2-seg .cnt{font-family:var(--mono);font-size:12px;opacity:.8;font-variant-numeric:tabular-nums}
 
 /* ─── Table ─── */
 .v2-table{width:100%;border-collapse:collapse;font-family:var(--font)}
@@ -403,9 +403,9 @@ border-bottom:1px solid var(--line)}
 .v2-cmdk-item.sel,.v2-cmdk-item:hover{background:var(--halo)}
 .v2-cmdk-item .ico{width:30px;height:30px;border-radius:8px;background:var(--card-2);display:flex;align-items:center;justify-content:center;color:var(--ip-blue);flex-shrink:0}
 .v2-cmdk-item .lbl{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.v2-cmdk-item .meta{font-size:12px;color:var(--muted);font-family:var(--mono)}
+.v2-cmdk-item .meta{font-size:12px;color:var(--muted);font-family:var(--mono);font-variant-numeric:tabular-nums}
 .v2-cmdk-foot{padding:9px 16px;border-top:1px solid var(--line);background:var(--card-2);font-size:12px;color:var(--muted);
-  font-family:var(--mono);display:flex;gap:14px}
+  font-family:var(--mono);display:flex;gap:14px;font-variant-numeric:tabular-nums}
 
 /* ─── Toast ─── */
 .v2-toast-host{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:300;display:flex;flex-direction:column;gap:9px;pointer-events:none}

@@ -2725,7 +2725,7 @@
     var bd = document.createElement('div');
     bd.id = 'v2-cmdk'; bd.className = 'v2-cmdk-bd';
     bd.innerHTML = '<div class="v2-cmdk" onclick="event.stopPropagation()">' +
-      '<div class="v2-cmdk-search">' + ICO('search', 22, 2) + '<input id="v2-cmdk-input" placeholder="Une pharmacie (nom, ville, CP), un produit, une page…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"><kbd style="font-family:var(--mono);font-size:11px;background:#F1F3F8;padding:4px 8px;border-radius:7px;color:var(--ip-ink-2)">Esc</kbd>' +
+      '<div class="v2-cmdk-search">' + ICO('search', 22, 2) + '<input id="v2-cmdk-input" placeholder="Une pharmacie (nom, ville, CP), un produit, une page…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"><kbd style="font-family:var(--mono);font-size:11px;background:#F1F3F8;padding:4px 8px;border-radius:7px;color:var(--ip-ink-2);font-variant-numeric:tabular-nums">Esc</kbd>' +
       // 19/10/2026 — au téléphone il n'y a pas de touche Échap : un « Annuler » à portée de pouce (caché sur ordinateur).
       '<button type="button" class="v2-cmdk-x" onclick="V2.closeCmdk()">Annuler</button></div>' +
       '<div id="v2-cmdk-results" class="v2-cmdk-results"></div>' +
@@ -2814,7 +2814,7 @@
       // règle (injectée après v2.css) gagnait sur le fichier et rendait "ESPACE
       // COMMERCIAL" illisible. Remonté à 12px, desktop et mobile.
       '.v2-brand-s{font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;' +
-        'font-size:12px;font-weight:500;color:var(--muted);line-height:1}' +
+        'font-size:12px;font-weight:500;color:var(--muted);line-height:1;font-variant-numeric:tabular-nums}' +
       '@media(max-width:640px){.v2-brand-s{letter-spacing:.08em}}' +
       // Point-étincelle après le wordmark : signature de marque minuscule.
       '.v2-brand-dot{display:inline-block;width:5px;height:5px;border-radius:50%;margin-left:5px;' +
@@ -2861,7 +2861,7 @@
       '.v2-login h1{margin-bottom:5px}' +
       // 25/09/2026 — 10,5px sous le plancher de lecture (12px).
       '.v2-login p{font-family:var(--mono);text-transform:uppercase;letter-spacing:.09em;font-size:12px;' +
-        'color:var(--muted-2);margin-bottom:24px}' +
+        'color:var(--muted-2);margin-bottom:24px;font-variant-numeric:tabular-nums}' +
       // Micro-séparateur d\'étincelle sous la baseline : signe de marque discret.
       '.v2-login-spark{width:34px;height:2.5px;border-radius:2px;margin:0 auto 22px;' +
         'background:linear-gradient(90deg,var(--info),var(--v2-spark));opacity:.9}' +
@@ -2876,7 +2876,7 @@
       // Pied de carte : réassurance sobre en mono.
       // 25/09/2026 — 9px sous le plancher de lecture (12px).
       '.v2-login-foot{margin-top:22px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;' +
-        'font-size:12px;color:var(--muted-2);display:flex;align-items:center;justify-content:center;gap:7px;line-height:1}' +
+        'font-size:12px;color:var(--muted-2);display:flex;align-items:center;justify-content:center;gap:7px;line-height:1;font-variant-numeric:tabular-nums}' +
       '.v2-login-foot::before{content:"";width:5px;height:5px;border-radius:50%;flex:0 0 auto;' +
         'background:var(--c-mint);box-shadow:0 0 0 3px color-mix(in srgb,var(--c-mint) 20%,transparent)}' +
 

@@ -54,7 +54,7 @@
 .olm-une-media{position:relative;display:flex;align-items:center;justify-content:center;height:158px;padding:12px;background:#fff;border-bottom:1px solid #E6ECF7}
 .olm-une-img{display:block;max-width:100%;max-height:100%;object-fit:contain}
 .olm-une-noimg{color:#8A94A6}
-.olm-rang-n{position:absolute;left:10px;top:10px;z-index:2;padding:4px 10px;border-radius:999px;background:var(--o-amb);color:#1B1300;font:800 14px/1.2 var(--mono)}
+.olm-rang-n{position:absolute;left:10px;top:10px;z-index:2;padding:4px 10px;border-radius:999px;background:var(--o-amb);color:#1B1300;font:800 14px/1.2 var(--mono);font-variant-numeric:tabular-nums}
 .olm-une .off-mkt-add{top:8px;right:8px;width:44px;height:44px;border-radius:14px;z-index:2}
 .olm-une-b{display:flex;flex-direction:column;gap:4px;min-width:0;padding:12px 14px 14px;flex:1}
 .olm-une-brand{font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--o-gris);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

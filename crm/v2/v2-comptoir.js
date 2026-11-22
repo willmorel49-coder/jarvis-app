@@ -3256,7 +3256,7 @@
       '.pm-b{display:flex;align-items:center;gap:8px;min-height:20px}.pm-b+.pm-b{margin-top:4px}',
       '.pm-tr{flex:1;min-width:0;display:flex;align-items:center;gap:8px}',
       '.pm-tr i{display:block;flex:none;height:10px;border-radius:999px;background:var(--a)}.pm-b.fr i{background:#B9C4DB}',
-      '.pm-b b{font:700 16px/1.2 var(--mono,"Geist Mono",ui-monospace,monospace);font-variant-numeric:tabular-nums;color:var(--ip-ink);white-space:nowrap}',
+      '.pm-b b{font:700 16px/1.2 var(--mono,var(--font));font-variant-numeric:tabular-nums;color:var(--ip-ink);white-space:nowrap}',
       '.pm-b.fr b{font-size:13px;font-weight:600;color:var(--muted)}',
       '.pm-lb,.pm-sp{flex:none;width:96px}.pm-lb{font:400 12px/1.2 Inter,sans-serif;color:var(--muted)}',
       '.pm-vide{font:400 14px/1.45 Inter,sans-serif;color:var(--muted);padding:8px 2px 2px}',

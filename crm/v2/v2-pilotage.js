@@ -2637,7 +2637,7 @@
               // les bouts de tiret qui dépassent se liraient comme un signe moins
               var ly = y - 4;
               if (nv != null) { var ny0 = yv(nv); if (ny0 < y + 2 && ny0 > y - 16) ly = ny0 - 5; }
-              labels += '<text x="' + x.toFixed(1) + '" y="' + ly.toFixed(1) + '" font-size="9.5" font-weight="700" text-anchor="middle" fill="#10131C" font-family="var(--mono)" stroke="#fff" stroke-width="3" paint-order="stroke">' + fmtVal(v) + '</text>';
+              labels += '<text x="' + x.toFixed(1) + '" y="' + ly.toFixed(1) + '" font-size="9.5" font-weight="700" text-anchor="middle" fill="#10131C" font-family="var(--mono)" stroke="#fff" stroke-width="3" paint-order="stroke" style="font-variant-numeric:tabular-nums">' + fmtVal(v) + '</text>';
             }
             if (nv != null) {
               var ny = yv(nv);
@@ -3481,7 +3481,7 @@
         'background:linear-gradient(180deg,var(--ip-blue),var(--ip-blue-d))}' +
       '.pilo-hero-main{min-width:0}' +
       '.pilo-hero-l{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}' +
-      '.pilo-hero-v{font-family:var(--mono);font-size:clamp(34px,6vw,46px);font-weight:700;letter-spacing:-.035em;line-height:1.02;margin-top:8px;color:var(--ip-ink)}' +
+      '.pilo-hero-v{font-family:var(--mono);font-size:clamp(34px,6vw,46px);font-weight:700;letter-spacing:-.035em;line-height:1.02;margin-top:8px;color:var(--ip-ink);font-variant-numeric:tabular-nums}' +
       '.pilo-hero-delta{margin-top:8px}.pilo-hero-delta .v2-kpi-d{font-size:13px}' +
       '.pilo-hero-trend{flex-shrink:0;text-align:right}' +
       '.pilo-hero-trend-t{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted-2);font-weight:700;margin-bottom:6px}' +
@@ -3724,7 +3724,7 @@
       '.pilo-cbar-hot .pilo-cbar-v{color:var(--ip-blue);font-weight:800}' +
       '.pilo-cbar-hot .pilo-cbar-lbl{color:var(--ip-ink);font-weight:700}' +
       '@media(prefers-reduced-motion:reduce){.pilo-bar-fill,.opso-gauge-fill,.pilo-kpi-meter-fill{transition:none}}' +
-      '.pilo-cbar-lbl{font-size:12px;color:var(--muted);font-weight:600;font-family:var(--mono)}' +
+      '.pilo-cbar-lbl{font-size:12px;color:var(--muted);font-weight:600;font-family:var(--mono);font-variant-numeric:tabular-nums}' +
       '.pilo-cbar-lbl.on{color:var(--ip-blue);font-weight:700}' +
       /* repères dérivés sous le graphe (moyenne · meilleur mois · mois actifs) */
       '.pilo-kfs{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}' +
@@ -3757,7 +3757,7 @@
       '.opso-perim-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}' +
       '.opso-perim-badge{display:inline-flex;align-items:center;padding:4px 11px;border-radius:10px;font-size:12px;font-weight:700;letter-spacing:.01em}' +
       '.opso-perim-nums{display:flex;align-items:center;flex-wrap:wrap}' +
-      '.opso-new-tag{display:inline-block;margin-left:6px;vertical-align:middle;font-size:12px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent);border:1px solid color-mix(in srgb,var(--ok) 30%,transparent);border-radius:999px;padding:1px 7px;font-family:var(--mono)}' +
+      '.opso-new-tag{display:inline-block;margin-left:6px;vertical-align:middle;font-size:12px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent);border:1px solid color-mix(in srgb,var(--ok) 30%,transparent);border-radius:999px;padding:1px 7px;font-family:var(--mono);font-variant-numeric:tabular-nums}' +
       // ── Parts par famille, mois par mois ──────────
       '.pilo-part-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px}' +
       '.pilo-part-segs{display:flex;gap:8px;flex-wrap:wrap}' +

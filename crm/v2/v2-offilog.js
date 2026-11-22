@@ -1821,7 +1821,7 @@
       '.off-cmp-price{font-size:14px;font-weight:700;text-align:right;white-space:nowrap}',
       '.off-cmp-price.bad{color:var(--bad)}',
       '.off-cmp-na{font-size:12px;color:var(--muted);font-style:italic;text-align:right;white-space:nowrap}',
-      '.off-cmp-delta{font-size:12px;font-weight:700;font-family:var(--mono);text-align:right}',
+      '.off-cmp-delta{font-size:12px;font-weight:700;font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}',
       '.off-cmp-delta.bad{color:var(--bad)}.off-cmp-delta.ok{color:var(--ok)}',
       '.off-insp-cta{margin-top:20px;display:flex;flex-direction:column}',
       '.off-insp-cta .v2-btn{width:100%}',

@@ -378,7 +378,7 @@
       '.sc-att,.sc-pl{grid-template-columns:30px minmax(0,1fr) 150px}',
       '.sc-run,.sc-in{grid-template-columns:minmax(0,1fr) 150px}',
       '.sc-in{grid-template-columns:minmax(0,1fr) minmax(0,220px)}',
-      '.sc-num{font-family:var(--mono);font-weight:800;font-size:14px;color:var(--muted)}',
+      '.sc-num{font-family:var(--mono);font-weight:800;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}',
       '.sc-tx{min-width:0;display:flex;flex-direction:column;gap:3px}',
       '.sc-tx b{font-weight:700;overflow-wrap:anywhere}',
       '.sc-tx span,.sc-dt{font-size:13px;line-height:1.5;color:var(--muted);overflow-wrap:anywhere}',

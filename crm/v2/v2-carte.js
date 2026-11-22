@@ -1743,7 +1743,7 @@
       // ── Frise horaire (agenda tournée) ──
       '.cn-tl{padding:6px 2px 4px}',
       '.cn-tldep{display:flex;align-items:center;gap:10px;padding:4px 14px 8px}',
-      '.cn-tltime{flex:none;width:44px;text-align:right;font:700 12.5px/1 "Geist Mono",ui-monospace,monospace;color:var(--ip-blue,#0057FF);font-variant-numeric:tabular-nums}',
+      '.cn-tltime{flex:none;width:44px;text-align:right;font:700 12.5px/1 var(--font);color:var(--ip-blue,#0057FF);font-variant-numeric:tabular-nums}',
       '.cn-tltime.late{color:#DC2626}',
       '.cn-tldeplbl{font-size:12.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}',
       '.cn-tlleg{padding:1px 14px 1px 66px}',

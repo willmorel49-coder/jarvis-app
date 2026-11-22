@@ -163,7 +163,7 @@
 .m1-prow div{min-width:0}
 .m1-prow div b{display:block;font-size:14px;font-weight:800;color:var(--ip-ink)}
 .m1-prow div span{display:block;font-size:13px;color:var(--txt-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.m1-rk{font-family:var(--mono);color:var(--ip-blue);font-size:18px;font-weight:700}
+.m1-rk{font-family:var(--mono);color:var(--ip-blue);font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
 
 /* ═══ Le rail : 60 px replié, 300 px au survol ou au toucher, PAR-DESSUS le contenu (il vit sur <body>, u2-hors) ═══ */
 .u2-hors .u2-rail{position:fixed;left:0;top:var(--v2-top-h);bottom:0;height:auto;z-index:95;width:var(--rail-w);display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:4px;

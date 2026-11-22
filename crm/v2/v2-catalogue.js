@@ -402,7 +402,7 @@
       '.cat-tablewrap{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-2);overflow:hidden}',
       '.cat-table-scroll{overflow-x:auto}',
       '.cat-pname{font-weight:600;color:var(--ip-ink)}',
-      '.cat-cip{font-family:var(--mono);font-size:11px;color:var(--muted)}',
+      '.cat-cip{font-family:var(--mono);font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}',
       '.cat-ip{font-weight:700;color:var(--ip-blue)}',
       '.cat-rem{color:var(--c-mint);font-weight:700}',
       '.cat-ca{color:var(--ip-ink-2)}',
@@ -422,21 +422,21 @@
       /* Performance produit */
       '.cat-perf-l{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin:20px 0 10px}',
       '.cat-perf-note{margin-top:12px;padding:11px 14px;background:color-mix(in srgb,var(--c-mint) 8%,#fff);border:1px solid color-mix(in srgb,var(--c-mint) 24%,transparent);border-radius:11px;font-size:12.5px;color:var(--ip-ink-2);line-height:1.5}',
-      '.cat-perf-note b{font-family:var(--mono);color:var(--c-mint)}',
+      '.cat-perf-note b{font-family:var(--mono);color:var(--c-mint);font-variant-numeric:tabular-nums}',
       /* Potentiel marché enrichi */
       '.cat-pot{margin-top:18px;padding:14px 16px;background:color-mix(in srgb,var(--ip-blue) 6%,#fff);border:1px solid color-mix(in srgb,var(--ip-blue) 22%,transparent);border-radius:13px}',
       '.cat-pot.nr{background:color-mix(in srgb,var(--c-amber) 8%,#fff);border-color:color-mix(in srgb,var(--c-amber) 26%,transparent)}',
       '.cat-pot-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}',
       '.cat-pot-l{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ip-blue);font-weight:700}',
       '.cat-pot.nr .cat-pot-l{color:var(--c-amber)}',
-      '.cat-pot-pct{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--ip-blue)}',
+      '.cat-pot-pct{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--ip-blue);font-variant-numeric:tabular-nums}',
       '.cat-pot-bar{height:8px;border-radius:5px;background:var(--line);overflow:hidden;margin:0 0 10px}',
       '.cat-pot-fill{height:100%;background:linear-gradient(90deg,var(--ip-blue),color-mix(in srgb,var(--ip-blue) 60%,#3B82F6));border-radius:5px;transition:width .5s var(--ease)}',
       '.cat-pot-row{display:flex;align-items:stretch;border:1px solid color-mix(in srgb,var(--ip-blue) 18%,transparent);border-radius:9px;overflow:hidden;background:rgba(255,255,255,.6);margin-bottom:10px}',
       '.cat-pot-stat{flex:1;padding:9px 10px;text-align:center}',
       '.cat-pot-sep{width:1px;background:color-mix(in srgb,var(--ip-blue) 14%,transparent)}',
       '.cat-pot-stat-l{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;margin-bottom:4px}',
-      '.cat-pot-stat-v{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--ip-ink)}',
+      '.cat-pot-stat-v{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--ip-ink);font-variant-numeric:tabular-nums}',
       '.cat-pot-ecart{color:var(--c-mint)}',
       '.cat-pot-note{font-size:11.5px;color:var(--ip-ink-2);line-height:1.45;padding-top:4px}',
       '.cat-pot-txt{font-size:12px;color:var(--ip-ink-2);line-height:1.5;margin-top:8px}',
@@ -569,7 +569,7 @@
           '<div class="v2-segs">' + chips + '</div>' +
           '<div class="cat-stats-l">' + (S.chip === 'all' ? (S.q ? 'Statistiques · résultats « ' + esc(S.q) + ' »' : 'Statistiques · tout le catalogue grossiste') : 'Statistiques · ' + esc(FAM_BY_KEY[S.chip].label)) + '</div>' +
           statBand(computeAgg(filtered)) +
-          '<div class="cat-count"><b style="color:var(--ip-ink);font-family:var(--mono)">' + V2.fmtNum(total) + '</b> référence' + (total > 1 ? 's' : '') + (S.chip !== 'all' ? ' · ' + esc(FAM_BY_KEY[S.chip].label) : '') + '</div>' +
+          '<div class="cat-count"><b style="color:var(--ip-ink);font-family:var(--mono);font-variant-numeric:tabular-nums">' + V2.fmtNum(total) + '</b> référence' + (total > 1 ? 's' : '') + (S.chip !== 'all' ? ' · ' + esc(FAM_BY_KEY[S.chip].label) : '') + '</div>' +
           tableHtml +
         '</div>' + insHtml;
     }

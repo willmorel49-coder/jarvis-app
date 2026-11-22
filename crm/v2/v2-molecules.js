@@ -485,7 +485,7 @@
       '.mol-table tbody tr:hover{background:color-mix(in srgb,var(--rowc,var(--ip-blue)) 7%,transparent)}' +
       '.mol-table tbody tr:hover .mol-name span{color:var(--ip-ink)}' +
       '.mol-table tbody tr.mol-more:hover{background:none}' +
-      '.mol-rk{color:var(--muted-2);width:34px;text-align:right;font-family:var(--mono);font-size:12px}' +
+      '.mol-rk{color:var(--muted-2);width:34px;text-align:right;font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums}' +
       '.mol-name{max-width:280px}.mol-name span{font-weight:700;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ip-ink-2,var(--ip-ink));transition:color .13s var(--ease)}' +
       '.mol-cip{color:var(--muted-2);font-size:12px;width:1%;white-space:nowrap;letter-spacing:-.01em}' +
       '.mol-nph{font-weight:800;color:var(--ip-ink)}' +
@@ -498,12 +498,12 @@
       '.mol-table td.mol-cip,.mol-table td.mol-ppht{opacity:.85}' +
       '.mol-table td.mol-frv{color:var(--muted)}.mol-table th.mol-fr{color:var(--muted-2)}' +
       '.mol-fam{display:inline-block;padding:3px 10px;border-radius:var(--r-pill,999px);font-size:12px;font-weight:700;letter-spacing:.01em;color:var(--fc);background:color-mix(in srgb,var(--fc) 12%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--fc) 24%,transparent);white-space:nowrap}' +
-      '.mol-rem{display:inline-block;padding:3px 10px;border-radius:var(--r-pill,999px);font-size:12px;font-weight:800;font-family:var(--mono);letter-spacing:-.01em;color:var(--c-mint-txt,var(--c-opp));background:color-mix(in srgb,var(--c-opp) 12%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c-opp) 26%,transparent)}' +
+      '.mol-rem{display:inline-block;padding:3px 10px;border-radius:var(--r-pill,999px);font-size:12px;font-weight:800;font-family:var(--mono);letter-spacing:-.01em;color:var(--c-mint-txt,var(--c-opp));background:color-mix(in srgb,var(--c-opp) 12%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c-opp) 26%,transparent);font-variant-numeric:tabular-nums}' +
       // segs (familles)
       '.mol-segs .v2-seg{transition:transform .16s var(--ease),border-color .16s var(--ease),background .16s var(--ease),box-shadow .16s var(--ease)}' +
       '.mol-segs .v2-seg .sw{box-shadow:0 0 0 3px color-mix(in srgb,var(--sc) 16%,transparent)}' +
       '.mol-segs .v2-seg.on{box-shadow:0 2px 8px color-mix(in srgb,var(--sc,var(--ip-blue)) 32%,transparent)}' +
-      '.mol-segs .v2-seg .cnt{margin-left:6px;padding:1px 7px;border-radius:var(--r-pill,999px);font-family:var(--mono);font-size:12px;font-weight:800;color:var(--muted);background:color-mix(in srgb,var(--ip-ink) 7%,transparent)}' +
+      '.mol-segs .v2-seg .cnt{margin-left:6px;padding:1px 7px;border-radius:var(--r-pill,999px);font-family:var(--mono);font-size:12px;font-weight:800;color:var(--muted);background:color-mix(in srgb,var(--ip-ink) 7%,transparent);font-variant-numeric:tabular-nums}' +
       '.mol-segs .v2-seg.on .cnt{background:color-mix(in srgb,#fff 24%,transparent);color:#fff;opacity:1}' +
       // champs du panneau (établissement, stock, export PDF)
       '.mol-field{display:flex;flex-direction:column;gap:5px;min-width:210px}' +
@@ -520,7 +520,7 @@
       '.mol-adv>summary::before{content:"▸";color:var(--muted);font-size:12px;transition:transform .16s var(--ease)}' +
       '.mol-adv[open]>summary::before{transform:rotate(90deg)}' +
       '.mol-adv>summary:hover{background:color-mix(in srgb,var(--ip-blue) 3%,transparent)}' +
-      '.mol-adv-hint{margin-left:auto;font-size:12px;font-weight:600;color:var(--muted);font-family:var(--mono)}' +
+      '.mol-adv-hint{margin-left:auto;font-size:12px;font-weight:600;color:var(--muted);font-family:var(--mono);font-variant-numeric:tabular-nums}' +
       '.mol-adv-body{padding:4px 16px 15px;display:flex;flex-direction:column;gap:11px;border-top:1px solid var(--line)}' +
       '.mol-adv-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-top:11px}' +
       '.mol-chips{display:flex;gap:6px;flex-wrap:wrap}' +
@@ -536,7 +536,7 @@
       // carte tableau : bandeau compteur + zone défilante (header sticky réellement actif)
       '.mol-tcard{border:1px solid var(--line);border-radius:var(--r-md,14px);background:var(--card);box-shadow:var(--sh-1);overflow:hidden}' +
       '.mol-countrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px 10px 20px;border-bottom:1px solid var(--line);background:var(--card-2,#f7f9fc)}' +
-      '.cat-count{font-size:12.5px;color:var(--muted)} .cat-count b{color:var(--ip-ink);font-family:var(--mono);font-weight:700}' +
+      '.cat-count{font-size:12.5px;color:var(--muted)} .cat-count b{color:var(--ip-ink);font-family:var(--mono);font-weight:700;font-variant-numeric:tabular-nums}' +
       '.mol-msort{display:none}' +
       '.mol-scroll{overflow:auto;max-height:min(76vh,880px);overscroll-behavior:contain}' +
       // mobile : cartes
