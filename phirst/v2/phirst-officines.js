@@ -143,6 +143,7 @@
     else {
       var plus = P.libelleVoirPlus(S.total, S.lignes.length);
       h = '<h2 class="po-h2">' + esc(P.nomAngle(S.angle)) + ' · ' + P.libelleResultats(S.total) + '</h2>' +
+        (P.releveAffiche(S.meta.charge_le, P.aujourdhui()) ? '<p class="po-aide">' + esc(P.releveAffiche(S.meta.charge_le, P.aujourdhui())) + '</p>' : '') +
         (S.total === 0 ? '<div class="pa-vide"><p>Aucun résultat.</p><button type="button" class="lg-gros" data-effacer="1">Effacer la recherche</button></div>'
           : '<ul class="pa-liste">' + S.lignes.map(htmlLigne).join('') + '</ul>') +
         (plus ? '<button type="button" class="pa-b po-plus" data-plus="1"' + (S.charge ? ' disabled' : '') + '>' + esc(plus) + '</button>' : '');
@@ -323,7 +324,7 @@
     vivantes.forEach(function (p) {
       var la = typeof p.lat === 'string' ? parseFloat(p.lat) : p.lat, lo = typeof p.lon === 'string' ? parseFloat(p.lon) : p.lon;
       if (!coordOk(la, lo)) { sans++; return; }
-      L.marker([la, lo], { icon: L.divIcon({ className: 'po-epingle', html: '<span></span>', iconSize: [26, 34], iconAnchor: [13, 34], popupAnchor: [0, -30] }) })
+      L.marker([la, lo], { icon: L.divIcon({ className: 'po-epingle', html: '<span></span>', iconSize: [44, 44], iconAnchor: [22, 40], popupAnchor: [0, -34] }) })
         .bindPopup('<div class="po-pop"><b>' + esc(p.nom) + '</b><small>' + esc([p.cp, p.ville].filter(Boolean).join(' ')) + '</small><div><em class="lg-et">' + esc(P.nomEtape(p.stage)) + '</em></div>' +
           (p.next_action ? '<p>' + esc(p.next_action) + (p.next_action_date ? ' · ' + esc(P.frDate(p.next_action_date)) : '') + '</p>' : '') +
           (p.telephone ? '<a class="pa-tel" href="tel:' + esc(String(p.telephone).replace(/\s/g, '')) + '">' + esc(P.telFr(p.telephone)) + '</a>' : '') +
@@ -340,9 +341,9 @@
     var z = M.racine && M.racine.querySelector('#po-couches'); if (!z) return;
     var vivantes = (M.pistes || []).filter(function (p) { return p.stage !== 'archive'; }).length;
     function nb(k) { var n = k === 'fiches' ? vivantes : M.totaux[M.perim + '|' + k + '|' + (k === 'robots' ? M.fab : '')]; return n == null ? '' : ' <span class="po-cn">' + n.toLocaleString('fr-FR') + '</span>'; }
-    z.innerHTML = ORDRE.map(function (k) { return '<button type="button" class="pa-chip" data-couche="' + k + '" aria-pressed="' + !!M.on[k] + '">' + esc(LIB_COUCHE[k]) + nb(k) + '</button>'; }).join('') +
-      '<span class="po-sep"></span><button type="button" class="pa-chip" data-perim="only" aria-pressed="' + (M.perim === 'only') + '">Secteur de Yann</button>' +
-      '<button type="button" class="pa-chip" data-perim="france" aria-pressed="' + (M.perim === 'france') + '">Toute la France</button>';
+    z.innerHTML = '<button type="button" class="pa-chip" data-perim="only" aria-pressed="' + (M.perim === 'only') + '">Secteur de Yann</button>' +
+      '<button type="button" class="pa-chip" data-perim="france" aria-pressed="' + (M.perim === 'france') + '">Toute la France</button><span class="po-sep"></span>' +
+      ORDRE.map(function (k) { return '<button type="button" class="pa-chip" data-couche="' + k + '" aria-pressed="' + !!M.on[k] + '">' + esc(LIB_COUCHE[k]) + nb(k) + '</button>'; }).join('');
     var f = M.racine.querySelector('#po-parc'); if (!f) return;
     var fabs = M.meta.fabs || [];
     if (!M.on.robots || !fabs.length) { f.hidden = true; f.innerHTML = ''; return; }
@@ -400,7 +401,7 @@
       if (M.racine !== root) return;
       if (!ok) { root.querySelector('#po-map').innerHTML = '<p class="pa-avis">La carte ne s’est pas chargée. Vérifiez votre connexion puis rouvrez cet écran.</p>'; return; }
       var L = window.L;
-      M.map = L.map(root.querySelector('#po-map'), { zoomControl: true, preferCanvas: true, minZoom: 4 }).setView([46.6, 2.4], 6);
+      M.map = L.map(root.querySelector('#po-map'), { zoomControl: true, renderer: L.canvas({ tolerance: 14 }), minZoom: 4 }).setView([46.6, 2.4], 6);
       poserFond(M.map);
       ORDRE.forEach(function (k) { M.groupes[k] = L.layerGroup().addTo(M.map); });
       cadrer();

@@ -134,3 +134,11 @@ describe('tournée du jour de la carte (port de lib/tourneeCarte.ts)', () => {
     assert.equal(decodeURIComponent(l.split('waypoints=')[1]).split('|').length, 9)
   })
 })
+
+describe('date des données', () => {
+  test('« Données relevées le … » seulement au-delà de 30 jours', () => {
+    assert.equal(P.releveAffiche('2026-10-01T03:00:00Z', '2026-11-22'), 'Données relevées le 01/10/2026.')
+    assert.equal(P.releveAffiche('2026-11-01T03:00:00Z', '2026-11-22'), '')
+    assert.equal(P.releveAffiche(null, '2026-11-22'), '')
+  })
+})

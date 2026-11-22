@@ -148,13 +148,14 @@
 .po-dep{width:96px}
 .po-h2{margin:0 0 10px;font-size:20px;font-weight:800;letter-spacing:-.01em}
 .po-et{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;max-width:48%}
+.pa-ht .po-et .lg-et{max-width:none;margin-top:0;white-space:nowrap}
 .po-fait{display:inline-flex;align-items:center;min-height:48px;font-weight:700;color:#0E6B43}
 .po-plus{margin-top:14px}
 .po-large{width:min(1200px,calc(100% - 32px))}
 .po-couches{align-items:center;margin:0 0 12px}
 .po-sep{width:12px}
 .po-carte{position:relative}
-.po-map{height:70vh;height:calc(100dvh - 300px);min-height:420px;border-radius:18px;border:1px solid var(--au-fil,#D8E7DD);overflow:hidden;background-color:#E4EFE8}
+.po-map{height:60vh;height:calc(100dvh - 380px);min-height:420px;border-radius:18px;border:1px solid var(--au-fil,#D8E7DD);overflow:hidden;background-color:#E4EFE8}
 .po-bandeau{position:absolute;left:12px;right:12px;bottom:28px;z-index:650;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-radius:14px;background-color:#fff;border:1px solid var(--au-fil,#D8E7DD);box-shadow:0 10px 24px -16px rgba(18,60,40,.4)}
 .po-bandeau[hidden]{display:none}
 .po-bandeau[data-ton="alerte"]{background-color:#FBEBD8;border-color:#E9C79B}
@@ -164,7 +165,8 @@
 .po-pop small{font-size:13px;color:#4A5D51}
 .po-pop ul{margin:0;padding:0;list-style:none;font-size:13px}
 .po-pop p{margin:0;font-size:14px}
-.po-epingle span{display:block;width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background-color:#1A3A2E;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.po-epingle{display:flex;align-items:flex-end;justify-content:center}
+.po-epingle span{display:block;margin-bottom:4px;width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background-color:#1A3A2E;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)}
 @media (max-width:700px){
   .po-grille{grid-template-columns:repeat(2,minmax(0,1fr))}
   .po-grille .po-tuile:first-child{grid-column:1 / -1}
@@ -184,3 +186,10 @@
 .po-arret b{display:block;font-size:16px;line-height:1.25}
 .po-arret small{display:block;font-size:14px;line-height:1.35;color:var(--au-ink3,#4A5D51)}
 .po-num{flex:none;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background-color:var(--au-accent,#1A3A2E);color:#fff;font-weight:800;font-size:15px}
+.leaflet-bar a,.leaflet-bar a:hover{width:44px;height:44px;line-height:44px;font-size:22px}
+@media (max-width:700px){
+  .po-couches,.po-parc{flex-wrap:nowrap;overflow-x:auto;margin-inline:-16px;padding-inline:16px;scrollbar-width:none}
+  .po-couches::-webkit-scrollbar,.po-parc::-webkit-scrollbar{display:none}
+  .po-couches .pa-chip,.po-parc .pa-chip,.po-parc-t{flex:none;white-space:nowrap}
+  .po-map{height:calc(100dvh - 330px);min-height:380px}
+}

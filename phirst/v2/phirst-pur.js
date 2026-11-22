@@ -740,6 +740,12 @@
   function phraseCachee(c) { var g = groupesCouches(c); return g.length ? listeFrancaise(g) + ' cachés à cette échelle' : ''; }
   function phraseToutAffiche(c) { var g = groupesCouches(c); return g.length ? 'Tout est affiché : ' + listeFrancaise(g) : ''; }
   function phraseVue(c) { var g = groupesCouches(c); return g.length ? 'Dans cette vue : ' + listeFrancaise(g) : ''; }
+  /* « Relevé le … » : montré seulement quand les données (charge_le) ont plus de 30 jours ; sinon rien. */
+  function releveAffiche(chargeLe, jour) {
+    if (!chargeLe) return '';
+    var d = String(chargeLe).slice(0, 10);
+    return joursEntre(d, jour) > 30 ? 'Données relevées le ' + frDate(d) + '.' : '';
+  }
   function libelleBouton(perim) { return perim === 'france' ? 'Zoomer pour tout voir' : 'Zoomer sur mon secteur'; }
 
   /* Tournée du jour de la carte du CRM (lib/tourneeCarte.ts de la V1, mêmes calculs) : fiches à action due, dans l'ordre de visite le plus court. */
@@ -809,7 +815,7 @@
     contientMontant: contientMontant, recherchePropre: recherchePropre, depPropre: depPropre, requeteOfficines: requeteOfficines, libelleResultats: libelleResultats, libelleVoirPlus: libelleVoirPlus,
     telFr: telFr, frDate: frDate, libelleGroupements: libelleGroupements, fusionnerSommes: fusionnerSommes, sansSommes: sansSommes, pourquoiAffiche: pourquoiAffiche, sousAffiche: sousAffiche,
     sourceEtNote: sourceEtNote, pisteDeLigne: pisteDeLigne, indexPistes: indexPistes, ficheSuivie: ficheSuivie,
-    SEUIL_COUCHES: SEUIL_COUCHES, couchesMasquees: couchesMasquees, phraseCachee: phraseCachee, phraseToutAffiche: phraseToutAffiche, phraseVue: phraseVue, libelleBouton: libelleBouton,
+    SEUIL_COUCHES: SEUIL_COUCHES, couchesMasquees: couchesMasquees, phraseCachee: phraseCachee, phraseToutAffiche: phraseToutAffiche, phraseVue: phraseVue, libelleBouton: libelleBouton, releveAffiche: releveAffiche,
     ordreTournee: ordreTournee, tourneeDuJour: tourneeDuJour, lienTournee: lienTournee, kmRoute: kmRoute
   };
 });
