@@ -6,9 +6,11 @@ name: Copilote · marché France (Ameli)
 # Aucune clé, aucun coût. Déclenchable aussi à la main (workflow_dispatch).
 
 on:
-  schedule:
-    # 1x/mois (le 3, à une minute non-ronde). Medic'AM ne bouge pas plus souvent.
-    - cron: '41 4 3 * *'
+  # 22/11/2026 (audit V3, D1) — SUSPENDU : Medic'AM refuse les serveurs de GitHub (HTTP 403) depuis août,
+  # aucun passage réussi depuis. Le robot du Mac com.will.veille-medicam (~/veille-medicam/lancer.sh, le 6)
+  # régénère et publie ameli-avg, saison et tendance. Lancement à la main encore possible (workflow_dispatch).
+  # schedule:
+  #   - cron: '41 4 3 * *'   # le 3 du mois — suspendu, voir ci-dessus
   workflow_dispatch:
 
 permissions:
