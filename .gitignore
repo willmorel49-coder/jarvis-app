@@ -126,6 +126,8 @@ biosim-poster-*interne.html
 
 # Comptes utilisateurs : contiennent des mots de passe en clair — NE JAMAIS publier
 crm/v2/_sql/create-user-*.sql
+# 22/11/2026 (choix de Will) : les règles d'accès Supabase portent les e-mails de l'équipe ; elles vivent hors du dépôt public
+crm/v2/_sql/
 **/create-user-*.sql
 
 # ── Sécurité (13/08/2026, audit de 4 experts) ──────────────────────
