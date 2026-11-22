@@ -138,7 +138,9 @@ const prix = t => {
     '// ⚠️ Les prix B2B vivent dans offilog-best-prix.js, hors dépôt, servi par\n' +
     '// adresse signée. Ce fichier-ci part dans un dépôt PUBLIC — ne rien y remettre.\n' +
     'const OFFILOG_BEST = ' + JSON.stringify(pub) + ';\n' +
-    'try{window.OFFILOG_BEST=OFFILOG_BEST;}catch(e){}\n');
+    'try{window.OFFILOG_BEST=OFFILOG_BEST;}catch(e){}\n' +
+    // 22/11/2026 : date du classement, lue par l'écran Offilog (« classement du 3 septembre » au-delà de 30 jours)
+    'try{window.OFFILOG_BEST_MAJ=' + JSON.stringify(j) + ';}catch(e){}\n');
   fs.writeFileSync(OUT_PRIX,
     '// Intégral Pharma — Offilog meilleures ventes, PRIX B2B\n' +
     '// ' + Object.keys(tarif).length + ' prix — ' + j + '\n' +

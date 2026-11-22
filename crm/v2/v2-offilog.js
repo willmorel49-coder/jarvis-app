@@ -1123,7 +1123,7 @@
       var mj = majLabel(window[P.g + '_MAJ']);
       return '<div class="off-cmp-row' + (bel ? ' below' : '') + '">' +
         '<span class="off-cmp-src"><span class="dot" style="background:' + P.color + '"></span>' + P.long +
-          (mj ? ' <i style="opacity:.65;font-weight:500">· relevé du ' + esc(mj) + '</i>' : '') + '</span>' +
+          (mj ? ' <i style="font-weight:500">· relevé du ' + esc(mj) + '</i>' : '') + '</span>' +
         '<span class="off-cmp-price ' + (bel ? 'bad' : '') + ' mono">' + V2.fmtEur(v) + '</span>' +
         (it.achat > 0 ? '<span class="off-cmp-delta ' + (bel ? 'bad' : 'ok') + '">' + (dl >= 0 ? '+' : '') + V2.fmtEur(dl) + '</span>' : '<span class="off-cmp-delta"></span>') +
       '</div>';
@@ -1169,7 +1169,7 @@
       var majD = majLabel(window.DRAKKARS_PUB_MAJ);
       drk = '<div class="off-cmp-row' + (belowD ? ' below' : '') + '">' +
         '<span class="off-cmp-src"><span class="dot" style="background:#5E6673"></span>Pharmacie des Drakkars (public TTC)' +
-          (majD ? ' <i style="opacity:.65;font-weight:500">· relevé du ' + esc(majD) + '</i>' : '') + '</span>' +
+          (majD ? ' <i style="font-weight:500">· relevé du ' + esc(majD) + '</i>' : '') + '</span>' +
         '<span class="off-cmp-price ' + (belowD ? 'bad' : '') + ' mono">' + V2.fmtEur(it.drakkars) + '</span>' +
         (it.achat > 0 ? '<span class="off-cmp-delta ' + (belowD ? 'bad' : 'ok') + '">' + (dD >= 0 ? '+' : '') + V2.fmtEur(dD) + '</span>' : '<span class="off-cmp-delta"></span>') +
       '</div>';
@@ -1197,7 +1197,7 @@
       var delta = x.ref || x.neutre || !(it.price > 0) ? '<span class="off-cmp-delta"></span>' :
         '<span class="off-cmp-delta ' + (below ? 'bad' : 'ok') + '" style="white-space:nowrap">' + (d >= 0 ? '+' : '−') + V2.fmtEur(Math.abs(d)) + ' · ' + (d >= 0 ? '+' : '−') + Math.abs(pct) + ' %</span>';
       return '<div class="' + (x.ref ? 'off-cmp-ref' : 'off-cmp-row' + (below ? ' below' : '')) + '" data-achat="' + x.n + '">' +
-        '<span class="off-cmp-src">' + x.n + ' <i style="opacity:.65;font-weight:500">· ' + x.sub + '</i></span>' +
+        '<span class="off-cmp-src">' + x.n + ' <i style="font-weight:500">· ' + x.sub + '</i></span>' +
         '<span class="off-cmp-price ' + (below ? 'bad' : '') + ' mono">' + V2.fmtEur(x.p) + '</span>' + delta + '</div>';
     }).join('');
     return '<div class="off-cmp" id="off-achat"><div class="off-cmp-l">Prix d\'achat <span>(HT, écart à Offilog)</span></div>' + rows + '</div>';
@@ -1209,7 +1209,7 @@
     // Offilog = référence (mise en évidence), l'écart se lit contre lui. Classes du volet existantes, aucune couleur nouvelle.
     var pzBlock = achatBlock(it);
     var rkDate = (!it.mkt && it.hasRank) ? vieilleDate(window.OFFILOG_BEST_MAJ) : '';   // rang pris dans le classement d'origine (sans relevé du marché) : il porte sa date
-    var badges = (it.hasRank ? '<span class="off-badge" style="--bc:var(--pil-froid)">#' + it.rank + ' ventes' + (rkDate ? ' <i style="opacity:.65;font-weight:500">· classement du ' + esc(rkDate) + '</i>' : '') + '</span>' : '') +
+    var badges = (it.hasRank ? '<span class="off-badge" style="--bc:var(--pil-froid)">#' + it.rank + ' ventes' + (rkDate ? ' <i style="font-weight:500">· classement du ' + esc(rkDate) + '</i>' : '') + '</span>' : '') +
       (it.cat && CHIP_BY_KEY[it.cat] ? '<span class="off-badge" style="--bc:' + CHIP_BY_KEY[it.cat].sc + '">' + esc(CHIP_BY_KEY[it.cat].label) + '</span>' : '') +
       (it.univers && it.univers !== 'Non classé' ? '<span class="off-badge" style="--bc:#6D4FC4">' + esc(it.univers) + '</span>' : '');
     return '<div class="off-insp' + (S.sel != null ? ' open' : '') + '">' +

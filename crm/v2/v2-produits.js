@@ -559,7 +559,7 @@
   // 22/11/2026 : « du 15 septembre au 5 novembre » sous « en stock » quand le stock a plus de 30 jours (dates lues dans les fichiers de stock).
   function stockMention() {
     var t = V2.stockDateTxt ? V2.stockDateTxt() : '';
-    return typeof t === 'string' && t ? ' <small style="opacity:.65;font-weight:500">' + esc(t.replace(/^stock /, '')) + '</small>' : '';
+    return typeof t === 'string' && t ? ' <small style="font-weight:500">' + esc(t.replace(/^stock /, '')) + '</small>' : '';
   }
   function chiffre(v, lib, cls) {
     return '<div class="' + (cls || '') + '"><span>' + v + '</span><em>' + lib + '</em></div>';
