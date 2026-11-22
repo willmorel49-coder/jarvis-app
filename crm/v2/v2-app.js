@@ -2635,6 +2635,7 @@
     var LO = V2.lieuOvr;
     if (LO) D.p.forEach(function (p) { var l = LO[String(p[13] || '')]; if (l) { if (l.ville) V2.pfPoser(p, 7, l.ville); if (l.cp) V2.pfPoser(p, 8, l.cp); } });
     D._wmlRecon = true; if (D.meta) D.meta.clients = nC;
+    D._reconN = (D._reconN || 0) + 1;   // 22/11/2026 : les calculs gardés en mémoire (part des groupements) savent qu'ils doivent se refaire
   };
   // 16/10/2026 — pose une correction dans la base nationale en mémoire (p = ligne de PHARMA_FR, col = colonne) en notant d'abord,
   // une seule fois, la valeur de la base : une correction vidée (v vide) la remet aussitôt, sans attendre un rechargement.
@@ -2643,7 +2644,7 @@
     var id = String(p[13] || ''), B = D._base || (D._base = {}), b = B[id] || (B[id] = {});
     if (!b.hasOwnProperty(col)) b[col] = p[col];
     var nv = (v != null && v !== '') ? v : b[col];
-    if (p[col] !== nv) { p[col] = nv; D.__norm = null; }   // la recherche relit noms / villes / CP / titulaires normalisés
+    if (p[col] !== nv) { p[col] = nv; D.__norm = null; D._reconN = (D._reconN || 0) + 1; }   // la recherche relit noms / villes / CP / titulaires normalisés
   };
   V2.ensurePharmaFr = function (cb) {
     if (window.PHARMA_FR) { try { V2.reconcilePharma(); } catch (e) {} if (cb) cb(); return; }

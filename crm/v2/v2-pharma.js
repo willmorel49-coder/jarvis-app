@@ -5572,7 +5572,7 @@
   // Base : la carte nationale (PHARMA_FR, réconciliée par V2.reconcilePharma, la même que la Carte des groupements). Des comptes, aucun montant.
   // Officines du groupement en France = nos clientes du groupement (comptées comme la liste) + les officines NON clientes de la base nationale
   // rangées dans ce groupement. Groupement sans aucune officine non cliente connue : taille inconnue → part = null, jamais « 100 % ».
-  var _grpFr = null, _grpFrRef = null, _grpFrN = -1;
+  var _grpFr = null, _grpFrRef = null, _grpFrN = -1, _grpFrV = -1;   // _grpFrV : rangement de la base (D._reconN) sur lequel le calcul a été fait
   function grpNomCanon(g) { g = String(g || '').trim(); var c = g ? canonG(g) : ''; return (!c || c === '—' || /PAS un groupement/.test(c)) ? '' : c; }
   function grpFranceIndex() {
     var D = window.PHARMA_FR;
@@ -5588,7 +5588,7 @@
       }
       return null;
     }
-    if (_grpFr && _grpFrRef === D && _grpFrN === D.p.length) return _grpFr;
+    if (_grpFr && _grpFrRef === D && _grpFrN === D.p.length && _grpFrV === (D._reconN || 0)) return _grpFr;   // re-rangée après coup (corrections de groupement…) : on refait
     var m = {};
     for (var i = 0; i < D.p.length; i++) {
       var p = D.p[i];
@@ -5596,7 +5596,7 @@
       var g = grpNomCanon(D.grp[p[3]]); if (!g) continue;
       m[g] = (m[g] || 0) + 1;
     }
-    _grpFr = m; _grpFrRef = D; _grpFrN = D.p.length;
+    _grpFr = m; _grpFrRef = D; _grpFrN = D.p.length; _grpFrV = D._reconN || 0;
     return m;
   }
   // nom = nom canonique affiché (groupName), clientes = nombre de nos clientes du groupement (o.nb de groupementList).

@@ -46,6 +46,21 @@ test('part chez nous : nos clientes sur les officines du groupement en France', 
   assert.equal(grpPart('Giropharm', 2).part, 50);
 });
 
+// 22/11/2026, vu en production : la base re-rangée APRÈS coup (corrections de groupement, segmentation…) sans changer de longueur
+// laissait l'ancien calcul en mémoire (Pharm-UPP 888 puis 887 officines selon le moment). Le rangement avance D._reconN : on refait.
+test('part chez nous : la base re-rangée après coup (même longueur) est recomptée', () => {
+  const { grpPart, window } = part(BASE());
+  assert.equal(grpPart('Pharm-UPP', 1).autres, 3);
+  const D = window.PHARMA_FR;
+  D.p[1][3] = 3;                              // une non cliente passe de Pharm-UPP à Giropharm (correction de groupement)
+  D._reconN = (D._reconN || 0) + 1;           // ce que font V2.reconcilePharma et V2.pfPoser
+  assert.equal(grpPart('Pharm-UPP', 1).autres, 2, 'ancien calcul resservi après le re-rangement');
+  assert.equal(grpPart('Giropharm', 2).autres, 3);
+  const app = readFileSync(new URL('../crm/v2/v2-app.js', import.meta.url), 'utf8');
+  assert.match(app, /D\._wmlRecon = true; if \(D\.meta\) D\.meta\.clients = nC;\n\s*D\._reconN = \(D\._reconN \|\| 0\) \+ 1;/, 'reconcilePharma n\'avance plus le compteur');
+  assert.match(app, /if \(p\[col\] !== nv\) \{ p\[col\] = nv; D\.__norm = null; D\._reconN = \(D\._reconN \|\| 0\) \+ 1; \}/, 'pfPoser n\'avance plus le compteur');
+});
+
 test('part chez nous : taille inconnue = pas de pourcentage (jamais 100 %)', () => {
   const { grpPart } = part(BASE());
   const r = grpPart('Réseau Seul', 12);   // aucune officine non cliente connue dans ce groupement
