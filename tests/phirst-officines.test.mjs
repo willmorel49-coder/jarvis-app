@@ -45,6 +45,20 @@ describe('anti-doublon avec le pipeline', () => {
   })
 })
 
+describe('noms lisibles : l’anti-doublon reconnaît la piste créée avant (nom brut) comme après (nom lisible)', () => {
+  const ligne = { nom: 'PHIE DES CONGRES', nom_affiche: 'Pharmacie des Congrès', ville: 'Nantes', cles: ['phie des congres|nantes', 'pharmacie des congres|nantes'], angle: 'toutes', groupements: [] }
+  test('c’est le nom lisible qui est inséré dans les pistes, avec les clés de la ligne', () => {
+    const p = P.pisteDeLigne(ligne)
+    assert.equal(p.nom, 'Pharmacie des Congrès'); assert.deepEqual(p.cles, ligne.cles)
+  })
+  test('piste créée avant (nom brut, ville en capitales) : déjà suivie', () => {
+    assert.equal(P.ficheSuivie(ligne, P.indexPistes([{ id: 'b1', nom: 'PHIE DES CONGRES', ville: 'NANTES' }])), 'b1')
+  })
+  test('piste créée après (nom lisible) : déjà suivie', () => {
+    assert.equal(P.ficheSuivie(ligne, P.indexPistes([{ id: 'b2', nom: 'Pharmacie des Congrès', ville: 'Nantes' }])), 'b2')
+  })
+})
+
 describe('retrait des sommes (la téléprospectrice n’en reçoit jamais)', () => {
   const ligne = { cle: 'k', angle: 'signaux', pourquoi: ['Cession publiée le 18/12/2024', '', 'Zone très porteuse — 4649 hab. par officine'], sieges: ['Siège Giropharm — 02 40 25 60 76'], robot_modele: null }
   test('la regex est la même que celle de la base', () => {

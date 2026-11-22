@@ -628,9 +628,9 @@
      phirst_officines (chargée par le Mac) ; ici aucun accès à la base ni à la page. ── */
   var ANGLES = [
     { cle: 'toutes', nom: 'Toutes les officines' }, { cle: 'robots', nom: 'Robots concurrents' }, { cle: 'ehpad', nom: 'Fournisseurs EHPAD' },
-    { cle: 'transferts', nom: 'Transferts / cessions' }, { cle: 'signaux', nom: 'Signaux d’achat' }
+    { cle: 'transferts', nom: 'Cessions et créations' }, { cle: 'signaux', nom: 'À saisir maintenant' }
   ];
-  var N_INITIAL = 10, PAS_LISTE = 30;
+  var N_INITIAL = 15, PAS_LISTE = 30;
   var FILTRES_SIGNAUX = [{ k: '', l: 'Tous les signaux' }, { k: 'cession', l: 'Vient de changer de main' }, { k: 'pmr', l: 'Accessibilité PMR à reprendre' },
     { k: 'ehpad', l: 'EHPAD à proximité' }, { k: 'sansRobot', l: 'Sans automate' }];
   var FILTRES_TRANSFERTS = [{ k: '', l: 'Tous' }, { k: 'Cession', l: 'Cessions (changement de main)' }, { k: 'Création', l: 'Créations (officine neuve)' }];
@@ -718,7 +718,7 @@
   function pisteDeLigne(l) {
     var sn = sourceEtNote(l), dep = l.angle === 'ehpad' ? '' : String(l.dep == null ? '' : l.dep);
     if (dep.length > 3) dep = dep.slice(0, 2);
-    return { nom: l.nom, ville: l.ville || '', cp: l.cp || '', departement: dep, pharmacien: l.pharmacien || '', telephone: l.telephone || '', email: l.email || '',
+    return { nom: l.nom_affiche || l.nom, cles: l.cles || [], ville: l.ville || '', cp: l.cp || '', departement: dep, pharmacien: l.pharmacien || '', telephone: l.telephone || '', email: l.email || '',
       groupement: libelleGroupements(l.groupements), lat: l.lat == null ? null : l.lat, lon: l.lon == null ? null : l.lon, source: sn.source, note: sn.note };
   }
 

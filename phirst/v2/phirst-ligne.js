@@ -111,7 +111,7 @@
     return sb.rpc('telepro_pistes').then(function (f) {
       if (f.error || !Array.isArray(f.data)) return PAS;
       var k = norm(p.nom) + '|' + norm(p.ville);
-      if (f.data.some(function (x) { return norm(x.nom) + '|' + norm(x.ville) === k; })) return 'Déjà dans vos pistes.';
+      if (f.data.some(function (x) { var c = norm(x.nom) + '|' + norm(x.ville); return c === k || (p.cles || []).indexOf(c) >= 0; })) return 'Déjà dans vos pistes.';
       return sb.rpc('telepro_creer_piste', { p_nom: p.nom, p_ville: p.ville || null, p_cp: p.cp || null, p_departement: p.departement || null, p_telephone: p.telephone || null, p_email: p.email || null,
         p_pharmacien: p.pharmacien || null, p_lat: p.lat == null ? null : p.lat, p_lon: p.lon == null ? null : p.lon, p_source: p.source || 'transfert' }).then(function (n) {
         if (n.error || !n.data) return PAS;
@@ -128,7 +128,7 @@
       return sb.from('crm_prospects').select('id,nom,ville').eq('workspace_id', ws).then(function (f) {
         if (f.error) return PAS;
         var k = norm(p.nom) + '|' + norm(p.ville);
-        if ((f.data || []).some(function (x) { return norm(x.nom) + '|' + norm(x.ville) === k; })) return 'Déjà dans vos pistes.';
+        if ((f.data || []).some(function (x) { var c = norm(x.nom) + '|' + norm(x.ville); return c === k || (p.cles || []).indexOf(c) >= 0; })) return 'Déjà dans vos pistes.';
         return sb.from('crm_prospects').insert({ workspace_id: ws, nom: p.nom, ville: p.ville, cp: p.cp, departement: p.departement,
           stage: 'a_qualifier', source: p.source || 'transfert', lat: p.lat, lon: p.lon,
           pharmacien: p.pharmacien || null, telephone: p.telephone || null, email: p.email || null, groupement: p.groupement || null }).select('id').single().then(function (n) {

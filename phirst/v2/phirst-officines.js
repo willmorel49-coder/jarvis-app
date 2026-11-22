@@ -1,4 +1,4 @@
-/* PHIRST · écrans « Officines » (Alimenter le pipeline) et « La carte » (21/11/2026), portés de la V1 (~/phirst-studio) :
+/* PHIRST · écrans « Officines » (« Officines ») et « La carte » (21/11/2026), portés de la V1 (~/phirst-studio) :
    app/crm/officines/page.tsx + components/crm/OfficinesListe.tsx (maquette m1 « Les angles en grand »), app/crm/carte/page.tsx +
    components/CrmMap.tsx / OfficinesMap.tsx (choix de Will du 29/10/2026 : Cibles et épingles, seuils de zoom « Masquer et le dire »).
    Les données ne sont PAS des fichiers : elles vivent dans la table phirst_officines (chargée par le Mac, voir officines-table.sql),
@@ -86,9 +86,9 @@
     tuiles: {}, meta: {}, ix: {}, faits: {}, tel: false };
 
   function aide() {
-    return { robots: 'Officines équipées d’un robot concurrent → cibles de remplacement Riedl.',
-      ehpad: 'Officines proches d’EHPAD → cibles PDA / Farmadosis (préparation des doses).',
-      transferts: 'Cessions & créations d’officines (BODACC, ~2 ans) → une pharmacie qui change de main ou s’ouvre réaménage.',
+    return { robots: 'Officines équipées d’un robot concurrent : de bonnes candidates pour le remplacer.',
+      ehpad: 'Officines proches d’EHPAD : elles peuvent avoir besoin de la préparation des doses (PDA, Farmadosis).',
+      transferts: 'Cessions et créations d’officines (annonces légales, environ 2 ans) : une pharmacie qui change de main ou qui ouvre réaménage.',
       signaux: 'Le croisement de toutes les sources : cession récente, potentiel de la zone, EHPAD autour, accessibilité PMR, automate déjà posé. Chaque ligne porte les faits qui la justifient — on n’appelle jamais sans pouvoir dire pourquoi.' }[S.angle] || '';
   }
   function chargerTuiles() {
@@ -121,7 +121,7 @@
       '<p class="po-aide">' + (S.france ? 'Votre secteur d’abord, puis le reste de la France.' : 'Grand Ouest par priorité : ' + esc(P.SECTEUR.join(' · '))) + '</p></div>' +
       (aide() ? '<p class="po-aide">' + esc(aide()) + '</p>' : '') +
       (savoir ? '<details class="po-savoir"><summary>À savoir</summary><p>' + esc(savoir) + '</p></details>' : '') +
-      (filtres.length ? '<div class="pa-chips po-sf" role="group" aria-label="Affiner l’angle">' + filtres.map(function (f) {
+      (filtres.length ? '<div class="pa-chips po-sf" role="group" aria-label="Affiner la liste">' + filtres.map(function (f) {
         return '<button type="button" class="pa-chip" data-fab="' + esc(f.k) + '" aria-pressed="' + (S.fab === f.k) + '">' + esc(f.l) + '</button>'; }).join('') + '</div>' : '');
   }
   function htmlLigne(l, i) {
@@ -182,7 +182,7 @@
       bt.disabled = true; dit.textContent = '';
       window.PHIRST_PISTE.ajouter(P.pisteDeLigne(l)).then(function (m) {
         S.faits[l.cle] = m;
-        if (FAIT.indexOf(m) >= 0) { S.ix[P.cle(l.nom, l.ville)] = S.ix[P.cle(l.nom, l.ville)] || 'nouvelle'; C.pistes = null; var d = document.createElement('div'); d.innerHTML = htmlLigne(l, +li.getAttribute('data-i')); li.replaceWith(d.firstChild); } else { dit.textContent = m; bt.disabled = false; }
+        if (FAIT.indexOf(m) >= 0) { S.ix[P.cle(l.nom_affiche || l.nom, l.ville)] = S.ix[P.cle(l.nom_affiche || l.nom, l.ville)] || 'nouvelle'; C.pistes = null; var d = document.createElement('div'); d.innerHTML = htmlLigne(l, +li.getAttribute('data-i')); li.replaceWith(d.firstChild); } else { dit.textContent = m; bt.disabled = false; }
       });
     }
   }
@@ -193,9 +193,9 @@
   }
   V2.pages.officines = { needs: [], render: function (root) {
     S.racine = root;
-    root.innerHTML = '<section class="pa po" aria-label="Officines"><header class="pa-tete"><h1>Alimenter le pipeline</h1>' +
-      '<p>Piochez vos prospects par angle de vente. Chaque ajout arrive dans la colonne <b>À qualifier</b>, tagué avec son origine.</p></header>' +
-      '<div class="po-grille" id="po-tuiles" role="group" aria-label="Angle de vente"></div><div id="po-reglages"></div>' +
+    root.innerHTML = '<section class="pa po" aria-label="Officines"><header class="pa-tete"><h1>Officines</h1>' +
+      '<p>Les pharmacies à appeler, du secteur de Yann d’abord. Celles que vous ajoutez arrivent dans vos pistes, à qualifier.</p></header>' +
+      '<div class="po-grille" id="po-tuiles" role="group" aria-label="Listes d’officines"></div><div id="po-reglages"></div>' +
       '<form class="po-recherche" id="po-form" role="search"><input type="text" name="q" placeholder="Rechercher (nom, ville…)" aria-label="Rechercher" autocomplete="off" enterkeyhint="search" value="' + esc(S.q) + '">' +
       '<input type="text" name="dep" class="po-dep" placeholder="Dépt" aria-label="Filtrer par département" inputmode="numeric" autocomplete="off" maxlength="5" value="' + esc(S.dep) + '">' +
       '<button type="submit" class="pa-b pa-ok">Filtrer</button></form><div id="po-liste"></div></section>';
@@ -212,8 +212,8 @@
 
   /* ════════════════════════ LA CARTE ════════════════════════ */
   var COUL = { robots: '#C2410C', omnicell: '#DC2626', ehpad: '#7C3AED', transferts: '#1D4ED8', signaux: '#12A567', toutes: '#1A3A2E' };
-  var NOMS_COUCHE = { toutes: 'officines', robots: 'robots', ehpad: 'EHPAD', transferts: 'transferts', signaux: 'signaux d’achat' };
-  var LIB_COUCHE = { fiches: 'Mes fiches', robots: 'Robots concurrents', transferts: 'Transferts / cessions', ehpad: 'Fournisseurs EHPAD', signaux: 'Signaux d’achat', toutes: 'Toutes les officines' };
+  var NOMS_COUCHE = { toutes: 'officines', robots: 'robots', ehpad: 'EHPAD', transferts: 'transferts', signaux: 'à saisir maintenant' };
+  var LIB_COUCHE = { fiches: 'Mes fiches', robots: 'Robots concurrents', transferts: 'Cessions et créations', ehpad: 'Fournisseurs EHPAD', signaux: 'À saisir maintenant', toutes: 'Toutes les officines' };
   var ORDRE = ['fiches', 'robots', 'transferts', 'ehpad', 'signaux', 'toutes'];
   var SECTEUR_BORNES = [[46.2, -5.3], [49.8, 1.2]];
   var CAP_PAGES = 4;
@@ -331,7 +331,7 @@
           '<button type="button" class="pa-b" data-vers="appels">Voir mes pistes</button></div>', { minWidth: 220 }).addTo(g);
     });
     var el = M.racine && M.racine.querySelector('#po-fiches');
-    if (el) el.textContent = vivantes.length + ' fiche' + (vivantes.length > 1 ? 's' : '') + ' dans votre pipeline' + (sans ? ', dont ' + sans + ' sans adresse (pas sur la carte)' : '') + '.';
+    if (el) el.textContent = vivantes.length + ' fiche' + (vivantes.length > 1 ? 's' : '') + ' dans vos pistes' + (sans ? ', dont ' + sans + ' sans adresse (pas sur la carte)' : '') + '.';
   }
   function cadrer() {
     if (!M.map) return;
@@ -391,7 +391,7 @@
   V2.pages.carte = { needs: [], render: function (root) {
     if (M.map) { try { M.map.remove(); } catch (e) { /* carte déjà démontée */ } M.map = null; }
     M.racine = root; M.groupes = {}; M.lignes = {}; M.totaux = {};
-    root.innerHTML = '<section class="pa po po-large" aria-label="La carte"><header class="pa-tete"><h1>La carte</h1><p>Vos fiches en épingles, les cibles du secteur en points. <span id="po-fiches"></span></p></header>' +
+    root.innerHTML = '<section class="pa po po-large" aria-label="La carte"><header class="pa-tete"><h1>La carte</h1><p>Vos fiches en épingles, les pharmacies du secteur en points. <span id="po-fiches"></span></p></header>' +
       '<div class="pa-chips po-couches" id="po-couches" role="group" aria-label="Couches"></div><div class="pa-chips po-parc" id="po-parc" role="group" aria-label="Parc concurrent" hidden></div>' +
       '<div class="po-carte"><div id="po-map" class="po-map" role="application" aria-label="Carte des pharmacies"></div><div id="po-bandeau" class="po-bandeau" role="status" hidden></div></div><div id="po-pipe" class="po-pipe"></div></section>';
     if (!root.__pc) { root.__pc = true; root.addEventListener('click', clicCarte); }
