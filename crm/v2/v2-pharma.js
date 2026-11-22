@@ -2294,6 +2294,20 @@
     viCourante = (v === 'integral') ? 'integral' : 'pharmacien';
     return viCourante;
   }
+  // 22/11/2026 — au TÉLÉPHONE, chaque fiche s'ouvre en vue Intégral (Will, sur son iPhone : « on doit arriver sur vue Intégral, c'est le plus important »).
+  // Seule l'arrivée sur une AUTRE officine remet la vue Intégral : un nouveau dessin de la même fiche (note enregistrée, retour, rechargement de Safari)
+  // garde la vue en cours, pour ne jamais faire apparaître l'interne d'un coup devant le pharmacien. À l'ordinateur, rien ne change (viLire).
+  var VI_TEL_CLE = 'jarvis.fiche.vue.tel';
+  function viArrivee(pid) {
+    var tel = false; try { tel = !!(window.matchMedia && window.matchMedia('(max-width:640px)').matches); } catch (e) {}
+    if (!tel) return viLire();
+    var der = null; try { der = window.sessionStorage.getItem(VI_TEL_CLE); } catch (e) {}
+    if (der !== String(pid)) {
+      viCourante = 'integral';
+      try { window.localStorage.setItem(VI_CLE, 'integral'); window.sessionStorage.setItem(VI_TEL_CLE, String(pid)); } catch (e) {}
+    }
+    return viLire();
+  }
   function viW(html, cls) { return html ? '<div class="vi-ct ' + cls + '">' + html + '</div>' : ''; }
   // premier élément qui correspond ET appartient à la vue affichée (les blocs de l'autre vue sont cachés : leur rectangle vaut 0)
   function viChercher(racine, sel) {
@@ -4726,7 +4740,7 @@
     var briefOff = V2.briefOfficine ? '<div class="v2-card pha-card" id="brief-off" data-pid="' + esc(pid) + '"><div class="pha-sub" style="padding:12px 18px">Brief du jour en préparation…</div></div>' : '';
     // Vue « À montrer au pharmacien » (liste blanche en CSS, voir .pha-wrap[data-vue]) : son nom, son adresse,
     // son titulaire, son groupement d'achat et les rubriques sans leurs éléments internes.
-    var vue = menu ? L1.vue : viLire();   // 29/10/2026 : la vue retenue par l'appareil (par défaut : pharmacien)
+    var vue = menu ? L1.vue : viArrivee(pid);   // 29/10/2026 : la vue retenue par l'appareil (par défaut : pharmacien) ; 22/11 : au téléphone, Intégral à l'arrivée (viArrivee)
     // 20/11/2026 — fiche « Le rendez-vous » : une colonne, chapitres 1-5 communs aux deux vues, chapitre 6 interne (vi-int). Rien n'est ajouté au rendu : la bascule ne fait que cacher / montrer.
     var apercu = fdrPage({
       pid: pid, pidSafe: pidSafe, pharma: pharma, nom: nameOf(pid, pharma.name), badges: ficheBadge + repriseBadge, comms: comms, loc: loc,

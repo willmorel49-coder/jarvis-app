@@ -76,3 +76,34 @@ test('tendance : pas d écart tant qu il n y a pas 6 mois depuis la première co
   assert.equal(T.evo, null);
   assert.equal(rv2Tendance({ pts: [], i0: 0, last: null }), null);
 });
+
+// 22/11/2026 — Will, sur son iPhone : au téléphone, la fiche doit s'OUVRIR en vue Intégral (« c'est le plus important »).
+const viCode = (() => { const a = src.indexOf("  var VI_CLE = 'jarvis.fiche.vue';"), b = src.indexOf('  function viW('); return src.slice(a, b); })();
+function appareil(largeur, depart) {
+  const mem = (init) => { const m = new Map(Object.entries(init || {})); return { getItem: k => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), m }; };
+  const window = { localStorage: mem(depart), sessionStorage: mem(), matchMedia: q => ({ matches: /max-width:640px/.test(q) && largeur <= 640 }) };
+  const api = new Function('window', viCode + '\nreturn { arrivee: viArrivee, lire: viLire, choisir: function (v) { viCourante = v; window.localStorage.setItem(VI_CLE, v); } };')(window);
+  return { window, ...api };
+}
+test('téléphone : chaque fiche s ouvre en vue Intégral, même si le pharmacien était la dernière vue', () => {
+  assert.ok(viCode.includes('function viArrivee(pid)'), 'viArrivee extraite du code');
+  assert.match(src, /var vue = menu \? L1\.vue : viArrivee\(pid\);/, 'la fiche passe bien par viArrivee');
+  const t = appareil(390, { 'jarvis.fiche.vue': 'pharmacien' });
+  assert.equal(t.arrivee('2000251'), 'integral', 'arrivée sur une fiche : Intégral');
+  t.choisir('pharmacien');
+  assert.equal(t.arrivee('2000251'), 'pharmacien', 'même fiche redessinée : la vue montrée au pharmacien est gardée');
+  assert.equal(t.arrivee('2000299'), 'integral', 'autre officine : retour à Intégral');
+});
+test('téléphone : un rechargement de Safari sur la même fiche garde la vue pharmacien', () => {
+  const t = appareil(390, {});
+  assert.equal(t.arrivee('2000251'), 'integral');
+  t.choisir('pharmacien');
+  // rechargement : nouvelle page, même mémoire de l'onglet (sessionStorage) et de l'appareil (localStorage)
+  const ls = Object.fromEntries(t.window.localStorage.m), ss = t.window.sessionStorage.m;
+  const r = appareil(390, ls); for (const [k, v] of ss) r.window.sessionStorage.setItem(k, v);
+  assert.equal(r.arrivee('2000251'), 'pharmacien');
+});
+test('ordinateur : rien ne change, vue pharmacien par défaut et dernier choix retenu', () => {
+  assert.equal(appareil(1280, {}).arrivee('2000251'), 'pharmacien');
+  assert.equal(appareil(1280, { 'jarvis.fiche.vue': 'integral' }).arrivee('2000251'), 'integral');
+});
