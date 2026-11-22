@@ -2436,6 +2436,10 @@
     mel: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
     rdv: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
     prod: '<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 2.004 0L20.7 7"/><path d="m7.5 4.27 9 5.15"/>',
+    // 22/11/2026 — v2 (barre du pouce au téléphone)
+    note: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+    prix: '<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".6" fill="currentColor"/>',
+    lien: '<path d="m9 18 6-6-6-6"/>',
     d2p: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>'
   };
   function fbIc(n, s) { return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + FB_IC[n] + '</svg>'; }
@@ -2530,6 +2534,10 @@
     if (k === 'todo') { V2.todo.menu(c.pid); return; }
     var f;
     if (k === 'logiciel') { c.sel = c.lgo; f = fbFeuilleLogiciel(); } else f = fbFeuilleListe(k);
+    fbPose(f, el);
+  };
+  // Pose une feuille du bas (f = { t, s, ic, h }) : partagée par les listings, le catalogue logiciel et les feuilles de la barre du pouce
+  function fbPose(f, el) {
     fbFerme(true);
     fbOp = el || document.activeElement;
     var o = document.createElement('div');
@@ -2541,7 +2549,7 @@
     fbOv = document.documentElement.style.overflow; document.documentElement.style.overflow = 'hidden';
     document.addEventListener('keydown', fbClav, true);
     var p = o.querySelector('.fbs-p'); if (p) p.focus();
-  };
+  }
   function fbClav(e) {
     var p = document.querySelector('#fbs .fbs-p'); if (!p) return;
     if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); fbFerme(); return; }
@@ -2739,6 +2747,21 @@
   // ── « Ne commande plus » (remontée de Florent, 07/10/2026) : ce qu'elle commandait régulièrement et qui
   // manque dans son dernier mois complet. La MÊME règle que la rubrique « Ses achats » du brief
   // (V2.briefOfficine.nePlusCommandes), les mêmes catégories que le Top 10, toutes les lignes.
+  // Produits interrompus, rangés par famille avec leur montant et leurs boîtes par mois (partagé : chapitre 2 et bandeau du premier écran au téléphone)
+  function nePlusParCat(np, ventes) {
+    var bIdx = benchIndex(), suivi = {}, ca = {}, q = {};
+    np.lignes.forEach(function (l) { suivi[l.cip] = 1; });
+    ventes.forEach(function (s) { var c = String(s.artCode || ''); if (suivi[c]) { ca[c] = (ca[c] || 0) + (s.mntNetHt || 0); q[c] = (q[c] || 0) + (s.qte || 0); } });
+    var parCat = {}, classees = 0, cc = V2.produits && V2.produits.catalogueIndex ? V2.produits.catalogueIndex() : null;
+    np.lignes.forEach(function (l) {
+      var b = bIdx.get(l.cip), cat = classify(b, l.cip);
+      if (!cat) return;
+      var nb = Math.max(1, Object.keys(l.mois).length);
+      (parCat[cat] || (parCat[cat] = [])).push({ designation: (b && b.designation) || (cc && cc[l.cip] && cc[l.cip].d) || l.cip, mois: l.mois, nb: nb, dernier: l.dernier, caMois: (ca[l.cip] || 0) / nb, qMois: (q[l.cip] || 0) / nb });
+      classees++;
+    });
+    return { parCat: parCat, classees: classees };
+  }
   var nePlusCat = null;
   V2.pharmaNePlusCat = function (key) { nePlusCat = key; if (!l1MajTout()) V2.render(); };
   function analyseNePlus(pid) {
@@ -2755,17 +2778,7 @@
         : 'Aucune commande enregistrée en ' + esc(moisFr(np.fin)) + ' : impossible de distinguer un produit abandonné d\'un mois sans commande.') + '</div>');
     }
     var sous = 'commandé au moins 4 mois sur les ' + np.avant.length + ' précédents, absent en ' + esc(moisFr(np.fin));
-    var bIdx = benchIndex(), suivi = {}, ca = {}, q = {};
-    np.lignes.forEach(function (l) { suivi[l.cip] = 1; });
-    ventes.forEach(function (s) { var c = String(s.artCode || ''); if (suivi[c]) { ca[c] = (ca[c] || 0) + (s.mntNetHt || 0); q[c] = (q[c] || 0) + (s.qte || 0); } });
-    var parCat = {}, classees = 0, cc = V2.produits && V2.produits.catalogueIndex ? V2.produits.catalogueIndex() : null;
-    np.lignes.forEach(function (l) {
-      var b = bIdx.get(l.cip), cat = classify(b, l.cip);
-      if (!cat) return;
-      var nb = Math.max(1, Object.keys(l.mois).length);
-      (parCat[cat] || (parCat[cat] = [])).push({ designation: (b && b.designation) || (cc && cc[l.cip] && cc[l.cip].d) || l.cip, mois: l.mois, nb: nb, dernier: l.dernier, caMois: (ca[l.cip] || 0) / nb, qMois: (q[l.cip] || 0) / nb });
-      classees++;
-    });
+    var pc = nePlusParCat(np, ventes), parCat = pc.parCat, classees = pc.classees;
     if (!classees) {
       return carte(sous, '<div class="pha-sub">' + (np.lignes.length
         ? V2.fmtNum(np.lignes.length) + ' référence' + (np.lignes.length > 1 ? 's interrompues' : ' interrompue') + ', hors des catégories suivies.'
@@ -4138,14 +4151,18 @@
     return '<dialog class="fdr-dlg" id="fdr-d-' + id + '" aria-labelledby="fdr-d-' + id + '-t"><div class="fdr-dlg-h"><h2 id="fdr-d-' + id + '-t">' + esc(titre) + '</h2>' +
       '<button type="button" class="fdr-dlg-x" onclick="this.closest(\'dialog\').close()" aria-label="Fermer">×</button></div><div class="fdr-dlg-c">' + corps + '</div></dialog>';
   }
+  function fdrOutilsBoutons(c) {
+    var b = function (id, nom) { return '<button type="button" class="fdr-outil" aria-haspopup="dialog" onclick="V2.fdrOuvrir(\'' + id + '\')">' + esc(nom) + '</button>'; };
+    return '<div class="fdr-outils" role="group" aria-label="Outils du rendez-vous">' + b('infos', 'Informations') + (c.notes ? b('notes', 'Notes et rendez-vous') : '') +
+      (c.briefOff ? b('brief', 'Brief du jour') : '') + fdrGrandsBoutons(c.pid, c.voitVentes) + '</div>';
+  }
   function fdrOutils(c) {
     var b = function (id, nom) { return '<button type="button" class="fdr-outil" aria-haspopup="dialog" onclick="V2.fdrOuvrir(\'' + id + '\')">' + esc(nom) + '</button>'; };
     var infos = '<div class="fdr-bloc fdr-infos"><div class="fdr-bl-h"><h3>Coordonnées et informations</h3>' +
         '<button type="button" class="fdr-btn" id="fdr-modif" aria-expanded="false" aria-controls="fdr-edit" onclick="V2.fdrModifier()">Modifier les informations</button></div>' +
         '<div class="pha-kv fdr-kv">' + c.kvHtml + '</div>' +
         '<div class="fdr-edit" id="fdr-edit" hidden>' + c.fe.panneau + c.infos + '</div></div>';
-    var h = '<div class="fdr-outils" role="group" aria-label="Outils du rendez-vous">' + b('infos', 'Informations') + (c.notes ? b('notes', 'Notes et rendez-vous') : '') +
-      (c.briefOff ? b('brief', 'Brief du jour') : '') + fdrGrandsBoutons(c.pid, c.voitVentes) + '</div>';
+    var h = fdrOutilsBoutons(c);
     return h + fdrDialogue('infos', 'Informations', infos) + (c.notes ? fdrDialogue('notes', 'Notes et préparation du rendez-vous', '<div class="fdr-nt">' + c.notes + '</div>') : '') +
       (c.briefOff ? fdrDialogue('brief', 'Brief du jour', '<div class="fdr-bj">' + c.briefOff + '</div>') : '');
   }
@@ -4158,9 +4175,116 @@
       if (ta) { try { ta.focus({ preventScroll: true }); } catch (e) { ta.focus(); } }
     }
   };
+  // ══════════════════════════════════════════════════════════════════════════
+  // 22/11/2026 — v2 « Le fil et la barre du pouce » (fiche au téléphone, 640 px et moins ; tout ce HTML est caché au-dessus : fiche.css).
+  // Ce qui se LIT s'affiche sans toucher : deux bandeaux (ses ventes sur 3 mois + courbe, « Ne commande plus »). Ce qui se FAIT est sous le pouce :
+  // une barre fixe en bas (Noter · Prix · À faire · Envoyer, + Appeler en vue Intégral). Rien n'est écrit en dur : tout vient de A et des plus commandés.
+  // ══════════════════════════════════════════════════════════════════════════
+  // Les 3 derniers mois face aux 3 d'avant (les ventes ne couvrent qu'une année : jamais « à l'an dernier »). evo = null tant qu'il n'y a pas 6 mois d'activité.
+  function rv2Tendance(A) {
+    var p = A.pts, n = p.length; if (!A.last || n < 1) return null;
+    var somme = function (a, b) { var t = 0; for (var i = Math.max(a, 0); i < b; i++) t += p[i].ca; return t; };
+    var cur = somme(n - 3, n);
+    return { tot: cur, evo: (n - 6 >= A.i0) ? pctOf(cur, somme(n - 6, n - 3)) : null, de: p[Math.max(n - 3, 0)], a: p[n - 1] };
+  }
+  // Courbe pleine largeur des mois lus (depuis la première commande), les 3 derniers mois soulignés par une bande claire
+  function rv2Courbe(A) {
+    var pts = A.pts.slice(A.i0), n = pts.length; if (n < 2) return '';
+    var w = 300, h = 86, pad = { l: 6, r: 6, t: 12, b: 24 }, W = w - pad.l - pad.r, H = h - pad.t - pad.b, max = 0;
+    pts.forEach(function (q) { max = Math.max(max, q.ca); }); max = (max || 1) * 1.1;
+    var x = function (i) { return pad.l + i * (W / (n - 1)); }, y = function (v) { return pad.t + H - (v / max) * H; };
+    var ligne = pts.map(function (q, i) { return x(i).toFixed(1) + ',' + y(q.ca).toFixed(1); });
+    var k = Math.min(3, n), x0 = x(n - k) - (k > 1 ? W / (n - 1) / 2 : 0);
+    var g = '<svg class="rv2-sv" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="Chiffre d’affaires mois par mois, de ' + esc(CL1_MC[pts[0].mk % 12]) + ' à ' + esc(CL1_MC[pts[n - 1].mk % 12]) + '">' +
+      '<defs><linearGradient id="rv2-gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCE8FF"/><stop offset="1" stop-color="#F6F9FF"/></linearGradient></defs>' +
+      '<rect x="' + Math.max(x0, 0).toFixed(1) + '" y="2" width="' + (w - Math.max(x0, 0)).toFixed(1) + '" height="' + (pad.t + H - 2) + '" rx="10" fill="#EEF3FF"/>' +
+      '<line x1="' + pad.l + '" x2="' + (w - pad.r) + '" y1="' + (pad.t + H) + '" y2="' + (pad.t + H) + '" stroke="#D5E0F6"/>' +
+      '<path d="M' + ligne.join(' L') + ' L' + x(n - 1).toFixed(1) + ',' + (pad.t + H) + ' L' + x(0).toFixed(1) + ',' + (pad.t + H) + 'Z" fill="url(#rv2-gr)"/>' +
+      '<path d="M' + ligne.join(' L') + '" fill="none" stroke="#0050E6" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round"/>';
+    pts.forEach(function (q, i) { if (i >= n - k) g += '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(q.ca).toFixed(1) + '" r="' + (i === n - 1 ? 5 : 3.5) + '" fill="' + (i === n - 1 ? '#0050E6' : '#fff') + '" stroke="#0050E6" stroke-width="2.2"/>'; });
+    g += '<text x="' + pad.l + '" y="' + (h - 6) + '" font-size="13" font-weight="600" fill="#4A5672">' + esc(CL1_MC[pts[0].mk % 12]) + '</text>' +
+      '<text x="' + (w - pad.r) + '" y="' + (h - 6) + '" font-size="13" font-weight="600" text-anchor="end" fill="#4A5672">' + esc(CL1_MC[pts[n - 1].mk % 12]) + ' ' + pts[n - 1].year + '</text></svg>';
+    return g;
+  }
+  // « Ne commande plus » : tous les produits interrompus (toutes familles), les 3 premiers par montant mensuel, le total par mois. null = pas calculable
+  function rv2NePlus(pid) {
+    if (!V2.briefOfficine || !V2.briefOfficine.nePlusCommandes) return null;
+    var ventes = pharmaSalesAll(pid); if (!ventes.length) return null;
+    var np = V2.briefOfficine.nePlusCommandes(ventes); if (!np.connu) return null;
+    var pc = nePlusParCat(np, ventes), rows = [];
+    Object.keys(pc.parCat).forEach(function (k) { rows = rows.concat(pc.parCat[k]); });
+    rows.sort(function (a, b) { return b.caMois - a.caMois; });
+    return { n: rows.length, total: rows.reduce(function (t, r) { return t + r.caMois; }, 0), top: rows.slice(0, 3) };
+  }
+  // (La maquette ajoutait en vue Intégral « Sous la moyenne de nos clients » : S.fam est NOTRE MARGE par famille, pas ses achats,
+  // et une marge négative donnait « −198 % ». Retiré du premier écran ; la comparaison complète reste au chapitre 5.)
+  function rv2Bandes(c) {
+    var A = c.A, T = rv2Tendance(A), lien = function (n) { return '<button type="button" class="rv2-lien" onclick="V2.fdrAller(' + n + ')">Détail' + fbIc('lien', 16) + '</button>'; };
+    var h = '<div class="rv2-bandes">';
+    if (T) {
+      var e = T.evo, cls = e == null || Math.abs(e) <= 2 ? 'rv2-fl' : (e > 0 ? 'rv2-up' : 'rv2-dn');
+      var tend = e == null ? '' : '<span class="rv2-tend ' + cls + '">' + (Math.abs(e) <= 2 ? '≈ stable' : (e > 0 ? '▲ +' : '▼ −') + Math.abs(e) + ' %') + '</span>';
+      h += '<section class="rv2-b rv2-ventes" aria-labelledby="rv2-v-t"><div class="rv2-bh"><h2 id="rv2-v-t">Ses ventes</h2>' + lien(1) + '</div>' +
+        '<div class="rv2-gros"><b class="rv2-mt cl1-num">' + V2.fmtEur(T.tot) + '</b>' + tend + '</div>' +
+        '<p class="rv2-ref">3 derniers mois' + (e == null ? '' : ', face aux 3 mois d’avant') + '</p>' + rv2Courbe(A) + '</section>';
+    }
+    var N = rv2NePlus(c.pid);
+    h += '<section class="rv2-b rv2-np" aria-labelledby="rv2-n-t"><div class="rv2-bh"><h2 id="rv2-n-t">Ne commande plus</h2>' + (N && N.n ? lien(2) : '') + '</div>';
+    if (!N) h += '<p class="rv2-vide">Pas assez de mois pour le dire.</p>';
+    else if (!N.n) h += '<p class="rv2-vide">Aucun produit abandonné.</p>';
+    else h += '<ol class="rv2-nl">' + N.top.map(function (r) { return '<li><span class="rv2-nn">' + esc(r.designation) + '</span><b class="cl1-num">' + V2.fmtEur(r.caMois) + '<small> par mois</small></b></li>'; }).join('') + '</ol>' +
+      '<p class="rv2-tot"><span>' + V2.fmtNum(N.n) + ' produit' + (N.n > 1 ? 's' : '') + ' au total</span><b class="cl1-num">' + V2.fmtEur(N.total) + '<small> par mois</small></b></p>';
+    return h + '</section></div>';
+  }
+  // Barre fixe du pouce. Visible dans les deux vues ; Appeler seulement en vue Intégral. Les anciens ronds y sont intégrés :
+  // E-mail et Rendez-vous → « Envoyer », Produits et Comparer → « Prix », Note → « Noter ». Pas de ventes (officine d'un collègue) : pas de barre.
+  var rv2Mail = '';   // l'e-mail de la fiche affichée (fbC ne le porte pas), lu par la feuille « Envoyer »
+  function rv2Barre(c) {
+    rv2Mail = c.mail || '';
+    if (!c.voitVentes || !fbC) return '';
+    var bt = function (cls, ic, nom, attrs) { return '<button type="button" class="rv2-bb ' + cls + '" ' + attrs + '>' + fbIc(ic, 24) + '<span>' + nom + '</span></button>'; };
+    return '<nav class="rv2-barre" aria-label="Actions du rendez-vous">' +
+      (c.tel ? '<a class="rv2-bb rv2-tel vi-int" href="tel:' + esc(c.tel.replace(/[^+0-9]/g, '')) + '">' + fbIc('tel', 24) + '<span>Appeler</span></a>' : '') +
+      (V2.notes ? bt('rv2-note', 'note', 'Noter', 'onclick="V2.fdrOuvrir(\'notes\')" aria-haspopup="dialog"') : '') +
+      bt('rv2-prix', 'prix', 'Prix', 'onclick="V2.rv2Feuille(\'prix\',this)" aria-haspopup="dialog"') +
+      (V2.todo && V2.todo.menu ? bt('rv2-todo', 'todo', 'À faire', 'onclick="V2.fbOuvre(\'todo\',this)" aria-haspopup="dialog"') : '') +
+      bt('rv2-envoi', 'envoi', 'Envoyer', 'onclick="V2.rv2Feuille(\'envoi\',this)" aria-haspopup="dialog"') + '</nav>';
+  }
+  function rv2Vue() { var w = document.querySelector('.pha-wrap.fdr-on'); return w ? w.getAttribute('data-vue') : 'pharmacien'; }
+  // Feuilles de la barre : « Prix » (Catalogue, Offilog, Transmettre + Comparer en vue Intégral) et « Envoyer » (Transmettre ; en vue Intégral aussi E-mail et Rendez-vous).
+  V2.rv2Feuille = function (k, el) {
+    var c = fbC; if (!c) return;
+    var integral = rv2Vue() === 'integral';
+    var li = function (ic, t, s, tag, attrs) { return '<' + tag + ' class="rv2-li" ' + attrs + '><span class="rv2-li-i">' + fbIc(ic, 22) + '</span><span class="rv2-li-t">' + t + '<small>' + s + '</small></span>' + fbIc('lien', 18) + '</' + tag + '>'; };
+    var va = function (a) { return 'type="button" onclick="V2.rv2Va(\'' + a + '\')"'; };
+    var l = '', f;
+    if (k === 'prix') {
+      if (V2.pages.produits) l += li('prod', 'Catalogue', 'Les produits, pour cette officine', 'button', va('catalogue'));
+      if (V2.pages.offilog) l += li('prix', 'Offilog', 'Le catalogue parapharmacie', 'button', va('offilog'));
+      l += li('tx', 'Transmettre', 'Choisir quoi lui envoyer', 'button', va('tx'));
+      if (integral && !isOpso() && !isEscale() && V2.d2pRender) l += li('d2p', 'Comparer', 'Ses prix face aux concurrents', 'button', va('d2p'));
+      f = { t: 'Prix', s: 'À lui montrer', ic: 'prix', h: '<div class="rv2-ls">' + l + '</div>' };
+    } else {
+      if (!integral) { V2.rv2Va('tx'); return; }   // vue pharmacien : un seul geste possible, on y va tout de suite
+      l += li('tx', 'Documents', 'Choisir quoi lui transmettre', 'button', va('tx'));
+      if (rv2Mail) l += li('mel', 'E-mail', esc(rv2Mail), 'a', 'href="mailto:' + esc(rv2Mail) + '" onclick="V2.fbFerme()"');
+      if (rv2Mail && V2.rdv) l += li('rdv', 'Rendez-vous', 'Lui proposer des créneaux', 'button', va('rdv'));
+      f = { t: 'Envoyer', s: 'Au pharmacien', ic: 'envoi', h: '<div class="rv2-ls">' + l + '</div>' };
+    }
+    fbPose(f, el);
+  };
+  V2.rv2Va = function (a) {
+    var c = fbC; fbFerme(true); if (!c) return;
+    if (a === 'catalogue') V2.go('produits', c.pid);
+    else if (a === 'offilog') V2.go('offilog');
+    else if (a === 'tx') V2.pharmaTransmettre(c.pid);
+    else if (a === 'd2p') V2.go('concurrents', 'd2p/' + c.pid);
+    else if (a === 'rdv' && V2.rdv) V2.rdv.proposer(c.pid);
+  };
   function fdrPage(c) {
     var vues = '<div class="fdr-sw vv-sel vv-ui" role="group" aria-label="Vue de la fiche">' + viBouton('pharmacien', 'Vue pharmacien') + viBouton('integral', 'Vue Intégral') + '</div>';
-    var sous = [c.loc, c.grp, c.titulaire].filter(function (x) { return x; }).map(esc).join('<span class="fdr-pt" aria-hidden="true"> · </span>');
+    var pt = '<span class="fdr-pt" aria-hidden="true"> · </span>';
+    var sous = [c.loc, c.grp].filter(function (x) { return x; }).map(esc).join(pt) + (c.titulaire ? '<span class="rv2-tit">' + ((c.loc || c.grp) ? pt : '') + esc(c.titulaire) + '</span>' : '');   // téléphone : « ville · groupement » seulement, le titulaire reste dans les coordonnées
     var tete = '<div class="fdr-head fdo-a" id="fdr-haut"><i class="fdr-astre" aria-hidden="true"></i>' +
       '<div class="fdr-bar">' + vues + '</div>' +
       '<div class="fdr-id"><div class="fdr-id-t">' +
@@ -4184,7 +4308,7 @@
     // ── 5. Côté Intégral : tout l'interne, dans un seul chapitre (jamais d'élément interne au-dessus)
     var int = fdrInterne(c);
     h += fdrChapitre(5, int, 'Ce que le pharmacien ne voit pas : notre marge par tranche de prix et la comparaison à nos clients.', 'vi-int fdr-int');
-    return '<div class="fdr fdr-d fdo-g"><aside class="fdo-side">' + tete + fdoCoord(c) + fdoOffilog(c.pid) + fdoBref(c) + navig + '</aside><div class="fdo-main">' + som + h + '</div></div>';
+    return '<div class="fdr fdr-d fdo-g"><aside class="fdo-side">' + tete + fdoCoord(c) + fdoOffilog(c.pid) + fdoBref(c) + navig + '</aside><div class="fdo-main">' + rv2Bandes(c) + '<div class="rv2-outils">' + fdrOutilsBoutons(c) + '</div>' + som + h + '</div>' + rv2Barre(c) + '</div>';
   }
   V2.fdrAller = function (n) {
     var el = document.getElementById('fdr-c' + n); if (!el) return;
