@@ -429,8 +429,15 @@
     return (v[0] & bit) === bit;
   };
 
+  // Nom du labo dont l'offre dépend de l'inscription (« Sanofi » · « UPSA »), '' pour tout autre produit.
+  V2.laboOffre = function (b) {
+    var bit = b ? laboOffre(b.cip13) : 0;
+    return bit === 1 ? 'Sanofi' : bit === 2 ? 'UPSA' : '';
+  };
+
   // `pid` (facultatif) : l'officine à qui le prix est montré ou envoyé. Sans lui, le prix du catalogue.
-  V2.bestPrice = function (b, pid) {
+  // `sansOffre` (facultatif) : le prix normal, offre labo écartée (listes sans officine, Will 23/11/2026).
+  V2.bestPrice = function (b, pid, sansOffre) {
     if (!b) return { ip: null, ht: null, remise: 0, offre: false };
     var ht = (b.prix_ht != null && b.prix_ht > 0) ? b.prix_ht : 0;   // PPHT / tarif grossiste
     var ip0 = (b.prix_ip != null && b.prix_ip > 0) ? b.prix_ip : 0;  // prix net IP
@@ -438,7 +445,7 @@
     // Offre labo valide UNIQUEMENT par rapport au PPHT : sous le tarif + remise réaliste
     // (≤ 50% du PPHT). Sans PPHT (prix_ht=0, ex vaccins à offre_ip aberrante 2,86 vs 73€)
     // → offre ignorée d'office. La remise se calcule TOUJOURS sur le PPHT.
-    var offre = off > 0 && ht > 0 && off < ht && off >= ht * 0.5 && V2.offreAdmise(b, pid);
+    var offre = !sansOffre && off > 0 && ht > 0 && off < ht && off >= ht * 0.5 && V2.offreAdmise(b, pid);
     var ip = (offre && (!ip0 || off < ip0)) ? off : ip0;             // prix le plus bas : l'offre seulement si elle bat le net standard
     var remise = (ht > 0 && ip > 0 && ip <= ht) ? Math.round((1 - ip / ht) * 1000) / 10 : 0;
     return { ip: ip > 0 ? ip : null, ht: ht > 0 ? ht : null, remise: remise, offre: offre && (!ip0 || off < ip0) };

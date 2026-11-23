@@ -5667,12 +5667,12 @@
     var calme = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     try { e.scrollIntoView({ behavior: calme ? 'auto' : 'smooth', block: 'start' }); } catch (x) { e.scrollIntoView(); }
   };
-  function groupementProducts(grpName, pidOffre) {   // pidOffre : officine destinataire (prix d'offre Sanofi / UPSA), facultatif
+  function groupementProducts(grpName, pidOffre, deuxPrix) {   // pidOffre : officine destinataire (prix d'offre Sanofi / UPSA), facultatif · deuxPrix : voir productsForIds
     var ids = {};
     (V2.pharmacies || []).forEach(function (p) {
       if (groupName(p) === grpName) ids[String(p.id)] = 1;
     });
-    return productsForIds(ids, 'GRP:' + grpName, pidOffre);
+    return productsForIds(ids, 'GRP:' + grpName, pidOffre, deuxPrix);
   }
   // ── Overrides produits par liste/groupement (retirés / ajoutés à la main) ──
   var OV_KEY = 'v2_list_overrides';
@@ -5740,7 +5740,11 @@
   // Agrégation des achats pour un ENSEMBLE de pharmacies (ids = {pharmacyId:1}).
   // Mutualisé par les groupements ET les listes personnalisées.
   // ovKey (optionnel) : applique les produits retirés/ajoutés à la main.
-  function productsForIds(ids, ovKey, pidOffre) {
+  // deuxPrix (liste faite sans officine : page d'un groupement, liste enregistrée, leurs PDF et Excel) :
+  // choix de Will du 23/11/2026, « Les deux prix ». Un produit de l'offre Sanofi / UPSA garde son prix
+  // normal (le même pour tous) et porte à côté le prix d'offre réservé aux officines inscrites
+  // (offre_prix, offre_labo). Les prospects n'en passent pas : l'offre leur reste (Will, 23/11/2026).
+  function productsForIds(ids, ovKey, pidOffre, deuxPrix) {
     var bIdx = benchIndex(), byCip = {}, activeSet = {};
     // 24/09/2026 — confidentialité : une liste personnalisée ou un petit groupement (< 5 officines)
     // trahirait les achats d'une officine précise → seulement les siennes pour un commercial restreint.
@@ -5783,10 +5787,11 @@
       // bruts, donc ratait toutes les corrections faites dans applyPPHT()/fusionsProtegees()
       // (produits froid, princeps mal classés NR, biosimilaires, génériques sans prix —
       // signalé par Will le 10/09/2026, ce moteur alimente Groupements + Listes + leurs PDF/Excel).
-      var e = byCip[cip], bp = V2.bestPrice(b, pidOffre);
+      var e = byCip[cip], bp = V2.bestPrice(b, pidOffre), lab = '', pOffre = 0;
+      if (deuxPrix && bp.offre && (lab = V2.laboOffre(b))) { pOffre = bp.ip; bp = V2.bestPrice(b, pidOffre, true); }
       if (!bp.ht && !bp.ip) return;   // 25/09/2026 — ni PPHT ni prix net connus : jamais « 0 € » sur un document
       buckets[cat].push({ cip: cip, designation: b.designation, prix_ht: bp.ht || 0, prix_ip: bp.ip || 0,
-                          offre: bp.offre, remise: bp.remise,
+                          offre: bp.offre, remise: bp.remise, offre_prix: pOffre, offre_labo: pOffre ? lab : '',
                           froid: estFroid(b, cip), sortie: nbPh(e), qte: e.qte, manual: !!e.manual });
     });
     return {
@@ -5887,6 +5892,8 @@
     if (inp) inp.focus();
   };
 
+  // « 0,78 € avec l'offre Sanofi (officines inscrites) » : la phrase choisie par Will (23/11/2026), la même à l'écran, dans le PDF et l'Excel.
+  function mentionOffre(r, fmt) { return fmt(r.offre_prix) + ' avec l\u2019offre ' + r.offre_labo + ' (officines inscrites)'; }
   function renderGrpCatCard(o, idx, panel, ovKey) {
     var c = o.cat, key = 'g_' + c.key;
     var enc = ovKey ? encodeURIComponent(ovKey).replace(/'/g, '%27') : '';
@@ -5908,7 +5915,8 @@
         '<td class="num" style="color:var(--muted-2);width:30px;text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums">' + (i + 1) + '</td>' +
         '<td><span class="v2-cat-prod">' + esc(r.designation) + '</span>' + (r.froid ? ' <span class="ph-froid">FROID</span>' : '') + (r.manual ? ' <span class="ph-manual">ajouté</span>' : '') + '</td>' +
         '<td class="mono" style="color:var(--muted);font-size:13px">' + esc(r.cip) + '</td>' +
-        '<td class="num cat-ip" style="color:var(--ip-blue);font-weight:700">' + (r.prix_ip > 0 ? V2.fmtEur(r.prix_ip) + (r.offre ? ' <span class="ph-offre">offre</span>' : '') : '—') + '</td>' +
+        '<td class="num cat-ip" style="color:var(--ip-blue);font-weight:700">' + (r.prix_ip > 0 ? V2.fmtEur(r.prix_ip) + (r.offre ? ' <span class="ph-offre">offre</span>' : '') : '—') +
+          (r.offre_prix ? '<span class="ph-offre-avec">' + esc(mentionOffre(r, V2.fmtEur)) + '</span>' : '') + '</td>' +
         '<td class="num" style="color:var(--c-mint);font-weight:700">' + (r.remise > 0 ? r.remise + '%' : '—') + '</td>' +
         '<td class="num" style="font-weight:800;white-space:nowrap" title="' + r.sortie + ' pharmacies sur ' + panel + '">' + partTxt(r, panel) + '</td>' +
         '<td style="width:46px;text-align:center"><button type="button" class="opp-add' + (on ? ' on' : '') + '" data-cip="' + esc(r.cip) + '" onclick="V2.pharmaToggleSel(this)" aria-label="Sélectionner pour le PDF">' + ICO(on ? 'check' : 'plus', 15) + '</button></td>' +
@@ -5930,7 +5938,7 @@
     }
     demanderCatComplet();
     if (String(selPid) !== 'GRP:' + grpName) { selPid = 'GRP:' + grpName; selCips = new Set(); }
-    var data = groupementProducts(grpName);
+    var data = groupementProducts(grpName, null, true);
     var total = data.cats.reduce(function (s, o) { return s + o.rows.length; }, 0);
     // ── Pharmacies membres du groupement ──
     var members = (V2.pharmacies || []).filter(function (p) {
@@ -6115,11 +6123,12 @@
     for (var i = 0; i < B.length && n < 400; i++) {
       var b = B[i], hay = ((b.designation || '') + ' ' + (b.cip13 || '')).toLowerCase();
       if (hay.indexOf(ql) < 0) continue;
-      var cip = String(b.cip13 || ''), sel = !!prodPick.set[cip], bp = V2.bestPrice(b);
+      var cip = String(b.cip13 || ''), sel = !!prodPick.set[cip], bp = V2.bestPrice(b), lab = bp.offre ? V2.laboOffre(b) : '', avec = '';
+      if (lab) { avec = mentionOffre({ offre_prix: bp.ip, offre_labo: lab }, V2.fmtEur); bp = V2.bestPrice(b, null, true); }   // liste sans officine : prix normal + offre (Will, 23/11/2026)
       out.push('<div class="pl-pick-row" onclick="V2.prodPickToggle(\'' + esc(cip) + '\')">' +
         '<span class="pl-pick-chk' + (sel ? ' on' : '') + '">' + (sel ? ICO('check', 13, 2.4) : '') + '</span>' +
         '<div style="flex:1;min-width:0"><div class="pl-pick-n">' + esc(b.designation || cip) + '</div>' +
-          '<div class="pl-pick-a">' + esc(cip) + (bp.ip != null ? ' · ' + V2.fmtEur(bp.ip) : '') + '</div></div>' +
+          '<div class="pl-pick-a">' + esc(cip) + (bp.ip != null ? ' · ' + V2.fmtEur(bp.ip) : '') + (avec ? ' · ' + esc(avec) : '') + '</div></div>' +
       '</div>'); n++;
     }
     box.innerHTML = out.join('') || '<div style="padding:22px;text-align:center;color:var(--muted)">Aucun produit trouvé.</div>';
@@ -6301,7 +6310,8 @@
         var badge = (r.froid ? ' <span style="font-size:7px;font-weight:800;color:#0086A3;background:#E3F7FB;padding:1px 5px;border-radius:4px;vertical-align:middle">FROID</span>' : '') +
           (r.offre ? ' <span style="font-size:7px;font-weight:800;color:#1E9E6A;background:#E6F6EE;padding:1px 5px;border-radius:4px;vertical-align:middle">OFFRE</span>' : '');
         return '<tr style="page-break-inside:avoid;background:' + bg + ';border-bottom:1px solid #F1F4F9">' +
-          '<td style="padding:6px 8px;font-size:12px;font-weight:700;color:#10131C">' + esc((r.designation || '').slice(0, 52)) + badge + '</td>' +
+          '<td style="padding:6px 8px;font-size:12px;font-weight:700;color:#10131C">' + esc((r.designation || '').slice(0, 52)) + badge +
+            (r.offre_prix ? '<div style="margin-top:1px;font-size:8.5px;font-weight:700;color:#1E7A55">' + esc(mentionOffre(r, e2)) + '</div>' : '') + '</td>' +
           '<td style="padding:6px 8px;font-family:' + MONO + ';font-size:9px;color:#737A8C">' + esc(r.cip) + '</td>' +
           '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:9.5px;color:#B6BFCE;white-space:nowrap">' + (r.prix_ht > 0 ? (r.prix_ip > 0 && r.prix_ip < r.prix_ht ? '<span style="text-decoration:line-through">' + e2(r.prix_ht) + '</span>' : e2(r.prix_ht)) : '—') + '</td>' +
           '<td style="padding:6px 8px;text-align:right;font-family:' + MONO + ';font-size:12px;font-weight:800;color:#0050E6;white-space:nowrap">' + (r.prix_ip ? e2(r.prix_ip) : '—') + '</td>' +
@@ -6475,12 +6485,12 @@
   V2.grpDownloadPdf = function (enc, mode) {
     if (!window.CATALOGUE_COMPLET && V2.loadFiles && !_catEssai) return avecCatalogue(function () { V2.grpDownloadPdf(enc, mode); });
     var grpName; try { grpName = decodeURIComponent(enc); } catch (e) { grpName = enc; }
-    achatsPdf(grpName, groupementProducts(grpName), !!(selCips && selCips.size && selPid === 'GRP:' + grpName), mode);
+    achatsPdf(grpName, groupementProducts(grpName, null, true), !!(selCips && selCips.size && selPid === 'GRP:' + grpName), mode);
   };
   V2.listDownloadPdf = function (id, mode) {
     if (!window.CATALOGUE_COMPLET && V2.loadFiles && !_catEssai) return avecCatalogue(function () { V2.listDownloadPdf(id, mode); });
     var l = listGet(id); if (!l) return;
-    achatsPdf(l.name, productsForIds(listIdsObj(l), 'LST:' + id), !!(selCips && selCips.size && selPid === 'LST:' + id), mode);
+    achatsPdf(l.name, productsForIds(listIdsObj(l), 'LST:' + id, null, true), !!(selCips && selCips.size && selPid === 'LST:' + id), mode);
   };
   // ── Export Excel des mêmes listes (SheetJS, chargé à la demande comme dans v2-mkt) ──
   var xlsxLoading = false;
@@ -6517,6 +6527,9 @@
       var wb = window.XLSX.utils.book_new();
       sections.forEach(function (o) {
         var head = ['#', 'Produit', 'CIP13', 'PPHT (€)', 'Prix net IP (€)', '% des pharmacies'];
+        // liste sans officine (Will, 23/11/2026) : le prix d'offre Sanofi / UPSA dans une colonne à part, seulement s'il y en a un
+        var avecOffre = o.rows.some(function (r) { return r.offre_prix > 0; }), der = avecOffre ? 6 : 5;
+        if (avecOffre) head.push('Offre labo');
         var aoa = [
           ['Intégral Pharma — Liste d\'achats recommandée · ' + title],
           [o.cat.label + (o.cat.sub ? ' · ' + o.cat.sub : '') + ' — éditée le ' + dateStr + (periodLabel() ? ' · ventes ' + periodLabel() : '') + ' · référence ' + panel + ' pharmacie' + (panel > 1 ? 's' : '')],
@@ -6531,12 +6544,12 @@
             r.prix_ht > 0 ? +r.prix_ht.toFixed(2) : '',
             r.prix_ip > 0 ? +r.prix_ip.toFixed(2) : '',
             r.sortie > 0 && l1PartDes(r, panel) < 1 ? 0.005 : l1PartDes(r, panel) / 100
-          ]);
+          ].concat(avecOffre ? [r.offre_prix > 0 ? mentionOffre(r, function (v) { return v.toFixed(2).replace('.', ',') + ' €'; }) : ''] : []));
         });
         var ws = window.XLSX.utils.aoa_to_sheet(aoa);
         for (var ri = 4; ri < aoa.length; ri++) { var cl = ws[window.XLSX.utils.encode_cell({ r: ri, c: 5 })]; if (cl) cl.z = '[=0]0%;[<0.01]"< 1 %";0%'; }
-        ws['!cols'] = [{ wch: 4 }, { wch: 48 }, { wch: 15 }, { wch: 10 }, { wch: 14 }, { wch: 17 }];
-        ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }, { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } }];
+        ws['!cols'] = [{ wch: 4 }, { wch: 48 }, { wch: 15 }, { wch: 10 }, { wch: 14 }, { wch: 17 }].concat(avecOffre ? [{ wch: 52 }] : []);
+        ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: der } }, { s: { r: 1, c: 0 }, e: { r: 1, c: der } }];
         window.XLSX.utils.book_append_sheet(wb, ws, sheetName(o.cat.label));
       });
       var fn = 'Liste-' + String(title).replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.xlsx';
@@ -6801,12 +6814,12 @@
   V2.grpDownloadXlsx = function (enc) {
     if (!window.CATALOGUE_COMPLET && V2.loadFiles && !_catEssai) return avecCatalogue(function () { V2.grpDownloadXlsx(enc); });
     var grpName; try { grpName = decodeURIComponent(enc); } catch (e) { grpName = enc; }
-    achatsXlsx(grpName, groupementProducts(grpName), !!(selCips && selCips.size && selPid === 'GRP:' + grpName));
+    achatsXlsx(grpName, groupementProducts(grpName, null, true), !!(selCips && selCips.size && selPid === 'GRP:' + grpName));
   };
   V2.listDownloadXlsx = function (id) {
     if (!window.CATALOGUE_COMPLET && V2.loadFiles && !_catEssai) return avecCatalogue(function () { V2.listDownloadXlsx(id); });
     var l = listGet(id); if (!l) return;
-    achatsXlsx(l.name, productsForIds(listIdsObj(l), 'LST:' + id), !!(selCips && selCips.size && selPid === 'LST:' + id));
+    achatsXlsx(l.name, productsForIds(listIdsObj(l), 'LST:' + id, null, true), !!(selCips && selCips.size && selPid === 'LST:' + id));
   };
   // PDF officine = liste d'achats PURE (même format que le groupement, SANS récap RDV).
   // scope = 'reseau' (réf. réseau IP) | 'groupement' (réf. son groupement). Toute la liste.
@@ -7514,7 +7527,7 @@
     demanderCatComplet();
     if (String(selPid) !== 'LST:' + id) { selPid = 'LST:' + id; selCips = new Set(); }
     var ids = listIdsObj(l);
-    var data = productsForIds(ids, 'LST:' + id);
+    var data = productsForIds(ids, 'LST:' + id, null, true);
     var total = data.cats.reduce(function (s, o) { return s + o.rows.length; }, 0);
     var nb = (l.ids || []).length;
     var hero =
@@ -7913,6 +7926,7 @@
       '.ph-fiche-tabs .ph-vtab:hover{background:var(--card);border-color:var(--line);transform:none}',
       '.ph-fiche-tabs .ph-vtab.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff;box-shadow:0 3px 10px rgba(0,80,230,.28);transform:none}',
       '.ph-froid{font-size:8.5px;font-weight:800;letter-spacing:.03em;padding:1px 5px;border-radius:5px;color:var(--c-froid);background:color-mix(in srgb,var(--c-froid) 13%,#fff)}',
+      '.ph-offre-avec{display:block;margin-top:2px;font-size:11.5px;font-weight:600;line-height:1.3;color:var(--muted)}',
       '.ph-offre{font-size:8.5px;font-weight:800;letter-spacing:.03em;padding:1px 5px;border-radius:5px;color:var(--c-amber);background:color-mix(in srgb,var(--c-amber) 14%,#fff);text-transform:uppercase}',
       '.ph-manual{font-size:8.5px;font-weight:800;letter-spacing:.03em;padding:1px 5px;border-radius:5px;color:var(--pil-opp);background:color-mix(in srgb,var(--pil-opp) 13%,#fff);text-transform:uppercase}',
       '.ph-rmprod{width:26px;height:26px;border-radius:7px;border:1px solid var(--line);background:var(--card);color:var(--muted-2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:.15s var(--ease)}',

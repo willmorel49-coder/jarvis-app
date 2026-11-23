@@ -112,11 +112,59 @@ test("v2-pharma.js : les listes de la fiche et du PDF / Excel passent l'officine
 
 test('mallette : les listings « réseau » et « groupement » envoyés à une officine suivent SON inscription', () => {
   const corps = (nom) => { const i = PHARMA.indexOf('function ' + nom + '('); assert.ok(i > 0, nom); return PHARMA.slice(i, PHARMA.indexOf('\n  }\n', i)); };
-  assert.match(corps('groupementProducts'), /productsForIds\(ids, 'GRP:' \+ grpName, pidOffre\)/);
+  assert.match(corps('groupementProducts'), /productsForIds\(ids, 'GRP:' \+ grpName, pidOffre, deuxPrix\)/);
   assert.match(corps('productsForIds'), /V2\.bestPrice\(b, pidOffre\)/);
   const i = PHARMA.indexOf('listing: function (kind, o)'); assert.ok(i > 0, 'pont.listing');
   const pont = PHARMA.slice(i, PHARMA.indexOf('V2.pharmaPont.charger()', i));
   assert.match(pont, /groupementProducts\(o\.grp, o\.pid\)/);
   assert.match(pont, /buildRecoCats\('__mallette__', 'reseau', o\.pid\)/);
   assert.doesNotMatch(pont, /groupementProducts\(o\.grp\)|buildRecoCats\('__mallette__', 'reseau'\)/);
+});
+
+// ── Listes faites SANS officine (page d'un groupement, liste enregistrée, leurs PDF et Excel) ──
+// Choix de Will (23/11/2026, question cliquée « Les deux prix ») : le prix normal pour tous, et à côté
+// « 0,78 € avec l'offre Sanofi (officines inscrites) ». Les prospects gardent l'offre.
+
+test('prix normal sur demande (sansOffre) et nom du labo de l\'offre', () => {
+  const V2 = monde();
+  assert.deepEqual([V2.bestPrice(SAN, null, true).offre, V2.bestPrice(SAN, null, true).ip], [false, 1.9]);
+  assert.deepEqual([V2.bestPrice(UPS, undefined, true).offre, V2.bestPrice(UPS, undefined, true).ip], [false, 1.9]);
+  assert.equal(V2.bestPrice(SAN, null, true).remise, 5, 'abandon de marge calculé sur le prix normal');
+  assert.equal(V2.bestPrice(SAN).ip, 1.6, 'sans le 3e argument : rien ne change');
+  assert.equal(V2.laboOffre(SAN), 'Sanofi');
+  assert.equal(V2.laboOffre(UPS), 'UPSA');
+  assert.equal(V2.laboOffre(AUTRE), '', 'autre offre : pas d\'inscription, pas de mention');
+  assert.equal(monde({ offres: false }).laboOffre(SAN), '', 'liste des offres pas chargée : pas de mention');
+});
+
+test('la phrase de la mention est celle choisie par Will', () => {
+  const i = PHARMA.indexOf('function mentionOffre('); assert.ok(i > 0, 'mentionOffre');
+  const sb = {}; vm.createContext(sb); vm.runInContext(PHARMA.slice(i, PHARMA.indexOf('\n', i)), sb);
+  const eur = (v) => v.toFixed(2).replace('.', ',') + ' €';
+  assert.equal(sb.mentionOffre({ offre_prix: 0.78, offre_labo: 'Sanofi' }, eur), '0,78 € avec l’offre Sanofi (officines inscrites)');
+  assert.equal(sb.mentionOffre({ offre_prix: 1.19, offre_labo: 'UPSA' }, eur), '1,19 € avec l’offre UPSA (officines inscrites)');
+});
+
+test('v2-pharma.js : les listes sans officine demandent les deux prix, les prospects non', () => {
+  const corps = (nom) => { const i = PHARMA.indexOf('function ' + nom + '('); assert.ok(i > 0, nom); return PHARMA.slice(i, PHARMA.indexOf('\n  }\n', i)); };
+  const pfi = corps('productsForIds');
+  assert.match(pfi, /if \(deuxPrix && bp\.offre && \(lab = V2\.laboOffre\(b\)\)\) \{ pOffre = bp\.ip; bp = V2\.bestPrice\(b, pidOffre, true\); \}/);
+  assert.match(pfi, /offre_prix: pOffre, offre_labo: pOffre \? lab : ''/);
+  assert.match(corps('renderGroupementDetail'), /groupementProducts\(grpName, null, true\)/);
+  assert.match(corps('renderListeDetail'), /productsForIds\(ids, 'LST:' \+ id, null, true\)/);
+  const fn = (nom) => { const i = PHARMA.indexOf(nom + ' = function'); assert.ok(i > 0, nom); return PHARMA.slice(i, PHARMA.indexOf('\n  };\n', i)); };
+  assert.match(fn('V2.grpDownloadPdf'), /achatsPdf\(grpName, groupementProducts\(grpName, null, true\)/);
+  assert.match(fn('V2.listDownloadPdf'), /productsForIds\(listIdsObj\(l\), 'LST:' \+ id, null, true\)/);
+  assert.match(fn('V2.grpDownloadXlsx'), /achatsXlsx\(grpName, groupementProducts\(grpName, null, true\)/);
+  assert.match(fn('V2.listDownloadXlsx'), /productsForIds\(listIdsObj\(l\), 'LST:' \+ id, null, true\)/);
+  // prospects (Transmettre) : l'offre reste — aucun « deux prix »
+  for (const f of ['V2.pharmaListPdf', 'V2.pharmaListXlsx']) {
+    assert.match(fn(f), /groupementProducts\(tx\.grp\)/, f);
+    assert.doesNotMatch(fn(f), /groupementProducts\(tx\.grp, null, true\)/, f);
+  }
+  // l'écran, le PDF et l'Excel montrent la mention ; le sélecteur « Ajouter un produit » aussi
+  assert.match(corps('renderGrpCatCard'), /r\.offre_prix \? '<span class="ph-offre-avec">' \+ esc\(mentionOffre\(r, V2\.fmtEur\)\)/);
+  assert.match(corps('achatsPdf'), /r\.offre_prix \? '<div [^>]*>' \+ esc\(mentionOffre\(r, e2\)\)/);
+  assert.match(corps('achatsXlsx'), /head\.push\('Offre labo'\)/);
+  assert.match(corps('refreshProdList'), /bp = V2\.bestPrice\(b, null, true\)/);
 });
