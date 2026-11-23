@@ -100,18 +100,6 @@
     if (m < 1440) return 'il y a ' + Math.floor(m / 60) + ' h';
     return 'il y a ' + Math.floor(m / 1440) + ' jour(s)';
   }
-  var JS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
-  var MS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-  function jourFr(iso) {
-    var p = String(iso || '').split('-'); if (p.length !== 3) return esc(iso);
-    var d = new Date(+p[0], +p[1] - 1, +p[2]);
-    return JS[d.getDay()] + ' ' + d.getDate() + ' ' + MS[d.getMonth()];
-  }
-  function heureFr(h) {
-    var p = String(h || '').split(':'); if (p.length < 2) return esc(h);
-    return (+p[0]) + ' h' + (p[1] !== '00' ? ' ' + p[1] : '');
-  }
-  function plageFr(p) { return jourFr(p.date) + ', ' + heureFr(p.debut) + ' – ' + heureFr(p.fin); }
 
   function appeler(corps) {
     var c = sb();
