@@ -4351,7 +4351,7 @@
         '<span class="flg-ic">' + fbIc(ic, 24) + '</span><span class="flg-t"><b>' + titre + '</b><small>' + sous + '</small></span>' +
         '<span class="flg-n">' + fbNb(n) + '</span><span class="flg-fl" aria-hidden="true">' + fbIc('lien', 20) + '</span></button>';
     };
-    if (d.nR > 0) t += tuile('reseau', 'reseau', 'Listing produits ' + (isEscale() ? 'Escale' : 'Intégral'), 'Les plus commandés du réseau', d.nR);
+    if (d.nR > 0) t += tuile('reseau', 'reseau', 'Listing produits ' + (isEscale() ? 'Escale' : 'Intégral'), 'Les plus commandés', d.nR);
     if (d.hasGrp && d.nG > 0) t += tuile('groupement', 'groupe', 'Listing groupement', esc(f.grp), d.nG);
     if (!t) return '';
     return '<section class="flg" aria-labelledby="flg-h"><h2 class="flg-h" id="flg-h">Listings à proposer</h2><div class="flg-row' + (deux ? '' : ' flg-1') + '">' + t + '</div></section>';

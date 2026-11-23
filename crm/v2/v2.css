@@ -1971,7 +1971,7 @@ html:root:root body .fdr-on .fdr-sw .vv-b{padding:0 18px;flex:0 0 auto}
 .pha-wrap.fdr-on .flg-ic{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:#FFFFFF;color:#0050E6;box-shadow:0 2px 6px rgba(0,30,90,.25)}
 .pha-wrap.fdr-on .flg-t{display:flex;flex-direction:column;gap:3px;min-width:0}
 .pha-wrap.fdr-on .fdr .flg-t b{font:800 18px/1.2 Inter,system-ui,sans-serif;letter-spacing:-.01em;color:#FFFFFF}
-.pha-wrap.fdr-on .fdr .flg-t small{display:block;font:600 14px/1.25 Inter,system-ui,sans-serif;color:#E6EEFF;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pha-wrap.fdr-on .fdr .flg-t small{display:block;font:600 14px/1.25 Inter,system-ui,sans-serif;color:#E6EEFF;white-space:normal;overflow-wrap:anywhere}
 .pha-wrap.fdr-on .flg-n{padding:7px 12px;border-radius:999px;background:#FFFFFF;color:#0034A0;font:800 14px/1 Inter,system-ui,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
 .pha-wrap.fdr-on .flg-fl{display:grid;place-items:center;color:#FFFFFF}
 @media (max-width:640px){
