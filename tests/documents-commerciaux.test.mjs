@@ -119,3 +119,31 @@ test('CI : le parcours connecté ouvre l\'écran et attend son titre', () => {
   assert.match(lire('.github/scripts/parcours-connecte.mjs'), /\{ route: 'doccom', +nom: 'Documents commerciaux', selecteur: 'h1\.v2-titre', +texte: 'Documents commerciaux' \}/);
   assert.match(dcm, /<h1 class="v2-titre">Documents commerciaux<\/h1>/);
 });
+
+// 23/11/2026 après-midi — « Livret clients » retiré (Will) : « Présenter » n'a plus de document, son filtre ne doit pas mener à un mur vide.
+function filtresSur(D) {
+  const corps = [bloc(dcm, '  function visibles()', '\n'), bloc(dcm, '  function famVide(k)', '\n'), bloc(dcm, '  function filtres() {', '\n  }\n')].join('\n');
+  const boutons = ['', 'presenter', 'compte', 'offres', 'fiches'].map(k => ({ k, hidden: false, ap: null, getAttribute: () => k, setAttribute(n, v) { this.ap = v; } }));
+  new Function('D', 'document', corps + '\nfiltres();')(D, { querySelectorAll: () => boutons });
+  return Object.fromEntries(boutons.map(b => [b.k || 'tout', b]));
+}
+
+test('une famille sans document affiché n\'a pas de filtre ; un filtre posé sur elle revient à « Tout »', () => {
+  const D = { etat: 'pret', fam: 'presenter', tous: [{ famille: 'presenter', retire_le: '2026-11-23T12:21:19Z' }, { famille: 'compte' }, { famille: 'offres' }, { famille: 'fiches' }] };
+  const b = filtresSur(D);
+  assert.equal(D.fam, '', 'le filtre « Présenter » vidé revient à « Tout »');
+  assert.equal(b.presenter.hidden, true);
+  assert.deepEqual([b.compte.hidden, b.offres.hidden, b.fiches.hidden, b.tout.hidden], [false, false, false, false]);
+  assert.equal(b.tout.ap, 'true');
+  assert.equal(b.presenter.ap, 'false');
+  // un document remis (ou ajouté) dans « Présenter » fait revenir son filtre
+  D.tous[0].retire_le = null;
+  assert.equal(filtresSur(D).presenter.hidden, false);
+});
+
+test('avant la liste lue, seul « Tout » est montré (aucun filtre qui disparaît sous le doigt)', () => {
+  const b = filtresSur({ etat: 'charge', fam: '', tous: [] });
+  assert.deepEqual([b.presenter.hidden, b.compte.hidden, b.offres.hidden, b.fiches.hidden, b.tout.hidden], [true, true, true, true, false]);
+  assert.match(dcm, /\(famVide\(f\.k\) \? ' hidden' : ''\)/, 'le gabarit pose aussi « hidden » dès le premier rendu');
+  assert.match(dcm, /\.dcm-fam\[hidden\]\{display:none\}/);
+});

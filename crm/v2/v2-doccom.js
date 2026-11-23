@@ -3,7 +3,8 @@
    Demande de Will : « un onglet pour les docs à dispo des commerciaux, qu'ils puissent y avoir accès rapidement et les
    prévisualiser (que des pdf), dispo aussi sur docs à partager quand on est sur une fiche officine » ; nom : « Documents commerciaux ».
    Mur de vignettes (1re page de chaque PDF) rangé en quatre familles ; un toucher = la visionneuse plein écran, page par page, sans quitter l'app.
-   Tout compte connecté AJOUTE un PDF ; seul Will RETIRE (réversible : rien n'est effacé du stockage, la ligne garde retire_le).
+   Tout compte connecté AJOUTE un PDF ; seuls Will et Pauline G. RETIRENT (choix de Will, 23/11/2026 ; réversible : rien n'est effacé du
+   stockage, la ligne garde retire_le). Une famille sans document affiché n'a pas de filtre (« Présenter » est vide depuis le 23/11).
    Stockage : espace fermé « documents-commerciaux » (pdf/<sha1>.pdf, apercus/<sha1>.jpg), lu par adresses signées ; liste = table
    documents_commerciaux ; droit de retrait = fonction documents_commerciaux_retrait_ok(). Le droit est porté par la BASE, l'écran
    ne fait que cacher le bouton. Jamais côté OPSO, Escale ni Phirst (porte filtrée dans u2Cles, écran fermé ici).
@@ -47,7 +48,7 @@
       '.dcm-outils{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin:18px 0 4px}',
       '.dcm-champ{flex:1 1 240px;margin:0}',
       '.dcm-champ input,.dcm-champ input:focus{font-size:16px;border:0;box-shadow:none;outline:0;background:transparent;border-radius:0;-webkit-appearance:none;appearance:none}',
-      '.dcm-fams{display:flex;gap:8px;flex-wrap:wrap}',
+      '.dcm-fams{display:flex;gap:8px;flex-wrap:wrap}.dcm-fam[hidden]{display:none}',
       '.dcm-fam{min-height:40px;padding:0 14px;border-radius:var(--r-pill);border:1px solid var(--line);background:var(--card);font-family:var(--font);font-size:14px;font-weight:700;color:var(--ip-ink-2);cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent}',
       '.dcm-fam[aria-pressed="true"]{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
       '.dcm-fam:focus-visible{outline:2px solid var(--ip-blue);outline-offset:2px}',
@@ -184,6 +185,16 @@
   var D = { etat: 'attente', tous: [], peut: false, lu: 0, q: '', fam: '', urls: {}, urlsLe: 0, msg: '', msgKo: false, retOuvert: false, promesse: null, blobs: {} };
   function visibles() { return D.tous.filter(function (d) { return !d.retire_le; }); }
   function retires() { return D.tous.filter(function (d) { return !!d.retire_le; }); }
+  // une famille n'a de filtre que si elle a un document affiché ; avant la liste lue, seul « Tout » est montré (aucun bouton qui disparaît sous le doigt)
+  function famVide(k) { return D.etat !== 'pret' || !visibles().some(function (d) { return d.famille === k; }); }
+  function filtres() {
+    if (D.fam && famVide(D.fam)) D.fam = '';
+    [].forEach.call(document.querySelectorAll('#dcm-root [data-filtre]'), function (b) {
+      var k = b.getAttribute('data-filtre') || '';
+      if (k) b.hidden = famVide(k);
+      b.setAttribute('aria-pressed', String(k === D.fam));
+    });
+  }
   function trouver(id) { for (var i = 0; i < D.tous.length; i++) if (String(D.tous[i].id) === String(id) || D.tous[i].sha1 === id) return D.tous[i]; return null; }
   function trier() {
     var o = {}; FAMILLES.forEach(function (f, i) { o[f.k] = i; });
@@ -238,6 +249,7 @@
       return;
     }
     var l = visibles(), q = norm(D.q), h = '';
+    filtres();
     if (D.msg) h += '<p class="' + (D.msgKo ? 'dcm-alerte' : 'dcm-ok-msg') + '" role="status">' + esc(D.msg) + '</p>';
     var fams = FAMILLES.filter(function (f) { return !D.fam || f.k === D.fam; }), vus = [];
     fams.forEach(function (f) {
@@ -493,12 +505,12 @@
   // ——— Écran ———
   function gabarit() {
     return '<div class="v2-wrap v2-u dcm-wrap" id="dcm-root">' +
-      '<div class="dcm-tete"><div><h1 class="v2-titre">Documents commerciaux</h1><p class="v2-sous">Les PDF à montrer ou à envoyer aux pharmacies, rangés en quatre familles.</p></div>' +
+      '<div class="dcm-tete"><div><h1 class="v2-titre">Documents commerciaux</h1><p class="v2-sous">Les PDF à montrer ou à envoyer aux pharmacies, rangés par famille.</p></div>' +
       '<label class="dcm-ajout">' + ic('plus') + 'Ajouter un PDF<input type="file" accept="application/pdf,.pdf" id="dcm-fic"></label></div>' +
       '<div class="dcm-outils"><label class="v2-champ dcm-champ">' + ic('search') +
       '<input type="text" inputmode="search" id="dcm-q" placeholder="Rechercher un document…" aria-label="Rechercher un document" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search"></label>' +
       '<div class="dcm-fams" role="group" aria-label="Familles"><button type="button" class="dcm-fam" data-filtre="" aria-pressed="' + !D.fam + '">Tout</button>' +
-      FAMILLES.map(function (f) { return '<button type="button" class="dcm-fam" data-filtre="' + f.k + '" aria-pressed="' + (D.fam === f.k) + '">' + esc(f.nom) + '</button>'; }).join('') + '</div></div>' +
+      FAMILLES.map(function (f) { return '<button type="button" class="dcm-fam" data-filtre="' + f.k + '" aria-pressed="' + (D.fam === f.k) + '"' + (famVide(f.k) ? ' hidden' : '') + '>' + esc(f.nom) + '</button>'; }).join('') + '</div></div>' +
       '<div id="dcm-corps"></div></div>';
   }
   function brancher() {
