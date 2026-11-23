@@ -1956,6 +1956,35 @@ html:root:root body .fdr-on .fdr-sw .vv-b{padding:0 18px;flex:0 0 auto}
 .fdr-outils .fdr-gb svg{flex:0 0 auto}
 .fdr-outil:hover,.fdr-outils .fdr-gb:hover{border-color:#B9CBF2}
 .fdr-outil:focus-visible,.fdr-outils .fdr-gb:focus-visible,.fdr-dlg-x:focus-visible{outline:2px solid #0050E6;outline-offset:2px}
+/* 23/11/2026 — « Listings à proposer » (Will : « que ce soit voyant ») : deux grandes tuiles bleues en tête de la fiche, dans les deux vues (fdrListings, v2-pharma.js).
+   Un seul accent, dégradé opaque avec un reflet clair en haut à droite (la lumière), aucun flou, aucune opacité sur du texte. Préfixe : flg-. */
+.pha-wrap.fdr-on .flg{margin:0 0 14px}
+.pha-wrap.fdr-on .fdr .flg-h{margin:0 0 8px;font:800 13px/1.2 Inter,system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#4A5672}
+.pha-wrap.fdr-on .flg-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.pha-wrap.fdr-on .flg-row.flg-1{grid-template-columns:minmax(0,1fr)}
+.pha-wrap.fdr-on .fdr .flg-b{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:14px;width:100%;min-height:84px;margin:0;padding:14px 12px 14px 14px;border-radius:20px;border:1px solid #0040B8;
+  background:radial-gradient(240px 130px at 100% 0,#3D7EF6 0,#1A63F0 45%,#0050E6 100%) #0050E6;color:#FFFFFF;text-align:left;cursor:pointer;font-family:Inter,system-ui,sans-serif;
+  box-shadow:0 1px 0 #6E9DF8 inset,0 10px 24px rgba(0,64,184,.26);transition:transform .15s ease,box-shadow .15s ease;-webkit-tap-highlight-color:transparent}
+.pha-wrap.fdr-on .fdr .flg-b:hover{transform:translateY(-2px);box-shadow:0 1px 0 #6E9DF8 inset,0 14px 30px rgba(0,64,184,.34)}
+.pha-wrap.fdr-on .fdr .flg-b:active{transform:scale(.985)}
+.pha-wrap.fdr-on .fdr .flg-b:focus-visible{outline:3px solid #7FA7F5;outline-offset:2px}
+.pha-wrap.fdr-on .flg-ic{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:#FFFFFF;color:#0050E6;box-shadow:0 2px 6px rgba(0,30,90,.25)}
+.pha-wrap.fdr-on .flg-t{display:flex;flex-direction:column;gap:3px;min-width:0}
+.pha-wrap.fdr-on .fdr .flg-t b{font:800 18px/1.2 Inter,system-ui,sans-serif;letter-spacing:-.01em;color:#FFFFFF}
+.pha-wrap.fdr-on .fdr .flg-t small{display:block;font:600 14px/1.25 Inter,system-ui,sans-serif;color:#E6EEFF;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pha-wrap.fdr-on .flg-n{padding:7px 12px;border-radius:999px;background:#FFFFFF;color:#0034A0;font:800 14px/1 Inter,system-ui,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pha-wrap.fdr-on .flg-fl{display:grid;place-items:center;color:#FFFFFF}
+@media (max-width:640px){
+  .pha-wrap.fdr-on .flg{margin:10px 0 0}
+  .pha-wrap.fdr-on .fdr .flg-h{margin-bottom:6px}
+  .pha-wrap.fdr-on .flg-row{grid-template-columns:minmax(0,1fr);gap:8px}
+  .pha-wrap.fdr-on .fdr .flg-b{grid-template-columns:auto minmax(0,1fr) auto;gap:12px;min-height:68px;padding:10px 12px;border-radius:18px}
+  .pha-wrap.fdr-on .flg-ic{width:44px;height:44px}
+  .pha-wrap.fdr-on .fdr .flg-t b{font-size:16px}
+  .pha-wrap.fdr-on .fdr .flg-t small{font-size:13px}
+  .pha-wrap.fdr-on .flg-fl{display:none}
+}
+@media (prefers-reduced-motion:reduce){.pha-wrap.fdr-on .fdr .flg-b{transition:none}.pha-wrap.fdr-on .fdr .flg-b:hover{transform:none}}
 .fdr-dlg{border:0;padding:0;border-radius:var(--r-card,20px);width:min(760px,calc(100vw - 24px));max-height:calc(100vh - 48px);background:#FFFFFF;color:var(--ink,#1A2030);box-shadow:0 24px 64px rgba(11,27,63,.22);overflow:auto}
 .fdr-dlg::backdrop{background:rgba(11,27,63,.38)}
 .fdr-dlg-h{position:sticky;top:0;z-index:1;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 20px;background:linear-gradient(180deg,#F1F6FF,#FFFFFF);border-bottom:1px solid var(--line,#E3E8F2)}

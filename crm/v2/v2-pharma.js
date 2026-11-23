@@ -4337,8 +4337,27 @@
     else if (a === 'd2p') V2.go('concurrents', 'd2p/' + c.pid);
     else if (a === 'rdv' && V2.rdv) V2.rdv.proposer(c.pid);
   };
+  // 23/11/2026 (Will, après son essai sur iPhone) : « il faut vraiment qu'on remette les boutons pour listing produits integral et listing groupement
+  // sur les fiches des officines et que ce soit voyant ». Ils avaient disparu avec la fiche « Le rendez-vous » (20/11 : fbBloc ne s'affiche plus),
+  // seul « Choisir quoi lui transmettre » y menait encore. Deux grandes tuiles en tête de la fiche, dans les DEUX vues (des listes pour le pharmacien,
+  // sans aucune marge), qui ouvrent la feuille d'avant (fbFeuilleListe : 5 premiers, Voir la liste, PDF, Excel, Envoyer au pharmacien).
+  // État posé par fbBloc (fbC, vérifié sur CETTE officine) ; officine d'un collègue ou aucun produit à proposer : pas de bloc. Préfixe CSS : flg-.
+  function fdrListings(c) {
+    var f = fbC;
+    if (!c.voitVentes || !f || String(f.pidBrut) !== String(c.pid)) return '';
+    var d = f.d, t = '', deux = d.nR > 0 && d.hasGrp && d.nG > 0;
+    var tuile = function (k, ic, titre, sous, n) {
+      return '<button type="button" class="flg-b" data-k="' + k + '" aria-haspopup="dialog" onclick="V2.fbOuvre(\'' + k + '\',this)">' +
+        '<span class="flg-ic">' + fbIc(ic, 24) + '</span><span class="flg-t"><b>' + titre + '</b><small>' + sous + '</small></span>' +
+        '<span class="flg-n">' + fbNb(n) + '</span><span class="flg-fl" aria-hidden="true">' + fbIc('lien', 20) + '</span></button>';
+    };
+    if (d.nR > 0) t += tuile('reseau', 'reseau', 'Listing produits ' + (isEscale() ? 'Escale' : 'Intégral'), 'Les plus commandés du réseau', d.nR);
+    if (d.hasGrp && d.nG > 0) t += tuile('groupement', 'groupe', 'Listing groupement', esc(f.grp), d.nG);
+    if (!t) return '';
+    return '<section class="flg" aria-labelledby="flg-h"><h2 class="flg-h" id="flg-h">Listings à proposer</h2><div class="flg-row' + (deux ? '' : ' flg-1') + '">' + t + '</div></section>';
+  }
   function fdrPage(c) {
-    var vues = '<div class="fdr-sw vv-sel vv-ui" role="group" aria-label="Vue de la fiche">' + viBouton('pharmacien', 'Vue pharmacien') + viBouton('integral', 'Vue Intégral') + '</div>';
+    var vues ='<div class="fdr-sw vv-sel vv-ui" role="group" aria-label="Vue de la fiche">' + viBouton('pharmacien', 'Vue pharmacien') + viBouton('integral', 'Vue Intégral') + '</div>';
     var pt = '<span class="fdr-pt" aria-hidden="true"> · </span>';
     var sous = [c.loc, c.grp].filter(function (x) { return x; }).map(esc).join(pt) + (c.titulaire ? '<span class="rv2-tit">' + ((c.loc || c.grp) ? pt : '') + esc(c.titulaire) + '</span>' : '');   // téléphone : « ville · groupement » seulement, le titulaire reste dans les coordonnées
     var tete = '<div class="fdr-head fdo-a" id="fdr-haut"><i class="fdr-astre" aria-hidden="true"></i>' +
@@ -4364,7 +4383,7 @@
     // ── 5. Côté Intégral : tout l'interne, dans un seul chapitre (jamais d'élément interne au-dessus)
     var int = fdrInterne(c);
     h += fdrChapitre(5, int, 'Ce que le pharmacien ne voit pas : notre marge par tranche de prix et la comparaison à nos clients.', 'vi-int fdr-int');
-    return '<div class="fdr fdr-d fdo-g"><aside class="fdo-side">' + tete + fdoCoord(c) + fdoOffilog(c.pid) + fdoBref(c) + navig + '</aside><div class="fdo-main">' + rv2Bandes(c) + '<div class="rv2-outils">' + fdrOutilsBoutons(c) + '</div>' + som + h + '</div>' + rv2Barre(c) + '</div>';
+    return '<div class="fdr fdr-d fdo-g"><aside class="fdo-side">' + tete + fdoCoord(c) + fdoOffilog(c.pid) + fdoBref(c) + navig + '</aside><div class="fdo-main">' + fdrListings(c) + rv2Bandes(c) + '<div class="rv2-outils">' + fdrOutilsBoutons(c) + '</div>' + som + h + '</div>' + rv2Barre(c) + '</div>';
   }
   V2.fdrAller = function (n) {
     var el = document.getElementById('fdr-c' + n); if (!el) return;
