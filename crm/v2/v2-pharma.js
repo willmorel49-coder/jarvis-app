@@ -708,7 +708,9 @@
 
   // Liste catégorisée (même moule que l'onglet groupement) : produits que la
   // référence (réseau IP ou son groupement) commande et que cette officine n'a PAS.
-  function buildRecoCats(pid, scope) {
+  // pidOffre (facultatif) : l'officine à qui la liste est ENVOYÉE, quand ce n'est pas `pid` (mallette, 23/11/2026) —
+  // seul le prix d'offre Sanofi / UPSA la suit ; le choix des produits reste celui de `pid`.
+  function buildRecoCats(pid, scope, pidOffre) {
     cipStats();
     var st, total;
     if (scope === 'groupement') {
@@ -735,7 +737,7 @@
       var cat = classify(b, cip); if (!cat || !buckets[cat]) return;
       if (!grpScope && total >= 2 && e.ph.size < Math.max(2, Math.ceil(total * penFor(cat)))) return;  // réseau : seuil
       if (grpScope && e.ph.size < Math.max(2, Math.ceil(total * PEN_GRP))) return;  // groupement : seuil 10 %
-      var bp = V2.bestPrice(b, pid), ht = bp.ht || 0, ip = bp.ip || 0;
+      var bp = V2.bestPrice(b, pidOffre != null && pidOffre !== '' ? pidOffre : pid), ht = bp.ht || 0, ip = bp.ip || 0;
       var rem = (ht > 0 && ip > 0 && ip <= ht) ? Math.round((1 - ip / ht) * 1000) / 10 : 0;
       buckets[cat].push({ cip: cip, designation: b.designation || '', prix_ht: ht, prix_ip: ip, offre: bp.offre,
                           remise: rem, froid: !!b.is_froid, sortie: e.ph.size, qte: e.qte });
@@ -5665,12 +5667,12 @@
     var calme = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     try { e.scrollIntoView({ behavior: calme ? 'auto' : 'smooth', block: 'start' }); } catch (x) { e.scrollIntoView(); }
   };
-  function groupementProducts(grpName) {
+  function groupementProducts(grpName, pidOffre) {   // pidOffre : officine destinataire (prix d'offre Sanofi / UPSA), facultatif
     var ids = {};
     (V2.pharmacies || []).forEach(function (p) {
       if (groupName(p) === grpName) ids[String(p.id)] = 1;
     });
-    return productsForIds(ids, 'GRP:' + grpName);
+    return productsForIds(ids, 'GRP:' + grpName, pidOffre);
   }
   // ── Overrides produits par liste/groupement (retirés / ajoutés à la main) ──
   var OV_KEY = 'v2_list_overrides';
@@ -5738,7 +5740,7 @@
   // Agrégation des achats pour un ENSEMBLE de pharmacies (ids = {pharmacyId:1}).
   // Mutualisé par les groupements ET les listes personnalisées.
   // ovKey (optionnel) : applique les produits retirés/ajoutés à la main.
-  function productsForIds(ids, ovKey) {
+  function productsForIds(ids, ovKey, pidOffre) {
     var bIdx = benchIndex(), byCip = {}, activeSet = {};
     // 24/09/2026 — confidentialité : une liste personnalisée ou un petit groupement (< 5 officines)
     // trahirait les achats d'une officine précise → seulement les siennes pour un commercial restreint.
@@ -5781,7 +5783,7 @@
       // bruts, donc ratait toutes les corrections faites dans applyPPHT()/fusionsProtegees()
       // (produits froid, princeps mal classés NR, biosimilaires, génériques sans prix —
       // signalé par Will le 10/09/2026, ce moteur alimente Groupements + Listes + leurs PDF/Excel).
-      var e = byCip[cip], bp = V2.bestPrice(b);
+      var e = byCip[cip], bp = V2.bestPrice(b, pidOffre);
       if (!bp.ht && !bp.ip) return;   // 25/09/2026 — ni PPHT ni prix net connus : jamais « 0 € » sur un document
       buckets[cat].push({ cip: cip, designation: b.designation, prix_ht: bp.ht || 0, prix_ip: bp.ip || 0,
                           offre: bp.offre, remise: bp.remise,
@@ -7425,10 +7427,10 @@
         if (!V2.prospectPdf) return null;
         if (kind === 'grp') {
           if (!o.grp) return null;
-          return V2.prospectPdf(groupementProducts(o.grp), { nom: nom || 'Officine', ref: o.grp, reseau: false, fichier: (nom ? nom + ' — ' : '') + o.grp, maxPages: cli ? 10 : 0 }, 'blob');
+          return V2.prospectPdf(groupementProducts(o.grp, o.pid), { nom: nom || 'Officine', ref: o.grp, reseau: false, fichier: (nom ? nom + ' — ' : '') + o.grp, maxPages: cli ? 10 : 0 }, 'blob');
         }
         // réseau : la liste complète des meilleures rotations (même chemin que le prospect de Transmettre)
-        return V2.prospectPdf(buildRecoCats('__mallette__', 'reseau'), { nom: nom || 'Officine', ref: reseauLbl(), reseau: true, fichier: (nom ? nom + ' — ' : '') + reseauLbl(), maxPages: cli ? 10 : 0 }, 'blob');
+        return V2.prospectPdf(buildRecoCats('__mallette__', 'reseau', o.pid), { nom: nom || 'Officine', ref: reseauLbl(), reseau: true, fichier: (nom ? nom + ' — ' : '') + reseauLbl(), maxPages: cli ? 10 : 0 }, 'blob');
       };
       return V2.pharmaPont.charger().then(function (ok) { return ok ? suite() : null; });
     },

@@ -100,9 +100,23 @@ test('les garde-fous de l\'offre restent : au-dessus du PPHT ou sous la moitié,
 
 test("v2-pharma.js : les listes de la fiche et du PDF / Excel passent l'officine au prix", () => {
   const corps = (nom) => { const i = PHARMA.indexOf('function ' + nom + '('); assert.ok(i > 0, nom); return PHARMA.slice(i, PHARMA.indexOf('\n  }\n', i)); };
-  for (const f of ['buildOpportunities', 'buildNetworkReco', 'buildRecoCats', 'grpBestRotations', 'gainYear']) {
+  for (const f of ['buildOpportunities', 'buildNetworkReco', 'grpBestRotations', 'gainYear']) {
     assert.match(corps(f), /V2\.bestPrice\(b, pid\)/, f);
     assert.doesNotMatch(corps(f), /V2\.bestPrice\(b\)/, f);
   }
   assert.match(corps('buildNetworkReco'), /gainYear\(b, pid\)/);
+  // buildRecoCats : le prix suit l'officine destinataire quand elle est donnée, sinon `pid`
+  assert.match(corps('buildRecoCats'), /V2\.bestPrice\(b, pidOffre != null && pidOffre !== '' \? pidOffre : pid\)/);
+  assert.doesNotMatch(corps('buildRecoCats'), /V2\.bestPrice\(b\)/);
+});
+
+test('mallette : les listings « réseau » et « groupement » envoyés à une officine suivent SON inscription', () => {
+  const corps = (nom) => { const i = PHARMA.indexOf('function ' + nom + '('); assert.ok(i > 0, nom); return PHARMA.slice(i, PHARMA.indexOf('\n  }\n', i)); };
+  assert.match(corps('groupementProducts'), /productsForIds\(ids, 'GRP:' \+ grpName, pidOffre\)/);
+  assert.match(corps('productsForIds'), /V2\.bestPrice\(b, pidOffre\)/);
+  const i = PHARMA.indexOf('listing: function (kind, o)'); assert.ok(i > 0, 'pont.listing');
+  const pont = PHARMA.slice(i, PHARMA.indexOf('V2.pharmaPont.charger()', i));
+  assert.match(pont, /groupementProducts\(o\.grp, o\.pid\)/);
+  assert.match(pont, /buildRecoCats\('__mallette__', 'reseau', o\.pid\)/);
+  assert.doesNotMatch(pont, /groupementProducts\(o\.grp\)|buildRecoCats\('__mallette__', 'reseau'\)/);
 });
