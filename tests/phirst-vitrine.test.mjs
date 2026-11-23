@@ -240,7 +240,9 @@ describe('branchement dans la page', () => {
     const i = (s) => html.indexOf(s)
     assert.ok(i('phirst-reglages.css') < i('phirst-vitrine.css'))
     assert.ok(i('phirst-reglages.js') < i('phirst-lettre-contenu.js') && i('phirst-lettre-contenu.js') < i('phirst-vitrine-pur.js') && i('phirst-vitrine-pur.js') < i('phirst-vitrine.js') && i('phirst-vitrine.js') < i('v2-app.js'))
-    for (const f of ['phirst-vitrine.css', 'phirst-lettre-contenu.js', 'phirst-vitrine-pur.js', 'phirst-vitrine.js']) assert.match(html, new RegExp(f.replace('.', '\\.') + '\\?v=20261123v"'))
+    // le jeton n'est jamais écrit ici (il avance à chaque mise en ligne) : celui des Réglages, voisins, fait foi
+    const jeton = /phirst-reglages\.js\?v=([0-9a-z]+)"/.exec(html)[1]
+    for (const f of ['phirst-vitrine.css', 'phirst-lettre-contenu.js', 'phirst-vitrine-pur.js', 'phirst-vitrine.js']) assert.match(html, new RegExp(f.replace('.', '\\.') + '\\?v=' + jeton + '"'))
     assert.match(html, /lettre: 'https:\/\/phirst-agencement\.vercel\.app\/phirst\/v2\/lettre\/'/); assert.doesNotMatch(html, /github\.io/)
   })
   test('la porte est à l’accueil, plus « En développement », et réservée à Yann', () => {
