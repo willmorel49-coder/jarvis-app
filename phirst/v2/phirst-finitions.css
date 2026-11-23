@@ -35,6 +35,13 @@
 .pa-l .pa-apres .pa-q{margin:10px 0 8px}
 .pa-liste>.pa-l:has(>.pa-ligne){padding:0;overflow:hidden}
 .pa-l .pa-det-g .pa-tel{margin-left:-4px}
+/* 23/11/2026 — sous 1024 px, l'étiquette passe sous le nom : « Robot Omnicell abandonné » prenait la largeur et coupait le nom au milieu
+   du mot (« Pharmaci / e de Quelisoy », vu en production à 390 px). Un mot n'est plus coupé que s'il ne tient pas seul sur la ligne. */
+@media (max-width:1023px){
+  .pa-l .pa-ligne{grid-template-columns:minmax(0,1fr) 28px;grid-template-areas:"nom chev" "motif motif" "raison raison"}
+  .pa-l .pa-ligne .lg-et{justify-self:start;margin-top:4px}
+  .pa-l .pa-nom b{overflow-wrap:break-word}
+}
 /* les lignes qui n'ont pas de bouton (Agenda, Veille) gardent leur forme d'avant */
 @media (min-width:1024px){
   .pa-liste:has(.pa-ligne){gap:0;border:1px solid var(--au-fil,#D8E7DD);border-radius:16px;background-color:#fff;overflow:hidden}

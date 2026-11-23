@@ -2128,7 +2128,11 @@
     var L = window.V2_CITATIONS;
     if (!L || !L.length || (window.V2_BRAND && window.V2_BRAND.opso)) return '';
     var d = new Date(), j = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000), c = L[((j % L.length) + L.length) % L.length];
-    return '<figure class="u2-cit" id="u2-citation"><blockquote><p>«\u00a0' + esc(c.t) + '\u00a0»</p></blockquote><figcaption>' + esc(c.a) + '</figcaption></figure>';
+    // 23/11/2026 — une marque peut remplacer la signature « Écrit pour JARVIS » (réglage citationMaison ; '' = sans signature, choix de Will pour Phirst).
+    // Sans ce réglage (JARVIS, Escale), rien ne change : les 365 citations ont toutes un auteur.
+    var a = c.a, maison = window.V2_BRAND && window.V2_BRAND.citationMaison;
+    if (typeof maison === 'string' && a === 'Écrit pour JARVIS') a = maison;
+    return '<figure class="u2-cit" id="u2-citation"><blockquote><p>«\u00a0' + esc(c.t) + '\u00a0»</p></blockquote>' + (a ? '<figcaption>' + esc(a) + '</figcaption>' : '') + '</figure>';
   }
   function u2Accueil(root, m) {
     if (_u2.monte && root.querySelector('.u2-page')) { u2Maj(m); return; }

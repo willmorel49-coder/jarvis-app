@@ -34,12 +34,17 @@
   });
   V2.pages.atelier = { needs: [], render: function (root) {
     ecran(root, 'Atelier 3D', 'Du plan 2D à la visite en 3D.', 'La 3D se fait dans la version précédente de Phirst : vos plans, vos rendus et vos visites s’y trouvent toujours, avec les mêmes identifiants. Elle s’ouvre dans un nouvel onglet.', [], ADRESSE_3D);
+    // 23/11/2026 — choix de Will : l'Atelier 3D est réservé à Yann, comme Dossiers, Chantiers et Encaisser (la téléprospectrice ne fait pas de 3D).
+    if (window.PHIRST_ROLE) window.PHIRST_ROLE.estTelepro().then(function (t) {
+      if (t && V2.route && V2.route.name === 'atelier') ecran(root, 'Atelier 3D', 'Du plan 2D à la visite en 3D.', 'Cet écran est réservé à Yann. Vos outils sont les Appels, l’Agenda et la Veille.', [['appels', 'Ouvrir mes Appels'], ['agenda', 'Ouvrir l’Agenda']]);
+    });
   } };
-  /* 21/11/2026 — la téléprospectrice ne voit ni Encaisser, ni Dossiers, ni Chantiers (écrans qui porteront des sommes) :
+  /* 21/11/2026 — la téléprospectrice ne voit ni Encaisser, ni Dossiers, ni Chantiers (écrans qui porteront des sommes) ;
+     23/11/2026 — ni l'Atelier 3D (choix de Will : elle ne fait pas de 3D, et ce bouton l'envoyait vers l'ancienne version) :
      l'écran dit « Cet écran est réservé à Yann. », et la porte quitte le menu et l'accueil. Le socle ne garde que les portes
-     dont la page existe (V2.pages[porte.page]) : pour elle, `page` de ces trois portes pointe une page absente (même mécanisme
+     dont la page existe (V2.pages[porte.page]) : pour elle, `page` de ces portes pointe une page absente (même mécanisme
      que `fam` de la porte « tournees » dans v2-app.js). Rôle lu dans la session (window.PHIRST_ROLE, phirst-appels.js). */
-  var RESERVE = ['dossiers', 'chantiers', 'encaisser'], telepro = false;
+  var RESERVE = ['dossiers', 'chantiers', 'encaisser', 'atelier'], telepro = false;
   var portes = window.V2_BRAND && window.V2_BRAND.portes;
   if (portes) RESERVE.forEach(function (k) {
     var d = portes[k]; if (!d) return;
@@ -49,7 +54,7 @@
   /* Le rôle n'est connu qu'une fois la session ouverte : on le lit dès que V2.user change, et on redessine si cela change les portes. */
   /* La barre du haut de l'accueil est dessinée avant que son rôle soit connu, et V2.render() ne la redessine pas (mesuré en ligne
      le 21/11/2026 : « Dossiers de projet » et « Chantiers » y restaient). Pour elle, on retire aussi les liens déjà affichés vers
-     ces trois écrans, et ceux de chaque rendu suivant. */
+     ces écrans, et ceux de chaque rendu suivant. */
   function retirer() {
     if (!telepro) return;
     RESERVE.forEach(function (k) {
