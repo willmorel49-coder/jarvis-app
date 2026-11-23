@@ -88,8 +88,7 @@
       phrase: 'notre catalogue, pour voir toute la gamme d’un coup d’œil' },
     { id: 'catalogue-itp', famille: 'offres', titre: 'Catalogue ITP juin 2026', sous: 'Quatorze pages', url: 'catalogue-itp.pdf', pages: 14, ko: 8307,
       phrase: 'le catalogue ITP de juin 2026' },
-    { id: 'offre-2026', famille: 'offres', titre: 'Offre 2026', sous: 'Neuf pages', url: '../../MARKETING/OFFRE V1 2026 (3).pdf', pages: 9, ko: 1890,
-      phrase: 'notre offre 2026' },
+    // 23/11/2026 (Will, question cliquée « La retirer ») : « Offre 2026 » de 9 pages (juin) retirée, périmée — les offres à jour sont dans Documents commerciaux.
     { id: 'biosim-memo', famille: 'fiches', titre: 'Fiche mémo biosimilaires', sous: 'Une page à garder au comptoir', url: '../../MARKETING/BIOSIM FICHE MEMO.pdf', pages: 1, ko: 127,
       phrase: 'une fiche mémo sur les biosimilaires, à garder au comptoir' },
     { id: 'infosoft', famille: 'fiches', titre: 'Fiche Infosoft', sous: 'Une page', url: '../../MARKETING/INFOSOFT .pdf', pages: 1, ko: 251,
