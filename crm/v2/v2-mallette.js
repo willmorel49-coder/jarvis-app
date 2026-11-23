@@ -78,10 +78,8 @@
 
   // pages = nombre RÉEL de pages (relevé sur le fichier le 16/10/2026) ; ko = poids réel arrondi.
   var FIXES = [
-    { id: 'presentation-groupements', famille: 'presenter', titre: 'Présentation Intégral Pharma', sous: 'Le groupe, les agences, la façon de travailler avec les groupements d’achat', url: '../../site-integral/assets/Presentation-Integral-Pharma-groupements.pdf', pages: 7, ko: 921,
-      phrase: 'qui nous sommes, nos agences et notre façon de travailler avec les groupements' },
-    { id: 'plaquette-prospection', famille: 'presenter', titre: 'Plaquette de prospection', sous: 'Quatre pages pour un premier rendez-vous', url: '../../MARKETING/IP PROSPECTION PGN.pdf', pages: 4, ko: 4922,
-      phrase: 'l’essentiel d’Intégral Pharma en quatre pages' },
+    // 23/11/2026 (Will, question cliquée « Retirer les 2 nominatifs ») : « Présentation Intégral Pharma » (p. 7 au nom et au portable de Pascale)
+    // et « Plaquette de prospection » (coordonnées de Pauline G.) retirées — règle « pas de fiches prospection nominative » (Documents commerciaux).
     { id: 'ouverture-compte', famille: 'compte', titre: 'Ouverture de compte 2026', sous: 'Le formulaire, une seule page', url: 'ouverture-compte-integral-pharma-2026.pdf', pages: 1, ko: 127,
       phrase: 'le formulaire d’ouverture de compte, une seule page à nous retourner remplie' },
     { id: 'catalogue-integral', famille: 'offres', titre: 'Catalogue Intégral', sous: 'Toute la gamme en dix pages', url: 'catalogue-integral.pdf', pages: 10, ko: 1111,
@@ -993,7 +991,7 @@
       brancher([el, hors]);
       $$('.ml-pile3').forEach(function (p) { p.innerHTML = pileHtml(); });
       // La première ouverture n'est pas vide : les trois documents de tous les rendez-vous sont déjà dans la mallette.
-      if (!S.init) { S.init = true; S.sel = ['presentation-groupements', 'plaquette-prospection', 'ouverture-compte'].filter(function (i) { return !!doc(i); }); }
+      if (!S.init) { S.init = true; S.sel = ['ouverture-compte'].filter(function (i) { return !!doc(i); }); }
       S.sel = S.sel.filter(function (i) { return !!doc(i); });
       if (S.equipe === null && S.equipe !== undefined && !S.chargementEquipe) { S.chargementEquipe = true; chargerEquipe().then(function () { S.chargementEquipe = false; if (V2.route && V2.route.name === 'mallette' && $('#ml-mur')) { rendreOnglets(); rendreMur(); rendre(); } }); }
       rendreOnglets(); rendreMur(); rendre();
