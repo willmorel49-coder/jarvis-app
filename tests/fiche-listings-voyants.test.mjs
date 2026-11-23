@@ -23,7 +23,17 @@ test('listings : deux tuiles, Intégral et groupement, qui ouvrent la feuille du
   assert.match(b, /onclick="V2\.fbOuvre\(\\'' \+ k \+ '\\',this\)"/);
   assert.match(b, /tuile\('reseau', 'reseau', 'Listing produits ' \+ \(isEscale\(\) \? 'Escale' : 'Intégral'\)/);
   assert.match(b, /tuile\('groupement', 'groupe', 'Listing groupement', esc\(f\.grp\)/);
-  assert.match(corps('fbFeuilleListe'), /V2\.pharmaListPdf\(.*V2\.pharmaListXlsx\(.*V2\.fbEnvoyer\(/s, 'la feuille a perdu PDF, Excel ou Envoyer');
+  assert.match(corps('fbFeuilleListe'), /V2\.fbPdf\(.*V2\.pharmaListXlsx\(.*V2\.fbEnvoyer\(/s, 'la feuille a perdu PDF, Excel ou Envoyer');
+});
+
+// 23/11/2026 — Will, sur iPhone : « ça devrait direct ouvrir au lieu de devoir fermer la fenêtre et de le voir ouvert le pdf ».
+// L'aperçu du PDF (#pdfp-modal, niveau 130) s'ouvrait sous la feuille (.fbs, niveau 9500).
+test('listings : le bouton PDF de la feuille la ferme AVANT d ouvrir l aperçu', () => {
+  const l = js.split('\n').find((x) => x.includes('V2.fbPdf = function'));
+  assert.ok(l, 'V2.fbPdf introuvable');
+  const iF = l.indexOf('fbFerme(true)'), iP = l.indexOf('V2.pharmaListPdf(c.pid, k)');
+  assert.ok(iF > 0 && iP > iF, 'la feuille doit se fermer avant l aperçu du PDF');
+  assert.ok(!corps('fbFeuilleListe').includes('V2.pharmaListPdf('), 'la feuille appelle encore le PDF sans se fermer');
 });
 
 test('listings : visibles dans les deux vues (aucun bloc interne)', () => {

@@ -2547,7 +2547,7 @@
     var voir = !!(V2.pages && V2.pages.produits);
     h += '<div class="fbs-acts ' + (voir ? 'fbs-acts-3' : 'fbs-acts-2') + '">' +
       (voir ? '<button type="button" class="fbs-a" onclick="V2.fbVoir()">' + fbIc('voir', 22) + '<span>Voir la liste</span></button>' : '') +
-      '<button type="button" class="fbs-a" onclick="V2.pharmaListPdf(\'' + c.pid + '\',\'' + k + '\')">' + fbIc('pdf', 22) + '<span>PDF</span></button>' +
+      '<button type="button" class="fbs-a" onclick="V2.fbPdf(\'' + k + '\')">' + fbIc('pdf', 22) + '<span>PDF</span></button>' +
       '<button type="button" class="fbs-a" onclick="V2.pharmaListXlsx(\'' + c.pid + '\',\'' + k + '\')">' + fbIc('excel', 22) + '<span>Excel</span></button></div>' +
       '<button type="button" class="fbs-send" onclick="V2.fbEnvoyer(\'' + k + '\')">' + fbIc('envoi', 20) + 'Envoyer au pharmacien</button>';
     return { t: g ? 'Listing groupe d’achat' : 'Listing réseau Intégral', s: (g ? esc(c.grp) + ' · ' : '') + fbNb(n) + ' · ce qu’elle n’a pas encore', ic: g ? 'groupe' : 'reseau', h: h };
@@ -2614,6 +2614,9 @@
   V2.fbFerme = function () { fbFerme(); };
   V2.fbVoir = function () { var c = fbC; fbFerme(true); if (c) V2.go('produits', c.pid); };
   V2.fbEnvoyer = function (k) { var c = fbC; fbFerme(true); if (c) V2.pharmaTransmettre(c.pid, ['L:' + k]); };
+  // 23/11/2026 — Will, sur iPhone : « ça devrait direct ouvrir au lieu de devoir fermer la fenêtre et de le voir ouvert le pdf ».
+  // L'aperçu du PDF (#pdfp-modal, niveau 130) s'ouvrait SOUS la feuille (.fbs, niveau 9500) : on ferme la feuille d'abord, comme Voir et Envoyer.
+  V2.fbPdf = function (k) { var c = fbC; fbFerme(true); if (c) V2.pharmaListPdf(c.pid, k); };
   V2.fbLgo = function (v) {
     var c = fbC; if (!c) return;
     c.sel = TX_LGO.some(function (l) { return l.s === v; }) ? v : '';
