@@ -18,3 +18,8 @@ test('Mallette : ni l Offre 2026 de 9 pages, ni les deux documents nominatifs', 
 test('Mallette : seule l ouverture de compte est cochée d office', () => {
   assert.match(code, /S\.sel = \['ouverture-compte'\]\.filter\(function \(i\) \{ return !!doc\(i\); \}\);/);
 });
+
+test('Mallette : la barre du bas accorde « document » au singulier (« 1 documents » vu le 23/11)', () => {
+  assert.match(code, /<b data-compte>0<\/b> <span id="ml-cap-lib">documents<\/span>/);
+  assert.match(code, /var capLib = \$\('#ml-cap-lib'\); if \(capLib\) capLib\.textContent = n > 1 \? 'documents' : 'document';/);
+});

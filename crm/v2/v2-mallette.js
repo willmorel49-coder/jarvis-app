@@ -279,6 +279,7 @@
       if (b.textContent !== String(n)) { b.textContent = n; b.classList.remove('ml-bump'); void b.offsetWidth; b.classList.add('ml-bump'); }
     });
     var lib = $('#ml-lib-docs'); if (lib) lib.textContent = n > 1 ? 'documents' : 'document';
+    var capLib = $('#ml-cap-lib'); if (capLib) capLib.textContent = n > 1 ? 'documents' : 'document';   // 23/11/2026 : « 1 documents » dans la barre du bas
     var sous = sousTexte(t);
     var st = $('#ml-sous'); if (st) st.textContent = sous;
     var cs = $('#ml-cap-sous'); if (cs) cs.textContent = n ? sous : 'Touchez un document pour l’ajouter';
@@ -844,7 +845,7 @@
   // Tout ce qui est « fixed » (barre du bas, fond, fenêtres) vit sur <body> : la racine de l'app porte une transformation d'entrée (mo-view-in)
   // qui ferait de chaque élément fixe un élément collé à la PAGE entière, et non à la fenêtre (même règle que le tiroir de l'accueil).
   function gabaritHors() {
-    return '<div class="ml-cap" id="ml-cap"><div class="ml-pile3" aria-hidden="true"></div><div class="ml-cap-t"><b data-compte>0</b> documents<small id="ml-cap-sous"></small></div>' +
+    return '<div class="ml-cap" id="ml-cap"><div class="ml-pile3" aria-hidden="true"></div><div class="ml-cap-t"><b data-compte>0</b> <span id="ml-cap-lib">documents</span><small id="ml-cap-sous"></small></div>' +
         '<button type="button" class="v2-btn v2-btn-primary" data-ouvre="sortie">Ouvrir la mallette</button></div>' +
       '<div class="ml-fond" id="ml-fond"></div>' +
       // Fenêtre : listing d'un groupement
