@@ -7926,7 +7926,7 @@
       '.ph-fiche-tabs .ph-vtab:hover{background:var(--card);border-color:var(--line);transform:none}',
       '.ph-fiche-tabs .ph-vtab.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff;box-shadow:0 3px 10px rgba(0,80,230,.28);transform:none}',
       '.ph-froid{font-size:8.5px;font-weight:800;letter-spacing:.03em;padding:1px 5px;border-radius:5px;color:var(--c-froid);background:color-mix(in srgb,var(--c-froid) 13%,#fff)}',
-      '.ph-offre-avec{display:block;margin-top:2px;font-size:11.5px;font-weight:600;line-height:1.3;color:var(--muted)}',
+      '.ph-offre-avec{display:block;max-width:14em;margin:2px 0 0 auto;font-size:11.5px;font-weight:600;line-height:1.3;color:var(--muted)}',   /* max-width : la mention ne doit pas élargir la colonne du prix (les noms passaient sur 2 lignes) */
       '.ph-offre{font-size:8.5px;font-weight:800;letter-spacing:.03em;padding:1px 5px;border-radius:5px;color:var(--c-amber);background:color-mix(in srgb,var(--c-amber) 14%,#fff);text-transform:uppercase}',
       '.ph-manual{font-size:8.5px;font-weight:800;letter-spacing:.03em;padding:1px 5px;border-radius:5px;color:var(--pil-opp);background:color-mix(in srgb,var(--pil-opp) 13%,#fff);text-transform:uppercase}',
       '.ph-rmprod{width:26px;height:26px;border-radius:7px;border:1px solid var(--line);background:var(--card);color:var(--muted-2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:.15s var(--ease)}',
