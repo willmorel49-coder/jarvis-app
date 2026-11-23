@@ -74,7 +74,6 @@ function monter(table = FAUX, echec) {
   return sb;
 }
 
-const nu = (x) => JSON.parse(JSON.stringify(x));
 const nb = (h, re) => (h.match(re) || []).length;
 const sansBalises = (h) => h.replace(/<[^>]*>/g, ' ').replace(/[\s\u00a0]+/g, ' ');
 const attendre = () => new Promise((r) => setTimeout(r, 0));
