@@ -19,8 +19,11 @@
     vue: 'liste', dossierId: null, sorte: null, ouv: -1,
     nouveau: null, ajout: null, modif: null, etatForm: null, raison: '', raisonErr: '',
     flash: '', flashErr: false, flashProchain: '', occupe: false,
-    brouillons: {}, mentions: {}, urls: {}, retirer: null, timers: {}, chaine: {}
+    brouillons: {}, mentions: {}, urls: {}, retirer: null, timers: {}, chaine: {},
+    /* Chantiers (lot 1, 23/11) : lus pour le bloc « Le chantier » de l'étape Travaux ; une lecture ratée n'empêche pas les dossiers de s'afficher */
+    chantiers: [], chArtisans: [], chTaches: [], chErreur: false, chOuvert: {}, cleVoulue: null
   };
+  var CH = window.PHIRST_CHANTIERS_PUR;
 
   /* ── petites briques ── */
   function ico(n, t) {
@@ -68,11 +71,17 @@
         base.from('dossiers').select('id,user_id,nom,ville,titulaire,statut,created_at').eq('user_id', u.id).order('created_at', { ascending: false }),
         toutLire(function () { return base.from('dossier_volets').select('*').order('id'); }),
         toutLire(function () { return base.from('dossier_etapes').select('*').order('id'); }),
-        ws ? toutLire(function () { return base.from('crm_prospects').select(COLS_PISTE).eq('workspace_id', ws).order('id'); }) : Promise.resolve([])
+        ws ? toutLire(function () { return base.from('crm_prospects').select(COLS_PISTE).eq('workspace_id', ws).order('id'); }) : Promise.resolve([]),
+        CH ? Promise.all([
+          toutLire(function () { return base.from('chantiers').select('*').order('id'); }),
+          toutLire(function () { return base.from('chantier_artisans').select('id,chantier_id,nom,retire_le,created_at').order('id'); }),
+          toutLire(function () { return base.from('chantier_taches').select('id,chantier_id,titre,artisan_id,prevue,fait,ordre,created_at').order('id'); })
+        ]).then(null, function () { return null; }) : Promise.resolve([[], [], []])
       ]).then(function (x) {
         if (x[0].error) throw new Error('dossiers');
         if (tok !== S.jeton) return;
         S.ws = ws || null; S.dossiers = x[0].data || []; S.volets = x[1]; S.etapes = x[2]; S.pistes = x[3];
+        S.chErreur = !x[4]; S.chantiers = x[4] ? x[4][0] : []; S.chArtisans = x[4] ? x[4][1] : []; S.chTaches = x[4] ? x[4][2] : [];
         S.charge = true; S.erreur = false; dessiner();
       });
     }).then(null, function () { if (tok === S.jeton) { S.erreur = true; dessiner(); } });
@@ -244,13 +253,55 @@
       h += htmlDocs(v, e, i);
       h += '<div class="dz-act"><label class="dz-btn petit" for="dz-fi-' + i + '">' + ico('plus', 18) + 'Ajouter un document<input class="dz-sr" id="dz-fi-' + i + '" type="file" data-fichier="' + i + '"' + dis() + '></label></div>' +
         '<p class="dz-note-p">25 Mo au plus par fichier.</p>';
+      var bloc = e.k === 'travaux' && CH && CH.aUnChantier(v.sorte), chv = bloc ? chantierDe(v) : null;
+      if (bloc) h += htmlBlocChantier(v, e, chv);
       h += '<div class="dz-act">' + (e.faite ? '<button class="dz-btn" type="button" disabled>Étape faite</button><button class="dz-lien" type="button" data-dz="defaire" data-i="' + i + '"' + dis() + '>Remettre à faire</button>'
-        : '<button class="dz-btn plein" type="button" data-dz="fait" data-i="' + i + '"' + dis() + '>' + ico('coche', 18) + 'Marquer comme faite</button>');
+        : '<button class="dz-btn' + (bloc && !(chv && chv.recuLe) ? '' : ' plein') + '" type="button" data-dz="fait" data-i="' + i + '"' + dis() + '>' + ico('coche', 18) + 'Marquer comme faite</button>');
       var adr = v.sorte === 'agencement' && e.k === 'plan3d' ? D.adresse3D(window.V2_BRAND && window.V2_BRAND.ancienne3d, S.dossierId) : '';
       if (adr) h += '<a class="dz-btn" href="' + esc(adr) + '" target="_blank" rel="noopener noreferrer">Ouvrir la 3D<span class="dz-sr"> (s’ouvre dans un nouvel onglet)</span></a>';
       h += '</div></div>';
     }
     return h + '</li>';
+  }
+  /* ── le bloc « Le chantier » de l'étape Travaux (Agencement et Transfert seulement, choix de Will du 23/11) ── */
+  function chantierDe(v) {
+    var ch = S.chantiers.filter(function (c) { return c.volet_id === v.id; })[0];
+    return ch ? CH.monterChantier(ch, S.chArtisans, S.chTaches) : null;
+  }
+  function htmlBlocChantier(v, e, c) {
+    if (S.chErreur) return '<div class="cz-bloc"><p class="dz-kicker">Le chantier</p><p>Le chantier ne s’est pas affiché. Réessayez dans un instant.</p></div>';
+    if (!c) {
+      return '<div class="cz-bloc vide"><p class="dz-kicker">Le chantier</p><p>Aucun chantier n’est ouvert pour ce volet. Ouvrez-le ici pour suivre les tâches, les artisans, les photos et la date d’ouverture promise au pharmacien.</p>' +
+        '<div class="dz-champ"><label for="dz-ouv-d">Date d’ouverture promise au pharmacien</label><input type="date" id="dz-ouv-d" data-ouv-d value="' + esc(S.ouvDate != null ? S.ouvDate : (e.prevue || '')) + '"' + dis() + '></div>' +
+        '<label class="dz-case"><input type="checkbox" id="dz-ouv-dep" data-ouv-dep' + (S.ouvDepart === false ? '' : ' checked') + dis() + '><span>Commencer avec les ' + CH.DEPART.length + ' tâches habituelles (dépose, électricité, sol, peinture, mobilier, enseigne, nettoyage), à modifier ensuite</span></label>' +
+        '<p class="dz-erreur" role="alert">' + esc(S.ouvErr || '') + '</p>' +
+        '<div class="dz-act"><button class="dz-btn plein" type="button" data-dz="ouvrir-ch" data-f="ouvrir-ch"' + dis() + '>Ouvrir le chantier</button></div></div>';
+    }
+    var r = CH.resume(c, auj());
+    return '<div class="cz-bloc"><div class="cz-bloc-t"><p class="dz-kicker">Le chantier</p><span class="dz-et ' + r.etat.ton + '">' + esc(r.etat.texte) + '</span></div>' +
+      '<p><b>' + esc(r.avancee) + '</b> · ' + esc(r.ouverture) + '</p>' + (r.prochaine ? '<p class="cz-pet">' + esc(r.prochaine) + '</p>' : '') +
+      (S.chOuvert[v.id] ? '<p class="cz-pet ok">Chantier ouvert à l’instant. Il apparaît aussi dans l’écran Chantiers.</p>' : '') +
+      '<div class="dz-act"><button class="dz-btn plein" type="button" data-dz="voir-ch" data-id="' + esc(c.id) + '" data-f="voir-ch">Voir le chantier ' + ico('fleche', 18) + '</button></div></div>';
+  }
+  function ouvrirChantier() {
+    var v = voletCourant(), base = sb(), u = V2.user; if (!v || !base || !u || !CH || !CH.aUnChantier(v.sorte) || chantierDe(v)) return;
+    var champ = S.racine && S.racine.querySelector('[data-ouv-d]'), d = champ ? champ.value : (S.ouvDate || '');
+    var dep = S.racine && S.racine.querySelector('[data-ouv-dep]'), depart = dep ? dep.checked : S.ouvDepart !== false;
+    S.ouvDate = d; S.ouvDepart = depart;
+    if (!D.estJour(d)) { S.ouvErr = 'Choisissez la date d’ouverture promise au pharmacien.'; dessiner(); var n = S.racine.querySelector('[data-ouv-d]'); if (n) { n.setAttribute('aria-invalid', 'true'); n.focus(); } return; }
+    S.ouvErr = '';
+    return geste(function () {
+      return base.from('chantiers').insert({ volet_id: v.id, user_id: u.id, ouverture: d, debut: auj() }).select().single().then(function (r) {
+        if (r.error || !r.data) throw new Error('chantier');
+        S.chantiers.push(r.data); S.chOuvert[v.id] = true; S.ouvDate = null; S.ouvDepart = null;
+        if (!depart) { dire('Chantier ouvert. Ajoutez les tâches et les artisans dans l’écran Chantiers.', false); return; }
+        return base.from('chantier_taches').insert(CH.tachesDepart(r.data.id, u.id)).select().then(function (t) {
+          if (t.error || !t.data) { dire('Le chantier est ouvert, mais les tâches habituelles n’ont pas pu être ajoutées : ajoutez-les dans « Les tâches ».', true); return; }
+          S.chTaches = S.chTaches.concat(t.data);
+          dire('Chantier ouvert avec les ' + t.data.length + ' tâches habituelles.', false);
+        });
+      });
+    });
   }
   function htmlRdv(p) {
     var h = '<div class="dz-cote-c" id="dz-rdv"><h3>Prochain rendez-vous</h3>';
@@ -575,6 +626,8 @@
     if (a === 'etat-non') { S.etatForm = null; S.raison = ''; S.raisonErr = ''; dessiner(); return; }
     if (a === 'etat-ok') { changerEtat(S.etatForm); return; }
     if (a === 'reprendre') { changerEtat('cours'); return; }
+    if (a === 'ouvrir-ch') { ouvrirChantier(); return; }
+    if (a === 'voir-ch') { sauverNotes(S.ouv); V2.go('chantiers', b.getAttribute('data-id')); return; }
   }
   function saisie(ev) {
     var t = ev.target;
@@ -604,8 +657,9 @@
 
   /* ── entrée ── */
   V2.pages.dossiers = { needs: [], render: function (root) {
-    var param = V2.route && V2.route.param ? String(V2.route.param) : '', cut = param.indexOf(':');
-    var id = cut < 0 ? param : param.slice(0, cut), sorte = cut < 0 ? null : param.slice(cut + 1);
+    var param = V2.route && V2.route.param ? String(V2.route.param) : '', bouts = param.split(':');
+    var id = bouts[0] || '', sorte = bouts[1] || null;
+    S.cleVoulue = bouts[2] && /^[a-z0-9]{2,16}$/.test(bouts[2]) ? bouts[2] : null; S.ouvDate = null; S.ouvDepart = null; S.ouvErr = ''; S.chOuvert = {};
     S.racine = root; S.flash = S.flashProchain; S.flashProchain = ''; S.flashErr = false; S.occupe = false;
     S.dossierId = id || null; S.vue = id ? 'fiche' : 'liste';
     if (id) { S.sorte = sorte && D.SORTES[sorte] ? sorte : null; S.ouv = -1; }
@@ -617,7 +671,16 @@
       S.telepro = false;
       /* le premier volet et son étape ouverte, une fois les données lues */
       charger().then(function () {
-        if (S.vue === 'fiche' && S.charge) { var v = voletCourant(); if (v) { S.sorte = v.sorte; if (S.ouv < 0) S.ouv = indexProchaine(v); dessiner(); } }
+        if (S.vue === 'fiche' && S.charge) {
+          var v = voletCourant();
+          if (v) {
+            S.sorte = v.sorte;
+            if (S.cleVoulue) v.etapes.forEach(function (e, k) { if (e.k === S.cleVoulue) S.ouv = k; });
+            if (S.ouv < 0) S.ouv = indexProchaine(v);
+            dessiner();
+            if (S.cleVoulue) { S.cleVoulue = null; scrollerEtape(); }
+          }
+        }
       });
     }
     if (window.PHIRST_ROLE) {
