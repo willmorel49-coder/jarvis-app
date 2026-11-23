@@ -30,7 +30,7 @@
   var OF_PAR = 50, ofVues = OF_PAR, ofCle = '', ofRedessine = null;
   // ── 20/11/2026 — « Le répertoire » : l'écran Officines devient un tableau (une ligne par officine) ──
   // État du tableau : tournée choisie (code, « » = toutes), seulement les officines à rappeler, colonne de tri et son sens (1 croissant, -1 décroissant).
-  var ofl = { tourn: '', rap: false, tri: 'ca', sens: -1, trnDemande: false };
+  var ofl = { tourn: '', rap: false, tri: 'ca', sens: -1, trnDemande: false, moi: true };   // moi : « Mon secteur » au menu (ofNoms)
   var OFL_TRIS = { ca: ['Chiffre d’affaires', -1], nom: ['Nom', 1], nm: ['Notre marge Intégral', -1], marge: ['Marge du pharmacien', -1], rap: ['À rappeler d’abord', -1], tourn: ['Tournée', 1] };
   // Tournée de livraison de chaque officine : même règle que « ficheDe » de v2-tournees.js (son code, sinon la fiche reliée). Recalculée quand le fichier arrive.
   var _trnRef = null, _trnIdx = null;
@@ -48,7 +48,7 @@
   function trnDe(p) { var m = trnIdx(); return (m && m[String(p.id)]) || []; }
   function ofActif(n) { return n > OF_PAR && !isOpso(); }
   function ofRaz() {   // la clé change (commercial, onglet, recherche, tournée, filtre, tri) → retour aux 50 premières
-    var cle = (V2.commFilter || '') + '|' + secteurTab + '|' + searchQuery + '|' + ofl.tourn + '|' + ofl.rap + '|' + ofl.tri + '|' + ofl.sens;
+    var cle = (V2.commFilter || '') + '|' + ofl.moi + '|' + secteurTab + '|' + searchQuery + '|' + ofl.tourn + '|' + ofl.rap + '|' + ofl.tri + '|' + ofl.sens;
     if (cle !== ofCle) { ofCle = cle; ofVues = OF_PAR; }
   }
   // 50 lignes, puis un bouton « Voir les 50 suivantes » ; chaque appui en ajoute 50.
@@ -998,7 +998,7 @@
     Object.keys(prom).forEach(function (pid) {
       if (!prom[pid]) return;
       if ((V2.pharmacies || []).some(function (c) { return String(c.id) === String(pid); })) return; // déjà client réel
-      var p = byId[String(pid)]; if (p) { var x = prospectPseudoX(p); x.p._promu = true; out.push(x); }
+      var p = byId[String(pid)]; if (p) { var x = prospectPseudoX(p); x.p._promu = true; x.p._uga = p[2]; out.push(x); }
     });
     return out;
   }
@@ -1008,11 +1008,11 @@
   // (361 sur 2 341 ce jour-là) n'était ni dans Clients ni dans Prospects : introuvable.
   // Il entre dans Clients, marqué « aucune vente sur la période ». Même règle de portefeuille que
   // l'export « Mes clients » : la colonne commercial de la base (en code : KV, ALH…) fait foi, et le
-  // code d'un prénom est celui qu'il porte le plus souvent. Sans commercial choisi (direction) : tous.
+  // code d'un prénom est celui qu'il porte le plus souvent. Prénoms retenus : ofNoms() (vide = tous).
   // `deja` = lignes déjà dans la liste (ventes + promus), pour ne doubler personne.
   function sansVenteRows(deja) {
     var CA = (window.CLIENTS_ACTIFS || {}).d, D = window.PHARMA_FR; if (!CA || !D || !D.p) return [];
-    var noms = V2.commFilter ? [V2.commFilter] : (V2.ventesRestreintes && V2.ventesRestreintes() ? V2.mesComms() : []);
+    var noms = ofNoms();
     var vu = {}, compte = {}, codes = {}, out = [];
     deja.forEach(function (x) { vu[String(x.p.id)] = 1; });
     (V2.pharmacies || []).forEach(function (p) {
@@ -1027,6 +1027,28 @@
       var x = prospectPseudoX(p); x.p._prospect = false; x.p._sansVente = true; out.push(x);
     });
     return out;
+  }
+
+  // 23/11/2026 — Will : « dans mes pharma je vois des pharma du 91, du 07 elles n'ont rien à faire là, il faut vraiment que
+  // chaque commercial voie son secteur et ses pharma ». Sans commercial choisi au menu, la liste portait les 2 114 officines du
+  // réseau : un commercial limité n'a pas de menu (une seule personne dans ses ventes), l'accès complet ouvrait sur « Tous ».
+  // ofNoms() = les prénoms dont « Mes officines » montre les officines (liste, capsules, « À rappeler », Excel « Mes clients ») ;
+  // [] = tout le réseau. Menu choisi → ce prénom. Commercial limité → toujours les siens (V2.mesComms : lui + les collègues
+  // ouverts sur son profil), menu ou pas. Accès complet avec un prénom → « Mon secteur » d'office, « Tous » et chaque collègue
+  // restent au menu. Compte sans prénom (direction) → tout le réseau, comme avant. Le filtre commun (Pilotage) n'est pas touché.
+  function ofNoms() {
+    if (V2.commFilter) return [V2.commFilter];
+    var mes = V2.mesComms ? V2.mesComms() : [];
+    if (V2.ventesRestreintes && V2.ventesRestreintes()) return mes;
+    return ofl.moi ? mes : [];
+  }
+  // Une ligne est-elle dans ce périmètre ? Client sans vente : déjà trié par le code commercial de la base (sansVenteRows).
+  // Prospect passé en client (fiche partagée par toute l'équipe) : par son UGA, la règle des « Prospects de mon secteur ».
+  function ofDansSecteur(x, noms) {
+    if (!noms.length || x.p._sansVente) return true;
+    var aMoi = function (c) { return noms.indexOf(c) >= 0; };
+    if (x.p._promu) return (ugaCommMap()[x.p._uga] || []).some(aMoi);
+    return (x.p.comms || []).some(aMoi);
   }
 
   function renderList(root) {
@@ -1048,6 +1070,7 @@
     if (!isOpso() && window.PHARMA_FR) { try { phs = phs.concat(promotedRows()); } catch (e) {} }
     if (!isOpso() && window.PHARMA_FR) { try { phs = phs.concat(sansVenteRows(phs)); } catch (e) {} }
     if (!isOpso()) chargerCrees();
+    var nomsOf = ofNoms();
 
     // ── Tri OPSO : clientes d'abord, puis par CA desc ──
     if (isOpso()) {
@@ -1116,7 +1139,7 @@
     function applyFilters(list) {
       var q = searchQuery.trim().toLowerCase();
       return trier(list.filter(function (x) {
-        if (V2.commFilter && !x.p._promu && !x.p._sansVente && (x.p.comms || []).indexOf(V2.commFilter) < 0) return false;
+        if (!ofDansSecteur(x, nomsOf)) return false;
         if (q && !correspond(x.p, q)) return false;
         if (isOpso() && opsoFilter === 'cliente' && !x.p.inDb) return false;
         if (isOpso() && opsoFilter === 'prospect' && x.p.inDb) return false;
@@ -1126,7 +1149,7 @@
       }));
     }
 
-    var commBar = commSelect();
+    var commBar = commSelect(true);
     var nAff = '';   // « 128 officines » : le compte de ce qui est affiché, écrit par listBody()
     var pl = function (n, mot) { return V2.fmtNum(n) + ' ' + mot + (n > 1 ? 's' : ''); };
 
@@ -1184,9 +1207,9 @@
     if (!isOpso()) {
       // 30/10/2026 — « plus clair » : les deux capsules portent leur compteur (le même compte que la liste, sans la recherche)
       var restreint = !!(V2.ventesRestreintes && V2.ventesRestreintes());
-      nbCli = phs.filter(function (x) { return !(V2.commFilter && !x.p._promu && !x.p._sansVente && (x.p.comms || []).indexOf(V2.commFilter) < 0); }).length;   // = ce que la liste affichera : la capsule annonce ce qu'on obtient en cliquant
+      nbCli = phs.filter(function (x) { return ofDansSecteur(x, nomsOf); }).length;   // = ce que la liste affichera : la capsule annonce ce qu'on obtient en cliquant
       // commercial limité : la PHRASE parle de son secteur (ses officines), la liste reste celle d'avant
-      if (restreint) nbSect = phs.filter(function (x) { return !(V2.commFilter && !x.p._promu && !x.p._sansVente && (x.p.comms || []).indexOf(V2.commFilter) < 0) && V2.voitVentesDe(x.p.id); }).length;
+      if (restreint) nbSect = phs.filter(function (x) { return ofDansSecteur(x, nomsOf) && V2.voitVentesDe(x.p.id); }).length;
       try { var qui0 = V2.commFilter || (V2.mesComms ? V2.mesComms() : []); if (window.PHARMA_FR && [].concat(qui0).length) nbProsp = commercialProspects(qui0, 1, '').total + creesRows('').length; } catch (e) {}
       var sTab = function (val, label, n) {
         return '<button type="button" class="v2-seg' + (secteurTab === val ? ' on' : '') + '" aria-pressed="' + (secteurTab === val) + '" style="--sc:var(--ip-blue)" onclick="V2.pharmaSecteurTab(\'' + val + '\')">' + label + (n != null ? '<span class="of-cnt">' + V2.fmtNum(n) + '</span>' : '') + '</button>';
@@ -1274,7 +1297,7 @@
     function oflFiltres() {
       var nbRap = null;
       if (secteurTab === 'clients' && V2.decrochageUI && V2.decrochageUI.compte() != null) {
-        nbRap = phs.filter(function (x) { return _rap[String(x.p.id)] && !x.p._sansVente && !(V2.commFilter && !x.p._promu && (x.p.comms || []).indexOf(V2.commFilter) < 0); }).length;
+        nbRap = phs.filter(function (x) { return _rap[String(x.p.id)] && !x.p._sansVente && ofDansSecteur(x, nomsOf); }).length;
       }
       // La bascule Clients / Prospects garde ses libellés, sans les compteurs : le nombre s'écrit une seule fois, au-dessus du tableau.
       var bascule = secteurBar.replace('<span class="v2-past-l">Afficher :</span>', '').replace(/<span class="of-cnt">[^<]*<\/span>/g, '').replace(/v2-segs/g, 'ofl-segs').replace(/v2-seg\b/g, 'ofl-seg');
@@ -5158,7 +5181,8 @@
     V2.render();
   };
   V2.pharmaSetComm = function (val) {
-    V2.commFilter = val || '';
+    ofl.moi = val === '__moi__';   // 23/11/2026 — « Mon secteur » laisse le filtre commun vide (Pilotage inchangé) : voir ofNoms()
+    V2.commFilter = ofl.moi ? '' : (val || '');
     V2.render();
     var sel = document.getElementById('v2-pharma-comm'); if (sel) sel.focus();
   };
@@ -5422,11 +5446,15 @@
     return '<div class="v2-tete"><div><h1 class="v2-titre">Mes officines</h1><p class="v2-sous">' + sous + '</p></div>' + (action || '') + '</div>';
   }
   // Menu « Commercial » (pièce .v2-select) à la place d'une pastille par prénom — seulement s'il y a plusieurs commerciaux.
-  function commSelect() {
+  // 23/11/2026 — `moi` (liste Officines seulement) : « Mon secteur » en tête pour un accès complet qui a un prénom (ofNoms).
+  function commSelect(moi) {
     var comms = V2.commercials ? V2.commercials() : [];
     if (comms.length < 2) return '';
+    var mien = !!(moi && V2.mesComms && V2.mesComms().length && !(V2.ventesRestreintes && V2.ventesRestreintes()));
+    var surMoi = mien && !V2.commFilter && ofl.moi;
     return '<label class="v2-select"><select id="v2-pharma-comm" aria-label="Commercial" onchange="V2.pharmaSetComm(this.value)">' +
-      '<option value="">Commercial : Tous</option>' +
+      (mien ? '<option value="__moi__"' + (surMoi ? ' selected' : '') + '>Mon secteur</option>' : '') +
+      '<option value=""' + (!V2.commFilter && !surMoi ? ' selected' : '') + '>Commercial : Tous</option>' +
       comms.map(function (c) { return '<option value="' + esc(c) + '"' + (V2.commFilter === c ? ' selected' : '') + '>Commercial : ' + esc(c) + '</option>'; }).join('') +
       '</select><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></label>';
   }
@@ -6601,7 +6629,7 @@
   // Ventes : celles que la session voit déjà (V2.voitVentesDe), mois lus dans les données.
   V2.pharmaClientsXlsx = function () {
     var q = searchQuery.trim().toLowerCase();
-    var noms = V2.commFilter ? [V2.commFilter] : (V2.ventesRestreintes && V2.ventesRestreintes() ? V2.mesComms() : []);
+    var noms = ofNoms();   // 23/11/2026 — le même périmètre que la liste (« Mon secteur » compris)
     var c = V2.sb && V2.sb();
     V2.toast('Préparation de l\'Excel…');
     var socle = Promise.all([

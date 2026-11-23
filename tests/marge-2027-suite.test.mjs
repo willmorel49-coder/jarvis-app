@@ -273,7 +273,9 @@ function bancExport() {
   const b = src.indexOf('// toutes ventes d\'une pharma');
   assert.ok(a > 0 && b > a, 'salesIndex introuvable');
   const aides = src.slice(a, b) + '\n' + fonction(src, 'pharmaSalesAll') + '\n' + fonction(src, 'pharmaSales')
-    + '\nvar _moisVentes = null;\n' + fonction(src, 'moisVentes') + '\n' + fonction(src, 'ensureXLSX') + '\nvar xlsxLoading = false;\nfunction deduitProbables() { return {}; }\nvar searchQuery = "";\n';
+    + '\nvar _moisVentes = null;\n' + fonction(src, 'moisVentes') + '\n' + fonction(src, 'ensureXLSX')
+    + '\n' + fonction(src, 'ofNoms') + '\nvar ofl = { moi: true };'   // 23/11/2026 — le périmètre de la liste (Mon secteur)
+    + '\nvar xlsxLoading = false;\nfunction deduitProbables() { return {}; }\nvar searchQuery = "";\n';
   const d = src.indexOf('V2.pharmaClientsXlsx = function () {');
   const f = src.indexOf('V2.grpDownloadXlsx = function', d);
   assert.ok(d > 0 && f > d, 'pharmaClientsXlsx introuvable');
