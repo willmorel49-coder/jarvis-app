@@ -173,3 +173,23 @@ test('le document se range comme une fiche Marketing marquée (type support, the
   assert.equal(f.footer, '', 'aucune mention de l\'officine sur le document');
   assert.ok(!JSON.stringify(f).match(/officine|pharmacie du carrefour/i));
 });
+
+test("base de départ selon l'inscription de l'officine (remontée d'Inès, choix de Will du 23/11/2026)", () => {
+  const m = monde();
+  // Officines fictives : 10 aucune · 11 Sanofi · 12 UPSA · 13 les deux · 14 cliente absente du fichier · 99 au fichier mais prospect
+  m.fenetre.WML_OFF_CA = { off: { b: { 10: [0, 0], 11: [1, 0], 12: [2, 0], 13: [3, 0], 99: [0, 0] } } };
+  m.V2.pharmacies = [{ id: 10 }, { id: 11 }, { id: 12 }, { id: 13 }, { id: 14 }];
+  const b = m.P.baseDepart;
+  assert.equal(b('10'), 'vide', 'cliente inscrite à rien : pas d\'offre Sanofi d\'office');
+  assert.equal(b('11'), 'sanofi');
+  assert.equal(b('12'), 'upsa', 'inscrite UPSA seule : Offre UPSA');
+  assert.equal(b('13'), 'sanofi');
+  assert.equal(b('14'), 'sanofi', 'absente du fichier : comme avant');
+  assert.equal(b('99'), 'sanofi', 'prospect : comme avant');
+  assert.equal(b(null), 'sanofi', 'sans officine (Marketing) : comme avant');
+  delete m.fenetre.WML_OFF_CA;
+  assert.equal(b('10'), 'sanofi', 'fichier d\'inscription pas encore chargé : comme avant');
+  assert.ok(m.P.BASES.some((x) => x.k === 'vide') && m.P.BASES.some((x) => x.k === 'upsa'), 'les bases rendues existent');
+  const src = lire('v2-mkt-doc.js'), i = src.indexOf('function ouvrir(o)');
+  assert.match(src.slice(i, src.indexOf('\n  }\n', i)), /: baseDepart\(pid\)\);/, 'ouvrir() part de la base de l\'officine');
+});

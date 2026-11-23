@@ -88,7 +88,7 @@
   }
 
   V2.mktDoc = V2.mktDoc || {};
-  V2.mktDoc._pur = { reglagesPrix: reglagesPrix, modeDe: modeDe, lirePrix: lirePrix, cip13: cip13, produitOffre: produitOffre, fiche: fiche, BASES: BASES, MODES: MODES, HIVER: HIVER, baseDe: baseDe };
+  V2.mktDoc._pur = { reglagesPrix: reglagesPrix, modeDe: modeDe, lirePrix: lirePrix, cip13: cip13, produitOffre: produitOffre, fiche: fiche, BASES: BASES, MODES: MODES, HIVER: HIVER, baseDe: baseDe, baseDepart: baseDepart };
   // ═══════════ L'écran ═══════════
   var S = null;          // la couche ouverte (null = fermée)
   var RETOUR_ESSAIS = 10;
@@ -494,6 +494,19 @@
     if (S.el && S.el.parentNode) S.el.parentNode.removeChild(S.el);
     S = null;
   }
+  // Base de départ selon l'inscription de l'officine à l'offre (remontée d'Inès du 18/11 : « il met l'offre Sanofi sur
+  // toutes les fiches même s'ils ne sont pas encodés » ; choix de Will, 23/11/2026, question cliquée). Inscription :
+  // WML_OFF_CA.off.b (colonne TIRBRANCHE : 0 aucune · 1 Sanofi · 2 UPSA · 3 les deux). Inscrite Sanofi → Offre Sanofi ;
+  // UPSA seule → Offre UPSA ; cliente présente au fichier et inscrite à rien → document vide. Sans officine, absente du
+  // fichier ou prospect → Offre Sanofi, comme avant. Le commercial peut toujours choisir une autre base à la main.
+  function baseDepart(pid) {
+    if (!pid) return 'sanofi';
+    var off = (window.WML_OFF_CA || {}).off, v = off && off.b && off.b[String(pid)];
+    if (!v) return 'sanofi';
+    var client = (V2.pharmacies || []).some(function (p) { return String(p.id) === String(pid); });
+    if (!client) return 'sanofi';
+    return (v[0] & 1) ? 'sanofi' : (v[0] & 2) ? 'upsa' : 'vide';
+  }
   function ouvrir(o) {
     o = o || {};
     if (S) return;
@@ -515,7 +528,7 @@
       }, function () { if (S === courant) { S = null; V2.toast('Document introuvable', 'error'); } });
       return;
     }
-    charger(BASES.some(function (b) { return b.k === o.base; }) ? o.base : 'sanofi');
+    charger(BASES.some(function (b) { return b.k === o.base; }) ? o.base : baseDepart(pid));
     monter();
   }
 
