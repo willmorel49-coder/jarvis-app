@@ -37,7 +37,8 @@ test('vue pharmacien : aucune vente, ni « Vendu » ni « Export », et le fichi
   const sb = bac({ ventes: VENTES(), loadFiles: () => { appels++; return Promise.resolve(); } });
   const h = sb.V2.comptoir._stockHtml(ligne(ETAB), true);
   assert.ok(!/Vendu|Export|Ventes/.test(h), h);
-  assert.match(h, /Stock déclaré par chaque établissement\. « — » : non communiqué\./);
+  // 23/11/2026, v1 La recherche d'abord : la note nomme maintenant les 7 sites (légende « CPR, HP… : les 7 sites de stock », P-12) ; la règle vérifiée est la même : note non datée en vue pharmacien, « — » = non communiqué.
+  assert.match(h, /Stock déclaré par chaque établissement\. [A-Z, ]+ : les 7 sites de stock\. « — » : non communiqué\./);
   assert.ok(!/ au 15\/09/.test(h), 'la vue pharmacien garde la note d\'aujourd\'hui, non datée');
   assert.equal(appels, 0);
   const h2 = sb.V2.comptoir._stockHtml({ cip: SANS_DETAIL, stock: 9 }, true);

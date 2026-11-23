@@ -89,72 +89,81 @@ async function pret(sb) {
   return sb;
 }
 const C = (sb) => sb.V2.comptoir._portes.etat;
-const noms = (h) => nu([...h.matchAll(/<span class="cpd-nm">([^<]*)</g)].map((m) => m[1]));
+const noms = (h) => nu([...h.matchAll(/<span class="(?:cpd|cq1)-nm">([^<]*)</g)].map((m) => m[1]));   // 23/11/2026, v1 La recherche d'abord : les lignes de résultats de la recherche s'appellent cq1-nm
+const lignesRes = (h) => nu([...h.matchAll(/<span class="cq1-nm">([^<]*)</g)].map((m) => m[1]));   // 23/11/2026 : seulement les lignes de RÉSULTATS de la recherche (la liste « Ce qui change » de l'accueil utilise cpd-nm)
 const panneau = (sb) => sb.crees.find((e) => e.id === 'cp-pan-hote').innerHTML;
 
-test('au repos : le bandeau, la question, trois portes, le lien Parcourir ; ni tableau ni barre de recherche', async () => {
+test('au repos : le bandeau, le grand champ de recherche, « Ce qui change », deux entrées vers le reste ; ni portes, ni tableau', async () => {
+  // 23/11/2026, v1 La recherche d'abord : classe (b)/(c). Les trois portes et la question « Que voulez-vous faire ? » ont disparu ; le champ est l'écran.
   const sb = await pret(monter());
   const h = sb.V2.comptoir.rendre(), t = sansBalises(h);
-  assert.match(t, /Catalogue produits/); assert.match(t, /Prix et stock des 7 établissements/);
-  assert.match(t, /Que voulez-vous faire \?/);
-  assert.equal(nb(h, /class="cpd-door"/g), 3);
-  for (const x of ['Trouver un produit', 'Ce qui change', 'À proposer', 'Parcourir tout le catalogue']) assert.ok(t.includes(x), x);
+  assert.match(t, /Catalogue produits/); assert.match(t, /Prix, stock et marge des 7 établissements/);
+  assert.equal(nb(h, /id="cpd-q"/g), 1, 'le champ de recherche, une seule fois');
+  assert.equal(nb(h, /class="cpd-door"/g), 0, 'plus de trois grandes portes');
+  assert.doesNotMatch(t, /Que voulez-vous faire|Trois portes/);
+  for (const x of ['Ce qui change', 'Parcourir tout le catalogue', 'Préparer une sélection pour une officine']) assert.ok(t.includes(x), x);
+  assert.doesNotMatch(t, /À proposer/, 'retiré le 23/11/2026 (pas de plus-value)');
   assert.equal(nb(h, /class="cp-head"/g), 0, 'pas de tableau au repos');
   assert.equal(nb(h, /class="cp-tete"/g), 0);
   assert.doesNotMatch(t, /n'a pas pu s'afficher|Données non chargées/);
-  // les trois chiffres du bandeau : 6 références, 5 en stock (BETA est à 0), 7 établissements
+  // les deux chiffres du bandeau : 6 références, 5 en stock (BETA est à 0) ; les 7 établissements sont dans la phrase
   const stats = [...h.matchAll(/<div class="cpd-stat"><b>([^<]*)<\/b><span>([^<]*)</g)].map((m) => m[1] + ' ' + m[2]);
-  assert.deepEqual(nu(stats), ['6 références', '5 en stock', '7 établissements']);
+  assert.deepEqual(nu(stats), ['6 références', '5 en stock']);
 });
 
-test('aperçu des portes : exemples = meilleurs rangs à premier mot distinct ; trois nombres ; trois premiers à proposer', async () => {
+test('« Ce qui change » à l\'accueil : « … » tant que le relevé n\'est pas arrivé, puis les trois nombres du moteur', async () => {
+  // 23/11/2026, v1 La recherche d'abord : classe (c). L'aperçu des trois portes (exemples, « À proposer ») n'existe plus ; les nombres du moteur se lisent sur les onglets de l'accueil.
   const sb = monter();
   await sb.V2.comptoir.chargerNational();
   let h = sb.V2.comptoir.rendre();
-  assert.match(sansBalises(h), /… baisses de prix au JO/, 'pas encore arrivés : « … », pas un faux zéro');
+  assert.match(sansBalises(h), /Prix au JO …/, 'pas encore arrivé : « … », pas un faux zéro');
   await sb.V2.comptoir._calc.pret();
   h = sb.V2.comptoir.rendre();
-  // exemples : rang 1 ALPHA, rang 2 BETA, rang 3 GAMMA (ALPHA JUNIOR n'est pas repris : même premier mot)
-  assert.match(h, /<em>ALPHA 500MG · BETA 10MG · GAMMA 1G<\/em>/);
-  const p2 = [...h.matchAll(/<span><b>([^<]*)<\/b><span class="n">([^<]*)</g)].map((m) => m[1] + ' ' + m[2]);
-  assert.deepEqual(nu(p2), ['2 baisses de prix au JO', '1 rupture dans notre catalogue', '1 nouveautés de moins de 36 mois']);
-  const p3 = [...h.matchAll(/<span><span class="n">([^<]*)<\/span><b>([^<]*)<\/b>/g)].map((m) => m[1] + ' | ' + m[2].replace(/\u00a0/g, ' '));
-  assert.deepEqual(nu(p3), ['GAMMA 1G BT8 | 3 000 €', 'ALPHA JUNIOR 250MG | 478 €', 'ALPHA 500MG BT10 | 463 €']);
+  const tabs = [...h.matchAll(/<button type="button" class="cq1-tab[^"]*"[^>]*>([^<]*)<i>([^<]*)<\/i>/g)].map((m) => m[1].trim() + ' ' + m[2]);
+  assert.deepEqual(nu(tabs), ['Prix au JO 2', 'Ruptures 1', 'Nouveautés 1']);
+  assert.doesNotMatch(sansBalises(h), /3 000 €|ALPHA JUNIOR 250MG 478|de plus par an/, 'plus aucun montant « à proposer »');
 });
 
-test('chaque porte ouvre son volet dans la page, avec un retour vers les trois portes', async () => {
+test('« Ce qui change » ouvre son volet dans la page, avec un retour vers la recherche ; « trouver » et l\'ancien « proposer » ramènent à l\'accueil', async () => {
+  // 23/11/2026, v1 La recherche d'abord : classe (c). Il reste un seul volet (« Ce qui change ») ; « À proposer » est retiré, « Trouver » est l'accueil lui-même.
   const sb = await pret(monter());
   const K = sb.V2.comptoir;
-  const titres = { trouver: 'Trouver un produit', change: 'Ce qui change', proposer: 'À proposer' };
-  for (const k of Object.keys(titres)) {
-    K.porte(k);
-    assert.equal(C(sb).porte, k);
-    const h = K.rendre();
-    assert.match(h, new RegExp('<h2 class="cpd-vt">' + titres[k] + '</h2>'));
-    assert.match(h, /V2\.comptoir\.portes\(\)">[^]*Les trois portes/);
-    assert.equal(nb(h, /class="cpd-door"/g), 0, 'les portes laissent la place au volet');
-    assert.doesNotMatch(h, /cp-aside|role="dialog"/, 'pas de fenêtre par-dessus');
-    K.portes();
-    assert.equal(C(sb).porte, null);
-    assert.equal(nb(K.rendre(), /class="cpd-door"/g), 3, 'le retour ramène aux trois portes');
+  K.porte('change');
+  assert.equal(C(sb).porte, 'change');
+  let h = K.rendre();
+  assert.match(h, /<h2 class="cpd-vt">Ce qui change<\/h2>/);
+  assert.match(h, /V2\.comptoir\.portes\(\)">[^]*Recherche/);
+  assert.equal(nb(h, /id="cpd-q"/g), 0, 'le volet laisse la place à la liste');
+  assert.doesNotMatch(h, /cp-aside|role="dialog"/, 'pas de fenêtre par-dessus');
+  K.portes();
+  assert.equal(C(sb).porte, null);
+  assert.equal(nb(K.rendre(), /id="cpd-q"/g), 1, 'le retour ramène au champ de recherche');
+  for (const k of ['trouver', 'proposer']) {
+    K.porte('change');
+    assert.doesNotThrow(() => K.porte(k));
+    assert.equal(C(sb).porte, null, k + ' = accueil');
+    assert.equal(nb(K.rendre(), /id="cpd-q"/g), 1);
   }
 });
 
-test('Trouver : champ de recherche, puces de familles, « Les plus vendus en France » par rang, SANS le filtre Opportunités', async () => {
+test('Trouver (l\'accueil) : champ de recherche, puces de familles dès qu\'on cherche, SANS le filtre Opportunités', async () => {
+  // 23/11/2026, v1 La recherche d'abord : classe (c) pour la liste « Les plus vendus en France » (vide, l'accueil montre « Ce qui change », plus une liste de produits) ; classe (b) pour le reste :
+  // la règle (la recherche ne porte pas le filtre Opportunités, BETA qui n'en est pas une se trouve) vit dans les lignes de résultats cq1.
   const sb = await pret(monter());
   const K = sb.V2.comptoir;
   assert.equal(C(sb).opp, true, 'départ : le filtre Opportunités est actif dans l\'état');
   K.porte('trouver');
+  assert.equal(C(sb).porte, null);
   let h = K.rendre();
   assert.match(h, /<input id="cpd-q" type="search"/);
-  assert.match(h, /Toutes les familles/); assert.match(h, /Princeps bas prix/);
-  assert.match(sansBalises(h), /Les plus vendus en France/);
-  assert.deepEqual(noms(h), ['ALPHA 500MG BT10', 'BETA 10MG BT30', 'GAMMA 1G BT8', 'DELTA 5MG BT28', 'ALPHA JUNIOR 250MG', 'ZETA NR'], 'ordre = rang France ; BETA (pas une opportunité) est là');
+  assert.doesNotMatch(sansBalises(h), /Les plus vendus en France/, 'à vide : pas de liste de produits');
+  assert.deepEqual(lignesRes(h), [], 'à vide : aucune ligne de résultat de recherche');
   assert.doesNotMatch(h, /Opportunités seulement/);
   C(sb).q = 'beta';
   h = K.rendre();
-  assert.deepEqual(noms(h), ['BETA 10MG BT30']);
+  assert.deepEqual(noms(h), ['BETA 10MG BT30'], 'BETA (pas une opportunité) est trouvé : le filtre Opportunités ne s\'applique pas');
   assert.match(sansBalises(h), /1 résultat/);
+  assert.match(h, /Toutes les familles/); assert.match(h, /Princeps bas prix/, 'les puces de familles apparaissent avec les résultats');
   C(sb).q = 'alpha'; C(sb).fam = 'pr_low';
   assert.deepEqual(noms(K.rendre()), ['ALPHA 500MG BT10', 'ALPHA JUNIOR 250MG']);
   // la rupture ANSM se voit dans la liste
@@ -211,21 +220,21 @@ test('Ce qui change : fichier pas encore arrivé = « … » puis redessin ; fic
   assert.match(sansBalises(h), /Prix au JO —/); assert.match(sansBalises(h), /n'est pas disponible pour le moment/);
 });
 
-test('À proposer : exactement les lignes « opportunité », du plus gros potentiel au plus petit ; règle expliquée', async () => {
+test('À proposer : la règle « opportunité » reste calculée (liste du plus gros potentiel au plus petit) mais n\'est plus AFFICHÉE ni à l\'accueil ni en volet', async () => {
+  // 23/11/2026, v1 La recherche d'abord : classe (c). « À proposer » (liste de produits) est retiré à la demande de Will (« ça n'a pas de plus-value ») ;
+  // le moteur (propositions = lignes l.opp) reste, il alimente encore « Parcourir tout » (filtre Opportunités) ; l'affichage disparaît.
   const sb = await pret(monter());
   const K = sb.V2.comptoir, d = K._calc.donnees();
   const attendu = d.lignes.filter((l) => l.opp).sort((a, b) => b.pot - a.pot).map((l) => l.d);
   assert.deepEqual(nu(attendu), ['GAMMA 1G BT8', 'ALPHA JUNIOR 250MG', 'ALPHA 500MG BT10']);
   assert.deepEqual(nu(K._portes.propositions(d)).map((l) => l.d), nu(attendu));
   K.porte('proposer');
-  const h = K.rendre();
-  assert.deepEqual(noms(h), nu(attendu));
-  const t = sansBalises(h);
-  assert.match(t, /top 200 des ventes en France/); assert.match(t, /sous notre part moyenne \(26,91 %\)/);
-  assert.match(t, /3 produits/);
-  assert.match(t, /3 000 € par an/); assert.match(t, /478 € par an/); assert.match(t, /463 € par an/);
-  assert.doesNotMatch(t, /BETA|DELTA|ZETA/, 'ni les produits où nous vendons déjà beaucoup, ni ceux sans rang');
-  assert.doesNotMatch(t, /officines qui le prennent|réseau prend/, 'pas le repère « réseau » de la maquette');
+  assert.equal(C(sb).porte, null);
+  const h = K.rendre(), t = sansBalises(h);
+  assert.deepEqual(lignesRes(h), [], 'aucune ligne de résultat de recherche');
+  assert.doesNotMatch(t, /GAMMA|ALPHA JUNIOR/, 'les produits « à proposer » (hors des listes « Ce qui change ») ne s\'affichent pas');
+  assert.doesNotMatch(t, /À proposer|top 200 des ventes|part moyenne|de plus par an|3 000 €|478 €|463 €/);
+  assert.doesNotMatch(h, /resultatsProposer|cq1-proposer/);
 });
 
 test('Parcourir : l\'écran d\'avant, entier, mais ouvert SANS « Opportunités seulement » ; le filtre reste disponible', async () => {
@@ -250,7 +259,7 @@ test('Parcourir : l\'écran d\'avant, entier, mais ouvert SANS « Opportunités 
 test('fiche : « À qui le proposer » est un bloc à part, n° 3, juste après les marges ; absent en vue pharmacien ; plus dans « Chez nous »', async () => {
   const sb = await pret(monter());
   const K = sb.V2.comptoir;
-  K.porte('proposer'); K.ouvrir(G);
+  K.portes(); K.ouvrir(G);                   // 23/11/2026, v1 : l'ancien volet « À proposer » n'existe plus, on part de l'accueil
   K.vuePharma(false);
   K.rendre();
   let p = panneau(sb);
@@ -281,31 +290,33 @@ test('entrées venues d\'ailleurs (⌘K, lien molécule) : le volet Trouver, rec
   const K = sb.V2.comptoir;
   C(sb).opp = true; C(sb).fam = 'pr_low'; C(sb).stock = true;
   K.depuisRecherche({ cip: B, q: 'beta' });
-  assert.equal(C(sb).porte, 'trouver'); assert.equal(C(sb).cip, B); assert.equal(C(sb).opp, false); assert.equal(C(sb).fam, 'all');
+  // 23/11/2026, v1 La recherche d'abord : classe (b). « trouver » est l'accueil (porte null) : la même règle (recherche remplie, résultat visible, filtres remis à zéro) se lit sur l'état et sur le champ rendu.
+  assert.equal(C(sb).porte, null); assert.equal(C(sb).cip, B); assert.equal(C(sb).opp, false); assert.equal(C(sb).fam, 'all');
   let h = K.rendre();
   assert.deepEqual(noms(h), ['BETA 10MG BT30'], 'le résultat est visible derrière la fiche');
   assert.match(panneau(sb), /BETA 10MG BT30/);
   K.fermerPanneau();
   C(sb).porte = 'change';
   K.molecule('gammamol');
-  assert.equal(C(sb).porte, 'trouver'); assert.equal(C(sb).q, 'gammamol');
+  assert.ok([null, 'trouver'].includes(C(sb).porte), 'accueil'); assert.equal(C(sb).q, 'gammamol');
   h = K.rendre();
+  assert.match(h, /id="cpd-q"[^>]*value="gammamol"/, 'le champ est rempli');
   assert.ok(noms(h).includes('GAMMA 1G BT8'));
   // molécule sans CIP depuis ⌘K : le produit le plus vendu s'ouvre, volet Trouver dessous
   K.depuisRecherche({ q: 'alphamol', mol: 'alphamol' });
-  assert.equal(C(sb).porte, 'trouver');
+  assert.equal(C(sb).porte, null);
   K.rendre();
   assert.equal(C(sb).cip, A);
 });
 
-test('quitter l\'écran Produits : au retour, les trois portes', async () => {
+test('quitter l\'écran Produits : au retour, l\'accueil', async () => {
   const sb = await pret(monter());
   const K = sb.V2.comptoir;
-  K.porte('proposer'); K.rendre();           // pose l'écouteur de changement d'adresse
-  assert.equal(C(sb).porte, 'proposer');
+  K.porte('change'); K.rendre();             // pose l'écouteur de changement d'adresse (23/11/2026, v1 : « change » au lieu de l'ancien volet « proposer »)
+  assert.equal(C(sb).porte, 'change');
   sb.location.hash = '#produits';
   sb.ecouteurs.hashchange.forEach((f) => f());
-  assert.equal(C(sb).porte, 'proposer', 'rester sur Produits ne change rien');
+  assert.equal(C(sb).porte, 'change', 'rester sur Produits ne change rien');
   sb.location.hash = '#accueil';
   sb.ecouteurs.hashchange.forEach((f) => f());
   assert.equal(C(sb).porte, null);

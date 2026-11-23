@@ -36,7 +36,8 @@ const ECRANS = [
   // 20/11/2026 — écran « Le répertoire » : le titre est h1.ofl-h1 (lu par les lecteurs d'écran), l'ancien h1.of-h1 n'est plus affiché.
   { route: 'pharma',   nom: 'Officines',    selecteur: 'h1.ofl-h1',       texte: 'Mes officines' },
   { route: 'pilotage', nom: 'Pilotage',     selecteur: '.v2-page-title',  texte: 'Pilotage' },
-  { route: 'produits', nom: 'Produits',     selecteur: '.v2-page-title',  texte: 'Produits' },
+  // 23/11/2026 — écran « Catalogue produits » v1 (La recherche d'abord) : le titre lu est h1.cpd-h1 ; le petit .v2-page-title « Produits » est masqué à l'accueil (sinon le décor de l'aube en fait un second bandeau).
+  { route: 'produits', nom: 'Produits',     selecteur: 'h1.cpd-h1',       texte: 'Catalogue produits' },
   // 21/11/2026 — écran « À faire avec les infos » (maquette C) : le titre est h1#inf-t-titre ; depuis le 21/11 au soir (bandeau commun), il dit « Infos du matin » comme l'onglet.
   { route: 'infos',    nom: 'Infos du jour', selecteur: 'h1#inf-t-titre', texte: 'Infos du matin' },
   { route: 'todo',     nom: 'To do list',   selecteur: 'h1',             texte: 'To do list' },

@@ -42,7 +42,7 @@
   var C = { q: '', fam: 'all', opp: true, stock: false, top: 200, tri: 'potentiel',
             page: 1, cip: null, offTout: false, unite: 'q', panier: false,
             mol: false, dcTout: false, pend: null,
-            porte: null, chg: 'jo' };   // 09/11/2026 : porte = null (les trois portes) | 'trouver' | 'change' | 'proposer' | 'tout' ; chg = onglet de « Ce qui change » ; 21/10/2026 : « Déjà commandé » (toute la molécule ? tout voir ?) et molécule à résoudre au prochain rendu
+            porte: null, chg: 'jo' };   // 09/11/2026 : porte = null (l'accueil : le champ de recherche) | 'change' | 'tout' ('trouver' et 'proposer' ramènent à l'accueil) ; chg = onglet de « Ce qui change » ; 21/10/2026 : « Déjà commandé » (toute la molécule ? tout voir ?) et molécule à résoudre au prochain rendu
   var PANIER_MAX = 200;    // au-delà, une fiche n'est plus lisible : « Tout ajouter » s'arrête là et le dit
   var D = { nat: null, natEtat: 0, etabEtat: 0, catEtat: 0,
             cache: null, sig: '', aqui: null, aquiIdx: null, aquiEtat: 0, noms: null,
@@ -62,8 +62,6 @@
     return fr(n) + ' €';
   }
   // 12/11/2026 (clarté, façon 1) : un montant écrit en entier, sans « k€ ».
-  // 13/11/2026 : le potentiel de « À proposer » s'écrit en euros entiers, arrondi au millier dès 1 000 € (60 000 €, 3 000 €), jamais « k€ ».
-  function eurMille(n) { n = +n || 0; return fr(Math.abs(n) >= 1e3 ? Math.round(n / 1e3) * 1e3 : Math.round(n)) + '\u00a0€'; }
   function eurPlein(n) { return fr(Math.round(+n || 0)) + '\u00a0€'; }
   function cl1Mois(d) {   // « janv.–oct. 2026 (10 mois) » : la période sur laquelle nos ventes sont ramenées à l'année
     var M = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
@@ -467,7 +465,7 @@
 
   // ── Filtres et tri ────────────────────────────────────────────
   function filtrees(L) {
-    var q = sansAccent(C.q).trim(), out = [], i, tr = C.porte === 'trouver';   // 09/11/2026 : « Trouver un produit » cherche dans tout le catalogue, du plus vendu au moins vendu
+    var q = sansAccent(C.q).trim(), out = [], i, tr = C.porte === null || C.porte === 'trouver';   // 09/11/2026 : « Trouver un produit » cherche dans tout le catalogue, du plus vendu au moins vendu
     for (i = 0; i < L.length; i++) {
       var l = L[i];
       // « Au panier » montre TOUT le panier : les autres filtres ne doivent pas en cacher une partie.
@@ -804,7 +802,7 @@
   // Un fichier absent ou en erreur donne simplement « donnée indisponible » (état 3) : jamais d'exception.
   function planRerender() {
     if (D.rr) return;
-    D.rr = setTimeout(function () { D.rr = null; if (C.cip || C.porte === null || C.porte === 'change') rerender(); }, 60);   // 09/11/2026 : les portes et « Ce qui change » lisent aussi ces fichiers
+    D.rr = setTimeout(function () { D.rr = null; if (C.cip || C.porte === null || C.porte === 'trouver' || C.porte === 'change') rerender(); }, 60);   // 09/11/2026 : les portes et « Ce qui change » lisent aussi ces fichiers
   }
   function demander(cle) {
     var e = D.fich && D.fich[cle], jour, p;
@@ -834,9 +832,9 @@
       if (!V2.loadFiles || !c || !(V2.user && V2.user.id)) { D.mpEtat = 3; return; }
       // Même accès que « Notre marge par produit » : la base répond d'abord, le fichier n'est demandé que sur un oui.
       Promise.resolve(c.rpc('jarvis_acces_marge_produits')).then(function (r) {
-        if (!(r && !r.error && r.data === true)) { D.mpEtat = 3; return; }
+        if (!(r && !r.error && r.data === true)) { D.mpEtat = 3; planRerender(); return; }   // 23/11/2026 : l'attente est remplacée aussi quand l'accès est refusé
         return V2.loadFiles(['margeproduits']).then(function () { D.mpEtat = window.MARGE_PRODUITS ? 2 : 3; planRerender(); });
-      }).catch(function () { D.mpEtat = 3; });
+      }).catch(function () { D.mpEtat = 3; planRerender(); });
     } catch (x) { D.mpEtat = 3; }
   }
   function ligneMargeProduits(cip) {
@@ -860,6 +858,10 @@
   function notreMargeDe(l) {
     var cip = String(l.cip), m = ligneMargeProduits(cip), pu, a, b;
     demanderMargeProduits();
+    // 23/11/2026 : fichier de la direction demandé et pas encore arrivé = une attente, JAMAIS l'estimation du Pilotage (elle sautait de 1,44 € à 1,59 € à l'arrivée du fichier).
+    if (!(m && m.m26 != null) && D.mpEtat === 1) {
+      return { source: 'attente', attente: true, libelle: 'estimation de la direction en cours de chargement', boite26: null, boite27: null, delta: null, taux26: null, taux27: null, disponible2027: null };
+    }
     if (m && m.m26 != null) {
       return { source: 'direction', libelle: 'estimation de la direction', boite26: +m.m26, boite27: m.m27 == null ? null : +m.m27,
                delta: m.m27 == null ? null : m.m27 - m.m26, taux26: m.t26, taux27: m.t27, disponible2027: m.dispo27 };
@@ -1214,29 +1216,29 @@
   // ── Pièces d'écran communes aux trois maquettes « molécule » (style cp- du comptoir, préfixe mo-) ──
   var MOCSS_ID = 'mo-styles';
   var MOCSS = [
-    '.mo{--mo-ink:#10131C;--mo-mut:#566074;--mo-line:rgba(16,19,28,.10);--mo-up:#0B6E4A;--mo-dn:#B4232F;--mo-blue:var(--ip-blue,#0050E6);--mo-wash:#EAF1FF;font-family:Inter,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;font-variant-numeric:tabular-nums;color:var(--mo-ink)}',
+    '.mo{--mo-ink:#10131C;--mo-mut:#566074;--mo-line:rgba(16,19,28,.10);--mo-up:#0B6E4A;--mo-dn:#B4232F;--mo-blue:var(--ip-blue,#0050E6);--mo-wash:#EAF1FF;font-family:var(--font);font-variant-numeric:tabular-nums;color:var(--mo-ink)}',
     '.mo *{box-sizing:border-box}',
     '.mo :where(h2,h3,p,ul){margin:0}',
     '.mo button{font-family:inherit;-webkit-tap-highlight-color:transparent}',
     '.mo-card{position:relative;border-radius:20px;background:#fff;border:1px solid var(--mo-line);box-shadow:0 1px 2px rgba(16,19,28,.05),0 12px 28px -16px rgba(0,50,160,.28);padding:22px 24px}',
     '.mo-lum{background:radial-gradient(520px 220px at 12% -70px,rgba(0,80,230,.13),transparent 70%),radial-gradient(360px 200px at 98% 0,rgba(0,181,216,.08),transparent 70%),#fff}',
-    '.mo-eye{font:700 13px/1.2 Inter,sans-serif;color:var(--mo-blue);letter-spacing:.02em}',
-    '.mo-h{font:800 36px/1.08 Inter,sans-serif;letter-spacing:-.025em;margin:6px 0 4px}',
-    '.mo-sub{font:500 14px/1.4 Inter,sans-serif;color:var(--mo-mut)}',
-    '.mo-phrase{font:600 21px/1.32 Inter,sans-serif;letter-spacing:-.012em;color:#232938;margin-top:14px;max-width:900px}',
+    '.mo-eye{font:700 13px/1.2 var(--font);color:var(--mo-blue);letter-spacing:.02em}',
+    '.mo-h{font:800 36px/1.08 var(--font);letter-spacing:-.025em;margin:6px 0 4px}',
+    '.mo-sub{font:500 14px/1.4 var(--font);color:var(--mo-mut)}',
+    '.mo-phrase{font:600 21px/1.32 var(--font);letter-spacing:-.012em;color:#232938;margin-top:14px;max-width:900px}',
     '.mo-phrase b{font-weight:800;color:var(--mo-ink)}',
     '.mo-phrase b.up{color:var(--mo-up)}.mo-phrase b.dn{color:var(--mo-dn)}',
-    '.mo-h3{font:800 18px/1.25 Inter,sans-serif;letter-spacing:-.01em;margin:26px 0 4px}',
-    '.mo-h3 small{font:500 14px/1.3 Inter,sans-serif;color:var(--mo-mut);margin-left:6px}',
-    '.mo-note{font:400 13px/1.45 Inter,sans-serif;color:var(--mo-mut);margin-top:14px}',
-    '.mo-warn{display:flex;gap:9px;align-items:flex-start;margin-top:14px;padding:12px 14px;border-radius:14px;background:#FBF0E1;color:#6E3F00;font:500 14px/1.4 Inter,sans-serif}',
-    '.mo-warn::before{content:"";flex:none;width:8px;height:8px;margin-top:6px;border-radius:50%;background:#E59A12}',
+    '.mo-h3{font:800 18px/1.25 var(--font);letter-spacing:-.01em;margin:26px 0 4px}',
+    '.mo-h3 small{font:500 14px/1.3 var(--font);color:var(--mo-mut);margin-left:6px}',
+    '.mo-note{font:400 13px/1.45 var(--font);color:var(--mo-mut);margin-top:14px}',
+    '.mo-warn{display:flex;gap:9px;align-items:flex-start;margin-top:14px;padding:12px 14px;border-radius:14px;background:#EAF1FF;color:#173A86;font:500 14px/1.4 var(--font)}',
+    '.mo-warn::before{content:"";flex:none;width:8px;height:8px;margin-top:6px;border-radius:50%;background:#0050E6}',
     '.mo-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;align-items:center}',
-    '.mo-chips>span{font:600 13px/1 Inter,sans-serif;color:var(--mo-mut);margin-right:2px}',
-    '.mo-chip{min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--mo-line);background:#fff;font:650 13px/1 Inter,sans-serif;color:var(--mo-ink);cursor:pointer}',
+    '.mo-chips>span{font:600 13px/1 var(--font);color:var(--mo-mut);margin-right:2px}',
+    '.mo-chip{min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--mo-line);background:#fff;font:650 13px/1 var(--font);color:var(--mo-ink);cursor:pointer}',
     '.mo-chip.on{background:var(--mo-blue);border-color:var(--mo-blue);color:#fff}',
     '.mo-chip:focus-visible,.mo-seg button:focus-visible,.mo-row:focus-visible,.mo-btn:focus-visible{outline:3px solid rgba(0,80,230,.45);outline-offset:2px}',
-    '.mo-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font:700 13px/1.25 Inter,sans-serif;white-space:nowrap}',
+    '.mo-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font:700 13px/1.25 var(--font);white-space:nowrap}',
     '.mo-pill i{font-style:normal;font-size:13px}',
     '.mo-pill.up{background:#E3F5EC;color:var(--mo-up)}.mo-pill.dn{background:#FCE9EA;color:var(--mo-dn)}.mo-pill.eq{background:#ECEFF5;color:#3A4256}',
     // une barre : la part (remplie) et le repère « sa moyenne » (trait)
@@ -1244,35 +1246,35 @@
     '.mo-tr .f{position:absolute;left:0;top:0;bottom:0;border-radius:7px;background:var(--mo-blue);min-width:3px}',
     '.mo-tr .f.dn{background:#8793AE}',
     '.mo-tr .tk{position:absolute;top:-4px;bottom:-4px;width:3px;margin-left:-1px;background:var(--mo-ink);border-radius:2px;box-shadow:0 0 0 2px #fff}',
-    '.mo-leg{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font:500 13px/1.3 Inter,sans-serif;color:var(--mo-mut)}',
+    '.mo-leg{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font:500 13px/1.3 var(--font);color:var(--mo-mut)}',
     '.mo-leg span{display:inline-flex;align-items:center;gap:7px}',
     '.mo-leg i{display:inline-block;width:16px;height:10px;border-radius:5px;background:var(--mo-blue)}',
     '.mo-leg i.t{width:3px;height:14px;border-radius:2px;background:var(--mo-ink)}',
     '.mo-big{display:flex;flex-direction:column;gap:2px;min-width:0}',
-    '.mo-big em{font:600 14px/1.2 Inter,sans-serif;color:var(--mo-mut);font-style:normal}',
-    '.mo-big b{font:800 40px/1.05 Inter,sans-serif;letter-spacing:-.03em;color:var(--mo-ink)}',
-    '.mo-big b small{font:600 16px/1 Inter,sans-serif;letter-spacing:0;color:var(--mo-mut);margin-left:6px}',
-    '.mo-big span{font:500 13.5px/1.35 Inter,sans-serif;color:var(--mo-mut)}',
-    '.mo-big span b{font:700 13.5px/1.35 Inter,sans-serif;letter-spacing:0;color:var(--mo-ink)}',
+    '.mo-big em{font:600 14px/1.2 var(--font);color:var(--mo-mut);font-style:normal}',
+    '.mo-big b{font:800 40px/1.05 var(--font);letter-spacing:-.03em;color:var(--mo-ink)}',
+    '.mo-big b small{font:600 16px/1 var(--font);letter-spacing:0;color:var(--mo-mut);margin-left:6px}',
+    '.mo-big span{font:500 13.5px/1.35 var(--font);color:var(--mo-mut)}',
+    '.mo-big span b{font:700 13.5px/1.35 var(--font);letter-spacing:0;color:var(--mo-ink)}',
     // lignes de commerciaux
     '.mo-c{display:grid;grid-template-columns:minmax(120px,170px) minmax(0,1fr) minmax(200px,250px) minmax(150px,190px);align-items:center;gap:6px 18px;padding:13px 0;border-top:1px solid var(--mo-line)}',
     '.mo-c:first-child{border-top:0}',
-    '.mo-c .nm{font:700 15px/1.25 Inter,sans-serif;min-width:0;overflow-wrap:anywhere}',
-    '.mo-c .nm small{display:block;font:500 13px/1.3 Inter,sans-serif;color:var(--mo-mut)}',
-    '.mo-c .mt{font:500 13px/1.35 Inter,sans-serif;color:var(--mo-mut)}',
-    '.mo-c .mt b{font:700 14px/1.35 Inter,sans-serif;color:var(--mo-ink)}',
-    '.mo-c .pt{font:500 13px/1.35 Inter,sans-serif;color:var(--mo-mut);margin-top:3px;display:block}',
+    '.mo-c .nm{font:700 15px/1.25 var(--font);min-width:0;overflow-wrap:anywhere}',
+    '.mo-c .nm small{display:block;font:500 13px/1.3 var(--font);color:var(--mo-mut)}',
+    '.mo-c .mt{font:500 13px/1.35 var(--font);color:var(--mo-mut)}',
+    '.mo-c .mt b{font:700 14px/1.35 var(--font);color:var(--mo-ink)}',
+    '.mo-c .pt{font:500 13px/1.35 var(--font);color:var(--mo-mut);margin-top:3px;display:block}',
     '.mo-c.res .nm{color:var(--mo-blue)}',
     '.mo-c .pc{display:flex;flex-direction:column;gap:5px;align-items:flex-start}',
-    '.mo-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:999px;border:1px solid var(--mo-line);background:#fff;font:650 14px/1 Inter,sans-serif;color:var(--mo-ink);cursor:pointer;margin-top:10px}',
+    '.mo-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:999px;border:1px solid var(--mo-line);background:#fff;font:650 14px/1 var(--font);color:var(--mo-ink);cursor:pointer;margin-top:10px}',
     // produits de la molécule
     '.mo-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:center;gap:6px 18px;width:100%;min-height:52px;padding:10px 0;border:0;border-top:1px solid var(--mo-line);background:transparent;text-align:left;cursor:pointer;color:inherit}',
     '.mo-row:first-child{border-top:0}',
-    '.mo-row .nm{font:700 14px/1.3 Inter,sans-serif;min-width:0}',
-    '.mo-row .nm small{display:block;font:500 13px/1.3 Inter,sans-serif;color:var(--mo-mut)}',
-    '.mo-row .n{text-align:right;font:700 14px/1.25 Inter,sans-serif;white-space:nowrap}',
-    '.mo-row .n small{display:block;font:500 13px/1.25 Inter,sans-serif;color:var(--mo-mut)}',
-    '.mo-vide{font:500 15px/1.45 Inter,sans-serif;color:var(--mo-mut);padding:14px 0}',
+    '.mo-row .nm{font:700 14px/1.3 var(--font);min-width:0}',
+    '.mo-row .nm small{display:block;font:500 13px/1.3 var(--font);color:var(--mo-mut)}',
+    '.mo-row .n{text-align:right;font:700 14px/1.25 var(--font);white-space:nowrap}',
+    '.mo-row .n small{display:block;font:500 13px/1.25 var(--font);color:var(--mo-mut)}',
+    '.mo-vide{font:500 15px/1.45 var(--font);color:var(--mo-mut);padding:14px 0}',
     '@media (max-width:760px){',
     '  .mo-card{padding:18px 16px;border-radius:20px}',
     '  .mo-h{font-size:30px}.mo-phrase{font-size:18px}',
@@ -1429,7 +1431,12 @@
       return '<div class="mo mo-1"><div class="mo-card"><p class="mo-eye">MOLÉCULES TROUVÉES</p><p class="mo-sub">Choisissez celle qui vous intéresse pour voir toutes ses statistiques.</p><div class="mo-chips">' + ch + '</div></div></div>';
     }
     var M = molStats(cle, d);
-    return M ? '<div class="mo mo-1">' + mo1Carte(M, d) + '</div>' : '';
+    if (!M) return '';
+    // v1 : la carte molécule est repliée sur UNE ligne de résumé, au-dessus des résultats ; on l'ouvre si on veut l'analyse complète.
+    var r = M.reseau, resume = '<span class="cq1-mol-k">Molécule</span><b>' + esc(M.aff) + '</b><span class="cq1-mol-t">' +
+      (M.avecNat ? 'La France achète ' + esc(molGros(M.france)) + (M.france >= 1e6 ? ' de' : '') + ' boîtes par an · nous en vendons ' + fr(r.boites) + ' (' + molPctP(r.part) + ')' : 'Nous en vendons ' + fr(r.boites) + ' boîtes par an') +
+      '</span><span class="cq1-mol-o">Voir l\'analyse</span>';
+    return '<details class="cq1-mol"><summary>' + resume + '</summary><div class="mo mo-1">' + mo1Carte(M, d) + '</div></details>';
   }
 
   window.MOCSS_V = [
@@ -1458,17 +1465,19 @@
     effacer: function () { C.q = ''; C.page = 1; rerender(); },
     // 09/11/2026 — les trois portes. Ouvrir un volet repart d'une page propre ; « Parcourir » s'ouvre SANS le filtre Opportunités.
     porte: function (k) {
-      C.porte = (k === 'trouver' || k === 'change' || k === 'proposer' || k === 'tout') ? k : null;
+      C.porte = (k === 'change' || k === 'tout') ? k : null;   // v1 : « trouver » et l'ancien « proposer » (retiré le 23/11/2026, sans plus-value) = l'accueil (porte null)
       C.page = 1; C.q = ''; C.fam = 'all'; C.stock = false; C.molSel = null;
       if (C.porte === 'tout') { C.opp = false; C.panier = false; }
       if (C.porte === 'change') C.chg = 'jo';
       rerender();
       try { window.scrollTo(0, 0); } catch (x) { /* rien */ }
-      if (C.porte === 'trouver' && window.innerWidth > 640) setTimeout(function () {   // clavier du téléphone : jamais ouvert de force
+      if ((k === 'trouver' || C.porte === null) && window.innerWidth > 640) setTimeout(function () {   // clavier du téléphone : jamais ouvert de force
         var i = document.getElementById('cpd-q'); if (i && i.focus) { try { i.focus({ preventScroll: true }); } catch (x) { i.focus(); } }
       }, 30);
     },
     portes: function () { V2.comptoir.porte(null); },
+    // P-2 : revenir d'un onglet (Client…) ramène à l'accueil de l'écran, jamais à « Parcourir tout ».
+    reinit: function () { C.porte = null; C.q = ''; C.fam = 'all'; C.page = 1; C.stock = false; C.molSel = null; C.panier = false; },
     onglet: function (k) { C.chg = (k === 'rup' || k === 'nv') ? k : 'jo'; C.page = 1; majResultats(); },
     fam: function (k) { C.fam = k; C.page = 1; rerender(); },
     opp: function () { C.opp = !C.opp; C.page = 1; rerender(); },
@@ -1529,7 +1538,10 @@
     panierVoir: function () { C.panier = !C.panier; C.page = 1; majPanier(); },
     panierVider: function () { V2.produits.S.sel = {}; C.panier = false; majPanier(); },
     panierFiche: function () { V2.comptoir.fermerPanneau(); V2.produits.ficheDuPanier(); },
-    ouvrir: function (cip) { C.cip = String(cip); C.offTout = false; C.mol = false; C.dcTout = false; rerender(); },
+    ouvrir: function (cip) {   // v1 : le panneau vit sous <body>, la page ne se redessine pas (elle garde sa position)
+      C.cip = String(cip); C.offTout = false; C.mol = false; C.dcTout = false;
+      var d = donnees(); if (d && document.getElementById('cp-pan-hote')) poserPanneau(d); else rerender();
+    },
     // 21/10/2026 — arrivée depuis la recherche ⌘K : filtres remis à zéro (sinon « Opportunités seulement » cache
     // le produit cherché), recherche du Comptoir remplie, panneau ouvert. Une molécule (sans CIP) ouvre le produit
     // que nous vendons le plus, sur la vue « Toute la molécule » ; il est choisi au rendu, quand le catalogue est prêt.
@@ -1537,7 +1549,7 @@
     depuisRecherche: function (o) {
       o = o || {};
       C.q = o.q || ''; C.fam = 'all'; C.opp = false; C.stock = false; C.panier = false; C.page = 1;
-      C.offTout = false; C.dcTout = false; C.porte = 'trouver';   // 09/11/2026 : le volet « Trouver un produit », recherche remplie
+      C.offTout = false; C.dcTout = false; C.porte = null;   // 09/11/2026 : le volet « Trouver un produit », recherche remplie
       C.cip = o.cip ? String(o.cip) : null; C.mol = !o.cip; C.pend = o.cip ? null : (o.mol || o.q || null);
       var S = V2.produits && V2.produits.S;
       if (S) { S.mode = 'comptoir'; S.apercu = false; }
@@ -1546,7 +1558,7 @@
     dcMol: function (v) { C.mol = !!v; C.dcTout = false; rerender(); },
     dcTout: function () { C.dcTout = true; rerender(); },
     versOfficine: function (id) { V2.comptoir.fermerPanneau(); V2.go('pharma', String(id)); },
-    fermer: function () { C.cip = null; rerender(); },
+    fermer: function () { V2.comptoir.fermerPanneau(); },   // v1 : fermer ne redessine pas la page, donc ne remonte pas en haut (P-11)
     offTout: function () { C.offTout = true; rerender(); },
     // Ouvre la vue Client de cette officine avec ce produit déjà retenu :
     // le document, le PDF et le mail existants prennent le relais.
@@ -1790,16 +1802,15 @@
       '</div>';
   }
   function resultatsHtml(d) {
-    if (C.porte === 'trouver') return resultatsTrouver(d);   // 09/11/2026 : les volets de « Ce qui change » et « À proposer » se redessinent ici aussi
+    if (C.porte === null || C.porte === 'trouver') return cq1Zone(d);   // v1 : le champ au repos montre « Ce qui change »   // 09/11/2026 : le volet de « Ce qui change » se redessine ici aussi
     if (C.porte === 'change') return resultatsChange(d);
-    if (C.porte === 'proposer') return resultatsProposer(d);
     var L = filtrees(d.lignes), AQ = aQui();
     var TD = (C.tri === 'hausse' || C.tri === 'baisse') ? tendances() : null;
     var vis = L.slice(0, C.page * PAR_PAGE), rows = '', cards = '', i;
     for (i = 0; i < vis.length; i++) { rows += ligneTable(vis[i], d, AQ, TD); cards += carte(vis[i], d, AQ, TD); }
     var head = '<div class="cp-head"><span class="c">Panier</span><span>Produit</span><span class="n" title="Prix net payé par la pharmacie (tarif pour les non remboursables)">Prix net</span><span class="n" title="Nos ventes, en boîtes par an">Ventes</span>' +
       '<span class="n" title="Rang parmi les boîtes remboursées vendues en France">France</span><span title="Notre part des ventes en France, face à notre part moyenne">Part</span><span class="n" title="Ce que nous vendrions de plus par an en rejoignant notre part moyenne">Potentiel</span>';
-    for (i = 0; i < ETABS.length; i++) head += '<span class="c">' + ETABS[i] + '</span>';
+    for (i = 0; i < ETABS.length; i++) head += '<span class="c" title="Stock du site ' + ETABS[i] + '">' + ETABS[i] + '</span>';
     head += '<span class="c">À qui</span></div>';
     var reste = L.length - vis.length;
     return '<div class="cp-count" id="cp-count-src" data-n="' + L.length + '"></div>' +
@@ -2197,6 +2208,7 @@
   }
   function tuileNotreMarge(s) {
     var nm = s.notreMarge;
+    if (nm && nm.attente) return tuileVide('w3 m1', 'Notre marge', 'par boîte', 'Estimation de la direction en cours de chargement…');
     if (nm && !(nm.boite26 > 0.004) && !(nm.boite27 > 0.004)) return tuileVide('w3 m1', 'Notre marge', 'par boîte', 'Aucune marge calculée sur ce produit par la règle du Pilotage.');
     if (!nm) return tuileVide('w3 m1', 'Notre marge', 'par boîte', 'Donnée indisponible pour ce produit.');
     var egal = nm.boite27 != null && Math.abs(nm.delta) < 0.005, d27 = dateFr(DATE_MG_2027), mx = Math.max(nm.boite26, nm.boite27 || 0);
@@ -2386,7 +2398,7 @@
           ? '<div class="nd"' + (st ? ' title="' + esc(st) + '"' : '') + '><em>' + ETABS[i] + '</em><b>—</b>' + (vc ? ventesLignes(vc) : '') + '</div>'
           : '<div class="' + (sv > 0 ? '' : 'zero') + '"' + (vc ? ' title="' + esc(st) + '"' : '') + '><em>' + ETABS[i] + '</em><b>' + fr(sv) + '</b>' + (vc ? ventesLignes(vc) : '') + '</div>';
       }
-      stock += '</div><p class="cp-note">' + (vp ? 'Stock déclaré par chaque établissement.' : noteStockDate()) + ' « — » : non communiqué.</p>';
+      stock += '</div><p class="cp-note">' + (vp ? 'Stock déclaré par chaque établissement.' : noteStockDate()) + ' ' + ETABS.join(', ') + ' : les ' + fr(ETABS.length) + ' sites de stock. « — » : non communiqué.</p>';
     } else {
       stock = '<div class="cp-sgrid"><div class="large"><em>Tous sites</em><b>' + fr(l.stock) + '</b></div></div>' +
         '<p class="cp-note">Pas de détail par établissement pour ce produit.</p>';
@@ -2528,7 +2540,7 @@
   // ── P1 : commandes de la carte molécule ──
   V2.comptoir._majMol = majMol;
   V2.comptoir.molecule = function (nom) {   // depuis l'extérieur (lien de la vitrine) : remplit la recherche et montre la carte
-    C.q = nom || ''; C.molSel = null; C.page = 1; C.opp = false; C.fam = 'all'; C.molProdTout = false; C.molCommTout = false; C.porte = 'trouver';
+    C.q = nom || ''; C.molSel = null; C.page = 1; C.opp = false; C.fam = 'all'; C.molProdTout = false; C.molCommTout = false; C.porte = null;
     rerender();
   };
   V2.comptoir.molChoix = function (i) { var m = MOLR.cands && MOLR.cands[i]; if (m) { C.molSel = m.cle; C.molProdTout = false; C.molCommTout = false; majMol(); } };
@@ -2645,7 +2657,7 @@
 
   // ── Lignes compactes (une seule cible par ligne, 56 px de haut) ──
   function ligneP(l, sous, b, i, avecBadges) {
-    return '<button type="button" class="cpd-l" onclick="V2.comptoir.ouvrir(\'' + escAttr(l.cip) + '\')"><span class="cpd-tx"><span class="cpd-nm">' + esc(l.d) +
+    return '<button type="button" class="cpd-l" data-cip="' + escAttr(l.cip) + '" onclick="V2.comptoir.ouvrir(\'' + escAttr(l.cip) + '\')"><span class="cpd-tx"><span class="cpd-nm">' + esc(l.d) +
       (avecBadges ? badges(l) : (l.rupt ? '<span class="cp-badge cp-badge-r">Rupture ANSM</span>' : '')) + '</span><span class="cpd-sb">' + esc(sous) + '</span></span>' +
       '<span class="cpd-px"><b>' + b + '</b><i>' + i + '</i></span></button>';
   }
@@ -2722,66 +2734,101 @@
     return '<div class="cpd-tabs" role="group" aria-label="Ce qui change">' + tabs + '</div>' + corps;
   }
 
-  // ── Volet 3 : À proposer ──
-  function resultatsProposer(d) {
-    var P = propositions(d);
-    return '<p class="cpd-lead">Les produits du top ' + fr(C.top) + ' des ventes en France sur lesquels nos ventes sont sous notre part moyenne (' + fr(d.partMoy * 100, 2) + ' %). ' +
-      'Du plus grand potentiel au plus petit : le potentiel est une estimation de ce que nous vendrions de plus par an en rejoignant cette part moyenne, pas des ventes réalisées. ' +
-      'Nos ventes : réseau, ' + esc(cl1Mois(d)) + ', ramenées à l\'année ; le rang est celui des boîtes remboursées vendues en France. <b>' + fr(P.length) + '</b> produit' + (P.length > 1 ? 's' : '') + '.</p>' +
-      listePage(P, function (l) {
-        return ligneP(l, [l.labo, 'n°' + fr(l.rang) + ' en France', l.an > 0 ? fr(l.an) + ' boîtes par an chez nous' : 'aucune vendue chez nous'].filter(Boolean).join(' · '), eurMille(l.pot), 'par an', false);
-      }, 'Aucun produit à proposer avec ces ventes.');
-  }
-
   function retourHtml(titre) {
-    return '<div class="cpd-vh"><button type="button" class="cpd-back" onclick="V2.comptoir.portes()">' + (ICO('back', 18, 2) || '←') + ' Les trois portes</button><h2 class="cpd-vt">' + esc(titre) + '</h2></div>';
+    return '<div class="cpd-vh"><button type="button" class="cpd-back" onclick="V2.comptoir.portes()">' + (ICO('back', 18, 2) || '←') + ' Recherche</button><h2 class="cpd-vt">' + esc(titre) + '</h2></div>';
   }
   function barrePanier() { return '<div id="cp-bar-hote">' + barreHtml() + '</div>'; }
 
   // Tout ce qui n'est pas « Parcourir » : les portes au repos, ou l'un des trois volets.
+  // ── v1 « La recherche d'abord » : l'écran s'ouvre sur un grand champ ; vide, il laisse voir « Ce qui change » ; tapé, il rend des lignes denses. ──
+  function nbSites(l) {
+    var n = 0, k;
+    if (l.etab) for (k in l.etab) if (Object.prototype.hasOwnProperty.call(l.etab, k) && l.etab[k] > 0) n++;
+    return n;
+  }
+  function cq1Ligne(l) {
+    var nm = C.vuePharma ? null : notreMargeDe(l), n = nbSites(l), marge;
+    if (C.vuePharma) marge = l.ab != null ? '<b>−' + eur2(l.ab) + '</b><i>abandon de marge</i>' : '<b>—</b><i>marge</i>';
+    else if (nm && nm.attente) marge = '<b>…</b><i>notre marge</i>';
+    else marge = nm && nm.boite26 != null ? '<b>' + eur2(nm.boite26) + '</b><i>notre marge</i>' : '<b>—</b><i>notre marge</i>';
+    return '<button type="button" class="cq1-l" data-cip="' + escAttr(l.cip) + '" onclick="V2.comptoir.ouvrir(\'' + escAttr(l.cip) + '\')">' +
+      '<span class="cq1-tx"><span class="cq1-nm">' + esc(l.d) + badges(l) + '</span><span class="cq1-sb">' + esc([l.labo, 'CIP ' + l.cip].filter(Boolean).join(' · ')) + '</span></span>' +
+      '<span class="cq1-c cq1-px"><b>' + (l.prix > 0 ? eur2(l.prix) : '—') + '</b><i>' + (l.prix > 0 ? (l.f === 'nr' ? 'tarif' : 'prix net') : 'prix') + '</i></span>' +
+      '<span class="cq1-c cq1-st' + (l.stock > 0 ? '' : ' zero') + '"><b>' + fr(l.stock > 0 ? l.stock : 0) + '</b><i>' + (l.stock > 0 ? (n ? 'dans ' + fr(n) + ' sites sur ' + fr(ETABS.length) : 'tous sites') : 'en stock') + '</i></span>' +
+      '<span class="cq1-c cq1-mg">' + marge + '</span></button>';
+  }
+  function cq1Resultats(d) {
+    var L = filtrees(d.lignes), vis = L.slice(0, C.page * PAR_PAGE), h = '', i;
+    for (i = 0; i < vis.length; i++) h += cq1Ligne(vis[i]);
+    return '<div class="cq1-cnt"><p id="cp-count" aria-live="polite">' + esc(libTrouve(L.length)) + '</p></div>' +
+      '<div class="cp-chips cpd-chips">' + famsHtml() + '</div>' +
+      (L.length ? '<div class="cq1-liste"><div class="cq1-th" aria-hidden="true"><span>Produit</span><span>Prix net</span><span>Stock</span><span>Marge</span></div>' + h + '</div>' + plusHtml(L.length - vis.length)
+        : '<div class="cp-vide">Aucun produit ne correspond.</div>');
+  }
+  function cq1Change(d) {
+    var X = changements(d), tabs = '', corps = '', liste = null, att = false, n = 0, lib = '', i;
+    var T = [['jo', 'Prix au JO', X.jo, X.joAtt], ['rup', 'Ruptures', X.rup, X.rupAtt], ['nv', 'Nouveautés', X.nv, false]];
+    for (i = 0; i < T.length; i++) {
+      tabs += '<button type="button" class="cq1-tab' + (C.chg === T[i][0] ? ' on' : '') + '" aria-pressed="' + (C.chg === T[i][0]) + '" onclick="V2.comptoir.onglet(\'' + T[i][0] + '\')">' + T[i][1] + ' <i>' + nbPorte(T[i][2], T[i][3]) + '</i></button>';
+      if (C.chg === T[i][0]) { liste = T[i][2]; att = T[i][3]; }
+    }
+    if (!liste) corps = '<div class="cp-vide">' + (att ? 'Le relevé arrive…' : 'Ce relevé n\'est pas disponible pour le moment.') + '</div>';
+    else if (!liste.length) corps = '<div class="cp-vide">Rien à signaler dans notre catalogue.</div>';
+    else {
+      n = liste.length;
+      for (i = 0; i < n && i < 6; i++) {
+        var x = liste[i];
+        if (C.chg === 'rup') {
+          var a = ansmPourCip(fichier('ansm'), x.cip);
+          corps += ligneP(x, a && a.depuis ? 'Rupture depuis le ' + dateJour(a.depuis) : 'Rupture signalée', x.stock > 0 ? 'en stock' : 'stock à 0', 'chez nous', false);
+        } else if (C.chg === 'nv') {
+          corps += ligneP(x.l, [x.n.labo || x.l.labo, x.n.amm ? 'AMM ' + moisIso(x.n.amm) : ''].filter(Boolean).join(' · '), x.l.prix > 0 ? eur2(x.l.prix) : '—', 'prix net', false);
+        } else {
+          var e = x.e, pct = (e.ancienTtc > 0 && e.nouveauTtc != null) ? (e.nouveauTtc / e.ancienTtc - 1) * 100 : null;
+          corps += ligneP(x.l, (e.aVenir ? 'À partir du ' : 'Depuis le ') + dateJour(e.dateEffet), pct != null ? '−' + fr(Math.abs(pct), 1) + ' %' : '', 'de baisse', false);
+        }
+      }
+      corps = '<div class="cpd-liste">' + corps + '</div>';
+    }
+    lib = C.chg === 'rup' ? 'toutes les ruptures' : C.chg === 'nv' ? 'toutes les nouveautés' : 'toutes les baisses';
+    return '<section class="cq1-card"><h2 class="cq1-h">Ce qui change</h2><div class="cq1-tabs" role="group" aria-label="Ce qui change">' + tabs + '</div>' + corps +
+      (n > 6 ? '<button type="button" class="cq1-all" onclick="V2.comptoir.porte(\'change\');V2.comptoir.onglet(\'' + C.chg + '\')">Voir ' + lib + ' (' + fr(n) + ')</button>' : '') +
+      (srcChange(X) ? '<p class="cq1-src">' + srcChange(X) + '</p>' : '') + '</section>';
+  }
+  // Les entrées vers le reste du Catalogue : nommées, à l'écart de la recherche.
+  function cq1Outils() {
+    var o = [['V2.produits.setMode(\'client\')', 'Préparer une sélection pour une officine', 'Par officine, groupement, prospect ou achats'],
+      ['V2.comptoir.porte(\'tout\')', 'Parcourir tout le catalogue', 'La liste complète, avec les ventes et les stocks']];
+    if (V2.pages && V2.pages.molecules) o.push(['V2.go(\'molecules\')', 'Prix par produit', 'Comparer les prix d\'un même produit']);
+    if (V2.pages && V2.pages.appro) o.push(['V2.go(\'appro\')', 'Appro Intégral', 'Les approvisionnements du groupe']);
+    if (V2.pages && V2.pages.catalogue) o.push(['V2.go(\'catalogue\')', 'Catalogue complet', 'Toutes les références, sans filtre']);
+    return '<nav class="cq1-outils" aria-label="Autres vues du catalogue">' + o.map(function (x) {
+      return '<button type="button" class="cq1-o" onclick="' + x[0] + '"><b>' + esc(x[1]) + '</b><span>' + esc(x[2]) + '</span></button>';
+    }).join('') + '</nav>';
+  }
+  // Ce que la zone sous le champ montre : la liste « Ce qui change » au repos, les lignes dès qu'on cherche.
+  function cq1Zone(d) {
+    if (C.q.trim() || C.fam !== 'all') return cq1Resultats(d);
+    return '<div class="cq1-duo">' + cq1Change(d) + '</div>' + cq1Outils();
+  }
+
   function portesHtml(d) {
     var k = C.porte;
-    if (k === 'trouver') {
-      var L = filtrees(d.lignes);
-      return '<div class="cp cpd">' + retourHtml('Trouver un produit') +
-        '<div class="cpd-champ">' + ICO('search', 20, 2) + '<input id="cpd-q" type="search" enterkeyhint="search" autocomplete="off" aria-label="Rechercher un produit" ' +
-          'placeholder="Nom, molécule, CIP ou laboratoire…" value="' + escAttr(C.q) + '" oninput="V2.comptoir.q(this.value)"></div>' +
-        '<div class="cp-chips cpd-chips">' + famsHtml() + '</div>' +
-        '<p class="cpd-cnt" id="cp-count" aria-live="polite">' + esc(libTrouve(L.length)) + '</p>' +
-        '<div id="mo-hote">' + mo1Html(d) + '</div><div id="cp-res">' + resultatsTrouver(d, L) + '</div>' + barrePanier() + '</div>';
+    if (k === 'change') {
+      return '<div class="cp cpd">' + retourHtml('Ce qui change') +
+        '<div id="cp-res">' + resultatsChange(d) + '</div>' + barrePanier() + '</div>';
     }
-    if (k === 'change' || k === 'proposer') {
-      return '<div class="cp cpd">' + retourHtml(k === 'change' ? 'Ce qui change' : 'À proposer') +
-        '<div id="cp-res">' + (k === 'change' ? resultatsChange(d) : resultatsProposer(d)) + '</div>' + barrePanier() + '</div>';
-    }
-    var e = enteteStats(d), X = changements(d), P = propositions(d), ex = exemples(d), i, p3 = '';
-    var p1 = '<span class="cpd-fake">' + ICO('search', 18, 2) + 'Nom, molécule, CIP, laboratoire…</span>' +
-      (ex.length ? '<em>' + ex.map(function (l) { return esc(l.d.split(' ').slice(0, 2).join(' ')); }).join(' · ') + '</em>' : '');
-    var p2 = '<span><b>' + nbPorte(X.jo, X.joAtt) + '</b><span class="n">' + (X.jo && X.jo.length === 1 ? 'baisse de prix au JO' : 'baisses de prix au JO') + '</span></span>' +
-      '<span><b>' + nbPorte(X.rup, X.rupAtt) + '</b><span class="n">' + (X.rup && X.rup.length === 1 ? 'rupture dans notre catalogue' : 'ruptures dans notre catalogue') + '</span></span>' +
-      '<span><b>' + nbPorte(X.nv, false) + '</b><span class="n">nouveautés' + (X.nvMois ? ' de moins de ' + fr(X.nvMois) + ' mois' : '') + '</span></span>';
-    for (i = 0; i < P.length && i < 3; i++) p3 += '<span><span class="n">' + esc(P[i].d) + '</span><b>' + eurMille(P[i].pot) + '</b></span>';
-    if (!p3) p3 = '<span><span class="n">Rien à proposer pour le moment</span></span>';
-    var chev = ICO('chev', 18, 2) || '›';
+    var e = enteteStats(d), dt = V2.stockDateTxt && V2.stockDateTxt() ? ' (' + esc(V2.stockDateTxt()) + ')' : '';
     return '<div class="cp cpd">' +
       '<section class="cpd-head"><div class="cpd-bar" aria-hidden="true"></div><div class="cpd-in">' +
-        '<div><h1 class="cpd-h1">Catalogue produits</h1><div class="cpd-sub">Prix et stock des ' + fr(e.etabs) + ' établissements' + (V2.stockDateTxt && V2.stockDateTxt() ? ' (' + esc(V2.stockDateTxt()) + ')' : '') + '</div></div>' +
-        '<div class="cpd-stats"><div class="cpd-stat"><b>' + fr(e.ref) + '</b><span>références</span><small>au catalogue Intégral</small></div><div class="cpd-stat"><b>' + fr(e.stock) + '</b><span>en stock</span><small>références du catalogue, tous sites réunis' + (V2.stockDateTxt && V2.stockDateTxt() ? ' · ' + esc(V2.stockDateTxt()) : '') + '</small></div>' +
-          '<div class="cpd-stat"><b>' + fr(e.etabs) + '</b><span>établissements</span><small>dont nous lisons prix et stock</small></div></div></div></section>' +
-      '<div class="cpd-q"><h2>Que voulez-vous faire ?</h2><p>Trois portes. Chacune ouvre son volet ici même, rien d\'autre à lire avant.</p></div>' +
-      '<div class="cpd-doors">' +
-        '<button type="button" class="cpd-door" onclick="V2.comptoir.porte(\'trouver\')"><span class="cpd-ic">' + ICO('search', 24, 1.8) + '</span><span class="cpd-t">Trouver un produit</span>' +
-          '<span class="cpd-s">Par nom, molécule, CIP ou laboratoire. La fiche donne le prix net, le stock et la marge.</span><span class="cpd-pv cpd-pill">' + p1 + '</span>' +
-          '<span class="cpd-go">Chercher <i>' + chev + '</i></span></button>' +
-        '<button type="button" class="cpd-door" onclick="V2.comptoir.porte(\'change\')"><span class="cpd-ic">' + icoPorte('down', 24) + '</span><span class="cpd-t">Ce qui change</span>' +
-          '<span class="cpd-s">Baisses de prix au Journal officiel (JO), produits en rupture signalés par l\'ANSM, nouveautés.</span><span class="cpd-pv cpd-rows cpd-rows2">' + p2 + '<span class="cl1-src">' + srcChange(X) + '</span></span>' +
-          '<span class="cpd-go">Voir ce qui change <i>' + chev + '</i></span></button>' +
-        '<button type="button" class="cpd-door" onclick="V2.comptoir.porte(\'proposer\')"><span class="cpd-ic">' + icoPorte('star', 24) + '</span><span class="cpd-t">À proposer</span>' +
-          '<span class="cpd-s">Les meilleures ventes de France sur lesquelles nous vendons moins que notre part moyenne.</span><span class="cpd-pv cpd-rows">' + p3 + (P.length ? '<span class="cl1-src">Montant : ce que nous vendrions de plus par an en rejoignant notre part moyenne (estimation) ; nos ventes ' + esc(cl1Mois(d)) + ', ramenées à l\'année.</span>' : '') + '</span>' +
-          '<span class="cpd-go">Voir les produits <i>' + chev + '</i></span></button>' +
-      '</div>' +
-      '<div class="cpd-all"><button type="button" class="cpd-link" onclick="V2.comptoir.porte(\'tout\')">' + ICO('grid', 18, 2) + ' Parcourir tout le catalogue</button></div>' +
-      barrePanier() + '</div>';
+        '<div><h1 class="cpd-h1">Catalogue produits</h1><div class="cpd-sub">Prix, stock et marge des ' + fr(e.etabs) + ' établissements' + dt + '</div></div>' +
+        '<div class="cpd-stats"><div class="cpd-stat"><b>' + fr(e.ref) + '</b><span>références</span></div><div class="cpd-stat"><b>' + fr(e.stock) + '</b><span>en stock</span></div></div>' +
+      '</div></section>' +
+      '<div class="cq1-hero"><label class="cq1-champ" for="cpd-q">' + ICO('search', 24, 2) +
+        '<input id="cpd-q" type="search" enterkeyhint="search" autocomplete="off" aria-label="Rechercher un produit" placeholder="Nom, molécule, CIP ou laboratoire" value="' + escAttr(C.q) + '" oninput="V2.comptoir.q(this.value)">' +
+        '<button type="button" class="cq1-eff" aria-label="Effacer la recherche" onclick="V2.comptoir.effacer()">' + (ICO('close', 18, 2) || '✕') + '</button>' + '</label></div>' +
+      '<div id="mo-hote">' + mo1Html(d) + '</div>' +
+      '<div id="cp-res">' + cq1Zone(d) + '</div>' + barrePanier() + '</div>';
   }
 
   function injectPortesStyles() {
@@ -2790,10 +2837,11 @@
     s.id = 'cpd-styles';
     s.textContent = [
       // Le bandeau « Catalogue produits » sert de titre aux trois portes (maquette B) : le titre de page « Produits » s'efface là, et seulement là.
+      // 23/11/2026 : à l'accueil le titre « Produits » reste dans la page pour les lecteurs d'écran et le contrôle de la CI (Playwright exige un élément VISIBLE : display:none le rendait invisible) ; il n'occupe plus aucune place à l'écran.
       '.pr-wrap>.v2-page-title:has(+.cpd>.cpd-head){display:none}',
       '.cpd-head{position:relative;margin-top:8px;background:linear-gradient(180deg,var(--card),var(--card-2));border:1px solid var(--line);border-radius:22px;box-shadow:var(--sh-2);overflow:hidden}',
       '.cpd-head::after{content:"";position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none;background:radial-gradient(520px 200px at 12% -70px,rgba(0,80,230,.12),transparent 70%)}',
-      '.cpd-bar{height:5px;background:linear-gradient(90deg,var(--ip-blue-d),var(--ip-blue) 55%,#F39A1B)}',
+      '.cpd-bar{height:5px;background:linear-gradient(90deg,var(--ip-blue-d),var(--ip-blue) 55%,var(--ip-blue))}',
       '.cpd-in{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:14px 28px;flex-wrap:wrap;padding:16px 20px}',
       '.cpd-h1{margin:0;font:800 26px/1.1 var(--font);letter-spacing:-.03em;color:var(--ip-ink)}',
       '.cpd-sub{margin-top:6px;font:600 15px/1.3 var(--font);color:var(--ip-ink-2);letter-spacing:-.01em}',
@@ -2859,6 +2907,78 @@
         '.cpd-t{margin-top:0;font-size:22px;padding-right:56px}.cpd-s{padding-right:56px}',
         '.cpd-pv{margin-top:14px}.cpd-go{padding-top:10px}.cpd-go i{display:none}.cpd-fake{height:44px}.cpd-stats{gap:20px}}',
       '@media (max-width:560px){.cpd-stat b{font-size:21px}.cpd-stats{gap:18px}.cpd-q{margin-top:20px}.cpd-h1{font-size:23px}.cpd-q h2{font-size:23px}.cpd-vt{font-size:22px}.cpd-in{padding:16px}}',
+      // ── v1 « La recherche d'abord » (préfixe cq1-) : bandeau, grand champ, deux listes au repos, lignes denses ──
+      '.pr-wrap>.v2-page-title:has(+.cpd>.cpd-vh){display:none}',
+      '.cpd-back,.cpd-link,.cpd-go{color:var(--ip-blue)}',
+      '.cpd-vh{margin:8px 0 12px}',
+      '.cpd-stats{flex-wrap:nowrap;gap:22px}',
+      '.cpd-stat{display:flex;align-items:baseline;gap:7px}',
+      '.cpd-stat b{display:inline;font-size:21px}.cpd-stat span{display:inline;margin:0;font:600 14px/1.2 var(--font);color:var(--ip-ink-2)}',
+      '.cq1-hero{position:relative;margin:22px 0 8px}',
+      '.cq1-hero::before{content:"";position:absolute;left:-3%;right:-3%;top:-34px;height:150px;pointer-events:none;background:radial-gradient(ellipse 60% 100% at 50% 0%,rgba(0,80,230,.10),transparent 72%)}',
+      '.cq1-champ{position:relative;display:flex;align-items:center;gap:14px;height:68px;padding:0 10px 0 22px;border-radius:20px;border:1.5px solid var(--line-strong);background:var(--card);box-shadow:0 1px 2px rgba(16,19,28,.05),0 22px 44px -26px rgba(0,80,230,.5);color:var(--ip-blue);cursor:text;transition:box-shadow .2s var(--ease),border-color .2s var(--ease)}',
+      '.cq1-champ:focus-within{border-color:var(--ip-blue);box-shadow:0 0 0 4px rgba(0,80,230,.16),0 22px 44px -22px rgba(0,80,230,.55)}',
+      '.cq1-champ svg{flex:none}',
+      '.cq1-champ input,.cq1-champ input:focus,.cq1-champ input:focus-visible{flex:1;min-width:0;height:100%;padding:0;border:0;outline:0;box-shadow:none;background:transparent;-webkit-appearance:none;appearance:none;font:600 20px/1.2 var(--font);letter-spacing:-.01em;color:var(--ip-ink)}',
+      '.cq1-champ input::placeholder{color:var(--cp-ink3);font-weight:500}',
+      '.cq1-champ input::-webkit-search-cancel-button{-webkit-appearance:none}',
+      '.cq1-eff{flex:none;width:48px;height:48px;padding:0;border:0;border-radius:14px;background:transparent;color:var(--cp-ink3);display:grid;place-items:center;cursor:pointer}',
+      '.cq1-eff:hover{background:var(--card-2)}',
+      '.cq1-champ input:placeholder-shown~.cq1-eff{display:none}',
+      '.cq1-mol{margin:14px 0 4px;border-radius:16px;border:1px solid var(--line);background:var(--card);box-shadow:var(--sh-1)}',
+      '.cq1-mol summary{list-style:none;display:flex;align-items:center;flex-wrap:wrap;gap:4px 12px;min-height:56px;padding:10px 16px;cursor:pointer}',
+      '.cq1-mol summary::-webkit-details-marker{display:none}',
+      '.cq1-mol-k{font:800 13px/1 var(--font);text-transform:uppercase;letter-spacing:.06em;color:var(--ip-blue)}',
+      '.cq1-mol summary b{font:800 17px/1.2 var(--font);letter-spacing:-.02em;color:var(--ip-ink)}',
+      '.cq1-mol-t{flex:1 1 260px;min-width:0;font:400 14px/1.4 var(--font);color:var(--ip-ink-2)}',
+      '.cq1-mol-o{margin-left:auto;font:700 14px/1 var(--font);color:var(--ip-blue)}',
+      '.cq1-mol>.mo{padding:0 8px 8px}',
+      '.cq1-cnt p{margin:16px 2px 4px;font:800 13px/1.2 var(--font);text-transform:uppercase;letter-spacing:.06em;color:var(--cp-ink3)}',
+      '.cq1-liste{margin-top:8px;border-radius:18px;border:1px solid var(--line);background:var(--card);box-shadow:var(--sh-1);padding:0 6px 4px}',
+      '.cq1-th,.cq1-l{display:grid;grid-template-columns:minmax(0,1fr) 120px 150px 130px;gap:14px;align-items:center}',
+      '.cq1-th{padding:12px 10px 8px;border-bottom:1px solid var(--line-2);font:700 13px/1 var(--font);color:var(--cp-ink3)}',
+      '.cq1-th span:nth-child(n+2){text-align:right}',
+      '.cq1-l{appearance:none;-webkit-appearance:none;width:100%;min-height:60px;padding:10px;margin:0;border:0;border-top:1px solid var(--line-2);border-radius:12px;background:none;text-align:left;font-family:var(--font);color:inherit;cursor:pointer;animation:cq1-fade .16s ease both}',
+      '.cq1-th+.cq1-l{border-top:0}.cq1-l:hover,.cq1-l:focus-visible{background:var(--card-2)}',
+      '.cq1-tx{min-width:0}',
+      '.cq1-nm{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;font:700 15.5px/1.3 var(--font);letter-spacing:-.01em;color:var(--ip-ink)}',
+      '.cq1-sb{display:block;margin-top:2px;font:400 13px/1.35 var(--font);color:var(--cp-ink3)}',
+      '.cq1-c{display:block;text-align:right;white-space:nowrap}',
+      '.cq1-c b{display:block;font:800 16px/1.2 var(--font);font-variant-numeric:tabular-nums;letter-spacing:-.02em;color:var(--ip-ink)}',
+      '.cq1-c i{display:block;margin-top:1px;font:400 13px/1.25 var(--font);font-style:normal;color:var(--cp-ink3)}',
+      '.cq1-px b{font-size:18px;color:var(--ip-blue)}',
+      '.cq1-st.zero b{color:var(--cp-ink3)}',
+      '.cq1-duo{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;margin-top:18px;align-items:start}',
+      '.cq1-card{position:relative;overflow:hidden;border-radius:20px;border:1px solid var(--line);background:var(--card);box-shadow:var(--sh-1);padding:18px 12px 10px;animation:cq1-in .35s var(--ease) both}',
+      '.cq1-card::before{content:"";position:absolute;left:0;right:0;top:0;height:120px;pointer-events:none;background:radial-gradient(ellipse 70% 100% at 20% 0%,rgba(0,80,230,.08),transparent 72%)}',
+      '.cq1-card>*{position:relative}',
+      '.cq1-card:nth-child(2){animation-delay:.07s}',
+      '.cq1-h{margin:0 8px 10px;font:800 22px/1.15 var(--font);letter-spacing:-.025em;color:var(--ip-ink)}',
+      '.cq1-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 8px 8px}',
+      '.cp-chip,.cp-sel{min-height:44px}.cp-sel{height:44px}.cp-seg button{min-height:44px}',
+      '.pr-wrap>.v2-page-title:has(+.cp>.cpd-vh){display:none}',
+      '.cq1-tab{appearance:none;-webkit-appearance:none;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 11px;margin:0;border-radius:999px;border:1.5px solid var(--line-strong);background:var(--card);font:650 14px/1 var(--font);color:var(--ip-ink-2);cursor:pointer}',
+      '.cq1-tab i{font:700 13px/1 var(--font);font-style:normal;font-variant-numeric:tabular-nums;color:var(--cp-ink3)}',
+      '.cq1-tab.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}.cq1-tab.on i{color:#fff}',
+      '.cq1-card .cpd-liste{border:0;box-shadow:none;padding:0;background:none}',
+      '.cq1-all{appearance:none;-webkit-appearance:none;display:flex;align-items:center;min-height:44px;margin:4px 8px 0;padding:0;border:0;background:none;font:700 15px/1.2 var(--font);color:var(--ip-blue);cursor:pointer}',
+      '.cq1-all:hover{text-decoration:underline}',
+      '.cq1-src{margin:6px 8px 6px;font:400 13px/1.4 var(--font);color:var(--cp-ink3)}',
+      '.cq1-outils{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:22px}',
+      '.cq1-o{appearance:none;-webkit-appearance:none;display:block;text-align:left;min-height:64px;padding:12px 16px;margin:0;border-radius:14px;border:1px solid var(--line);background:var(--card);box-shadow:var(--sh-1);font-family:var(--font);cursor:pointer}',
+      '.cq1-o:hover{box-shadow:var(--sh-2)}',
+      '.cq1-o b{display:block;font:750 15px/1.3 var(--font);color:var(--ip-blue)}',
+      '.cq1-o span{display:block;margin-top:2px;font:400 13px/1.35 var(--font);color:var(--cp-ink3)}',
+      '@keyframes cq1-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}',
+      '@keyframes cq1-fade{from{opacity:0}to{opacity:1}}',
+      '@media (max-width:860px){.cq1-duo{grid-template-columns:minmax(0,1fr);gap:14px}}',
+      '@media (max-width:700px){.cq1-th{display:none}',
+        '.cq1-l{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"tx px" "st mg";gap:6px 14px;padding:12px 10px}',
+        '.cq1-tx{grid-area:tx}.cq1-px{grid-area:px}.cq1-st{grid-area:st;text-align:left}.cq1-mg{grid-area:mg}',
+        '.cq1-st,.cq1-mg{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}.cq1-st b,.cq1-mg b{display:inline;font-size:14px}.cq1-st i,.cq1-mg i{display:inline;margin:0}}',
+      '@media (max-width:640px){.cq1-tab{font-size:13.5px;padding:0 9px;gap:5px}.cq1-tabs{gap:5px}.cq1-hero{margin-top:16px}.cq1-champ{height:60px;padding-left:16px}.cq1-champ input,.cq1-champ input:focus,.cq1-champ input:focus-visible{font-size:17px}',
+        '.cpd-stat b{font-size:18px}.cpd-stat span{font-size:13px}.cpd-stats{gap:16px}.cq1-card .cpd-liste .cpd-l:nth-child(n+5){display:none}.cq1-h{font-size:20px}}',
+      '@media (prefers-reduced-motion:reduce){.cq1-card,.cq1-l{animation:none}.cq1-champ{transition:none}}',
       '@media (prefers-reduced-motion:reduce){.cpd-door,.cpd-go i{transition:none}}'
     ].join('\n');
     document.head.appendChild(s);
@@ -2913,7 +3033,7 @@
         '</div>' +
         '<div class="cp-chips" id="cp-outils">' + outilsPanierHtml(n) + '</div>' +
         '<div class="cp-leg"><span><i class="cp-dot g"></i>stock ≥ 50</span><span><i class="cp-dot l"></i>1 à 49</span>' +
-          '<span><i class="cp-dot z"></i>0</span><span><i class="cp-leg-m"></i>part moyenne ' + fr(d.partMoy * 100, 2) + ' %</span></div>' +
+          '<span><i class="cp-dot z"></i>0</span><span><i class="cp-leg-m"></i>part moyenne ' + fr(d.partMoy * 100, 2) + ' %</span><span>' + ETABS.join(', ') + ' : les ' + fr(ETABS.length) + ' sites de stock</span></div>' +
       '</div>' +
       '<div id="mo-hote">' + mo1Html(d) + '</div>' +
       '<div id="cp-res">' + resultatsHtml(d) + '</div>' +
@@ -2942,50 +3062,51 @@
     var s = document.createElement('style');
     s.id = 'cp-styles';
     s.textContent = [
-      '.cp,#cp-pan-hote{--cp-wash:#EAF1FF;--cp-deep:#0034A0;--cp-green:#0F7A52;--cp-amber:#9A5B12;--cp-amberw:#FBF0E1;--cp-alt:#F7F9FC;--cp-ink3:#5B6272;--cp-shadow:0 1px 2px rgba(16,19,28,.05),0 10px 26px -16px rgba(16,19,28,.28)}',
+      '.cp,#cp-pan-hote{--cp-wash:#EAF1FF;--cp-deep:#0034A0;--cp-green:#0F7A52;--cp-amber:#B3263B;--cp-amberw:#FBECEE;--cp-alt:#F7F9FC;--cp-ink3:#5B6272;--cp-shadow:0 1px 2px rgba(16,19,28,.05),0 10px 26px -16px rgba(16,19,28,.28)}',
       // La lumière vient d'en haut à gauche, derrière la recherche.
       '.cp-tete{position:relative;margin:8px 0 12px;padding:14px;border-radius:16px;border:1px solid var(--line);background:radial-gradient(520px 200px at 18% -60px,rgba(0,80,230,.11),transparent 70%),radial-gradient(380px 180px at 90% -40px,rgba(0,80,230,.06),transparent 65%),var(--card)}',
       '.cp-tete-l{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px}',
-      '.cp-sous{font:700 15px/1.2 Inter,sans-serif;color:var(--ip-ink)}',
-      '.cp-n{font:600 13px/1 Inter,sans-serif;color:var(--cp-ink3);white-space:nowrap}',
+      '.cp-sous{font:700 15px/1.2 var(--font);color:var(--ip-ink)}',
+      '.cp-n{font:600 13px/1 var(--font);color:var(--cp-ink3);white-space:nowrap}',
       '.cp-search{display:flex;align-items:center;gap:10px;height:48px;padding:0 14px;margin-bottom:10px;border-radius:14px;border:1px solid rgba(16,19,28,.12);background:var(--card);box-shadow:var(--cp-shadow);color:var(--cp-ink3)}',
       '.cp-search input{flex:1;min-width:0;height:100%;border:0;outline:none;background:transparent;font-size:16px;color:var(--ip-ink)}',
       '.cp-chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin-bottom:6px;align-items:center}',
       '.cp-chips::-webkit-scrollbar{display:none}',
-      '.cp-chip{flex:none;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid rgba(16,19,28,.12);background:var(--card);font:650 13px/1 Inter,sans-serif;color:var(--ip-ink);cursor:pointer;white-space:nowrap}',
+      '.cp-chip{flex:none;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid rgba(16,19,28,.12);background:var(--card);font:650 13px/1 var(--font);color:var(--ip-ink);cursor:pointer;white-space:nowrap}',
       '.cp-chip.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
-      '.cp-sel{flex:none;min-height:36px;padding:0 10px;border-radius:999px;border:1px solid rgba(16,19,28,.12);background:var(--card);font:650 13px/1 Inter,sans-serif;color:var(--ip-ink)}',
+      '.cp-sel{flex:none;min-height:36px;padding:0 10px;border-radius:999px;border:1px solid rgba(16,19,28,.12);background:var(--card);font:650 13px/1 var(--font);color:var(--ip-ink)}',
       '@media (max-width:640px){.cp-chips-w{flex-wrap:wrap;overflow-x:visible}.cp-chips-w .cp-sel{flex:1 1 100%;max-width:100%}}',
-      '.cp-leg{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;font:400 13px/1.3 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-leg{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;font:400 13px/1.3 var(--font);color:var(--cp-ink3)}',
       '.cp-leg span{display:inline-flex;align-items:center;gap:5px}',
       '.cp-leg-m{display:inline-block;width:2px;height:13px;background:var(--ip-ink)}',
       '.cp-dot{display:inline-block;width:10px;height:10px;border-radius:3px;flex:none}',
       '.cp-dot.z{background:var(--cp-amber)}',
-      '.cp-dot.l{background:var(--cp-amberw);border:1.5px solid var(--cp-amber)}',
+      '.cp-dot.l{background:#EAF1FF;border:1.5px solid #0050E6}',
       '.cp-dot.g{background:var(--cp-green)}',
       '.cp-dot.u{background:transparent;border:1.5px dashed var(--cp-ink3)}',
-      '.cp-badge{flex:none;display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:6px;background:var(--cp-wash);color:var(--cp-deep);font:700 13px/1 Inter,sans-serif;white-space:nowrap}',
+      '.cp-badge{flex:none;display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:6px;background:var(--cp-wash);color:var(--cp-deep);font:700 13px/1 var(--font);white-space:nowrap}',
       '.cp-badge-r{background:var(--cp-amberw);color:var(--cp-amber)}',
       '.cp-lib-l{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap}',
-      '.cp-lib{font:700 13.5px/1.3 Inter,sans-serif;color:var(--ip-ink);text-align:left}',
-      '.cp-meta{display:block;font:400 13px/1.35 Inter,sans-serif;color:var(--cp-ink3);text-align:left;margin:1px 0 0}',
+      '.cp-lib{font:700 13.5px/1.3 var(--font);color:var(--ip-ink);text-align:left}',
+      '.cp-meta{display:block;font:400 13px/1.35 var(--font);color:var(--cp-ink3);text-align:left;margin:1px 0 0}',
       '.cp-num{display:block;text-align:right;white-space:nowrap}',
-      '.cp-num b{display:block;font:800 13.5px/1.25 Inter,sans-serif;color:var(--ip-ink);font-variant-numeric:tabular-nums}',
-      '.cp-num i{display:block;font:400 13px/1.25 Inter,sans-serif;font-style:normal;color:var(--cp-ink3)}',
-      '.cp-rang{font:700 13px/1 Inter,sans-serif;color:var(--ip-ink);font-variant-numeric:tabular-nums}',
-      '.cp-na,.cp-part-na{color:var(--cp-ink3);font:600 13px/1 Inter,sans-serif}',
+      '.cp-row .cp-num i{white-space:normal}',
+      '.cp-num b{display:block;font:800 13.5px/1.25 var(--font);color:var(--ip-ink);font-variant-numeric:tabular-nums}',
+      '.cp-num i{display:block;font:400 13px/1.25 var(--font);font-style:normal;color:var(--cp-ink3)}',
+      '.cp-rang{font:700 13px/1 var(--font);color:var(--ip-ink);font-variant-numeric:tabular-nums}',
+      '.cp-na,.cp-part-na{color:var(--cp-ink3);font:600 13px/1 var(--font)}',
       '.cp-part{display:flex;align-items:center;gap:6px}',
       '.cp-part-t{position:relative;flex:none;width:56px;height:16px;border-radius:5px;background:var(--cp-alt);border:1px solid rgba(16,19,28,.12)}',
       '.cp-part-f{position:absolute;left:0;top:0;bottom:0;min-width:3px;border-radius:5px;background:var(--ip-blue)}',
       '.cp-part-m{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ip-ink);box-shadow:0 0 0 1px rgba(251,252,254,.9)}',
-      '.cp-part-p{font:400 13px/1 Inter,sans-serif;color:var(--cp-ink3);white-space:nowrap;font-variant-numeric:tabular-nums}',
-      '.cp-aqui{display:inline-flex;align-items:center;justify-content:center;min-height:28px;padding:0 10px;border-radius:999px;background:var(--cp-wash);color:var(--cp-deep);font:750 13px/1 Inter,sans-serif;white-space:nowrap}',
-      '.cp-etab-tot{grid-column:span 7;font:400 13px/1.3 Inter,sans-serif;color:var(--cp-ink3);text-align:center}',
+      '.cp-part-p{font:400 13px/1 var(--font);color:var(--cp-ink3);white-space:nowrap;font-variant-numeric:tabular-nums}',
+      '.cp-aqui{display:inline-flex;align-items:center;justify-content:center;min-height:28px;padding:0 10px;border-radius:999px;background:var(--cp-wash);color:var(--cp-deep);font:750 13px/1 var(--font);white-space:nowrap}',
+      '.cp-etab-tot{grid-column:span 7;font:400 13px/1.3 var(--font);color:var(--cp-ink3);text-align:center}',
       '.cp-dot-c{display:flex;align-items:center;justify-content:center}',
       // Ordinateur : le tableau. Téléphone : des cartes.
       '.cp-table{display:none}',
-      '.cp-head,.cp-row{display:grid;grid-template-columns:44px minmax(200px,1.4fr) 78px 66px 58px 110px 74px repeat(7,30px) 54px;align-items:center;gap:8px;padding:0 12px}',
-      '.cp-head{height:34px;font:700 13px/1 Inter,sans-serif;color:var(--cp-ink3);text-transform:uppercase;white-space:nowrap}',
+      '.cp-head,.cp-row{display:grid;grid-template-columns:44px minmax(190px,1.4fr) 128px 88px 58px 110px 84px repeat(7,30px) 54px;align-items:center;gap:8px;padding:0 12px}',
+      '.cp-head{height:34px;font:700 13px/1 var(--font);color:var(--cp-ink3);text-transform:uppercase;white-space:nowrap}',
       '.cp-head .n{text-align:right}.cp-head .c{text-align:center}',
       '.cp-body{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--cp-shadow);overflow:hidden}',
       '.cp-row{width:100%;min-height:58px;padding-top:8px;padding-bottom:8px;border:0;border-top:1px solid var(--line);background:transparent;cursor:pointer;font:inherit;color:inherit}',
@@ -2993,7 +3114,7 @@
       '.cp-row:hover{background:var(--cp-alt)}',
       '.cp-row.pris,.cp-card.pris{background:var(--cp-wash)}',
       '.cp-row:focus-visible,.cp-card:focus-visible{outline:2px solid var(--ip-blue);outline-offset:-2px}',
-      '.cp-add{flex:none;justify-self:center;width:44px;height:44px;border-radius:12px;border:1px solid rgba(16,19,28,.14);background:var(--card);font:700 18px/1 Inter,sans-serif;color:var(--ip-blue);cursor:pointer}',
+      '.cp-add{flex:none;justify-self:center;width:44px;height:44px;border-radius:12px;border:1px solid rgba(16,19,28,.14);background:var(--card);font:700 18px/1 var(--font);color:var(--ip-blue);cursor:pointer}',
       '.cp-add.on{background:var(--ip-blue);border-color:var(--ip-blue);color:#fff}',
       '.cp-chip-add{border-style:dashed;color:var(--cp-deep)}',
       '.cp-chip:disabled{opacity:.5;cursor:default}',
@@ -3001,9 +3122,9 @@
       // La barre du panier reste au pied de l'écran pendant qu'on parcourt la liste (sticky : pas de position:fixed sous #v2-root).
       '#cp-bar-hote{position:sticky;bottom:calc(12px + env(safe-area-inset-bottom));z-index:5}',
       '.cp-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:12px 0 0;padding:8px 8px 8px 16px;border-radius:16px;background:var(--ip-ink);color:#fff;box-shadow:0 14px 34px -12px rgba(16,19,28,.55)}',
-      '.cp-bar-n{flex:1;min-width:140px;font:500 14px/1.2 Inter,sans-serif}',
+      '.cp-bar-n{flex:1;min-width:140px;font:500 14px/1.2 var(--font)}',
       '.cp-bar-n b{font-weight:800;font-variant-numeric:tabular-nums}',
-      '.cp-bar-l{min-height:44px;padding:0 12px;border:0;border-radius:12px;background:transparent;color:#fff;font:650 14px/1 Inter,sans-serif;cursor:pointer;text-decoration:underline;text-underline-offset:3px}',
+      '.cp-bar-l{min-height:44px;padding:0 12px;border:0;border-radius:12px;background:transparent;color:#fff;font:650 14px/1 var(--font);cursor:pointer;text-decoration:underline;text-underline-offset:3px}',
       '.cp-bar-go{min-height:44px}',
       // Téléphone : le bouton rond « + » du CRM occupe le coin bas droit — la barre lui laisse la place.
       '@media (max-width:879px){.cp-bar{padding-right:80px}}',
@@ -3013,90 +3134,91 @@
       '.cp-card{display:block;width:100%;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);box-shadow:var(--cp-shadow);cursor:pointer;font:inherit;color:inherit;text-align:left}',
       '.cp-card-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}',
       '.cp-card-n{min-width:0}',
-      '.cp-card-v{display:block;margin-top:9px;font:400 13px/1.35 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-card-v{display:block;margin-top:9px;font:400 13px/1.35 var(--font);color:var(--cp-ink3)}',
       '.cp-card-v b{color:var(--ip-ink);font-weight:700}',
       '.cp-card-p{display:block;margin-top:7px}',
       '.cp-card-p .cp-part-t{width:100px}',
-      '.cp-pill{display:inline-flex;align-items:center;gap:5px;min-height:26px;margin-top:8px;padding:0 10px;border-radius:999px;background:var(--cp-wash);color:var(--cp-deep);font:700 13px/1 Inter,sans-serif}',
+      '.cp-pill{display:inline-flex;align-items:center;gap:5px;min-height:26px;margin-top:8px;padding:0 10px;border-radius:999px;background:var(--cp-wash);color:var(--cp-deep);font:700 13px/1 var(--font)}',
       '.cp-card-b{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}',
       '.cp-strip{display:flex;align-items:center;gap:5px;min-width:0}',
       '.cp-strip .cp-dot-c{width:auto}',
       '.cp-strip .cp-etab-tot{text-align:left}',
       '@media (min-width:880px){.cp-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}.cp-cards{display:none}}',
-      '.cp-more{display:block;width:100%;min-height:46px;margin-top:10px;border-radius:14px;border:1px dashed rgba(16,19,28,.14);background:var(--cp-alt);font:700 14px/1.2 Inter,sans-serif;color:var(--ip-ink);cursor:pointer}',
+      '.cp-more{display:block;width:100%;min-height:46px;margin-top:10px;border-radius:14px;border:1px dashed rgba(16,19,28,.14);background:var(--cp-alt);font:700 14px/1.2 var(--font);color:var(--ip-ink);cursor:pointer}',
       '.cp-more i{font-style:normal;font-weight:500;color:var(--cp-ink3)}',
-      '.cp-vide{padding:36px 16px;text-align:center;border-radius:18px;border:1px solid var(--line);background:var(--card);font:400 14px/1.5 Inter,sans-serif;color:var(--cp-ink3)}',
-      '.cp-src{margin:16px 2px 0;font:400 13px/1.5 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-vide{padding:36px 16px;text-align:center;border-radius:18px;border:1px solid var(--line);background:var(--card);font:400 14px/1.5 var(--font);color:var(--cp-ink3)}',
+      '.cp-src{margin:16px 2px 0;font:400 13px/1.5 var(--font);color:var(--cp-ink3)}',
       // Panneau : feuille en bas au téléphone, colonne à droite sur ordinateur.
       '.cp-fond{position:fixed;inset:0;z-index:900;background:rgba(16,19,28,.38)}',
       '.cp-pan{position:fixed;left:0;right:0;bottom:0;z-index:901;max-width:640px;max-height:88vh;margin:0 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--card);border-radius:20px 20px 0 0;box-shadow:0 -20px 50px rgba(16,19,28,.28);padding-bottom:calc(20px + env(safe-area-inset-bottom))}',
       '@media (min-width:1000px){.cp-pan{left:auto;top:0;max-height:none;border-radius:0;box-shadow:-20px 0 50px rgba(16,19,28,.22)}}',
       '.cp-pan-h{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"id x" "vp vp";align-items:start;gap:10px;padding:16px 20px 12px}.cp-pan-id{grid-area:id;min-width:0}.cp-vp{grid-area:vp;justify-self:start}.cp-x{grid-area:x}',
-      '.cp-pan-t{margin:0 0 3px;font:800 16.5px/1.3 Inter,sans-serif;color:var(--ip-ink)}',
+      '.cp-pan-h{position:sticky;top:0;z-index:3;background:var(--card)}',
+      '.cp-pan-t{margin:0 0 3px;font:800 16.5px/1.3 var(--font);color:var(--ip-ink)}',
       '.cp-x{flex:none;width:44px;height:44px;margin:-6px -6px 0 0;border-radius:10px;border:1px solid rgba(16,19,28,.12);background:var(--card);color:var(--ip-ink);cursor:pointer;display:flex;align-items:center;justify-content:center}',
       '.cp-pan-c{padding:0 20px}',
       '.cp-prix{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px;padding:12px 0;margin-bottom:6px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}',
-      '.cp-prix b{font:800 20px/1 Inter,sans-serif;color:var(--ip-ink);font-variant-numeric:tabular-nums}',
-      '.cp-prix s{font:400 13px/1 Inter,sans-serif;color:var(--cp-ink3)}',
-      '.cp-tag{padding:4px 9px;border-radius:999px;background:var(--cp-wash);color:var(--cp-deep);font:700 13px/1.2 Inter,sans-serif}',
+      '.cp-prix b{font:800 20px/1 var(--font);color:var(--ip-ink);font-variant-numeric:tabular-nums}',
+      '.cp-prix s{font:400 13px/1 var(--font);color:var(--cp-ink3)}',
+      '.cp-tag{padding:4px 9px;border-radius:999px;background:var(--cp-wash);color:var(--cp-deep);font:700 13px/1.2 var(--font)}',
       '.cp-tag-r{background:var(--cp-amberw);color:var(--cp-amber)}',
-      '.cp-st{margin:16px 0 8px;font:750 13px/1 Inter,sans-serif;text-transform:uppercase;letter-spacing:.02em;color:var(--ip-ink)}',
+      '.cp-st{margin:16px 0 8px;font:750 13px/1 var(--font);text-transform:uppercase;letter-spacing:.02em;color:var(--ip-ink)}',
       '.cp-st span{margin-left:6px;padding:2px 8px;border-radius:999px;background:var(--cp-wash);color:var(--cp-deep)}',
       '.cp-vgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}',
       '.cp-vgrid div,.cp-sgrid div{display:flex;flex-direction:column;gap:3px;padding:9px 8px;border-radius:10px;background:var(--cp-alt);border:1px solid var(--line)}',
-      '.cp-vgrid em,.cp-sgrid em{font:650 13px/1.25 Inter,sans-serif;font-style:normal;color:var(--cp-ink3)}',
-      '.cp-vgrid b{font:800 15px/1.2 Inter,sans-serif;color:var(--ip-ink);font-variant-numeric:tabular-nums}',
-      '.cp-vgrid small{font:650 13px/1 Inter,sans-serif;color:var(--cp-ink3)}',
-      '.cp-phrase{margin:0 0 8px;font:400 13.5px/1.5 Inter,sans-serif;color:var(--ip-ink)}',
-      '.cp-ecart{margin:0;padding:8px 10px;border-radius:10px;background:var(--cp-wash);color:var(--cp-deep);font:700 13px/1.4 Inter,sans-serif}',
+      '.cp-vgrid em,.cp-sgrid em{font:650 13px/1.25 var(--font);font-style:normal;color:var(--cp-ink3)}',
+      '.cp-vgrid b{font:800 15px/1.2 var(--font);color:var(--ip-ink);font-variant-numeric:tabular-nums}',
+      '.cp-vgrid small{font:650 13px/1 var(--font);color:var(--cp-ink3)}',
+      '.cp-phrase{margin:0 0 8px;font:400 13.5px/1.5 var(--font);color:var(--ip-ink)}',
+      '.cp-ecart{margin:0;padding:8px 10px;border-radius:10px;background:var(--cp-wash);color:var(--cp-deep);font:700 13px/1.4 var(--font)}',
       '.cp-ecart.plat{background:var(--cp-alt);color:var(--cp-ink3);font-weight:600}',
       '.cp-sgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px}',
       '.cp-sgrid div{align-items:center}',
       '.cp-sgrid div.large{grid-column:span 4}',
       '.cp-sgrid div.zero b{color:var(--cp-amber)}',
       '.cp-sgrid div.nd b{color:var(--cp-ink3)}',
-      '.cp-sgrid b{font:800 14px/1.2 Inter,sans-serif;color:var(--ip-ink);font-variant-numeric:tabular-nums}',
-      '.cp-sgrid .cp-vd{font:600 13px/1.25 Inter,sans-serif;color:var(--cp-ink3);font-variant-numeric:tabular-nums;text-align:center;overflow-wrap:anywhere}',
+      '.cp-sgrid b{font:800 14px/1.2 var(--font);color:var(--ip-ink);font-variant-numeric:tabular-nums}',
+      '.cp-sgrid .cp-vd{font:600 13px/1.25 var(--font);color:var(--cp-ink3);font-variant-numeric:tabular-nums;text-align:center;overflow-wrap:anywhere}',
       '.cp-sgrid .cp-vx{color:var(--cp-deep)}',
       '.cp-nb{white-space:nowrap}',
-      '.cp-note{margin:0 0 6px;font:400 13px/1.5 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-note{margin:0 0 6px;font:400 13px/1.5 var(--font);color:var(--cp-ink3)}',
       '.cp-off{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}',
       '.cp-off-m{flex:1;min-width:0}',
-      '.cp-off-m b{display:block;font:700 13.5px/1.3 Inter,sans-serif;color:var(--ip-ink)}',
-      '.cp-off-m span{display:block;font:400 13px/1.35 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-off-m b{display:block;font:700 13.5px/1.3 var(--font);color:var(--ip-ink)}',
+      '.cp-off-m span{display:block;font:400 13px/1.35 var(--font);color:var(--cp-ink3)}',
       '.cp-dc-ch{flex-wrap:wrap;overflow:visible;margin:0 0 8px}',
       '.cp-dc-ch .cp-chip{min-height:44px;white-space:normal;text-align:left}',
       '.cp-dc-l{display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:10px 0;border:0;border-bottom:1px solid var(--line);background:transparent;text-align:left;cursor:pointer;font:inherit;color:var(--ip-ink)}',
       '.cp-dc-m{flex:1;min-width:0}',
-      '.cp-dc-m b{display:block;font:700 13.5px/1.3 Inter,sans-serif;color:var(--ip-ink)}',
-      '.cp-dc-m span{display:block;font:400 13px/1.35 Inter,sans-serif;color:var(--cp-ink3)}',
-      '.cp-dc-q{flex:none;font:400 13px/1.2 Inter,sans-serif;color:var(--cp-ink3);white-space:nowrap}',
-      '.cp-dc-q b{font:800 15px/1.2 Inter,sans-serif;color:var(--ip-ink);font-variant-numeric:tabular-nums}',
-      '.cp-off-b{flex:none;min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--ip-blue);background:var(--card);color:var(--ip-blue);font:700 13.5px/1 Inter,sans-serif;cursor:pointer}',
+      '.cp-dc-m b{display:block;font:700 13.5px/1.3 var(--font);color:var(--ip-ink)}',
+      '.cp-dc-m span{display:block;font:400 13px/1.35 var(--font);color:var(--cp-ink3)}',
+      '.cp-dc-q{flex:none;font:400 13px/1.2 var(--font);color:var(--cp-ink3);white-space:nowrap}',
+      '.cp-dc-q b{font:800 15px/1.2 var(--font);color:var(--ip-ink);font-variant-numeric:tabular-nums}',
+      '.cp-off-b{flex:none;min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--ip-blue);background:var(--card);color:var(--ip-blue);font:700 13.5px/1 var(--font);cursor:pointer}',
       '.cp-cta{display:block;width:100%;min-height:50px;margin:16px 0 4px}',
       '@media (max-width:430px){.cp-vgrid{grid-template-columns:1fr 1fr}.cp-vgrid div:last-child{grid-column:span 2}}',
       // Mois par mois : trois chiffres, puis les courbes (une seule échelle chacune).
       '.cp-part-p{display:flex;flex-direction:column;gap:3px}',
-      '.cp-part-d{font:750 13px/1 Inter,sans-serif;color:var(--cp-ink3)}.cp-part-d.up,.cp-dl.up{color:var(--cp-green)}.cp-part-d.down,.cp-dl.down{color:var(--cp-amber)}',
+      '.cp-part-d{font:750 13px/1 var(--font);color:var(--cp-ink3)}.cp-part-d.up,.cp-dl.up{color:var(--cp-green)}.cp-part-d.down,.cp-dl.down{color:var(--cp-amber)}',
       '.cp-tus{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:6px}',
       '.cp-tu{display:flex;flex-direction:column;gap:3px;min-width:0;padding:10px 9px;border-radius:12px;border:1px solid var(--line);background:radial-gradient(180px 80px at 0 0,rgba(0,80,230,.08),transparent 70%),var(--card)}',
-      '.cp-tu em{font:650 13px/1.25 Inter,sans-serif;font-style:normal;color:var(--cp-ink3)}',
-      '.cp-tu b{font:800 16px/1.2 Inter,sans-serif;color:var(--ip-ink)}',
-      '.cp-tu b small{font:650 13px/1 Inter,sans-serif;color:var(--cp-ink3)}',
-      '.cp-tu>small{font:400 13px/1.3 Inter,sans-serif;color:var(--cp-ink3)}',
-      '.cp-dl{font:750 13px/1.2 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-tu em{font:650 13px/1.25 var(--font);font-style:normal;color:var(--cp-ink3)}',
+      '.cp-tu b{font:800 16px/1.2 var(--font);color:var(--ip-ink)}',
+      '.cp-tu b small{font:650 13px/1 var(--font);color:var(--cp-ink3)}',
+      '.cp-tu>small{font:400 13px/1.3 var(--font);color:var(--cp-ink3)}',
+      '.cp-dl{font:750 13px/1.2 var(--font);color:var(--cp-ink3)}',
       '.cp-ch{margin:0;padding:12px 0 6px;border-top:1px solid var(--line)}',
       '.cp-tus+.cp-ch{border-top:0}',
-      '.cp-ch-t{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:0 0 6px;font:700 13.5px/1.3 Inter,sans-serif;color:var(--ip-ink)}',
-      '.cp-ch-lg{display:inline-flex;gap:12px;font:400 13px/1 Inter,sans-serif;color:var(--cp-ink3)}.cp-ch-lg span{display:inline-flex;align-items:center;gap:5px}',
+      '.cp-ch-t{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:0 0 6px;font:700 13.5px/1.3 var(--font);color:var(--ip-ink)}',
+      '.cp-ch-lg{display:inline-flex;gap:12px;font:400 13px/1 var(--font);color:var(--cp-ink3)}.cp-ch-lg span{display:inline-flex;align-items:center;gap:5px}',
       '.cp-seg{display:inline-flex;padding:3px;border-radius:999px;background:var(--cp-alt);border:1px solid var(--line)}',
-      '.cp-seg button{min-height:38px;padding:0 12px;border:0;border-radius:999px;background:transparent;font:650 13px/1 Inter,sans-serif;color:var(--cp-ink3);cursor:pointer}',
+      '.cp-seg button{min-height:38px;padding:0 12px;border:0;border-radius:999px;background:transparent;font:650 13px/1 var(--font);color:var(--cp-ink3);cursor:pointer}',
       '.cp-seg button.on{background:var(--card);color:var(--ip-ink);box-shadow:0 1px 2px rgba(16,19,28,.14)}',
       '.cp-ch-w{position:relative;outline:none;touch-action:pan-y}',
       '.cp-ch-w:focus-visible{box-shadow:0 0 0 2px var(--ip-blue);border-radius:8px}',
       '.cp-ch-w svg{display:block;max-width:100%;height:auto;overflow:visible}',
       '.cp-g{stroke:rgba(16,19,28,.09);stroke-width:1}',
-      '.cp-ax{font:400 13px Inter,sans-serif;fill:var(--cp-ink3);font-variant-numeric:tabular-nums}',
+      '.cp-ax{font:400 13px var(--font);fill:var(--cp-ink3);font-variant-numeric:tabular-nums}',
       '.cp-ref{stroke:var(--ip-ink);stroke-width:1;opacity:.5}',
       '.cp-ref-t{fill:var(--ip-ink);paint-order:stroke;stroke:var(--card);stroke-width:4px;stroke-linejoin:round}',
       '.cp-l{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}',
@@ -3105,91 +3227,91 @@
       '.cp-pt,.cp-hl{stroke:var(--card);stroke-width:2}.cp-pt.b,.cp-hl.b{fill:var(--ip-blue)}.cp-pt.g,.cp-hl.g{fill:' + GRIS + '}',
       '.cp-chl{stroke:var(--ip-ink);stroke-width:1;opacity:.35}',
       '.cp-tip{position:absolute;top:0;z-index:2;padding:8px 10px;border-radius:10px;background:var(--card);border:1px solid var(--line);box-shadow:0 10px 26px -12px rgba(16,19,28,.4);pointer-events:none}',
-      '.cp-tip>b{display:block;margin-bottom:3px;font:700 13px/1.3 Inter,sans-serif;color:var(--ip-ink)}',
-      '.cp-tr{display:flex;align-items:center;gap:6px;font:400 13px/1.55 Inter,sans-serif;color:var(--cp-ink3);white-space:nowrap}',
+      '.cp-tip>b{display:block;margin-bottom:3px;font:700 13px/1.3 var(--font);color:var(--ip-ink)}',
+      '.cp-tr{display:flex;align-items:center;gap:6px;font:400 13px/1.55 var(--font);color:var(--cp-ink3);white-space:nowrap}',
       '.cp-tr b{color:var(--ip-ink);font-weight:750;font-variant-numeric:tabular-nums}.cp-tr em{font-style:normal}',
       '.cp-lk{display:inline-block;flex:none;width:12px;height:2px;border-radius:2px}.cp-lk.b{background:var(--ip-blue)}.cp-lk.g{background:' + GRIS + '}',
       '.cp-tab{margin:4px 0 2px;border-top:1px solid var(--line)}',
-      '.cp-tab summary{min-height:44px;display:flex;align-items:center;font:700 13.5px/1 Inter,sans-serif;color:var(--ip-blue);cursor:pointer}',
+      '.cp-tab summary{min-height:44px;display:flex;align-items:center;font:700 13.5px/1 var(--font);color:var(--ip-blue);cursor:pointer}',
       '.cp-tabw{overflow-x:auto;-webkit-overflow-scrolling:touch}',
-      '.cp-tab table{width:100%;border-collapse:collapse;font:400 13px/1.3 Inter,sans-serif;font-variant-numeric:tabular-nums}',
+      '.cp-tab table{width:100%;border-collapse:collapse;font:400 13px/1.3 var(--font);font-variant-numeric:tabular-nums}',
       '.cp-tab th,.cp-tab td{padding:6px 4px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}',
       '.cp-tab th{font-weight:700;color:var(--cp-ink3)}.cp-tab td{color:var(--ip-ink)}',
       '.cp-tab th:first-child,.cp-tab td:first-child{text-align:left}',
       '@media (max-width:430px){.cp-tus{grid-template-columns:1fr 1fr}.cp-tus .cp-tu:last-child{grid-column:span 2}}',
       // Tableau de bord (v1) : grille de tuiles, alertes, barres par commercial.
-      '.cp-vp{display:inline-flex;align-items:center;gap:9px;min-height:44px;padding:0 14px 0 10px;border-radius:999px;border:1.5px solid var(--ip-blue);background:var(--card);color:var(--ip-blue);font:750 14px/1 Inter,sans-serif;cursor:pointer;white-space:nowrap}',
+      '.cp-vp{display:inline-flex;align-items:center;gap:9px;min-height:44px;padding:0 14px 0 10px;border-radius:999px;border:1.5px solid var(--ip-blue);background:var(--card);color:var(--ip-blue);font:750 14px/1 var(--font);cursor:pointer;white-space:nowrap}',
       '.cp-vp.on{background:var(--ip-blue);color:#fff;box-shadow:var(--sh-blue)}',
       '.cp-sw{position:relative;flex:none;width:30px;height:18px;border-radius:999px;background:rgba(0,80,230,.22)}',
       '.cp-sw i{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--ip-blue)}',
       '.cp-vp.on .cp-sw{background:rgba(255,255,255,.35)}.cp-vp.on .cp-sw i{left:14px;background:#fff}',
-      '.cp-vpn{margin:0 0 12px;padding:9px 12px;border-radius:12px;background:var(--cp-wash);color:var(--cp-deep);font:650 13.5px/1.4 Inter,sans-serif}',
+      '.cp-vpn{margin:0 0 12px;padding:9px 12px;border-radius:12px;background:var(--cp-wash);color:var(--cp-deep);font:650 13.5px/1.4 var(--font)}',
       '.cp-hero{display:flex;align-items:flex-end;flex-wrap:wrap;gap:6px 28px;padding:4px 0 14px}',
       '.cp-hn{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px}',
-      '.cp-hn small{flex:1 1 100%;font:650 13px/1.3 Inter,sans-serif;color:var(--cp-ink3)}',
-      '.cp-hn b{font:800 34px/1 Inter,sans-serif;letter-spacing:-.02em;color:var(--ip-ink);font-variant-numeric:tabular-nums}',
+      '.cp-hn small{flex:1 1 100%;font:650 13px/1.3 var(--font);color:var(--cp-ink3)}',
+      '.cp-hn b{font:800 34px/1 var(--font);letter-spacing:-.02em;color:var(--ip-ink);font-variant-numeric:tabular-nums}',
       '.cp-hn.ab b{color:var(--ip-blue)}',
-      '.cp-hn s{font:500 14px/1 Inter,sans-serif;color:var(--cp-ink3);font-variant-numeric:tabular-nums}',
+      '.cp-hn s{font:500 14px/1 var(--font);color:var(--cp-ink3);font-variant-numeric:tabular-nums}',
       '.cp-hg{display:flex;gap:6px;flex-wrap:wrap;align-self:center}',
       '.cp-als{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-wrap:wrap;gap:8px}',
-      '.cp-al{display:flex;align-items:flex-start;gap:8px;max-width:100%;padding:8px 12px;border-radius:14px;font:650 13.5px/1.35 Inter,sans-serif}',
+      '.cp-al{display:flex;align-items:flex-start;gap:8px;max-width:100%;padding:8px 12px;border-radius:14px;font:650 13.5px/1.35 var(--font)}',
       '.cp-al i{flex:none;width:9px;height:9px;margin-top:5px;border-radius:50%}',
-      '.cp-al small{font:500 13px/1.35 Inter,sans-serif}',
+      '.cp-al small{font:500 13px/1.35 var(--font)}',
       '.cp-al.info{background:var(--cp-wash);color:var(--cp-deep)}.cp-al.info i{background:var(--ip-blue)}',
-      '.cp-al.warn{background:var(--cp-amberw);color:#7A4709}.cp-al.warn i{background:#D98A1F}',
+      '.cp-al.warn{background:var(--cp-amberw);color:#8A1F30}.cp-al.warn i{background:#D2384D}',
       '.cp-al.bad{background:#FDECEF;color:#A11D33}.cp-al.bad i{background:#D6334C}',
-      '.cp-calm{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:8px 12px;border-radius:14px;border:1px solid var(--line);background:var(--cp-alt);font:600 13.5px/1.35 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-calm{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:8px 12px;border-radius:14px;border:1px solid var(--line);background:var(--cp-alt);font:600 13.5px/1.35 var(--font);color:var(--cp-ink3)}',
       '.cp-calm i{flex:none;width:9px;height:9px;border-radius:50%;background:var(--cp-green)}',
       '.cp-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}',
       '.cp-t{grid-column:span 2;display:flex;flex-direction:column;gap:7px;min-width:0;padding:14px 14px 12px;border-radius:18px;border:1px solid var(--line);background:radial-gradient(260px 120px at 0 0,rgba(0,80,230,.10),transparent 70%),var(--card);box-shadow:var(--sh-1)}',
       '.cp-t.w3{grid-column:span 3}.cp-t.w6{grid-column:span 6}',
       '.cp-t.hero{border-color:rgba(0,80,230,.28);background:radial-gradient(340px 150px at 0 0,rgba(0,80,230,.17),transparent 70%),radial-gradient(240px 120px at 100% 100%,rgba(0,80,230,.06),transparent 70%),var(--card)}',
-      '.cp-tl{margin:0;font:750 13px/1.25 Inter,sans-serif;letter-spacing:.03em;text-transform:uppercase;color:var(--ip-ink)}',
+      '.cp-tl{margin:0;font:750 13px/1.25 var(--font);letter-spacing:.03em;text-transform:uppercase;color:var(--ip-ink)}',
       '.cp-tl span{margin-left:7px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--cp-ink3)}',
-      '.cp-big{margin:0;font:800 30px/1.05 Inter,sans-serif;letter-spacing:-.02em;color:var(--ip-ink);font-variant-numeric:tabular-nums}',
-      '.cp-big small{font:650 14px/1 Inter,sans-serif;letter-spacing:0;color:var(--cp-ink3)}',
+      '.cp-big{margin:0;font:800 30px/1.05 var(--font);letter-spacing:-.02em;color:var(--ip-ink);font-variant-numeric:tabular-nums}',
+      '.cp-big small{font:650 14px/1 var(--font);letter-spacing:0;color:var(--cp-ink3)}',
       '.cp-big.nd{color:var(--cp-ink3)}.cp-big.up{color:var(--cp-green)}.cp-big.down{color:var(--cp-amber)}',
-      '.cp-tx{margin:0;font:400 13px/1.4 Inter,sans-serif;color:var(--cp-ink3)}',
-      '.cp-tp{margin:auto 0 0;padding-top:7px;border-top:1px solid var(--line);font:500 13px/1.35 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-tx{margin:0;font:400 13px/1.4 var(--font);color:var(--cp-ink3)}',
+      '.cp-tp{margin:auto 0 0;padding-top:7px;border-top:1px solid var(--line);font:500 13px/1.35 var(--font);color:var(--cp-ink3)}',
       '.cp-duo{display:flex;align-items:flex-end;gap:10px}',
       '.cp-duo div{display:flex;flex-direction:column;gap:4px;min-width:0}',
-      '.cp-duo small{font:650 13px/1.2 Inter,sans-serif;color:var(--cp-ink3)}',
-      '.cp-duo b{font:800 32px/1 Inter,sans-serif;letter-spacing:-.02em;color:var(--ip-ink);font-variant-numeric:tabular-nums;white-space:nowrap}',
+      '.cp-duo small{font:650 13px/1.2 var(--font);color:var(--cp-ink3)}',
+      '.cp-duo b{font:800 32px/1 var(--font);letter-spacing:-.02em;color:var(--ip-ink);font-variant-numeric:tabular-nums;white-space:nowrap}',
       '.cp-duo .n27 b{color:var(--ip-blue)}',
-      '.cp-ar{padding-bottom:5px;font:700 22px/1 Inter,sans-serif;color:var(--cp-ink3)}',
-      '.cp-dz{display:inline-flex;align-self:flex-start;padding:5px 11px;border-radius:999px;font:750 13.5px/1.2 Inter,sans-serif;font-variant-numeric:tabular-nums}',
+      '.cp-ar{padding-bottom:5px;font:700 22px/1 var(--font);color:var(--cp-ink3)}',
+      '.cp-dz{display:inline-flex;align-self:flex-start;padding:5px 11px;border-radius:999px;font:750 13.5px/1.2 var(--font);font-variant-numeric:tabular-nums}',
       '.cp-dz.up{background:#E4F4EC;color:var(--cp-green)}.cp-dz.down{background:var(--cp-amberw);color:var(--cp-amber)}',
       '.cp-dz.nul{background:var(--cp-alt);border:1px solid var(--line);color:var(--cp-ink3)}',
       '.cp-mn{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:8px}',
       '.cp-mn div{display:flex;flex-direction:column;gap:2px;min-width:0}',
       '.cp-mn.s3 div:first-child{grid-column:1/-1}',
-      '.cp-mn small{font:650 13px/1.2 Inter,sans-serif;color:var(--cp-ink3)}',
-      '.cp-mn b{font:800 16px/1.2 Inter,sans-serif;color:var(--ip-ink);font-variant-numeric:tabular-nums}',
+      '.cp-mn small{font:650 13px/1.2 var(--font);color:var(--cp-ink3)}',
+      '.cp-mn b{font:800 16px/1.2 var(--font);color:var(--ip-ink);font-variant-numeric:tabular-nums}',
       '.cp-fc{display:flex;flex-direction:column;gap:7px}',
-      '.cp-fc-h{margin:0;display:flex;align-items:baseline;justify-content:space-between;gap:8px;font:650 13px/1.2 Inter,sans-serif;color:var(--cp-ink3)}',
-      '.cp-fc-h b{font:800 17px/1.1 Inter,sans-serif;color:var(--ip-ink);font-variant-numeric:tabular-nums;white-space:nowrap}',
-      '.cp-fc-h small{font:650 13px/1 Inter,sans-serif;color:var(--cp-ink3)}',
-      '.cp-fc-n{margin:0;font:400 13px/1.35 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-fc-h{margin:0;display:flex;align-items:baseline;justify-content:space-between;gap:8px;font:650 13px/1.2 var(--font);color:var(--cp-ink3)}',
+      '.cp-fc-h b{font:800 17px/1.1 var(--font);color:var(--ip-ink);font-variant-numeric:tabular-nums;white-space:nowrap}',
+      '.cp-fc-h small{font:650 13px/1 var(--font);color:var(--cp-ink3)}',
+      '.cp-fc-n{margin:0;font:400 13px/1.35 var(--font);color:var(--cp-ink3)}',
       '.cp-rg{position:relative;height:10px;margin:2px 6px;border-radius:999px;background:var(--cp-alt);border:1px solid var(--line)}',
       '.cp-rg i{position:absolute;top:1px;bottom:1px;border-radius:999px;background:rgba(0,80,230,.28)}',
       '.cp-rg .z{position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:var(--ip-ink)}',
       '.cp-rg .m{position:absolute;top:-3px;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:var(--ip-blue);border:2px solid var(--card);box-shadow:0 1px 3px rgba(16,19,28,.35)}',
-      '.cp-fn{margin:8px 0 0;font:400 13px/1.4 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-fn{margin:8px 0 0;font:400 13px/1.4 var(--font);color:var(--cp-ink3)}',
       '.cp-card{padding:4px 14px 8px;border-radius:18px;border:1px solid var(--line);background:var(--card);box-shadow:var(--sh-1)}',
       '.cp-2{display:grid;grid-template-columns:minmax(0,1fr);gap:0 28px;align-items:start}',
       '@media (min-width:1000px){.cp-2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.cp-2>.cp-bl:only-child{grid-column:1/-1}}',
       '.cp-bl{min-width:0}',
       '.cp-pc{display:grid;grid-template-columns:minmax(64px,96px) minmax(0,1fr) auto;align-items:center;gap:2px 10px;padding:7px 0;border-bottom:1px solid var(--line)}',
-      '.cp-pc b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 13.5px/1.3 Inter,sans-serif;color:var(--ip-ink)}',
+      '.cp-pc b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 13.5px/1.3 var(--font);color:var(--ip-ink)}',
       '.cp-bh{display:block;height:8px;border-radius:999px;background:var(--cp-alt);overflow:hidden}',
       '.cp-bh i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#5C93F2,var(--ip-blue))}',
-      '.cp-pc strong{font:800 13.5px/1.2 Inter,sans-serif;color:var(--ip-ink);font-variant-numeric:tabular-nums;text-align:right}',
-      '.cp-pc small{grid-column:2/4;font:400 13px/1.3 Inter,sans-serif;color:var(--cp-ink3);font-variant-numeric:tabular-nums}',
+      '.cp-pc strong{font:800 13.5px/1.2 var(--font);color:var(--ip-ink);font-variant-numeric:tabular-nums;text-align:right}',
+      '.cp-pc small{grid-column:2/4;font:400 13px/1.3 var(--font);color:var(--cp-ink3);font-variant-numeric:tabular-nums}',
       '.cp-kv{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:7px 0;border-bottom:1px solid var(--line)}',
-      '.cp-kv em{font:650 13.5px/1.3 Inter,sans-serif;font-style:normal;color:var(--cp-ink3)}',
+      '.cp-kv em{font:650 13.5px/1.3 var(--font);font-style:normal;color:var(--cp-ink3)}',
       '.cp-kv span{display:flex;flex-direction:column;align-items:flex-end;text-align:right}',
-      '.cp-kv b{font:800 13.5px/1.3 Inter,sans-serif;color:var(--ip-ink)}',
-      '.cp-kv small{font:400 13px/1.3 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-kv b{font:800 13.5px/1.3 var(--font);color:var(--ip-ink)}',
+      '.cp-kv small{font:400 13px/1.3 var(--font);color:var(--cp-ink3)}',
       '.cp-ctas{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-top:18px}',
       '@media (min-width:1000px){.cp-ctas{grid-template-columns:1fr 1fr}}',
       '.cp-ctas .cp-cta{margin:0}',
@@ -3197,69 +3319,69 @@
       '@media (max-width:520px){.cp-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cp-t,.cp-t.w3,.cp-t.w6{grid-column:span 1}.cp-t.w3,.cp-t.w6{grid-column:span 2}.cp-t:not(.w3):not(.w6) .cp-mn{grid-template-columns:1fr}.cp-hero{display:grid;grid-template-columns:1fr 1fr}.cp-hg{grid-column:1/-1}.cp-hn b{font-size:28px}.cp-big{font-size:26px}.cp-duo b{font-size:28px}.cp-hn b{font-size:30px}}',
       // ── v4 « Le mélange » : fil numéroté de la v3 posé sur le squelette (tuiles, en-tête) de la v1. ──
       '.cp-pan-c{--px:20px}@media (min-width:1000px){.cp-pan-c{--px:24px}}',
-      '.cp-meta{margin:0;font:400 13px/1.4 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-meta{margin:0;font:400 13px/1.4 var(--font);color:var(--cp-ink3)}',
       '.cp-hero{padding:0 0 4px}.cp-hn b{font-size:30px}',
       '.cq-bl{padding:10px 0 4px;border-top:1px solid var(--line)}',
-      '.cq-bt{display:flex;align-items:center;gap:10px;margin:0 0 8px;font:750 13px/1 Inter,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--ip-blue-d)}',
+      '.cq-bt{display:flex;align-items:center;gap:10px;margin:0 0 8px;font:750 13px/1 var(--font);text-transform:uppercase;letter-spacing:.06em;color:var(--ip-blue-d)}',
       '.cq-bt span{display:inline-flex;align-items:center;justify-content:center;flex:none;width:22px;height:22px;border-radius:50%;background:var(--ip-blue);color:#fff;font-size:13px;letter-spacing:0}',
       '.cq-nb{margin:0 0 8px}',
-      '.cq-g{font:800 22px/1.1 Inter,sans-serif;letter-spacing:-.02em;color:var(--ip-blue-d);font-variant-numeric:tabular-nums;white-space:nowrap}',
-      '.cq-ph{margin:0 0 10px;font:500 15px/1.5 Inter,sans-serif;color:var(--ip-ink)}',
+      '.cq-g{font:800 22px/1.1 var(--font);letter-spacing:-.02em;color:var(--ip-blue-d);font-variant-numeric:tabular-nums;white-space:nowrap}',
+      '.cq-ph{margin:0 0 10px;font:500 15px/1.5 var(--font);color:var(--ip-ink)}',
       '.cq-al{display:grid;grid-template-columns:84px 1fr;gap:14px;align-items:center;margin:0 0 6px;padding:7px 14px 7px 10px;border-radius:20px;border:1px solid var(--line);background:radial-gradient(260px 120px at 0 0,rgba(0,80,230,.10),transparent 70%),var(--card);box-shadow:var(--cp-shadow)}',
-      '.cq-al p{margin:0;font:400 14.5px/1.4 Inter,sans-serif;color:var(--ip-ink)}',
+      '.cq-al p{margin:0;font:400 14.5px/1.4 var(--font);color:var(--ip-ink)}',
       '.cq-al-info{grid-template-columns:84px 1fr;padding:6px 14px 6px 10px;gap:12px;border-radius:16px;box-shadow:none;background:var(--cp-alt)}.cq-al-info .cq-al-f{min-height:32px;padding:3px 4px;border-radius:10px}',
-      '.cq-al-f{display:flex;align-items:center;justify-content:center;min-height:44px;padding:6px 4px;border-radius:14px;background:var(--cp-wash);color:var(--ip-blue-d);font:800 22px/1.1 Inter,sans-serif;letter-spacing:-.02em;text-align:center;font-variant-numeric:tabular-nums}',
+      '.cq-al-f{display:flex;align-items:center;justify-content:center;min-height:44px;padding:6px 4px;border-radius:14px;background:var(--cp-wash);color:var(--ip-blue-d);font:800 22px/1.1 var(--font);letter-spacing:-.02em;text-align:center;font-variant-numeric:tabular-nums}',
       '.cq-al-info .cq-al-f{font-size:14px;letter-spacing:0}',
-      '.cq-al-warn{background:radial-gradient(260px 120px at 0 0,rgba(154,91,18,.12),transparent 70%),var(--cp-amberw)}',
+      '.cq-al-warn{background:radial-gradient(260px 120px at 0 0,rgba(210,56,77,.10),transparent 70%),var(--cp-amberw)}',
       '.cq-al-warn .cq-al-f{background:#fff;color:var(--cp-amber);font-size:14px;letter-spacing:0}',
       '.cq-al .cq-g{font-size:17px;color:inherit}.cq-al-prix .cq-g{color:var(--ip-blue-d)}',
-      '.cq-rien{display:flex;align-items:center;gap:12px;margin:0 0 8px;font:600 16px/1.4 Inter,sans-serif;color:var(--ip-ink)}',
+      '.cq-rien{display:flex;align-items:center;gap:12px;margin:0 0 8px;font:600 16px/1.4 var(--font);color:var(--ip-ink)}',
       '.cq-rien i{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:#E3F4EC;color:var(--cp-green);font-style:normal;font-weight:800}',
       '.cq-rien-c{font-weight:500;color:var(--cp-ink3)}',
       '.cq-brs{display:grid;gap:6px;margin:0 0 4px}',
       '.cq-br-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:3px}',
-      '.cq-br-h span{font:650 13.5px/1.2 Inter,sans-serif;color:var(--ip-ink)}',
-      '.cq-br-h b{font:800 16px/1 Inter,sans-serif;color:var(--ip-blue-d);font-variant-numeric:tabular-nums}',
+      '.cq-br-h span{font:650 13.5px/1.2 var(--font);color:var(--ip-ink)}',
+      '.cq-br-h b{font:800 16px/1 var(--font);color:var(--ip-blue-d);font-variant-numeric:tabular-nums}',
       '.cq-br-t{display:flex;width:100%;height:14px;border-radius:7px;background:var(--cp-alt);overflow:hidden}',
       '.cq-br-t i{display:block;height:100%}',
       '.cq-s1{background:#9DB4E8}.cq-s2{background:var(--ip-blue)}.cq-s3{background:var(--ip-blue-d);border-radius:0 7px 7px 0}',
-      '.cq-br-d{display:flex;flex-wrap:wrap;align-items:center;gap:0 14px;margin:4px 0 0;font:400 13px/1.35 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cq-br-d{display:flex;flex-wrap:wrap;align-items:center;gap:0 14px;margin:4px 0 0;font:400 13px/1.35 var(--font);color:var(--cp-ink3)}',
       '.cq-br-d span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}','.cq-k1,.cq-k2{display:inline-block;width:10px;height:10px;border-radius:3px;flex:none}.cq-k1{background:#9DB4E8}.cq-k2{background:var(--ip-blue)}',
-      '.cq-sep{display:flex;align-items:center;gap:10px;margin:16px calc(-1 * var(--px)) 0;padding:12px var(--px);background:radial-gradient(300px 80px at 0 0,rgba(90,140,255,.35),transparent 70%),var(--ip-blue-d);color:#fff;font:600 14px/1.2 Inter,sans-serif}',
-      '.cq-sep span{padding:4px 10px;border-radius:999px;background:#fff;color:var(--ip-blue-d);font:800 13px/1 Inter,sans-serif;text-transform:uppercase;letter-spacing:.06em}',
+      '.cq-sep{display:flex;align-items:center;gap:10px;margin:16px calc(-1 * var(--px)) 0;padding:12px var(--px);background:radial-gradient(300px 80px at 0 0,rgba(90,140,255,.35),transparent 70%),var(--ip-blue-d);color:#fff;font:600 14px/1.2 var(--font)}',
+      '.cq-sep span{padding:4px 10px;border-radius:999px;background:#fff;color:var(--ip-blue-d);font:800 13px/1 var(--font);text-transform:uppercase;letter-spacing:.06em}',
       '.cq-bl-i{margin:0 calc(-1 * var(--px));padding:16px var(--px) 18px;background:var(--cp-alt);border-top:0}',
       '.cq-bl-i .cp-card,.cq-bl-i .cp-vgrid div,.cq-bl-i .cp-ecart.plat{background:var(--card)}',
       '.cq-bl-i .cp-chip:not(.on){background:var(--card)}',
       '.cq-bl-i .cp-bh{background:#fff}',
-      '.cp-st small{margin-left:6px;font:400 13px/1 Inter,sans-serif;text-transform:none;letter-spacing:0;color:var(--cp-ink3)}',
+      '.cp-st small{margin-left:6px;font:400 13px/1 var(--font);text-transform:none;letter-spacing:0;color:var(--cp-ink3)}',
       '.cp-st0{margin-top:0}',
       '.cp-fts{display:grid;gap:0}',
       '.cp-ft{display:grid;grid-template-columns:130px 1fr;gap:2px 12px;padding:11px 0;border-bottom:1px solid var(--line)}',
-      '.cp-ft em{grid-row:span 2;font:650 13px/1.4 Inter,sans-serif;font-style:normal;color:var(--cp-ink3)}',
-      '.cp-ft b{font:700 15px/1.4 Inter,sans-serif;color:var(--ip-ink)}',
-      '.cp-ft small{font:400 13px/1.4 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-ft em{grid-row:span 2;font:650 13px/1.4 var(--font);font-style:normal;color:var(--cp-ink3)}',
+      '.cp-ft b{font:700 15px/1.4 var(--font);color:var(--ip-ink)}',
+      '.cp-ft small{font:400 13px/1.4 var(--font);color:var(--cp-ink3)}',
       '.cp-sai{display:flex;align-items:flex-end;gap:4px;height:44px;margin:8px 0 0 142px}',
       '.cp-sai i{flex:1;border-radius:3px 3px 0 0;background:#C9D6F2}.cp-sai i.f{background:var(--ip-blue)}.cp-sai i.w{background:var(--cp-amber)}',
-      '.cp-sai-m{display:flex;justify-content:space-between;margin:3px 0 4px 142px;font:400 13px/1 Inter,sans-serif;color:var(--cp-ink3)}',
+      '.cp-sai-m{display:flex;justify-content:space-between;margin:3px 0 4px 142px;font:400 13px/1 var(--font);color:var(--cp-ink3)}',
       '.cq-bl-p{padding-bottom:6px}',
       '.cp-t .cq-ph{margin:0 0 2px}.cp-t .cp-tp{padding-top:5px}',
       '@media (min-width:1000px){.cp-hero{flex-wrap:nowrap}.cp-hg{margin-left:auto;padding-bottom:4px}.cp-t{padding:12px 14px 10px;gap:6px}.cp-pan-h{padding:14px 24px 8px}.cp-fn{margin:6px 0 8px}}',
       '@media (max-width:520px){.cp-t.m1{grid-column:span 2}.cp-t:not(.w3):not(.w6) .cp-mn{grid-template-columns:repeat(var(--n),minmax(0,1fr))}.cp-t:not(.w3):not(.w6) .cp-mn.s3{grid-template-columns:repeat(2,minmax(0,1fr))}.cq-al{grid-template-columns:1fr;gap:8px}.cq-al-f{justify-content:flex-start;min-height:0;padding:8px 12px;font-size:20px}.cq-al-info .cq-al-f,.cq-al-warn .cq-al-f{font-size:14px}.cp-ft{grid-template-columns:1fr}.cp-ft em{grid-row:auto}.cp-sai,.cp-sai-m{margin-left:0}}',
       '.pm-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card,18px);box-shadow:var(--sh-1);padding:20px 22px;margin-bottom:16px;--a:var(--c-mint,#1E9E6A)}',
-      '.pm-t{font:700 18px/1.3 Inter,sans-serif;color:var(--ip-ink);letter-spacing:-.01em}',
-      '.pm-s{font:400 13px/1.4 Inter,sans-serif;color:var(--muted);margin-top:3px}',
+      '.pm-t{font:700 18px/1.3 var(--font);color:var(--ip-ink);letter-spacing:-.01em}',
+      '.pm-s{font:400 13px/1.4 var(--font);color:var(--muted);margin-top:3px}',
       '.pm-base{color:var(--ip-ink);font-weight:600;margin-top:6px}',
-      '.pm-k{font:700 15px/1.3 Inter,sans-serif;color:var(--ip-ink)}',
+      '.pm-k{font:700 15px/1.3 var(--font);color:var(--ip-ink)}',
       '.pm-g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:16px}.pm-g2 .pm-card{margin-bottom:0}',
       '.pm-v3 .pm-tete{margin-bottom:14px}',
-      '.pm-l{margin-top:12px}.pm-n{font:600 12.5px/1.3 Inter,sans-serif;color:var(--muted);margin-bottom:5px}',
+      '.pm-l{margin-top:12px}.pm-n{font:600 12.5px/1.3 var(--font);color:var(--muted);margin-bottom:5px}',
       '.pm-b{display:flex;align-items:center;gap:8px;min-height:20px}.pm-b+.pm-b{margin-top:4px}',
       '.pm-tr{flex:1;min-width:0;display:flex;align-items:center;gap:8px}',
       '.pm-tr i{display:block;flex:none;height:10px;border-radius:999px;background:var(--a)}.pm-b.fr i{background:#B9C4DB}',
       '.pm-b b{font:700 16px/1.2 var(--mono,var(--font));font-variant-numeric:tabular-nums;color:var(--ip-ink);white-space:nowrap}',
       '.pm-b.fr b{font-size:13px;font-weight:600;color:var(--muted)}',
-      '.pm-lb,.pm-sp{flex:none;width:96px}.pm-lb{font:400 12px/1.2 Inter,sans-serif;color:var(--muted)}',
-      '.pm-vide{font:400 14px/1.45 Inter,sans-serif;color:var(--muted);padding:8px 2px 2px}',
+      '.pm-lb,.pm-sp{flex:none;width:96px}.pm-lb{font:400 12px/1.2 var(--font);color:var(--muted)}',
+      '.pm-vide{font:400 14px/1.45 var(--font);color:var(--muted);padding:8px 2px 2px}',
       '.pm-fiche{margin-top:14px}.pm-fiche .pm-card{padding:16px 18px;margin-bottom:6px}.pm-fiche .pm-t{font-size:16px}',
       '.cp-row .pm-s2{grid-column:2/-1;grid-row:2;display:grid;grid-template-columns:minmax(150px,210px) minmax(0,480px);align-items:center;gap:0 12px;margin-top:2px;--a:var(--c-mint,#1E9E6A)}',
       '.cp-row .pm-s2 .pm-n{margin:0}',
@@ -3270,8 +3392,8 @@
       '.cp-card .pm-s2 .pm-n{display:block;margin-bottom:5px}',
       '@media(max-width:700px){.pm-g2{grid-template-columns:minmax(0,1fr)}}',
       '@media(max-width:560px){.pm-lb,.pm-sp{width:76px}.pm-card{padding:18px 16px}.pm-fiche .pm-card{padding:14px 14px}}',
-      '.pm-inc{display:flex;gap:9px;align-items:flex-start;margin-top:12px;padding:10px 12px;border-radius:10px;background:#FFF4DE;color:#6E4300;font-size:13px;line-height:1.45}',
-      '.pm-inc::before{content:"";flex:none;width:8px;height:8px;margin-top:5px;border-radius:50%;background:#E59A12}'
+      '.pm-inc{display:flex;gap:9px;align-items:flex-start;margin-top:12px;padding:10px 12px;border-radius:10px;background:#EAF1FF;color:#173A86;font-size:13px;line-height:1.45}',
+      '.pm-inc::before{content:"";flex:none;width:8px;height:8px;margin-top:5px;border-radius:50%;background:#0050E6}'
     ].join('\n');
     document.head.appendChild(s);
   }
