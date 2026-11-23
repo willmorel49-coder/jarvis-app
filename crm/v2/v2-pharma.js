@@ -6933,7 +6933,13 @@
       if (nG > 0) its.push({ k: 'X:groupement', grp: 'listing', xls: true, label: 'Listing ' + (g.name || 'groupement') + ' · Excel', meta: V2.fmtNum(nG) + ' produits · Excel généré' });
     }
     // Documents à l'en-tête Intégral : pas dans les espaces Escale ni OPSO (deux marques distinctes).
-    if (!isEscale() && !isOpso()) TX_APP_DOCS.forEach(function (d) { its.push({ k: 'S:' + d.f, grp: 'app', label: d.label, meta: 'PDF' }); });
+    // 22/11/2026 (Will) — « Documents commerciaux » (v2-doccom.js) REMPLACE les trois documents de l'app (ils en font partie) : pas de doublon.
+    // Module absent (chargement raté) : les trois d'avant, sous leur ancien nom.
+    if (!isEscale() && !isOpso()) {
+      var dcl = txDoccom() ? V2.doccom.liste() : false;
+      if (dcl === false) TX_APP_DOCS.forEach(function (d) { its.push({ k: 'S:' + d.f, grp: 'app', label: d.label, meta: 'PDF' }); });
+      else (dcl || []).forEach(function (d) { its.push({ k: 'K:' + d.sha1, grp: 'app', label: d.titre, meta: V2.doccom.famille(d.famille) + ' · ' + (d.pages ? d.pages + ' page' + (d.pages > 1 ? 's' : '') : 'PDF') }); });
+    }
     if (!isEscale() && !isOpso()) {
       (txFiches || []).forEach(function (f) { its.push({ k: 'M:' + f.id, grp: 'fab', label: f.titre, meta: 'Fiche ' + f.type.toLowerCase() + ' · ' + f.n + ' produit' + (f.n > 1 ? 's' : '') + ' · PDF généré' }); });
       if (V2.mkt && V2.mkt.catalogueCategoriesFichier) its.push({ k: 'C:categories', grp: 'fab', label: 'Catalogue par catégorie', meta: 'Princeps par tranche de prix et non remboursables · PDF généré' });
@@ -7009,7 +7015,9 @@
               : group('Listings produits', 'les plus commandés' + (tx.grp ? ' · son groupement : ' + esc(tx.grp) : ''), of('listing'),
                   (window.BENCHMARK ? '' : '<div class="tx-empty">Chargement du catalogue…</div>') + txStyleHtml(of('listing')))) +
       lgoHtml +
-      group('Documents Intégral Pharma', '', of('app')) +
+      (txDoccom() ? group('Documents commerciaux', 'les PDF de l\'équipe', of('app'), V2.doccom.liste() === null ? '<div class="tx-empty">Chargement des documents commerciaux…</div>'
+          : V2.doccom.echec() ? '<div class="tx-empty tx-err">La liste des documents commerciaux n\'a pas pu être chargée.</div>' : '')
+        : group('Documents Intégral Pharma', '', of('app'))) +
       group('Faits dans l\'app', 'fiches Marketing de l\'équipe, biosimilaires, catalogue', of('fab'),
         (txFiches === null && !isEscale() && !isOpso() ? '<div class="tx-empty">Chargement des fiches Marketing…</div>' : '') +
         // 26/10/2026 — « Créer un document » (v2-mkt-doc.js) : Offre Sanofi, Offre UPSA, Essentiels d'hiver, sur un seul écran
@@ -7097,11 +7105,13 @@
     txRender();
     txLoadDocs().then(txRender);
     txLoadFiches().then(txRender);
+    if (txDoccom()) V2.doccom.charger().then(txRender, txRender);
   };
   // Nom lisible d'une pièce jointe à partir de sa clé (S: document de l'app, D: bibliothèque, L: listing généré).
   V2.pharmaTxLabel = function (k) {
     k = String(k || '');
     if (k.indexOf('S:') === 0) { var d = TX_APP_DOCS.find(function (x) { return x.f === k.slice(2); }); return d ? d.label : k.slice(2); }
+    if (k.indexOf('K:') === 0) return (V2.doccom && V2.doccom.titre(k.slice(2))) || 'Document commercial';
     if (k.indexOf('D:') === 0) return txPretty(k.slice(2));
     if (k.indexOf('P:') === 0) return txProtegeTitre(k.slice(2));
     if (k === 'C:categories') return 'Catalogue par catégorie';
@@ -7173,7 +7183,9 @@
     if (tx.surChoix) tx.surChoix(Object.keys(tx.sel));
     tx.files = null; txRender();
   };
+  function txDoccom() { return !!(V2.doccom && V2.doccom.ouvert && V2.doccom.ouvert()); }
   function txFetch(pid, k) {
+    if (k.indexOf('K:') === 0) return txDoccom() ? V2.doccom.fichier(k.slice(2)) : Promise.resolve(null);
     if (k.indexOf('L:') === 0) return Promise.resolve(V2.pharmaListPdf(pid, k.slice(2), 'blob'));
     if (k.indexOf('X:') === 0) return V2.pharmaListXlsx(pid, k.slice(2), 'blob');
     if (k.indexOf('M:') === 0) return V2.mkt && V2.mkt.fichePdfFichier ? V2.mkt.fichePdfFichier(k.slice(2)) : Promise.resolve(null);

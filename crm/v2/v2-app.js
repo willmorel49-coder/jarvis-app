@@ -1141,7 +1141,7 @@
     ].join('\n');
     document.head.appendChild(s);
   }
-  var G4_REPLI = ['pharma', 'produits', 'pilotage', 'marketing', 'mallette', 'infos', 'rdv', 'carte', 'tournees', 'appro', 'todo', 'blocnotes', 'biosimilaires', 'offilog', 'concurrents', 'remontees', 'discussion', 'marchefr', 'carteGrp', 'lgo', 'documents', 'academy'];
+  var G4_REPLI = ['pharma', 'produits', 'pilotage', 'marketing', 'mallette', 'infos', 'rdv', 'carte', 'tournees', 'appro', 'todo', 'blocnotes', 'biosimilaires', 'offilog', 'concurrents', 'remontees', 'discussion', 'marchefr', 'carteGrp', 'lgo', 'documents', 'doccom', 'academy'];
   // 02/10/2026 — Will : « supprimer audit, fiches pdf, l'argument, audit marge, réforme 2027, présentation intégral » : ces six outils
   // n'existent plus nulle part (ni porte, ni écran). Un réglage enregistré qui les cite encore est écarté par u2Net.
   // k = nom de la route mesurée par V2.mesurer (= `ecran` côté base) ; page = écran qui doit exister.
@@ -1169,6 +1169,8 @@
     mallette: { fam: 'dev', ico: 'mallette', nom: 'La Mallette', ph: 'Les documents à envoyer, en un seul PDF ou séparés', page: 'mallette' },
     // 16/10/2026 — Documents : le classement des grossistes, groupements et laboratoires, consultable depuis l'iPhone. Porte visible seulement si documents_acces_ok() = true (voir docOk).
     documents: { fam: 'accueil', ico: 'documents', nom: 'Documents', ph: 'Tarifs, conditions et catalogues, rangés par dossier', page: 'documents' },
+    // 22/11/2026 — Documents commerciaux (v2-doccom.js) : les PDF à montrer ou envoyer aux pharmacies. Menu principal juste après Offilog (V2.accueilCinq.barre), en tête du « Menu » au téléphone. Jamais OPSO ni Escale (u2Cles).
+    doccom: { fam: 'accueil', ico: 'doccom', nom: 'Documents commerciaux', ph: 'Les PDF à montrer ou à envoyer aux pharmacies', page: 'doccom' },
     lgo: { fam: 'direct', ico: 'lgo', nom: 'Logiciels officine', ph: 'Importer le catalogue dans chaque logiciel', page: 'lgo' },
     // JARVIS Academy : lien externe (Q_ACADEMY), dans « Communiquer et progresser » ; pas d'écran de l'app (page: null).
     academy: { fam: 'dev', ico: 'academy', nom: 'JARVIS Academy', ph: 'Se former à l\'outil, pas à pas', page: null },
@@ -1295,6 +1297,7 @@
     doc: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/>',
     mallette: '<path d="M3.5 8h17v11.5h-17z"/><path d="M9 8V5.5h6V8"/><path d="M3.5 13.2h17M11 13.2h2"/>',
     documents: '<path d="M3.5 7.5V19h17V9H11L9.2 6.5H3.5z"/><path d="M3.5 11h17"/>',
+    doccom: '<path d="M8 3h7l4 4v11H8z"/><path d="M15 3v4h4"/><path d="M5 7v14h11"/>',
     maison: '<path d="M3.5 11L12 3.5l8.5 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5.5h4V20"/>',
     tournees: '<path d="M3 6.5h11v9H3z"/><path d="M14 9.5h3.8l2.7 3v3H14z"/><circle cx="7.5" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/>'
   };
@@ -1542,6 +1545,7 @@
       if (k === 'blocnotes' && (window.V2_BRAND && window.V2_BRAND.opso)) return false;   // 16/10/2026 : pas de Bloc-notes côté OPSO
       if (k === 'tournees' && tournInterdit()) return false;   // 10/11/2026 : jamais pour le rôle opso
       if (k === 'documents' && !docOk()) return false;   // 16/10/2026 : cachée tant que documents_acces_ok() n'a pas rendu true
+      if (k === 'doccom' && (escale || (window.V2_BRAND && window.V2_BRAND.opso))) return false;   // 22/11/2026 : documents à l'en-tête Intégral
       if (k === 'remontees' && V2.pages.discussion) return false;   // 15/10/2026 (Will) : les remontées vivent dans Le QG
       return k === 'academy' || !!V2.pages[d.page];  // un outil dont l'écran n'est pas chargé n'apparaît pas
     }));
@@ -1933,11 +1937,14 @@
   };
   // 22/11/2026 — la liste de « Autres outils » est fabriquée ICI, une seule fois, à partir d'un indice de départ : 7 à l'ordinateur (les sept premières rubriques sont dans la barre
   // du haut), 3 au téléphone (la barre du bas porte Accueil + les trois premières rubriques ; « Menu » montre la suite). `lien` fabrique chaque ligne (aoLien par défaut).
-  function autresListe(debut, lien, liste) {
+  // `tete` (22/11/2026, Will) : la rubrique à remonter en premier (au téléphone, « Documents commerciaux » ouvre le Menu).
+  function autresListe(debut, lien, liste, tete) {
     var etat = u2Etat(), reg = !!(V2.accueilWidgets && V2.accueilWidgets.regle && V2.accueilWidgets.regle());
     var fams = reg ? etat.tous : etat.fams, h = '';
     lien = lien || aoLien;
-    (liste || (V2.accueilCinq && V2.accueilCinq.barre ? V2.accueilCinq.barre() : [])).slice(debut).forEach(function (t) {
+    var lb = (liste || (V2.accueilCinq && V2.accueilCinq.barre ? V2.accueilCinq.barre() : [])).slice(debut);
+    if (tete) { for (var ti = 1; ti < lb.length; ti++) if (lb[ti].k === tete) { lb.unshift(lb.splice(ti, 1)[0]); break; } }
+    lb.forEach(function (t) {
       h += lien({ href: t.href, act: t.act, nom: t.nom }, t.k);
     });
     fams.forEach(function (f) {
@@ -2021,7 +2028,7 @@
   function tbIco(k) { var p = window.V2_BRAND && window.V2_BRAND.portes; return (p && p[k] && p[k].ico) || k; }
   // « Menu » : la feuille du bas de la fiche (v2-pharma.js, chargée en différé) ; tant qu'elle n'est pas là, le menu déroulant de l'ordinateur
   V2.tbMenu = function (btn) {
-    var h = autresListe(3, function (t, k) { return aoLien(t, k, 'bnav-li', k === 'groupements' ? 'carteGrp' : tbIco(k)); }, V2.tbRubriques());
+    var h = autresListe(3, function (t, k) { return aoLien(t, k, 'bnav-li', k === 'groupements' ? 'carteGrp' : tbIco(k)); }, V2.tbRubriques(), 'doccom');
     if (!h) return;
     if (!V2.feuille) {
       var m = menuBarre('v2-autresmenu', btn, h);

@@ -2089,8 +2089,9 @@
     s.onerror = function () { pdfjsLoading = false; cb(false); };
     document.head.appendChild(s);
   }
+  // 23/11/2026 (Will : oui) — isEvalSupported:false = la parade officielle à la faille CVE-2024-4367 de pdf.js 3.11 (un PDF piégé exécutait du code) : chacun dépose ici des PDF
   function pdfOpen(blob) {
-    return blob.arrayBuffer().then(function (buf) { return window.pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise; });
+    return blob.arrayBuffer().then(function (buf) { return window.pdfjsLib.getDocument({ data: new Uint8Array(buf), isEvalSupported: false }).promise; });
   }
   function pdfPageCanvas(pdf, n, width) {
     return pdf.getPage(n).then(function (pg) {

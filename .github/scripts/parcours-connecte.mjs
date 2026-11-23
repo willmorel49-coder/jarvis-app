@@ -30,7 +30,7 @@ const moteur = nomMoteur === 'webkit' ? webkit : chromium;
 const PORT = process.env.PORT || 8080;
 const base = `http://localhost:${PORT}/crm/v2/index.html`;
 
-// Écrans principaux de l'équipe (accueil + 5), chacun avec son marqueur propre.
+// Écrans principaux de l'équipe (accueil + 6), chacun avec son marqueur propre.
 // `selecteur` + `texte` : l'élément précis qui doit contenir le texte (pas n'importe où dans la page).
 const ECRANS = [
   // 20/11/2026 — écran « Le répertoire » : le titre est h1.ofl-h1 (lu par les lecteurs d'écran), l'ancien h1.of-h1 n'est plus affiché.
@@ -40,6 +40,8 @@ const ECRANS = [
   // 21/11/2026 — écran « À faire avec les infos » (maquette C) : le titre est h1#inf-t-titre ; depuis le 21/11 au soir (bandeau commun), il dit « Infos du matin » comme l'onglet.
   { route: 'infos',    nom: 'Infos du jour', selecteur: 'h1#inf-t-titre', texte: 'Infos du matin' },
   { route: 'todo',     nom: 'To do list',   selecteur: 'h1',             texte: 'To do list' },
+  // 23/11/2026 — onglet « Documents commerciaux » (v2-doccom.js) : liste + aperçus lus dans l'espace fermé documents-commerciaux.
+  { route: 'doccom',   nom: 'Documents commerciaux', selecteur: 'h1.v2-titre', texte: 'Documents commerciaux' },
 ];
 const DELAI = 90000;
 const ECRITURES = ['POST', 'PATCH', 'PUT', 'DELETE'];

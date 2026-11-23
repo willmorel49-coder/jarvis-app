@@ -879,7 +879,7 @@
   function barre() {
     var p = P(); if (!p) return [];
     var etat = p.etat(), vis = etat.vis || [], cles = etat.cles || [], l = [];
-    ['pharma', 'todo', 'infos', 'groupements', 'offilog'].forEach(function (k) {
+    ['pharma', 'todo', 'infos', 'groupements', 'offilog', 'doccom'].forEach(function (k) {   // doccom (22/11/2026, Will) : juste après Offilog
       if (k === 'groupements') { if (cles.indexOf('pharma') >= 0) l.push({ k: k, nom: GRP.nom, act: GRP.act, href: GRP.href }); return; }
       if (vis.indexOf(k) < 0) return;
       var t = p.outil(k); l.push({ k: k, nom: t.nom, act: t.act, href: t.href });
