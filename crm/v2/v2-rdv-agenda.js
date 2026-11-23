@@ -5,6 +5,11 @@
    tout ce qui y est déjà pris disparaît des créneaux proposés au pharmacien,
    sans qu'il ait à cocher quoi que ce soit.
 
+   23/11/2026 — Will : « lien simplifié seulement » (ni bouton Google ni bouton
+   Microsoft pour l'instant). Le bloc choisit l'outil d'après l'agenda déjà
+   branché ou l'adresse du compte, ouvre la bonne page de réglages, lit le
+   presse-papiers d'un toucher et vérifie le lien dès qu'il est collé.
+
    Ce que l'écran ne montre JAMAIS : l'adresse elle-même. Une fois déposée,
    elle n'est plus relisible — même pas par son propriétaire, même pas par
    erreur (le droit de lecture sur cette colonne n'existe pas en base). On
@@ -17,57 +22,70 @@
 
   function sb() { return (V2.sb && V2.sb()) || null; }
   function uid() { return (V2.user && V2.user.id) || null; }
+  function $(id) { return document.getElementById(id); }
 
-  // Mode d'emploi par outil : c'est le vrai obstacle. Sans ça, personne ne
-  // trouve l'adresse — elle est enterrée à trois niveaux dans les réglages.
+  // Mode d'emploi par outil. Le bouton « réglages » mène directement à la
+  // page où se trouve le lien : c'est elle qui était introuvable.
+  // Adresses sondées le 23/11/2026 sans session : la connexion Google et la
+  // connexion Microsoft gardent toutes deux le chemin de retour.
   var MODES = [
-    { cle: 'google', nom: 'Google Agenda', pas: [
-      'Ouvrez Google Agenda sur un ordinateur',
-      'Passez la souris sur votre agenda (colonne de gauche) → les trois points → « Paramètres et partage »',
-      'Descendez jusqu’à « Intégrer l’agenda »',
-      'Copiez « Adresse secrète au format iCal »'
-    ], piege: 'Si vous ne voyez pas cette ligne, c’est que votre entreprise l’a désactivée : seul l’administrateur peut la rouvrir.' },
-    { cle: 'outlook', nom: 'Outlook / Microsoft 365', pas: [
-      'Ouvrez Outlook dans un navigateur → l’Agenda',
-      'Roue dentée (en haut à droite) → « Calendriers partagés »',
-      'Sous « Publier un calendrier », choisissez votre agenda',
-      'Choisissez « Peut voir quand je suis occupé » — surtout pas plus',
-      'Publiez, puis copiez le lien qui finit par .ics'
-    ], piege: 'Choisissez bien « quand je suis occupé » : les autres options partageraient les titres de vos rendez-vous.' },
-    { cle: 'apple', nom: 'Agenda iPhone / iCloud', pas: [
-      'Sur iPhone : Calendrier → Calendriers → le (i) à côté du vôtre',
-      'Activez « Calendrier public »',
-      'Touchez « Partager le lien » → Copier'
-    ], piege: 'Le lien commence par webcal:// — collez-le tel quel, on s’occupe du reste.' }
+    { cle: 'outlook', nom: 'Outlook', long: 'Outlook / Microsoft 365',
+      reglages: 'https://outlook.office.com/calendar/options/calendar/SharedCalendars',
+      bouton: 'Ouvrir mes réglages Outlook',
+      pas: [
+        'Le bouton ouvre « Calendriers partagés » (connectez-vous si on vous le demande)',
+        'Sous « Publier un calendrier » : choisissez « Calendrier », puis « Peut voir quand je suis occupé », puis « Publier »',
+        'Touchez le lien ICS qui apparaît, puis « Copier le lien »'
+      ],
+      piege: 'Pourquoi « occupé » seulement : les autres choix partageraient les titres de vos rendez-vous.' },
+    { cle: 'google', nom: 'Google', long: 'Google Agenda',
+      reglages: 'https://calendar.google.com/calendar/r/settings',
+      bouton: 'Ouvrir mes réglages Google',
+      note: 'Sur ordinateur : l’application Google Agenda du téléphone n’a pas ce réglage.',
+      pas: [
+        'Le bouton ouvre les paramètres de Google Agenda',
+        'À gauche, sous « Paramètres de mes agendas », cliquez sur votre nom',
+        'Descendez à « Intégrer l’agenda » et copiez « Adresse secrète au format iCal »'
+      ],
+      piege: 'Pas de ligne « Adresse secrète » ? Votre entreprise l’a désactivée : seul l’administrateur peut la rouvrir.' },
+    { cle: 'apple', nom: 'iPhone', long: 'Agenda iPhone / iCloud',
+      pas: [
+        'Sur l’iPhone : Calendrier → Calendriers → le (i) à côté du vôtre',
+        'Activez « Calendrier public »',
+        'Touchez « Partager le lien » → « Copier »'
+      ],
+      piege: 'Le lien commence par webcal:// : collez-le tel quel, on s’occupe du reste.' }
   ];
+  // Guillemets français : espace insécable, sinon « » se retrouve seul en bout de ligne.
+  function nb(t) { return String(t).replace(/« /g, '«\u00a0').replace(/ »/g, '\u00a0»'); }
+  MODES.forEach(function (m) { m.pas = m.pas.map(nb); if (m.piege) m.piege = nb(m.piege); if (m.note) m.note = nb(m.note); });
+  function mode(cle) { for (var i = 0; i < MODES.length; i++) if (MODES[i].cle === cle) return MODES[i]; return MODES[0]; }
 
-  function css() {
-    if (document.getElementById('v2-rdvag-css')) return;
-    var s = document.createElement('style'); s.id = 'v2-rdvag-css';
-    s.textContent = [
-      '.v2-ag-box{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px}',
-      '.v2-ag-etat{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:14px;margin-bottom:10px}',
-      '.v2-ag-pastille{display:inline-block;width:9px;height:9px;border-radius:50%;flex:0 0 auto}',
-      '.v2-ag-ok{background:#00A870}.v2-ag-ko{background:#E5484D}.v2-ag-off{background:#8B93A1}',
-      '.v2-ag-box input[type=url]{width:100%;min-height:44px;font-size:16px;padding:10px 12px;',
-      '  border:1px solid var(--line);border-radius:10px;background:var(--card-2);color:inherit}',
-      '.v2-ag-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}',
-      '.v2-ag-acts .v2-btn{min-height:44px}',
-      '.v2-ag-aide{margin-top:12px;font-size:14px;color:var(--muted);line-height:1.55}',
-      '.v2-ag-aide ol{margin:6px 0 0;padding-left:20px}.v2-ag-aide li{margin:3px 0}',
-      '.v2-ag-onglets{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}',
-      '.v2-ag-onglets button{min-height:44px;padding:0 12px;border-radius:9px;border:1px solid var(--line);',
-      '  background:transparent;color:inherit;font:inherit;cursor:pointer}',
-      '.v2-ag-onglets button.on{border-color:var(--ip-blue);color:var(--ip-blue);font-weight:700}',
-      '.v2-ag-piege{margin-top:6px;font-style:italic}',
-      '.v2-ag-res{margin-top:10px;font-size:14px;line-height:1.5}'
-    ].join('');
-    document.head.appendChild(s);
+  // Outil présélectionné : l'agenda déjà branché d'abord, sinon l'adresse du
+  // compte (l'équipe est sur Microsoft 365), sinon Outlook.
+  function outilAuto(a) {
+    var h = String((a && a.hote) || '');
+    if (/google/.test(h)) return { cle: 'google', pourquoi: '' };
+    if (/outlook|office/.test(h)) return { cle: 'outlook', pourquoi: '' };
+    if (/icloud/.test(h)) return { cle: 'apple', pourquoi: '' };
+    var d = String((V2.user && V2.user.email) || '').toLowerCase().split('@')[1] || '';
+    if (/^(gmail|googlemail)\./.test(d)) return { cle: 'google', pourquoi: d };
+    if (/^(outlook|hotmail|live)\./.test(d) || d === 'integralpharma.fr') return { cle: 'outlook', pourquoi: d };
+    return { cle: 'outlook', pourquoi: '' };
+  }
+  function nomHote(h) {
+    h = String(h || '');
+    if (/google/.test(h)) return 'Google Agenda';
+    if (/outlook|office/.test(h)) return 'Outlook';
+    if (/icloud/.test(h)) return 'Agenda iCloud';
+    return h;
   }
 
-  function dire(html, couleur) {
-    var e = document.getElementById('v2-ag-res');
-    if (e) e.innerHTML = '<span style="color:' + (couleur || 'var(--muted)') + '">' + html + '</span>';
+  var ETAT = { outil: 'outlook', pourquoi: '', ouvert: false, dernierLien: '', minuteur: 0, a: null };
+
+  function dire(html, ton) {
+    var e = $('v2-ag-res');
+    if (e) { e.className = 'v2-ag-res' + (ton ? ' ' + ton : ''); e.innerHTML = html; }
   }
 
   // « il y a 19 h » a déjà été lu « à 19 h » par un utilisateur, qui a cru que
@@ -82,6 +100,18 @@
     if (m < 1440) return 'il y a ' + Math.floor(m / 60) + ' h';
     return 'il y a ' + Math.floor(m / 1440) + ' jour(s)';
   }
+  var JS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+  var MS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  function jourFr(iso) {
+    var p = String(iso || '').split('-'); if (p.length !== 3) return esc(iso);
+    var d = new Date(+p[0], +p[1] - 1, +p[2]);
+    return JS[d.getDay()] + ' ' + d.getDate() + ' ' + MS[d.getMonth()];
+  }
+  function heureFr(h) {
+    var p = String(h || '').split(':'); if (p.length < 2) return esc(h);
+    return (+p[0]) + ' h' + (p[1] !== '00' ? ' ' + p[1] : '');
+  }
+  function plageFr(p) { return jourFr(p.date) + ', ' + heureFr(p.debut) + ' – ' + heureFr(p.fin); }
 
   function appeler(corps) {
     var c = sb();
@@ -106,106 +136,205 @@
 
   var RAISONS = {
     hebergeur_inconnu: 'Cette adresse ne vient pas d’un agenda Google, Outlook ou iCloud.',
-    adresse_invalide: 'Cette adresse n’a pas l’air d’un lien.',
+    adresse_invalide: 'Ce que vous avez collé n’est pas un lien.',
     https_obligatoire: 'Le lien doit commencer par https:// (ou webcal://).',
-    agenda_injoignable: 'Votre agenda n’a pas répondu. Vérifiez que le lien est bien le lien « secret » et non l’adresse de la page.',
+    agenda_injoignable: 'Votre agenda n’a pas répondu. C’est souvent l’adresse de la page qui a été copiée, et non le lien de l’agenda : reprenez l’étape « Copiez ».',
     pas_un_agenda: 'Ce lien ne renvoie pas un agenda.',
     agenda_trop_gros: 'Cet agenda est trop volumineux.',
     lecture_impossible: 'Cet agenda n’a pas pu être lu.',
     connexion_requise: 'Reconnectez-vous et réessayez.'
   };
   var msg = function (r) { return RAISONS[r] || 'Impossible pour l’instant.'; };
+  var ressembleLien = function (u) { return /^(https?|webcal):\/\/\S+$/i.test(String(u || '').trim()); };
+
+  // Le lien se branche dès qu'il est collé : plus de bouton « Tester » à part.
+  function ecouter() {
+    var e = $('v2-ag-url');
+    if (!e || e.getAttribute('data-ecoute')) return;
+    e.setAttribute('data-ecoute', '1');
+    var lancer = function () {
+      clearTimeout(ETAT.minuteur);
+      ETAT.minuteur = setTimeout(function () {
+        var u = e.value.trim();
+        if (ressembleLien(u) && u !== ETAT.dernierLien) V2.rdvAgenda.brancher();
+      }, 350);
+    };
+    e.addEventListener('paste', lancer);
+    e.addEventListener('input', lancer);
+  }
+
+  // Mention de confidentialité, juste depuis l'Agenda du mois (23/11/2026) :
+  // les titres sont lus en mémoire pour reconnaître les officines, jamais rangés.
+  var MENTION = 'JARVIS relit vos <b>heures occupées</b> toutes les 15 minutes. ' +
+    'Les titres ne servent, sur le moment, qu’à reconnaître vos officines : aucun titre, ' +
+    'aucun lieu, aucun participant n’est enregistré. Le lien collé ne peut plus être ' +
+    'réaffiché, même à vous.';
+
+  // ── « Un seul geste » (maquette 2, choisie par Will le 23/11/2026) : un gros
+  //    bouton Coller, l'agenda est branché aussitôt ; le mode d'emploi se déplie. ──
+  function apresChoix() {
+    var t = $('v2-ag-ti'); if (t) t.textContent = 'Branchez votre agenda ' + mode(ETAT.outil).nom;
+  }
+
+  function css() {
+    if ($('v2-rdvag-css')) return;
+    var s = document.createElement('style'); s.id = 'v2-rdvag-css';
+    s.textContent = [
+      '.v2-ag-box{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:10px;overflow:hidden}',
+      '.v2-ag-heros{text-align:center;padding:22px 14px 16px;border-radius:14px;background:radial-gradient(130% 90% at 50% 0%,#E6EFFF 0%,#F4F8FF 45%,#fff 80%);box-shadow:0 0 0 1px rgba(0,80,230,.08) inset}',
+      '.v2-ag-ico{width:56px;height:56px;margin:0 auto 12px;border-radius:16px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 24px -12px rgba(0,80,230,.55),0 0 0 1px rgba(0,80,230,.12)}',
+      '.v2-ag-ti{font-size:19px;font-weight:800;letter-spacing:-.01em;margin:0 0 4px}',
+      '.v2-ag-st{font-size:14px;color:var(--muted);line-height:1.45;margin:0 auto 16px;max-width:30em}',
+      '.v2-ag-coller{width:100%;min-height:54px;font-size:16.5px;border-radius:14px}',
+      '.v2-ag-ou{margin-top:10px;min-height:44px;border:0;background:transparent;color:var(--ip-blue);font:inherit;font-size:14.5px;font-weight:700;cursor:pointer;padding:0 8px}',
+      '.v2-ag-ou[aria-expanded=true] .fl{display:inline-block;transform:rotate(90deg)}',
+      '.v2-ag-depli{padding:14px 6px 4px}',
+      '.v2-ag-lib{font-size:13px;font-weight:700;color:var(--muted);margin:0 0 7px}',
+      '.v2-ag-outils{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}',
+      '.v2-ag-outils button{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:#fff;font:inherit;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer}',
+      '.v2-ag-outils button.on{background:var(--halo,#E9F0FF);border-color:rgba(0,80,230,.35);color:var(--ip-blue)}',
+      '.v2-ag-regl{width:100%;text-decoration:none;box-sizing:border-box}',
+      '.v2-ag-cap{font-size:13px;color:var(--muted);margin:7px 0 0;line-height:1.45}',
+      '.v2-ag-pas{margin:10px 0 0;padding-left:20px;font-size:14px;line-height:1.5}.v2-ag-pas li{margin:5px 0}',
+      '.v2-ag-note{background:#FFF6E8;color:#7A4A0E;border-radius:10px;padding:8px 10px;font-size:13px;line-height:1.45;margin:9px 0 0}',
+      '.v2-ag-piege{font-size:13px;color:var(--muted);margin:8px 0 0;line-height:1.45}',
+      '.v2-ag-box input[type=url]{display:block;width:100%;box-sizing:border-box;min-height:44px;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card-2,#F6F8FB);color:inherit;margin-top:12px}',
+      '.v2-ag-res{margin-top:12px;font-size:14px;line-height:1.5}.v2-ag-res:empty{display:none}.v2-ag-res.ko{color:#B4233C;background:#FDEEF1;border-radius:10px;padding:9px 11px;text-align:left}.v2-ag-res.lit{color:var(--muted)}',
+      '.v2-ag-roue{display:inline-block;width:14px;height:14px;border:2px solid #C9D3E4;border-top-color:var(--ip-blue);border-radius:50%;animation:v2agr .8s linear infinite;vertical-align:-2px;margin-right:6px}',
+      '@keyframes v2agr{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){.v2-ag-roue{animation:none}}',
+      '.v2-ag-ligne{display:flex;gap:12px;align-items:center;padding:8px 6px}',
+      '.v2-ag-pt{width:12px;height:12px;border-radius:50%;flex:0 0 auto;background:#1E9E6A;box-shadow:0 0 0 4px #DDF3E9}',
+      '.v2-ag-ligne.ko .v2-ag-pt{background:#C7791A;box-shadow:0 0 0 4px #FCEBD3}',
+      '.v2-ag-ligne b{font-size:15px}.v2-ag-ligne small{display:block;color:var(--muted);font-size:13.5px;line-height:1.45;margin-top:2px}',
+      '.v2-ag-acts{display:flex;flex-wrap:wrap;gap:8px;padding:6px 6px 2px}.v2-ag-acts .v2-btn{min-height:44px}',
+      '.v2-ag-mention{margin:12px 6px 4px;font-size:13px;line-height:1.5;color:var(--muted)}'
+    ].join('');
+    document.head.appendChild(s);
+  }
+
+  function guide(m) {
+    var pas = m.reglages ? m.pas.slice(1) : m.pas;
+    return (m.reglages
+        ? '<a class="v2-btn v2-btn-primary v2-ag-regl" href="' + esc(m.reglages) + '" target="_blank" rel="noopener">' + esc(m.bouton) + ' ↗</a>' +
+          '<p class="v2-ag-cap">' + esc(m.pas[0]) + '.</p>' : '') +
+      (m.note ? '<p class="v2-ag-note">' + esc(m.note) + '</p>' : '') +
+      '<ol class="v2-ag-pas">' + pas.map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') + '</ol>' +
+      '<p class="v2-ag-piege">' + esc(m.piege) + ' Revenez ensuite ici et touchez « Coller le lien de mon agenda ».</p>';
+  }
+
+  var ICO = '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="3.5" stroke="#0050E6" stroke-width="1.8"/><path d="M3 9.5h18" stroke="#0050E6" stroke-width="1.8"/><path d="M8 2.8v3.4M16 2.8v3.4" stroke="#0050E6" stroke-width="1.8" stroke-linecap="round"/><path d="m8.6 14.6 2.2 2.2 4.6-4.6" stroke="#1E9E6A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  function rendu(a) {
+    var branche = !!(a && a.hote);
+    if (branche && !ETAT.ouvert) {
+      var vieux = !a.dernier_ok || (Date.now() - new Date(a.dernier_ok).getTime()) > 2 * 3600 * 1000;
+      return '<div class="v2-ag-ligne' + (vieux ? ' ko' : '') + '"><span class="v2-ag-pt"></span><div>' +
+          (vieux
+            ? '<b>' + esc(nomHote(a.hote)) + ' : pas relu depuis ' + esc(depuis(a.dernier_ok).replace('il y a ', '')) + '</b>' +
+              '<small>' + (a.derniere_erreur ? esc(String(a.derniere_erreur).slice(0, 60)) + ' · ' : '') + 'le lien a peut-être changé</small>'
+            : '<b>' + esc(nomHote(a.hote)) + ' branché</b> · relu ' + esc(depuis(a.dernier_ok)) +
+              '<small>' + (a.plages_gardees != null ? esc(a.plages_gardees) + ' plage(s) occupée(s) à venir bloquent vos créneaux · ' : '') + 'relu toutes les 15 min</small>') +
+        '</div></div>' +
+        '<div class="v2-ag-acts">' +
+          (V2.pages && V2.pages.rdvplanning ? '<button class="v2-btn" onclick="V2.go(\'rdvplanning\')">Voir mon agenda</button>' : '') +
+          '<button class="v2-btn' + (vieux ? ' v2-btn-primary' : '') + '" onclick="V2.rdvAgenda.changer()">Changer de lien</button>' +
+          '<button class="v2-btn" onclick="V2.rdvAgenda.debrancher()">Débrancher</button>' +
+        '</div><p class="v2-ag-mention">' + MENTION + '</p>';
+    }
+    var outils = MODES.map(function (m) {
+      return '<button type="button" data-m="' + m.cle + '" class="' + (m.cle === ETAT.outil ? 'on' : '') + '" aria-pressed="' +
+        (m.cle === ETAT.outil) + '" onclick="V2.rdvAgenda.aide(\'' + m.cle + '\')">' + esc(m.long) + '</button>';
+    }).join('');
+    return '<div class="v2-ag-heros">' +
+        '<div class="v2-ag-ico">' + ICO + '</div>' +
+        '<p class="v2-ag-ti" id="v2-ag-ti">Branchez votre agenda ' + esc(mode(ETAT.outil).nom) + '</p>' +
+        '<p class="v2-ag-st">Vos rendez-vous déjà pris ne seront plus proposés aux pharmaciens. Copiez le lien de votre agenda, puis un seul toucher ici.</p>' +
+        '<button class="v2-btn v2-btn-primary v2-ag-coller" onclick="V2.rdvAgenda.coller()">Coller le lien de mon agenda</button>' +
+        '<div class="v2-ag-res" id="v2-ag-res" aria-live="polite"></div>' +
+        '<button type="button" class="v2-ag-ou" id="v2-ag-ou" aria-expanded="false" aria-controls="v2-ag-depli" onclick="V2.rdvAgenda.deplier()">Où trouver ce lien ? <span class="fl">›</span></button>' +
+      '</div>' +
+      '<div class="v2-ag-depli" id="v2-ag-depli" hidden>' +
+        '<p class="v2-ag-lib">Mon agenda est sur' + (ETAT.pourquoi ? ' (choisi d’après votre adresse @' + esc(ETAT.pourquoi) + ')' : '') + '</p>' +
+        '<div class="v2-ag-outils" role="group" aria-label="Mon agenda est sur">' + outils + '</div>' +
+        '<div id="v2-ag-guide"></div>' +
+        '<input type="url" id="v2-ag-url" inputmode="url" autocomplete="off" spellcheck="false" ' +
+          'placeholder="ou collez le lien ici à la main" aria-label="Lien de mon agenda" />' +
+      '</div>' +
+      (branche ? '<div class="v2-ag-acts"><button class="v2-btn" onclick="V2.go(\'rdvdispo\')">Annuler</button></div>' : '') +
+      '<p class="v2-ag-mention">' + MENTION + '</p>';
+  }
 
   V2.rdvAgenda = {
     // Rendu du bloc. `a` = ligne rdv_agenda (sans l'adresse, elle n'est pas lisible).
     bloc: function (a) {
       css();
-      var branche = !!(a && a.hote);
-      // Ce qui compte n'est pas « le dernier appel a-t-il abouti » mais « mes
-      // heures sont-elles à jour ». Google rationne parfois la lecture de son
-      // flux (429) : l'appel échoue, et pourtant les plages relevées quinze
-      // minutes plus tôt sont parfaitement valables. Crier à la panne dans ce
-      // cas apprend à ignorer le voyant.
-      var vieux = !a || !a.dernier_ok ||
-        (Date.now() - new Date(a.dernier_ok).getTime()) > 2 * 3600 * 1000;
-      var etat = !branche
-        ? '<span class="v2-ag-pastille v2-ag-off"></span> Aucun agenda connecté'
-        : (vieux
-            ? '<span class="v2-ag-pastille v2-ag-ko"></span> ' + esc(a.hote) +
-              ' — pas relu depuis ' + esc(depuis(a.dernier_ok)) +
-              (a.derniere_erreur ? ' · ' + esc(String(a.derniere_erreur).slice(0, 60)) : '')
-            : '<span class="v2-ag-pastille v2-ag-ok"></span> ' + esc(a.hote) +
-              ' — relu ' + esc(depuis(a.dernier_ok)) +
-              (a.plages_gardees != null
-                ? ' · ' + esc(a.plages_gardees) + ' plage(s) occupée(s)' : '') +
-              ' · relecture automatique toutes les 15 min');
-
-      var onglets = MODES.map(function (m, i) {
-        return '<button class="' + (i === 0 ? 'on' : '') + '" data-m="' + m.cle +
-               '" onclick="V2.rdvAgenda.aide(\'' + m.cle + '\')">' + esc(m.nom) + '</button>';
-      }).join('');
-
-      return '<div class="v2-ag-box">' +
-        '<div class="v2-ag-etat">' + etat + '</div>' +
-        '<input type="url" id="v2-ag-url" inputmode="url" autocomplete="off" spellcheck="false" ' +
-          'placeholder="Collez l’adresse privée de votre agenda" />' +
-        '<div class="v2-ag-acts">' +
-          '<button class="v2-btn" onclick="V2.rdvAgenda.tester()">Tester</button>' +
-          '<button class="v2-btn v2-btn-primary" onclick="V2.rdvAgenda.brancher()">Connecter mon agenda</button>' +
-          (branche && V2.pages && V2.pages.rdvplanning
-            ? '<button class="v2-btn" onclick="V2.go(\'rdvplanning\')">Voir mon agenda</button>' : '') +
-          (branche ? '<button class="v2-btn" onclick="V2.rdvAgenda.debrancher()">Débrancher</button>' : '') +
-        '</div>' +
-        '<div class="v2-ag-res" id="v2-ag-res"></div>' +
-        '<div class="v2-ag-aide"><div class="v2-ag-onglets">' + onglets + '</div>' +
-          '<div id="v2-ag-aide-corps"></div>' +
-          '<p style="margin:10px 0 0">Ce qui est lu se limite aux <b>heures occupées</b>. ' +
-          'Aucun titre, aucun lieu, aucun participant n’est enregistré — il n’existe pas de ' +
-          'case pour les ranger. Et l’adresse que vous collez ne pourra plus jamais être ' +
-          'réaffichée, y compris à vous.</p>' +
-        '</div></div>';
+      var o = outilAuto(a);
+      ETAT.outil = o.cle; ETAT.pourquoi = o.pourquoi;
+      ETAT.ouvert = !(a && a.hote); ETAT.dernierLien = '';
+      ETAT.a = a || null;
+      setTimeout(ecouter, 0);
+      return '<div class="v2-ag-box" id="v2-ag-box">' + rendu(a) + '</div>';
     },
 
+    // Sans argument (appel de l'écran juste après l'affichage) : l'outil présélectionné.
     aide: function (cle) {
-      var m = null, i;
-      for (i = 0; i < MODES.length; i++) if (MODES[i].cle === cle) m = MODES[i];
-      if (!m) m = MODES[0];
-      var bt = document.querySelectorAll('.v2-ag-onglets button');
-      for (i = 0; i < bt.length; i++) bt[i].classList.toggle('on', bt[i].getAttribute('data-m') === m.cle);
-      var e = document.getElementById('v2-ag-aide-corps');
-      if (e) e.innerHTML = '<ol>' + m.pas.map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') +
-        '</ol><p class="v2-ag-piege">' + esc(m.piege) + '</p>';
+      ETAT.outil = mode(cle || ETAT.outil).cle;
+      var bt = document.querySelectorAll('.v2-ag-outils [data-m]');
+      for (var i = 0; i < bt.length; i++) {
+        var on = bt[i].getAttribute('data-m') === ETAT.outil;
+        bt[i].classList.toggle('on', on); bt[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+      }
+      var e = $('v2-ag-guide');
+      if (e) e.innerHTML = guide(mode(ETAT.outil));
+      apresChoix();
+      ecouter();
     },
 
-    tester: function () {
-      var e = document.getElementById('v2-ag-url'), u = e ? e.value.trim() : '';
-      if (!u) { dire('Collez d’abord l’adresse de votre agenda.'); return; }
-      dire('Lecture de votre agenda…');
-      appeler({ action: 'tester', url: u }).then(function (r) {
-        if (!r || !r.ok) { dire(esc(msg(r && r.raison)), 'var(--rose,#E5484D)'); return; }
-        var ex = (r.exemple || []).map(function (p) {
-          return esc(p.date) + ' ' + esc(p.debut) + '–' + esc(p.fin);
-        }).join(' · ');
-        dire('Agenda lu : <b>' + esc(r.evenements_lus) + '</b> événement(s), <b>' +
-             esc(r.plages_gardees) + '</b> plage(s) qui bloqueront un créneau.' +
-             (ex ? '<br><small>Par exemple : ' + ex + ' — reconnaissez-vous votre agenda ?</small>' : ''),
-             'var(--mint,#00A870)');
-      }).catch(function () { dire('Impossible de joindre le serveur.', 'var(--rose,#E5484D)'); });
+    // Rouvre le pas-à-pas quand l'agenda est déjà branché (« Changer de lien »).
+    changer: function () {
+      ETAT.ouvert = true;
+      var b = $('v2-ag-box'); if (!b) return;
+      b.innerHTML = rendu(ETAT.a);
+      V2.rdvAgenda.aide();
+    },
+
+    // Un toucher : Safari affiche sa bulle « Coller », le lien arrive dans la case.
+    coller: function () {
+      var e = $('v2-ag-url');
+      var aLaMain = function () {
+        if (e) { if (e.closest) { var z = e.closest('[hidden]'); if (z) z.hidden = false; } e.focus(); }
+        dire('Collez le lien dans la case : ⌘V sur ordinateur, appui long puis « Coller » sur téléphone.');
+      };
+      if (!navigator.clipboard || !navigator.clipboard.readText) { aLaMain(); return; }
+      navigator.clipboard.readText().then(function (t) {
+        t = String(t || '').trim();
+        if (!t) { aLaMain(); return; }
+        if (e) e.value = t;
+        V2.rdvAgenda.brancher();
+      }, aLaMain);
     },
 
     brancher: function () {
-      var e = document.getElementById('v2-ag-url'), u = e ? e.value.trim() : '';
-      if (!u) { dire('Collez d’abord l’adresse de votre agenda.'); return; }
-      dire('Connexion…');
+      var e = $('v2-ag-url'), u = e ? e.value.trim() : '';
+      if (!u) { dire('Collez d’abord le lien de votre agenda.'); return; }
+      // Branché d'un geste : la connexion lit déjà l'agenda (une seule lecture,
+      // Google rationne son flux). Le résultat s'affiche dans l'état « branché ».
+      ETAT.dernierLien = u;
+      dire('<span class="v2-ag-roue" aria-hidden="true"></span> Lecture et connexion de votre agenda…', 'lit');
       appeler({ action: 'brancher', url: u }).then(function (r) {
-        if (!r || !r.ok) { dire(esc(msg(r && r.raison)), 'var(--rose,#E5484D)'); return; }
+        if (!r || !r.ok) { dire(esc(msg(r && r.raison)), 'ko'); return; }
         if (e) e.value = '';
         V2.toast('Agenda connecté.');
-        dire('Connecté : <b>' + esc(r.evenements_lus || 0) + '</b> événement(s) lus, <b>' +
-             esc(r.plages_gardees || 0) + '</b> plage(s) qui bloqueront un créneau.',
-             'var(--mint,#00A870)');
         if (V2.go) V2.go('rdvdispo');
-      }).catch(function () { dire('Impossible de joindre le serveur.', 'var(--rose,#E5484D)'); });
+      }).catch(function () { dire('Impossible de joindre le serveur.', 'ko'); });
+    },
+
+    // « Où trouver ce lien ? » : déplie le mode d'emploi et la case à la main.
+    deplier: function () {
+      var d = $('v2-ag-depli'), b = $('v2-ag-ou');
+      if (!d) return;
+      d.hidden = !d.hidden;
+      if (b) b.setAttribute('aria-expanded', d.hidden ? 'false' : 'true');
     },
 
     debrancher: function () {

@@ -458,7 +458,8 @@
 
         // Le mode d'emploi s'affiche d'emblée : sans lui, personne ne trouve
         // l'adresse de son agenda — elle est enterrée dans les réglages.
-        if (V2.rdvAgenda) V2.rdvAgenda.aide('google');
+        // 23/11/2026 : sans argument, l'outil présélectionné (agenda branché, sinon adresse du compte).
+        if (V2.rdvAgenda) V2.rdvAgenda.aide();
         if (V2.rdvFlux) V2.rdvFlux.aide('iphone');
       });
     }
