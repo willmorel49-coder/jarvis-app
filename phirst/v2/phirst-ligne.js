@@ -112,6 +112,14 @@
       if (f.error || !Array.isArray(f.data)) return PAS;
       var k = norm(p.nom) + '|' + norm(p.ville);
       if (f.data.some(function (x) { var c = norm(x.nom) + '|' + norm(x.ville); return c === k || (p.cles || []).indexOf(c) >= 0; })) return 'Déjà dans vos pistes.';
+      // 23/11/2026 — ses fiches archivées (telepro_archivees) : telepro_creer_piste ne les voit pas et en créerait une deuxième. Fonction absente = comme avant.
+      return Promise.resolve(sb.rpc('telepro_archivees')).then(null, function () { return {}; }).then(function (a) {
+        if (a && !a.error && Array.isArray(a.data) && a.data.some(function (x) { var c = norm(x.nom) + '|' + norm(x.ville); return c === k || (p.cles || []).indexOf(c) >= 0; })) return ARCH;
+        return creerParTelepro(p, sb);
+      });
+    }).then(null, function () { return PAS; });
+  }
+  function creerParTelepro(p, sb) {
       return sb.rpc('telepro_creer_piste', { p_nom: p.nom, p_ville: p.ville || null, p_cp: p.cp || null, p_departement: p.departement || null, p_telephone: p.telephone || null, p_email: p.email || null,
         p_pharmacien: p.pharmacien || null, p_lat: p.lat == null ? null : p.lat, p_lon: p.lon == null ? null : p.lon, p_source: p.source || 'transfert' }).then(function (n) {
         if (n.error || !n.data) return PAS;
@@ -119,7 +127,6 @@
         if (!p.note) return fin();
         return sb.rpc('telepro_ecrire', { p_prospect: n.data, p_type: 'note', p_body: p.note }).then(fin, fin);
       });
-    }).then(null, function () { return PAS; });
   }
   function ajouterParMembre(p, u, sb) {
     return sb.from('crm_members').select('workspace_id').eq('user_id', u.id).limit(1).maybeSingle().then(function (m) {
@@ -140,7 +147,21 @@
       });
     }).then(null, function () { return PAS; });
   }
-  window.PHIRST_PISTE = { ajouter: ajouterPiste, norm: norm };
+  /* 23/11/2026 (Will) — « Reprendre » une fiche archivée : la même fiche revient « à qualifier », son historique reste. Membre : mise à jour gardée sur
+     l'étape d'origine (une seule ligne, relue) ; téléprospectrice : telepro_reprendre_piste (son espace, archivées seulement). */
+  var REPRISE = 'Reprise dans vos pistes.', ARCH = 'Sa fiche est archivée : reprenez-la depuis l’écran Officines.';
+  function reprendrePiste(id) {
+    var V2 = window.V2, u = V2 && V2.user, sb = u && typeof V2.sb === 'function' ? V2.sb() : null;
+    if (!id || !sb) return Promise.resolve(PAS);
+    var R = window.PHIRST_ROLE;
+    return (R ? R.estTelepro() : Promise.resolve(false)).then(function (t) {
+      if (t) return sb.rpc('telepro_reprendre_piste', { p_prospect: id }).then(function (r) { return r.error || r.data !== true ? PAS : REPRISE; });
+      return sb.from('crm_prospects').update({ stage: 'a_qualifier' }).eq('id', id).eq('stage', 'archive').select('id').then(function (r) {
+        return r.error || !Array.isArray(r.data) || r.data.length !== 1 ? PAS : REPRISE;
+      });
+    }, function () { return PAS; }).then(null, function () { return PAS; });
+  }
+  window.PHIRST_PISTE = { ajouter: ajouterPiste, reprendre: reprendrePiste, norm: norm, REPRISE: REPRISE };
   function ajouter(btn) {
     var s = D && D.filter(function (x) { return x.cle === cle; })[0], p = s && s.chose && s.chose.piste;
     var dit = btn.parentNode.querySelector('.lg-dit');

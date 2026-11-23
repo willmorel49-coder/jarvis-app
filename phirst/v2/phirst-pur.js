@@ -732,6 +732,17 @@
     for (var i = 0; i < c.length; i++) if (ix && ix[c[i]]) return ix[c[i]];
     return null;
   }
+  /* 23/11/2026 (Will) — une officine dont la fiche est archivée : la ligne dit « Archivée » et propose « Reprendre » (la MÊME fiche, jamais une deuxième).
+     Une fiche vivante l'emporte toujours sur une archivée du même nom. suiviOfficine rend { etat: 'piste' | 'archivee' | '', id }. */
+  function indexParEtat(fiches) {
+    var vives = [], arch = [];
+    (fiches || []).forEach(function (f) { if (f) (f.stage === 'archive' ? arch : vives).push(f); });
+    return { vives: indexPistes(vives), archivees: indexPistes(arch) };
+  }
+  function suiviOfficine(l, ie) {
+    var v = ficheSuivie(l, ie && ie.vives); if (v) return { etat: 'piste', id: v };
+    var a = ficheSuivie(l, ie && ie.archivees); return a ? { etat: 'archivee', id: a } : { etat: '', id: null };
+  }
 
   /* Seuils de zoom de la carte, choix de Will du 29/10/2026 « Masquer et le dire » : sous le seuil les couches ne se dessinent pas, le bandeau le dit. */
   var SEUIL_COUCHES = { only: 6, france: 8 };
@@ -842,7 +853,7 @@
     ANGLES: ANGLES, N_INITIAL: N_INITIAL, PAS_LISTE: PAS_LISTE, FILTRES_SIGNAUX: FILTRES_SIGNAUX, FILTRES_TRANSFERTS: FILTRES_TRANSFERTS, nomAngle: nomAngle, angleValide: angleValide,
     contientMontant: contientMontant, recherchePropre: recherchePropre, depPropre: depPropre, requeteOfficines: requeteOfficines, libelleResultats: libelleResultats, libelleVoirPlus: libelleVoirPlus,
     telFr: telFr, frDate: frDate, libelleGroupements: libelleGroupements, fusionnerSommes: fusionnerSommes, sansSommes: sansSommes, pourquoiAffiche: pourquoiAffiche, sousAffiche: sousAffiche,
-    sourceEtNote: sourceEtNote, pisteDeLigne: pisteDeLigne, indexPistes: indexPistes, ficheSuivie: ficheSuivie,
+    sourceEtNote: sourceEtNote, pisteDeLigne: pisteDeLigne, indexPistes: indexPistes, ficheSuivie: ficheSuivie, indexParEtat: indexParEtat, suiviOfficine: suiviOfficine,
     SEUIL_COUCHES: SEUIL_COUCHES, couchesMasquees: couchesMasquees, phraseCachee: phraseCachee, phraseToutAffiche: phraseToutAffiche, phraseVue: phraseVue, libelleBouton: libelleBouton, releveAffiche: releveAffiche,
     ordreTournee: ordreTournee, tourneeDuJour: tourneeDuJour, lienTournee: lienTournee, kmRoute: kmRoute
   };

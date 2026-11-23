@@ -19,6 +19,9 @@
 
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function isOpso() { return !!(window.V2_BRAND && window.V2_BRAND.opso); }
+  // 23/11/2026 (Will) — une marque sans robot du soir (Phirst : `robotNotes: false`) garde un bloc-notes simple : ni envoi au robot,
+  // ni transcription annoncée (le robot du Mac ne lit que la base de JARVIS). Sans ce réglage, rien ne change.
+  function avecRobot() { return !(window.V2_BRAND && window.V2_BRAND.robotNotes === false); }
   function sb() { return (V2.sb && V2.sb()) || null; }
   function uid() { return (V2.user && V2.user.id) || ''; }
   function $(s, r) { return (r || document).querySelector(s); }
@@ -377,7 +380,8 @@
   function gabarit() {
     var dictee = (V2.notes && V2.notes.micPossible) ? V2.notes.micPossible() : !!(window.SpeechRecognition || window.webkitSpeechRecognition);   // 19/10/2026 : sur téléphone, dictée du clavier (v2-notes.js)
     return '<div class="v2-wrap v2-u bn-wrap" id="bn-root">' +
-      '<div class="bn-tete"><h1>Bloc-notes</h1><p>Vos notes restent des brouillons, rien que pour vous. Quand vous voulez, envoyez-les au robot : il les lit le soir et vous propose les mises à jour du CRM, que vous appliquez d’un geste.</p></div>' +
+      '<div class="bn-tete"><h1>Bloc-notes</h1><p>' + (avecRobot() ? 'Vos notes restent des brouillons, rien que pour vous. Quand vous voulez, envoyez-les au robot : il les lit le soir et vous propose les mises à jour du CRM, que vous appliquez d’un geste.'
+        : 'Vos notes ne sont qu’à vous : écrivez, dictez ou enregistrez au fil de la journée, vous les retrouvez ici.') + '</p></div>' +
       '<div class="bn-band" id="bn-bandeau-brouillons" hidden></div>' +
       '<div class="bn-band" id="bn-bandeau" hidden></div>' +
       '<div class="v2-card bn-ecrire" data-dictee="1"><div class="bn-h">Nouvelle note</div>' +
@@ -404,7 +408,7 @@
   function brouillons() { return S.rows.filter(function (r) { return r.statut === 'brouillon'; }); }
   function dessinerBrouillons() {
     var b = document.getElementById('bn-bandeau-brouillons'); if (!b) return;
-    var l = brouillons();
+    var l = avecRobot() ? brouillons() : [];
     if (!l.length) { b.hidden = true; b.innerHTML = ''; return; }
     b.hidden = false;
     b.innerHTML = '<span>' + l.length + ' brouillon' + (l.length > 1 ? 's' : '') + '</span>' +
@@ -413,9 +417,10 @@
 
   // Texte d'une note : écrite → body ; vocale → body (version corrigée par le commercial) s'il est rempli, sinon transcription (robot).
   function texteDe(r) { return String((r.kind === 'vocal' ? (r.body || r.transcription) : r.body) || ''); }
-  function vocalSansTexte(r) { return r.kind === 'vocal' && !r.body && !r.transcription && r.statut !== 'lue' && r.statut !== 'erreur'; }
+  function vocalSansTexte(r) { return avecRobot() && r.kind === 'vocal' && !r.body && !r.transcription && r.statut !== 'lue' && r.statut !== 'erreur'; }
 
   function etatNote(r) {
+    if (!avecRobot()) return '';
     if (r.statut === 'brouillon') return '<div class="bn-etat bn-etat--brouillon">' + ic('crayon') + 'Brouillon — le robot ne le lit pas tant que vous ne l’envoyez pas</div>';
     if (r.statut === 'a_lire') return '<div class="bn-etat">' + ic('clock') + 'Envoyée au robot — il la lira à son prochain passage, en soirée</div>';
     if (r.statut === 'lue') return '<div class="bn-etat">' + ic('check') + 'Lue par le robot' + (r.lu_le ? ' le ' + esc(dateLongue(cleJour(new Date(r.lu_le)))) + ' à ' + heure(r.lu_le) : '') + '</div>';
@@ -461,14 +466,14 @@
     } else {
       var txt = texteDe(r);
       if (txt) h += '<div class="bn-corps">' + esc(txt) + '</div>';
-      else if (vocal) h += '<div class="bn-corps" style="color:var(--muted)">' + (vocalSansTexte(r) ? 'Transcription en cours (quelques minutes, quand le Mac de l’agence est allumé)' : 'Aucun texte reconnu dans cet enregistrement.') + '</div>';
+      else if (vocal) h += '<div class="bn-corps" style="color:var(--muted)">' + (vocalSansTexte(r) ? 'Transcription en cours (quelques minutes, quand le Mac de l’agence est allumé)' : avecRobot() ? 'Aucun texte reconnu dans cet enregistrement.' : 'Écoutez l’enregistrement, ou ajoutez-lui un texte avec « Modifier ».') + '</div>';
       if (vocal && r.audio_path) h += '<div class="bn-audio-zone">' + (S.urls[r.id] ? '<audio class="bn-audio" controls preload="metadata" src="' + esc(S.urls[r.id]) + '"></audio>' : '<div class="bn-acts"><button type="button" class="bn-b" data-bn="ecouter" data-row="' + esc(r.id) + '">' + ic('mic') + 'Écouter</button></div>') + '</div>';
       h += etatNote(r);
       h += blocCompteRendu(r);
       var occN = !!S.occupe['n:' + r.id];
       if (S.msgNote[r.id]) h += '<div class="bn-msg bn-msg--ko" role="status">' + esc(S.msgNote[r.id]) + '</div>';
       h += '<div class="bn-acts">' + (r.statut === 'brouillon' || r.statut === 'a_lire' ? '<button type="button" class="bn-b" data-bn="edit" data-row="' + esc(r.id) + '"' + (occN ? ' disabled' : '') + '>Modifier</button>' : '') +
-        (r.statut === 'brouillon' ? '<button type="button" class="v2-btn v2-btn-primary" data-bn="envoyer" data-row="' + esc(r.id) + '"' + (occN || S.envoiTout ? ' disabled' : '') + '>' + (occN ? 'Envoi…' : 'Envoyer au robot') + '</button>' : '') +
+        (r.statut === 'brouillon' && avecRobot() ? '<button type="button" class="v2-btn v2-btn-primary" data-bn="envoyer" data-row="' + esc(r.id) + '"' + (occN || S.envoiTout ? ' disabled' : '') + '>' + (occN ? 'Envoi…' : 'Envoyer au robot') + '</button>' : '') +
         (r.statut === 'a_lire' ? '<button type="button" class="bn-b" data-bn="reprendre" data-row="' + esc(r.id) + '"' + (occN || S.envoiTout ? ' disabled' : '') + '>' + (occN ? 'Un instant…' : 'Reprendre') + '</button>' : '') +
         '<button type="button" class="bn-b bn-b--rose" data-bn="retirer" data-row="' + esc(r.id) + '">Retirer</button></div>';
     }
@@ -505,7 +510,7 @@
     Promise.resolve(c.from(TABLE).insert({ author_id: V2.user.id, author_name: V2.user.name || '', kind: 'texte', body: body, statut: 'brouillon' }).select('id')).then(function (r) {
       if (!r || r.error || !Array.isArray(r.data) || !r.data.length) throw new Error('refus');
       if (ta && ta.value.trim() === body) ta.value = '';
-      dire('Brouillon enregistré. Le robot ne le lira que si vous l’envoyez.', 'ok');
+      dire(avecRobot() ? 'Brouillon enregistré. Le robot ne le lira que si vous l’envoyez.' : 'Note enregistrée.', 'ok');
       return charger();
     }).catch(function () { dire('La note n’est pas enregistrée (pas de réseau ?). Votre texte est gardé : réessayez.', 'ko'); })
       .then(function () { btn.disabled = false; });
@@ -521,7 +526,7 @@
       var row = trouverRow(id); if (row) row.body = body;
       S.edit = null; dessinerListe(); toast('Note modifiée');
     }).catch(function () {
-      var m2 = document.getElementById('bn-edit-msg'); if (m2) m2.textContent = 'La note n’a pas été modifiée (le robot l’a peut-être déjà lue). Réessayez.';
+      var m2 = document.getElementById('bn-edit-msg'); if (m2) m2.textContent = avecRobot() ? 'La note n’a pas été modifiée (le robot l’a peut-être déjà lue). Réessayez.' : 'La note n’a pas été modifiée. Réessayez.';
       charger();   // relecture : l'écran montre l'état réel de la note
     });
   }
@@ -737,7 +742,7 @@
     R.etat = 'envoi'; dire(''); dessinerVoix(); dessinerAttente();
     envoyerEntree(e).then(function (ok) {
       if (ok) {
-        oublierUrl(); R.entry = null; R.etat = 'repos'; dessinerVoix(); dire('Note vocale enregistrée en brouillon. Le robot ne la lira que si vous l’envoyez.', 'ok');
+        oublierUrl(); R.entry = null; R.etat = 'repos'; dessinerVoix(); dire(avecRobot() ? 'Note vocale enregistrée en brouillon. Le robot ne la lira que si vous l’envoyez.' : 'Note vocale enregistrée.', 'ok');
         dessinerAttente(); charger();
       } else {
         // l'enregistrement quitte le lecteur et passe dans « Pas encore envoyé » (gardé, avec « Renvoyer », et renvoyé tout seul à la prochaine ouverture)

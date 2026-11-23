@@ -31,7 +31,12 @@
     if (C.pistes && !forcer) return C.pistes;
     var b = sb(); if (!b) return Promise.resolve(null);
     var p = estTelepro().then(function (t) {
-      if (t) return b.rpc('telepro_pistes').then(function (r) { return r.error || !Array.isArray(r.data) ? null : r.data; });
+      if (t) return Promise.all([b.rpc('telepro_pistes'), Promise.resolve(b.rpc('telepro_archivees')).then(null, function () { return {}; })]).then(function (r) {
+        if (r[0].error || !Array.isArray(r[0].data)) return null;
+        // 23/11/2026 — ses fiches archivées (nom + ville seulement), marquées « archive » : la ligne d'Officines propose « Reprendre », jamais une deuxième fiche.
+        var a = r[1] && !r[1].error && Array.isArray(r[1].data) ? r[1].data.map(function (x) { return { id: x.id, nom: x.nom, ville: x.ville, stage: 'archive' }; }) : [];
+        return r[0].data.concat(a);
+      });
       var out = [];
       function page(de) {
         return b.from('crm_prospects').select('id,nom,ville,cp,lat,lon,stage,source,telephone,next_action,next_action_date').order('id').range(de, de + 999).then(function (r) {
@@ -83,7 +88,7 @@
 
   /* ════════════════════════ OFFICINES ════════════════════════ */
   var S = { racine: null, jeton: 0, angle: 'toutes', france: false, q: '', dep: '', fab: '', lignes: [], total: null, erreur: '', charge: false,
-    tuiles: {}, meta: {}, ix: {}, faits: {}, tel: false };
+    tuiles: {}, meta: {}, ie: { vives: {}, archivees: {} }, faits: {}, tel: false };
 
   function aide() {
     return { robots: 'Officines équipées d’un robot concurrent : de bonnes candidates pour le remplacer.',
@@ -125,10 +130,12 @@
         return '<button type="button" class="pa-chip" data-fab="' + esc(f.k) + '" aria-pressed="' + (S.fab === f.k) + '">' + esc(f.l) + '</button>'; }).join('') + '</div>' : '');
   }
   function htmlLigne(l, i) {
-    var ficheId = P.ficheSuivie(l, S.ix), f = S.faits[l.cle] || '';
+    var suivi = P.suiviOfficine(l, S.ie), ficheId = suivi.etat === 'piste' ? suivi.id : null, f = S.faits[l.cle] || '';
     var pour = P.pourquoiAffiche(l);
     var action = ficheId
       ? '<span class="po-fait" role="status">✓ ' + (FAIT.indexOf(f) === 1 ? 'Déjà dans vos pistes' : 'Dans vos pistes') + '</span><button type="button" class="pa-b" data-vers="appels">Voir mes pistes</button>'
+      : suivi.etat === 'archivee'
+      ? '<span class="po-fait po-arch" role="status">Archivée</span><button type="button" class="pa-b pa-ok" data-reprendre="' + esc(suivi.id) + '" aria-label="Reprendre ' + esc(l.nom_affiche || l.nom) + ' dans mes pistes">Reprendre</button>'
       : '<button type="button" class="pa-b pa-ok" data-ajout="1" aria-label="Ajouter ' + esc(l.nom_affiche || l.nom) + ' à mes pistes">Ajouter à mes pistes</button>';
     return '<li class="pa-l" data-i="' + i + '"><div class="pa-ht"><div><b>' + esc(l.nom_affiche || l.nom) + '</b><small>' + esc(P.sousAffiche(l)) + '</small></div><div class="po-et">' + pastilles(l) + '</div></div>' +
       (pour.length ? '<ul class="pa-au">' + pour.map(function (r) { return '<li>→ ' + esc(r) + '</li>'; }).join('') + '</ul>' : '') +
@@ -179,14 +186,27 @@
     if (t.closest('[data-effacer]')) { S.q = ''; S.dep = ''; var f3 = S.racine.querySelector('#po-form'); if (f3) { f3.q.value = ''; f3.dep.value = ''; } recharger(); return; }
     if (t.closest('[data-reessayer]')) { S.erreur = ''; S.total = null; dessinerListe(); lirePage(S.lignes.length ? S.lignes.length : 0); return; }
     if (t.closest('[data-plus]')) { if (S.charge) return; S.charge = true; dessinerListe(); lirePage(S.lignes.length); return; }
-    var bt = t.closest('[data-ajout]'), li = t.closest('.pa-l');
+    var bt = t.closest('[data-ajout]'), li = t.closest('.pa-l'), rp = t.closest('[data-reprendre]');
+    // 23/11/2026 (Will) — « Reprendre » : la même fiche revient « à qualifier ». La ligne ne change qu'après la réponse qui confirme la reprise.
+    if (rp && li) {
+      var lr = S.lignes[+li.getAttribute('data-i')], dr = li.querySelector('.pa-dit'), idr = rp.getAttribute('data-reprendre');
+      if (!lr || !window.PHIRST_PISTE || !window.PHIRST_PISTE.reprendre) { dr.textContent = PAS; return; }
+      rp.disabled = true; dr.textContent = '';
+      window.PHIRST_PISTE.reprendre(idr).then(function (m) {
+        if (m !== window.PHIRST_PISTE.REPRISE) { dr.textContent = m; rp.disabled = false; return; }
+        Object.keys(S.ie.archivees).forEach(function (k) { if (S.ie.archivees[k] === idr) { delete S.ie.archivees[k]; S.ie.vives[k] = idr; } });
+        S.faits[lr.cle] = m; C.pistes = null;
+        var d = document.createElement('div'); d.innerHTML = htmlLigne(lr, +li.getAttribute('data-i')); li.replaceWith(d.firstChild);
+      });
+      return;
+    }
     if (bt && li) {
       var l = S.lignes[+li.getAttribute('data-i')], dit = li.querySelector('.pa-dit');
       if (!l || !window.PHIRST_PISTE) { dit.textContent = PAS; return; }
       bt.disabled = true; dit.textContent = '';
       window.PHIRST_PISTE.ajouter(P.pisteDeLigne(l)).then(function (m) {
         S.faits[l.cle] = m;
-        if (FAIT.indexOf(m) >= 0) { S.ix[P.cle(l.nom_affiche || l.nom, l.ville)] = S.ix[P.cle(l.nom_affiche || l.nom, l.ville)] || 'nouvelle'; C.pistes = null; var d = document.createElement('div'); d.innerHTML = htmlLigne(l, +li.getAttribute('data-i')); li.replaceWith(d.firstChild); } else { dit.textContent = m; bt.disabled = false; }
+        if (FAIT.indexOf(m) >= 0) { S.ie.vives[P.cle(l.nom_affiche || l.nom, l.ville)] = S.ie.vives[P.cle(l.nom_affiche || l.nom, l.ville)] || 'nouvelle'; C.pistes = null; var d = document.createElement('div'); d.innerHTML = htmlLigne(l, +li.getAttribute('data-i')); li.replaceWith(d.firstChild); } else { dit.textContent = m; bt.disabled = false; }
       });
     }
   }
@@ -207,7 +227,7 @@
     S.tuiles = {}; S.faits = {};
     Promise.all([lireMeta(), lirePistes(true)]).then(function (r) {
       if (S.racine !== root) return;
-      S.meta = r[0] || {}; S.ix = P.indexPistes(r[1] || []);
+      S.meta = r[0] || {}; S.ie = P.indexParEtat(r[1] || []);
       dessinerReglages(); dessinerListe();
       if (S.total !== null) { /* liste déjà chargée : on la redessine avec l'anti-doublon à jour */ }
     });

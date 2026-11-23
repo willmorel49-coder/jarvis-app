@@ -160,3 +160,10 @@ html body .leaflet-touch .leaflet-bar a,html body .leaflet-touch .leaflet-bar a:
 .leaflet-container .leaflet-control-attribution{font-size:13px;line-height:1.5}
 html body .leaflet-container .leaflet-control-attribution{font-size:13px}
 .leaflet-container a{color:var(--au-accent,#1A3A2E)}
+
+/* 23/11/2026 — To do de Phirst : sans les mails tout prêts d'Intégral, « Mes modèles » prend toute la largeur ; trois sortes de tâche au lieu de quatre. */
+.td-m1 .tb-bas.tb-bas--seul{grid-template-columns:minmax(0,1fr)}
+@media (min-width:761px){html body .v2-todo-kinds[data-n="3"]{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (min-width:1001px){html:not([data-hab]) body .td-m1 .v2-todo-kinds[data-n="3"]{grid-template-columns:repeat(3,auto)}}
+/* 23/11/2026 — Officines : une fiche archivée se dit en gris (pas de coche verte), « Reprendre » à côté. */
+.po-fait.po-arch{color:#4A5753}

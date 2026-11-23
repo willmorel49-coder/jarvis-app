@@ -36,6 +36,12 @@
     libre:  { l: 'Autre chose à faire',    s: '',                                  ico: 'list' }
   };
   var ORDER = ['rdv', 'merci', 'compte', 'libre'];
+  // 23/11/2026 (Will) — une marque peut ne garder qu'une partie des sortes de tâches et des mails tout prêts : Phirst n'a ni l'ouverture
+  // de compte ni les trois mails d'Intégral (ceux de Yann viendront avec ses textes). Sans réglage, JARVIS garde tout, comme avant.
+  function reglage() { return window.V2_BRAND || {}; }
+  function sortes() { var l = reglage().sortesTaches; return Array.isArray(l) ? ORDER.filter(function (k) { return l.indexOf(k) >= 0; }) : ORDER; }
+  function pret(k) { var l = reglage().mailsPrets; return !Array.isArray(l) || l.indexOf(k) >= 0; }
+  function modelesPrets() { return MODELES.filter(function (m) { return pret(m.k); }); }
 
   var st = { items: null, backend: 'local', filtre: 'afaire', chargement: null, kind: 'rdv', onglet: 'taches', formOuvert: false };
   // 03/11/2026 — écran « plus clair » (v2-todo-m1.css) : en-tête bleu, les tâches du jour DANS le bleu
@@ -171,7 +177,7 @@
   }
   function prenom() { return String((V2.user && V2.user.name) || '').split(' ')[0] || ''; }
   // Le nom de la société dans les mails, comme v2-rdv-modeles — pas V2_BRAND.name, qui est le nom de l'app.
-  function marque() { return 'Intégral Pharma'; }
+  function marque() { return reglage().societe || 'Intégral Pharma'; }
   function signature() {
     var t = String(V2.rdvTel || '').trim();
     return '\n\nBien cordialement,\n\n' + ((V2.user && V2.user.name) || prenom()) + '\n' + marque() + (t ? '\n' + t : '');
@@ -341,7 +347,7 @@
           '<label class="v2-todo-mn-al" id="v2-todo-mn-alr" style="display:none"><input id="v2-todo-mn-al" type="checkbox"><span>Alerte sur mon téléphone, à 9 h</span></label>' +
         '</div>' +
         '<div class="v2-todo-mn-k">Choisir quoi ajouter</div>' +
-        ORDER.map(function (k) {
+        sortes().map(function (k) {
           return '<button class="v2-todo-choix" onclick="V2.todo.ajouterDepuis(\'' + esc(String(pid)) + '\',\'' + k + '\')">' +
             '<span class="v2-todo-ico">' + ICO(KINDS[k].ico, 16, 2) + '</span><span><b>' + esc(KINDS[k].l) + '</b>' +
             (KINDS[k].s ? '<small>' + esc(KINDS[k].s) + '</small>' : '') + '</span></button>';
@@ -467,9 +473,10 @@
       // Ma version du mail tout prêt, si j'en ai une : chargée avant d'écrire le texte.
       Promise.all([Promise.resolve(lienP).catch(function () { return ''; }), chargerMods()]).then(function (r) {
         st.lien = r[0] || st.lien || '';
-        var m = it.k === 'libre' ? { objet: '', corps: 'Bonjour,\n\n' + signature().replace(/^\n\n/, '') } : texteDe(it.k, it);
+        var vierge = it.k === 'libre' || !pret(it.k);   // sans mail tout prêt pour cette sorte : un mail vierge, signé
+        var m = vierge ? { objet: '', corps: 'Bonjour,\n\n' + signature().replace(/^\n\n/, '') } : texteDe(it.k, it);
         composer({ it: it, pid: it.pid, nom: it.nom, dest: dest, objet: m.objet, corps: m.corps,
-          docs: docsDe(it.k), base: it.k === 'libre' ? '' : 'b:' + it.k });
+          docs: docsDe(it.k), base: vierge ? '' : 'b:' + it.k });
       });
     },
     docs: function (id) {
@@ -570,7 +577,7 @@
     }).join('') + '<button type="button" class="tb-dep-b" onclick="V2.todo.rappel(\'' + id + '\')">Choisir une date</button></div>';
     var plus = it.fait ? '' : '<div class="tb-plus" id="tb-pl-' + id + '">' +
       (it.k !== 'libre' ? micChamp('<input class="v2-todo-n-in" type="text" value="' + esc(it.note) + '" placeholder="Une précision (facultatif)…" aria-label="Précision" autocomplete="off" onchange="V2.todo.note(\'' + id + '\',this)">', 'Dicter la précision à la voix') : '') +
-      '<div class="tb-pl-b">' + (K.docs && it.pid ? '<button type="button" class="tb-b" aria-label="' + esc(K.docs) + '" onclick="V2.todo.docs(\'' + id + '\')">' + ICO('download', 15, 2) + '<span>Joindre</span></button>' : '') +
+      '<div class="tb-pl-b">' + (K.docs && it.pid && pret(it.k) ? '<button type="button" class="tb-b" aria-label="' + esc(K.docs) + '" onclick="V2.todo.docs(\'' + id + '\')">' + ICO('download', 15, 2) + '<span>Joindre</span></button>' : '') +
         '<button type="button" class="tb-b" onclick="V2.todo.rappel(\'' + id + '\')">' + ICO('cal', 15, 2) + '<span>' + (it.pour || it.rep ? 'Modifier le rappel' : 'Ajouter un rappel') + '</span></button></div></div>';
     var meta = [q ? '<span class="tb-q' + (b && b.t.indexOf('Retard') === 0 ? ' is-ret' : '') + '">' + esc(q) + '</span>' : '', it.rep && !it.fait ? '<span class="v2-todo-rep">↻ ' + esc(REP[it.rep]) + '</span>' : ''].filter(Boolean).join('');
     return '<article class="v2-todo-it tb-c' + (it.fait ? ' is-fait' : '') + (ouv ? ' td-ouv' : '') + (it.fait || der ? ' tb-fige' : '') + '" data-id="' + id + '" data-banc="todo-ligne">' +
@@ -687,8 +694,9 @@
     if (st.mods == null) chargerMods().then(rendre);
     // 25/09, Will : « chacun doit pouvoir avoir des modèles de base et pouvoir les modifier pour lui
     // et que pour lui » → mêmes 3 modèles au départ pour tous, « Ma version » rangée avec ses modèles.
+    if (!modelesPrets().length) return '<div class="tb-bas tb-bas--seul"><section class="tb-bas-c">' + mesModeles() + '</section></div>';
     return '<div class="tb-bas"><section class="tb-bas-c"><div class="v2-todo-mh"><h2>Les mails tout prêts</h2></div>' +
-      '<div class="v2-card v2-todo-list">' + MODELES.map(function (m) {
+      '<div class="v2-card v2-todo-list">' + modelesPrets().map(function (m) {
         var x = modele(m.k), mien = !!(st.bases || {})[m.k];
         return '<details class="v2-todo-mail"' + ((st.ouverts || {})[m.k] ? ' open' : '') + ' ontoggle="window.V2&&V2.todo.plier(\'' + m.k + '\',this.open)"><summary><span class="v2-todo-ico">' + ICO(KINDS[m.k].ico, 16, 2) + '</span>' +
           '<span class="v2-todo-mt"><b>' + esc(m.t) + (mien ? ' <em class="v2-todo-mien">Ma version</em>' : '') + '</b><small>' + esc(m.s) + '</small></span><span class="v2-todo-chev">' + ICO('chev', 16, 2) + '</span></summary>' +
@@ -881,7 +889,7 @@
     var b = (st.bases || {})[k];
     return b ? { objet: remplir(b.objet), corps: remplir(b.corps) } : origine(k, it);
   }
-  function docsDe(k) { var b = (st.bases || {})[k]; return (b ? b.docs : (KINDS[k] && KINDS[k].presel) || []).slice(); }
+  function docsDe(k) { if (!pret(k)) return []; var b = (st.bases || {})[k]; return (b ? b.docs : (KINDS[k] && KINDS[k].presel) || []).slice(); }
   function depuis(base, it) {
     if (base.indexOf('b:') === 0 && KINDS[base.slice(2)]) { var m = texteDe(base.slice(2), it); return { objet: m.objet, corps: m.corps, docs: docsDe(base.slice(2)), nom: MODELES.filter(function (x) { return x.k === base.slice(2); })[0].t }; }
     var x = (st.mods || []).filter(function (m) { return 'm:' + m.id === base; })[0];
@@ -913,7 +921,7 @@
     }
     var modele = c.mode === 'modele', enBase = c.mode === 'base';
     var opts = '<option value="">' + (modele ? 'Partir d\'un mail existant…' : 'Changer de modèle…') + '</option>' +
-      '<optgroup label="Les mails tout prêts">' + MODELES.map(function (m) { return '<option value="b:' + m.k + '">' + esc(m.t) + '</option>'; }).join('') + '</optgroup>' +
+      (modelesPrets().length ? '<optgroup label="Les mails tout prêts">' + modelesPrets().map(function (m) { return '<option value="b:' + m.k + '">' + esc(m.t) + '</option>'; }).join('') + '</optgroup>' : '') +
       ((st.mods || []).length ? '<optgroup label="Mes modèles">' + st.mods.map(function (m) { return '<option value="m:' + m.id + '">' + esc(m.nom) + '</option>'; }).join('') + '</optgroup>' : '');
     var docs = c.docs.length ? c.docs.map(function (k, i) {
       return '<span class="v2-tc-doc">' + ICO('fiche', 13, 2) + '<span>' + esc(libDoc(k)) + '</span><button aria-label="Retirer ce document" onclick="V2.todo.compRetirerDoc(' + i + ')">&times;</button></span>';
@@ -1091,7 +1099,7 @@
         (st.formOuvert ? '' : '<button type="button" class="v2-btn v2-btn-primary v2-todo-ajbtn" onclick="V2.todo.ouvrirForm()">' + ICO('plus', 16, 2) + 'Ajouter une tâche</button>') + '</div>';
       var form = !st.formOuvert ? '' : '<div class="v2-card v2-todo-add" data-banc="todo-formulaire" role="group" aria-label="Ajouter une tâche">' +
         '<div class="v2-todo-fh"><h2 class="tb-add-t">Nouvelle tâche</h2><button type="button" class="v2-btn v2-btn-ghost v2-todo-fermer" onclick="V2.todo.fermerForm()">Fermer</button></div>' +
-        '<div class="v2-todo-kinds" role="group" aria-label="Type de tâche">' + ORDER.map(function (k) {
+        '<div class="v2-todo-kinds" role="group" aria-label="Type de tâche"' + (sortes().length !== ORDER.length ? ' data-n="' + sortes().length + '"' : '') + '>' + sortes().map(function (k) {
           return '<button type="button" class="v2-todo-kind' + (st.kind === k ? ' is-on' : '') + '" data-k="' + k + '" aria-pressed="' + (st.kind === k) + '" onclick="V2.todo.choisir(\'' + k + '\')">' + ICO(KINDS[k].ico, 15, 2) + '<span>' + esc(KINDS[k].l) + '</span></button>';
         }).join('') + '</div>' +
         '<div class="v2-todo-form">' +
