@@ -1,0 +1,40 @@
+/* PHIRST · écran « Vitrine » (24/11/2026) : mêmes briques que Réglages et Chantiers (.dz, .cz-feuille) ; n'ajoute que les siennes (.vt).
+   Aucun flou, aucun verre dépoli, aucune opacité ni dégradé sur du texte (Safari). Cibles ≥ 44 px, champs à 16 px, rien qui dépasse à 390 px. */
+.vt .vt-liste,.vt .vt-grille{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:0;padding:0;list-style:none}
+@media (max-width:900px){.vt .vt-liste,.vt .vt-grille{grid-template-columns:minmax(0,1fr)}}
+.vt .vt-bloc{margin:0 0 30px}
+.vt .dz-carte{min-width:0}
+.vt .dz-carte h3{overflow-wrap:break-word}
+.vt .vt-quand{font-size:14.5px;font-weight:700;color:var(--dz-ink3)}
+.vt .vt-sous{overflow-wrap:break-word}
+.vt .vt-qui{margin:0;font-size:16.5px;line-height:1.4;overflow-wrap:break-word}
+.vt .vt-mot{margin:0;padding:10px 14px;border-radius:12px;background-color:var(--dz-surv);font-size:16px;line-height:1.45;color:var(--dz-ink);overflow-wrap:break-word;white-space:pre-wrap}
+.vt .vt-traitee{margin:0;font-size:15px;font-weight:700;color:var(--dz-vert-t)}
+.vt .vt-fait{margin:0}
+.vt .vt-bs{display:flex;flex-wrap:wrap;gap:10px}
+.vt .vt-bs .dz-btn{flex:1 1 auto;min-width:0;text-align:center}
+.vt .vt-pet{margin:0;font-size:14.5px;line-height:1.4;color:var(--dz-ink3)}
+.vt .vt-coupe{align-self:flex-start;color:var(--dz-ink2)}
+.vt .vt-conf{padding:14px 16px}
+.vt .vt-lien input{font-size:16px;min-width:0}
+.vt .dz-champ input[type=datetime-local],.vt .dz-champ input[type=tel]{width:100%;min-width:0;max-width:100%;min-height:48px;padding:10px 14px;border:1px solid var(--dz-fil);border-radius:12px;background-color:#fff;font-size:16px;font-weight:500;color:var(--dz-ink)}
+.vt .dz-champ input[aria-invalid="true"],.vt .dz-champ textarea[aria-invalid="true"],.vt .dz-champ select[aria-invalid="true"]{border-color:var(--dz-rouge-t);box-shadow:0 0 0 2px var(--dz-rouge-f)}
+.vt .dz-champ input[readonly]{background-color:#F6FAF7}
+
+/* la feuille : les champs */
+.vt .vt-form{display:grid;gap:14px}
+.vt .vt-ligne{display:grid;gap:10px;min-width:0;margin:0;padding:12px;border:1px solid var(--dz-fil);border-radius:14px;background-color:#FBFDFC}
+.vt .vt-ligne legend{padding:0 6px;font-size:14.5px;font-weight:800;color:var(--dz-ink2)}
+.vt .vt-cpt{margin:0;font-size:14.5px;font-weight:700;color:var(--dz-ink3)}
+.vt .vt-cpt.trop{color:var(--dz-rouge-t)}
+.vt .vt-err{margin:0;font-size:15px;line-height:1.4;font-weight:700;color:var(--dz-rouge-t)}
+.vt .vt-resume{padding:12px 14px;border-radius:12px;background-color:var(--dz-rouge-f)}
+.vt .vt-f-pied{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+.vt .vt-f-ok{font-size:16px;font-weight:700;color:var(--dz-vert-t)}
+.vt .vt-f-ok a{display:inline-flex;align-items:center;min-height:44px}
+@media (max-width:700px){
+  .vt .vt-f-pied .dz-btn{width:100%}
+  .vt .vt-bs .dz-btn{flex:1 1 100%}
+}
+/* 24/11/2026 — un intitulé sur deux lignes (« Postes au comptoir aujourd’hui ») ne décale plus le champ voisin : les champs d'une même ligne s'alignent par le bas. */
+.vt .cz-f-deux{align-items:end}

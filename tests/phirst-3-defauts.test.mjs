@@ -73,7 +73,7 @@ describe('Atelier 3D : réservé à Yann', () => {
   async function monde(estTelepro) {
     const racine = { innerHTML: '', __pw: false, addEventListener() {} }
     const V2 = { pages: {}, topbar: () => '<div class="v2-top"></div>', go() {}, route: { name: 'atelier' }, user: { id: 'u1' }, render() { V2.rendu++ }, rendu: 0 }
-    const portes = { dossiers: { page: 'dossiers' }, chantiers: { page: 'chantiers' }, encaisser: { page: 'encaisser' }, atelier: { page: 'atelier' }, appels: { page: 'appels' } }
+    const portes = { dossiers: { page: 'dossiers' }, chantiers: { page: 'chantiers' }, encaisser: { page: 'encaisser' }, atelier: { page: 'atelier' }, vitrine: { page: 'vitrine' }, appels: { page: 'appels' } }
     const window = { V2_BRAND: { ancienne3d: 'https://phirst-studio.vercel.app/dossiers', portes }, V2, PHIRST_ROLE: { estTelepro: () => Promise.resolve(estTelepro) } }
     const retires = []
     const document = { documentElement: {}, querySelectorAll: (sel) => { retires.push(sel); return [] } }
@@ -85,7 +85,7 @@ describe('Atelier 3D : réservé à Yann', () => {
   }
   test('téléprospectrice : la porte de l’Atelier quitte le menu et l’accueil, comme les trois autres', async () => {
     const { portes, retires, V2 } = await monde(true)
-    for (const k of ['dossiers', 'chantiers', 'encaisser', 'atelier']) assert.equal(portes[k].page, 'reserve-a-yann', k)
+    for (const k of ['dossiers', 'chantiers', 'encaisser', 'atelier', 'vitrine']) assert.equal(portes[k].page, 'reserve-a-yann', k)
     assert.equal(portes.appels.page, 'appels')
     assert.ok(retires.some((s) => s.includes('go:atelier') && s.includes('a[href="#atelier"]')), 'les liens déjà affichés vers l’Atelier sont retirés')
     assert.equal(V2.rendu, 1)

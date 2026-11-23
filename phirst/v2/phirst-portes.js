@@ -7,10 +7,11 @@
      d'aujourd'hui. [titre, phrase sous le titre, explication, [[écran, bouton], …]]. */
   var AUJ = [['appels', 'Ouvrir les Appels'], ['agenda', 'Ouvrir l’Agenda']];
   /* 23/11/2026 — « Chantiers » a son vrai écran (phirst-chantiers.js) : il quitte cette table, et reste réservé à Yann (RESERVE). */
+  /* 24/11/2026 — « Vitrine » a son vrai écran (phirst-vitrine.js) : il quitte cette table, et reste réservé à Yann (RESERVE ; l'écran se garde lui-même).
+  */
   /* 23/11/2026 (soir) — « Réglages » a son vrai écran (phirst-reglages.js, ouvert à Yann et à la téléprospectrice) : il quitte cette table. */
   var E = {
-    encaisser:['Encaisser', 'Acomptes, situations et soldes.', 'Cet écran se prépare. En attendant, retrouvez vos pistes et vos rendez-vous dans les Appels et l’Agenda.', AUJ],
-    vitrine:  ['Vitrine', 'Ce que voit un pharmacien.', 'Cet écran se prépare. En attendant, ouvrez vos Appels pour préparer les prochaines prises de contact.', AUJ]
+    encaisser:['Encaisser', 'Acomptes, situations et soldes.', 'Cet écran se prépare. En attendant, retrouvez vos pistes et vos rendez-vous dans les Appels et l’Agenda.', AUJ]
   };
   /* L'Atelier 3D reste dans l'ancienne version de Phirst (décision de Will, 22/11/2026) : l'adresse se lit dans le réglage de la marque. */
   var ADRESSE_3D = (window.V2_BRAND && window.V2_BRAND.ancienne3d) || '';
@@ -43,7 +44,7 @@
      l'écran dit « Cet écran est réservé à Yann. », et la porte quitte le menu et l'accueil. Le socle ne garde que les portes
      dont la page existe (V2.pages[porte.page]) : pour elle, `page` de ces portes pointe une page absente (même mécanisme
      que `fam` de la porte « tournees » dans v2-app.js). Rôle lu dans la session (window.PHIRST_ROLE, phirst-appels.js). */
-  var RESERVE = ['dossiers', 'chantiers', 'encaisser', 'atelier'], telepro = false;
+  var RESERVE = ['dossiers', 'chantiers', 'encaisser', 'atelier', 'vitrine'], telepro = false;
   var portes = window.V2_BRAND && window.V2_BRAND.portes;
   if (portes) RESERVE.forEach(function (k) {
     var d = portes[k]; if (!d) return;

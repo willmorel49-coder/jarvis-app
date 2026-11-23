@@ -25,7 +25,9 @@ from datetime import datetime
 RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Chaque ?v= de ces pages est remplacé.
 # phirst/v2 (Yann, 20/11/2026) charge le socle crm/v2 comme OPSO : sans son jeton, Safari garderait l'ancien socle.
-TOUS_LES_V = ['crm/v2/index.html', 'opso/v2/index.html', 'phirst/v2/index.html']
+# phirst/v2/lettre/index.html (page publique du pharmacien, 24/11/2026) charge ../phirst-dossiers-pur.js et ../phirst-lettre-contenu.js :
+# même jeton que l'app, sinon un pharmacien qui a déjà ouvert sa page garderait l'ancien fichier.
+TOUS_LES_V = ['crm/v2/index.html', 'opso/v2/index.html', 'phirst/v2/index.html', 'phirst/v2/lettre/index.html']
 # Ici, seul le jeton de la ligne visée (v2-boot.js en a deux : code et données).
 MOTIFS = {
     'crm/v2/sw.js': r"(var VER\s*=\s*')([^']*)(')",
