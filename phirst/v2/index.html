@@ -40,6 +40,7 @@
   <link rel="stylesheet" href="phirst-finitions.css?v=20261123t" />
   <link rel="stylesheet" href="phirst-dossiers.css?v=20261123t" />
   <link rel="stylesheet" href="phirst-chantiers.css?v=20261123t" />
+  <link rel="stylesheet" href="phirst-reglages.css?v=20261123t" />
   <script>
     window.V2_MODULES = ['../../crm/v2/v2-todo.js', '../../crm/v2/v2-bloc-notes.js'];   // adresses relatives à CETTE page : sans ../../crm/v2/, 404
     window.V2_BRAND = { name: 'Phirst', sub: 'Agencement de pharmacies', phirst: true, ventes: false,
@@ -47,6 +48,8 @@
       barreBas: ['appels', 'agenda', 'veille'],
       // La 3D reste dans l'ancienne version de Phirst (décision de Will, 22/11/2026) : adresse de la liste des dossiers, ouverte dans un nouvel onglet.
       ancienne3d: 'https://phirst-studio.vercel.app/dossiers',
+      // 23/11/2026 — Réglages : l'état des images, de la vidéo et du plafond se lit à l'ancienne version, seule à connaître ses clés (jamais une clé dans la réponse).
+      ancienneEtat: 'https://phirst-studio.vercel.app/api/etat',
       // Phrases de « rien à montrer » propres à Phirst (sans ce réglage, JARVIS garde les siennes) : chacune dit quoi faire.
       vides: { relances: 'Vos relances s’affichent ici : ouvrez vos Appels pour en préparer.', aFaire: 'Votre liste est à jour : vos prochains appels sont dans les Appels.', modeles: 'Créez un modèle pour gagner du temps sur vos mails qui se répètent.' },
       // 23/11/2026 — choix de Will : Bloc-notes sans robot du soir (le robot du Mac ne lit que la base de JARVIS) ; To do sans l'ouverture de compte
@@ -69,7 +72,7 @@
       atelier:   { fam: 'accueil',  ico: 'catalogue', nom: 'Atelier 3D', ph: 'Du plan 2D à la visite 3D', page: 'atelier' },
       blocnotes: { fam: 'direct',  ico: 'blocnotes', nom: 'Bloc-notes', ph: 'Écrire ou dicter au fil de la journée', page: 'blocnotes' },
       vitrine:   { fam: 'dev',     ico: 'marketing', nom: 'Vitrine', ph: 'Ce que voit un pharmacien', page: 'vitrine' },
-      reglages:  { fam: 'dev',     ico: 'grille',    nom: 'Réglages', ph: 'Compte, accès, préférences', page: 'reglages' }
+      reglages:  { fam: 'direct',  ico: 'grille',    nom: 'Réglages', ph: 'Les outils en service et votre compte', page: 'reglages' }
     } };
   </script>
   <!-- Même copie épinglée de la bibliothèque que crm/v2/index.html (même origine : traces d'erreur complètes). -->
@@ -103,6 +106,8 @@
   <script src="phirst-chantiers-pur.js?v=20261123t"></script>
   <script src="phirst-dossiers.js?v=20261123t"></script>
   <script src="phirst-chantiers.js?v=20261123t"></script>
+  <script src="phirst-reglages-pur.js?v=20261123t"></script>
+  <script src="phirst-reglages.js?v=20261123t"></script>
   <script src="../../crm/v2/v2-app.js?v=20261123t"></script>
   <script src="../../crm/v2/v2-motion.js?v=20261123t"></script>
   <script src="../../crm/v2/v2-aube.js?v=20261123t"></script>

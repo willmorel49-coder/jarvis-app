@@ -1,0 +1,76 @@
+/* PHIRST · écran « Réglages » (23/11/2026) : la feuille de la maquette validée par Will (M-reglages-maquette/assets/reglages.css),
+   sur les couleurs de la V2 (.dz, phirst-dossiers.css) et le panneau des Chantiers (.cz-feuille, phirst-chantiers.css).
+   Le bandeau vert forêt de m1, éclairé d'en haut à droite (dégradés radiaux, aucun flou, aucune opacité sur du texte, aucun dégradé sur du texte).
+   Chaque règle commence par « .rg » ; cibles ≥ 44 px, champs à 16 px, rien qui dépasse à 390 px. */
+.rg .rg-bande{position:relative;margin:0 0 -48px;padding:30px 36px 84px;border-radius:26px;color:#fff;
+  background-color:#1A3A2E;
+  background-image:radial-gradient(640px 360px at 90% -24%,rgba(150,226,180,.30) 0%,rgba(150,226,180,0) 70%),
+    radial-gradient(520px 320px at 6% 128%,rgba(18,165,103,.26) 0%,rgba(18,165,103,0) 70%),
+    linear-gradient(158deg,#24503F 0%,#173428 54%,#12281F 100%);
+  box-shadow:0 1px 0 rgba(255,255,255,.14) inset,0 30px 56px -34px rgba(18,40,31,.7)}
+.rg .rg-bande.rg-attente{margin:0;padding-bottom:30px}
+.rg .rg-sur{margin:0;font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:#CFE6D8}
+.rg .rg-bande h1{margin:4px 0 0;font:800 24px/1.15 var(--font);letter-spacing:-.01em;color:#fff}
+.rg .rg-grand{display:flex;align-items:flex-end;gap:14px;margin:10px 0 0}
+.rg .rg-grand b{font:800 84px/.86 var(--font);letter-spacing:-.04em;font-variant-numeric:tabular-nums;color:#fff}
+.rg .rg-grand span{padding-bottom:4px;font-weight:700;font-size:20px;line-height:1.18;color:#fff}
+.rg .rg-phrase{margin:14px 0 0;max-width:52ch;font-size:17px;line-height:1.45;color:#DCEBE2}
+@media (min-width:901px){.rg .rg-bande{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:end;column-gap:56px;padding:28px 36px 76px}
+  .rg .rg-bande.rg-attente{padding-bottom:28px}.rg .rg-phrase{margin:0 0 6px;justify-self:end;max-width:44ch;font-size:18px}}
+
+.rg .rg-grille{position:relative;display:grid;gap:16px;padding:0 22px}
+.rg .rg-outils{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:0;padding:0;list-style:none}
+.rg .rg-outil{display:grid;grid-template-columns:44px minmax(0,1fr);gap:16px;align-items:start;padding:20px 22px}
+.rg .rg-pastille{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background-color:var(--dz-vert-f);color:var(--dz-vert-t)}
+.rg .rg-outil[data-panne] .rg-pastille{background-color:var(--dz-orange-f);color:var(--dz-orange-t)}
+.rg .rg-outil[data-inconnu] .rg-pastille{background-color:#EEF2EF;color:var(--dz-ink3)}
+.rg .rg-outil-c{min-width:0}
+.rg .rg-outil-t{display:flex;align-items:center;gap:9px;margin:0;font-size:19px;line-height:1.25;font-weight:800;letter-spacing:-.01em;color:var(--dz-ink)}
+.rg .rg-outil-t svg{color:var(--dz-accent)}
+.rg .rg-quoi{margin:5px 0 0;font-size:16px;line-height:1.45;color:var(--dz-ink2)}
+.rg .rg-etat{margin:10px 0 0;font-size:16px;line-height:1.4;font-weight:800;color:var(--dz-vert-t)}
+.rg .rg-outil[data-panne] .rg-etat{color:var(--dz-orange-t)}
+.rg .rg-outil[data-inconnu] .rg-etat{color:var(--dz-ink3)}
+
+.rg .rg-cote{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.rg .rg-bloc{gap:14px;padding:22px}
+.rg .rg-h2{margin:0;font-size:20px;line-height:1.2;font-weight:800;letter-spacing:-.01em;color:var(--dz-ink)}
+.rg .rg-sous{margin:0;font-size:16px;line-height:1.5;color:var(--dz-ink2);overflow-wrap:anywhere}
+.rg .rg-sous b{color:var(--dz-ink)}
+.rg .rg-inconnu{margin:0;font-size:16px;line-height:1.5;font-weight:700;color:var(--dz-ink3)}
+.rg .rg-jauge{display:grid;gap:10px}
+.rg .rg-jauge-l{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:0}
+.rg .rg-jauge-l b{font:800 44px/1 var(--font);letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--dz-ink)}
+.rg .rg-jauge-l span{font-size:17px;color:var(--dz-ink2)}
+.rg .rg-jauge-p{position:relative;height:16px;border-radius:999px;background-color:#E6EEE9;overflow:hidden;box-shadow:0 1px 2px rgba(18,40,31,.12) inset}
+.rg .rg-jauge-p i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background-color:var(--dz-vif);background-image:linear-gradient(180deg,#2FC07E 0%,#0E8F57 100%)}
+.rg .rg-jauge-p i[data-fort]{background-color:#C2410C;background-image:none}
+.rg .rg-jauge-r{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;margin:0;font-size:15px;color:var(--dz-ink3)}
+.rg .rg-bloc .dz-btn{width:100%}
+.rg .rg-sortir{color:var(--dz-ink)}
+.rg .rg-flash{margin:0}
+.rg .rg-tech{grid-column:1/-1;margin:0}
+.rg .rg-tech>summary{font-size:16px;color:var(--dz-ink2)}
+.rg .rg-tech .dz-repli-c{display:grid;gap:12px}
+.rg .rg-tech p{margin:0;font-size:15px;line-height:1.5;color:var(--dz-ink2)}
+.rg .rg-tech b{color:var(--dz-ink)}
+
+.rg .rg-form{display:grid;gap:14px}
+.rg .rg-form .dz-btn{width:100%}
+.rg .rg-intro{margin:0;font-size:16px;line-height:1.5;color:var(--dz-ink2)}
+.rg .dz-champ input[type=password]{width:100%;min-height:48px;padding:10px 14px;border:1px solid var(--dz-fil);border-radius:12px;background-color:#fff;font-size:16px;font-weight:500;color:var(--dz-ink)}
+.rg .rg-err{margin:0;padding:10px 14px;border-radius:12px;background-color:var(--dz-rouge-f);color:var(--dz-rouge-t);font-weight:700;font-size:15.5px;line-height:1.4}
+.rg .dz-champ input[aria-invalid]{border-color:var(--dz-rouge-t);box-shadow:0 0 0 1px var(--dz-rouge-t)}
+.rg .cz-f-tete h2:focus{outline:none;box-shadow:none}
+
+.rg .rg-seul{display:grid;gap:14px;max-width:560px}
+
+@media (max-width:900px){.rg .rg-outils,.rg .rg-cote{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:700px){
+  .rg .rg-bande{margin:0 0 -40px;padding:22px 20px 66px;border-radius:22px}
+  .rg .rg-bande.rg-attente{margin:0;padding-bottom:22px}
+  .rg .rg-grand b{font-size:72px}
+  .rg .rg-grille{padding:0 10px}
+  .rg .rg-outil{grid-template-columns:44px minmax(0,1fr);gap:14px;padding:18px 16px}
+  .rg .rg-bloc{padding:18px 16px}
+}

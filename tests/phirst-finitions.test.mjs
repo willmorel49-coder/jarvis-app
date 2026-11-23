@@ -113,7 +113,7 @@ describe('écrans en attente et Atelier 3D (A-3, A-7)', () => {
   const INTERDITS = /Aperçu|socle|JARVIS|Intégral|bientôt|maquette|arrive/i
   test('chaque écran en attente a un titre, une explication, une action, et aucun mot interne', () => {
     const { V2, racine } = monde(brand)
-    for (const k of ['encaisser', 'vitrine', 'reglages']) {   // 23/11/2026 : « dossiers » et « chantiers » ont leur vrai écran (phirst-dossiers.js, phirst-chantiers.js)
+    for (const k of ['encaisser', 'vitrine']) {   // 23/11/2026 : « dossiers », « chantiers » et « reglages » ont leur vrai écran (phirst-dossiers.js, phirst-chantiers.js, phirst-reglages.js)
       V2.pages[k].render(racine)
       assert.match(racine.innerHTML, /<h1>/); assert.match(racine.innerHTML, /data-vers="(appels|agenda)"/); assert.doesNotMatch(racine.innerHTML, INTERDITS, k)
     }

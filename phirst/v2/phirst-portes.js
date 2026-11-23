@@ -7,10 +7,10 @@
      d'aujourd'hui. [titre, phrase sous le titre, explication, [[écran, bouton], …]]. */
   var AUJ = [['appels', 'Ouvrir les Appels'], ['agenda', 'Ouvrir l’Agenda']];
   /* 23/11/2026 — « Chantiers » a son vrai écran (phirst-chantiers.js) : il quitte cette table, et reste réservé à Yann (RESERVE). */
+  /* 23/11/2026 (soir) — « Réglages » a son vrai écran (phirst-reglages.js, ouvert à Yann et à la téléprospectrice) : il quitte cette table. */
   var E = {
     encaisser:['Encaisser', 'Acomptes, situations et soldes.', 'Cet écran se prépare. En attendant, retrouvez vos pistes et vos rendez-vous dans les Appels et l’Agenda.', AUJ],
-    vitrine:  ['Vitrine', 'Ce que voit un pharmacien.', 'Cet écran se prépare. En attendant, ouvrez vos Appels pour préparer les prochaines prises de contact.', AUJ],
-    reglages: ['Réglages', 'Compte, accès, préférences.', 'Cet écran se prépare. Votre compte et son menu restent accessibles par votre pastille en haut à droite.', AUJ]
+    vitrine:  ['Vitrine', 'Ce que voit un pharmacien.', 'Cet écran se prépare. En attendant, ouvrez vos Appels pour préparer les prochaines prises de contact.', AUJ]
   };
   /* L'Atelier 3D reste dans l'ancienne version de Phirst (décision de Will, 22/11/2026) : l'adresse se lit dans le réglage de la marque. */
   var ADRESSE_3D = (window.V2_BRAND && window.V2_BRAND.ancienne3d) || '';

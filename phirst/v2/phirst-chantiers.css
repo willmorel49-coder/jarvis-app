@@ -44,7 +44,7 @@
 .cz .cz-feuille{position:fixed;inset:0 0 0 auto;width:min(620px,100%);height:100%;max-height:none;max-width:none;margin:0;padding:0;border:0;border-radius:24px 0 0 24px;
   background-color:var(--cz-fond);color:var(--dz-ink);overflow-y:auto;box-shadow:-30px 0 60px -30px rgba(18,40,31,.45)}
 .cz .cz-feuille::backdrop{background-color:rgba(18,40,31,.42)}
-.cz .cz-feuille h2:focus{outline:none}
+.cz .cz-feuille h2:focus{outline:none;box-shadow:none}   /* 23/11 : le socle dessine aussi une ombre sur [tabindex]:focus-visible (crm/v2/v2.css) */
 .cz .cz-f-tete{position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 24px;background-color:#fff;border-bottom:1px solid var(--cz-barre-fil)}
 .cz .cz-f-tete-g{min-width:0}
 .cz .cz-f-tete h2{margin:2px 0 0;font-size:24px;line-height:1.15;font-weight:800;letter-spacing:-.02em;overflow-wrap:break-word;color:var(--dz-ink)}
