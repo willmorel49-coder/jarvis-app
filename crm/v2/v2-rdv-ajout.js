@@ -214,11 +214,9 @@
         message: 'Indiquez la date.' });
       if (!q.heure) return Promise.resolve({ ok: false, raison: 'heure',
         message: 'Indiquez l’heure.' });
-      // Une date passée n'est pas une faute improbable : le champ date d'un
-      // téléphone se manipule vite. On refuse plutôt que de créer un
-      // rendez-vous invisible dans l'agenda, qui ne montre que l'à-venir.
-      if (q.date < new Date().toISOString().slice(0, 10))
-        return Promise.resolve({ ok: false, raison: 'passe', message: 'Cette date est déjà passée.' });
+      // 23/11/2026 — une date passée est acceptée (Will : « mettre la date quand on veut, en antérieur
+      // ou après ») : le refus d'avant protégeait d'un rendez-vous invisible, or l'onglet « Agenda du
+      // mois » de la To do et la vue Mois de « Mon agenda » montrent aussi le passé.
 
       // Sans position, le moteur de créneaux ne sait pas placer ce rendez-vous
       // dans la géographie de la journée : les suivants seraient proposés

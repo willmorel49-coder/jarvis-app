@@ -116,7 +116,8 @@
     function lu(p, f) { return Promise.resolve(p).then(function (r) { ((r && !r.error && r.data) || []).forEach(f); }, function () {}); }
     try {
       Promise.all([
-        lu(c.from('notes').select('scope_id, created_at').eq('scope_type', 'client').gte('created_at', depuis)
+        // 23/11/2026 — une note se date désormais à la main : une note datée dans le futur n'est pas un contact passé
+        lu(c.from('notes').select('scope_id, created_at').eq('scope_type', 'client').gte('created_at', depuis).lte('created_at', new Date().toISOString())
           .order('created_at', { ascending: false }).limit(5000), function (n) { plusRecent(autres, n.scope_id, n.created_at); }),
         lu(c.from('rdv').select('cip, date, cree_le').eq('statut', 'confirme').gte('date', depuis)
           .order('date', { ascending: false }).limit(5000), function (x) { plusRecent(autres, x.cip, x.cree_le); plusRecent(autres, x.cip, x.date); })

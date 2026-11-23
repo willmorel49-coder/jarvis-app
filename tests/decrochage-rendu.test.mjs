@@ -151,11 +151,17 @@ test('bandeau « tout le portefeuille baisse » : chiffre calculé, seuil lu, ab
 function faussesTables(lignes) {
   const lus = [];
   const chaine = (t) => {
-    const q = { filtres: [] };
+    const q = { filtres: [], max: [] };
     const o = {
       select() { return o; }, eq(k, v) { q.filtres.push(k + '=' + v); return o; }, gte() { return o; },
+      // 23/11/2026 — borne haute appliquée pour de vrai : une note datée dans le futur ne revient pas
+      lte(k, v) { q.max.push([k, v]); return o; },
       order() { return o; }, limit() { return o; },
-      then(ok, ko) { lus.push(t + ' ' + q.filtres.join(',')); return Promise.resolve({ data: lignes[t] || [], error: null }).then(ok, ko); }
+      then(ok, ko) {
+        lus.push(t + ' ' + q.filtres.join(','));
+        const data = (lignes[t] || []).filter((r) => q.max.every(([k, v]) => !(k in r) || String(r[k]) <= String(v)));
+        return Promise.resolve({ data, error: null }).then(ok, ko);
+      }
     };
     return o;
   };
@@ -180,6 +186,17 @@ test('une note de fiche récente compte comme un contact : la ligne passe « en 
   assert.ok(f.lus.includes('rdv statut=confirme'), 'seulement les rendez-vous confirmés');
   assert.doesNotMatch(h, /déjà contactée/, 'ligne visible avec son étiquette : pas de doublon en pied');
   assert.doesNotMatch(h, ERREURS);
+});
+
+test('une note datée à la main dans le FUTUR ne compte pas comme un contact (23/11/2026)', async () => {
+  const { V2 } = monter();
+  const f = faussesTables({ notes: [{ scope_id: '111', created_at: new Date(Date.now() + 5 * 864e5).toISOString() }] });
+  V2.sb = () => f.sb; V2.decrochageUI._raz();
+  V2.decrochageUI.bloc(); await attendre(); await attendre();
+  const h = V2.decrochageUI.bloc();
+  assert.match(h, /data-pid="111"/, 'marqueur : la ligne de l’officine est bien là');
+  assert.doesNotMatch(h, /<span class="dr-tag">en cours<\/span>/);
+  assert.doesNotMatch(h, /Dernier contact/);
 });
 
 test('un rendez-vous confirmé à venir garde la ligne « en cours » et le dit', async () => {

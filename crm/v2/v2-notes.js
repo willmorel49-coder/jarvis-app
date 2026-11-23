@@ -58,6 +58,15 @@
   function localFor(st, sid) { var a = localMap()[st + ':' + sid]; return Array.isArray(a) ? a : []; }
   function localSet(st, sid, arr) { var m = localMap(); m[st + ':' + sid] = arr; try { localStorage.setItem(LS, JSON.stringify(m)); } catch (e) {} }
   function newId() { return 'n' + Date.now() + Math.floor((window.performance && performance.now ? performance.now() : 0) % 1000); }
+  // 23/11/2026 — date choisie dans le formulaire : on garde l'heure du moment (les notes d'un même jour restent dans
+  // l'ordre où on les écrit). Aujourd'hui ou vide = null : la base pose sa propre date, comme avant.
+  function aujIso() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function horodatage(j) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(j || '')) || j === aujIso()) return null;
+    var n = new Date(), p = j.split('-');
+    return new Date(+p[0], +p[1] - 1, +p[2], n.getHours(), n.getMinutes(), n.getSeconds()).toISOString();
+  }
+  function avecDate(ligne, quand) { if (quand) ligne.created_at = quand; return ligne; }
   function fromRow(r) { return { id: r.id, author: r.author_name || '—', authorId: r.author_id || '', body: r.body || '', created: r.created_at ? new Date(r.created_at).getTime() : Date.now() }; }
 
   // 28/10/2026 — notes écrites sans réseau, pas encore parties (V2.hl, v2-hors-ligne.js) :
@@ -99,6 +108,8 @@
             V2.notes.champ('<textarea class="v2-notes-ta" rows="2" placeholder="Ajouter une note personnelle…" oninput="V2.notes.garder(this)">' + esc(brouillonLire(cle)) + '</textarea>', 'Dicter la note à la voix') +   // 19/10/2026 : le micro passe DANS le coin du champ, comme partout
             '<button class="v2-btn v2-btn-primary v2-notes-btn" onclick="V2.notes.add(this)">Ajouter</button>' +
           '</div>' +
+          // 23/11/2026 — Will : « dans notes et rdv il faut pouvoir mettre la date quand on veut », avant ou après aujourd'hui
+          '<label class="v2-notes-date"><span>Date de la note</span><input type="date" class="v2-notes-dt" value="' + aujIso() + '"></label>' +
         '</div>';
     },
 
@@ -292,9 +303,10 @@
       var ta = box.querySelector('.v2-notes-ta'); var body = (ta && ta.value || '').trim();
       if (!body) { if (ta) ta.focus(); return; }
       var st = box.getAttribute('data-st'), sid = box.getAttribute('data-sid');
+      var quand = horodatage((box.querySelector('.v2-notes-dt') || {}).value);   // null = aujourd'hui : la date du serveur
       btn.disabled = true; btn.textContent = 'Ajout…';
       var c = sb();
-      var done = function () { if (ta) ta.value = ''; brouillonPoser('note:' + st + ':' + sid, ''); if (V2.toast) V2.toast('Note ajoutée'); renderBox(box); };
+      var done = function () { if (ta) ta.value = ''; var dt = box.querySelector('.v2-notes-dt'); if (dt) dt.value = aujIso(); brouillonPoser('note:' + st + ':' + sid, ''); if (V2.toast) V2.toast(quand ? 'Note ajoutée au ' + new Date(quand).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Note ajoutée'); renderBox(box); };
       if (c) {
         // échec Supabase → NE PAS faire croire que c'est sauvé (avant : sauvé en local + « Note ajoutée » puis disparue au re-render qui relit Supabase)
         var fail = function () { btn.disabled = false; btn.textContent = 'Ajouter'; if (V2.toast) V2.toast('Note non enregistrée — réessayez', 'error'); };
@@ -302,22 +314,23 @@
         // part seule au retour du réseau. Si l'appareil refuse de la garder : échec dit.
         var garder = function () {
           var ligne = { id: V2.hl.nouvelId(), scope_type: st, scope_id: String(sid), author_id: V2.user.id,
-                        author_name: V2.user.name || '', body: body, created_at: new Date().toISOString() };
+                        author_name: V2.user.name || '', body: body, created_at: quand || new Date().toISOString() };
           if (!V2.hl.differer({ table: TABLE, ligne: ligne, quoi: 'Une note' })) { fail(); return; }
           if (ta) ta.value = ''; brouillonPoser('note:' + st + ':' + sid, '');
           if (V2.toast) V2.toast('Note gardée sur l’appareil : elle partira au retour du réseau');
           renderBox(box);
         };
         if (V2.hl && V2.hl.sansReseau()) { garder(); return; }
-        c.from(TABLE).insert({ scope_type: st, scope_id: String(sid), author_id: V2.user.id, author_name: V2.user.name || '', body: body })
+        c.from(TABLE).insert(avecDate({ scope_type: st, scope_id: String(sid), author_id: V2.user.id, author_name: V2.user.name || '', body: body }, quand))
           .then(function (r) { if (r.error && r.status === 0 && V2.hl) garder(); else if (r.error) fail(); else done(); })
           .catch(function () { fail(); });
-      } else { addLocal(st, sid, body); done(); }
+      } else { addLocal(st, sid, body, quand); done(); }
     },
 
     // Note écrite par l'app elle-même (ex. documents transmis depuis la fiche),
     // puis les encadrés de notes de ce client affichés à l'écran sont relus.
-    addAuto: function (st, sid, body) {
+    // `quand` (facultatif, 23/11/2026) : date ISO de la note, posée dans created_at ; absent = maintenant.
+    addAuto: function (st, sid, body, quand) {
       if (!V2.user || !body) return Promise.resolve(false);
       var c = sb();
       var redraw = function () {
@@ -326,14 +339,14 @@
         });
         return true;
       };
-      if (!c) { addLocal(st, sid, body); return Promise.resolve(redraw()); }
+      if (!c) { addLocal(st, sid, body, quand); return Promise.resolve(redraw()); }
       var garder = function () {   // 28/10/2026 — sans réseau : même boîte d'envoi que V2.notes.add
         var ok = V2.hl.differer({ table: TABLE, quoi: 'Une note', ligne: { id: V2.hl.nouvelId(), scope_type: st, scope_id: String(sid),
-          author_id: V2.user.id, author_name: V2.user.name || '', body: body, created_at: new Date().toISOString() } });
+          author_id: V2.user.id, author_name: V2.user.name || '', body: body, created_at: quand || new Date().toISOString() } });
         return ok ? redraw() : false;
       };
       if (V2.hl && V2.hl.sansReseau()) return Promise.resolve(garder());
-      return c.from(TABLE).insert({ scope_type: st, scope_id: String(sid), author_id: V2.user.id, author_name: V2.user.name || '', body: body })
+      return c.from(TABLE).insert(avecDate({ scope_type: st, scope_id: String(sid), author_id: V2.user.id, author_name: V2.user.name || '', body: body }, quand))
         .then(function (r) { return r.error ? (r.status === 0 && V2.hl ? garder() : false) : redraw(); }, function () { return false; });
     },
 
@@ -504,9 +517,9 @@
     if (changed) localSet(st, sid, a);
   }
 
-  function addLocal(st, sid, body) {
+  function addLocal(st, sid, body, quand) {
     var a = localFor(st, sid);
-    a.unshift({ id: newId(), author: (V2.user && V2.user.name) || '—', authorId: (V2.user && V2.user.id) || '', body: body, created: Date.now() });
+    a.unshift({ id: newId(), author: (V2.user && V2.user.name) || '—', authorId: (V2.user && V2.user.id) || '', body: body, created: quand ? new Date(quand).getTime() : Date.now() });
     localSet(st, sid, a);
   }
 
@@ -563,6 +576,8 @@
       '.v2-notes-ta{flex:1;min-width:0;box-sizing:border-box;border:1px solid var(--line-strong);border-radius:11px;padding:10px 12px;font:inherit;font-size:13.5px;color:var(--ip-ink);background:var(--card);resize:vertical;min-height:44px}',
       '.v2-notes-ta:focus{outline:none;border-color:var(--ip-blue);box-shadow:0 0 0 3px var(--halo,color-mix(in srgb,var(--ip-blue) 18%,transparent))}',
       '.v2-notes-btn{flex:none;white-space:nowrap}',
+      '.v2-notes-date{display:flex;align-items:center;gap:10px;margin-top:8px;font-size:13px;font-weight:700;color:var(--muted)}',
+      '.v2-notes-dt{min-height:44px;padding:8px 12px;border:1px solid var(--line-strong);border-radius:11px;font:inherit;font-size:16px;color:var(--ip-ink);background:var(--card)}',
       // Bouton micro (dictée vocale) : repos = gris, écoute = rouge qui pulse
       '.v2-notes-mic{flex:none;width:44px;height:44px;border-radius:11px;border:1px solid var(--line-strong);background:var(--card);color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:color .16s var(--ease),border-color .16s var(--ease),background .16s var(--ease)}',
       '.v2-notes-mic:hover{color:var(--ip-blue);border-color:color-mix(in srgb,var(--ip-blue) 36%,var(--line))}',

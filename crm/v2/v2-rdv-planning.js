@@ -116,6 +116,9 @@
     }
     return { porte: R.indexer(porte), nat: R.indexer(nat), idsPorte: idsPorte };
   }
+  // 23/11/2026 — l'onglet « Agenda du mois » de la To do (v2-todo-mois.js) reconnaît les officines de la même façon.
+  V2.planningIndex = indexOfficines;
+  V2.planningAppelerAgenda = appelerAgenda;
 
   // ── Qui reste-t-il à contacter ? Tout le portefeuille, moins :
   //   · celles qui ont déjà un RDV à venir (JARVIS ou reconnu dans l'agenda),

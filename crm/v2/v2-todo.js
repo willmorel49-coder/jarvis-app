@@ -1039,7 +1039,8 @@
   V2.todo.signature = function () { return signature(); };
   V2.todo.reglagesMail = function () { return reglages(); };
   // Onglets de la page : mes tâches, les relances prospects, les prospects chauds (16/10/2026).
-  V2.todo.onglet = function (o) { st.onglet = o; if (o !== 'taches' && V2.relances && V2.relances.rafraichir) V2.relances.rafraichir(); rendre(); };
+  // 23/11/2026 — 4e onglet « Agenda du mois » (v2-todo-mois.js) : relu à chaque ouverture, sans les relances.
+  V2.todo.onglet = function (o) { st.onglet = o; if (o === 'agenda' && V2.todoMois) V2.todoMois.rafraichir(); if (o !== 'taches' && o !== 'agenda' && V2.relances && V2.relances.rafraichir) V2.relances.rafraichir(); rendre(); };
   // La case se coche et la ligne se barre sous les yeux, puis V2.todo.cocher (inchangée) range la ligne ; un second clic dans l'intervalle annule.
   V2.todo.cocherVu = function (el, id) {
     var f = el.checked;
@@ -1077,17 +1078,23 @@
       // 16/10, Will : « dans la to do list, un truc relance et un truc prospects chauds ».
       var R = V2.relances, ong = R ? st.onglet : 'taches', nR = R ? R.nbARelancer() : null, nC = R ? R.nbChauds() : null;
       // Les onglets SONT les capsules à compteurs de l'en-tête ; au téléphone le libellé court tient les trois sur une rangée
-      var onglets = R ? '<div class="td-caps" role="tablist" aria-label="Ma liste">' + [['taches', 'Tâches à faire', 'Tâches', ouv.length], ['relances', 'Prospects à relancer', 'Relances', nR], ['chauds', 'Prospects chauds', 'Chauds', nC]].map(function (o) {
+      var onglets = R ? '<div class="td-caps" role="tablist" aria-label="Ma liste">' + [['taches', 'Tâches à faire', 'Tâches', ouv.length]].concat(V2.todoMois ? [['agenda', 'Agenda du mois', 'Agenda', null]] : []).concat([['relances', 'Prospects à relancer', 'Relances', nR], ['chauds', 'Prospects chauds', 'Chauds', nC]]).map(function (o) {
         var court = '<span class="tb-long">' + o[1] + '</span><span class="tb-court" aria-hidden="true">' + o[2] + '</span>';
         return '<button type="button" role="tab" aria-selected="' + (ong === o[0]) + '" class="td-cap' + (ong === o[0] ? ' is-on' : '') + '" onclick="V2.todo.onglet(\'' + o[0] + '\')">' + court + (o[3] != null ? '<b class="td-cnt">' + o[3] + '</b>' : '') + '</button>';
       }).join('') + '</div>' : '';
-      var phrase = tdPhrase(ong, ouv, faits, nR, nC);
+      if (ong === 'agenda' && !V2.todoMois) ong = 'taches';
+      var phrase = ong === 'agenda' ? V2.todoMois.phrase() : tdPhrase(ong, ouv, faits, nR, nC);
       // 22/11/2026 — connecté mais la base ne répond pas : le dire en clair, avec quoi faire (la pastille seule ne le disait pas)
       var horsBase = st.backend === 'local' && sb() && V2.user, sansRes = V2.hl && V2.hl.sansReseau && V2.hl.sansReseau();
       var local = st.backend !== 'local' ? '' : !horsBase ? '<p class="td-expl"><b class="td-local">Gardée sur cet appareil seulement.</b></p>'
         : '<p class="td-expl" role="alert"><b class="td-local">Pas enregistré</b> JARVIS ne joint pas votre liste en ligne : ce que vous changez ici reste sur cet appareil et sera effacé au prochain chargement.</p>' +
           '<p class="td-expl td-hb-bs"><button type="button" class="td-local td-hb-b" onclick="V2.todo.reessayer()">Réessayer</button>' +
           (sansRes ? '' : '<button type="button" class="td-local td-hb-b" onclick="V2.signOut()">Se reconnecter</button>') + '</p>';
+      if (ong === 'agenda') {
+        root.innerHTML = top + '<div class="v2-wrap narrow">' + tdOuvre() + tdEntete(phrase, local, onglets, '') + V2.todoMois.html() + '</div></div>';
+        tdApres(root);
+        return;
+      }
       if (ong !== 'taches') {
         root.innerHTML = top + '<div class="v2-wrap narrow">' + tdOuvre() + tdEntete(phrase, local, onglets, '') + R.html(ong) + '</div></div>';
         tdApres(root);
