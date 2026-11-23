@@ -98,6 +98,19 @@ test('l’agenda du mois lit SES rendez-vous, SES heures occupées et SES notes 
   assert.match(V2.todoMois.phrase(), /<b class="td-num">2<\/b> rendez-vous et <b class="td-num">1<\/b> note/, 'la phrase compte ce qui est affiché');
 });
 
+test('les officines arrivées APRÈS la première lecture sont reconnues quand même (vu le 23/11 dans le Safari de Will)', async () => {
+  const base = fausseBase({ rdv: [], rdv_occupe: [{ date: AUJ, debut: '14:00:00', fin: '14:45:00', jour_entier: false }], notes: [] });
+  const ctx = monter([MOIS], agendaPret(base));
+  const V2 = ctx.V2, toutes = V2.pharmacies;
+  V2.pharmacies = [];   // l'app vient de s'ouvrir : le portefeuille n'est pas encore là
+  V2.planningIndex = () => ({ porte: V2.pharmacies.slice(), nat: [] });
+  ctx.V2RECO = { apparier: (titre, porte) => porte.length && /tilleuls/i.test(titre) ? { officine: { name: 'PHARMACIE DES TILLEULS', ville: 'CAEN' }, etat: 'sur' } : {} };
+  V2.todoMois.html(); await attendre();
+  assert.doesNotMatch(V2.todoMois.html(), /Pharmacie Des Tilleuls/, 'marqueur : sans portefeuille, rien de reconnu');
+  V2.pharmacies = toutes;
+  assert.match(V2.todoMois.html(), /Pharmacie Des Tilleuls/, 'le portefeuille arrivé, l’officine est reconnue sans rouvrir l’onglet');
+});
+
 test('une lecture ratée le dit, au lieu d’un mois qui aurait l’air vide', async () => {
   const base = fausseBase({});
   base.sb.from = () => { const o = { select: () => o, eq: () => o, gte: () => o, lte: () => o, lt: () => o, order: () => o, then: (ok, ko) => Promise.resolve({ data: null, error: { message: 'x' } }).then(ok, ko) }; return o; };

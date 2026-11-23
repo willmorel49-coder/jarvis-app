@@ -50,7 +50,10 @@
   // ── état ──
   var S = { ref: null, sel: null, form: null, envoi: false };
   var CACHE = {};   // 'AAAA-MM' -> { etat: 'cours' | 'ok' | 'ko', rdv: [], occ: [], notes: [] }
-  var RECO = null;  // { etat, liste } : officines reconnues dans l'agenda perso, lues à l'ouverture, jamais stockées
+  var RECO = null;  // { etat, brut, alias } : événements de l'agenda perso, lus à l'ouverture, gardés en mémoire le temps de l'écran, jamais stockés
+  // La reconnaissance se refait quand la liste des officines change : au premier passage juste après le chargement de
+  // l'app, V2.pharmacies peut être encore vide (vu dans le Safari de Will le 23/11 : 0 officine reconnue sur 16).
+  var RECO_CLE = '', RECO_LISTE = [];
   var AGENDA = null; // { etat, branche } : un agenda perso est-il branché ?
   var PAR_JOUR = null;
 
@@ -79,28 +82,34 @@
   }
   function lireAgenda() {
     if (RECO) return;
-    RECO = { etat: 'cours', liste: [] }; AGENDA = { etat: 'cours', branche: false };
-    var R = window.V2RECO, idx = V2.planningIndex ? V2.planningIndex() : null;
+    RECO = { etat: 'cours', brut: [], alias: {} }; AGENDA = { etat: 'cours', branche: false };
     var releve = V2.rdvAgenda && V2.rdvAgenda.relever ? V2.rdvAgenda.relever() : Promise.resolve(null);
     releve.then(function () {
       return Promise.all([
-        V2.planningAppelerAgenda && idx && R ? V2.planningAppelerAgenda({ action: 'mes_evenements' }) : null,
+        V2.planningAppelerAgenda ? V2.planningAppelerAgenda({ action: 'mes_evenements' }) : null,
         V2.rdvAlias && V2.rdvAlias.charger ? V2.rdvAlias.charger() : {},
         V2.rdvAgenda && V2.rdvAgenda.charger ? V2.rdvAgenda.charger() : null
       ]);
     }).then(function (r) {
-      var brut = (r[0] && r[0].ok && r[0].evenements) || [], alias = r[1] || {};
-      brut.forEach(function (ev) {
-        var m = R.apparier(ev.titre, idx.porte, idx.nat, alias);
-        if (!m.officine) return;
-        RECO.liste.push({ date: ev.date, debut: ev.debut, fin: ev.fin, jour_entier: ev.jour_entier, nom: m.officine.name, ville: m.officine.ville || '', etat: m.etat });
-      });
+      RECO.brut = (r[0] && r[0].ok && r[0].evenements) || []; RECO.alias = r[1] || {}; RECO_CLE = '';
       RECO.etat = 'ok';
       AGENDA = { etat: 'ok', branche: !!(r[2] && r[2].actif !== false) };
     }).catch(function () { RECO.etat = 'ko'; AGENDA = { etat: 'ko', branche: false }; }).then(function () {
       // relu APRÈS le relevé : les heures occupées du mois affiché sont celles d'il y a quelques secondes
       Object.keys(CACHE).forEach(function (ym) { lireMois(ym, true); }); PAR_JOUR = null; redessiner();
     });
+  }
+  function cleReco() { var D = window.PHARMA_FR; return (V2.pharmacies || []).length + '|' + (D && D.p ? D.p.length : 0) + '|' + (RECO ? RECO.brut.length : -1) + '|' + !!(window.V2RECO && V2.planningIndex); }
+  function reconnus() {
+    var cle = cleReco();
+    if (cle === RECO_CLE) return RECO_LISTE;
+    var R = window.V2RECO, idx = R && V2.planningIndex ? V2.planningIndex() : null, liste = [];
+    if (idx && RECO) RECO.brut.forEach(function (ev) {
+      var m = R.apparier(ev.titre, idx.porte, idx.nat, RECO.alias);
+      if (m && m.officine) liste.push({ date: ev.date, debut: ev.debut, fin: ev.fin, jour_entier: ev.jour_entier, nom: m.officine.name, ville: m.officine.ville || '', etat: m.etat });
+    });
+    RECO_CLE = cle; RECO_LISTE = liste;
+    return liste;
   }
   function etatMois() { var ym = S.ref.slice(0, 7); lireMois(ym); return CACHE[ym].etat; }
 
@@ -116,7 +125,8 @@
     var idx = {}, D = 45;
     function pose(d, e) { (idx[d] = idx[d] || { ev: [], notes: [] }).ev.push(e); }
     var reco = {}, cle = function (x) { return x.date + '|' + (x.jour_entier ? 'J' : hm(x.debut)); };
-    ((RECO && RECO.liste) || []).forEach(function (x) { reco[cle(x)] = 1; });
+    var RL = reconnus();
+    RL.forEach(function (x) { reco[cle(x)] = 1; });
     Object.keys(CACHE).forEach(function (ym) {
       var M = CACHE[ym];
       M.rdv.forEach(function (r) { pose(r.date, { type: 'rdv', jarvis: true, h: hm(r.heure), deb: min(r.heure), dur: r.duree_min || D, nom: r.nom || 'Rendez-vous', ville: r.ville || '', attente: !!r._attente }); });
@@ -130,7 +140,7 @@
         (idx[d] = idx[d] || { ev: [], notes: [] }).notes.push({ nom: nomOfficine(n.scope_type, n.scope_id), body: n.body || '' });
       });
     });
-    ((RECO && RECO.liste) || []).forEach(function (x) {
+    RL.forEach(function (x) {
       if (!CACHE[x.date.slice(0, 7)]) return;
       var deb = x.jour_entier ? 8 * 60 : min(x.debut), fin = x.jour_entier ? 19 * 60 : min(x.fin);
       pose(x.date, { type: 'rdv', reco: true, entier: !!x.jour_entier, h: x.jour_entier ? '' : hm(x.debut), deb: deb, dur: fin - deb, nom: x.nom, ville: x.ville, confirmer: x.etat === 'confirmer' });
@@ -159,6 +169,7 @@
     return a;
   }
   function jour(s) {
+    if (PAR_JOUR && cleReco() !== RECO_CLE) PAR_JOUR = null;   // les officines sont arrivées depuis : on reconnaît à nouveau
     if (!PAR_JOUR) PAR_JOUR = construire();
     var j = PAR_JOUR[s] || { ev: [], notes: [] };
     return { ev: j.ev, rdv: j.ev.filter(function (e) { return e.type === 'rdv'; }), taches: tachesDe(s), notes: j.notes };
