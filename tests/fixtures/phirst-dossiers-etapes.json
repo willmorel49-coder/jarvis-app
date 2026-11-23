@@ -1,0 +1,211 @@
+{
+ "source": "Maquette des Dossiers choisie par Will le 23/11/2026 (I-dossiers-maquettes/assets/donnees.js), étapes validées le 23/11 (G-dossiers-etapes/ETAPES-PROPOSEES.md)",
+ "sortes": {
+  "transfert": {
+   "nom": "Transfert",
+   "etapes": [
+    {
+     "k": "rdv",
+     "c": "1er rendez-vous",
+     "t": "Premier rendez-vous : le projet, le quartier visé, le calendrier souhaité"
+    },
+    {
+     "k": "local",
+     "c": "Nouveau local",
+     "t": "Le nouveau local : trouvé, visité, réservé sous réserve de l’accord de l’ARS"
+    },
+    {
+     "k": "plans",
+     "c": "Plans",
+     "t": "Les plans du nouveau local, pour la demande"
+    },
+    {
+     "k": "demande",
+     "c": "Demande à l’ARS",
+     "t": "Demande déposée à l’ARS"
+    },
+    {
+     "k": "reponse",
+     "c": "Réponse de l’ARS",
+     "t": "Réponse de l’ARS : accord ou refus"
+    },
+    {
+     "k": "contest",
+     "c": "Contestation possible",
+     "t": "Le temps pendant lequel l’accord peut encore être contesté (durée à confirmer par Yann)"
+    },
+    {
+     "k": "agenc",
+     "c": "Agencement",
+     "t": "Agencement du nouveau local : plan, devis, bon pour accord"
+    },
+    {
+     "k": "travaux",
+     "c": "Travaux",
+     "t": "Travaux"
+    },
+    {
+     "k": "demenage",
+     "c": "Ouverture",
+     "t": "Déménagement et ouverture au public"
+    }
+   ]
+  },
+  "agencement": {
+   "nom": "Agencement",
+   "etapes": [
+    {
+     "k": "rdv",
+     "c": "1er rendez-vous",
+     "t": "Premier rendez-vous : les besoins du pharmacien (cahier des besoins)"
+    },
+    {
+     "k": "releve",
+     "c": "Relevé",
+     "t": "Relevé : mesures, photos « avant », plan existant"
+    },
+    {
+     "k": "ambiance",
+     "c": "Ambiance",
+     "t": "Inspirations et ambiance choisies avec le pharmacien"
+    },
+    {
+     "k": "plan3d",
+     "c": "Plan et 3D",
+     "t": "Plan et 3D présentés"
+    },
+    {
+     "k": "devis",
+     "c": "Devis",
+     "t": "Devis envoyé"
+    },
+    {
+     "k": "bon",
+     "c": "Bon pour accord",
+     "t": "Bon pour accord signé"
+    },
+    {
+     "k": "mobilier",
+     "c": "Mobilier",
+     "t": "Commande et fabrication du mobilier"
+    },
+    {
+     "k": "travaux",
+     "c": "Travaux",
+     "t": "Travaux (le chantier, ses artisans, ses dates)"
+    },
+    {
+     "k": "reception",
+     "c": "Réception",
+     "t": "Réception des travaux"
+    }
+   ]
+  },
+  "riedl": {
+   "nom": "Robotique Riedl",
+   "etapes": [
+    {
+     "k": "rdv",
+     "c": "1er rendez-vous",
+     "t": "Premier rendez-vous : le besoin, le robot actuel s’il y en a un"
+    },
+    {
+     "k": "visite",
+     "c": "Visite technique",
+     "t": "Visite technique : mesures de la réserve, accès pour la livraison, électricité"
+    },
+    {
+     "k": "implant",
+     "c": "Implantation",
+     "t": "Implantation : où va le robot, quel modèle"
+    },
+    {
+     "k": "offre",
+     "c": "Offre",
+     "t": "Offre et financement envoyés (achat ou location)"
+    },
+    {
+     "k": "bon",
+     "c": "Bon de commande",
+     "t": "Bon de commande signé"
+    },
+    {
+     "k": "prepa",
+     "c": "Préparation",
+     "t": "Préparation sur place : place libérée, prises, réseau, lien avec le logiciel de la pharmacie"
+    },
+    {
+     "k": "demontage",
+     "c": "Démontage",
+     "t": "Démontage de l’ancien robot",
+     "facultative": true
+    },
+    {
+     "k": "livraison",
+     "c": "Livraison",
+     "t": "Livraison et montage"
+    },
+    {
+     "k": "service",
+     "c": "Mise en service",
+     "t": "Mise en service et formation de l’équipe"
+    },
+    {
+     "k": "suivi",
+     "c": "Suivi",
+     "t": "Suivi : premier bilan, contrat d’entretien"
+    }
+   ]
+  },
+  "pda": {
+   "nom": "Robotique PDA",
+   "etapes": [
+    {
+     "k": "rdv",
+     "c": "1er rendez-vous",
+     "t": "Premier rendez-vous : les EHPAD servis (ou patients à domicile), le nombre de résidents"
+    },
+    {
+     "k": "etude",
+     "c": "Étude",
+     "t": "Étude : le volume à préparer, le choix de la machine (et d’une déblistéreuse si besoin)"
+    },
+    {
+     "k": "offre",
+     "c": "Offre",
+     "t": "Offre et financement envoyés"
+    },
+    {
+     "k": "bon",
+     "c": "Bon de commande",
+     "t": "Bon de commande signé"
+    },
+    {
+     "k": "prepa",
+     "c": "Préparation",
+     "t": "Préparation : le local de préparation, le logiciel relié à celui de la pharmacie"
+    },
+    {
+     "k": "install",
+     "c": "Installation",
+     "t": "Livraison et installation"
+    },
+    {
+     "k": "formation",
+     "c": "Formation",
+     "t": "Formation de l’équipe et premiers essais (double contrôle)"
+    },
+    {
+     "k": "demarrage",
+     "c": "Démarrage",
+     "t": "Démarrage avec le premier EHPAD"
+    },
+    {
+     "k": "suivi",
+     "c": "Suivi",
+     "t": "Suivi : premier bilan, entretien"
+    }
+   ]
+  }
+ }
+}

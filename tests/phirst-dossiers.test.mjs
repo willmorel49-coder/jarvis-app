@@ -3,7 +3,6 @@ import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import fs from 'node:fs'
-import vm from 'node:vm'
 const D = createRequire(import.meta.url)('../phirst/v2/phirst-dossiers-pur.js')
 
 const AUJ = '2026-11-23'
@@ -20,9 +19,8 @@ function ph(id, nom, volets) { return { dossier: { id, nom }, volets } }
 
 describe('étapes', () => {
   test('les 37 textes, noms courts et clés sont ceux de la maquette', () => {
-    const bac = { window: {} }
-    vm.runInNewContext(fs.readFileSync('/Users/williammorel/PHIRST/finalisation-2026-11-22/I-dossiers-maquettes/assets/donnees.js', 'utf8'), bac)
-    const M = bac.window.PH.SORTES
+    // Référence copiée de la maquette dans le dépôt (la CI n'a pas les fichiers du Mac).
+    const M = JSON.parse(fs.readFileSync(new URL('./fixtures/phirst-dossiers-etapes.json', import.meta.url), 'utf8')).sortes
     let total = 0
     assert.deepEqual(Object.keys(M).sort(), Object.keys(D.SORTES).sort())
     for (const s of Object.keys(M)) {
