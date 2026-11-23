@@ -1,3 +1,16 @@
+-- ⛔ NE PAS REJOUER CE FICHIER (avertissement posé le 23/11/2026).
+--    Sa fonction public.rdv_alerter() est PÉRIMÉE. La rejouer effacerait
+--    les deux gardes ajoutées depuis :
+--      · la sonde quotidienne du gardien ne prévient personne (17/08/2026) —
+--        sans elle, le commercial visé par la sonde reçoit un faux
+--        rendez-vous chaque matin ;
+--      · un rendez-vous noté à une date déjà passée ne prévient pas
+--        (16/11/2026, choix de Will).
+--    La version installée en base est celle de rdv-controle-bout-en-bout.sql
+--    (empreinte md5(prosrc) 3a4b978e, relevée le 23/11/2026).
+--    Base neuve : rejouer ce fichier, puis rdv-controle-bout-en-bout.sql
+--    juste après, dans le même passage.
+--
 -- ═══════════════════════════════════════════════════════════════
 -- JARVIS · L'alerte quand un pharmacien réserve (13/08/2026)
 --
