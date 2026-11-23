@@ -7,7 +7,6 @@
      d'aujourd'hui. [titre, phrase sous le titre, explication, [[écran, bouton], …]]. */
   var AUJ = [['appels', 'Ouvrir les Appels'], ['agenda', 'Ouvrir l’Agenda']];
   var E = {
-    dossiers: ['Dossiers de projet', 'Chaque agencement, du premier relevé à la réception.', 'Cet écran se prépare. En attendant, vos pistes et vos rendez-vous sont dans les Appels et l’Agenda.', AUJ],
     chantiers:['Chantiers', 'Ce qui se monte cette semaine, et ce qui bloque.', 'Cet écran se prépare. En attendant, les dates de pose se suivent dans l’Agenda.', [['agenda', 'Ouvrir l’Agenda'], ['appels', 'Ouvrir les Appels']]],
     encaisser:['Encaisser', 'Acomptes, situations et soldes.', 'Cet écran se prépare. En attendant, retrouvez vos pistes et vos rendez-vous dans les Appels et l’Agenda.', AUJ],
     vitrine:  ['Vitrine', 'Ce que voit un pharmacien.', 'Cet écran se prépare. En attendant, ouvrez vos Appels pour préparer les prochaines prises de contact.', AUJ],
