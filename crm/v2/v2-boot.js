@@ -392,7 +392,45 @@
     return 'stock du ' + V2.dateEnMots(ds[0], maintenant) + (z !== ds[0] ? ' au ' + V2.dateEnMots(z, maintenant) : '');
   };
 
-  V2.bestPrice = function (b) {
+  // ── L'offre d'un labo vaut-elle pour CETTE officine ? (23/11/2026, remontée d'Inès du 18/11) ──
+  // « il met l'offre Sanofi sur toutes les fiches même s'ils ne sont pas encodés » : le prix d'offre
+  // partait chez toutes les officines. Le produit appartient à l'offre Sanofi ou UPSA si son CIP7 figure
+  // dans la liste de l'offre (crm/marketing-offers.js, CIP13 approché « 3400 » + CIP7 + « 0 » = 12
+  // chiffres : on compare le CIP7). L'inscription se lit dans WML_OFF_CA.off.b (colonne TIRBRANCHE :
+  // 0 aucune · 1 Sanofi · 2 UPSA · 3 les deux). Choix de Will (23/11/2026, question cliquée) : l'offre
+  // ne s'écarte QUE pour une officine cliente PRÉSENTE au fichier et non inscrite à ce labo. Sans
+  // officine, officine absente du fichier, prospect, ou produit d'une autre offre : l'offre reste.
+  function cip7De(c) {
+    c = String(c == null ? '' : c);
+    return c.length === 13 ? c.slice(5, 12) : c.length === 12 ? c.slice(4, 11) : c.length === 7 ? c : '';
+  }
+  var _labosOffre = null, _labosOffreSrc = null;
+  function laboOffre(cip) {
+    var L = window.MARKETING_IP_OFFERS;
+    if (!L || !L.length) return '';
+    if (_labosOffreSrc !== L || !_labosOffre) {
+      var idx = {}, BIT = { ip_sanofi: 1, ip_upsa: 2 };
+      L.forEach(function (o) {
+        if (!o || !BIT[o.id]) return;
+        (o.products || []).forEach(function (p) { var k = cip7De(p.cip13 || p.ean); if (k) idx[k] = BIT[o.id]; });
+      });
+      _labosOffre = idx; _labosOffreSrc = L;
+    }
+    return _labosOffre[cip7De(cip)] || 0;
+  }
+  V2.offreAdmise = function (b, pid) {
+    if (pid == null || pid === '' || !b) return true;
+    var bit = laboOffre(b.cip13);
+    if (!bit) return true;                                   // produit hors offres Sanofi / UPSA
+    var off = (window.WML_OFF_CA || {}).off, v = off && off.b && off.b[String(pid)];
+    if (!v) return true;                                     // absente du fichier : on ne sait pas
+    var client = (V2.pharmacies || []).some(function (p) { return String(p.id) === String(pid); });
+    if (!client) return true;                                // prospect : l'offre reste (Will, 23/11/2026)
+    return (v[0] & bit) === bit;
+  };
+
+  // `pid` (facultatif) : l'officine à qui le prix est montré ou envoyé. Sans lui, le prix du catalogue.
+  V2.bestPrice = function (b, pid) {
     if (!b) return { ip: null, ht: null, remise: 0, offre: false };
     var ht = (b.prix_ht != null && b.prix_ht > 0) ? b.prix_ht : 0;   // PPHT / tarif grossiste
     var ip0 = (b.prix_ip != null && b.prix_ip > 0) ? b.prix_ip : 0;  // prix net IP
@@ -400,7 +438,7 @@
     // Offre labo valide UNIQUEMENT par rapport au PPHT : sous le tarif + remise réaliste
     // (≤ 50% du PPHT). Sans PPHT (prix_ht=0, ex vaccins à offre_ip aberrante 2,86 vs 73€)
     // → offre ignorée d'office. La remise se calcule TOUJOURS sur le PPHT.
-    var offre = off > 0 && ht > 0 && off < ht && off >= ht * 0.5;
+    var offre = off > 0 && ht > 0 && off < ht && off >= ht * 0.5 && V2.offreAdmise(b, pid);
     var ip = (offre && (!ip0 || off < ip0)) ? off : ip0;             // prix le plus bas : l'offre seulement si elle bat le net standard
     var remise = (ht > 0 && ip > 0 && ip <= ht) ? Math.round((1 - ip / ht) * 1000) / 10 : 0;
     return { ip: ip > 0 ? ip : null, ht: ht > 0 ? ht : null, remise: remise, offre: offre && (!ip0 || off < ip0) };

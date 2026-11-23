@@ -462,7 +462,7 @@
       if (!b) return;                        // pas dans le catalogue IP → on ignore
       var cat = classify(b, cip);
       if (!cat || !buckets[cat] || cat === 'gen') return;   // génériques non partenaires : jamais une opportunité
-      var bp = V2.bestPrice(b);
+      var bp = V2.bestPrice(b, pid);
       buckets[cat].push({
         cip: cip,
         designation: b.designation || m.designation || '',
@@ -620,9 +620,9 @@
     return Math.round(e.qte / e.ph.size / _statsMonths * 12);
   }
   // Gain estimé = remise (PPHT - prix net) × rotation moyenne annuelle.
-  function gainYear(b) {
+  function gainYear(b, pid) {   // pid facultatif : le gain suit le prix que voit CETTE officine (offre Sanofi / UPSA)
     if (!b) return 0;
-    var bp = V2.bestPrice(b), ht = bp.ht || 0, ip = bp.ip || 0;
+    var bp = V2.bestPrice(b, pid), ht = bp.ht || 0, ip = bp.ip || 0;
     if (!(ht > 0 && ip > 0 && ip < ht)) return 0;
     return Math.round((ht - ip) * rotationYear(b.cip13));
   }
@@ -647,9 +647,9 @@
     stats.forEach(function (e, cip) {
       if (owned.has(cip)) return;
       var b = bIdx.get(cip); if (!b) return;          // doit être au catalogue IP pour être proposable
-      var bp = V2.bestPrice(b);
+      var bp = V2.bestPrice(b, pid);
       rows.push({ cip: cip, designation: b.designation || '', nb: e.ph.size, prix: bp.ip, offre: bp.offre,
-                  froid: !!b.is_froid, rota: rotationYear(cip), gain: gainYear(b) });
+                  froid: !!b.is_froid, rota: rotationYear(cip), gain: gainYear(b, pid) });
     });
     rows.sort(function (a, b) { return b.nb - a.nb; });
     return { rows: rows.slice(0, limit || 40), total: total };
@@ -735,7 +735,7 @@
       var cat = classify(b, cip); if (!cat || !buckets[cat]) return;
       if (!grpScope && total >= 2 && e.ph.size < Math.max(2, Math.ceil(total * penFor(cat)))) return;  // réseau : seuil
       if (grpScope && e.ph.size < Math.max(2, Math.ceil(total * PEN_GRP))) return;  // groupement : seuil 10 %
-      var bp = V2.bestPrice(b), ht = bp.ht || 0, ip = bp.ip || 0;
+      var bp = V2.bestPrice(b, pid), ht = bp.ht || 0, ip = bp.ip || 0;
       var rem = (ht > 0 && ip > 0 && ip <= ht) ? Math.round((1 - ip / ht) * 1000) / 10 : 0;
       buckets[cat].push({ cip: cip, designation: b.designation || '', prix_ht: ht, prix_ip: ip, offre: bp.offre,
                           remise: rem, froid: !!b.is_froid, sortie: e.ph.size, qte: e.qte });
@@ -760,7 +760,7 @@
     var rows = [];
     stats.forEach(function (e, cip) {
       var b = bIdx.get(cip); if (!b) return;
-      var bp = V2.bestPrice(b), ht = bp.ht || 0, ip = bp.ip || 0;
+      var bp = V2.bestPrice(b, pid), ht = bp.ht || 0, ip = bp.ip || 0;
       var rem = (ht > 0 && ip > 0 && ip <= ht) ? Math.round((1 - ip / ht) * 1000) / 10 : 0;
       rows.push({ cip: cip, designation: b.designation || '', prix_ip: ip, remise: rem, froid: !!b.is_froid, sortie: e.ph.size, qte: e.qte, owned: owned.has(cip) });
     });
@@ -5214,7 +5214,7 @@
       selCips.forEach(function (cip) {
         var b = bIdxP.get(String(cip)); if (!b) return;
         var cat = classify(b, cip); if (!cat || !buckP[cat]) return;
-        var bp = V2.bestPrice(b);
+        var bp = V2.bestPrice(b, pid);
         buckP[cat].push({ cip: String(cip), designation: b.designation || '', prix_ip: bp.ip, marketQte: rotationYear(cip) || 0 });
       });
       sections = CATS.map(function (c) {
