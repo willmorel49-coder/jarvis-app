@@ -591,3 +591,72 @@ test('nom du fichier Excel : accents et espaces retirés, finit par .xlsx', () =
   assert.ok(/^[A-Za-z0-9.-]+$/.test(n) && n.endsWith('.xlsx'));
   assert.ok(C.nomFichierExcel('T1', 'x'.repeat(200), 'j').length < 90);
 });
+
+// ── Bloc « T10, clientes d'Angers et Essentiels » (24/11/2026) — données FICTIVES ──
+const Ess = require('../crm/v2/v2-tournees-essentiels.js');
+// Tracé fictif : T10 de (47.0, -1.0) à (47.0, 0.0) ; T7 loin au nord, sur le même parallèle décalé de +1° (~111 km)
+const traceT10 = [[47.0, -1.0], [47.0, 0.0]];
+const arretE = (n, id, lat, lng, r) => ({ n, id, nom: 'ARRET ' + n, ville: 'ANGERS', lat, lng, r: r || null, m: r ? [[100, 10, 2], null, [50, 5, 1]] : [] });
+const TE = { tournees: {
+  T10: { trace: traceT10, prospects: [['e2', 47.01, -0.5, 0, 0, 0, 1.2]], arrets: [arretE(1, 'a1', 47.0, -0.9, { rm: 5 }), arretE(2, 'a2', 47.0, -0.5, { rm: 6 })] },
+  T7: { trace: [[48.0, -1.0], [48.0, 0.0]], arrets: [arretE(1, 'b1', 48.0, -0.5, { rm: 1 })] }
+} };
+// base nationale fictive : [lat, lng, ?, ?, ?, ?, nom, ville, cp, ... , cip en colonne 13]
+const pfe = (cip, lat, lng, nom, ville) => { const l = new Array(14).fill(''); l[0] = lat; l[1] = lng; l[6] = nom; l[7] = ville; l[8] = '49000'; l[13] = cip; return l; };
+const PFE = { p: [
+  pfe('e1', 47.0, -0.8, 'PHARMACIE UN', 'ANGERS'),         // sur la route (0 km)
+  pfe('e2', 47.04, -0.5, 'PHARMACIE DEUX', 'TRELAZE'),      // ~4,4 km, déjà cliente
+  pfe('e3', 47.2, -0.5, 'PHARMACIE TROIS', 'LOIN PROCHE'),  // ~22 km
+  pfe('e4', 48.9, 2.3, 'PHARMACIE QUATRE', 'PARIS'),        // très loin de tout tracé
+  pfe('e5', 47.0, -0.95, 'PHARMACIE CINQ', 'ANGERS')
+] };
+const GE = { e1: 'Essentiels Pharma', e2: 'Essentiels Pharma', e3: 'Essentiels Pharma', e4: 'Essentiels Pharma', e5: 'Essentiels Pharma' };
+const WE = [
+  { id: 'e2', name: 'PHARMACIE DEUX', ville: 'TRELAZE', cp: '49800', lat: 47.04, lng: -0.5 },
+  { id: 'a1', name: 'CLIENTE LIVREE', ville: 'ANGERS', cp: '49000', lat: 47.0, lng: -0.9 },
+  { id: 'a2', name: 'AUTRE LIVREE', ville: 'ANGERS', cp: '49100', lat: 47.0, lng: -0.5 },
+  { id: 'a9', name: 'CLIENTE SANS LIVRAISON', ville: 'ANGERS', cp: '49000', lat: 47.01, lng: -0.7 },
+  { id: 'z1', name: 'AILLEURS', ville: 'NANTES', cp: '44000', lat: 47.2, lng: -1.5 }
+];
+
+test('Essentiels : une officine à plus de 40 km de toute tournée n’apparaît ni dans la liste ni dans les marqueurs ni dans les comptes', () => {
+  const D = Ess.calculer(TE, PFE, GE, WE, 'T10');
+  assert.deepEqual(D.ess.map(e => e.cip).sort(), ['e1', 'e2', 'e3', 'e5']);
+  assert.ok(!D.ess.some(e => e.cip === 'e4') && !D.cl.some(e => e.cip === 'e4') && !D.non.some(e => e.cip === 'e4'));
+  const html = D.ess.map(Ess.ligneEss).join('') + Ess.sousTitre(D, 'quot') + Ess.sousTitre(D, 'auj');
+  assert.ok(!/Paris|trop loin|Loin des tourn/i.test(html));
+  assert.equal(Ess.SEUIL_LOIN, 40);
+});
+
+test('Essentiels : triées de la plus proche de la route à la plus loin', () => {
+  const D = Ess.calculer(TE, PFE, GE, WE, 'T10');
+  assert.deepEqual(D.ess.map(e => e.cip), ['e1', 'e5', 'e2', 'e3']);
+  for (let i = 1; i < D.ess.length; i++) assert.ok(D.ess[i].d10 >= D.ess[i - 1].d10);
+  assert.ok(D.ess[0].d10 < 0.05 && D.ess[2].d10 > 3 && D.ess[2].d10 < 6);
+});
+
+test('Essentiels : compte des déjà clientes et des à récupérer', () => {
+  const D = Ess.calculer(TE, PFE, GE, WE, 'T10');
+  assert.deepEqual(D.cl.map(e => e.cip), ['e2']);
+  assert.deepEqual(D.non.map(e => e.cip).sort(), ['e1', 'e3', 'e5']);
+  assert.equal(D.cl.length + D.non.length, D.ess.length);
+});
+
+test('Essentiels : clientes d’Angers livrées (arrêt sur la tournée) et non livrées', () => {
+  const D = Ess.calculer(TE, PFE, GE, WE, 'T10');
+  assert.deepEqual(D.angers.map(a => a.cip), ['a1', 'a2', 'a9']);   // Nantes et Trélazé exclues, arrêts dans l’ordre puis sans arrêt
+  assert.deepEqual(D.angersLivrees.map(a => a.cip), ['a1', 'a2']);
+  assert.deepEqual(D.angersSans.map(a => a.cip), ['a9']);
+  assert.equal(D.arrets.length, 2);
+  assert.equal(D.angers.find(a => a.cip === 'a1').ch.cmd, 3);
+  assert.equal(D.angers.find(a => a.cip === 'a9').ch, null);
+  assert.ok(/2 clientes à Angers/.test(Ess.sousTitre(D, 'quot')) && /1 sans livraison/.test(Ess.sousTitre(D, 'auj')));
+});
+
+test('Essentiels : donnée manquante = null, jamais un chiffre faux ; CIP absent de la base nationale ignoré', () => {
+  assert.equal(Ess.calculer(TE, null, GE, WE, 'T10'), null);
+  assert.equal(Ess.calculer(TE, PFE, GE, null, 'T10'), null);
+  assert.equal(Ess.calculer({ tournees: {} }, PFE, GE, WE, 'T10'), null);
+  const D = Ess.calculer(TE, PFE, Object.assign({ inconnu: 'Essentiels Pharma' }, GE), WE, 'T10');
+  assert.equal(D.ess.length, 4);
+});

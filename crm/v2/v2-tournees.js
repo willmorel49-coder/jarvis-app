@@ -820,6 +820,7 @@
         '<p class="trn-fen" id="trn-fen">' + esc(C.texteFenetre(tb.mois, tb.fen)) + '</p></section>' +
       notes(tb) + '</div>';
     root.innerHTML = h;
+    if (code === 'T10' && V2.tourneesEssentiels) { try { V2.tourneesEssentiels.monter(root, ensureLeaflet); } catch (e) { console.warn('bloc Essentiels T10', e); } }   // bloc « T10, Angers et les Essentiels » (v2-tournees-essentiels.js)
     var sel = document.getElementById('trn-sel');
     if (sel) sel.onchange = function () { if (sel.value && sel.value !== S.open) V2.go('tournees', sel.value); };
     segs(); familles(tb); liste(); route(code); simCarte(); cmpCarte(); graphiques(); chip();
