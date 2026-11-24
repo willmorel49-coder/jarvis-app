@@ -77,7 +77,7 @@ function pret(base, extra = {}) {
     ] })
   }, extra);
 }
-const RECO = { apparier: (t) => /essais/i.test(t) ? { officine: { id: '9000001', name: 'PHARMACIE DES ESSAIS', ville: 'VILLE-A' }, etat: 'sur' } : {} };
+const RECO = { apparier: (t) => /essais/i.test(t) ? { officine: { id: '9000001', name: 'PHARMACIE DES ESSAIS', ville: 'VILLE-A' }, etat: 'reconnu' } : {} };
 
 test('Vos clients : celles qui ont un rendez-vous à venir, quand, et les autres à qui le proposer', async () => {
   const base = fausseBase({ rdv: [{ cip: '9000002', nom: 'PHARMACIE DU BANC', date: plus(5), heure: '14:00:00' }] }, { opposes: [{ cip: '9000005' }] });
@@ -93,7 +93,7 @@ test('Vos clients : celles qui ont un rendez-vous à venir, quand, et les autres
 
   assert.match(h, /<b>2<\/b> sur 5 ont un rendez-vous à venir · <b>2<\/b> sans rendez-vous · <b>1<\/b> ne veut plus être sollicitée/, 'les comptes tombent juste : 5 à lui = 2 posées + 2 à proposer + 1 qui a dit stop');
   assert.doesNotMatch(h, /Collegue/, 'une officine d’un collègue n’apparaît pas');
-  assert.doesNotMatch(h, /Le mois montre aussi/, 'aucun rendez-vous hors portefeuille : pas de phrase');
+  assert.doesNotMatch(h, /Vous avez aussi/, 'aucun rendez-vous hors portefeuille : pas de phrase');
   assert.doesNotMatch(h, /Refus/, 'celle qui a dit stop n’est pas dans les listes');
 
   const [sans, poses] = h.split('Rendez-vous posé <b>');
@@ -117,8 +117,33 @@ test('Vos clients : un rendez-vous chez l’officine d’un collègue est dit, p
   ctx.V2.todoMois.html(); await attendre();
   const h = ctx.V2.todoMois.html();
   assert.match(h, /<b>1<\/b> sur 5 ont un rendez-vous à venir/, 'marqueur : la section est calculée (Essais, reconnue dans l’agenda)');
-  assert.match(h, /Le mois montre aussi 1 rendez-vous à venir chez une officine qui n’est pas dans vos clients/, 'l’écart entre la grille et la liste est dit');
+  assert.match(h, /Vous avez aussi 1 rendez-vous à venir chez une officine qui n’est pas dans vos clients/, 'l’écart entre la grille et la liste est dit');
   assert.doesNotMatch(h.split('Vos clients')[1], /Collegue/, 'et l’officine n’est pas dans les listes');
+});
+
+test('Vos clients : la phrase compte des RENDEZ-VOUS ; un « à confirmer » chez un collègue ne compte pas, chez soi il est dit (24/11)', async () => {
+  // deux rendez-vous JARVIS chez la même officine d'un collègue, plus la copie du second dans l'agenda (même jour)
+  const base = fausseBase({ rdv: [
+    { cip: '9000009', nom: 'PHARMACIE DU COLLEGUE', date: plus(4), heure: '11:00:00' },
+    { cip: '9000009', nom: 'PHARMACIE DU COLLEGUE', date: plus(9), heure: '15:00:00' }
+  ] });
+  const ctx = monter([MOIS], pret(base, {
+    planningAppelerAgenda: () => Promise.resolve({ ok: true, evenements: [
+      { date: plus(9), debut: '15:00:00', fin: '16:00:00', jour_entier: false, titre: 'Phie du collegue' },
+      { date: plus(6), debut: '10:00:00', fin: '11:00:00', jour_entier: false, titre: 'Phie qui ressemble au collegue' },
+      { date: plus(7), debut: '09:00:00', fin: '10:00:00', jour_entier: false, titre: 'Phie qui ressemble au temoin' }
+    ] })
+  }));
+  const C = { id: '9000009', name: 'PHARMACIE DU COLLEGUE', ville: 'VILLE-F' }, T = { id: '9000004', name: 'PHARMACIE DU TEMOIN', ville: 'VILLE-D' };
+  ctx.V2RECO = { apparier: (t) => /ressemble au collegue/i.test(t) ? { officine: C, etat: 'confirmer' }
+    : /ressemble au temoin/i.test(t) ? { officine: T, etat: 'confirmer' } : /du collegue/i.test(t) ? { officine: C, etat: 'reconnu' } : {} };
+  ctx.V2.todoMois.html(); await attendre();
+  const h = ctx.V2.todoMois.html();
+  assert.match(h, /<h2 class="tm-cht">Vos clients<\/h2>/, 'marqueur : la section est là');
+  assert.match(h, /Vous avez aussi 2 rendez-vous à venir chez une officine qui n’est pas dans vos clients/, '2 rendez-vous (la copie agenda comptée une fois, le « à confirmer » pas du tout), 1 officine');
+  const poses = h.split('Rendez-vous posé <b>')[1];
+  assert.ok(poses && poses.indexOf('<b>Temoin</b>') >= 0, 'chez soi, la ressemblance reste visible…');
+  assert.match(poses, /agenda personnel · à confirmer/, '… avec la mention « à confirmer »');
 });
 
 test('Vos clients : une lecture ratée ne fait jamais croire que tous sont sans rendez-vous', async () => {

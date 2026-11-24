@@ -128,3 +128,32 @@ test('alias : un titre corrige a la main est reconnu directement', () => {
 test('alias : la cle ignore le verbe d’action et la casse', () => {
   assert.equal(R.cleAlias('Appeler phie du lys'), R.cleAlias('Phie du lys'));
 });
+
+// ─── 24/11/2026 : quatre événements à venir d'un agenda réel tombaient sur les officines d'un
+// collègue. Les noms ci-dessous sont des noms génériques, les villes sont fictives.
+const AUTRES = R.indexer([
+  { id: '2200001', name: 'PHARMACIE DE BOURG', ville: 'BOURG' },
+  { id: '2200002', name: 'PHARMACIE DU BOULEVARD', ville: 'VILLE-X' },
+  { id: '2200003', name: 'PHARMACIE COEUR DE ROSERAIE', ville: 'VILLE-Y' },
+  { id: '2200004', name: 'PHARMACIE DE LA ROCADE', ville: 'VILLE-Z' },
+]);
+const app2 = (titre) => R.apparier(titre, AUTRES, [], {});
+
+test('normaliser : « œ » devient OE, il ne disparaît pas', () => {
+  assert.equal(R.normaliser('Phie cœur de bourg'), 'PHIE COEUR DE BOURG');
+  assert.equal(R.normaliser('ŒUVRE Æ'), 'OEUVRE AE');
+});
+
+test('faux positif : un nom d’un seul mot n’explique pas un titre qui en dit plus', () => {
+  assert.notEqual(app2('Phie cœur de bourg').etat, 'reconnu', '« cœur » n’est pas dans « Pharmacie de Bourg »');
+  assert.notEqual(app2('Pharmacie boulevard de l’Est').etat, 'reconnu', '« Est » n’est pas dans « Pharmacie du Boulevard »');
+  assert.notEqual(app2('Pharmacie de la rocade Le Mans').etat, 'reconnu', 'une autre ville que la sienne');
+});
+
+test('reconnu : le nom complet, avec ou sans sa ville, reste une certitude', () => {
+  assert.equal(app2('Phie du bourg').etat, 'reconnu');
+  assert.equal(app2('Pharmacie de la rocade Ville-Z').etat, 'reconnu');
+  const r = app2('Pharmacie cœur de la roseraie');
+  assert.equal(r.etat, 'reconnu', 'avec le « œ » lu, le nom entier est retrouvé');
+  assert.equal(r.officine.id, '2200003');
+});

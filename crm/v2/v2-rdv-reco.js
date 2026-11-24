@@ -47,7 +47,9 @@
   var SANS    = 'AAAAAACEEEEIIIINOOOOOUUUUYaaaaaaceeeeiiiinooooouuuuyy';
 
   M.normaliser = function (texte) {
-    var s = String(texte == null ? '' : texte);
+    // ⚠️ « œ » n'est pas une lettre accentuée mais deux lettres : sans cette ligne, « Phie cœur
+    // de bourg » devenait « C UR DE BOURG » et tombait sur « PHARMACIE DE BOURG » (24/11/2026).
+    var s = String(texte == null ? '' : texte).replace(/œ/g, 'oe').replace(/Œ/g, 'OE').replace(/æ/g, 'ae').replace(/Æ/g, 'AE');
     var out = '';
     for (var i = 0; i < s.length; i++) {
       var k = ACCENTS.indexOf(s.charAt(i));
@@ -147,6 +149,20 @@
       if (seg === e.dist) score = 1;
       // La ville écrite dans le titre départage deux homonymes.
       if (e.ville && enveloppe.indexOf(' ' + e.ville + ' ') !== -1) score = Math.min(1, score + 0.12);
+      // ⚠️ Un nom qui n'explique pas TOUT le titre n'est jamais une certitude (24/11/2026) :
+      // « Pharmacie boulevard de l'Est » sortait « reconnu » en PHARMACIE DU BOULEVARD à Brive,
+      // « Phie cœur de bourg » en PHARMACIE DE BOURG, parce qu'un nom d'un seul mot est
+      // entièrement « recouvert » par n'importe quel titre qui le contient. Un mot du titre
+      // absent du nom (EST, COEUR, LISIEUX) et qui n'est pas la ville de l'officine : on descend
+      // sous le seuil, le commercial tranche (« à confirmer »). L'inverse (un mot du NOM absent
+      // du titre) n'est pas retenu : mesuré sur l'agenda réel, il rétrogradait des officines du
+      // portefeuille à deux noms dont le commercial n'écrit qu'un (« Phie deroche »).
+      if (seg !== e.dist) {
+        var villeJ = {}, reste = 0;
+        e.ville.split(' ').forEach(function (v) { if (v) villeJ[v] = 1; });
+        for (k = 0; k < js.length; k++) if (!e.jetons[js[k]] && !villeJ[js[k]] && /^[A-Z]{2,}$/.test(js[k])) reste++;
+        if (reste) score = Math.min(score, SEUIL_RECONNU - 0.01);
+      }
       if (!marqueur) score -= 0.10;
       trouves.push({ s: score, o: e.o, dist: e.dist });
     }
