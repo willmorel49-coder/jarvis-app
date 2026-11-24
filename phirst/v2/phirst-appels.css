@@ -355,7 +355,7 @@
 
 /* ── Les trois blocs de la pharmacie ouverte (L1, 24/11/2026, maquette 1-appels) : la première phrase, « Il me dit… », les voisines équipées.
    Fonds opaques, ombres douces ; aucun flou, aucune opacité sur du texte ; cibles ≥ 44 px, textes ≥ 13 px. ── */
-.pa-l .pt-plus{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:16px;margin-top:14px;align-items:start}
+.pa-l .pt-plus{grid-column:1 / -1;display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:16px;margin-top:14px;align-items:start}
 @media (max-width:1023px){.pa-l .pt-plus{grid-template-columns:minmax(0,1fr)}}
 .pt-col{display:grid;gap:14px;min-width:0;align-content:start}
 .pt-col:empty{display:none}

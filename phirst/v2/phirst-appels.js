@@ -297,7 +297,7 @@
       return '<li><div class="pt-vn"><b>' + esc(e.nom) + '</b><em>' + x.km + ' km</em></div><p class="pt-vd">' + esc(T.villeAvecDep(e.ville, e.cp)) + ' · ' + esc(e.pose || '') + (e.an ? ', ' + esc(e.an) : '') + '</p><div class="pt-tags">' +
         '<span class="pt-tag">Accepte d’être citée</span>' + (e.visite ? '<span class="pt-tag" data-t="visite">Visite possible</span>' : '') +
         '<button type="button" class="pt-lien" data-vph="' + i + '" aria-pressed="' + (vp === i) + '">' + (vp === i ? 'Masquer la phrase' : 'Phrase prête') + '</button></div></li>';
-    }).join('') + '</ul>' + (vp != null && v[vp] ? '<p class="pt-vphrase" role="status">« ' + esc(T.phraseVoisine(v[vp].ref, v[vp].km)) + ' »</p>' : '') + '</section>';
+    }).join('') + '</ul>' + (vp != null && v[vp] ? '<p class="pt-vphrase" role="status">«\u00a0' + esc(T.phraseVoisine(v[vp].ref, v[vp].km)) + '\u00a0»</p>' : '') + '</section>';
   }
   function blocPlus(r) {
     if (!T) return '';

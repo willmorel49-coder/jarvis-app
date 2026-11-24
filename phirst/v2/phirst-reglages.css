@@ -187,3 +187,4 @@
 .ri-toast[data-err]{background-color:#7A2A12}
 .rg #ri-zone:empty{display:none}
 .rg .ri-groupe .rg-sur{color:var(--dz-ink3)}
+.rg .dz-sr{font-size:13px}
