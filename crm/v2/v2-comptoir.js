@@ -115,6 +115,164 @@
       '<button class="v2-btn v2-btn-primary cp-bar-go" onclick="V2.comptoir.panierFiche()">Créer la fiche</button></div>';
   }
 
+  // ── 24/11/2026 — Favoris. Demande de Will : « un bouton favoris pour faire un listing produits, par exemple dans les
+  //    nouveautés […] Karine va pouvoir se faire un panier de produits à mettre en avant ». Une liste PAR PERSONNE, rangée
+  //    dans `profils` (ligne __favprod_<id>__, même façon que la to do list) : elle suit d'un appareil à l'autre. Copie sur
+  //    l'appareil pour l'affichage immédiat (et le banc sans compte). On ne garde que le code CIP, le nom du moment (si le
+  //    produit sort du catalogue) et le jour d'ajout. « Tout mettre au panier » rejoint le panier existant → « Créer la fiche ».
+  var FAV_MAX = 300, FAV_LS = 'jarvis_favoris_produits_v1';
+  var FAV = { uid: null, items: null, etat: 0, backend: 'local', file: null, attente: 0, set: null, setDe: null };
+  var CLAVIER = ' onkeydown="if(event.target===this&&(event.key===\'Enter\'||event.key===\' \')){event.preventDefault();this.click()}"';
+  function favUid() { return (V2.user && V2.user.id) || 'local'; }
+  function favSb() { var c = null; try { c = V2.sb ? V2.sb() : null; } catch (e) { c = null; } return c && typeof c.from === 'function' ? c : null; }   // une base absente ou incomplète ne casse jamais l'écran
+  function favScope() { return { st: 'groupement', sid: '__favprod_' + favUid() + '__' }; }
+  function favNettoie(a) {
+    var out = [], vu = {}, i, x, c;
+    a = Array.isArray(a) ? a : [];
+    for (i = 0; i < a.length && out.length < FAV_MAX; i++) {
+      x = a[i]; c = x ? String(x.c || '').replace(/\D/g, '') : '';
+      if (!c || vu[c]) continue;
+      vu[c] = 1;
+      out.push({ c: c, d: String(x.d || '').slice(0, 160), t: /^\d{4}-\d{2}-\d{2}$/.test(String(x.t || '')) ? String(x.t) : '' });
+    }
+    return out;
+  }
+  function favLocal() { try { return favNettoie(JSON.parse(localStorage.getItem(FAV_LS + ':' + favUid()) || '[]')); } catch (e) { return []; } }
+  function favGarde(a) { try { localStorage.setItem(FAV_LS + ':' + favUid(), JSON.stringify(a)); } catch (e) {} }
+  function favListe() {
+    if (FAV.uid !== favUid()) { FAV.uid = favUid(); FAV.items = favLocal(); FAV.etat = 0; FAV.backend = 'local'; }
+    if (!FAV.etat) favCharger();
+    return FAV.items;
+  }
+  function favSet() {
+    var a = favListe(), i;
+    if (FAV.setDe !== a) { FAV.set = {}; for (i = 0; i < a.length; i++) FAV.set[a[i].c] = 1; FAV.setDe = a; }
+    return FAV.set;
+  }
+  function favCharger() {
+    var c = favSb(), s = favScope(), uid = FAV.uid;
+    if (!(c && V2.user)) { FAV.etat = 2; return Promise.resolve(FAV.items); }
+    FAV.etat = 1;
+    return Promise.resolve(c.from('profils').select('data').eq('scope_type', s.st).eq('scope_id', s.sid).maybeSingle()).then(function (r) {
+      if (r.error) throw r.error;
+      if (FAV.uid !== uid) return;
+      FAV.etat = 2; FAV.backend = 'supabase';
+      if (FAV.attente) return;   // un geste est en cours d'écriture : c'est lui qui posera la liste à jour
+      FAV.items = favNettoie(r.data && r.data.data && r.data.data.items); favGarde(FAV.items); majFavoris();
+    }).catch(function () { FAV.etat = 2; FAV.backend = 'local'; majFavoris(); });
+  }
+  // `fn` pose l'état voulu (jamais une bascule) : appliquée à la copie de l'écran PUIS à la ligne relue en base,
+  // elle donne le même résultat ; relire avant d'écrire évite que l'iPhone et le Mac s'écrasent l'un l'autre.
+  function favEcrire(fn) {
+    var c = favSb(), s = favScope();
+    FAV.items = fn(favNettoie(favListe())); favGarde(FAV.items); majFavoris();
+    if (!(c && V2.user)) return Promise.resolve(true);
+    FAV.attente++;
+    FAV.file = Promise.resolve(FAV.file).then(function () {
+      return Promise.resolve(c.from('profils').select('data').eq('scope_type', s.st).eq('scope_id', s.sid).maybeSingle()).then(function (r) {
+        if (r.error) throw r.error;
+        var items = fn(favNettoie(r.data && r.data.data && r.data.data.items));
+        return Promise.resolve(c.from('profils').upsert({ scope_type: s.st, scope_id: s.sid, data: { items: items }, updated_by: V2.user.id,
+          updated_by_name: V2.user.name || '', updated_at: new Date().toISOString() }, { onConflict: 'scope_type,scope_id' })).then(function (u) {
+          if (u.error) throw u.error;
+          FAV.backend = 'supabase'; FAV.attente--;
+          if (!FAV.attente) { FAV.items = items; favGarde(items); majFavoris(); }
+          return true;
+        });
+      }).catch(function () {
+        FAV.attente--; FAV.backend = 'local'; majFavoris();
+        if (V2.toast) V2.toast('Favori gardé sur cet appareil seulement : la base n\'a pas répondu', 'warn');
+        return false;
+      });
+    });
+    return FAV.file;
+  }
+  function favBascule(cip) {
+    var a = favListe(), veut = !favSet()[cip], d = donnees(), l = d && d.parCip ? d.parCip[cip] : null;
+    if (veut && a.length >= FAV_MAX) { if (V2.toast) V2.toast('Vos favoris sont pleins (' + FAV_MAX + ' produits) : retirez-en un d\'abord', 'warn'); return Promise.resolve(false); }
+    var item = { c: cip, d: l ? l.d : '', t: jourIso(maintenant()) };
+    if (V2.toast) V2.toast(veut ? 'Ajouté à vos favoris' : 'Retiré de vos favoris');
+    return favEcrire(function (x) {
+      x = x.filter(function (y) { return y.c !== cip; });
+      if (veut) x.unshift(item);
+      return x.slice(0, FAV_MAX);
+    });
+  }
+  function etoile(on, t) {
+    t = t || 20;
+    return '<svg width="' + t + '" height="' + t + '" viewBox="0 0 24 24" fill="' + (on ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true">' +
+      '<path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.4 6.6 19.5l1.2-6L3.3 9.3l6.1-.7L12 3z"/></svg>';
+  }
+  function boutonFav(cip) {
+    var on = !!favSet()[cip], lib = on ? 'Retirer des favoris' : 'Ajouter aux favoris';
+    return '<button type="button" class="cp-fav' + (on ? ' on' : '') + '" data-fav="' + escAttr(cip) + '" aria-pressed="' + on + '" aria-label="' + lib + '" title="' + lib + '"' +
+      ' onclick="V2.comptoir.favori(\'' + escAttr(cip) + '\',event)">' + etoile(on) + '</button>';
+  }
+  function boutonFavPanneau(cip) {
+    var on = !!favSet()[cip];
+    return '<button type="button" id="cp-fav-pan" class="v2-btn cp-cta cp-cta2 cp-fav-pan' + (on ? ' on' : '') + '" aria-pressed="' + on + '" onclick="V2.comptoir.favori(\'' + escAttr(cip) + '\',event)">' +
+      etoile(on, 18) + (on ? 'Dans mes favoris — retirer' : 'Ajouter aux favoris') + '</button>';
+  }
+  // Les favoris rangés : ceux du catalogue (dans l'ordre d'ajout, le plus récent d'abord) et ceux qui n'y sont plus.
+  function favLignes(d) {
+    var a = favListe(), dans = [], hors = [], i, l;
+    for (i = 0; i < a.length; i++) { l = d && d.parCip ? d.parCip[a[i].c] : null; if (l) dans.push({ l: l, f: a[i] }); else hors.push(a[i]); }
+    return { dans: dans, hors: hors };
+  }
+  function favLigne(x) {
+    var l = x.l;
+    return ligneP(l, [l.labo, x.f.t ? 'ajouté le ' + dateFr(x.f.t) : ''].filter(Boolean).join(' · '), l.prix > 0 ? eur2(l.prix) : '—',
+      (l.prix > 0 ? (l.f === 'nr' ? 'tarif' : 'prix net') + ' · ' : '') + stockLib(l), false);
+  }
+  function favOu() {
+    if (FAV.etat === 1) return '';
+    if (FAV.backend === 'supabase') return 'Elle vous suit sur tous vos appareils.';
+    return V2.user ? 'Gardée sur cet appareil pour le moment : la base n\'a pas répondu.' : 'Gardée sur cet appareil.';
+  }
+  function favVideTxt() {
+    return FAV.etat === 1 ? 'Lecture de vos favoris…'
+      : 'Aucun favori pour le moment. Ajoutez un produit avec l\'étoile ' + etoile(false, 16) + ' : dans les listes du catalogue ou dans la fiche du produit.';
+  }
+  // L'accueil du catalogue : la carte « Mes favoris », sous « Ce qui change ».
+  function favCarte(d) {
+    var a = favListe(), F = favLignes(d), h = '', i;
+    var titre = '<h2 class="cq1-h">Mes favoris' + (a.length ? ' <i class="cq1-fav-n">' + fr(a.length) + '</i>' : '') + '</h2>';
+    if (!a.length) return '<section class="cq1-card cq1-fav">' + titre + '<p class="cq1-fav-v">' + favVideTxt() + '</p></section>';
+    for (i = 0; i < F.dans.length && i < 6; i++) h += favLigne(F.dans[i]);
+    return '<section class="cq1-card cq1-fav">' + titre + (h ? '<div class="cpd-liste">' + h + '</div>' : '') +
+      '<button type="button" class="cq1-all" onclick="V2.comptoir.porte(\'fav\')">Voir mes favoris (' + fr(a.length) + ')</button></section>';
+  }
+  // Le volet « Mes favoris » : la liste entière, et le passage au panier.
+  function favVolet(d) {
+    var a = favListe(), F = favLignes(d), n = F.dans.length, h = '<p class="cpd-lead">Vos produits à mettre en avant, le dernier ajouté en premier. ' + favOu() + '</p>';
+    if (!a.length) return h + '<div class="cp-vide">' + favVideTxt() + '</div>';
+    if (n) h += '<div class="cpd-fav-act"><button type="button" class="v2-btn v2-btn-primary cpd-fav-go" onclick="V2.comptoir.favorisAuPanier()">Tout mettre au panier (' + fr(Math.min(n, PANIER_MAX)) + ')</button>' +
+      '<span class="cpd-fav-aide">Ensuite, « Créer la fiche » en bas de l\'écran en fait un document.</span></div>' + listePage(F.dans, favLigne, '');
+    if (F.hors.length) {
+      h += '<p class="cpd-lead cpd-fav-hors">' + (F.hors.length > 1 ? 'Ne sont plus dans notre catalogue :' : 'N\'est plus dans notre catalogue :') + '</p><div class="cpd-liste">';
+      for (var i = 0; i < F.hors.length; i++) {
+        h += '<div class="cpd-l cpd-l-off"><span class="cpd-tx"><span class="cpd-nm">' + esc(F.hors[i].d || 'Produit retiré') + '</span><span class="cpd-sb">code CIP ' + esc(F.hors[i].c) + '</span></span>' + boutonFav(F.hors[i].c) + '</div>';
+      }
+      h += '</div>';
+    }
+    return h;
+  }
+  // Après un geste (ou la lecture en base) : les étoiles visibles, le bouton de la fiche, la carte et le volet suivent sans redessiner l'écran.
+  function majFavoris() {
+    if (typeof document === 'undefined') return;
+    var s = favSet(), b = document.querySelectorAll ? document.querySelectorAll('button.cp-fav[data-fav]') : [], i, on, lib;
+    for (i = 0; i < b.length; i++) {
+      on = !!s[b[i].getAttribute('data-fav')]; lib = on ? 'Retirer des favoris' : 'Ajouter aux favoris';
+      b[i].className = 'cp-fav' + (on ? ' on' : ''); b[i].setAttribute('aria-pressed', String(on));
+      b[i].setAttribute('aria-label', lib); b[i].setAttribute('title', lib); b[i].innerHTML = etoile(on);
+    }
+    var p = document.getElementById('cp-fav-pan'); if (p && C.cip) p.outerHTML = boutonFavPanneau(C.cip);
+    var d = donnees(); if (!d) return;
+    var hote = document.getElementById('cq1-fav-hote');
+    if (hote) { hote.innerHTML = favCarte(d); if (hote.firstChild && hote.firstChild.style) hote.firstChild.style.animation = 'none'; }
+    if (C.porte === 'fav') { var r = document.getElementById('cp-res'); if (r) r.innerHTML = favVolet(d); }
+  }
+
   function rerender() { if (V2.route && V2.route.name === 'produits' && V2.render) V2.render(); }
 
   // ── Chargements à la demande ──────────────────────────────────
@@ -802,7 +960,7 @@
   // Un fichier absent ou en erreur donne simplement « donnée indisponible » (état 3) : jamais d'exception.
   function planRerender() {
     if (D.rr) return;
-    D.rr = setTimeout(function () { D.rr = null; if (C.cip || C.porte === null || C.porte === 'trouver' || C.porte === 'change') rerender(); }, 60);   // 09/11/2026 : les portes et « Ce qui change » lisent aussi ces fichiers
+    D.rr = setTimeout(function () { D.rr = null; if (C.cip || C.porte === null || C.porte === 'trouver' || C.porte === 'change' || C.porte === 'fav') rerender(); }, 60);   // 09/11/2026 : les portes et « Ce qui change » lisent aussi ces fichiers
   }
   function demander(cle) {
     var e = D.fich && D.fich[cle], jour, p;
@@ -1465,7 +1623,7 @@
     effacer: function () { C.q = ''; C.page = 1; rerender(); },
     // 09/11/2026 — les trois portes. Ouvrir un volet repart d'une page propre ; « Parcourir » s'ouvre SANS le filtre Opportunités.
     porte: function (k) {
-      C.porte = (k === 'change' || k === 'tout') ? k : null;   // v1 : « trouver » et l'ancien « proposer » (retiré le 23/11/2026, sans plus-value) = l'accueil (porte null)
+      C.porte = (k === 'change' || k === 'tout' || k === 'fav') ? k : null;   // v1 : « trouver » et l'ancien « proposer » (retiré le 23/11/2026, sans plus-value) = l'accueil (porte null)
       C.page = 1; C.q = ''; C.fam = 'all'; C.stock = false; C.molSel = null;
       if (C.porte === 'tout') { C.opp = false; C.panier = false; }
       if (C.porte === 'change') C.chg = 'jo';
@@ -1538,6 +1696,15 @@
     panierVoir: function () { C.panier = !C.panier; C.page = 1; majPanier(); },
     panierVider: function () { V2.produits.S.sel = {}; C.panier = false; majPanier(); },
     panierFiche: function () { V2.comptoir.fermerPanneau(); V2.produits.ficheDuPanier(); },
+    // 24/11/2026 — favoris : l'étoile des lignes et de la fiche ; la liste entière rejoint le panier d'un geste.
+    favori: function (cip, ev) { if (ev) { ev.stopPropagation(); if (ev.preventDefault) ev.preventDefault(); } return favBascule(String(cip)); },
+    favorisAuPanier: function () {
+      var d = donnees(); if (!d) return;
+      var F = favLignes(d).dans, s = sel(), ajout = 0, i;
+      for (i = 0; i < F.length && i < PANIER_MAX; i++) if (!s[F[i].l.cip]) { s[F[i].l.cip] = 1; ajout++; }
+      majPanier();
+      if (V2.toast) V2.toast(ajout ? fr(ajout) + ' produit' + (ajout > 1 ? 's ajoutés' : ' ajouté') + ' au panier' : 'Vos favoris sont déjà au panier');
+    },
     ouvrir: function (cip) {   // v1 : le panneau vit sous <body>, la page ne se redessine pas (elle garde sa position)
       C.cip = String(cip); C.offTout = false; C.mol = false; C.dcTout = false;
       var d = donnees(); if (d && document.getElementById('cp-pan-hote')) poserPanneau(d); else rerender();
@@ -1804,6 +1971,7 @@
   function resultatsHtml(d) {
     if (C.porte === null || C.porte === 'trouver') return cq1Zone(d);   // v1 : le champ au repos montre « Ce qui change »   // 09/11/2026 : le volet de « Ce qui change » se redessine ici aussi
     if (C.porte === 'change') return resultatsChange(d);
+    if (C.porte === 'fav') return favVolet(d);
     var L = filtrees(d.lignes), AQ = aQui();
     var TD = (C.tri === 'hausse' || C.tri === 'baisse') ? tendances() : null;
     var vis = L.slice(0, C.page * PAR_PAGE), rows = '', cards = '', i;
@@ -2495,7 +2663,7 @@
         (s ? blocAlertes(s, l, vp) + blocMarges(s, vp) + (vp ? '' : blocAqui(liste, off)) + blocMarche(s, l, vp) + (vp ? '' : blocNous(s, l, d, ventes)) + blocProduit(s, l, stock) : blocProduit({ autres: { froid: false }, generique: null, tendance: null, sansEtude: true }, l, stock)) +
         (s && V2.etude && V2.etude.bloc ? V2.etude.bloc(l, s, vp) : '') +   // 24/11/2026 : l'étude par produit (bloc 7, « La fiche enrichie » choisie par Will)
         indispo +
-        '<div class="cp-ctas">' + boutonPanneau(l.cip) +
+        '<div class="cp-ctas">' + boutonPanneau(l.cip) + boutonFavPanneau(l.cip) +
         '<button class="v2-btn v2-btn-primary cp-cta" onclick="V2.produits.ficheMarketing(\'' + escAttr(l.cip) + '\')">Fiche marketing du produit</button></div>' +
       '</div></aside>';
   }
@@ -2669,9 +2837,9 @@
 
   // ── Lignes compactes (une seule cible par ligne, 56 px de haut) ──
   function ligneP(l, sous, b, i, avecBadges) {
-    return '<button type="button" class="cpd-l" data-cip="' + escAttr(l.cip) + '" onclick="V2.comptoir.ouvrir(\'' + escAttr(l.cip) + '\')"><span class="cpd-tx"><span class="cpd-nm">' + esc(l.d) +
+    return '<div class="cpd-l" role="button" tabindex="0" data-cip="' + escAttr(l.cip) + '" onclick="V2.comptoir.ouvrir(\'' + escAttr(l.cip) + '\')"' + CLAVIER + '><span class="cpd-tx"><span class="cpd-nm">' + esc(l.d) +
       (avecBadges ? badges(l) : (l.rupt ? '<span class="cp-badge cp-badge-r">Rupture ANSM</span>' : '')) + '</span><span class="cpd-sb">' + esc(sous) + '</span></span>' +
-      '<span class="cpd-px"><b>' + b + '</b><i>' + i + '</i></span></button>';
+      '<span class="cpd-px"><b>' + b + '</b><i>' + i + '</i></span>' + boutonFav(l.cip) + '</div>';   // 24/11/2026 : l'étoile des favoris
   }
   function stockLib(l) {
     if (!(l.stock > 0)) return 'stock à 0';
@@ -2763,18 +2931,18 @@
     if (C.vuePharma) marge = l.ab != null ? '<b>−' + eur2(l.ab) + '</b><i>abandon de marge</i>' : '<b>—</b><i>marge</i>';
     else if (nm && nm.attente) marge = '<b>…</b><i>notre marge</i>';
     else marge = nm && nm.boite26 != null ? '<b>' + eur2(nm.boite26) + '</b><i>notre marge</i>' : '<b>—</b><i>notre marge</i>';
-    return '<button type="button" class="cq1-l" data-cip="' + escAttr(l.cip) + '" onclick="V2.comptoir.ouvrir(\'' + escAttr(l.cip) + '\')">' +
+    return '<div class="cq1-l" role="button" tabindex="0" data-cip="' + escAttr(l.cip) + '" onclick="V2.comptoir.ouvrir(\'' + escAttr(l.cip) + '\')"' + CLAVIER + '>' +
       '<span class="cq1-tx"><span class="cq1-nm">' + esc(l.d) + badges(l) + '</span><span class="cq1-sb">' + esc([l.labo, 'CIP ' + l.cip].filter(Boolean).join(' · ')) + '</span></span>' +
       '<span class="cq1-c cq1-px"><b>' + (l.prix > 0 ? eur2(l.prix) : '—') + '</b><i>' + (l.prix > 0 ? (l.f === 'nr' ? 'tarif' : 'prix net') : 'prix') + '</i></span>' +
       '<span class="cq1-c cq1-st' + (l.stock > 0 ? '' : ' zero') + '"><b>' + fr(l.stock > 0 ? l.stock : 0) + '</b><i>' + (l.stock > 0 ? (n ? 'dans ' + fr(n) + ' sites sur ' + fr(ETABS.length) : 'tous sites') : 'en stock') + '</i></span>' +
-      '<span class="cq1-c cq1-mg">' + marge + '</span></button>';
+      '<span class="cq1-c cq1-mg">' + marge + '</span>' + boutonFav(l.cip) + '</div>';   // 24/11/2026 : l'étoile des favoris
   }
   function cq1Resultats(d) {
     var L = filtrees(d.lignes), vis = L.slice(0, C.page * PAR_PAGE), h = '', i;
     for (i = 0; i < vis.length; i++) h += cq1Ligne(vis[i]);
     return '<div class="cq1-cnt"><p id="cp-count" aria-live="polite">' + esc(libTrouve(L.length)) + '</p></div>' +
       '<div class="cp-chips cpd-chips">' + famsHtml() + '</div>' +
-      (L.length ? '<div class="cq1-liste"><div class="cq1-th" aria-hidden="true"><span>Produit</span><span>Prix net</span><span>Stock</span><span>Marge</span></div>' + h + '</div>' + plusHtml(L.length - vis.length)
+      (L.length ? '<div class="cq1-liste"><div class="cq1-th" aria-hidden="true"><span>Produit</span><span>Prix net</span><span>Stock</span><span>Marge</span><span></span></div>' + h + '</div>' + plusHtml(L.length - vis.length)
         : '<div class="cp-vide">Aucun produit ne correspond.</div>');
   }
   function cq1Change(d) {
@@ -2821,7 +2989,7 @@
   // Ce que la zone sous le champ montre : la liste « Ce qui change » au repos, les lignes dès qu'on cherche.
   function cq1Zone(d) {
     if (C.q.trim() || C.fam !== 'all') return cq1Resultats(d);
-    return '<div class="cq1-duo">' + cq1Change(d) + '</div>' + cq1Outils();
+    return '<div class="cq1-duo">' + cq1Change(d) + '<div id="cq1-fav-hote">' + favCarte(d) + '</div></div>' + cq1Outils();   // 24/11/2026 : « Mes favoris »
   }
 
   function portesHtml(d) {
@@ -2829,6 +2997,10 @@
     if (k === 'change') {
       return '<div class="cp cpd">' + retourHtml('Ce qui change') +
         '<div id="cp-res">' + resultatsChange(d) + '</div>' + barrePanier() + '</div>';
+    }
+    if (k === 'fav') {   // 24/11/2026
+      return '<div class="cp cpd">' + retourHtml('Mes favoris') +
+        '<div id="cp-res">' + favVolet(d) + '</div>' + barrePanier() + '</div>';
     }
     var e = enteteStats(d), dt = V2.stockDateTxt && V2.stockDateTxt() ? ' (' + esc(V2.stockDateTxt()) + ')' : '';
     return '<div class="cp cpd">' +
@@ -2991,6 +3163,16 @@
       '@media (max-width:640px){.cq1-tab{font-size:13.5px;padding:0 9px;gap:5px}.cq1-tabs{gap:5px}.cq1-hero{margin-top:16px}.cq1-champ{height:60px;padding-left:16px}.cq1-champ input,.cq1-champ input:focus,.cq1-champ input:focus-visible{font-size:17px}',
         '.cpd-stat b{font-size:18px}.cpd-stat span{font-size:13px}.cpd-stats{gap:16px}.cq1-card .cpd-liste .cpd-l:nth-child(n+5){display:none}.cq1-h{font-size:20px}}',
       '@media (prefers-reduced-motion:reduce){.cq1-card,.cq1-l{animation:none}.cq1-champ{transition:none}}',
+      // 24/11/2026 — favoris : l'étoile (cible de 44 px), la 5e colonne des lignes de recherche, la carte et le volet.
+      '.cp-fav{appearance:none;-webkit-appearance:none;flex:none;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;margin:0 -4px 0 0;padding:0;border:0;border-radius:12px;background:none;color:var(--cp-ink3);cursor:pointer}',
+      '.cp-fav:hover{background:rgba(0,80,230,.08);color:var(--ip-blue)}.cp-fav.on{color:var(--ip-blue)}.cp-fav:focus-visible{outline:2px solid var(--ip-blue);outline-offset:1px}',
+      '.cq1-th,.cq1-l{grid-template-columns:minmax(0,1fr) 120px 150px 130px 44px}',
+      '.cq1-fav-n{font-style:normal;font-weight:700;color:var(--cp-ink3);margin-left:4px}',
+      '.cq1-fav-v{margin:0 8px 10px;font:400 15px/1.5 var(--font);color:var(--cp-ink3)}.cq1-fav-v svg,.cp-vide svg{vertical-align:-3px;color:var(--ip-blue)}',
+      '.cpd-fav-act{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:0 0 14px}.cpd-fav-go{min-height:44px}',
+      '.cpd-fav-aide{font:400 14px/1.4 var(--font);color:var(--cp-ink3)}.cpd-fav-hors{margin-top:18px}',
+      '.cpd-l-off{cursor:default}.cpd-l-off:hover{background:none}',
+      '@media (max-width:700px){.cq1-l{grid-template-columns:minmax(0,1fr) auto 44px;grid-template-areas:"tx px fv" "st mg fv"}.cq1-l>.cp-fav{grid-area:fv;align-self:center}}',
       '@media (prefers-reduced-motion:reduce){.cpd-door,.cpd-go i{transition:none}}'
     ].join('\n');
     document.head.appendChild(s);
@@ -3327,6 +3509,8 @@
       '.cp-ctas{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-top:18px}',
       '@media (min-width:1000px){.cp-ctas{grid-template-columns:1fr 1fr}}',
       '.cp-ctas .cp-cta{margin:0}',
+      '.cp-fav-pan{display:flex;align-items:center;justify-content:center;gap:8px}.cp-fav-pan svg{flex:none;color:var(--ip-blue)}',   // 24/11/2026
+      '@media (min-width:1000px){.cp-ctas>.cp-fav-pan+.cp-cta{grid-column:1/-1}}',
       '@media (min-width:1000px){.cp-pan{width:720px;max-width:720px}.cp-pan-h{position:sticky;top:0;z-index:3;grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:"id vp x";align-items:center;gap:12px;padding:18px 24px 12px;background:radial-gradient(520px 200px at 6% -90px,rgba(0,80,230,.13),transparent 70%),var(--card)}.cp-pan-c{padding:0 24px}}',
       '@media (max-width:520px){.cp-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cp-t,.cp-t.w3,.cp-t.w6{grid-column:span 1}.cp-t.w3,.cp-t.w6{grid-column:span 2}.cp-t:not(.w3):not(.w6) .cp-mn{grid-template-columns:1fr}.cp-hero{display:grid;grid-template-columns:1fr 1fr}.cp-hg{grid-column:1/-1}.cp-hn b{font-size:28px}.cp-big{font-size:26px}.cp-duo b{font-size:28px}.cp-hn b{font-size:30px}}',
       // ── v4 « Le mélange » : fil numéroté de la v3 posé sur le squelette (tuiles, en-tête) de la v1. ──
