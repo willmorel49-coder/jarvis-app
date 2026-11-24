@@ -352,12 +352,11 @@ html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard
 }
 
 /* texte libre des autres écrans (même principe, plaque portée par le fond du texte lui-même : les écrans hors banc n'ont pas la mesure de contraste, le plus simple suffit) */
-:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"]) :is(.v2-sem-t,.v2-todo-hero h1,.v2-todo-hero p,.cm-marche-t,.cm-faits,.bs-count,.bs-legend,.bs-wrap>h1,.bs-wrap>p,.gr-mserie,.v2-empty-t,.v2-empty-d,.v2-camp-sec,.v2-camp-note,.mis-foot,.ml-sec-h h2,.ml-n,.ml-tete p,.v2-loading div:last-child,.off-verdict-meta,.off-count){
+:is([data-hab="leopard"],[data-hab="marbre"],[data-hab="foret"],[data-hab="velours"],[data-hab="terracotta"]) :is(.v2-todo-hero h1,.v2-todo-hero p,.cm-marche-t,.cm-faits,.bs-count,.bs-legend,.bs-wrap>h1,.bs-wrap>p,.gr-mserie,.v2-empty-t,.v2-empty-d,.v2-camp-sec,.v2-camp-note,.mis-foot,.ml-sec-h h2,.ml-n,.ml-tete p,.v2-loading div:last-child,.off-verdict-meta,.off-count){
   background:var(--h-pl);color:var(--h-pl-ink,var(--ip-ink));padding:2px 10px 3px;border-radius:10px;-webkit-box-decoration-break:clone;box-decoration-break:clone;box-shadow:var(--h-pl-sh,none)}
-/* ligne de repères d'Offilog : boîte qui s'ajuste à son texte ; bande de jours des Rendez-vous : le bleu codé en dur laisse place à la matière ; « + N autres groupes » : pastille pleine */
+/* ligne de repères d'Offilog : boîte qui s'ajuste à son texte ; « + N autres groupes » : pastille pleine */
 html[data-hab] :is(.off-verdict-meta,.off-count){width:fit-content;max-width:100%}
-:is([data-hab="marbre"],[data-hab="foret"],[data-hab="velours"]) :is(.off-verdict-meta,.off-count) b,.v2-sem-t span{color:inherit}
-html[data-hab] .v2-sem-fond{background:none}
+:is([data-hab="marbre"],[data-hab="foret"],[data-hab="velours"]) :is(.off-verdict-meta,.off-count) b{color:inherit}
 html[data-hab] .cm-plus{background:var(--card);border-style:solid;border-color:var(--line-strong)}
 /* en-tête de fiche : encore un voile dessus (texte blanc fin à 62 % d'opacité dans cette pièce) */
 html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard],[data-hab=ambre],[data-hab=prune])) .pha-id{background:linear-gradient(rgba(0,0,0,.30),rgba(0,0,0,.30)),var(--h-hero)}
