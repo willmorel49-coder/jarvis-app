@@ -65,10 +65,11 @@
   }
 
   /* ── Ce qu'a noté la téléprospectrice ── */
-  /* Les réponses aux « cinq questions » : seulement si le rendez-vous les porte (lot L2). Format : [{ q, r }] ou [[q, r]]. */
-  function reponses(rdv) {
-    var l = rdv && rdv.reponses; if (!Array.isArray(l)) return [];
-    return l.map(function (x) { return Array.isArray(x) ? { q: txt(x[0]), r: txt(x[1]) } : { q: txt(x && x.q), r: txt(x && x.r) }; }).filter(function (x) { return x.q && x.r; });
+  /* Les réponses aux « cinq questions » (lot L2) : le rendez-vous porte `questions_lignes`, un tableau de phrases lisibles (« Projet : Robot Riedl »).
+     Affichées telles quelles, 8 au plus, seulement si le tableau est présent et non vide ; sinon rien (pas de bloc vide). */
+  function questionsLignes(rdv) {
+    var l = rdv && rdv.questions_lignes; if (!Array.isArray(l)) return [];
+    return l.filter(function (x) { return typeof x === 'string' && x.trim(); }).map(function (x) { return x.trim().slice(0, 300); }).slice(0, 8);
   }
   /* « Premier rendez-vous » n'apprend rien : on ne le répète pas comme titre du projet. */
   function projetDit(objet) { var o = txt(objet); return o && P.norm(o) !== 'premier rendez-vous' ? o : ''; }
@@ -157,7 +158,7 @@
 
   return {
     jourDeVeille: jourDeVeille, pageDisponible: pageDisponible, pageEnAttente: pageEnAttente, bandeau: bandeau, route: route, enTete: enTete,
-    reponses: reponses, projetDit: projetDit, origine: origine, journal: journal, pourquoiAppelee: pourquoiAppelee, pharmacie: pharmacie,
+    questionsLignes: questionsLignes, projetDit: projetDit, origine: origine, journal: journal, pourquoiAppelee: pourquoiAppelee, pharmacie: pharmacie,
     voisines: voisines, dossier: dossier, sorteDeProjet: sorteDeProjet, aApporter: aApporter, cleCases: cleCases, casesLues: casesLues
   };
 });

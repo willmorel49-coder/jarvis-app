@@ -69,9 +69,10 @@ describe('l’en-tête', () => {
 })
 
 describe('ce qu’a noté la téléprospectrice : seulement ce qui existe', () => {
-  test('les cinq réponses : rien tant que le rendez-vous ne les porte pas', () => {
-    assert.deepEqual(R.reponses(rdv()), [])
-    assert.deepEqual(R.reponses(rdv({ reponses: [{ q: 'Pour quand', r: 'Dans l’année' }, ['Qui décide', 'Le titulaire'], { q: 'Vide', r: '' }] })), [{ q: 'Pour quand', r: 'Dans l’année' }, { q: 'Qui décide', r: 'Le titulaire' }])
+  test('les cinq réponses (questions_lignes de L2) : rien tant que le rendez-vous ne les porte pas ; 8 lignes au plus, chaînes seulement', () => {
+    assert.deepEqual(R.questionsLignes(rdv()), []); assert.deepEqual(R.questionsLignes(rdv({ questions_lignes: [] })), []); assert.deepEqual(R.questionsLignes(rdv({ questions_lignes: 'texte' })), [])
+    assert.deepEqual(R.questionsLignes(rdv({ questions_lignes: ['Projet : Robot Riedl', 12, '', '  Pour quand : d’ici mai 2027 '] })), ['Projet : Robot Riedl', 'Pour quand : d’ici mai 2027'])
+    assert.equal(R.questionsLignes(rdv({ questions_lignes: Array.from({ length: 12 }, (_, i) => 'Ligne ' + i) })).length, 8)
   })
   test('« Premier rendez-vous » n’est pas un projet', () => {
     assert.equal(R.projetDit('Premier rendez-vous'), ''); assert.equal(R.projetDit('Robot Riedl · d’ici mai 2027'), 'Robot Riedl · d’ici mai 2027')

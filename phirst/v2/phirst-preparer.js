@@ -63,9 +63,10 @@
   }
   function sectionTel(rdv, d) {
     var auj = P.aujourdhui(), h = '<section class="pv-c pv-tel"><h3>Ce qu’a noté la téléprospectrice</h3>', l = [];
-    var rep = R.reponses(rdv), projet = R.projetDit(rdv.objet);
-    rep.forEach(function (x) { l.push({ e: x.q, v: x.r }); });
-    if (projet && !rep.length) l.unshift({ e: 'Projet', v: projet });
+    var rep = R.questionsLignes(rdv), projet = R.projetDit(rdv.objet);
+    if (projet) l.push({ e: 'Projet', v: projet });
+    rep.forEach(function (x) { var k = x.indexOf(' : '); l.push(k > 0 ? { e: x.slice(0, k), v: x.slice(k + 3) } : { e: '', v: x }); });
+    if (projet && rep.some(function (x) { return /^Projet : /.test(x); })) l.shift();   // « Projet » déjà dit par les réponses : pas deux fois
     if (l.length) h += dl(l);
     var pour = d.lignes ? R.pourquoiAppelee(d.lignes) : '';
     if (rdv.passation) h += '<p class="pv-note"><b>Son mot pour vous</b>' + esc(rdv.passation) + '</p>';
