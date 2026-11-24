@@ -25,6 +25,7 @@ function fausseBase(lignes) {
       eq(k, v) { q.f.push(k + '=' + v); return o; }, gte(k, v) { q.f.push(k + '>=' + v); return o; },
       lte(k, v) { q.f.push(k + '<=' + v); return o; }, lt(k, v) { q.f.push(k + '<' + v); return o; },
       insert(l) { ecrits.push({ t, ligne: l }); q.ins = true; return o; },
+      // oxlint-disable-next-line unicorn/no-thenable -- faux client Supabase : le vrai se lit avec await, il doit donc avoir then
       then(ok, ko) { if (!q.ins) lus.push(q); return Promise.resolve({ data: q.ins ? { id: 'x1' } : (lignes[t] || []), error: null }).then(ok, ko); }
     };
     return o;
@@ -113,6 +114,7 @@ test('les officines arrivées APRÈS la première lecture sont reconnues quand m
 
 test('une lecture ratée le dit, au lieu d’un mois qui aurait l’air vide', async () => {
   const base = fausseBase({});
+  // oxlint-disable-next-line unicorn/no-thenable -- faux client Supabase : le vrai se lit avec await, il doit donc avoir then
   base.sb.from = () => { const o = { select: () => o, eq: () => o, gte: () => o, lte: () => o, lt: () => o, order: () => o, then: (ok, ko) => Promise.resolve({ data: null, error: { message: 'x' } }).then(ok, ko) }; return o; };
   const ctx = monter([MOIS], agendaPret(base));
   ctx.V2RECO = { apparier: () => ({}) };

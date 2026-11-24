@@ -67,6 +67,9 @@
   // JSON fetché frais (cache-buster + no-store, comme infos-jour) → auto-actualisé sans re-déploiement.
   window.REPRISES = window.REPRISES || {};
   (function () {
+    // 24/11/2026 — Phirst ne lit jamais les fichiers de données d'Intégral (phirst/v2/index.html) : sans cette garde, chaque
+    // ouverture demandait /phirst/v2/reprises.json, absent partout (404). Ses reprises à lui viennent de sa Veille (BODACC).
+    if (window.V2_BRAND && window.V2_BRAND.phirst) return;
     var day = new Date().toISOString().slice(0, 10);
     // Chemin relatif à crm/v2 : depuis un univers séparé (opso/v2, escale/v2), on passe par V2_DATA_BASE.
     fetch((window.V2_DATA_BASE || '../') + 'v2/reprises.json?d=' + day, { cache: 'no-store' })

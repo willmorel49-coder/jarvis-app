@@ -212,11 +212,11 @@ describe('l’écran : la téléprospectrice ne déclenche AUCUNE lecture', () =
     const noeud = () => ({ innerHTML: '', addEventListener() {}, querySelector: () => noeud(), querySelectorAll: () => [], contains: () => false, getAttribute: () => null, remove() {}, classList: { toggle() {} } })
     const racine = { ...noeud(), querySelector: () => (racine.innerHTML ? noeud() : null) }
     const chaine = (t) => { const c = { select: () => c, eq: () => c, is: () => c, in: () => c, order: () => c, limit: () => c, range: () => c, maybeSingle: () => c, single: () => c, insert: () => c, update: () => c,
+      // oxlint-disable-next-line unicorn/no-thenable -- faux client Supabase : le vrai se lit avec await, il doit donc avoir then
       then: (ok) => Promise.resolve({ data: [], error: null }).then(ok) }; appels.push(t); return c }
     const V2 = { pages: {}, topbar: () => '<div class="v2-top"></div>', go() {}, route: { name: 'vitrine' }, user: { id: 'u1' }, sb: () => ({ from: chaine }) }
     const window = { V2, PHIRST_ROLE: { estTelepro: () => Promise.resolve(telepro) }, V2_BRAND: { lettre: 'https://exemple.test/lettre/' }, PHIRST_LETTRE: L, PHIRST_VITRINE_PUR: V }
     new Function('window', 'V2', lire('phirst/v2/phirst-ecran.js'))(window, V2)
-    window.PHIRST_ECRAN = window.PHIRST_ECRAN
     new Function('window', 'V2', 'document', lire('phirst/v2/phirst-vitrine.js'))(window, V2, { activeElement: null })
     return { V2, racine, appels }
   }
