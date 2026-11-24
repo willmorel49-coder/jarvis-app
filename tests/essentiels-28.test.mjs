@@ -49,3 +49,43 @@ test('une correction faite dans l\'app passe par-dessus la table de départ', ()
   assert.equal(ctx.GRP_OVR['2128049'], 'Ensemble');
   assert.equal(ctx.GRP_OVR['2126298'], 'Essentiels Pharma');
 });
+
+// 24/11/2026 — l'écran Groupements lit V2.mapOfficines (fichier de ventes), pas la base nationale :
+// la table de départ doit s'y appliquer aussi.
+function chargerVentes(avant) {
+  const app = lire('v2-app.js'), boot = lire('v2-boot.js');
+  const a = app.indexOf('  V2.canonGrp = function'), b = app.indexOf('  V2.ensurePharmaFr = function');
+  const c = boot.indexOf('  V2.mapOfficines = function'), d = boot.indexOf('  // ── Périmètre ESCALE PHARMA');
+  assert.ok(a >= 0 && b > a && c >= 0 && d > c, 'structure inattendue');
+  const ctx = {}; ctx.window = ctx; vm.createContext(ctx);
+  vm.runInContext('var V2 = {};', ctx);
+  vm.runInContext(lire('pharma-fr-data.js'), ctx);
+  if (avant) vm.runInContext(avant, ctx);
+  vm.runInContext(lire('groupement-alias.js'), ctx);
+  vm.runInContext(lire('wml-officines-data.js') + '\n;window.WML_OFFICINES = WML_OFFICINES;', ctx);
+  vm.runInContext(app.slice(a, b), ctx); vm.runInContext(boot.slice(c, d), ctx);
+  return ctx;
+}
+const grpDe = (ctx, id) => vm.runInContext('(function(){var p=V2.mapOfficines().filter(function(x){return x.id===' + JSON.stringify(id) + '})[0]; return V2.canonGrp(p.groupement);})()', ctx);
+
+test('une cliente « Ensemble » dans le fichier de ventes sort « Essentiels Pharma » de mapOfficines', () => {
+  const ctx = chargerVentes();
+  for (const c of ['2128049', '2133331', '2022553', '2125776', '2041251']) assert.equal(grpDe(ctx, c), 'Essentiels Pharma', c);
+});
+
+test('une correction Supabase posée par-dessus gagne sur la table de départ', () => {
+  const ctx = chargerVentes();
+  // même geste que chargerOverrides / v2-profil.js : p.groupement posé APRÈS mapOfficines
+  const p = vm.runInContext('V2.mapOfficines().filter(function(x){return x.id==="2128049";})[0]', ctx);
+  p.groupement = 'Ensemble';
+  assert.equal(vm.runInContext('V2.canonGrp("Ensemble")', ctx), 'Ensemble');
+});
+
+test('correction effacée dans la fiche : retour à la table de départ, pas au fichier de ventes', () => {
+  const ctx = chargerVentes();
+  const src = readFileSync(racine + 'crm/v2/v2-pharma.js', 'utf8');
+  assert.match(src, /else if \(window\.GRP_DEPART && window\.GRP_DEPART\[_gid\]\) window\.GRP_OVR\[_gid\] = window\.GRP_DEPART\[_gid\]/);
+  assert.match(src, /champ === 'groupement' && window\.GRP_DEPART/);
+  assert.equal(ctx.GRP_DEPART['2128049'], 'Essentiels Pharma');
+  assert.equal(ctx.GRP_OVR['2128049'], 'Essentiels Pharma');
+});
