@@ -117,6 +117,11 @@ describe('l’écran (lecture du code de phirst-officines.js)', () => {
     assert.doesNotMatch(SRC, /fillOpacity: 1 \}\)\.on\('click'/)
     assert.match(SRC, /pointer:coarse\)'\)\.matches \? 28 : 20/)
   })
+  test('Leaflet chargé une seule fois ; seul le dernier dessin de l’écran crée la carte (jamais deux cartes au même endroit)', () => {
+    assert.match(SRC, /if \(attenteLeaflet\) \{ attenteLeaflet\.push\(cb\); return; \}/)
+    assert.match(SRC, /var tour = M\.tour = \(M\.tour \|\| 0\) \+ 1;/)
+    assert.match(SRC, /if \(M\.racine !== root \|\| tour !== M\.tour\) return;/)
+  })
   test('le premier clic donne le focus à la carte SANS faire défiler la page (sinon il tombe à côté du point)', () => {
     assert.match(SRC, /kb\.disable\(\); kb\._onMouseDown = function \(\) \{ if \(!this\._focused\) this\._map\.getContainer\(\)\.focus\(\{ preventScroll: true \}\); \}; kb\.enable\(\);/)
   })

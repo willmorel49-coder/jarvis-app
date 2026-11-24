@@ -247,12 +247,18 @@
     yann: false, pistesDessinees: false, sel: null, repere: null, ficheJeton: 0, replie: false, pts: {} };
   function ordre() { return P.ordreCouches(M.yann); }
 
+  /* Leaflet n'est chargé qu'UNE fois : l'écran peut être redessiné pendant le chargement (la téléprospectrice : deux dessins, deux scripts,
+     « Map container is already initialized » mesuré en production le 24/11/2026). Les demandes arrivées entre-temps attendent le même script. */
+  var attenteLeaflet = null;
   function chargerLeaflet(cb) {
     function css(h) { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = h; document.head.appendChild(l); }
     if (window.L) { cb(true); return; }
+    if (attenteLeaflet) { attenteLeaflet.push(cb); return; }
+    attenteLeaflet = [cb];
+    function fin(ok) { var a = attenteLeaflet; attenteLeaflet = null; a.forEach(function (f) { f(ok); }); }
     css('../../crm/v2/vendor/leaflet/leaflet.css');
     var s = document.createElement('script'); s.src = '../../crm/v2/vendor/leaflet/leaflet.js';
-    s.onload = function () { cb(!!window.L); }; s.onerror = function () { cb(false); };
+    s.onload = function () { fin(!!window.L); }; s.onerror = function () { fin(false); };
     document.head.appendChild(s);
   }
   function poserFond(map) {
@@ -613,8 +619,9 @@
     viderTel();
     dessinerPuces();
     if (!sb()) { dire('alerte', 'Connectez-vous pour voir la carte.'); return; }
+    var tour = M.tour = (M.tour || 0) + 1; // seul le DERNIER dessin de l'écran crée la carte
     chargerLeaflet(function (ok) {
-      if (M.racine !== root) return;
+      if (M.racine !== root || tour !== M.tour) return;
       if (!ok) { root.querySelector('#po-map').innerHTML = '<p class="pa-avis">La carte ne s’est pas chargée. Vérifiez votre connexion puis rouvrez cet écran.</p>'; return; }
       var L = window.L;
       M.map = L.map(root.querySelector('#po-map'), { zoomControl: false, renderer: L.canvas({ tolerance: 14 }), minZoom: 4 }).setView([46.6, 2.4], 6);
