@@ -345,7 +345,10 @@
       if (x.date >= a) poser(x.cip, x.date, x.jour_entier ? '' : hm(x.debut), 'agenda');
       else if (!vu[x.cip] || x.date > vu[x.cip]) vu[x.cip] = x.date;
     });
-    var poses = [], libres = [], stop = 0;
+    var poses = [], libres = [], stop = 0, a_lui = {};
+    liste.forEach(function (p) { a_lui[String(p.id)] = 1; });
+    // un rendez-vous du mois chez une officine qui n'est pas à lui (prospect, client d'un collègue) : dit, pas listé
+    var hors = Object.keys(prochain).filter(function (k) { return !a_lui[k]; }).length;
     liste.forEach(function (p) {
       var k = String(p.id), n = prochain[k];
       if (n) { poses.push({ p: p, n: n }); return; }
@@ -388,6 +391,7 @@
     return h + '<div class="tm-ccols">' +
       col('l', 'Sans rendez-vous à venir', libres, ligneL, 'Toutes ont un rendez-vous à venir.') +
       col('p', 'Rendez-vous posé', poses, ligneP, 'Aucun rendez-vous à venir pour l’instant.') + '</div>' +
+      (hors ? '<p class="tm-cnote">Le mois montre aussi ' + hors + ' rendez-vous à venir chez ' + (hors > 1 ? 'des officines qui ne sont pas' : 'une officine qui n’est pas') + ' dans vos clients (prospect ou client d’un collègue) : ' + (hors > 1 ? 'ils ne sont pas' : 'il n’est pas') + ' dans ces listes.</p>' : '') +
       '</section>';
   }
   function page() {

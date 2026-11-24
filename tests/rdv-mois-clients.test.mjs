@@ -93,6 +93,7 @@ test('Vos clients : celles qui ont un rendez-vous à venir, quand, et les autres
 
   assert.match(h, /<b>2<\/b> sur 5 ont un rendez-vous à venir · <b>2<\/b> sans rendez-vous · <b>1<\/b> ne veut plus être sollicitée/, 'les comptes tombent juste : 5 à lui = 2 posées + 2 à proposer + 1 qui a dit stop');
   assert.doesNotMatch(h, /Collegue/, 'une officine d’un collègue n’apparaît pas');
+  assert.doesNotMatch(h, /Le mois montre aussi/, 'aucun rendez-vous hors portefeuille : pas de phrase');
   assert.doesNotMatch(h, /Refus/, 'celle qui a dit stop n’est pas dans les listes');
 
   const [sans, poses] = h.split('Rendez-vous posé <b>');
@@ -107,6 +108,17 @@ test('Vos clients : celles qui ont un rendez-vous à venir, quand, et les autres
   assert.match(poses, /dans 3 jours · agenda personnel/, 'celui reconnu dans l’agenda est dit comme tel');
   assert.match(poses, new RegExp("allerA\\('" + plus(5) + "'\\)"), 'toucher un rendez-vous posé ouvre son jour dans le mois');
   assert.match(poses, /09h30/, 'l’heure');
+});
+
+test('Vos clients : un rendez-vous chez l’officine d’un collègue est dit, pas listé', async () => {
+  const base = fausseBase({ rdv: [{ cip: '9000009', nom: 'PHARMACIE DU COLLEGUE', date: plus(4), heure: '11:00:00' }] });
+  const ctx = monter([MOIS], pret(base));
+  ctx.V2RECO = RECO;
+  ctx.V2.todoMois.html(); await attendre();
+  const h = ctx.V2.todoMois.html();
+  assert.match(h, /<b>1<\/b> sur 5 ont un rendez-vous à venir/, 'marqueur : la section est calculée (Essais, reconnue dans l’agenda)');
+  assert.match(h, /Le mois montre aussi 1 rendez-vous à venir chez une officine qui n’est pas dans vos clients/, 'l’écart entre la grille et la liste est dit');
+  assert.doesNotMatch(h.split('Vos clients')[1], /Collegue/, 'et l’officine n’est pas dans les listes');
 });
 
 test('Vos clients : une lecture ratée ne fait jamais croire que tous sont sans rendez-vous', async () => {
