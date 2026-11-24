@@ -748,8 +748,14 @@
   var SEUIL_COUCHES = { only: 6, france: 8 };
   function couchesMasquees(zoom, perim) { return isFinite(zoom) && zoom < SEUIL_COUCHES[perim === 'france' ? 'france' : 'only']; }
   function listeFrancaise(n) { return n.length <= 1 ? (n[0] || '') : n.slice(0, -1).join(', ') + ' et ' + n[n.length - 1]; }
-  function groupesCouches(c) { return (c || []).filter(function (x) { return x.n > 0; }).map(function (x) { return x.n.toLocaleString('fr-FR') + ' ' + x.nom; }); }
-  function phraseCachee(c) { var g = groupesCouches(c); return g.length ? listeFrancaise(g) + ' cachés à cette échelle' : ''; }
+  /* x = { nom (pluriel), un (singulier, facultatif), f (féminin, facultatif), n } : « 1 robot », « 3 robots ». */
+  function groupesCouches(c) { return (c || []).filter(function (x) { return x.n > 0; }).map(function (x) { return x.n.toLocaleString('fr-FR') + ' ' + (x.n === 1 && x.un ? x.un : x.nom); }); }
+  /* « caché » s'accorde : singulier si une seule couche à 1 point, féminin si toutes les couches sont féminines (officines, clientes). */
+  function accordCache(c) {
+    var g = (c || []).filter(function (x) { return x.n > 0; });
+    return 'caché' + (g.length && g.every(function (x) { return x.f; }) ? 'e' : '') + (g.length > 1 || (g[0] && g[0].n > 1) ? 's' : '');
+  }
+  function phraseCachee(c) { var g = groupesCouches(c); return g.length ? listeFrancaise(g) + ' ' + accordCache(c) + ' à cette échelle' : ''; }
   function phraseToutAffiche(c) { var g = groupesCouches(c); return g.length ? 'Tout est affiché : ' + listeFrancaise(g) : ''; }
   function phraseVue(c) { var g = groupesCouches(c); return g.length ? 'Dans cette vue : ' + listeFrancaise(g) : ''; }
   /* « Relevé le … » : montré seulement quand les données (charge_le) ont plus de 30 jours ; sinon rien. */

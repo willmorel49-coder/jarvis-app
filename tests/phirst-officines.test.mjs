@@ -2,6 +2,7 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
+import fs from 'node:fs'
 const P = createRequire(import.meta.url)('../phirst/v2/phirst-pur.js')
 
 describe('requête de la liste (filtres posés sur la table)', () => {
@@ -119,6 +120,22 @@ describe('carte : seuils de zoom « Masquer et le dire »', () => {
     assert.equal(P.phraseCachee([{ nom: 'robots', n: 0 }]), '')
     assert.equal(P.phraseVue([{ nom: 'robots', n: 3 }, { nom: 'transferts', n: 1 }, { nom: 'EHPAD', n: 2 }]), 'Dans cette vue : 3 robots, 1 transferts et 2 EHPAD')
     assert.equal(P.libelleBouton('only'), 'Zoomer sur mon secteur'); assert.equal(P.libelleBouton('france'), 'Zoomer pour tout voir')
+  })
+  test('singulier quand une couche a un seul point (« 1 robot », pas « 1 robots »), accord de « caché »', () => {
+    const robots = (n) => ({ nom: 'robots', un: 'robot', n }), clientes = (n) => ({ nom: 'clientes d’Intégral', un: 'cliente d’Intégral', f: true, n })
+    assert.equal(P.phraseVue([clientes(4), robots(1), { nom: 'transferts', un: 'transfert', n: 6 }, { nom: 'EHPAD', un: 'EHPAD', n: 2 }]),
+      'Dans cette vue : 4 clientes d’Intégral, 1 robot, 6 transferts et 2 EHPAD')
+    assert.equal(P.phraseVue([clientes(1)]), 'Dans cette vue : 1 cliente d’Intégral')
+    assert.equal(P.phraseCachee([robots(1)]), '1 robot caché à cette échelle')
+    assert.equal(P.phraseCachee([clientes(1)]), '1 cliente d’Intégral cachée à cette échelle')
+    assert.equal(P.phraseCachee([clientes(229), { nom: 'officines', un: 'officine', f: true, n: 2214 }]), '229 clientes d’Intégral et ' + (2214).toLocaleString('fr-FR') + ' officines cachées à cette échelle')
+    assert.equal(P.phraseCachee([clientes(229), robots(287)]), '229 clientes d’Intégral et 287 robots cachés à cette échelle')
+  })
+  test('l’écran Carte donne à chaque couche son singulier (et le féminin d’officines et de clientes)', () => {
+    const src = fs.readFileSync(new URL('../phirst/v2/phirst-officines.js', import.meta.url), 'utf8')
+    assert.match(src, /UN_COUCHE = \{ toutes: 'officine', robots: 'robot', ehpad: 'EHPAD', transferts: 'transfert', signaux: 'à saisir maintenant', integral: 'cliente d’Intégral' \}/)
+    assert.equal((src.match(/compteCouche\(/g) || []).length, 3)
+    assert.doesNotMatch(src, /\{ nom: NOMS_COUCHE\[[a-z.]+\], n: n \}/)
   })
 })
 

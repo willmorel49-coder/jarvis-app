@@ -238,6 +238,8 @@
   var COUL = { robots: '#C2410C', omnicell: '#DC2626', ehpad: '#7C3AED', transferts: '#1D4ED8', signaux: '#12A567', toutes: '#1A3A2E' };
   var BLEU_IP = '#0050E6';
   var NOMS_COUCHE = { toutes: 'officines', robots: 'robots', ehpad: 'EHPAD', transferts: 'transferts', signaux: 'à saisir maintenant', integral: 'clientes d’Intégral' };
+  var UN_COUCHE = { toutes: 'officine', robots: 'robot', ehpad: 'EHPAD', transferts: 'transfert', signaux: 'à saisir maintenant', integral: 'cliente d’Intégral' };
+  function compteCouche(a, n) { return { nom: NOMS_COUCHE[a], un: UN_COUCHE[a], f: a === 'toutes' || a === 'integral', n: n }; }
   var LIB_COUCHE = { fiches: 'Mes fiches', robots: 'Robots concurrents', transferts: 'Cessions et créations', ehpad: 'Fournisseurs EHPAD', signaux: 'À saisir maintenant', toutes: 'Toutes les officines', integral: 'Clients Intégral' };
   var SECTEUR_BORNES = [[46.2, -5.3], [49.8, 1.2]];
   var CAP_PAGES = 4;
@@ -355,7 +357,7 @@
     if (M.on.fiches) { if (!M.pistesDessinees) tracerPistes(); } else if (M.groupes.fiches) { M.groupes.fiches.clearLayers(); M.pistesDessinees = false; }
     if (masque) {
       actives.forEach(vider);
-      Promise.all(actives.map(function (a) { return totalCouche(a).then(function (n) { return { nom: NOMS_COUCHE[a], n: n }; }); })).then(function (couches) {
+      Promise.all(actives.map(function (a) { return totalCouche(a).then(function (n) { return compteCouche(a, n); }); })).then(function (couches) {
         if (tok !== M.jeton) return;
         var ph = P.phraseCachee(couches);
         dire('alerte', ph || 'Vue trop large : zoomez pour voir les points.', P.libelleBouton(M.perim));
@@ -372,7 +374,7 @@
       r.slice(1).forEach(function (c) {
         if (!c.rows) return;
         var n = tracerLignes(c.a, finir(c.rows, sommes));
-        faits.push({ nom: NOMS_COUCHE[c.a], n: n });
+        faits.push(compteCouche(c.a, n));
       });
       var ph = P.phraseVue(faits);
       dire('ok', ph ? ph + (M.plafond ? ' (affichage limité : zoomez pour tout voir)' : '') : 'Aucun point dans cette vue.');
