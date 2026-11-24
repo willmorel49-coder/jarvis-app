@@ -718,6 +718,7 @@
   // Écartés : les génériques (un changement de laboratoire, pas une nouveauté) et les produits de campagne (vaccins grippe, anti-VRS, autotests Covid / grippe) — même courbe chaque automne
   // sans être nouveaux. Réglé le 24/11/2026 sur janv.→oct. 2026 : EasyDrip 4 mm (4 → 289 boîtes/mois), 5 mm et 8 mm y sont.
   var NOUV = { key: 'nouv', label: 'Nouveautés', sub: 'en forte hausse dans le réseau', color: '#B45309' };
+  var NOUV_GRP = { key: 'nouv', label: 'Nouveautés', sub: 'en forte hausse · part des pharmacies du réseau Intégral', color: '#B45309' };   // listing du groupement
   var NOUV_MAX = 30;
   var NOUV_SAISON = /AUTO.?TEST|ANTIGEN|COVID|GRIPPE|VACCIN|INFLUVAC|EFLUELDA|VAXIGRIP|FLUARIX|INFLUSPLIT|SUPEMTEK|BEYFORTUS|ENFLONSIA|SYNAGIS|ABRYSVO|AREXVY|MRESVIA|COMIRNATY|KOSTAIVE|NUVAXOVID|SPIKEVAX/i;
   var _nouv = null, _nouvSig = '';
@@ -778,8 +779,10 @@
     var PEN = { pp: 0.20, mi: 0.08, gen: 0.08, genp: 0.08, nr: 0.08, ch: 0.04, froid: 0.04, biosim: 0.02 };
     var penFor = function (k) { return PEN[k] != null ? PEN[k] : 0.08; };
     var CAP = grpScope ? 200 : 40;   // plafond par famille
-    // nouveautés en tête (24/11/2026) : mesurées sur le réseau, même pour le listing du groupement ; la part affichée
-    // reste celle des pharmacies de la référence. Hors BENCHMARK (EasyDrip) : nom et prix lus dans le catalogue complet.
+    // nouveautés en tête (24/11/2026) : mesurées sur le réseau, même pour le listing du groupement. Hors BENCHMARK (EasyDrip) :
+    // nom et prix lus dans le catalogue complet. Listing du groupement : leur part est celle du RÉSEAU (Will, 24/11/2026 :
+    // 15 nouveautés sur 21 affichaient « 0 % » sous « commandés par les 8 pharmacies de son groupement ») — `sur` = ce total.
+    var netSt = grpScope ? computeStats('__net__', null) : st, surNouv = grpScope ? netSt.total : 0;
     var cc = V2.produits && V2.produits.catalogueIndex ? V2.produits.catalogueIndex() : null, nouv = [], enNouv = {};
     nouveautesReseau().forEach(function (n) {
       if (owned.has(n.cip) || nouv.length >= NOUV_MAX) return;
@@ -787,10 +790,10 @@
       if (!b && !cr) return;
       var bp = V2.bestPrice(b || { prix_ht: cr.ppht, prix_ip: cr.net }, pidOffre != null && pidOffre !== '' ? pidOffre : pid), ht = bp.ht || 0, ip = bp.ip || 0;
       if (!ip && cr && cr.net > 0) { ht = cr.ppht > 0 ? cr.ppht : 0; ip = cr.net; }   // connu du BENCHMARK sans prix (Lamaline, Roactemra…) : le catalogue a le sien
-      var e = stats.get(n.cip);
+      var e = netSt.map.get(n.cip);
       nouv.push({ cip: n.cip, designation: (b && b.designation) || (cr && cr.d) || '', prix_ht: ht, prix_ip: ip, offre: bp.offre,
                   remise: (ht > 0 && ip > 0 && ip <= ht) ? Math.round((1 - ip / ht) * 1000) / 10 : 0, froid: !!(b && b.is_froid),
-                  sortie: e && e.ph ? e.ph.size : 0, qte: e ? e.qte : 0, nouv: true });
+                  sortie: e && e.ph ? e.ph.size : 0, qte: e ? e.qte : 0, nouv: true, sur: surNouv });
       enNouv[n.cip] = 1;
     });
     var buckets = {}; CATS.forEach(function (c) { buckets[c.key] = []; });
@@ -807,7 +810,7 @@
     });
     return {
       panel: total, total: total,
-      cats: (nouv.length ? [{ cat: NOUV, rows: nouv }] : []).concat(CATS.map(function (c) {
+      cats: (nouv.length ? [{ cat: surNouv ? NOUV_GRP : NOUV, rows: nouv, sur: surNouv }] : []).concat(CATS.map(function (c) {
         return { cat: c, rows: buckets[c.key].sort(function (a, b) { return b.sortie - a.sortie || b.qte - a.qte; }).slice(0, CAP) };
       }).filter(function (o) { return o.rows.length; }))
     };
@@ -3000,10 +3003,12 @@
   // ── Les 5 premiers produits d'une liste, toutes catégories confondues ──
   function l1Premiers(data) {
     var all = []; (data.cats || []).forEach(function (o) { o.rows.forEach(function (r) { all.push({ r: r, cat: o.cat.key }); }); });
-    all.sort(function (x, y) { return y.r.sortie - x.r.sortie || y.r.qte - x.r.qte; });
+    // par part des pharmacies (une nouveauté du listing groupement se compte sur le réseau : r.sur)
+    var part = function (r) { var t = r.sur || data.total; return t ? r.sortie / t : 0; };
+    all.sort(function (x, y) { return part(y.r) - part(x.r) || y.r.sortie - x.r.sortie || y.r.qte - x.r.qte; });
     return all;
   }
-  function l1PartDes(r, total) { return total ? Math.min(100, Math.round(r.sortie / total * 100)) : 0; }
+  function l1PartDes(r, total) { var t = r.sur || total; return t ? Math.min(100, Math.round(r.sortie / t * 100)) : 0; }
   // Part des pharmacies de la référence qui commandent le produit, en texte (« 40 % », « < 1 % »). Même calcul que l1PartDes.
   function partTxt(r, total) { var p = l1PartDes(r, total); return (r.sortie > 0 && p < 1) ? '< 1' + NB + '%' : p + NB + '%'; }
   function l1NomProduit(r) { return esc(cap((r.designation || '').toLowerCase())); }
@@ -5985,7 +5990,7 @@
         '<td class="num cat-ip" style="color:var(--ip-blue);font-weight:700">' + (r.prix_ip > 0 ? V2.fmtEur(r.prix_ip) + (r.offre ? ' <span class="ph-offre">offre</span>' : '') : '—') +
           (r.offre_prix ? '<span class="ph-offre-avec">' + esc(mentionOffre(r, V2.fmtEur)) + '</span>' : '') + '</td>' +
         '<td class="num" style="color:var(--c-mint);font-weight:700">' + (r.remise > 0 ? r.remise + '%' : '—') + '</td>' +
-        '<td class="num" style="font-weight:800;white-space:nowrap" title="' + r.sortie + ' pharmacies sur ' + panel + '">' + partTxt(r, panel) + '</td>' +
+        '<td class="num" style="font-weight:800;white-space:nowrap" title="' + r.sortie + ' pharmacies sur ' + (r.sur || panel) + '">' + partTxt(r, panel) + '</td>' +
         '<td style="width:46px;text-align:center"><button type="button" class="opp-add' + (on ? ' on' : '') + '" data-cip="' + esc(r.cip) + '" onclick="V2.pharmaToggleSel(this)" aria-label="Sélectionner pour le PDF">' + ICO(on ? 'check' : 'plus', 15) + '</button></td>' +
         (enc ? '<td style="width:38px;text-align:center"><button type="button" class="ph-rmprod" title="Retirer ce produit de la liste" onclick="V2.itemRemove(\'' + enc + '\',\'' + esc(r.cip) + '\')">' + ICO('close', 14, 2) + '</button></td>' : '') +
       '</tr>';
@@ -6581,10 +6586,11 @@
   // Mêmes colonnes que le PDF (Produit, CIP13, PPHT, Prix net IP, % des pharmacies) :
   // pas de colonne « abandon » — le % ne figure jamais sur un document remis.
   // mode 'blob' : ne télécharge rien, rend une promesse de File (pour « Transmettre »).
-  function achatsXlsx(title, data, useSel, mode) {
+  // top (facultatif) = topVentesData(pid) : « Ce qu'elle commande » en valeur puis en volume, deux onglets en tête
+  function achatsXlsx(title, data, useSel, mode, top) {
     var sections = data.cats.map(function (o) {
       var rows = (useSel && selCips) ? o.rows.filter(function (r) { return selCips.has(r.cip); }) : o.rows;
-      return { cat: o.cat, rows: rows };
+      return { cat: o.cat, rows: rows, sur: o.sur || 0 };
     }).filter(function (o) { return o.rows.length; });
     var panel = (data.panel > 0) ? data.panel : 0;
     if (!sections.length || !panel) { V2.toast('Aucun produit à proposer pour cette liste', 'warn'); return Promise.resolve(null); }
@@ -6598,6 +6604,27 @@
         var base = n; var i = 2; while (used[n.toLowerCase()]) { n = (base.slice(0, 25) + ' ' + i); i++; } used[n.toLowerCase()] = 1; return n;
       }
       var wb = window.XLSX.utils.book_new();
+      // 24/11/2026 — Will : le top 50 en valeur ET en volume aussi dans l'Excel (mêmes produits que le PDF client)
+      var r2 = function (v) { return Math.round(v * 100) / 100; };
+      var onglet = function (nom, sous, rows, vol) {
+        var tot = vol ? top.vol.qteTot : top.caTot;
+        var aoa = [['Intégral Pharma — Ce qu\'elle commande · ' + (vol ? 'en volume' : 'en valeur') + ' · ' + title],
+          [sous + ' — éditée le ' + dateStr + (periodLabel() ? ' · ventes ' + periodLabel() : '')], [],
+          ['#', 'Produit', 'CIP13', 'Famille', 'Boîtes', 'CA HT (€)', vol ? 'Part de ses boîtes' : 'Part de son CA']];
+        rows.forEach(function (r, i) { aoa.push([i + 1, r.designation || String(r.cip), String(r.cip), r.cat ? r.cat.label : 'Autres', r.qte || 0, r2(r.ca || 0), tot > 0 ? (vol ? r.qte : r.ca) / tot : '']); });
+        var ws = window.XLSX.utils.aoa_to_sheet(aoa);
+        for (var ri = 4; ri < aoa.length; ri++) {
+          var c6 = ws[window.XLSX.utils.encode_cell({ r: ri, c: 6 })]; if (c6 && c6.t === 'n') c6.z = '0.0%';
+          var c5 = ws[window.XLSX.utils.encode_cell({ r: ri, c: 5 })]; if (c5) c5.z = '#,##0.00';
+        }
+        ws['!cols'] = [{ wch: 4 }, { wch: 48 }, { wch: 15 }, { wch: 24 }, { wch: 9 }, { wch: 12 }, { wch: 17 }];
+        ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }, { s: { r: 1, c: 0 }, e: { r: 1, c: 6 } }];
+        window.XLSX.utils.book_append_sheet(wb, ws, sheetName(nom));
+      };
+      if (top && top.rows && top.rows.length) {
+        onglet('Ce qu\'elle commande · valeur', 'ses ' + top.rows.length + ' premiers produits en CA HT' + (top.caTot > 0 ? ' · ' + Math.round(top.caTop / top.caTot * 100) + ' % de son CA' : '') + ' · ' + top.nb + ' réf. commandées', top.rows, false);
+        if (top.vol && top.vol.rows.length) onglet('Ce qu\'elle commande · volume', 'ses ' + top.vol.rows.length + ' premiers produits en boîtes' + (top.vol.qteTot > 0 ? ' · ' + Math.round(top.vol.qteTop / top.vol.qteTot * 100) + ' % de ses boîtes' : ''), top.vol.rows, true);
+      }
       sections.forEach(function (o) {
         var head = ['#', 'Produit', 'CIP13', 'PPHT (€)', 'Prix net IP (€)', '% des pharmacies'];
         // liste sans officine (Will, 23/11/2026) : le prix d'offre Sanofi / UPSA dans une colonne à part, seulement s'il y en a un
@@ -6605,7 +6632,7 @@
         if (avecOffre) head.push('Offre labo');
         var aoa = [
           ['Intégral Pharma — Liste d\'achats recommandée · ' + title],
-          [o.cat.label + (o.cat.sub ? ' · ' + o.cat.sub : '') + ' — éditée le ' + dateStr + (periodLabel() ? ' · ventes ' + periodLabel() : '') + ' · référence ' + panel + ' pharmacie' + (panel > 1 ? 's' : '')],
+          [o.cat.label + (o.cat.sub ? ' · ' + o.cat.sub : '') + ' — éditée le ' + dateStr + (periodLabel() ? ' · ventes ' + periodLabel() : '') + ' · référence ' + (o.sur || panel) + ' pharmacie' + ((o.sur || panel) > 1 ? 's' : '') + (o.sur ? ' du réseau Intégral Pharma' : '')],
           [],
           head
         ];
@@ -6940,7 +6967,8 @@
     var grp = (scope === 'groupement');
     var data = prospect ? (grp ? groupementProducts(tx.grp) : buildRecoCats(pid, 'reseau')) : buildRecoCats(pid, grp ? 'groupement' : 'reseau');
     var ref = grp ? (prospect ? tx.grp : (groupementPids(pid).name || 'Groupement')) : reseauLbl();
-    return achatsXlsx((prospect || pharma.name) + ' — ' + ref, data, false, mode);
+    // 24/11/2026 — Will : « Ce qu'elle commande » en valeur et en volume aussi dans l'Excel (deux onglets en tête), comme dans le PDF
+    return achatsXlsx((prospect || pharma.name) + ' — ' + ref, data, false, mode, prospect ? null : topVentesData(pid));
   };
 
   // 24/11/2026 — Will : « il faudra aussi que le commercial puisse extraire toutes les ventes de la pharma si il le souhaite ».

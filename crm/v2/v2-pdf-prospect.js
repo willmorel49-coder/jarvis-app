@@ -74,17 +74,28 @@
   // Données de l'app ({cat, rows:[{designation, prix_ht, prix_ip, sortie…}]}) → forme du banc
   function contexte(data, o) {
     var cats = (data.cats || []).map(function (k) {
-      return { label: k.cat.label, sub: k.cat.sub || '', color: k.cat.color || BLEU, rows: k.rows.map(function (r) {
-        return { d: r.designation || String(r.cip), ppht: r.prix_ht > 0 ? r.prix_ht : null, net: r.prix_ip > 0 ? r.prix_ip : null, n: r.sortie || 0, froid: !!r.froid, offre: !!r.offre, nouv: !!r.nouv };
+      // sur : total qui sert de base à la part (nouveautés du listing groupement = pharmacies du RÉSEAU, 24/11/2026) ; 0 = c.panel
+      return { label: k.cat.label, sub: k.cat.sub || '', color: k.cat.color || BLEU, sur: k.sur || 0, rows: k.rows.map(function (r) {
+        return { d: r.designation || String(r.cip), ppht: r.prix_ht > 0 ? r.prix_ht : null, net: r.prix_ip > 0 ? r.prix_ip : null, n: r.sortie || 0, s: r.sur || 0, froid: !!r.froid, offre: !!r.offre, nouv: !!r.nouv };
       }) };
     }).filter(function (k) { return k.rows.length; });
     var tot = cats.reduce(function (a, k) { return a + k.rows.length; }, 0);
     return { cats: cats, panel: data.panel > 0 ? data.panel : 0, ref: o.ref || '', nom: o.nom || 'Officine', reseau: !!o.reseau, tot: tot, client: o.client || null, maxPages: o.maxPages || 0,
       date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) };
   }
-  function pct(n, c) { return Math.min(100, Math.round(n / c.panel * 100)); }
+  function pct(n, c, sur) { var t = sur || c.panel; return t ? Math.min(100, Math.round(n / t * 100)) : 0; }
   // Part des pharmacies en texte pour les listes (« 40 % », « < 1 % »), même calcul que pct.
-  function pctTxt(n, c) { var p = pct(n, c); return (n > 0 && p < 1) ? '< 1\u00a0%' : p + '\u00a0%'; }
+  function pctTxt(n, c, sur) { var p = pct(n, c, sur); return (n > 0 && p < 1) ? '< 1\u00a0%' : p + '\u00a0%'; }
+  // Listing groupement (24/11/2026) : les nouveautés se comptent sur le réseau — les phrases le disent
+  function nNouvReseau(c) { var n = 0, sur = 0; c.cats.forEach(function (k) { if (k.sur) { n += k.rows.length; sur = k.sur; } }); return { n: n, sur: sur }; }
+  function oppPhrase(c) {
+    var x = nNouvReseau(c), reste = c.tot - x.n;
+    var par = ' commandés par ' + refPhrase(c);
+    if (!x.n) return nb(c.tot) + ' produits' + par;
+    var nv = nb(x.n) + (x.n > 1 ? ' nouveautés en forte hausse' : ' nouveauté en forte hausse') + ' dans le réseau Intégral Pharma';
+    return reste > 0 ? nv + ' et ' + nb(reste) + ' produit' + (reste > 1 ? 's' : '') + ' commandé' + (reste > 1 ? 's' : '') + ' par ' + refPhrase(c) : nv;
+  }
+  function noteNouv(c) { var x = nNouvReseau(c); return x.n ? ' (nouveautés : part des ' + nb(x.sur) + ' pharmacies du réseau Intégral Pharma)' : ''; }
 
   // Chaque direction rend : fond, marges, polices, blocs (t: 'head' | 'row' | 'autre', f: n° de famille,
   // mt: espace au-dessus, keep: nb de blocs suivants à garder sur la même page, g: carte qui les regroupe),
@@ -137,7 +148,7 @@
     }
     if (T.avantOpps) T.avantOpps(blocks);   // style 5 : « Par où commencer » entre les achats du client et ses opportunités
     blocks.push({ t: 'autre', mt: T.mt + 6, keep: 1, h: '<div style="font-size:11px;font-weight:700;letter-spacing:1.3px;color:' + T.acc + ';text-transform:uppercase">Ses opportunités d\'achat</div>' +
-      '<div style="margin-top:5px;font-size:12.5px;line-height:1.45;color:' + GRIS + ';max-width:600px">' + nb(c.tot) + ' produits commandés par ' + refPhrase(c) + ' qu\'elle ne commande pas encore, famille par famille, avec leur prix net.</div>' });
+      '<div style="margin-top:5px;font-size:12.5px;line-height:1.45;color:' + GRIS + ';max-width:600px">' + oppPhrase(c) + ' qu\'elle ne commande pas encore, famille par famille, avec leur prix net.</div>' });
   }
 
   // ───────── 1 · L'ESSENTIEL — blanc, air, Archivo, une seule couleur
@@ -157,7 +168,7 @@
         '<span style="font-size:10px;color:' + GRIS + '">Édité le ' + c.date + '</span></div>' +
       '<div style="margin-top:34px;font-size:11px;font-weight:700;letter-spacing:1.4px;color:' + BLEU + ';text-transform:uppercase">Sélection préparée pour ' + esc(c.nom) + '</div>' +
       '<div style="margin-top:8px;font-size:34px;font-weight:800;letter-spacing:-1px;line-height:1.05;max-width:600px">' + (c.client ? 'Ses achats et ses opportunités' : c.reseau ? 'Les produits qui tournent le plus dans le réseau' : 'Ce que commandent les pharmacies ' + esc(c.ref)) + '</div>' +
-      '<div style="margin-top:12px;font-size:13px;line-height:1.5;color:' + GRIS + ';max-width:560px">' + (c.client ? 'Ce qu\'elle commande aujourd\'hui, puis ' + nb(c.tot) + ' produits commandés par ' + refPhrase(c) + ' qu\'elle n\'a pas encore, avec leur prix net.' : nb(c.tot) + ' références, commandées chaque mois par ' + refPhrase(c) + ', avec leur prix net.') + '</div>' +
+      '<div style="margin-top:12px;font-size:13px;line-height:1.5;color:' + GRIS + ';max-width:560px">' + (c.client ? 'Ce qu\'elle commande aujourd\'hui, puis ' + oppPhrase(c) + ' qu\'elle n\'a pas encore, avec leur prix net.' : nb(c.tot) + ' références, commandées chaque mois par ' + refPhrase(c) + ', avec leur prix net.') + '</div>' +
       '<div style="display:flex;margin-top:24px;border-top:1px solid ' + FILET + ';border-bottom:1px solid ' + FILET + '">' +
         [[nb(c.tot), c.client ? 'opportunités' : 'produits'], [nb(c.panel), 'pharmacies de référence'], [String(c.cats.length), 'familles']].map(function (x, i) { return '<div style="flex:1;padding:14px 0' + (i ? ';padding-left:18px;border-left:1px solid ' + FILET : '') + '"><div style="font-size:26px;font-weight:800;letter-spacing:-.6px">' + x[0] + '</div><div style="font-size:10.5px;color:' + GRIS + ';margin-top:2px">' + x[1] + '</div></div>'; }).join('') +
       '</div>' });
@@ -167,7 +178,7 @@
       blocks.push({ t: 'head', f: ki, mt: 26, keep: 2, h: entete(k, ki) });
       suite[ki] = { t: 'autre', mt: 0, h: entete(k, ki, true) };
       k.rows.forEach(function (r) {
-        var n = nom(r.d), p = pct(r.n, c);
+        var n = nom(r.d), p = pct(r.n, c, r.s);
         blocks.push({ t: 'row', f: ki, mt: 0, h: '<div style="display:flex;align-items:center;gap:14px;padding:7px 0;border-bottom:1px solid ' + FILET + '">' +
           '<div style="flex:1;min-width:0;font-size:11.5px;line-height:1.3;color:' + ENCRE + '"><b style="font-weight:700">' + esc(n.m) + '</b> <span style="color:' + GRIS + '">' + esc(n.r) + '</span>' + tags(r, 'font-size:7.5px;font-weight:700;letter-spacing:.4px;border:1px solid;border-radius:4px;padding:1px 4px;margin-left:4px;vertical-align:1px') + '</div>' +
           '<div style="width:112px;display:flex;align-items:center;gap:7px"><div style="flex:1;height:4px;border-radius:2px;background:#EDF1F7"><div style="height:4px;border-radius:2px;width:' + p + '%;background:#80A7F2"></div></div><span style="font-size:10px;color:' + GRIS + ';width:30px;text-align:right">' + p + ' %</span></div>' +
@@ -175,7 +186,7 @@
           '<div style="width:74px;text-align:right;font-size:14px;font-weight:800;color:' + BLEU + '">' + eur(r.net) + '</div></div>' });
       });
     });
-    blocks.push({ t: 'autre', mt: 26, h: '<div style="font-size:9.5px;line-height:1.5;color:' + PALE + '">Prix nets HT indicatifs au ' + c.date + '. Part du réseau : proportion des ' + refPhrase(c) + ' qui commandent le produit.<br><b style="color:' + GRIS + '">Intégral Pharma</b> · groupe de grossistes-répartiteurs</div>' });
+    blocks.push({ t: 'autre', mt: 26, h: '<div style="font-size:9.5px;line-height:1.5;color:' + PALE + '">Prix nets HT indicatifs au ' + c.date + '. Part du réseau : proportion des ' + refPhrase(c) + ' qui commandent le produit' + noteNouv(c) + '.<br><b style="color:' + GRIS + '">Intégral Pharma</b> · groupe de grossistes-répartiteurs</div>' });
     return { bg: '#fff', padT: 34, padX: 48, base: 'font-family:PdfArchivo,system-ui,sans-serif', blocks: blocks, suite: suite };
   }
 
@@ -192,7 +203,7 @@
         '<div style="display:flex;align-items:center;gap:11px">' + LOGO('#fff', BLEU) + '<span style="font-size:15px;font-weight:800">Intégral Pharma</span><span style="margin-left:auto;font-size:11px;color:#A9C2F5">' + c.date + '</span></div>' +
         '<div style="margin-top:' + (c.cats.length > (c.client ? 8 : 9) ? 90 : 150) + 'px;font-size:12px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:#A9C2F5">Préparé pour ' + esc(c.nom) + '</div>' +
         '<div style="margin-top:12px;font-size:52px;font-weight:900;letter-spacing:-1.8px;line-height:1">' + (c.client ? 'Ses achats,<br>ses opportunités' : c.reseau ? 'Meilleures<br>rotations du réseau' : 'La sélection<br>' + esc(c.ref)) + '</div>' +
-        '<div style="margin-top:18px;font-size:15px;line-height:1.5;color:#D6E2FB;max-width:520px">' + (c.client ? 'Ce qu\'elle commande, puis ' + nb(c.tot) + ' produits commandés par ' + refPhrase(c) + ' qu\'elle n\'a pas encore, avec leur prix net.' : nb(c.tot) + ' produits commandés par ' + refPhrase(c) + ', classés par famille, avec leur prix net.') + '</div>' +
+        '<div style="margin-top:18px;font-size:15px;line-height:1.5;color:#D6E2FB;max-width:520px">' + (c.client ? 'Ce qu\'elle commande, puis ' + oppPhrase(c) + ' qu\'elle n\'a pas encore, avec leur prix net.' : oppPhrase(c) + ', classés par famille, avec leur prix net.') + '</div>' +
         '<div style="margin-top:' + (c.cats.length > (c.client ? 8 : 9) ? 36 : 60) + 'px;font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#8FB0F5;margin-bottom:4px">Au sommaire</div>' + som +
       '</div></div>';
     var TH = 'padding:6px 10px;font-size:8.5px;font-weight:700;letter-spacing:.8px;color:' + GRIS;
@@ -208,12 +219,12 @@
       k.rows.forEach(function (r, i) {
         var n = nom(r.d);
         blocks.push({ t: 'row', f: ki, mt: 0, h: '<div style="display:flex;align-items:center;background:' + (i % 2 ? '#F6F8FC' : '#fff') + '"><div style="flex:1;min-width:0;padding:7px 10px;font-size:11px"><b>' + esc(n.m) + '</b> <span style="color:' + GRIS + '">' + esc(n.r) + '</span>' + tags(r, 'font-size:7.5px;font-weight:800;border:1px solid;border-radius:4px;padding:1px 4px;margin-left:4px') + '</div>' +
-          '<div style="width:92px;padding:7px 10px;text-align:right;font-family:' + M + ';font-size:10px;color:' + GRIS + ';white-space:nowrap">' + pctTxt(r.n, c) + '</div>' +
+          '<div style="width:92px;padding:7px 10px;text-align:right;font-family:' + M + ';font-size:10px;color:' + GRIS + ';white-space:nowrap">' + pctTxt(r.n, c, r.s) + '</div>' +
           '<div style="width:80px;padding:7px 10px;text-align:right;font-family:' + M + ';font-size:10px;color:' + PALE + '">' + tarif(r) + '</div>' +
           '<div style="width:92px;padding:7px 10px;text-align:right;font-family:' + M + ';font-size:12.5px;font-weight:700;color:' + BLEU + '">' + eur(r.net) + '</div></div>' });
       });
     });
-    blocks.push({ t: 'autre', mt: 22, h: '<div style="font-size:9.5px;line-height:1.5;color:' + PALE + '">Prix nets HT indicatifs au ' + c.date + ' · % des pharmacies : part des ' + refPhrase(c) + ' qui commandent le produit. <b style="color:' + GRIS + '">Intégral Pharma</b>, groupe de grossistes-répartiteurs.</div>' });
+    blocks.push({ t: 'autre', mt: 22, h: '<div style="font-size:9.5px;line-height:1.5;color:' + PALE + '">Prix nets HT indicatifs au ' + c.date + ' · % des pharmacies : part des ' + refPhrase(c) + ' qui commandent le produit' + noteNouv(c) + '. <b style="color:' + GRIS + '">Intégral Pharma</b>, groupe de grossistes-répartiteurs.</div>' });
     return { bg: '#fff', padT: 30, padX: 40, base: 'font-family:Satoshi,system-ui,sans-serif', cover: cover, blocks: blocks, suite: suite };
   }
 
@@ -235,7 +246,7 @@
       blocks.push({ t: 'head', f: ki, g: g, mt: 14, keep: 2, h: entete(k) });
       suite[ki] = { t: 'autre', g: g, mt: 0, h: entete(k, true) };
       k.rows.forEach(function (r) {
-        var n = nom(r.d), p = pct(r.n, c);
+        var n = nom(r.d), p = pct(r.n, c, r.s);
         blocks.push({ t: 'row', f: ki, g: g, mt: 0, h: '<div style="display:flex;align-items:center;gap:10px;padding:6px 14px;border-top:1px solid #EEF1F6">' +
           '<div style="flex:1;min-width:0;font-size:11px"><b>' + esc(n.m) + '</b> <span style="color:' + GRIS + '">' + esc(n.r) + '</span>' + tags(r, 'font-size:7.5px;font-weight:800;border:1px solid;border-radius:10px;padding:1px 5px;margin-left:4px') + '</div>' +
           '<div style="width:48px;text-align:center"><span style="display:inline-block;min-width:34px;font-family:' + M + ';font-size:9.5px;font-weight:600;color:' + (p >= 50 ? '#fff' : BLEU) + ';background:' + (p >= 50 ? BLEU : '#E9F0FF') + ';border-radius:10px;padding:2px 6px">' + p + '%</span></div>' +
@@ -243,7 +254,7 @@
           '<div style="width:80px;text-align:right;font-family:' + M + ';font-size:12px;font-weight:700;color:' + ENCRE + '">' + eur(r.net) + '</div></div>' });
       });
     });
-    blocks.push({ t: 'autre', mt: 14, h: '<div style="font-size:9.5px;line-height:1.5;color:' + GRIS + '">Prix nets HT indicatifs au ' + c.date + '. Le pourcentage indique la part des ' + refPhrase(c) + ' qui commandent le produit.</div>' });
+    blocks.push({ t: 'autre', mt: 14, h: '<div style="font-size:9.5px;line-height:1.5;color:' + GRIS + '">Prix nets HT indicatifs au ' + c.date + '. Le pourcentage indique la part des ' + refPhrase(c) + ' qui commandent le produit' + noteNouv(c) + '.</div>' });
     return { bg: '#E4E9F1', padT: 26, padX: 30, base: 'font-family:Satoshi,system-ui,sans-serif', groupe: 'background:#fff;border-radius:16px;box-shadow:0 1px 2px rgba(15,20,32,.06);overflow:hidden', blocks: blocks, suite: suite };
   }
 
@@ -252,7 +263,7 @@
     var M = 'PdfPlexMono,ui-monospace,monospace', blocks = [], suite = {};
     var item = function (r) {
       if (!r) return '';
-      var n = nom(r.d), p = pct(r.n, c);
+      var n = nom(r.d), p = pct(r.n, c, r.s);
       return '<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px dotted #CBD2DE">' +
         '<div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:700;line-height:1.2">' + esc(n.m) + tags(r, 'font-size:7px;font-weight:700;border:1px solid;border-radius:3px;padding:0 3px;margin-left:3px') + '</div><div style="font-size:9.5px;color:' + GRIS + ';line-height:1.3">' + esc(n.r) + '</div></div>' +
         '<div style="text-align:right"><div style="font-size:13px;font-weight:800;color:' + BLEU + ';white-space:nowrap">' + eur(r.net) + '</div><div style="font-family:' + M + ';font-size:8.5px;color:' + PALE + ';white-space:nowrap">' + (r.ppht != null ? (baisse(r) ? '' : 'tarif ') + tarif(r) + ' · ' : '') + p + ' %</div></div></div>';
@@ -261,7 +272,7 @@
     blocks.push({ t: 'autre', mt: 0, h: '<div style="display:flex;align-items:flex-end;gap:20px;border-bottom:3px solid ' + BLEU + ';padding-bottom:14px">' +
       '<div><div style="font-size:11px;font-weight:700;color:' + BLEU + ';letter-spacing:.4px">INTÉGRAL PHARMA · TARIF NET</div><div style="font-size:30px;font-weight:800;letter-spacing:-.8px;line-height:1.05;margin-top:6px">' + (c.client ? 'Ses achats, ses opportunités' : c.reseau ? 'Meilleures rotations' : 'Sélection ' + esc(c.ref)) + '</div></div>' +
       '<div style="margin-left:auto;text-align:right;font-size:11px;line-height:1.45;color:' + GRIS + '"><b style="color:' + ENCRE + '">' + esc(c.nom) + '</b><br>' + nb(c.tot) + (c.client ? ' opportunités · ' : ' produits · ') + c.date + '</div></div>' });
-    blocks.push({ t: 'autre', mt: 10, h: '<div style="font-size:10px;color:' + GRIS + '">En bleu, le prix net. En dessous : le tarif barré, puis la part des ' + refPhrase(c) + ' qui le commandent.</div>' });
+    blocks.push({ t: 'autre', mt: 10, h: '<div style="font-size:10px;color:' + GRIS + '">En bleu, le prix net. En dessous : le tarif barré, puis la part des ' + refPhrase(c) + ' qui le commandent' + noteNouv(c) + '.</div>' });
     blocsClient(c, { num: M, acc: BLEU, carte: 'border:1px solid #CBD2DE;border-radius:8px', px: 4, mt: 20,
       sec: function (l, sub, su) { return '<div style="background:' + ENCRE + ';color:#fff;border-radius:8px;padding:8px 12px;display:flex;align-items:baseline;gap:10px"><span style="font-size:14px;font-weight:800">' + esc(l) + (su ? ' <span style="font-weight:600;color:#AEB6C6;font-size:11px">(suite)</span>' : '') + '</span><span style="font-size:10.5px;color:#AEB6C6">' + esc(sub) + '</span></div>'; } }, blocks, suite);
     c.cats.forEach(function (k, ki) {
@@ -279,10 +290,10 @@
   function v5(c) {
     var blocks = [], suite = {};
     var all = []; c.cats.forEach(function (k) { k.rows.forEach(function (r) { all.push({ r: r, k: k }); }); });
-    all.sort(function (a, b) { return b.r.n - a.r.n; });
+    all.sort(function (a, b) { return pct(b.r.n, c, b.r.s) - pct(a.r.n, c, a.r.s) || b.r.n - a.r.n; });   // par part : une nouveauté du listing groupement se compte sur le réseau
     var top = all.slice(0, 12);
     var carte = function (x, i) {
-      var n = nom(x.r.d), p = pct(x.r.n, c);
+      var n = nom(x.r.d), p = pct(x.r.n, c, x.r.s);
       return '<div style="flex:0 0 calc(33.33% - 8px);box-sizing:border-box;background:#fff;border:1px solid ' + FILET + ';border-radius:14px;padding:12px 14px;box-shadow:0 6px 16px -10px rgba(0,50,160,.25)">' +
         '<div style="display:flex;justify-content:space-between;gap:6px;font-size:9px;font-weight:700;color:' + PALE + '"><span>N° ' + (i + 1) + '</span><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(x.k.label.replace('Princeps · ', '')) + '</span></div>' +
         '<div style="margin-top:8px;font-size:14px;font-weight:800;letter-spacing:-.2px;line-height:1.1">' + esc(n.m) + '</div><div style="font-size:9.5px;color:' + GRIS + ';margin-top:2px;height:24px;overflow:hidden">' + esc(n.r) + '</div>' +
@@ -309,10 +320,10 @@
       suite[ki] = { t: 'autre', mt: 0, h: entete(k, true) };
       k.rows.forEach(function (r) {
         var n = nom(r.d);
-        blocks.push({ t: 'row', f: ki, mt: 0, h: '<div style="display:flex;gap:12px;align-items:center;padding:5px 0;border-bottom:1px solid ' + FILET + ';font-size:10.5px"><div style="flex:1;min-width:0"><b>' + esc(n.m) + '</b> <span style="color:' + GRIS + '">' + esc(n.r) + '</span>' + tags(r, 'font-size:7px;font-weight:700;border:1px solid;border-radius:3px;padding:0 3px;margin-left:3px') + '</div><div style="width:60px;text-align:right;color:' + GRIS + ';white-space:nowrap">' + pctTxt(r.n, c) + '</div><div style="width:62px;text-align:right;color:' + PALE + '">' + tarif(r) + '</div><div style="width:72px;text-align:right;font-size:12px;font-weight:800;color:' + BLEU + '">' + eur(r.net) + '</div></div>' });
+        blocks.push({ t: 'row', f: ki, mt: 0, h: '<div style="display:flex;gap:12px;align-items:center;padding:5px 0;border-bottom:1px solid ' + FILET + ';font-size:10.5px"><div style="flex:1;min-width:0"><b>' + esc(n.m) + '</b> <span style="color:' + GRIS + '">' + esc(n.r) + '</span>' + tags(r, 'font-size:7px;font-weight:700;border:1px solid;border-radius:3px;padding:0 3px;margin-left:3px') + '</div><div style="width:60px;text-align:right;color:' + GRIS + ';white-space:nowrap">' + pctTxt(r.n, c, r.s) + '</div><div style="width:62px;text-align:right;color:' + PALE + '">' + tarif(r) + '</div><div style="width:72px;text-align:right;font-size:12px;font-weight:800;color:' + BLEU + '">' + eur(r.net) + '</div></div>' });
       });
     });
-    blocks.push({ t: 'autre', mt: 20, h: '<div style="font-size:9.5px;line-height:1.5;color:' + PALE + '">Prix nets HT indicatifs au ' + c.date + '. % des pharmacies : part des ' + refPhrase(c) + ' qui commandent le produit · Intégral Pharma, groupe de grossistes-répartiteurs.</div>' });
+    blocks.push({ t: 'autre', mt: 20, h: '<div style="font-size:9.5px;line-height:1.5;color:' + PALE + '">Prix nets HT indicatifs au ' + c.date + '. % des pharmacies : part des ' + refPhrase(c) + ' qui commandent le produit' + noteNouv(c) + ' · Intégral Pharma, groupe de grossistes-répartiteurs.</div>' });
     return { bg: '#fff', padT: 30, padX: 40, base: 'font-family:PdfArchivo,system-ui,sans-serif', blocks: blocks, suite: suite };
   }
   var DIR = { 1: v1, 2: v2, 3: v3, 4: v4, 5: v5 };
