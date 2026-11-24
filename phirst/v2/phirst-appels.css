@@ -151,11 +151,7 @@
 .pa-ht .po-et .lg-et{max-width:none;margin-top:0;white-space:nowrap}
 .po-fait{display:inline-flex;align-items:center;min-height:48px;font-weight:700;color:#0E6B43}
 .po-plus{margin-top:14px}
-.po-large{width:min(1200px,calc(100% - 32px))}
-.po-couches{align-items:center;margin:0 0 12px}
-.po-sep{width:12px}
 .po-carte{position:relative}
-.po-map{height:60vh;height:calc(100dvh - 380px);min-height:420px;border-radius:18px;border:1px solid var(--au-fil,#D8E7DD);overflow:hidden;background-color:#E4EFE8}
 .po-bandeau{position:absolute;left:12px;right:12px;bottom:28px;z-index:650;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-radius:14px;background-color:#fff;border:1px solid var(--au-fil,#D8E7DD);box-shadow:0 10px 24px -16px rgba(18,60,40,.4)}
 .po-bandeau[hidden]{display:none}
 .po-bandeau[data-ton="alerte"]{background-color:#FBEBD8;border-color:#E9C79B}
@@ -171,15 +167,9 @@
   .po-grille{grid-template-columns:repeat(2,minmax(0,1fr))}
   .po-grille .po-tuile:first-child{grid-column:1 / -1}
   .po-et{max-width:none;justify-content:flex-start}
-  .po-large{width:auto}
   .po-bandeau{flex-direction:column;align-items:stretch}
 }
-/* Carte : nombres sur les puces, parc concurrent, tournée du jour (22/11/2026). */
-.po-cn{margin-left:6px;font-weight:800}
-.po-parc{margin:-4px 0 12px}
-.po-parc[hidden]{display:none}
-.po-parc-t{display:inline-flex;align-items:center;min-height:44px;font-weight:800;font-size:15px;color:var(--au-ink2,#3B4F43)}
-.po-pipe{margin:22px 0 0}
+/* Carte : tournée du jour (22/11/2026). */
 .po-arrets{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:8px}
 .po-arret{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--au-fil,#D8E7DD);border-radius:16px;background-color:#fff}
 .po-arret div{flex:1 1 auto;min-width:0}
@@ -187,12 +177,6 @@
 .po-arret small{display:block;font-size:14px;line-height:1.35;color:var(--au-ink3,#4A5D51)}
 .po-num{flex:none;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background-color:var(--au-accent,#1A3A2E);color:#fff;font-weight:800;font-size:15px}
 .leaflet-bar a,.leaflet-bar a:hover{width:44px;height:44px;line-height:44px;font-size:22px}
-@media (max-width:700px){
-  .po-couches,.po-parc{flex-wrap:nowrap;overflow-x:auto;margin-inline:-16px;padding-inline:16px;scrollbar-width:none}
-  .po-couches::-webkit-scrollbar,.po-parc::-webkit-scrollbar{display:none}
-  .po-couches .pa-chip,.po-parc .pa-chip,.po-parc-t{flex:none;white-space:nowrap}
-  .po-map{height:calc(100dvh - 330px);min-height:380px}
-}
 /* Officines à l'ordinateur (22/11/2026) : une rangée par pharmacie, comme une liste de travail. Nom, ville, titulaire, étiquettes, raisons
    à gauche ; le bouton « Ajouter à mes pistes » à droite sur la même rangée. Sous 1024 px : la forme empilée ci-dessus reste. */
 @media (min-width:1024px){
@@ -219,11 +203,6 @@
 .po-carte .leaflet-control-zoom a{width:44px;height:44px;line-height:44px;font-size:22px}
 .po-carte[data-fiche="ouvert"] .po-bandeau{left:436px}
 .lg-et.po-et-ip{background-color:#E3ECFF;color:#0050E6}
-.po-chip-an{display:inline-block;width:15px;height:15px;margin-right:9px;border-radius:50%;border:3px solid #0050E6;background-color:#1A3A2E;box-shadow:0 0 0 1.5px #fff;vertical-align:-3px}
-.pa-chip.po-chip-ip{border-color:#BDD0F8;color:#0050E6}
-.pa-chip.po-chip-ip[aria-pressed="true"]{background-color:#0050E6;border-color:#0050E6;color:#fff}
-.pa-chip.po-chip-ip[aria-pressed="true"] .po-chip-an{border-color:#fff;box-shadow:none}
-.pa-chip.po-chip-ip:focus-visible{outline-color:#0050E6}
 /* Le repère du point choisi : un anneau et une onde douce */
 .po-rep{background:none;border:0;pointer-events:none}
 .po-rep-a{position:absolute;inset:4px;border-radius:50%;border:3px solid #1A3A2E;box-shadow:0 0 0 2px #fff,0 6px 14px rgba(18,40,31,.38)}
@@ -280,7 +259,6 @@
 .po-ffait{display:flex;align-items:center;gap:8px;margin:0;min-height:48px;font-size:16px;font-weight:800;color:#0E6B43}
 @media (max-width:700px){
   /* Téléphone : la fiche est une feuille posée en bas de l'écran, la carte reste visible au-dessus. */
-  .po-ouverte .po{padding-bottom:62dvh}
   .po-fiche{position:fixed;z-index:1200;left:8px;right:8px;top:auto;bottom:8px;width:auto;max-height:58dvh}
   .po-carte[data-fiche="ouvert"] .po-bandeau{left:12px}
   .po-fnom{font-size:21px}
@@ -289,3 +267,88 @@
 @media (prefers-reduced-motion:reduce){
   .po-rep-p{animation:none;opacity:0}
 }
+
+/* ── La carte · « 2 · Une seule barre » (maquette choisie par Will le 24/11/2026, X-carte-variantes/v2) ──
+   Une ligne d'outils sous la barre du haut, puis la carte jusqu'en bas de la fenêtre. Sous 1 280 px la ligne passe sur deux rangées
+   (un défilement de côté couperait le menu du parc concurrent) ; au téléphone, les couches vont dans un tiroir en bas de la carte.
+   Panneaux en blanc opaque, lumière en haut à gauche, ombre douce : aucun flou (Safari). */
+.pa.po.po-plein{width:auto;max-width:none;margin:0;display:flex;flex-direction:column;height:calc(100vh - var(--v2-top-h,72px) - var(--bnav-h,0px));height:calc(100dvh - var(--v2-top-h,72px) - var(--bnav-h,0px));min-height:440px}
+.po-cache{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+.po-barre{position:relative;z-index:2;flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-height:64px;padding:6px 16px;background-color:#fff;background-image:radial-gradient(80% 180% at 0 0,#EAF5EE 0,#fff 60%);border-bottom:1px solid #E3EEE7;box-shadow:0 10px 24px -20px rgba(18,60,40,.5)}
+.po-seg{flex:none;display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;padding:3px;border-radius:13px;background-color:#EAF1ED;border:1px solid #DCE8E0}
+.po-plein .po-seg button{min-height:44px;padding:0 12px;border:0;border-radius:10px;background-color:transparent;font:700 13.5px/1.1 var(--font);color:var(--au-ink2,#3B4F43);white-space:nowrap;transition:background-color .2s,color .2s,box-shadow .2s}
+.po-plein .po-seg button[aria-pressed="true"]{background-color:var(--au-accent,#1A3A2E);color:#fff;box-shadow:0 6px 12px -6px rgba(26,58,46,.7),0 1px 0 rgba(255,255,255,.2) inset}
+.po-barre-sep{flex:none;width:1px;height:30px;margin:0 2px;background-color:#DCE8E0}
+.po-couches{flex:1 1 0;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:5px}
+.po-couches>*{flex:none}
+.po-plein .po-b{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 10px 0 9px;border:1.5px solid var(--au-fil,#D8E7DD);border-radius:999px;background-color:#fff;font:700 13.5px/1 var(--font);color:var(--au-ink3,#4A5D51);white-space:nowrap;transition:background-color .2s,border-color .2s,box-shadow .2s}
+.po-plein .po-b[aria-pressed="true"]{background-color:#E7F3EB;border-color:var(--au-accent,#1A3A2E);color:var(--au-ink,#16281E);box-shadow:0 6px 12px -8px rgba(26,58,46,.55)}
+.po-plein .po-b:hover{border-color:#9DBBA9}
+.po-plein .po-b[aria-pressed="true"]:hover{border-color:var(--au-accent,#1A3A2E)}
+.po-cn{font-weight:800;color:var(--au-ink2,#3B4F43);font-variant-numeric:tabular-nums}
+.po-split{position:relative;display:inline-flex}
+.po-plein .po-split>.po-b:first-child{border-top-right-radius:6px;border-bottom-right-radius:6px;margin-right:-1px}
+.po-plein .po-b.po-ch{position:relative;width:38px;padding:0;justify-content:center;border-top-left-radius:6px;border-bottom-left-radius:6px;color:var(--au-ink2,#3B4F43)}
+.po-ch svg{transition:transform .2s}
+.po-ch[aria-expanded="true"] svg{transform:rotate(180deg)}
+.po-pt{display:none;position:absolute;top:7px;right:7px;width:9px;height:9px;border-radius:50%;background-color:var(--au-accent,#1A3A2E);border:2px solid #fff;box-sizing:content-box}
+.po-fab .po-pt{display:block}
+.po-menu{position:absolute;z-index:5;top:calc(100% + 10px);left:0;width:310px;padding:14px;border-radius:18px;background-color:#fff;background-image:radial-gradient(120% 60% at 0 0,#EAF5EE 0,#fff 62%);border:1px solid var(--au-fil,#D8E7DD);box-shadow:inset 0 1px 0 #fff,0 22px 44px -26px rgba(18,60,40,.55),0 2px 8px rgba(22,40,30,.09)}
+.po-menu[hidden]{display:none}
+.po-plein .po-menu-t{margin:0 0 10px;font:800 13px/1.2 var(--font);letter-spacing:.07em;text-transform:uppercase;color:var(--au-ink3,#4A5D51)}
+.po-chips{display:flex;flex-wrap:wrap;gap:6px}
+.po-menu .po-chips{flex-direction:column;align-items:stretch;gap:4px}
+.po-plein .po-chip{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 13px;border:1px solid var(--au-fil,#D8E7DD);border-radius:999px;background-color:#fff;font:700 15px/1.15 var(--font);color:var(--au-ink2,#3B4F43);text-align:left}
+.po-chip-n{margin-left:auto;padding-left:10px;font-style:normal;font-weight:800;color:var(--au-ink3,#4A5D51);font-variant-numeric:tabular-nums}
+.po-plein .po-chip[aria-pressed="true"]{background-color:var(--au-accent,#1A3A2E);border-color:var(--au-accent,#1A3A2E);color:#fff}
+.po-chip[aria-pressed="true"] .po-chip-n{color:#CFE6D8}
+.po-plein .po-menu .po-chip{border-radius:12px}
+.po-plein .po-menu .po-chip[aria-pressed="false"]{border-color:transparent;background-color:transparent}
+.po-plein .po-menu .po-chip[aria-pressed="false"]:hover{background-color:#F1F7F3}
+/* Les pastilles : la légende des points. Pleine = couche affichée, anneau creux = couche éteinte. */
+.po-g{flex:none;display:inline-block;width:16px;height:16px;border-radius:50%;background-color:var(--c,#1A3A2E);border:2px solid #fff;box-shadow:0 0 0 1px rgba(22,40,30,.28)}
+[aria-pressed="false"]>.po-g{background-color:#fff;border:2.5px solid var(--c,#1A3A2E);box-shadow:none}
+.po-g-fiches{width:14px;height:14px;margin:0 1px;border-radius:50% 50% 50% 0;transform:rotate(-45deg)}
+.po-g-robots{--c:#C2410C}.po-g-omnicell{--c:#DC2626}.po-g-transferts{--c:#1D4ED8}.po-g-ehpad{--c:#7C3AED}.po-g-signaux{--c:#12A567}.po-g-toutes{--c:#1A3A2E;width:12px;height:12px;margin:2px}
+.po-g-integral{--c:#0050E6;width:17px;height:17px;border:3px solid #0050E6;background-color:#1A3A2E;box-shadow:0 0 0 1.5px #fff,0 0 0 2.5px rgba(0,80,230,.25)}
+[aria-pressed="false"]>.po-g-integral{background-color:#fff;border:3px solid #0050E6;box-shadow:0 0 0 1.5px #fff}
+.po-chip .po-g{width:11px;height:11px;border-width:1.5px}
+.po-chip[aria-pressed]>.po-g{background-color:var(--c);border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(22,40,30,.28)}
+/* La carte remplit tout ce qui reste ; le bandeau « Dans cette vue » en bas à gauche, la tournée en bas à droite. */
+.po-plein .po-carte{z-index:0;flex:1 1 auto;min-height:0}
+.po-plein .po-map{position:absolute;inset:0;height:auto;background-color:#E4EFE8}
+.po-plein .po-bandeau{left:16px;right:auto;bottom:30px;max-width:min(640px,calc(100% - 330px))}
+.po-plein .po-carte[data-fiche="ouvert"] .po-bandeau{max-width:min(640px,calc(100% - 452px))}
+.po-tr{position:absolute;z-index:700;right:14px;bottom:30px;display:flex;flex-direction:column;align-items:flex-end;gap:8px;max-height:calc(100% - 90px)}
+.po-plein .po-tr-b{display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:0 16px;border:1px solid var(--au-fil,#D8E7DD);border-radius:999px;background-color:#fff;box-shadow:0 12px 24px -16px rgba(18,60,40,.55),0 1px 3px rgba(22,40,30,.12);font:800 15px/1 var(--font);color:var(--au-ink,#16281E);white-space:nowrap}
+.po-tr-b b{font-weight:800;color:var(--au-ink2,#3B4F43)}
+.po-tr-b svg{transition:transform .2s}
+.po-tr-b[aria-expanded="true"] svg{transform:rotate(180deg)}
+.po-pipe{order:-1;width:340px;max-width:calc(100vw - 48px);min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:14px;border-radius:18px;background-color:#fff;border:1px solid var(--au-fil,#D8E7DD);box-shadow:0 22px 44px -26px rgba(18,60,40,.55),0 2px 8px rgba(22,40,30,.09)}
+.po-pipe[hidden]{display:none}
+.po-plein :is(.po-pipe,.po-tr-m) .po-h2{margin:0 0 10px;font:800 13px/1.2 var(--font);letter-spacing:.07em;text-transform:uppercase;color:var(--au-ink3,#4A5D51)}
+.po-ouverte .po-tr{display:none}
+.po-tiroir{display:none}
+.po-plein :is(.po-b,.po-seg button,.po-chip,.po-tr-b,.po-poignee):focus-visible{outline:2px solid var(--au-accent,#1A3A2E);outline-offset:2px}
+@media (max-width:700px){
+  .po-barre{min-height:62px;padding:8px 12px}
+  .po-seg{flex:1 1 auto}
+  .po-plein .po-seg button{min-height:44px;font-size:15px}
+  .po-barre-sep,.po-barre .po-couches,.po-tr{display:none}
+  .po-tiroir{display:block;position:absolute;z-index:700;left:12px;right:12px;bottom:26px;padding:0 6px;background-color:#fff;background-image:radial-gradient(120% 60% at 0 0,#EAF5EE 0,#fff 62%);border:1px solid var(--au-fil,#D8E7DD);border-radius:20px;box-shadow:inset 0 1px 0 #fff,0 22px 44px -26px rgba(18,60,40,.55),0 2px 8px rgba(22,40,30,.09)}
+  .po-plein .po-poignee{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:54px;padding:0 10px;border:0;background-color:transparent;font:800 16px/1 var(--font);color:var(--au-ink,#16281E)}
+  .po-poignee span:last-child{color:var(--au-accent,#1A3A2E)}
+  .po-tcorps{display:none;max-height:52dvh;overflow-y:auto;overscroll-behavior:contain;padding:4px 4px 12px;border-top:1px solid #E3EEE7}
+  .po-tiroir[data-ouvert="true"] .po-tcorps{display:block}
+  .po-grille-c{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;padding:8px 0}
+  .po-plein .po-grille-c .po-b{justify-content:flex-start;min-width:0;min-height:48px;padding:0 14px;font-size:15px;line-height:1.15;white-space:normal;text-align:left}
+  .po-grille-c .po-cn{margin-left:auto;padding-left:6px}
+  .po-tiroir .po-parc{padding:2px 0 10px}
+  .po-tiroir .po-parc[hidden]{display:none}
+  .po-tr-m{padding-top:8px;border-top:1px solid #E3EEE7}
+  .po-plein .po-bandeau{left:12px;right:12px;bottom:98px;max-width:none}
+  .po-plein .po-carte[data-fiche="ouvert"] .po-bandeau{max-width:none}
+  .po-bandeau p{font-size:14.5px}
+  .po-ouverte .po-tiroir,.po-ouverte .po-bandeau{display:none}
+}
+@media (prefers-reduced-motion:reduce){.po-ch svg,.po-tr-b svg,.po-plein .po-b,.po-plein .po-seg button{transition:none}}

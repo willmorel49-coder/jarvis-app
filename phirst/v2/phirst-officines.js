@@ -241,12 +241,18 @@
   var UN_COUCHE = { toutes: 'officine', robots: 'robot', ehpad: 'EHPAD', transferts: 'transfert', signaux: 'à saisir maintenant', integral: 'cliente d’Intégral' };
   function compteCouche(a, n) { return { nom: NOMS_COUCHE[a], un: UN_COUCHE[a], f: a === 'toutes' || a === 'integral', n: n }; }
   var LIB_COUCHE = { fiches: 'Mes fiches', robots: 'Robots concurrents', transferts: 'Cessions et créations', ehpad: 'Fournisseurs EHPAD', signaux: 'À saisir maintenant', toutes: 'Toutes les officines', integral: 'Clients Intégral' };
+  /* 24/11/2026 — maquette « 2 · Une seule barre » choisie par Will : noms courts dans la barre (le nom complet est dans l'info-bulle,
+     dans le nom lu par VoiceOver et en toutes lettres dans le tiroir du téléphone), et la pastille de chaque bouton sert de légende. */
+  var COURT_COUCHE = { fiches: 'Mes fiches', robots: 'Robots', transferts: 'Cessions', ehpad: 'EHPAD', signaux: 'À saisir', toutes: 'Toutes', integral: 'Intégral' };
+  var AIDE_COUCHE = { fiches: 'les officines de vos pistes, en épingle verte.', robots: 'robot concurrent, point orange (Omnicell en rouge).', transferts: 'cession, transfert ou création, point bleu.',
+    ehpad: 'fournisseur d’EHPAD, point violet.', signaux: 'à saisir maintenant, point vert vif.', toutes: 'toutes les officines, petit point vert foncé.', integral: 'cliente d’Intégral, anneau bleu.' };
   var SECTEUR_BORNES = [[46.2, -5.3], [49.8, 1.2]];
   var CAP_PAGES = 4;
   /* yann : vrai quand le compte n'est pas la téléprospectrice (couche « Clients Intégral » et bloc Intégral de la fiche, jamais pour elle). */
   var M = { racine: null, map: null, perim: 'only', on: { fiches: true, robots: true, transferts: true, ehpad: true, signaux: false, toutes: false, integral: true },
     groupes: {}, lignes: {}, ix: {}, pistes: [], sommes: null, jeton: 0, minuteur: 0, totaux: {}, vus: {}, plafond: false, fab: '', meta: {},
-    yann: false, pistesDessinees: false, sel: null, repere: null, ficheJeton: 0, replie: false, pts: {}, totauxP: {}, cache: {}, dessine: {}, compte: {} };
+    yann: false, pistesDessinees: false, sel: null, repere: null, ficheJeton: 0, replie: false, pts: {}, totauxP: {}, cache: {}, dessine: {}, compte: {},
+    menuParc: false, tiroir: false, tourneeOuverte: false };
   function ordre() { return P.ordreCouches(M.yann); }
 
   /* Leaflet n'est chargé qu'UNE fois : l'écran peut être redessiné pendant le chargement (la téléprospectrice : deux dessins, deux scripts,
@@ -404,18 +410,16 @@
   function tracerPistes() {
     var L = window.L, g = M.groupes.fiches; g.clearLayers();
     M.pistesDessinees = true;
-    var vivantes = (M.pistes || []).filter(function (p) { return p.stage !== 'archive'; }), sans = 0;
+    var vivantes = (M.pistes || []).filter(function (p) { return p.stage !== 'archive'; });
     vivantes.forEach(function (p) {
       var la = typeof p.lat === 'string' ? parseFloat(p.lat) : p.lat, lo = typeof p.lon === 'string' ? parseFloat(p.lon) : p.lon;
-      if (!coordOk(la, lo)) { sans++; return; }
+      if (!coordOk(la, lo)) return;
       L.marker([la, lo], { icon: L.divIcon({ className: 'po-epingle', html: '<span></span>', iconSize: [44, 44], iconAnchor: [22, 40], popupAnchor: [0, -34] }) })
         .bindPopup('<div class="po-pop"><b>' + esc(p.nom) + '</b><small>' + esc([p.cp, p.ville].filter(Boolean).join(' ')) + '</small><div><em class="lg-et">' + esc(P.nomEtape(p.stage)) + '</em></div>' +
           (p.next_action ? '<p>' + esc(p.next_action) + (p.next_action_date ? ' · ' + esc(P.frDate(p.next_action_date)) : '') + '</p>' : '') +
           (p.telephone ? '<a class="pa-tel" href="tel:' + esc(String(p.telephone).replace(/\s/g, '')) + '">' + esc(P.telFr(p.telephone)) + '</a>' : '') +
           '<button type="button" class="pa-b" data-vers="appels">Voir mes pistes</button></div>', { minWidth: 220 }).addTo(g);
     });
-    var el = M.racine && M.racine.querySelector('#po-fiches');
-    if (el) el.textContent = vivantes.length + ' fiche' + (vivantes.length > 1 ? 's' : '') + ' dans vos pistes' + (sans ? ', dont ' + sans + ' sans adresse (pas sur la carte)' : '') + '.';
   }
 
   /* ── La fiche posée sur la carte (maquette v2 choisie par Will le 24/11/2026) ──
@@ -529,8 +533,7 @@
     var m = M.map, s = m.getSize(), ll = [M.sel.l.lat, M.sel.l.lon], el = document.getElementById('po-fiche');
     if (estTel()) {
       if (!el) return;
-      var r = m.getContainer().getBoundingClientRect();
-      if (r.top < 0 || r.top > 90) { window.scrollTo(0, window.scrollY + r.top - 64); r = m.getContainer().getBoundingClientRect(); }
+      var r = m.getContainer().getBoundingClientRect(); // la carte remplit l'écran sous sa barre : plus rien à faire défiler
       var libre = Math.max(120, el.getBoundingClientRect().top - r.top);
       m.panInside(ll, { paddingTopLeft: [30, 30], paddingBottomRight: [30, Math.max(0, s.y - libre) + 30], animate: false });
     } else if (!M.replie) m.panInside(ll, { paddingTopLeft: [14 + 408 + 8 + 44, 44], paddingBottomRight: [44, 44], animate: false });
@@ -562,6 +565,8 @@
   function ouvrirFiche(l) {
     var tok = ++M.ficheJeton;
     M.sel = { l: l, f: P.ficheDeLignes([l]), integ: null, dit: '', envoi: false };
+    if (M.menuParc) { M.menuParc = false; dessinerPuces(); }
+    if (M.tiroir) poserTiroir(false);
     marquer(l); dessinerFiche(); placerFiche(); naitre();
     enrichirFiche(l, tok);
   }
@@ -576,7 +581,11 @@
       if (M.sel === F) dessinerFiche();
     });
   }
-  function toucheCarte(ev) { if (ev.key === 'Escape' && M.sel && M.racine && M.racine.querySelector('#po-fiche-hote')) fermerFiche(); }
+  function toucheCarte(ev) {
+    if (!(ev.key === 'Escape' && M.racine && M.racine.querySelector('#po-fiche-hote'))) return;
+    if (M.menuParc) { M.menuParc = false; dessinerPuces(); var c = M.racine.querySelector('[data-menu-parc]'); if (c) c.focus(); return; } // le menu d'abord, puis la fiche
+    if (M.sel) fermerFiche();
+  }
   /* En quittant l'écran, la fiche part avec lui (la feuille du téléphone vit dans la page). */
   function quitterCarte() { if (/^#carte\b/.test(location.hash || '')) return; M.sel = null; M.ficheJeton++; viderTel(); if (M.racine) M.racine.classList.remove('po-ouverte'); }
 
@@ -584,27 +593,74 @@
     if (!M.map) return;
     if (M.perim === 'france') M.map.setView([46.6, 2.4], 6); else M.map.fitBounds(SECTEUR_BORNES, { padding: [20, 20], maxZoom: 9 });
   }
-  function dessinerPuces() {
-    var z = M.racine && M.racine.querySelector('#po-couches'); if (!z) return;
-    var vivantes = (M.pistes || []).filter(function (p) { return p.stage !== 'archive'; }).length;
-    function nb(k) { var n = k === 'fiches' ? vivantes : M.totaux[M.perim + '|' + k + '|' + (k === 'robots' ? M.fab : '')]; return n == null ? '' : ' <span class="po-cn">' + n.toLocaleString('fr-FR') + '</span>'; }
-    z.innerHTML = '<button type="button" class="pa-chip" data-perim="only" aria-pressed="' + (M.perim === 'only') + '">Secteur de Yann</button>' +
-      '<button type="button" class="pa-chip" data-perim="france" aria-pressed="' + (M.perim === 'france') + '">Toute la France</button><span class="po-sep"></span>' +
-      ordre().map(function (k) {
-        if (k === 'integral') return '<span class="po-sep"></span><button type="button" class="pa-chip po-chip-ip" data-couche="integral" aria-pressed="' + !!M.on.integral + '"><span class="po-chip-an" aria-hidden="true"></span>' + esc(LIB_COUCHE.integral) + nb(k) + '</button>';
-        return '<button type="button" class="pa-chip" data-couche="' + k + '" aria-pressed="' + !!M.on[k] + '">' + esc(LIB_COUCHE[k]) + nb(k) + '</button>'; }).join('');
-    var f = M.racine.querySelector('#po-parc'); if (!f) return;
-    var fabs = M.meta.fabs || [];
-    if (!M.on.robots || !fabs.length) { f.hidden = true; f.innerHTML = ''; return; }
-    f.hidden = false;
-    f.innerHTML = '<span class="po-parc-t">Parc concurrent</span>' + [{ key: '', label: 'Tous' }].concat(fabs.map(function (x) { return { key: x.key, label: x.label + ' (' + x.n + ')' }; })).map(function (x) {
-      return '<button type="button" class="pa-chip" data-parc="' + esc(x.key) + '" aria-pressed="' + (M.fab === x.key) + '">' + esc(x.label) + '</button>'; }).join('');
+  /* La barre d'outils (maquette 2 choisie le 24/11/2026) : Secteur / France à gauche, puis une rangée de boutons compacts, pastille + nom court + nombre.
+     Le bouton Robots porte une flèche qui ouvre le parc concurrent dans un menu (seulement quand les robots sont affichés).
+     Au téléphone, les mêmes boutons, en toutes lettres, vivent dans le tiroir du bas. Les états (menu, tiroir) sont dans M : les nombres arrivent
+     après coup et redessinent la barre, le menu ouvert le reste. */
+  function glyphe(k) { return '<i class="po-g po-g-' + k + '" aria-hidden="true"></i>'; }
+  function chipsParc() {
+    return '<div class="po-chips" role="group" aria-label="Parc concurrent">' + [{ key: '', label: 'Tous' }].concat(M.meta.fabs || []).map(function (x) {
+      var n = typeof x.n === 'number' ? x.n.toLocaleString('fr-FR') : (x.n == null ? '' : String(x.n));
+      return '<button type="button" class="po-chip" data-parc="' + esc(x.key) + '" aria-pressed="' + (M.fab === x.key) + '">' + (x.key === 'omnicell' ? glyphe('omnicell') : '') +
+        '<span>' + esc(x.label) + '</span>' + (n ? '<i class="po-chip-n">' + esc(n) + '</i>' : '') + '</button>';
+    }).join('') + '</div>';
+  }
+  /* La barre est redessinée quand un nombre arrive : le bouton qui avait le focus clavier le retrouve. */
+  function garderFocus(f) {
+    var a = document.activeElement, zone = a && a.closest ? a.closest('#po-couches,#po-grille,#po-parc,#po-perim') : null, sel = '';
+    if (zone) ['data-couche', 'data-parc', 'data-perim', 'data-menu-parc'].some(function (n) { var v = a.getAttribute(n); if (v !== null) sel = '[' + n + '="' + v + '"]'; return v !== null; });
+    f();
+    if (sel) { var b = zone.querySelector(sel); if (b && b !== document.activeElement) b.focus({ preventScroll: true }); }
+  }
+  function dessinerPuces() { garderFocus(dessinerBarre); }
+  function dessinerBarre() {
+    var r = M.racine, z = r && r.querySelector('#po-couches'); if (!z) return;
+    var vivantes = (M.pistes || []).filter(function (p) { return p.stage !== 'archive'; });
+    var sans = vivantes.filter(function (p) { return !coordOk(typeof p.lat === 'string' ? parseFloat(p.lat) : p.lat, typeof p.lon === 'string' ? parseFloat(p.lon) : p.lon); }).length;
+    var fabs = M.meta.fabs || [], parc = !!M.on.robots && fabs.length > 0, libFab = '';
+    fabs.forEach(function (x) { if (x.key === M.fab) libFab = x.label; });
+    if (!parc) M.menuParc = false;
+    function n(k) { return k === 'fiches' ? vivantes.length : M.totaux[cleCouche(k)]; }
+    function bouton(k, long) {
+      var x = n(k), nb = x == null ? '' : x.toLocaleString('fr-FR');
+      var titre = LIB_COUCHE[k] + ' : ' + AIDE_COUCHE[k] + (k === 'fiches' && sans ? ' ' + sans + ' sans adresse, pas sur la carte.' : '');
+      return '<button type="button" class="po-b" data-couche="' + k + '" aria-pressed="' + !!M.on[k] + '" title="' + esc(titre) + '" aria-label="' + esc(LIB_COUCHE[k] + (nb ? ', ' + nb : '')) + '">' +
+        glyphe(k) + '<span class="po-bn">' + esc(long ? LIB_COUCHE[k] : COURT_COUCHE[k]) + '</span>' + (nb ? '<span class="po-cn">' + nb + '</span>' : '') + '</button>';
+    }
+    var p = r.querySelector('#po-perim');
+    if (p) p.innerHTML = '<button type="button" data-perim="only" aria-pressed="' + (M.perim === 'only') + '">Secteur de Yann</button><button type="button" data-perim="france" aria-pressed="' + (M.perim === 'france') + '">Toute la France</button>';
+    z.innerHTML = ordre().map(function (k) {
+      if (k !== 'robots' || !parc) return bouton(k);
+      return '<div class="po-split' + (M.fab ? ' po-fab' : '') + '">' + bouton(k) +
+        '<button type="button" class="po-b po-ch" data-menu-parc="1" aria-haspopup="true" aria-expanded="' + M.menuParc + '" aria-controls="po-menu" aria-label="Parc concurrent : ' + esc(libFab ? libFab + ' choisi' : 'choisir le fabricant') + '">' + IC.bas + '<i class="po-pt" aria-hidden="true"></i></button>' +
+        '<div class="po-menu" id="po-menu"' + (M.menuParc ? '' : ' hidden') + '><h2 class="po-menu-t">Parc concurrent</h2>' + chipsParc() + '</div></div>';
+    }).join('');
+    var g = r.querySelector('#po-grille'); if (g) g.innerHTML = ordre().map(function (k) { return bouton(k, true); }).join('');
+    var f = r.querySelector('#po-parc');
+    if (f) { f.hidden = !parc; f.innerHTML = parc ? '<h3 class="po-menu-t">Parc concurrent</h3>' + chipsParc() : ''; }
+    var t = r.querySelector('#po-tlib'), act = ordre().filter(function (k) { return M.on[k]; }).length;
+    if (t) t.textContent = act + ' couche' + (act > 1 ? 's' : '') + ' affichée' + (act > 1 ? 's' : '');
+  }
+  /* Le tiroir du téléphone (couches, parc concurrent, tournée) : fermé, il ne garde qu'une poignée au-dessus de la carte. */
+  function poserTiroir(ouvert) {
+    M.tiroir = ouvert;
+    var r = M.racine, t = r && r.querySelector('#po-tiroir'), b = r && r.querySelector('[data-tiroir]'), i = r && r.querySelector('#po-tact');
+    if (t) t.setAttribute('data-ouvert', String(ouvert));
+    if (b) b.setAttribute('aria-expanded', String(ouvert));
+    if (i) i.textContent = ouvert ? 'Fermer' : 'Ouvrir';
+  }
+  function poserTournee(ouvert) {
+    M.tourneeOuverte = ouvert;
+    var r = M.racine, c = r && r.querySelector('#po-pipe'), b = r && r.querySelector('[data-tournee]');
+    if (c) c.hidden = !ouvert;
+    if (b) b.setAttribute('aria-expanded', String(ouvert));
   }
   function chargerTotaux() {
     var jeton = M.perim + '|' + M.fab;
     ordre().filter(function (k) { return k !== 'fiches'; }).forEach(function (k) { totalCouche(k).then(function () { if (M.racine && jeton === M.perim + '|' + M.fab) dessinerPuces(); }); });
   }
   /* « Ma tournée du jour » : les fiches dont l'action est due, dans l'ordre de visite le plus court (V1 : tournée de la carte du CRM). */
+  /* 24/11/2026 — maquette 2 : un bouton posé en bas à droite de la carte ouvre la tournée au-dessus de lui ; au téléphone, elle est dans le tiroir. */
   function dessinerTournee() {
     var z = M.racine && M.racine.querySelector('#po-pipe'); if (!z) return;
     var stops = P.tourneeDuJour(M.pistes, P.aujourdhui());
@@ -619,24 +675,43 @@
         (lignes.length > 5 ? '<details class="po-savoir"><summary>Voir les ' + (lignes.length - 5) + ' autres arrêts</summary><ol class="po-arrets">' + lignes.slice(5).join('') + '</ol></details>' : '') +
         (lien ? '<a class="pa-b pa-ok" href="' + esc(lien) + '" target="_blank" rel="noopener">Ouvrir l’itinéraire</a>' : '')
         : '<p class="pa-avis">Rien à visiter aujourd’hui. Fixez une date de relance sur une piste (écran Appels) : elle apparaît ici, rangée dans l’ordre de visite.</p>');
+    var tel = M.racine.querySelector('#po-pipe-tel'); if (tel) tel.innerHTML = z.innerHTML;
+    var nb = M.racine.querySelector('#po-tr-n'); if (nb) nb.textContent = stops.length ? stops.length + ' arrêt' + (stops.length > 1 ? 's' : '') : 'aucun arrêt';
   }
   function clicCarte(ev) {
     var t = ev.target, g;
+    if (t.closest('[data-menu-parc]')) { M.menuParc = !M.menuParc; dessinerPuces(); return; }
+    if (M.menuParc && !t.closest('.po-split')) { M.menuParc = false; dessinerPuces(); } // un clic ailleurs referme le menu du parc concurrent
+    if (t.closest('[data-tiroir]')) { poserTiroir(!M.tiroir); return; }
+    if (t.closest('[data-tournee]')) { poserTournee(!M.tourneeOuverte); return; }
     if ((g = t.closest('[data-vers]'))) { V2.go(g.getAttribute('data-vers')); return; }
     if (t.closest('[data-fiche-fermer]')) { fermerFiche(); return; }
     if (t.closest('[data-fiche-replier]')) { M.replie = !M.replie; dessinerFiche(); if (!M.replie) placerFiche(); return; }
     if (t.closest('[data-fiche-ajout]')) { ajouterDepuisFiche(); return; }
     if ((g = t.closest('[data-couche]'))) { var k = g.getAttribute('data-couche'); M.on[k] = !M.on[k]; if (!M.on[k]) vider(k); if (k === 'fiches') M.pistesDessinees = false; dessinerPuces(); actualiser(); return; }
-    if ((g = t.closest('[data-parc]'))) { M.fab = g.getAttribute('data-parc'); vider('robots'); dessinerPuces(); chargerTotaux(); actualiser(); return; }
+    if ((g = t.closest('[data-parc]'))) {
+      var duMenu = !!(g.closest && g.closest('#po-menu'));
+      M.fab = g.getAttribute('data-parc'); M.menuParc = false; vider('robots'); dessinerPuces(); chargerTotaux(); actualiser();
+      if (duMenu) { var c = M.racine.querySelector('[data-menu-parc]'); if (c) c.focus(); } // le menu se referme : le focus revient sur sa flèche
+      return;
+    }
     if ((g = t.closest('[data-perim]'))) { M.perim = g.getAttribute('data-perim'); M.totaux = {}; M.totauxP = {}; ordre().forEach(vider); M.pistesDessinees = false; dessinerPuces(); chargerTotaux(); cadrer(); actualiser(); return; }
     if (t.closest('[data-zoomer]')) { if (M.perim === 'france') M.map.setZoom(Math.max(M.map.getZoom(), P.SEUIL_COUCHES.france)); else cadrer(); setTimeout(actualiser, 50); return; }
   }
   V2.pages.carte = { needs: [], render: function (root) {
     if (M.map) { try { M.map.remove(); } catch (e) { /* carte déjà démontée */ } M.map = null; }
     M.racine = root; M.groupes = {}; M.lignes = {}; M.pts = {}; M.totaux = {}; M.totauxP = {}; M.cache = {}; M.dessine = {}; M.compte = {}; M.yann = false; M.pistesDessinees = false; M.sel = null; M.repere = null; M.replie = false; M.ficheJeton++;
-    root.innerHTML = window.PHIRST_ECRAN.cadre('<section class="pa po po-large" aria-label="La carte"><header class="pa-tete"><h1>La carte</h1><p>Vos fiches en épingles, les pharmacies du secteur en points. <span id="po-fiches"></span></p></header>' +
-      '<div class="pa-chips po-couches" id="po-couches" role="group" aria-label="Couches"></div><div class="pa-chips po-parc" id="po-parc" role="group" aria-label="Parc concurrent" hidden></div>' +
-      '<div class="po-carte"><div id="po-map" class="po-map" role="application" aria-label="Carte des pharmacies"></div><div id="po-bandeau" class="po-bandeau" role="status" hidden></div><div id="po-fiche-hote" class="po-fiche-hote"></div></div><div id="po-pipe" class="po-pipe"></div></section>');
+    M.menuParc = false; M.tiroir = false; M.tourneeOuverte = false;
+    /* 24/11/2026 — maquette « 2 · Une seule barre » : la barre d'outils juste sous la barre du haut, puis la carte jusqu'en bas de la fenêtre
+       (avant : titre, phrase, deux rangées de puces et le parc concurrent, la carte ne commençait qu'à 56 % de la hauteur). */
+    root.innerHTML = window.PHIRST_ECRAN.cadre('<section class="pa po po-plein" aria-label="La carte"><h1 class="po-cache">La carte</h1>' +
+      '<div class="po-barre" role="group" aria-label="Périmètre et couches"><div class="po-seg" id="po-perim" role="group" aria-label="Périmètre"></div><span class="po-barre-sep" aria-hidden="true"></span>' +
+      '<div class="po-couches" id="po-couches" role="group" aria-label="Couches"></div></div>' +
+      '<div class="po-carte"><div id="po-map" class="po-map" role="application" aria-label="Carte des pharmacies"></div><div id="po-bandeau" class="po-bandeau" role="status" hidden></div>' +
+      '<div class="po-tr"><button type="button" class="po-tr-b" data-tournee="1" aria-expanded="false" aria-controls="po-pipe"><span>Ma tournée du jour</span><b id="po-tr-n"></b>' + IC.haut + '</button><div id="po-pipe" class="po-pipe" hidden></div></div>' +
+      '<section class="po-tiroir" id="po-tiroir" data-ouvert="false" aria-label="Couches de la carte"><button type="button" class="po-poignee" data-tiroir="1" aria-expanded="false" aria-controls="po-tcorps"><span id="po-tlib"></span><span id="po-tact">Ouvrir</span></button>' +
+      '<div class="po-tcorps" id="po-tcorps"><div class="po-grille-c" id="po-grille" role="group" aria-label="Couches"></div><div class="po-parc" id="po-parc" hidden></div><div class="po-tr-m" id="po-pipe-tel"></div></div></section>' +
+      '<div id="po-fiche-hote" class="po-fiche-hote"></div></div></section>');
     if (!root.__pc) { root.__pc = true; root.addEventListener('click', clicCarte); }
     if (!document.__poEchap) { document.__poEchap = true; document.addEventListener('keydown', toucheCarte); window.addEventListener('hashchange', quitterCarte); }
     viderTel();
