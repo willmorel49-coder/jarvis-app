@@ -337,6 +337,11 @@ describe('resteDossier, étiquette, phrases', () => {
     assert.equal(E.jours('2026-11-17', '2026-11-24'), 7)
     assert.equal(E.longJour('2026-11-24'), 'mardi 24 novembre 2026')
     // le numéro de la pharmacie s'affiche par paires, sans se couper (l'annuaire le donne collé : « 0297767802 »)
+    // une adresse piégée n'ajoute aucun destinataire au brouillon
+    assert.equal(E.adresseMail(' pre-lormeau@exemple.fr '), 'pre-lormeau@exemple.fr')
+    assert.equal(E.adresseMail('a@b.fr?cc=autre@c.fr'), '')
+    assert.equal(E.adresseMail('a@b.fr,autre@c.fr'), '')
+    assert.ok(E.lienMail('a@b.fr?bcc=x@y.fr', 'Objet', 'Texte').startsWith('mailto:?subject='))
     assert.equal(E.telLisible('0297767802'), '02 97 76 78 02')
     assert.equal(E.telLisible('+33 6 12 34 56 78'), '+33 6 12 34 56 78')
     assert.equal(E.telLisible('12'), '12')

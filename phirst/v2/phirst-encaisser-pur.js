@@ -133,7 +133,9 @@
     if (a.j > 7) return { objet: 'Règlement en attente — ' + nom, texte: b + '\n\nSauf erreur de ma part, ' + quoi + pour + ech + ' ne nous est pas encore parvenu.\n\nPourriez-vous me dire où en est le règlement ?' + fin };
     return { objet: 'Petit rappel — ' + nom, texte: b + '\n\nUn petit rappel : ' + quoi + pour + ech + ' ne nous est pas encore parvenu. Il s’est peut-être croisé avec ce message.' + fin };
   }
-  function lienMail(mail, objet, texte) { return 'mailto:' + String(mail || '').trim() + '?subject=' + encodeURIComponent(objet) + '&body=' + encodeURIComponent(texte); }
+  /* Une seule adresse simple, sinon rien : une adresse notée « x@y.fr?cc=… » ne doit pas ajouter de destinataire au brouillon (relecture de sécurité du 24/11). */
+  function adresseMail(m) { var t = String(m || '').trim(); return /^[^\s@?&,;%:\/<>"'=#]+@[^\s@?&,;%:\/<>"'=#]+\.[^\s@?&,;%:\/<>"'=#]+$/.test(t) ? t : ''; }
+  function lienMail(mail, objet, texte) { return 'mailto:' + adresseMail(mail) + '?subject=' + encodeURIComponent(objet) + '&body=' + encodeURIComponent(texte); }
   function telSms(tel) { var t = String(tel || '').replace(/[^\d+]/g, ''); return t.replace(/\D/g, '').length >= 10 ? t : ''; }
   /* « 0297767802 » → « 02 97 76 78 02 » (espaces insécables : le numéro ne se coupe pas) ; un numéro d'une autre forme reste tel quel. */
   function telLisible(tel) {
@@ -209,7 +211,7 @@
     estJour: estJour, jourDe: jourDe, jours: jours, decaler: decaler, court: court, dateMsg: dateMsg, longJour: longJour,
     eur: eur, pl: pl, maj: maj, nomCourt: nomCourt, laPh: laPh, offre: offre,
     ligneDe: ligneDe, dernieres: dernieres, attentes: attentes, recente: recente, du: du, enRetard: enRetard, relances: relances, aFaire: aFaire,
-    bientot: bientot, notees: notees, bonjour: bonjour, signature: signature, message: message, lienMail: lienMail, telSms: telSms, telLisible: telLisible, lienSms: lienSms,
+    bientot: bientot, notees: notees, bonjour: bonjour, signature: signature, message: message, adresseMail: adresseMail, lienMail: lienMail, telSms: telSms, telLisible: telLisible, lienSms: lienSms,
     quoiCourt: quoiCourt, etiquette: etiquette, phraseBande: phraseBande, phraseRelance: phraseRelance, detailLigne: detailLigne, resteDossier: resteDossier,
     lireMontant: lireMontant, verifier: verifier, aideType: aideType
   };
