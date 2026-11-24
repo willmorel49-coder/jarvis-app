@@ -716,8 +716,8 @@ test('Essentiels E1… : badge, ligne, bandeau et nom court', () => {
   assert.ok(!/€|commandes|marge/.test(b + Ess.ligneNum(f3)));           // aucun chiffre de vente pour une non cliente
   assert.equal(Ess.court('Pharmacie de la Gare'), 'Gare');
   assert.equal(Ess.court('Pharmacie du Centre'), 'Centre');
-  assert.equal(Ess.court('Pharmacie de l’Horloge'), 'Horloge');
-  assert.equal(Ess.court('Nouvelle Pharmacie des Halles'), 'Halles');
+  assert.equal(Ess.court('Pharmacie de l’Abbaye'), 'Abbaye');
+  assert.equal(Ess.court('Nouvelle Pharmacie des Tilleuls'), 'Tilleuls');
   assert.equal(Ess.court('Grande Pharmacie'), 'Grande Pharmacie');      // rien d'inventé : le nom reste entier
-  assert.equal(Ess.court('Pharmacie Pichard'), 'Pichard');
+  assert.equal(Ess.court('Pharmacie Exemple'), 'Exemple');
 });
