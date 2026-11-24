@@ -83,6 +83,10 @@ describe('idée 4 : le relais par écrit', () => {
     assert.equal(A.injoignablesDeSuite(j.concat(appel('a', '2026-11-05', 9, INJ)), 'a'), 2)
     assert.equal(A.injoignablesDeSuite(j, 'autre'), 0)
   })
+  test('un barrage ou un mauvais numéro entre deux injoignables n’est pas compté comme injoignable', () => {
+    const j = [appel('a', '2026-11-01', 9, INJ), { prospect_id: 'a', type: 'appel', body: JSON.stringify({ resultat: 'barrage' }), created_at: '2026-11-02T09:00:00Z' }, appel('a', '2026-11-03', 9, INJ)]
+    assert.equal(A.injoignablesDeSuite(j, 'a'), 2)
+  })
   test('la barre : après 2 injoignables ou la réponse « documentation », jamais une fois la lettre envoyée', () => {
     const un = [appel('a', '2026-11-01', 9, INJ)], deux = un.concat(appel('a', '2026-11-02', 9, INJ))
     assert.equal(A.relaisPropose(un, 'a', false), false); assert.equal(A.relaisPropose(deux, 'a', false), true)
