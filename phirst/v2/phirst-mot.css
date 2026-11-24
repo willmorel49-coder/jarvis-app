@@ -1,0 +1,56 @@
+/* PHIRST · « Le mot du vendredi » (idée 11, 24/11/2026), posé sous la ligne de l'accueil de Yann (portée de la maquette validée). Fonds opaques, aucune opacité sur du texte, ni flou ni verre dépoli. */
+.mv{--mv-ease:cubic-bezier(.32,.72,0,1);position:relative;width:min(1000px,100%);margin:0 auto 28px;padding:6px 32px 8px;border:1px solid var(--au-fil,#D8E7DD);border-radius:24px;
+  background-color:#fff;background-image:radial-gradient(520px 200px at 8% 0%,#EAF4EE 0%,rgba(234,244,238,0) 72%),linear-gradient(180deg,#FFFFFF 0%,#F8FBF9 100%);
+  box-shadow:0 1px 2px var(--au-ombre,rgba(22,40,30,.07)),0 24px 40px -30px var(--au-ombre-l,rgba(18,60,40,.22)),inset 0 1px 0 #fff;font-family:var(--font);color:var(--au-ink,#16281E);
+  animation:mv-entre .7s var(--mv-ease) both .35s}
+@keyframes mv-entre{from{transform:translateY(12px);clip-path:inset(0 0 100% 0)}to{transform:none;clip-path:inset(0 0 0 0)}}
+.mv *{box-sizing:border-box}
+.mv h2,.mv p,.mv ul{margin:0}
+.mv-tete{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 16px;padding:22px 0 14px}
+.mv-sur{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--au-accent,#1A3A2E)}
+.mv-sur i{flex:none;width:10px;height:10px;border-radius:50%;background-color:#12A567;box-shadow:0 0 0 4px #DCF0E3}
+.mv-jusque{font-size:14px;font-weight:600;color:var(--au-ink3,#4A5D51)}
+.mv-l{display:grid;grid-template-columns:190px minmax(0,1fr);gap:8px 28px;align-items:baseline;padding:18px 0;border-top:1px solid var(--au-fil,#D8E7DD)}
+.mv-e{font-weight:800;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--au-ink3,#4A5D51);line-height:1.4}
+.mv-phrase{font-size:17px;line-height:1.5;color:var(--au-ink2,#3B4F43);text-wrap:pretty}
+.mv-phrase b{color:var(--au-ink,#16281E);font-weight:800}
+.mv-grande{font-size:25px;line-height:1.3;font-weight:600;letter-spacing:-.015em;color:var(--au-ink,#16281E)}
+.mv-grande b{font-weight:800;color:var(--au-accent,#1A3A2E)}
+.mv-raisons{list-style:none;padding:0;display:grid;gap:10px}
+.mv-raisons li{display:grid;grid-template-columns:minmax(0,230px) minmax(0,1fr);gap:4px 20px;align-items:baseline;font-size:17px;line-height:1.45}
+.mv-r{font-weight:700;color:var(--au-ink,#16281E)}
+.mv-v{color:var(--au-ink2,#3B4F43)}
+.mv-v b{color:var(--au-ink,#16281E);font-weight:800}
+.mv-geste{display:grid;gap:14px;justify-items:start}
+.mv-zone{min-height:52px;display:flex;align-items:center}
+.mv-btn{display:inline-flex;align-items:center;gap:10px;min-height:52px;padding:0 24px;border:0;border-radius:16px;background-color:var(--au-accent,#1A3A2E);background-image:linear-gradient(180deg,#24503F,#1A3A2E);color:#fff;font:700 16px/1.25 var(--font);text-align:left;cursor:pointer;
+  box-shadow:0 10px 24px -10px var(--au-ombre-l,rgba(18,60,40,.22)),inset 0 1px 0 rgba(255,255,255,.14);transition:transform .3s var(--mv-ease)}
+.mv-btn:hover{transform:translateY(-1px)}
+.mv-btn:active{transform:scale(.98)}
+.mv-btn:focus-visible,.mv-annule:focus-visible{outline:2px solid var(--au-accent,#1A3A2E);outline-offset:3px}
+.mv-btn svg{flex:none}
+.mv-fait{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;animation:mv-fait .5s var(--mv-ease) both}
+@keyframes mv-fait{from{transform:translateY(6px);clip-path:inset(0 0 100% 0)}to{transform:none;clip-path:inset(0 0 0 0)}}
+.mv-coche{flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background-color:#E0F2E7;color:#0E6B43;box-shadow:0 0 0 4px #F0F8F3}
+.mv-ok{font-size:19px;font-weight:700;line-height:1.35;color:var(--au-ink,#16281E)}
+.mv-annule{min-height:44px;padding:0 6px;border:0;background:none;font:700 15px/1 var(--font);color:var(--au-accent,#1A3A2E);text-decoration:underline;text-underline-offset:4px;cursor:pointer}
+.mv-act .mv-phrase{max-width:60ch}
+
+/* fenêtres étroites : la phrase d'abord, les étiquettes passent au-dessus */
+@media (max-width:1000px){
+  .mv{width:auto;margin:0 0 20px;padding:2px 18px 6px;border-radius:20px}
+  .mv-l{grid-template-columns:minmax(0,1fr);gap:6px;padding:16px 0}
+  .mv-grande{font-size:21px}
+  .mv-raisons li{grid-template-columns:minmax(0,1fr);gap:0}
+  .mv-btn{width:100%;justify-content:center;text-align:center}
+  .mv-zone{width:100%}
+  .mv-fait{align-items:flex-start}
+}
+.mv-dit{margin:0;font-size:15px;font-weight:700;color:#9B2C24}.mv-dit:empty{display:none}
+.mv-btn:disabled,.mv-annule:disabled{cursor:default;background-image:none;background-color:#7C8F84;color:#fff}
+/* l'accueil sobre cache tout ce qui n'est pas l'aube (v2.css) : le mot reste visible, comme la ligne */
+html:root:root body .u2-page.u2-barre .u2-centre .m1-wrap>#mv{display:block!important}
+/* le vide sous la ligne se réduit seulement les jours où le mot est là, pour qu'il se voie tôt */
+html:root:root body:has(#mv) #aube-acc{margin-bottom:22px!important}
+html:root:root body:has(#mv) #aube-acc .aube-acc-bloc{padding-bottom:20px}
+html:root:root body:has(#mv) #aube-acc.u2-salut{min-height:0;margin-bottom:22px}

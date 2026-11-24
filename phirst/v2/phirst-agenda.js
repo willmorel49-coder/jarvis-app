@@ -5,7 +5,7 @@
    (créneaux, états, vérifications) est dans phirst-pur.js, testée (tests/phirst-agenda.test.mjs). */
 (function () {
   'use strict';
-  var P = window.PHIRST_PUR, V2 = window.V2, RDV = window.PHIRST_RDV;
+  var P = window.PHIRST_PUR, V2 = window.V2, RDV = window.PHIRST_RDV, PR = window.PHIRST_PREPARER_PUR;   // PR : « La veille du rendez-vous » (idée 6, phirst-preparer.js) ; absent = l'agenda reste tel quel
   if (!P || !V2 || !RDV) return;
   V2.pages = V2.pages || {};
   var PAS = 'Pas enregistré : réessayez dans un instant.';
@@ -42,10 +42,12 @@
     var mot = S.telepro && P.aConfirmer(r) ? 'En attente de Yann' : P.maj(P.STATUTS_RDV[r.statut]);   // elle ne confirme pas : c'est Yann qui le fait
     return '<em class="lg-et"' + (ton ? ' data-ton="' + ton + '"' : '') + '>' + esc(mot) + '</em>';
   }
+  var ICO_PRET = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
   function role() { return S.telepro ? 'telepro' : 'patron'; }
   function boutonsRdv(e, maintenant) {
     var r = e.rdv, b = '';
     if (e.fiche.occupe) return '';   // un rendez-vous de Yann qui n'est pas le sien : « Yann est occupé », sans bouton
+    if (!S.telepro && PR && window.PHIRST_PREPARER && PR.pageDisponible(r, jour())) b += '<button type="button" class="pa-b pa-ok pv-prep" data-ag="preparer" data-rdv="' + esc(r.id) + '"><span class="pv-prep-i">' + ICO_PRET + '</span>Préparer · page prête</button>';
     if (P.gestePermis(r, 'confirmer', role())) b += '<button type="button" class="pa-b pa-ok" data-ag="confirmer" data-rdv="' + esc(r.id) + '">Confirmer</button>';
     if (P.gestePermis(r, 'deplacer', role())) b += '<button type="button" class="pa-b" data-ag="deplacer" data-rdv="' + esc(r.id) + '">Déplacer</button>';
     if (P.gestePermis(r, 'fait', role()) && P.minutes(r.debut) < P.minutes(maintenant)) b += '<button type="button" class="pa-b" data-ag="fait" data-rdv="' + esc(r.id) + '">C’est fait</button>';
@@ -79,6 +81,7 @@
     return '<li class="pa-l ag-rdv' + (r.statut === 'annule' ? ' ag-annule' : '') + '" data-rdv="' + esc(r.id) + '"><div class="pa-ht"><div><b>' + esc(hh(r.debut)) + ' – ' + esc(hh(r.fin)) + ' · ' + esc(titre) + '</b>' +
       '<small>' + esc(f.occupe ? '' : ligne2 || f.ville || '') + '</small></div>' + (f.occupe && r.statut !== 'annule' ? '' : etatBadge(r)) + '</div>' +
       (e.chevauche ? '<p class="ag-alerte" role="alert">Attention : deux rendez-vous se chevauchent à cette heure-là.</p>' : '') +
+      (!S.telepro && PR && PR.pageEnAttente(r, jour()) ? '<p class="pv-attente">Sa page se prépare la veille au soir, une fois le rendez-vous confirmé.</p>' : '') +
       (r.statut === 'annule' ? '' : boutonsRdv(e, maintenant)) + zoneOuverte(e) + '<p class="pa-dit" role="status"></p></li>';
   }
   function dessiner() {
@@ -98,6 +101,10 @@
     var auj = jour(), maint = P.maintenantParis(), J = S.jour || auj, els = elements(), h = '';
     var fen = P.fenetreJours(J, auj), dec = P.decalages(fen, auj), comptes = P.comptesParJour(els, fen);
     var libresJ = P.creneauxLibres({ jour: J, occupations: RDV.occupations(S.rdvs, S.fiches), cible: null, maintenant: maint });
+    // Demain : les pages prêtes (idée 6), réservé à Yann
+    var bd = !S.telepro && PR && window.PHIRST_PREPARER ? PR.bandeau(els, auj) : null;
+    if (bd) h += '<section class="pv-veille" aria-label="' + esc(bd.titre) + '"><span class="pv-veille-i">' + ICO_PRET + '</span><p><b>' + esc(bd.titre) + '</b><span>' + esc(bd.sous) + '</span></p><div class="pv-veille-l">' +
+      bd.boutons.map(function (x) { return '<button type="button" class="pa-b" data-ag="preparer" data-rdv="' + esc(x.id) + '">' + esc(x.texte) + '</button>'; }).join('') + '</div></section>';
     // À confirmer
     var conf = els.filter(function (e) { return e.aConfirmer && P.minutes(e.rdv.fin) >= P.minutes(maint); });
     if (conf.length) {
@@ -178,6 +185,7 @@
     var b = ev.target.closest('[data-ag]'); if (!b) return;
     var a = b.getAttribute('data-ag'), id = b.getAttribute('data-rdv'), li = b.closest('li');
     if (a === 'reessayer') { charger(); return; }
+    if (a === 'preparer') { if (window.PHIRST_PREPARER) window.PHIRST_PREPARER.ouvrir(id, { rdvs: S.rdvs, fiches: S.fiches, ws: S.ws }); return; }
     if (a === 'jour') { S.jour = b.getAttribute('data-jour'); S.flash = ''; S.ouvert = null; S.mode = null; dessiner(); return; }
     if (a === 'fermer') { S.ouvert = null; S.mode = null; S.props = null; dessiner(); return; }
     if (a === 'deplacer') { S.flash = ''; ouvrirDeplacer(id); return; }

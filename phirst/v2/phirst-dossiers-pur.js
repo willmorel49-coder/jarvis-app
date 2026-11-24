@@ -386,6 +386,142 @@
     return ORDRE.filter(function (s) { return ont.indexOf(s) < 0; });
   }
 
+
+  /* ═══ Idée 7 · « Ce qui bloque cette semaine » (24/11/2026) ═══
+     Calculé à chaque affichage, à partir des seules étapes déjà cochées des volets d'UNE MÊME pharmacie : rien à saisir en plus, aucune table.
+     Aucun délai légal, aucun nombre de jours d'attente de l'ARS. Les trois règles d'ordre sont celles de Will (24/11/2026), à faire valider par Yann. */
+  var DEPS = [
+    { de: ['agencement', 'plan3d'], attend: ['transfert', 'reponse'], regle: 'Pas de plans d’agencement définitifs sans l’accord de l’ARS sur le nouveau local.' },
+    { de: ['riedl', 'bon'], attend: ['agencement', 'plan3d'], regle: 'Pas de commande du robot sans les plans.' },
+    { de: ['riedl', 'livraison'], attend: ['agencement', 'travaux'], regle: 'Pas de livraison ni de pose du robot tant que le local n’est pas prêt.' }
+  ];
+  /* Comment on nomme une étape quand elle en attend une autre (sinon : son nom court, en minuscules). */
+  var ATTEND = { 'agencement.plan3d': 'plans d’agencement définitifs', 'riedl.bon': 'commande du robot', 'riedl.livraison': 'livraison et pose du robot' };
+  var VOUS = 'Vous', PHARM = 'le pharmacien', ARS = 'l’ARS', ART = 'un artisan', FAB = 'le fabricant';
+  /* Qui peut faire bouger l'étape, le geste proposé, et le bouton qui la note faite : [qui, geste, noter]. Tableau à relire par Yann. */
+  var QUI = {
+    'transfert.rdv': [VOUS, 'Fixer le rendez-vous', 'Noter le rendez-vous fait'], 'transfert.local': [PHARM, 'Relancer le pharmacien', 'Noter le local réservé'],
+    'transfert.plans': [VOUS, 'Finir les plans', 'Noter les plans faits'], 'transfert.demande': [PHARM, 'Relancer le pharmacien', 'Noter le dépôt'],
+    'transfert.reponse': [ARS, 'Appeler l’ARS', 'Noter la réponse'], 'transfert.contest': [ARS, 'Appeler l’ARS', 'Noter que c’est passé'],
+    'transfert.agenc': [VOUS, 'Voir l’agencement', 'Noter le bon pour accord'], 'transfert.travaux': [ART, 'Appeler l’artisan', 'Noter la fin des travaux'],
+    'transfert.demenage': [PHARM, 'Relancer le pharmacien', 'Noter l’ouverture'],
+    'agencement.rdv': [VOUS, 'Fixer le rendez-vous', 'Noter le rendez-vous fait'], 'agencement.releve': [VOUS, 'Prévoir le relevé', 'Noter le relevé fait'],
+    'agencement.ambiance': [PHARM, 'Relancer le pharmacien', 'Noter l’ambiance choisie'], 'agencement.plan3d': [VOUS, 'Préparer le plan et la 3D', 'Noter la présentation'],
+    'agencement.devis': [VOUS, 'Envoyer le devis', 'Noter l’envoi du devis'], 'agencement.bon': [PHARM, 'Relancer le pharmacien', 'Noter la signature'],
+    'agencement.mobilier': [FAB, 'Appeler le fabricant', 'Noter le mobilier prêt'], 'agencement.travaux': [ART, 'Appeler l’artisan', 'Noter la fin des travaux'],
+    'agencement.reception': [VOUS, 'Fixer la réception', 'Noter la réception'],
+    'riedl.rdv': [VOUS, 'Fixer le rendez-vous', 'Noter le rendez-vous fait'], 'riedl.visite': [VOUS, 'Fixer la visite technique', 'Noter la visite faite'],
+    'riedl.implant': [VOUS, 'Finir l’implantation', 'Noter l’implantation'], 'riedl.offre': [VOUS, 'Envoyer l’offre', 'Noter l’envoi de l’offre'],
+    'riedl.bon': [PHARM, 'Relancer le pharmacien', 'Noter la signature'], 'riedl.prepa': [ART, 'Appeler l’artisan', 'Noter la préparation faite'],
+    'riedl.demontage': [ART, 'Appeler l’artisan', 'Noter le démontage'], 'riedl.livraison': [FAB, 'Appeler le fabricant', 'Noter la livraison'],
+    'riedl.service': [VOUS, 'Fixer la formation', 'Noter la mise en service'], 'riedl.suivi': [VOUS, 'Fixer le bilan', 'Noter le bilan'],
+    'pda.rdv': [VOUS, 'Fixer le rendez-vous', 'Noter le rendez-vous fait'], 'pda.etude': [VOUS, 'Finir l’étude', 'Noter l’étude faite'],
+    'pda.offre': [VOUS, 'Envoyer l’offre', 'Noter l’envoi de l’offre'], 'pda.bon': [PHARM, 'Relancer le pharmacien', 'Noter la signature'],
+    'pda.prepa': [ART, 'Appeler l’artisan', 'Noter la préparation faite'], 'pda.install': [FAB, 'Appeler le fabricant', 'Noter l’installation'],
+    'pda.formation': [VOUS, 'Fixer la formation', 'Noter la formation'], 'pda.demarrage': [PHARM, 'Relancer le pharmacien', 'Noter le démarrage'],
+    'pda.suivi': [VOUS, 'Fixer le bilan', 'Noter le bilan']
+  };
+  function quiDe(sorte, k) {
+    var q = QUI[sorte + '.' + k] || [VOUS, 'Voir le dossier', 'Noter que c’est fait'];
+    return { qui: q[0], geste: q[1], noter: q[2], vous: q[0] === VOUS };
+  }
+  function nomAttend(v, e) { return ATTEND[v.sorte + '.' + e.k] || String(e.c || '').toLowerCase(); }
+  function etapeCle(v, k) { for (var i = 0; i < v.etapes.length; i++) if (v.etapes[i].k === k) return v.etapes[i]; return null; }
+  /* Depuis quand l'étape est la prochaine : la date de l'étape faite juste avant, sinon l'ouverture du volet ('' si on ne la connaît pas). */
+  function depuisDe(v, e) {
+    var i = e.n - 2;
+    return i >= 0 && v.etapes[i] && v.etapes[i].faite ? v.etapes[i].faite : (v.ouvert || '');
+  }
+  /* Une pharmacie : ses volets en cours, les attentes encore actives entre eux, et pour chaque volet sa prochaine étape et ce qui attend derrière. */
+  function analyseBloque(ph) {
+    var ds = (ph.volets || []).filter(function (v) { return v.etat === 'cours'; }).slice().sort(function (a, b) { return ORDRE.indexOf(a.sorte) - ORDRE.indexOf(b.sorte); });
+    var cross = [];
+    DEPS.forEach(function (dep) {
+      var dx = ds.filter(function (d) { return d.sorte === dep.de[0]; })[0], dy = ds.filter(function (d) { return d.sorte === dep.attend[0]; })[0];
+      if (!dx || !dy) return;
+      var ex = etapeCle(dx, dep.de[1]), ey = etapeCle(dy, dep.attend[1]);
+      if (!ex || !ey || ex.faite || ey.faite) return;
+      cross.push({ dx: dx, ex: ex, dy: dy, ey: ey, regle: dep.regle });
+    });
+    var volets = ds.map(function (d) {
+      var B = prochaineEtape(d), v = { v: d, B: B, statut: 'libre', attendDe: [], waiters: [], plusLoin: [] };
+      if (!B) return v;
+      v.attendDe = cross.filter(function (c) { return c.ex === B; });
+      /* ce qui attend derrière B, de proche en proche (volet après volet) */
+      var reach = {}; reach[d.id] = B.n; var ch = true;
+      while (ch) {
+        ch = false;
+        cross.forEach(function (c) {
+          if (reach[c.dy.id] != null && c.ey.n >= reach[c.dy.id] && v.waiters.indexOf(c) < 0) {
+            v.waiters.push(c); var cur = reach[c.dx.id]; if (cur == null || c.ex.n < cur) reach[c.dx.id] = c.ex.n; ch = true;
+          }
+        });
+      }
+      v.plusLoin = cross.filter(function (c) { return c.dx === d && c.ex !== B; });
+      return v;
+    });
+    return { cross: cross, volets: volets };
+  }
+  /* « Cette semaine » : une ligne par étape qui retient le reste. Une étape retient si elle est la prochaine de son volet, si rien ne l'attend
+     elle-même, si au moins une étape d'un autre volet l'attend, et si elle dépend de quelqu'un d'autre que vous — ou qu'elle est en retard quand
+     c'est vous. */
+  function retenues(phs, auj) {
+    auj = auj || aujourdhui();
+    var out = [];
+    (phs || []).forEach(function (ph) {
+      analyseBloque(ph).volets.forEach(function (x) {
+        if (!x.B || x.attendDe.length || !x.waiters.length) return;
+        var q = quiDe(x.v.sorte, x.B.k), ret = retard(x.B, auj);
+        if (q.vous && ret <= 0) return;
+        var dep = depuisDe(x.v, x.B);
+        out.push({ ph: ph, volet: x.v, etape: x.B, qui: q, depuis: dep, jours: dep ? Math.max(0, joursEntre(dep, auj)) : null, retard: ret,
+          attendent: x.waiters.map(function (c) { return { volet: c.dx, etape: c.ex, t: nomAttend(c.dx, c.ex) }; }),
+          regles: x.waiters.map(function (c) { return c.regle; }) });
+      });
+    });
+    out.sort(function (x, y) { return (y.attendent.length - x.attendent.length) || ((y.jours || 0) - (x.jours || 0)); });
+    return out;
+  }
+  /* La chaîne des volets d'une pharmacie (fiche) : chaque volet est « bloque » (retient le reste), « attend » (attend un autre) ou « libre ». */
+  function chaineBloque(ph, auj) {
+    var a = analyseBloque(ph), lignes = retenues([ph], auj);
+    a.volets.forEach(function (x) {
+      var r = lignes.filter(function (l) { return l.volet === x.v; })[0];
+      if (r) { x.statut = 'bloque'; x.ligne = r; } else if (x.attendDe.length) x.statut = 'attend'; else x.statut = 'libre';
+    });
+    var sortes = a.volets.map(function (x) { return x.v.sorte; });
+    a.regles = DEPS.filter(function (d) { return sortes.indexOf(d.de[0]) >= 0 && sortes.indexOf(d.attend[0]) >= 0; }).map(function (d) { return d.regle; });
+    a.nbBloque = a.volets.filter(function (x) { return x.statut === 'bloque'; }).length;
+    return a;
+  }
+  /* La pharmacie telle qu'elle serait une fois cette étape cochée (rien n'est modifié). */
+  function sansBloquer(ph, voletId, cle, jour) {
+    return { dossier: ph.dossier, volets: ph.volets.map(function (v) {
+      if (v.id !== voletId) return v;
+      var c = Object.assign({}, v); c.etapes = v.etapes.map(function (e) { return e.k === cle ? Object.assign({}, e, { faite: jour }) : e; }); return c;
+    }) };
+  }
+  /* Ce que cocher cette étape libère (noms des étapes qui n'attendent plus rien), pour la phrase de confirmation. null = elle ne retenait rien. */
+  function cequiSeDebloque(ph, voletId, cle, jour) {
+    var av = retenues([ph], jour).filter(function (l) { return l.volet.id === voletId && l.etape.k === cle; })[0];
+    if (!av) return null;
+    var apres = analyseBloque(sansBloquer(ph, voletId, cle, jour));
+    return av.attendent.filter(function (w) { return !apres.cross.some(function (c) { return c.dx.id === w.volet.id && c.ex.k === w.etape.k; }); }).map(function (w) { return w.t; });
+  }
+  /* « Pharmacie des Tilleuls Bleus » → « Tilleuls Bleus » */
+  function nomCourtPharmacie(nom) { return String(nom || '').replace(/^Pharmacie\s+(?:de la |du |des |de l’|d’|de )/, ''); }
+  function phraseDebloque(nom, etape, libres) {
+    return nomCourtPharmacie(nom) + ' : l’étape « ' + etape.c + ' » est faite. ' + (libres && libres.length ? 'Se débloque : ' + libres.join(', ') + '.' : 'Ce qui attend reste retenu par l’étape suivante.');
+  }
+  /* Le titre du bloc de la liste. n = nombre de lignes, nbPh = pharmacies concernées, tot = dossiers. */
+  function titreSemaine(n, nbPh, tot) {
+    if (!n) return { titre: 'Tous vos dossiers peuvent avancer', texte: 'Aucune étape n’en retient une autre pour le moment. Cochez les étapes faites au fil de l’eau : dès qu’une étape en retiendra d’autres, elle apparaîtra ici avec son geste.' };
+    return { titre: n > 1 ? n + ' choses retiennent vos dossiers' : '1 chose retient vos dossiers',
+      texte: 'Sur vos ' + tot + ' dossiers, ' + (nbPh > 1 ? nbPh + ' attendent' : '1 attend') + ' une étape qui retient le reste. ' + (n > 1 ? 'Les voici, avec qui peut les faire bouger et le geste à faire.' : 'La voici, avec qui peut la faire bouger et le geste à faire.') };
+  }
+  /* « de qui » : « vous », « du pharmacien », « de l’ARS », « d’un artisan », « du fabricant » */
+  function deQui(q) { return q === VOUS ? 'vous' : q.replace(/^le /, 'du ').replace(/^l’/, 'de l’').replace(/^un /, 'd’un '); }
+
   return {
     SORTES: SORTES, ORDRE: ORDRE, MAX_FICHIER: MAX_FICHIER, MAX_DOCS: MAX_DOCS,
     aujourdhui: aujourdhui, maintenant: maintenant, jourDeHorodatage: jourDeHorodatage, joursEntre: joursEntre, estJour: estJour, court: court, long: long, jourLong: jourLong, heureFr: heureFr, pl: pl, maj1: maj1,
@@ -395,6 +531,8 @@
     suffixeVolet: suffixeVolet, ligneDate: ligneDate, detailsVolet: detailsVolet, texteSegs: texteSegs, texteSansProchaine: texteSansProchaine,
     nomFichierPropre: nomFichierPropre, cheminDocument: cheminDocument, tailleLisible: tailleLisible, telLisible: telLisible, gesteDetails: gesteDetails, verifierFichier: verifierFichier, nouveauDoc: nouveauDoc,
     verifierRaison: verifierRaison, verifierEntier: verifierEntier, verifierNotes: verifierNotes, verifierDetails: verifierDetails, verifierPharmacie: verifierPharmacie, texteCourt: texteCourt,
-    pharmacieDePiste: pharmacieDePiste, norm: norm, pistesSansDossier: pistesSansDossier, prochainRdv: prochainRdv, quandRdv: quandRdv, adresse3D: adresse3D, sortesAbsentes: sortesAbsentes
+    pharmacieDePiste: pharmacieDePiste, norm: norm, pistesSansDossier: pistesSansDossier, prochainRdv: prochainRdv, quandRdv: quandRdv, adresse3D: adresse3D, sortesAbsentes: sortesAbsentes,
+    DEPS: DEPS, quiDe: quiDe, nomAttend: nomAttend, depuisDe: depuisDe, analyseBloque: analyseBloque, retenues: retenues, chaineBloque: chaineBloque, cequiSeDebloque: cequiSeDebloque,
+    nomCourtPharmacie: nomCourtPharmacie, phraseDebloque: phraseDebloque, titreSemaine: titreSemaine, deQui: deQui
   };
 });

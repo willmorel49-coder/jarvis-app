@@ -18,7 +18,7 @@
     dossiers: [], volets: [], etapes: [], pistes: [], rdvs: null, rdvEnCours: false, rdvErreur: false,
     vue: 'liste', dossierId: null, sorte: null, ouv: -1,
     nouveau: null, ajout: null, modif: null, etatForm: null, raison: '', raisonErr: '',
-    flash: '', flashErr: false, flashProchain: '', occupe: false,
+    flash: '', flashErr: false, flashProchain: '', occupe: false, debloques: [],
     brouillons: {}, mentions: {}, urls: {}, retirer: null, timers: {}, chaine: {},
     /* Chantiers (lot 1, 23/11) : lus pour le bloc « Le chantier » de l'étape Travaux ; une lecture ratée n'empêche pas les dossiers de s'afficher */
     chantiers: [], chArtisans: [], chTaches: [], chErreur: false, chOuvert: {}, cleVoulue: null
@@ -87,6 +87,102 @@
     }).then(null, function () { if (tok === S.jeton) { S.erreur = true; dessiner(); } });
   }
 
+  /* ── Idée 7 · « Ce qui bloque cette semaine » : le bloc de la liste et la chaîne des volets (calcul : phirst-dossiers-pur.js) ── */
+  function lieuPh(ph) {
+    var d = ph.dossier, p = pisteDe(d.id), ville = d.ville || (p && p.ville) || '';
+    return ville ? ville + (p && p.departement ? ' (' + p.departement + ')' : '') : '';
+  }
+  function datesBloc(r) {
+    var t = [];
+    if (r.depuis) t.push('Depuis le ' + D.court(r.depuis) + (r.jours != null ? ' · ' + D.pl(r.jours, 'jour', 'jours') : ''));
+    if (r.etape.prevue) t.push('prévue le ' + D.court(r.etape.prevue));
+    return (t.length ? '<span>' + esc(t.join(' · ')) + '</span>' : '') + (r.retard > 0 ? ' <span class="ret">En retard de ' + D.pl(r.retard, 'jour', 'jours') + '</span>' : '');
+  }
+  function puces(liste) { return liste.map(function (a) { return '<i class="dz-pl">' + esc(a.t) + '</i>'; }).join(''); }
+  function quiLigne(q) { return q.vous ? 'À faire par vous' : 'À faire bouger : <b>' + esc(q.qui) + '</b>'; }
+  /* Le geste : appeler le pharmacien quand on a son numéro ; sinon ouvrir l'étape (date, notes, documents), où se note ce qui s'est dit. */
+  function boutonGeste(ph, volet, etape, q, plein) {
+    var p = pisteDe(ph.dossier.id), tel = q.qui === 'le pharmacien' && p && p.telephone ? String(p.telephone).replace(/[^\d+]/g, '') : '';
+    var cl = 'dz-btn petit' + (plein ? ' plein' : '');
+    if (tel) return '<a class="' + cl + '" href="tel:' + esc(tel) + '">' + ico('tel', 16) + esc(q.geste) + '</a>';
+    return '<button type="button" class="' + cl + '" data-dz="voir-etape" data-id="' + esc(ph.dossier.id) + '" data-s="' + esc(volet.sorte) + '" data-k="' + esc(etape.k) + '">' + esc(q.geste) + '</button>';
+  }
+  function htmlSemaine(phs) {
+    var L = D.retenues(phs, auj()), noms = [];
+    L.forEach(function (r) { if (noms.indexOf(r.ph.dossier.id) < 0) noms.push(r.ph.dossier.id); });
+    var T = D.titreSemaine(L.length, noms.length, phs.length);
+    var h = '<section class="dz-sem" aria-labelledby="dz-sem-t"><div class="dz-sem-tete"><p class="dz-kicker">Cette semaine</p><h2 id="dz-sem-t">' + esc(T.titre) + '</h2><p class="dz-sem-p">' + esc(T.texte) + '</p></div>';
+    if (L.length) {
+      h += '<ol class="dz-sem-liste">';
+      L.forEach(function (r) {
+        var d = r.ph.dossier, lieu = lieuPh(r.ph);
+        h += '<li class="dz-sem-l"><div class="dz-sem-ph"><a class="dz-sem-nom" href="#dossiers/' + encodeURIComponent(d.id) + '">' + esc(d.nom) + '</a>' + (lieu ? '<span>' + esc(lieu) + '</span>' : '') + '</div>' +
+          '<div class="dz-sem-corps"><span class="dz-kicker">Volet ' + esc(r.volet.nom) + ' · étape ' + r.etape.n + ' sur ' + r.volet.etapes.length + '</span><b>' + esc(r.etape.t) + '</b>' +
+          '<p class="dz-sem-dep">' + datesBloc(r) + '</p><p class="dz-sem-att"><span>Attend cette étape :</span>' + puces(r.attendent) + '</p></div>' +
+          '<div class="dz-sem-act"><p class="dz-sem-qui">' + quiLigne(r.qui) + '</p>' + boutonGeste(r.ph, r.volet, r.etape, r.qui, true) +
+          '<a class="dz-btn petit" href="#dossiers/' + encodeURIComponent(d.id + ':' + r.volet.sorte) + '">Ouvrir le dossier ' + ico('fleche', 16) + '</a></div></li>';
+      });
+      h += '</ol>';
+    }
+    S.debloques.slice(-2).forEach(function (t) { h += '<p class="dz-sem-ok">' + ico('coche', 18) + '<span>' + esc(t) + '</span></p>'; });
+    return h + '<p class="dz-sem-note">Recalculé à chaque ouverture, à partir des étapes déjà cochées : rien à saisir en plus.</p></section>';
+  }
+  /* Sur la carte d'une pharmacie : ce qui la retient cette semaine */
+  function retenuCarte(ph) {
+    return D.retenues([ph], auj()).map(function (r) {
+      return '<p class="dz-retenu">Cette semaine · ' + esc(r.volet.nom) + ' : ' + (r.qui.vous ? 'une étape à faire par vous' : 'en attente ' + esc(D.deQui(r.qui.qui))) + '</p>';
+    }).join('');
+  }
+  function htmlChaine(ph) {
+    if (ph.volets.filter(function (v) { return v.etat === 'cours'; }).length < 2) return '';
+    var c = D.chaineBloque(ph, auj()), V = c.volets, nb = c.nbBloque;
+    var h = '<section class="dz-chaine" aria-labelledby="dz-ch-t"><div class="dz-ch-tete"><div><p class="dz-kicker">Ce qui bloque cette semaine</p>';
+    if (nb) h += '<h2 id="dz-ch-t">' + (nb > 1 ? nb + ' étapes retiennent' : 'Une étape retient') + ' le reste du dossier</h2>';
+    else h += '<h2 id="dz-ch-t">Chaque volet peut avancer sans attendre un autre</h2><p class="dz-ch-p">Cochez les étapes au fil de l’eau : dès qu’une étape en retiendra une autre, elle apparaîtra ici.</p>';
+    h += '</div><p class="dz-ch-note">Recalculé à chaque ouverture, à partir des étapes déjà cochées : rien à saisir en plus.</p></div><ol class="dz-ch-liste">';
+    V.forEach(function (x, i) {
+      var v = x.v, B = x.B;
+      if (i > 0) {
+        var prev = V[i - 1], act = c.cross.some(function (k) { return k.dy === prev.v && k.dx === v; });
+        h += '<li class="dz-ch-lien' + (act ? ' act' : '') + '" aria-hidden="true"><span>' + ico('fleche', 20) + '</span></li>';
+      }
+      h += '<li class="dz-chn ' + x.statut + '"><div class="dz-chn-t"><b>' + esc(v.nom) + '</b><span>' + D.nbFaites(v) + '/' + v.etapes.length + '</span></div>' + friseMini(v);
+      if (!B) { h += '<p class="dz-chn-m">Toutes les étapes sont faites.</p></li>'; return; }
+      var q = D.quiDe(v.sorte, B.k);
+      if (x.statut === 'bloque') {
+        var r = x.ligne;
+        h += '<p class="dz-chn-k">Étape qui retient le reste</p><h3>' + esc(B.t) + '</h3><p class="dz-chn-m">Étape ' + B.n + ' sur ' + v.etapes.length + '</p><p class="dz-chn-d">' + datesBloc(r) + '</p><p class="dz-chn-q">' + quiLigne(q) + '</p>' +
+          (v.sorte === 'transfert' && B.k === 'reponse' ? '<p class="dz-chn-m">La réponse dépend du délai de réponse de l’ARS.</p>' : '') +
+          '<div class="dz-chn-att"><span>Attend cette étape :</span>' + puces(r.attendent) + '</div>' +
+          '<div class="dz-chn-act"><button class="dz-btn plein" type="button" data-dz="noter-bloque" data-v="' + esc(v.id) + '" data-k="' + esc(B.k) + '"' + dis() + '>' + ico('coche', 18) + esc(q.noter) + '</button>' + boutonGeste(ph, v, B, q, false) + '</div>';
+      } else if (x.statut === 'attend') {
+        var c0 = x.attendDe[0];
+        h += '<p class="dz-chn-k">En attente</p><h3>' + esc(B.t) + '</h3><p class="dz-chn-m">Étape ' + B.n + ' sur ' + v.etapes.length + '</p><p class="dz-chn-w"><b>Attend :</b> ' + esc(c0.ey.c) + ' <span>(volet ' + esc(c0.dy.nom) + ')</span></p><p>' + esc(c0.regle) + '</p>';
+      } else {
+        var dl = D.ligneDate(B, auj());
+        h += '<p class="dz-chn-k">Avance</p><h3>' + esc(B.t) + '</h3><p class="dz-chn-m">Étape ' + B.n + ' sur ' + v.etapes.length + ' · ' + (q.vous ? 'à faire par vous' : 'à faire bouger : ' + esc(q.qui)) + '</p><p class="dz-chn-d' + (dl.retard ? ' ret' : '') + '">' + esc(dl.texte) + '</p>';
+        if (x.waiters.length) h += '<div class="dz-chn-att"><span>Libère ensuite :</span>' + puces(x.waiters.map(function (w) { return { t: D.nomAttend(w.dx, w.ex) }; })) + '</div>';
+        x.plusLoin.forEach(function (k) { h += '<p class="dz-chn-w"><b>Plus loin :</b> ' + esc(D.nomAttend(k.dx, k.ex)) + ' attend ' + esc(String(k.ey.c).toLowerCase()) + ' <span>(volet ' + esc(k.dy.nom) + ')</span></p>'; });
+      }
+      h += '</li>';
+    });
+    h += '</ol>';
+    if (c.regles.length) h += '<details class="dz-ch-regles"><summary>Pourquoi cet ordre ?<i class="dz-chev"></i></summary><ul>' + c.regles.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></details>';
+    return h + '</section>';
+  }
+  /* « Noter la réponse » (etc.) : coche l'étape qui retient, puis dit ce que ça libère. La base répond avant toute phrase de réussite. */
+  function noterBloque(voletId, cle) {
+    var ph = phCourant(), v = ph && ph.volets.filter(function (x) { return x.id === voletId; })[0], e = v && v.etapes.filter(function (x) { return x.k === cle; })[0];
+    if (!v || !e || e.faite) return;
+    var libres = D.cequiSeDebloque(ph, voletId, cle, auj()), jour = auj();
+    return geste(function () {
+      return ecrireEtape(v, cle, { faite: jour }).then(function () {
+        var t = D.phraseDebloque(ph.dossier.nom, e, libres || []);
+        S.debloques.push(t); dire(t, false);
+      });
+    });
+  }
+
   /* ── affichage : la liste ── */
   function infoPharmacie(ph) {
     var d = ph.dossier, p = pisteDe(d.id), ville = d.ville || (p && p.ville) || '', dep = p && p.departement ? ' (' + p.departement + ')' : '';
@@ -120,6 +216,7 @@
     } else {
       h += '<div class="dz-proch"><span class="dz-kicker">Aucune étape à faire</span><small>' + esc(D.texteSansProchaine(vs)) + '</small></div>';
     }
+    h += retenuCarte(ph);
     return h + '<button type="button" class="dz-btn" data-dz="ouvrir" data-id="' + esc(ph.dossier.id) + '">Ouvrir le dossier ' + ico('fleche', 18) + '</button></article>';
   }
   function groupe(titre, n, html) { return '<section class="dz-groupe"><div class="dz-groupe-t"><h2>' + titre + '</h2><span>' + n + '</span></div><div class="dz-grille">' + html + '</div></section>'; }
@@ -134,6 +231,7 @@
     if (!S.charge && !S.erreur) return h + '<div class="dz-vide"><p>Vos dossiers arrivent…</p></div>';
     if (S.erreur) return h + '<div class="dz-vide"><p>Vos dossiers ne se sont pas affichés.</p><p>Réessayez dans un instant.</p><button type="button" class="dz-btn plein" data-dz="reessayer">Réessayer</button></div>';
     if (!phs.length) return h + (S.vue === 'nouveau' ? '' : '<div class="dz-vide"><p>Vous n’avez pas encore de dossier.</p><p>Créez-en un pour suivre un projet, étape par étape.</p><button type="button" class="dz-btn plein" data-dz="nouveau">Nouveau dossier</button></div>');
+    if (S.vue !== 'nouveau') h += htmlSemaine(phs);
     if (g.av.length) h += groupe('Ils avancent', D.pl(g.av.length, 'pharmacie', 'pharmacies'), g.av.map(carte).join(''));
     if (g.dem.length) h += groupe('À démarrer', D.pl(g.dem.length, 'pharmacie', 'pharmacies'), g.dem.map(carte).join(''));
     if (g.fin.length) h += repli('Terminés', D.pl(g.fin.length, 'pharmacie', 'pharmacies'), g.fin.map(carte).join(''));
@@ -368,6 +466,7 @@
       h += '<div class="dz-aff" style="margin:14px 0 16px">' + dd.map(segs).join(' · ') + (geste ? ' <button type="button" class="dz-lien" data-dz="modif"' + dis() + '>' + esc(geste) + '</button>' : '') + '</div>';
       if (S.modif) h += htmlModif(v);
     }
+    h += htmlChaine(ph);
     h += '<section class="dz-hero" aria-label="Avancée du volet">' + friseFiche(v) + carteProchaine(v) + '</section>';
     h += '<div class="dz-corps"><div><ol class="dz-etapes">' + v.etapes.map(function (e, i) { return htmlEtape(v, e, i); }).join('') + '</ol></div>' + htmlCote(v, ph) + '</div></div>';
     return h;
@@ -627,6 +726,8 @@
     if (a === 'etat-ok') { changerEtat(S.etatForm); return; }
     if (a === 'reprendre') { changerEtat('cours'); return; }
     if (a === 'ouvrir-ch') { ouvrirChantier(); return; }
+    if (a === 'noter-bloque') { sauverNotes(S.ouv); noterBloque(b.getAttribute('data-v'), b.getAttribute('data-k')); return; }
+    if (a === 'voir-etape') { sauverNotes(S.ouv); S.flash = ''; V2.go('dossiers', b.getAttribute('data-id') + ':' + b.getAttribute('data-s') + ':' + b.getAttribute('data-k')); return; }
     if (a === 'voir-ch') { sauverNotes(S.ouv); V2.go('chantiers', b.getAttribute('data-id')); return; }
   }
   function saisie(ev) {
