@@ -246,7 +246,7 @@
   /* yann : vrai quand le compte n'est pas la téléprospectrice (couche « Clients Intégral » et bloc Intégral de la fiche, jamais pour elle). */
   var M = { racine: null, map: null, perim: 'only', on: { fiches: true, robots: true, transferts: true, ehpad: true, signaux: false, toutes: false, integral: true },
     groupes: {}, lignes: {}, ix: {}, pistes: [], sommes: null, jeton: 0, minuteur: 0, totaux: {}, vus: {}, plafond: false, fab: '', meta: {},
-    yann: false, pistesDessinees: false, sel: null, repere: null, ficheJeton: 0, replie: false, pts: {} };
+    yann: false, pistesDessinees: false, sel: null, repere: null, ficheJeton: 0, replie: false, pts: {}, totauxP: {}, cache: {}, dessine: {}, compte: {} };
   function ordre() { return P.ordreCouches(M.yann); }
 
   /* Leaflet n'est chargé qu'UNE fois : l'écran peut être redessiné pendant le chargement (la téléprospectrice : deux dessins, deux scripts,
@@ -284,18 +284,22 @@
   }
   /* Les clientes d'Intégral se dessinent EN PREMIER : leur anneau reste visible autour des points des autres couches posés par-dessus. */
   function couchesActives() { return ordre().filter(function (k) { return k !== 'fiches' && M.on[k]; }).sort(function (x, y) { return (y === 'integral') - (x === 'integral'); }); }
+  function cleCouche(a) { return M.perim + '|' + a + '|' + (a === 'robots' ? M.fab : ''); }
+  /* La demande EN COURS est gardée : l'ouverture appelait chargerTotaux deux fois et les 5 comptages partaient deux fois (mesuré le 24/11/2026). */
   function totalCouche(a) {
-    var cle = M.perim + '|' + a + '|' + (a === 'robots' ? M.fab : '');
+    var cle = cleCouche(a);
     if (M.totaux[cle] !== undefined) return Promise.resolve(M.totaux[cle]);
-    return compter(filtresCouche(a), jointCouche(a)).then(function (n) { if (n !== null) M.totaux[cle] = n; return n || 0; });
+    if (M.totauxP[cle]) return M.totauxP[cle];
+    var p = M.totauxP[cle] = compter(filtresCouche(a), jointCouche(a)).then(function (n) { if (n !== null) M.totaux[cle] = n; else if (M.totauxP[cle] === p) delete M.totauxP[cle]; return n || 0; });
+    return p;
   }
-  function vider(a) { if (M.groupes[a]) M.groupes[a].clearLayers(); M.pts[a] = []; }
+  function vider(a) { if (M.groupes[a]) M.groupes[a].clearLayers(); M.pts[a] = []; M.compte[a] = []; M.dessine[a] = null; }
   function couleurLigne(l) { return l.angle === 'robots' ? (l.cat === 'omnicell' ? COUL.omnicell : COUL.robots) : COUL[l.angle] || COUL.toutes; }
   /* 24/11/2026 — plus de bulle Leaflet : un clic ouvre la fiche posée sur la carte, qui ne dépend d'aucune couche (le rechargement des points ne la touche plus). */
   function tracerLignes(a, rows) {
     if (a === 'integral') return tracerIntegral(rows);
     var L = window.L, g = M.groupes[a]; g.clearLayers();
-    var n = 0, pts = M.pts[a] = [];
+    var n = 0, pts = M.pts[a] = M.compte[a] = [];
     rows.forEach(function (l) {
       if (!coordOk(l.lat, l.lon) || P.ficheSuivie(l, M.ix)) return;
       M.lignes[l.cle] = l;
@@ -309,10 +313,10 @@
      pour ne pas la confondre avec les points bleus pleins des cessions et créations (#1D4ED8). Une cliente déjà dans les pistes garde son épingle. */
   function tracerIntegral(rows) {
     var L = window.L, g = M.groupes.integral; g.clearLayers();
-    var n = 0, pts = M.pts.integral = [];
+    var n = 0, pts = M.pts.integral = [], tous = M.compte.integral = [];
     rows.forEach(function (l) {
       if (!coordOk(l.lat, l.lon)) return;
-      M.lignes[l.cle] = l;
+      M.lignes[l.cle] = l; tous.push(l);
       L.circleMarker([l.lat, l.lon], { radius: 13, weight: 5, color: '#fff', fill: false, interactive: false }).addTo(g);
       L.circleMarker([l.lat, l.lon], { radius: 11, weight: 3, color: BLEU_IP, fill: false, interactive: false }).addTo(g);
       if (!P.ficheSuivie(l, M.ix)) { L.circleMarker([l.lat, l.lon], { radius: 6, weight: 2, color: '#fff', fillColor: COUL.toutes, fillOpacity: 1, interactive: false }).addTo(g); pts.push(l); }
@@ -333,26 +337,44 @@
     });
     return best && best.l;
   }
-  /* Les lignes d'une couche, DANS LA VUE : tranches de 1 000, plafonnées (le bandeau le dit). */
-  function lireCouche(a, tok, bornes) {
+  /* Les lignes d'une couche : tranches de 1 000, plafonnées (le bandeau le dit) ; dans des bornes seulement pour « Toute la France ». */
+  function lireCouche(a, bornes) {
     var b = sb(), out = [];
     function page(i) {
-      var q = appliquer(b.from('phirst_officines').select(COLS + jointCouche(a)), filtresCouche(a)).gte('lat', bornes.getSouth()).lte('lat', bornes.getNorth()).gte('lon', bornes.getWest()).lte('lon', bornes.getEast())
-        .order('tri', { ascending: true }).range(i * 1000, i * 1000 + 999);
-      return q.then(function (r) {
-        if (tok !== M.jeton || r.error) return null;
+      var q = appliquer(b.from('phirst_officines').select(COLS + jointCouche(a)), filtresCouche(a));
+      if (bornes) q = q.gte('lat', bornes.getSouth()).lte('lat', bornes.getNorth()).gte('lon', bornes.getWest()).lte('lon', bornes.getEast());
+      return q.order('tri', { ascending: true }).range(i * 1000, i * 1000 + 999).then(function (r) {
+        if (r.error) return null;
         out = out.concat(r.data || []);
-        if ((r.data || []).length < 1000) return out;
-        if (i + 1 >= CAP_PAGES) { M.plafond = true; return out; }
+        if ((r.data || []).length < 1000) return { rows: out, plafond: false };
+        if (i + 1 >= CAP_PAGES) return { rows: out, plafond: true };
         return page(i + 1);
       });
     }
     return page(0);
   }
+  /* 24/11/2026 — rapidité, mesurée dans le Safari de Will : CHAQUE geste (glisser, zoomer) retéléchargeait les couches (≈ 830 Ko)
+     et redessinait tous les points, 456 à 556 ms avant la mise à jour. Désormais :
+     · « Secteur de Yann » : chaque couche est lue UNE fois pour tout le secteur et dessinée une fois ; un geste ne relit ni ne redessine rien,
+       seule la phrase « Dans cette vue » est recomptée sur place ;
+     · « Toute la France » : la couche est lue pour une zone plus large que la vue ; tant que la vue reste dedans (et que la lecture
+       n'a pas été plafonnée), rien n'est relu. La demande en cours est partagée : deux gestes rapprochés n'envoient qu'une lecture. */
+  function entreeCouche(a) {
+    var cle = cleCouche(a), e = M.cache[cle], france = M.perim === 'france', vue = M.map.getBounds();
+    if (e && (!france || (e.bornes.contains(vue) && !e.plafond))) return e;
+    e = M.cache[cle] = { bornes: france ? vue.pad(0.3) : null, rows: null, plafond: false };
+    function rate() { if (M.cache[cle] === e) delete M.cache[cle]; return e; }
+    e.p = lireCouche(a, e.bornes).then(function (r) { if (!r) return rate(); e.rows = r.rows; e.plafond = r.plafond; return e; }, rate);
+    return e;
+  }
+  function dansVue(a, vue) {
+    var s = vue.getSouth(), n = vue.getNorth(), w = vue.getWest(), e = vue.getEast(), k = 0;
+    (M.compte[a] || []).forEach(function (l) { if (l.lat >= s && l.lat <= n && l.lon >= w && l.lon <= e) k++; });
+    return k;
+  }
   function actualiser() {
     if (!M.map) return;
     var tok = ++M.jeton, zoom = M.map.getZoom(), masque = P.couchesMasquees(zoom, M.perim), actives = couchesActives();
-    M.plafond = false;
     // Les épingles ne dépendent pas de la vue : dessinées une fois (et à chaque changement des pistes), plus à chaque déplacement.
     if (M.on.fiches) { if (!M.pistesDessinees) tracerPistes(); } else if (M.groupes.fiches) { M.groupes.fiches.clearLayers(); M.pistesDessinees = false; }
     if (masque) {
@@ -365,19 +387,18 @@
       return;
     }
     if (!actives.length) { dire('ok', ''); return; }
-    var bornes = M.map.getBounds().pad(0.1), faits = [];
-    Promise.all([lireSommes()].concat(actives.map(function (a) {
-      return lireCouche(a, tok, bornes).then(function (rows) { return { a: a, rows: rows }; });
-    }))).then(function (r) {
-      if (tok !== M.jeton) return;
-      var sommes = r[0];
-      r.slice(1).forEach(function (c) {
-        if (!c.rows) return;
-        var n = tracerLignes(c.a, finir(c.rows, sommes));
-        faits.push(compteCouche(c.a, n));
+    var entrees = actives.map(entreeCouche);
+    Promise.all([lireSommes()].concat(entrees.map(function (e) { return e.p; }))).then(function (r) {
+      if (tok !== M.jeton || !M.map) return;
+      var sommes = r[0], vue = M.map.getBounds(), faits = [], plafond = false;
+      actives.forEach(function (a, i) {
+        var e = entrees[i]; if (!e.rows) return;
+        if (M.dessine[a] !== e) { tracerLignes(a, finir(e.rows, sommes)); M.dessine[a] = e; }
+        if (e.plafond) plafond = true;
+        faits.push(compteCouche(a, dansVue(a, vue)));
       });
       var ph = P.phraseVue(faits);
-      dire('ok', ph ? ph + (M.plafond ? ' (affichage limité : zoomez pour tout voir)' : '') : 'Aucun point dans cette vue.');
+      dire('ok', ph ? ph + (plafond ? ' (affichage limité : zoomez pour tout voir)' : '') : 'Aucun point dans cette vue.');
     });
   }
   function tracerPistes() {
@@ -551,7 +572,7 @@
     F.envoi = true; F.dit = ''; dessinerFiche();
     window.PHIRST_PISTE.ajouter(P.pisteDeLigne(F.f.piste)).then(function (m) {
       F.envoi = false; F.dit = m;
-      if (FAIT.indexOf(m) >= 0) lirePistes(true).then(function (p) { M.pistes = p || M.pistes; M.ix = P.indexPistes(M.pistes); dessinerPuces(); dessinerTournee(); if (M.on.fiches) tracerPistes(); if (M.sel === F) dessinerFiche(); });
+      if (FAIT.indexOf(m) >= 0) lirePistes(true).then(function (p) { M.pistes = p || M.pistes; M.ix = P.indexPistes(M.pistes); M.dessine = {}; dessinerPuces(); dessinerTournee(); if (M.on.fiches) tracerPistes(); actualiser(); if (M.sel === F) dessinerFiche(); });
       if (M.sel === F) dessinerFiche();
     });
   }
@@ -607,12 +628,12 @@
     if (t.closest('[data-fiche-ajout]')) { ajouterDepuisFiche(); return; }
     if ((g = t.closest('[data-couche]'))) { var k = g.getAttribute('data-couche'); M.on[k] = !M.on[k]; if (!M.on[k]) vider(k); if (k === 'fiches') M.pistesDessinees = false; dessinerPuces(); actualiser(); return; }
     if ((g = t.closest('[data-parc]'))) { M.fab = g.getAttribute('data-parc'); vider('robots'); dessinerPuces(); chargerTotaux(); actualiser(); return; }
-    if ((g = t.closest('[data-perim]'))) { M.perim = g.getAttribute('data-perim'); M.totaux = {}; ordre().forEach(vider); M.pistesDessinees = false; dessinerPuces(); chargerTotaux(); cadrer(); actualiser(); return; }
+    if ((g = t.closest('[data-perim]'))) { M.perim = g.getAttribute('data-perim'); M.totaux = {}; M.totauxP = {}; ordre().forEach(vider); M.pistesDessinees = false; dessinerPuces(); chargerTotaux(); cadrer(); actualiser(); return; }
     if (t.closest('[data-zoomer]')) { if (M.perim === 'france') M.map.setZoom(Math.max(M.map.getZoom(), P.SEUIL_COUCHES.france)); else cadrer(); setTimeout(actualiser, 50); return; }
   }
   V2.pages.carte = { needs: [], render: function (root) {
     if (M.map) { try { M.map.remove(); } catch (e) { /* carte déjà démontée */ } M.map = null; }
-    M.racine = root; M.groupes = {}; M.lignes = {}; M.pts = {}; M.totaux = {}; M.yann = false; M.pistesDessinees = false; M.sel = null; M.repere = null; M.replie = false; M.ficheJeton++;
+    M.racine = root; M.groupes = {}; M.lignes = {}; M.pts = {}; M.totaux = {}; M.totauxP = {}; M.cache = {}; M.dessine = {}; M.compte = {}; M.yann = false; M.pistesDessinees = false; M.sel = null; M.repere = null; M.replie = false; M.ficheJeton++;
     root.innerHTML = window.PHIRST_ECRAN.cadre('<section class="pa po po-large" aria-label="La carte"><header class="pa-tete"><h1>La carte</h1><p>Vos fiches en épingles, les pharmacies du secteur en points. <span id="po-fiches"></span></p></header>' +
       '<div class="pa-chips po-couches" id="po-couches" role="group" aria-label="Couches"></div><div class="pa-chips po-parc" id="po-parc" role="group" aria-label="Parc concurrent" hidden></div>' +
       '<div class="po-carte"><div id="po-map" class="po-map" role="application" aria-label="Carte des pharmacies"></div><div id="po-bandeau" class="po-bandeau" role="status" hidden></div><div id="po-fiche-hote" class="po-fiche-hote"></div></div><div id="po-pipe" class="po-pipe"></div></section>');
@@ -638,7 +659,7 @@
       poserFond(M.map);
       P.ordreCouches(true).forEach(function (k) { M.groupes[k] = L.layerGroup().addTo(M.map); });
       cadrer();
-      M.map.on('moveend', function () { clearTimeout(M.minuteur); M.minuteur = setTimeout(actualiser, 300); });
+      M.map.on('moveend', function () { clearTimeout(M.minuteur); M.minuteur = setTimeout(actualiser, 150); });
       setTimeout(function () { if (M.map) M.map.invalidateSize(); }, 50);
       lireMeta().then(function (m) { M.meta = m || {}; dessinerPuces(); });
       chargerTotaux();
@@ -650,4 +671,7 @@
       });
     });
   } };
+  /* Arrivée directe sur la carte : le fond de carte (Leaflet) part tout de suite, en même temps que la vérification de la connexion
+     (mesuré le 24/11/2026 dans le Safari de Will : il n'était demandé qu'au bout de 2,06 s, une fois la connexion et le profil relus). */
+  if (/^#carte\b/.test(location.hash || '')) chargerLeaflet(function () {});
 })();
