@@ -33,14 +33,18 @@ jobs:
       - name: Signalements par produit et risque de rupture
         continue-on-error: true
         run: python3 generate_ansm_signalements.py
+      # Arrêts de commercialisation annoncés à l'avance (ANSM, data.gouv.fr, code 102), une ligne sur la fiche (24/11/2026).
+      - name: Arrêts de commercialisation annoncés
+        continue-on-error: true
+        run: python3 generate_ansm_arrets.py
       - name: Committer si changement
         run: |
-          if git diff --quiet -- crm/v2/ruptures-data.js crm/v2/ansm-signalements.json; then
+          if git diff --quiet -- crm/v2/ruptures-data.js crm/v2/ansm-signalements.json crm/v2/ansm-arrets.json; then
             echo "Pas de changement (liste ANSM inchangée)."
           else
             git config user.name  "JARVIS copilote"
             git config user.email "actions@users.noreplace.github.com"
-            git add crm/v2/ruptures-data.js crm/v2/ansm-signalements.json
+            git add crm/v2/ruptures-data.js crm/v2/ansm-signalements.json crm/v2/ansm-arrets.json
             git commit -m "data(copilote): ruptures ANSM $(date -u +%Y-%m-%d)"
             # 24 robots poussent sur le meme depot et GitHub livre leurs executions
             # planifiees en paquet : une seule reprise ne suffit pas (le 03/08, ansm-dispo,

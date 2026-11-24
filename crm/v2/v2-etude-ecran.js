@@ -20,9 +20,9 @@
   }
   function charger(cip) {
     var tr = 'etude-france/' + cip.slice(-2) + '.json';
-    return Promise.all([json(tr).then(function (t) { S.tr[cip.slice(-2)] = t || false; }), json('etude-france/index.json'), json('ansm-archive.json'), json('ansm-causes.json'), json('ema-penuries.json'), json('ansm-signalements.json'), json('mitm.json')])
+    return Promise.all([json(tr).then(function (t) { S.tr[cip.slice(-2)] = t || false; }), json('etude-france/index.json'), json('ansm-archive.json'), json('ansm-causes.json'), json('ema-penuries.json'), json('ansm-signalements.json'), json('mitm.json'), json('ansm-arrets.json')])
       .then(function (r) {
-        S.idx = r[1]; S.arch = r[2]; S.causes = r[3]; S.pen = r[4]; S.sig = r[5];
+        S.idx = r[1]; S.arch = r[2]; S.causes = r[3]; S.pen = r[4]; S.sig = r[5]; S.arr = r[7];
         if (!S.mitm && r[6] && r[6].cips) { S.mitm = {}; r[6].cips.forEach(function (c) { S.mitm[c] = 1; }); }
         S.charge = S.charge || {}; S.charge[cip] = 1;
       });
@@ -91,6 +91,7 @@
     out.sig = S.sig ? K.signalementsDe(S.sig, cip) : null;   // null = fichier ANSM absent : on garde l'affichage d'avant
     out.sigMeta = S.sig || null;
     out.risque = S.sig && S.mitm ? K.risqueRupture(S.sig, out.sig, !!S.mitm[cip], out.france) : null;
+    out.arret = K.arretAnnonce(S.arr, cip, new Date().toISOString().slice(0, 10));
     out.arch = S.arch; out.causes = S.causes; out.idx = S.idx;
     return out;
   };
@@ -235,6 +236,9 @@
       h += '<span class="et-sm">Profil : ' + (rq.mitm ? 'médicament d\'intérêt thérapeutique majeur' : 'hors liste des médicaments d\'intérêt thérapeutique majeur') + ' · ' +
         (rq.recents ? rq.recents + ' signalement' + (rq.recents > 1 ? 's' : '') : 'aucun signalement') + ' en ' + rq.fenetre[0] + '-' + rq.fenetre[1] + ' · demande France ' + (rq.baisse ? 'en baisse' : 'stable ou en hausse') + '.</span>';
     }
+    // Arrêt annoncé à l'avance (choix de Will, 24/11/2026) : sous le risque de rupture, avec la source et la date du fichier ANSM.
+    var ar = D.arret;
+    if (ar) h += '<span>Arrêt de commercialisation annoncé par le laboratoire : ' + dateJ(ar.date) + '.</span><span class="et-sm">Source : données ouvertes de l\'ANSM (data.gouv.fr)' + (ar.version ? ', fichier du ' + dateJ(ar.version) : '') + '.</span>';
     if (sg && !sgTete) {
       var parAn = {}; sg.forEach(function (d) { parAn[d.slice(0, 4)] = (parAn[d.slice(0, 4)] || 0) + 1; });
       var ans = []; for (var yA = sm.annees[0]; yA <= sm.annees[1]; yA++) ans.push(yA + ' : ' + (parAn[yA] || 0));

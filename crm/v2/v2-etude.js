@@ -163,7 +163,16 @@
     return { taux: taux, n: c[0], niveau: taux >= 0.3 ? 'élevé' : taux >= 0.1 ? 'moyen' : 'faible', cle: cle, mitm: !!estMitm, baisse: baisse,
       recents: recents, fenetre: fen, annees: t.annees || [] };
   }
+  // Arrêt de commercialisation annoncé par le laboratoire (ansm-arrets.json, code 102 de l'ANSM, CIP13 exact, généré par
+  // generate_ansm_arrets.py). Une annonce, pas une prédiction : seules les dates d'aujourd'hui ou à venir sont rendues
+  // (auj = AAAA-MM-JJ). version = date du fichier ANSM, lue dans le fichier. null = pas d'annonce ou fichier absent.
+  function arretAnnonce(arr, cip, auj) {
+    var d = arr && arr.d && arr.d[cip], iso = /^\d{4}-\d{2}-\d{2}$/;
+    if (!d || !iso.test(d) || !iso.test(auj || '') || d < auj) return null;
+    return { date: d, version: iso.test(arr.version || '') ? arr.version : null };
+  }
   E._calc = { moisListe: moisListe, serieDe: serieDe, resumeFrance: resumeFrance, saisonIndices: saisonIndices, saisonAnnees: saisonAnnees, periodeAnnees: periodeAnnees, partsPrescripteurs: partsPrescripteurs,
     tendanceCommune: tendanceCommune, regionDeCp: regionDeCp, partsRegions: partsRegions, partsAge: partsAge, niveauxPrevision: niveauxPrevision,
-    marqueDe: marqueDe, rupturesPassees: rupturesPassees, memeDosage: memeDosage, penuriesEma: penuriesEma, signalementsDe: signalementsDe, risqueRupture: risqueRupture, pct: pct, fr: fr };
+    marqueDe: marqueDe, rupturesPassees: rupturesPassees, memeDosage: memeDosage, penuriesEma: penuriesEma, signalementsDe: signalementsDe, risqueRupture: risqueRupture,
+    arretAnnonce: arretAnnonce, pct: pct, fr: fr };
 })();
