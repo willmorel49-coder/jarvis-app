@@ -452,3 +452,7 @@
   .pa-champs label{flex:1 1 140px}
   .pa-ecrire .pa-b,.pa-cinq-pied .pa-b,.pa-mail-pied .pa-b{width:100%}
 }
+
+/* L4 (24/11/2026) : une étiquette écrite par le robot peut être longue (« De la part de Pharmacie du Bocage Clair ») : elle passe à la ligne dans sa colonne
+   au lieu de déborder sur la raison. Les étiquettes courtes ne changent pas (elles tiennent sur une ligne). */
+.pa-liste .pa-l .pa-ligne .lg-et{white-space:normal;max-width:100%;border-radius:14px;line-height:1.25;overflow-wrap:anywhere}
