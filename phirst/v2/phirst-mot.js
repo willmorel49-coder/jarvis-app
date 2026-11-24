@@ -1,4 +1,4 @@
-/* PHIRST · accueil de Yann : « Le mot du vendredi » (idée 11, 24/11/2026), posé sous la ligne. Du vendredi au lundi, trois lignes sur la semaine de la
+/* PHIRST · accueil de Yann : « Le mot du vendredi » (idée 11, 24/11/2026), posé sous l'aube et sa ligne. Du vendredi au lundi, trois lignes sur la semaine de la
    téléprospectrice, calculées depuis le journal réel (crm_activities, type « appel », ses appels à elle seule), et un bouton pour viser mieux la suivante.
    Le bouton range le choix dans `ligne_priorite` (une ligne par compte, une semaine) : c'est le robot du matin (~/phirst-ligne/) qui le lit pour ranger
    la liste d'appels ; tant qu'il ne l'a pas fait, l'écran dit « C'est noté », jamais « C'est fait ». « Revenir à l'ordre habituel » ne supprime rien :
@@ -76,7 +76,8 @@
   function redessiner(focus) { var el = document.getElementById('mv'); if (!el) return; dessiner(el); var f = focus && document.getElementById(focus); if (f) f.focus(); }
   function monter() {
     if (E.etat !== 'pret') return;
-    var ancre = document.getElementById('lg-ligne') || document.getElementById('aube-champ'), el = document.getElementById('mv');
+    /* sous l'aube entière (la ligne vit dans sa colonne étroite) : frère de #aube-acc, comme dans la maquette */
+    var ancre = document.getElementById('aube-acc'), el = document.getElementById('mv');
     if (!ancre) return;
     if (el && el.previousElementSibling === ancre) return;
     if (!el) {

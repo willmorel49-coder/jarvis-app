@@ -142,8 +142,8 @@
   .pv-t{font-size:10pt;color:#000!important;text-decoration:none!important}
   .pv-pied-f{display:block;grid-column:1/-1;margin:6pt 0 0;font-size:8pt;text-align:center;color:#444}
 }
-.pv-co .pa-tel{min-height:40px;padding:0}
-.pv-co .pa-lien{min-height:40px}
+.pv-co .pa-tel{min-height:44px;padding:0}
+.pv-co .pa-lien{min-height:44px}
 .ag-rdv .pa-bs .pv-prep{flex:0 0 auto;min-width:260px}
 @media (max-width:760px){.ag-rdv .pa-bs .pv-prep{min-width:0;flex:1 1 100%}}
 
