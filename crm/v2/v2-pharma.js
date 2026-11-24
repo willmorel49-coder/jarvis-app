@@ -4169,8 +4169,10 @@
       '<div class="fdr-edit" id="fdr-edit"' + (ouvert ? '' : ' hidden') + '>' + forms + '</div></div>';
   }
   // 21/11/2026 — version « Le dossier » (préfixe fdo-) : la fiche comme un dossier client de logiciel de suivi commercial.
-  // Colonne de gauche qui reste à l'écran (nom, actions, coordonnées courtes, Offilog), chiffres à droite. Au téléphone : tout à la suite,
-  // les coordonnées et Offilog juste après le chapitre des chiffres (CSS : ordre des blocs), jamais devant.
+  // Colonne de gauche qui reste à l'écran (nom, actions, coordonnées courtes), chiffres à droite. Au téléphone : tout à la suite,
+  // les coordonnées juste après le chapitre des chiffres (CSS : ordre des blocs), jamais devant.
+  // 24/11/2026 — Offilog quitte la colonne de gauche pour le chapitre 1 (fdrOffilog) : la colonne défile sans barre et le bloc
+  // tombait sous le bas de l'écran (mesuré à 900 px de haut : 882 px en vue pharmacien, 1 063 px en vue Intégral). « En bref » retiré (Will).
   function fdoCoord(c) {
     var ligne = function (ic, corps) { return '<li class="fdo-co"><span class="fdo-co-i">' + actIco(ACT_GLYPH[ic]) + '</span><span class="fdo-co-t">' + corps + '</span></li>'; };
     var l = '';
@@ -4178,21 +4180,6 @@
     if (c.mail) l += ligne('mail', '<a href="mailto:' + esc(c.mail) + '">' + esc(c.mail) + '</a>');
     if (c.adresse || c.loc) l += ligne('map', esc([c.adresse, c.loc].filter(function (x) { return x; }).join(', ')));
     return l ? '<div class="fdr-bloc fdo-b fdo-coords"><h3>Coordonnées</h3><ul class="fdo-cos" aria-label="Coordonnées">' + l + '</ul></div>' : '';
-  }
-  // Offilog en version compacte : une ligne par mois, le total en dessous (la prime du commercial n'apparaît jamais)
-  function fdoOffilog(pid) {
-    var OV = V2.offVentes, F = OV && OV.moisFiche && OV.moisFiche(pid, (window.WML_OFF_CA || {}).off);
-    if (!F) return '';
-    return '<div class="fdr-bloc fdr-off fdo-off fdo-b" id="fdr-offilog"><h3>Offilog, mois par mois</h3><p class="fdr-leg">achats hors taxes, avoirs déduits · ' + esc(F.periode) + '</p>' +
-      '<dl class="fdo-off-l">' + F.mois.map(function (m) { return '<div><dt>' + esc(m.lib) + '</dt><dd>' + OV.eur(m.ht) + '</dd></div>'; }).join('') +
-      (F.mois.length > 1 ? '<div class="fdo-off-t"><dt>Total</dt><dd>' + OV.eur(F.total) + '</dd></div>' : '') + '</dl></div>';
-  }
-  // « En bref » : trois repères tirés des données déjà calculées (jamais un chiffre écrit en dur) ; ne sert qu'en deux colonnes
-  function fdoBref(c) {
-    var A = c.A; if (!A || !A.last) return '';
-    var l = function (a, b) { return '<div><dt>' + a + '</dt><dd>' + b + '</dd></div>'; };
-    return '<div class="fdr-bloc fdo-b fdo-bref"><h3>En bref</h3><dl class="fdo-off-l">' +
-      l('Dernier mois reçu', esc(cl1MoisK(A.last.mk, true))) + l('Mois d’activité', V2.fmtNum(A.nAct)) + l('Produits différents', V2.fmtNum(c.nbRefs)) + '</dl></div>';
   }
   // ══════════════════════════════════════════════════════════════════════════
   // 21/11/2026 (Will) — « Côté Intégral » = « les données pour la marge commerciale d'Intégral Pharma en valeur par tranches de prix
@@ -4273,7 +4260,7 @@
   function fdrOutilsBoutons(c) {
     var b = function (id, nom) { return '<button type="button" class="fdr-outil" aria-haspopup="dialog" onclick="V2.fdrOuvrir(\'' + id + '\')">' + esc(nom) + '</button>'; };
     return '<div class="fdr-outils" role="group" aria-label="Outils du rendez-vous">' + b('infos', 'Informations') + (c.notes ? b('notes', 'Notes et rendez-vous') : '') +
-      (c.briefOff ? b('brief', 'Brief du jour') : '') + fdrGrandsBoutons(c.pid, c.voitVentes) + '</div>';
+      (c.briefOff ? b('brief', 'Infos du jour') : '') + fdrGrandsBoutons(c.pid, c.voitVentes) + '</div>';
   }
   function fdrOutils(c) {
     var b = function (id, nom) { return '<button type="button" class="fdr-outil" aria-haspopup="dialog" onclick="V2.fdrOuvrir(\'' + id + '\')">' + esc(nom) + '</button>'; };
@@ -4283,9 +4270,10 @@
         '<div class="fdr-edit" id="fdr-edit" hidden>' + c.fe.panneau + c.infos + '</div></div>';
     var h = fdrOutilsBoutons(c);
     return h + fdrDialogue('infos', 'Informations', infos) + (c.notes ? fdrDialogue('notes', 'Notes et préparation du rendez-vous', '<div class="fdr-nt">' + c.notes + '</div>') : '') +
-      (c.briefOff ? fdrDialogue('brief', 'Brief du jour', '<div class="fdr-bj">' + c.briefOff + '</div>') : '');
+      (c.briefOff ? '<div class="fdr-bj" hidden>' + c.briefOff + '</div>' : '');   // 24/11/2026 : #brief-off reste dans la page (hydrate le lit), caché ; le bouton ouvre le panneau
   }
   V2.fdrOuvrir = function (id) {
+    if (id === 'brief') { if (V2.briefOfficine) V2.briefOfficine.ouvrir(); return; }   // 24/11/2026 (Will) : « un seul [clic] qui emmène direct aux infos »
     var d = document.getElementById('fdr-d-' + id);
     if (!d) { if (id === 'notes' && V2.pharmaNav && V2.pharmaNav.noter) V2.pharmaNav.noter(); return; }   // fiche de prospect : les notes restent dans la page
     if (!d.open) { try { d.showModal(); } catch (e) { d.setAttribute('open', ''); } }
@@ -4476,14 +4464,14 @@
     var som = '<nav class="fdr-som" id="fdr-som" aria-label="Aller à un chapitre">' + FDR_SOM.map(function (t, i) {
       return '<button type="button" class="fdr-pil' + (i === FDR_SOM.length - 1 ? ' vi-int' : '') + '" data-ch="' + (i + 1) + '" onclick="V2.fdrAller(' + (i + 1) + ')"><b>' + (i + 1) + '</b><span>' + esc(t) + '</span></button>';
     }).join('') + '</nav>';
-    h += fdrChapitre(1, '<div class="fdr-c1">' + fdrMontants(A, c.nbRefs) + fdrCourbe(A) + '</div>', '');
+    h += fdrChapitre(1, '<div class="fdr-c1">' + fdrMontants(A, c.nbRefs) + fdrOffilog(c.pid) + fdrCourbe(A) + '</div>', '');   // Offilog sous les montants, dans les deux vues (24/11/2026)
     h += fdrChapitre(2, c.nePlus || '<p class="fdr-leg">Rien à signaler.</p>', '');
     h += fdrChapitre(3, c.tranches + '<div class="fdr-bloc fdr-rep">' + m5Replie('fdr-top5', 'Top 10 par catégorie', c.top5) + m5Replie('fdr-parts', 'Par catégorie, mois par mois', analyseParts(A, true)) + '</div>', '');
     h += fdrChapitre(4, c.generiqueurs || '<p class="fdr-leg">Aucun génériqueur ni biosimilaire enregistré.</p>', '');
     // ── 5. Côté Intégral : tout l'interne, dans un seul chapitre (jamais d'élément interne au-dessus)
     var int = fdrInterne(c);
     h += fdrChapitre(5, int, 'Ce que le pharmacien ne voit pas : notre marge par tranche de prix et la comparaison à nos clients.', 'vi-int fdr-int');
-    return '<div class="fdr fdr-d fdo-g"><aside class="fdo-side">' + tete + fdoCoord(c) + fdoOffilog(c.pid) + fdoBref(c) + navig + '</aside><div class="fdo-main">' + fdrListings(c) + rv2Bandes(c) + '<div class="rv2-outils">' + fdrOutilsBoutons(c) + '</div>' + som + h + '</div>' + rv2Barre(c) + '</div>';
+    return '<div class="fdr fdr-d fdo-g"><aside class="fdo-side">' + tete + fdoCoord(c) + navig + '</aside><div class="fdo-main">' + fdrListings(c) + rv2Bandes(c) + '<div class="rv2-outils">' + fdrOutilsBoutons(c) + '</div>' + som + h + '</div>' + rv2Barre(c) + '</div>';
   }
   V2.fdrAller = function (n) {
     var el = document.getElementById('fdr-c' + n); if (!el) return;
@@ -4898,7 +4886,7 @@
 
     // Brief du jour (v2-brief-officine.js) : rempli après coup, sans re-rendre la fiche.
     // Posé APRÈS les chiffres (demande de Will, 22/09/2026) : une ligne de résumé qui ouvre la fenêtre.
-    var briefOff = V2.briefOfficine ? '<div class="v2-card pha-card" id="brief-off" data-pid="' + esc(pid) + '"><div class="pha-sub" style="padding:12px 18px">Brief du jour en préparation…</div></div>' : '';
+    var briefOff = V2.briefOfficine ? '<div class="v2-card pha-card" id="brief-off" data-pid="' + esc(pid) + '"><div class="pha-sub" style="padding:12px 18px">Infos du jour en préparation…</div></div>' : '';
     // Vue « À montrer au pharmacien » (liste blanche en CSS, voir .pha-wrap[data-vue]) : son nom, son adresse,
     // son titulaire, son groupement d'achat et les rubriques sans leurs éléments internes.
     var vue = menu ? L1.vue : viArrivee(pid);   // 29/10/2026 : la vue retenue par l'appareil (par défaut : pharmacien) ; 22/11 : au téléphone, Intégral à l'arrivée (viArrivee)
@@ -4929,7 +4917,7 @@
     if (V2.profil) V2.profil.hydrate();
     if (V2.notes) V2.notes.hydrate();
     if (V2.rdvPrepa) V2.rdvPrepa.hydrate();
-    if (briefOff) V2.briefOfficine.hydrate(pid, pharmaSalesAll(pid));
+    if (briefOff) V2.briefOfficine.hydrate(pid, pharmaSalesAll(pid), { ville: villeV, cp: cpV });
     if (!menu) V2.pharmaFiche.apres(pid);
     if (!menu) phaTel();
     if (fi && !fdr) { fiVeille(root); if (fiArr) fiJoue(root); }

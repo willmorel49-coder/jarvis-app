@@ -93,19 +93,31 @@ test('chapitre interne : alerte de baisse, puis notre marge, puis la comparaison
   assert.ok(!/c\.listing|[Rr]otations/.test(corps('fdrPage')), 'les rotations reviennent dans la page');
 });
 
-test('6 boutons visibles dans les deux vues ; Informations, Notes et Brief dans des <dialog>', () => {
+test('6 boutons visibles dans les deux vues ; Informations et Notes dans des <dialog>, « Infos du jour » sans fenêtre intermédiaire', () => {
   const { ctx } = monde();
   const h = ctx.fdrOutils({ pid: 'F1', voitVentes: true, kvHtml: '<div>CIP</div>', fe: { panneau: '' }, infos: '', notes: '<div class="v2-notes-box"></div>', briefOff: '<p>brief</p>' });
   const groupe = h.slice(0, h.indexOf('<dialog'));
   const noms = [...groupe.matchAll(/<button[^>]*>(?:<span[^>]*>)?([^<]+)/g)].map((m) => m[1]);
-  assert.deepEqual(noms, ['Informations', 'Notes et rendez-vous', 'Brief du jour', 'Choisir quoi lui transmettre', 'Ouvrir la liste de tâches', 'Catalogue pour son logiciel']);
+  assert.deepEqual(noms, ['Informations', 'Notes et rendez-vous', 'Infos du jour', 'Choisir quoi lui transmettre', 'Ouvrir la liste de tâches', 'Catalogue pour son logiciel']);
   assert.ok(!/vi-int|vi-ph/.test(groupe), 'la rangée de boutons doit rester visible dans les deux vues');
-  assert.deepEqual([...h.matchAll(/<dialog class="fdr-dlg" id="(fdr-d-[a-z]+)" aria-labelledby="\1-t">/g)].map((m) => m[1]), ['fdr-d-infos', 'fdr-d-notes', 'fdr-d-brief']);
+  assert.deepEqual([...h.matchAll(/<dialog class="fdr-dlg" id="(fdr-d-[a-z]+)" aria-labelledby="\1-t">/g)].map((m) => m[1]), ['fdr-d-infos', 'fdr-d-notes']);
+  // 24/11/2026 (Will) : « un seul [clic] qui emmène direct aux infos » — le contenu du brief reste dans la page, caché, pour hydrate()
+  assert.match(h, /<div class="fdr-bj" hidden><p>brief<\/p><\/div>/);
+  assert.ok(!/fdr-d-brief|Brief du jour/.test(h), 'la fenêtre intermédiaire « Brief du jour » doit disparaître');
   assert.match(h, /id="fdr-modif"[^>]*aria-controls="fdr-edit"/); assert.match(h, /id="fdr-edit" hidden/);
   // sans notes ni brief (droits, prospect), leurs boutons ET leurs fenêtres disparaissent ensemble
   const h2 = ctx.fdrOutils({ pid: 'F1', voitVentes: true, kvHtml: '', fe: { panneau: '' }, infos: '', notes: '', briefOff: '' });
-  assert.ok(!/Notes et rendez-vous|Brief du jour|fdr-d-notes|fdr-d-brief/.test(h2));
+  assert.ok(!/Notes et rendez-vous|Infos du jour|fdr-d-notes|fdr-bj/.test(h2));
   assert.match(corps('fdrPage'), /fdrActions\([^)]*\) \+ fdrOutils\(c\)/, 'les boutons suivent les actions rondes, dans la carte d\'identité');
+});
+
+test('24/11/2026 : Offilog au chapitre 1 sous les montants (visible sans défiler la colonne de gauche), « En bref » retiré', () => {
+  const p = corps('fdrPage');
+  assert.match(p, /fdrMontants\(A, c\.nbRefs\) \+ fdrOffilog\(c\.pid\) \+ fdrCourbe\(A\)/, 'Offilog doit suivre les trois montants du chapitre 1');
+  assert.match(p, /<aside class="fdo-side">' \+ tete \+ fdoCoord\(c\) \+ navig \+ '<\/aside>/, 'colonne de gauche : identité, coordonnées, navigation');
+  assert.ok(!/fdoOffilog|fdoBref/.test(js), 'les deux blocs de la colonne de gauche ne doivent plus exister');
+  assert.ok(!/fdo-bref|En bref/.test(css), 'le style de « En bref » doit partir avec lui');
+  assert.ok(!/class="[^"]*vi-int[^"]*" id="fdr-offilog"|id="fdr-offilog"[^>]*vi-int/.test(corps('fdrOffilog')), 'Offilog reste visible du pharmacien');
 });
 
 test('V2.fdrOuvrir : ouvre la fenêtre et place le curseur dans la note ; sur un prospect (pas de fenêtre), repli sur la note de la page', () => {
@@ -119,8 +131,12 @@ test('V2.fdrOuvrir : ouvre la fenêtre et place le curseur dans la note ; sur un
   delete dialogs['fdr-d-notes'];
   ctx.V2.fdrOuvrir('notes');
   assert.deepEqual(appels, ['noter']);
-  ctx.V2.fdrOuvrir('brief');
+  ctx.V2.fdrOuvrir('transmettre');
   assert.deepEqual(appels, ['noter'], 'une autre fenêtre absente ne déclenche rien');
+  // « Infos du jour » : le bouton ouvre directement le panneau (un clic), sans <dialog> intermédiaire
+  ctx.V2.briefOfficine = { ouvrir: () => appels.push('infos-du-jour') };
+  ctx.V2.fdrOuvrir('brief');
+  assert.deepEqual(appels, ['noter', 'infos-du-jour']);
   assert.match(corps('fdrProspect'), /V2\.fdrOuvrir\(\\'notes\\'\)/, 'le rond « Note » d\'un prospect passe par fdrOuvrir');
 });
 

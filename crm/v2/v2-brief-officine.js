@@ -11,7 +11,11 @@
      - rappels de lots (rappels-lots.json)
      - produit habituel non commandé le dernier mois connu (ventes)
      - princeps encore acheté alors qu'un générique existe (generiques-bdpm.json)
-     - échéances réglementaires proches (calendrier-officine.json, tenu à la main)
+     - annonces légales des pharmacies de sa ville, puis de son département (bodacc-secteur.json)
+   24/11/2026 (Will) — « Infos du jour » : ce qui la touche (ses achats) puis ce qui se passe
+   autour d'elle (ventes, fermetures, procédures de pharmacies). Les échéances réglementaires
+   (les mêmes sur toutes les fiches) sont retirées ; elles restent dans l'écran Infos du matin.
+   Le bouton de la fiche ouvre le panneau en UN clic (avant : bouton → fenêtre → ligne → panneau).
    7 points maximum, ce qui est propre à CETTE officine d'abord (08/10/2026) :
    rappels de lots, achats interrompus, prix qui changent, puis 3 ruptures au plus
    (les autres repliées), puis les opportunités. Aucun modèle de langue :
@@ -32,13 +36,13 @@
   var PRINCEPS_MAX_LIGNES = 2;
   var HABITUDE_MAX_LIGNES = 3;
   var RECENT_MOIS = 3;    // au-delà, la liste noie les vraies alertes
-  var ECHEANCE_MAX_LIGNES = 2;
   // 08/10/2026 — mesuré sur les 2 011 officines : 73 % des points affichés étaient des ruptures ou
   // tensions NATIONALES, les mêmes d'une fiche à l'autre, et « Ses achats » finissait replié derrière.
   // Donc : ce qui lui est propre d'abord, et 3 ruptures au plus (les siennes par volume), le reste replié.
   var ORDRE = ['À retirer', 'Ses achats', 'Change bientôt', 'Va manquer', 'Revient', 'Opportunité'];
   var RUPTURES_MAX = 3;
-  var CALENDRIER_MAX_J = 120;     // fichier tenu à la main : à revérifier au moins tous les 4 mois
+  var SECTEUR_FAMILLES = { cession: 'Vente', fermeture: 'Fermeture', procedure: 'Procédure' };   // choix de Will (24/11/2026) : ventes, fermetures, procédures
+  var SECTEUR_MAX_LIGNES = 5;     // par niveau (sa ville, puis son département) ; le reste est compté
 
   var STATUTS = {
     'Rupture de stock': { urgence: 3, titre: 'En rupture' },
@@ -97,16 +101,59 @@
     }).sort(function (x, y) { return idx[y].qte - idx[x].qte; }) };
   }
 
+  // Département d'un code postal : même convention que v2-infos.js (sctDepDeCP) et que le champ du Bodacc.
+  function depDeCP(cp) {
+    cp = String(cp || '').trim();
+    if (!/^\d{5}$/.test(cp)) return '';
+    if (cp.slice(0, 2) === '20') return parseInt(cp, 10) < 20200 ? '2A' : '2B';
+    if (/^97[1234]|^976/.test(cp)) return cp.slice(0, 3);
+    return cp.slice(0, 2);
+  }
+  function villeCle(v) {
+    return String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]+/g, ' ').replace(/\bSTE\b/g, 'SAINTE').replace(/\bST\b/g, 'SAINT').trim();
+  }
+  function joli(s) {
+    return String(s || '').toLowerCase().replace(/(^|[\s'’(-])([a-zà-ÿ])/g, function (m, a, c) { return a + c.toUpperCase(); })
+      .replace(/\b(Selarl|Selas|Sarl|Snc|Spfpl|Spfplas|Sas|Eurl|Sa)\b/g, function (m) { return m.toUpperCase(); });
+  }
+  // FONCTION PURE. secteur = bodacc-secteur.json ({ maj, ev:[{ id, d, f, nom, ville, cp, dep, depNom, detail, url }] }) ;
+  // officine = { ville, cp }. Seules les ventes, fermetures et procédures. Sa ville d'abord (même code postal ou même nom
+  // de ville dans le même département), puis le reste de son département ; les plus récentes d'abord.
+  // → { connu:bool, ville:'', dep:'', depNom:'', dansVille:[…], dansDep:[…], autresDep:n, depuis:'AAAA-MM-JJ' }
+  function autourDElle(secteur, officine) {
+    var o = officine || {}, dep = depDeCP(o.cp), vc = villeCle(o.ville);
+    var r = { connu: !!(secteur && secteur.ev && dep), ville: joli(o.ville), dep: dep, depNom: '', dansVille: [], dansDep: [], autresDep: 0, depuis: '' };
+    if (!r.connu) return r;
+    var evs = secteur.ev.filter(function (x) { return x && SECTEUR_FAMILLES[x.f] && String(x.dep || depDeCP(x.cp)) === dep; })
+      .sort(function (x, y) { return x.d < y.d ? 1 : x.d > y.d ? -1 : 0; });
+    secteur.ev.forEach(function (x) { if (x && x.d && (!r.depuis || x.d < r.depuis)) r.depuis = x.d; });
+    var ligne = function (x) {
+      return { famille: SECTEUR_FAMILLES[x.f], titre: joli(x.nom), detail: String(x.detail || ''), ville: joli(x.ville), date: x.d || '',
+        url: /^https:\/\//.test(String(x.url || '')) ? x.url : '' };
+    };
+    var dep2 = [];
+    evs.forEach(function (x) {
+      if (!r.depNom && x.depNom) r.depNom = x.depNom;
+      var memeVille = (o.cp && x.cp && String(x.cp) === String(o.cp)) || (vc && villeCle(x.ville) === vc);
+      (memeVille ? r.dansVille : dep2).push(ligne(x));
+    });
+    r.dansVille = r.dansVille.slice(0, SECTEUR_MAX_LIGNES);
+    r.dansDep = dep2.slice(0, SECTEUR_MAX_LIGNES);
+    r.autresDep = Math.max(0, dep2.length - SECTEUR_MAX_LIGNES);
+    return r;
+  }
+
   /* entree = {
        aujourdhui: 'AAAA-MM-JJ',
        ventes: [{cip, mois:'AAAA-MM', qte}],     // TOUS commerciaux de l'officine
        moisCouverts: ['AAAA-MM', …],               // mois où le fichier de l'officine existe
        ansm, prixFuturs, rappels, generiques,      // JSON des robots, ou null si non lus
-       calendrier,                                  // calendrier-officine.json, ou null
+       secteur,                                     // bodacc-secteur.json, ou null
+       officine: { ville, cp },                     // pour « Autour d'elle »
        stockSites: function (cip) → [{site, q}],   // facultatif
        nom: function (cip) → libellé                // facultatif
      }
-     → { points:[…≤7], autres:[…], sources:[…], achatsConnus:bool } */
+     → { points:[…≤7], autres:[…], autour:{…}, sources:[…], achatsConnus:bool } */
   function calculer(e) {
     var auj = e.aujourdhui;
     var idx = indexAchats(e.ventes || []);
@@ -220,21 +267,8 @@
         });
       });
 
-    // 6. Échéances réglementaires : à part, sous la liste (elles ne dépendent pas
-    //    de ses achats et seraient toujours reléguées derrière les 7 points).
-    var echeances = ((e.calendrier && e.calendrier.items) || []).filter(function (it) {
-      var dans = it.date ? jours(auj, it.date) : -1;
-      return dans >= 0 && dans <= (it.prevenir_j || 0);
-    }).sort(function (x, y) { return x.date < y.date ? -1 : 1; })
-      .slice(0, ECHEANCE_MAX_LIGNES)
-      .map(function (it) {
-        var dans = jours(auj, it.date);
-        return {
-          titre: it.titre + ' le ' + dateFr(it.date) + (dans ? ' (dans ' + pluriel(dans, 'jour') + ')' : ' (aujourd\'hui)'),
-          detail: it.detail, action: it.action,
-          source: it.source_nom, url: it.source_url || ''
-        };
-      });
+    // 6. Autour d'elle : annonces légales (Bodacc) des pharmacies de sa ville, puis du reste de son département
+    var autour = autourDElle(e.secteur, e.officine);
 
     // Ordre des rubriques (ORDRE) ; dans une rubrique, l'urgence puis SON volume — les ruptures, elles,
     // par son volume seul : une tension sur 50 boîtes par mois la gêne plus qu'une rupture sur 2.
@@ -250,17 +284,17 @@
       { cle: 'prix', nom: 'Prix au JO', json: e.prixFuturs, max: FRAIS_MAX_J },
       { cle: 'rappels', nom: 'Rappels de lots', json: e.rappels, max: FRAIS_MAX_J },
       { cle: 'generiques', nom: 'Répertoire des génériques', json: e.generiques, max: 9 },
-      { cle: 'calendrier', nom: 'Calendrier réglementaire', json: e.calendrier, max: CALENDRIER_MAX_J }
+      { cle: 'secteur', nom: 'Annonces légales', json: e.secteur, max: FRAIS_MAX_J }
     ].map(function (s) {
       if (!s.json) return { cle: s.cle, nom: s.nom, lue: false, date: '', aJour: false };
-      var d = String(s.json.generated || '').slice(0, 10);
+      var d = String(s.json.generated || s.json.maj || '').slice(0, 10);
       return { cle: s.cle, nom: s.nom, lue: true, date: d, aJour: !!d && jours(d, auj) <= s.max };
     });
 
     return {
       points: tete.slice(0, MAX_POINTS),
       autres: ruptRepliees.concat(tete.slice(MAX_POINTS)),
-      echeances: echeances,
+      autour: autour,
       sources: sources,
       achatsConnus: Object.keys(idx).length > 0,
       periode: mc.length ? moisFr(mc[0]) + ' – ' + moisFr(fin) : ''
@@ -364,6 +398,25 @@
       html: morceaux.length ? '<span class="bo-sum">' + morceaux.join('<span>·</span>') + '</span>' : '' };
   }
 
+  // « Autour d'elle » : sa ville, puis son département (ventes, fermetures, procédures de pharmacies, annonces légales).
+  function autourHtml(a) {
+    if (!a || !a.connu) return '<h4 class="bo-part">Autour d\'elle</h4><p class="bo-vide">Annonces légales de son secteur indisponibles (code postal inconnu ou fichier non lu).</p>';
+    var li = function (x) {
+      return '<li class="bo-pt"><span class="bo-rub" style="--c:#475569">' + esc(x.famille) + '</span><div class="bo-tx"><b>' + esc(x.titre) + '</b>' +
+        '<span>' + esc(x.detail) + (x.ville ? ' · ' + esc(x.ville) : '') + '</span>' +
+        '<small>Annonce légale du ' + esc(dateFr(x.date)) + (x.url ? ' · <a href="' + esc(x.url) + '" target="_blank" rel="noopener">voir l\'annonce</a>' : '') + '</small></div></li>';
+    };
+    var bloc = function (titre, liste, vide) {
+      return '<div class="bo-aut"><h5>' + esc(titre) + '</h5>' + (liste.length ? '<ol class="bo-liste">' + liste.map(li).join('') + '</ol>' : '<p class="bo-vide">' + esc(vide) + '</p>') + '</div>';
+    };
+    var depLib = a.depNom ? a.depNom + ' (' + a.dep + ')' : 'département ' + a.dep;
+    var depuis = a.depuis ? ' depuis le ' + dateFr(a.depuis) : '';
+    return '<h4 class="bo-part">Autour d\'elle</h4>' +
+      bloc('Dans sa ville' + (a.ville ? ' · ' + a.ville : ''), a.dansVille, 'Aucune vente, fermeture ni procédure de pharmacie dans sa ville' + depuis + '.') +
+      bloc('Dans son département · ' + depLib, a.dansDep, 'Aucune autre vente, fermeture ni procédure de pharmacie dans son département' + depuis + '.') +
+      (a.autresDep ? '<p class="bo-src">… et ' + pluriel(a.autresDep, 'autre annonce') + ' dans le département.</p>' : '');
+  }
+
   function corpsHtml(r) {
     var nonLues = r.sources.filter(function (s) { return !s.lue; });
     var corps;
@@ -383,13 +436,7 @@
         replie(rupt, ' autre rupture ou tension', ' autres ruptures ou tensions') +
         replie(reste, ' autre point', ' autres points');
     }
-    // Replié : les mêmes échéances sur toutes les fiches (elles vivent dans l'écran Infos du jour).
-    if (r.echeances.length) {
-      corps += '<details class="bo-agenda"><summary>À l\'agenda · ' + pluriel(r.echeances.length, 'échéance') + ' réglementaire' + (r.echeances.length > 1 ? 's' : '') + '</summary><ul>' + r.echeances.map(function (x) {
-        return '<li><b>' + esc(x.titre) + '</b><span>' + esc(x.detail) + '</span><span class="bo-act">→ ' + esc(x.action) + '</span>' +
-          '<small>Source : ' + (/^https:\/\//.test(x.url) ? '<a href="' + esc(x.url) + '" target="_blank" rel="noopener">' + esc(x.source) + '</a>' : esc(x.source)) + '</small></li>';
-      }).join('') + '</ul></details>';
-    }
+    corps = '<h4 class="bo-part">Ce qui la touche</h4>' + corps + autourHtml(r.autour);
     var src = r.sources.map(function (s) {
       var etat = !s.lue ? 'non lue' : (s.aJour ? dateFr(s.date) : dateFr(s.date) + ', en retard');
       return '<span class="' + (s.lue && s.aJour ? '' : 'bo-ko') + '">' + esc(s.nom) + ' (' + esc(etat) + ')</span>';
@@ -415,11 +462,11 @@
   function fenetreHtml(r) {
     var s = resume(r);
     return '<div class="bo-win" role="dialog" aria-modal="true" aria-labelledby="bo-win-t">' +
-      '<div class="bo-win-h"><h3 id="bo-win-t">Aujourd\'hui</h3>' + s.html +
+      '<div class="bo-win-h"><h3 id="bo-win-t">Infos du jour</h3>' + s.html +
         '<button type="button" class="bo-x" aria-label="Fermer" onclick="V2.briefOfficine.fermer()">×</button>' +
-        '<span class="pha-sub">ce qui la concerne, tiré de ses achats' + (s.nb ? ' · ' + pluriel(s.nb, 'point') : '') + '</span></div>' +
+        '<span class="pha-sub">ce qui la touche, tiré de ses achats' + (s.nb ? ' · ' + pluriel(s.nb, 'point') : '') + ', puis ce qui se passe autour d\'elle</span></div>' +
       '<div class="bo-win-b">' + corpsHtml(r) + '</div>' +
-      '<div class="bo-win-f"><span class="pha-sub">Se rouvre avec le bouton « Voir le brief du jour ».</span>' +
+      '<div class="bo-win-f"><span class="pha-sub">Se rouvre avec le bouton « Infos du jour ».</span>' +
         (r.points.length ? '<button type="button" class="v2-btn bo-imp" onclick="V2.briefOfficine.imprimer()">Imprimer pour l\'équipe</button>' : '') +
         '<button type="button" class="v2-btn dark" onclick="V2.briefOfficine.fermer()">Fermer</button></div>' +
     '</div>';
@@ -428,8 +475,8 @@
   // Le bouton « Voir le brief du jour · 7 » à droite des onglets Analyse / Audit marge.
   // Bleu plein + verbe : les commerciaux ne voyaient pas qu'une pastille blanche « Aujourd'hui » se cliquait (Will, 22/09/2026).
   function boutonHtml(s) {
-    if (!s) return ICONE + 'Brief du jour en préparation…';
-    return ICONE + 'Voir le brief du jour' +
+    if (!s) return ICONE + 'Infos du jour en préparation…';
+    return ICONE + 'Voir les infos du jour' +
       (s.nb ? ' <span class="n">' + s.nb + '</span>' : '') +
       (s.rouge ? '<span class="bo-dot" aria-label="rappel de lot à traiter"></span>' : '') + CHEVRON;
   }
@@ -442,11 +489,10 @@
     '.bo-tx b{font-weight:600}.bo-act{font-weight:500}.bo-tx small{color:var(--v2-muted,#64748b);font-size:12px}' +
     '.bo-vide{margin:8px 0 0;font-size:13.5px}' +
     '.bo-plus{margin-top:10px}.bo-plus summary{cursor:pointer;font-size:12.5px;font-weight:600}' +
-    '.bo-agenda{margin-top:12px;padding-top:10px;border-top:1px solid var(--v2-line,#e2e8f0)}' +
-    '.bo-agenda summary{cursor:pointer;font-size:12.5px;font-weight:700;letter-spacing:.02em;color:#A16207}' +
-    '.bo-agenda ul{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px}' +
-    '.bo-agenda li{display:grid;gap:2px;font-size:13px;line-height:1.4}.bo-agenda b{font-weight:600}' +
-    '.bo-agenda small{color:var(--v2-muted,#64748b);font-size:12px}.bo-agenda a{color:inherit}' +
+    '.bo-part{margin:16px 0 6px;font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--ip-ink-2,#334155)}' +
+    '.bo-part:first-child{margin-top:4px}' +
+    '.bo-aut{margin-top:8px}.bo-aut h5{margin:0;font-size:13.5px;font-weight:700}.bo-aut .bo-vide{margin-top:4px;color:var(--v2-muted,#64748b)}' +
+    '.bo-aut a{color:inherit}' +
     '.bo-src{margin-top:12px;font-size:12px;color:var(--v2-muted,#64748b)}.bo-ko{color:#B45309;font-weight:600}' +
     '@media (max-width:520px){.bo-pt{flex-direction:column;gap:4px}.bo-rub{min-width:0}}' +
     '.bo-imp{font-size:12px;padding:4px 10px}' +
@@ -530,7 +576,7 @@
   }
   function ouvrir() {
     var ov = document.getElementById('bo-ov');
-    if (!ov || !ov.firstChild) return;
+    if (!ov || !ov.firstChild) return;   // aucune fiche hydratée : rien à ouvrir
     ov.classList.add('on'); document.body.style.overflow = 'hidden';
     var x = ov.querySelector('.bo-x'); if (x) x.focus({ preventScroll: true });
   }
@@ -540,7 +586,15 @@
     ov.classList.remove('on'); document.body.style.overflow = '';
   }
 
-  function hydrate(pid, ventesOfficine) {
+  function attenteHtml() {
+    return '<div class="bo-win" role="dialog" aria-modal="true" aria-labelledby="bo-win-t" aria-busy="true">' +
+      '<div class="bo-win-h"><h3 id="bo-win-t">Infos du jour</h3>' +
+        '<button type="button" class="bo-x" aria-label="Fermer" onclick="V2.briefOfficine.fermer()">×</button></div>' +
+      '<div class="bo-win-b"><p class="bo-vide">Infos du jour en préparation…</p></div></div>';
+  }
+
+  // lieu = { ville, cp } de l'officine (rubrique « Autour d'elle »)
+  function hydrate(pid, ventesOfficine, lieu) {
     var el = document.getElementById('brief-off');
     if (!el) return;
     if (!document.getElementById('bo-style')) {
@@ -550,19 +604,21 @@
     // apparaître l'onglet Audit) : sur la MÊME officine, la fenêtre reste ouverte et son contenu
     // est remplacé quand le brief est prêt ; sur une autre officine, on ferme et on vide.
     var ov = overlay();
-    if (ov.getAttribute('data-pid') !== String(pid)) { fermer(); ov.innerHTML = ''; ov.setAttribute('data-pid', String(pid)); }
-    Promise.all(['ansm-dispo.json', 'prix-futurs.json', 'rappels-lots.json', 'generiques-bdpm.json', 'calendrier-officine.json'].map(lire).concat([chargerStockSites()])).then(function (j) {
+    // 24/11/2026 — un seul clic : tant que le calcul n'est pas fini, le panneau s'ouvre sur « en préparation » et se remplit tout seul.
+    if (ov.getAttribute('data-pid') !== String(pid)) { fermer(); ov.innerHTML = attenteHtml(); ov.setAttribute('data-pid', String(pid)); }
+    Promise.all(['ansm-dispo.json', 'prix-futurs.json', 'rappels-lots.json', 'generiques-bdpm.json', 'bodacc-secteur.json'].map(lire).concat([chargerStockSites()])).then(function (j) {
       var cible = document.getElementById('brief-off');
       if (!cible || cible.getAttribute('data-pid') !== String(pid)) return;   // l'écran a changé entre-temps
       var r = calculer({
         aujourdhui: new Date().toISOString().slice(0, 10),
         ventes: ventesOfficine.map(function (s) { return { cip: String(s.artCode || ''), mois: cleMois(s), qte: s.qte || 0 }; }),
         moisCouverts: moisCouverts(ventesOfficine),
-        ansm: j[0], prixFuturs: j[1], rappels: j[2], generiques: j[3], calendrier: j[4],
+        ansm: j[0], prixFuturs: j[1], rappels: j[2], generiques: j[3], secteur: j[4], officine: lieu || {},
         stockSites: stockSites, nom: nom
       });
       cible.innerHTML = rendre(r);
-      overlay().innerHTML = fenetreHtml(r);
+      var o2 = overlay(); o2.innerHTML = fenetreHtml(r);
+      if (o2.classList.contains('on')) { var x = o2.querySelector('.bo-x'); if (x) x.focus({ preventScroll: true }); }
       var btn = document.getElementById('bo-open');
       if (btn) { btn.innerHTML = boutonHtml(resume(r)); btn.disabled = false; }
     });
@@ -583,5 +639,5 @@
     return '<button type="button" class="bo-open" id="bo-open" disabled onclick="V2.briefOfficine.ouvrir()">' + boutonHtml(null) + '</button>';
   }
 
-  V2.briefOfficine = { calculer: calculer, hydrate: hydrate, imprimer: imprimer, ouvrir: ouvrir, fermer: fermer, bouton: bouton, nePlusCommandes: nePlusCommandes, moisFr: moisFr };
+  V2.briefOfficine = { calculer: calculer, autourDElle: autourDElle, hydrate: hydrate, imprimer: imprimer, ouvrir: ouvrir, fermer: fermer, bouton: bouton, nePlusCommandes: nePlusCommandes, moisFr: moisFr };
 })();

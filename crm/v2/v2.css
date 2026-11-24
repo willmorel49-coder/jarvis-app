@@ -1752,7 +1752,6 @@ html:root:root body .fdr-on .fdr-sw .vv-b[aria-pressed="true"]{background:var(--
 .fdr-on .fdr-ig-a .fdr-gbs{margin-top:8px}
 .fdr-on .fdr-ig-b > .pha-kpi{margin:0}
 .fdr-on .fdr-int .fdr-bloc.fdr-nt{padding:2px 20px}
-.fdr-on .fdr-bj #brief-off{box-shadow:none;border:0;padding:0;margin:8px 0 0;background:transparent}
 .fdr-on .fdr-kv > span:nth-child(even){text-align:left}
 
 /* ── Échelle de texte unique : 13 · 15 · 17 · 28 · 34 · 44 (aucune autre taille dans la fiche, graphiques compris) ── */
@@ -1897,17 +1896,6 @@ html:root:root body .fdr-on .fdr-sw .vv-b{padding:0 18px;flex:0 0 auto}
 .fdr-on .fdo-co-t a{color:var(--fdr-encre);text-decoration:none}
 .fdr-on .fdo-co-t a:hover{color:var(--fdr-bleu);text-decoration:underline}
 
-/* Offilog compact */
-.fdr-on .fdo-off{padding:16px 18px}
-.fdr-on .fdo-off .fdr-leg{margin:2px 0 8px}
-.fdr-on .fdo-off-l{margin:0;display:flex;flex-direction:column}
-.fdr-on .fdo-off-l > div{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #EEF0F5}
-.fdr-on .fdo-off-l dt{margin:0;font-weight:600;color:#2A2F3C}
-.fdr-on .fdo-off-l dd{margin:0;font-weight:800;color:var(--ip-blue-d,#0034A0);font-variant-numeric:tabular-nums;white-space:nowrap}
-.fdr-on .fdo-off-l .fdo-off-t{border-bottom:0;padding:10px 12px;margin-top:6px;border-radius:12px;background:radial-gradient(260px 120px at 100% 0,#FFFFFF 0,#EEF4FF 60%,#E6EEFF 100%)}
-.fdr-on .fdo-off-l .fdo-off-t dd{font-size:17px}
-.fdr-on .fdr .fdo-off-l .fdo-off-t dd{font-size:17px}
-.fdr-on .fdo-bref{display:none}
 .fdr-on .fdo-nav{padding:10px 14px}
 .fdr-on .fdo-nav .fdr-nav .pha-nav-champ{width:100%}
 .fdr-on .fdo-nav .fdr-nav{display:block}
@@ -1928,9 +1916,6 @@ html:root:root body .fdr-on .fdr-sw .vv-b{padding:0 18px;flex:0 0 auto}
   .fdr-on .fdo-main{display:block;min-width:0}
   .fdr-on .fdo-g .fdr-som{width:max-content;max-width:100%;margin:0 0 6px;top:calc(var(--fdr-top,0px) + 12px)}
   .fdr-on .fdo-g .fdo-b{margin-top:0}
-  .fdr-on .fdo-side{min-height:calc(100vh - var(--fdr-top,0px) - 24px)}
-  .fdr-on .fdo-bref{display:block;flex:1 1 auto;background:radial-gradient(360px 220px at 50% 115%,#E6EEFF 0,#EEF4FF 60%,#F5F8FF 100%)}
-  .fdr-on .fdo-bref .fdo-off-l{margin-top:8px}
   .fdr-on .fdo-g .fdr-ch{margin-top:22px;scroll-margin-top:90px}
   .fdr-on .fdo-main > .fdr-som + .fdr-ch{margin-top:14px}
   /* les trois montants en rangée, la courbe dessous : les chiffres restent le centre de la page */

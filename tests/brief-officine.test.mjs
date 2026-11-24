@@ -205,24 +205,53 @@ test('sources : non lue, en retard, à jour', () => {
   assert.equal(s.rappels.lue, false);
 });
 
-test('échéance : dans sa fenêtre seulement, 2 au plus, à part des 7 points', () => {
+test('24/11/2026 (Will) : les échéances réglementaires ne sont plus dans le panneau de la fiche', () => {
   const ech = (date, prevenir_j, titre) => ({ date, prevenir_j, titre, detail: 'D.', action: 'A.', source_nom: 'S' });
   const r = calculer(base({
     ventes: [{ cip: '3400900000001', mois: '2026-08', qte: 1 }],
-    calendrier: { generated: '2026-09-17', items: [
-      ech('2026-09-01', 365, 'Passée'),
-      ech('2027-09-01', 300, 'Trop tôt'),
-      ech('2026-10-07', 60, 'Proche'),
-      ech('2027-01-20', 150, 'Réforme'),
-      ech('2027-02-01', 200, 'Troisième'),
-    ] },
+    calendrier: { generated: '2026-09-17', items: [ech('2026-10-07', 60, 'Proche')] },
   }));
-  assert.deepEqual(Array.from(r.echeances, (p) => p.titre), ['Proche le 07/10/2026 (dans 20 jours)', 'Réforme le 20/01/2027 (dans 125 jours)']);
+  assert.equal(r.echeances, undefined, 'plus de liste d\'échéances');
+  assert.ok(!r.sources.some((x) => x.cle === 'calendrier'), 'le calendrier n\'est plus une source du panneau');
   assert.equal(r.points.length, 0);
-  const s = Object.fromEntries(Array.from(r.sources, (x) => [x.cle, x]));
-  assert.equal(s.calendrier.aJour, true);
-  const vieux = calculer(base({ calendrier: { generated: '2026-05-01', items: [] } }));
-  assert.equal(vieux.sources.find((x) => x.cle === 'calendrier').aJour, false);
+});
+
+// ─────────────── « Autour d'elle » : annonces légales de sa ville, puis de son département ───────────────
+const sect = (ev, maj = '2026-11-24') => ({ maj, n: ev.length, ev });
+const an = (id, d, f, nom, ville, cp, dep, detail = 'Fonds vendu') => ({ id, d, f, nom, ville, cp, dep, depNom: dep === '83' ? 'Var' : 'Rhône', detail, url: 'https://www.bodacc.fr/x?q.id=' + id });
+
+test('autour d\'elle : sa ville d\'abord (même code postal ou même nom), puis le reste du département ; ventes, fermetures, procédures seulement', () => {
+  const r = calculer(base({ officine: { ville: 'SAINT-MAXIMIN-LA-SAINTE-BAUME', cp: '83470' }, secteur: sect([
+    an('a1', '2026-11-20', 'cession', 'PHARMACIE DU COURS', 'Saint-Maximin-la-Sainte-Baume', '83470', '83'),
+    an('a2', '2026-11-22', 'procedure', 'SELARL PHARMACIE DE LA BASILIQUE', 'St Maximin la Ste Baume', '', '83', 'Redressement judiciaire'),
+    an('a3', '2026-11-23', 'fermeture', 'PHARMACIE DU PORT', 'Toulon', '83000', '83', 'Société radiée'),
+    an('a4', '2026-11-24', 'dirigeant', 'PHARMACIE DU MARCHÉ', 'Toulon', '83000', '83', 'Changement de dirigeant'),
+    an('a5', '2026-11-24', 'creation', 'PHARMACIE NOUVELLE', 'Hyères', '83400', '83', 'Nouvelle société d’officine'),
+    an('a6', '2026-11-24', 'cession', 'PHARMACIE DE LYON', 'Lyon', '69001', '69'),
+  ]) }));
+  const A = r.autour;
+  assert.equal(A.connu, true); assert.equal(A.dep, '83'); assert.equal(A.depNom, 'Var');
+  assert.deepEqual(Array.from(A.dansVille, (x) => x.titre), ['SELARL Pharmacie De La Basilique', 'Pharmacie Du Cours'], 'sa ville, la plus récente d\'abord (nom écrit autrement compris)');
+  assert.deepEqual(Array.from(A.dansVille, (x) => x.famille), ['Procédure', 'Vente']);
+  assert.deepEqual(Array.from(A.dansDep, (x) => x.titre), ['Pharmacie Du Port'], 'département : sans sa ville, sans changement de dirigeant ni création, sans autre département');
+  assert.equal(A.dansDep[0].famille, 'Fermeture');
+  assert.equal(A.depuis, '2026-11-20');
+  assert.equal(r.points.length, 0, '« Autour d\'elle » ne prend aucune des 7 places de ce qui la touche');
+  const s2 = r.sources.find((x) => x.cle === 'secteur');
+  assert.equal(s2.lue, true); assert.equal(s2.date, '2026-11-24');
+});
+
+test('autour d\'elle : 5 au plus par niveau, le reste compté ; code postal inconnu = rien d\'inventé', () => {
+  const ev = [];
+  for (let i = 1; i <= 8; i++) ev.push(an('d' + i, '2026-11-0' + i, 'fermeture', 'PHARMACIE ' + i, 'Toulon', '83000', '83'));
+  const r = calculer(base({ officine: { ville: 'BRIGNOLES', cp: '83170' }, secteur: sect(ev) }));
+  assert.equal(r.autour.dansVille.length, 0);
+  assert.equal(r.autour.dansDep.length, 5); assert.equal(r.autour.autresDep, 3);
+  assert.equal(r.autour.dansDep[0].titre, 'Pharmacie 8', 'la plus récente en tête');
+  const sans = calculer(base({ officine: { ville: 'BRIGNOLES', cp: '' }, secteur: sect(ev) }));
+  assert.equal(sans.autour.connu, false); assert.equal(sans.autour.dansDep.length, 0);
+  const corse = calculer(base({ officine: { ville: 'AJACCIO', cp: '20000' }, secteur: sect([an('c1', '2026-11-01', 'cession', 'PHARMACIE', 'Ajaccio', '20000', '2A')]) }));
+  assert.equal(corse.autour.dep, '2A'); assert.equal(corse.autour.dansVille.length, 1);
 });
 
 test('calendrier-officine.json : chaque ligne a une date, une fenêtre et une source', () => {
@@ -269,19 +298,23 @@ test('chemin réel : les vrais fichiers des robots arrivent jusqu\'à la carte',
   const carte = () => el.innerHTML && (el.innerHTML + ov.innerHTML);
   sb.ETAB_PRICES = { prices: { CPR: { [cible.cips[0]]: [1, 7] } } };
   sb.V2.sales = [{ pharmacyId: '2000016', commercial: 'A', year: 2026, month: 8, artCode: cible.cips[0], qte: 6 }];
-  sb.V2.briefOfficine.hydrate('2000016', sb.V2.sales);
+  // « Autour d'elle » : une vraie annonce (vente, fermeture ou procédure) du fichier du jour, et l'officine placée dans sa commune
+  const vraiSect = lireJson('bodacc-secteur.json');
+  assert.ok(vraiSect.ev.length > 50, 'bodacc-secteur.json semble vide');
+  const annonce = vraiSect.ev.slice().sort((x, y) => (x.d < y.d ? 1 : -1)).find((x) => /^(cession|fermeture|procedure)$/.test(x.f) && /^\d{5}$/.test(x.cp) && x.ville);
+  assert.ok(annonce, 'aucune vente, fermeture ni procédure avec code postal dans le fichier du jour');
+  sb.V2.briefOfficine.hydrate('2000016', sb.V2.sales, { ville: annonce.ville, cp: annonce.cp });
+  // un seul clic : le panneau s'ouvre AVANT la fin du calcul, sur « en préparation »
+  assert.match(ov.innerHTML, /Infos du jour en préparation/);
   for (let i = 0; i < 20 && !carte(); i++) await new Promise((r) => setTimeout(r, 5));
 
-  assert.deepEqual(demandes.sort(), ['ansm-dispo.json', 'calendrier-officine.json', 'generiques-bdpm.json', 'prix-futurs.json', 'rappels-lots.json']);
-  assert.match(carte(), /Calendrier réglementaire \(\d/);
-  const auj = new Date().toISOString().slice(0, 10);
-  const attendue = lireJson('calendrier-officine.json').items
-    .find((it) => it.date >= auj && (Date.parse(it.date) - Date.parse(auj)) / 864e5 <= it.prevenir_j);
-  if (attendue) {
-    assert.ok(carte().includes(attendue.titre), 'l\'échéance du calendrier n\'arrive pas jusqu\'à la carte');
-    assert.match(ov.innerHTML, /<details class="bo-agenda"><summary>À l'agenda/, 'l\'agenda doit être replié');
-    assert.ok(!/échéance/.test(el.innerHTML), 'les échéances ne doivent plus figurer dans le résumé de la fiche');
-  }
+  assert.deepEqual(demandes.sort(), ['ansm-dispo.json', 'bodacc-secteur.json', 'generiques-bdpm.json', 'prix-futurs.json', 'rappels-lots.json']);
+  assert.ok(!/calendrier|bo-agenda|À l'agenda/.test(carte()), 'plus d\'échéances réglementaires dans le panneau');
+  assert.match(ov.innerHTML, /<h3 id="bo-win-t">Infos du jour<\/h3>/);
+  assert.match(ov.innerHTML, /Ce qui la touche[\s\S]*Autour d'elle[\s\S]*Dans sa ville[\s\S]*Dans son département/);
+  assert.ok(ov.innerHTML.toLowerCase().includes(annonce.nom.toLowerCase().replace(/</g, '&lt;')), 'l\'annonce réelle de sa commune n\'arrive pas jusqu\'au panneau');
+  assert.match(carte(), /Annonces légales \(\d/);
+  assert.match(ov.innerHTML, /Se rouvre avec le bouton « Infos du jour »/);
   assert.match(el.innerHTML, /Aujourd'hui/);
   assert.match(el.innerHTML, /bo-dot|bo-sum/, 'la ligne de résumé (point + résumé) n\'est pas dans la fiche');
   assert.match(ov.innerHTML, /bo-win/, 'la fenêtre n\'est pas fabriquée');
