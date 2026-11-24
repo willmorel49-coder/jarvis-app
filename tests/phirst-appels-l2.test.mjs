@@ -52,6 +52,7 @@ describe('idée 3 : le bon moment', () => {
   test('le bon moment : une heure de marge de chaque côté', () => {
     const x = { h: 14 }
     assert.ok(A.dansLeBonMoment(x, 13) && A.dansLeBonMoment(x, 14) && A.dansLeBonMoment(x, 15))
+    assert.ok(A.dansLeBonMoment({ h: 23 }, 0) && A.dansLeBonMoment({ h: 0 }, 23) && !A.dansLeBonMoment({ h: 22 }, 1), 'minuit est voisin de 23 h et de 1 h')
     assert.ok(!A.dansLeBonMoment(x, 12) && !A.dansLeBonMoment(x, 16) && !A.dansLeBonMoment(null, 14))
   })
   test('le tri : les pharmacies du bon moment d’abord, les autres gardent leur rang, la liste d’origine n’est pas touchée', () => {

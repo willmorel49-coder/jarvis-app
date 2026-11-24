@@ -67,7 +67,8 @@
     return out;
   }
   /* Est-on dans le bon moment ? hNow : l'heure (0-23) de maintenant. */
-  function dansLeBonMoment(hab, hNow) { return !!hab && Math.abs(hab.h - hNow) <= MARGE_HEURES; }
+  function ecartHeures(a, b) { var d = Math.abs(a - b); return Math.min(d, 24 - d); }   // minuit est voisin de 23 h et de 1 h
+  function dansLeBonMoment(hab, hNow) { return !!hab && ecartHeures(hab.h, hNow) <= MARGE_HEURES; }
   /* « vers 14 h » */
   function versHeure(h) { return 'vers ' + h + ' h'; }
   /* Le tri « par bon moment » : celles qui décrochent d'habitude à cette heure-ci d'abord (la plus proche de l'heure d'abord), les autres gardent
@@ -75,7 +76,7 @@
   function trierParMoment(lignes, hab, hNow, idDe) {
     var l = (Array.isArray(lignes) ? lignes : []).map(function (r, i) {
       var id = idDe(r), h = id ? hab[id] : null, bon = dansLeBonMoment(h, hNow);
-      return { r: r, i: i, bon: bon, ecart: bon ? Math.abs(h.h - hNow) : 99 };
+      return { r: r, i: i, bon: bon, ecart: bon ? ecartHeures(h.h, hNow) : 99 };
     });
     l.sort(function (a, b) { return (b.bon - a.bon) || (a.ecart - b.ecart) || (a.i - b.i); });
     return l.map(function (x) { return x.r; });
