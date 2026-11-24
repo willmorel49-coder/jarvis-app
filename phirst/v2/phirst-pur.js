@@ -108,7 +108,7 @@
       // nom de vue d'abord (celui de la fiche créée depuis l'écran), puis la clé de la V1 (nom brut : « Pharmacie le Roch - Lorient »)
       var f = (r.prospectId && parId[r.prospectId]) || parCle[cle(r.nom, r.ville)] || (r.cle && parCle[r.cle]) || null;
       if (f) {
-        if (CLOSES[f.stage]) return;
+        if (CLOSES[f.stage] && !(r.motif === 'client' && f.stage === 'signe')) return; // L4 : un client dont le rappel arrive a, normalement, une fiche « signé » (perdue ou archivée : jamais)
         if (dueId[f.id]) return; // remplacée par la relance lue en direct
         if (r.motif === 'relance') return; // l'échéance a changé depuis 7 h 05
         var j = dernierAppel && dernierAppel[f.id];
@@ -562,8 +562,22 @@
   var MOTIFS = {
     relance: ['Relance promise', 'rouge'], procedure: ['Procédure collective', 'rouge'], cession: ['Cession d’officine', 'orange'],
     creation: ['Création d’officine', 'orange'], omnicell: ['Robot Omnicell abandonné', 'orange'], pda: ['Marché public PDA', ''],
-    robot: ['Robot concurrent', ''], ehpad: ['Fournisseur d’EHPAD', ''], pmr: ['Accessibilité PMR', '']
+    robot: ['Robot concurrent', ''], ehpad: ['Fournisseur d’EHPAD', ''], pmr: ['Accessibilité PMR', ''],
+    /* L4 (24/11/2026) : trois raisons qui viennent du robot du matin. Leur rang dans la liste (score) est fixé par lui, voir RANGS_L4. */
+    ars: ['Transfert autorisé par l’ARS', 'orange'], client: ['Client qui revient', 'vert'], recommande: ['Recommandé par un confrère', 'vert']
   };
+  /* Les rangs que le robot du matin donne à ces trois raisons (ligne-vers-base.mjs) ; une relance promise (200 et plus) reste devant tout.
+       recommande  190 à 198 : un confrère de Yann a donné son nom, la piste la plus chaude (monte de 1 point par jour, sans jamais passer 198) ;
+       client      180 à 188 : un client de Yann, rappel qu'il a lui-même programmé (même montée) ;
+       ars         108 à 169 : un signal de plus parmi les autres (cession, création…), plus haut quand la décision est récente et le département proche de Yann. */
+  var RANGS_L4 = { recommande: [190, 198], client: [180, 188], ars: [108, 169], relance: [200, 239] };
+  /* L'étiquette d'une ligne de la liste : celle que le robot a écrite pour cette ligne (« Client · bilan à 3 mois », « De la part de Pharmacie… »,
+     « Regroupement autorisé par l'ARS »), sinon celle du motif. Une étiquette qui parle d'argent n'est jamais montrée. Rend [texte, ton]. */
+  var ETIQUETTE_PROPRE = { ars: 1, client: 1, recommande: 1 };
+  function etiquetteDe(r) {
+    var m = MOTIFS[r && r.motif] || ['Signal', ''], e = r && typeof r.etiquette === 'string' ? r.etiquette.replace(/\s+/g, ' ').trim() : '';
+    return e && e.length <= 90 && ETIQUETTE_PROPRE[r.motif] && !contientMontant(e) ? [e, m[1]] : m;
+  }
   /* Veille : mêmes mots que le robot de l'accueil de Yann (ligne-vers-base.mjs, SIGNAL). */
   var SIGNAL_VEILLE = {
     procedure_collective: { t: 'En difficulté', ton: 'rouge', phrase: 'est en procédure collective' },
@@ -581,14 +595,14 @@
     var m = { cle: 'trouver', mot: 'Trouver', pharmacies: [], total: 0, chose: null, vide: null, autres: null, source: 'appels' };
     if (appels.length) {
       m.pharmacies = appels.slice(0, MONTRES_ACCUEIL).map(function (a) {
-        var e = MOTIFS[a.motif] || ['Signal', ''];
+        var e = etiquetteDe(a);
         return { nom: a.nom, ville: a.ville, etiquette: { t: e[0], ton: e[1] } };
       });
       // le total = ce que l'écran Appels lui montre vraiment (appelsTotal compte tout le plan de la V1, qu'elle ne voit nulle part)
       m.total = appels.length;
       if (m.total > MONTRES_ACCUEIL) m.autres = 'Voir les ' + (m.total - MONTRES_ACCUEIL) + ' autres dans Appels';
       var a0 = appels[0];
-      m.chose = { heure: (MOTIFS[a0.motif] || ['Signal'])[0], titre: a0.nom + (a0.ville ? ', à ' + a0.ville : ''), detail: (a0.raisons && a0.raisons[0]) || null, bouton: 'Voir la fiche et appeler' };   // comme chez Yann : l'étiquette du motif, puis la raison
+      m.chose = { heure: etiquetteDe(a0)[0], titre: a0.nom + (a0.ville ? ', à ' + a0.ville : ''), detail: (a0.raisons && a0.raisons[0]) || null, bouton: 'Voir la fiche et appeler' };   // comme chez Yann : l'étiquette du motif, puis la raison
       return [m];
     }
     if (veille.length) {
@@ -935,7 +949,7 @@
     maj: maj, dureeFr: dureeFr, lieuPharmacie: lieuPharmacie, phraseRdv: phraseRdv, joursProposes: joursProposes, corpsRdv: corpsRdv,
     NB_PUCES: NB_PUCES, fenetreJours: fenetreJours, decalages: decalages, jourCourt: jourCourt, lierRdv: lierRdv, duJour: duJour,
     comptesParJour: comptesParJour, sousPuce: sousPuce, phraseLibres: phraseLibres, plagesLibres: plagesLibres, carteEnsuite: carteEnsuite, phraseEtat: phraseEtat,
-    equipeParId: equipeParId, estTelepro: estTelepro, nomAuteur: nomAuteur, avecAuteur: avecAuteur, ligneDeTelepro: ligneDeTelepro, momentDeTelepro: momentDeTelepro, MOTIFS: MOTIFS, agendaDeTelepro: agendaDeTelepro, messageDeLaBase: messageDeLaBase,
+    equipeParId: equipeParId, estTelepro: estTelepro, nomAuteur: nomAuteur, avecAuteur: avecAuteur, ligneDeTelepro: ligneDeTelepro, momentDeTelepro: momentDeTelepro, MOTIFS: MOTIFS, RANGS_L4: RANGS_L4, etiquetteDe: etiquetteDe, agendaDeTelepro: agendaDeTelepro, messageDeLaBase: messageDeLaBase,
     ANGLES: ANGLES, N_INITIAL: N_INITIAL, PAS_LISTE: PAS_LISTE, FILTRES_SIGNAUX: FILTRES_SIGNAUX, FILTRES_TRANSFERTS: FILTRES_TRANSFERTS, nomAngle: nomAngle, angleValide: angleValide,
     contientMontant: contientMontant, recherchePropre: recherchePropre, depPropre: depPropre, requeteOfficines: requeteOfficines, libelleResultats: libelleResultats, libelleVoirPlus: libelleVoirPlus,
     telFr: telFr, frDate: frDate, libelleGroupements: libelleGroupements, fusionnerSommes: fusionnerSommes, sansSommes: sansSommes, pourquoiAffiche: pourquoiAffiche, sousAffiche: sousAffiche,

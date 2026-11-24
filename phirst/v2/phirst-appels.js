@@ -256,7 +256,7 @@
   /* 22/11/2026 — une ligne par pharmacie (nom, motif, raison n° 1) ; la pharmacie OUVERTE montre son numéro, les autres raisons et les 4 boutons « après l'appel ».
      La première est ouverte d'office : elle appelle, note, et la suivante s'ouvre. */
   function ligneAppel(r, i) {
-    var m = MOTIFS[r.motif] || ['Signal', ''], autres = (r.raisons || []).slice(1), ouv = P.cle(r.nom, r.ville) === S.ouverte, id = 'pa-d' + i;
+    var m = P.etiquetteDe(r), autres = (r.raisons || []).slice(1), ouv = P.cle(r.nom, r.ville) === S.ouverte, id = 'pa-d' + i;
     var raison = P.datesLisibles((r.raisons || [])[0] || '', jour());
     var garde = !!S.gardees[P.cle(r.nom, r.ville)], sous = A ? sousLeNom(r) : '';
     return '<li class="pa-l' + (ouv ? ' pa-ouvert' : '') + '" data-i="' + i + '"><button type="button" class="pa-ligne" data-ouvrir="' + i + '" aria-expanded="' + ouv + '" aria-controls="' + id + '">' +

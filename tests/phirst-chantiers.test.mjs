@@ -238,7 +238,8 @@ describe('l’écran et son branchement', () => {
   test('lot 1 : aucun bouton « Envoyer le lien », aucune somme, aucun console.log', () => {
     const code = (t) => t.replace(/\/\*[\s\S]*?\*\//g, '')   // les commentaires d'en-tête disent justement ce qui n'y est pas
     assert.doesNotMatch(code(ecran), /Envoyer le lien|sms:/)
-    assert.doesNotMatch(code(ecran + lire('phirst/v2/phirst-chantiers-pur.js')), /€|montant|acompte|budget|console\.log/i)
+    // L4 : « contientMontant » est le GARDE qui retire les sommes d'une note de confrère (jamais une somme gardée) : il est le seul mot permis
+    assert.doesNotMatch(code(ecran + lire('phirst/v2/phirst-chantiers-pur.js')).replace(/contientMontant/g, ''), /€|montant|acompte|budget|console\.log/i)
   })
   test('le bloc « Le chantier » n’apparaît qu’à l’étape « Travaux » d’un volet Agencement ou Transfert', () => {
     assert.match(dossiers, /e\.k === 'travaux' && CH && CH\.aUnChantier\(v\.sorte\)/)

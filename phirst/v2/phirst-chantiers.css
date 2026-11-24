@@ -135,3 +135,57 @@
 .dz .cz-bloc .dz-case input{flex:none;margin:1px 0 0}
 .dz .cz-bloc .dz-champ input[type=date]{max-width:320px}
 .dz .cz-bloc .dz-champ input[aria-invalid="true"]{border-color:var(--dz-rouge-t);box-shadow:0 0 0 2px var(--dz-rouge-f)}
+
+/* ═══ L4 (24/11/2026) · idée 9 « Ce client reviendra » et idée 10 « Un confrère qui a un projet ? » : d'après la maquette 4-accueil-apres/chantiers-ajout.css.
+   Fonds opaques, aucune opacité sur du texte, ni flou ni verre dépoli (Safari). Cibles ≥ 44 px, textes ≥ 13 px. ═══ */
+.cz .cz-rv,.cz .cz-cf{position:relative;display:grid;gap:12px;padding:18px 18px 16px;border-radius:20px;border:1px solid #CFE3D6;
+  background-color:#F4FAF6;background-image:radial-gradient(360px 150px at 0% 0%,#FFFFFF 0%,rgba(255,255,255,0) 75%),linear-gradient(180deg,#F4FAF6 0%,#EAF4EE 100%);
+  box-shadow:0 1px 0 #fff inset,0 18px 30px -26px rgba(18,60,40,.5)}
+.cz .cz-rv-k{display:flex;align-items:center;gap:8px;color:var(--dz-accent);font-size:13px}
+.cz .cz-rv-k i{flex:none;width:10px;height:10px;border-radius:50%;background-color:#12A567;box-shadow:0 0 0 4px #DCF0E3}
+.cz .cz-rv-i{margin:0;font-size:16px;line-height:1.45;color:var(--dz-ink2)}
+.cz .cz-raps{display:grid;gap:10px;margin:2px 0 0;padding:0;list-style:none}
+.cz .cz-rap{display:grid;grid-template-columns:44px minmax(0,1fr);gap:6px 14px;align-items:start;padding:14px 16px;border-radius:16px;background-color:#fff;border:1px solid var(--dz-fil)}
+.cz .cz-rap-ic{display:grid;place-items:center;width:44px;height:44px;border-radius:14px;background-color:var(--dz-pastille);color:var(--dz-accent)}
+.cz .cz-rap-t{display:grid;gap:3px;min-width:0}
+.cz .cz-rap-t b{font-size:17px;line-height:1.3;font-weight:800}
+.cz .cz-rap-d{font-size:16px;font-weight:700;color:var(--dz-vert-t)}
+.cz .cz-rap-dit{margin:2px 0 0;font-size:15.5px;line-height:1.5;color:var(--dz-ink2)}
+.cz .cz-rap-dit q{display:block;margin-top:4px;padding:8px 12px;border-radius:12px;background-color:#F3F8F5;color:var(--dz-ink);font-weight:600;quotes:"« " " »"}
+.cz .cz-rap-act{grid-column:2;display:flex;flex-wrap:wrap;align-items:center;gap:2px 14px}
+.cz .cz-rap-act .dz-lien{min-height:44px}
+.cz .cz-rap-form{grid-column:1 / -1;margin-top:4px}
+.cz .cz-rap.retire{background-color:#F6F8F7;border-style:dashed}
+.cz .cz-rap.retire .cz-rap-ic{background-color:#E9EFEA;color:var(--dz-ink3)}
+.cz .cz-rap.fait .cz-rap-d{color:var(--dz-ink3)}
+.cz .cz-rv-ok{display:flex;align-items:center;gap:12px;margin:0;padding:12px 14px;border-radius:16px;background-color:#fff;border:2px solid var(--dz-accent);font-size:16px;font-weight:700;line-height:1.4}
+.cz .cz-cf-coche{flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background-color:var(--dz-vert-f);color:var(--dz-vert-t);box-shadow:0 0 0 4px #F0F8F3}
+/* le résumé dans la carte d'un chantier réceptionné */
+.cz .cz-rv-mini{display:grid;gap:8px;padding:12px 14px;border-radius:16px;background-color:#F4FAF6;border:1px solid #CFE3D6}
+.cz .cz-rv-mini ul{display:grid;gap:4px;margin:0;padding:0;list-style:none;font-size:15.5px;line-height:1.4;color:var(--dz-ink2)}
+.cz .cz-rv-mini li b{color:var(--dz-ink)}
+.cz .cz-rv-mini li span{font-weight:700;color:var(--dz-vert-t)}
+/* « Bilans à faire » */
+.cz .dz-proch .dz-kicker{font-size:13px}
+.cz .cz-bilan h3{margin:0}
+.cz .cz-bilan .dz-btn{align-self:flex-start}
+/* la question du confrère, au bilan */
+.cz .cz-cf{margin-top:6px;background-color:#fff;background-image:radial-gradient(380px 160px at 100% 0%,#EAF4EE 0%,rgba(234,244,238,0) 75%);border:2px solid var(--dz-accent)}
+.cz .cz-cf-h{margin:0;font-size:22px;line-height:1.2;font-weight:800;letter-spacing:-.02em;text-wrap:balance}
+.cz .cz-cf-form{padding:0;border:0;background:none}
+.cz .cz-cf-ok{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:16px;background-color:var(--dz-vert-f);border:1px solid #BFE0CC}
+.cz .cz-cf-ok-t{margin:0;font-size:16.5px;line-height:1.45;font-weight:600;color:var(--dz-ink)}
+.cz .cz-cf-ok-t b{font-weight:800}
+.cz .cz-cf-liste{display:grid;gap:4px;margin:8px 0 0;padding:0;list-style:none;font-size:15.5px;color:var(--dz-ink2)}
+.cz .cz-cf-liste li{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0 12px}
+.cz .cz-cf-liste small{display:block;font-size:14px;color:var(--dz-ink3)}
+.cz .cz-cf-liste .dz-lien{min-height:44px}
+.cz .cz-pet.ok{color:var(--dz-vert-t);font-weight:700}
+@media (max-width:700px){
+  .cz .cz-rap{grid-template-columns:minmax(0,1fr);padding:14px}
+  .cz .cz-rap-ic{display:none}
+  .cz .cz-rap-act{grid-column:1}
+  .cz .cz-rv,.cz .cz-cf{padding:16px 14px 14px}
+  .cz .cz-cf-h{font-size:20px}
+  .cz .cz-bilan .dz-btn{width:100%}
+}

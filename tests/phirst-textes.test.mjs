@@ -29,13 +29,15 @@ describe('idée 1 : la première phrase', () => {
     assert.equal(T.phraseDe('creation', [{ cle: 'creation', texte: '   ' }]).source, 'proposition')
   })
   test('raison inconnue : null, pas d’exception', () => { assert.equal(T.phraseDe('nimporte', []), null); assert.equal(T.phraseDe(null, null), null) })
-  test('les trois raisons du lot suivant ont leur clé prête, sans être dans la liste', () => {
-    assert.deepEqual(T.A_VENIR.map((r) => r.cle), ['ars', 'client', 'recommande'])
+  test('L4 : les trois raisons (ars, client, recommande) sont passées dans la liste, avec leur étiquette', () => {
+    assert.deepEqual(T.A_VENIR, [])
     for (const c of ['ars', 'client', 'recommande']) {
-      assert.ok(!T.RAISONS.some((r) => r.cle === c)); assert.ok(!P.MOTIFS[c])
+      assert.ok(T.RAISONS.some((r) => r.cle === c), c); assert.ok(P.MOTIFS[c], c)
       assert.equal(T.phraseDe(c, []).source, 'proposition')
       assert.equal(T.phraseDe(c, [{ cle: c, texte: 'Mienne' }]).texte, 'Mienne')
     }
+    assert.equal(T.RAISONS.length, 12); assert.equal(new Set(T.RAISONS.map((r) => r.cle)).size, 12)
+    assert.equal(P.MOTIFS.ars[0], 'Transfert autorisé par l’ARS')
   })
   test('aucune proposition ne parle d’argent', () => {
     for (const r of T.RAISONS.concat(T.A_VENIR)) assert.equal(P.contientMontant(r.propo), false, r.cle)

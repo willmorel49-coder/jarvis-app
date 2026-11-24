@@ -4,7 +4,10 @@
    (pour « Prêts pour un chantier » et la réception, qui fait passer « Travaux » à faite dans le dossier). Photos : seau `dossiers`.
    Toute la logique est dans phirst-chantiers-pur.js, testée (tests/phirst-chantiers.test.mjs) ; ici : l'affichage et les écritures.
    Chaque geste écrit, puis met l'écran à jour avec la ligne RENDUE par la base : jamais de « réussi » avant la réponse.
-   Paramètre d'adresse : V2.go('chantiers', <id du chantier>) ouvre la feuille de ses tâches. */
+   Paramètre d'adresse : V2.go('chantiers', <id du chantier>) ouvre la feuille de ses tâches.
+   L4 (24/11/2026) : idée 9 « Ce client reviendra » (un chantier réceptionné programme ses rappels : table chantier_rappels, échéances calculées depuis
+   la date de réception ; la téléprospectrice les reçoit par le robot du matin, sans jamais voir le chantier) et idée 10 « Un confrère qui a un projet ? »
+   (noté au bilan : table chantier_confreres). Si ces deux tables n'existent pas encore, l'écran garde tout ce qu'il avait et n'affiche pas ces blocs. */
 (function () {
   'use strict';
   var C = window.PHIRST_CHANTIERS_PUR, D = window.PHIRST_DOSSIERS_PUR, V2 = window.V2, X = window.PHIRST_ECRAN;
@@ -17,7 +20,7 @@
 
   var S = {
     racine: null, jeton: 0, telepro: false, roleConnu: false, charge: false, erreur: false,
-    dossiers: [], volets: [], etapes: [], pistes: [], chantiers: [], artisans: [], taches: [],
+    dossiers: [], volets: [], etapes: [], pistes: [], chantiers: [], artisans: [], taches: [], rappels: [], confreres: [], sansRappels: false,
     voir: null, fc: null, mode: null, ui: {}, form: {}, occupe: false, flash: '', flashErr: false, tFlash: 0, urls: {}
   };
 
@@ -28,6 +31,8 @@
       coche: '<path d="M5 12.5l4.5 4.5L19 7.5"/>', fleche: '<path d="M5 12h14"/><path d="M13 6l6 6-6 6"/>', plus: '<path d="M12 5v14M5 12h14"/>',
       photo: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
       liste: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/>',
+      agenda: '<rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M9 3v4M15 3v4"/>',
+      rond: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5"/>',
       gens: '<circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0112 0"/><path d="M16 4.5a3.5 3.5 0 010 7M18 14a6 6 0 013 6"/>'
     }[n];
     return '<svg width="' + t + '" height="' + t + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>';
@@ -82,11 +87,15 @@
         ws ? toutLire(function () { return base.from('crm_prospects').select(COLS_PISTE).eq('workspace_id', ws).not('dossier_id', 'is', null).order('id'); }) : Promise.resolve([]),
         toutLire(function () { return base.from('chantiers').select('*').order('id'); }),
         toutLire(function () { return base.from('chantier_artisans').select('*').order('id'); }),
-        toutLire(function () { return base.from('chantier_taches').select('*').order('id'); })
+        toutLire(function () { return base.from('chantier_taches').select('*').order('id'); }),
+        /* L4 : si ces deux tables n'existent pas encore (SQL pas posé), tout le reste de l'écran continue de marcher */
+        toutLire(function () { return base.from('chantier_rappels').select('*').order('id'); }).then(null, function () { return null; }),
+        toutLire(function () { return base.from('chantier_confreres').select('*').order('id'); }).then(null, function () { return null; })
       ]).then(function (x) {
         if (x[0].error) throw new Error('dossiers');
         if (tok !== S.jeton) return;
         S.dossiers = x[0].data || []; S.volets = x[1]; S.etapes = x[2]; S.pistes = x[3]; S.chantiers = x[4]; S.artisans = x[5]; S.taches = x[6];
+        S.sansRappels = x[7] === null || x[8] === null; S.rappels = x[7] || []; S.confreres = x[8] || [];
         S.charge = true; S.erreur = false; dessiner();
       });
     }).then(null, function () { if (tok === S.jeton) { S.erreur = true; dessiner(); } });
@@ -125,7 +134,76 @@
     var c = x.c, inf = infoPh(x.ph);
     return '<article class="dz-carte cz-recu"><div class="dz-carte-h"><span class="dz-et">' + esc(x.volet.nom) + '</span><span class="dz-et vert">Réceptionné</span></div><h3>' + esc(x.ph.dossier.nom) + '</h3>' +
       '<p class="dz-sous">' + (inf.ville ? esc(inf.ville) + ' · ' : '') + 'réception le ' + esc(D.court(c.recuLe)) + ' · ' + pl(c.taches.length, 'tâche', 'tâches') + '</p>' +
+      miniRappels(x) + (S.sansRappels ? '' : '<button class="dz-btn" type="button" data-cz="taches" data-id="' + esc(c.id) + '">' + ico('agenda', 18) + 'Voir et modifier les rappels</button>') +
       '<button class="dz-btn" type="button" data-cz="taches" data-id="' + esc(c.id) + '">Revoir les tâches et les photos</button></article>';
+  }
+
+  /* ── L4 · idée 9 « Ce client reviendra » et idée 10 « Un confrère qui a un projet ? » ── */
+  var ICO_RAPPEL = { bilan: 'agenda', entretien: 'liste', remplacement: 'rond' };
+  function rappelsDe(x) { return C.rappelsDuChantier(S.rappels, x.c.id, auj()); }
+  function confreresDe(x) { return C.confreresDuChantier(S.confreres, x.c.id).filter(function (f) { return !f.retire; }); }
+  function ligneRappel(x, r) {
+    var h, passe = r.passe;
+    if (r.retire) {
+      return '<li class="cz-rap retire"><span class="cz-rap-ic">' + ico(ICO_RAPPEL[r.type], 20) + '</span><div class="cz-rap-t"><b>' + esc(r.titre) + '</b><p class="cz-rap-dit">Rappel retiré : il n’arrivera pas dans la liste de la téléprospectrice.</p></div>' +
+        '<div class="cz-rap-act"><button class="dz-lien" type="button" data-cz="rap-remettre" data-id="' + esc(r.id) + '"' + dis() + '>Remettre ce rappel</button></div></li>';
+    }
+    h = '<li class="cz-rap' + (r.fait ? ' fait' : '') + '"><span class="cz-rap-ic">' + ico(ICO_RAPPEL[r.type], 20) + '</span><div class="cz-rap-t"><b>' + esc(r.titre) + '</b>' +
+      '<span class="cz-rap-d">' + (r.fait ? 'Fait' : esc(maj(C.quandRappel(r)))) + '</span>' +
+      '<p class="cz-rap-dit">' + (r.fait ? 'Ce bilan est noté : il est sorti de la liste de la téléprospectrice.' :
+        (passe ? 'Il est arrivé tout seul' : 'Il arrivera tout seul') + ' dans la liste de la téléprospectrice, avec cette raison écrite :<q>' + esc(r.raison) + '</q>') + '</p></div>';
+    h += '<div class="cz-rap-act">' + (r.type === 'bilan' && passe ? '<button class="dz-btn' + (r.fait ? '' : ' plein') + ' petit" type="button" data-cz="bilan" data-id="' + esc(x.c.id) + '"' + dis() + '>Ouvrir le bilan</button>' : '') +
+      (r.fait ? '' : '<button class="dz-lien" type="button" data-cz="rap-date" data-id="' + esc(r.id) + '"' + dis() + '>Changer la date</button><button class="dz-lien" type="button" data-cz="rap-retirer" data-id="' + esc(r.id) + '"' + dis() + '>Retirer</button>') + '</div>';
+    if (!r.fait && S.ui.rdate === r.id) h += '<div class="cz-f-form cz-rap-form"><div class="dz-champ"><label for="cz-rd-' + esc(r.id) + '">Nouvelle date</label><input type="date" id="cz-rd-' + esc(r.id) + '" data-form="rap_date" value="' + esc(val('rap_date', r.date)) + '"' + dis() + '></div>' +
+      '<p class="dz-erreur" role="alert">' + esc(S.ui.errRappel || '') + '</p><div class="dz-act"><button class="dz-btn plein petit" type="button" data-cz="rap-ok" data-id="' + esc(r.id) + '" data-f="rap-ok"' + dis() + '>Enregistrer la date</button><button class="dz-lien" type="button" data-cz="rap-annuler"' + dis() + '>Annuler</button></div></div>';
+    if (!r.fait && S.ui.rretirer === r.id) h += '<div class="cz-confirme cz-rap-form" role="alertdialog" aria-labelledby="cz-rr-' + esc(r.id) + '"><p id="cz-rr-' + esc(r.id) + '"><b>Retirer ce rappel ?</b></p><p>Il n’arrivera pas dans la liste de la téléprospectrice. Vous pourrez le remettre.</p>' +
+      '<div class="dz-act"><button class="dz-btn plein petit" type="button" data-cz="rap-retirer-ok" data-id="' + esc(r.id) + '" data-f="rap-retirer-ok"' + dis() + '>Oui, retirer</button><button class="dz-lien" type="button" data-cz="rap-annuler"' + dis() + '>Annuler</button></div></div>';
+    return h + '</li>';
+  }
+  /* Le bloc de la feuille d'un chantier réceptionné. Rien tant que les deux tables neuves n'existent pas. */
+  function blocReviendra(x) {
+    if (S.sansRappels) return '';
+    var R = rappelsDe(x), robot = C.robotDePharmacie(x.ph), h = '<section class="cz-rv" aria-label="Ce client reviendra"><p class="dz-kicker cz-rv-k"><i></i>Ce client reviendra</p>';
+    if (!R.length) {
+      return h + '<p class="cz-rv-i">Aucun rappel n’est programmé pour ce chantier. Programmez-les : chacun arrivera tout seul dans la liste de la téléprospectrice, à la date calculée depuis la réception du ' + esc(D.court(x.c.recuLe)) + '.</p>' +
+        '<div class="dz-act"><button class="dz-btn plein" type="button" data-cz="rap-programmer" data-id="' + esc(x.c.id) + '" data-f="rap-programmer"' + dis() + '>' + ico('agenda', 18) + 'Programmer les rappels</button></div></section>';
+    }
+    h += '<p class="cz-rv-i">Chaque rappel arrive tout seul dans la liste de la téléprospectrice. Vous pouvez changer une date ou en retirer un.</p><ul class="cz-raps">' + R.map(function (r) { return ligneRappel(x, r); }).join('') + '</ul>';
+    if (!R.some(function (r) { return r.type === 'remplacement'; })) h += '<p class="cz-pet">' + (robot ? 'Le rappel de remplacement du robot n’est pas programmé.' : 'Cette pharmacie n’a pas de robot dans nos dossiers : aucun rappel de remplacement n’est programmé.') + '</p>';
+    return h + '</section>';
+  }
+  /* Le résumé dans la carte d'un chantier réceptionné */
+  function miniRappels(x) {
+    if (S.sansRappels) return '';
+    var l = C.resumeRappels(rappelsDe(x));
+    return '<div class="cz-rv-mini"><p class="dz-kicker cz-rv-k"><i></i>Ce client reviendra</p><ul>' + (l.length ? l.map(function (r) { return '<li><b>' + esc(r.titre) + '</b> <span>' + esc(r.quand) + '</span></li>'; }).join('') :
+      '<li>Aucun rappel programmé : ouvrez la feuille pour les programmer.</li>') + '</ul></div>';
+  }
+  /* « Bilans à faire » : un chantier réceptionné dont le bilan est arrivé à échéance, pas encore noté */
+  function carteBilan(x, b) {
+    var inf = infoPh(x.ph);
+    return '<article class="dz-carte cz-bilan"><div class="dz-carte-h"><span class="dz-et">' + esc(b.titre) + '</span><span class="dz-et orange">À faire</span></div><h3>' + esc(x.ph.dossier.nom) + '</h3>' +
+      '<p class="dz-sous">' + (inf.ville ? esc(inf.ville) + ' · ' : '') + 'réception le ' + esc(D.long(x.c.recuLe)) + '</p>' +
+      '<div class="dz-proch"><span class="dz-kicker">Rappel arrivé le ' + esc(C.cj(b.date, auj())) + '</span><b>Faire le point avec le pharmacien</b><small>Il est dans la liste de la téléprospectrice depuis cette date. Vous pouvez aussi le faire vous-même.</small></div>' +
+      '<button class="dz-btn plein" type="button" data-cz="bilan" data-id="' + esc(x.c.id) + '" data-f="b-' + esc(x.c.id) + '"' + dis() + '>' + ico('agenda', 18) + 'Ouvrir le bilan</button></article>';
+  }
+  function feuilleBilan(x) {
+    var c = x.c, b = rappelsDe(x).filter(function (r) { return r.type === 'bilan'; })[0], cf = confreresDe(x), h = tete(x, b ? b.titre : 'Bilan') + '<div class="cz-f-corps">';
+    if (!b) return h + '<p class="dz-vide-d">Le bilan de ce chantier n’est pas programmé : ouvrez « Les tâches » du chantier réceptionné et choisissez « Programmer les rappels ».</p>' + htmlFlash(true) + '</div>';
+    h += '<div class="cz-f-ouv"><div><p class="dz-kicker">Réception du chantier</p><p class="cz-f-ouv-d">' + esc(maj(D.jourLong(c.recuLe))) + '<span> · bilan prévu ' + esc(C.quandRappel(b)) + '</span></p></div></div>';
+    if (b.fait) h += '<p class="cz-pet ok">Ce bilan est noté. Vous pouvez encore ajouter un confrère ci-dessous.</p>';
+    else if (!b.retire) h += '<div class="cz-f-form"><div class="dz-champ"><label for="cz-bi-note">Ce que dit le pharmacien de ses premiers mois</label><textarea id="cz-bi-note" data-form="bi_note" maxlength="600" placeholder="Par exemple : le comptoir est apprécié, il manque un rayonnage dans la réserve."' + dis() + '>' + esc(val('bi_note')) + '</textarea></div>' +
+      '<div class="dz-act"><button class="dz-btn petit" type="button" data-cz="bilan-fait" data-id="' + esc(b.id) + '" data-f="bilan-fait"' + dis() + '>' + ico('coche', 18) + 'Noter le bilan comme fait</button></div></div>';
+    h += '<section class="cz-cf" aria-labelledby="cz-cf-h"><p class="dz-kicker cz-rv-k"><i></i>Au bilan</p><h3 id="cz-cf-h" class="cz-cf-h">Un confrère qui a un projet ?</h3>' +
+      '<p class="cz-rv-i">Un pharmacien qui déménage, s’agrandit ou veut un robot. Donnez son nom : la téléprospectrice l’appellera en vous citant.</p>' +
+      '<div class="cz-f-form cz-cf-form"><div class="dz-champ"><label for="cz-cf-nom">Nom de la pharmacie</label><input id="cz-cf-nom" type="text" data-form="cf_nom" data-f="cf-nom" maxlength="120" autocomplete="off" value="' + esc(val('cf_nom')) + '" placeholder="Par exemple : Pharmacie des Hauts Frênes"' + dis() + '></div>' +
+      '<div class="dz-champ"><label for="cz-cf-ville">Ville</label><input id="cz-cf-ville" type="text" data-form="cf_ville" data-f="cf-ville" maxlength="80" autocomplete="off" value="' + esc(val('cf_ville')) + '" placeholder="Par exemple : Brest"' + dis() + '></div>' +
+      '<div class="dz-champ"><label for="cz-cf-note">Une note (facultatif)</label><textarea id="cz-cf-note" data-form="cf_note" maxlength="300" placeholder="Par exemple : il parle de s’agrandir l’an prochain."' + dis() + '>' + esc(val('cf_note')) + '</textarea></div>' +
+      '<p class="dz-erreur" role="alert">' + esc(S.ui.errConfrere || '') + '</p>' +
+      '<div class="dz-act"><button class="dz-btn plein" type="button" data-cz="confrere-ajout" data-f="confrere-ajout"' + dis() + '>' + ico('plus', 18) + 'Ajouter à la liste de la téléprospectrice</button></div></div>';
+    if (cf.length) h += '<div class="cz-cf-ok" role="status"><span class="cz-cf-coche">' + ico('coche', 20) + '</span><div><p class="cz-cf-ok-t">Elle l’appellera avec : <b>' + esc(C.phraseDeLaPart(x.ph.dossier.nom)) + '</b>.</p><ul class="cz-cf-liste">' +
+      cf.map(function (f) { return '<li><div><b>' + esc(f.nom) + '</b> · ' + esc(f.ville) + (f.note ? '<small>' + esc(f.note) + '</small>' : '') + '</div><button class="dz-lien" type="button" data-cz="confrere-retirer" data-id="' + esc(f.id) + '"' + dis() + '>Retirer de la liste</button></li>'; }).join('') + '</ul></div></div>';
+    return h + '</section>' + htmlFlash(true) + '</div>';
   }
   function htmlFlash(dansFeuille) {
     if (!S.flash || (!!dansFeuille !== !!(S.fc && feuille() && feuille().open))) return '';
@@ -145,6 +223,9 @@
     }
     h += '<section class="dz-groupe"><div class="dz-groupe-t"><h2>En cours</h2><span>' + pl(cours.length, 'chantier', 'chantiers') + '</span></div>' +
       (cours.length ? '<div class="dz-grille cz-grille">' + cours.map(function (c) { return carte(parId[c.id]); }).join('') + '</div>' : '<p class="dz-vide-d">Aucun chantier en cours. Ouvrez-en un depuis l’étape « Travaux » d’un dossier.</p>') + '</section>';
+    var bilans = S.sansRappels ? [] : recus.map(function (c) { var b = C.bilanAFaire(rappelsDe(parId[c.id])); return b ? { x: parId[c.id], b: b } : null; }).filter(Boolean);
+    if (bilans.length) h += '<section class="dz-groupe" id="cz-bilans"><div class="dz-groupe-t"><h2>Bilans à faire</h2><span>' + pl(bilans.length, 'bilan', 'bilans') + '</span></div><div class="dz-grille cz-grille">' +
+      bilans.map(function (o) { return carteBilan(o.x, o.b); }).join('') + '</div></section>';
     if (prets.length) h += '<section class="dz-groupe" id="cz-prets"><div class="dz-groupe-t"><h2>Prêts pour un chantier</h2><span>' + pl(prets.length, 'dossier', 'dossiers') + '</span></div>' +
       '<p class="cz-intro">Un chantier s’ouvre depuis l’étape « Travaux » d’un dossier Agencement ou Transfert. Ces dossiers en sont à une étape au plus.</p><div class="dz-grille">' + prets.map(cartePret).join('') + '</div></section>';
     if (recus.length) h += '<details class="dz-repli"><summary>Réceptionnés <span class="dz-n">' + pl(recus.length, 'chantier', 'chantiers') + '</span><i class="dz-chev"></i></summary><div class="dz-repli-c"><div class="dz-grille">' +
@@ -183,6 +264,7 @@
   function feuilleTaches(x) {
     var c = x.c, a = auj(), reste = C.aFaire(c), faites = C.faites(c), n = c.taches.length, j = C.jours(c, a);
     var h = tete(x, 'Chantier · volet ' + esc(x.volet.nom)) + '<div class="cz-f-corps">';
+    if (c.recuLe && !S.sansRappels) h += (S.ui.justeRecu ? '<p class="cz-rv-ok" role="status"><span class="cz-cf-coche">' + ico('coche', 20) + '</span>Réception prononcée. Voici ce que ce chantier programme pour la suite.</p>' : '') + blocReviendra(x);
     h += '<div class="cz-f-ouv"><div><p class="dz-kicker">Ouverture promise au pharmacien</p><p class="cz-f-ouv-d">' + esc(maj(D.jourLong(c.ouverture))) + '<span> · ' + C.dans(j) + '</span></p></div>' +
       (c.recuLe ? '' : '<button class="dz-lien" type="button" data-cz="ouv-changer"' + dis() + '>Changer la date</button>') + '</div>';
     if (S.ui.ouv) h += '<div class="cz-f-form"><div class="dz-champ"><label for="cz-ouv-in">Nouvelle date d’ouverture</label><input type="date" id="cz-ouv-in" data-form="ouv" value="' + esc(val('ouv', c.ouverture)) + '"' + dis() + '></div>' +
@@ -240,10 +322,10 @@
     var F = feuille(); if (!F || !S.fc) return;
     var x = un(S.fc); if (!x) { fermer(); return; }
     var act = document.activeElement, cle = act && F.contains(act) && act.getAttribute ? act.getAttribute('data-f') : null, y = F.scrollTop;
-    F.innerHTML = S.mode === 'artisans' ? feuilleArtisans(x) : feuilleTaches(x);
+    F.innerHTML = S.mode === 'artisans' ? feuilleArtisans(x) : S.mode === 'bilan' ? feuilleBilan(x) : feuilleTaches(x);
     F.scrollTop = y;
     if (cle) { var n = F.querySelector('[data-f="' + cle + '"]'); if (n && !n.disabled) try { n.focus({ preventScroll: true }); } catch (e) { n.focus(); } }
-    if (S.mode !== 'artisans') lireUrls(x.c);
+    if (S.mode === 'taches') lireUrls(x.c);
   }
   function ouvrirFeuille(id, mode) {
     var F = feuille(); if (!F || !un(id)) return;
@@ -313,7 +395,7 @@
   }
   function maj1(table, liste, id, champs) {
     var o = {}; Object.keys(champs).forEach(function (k) { o[k] = champs[k]; });
-    if (table !== 'chantier_artisans') o.updated_at = new Date().toISOString();
+    if (table !== 'chantier_artisans' && table !== 'chantier_confreres') o.updated_at = new Date().toISOString();
     return sb().from(table).update(o).eq('id', id).select().single().then(function (r) {
       if (r.error || !r.data) throw new Error(table);
       remplacer(liste, r.data); return r.data;
@@ -371,11 +453,77 @@
             remplacer(S.etapes, r.data);
           });
         })).then(function () {
-          dire('Réception prononcée : le chantier passe dans « Réceptionnés », et ' + C.texteReception(sorte) + '.', false);
+          var msg = 'Réception prononcée : le chantier passe dans « Réceptionnés », et ' + C.texteReception(sorte) + '.';
+          if (S.sansRappels) { dire(msg, false); return; }
+          S.ui.justeRecu = 1;
+          return ecrireRappels(un(S.fc)).then(function (n) {
+            dire(msg + ' ' + (n > 1 ? n + ' rappels sont programmés pour la suite.' : n === 1 ? 'Un rappel est programmé pour la suite.' : ''), false);
+          }, function () {
+            throw echec('La réception est prononcée, mais les rappels n’ont pas pu être programmés : ouvrez le chantier réceptionné et choisissez « Programmer les rappels ».');
+          });
         }, function () {
           throw echec('La réception est prononcée, mais le dossier n’a pas pu être mis à jour : marquez « Travaux » comme faite dans le dossier.');
         });
       });
+    });
+  }
+  /* L4 : programme (écrit) les rappels d'un chantier réceptionné qui n'en a pas encore. Rend le nombre écrit. Les échéances se CALCULENT depuis la date de réception. */
+  function ecrireRappels(x) {
+    var u = V2.user; if (!x || !x.c.recuLe || !u) return Promise.resolve(0);
+    var l = C.rappelsAProgrammer(x, C.robotDePharmacie(x.ph), rappelsDe(x));
+    if (!l.length) return Promise.resolve(0);
+    l.forEach(function (r) { r.user_id = u.id; });
+    return sb().from('chantier_rappels').insert(l).select().then(function (r) {
+      if (r.error || !r.data) throw new Error('rappels');
+      r.data.forEach(function (ligne) { remplacer(S.rappels, ligne); });
+      return r.data.length;
+    });
+  }
+  function programmerRappels() {
+    var x = un(S.fc); if (!x || !x.c.recuLe) return;
+    return geste(function () {
+      return ecrireRappels(x).then(function (n) {
+        S.ui.justeRecu = 1;
+        dire(n ? (n > 1 ? n + ' rappels sont programmés.' : 'Un rappel est programmé.') + ' Ceux dont la date est passée arrivent dès demain matin dans la liste.' : 'Les rappels étaient déjà programmés.', false);
+      });
+    });
+  }
+  function rappel(id) { return S.rappels.filter(function (r) { return r.id === id; })[0] || null; }
+  function majRappel(id, champs, msg) {
+    var r = rappel(id), m = r && C.monterRappel(r, auj()); if (!r) return;
+    return geste(function () {
+      return maj1('chantier_rappels', S.rappels, id, champs).then(function () { S.ui.rdate = null; S.ui.rretirer = null; delete S.form.rap_date; dire(typeof msg === 'function' ? msg(m) : msg, false); });
+    });
+  }
+  function changerDateRappel(id) {
+    var r = rappel(id); if (!r) return;
+    var v = C.verifierDateRappel(val('rap_date', r.echeance), auj());
+    if (!v.ok) { S.ui.rdate = id; S.ui.errRappel = v.erreur; rendreFeuille(); return; }
+    S.ui.errRappel = '';
+    return majRappel(id, { echeance: v.valeur }, function (m) { return 'Date changée : « ' + m.titre + ' » arrivera ' + C.quandRappel({ type: m.type, date: v.valeur }) + '.'; });
+  }
+  function noterBilanFait(id) {
+    var r = rappel(id); if (!r) return;
+    var note = String(val('bi_note')).trim().slice(0, 600);
+    return majRappel(id, { fait_le: auj(), note: note || null }, 'Bilan noté : il sort de la liste de la téléprospectrice.');
+  }
+  function ajouterConfrere() {
+    var x = un(S.fc), u = V2.user; if (!x || !u) return;
+    var v = C.verifierConfrere({ nom: val('cf_nom'), ville: val('cf_ville'), note: val('cf_note') }, C.confreresDuChantier(S.confreres, x.c.id));
+    if (!v.ok) { S.ui.errConfrere = v.erreur; rendreFeuille(); var n = feuille().querySelector(v.champ === 'ville' ? '#cz-cf-ville' : '#cz-cf-nom'); if (n) n.focus(); return; }
+    S.ui.errConfrere = '';
+    return geste(function () {
+      return sb().from('chantier_confreres').insert({ chantier_id: x.c.id, user_id: u.id, nom: v.valeur.nom, ville: v.valeur.ville, note: v.valeur.note, par: String(x.ph.dossier.nom || '').trim().slice(0, 120) }).select().single().then(function (r) {
+        if (r.error || !r.data) throw new Error('confrere');
+        S.confreres.push(r.data); S.form.cf_nom = ''; S.form.cf_ville = ''; S.form.cf_note = '';
+        dire('Ajouté à la liste de la téléprospectrice : elle l’appellera avec « ' + C.phraseDeLaPart(x.ph.dossier.nom) + ' ».' + (v.alerte ? ' ' + v.alerte : ''), !!v.alerte);
+      });
+    }).then(function () { var ok = feuille() && feuille().querySelector('.cz-cf-ok'); if (ok && ok.scrollIntoView) ok.scrollIntoView({ block: 'nearest' }); });
+  }
+  function retirerConfrere(id) {
+    var f = S.confreres.filter(function (r) { return r.id === id; })[0]; if (!f) return;
+    return geste(function () {
+      return maj1('chantier_confreres', S.confreres, id, { retire_le: auj() }).then(function () { dire(f.nom + ' est retiré de la liste de la téléprospectrice.', false); });
     });
   }
   function retirerArtisan(aid) {
@@ -445,6 +593,7 @@
     var a = b.getAttribute('data-cz'), id = b.getAttribute('data-id');
     if (a === 'reessayer') { charger(); return; }
     if (a === 'taches' || a === 'artisans') { ouvrirFeuille(id, a); return; }
+    if (a === 'bilan') { ouvrirFeuille(id, 'bilan'); return; }
     if (a === 'recep-carte') { ouvrirFeuille(id, 'taches'); S.ui.recep = 1; rendreFeuille(); var cf = feuille().querySelector('.cz-confirme'); if (cf && cf.scrollIntoView) cf.scrollIntoView({ block: 'nearest' }); return; }
     if (a === 'dossier') { fermer(); V2.go('dossiers', id + ':' + b.getAttribute('data-s') + ':travaux'); return; }
     if (a === 'vers-prets') { var p = S.racine.querySelector('#cz-prets'); if (p && p.scrollIntoView) { try { p.scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (e) { p.scrollIntoView(); } } return; }
@@ -462,6 +611,16 @@
     if (a === 'retirer-annuler') { S.ui.retirer = null; rendreFeuille(); return; }
     if (a === 'retirer-ok') { retirerArtisan(id); return; }
     if (a === 'ajout-art') { ajouterArtisan(); return; }
+    if (a === 'rap-programmer') { programmerRappels(); return; }
+    if (a === 'rap-date') { S.ui.rdate = id; S.ui.rretirer = null; S.ui.errRappel = ''; rendreFeuille(); var di = feuille().querySelector('#cz-rd-' + id); if (di) di.focus(); return; }
+    if (a === 'rap-retirer') { S.ui.rretirer = id; S.ui.rdate = null; rendreFeuille(); var ok0 = feuille().querySelector('[data-f="rap-retirer-ok"]'); if (ok0) try { ok0.focus({ preventScroll: true }); } catch (e) {} return; }
+    if (a === 'rap-annuler') { S.ui.rdate = null; S.ui.rretirer = null; delete S.form.rap_date; rendreFeuille(); return; }
+    if (a === 'rap-ok') { changerDateRappel(id); return; }
+    if (a === 'rap-retirer-ok') { majRappel(id, { retire_le: auj() }, function (m) { return 'Rappel retiré : « ' + m.titre + ' » n’arrivera pas dans la liste de la téléprospectrice.'; }); return; }
+    if (a === 'rap-remettre') { majRappel(id, { retire_le: null }, function (m) { return 'Rappel remis : « ' + m.titre + ' » arrivera ' + C.quandRappel(m) + '.'; }); return; }
+    if (a === 'bilan-fait') { noterBilanFait(id); return; }
+    if (a === 'confrere-ajout') { ajouterConfrere(); return; }
+    if (a === 'confrere-retirer') { retirerConfrere(id); return; }
   }
   function saisie(ev) {
     var t = ev.target; if (!t.getAttribute) return;

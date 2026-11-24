@@ -3,11 +3,13 @@
    Règles reprises de la maquette validée par Will le 23/11 (K-chantiers-maquette/assets/chantiers-donnees.js et chantiers.js) :
    un chantier par volet Agencement ou Transfert, ouvert depuis l'étape « Travaux » ; c'est Yann qui coche ; la réception fait passer
    « Travaux » (et pour un Agencement « Réception des travaux ») à faites dans le dossier. Aucune somme d'argent ici.
-   Tables : chantiers, chantier_artisans (retire_le = retiré, rien n'est effacé), chantier_taches (fait = la coche, photos). */
+   Tables : chantiers, chantier_artisans (retire_le = retiré, rien n'est effacé), chantier_taches (fait = la coche, photos).
+   L4 (24/11/2026) : idée 9 « Ce client reviendra » (chantier_rappels : les rappels qu'une réception programme, échéances CALCULÉES depuis la date de réception)
+   et idée 10 « Un confrère qui a un projet ? » (chantier_confreres : noté au bilan). Aucune somme d'argent ici non plus. */
 (function (racine, fabrique) {
-  if (typeof module === 'object' && module.exports) module.exports = fabrique(require('./phirst-dossiers-pur.js'));
-  else racine.PHIRST_CHANTIERS_PUR = fabrique(racine.PHIRST_DOSSIERS_PUR);
-})(typeof window !== 'undefined' ? window : this, function (D) {
+  if (typeof module === 'object' && module.exports) module.exports = fabrique(require('./phirst-dossiers-pur.js'), require('./phirst-pur.js'));
+  else racine.PHIRST_CHANTIERS_PUR = fabrique(racine.PHIRST_DOSSIERS_PUR, racine.PHIRST_PUR);
+})(typeof window !== 'undefined' ? window : this, function (D, P) {
   'use strict';
 
   var SORTES_CHANTIER = ['agencement', 'transfert'];
@@ -179,6 +181,119 @@
     var k = Math.min(1, max / Math.max(l, h)); return { l: Math.round(l * k), h: Math.round(h * k) };
   }
 
+
+  /* ═══ IDÉE 9 · « Ce client reviendra » : les rappels qu'un chantier réceptionné programme (L4, 24/11/2026) ═══
+     Un rappel = une ligne chantier_rappels : { type: bilan | entretien | remplacement, mois, robot, echeance, raison, etiquette, note, retire_le, fait_le }.
+     L'échéance est CALCULÉE : date de réception + `mois` (jamais écrite en dur). Les trois départs ci-dessous sont les propositions de la maquette validée ;
+     Yann change une date ou retire un rappel, rien d'autre n'est figé. `raison` est la phrase que la téléprospectrice lira ; elle ne contient aucune somme. */
+  var RAPPELS_DEPART = [{ type: 'bilan', mois: 3 }, { type: 'entretien', mois: 12 }, { type: 'remplacement', mois: 120, robot: true }];
+  var MOTS = ['', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf', 'dix'];
+  /* Ajoute n mois à une date AAAA-MM-JJ ; le 31 devient le dernier jour d'un mois plus court (31 août + 6 mois = 28 février). */
+  function ajouterMois(s, n) {
+    var p = String(s).slice(0, 10).split('-'), m = +p[1] - 1 + n, a = +p[0] + Math.floor(m / 12), mm = ((m % 12) + 12) % 12;
+    var dernier = new Date(Date.UTC(a, mm + 1, 0)).getUTCDate(), j = Math.min(+p[2], dernier);
+    return a + '-' + ('0' + (mm + 1)).slice(-2) + '-' + ('0' + j).slice(-2);
+  }
+  /* « 3 mois », « 1 an », « 10 ans », « 18 mois » */
+  function dureeCourte(m) { return m % 12 === 0 ? (m / 12) + ' ' + (m === 12 ? 'an' : 'ans') : m + ' mois'; }   // espaces simples : ce texte est écrit en base
+  /* « Il y a 3 mois », « Il y a un an », « Il y a dix ans » (en lettres jusqu'à dix, comme la maquette) */
+  function ilYa(m) {
+    if (m % 12 !== 0) return 'Il y a ' + m + ' mois';
+    var a = m / 12; return 'Il y a ' + (MOTS[a] || a) + (a === 1 ? ' an' : ' ans');
+  }
+  function nomRobot(r) { return r === 'pda' ? 'robot PDA' : 'robot Riedl'; }
+  /* Le robot de la pharmacie : un volet Riedl ou PDA dans son dossier (ph = D.pharmacies(...)[i]) ; sinon null. */
+  function robotDePharmacie(ph) {
+    var vs = (ph && ph.volets) || [];
+    for (var i = 0; i < vs.length; i++) if (vs[i].sorte === 'riedl' || vs[i].sorte === 'pda') return vs[i].sorte;
+    return null;
+  }
+  function titreRappel(type, mois) {
+    return type === 'bilan' ? 'Bilan à ' + dureeCourte(mois) : type === 'entretien' ? 'Contrat d’entretien' : 'Remplacement du robot à étudier';
+  }
+  /* L'étiquette que la téléprospectrice voit dans sa liste */
+  function etiquetteRappel(type, mois) {
+    return 'Client · ' + (type === 'bilan' ? 'bilan à ' + dureeCourte(mois) : type === 'entretien' ? 'contrat d’entretien' : 'remplacement du robot');
+  }
+  /* La phrase écrite (raison n° 1 de la liste). sorte = celle du chantier (agencement | transfert) ; robot = riedl | pda | null. */
+  function raisonRappel(type, mois, sorte, robot) {
+    var tr = sorte === 'transfert' ? 'de transfert' : 'd’agencement', quoi = robot ? 'pose du ' + nomRobot(robot) : 'réception du chantier ' + tr;
+    if (type === 'bilan') return ilYa(mois) + ', ' + quoi + ' : un bilan à faire avec le pharmacien';
+    if (type === 'entretien') return ilYa(mois) + ', ' + quoi + ' : le contrat d’entretien est à proposer';
+    return ilYa(mois) + ', ' + quoi + ' : un remplacement à étudier';
+  }
+  /* Les rappels à écrire pour un chantier réceptionné. existants = les types déjà programmés (on n'en double aucun). */
+  function rappelsAProgrammer(x, robot, existants) {
+    var c = x.c, sorte = x.volet.sorte, deja = {}, l = [];
+    (existants || []).forEach(function (r) { deja[r.type] = 1; });
+    if (!c.recuLe) return l;
+    RAPPELS_DEPART.forEach(function (d) {
+      if (deja[d.type] || (d.robot && !robot)) return;
+      l.push({ chantier_id: c.id, type: d.type, mois: d.mois, robot: robot || null, echeance: ajouterMois(c.recuLe, d.mois),
+        raison: raisonRappel(d.type, d.mois, sorte, robot), etiquette: etiquetteRappel(d.type, d.mois) });
+    });
+    return l;
+  }
+  /* Une ligne de la base → le rappel tel que l'écran le montre */
+  function monterRappel(r, auj) {
+    var date = jour(r.echeance);
+    return { id: r.id, chantier: r.chantier_id, type: r.type, mois: Number(r.mois) || 0, robot: r.robot || null, date: date, raison: String(r.raison || ''), etiquette: String(r.etiquette || ''),
+      note: r.note ? String(r.note) : '', retire: !!r.retire_le, fait: !!r.fait_le, passe: !!date && date <= aujDe(auj), titre: titreRappel(r.type, Number(r.mois) || 0) };
+  }
+  var ORDRE_TYPE = { bilan: 0, entretien: 1, remplacement: 2 };
+  function rappelsDuChantier(lignes, chantierId, auj) {
+    return (lignes || []).filter(function (r) { return r && r.chantier_id === chantierId; }).map(function (r) { return monterRappel(r, auj); })
+      .sort(function (a, b) { return (ORDRE_TYPE[a.type] || 0) - (ORDRE_TYPE[b.type] || 0); });
+  }
+  /* « le 12 février 2027 » ; le remplacement, si loin, se dit par le mois : « en novembre 2036 » */
+  function quandRappel(r) {
+    if (!r.date) return 'à une date à choisir';
+    return r.type === 'remplacement' ? 'en ' + D.long(r.date).replace(/^\d+(er)? /, '') : 'le ' + D.long(r.date);
+  }
+  /* Le bilan arrivé à échéance et pas encore noté (ni retiré) */
+  function bilanAFaire(rappels) {
+    return (rappels || []).filter(function (r) { return r.type === 'bilan' && !r.retire && !r.fait && r.passe; })[0] || null;
+  }
+  /* Le résumé de la carte « Réceptionnés » : une ligne par rappel gardé */
+  function resumeRappels(rappels) {
+    return (rappels || []).filter(function (r) { return !r.retire; }).map(function (r) { return { titre: r.titre, quand: r.fait ? 'fait' : quandRappel(r) }; });
+  }
+  /* Une nouvelle date : un vrai jour, et pas avant aujourd'hui (un rappel passé arriverait demain matin sans que Yann l'ait voulu). */
+  function verifierDateRappel(v, auj) {
+    var t = String(v == null ? '' : v).trim();
+    if (!D.estJour(t)) return { ok: false, erreur: 'Choisissez une date.' };
+    if (t < aujDe(auj)) return { ok: false, erreur: 'Choisissez une date à partir d’aujourd’hui.' };
+    return { ok: true, valeur: t };
+  }
+
+  /* ═══ IDÉE 10 · « Un confrère qui a un projet ? » : noté au bilan, il entre dans la liste d'appels « De la part de <pharmacie> » ═══ */
+  function verifierConfrere(s, deja) {
+    s = s || {};
+    var nom = String(s.nom == null ? '' : s.nom).replace(/\s+/g, ' ').trim(), ville = String(s.ville == null ? '' : s.ville).replace(/\s+/g, ' ').trim(), note = String(s.note == null ? '' : s.note).replace(/\s+/g, ' ').trim();
+    if (!nom) return { ok: false, champ: 'nom', erreur: 'Écrivez d’abord le nom de la pharmacie du confrère.' };
+    if (nom.length > 120) return { ok: false, champ: 'nom', erreur: 'Ce nom est trop long : 120 caractères au plus.' };
+    if (!ville) return { ok: false, champ: 'ville', erreur: 'Écrivez aussi sa ville.' };
+    if (ville.length > 80) return { ok: false, champ: 'ville', erreur: 'Cette ville est trop longue : 80 caractères au plus.' };
+    if (note.length > 300) return { ok: false, champ: 'note', erreur: 'Cette note est trop longue : 300 caractères au plus.' };
+    var k = cleConfrere(nom, ville);
+    for (var i = 0; i < (deja || []).length; i++) if (!deja[i].retire && cleConfrere(deja[i].nom, deja[i].ville) === k) return { ok: false, champ: 'nom', erreur: 'Ce confrère est déjà dans la liste de la téléprospectrice.' };
+    var alerte = P && P.contientMontant && note && P.contientMontant(note) ? 'Cette note parle d’argent : la téléprospectrice ne la verra pas. Retirez la somme pour qu’elle la lise.' : '';
+    return { ok: true, valeur: { nom: nom, ville: ville, note: note || null }, alerte: alerte };
+  }
+  function cleConfrere(nom, ville) {
+    var n = function (v) { return String(v == null ? '' : v).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim(); };
+    return n(nom) + '|' + n(ville);
+  }
+  function monterConfrere(r) {
+    return { id: r.id, chantier: r.chantier_id, nom: String(r.nom || ''), ville: String(r.ville || ''), note: r.note ? String(r.note) : '', par: String(r.par || ''), retire: !!r.retire_le, cree: String(r.created_at || '') };
+  }
+  function confreresDuChantier(lignes, chantierId) {
+    return (lignes || []).filter(function (r) { return r && r.chantier_id === chantierId; }).map(monterConfrere)
+      .sort(function (a, b) { return a.cree < b.cree ? -1 : a.cree > b.cree ? 1 : 0; });
+  }
+  /* « de la part de Pharmacie X » : ce que la téléprospectrice dira (et verra dans l'étiquette de sa liste) */
+  function phraseDeLaPart(par) { return 'de la part de ' + String(par || '').trim(); }
+
   return {
     SORTES_CHANTIER: SORTES_CHANTIER, DEPART: DEPART, MAX_PHOTOS: MAX_PHOTOS,
     cj: cj, dans: dans, tuile: tuile, monterChantier: monterChantier, artisan: artisan, nomArtisan: nomArtisan,
@@ -186,6 +301,10 @@
     statut: statut, segments: segments, quand: quand, phraseCompte: phraseCompte, trierEnCours: trierEnCours, trierRecus: trierRecus,
     aUnChantier: aUnChantier, etapeTravaux: etapeTravaux, prets: prets, etapesAReceptionner: etapesAReceptionner, texteReception: texteReception, lignesReception: lignesReception,
     tachesDepart: tachesDepart, ordreSuivant: ordreSuivant, resume: resume,
+    RAPPELS_DEPART: RAPPELS_DEPART, ajouterMois: ajouterMois, dureeCourte: dureeCourte, ilYa: ilYa, nomRobot: nomRobot, robotDePharmacie: robotDePharmacie, titreRappel: titreRappel,
+    etiquetteRappel: etiquetteRappel, raisonRappel: raisonRappel, rappelsAProgrammer: rappelsAProgrammer, monterRappel: monterRappel, rappelsDuChantier: rappelsDuChantier,
+    quandRappel: quandRappel, bilanAFaire: bilanAFaire, resumeRappels: resumeRappels, verifierDateRappel: verifierDateRappel,
+    verifierConfrere: verifierConfrere, cleConfrere: cleConfrere, monterConfrere: monterConfrere, confreresDuChantier: confreresDuChantier, phraseDeLaPart: phraseDeLaPart,
     verifierTitre: verifierTitre, verifierArtisan: verifierArtisan, metierAffiche: metierAffiche, lienTel: lienTel, cheminPhoto: cheminPhoto, verifierPhoto: verifierPhoto, tailleReduite: tailleReduite
   };
 });

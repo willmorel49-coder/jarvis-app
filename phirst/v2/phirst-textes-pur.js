@@ -5,9 +5,8 @@
    2. « Les réponses de Yann » : une objection entendue → la réponse de Yann ; « Entendue N fois ce mois » (mois de Paris).
    3. « Les voisines équipées » : les pharmacies déjà équipées par Yann ; la téléprospectrice ne voit que les CITABLES, les deux plus proches.
    Les écrans (phirst-reglages.js pour Yann, phirst-appels.js pour la téléprospectrice) ne font que lire, écrire et afficher.
-   Les clés des raisons (cession, creation…) sont celles de P.MOTIFS. Trois raisons arrivent au lot suivant (ars, client, recommande) :
-   leurs clés et leurs propositions sont déjà prévues ici (A_VENIR), mais elles ne sont PAS dans RAISONS, donc pas dans Réglages
-   ni dans la liste du jour. Le lot suivant les passera de A_VENIR à RAISONS (et ajoutera leur étiquette à P.MOTIFS). */
+   Les clés des raisons (cession, creation…) sont celles de P.MOTIFS. Depuis L4 (24/11/2026), « ars », « client » et « recommande » sont dans RAISONS
+   (donc dans Réglages, « Mes premières phrases ») et leur étiquette dans P.MOTIFS. */
 (function (racine, fabrique) {
   if (typeof module === 'object' && module.exports) module.exports = fabrique(require('./phirst-pur.js'));
   else racine.PHIRST_TEXTES_PUR = fabrique(racine.PHIRST_PUR);
@@ -25,15 +24,15 @@
     { cle: 'robot', raison: 'Robot de plus de 8 ans', propo: 'Bonjour, je vous appelle de la part de Yann, agenceur de pharmacies. Votre robot a plus de huit ans : c’est souvent le bon moment d’en parler. Yann installe des robots Riedl et peut vous dire ce que le remplacer changerait chez vous.' },
     { cle: 'ehpad', raison: 'EHPAD voisin', propo: 'Bonjour, je vous appelle de la part de Yann, agenceur de pharmacies. Un EHPAD est installé près de votre officine : Yann installe des robots PDA, qui préparent les piluliers. Cela peut vous ouvrir ce marché. Avez-vous deux minutes ?' },
     { cle: 'pda', raison: 'Marché public PDA', propo: 'Bonjour, je vous appelle de la part de Yann, agenceur de pharmacies. Un marché public de préparation des doses à administrer vient d’être publié près de chez vous. Yann équipe des officines en robots PDA : il peut vous dire ce qu’il faut prévoir.' },
+    { cle: 'ars', raison: 'Transfert autorisé par l’ARS', propo: 'Bonjour, je vous appelle de la part de Yann, agenceur de pharmacies. L’ARS vient d’autoriser le transfert de votre officine : Yann conçoit l’agencement des nouveaux locaux et suit le chantier. Avez-vous deux minutes ?' },
+    { cle: 'client', raison: 'Client qui revient', propo: 'Bonjour, ici l’équipe de Yann, l’agenceur avec qui vous avez déjà travaillé. Nous prenons de vos nouvelles : un nouveau projet se dessine-t-il dans votre officine ?' },
+    { cle: 'recommande', raison: 'Recommandé par un confrère', propo: 'Bonjour, un confrère de votre région nous a recommandés auprès de vous. Yann est agenceur de pharmacies et a équipé son officine. Puis-je vous présenter ce qu’il a fait ?' },
     { cle: 'relance', raison: 'Relance promise', propo: 'Bonjour, je vous rappelle comme convenu, de la part de Yann. Avez-vous eu le temps d’y réfléchir ? Je suis là pour fixer un moment qui vous arrange.' },
     { cle: 'pmr', raison: 'Accessibilité PMR', propo: 'Bonjour, je vous appelle de la part de Yann, agenceur de pharmacies. L’accès de votre officine aux personnes à mobilité réduite est un sujet de mise en conformité : Yann peut vous dire ce qui est simple à faire. Avez-vous deux minutes ?' }
   ];
-  /* Les raisons du lot suivant : clés prévues, proposition prête, pas encore dans la liste (ni Réglages, ni Appels). */
-  var A_VENIR = [
-    { cle: 'ars', raison: 'Transfert autorisé par l’ARS', propo: 'Bonjour, je vous appelle de la part de Yann, agenceur de pharmacies. L’ARS vient d’autoriser le transfert de votre officine : Yann conçoit l’agencement des nouveaux locaux et suit le chantier. Avez-vous deux minutes ?' },
-    { cle: 'client', raison: 'Client qui revient', propo: 'Bonjour, ici l’équipe de Yann, l’agenceur avec qui vous avez déjà travaillé. Nous prenons de vos nouvelles : un nouveau projet se dessine-t-il dans votre officine ?' },
-    { cle: 'recommande', raison: 'Recommandé par un confrère', propo: 'Bonjour, un confrère de votre région nous a recommandés auprès de vous. Yann est agenceur de pharmacies et a équipé son officine. Puis-je vous présenter ce qu’il a fait ?' }
-  ];
+  /* Les raisons « à venir » : plus aucune (L4 a passé ars, client et recommande dans RAISONS, 24/11/2026). La liste reste, vide, pour qu'une
+     future raison puisse y attendre son lot sans toucher au reste. */
+  var A_VENIR = [];
 
   /* Le mail de « Lui écrire plutôt » (L2, idée 4) : un texte de Yann comme les phrases, mais qui n'est PAS une raison d'appeler (pas dans RAISONS).
      Mots remplacés tout seuls : {titulaire}, {pharmacie}, {lien} (la ligne qui le porte disparaît s'il n'y a aucun lien). La signature s'ajoute en bas (lue en base). */
