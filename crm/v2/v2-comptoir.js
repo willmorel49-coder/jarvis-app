@@ -2495,7 +2495,9 @@
       h += fait('Saisonnalité', 'Fort en ' + MOIS_C[sa.moisFort - 1] + ', faible en ' + MOIS_C[sa.moisFaible - 1], es ? 'boîtes remboursées en France (Medic\'AM), ' + esc(es.periode || 'années complètes') : 'ventes France, indices du produit') +
         '<div class="cp-sai" role="img" aria-label="Indice saisonnier mois par mois, de janvier à décembre">' + bars + '</div><div class="cp-sai-m" aria-hidden="true"><span>janv.</span><span>juin</span><span>déc.</span></div>';
     }
-    h += fait('Nouveauté', x.nouveaute ? 'AMM ' + esc(x.nouveaute.amm || '') + (x.nouveaute.labo ? ' · ' + esc(x.nouveaute.labo) : '') : 'Non', 'AMM de moins de 36 mois');
+    // 24/11/2026, choix cliqué de Will : le labo du catalogue partout (« MSD FRANCE »), le titulaire de l'AMM (BDPM) seulement à défaut.
+    var nvLabo = x.nouveaute ? (l.labo || x.nouveaute.labo) : '';
+    h += fait('Nouveauté', x.nouveaute ? 'AMM ' + esc(x.nouveaute.amm || '') + (nvLabo ? ' · ' + esc(nvLabo) : '') : 'Non', 'AMM de moins de 36 mois');
     return bloc(6, 'Le produit', h + '</div>', 'cq-bl-p');
   }
 
@@ -2899,7 +2901,7 @@
         (X.nvDate ? ' (BDPM, relevé du ' + esc(dateFr(X.nvDate)) + ')' : '') + '. Les plus récents d\'abord.</p>';
       if (!X.nv) corps += '<div class="cp-vide">La liste des nouveautés n\'est pas disponible pour le moment.</div>';
       else corps += listePage(X.nv, function (x) {
-        return ligneP(x.l, [x.n.labo || x.l.labo, x.n.amm ? 'AMM ' + moisIso(x.n.amm) : ''].filter(Boolean).join(' · '), x.l.prix > 0 ? eur2(x.l.prix) : '—', stockLib(x.l), false);
+        return ligneP(x.l, [x.l.labo || x.n.labo, x.n.amm ? 'AMM ' + moisIso(x.n.amm) : ''].filter(Boolean).join(' · '), x.l.prix > 0 ? eur2(x.l.prix) : '—', stockLib(x.l), false);
       }, 'Aucune nouveauté dans notre catalogue.');
     } else {
       corps = '<p class="cpd-lead">Baisses du prix public publiées au Journal officiel (JO) : celles à venir, et celles déjà en vigueur depuis moins de ' + JOURS_ALERTE_PRIX + ' jours' +
@@ -2962,7 +2964,7 @@
           var a = ansmPourCip(fichier('ansm'), x.cip);
           corps += ligneP(x, a && a.depuis ? 'Rupture depuis le ' + dateJour(a.depuis) : 'Rupture signalée', x.stock > 0 ? 'en stock' : 'stock à 0', 'chez nous', false);
         } else if (C.chg === 'nv') {
-          corps += ligneP(x.l, [x.n.labo || x.l.labo, x.n.amm ? 'AMM ' + moisIso(x.n.amm) : ''].filter(Boolean).join(' · '), x.l.prix > 0 ? eur2(x.l.prix) : '—', 'prix net', false);
+          corps += ligneP(x.l, [x.l.labo || x.n.labo, x.n.amm ? 'AMM ' + moisIso(x.n.amm) : ''].filter(Boolean).join(' · '), x.l.prix > 0 ? eur2(x.l.prix) : '—', 'prix net', false);
         } else {
           var e = x.e, pct = (e.ancienTtc > 0 && e.nouveauTtc != null) ? (e.nouveauTtc / e.ancienTtc - 1) * 100 : null;
           corps += ligneP(x.l, (e.aVenir ? 'À partir du ' : 'Depuis le ') + dateJour(e.dateEffet), pct != null ? '−' + fr(Math.abs(pct), 1) + ' %' : '', 'de baisse', false);

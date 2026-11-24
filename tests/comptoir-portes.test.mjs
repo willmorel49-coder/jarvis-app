@@ -339,3 +339,30 @@ test('styles des portes : police de l\'app, chiffres alignés, aucun texte sous 
   assert.doesNotMatch(autres, /cpd-/);
   assert.doesNotMatch(sansBalises(sb.V2.comptoir.rendre()), /\bremise/i, 'vocabulaire : « abandon de marge », jamais « remise »');
 });
+
+// 24/11/2026, choix cliqué de Will (« Nom du catalogue ») : sur la ligne Nouveautés, Karine voyait le titulaire de l'AMM
+// (« MERCK SHARP & DOHME (PAYS-BAS) ») et, dans Mes favoris, le labo du catalogue (« MSD FRANCE »). Désormais le labo du
+// catalogue partout ; le titulaire de l'AMM (BDPM) seulement quand le catalogue n'a pas de labo.
+test('Nouveautés : le labo du catalogue avant le titulaire de l\'AMM, sur l\'accueil, dans le volet et dans la fiche', async () => {
+  const sb = monter();
+  sb.NOUVEAUTES.data[E].labo = 'TITULAIRE OFFICIEL (PAYS-BAS)';   // BDPM ≠ catalogue (« LABO QUATRE »)
+  await pret(sb);
+  const K = sb.V2.comptoir;
+  K.onglet('nv');                                                 // l'accueil : la carte « Ce qui change »
+  let t = sansBalises(K.rendre());
+  assert.match(t, /LABO QUATRE · AMM févr\. 2026/); assert.doesNotMatch(t, /TITULAIRE OFFICIEL/);
+  K.porte('change'); K.onglet('nv');                              // le volet entier
+  t = sansBalises(K.rendre());
+  assert.match(t, /LABO QUATRE · AMM févr\. 2026/); assert.doesNotMatch(t, /TITULAIRE OFFICIEL/);
+  const s = { autres: { froid: false, nouveaute: { amm: '2026-02', labo: 'TITULAIRE OFFICIEL (PAYS-BAS)' } }, generique: null, tendance: null, sansEtude: true };
+  let f = sansBalises(K._calc.blocProduit(s, { cip: E, d: 'ALPHA JUNIOR 250MG', labo: 'LABO QUATRE' }, ''));
+  assert.match(f, /AMM 2026-02 · LABO QUATRE/); assert.doesNotMatch(f, /TITULAIRE OFFICIEL/);
+  // à défaut de labo au catalogue : le titulaire de l'AMM, comme avant
+  f = sansBalises(K._calc.blocProduit(s, { cip: E, d: 'ALPHA JUNIOR 250MG', labo: '' }, ''));
+  assert.match(f, /AMM 2026-02 · TITULAIRE OFFICIEL \(PAYS-BAS\)/);
+  const sb2 = monter();
+  sb2.NOUVEAUTES.data[E].labo = 'TITULAIRE OFFICIEL (PAYS-BAS)'; sb2.CATX[E].labo = '';
+  await pret(sb2);
+  sb2.V2.comptoir.porte('change'); sb2.V2.comptoir.onglet('nv');
+  assert.match(sansBalises(sb2.V2.comptoir.rendre()), /TITULAIRE OFFICIEL \(PAYS-BAS\) · AMM févr\. 2026/);
+});
