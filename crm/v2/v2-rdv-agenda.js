@@ -81,7 +81,7 @@
     return h;
   }
 
-  var ETAT = { outil: 'outlook', pourquoi: '', ouvert: false, dernierLien: '', minuteur: 0, a: null };
+  var ETAT = { outil: 'outlook', pourquoi: '', ouvert: false, dernierLien: '', minuteur: 0, a: null, voulu: '' };
 
   function dire(html, ton) {
     var e = $('v2-ag-res');
@@ -256,13 +256,25 @@
     // Rendu du bloc. `a` = ligne rdv_agenda (sans l'adresse, elle n'est pas lisible).
     bloc: function (a) {
       css();
-      var o = outilAuto(a);
+      // 24/11/2026 — l'outil choisi d'un toucher depuis le mois (V2.rdvAgenda.choisir) passe avant l'outil deviné.
+      var o = outilAuto(a), voulu = ETAT.voulu || '';
+      ETAT.voulu = '';
+      if (voulu && voulu !== 'changer') o = { cle: mode(voulu).cle, pourquoi: '' };
       ETAT.outil = o.cle; ETAT.pourquoi = o.pourquoi;
-      ETAT.ouvert = !(a && a.hote); ETAT.dernierLien = '';
+      ETAT.ouvert = !(a && a.hote) || !!voulu; ETAT.dernierLien = '';
       ETAT.a = a || null;
       setTimeout(ecouter, 0);
+      // arrivé depuis le mois : le mode d'emploi de l'outil choisi est déjà ouvert, et le bloc à l'écran
+      if (voulu) setTimeout(function () {
+        var d = $('v2-ag-depli'); if (d && d.hidden) V2.rdvAgenda.deplier();
+        var b = $('v2-ag-box'); if (b && b.scrollIntoView) b.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      }, 60);
       return '<div class="v2-ag-box" id="v2-ag-box">' + rendu(a) + '</div>';
     },
+
+    // Depuis le mois (Rendez-vous, To do) : « Mon agenda est sur Google / Outlook / iPhone », ou vide pour
+    // « Changer d'agenda ». L'écran Mes disponibilités s'ouvre sur le branchement, l'outil déjà choisi.
+    choisir: function (cle) { ETAT.voulu = cle || 'changer'; if (V2.go) V2.go('rdvdispo'); },
 
     // Sans argument (appel de l'écran juste après l'affichage) : l'outil présélectionné.
     aide: function (cle) {

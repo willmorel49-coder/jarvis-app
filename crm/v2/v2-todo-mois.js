@@ -48,7 +48,7 @@
   function horodatage(s) { var n = new Date(), p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2], n.getHours(), n.getMinutes(), n.getSeconds()).toISOString(); }
 
   // ── état ──
-  var S = { ref: null, sel: null, form: null, envoi: false };
+  var S = { ref: null, sel: null, form: null, envoi: false, tout: { l: false, p: false } };
   var CACHE = {};   // 'AAAA-MM' -> { etat: 'cours' | 'ok' | 'ko', rdv: [], occ: [], notes: [] }
   var RECO = null;  // { etat, brut, alias } : événements de l'agenda perso, lus à l'ouverture, gardés en mémoire le temps de l'écran, jamais stockés
   // La reconnaissance se refait quand la liste des officines change : au premier passage juste après le chargement de
@@ -60,7 +60,13 @@
   function sb() { return (V2.sb && V2.sb()) || null; }
   function uid() { return (V2.user && V2.user.id) || null; }
   function surEcran() { return !!document.querySelector('.tm'); }
-  function redessiner() { if (surEcran() && V2.render) V2.render(); }
+  // 24/11/2026 — l'écran Rendez-vous montre ce même mois dans #tm-hote : on ne redessine que lui, sans relire l'écran
+  // (V2.render relancerait toutes ses lectures à chaque jour touché). La To do, elle, se redessine en entier comme avant.
+  function redessiner() {
+    var h = document.getElementById('tm-hote');
+    if (h) { h.innerHTML = V2.todoMois.html(); return; }
+    if (surEcran() && V2.render) V2.render();
+  }
 
   // ── lectures ──
   // `force` : relecture silencieuse d'un mois déjà affiché (ce qui est à l'écran reste jusqu'à la réponse)
@@ -93,7 +99,7 @@
     }).then(function (r) {
       RECO.brut = (r[0] && r[0].ok && r[0].evenements) || []; RECO.alias = r[1] || {}; RECO_CLE = '';
       RECO.etat = 'ok';
-      AGENDA = { etat: 'ok', branche: !!(r[2] && r[2].actif !== false) };
+      AGENDA = { etat: 'ok', branche: !!(r[2] && r[2].actif !== false), hote: (r[2] && r[2].hote) || '', ok: (r[2] && r[2].dernier_ok) || '' };
     }).catch(function () { RECO.etat = 'ko'; AGENDA = { etat: 'ko', branche: false }; }).then(function () {
       // relu APRÈS le relevé : les heures occupées du mois affiché sont celles d'il y a quelques secondes
       Object.keys(CACHE).forEach(function (ym) { lireMois(ym, true); }); PAR_JOUR = null; redessiner();
@@ -106,7 +112,7 @@
     var R = window.V2RECO, idx = R && V2.planningIndex ? V2.planningIndex() : null, liste = [];
     if (idx && RECO) RECO.brut.forEach(function (ev) {
       var m = R.apparier(ev.titre, idx.porte, idx.nat, RECO.alias);
-      if (m && m.officine) liste.push({ date: ev.date, debut: ev.debut, fin: ev.fin, jour_entier: ev.jour_entier, nom: m.officine.name, ville: m.officine.ville || '', etat: m.etat });
+      if (m && m.officine) liste.push({ date: ev.date, debut: ev.debut, fin: ev.fin, jour_entier: ev.jour_entier, cip: String(m.officine.id), nom: m.officine.name, ville: m.officine.ville || '', etat: m.etat });
     });
     RECO_CLE = cle; RECO_LISTE = liste;
     return liste;
@@ -264,8 +270,22 @@
     if (e === 'cours') return '<p class="tm-etat" role="status">Lecture de vos rendez-vous et de vos notes…</p>';
     if (e === 'ko') return '<p class="tm-etat" role="alert">Vos rendez-vous et vos notes de ce mois n’ont pas pu être lus : seules les tâches s’affichent. <button type="button" class="tm-btn" onclick="V2.todoMois.reessayer()">Réessayer</button></p>';
     if (RECO && RECO.etat === 'cours') return '<p class="tm-etat" role="status">Lecture de votre agenda personnel…</p>';
-    if (AGENDA && AGENDA.etat === 'ok' && !AGENDA.branche) return '<p class="tm-etat">Votre agenda personnel (Google, Outlook, iPhone) n’est pas branché : il s’affichera ici dès qu’il le sera. <button type="button" class="tm-btn" onclick="V2.go(\'rdvplanning\')">Brancher mon agenda</button></p>';
+    if (AGENDA && AGENDA.etat === 'ok') return agendaLigne();
     return '';
+  }
+  // 24/11/2026 — Will : les commerciaux se connectent « avec leur agenda qu'il souhaite ». Le choix se fait ici, d'un
+  // toucher, au lieu de l'outil deviné d'après l'adresse du compte (toute l'équipe est en @integralpharma.fr, donc Outlook).
+  var OUTILS = [['google', 'Google Agenda'], ['outlook', 'Outlook'], ['apple', 'iPhone / iCloud']];
+  function relu(s) {
+    var m = Math.floor((Date.now() - new Date(s).getTime()) / 6e4);
+    return m < 2 ? 'à l’instant' : m < 60 ? 'il y a ' + m + ' min' : m < 1440 ? 'il y a ' + Math.floor(m / 60) + ' h' : 'il y a ' + Math.floor(m / 1440) + ' j';
+  }
+  function agendaLigne() {
+    if (!AGENDA.branche) return '<div class="tm-etat tm-ag" role="group" aria-label="Brancher mon agenda"><span class="tm-agt"><b>Branchez votre agenda</b> : vos rendez-vous s’afficheront ici et vos heures prises ne seront plus proposées aux pharmaciens. Mon agenda est sur :</span><span class="tm-agb">' +
+      OUTILS.map(function (o) { return '<button type="button" class="tm-btn" onclick="V2.rdvAgenda.choisir(\'' + o[0] + '\')">' + o[1] + '</button>'; }).join('') + '</span></div>';
+    var h = String(AGENDA.hote || ''), nom = /google/.test(h) ? 'Google Agenda' : /outlook|office/.test(h) ? 'Outlook' : /icloud/.test(h) ? 'Agenda iPhone / iCloud' : 'Votre agenda';
+    return '<p class="tm-etat tm-ag-on"><i class="tm-agp" aria-hidden="true"></i><span>' + esc(nom) + ' branché' + (AGENDA.ok ? ' · relu ' + esc(relu(AGENDA.ok)) : '') + '</span>' +
+      '<button type="button" class="tm-btn" onclick="V2.rdvAgenda.choisir(\'\')">Changer d’agenda</button></p>';
   }
   function legende() {
     return '<p class="tm-leg"><span><i class="d-rdv"></i>rendez-vous</span><span><i class="d-rdv passe"></i>rendez-vous passé</span><span><i class="d-occ"></i>occupé (agenda personnel)</span><span><i class="d-t"></i>tâche</span><span><i class="d-note"></i>note</span></p>';
@@ -280,10 +300,100 @@
       '<span class="tm-cn">' + num(s) + '</span>' +
       '<span class="tm-cl">' + v.join('') + (r > 0 ? '<span class="tm-plus">+ ' + r + (r > 1 ? ' autres' : ' autre') + '</span>' : '') + '</span>' + points(s) + '</div>';
   }
+  // ── « Vos clients » (24/11/2026) — Will : « proposer des pharmacies à qui proposer des rdv qui ne sont pas placées
+  //    dans le futur et lister toutes celles qui sont positionnées et quand, genre un visu sur nos clients ».
+  //    Positionnée = un rendez-vous JARVIS confirmé à venir, ou un événement à venir de l'agenda perso reconnu comme elle.
+  var VENIR = null;   // { etat, rdv } : ses rendez-vous confirmés à partir d'aujourd'hui, tous mois confondus
+  var OPPOSES = null; // cip -> 1 : celles qui ont demandé à ne plus être sollicitées (liste commune à l'équipe)
+  var VU_LU = false;
+  function lireVenir() {
+    if (VENIR) return;
+    var e = VENIR = { etat: 'cours', rdv: [] }, c = sb(), u = uid();
+    if (!c || !u) { e.etat = 'ko'; return; }
+    Promise.all([
+      c.from('rdv').select('cip,nom,date,heure').eq('user_id', u).eq('statut', 'confirme').gte('date', auj()).order('date').order('heure'),
+      c.rpc ? c.rpc('rdv_opposes').then(function (o) { return o; }, function () { return null; }) : null
+    ]).then(function (r) {
+      if (r[0] && r[0].error) throw new Error('lecture');
+      e.rdv = (r[0] && r[0].data) || []; e.etat = 'ok';
+      var o = {}; ((r[1] && r[1].data) || []).forEach(function (x) { o[String(x && x.cip != null ? x.cip : x)] = 1; }); OPPOSES = o;
+    }).catch(function () { e.etat = 'ko'; }).then(function () { if (VENIR === e) redessiner(); });
+    // « vue il y a 7 mois » : visites notées et rendez-vous passés, lus une fois (v2-rdv.js)
+    if (V2.rdvVuCharger && !VU_LU) { VU_LU = true; var pv = V2.rdvVuCharger(); if (pv && pv.then) pv.then(function () { redessiner(); }, function () {}); }
+  }
+  // Ses officines à LUI : le fichier porte celles de toute l'équipe (même filtre que « Qui inviter », v2-rdv-planning.js).
+  function portefeuille() {
+    var moi = (V2.user && V2.user.commercial) ? String(V2.user.commercial) : '', l = V2.pharmacies || [];
+    return moi ? l.filter(function (p) { return (p.comms || []).indexOf(moi) >= 0; }) : l;
+  }
+  function ilYa(s) {
+    var n = Math.round((dt(auj()) - dt(s)) / 864e5);
+    if (n <= 0) return 'vue aujourd’hui'; if (n === 1) return 'vue hier'; if (n < 31) return 'vue il y a ' + n + ' jours';
+    var m = Math.round(n / 30.4); return m < 12 ? 'vue il y a ' + m + ' mois' : 'vue il y a plus d’un an';
+  }
+  function clientsHtml() {
+    var liste = portefeuille();
+    if (!liste.length) return '';
+    lireVenir();
+    var a = auj(), prochain = {}, vu = {}, lu = VENIR.etat;
+    function poser(cip, date, h, src) {
+      var k = String(cip || ''), x = prochain[k];
+      if (k && (!x || date + h < x.date + x.h)) prochain[k] = { date: date, h: h, src: src };
+    }
+    if (lu === 'ok') VENIR.rdv.forEach(function (r) { poser(r.cip, r.date, hm(r.heure), 'jarvis'); });
+    reconnus().forEach(function (x) {
+      if (x.date >= a) poser(x.cip, x.date, x.jour_entier ? '' : hm(x.debut), 'agenda');
+      else if (!vu[x.cip] || x.date > vu[x.cip]) vu[x.cip] = x.date;
+    });
+    var poses = [], libres = [], stop = 0;
+    liste.forEach(function (p) {
+      var k = String(p.id), n = prochain[k];
+      if (n) { poses.push({ p: p, n: n }); return; }
+      if (OPPOSES && OPPOSES[k]) { stop++; return; }
+      var v = V2.rdvVuLe ? V2.rdvVuLe(k) : null;
+      if (vu[k] && (!v || vu[k] > v)) v = vu[k];
+      libres.push({ p: p, vu: v || '' });
+    });
+    poses.sort(function (x, y) { return x.n.date + x.n.h < y.n.date + y.n.h ? -1 : 1; });
+    // jamais vue d'abord, puis la plus ancienne visite : c'est elle qu'on propose en premier
+    libres.sort(function (x, y) { return x.vu === y.vu ? String(x.p.name || '').localeCompare(String(y.p.name || '')) : (x.vu < y.vu ? -1 : 1); });
+    var tot = liste.length, np = poses.length;
+    var h = '<section class="tm-carte tm-clients" aria-label="Vos clients"><h2 class="tm-cht">Vos clients</h2>';
+    if (lu === 'cours') return h + '<p class="tm-chp" role="status">Lecture de vos rendez-vous à venir…</p></section>';
+    // une lecture ratée ne fait pas croire que tous les clients sont sans rendez-vous
+    if (lu === 'ko') return h + '<p class="tm-etat" role="alert">Vos rendez-vous à venir n’ont pas pu être lus. <button type="button" class="tm-btn" onclick="V2.todoMois.reessayer()">Réessayer</button></p></section>';
+    h += '<p class="tm-chp"><b>' + np + '</b> sur ' + tot + ' ont un rendez-vous à venir · <b>' + libres.length + '</b> sans rendez-vous' +
+      (stop ? ' · <b>' + stop + '</b> ne ' + (stop > 1 ? 'veulent' : 'veut') + ' plus être sollicitée' + (stop > 1 ? 's' : '') : '') + '</p>' +
+      '<div class="tm-jauge" aria-hidden="true"><i style="width:' + Math.round(np * 100 / tot) + '%"></i></div>';
+    var ho = String((AGENDA && AGENDA.hote) || '');
+    if (AGENDA && AGENDA.etat === 'ok' && !AGENDA.branche) h += '<p class="tm-cnote">Tant que votre agenda n’est pas branché, seuls les rendez-vous notés dans JARVIS comptent.</p>';
+    else if (/outlook|office/.test(ho)) h += '<p class="tm-cnote">Outlook ne partage que vos heures occupées, sans les noms : seuls les rendez-vous notés dans JARVIS comptent.</p>';
+    function ligneL(x) {
+      var p = x.p, k = String(p.id), o = V2.rdvInfo ? V2.rdvInfo(k) : {}, mail = String(o.email || '').trim(), tel = String(o.tel || '').replace(/[^0-9+]/g, '');
+      var act = mail && V2.rdv ? '<button type="button" class="tm-btn tm-prim tm-ca" onclick="V2.rdv.proposer(\'' + esc(k) + '\')">Proposer un RDV</button>'
+        : tel ? '<a class="tm-btn tm-ca" href="tel:' + esc(tel) + '">Appeler</a>' : '<span class="tm-cs">ni mail ni téléphone</span>';
+      return '<div class="tm-cli"><button type="button" class="tm-cn2" onclick="V2.go(\'pharma\',\'' + esc(k) + '\')"><b>' + esc(court(p.name)) + '</b><small>' +
+        esc([joli(p.ville || ''), x.vu ? ilYa(x.vu) : 'aucune visite notée'].filter(Boolean).join(' · ')) + '</small></button>' + act + '</div>';
+    }
+    function ligneP(x) {
+      var p = x.p, n = x.n, quand = maj(J3[dow(n.date)]) + '. ' + num(n.date) + ' ' + MOIS[+n.date.slice(5, 7) - 1] + (n.h ? ' · ' + n.h.replace(':', 'h') : '');
+      return '<div class="tm-cli"><button type="button" class="tm-cn2" onclick="V2.todoMois.allerA(\'' + n.date + '\')" aria-label="' + esc(joli(p.name) + ', ' + quand + ' : voir ce jour dans le mois') + '"><b>' + esc(court(p.name)) + '</b><small>' +
+        esc([joli(p.ville || ''), ecart(n.date), n.src === 'agenda' ? 'agenda personnel' : ''].filter(Boolean).join(' · ')) + '</small></button><span class="tm-cq">' + esc(quand) + '</span></div>';
+    }
+    function col(k, titre, arr, f, vide) {
+      var M = 8, tout = S.tout[k], vis = tout ? arr : arr.slice(0, M);
+      return '<section class="tm-ccol"><h3 class="tm-sh">' + titre + ' <b>' + arr.length + '</b></h3>' + (arr.length ? vis.map(f).join('') : '<p class="tm-rien">' + vide + '</p>') +
+        (arr.length > M ? '<button type="button" class="tm-btn tm-cplus" onclick="V2.todoMois.voirTout(\'' + k + '\')">' + (tout ? 'Réduire la liste' : 'Voir les ' + arr.length) + '</button>' : '') + '</section>';
+    }
+    return h + '<div class="tm-ccols">' +
+      col('l', 'Sans rendez-vous à venir', libres, ligneL, 'Toutes ont un rendez-vous à venir.') +
+      col('p', 'Rendez-vous posé', poses, ligneP, 'Aucun rendez-vous à venir pour l’instant.') + '</div>' +
+      '</section>';
+  }
   function page() {
     var e = etatMois();
     return barre() + etatLu(e) + '<div class="tm-cote"><div class="tm-gauche"><div class="tm-mois-g">' + entetes() + '<div class="tm-g">' + cases(S.ref).map(cellule).join('') + '</div></div>' + legende() + libres() + '</div>' +
-      '<section class="tm-carte tm-jour" aria-live="polite">' + detail(S.sel) + '</section></div>';
+      '<section class="tm-carte tm-jour" aria-live="polite">' + detail(S.sel) + '</section></div>' + clientsHtml();
   }
 
   // ── la phrase sous le titre, faite des nombres affichés ──
@@ -306,8 +416,14 @@
     phrase: phrase,
     html: function () { init(); ensureCss(); return '<div class="tm tm-v2">' + page() + '</div>'; },
     // l'onglet s'ouvre : tout est relu (un rendez-vous pris ailleurs depuis doit apparaître)
-    rafraichir: function () { CACHE = {}; RECO = null; PAR_JOUR = null; },
-    reessayer: function () { CACHE = {}; PAR_JOUR = null; redessiner(); },
+    rafraichir: function () { CACHE = {}; RECO = null; PAR_JOUR = null; VENIR = null; OPPOSES = null; },
+    // « Vos clients » › Rendez-vous posé : le jour s'ouvre dans le mois
+    allerA: function (s) {
+      S.ref = s; S.sel = s; S.form = null; redessiner();
+      var b = document.querySelector('.tm .tm-barre'); if (b && b.scrollIntoView) b.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    },
+    voirTout: function (k) { S.tout[k] = !S.tout[k]; redessiner(); },
+    reessayer: function () { CACHE = {}; PAR_JOUR = null; VENIR = null; redessiner(); },
     choisir: function (s) { S.sel = s; if (S.form) S.form.date = s; redessiner(); },
     pas: function (n) {
       var d = dt(S.ref); d.setDate(1); d.setMonth(d.getMonth() + n); S.ref = iso(d);
@@ -455,6 +571,33 @@
       '.tm-lb{padding:6px 16px 8px;border-radius:18px;border:1px solid #D6E0F3;background:#F4F7FD}',
       '.tm-lb .tm-sh{margin-top:10px}',
       '.tm-lb .tm-box{margin:0 4px 0 0}',
+      /* l'agenda branché ou à brancher (24/11/2026) */
+      '.tm-ag{justify-content:space-between}',
+      '.tm-agt{flex:1 1 320px;min-width:0}',
+      '.tm-agb{display:flex;flex-wrap:wrap;gap:8px}',
+      '.tm-ag-on span{flex:1;min-width:0}',
+      '.tm-agp{flex:none;width:10px;height:10px;border-radius:50%;background:#1E9E6A;box-shadow:0 0 0 4px #DDF3E9}',
+      /* vos clients (24/11/2026) */
+      '.tm-clients{margin-top:16px}',
+      '.tm-cht{margin:0;font:800 21px/1.2 var(--font);letter-spacing:-.02em;color:var(--tm-i)}',
+      '.tm-chp{margin:4px 0 0;font:500 15px/1.4 var(--font);color:var(--tm-g)}',
+      '.tm-chp b{color:var(--tm-b);font-weight:800;font-variant-numeric:tabular-nums}',
+      '.tm-jauge{height:10px;margin:12px 0 4px;border-radius:999px;background:#E3E9F4;overflow:hidden;box-shadow:0 1px 2px rgba(15,20,32,.1) inset}',
+      '.tm-jauge i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--tm-n),var(--tm-b))}',
+      '.tm-cnote{margin:8px 0 0;font:500 13px/1.45 var(--font);color:var(--tm-g)}',
+      '.tm-ccols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 28px}',
+      '.tm-cli{display:flex;align-items:center;gap:10px;min-height:44px;padding:5px 0;border-top:1px solid #E6ECF6}',
+      '.tm-sh + .tm-cli{border-top:0}',
+      '.tm-cn2{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:2px;min-height:44px;margin:0;padding:0;border:0;background:transparent;text-align:left;cursor:pointer;color:var(--tm-i);font:inherit}',
+      '.tm-cn2 b{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 15px/1.3 var(--font)}',
+      '.tm-cn2 small{font:500 13px/1.35 var(--font);color:var(--tm-g)}',
+      '.tm-cn2:hover b{color:var(--tm-b)}',
+      '.tm-cn2:focus-visible{outline:2px solid var(--tm-b);outline-offset:2px;border-radius:6px}',
+      '.tm-ca{flex:none;padding:0 14px;text-decoration:none}',
+      '.tm-cq{flex:none;padding:4px 9px;border-radius:8px;background:var(--tm-halo);color:var(--tm-n);font:800 13px/1.3 var(--font);font-variant-numeric:tabular-nums;white-space:nowrap}',
+      '.tm-cs{flex:none;font:500 13px/1.3 var(--font);color:var(--tm-g)}',
+      '.tm-cplus{margin:8px 0 4px}',
+      '@media (max-width:760px){.tm-ccols{grid-template-columns:minmax(0,1fr)}}',
       /* le mois à gauche, le jour à droite */
       '.tm-cote{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(320px,1fr);gap:16px;align-items:start}',
       '.tm-jour{position:sticky;top:76px}',

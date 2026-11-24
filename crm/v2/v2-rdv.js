@@ -27,7 +27,6 @@
     var q = +p[2];
     return JOURS[d.getUTCDay()] + ' ' + (q === 1 ? '1er' : q) + ' ' + MOIS[+p[1] - 1];
   }
-  function hhmm(h) { return String(h).slice(0, 5).replace(':', 'h'); }
   function numero(s) { return String(s || '').replace(/[^0-9+]/g, ''); }
 
   // Valeur injectée DANS un onclick="…('ICI')" : elle traverse deux analyseurs,
@@ -329,11 +328,6 @@
       '.v2-rdv-h{font-weight:800;font-variant-numeric:tabular-nums;min-width:52px}',
       '.v2-rdv-n{font-weight:600}',
       '.v2-rdv-c{color:var(--muted);font-size:13px;width:100%}',
-      // Fiche de préparation : ce qu'il faut savoir AVANT d'entrer dans l'officine.
-      '.v2-rdv-prep{width:100%;margin-top:6px;padding:8px 10px;font-size:13px;line-height:1.5;',
-      '  border-left:3px solid var(--ip-blue);background:var(--card-2);border-radius:0 8px 8px 0}',
-      '.v2-rdv-prep b{font-weight:800}',
-      '.v2-rdv-prep a{min-height:44px;display:inline-flex;align-items:center}',
       '.v2-rdv-c a{color:var(--ip-blue);font-weight:700;text-decoration:none}',
       '.v2-rdv-item{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;margin-bottom:8px}',
       '.v2-rdv-item b{display:block;font-size:14.5px}',
@@ -358,88 +352,9 @@
       '  margin:0;position:relative}',
       '.v2-sem-cap p{margin:4px 0 0;font-size:14px;color:rgba(255,255,255,.86);position:relative}',
 
-      /* La bande de jours : elle défile horizontalement DANS son cadre, la
-         page elle-même ne bouge jamais de côté. */
-      '.v2-sem-fond{margin:0 -26px;',
-      '  background:linear-gradient(180deg,#0039A8 0%,#0039A8 40%,transparent 40%)}',
-      '@media(max-width:640px){.v2-sem-fond{margin:0 -14px}}',
-      '.v2-sem-b{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;',
-      '  padding:16px 26px 18px}',
-      '@media(max-width:640px){.v2-sem-b{padding:16px 14px 18px}}',
-      '.v2-sem-b::-webkit-scrollbar{display:none}',
-      '.v2-sem-j{position:relative;flex:0 0 auto;min-width:60px;min-height:64px;padding:8px 6px;',
-      '  border-radius:14px;',
-      '  border:1px solid var(--line);background:var(--card);text-align:center;cursor:pointer;',
-      '  font:inherit;color:inherit;box-shadow:0 1px 0 #fff inset,0 6px 16px -10px rgba(16,19,28,.28)}',
-      '.v2-sem-j .d{display:block;font-size:13px;font-weight:800;letter-spacing:.05em;',
-      '  text-transform:uppercase;color:var(--muted)}',
-      '.v2-sem-j .n{display:block;font-size:20px;font-weight:800;letter-spacing:-.02em;margin-top:1px;',
-      '  font-variant-numeric:tabular-nums}',
-      '.v2-sem-j .pt{display:block;height:6px;width:6px;margin:5px auto 0;border-radius:99px;',
-      '  background:var(--line)}',
-      '.v2-sem-j .pt.on{background:var(--ip-blue);width:22px}',
-      '.v2-sem-j[aria-current="true"]{background:var(--ip-blue);border-color:var(--ip-blue);',
-      '  box-shadow:0 1px 0 rgba(255,255,255,.3) inset,0 10px 22px -10px rgba(0,80,230,.7)}',
-      // Mesuré sur le rendu (blanc à 72% sur le bleu plein) : 4,02:1, sous 4,5:1. Remonté à .85.
-      '.v2-sem-j[aria-current="true"] .d{color:rgba(255,255,255,.85)}',
-      '.v2-sem-j[aria-current="true"] .n{color:#fff}',
-      '.v2-sem-j[aria-current="true"] .pt,.v2-sem-j[aria-current="true"] .pt.on{background:#fff}',
-
       '.v2-sr-only{position:absolute;width:1px;height:1px;overflow:hidden;',
       '  clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}',
-      '.v2-sem-t{margin:2px 0 12px;font-size:19px;font-weight:800;letter-spacing:-.02em}',
-      '.v2-sem-t span{font-weight:500;color:var(--muted)}',
-
-      /* Un rendez-vous = une ligne d'agenda : l'heure tient la colonne. */
-      '.v2-sem-r{display:flex;gap:14px;padding:14px;margin-bottom:10px;background:var(--card);',
-      '  border:1px solid var(--line);border-radius:var(--r-md);',
-      '  box-shadow:0 1px 0 #fff inset,0 8px 22px -14px rgba(16,19,28,.30)}',
-      '.v2-sem-r .h{flex:0 0 54px;font-size:17px;font-weight:800;letter-spacing:-.02em;',
-      '  font-variant-numeric:tabular-nums;padding-top:1px}',
-      '.v2-sem-r .co{flex:1;min-width:0}',
-      '.v2-sem-r .nom{font-size:15.5px;font-weight:700;letter-spacing:-.01em}',
-      '.v2-sem-r .ou{font-size:13.5px;color:var(--muted);margin-top:2px}',
-      /* ⚠️ Deux boutons par ligne, jamais trois : à 390 px le troisième passe
-         à la ligne et casse le rythme. Mesuré à l'écran, pas supposé. */
-      '.v2-sem-r .act{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}',
-      '.v2-sem-r .act a,.v2-sem-r .act button{display:inline-flex;align-items:center;',
-      '  min-height:44px;padding:0 14px;border-radius:11px;border:1px solid var(--line);',
-      '  background:var(--card-2);font-size:14px;font-weight:600;text-decoration:none;',
-      '  color:inherit;font-family:inherit;cursor:pointer}',
-      '.v2-sem-r .act a.tel{color:var(--ip-blue);border-color:#CFDFFB;background:#EAF0FE}',
-
-      /* ── Ce que dit l'agenda perso ────────────────────────────────
-         ⚠️ Ajouté le 25/08/2026 après un retour de Will : « je vois plus mon
-         agenda synchronisé, comme si j'avais rien chaque jour ». L'agenda
-         était pourtant relu (30 plages, aucune erreur) — c'est CET ÉCRAN qui
-         ne lisait que la table `rdv`. Avec 0 rendez-vous JARVIS à venir, il
-         affirmait « Rien de prévu ce jour-là » sur des journées pleines.
-         Un écran qui annonce le vide sur des données qu'il n'a pas lues est
-         pire qu'un écran absent. Voir [[feedback-verifier-tout-le-perimetre]].
-         Sourd et sans bouton : ce n'est pas une visite, c'est une contrainte.
-         ⚠️ Aucun titre n'est affiché — la table n'en stocke aucun, par
-         conception. On ne montre que l'heure. */
-      '.v2-sem-occ{display:flex;gap:14px;align-items:center;padding:11px 14px;margin-bottom:8px;',
-      '  background:var(--card-2);border:1px dashed var(--line-strong);border-radius:var(--r-md)}',
-      '.v2-sem-occ .h{flex:0 0 54px;font-size:14.5px;font-weight:700;color:var(--muted);',
-      '  font-variant-numeric:tabular-nums}',
-      '.v2-sem-occ .q{font-size:14px;color:var(--muted)}',
-      '.v2-sem-j .pt.perso{background:var(--muted-2);width:6px}',
-      '.v2-sem-tour{display:flex;align-items:center;gap:12px;padding:14px;',
-      '  border-radius:var(--r-md);margin-bottom:10px;color:#fff;border:0;width:100%;',
-      '  text-align:left;font:inherit;cursor:pointer;',
-      '  background:linear-gradient(140deg,#0B5BEE,#0039A8);',
-      '  box-shadow:0 12px 26px -14px rgba(0,57,168,.9)}',
-      '.v2-sem-tour b{display:block;font-size:15px;font-weight:700}',
-      '.v2-sem-tour small{display:block;font-size:13px;color:rgba(255,255,255,.82);margin-top:1px}',
-      '.v2-sem-tour .go{margin-left:auto;flex:0 0 auto;min-height:44px;display:flex;',
-      '  align-items:center;padding:0 14px;border-radius:11px;background:rgba(255,255,255,.18);',
-      '  border:1px solid rgba(255,255,255,.42);font-weight:700;font-size:14px}',
-
-      '.v2-sem-vide{padding:26px 18px;text-align:center;color:var(--muted);background:var(--card);',
-      '  border:1px dashed var(--line);border-radius:var(--r-md)}',
-      '.v2-sem-vide b{display:block;color:var(--text);font-size:15.5px;margin-bottom:4px}',
-
+      '#tm-hote{margin-top:18px}',
       /* La barre du bas : les deux gestes du quotidien, toujours à portée. */
       '.v2-sem-barre{position:fixed;left:0;right:0;bottom:0;display:flex;gap:10px;z-index:40;',
       '  padding:12px 16px calc(12px + env(safe-area-inset-bottom));',
@@ -737,24 +652,6 @@
     }
   };
 
-  // Ce qu'on sait déjà de l'officine, sans rien recalculer : les ruptures viennent de V2.rupture.
-  // Le vrai gain du commercial n'est pas le créneau, c'est d'arriver préparé.
-  function prepa(cip) {
-    if (!cip) return '';
-    var bouts = [];
-    try {
-      // Ruptures ANSM sur ce qu'elle achète, dont ce qu'Intégral a en stock :
-      // c'est l'argument le plus concret à poser sur le comptoir. Le calcul
-      // vit dans V2.rdvTension — le mail et cette ligne doivent dire pareil.
-      var t = V2.rdvTension(cip);
-      if (t.n) bouts.push('<b>' + t.n + '</b> rupture' + (t.n > 1 ? 's' : '') + ' sur ses achats' +
-                        (t.dispo ? ' · <b>' + t.dispo + '</b> en stock chez nous' : ''));
-    } catch (e) {}
-    if (!bouts.length) return '';
-    return '<div class="v2-rdv-prep">' + bouts.join(' — ') +
-      ' · <a href="#" onclick="V2.go(\'pharma\',\'' + escArg(cip) + '\');return false">voir sa fiche</a></div>';
-  }
-
   var IC = {
     agenda: '<rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3 10h18"/>',
     noter: '<path d="M12 5v14M5 12h14"/>',
@@ -788,9 +685,7 @@
   // CHIFFRÉE — ce qui attend une réponse ne doit jamais disparaître en
   // silence, sinon on l'oublie et personne ne s'en aperçoit.
 
-  // Ce que la dernière lecture a rendu. Changer de jour NE RELIT RIEN et ne
-  // recharge pas l'écran : Will a dit « ça fait revenir en arrière c'est
-  // chiant ». On re-rend uniquement la zone de la journée.
+  // Ce que la dernière lecture a rendu, pour le panneau « ··· ».
   var ETAT = null;
 
   function jourPlus(iso, n) {
@@ -798,153 +693,6 @@
     var d = new Date(Date.UTC(+q[0], +q[1] - 1, +q[2]));
     d.setUTCDate(d.getUTCDate() + n);
     return d.toISOString().slice(0, 10);
-  }
-  function jourSem(iso) {
-    var q = String(iso).split('-');
-    return new Date(Date.UTC(+q[0], +q[1] - 1, +q[2])).getUTCDay();
-  }
-
-  // Les jours de la bande : trois semaines ouvrées, plus tout jour qui porte
-  // un rendez-vous. Un samedi vide n'a rien à faire là ; un samedi où l'on a
-  // rendez-vous ne doit surtout pas manquer.
-  function joursDeLaBande(auj, parJour) {
-    var out = [], vus = {};
-    for (var i = 0; i < 21; i++) {
-      var d = jourPlus(auj, i), js = jourSem(d);
-      if ((js >= 1 && js <= 5) || parJour[d]) { out.push(d); vus[d] = 1; }
-    }
-    Object.keys(parJour).forEach(function (d) { if (!vus[d] && d >= auj) out.push(d); });
-    return out.sort();
-  }
-
-  function bandeHtml(jours, parJour, choisi) {
-    return '<nav class="v2-sem-b" aria-label="Les trois prochaines semaines">' +
-      jours.map(function (d) {
-        var n = (parJour[d] || []).length;
-        var o = ((ETAT && ETAT.occupeParJour) || {})[d];
-        var nOcc = o ? o.length : 0;
-        // Trois états, et jamais deux qui se ressemblent : une visite JARVIS
-        // (barre bleue), une journée seulement occupée par l'agenda perso
-        // (point sourd), une journée réellement libre (point clair).
-        var pastille = n ? ' on' : (nOcc ? ' perso' : '');
-        var dit = n
-          ? n + ' visite' + (n > 1 ? 's' : '') + (nOcc ? ', et ' + nOcc + ' créneau' + (nOcc > 1 ? 'x' : '') + ' pris dans votre agenda' : '')
-          : (nOcc ? nOcc + ' créneau' + (nOcc > 1 ? 'x' : '') + ' pris dans votre agenda' : 'journée libre');
-        return '<button class="v2-sem-j" type="button"' +
-          (d === choisi ? ' aria-current="true"' : '') +
-          ' onclick="V2.rdv.jour(\'' + escArg(d) + '\')">' +
-          '<span class="d">' + esc(JOURS[jourSem(d)].slice(0, 3)) + '</span>' +
-          '<span class="n">' + esc(+String(d).split('-')[2]) + '</span>' +
-          '<span class="pt' + pastille + '"></span>' +
-          '<span class="v2-sr-only">' + esc(dit) + '</span></button>';
-      }).join('') + '</nav>';
-  }
-
-  // Une ligne de la journée. Deux boutons au maximum : à 390 px le troisième
-  // passe à la ligne — constaté à l'écran le 25/08, pas supposé.
-  function ligneJour(d) {
-    var tel = numero(d.contact_tel);
-    var ou = [d.ville, d.contact_nom].filter(Boolean).map(esc).join(' · ');
-    var mois = V2.rdvMoisDepuis ? V2.rdvMoisDepuis(d.cip) : null;
-    if (mois) ou += (ou ? ' · ' : '') + 'vue il y a ' + mois + ' mois';
-    // 28/10/2026 — noté sans réseau, pas encore parti (v2-hors-ligne.js).
-    if (d._attente) ou += (ou ? ' · ' : '') + 'en attente d’envoi';
-    return '<article class="v2-sem-r">' +
-      '<div class="h">' + esc(hhmm(d.heure)) + '</div>' +
-      '<div class="co">' +
-        '<div class="nom">' + esc(d.nom) + '</div>' +
-        (ou ? '<div class="ou">' + ou + '</div>' : '') +
-        prepa(d.cip) +
-        '<div class="act">' +
-          (tel ? '<a class="tel" href="tel:' + esc(tel) + '">Appeler</a>' : '') +
-          '<button type="button" onclick="V2.rdv.ics(\'' + escArg(d.id) + '\')">' +
-            'Agenda</button>' +
-        '</div>' +
-      '</div></article>';
-  }
-
-  // Une plage prise dans l'agenda personnel. Aucune action, aucun titre :
-  // la table `rdv_occupe` ne stocke QUE des heures, par conception.
-  function ligneOccupe(o) {
-    var quand = o.jour_entier
-      ? 'Toute la journée'
-      : hhmm(o.debut) + (o.fin ? ' – ' + hhmm(o.fin) : '');
-    return '<div class="v2-sem-occ">' +
-      '<div class="h">' + esc(o.jour_entier ? '—' : hhmm(o.debut)) + '</div>' +
-      '<div class="q">' + esc(o.jour_entier ? 'Toute la journée' : quand) +
-        ' · votre agenda</div></div>';
-  }
-
-  function journeeHtml(date) {
-    if (!ETAT) return '';
-    var liste = (ETAT.parJour[date] || []).slice().sort(function (a, b) {
-      return String(a.heure) < String(b.heure) ? -1 : 1;
-    });
-    var occ = ((ETAT.occupeParJour || {})[date] || []).slice().sort(function (a, b) {
-      if (a.jour_entier) return -1;
-      if (b.jour_entier) return 1;
-      return String(a.debut) < String(b.debut) ? -1 : 1;
-    });
-
-    var lib = libelle(date);
-    lib = lib.charAt(0).toUpperCase() + lib.slice(1);
-    // Le sous-titre doit décrire la journée RÉELLE, pas seulement la part
-    // que JARVIS connaît. « aucune visite » sur une journée où l'agenda
-    // porte trois réunions est un mensonge par omission.
-    var dit;
-    if (liste.length && occ.length) {
-      dit = liste.length + ' visite' + (liste.length > 1 ? 's' : '') +
-            ' · ' + occ.length + ' créneau' + (occ.length > 1 ? 'x' : '') + ' pris';
-    } else if (liste.length) {
-      dit = liste.length + ' visite' + (liste.length > 1 ? 's' : '');
-    } else if (occ.length) {
-      dit = occ.length + ' créneau' + (occ.length > 1 ? 'x' : '') + ' déjà pris';
-    } else {
-      dit = 'journée libre';
-    }
-    var h = '<p class="v2-sem-t">' + esc(lib) + ' <span>· ' + esc(dit) + '</span></p>';
-
-    // La tournée n'a de sens qu'à partir de deux arrêts.
-    if (liste.length > 1 && V2.carteTourFromIds) {
-      h += '<button class="v2-sem-tour" type="button" onclick="V2.rdv.tourneeDuJour(\'' +
-        escArg(date) + '\')"><span><b>Votre tournée du jour</b>' +
-        '<small>' + esc(liste.length) + ' arrêts</small></span>' +
-        '<span class="go">Ouvrir</span></button>';
-    }
-
-    // Visites et plages d'agenda dans le MÊME ordre chronologique : c'est
-    // ainsi que la journée se vit, pas en deux listes séparées.
-    var tout = liste.map(function (d) {
-        return { t: String(d.heure || ''), html: ligneJour(d) };
-      }).concat(occ.map(function (o) {
-        return { t: o.jour_entier ? '' : String(o.debut || ''), html: ligneOccupe(o) };
-      }));
-    tout.sort(function (a, b) { return a.t < b.t ? -1 : (a.t > b.t ? 1 : 0); });
-    h += tout.map(function (x) { return x.html; }).join('');
-
-    if (liste.length) {
-      if (V2.rdvRadar) {
-        h += '<div class="v2-rdv-acts"><button class="v2-btn" type="button" onclick="V2.rdv.completer(\'' +
-          escArg(date) + '\')">Compléter cette journée</button></div>';
-      }
-    } else if (occ.length) {
-      // Occupée mais sans visite : on propose de la remplir autour, sans
-      // prétendre qu'elle est vide.
-      if (V2.rdvRadar) {
-        h += '<div class="v2-rdv-acts"><button class="v2-btn" type="button" onclick="V2.rdv.completer(\'' +
-          escArg(date) + '\')">Caler une visite ce jour-là</button></div>';
-      }
-    } else {
-      h += '<div class="v2-sem-vide"><b>Rien de prévu ce jour-là</b>' +
-        'Ni visite, ni rendez-vous dans votre agenda. Les officines proches que vous n’avez pas ' +
-        'vues depuis longtemps sont les moins chères à aller voir.' +
-        (V2.rdvRadar
-          ? '<div style="margin-top:14px"><button class="v2-btn" type="button" onclick="V2.rdv.completer(\'' +
-            escArg(date) + '\')">Remplir cette journée</button></div>'
-          : '') +
-        '</div>';
-    }
-    return h;
   }
 
   // Le panneau « ··· » : tout le reste du module. Rangé, jamais supprimé.
@@ -1055,15 +803,6 @@
 
   // ── Les gestes de l'écran ────────────────────────────────────────
   // Aucun ne recharge la page : ils repeignent la zone concernée.
-  V2.rdv.jour = function (iso) {
-    if (!ETAT) return;
-    ETAT.choisi = iso;
-    var z = document.getElementById('v2-sem-journee');
-    if (z) z.innerHTML = journeeHtml(iso);
-    var b = document.getElementById('v2-sem-bande');
-    if (b) b.innerHTML = bandeHtml(ETAT.jours, ETAT.parJour, iso);
-  };
-
   V2.rdv.menu = function (ouvrir) {
     var p = document.getElementById('v2-sem-pan');
     if (!p) return;
@@ -1087,11 +826,11 @@
       }
       var auj = new Date().toISOString().slice(0, 10);
       V2.rdvTelCharger();
-      // « Vue il y a N mois » sur chaque ligne a besoin de cette lecture. On
-      // ne l'attend pas : l'écran s'affiche d'abord, la mention arrive après.
-      if (V2.rdvVuCharger) V2.rdvVuCharger();
-      // Ouvrir cet écran relance une lecture de l'agenda personnel, en fond.
-      if (V2.rdvAgenda) V2.rdvAgenda.relever();
+      // 24/11/2026 — Will : « la feature rendez-vous doit direct s'ouvrir sur mon agenda en vision mensuel », « mixé
+      // avec to do list ». L'écran montre donc LE MÊME mois que To do › Agenda du mois (v2-todo-mois.js) : rendez-vous,
+      // agenda personnel, tâches et notes, plus « Vos clients ». Ouvrir l'écran relit tout ; c'est le mois qui relance
+      // la lecture de l'agenda personnel (V2.rdvAgenda.relever), plus cet écran.
+      if (V2.todoMois) V2.todoMois.rafraichir();
 
       Promise.all([
         c.from('rdv').select('*').eq('user_id', u).eq('statut', 'confirme').gte('date', auj)
@@ -1108,41 +847,14 @@
         // dans JARVIS : il restait « confirmé » à vie.
         c.from('rdv').select('*').eq('user_id', u).eq('statut', 'confirme')
           .lt('date', auj).gte('date', new Date(Date.now() - 15 * 864e5).toISOString().slice(0, 10))
-          .order('date', { ascending: false }),
-        // ⚠️ Les plages de l'agenda personnel, sur la fenêtre de la bande.
-        // Sans cette lecture, l'écran annonçait « Rien de prévu ce jour-là »
-        // à quelqu'un qui avait 30 créneaux pris — il ne lisait que la table
-        // `rdv`. La table ne contient QUE des heures : aucun titre n'en sort,
-        // et c'est voulu (voir docs/supabase/rdv-socle.sql).
-        c.from('rdv_occupe').select('date, debut, fin, jour_entier').eq('user_id', u)
-          .gte('date', auj).lte('date', jourPlus(auj, 21))
-          .order('date').order('debut')
+          .order('date', { ascending: false })
       ]).then(function (r) {
         // 11/09/2026 — perf : la navigation est devenue assez rapide pour que l'on
         // ait déjà quitté cet écran quand les lectures reviennent. Dans ce cas on
         // ne réécrit pas la page (sinon RDV recouvrait la Carte ouverte entre-temps).
         if (!V2.route || V2.route.name !== 'rdv') return;
         var venir = (r[0] && r[0].data) || [];
-        var parJour = {};
-        venir.forEach(function (d) {
-          if (!parJour[d.date]) parJour[d.date] = [];
-          parJour[d.date].push(d);
-        });
-
-        var jours = joursDeLaBande(auj, parJour);
-        // Le jour ouvert par défaut : le prochain qui porte un rendez-vous.
-        // À défaut, aujourd'hui — jamais un jour vide choisi au hasard.
-        var choisi = venir.length ? venir[0].date : (jours.indexOf(auj) >= 0 ? auj : jours[0] || auj);
-
-        var occupeParJour = {};
-        ((r[4] && r[4].data) || []).forEach(function (o) {
-          if (!o || !o.date) return;
-          if (!occupeParJour[o.date]) occupeParJour[o.date] = [];
-          occupeParJour[o.date].push(o);
-        });
-
         ETAT = {
-          parJour: parJour, occupeParJour: occupeParJour, jours: jours, choisi: choisi,
           rappeler: (r[1] && r[1].data) || [],
           attente: (r[2] && r[2].data) || [],
           passes: (r[3] && r[3].data) || []
@@ -1158,8 +870,8 @@
             '<div class="v2-sem-cap"><h1>Rendez-vous</h1>' +
               '<p>' + esc(venir.length) + ' à venir · ' + esc(semaine) + ' cette semaine' +
               (enAttente ? ' · ' + esc(enAttente) + ' en attente' : '') + '</p></div>' +
-            '<div id="v2-sem-bande" class="v2-sem-fond">' + bandeHtml(jours, parJour, choisi) + '</div>' +
-            '<div id="v2-sem-journee">' + journeeHtml(choisi) + '</div>' +
+            // Le mois se redessine seul dans #tm-hote (V2.todoMois) : choisir un jour ne relit pas cet écran.
+            '<div id="tm-hote">' + (V2.todoMois ? V2.todoMois.html() : '') + '</div>' +
             '<div class="v2-sem-fin"></div>' +
           '</div>' +
           '<div class="v2-sem-barre">' +
