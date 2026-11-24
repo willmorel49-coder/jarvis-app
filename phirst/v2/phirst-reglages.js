@@ -65,6 +65,7 @@
     S.lu = false; S.base = null; S.liste = null; S.etat = null; S.depense = null;
     if (!b) { S.lu = true; dessiner(); return; }
     var D = window.PHIRST_DONNEES;
+    if (window.PHIRST_RG_TEXTES) window.PHIRST_RG_TEXTES.lire(b);   // les textes de Yann pour la téléprospectrice : leur propre lecture, leur propre zone
     Promise.all([borne(lireBase(b)), borne(D && D.ligne ? D.ligne() : null), borne(lireEtat(b)), borne(lireDepense(b))]).then(function (x) {
       if (tok !== S.jeton) return;
       S.base = x[0] === true; S.liste = x[1]; S.etat = x[2]; S.depense = typeof x[3] === 'number' ? x[3] : null; S.lu = true;
@@ -119,6 +120,7 @@
       '<p class="rg-grand"><b>' + esc(b.chiffre) + '</b><span>' + esc(lib[0]) + '<br>' + esc(lib[1]) + '</span></p></div>' +
       '<p class="rg-phrase">' + esc(b.phrase) + '</p></section>' +
       '<div class="rg-grille"><ul class="rg-outils" aria-label="Les outils de Phirst">' + outils.map(outil).join('') + '</ul>' +
+      '<div id="ri-zone">' + (window.PHIRST_RG_TEXTES ? window.PHIRST_RG_TEXTES.html() : '') + '</div>' +
       '<div class="rg-cote">' + plafond() +
       '<section class="dz-carte rg-bloc" id="rg-compte"><h2 class="rg-h2">Mon compte</h2><p class="rg-sous">' + esc(email()) + '</p>' + htmlFlash() +
       '<button type="button" class="dz-btn plein" data-rg="mdp" data-f="mdp">' + ico('cadenas', 20) + 'Changer mon mot de passe</button>' + deconnexion() + '</section>' +
@@ -208,6 +210,7 @@
   V2.pages.reglages = { needs: [], render: function (root) {
     S.racine = root; S.flash = ''; S.flashErr = false; S.occupe = false; S.depuis = null; S.techOuvert = false;
     root.innerHTML = '';
+    if (window.PHIRST_RG_TEXTES) { window.PHIRST_RG_TEXTES.remise(); window.PHIRST_RG_TEXTES.brancher(root); }
     if (!root.__rg) {
       root.__rg = true;
       root.addEventListener('click', function (ev) { if (V2.route && V2.route.name === 'reglages') clic(ev); });

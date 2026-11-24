@@ -9,7 +9,7 @@
    Son rôle se lit dans la session (window.PHIRST_ROLE), pour l'AFFICHAGE seulement : la base filtre de toute façon. */
 (function () {
   'use strict';
-  var P = window.PHIRST_PUR, V2 = window.V2;
+  var P = window.PHIRST_PUR, V2 = window.V2, T = window.PHIRST_TEXTES_PUR;   // T : les textes de Yann (phirst-textes-pur.js) ; absent = les trois blocs ne s'affichent pas, rien d'autre ne change
   if (!P || !V2) return;
   V2.pages = V2.pages || {};
   var PAS = 'Pas enregistré : réessayez dans un instant.';
@@ -146,7 +146,8 @@
   };
 
   /* ── État de l'écran ── */
-  var S = { racine: null, jeton: 0, telepro: false, onglet: 'jour', fiche: null, ouverte: null, ws: null, fiches: [], appelAu: {}, robot: null, avis: '', flash: '', charge: false, erreur: false };
+  var S = { racine: null, jeton: 0, telepro: false, onglet: 'jour', fiche: null, ouverte: null, ws: null, fiches: [], appelAu: {}, robot: null, avis: '', flash: '', charge: false, erreur: false,
+    textes: null, dits: {}, repSel: {}, fois: {}, vph: {} };
   var COLS = 'id,nom,ville,cp,departement,telephone,email,pharmacien,stage,source,next_action,next_action_date,lat,lon,updated_at';
   var MOTIFS = P.MOTIFS;
   function jour() { return P.aujourdhui(); }
@@ -167,12 +168,33 @@
   function sienne(f) { return ['a_qualifier', 'a_rappeler', 'rdv_fixe', 'perdu'].indexOf(f.stage) >= 0; }
   /* Téléprospectrice : ses pistes, le journal de son espace (pour « déjà appelée »), la liste du robot, l'équipe. Tout par les fonctions. */
   function chargerTelepro(tok, base) {
-    return Promise.all([base.rpc('telepro_pistes'), base.rpc('telepro_journal', { p_prospect: null }), window.PHIRST_DONNEES.ligne(), EQUIPE.lire()]).then(function (r) {
+    return Promise.all([base.rpc('telepro_pistes'), base.rpc('telepro_journal', { p_prospect: null }), window.PHIRST_DONNEES.ligne(), EQUIPE.lire(), chargerTextes(base, true, null)]).then(function (r) {
       if (!r[0] || r[0].error || !Array.isArray(r[0].data) || !r[1] || r[1].error || !Array.isArray(r[1].data)) throw new Error('fiches');
       if (tok !== S.jeton) return;
       S.ws = null; S.fiches = r[0].data.filter(sienne); S.appelAu = P.dernierAppelParFiche(r[1].data, versJourParis);
-      S.robot = r[2]; S.charge = true; dessiner();
+      S.robot = r[2]; S.textes = r[4]; S.charge = true; dessiner();
     });
+  }
+  /* Les textes de Yann (idées 1, 2, 8). Elle : telepro_textes (phrases, réponses avec leur compte du mois, références CITABLES seulement).
+     Yann : ses tables, sous sa règle d'accès. Une lecture qui échoue rend null : l'écran garde les propositions de départ et ne dit jamais « rien d'écrit ». */
+  function chargerTextes(base, telepro, ws) {
+    if (!T) return Promise.resolve(null);
+    var q;
+    if (telepro) q = base.rpc('telepro_textes').then(function (r) {
+      var d = r && !r.error && r.data && typeof r.data === 'object' ? r.data : null;
+      return d ? { phrases: T.phrasesParCle(d.phrases), reponses: Array.isArray(d.reponses) ? d.reponses : [], refs: T.referencesCitables(d.references) } : null;
+    });
+    else q = ws ? Promise.all([
+      base.from('phirst_textes').select('id,sorte,cle,titre,texte,details').eq('workspace_id', ws).order('created_at', { ascending: true }).limit(500),
+      base.from('phirst_entendues').select('texte_id,created_at').eq('workspace_id', ws).gte('created_at', new Date(Date.now() - 40 * 864e5).toISOString()).limit(5000)
+    ]).then(function (x) {
+      if (!x[0] || x[0].error || !x[1] || x[1].error) return null;
+      var l = x[0].data || [], c = T.comptesDuMois(x[1].data || [], Date.now());
+      return { phrases: T.phrasesParCle(l.filter(function (t) { return t.sorte === 'phrase'; })),
+        reponses: l.filter(function (t) { return t.sorte === 'reponse' && t.titre && t.texte && t.texte.trim(); }).map(function (t) { return { id: t.id, titre: t.titre, texte: t.texte, fois: c[t.id] || 0 }; }),
+        refs: T.referencesCitables(l.filter(function (t) { return t.sorte === 'reference'; })) };
+    }) : Promise.resolve(null);
+    return q.then(null, function () { return null; });
   }
   function chargerMembre(tok, base, u) {
     return Promise.all([
@@ -184,10 +206,12 @@
       return base.from('crm_prospects').select(COLS).eq('workspace_id', ws).then(function (f) {
         if (f.error) throw new Error('fiches');
         var ids = (f.data || []).map(function (x) { return x.id; });
+        var tx = chargerTextes(base, false, ws);
         var act = ids.length ? base.from('crm_activities').select('prospect_id,type,created_at').eq('type', 'appel').in('prospect_id', ids).order('created_at', { ascending: false }).limit(500) : Promise.resolve({ data: [] });
-        return act.then(function (a) {
+        return Promise.all([act, tx]).then(function (ax) {
+          var a = ax[0];
           if (tok !== S.jeton) return;
-          S.ws = ws; S.fiches = f.data || []; S.appelAu = P.dernierAppelParFiche(a.data || [], versJourParis);
+          S.textes = ax[1]; S.ws = ws; S.fiches = f.data || []; S.appelAu = P.dernierAppelParFiche(a.data || [], versJourParis);
           S.robot = r[1]; S.charge = true; dessiner();
         });
       });
@@ -220,7 +244,83 @@
       '<div class="pa-bs"><button type="button" class="pa-b" data-res="rdv">RDV obtenu</button><button type="button" class="pa-b" data-res="rappeler">À rappeler</button>' +
       '<button type="button" class="pa-b" data-res="injoignable">Injoignable</button><button type="button" class="pa-b" data-res="non">Pas intéressé</button></div></div>' +
       '<div class="pa-rap" hidden><label>Rappeler le <input type="date" class="pa-date" min="' + jour() + '" value="' + P.ajouterJours(jour(), 7) + '"></label><button type="button" class="pa-b pa-ok" data-res="rappeler-ok">Noter le rappel</button></div>' +
-      '<div class="pa-quand" hidden></div><p class="pa-dit" role="status"></p></div></li>';
+      '<div class="pa-quand" hidden></div><p class="pa-dit" role="status"></p>' + (ouv ? blocPlus(r) : '') + '</div></li>';
+  }
+
+  /* ── Les trois blocs de la pharmacie ouverte (L1, 24/11/2026, maquette 1-appels) : « Pour commencer » (idée 1), « Il me dit… » (idée 2),
+     « Près d'elle, déjà équipées par Yann » (idée 8). Les textes viennent de Yann (Réglages) ; rien n'est écrit en dur ici sauf les propositions
+     de départ de phirst-textes-pur.js, marquées comme telles. ── */
+  function lienReglages() { return S.telepro ? '' : ' · <button type="button" class="pt-lien" data-vers="reglages">Réglages</button>'; }
+  function blocPhrase(r) {
+    var ph = T.phraseDe(r.motif, S.textes ? S.textes.phrases : {});
+    if (!ph) return '';
+    var m = T.mentionPhrase(ph.source, !S.telepro), txt = m.texte + (S.textes ? '' : ' · ses phrases n’ont pas pu être lues');
+    return '<section class="pt-carte" aria-label="Pour commencer"><h3 class="pt-h">Pour commencer<span class="pt-mention">' + esc(txt) + (m.lienReglages ? lienReglages() : '') + '</span></h3>' +
+      '<p class="pt-motif">Phrase choisie pour la raison : <b>' + esc(ph.raison) + '</b></p><p class="pt-phrase">' + esc(ph.texte) + '</p></section>';
+  }
+  function reponsesTriees() {
+    var c = {}; S.textes.reponses.forEach(function (x) { c[x.id] = Math.max(Number(x.fois) || 0, S.fois[x.id] || 0); });
+    return T.reponsesTriees(S.textes.reponses, c);
+  }
+  function blocReponses(r) {
+    if (!S.textes) return '';
+    var k = P.cle(r.nom, r.ville), h = '<section class="pt-carte" aria-label="Les réponses de Yann"><h3 class="pt-h">Il me dit…<span class="pt-mention">Réponses écrites par Yann</span></h3>';
+    if (!S.textes.reponses.length) return h + '<p class="pt-vide">' + (S.telepro ? 'Yann n’a pas encore écrit de réponses : il le fait dans Réglages, rubrique « Mes réponses ».'
+      : 'Vous n’avez pas encore écrit de réponses : ouvrez <button type="button" class="pt-lien" data-vers="reglages">Réglages</button>, rubrique « Mes réponses ».') + '</p></section>';
+    var sel = S.repSel[k], o = S.textes.reponses.filter(function (x) { return x.id === sel; })[0], dits = S.dits[k] || [];
+    h += '<div class="pt-chips">' + reponsesTriees().map(function (x) { return '<button type="button" class="pt-chip" data-obj="' + esc(x.id) + '" aria-pressed="' + (sel === x.id) + '">' + esc(x.titre) + '</button>'; }).join('') + '</div>';
+    if (o) {
+      var n = Math.max(Number(o.fois) || 0, S.fois[o.id] || 0);
+      h += '<div class="pt-rep" role="status"><p class="pt-qui">Vous pouvez répondre</p><p>' + esc(o.texte) + '</p></div>' +
+        '<p class="pt-note"><span><b>Il entrera dans le journal de l’appel</b></span>' + (n > 0 ? '<span>' + esc(T.foisDuMois(n)) + '</span>' : '') + '</p>';
+    }
+    if (dits.length) h += '<ul class="pt-jr" aria-label="Journal de cet appel">' + dits.map(function (x) { return '<li><span>' + esc(x.h) + '</span>Il m’a dit : « ' + esc(x.titre) + ' »</li>'; }).join('') + '</ul>';
+    return h + '</section>';
+  }
+  function cibleDe(r) {
+    var f = (r.prospectId && S.fiches.filter(function (x) { return x.id === r.prospectId; })[0]) || S.fiches.filter(function (x) { return P.cle(x.nom, x.ville) === P.cle(r.nom, r.ville); })[0] || null;
+    var lat = r.lat != null ? r.lat : f && f.lat, lon = r.lon != null ? r.lon : f && f.lon;
+    return typeof lat === 'number' && typeof lon === 'number' ? { lat: lat, lon: lon } : null;
+  }
+  function blocVoisines(r) {
+    if (!S.textes) return '';
+    var k = P.cle(r.nom, r.ville), refs = S.textes.refs, h = '<section class="pt-carte" aria-label="Près d’elle, déjà équipées par Yann"><h3 class="pt-h">Près d’elle, déjà équipées par Yann</h3>';
+    if (!refs.length) return h + '<p class="pt-vide">' + (S.telepro ? 'Yann n’a pas encore de pharmacie à citer : il les ajoute dans Réglages, rubrique « Mes références ».'
+      : 'Vous n’avez pas encore de référence à citer : ajoutez-en dans <button type="button" class="pt-lien" data-vers="reglages">Réglages</button>, rubrique « Mes références ».') + '</p></section>';
+    var cible = cibleDe(r);
+    if (!cible) return h + '<p class="pt-vide">La position de cette pharmacie n’est pas connue : les pharmacies équipées qui sont près d’elle ne peuvent pas être cherchées.</p></section>';
+    var v = T.voisines(refs, cible, 2);
+    if (!v.length) return h + '<p class="pt-vide">Les références de Yann n’ont pas de position : il peut les corriger dans Réglages, rubrique « Mes références ».</p></section>';
+    var vp = S.vph[k];
+    return h + '<ul class="pt-vs">' + v.map(function (x, i) {
+      var e = x.ref;
+      return '<li><div class="pt-vn"><b>' + esc(e.nom) + '</b><em>' + x.km + ' km</em></div><p class="pt-vd">' + esc(T.villeAvecDep(e.ville, e.cp)) + ' · ' + esc(e.pose || '') + (e.an ? ', ' + esc(e.an) : '') + '</p><div class="pt-tags">' +
+        '<span class="pt-tag">Accepte d’être citée</span>' + (e.visite ? '<span class="pt-tag" data-t="visite">Visite possible</span>' : '') +
+        '<button type="button" class="pt-lien" data-vph="' + i + '" aria-pressed="' + (vp === i) + '">' + (vp === i ? 'Masquer la phrase' : 'Phrase prête') + '</button></div></li>';
+    }).join('') + '</ul>' + (vp != null && v[vp] ? '<p class="pt-vphrase" role="status">« ' + esc(T.phraseVoisine(v[vp].ref, v[vp].km)) + ' »</p>' : '') + '</section>';
+  }
+  function blocPlus(r) {
+    if (!T) return '';
+    var a = blocPhrase(r) + blocReponses(r), b = blocVoisines(r);
+    return a || b ? '<div class="pt-plus"><div class="pt-col">' + a + '</div><div class="pt-col">' + b + '</div></div>' : '';
+  }
+  /* « Il me dit… » : montre la réponse, la note pour le journal de l'appel, et compte « entendue N fois ce mois » (elle seule : la base ne compte que ses appels). */
+  function choisirReponse(r, li, id) {
+    var k = P.cle(r.nom, r.ville), o = S.textes && S.textes.reponses.filter(function (x) { return x.id === id; })[0]; if (!o) return;
+    var dejaVue = (S.dits[k] || []).some(function (x) { return x.id === id; });
+    S.repSel[k] = id;
+    if (!dejaVue) {
+      (S.dits[k] = S.dits[k] || []).push({ id: id, titre: o.titre, h: P.heureFr(P.maintenantParis().slice(11)) });
+      if (S.telepro) sb().rpc('telepro_entendue', { p_texte: id, p_pharmacie: (r.nom + (r.ville ? ' · ' + r.ville : '')).slice(0, 200) }).then(function (x) {
+        if (x && !x.error && typeof x.data === 'number') { S.fois[id] = x.data; if (li.isConnected && S.ouverte === k) rafraichirPlus(li, r); }
+      }, function () {});
+    }
+    rafraichirPlus(li, r);
+  }
+  function rafraichirPlus(li, r) {
+    var z = li.querySelector('.pt-plus'), h = blocPlus(r); if (!z) return;
+    var tmp = document.createElement('div'); tmp.innerHTML = h;
+    if (tmp.firstChild) z.replaceWith(tmp.firstChild);
   }
   function ouvrirParDefaut(l) {
     if (!l.some(function (r) { return P.cle(r.nom, r.ville) === S.ouverte; })) S.ouverte = l.length ? P.cle(l[0].nom, l[0].ville) : null;
@@ -334,7 +434,8 @@
     function dire(t) { dit.textContent = t; li.querySelectorAll('button').forEach(function (b) { b.disabled = false; }); }
     li.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
     dit.textContent = '';
-    var suite = P.suiteAppel(resultat, jr, choisie, '');
+    var dits = T ? T.ditsEnTexte((S.dits[P.cle(r.nom, r.ville)] || []).map(function (x) { return x.titre; })) : '';   // ce que le pharmacien a dit (« Il me dit… »), au journal de l'appel
+    var suite = P.suiteAppel(resultat, jr, choisie, dits);
     if (debutRdv) suite.maj.next_action_date = debutRdv.slice(0, 10); // la prochaine action tombe le jour du rendez-vous
     var fiche = (r.prospectId && S.fiches.filter(function (f) { return f.id === r.prospectId; })[0]) ||
       (function () { var c = P.cle(r.nom, r.ville); var t = S.fiches.filter(function (f) { return P.cle(f.nom, f.ville) === c; }); return t.filter(function (f) { return f.stage !== 'archive'; })[0] || t[0] || null; })();
@@ -365,7 +466,7 @@
         if (u.error || !u.data) throw erreurBase(u, 'maj');
         var i = S.fiches.map(function (x) { return x.id; }).indexOf(u.data.id);
         if (i < 0) S.fiches.push(u.data); else S.fiches[i] = u.data;
-        S.appelAu[u.data.id] = jr;
+        S.appelAu[u.data.id] = jr; delete S.dits[P.cle(r.nom, r.ville)]; delete S.repSel[P.cle(r.nom, r.ville)]; delete S.vph[P.cle(r.nom, r.ville)];
         if (debutRdv) { S.flash = 'Rendez-vous posé : ' + P.quandFr(debutRdv) + ' chez ' + r.nom + '.'; dessiner(); return; }
         S.flash = 'Noté : ' + r.nom + ' — ' + { rdv: 'rendez-vous obtenu', rappeler: 'à rappeler', injoignable: 'injoignable', non: 'pas intéressé' }[resultat] + '.' +
           (suite.maj.next_action_date ? ' Prochaine action le ' + P.jourAvecAnnee(suite.maj.next_action_date, jour()) + '.' : ' La piste passe dans les perdues.');
@@ -415,6 +516,12 @@
     var ou = t.closest('[data-ouvrir]');
     if (ou) { var rr = liste()[+ou.getAttribute('data-ouvrir')]; if (rr) { var cc = P.cle(rr.nom, rr.ville); S.ouverte = S.ouverte === cc ? null : cc; dessiner(); } return; }
     var b = t.closest('.pa-b[data-res]'), li = t.closest('.pa-l');
+    var ob = t.closest('[data-obj]'), vp = t.closest('[data-vph]');
+    if ((ob || vp) && li) {
+      var rl = liste()[+li.getAttribute('data-i')]; if (!rl) return;
+      if (ob) { choisirReponse(rl, li, ob.getAttribute('data-obj')); return; }
+      var kk = P.cle(rl.nom, rl.ville), nn = +vp.getAttribute('data-vph'); S.vph[kk] = S.vph[kk] === nn ? null : nn; rafraichirPlus(li, rl); return;
+    }
     if (b && li) {
       var r = liste()[+li.getAttribute('data-i')], res = b.getAttribute('data-res');
       if (!r) return;
