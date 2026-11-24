@@ -1974,6 +1974,10 @@ html:root:root body .fdr-on .fdr-sw .vv-b{padding:0 18px;flex:0 0 auto}
 .pha-wrap.fdr-on .fdr .flg-t small{display:block;font:600 14px/1.25 Inter,system-ui,sans-serif;color:#E6EEFF;white-space:normal;overflow-wrap:anywhere}
 .pha-wrap.fdr-on .flg-n{padding:7px 12px;border-radius:999px;background:#FFFFFF;color:#0034A0;font:800 14px/1 Inter,system-ui,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
 .pha-wrap.fdr-on .flg-fl{display:grid;place-items:center;color:#FFFFFF}
+/* 24/11/2026 — « Extraire toutes ses ventes · Excel », sous les tuiles des listings : bouton secondaire, blanc, texte bleu */
+.pha-wrap.fdr-on .fdr .flg-x{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin:10px 0 0;padding:10px 16px;border:1px solid #C9D7F2;border-radius:14px;background:#FFFFFF;color:#0047CC;font:700 15px/1.2 Inter,system-ui,sans-serif;cursor:pointer}
+.pha-wrap.fdr-on .fdr .flg-x:hover{border-color:#0050E6;background:#F3F7FF}
+.pha-wrap.fdr-on .fdr .flg-x:focus-visible{outline:3px solid #7FA7F5;outline-offset:2px}
 @media (max-width:640px){
   .pha-wrap.fdr-on .flg{margin:10px 0 0}
   .pha-wrap.fdr-on .fdr .flg-h{margin-bottom:6px}

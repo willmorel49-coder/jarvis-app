@@ -4446,8 +4446,10 @@
     };
     if (d.nR > 0) t += tuile('reseau', 'reseau', 'Listing produits ' + (isEscale() ? 'Escale' : 'Intégral'), 'Les plus commandés', d.nR);
     if (d.hasGrp && d.nG > 0) t += tuile('groupement', 'groupe', 'Listing groupement', esc(f.grp), d.nG);
-    if (!t) return '';
-    return '<section class="flg" aria-labelledby="flg-h"><h2 class="flg-h" id="flg-h">Listings à proposer</h2><div class="flg-row' + (deux ? '' : ' flg-1') + '">' + t + '</div></section>';
+    // 24/11/2026 — Will : « il faudra aussi que le commercial puisse extraire toutes les ventes de la pharma si il le souhaite »
+    var x = '<button type="button" class="flg-x" onclick="V2.pharmaVentesXlsx(\'' + esc(String(c.pid)) + '\')" title="Toutes ses ventes de la période, par produit et ligne par ligne">' + fbIc('excel', 18) + '<span>Extraire toutes ses ventes · Excel</span></button>';
+    if (!t) return '<section class="flg" aria-label="Ses ventes">' + x + '</section>';
+    return '<section class="flg" aria-labelledby="flg-h"><h2 class="flg-h" id="flg-h">Listings à proposer</h2><div class="flg-row' + (deux ? '' : ' flg-1') + '">' + t + '</div>' + x + '</section>';
   }
   function fdrPage(c) {
     var vues ='<div class="fdr-sw vv-sel vv-ui" role="group" aria-label="Vue de la fiche">' + viBouton('pharmacien', 'Vue pharmacien') + viBouton('integral', 'Vue Intégral') + '</div>';
@@ -6939,6 +6941,81 @@
     var data = prospect ? (grp ? groupementProducts(tx.grp) : buildRecoCats(pid, 'reseau')) : buildRecoCats(pid, grp ? 'groupement' : 'reseau');
     var ref = grp ? (prospect ? tx.grp : (groupementPids(pid).name || 'Groupement')) : reseauLbl();
     return achatsXlsx((prospect || pharma.name) + ' — ' + ref, data, false, mode);
+  };
+
+  // 24/11/2026 — Will : « il faudra aussi que le commercial puisse extraire toutes les ventes de la pharma si il le souhaite ».
+  // Un Excel, deux onglets, lecture seule (rien n'est écrit nulle part) :
+  //  · « Par produit » : toutes ses références, classées par CA HT, avec boîtes, parts, et les boîtes de chaque mois (filtre automatique) ;
+  //  · « Ligne par ligne » : chaque ligne de vente telle qu'elle est reçue (mois, produit, CIP13, boîtes, prix net unitaire, CA HT), retours compris.
+  // Toutes ses ventes, tous commerciaux (pharmaSalesAll). Officine d'un collègue dont les ventes sont masquées : refusé.
+  V2.pharmaVentesXlsx = function (pid, mode) {
+    var pharma = (V2.pharmacies || []).find(function (p) { return String(p.id) === String(pid); });
+    if (!pharma) { V2.toast('Pharmacie introuvable', 'error'); return Promise.resolve(null); }
+    if (V2.voitVentesDe && !V2.voitVentesDe(pid)) { V2.toast('Ses ventes sont réservées à son commercial', 'warn'); return Promise.resolve(null); }
+    // les produits hors BENCHMARK prennent leur nom dans le catalogue complet : on l'attend une fois
+    if (!window.CATALOGUE_COMPLET && V2.loadFiles && !_catEssai) { _catEssai = true; var re = function () { return V2.pharmaVentesXlsx(pid, mode); }; return V2.loadFiles(['catcomplet']).then(re, re); }
+    var sales = pharmaSalesAll(pid).filter(function (s) { return String(s.artCode || '').length >= 7; });   // tous commerciaux, quel que soit le filtre affiché
+    if (!sales.length) { V2.toast('Aucune vente sur la période', 'warn'); return Promise.resolve(null); }
+    var bIdx = benchIndex(), cc = V2.produits && V2.produits.catalogueIndex ? V2.produits.catalogueIndex() : null;
+    var by = {}, mn = Infinity, mx = -Infinity, caTot = 0, qteTot = 0;
+    sales.forEach(function (s) {
+      var cip = String(s.artCode), e = by[cip];
+      if (!e) {
+        var b = bIdx.get(cip), ck = classify(b, cip), ct = CATS.filter(function (c) { return c.key === ck; })[0];
+        e = by[cip] = { cip: cip, d: (b && b.designation) || s.artDesignation || (cc && cc[cip] && cc[cip].d) || cip, fam: ct ? ct.label : 'Autres', ca: 0, qte: 0, m: {} };
+      }
+      e.ca += s.mntNetHt || 0; e.qte += s.qte || 0; caTot += s.mntNetHt || 0; qteTot += s.qte || 0;
+      if (s.month && s.year) { var k = s.year * 12 + s.month - 1; e.m[k] = (e.m[k] || 0) + (s.qte || 0); if (k < mn) mn = k; if (k > mx) mx = k; }
+    });
+    // les colonnes couvrent toute la période des ventes chargées, même les mois où elle n'a rien commandé
+    var mv = moisVentes(), pk = function (t) { var m = /^(\d{4})-(\d{2})$/.exec(t || ''); return m ? +m[1] * 12 + +m[2] - 1 : null; };
+    if (pk(mv.du) != null && pk(mv.du) < mn) mn = pk(mv.du);
+    if (pk(mv.au) != null && pk(mv.au) > mx) mx = pk(mv.au);
+    var mois = []; for (var k = mn; k <= mx && isFinite(mn); k++) mois.push(k);
+    var nomMois = function (k) { return MN_SHORT[k % 12] + ' ' + Math.floor(k / 12); };
+    var prods = Object.keys(by).map(function (c) { return by[c]; }).filter(function (e) { return Math.abs(e.ca) > 0.004 || e.qte; })
+      .sort(function (a, b) { return b.ca - a.ca || b.qte - a.qte; });
+    V2.toast('Génération de l\'Excel…');
+    return new Promise(function (resolve) { ensureXLSX(function (ok) {
+      if (!ok || !window.XLSX) { V2.toast('Export Excel indisponible (hors ligne ?)', 'error'); resolve(null); return; }
+      var X = window.XLSX, wb = X.utils.book_new();
+      var dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+      var sous = 'Éditée le ' + dateStr + (periodLabel() ? ' · ventes ' + periodLabel() : '') + ' · ' + prods.length + ' références · ' + sales.length + ' lignes de vente';
+      var r2 = function (v) { return Math.round(v * 100) / 100; };
+      // onglet 1 : par produit
+      var head = ['#', 'Produit', 'CIP13', 'Famille', 'Boîtes', 'CA HT (€)', 'Part du CA', 'Part des boîtes'].concat(mois.map(function (k) { return 'Boîtes ' + nomMois(k); }));
+      var aoa = [['Intégral Pharma — Toutes ses ventes · ' + pharma.name], [sous], [], head];
+      prods.forEach(function (e, i) {
+        aoa.push([i + 1, e.d, e.cip, e.fam, e.qte, r2(e.ca), caTot > 0 ? e.ca / caTot : '', qteTot > 0 ? e.qte / qteTot : ''].concat(mois.map(function (k) { return e.m[k] || 0; })));
+      });
+      aoa.push([], ['', 'Total', '', '', qteTot, r2(caTot)]);
+      var ws = X.utils.aoa_to_sheet(aoa);
+      for (var ri = 4; ri < 4 + prods.length; ri++) {
+        [6, 7].forEach(function (ci) { var cl = ws[X.utils.encode_cell({ r: ri, c: ci })]; if (cl && cl.t === 'n') cl.z = '0.0%'; });
+        var cc5 = ws[X.utils.encode_cell({ r: ri, c: 5 })]; if (cc5) cc5.z = '#,##0.00';
+      }
+      ws['!cols'] = [{ wch: 5 }, { wch: 46 }, { wch: 15 }, { wch: 24 }, { wch: 9 }, { wch: 12 }, { wch: 10 }, { wch: 13 }].concat(mois.map(function () { return { wch: 13 }; }));
+      ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }, { s: { r: 1, c: 0 }, e: { r: 1, c: 7 } }];
+      ws['!autofilter'] = { ref: X.utils.encode_range({ s: { r: 3, c: 0 }, e: { r: 3 + prods.length, c: head.length - 1 } }) };
+      X.utils.book_append_sheet(wb, ws, 'Par produit');
+      // onglet 2 : ligne par ligne
+      var lignes = sales.slice().sort(function (a, b) { return ((a.year * 12 + a.month) - (b.year * 12 + b.month)) || ((b.mntNetHt || 0) - (a.mntNetHt || 0)); });
+      var aoa2 = [['Intégral Pharma — Toutes ses ventes, ligne par ligne · ' + pharma.name], [sous + ' · les retours sont en négatif'], [], ['Mois', 'Produit', 'CIP13', 'Boîtes', 'Prix net unitaire (€)', 'CA HT (€)']];
+      lignes.forEach(function (s) {
+        var e = by[String(s.artCode)];
+        aoa2.push([s.month && s.year ? nomMois(s.year * 12 + s.month - 1) : '', e ? e.d : String(s.artCode), String(s.artCode), s.qte || 0, s.puNet ? r2(s.puNet) : '', r2(s.mntNetHt || 0)]);
+      });
+      var ws2 = X.utils.aoa_to_sheet(aoa2);
+      ws2['!cols'] = [{ wch: 11 }, { wch: 46 }, { wch: 15 }, { wch: 9 }, { wch: 18 }, { wch: 12 }];
+      ws2['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }, { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } }];
+      ws2['!autofilter'] = { ref: X.utils.encode_range({ s: { r: 3, c: 0 }, e: { r: 3 + lignes.length, c: 5 } }) };
+      X.utils.book_append_sheet(wb, ws2, 'Ligne par ligne');
+      var fn = 'Ventes-' + String(pharma.name).replace(/[^A-Za-z0-9-]/g, '_') + '-' + new Date().toISOString().slice(0, 10) + '.xlsx';
+      if (mode === 'blob') { resolve(new File([X.write(wb, { bookType: 'xlsx', type: 'array' })], fn, { type: txMime(fn) })); return; }
+      X.writeFile(wb, fn);
+      V2.toast('Excel téléchargé');
+      resolve(null);
+    }); });
   };
 
   // ════════════════════════════════════════════
