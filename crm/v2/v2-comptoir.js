@@ -2484,6 +2484,7 @@
         (l.f === 'nr' && l.net > 0 && Math.abs(l.net - l.prix) >= 0.01 * l.prix
           ? '<p class="cp-note">Prix moyen facturé au réseau : ' + eur2(l.net) + '.</p>' : '') +
         (s ? blocAlertes(s, l, vp) + blocMarges(s, vp) + (vp ? '' : blocAqui(liste, off)) + blocMarche(s, l, vp) + (vp ? '' : blocNous(s, l, d, ventes)) + blocProduit(s, l, stock) : blocProduit({ autres: { froid: false }, generique: null, tendance: null }, l, stock)) +
+        (s && V2.etude && V2.etude.v1 ? V2.etude.v1(l, s, vp) : '') +   // 24/11/2026 : l'étude par produit (bloc 7 ou bouton, selon la version choisie)
         indispo +
         '<div class="cp-ctas">' + boutonPanneau(l.cip) +
         '<button class="v2-btn v2-btn-primary cp-cta" onclick="V2.produits.ficheMarketing(\'' + escAttr(l.cip) + '\')">Fiche marketing du produit</button></div>' +
@@ -2522,6 +2523,8 @@
   V2.comptoir._repliMolecules = repliMolecules;
   // Socle de calcul (22/10/2026) : l'objet complet du panneau, et ses calculs purs pour les tests.
   V2.comptoir.stats = stats;
+  V2.comptoir._fichier = fichier;   // 24/11/2026 : l'étude par produit relit marche-regional.json sans le recharger
+  V2.comptoir.repose = function () { var d = donnees(); if (C.cip && d && document.getElementById('cp-pan-hote')) poserPanneau(d); };
   V2.comptoir.vuePharma = function (b) {
     if (arguments.length) { C.vuePharma = !!b; ecrireVuePharma(C.vuePharma); rerender(); }
     return C.vuePharma;
