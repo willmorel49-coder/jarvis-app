@@ -831,6 +831,78 @@
     return quand + ' à ' + heure;
   }
 
+  /* ── La fiche de la carte (24/11/2026, maquette v2 « posée sur la carte » choisie par Will) ──
+     Une pharmacie = UNE fiche : ses lignes de tous les angles (robots, transferts, EHPAD, signaux, annuaire), réunies par une clé nom|ville
+     en commun. La fiche vit HORS de la carte : glisser, zoomer ou recharger les points ne la ferment plus. */
+  var PRIO_FICHE = ['robots', 'transferts', 'ehpad', 'signaux', 'toutes'];
+  function tel9(t) { var n = String(t == null ? '' : t).replace(/\D/g, ''); return n.length >= 9 ? n.slice(-9) : ''; }
+  function clesDe(l) { return l.cles && l.cles.length ? l.cles : [cle(l.nom, l.ville)]; }
+  /* Les lignes de la MÊME pharmacie que l : une clé en commun, et rien qui les contredise (téléphone différent, ou à plus de 2 km). */
+  function memePharmacie(l, autres) {
+    var c = clesDe(l), t = tel9(l.telephone), vus = {}, out = [l];
+    vus[l.cle] = 1;
+    (autres || []).forEach(function (x) {
+      if (!x || vus[x.cle]) return;
+      if (!clesDe(x).some(function (k) { return c.indexOf(k) >= 0; })) return;
+      var xt = tel9(x.telephone); if (t && xt && t !== xt) return;
+      if (typeof l.lat === 'number' && typeof x.lat === 'number' && typeof l.lon === 'number' && typeof x.lon === 'number' && kmEntre(l, x) > 2) return;
+      vus[x.cle] = 1; out.push(x);
+    });
+    return out;
+  }
+  /* La fiche : pour chaque champ, la première valeur trouvée dans l'ordre robots > transferts > EHPAD > signaux > annuaire ;
+     les listes sont réunies sans doublon ; un seul « N pts » et un seul « N EHPAD » (le plus grand). */
+  function ficheDeLignes(lignes) {
+    var ls = (lignes || []).filter(Boolean).slice().sort(function (a, b) { return PRIO_FICHE.indexOf(a.angle) - PRIO_FICHE.indexOf(b.angle); });
+    function prem(k) { for (var i = 0; i < ls.length; i++) if (ls[i][k] != null && ls[i][k] !== '') return ls[i][k]; return null; }
+    function union(k) { var o = []; ls.forEach(function (l) { (l[k] || []).forEach(function (v) { if (v && o.indexOf(v) < 0) o.push(v); }); }); return o; }
+    function une(k) { return ls.some(function (l) { return !!l[k]; }); }
+    var et = [], pts = null, eh = null, angles = [];
+    ls.forEach(function (l) {
+      if (angles.indexOf(l.angle) < 0) angles.push(l.angle);
+      (l.etiquettes || []).forEach(function (e) {
+        if (!e || !e.texte) return;
+        var mp = /^(\d+) pts$/.exec(e.texte), me = /^(\d+) EHPAD$/.exec(e.texte);
+        if (mp) { if (!pts || +mp[1] > +pts.n) pts = { n: mp[1], e: e }; }
+        else if (me) { if (!eh || +me[1] > +eh.n) eh = { n: me[1], e: e }; }
+        else if (!et.some(function (x) { return x.texte === e.texte; })) et.push(e);
+      });
+    });
+    if (pts) et.push(pts.e);
+    if (eh) et.push(eh.e);
+    var f = { lignes: ls.map(function (l) { return l.cle; }), angles: angles, cles: union('cles'),
+      nom: prem('nom_affiche') || prem('nom') || '', ville: prem('ville'), cp: prem('cp'), dep: prem('dep'), lat: prem('lat'), lon: prem('lon'),
+      pharmacien: prem('pharmacien'), telephone: prem('telephone'), email: prem('email'),
+      groupements: union('groupements'), sieges: union('sieges'), etiquettes: et, pourquoi: union('pourquoi'),
+      fab: prem('fab'), cat: prem('cat'), robot_modele: prem('robot_modele'), robot_date: prem('robot_date'),
+      tt_type: prem('tt_type'), tt_date: prem('tt_date'), annonce: prem('annonce'),
+      ehpad_proches: union('ehpad_proches'), n_ehpad: ls.reduce(function (m, l) { return Math.max(m, l.n_ehpad || 0); }, 0),
+      f_cession: une('f_cession'), f_pmr: une('f_pmr'), f_sans_robot: une('f_sans_robot'), dans_secteur: une('dans_secteur') };
+    /* La fiche à créer (« Ajouter aux officines à appeler ») part de la ligne la plus parlante, avec TOUTES les clés de la pharmacie. */
+    var base = {}, k; for (k in (ls[0] || {})) base[k] = ls[0][k];
+    base.cles = f.cles.length ? f.cles : clesDe(base.nom ? base : { nom: f.nom, ville: f.ville });
+    f.piste = ls.length ? base : null;
+    return f;
+  }
+  /* Le bloc « Cliente d'Intégral Pharma » : le nom du commercial, son téléphone et son mail PROFESSIONNELS, rien d'autre.
+     infos = les lignes de phirst_integral trouvées pour la pharmacie ; aucune = null (une officine non reliée : RIEN sur Intégral). */
+  function blocIntegral(infos) {
+    var i = (infos || []).filter(Boolean)[0];
+    if (!i) return null;
+    var c = (infos || []).filter(function (x) { return x && x.commercial; })[0] || i;
+    var t = String(c.tel == null ? '' : c.tel).replace(/[^\d+]/g, ''), m = String(c.mail == null ? '' : c.mail).trim();
+    return { commercial: c.commercial ? String(c.commercial).trim() : '', tel: t.replace(/\D/g, '').length >= 9 ? telFr(t) : '', telHref: t.replace(/\D/g, '').length >= 9 ? 'tel:' + t : '',
+      mail: /^[^\s@<>"',;:]+@[^\s@<>"',;:]+\.[a-z]{2,}$/i.test(m) ? m : '' };
+  }
+  /* Les couches de la carte : « Clients Intégral » pour Yann seulement, jamais pour la téléprospectrice. */
+  function ordreCouches(yann) {
+    var o = ['fiches', 'robots', 'transferts', 'ehpad', 'signaux', 'toutes'];
+    return yann ? o.concat('integral') : o;
+  }
+  /* Les clientes d'Intégral se cherchent sur les lignes de l'annuaire (une par pharmacie), jointes à phirst_integral. */
+  var SELECT_INTEGRAL = ',phirst_integral!inner(cle)';
+  function filtresIntegral(perim) { return requeteOfficines({ angle: 'toutes', france: perim === 'france' }); }
+
   return {
     jourAvecAnnee: jourAvecAnnee, datesLisibles: datesLisibles, miseAJourFr: miseAJourFr,
     SECTEUR: SECTEUR, rang: rang, dansSecteur: dansSecteur, primeSecteur: primeSecteur, norm: norm, cle: cle,
@@ -855,6 +927,8 @@
     telFr: telFr, frDate: frDate, libelleGroupements: libelleGroupements, fusionnerSommes: fusionnerSommes, sansSommes: sansSommes, pourquoiAffiche: pourquoiAffiche, sousAffiche: sousAffiche,
     sourceEtNote: sourceEtNote, pisteDeLigne: pisteDeLigne, indexPistes: indexPistes, ficheSuivie: ficheSuivie, indexParEtat: indexParEtat, suiviOfficine: suiviOfficine,
     SEUIL_COUCHES: SEUIL_COUCHES, couchesMasquees: couchesMasquees, phraseCachee: phraseCachee, phraseToutAffiche: phraseToutAffiche, phraseVue: phraseVue, libelleBouton: libelleBouton, releveAffiche: releveAffiche,
-    ordreTournee: ordreTournee, tourneeDuJour: tourneeDuJour, lienTournee: lienTournee, kmRoute: kmRoute
+    ordreTournee: ordreTournee, tourneeDuJour: tourneeDuJour, lienTournee: lienTournee, kmRoute: kmRoute,
+    tel9: tel9, memePharmacie: memePharmacie, ficheDeLignes: ficheDeLignes, blocIntegral: blocIntegral, ordreCouches: ordreCouches,
+    SELECT_INTEGRAL: SELECT_INTEGRAL, filtresIntegral: filtresIntegral
   };
 });

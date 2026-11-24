@@ -1371,6 +1371,8 @@
   // ── Infos du matin : infos-jour.json, même adresse et même cache que les autres écrans ──
   var _qInfos = { data: null, t: 0, enCours: false };
   function qInfosCharger() {
+    // 24/11/2026 — Phirst n'a pas d'Infos du matin : /phirst/v2/infos-jour.json n'existe pas (404 à chaque ouverture, vu en production).
+    if (window.V2_BRAND && window.V2_BRAND.phirst) { _qInfos.fini = true; return; }
     if (_qInfos.enCours || (_qInfos.data && Date.now() - _qInfos.t < 900000)) return;
     _qInfos.enCours = true;
     function fin(j) {

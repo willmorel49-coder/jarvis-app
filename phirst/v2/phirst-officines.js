@@ -14,7 +14,7 @@
   V2.pages = V2.pages || {};
   var PAS = 'Pas enregistré : réessayez dans un instant.';
   var FAIT = ['Ajoutée à vos pistes.', 'Déjà dans vos pistes.'];
-  var COLS = 'cle,angle,nom,nom_affiche,ville,cp,dep,lat,lon,pharmacien,telephone,email,groupements,sous,etiquettes,pourquoi,sieges,annonce,score,fab,cat,robot_modele,tt_type,tt_date,n_ehpad,ehpad_proches,cles';
+  var COLS = 'cle,angle,nom,nom_affiche,ville,cp,dep,lat,lon,pharmacien,telephone,email,groupements,sous,etiquettes,pourquoi,sieges,annonce,score,fab,cat,robot_modele,robot_date,tt_type,tt_date,n_ehpad,ehpad_proches,f_cession,f_pmr,f_sans_robot,dans_secteur,cles';
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function sb() { return typeof V2.sb === 'function' ? V2.sb() : null; }
   function appliquer(q, filtres) { filtres.forEach(function (f) { q = q[f[0]](f[1], f[2]); }); return q; }
@@ -78,9 +78,9 @@
     }).then(null, function () { return {}; });
     return C.meta;
   }
-  function compter(filtres) {
+  function compter(filtres, joint) {
     var b = sb(); if (!b) return Promise.resolve(null);
-    return appliquer(b.from('phirst_officines').select('cle', { count: 'exact', head: true }), filtres).then(function (r) { return r.error ? null : r.count; }, function () { return null; });
+    return appliquer(b.from('phirst_officines').select('cle' + (joint || ''), { count: 'exact', head: true }), filtres).then(function (r) { return r.error ? null : r.count; }, function () { return null; });
   }
   function pastilles(l) {
     return (l.etiquettes || []).map(function (e) { return '<em class="lg-et"' + (e.ton ? ' data-ton="' + esc(e.ton) + '"' : '') + '>' + esc(e.texte) + '</em>'; }).join(' ');
@@ -236,13 +236,16 @@
 
   /* ════════════════════════ LA CARTE ════════════════════════ */
   var COUL = { robots: '#C2410C', omnicell: '#DC2626', ehpad: '#7C3AED', transferts: '#1D4ED8', signaux: '#12A567', toutes: '#1A3A2E' };
-  var NOMS_COUCHE = { toutes: 'officines', robots: 'robots', ehpad: 'EHPAD', transferts: 'transferts', signaux: 'à saisir maintenant' };
-  var LIB_COUCHE = { fiches: 'Mes fiches', robots: 'Robots concurrents', transferts: 'Cessions et créations', ehpad: 'Fournisseurs EHPAD', signaux: 'À saisir maintenant', toutes: 'Toutes les officines' };
-  var ORDRE = ['fiches', 'robots', 'transferts', 'ehpad', 'signaux', 'toutes'];
+  var BLEU_IP = '#0050E6';
+  var NOMS_COUCHE = { toutes: 'officines', robots: 'robots', ehpad: 'EHPAD', transferts: 'transferts', signaux: 'à saisir maintenant', integral: 'clientes d’Intégral' };
+  var LIB_COUCHE = { fiches: 'Mes fiches', robots: 'Robots concurrents', transferts: 'Cessions et créations', ehpad: 'Fournisseurs EHPAD', signaux: 'À saisir maintenant', toutes: 'Toutes les officines', integral: 'Clients Intégral' };
   var SECTEUR_BORNES = [[46.2, -5.3], [49.8, 1.2]];
   var CAP_PAGES = 4;
-  var M = { racine: null, map: null, perim: 'only', on: { fiches: true, robots: true, transferts: true, ehpad: true, signaux: false, toutes: false },
-    groupes: {}, lignes: {}, ix: {}, pistes: [], sommes: null, jeton: 0, minuteur: 0, totaux: {}, vus: {}, plafond: false, fab: '', meta: {} };
+  /* yann : vrai quand le compte n'est pas la téléprospectrice (couche « Clients Intégral » et bloc Intégral de la fiche, jamais pour elle). */
+  var M = { racine: null, map: null, perim: 'only', on: { fiches: true, robots: true, transferts: true, ehpad: true, signaux: false, toutes: false, integral: true },
+    groupes: {}, lignes: {}, ix: {}, pistes: [], sommes: null, jeton: 0, minuteur: 0, totaux: {}, vus: {}, plafond: false, fab: '', meta: {},
+    yann: false, pistesDessinees: false, sel: null, repere: null, ficheJeton: 0, replie: false, pts: {} };
+  function ordre() { return P.ordreCouches(M.yann); }
 
   function chargerLeaflet(cb) {
     function css(h) { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = h; document.head.appendChild(l); }
@@ -261,7 +264,8 @@
     });
   }
   function coordOk(la, lo) { return typeof la === 'number' && typeof lo === 'number' && la > -22 && la < 52 && lo > -64 && lo < 56; }
-  function filtresCouche(a) { return P.requeteOfficines({ angle: a, france: M.perim === 'france', fab: a === 'robots' ? M.fab : '' }); }
+  function filtresCouche(a) { return a === 'integral' ? P.filtresIntegral(M.perim) : P.requeteOfficines({ angle: a, france: M.perim === 'france', fab: a === 'robots' ? M.fab : '' }); }
+  function jointCouche(a) { return a === 'integral' ? P.SELECT_INTEGRAL : ''; }
 
   /* Bandeau SUR la carte (choix m1) : dit ce que la vue trop large ne dessine pas, avec un bouton pour s'en approcher ; sinon ce qui est dans la vue. */
   function dire(ton, phrase, bouton) {
@@ -270,37 +274,62 @@
     el.innerHTML = '<p>' + esc(phrase) + '</p>' + (bouton ? '<button type="button" class="po-bouton" data-zoomer="1">' + esc(bouton) + '</button>' : '');
     el.hidden = !phrase;
   }
-  function couchesActives() { return ORDRE.filter(function (k) { return k !== 'fiches' && M.on[k]; }); }
+  /* Les clientes d'Intégral se dessinent EN PREMIER : leur anneau reste visible autour des points des autres couches posés par-dessus. */
+  function couchesActives() { return ordre().filter(function (k) { return k !== 'fiches' && M.on[k]; }).sort(function (x, y) { return (y === 'integral') - (x === 'integral'); }); }
   function totalCouche(a) {
     var cle = M.perim + '|' + a + '|' + (a === 'robots' ? M.fab : '');
     if (M.totaux[cle] !== undefined) return Promise.resolve(M.totaux[cle]);
-    return compter(filtresCouche(a)).then(function (n) { if (n !== null) M.totaux[cle] = n; return n || 0; });
+    return compter(filtresCouche(a), jointCouche(a)).then(function (n) { if (n !== null) M.totaux[cle] = n; return n || 0; });
   }
-  function vider(a) { if (M.groupes[a]) M.groupes[a].clearLayers(); }
-  function popupLigne(l) {
-    var pour = P.pourquoiAffiche(l);
-    return '<div class="po-pop"><b>' + esc(l.nom_affiche || l.nom) + '</b><small>' + esc(P.sousAffiche(l)) + '</small>' + '<div>' + pastilles(l) + '</div>' +
-      (pour.length ? '<ul>' + pour.map(function (r) { return '<li>→ ' + esc(r) + '</li>'; }).join('') + '</ul>' : '') +
-      '<button type="button" class="pa-b pa-ok" data-ajout-carte="' + esc(l.cle) + '">Ajouter à mes pistes</button><p class="pa-dit" role="status"></p></div>';
-  }
+  function vider(a) { if (M.groupes[a]) M.groupes[a].clearLayers(); M.pts[a] = []; }
   function couleurLigne(l) { return l.angle === 'robots' ? (l.cat === 'omnicell' ? COUL.omnicell : COUL.robots) : COUL[l.angle] || COUL.toutes; }
+  /* 24/11/2026 — plus de bulle Leaflet : un clic ouvre la fiche posée sur la carte, qui ne dépend d'aucune couche (le rechargement des points ne la touche plus). */
   function tracerLignes(a, rows) {
+    if (a === 'integral') return tracerIntegral(rows);
     var L = window.L, g = M.groupes[a]; g.clearLayers();
-    var n = 0;
+    var n = 0, pts = M.pts[a] = [];
     rows.forEach(function (l) {
       if (!coordOk(l.lat, l.lon) || P.ficheSuivie(l, M.ix)) return;
       M.lignes[l.cle] = l;
       var big = a === 'robots' || a === 'transferts' || a === 'signaux';
-      L.circleMarker([l.lat, l.lon], { radius: a === 'toutes' ? 4 : big ? 8 : 7, weight: 2, color: '#fff', fillColor: couleurLigne(l), fillOpacity: 1 }).bindPopup(popupLigne(l), { minWidth: 220 }).addTo(g);
+      L.circleMarker([l.lat, l.lon], { radius: a === 'toutes' ? 4 : big ? 8 : 7, weight: 2, color: '#fff', fillColor: couleurLigne(l), fillOpacity: 1, interactive: false }).addTo(g);
+      pts.push(l); n++;
+    });
+    return n;
+  }
+  /* « Clients Intégral » : un ANNEAU bleu (#0050E6) cerclé de blanc autour d'un point vert forêt — une forme, pas seulement une couleur,
+     pour ne pas la confondre avec les points bleus pleins des cessions et créations (#1D4ED8). Une cliente déjà dans les pistes garde son épingle. */
+  function tracerIntegral(rows) {
+    var L = window.L, g = M.groupes.integral; g.clearLayers();
+    var n = 0, pts = M.pts.integral = [];
+    rows.forEach(function (l) {
+      if (!coordOk(l.lat, l.lon)) return;
+      M.lignes[l.cle] = l;
+      L.circleMarker([l.lat, l.lon], { radius: 13, weight: 5, color: '#fff', fill: false, interactive: false }).addTo(g);
+      L.circleMarker([l.lat, l.lon], { radius: 11, weight: 3, color: BLEU_IP, fill: false, interactive: false }).addTo(g);
+      if (!P.ficheSuivie(l, M.ix)) { L.circleMarker([l.lat, l.lon], { radius: 6, weight: 2, color: '#fff', fillColor: COUL.toutes, fillOpacity: 1, interactive: false }).addTo(g); pts.push(l); }
       n++;
     });
     return n;
+  }
+  /* Le clic ouvre le point VISIBLE le plus proche (20 px, 28 au doigt), comme la maquette : au centre d'une ville les points se recouvrent,
+     et le point du dessus n'est pas toujours celui qu'on vise. Une cliente d'Intégral passe en premier à distance égale. */
+  function plusProche(pt) {
+    var best = null, rmax = window.matchMedia && window.matchMedia('(pointer:coarse)').matches ? 28 : 20;
+    Object.keys(M.pts).forEach(function (a) {
+      if (!M.on[a] || (a === 'integral' && !M.yann)) return;
+      M.pts[a].forEach(function (l) {
+        var q = M.map.latLngToContainerPoint([l.lat, l.lon]), d = Math.sqrt((q.x - pt.x) * (q.x - pt.x) + (q.y - pt.y) * (q.y - pt.y)) - (a === 'integral' ? 4 : 0);
+        if (d <= rmax && (!best || d < best.d)) best = { l: l, d: d };
+      });
+    });
+    return best && best.l;
   }
   /* Les lignes d'une couche, DANS LA VUE : tranches de 1 000, plafonnées (le bandeau le dit). */
   function lireCouche(a, tok, bornes) {
     var b = sb(), out = [];
     function page(i) {
-      var q = appliquer(b.from('phirst_officines').select(COLS), filtresCouche(a)).gte('lat', bornes.getSouth()).lte('lat', bornes.getNorth()).gte('lon', bornes.getWest()).lte('lon', bornes.getEast())
+      var q = appliquer(b.from('phirst_officines').select(COLS + jointCouche(a)), filtresCouche(a)).gte('lat', bornes.getSouth()).lte('lat', bornes.getNorth()).gte('lon', bornes.getWest()).lte('lon', bornes.getEast())
         .order('tri', { ascending: true }).range(i * 1000, i * 1000 + 999);
       return q.then(function (r) {
         if (tok !== M.jeton || r.error) return null;
@@ -316,7 +345,8 @@
     if (!M.map) return;
     var tok = ++M.jeton, zoom = M.map.getZoom(), masque = P.couchesMasquees(zoom, M.perim), actives = couchesActives();
     M.plafond = false;
-    if (M.on.fiches) tracerPistes(); else if (M.groupes.fiches) M.groupes.fiches.clearLayers();
+    // Les épingles ne dépendent pas de la vue : dessinées une fois (et à chaque changement des pistes), plus à chaque déplacement.
+    if (M.on.fiches) { if (!M.pistesDessinees) tracerPistes(); } else if (M.groupes.fiches) { M.groupes.fiches.clearLayers(); M.pistesDessinees = false; }
     if (masque) {
       actives.forEach(vider);
       Promise.all(actives.map(function (a) { return totalCouche(a).then(function (n) { return { nom: NOMS_COUCHE[a], n: n }; }); })).then(function (couches) {
@@ -344,6 +374,7 @@
   }
   function tracerPistes() {
     var L = window.L, g = M.groupes.fiches; g.clearLayers();
+    M.pistesDessinees = true;
     var vivantes = (M.pistes || []).filter(function (p) { return p.stage !== 'archive'; }), sans = 0;
     vivantes.forEach(function (p) {
       var la = typeof p.lat === 'string' ? parseFloat(p.lat) : p.lat, lo = typeof p.lon === 'string' ? parseFloat(p.lon) : p.lon;
@@ -357,6 +388,169 @@
     var el = M.racine && M.racine.querySelector('#po-fiches');
     if (el) el.textContent = vivantes.length + ' fiche' + (vivantes.length > 1 ? 's' : '') + ' dans vos pistes' + (sans ? ', dont ' + sans + ' sans adresse (pas sur la carte)' : '') + '.';
   }
+
+  /* ── La fiche posée sur la carte (maquette v2 choisie par Will le 24/11/2026) ──
+     Elle NAÎT du point cliqué et se pose à gauche (en bas sur un téléphone) ; repliable en bandeau ; elle reste ouverte quand on glisse,
+     zoome ou recharge les points ; Échap, la croix ou un autre point la ferment ou la remplacent. Logique pure : P.memePharmacie,
+     P.ficheDeLignes, P.blocIntegral. Le bloc Intégral n'est demandé que pour Yann : la téléprospectrice n'envoie AUCUNE requête à phirst_integral. */
+  var IC = {
+    ring: '<svg class="po-ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="9"/></svg>',
+    tel: '<svg class="po-ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>',
+    mail: '<svg class="po-ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7 8 6 8-6"/></svg>',
+    ok: '<svg class="po-ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
+    x: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+    haut: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>',
+    bas: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>'
+  };
+  function estTel() { return !!(window.matchMedia && window.matchMedia('(max-width:700px)').matches); }
+  function reduit() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  function lienTel(t) { return 'tel:' + String(t).replace(/[^\d+]/g, ''); }
+  function dl(r) { return '<dl class="po-fdl">' + r.map(function (x) { return '<dt>' + x[0] + '</dt><dd>' + x[1] + '</dd>'; }).join('') + '</dl>'; }
+  function rubrique(titre, corps) { return '<section class="po-fsec"><h3 class="po-fh">' + titre + '</h3>' + corps + '</section>'; }
+  function puces(t) { return '<ul class="po-fl">' + t.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>'; }
+  function htmlIntegral(i) {
+    if (!i) return '';
+    return '<section class="po-fsec po-ip" aria-label="Cliente d’Intégral Pharma"><h3 class="po-ip-t">' + IC.ring + 'Cliente d’Intégral Pharma</h3>' +
+      (i.commercial ? '<p class="po-ip-qui">Suivie par <b>' + esc(i.commercial) + '</b></p><ul class="po-ip-co">' +
+        '<li>' + IC.tel + (i.tel ? '<a href="' + esc(i.telHref) + '">' + esc(i.tel) + '</a>' : '<span class="po-manque">Téléphone à compléter</span>') + '</li>' +
+        '<li>' + IC.mail + (i.mail ? '<a href="mailto:' + esc(i.mail) + '">' + esc(i.mail) + '</a>' : '<span class="po-manque">Mail à compléter</span>') + '</li></ul>' +
+        '<p class="po-ip-dit">Appelez ' + esc(i.commercial) + ' pour en savoir plus sur cette officine.</p>' : '') + '</section>';
+  }
+  /* Chaque rubrique se tait quand elle n'a rien à dire. */
+  function htmlCorps(f, integ) {
+    var h = htmlIntegral(integ), r;
+    var pour = (f.pourquoi || []).filter(Boolean);
+    if (pour.length) h += rubrique('Pourquoi l’appeler', puces(pour));
+    r = [];
+    if (f.pharmacien) r.push(['Pharmacien', esc(f.pharmacien)]);
+    if (f.telephone) r.push(['Téléphone', '<a class="po-flien" href="' + esc(lienTel(f.telephone)) + '">' + IC.tel + esc(P.telFr(f.telephone)) + '</a>']);
+    if (f.email) r.push(['Mail', '<a class="po-flien" href="mailto:' + esc(f.email) + '">' + IC.mail + '<span>' + esc(f.email) + '</span></a>']);
+    if (f.groupements.length) r.push([f.groupements.length > 1 ? 'Groupements' : 'Groupement', esc(P.libelleGroupements(f.groupements))]);
+    f.sieges.forEach(function (s) { r.push(['Siège du groupement', esc(String(s).replace(/^Siège\s+/, ''))]); });
+    r.push(['Votre secteur', f.dans_secteur ? 'Oui, dans votre secteur' : 'Non, hors de votre secteur']);
+    h += rubrique('Contact', dl(r));
+    if (f.fab || f.robot_modele) {
+      r = [];
+      if (f.fab) r.push(['Fabricant', esc(f.fab)]);
+      if (f.robot_modele) r.push(['Modèle', esc(f.robot_modele)]);
+      if (f.robot_date) r.push(['Posé', esc(P.frDate(f.robot_date))]);
+      h += rubrique('Robot concurrent', dl(r));
+    }
+    r = [];
+    if (f.tt_type) r.push(['Type', esc(f.tt_type)]);
+    if (f.tt_date) r.push(['Date', esc(P.frDate(f.tt_date))]);
+    if (P.lienSur(f.annonce)) r.push(['Annonce', '<a class="po-flien" href="' + esc(P.lienSur(f.annonce)) + '" target="_blank" rel="noopener">Voir l’annonce légale</a>']);
+    if (r.length) h += rubrique('Transfert ou cession', dl(r));
+    var ne = f.n_ehpad || f.ehpad_proches.length;
+    if (ne) h += rubrique('EHPAD proches', '<p class="po-fgros"><b>' + ne + '</b> EHPAD à proximité</p>' + (f.ehpad_proches.length ? puces(f.ehpad_proches) : ''));
+    var s = [];
+    if (f.f_cession) s.push('Vient de changer de main');
+    if (f.f_pmr) s.push('Accessibilité PMR à reprendre');
+    if (f.f_sans_robot) s.push('Sans automate');
+    if (s.length) h += rubrique('Signaux', '<div class="po-fsig">' + s.map(function (x) { return '<span class="po-fsg">' + IC.ok + esc(x) + '</span>'; }).join('') + '</div>');
+    return h;
+  }
+  function htmlAction(F) {
+    var f = F.f, s = P.suiviOfficine({ cles: f.cles, nom: f.nom, ville: f.ville }, P.indexParEtat(M.pistes)), fait = FAIT.indexOf(F.dit) >= 0;
+    if (fait || s.etat === 'piste') return '<div class="po-fact" role="status"><p class="po-ffait">' + IC.ok + esc(fait ? F.dit : 'Dans vos pistes') + '</p><button type="button" class="pa-b" data-vers="appels">Voir mes pistes</button></div>';
+    if (s.etat === 'archivee') return '<div class="po-fact" role="status"><p class="po-ffait">Archivée dans vos pistes</p><button type="button" class="pa-b" data-vers="appels">Voir mes pistes</button></div>';
+    return '<div class="po-fact"><button type="button" class="pa-b pa-ok po-fajout" data-fiche-ajout="1"' + (F.envoi ? ' disabled' : '') + '>Ajouter aux officines à appeler</button><p class="pa-dit" role="status">' + esc(F.dit || '') + '</p></div>';
+  }
+  function htmlFiche(F) {
+    var f = F.f, rep = M.replie, past = pastilles(f) + (F.integ ? ' <em class="lg-et po-et-ip">Cliente Intégral</em>' : '');
+    var sous = [f.cp, f.ville].filter(Boolean).join(' ') + (f.groupements.length ? ' · ' + P.libelleGroupements(f.groupements) : '');
+    return '<article class="po-fiche" id="po-fiche" data-etat="' + (rep ? 'replie' : 'ouvert') + '" aria-label="' + esc(f.nom) + '">' +
+      '<header class="po-ftete"><div><h2 class="po-fnom">' + esc(f.nom) + '</h2><p class="po-fsous">' + esc(sous) + '</p></div>' +
+      '<div class="po-fbtns"><button type="button" class="po-fbt" data-fiche-replier="1" aria-label="' + (rep ? 'Déplier la fiche' : 'Replier la fiche') + '" aria-expanded="' + !rep + '">' + (rep ? IC.bas : IC.haut) + '</button>' +
+      '<button type="button" class="po-fbt" data-fiche-fermer="1" aria-label="Fermer la fiche">' + IC.x + '</button></div>' +
+      (past.trim() ? '<div class="po-fpast">' + past + '</div>' : '') + '</header>' +
+      '<div class="po-fcorps">' + htmlCorps(f, F.integ) + '</div><div class="po-fpied">' + htmlAction(F) + '</div></article>';
+  }
+  /* Téléphone : la feuille est posée dans la PAGE (hors de l'écran), car l'écran porte une animation d'apparition (will-change: transform)
+     qui ferait glisser une feuille « fixe » sous le bas de l'écran au lieu de la poser en bas de la fenêtre. */
+  function hoteTel() {
+    var h = document.getElementById('po-fiche-tel');
+    if (!h) { h = document.createElement('div'); h.id = 'po-fiche-tel'; h.className = 'po-fiche-hote'; document.body.appendChild(h); h.addEventListener('click', clicCarte); }
+    return h;
+  }
+  function viderTel() { var h = document.getElementById('po-fiche-tel'); if (h) h.innerHTML = ''; }
+  function dessinerFiche() {
+    var dans = M.racine && M.racine.querySelector('#po-fiche-hote'), carte = M.racine && M.racine.querySelector('.po-carte');
+    if (!dans) { viderTel(); return; }
+    var hote = estTel() ? hoteTel() : dans, autre = hote === dans ? document.getElementById('po-fiche-tel') : dans;
+    if (autre && autre !== hote) autre.innerHTML = '';
+    if (!M.sel) { hote.innerHTML = ''; if (carte) carte.removeAttribute('data-fiche'); M.racine.classList.remove('po-ouverte'); return; }
+    var vieux = hote.querySelector('.po-fcorps'), haut = vieux ? vieux.scrollTop : 0;
+    hote.innerHTML = htmlFiche(M.sel);
+    var c = hote.querySelector('.po-fcorps'); if (c && haut) c.scrollTop = haut;
+    if (carte) carte.setAttribute('data-fiche', M.replie ? 'replie' : 'ouvert');
+    M.racine.classList.add('po-ouverte');
+  }
+  /* Le repère du point choisi : hors des couches, il ne s'efface pas quand les points se rechargent. */
+  function marquer(l) {
+    if (M.repere && M.map) M.map.removeLayer(M.repere);
+    M.repere = null;
+    if (!l || !M.map || !coordOk(l.lat, l.lon)) return;
+    M.repere = window.L.marker([l.lat, l.lon], { interactive: false, keyboard: false, zIndexOffset: 1000,
+      icon: window.L.divIcon({ className: 'po-rep', html: '<span class="po-rep-p"></span><span class="po-rep-a"></span>', iconSize: [44, 44], iconAnchor: [22, 22] }) }).addTo(M.map);
+  }
+  /* Ramène le point dans la partie libre de la carte (à droite de la fiche ; au-dessus d'elle sur un téléphone), sans animation. */
+  function placerFiche() {
+    if (!M.map || !M.sel || !coordOk(M.sel.l.lat, M.sel.l.lon)) return;
+    var m = M.map, s = m.getSize(), ll = [M.sel.l.lat, M.sel.l.lon], el = document.getElementById('po-fiche');
+    if (estTel()) {
+      if (!el) return;
+      var r = m.getContainer().getBoundingClientRect();
+      if (r.top < 0 || r.top > 90) { window.scrollTo(0, window.scrollY + r.top - 64); r = m.getContainer().getBoundingClientRect(); }
+      var libre = Math.max(120, el.getBoundingClientRect().top - r.top);
+      m.panInside(ll, { paddingTopLeft: [30, 30], paddingBottomRight: [30, Math.max(0, s.y - libre) + 30], animate: false });
+    } else if (!M.replie) m.panInside(ll, { paddingTopLeft: [14 + 408 + 8 + 44, 44], paddingBottomRight: [44, 44], animate: false });
+  }
+  function naitre() {
+    var el = document.getElementById('po-fiche'); if (!el || !el.animate || reduit() || !M.map || !M.sel) return;
+    var zr = M.map.getContainer().getBoundingClientRect(), er = el.getBoundingClientRect(), p = M.map.latLngToContainerPoint([M.sel.l.lat, M.sel.l.lon]);
+    el.animate([{ transform: 'translate(' + (zr.left + p.x - er.left) + 'px,' + (zr.top + p.y - er.top) + 'px) scale(.04)' }, { transform: 'translate(0,0) scale(1)' }],
+      { duration: 440, easing: 'cubic-bezier(.2,.8,.2,1)' });
+  }
+  /* Toutes les lignes de la pharmacie (tous les angles), puis — Yann seulement — sa ligne dans phirst_integral. */
+  function enrichirFiche(l, tok) {
+    var b = sb(); if (!b) return;
+    var lignes = l.cles && l.cles.length
+      ? b.from('phirst_officines').select(COLS).overlaps('cles', l.cles).range(0, 49).then(function (r) { return r.error ? [] : r.data || []; }, function () { return []; })
+      : Promise.resolve([]);
+    Promise.all([lignes, lireSommes()]).then(function (r) {
+      if (tok !== M.ficheJeton || !M.sel) return null;
+      M.sel.f = P.ficheDeLignes(P.memePharmacie(l, finir(r[0], r[1])));
+      dessinerFiche();
+      if (!M.yann) return null;
+      return b.from('phirst_integral').select('cle,commercial,tel,mail').in('cle', M.sel.f.lignes).then(function (x) {
+        if (tok !== M.ficheJeton || !M.sel || x.error) return;
+        M.sel.integ = P.blocIntegral(x.data);
+        if (M.sel.integ) dessinerFiche();
+      });
+    }).then(null, function () { /* la fiche garde ce qu'elle a déjà */ });
+  }
+  function ouvrirFiche(l) {
+    var tok = ++M.ficheJeton;
+    M.sel = { l: l, f: P.ficheDeLignes([l]), integ: null, dit: '', envoi: false };
+    marquer(l); dessinerFiche(); placerFiche(); naitre();
+    enrichirFiche(l, tok);
+  }
+  function fermerFiche() { if (!M.sel) return; M.sel = null; M.ficheJeton++; marquer(null); dessinerFiche(); }
+  function ajouterDepuisFiche() {
+    var F = M.sel; if (!F || F.envoi) return;
+    if (!window.PHIRST_PISTE || !F.f.piste) { F.dit = PAS; dessinerFiche(); return; }
+    F.envoi = true; F.dit = ''; dessinerFiche();
+    window.PHIRST_PISTE.ajouter(P.pisteDeLigne(F.f.piste)).then(function (m) {
+      F.envoi = false; F.dit = m;
+      if (FAIT.indexOf(m) >= 0) lirePistes(true).then(function (p) { M.pistes = p || M.pistes; M.ix = P.indexPistes(M.pistes); dessinerPuces(); dessinerTournee(); if (M.on.fiches) tracerPistes(); if (M.sel === F) dessinerFiche(); });
+      if (M.sel === F) dessinerFiche();
+    });
+  }
+  function toucheCarte(ev) { if (ev.key === 'Escape' && M.sel && M.racine && M.racine.querySelector('#po-fiche-hote')) fermerFiche(); }
+  /* En quittant l'écran, la fiche part avec lui (la feuille du téléphone vit dans la page). */
+  function quitterCarte() { if (/^#carte\b/.test(location.hash || '')) return; M.sel = null; M.ficheJeton++; viderTel(); if (M.racine) M.racine.classList.remove('po-ouverte'); }
+
   function cadrer() {
     if (!M.map) return;
     if (M.perim === 'france') M.map.setView([46.6, 2.4], 6); else M.map.fitBounds(SECTEUR_BORNES, { padding: [20, 20], maxZoom: 9 });
@@ -367,7 +561,9 @@
     function nb(k) { var n = k === 'fiches' ? vivantes : M.totaux[M.perim + '|' + k + '|' + (k === 'robots' ? M.fab : '')]; return n == null ? '' : ' <span class="po-cn">' + n.toLocaleString('fr-FR') + '</span>'; }
     z.innerHTML = '<button type="button" class="pa-chip" data-perim="only" aria-pressed="' + (M.perim === 'only') + '">Secteur de Yann</button>' +
       '<button type="button" class="pa-chip" data-perim="france" aria-pressed="' + (M.perim === 'france') + '">Toute la France</button><span class="po-sep"></span>' +
-      ORDRE.map(function (k) { return '<button type="button" class="pa-chip" data-couche="' + k + '" aria-pressed="' + !!M.on[k] + '">' + esc(LIB_COUCHE[k]) + nb(k) + '</button>'; }).join('');
+      ordre().map(function (k) {
+        if (k === 'integral') return '<span class="po-sep"></span><button type="button" class="pa-chip po-chip-ip" data-couche="integral" aria-pressed="' + !!M.on.integral + '"><span class="po-chip-an" aria-hidden="true"></span>' + esc(LIB_COUCHE.integral) + nb(k) + '</button>';
+        return '<button type="button" class="pa-chip" data-couche="' + k + '" aria-pressed="' + !!M.on[k] + '">' + esc(LIB_COUCHE[k]) + nb(k) + '</button>'; }).join('');
     var f = M.racine.querySelector('#po-parc'); if (!f) return;
     var fabs = M.meta.fabs || [];
     if (!M.on.robots || !fabs.length) { f.hidden = true; f.innerHTML = ''; return; }
@@ -377,7 +573,7 @@
   }
   function chargerTotaux() {
     var jeton = M.perim + '|' + M.fab;
-    ORDRE.filter(function (k) { return k !== 'fiches'; }).forEach(function (k) { totalCouche(k).then(function () { if (M.racine && jeton === M.perim + '|' + M.fab) dessinerPuces(); }); });
+    ordre().filter(function (k) { return k !== 'fiches'; }).forEach(function (k) { totalCouche(k).then(function () { if (M.racine && jeton === M.perim + '|' + M.fab) dessinerPuces(); }); });
   }
   /* « Ma tournée du jour » : les fiches dont l'action est due, dans l'ordre de visite le plus court (V1 : tournée de la carte du CRM). */
   function dessinerTournee() {
@@ -398,42 +594,47 @@
   function clicCarte(ev) {
     var t = ev.target, g;
     if ((g = t.closest('[data-vers]'))) { V2.go(g.getAttribute('data-vers')); return; }
-    if ((g = t.closest('[data-couche]'))) { var k = g.getAttribute('data-couche'); M.on[k] = !M.on[k]; if (!M.on[k]) vider(k); dessinerPuces(); actualiser(); return; }
+    if (t.closest('[data-fiche-fermer]')) { fermerFiche(); return; }
+    if (t.closest('[data-fiche-replier]')) { M.replie = !M.replie; dessinerFiche(); if (!M.replie) placerFiche(); return; }
+    if (t.closest('[data-fiche-ajout]')) { ajouterDepuisFiche(); return; }
+    if ((g = t.closest('[data-couche]'))) { var k = g.getAttribute('data-couche'); M.on[k] = !M.on[k]; if (!M.on[k]) vider(k); if (k === 'fiches') M.pistesDessinees = false; dessinerPuces(); actualiser(); return; }
     if ((g = t.closest('[data-parc]'))) { M.fab = g.getAttribute('data-parc'); vider('robots'); dessinerPuces(); chargerTotaux(); actualiser(); return; }
-    if ((g = t.closest('[data-perim]'))) { M.perim = g.getAttribute('data-perim'); M.totaux = {}; ORDRE.forEach(vider); dessinerPuces(); chargerTotaux(); cadrer(); actualiser(); return; }
+    if ((g = t.closest('[data-perim]'))) { M.perim = g.getAttribute('data-perim'); M.totaux = {}; ordre().forEach(vider); M.pistesDessinees = false; dessinerPuces(); chargerTotaux(); cadrer(); actualiser(); return; }
     if (t.closest('[data-zoomer]')) { if (M.perim === 'france') M.map.setZoom(Math.max(M.map.getZoom(), P.SEUIL_COUCHES.france)); else cadrer(); setTimeout(actualiser, 50); return; }
-    if ((g = t.closest('[data-ajout-carte]'))) {
-      var l = M.lignes[g.getAttribute('data-ajout-carte')], dit = g.parentNode.querySelector('.pa-dit');
-      if (!l || !window.PHIRST_PISTE) { if (dit) dit.textContent = PAS; return; }
-      g.disabled = true; if (dit) dit.textContent = '';
-      window.PHIRST_PISTE.ajouter(P.pisteDeLigne(l)).then(function (m) {
-        if (dit) dit.textContent = m;
-        if (FAIT.indexOf(m) >= 0) lirePistes(true).then(function (p) { M.pistes = p || M.pistes; M.ix = P.indexPistes(M.pistes); dessinerPuces(); dessinerTournee(); tracerPistes(); }); else g.disabled = false;
-      });
-    }
   }
   V2.pages.carte = { needs: [], render: function (root) {
     if (M.map) { try { M.map.remove(); } catch (e) { /* carte déjà démontée */ } M.map = null; }
-    M.racine = root; M.groupes = {}; M.lignes = {}; M.totaux = {};
+    M.racine = root; M.groupes = {}; M.lignes = {}; M.pts = {}; M.totaux = {}; M.yann = false; M.pistesDessinees = false; M.sel = null; M.repere = null; M.replie = false; M.ficheJeton++;
     root.innerHTML = window.PHIRST_ECRAN.cadre('<section class="pa po po-large" aria-label="La carte"><header class="pa-tete"><h1>La carte</h1><p>Vos fiches en épingles, les pharmacies du secteur en points. <span id="po-fiches"></span></p></header>' +
       '<div class="pa-chips po-couches" id="po-couches" role="group" aria-label="Couches"></div><div class="pa-chips po-parc" id="po-parc" role="group" aria-label="Parc concurrent" hidden></div>' +
-      '<div class="po-carte"><div id="po-map" class="po-map" role="application" aria-label="Carte des pharmacies"></div><div id="po-bandeau" class="po-bandeau" role="status" hidden></div></div><div id="po-pipe" class="po-pipe"></div></section>');
+      '<div class="po-carte"><div id="po-map" class="po-map" role="application" aria-label="Carte des pharmacies"></div><div id="po-bandeau" class="po-bandeau" role="status" hidden></div><div id="po-fiche-hote" class="po-fiche-hote"></div></div><div id="po-pipe" class="po-pipe"></div></section>');
     if (!root.__pc) { root.__pc = true; root.addEventListener('click', clicCarte); }
+    if (!document.__poEchap) { document.__poEchap = true; document.addEventListener('keydown', toucheCarte); window.addEventListener('hashchange', quitterCarte); }
+    viderTel();
     dessinerPuces();
     if (!sb()) { dire('alerte', 'Connectez-vous pour voir la carte.'); return; }
     chargerLeaflet(function (ok) {
       if (M.racine !== root) return;
       if (!ok) { root.querySelector('#po-map').innerHTML = '<p class="pa-avis">La carte ne s’est pas chargée. Vérifiez votre connexion puis rouvrez cet écran.</p>'; return; }
       var L = window.L;
-      M.map = L.map(root.querySelector('#po-map'), { zoomControl: true, renderer: L.canvas({ tolerance: 14 }), minZoom: 4 }).setView([46.6, 2.4], 6);
+      M.map = L.map(root.querySelector('#po-map'), { zoomControl: false, renderer: L.canvas({ tolerance: 14 }), minZoom: 4 }).setView([46.6, 2.4], 6);
+      L.control.zoom({ position: 'topright' }).addTo(M.map); // la fiche se pose en haut à gauche
+      M.map.on('click', function (e) { var l = plusProche(e.containerPoint); if (l) ouvrirFiche(l); });
+      var survol = 0;
+      M.map.on('mousemove', function (e) { if (survol) return; survol = requestAnimationFrame(function () { survol = 0; if (M.map) M.map.getContainer().style.cursor = plusProche(e.containerPoint) ? 'pointer' : ''; }); });
       poserFond(M.map);
-      ORDRE.forEach(function (k) { M.groupes[k] = L.layerGroup().addTo(M.map); });
+      P.ordreCouches(true).forEach(function (k) { M.groupes[k] = L.layerGroup().addTo(M.map); });
       cadrer();
       M.map.on('moveend', function () { clearTimeout(M.minuteur); M.minuteur = setTimeout(actualiser, 300); });
       setTimeout(function () { if (M.map) M.map.invalidateSize(); }, 50);
       lireMeta().then(function (m) { M.meta = m || {}; dessinerPuces(); });
       chargerTotaux();
-      lirePistes(true).then(function (p) { M.pistes = p || []; M.ix = P.indexPistes(M.pistes); dessinerPuces(); dessinerTournee(); actualiser(); });
+      // Le rôle d'abord : la couche « Clients Intégral » n'existe que pour Yann (en cas de doute, on la tait).
+      Promise.all([lirePistes(true), estTelepro().then(null, function () { return true; })]).then(function (r) {
+        if (M.racine !== root) return;
+        M.pistes = r[0] || []; M.ix = P.indexPistes(M.pistes); M.yann = r[1] === false;
+        dessinerPuces(); dessinerTournee(); if (M.yann) chargerTotaux(); actualiser();
+      });
     });
   } };
 })();

@@ -213,3 +213,79 @@
   .po .po-fait{min-height:44px;white-space:nowrap}
   .po .pa-l .pa-dit{grid-column:1 / -1;grid-row:3;margin:4px 0 0}
 }
+
+/* ── La carte · fiche « posée sur la carte » et couche « Clients Intégral » (24/11/2026, maquette v2 choisie par Will) ──
+   Vert forêt #1A3A2E ; bleu #0050E6 SEULEMENT pour ce qui touche Intégral. Aucun flou, aucune opacité sur du texte ; dégradés opaques. */
+.po-carte .leaflet-control-zoom a{width:44px;height:44px;line-height:44px;font-size:22px}
+.po-carte[data-fiche="ouvert"] .po-bandeau{left:436px}
+.lg-et.po-et-ip{background-color:#E3ECFF;color:#0050E6}
+.po-chip-an{display:inline-block;width:15px;height:15px;margin-right:9px;border-radius:50%;border:3px solid #0050E6;background-color:#1A3A2E;box-shadow:0 0 0 1.5px #fff;vertical-align:-3px}
+.pa-chip.po-chip-ip{border-color:#BDD0F8;color:#0050E6}
+.pa-chip.po-chip-ip[aria-pressed="true"]{background-color:#0050E6;border-color:#0050E6;color:#fff}
+.pa-chip.po-chip-ip[aria-pressed="true"] .po-chip-an{border-color:#fff;box-shadow:none}
+.pa-chip.po-chip-ip:focus-visible{outline-color:#0050E6}
+/* Le repère du point choisi : un anneau et une onde douce */
+.po-rep{background:none;border:0;pointer-events:none}
+.po-rep-a{position:absolute;inset:4px;border-radius:50%;border:3px solid #1A3A2E;box-shadow:0 0 0 2px #fff,0 6px 14px rgba(18,40,31,.38)}
+.po-rep-p{position:absolute;inset:4px;border-radius:50%;background-color:rgba(18,165,103,.34);animation:po-onde 2.4s ease-out infinite}
+@keyframes po-onde{0%{transform:scale(.85);opacity:.9}100%{transform:scale(2.2);opacity:0}}
+/* La fiche */
+.po-fiche{position:absolute;z-index:800;left:14px;top:14px;width:408px;max-height:calc(100% - 28px);transform-origin:0 0;display:flex;flex-direction:column;min-height:0;overflow:hidden;
+  color:#16281E;font-family:var(--font);background-color:#fff;background-image:radial-gradient(120% 55% at 0 0,#EAF5EE 0,#fff 62%);
+  border:1px solid var(--au-fil,#D8E7DD);border-radius:20px;box-shadow:inset 0 1px 0 #fff,0 26px 50px -28px rgba(18,60,40,.55),0 2px 8px rgba(22,40,30,.07)}
+.po-ftete{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:start;padding:18px 16px 12px 20px}
+.po-fnom{margin:0;font:800 23px/1.14 var(--font);letter-spacing:-.025em;overflow-wrap:anywhere}
+.po-fsous{margin:4px 0 0;font-size:15px;line-height:1.35;color:#3B4F43}
+.po-fpast{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:6px}
+.po-fpast .lg-et{margin:0}
+.po-fbtns{display:flex;gap:6px}
+.po-fbt{width:44px;height:44px;display:inline-grid;place-items:center;border:1px solid var(--au-fil,#D8E7DD);border-radius:14px;background-color:#fff;color:#3B4F43;cursor:pointer;transition:background-color .2s,transform .2s}
+.po-fbt:hover{background-color:#E7F3EB}
+.po-fbt:active{transform:scale(.94)}
+.po-fbt:focus-visible{outline:2px solid #1A3A2E;outline-offset:2px}
+.po-fcorps{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:grid;gap:18px;align-content:start;padding:6px 20px 20px}
+.po-fpied{padding:12px 20px 16px;border-top:1px solid #E3EEE7;background-color:#fff}
+.po-fiche[data-etat="replie"] .po-fcorps,.po-fiche[data-etat="replie"] .po-fpied{display:none}
+.po-fiche[data-etat="replie"] .po-ftete{padding-bottom:16px}
+.po-fsec{margin:0}
+.po-fh{margin:0 0 8px;font:800 13px/1.2 var(--font);letter-spacing:.07em;text-transform:uppercase;color:#4A5D51}
+.po-fl{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.po-fl li{position:relative;padding-left:18px;font-size:15.5px;line-height:1.42}
+.po-fl li::before{content:"";position:absolute;left:2px;top:.58em;width:7px;height:7px;border-radius:50%;background-color:#12A567}
+.po-fdl{display:grid;grid-template-columns:116px minmax(0,1fr);gap:0;margin:0}
+.po-fdl dt{padding:10px 0;font-size:14px;line-height:1.3;color:#4A5D51}
+.po-fdl dd{margin:0;padding:10px 0 10px 12px;min-height:44px;font-size:15.5px;line-height:1.35;font-weight:600;overflow-wrap:anywhere}
+.po-fdl dt,.po-fdl dd{border-top:1px solid #EAF1ED}
+.po-fdl dt:first-child,.po-fdl dt:first-child + dd{border-top:0}
+.po-flien{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin:-10px 0;color:#1A3A2E;font-weight:800;text-decoration:underline;text-decoration-color:#B6D6C2;text-underline-offset:4px}
+.po-flien:hover{text-decoration-color:#1A3A2E}
+.po-flien:focus-visible,.po-ip a:focus-visible{outline:2px solid #1A3A2E;outline-offset:2px;border-radius:6px}
+.po-ic{flex:none}
+.po-fgros{margin:0 0 10px;font-size:15.5px}
+.po-fgros b{font:800 28px/1 var(--font);letter-spacing:-.03em;margin-right:4px}
+.po-fsig{display:flex;flex-wrap:wrap;gap:8px}
+.po-fsg{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px 0 8px;border-radius:999px;background-color:#EAF5EE;color:#0E6B43;font-weight:700;font-size:14px}
+/* Le bloc Intégral : le seul endroit bleu de la fiche */
+.po-ip{padding:16px 16px 14px;border-radius:18px;border:1px solid #BDD0F8;background-color:#EEF4FF;background-image:radial-gradient(90% 130% at 0 0,#FFFFFF 0,#EEF4FF 66%);box-shadow:inset 0 1px 0 #fff,0 14px 28px -20px rgba(0,80,230,.5)}
+.po-ip-t{display:flex;align-items:center;gap:8px;margin:0 0 6px;font:800 15px/1.2 var(--font);color:#0050E6}
+.po-ip-qui{margin:0 0 4px;font-size:16.5px;color:#1A2030}
+.po-ip-co{list-style:none;margin:0;padding:0}
+.po-ip-co li{display:flex;align-items:center;gap:10px;min-height:44px;color:#0050E6;font-size:16px;font-weight:700}
+.po-ip-co a{display:inline-flex;align-items:center;min-height:44px;color:#0050E6;overflow-wrap:anywhere;text-decoration:underline;text-decoration-color:#BDD0F8;text-underline-offset:4px}
+.po-manque{padding:5px 12px;border:1px dashed #8EA9E6;border-radius:999px;background-color:#fff;color:#1A2030;font-size:15px;font-weight:600}
+.po-ip-dit{margin:6px 0 0;font-size:15px;line-height:1.4;color:#1A2030}
+.po-fact{display:flex;align-items:center;flex-wrap:wrap;gap:6px 18px}
+.po-fact .pa-dit{margin:0}
+.po-fajout{width:100%}
+.po-ffait{display:flex;align-items:center;gap:8px;margin:0;min-height:48px;font-size:16px;font-weight:800;color:#0E6B43}
+@media (max-width:700px){
+  /* Téléphone : la fiche est une feuille posée en bas de l'écran, la carte reste visible au-dessus. */
+  .po-ouverte .po{padding-bottom:62dvh}
+  .po-fiche{position:fixed;z-index:1200;left:8px;right:8px;top:auto;bottom:8px;width:auto;max-height:58dvh}
+  .po-carte[data-fiche="ouvert"] .po-bandeau{left:12px}
+  .po-fnom{font-size:21px}
+  .po-fdl{grid-template-columns:104px minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){
+  .po-rep-p{animation:none;opacity:0}
+}
