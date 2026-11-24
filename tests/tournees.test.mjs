@@ -660,3 +660,64 @@ test('Essentiels : donnée manquante = null, jamais un chiffre faux ; CIP absent
   const D = Ess.calculer(TE, PFE, Object.assign({ inconnu: 'Essentiels Pharma' }, GE), WE, 'T10');
   assert.equal(D.ess.length, 4);
 });
+
+// ── Numéros E1, E2… (maquette v1 « Étiquettes », 24/11/2026) — données FICTIVES ──
+// T10 d'ouest en est sur le parallèle 47 avec 3 arrêts ; T7 à ~33 km au sud, T11 à ~33 km au nord (T7 doit passer avant T11 : tri des codes en nombres).
+const TN = { tournees: {
+  T10: { trace: [[47.0, -1.0], [47.0, 0.0]], arrets: [arretE(1, 'a1', 47.0, -0.9, { rm: 1 }), arretE(2, 'a2', 47.0, -0.5, { rm: 1 }), arretE(3, 'a3', 47.0, -0.1, { rm: 1 })] },
+  T11: { trace: [[47.3, -1.0], [47.3, 0.0]], arrets: [] },
+  T7: { trace: [[46.7, -1.0], [46.7, 0.0]], arrets: [] }
+} };
+const PFN = { p: [
+  pfe('f1', 47.0, -0.12, 'PHARMACIE DE LA GARE', 'ANGERS'),   // T10, près de l'arrêt 3
+  pfe('f2', 47.01, -0.88, 'PHARMACIE DU CENTRE', 'ANGERS'),   // T10, près de l'arrêt 1 (~1,9 km)
+  pfe('f3', 47.0, -0.92, 'GRANDE PHARMACIE', 'ANGERS'),       // T10, près de l'arrêt 1 (~1,5 km) : avant f2
+  pfe('g1', 47.28, -0.5, 'PHARMACIE NORD', 'LE NORD'),        // plus proche de la T11
+  pfe('g2', 46.71, -0.5, 'PHARMACIE SUD', 'LE SUD'),          // plus proche de la T7, ~1 km
+  pfe('g3', 46.75, -0.3, 'PHARMACIE SUD BIS', 'LE SUD'),      // plus proche de la T7, ~5,6 km : après g2
+  pfe('x9', 48.9, 2.3, 'PHARMACIE LOINTAINE', 'PARIS')        // hors projet : aucun numéro
+] };
+const GN = { f1: 1, f2: 1, f3: 1, g1: 1, g2: 1, g3: 1, x9: 1 };
+const WN = [{ id: 'f2', name: 'PHARMACIE DU CENTRE', ville: 'ANGERS', cp: '49000', lat: 47.01, lng: -0.88 }];
+
+test('Essentiels E1… : d’abord celles de la T10 dans l’ordre des arrêts, puis les autres par code de tournée ; aucune lointaine', () => {
+  const D = Ess.calculer(TN, PFN, GN, WN, 'T10');
+  const N = Ess.numeroter(D);
+  assert.deepEqual(N.tous.map(e => e.cip), ['f3', 'f2', 'f1', 'g2', 'g3', 'g1']);
+  assert.deepEqual(N.tous.map(e => e.no), [1, 2, 3, 4, 5, 6]);
+  assert.deepEqual(N.route.map(e => e.cip), ['f3', 'f2', 'f1']);
+  assert.deepEqual(N.autres.map(e => e.procheCode), ['T7', 'T7', 'T11']);
+  assert.deepEqual(N.route.map(e => e.ap.n), [1, 1, 3]);
+  assert.ok(N.route[0].apD < N.route[1].apD);
+  assert.ok(!N.tous.some(e => e.cip === 'x9') && !N.par.x9);
+  assert.equal(N.tous.length, D.ess.length);
+  assert.equal(N.par.g1.no, 6);
+});
+
+test('Essentiels E1… : fonction pure (D non modifié, même résultat deux fois), donnée manquante = null', () => {
+  const D = Ess.calculer(TN, PFN, GN, WN, 'T10');
+  const avant = JSON.stringify(D);
+  const a = Ess.numeroter(D), b = Ess.numeroter(D);
+  assert.equal(JSON.stringify(D), avant);
+  assert.ok(!('no' in D.ess[0]));
+  assert.deepEqual(a.tous.map(e => e.cip + e.no), b.tous.map(e => e.cip + e.no));
+  assert.equal(Ess.numeroter(null), null);
+  assert.equal(Ess.numeroter({}), null);
+});
+
+test('Essentiels E1… : badge, ligne, bandeau et nom court', () => {
+  const N = Ess.numeroter(Ess.calculer(TN, PFN, GN, WN, 'T10'));
+  const f2 = N.par.f2, f3 = N.par.f3;
+  assert.equal(Ess.badge(f3), '<i class="ess-b">E1</i>');
+  assert.equal(Ess.badge(f2), '<i class="ess-b cl">E2</i>');          // déjà cliente : badge cerclé
+  assert.ok(Ess.ligneNum(f3).startsWith('<button type="button" class="ess-row ess-nrow" data-cip="f3"><i class="ess-b">E1</i><span><b>'));
+  const b = Ess.bandeau(f3);
+  assert.ok(/E1/.test(b) && /Grande Pharmacie/.test(b) && /Angers/.test(b) && /à récupérer/.test(b) && /sur la route/.test(b));
+  assert.ok(!/€|commandes|marge/.test(b + Ess.ligneNum(f3)));           // aucun chiffre de vente pour une non cliente
+  assert.equal(Ess.court('Pharmacie de la Gare'), 'Gare');
+  assert.equal(Ess.court('Pharmacie du Centre'), 'Centre');
+  assert.equal(Ess.court('Pharmacie de l’Horloge'), 'Horloge');
+  assert.equal(Ess.court('Nouvelle Pharmacie des Halles'), 'Halles');
+  assert.equal(Ess.court('Grande Pharmacie'), 'Grande Pharmacie');      // rien d'inventé : le nom reste entier
+  assert.equal(Ess.court('Pharmacie Pichard'), 'Pichard');
+});
