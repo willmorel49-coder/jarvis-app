@@ -51,6 +51,19 @@
     for (m = 0; m < 12; m++) out.push(somme_[m] / cpt);
     return out;
   }
+  // Les années que saisonIndices garde (12 mois publiés, total non nul), et la période écrite en clair (24/11/2026 : bloc 6 = bloc 7).
+  function saisonAnnees(tous, mois) {
+    var ans = {}, out = [];
+    mois.forEach(function (x, k) { var a = x.slice(0, 4); (ans[a] = ans[a] || { n: 0, t: 0 }).n++; ans[a].t += tous[k] || 0; });
+    Object.keys(ans).sort().forEach(function (a) { if (ans[a].n === 12 && ans[a].t > 0) out.push(a); });
+    return out;
+  }
+  function periodeAnnees(ans) {
+    if (!ans || !ans.length) return null;
+    if (ans.length === 1) return 'de janvier à décembre ' + ans[0];
+    for (var i = 1; i < ans.length; i++) if (+ans[i] !== +ans[i - 1] + 1) return 'années ' + ans.slice(0, -1).join(', ') + ' et ' + ans[ans.length - 1];
+    return 'de janvier ' + ans[0] + ' à décembre ' + ans[ans.length - 1];
+  }
   function partsPrescripteurs(s) {
     var n = s.n, v = somme(s.ville, n - 12, n), h = somme(s.hop, n - 12, n), t = v + h, par = [], y, ans = {}, i;
     s.mois.forEach(function (x) { ans[x.slice(0, 4)] = 1; });
@@ -131,7 +144,7 @@
     });
     return out;
   }
-  E._calc = { moisListe: moisListe, serieDe: serieDe, resumeFrance: resumeFrance, saisonIndices: saisonIndices, partsPrescripteurs: partsPrescripteurs,
+  E._calc = { moisListe: moisListe, serieDe: serieDe, resumeFrance: resumeFrance, saisonIndices: saisonIndices, saisonAnnees: saisonAnnees, periodeAnnees: periodeAnnees, partsPrescripteurs: partsPrescripteurs,
     tendanceCommune: tendanceCommune, regionDeCp: regionDeCp, partsRegions: partsRegions, partsAge: partsAge, niveauxPrevision: niveauxPrevision,
     marqueDe: marqueDe, rupturesPassees: rupturesPassees, memeDosage: memeDosage, penuriesEma: penuriesEma, pct: pct, fr: fr };
 })();

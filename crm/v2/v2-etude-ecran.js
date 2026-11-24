@@ -68,6 +68,7 @@
     if (!serie) return out;
     out.france = K.resumeFrance(serie);
     out.saison = K.saisonIndices(serie.tous, serie.mois);
+    out.saisonPeriode = K.periodeAnnees(K.saisonAnnees(serie.tous, serie.mois));
     out.presc = K.partsPrescripteurs(serie);
     prev = s && s.tendance && s.tendance.previsions;
     out.prev = prev; out.niv = K.niveauxPrevision(serie.tous, prev);
@@ -93,6 +94,17 @@
     if (!S.charge || !S.charge[cip]) return undefined;
     var tr = S.tr[cip.slice(-2)], serie = tr ? K.serieDe(tr, cip) : null, f = serie && serie.n >= 24 ? K.resumeFrance(serie) : null;
     return f && f.evo != null ? { evo: f.evo, periode: moisLib(f.debut12) + ' à ' + moisLib(f.dernier) + ' face aux 12 mois précédents' } : null;
+  };
+
+  // Saisonnalité France pour le bloc 6 (24/11/2026, choix cliqué de Will : « Celle de l'étude ») : même série et même calcul que la carte du bloc 7.
+  // undefined = pas encore chargée, null = pas de série France pour ce produit.
+  E.franceSaison = function (cip) {
+    cip = String(cip);
+    if (!S.charge || !S.charge[cip]) return undefined;
+    var tr = S.tr[cip.slice(-2)], serie = tr ? K.serieDe(tr, cip) : null, ind = serie ? K.saisonIndices(serie.tous, serie.mois) : null;
+    if (!ind) return null;
+    return { moisFort: ind.indexOf(Math.max.apply(null, ind)) + 1, moisFaible: ind.indexOf(Math.min.apply(null, ind)) + 1, indices: ind,
+             periode: K.periodeAnnees(K.saisonAnnees(serie.tous, serie.mois)) };
   };
 
   // ══ Rendu : petits morceaux ═══════════════════════════════
@@ -155,7 +167,7 @@
     if (!D.saison) return '';
     var ind = D.saison, hi = ind.indexOf(Math.max.apply(null, ind)), lo = ind.indexOf(Math.min.apply(null, ind)), MC = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
     return carte('', 'Saisonnalité', '<p class="et-ph">Mois le plus fort : <b>' + MC[hi] + '</b> (' + pct(ind[hi] - 1) + ' face à un mois moyen). Mois le plus faible : <b>' + MC[lo] + '</b> (' + pct(ind[lo] - 1) + ').</p>' + saisonSvg(ind),
-      'Indices recalculés sur les cinq années complètes 2021 à 2025 (Medic\'AM), chaque mois rapporté à la moyenne de son année. Trait pointillé : un mois moyen.');
+      'Indices recalculés sur les années complètes, ' + esc(D.saisonPeriode) + ' (Medic\'AM), chaque mois rapporté à la moyenne de son année. Trait pointillé : un mois moyen.');
   }
   function cRegion(D) {
     if (!D.regions) return carte('', 'Sa région face à la France', '<p class="et-n">Données régionales indisponibles pour ce produit.</p>');

@@ -2316,10 +2316,15 @@
     h += fait('Chaîne du froid', x.froid ? 'Oui, 2 à 8 °C' : 'Non');
     if (x.has) h += fait('Avis HAS', 'SMR ' + esc(x.has.smr || '—') + ' · ASMR ' + esc(x.has.asmr || '—'), 'avis du ' + dateJour(x.has.date) + (x.has.motif ? ' · ' + esc(x.has.motif) : ''));
     else h += fait('Avis HAS', 'Aucun avis récent');
-    if (s.tendance && s.tendance.saison) {
-      var sa = s.tendance.saison, ind = sa.indices, mx = Math.max.apply(null, ind), bars = '', i;
+    // 24/11/2026 (choix cliqué de Will) : une seule saisonnalité sur la fiche, celle de l'étude (bloc 7 : Medic'AM, années civiles complètes),
+    // période écrite. On attend son chargement plutôt que d'afficher deux mois de suite ; national.json seulement si l'étude n'a pas de série France.
+    // Sans statistiques (sansEtude), le bloc 7 n'est pas construit et l'étude ne se charge pas : rien à attendre.
+    var es = !s.sansEtude && V2.etude && V2.etude.franceSaison ? V2.etude.franceSaison(l.cip) : null;
+    if (es === undefined) h += fait('Saisonnalité', 'Chargement de la saisonnalité…');
+    else if (es || (s.tendance && s.tendance.saison)) {
+      var sa = es || s.tendance.saison, ind = sa.indices, mx = Math.max.apply(null, ind), bars = '', i;
       for (i = 0; i < 12; i++) bars += '<i class="' + (i + 1 === sa.moisFort ? 'f' : i + 1 === sa.moisFaible ? 'w' : '') + '" style="height:' + Math.max(8, ind[i] / (mx || 1) * 100).toFixed(0) + '%" title="' + MOIS_C[i] + '"></i>';
-      h += fait('Saisonnalité', 'Fort en ' + MOIS_C[sa.moisFort - 1] + ', faible en ' + MOIS_C[sa.moisFaible - 1], 'ventes France, indices du produit') +
+      h += fait('Saisonnalité', 'Fort en ' + MOIS_C[sa.moisFort - 1] + ', faible en ' + MOIS_C[sa.moisFaible - 1], es ? 'boîtes remboursées en France (Medic\'AM), ' + esc(es.periode || 'années complètes') : 'ventes France, indices du produit') +
         '<div class="cp-sai" role="img" aria-label="Indice saisonnier mois par mois, de janvier à décembre">' + bars + '</div><div class="cp-sai-m" aria-hidden="true"><span>janv.</span><span>juin</span><span>déc.</span></div>';
     }
     h += fait('Nouveauté', x.nouveaute ? 'AMM ' + esc(x.nouveaute.amm || '') + (x.nouveaute.labo ? ' · ' + esc(x.nouveaute.labo) : '') : 'Non', 'AMM de moins de 36 mois');
@@ -2487,7 +2492,7 @@
         pmFiche(l, d, vp) +
         (l.f === 'nr' && l.net > 0 && Math.abs(l.net - l.prix) >= 0.01 * l.prix
           ? '<p class="cp-note">Prix moyen facturé au réseau : ' + eur2(l.net) + '.</p>' : '') +
-        (s ? blocAlertes(s, l, vp) + blocMarges(s, vp) + (vp ? '' : blocAqui(liste, off)) + blocMarche(s, l, vp) + (vp ? '' : blocNous(s, l, d, ventes)) + blocProduit(s, l, stock) : blocProduit({ autres: { froid: false }, generique: null, tendance: null }, l, stock)) +
+        (s ? blocAlertes(s, l, vp) + blocMarges(s, vp) + (vp ? '' : blocAqui(liste, off)) + blocMarche(s, l, vp) + (vp ? '' : blocNous(s, l, d, ventes)) + blocProduit(s, l, stock) : blocProduit({ autres: { froid: false }, generique: null, tendance: null, sansEtude: true }, l, stock)) +
         (s && V2.etude && V2.etude.bloc ? V2.etude.bloc(l, s, vp) : '') +   // 24/11/2026 : l'étude par produit (bloc 7, « La fiche enrichie » choisie par Will)
         indispo +
         '<div class="cp-ctas">' + boutonPanneau(l.cip) +
@@ -2537,7 +2542,7 @@
     pfhtDepuisPpht: pfhtDepuisPpht, margeGrossiste: margeGrossiste, margeOfficine: margeOfficine, abandon2027: abandon2027,
     margePharmacien: margePharmacien, margeAuPrix: margeAuPrix, donnees: function () { return donnees(); }, prixJO: prixJO, alertesPrix: alertesPrix, statutGenerique: statutGenerique, emaPourMolecule: emaPourMolecule,
     ansmPourCip: ansmPourCip, rappelPourCip: rappelPourCip, hasPourCip: hasPourCip, previsionsPourCip: previsionsPourCip,
-    saisonDe: saisonDe, ventesProduit: ventesProduit, tuileMargePharmacien: tuileMargePharmacien, tuileNotreMarge: tuileNotreMarge,
+    saisonDe: saisonDe, blocProduit: blocProduit, ventesProduit: ventesProduit, tuileMargePharmacien: tuileMargePharmacien, tuileNotreMarge: tuileNotreMarge,
     // Pour les tests : attendre les fichiers demandés, fixer la date du jour.
     pret: function () { return Promise.all(D.fichP || []); },
     horloge: function (f) { D.horloge = f || null; }
