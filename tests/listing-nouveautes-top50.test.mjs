@@ -167,3 +167,23 @@ test('V2.pharmaListXlsx passe son top 50 à l’Excel (pas pour un prospect)', (
   const i = ph.indexOf('V2.pharmaListXlsx = function'), f = ph.slice(i, ph.indexOf('\n  };\n', i));
   assert.match(f, /achatsXlsx\(\(prospect \|\| pharma\.name\) \+ ' — ' \+ ref, data, false, mode, prospect \? null : topVentesData\(pid\)\)/);
 });
+
+// 24/11/2026 (Will, choix cliqué) : sur le listing groupement, la colonne dit « Part du groupement » (c'est la part
+// de SES pharmacies), sauf sur la famille Nouveautés qui se compte sur le réseau ; bas de page sans « des les ».
+function v1De(c) {
+  const ctx = { BLEU: '#0050E6', ENCRE: '#0F1420', GRIS: '#5B6275', PALE: '#8A91A3', FILET: '#E6EAF1' };
+  vm.runInNewContext(bloc(pdf, '  function eur(v)', '  // ───────── 2 · LA COUVERTURE') + '\nthis.f = v1;', ctx);
+  return ctx.f(c).blocks.map((b) => b.h).join('\n');
+}
+test('PDF : « Part du groupement » sur le listing groupement, « Part du réseau » sur ses nouveautés et sur le listing Intégral', () => {
+  const ligne = { d: 'DOLIPRANE 1000MG CPR B8', n: 4, ppht: 2.5, net: 2.1 };
+  const cats = (sur) => [{ label: 'Nouveautés', sub: '', sur, rows: [{ ...ligne, s: sur }] }, { label: 'Princeps · Petits prix', sub: '', sur: 0, rows: [{ ...ligne, s: 0 }] }];
+  const entetes = (h) => [...h.matchAll(/width:112px;white-space:nowrap">([^<]+)</g)].map((m) => m[1]);
+  const g = v1De({ reseau: false, panel: 8, ref: 'Les Officinales', nom: 'Officine', tot: 2, date: '24 novembre 2026', cats: cats(2114) });
+  assert.deepEqual(entetes(g), ['Part du réseau', 'Part du groupement']);
+  assert.ok(g.includes('Part du groupement : proportion des 8 pharmacies Les Officinales clientes d\'Intégral Pharma qui commandent le produit (nouveautés : part des 2 114 pharmacies du réseau Intégral Pharma).'), 'bas de page du listing groupement');
+  const r = v1De({ reseau: true, panel: 2114, ref: 'Réseau Intégral Pharma', nom: 'Officine', tot: 2, date: '24 novembre 2026', cats: cats(0) });
+  assert.deepEqual(entetes(r), ['Part du réseau', 'Part du réseau']);
+  assert.ok(r.includes('Part du réseau : proportion des 2 114 pharmacies du réseau Intégral Pharma qui commandent le produit.'), 'bas de page du listing Intégral');
+  assert.ok(!/des les /.test(g) && !/des les /.test(r), 'plus de « des les »');
+});

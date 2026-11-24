@@ -160,7 +160,7 @@
         '<span style="font-size:17px;font-weight:800;letter-spacing:-.3px">' + esc(k.label) + (s ? ' <span style="font-weight:600;color:' + PALE + ';font-size:13px">(suite)</span>' : '') + '</span>' +
         '<span style="font-size:11px;color:' + GRIS + '">' + esc(k.sub) + '</span>' +
         '<span style="margin-left:auto;font-size:10px;color:' + PALE + '">' + k.rows.length + ' produits</span></div>' +
-        '<div style="display:flex;gap:14px;padding:6px 0 2px;font-size:8.5px;font-weight:700;letter-spacing:.8px;color:' + PALE + ';text-transform:uppercase"><div style="flex:1">Produit</div><div style="width:112px">Part du réseau</div><div style="width:62px;text-align:right">Tarif</div><div style="width:74px;text-align:right;color:' + BLEU + '">Prix net</div></div>';
+        '<div style="display:flex;gap:14px;padding:6px 0 2px;font-size:8.5px;font-weight:700;letter-spacing:.8px;color:' + PALE + ';text-transform:uppercase"><div style="flex:1">Produit</div><div style="width:112px;white-space:nowrap">' + (c.reseau || k.sur ? 'Part du réseau' : 'Part du groupement') + '</div><div style="width:62px;text-align:right">Tarif</div><div style="width:74px;text-align:right;color:' + BLEU + '">Prix net</div></div>';
     };
     blocks.push({ t: 'autre', mt: 0, h:
       '<div style="display:flex;align-items:center;justify-content:space-between">' +
@@ -186,7 +186,7 @@
           '<div style="width:74px;text-align:right;font-size:14px;font-weight:800;color:' + BLEU + '">' + eur(r.net) + '</div></div>' });
       });
     });
-    blocks.push({ t: 'autre', mt: 26, h: '<div style="font-size:9.5px;line-height:1.5;color:' + PALE + '">Prix nets HT indicatifs au ' + c.date + '. Part du réseau : proportion des ' + refPhrase(c) + ' qui commandent le produit' + noteNouv(c) + '.<br><b style="color:' + GRIS + '">Intégral Pharma</b> · groupe de grossistes-répartiteurs</div>' });
+    blocks.push({ t: 'autre', mt: 26, h: '<div style="font-size:9.5px;line-height:1.5;color:' + PALE + '">Prix nets HT indicatifs au ' + c.date + '. ' + (c.reseau ? 'Part du réseau' : 'Part du groupement') + ' : proportion des ' + refPhrase(c).replace(/^les /, '') + ' qui commandent le produit' + noteNouv(c) + '.<br><b style="color:' + GRIS + '">Intégral Pharma</b> · groupe de grossistes-répartiteurs</div>' });
     return { bg: '#fff', padT: 34, padX: 48, base: 'font-family:PdfArchivo,system-ui,sans-serif', blocks: blocks, suite: suite };
   }
 
