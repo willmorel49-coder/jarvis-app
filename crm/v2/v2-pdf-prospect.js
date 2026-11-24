@@ -75,7 +75,7 @@
   function contexte(data, o) {
     var cats = (data.cats || []).map(function (k) {
       return { label: k.cat.label, sub: k.cat.sub || '', color: k.cat.color || BLEU, rows: k.rows.map(function (r) {
-        return { d: r.designation || String(r.cip), ppht: r.prix_ht > 0 ? r.prix_ht : null, net: r.prix_ip > 0 ? r.prix_ip : null, n: r.sortie || 0, froid: !!r.froid, offre: !!r.offre };
+        return { d: r.designation || String(r.cip), ppht: r.prix_ht > 0 ? r.prix_ht : null, net: r.prix_ip > 0 ? r.prix_ip : null, n: r.sortie || 0, froid: !!r.froid, offre: !!r.offre, nouv: !!r.nouv };
       }) };
     }).filter(function (k) { return k.rows.length; });
     var tot = cats.reduce(function (a, k) { return a + k.rows.length; }, 0);
@@ -112,22 +112,28 @@
       '<div style="display:flex;gap:10px;margin-top:10px"><div style="flex:0 0 250px;' + T.carte + ';padding:11px 13px">' + lab('CA par mois') + '<div style="display:flex;align-items:flex-end;gap:8px;height:84px;margin-top:8px">' + (barres || '—') + '</div></div>' +
       '<div style="flex:1;min-width:0;' + T.carte + ';padding:11px 13px">' + lab('Ce qu\'elle commande déjà · par tranche') + '<div style="margin-top:6px">' + (tr || '<span style="font-size:10px;color:' + PALE + '">Aucune commande identifiée.</span>') + '</div></div></div>' });
     var t = C.top;
-    if (t) {
-      var sous = 'ses ' + t.rows.length + ' premiers produits' + (t.caTot > 0 ? ' · ' + Math.round(t.caTop / t.caTot * 100) + ' % de son CA' : '') + ' · ' + C.fmtNum(t.nb) + ' réf. commandées';
+    // 24/11/2026 — Will : le top 50 en VALEUR (CA HT) et le top 50 en VOLUME (boîtes). Même tableau ; la colonne qui classe
+    // est en gras, et « Part » se lit dans la même unité (part de son CA, ou part de ses boîtes).
+    var tableTop = function (f, titre, sous, rows, parVol, tot) {
       var cols = '<div style="display:flex;gap:10px;padding:7px ' + T.px + 'px 3px;font-size:8.5px;font-weight:700;letter-spacing:.7px;color:' + PALE + ';text-transform:uppercase"><div style="width:18px">#</div><div style="flex:1">Produit</div><div style="width:120px">Famille</div><div style="width:44px;text-align:right">Boîtes</div><div style="width:78px;text-align:right">CA HT</div><div style="width:40px;text-align:right">Part</div></div>';
-      var g = T.g ? 'top' : undefined;
-      blocks.push({ t: 'head', f: 'top', g: g, mt: T.mt, keep: 2, h: T.sec('Ce qu\'elle commande', sous) + cols });
-      suite.top = { t: 'autre', g: g, mt: 0, h: T.sec('Ce qu\'elle commande', '', true) + cols };
-      t.rows.forEach(function (r, i) {
-        var n = nom(r.designation), k = r.cat;
-        blocks.push({ t: 'row', f: 'top', g: g, mt: 0, h: '<div style="display:flex;align-items:center;gap:10px;padding:6px ' + T.px + 'px;border-top:1px solid ' + FILET + (T.zebre && i % 2 ? ';background:#F6F8FC' : '') + '">' +
+      var g = T.g ? f : undefined;
+      blocks.push({ t: 'head', f: f, g: g, mt: T.mt, keep: 2, h: T.sec(titre, sous) + cols });
+      suite[f] = { t: 'autre', g: g, mt: 0, h: T.sec(titre, '', true) + cols };
+      rows.forEach(function (r, i) {
+        var n = nom(r.designation), k = r.cat, v = parVol ? r.qte : r.ca;
+        blocks.push({ t: 'row', f: f, g: g, mt: 0, h: '<div style="display:flex;align-items:center;gap:10px;padding:6px ' + T.px + 'px;border-top:1px solid ' + FILET + (T.zebre && i % 2 ? ';background:#F6F8FC' : '') + '">' +
           '<div style="width:18px;' + N + ';font-size:9px;color:' + PALE + '">' + (i + 1) + '</div>' +
           '<div style="flex:1;min-width:0;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><b>' + esc(n.m) + '</b> <span style="color:' + GRIS + '">' + esc(n.r) + '</span></div>' +
           '<div style="width:120px;font-size:9.5px;color:' + GRIS + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:5px;background:' + (k ? k.color : '#C9CFDA') + '"></span>' + esc(k ? k.label : 'Autres') + '</div>' +
-          '<div style="width:44px;text-align:right;' + N + ';font-size:10px">' + esc(C.fmtNum(r.qte)) + '</div>' +
-          '<div style="width:78px;text-align:right;' + N + ';font-size:11px;font-weight:700;white-space:nowrap">' + esc(C.fmtEur(r.ca)) + '</div>' +
-          '<div style="width:40px;text-align:right;' + N + ';font-size:9.5px;color:' + GRIS + '">' + (t.caTot > 0 ? (r.ca / t.caTot * 100).toFixed(1).replace('.', ',') + ' %' : '—') + '</div></div>' });
+          '<div style="width:44px;text-align:right;' + N + (parVol ? ';font-size:11px;font-weight:700' : ';font-size:10px') + '">' + esc(C.fmtNum(r.qte)) + '</div>' +
+          '<div style="width:78px;text-align:right;' + N + (parVol ? ';font-size:10px' : ';font-size:11px;font-weight:700') + ';white-space:nowrap">' + esc(C.fmtEur(r.ca)) + '</div>' +
+          '<div style="width:40px;text-align:right;' + N + ';font-size:9.5px;color:' + GRIS + '">' + (tot > 0 ? (v / tot * 100).toFixed(1).replace('.', ',') + ' %' : '—') + '</div></div>' });
       });
+    };
+    if (t) {
+      tableTop('top', 'Ce qu\'elle commande · en valeur', 'ses ' + t.rows.length + ' premiers produits en CA HT' + (t.caTot > 0 ? ' · ' + Math.round(t.caTop / t.caTot * 100) + ' % de son CA' : '') + ' · ' + C.fmtNum(t.nb) + ' réf. commandées', t.rows, false, t.caTot);
+      var tv = t.vol;
+      if (tv) tableTop('topv', 'Ce qu\'elle commande · en volume', 'ses ' + tv.rows.length + ' premiers produits en boîtes' + (tv.qteTot > 0 ? ' · ' + Math.round(tv.qteTop / tv.qteTot * 100) + ' % de ses boîtes' : ''), tv.rows, true, tv.qteTot);
     }
     if (T.avantOpps) T.avantOpps(blocks);   // style 5 : « Par où commencer » entre les achats du client et ses opportunités
     blocks.push({ t: 'autre', mt: T.mt + 6, keep: 1, h: '<div style="font-size:11px;font-weight:700;letter-spacing:1.3px;color:' + T.acc + ';text-transform:uppercase">Ses opportunités d\'achat</div>' +
@@ -364,8 +370,9 @@
   // Ne garde que les K produits commandés par le plus de pharmacies (ordre des familles conservé)
   function garder(c, K) {
     var tous = [];
-    c.cats.forEach(function (k, ki) { k.rows.forEach(function (r, ri) { tous.push({ n: r.n, ki: ki, ri: ri }); }); });
-    tous.sort(function (a, b) { return b.n - a.n || a.ki - b.ki || a.ri - b.ri; });
+    c.cats.forEach(function (k, ki) { k.rows.forEach(function (r, ri) { tous.push({ n: r.n, nv: r.nouv ? 1 : 0, ki: ki, ri: ri }); }); });
+    // 24/11/2026 : les nouveautés passent avant tout — peu de pharmacies les commandent ENCORE, c'est le but
+    tous.sort(function (a, b) { return b.nv - a.nv || b.n - a.n || a.ki - b.ki || a.ri - b.ri; });
     var pris = {}; tous.slice(0, K).forEach(function (x) { pris[x.ki + ':' + x.ri] = 1; });
     var d = {}; Object.keys(c).forEach(function (x) { d[x] = c[x]; });
     d.cats = c.cats.map(function (k, ki) {

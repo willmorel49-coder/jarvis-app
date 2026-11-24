@@ -710,6 +710,54 @@
   // référence (réseau IP ou son groupement) commande et que cette officine n'a PAS.
   // pidOffre (facultatif) : l'officine à qui la liste est ENVOYÉE, quand ce n'est pas `pid` (mallette, 23/11/2026) —
   // seul le prix d'offre Sanofi / UPSA la suit ; le choix des produits reste celui de `pid`.
+  // ── 24/11/2026 — Will : « ajoute également en opportunités les nouveautés qui explosent en volume, les produits comme
+  // les aiguilles EasyDrip ». Mesuré sur les ventes du réseau (V2.sales), mois par mois, période de 9 mois au moins :
+  //  · quasi absente au début (ses 3 premiers mois ≤ 5 % des 3 derniers) ;
+  //  · au moins 2 fois plus de boîtes sur les 3 derniers mois que sur les 3 d'avant, et au moins 50 boîtes ;
+  //  · commandée par au moins 8 pharmacies sur un même des 3 derniers mois (une ligne « reste du réseau » vaut preuve).
+  // Écartés : les génériques (un changement de laboratoire, pas une nouveauté) et les produits de campagne (vaccins grippe, anti-VRS, autotests Covid / grippe) — même courbe chaque automne
+  // sans être nouveaux. Réglé le 24/11/2026 sur janv.→oct. 2026 : EasyDrip 4 mm (4 → 289 boîtes/mois), 5 mm et 8 mm y sont.
+  var NOUV = { key: 'nouv', label: 'Nouveautés', sub: 'en forte hausse dans le réseau', color: '#B45309' };
+  var NOUV_MAX = 30;
+  var NOUV_SAISON = /AUTO.?TEST|ANTIGEN|COVID|GRIPPE|VACCIN|INFLUVAC|EFLUELDA|VAXIGRIP|FLUARIX|INFLUSPLIT|SUPEMTEK|BEYFORTUS|ENFLONSIA|SYNAGIS|ABRYSVO|AREXVY|MRESVIA|COMIRNATY|KOSTAIVE|NUVAXOVID|SPIKEVAX/i;
+  var _nouv = null, _nouvSig = '';
+  function nouveautesReseau() {
+    var S = V2.sales || [], cc = V2.produits && V2.produits.catalogueIndex ? V2.produits.catalogueIndex() : null, bIdx = benchIndex();
+    var sig = S.length + '|' + (cc ? 1 : 0) + '|' + bIdx.size;
+    if (_nouv && _nouvSig === sig) return _nouv;
+    var i, s, k, mn = Infinity, mx = -Infinity;
+    for (i = 0; i < S.length; i++) { s = S[i]; if (!s.month || !s.year) continue; k = s.year * 12 + s.month; if (k < mn) mn = k; if (k > mx) mx = k; }
+    var out = [];
+    if (mx - mn + 1 >= 9) {
+      var by = new Map();
+      for (i = 0; i < S.length; i++) {
+        s = S[i]; var c = String(s.artCode || ''); if (c.length < 7 || !s.month || !s.year) continue;
+        k = s.year * 12 + s.month;
+        var e = by.get(c); if (!e) { e = { E: 0, P: 0, A: 0, ph: [{}, {}, {}], nph: [0, 0, 0], reste: false }; by.set(c, e); }
+        var q = s.qte || 0;
+        if (k <= mn + 2) e.E += q;
+        if (k >= mx - 5 && k <= mx - 3) e.P += q;
+        if (k >= mx - 2) {
+          e.A += q;
+          var pidv = String(s.pharmacyId), j = k - (mx - 2);
+          if (V2.estReste && V2.estReste(pidv)) e.reste = true;
+          else if (!e.ph[j][pidv]) { e.ph[j][pidv] = 1; e.nph[j]++; }
+        }
+      }
+      by.forEach(function (e, c) {
+        if (e.A < 50 || e.A < 2 * e.P || e.E > 0.05 * e.A) return;
+        if (!e.reste && Math.max(e.nph[0], e.nph[1], e.nph[2]) < 8) return;
+        var b = bIdx.get(c), cr = cc && cc[c], d = (b && b.designation) || (cr && cr.d) || '';
+        if (!d || NOUV_SAISON.test(d)) return;
+        // génériques écartés : leur hausse vient d'un changement de laboratoire chez quelques officines, pas d'une nouveauté à proposer
+        if ((V2.estGeneriqueOfficiel && V2.estGeneriqueOfficiel(c)) || /^generique/.test(String((b && b.artnature) || '').toLowerCase()) || (cr && /^gen/.test(cr.f || ''))) return;
+        out.push({ cip: c, A: e.A, P: e.P });
+      });
+      out.sort(function (a, b) { return b.A - a.A; });
+    }
+    _nouv = out; _nouvSig = sig;
+    return out;
+  }
   function buildRecoCats(pid, scope, pidOffre) {
     cipStats();
     var st, total;
@@ -730,9 +778,24 @@
     var PEN = { pp: 0.20, mi: 0.08, gen: 0.08, genp: 0.08, nr: 0.08, ch: 0.04, froid: 0.04, biosim: 0.02 };
     var penFor = function (k) { return PEN[k] != null ? PEN[k] : 0.08; };
     var CAP = grpScope ? 200 : 40;   // plafond par famille
+    // nouveautés en tête (24/11/2026) : mesurées sur le réseau, même pour le listing du groupement ; la part affichée
+    // reste celle des pharmacies de la référence. Hors BENCHMARK (EasyDrip) : nom et prix lus dans le catalogue complet.
+    var cc = V2.produits && V2.produits.catalogueIndex ? V2.produits.catalogueIndex() : null, nouv = [], enNouv = {};
+    nouveautesReseau().forEach(function (n) {
+      if (owned.has(n.cip) || nouv.length >= NOUV_MAX) return;
+      var b = bIdx.get(n.cip), cr = cc ? cc[n.cip] : null;
+      if (!b && !cr) return;
+      var bp = V2.bestPrice(b || { prix_ht: cr.ppht, prix_ip: cr.net }, pidOffre != null && pidOffre !== '' ? pidOffre : pid), ht = bp.ht || 0, ip = bp.ip || 0;
+      if (!ip && cr && cr.net > 0) { ht = cr.ppht > 0 ? cr.ppht : 0; ip = cr.net; }   // connu du BENCHMARK sans prix (Lamaline, Roactemra…) : le catalogue a le sien
+      var e = stats.get(n.cip);
+      nouv.push({ cip: n.cip, designation: (b && b.designation) || (cr && cr.d) || '', prix_ht: ht, prix_ip: ip, offre: bp.offre,
+                  remise: (ht > 0 && ip > 0 && ip <= ht) ? Math.round((1 - ip / ht) * 1000) / 10 : 0, froid: !!(b && b.is_froid),
+                  sortie: e && e.ph ? e.ph.size : 0, qte: e ? e.qte : 0, nouv: true });
+      enNouv[n.cip] = 1;
+    });
     var buckets = {}; CATS.forEach(function (c) { buckets[c.key] = []; });
     stats.forEach(function (e, cip) {
-      if (owned.has(cip)) return;
+      if (owned.has(cip) || enNouv[cip]) return;
       var b = bIdx.get(cip); if (!b) return;
       var cat = classify(b, cip); if (!cat || !buckets[cat]) return;
       if (!grpScope && total >= 2 && e.ph.size < Math.max(2, Math.ceil(total * penFor(cat)))) return;  // réseau : seuil
@@ -744,9 +807,9 @@
     });
     return {
       panel: total, total: total,
-      cats: CATS.map(function (c) {
+      cats: (nouv.length ? [{ cat: NOUV, rows: nouv }] : []).concat(CATS.map(function (c) {
         return { cat: c, rows: buckets[c.key].sort(function (a, b) { return b.sortie - a.sortie || b.qte - a.qte; }).slice(0, CAP) };
-      }).filter(function (o) { return o.rows.length; })
+      }).filter(function (o) { return o.rows.length; }))
     };
   }
   // Best rotations du groupement (ou réseau si pas de groupement), avec marqueur
@@ -2932,7 +2995,7 @@
     };
   }
 
-  function l1CatLabel(key) { for (var i = 0; i < CATS.length; i++) { if (CATS[i].key === key) return CATS[i].label; } return key; }
+  function l1CatLabel(key) { if (key === NOUV.key) return NOUV.label; for (var i = 0; i < CATS.length; i++) { if (CATS[i].key === key) return CATS[i].label; } return key; }
 
   // ── Les 5 premiers produits d'une liste, toutes catégories confondues ──
   function l1Premiers(data) {
@@ -6228,10 +6291,16 @@
     });
     var all = Object.keys(by).map(function (k) { return by[k]; }).filter(function (r) { return r.ca > 0; });
     all.forEach(function (r) { caTot += r.ca; });
+    // 24/11/2026 — Will : « le top 50 volume et top 50 valeur que commande la pharma […] le volume est très intéressant ».
+    // vol = les mêmes produits classés par boîtes (à boîtes égales, le plus gros CA d'abord) ; part = part de SES boîtes.
+    var qteTot = 0;
+    all.forEach(function (r) { if (r.qte > 0) qteTot += r.qte; });
+    var rowsVol = all.filter(function (r) { return r.qte > 0; }).sort(function (a, b) { return b.qte - a.qte || b.ca - a.ca; }).slice(0, PDF_TOP_VENTES);
     all.sort(function (a, b) { return b.ca - a.ca; });
     var rows = all.slice(0, PDF_TOP_VENTES);
     if (!rows.length) return null;
-    return { rows: rows, nb: all.length, caTot: caTot, caTop: rows.reduce(function (a, r) { return a + r.ca; }, 0) };
+    return { rows: rows, nb: all.length, caTot: caTot, caTop: rows.reduce(function (a, r) { return a + r.ca; }, 0),
+      vol: rowsVol.length ? { rows: rowsVol, qteTot: qteTot, qteTop: rowsVol.reduce(function (a, r) { return a + r.qte; }, 0) } : null };
   }
   function topVentesPdfHtml(pid) {
     var t = topVentesData(pid);
@@ -6833,6 +6902,7 @@
     scope = (scope === 'groupement') ? 'groupement' : 'reseau';
     // Prospect (21/09/2026) : rien d'acheté chez nous, donc la liste ENTIÈRE — celle de son
     // groupement (la même que l'écran Groupements) ou les meilleures rotations du réseau.
+    if (prospect && !window.CATALOGUE_COMPLET && V2.loadFiles && !_catEssai) { _catEssai = true; return V2.loadFiles(['catcomplet']).then(function () { return V2.pharmaListPdf(pid, scope, mode); }, function () { return V2.pharmaListPdf(pid, scope, mode); }); }
     if (prospect) {
       // 23/09/2026 : 5 styles au choix et pages découpées par nous (v2-pdf-prospect.js)
       if (V2.prospectPdf) {
@@ -6843,9 +6913,9 @@
         ? achatsPdf(tx.grp, groupementProducts(tx.grp), false, mode, null, prospect)
         : achatsPdf(reseauLbl(), buildRecoCats(pid, 'reseau'), false, mode, null, prospect);
     }
-    var data = buildRecoCats(pid, scope);
     var label = (scope === 'groupement') ? (groupementPids(pid).name || 'Groupement') : reseauLbl();
     var faire = function () {
+      var data = buildRecoCats(pid, scope);   // 24/11/2026 : calculée APRÈS le catalogue complet (nouveautés hors BENCHMARK)
       if (V2.prospectPdf) {
         return V2.prospectPdf(data, { nom: pharma.name, ref: label, reseau: scope !== 'groupement', client: clientPdfData(pid), fichier: pharma.name + ' — ' + label,
           maxPages: 10, pid: pid }, mode);   // Will, 24/09/2026 : 8-10 pages maximum
@@ -6863,6 +6933,8 @@
     var prospect = (!pharma && tx.pid === String(pid)) ? (tx.nom || 'Officine') : '';
     if (!pharma && !prospect) { V2.toast('Pharmacie introuvable', 'error'); return Promise.resolve(null); }
     if (!window.BENCHMARK) { V2.toast('Catalogue en cours de chargement…'); V2.loadFiles(['bench', 'sagitta']).then(function () {}); return Promise.resolve(null); }
+    // 24/11/2026 — les nouveautés hors BENCHMARK (EasyDrip…) prennent nom et prix dans le catalogue complet : on l'attend une fois
+    if (!window.CATALOGUE_COMPLET && V2.loadFiles && !_catEssai) { _catEssai = true; return V2.loadFiles(['catcomplet']).then(function () { return V2.pharmaListXlsx(pid, scope, mode); }, function () { return V2.pharmaListXlsx(pid, scope, mode); }); }
     var grp = (scope === 'groupement');
     var data = prospect ? (grp ? groupementProducts(tx.grp) : buildRecoCats(pid, 'reseau')) : buildRecoCats(pid, grp ? 'groupement' : 'reseau');
     var ref = grp ? (prospect ? tx.grp : (groupementPids(pid).name || 'Groupement')) : reseauLbl();
