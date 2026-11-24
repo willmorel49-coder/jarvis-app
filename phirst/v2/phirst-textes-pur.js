@@ -35,8 +35,13 @@
     { cle: 'recommande', raison: 'Recommandé par un confrère', propo: 'Bonjour, un confrère de votre région nous a recommandés auprès de vous. Yann est agenceur de pharmacies et a équipé son officine. Puis-je vous présenter ce qu’il a fait ?' }
   ];
 
+  /* Le mail de « Lui écrire plutôt » (L2, idée 4) : un texte de Yann comme les phrases, mais qui n'est PAS une raison d'appeler (pas dans RAISONS).
+     Mots remplacés tout seuls : {titulaire}, {pharmacie}, {lien} (la ligne qui le porte disparaît s'il n'y a aucun lien). La signature s'ajoute en bas (lue en base). */
+  var MAILS = [
+    { cle: 'mail_lettre', raison: 'Le mail de la lettre', propo: 'Bonjour {titulaire},\n\nJe vous écris de la part de Yann, agenceur de pharmacies dans le Grand Ouest. Il a préparé une présentation de ce qu’il peut faire pour votre officine.\nVous pouvez la lire ici : {lien}\n\nSi vous souhaitez en parler, répondez simplement à ce message : nous vous rappellerons à l’heure qui vous convient.' }
+  ];
   function raisonDe(cle) {
-    var k = String(cle == null ? '' : cle), tout = RAISONS.concat(A_VENIR);
+    var k = String(cle == null ? '' : cle), tout = RAISONS.concat(A_VENIR, MAILS);
     for (var i = 0; i < tout.length; i++) if (tout[i].cle === k) return tout[i];
     return null;
   }
@@ -209,7 +214,7 @@
     return 'Votre confrère ' + de(ref.ville) + ', à ' + km + ' km, a travaillé avec Yann : ' + pose + (ref.an ? ' en ' + ref.an : '') + '.' + fin;
   }
 
-  return { LONG_MAX: LONG_MAX, RAISONS: RAISONS, A_VENIR: A_VENIR, REPONSES_DEPART: REPONSES_DEPART, raisonDe: raisonDe, phrasesParCle: phrasesParCle, phraseDe: phraseDe,
+  return { LONG_MAX: LONG_MAX, RAISONS: RAISONS, A_VENIR: A_VENIR, MAILS: MAILS, REPONSES_DEPART: REPONSES_DEPART, raisonDe: raisonDe, phrasesParCle: phrasesParCle, phraseDe: phraseDe,
     mentionPhrase: mentionPhrase, modifiee: modifiee, secondes: secondes, texteValide: texteValide,
     comptesDuMois: comptesDuMois, foisDuMois: foisDuMois, reponsesTriees: reponsesTriees, cleDe: cleDe, objectionNette: objectionNette, validerReponse: validerReponse, ditsEnTexte: ditsEnTexte,
     departementDe: departementDe, villeAvecDep: villeAvecDep, anneeValide: anneeValide, validerReference: validerReference, choisirPosition: choisirPosition, ligneReference: ligneReference,

@@ -81,14 +81,14 @@
   function cartePh(r) {
     var t = texteDe(r), b = brouillon('ph:' + r.cle, t), sale = b !== t;
     return '<li class="ri-carte" data-ph="' + r.cle + '"' + (sale ? ' data-sale' : '') + (r.cle === Z.sel ? ' data-sel' : '') + '><div class="ri-ligne"><h4 class="ri-raison">' + esc(r.raison) + '</h4><p class="ri-mention" data-m' + (sale ? ' data-sale' : '') + '>' + esc(mention(r)) + '</p></div>' +
-      zoneTexte('ph', r.cle, b, 'Phrase d’ouverture : ' + r.raison) + '<p class="ri-err" data-e hidden role="alert"></p>' + actions('ph', r.cle, sale, b !== r.propo) + '</li>';
+      zoneTexte('ph', r.cle, b, (T.MAILS.indexOf(r) >= 0 ? 'Texte du mail : ' : 'Phrase d’ouverture : ') + r.raison) + '<p class="ri-err" data-e hidden role="alert"></p>' + actions('ph', r.cle, sale, b !== r.propo) + '</li>';
   }
   function apercu() {
     var r = T.raisonDe(Z.sel), b = r ? brouillon('ph:' + r.cle, texteDe(r)) : '';
     return '<li class="ri-apercu-li"><div class="ri-apercu" aria-live="polite"><p class="ri-apercu-k">Ce que la téléprospectrice lira</p><p class="ri-apercu-q" id="ri-apercu-q">« ' + esc(b.trim()) + ' »</p>' +
       '<p class="ri-apercu-m" id="ri-apercu-m">' + esc(apercuSous(r, b)) + '</p></div></li>';
   }
-  function apercuSous(r, b) { return r ? 'Quand elle appelle pour : ' + r.raison.charAt(0).toLowerCase() + r.raison.slice(1) + ' · se lit en environ ' + T.secondes(b) + ' secondes' : ''; }
+  function apercuSous(r, b) { return r && T.MAILS.indexOf(r) >= 0 ? 'Le mail envoyé au pharmacien à la place d’un appel : sa signature et le lien de la présentation s’ajoutent tout seuls' : r ? 'Quand elle appelle pour : ' + r.raison.charAt(0).toLowerCase() + r.raison.slice(1) + ' · se lit en environ ' + T.secondes(b) + ' secondes' : ''; }
   function carteOb(o) {
     var n = Z.comptes[o.id] || 0, max = 1;
     Z.reponses.forEach(function (x) { max = Math.max(max, Z.comptes[x.id] || 0); });
@@ -118,7 +118,9 @@
 
   function corpsPh() {
     return '<p class="rg-sous">Une phrase d’ouverture par raison d’appeler. Elle s’affiche en haut de la fiche, au moment où la téléprospectrice décroche. Écrivez comme vous parleriez : court, poli, sans promesse. Tant que vous n’avez rien écrit, elle lit la proposition de départ.</p>' +
-      '<ul class="ri-liste" id="ri-liste-ph">' + T.RAISONS.map(cartePh).join('') + apercu() + '</ul>';
+      '<ul class="ri-liste" id="ri-liste-ph">' + T.RAISONS.map(cartePh).join('') + apercu() + '</ul>' +
+      '<p class="rg-sous"><b>Le mail « Lui écrire plutôt ».</b> Après deux appels sans réponse, ou si le pharmacien demande une documentation, la téléprospectrice lui propose ce mail. Les mots entre accolades se remplacent tout seuls : {titulaire}, {pharmacie} et {lien} (la présentation de Yann ; la ligne qui le porte disparaît s’il n’y a pas de lien). Votre signature s’ajoute en bas.</p>' +
+      '<ul class="ri-liste" id="ri-liste-mail">' + T.MAILS.map(cartePh).join('') + '</ul>';
   }
   function corpsOb() {
     var h = '<p class="rg-sous">Ce qu’elle entend le plus souvent, de la plus fréquente à la moins fréquente, avec la réponse que vous lui donnez à lire. Le nombre de fois se met à jour tout seul à chaque appel.</p>';

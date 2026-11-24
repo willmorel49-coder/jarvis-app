@@ -332,6 +332,13 @@
     if (isFinite(duree) && Math.floor(duree) === duree && duree >= 15 && duree <= 480) c.duree_min = duree;
     if (court(o.lieu, 120)) c.lieu = court(o.lieu, 120);
     if (court(o.objet, 300)) c.objet = court(o.objet, 300);
+    /* L2 (24/11/2026) : les réponses aux « cinq questions » de la téléprospectrice, lues par « La veille du rendez-vous » : `questions` (structuré)
+       et `questions_lignes` (lignes lisibles). Rien d'autre ne passe : au plus 8 lignes de 160 caractères, un objet de moins de 1 000 caractères. */
+    if (Array.isArray(o.questions_lignes)) {
+      var ql = o.questions_lignes.filter(function (x) { return typeof x === 'string' && x.trim(); }).slice(0, 8).map(function (x) { return x.trim().slice(0, 160); });
+      if (ql.length) c.questions_lignes = ql;
+    }
+    if (o.questions && typeof o.questions === 'object' && !Array.isArray(o.questions) && JSON.stringify(o.questions).length < 1000) c.questions = o.questions;
     c.pour = 'yann';
     c.prisPar = court(o.prisPar, 64);
     if (court(o.passation, 2000)) c.passation = court(o.passation, 2000);
@@ -357,6 +364,7 @@
           id: c.rdv, prospect_id: l.prospect_id, debut: c.debut, fin: ajouterMinutes(c.debut, duree), duree_min: duree,
           lieu: c.lieu || '', objet: c.objet || '', statut: parTelepro ? 'propose' : 'confirme', prisParTelepro: parTelepro,
           creePar: l.author_id, creeLe: l.created_at, passation: c.passation || '',
+          questions: c.questions || null, questions_lignes: c.questions_lignes || [],
           dernier: { quoi: 'creer', parTelepro: parTelepro, le: l.created_at }
         };
         ids.push(c.rdv);
