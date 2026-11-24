@@ -113,7 +113,7 @@ def main():
         sys.exit("dernier mois %s tronqué" % mois[-1])
     tranches, cips = {}, set(tout["tous_presc"]) | set(tout["presc_ville"]) | set(tout["presc_hopital"])
     ecart_max, nb_ecart, somme_t, somme_vh = 0.0, 0, 0.0, 0.0
-    for cip in cips:
+    for cip in sorted(cips):   # ordre fixe : deux passages sur la même source donnent les mêmes octets (sinon 100 fichiers poussés pour rien)
         lignes = []
         for k in FEUILLES:
             d = tout[k].get(cip, {})

@@ -58,3 +58,9 @@ test('ruptures : seule la marque du produit compte', () => {
   const arch = { episodes: [{ k: 'xarelto 1 mg granules', spec: 'Xarelto 1 mg/ml – [rivaroxaban]', st: 'Tension', d: '2026-08-28', f: '2026-10-20', j: 53 }, { k: 'autre', spec: 'Autre 5 mg' }] };
   assert.equal(K.rupturesPassees(arch, 'XARELTO 20MG CPR').length, 1); assert.equal(K.rupturesPassees(arch, 'XA').length, 0);
 });
+test('ruptures : le dosage dit si l\'épisode de la marque touche cette présentation', () => {
+  assert.equal(K.memeDosage('XARELTO 20MG CPR', 'Xarelto 1 mg/mL, granulés pour supension buvable, flacon de 250 ml – [rivaroxaban]'), false);
+  assert.equal(K.memeDosage('XARELTO 2,5MG CPR', 'Xarelto 2,5 mg, comprimé pelliculé'), true);
+  assert.equal(K.memeDosage('HEPARINE CALCIQUE 25000UI/ML', 'Héparine calcique Panpharma 25 000 UI/mL, solution injectable'), true);
+  assert.equal(K.memeDosage('REPEVAX SER', 'Repevax, suspension injectable en seringue préremplie'), null);
+});

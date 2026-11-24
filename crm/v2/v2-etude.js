@@ -1,7 +1,5 @@
-/* L'étude par produit (24/11/2026) — trois versions derrière un sélecteur local (?etude=1|2|3).
-   v1 « La fiche enrichie » : un bloc 7 dans le panneau produit (vue pharmacien comprise).
-   v2 « L'étude plein écran » : un écran fait pour le rendez-vous.
-   v3 « La page à laisser » : une page A4 imprimable, sans aucune donnée interne.
+/* L'étude par produit (24/11/2026) — le bloc 7 « L'étude du produit » de la fiche produit (vue pharmacien comprise),
+   version choisie par Will le 24/11/2026 (« La fiche enrichie »). Rendu : v2-etude-ecran.js.
    Données : Medic'AM par type de prescripteur (etude-france/NN.json, une tranche par produit), marche-regional.json,
    previsions.json, HAS, ANSM, EMA. Nos ventes ne sortent qu'en POURCENTAGE côté pharmacien.
    Les calculs purs sont exposés dans V2.etude._calc (testés dans tests/etude-tendance.test.mjs). */
@@ -115,6 +113,16 @@
     arch.episodes.forEach(function (e) { if (sansAccent(e.spec || e.k).replace(/[^a-z0-9 ]/g, ' ').trim().split(/\s+/)[0] === m) out.push(e); });
     return out;
   }
+  // L'ANSM signale par nom de présentation, sans CIP : on compare le premier dosage écrit des deux côtés
+  // (« XARELTO 20MG CPR » face à « Xarelto 1 mg/mL, granulés… »). true = même dosage, false = autre présentation, null = on ne sait pas.
+  function dosageDe(nom) {
+    var t = sansAccent(nom).replace(/[\u00a0\u202f]/g, ' ').replace(/(\d) (?=\d{3}\b)/g, '$1'), m = /(\d+(?:[.,]\d+)?)\s*(mg|µg|mcg|g|ui|ml|%)/.exec(t);
+    return m ? (+m[1].replace(',', '.')) + (m[2] === 'mcg' ? 'µg' : m[2]) : null;
+  }
+  function memeDosage(nomProduit, spec) {
+    var a = dosageDe(nomProduit), b = dosageDe(spec);
+    return a && b ? a === b : null;
+  }
   function penuriesEma(pen, cip, nom) {
     var m = marqueDe(nom), out = [];
     if (!pen || !pen.items) return [];
@@ -125,5 +133,5 @@
   }
   E._calc = { moisListe: moisListe, serieDe: serieDe, resumeFrance: resumeFrance, saisonIndices: saisonIndices, partsPrescripteurs: partsPrescripteurs,
     tendanceCommune: tendanceCommune, regionDeCp: regionDeCp, partsRegions: partsRegions, partsAge: partsAge, niveauxPrevision: niveauxPrevision,
-    marqueDe: marqueDe, rupturesPassees: rupturesPassees, penuriesEma: penuriesEma, pct: pct, fr: fr };
+    marqueDe: marqueDe, rupturesPassees: rupturesPassees, memeDosage: memeDosage, penuriesEma: penuriesEma, pct: pct, fr: fr };
 })();

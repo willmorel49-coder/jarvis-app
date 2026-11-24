@@ -2251,15 +2251,19 @@
           'Nos ventes, ' + esc(nv.periode));
       } else h += tuileVide('m1', 'Nos ventes', '', 'Ventes du réseau pas encore chargées.');
     }
-    if (t && (t.anAn != null || t.previsions)) {
-      var p = t.previsions, tonT = t.anAn == null ? '' : t.anAn > 0.5 ? ' up' : t.anAn < -0.5 ? ' down' : '';
+    // 24/11/2026 : une seule tendance France sur la fiche. Celle de l'étude (bloc 7 : les 12 derniers mois publiés face aux 12 d'avant)
+    // remplace celle de tendance-data.js (janvier–juin seulement) dès qu'elle existe ; on attend son chargement plutôt que d'afficher deux chiffres de suite.
+    var ef = V2.etude && V2.etude.franceEvo ? V2.etude.franceEvo(l.cip) : null, anAn = ef ? Math.round(ef.evo * 100) : t ? t.anAn : null;
+    if (ef === undefined) h += tuileVide(vp ? 'w3 m1' : 'm1', 'Tendance', 'France, an/an', 'Chargement de la tendance…');
+    else if (anAn != null || (t && t.previsions)) {
+      var p = t && t.previsions, tonT = anAn == null ? '' : anAn > 0.5 ? ' up' : anAn < -0.5 ? ' down' : '';
       h += tuileT(vp ? 'w3 m1' : 'm1', 'Tendance', 'France, an/an',
-        '<p class="cp-big' + tonT + '">' + pctSigne(t.anAn) + ' <small>sur un an</small></p>' +
+        '<p class="cp-big' + tonT + '">' + pctSigne(anAn) + ' <small>sur un an</small></p>' +
         (p ? '<div class="cp-fc"><p class="cp-fc-h"><span>Prévision à 6 mois</span><b>' + fr(p.m6) + ' % <small>(' + fr(p.b6) + '–' + fr(p.h6) + ')</small></b></p>' +
           reglette(p.m6, p.b6, p.h6) +
           '<p class="cp-fc-n">100 = rythme des 3 derniers mois' + (p.fiable ? '' : ' · fourchette large') + ' · 3 mois : ' + fr(p.m3) + ' % · 12 mois : ' + fr(p.m12) + ' %</p></div>'
           : '<p class="cp-tx">Prévisions indisponibles.</p>'),
-        t.anAn != null ? esc(t.anAnPeriode || 'même période un an avant') + (t.momentum != null ? ' · élan ' + pctSigne(t.momentum) + ' par mois' : '') : '');
+        anAn != null ? esc(ef ? ef.periode : t.anAnPeriode || 'même période un an avant') + (t && t.momentum != null ? ' · élan ' + pctSigne(t.momentum) + ' par mois' : '') : '');
     } else h += tuileVide(vp ? 'w3 m1' : 'm1', 'Tendance', 'France, an/an', 'Pas de tendance publiée pour ce produit.');
     return bloc(4, 'Le marché', '<div class="cp-grid">' + h + '</div>' +
       '<p class="cp-fn">' + (vp ? '' : 'Part = nos boîtes par an ÷ boîtes France 2025. ') + 'Valeur : prix public, base de remboursement.</p>' +
@@ -2484,7 +2488,7 @@
         (l.f === 'nr' && l.net > 0 && Math.abs(l.net - l.prix) >= 0.01 * l.prix
           ? '<p class="cp-note">Prix moyen facturé au réseau : ' + eur2(l.net) + '.</p>' : '') +
         (s ? blocAlertes(s, l, vp) + blocMarges(s, vp) + (vp ? '' : blocAqui(liste, off)) + blocMarche(s, l, vp) + (vp ? '' : blocNous(s, l, d, ventes)) + blocProduit(s, l, stock) : blocProduit({ autres: { froid: false }, generique: null, tendance: null }, l, stock)) +
-        (s && V2.etude && V2.etude.v1 ? V2.etude.v1(l, s, vp) : '') +   // 24/11/2026 : l'étude par produit (bloc 7 ou bouton, selon la version choisie)
+        (s && V2.etude && V2.etude.bloc ? V2.etude.bloc(l, s, vp) : '') +   // 24/11/2026 : l'étude par produit (bloc 7, « La fiche enrichie » choisie par Will)
         indispo +
         '<div class="cp-ctas">' + boutonPanneau(l.cip) +
         '<button class="v2-btn v2-btn-primary cp-cta" onclick="V2.produits.ficheMarketing(\'' + escAttr(l.cip) + '\')">Fiche marketing du produit</button></div>' +
