@@ -285,7 +285,9 @@
         var r = x.getBoundingClientRect(); if (r.width) ovl.push({ x: r.left - R0.left - 4, y: r.top - R0.top - 4, w: r.width + 8, h: r.height + 8 });
       });
       pris = pris.concat(ovl);
-      items.forEach(function (it) { var p = carte.latLngToContainerPoint(it.m.getLatLng()); it.p = p; it.b = { x: p.x - 17, y: p.y - 13, w: 34, h: 26 }; pris.push(it.b); });
+      // la boîte d'un badge = sa zone de toucher (44 × 44 au téléphone, sinon 34 × 26) : un nom ne s'écrit jamais à côté d'un badge qu'un voisin intercepte au toucher
+      var HB = tactile() ? 22 : 17, VB = tactile() ? 22 : 13;
+      items.forEach(function (it) { var p = carte.latLngToContainerPoint(it.m.getLatLng()); it.p = p; it.b = { x: p.x - HB, y: p.y - VB, w: 2 * HB, h: 2 * VB }; pris.push(it.b); });
       // un badge recouvert par un autre (celui du dessus pour Leaflet : le plus bas à l'écran, à égalité le plus petit numéro), coupé au bord ou caché
       // sous un bouton ne porte pas son nom en permanence : le nom se lirait comme celui du badge voisin. Le survol et la liste le montrent quand même.
       items.forEach(function (it) {
@@ -298,7 +300,7 @@
       });
       items.forEach(function (it) {
         var el = it.m.getElement(); if (!el) return; var lab = el.querySelector('.ess-lb'); if (!lab) return;
-        var lw = lab.offsetWidth, lh = lab.offsetHeight, p = it.p, g = 5, hb = 17, vb = 13, ox = p.x - el.offsetWidth / 2, oy = p.y - el.offsetHeight / 2;
+        var lw = lab.offsetWidth, lh = lab.offsetHeight, p = it.p, g = 5, hb = HB, vb = VB, ox = p.x - el.offsetWidth / 2, oy = p.y - el.offsetHeight / 2;
         var c = [{ x: p.x + hb + g, y: p.y - lh / 2 }, { x: p.x - hb - g - lw, y: p.y - lh / 2 }, { x: p.x - lw / 2, y: p.y - vb - g - lh }, { x: p.x - lw / 2, y: p.y + vb + g }];
         var ok = null;
         for (var i = 0; i < c.length && !ok && !it.dessous; i++) {
