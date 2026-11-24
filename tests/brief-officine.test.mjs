@@ -372,3 +372,61 @@ test('nePlusCommandes : même règle que « Ses achats », toutes les lignes, mo
   sb.V2.sales = court;
   assert.equal(sb.V2.briefOfficine.nePlusCommandes(court).lignes.length, 0);
 });
+
+// 24/11/2026 — en-tête du panneau : « 21 autres points » en haut contre « 18 autres points » replié en bas
+// (officine 2003659, production). Le mot « autres » voulait dire « d'une autre sorte » en haut et « pas affiché
+// au-dessus » en bas : les 3 « Change bientôt » affichés en tête comptaient dans les 21. Et « 7 points » dans le
+// sous-titre face à 54 dans l'en-tête. Règle : en haut, chaque sorte porte SON nom ; le sous-titre dit combien
+// sont en tête et combien sont repliés, et les deux font le total de l'en-tête.
+test('en-tête du panneau : chaque sorte a son nom, et en tête + repliés = total de l\'en-tête', async () => {
+  const rien = () => {};
+  const el = { innerHTML: '', getAttribute: (k) => (k === 'data-pid' ? '2000016' : null) };
+  const ov = { id: '', innerHTML: '', firstChild: null, addEventListener: rien, getAttribute: () => null, setAttribute: rien, classList: { add: rien, remove: rien, contains: () => false }, querySelector: () => null };
+  const jour = (d) => new Date(Date.now() + d * 864e5).toISOString().slice(0, 10);
+  const fr = (iso) => iso.split('-').reverse().join('/');
+  const cip = (n) => '34009000' + String(n).padStart(5, '0');
+  const R = [cip(1)], A = [2, 3, 4].map(cip), P = [5, 6, 7, 8, 9].map(cip), U = [10, 11, 12, 13, 14, 15].map(cip), V = [16, 17].map(cip), O = [18, 19].map(cip);
+  const json = {
+    'rappels-lots.json': { generated: jour(0), items: [{ d: jour(-10), t: 'Produit rappelé', cips: R, lots: [{ n: 'L1' }] }] },
+    'prix-futurs.json': { generated: jour(0), changes: P.map((c) => ({ c, sens: 'baisse', date_effet: jour(40), date_publi: jour(-5), ppttc: '9.99', d: 'Prix ' + c })) },
+    'ansm-dispo.json': { generated: jour(0), items: U.map((c) => ({ st: 'Rupture de stock', spec: 'Rupture ' + c, maj: fr(jour(-1)), cips: [c] }))
+      .concat(V.map((c) => ({ st: 'Remise à disposition', spec: 'Revient ' + c, maj: fr(jour(-1)), since: jour(-2), cips: [c] }))) },
+    'generiques-bdpm.json': { generated: jour(0), princepsWithGeneric: O },
+  };
+  const sb = charger({
+    fetch: (url) => { const j = json[url.split('?')[0]]; return Promise.resolve(j ? { ok: true, json: () => Promise.resolve(j) } : { ok: false }); },
+    addEventListener: rien,
+    document: { getElementById: (id) => (id === 'brief-off' ? el : (id === 'bo-ov' && ov.id ? ov : null)), createElement: () => ov, addEventListener: rien, head: { appendChild() {} }, body: { appendChild() {}, style: {} } },
+  });
+  sb.ETAB_PRICES = { prices: {} };
+  sb.BENCHMARK = A.concat(O).map((c) => ({ cip13: c, designation: 'PRODUIT ' + c }));
+  const v = (c, month, qte = 4) => ({ pharmacyId: '2000016', commercial: 'A', year: 2026, month, artCode: c, qte });
+  const ventes = [v(R[0], 8)];
+  A.forEach((c) => [3, 4, 5, 6, 7].forEach((m) => ventes.push(v(c, m))));          // habitude interrompue en août
+  P.concat(U).forEach((c) => [7, 8].forEach((m) => ventes.push(v(c, m))));
+  V.forEach((c) => ventes.push(v(c, 8)));
+  O.forEach((c) => [6, 7, 8].forEach((m) => ventes.push(v(c, m, 5))));             // 15 boîtes : au-dessus du seuil
+  sb.V2.sales = ventes;
+  sb.V2.briefOfficine.hydrate('2000016', ventes, {});
+  for (let i = 0; i < 20 && !el.innerHTML; i++) await new Promise((r) => setTimeout(r, 5));
+
+  const total = 1 + 3 + 5 + 6 + 2 + 2;   // 19 points : 7 en tête, 12 repliés
+  const tete = ov.innerHTML.split('<div class="bo-win-b">')[0];
+  const resume = (tete.match(/<span class="bo-sum">([\s\S]*?)<\/span><button/) || [])[1] || '';
+  assert.ok(resume, 'pas de résumé dans l\'en-tête du panneau');
+  // marqueur positif : c'est bien l'en-tête attendu (le rappel en rouge, les achats)
+  assert.match(resume, /<em>1 rappel de lots<\/em>/);
+  assert.match(resume, /3 achats interrompus/);
+  assert.ok(!/autre/.test(resume), 'l\'en-tête range encore des points sous « autres » : ' + resume);
+  assert.match(resume, /5 prix qui changent/);
+  assert.match(resume, /6 ruptures ou tensions/);
+  assert.match(resume, /2 produits de nouveau disponibles/);
+  assert.match(resume, /2 génériques à proposer/);
+  const somme = (resume.match(/\d+/g) || []).reduce((t, n) => t + Number(n), 0);
+  assert.equal(somme, total, 'les nombres de l\'en-tête ne font pas le total des points');
+  // le sous-titre : combien en tête, combien repliés, et les replis du bas font bien ce nombre
+  assert.match(tete, /7 points en tête, 12 repliés plus bas/);
+  const replis = [...ov.innerHTML.matchAll(/<summary>(\d+) /g)].reduce((t, m) => t + Number(m[1]), 0);
+  assert.equal(replis, 12, 'les listes repliées du bas ne font pas le nombre annoncé dans le sous-titre');
+  assert.equal((ov.innerHTML.match(/<li class="bo-pt">/g) || []).length, total, 'chaque point est dans le panneau, une seule fois');
+});

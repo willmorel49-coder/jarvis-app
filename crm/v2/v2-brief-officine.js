@@ -383,18 +383,23 @@
   // Résumé en une ligne : « 1 rappel de lots · 3 achats interrompus · 6 ruptures ou tensions ».
   // Les échéances réglementaires n'y sont plus (08/10/2026) : les mêmes sur toutes les fiches pendant des mois.
   // Le point rouge reste tant qu'il y a quelque chose « À retirer » (rappel de lots).
+  // 24/11/2026 — chaque sorte porte SON nom : « 21 autres points » en haut contre « 18 autres points » replié en bas
+  // (les 3 « Change bientôt » affichés en tête comptaient dans les 21). « autres » ne sert plus qu'aux listes repliées.
+  var RESUME_NOMS = [
+    ['À retirer', function (n) { return '<em>' + pluriel(n, 'rappel') + ' de lots</em>'; }],
+    ['Ses achats', function (n) { return n + (n > 1 ? ' achats interrompus' : ' achat interrompu'); }],
+    ['Change bientôt', function (n) { return n + (n > 1 ? ' prix qui changent' : ' prix qui change'); }],
+    ['Va manquer', function (n) { return n + (n > 1 ? ' ruptures ou tensions' : ' rupture ou tension'); }],
+    ['Revient', function (n) { return n + (n > 1 ? ' produits de nouveau disponibles' : ' produit de nouveau disponible'); }],
+    ['Opportunité', function (n) { return n + (n > 1 ? ' génériques à proposer' : ' générique à proposer'); }]
+  ];
   function resume(r) {
     var tous = r.points.concat(r.autres);
-    var rappels = tous.filter(function (p) { return p.rubrique === 'À retirer'; }).length;
-    var ruptures = tous.filter(function (p) { return p.rubrique === 'Va manquer'; }).length;
-    var achats = tous.filter(function (p) { return p.rubrique === 'Ses achats'; }).length;
-    var autres = tous.length - rappels - ruptures - achats;
-    var morceaux = [];
-    if (rappels) morceaux.push('<em>' + pluriel(rappels, 'rappel') + ' de lots</em>');
-    if (achats) morceaux.push(achats + (achats > 1 ? ' achats interrompus' : ' achat interrompu'));
-    if (ruptures) morceaux.push(ruptures + (ruptures > 1 ? ' ruptures ou tensions' : ' rupture ou tension'));
-    if (autres) morceaux.push(autres + (autres > 1 ? ' autres points' : ' autre point'));
-    return { rappels: rappels, nb: r.points.length, rouge: rappels > 0,
+    var compte = function (rub) { return tous.filter(function (p) { return p.rubrique === rub; }).length; };
+    var rappels = compte('À retirer'), nommes = 0, morceaux = [];
+    RESUME_NOMS.forEach(function (x) { var n = compte(x[0]); nommes += n; if (n) morceaux.push(x[1](n)); });
+    if (tous.length > nommes) morceaux.push(pluriel(tous.length - nommes, 'point') + ' d\'une autre sorte');   // rubrique future non nommée ici
+    return { rappels: rappels, nb: r.points.length, replies: r.autres.length, rouge: rappels > 0,
       html: morceaux.length ? '<span class="bo-sum">' + morceaux.join('<span>·</span>') + '</span>' : '' };
   }
 
@@ -464,7 +469,7 @@
     return '<div class="bo-win" role="dialog" aria-modal="true" aria-labelledby="bo-win-t">' +
       '<div class="bo-win-h"><h3 id="bo-win-t">Infos du jour</h3>' + s.html +
         '<button type="button" class="bo-x" aria-label="Fermer" onclick="V2.briefOfficine.fermer()">×</button>' +
-        '<span class="pha-sub">ce qui la touche, tiré de ses achats' + (s.nb ? ' · ' + pluriel(s.nb, 'point') : '') + ', puis ce qui se passe autour d\'elle</span></div>' +
+        '<span class="pha-sub">ce qui la touche, tiré de ses achats' + (s.nb ? ' · ' + pluriel(s.nb, 'point') + (s.replies ? ' en tête, ' + s.replies + (s.replies > 1 ? ' repliés' : ' replié') + ' plus bas' : '') : '') + ', puis ce qui se passe autour d\'elle</span></div>' +
       '<div class="bo-win-b">' + corpsHtml(r) + '</div>' +
       '<div class="bo-win-f"><span class="pha-sub">Se rouvre avec le bouton « Infos du jour ».</span>' +
         (r.points.length ? '<button type="button" class="v2-btn bo-imp" onclick="V2.briefOfficine.imprimer()">Imprimer pour l\'équipe</button>' : '') +
