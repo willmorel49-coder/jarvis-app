@@ -111,12 +111,10 @@ describe('écrans en attente et Atelier 3D (A-3, A-7)', () => {
   }
   const brand = { ancienne3d: 'https://phirst-studio.vercel.app/dossiers', portes: { dossiers: { page: 'dossiers' }, chantiers: { page: 'chantiers' }, encaisser: { page: 'encaisser' } } }
   const INTERDITS = /Aperçu|socle|JARVIS|Intégral|bientôt|maquette|arrive/i
-  test('chaque écran en attente a un titre, une explication, une action, et aucun mot interne', () => {
-    const { V2, racine } = monde(brand)
-    for (const k of ['encaisser']) {   // 23/11/2026 : « dossiers », « chantiers » et « reglages » ont leur vrai écran ; 24/11/2026 : « vitrine » aussi (phirst-vitrine.js)
-      V2.pages[k].render(racine)
-      assert.match(racine.innerHTML, /<h1>/); assert.match(racine.innerHTML, /data-vers="(appels|agenda)"/); assert.doesNotMatch(racine.innerHTML, INTERDITS, k)
-    }
+  test('plus aucun écran en attente : phirst-portes.js ne dessine plus que l’Atelier 3D', () => {
+    // 23/11/2026 : « dossiers », « chantiers » et « reglages » ont leur vrai écran ; 24/11/2026 : « vitrine » (phirst-vitrine.js) puis « encaisser » (phirst-encaisser.js) aussi
+    const { V2 } = monde(brand)
+    assert.deepEqual(Object.keys(V2.pages), ['atelier'])
   })
   test('Atelier 3D : « Ouvrir la 3D » mène à l’ancienne version, dans un nouvel onglet, sans rien vers les images par IA', () => {
     const { V2, racine } = monde(brand)

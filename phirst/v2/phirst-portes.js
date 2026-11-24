@@ -5,14 +5,12 @@
   V2.pages = V2.pages || {};
   /* 22/11/2026 — écrans pas encore construits : plus de notes internes. Chacun dit en une phrase où en est la chose, et propose le geste utile
      d'aujourd'hui. [titre, phrase sous le titre, explication, [[écran, bouton], …]]. */
-  var AUJ = [['appels', 'Ouvrir les Appels'], ['agenda', 'Ouvrir l’Agenda']];
   /* 23/11/2026 — « Chantiers » a son vrai écran (phirst-chantiers.js) : il quitte cette table, et reste réservé à Yann (RESERVE). */
   /* 24/11/2026 — « Vitrine » a son vrai écran (phirst-vitrine.js) : il quitte cette table, et reste réservé à Yann (RESERVE ; l'écran se garde lui-même).
   */
   /* 23/11/2026 (soir) — « Réglages » a son vrai écran (phirst-reglages.js, ouvert à Yann et à la téléprospectrice) : il quitte cette table. */
-  var E = {
-    encaisser:['Encaisser', 'Acomptes, situations et soldes.', 'Cet écran se prépare. En attendant, retrouvez vos pistes et vos rendez-vous dans les Appels et l’Agenda.', AUJ]
-  };
+  /* 24/11/2026 — « Encaisser » a son vrai écran (phirst-encaisser.js) : il quitte cette table (vide), et reste réservé à Yann (RESERVE ; l'écran se garde lui-même). */
+  var E = {};
   /* L'Atelier 3D reste dans l'ancienne version de Phirst (décision de Will, 22/11/2026) : l'adresse se lit dans le réglage de la marque. */
   var ADRESSE_3D = (window.V2_BRAND && window.V2_BRAND.ancienne3d) || '';
   function ecran(root, titre, phrase, expl, boutons, lien3d) {

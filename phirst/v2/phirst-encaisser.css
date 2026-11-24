@@ -1,0 +1,119 @@
+/* PHIRST · écran « Encaisser » (24/11/2026) : allure de la maquette V2 validée par Will (R-encaisser-maquette/assets/encaisser.css), à l'identique.
+   La section porte « pa dz cz en » : couleurs et briques des Dossiers (dz-) et le panneau latéral des Chantiers (cz-) ; ici, seulement les siennes (en-).
+   Le bandeau vert forêt éclairé des Réglages (dégradés radiaux, aucun flou, aucune opacité ni dégradé sur du texte : Safari).
+   Cibles ≥ 44 px, champs à 16 px, rien qui dépasse à 390 px. */
+.en .en-bande{position:relative;margin:0 0 -44px;padding:28px 36px 76px;border-radius:26px;color:#fff;
+  background-color:#1A3A2E;
+  background-image:radial-gradient(640px 360px at 90% -24%,rgba(150,226,180,.30) 0%,rgba(150,226,180,0) 70%),
+    radial-gradient(520px 320px at 6% 128%,rgba(18,165,103,.26) 0%,rgba(18,165,103,0) 70%),
+    linear-gradient(158deg,#24503F 0%,#173428 54%,#12281F 100%);
+  box-shadow:0 1px 0 rgba(255,255,255,.14) inset,0 30px 56px -34px rgba(18,40,31,.7)}
+.en .en-sur{margin:0;font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:#CFE6D8}
+.en .en-bande h1{margin:4px 0 0;font:800 24px/1.15 var(--font);letter-spacing:-.01em;color:#fff}
+.en .en-grand{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px 14px;margin:10px 0 0}
+.en .en-grand b{font:800 76px/.88 var(--font);letter-spacing:-.04em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.en .en-grand span{padding-bottom:5px;font-weight:700;font-size:20px;line-height:1.18}
+.en .en-retard{display:inline-flex;align-items:center;gap:8px;margin:14px 0 0;padding:5px 12px;border-radius:999px;background-color:#FBE2DF;color:#9B2C24;font-weight:800;font-size:15px}
+.en .en-retard.ok{background-color:#E0F2E7;color:#0E6B43}
+.en .en-phrase{margin:14px 0 0;max-width:52ch;font-size:17px;line-height:1.45;color:#DCEBE2}
+@media (min-width:901px){.en .en-bande{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:end;column-gap:56px}.en .en-phrase{margin:0 0 6px;justify-self:end;max-width:50ch;font-size:18px}}
+
+.en .en-grille{position:relative;display:grid;gap:16px;padding:0 22px}
+.en .en-trois{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
+
+/* la relance du moment */
+.en .dz-carte.en-maint{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:28px;padding:24px 28px}
+.en .en-maint-g{display:grid;gap:12px;align-content:start;min-width:0}
+.en .en-qui{display:flex;align-items:center;gap:12px}
+.en .en-ini{display:grid;place-items:center;flex:none;width:48px;height:48px;border-radius:50%;background-color:var(--dz-pastille);color:var(--dz-accent);font-weight:800;font-size:19px}
+.en .en-qui h2{margin:0;font-size:24px;line-height:1.15;font-weight:800;letter-spacing:-.02em;color:var(--dz-ink)}
+.en .en-qui h2:focus{outline:none;box-shadow:none}
+.en .en-qui p{margin:3px 0 0;font-size:15.5px;color:var(--dz-ink3)}
+.en .en-somme{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:2px 0 0}
+.en .en-somme b{font:800 38px/1 var(--font);letter-spacing:-.03em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.en .en-somme small{font-size:15px;font-weight:700;color:var(--dz-ink3)}
+.en .en-detail{margin:0;font-size:16.5px;line-height:1.45;color:var(--dz-ink2)}
+.en .en-envois{display:grid;gap:10px;margin-top:4px}
+.en .en-envois .dz-btn{width:100%;justify-content:flex-start}
+.en .en-deux{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.en .en-fait{margin-top:2px}
+.en .en-fait .dz-btn{width:100%}
+.en .dz-btn[aria-disabled="true"]{color:var(--dz-ink3)}
+.en .en-msg-c{display:grid;gap:10px;align-content:start;min-width:0;padding:16px;border-radius:16px;background-color:#F6FAF7;border:1px solid var(--dz-fil)}
+.en .en-objet{margin:0;font-size:15px;line-height:1.4;color:var(--dz-ink2)}
+.en .en-objet b{color:var(--dz-ink)}
+.en .en-msg-c textarea{min-height:250px;overflow:hidden}
+.en .en-pet{margin:0;font-size:14.5px;line-height:1.45;color:var(--dz-ink3);overflow-wrap:anywhere}
+
+/* listes (autres relances, attendu bientôt, relances notées) */
+.en .dz-carte.en-bloc{gap:10px;padding:20px 22px}
+.en .en-bloc h3{margin:0;font-size:19px;line-height:1.2;font-weight:800;letter-spacing:-.01em}
+.en .en-liste{margin:0;padding:0;list-style:none}
+.en .en-liste li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--dz-fil)}
+.en .en-liste li:first-child{border-top:0}
+.en .en-liste .g{min-width:0}
+.en .en-liste .n{margin:0;font-weight:800;font-size:16.5px;line-height:1.3}
+.en .en-liste .q{margin:2px 0 0;font-size:15px;line-height:1.4;color:var(--dz-ink3)}
+.en .en-liste .m{flex:none;margin:0;font-weight:800;font-size:17px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.en .en-liste .d{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none}
+.en .en-autres li{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px 12px}
+.en .en-autres .g{grid-column:1/-1}
+.en .en-autres .d{flex-direction:row;align-items:center;flex-wrap:wrap;gap:8px 10px}
+.en .en-vide{margin:0;font-size:15.5px;line-height:1.45;color:var(--dz-ink3)}
+
+/* les sommes, dossier par dossier */
+.en .en-sommes{display:grid;gap:12px;margin:28px 22px 0}
+.en .en-sommes:focus{outline:none}
+.en .en-sommes-t{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px}
+.en .en-sommes-t h2{margin:0;font-size:22px;font-weight:800;letter-spacing:-.02em;color:var(--dz-ink)}
+.en .en-sommes-t p{margin:3px 0 0;font-size:15.5px;color:var(--dz-ink3)}
+.en .dz-repli.en-ph{margin:0}
+.en .en-ph>summary{flex-wrap:wrap;row-gap:4px;padding:10px 20px}
+.en .en-ph>summary .v{display:inline-flex;flex-wrap:wrap;gap:6px}
+.en .en-ph>summary .reste{margin-left:auto;font-size:15.5px;font-weight:800;color:var(--dz-ink)}
+.en .en-ph>summary .reste.zero{color:var(--dz-vert-t)}
+.en .en-ph>summary .reste + .dz-chev{margin-left:14px}
+.en .en-lignes{margin:0;padding:0;list-style:none}
+.en .en-ligne{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:8px 16px;padding:12px 0;border-top:1px solid var(--dz-fil)}
+.en .en-ligne:first-child{border-top:0}
+.en .en-ligne .t{margin:0;font-weight:800;font-size:16.5px}
+.en .en-ligne .t .dz-et{margin-left:6px;vertical-align:1px}
+.en .en-ligne .q{margin:2px 0 0;font-size:15px;color:var(--dz-ink3)}
+.en .en-ligne .m{margin:0;font-weight:800;font-size:17px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.en .en-ligne[data-fait] .m{color:var(--dz-vert-t)}
+.en .en-ligne .a{display:flex;gap:8px}
+.en .en-ligne .cz-confirme{grid-column:1/-1}
+.en .en-ligne .cz-confirme p{margin:0}
+.en .en-ph .dz-repli-c>.dz-btn{margin-top:10px}
+
+/* la feuille « Noter une somme » (même panneau que les Chantiers) */
+.en .en-f-err{margin:0;padding:10px 14px;border-radius:12px;background-color:var(--dz-rouge-f);color:var(--dz-rouge-t);font-weight:700;font-size:15.5px}
+.en .en-f [aria-invalid="true"]{border-color:var(--dz-rouge-t);box-shadow:0 0 0 2px var(--dz-rouge-f)}
+.en .en-f .dz-champ input[type=date]{min-height:48px}
+.en .en-f .dz-champ input[type=text]{width:100%;min-height:48px}
+.en .en-f h2:focus{outline:none;box-shadow:none}
+.en .en-facult{text-transform:none;letter-spacing:0;font-weight:600}
+
+/* le message de retour (en bas, au-dessus de la barre du téléphone) */
+.en .en-flash{position:fixed;left:50%;bottom:28px;z-index:80;transform:translateX(-50%);max-width:calc(100% - 32px);padding:12px 18px;border-radius:14px;background-color:var(--dz-accent);color:#fff;font-weight:700;font-size:15.5px;line-height:1.4;box-shadow:0 18px 36px -14px rgba(18,40,31,.6)}
+
+@media (max-width:900px){
+  .en .en-grille{padding:0 12px}
+  .en .en-trois{grid-template-columns:minmax(0,1fr)}
+  .en .dz-carte.en-maint{grid-template-columns:minmax(0,1fr);padding:18px}
+  .en .en-sommes{margin:24px 12px 0}
+}
+@media (max-width:700px){
+  .en .en-bande{padding:22px 20px 66px;border-radius:22px}
+  .en .en-grand b{font-size:54px}
+  .en .en-grand span{font-size:17px;padding-bottom:3px}
+  .en .en-deux{grid-template-columns:minmax(0,1fr)}
+  .en .en-ligne{grid-template-columns:minmax(0,1fr)}
+  .en .en-ligne .a{flex-wrap:wrap}
+  .en .en-ph>summary{position:relative;padding-right:52px}
+  .en .en-ph>summary .reste{margin-left:0;width:100%}
+  .en .en-ph>summary .dz-chev{position:absolute;top:22px;right:22px;margin:0}
+  .en .en-msg-c textarea{min-height:200px}
+  .en .en-flash{bottom:92px}
+  .pa.en{padding-bottom:88px}
+}
