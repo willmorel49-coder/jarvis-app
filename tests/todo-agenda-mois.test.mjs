@@ -153,3 +153,153 @@ test('l’agenda du mois enregistre une note datée dans le passé par la vraie 
   assert.deepEqual([appels[0].st, appels[0].sid, appels[0].body], ['client', '111', 'Compte rendu']);
   assert.equal(isoLocal(new Date(appels[0].q)), passe, 'created_at tombe le jour choisi');
 });
+
+// ── « Visite » (24/11/2026) : une officine vue tel jour, cliente ou prospect, et la suite à donner ──
+// Données FICTIVES : l'officine du fichier vient de monter() (id 111), le prospect de l'annuaire est inventé (id ZZ900).
+function visitePrete({ annuaire = true, noteOk = true, ligneOk = true } = {}) {
+  const base = fausseBase({});
+  const ctx = monter([MOIS], agendaPret(base));
+  ctx.V2RECO = { apparier: () => ({}) };
+  const notes = [], lignes = [], toasts = [];
+  ctx.V2.notes = { addAuto: (st, sid, body, q) => { notes.push({ st, sid, body, q }); return Promise.resolve(noteOk); } };
+  ctx.V2.todo.ajouterLigne = (l) => { lignes.push(l); return Promise.resolve(ligneOk); };
+  ctx.V2.toast = (m, t) => toasts.push({ m, t });
+  if (annuaire) ctx.PHARMA_FR = { p: [[0, 0, '', '', '', '', 'PHARMACIE DU PROSPECT FICTIF', 'ROUEN', '76000', '', '', '', 0, 'ZZ900']] };
+  const champs = {};
+  ctx.document.getElementById = (id) => champs[id] || null;
+  const saisir = (o) => Object.keys(o).forEach((k) => { champs[k] = { value: o[k] }; });
+  return { ctx, V2: ctx.V2, notes, lignes, toasts, saisir };
+}
+const ymd = (s, n) => { const p = s.split('-'); const d = new Date(+p[0], +p[1] - 1, +p[2] + n, 12); return isoLocal(d); };
+
+test('visite : une cliente du fichier, sans suite → une note « Visite », aucune ligne To do', async () => {
+  const t = visitePrete();
+  t.V2.todoMois.html(); await attendre();
+  t.V2.todoMois.ouvrir('visite', AUJ);
+  assert.match(t.V2.todoMois.html(), /Noter une visite/, 'marqueur : le formulaire Visite est affiché');
+  t.V2.todoMois.visiteChoisir('111');
+  t.saisir({ 'tm-date': AUJ, 'tm-txt': 'Passé au comptoir' });
+  t.V2.todoMois.enregistrer(); await attendre();
+  assert.equal(t.notes.length, 1);
+  assert.deepEqual([t.notes[0].st, t.notes[0].sid, t.notes[0].q], ['client', '111', null]);
+  assert.equal(t.notes[0].body, 'Visite : Passé au comptoir');
+  assert.equal(t.lignes.length, 0);
+  assert.match(t.toasts.at(-1).m, /^Visite notée au /);
+});
+
+test('visite : un prospect de l’annuaire, à relancer dans 2 semaines → note sur son id + ligne To do datée', async () => {
+  const t = visitePrete();
+  t.V2.todoMois.html(); await attendre();
+  t.V2.todoMois.ouvrir('visite', AUJ);
+  t.saisir({ 'tm-q': 'prospect fictif' });
+  t.V2.todoMois.visiteChercher();
+  t.V2.todoMois.visiteChoisir('ZZ900');
+  assert.equal(t.V2.todoMois.etat.form.off.id, 'ZZ900', 'marqueur : le prospect de l’annuaire est retenu');
+  t.V2.todoMois.visiteSuite('relance');
+  t.saisir({ 'tm-date': AUJ, 'tm-txt': '' });
+  t.V2.todoMois.visiteDans(14);
+  const attendu = ymd(AUJ, 14);
+  assert.equal(t.V2.todoMois.etat.form.dsuite, attendu, 'le raccourci compte depuis la date de visite');
+  t.saisir({ 'tm-dsuite': attendu });
+  t.V2.todoMois.enregistrer(); await attendre();
+  assert.equal(t.notes[0].sid, 'ZZ900');
+  assert.match(t.notes[0].body, /^Visite — PHARMACIE DU PROSPECT FICTIF · relance prévue le \d\d\/\d\d\/\d{4}$/, 'un prospect : la note porte son nom');
+  assert.equal(t.lignes.length, 1);
+  assert.deepEqual([t.lignes[0].k, t.lignes[0].pid, t.lignes[0].note, t.lignes[0].pour], ['libre', 'ZZ900', 'Relancer', attendu]);
+  assert.match(t.toasts.at(-1).m, /^Visite notée au .* · relance le /);
+});
+
+test('visite : la recherche ne sort que des résultats du fichier tant que l’annuaire n’est pas chargé', async () => {
+  const t = visitePrete({ annuaire: false });
+  t.V2.todoMois.html(); await attendre();
+  t.V2.todoMois.ouvrir('visite', AUJ);
+  t.saisir({ 'tm-q': 'prospect' });
+  t.V2.todoMois.visiteChercher();
+  const h = t.V2.todoMois.html();
+  assert.match(h, /Chercher aussi dans l’annuaire national/);
+  assert.equal(t.V2.todoMois.etat.form.off, null);
+});
+
+test('visite : une date passée part en created_at du bon jour', async () => {
+  const t = visitePrete();
+  t.V2.todoMois.html(); await attendre();
+  t.V2.todoMois.ouvrir('visite', AUJ);
+  t.V2.todoMois.visiteChoisir('111');
+  const passe = ymd(AUJ, -40);
+  t.saisir({ 'tm-date': passe, 'tm-txt': '' });
+  t.V2.todoMois.enregistrer(); await attendre();
+  assert.equal(t.notes.length, 1, 'marqueur : la note est partie');
+  assert.notEqual(t.notes[0].q, null);
+  assert.equal(isoLocal(new Date(t.notes[0].q)), passe);
+});
+
+test('visite : sans officine retenue, rien ne part et le refus est dit', async () => {
+  const t = visitePrete();
+  t.V2.todoMois.html(); await attendre();
+  t.V2.todoMois.ouvrir('visite', AUJ);
+  t.saisir({ 'tm-date': AUJ });
+  t.V2.todoMois.enregistrer(); await attendre();
+  assert.equal(t.notes.length, 0); assert.equal(t.lignes.length, 0);
+  assert.equal(t.toasts.at(-1).m, 'Choisissez l’officine dans la liste.');
+});
+
+test('visite : une suite sans date valide est refusée avant tout envoi', async () => {
+  const t = visitePrete();
+  t.V2.todoMois.html(); await attendre();
+  t.V2.todoMois.ouvrir('visite', AUJ);
+  t.V2.todoMois.visiteChoisir('111'); t.V2.todoMois.visiteSuite('revisite');
+  t.saisir({ 'tm-date': AUJ, 'tm-dsuite': '' });
+  t.V2.todoMois.enregistrer(); await attendre();
+  assert.equal(t.notes.length, 0); assert.equal(t.lignes.length, 0);
+  assert.match(t.toasts.at(-1).m, /Indiquez la date/);
+});
+
+test('visite : note passée mais ligne To do refusée → échec partiel dit, jamais « Visite notée » seul, et le réessai ne double pas la note', async () => {
+  const t = visitePrete({ ligneOk: false });
+  t.V2.todoMois.html(); await attendre();
+  t.V2.todoMois.ouvrir('visite', AUJ);
+  t.V2.todoMois.visiteChoisir('111'); t.V2.todoMois.visiteSuite('revisite');
+  const d = ymd(AUJ, 7);
+  t.saisir({ 'tm-date': AUJ, 'tm-txt': 'À revoir', 'tm-dsuite': d });
+  t.V2.todoMois.enregistrer(); await attendre();
+  assert.equal(t.notes.length, 1, 'marqueur : la note est partie');
+  assert.equal(t.lignes.length, 1);
+  assert.equal(t.toasts.at(-1).m, 'Visite notée, mais la nouvelle visite n’a pas été enregistrée, réessayez.');
+  assert.ok(!t.toasts.some((x) => /^Visite notée au/.test(x.m)), 'aucun faux succès');
+  assert.equal(t.V2.todoMois.etat.form.txt, 'À revoir', 'ce qui a été tapé est gardé');
+  t.V2.todoMois.enregistrer(); await attendre();
+  assert.equal(t.notes.length, 1, 'le réessai ne recrée pas la note');
+  assert.equal(t.lignes.length, 2);
+});
+
+test('visite : sans annuaire chargé, le mois montre le NOM du prospect (porté par la note), jamais « Officine ZZ900 »', async () => {
+  const base = fausseBase({
+    notes: [
+      { id: 'n9', scope_type: 'client', scope_id: 'ZZ900', body: 'Visite — PHARMACIE DU PROSPECT FICTIF : vu la titulaire · relance prévue le 08/12/2026', created_at: midi(AUJ) },
+      { id: 'n8', scope_type: 'client', scope_id: 'ZZ901', body: 'Note libre sans nom', created_at: midi(AUJ) }
+    ]
+  });
+  const ctx = monter([MOIS], agendaPret(base));
+  ctx.V2RECO = { apparier: () => ({}) };
+  ctx.V2.todoMois.html(); await attendre();
+  const h = ctx.V2.todoMois.html();
+  assert.match(h, /Note libre sans nom/, 'marqueur : les notes du jour sont affichées');
+  assert.match(h, /Prospect Fictif/, 'le nom relu dans la note de visite');
+  assert.doesNotMatch(h, /Officine ZZ900/i);
+  assert.match(h, /Officine ZZ901/i, 'une note ordinaire sans nom connu garde le repli d’avant');
+});
+
+test('visite : un raccourci ou un jour touché gagne sur la case encore affichée (vu au banc WebKit le 24/11 : la date restait vide)', async () => {
+  const t = visitePrete();
+  t.V2.todoMois.html(); await attendre();
+  t.V2.todoMois.ouvrir('visite', AUJ);
+  t.V2.todoMois.visiteChoisir('111');
+  t.V2.todoMois.visiteSuite('relance');
+  t.saisir({ 'tm-date': AUJ, 'tm-dsuite': '' });   // l'écran montre la case de relance, encore vide
+  t.V2.todoMois.visiteDans(7);
+  assert.equal(t.V2.todoMois.etat.form.dsuite, ymd(AUJ, 7), 'la date du raccourci n’est pas écrasée par la case vide');
+  assert.match(t.V2.todoMois.html(), new RegExp('id="tm-dsuite" type="date" value="' + ymd(AUJ, 7) + '"'), 'et elle s’affiche');
+  const autre = ymd(AUJ, -3);
+  t.V2.todoMois.choisir(autre);                    // la case « Date de la visite » montre encore AUJ
+  assert.equal(t.V2.todoMois.etat.form.date, autre, 'le jour touché devient la date de visite');
+});

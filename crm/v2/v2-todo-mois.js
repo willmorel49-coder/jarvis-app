@@ -12,6 +12,8 @@
      · notes         = table `notes` (les siennes), datées par created_at — une note datée à la main pose created_at ;
      · tâches        = V2.todo (cocher ici = cocher dans la liste, c'est la même ligne).
    Enregistrer passe par les vraies fonctions : V2.todo.ajouterLigne, V2.rdvAjout.creer, V2.notes.addAuto.
+   24/11/2026 — Visite : 4e ajout du jour, « officine vue tel jour, cliente ou prospect, et la suite à donner » (Will) :
+   note datée sur la fiche + ligne To do « Relancer » / « Revisiter » à la date choisie ; l'annuaire national ne se télécharge qu'au clic.
    ═══════════════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -62,7 +64,10 @@
   function surEcran() { return !!document.querySelector('.tm'); }
   // 24/11/2026 — l'écran Rendez-vous montre ce même mois dans #tm-hote : on ne redessine que lui, sans relire l'écran
   // (V2.render relancerait toutes ses lectures à chaque jour touché). La To do, elle, se redessine en entier comme avant.
-  function redessiner() {
+  // `dejaLu` : le geste a déjà relu la saisie AVANT de changer l'état (date d'un raccourci, jour touché) ;
+  // la relire encore ici écraserait la nouvelle valeur par l'ancienne, encore affichée.
+  function redessiner(dejaLu) {
+    if (!dejaLu && S.form && S.form.type === 'visite') saisieVisite();   // ce qui est tapé survit à tout autre redessin
     var h = document.getElementById('tm-hote');
     if (h) { h.innerHTML = V2.todoMois.html(); return; }
     if (surEcran() && V2.render) V2.render();
@@ -120,12 +125,15 @@
   function etatMois() { var ym = S.ref.slice(0, 7); lireMois(ym); return CACHE[ym].etat; }
 
   // ── le contenu d'un jour ──
-  function nomOfficine(st, sid) {
+  // 24/11/2026 — un prospect de l'annuaire n'a pas de nom tant que l'annuaire (2,8 Mo) n'est pas chargé :
+  // la note de visite porte son nom (« Visite — NOM : … »), relu ici plutôt que « Officine 2007264 ».
+  function nomOfficine(st, sid, body) {
     if (st !== 'client') return String(sid || '');
     var p = (V2.pharmacies || []).find(function (x) { return String(x.id) === String(sid); });
     if (p) return p.name || '';
     var i = V2.rdvInfo ? V2.rdvInfo(sid) : null;
-    return (i && i.nom) || 'Officine ' + sid;
+    var v = /^Visite — (.+?)(?: : | · |$)/.exec(String(body || ''));
+    return (i && i.nom) || (v && v[1]) || 'Officine ' + sid;
   }
   function construire() {
     var idx = {}, D = 45;
@@ -143,7 +151,7 @@
       });
       M.notes.forEach(function (n) {
         var d = iso(new Date(n.created_at));
-        (idx[d] = idx[d] || { ev: [], notes: [] }).notes.push({ nom: nomOfficine(n.scope_type, n.scope_id), body: n.body || '' });
+        (idx[d] = idx[d] || { ev: [], notes: [] }).notes.push({ nom: nomOfficine(n.scope_type, n.scope_id, n.body), body: n.body || '' });
       });
     });
     RL.forEach(function (x) {
@@ -154,7 +162,7 @@
     // notes écrites sans réseau, pas encore parties (V2.hl, v2-hors-ligne.js)
     if (V2.hl && V2.hl.miennes) V2.hl.miennes('notes').forEach(function (x) {
       var l = x.ligne || {}, d = l.created_at ? iso(new Date(l.created_at)) : '';
-      if (d && CACHE[d.slice(0, 7)]) (idx[d] = idx[d] || { ev: [], notes: [] }).notes.push({ nom: nomOfficine(l.scope_type, l.scope_id), body: l.body || '', attente: true });
+      if (d && CACHE[d.slice(0, 7)]) (idx[d] = idx[d] || { ev: [], notes: [] }).notes.push({ nom: nomOfficine(l.scope_type, l.scope_id, l.body), body: l.body || '', attente: true });
     });
     // Ce qui vient de l'agenda perso et tombe sur un rendez-vous JARVIS est ce même rendez-vous recopié (règle de v2-agenda-vues.js)
     Object.keys(idx).forEach(function (k) {
@@ -217,7 +225,7 @@
     var j = jour(s), a = auj(), passe = s < a, html = '';
     html += '<div class="tm-dh"><div><p class="tm-dk">' + esc(maj(ecart(s))) + '</p><h2 class="tm-dt">' + esc(maj(libJour(s))) + '</h2></div></div>';
     html += '<div class="tm-ajouts" role="group" aria-label="Ajouter à cette date">' +
-      [['tache', 'Tâche'], ['rdv', 'Rendez-vous'], ['note', 'Note']].map(function (x) {
+      [['tache', 'Tâche'], ['rdv', 'Rendez-vous'], ['note', 'Note'], ['visite', 'Visite']].map(function (x) {
         var on = S.form && S.form.type === x[0];
         return '<button type="button" class="tm-aj' + (on ? ' on' : '') + '" aria-pressed="' + !!on + '" onclick="V2.todoMois.ouvrir(\'' + x[0] + '\',\'' + s + '\')">' + IC.plus + '<span>' + x[1] + '</span></button>';
       }).join('') + '</div>';
@@ -238,7 +246,100 @@
     }).join('');
     return html;
   }
+  // ── Visite : une officine vue ce jour-là (cliente ou prospect) et la suite à donner ──
+  function sa(s) { return String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+  function fr(s) { return s.slice(8, 10) + '/' + s.slice(5, 7) + '/' + s.slice(0, 4); }
+  function dateOk(s) { return /^\d{4}-\d{2}-\d{2}$/.test(s) && iso(dt(s)) === s; }
+  function suiteLib(k) { return k === 'relance' ? 'Relancer' : 'Revisiter'; }
+  // D'abord les officines du fichier, puis l'annuaire s'il est déjà chargé (jamais téléchargé tout seul) ; 8 au plus.
+  function chercherVisite(q) {
+    var t = sa(q).trim(), out = [], vus = {}, i, p, r, id;
+    if (t.length < 2) return out;
+    var L = V2.pharmacies || [];
+    for (i = 0; i < L.length && out.length < 8; i++) {
+      p = L[i]; id = String(p.id);
+      if (sa(p.name).indexOf(t) >= 0 || sa(p.ville).indexOf(t) >= 0) { out.push({ id: id, nom: p.name, ville: p.ville, annuaire: false }); vus[id] = 1; }
+    }
+    var D = window.PHARMA_FR && window.PHARMA_FR.p;
+    if (D) for (i = 0; i < D.length && out.length < 8; i++) {
+      r = D[i]; id = String(r[13] == null ? '' : r[13]);
+      if (!id || vus[id]) continue;
+      if (sa(r[6]).indexOf(t) >= 0 || sa(r[7]).indexOf(t) >= 0) { out.push({ id: id, nom: r[6], ville: r[7], annuaire: true }); vus[id] = 1; }
+    }
+    return out;
+  }
+  function trouverVisite(id) {
+    var i, L = V2.pharmacies || [], D = window.PHARMA_FR && window.PHARMA_FR.p;
+    for (i = 0; i < L.length; i++) if (String(L[i].id) === id) return { id: id, nom: L[i].name, ville: L[i].ville };
+    if (D) for (i = 0; i < D.length; i++) if (String(D[i][13]) === id) return { id: id, nom: D[i][6], ville: D[i][7] };
+    return null;
+  }
+  function resultatsVisite(q) {
+    if (sa(q).trim().length < 2) return '<li class="tm-vi">Tapez au moins deux lettres du nom ou de la ville.</li>';
+    var r = chercherVisite(q), a = !!window.PHARMA_FR;
+    return (r.length ? r.map(function (o) {
+      return '<li><button type="button" class="tm-vr" onclick="V2.todoMois.visiteChoisir(\'' + esc(String(o.id).replace(/[^0-9A-Za-z]/g, '')) + '\')"><b>' + esc(joli(o.nom)) + '</b><small>' + esc(joli(o.ville)) + (o.annuaire ? ' · annuaire national' : '') + '</small></button></li>';
+    }).join('') : '<li class="tm-vi">Aucune officine trouvée' + (a ? '.' : ' dans votre fichier.') + '</li>') +
+      (a ? '' : '<li><button type="button" class="tm-vr" onclick="V2.todoMois.visiteNational()"><b>Chercher aussi dans l’annuaire national</b><small>2,8 Mo à télécharger</small></button></li>');
+  }
+  function saisieVisite() {
+    var f = S.form, g = function (id) { var e = document.getElementById(id); return e ? e.value : null; }, v;
+    if (!f || f.type !== 'visite') return;
+    if ((v = g('tm-q')) != null) f.q = v;
+    if ((v = g('tm-date')) != null) f.date = v;
+    if ((v = g('tm-txt')) != null) f.txt = v;
+    if ((v = g('tm-dsuite')) != null) f.dsuite = v;
+  }
+  function formVisite() {
+    var f = S.form, suite = f.suite || '';
+    var off = f.off
+      ? '<div class="tm-f tm-f-l"><span>Officine</span><div class="tm-vo"><span><b>' + esc(joli(f.off.nom)) + '</b><small>' + esc(joli(f.off.ville)) + '</small></span><button type="button" class="tm-btn" onclick="V2.todoMois.visiteChanger()">changer</button></div></div>'
+      : '<label class="tm-f tm-f-l"><span>Officine</span><input id="tm-q" type="text" autocomplete="off" placeholder="Nom ou ville de l’officine" value="' + esc(f.q || '') + '" oninput="V2.todoMois.visiteChercher()"></label><ul class="tm-res" id="tm-res">' + resultatsVisite(f.q || '') + '</ul>';
+    var choix = [['', 'Rien'], ['relance', 'Relancer'], ['revisite', 'Revisiter']].map(function (x) {
+      return '<button type="button" class="tm-btn' + (suite === x[0] ? ' on' : '') + '" aria-pressed="' + (suite === x[0]) + '" onclick="V2.todoMois.visiteSuite(\'' + x[0] + '\')">' + x[1] + '</button>';
+    }).join('');
+    var quand = !suite ? '' : '<label class="tm-f tm-f-l"><span>' + (suite === 'relance' ? 'À relancer le' : 'À revisiter le') + '</span><input id="tm-dsuite" type="date" value="' + esc(f.dsuite || '') + '"></label>' +
+      '<div class="tm-f tm-f-l"><div class="tm-rac">' + [[7, 'dans 1 semaine'], [14, 'dans 2 semaines'], [30, 'dans 1 mois']].map(function (x) {
+        return '<button type="button" class="tm-btn" onclick="V2.todoMois.visiteDans(' + x[0] + ')">' + x[1] + '</button>';
+      }).join('') + '</div></div>';
+    return '<div class="tm-form" role="group" aria-label="Noter une visite"><p class="tm-ft">Noter une visite</p><p class="tm-fa">Une officine vue ce jour-là, cliente ou prospect, et la suite à donner.</p>' +
+      '<div class="tm-fg">' + off +
+      '<label class="tm-f"><span>Date de la visite</span><input id="tm-date" type="date" value="' + esc(f.date) + '"></label>' +
+      '<label class="tm-f tm-f-l"><span>Ce qui s’est dit (facultatif)</span><textarea id="tm-txt" rows="3" placeholder="Ce qui s’est dit, ce qu’il faut retenir…">' + esc(f.txt || '') + '</textarea></label>' +
+      '<div class="tm-f tm-f-l" role="group" aria-label="Et ensuite ?"><span>Et ensuite ?</span><div class="tm-rac">' + choix + '</div></div>' + quand +
+      '</div><div class="tm-fb"><button type="button" class="tm-btn tm-prim" id="tm-go" onclick="V2.todoMois.enregistrer()"' + (S.envoi ? ' disabled' : '') + '>' + (S.envoi ? 'Enregistrement…' : 'Enregistrer') + '</button><button type="button" class="tm-btn" onclick="V2.todoMois.ouvrir(null)">Annuler</button></div></div>';
+  }
+  function enregistrerVisite() {
+    var f = S.form; saisieVisite();
+    var dire = function (m) { if (V2.toast) V2.toast(m, 'error'); };
+    var date = String(f.date || '').trim(), txt = String(f.txt || '').trim(), suite = f.suite || '', ds = String(f.dsuite || '').trim();
+    if (!f.off) { dire('Choisissez l’officine dans la liste.'); return; }
+    if (!dateOk(date)) { dire('Indiquez la date de la visite.'); return; }
+    if (suite && !dateOk(ds)) { dire('Indiquez la date ' + (suite === 'relance' ? 'de la relance.' : 'de la nouvelle visite.')); return; }
+    var id = String(f.off.id), nom = f.off.nom;
+    var prospect = !(V2.pharmacies || []).some(function (x) { return String(x.id) === id; });
+    var body = 'Visite' + (prospect ? ' — ' + nom : '') + (txt ? ' : ' + txt : '') + (suite ? ' · ' + (suite === 'relance' ? 'relance prévue le ' : 'nouvelle visite prévue le ') + fr(ds) : '');
+    var rate = function (m) { S.envoi = false; redessiner(); dire(m); };
+    var fini = function () {
+      S.envoi = false; S.form = null; S.sel = date; S.ref = date; relire(date);
+      if (V2.toast) V2.toast('Visite notée au ' + libJour(date) + ' (' + ecart(date) + ')' + (suite ? (suite === 'relance' ? ' · relance le ' : ' · à revisiter le ') + libJour(ds) : ''));
+      redessiner();
+    };
+    var ligne = function () {
+      var echec = function () { f.noteOk = true; relire(date); rate('Visite notée, mais ' + (suite === 'relance' ? 'la relance' : 'la nouvelle visite') + ' n’a pas été enregistrée, réessayez.'); };
+      V2.todo.ajouterLigne({ k: 'libre', pid: id, nom: nom, note: suiteLib(suite), pour: ds }).then(function (ok) { if (ok) fini(); else echec(); }, echec);
+    };
+    S.envoi = true; redessiner();
+    // Réessai après un échec de la seule ligne To do : la note est déjà partie, on ne la double pas.
+    if (f.noteOk) { ligne(); return; }
+    var quand = date === auj() ? null : horodatage(date);
+    V2.notes.addAuto('client', id, body, quand).then(function (ok) {
+      if (!ok) { rate('Visite non enregistrée, réessayez.'); return; }
+      if (suite) { f.noteOk = true; ligne(); } else fini();
+    }, function () { rate('Visite non enregistrée, réessayez.'); });
+  }
   function formulaire() {
+    if (S.form.type === 'visite') return formVisite();
     var f = S.form, noms = (V2.pharmacies || []).map(function (p) { return '<option value="' + esc(p.name || '') + '">'; }).join('');
     var titre = f.type === 'rdv' ? 'Noter un rendez-vous' : f.type === 'note' ? 'Écrire une note' : 'Ajouter une tâche';
     var aide = f.type === 'rdv' ? 'Date passée ou à venir : un rendez-vous déjà fait se note aussi.' : f.type === 'note' ? 'La note est datée du jour choisi, avant ou après aujourd’hui.' : 'La tâche se range à cette date dans la To do list.';
@@ -435,16 +536,37 @@
     },
     voirTout: function (k) { S.tout[k] = !S.tout[k]; redessiner(); },
     reessayer: function () { CACHE = {}; PAR_JOUR = null; VENIR = null; redessiner(); },
-    choisir: function (s) { S.sel = s; if (S.form) S.form.date = s; redessiner(); },
+    visiteChercher: function () {
+      var f = S.form; if (!f || f.type !== 'visite') return;
+      var e = document.getElementById('tm-q'); f.q = e ? e.value : '';
+      var r = document.getElementById('tm-res'); if (r) r.innerHTML = resultatsVisite(f.q);
+    },
+    visiteChoisir: function (id) { var f = S.form, o = f && f.type === 'visite' ? trouverVisite(String(id)) : null; if (!o) return; saisieVisite(); f.off = o; redessiner(true); },
+    visiteChanger: function () { var f = S.form; if (!f || f.type !== 'visite') return; saisieVisite(); f.off = null; f.noteOk = false; redessiner(true); },
+    visiteNational: function () {
+      var f = S.form, r = document.getElementById('tm-res'); if (!f || f.type !== 'visite') return;
+      if (r) r.innerHTML = '<li class="tm-vi">Téléchargement de l’annuaire…</li>';
+      if (V2.ensurePharmaFr) V2.ensurePharmaFr(function () { if (S.form === f) redessiner(); });
+    },
+    visiteSuite: function (k) { var f = S.form; if (!f || f.type !== 'visite') return; saisieVisite(); f.suite = k || ''; redessiner(true); },
+    visiteDans: function (n) {
+      var f = S.form; if (!f || f.type !== 'visite') return; saisieVisite();
+      var b = dateOk(f.date) ? f.date : auj(), d;
+      if (n === 30) { d = dt(b); var j = d.getDate(); d.setDate(1); d.setMonth(d.getMonth() + 1); var fin = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate(); d.setDate(Math.min(j, fin)); f.dsuite = iso(d); }
+      else f.dsuite = plus(b, n);
+      redessiner(true);
+    },
+    choisir: function (s) { if (S.form && S.form.type === 'visite') saisieVisite(); S.sel = s; if (S.form) S.form.date = s; redessiner(true); },
     pas: function (n) {
       var d = dt(S.ref); d.setDate(1); d.setMonth(d.getMonth() + n); S.ref = iso(d);
       S.sel = S.ref.slice(0, 7) === auj().slice(0, 7) ? auj() : S.ref; S.form = null; redessiner();
     },
     aujourdhui: function () { S.ref = auj(); S.sel = auj(); S.form = null; redessiner(); },
-    ouvrir: function (type, s) { S.form = type ? { type: type, date: s || S.sel } : null; redessiner(); var e = document.getElementById('tm-off'); if (e) try { e.focus(); } catch (x) {} },
+    ouvrir: function (type, s) { S.form = type ? { type: type, date: s || S.sel, off: null, q: '', txt: '', suite: '', dsuite: '' } : null; redessiner(); var e = document.getElementById('tm-off'); if (e) try { e.focus(); } catch (x) {} },
     cocher: function (id, f) { if (V2.todo) V2.todo.cocher(id, !!f); },
     enregistrer: function () {
       var f = S.form; if (!f || S.envoi) return;
+      if (f.type === 'visite') { enregistrerVisite(); return; }
       var g = function (id) { var e = document.getElementById(id); return e ? String(e.value || '').trim() : ''; };
       var nom = g('tm-off'), date = g('tm-date'), txt = g('tm-txt'), h = g('tm-heure') || '09:30';
       var dire = function (m) { if (V2.toast) V2.toast(m, 'error'); };
@@ -577,6 +699,15 @@
       '.tm-f textarea{resize:vertical}',
       '.tm-f input:focus,.tm-f textarea:focus{outline:2px solid var(--tm-b);outline-offset:0;border-color:var(--tm-b)}',
       '.tm-fb{display:flex;gap:8px;margin-top:12px}',
+      '.tm-btn.on{background:var(--tm-b);border-color:var(--tm-b);color:#fff}',
+      '.tm-rac{display:flex;flex-wrap:wrap;gap:8px}',
+      '.tm-res{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;grid-column:1/-1}',
+      '.tm-vr{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;min-height:44px;padding:8px 12px;border-radius:10px;border:1px solid #B8C6E0;background:#fff;color:var(--tm-i);font:700 15px/1.25 var(--font);text-align:left;cursor:pointer}',
+      '.tm-vr small{font:500 13px/1.2 var(--font);color:var(--tm-g)}',
+      '.tm-vi{font:500 13.5px/1.4 var(--font);color:var(--tm-g);padding:4px 2px}',
+      '.tm-vo{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;padding:6px 6px 6px 12px;border-radius:10px;border:1px solid #B8C6E0;background:#fff}',
+      '.tm-vo b{display:block;font:700 15px/1.25 var(--font);color:var(--tm-i)}',
+      '.tm-vo small{font:500 13px/1.2 var(--font);color:var(--tm-g)}',
       /* en retard, sans date */
       '.tm-libres{display:grid;grid-template-columns:1fr;gap:12px;margin:16px 0 0;align-items:start}',
       '.tm-lb{padding:6px 16px 8px;border-radius:18px;border:1px solid #D6E0F3;background:#F4F7FD}',
