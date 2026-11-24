@@ -176,3 +176,36 @@ test('Sur l’écran Rendez-vous, toucher un jour redessine le mois sur place, s
   assert.match(hote.innerHTML, /class="tm tm-v2"/, 'le mois est redessiné dans #tm-hote');
   assert.equal(rendus, 0, 'V2.render (qui relancerait toutes les lectures de l’écran) n’est pas appelé');
 });
+
+test('La To do s’ouvre sur le mois à chaque arrivée, et garde l’onglet choisi tant qu’on y reste (choix de Will, 24/11)', async () => {
+  const TODO = readFileSync(new URL('v2-todo.js', R), 'utf8');
+  const noop = () => {};
+  const sb = { console, setTimeout, clearTimeout, Date, Promise, JSON, Math, RegExp, String, Number, Array, Object };
+  sb.window = sb; sb.globalThis = sb;
+  const LS = new Map([['jarvis_todo_v1', JSON.stringify([{ id: 't1', k: 'libre', nom: '', note: 'Tâche fictive', pour: AUJ, fait: false }])]]);
+  sb.localStorage = { getItem: (k) => (LS.has(k) ? LS.get(k) : null), setItem: (k, v) => LS.set(k, String(v)), removeItem: (k) => LS.delete(k) };
+  sb.document = {
+    currentScript: { src: 'v2/v2-todo.js?v=x' }, getElementById: () => null, querySelector: () => null, querySelectorAll: () => [],
+    createElement: () => ({ style: {}, classList: { add: noop, remove: noop }, setAttribute: noop }),
+    head: { appendChild: noop }, body: { classList: { add: noop, remove: noop }, appendChild: noop }, addEventListener: noop
+  };
+  sb.addEventListener = noop; sb.location = { hash: '#todo' };
+  vm.createContext(sb);
+  vm.runInContext(`window.V2 = { route: { name: 'todo' }, esc: s => String(s == null ? '' : s), topbar: () => '', go(){}, toast(){}, pharmacies: [], user: null,
+    render(){ window.V2.pages.todo.render(window.__racine); },
+    relances: { nbARelancer: () => 0, nbChauds: () => 0, html: () => '<p>RELANCES</p>', rafraichir(){} },
+    todoMois: { html: () => '<div class="tm">LE MOIS</div>', phrase: () => 'Novembre', rafraichir(){} } };
+    window.ICO = () => '';`, sb);
+  sb.__racine = { html: '', set innerHTML(v) { this.html = v; }, get innerHTML() { return this.html; }, querySelector: () => null };
+  vm.runInContext(TODO, sb);
+  const V2 = sb.V2, rendre = async () => { V2.pages.todo.render(sb.__racine); for (let i = 0; i < 6; i++) await attendre(1); return sb.__racine.html; };
+  let h = await rendre();
+  assert.match(h, /td-h1/, 'marqueur : c’est bien la To do');
+  assert.match(h, /LE MOIS/, 'à l’arrivée : le mois');
+  V2.todo.onglet('taches'); await attendre();
+  h = sb.__racine.html;
+  assert.match(h, /aria-selected="true" class="td-cap is-on" onclick="V2\.todo\.onglet\('taches'\)"/, 'marqueur : l’onglet Tâches est ouvert');
+  assert.doesNotMatch(h, /LE MOIS/, 'un redessin sur place garde l’onglet choisi');
+  V2.route = { name: 'todo' };   // nouvelle arrivée sur l'écran (menu, accueil)
+  assert.match(await rendre(), /LE MOIS/, 'revenir sur la To do rouvre le mois');
+});

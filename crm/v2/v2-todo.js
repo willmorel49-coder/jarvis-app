@@ -1066,6 +1066,9 @@
     needs: [],
     render: function (root) {
       ensureCss();
+      // 24/11/2026 — Will (question cliquée) : « To do s'ouvre sur le mois », comme Rendez-vous. Chaque arrivée sur
+      // l'écran (V2.go ou lien : V2.route est un objet neuf) ouvre l'Agenda du mois ; un simple redessin garde l'onglet choisi.
+      if (st.routeVue !== V2.route) { st.routeVue = V2.route; if (V2.todoMois && V2.relances) st.onglet = 'agenda'; }
       var top = V2.topbar ? V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) : '';
       if (st.items == null) {
         root.innerHTML = top + '<div class="v2-wrap narrow">' + tdOuvre() + tdEntete('Chargement…', '', '', '') + '</div></div>';
