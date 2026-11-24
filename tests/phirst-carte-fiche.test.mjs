@@ -117,6 +117,9 @@ describe('l’écran (lecture du code de phirst-officines.js)', () => {
     assert.doesNotMatch(SRC, /fillOpacity: 1 \}\)\.on\('click'/)
     assert.match(SRC, /pointer:coarse\)'\)\.matches \? 28 : 20/)
   })
+  test('le premier clic donne le focus à la carte SANS faire défiler la page (sinon il tombe à côté du point)', () => {
+    assert.match(SRC, /kb\.disable\(\); kb\._onMouseDown = function \(\) \{ if \(!this\._focused\) this\._map\.getContainer\(\)\.focus\(\{ preventScroll: true \}\); \}; kb\.enable\(\);/)
+  })
   test('téléphone : la feuille est posée dans la page, hors de l’écran animé, et part quand on quitte la carte', () => {
     assert.match(SRC, /h\.id = 'po-fiche-tel'/)
     assert.match(SRC, /window\.addEventListener\('hashchange', quitterCarte\)/)

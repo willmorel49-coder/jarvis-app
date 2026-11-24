@@ -619,6 +619,10 @@
       var L = window.L;
       M.map = L.map(root.querySelector('#po-map'), { zoomControl: false, renderer: L.canvas({ tolerance: 14 }), minZoom: 4 }).setView([46.6, 2.4], 6);
       L.control.zoom({ position: 'topright' }).addTo(M.map); // la fiche se pose en haut à gauche
+      /* Le premier appui donne le focus clavier à la carte ; WebKit fait alors défiler la page pour la montrer en entier (22 px mesurés le 24/11/2026,
+         Leaflet n'arrive pas à la remettre) : la carte glisse sous la souris et le clic tombe à côté du point. Focus sans défilement, mêmes touches. */
+      var kb = M.map.keyboard;
+      if (kb) { kb.disable(); kb._onMouseDown = function () { if (!this._focused) this._map.getContainer().focus({ preventScroll: true }); }; kb.enable(); }
       M.map.on('click', function (e) { var l = plusProche(e.containerPoint); if (l) ouvrirFiche(l); });
       var survol = 0;
       M.map.on('mousemove', function (e) { if (survol) return; survol = requestAnimationFrame(function () { survol = 0; if (M.map) M.map.getContainer().style.cursor = plusProche(e.containerPoint) ? 'pointer' : ''; }); });
