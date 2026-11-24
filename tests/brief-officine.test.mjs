@@ -76,7 +76,7 @@ test('prix : effet passé ignoré, baisse à venir retenue et urgente sous 7 jou
   ] };
   const r = calculer(base({ ventes: [{ cip: '3400900000001', mois: '2026-08', qte: 4 }], prixFuturs: pf }));
   assert.equal(r.points.length, 1);
-  assert.match(r.points[0].titre, /Baisse de prix le 20\/09\/2026 : PROCHE/);
+  assert.match(r.points[0].titre, /Baisse de prix le 20\/09\/2026 : Proche/);   // nom écrit comme partout ailleurs (24/11/2026)
   assert.equal(r.points[0].urgence, 3);
   assert.match(r.points[0].detail, /6,5 € → 5 € TTC/);
 });
@@ -163,7 +163,8 @@ test('ruptures : 3 au plus, les siennes par volume, les autres repliées', () =>
   assert.ok(r.autres.every((p) => p.rubrique === 'Va manquer'));
 });
 
-test('ordre : rappel, ses achats, prix, ruptures, opportunité — ce qui lui est propre avant le national', () => {
+// 24/11/2026 (Will) : les ruptures passent avant les prix qui changent.
+test('ordre : rappel, ses achats, ruptures, prix, opportunité — ce qui lui est propre avant le national', () => {
   const hab = ['2026-03', '2026-04', '2026-05', '2026-06', '2026-07'].map((m) => ({ cip: '3400900000001', mois: m, qte: 2 }));
   const ventes = hab.concat([
     { cip: '3400900000002', mois: '2026-08', qte: 500 },   // rupture, très gros volume
@@ -178,7 +179,7 @@ test('ordre : rappel, ses achats, prix, ruptures, opportunité — ce qui lui es
     prixFuturs: { generated: '2026-09-17', changes: [{ c: '3400900000004', d: 'PRIX', sens: 'baisse', date_effet: '2026-10-20', date_publi: '2026-09-16', ppttc: 5 }] },
     generiques: { generated: '2026-09-17', princepsWithGeneric: ['3400900000005'] },
   }));
-  assert.deepEqual(Array.from(r.points, (p) => p.rubrique), ['À retirer', 'Ses achats', 'Change bientôt', 'Va manquer', 'Opportunité']);
+  assert.deepEqual(Array.from(r.points, (p) => p.rubrique), ['À retirer', 'Ses achats', 'Va manquer', 'Change bientôt', 'Opportunité']);
 });
 
 test('7 points au plus : ce qui dépasse part dans « autres », les ruptures repliées en premier', () => {
@@ -314,11 +315,14 @@ test('chemin réel : les vrais fichiers des robots arrivent jusqu\'à la carte',
   assert.match(ov.innerHTML, /Ce qui la touche[\s\S]*Autour d'elle[\s\S]*Dans sa ville[\s\S]*Dans son département/);
   assert.ok(ov.innerHTML.toLowerCase().includes(annonce.nom.toLowerCase().replace(/</g, '&lt;')), 'l\'annonce réelle de sa commune n\'arrive pas jusqu\'au panneau');
   assert.match(carte(), /Annonces légales \(\d/);
-  assert.match(ov.innerHTML, /Se rouvre avec le bouton « Infos du jour »/);
+  assert.match(ov.innerHTML, /<div class="bo-win-f">[\s\S]*Fermer/, 'le pied du panneau (Imprimer, Fermer) a disparu');
+  assert.ok(!/Se rouvre avec le bouton/.test(ov.innerHTML), 'phrase du pied retirée par Will le 24/11/2026');
   assert.match(el.innerHTML, /Aujourd'hui/);
   assert.match(el.innerHTML, /bo-dot|bo-sum/, 'la ligne de résumé (point + résumé) n\'est pas dans la fiche');
   assert.match(ov.innerHTML, /bo-win/, 'la fenêtre n\'est pas fabriquée');
-  assert.ok(carte().includes(cible.spec.split(' – [')[0].split(', ')[0]), 'la rupture réelle n\'apparaît pas');
+  const nomCible = sb.V2.briefOfficine.nomProduit(cible.spec);
+  assert.ok(nomCible.length > 3 && cible.spec.toLowerCase().startsWith(nomCible.split(' ')[0].toLowerCase()), 'nom de la rupture réelle mal écrit : ' + nomCible);
+  assert.ok(carte().includes(nomCible), 'la rupture réelle n\'apparaît pas');
   assert.match(carte(), /7 boîtes sur CPR/);
   assert.ok(!/non lue/.test(carte()), 'une source réelle n\'a pas été lue');
   // contre-épreuve : la même officine sans cet achat ne voit pas cette rupture
@@ -326,7 +330,7 @@ test('chemin réel : les vrais fichiers des robots arrivent jusqu\'à la carte',
   sb.V2.briefOfficine.hydrate('2000016', [{ pharmacyId: '2000016', commercial: 'A', year: 2026, month: 8, artCode: '3400900000000', qte: 1 }]);
   for (let i = 0; i < 20 && !carte(); i++) await new Promise((r) => setTimeout(r, 5));
   assert.ok(carte().length > 0);
-  assert.ok(!carte().includes(cible.spec.split(' – [')[0].split(', ')[0]));
+  assert.ok(!carte().includes(nomCible));
 });
 
 // Le catalogue (benchmark-data.js) arrive en différé : un premier brief calculé sans lui ne doit pas
@@ -460,19 +464,21 @@ test('liste repliée des ruptures : « autres » seulement si une rupture est d�
   const ansm = { generated: jour(0), items: U.map((c) => ({ st: 'Rupture de stock', spec: 'Rupture ' + c, maj: fr(jour(-1)), cips: [c] })) };
   const summaries = (h) => [...h.matchAll(/<summary>([^<]*)<\/summary>/g)].map((m) => m[1]);
 
-  // Cas 1 — en tête : 1 rappel + 3 achats interrompus + 3 prix qui changent (les 7 places) ; les 6 ruptures sont toutes repliées.
-  const A = [2, 3, 4].map(cip), P = [5, 6, 7, 8, 9].map(cip);
-  const ventes1 = [v(R[0], 8)];
+  // Cas 1 — en tête : 4 rappels + 3 achats interrompus (les 7 places) ; les 6 ruptures sont toutes repliées.
+  // (24/11/2026 : les ruptures passent avant les prix, seuls les rappels et ses achats peuvent donc les repousser.)
+  const A = [2, 3, 4].map(cip), P = [5, 6, 7, 8, 9].map(cip), R4 = [1, 20, 21, 22].map(cip);
+  const rappels4 = { generated: jour(0), items: R4.map((c, i) => ({ d: jour(-10), t: 'Produit rappelé ' + i, cips: [c], lots: [{ n: 'L' + i }] })) };
+  const ventes1 = R4.map((c) => v(c, 8));
   A.forEach((c) => [3, 4, 5, 6, 7].forEach((m) => ventes1.push(v(c, m))));
   P.concat(U).forEach((c) => [7, 8].forEach((m) => ventes1.push(v(c, m))));
   const h1 = await panneau({
-    'rappels-lots.json': rappels, 'ansm-dispo.json': ansm,
+    'rappels-lots.json': rappels4, 'ansm-dispo.json': ansm,
     'prix-futurs.json': { generated: jour(0), changes: P.map((c) => ({ c, sens: 'baisse', date_effet: jour(40), date_publi: jour(-5), ppttc: '9.99', d: 'Prix ' + c })) },
   }, ventes1, A.map((c) => ({ cip13: c, designation: 'PRODUIT ' + c })));
   const tete1 = h1.split('<details')[0];
   assert.match(tete1, /3 achats interrompus/, 'marqueur positif : ce n\'est pas le panneau attendu');
   assert.ok(!/Rupture 34009/.test(tete1), 'cas mal monté : une rupture est affichée en tête');
-  assert.deepEqual(summaries(h1), ['6 ruptures ou tensions', '2 autres points']);
+  assert.deepEqual(summaries(h1), ['6 ruptures ou tensions', '5 autres points']);
 
   // Cas 2 — en tête : 1 rappel + 3 ruptures (le plafond) ; les 3 autres ruptures sont repliées.
   const ventes2 = [v(R[0], 8)];
@@ -480,4 +486,152 @@ test('liste repliée des ruptures : « autres » seulement si une rupture est d�
   const h2 = await panneau({ 'rappels-lots.json': rappels, 'ansm-dispo.json': ansm }, ventes2, []);
   assert.equal((h2.split('<details')[0].match(/Rupture 34009/g) || []).length, 3, 'cas mal monté : il faut 3 ruptures en tête');
   assert.deepEqual(summaries(h2), ['3 autres ruptures ou tensions']);
+});
+
+// ── 24/11/2026 (Will, choix cliqués après l'audit du panneau, ~/jarvis-preuves/infos-du-jour-audit-2026-11-24/AUDIT.md) ──
+const rienA = () => {};
+const jourA = (d) => new Date(Date.now() + d * 864e5).toISOString().slice(0, 10);
+const frA = (iso) => iso.split('-').reverse().join('/');
+const cipA = (n) => '34009000' + String(n).padStart(5, '0');
+const venteA = (c, month, qte = 4) => ({ pharmacyId: '2000016', commercial: 'A', year: 2026, month, artCode: c, qte });
+async function panneauA(json, ventes, benchmark = []) {
+  const el = { innerHTML: '', getAttribute: (k) => (k === 'data-pid' ? '2000016' : null) };
+  const ov = { id: '', innerHTML: '', firstChild: null, addEventListener: rienA, getAttribute: () => null, setAttribute: rienA, classList: { add: rienA, remove: rienA, contains: () => false }, querySelector: () => null };
+  const sb = charger({
+    fetch: (url) => { const j = json[url.split('?')[0]]; return Promise.resolve(j ? { ok: true, json: () => Promise.resolve(j) } : { ok: false }); },
+    addEventListener: rienA,
+    document: { getElementById: (id) => (id === 'brief-off' ? el : (id === 'bo-ov' && ov.id ? ov : null)), createElement: () => ov, addEventListener: rienA, head: { appendChild() {} }, body: { appendChild() {}, style: {} } },
+  });
+  sb.ETAB_PRICES = { prices: {} };
+  sb.BENCHMARK = benchmark;
+  sb.V2.sales = ventes;
+  sb.V2.briefOfficine.hydrate('2000016', ventes, {});
+  for (let i = 0; i < 20 && !el.innerHTML; i++) await new Promise((r) => setTimeout(r, 5));
+  return ov.innerHTML;
+}
+
+// D1 — les 7 places du haut prises par 1 rappel, 3 achats et 3 baisses (dont Ezetimibe 11,75 → 11,68 €, −0,6 %, avec
+// « Lui conseiller d'écouler son stock ») ; ses 29 ruptures toutes repliées. Règle : ruptures avant prix ; baisse < 5 % repliée, sans « écouler ».
+test('24/11 (1) : les ruptures avant les prix ; une baisse de moins de 5 % repliée, sans « écouler son stock »', () => {
+  const ventes = ['3400900000001', '3400900000002', '3400900000003', '3400900000004'].map((cip) => ({ cip, mois: '2026-08', qte: 30 }));
+  const change = (c, d, ancien, ppttc) => ({ c, d, sens: 'baisse', date_effet: '2026-10-20', date_publi: '2026-09-16', ppttc, ...(ancien ? { ancien_ttc: ancien } : {}) });
+  const r = calculer(base({
+    ventes,
+    ansm: ansm([rupture(['3400900000001'])]),
+    prixFuturs: { generated: '2026-09-17', changes: [
+      change('3400900000002', 'EZETIMIBE ZEN 10MG CPR BT30', 11.75, 11.68),    // −0,6 % : repliée
+      change('3400900000003', 'RIVAROXABAN ZEN 20MG CPR BT28', 12.37, 11.43),  // −7,6 % : en tête
+      change('3400900000004', 'SANS ANCIEN PRIX 5MG CPR BT30', null, 9.5),     // ancien prix inconnu : traitement d'avant
+    ] },
+  }));
+  assert.deepEqual(Array.from(r.points, (p) => p.rubrique), ['Va manquer', 'Change bientôt', 'Change bientôt'], 'la rupture doit passer avant les prix');
+  assert.ok(!r.points.some((p) => /Ezetimibe/.test(p.titre)), 'la baisse de 0,6 % prend encore une place du haut');
+  const petite = r.autres.find((p) => /Ezetimibe/.test(p.titre));
+  assert.ok(petite, 'la petite baisse doit rester dans le panneau, repliée');
+  assert.ok(!/écouler/.test(petite.action), 'pas de conseil d\'écouler son stock pour 0,6 %');
+  assert.match(petite.detail, /11,75 € → 11,68 € TTC \(−0,6 %\)/);
+  const grande = r.points.find((p) => /Rivaroxaban/.test(p.titre));
+  assert.match(grande.action, /écouler son stock avant le 20\/10\/2026/);
+  const sansAncien = r.points.find((p) => /Sans ancien prix/.test(p.titre));
+  assert.ok(sansAncien && /écouler/.test(sansAncien.action), 'sans ancien prix, le point garde son traitement d\'avant');
+});
+
+// D2 — trois écritures dans la même liste : « Clopidogrel Zentiva 75 mg » (ANSM), « Prednisolone ztl 20mg c.disp20 »
+// (catalogue), « RIVAROXABAN ZEN 20MG CPR BT28 » (JO). Règle : une seule écriture ; abréviation développée seulement si sûre.
+test('24/11 (2) : un nom de produit s\'écrit d\'une seule façon, quelle que soit la source', () => {
+  const hab = ['2026-02', '2026-03', '2026-04', '2026-05', '2026-06', '2026-07'].map((m) => ({ cip: '3400900000002', mois: m, qte: 80 }));
+  const r = calculer(base({
+    moisCouverts: ['2026-02', ...MOIS], ventes: hab.concat([
+      { cip: '3400900000001', mois: '2026-08', qte: 84 }, { cip: '3400900000003', mois: '2026-08', qte: 120 },
+      { cip: '3400900000004', mois: '2026-08', qte: 12 }, { cip: '3400900000009', mois: '2026-08', qte: 1 },
+    ]),
+    nom: (c) => ({ '3400900000002': 'PREDNISOLONE ZTL 20MG C.DISP20' }[c] || ''),
+    rappels: { generated: '2026-09-17', items: [{ d: '2026-09-08', t: 'Clopidogrel Zentiva 75 mg, comprimé pelliculé', cips: ['3400900000001'], lots: [{ n: '4P0202A', exp: '12/2026' }, { n: '4P0201A', exp: '12/2026' }] }] },
+    prixFuturs: { generated: '2026-09-17', changes: [{ c: '3400900000003', d: 'RIVAROXABAN ZEN 20MG CPR BT28', sens: 'baisse', date_effet: '2026-10-20', date_publi: '2026-09-16', ppttc: 11.43, ancien_ttc: 12.37 }] },
+    ansm: ansm([rupture(['3400900000004'], { spec: 'EZETIMIBE EG 10 mg, comprimé – [ézétimibe]' })]),
+  }));
+  const titres = r.points.map((p) => p.titre);
+  const nomDe = (re) => (titres.find((t) => re.test(t)) || '').split(' : ').pop();
+  assert.equal(nomDe(/Rappel/), 'Clopidogrel Zentiva 75 mg');
+  assert.equal(nomDe(/Pas commandé/), 'Prednisolone ZTL 20 mg', 'ZTL n\'est recoupé nulle part : gardé tel quel, en sigle');
+  assert.equal(nomDe(/Baisse/), 'Rivaroxaban Zentiva 20 mg', 'ZEN = Zentiva, recoupé CIP par CIP');
+  assert.equal(nomDe(/En rupture/), 'Ezetimibe EG 10 mg');
+  titres.forEach((t) => {
+    const nomP = t.split(' : ').pop();
+    assert.ok(!/\b[A-Z]{4,}\b/.test(nomP), 'mot en majuscules dans « ' + nomP + ' »');
+    assert.ok(!/\b(CPR|BT\d+|c\.disp\d*)\b|\d(mg|MG)\b/i.test(nomP), 'forme, boîte ou dosage collé dans « ' + nomP + ' »');
+  });
+});
+
+// D3 — à l'ordinateur, la pastille « Change bientôt » dépassait le min-width de 96 px : ses titres commençaient plus à droite.
+test('24/11 (3) : pastilles de largeur fixe commune, texte aligné quelle que soit la pastille', () => {
+  const src = readFileSync(new URL('v2-brief-officine.js', B), 'utf8');
+  const rub = (src.match(/'\.bo-rub\{[^}]*\}/) || [''])[0], g = (src.match(/'\.bo-g\{[^}]*\}/) || [''])[0];
+  assert.ok(!/min-width/.test(rub), 'min-width laisse les pastilles longues déborder : ' + rub);
+  const w = Number((rub.match(/;width:(\d+)px/) || [])[1]);
+  assert.ok(w >= 112, '« Change bientôt » mesure ~108 px sous WebKit : largeur ' + w);
+  assert.match(rub, /white-space:nowrap/);
+  assert.equal(Number((g.match(/;width:(\d+)px/) || [])[1]), w, 'la colonne de gauche (pastille + source) doit avoir la largeur de la pastille');
+});
+
+// D4 — chaque point faisait 4 à 5 lignes ; « Ses achats » redisait la pastille et le titre (« Habitude d'achat interrompue. »).
+test('24/11 (4) : points allégés — plus de redite, la source officielle et sa date gardées sous la pastille', async () => {
+  const R = [cipA(1)], A = [2].map(cipA), U = [10].map(cipA), P = [5].map(cipA);
+  const ventes = [venteA(R[0], 8)];
+  A.forEach((c) => [3, 4, 5, 6, 7].forEach((m) => ventes.push(venteA(c, m))));
+  U.concat(P).forEach((c) => [7, 8].forEach((m) => ventes.push(venteA(c, m))));
+  const h = await panneauA({
+    'rappels-lots.json': { generated: jourA(0), items: [{ d: jourA(-10), t: 'Produit rappelé', cips: R, lots: [{ n: 'L1' }] }] },
+    'ansm-dispo.json': { generated: jourA(0), items: U.map((c) => ({ st: 'Rupture de stock', spec: 'Rupture ' + c, maj: frA(jourA(-1)), cips: [c] })) },
+    'prix-futurs.json': { generated: jourA(0), changes: P.map((c) => ({ c, sens: 'baisse', date_effet: jourA(40), date_publi: jourA(-5), ppttc: 9, ancien_ttc: 10, d: 'Prix ' + c })) },
+  }, ventes, A.map((c) => ({ cip13: c, designation: 'PRODUIT ' + c })));
+  const points = [...h.split('<details')[0].matchAll(/<li class="bo-pt">([\s\S]*?)<\/li>/g)].map((m) => m[1]).filter((x) => /bo-g/.test(x));
+  assert.equal(points.length, 4, 'marqueur positif : rappel, achat, rupture, prix en tête');
+  assert.ok(!/Habitude d'achat interrompue/.test(h), 'la ligne qui redit la pastille et le titre est encore là');
+  assert.ok(!/présent dans ses achats|\(rupture de stock/.test(h), 'la source redit le titre');
+  points.forEach((x) => {
+    const tx = (x.match(/<div class="bo-tx">([\s\S]*)<\/div>/) || [])[1] || '';
+    const rangs = (tx.match(/<(b|span|small)[ >]/g) || []).length;
+    assert.ok(rangs <= 3, 'plus de 3 rangs de texte dans un point : ' + tx);
+  });
+  const sourceDe = (rub) => ((points.find((x) => x.includes('>' + rub + '<')) || '').match(/<small class="bo-qui">([^<]*)<\/small>/) || [])[1] || '';
+  const dt = /\d{2}\/\d{2}\/\d{4}/;
+  assert.match(sourceDe('À retirer'), /^ANSM · /); assert.match(sourceDe('À retirer'), dt);
+  assert.match(sourceDe('Va manquer'), /^ANSM · /); assert.match(sourceDe('Va manquer'), dt);
+  assert.match(sourceDe('Change bientôt'), /^Journal officiel du /); assert.match(sourceDe('Change bientôt'), dt);
+  assert.equal(sourceDe('Ses achats'), '', 'ses achats ne sont pas une source publique : pas de ligne de source');
+});
+
+// D5 + D6 — sous-titre « ce qui la touche, tiré de ses achats · 7 points en tête, 47 repliés plus bas, puis ce qui se passe
+// autour d'elle » (2 lignes au téléphone) ; pied « Se rouvre avec le bouton « Infos du jour ». » sans utilité.
+test('24/11 (5, 6) : en-tête raccourci, compte toujours vérifiable ; phrase du pied supprimée', async () => {
+  const R = [cipA(1)], U = [10, 11, 12, 13, 14, 15].map(cipA);
+  const ventes = [venteA(R[0], 8)];
+  U.forEach((c) => [7, 8].forEach((m) => ventes.push(venteA(c, m))));
+  const h = await panneauA({
+    'rappels-lots.json': { generated: jourA(0), items: [{ d: jourA(-10), t: 'Produit rappelé', cips: R, lots: [{ n: 'L1' }] }] },
+    'ansm-dispo.json': { generated: jourA(0), items: U.map((c) => ({ st: 'Rupture de stock', spec: 'Rupture ' + c, maj: frA(jourA(-1)), cips: [c] })) },
+  }, ventes);
+  const tete = h.split('<div class="bo-win-b">')[0];
+  const sous = (tete.match(/<span class="pha-sub">([^<]*)<\/span>/) || [])[1] || '';
+  assert.match(sous, /^4 points en tête, 3 repliés plus bas$/, 'sous-titre : ' + sous);
+  assert.ok(sous.length <= 40, 'sous-titre trop long : ' + sous);
+  const somme = ((tete.match(/<span class="bo-sum">([\s\S]*?)<\/span><button/) || [])[1] || '').match(/\d+/g).reduce((t, n) => t + Number(n), 0);
+  assert.equal(somme, 4 + 3, 'en tête + repliés ≠ total de l\'en-tête');
+  const pied = (h.match(/<div class="bo-win-f">([\s\S]*?)<\/div><\/div>$/) || [])[1] || '';
+  assert.match(pied, /Fermer/, 'marqueur positif : c\'est bien le pied');
+  assert.ok(!/Se rouvre/.test(pied), 'phrase du pied encore là');
+});
+
+// Le rendu local du 24/11 l'a montré : le libellé du catalogue arrivait déjà écrit en minuscules (« Prednisolone ztl 20mg… »)
+// par la lecture du catalogue, avant la règle du nom. On éprouve donc le CHEMIN réel : BENCHMARK → hydrate() → panneau.
+test('24/11 (2 bis) : chemin réel — le libellé du catalogue arrive dans le panneau écrit comme les autres sources', async () => {
+  const A = [cipA(2)], R = [cipA(1)];
+  const ventes = [venteA(R[0], 8)];
+  A.forEach((c) => [3, 4, 5, 6, 7].forEach((m) => ventes.push(venteA(c, m))));
+  const h = await panneauA({
+    'rappels-lots.json': { generated: jourA(0), items: [{ d: jourA(-10), t: 'Produit rappelé', cips: R, lots: [{ n: 'L1' }] }] },
+  }, ventes, [{ cip13: A[0], designation: 'PREDNISOLONE ZTL 20MG C.DISP20' }]);
+  assert.match(h, /Pas commandé en [^<]* : /, 'marqueur positif : le point « Ses achats » est là');
+  assert.match(h, /Pas commandé en [^<]* : Prednisolone ZTL 20 mg</);
 });

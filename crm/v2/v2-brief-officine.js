@@ -17,8 +17,9 @@
    (les mêmes sur toutes les fiches) sont retirées ; elles restent dans l'écran Infos du matin.
    Le bouton de la fiche ouvre le panneau en UN clic (avant : bouton → fenêtre → ligne → panneau).
    7 points maximum, ce qui est propre à CETTE officine d'abord (08/10/2026) :
-   rappels de lots, achats interrompus, prix qui changent, puis 3 ruptures au plus
-   (les autres repliées), puis les opportunités. Aucun modèle de langue :
+   rappels de lots, achats interrompus, puis 3 ruptures au plus (les autres repliées),
+   puis les prix qui changent (24/11/2026, Will : les ruptures avant les prix ; une baisse
+   de moins de 5 % part directement dans la liste repliée), puis les opportunités. Aucun modèle de langue :
    chaque ligne sort d'une règle écrite ici, avec sa source et sa date.
 
    V2.briefOfficine.calculer(entree) est une fonction PURE (testée dans
@@ -39,7 +40,10 @@
   // 08/10/2026 — mesuré sur les 2 011 officines : 73 % des points affichés étaient des ruptures ou
   // tensions NATIONALES, les mêmes d'une fiche à l'autre, et « Ses achats » finissait replié derrière.
   // Donc : ce qui lui est propre d'abord, et 3 ruptures au plus (les siennes par volume), le reste replié.
-  var ORDRE = ['À retirer', 'Ses achats', 'Change bientôt', 'Va manquer', 'Revient', 'Opportunité'];
+  // 24/11/2026 (Will) — les ruptures avant les prix : à l'officine 2003659, 3 baisses (dont −0,6 %) prenaient les places
+  // du haut et ses 29 ruptures étaient toutes repliées.
+  var ORDRE = ['À retirer', 'Ses achats', 'Va manquer', 'Change bientôt', 'Revient', 'Opportunité'];
+  var BAISSE_PETITE = 0.05;       // une baisse de moins de 5 % (ancien_ttc → ppttc) : repliée, sans « écouler son stock »
   var RUPTURES_MAX = 3;
   var SECTEUR_FAMILLES = { cession: 'Vente', fermeture: 'Fermeture', procedure: 'Procédure' };   // choix de Will (24/11/2026) : ventes, fermetures, procédures
   var SECTEUR_MAX_LIGNES = 5;     // par niveau (sa ville, puis son département) ; le reste est compté
@@ -58,6 +62,47 @@
   function isoDeFr(fr) { var p = String(fr || '').split('/'); return p.length === 3 ? p[2] + '-' + p[1] + '-' + p[0] : ''; }
   function pluriel(n, mot) { n = Math.round(n); return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f') + ' ' + mot + (n > 1 ? 's' : ''); }
   function nomCourt(spec) { return String(spec || '').split(' – [')[0].split(', ')[0]; }
+
+  // 24/11/2026 (Will) — un nom de produit s'écrit d'UNE façon dans tout le panneau, sur le modèle des fiches de l'ANSM
+  // (« Clopidogrel Zentiva 75 mg ») : nom, laboratoire, dosage ; la forme et la boîte (« CPR BT28 ») sont retirées.
+  // Avant : « Clopidogrel Zentiva 75 mg » (ANSM), « Prednisolone ztl 20mg c.disp20 » (catalogue), « RIVAROXABAN ZEN 20MG CPR BT28 » (JO).
+  // Une abréviation de laboratoire n'est développée que si elle est sûre : chacune ci-dessous a été recoupée CIP par CIP
+  // avec les fiches ANSM et le laboratoire des avis du JO (24/11/2026, aucun contre-exemple). Les autres (ZTL…) restent telles quelles.
+  var LABOS = { ZEN: 'Zentiva', ZENTIVA: 'Zentiva', BGA: 'Biogaran', BIOGARAN: 'Biogaran', TVC: 'Teva', TEVA: 'Teva', VIA: 'Viatris', VIATRIS: 'Viatris',
+    ZYD: 'Zydus', ZYDUS: 'Zydus', SDZ: 'Sandoz', SANDOZ: 'Sandoz', EG: 'EG', ARROW: 'Arrow', MYLAN: 'Mylan', CRISTERS: 'Cristers', BIOGALENIQUE: 'Biogalénique' };
+  var UNITES = { MG: 'mg', G: 'g', MCG: 'µg', 'µG': 'µg', MUI: 'MUI', UI: 'UI', U: 'U', ML: 'ml', H: 'h', '%': '%' };
+  var MOTS_MINUSCULES = { A: 1, 'À': 1, AU: 1, AUX: 1, DE: 1, DU: 1, DES: 1, ET: 1, EN: 1, LA: 1, LE: 1, LES: 1, OU: 1, PAR: 1, POUR: 1, SUR: 1 };
+  // Forme ou boîte dans un libellé court (catalogue, JO) : on coupe là.
+  var FORME = /^(CPR|CP|CPS|COMP|GELU|GEL|GLE|CAPS|INJ|SOL|BUV|SACH|SUPPO?|PDR|CREME|POM|SIROP|COLLY|AMP|FL|FLAC|TUBE|SRG|STY|SUSP|LYOPH|B\d+DU|BT\d*|BTE\d*|C\.\S*|CPR\d+\w*|CP\d+|GELU\d+|CPS\d+|FL\d+\S*)$/;
+  // « 20MG », « 10MG/10MG », « 100U/ML », « 100/6MCG », « 50MCG/H », « mg/mL » → « 20 mg », « 10 mg/10 mg », « 100 U/ml »… ;
+  // '' si ce n'est pas un dosage. Écrit de la même façon quelle que soit la source.
+  function dosage(t) {
+    var parts = String(t).split('/'), unite = false, ok = true;
+    var out = parts.map(function (x, i) {
+      var m = (i ? /^(\d+(?:[.,]\d+)?)?(MG|G|MCG|µG|MUI|UI|U|ML|H|%)?$/i : /^(\d+(?:[.,]\d+)?)?(MG|G|MCG|µG|MUI|UI|U|ML|%)?$/i).exec(x);
+      if (!m || (!m[1] && !m[2])) { ok = false; return ''; }
+      if (m[2]) unite = true;
+      return (m[1] || '') + (m[2] ? (m[1] ? ' ' : '') + UNITES[m[2].toUpperCase()] : '');
+    });
+    return ok && unite ? out.join('/') : '';
+  }
+  function nomProduit(texte) {
+    var mots = nomCourt(texte).replace(/\s+/g, ' ').trim().split(' '), garde = [], dernierDosage = -1;
+    for (var i = 0; i < mots.length; i++) {
+      var t = mots[i], maj = t === t.toUpperCase() && /[A-ZÀ-Ý]/.test(t);
+      if (maj && i > 0 && FORME.test(t)) break;                     // « CPR BT28 », « GELU », « C.DISP20 »
+      var d = dosage(t);
+      if (d) { garde.push(d); dernierDosage = garde.length; continue; }
+      if (!maj) { garde.push(t); continue; }                        // écrit en minuscules à la source : gardé tel quel
+      if (LABOS[t]) garde.push(LABOS[t]);
+      else if (MOTS_MINUSCULES[t]) garde.push(t.toLowerCase());
+      else if (/^(?:[A-Z]{1,3}|(?:[A-Z]\.){1,3}|[A-Z]\d{1,3})$/.test(t)) garde.push(t);   // « LP », « NPH », « ZTL », « L.P. », « B12 » : sigle gardé
+      else garde.push(t.toLowerCase());
+    }
+    if (dernierDosage > 0) garde = garde.slice(0, dernierDosage);   // après le dosage : forme ou mode de libération
+    var n = garde.join(' ');
+    return n ? n.charAt(0).toUpperCase() + n.slice(1) : '';
+  }
 
   // Achats de l'officine regroupés par CIP13 : total, mois vus, dernier mois.
   function indexAchats(ventes) {
@@ -158,7 +203,8 @@
     var auj = e.aujourdhui;
     var idx = indexAchats(e.ventes || []);
     var nbMois = Math.max(1, (e.moisCouverts || []).length);
-    var nom = e.nom || function () { return ''; };
+    var nomBrut = e.nom || function () { return ''; };
+    var nom = function (c) { return nomProduit(nomBrut(c)); };
     var stockSites = e.stockSites || function () { return []; };
     var pts = [];
     var mc = (e.moisCouverts || []).slice().sort();
@@ -175,9 +221,12 @@
       var a = achatsDe(idx, it.cips);
       if (!a.qte || a.dernier < recent) return;
       var parMois = Math.max(1, Math.round(a.qte / nbMois));
-      var detail = ['Elle en achète environ ' + pluriel(parMois, 'boîte') + ' par mois (dernière commande : ' + moisFr(a.dernier) + ').'];
+      // 24/11/2026 — sans « (dernière commande : …) » : seuls ses achats des 3 derniers mois passent ce filtre.
+      var detail = ['Elle en achète environ ' + pluriel(parMois, 'boîte') + ' par mois.'];
       if (it.st !== 'Remise à disposition') {
-        if (it.retour && it.retour.raw) detail.push('Retour annoncé : ' + String(it.retour.raw).replace(/\.$/, '') + '.');
+        // 24/11/2026 — la date seule : la phrase qui suit (« Un délai de quelques jours à plusieurs semaines peut être néc ») est
+        // la même partout et arrive coupée du fichier de l'ANSM.
+        if (it.retour && it.retour.raw) detail.push('Retour annoncé : ' + String(it.retour.raw).split(/\.\s/)[0].replace(/\.$/, '') + '.');
         var sites = [];
         it.cips.forEach(function (c) { stockSites(c).forEach(function (x) { if (x.q > 0) sites.push(x); }); });
         if (sites.length) {
@@ -189,10 +238,10 @@
       pts.push({
         rubrique: it.st === 'Remise à disposition' ? 'Revient' : 'Va manquer',
         urgence: s.urgence, volume: a.qte,
-        titre: s.titre + ' : ' + nomCourt(it.spec),
+        titre: s.titre + ' : ' + nomProduit(it.spec),
         detail: detail.join(' '),
         action: it.st === 'Remise à disposition' ? 'Lui signaler qu\'elle peut recommander.' : 'La prévenir avant qu\'elle le découvre au comptoir.',
-        pourquoi: 'Signalé par l\'ANSM (' + it.st.toLowerCase() + ', fiche du ' + dateFr(isoDeFr(it.maj) || e.ansm.generated) + ') et présent dans ses achats.',
+        pourquoi: 'ANSM · ' + dateFr(isoDeFr(it.maj) || e.ansm.generated),   // « (rupture de stock…) et présent dans ses achats » redisait le titre
         source: 'ansm', date: isoDeFr(it.maj) || (e.ansm.generated || '')
       });
     });
@@ -204,14 +253,20 @@
       var a = achatsDe(idx, [String(ch.c)]);
       if (!a.qte || a.dernier < recent) return;
       var dans = jours(auj, ch.date_effet);
-      var prix = (ch.ancien_ttc ? String(ch.ancien_ttc).replace('.', ',') + ' € → ' : '') + String(ch.ppttc).replace('.', ',') + ' € TTC';
+      var ancien = parseFloat(String(ch.ancien_ttc || '').replace(',', '.')), nouveau = parseFloat(String(ch.ppttc || '').replace(',', '.'));
+      var ecart = ancien > 0 && nouveau > 0 ? (nouveau - ancien) / ancien : null;   // ancien prix inconnu : traitement d'avant
+      var petite = ch.sens === 'baisse' && ecart !== null && -ecart < BAISSE_PETITE;
+      var prix = (ch.ancien_ttc ? String(ch.ancien_ttc).replace('.', ',') + ' € → ' : '') + String(ch.ppttc).replace('.', ',') + ' € TTC' +
+        (ecart !== null ? ' (' + (ecart < 0 ? '−' : '+') + String(Math.abs(Math.round(ecart * 1000) / 10)).replace('.', ',') + ' %)' : '');
       pts.push({
         rubrique: 'Change bientôt',
         urgence: dans <= 7 ? 3 : 2, volume: a.qte,
-        titre: (ch.sens === 'baisse' ? 'Baisse' : 'Hausse') + ' de prix le ' + dateFr(ch.date_effet) + ' : ' + (ch.d || nom(ch.c)),
-        detail: 'Prix public ' + prix + '. Elle en a acheté ' + pluriel(a.qte, 'boîte') + ' sur la période (dernière commande : ' + moisFr(a.dernier) + ').',
-        action: ch.sens === 'baisse' ? 'Lui conseiller d\'écouler son stock avant le ' + dateFr(ch.date_effet) + '.' : 'Lui signaler la hausse avant sa prochaine commande.',
-        pourquoi: 'Avis de prix publié au Journal officiel le ' + dateFr(ch.date_publi) + '.',
+        titre: (ch.sens === 'baisse' ? 'Baisse' : 'Hausse') + ' de prix le ' + dateFr(ch.date_effet) + ' : ' + (nomProduit(ch.d) || nom(ch.c)),
+        detail: 'Prix public ' + prix + '. Elle en a acheté ' + pluriel(a.qte, 'boîte') + '.',
+        // 24/11/2026 (Will) — une baisse de moins de 5 % : repliée d'office, et pas de conseil d'écouler le stock pour quelques centimes.
+        action: petite ? '' : ch.sens === 'baisse' ? 'Lui conseiller d\'écouler son stock avant le ' + dateFr(ch.date_effet) + '.' : 'Lui signaler la hausse avant sa prochaine commande.',
+        replie: petite,
+        pourquoi: 'Journal officiel du ' + dateFr(ch.date_publi),
         source: 'prix', date: ch.date_publi || ''
       });
     });
@@ -221,14 +276,21 @@
       if (!r.d || jours(r.d, auj) > RAPPEL_RECENT_J || !r.cips || !r.cips.length) return;
       var a = achatsDe(idx, r.cips);
       if (!a.qte) return;
-      var lots = (r.lots || []).map(function (l) { return l.n + (l.exp ? ' (exp. ' + l.exp + ')' : ''); });
+      // Les lots qui expirent le même mois sont regroupés : « 4P0202A, 4P0201A (exp. 12/2026) ».
+      var parExp = [], lots = [];
+      (r.lots || []).forEach(function (l) {
+        var g = parExp.filter(function (x) { return x.exp === (l.exp || ''); })[0];
+        if (!g) parExp.push(g = { exp: l.exp || '', n: [] });
+        g.n.push(l.n);
+      });
+      parExp.forEach(function (g) { lots.push(g.n.join(', ') + (g.exp ? ' (exp. ' + g.exp + ')' : '')); });
       pts.push({
         rubrique: 'À retirer',
         urgence: 4, volume: a.qte,
-        titre: 'Rappel de lots : ' + nomCourt(r.t),
-        detail: (lots.length ? 'Lots concernés : ' + lots.join(', ') + '. ' : '') + 'Elle en a acheté ' + pluriel(a.qte, 'boîte') + ' (dernière commande : ' + moisFr(a.dernier) + ').',
+        titre: 'Rappel de lots : ' + nomProduit(r.t),
+        detail: (lots.length ? 'Lots ' + lots.join(', ') + ' · ' : '') + pluriel(a.qte, 'boîte') + (a.qte > 1 ? ' achetées.' : ' achetée.'),
         action: 'Lui demander de vérifier ses lots en rayon.',
-        pourquoi: 'Rappel publié par l\'ANSM le ' + dateFr(r.d) + '.',
+        pourquoi: 'ANSM · ' + dateFr(r.d),
         source: 'rappels', date: r.d
       });
     });
@@ -244,7 +306,7 @@
         titre: 'Pas commandé en ' + moisFr(fin) + ' : ' + n,
         detail: 'Commandé ' + vus + ' mois sur les ' + avant.length + ' précédents (' + pluriel(a.qte, 'boîte') + ' au total).',
         action: 'Lui demander si elle l\'achète ailleurs.',
-        pourquoi: 'Habitude d\'achat interrompue.',
+        pourquoi: '',   // 24/11/2026 — « Habitude d'achat interrompue. » redisait la pastille et le titre ; ses achats ne sont pas une source publique
         source: 'ventes', date: ''
       });
     });
@@ -262,7 +324,7 @@
           titre: 'Princeps acheté alors qu\'un générique existe : ' + nom(c),
           detail: pluriel(idx[c].qte, 'boîte') + ' sur la période.',
           action: 'Lui proposer le générique.',
-          pourquoi: 'Inscrit au répertoire des génériques (base officielle des médicaments).',
+          pourquoi: 'Répertoire des génériques' + (e.generiques.generated ? ' · ' + dateFr(e.generiques.generated) : ''),
           source: 'generiques', date: (e.generiques.generated || '')
         });
       });
@@ -277,7 +339,10 @@
       return (rang[x.rubrique] - rang[y.rubrique]) || (x.rubrique === 'Va manquer' ? 0 : y.urgence - x.urgence) || (y.volume - x.volume);
     });
     var tete = [], ruptRepliees = [], nbRupt = 0;
-    pts.forEach(function (p) { if (p.rubrique === 'Va manquer' && ++nbRupt > RUPTURES_MAX) ruptRepliees.push(p); else tete.push(p); });
+    pts.forEach(function (p) { if (p.rubrique === 'Va manquer' && ++nbRupt > RUPTURES_MAX) ruptRepliees.push(p); else if (!p.replie) tete.push(p); });
+    var enTete = tete.slice(0, MAX_POINTS);
+    // le reste replié garde l'ordre des rubriques : ce qui dépasse les 7 places et les petites baisses
+    var reste = pts.filter(function (p) { return ruptRepliees.indexOf(p) < 0 && enTete.indexOf(p) < 0; });
 
     var sources = [
       { cle: 'ansm', nom: 'Ruptures ANSM', json: e.ansm, max: FRAIS_MAX_J },
@@ -292,8 +357,8 @@
     });
 
     return {
-      points: tete.slice(0, MAX_POINTS),
-      autres: ruptRepliees.concat(tete.slice(MAX_POINTS)),
+      points: enTete,
+      autres: ruptRepliees.concat(reste),
       autour: autour,
       sources: sources,
       achatsConnus: Object.keys(idx).length > 0,
@@ -363,20 +428,21 @@
       _noms = {}; _nomsDe = B;
       B.forEach(function (b) { if (b.cip13 && b.designation) _noms[String(b.cip13)] = b.designation; });
     }
-    var n = _noms[cip] || '';
-    return n ? n.charAt(0) + n.slice(1).toLowerCase() : '';
+    return _noms[cip] || '';   // le libellé tel quel : calculer() l'écrit avec nomProduit, comme les autres sources (24/11/2026)
   }
 
   function esc(s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s); }
 
+  // 24/11/2026 (Will) — alléger : à gauche la pastille et, dessous (place libre), la source officielle et sa date ;
+  // à droite le titre, les faits, l'action. La ligne qui redisait la pastille ou le titre est retirée.
   function ligneHtml(p) {
     var c = RUB_COULEUR[p.rubrique] || '#475569';
+    var src = p.pourquoi ? p.pourquoi + (p.date && p.pourquoi.indexOf(dateFr(p.date)) < 0 ? ' · relevé du ' + dateFr(p.date) : '') : '';
     return '<li class="bo-pt">' +
-      '<span class="bo-rub" style="--c:' + c + '">' + esc(p.rubrique) + '</span>' +
+      '<div class="bo-g"><span class="bo-rub" style="--c:' + c + '">' + esc(p.rubrique) + '</span>' + (src ? '<small class="bo-qui">' + esc(src) + '</small>' : '') + '</div>' +
       '<div class="bo-tx"><b>' + esc(p.titre) + '</b>' +
         '<span>' + esc(p.detail) + '</span>' +
-        '<span class="bo-act">→ ' + esc(p.action) + '</span>' +
-        '<small>' + esc(p.pourquoi) + (p.date && p.pourquoi.indexOf(dateFr(p.date)) < 0 ? ' · relevé du ' + esc(dateFr(p.date)) : '') + '</small>' +
+        (p.action ? '<span class="bo-act">→ ' + esc(p.action) + '</span>' : '') +
       '</div></li>';
   }
 
@@ -427,7 +493,7 @@
     var corps;
     if (!r.achatsConnus) {
       corps = '<p class="bo-vide">Aucun achat connu pour cette officine sur la période : le brief n\'a rien à croiser.</p>';
-    } else if (!r.points.length) {
+    } else if (!r.points.length && !r.autres.length) {
       corps = '<p class="bo-vide">' + (nonLues.length
         ? 'Rien d\'urgent dans les sources lues. ' + pluriel(nonLues.length, 'source') + ' n\'' + (nonLues.length > 1 ? 'ont' : 'a') + ' pas pu être lue' + (nonLues.length > 1 ? 's' : '') + ' : à revoir plus tard.'
         : 'Rien d\'urgent aujourd\'hui pour cette officine.') + '</p>';
@@ -439,9 +505,10 @@
       var replie = function (liste, un, plusieurs) {
         return liste.length ? '<details class="bo-plus"><summary>' + liste.length + (liste.length > 1 ? plusieurs : un) + '</summary><ol class="bo-liste">' + liste.map(ligneHtml).join('') + '</ol></details>' : '';
       };
-      corps = '<ol class="bo-liste">' + r.points.map(ligneHtml).join('') + '</ol>' +
+      var resteEnTete = r.points.some(function (p) { return p.rubrique !== 'Va manquer'; });
+      corps = (r.points.length ? '<ol class="bo-liste">' + r.points.map(ligneHtml).join('') + '</ol>' : '<p class="bo-vide">Rien d\'urgent aujourd\'hui pour cette officine.</p>') +
         replie(rupt, ruptEnTete ? ' autre rupture ou tension' : ' rupture ou tension', ruptEnTete ? ' autres ruptures ou tensions' : ' ruptures ou tensions') +
-        replie(reste, ' autre point', ' autres points');
+        replie(reste, resteEnTete ? ' autre point' : ' point', resteEnTete ? ' autres points' : ' points');
     }
     corps = '<h4 class="bo-part">Ce qui la touche</h4>' + corps + autourHtml(r.autour);
     var src = r.sources.map(function (s) {
@@ -466,14 +533,22 @@
   // Le panneau latéral (maquette C, choix de Will le 22/09/2026) : il glisse depuis la droite et laisse
   // les chiffres visibles à côté ; sur iPhone il monte depuis le bas. Accroché à <body> : .v2-wrap porte un transform
   // (animation d'entrée) qui rendrait un position:fixed relatif à la page.
+  function sousTitre(s) {
+    var rep = function (n) { return n + (n > 1 ? ' repliés' : ' replié') + ' plus bas'; };
+    if (s.nb && s.replies) return pluriel(s.nb, 'point') + ' en tête, ' + rep(s.replies);
+    if (s.nb) return pluriel(s.nb, 'point');
+    return s.replies ? (s.replies > 1 ? s.replies + ' points repliés plus bas' : '1 point replié plus bas') : '';
+  }
   function fenetreHtml(r) {
     var s = resume(r);
     return '<div class="bo-win" role="dialog" aria-modal="true" aria-labelledby="bo-win-t">' +
       '<div class="bo-win-h"><h3 id="bo-win-t">Infos du jour</h3>' + s.html +
         '<button type="button" class="bo-x" aria-label="Fermer" onclick="V2.briefOfficine.fermer()">×</button>' +
-        '<span class="pha-sub">ce qui la touche, tiré de ses achats' + (s.nb ? ' · ' + pluriel(s.nb, 'point') + (s.replies ? ' en tête, ' + s.replies + (s.replies > 1 ? ' repliés' : ' replié') + ' plus bas' : '') : '') + ', puis ce qui se passe autour d\'elle</span></div>' +
+        // 24/11/2026 (Will) — raccourci : « ce qui la touche… autour d'elle » redisait les deux titres du panneau.
+        // Reste le compte, vérifiable : en tête + repliés = la somme des nombres au-dessus.
+        (sousTitre(s) ? '<span class="pha-sub">' + sousTitre(s) + '</span>' : '') + '</div>' +
       '<div class="bo-win-b">' + corpsHtml(r) + '</div>' +
-      '<div class="bo-win-f"><span class="pha-sub">Se rouvre avec le bouton « Infos du jour ».</span>' +
+      '<div class="bo-win-f">' +   // 24/11/2026 (Will) : phrase « Se rouvre avec le bouton… » supprimée
         (r.points.length ? '<button type="button" class="v2-btn bo-imp" onclick="V2.briefOfficine.imprimer()">Imprimer pour l\'équipe</button>' : '') +
         '<button type="button" class="v2-btn dark" onclick="V2.briefOfficine.fermer()">Fermer</button></div>' +
     '</div>';
@@ -491,7 +566,11 @@
 
   var STYLE = '.bo-liste{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:10px}' +
     '.bo-pt{display:flex;gap:12px;align-items:flex-start}' +
-    '.bo-rub{flex:0 0 auto;min-width:96px;font-size:12px;font-weight:700;letter-spacing:.02em;color:var(--c);border:1px solid var(--c);border-radius:999px;padding:2px 8px;text-align:center}' +
+    /* 24/11/2026 (Will) — largeur FIXE commune, prise sur la plus longue (« Change bientôt », ~108 px mesurés sous WebKit) :
+       avec min-width 96 px, ses titres commençaient ~12 px plus à droite que ceux des autres pastilles. */
+    '.bo-g{flex:0 0 116px;width:116px;display:grid;gap:4px;justify-items:start}' +
+    '.bo-rub{flex:0 0 116px;box-sizing:border-box;width:116px;white-space:nowrap;font-size:12px;font-weight:700;letter-spacing:.02em;color:var(--c);border:1px solid var(--c);border-radius:999px;padding:2px 8px;text-align:center}' +
+    '.bo-qui{font-size:11px;line-height:1.35;color:var(--v2-muted,#64748b)}' +
     '.bo-tx{display:grid;gap:2px;font-size:13px;line-height:1.4;min-width:0}' +
     '.bo-tx b{font-weight:600}.bo-act{font-weight:500}.bo-tx small{color:var(--v2-muted,#64748b);font-size:12px}' +
     '.bo-vide{margin:8px 0 0;font-size:13.5px}' +
@@ -501,7 +580,7 @@
     '.bo-aut{margin-top:8px}.bo-aut h5{margin:0;font-size:13.5px;font-weight:700}.bo-aut .bo-vide{margin-top:4px;color:var(--v2-muted,#64748b)}' +
     '.bo-aut a{color:inherit}' +
     '.bo-src{margin-top:12px;font-size:12px;color:var(--v2-muted,#64748b)}.bo-ko{color:#B45309;font-weight:600}' +
-    '@media (max-width:520px){.bo-pt{flex-direction:column;gap:4px}.bo-rub{min-width:0}}' +
+    '@media (max-width:520px){.bo-pt{flex-direction:column;gap:4px}.bo-rub{flex:none;width:auto}.bo-g{flex:none;width:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}}' +
     '.bo-imp{font-size:12px;padding:4px 10px}' +
     /* résumé + point rouge */
     '.bo-sum{display:inline-flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--ip-ink-2,#334155)}' +
@@ -538,9 +617,8 @@
     '.bo-win-h .pha-sub{flex:1 1 100%}' +
     '.bo-x{position:absolute;right:14px;top:12px;width:34px;height:34px;border-radius:50%;border:1px solid var(--line-strong,#cbd2dd);background:var(--card-2,#f6f7fa);display:inline-flex;align-items:center;justify-content:center;font-size:18px;line-height:1;cursor:pointer;color:inherit}' +
     '.bo-win-b{flex:1;overflow:auto;padding:12px 20px 16px;-webkit-overflow-scrolling:touch}' +
-    '.bo-win-f{display:flex;gap:8px;padding:12px 20px;border-top:1px solid var(--line,#e2e8f0);background:var(--card-2,#f6f7fa);align-items:center;flex-wrap:wrap}' +
-    '.bo-win-f .pha-sub{flex:1}' +
-    '@media (max-width:640px){.bo-ov{align-items:flex-end}.bo-win-f .pha-sub{display:none}.bo-win-f{justify-content:flex-end}.bo-win{width:100%;height:88vh;border-radius:var(--r-card,16px) var(--r-card,16px) 0 0;box-shadow:0 -12px 40px -12px rgba(16,19,28,.35)}@keyframes bo-glisse{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}.bo-voir{margin-left:0;flex-basis:100%}}' +
+    '.bo-win-f{display:flex;gap:8px;padding:12px 20px;border-top:1px solid var(--line,#e2e8f0);background:var(--card-2,#f6f7fa);align-items:center;justify-content:flex-end;flex-wrap:wrap}' +
+    '@media (max-width:640px){.bo-ov{align-items:flex-end}.bo-win{width:100%;height:88vh;border-radius:var(--r-card,16px) var(--r-card,16px) 0 0;box-shadow:0 -12px 40px -12px rgba(16,19,28,.35)}@keyframes bo-glisse{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}.bo-voir{margin-left:0;flex-basis:100%}}' +
     '@media print{body.bo-imprime *{visibility:hidden}body.bo-imprime #bo-ov,body.bo-imprime #bo-ov *{visibility:visible}' +
     'body.bo-imprime #bo-ov{position:absolute;left:0;top:0;width:100%;height:auto;display:block;padding:0;background:#fff}' +
     'body.bo-imprime .bo-win{height:auto;max-height:none;box-shadow:none;width:100%;animation:none}body.bo-imprime .bo-win-b{overflow:visible}' +
@@ -646,5 +724,5 @@
     return '<button type="button" class="bo-open" id="bo-open" disabled onclick="V2.briefOfficine.ouvrir()">' + boutonHtml(null) + '</button>';
   }
 
-  V2.briefOfficine = { calculer: calculer, autourDElle: autourDElle, hydrate: hydrate, imprimer: imprimer, ouvrir: ouvrir, fermer: fermer, bouton: bouton, nePlusCommandes: nePlusCommandes, moisFr: moisFr };
+  V2.briefOfficine = { calculer: calculer, autourDElle: autourDElle, nomProduit: nomProduit, hydrate: hydrate, imprimer: imprimer, ouvrir: ouvrir, fermer: fermer, bouton: bouton, nePlusCommandes: nePlusCommandes, moisFr: moisFr };
 })();
