@@ -262,6 +262,31 @@ POSITIONS_CORRIGEES = {
     '2261952': (47.21142, -1.61629),  # Saint-Herblain
     '2145331': (47.6472, -2.72487),   # Séné
     '2265983': (47.89118, -2.83452),  # Locminé
+    # 24/11/2026 — 22 officines Essentiels Pharma (bloc T10 de l'écran Tournées) : sans adresse exacte, elles étaient posées au centre
+    # de leur commune ou en spirale autour (jusqu'à 3,3 km d'écart ; deux d'entre elles au même point à Angers). Position officielle
+    # FINESS du 12/05/2026 (lignes geolocalisation, Lambert 93 converti), contrôlée au géocodeur IGN sur deux adresses.
+    '2024173': (47.46514, -0.59552),  # PHARMACIE DE L HORLOGE, 49000 Angers
+    '2132516': (47.48843, -0.54373),  # GRANDE PHARMACIE, 49100 Angers
+    '2024346': (47.47214, -0.542),  # NOUVELLE PHARMACIE PIERRE LISE, 49100 Angers
+    '2000899': (47.47132, -0.55452),  # PHARMACIE DES HALLES, 49100 Angers
+    '2279818': (47.42074, -0.61046),  # PHARMACIE DE BOUCHEMAINE, 49080 Bouchemaine
+    '2247587': (47.47326, -0.5499),  # GRANDE PHARMACIE DU PILORI, 49100 Angers
+    '2263530': (47.46458, -0.5578),  # PHARMACIE PICHARD, 49100 Angers
+    '2132542': (47.46689, -0.59369),  # NOUVELLE PHARMACIE GRAND MAINE, 49000 Angers
+    '2132741': (47.46689, -0.55757),  # PHARMACIE LE GALL, 49100 Angers
+    '2132799': (47.47546, -0.54946),  # PHARMACIE DE L UNIVERSITE, 49100 Angers
+    '2024084': (47.45599, -0.401),  # PHARMACIE DE L AUTHION, 49800 Loire Authion
+    '2279142': (47.26013, -0.0755),  # PHARMACIE DU THOUET, 49400 Saumur
+    '2134576': (47.61549, -0.46388),  # PHARMACIE DES ERABLES, 49125 Tierce
+    '2183162': (48.01208, 0.20562),  # PHIE DE LA CROIX DE PIERRE, 72000 Le Mans
+    '2139108': (48.0624, -0.75499),  # PHARMACIE LAVAL MURAT, 53000 Laval
+    '2138827': (47.82872, -0.70097),  # PHARMACIE DESJOBERT, 53200 Chateau Gontier Sur Mayenn
+    '2252246': (47.21616, -1.68559),  # PHARMACIE DE LA LIBERATION, 44220 Coueron
+    '2128049': (47.16498, -1.48374),  # PHARMACIE DU CHENE, 44120 Vertou
+    '2126298': (47.22725, -1.56952),  # PHARMACIE DES HAUTS PAVES, 44000 Nantes
+    '2125776': (47.24486, -1.5335),  # PHARMACIE DE L ERAUDIERE, 44300 Nantes
+    '2041251': (46.97838, -0.20385),  # PHARMACIE DES CAPUCINS, 79100 Thouars
+    '2133331': (47.04613, -0.87539),  # PHARMACIE QUILLET CA VAN, 49300 Cholet
 }
 
 
