@@ -157,3 +157,29 @@ test('reconnu : le nom complet, avec ou sans sa ville, reste une certitude', () 
   assert.equal(r.etat, 'reconnu', 'avec le « œ » lu, le nom entier est retrouvé');
   assert.equal(r.officine.id, '2200003');
 });
+
+// 24/11/2026 — le lieu écrit dans le titre. Officines fictives.
+const LIEUX_P = R.indexer([
+  { id: '9100001', name: 'PHARMACIE DU LOINTAIN', ville: 'VILLE-PROCHE', cp: '49999' },
+]);
+const LIEUX_N = R.indexer([
+  { id: '9100002', name: 'PHARMACIE MARTINET', ville: 'VILLE-LOIN', cp: '63999' },
+  { id: '9100003', name: 'PHARMACIE DE OUTREMER', ville: 'VILLE-MER', cp: 6999 },   // un code postal lu comme un nombre
+]);
+
+test('faux positif : un code postal dans le titre qui n’est pas celui de l’officine', () => {
+  assert.equal(R.apparier('Pharmacie Martinet (49999)', LIEUX_P, LIEUX_N, {}).officine, null);
+  const r = R.apparier('Pharmacie Martinet (63999)', LIEUX_P, LIEUX_N, {});
+  assert.equal(r.etat, 'reconnu');
+  assert.equal(r.officine.id, '9100002');
+  assert.equal(R.apparier('Phie de outremer 06999', LIEUX_P, LIEUX_N, {}).etat, 'reconnu');
+});
+
+test('à confirmer : une ville connue entre parenthèses qui n’est pas celle de l’officine', () => {
+  const villes = { 'VILLE LOIN': 1, 'VILLE PROCHE': 1 };
+  assert.equal(R.apparier('Phie du lointain (Ville-Loin)', LIEUX_P, [], {}, villes).etat, 'confirmer');
+  assert.equal(R.apparier('Phie du lointain (Ville-Proche)', LIEUX_P, [], {}, villes).etat, 'reconnu');
+  // une parenthèse qui n'est pas une ville connue reste un contact : rien ne change
+  assert.equal(R.apparier('Phie du lointain (Charlotte)', LIEUX_P, [], {}, villes).etat, 'reconnu');
+  assert.equal(R.apparier('Phie du lointain (Ville-Loin)', LIEUX_P, [], {}).etat, 'reconnu');   // sans liste de villes : comme avant
+});

@@ -101,20 +101,37 @@
   function indexOfficines() {
     var R = window.V2RECO;
     if (!R) return null;
-    var porte = (V2.pharmacies || []).map(function (p) {
-      return { id: p.id, name: p.name, ville: p.ville || '' };
+    var tous = V2.pharmacies || [], moi = String((V2.user && V2.user.commercial) || '');
+    var idsPorte = {}, villes = {}, k;
+    for (k = 0; k < tous.length; k++) {
+      idsPorte[String(tous[k].id)] = 1;
+      if (tous[k].ville) villes[R.normaliser(tous[k].ville)] = 1;
+    }
+    // ⚠️ 24/11/2026 — le « portefeuille » de la reconnaissance, ce sont les officines DU commercial
+    // (p.comms), pas tout le fichier de l'équipe (2 114 officines) : un nom courant y paraissait
+    // unique et sortait chez un collègue à l'autre bout de la France (« Phie Bellevue » à Limoges,
+    // « Phie de Paris » à Paris 15e). Mesuré sur l'agenda de Will (636 événements) : 63
+    // rattachements à une officine de collègue (13 « reconnus », 50 « à confirmer »), presque
+    // tous à l'autre bout de la France ; trois au plus étaient plausibles. Celles des collègues
+    // restent trouvables par l'annuaire national, quand il est chargé, avec ses homonymes pour arbitre.
+    // Sans officine à son nom (direction), on garde tout le fichier.
+    var miennes = moi ? tous.filter(function (p) { return (p.comms || []).indexOf(moi) !== -1; }) : [];
+    if (!miennes.length) miennes = tous;
+    var porte = miennes.map(function (p) {
+      return { id: p.id, name: p.name, ville: p.ville || '', cp: p.cp || '' };
     });
-    var idsPorte = {}, k;
-    for (k = 0; k < porte.length; k++) idsPorte[String(porte[k].id)] = 1;
     var nat = [], D = window.PHARMA_FR;
     if (D && D.p) {
       // [lat, lng, uga, grp, seg, comm, nom, ville, cp, tel, titulaire, email, ca, id]
       for (var i = 0; i < D.p.length; i++) {
         var l = D.p[i];
-        if (l[6] && l[13] != null) nat.push({ id: String(l[13]), name: l[6], ville: l[7] || '' });
+        if (l[6] && l[13] != null) {
+          nat.push({ id: String(l[13]), name: l[6], ville: l[7] || '', cp: l[8] || '' });
+          if (l[7]) villes[R.normaliser(l[7])] = 1;
+        }
       }
     }
-    return { porte: R.indexer(porte), nat: R.indexer(nat), idsPorte: idsPorte };
+    return { porte: R.indexer(porte), nat: R.indexer(nat), idsPorte: idsPorte, villes: villes };
   }
   // 23/11/2026 — l'onglet « Agenda du mois » de la To do (v2-todo-mois.js) reconnaît les officines de la même façon.
   V2.planningIndex = indexOfficines;
@@ -1130,7 +1147,7 @@
         if (idx && R) {
           for (var b = 0; b < brut.length; b++) {
             var ev = brut[b];
-            var m = R.apparier(ev.titre, idx.porte, idx.nat, alias);
+            var m = R.apparier(ev.titre, idx.porte, idx.nat, alias, idx.villes);
             if (!m.officine) continue;
             var cipEv = String(m.officine.id);
             if (ev.date < auj) {

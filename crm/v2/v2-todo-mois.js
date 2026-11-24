@@ -111,7 +111,7 @@
     if (cle === RECO_CLE) return RECO_LISTE;
     var R = window.V2RECO, idx = R && V2.planningIndex ? V2.planningIndex() : null, liste = [];
     if (idx && RECO) RECO.brut.forEach(function (ev) {
-      var m = R.apparier(ev.titre, idx.porte, idx.nat, RECO.alias);
+      var m = R.apparier(ev.titre, idx.porte, idx.nat, RECO.alias, idx.villes);
       if (m && m.officine) liste.push({ date: ev.date, debut: ev.debut, fin: ev.fin, jour_entier: ev.jour_entier, cip: String(m.officine.id), nom: m.officine.name, ville: m.officine.ville || '', etat: m.etat });
     });
     RECO_CLE = cle; RECO_LISTE = liste;

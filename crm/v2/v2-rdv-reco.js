@@ -93,10 +93,27 @@
       var j = {}, mm = d.split(' ');
       for (var k = 0; k < mm.length; k++) j[mm[k]] = 1;
       out.push({ o: o, dist: d, jetons: j, nbJetons: mm.length,
-                 ville: M.normaliser(o.ville || '') });
+                 ville: M.normaliser(o.ville || ''), cp: codePostal(o.cp) });
     }
     return out;
   };
+
+  // « 6000 » lu comme un nombre est « 06000 ». Rien d'autre qu'un code postal à cinq chiffres.
+  function codePostal(v) {
+    var c = String(v == null ? '' : v).trim();
+    if (/^\d{4}$/.test(c)) c = '0' + c;
+    return /^\d{5}$/.test(c) ? c : '';
+  }
+
+  // Ce que le titre dit du LIEU, hors du nom : un code postal (« Pharmacie Martin (49250) »),
+  // ou une ville connue écrite entre parenthèses (« Phie de saint Martin (segre en Anjou bleu) »).
+  // Une parenthèse qui n'est pas une ville connue (« (Charlotte) », un contact) ne dit rien.
+  function lieux(titre, villes) {
+    var brut = String(titre == null ? '' : titre), cps = [], vs = [];
+    M.normaliser(brut).split(' ').forEach(function (m) { if (/^(0[1-9]|[1-8]\d|9[0-5]|97)\d{3}$/.test(m)) cps.push(m); });
+    if (villes) brut.replace(/\(([^)]*)\)/g, function (_, x) { var v = M.normaliser(x); if (v && villes[v]) vs.push(v); return ''; });
+    return { cps: cps, villes: vs };
+  }
 
   // Similarité de deux chaînes : part des bigrammes communs. Suffisant ici,
   // et sans dépendance — le projet n'a pas d'étape de build.
@@ -112,7 +129,7 @@
     return (2 * n) / (a.length - 1 + b.length - 1);
   }
 
-  function chercher(seg, marqueur, index) {
+  function chercher(seg, marqueur, index, lieu) {
     var vide = { officine: null, score: 0, candidats: 0, dist: '' };
     if (!seg) return vide;
     var js = seg.split(' ').filter(function (m) { return m && !MOTS_VIDES[m]; });
@@ -149,6 +166,17 @@
       if (seg === e.dist) score = 1;
       // La ville écrite dans le titre départage deux homonymes.
       if (e.ville && enveloppe.indexOf(' ' + e.ville + ' ') !== -1) score = Math.min(1, score + 0.12);
+      // ⚠️ 24/11/2026 — le lieu écrit dans le titre tranche. Un code postal qui n'est pas celui de
+      // l'officine : ce n'est pas elle (« Pharmacie Martin (49250) » n'est pas Combronde, 63460).
+      // Une ville entre parenthèses qui n'est pas la sienne : jamais une certitude.
+      if (lieu && lieu.cps.length && e.cp) {
+        if (lieu.cps.indexOf(e.cp) === -1) continue;
+        score = Math.min(1, score + 0.12);
+      }
+      if (lieu && lieu.villes.length && e.ville) {
+        if (lieu.villes.indexOf(e.ville) === -1) score = Math.min(score, SEUIL_RECONNU - 0.01);
+        else score = Math.min(1, score + 0.12);
+      }
       // ⚠️ Un nom qui n'explique pas TOUT le titre n'est jamais une certitude (24/11/2026) :
       // « Pharmacie boulevard de l'Est » sortait « reconnu » en PHARMACIE DU BOULEVARD à Brive,
       // « Phie cœur de bourg » en PHARMACIE DE BOURG, parce qu'un nom d'un seul mot est
@@ -178,10 +206,13 @@
     return null;
   }
 
-  M.apparier = function (titre, indexPortefeuille, indexNational, alias) {
+  // `villes` (facultatif) : les villes connues, normalisées ({ 'SEGRE EN ANJOU BLEU': 1 }), pour lire
+  // une ville écrite entre parenthèses. Sans elles, seule la ville hors parenthèses compte.
+  M.apparier = function (titre, indexPortefeuille, indexNational, alias, villes) {
     var rien = { officine: null, score: 0, candidats: 0, source: null, etat: 'ignore' };
     var seg = M.segment(titre);
     if (!seg.texte) return rien;
+    var lieu = lieux(titre, villes);
 
     // 1. Un rattachement déjà validé à la main gagne toujours.
     var cip = (alias || {})[seg.texte];
@@ -191,7 +222,7 @@
     }
 
     // 2. Le portefeuille d'abord : ce sont ses clients.
-    var p = chercher(seg.texte, seg.marqueur, indexPortefeuille || []);
+    var p = chercher(seg.texte, seg.marqueur, indexPortefeuille || [], lieu);
     var meilleur = { r: p, source: 'portefeuille' };
 
     if (!seg.marqueur) {
@@ -205,7 +236,7 @@
       // et n'allait donc jamais voir « PHARMACIE DES PLANTES » à Angers, à
       // deux pas du secteur. On ne s'arrête au portefeuille que si la
       // correspondance y est quasi parfaite ; sinon on compare les deux.
-      var n = chercher(seg.texte, seg.marqueur, indexNational || []);
+      var n = chercher(seg.texte, seg.marqueur, indexNational || [], lieu);
       if (n.officine && n.score > p.score) meilleur = { r: n, source: 'annuaire' };
     }
 
