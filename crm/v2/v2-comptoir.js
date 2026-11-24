@@ -226,8 +226,8 @@
   }
   function favOu() {
     if (FAV.etat === 1) return '';
-    if (FAV.backend === 'supabase') return 'Elle vous suit sur tous vos appareils.';
-    return V2.user ? 'Gardée sur cet appareil pour le moment : la base n\'a pas répondu.' : 'Gardée sur cet appareil.';
+    if (FAV.backend === 'supabase') return 'Cette liste vous suit sur tous vos appareils.';
+    return V2.user ? 'Cette liste est gardée sur cet appareil pour le moment : la base n\'a pas répondu.' : 'Cette liste est gardée sur cet appareil.';
   }
   function favVideTxt() {
     return FAV.etat === 1 ? 'Lecture de vos favoris…'

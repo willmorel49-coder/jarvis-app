@@ -138,7 +138,7 @@ test('b. sans compte : étoile → carte, volet, panier', async () => {
   h = K.rendre(); t = sansBalises(h);
   assert.match(t, /Tout mettre au panier \(1\)/);
   assert.match(t, /ajouté le 09\/11\/2026/, 'le jour d\'ajout vient de l\'horloge de l\'écran');
-  assert.match(t, /Gardée sur cet appareil\./);
+  assert.match(t, /Cette liste est gardée sur cet appareil\./);
   K.favorisAuPanier();
   assert.deepEqual(Object.keys(sb.V2.produits.S.sel), [E]);
   await K.favori(E);
@@ -162,7 +162,7 @@ test('c. avec compte : écrit dans profils, relit avant d\'écrire, retire', asy
     assert.deepEqual(items, [A, B, G], 'le plus récent d\'abord, rien d\'écrasé');
     assert.match(sansBalises(K.rendre()), /Mes favoris 3/);
     K.porte('fav');
-    assert.match(sansBalises(K.rendre()), /Elle vous suit sur tous vos appareils\./);
+    assert.match(sansBalises(K.rendre()), /Cette liste vous suit sur tous vos appareils\./);
     assert.equal(await K.favori(B), true);
     assert.deepEqual(B0.lignes['__favprod_u1__'].items.map((x) => x.c), [A, G]);
   }
