@@ -20,8 +20,12 @@
   }
   function charger(cip) {
     var tr = 'etude-france/' + cip.slice(-2) + '.json';
-    return Promise.all([json(tr).then(function (t) { S.tr[cip.slice(-2)] = t || false; }), json('etude-france/index.json'), json('ansm-archive.json'), json('ansm-causes.json'), json('ema-penuries.json')])
-      .then(function (r) { S.idx = r[1]; S.arch = r[2]; S.causes = r[3]; S.pen = r[4]; S.charge = S.charge || {}; S.charge[cip] = 1; });
+    return Promise.all([json(tr).then(function (t) { S.tr[cip.slice(-2)] = t || false; }), json('etude-france/index.json'), json('ansm-archive.json'), json('ansm-causes.json'), json('ema-penuries.json'), json('ansm-signalements.json'), json('mitm.json')])
+      .then(function (r) {
+        S.idx = r[1]; S.arch = r[2]; S.causes = r[3]; S.pen = r[4]; S.sig = r[5];
+        if (!S.mitm && r[6] && r[6].cips) { S.mitm = {}; r[6].cips.forEach(function (c) { S.mitm[c] = 1; }); }
+        S.charge = S.charge || {}; S.charge[cip] = 1;
+      });
   }
   function comptoir() { return V2.comptoir || {}; }
   function ligne(cip) {
@@ -84,6 +88,9 @@
     var nom = o.l.d;
     out.ruptures = K.rupturesPassees(S.arch, nom);
     out.penuries = K.penuriesEma(S.pen, cip, nom);
+    out.sig = S.sig ? K.signalementsDe(S.sig, cip) : null;   // null = fichier ANSM absent : on garde l'affichage d'avant
+    out.sigMeta = S.sig || null;
+    out.risque = S.sig && S.mitm ? K.risqueRupture(S.sig, out.sig, !!S.mitm[cip], out.france) : null;
     out.arch = S.arch; out.causes = S.causes; out.idx = S.idx;
     return out;
   };
@@ -218,10 +225,24 @@
     // L'archive ANSM est rattachée par la MARQUE (pas de CIP) : un épisode d'un autre dosage est dit « autre présentation », jamais compté comme une rupture de celle-ci.
     var an = x.ansm, rp = (D.ruptures || []).map(function (e) { return { e: e, z: K.memeDosage(D.l.d, e.spec || e.k) }; }).sort(function (a, b) { return (a.z === false) - (b.z === false); }),
       ici = rp.filter(function (r) { return r.z !== false; }), flou = ici.some(function (r) { return r.z === null; }), pl = ici.length > 1 ? 's' : '';
-    h += '<div class="et-f"><em>Ruptures en France (ANSM)</em>' + (an ? '<b>' + esc(an.statut) + ' en ce moment</b>' : ici.length ? '<b>' + ici.length + ' épisode' + pl + ' passé' + pl + (flou ? ' sur la marque' : '') + '</b>' : rp.length ? '<b>Aucune rupture de ce dosage enregistrée</b>' : '<b>Aucune rupture enregistrée</b>');
+    // Signalements ANSM par CIP (fichiers annuels) et risque appris sur le passé (rétro-test du robot) : D.sig null = fichier absent, affichage d'avant.
+    var sg = D.sig, rq = D.risque, sm = D.sigMeta, per = sm && sm.annees ? sm.annees[0] + ' à ' + sm.annees[1] : '', sgTete = !an && !rq && sg;
+    h += '<div class="et-f"><em>Ruptures en France (ANSM)</em>' + (an ? '<b>' + esc(an.statut) + ' en ce moment</b>' : rq ? '<b>Risque de rupture ' + rq.niveau + '</b>'
+      : sgTete ? '<b>' + (sg.length ? sg.length + ' signalement' + (sg.length > 1 ? 's' : '') + ' de ' + per : 'Aucun signalement de ' + per) + '</b>'
+      : ici.length ? '<b>' + ici.length + ' épisode' + pl + ' passé' + pl + (flou ? ' sur la marque' : '') + '</b>' : rp.length ? '<b>Aucune rupture de ce dosage enregistrée</b>' : '<b>Aucune rupture enregistrée</b>');
+    if (rq) {
+      h += '<span>Parmi les ' + fr(rq.n) + ' présentations au même profil, ' + fr(rq.taux * 100) + ' % ont été signalées à l\'ANSM l\'année suivante (mesuré sur ' + rq.annees.join(' et ') + ').</span>';
+      h += '<span class="et-sm">Profil : ' + (rq.mitm ? 'médicament d\'intérêt thérapeutique majeur' : 'hors liste des médicaments d\'intérêt thérapeutique majeur') + ' · ' +
+        (rq.recents ? rq.recents + ' signalement' + (rq.recents > 1 ? 's' : '') : 'aucun signalement') + ' en ' + rq.fenetre[0] + '-' + rq.fenetre[1] + ' · demande France ' + (rq.baisse ? 'en baisse' : 'stable ou en hausse') + '.</span>';
+    }
+    if (sg && !sgTete) {
+      var parAn = {}; sg.forEach(function (d) { parAn[d.slice(0, 4)] = (parAn[d.slice(0, 4)] || 0) + 1; });
+      var ans = []; for (var yA = sm.annees[0]; yA <= sm.annees[1]; yA++) ans.push(yA + ' : ' + (parAn[yA] || 0));
+      h += '<span>' + (sg.length ? 'Signalements de cette présentation (code CIP) : ' + ans.join(' · ') + ', le dernier le ' + dateJ(sg[sg.length - 1]) : 'Aucun signalement de cette présentation (code CIP) de ' + per) + '.</span>';
+    } else if (sgTete && sg.length) h += '<span>Le dernier le ' + dateJ(sg[sg.length - 1]) + ' (code CIP de cette présentation).</span>';
     rp.slice(0, 2).forEach(function (r) { var e = r.e; h += '<span>' + (r.z === false ? 'Autre présentation de la marque (' + esc(String(e.spec || e.k).replace(/\s*–.*$/, '')) + ')' : esc(String(e.spec || e.k).replace(/\s*–.*$/, ''))) + ' : ' + esc((e.st || '').toLowerCase()) + ' du ' + dateJ(e.d) + ' au ' + dateJ(e.f) + ' (' + fr(e.j) + ' jours)</span>'; });
     var ca = D.causes; if (ca && ca.causes && ca.derniere_complete && ca.causes[ca.derniere_complete] && ca.causes[ca.derniere_complete][0]) { var c0 = ca.causes[ca.derniere_complete][0]; h += '<span class="et-sm">Cause la plus fréquente des signalements en ' + ca.derniere_complete + ' : ' + esc(c0.c.toLowerCase()) + ' (' + fr(c0.p) + ' %).</span>'; }
-    h += '<span class="et-sm">Historique ANSM conservé depuis ' + (D.arch && D.arch.episodes && D.arch.episodes.length ? moisLib(D.arch.episodes.reduce(function (m, e) { return e.d < m ? e.d : m; }, '9999').slice(0, 7)) : 'peu') + '.</span></div>';
+    h += '<span class="et-sm">' + (sm ? 'Sources : signalements annuels de l\'ANSM (' + per + ') et suivi quotidien depuis ' : 'Historique ANSM conservé depuis ') + (D.arch && D.arch.episodes && D.arch.episodes.length ? moisLib(D.arch.episodes.reduce(function (m, e) { return e.d < m ? e.d : m; }, '9999').slice(0, 7)) : 'peu') + '.</span></div>';
     var pn = D.penuries || [];
     h += '<div class="et-f"><em>Pénuries européennes (agence européenne)</em>' + (pn.length ? '<b>' + pn.length + ' signalement' + (pn.length > 1 ? 's' : '') + '</b>' : '<b>Aucune pénurie signalée</b>');
     pn.slice(0, 2).forEach(function (p) { h += '<span>' + esc(p.name) + ' : pénurie signalée le ' + dateJ(p.start) + ', ' + (/resolved/i.test(p.status) ? 'aujourd\'hui résolue' + (p.resolution ? ' (le ' + dateJ(p.resolution) + ')' : '') : 'toujours en cours') + '</span>'; });

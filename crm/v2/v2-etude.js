@@ -143,7 +143,27 @@
     });
     return out;
   }
+  // Signalements ANSM d'une présentation (ansm-signalements.json, CIP13 exact, 2022 → dernière année complète), en dates ISO.
+  function signalementsDe(sig, cip) {
+    var l = sig && sig.d && sig.d[cip];
+    return (l || []).map(function (d) { return '20' + d.slice(0, 2) + '-' + d.slice(2, 4) + '-' + d.slice(4, 6); });
+  }
+  // Risque de rupture : le profil du produit (MITM ou non · signalements des deux dernières années complètes · demande France en
+  // baisse de plus de 10 % ou non) et la part des présentations au même profil signalées l'année suivante, mesurée sur le passé
+  // par generate_ansm_signalements.py (rétro-test). Aucun taux n'est écrit ici. null = pas de quoi comparer.
+  // france = resumeFrance(...) : le rétro-test ne compte que les présentations remboursées l'année d'avant (l12 > 0).
+  function risqueRupture(sig, dates, estMitm, france) {
+    var t = sig && sig.test, fen = sig && sig.fenetre;
+    if (!t || !t.cases || !fen || !france || !(france.l12 > 0)) return null;
+    var recents = (dates || []).filter(function (d) { var y = +d.slice(0, 4); return y >= fen[0] && y <= fen[1]; }).length,
+      baisse = france.evo != null && isFinite(france.evo) && france.evo < (t.baisse != null ? t.baisse : -0.1),
+      cle = (estMitm ? 'M' : 'N') + '|' + (recents >= 3 ? '3+' : recents) + '|' + (baisse ? 'b' : 's'), c = t.cases[cle];
+    if (!c || !(c[0] > 0)) return null;
+    var taux = c[1] / c[0];
+    return { taux: taux, n: c[0], niveau: taux >= 0.3 ? 'élevé' : taux >= 0.1 ? 'moyen' : 'faible', cle: cle, mitm: !!estMitm, baisse: baisse,
+      recents: recents, fenetre: fen, annees: t.annees || [] };
+  }
   E._calc = { moisListe: moisListe, serieDe: serieDe, resumeFrance: resumeFrance, saisonIndices: saisonIndices, saisonAnnees: saisonAnnees, periodeAnnees: periodeAnnees, partsPrescripteurs: partsPrescripteurs,
     tendanceCommune: tendanceCommune, regionDeCp: regionDeCp, partsRegions: partsRegions, partsAge: partsAge, niveauxPrevision: niveauxPrevision,
-    marqueDe: marqueDe, rupturesPassees: rupturesPassees, memeDosage: memeDosage, penuriesEma: penuriesEma, pct: pct, fr: fr };
+    marqueDe: marqueDe, rupturesPassees: rupturesPassees, memeDosage: memeDosage, penuriesEma: penuriesEma, signalementsDe: signalementsDe, risqueRupture: risqueRupture, pct: pct, fr: fr };
 })();

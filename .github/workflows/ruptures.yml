@@ -28,14 +28,19 @@ jobs:
         run: pip install openpyxl
       - name: Recalculer les ruptures
         run: python3 generate_ruptures.py
+      # Étude par produit (24/11/2026) : signalements ANSM par CIP depuis 2022 + risque appris sur le passé.
+      # Un échec ici ne doit pas priver la liste des ruptures de sa mise à jour : l'ancien fichier reste en place.
+      - name: Signalements par produit et risque de rupture
+        continue-on-error: true
+        run: python3 generate_ansm_signalements.py
       - name: Committer si changement
         run: |
-          if git diff --quiet -- crm/v2/ruptures-data.js; then
+          if git diff --quiet -- crm/v2/ruptures-data.js crm/v2/ansm-signalements.json; then
             echo "Pas de changement (liste ANSM inchangée)."
           else
             git config user.name  "JARVIS copilote"
             git config user.email "actions@users.noreplace.github.com"
-            git add crm/v2/ruptures-data.js
+            git add crm/v2/ruptures-data.js crm/v2/ansm-signalements.json
             git commit -m "data(copilote): ruptures ANSM $(date -u +%Y-%m-%d)"
             # 24 robots poussent sur le meme depot et GitHub livre leurs executions
             # planifiees en paquet : une seule reprise ne suffit pas (le 03/08, ansm-dispo,
