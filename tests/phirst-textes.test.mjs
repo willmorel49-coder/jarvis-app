@@ -93,7 +93,7 @@ describe('idée 2 : les réponses de Yann', () => {
 describe('idée 8 : les voisines équipées', () => {
   const R = (id, nom, ville, lat, lon, extra = {}) => ({ id, nom, ville, lat, lon, pose: 'Robot Riedl posé', an: 2024, visite: false, ...extra })
   const nantes = { lat: 47.2184, lon: -1.5536 }
-  const refs = [R('1', 'Pharmacie Zéro', 'Challans', 46.846, -1.878), R('2', 'Pharmacie Un', 'Rezé', 47.1827, -1.5496), R('3', 'Pharmacie Deux', 'Saumur', 47.26, -0.077), R('4', 'Sans position', 'X', null, null)]
+  const refs = [R('1', 'Pharmacie des Sables Pâles', 'Challans', 46.846, -1.878), R('2', 'Pharmacie du Val Tamaris', 'Rezé', 47.1827, -1.5496), R('3', 'Pharmacie de la Lande Rousse', 'Saumur', 47.26, -0.077), R('4', 'Sans position', 'X', null, null)]
   test('les deux plus proches, la distance en km (au moins 1)', () => {
     const v = T.voisines(refs, nantes, 2)
     assert.deepEqual(v.map((x) => x.ref.id), ['2', '1']); assert.equal(v[0].km, 4); assert.ok(v[1].km > 40 && v[1].km < 60)
@@ -120,8 +120,8 @@ describe('idée 8 : les voisines équipées', () => {
     assert.equal(T.de('Auray'), 'd’Auray'); assert.equal(T.de('Le Mans'), 'du Mans'); assert.equal(T.de('Quimper'), 'de Quimper')
   })
   test('le formulaire d’ajout : tout obligatoire, code postal à cinq chiffres, année à quatre', () => {
-    const ok = { nom: ' Pharmacie Un ', ville: 'Rezé', cp: '44400', pose: 'Robot Riedl posé', an: '2024' }
-    assert.deepEqual(T.validerReference(ok), { nom: 'Pharmacie Un', ville: 'Rezé', cp: '44400', pose: 'Robot Riedl posé', an: 2024 })
+    const ok = { nom: ' Pharmacie du Val Tamaris ', ville: 'Rezé', cp: '44400', pose: 'Robot Riedl posé', an: '2024' }
+    assert.deepEqual(T.validerReference(ok), { nom: 'Pharmacie du Val Tamaris', ville: 'Rezé', cp: '44400', pose: 'Robot Riedl posé', an: 2024 })
     for (const k of ['nom', 'ville', 'pose', 'an']) assert.ok(T.validerReference({ ...ok, [k]: '' }).erreur, k)
     assert.match(T.validerReference({ ...ok, cp: '444' }).erreur, /cinq chiffres/); assert.ok(T.validerReference({ ...ok, an: '24' }).erreur)
   })
@@ -133,9 +133,9 @@ describe('idée 8 : les voisines équipées', () => {
     assert.equal(T.resumeReferences([l, T.ligneReference({ nom: 'x', ville: 'y', cp: '29100', pose: 'z', an: 2020 }, null, 'r-2')]), '1 peut être citée · 1 accepte une visite')
   })
   test('la position : la pharmacie du même nom, sinon la commune, sinon rien', () => {
-    const l = [{ nom: 'Pharmacie du Port', lat: 1, lon: 1 }, { nom: 'Pharmacie des Tilleuls', nom_affiche: 'Pharmacie des Tilleuls', lat: 2, lon: 2 }, { nom: 'Sans', lat: null, lon: 3 }]
-    assert.deepEqual(T.choisirPosition(l, 'Pharmacie des Tilleuls'), { lat: 2, lon: 2, precise: true })
-    assert.deepEqual(T.choisirPosition(l, 'Pharmacie Inconnue'), { lat: 1, lon: 1, precise: false })
+    const l = [{ nom: 'Pharmacie du Pré Brumeux', lat: 1, lon: 1 }, { nom: 'Pharmacie des Hauts Brumeux', nom_affiche: 'Pharmacie des Hauts Brumeux', lat: 2, lon: 2 }, { nom: 'Sans', lat: null, lon: 3 }]
+    assert.deepEqual(T.choisirPosition(l, 'Pharmacie des Hauts Brumeux'), { lat: 2, lon: 2, precise: true })
+    assert.deepEqual(T.choisirPosition(l, 'Pharmacie des Ormes Clairs'), { lat: 1, lon: 1, precise: false })
     assert.equal(T.choisirPosition([{ nom: 'x', lat: null, lon: null }], 'x'), null); assert.equal(T.choisirPosition(null, 'x'), null)
   })
 })
