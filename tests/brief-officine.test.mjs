@@ -430,3 +430,54 @@ test('en-tête du panneau : chaque sorte a son nom, et en tête + repliés = tot
   assert.equal(replis, 12, 'les listes repliées du bas ne font pas le nombre annoncé dans le sous-titre');
   assert.equal((ov.innerHTML.match(/<li class="bo-pt">/g) || []).length, total, 'chaque point est dans le panneau, une seule fois');
 });
+
+// 24/11/2026 — en bas du panneau, « 29 autres ruptures ou tensions » alors qu'AUCUNE rupture n'était affichée en
+// tête (officine 2003659, production) : « autres » de trop. Règle : la liste repliée des ruptures ne dit « autres »
+// que si au moins une rupture est déjà visible au-dessus ; « autres points » reste juste, des points sont toujours en tête.
+test('liste repliée des ruptures : « autres » seulement si une rupture est déjà affichée en tête', async () => {
+  const rien = () => {};
+  const jour = (d) => new Date(Date.now() + d * 864e5).toISOString().slice(0, 10);
+  const fr = (iso) => iso.split('-').reverse().join('/');
+  const cip = (n) => '34009000' + String(n).padStart(5, '0');
+  const panneau = async (json, ventes, benchmark) => {
+    const el = { innerHTML: '', getAttribute: (k) => (k === 'data-pid' ? '2000016' : null) };
+    const ov = { id: '', innerHTML: '', firstChild: null, addEventListener: rien, getAttribute: () => null, setAttribute: rien, classList: { add: rien, remove: rien, contains: () => false }, querySelector: () => null };
+    const sb = charger({
+      fetch: (url) => { const j = json[url.split('?')[0]]; return Promise.resolve(j ? { ok: true, json: () => Promise.resolve(j) } : { ok: false }); },
+      addEventListener: rien,
+      document: { getElementById: (id) => (id === 'brief-off' ? el : (id === 'bo-ov' && ov.id ? ov : null)), createElement: () => ov, addEventListener: rien, head: { appendChild() {} }, body: { appendChild() {}, style: {} } },
+    });
+    sb.ETAB_PRICES = { prices: {} };
+    sb.BENCHMARK = benchmark;
+    sb.V2.sales = ventes;
+    sb.V2.briefOfficine.hydrate('2000016', ventes, {});
+    for (let i = 0; i < 20 && !el.innerHTML; i++) await new Promise((r) => setTimeout(r, 5));
+    return ov.innerHTML;
+  };
+  const v = (c, month, qte = 4) => ({ pharmacyId: '2000016', commercial: 'A', year: 2026, month, artCode: c, qte });
+  const R = [cip(1)], U = [10, 11, 12, 13, 14, 15].map(cip);
+  const rappels = { generated: jour(0), items: [{ d: jour(-10), t: 'Produit rappelé', cips: R, lots: [{ n: 'L1' }] }] };
+  const ansm = { generated: jour(0), items: U.map((c) => ({ st: 'Rupture de stock', spec: 'Rupture ' + c, maj: fr(jour(-1)), cips: [c] })) };
+  const summaries = (h) => [...h.matchAll(/<summary>([^<]*)<\/summary>/g)].map((m) => m[1]);
+
+  // Cas 1 — en tête : 1 rappel + 3 achats interrompus + 3 prix qui changent (les 7 places) ; les 6 ruptures sont toutes repliées.
+  const A = [2, 3, 4].map(cip), P = [5, 6, 7, 8, 9].map(cip);
+  const ventes1 = [v(R[0], 8)];
+  A.forEach((c) => [3, 4, 5, 6, 7].forEach((m) => ventes1.push(v(c, m))));
+  P.concat(U).forEach((c) => [7, 8].forEach((m) => ventes1.push(v(c, m))));
+  const h1 = await panneau({
+    'rappels-lots.json': rappels, 'ansm-dispo.json': ansm,
+    'prix-futurs.json': { generated: jour(0), changes: P.map((c) => ({ c, sens: 'baisse', date_effet: jour(40), date_publi: jour(-5), ppttc: '9.99', d: 'Prix ' + c })) },
+  }, ventes1, A.map((c) => ({ cip13: c, designation: 'PRODUIT ' + c })));
+  const tete1 = h1.split('<details')[0];
+  assert.match(tete1, /3 achats interrompus/, 'marqueur positif : ce n\'est pas le panneau attendu');
+  assert.ok(!/Rupture 34009/.test(tete1), 'cas mal monté : une rupture est affichée en tête');
+  assert.deepEqual(summaries(h1), ['6 ruptures ou tensions', '2 autres points']);
+
+  // Cas 2 — en tête : 1 rappel + 3 ruptures (le plafond) ; les 3 autres ruptures sont repliées.
+  const ventes2 = [v(R[0], 8)];
+  U.forEach((c) => [7, 8].forEach((m) => ventes2.push(v(c, m))));
+  const h2 = await panneau({ 'rappels-lots.json': rappels, 'ansm-dispo.json': ansm }, ventes2, []);
+  assert.equal((h2.split('<details')[0].match(/Rupture 34009/g) || []).length, 3, 'cas mal monté : il faut 3 ruptures en tête');
+  assert.deepEqual(summaries(h2), ['3 autres ruptures ou tensions']);
+});

@@ -434,11 +434,13 @@
     } else {
       var rupt = r.autres.filter(function (p) { return p.rubrique === 'Va manquer'; });
       var reste = r.autres.filter(function (p) { return p.rubrique !== 'Va manquer'; });
+      // 24/11/2026 — « autres » seulement si une rupture est déjà affichée au-dessus (« 29 autres ruptures » sans aucune en tête)
+      var ruptEnTete = r.points.some(function (p) { return p.rubrique === 'Va manquer'; });
       var replie = function (liste, un, plusieurs) {
         return liste.length ? '<details class="bo-plus"><summary>' + liste.length + (liste.length > 1 ? plusieurs : un) + '</summary><ol class="bo-liste">' + liste.map(ligneHtml).join('') + '</ol></details>' : '';
       };
       corps = '<ol class="bo-liste">' + r.points.map(ligneHtml).join('') + '</ol>' +
-        replie(rupt, ' autre rupture ou tension', ' autres ruptures ou tensions') +
+        replie(rupt, ruptEnTete ? ' autre rupture ou tension' : ' rupture ou tension', ruptEnTete ? ' autres ruptures ou tensions' : ' ruptures ou tensions') +
         replie(reste, ' autre point', ' autres points');
     }
     corps = '<h4 class="bo-part">Ce qui la touche</h4>' + corps + autourHtml(r.autour);
