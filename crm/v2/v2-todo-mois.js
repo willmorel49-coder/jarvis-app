@@ -103,7 +103,9 @@
       ]);
     }).then(function (r) {
       RECO.brut = (r[0] && r[0].ok && r[0].evenements) || []; RECO.alias = r[1] || {}; RECO_CLE = '';
-      RECO.etat = 'ok';
+      // 24/11/2026 — une lecture ratée (réseau, session, agenda injoignable) n'est pas un agenda vide : seul
+      // « pas d'agenda branché » l'est. Avant, l'échec donnait un mois sans ses rendez-vous et « 0 sur 64 ».
+      RECO.etat = r[0] && (r[0].ok || r[0].raison === 'pas_d_agenda') ? 'ok' : 'ko';
       AGENDA = { etat: 'ok', branche: !!(r[2] && r[2].actif !== false), hote: (r[2] && r[2].hote) || '', ok: (r[2] && r[2].dernier_ok) || '' };
     }).catch(function () { RECO.etat = 'ko'; AGENDA = { etat: 'ko', branche: false }; }).then(function () {
       // relu APRÈS le relevé : les heures occupées du mois affiché sont celles d'il y a quelques secondes
@@ -371,6 +373,7 @@
     if (e === 'cours') return '<p class="tm-etat" role="status">Lecture de vos rendez-vous et de vos notes…</p>';
     if (e === 'ko') return '<p class="tm-etat" role="alert">Vos rendez-vous et vos notes de ce mois n’ont pas pu être lus : seules les tâches s’affichent. <button type="button" class="tm-btn" onclick="V2.todoMois.reessayer()">Réessayer</button></p>';
     if (RECO && RECO.etat === 'cours') return '<p class="tm-etat" role="status">Lecture de votre agenda personnel…</p>';
+    if (RECO && RECO.etat === 'ko') return '<p class="tm-etat" role="alert">Votre agenda personnel n’a pas pu être lu : ses rendez-vous manquent dans ce mois. <button type="button" class="tm-btn" onclick="V2.todoMois.reessayer()">Réessayer</button></p>';
     if (AGENDA && AGENDA.etat === 'ok') return agendaLigne();
     return '';
   }
@@ -473,6 +476,10 @@
     if (lu === 'cours') return h + '<p class="tm-chp" role="status">Lecture de vos rendez-vous à venir…</p></section>';
     // une lecture ratée ne fait pas croire que tous les clients sont sans rendez-vous
     if (lu === 'ko') return h + '<p class="tm-etat" role="alert">Vos rendez-vous à venir n’ont pas pu être lus. <button type="button" class="tm-btn" onclick="V2.todoMois.reessayer()">Réessayer</button></p></section>';
+    // 24/11/2026 — idem pour l'agenda personnel : pendant sa lecture ou s'il n'a pas pu être lu, ses rendez-vous manquent
+    // (vu dans le Safari de Will : « 0 sur 64 » juste après un rechargement). Pas de compte faux.
+    if (RECO && RECO.etat === 'cours') return h + '<p class="tm-chp" role="status">Lecture de votre agenda personnel…</p></section>';
+    if (RECO && RECO.etat === 'ko') return h + '<p class="tm-etat" role="alert">Votre agenda personnel n’a pas pu être lu : impossible de dire qui a un rendez-vous à venir. <button type="button" class="tm-btn" onclick="V2.todoMois.reessayer()">Réessayer</button></p></section>';
     h += '<p class="tm-chp"><b>' + np + '</b> sur ' + tot + ' ont un rendez-vous à venir · <b>' + libres.length + '</b> sans rendez-vous' +
       (stop ? ' · <b>' + stop + '</b> ne ' + (stop > 1 ? 'veulent' : 'veut') + ' plus être sollicitée' + (stop > 1 ? 's' : '') : '') + '</p>' +
       '<div class="tm-jauge" aria-hidden="true"><i style="width:' + Math.round(np * 100 / tot) + '%"></i></div>';
@@ -535,7 +542,7 @@
       var b = document.querySelector('.tm .tm-barre'); if (b && b.scrollIntoView) b.scrollIntoView({ block: 'start', behavior: 'smooth' });
     },
     voirTout: function (k) { S.tout[k] = !S.tout[k]; redessiner(); },
-    reessayer: function () { CACHE = {}; PAR_JOUR = null; VENIR = null; redessiner(); },
+    reessayer: function () { CACHE = {}; PAR_JOUR = null; VENIR = null; if (RECO && RECO.etat === 'ko') RECO = null; redessiner(); },
     visiteChercher: function () {
       var f = S.form; if (!f || f.type !== 'visite') return;
       var e = document.getElementById('tm-q'); f.q = e ? e.value : '';

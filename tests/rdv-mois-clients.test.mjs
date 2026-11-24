@@ -234,3 +234,51 @@ test('La To do s’ouvre sur le mois à chaque arrivée, et garde l’onglet cho
   V2.route = { name: 'todo' };   // nouvelle arrivée sur l'écran (menu, accueil)
   assert.match(await rendre(), /LE MOIS/, 'revenir sur la To do rouvre le mois');
 });
+
+test('L’agenda personnel qui n’a pas pu être lu est dit, jamais pris pour un agenda vide (24/11)', async () => {
+  let appels = 0, reponse = { ok: false, raison: 'telechargement' };
+  const base = fausseBase({ rdv: [{ cip: '9000002', nom: 'PHARMACIE DU BANC', date: plus(5), heure: '14:00:00' }] });
+  const ctx = monter([MOIS], pret(base, { planningAppelerAgenda: () => { appels++; return Promise.resolve(reponse); } }));
+  ctx.V2RECO = RECO;
+  ctx.V2.todoMois.html(); await attendre();
+  let h = ctx.V2.todoMois.html();
+  assert.match(h, /<h2 class="tm-cht">Vos clients<\/h2>/, 'marqueur : la section est là');
+  assert.match(h, /Votre agenda personnel n’a pas pu être lu : ses rendez-vous manquent dans ce mois/, 'le mois dit l’échec');
+  assert.match(h, /Votre agenda personnel n’a pas pu être lu : impossible de dire qui a un rendez-vous à venir/, 'Vos clients dit l’échec');
+  assert.doesNotMatch(h, /sur 5 ont un rendez-vous à venir/, 'aucun compte faux (avant : « 1 sur 5 », le rendez-vous de l’agenda manquait)');
+  assert.doesNotMatch(h, /Google Agenda branché/, 'pas de « branché · relu » au-dessus d’une lecture ratée');
+  // Réessayer relit vraiment l'agenda
+  reponse = { ok: true, evenements: [{ date: plus(3), debut: '09:30:00', fin: '10:30:00', jour_entier: false, titre: 'RDV Pharmacie des Essais' }] };
+  const avant = appels;
+  ctx.V2.todoMois.reessayer(); ctx.V2.todoMois.html(); await attendre();
+  h = ctx.V2.todoMois.html();
+  assert.equal(appels, avant + 1, 'Réessayer relance la lecture de l’agenda');
+  assert.match(h, /<b>2<\/b> sur 5 ont un rendez-vous à venir/, 'relu : le rendez-vous de l’agenda compte');
+  assert.doesNotMatch(h, /n’a pas pu être lu/, 'et l’alerte disparaît');
+});
+
+test('Sans agenda branché, rien ne change : pas d’alerte, les rendez-vous JARVIS comptent (24/11)', async () => {
+  const base = fausseBase({ rdv: [{ cip: '9000002', nom: 'PHARMACIE DU BANC', date: plus(5), heure: '14:00:00' }] });
+  const ctx = monter([MOIS], pret(base, {
+    rdvAgenda: { relever: () => Promise.resolve(null), charger: () => Promise.resolve(null) },
+    planningAppelerAgenda: () => Promise.resolve({ ok: false, raison: 'pas_d_agenda' })
+  }));
+  ctx.V2RECO = RECO;
+  ctx.V2.todoMois.html(); await attendre();
+  const h = ctx.V2.todoMois.html();
+  assert.match(h, /<b>1<\/b> sur 5 ont un rendez-vous à venir/, 'les comptes s’affichent');
+  assert.match(h, /Tant que votre agenda n’est pas branché/, 'avec la phrase habituelle');
+  assert.match(h, /Branchez votre agenda/, 'et la proposition de le brancher');
+  assert.doesNotMatch(h, /n’a pas pu être lu/, 'aucune alerte');
+});
+
+test('Pendant la lecture de l’agenda, Vos clients attend au lieu d’afficher « 0 sur N » (24/11)', async () => {
+  const base = fausseBase({});
+  const ctx = monter([MOIS], pret(base, { planningAppelerAgenda: () => new Promise(() => {}) }));
+  ctx.V2RECO = RECO;
+  ctx.V2.todoMois.html(); await attendre();
+  const h = ctx.V2.todoMois.html();
+  assert.match(h, /<h2 class="tm-cht">Vos clients<\/h2>/, 'marqueur : la section est là');
+  assert.match(h.split('tm-cht">Vos clients</h2>')[1], /Lecture de votre agenda personnel…/, 'elle dit qu’elle lit');
+  assert.doesNotMatch(h, /sur 5 ont un rendez-vous à venir/, 'aucun compte provisoire');
+});
