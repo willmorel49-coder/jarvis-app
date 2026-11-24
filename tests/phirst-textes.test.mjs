@@ -139,3 +139,14 @@ describe('idée 8 : les voisines équipées', () => {
     assert.equal(T.choisirPosition([{ nom: 'x', lat: null, lon: null }], 'x'), null); assert.equal(T.choisirPosition(null, 'x'), null)
   })
 })
+
+describe('le chargement dans index.html', () => {
+  test('les textes (logique) se chargent avant les écrans qui s’en servent, et leur zone avant Réglages', async () => {
+    const { readFileSync } = await import('node:fs')
+    const h = readFileSync(new URL('../phirst/v2/index.html', import.meta.url), 'utf8')
+    const at = (f) => h.indexOf('src="' + f + '?v=')
+    for (const f of ['phirst-textes-pur.js', 'phirst-reglages-textes.js']) assert.ok(at(f) > 0, f + ' absent')
+    assert.ok(at('phirst-pur.js') < at('phirst-textes-pur.js') && at('phirst-textes-pur.js') < at('phirst-appels.js'))
+    assert.ok(at('phirst-textes-pur.js') < at('phirst-reglages-textes.js') && at('phirst-reglages-textes.js') < at('phirst-reglages.js'))
+  })
+})
