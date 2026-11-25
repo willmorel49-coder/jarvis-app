@@ -74,7 +74,8 @@
   var UNITES = { MG: 'mg', G: 'g', MCG: 'µg', 'µG': 'µg', '\u039CG': 'µg', MUI: 'MUI', UI: 'UI', U: 'U', ML: 'ml', H: 'h', '%': '%' };
   var MOTS_MINUSCULES = { A: 1, 'À': 1, AU: 1, AUX: 1, DE: 1, DU: 1, DES: 1, ET: 1, EN: 1, LA: 1, LE: 1, LES: 1, OU: 1, PAR: 1, POUR: 1, SUR: 1 };
   // Forme ou boîte dans un libellé court (catalogue, JO) : on coupe là.
-  var FORME = /^(CPR|CP|CPS|COMP|GELU|GEL|GLE|CAPS|INJ|SOL|BUV|SACH|SUPPO?|PDR|CREME|POM|SIROP|COLLY|AMP|FL|FLAC|TUBE|SRG|STY|SUSP|LYOPH|B\d+DU|BT\d*|BTE\d*|C\.\S*|CPR\d+\w*|CP\d+|GELU\d+|CPS\d+|FL\d+\S*)$/;
+  // 25/11/2026 — « OPHT UNIDOS10ML 24 » (Dacudoses, officine 2281324) restait écrit tel quel : voie et unidoses coupées aussi.
+  var FORME = /^(CPR|CP|CPS|COMP|GELU|GEL|GLE|CAPS|INJ|SOL|BUV|SACH|SUPPO?|PDR|CREME|POM|SIROP|COLLY|AMP|FL|FLAC|TUBE|SRG|STY|SUSP|LYOPH|OPHT|GTT|UNIDOS\S*|UNID\d*|TB\d+\S*|B\d+DU|BT\d*|BTE\d*|C\.\S*|CPR\d+\w*|CP\d+|GELU\d+|CPS\d+|FL\d+\S*)$/;
   // « 20MG », « 10MG/10MG », « 100U/ML », « 100/6MCG », « 50MCG/H », « mg/mL » → « 20 mg », « 10 mg/10 mg », « 100 U/ml »… ;
   // '' si ce n'est pas un dosage. Écrit de la même façon quelle que soit la source.
   function dosage(t) {
@@ -89,7 +90,13 @@
   }
   function nomProduit(texte) {
     // Libellé court du JO où le laboratoire est collé au dosage : « EZETIMIB/ATOR.ZEN10/20MG » → « EZETIMIB/ATOR. ZEN 10/20MG ».
-    var brut = nomCourt(texte).replace(/\.([A-Z]{2,3})(\d)/g, '. $1 $2').replace(/\.([A-Z]{2,3})(?=\s|$)/g, '. $1');
+    var brut = nomCourt(texte)
+      // 25/11/2026 — l'ANSM écrit « 0,5 pour cent », « 100 unités/ ml », « L.P. » ; le JO et le catalogue « 0,5% », « 100U/ML », « LP » : une seule façon.
+      .replace(/(\d)\s*pour\s+cent\b/gi, '$1 %').replace(/(\d)\s*unités\s*\/\s*ml\b/gi, '$1 U/ml').replace(/(^|\s)L\.P\.(?=\s|$)/g, '$1LP')
+      .replace(/\.([A-Z]{2,3})(\d)/g, '. $1 $2').replace(/\.([A-Z]{2,3})(?=\s|$)/g, '. $1')
+      // sigle ou laboratoire collé au dosage dans le catalogue : « LP75MG », « ZEN0,5MG », « DEL.1000MCG » → séparés
+      // (pas un volume seul après un point : « SRG.BACK.1ML », « A.2ML » sont la boîte, coupée plus bas)
+      .replace(/\b(LP|ZEN|BGA|TVC|VIA|ZYD|SDZ|EG)(\d)/g, '$1 $2').replace(/([A-Z])\.(\d+(?:[.,]\d+)?(?:\/\d+(?:[.,]\d+)?)*(?:MG|MCG|G|UI|MUI|U|%))/g, '$1. $2');
     var mots = brut.replace(/\s+/g, ' ').trim().split(' '), garde = [], dernierDosage = -1;
     for (var i = 0; i < mots.length; i++) {
       // écrit en capitales : aucune minuscule, ou une seule perdue dans 4 capitales et plus (« v-HUBEI/BLEU », catalogue)
@@ -109,6 +116,18 @@
     var n = garde.join(' ');
     return n ? n.charAt(0).toUpperCase() + n.slice(1) : '';
   }
+
+  // 25/11/2026 (Will) — la boîte lue dans le libellé brut (« CPR30 », « BT90 », « B28DU », « S.30 », « GELU 30 », « UNIDOS10ML 24 ») ;
+  // '' si on ne la lit pas. Ne sert qu'à départager deux lignes au même nom (boîte de 30 et boîte de 90).
+  function boite(texte) {
+    var t = String(texte || '').replace(/\s+-\s+.*$/, '').trim(), m, der = '';
+    var re = /(?:^|\s)(?:(?:CPR|CPS|CP|GELU|GLE|GEL|BTE|BT|FL|AMP|SACH)(\d+)(?:DU)?|B(\d+)DU|S\.(\d+))(?=\s|$)/g;
+    while ((m = re.exec(t))) der = m[1] || m[2] || m[3];
+    if (!der && (m = /\s(\d+)$/.exec(t))) der = m[1];
+    return +der > 0 ? String(+der) : '';
+  }
+  // Prix toujours à deux chiffres après la virgule : le fichier du JO écrit 19.6 pour 19,60 € (25 changements sur 110, 25/11/2026).
+  function prixFr(v) { var n = parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n.toFixed(2).replace('.', ',') : String(v); }
 
   // Achats de l'officine regroupés par CIP13 : total, mois vus, dernier mois.
   function indexAchats(ventes) {
@@ -247,6 +266,7 @@
         rubrique: it.st === 'Remise à disposition' ? 'Revient' : 'Va manquer',
         urgence: s.urgence, volume: a.qte,
         titre: s.titre + ' : ' + nomProduit(it.spec),
+        brut: it.spec,
         detail: detail.join(' '),
         action: it.st === 'Remise à disposition' ? 'Lui signaler qu\'elle peut recommander.' : 'La prévenir avant qu\'elle le découvre au comptoir.',
         pourquoi: 'ANSM · ' + dateFr(isoDeFr(it.maj) || e.ansm.generated),   // « (rupture de stock…) et présent dans ses achats » redisait le titre
@@ -264,12 +284,13 @@
       var ancien = parseFloat(String(ch.ancien_ttc || '').replace(',', '.')), nouveau = parseFloat(String(ch.ppttc || '').replace(',', '.'));
       var ecart = ancien > 0 && nouveau > 0 ? (nouveau - ancien) / ancien : null;   // ancien prix inconnu : traitement d'avant
       var petite = ch.sens === 'baisse' && ecart !== null && -ecart < BAISSE_PETITE;
-      var prix = (ch.ancien_ttc ? String(ch.ancien_ttc).replace('.', ',') + ' € → ' : '') + String(ch.ppttc).replace('.', ',') + ' € TTC' +
+      var prix = (ch.ancien_ttc ? prixFr(ch.ancien_ttc) + ' € → ' : '') + prixFr(ch.ppttc) + ' € TTC' +
         (ecart !== null ? ' (' + (ecart < 0 ? '−' : '+') + String(Math.abs(Math.round(ecart * 1000) / 10)).replace('.', ',') + ' %)' : '');
       pts.push({
         rubrique: 'Change bientôt',
         urgence: dans <= 7 ? 3 : 2, volume: a.qte,
         titre: (ch.sens === 'baisse' ? 'Baisse' : 'Hausse') + ' de prix le ' + dateFr(ch.date_effet) + ' : ' + (nomProduit(ch.d) || nom(ch.c)),
+        brut: ch.d || nomBrut(ch.c),
         detail: 'Prix public ' + prix + '. Elle en a acheté ' + pluriel(a.qte, 'boîte') + '.',
         // 24/11/2026 (Will) — une baisse de moins de 5 % : repliée d'office, et pas de conseil d'écouler le stock pour quelques centimes.
         action: petite ? '' : ch.sens === 'baisse' ? 'Lui conseiller d\'écouler son stock avant le ' + dateFr(ch.date_effet) + '.' : 'Lui signaler la hausse avant sa prochaine commande.',
@@ -296,6 +317,7 @@
         rubrique: 'À retirer',
         urgence: 4, volume: a.qte,
         titre: 'Rappel de lots : ' + nomProduit(r.t),
+        brut: r.t,
         detail: (lots.length ? 'Lots ' + lots.join(', ') + ' · ' : '') + pluriel(a.qte, 'boîte') + (a.qte > 1 ? ' achetées.' : ' achetée.'),
         action: 'Lui demander de vérifier ses lots en rayon.',
         pourquoi: 'ANSM · ' + dateFr(r.d),
@@ -312,6 +334,7 @@
         rubrique: 'Ses achats',
         urgence: 1, volume: a.qte,
         titre: 'Pas commandé en ' + moisFr(fin) + ' : ' + n,
+        brut: nomBrut(c),
         detail: 'Commandé ' + vus + ' mois sur les ' + avant.length + ' précédents (' + pluriel(a.qte, 'boîte') + ' au total).',
         action: 'Lui demander si elle l\'achète ailleurs.',
         pourquoi: '',   // 24/11/2026 — « Habitude d'achat interrompue. » redisait la pastille et le titre ; ses achats ne sont pas une source publique
@@ -330,6 +353,7 @@
           rubrique: 'Opportunité',
           urgence: 0, volume: idx[c].qte,
           titre: 'Princeps acheté alors qu\'un générique existe : ' + nom(c),
+          brut: nomBrut(c),
           detail: pluriel(idx[c].qte, 'boîte') + ' sur la période.',
           action: 'Lui proposer le générique.',
           pourquoi: 'Répertoire des génériques' + (e.generiques.generated ? ' · ' + dateFr(e.generiques.generated) : ''),
@@ -339,6 +363,17 @@
 
     // 6. Autour d'elle : annonces légales (Bodacc) des pharmacies de sa ville, puis du reste de son département
     var autour = autourDElle(e.secteur, e.officine);
+
+    // 25/11/2026 (Will) — boîte de 30 et boîte de 90 donnaient deux lignes au même titre avec deux prix (Liptruzet 10 mg/10 mg,
+    // Ezetimib/ator. Zentiva 10/10 mg à l'officine 2003659). La boîte n'est écrite QUE dans ce cas, et seulement si elle départage.
+    var memeTitre = {};
+    pts.forEach(function (p) { (memeTitre[p.titre] = memeTitre[p.titre] || []).push(p); });
+    Object.keys(memeTitre).forEach(function (t) {
+      var g = memeTitre[t], b = g.map(function (p) { return boite(p.brut); });
+      if (g.length < 2 || b.filter(function (x, i) { return x && b.indexOf(x) === i; }).length < 2) return;
+      g.forEach(function (p, i) { if (b[i]) p.titre += ', boîte de ' + b[i]; });
+    });
+    pts.forEach(function (p) { delete p.brut; });
 
     // Ordre des rubriques (ORDRE) ; dans une rubrique, l'urgence puis SON volume — les ruptures, elles,
     // par son volume seul : une tension sur 50 boîtes par mois la gêne plus qu'une rupture sur 2.
@@ -541,20 +576,24 @@
   // Le panneau latéral (maquette C, choix de Will le 22/09/2026) : il glisse depuis la droite et laisse
   // les chiffres visibles à côté ; sur iPhone il monte depuis le bas. Accroché à <body> : .v2-wrap porte un transform
   // (animation d'entrée) qui rendrait un position:fixed relatif à la page.
-  function sousTitre(s) {
-    var rep = function (n) { return n + (n > 1 ? ' repliés' : ' replié') + ' plus bas'; };
+  // papier = true : sur la feuille, les listes repliées sont imprimées dépliées — « repliés » y serait faux (25/11/2026).
+  function sousTitre(s, papier) {
+    var rep = function (n) { return n + (papier ? '' : n > 1 ? ' repliés' : ' replié') + ' plus bas'; };
     if (s.nb && s.replies) return pluriel(s.nb, 'point') + ' en tête, ' + rep(s.replies);
     if (s.nb) return pluriel(s.nb, 'point');
-    return s.replies ? (s.replies > 1 ? s.replies + ' points repliés plus bas' : '1 point replié plus bas') : '';
+    return s.replies ? (s.replies > 1 ? s.replies + ' points' : '1 point') + (papier ? '' : s.replies > 1 ? ' repliés' : ' replié') + ' plus bas' : '';
   }
-  function fenetreHtml(r) {
+  // lieu = { nom, cip } de l'officine : en tête de la feuille imprimée seulement (la date s'y écrit au moment d'imprimer)
+  function fenetreHtml(r, lieu) {
     var s = resume(r);
+    var qui = [lieu && lieu.nom, lieu && lieu.cip ? 'CIP ' + lieu.cip : ''].filter(Boolean).map(esc);
     return '<div class="bo-win" role="dialog" aria-modal="true" aria-labelledby="bo-win-t">' +
-      '<div class="bo-win-h"><h3 id="bo-win-t">Infos du jour</h3>' + s.html +
+      '<div class="bo-win-h"><p class="bo-feuille">' + qui.concat(['<span class="bo-feuille-date"></span>']).join(' · ') + '</p>' +
+        '<h3 id="bo-win-t">Infos du jour</h3>' + s.html +
         '<button type="button" class="bo-x" aria-label="Fermer" onclick="V2.briefOfficine.fermer()">×</button>' +
         // 24/11/2026 (Will) — raccourci : « ce qui la touche… autour d'elle » redisait les deux titres du panneau.
         // Reste le compte, vérifiable : en tête + repliés = la somme des nombres au-dessus.
-        (sousTitre(s) ? '<span class="pha-sub">' + sousTitre(s) + '</span>' : '') + '</div>' +
+        (sousTitre(s) ? '<span class="pha-sub">' + sousTitre(s) + '</span><span class="pha-sub bo-papier">' + sousTitre(s, true) + '</span>' : '') + '</div>' +
       '<div class="bo-win-b">' + corpsHtml(r) + '</div>' +
       '<div class="bo-win-f">' +   // 24/11/2026 (Will) : phrase « Se rouvre avec le bouton… » supprimée
         (r.points.length ? '<button type="button" class="v2-btn bo-imp" onclick="V2.briefOfficine.imprimer()">Imprimer pour l\'équipe</button>' : '') +
@@ -627,14 +666,32 @@
     '.bo-win-b{flex:1;overflow:auto;padding:12px 20px 16px;-webkit-overflow-scrolling:touch}' +
     '.bo-win-f{display:flex;gap:8px;padding:12px 20px;border-top:1px solid var(--line,#e2e8f0);background:var(--card-2,#f6f7fa);align-items:center;justify-content:flex-end;flex-wrap:wrap}' +
     '@media (max-width:640px){.bo-ov{align-items:flex-end}.bo-win{width:100%;height:88vh;border-radius:var(--r-card,16px) var(--r-card,16px) 0 0;box-shadow:0 -12px 40px -12px rgba(16,19,28,.35)}@keyframes bo-glisse{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}.bo-voir{margin-left:0;flex-basis:100%}}' +
-    '@media print{body.bo-imprime *{visibility:hidden}body.bo-imprime #bo-ov,body.bo-imprime #bo-ov *{visibility:visible}' +
-    'body.bo-imprime #bo-ov{position:absolute;left:0;top:0;width:100%;height:auto;display:block;padding:0;background:#fff}' +
-    'body.bo-imprime .bo-win{height:auto;max-height:none;box-shadow:none;width:100%;animation:none}body.bo-imprime .bo-win-b{overflow:visible}' +
-    'body.bo-imprime .bo-imp,body.bo-imprime .bo-x,body.bo-imprime .bo-win-f,body.bo-imprime .bo-plus{display:none}}';
+    '.bo-win-h .bo-feuille,.bo-win-h .bo-papier{display:none}' +
+    /* 25/11/2026 (Will) — la feuille : `visibility:hidden` sur la fiche lui gardait sa place (1 page utile puis 4 à 5 blanches).
+       Tout ce qui n'est pas le panneau est retiré de la page ; nom, CIP et date en tête ; les listes repliées imprimées. */
+    '@media print{body.bo-imprime{overflow:visible !important;background:#fff}body.bo-imprime>*:not(#bo-ov){display:none !important}' +
+    'body.bo-imprime #bo-ov{position:static;display:block;padding:0;background:#fff}' +
+    'body.bo-imprime .bo-win{display:block;height:auto;max-height:none;overflow:visible;box-shadow:none;border-radius:0;width:100%;animation:none}' +
+    'body.bo-imprime .bo-win-h{padding:0 0 10px}body.bo-imprime .bo-win-b{overflow:visible;padding:8px 0 0}' +
+    'body.bo-imprime .bo-win-h .bo-feuille{display:block;flex:1 1 100%;margin:0 0 4px;font-size:13px;font-weight:700}' +
+    'body.bo-imprime .bo-win-h>.pha-sub{display:none}body.bo-imprime .bo-win-h>.bo-papier{display:block}' +
+    'body.bo-imprime .bo-imp,body.bo-imprime .bo-x,body.bo-imprime .bo-win-f{display:none}' +
+    'body.bo-imprime .bo-plus summary{list-style:none;cursor:auto}body.bo-imprime .bo-plus summary::-webkit-details-marker{display:none}' +
+    'body.bo-imprime .bo-pt{break-inside:avoid}}';
 
   function imprimer() {
+    var ov = document.getElementById('bo-ov');
+    // une liste <details> fermée ne s'imprime pas, même affichée : ouverte le temps de l'impression, refermée après
+    var fermees = ov ? [].slice.call(ov.querySelectorAll('details.bo-plus:not([open])')) : [];
+    fermees.forEach(function (d) { d.open = true; });
+    var date = ov && ov.querySelector('.bo-feuille-date');
+    if (date) date.textContent = 'imprimé le ' + new Date().toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' });
     document.body.classList.add('bo-imprime');
-    var fin = function () { document.body.classList.remove('bo-imprime'); window.removeEventListener('afterprint', fin); };
+    var fin = function () {
+      document.body.classList.remove('bo-imprime');
+      fermees.forEach(function (d) { d.open = false; });
+      window.removeEventListener('afterprint', fin);
+    };
     window.addEventListener('afterprint', fin);
     window.print();
   }
@@ -686,7 +743,7 @@
       '<div class="bo-win-b"><p class="bo-vide">Infos du jour en préparation…</p></div></div>';
   }
 
-  // lieu = { ville, cp } de l'officine (rubrique « Autour d'elle »)
+  // lieu = { ville, cp } de l'officine (rubrique « Autour d'elle »), + { nom, cip } pour la feuille imprimée (25/11/2026)
   function hydrate(pid, ventesOfficine, lieu) {
     var el = document.getElementById('brief-off');
     if (!el) return;
@@ -710,7 +767,7 @@
         stockSites: stockSites, nom: nom
       });
       cible.innerHTML = rendre(r);
-      var o2 = overlay(); o2.innerHTML = fenetreHtml(r);
+      var o2 = overlay(); o2.innerHTML = fenetreHtml(r, lieu);
       if (o2.classList.contains('on')) { var x = o2.querySelector('.bo-x'); if (x) x.focus({ preventScroll: true }); }
       var btn = document.getElementById('bo-open');
       if (btn) { btn.innerHTML = boutonHtml(resume(r)); btn.disabled = false; }

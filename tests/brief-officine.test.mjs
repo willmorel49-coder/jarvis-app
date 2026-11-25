@@ -78,7 +78,7 @@ test('prix : effet passé ignoré, baisse à venir retenue et urgente sous 7 jou
   assert.equal(r.points.length, 1);
   assert.match(r.points[0].titre, /Baisse de prix le 20\/09\/2026 : Proche/);   // nom écrit comme partout ailleurs (24/11/2026)
   assert.equal(r.points[0].urgence, 3);
-  assert.match(r.points[0].detail, /6,5 € → 5 € TTC/);
+  assert.match(r.points[0].detail, /6,50 € → 5,00 € TTC/);   // 25/11/2026 (Will) : deux chiffres après la virgule
 });
 
 test('rappel de lots : récent retenu en tête, ancien de plus de 90 jours ignoré', () => {
@@ -494,7 +494,7 @@ const jourA = (d) => new Date(Date.now() + d * 864e5).toISOString().slice(0, 10)
 const frA = (iso) => iso.split('-').reverse().join('/');
 const cipA = (n) => '34009000' + String(n).padStart(5, '0');
 const venteA = (c, month, qte = 4) => ({ pharmacyId: '2000016', commercial: 'A', year: 2026, month, artCode: c, qte });
-async function panneauA(json, ventes, benchmark = []) {
+async function panneauA(json, ventes, benchmark = [], lieu = {}) {
   const el = { innerHTML: '', getAttribute: (k) => (k === 'data-pid' ? '2000016' : null) };
   const ov = { id: '', innerHTML: '', firstChild: null, addEventListener: rienA, getAttribute: () => null, setAttribute: rienA, classList: { add: rienA, remove: rienA, contains: () => false }, querySelector: () => null };
   const sb = charger({
@@ -505,7 +505,7 @@ async function panneauA(json, ventes, benchmark = []) {
   sb.ETAB_PRICES = { prices: {} };
   sb.BENCHMARK = benchmark;
   sb.V2.sales = ventes;
-  sb.V2.briefOfficine.hydrate('2000016', ventes, {});
+  sb.V2.briefOfficine.hydrate('2000016', ventes, lieu);
   for (let i = 0; i < 20 && !el.innerHTML; i++) await new Promise((r) => setTimeout(r, 5));
   return ov.innerHTML;
 }
@@ -669,4 +669,108 @@ test('25/11 : stock chez nous sur plus de 3 sites → le total seul, pas la list
     stockSites: () => sites.map((site) => ({ site, q: 10 })),
   }));
   assert.match(r.points[0].detail, /Chez nous : 70 boîtes\.$/);   // « sur 7 de nos sites » faisait encore 5 lignes (Izalgi, production 25/11)
+});
+
+// ─────────────── 25/11/2026 — les quatre corrections choisies par Will (constat ~/jarvis-preuves/infos-du-jour-verifs-2026-11-25) ───────────────
+const STYLE_SRC = readFileSync(new URL('v2-brief-officine.js', B), 'utf8');
+
+// Défaut 1 : PDF de 5 à 6 pages, dont 4 à 5 blanches — `visibility:hidden` gardait la place de la fiche.
+test('25/11 (impression 1) : la feuille retire la fiche de la page au lieu de la rendre invisible', () => {
+  const print = (STYLE_SRC.match(/'@media print\{[\s\S]*?\}\}';/) || [''])[0];
+  assert.ok(print.length > 100, 'marqueur positif : la règle d\'impression est lue');
+  assert.ok(!/visibility:hidden/.test(print), 'visibility:hidden garde la place de la fiche → pages blanches');
+  assert.match(print, /body\.bo-imprime>\*:not\(#bo-ov\)\{display:none !important\}/);
+  assert.match(print, /body\.bo-imprime #bo-ov\{position:static/);
+  assert.ok(!/\.bo-plus\{display:none\}/.test(print), 'les listes repliées doivent s\'imprimer');
+});
+
+// Défauts 2 et 3 : la feuille ne disait pas de quelle officine il s'agit, et les listes repliées ne s'imprimaient pas
+// alors que la feuille écrivait « 47 repliés plus bas ».
+test('25/11 (impression 2, 3) : nom, CIP et date en tête de feuille ; listes ouvertes pour l\'impression puis refermées', async () => {
+  const R = [cipA(1)], U = [10, 11, 12, 13, 14, 15].map(cipA);
+  const ventes = [venteA(R[0], 8)];
+  U.forEach((c) => [7, 8].forEach((m) => ventes.push(venteA(c, m))));
+  const h = await panneauA({
+    'rappels-lots.json': { generated: jourA(0), items: [{ d: jourA(-10), t: 'Produit rappelé', cips: R, lots: [{ n: 'L1' }] }] },
+    'ansm-dispo.json': { generated: jourA(0), items: U.map((c) => ({ st: 'Rupture de stock', spec: 'Rupture ' + c, maj: frA(jourA(-1)), cips: [c] })) },
+  }, ventes, [], { ville: 'Ville', cp: '44000', nom: 'Pharmacie <Essai>', cip: '2000016' });
+  assert.match(h, /<p class="bo-feuille">Pharmacie &lt;Essai> · CIP 2000016 · <span class="bo-feuille-date"><\/span><\/p>/);
+  assert.match(h, /<span class="pha-sub">4 points en tête, 3 repliés plus bas<\/span>/, 'à l\'écran : inchangé');
+  assert.match(h, /<span class="pha-sub bo-papier">4 points en tête, 3 plus bas<\/span>/, 'sur la feuille : plus de « repliés »');
+  // imprimer() : listes fermées ouvertes, date écrite, puis tout remis après l'impression
+  const det = [{ open: false }, { open: false }], date = { textContent: '' }, ecoute = {}, classes = new Set();
+  let imprime = 0;
+  const ov = { querySelectorAll: (s) => (s === 'details.bo-plus:not([open])' ? det : []), querySelector: (s) => (s === '.bo-feuille-date' ? date : null) };
+  const sb = charger({
+    document: { getElementById: (id) => (id === 'bo-ov' ? ov : null), body: { classList: { add: (c) => classes.add(c), remove: (c) => classes.delete(c) } } },
+    addEventListener: (n, f) => { ecoute[n] = f; }, removeEventListener: (n) => { delete ecoute[n]; },
+    print: () => { imprime++; assert.deepEqual(det.map((d) => d.open), [true, true], 'listes ouvertes AU MOMENT d\'imprimer'); assert.ok(classes.has('bo-imprime')); },
+  });
+  sb.V2.briefOfficine.imprimer();
+  assert.equal(imprime, 1);
+  assert.match(date.textContent, /^imprimé le \d{2}\/\d{2}\/\d{4}$/);
+  ecoute.afterprint();
+  assert.deepEqual(det.map((d) => d.open), [false, false], 'refermées après l\'impression');
+  assert.ok(!classes.has('bo-imprime'));
+});
+
+// Défaut 4 : boîte de 30 et boîte de 90 au même titre, avec deux prix (Liptruzet 10 mg/10 mg, Ezetimib/ator. Zentiva, officine 2003659).
+test('25/11 (boîtes) : « boîte de 30 / 90 » seulement quand deux lignes portent le même nom', () => {
+  const pf = JSON.parse(readFileSync(new URL('prix-futurs.json', B), 'utf8'));
+  const deux = pf.changes.filter((c) => ['3400930284605', '3400930284612'].includes(String(c.c)));
+  assert.equal(deux.length, 2, 'marqueur positif : les deux boîtes Zentiva sont dans le fichier du jour');
+  const seul = { c: '3400900000009', d: 'LIPTRUZET 10MG/20MG CPR BT30', sens: 'baisse', date_effet: '2027-01-02', date_publi: '2026-10-20', ppttc: 17.16, ancien_ttc: 19.6 };
+  const ventes = [...deux.map((c) => String(c.c)), seul.c].map((cip) => ({ cip, mois: '2026-10', qte: 20 }));
+  const r = calculer(base({ aujourdhui: '2026-11-25', moisCouverts: ['2026-08', '2026-09', '2026-10'], ventes, prixFuturs: { generated: '2026-11-25', changes: [...deux, seul] } }));
+  const titres = [...r.points.concat(r.autres).map((p) => p.titre)].sort();
+  assert.deepEqual(titres, [
+    'Baisse de prix le 02/01/2027 : Ezetimib/ator. Zentiva 10/10 mg, boîte de 30',
+    'Baisse de prix le 02/01/2027 : Ezetimib/ator. Zentiva 10/10 mg, boîte de 90',
+    'Baisse de prix le 02/01/2027 : Liptruzet 10 mg/20 mg',
+  ]);
+  assert.ok(r.points.concat(r.autres).every((p) => !('brut' in p)), 'le libellé brut ne sort pas de calculer()');
+});
+
+test('25/11 (boîtes) : sur TOUT le fichier du JO, plus aucun titre en double quand la boîte se lit', () => {
+  const pf = JSON.parse(readFileSync(new URL('prix-futurs.json', B), 'utf8'));
+  const changes = pf.changes.filter((c) => c.date_effet >= '2026-11-25');
+  const ventes = [...new Set(changes.map((c) => String(c.c)))].map((cip) => ({ cip, mois: '2026-10', qte: 20 }));
+  const r = calculer(base({ aujourdhui: '2026-11-25', moisCouverts: ['2026-08', '2026-09', '2026-10'], ventes, prixFuturs: { generated: '2026-11-25', changes } }));
+  const tous = r.points.concat(r.autres);
+  assert.ok(tous.length >= 50, 'marqueur positif : les changements du JO sont lus (' + tous.length + ')');
+  assert.ok(tous.some((p) => /, boîte de \d+$/.test(p.titre)), 'au moins un titre départagé');
+  const parCip = {};
+  changes.forEach((c) => { parCip[c.c] = c; });
+  const vus = {};
+  tous.forEach((p) => { vus[p.titre] = (vus[p.titre] || 0) + 1; });
+  const doubles = Object.keys(vus).filter((t) => vus[t] > 1);
+  // un double qui reste = même produit, même boîte, même date (deux CIP pour une même présentation) : la boîte ne départage pas
+  assert.ok(doubles.every((t) => !/, boîte de /.test(t)) || doubles.length === 0, 'doubles : ' + doubles.join(' | '));
+  assert.ok(doubles.length <= 3, doubles.length + ' titres encore en double : ' + doubles.join(' | '));
+});
+
+// Défaut 5 : « 19,6 € » recopié du fichier (13 anciens et 12 nouveaux prix sur 110 écrits avec un seul chiffre après la virgule).
+test('25/11 (prix) : toujours deux chiffres après la virgule, sur tout le fichier du JO', () => {
+  const pf = JSON.parse(readFileSync(new URL('prix-futurs.json', B), 'utf8'));
+  const changes = pf.changes.filter((c) => c.date_effet >= '2026-11-25');
+  const ventes = [...new Set(changes.map((c) => String(c.c)))].map((cip) => ({ cip, mois: '2026-10', qte: 20 }));
+  const r = calculer(base({ aujourdhui: '2026-11-25', moisCouverts: ['2026-08', '2026-09', '2026-10'], ventes, prixFuturs: { generated: '2026-11-25', changes } }));
+  const details = [...r.points.concat(r.autres).map((p) => p.detail)];
+  assert.ok(details.some((d) => /19,60 € → 17,16 € TTC/.test(d)), 'marqueur positif : Liptruzet boîte de 30');
+  const mal = details.filter((d) => /\d,\d €|\d € →|\d € TTC/.test(d.replace(/\d,\d\d €/g, '')));
+  assert.deepEqual(mal, []);
+});
+
+// Défaut 6 : « Dacudoses opht unidos10ml 24 » (2281324), et une même chose écrite de deux façons selon la source.
+test('25/11 (noms) : noms restés bruts remis au format ; LP, %, U/ml écrits d\'une seule façon', () => {
+  const { nomProduit } = charger().V2.briefOfficine;
+  assert.equal(nomProduit('DACUDOSES OPHT UNIDOS10ML 24'), 'Dacudoses');
+  assert.equal(nomProduit('Skiacol 0,5 pour cent, collyre – [cyclopentolate (chlorhydrate de)]'), 'Skiacol 0,5 %');
+  assert.equal(nomProduit('SKIACOL 0,5% COLLY FL0,5ML'), 'Skiacol 0,5 %');
+  assert.equal(nomProduit('Micropakine L.P. 500 mg, granulés à libération prolongée en sachet-dose'), 'Micropakine LP 500 mg');
+  assert.equal(nomProduit('MICROPAKINE LP 500MG GLE S.30'), 'Micropakine LP 500 mg');
+  assert.equal(nomProduit('Lantus Solostar 100 unités/ ml, solution injectable en stylo prérempli – [insuline glargine]'), 'Lantus Solostar 100 U/ml');
+  assert.equal(nomProduit('LANTUS 100U/ML INJ SOLO3ML 5'), 'Lantus 100 U/ml');
+  assert.equal(nomProduit('VENLAFAXINE BGA LP75MG GEL B30'), 'Venlafaxine Biogaran LP 75 mg');
+  assert.equal(nomProduit('ENGERIX B 20MCG SRG.BACK.1ML 1'), 'Engerix B 20 µg', 'la boîte après un point reste coupée');
 });

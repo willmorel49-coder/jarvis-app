@@ -4917,7 +4917,7 @@
     if (V2.profil) V2.profil.hydrate();
     if (V2.notes) V2.notes.hydrate();
     if (V2.rdvPrepa) V2.rdvPrepa.hydrate();
-    if (briefOff) V2.briefOfficine.hydrate(pid, pharmaSalesAll(pid), { ville: villeV, cp: cpV });
+    if (briefOff) V2.briefOfficine.hydrate(pid, pharmaSalesAll(pid), { ville: villeV, cp: cpV, nom: nameOf(pid, pharma.name), cip: pharma.code ? String(pharma.code) : '' });   // 25/11/2026 : nom et CIP en tête de la feuille imprimée
     if (!menu) V2.pharmaFiche.apres(pid);
     if (!menu) phaTel();
     if (fi && !fdr) { fiVeille(root); if (fiArr) fiJoue(root); }
