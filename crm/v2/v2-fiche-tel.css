@@ -80,6 +80,9 @@
   .pha-wrap.fdr-on .fdr-comp .fdr-tbl thead th{white-space:normal;line-height:1.2;vertical-align:bottom}
   .pha-wrap.fdr-on .fdr-comp .fdr-tbl th,.pha-wrap.fdr-on .fdr-comp .fdr-tbl td{padding:7px 3px}
   .pha-wrap.fdr-on .fdr-comp .fdr-ec{min-width:60px;padding:3px 5px}
+  /* 360 px : il manquait encore 10 à 22 px (mesuré le 25/11 : tableau de 292 à 304 px dans 282). Le tableau prend 8 px de la marge intérieure du cadre
+     de chaque côté (14 px), cases et pastilles se resserrent ; tailles de texte inchangées, rien ne bouge au-dessus de 380 px. */
+  @media (max-width:380px){.pha-wrap.fdr-on .fdr-comp .fdr-tw{margin-left:-8px;margin-right:-8px}.pha-wrap.fdr-on .fdr-comp .fdr-tbl th,.pha-wrap.fdr-on .fdr-comp .fdr-tbl td{padding-left:2px;padding-right:2px}.pha-wrap.fdr-on .fdr-comp .fdr-ec{min-width:0;padding-left:4px;padding-right:4px}}
   /* Coordonnées : le numéro et l'e-mail sont des zones de 44 px (16 px mesurés) ; la ligne de l'adresse, sans lien, ne bouge pas */
   .pha-wrap.fdr-on .fdo-co:has(a){align-items:center;padding:0}
   .pha-wrap.fdr-on .fdo-co:has(a) .fdo-co-t{padding-top:0}

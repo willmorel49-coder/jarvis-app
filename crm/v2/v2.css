@@ -633,15 +633,6 @@ html.v2-nav .v2-top::before{content:"";position:absolute;left:0;bottom:-1px;heig
   html .mis-tot span,html .mis-tot small,html .mis-tot-note{opacity:1}
   /* Listings : le libellé des cartes de famille n'est plus en capitales espacées (« NOTRE MARGE PAR / BOÎTE » se cassait en deux) */
   html .mp-fv::before{text-transform:none;letter-spacing:0}
-  /* Barre du haut à 380 px et moins : 8 px entre les quatre boutons de droite. v2-pieces.css les serre à 2 px pour que la maison d'un écran interne ne soit pas rognée ;
-     la place est reprise au bouton Retour (resserré de 15 px) et au nom de la marque, qui s'efface à l'accueil comme à l'ordinateur (le logo reste).
-     JARVIS connecté seulement : ni Phirst (data-teinte) ni OPSO (pas de barre du bas). */
-  @media (max-width:380px){
-    html:not([data-teinte]) body.bnav-on .tp-d{gap:8px}
-    html:not([data-teinte]) body.bnav-on .tp-g{gap:4px}
-    html:not([data-teinte]) body.bnav-on .v2-top .v2-back{gap:4px;padding:0 8px 0 5px}
-    html:not([data-teinte]) body.bnav-on .v2-top .v2-brand:not(.v2-brand-compact)>span:not(.v2-logo){display:none}
-  }
 }
 .v2-cmdk-x{display:none;align-items:center;justify-content:center;flex-shrink:0;min-height:44px;padding:0 8px;border:0;background:none;
   color:var(--ip-blue);font:600 16px var(--font);cursor:pointer;-webkit-tap-highlight-color:transparent}
