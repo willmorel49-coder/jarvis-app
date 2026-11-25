@@ -297,7 +297,7 @@ test('chemin réel : les vrais fichiers des robots arrivent jusqu\'à la carte',
   });
   // la carte « vue par le commercial » = la ligne de la fiche + la fenêtre
   const carte = () => el.innerHTML && (el.innerHTML + ov.innerHTML);
-  sb.ETAB_PRICES = { prices: { CPR: { [cible.cips[0]]: [1, 7] } } };
+  sb.ETAB_PRICES = { prices: { CPR: { [cible.cips[0]]: [1, 7] } }, siteDates: { CPR: new Date().toISOString().slice(0, 10) } };
   sb.V2.sales = [{ pharmacyId: '2000016', commercial: 'A', year: 2026, month: 8, artCode: cible.cips[0], qte: 6 }];
   // « Autour d'elle » : une vraie annonce (vente, fermeture ou procédure) du fichier du jour, et l'officine placée dans sa commune
   const vraiSect = lireJson('bodacc-secteur.json');
@@ -494,7 +494,7 @@ const jourA = (d) => new Date(Date.now() + d * 864e5).toISOString().slice(0, 10)
 const frA = (iso) => iso.split('-').reverse().join('/');
 const cipA = (n) => '34009000' + String(n).padStart(5, '0');
 const venteA = (c, month, qte = 4) => ({ pharmacyId: '2000016', commercial: 'A', year: 2026, month, artCode: c, qte });
-async function panneauA(json, ventes, benchmark = [], lieu = {}) {
+async function panneauA(json, ventes, benchmark = [], lieu = {}, etab = { prices: {} }) {
   const el = { innerHTML: '', getAttribute: (k) => (k === 'data-pid' ? '2000016' : null) };
   const ov = { id: '', innerHTML: '', firstChild: null, addEventListener: rienA, getAttribute: () => null, setAttribute: rienA, classList: { add: rienA, remove: rienA, contains: () => false }, querySelector: () => null };
   const sb = charger({
@@ -502,7 +502,7 @@ async function panneauA(json, ventes, benchmark = [], lieu = {}) {
     addEventListener: rienA,
     document: { getElementById: (id) => (id === 'brief-off' ? el : (id === 'bo-ov' && ov.id ? ov : null)), createElement: () => ov, addEventListener: rienA, head: { appendChild() {} }, body: { appendChild() {}, style: {} } },
   });
-  sb.ETAB_PRICES = { prices: {} };
+  sb.ETAB_PRICES = etab;
   sb.BENCHMARK = benchmark;
   sb.V2.sales = ventes;
   sb.V2.briefOfficine.hydrate('2000016', ventes, lieu);
@@ -874,4 +874,24 @@ test('25/11 (sources) : répertoire des génériques à jour jusqu\'à 35 jours 
   const s = (g) => Array.from(calculer(base({ aujourdhui: '2026-11-25', generiques: { generated: g, princepsWithGeneric: [] } })).sources).filter((x) => x.cle === 'generiques')[0];
   assert.equal(s('2026-11-02').aJour, true, '23 jours après la sortie du 2 : pas en retard');
   assert.equal(s('2026-10-20').aJour, false, '36 jours : en retard');
+});
+
+test('25/11 (prix) : « Prix public … · 27 boîtes achetées. », sur une ligne', () => {
+  const r = calculer(base({ ventes: [{ cip: '3400900000001', mois: '2026-08', qte: 27 }, { cip: '3400900000002', mois: '2026-08', qte: 1 }],
+    prixFuturs: { generated: '2026-09-17', changes: ['3400900000001', '3400900000002'].map((c) => ({ c, d: 'DOLIPRANE 1000MG CPR BT8', sens: 'baisse', date_effet: '2026-10-01', date_publi: '2026-09-15', ppttc: 9.64, ancien_ttc: 10.43 })) } }));
+  assert.deepEqual(Array.from(r.points, (p) => p.detail).sort(), ['Prix public 10,43 € → 9,64 € TTC (−7,6 %) · 1 boîte achetée.', 'Prix public 10,43 € → 9,64 € TTC (−7,6 %) · 27 boîtes achetées.']);
+});
+
+test('25/11 (stock) : chemin réel — un relevé de plus de 30 jours, ou sans date, ne compte plus dans « Chez nous »', async () => {
+  const C = cipA(3);
+  const h = await panneauA({ 'ansm-dispo.json': { generated: jourA(0), items: [{ st: 'Rupture de stock', spec: 'Produit Rompu 5 mg', maj: frA(jourA(-1)), cips: [C] }] } },
+    [venteA(C, 8), venteA(cipA(4), 8)], [], {},
+    { prices: { OPS: { [C]: [1, 823] }, CPR: { [C]: [1, 13768] }, HP: { [C]: [1, 500] } }, siteDates: { OPS: jourA(-20), CPR: jourA(-71) } });
+  assert.match(h, /En rupture : Produit Rompu 5 mg/, 'marqueur positif : le point de rupture est là');
+  assert.match(h, /Chez nous : 823 boîtes sur OPS\./, 'seul le relevé de 20 jours compte');
+  assert.ok(!/13\u202f768|14\u202f591|15\u202f091|sur OPS, CPR/.test(h), 'le relevé de 71 jours ou sans date est compté');
+  const vieux = await panneauA({ 'ansm-dispo.json': { generated: jourA(0), items: [{ st: 'Rupture de stock', spec: 'Produit Rompu 5 mg', maj: frA(jourA(-1)), cips: [C] }] } },
+    [venteA(C, 8), venteA(cipA(4), 8)], [], {}, { prices: { CPR: { [C]: [1, 13768] } }, siteDates: { CPR: jourA(-71) } });
+  assert.match(vieux, /En rupture : Produit Rompu 5 mg/);
+  assert.ok(!/Chez nous/.test(vieux), 'tout le stock est trop ancien : pas de « Chez nous »');
 });

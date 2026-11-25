@@ -347,7 +347,9 @@
         // 25/11/2026 (Will) — « Baisse le … » : « Baisse de prix le … : Ezetimib/ator. Zentiva 10/20 mg, boîte de 30 » faisait passer le point à 5 lignes
         titre: (ch.sens === 'baisse' ? 'Baisse' : 'Hausse') + ' le ' + dateFr(ch.date_effet) + ' : ' + (np(ch.d) || nom(ch.c)),
         brut: ch.d || nomBrut(ch.c),
-        detail: 'Prix public ' + prix + '. Elle en a acheté ' + pluriel(a.qte, 'boîte') + '.',
+        // 25/11/2026 (Will) — « · 27 boîtes achetées. » au lieu de « . Elle en a acheté 27 boîtes. » : la phrase tient sur une ligne
+        // (les « Ezetimib/ator. Zentiva 10/20 mg, boîte de 30 » de l'officine 2003659 restaient à 5 lignes avec « Baisse le … »).
+        detail: 'Prix public ' + prix + ' · ' + pluriel(a.qte, 'boîte') + (a.qte > 1 ? ' achetées.' : ' achetée.'),
         // 24/11/2026 (Will) — une baisse de moins de 5 % : repliée d'office, et pas de conseil d'écouler le stock pour quelques centimes.
         action: petite ? '' : ch.sens === 'baisse' ? 'Lui conseiller d\'écouler son stock avant le ' + dateFr(ch.date_effet) + '.' : 'Lui signaler la hausse avant sa prochaine commande.',
         replie: petite,
@@ -519,15 +521,22 @@
     return Object.keys(vus).filter(function (m) { return !fin || m <= fin; }).sort();
   }
 
+  // 25/11/2026 (Will) — un relevé de stock de plus de 30 jours ne compte plus : « Chez nous : 57 971 boîtes » (Izalgi) additionnait six
+  // sites relevés du 15 au 21/09 (OPS, seul relevé du 05/11, était passé de 7 184 à 823). Un chiffre faux trompe plus qu'une absence.
+  // Un site sans date de relevé ne compte pas non plus : son chiffre ne se vérifie pas.
+  var STOCK_FRAIS_J = 30;
+  function releveFrais(d) { return !!d && jours(d, new Date().toISOString().slice(0, 10)) <= STOCK_FRAIS_J; }
   function stockSites(cip) {
     var EP = window.ETAB_PRICES && window.ETAB_PRICES.prices;
     if (EP) {
-      var out = [];
-      Object.keys(EP).forEach(function (site) { var v = EP[site][cip]; if (v && v[1] > 0) out.push({ site: site, q: v[1] }); });
+      var dates = window.ETAB_PRICES.siteDates || {}, out = [];
+      Object.keys(EP).forEach(function (site) { var v = EP[site][cip]; if (v && v[1] > 0 && releveFrais(dates[site])) out.push({ site: site, q: v[1] }); });
       return out;
     }
-    var q = window.STOCK_IP && window.STOCK_IP.data && window.STOCK_IP.data[cip];
-    return q > 0 ? [{ site: 'nos sites', q: q }] : [];
+    // stock-data.js : un total tous sites, sans le détail par site → montré seulement si TOUS les relevés sont frais
+    var S = window.STOCK_IP, q = S && S.data && S.data[cip], sd = (S && S.meta && S.meta.siteDates) || {};
+    var frais = Object.keys(sd).length > 0 && Object.keys(sd).every(function (x) { return releveFrais(sd[x]); });
+    return q > 0 && frais ? [{ site: 'nos sites', q: q }] : [];
   }
 
   // Mémorisé seulement si le catalogue est là : mémoriser un catalogue pas encore arrivé (chargé en
