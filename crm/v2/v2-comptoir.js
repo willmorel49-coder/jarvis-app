@@ -1636,7 +1636,13 @@
     portes: function () { V2.comptoir.porte(null); },
     // P-2 : revenir d'un onglet (Client…) ramène à l'accueil de l'écran, jamais à « Parcourir tout ».
     reinit: function () { C.porte = null; C.q = ''; C.fam = 'all'; C.page = 1; C.stock = false; C.molSel = null; C.panier = false; },
-    onglet: function (k) { C.chg = (k === 'rup' || k === 'nv') ? k : 'jo'; C.page = 1; majResultats(); },
+    // PRD-1 (26/11/2026) : au téléphone la rangée d'onglets glisse ; redessinée, elle revenait à gauche et l'onglet choisi restait coupé au bord droit.
+    // Sans effet là où la rangée ne déborde pas (ordinateur).
+    onglet: function (k) {
+      C.chg = (k === 'rup' || k === 'nv') ? k : 'jo'; C.page = 1; majResultats();
+      var t = document.querySelector && document.querySelector('.cq1-tabs'), on = t && t.querySelector('.cq1-tab.on');
+      if (on) { var a = on.getBoundingClientRect(), b = t.getBoundingClientRect(); if (a.right > b.right) t.scrollLeft += a.right - b.right; else if (a.left < b.left) t.scrollLeft -= b.left - a.left; }
+    },
     fam: function (k) { C.fam = k; C.page = 1; rerender(); },
     opp: function () { C.opp = !C.opp; C.page = 1; rerender(); },
     stock: function () { C.stock = !C.stock; C.page = 1; rerender(); },

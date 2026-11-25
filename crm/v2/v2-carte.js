@@ -586,8 +586,10 @@
     var b = document.getElementById('cn-tourbar'); if (!b) return;
     b.classList.toggle('on', tour.length > 0);
     var n = document.getElementById('cn-tourbar-n'); if (n) n.textContent = 'Ma tournée · ' + tour.length + ' arrêt' + (tour.length > 1 ? 's' : '');
-    var t = document.getElementById('cn-fb-tourn'); if (t) { t.textContent = String(tour.length); t.style.display = tour.length ? '' : 'none'; }
+    var t = document.getElementById('cn-fb-tourn'); if (t) { t.textContent = String(tour.length); t.style.display = tour.length ? '' : 'none'; if (t.parentNode) t.parentNode.setAttribute('aria-label', tourNom()); }
   }
+  // CARTE-3 (26/11/2026) : le nom lu par VoiceOver du bouton « Ma tournée » garde le nombre d'arrêts (au téléphone le libellé est masqué, il ne reste que la pastille)
+  function tourNom() { return 'Ma tournée' + (tour.length ? ', ' + tour.length + ' arrêt' + (tour.length > 1 ? 's' : '') : ''); }
   function haversine(a, b) {
     var R = 6371, r = Math.PI / 180;
     var s = Math.sin((b.lat - a.lat) * r / 2) * Math.sin((b.lat - a.lat) * r / 2) +
@@ -2008,7 +2010,7 @@
     if (acts) acts.innerHTML =
       '<button class="cn-fb-btn cn-fb-act" aria-label="Liste" onclick="V2.carteListOpen()">' + ICO('list', 14) + '<span>Liste</span></button>' +
       '<button class="cn-fb-btn cn-fb-act" title="Extraire les officines du filtre dans un fichier Excel" aria-label="Extraire en Excel" onclick="V2.carteExportXlsx()">' + ICO('download', 14) + '<span>Excel</span></button>' +
-      '<button class="cn-fb-btn cn-fb-act cn-fb-tour" aria-label="Ma tournée" onclick="V2.carteTourOpen()">' + ICO('pharma', 14) + '<span>Ma tournée</span><b id="cn-fb-tourn"' + (tour.length ? '' : ' style="display:none"') + '>' + tour.length + '</b></button>';
+      '<button class="cn-fb-btn cn-fb-act cn-fb-tour" aria-label="' + tourNom() + '" onclick="V2.carteTourOpen()">' + ICO('pharma', 14) + '<span>Ma tournée</span><b id="cn-fb-tourn"' + (tour.length ? '' : ' style="display:none"') + '>' + tour.length + '</b></button>';
     var el2 = document.getElementById('cn-fbrow2'); if (!el2) return;
     el2.style.display = more ? '' : 'none';
     el2.innerHTML = !more ? '' :

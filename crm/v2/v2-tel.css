@@ -50,6 +50,7 @@
   /* 26/11/2026 (audit téléphone du 25/11) — trois barres collantes passaient sous la barre du bas : le panier du Catalogue (53 px cachés, mesuré),
      la barre « N produits retenus » d'un document de produits, et la barre d'envoi de « Qui inviter » */
   body.bnav-on #cp-bar-hote{bottom:calc(var(--bnav-h) + 12px)}
+  body.bnav-on .cp-bar{padding-right:8px}   /* le panier gardait 80 px vides à droite pour le rond « + », masqué ici depuis la barre du bas */
   body.bnav-on .pr-panier{bottom:calc(var(--bnav-h) + 8px)}
   body.bnav-on .rad-bar{bottom:var(--bnav-h)}
   /* la carte s'arrête AU-DESSUS de la barre du bas : elle dépassait de 64 px (page de 908 px pour un écran de 844), la légende, « Ma tournée » et le pied de la fiche passaient dessous */
