@@ -200,6 +200,8 @@
         h += '<p class="pe-apres">À ' + esc(C.nom || 'cet endroit') + ' même, en ' + esc(an) + ' : ' +
           [nul(x.autorises) ? '' : nombre(x.autorises) + ' ' + plur(x.autorises, 'logement autorisé', 'logements autorisés'), nul(x.commences) ? '' : nombre(x.commences) + ' ' + plur(x.commences, 'mis en chantier', 'mis en chantier')].filter(function (t) { return t; }).join(' et ') + '.</p>';
       }
+    } else {
+      h += '<p>Les logements autorisés autour de la pharmacie ne sont pas encore dans cette étude : ils s’ajouteront au prochain calcul.</p>';
     }
     h += '<div class="pe-grille">' + TETE +
       ligne('Commerces', source(D, 'bpe'), parZone(D, function (z) { return nombre(z.commerces); })) +

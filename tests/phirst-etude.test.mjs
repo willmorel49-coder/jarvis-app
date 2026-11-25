@@ -145,6 +145,15 @@ describe('données manquantes', () => {
     const D = etude(); D.zones[10].habitants = null
     assert.match(vide(E.feuilles(D, null, { yann: false })), /—\s+habitants à moins de 10 minutes/)
   })
+  test('logements inconnus (Sitadel sans réponse) : le chapitre le dit, sans graphique vide', () => {
+    const avec = vide(E.feuilles(etude(), null, { yann: false }))
+    assert.doesNotMatch(avec, /pas encore dans cette étude/)
+    const D = etude(); for (const k of ['5', '10', '15']) D.zones[k].logements = null
+    const h = E.feuilles(D, null, { yann: false })
+    assert.match(vide(h), /logements autorisés autour de la pharmacie ne sont pas encore dans cette étude/)
+    assert.doesNotMatch(h, /pe-barres/)
+    assert.doesNotMatch(h, /null|NaN|undefined/)
+  })
 })
 
 describe('chapitre 03 : les pharmacies autour', () => {
