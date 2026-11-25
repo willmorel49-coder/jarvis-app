@@ -240,6 +240,7 @@ jobs:
       contents: read
       pages: write
       id-token: write
+      actions: read   # 25/11/2026 : lire la liste des paquets du run (étape « Attendre que GitHub liste le paquet »)
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -252,6 +253,20 @@ jobs:
         with:
           path: '.'
           include-hidden-files: true
+
+      # 25/11/2026 — GitHub liste parfois le paquet trop tard : deploy-pages lit « Found 0 artifact(s) » 20 ms après
+      # « Artifact github-pages successfully finalized » (4 runs de suite le 25/11, 3 le 24/11 ; le paquet apparaît ensuite).
+      # On attend qu'il soit listé, 60 s au plus ; au-delà, la publication est tentée quand même.
+      - name: Attendre que GitHub liste le paquet
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for i in $(seq 1 30); do
+            n=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" --jq '[.artifacts[] | select(.name=="github-pages")] | length' || echo 0)
+            if [ "${n:-0}" -ge 1 ]; then echo "paquet listé après $((i * 2)) s"; sleep 3; exit 0; fi
+            sleep 2
+          done
+          echo "::warning::paquet github-pages toujours absent de la liste après 60 s : publication tentée quand même"
 
       - id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
