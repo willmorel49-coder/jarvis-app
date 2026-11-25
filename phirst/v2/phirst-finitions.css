@@ -24,7 +24,7 @@
 .pa-l .pa-nom b{display:block;font-size:18px;line-height:1.25;overflow-wrap:anywhere}
 .pa-l .pa-nom small{display:block;font-size:14px;color:var(--au-ink3,#4A5D51)}
 .pa-l .pa-ligne .lg-et{grid-area:motif;margin:0;justify-self:end;white-space:nowrap}
-.pa-l .pa-r1{grid-area:raison;display:block;margin:4px 0 0;font-size:16px;line-height:1.4;font-weight:600;color:var(--au-ink,#16281E);overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+.pa-l .pa-r1{grid-area:raison;display:block;margin:4px 0 0;font-size:16px;line-height:1.4;font-weight:600;color:var(--au-ink,#16281E)}   /* 25/11 : la raison se lit en entier, plus de « … » au milieu d'une phrase */
 .pa-l.pa-ouvert .pa-r1{-webkit-line-clamp:unset;display:block;overflow:visible}
 .pa-l .pa-chev{grid-area:chev;justify-self:end;width:10px;height:10px;margin-right:6px;border-right:2.5px solid var(--au-accent,#1A3A2E);border-bottom:2.5px solid var(--au-accent,#1A3A2E);transform:rotate(45deg);transition:transform .18s ease}
 .pa-l.pa-ouvert .pa-chev{transform:rotate(-135deg)}
@@ -51,7 +51,7 @@
   .pa-l .pa-ligne{grid-template-columns:minmax(220px,1.1fr) 200px minmax(0,2.4fr) 24px;grid-template-areas:"nom motif raison chev";gap:0 18px;min-height:60px;padding:8px 14px 8px 18px;border-radius:0}
   .pa-l .pa-ligne:hover{background-color:#F6FAF7}
   .pa-l .pa-ligne .lg-et{justify-self:start}
-  .pa-l .pa-r1{margin:0;font-size:15px;-webkit-line-clamp:1}
+  .pa-l .pa-r1{margin:0;font-size:15px}
   .pa-l.pa-ouvert .pa-r1{-webkit-line-clamp:unset}
   .pa-l .pa-nom b{font-size:17px}
   .pa-l .pa-det{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:24px;align-items:start;padding:2px 18px 14px}
@@ -86,15 +86,15 @@
 /* ═══ 3. Veille : une rangée par pharmacie à l'ordinateur (même forme que Officines) ═══ */
 @media (min-width:1024px){
   .pv .pa-liste{gap:0;border:1px solid var(--au-fil,#D8E7DD);border-radius:16px;background-color:#fff;overflow:hidden}
-  .pv .pa-l{display:grid;grid-template-columns:minmax(0,1fr) 200px 330px;column-gap:16px;align-items:center;min-height:60px;padding:8px 14px 8px 18px;border:0;border-bottom:1px solid var(--au-fil,#D8E7DD);border-radius:0;box-shadow:none}
+  .pv .pa-l{display:grid;grid-template-columns:minmax(0,max-content) max-content minmax(0,1fr) 330px;column-gap:16px;align-items:center;min-height:60px;padding:8px 14px 8px 18px;border:0;border-bottom:1px solid var(--au-fil,#D8E7DD);border-radius:0;box-shadow:none}
   .pv .pa-l:last-child{border-bottom:0}
   .pv .pa-l:hover{background-color:#F6FAF7}
   .pv .pa-ht{display:contents}
   .pv .pa-ht>div:first-child{grid-column:1;grid-row:1;min-width:0}
   .pv .pa-ht b{font-size:17px;line-height:1.25}
   .pv .pa-ht .lg-et{grid-column:2;grid-row:1;justify-self:start;max-width:none;margin:0}
-  .pv .pa-r{grid-column:1;grid-row:2;margin:2px 0 0;font-size:14px;font-weight:600}
-  .pv .pa-bs{grid-column:3;grid-row:1 / span 2;flex-wrap:nowrap;justify-content:flex-end}
+  .pv .pa-r{grid-column:1 / 4;grid-row:2;margin:2px 0 0;font-size:14px;font-weight:600}
+  .pv .pa-bs{grid-column:4;grid-row:1 / span 2;flex-wrap:nowrap;justify-content:flex-end}
   .pv .pa-bs .pa-b{min-height:44px;white-space:nowrap}
   .pv .pa-l .pa-dit{grid-column:1 / -1;grid-row:3;margin:4px 0 0}
   .pv .pa-filtres{grid-template-columns:minmax(0,1fr) 280px;align-items:end}

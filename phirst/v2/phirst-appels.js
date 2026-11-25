@@ -256,13 +256,13 @@
   /* 22/11/2026 — une ligne par pharmacie (nom, motif, raison n° 1) ; la pharmacie OUVERTE montre son numéro, les autres raisons et les 4 boutons « après l'appel ».
      La première est ouverte d'office : elle appelle, note, et la suivante s'ouvre. */
   function ligneAppel(r, i) {
-    var m = P.etiquetteDe(r), autres = (r.raisons || []).slice(1), ouv = P.cle(r.nom, r.ville) === S.ouverte, id = 'pa-d' + i;
-    var raison = P.datesLisibles((r.raisons || [])[0] || '', jour());
+    var m = P.etiquetteDe(r), rs = P.raisonsAffichees(r), autres = rs.slice(1), ouv = P.cle(r.nom, r.ville) === S.ouverte, id = 'pa-d' + i;
+    var raison = P.datesLisibles(rs[0] || '', jour());
     var garde = !!S.gardees[P.cle(r.nom, r.ville)], sous = A ? sousLeNom(r) : '';
     return '<li class="pa-l' + (ouv ? ' pa-ouvert' : '') + '" data-i="' + i + '"><button type="button" class="pa-ligne" data-ouvrir="' + i + '" aria-expanded="' + ouv + '" aria-controls="' + id + '">' +
       '<span class="pa-nom"><b>' + esc(r.nom) + '</b><small>' + esc(r.ville) + (r.dep ? ' · ' + esc(r.dep) : '') + '</small>' + sous + '</span>' +
       '<em class="lg-et"' + (m[1] ? ' data-ton="' + m[1] + '"' : '') + '>' + esc(m[0]) + '</em>' +
-      '<span class="pa-r1">' + esc(raison) + '</span><span class="pa-chev" aria-hidden="true"></span></button>' +
+      (raison ? '<span class="pa-r1">' + esc(raison) + '</span>' : '') + '<span class="pa-chev" aria-hidden="true"></span></button>' +
       '<div class="pa-det" id="' + id + '"' + (ouv ? '' : ' hidden') + '><div class="pa-det-g">' +
       '<p class="pa-nu">' + (r.telephone ? tel(r.telephone) : '<span>Numéro à chercher avant d’appeler</span>') + (P.lienSur(r.lien) ? ' <a class="pa-lien" href="' + esc(P.lienSur(r.lien)) + '" target="_blank" rel="noopener">Voir la source</a>' : '') + '</p>' +
       (autres.length ? '<ul class="pa-au">' + autres.map(function (a) { return '<li>' + esc(P.datesLisibles(a, jour())) + '</li>'; }).join('') + '</ul>' : '') + '</div>' +

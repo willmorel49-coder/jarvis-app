@@ -33,7 +33,7 @@ describe('quels rendez-vous ont leur page', () => {
   test('le bandeau compte les rendez-vous confirmés de demain, dans l’ordre', () => {
     const b = R.bandeau([el(rdv({ id: 'b', debut: '2026-11-25T14:00', fin: '2026-11-25T15:00' }), fiche({ ville: 'Loudéac' })), el(rdv(), fiche()), el(rdv({ id: 'c', statut: 'propose' }), fiche())], AUJ)
     assert.equal(b.n, 2); assert.equal(b.titre, 'Demain : 2 rendez-vous, leurs pages sont prêtes.')
-    assert.deepEqual(b.boutons.map((x) => x.texte), ['9 h 30 · Lamballe', '14 h · Loudéac'])
+    assert.deepEqual(b.boutons.map((x) => x.texte), ['9 h 30\u00A0·\u00A0Pharmacie du Test Un\u00A0·\u00A0Lamballe', '14 h\u00A0·\u00A0Pharmacie du Test Un\u00A0·\u00A0Loudéac'])   // 25/11 : l'heure, la pharmacie, puis la ville quand le texte reste court
     assert.match(b.sous, /mercredi 25 novembre/)
   })
   test('le bandeau : singulier, lundi depuis le vendredi, rien quand rien', () => {

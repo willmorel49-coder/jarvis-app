@@ -27,6 +27,15 @@
     if (!rdv || (rdv.statut !== 'propose' && rdv.statut !== 'reporte') || !rdv.debut) return false;
     return String(rdv.debut).slice(0, 10) >= auj;
   }
+  /* 25/11/2026 — une pastille du bandeau dit l'heure ET la pharmacie (deux rendez-vous dans la même ville ne se distinguaient pas) ;
+     la ville ne vient qu'en plus, quand le texte reste court. Le « · » est tenu par des insécables des deux côtés. */
+  var PT = '\u00A0·\u00A0';
+  function textePastille(e) {
+    var h = P.heureFr(String(e.rdv.debut).slice(11)), nom = e.fiche && e.fiche.nom ? String(e.fiche.nom).trim() : '', ville = e.fiche && e.fiche.ville ? String(e.fiche.ville).trim() : '';
+    if (!nom) return h + (ville ? PT + ville : '');
+    var t = h + PT + nom;
+    return ville && (t.length + PT.length + ville.length) <= 44 ? t + PT + ville : t;
+  }
   /* Le bandeau du haut de l'agenda : les rendez-vous confirmés du jour de veille. null = rien à annoncer. */
   function bandeau(els, auj) {
     var veille = jourDeVeille(auj);
@@ -38,7 +47,7 @@
       jour: veille, n: l.length,
       titre: mot + ' : ' + (l.length > 1 ? l.length + ' rendez-vous, leurs pages sont prêtes.' : '1 rendez-vous, sa page est prête.'),
       sous: 'Prêtes pour ' + P.dateLongue(veille) + '.',
-      boutons: l.map(function (e) { return { id: e.rdv.id, texte: P.heureFr(String(e.rdv.debut).slice(11)) + (e.fiche && e.fiche.ville ? ' · ' + e.fiche.ville : '') }; })
+      boutons: l.map(function (e) { return { id: e.rdv.id, texte: textePastille(e) }; })
     };
   }
 

@@ -127,11 +127,10 @@
     S.debloques.slice(-2).forEach(function (t) { h += '<p class="dz-sem-ok">' + ico('coche', 18) + '<span>' + esc(t) + '</span></p>'; });
     return h + '<p class="dz-sem-note">Rien à saisir en plus : tout part des étapes déjà cochées.</p></section>';
   }
-  /* Sur la carte d'une pharmacie : ce qui la retient cette semaine */
-  function retenuCarte(ph) {
-    return D.retenues([ph], auj()).map(function (r) {
-      return '<p class="dz-retenu">Cette semaine · ' + esc(r.volet.nom) + ' : ' + (r.qui.vous ? 'une étape à faire par vous' : 'en attente ' + esc(D.deQui(r.qui.qui))) + '</p>';
-    }).join('');
+  /* 25/11/2026 — l'étape qui bloque est dite UNE fois : dans le bandeau « Cette semaine ». La carte d'une pharmacie déjà citée dans le bandeau
+     ne la redit pas (ni en « Prochaine chose à faire », ni en pastille grise). Le bandeau est absent quand le formulaire « Nouveau dossier » est ouvert. */
+  function citeeDansBandeau(ph, u) {
+    return !!u && S.vue !== 'nouveau' && D.retenues([ph], auj()).some(function (r) { return r.volet.sorte === u.volet.sorte && r.etape.k === u.etape.k; });
   }
   function htmlChaine(ph) {
     if (ph.volets.filter(function (v) { return v.etat === 'cours'; }).length < 2) return '';
@@ -208,7 +207,9 @@
       });
       h += '</div>';
     }
-    if (u) {
+    if (citeeDansBandeau(ph, u)) {
+      /* étape déjà dite dans le bandeau « Cette semaine » : rien ici */
+    } else if (u) {
       var dl = D.ligneDate(u.etape, a);
       h += '<div class="dz-proch"><span class="dz-kicker">Prochaine chose à faire · ' + esc(u.volet.nom) + '</span><b>' + esc(u.etape.t) + '</b><small class="' + (dl.retard ? 'ret' : '') + '">' + esc(dl.texte) + '</small></div>';
     } else if (!vs.length) {
@@ -216,7 +217,6 @@
     } else {
       h += '<div class="dz-proch"><span class="dz-kicker">Aucune étape à faire</span><small>' + esc(D.texteSansProchaine(vs)) + '</small></div>';
     }
-    h += retenuCarte(ph);
     return h + '<button type="button" class="dz-btn" data-dz="ouvrir" data-id="' + esc(ph.dossier.id) + '">Ouvrir le dossier ' + ico('fleche', 18) + '</button></article>';
   }
   function groupe(titre, n, html) { return '<section class="dz-groupe"><div class="dz-groupe-t"><h2>' + titre + '</h2><span>' + n + '</span></div><div class="dz-grille">' + html + '</div></section>'; }
@@ -232,7 +232,10 @@
     if (S.erreur) return h + '<div class="dz-vide"><p>Vos dossiers ne se sont pas affichés.</p><p>Réessayez dans un instant.</p><button type="button" class="dz-btn plein" data-dz="reessayer">Réessayer</button></div>';
     if (!phs.length) return h + (S.vue === 'nouveau' ? '' : '<div class="dz-vide"><p>Vous n’avez pas encore de dossier.</p><p>Créez-en un pour suivre un projet, étape par étape.</p><button type="button" class="dz-btn plein" data-dz="nouveau">Nouveau dossier</button></div>');
     if (S.vue !== 'nouveau') h += htmlSemaine(phs);
-    if (g.av.length) h += groupe('Ils avancent', D.pl(g.av.length, 'pharmacie', 'pharmacies'), g.av.map(carte).join(''));
+    /* 25/11/2026 — un dossier en retard ne se range plus sous « Ils avancent » : groupe à part, devant */
+    var enRet = g.av.filter(function (ph) { return D.enRetard(ph.volets, auj()); }), avance = g.av.filter(function (ph) { return enRet.indexOf(ph) < 0; });
+    if (enRet.length) h += groupe('En retard', D.pl(enRet.length, 'pharmacie', 'pharmacies'), enRet.map(carte).join(''));
+    if (avance.length) h += groupe('Ils avancent', D.pl(avance.length, 'pharmacie', 'pharmacies'), avance.map(carte).join(''));
     if (g.dem.length) h += groupe('À démarrer', D.pl(g.dem.length, 'pharmacie', 'pharmacies'), g.dem.map(carte).join(''));
     if (g.fin.length) h += repli('Terminés', D.pl(g.fin.length, 'pharmacie', 'pharmacies'), g.fin.map(carte).join(''));
     if (g.att.length) h += repli('En pause ou perdus', D.pl(g.att.length, 'pharmacie', 'pharmacies'), g.att.map(carte).join(''));

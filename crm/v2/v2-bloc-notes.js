@@ -53,7 +53,7 @@
       '.bn-ta:focus{outline:none;border-color:var(--ip-blue);box-shadow:0 0 0 3px var(--halo)}',
       '.bn-ligne{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:10px}',
       '.bn-ligne .v2-btn,.bn-b{min-height:44px}',
-      '.bn-mic{flex:none;width:44px;height:44px;border-radius:11px;border:1px solid var(--line-strong);background:var(--card);color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}',
+      '.bn-mic{flex:none;min-width:44px;height:44px;padding:0 14px;gap:8px;font:inherit;font-size:15px;font-weight:600;border-radius:11px;border:1px solid var(--line-strong);background:var(--card);color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}',
       '.bn-mic:hover{color:var(--ip-blue);border-color:var(--ip-blue)}',
       '.bn-mic.rec{color:#fff;background:var(--c-rose);border-color:var(--c-rose)}',
       '.bn-b{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 16px;border:1px solid var(--line-strong);border-radius:var(--r-btn);background:var(--card);font-family:var(--font);font-size:14.5px;font-weight:700;color:var(--ip-blue);cursor:pointer;-webkit-tap-highlight-color:transparent}',
@@ -387,7 +387,7 @@
       '<div class="v2-card bn-ecrire" data-dictee="1"><div class="bn-h">Nouvelle note</div>' +
         '<textarea class="v2-notes-ta bn-ta" id="bn-ta" rows="4" placeholder="Vu la pharmacie du Port à Caen, nouveau titulaire…" aria-label="Texte de la note"></textarea>' +
         '<div class="bn-ligne">' +
-          (dictee ? '<button type="button" class="bn-mic" data-bn="dicter" title="Dicter la note à la voix" aria-label="Dicter la note à la voix">' + ic('mic') + '</button>' : '') +
+          (dictee ? '<button type="button" class="bn-mic" data-bn="dicter" title="Dicter la note à la voix" aria-label="Dicter la note à la voix">' + ic('mic') + 'Dicter</button>' : '') +
           '<button type="button" class="v2-btn v2-btn-primary" data-bn="enregistrer" id="bn-enr">Enregistrer la note</button>' +
         '</div><div class="bn-msg" id="bn-msg-ecrire" role="status" aria-live="polite"></div></div>' +
       '<div class="v2-card bn-voix"><div class="bn-h">Note vocale</div><div id="bn-voix"></div></div>' +
@@ -488,7 +488,7 @@
     if (en) S.editTxt = en.value;
     if (S.etat === 'charge' || S.etat === 'attente') { z.innerHTML = '<div class="bn-vide">Chargement de vos notes…</div>'; return; }
     if (S.etat === 'echec') { z.innerHTML = '<div class="v2-card bn-note"><div class="bn-msg bn-msg--ko" style="margin:0">' + esc(S.erreur) + '</div><div class="bn-acts"><button type="button" class="v2-btn v2-btn-primary" data-bn="recharger">Réessayer</button></div></div>'; return; }
-    if (!S.rows.length) { z.innerHTML = '<div class="bn-vide">Aucune note pour l’instant. Écris ou dicte la première ci-dessus.</div>'; return; }
+    if (!S.rows.length) { z.innerHTML = '<div class="bn-vide">Aucune note pour l’instant. Écrivez ou dictez la première ci-dessus.</div>'; return; }
     var h = '', dernier = '';
     S.rows.forEach(function (r) {
       var j = libJour(r.created_at);
@@ -504,7 +504,7 @@
     var ta = document.getElementById('bn-ta'), msg = document.getElementById('bn-msg-ecrire');
     var body = (ta && ta.value || '').trim();
     var dire = function (t, cl) { if (msg) { msg.className = 'bn-msg' + (cl ? ' bn-msg--' + cl : ''); msg.textContent = t; } };
-    if (!body) { dire('Écris ou dicte quelque chose d’abord.', 'ko'); if (ta) ta.focus(); return; }
+    if (!body) { dire('Écrivez ou dictez quelque chose d’abord.', 'ko'); if (ta) ta.focus(); return; }
     var c = sb(); if (!c || !V2.user) { dire('Vous n’êtes pas connecté : la note n’est pas enregistrée.', 'ko'); return; }
     btn.disabled = true; dire('Enregistrement…');
     Promise.resolve(c.from(TABLE).insert({ author_id: V2.user.id, author_name: V2.user.name || '', kind: 'texte', body: body, statut: 'brouillon' }).select('id')).then(function (r) {
@@ -669,7 +669,7 @@
 
   function demarrer() {
     if (R.etat !== 'repos') return;
-    if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder)) { dire('Ce navigateur ne sait pas enregistrer la voix. Utilise le micro de dictée dans « Nouvelle note ».', 'ko'); return; }
+    if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder)) { dire('Ce navigateur ne sait pas enregistrer la voix. Utilisez le micro de dictée dans « Nouvelle note ».', 'ko'); return; }
     R.etat = 'micro'; dire(''); dessinerVoix();
     navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
       var type = typeAudio(), rec;

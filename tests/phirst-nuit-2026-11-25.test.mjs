@@ -70,8 +70,8 @@ test('A36 · Chantiers : « vous-même » ne se coupe plus dans le mot', () => {
   assert.match(lire('phirst-chantiers.js'), /faire <span style="white-space:nowrap">vous-même<\/span>\./);
 });
 
-test('Encaisser : les guillemets de « Malgré mon précédent message » ne restent plus seuls en fin de ligne', () => {
-  assert.match(lire('phirst-encaisser.js'), /«\\u00A0Malgré mon précédent message\\u00A0» seulement si/);
+test('Encaisser : la note « Le ton suit le retard… » (qui redisait « ce message est plus net ») a été retirée le 25/11 (B28), guillemets compris', () => {
+  assert.doesNotMatch(lire('phirst-encaisser.js'), /Malgré mon précédent message\\u00A0» seulement si/);
 });
 
 test('B24 · phrases de départ : jamais d’espace ordinaire avant « ? ! : ; »', () => {

@@ -92,7 +92,7 @@
   }
 
   /* ── l'écran ── */
-  function pastille(a) { var e = E.etiquette(a, auj()); return '<span class="dz-et' + (e.ton ? ' ' + e.ton : '') + '">' + esc(e.texte) + '</span>'; }
+  function pastille(a) { var e = E.etiquette(a, auj()); return '<span class="dz-et' + (e.ton ? ' en-jours ' + e.ton : '') + '">' + esc(e.texte) + '</span>'; }
   function bande(M) {
     var d = E.du(M.lignes), r = E.enRetard(M.att), phrase = E.phraseBande(M.lignes.length, M.rel, auj());
     return '<section class="en-bande" aria-labelledby="en-t"><div><p class="en-sur">' + esc(maj(E.longJour(auj()))) + '</p><h1 id="en-t">Encaisser</h1>' +
@@ -117,7 +117,7 @@
       '<p class="en-pet">À ' + esc(a2.join(' · ')) + '</p></div>' +
       '<div class="en-msg-c"><p class="en-objet">Objet : <b id="en-objet">' + esc(m.objet) + '</b></p>' +
       '<div class="dz-champ"><label for="en-texte">Le message, déjà écrit : vous pouvez le modifier</label><textarea id="en-texte" data-id="' + esc(l.id) + '">' + esc(texte) + '</textarea></div>' +
-      '<p class="en-pet">Le ton suit le retard : un rappel courtois la première semaine, plus net ensuite. «\u00A0Malgré mon précédent message\u00A0» seulement si une relance est déjà partie.</p></div></section>';
+      '</div></section>';
   }
   function boutonNoter(M, cls) {
     return M.phs.length ? '<button type="button" class="dz-btn plein' + (cls || '') + '" data-en="noter">' + ico('plus', 20) + 'Noter une somme</button>'

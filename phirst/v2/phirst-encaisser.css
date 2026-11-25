@@ -9,17 +9,17 @@
     linear-gradient(158deg,#24503F 0%,#173428 54%,#12281F 100%);
   box-shadow:0 1px 0 rgba(255,255,255,.14) inset,0 30px 56px -34px rgba(18,40,31,.7)}
 .en .en-sur{margin:0;font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:#CFE6D8}
-.en .en-bande h1{margin:4px 0 0;font:800 24px/1.15 var(--font);letter-spacing:-.01em;color:#fff}
+.en .en-bande h1{margin:4px 0 0;font:800 clamp(32px,9vw,40px)/1.04 var(--font);letter-spacing:-.03em;color:#fff}
 .en .en-grand{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px 14px;margin:10px 0 0}
 .en .en-grand b{font:800 76px/.88 var(--font);letter-spacing:-.04em;font-variant-numeric:tabular-nums;white-space:nowrap}
 .en .en-grand span{padding-bottom:5px;font-weight:700;font-size:20px;line-height:1.18}
-.en .en-retard{display:inline-flex;align-items:center;gap:8px;margin:14px 0 0;padding:5px 12px;border-radius:999px;background-color:#FBE2DF;color:#9B2C24;font-weight:800;font-size:15px}
-.en .en-retard.ok{background-color:#E0F2E7;color:#0E6B43}
+.en .en-retard{margin:14px 0 0;color:#FFC2BA;font-weight:800;font-size:16px}   /* texte seul sur le vert foncé (rouge clair : contraste mesuré ≥ 4,5:1) ; plus de pastille */
+.en .en-retard.ok{color:#B8F0CC}
 .en .en-phrase{margin:14px 0 0;max-width:52ch;font-size:17px;line-height:1.45;color:#DCEBE2}
 @media (min-width:901px){.en .en-bande{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:end;column-gap:56px}.en .en-phrase{margin:0 0 6px;justify-self:end;max-width:50ch;font-size:18px}}
 
 .en .en-grille{position:relative;display:grid;gap:16px;padding:0 22px}
-.en .en-trois{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
+.en .en-trois{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch}
 
 /* la relance du moment */
 .en .dz-carte.en-maint{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:28px;padding:24px 28px}
@@ -38,6 +38,7 @@
 .en .en-deux{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .en .en-fait{margin-top:2px}
 .en .en-fait .dz-btn{width:100%}
+.en.dz .dz-et.en-jours{padding:0;border-radius:0;background-color:transparent;font-size:14px}   /* les jours en texte coloré, sans fond (Encaisser seulement : Dossiers garde ses pastilles) */
 .en .dz-btn[aria-disabled="true"]{color:var(--dz-ink3)}
 .en .en-msg-c{display:grid;gap:10px;align-content:start;min-width:0;padding:16px;border-radius:16px;background-color:#F6FAF7;border:1px solid var(--dz-fil)}
 .en .en-objet{margin:0;font-size:15px;line-height:1.4;color:var(--dz-ink2)}

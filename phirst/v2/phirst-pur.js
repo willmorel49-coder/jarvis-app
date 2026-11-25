@@ -578,6 +578,14 @@
     var m = MOTIFS[r && r.motif] || ['Signal', ''], e = r && typeof r.etiquette === 'string' ? r.etiquette.replace(/\s+/g, ' ').trim() : '';
     return e && e.length <= 90 && ETIQUETTE_PROPRE[r.motif] && !contientMontant(e) ? [e, m[1]] : m;
   }
+  /* 25/11/2026 — quand la pastille dit « De la part de X », la raison « Recommandée par X (ville), client de Yann » redit la même chose : elle part.
+     Rend les raisons à montrer (le tableau d'origine n'est pas modifié). */
+  function raisonsAffichees(r) {
+    var rs = (r && Array.isArray(r.raisons) ? r.raisons : []).slice(), e = etiquetteDe(r)[0], m = /^De la part (?:de |d[’'])\s*(.+)$/i.exec(e || '');
+    if (!m) return rs;
+    var nom = m[1].replace(/\s+/g, ' ').trim().toLowerCase();
+    return rs.filter(function (t) { var x = String(t || '').replace(/\s+/g, ' ').trim().toLowerCase(); return !(/^recommandée? par /.test(x) && nom && x.indexOf(nom) >= 0); });
+  }
   /* Veille : mêmes mots que le robot de l'accueil de Yann (ligne-vers-base.mjs, SIGNAL). */
   var SIGNAL_VEILLE = {
     procedure_collective: { t: 'En difficulté', ton: 'rouge', phrase: 'est en procédure collective' },
@@ -949,7 +957,7 @@
     maj: maj, dureeFr: dureeFr, lieuPharmacie: lieuPharmacie, phraseRdv: phraseRdv, joursProposes: joursProposes, corpsRdv: corpsRdv,
     NB_PUCES: NB_PUCES, fenetreJours: fenetreJours, decalages: decalages, jourCourt: jourCourt, lierRdv: lierRdv, duJour: duJour,
     comptesParJour: comptesParJour, sousPuce: sousPuce, phraseLibres: phraseLibres, plagesLibres: plagesLibres, carteEnsuite: carteEnsuite, phraseEtat: phraseEtat,
-    equipeParId: equipeParId, estTelepro: estTelepro, nomAuteur: nomAuteur, avecAuteur: avecAuteur, ligneDeTelepro: ligneDeTelepro, momentDeTelepro: momentDeTelepro, MOTIFS: MOTIFS, RANGS_L4: RANGS_L4, etiquetteDe: etiquetteDe, agendaDeTelepro: agendaDeTelepro, messageDeLaBase: messageDeLaBase,
+    equipeParId: equipeParId, estTelepro: estTelepro, nomAuteur: nomAuteur, avecAuteur: avecAuteur, ligneDeTelepro: ligneDeTelepro, momentDeTelepro: momentDeTelepro, MOTIFS: MOTIFS, RANGS_L4: RANGS_L4, etiquetteDe: etiquetteDe, raisonsAffichees: raisonsAffichees, agendaDeTelepro: agendaDeTelepro, messageDeLaBase: messageDeLaBase,
     ANGLES: ANGLES, N_INITIAL: N_INITIAL, PAS_LISTE: PAS_LISTE, FILTRES_SIGNAUX: FILTRES_SIGNAUX, FILTRES_TRANSFERTS: FILTRES_TRANSFERTS, nomAngle: nomAngle, angleValide: angleValide,
     contientMontant: contientMontant, recherchePropre: recherchePropre, depPropre: depPropre, requeteOfficines: requeteOfficines, libelleResultats: libelleResultats, libelleVoirPlus: libelleVoirPlus,
     telFr: telFr, frDate: frDate, libelleGroupements: libelleGroupements, fusionnerSommes: fusionnerSommes, sansSommes: sansSommes, pourquoiAffiche: pourquoiAffiche, sousAffiche: sousAffiche,

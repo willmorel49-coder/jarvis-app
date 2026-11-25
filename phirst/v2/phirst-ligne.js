@@ -74,7 +74,12 @@
   function station(s) {
     var n = nb(s), av = avenir(s);
     return '<li><button type="button" class="lg-st" data-k="' + esc(s.cle) + '" aria-pressed="' + (s.cle === cle) + '" aria-label="' + esc(s.mot) + ' : ' + (av ? 'à venir' : n + ' pharmacie' + (n > 1 ? 's' : '')) + '">' +
-      '<span class="lg-n' + (av ? ' lg-avenir' : '') + '">' + (av ? 'à venir' : n) + '</span><span class="lg-m">' + esc(s.mot) + '</span></button></li>';
+      '<span class="lg-n' + (av ? ' lg-avenir' : '') + '">' + (av ? '—' : n) + '</span><span class="lg-m">' + esc(s.mot) + '</span></button></li>';
+  }
+  /* 25/11/2026 — la pharmacie de la grande carte « La chose n° 1 » n'est pas redite dans la liste du dessous (son titre commence par son nom). */
+  function estLaChose(c, p) {
+    var t = norm(c && c.titre), n = norm(p && p.nom);
+    return !!n && t.indexOf(n) === 0 && (t.length === n.length || /^(,| ·| —| -|\s—|\s-)/.test(t.slice(n.length)));
   }
   function lignes(liste) {
     return liste.map(function (p) { return '<li>' + pastille(p, 48) + '<span><b>' + esc(p.nom) + '</b><small>' + esc(p.ville) + '</small><em class="lg-et"' + (p.etiquette.ton ? ' data-ton="' + esc(p.etiquette.ton) + '"' : '') + '>' + esc(p.etiquette.t) + '</em></span></li>'; }).join('');
@@ -89,7 +94,7 @@
     var det = c && (c.parution ? 'Paru au BODACC ' + depuis(c.parution) + '.' : (window.PHIRST_PUR && c.detail ? window.PHIRST_PUR.datesLisibles(c.detail, window.PHIRST_PUR.aujourdhui()) : c.detail));
     if (c) h += '<p class="lg-titre">' + esc(c.titre) + '</p><p class="lg-det">' + esc(c.heure) + (det ? ' · ' + esc(det) : '') + '</p><button type="button" class="lg-gros"' + (c.type === 'veille' ? (c.piste ? ' data-piste="1"' : '') : vers(GESTE_VERS[s.cle])) + '>' + esc(c.bouton) + FL + '</button>' +
       (c.type === 'veille' ? '<p class="lg-dit" role="status"></p>' : '');
-    h += '</div><div class="lg-liste"><p class="lg-lt">' + n + ' pharmacie' + (n > 1 ? 's' : '') + ' à ce moment</p><ul>' + lignes(s.pharmacies);
+    h += '</div><div class="lg-liste"><p class="lg-lt">' + n + ' pharmacie' + (n > 1 ? 's' : '') + ' à ce moment</p><ul>' + lignes(c ? s.pharmacies.filter(function (p) { return !estLaChose(c, p); }) : s.pharmacies);
     return h + '</ul>' + (s.autres ? '<button type="button" class="lg-autres"' + vers(s.source === 'appels' ? 'appels' : s.source === 'veille' || s.cle === 'trouver' ? 'veille' : VIDE_VERS[s.cle]) + '>' + esc(s.autres) + FL + '</button>' : '') + '</div></div>';
   }
   /* « L'ajouter à mes pistes » : crée la fiche comme ajouterAuPipeline de la V1 (~/phirst-studio/app/crm/actions.ts l. 56-114) —

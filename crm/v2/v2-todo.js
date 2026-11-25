@@ -1122,7 +1122,7 @@
         '</div></div>';
       var corps = voirFaits
         ? (faits.length ? '<div class="tb-faits">' + faits.map(carte).join('') + '</div>' : '<div class="v2-card v2-todo-empty">Rien de coché pour l\'instant.</div>')
-        : (ouv.length ? tableau(ouv) : '<div class="v2-card v2-todo-empty">' + (faits.length ? 'Tout est coché.' : 'La liste est vide.') + '</div>') +
+        : (ouv.length ? tableau(ouv) : '') +   /* 25/11 : rien à faire = une seule phrase, celle du bandeau (les deux anciennes cartes la redisaient) */
           (faits.length ? '<div class="tb-pied"><button type="button" class="tb-lien" onclick="V2.todo.filtrer(\'fait\')"><span>Tâches faites</span><b class="tb-nb">' + faits.length + '</b></button></div>' : '');
       root.innerHTML = top + '<div class="v2-wrap narrow">' + tdOuvre() + tdEntete(phrase, local, onglets, '') + barre + form + corps + mailsPrets() + '</div></div>';
       tdApres(root);
@@ -1136,7 +1136,7 @@
   function tdPhrase(ong, ouv, faits, nR, nC) {
     if (ong === 'relances') return nR == null ? 'Le suivi de vos envois aux prospects se prépare…' : nR ? tdPl(nR, 'prospect à relancer', 'prospects à relancer') + ' maintenant.' : 'Aucune relance à faire maintenant.';
     if (ong === 'chauds') return nC == null ? 'Le suivi de vos prospects se prépare…' : nC ? tdPl(nC, 'prospect chaud', 'prospects chauds') + ' : le moment de les pousser à tester.' : 'Aucun prospect chaud pour l\'instant.';
-    if (!ouv.length) return faits.length ? 'Rien à faire pour l\'instant : tout est coché.' : 'Rien à faire pour l\'instant. Ajoutez votre première tâche.';
+    if (!ouv.length) return faits.length ? 'Rien à faire pour l’instant : tout est coché.' : 'Rien à faire pour l’instant. Ajoutez votre première tâche.';
     // v3 : une seule phrase, celle de la colonne « Aujourd'hui » ; le total est déjà dans l'onglet
     var a = 0, r = 0;
     ouv.forEach(function (x) { var d = joursAvant(x); if (d != null && d <= 0) a++; if (d != null && d < 0) r++; });
