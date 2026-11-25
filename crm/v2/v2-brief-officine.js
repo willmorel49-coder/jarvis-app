@@ -297,7 +297,7 @@
       if (!a.qte || a.dernier < recent) return;
       var parMois = Math.max(1, Math.round(a.qte / nbMois));
       // 24/11/2026 — sans « (dernière commande : …) » : seuls ses achats des 3 derniers mois passent ce filtre.
-      var detail = [];   // les faits après sa consommation : repris tels quels si la ligne fusionne avec « Pas commandé »
+      var detail = ['Elle en achète environ ' + pluriel(parMois, 'boîte') + ' par mois.'];
       var majIso = isoDeFr(it.maj);
       var ancienne = it.st !== 'Remise à disposition' && !!majIso && jours(majIso, auj) > ANSM_ANCIENNE_J;
       var depuis = ancienne ? moisFr(String(it.since || majIso).slice(0, 7)) : '';
@@ -320,9 +320,9 @@
         urgence: s.urgence, volume: a.qte,
         titre: s.titre + (depuis ? ' depuis ' + depuis : '') + ' : ' + np(it.spec),
         brut: it.spec,
-        detail: ['Elle en achète environ ' + pluriel(parMois, 'boîte') + ' par mois.'].concat(detail).join(' '),
+        detail: detail.join(' '),
         replie: ancienne,
-        cips: it.cips, etat: s.etat ? s.etat + (depuis ? ' depuis ' + depuis : '') : '', faits: detail.join(' '),
+        cips: it.cips, etat: s.etat ? s.etat + (depuis ? ' depuis ' + depuis : '') : '',
         action: it.st === 'Remise à disposition' ? 'Lui signaler qu\'elle peut recommander.' : 'La prévenir avant qu\'elle le découvre au comptoir.',
         pourquoi: 'ANSM · ' + dateFr(isoDeFr(it.maj) || e.ansm.generated),   // « (rupture de stock…) et présent dans ses achats » redisait le titre
         source: 'ansm', date: isoDeFr(it.maj) || (e.ansm.generated || '')
@@ -398,13 +398,12 @@
       });
     });
     // 25/11/2026 (Will) — produit qu'elle n'a pas commandé ET que l'ANSM signale (Izalgi 500 mg/25 mg, officine 2281324 : deux lignes) :
-    // UNE ligne qui dit les deux, la rupture ou la tension expliquant sans doute l'arrêt. Le point ANSM s'efface, ses faits
-    // (retour annoncé, notre stock) et sa source passent dans la ligne ; « elle en achète environ… » redirait ses achats.
+    // UNE ligne qui dit les deux, la rupture ou la tension expliquant sans doute l'arrêt. Le point ANSM s'efface, sa source passe
+    // dans la ligne. Ses faits (retour annoncé, notre stock) n'y sont PAS : la ligne passait à 6 lignes (sonde du 25/11, 2281324).
     pts.filter(function (p) { return p.rubrique === 'Ses achats'; }).forEach(function (p) {
       var q = pts.filter(function (x) { return x.rubrique === 'Va manquer' && x.cips.indexOf(p.cip) >= 0; })[0];
       if (!q) return;
       p.titre += ', ' + q.etat;
-      if (q.faits) p.detail += ' ' + q.faits;
       p.pourquoi = q.pourquoi; p.source = q.source; p.date = q.date;
       pts.splice(pts.indexOf(q), 1);
     });
@@ -440,7 +439,7 @@
       if (g.length < 2 || b.filter(function (x, i) { return x && b.indexOf(x) === i; }).length < 2) return;
       g.forEach(function (p, i) { if (b[i]) p.titre += ', boîte de ' + b[i]; });
     });
-    pts.forEach(function (p) { delete p.brut; delete p.cips; delete p.cip; delete p.etat; delete p.faits; });
+    pts.forEach(function (p) { delete p.brut; delete p.cips; delete p.cip; delete p.etat; });
 
     // Ordre des rubriques (ORDRE) ; dans une rubrique, l'urgence puis SON volume — les ruptures, elles,
     // par son volume seul : une tension sur 50 boîtes par mois la gêne plus qu'une rupture sur 2.

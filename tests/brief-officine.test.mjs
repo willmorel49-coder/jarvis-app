@@ -841,10 +841,10 @@ test('25/11 (Izalgi) : « Pas commandé » et « En tension » du même produit 
   assert.equal(iz.length, 1, 'une seule ligne : ' + iz.map((p) => p.titre).join(' | '));
   assert.equal(iz[0].rubrique, 'Ses achats');
   assert.equal(iz[0].titre, 'Pas commandé en août 2026 : Izalgi 500 mg/25 mg, en tension');
-  assert.equal(iz[0].detail, 'Commandé 5 mois sur les 5 précédents (150 boîtes au total). Chez nous : 10 boîtes sur CPR.');
+  assert.equal(iz[0].detail, 'Commandé 5 mois sur les 5 précédents (150 boîtes au total).', 'sans retour ni stock : la ligne tient en 4 lignes');
   assert.equal(iz[0].pourquoi, 'ANSM · 22/05/2026');
   assert.ok(!tous.some((p) => p.rubrique === 'Va manquer'), 'le point ANSM s\'est effacé');
-  assert.ok(tous.every((p) => !['cips', 'cip', 'etat', 'faits'].some((k) => k in p)), 'aucun champ de travail ne sort de calculer()');
+  assert.ok(tous.every((p) => !['cips', 'cip', 'etat'].some((k) => k in p)), 'aucun champ de travail ne sort de calculer()');
 });
 
 test('25/11 (anciennes) : une tension que l\'ANSM n\'a pas mise à jour depuis plus d\'un an est repliée, avec « depuis »', () => {
