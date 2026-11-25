@@ -269,6 +269,7 @@
     s.onload = function () { fin(!!window.L); }; s.onerror = function () { fin(false); };
     document.head.appendChild(s);
   }
+  window.PHIRST_LEAFLET = chargerLeaflet; // l'étude de zone (phirst-etude.js) réutilise ce chargement : Leaflet n'est jamais chargé deux fois
   function poserFond(map) {
     var L = window.L, ign = 'https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&FORMAT=image/png&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}';
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.ign.fr">IGN</a> — Géoplateforme &middot; &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(map);
@@ -489,6 +490,10 @@
     if (s.etat === 'archivee') return '<div class="po-fact" role="status"><p class="po-ffait">Archivée dans vos pistes</p><button type="button" class="pa-b" data-vers="appels">Voir mes pistes</button></div>';
     return '<div class="po-fact"><button type="button" class="pa-b pa-ok po-fajout" data-fiche-ajout="1"' + (F.envoi ? ' disabled' : '') + '>Ajouter aux officines à appeler</button><p class="pa-dit" role="status">' + esc(F.dit || '') + '</p></div>';
   }
+  /* Le bouton « Étude de zone » : seulement si une étude existe — ou si la vérification a échoué (on ne conclut pas « pas d'étude » sur une panne). */
+  function htmlEtude(F) {
+    return F.etude === 'oui' || F.etude === 'erreur' ? '<button type="button" class="pa-b pe-ouvre" data-fiche-etude="1">Étude de zone</button>' : '';
+  }
   function htmlFiche(F) {
     var f = F.f, rep = M.replie, past = pastilles(f) + (F.integ ? ' <em class="lg-et po-et-ip">Cliente Intégral</em>' : '');
     var sous = [f.cp, f.ville].filter(Boolean).join(' ') + (f.groupements.length ? ' · ' + P.libelleGroupements(f.groupements) : '');
@@ -497,7 +502,7 @@
       '<div class="po-fbtns"><button type="button" class="po-fbt" data-fiche-replier="1" aria-label="' + (rep ? 'Déplier la fiche' : 'Replier la fiche') + '" aria-expanded="' + !rep + '">' + (rep ? IC.bas : IC.haut) + '</button>' +
       '<button type="button" class="po-fbt" data-fiche-fermer="1" aria-label="Fermer la fiche">' + IC.x + '</button></div>' +
       (past.trim() ? '<div class="po-fpast">' + past + '</div>' : '') + '</header>' +
-      '<div class="po-fcorps">' + htmlCorps(f, F.integ) + '</div><div class="po-fpied">' + htmlAction(F) + '</div></article>';
+      '<div class="po-fcorps">' + htmlCorps(f, F.integ) + '</div><div class="po-fpied">' + htmlEtude(F) + htmlAction(F) + '</div></article>';
   }
   /* Téléphone : la feuille est posée dans la PAGE (hors de l'écran), car l'écran porte une animation d'apparition (will-change: transform)
      qui ferait glisser une feuille « fixe » sous le bas de l'écran au lieu de la poser en bas de la fenêtre. */
@@ -554,6 +559,8 @@
       if (tok !== M.ficheJeton || !M.sel) return null;
       M.sel.f = P.ficheDeLignes(P.memePharmacie(l, finir(r[0], r[1])));
       dessinerFiche();
+      // 25/11/2026 — « Étude de zone » : une lecture légère dit s'il y en a une pour cette pharmacie (le bouton n'apparaît qu'alors).
+      if (window.PHIRST_ETUDE) window.PHIRST_ETUDE.verifier(M.sel.f.lignes).then(function (e) { if (tok === M.ficheJeton && M.sel) { M.sel.etude = e; dessinerFiche(); } });
       if (!M.yann) return null;
       return b.from('phirst_integral').select('cle,commercial,tel,mail').in('cle', M.sel.f.lignes).then(function (x) {
         if (tok !== M.ficheJeton || !M.sel || x.error) return;
@@ -688,6 +695,7 @@
     if (t.closest('[data-fiche-fermer]')) { fermerFiche(); return; }
     if (t.closest('[data-fiche-replier]')) { M.replie = !M.replie; dessinerFiche(); if (!M.replie) placerFiche(); return; }
     if (t.closest('[data-fiche-ajout]')) { ajouterDepuisFiche(); return; }
+    if (t.closest('[data-fiche-etude]')) { if (M.sel && window.PHIRST_ETUDE) window.PHIRST_ETUDE.ouvrir(M.sel.f.lignes, { nom: M.sel.f.nom, yann: M.yann }); return; }
     if ((g = t.closest('[data-couche]'))) { var k = g.getAttribute('data-couche'); M.on[k] = !M.on[k]; if (!M.on[k]) vider(k); if (k === 'fiches') M.pistesDessinees = false; dessinerPuces(); actualiser(); return; }
     if ((g = t.closest('[data-parc]'))) {
       var duMenu = !!(g.closest && g.closest('#po-menu'));
