@@ -65,7 +65,7 @@
   }
   function lienTel(t) { var c = txt(t).replace(/[^\d+]/g, '').replace(/(?!^)\+/g, ''); return c ? 'tel:' + c : ''; }
   /* « Pharmacie des Tilleuls · Angers » */
-  function titreDemande(d) { return [txt(d && d.pharmacie), txt(d && d.ville)].filter(Boolean).join('\u00A0· ') || 'Pharmacie non précisée'; }
+  function titreDemande(d) { return [txt(d && d.pharmacie), txt(d && d.ville)].filter(Boolean).join('\u00A0·\u00A0') || 'Pharmacie non précisée'; }
   function phraseCompte(liste) {
     var n = (liste || []).filter(function (d) { return !d.traitee_le; }).length;
     if (!n) return 'Rien à rappeler pour l’instant.';

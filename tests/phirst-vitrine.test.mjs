@@ -32,7 +32,7 @@ describe('les demandes : tri', () => {
   })
   test('origine, titre, compte', () => {
     assert.equal(V.origineLibelle('lettre'), 'par sa page'); assert.equal(V.origineLibelle('expertise'), 'par l’ancienne vitrine'); assert.equal(V.origineLibelle('x'), '')
-    assert.equal(V.titreDemande(dem()), 'Pharmacie des Tilleuls\u00A0· Angers'); assert.equal(V.titreDemande(dem({ ville: null })), 'Pharmacie des Tilleuls')
+    assert.equal(V.titreDemande(dem()), 'Pharmacie des Tilleuls\u00A0·\u00A0Angers'); assert.equal(V.titreDemande(dem({ ville: null })), 'Pharmacie des Tilleuls')
     assert.equal(V.titreDemande({}), 'Pharmacie non précisée')
     assert.equal(V.majuscule('constat 1 : il manque le titre.'), 'Constat 1 : il manque le titre.'); assert.equal(V.majuscule(null), '')
     assert.equal(V.phraseCompte([]), 'Rien à rappeler pour l’instant.'); assert.equal(V.phraseCompte([dem()]), 'Une demande à rappeler.')

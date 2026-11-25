@@ -63,7 +63,7 @@ test('A34 · Dossiers : la date courte ne se coupe plus (et l’année reste ret
 });
 
 test('B17 · Vitrine : le « · » du titre d’une demande ne finit plus une ligne', () => {
-  assert.equal(V.titreDemande({ pharmacie: 'Pharmacie de la Châtaigneraie', ville: 'Lanester' }), 'Pharmacie de la Châtaigneraie' + NB + '· Lanester');
+  assert.equal(V.titreDemande({ pharmacie: 'Pharmacie de la Châtaigneraie', ville: 'Lanester' }), 'Pharmacie de la Châtaigneraie' + NB + '·' + NB + 'Lanester', 'insécables des DEUX côtés : avant seul, le « · » finissait encore la ligne (vu le 25/11 à 390)');
 });
 
 test('A36 · Chantiers : « vous-même » ne se coupe plus dans le mot', () => {
