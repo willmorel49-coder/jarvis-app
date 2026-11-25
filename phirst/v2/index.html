@@ -4,6 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#1a3a2e" />
+  <!-- 25/11/2026 — installation sur l'iPhone de Yann : icône « 2 · L'aube » choisie par Will (180 px, sans transparence :
+       iOS met du noir dessous), nom court sous l'icône (sans lui l'iPhone coupe le titre : « Phirst · Agenc… »). -->
+  <link rel="apple-touch-icon" href="icones/apple-touch-icon.png?v=20261125x" />
+  <link rel="manifest" href="manifest.webmanifest?v=20261125x" />
+  <meta name="apple-mobile-web-app-title" content="Phirst" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <title>Phirst · Agencement de pharmacies</title>
   <!-- PHIRST (Yann) sur le socle de JARVIS, modèle opso/v2/index.html (décision de Will du 20/11/2026 : un seul code).
@@ -51,6 +56,9 @@
     window.V2_BRAND = { name: 'Phirst', sub: 'Agencement de pharmacies', phirst: true, ventes: false,
       // 22/11/2026 — la barre du bas du téléphone (V2.tbMaj) : Accueil + ces trois rubriques + « Menu », dans l'ordre de la prospection (sans ce réglage : les trois premières de la barre du haut).
       barreBas: ['appels', 'agenda', 'veille'],
+      // 25/11/2026 — la carte « Mettez Phirst sur votre écran d'accueil » (sous la connexion et en haut de l'accueil, iPhone dans Safari seulement ;
+      // remplace la barre « Installez JARVIS » du socle). Sans ce réglage (JARVIS, OPSO), rien ne change.
+      installer: true,
       // La 3D reste dans l'ancienne version de Phirst (décision de Will, 22/11/2026) : adresse de la liste des dossiers, ouverte dans un nouvel onglet.
       ancienne3d: 'https://phirst-studio.vercel.app/dossiers',
       // 23/11/2026 — Réglages : l'état des images, de la vidéo et du plafond se lit à l'ancienne version, seule à connaître ses clés (jamais une clé dans la réponse).

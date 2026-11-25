@@ -565,6 +565,16 @@
     var isWin = /Windows/i.test(ua);
     var isEdge = /Edg\//i.test(ua);
     var isFirefox = /Firefox/i.test(ua);
+    // 25/11/2026 — une marque qui a sa carte (Phirst) montre la même carte sur iPhone, à la place des anciennes étapes « Installer JARVIS ».
+    if (isIOS && window.V2_BRAND && window.V2_BRAND.installer) {
+      var oi = document.createElement('div');
+      oi.className = 'v2-inst-place';
+      oi.style.cssText = 'position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(16,19,28,0.55);';
+      oi.innerHTML = V2.installerCarte('<button type="button" data-inst-fermer>Compris</button>');
+      oi.addEventListener('click', function (e) { if (e.target === oi || (e.target.closest && e.target.closest('[data-inst-fermer]'))) oi.remove(); });
+      document.body.appendChild(oi);
+      return;
+    }
     var steps;
     if (isIOS) {
       steps = '1. Touchez le bouton <b>Partager</b> (le carré avec une flèche ⬆) en bas de Safari<br>2. Choisissez <b>« Sur l\'écran d\'accueil »</b><br>3. Validez avec <b>Ajouter</b>';
@@ -616,10 +626,89 @@
   var SVG_REFRESH = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>';
   var SVG_X = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
 
+  // ── 25/11/2026 — la carte « Mettez … sur votre écran d'accueil » (Phirst, iPhone de Yann) ──
+  // Activée par V2_BRAND.installer (posé dans phirst/v2/index.html seulement) : sans ce réglage, rien ne change (JARVIS).
+  // Apple n'offre aucun bouton « Installer » sur iPhone : la carte montre le geste (iOS 26 : « ··· » à côté de l'adresse,
+  // puis Partager). Visible sous la connexion ET en haut de l'accueil (choix cliqué de Will, 25/11/2026), sur iPhone dans
+  // Safari seulement, jamais une fois l'icône posée ; « Plus tard » la range pour sept jours.
+  var INST_CLE = 'v2-installer-plus-tard', INST_JOURS = 7;
+  function instInstallee() {
+    try { return window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; }
+  }
+  function instSafariIphone() {
+    var ua = navigator.userAgent || '';
+    // Safari seulement : Chrome (CriOS), Firefox (FxiOS), Edge (EdgiOS), Opera, l'appli Google et les navigateurs intégrés n'ont pas ces étapes
+    return /iPhone|iPod/.test(ua) && /Safari\//.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|OPT\/|GSA\/|FBAN|FBAV|Instagram|Line\//.test(ua);
+  }
+  function instRangee() {
+    var t = 0; try { t = +localStorage.getItem(INST_CLE) || 0; } catch (e) {}
+    return t > 0 && (Date.now() - t) < INST_JOURS * 86400000;
+  }
+  V2.installerVisible = function () {
+    return !!(window.V2_BRAND && window.V2_BRAND.installer) && instSafariIphone() && !instInstallee() && !instRangee();
+  };
+  function instCss() {
+    if (document.getElementById('v2-inst-css')) return;
+    var s = document.createElement('style'); s.id = 'v2-inst-css';
+    s.textContent = [
+      '.v2-inst{position:relative;box-sizing:border-box;width:100%;max-width:380px;margin:0 auto;border-radius:20px;padding:18px 18px 10px;text-align:left;',
+        'background:linear-gradient(180deg,#FFFFFF,var(--au-carte-b,#F7FAF8));border:1px solid var(--au-fil,#D8E7DD);',
+        'box-shadow:inset 0 1px 0 #fff,0 10px 26px rgba(18,40,31,.12);overflow:hidden;color:var(--au-ink,#16281E)}',
+      // L'astre de l'aube, en coin : la carte a sa source de lumière (dégradés opaques, aucun flou)
+      '.v2-inst::before{content:"";position:absolute;right:-46px;top:-46px;width:130px;height:130px;border-radius:50%;pointer-events:none;',
+        'background:radial-gradient(circle at 42% 30%,#FFFFFF,var(--au-astre-b,#EAF5EE) 55%,var(--au-astre-c,#C4E0CE));',
+        'box-shadow:0 0 0 14px rgba(194,219,203,.35),0 0 0 30px rgba(220,233,224,.3)}',
+      '.v2-inst h2{position:relative;margin:0 0 4px;font:800 19px/1.15 Archivo,var(--font,system-ui);letter-spacing:-.02em;max-width:250px;color:inherit}',
+      '.v2-login .v2-inst p,.v2-inst p{position:relative;margin:0 0 12px;font-family:var(--font,system-ui);text-transform:none;letter-spacing:0;font-size:14px;line-height:1.45;color:var(--au-ink2,#3B4F43);max-width:270px}',
+      '.v2-inst ol{position:relative;margin:0 0 10px;padding:0;list-style:none;counter-reset:e}',
+      '.v2-inst li{counter-increment:e;display:flex;gap:10px;align-items:flex-start;font-size:15px;line-height:1.35;margin:0 0 9px}',
+      '.v2-inst li::before{content:counter(e);flex:none;width:24px;height:24px;border-radius:50%;background:var(--au-pastille,#E4F1E8);color:var(--au-accent,#1A3A2E);font:800 13px/24px Archivo,var(--font,system-ui);text-align:center}',
+      '.v2-inst .pic{display:inline-flex;align-items:center;justify-content:center;vertical-align:-5px;width:24px;height:22px;border-radius:6px;background:#EEF2F0;color:#0a64d8;margin:0 1px;font-weight:700}',
+      '.v2-inst small{display:block;margin-top:3px;font-size:13.5px;color:var(--au-ink3,#4A5D51)}',
+      '.v2-login .v2-inst p.v2-inst-note,.v2-inst p.v2-inst-note{margin:2px 0 4px;font-size:13.5px;color:var(--au-ink3,#4A5D51)}',
+      '.v2-inst-pied{position:relative;display:flex;justify-content:flex-end}',
+      '.v2-inst-pied button{min-height:44px;padding:0 8px;border:0;background:none;font:600 15px var(--font,system-ui);color:var(--au-accent,#1A3A2E);cursor:pointer}',
+      '.v2-login.v2-login-inst{flex-direction:column;gap:16px}',
+      '.v2-inst-acc{padding:12px 16px 0}',
+      '@media (prefers-reduced-motion:no-preference){.v2-inst{animation:v2-inst-in 320ms cubic-bezier(.32,.72,0,1) 120ms both}',
+        '@keyframes v2-inst-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}}'
+    ].join('');
+    document.head.appendChild(s);
+  }
+  // Le texte de la carte (une seule source pour la connexion, l'accueil et le menu « Installer l'app »).
+  V2.installerCarte = function (pied) {
+    instCss();
+    var nom = esc((window.V2_BRAND && window.V2_BRAND.name) || 'JARVIS');
+    var partager = '<span class="pic" aria-hidden="true"><svg width="14" height="16" viewBox="0 0 14 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 1v9M3.5 4.2 7 1l3.5 3.2"/><path d="M4.5 7H2.5v8h9V7h-2"/></svg></span>';
+    return '<section class="v2-inst" aria-labelledby="v2-inst-t">' +
+      '<h2 id="v2-inst-t">Mettez ' + nom + ' sur votre écran d’accueil</h2>' +
+      '<p>Elle s’ouvrira comme une vraie application, en plein écran.</p>' +
+      '<ol>' +
+        '<li><span>Touchez <span class="pic" aria-hidden="true">···</span> en bas, à côté de l’adresse. <small>Pas de « ··· » ? Le bouton Partager est déjà en bas : passez à l’étape 2.</small></span></li>' +
+        '<li><span>Touchez ' + partager + ' Partager, puis « Sur l’écran d’accueil ».</span></li>' +
+        '<li><span>Laissez « app web » allumé, puis touchez « Ajouter ».</span></li>' +
+      '</ol>' +
+      '<p class="v2-inst-note">Ensuite, ouvrez ' + nom + ' depuis l’icône : il faudra vous connecter une seule fois.</p>' +
+      '<div class="v2-inst-pied">' + (pied || '<button type="button" data-inst-plus-tard>Plus tard</button>') + '</div>' +
+    '</section>';
+  };
+  V2.installerPlusTard = function () {
+    try { localStorage.setItem(INST_CLE, String(Date.now())); } catch (e) {}
+    var n = document.querySelectorAll('.v2-inst-place');
+    for (var i = 0; i < n.length; i++) if (n[i].parentNode) n[i].parentNode.removeChild(n[i]);
+    var l = document.querySelector('.v2-login-inst'); if (l) l.classList.remove('v2-login-inst');
+  };
+  document.addEventListener('click', function (e) {
+    var b = e.target && e.target.closest && e.target.closest('[data-inst-plus-tard]');
+    if (b) { e.preventDefault(); V2.installerPlusTard(); }
+  });
+
   // Proposée uniquement sur l'accueil, si installable et pas déjà installée/refusée.
   V2.installBanner = function () {
     ensureAppbarCss();
     var ex = document.getElementById('v2-installbar');
+    // Une marque qui a sa carte (V2_BRAND.installer) ne montre pas aussi la barre « Installez JARVIS » : une seule invitation.
+    if (window.V2_BRAND && window.V2_BRAND.installer) { if (ex) ex.classList.remove('show'); return; }
     var installed = false;
     try { installed = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch (e) {}
     var dismissed = false; try { dismissed = localStorage.getItem('v2-install-dismissed') === '1'; } catch (e) {}
@@ -2148,6 +2237,7 @@
     root.innerHTML = '<div class="u2-page' + (cascade ? ' u2-cascade' : '') + (barreAcc ? ' u2-barre' : '') + '"' + u2StyleAttr() + '>' +
       '<button type="button" class="u2-skip" data-u2-skip>Aller aux outils</button>' + topbar() +
       '<div class="pb-band" id="pb-band" role="region" aria-label="Personnaliser mon accueil" hidden></div>' +
+      (V2.installerVisible() ? '<div class="v2-inst-place v2-inst-acc">' + V2.installerCarte() + '</div>' : '') +   // 25/11/2026 — Yann déjà connecté dans Safari (choix cliqué de Will)
       '<div class="u2-grille">' +
         '<main class="u2-centre" id="u2-centre" tabindex="-1">' + u2CentreHtml(m, etat) + '</main>' +
         u2Citation() +
@@ -3154,7 +3244,8 @@
     injectShellStyles();
     // Login = scène marque : la lumière neutre/info (bleu marque) pour le halo signature.
     try { document.documentElement.style.setProperty('--accent', 'var(--info)'); } catch (e) {}
-    root.innerHTML = '<div class="v2-login"><div class="v2-login-card">' +
+    var inst = V2.installerVisible();   // 25/11/2026 — la carte d'installation sous la connexion (Phirst, iPhone dans Safari)
+    root.innerHTML = '<div class="v2-login' + (inst ? ' v2-login-inst' : '') + '"><div class="v2-login-card">' +
       '<div class="v2-login-logo">' + ICO('logo', 30) + '</div>' +
       '<h1>' + ((window.V2_BRAND && window.V2_BRAND.name) || 'Intégral Pharma') + '</h1>' +
       '<p>' + ((window.V2_BRAND && window.V2_BRAND.sub) || 'Espace commercial · CRM') + '</p>' +
@@ -3169,7 +3260,7 @@
         '<div class="v2-login-err" id="v2-login-err" role="alert"></div>' +
       '</form>' +
       '<div class="v2-login-foot">Connexion sécurisée</div>' +
-      '</div></div>';
+      '</div>' + (inst ? '<div class="v2-inst-place" style="width:100%;max-width:380px">' + V2.installerCarte() + '</div>' : '') + '</div>';
     var btn = document.getElementById('v2-login-btn');
     var err = document.getElementById('v2-login-err');
     function submit() {
