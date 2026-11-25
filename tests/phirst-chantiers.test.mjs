@@ -76,11 +76,11 @@ describe('à faire, faites, prochaine, retard', () => {
 
 describe('les textes de date', () => {
   test('ligne d’une tâche : faite, à fixer, prévue, en retard (1 jour / 2 jours), année omise si c’est l’année en cours', () => {
-    assert.deepEqual(C.quand({ fait: '2026-11-10' }, AUJ), { texte: 'Faite le 10 nov.', retard: false })
+    assert.deepEqual(C.quand({ fait: '2026-11-10' }, AUJ), { texte: 'Faite le 10\u00A0nov.', retard: false })
     assert.deepEqual(C.quand({ prevu: null }, AUJ), { texte: 'Date à fixer', retard: false })
-    assert.deepEqual(C.quand({ prevu: '2027-01-05' }, AUJ), { texte: 'Prévue le 5 janv. 2027', retard: false })
-    assert.deepEqual(C.quand({ prevu: '2026-11-22' }, AUJ), { texte: 'En retard de 1 jour · prévue le 22 nov.', retard: true })
-    assert.deepEqual(C.quand({ prevu: '2026-11-01' }, AUJ), { texte: 'En retard de 22 jours · prévue le 1er nov.', retard: true })
+    assert.deepEqual(C.quand({ prevu: '2027-01-05' }, AUJ), { texte: 'Prévue le 5\u00A0janv.\u00A02027', retard: false })
+    assert.deepEqual(C.quand({ prevu: '2026-11-22' }, AUJ), { texte: 'En retard de 1 jour · prévue le 22\u00A0nov.', retard: true })
+    assert.deepEqual(C.quand({ prevu: '2026-11-01' }, AUJ), { texte: 'En retard de 22 jours · prévue le 1er\u00A0nov.', retard: true })
   })
   test('« dans » : aujourd’hui, demain, dans n jours, passée de n jour(s), avec espaces insécables', () => {
     assert.equal(C.dans(0), 'aujourd’hui')
@@ -185,7 +185,7 @@ describe('le lien avec les dossiers', () => {
     assert.equal(r.prochaine, 'Prochaine étape : Tâche a (Menuiserie Kervadec).')
     const recu = C.resume(monte([], [], { recu_le: '2026-11-22' }), AUJ)
     assert.equal(recu.avancee, 'Aucune tâche pour l’instant')
-    assert.deepEqual(recu.etat, { ton: 'vert', texte: 'Réceptionné le 22 nov. 2026' })
+    assert.deepEqual(recu.etat, { ton: 'vert', texte: 'Réceptionné le 22\u00A0nov.\u00A02026' })
     assert.equal(recu.prochaine, '')
   })
   test('ordre suivant d’une tâche ajoutée', () => {

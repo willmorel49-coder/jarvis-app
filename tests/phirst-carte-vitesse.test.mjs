@@ -88,7 +88,7 @@ test('secteur : glisser et zoomer ne relisent plus les couches et ne redessinent
   await attendre(400)
   const lus = c.lu.length, ronds = c.ronds.n, eff = JSON.stringify(c.effacements)
   assert.ok(lus >= 4, 'les couches affichées sont lues à l’ouverture (' + lus + ')')
-  assert.match(c.bandeau(), /Dans cette vue : 3 clientes d’Intégral, 3 robots, 3 transferts et 3 EHPAD/)
+  assert.match(c.bandeau(), /Dans cette vue : 3 clientes d’Intégral, 3 robots, 3 cessions et créations et 3 EHPAD/)
   await c.bouger({ s: 47.42, n: 47.47, w: -0.53, e: -0.48 })   // ne garde que le 2e point de chaque couche
   c.zoomer(10); await c.bouger({})
   assert.equal(c.lu.length, lus, 'aucune nouvelle lecture des couches après deux gestes')

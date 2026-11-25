@@ -108,7 +108,7 @@
   function carte(x) {
     var c = x.c, v = x.volet, inf = infoPh(x.ph), a = auj(), pr = C.prochaine(c), f = C.nbFaites(c), n = c.taches.length, reste = C.aFaire(c), r = C.enRetard(c, a), j = C.jours(c, a);
     var h = '<article class="dz-carte cz-carte" id="cz-c-' + esc(c.id) + '" aria-labelledby="cz-n-' + esc(c.id) + '"><div class="cz-tete">' + tuile(c.ouverture) + '<div class="cz-id">' +
-      '<div class="dz-carte-h"><span class="dz-et">' + esc(v.nom) + '</span>' + pastille(C.statut(c, a)) + '</div>' +
+      '<div class="dz-carte-h"><span class="dz-et">' + esc(v.nom) + '</span>' + (function (st) { return st.texte === 'En cours' ? '' : pastille(st); })(C.statut(c, a)) + '</div>' +
       '<h3 id="cz-n-' + esc(c.id) + '">' + esc(x.ph.dossier.nom) + '</h3><p class="dz-sous">' + (inf.ville ? esc(inf.ville) + ' · ' : '') + 'ouverture ' + (j < 0 ? 'prévue le ' : 'le ') + esc(D.jourLong(c.ouverture)) + ', ' + C.dans(j) + '</p></div></div>';
     h += '<div class="cz-av">' + segments(c) + '<p class="cz-nn">' + (n ? f + ' sur ' + n + ' tâches faites · ' + Math.round(100 * f / n) + ' %' : 'Aucune tâche pour l’instant') + '</p></div>';
     if (pr) {
@@ -184,7 +184,7 @@
     var inf = infoPh(x.ph);
     return '<article class="dz-carte cz-bilan"><div class="dz-carte-h"><span class="dz-et">' + esc(b.titre) + '</span><span class="dz-et orange">À faire</span></div><h3>' + esc(x.ph.dossier.nom) + '</h3>' +
       '<p class="dz-sous">' + (inf.ville ? esc(inf.ville) + ' · ' : '') + 'réception le ' + esc(D.long(x.c.recuLe)) + '</p>' +
-      '<div class="dz-proch"><span class="dz-kicker">Rappel arrivé le ' + esc(C.cj(b.date, auj())) + '</span><b>Faire le point avec le pharmacien</b><small>Il est dans la liste de la téléprospectrice depuis cette date. Vous pouvez aussi le faire vous-même.</small></div>' +
+      '<div class="dz-proch"><span class="dz-kicker">Rappel arrivé le ' + esc(C.cj(b.date, auj())) + '</span><b>Faire le point avec le pharmacien</b><small>Il est dans la liste de la téléprospectrice depuis cette date. Vous pouvez aussi le faire <span style="white-space:nowrap">vous-même</span>.</small></div>' +
       '<button class="dz-btn plein" type="button" data-cz="bilan" data-id="' + esc(x.c.id) + '" data-f="b-' + esc(x.c.id) + '"' + dis() + '>' + ico('agenda', 18) + 'Ouvrir le bilan</button></article>';
   }
   function feuilleBilan(x) {

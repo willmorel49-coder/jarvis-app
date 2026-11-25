@@ -86,7 +86,7 @@
   }
   function joursEntre(de, a) { return Math.round((ms(a) - ms(de)) / 864e5); }
   function parties(s) { return String(s).slice(0, 10).split('-'); }
-  function court(s) { if (!estJour(String(s).slice(0, 10))) return ''; var p = parties(s); return (+p[2] === 1 ? '1er' : +p[2]) + ' ' + MC[+p[1] - 1] + ' ' + p[0]; }
+  function court(s) { if (!estJour(String(s).slice(0, 10))) return ''; var p = parties(s); return (+p[2] === 1 ? '1er' : +p[2]) + '\u00A0' + MC[+p[1] - 1] + '\u00A0' + p[0]; }   // 25/11 : insécables, la date ne se coupe plus
   function long(s) { if (!estJour(String(s).slice(0, 10))) return ''; var p = parties(s); return (+p[2] === 1 ? '1er' : +p[2]) + ' ' + ML[+p[1] - 1] + ' ' + p[0]; }
   function jourLong(s) { if (!estJour(String(s).slice(0, 10))) return ''; return JS[new Date(ms(s)).getUTCDay()] + ' ' + long(s); }
   function heureFr(hhmm) {
@@ -517,7 +517,7 @@
   function titreSemaine(n, nbPh, tot) {
     if (!n) return { titre: 'Tous vos dossiers peuvent avancer', texte: 'Aucune étape n’en retient une autre pour le moment. Cochez les étapes faites au fil de l’eau : dès qu’une étape en retiendra d’autres, elle apparaîtra ici avec son geste.' };
     return { titre: n > 1 ? n + ' choses retiennent vos dossiers' : '1 chose retient vos dossiers',
-      texte: 'Sur vos ' + tot + ' dossiers, ' + (nbPh > 1 ? nbPh + ' attendent' : '1 attend') + ' une étape qui retient le reste. ' + (n > 1 ? 'Les voici, avec qui peut les faire bouger et le geste à faire.' : 'La voici, avec qui peut la faire bouger et le geste à faire.') };
+      texte: 'Sur vos ' + tot + ' dossiers, ' + (nbPh > 1 ? nbPh + ' sont retenus' : '1 est retenu') + ' par une étape. ' + (n > 1 ? 'Les voici, avec qui peut les débloquer.' : 'La voici, avec qui peut la débloquer.') };
   }
   /* « de qui » : « vous », « du pharmacien », « de l’ARS », « d’un artisan », « du fabricant » */
   function deQui(q) { return q === VOUS ? 'vous' : q.replace(/^le /, 'du ').replace(/^l’/, 'de l’').replace(/^un /, 'd’un '); }

@@ -125,7 +125,7 @@
       h += '</ol>';
     }
     S.debloques.slice(-2).forEach(function (t) { h += '<p class="dz-sem-ok">' + ico('coche', 18) + '<span>' + esc(t) + '</span></p>'; });
-    return h + '<p class="dz-sem-note">Recalculé à chaque ouverture, à partir des étapes déjà cochées : rien à saisir en plus.</p></section>';
+    return h + '<p class="dz-sem-note">Rien à saisir en plus : tout part des étapes déjà cochées.</p></section>';
   }
   /* Sur la carte d'une pharmacie : ce qui la retient cette semaine */
   function retenuCarte(ph) {
@@ -139,7 +139,7 @@
     var h = '<section class="dz-chaine" aria-labelledby="dz-ch-t"><div class="dz-ch-tete"><div><p class="dz-kicker">Ce qui bloque cette semaine</p>';
     if (nb) h += '<h2 id="dz-ch-t">' + (nb > 1 ? nb + ' étapes retiennent' : 'Une étape retient') + ' le reste du dossier</h2>';
     else h += '<h2 id="dz-ch-t">Chaque volet peut avancer sans attendre un autre</h2><p class="dz-ch-p">Cochez les étapes au fil de l’eau : dès qu’une étape en retiendra une autre, elle apparaîtra ici.</p>';
-    h += '</div><p class="dz-ch-note">Recalculé à chaque ouverture, à partir des étapes déjà cochées : rien à saisir en plus.</p></div><ol class="dz-ch-liste">';
+    h += '</div><p class="dz-ch-note">Rien à saisir en plus : tout part des étapes déjà cochées.</p></div><ol class="dz-ch-liste">';
     V.forEach(function (x, i) {
       var v = x.v, B = x.B;
       if (i > 0) {

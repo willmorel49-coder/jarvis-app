@@ -3,6 +3,7 @@
    (ligne_accueil.donnees[0].veille, calculée par le robot du Mac) ; « L'ajouter à mes pistes » est la fonction de l'accueil
    (window.PHIRST_PISTE.ajouter, phirst-ligne.js), pas une copie. Logique pure : phirst-pur.js. */
 (function () {
+  function insec(s) { return String(s == null ? '' : s).replace(/ /g, '\u00A0'); }   // 25/11 : « il y a 17 jours », « 8 novembre » ne se coupent plus
   'use strict';
   var P = window.PHIRST_PUR, V2 = window.V2;
   if (!P || !V2) return;
@@ -23,7 +24,7 @@
     var f = S.faits[P.cle(v.nom, v.ville)];
     return '<li class="pa-l" data-i="' + i + '"><div class="pa-ht"><div><b>' + esc(v.nom) + '</b><small>' + esc(v.ville) + (v.dep ? ' · ' + esc(v.dep) : '') + '</small></div>' +
       '<em class="lg-et" data-ton="' + (v.famille === 'procedure_collective' ? 'rouge' : 'orange') + '">' + esc(P.nomFamille(v.famille)) + '</em></div>' +
-      '<p class="pa-r">Paru au BODACC ' + esc(P.age(v.date, P.aujourdhui())) + ' (' + esc(P.jourAvecAnnee(v.date, P.aujourdhui())) + ').</p>' +
+      '<p class="pa-r">Paru au BODACC ' + esc(insec(P.age(v.date, P.aujourdhui()))) + ' (' + esc(insec(P.jourAvecAnnee(v.date, P.aujourdhui()))) + ').</p>' +
       '<div class="pa-bs"><button type="button" class="pa-b pa-ok" data-ajout="1"' + (FAIT.indexOf(f) >= 0 ? ' disabled' : '') + '>L’ajouter à mes pistes</button>' +
       (P.lienSur(v.lien) ? '<a class="pa-b pa-lienb" href="' + esc(P.lienSur(v.lien)) + '" target="_blank" rel="noopener">Voir l’annonce</a>' : '') + '</div>' +
       '<p class="pa-dit" role="status">' + esc(f || '') + '</p></li>';

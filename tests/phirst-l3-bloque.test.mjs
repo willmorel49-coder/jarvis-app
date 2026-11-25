@@ -132,7 +132,7 @@ describe('les phrases', () => {
     assert.equal(D.titreSemaine(3, 2, 6).titre, '3 choses retiennent vos dossiers')
     assert.equal(D.titreSemaine(1, 1, 6).titre, '1 chose retient vos dossiers')
     assert.match(D.titreSemaine(1, 1, 6).texte, /La voici/)
-    assert.match(D.titreSemaine(3, 2, 6).texte, /Sur vos 6 dossiers, 2 attendent/)
+    assert.match(D.titreSemaine(3, 2, 6).texte, /Sur vos 6 dossiers, 2 sont retenus par une étape\. Les voici, avec qui peut les débloquer\./)
     const v = D.titreSemaine(0, 0, 6); assert.equal(v.titre, 'Tous vos dossiers peuvent avancer'); assert.match(v.texte, /Cochez les étapes/)
     assert.doesNotMatch(v.texte, /^0|Rien de prévu/)
   })

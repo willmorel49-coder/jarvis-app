@@ -100,10 +100,10 @@ describe('avancement', () => {
     assert.equal(D.retard(e({ prevue: '2026-11-24' }), AUJ), 0)
     assert.equal(D.retard(e({ prevue: '2026-11-01', faite: '2026-11-02' }), AUJ), 0)
     assert.equal(D.retard(e(), AUJ), 0)
-    assert.equal(D.ligneDate(e({ prevue: '2026-11-22' }), AUJ).texte, 'En retard de 1 jour · prévue le 22 nov. 2026')
-    assert.equal(D.ligneDate(e({ prevue: '2026-11-21' }), AUJ).texte, 'En retard de 2 jours · prévue le 21 nov. 2026')
-    assert.equal(D.ligneDate(e({ prevue: '2026-11-16' }), AUJ).texte, 'En retard de 7 jours · prévue le 16 nov. 2026')
-    assert.deepEqual(D.ligneDate(e({ prevue: '2026-12-01' }), AUJ), { texte: 'Prévue le 1er déc. 2026', retard: false })
+    assert.equal(D.ligneDate(e({ prevue: '2026-11-22' }), AUJ).texte, 'En retard de 1 jour · prévue le 22\u00A0nov.\u00A02026')
+    assert.equal(D.ligneDate(e({ prevue: '2026-11-21' }), AUJ).texte, 'En retard de 2 jours · prévue le 21\u00A0nov.\u00A02026')
+    assert.equal(D.ligneDate(e({ prevue: '2026-11-16' }), AUJ).texte, 'En retard de 7 jours · prévue le 16\u00A0nov.\u00A02026')
+    assert.deepEqual(D.ligneDate(e({ prevue: '2026-12-01' }), AUJ), { texte: 'Prévue le 1er\u00A0déc.\u00A02026', retard: false })
     assert.deepEqual(D.ligneDate(e(), AUJ), { texte: 'Date à fixer', retard: false })
   })
   test('état affiché', () => {
@@ -195,8 +195,8 @@ describe('groupes de la liste', () => {
 
 describe('dates et textes', () => {
   test('dates en français', () => {
-    assert.equal(D.court('2026-12-01'), '1er déc. 2026')
-    assert.equal(D.court('2026-11-02'), '2 nov. 2026')
+    assert.equal(D.court('2026-12-01'), '1er\u00A0déc.\u00A02026')
+    assert.equal(D.court('2026-11-02'), '2\u00A0nov.\u00A02026')
     assert.equal(D.long('2026-08-01'), '1er août 2026')
     assert.equal(D.long('2026-02-15'), '15 février 2026')
     assert.equal(D.jourLong('2026-12-01'), 'mardi 1er décembre 2026')

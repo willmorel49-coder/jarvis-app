@@ -135,7 +135,7 @@
     var action = ficheId
       ? '<span class="po-fait" role="status">✓ ' + (FAIT.indexOf(f) === 1 ? 'Déjà dans vos pistes' : 'Dans vos pistes') + '</span><button type="button" class="pa-b" data-vers="appels">Voir mes pistes</button>'
       : suivi.etat === 'archivee'
-      ? '<span class="po-fait po-arch" role="status">Archivée</span><button type="button" class="pa-b pa-ok" data-reprendre="' + esc(suivi.id) + '" aria-label="Reprendre ' + esc(l.nom_affiche || l.nom) + ' dans mes pistes">Reprendre</button>'
+      ? '<span class="po-fait po-arch" role="status">Archivée</span><button type="button" class="pa-b" data-reprendre="' + esc(suivi.id) + '" aria-label="Reprendre ' + esc(l.nom_affiche || l.nom) + ' dans mes pistes">Reprendre</button>'
       : '<button type="button" class="pa-b pa-ok" data-ajout="1" aria-label="Ajouter ' + esc(l.nom_affiche || l.nom) + ' à mes pistes">Ajouter à mes pistes</button>';
     return '<li class="pa-l" data-i="' + i + '"><div class="pa-ht"><div><b>' + esc(l.nom_affiche || l.nom) + '</b><small>' + esc(P.sousAffiche(l)) + '</small></div><div class="po-et">' + pastilles(l) + '</div></div>' +
       (pour.length ? '<ul class="pa-au">' + pour.map(function (r) { return '<li>→ ' + esc(r) + '</li>'; }).join('') + '</ul>' : '') +
@@ -237,7 +237,7 @@
   /* ════════════════════════ LA CARTE ════════════════════════ */
   var COUL = { robots: '#C2410C', omnicell: '#DC2626', ehpad: '#7C3AED', transferts: '#1D4ED8', signaux: '#12A567', toutes: '#1A3A2E' };
   var BLEU_IP = '#0050E6';
-  var NOMS_COUCHE = { toutes: 'officines', robots: 'robots', ehpad: 'EHPAD', transferts: 'transferts', signaux: 'à saisir maintenant', integral: 'clientes d’Intégral' };
+  var NOMS_COUCHE = { toutes: 'officines', robots: 'robots', ehpad: 'EHPAD', transferts: 'cessions et créations', signaux: 'à saisir maintenant', integral: 'clientes d’Intégral' };
   var UN_COUCHE = { toutes: 'officine', robots: 'robot', ehpad: 'EHPAD', transferts: 'transfert', signaux: 'à saisir maintenant', integral: 'cliente d’Intégral' };
   function compteCouche(a, n) { return { nom: NOMS_COUCHE[a], un: UN_COUCHE[a], f: a === 'toutes' || a === 'integral', n: n }; }
   var LIB_COUCHE = { fiches: 'Mes fiches', robots: 'Robots concurrents', transferts: 'Cessions et créations', ehpad: 'Fournisseurs EHPAD', signaux: 'À saisir maintenant', toutes: 'Toutes les officines', integral: 'Clients Intégral' };

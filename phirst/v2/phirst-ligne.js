@@ -60,7 +60,7 @@
     return m.charAt(0).toUpperCase();
   }
   var FL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
-  function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }).replace(/'/g, '’'); }   // 25/11 : apostrophe courbe (textes venus du robot)
   /* où mène chaque bouton (pages de phirst-portes.js), 20/11/2026. Les textes viennent du robot (~/phirst-ligne/ligne-vers-base.mjs,
      VIDE et GESTE ; boutons de chosesDuJour de la V1) : changer un texte là-bas = revoir sa page ici.
      Consigne d'un moment vide : « Ouvrir la Veille », « Ouvrir un dossier », « Voir mes dossiers », « Voir mes chantiers ».

@@ -76,7 +76,7 @@
     return '';
   }
   function carteRdv(e, maintenant) {
-    var r = e.rdv, f = e.fiche, ligne2 = [r.lieu, r.objet].filter(Boolean).join(' · ');
+    var r = e.rdv, f = e.fiche, lieu = r.lieu && String(r.lieu).trim().toLowerCase() !== String(f.nom || '').trim().toLowerCase() ? r.lieu : '', ligne2 = [lieu, r.objet].filter(Boolean).join(' · ');
     var titre = f.occupe ? f.nom + (f.ville ? ' · ' + f.ville : '') : f.nom;   // « Yann est occupé · commune »
     return '<li class="pa-l ag-rdv' + (r.statut === 'annule' ? ' ag-annule' : '') + '" data-rdv="' + esc(r.id) + '"><div class="pa-ht"><div><b>' + esc(hh(r.debut)) + ' – ' + esc(hh(r.fin)) + ' · ' + esc(titre) + '</b>' +
       '<small>' + esc(f.occupe ? '' : ligne2 || f.ville || '') + '</small></div>' + (f.occupe && r.statut !== 'annule' ? '' : etatBadge(r)) + '</div>' +
@@ -109,7 +109,7 @@
     var conf = els.filter(function (e) { return e.aConfirmer && P.minutes(e.rdv.fin) >= P.minutes(maint); });
     if (conf.length) {
       h += '<section class="ag-conf" aria-label="' + (S.telepro ? 'En attente de Yann' : 'À confirmer') + '"><h2>' + (S.telepro ? 'En attente de Yann' : 'À confirmer') + '</h2><ul class="pa-liste">' + conf.map(function (e) {
-        return '<li class="pa-l" data-rdv="' + esc(e.rdv.id) + '"><div class="pa-ht"><div><b>' + esc(e.fiche.nom) + '</b><small>' + esc(P.maj(P.quandFr(e.rdv.debut))) + (e.fiche.ville ? ' · ' + esc(e.fiche.ville) : '') + '</small></div>' + etatBadge(e.rdv) + '</div>' +
+        return '<li class="pa-l" data-rdv="' + esc(e.rdv.id) + '"><div class="pa-ht"><div><b>' + esc(e.fiche.nom) + '</b><small>' + esc(P.maj(P.quandFr(e.rdv.debut))) + (e.fiche.ville ? ' · ' + esc(e.fiche.ville) : '') + '</small></div>' + (S.telepro || e.rdv.statut === 'propose' ? '' : etatBadge(e.rdv)) + '</div>' +
           '<div class="pa-bs">' + (S.telepro ? '' : '<button type="button" class="pa-b pa-ok" data-ag="confirmer" data-rdv="' + esc(e.rdv.id) + '">Confirmer</button>') + '<button type="button" class="pa-b" data-ag="deplacer" data-rdv="' + esc(e.rdv.id) + '">Déplacer</button></div>' +
           zoneOuverte(e) + '<p class="pa-dit" role="status"></p></li>';
       }).join('') + '</ul></section>';

@@ -544,7 +544,7 @@
   function estTelepro(equipe, id) { return !!(id && equipe && equipe[id] && equipe[id].telepro === true); }
   /* Le nom de l'auteur, ou '' s'il est inconnu (jamais « undefined »). */
   function nomAuteur(equipe, id) { var e = id && equipe && equipe[id]; return e && e.nom ? e.nom : ''; }
-  function avecAuteur(phrase, nom) { return nom ? phrase + ' — par ' + nom : phrase; }
+  function avecAuteur(phrase, nom) { return nom ? String(phrase).replace(/[.\s]+$/, '') + ' — par ' + nom : phrase; }
 
   /* telepro_ligne() → le format de la ligne du compte { trouver: { appels, veille }, frais } (frais : calculée il y a moins de 36 h). */
   var AGE_LIGNE_MAX = 36 * 3600 * 1000;

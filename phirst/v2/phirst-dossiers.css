@@ -37,7 +37,7 @@
 
 /* groupes et cartes */
 .dz .dz-groupe{margin:0 0 30px}
-.dz .dz-groupe-t{display:flex;align-items:baseline;gap:12px;margin:0 0 12px}
+.dz .dz-groupe-t{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin:0 0 12px}
 .dz .dz-groupe-t h2{margin:0;font-size:22px;font-weight:800;letter-spacing:-.02em}
 .dz .dz-groupe-t span{font-size:15px;font-weight:700;color:var(--dz-ink3)}
 .dz .dz-repli{margin:0 0 14px;border:1px solid var(--dz-fil);border-radius:18px;background-color:#fff;overflow:hidden}

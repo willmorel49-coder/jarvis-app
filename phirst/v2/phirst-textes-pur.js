@@ -32,6 +32,8 @@
   ];
   /* Les raisons « à venir » : plus aucune (L4 a passé ars, client et recommande dans RAISONS, 24/11/2026). La liste reste, vide, pour qu'une
      future raison puisse y attendre son lot sans toucher au reste. */
+  /* 25/11/2026 — typographie : espace insécable avant « ? ! : ; » dans les phrases de départ (le « ? » finissait seul sa ligne). */
+  RAISONS.forEach(function (r) { if (r.propo) r.propo = String(r.propo).replace(/ ([?!:;])/g, '\u00A0$1'); });
   var A_VENIR = [];
 
   /* Le mail de « Lui écrire plutôt » (L2, idée 4) : un texte de Yann comme les phrases, mais qui n'est PAS une raison d'appeler (pas dans RAISONS).
@@ -62,7 +64,7 @@
   /* La mention sous « Pour commencer ». `yann` : celui qui regarde est Yann (le lien vers Réglages n'a de sens que pour lui). */
   function mentionPhrase(source, yann) {
     if (source === 'yann') return { texte: 'Phrase écrite par Yann', lienReglages: !!yann };
-    return { texte: 'Proposition de départ · Yann ne l’a pas encore écrite', lienReglages: !!yann };
+    return { texte: yann ? 'Proposition de départ · vous ne l’avez pas encore écrite' : 'Proposition de départ · Yann ne l’a pas encore écrite', lienReglages: !!yann };
   }
   /* « Modifiée aujourd'hui à 17 h 40 » / « Modifiée le 20 novembre à 17 h 40 » (heure de Paris), à partir de updated_at. */
   function modifiee(iso, maintenant) {

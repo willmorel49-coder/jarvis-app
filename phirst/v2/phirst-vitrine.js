@@ -67,7 +67,8 @@
     var h = '<li class="dz-carte vt-dem" data-dem="' + id + '"><div class="dz-carte-h"><span class="dz-et' + (d.traitee_le ? ' vert' : ' orange') + '">' + (d.traitee_le ? 'Dans vos pistes' : 'À rappeler') + '</span>' +
       '<span class="vt-quand">' + esc(Vp.quandParis(d.created_at)) + '</span></div>' +
       '<h3>' + esc(Vp.titreDemande(d)) + '</h3><p class="dz-sous vt-sous">' + esc(d.motif || '') + (orig ? ' · ' + esc(orig) : '') + '</p>';
-    h += '<p class="vt-qui">' + (d.nom ? '<b>' + esc(d.nom) + '</b> · ' : '') + esc(tel) + '</p>';
+    if (!lien) h += '<p class="vt-qui">' + (d.nom ? '<b>' + esc(d.nom) + '</b> · ' : '') + esc(tel) + '</p>';
+    else if (d.nom) h += '<p class="vt-qui"><b>' + esc(d.nom) + '</b></p>';   // 25/11 : le numéro est sur le bouton « Appeler le … »
     if (d.mot) h += '<p class="vt-mot">« ' + esc(d.mot) + ' »</p>';
     if (S.fait[d.id]) h += '<p class="dz-flash vt-fait" role="status">' + esc(S.fait[d.id].texte) + '</p>';
     if (S.fait[d.id] && S.fait[d.id].err) h = h.replace('class="dz-flash vt-fait"', 'class="dz-flash dz-err vt-fait"');

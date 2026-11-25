@@ -175,3 +175,11 @@ html body .leaflet-container .leaflet-control-attribution{font-size:13px}
 @media (min-width:1001px){html:not([data-hab]) body .td-m1 .v2-todo-kinds[data-n="3"]{grid-template-columns:repeat(3,auto)}}
 /* 23/11/2026 — Officines : une fiche archivée se dit en gris (pas de coche verte), « Reprendre » à côté. */
 .po-fait.po-arch{color:#4A5753}
+
+/* 25/11/2026 nuit — Appels : ligne ouverte, « Lettre envoyée le … » n'est plus dite deux fois (le bandeau vert la porte). */
+.pa-l.pa-ouvert:has(.pa-envoye) .pa-etat{display:none}
+/* Veille au téléphone : les boutons ne touchent plus la phrase du dessus. */
+@media (max-width:1023px){.pa.pv .pa-l>.pa-bs{margin-top:12px}}
+/* Agenda : air entre le titre et la ligne dessous, et au-dessus des boutons « À confirmer ». */
+.ag-conf .pa-bs{margin-top:12px}
+.ag-conf .pa-ht small,.ag-rdv .pa-ht small{margin-top:4px}

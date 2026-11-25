@@ -24,7 +24,7 @@
   function jour(s) { var t = String(s || '').slice(0, 10); return D.estJour(t) ? t : null; }
   function aujDe(auj) { return auj || D.aujourdhui(); }
   /* Date courte, sans l'année quand c'est l'année en cours (« 26 nov. », « 18 janv. 2027 ») */
-  function cj(s, auj) { var c = D.court(s); return String(s).slice(0, 4) === aujDe(auj).slice(0, 4) ? c.replace(/ \d{4}$/, '') : c; }
+  function cj(s, auj) { var c = D.court(s); return String(s).slice(0, 4) === aujDe(auj).slice(0, 4) ? c.replace(/[ \u00A0]\d{4}$/, '') : c; }
   /* « aujourd'hui », « demain », « dans 12 jours », « passée de 3 jours » (espaces insécables : le nombre ne reste pas seul en bout de ligne) */
   function dans(n) {
     return n === 0 ? 'aujourd’hui' : n === 1 ? 'demain' : n > 1 ? 'dans' + E + n + E + 'jours' : 'passée de' + E + (-n) + E + (-n > 1 ? 'jours' : 'jour');
