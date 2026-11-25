@@ -204,7 +204,7 @@ test('direction avec un secteur : « Ventes et rachats en France », hors secteu
     ev('x2', 'PHARMACIE NOUVELLE', 'PARIS', 1, 'creation', '75'),          // création ordinaire : écartée
     ev('x3', 'PHARMACIE TROP VIEILLE', 'LYON', 100, 'cession', '69'));     // plus de 3 mois : écartée
   const sb = monter(fx);
-  sb.V2.user.voitTousReel = true;                                            // la direction, avec son secteur (49)
+  sb.V2.user.voitTousReel = true; sb.V2.user.commercial = 'Will';         // la direction, avec son secteur (49)
   const html = await rendreSb(sb);
   assert.equal(annSection(html, 'inf-t-h-ann').titre, 'Annonces de votre secteur · 3 derniers mois');
   const F = annSection(html, 'inf-t-h-annfr');
@@ -221,6 +221,23 @@ test('direction avec un secteur : « Ventes et rachats en France », hors secteu
   assert.doesNotMatch(texte(F.corps), /Fermee|Nouvelle|Trop Vieille|Angers/, 'ni fermeture, ni création ordinaire, ni plus de 3 mois, ni le secteur');
   const tous = [...html.matchAll(/data-it-ann="(\d+)"/g)].map((m) => +m[1]);
   assert.deepEqual(tous, tous.map((_, k) => k), 'les rangs se suivent sur toute la page : chaque clic ouvre SA fiche');
+});
+
+// 25/11/2026, Will (question cliquée) : la liste France reste à la direction (Will et Pascale P.). Karine, Pauline S., Pauline G. et
+// Florent ont l'accès aux ventes de toute l'équipe (voit_tous_commerciaux) mais restent des commerciaux : leur secteur seulement.
+test('groupe restreint (accès à toute l\'équipe, mais commercial) : son secteur seulement, pas de liste France', async () => {
+  const fx = fixtures();
+  fx['bodacc-secteur.json'].ev.push({ id: 'f1', nom: 'PHARMACIE UN', ville: 'LYON', cp: '69000', dep: '69', d: iso(-3), f: 'cession', detail: '', url: 'https://www.bodacc.fr/f1', depNom: '' });
+  const sb = monter(fx);
+  sb.V2.user.voitTousReel = true; sb.V2.user.commercial = 'Karine';
+  const html = await rendreSb(sb);
+  assert.equal(annSection(html, 'inf-t-h-ann').titre, 'Annonces de votre secteur · 3 derniers mois', 'marqueur positif : ses annonces sont là');
+  assert.doesNotMatch(html, /inf-t-h-annfr|inf-t-annfr-b|Ventes et rachats en France/, 'pas de liste France');
+  assert.doesNotMatch(texte(html), /Lille|Lyon/, 'aucune annonce hors de son secteur');
+  // la même page, en direction (Pascale P.) : la liste France revient — l'essai sait rendre autre chose que « rien »
+  const sb2 = monter(fx);
+  sb2.V2.user.voitTousReel = true; sb2.V2.user.commercial = 'Pascale P.';
+  assert.ok(annSection(await rendreSb(sb2), 'inf-t-h-annfr'), 'Pascale P. garde la liste France');
 });
 
 test('« Fait » (zone f) : cochée → rangée dans « Fait · 1 », décochée (off) → revient à sa place', async () => {

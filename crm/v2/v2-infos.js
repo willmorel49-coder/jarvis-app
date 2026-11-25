@@ -262,7 +262,16 @@
 
   var SCT_S = { scope: null, autre: -1, per: 90 };
 
-  function sctEstDirection() { return !!(V2.user && V2.user.voitTousReel); }
+  /* Direction = accès aux ventes de toute l'équipe ET (aucun secteur à soi, ou l'un des comptes de direction).
+     Will, 25/11/2026 (question cliquée) : « ils s'en foutent de voir les rachats qui sont pas sur leur secteur ».
+     Karine, Pauline S., Pauline G. et Florent ont voit_tous_commerciaux (groupe restreint du 16/10) mais restent des
+     commerciaux : sans cette liste, l'écran leur montrait « Ventes et rachats en France » et la bascule des autres secteurs.
+     Repère = le champ `commercial` du profil (« Will », « Pascale P. »). */
+  var SCT_DIRECTION = ['Will', 'Pascale P.'];
+  function sctEstDirection() {
+    var u = V2.user;
+    return !!(u && u.voitTousReel && (!u.commercial || SCT_DIRECTION.indexOf(String(u.commercial)) >= 0));
+  }
 
   /* Ses départements : ceux où V2.pharmacies (WML_OFFICINES) lui donne au moins
      3 officines. Rien de tout ça n'est écrit en dur — recalculé à chaque visite. */
