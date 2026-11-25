@@ -76,7 +76,7 @@ test('prix : effet passé ignoré, baisse à venir retenue et urgente sous 7 jou
   ] };
   const r = calculer(base({ ventes: [{ cip: '3400900000001', mois: '2026-08', qte: 4 }], prixFuturs: pf }));
   assert.equal(r.points.length, 1);
-  assert.match(r.points[0].titre, /Baisse de prix le 20\/09\/2026 : Proche/);   // nom écrit comme partout ailleurs (24/11/2026)
+  assert.match(r.points[0].titre, /Baisse le 20\/09\/2026 : Proche/);   // nom écrit comme partout ailleurs (24/11/2026)
   assert.equal(r.points[0].urgence, 3);
   assert.match(r.points[0].detail, /6,50 € → 5,00 € TTC/);   // 25/11/2026 (Will) : deux chiffres après la virgule
 });
@@ -724,9 +724,9 @@ test('25/11 (boîtes) : « boîte de 30 / 90 » seulement quand deux lignes port
   const r = calculer(base({ aujourdhui: '2026-11-25', moisCouverts: ['2026-08', '2026-09', '2026-10'], ventes, prixFuturs: { generated: '2026-11-25', changes: [...deux, seul] } }));
   const titres = [...r.points.concat(r.autres).map((p) => p.titre)].sort();
   assert.deepEqual(titres, [
-    'Baisse de prix le 02/01/2027 : Ezetimib/ator. Zentiva 10/10 mg, boîte de 30',
-    'Baisse de prix le 02/01/2027 : Ezetimib/ator. Zentiva 10/10 mg, boîte de 90',
-    'Baisse de prix le 02/01/2027 : Liptruzet 10 mg/20 mg',
+    'Baisse le 02/01/2027 : Ezetimib/ator. Zentiva 10/10 mg, boîte de 30',
+    'Baisse le 02/01/2027 : Ezetimib/ator. Zentiva 10/10 mg, boîte de 90',
+    'Baisse le 02/01/2027 : Liptruzet 10 mg/20 mg',
   ]);
   assert.ok(r.points.concat(r.autres).every((p) => !('brut' in p)), 'le libellé brut ne sort pas de calculer()');
 });
@@ -773,4 +773,105 @@ test('25/11 (noms) : noms restés bruts remis au format ; LP, %, U/ml écrits d\
   assert.equal(nomProduit('LANTUS 100U/ML INJ SOLO3ML 5'), 'Lantus 100 U/ml');
   assert.equal(nomProduit('VENLAFAXINE BGA LP75MG GEL B30'), 'Venlafaxine Biogaran LP 75 mg');
   assert.equal(nomProduit('ENGERIX B 20MCG SRG.BACK.1ML 1'), 'Engerix B 20 µg', 'la boîte après un point reste coupée');
+});
+
+// ── 25/11/2026 (Will) — les cinq points choisis après l'impression ──
+test('25/11 (titres) : « Baisse le … » et « Hausse le … », sans « de prix »', () => {
+  const ventes = ['3400900000001', '3400900000002'].map((cip) => ({ cip, mois: '2026-08', qte: 5 }));
+  const ch = (c, d, sens, ppttc) => ({ c, d, sens, date_effet: '2026-10-01', date_publi: '2026-09-15', ppttc, ancien_ttc: 10 });
+  const r = calculer(base({ ventes, prixFuturs: { generated: '2026-09-17', changes: [ch('3400900000001', 'DOLIPRANE 1000MG CPR BT8', 'baisse', 5), ch('3400900000002', 'SPASFON 80MG CPR BT30', 'hausse', 12)] } }));
+  assert.deepEqual(Array.from(r.points, (p) => p.titre).sort(), ['Baisse le 01/10/2026 : Doliprane 1000 mg', 'Hausse le 01/10/2026 : Spasfon 80 mg']);
+});
+
+test('25/11 (accents) : repris des noms de l\'ANSM, jamais devinés', () => {
+  const { nomProduit } = charger().V2.briefOfficine;
+  assert.equal(nomProduit('KETOPROFENE ZEN LP100MG GELU BT20'), 'Kétoprofène Zentiva LP 100 mg');
+  assert.equal(nomProduit('PARACETAMOL BGA 1G CPR BT8'), 'Paracétamol Biogaran 1 g');
+  assert.equal(nomProduit('Kétoprofène Pharmy II 100 mg, gélule'), 'Kétoprofène Pharmy II 100 mg', 'déjà accentué : inchangé');
+  const masque = nomProduit('MASQUE PRO ACTIVE TEX FFP2 BT 10');
+  assert.match(masque, /^Masque PRO active /, 'un « é » final seul ne se recopie pas (charbon activé) : ' + masque);
+  // le chemin du jour : un nom que seule l'ANSM du jour accentue, et deux pièges
+  const ventes = ['3400900000001', '3400900000002', '3400900000003'].map((cip) => ({ cip, mois: '2026-08', qte: 5 }));
+  const ch = (c, d) => ({ c, d, sens: 'baisse', date_effet: '2026-10-01', date_publi: '2026-09-15', ppttc: 5, ancien_ttc: 10 });
+  const fiche = (spec, dci) => ({ st: 'Rupture de stock', spec, dci, maj: '16/09/2026', cips: ['3400900000009'] });
+  const r = calculer(base({ ventes,
+    ansm: ansm([fiche('Zébrine 5 mg, granulés en sachet – [zébrinol]', 'zébrinol'), fiche('Qualine Arrow 5 mg'), fiche('Qualiné 2 mg'), fiche('Toxicarb, suspension – [charbon activé]', 'charbon activé')]),
+    prixFuturs: { generated: '2026-09-17', changes: [ch('3400900000001', 'ZEBRINE 5MG CPR BT30'), ch('3400900000002', 'QUALINE 5MG CPR BT30'), ch('3400900000003', 'CHARBON ACTIVE GRANULES 100G')] } }));
+  assert.deepEqual(Array.from(r.points.concat(r.autres), (p) => p.titre).sort(), [
+    'Baisse le 01/10/2026 : Charbon active granules 100 g',   // « granulés » est dans la forme, « activé » n'a qu'un é final
+    'Baisse le 01/10/2026 : Qualine 5 mg',                     // deux écritures à l'ANSM : rien de recopié
+    'Baisse le 01/10/2026 : Zébrine 5 mg',
+  ]);
+});
+
+test('25/11 (accents) : sur tout le catalogue et le JO, aucun mot accentué à tort ni libellé cassé', () => {
+  const sb = charger();
+  vm.runInContext(readFileSync(new URL('../benchmark-data.js', B), 'utf8') + ';window.BENCHMARK = BENCHMARK;', sb);
+  const { nomProduit } = sb.V2.briefOfficine;
+  const pf = JSON.parse(readFileSync(new URL('prix-futurs.json', B), 'utf8'));
+  const libs = [...new Set(sb.BENCHMARK.map((b) => b.designation).filter(Boolean).concat(pf.changes.map((c) => c.d || '')))];
+  assert.ok(libs.length > 10000, 'marqueur positif : le catalogue est lu (' + libs.length + ')');
+  const sans = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const accent = /[à-öø-ÿ]/i;
+  let accentues = 0;
+  const casse = [], pieges = [];
+  libs.forEach((l) => {
+    const n = nomProduit(l);
+    if (accent.test(n) && !accent.test(l)) accentues++;
+    if (!n || /undefined|\s$/.test(n) || sans(n).toLowerCase() !== sans(n).toLowerCase().normalize('NFC')) casse.push(l + ' → ' + n);
+    if (/activé|granulés|téva|théa/i.test(n) && !/activé|granulés|téva|théa/i.test(l)) pieges.push(l + ' → ' + n);
+  });
+  assert.ok(accentues >= 300, 'marqueur positif : les libellés du relevé prennent leurs accents (' + accentues + ')');
+  assert.ok(casse.length <= 20, casse.length + ' libellés vides ou cassés : ' + casse.slice(0, 5).join(' | '));
+  assert.deepEqual(pieges, []);
+});
+
+test('25/11 (Izalgi) : « Pas commandé » et « En tension » du même produit = une seule ligne qui dit les deux', () => {
+  const C = '3400949605538';
+  const ventes = ['2026-03', '2026-04', '2026-05', '2026-06', '2026-07'].map((mois) => ({ cip: C, mois, qte: 30 }))
+    .concat([{ cip: '3400900000001', mois: '2026-08', qte: 1 }]);
+  const r = calculer(base({
+    ventes,
+    nom: (c) => (c === C ? 'IZALGI 500MG/25MG GELU BT16' : ''),
+    ansm: ansm([{ st: "Tension d'approvisionnement", spec: "Izalgi 500 mg/25 mg, gélule – [opium (poudre d'), paracétamol]", maj: '22/05/2026', since: '2025-10-01', cips: [C, '3400955003182'] }]),
+    stockSites: (c) => (c === C ? [{ site: 'CPR', q: 10 }] : []),
+  }));
+  const tous = r.points.concat(r.autres);
+  const iz = tous.filter((p) => /Izalgi/.test(p.titre));
+  assert.equal(iz.length, 1, 'une seule ligne : ' + iz.map((p) => p.titre).join(' | '));
+  assert.equal(iz[0].rubrique, 'Ses achats');
+  assert.equal(iz[0].titre, 'Pas commandé en août 2026 : Izalgi 500 mg/25 mg, en tension');
+  assert.equal(iz[0].detail, 'Commandé 5 mois sur les 5 précédents (150 boîtes au total). Chez nous : 10 boîtes sur CPR.');
+  assert.equal(iz[0].pourquoi, 'ANSM · 22/05/2026');
+  assert.ok(!tous.some((p) => p.rubrique === 'Va manquer'), 'le point ANSM s\'est effacé');
+  assert.ok(tous.every((p) => !['cips', 'cip', 'etat', 'faits'].some((k) => k in p)), 'aucun champ de travail ne sort de calculer()');
+});
+
+test('25/11 (anciennes) : une tension que l\'ANSM n\'a pas mise à jour depuis plus d\'un an est repliée, avec « depuis »', () => {
+  const cips = ['3400900000001', '3400900000002', '3400900000003', '3400900000004'];
+  const ventes = cips.map((cip, i) => ({ cip, mois: '2026-08', qte: i === 0 ? 100 : 10 - i }));
+  const items = cips.map((c, i) => ({ st: "Tension d'approvisionnement", spec: 'Produit ' + 'QRST'[i] + ' 1 mg', maj: i === 0 ? '07/11/2023' : '16/09/2026', since: i === 0 ? '2023-10-06' : '2026-09-01', cips: [c] }));
+  const r = calculer(base({ ventes, ansm: ansm(items) }));
+  assert.deepEqual(Array.from(r.points, (p) => p.titre), ['En tension : Produit R 1 mg', 'En tension : Produit S 1 mg', 'En tension : Produit T 1 mg'],
+    'les 3 places vont aux tensions récentes, même si l\'ancienne pèse plus lourd dans ses achats');
+  assert.deepEqual(Array.from(r.autres, (p) => p.titre), ['En tension depuis oct. 2023 : Produit Q 1 mg']);
+});
+
+test('25/11 (anciennes) : sur le vrai fichier de l\'ANSM, aucune fiche de plus d\'un an en tête, toutes repliées avec « depuis »', () => {
+  const a = JSON.parse(readFileSync(new URL('ansm-dispo.json', B), 'utf8'));
+  const auj = a.generated.slice(0, 10);
+  const fr = (d) => d.split('/').reverse().join('-');
+  const items = a.items.filter((it) => (it.st === 'Rupture de stock' || it.st === "Tension d'approvisionnement") && it.cips && it.cips.length);
+  const vieilles = items.filter((it) => (Date.parse(auj) - Date.parse(fr(it.maj))) / 864e5 > 365);
+  assert.ok(vieilles.length >= 5, 'marqueur positif : des fiches de plus d\'un an existent (' + vieilles.length + ')');
+  const ventes = items.map((it) => ({ cip: it.cips[0], mois: '2026-10', qte: 5 }));
+  const r = calculer(base({ aujourdhui: auj, moisCouverts: ['2026-08', '2026-09', '2026-10'], ventes, ansm: a }));
+  assert.ok(r.points.filter((p) => p.rubrique === 'Va manquer').every((p) => !/ depuis /.test(p.titre)), 'une ancienne est en tête');
+  assert.equal(r.autres.filter((p) => /^(En rupture|En tension) depuis [a-zéû.]+ \d{4} : /.test(p.titre)).length, vieilles.length);
+});
+
+test('25/11 (sources) : répertoire des génériques à jour jusqu\'à 35 jours (il sort une fois par mois)', () => {
+  const s = (g) => Array.from(calculer(base({ aujourdhui: '2026-11-25', generiques: { generated: g, princepsWithGeneric: [] } })).sources).filter((x) => x.cle === 'generiques')[0];
+  assert.equal(s('2026-11-02').aJour, true, '23 jours après la sortie du 2 : pas en retard');
+  assert.equal(s('2026-10-20').aJour, false, '36 jours : en retard');
 });

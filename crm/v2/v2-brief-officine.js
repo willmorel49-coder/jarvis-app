@@ -45,13 +45,17 @@
   var ORDRE = ['À retirer', 'Ses achats', 'Va manquer', 'Change bientôt', 'Revient', 'Opportunité'];
   var BAISSE_PETITE = 0.05;       // une baisse de moins de 5 % (ancien_ttc → ppttc) : repliée, sans « écouler son stock »
   var RUPTURES_MAX = 3;
+  // 25/11/2026 (Will) — une rupture ou une tension que l'ANSM n'a pas mise à jour depuis plus d'un an n'est pas une info du jour
+  // (Skiacol, fiche du 07/11/2023, parmi les 7 en tête de l'officine 2003659 ; 33 sur 186 dans le fichier du 24/11/2026) :
+  // repliée (toujours imprimée), son ancienneté dans le titre.
+  var ANSM_ANCIENNE_J = 365;
   var SECTEUR_FAMILLES = { cession: 'Vente', fermeture: 'Fermeture', procedure: 'Procédure' };   // choix de Will (24/11/2026) : ventes, fermetures, procédures
   var SECTEUR_MAX_LIGNES = 5;     // par niveau (sa ville, puis son département) ; le reste est compté
 
   var STATUTS = {
-    'Rupture de stock': { urgence: 3, titre: 'En rupture' },
-    "Tension d'approvisionnement": { urgence: 2, titre: 'En tension' },
-    'Arrêt de commercialisation': { urgence: 2, titre: 'Arrêt de commercialisation' },
+    'Rupture de stock': { urgence: 3, titre: 'En rupture', etat: 'en rupture' },
+    "Tension d'approvisionnement": { urgence: 2, titre: 'En tension', etat: 'en tension' },
+    'Arrêt de commercialisation': { urgence: 2, titre: 'Arrêt de commercialisation', etat: 'commercialisation arrêtée' },
     'Remise à disposition': { urgence: 1, titre: 'De nouveau disponible' }
   };
   var MOIS_FR = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
@@ -88,7 +92,48 @@
     });
     return ok && unite ? out.join('/') : '';
   }
-  function nomProduit(texte) {
+  // 25/11/2026 (Will) — accents repris d'une source officielle, jamais devinés : le catalogue et le JO écrivent en capitales sans
+  // accent (« Ketoprofene Zentiva LP » contre « Kétoprofène Pharmy II » à l'ANSM). Un mot prend les accents que l'ANSM lui donne
+  // dans un NOM de produit ou de molécule (pas dans la forme : « granulés » aurait accentué les granules d'homéopathie), s'il a
+  // 5 lettres au moins, une seule écriture à l'ANSM, et un accent ailleurs qu'un « é » final (« charbon activé » aurait donné
+  // « Masque Pro Activé »). ACCENTS_RELEVES = le relevé du 25/11/2026 (44 mots, 404 libellés du catalogue et du JO) : un mot
+  // garde son accent le jour où sa fiche ANSM disparaît (paracétamol ne le perd pas quand sa rupture finit).
+  var ACCENTS_RELEVES = ('rispéridone paracétamol aténolol quétiapine montélukast acébutolol diclofénac furosémide ondansétron duloxétine ' +
+    'fluoxétine vérapamil kétoprofène bétaméthasone ioméron aprépitant ténofovir palipéridone diazépam célestène magnésium néosynéphrine ' +
+    'métoprolol tranxène gardénal lévonorgestrel téralithe dépakote caféine méthotrexate guêpe oxybuprocaïne nifédipine héparine adrénaline ' +
+    'synacthène mytélase dexaméthasone tibéral névirapine méthylphénidate tétracaïne propafénone acétate').split(' ');
+  function sansAccent(w) { return String(w).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+  function nomDeFiche(t) { return String(t || '').split(' – ')[0].split(', ')[0]; }   // « Izalgi 500 mg/25 mg, gélule – [...] » → le nom
+  // textes = noms de produits et de molécules de l'ANSM → { mot sans accent : mot accentué }
+  function dicoAccents(textes) {
+    var formes = {}, dico = {};
+    textes.forEach(function (t) {
+      (String(t || '').match(/[a-zà-öø-ÿ]+/gi) || []).forEach(function (w) {
+        if (w.length < 5) return;
+        var k = sansAccent(w), f = formes[k] || (formes[k] = {});
+        f[w.toLowerCase()] = 1;
+      });
+    });
+    Object.keys(formes).forEach(function (k) {
+      var f = Object.keys(formes[k]);
+      if (f.length !== 1 || f[0] === k) return;                                    // deux écritures à l'ANSM, ou aucun accent
+      if (f[0].slice(0, -1) === k.slice(0, -1) && f[0].slice(-1) === 'é') return;  // seul accent : un « é » final (activé)
+      dico[k] = f[0];
+    });
+    ACCENTS_RELEVES.forEach(function (w) { dico[sansAccent(w)] = w; });
+    return dico;
+  }
+  var ACCENTS_DEFAUT = dicoAccents([]);
+  function accentuer(n, dico) {
+    return n.replace(/[A-Za-z]{5,}/g, function (w, i, s) {
+      if (/[a-zà-öø-ÿ]/i.test(s.charAt(i - 1) + s.charAt(i + w.length))) return w;   // morceau d'un mot déjà accentué
+      var a = dico[w.toLowerCase()];
+      if (!a) return w;
+      if (w === w.toLowerCase()) return a;
+      return w === w.charAt(0) + w.slice(1).toLowerCase() ? a.charAt(0).toUpperCase() + a.slice(1) : w;   // tout en capitales : un sigle, gardé
+    });
+  }
+  function nomProduit(texte, accents) {
     // Libellé court du JO où le laboratoire est collé au dosage : « EZETIMIB/ATOR.ZEN10/20MG » → « EZETIMIB/ATOR. ZEN 10/20MG ».
     var brut = nomCourt(texte)
       // 25/11/2026 — l'ANSM écrit « 0,5 pour cent », « 100 unités/ ml », « L.P. » ; le JO et le catalogue « 0,5% », « 100U/ML », « LP » : une seule façon.
@@ -113,7 +158,7 @@
       else garde.push(t.toLowerCase());
     }
     if (dernierDosage > 0) garde = garde.slice(0, dernierDosage);   // après le dosage : forme ou mode de libération
-    var n = garde.join(' ');
+    var n = accentuer(garde.join(' '), accents || ACCENTS_DEFAUT);
     return n ? n.charAt(0).toUpperCase() + n.slice(1) : '';
   }
 
@@ -229,7 +274,12 @@
     var idx = indexAchats(e.ventes || []);
     var nbMois = Math.max(1, (e.moisCouverts || []).length);
     var nomBrut = e.nom || function () { return ''; };
-    var nom = function (c) { return nomProduit(nomBrut(c)); };
+    var noms = [];
+    ((e.ansm && e.ansm.items) || []).forEach(function (it) { noms.push(nomDeFiche(it.spec), it.dci || ''); });
+    ((e.rappels && e.rappels.items) || []).forEach(function (r) { noms.push(nomDeFiche(r.t)); });
+    var accents = dicoAccents(noms);
+    var np = function (t) { return nomProduit(t, accents); };
+    var nom = function (c) { return np(nomBrut(c)); };
     var stockSites = e.stockSites || function () { return []; };
     var pts = [];
     var mc = (e.moisCouverts || []).slice().sort();
@@ -247,7 +297,10 @@
       if (!a.qte || a.dernier < recent) return;
       var parMois = Math.max(1, Math.round(a.qte / nbMois));
       // 24/11/2026 — sans « (dernière commande : …) » : seuls ses achats des 3 derniers mois passent ce filtre.
-      var detail = ['Elle en achète environ ' + pluriel(parMois, 'boîte') + ' par mois.'];
+      var detail = [];   // les faits après sa consommation : repris tels quels si la ligne fusionne avec « Pas commandé »
+      var majIso = isoDeFr(it.maj);
+      var ancienne = it.st !== 'Remise à disposition' && !!majIso && jours(majIso, auj) > ANSM_ANCIENNE_J;
+      var depuis = ancienne ? moisFr(String(it.since || majIso).slice(0, 7)) : '';
       if (it.st !== 'Remise à disposition') {
         // 24/11/2026 — la date seule : la phrase qui suit (« Un délai de quelques jours à plusieurs semaines peut être néc ») est
         // la même partout et arrive coupée du fichier de l'ANSM.
@@ -265,9 +318,11 @@
       pts.push({
         rubrique: it.st === 'Remise à disposition' ? 'Revient' : 'Va manquer',
         urgence: s.urgence, volume: a.qte,
-        titre: s.titre + ' : ' + nomProduit(it.spec),
+        titre: s.titre + (depuis ? ' depuis ' + depuis : '') + ' : ' + np(it.spec),
         brut: it.spec,
-        detail: detail.join(' '),
+        detail: ['Elle en achète environ ' + pluriel(parMois, 'boîte') + ' par mois.'].concat(detail).join(' '),
+        replie: ancienne,
+        cips: it.cips, etat: s.etat ? s.etat + (depuis ? ' depuis ' + depuis : '') : '', faits: detail.join(' '),
         action: it.st === 'Remise à disposition' ? 'Lui signaler qu\'elle peut recommander.' : 'La prévenir avant qu\'elle le découvre au comptoir.',
         pourquoi: 'ANSM · ' + dateFr(isoDeFr(it.maj) || e.ansm.generated),   // « (rupture de stock…) et présent dans ses achats » redisait le titre
         source: 'ansm', date: isoDeFr(it.maj) || (e.ansm.generated || '')
@@ -289,7 +344,8 @@
       pts.push({
         rubrique: 'Change bientôt',
         urgence: dans <= 7 ? 3 : 2, volume: a.qte,
-        titre: (ch.sens === 'baisse' ? 'Baisse' : 'Hausse') + ' de prix le ' + dateFr(ch.date_effet) + ' : ' + (nomProduit(ch.d) || nom(ch.c)),
+        // 25/11/2026 (Will) — « Baisse le … » : « Baisse de prix le … : Ezetimib/ator. Zentiva 10/20 mg, boîte de 30 » faisait passer le point à 5 lignes
+        titre: (ch.sens === 'baisse' ? 'Baisse' : 'Hausse') + ' le ' + dateFr(ch.date_effet) + ' : ' + (np(ch.d) || nom(ch.c)),
         brut: ch.d || nomBrut(ch.c),
         detail: 'Prix public ' + prix + '. Elle en a acheté ' + pluriel(a.qte, 'boîte') + '.',
         // 24/11/2026 (Will) — une baisse de moins de 5 % : repliée d'office, et pas de conseil d'écouler le stock pour quelques centimes.
@@ -316,7 +372,7 @@
       pts.push({
         rubrique: 'À retirer',
         urgence: 4, volume: a.qte,
-        titre: 'Rappel de lots : ' + nomProduit(r.t),
+        titre: 'Rappel de lots : ' + np(r.t),
         brut: r.t,
         detail: (lots.length ? 'Lots ' + lots.join(', ') + ' · ' : '') + pluriel(a.qte, 'boîte') + (a.qte > 1 ? ' achetées.' : ' achetée.'),
         action: 'Lui demander de vérifier ses lots en rayon.',
@@ -338,8 +394,19 @@
         detail: 'Commandé ' + vus + ' mois sur les ' + avant.length + ' précédents (' + pluriel(a.qte, 'boîte') + ' au total).',
         action: 'Lui demander si elle l\'achète ailleurs.',
         pourquoi: '',   // 24/11/2026 — « Habitude d'achat interrompue. » redisait la pastille et le titre ; ses achats ne sont pas une source publique
-        source: 'ventes', date: ''
+        source: 'ventes', date: '', cip: c
       });
+    });
+    // 25/11/2026 (Will) — produit qu'elle n'a pas commandé ET que l'ANSM signale (Izalgi 500 mg/25 mg, officine 2281324 : deux lignes) :
+    // UNE ligne qui dit les deux, la rupture ou la tension expliquant sans doute l'arrêt. Le point ANSM s'efface, ses faits
+    // (retour annoncé, notre stock) et sa source passent dans la ligne ; « elle en achète environ… » redirait ses achats.
+    pts.filter(function (p) { return p.rubrique === 'Ses achats'; }).forEach(function (p) {
+      var q = pts.filter(function (x) { return x.rubrique === 'Va manquer' && x.cips.indexOf(p.cip) >= 0; })[0];
+      if (!q) return;
+      p.titre += ', ' + q.etat;
+      if (q.faits) p.detail += ' ' + q.faits;
+      p.pourquoi = q.pourquoi; p.source = q.source; p.date = q.date;
+      pts.splice(pts.indexOf(q), 1);
     });
 
     // 5. Princeps encore acheté alors qu'un générique existe
@@ -373,16 +440,17 @@
       if (g.length < 2 || b.filter(function (x, i) { return x && b.indexOf(x) === i; }).length < 2) return;
       g.forEach(function (p, i) { if (b[i]) p.titre += ', boîte de ' + b[i]; });
     });
-    pts.forEach(function (p) { delete p.brut; });
+    pts.forEach(function (p) { delete p.brut; delete p.cips; delete p.cip; delete p.etat; delete p.faits; });
 
     // Ordre des rubriques (ORDRE) ; dans une rubrique, l'urgence puis SON volume — les ruptures, elles,
     // par son volume seul : une tension sur 50 boîtes par mois la gêne plus qu'une rupture sur 2.
     var rang = {}; ORDRE.forEach(function (r, i) { rang[r] = i; });
     pts.sort(function (x, y) {
-      return (rang[x.rubrique] - rang[y.rubrique]) || (x.rubrique === 'Va manquer' ? 0 : y.urgence - x.urgence) || (y.volume - x.volume);
+      // les ruptures anciennes (ANSM_ANCIENNE_J) après les récentes : elles ne prennent aucune des 3 places
+      return (rang[x.rubrique] - rang[y.rubrique]) || (x.rubrique === 'Va manquer' ? (x.replie ? 1 : 0) - (y.replie ? 1 : 0) : y.urgence - x.urgence) || (y.volume - x.volume);
     });
     var tete = [], ruptRepliees = [], nbRupt = 0;
-    pts.forEach(function (p) { if (p.rubrique === 'Va manquer' && ++nbRupt > RUPTURES_MAX) ruptRepliees.push(p); else if (!p.replie) tete.push(p); });
+    pts.forEach(function (p) { if (p.rubrique === 'Va manquer' && (p.replie || ++nbRupt > RUPTURES_MAX)) ruptRepliees.push(p); else if (!p.replie) tete.push(p); });
     var enTete = tete.slice(0, MAX_POINTS);
     // le reste replié garde l'ordre des rubriques : ce qui dépasse les 7 places et les petites baisses
     var reste = pts.filter(function (p) { return ruptRepliees.indexOf(p) < 0 && enTete.indexOf(p) < 0; });
@@ -391,7 +459,9 @@
       { cle: 'ansm', nom: 'Ruptures ANSM', json: e.ansm, max: FRAIS_MAX_J },
       { cle: 'prix', nom: 'Prix au JO', json: e.prixFuturs, max: FRAIS_MAX_J },
       { cle: 'rappels', nom: 'Rappels de lots', json: e.rappels, max: FRAIS_MAX_J },
-      { cle: 'generiques', nom: 'Répertoire des génériques', json: e.generiques, max: 9 },
+      // 25/11/2026 (Will) — 35 jours : la BDPM publie environ une fois par mois et le robot passe le 2 (generiques-bdpm.yml) ;
+      // avec 9 jours, le panneau écrivait « en retard » du 12 à la fin de chaque mois alors que tout tournait.
+      { cle: 'generiques', nom: 'Répertoire des génériques', json: e.generiques, max: 35 },
       { cle: 'secteur', nom: 'Annonces légales', json: e.secteur, max: FRAIS_MAX_J }
     ].map(function (s) {
       if (!s.json) return { cle: s.cle, nom: s.nom, lue: false, date: '', aJour: false };
