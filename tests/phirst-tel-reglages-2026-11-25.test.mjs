@@ -58,3 +58,7 @@ test('téléprospectrice : sa page (mot de passe + déconnexion) n’est pas tou
   assert.match(js, /function pageTelepro\(\)/); assert.match(js, /rg-seul/);
   assert.ok(!/rg-bilan|rg-tog/.test(js.slice(js.indexOf('function pageTelepro'), js.indexOf('/* ── dessin'))));
 });
+test('au téléphone, l’en-tête « Pour la téléprospectrice » s’aligne sur le titre (plus de retrait de 6 px) ; l’ordinateur garde le sien', () => {
+  assert.match(css, /@media \(max-width:700px\)\{\n {2}\.rg \.ri-tete\{padding:6px 0 0\}/);
+  assert.match(horsMedia(), /\.rg \.ri-tete\{display:grid;gap:4px;padding:6px 6px 0\}/);
+});
