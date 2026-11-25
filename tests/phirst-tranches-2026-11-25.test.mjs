@@ -97,13 +97,14 @@ test('10 · To do list au téléphone : le span vide de la barre ne décale plus
   assert.match(tel, /\.td-m1 \.tb-barre>span:empty\{display:none\}/);
 });
 
-test('11 · To do list au téléphone : plus de trait d’horizon ni de sol dans le bandeau (ils coupaient la phrase)', () => {
+test('11 · To do list au téléphone : le bandeau laisse la place à l’horizon sous la phrase (il retombait dans la phrase)', () => {
+  // v2-aube.js pose l'horizon à « bas de la phrase + 12 px » seulement s'il reste 4 px avant le bas du bandeau ; sinon il retombe à 78 %.
+  // Mesuré en prod le 25/11 : phrase sur 2 lignes 86-134, bandeau 149 px (14 px de marge) → trait à 116, dans la phrase. Il faut au moins 12 + 4 + 1 (bord) = 17 px.
   const css = socle('v2-todo-m1.css'), d = css.indexOf('@media (max-width:760px)'), f = css.indexOf("L'arrivée", d);
-  const bloc = css.slice(d, f);
-  assert.match(bloc, /html:root:root body \.td-m1 \.td-hd :is\(\.aube-horizon,\.aube-sol\)\{display:none\}/);
-  assert.ok(!/aube-horizon/.test(css.slice(0, d)), 'à l’ordinateur le bandeau garde son horizon');
+  const bloc = css.slice(d, f), m = bloc.match(/\.td-m1 \.td-hd\{padding-bottom:(\d+)px\}/);
+  assert.ok(m && +m[1] >= 17, 'marge du bas du bandeau au téléphone : ' + (m ? m[1] : 'absente') + ' px');
+  assert.ok(!/aube-horizon[^{]*\)\{display:none/.test(css), 'le décor éclairé (horizon, sol) reste au téléphone');
 });
-
 test('socle : les deux pages (JARVIS et Phirst) chargent les mêmes fichiers modifiés', () => {
   const phirst = lire('index.html'), jarvis = socle('index.html');
   assert.match(phirst, /crm\/v2\/v2-todo-m1\.css/); assert.match(phirst, /crm\/v2\/v2-todo\.js/); assert.match(phirst, /crm\/v2\/v2-bloc-notes\.js/);
