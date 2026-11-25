@@ -9,7 +9,6 @@
   box-shadow:inset 0 1px 0 #fff,0 10px 30px rgba(18,40,31,.10); font-family:var(--font); color:var(--ip-ink,#16281e); }
 .ph-apercu h1 { margin:0 0 8px; font-size:26px; letter-spacing:-.02em; }
 .ph-apercu p { margin:0 0 10px; font-size:15.5px; line-height:1.5; color:var(--ip-ink-2,#45564b); }
-.ph-apercu .ph-tag { display:inline-block; padding:5px 10px; border-radius:999px; background:#E4EFE8; color:#12281f; font-size:12.5px; font-weight:700; }
 
 /* L'aube teintée Phirst (accueil n° 6, 20/11/2026) : mêmes noms de couleurs que l'aube de JARVIS, valeurs vert forêt.
    <html data-teinte="phirst"> est posé dans index.html. */

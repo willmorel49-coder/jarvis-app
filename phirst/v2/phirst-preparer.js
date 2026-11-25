@@ -125,7 +125,7 @@
   function monter() {
     if (document.getElementById('pv')) return;
     var voile = document.createElement('div'); voile.className = 'pv-voile'; voile.id = 'pv-voile'; voile.hidden = true;
-    var pv = document.createElement('aside'); pv.className = 'pv'; pv.id = 'pv'; pv.hidden = true; pv.setAttribute('role', 'dialog'); pv.setAttribute('aria-modal', 'true'); pv.setAttribute('aria-labelledby', 'pv-titre');
+    var pv = document.createElement('aside'); pv.className = 'pv-panneau'; pv.id = 'pv'; pv.hidden = true; pv.setAttribute('role', 'dialog'); pv.setAttribute('aria-modal', 'true'); pv.setAttribute('aria-labelledby', 'pv-titre');
     document.body.appendChild(voile); document.body.appendChild(pv);
     voile.addEventListener('click', fermer);
     pv.addEventListener('click', function (ev) {

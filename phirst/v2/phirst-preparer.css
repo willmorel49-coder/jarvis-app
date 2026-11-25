@@ -21,10 +21,10 @@
 /* ── Le voile et le panneau ── */
 .pv-voile{position:fixed;inset:0;z-index:9000;background-color:rgba(18,40,31,0);transition:background-color .35s cubic-bezier(.32,.72,0,1)}
 .pv-voile.pv-on{background-color:rgba(18,40,31,.34)}
-.pv{position:fixed;top:0;right:0;bottom:0;z-index:9100;width:min(1000px,100vw);overflow-y:auto;overscroll-behavior:contain;
+.pv-panneau{position:fixed;top:0;right:0;bottom:0;z-index:9100;width:min(1000px,100vw);overflow-y:auto;overscroll-behavior:contain;
   background-color:#F3F6F4;background-image:radial-gradient(80% 360px at 90% 0,#FFFFFF 0,#EAF3EE 50%,rgba(243,246,244,0) 100%);
   box-shadow:-30px 0 60px -34px rgba(18,40,31,.55),-1px 0 0 #D8E7DD;transform:translateX(48px);transition:transform .42s cubic-bezier(.32,.72,0,1)}
-.pv.pv-on{transform:none}
+.pv-panneau.pv-on{transform:none}
 .pv-barre{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 22px;background-color:#F3F6F4;border-bottom:1px solid #E2ECE6}
 .pv-barre-d{display:flex;gap:8px;flex-wrap:wrap}
 .pv-barre .pa-b{min-height:48px}
@@ -85,14 +85,14 @@
 
 /* ── Page propre : le même contenu seul, sur tout l'écran (l'agenda disparaît derrière) ── */
 .pv-propre .pv-voile{display:none}
-.pv-propre .pv{width:100vw;transform:none}
+.pv-propre .pv-panneau{width:100vw;transform:none}
 .pv-propre .pv-barre,.pv-propre .pv-feuille{width:min(1080px,100%);margin-inline:auto;box-sizing:border-box}
 
 /* ── Téléphone ── */
 @media screen and (max-width:760px){
   .pv-veille{flex-wrap:wrap}
   .pv-veille-l{width:100%}.pv-veille-l .pa-b{flex:1 1 100%}
-  .pv{width:100vw;transform:translateY(32px)}
+  .pv-panneau{width:100vw;transform:translateY(32px)}
   .pv-barre{padding:10px 14px}
   .pv-barre{flex-wrap:nowrap}.pv-barre .pv-ferme{flex:1 1 auto;padding:0 10px}.pv-barre-d [data-propre]{display:none}
   .pv-feuille{display:block;padding:14px 14px 28px}
@@ -104,7 +104,7 @@
   
   .ag-rdv .pa-bs .pa-b{flex:1 1 100%}
 }
-@media (prefers-reduced-motion:reduce){.pv,.pv-voile,.pv-bte,.pv-bte::after{transition-duration:.01ms!important}}
+@media (prefers-reduced-motion:reduce){.pv-panneau,.pv-voile,.pv-bte,.pv-bte::after{transition-duration:.01ms!important}}
 
 /* ── Impression : une feuille A4 propre, l'écran derrière disparaît ── */
 @page{size:A4;margin:12mm}
@@ -112,7 +112,7 @@
   html,body{background:#fff!important;background-image:none!important;height:auto;color:#000}
   body.pv-ouvert>*:not(#pv){display:none!important}
   .pv-barre{display:none!important}
-  body.pv-ouvert .pv{display:block!important;position:static;width:auto;overflow:visible;transform:none;background:#fff!important;background-image:none!important;box-shadow:none;transition:none}
+  body.pv-ouvert .pv-panneau{display:block!important;position:static;width:auto;overflow:visible;transform:none;background:#fff!important;background-image:none!important;box-shadow:none;transition:none}
   .pv-feuille{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:8pt;padding:0;font-size:10pt}
   .pv-tete{padding:10pt 12pt;color:#000;background:#fff!important;background-image:none!important;border:1.5pt solid #1A3A2E;box-shadow:none;border-radius:8pt}
   .pv-tag{background:#fff;border:1pt solid #1A3A2E;color:#000;padding:1pt 8pt}
@@ -130,7 +130,7 @@
   .pv-phrase{background:#fff!important;background-image:none!important;border:.75pt solid #1A3A2E;padding:6pt 9pt}
   .pv-phrase p{font-size:10.5pt;color:#000}.pv-phrase footer{font-size:8.5pt;color:#000}
   .pv-nom{font-size:12pt}.pv-role{font-size:9.5pt;color:#000}
-  .pv .pv-co .pa-tel,.pv .pv-co .pa-lien{min-height:0;padding:1pt 0;font-size:10pt;color:#000}
+  .pv-panneau .pv-co .pa-tel,.pv-panneau .pv-co .pa-lien{min-height:0;padding:1pt 0;font-size:10pt;color:#000}
   .pv-seul{background:#fff;border:.5pt solid #666;color:#000;font-size:8pt}
   .pv-vl li{background:#fff;border:.5pt solid #999;padding:4pt 7pt}
   .pv-vl b{font-size:10pt}.pv-vl small{font-size:9pt;color:#000}
