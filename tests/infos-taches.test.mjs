@@ -121,6 +121,20 @@ test('rappel de lot : limité aux hôpitaux, il ne monte pas ; pour les officine
   assert.equal(L[0].aDire, 'Le lot 008825 de Mapakna LP 20 mg est rappelé : à retirer du stock.');
 });
 
+/* Choix cliqué de Will, 25/11/2026 : « Chez nous ou officines ». Un rappel ne monte que si le produit est dans notre catalogue ou notre
+   stock (cat / stk, posés par generate_rappels_lots.py), ou si l'Agence nomme les officines. VRAIES lignes de rappels-lots.json du 24/11. */
+test('rappel de lot : seulement si le produit passe chez nous ou si l\'Agence nomme les officines', () => {
+  const garde = T._.pourOfficines;
+  const z011 = { d: '2026-11-24', t: 'Albumine humaine iodée [125I], Cis bio international, solution injectable. [Réf : SERALB-125] - Laboratoire Cis Bio Inte', niv: 'Ce rappel a été effectué en direct auprès des clients concernés, aucun numéro d\'alerte n\'a donc été attribué.', lots: [{ n: 'Z011' }], cat: [], stk: [], url: 'https://ansm.sante.fr/x' };
+  assert.equal(garde(z011), false, 'Z011 : médecine nucléaire, ni catalogue ni stock, l\'Agence a prévenu les clients en direct');
+  assert.equal(garde({ niv: 'Aucun numéro d\'alerte n\'a été attribué.', cat: [], stk: [] }), false, 'Carmustine : perfusion d\'hôpital');
+  assert.equal(garde({ niv: 'Etablissements de santé et circuit de distribution pharmaceutique Pour toute information complémentaire, vous pouvez con', cat: [], stk: [] }), false, 'Kétamine : « Etablissements » sans accent');
+  assert.equal(garde({ niv: 'établissements de santé et circuit de distribution pharmaceutique, ainsi qu\'en direct auprès des professionnels de santé', cat: [], stk: [{ c: '3400956238811', q: 30 }] }), true, 'Omnipaque : 30 boîtes dans notre stock');
+  assert.equal(garde({ niv: 'officines, établissements de santé, circuit de distribution pharmaceutique et patients', cat: [], stk: [] }), true, 'Rivaroxaban Viatris : l\'Agence nomme les officines');
+  const B = copie(BRIEF); B.rappels_lots = [z011];
+  assert.ok(!T.france(B, { auj: '2026-11-25' }).some((t) => t.etiquette === 'Lot rappelé'), 'la tâche du 25/11 « vérifier le lot Z011 » ne monte plus');
+});
+
 test('sans article repris par plusieurs sources : une alerte ANSM d\'un produit de ville, jamais d\'hôpital', () => {
   const B = copie(BRIEF); B.cinq = B.cinq.filter((a) => !/furos/i.test(a.t));
   assert.ok(!T.france(B, { auj: AUJ }).some((t) => t.etiquette === 'Médicament qui manque'), 'Kanokad (poudre et solvant), Rapibloc (à diluer) : écartés ; Jext revient : pas une rupture');

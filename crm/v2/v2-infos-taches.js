@@ -247,8 +247,10 @@
   }
 
   /* ════════════════ 5. RAPPEL DE LOT ════════════════
-     Seulement s'il touche les officines : un rappel limité aux « établissements de santé » (hôpitaux) reste dans « Tout le reste ». */
-  function pourOfficines(r) { var n = txt(r.niv); return !n || /officine|pharmacie|grossiste|répartit/i.test(n) || !/établissement/i.test(n); }
+     Seulement s'il touche les officines (choix de Will, 25/11/2026, « Chez nous ou officines ») : le produit est dans notre catalogue
+     ou notre stock (cat / stk, posés par generate_rappels_lots.py), ou l'Agence nomme les officines dans le niveau de rappel.
+     Un produit d'hôpital qu'on ne vend pas (lot Z011, albumine iodée [125I], prévenu « en direct auprès des clients ») ne monte pas. */
+  function pourOfficines(r) { return !!((r.cat && r.cat.length) || (r.stk && r.stk.length)) || /officine|pharmacie/i.test(txt(r.niv)); }
   function rappel(r, o) {
     o = o || {};
     var nom = nomCourt(r.t), lots = r.lots || [], un = lots.length === 1 && lots[0].n;
