@@ -81,8 +81,11 @@
     var t = norm(c && c.titre), n = norm(p && p.nom);
     return !!n && t.indexOf(n) === 0 && (t.length === n.length || /^(,| ·| —| -|\s—|\s-)/.test(t.slice(n.length)));
   }
+  /* 25/11/2026 — au téléphone la liste ne montre que 5 pharmacies (les suivantes sont cachées par la feuille de style, jamais retirées) ;
+     le lien « Voir les N autres » compte ce qui reste : le total du moment, moins la pharmacie de la grande carte, moins les 5 montrées. */
+  var MONTRES_TEL = 5;
   function lignes(liste) {
-    return liste.map(function (p) { return '<li>' + pastille(p, 48) + '<span><b>' + esc(p.nom) + '</b><small>' + esc(p.ville) + '</small><em class="lg-et"' + (p.etiquette.ton ? ' data-ton="' + esc(p.etiquette.ton) + '"' : '') + '>' + esc(p.etiquette.t) + '</em></span></li>'; }).join('');
+    return liste.map(function (p, i) { return '<li' + (i >= MONTRES_TEL ? ' class="lg-apres"' : '') + '>' + pastille(p, 48) + '<span><b>' + esc(p.nom) + '</b><small>' + esc(p.ville) + '</small><em class="lg-et"' + (p.etiquette.ton ? ' data-ton="' + esc(p.etiquette.ton) + '"' : '') + '>' + esc(p.etiquette.t) + '</em></span></li>'; }).join('');
   }
   function panneau() {
     var s = D.filter(function (x) { return x.cle === cle; })[0]; if (!s) return '';
@@ -94,8 +97,12 @@
     var det = c && (c.parution ? 'Paru au BODACC ' + depuis(c.parution) + '.' : (window.PHIRST_PUR && c.detail ? window.PHIRST_PUR.datesLisibles(c.detail, window.PHIRST_PUR.aujourdhui()) : c.detail));
     if (c) h += '<p class="lg-titre">' + esc(c.titre) + '</p><p class="lg-det">' + esc(c.heure) + (det ? ' · ' + esc(det) : '') + '</p><button type="button" class="lg-gros"' + (c.type === 'veille' ? (c.piste ? ' data-piste="1"' : '') : vers(GESTE_VERS[s.cle])) + '>' + esc(c.bouton) + FL + '</button>' +
       (c.type === 'veille' ? '<p class="lg-dit" role="status"></p>' : '');
+    var sortie = c ? s.pharmacies.filter(function (p) { return estLaChose(c, p); }).length : 0;   // la pharmacie de la grande carte, déjà comptée dans n
+    var reste = Math.max(n - sortie, s.pharmacies.length - sortie) - MONTRES_TEL;
+    var ou = s.source === 'appels' ? 'appels' : s.source === 'veille' || s.cle === 'trouver' ? 'veille' : VIDE_VERS[s.cle];
+    var suite = reste > 0 ? '<button type="button" class="lg-suite"' + vers(ou) + '>Voir ' + (reste > 1 ? 'les ' + reste + ' autres' : '1 autre') + (ou === 'veille' ? ' dans la Veille' : ou === 'appels' ? ' dans Appels' : '') + FL + '</button>' : '';
     h += '</div><div class="lg-liste"><p class="lg-lt">' + n + ' pharmacie' + (n > 1 ? 's' : '') + ' à ce moment</p><ul>' + lignes(c ? s.pharmacies.filter(function (p) { return !estLaChose(c, p); }) : s.pharmacies);
-    return h + '</ul>' + (s.autres ? '<button type="button" class="lg-autres"' + vers(s.source === 'appels' ? 'appels' : s.source === 'veille' || s.cle === 'trouver' ? 'veille' : VIDE_VERS[s.cle]) + '>' + esc(s.autres) + FL + '</button>' : '') + '</div></div>';
+    return h + '</ul>' + suite + (s.autres ? '<button type="button" class="lg-autres"' + vers(s.source === 'appels' ? 'appels' : s.source === 'veille' || s.cle === 'trouver' ? 'veille' : VIDE_VERS[s.cle]) + '>' + esc(s.autres) + FL + '</button>' : '') + '</div></div>';
   }
   /* « L'ajouter à mes pistes » : crée la fiche comme ajouterAuPipeline de la V1 (~/phirst-studio/app/crm/actions.ts l. 56-114) —
      dans SON espace, pas de doublon par nom + ville (toute étape, archivées comprises), étape « à qualifier », source « transfert »,

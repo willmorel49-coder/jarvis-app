@@ -183,3 +183,38 @@ html body .leaflet-container .leaflet-control-attribution{font-size:13px}
 /* Agenda : air entre le titre et la ligne dessous, et au-dessus des boutons « À confirmer ». */
 .ag-conf .pa-bs{margin-top:12px}
 .ag-conf .pa-ht small,.ag-rdv .pa-ht small{margin-top:4px}
+
+/* 25/11/2026 — Officines au téléphone (maquette « 1 · tuiles qui défilent », choisie par Will) : une rangée de tuiles qu'on fait défiler de côté,
+   recherche sur une ligne, première pharmacie plus haut, boutons en contour, étiquette collée au nom. Ordinateur inchangé (tout est dans le @media). */
+.pa.po:not(.po-plein) .po-ic-plus,.pa.po:not(.po-plein) .po-loupe{display:none}
+@media (max-width:700px){
+  .pa.po:not(.po-plein) .pa-tete{margin:0 0 14px}
+  .pa.po:not(.po-plein) .pa-tete p{margin:0}
+  .pa.po:not(.po-plein) .po-grille{display:flex;gap:8px;margin:0 -16px 12px;padding:2px 16px 8px;overflow-x:auto;scroll-snap-type:x proximity;scroll-padding:0 16px;scrollbar-width:none}
+  .pa.po:not(.po-plein) .po-grille::-webkit-scrollbar{display:none}
+  .pa.po:not(.po-plein) .po-grille .po-tuile,.pa.po:not(.po-plein) .po-grille .po-tuile:first-child{flex:none;grid-column:auto;scroll-snap-align:start;width:152px;min-height:88px;padding:10px 14px;border-radius:16px}
+  .pa.po:not(.po-plein) .po-n{font-size:26px;line-height:1.1;letter-spacing:-.02em}
+  .pa.po:not(.po-plein) .po-nom{margin-top:2px;font-size:14px;line-height:1.25}
+  .pa.po:not(.po-plein) .po-sous{margin-top:1px;font-size:13px}
+  .pa.po:not(.po-plein) .po-secteur{margin:2px 0 8px}
+  .pa.po:not(.po-plein) .po-secteur .pa-chips{margin:0 0 8px}
+  .pa.po:not(.po-plein) .po-une{margin:0;font-size:14px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pa.po:not(.po-plein) .po-recherche{display:grid;grid-template-columns:minmax(0,1fr) 76px 48px;gap:8px;margin:8px 0 14px}
+  .pa.po:not(.po-plein) .po-recherche input[name=q],.pa.po:not(.po-plein) .po-recherche .po-dep{width:100%;min-width:0;padding:0 14px}
+  .pa.po:not(.po-plein) .po-recherche .pa-ok{width:48px;padding:0}
+  .pa.po:not(.po-plein) .po-recherche .po-loupe{display:block}
+  .pa.po:not(.po-plein) .po-recherche .po-mot{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .pa.po:not(.po-plein) .po-h2{margin:0 0 8px;font-size:17px}
+  /* la ligne : nom + étiquette sur la même rangée, adresse dessous, boutons en contour */
+  .pa.po:not(.po-plein) .pa-l{padding:14px 16px}
+  .pa.po:not(.po-plein) .pa-ht{flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:4px 8px}
+  .pa.po:not(.po-plein) .pa-ht>div:first-child{display:contents}
+  .pa.po:not(.po-plein) .pa-ht b{display:block;font-size:17px;overflow-wrap:break-word}
+  .pa.po:not(.po-plein) .pa-ht small{order:3;flex:0 0 100%;margin:0;font-size:14.5px;line-height:1.4}
+  .pa.po:not(.po-plein) .pa-ht .po-et{order:2;max-width:none;justify-content:flex-start}
+  .pa.po:not(.po-plein) .pa-bs{align-items:center;flex-wrap:wrap;gap:12px;margin-top:10px}
+  .pa.po:not(.po-plein) .pa-bs .pa-b{flex:0 0 auto;min-height:44px;padding:0 14px;font-size:15px;font-weight:700}
+  .pa.po:not(.po-plein) .pa-bs .pa-b.pa-ok{gap:8px;background-color:#fff;border-color:var(--au-fil,#D8E7DD);color:var(--au-accent,#1A3A2E)}
+  .pa.po:not(.po-plein) .pa-bs .po-ic-plus{display:block}
+  .pa.po:not(.po-plein) .po-fait{min-height:44px;font-size:15px}
+}

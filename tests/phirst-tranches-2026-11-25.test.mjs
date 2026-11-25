@@ -42,11 +42,12 @@ test('2 · les jours (« En retard · 19 jours », « Sans réponse · 15 jours 
   assert.match(js, /'<span class="dz-et">' \+ esc\(v\.nom\)/, 'les pastilles de nom de volet restent des pastilles');
 });
 
-test('3 · le titre « Encaisser » de la bande a la taille des autres écrans ; Réglages n’est pas touché', () => {
+test('3 · le titre « Encaisser » de la bande a la taille des autres écrans ; Réglages aussi depuis le choix de Will (25/11, maquette Réglages 1)', () => {
   const taille = /clamp\(32px,9vw,40px\)/;
   assert.match(regle(lire('phirst-encaisser.css'), '.en .en-bande h1'), taille);
   assert.match(lire('phirst-finitions.css'), /\.pa \.pa-tete h1\{[^}]*clamp\(32px,9vw,40px\)/);
-  assert.match(lire('phirst-reglages.css'), /font:800 24px/, 'Réglages garde son titre (point non tranché)');
+  assert.match(lire('phirst-reglages.css'), /\.rg \.rg-bande h1\{[^}]*font:800 clamp\(32px,9vw,40px\)/, 'Réglages : même titre qu’Encaisser');
+  assert.ok(!/font:800 24px/.test(lire('phirst-reglages.css')), 'plus de titre à 24 px');
 });
 
 test('4 · les 3 cartes du bas ont la même hauteur', () => {

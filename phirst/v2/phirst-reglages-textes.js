@@ -11,9 +11,11 @@
   var esc = X.esc, DELAI = 10000;
   var PAS = 'Pas enregistré : réessayez dans un instant.';
   var Z = null, racine = null, tToast = 0;
+  /* Au téléphone (maquette 25/11), les trois rubriques arrivent repliées ; à l'ordinateur, la première reste ouverte comme avant. */
+  function petitEcran() { try { return !!(window.matchMedia && window.matchMedia('(max-width:700px)').matches); } catch (e) { return false; } }
   function neuf() {
     return { lu: false, erreur: false, ws: null, phrases: {}, reponses: [], refs: [], comptes: {}, brouillons: {}, sel: T.RAISONS[0].cle,
-      ouvert: { ph: true, ob: false, rf: false }, formOb: false, formRf: false, occupe: false, jeton: 0, erreurs: {} };
+      ouvert: { ph: !petitEcran(), ob: false, rf: false }, formOb: false, formRf: false, occupe: false, jeton: 0, erreurs: {} };
   }
   Z = neuf();
   function sb() { return window.V2 && typeof window.V2.sb === 'function' ? window.V2.sb() : null; }

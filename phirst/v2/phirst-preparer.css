@@ -162,3 +162,76 @@
 .pv-dos .pv-note{margin:8px 0 0}
 @media screen and (max-width:760px){.pv-jr li{grid-template-columns:minmax(0,1fr);gap:0}}
 @media print{.pv-col{display:contents}.pv-jr li{grid-template-columns:60pt minmax(0,1fr);padding:2pt 0}.pv-jr p,.pv-jr span{font-size:9pt;color:#000}.pv-orig,.pv-att,.pv-prop{color:#000;font-size:9pt}.pv-c h4{color:#000}}
+
+/* ═══ Agenda au téléphone (25/11/2026, maquette « Agenda 1 · aujourd'hui d'abord ») ═══
+   Tout est préfixé .pa.ag et ne s'applique qu'au téléphone : à l'ordinateur ces éléments restent cachés ou inchangés. Aucun flou, aucune opacité sur du texte. */
+.pa.ag .ag-alerte-u,.pa.ag .ag-ensuite,.pa.ag .ag-plie-b,.pa.ag .ag-conf-n{display:none}
+@media (max-width:700px){
+  /* ordre : jours, jour choisi et ses rendez-vous, (jour vide), Demain replié, À confirmer, Avant/Après, annulés */
+  .pa.ag .pa-corps{display:flex;flex-direction:column}
+  .pa.ag .pa-corps>*{order:5}
+  .pa.ag .pa-corps>.pa-flash{order:0}
+  .pa.ag .pa-corps>.ag-jours{order:1}
+  .pa.ag .pa-corps>.ag-jt{order:2}
+  .pa.ag .pa-corps>.pa-avis,.pa.ag .pa-corps>.ag-vide{order:3}
+  .pa.ag .pa-corps>.pa-liste{order:4}
+  .pa.ag .pa-corps>.ag-ens-vide{order:5}
+  .pa.ag .pa-corps>.pv-veille{order:6;margin:16px 0 0}
+  .pa.ag .pa-corps>.ag-conf{order:7;margin:22px 0 0}
+  .pa.ag .pa-corps>.ag-periode{order:8;justify-content:space-between;margin:14px 0 0}
+  .pa.ag .pa-corps>.ag-annules{order:9}
+
+  /* les jours : une rangée qui défile de côté, le jour choisi en vert clair */
+  .pa.ag .ag-jours{display:flex;gap:8px;margin:0 -16px 6px;padding:2px 16px 10px;overflow-x:auto;scroll-snap-type:x proximity;scroll-padding:0 16px;scrollbar-width:none}
+  .pa.ag .ag-jours::-webkit-scrollbar{display:none}
+  .pa.ag .ag-jour{flex:none;scroll-snap-align:start;min-width:84px;min-height:56px;padding:6px 10px;border-radius:16px;font-size:14.5px;line-height:1.25}
+  .pa.ag .ag-jour[aria-pressed="true"]{border:2px solid var(--au-accent,#1A3A2E);background-color:#E4F1E8;color:#12281F}
+  .pa.ag .ag-jour[aria-pressed="true"] small{color:#3B4F43}
+  .pa.ag .ag-jt{margin:6px 0 2px;font-size:22px;line-height:1.2}
+  .pa.ag .pa-corps>.pa-avis{margin:0 0 12px;font-size:14.5px;line-height:1.4;color:#4A5D51}
+
+  /* « Ensuite » : plus de bloc sombre, une étiquette claire sur le rendez-vous (le bloc ne reste, en clair, que pour un jour vide) */
+  .pa.ag .ag-ens:not(.ag-ens-vide){display:none}
+  .pa.ag .ag-ens-vide{margin:12px 0 0;border:1px solid var(--au-fil,#D8E7DD);background-color:#fff;color:#16281E}
+  .pa.ag .ag-ens-vide .ag-ens-m{color:#4A5D51}
+  .pa.ag .ag-ens-vide .ag-ens-t{font-size:22px}
+  .pa.ag .ag-ens-vide .ag-ens-d,.pa.ag .ag-ens-vide .ag-ens-c{color:#3B4F43}
+  .pa.ag .ag-ens-vide .ag-ens-b{border-color:#D8E7DD;background-color:#fff;color:#1A3A2E}
+  .pa.ag .ag-rdv .pa-ht{flex-direction:row;flex-wrap:wrap;justify-content:flex-start;gap:8px}
+  .pa.ag .ag-rdv .pa-ht>div{flex:1 1 100%}
+  .pa.ag .ag-rdv .pa-ht .lg-et{max-width:none}
+  .pa.ag .ag-rdv .pa-ht .ag-ensuite{display:inline-block;background-color:#DDF0EE;color:#0B5A54}
+  .pa.ag .ag-rdv .ag-lieu{display:none}
+
+  /* une seule alerte au-dessus des rendez-vous qui se chevauchent */
+  .pa.ag .ag-rdv .ag-alerte{display:none}
+  .pa.ag .ag-alerte-u{display:block;padding:10px 14px;border-radius:12px;background-color:#FBE2DF;color:#9B2C24;font-size:15px;font-weight:800;line-height:1.35}
+  .pa.ag .ag-rdv.ag-chev{border-color:#F0C9C4}
+
+  /* un seul bouton plein par carte : « Préparer » ; Confirmer passe en contour s'il vient après ; le reste en contour, deux par ligne */
+  .pa.ag .ag-rdv>.pa-bs .pa-b{flex:1 1 calc(50% - 8px);min-height:44px;font-size:15px}
+  .pa.ag .ag-rdv>.pa-bs .pv-prep{flex:1 1 100%;min-height:48px;font-size:16px}
+  .pa.ag .ag-rdv>.pa-bs .pa-ok~.pa-ok{border-color:var(--au-fil,#D8E7DD);background-color:#fff;color:#1A3A2E}
+
+  /* « Demain » replié en une ligne qu'on déplie (le texte du bandeau est inchangé) */
+  .pa.ag .pv-veille{align-items:center;flex-wrap:wrap}
+  .pa.ag .pv-veille p{flex:1 1 0}
+  .pa.ag .pv-veille .pv-veille-l{display:none}
+  .pa.ag .pv-veille.ag-ouvert .pv-veille-l{display:flex}
+  .pa.ag .pv-veille .ag-plie-b{display:inline-flex;align-items:center;justify-content:center;flex:none;width:44px;height:44px;border:0;border-radius:50%;background-color:transparent;color:#1A3A2E}
+  .pa.ag .pv-veille .ag-plie-b svg{transition:transform .18s ease}
+  .pa.ag .pv-veille.ag-ouvert .ag-plie-b svg{transform:rotate(180deg)}
+  .pa.ag .pv-veille.ag-ouvert .pv-veille-l{order:3}
+
+  /* À confirmer : le nombre à droite du titre */
+  .pa.ag .ag-conf h2{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+  .pa.ag .ag-conf-n{display:inline;font-size:14px;font-weight:700;color:#4A5D51}
+
+  /* Annulés : une ligne repliée dans une carte, comme les autres replis */
+  .pa.ag .ag-annules{margin-top:18px}
+  .pa.ag .ag-annules>summary.ag-sh{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:52px;margin:0;padding:8px 14px;border:1px solid var(--au-fil,#D8E7DD);border-radius:16px;background-color:#fff;box-shadow:0 14px 30px -26px rgba(18,60,40,.22);font-size:16px;font-weight:800;letter-spacing:0;text-transform:none;color:#16281E;list-style:none}
+  .pa.ag .ag-annules>summary.ag-sh::-webkit-details-marker{display:none}
+  .pa.ag .ag-annules>summary.ag-sh::after{content:"";flex:none;width:9px;height:9px;margin-right:4px;border:solid #16281E;border-width:0 2px 2px 0;transform:translateY(-2px) rotate(45deg);transition:transform .18s ease}
+  .pa.ag .ag-annules[open]>summary.ag-sh::after{transform:translateY(2px) rotate(-135deg)}
+  .pa.ag .ag-annules>.pa-liste{margin-top:10px}
+}

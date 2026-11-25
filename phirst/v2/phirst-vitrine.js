@@ -14,7 +14,10 @@
 
   var S = { racine: null, jeton: 0, telepro: false, roleConnu: false, charge: false, erreur: false, ws: null,
     demandes: [], dossiers: [], lettres: [], occupe: {}, fait: {}, partiel: {}, flash: '', flashErr: false, tFlash: 0,
-    confirme: null, lienVu: null, f: null, depuis: null };
+    confirme: null, lienVu: null, f: null, depuis: null, plus: false };
+  /* 25/11/2026 — au téléphone (≤ 700 px) seules les 3 premières demandes sont montrées, le reste se déplie sur place (maquette Vitrine 1). */
+  var NB_PREMIERES = 3, TEL = window.matchMedia ? window.matchMedia('(max-width:700px)') : null;
+  function auTel() { return !!(TEL && TEL.matches); }
 
   function ico(n, t) {
     t = t || 20;
@@ -81,7 +84,10 @@
   function blocDemandes() {
     var l = S.demandes, h = '<section class="dz-groupe vt-bloc" aria-labelledby="vt-t-dem"><div class="dz-groupe-t"><h2 id="vt-t-dem">Reçu par vos pages</h2><span>' + esc(Vp.phraseCompte(l)) + '</span></div>';
     if (!l.length) return h + '<div class="dz-vide"><p>Aucune demande pour l’instant.</p><p>Quand un pharmacien écrit depuis sa page, ou depuis « Démarrer un projet » de l’ancienne vitrine, sa demande arrive ici, avec son numéro.</p></div></section>';
-    return h + '<ul class="vt-liste">' + l.map(carteDemande).join('') + '</ul></section>';
+    if (!auTel() || l.length <= NB_PREMIERES) return h + '<ul class="vt-liste">' + l.map(carteDemande).join('') + '</ul></section>';
+    return h + '<ul class="vt-liste">' + l.slice(0, NB_PREMIERES).map(carteDemande).join('') + '</ul>' +
+      '<details class="vt-plus"' + (S.plus ? ' open' : '') + '><summary class="dz-btn" data-f="vt-plus">Voir les ' + (l.length - NB_PREMIERES) + ' autres</summary>' +
+      '<ul class="vt-liste">' + l.slice(NB_PREMIERES).map(carteDemande).join('') + '</ul></details></section>';
   }
 
   /* ── les pages ── */
@@ -327,10 +333,12 @@
 
   /* ── entrée ── */
   V2.pages.vitrine = { needs: [], render: function (root) {
-    S.racine = root; S.flash = ''; S.flashErr = false; S.occupe = {}; S.fait = {}; S.partiel = {}; S.confirme = null; S.lienVu = null; S.f = null; S.depuis = null;
+    S.racine = root; S.flash = ''; S.flashErr = false; S.occupe = {}; S.fait = {}; S.partiel = {}; S.confirme = null; S.lienVu = null; S.f = null; S.depuis = null; S.plus = false;
     root.innerHTML = X.cadre('<section class="pa dz cz vt" aria-label="Vitrine">' + X.tete('Vitrine', 'Les pages préparées pour vos pharmacies.') + '<div class="dz-vide"><p>Un instant…</p></div></section>');
     if (!root.__vt) {
       root.__vt = true;
+      root.addEventListener('toggle', function (ev) { if (ev.target && ev.target.classList && ev.target.classList.contains('vt-plus')) S.plus = ev.target.open; }, true);
+      if (TEL && TEL.addEventListener) TEL.addEventListener('change', function () { if (S.racine === root && S.charge && V2.route && V2.route.name === 'vitrine') dessiner(); });
       root.addEventListener('click', function (ev) { if (V2.route && V2.route.name === 'vitrine') clic(ev); });
       root.addEventListener('submit', function (ev) {
         if (!V2.route || V2.route.name !== 'vitrine') return;

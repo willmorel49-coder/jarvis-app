@@ -123,7 +123,7 @@
     z.innerHTML = '<div class="po-secteur"><div class="pa-chips" role="group" aria-label="Périmètre">' +
       '<button type="button" class="pa-chip" data-sect="only" aria-pressed="' + (!S.france) + '">Secteur de Yann</button>' +
       '<button type="button" class="pa-chip" data-sect="france" aria-pressed="' + S.france + '">Toute la France</button></div>' +
-      '<p class="po-aide">' + (S.france ? 'Votre secteur d’abord, puis le reste de la France.' : 'Grand Ouest par priorité : ' + esc(P.SECTEUR.join(' · '))) + '</p></div>' +
+      '<p class="po-aide po-une" title="' + esc(S.france ? 'Votre secteur d’abord, puis le reste de la France.' : 'Grand Ouest par priorité : ' + P.SECTEUR.join(' · ')) + '">' + (S.france ? 'Votre secteur d’abord, puis le reste de la France.' : 'Grand Ouest par priorité : ' + esc(P.SECTEUR.join(' · '))) + '</p></div>' +
       (aide() ? '<p class="po-aide">' + esc(aide()) + '</p>' : '') +
       (savoir ? '<details class="po-savoir"><summary>À savoir</summary><p>' + esc(savoir) + '</p></details>' : '') +
       (filtres.length ? '<div class="pa-chips po-sf" role="group" aria-label="Affiner la liste">' + filtres.map(function (f) {
@@ -136,7 +136,7 @@
       ? '<span class="po-fait" role="status">✓ ' + (FAIT.indexOf(f) === 1 ? 'Déjà dans vos pistes' : 'Dans vos pistes') + '</span><button type="button" class="pa-b" data-vers="appels">Voir mes pistes</button>'
       : suivi.etat === 'archivee'
       ? '<span class="po-fait po-arch" role="status">Archivée</span><button type="button" class="pa-b" data-reprendre="' + esc(suivi.id) + '" aria-label="Reprendre ' + esc(l.nom_affiche || l.nom) + ' dans mes pistes">Reprendre</button>'
-      : '<button type="button" class="pa-b pa-ok" data-ajout="1" aria-label="Ajouter ' + esc(l.nom_affiche || l.nom) + ' à mes pistes">Ajouter à mes pistes</button>';
+      : '<button type="button" class="pa-b pa-ok" data-ajout="1" aria-label="Ajouter ' + esc(l.nom_affiche || l.nom) + ' à mes pistes"><svg class="po-ic-plus" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Ajouter à mes pistes</button>';
     return '<li class="pa-l" data-i="' + i + '"><div class="pa-ht"><div><b>' + esc(l.nom_affiche || l.nom) + '</b><small>' + esc(P.sousAffiche(l)) + '</small></div><div class="po-et">' + pastilles(l) + '</div></div>' +
       (pour.length ? '<ul class="pa-au">' + pour.map(function (r) { return '<li>→ ' + esc(r) + '</li>'; }).join('') + '</ul>' : '') +
       '<div class="pa-bs">' + (P.lienSur(l.annonce) ? '<a class="pa-b" href="' + esc(P.lienSur(l.annonce)) + '" target="_blank" rel="noopener">Voir l’annonce</a>' : '') + action + '</div>' +
@@ -222,7 +222,7 @@
       '<div class="po-grille" id="po-tuiles" role="group" aria-label="Listes d’officines"></div><div id="po-reglages"></div>' +
       '<form class="po-recherche" id="po-form" role="search"><input type="text" name="q" placeholder="Rechercher (nom, ville…)" aria-label="Rechercher" autocomplete="off" enterkeyhint="search" value="' + esc(S.q) + '">' +
       '<input type="text" name="dep" class="po-dep" placeholder="Dépt" aria-label="Filtrer par département" inputmode="numeric" autocomplete="off" maxlength="5" value="' + esc(S.dep) + '">' +
-      '<button type="submit" class="pa-b pa-ok">Filtrer</button></form><div id="po-liste"></div></section>');
+      '<button type="submit" class="pa-b pa-ok" aria-label="Filtrer"><svg class="po-loupe" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><span class="po-mot">Filtrer</span></button></form><div id="po-liste"></div></section>');
     if (!root.__po) { root.__po = true; root.addEventListener('click', clicOfficines); root.addEventListener('submit', soumettre); }
     S.tuiles = {}; S.faits = {};
     Promise.all([lireMeta(), lirePistes(true)]).then(function (r) {

@@ -13,7 +13,7 @@
   function sb() { return typeof V2.sb === 'function' ? V2.sb() : null; }
   function jour() { return P.aujourdhui(); }
 
-  var S = { racine: null, jeton: 0, telepro: false, ws: null, fiches: [], rdvs: [], jour: null, flash: '', charge: false, erreur: false, ouvert: null, mode: null, props: null };
+  var S = { racine: null, jeton: 0, telepro: false, ws: null, fiches: [], rdvs: [], jour: null, flash: '', charge: false, erreur: false, ouvert: null, mode: null, props: null, demain: false };
 
   function charger(garder) {
     var u = V2.user, tok = ++S.jeton, base = sb();
@@ -75,11 +75,14 @@
     }
     return '';
   }
-  function carteRdv(e, maintenant) {
+  /* ens = { id, mot } : le rendez-vous « Ensuite » (téléphone : étiquette claire sur la carte, à la place du bloc sombre). */
+  function carteRdv(e, maintenant, ens) {
     var r = e.rdv, f = e.fiche, lieu = r.lieu && String(r.lieu).trim().toLowerCase() !== String(f.nom || '').trim().toLowerCase() ? r.lieu : '', ligne2 = [lieu, r.objet].filter(Boolean).join(' · ');
     var titre = f.occupe ? f.nom + (f.ville ? ' · ' + f.ville : '') : f.nom;   // « Yann est occupé · commune »
-    return '<li class="pa-l ag-rdv' + (r.statut === 'annule' ? ' ag-annule' : '') + '" data-rdv="' + esc(r.id) + '"><div class="pa-ht"><div><b>' + esc(hh(r.debut)) + ' – ' + esc(hh(r.fin)) + ' · ' + esc(titre) + '</b>' +
-      '<small>' + esc(f.occupe ? '' : ligne2 || f.ville || '') + '</small></div>' + (f.occupe && r.statut !== 'annule' ? '' : etatBadge(r)) + '</div>' +
+    var nomBas = String(f.nom || '').trim().toLowerCase(), repete = !!lieu && !!nomBas && String(lieu).trim().toLowerCase().indexOf(nomBas) === 0;   // le lieu reprend le nom : caché au téléphone ; une vraie adresse reste
+    return '<li class="pa-l ag-rdv' + (r.statut === 'annule' ? ' ag-annule' : '') + (e.chevauche ? ' ag-chev' : '') + '" data-rdv="' + esc(r.id) + '"><div class="pa-ht"><div><b>' + esc(hh(r.debut)) + ' – ' + esc(hh(r.fin)) + ' · ' + esc(titre) + '</b>' +
+      '<small>' + (f.occupe ? '' : repete && r.objet ? '<span class="ag-lieu">' + esc(lieu) + ' · </span>' + esc(r.objet) : esc(ligne2 || f.ville || '')) + '</small></div>' + (f.occupe && r.statut !== 'annule' ? '' : etatBadge(r)) +
+      (ens && ens.id === r.id ? '<em class="lg-et ag-ensuite">' + esc(ens.mot) + '</em>' : '') + '</div>' +
       (e.chevauche ? '<p class="ag-alerte" role="alert">Attention : deux rendez-vous se chevauchent à cette heure-là.</p>' : '') +
       (!S.telepro && PR && PR.pageEnAttente(r, jour()) ? '<p class="pv-attente">Sa page se prépare la veille au soir, une fois le rendez-vous confirmé.</p>' : '') +
       (r.statut === 'annule' ? '' : boutonsRdv(e, maintenant)) + zoneOuverte(e) + '<p class="pa-dit" role="status"></p></li>';
@@ -97,18 +100,25 @@
   function videAction(telepro, consigne, claire) {
     return '<p class="ag-ens-c">' + esc(consigne) + '</p><button type="button" class="pa-b' + (claire ? ' ag-ens-b' : '') + '" data-vers="appels">Prendre un rendez-vous depuis les Appels</button>';
   }
+  /* Téléphone : UNE alerte au-dessus des rendez-vous qui se chevauchent (les alertes par carte y sont cachées ; à l'ordinateur c'est l'inverse). */
+  function alerteUnique(chev) {
+    var hs = [];
+    chev.forEach(function (x) { var t = hh(x.rdv.debut); if (hs.indexOf(t) < 0) hs.push(t); });
+    return '<li class="ag-alerte-u" role="alert">Attention : ' + (chev.length === 2 ? 'deux' : chev.length) + ' rendez-vous se chevauchent à ' + esc(hs.join(' et ')) + '.</li>';
+  }
   function vue() {
     var auj = jour(), maint = P.maintenantParis(), J = S.jour || auj, els = elements(), h = '';
     var fen = P.fenetreJours(J, auj), dec = P.decalages(fen, auj), comptes = P.comptesParJour(els, fen);
     var libresJ = P.creneauxLibres({ jour: J, occupations: RDV.occupations(S.rdvs, S.fiches), cible: null, maintenant: maint });
     // Demain : les pages prêtes (idée 6), réservé à Yann
     var bd = !S.telepro && PR && window.PHIRST_PREPARER ? PR.bandeau(els, auj) : null;
-    if (bd) h += '<section class="pv-veille" aria-label="' + esc(bd.titre) + '"><span class="pv-veille-i">' + ICO_PRET + '</span><p><b>' + esc(bd.titre) + '</b><span>' + esc(bd.sous) + '</span></p><div class="pv-veille-l">' +
-      bd.boutons.map(function (x) { return '<button type="button" class="pa-b" data-ag="preparer" data-rdv="' + esc(x.id) + '">' + esc(x.texte) + '</button>'; }).join('') + '</div></section>';
+    if (bd) h += '<section class="pv-veille' + (S.demain ? ' ag-ouvert' : '') + '" aria-label="' + esc(bd.titre) + '"><span class="pv-veille-i">' + ICO_PRET + '</span><p><b>' + esc(bd.titre) + '</b><span>' + esc(bd.sous) + '</span></p><div class="pv-veille-l">' +
+      bd.boutons.map(function (x) { return '<button type="button" class="pa-b" data-ag="preparer" data-rdv="' + esc(x.id) + '">' + esc(x.texte) + '</button>'; }).join('') + '</div>' +
+      '<button type="button" class="ag-plie-b" data-ag="demain" aria-expanded="' + S.demain + '" aria-label="Montrer ou cacher les pages prêtes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></section>';
     // À confirmer
     var conf = els.filter(function (e) { return e.aConfirmer && P.minutes(e.rdv.fin) >= P.minutes(maint); });
     if (conf.length) {
-      h += '<section class="ag-conf" aria-label="' + (S.telepro ? 'En attente de Yann' : 'À confirmer') + '"><h2>' + (S.telepro ? 'En attente de Yann' : 'À confirmer') + '</h2><ul class="pa-liste">' + conf.map(function (e) {
+      h += '<section class="ag-conf" aria-label="' + (S.telepro ? 'En attente de Yann' : 'À confirmer') + '"><h2>' + (S.telepro ? 'En attente de Yann' : 'À confirmer') + ' <span class="ag-conf-n">' + conf.length + '</span></h2><ul class="pa-liste">' + conf.map(function (e) {
         return '<li class="pa-l" data-rdv="' + esc(e.rdv.id) + '"><div class="pa-ht"><div><b>' + esc(e.fiche.nom) + '</b><small>' + esc(P.maj(P.quandFr(e.rdv.debut))) + (e.fiche.ville ? ' · ' + esc(e.fiche.ville) : '') + '</small></div>' + (S.telepro || e.rdv.statut === 'propose' ? '' : etatBadge(e.rdv)) + '</div>' +
           '<div class="pa-bs">' + (S.telepro ? '' : '<button type="button" class="pa-b pa-ok" data-ag="confirmer" data-rdv="' + esc(e.rdv.id) + '">Confirmer</button>') + '<button type="button" class="pa-b" data-ag="deplacer" data-rdv="' + esc(e.rdv.id) + '">Déplacer</button></div>' +
           zoneOuverte(e) + '<p class="pa-dit" role="status"></p></li>';
@@ -116,7 +126,7 @@
     }
     // Ensuite
     var c = P.carteEnsuite({ elements: els, jour: J, aujourdhui: auj, maintenant: maint, libres: libresJ.length });
-    h += '<div class="ag-ens"><p class="ag-ens-m">' + esc(c.maint) + '</p><p class="ag-ens-t">' + esc(c.titre) + '</p><p class="ag-ens-d">' + esc(c.detail) + '</p>' + (c.vide ? videAction(S.telepro, 'Un rendez-vous obtenu au téléphone s’inscrit ici tout seul. Pour en prendre un, partez de l’appel.', true) : '') + '</div>';
+    h += '<div class="ag-ens' + (c.vide ? ' ag-ens-vide' : '') + '"><p class="ag-ens-m">' + esc(c.maint) + '</p><p class="ag-ens-t">' + esc(c.titre) + '</p><p class="ag-ens-d">' + esc(c.detail) + '</p>' + (c.vide ? videAction(S.telepro, 'Un rendez-vous obtenu au téléphone s’inscrit ici tout seul. Pour en prendre un, partez de l’appel.', true) : '') + '</div>';
     // puces de jour
     h += '<div class="ag-jours" role="group" aria-label="Jour affiché">' + fen.map(function (j) {
       return '<button type="button" class="ag-jour" data-ag="jour" data-jour="' + j + '" aria-pressed="' + (j === J) + '">' + esc(P.jourCourt(j)) + '<small>' + esc(P.sousPuce(j, auj, comptes[j])) + '</small></button>';
@@ -131,7 +141,12 @@
         libresJ.length ? (S.telepro ? 'Yann est libre ' : 'Vous êtes libre ') + esc(P.plagesLibres(libresJ).join(' et ')) + ' (' + esc(P.phraseLibres(libresJ.length)) + ').' : 'Il ne reste plus de créneau d’une heure libre ce jour-là. Choisissez un autre jour ci-dessus.') + '</p>' +
         '<button type="button" class="pa-b" data-vers="appels">Ouvrir les Appels</button></div>';
     } else {
-      h += '<p class="pa-avis">' + esc(P.phraseEtat(duJ, libresJ.length, S.telepro)) + '</p><ul class="pa-liste">' + actifs.map(function (e) { return carteRdv(e, maint); }).join('') + '</ul>';
+      var ens = null, chev = [], prem = null;
+      if (!c.vide) for (var i = 0; i < actifs.length; i++) { var x = actifs[i]; if (x.rdv.statut !== 'fait' && (J !== auj || P.minutes(x.rdv.fin) > P.minutes(maint))) { ens = { id: x.rdv.id, mot: c.maint }; break; } }   // même choix que carteEnsuite (phirst-pur.js)
+      actifs.forEach(function (x) { if (x.chevauche) { chev.push(x); if (!prem) prem = x.rdv.id; } });
+      h += '<p class="pa-avis">' + esc(P.phraseEtat(duJ, libresJ.length, S.telepro)) + '</p><ul class="pa-liste">' + actifs.map(function (e) {
+        return (e.rdv.id === prem ? alerteUnique(chev) : '') + carteRdv(e, maint, ens);
+      }).join('') + '</ul>';
     }
     // Repliés : quelques annulations ne doivent pas repousser la journée hors de vue.
     if (annules.length) h += '<details class="ag-annules"><summary class="ag-sh">Annulés ce jour (' + annules.length + ')</summary><ul class="pa-liste">' + annules.map(function (e) { return carteRdv(e, maint); }).join('') + '</ul></details>';
@@ -186,6 +201,7 @@
     var a = b.getAttribute('data-ag'), id = b.getAttribute('data-rdv'), li = b.closest('li');
     if (a === 'reessayer') { charger(); return; }
     if (a === 'preparer') { if (window.PHIRST_PREPARER) window.PHIRST_PREPARER.ouvrir(id, { rdvs: S.rdvs, fiches: S.fiches, ws: S.ws }); return; }
+    if (a === 'demain') { S.demain = !S.demain; dessiner(); return; }
     if (a === 'jour') { S.jour = b.getAttribute('data-jour'); S.flash = ''; S.ouvert = null; S.mode = null; dessiner(); return; }
     if (a === 'fermer') { S.ouvert = null; S.mode = null; S.props = null; dessiner(); return; }
     if (a === 'deplacer') { S.flash = ''; ouvrirDeplacer(id); return; }
@@ -202,7 +218,7 @@
   }
 
   V2.pages.agenda = { needs: [], render: function (root) {
-    S.racine = root; S.jour = jour(); S.flash = ''; S.ouvert = null; S.mode = null; S.props = null;
+    S.racine = root; S.demain = false; S.jour = jour(); S.flash = ''; S.ouvert = null; S.mode = null; S.props = null;
     if (!root.__ag) { root.__ag = true; root.addEventListener('click', clic); }
     charger();
   } };

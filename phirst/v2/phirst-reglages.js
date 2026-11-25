@@ -76,9 +76,24 @@
   /* ── les briques de la maquette ── */
   function outil(o) {
     var marque = o.etat === 'ok' ? '' : o.etat === 'panne' ? ' data-panne' : ' data-inconnu';
-    return '<li class="dz-carte rg-outil"' + marque + ' data-outil="' + esc(o.id) + '"><span class="rg-pastille">' + ico(o.etat === 'ok' ? 'valide' : o.etat === 'panne' ? 'point' : 'question', 24) + '</span><div class="rg-outil-c">' +
-      '<h3 class="rg-outil-t">' + ico(o.ic, 20) + '<span>' + esc(o.t) + '</span></h3><p class="rg-quoi">' + esc(o.quoi) + '</p>' +
+    return '<li class="dz-carte rg-outil"' + marque + ' data-outil="' + esc(o.id) + '"><button type="button" class="rg-tog" data-rg="outil" data-id="' + esc(o.id) + '" aria-controls="rg-note" aria-pressed="' + (o.id === S.noteOutil ? 'true' : 'false') + '" aria-label="Lire le détail : ' + esc(o.t) + '"></button><span class="rg-pastille">' + ico(o.etat === 'ok' ? 'valide' : o.etat === 'panne' ? 'point' : 'question', 24) + '</span><div class="rg-outil-c">' +
+      '<h3 class="rg-outil-t">' + ico(o.ic, 20) + '<span>' + esc(o.t) + '</span></h3><p class="rg-court">' + esc(court(o)) + '</p><p class="rg-quoi">' + esc(o.quoi) + '</p>' +
       '<p class="rg-etat">' + esc(o.texte) + '</p></div></li>';
+  }
+  /* Au téléphone, la carte ne porte qu'une ligne d'état ; tout le texte (explication + état) s'affiche au toucher, dans la note. */
+  function court(o) {
+    if (o.etat === 'ok') return o.texte.replace(' — et sans frais', '').replace(' · mise à jour aujourd’hui à ', ' · ').replace(' · mise à jour ', ' · ');
+    if (o.etat === 'panne') return o.id === 'liste' ? 'Pas à jour' : 'Pas disponible';
+    return 'État inconnu';
+  }
+  function noteParDefaut(outils) {   // sans choix de l'utilisateur : le premier outil en panne (ce qu'il faut lire en premier)
+    if (S.noteOutil !== undefined) return;
+    outils.forEach(function (x) { if (S.noteOutil === undefined && x.etat === 'panne') S.noteOutil = x.id; });
+  }
+  function noteOutil(outils) {
+    var id = S.noteOutil, o = null;
+    outils.forEach(function (x) { if (x.id === id) o = x; });
+    return '<div class="rg-note" id="rg-note" role="status" aria-live="polite">' + (o ? '<b>' + esc(o.t) + '</b>' + esc(o.quoi) + ' ' + esc(o.texte) : '') + '</div>';
   }
   function plafond() {
     var pl = R.plafondValide(S.etat && S.etat.plafondCentimes), j = R.jauge(S.depense, pl), h = '<section class="dz-carte rg-bloc"><h2 class="rg-h2">Le plafond du mois</h2>';
@@ -113,13 +128,15 @@
   }
 
   function pageYann() {
-    if (!S.lu) return '<section class="rg-bande rg-attente" aria-labelledby="rg-h1"><div class="rg-bande-g"><p class="rg-sur">Outils et compte</p><h1 id="rg-h1">Réglages</h1>' +
+    if (!S.lu) return '<section class="rg-bande rg-attente" aria-labelledby="rg-h1"><div class="rg-bande-g"><p class="rg-sur">Outils et compte</p><h1 id="rg-h1">Réglages</h1><p class="rg-lede">Outils et compte.</p>' +
       '<p class="rg-phrase">Vérification des outils…</p></div></section>';
     var outils = R.etats({ base: S.base, liste: S.liste, etat: S.etat }), b = R.bilan(outils), lib = b.libelle.split('\n');
-    return '<section class="rg-bande" aria-labelledby="rg-h1"><div class="rg-bande-g"><p class="rg-sur">Outils et compte</p><h1 id="rg-h1">Réglages</h1>' +
+    noteParDefaut(outils);
+    return '<section class="rg-bande" aria-labelledby="rg-h1"><div class="rg-bande-g"><p class="rg-sur">Outils et compte</p><h1 id="rg-h1">Réglages</h1><p class="rg-lede">Outils et compte.</p>' +
       '<p class="rg-grand"><b>' + esc(b.chiffre) + '</b><span>' + esc(lib[0]) + '<br>' + esc(lib[1]) + '</span></p></div>' +
       '<p class="rg-phrase">' + esc(b.phrase) + '</p></section>' +
-      '<div class="rg-grille"><ul class="rg-outils" aria-label="Les outils de Phirst">' + outils.map(outil).join('') + '</ul>' +
+      '<div class="rg-grille"><div class="rg-bilan"><p class="rg-sur">Outils et compte</p><b>' + esc(b.chiffre) + '</b><p><span>' + esc(lib[0] + ' ' + lib[1]) + '</span>' + esc(b.phrase) + '</p></div>' +
+      '<ul class="rg-outils" aria-label="Les outils de Phirst">' + outils.map(outil).join('') + '</ul>' + noteOutil(outils) +
       '<div id="ri-zone">' + (window.PHIRST_RG_TEXTES ? window.PHIRST_RG_TEXTES.html() : '') + '</div>' +
       '<div class="rg-cote">' + plafond() +
       '<section class="dz-carte rg-bloc" id="rg-compte"><h2 class="rg-h2">Mon compte</h2><p class="rg-sous">' + esc(email()) + '</p>' + htmlFlash() +
@@ -197,18 +214,26 @@
     });
   }
 
+  function choisirOutil(id) {
+    var r = S.racine; if (!r) return;
+    var li = r.querySelector('.rg-outil[data-outil="' + id + '"]'), n = r.querySelector('#rg-note'); if (!li || !n) return;
+    S.noteOutil = id;
+    Array.prototype.forEach.call(r.querySelectorAll('.rg-tog'), function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-id') === id ? 'true' : 'false'); });
+    n.innerHTML = '<b>' + esc(li.querySelector('.rg-outil-t span').textContent) + '</b>' + esc(li.querySelector('.rg-quoi').textContent) + ' ' + esc(li.querySelector('.rg-etat').textContent);
+  }
   function clic(ev) {
     var t = ev.target.closest('[data-rg],[data-vers]'); if (!t) return;
     if (t.hasAttribute('data-vers')) { V2.go(t.getAttribute('data-vers')); return; }
     var a = t.getAttribute('data-rg');
     if (a === 'mdp') ouvrirMdp();
+    else if (a === 'outil') choisirOutil(t.getAttribute('data-id'));
     else if (a === 'fermer') fermer();
     else if (a === 'sortir' && typeof V2.signOut === 'function') V2.signOut();
   }
 
   /* ── entrée ── */
   V2.pages.reglages = { needs: [], render: function (root) {
-    S.racine = root; S.flash = ''; S.flashErr = false; S.occupe = false; S.depuis = null; S.techOuvert = false;
+    S.racine = root; S.flash = ''; S.flashErr = false; S.occupe = false; S.depuis = null; S.techOuvert = false; S.noteOutil = undefined;
     root.innerHTML = '';
     if (window.PHIRST_RG_TEXTES) { window.PHIRST_RG_TEXTES.remise(); window.PHIRST_RG_TEXTES.brancher(root); }
     if (!root.__rg) {

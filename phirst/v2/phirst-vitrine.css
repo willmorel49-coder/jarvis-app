@@ -38,3 +38,20 @@
 }
 /* 24/11/2026 — un intitulé sur deux lignes (« Postes au comptoir aujourd’hui ») ne décale plus le champ voisin : les champs d'une même ligne s'alignent par le bas. */
 .vt .cz-f-deux{align-items:end}
+
+/* 25/11/2026 — téléphone (maquette Vitrine 1) : titre et phrase de chaque groupe sur une ligne ; cartes plus serrées ; « Voir les N autres » ; boutons des pages en rangée. Ordinateur inchangé. */
+.vt .vt-plus>summary{list-style:none;cursor:pointer}
+.vt .vt-plus>summary::-webkit-details-marker{display:none}
+@media (max-width:700px){
+  .vt .dz-groupe-t{flex-wrap:nowrap;justify-content:space-between;align-items:baseline;gap:10px;margin:6px 0 10px}
+  .vt .dz-groupe-t h2{min-width:0;font-size:20px;line-height:1.2}
+  .vt .dz-groupe-t span{flex:0 0 auto;font-size:14px;text-align:right}
+  .vt .vt-bloc{margin:0 0 22px}
+  .vt .vt-liste,.vt .vt-grille{gap:12px}
+  .vt .dz-carte{gap:10px;padding:16px;border-radius:22px}
+  .vt .vt-plus{margin-top:12px}
+  .vt .vt-plus>summary{width:100%;min-height:48px;margin:0}
+  .vt .vt-plus[open]>summary{margin-bottom:12px}
+  .vt .vt-page .vt-bs{gap:8px;margin-top:4px}
+  .vt .vt-page .vt-bs .dz-btn{flex:1 1 auto;width:auto;gap:6px;padding:0 10px}
+}
