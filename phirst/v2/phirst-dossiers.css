@@ -62,7 +62,7 @@
 .dz .dz-frise-c i.c{background-color:#fff;box-shadow:0 0 0 2px var(--dz-accent) inset}
 .dz .dz-nn{margin:-2px 0 0;font-size:15px;font-weight:700;color:var(--dz-ink2)}
 .dz .dz-proch{padding:12px 14px;border-radius:14px;background-color:var(--dz-surv);display:grid;gap:3px}
-.dz .dz-proch .dz-kicker{font-size:12.5px;color:var(--dz-vert-t)}
+.dz .dz-proch .dz-kicker{font-size:13px;color:var(--dz-vert-t)}
 .dz .dz-proch b{font-size:16px;line-height:1.3;overflow-wrap:break-word}
 .dz .dz-proch small{font-size:14px;color:var(--dz-ink2);line-height:1.35}
 .dz .dz-proch small.ret{color:var(--dz-rouge-t);font-weight:700}

@@ -155,8 +155,9 @@ html[data-teinte="phirst"] .pa-tete h1,html[data-teinte="phirst"] .td-m1 .td-hd 
 }
 
 /* ═══ 8. Cibles tactiles ≥ 44 px (A-11) ═══ */
+/* 25/11/2026 — « Aller aux outils » fait 44 px à toutes les tailles (mesuré 35 px à 1 440 : la règle n'était que dans le @media ci-dessous). */
+.u2-skip,.u2-skip:focus{min-height:44px}
 @media (pointer:coarse),(max-width:700px){
-  .u2-skip,.u2-skip:focus{min-height:44px}
   .lg-liste li button,.lg-liste li a{min-height:44px}
 }
 
