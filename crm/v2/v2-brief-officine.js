@@ -70,7 +70,8 @@
   // avec les fiches ANSM et le laboratoire des avis du JO (24/11/2026, aucun contre-exemple). Les autres (ZTL…) restent telles quelles.
   var LABOS = { ZEN: 'Zentiva', ZENTIVA: 'Zentiva', BGA: 'Biogaran', BIOGARAN: 'Biogaran', TVC: 'Teva', TEVA: 'Teva', VIA: 'Viatris', VIATRIS: 'Viatris',
     ZYD: 'Zydus', ZYDUS: 'Zydus', SDZ: 'Sandoz', SANDOZ: 'Sandoz', EG: 'EG', ARROW: 'Arrow', MYLAN: 'Mylan', CRISTERS: 'Cristers', BIOGALENIQUE: 'Biogalénique' };
-  var UNITES = { MG: 'mg', G: 'g', MCG: 'µg', 'µG': 'µg', MUI: 'MUI', UI: 'UI', U: 'U', ML: 'ml', H: 'h', '%': '%' };
+  // « µ » mis en majuscule devient la lettre grecque « Μ » (U+039C) : sans cette clé, « 1000 undefined/2 ml » (production, 25/11/2026).
+  var UNITES = { MG: 'mg', G: 'g', MCG: 'µg', 'µG': 'µg', '\u039CG': 'µg', MUI: 'MUI', UI: 'UI', U: 'U', ML: 'ml', H: 'h', '%': '%' };
   var MOTS_MINUSCULES = { A: 1, 'À': 1, AU: 1, AUX: 1, DE: 1, DU: 1, DES: 1, ET: 1, EN: 1, LA: 1, LE: 1, LES: 1, OU: 1, PAR: 1, POUR: 1, SUR: 1 };
   // Forme ou boîte dans un libellé court (catalogue, JO) : on coupe là.
   var FORME = /^(CPR|CP|CPS|COMP|GELU|GEL|GLE|CAPS|INJ|SOL|BUV|SACH|SUPPO?|PDR|CREME|POM|SIROP|COLLY|AMP|FL|FLAC|TUBE|SRG|STY|SUSP|LYOPH|B\d+DU|BT\d*|BTE\d*|C\.\S*|CPR\d+\w*|CP\d+|GELU\d+|CPS\d+|FL\d+\S*)$/;
@@ -87,13 +88,18 @@
     return ok && unite ? out.join('/') : '';
   }
   function nomProduit(texte) {
-    var mots = nomCourt(texte).replace(/\s+/g, ' ').trim().split(' '), garde = [], dernierDosage = -1;
+    // Libellé court du JO où le laboratoire est collé au dosage : « EZETIMIB/ATOR.ZEN10/20MG » → « EZETIMIB/ATOR. ZEN 10/20MG ».
+    var brut = nomCourt(texte).replace(/\.([A-Z]{2,3})(\d)/g, '. $1 $2').replace(/\.([A-Z]{2,3})(?=\s|$)/g, '. $1');
+    var mots = brut.replace(/\s+/g, ' ').trim().split(' '), garde = [], dernierDosage = -1;
     for (var i = 0; i < mots.length; i++) {
-      var t = mots[i], maj = t === t.toUpperCase() && /[A-ZÀ-Ý]/.test(t);
+      // écrit en capitales : aucune minuscule, ou une seule perdue dans 4 capitales et plus (« v-HUBEI/BLEU », catalogue)
+      var t = mots[i], up = (t.match(/[A-ZÀ-Ý]/g) || []).length, lo = (t.match(/[a-zà-ÿ]/g) || []).length, maj = up > 0 && (lo === 0 || (up >= 4 && lo <= 1));
       if (maj && i > 0 && FORME.test(t)) break;                     // « CPR BT28 », « GELU », « C.DISP20 »
       var d = dosage(t);
       if (d) { garde.push(d); dernierDosage = garde.length; continue; }
       if (!maj) { garde.push(t); continue; }                        // écrit en minuscules à la source : gardé tel quel
+      var colle = /^(\d+(?:[.,]\d+)?(?:\/\d+(?:[.,]\d+)?)*(?:MG|MCG|G|ML|UI|U|%)(?:\/(?:ML|H))?)(\S+)$/i.exec(t);
+      if (colle && dosage(colle[1])) { garde.push(dosage(colle[1])); dernierDosage = garde.length; break; }   // « 100/6MCG120D1+C » : dosage, puis la boîte
       if (LABOS[t]) garde.push(LABOS[t]);
       else if (MOTS_MINUSCULES[t]) garde.push(t.toLowerCase());
       else if (/^(?:[A-Z]{1,3}|(?:[A-Z]\.){1,3}|[A-Z]\d{1,3})$/.test(t)) garde.push(t);   // « LP », « NPH », « ZTL », « L.P. », « B12 » : sigle gardé
@@ -232,7 +238,8 @@
         if (sites.length) {
           var tot = sites.reduce(function (t, x) { return t + x.q; }, 0);
           var noms = sites.map(function (x) { return x.site; }).filter(function (v, i, arr) { return arr.indexOf(v) === i; });
-          detail.push('Chez nous : ' + pluriel(tot, 'boîte') + ' sur ' + noms.join(', ') + '.');
+          // 25/11/2026 — au-delà de 3 sites, le compte : « sur CPR, HP, MSP, OPS, POS, SEP, SOP » faisait passer le point à 5 lignes.
+          detail.push('Chez nous : ' + pluriel(tot, 'boîte') + ' sur ' + (noms.length > 3 ? noms.length + ' de nos sites' : noms.join(', ')) + '.');
         }
       }
       pts.push({

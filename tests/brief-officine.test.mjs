@@ -635,3 +635,38 @@ test('24/11 (2 bis) : chemin réel — le libellé du catalogue arrive dans le p
   assert.match(h, /Pas commandé en [^<]* : /, 'marqueur positif : le point « Ses achats » est là');
   assert.match(h, /Pas commandé en [^<]* : Prednisolone ZTL 20 mg</);
 });
+
+// 25/11/2026 — vu en production (officine 2003659) après la première mise en ligne : « Vitamine B12 Delagrange 1000 undefined/2 ml »
+// (le « µ » mis en majuscule devient une lettre grecque), « Ezetimib/ator.zen10/20mg » (libellé du JO collé), et un point de
+// 5 lignes à cause de 7 sites listés. Contrôle sur TOUS les vrais libellés des fichiers du jour, pas sur un échantillon.
+test('25/11 : tous les vrais libellés (ANSM, rappels, JO, catalogue) donnent un nom propre', () => {
+  const { nomProduit } = charger().V2.briefOfficine;
+  assert.equal(nomProduit('Vitamine B12 Delagrange 1000 µg/2 ml, solution injectable'), 'Vitamine B12 Delagrange 1000 µg/2 ml');
+  assert.equal(nomProduit('EZETIMIB/ATOR.ZEN10/20MG CPR90'), 'Ezetimib/ator. Zentiva 10/20 mg');
+  assert.equal(nomProduit('EZETIMIB/ATOR.EG 10/20MG CPR30'), 'Ezetimib/ator. EG 10/20 mg');
+  const lireJson = (f) => JSON.parse(readFileSync(new URL(f, B), 'utf8'));
+  const cat = readFileSync(new URL('../benchmark-data.js', B), 'utf8');
+  const libelles = [
+    ...lireJson('ansm-dispo.json').items.map((i) => i.spec),
+    ...lireJson('rappels-lots.json').items.map((i) => i.t),
+    ...lireJson('prix-futurs.json').changes.map((c) => c.d),
+    ...[...cat.matchAll(/designation:"([^"]*)"/g)].map((m) => m[1]),
+  ].filter(Boolean);
+  assert.ok(libelles.length > 5000, 'marqueur positif : les vrais fichiers sont lus (' + libelles.length + ')');
+  const mal = libelles.map((l) => [l, nomProduit(l)]).filter(([, n]) => !n || /undefined|null|NaN/.test(n) || /\b[A-Z]{4,}\b/.test(n));
+  assert.deepEqual(mal.slice(0, 5), [], mal.length + ' noms mal écrits');
+  // le dosage n'est plus collé dans les libellés du JO (ceux du panneau « prix qui changent »)
+  assert.equal(nomProduit('BECLOME/FOR BGA 100/6MCG120D1+C'), 'Beclome/for Biogaran 100/6 µg');
+  const colles = lireJson('prix-futurs.json').changes.map((c) => nomProduit(c.d)).filter((n) => /\d(mg|g|ml|mcg|µg|ui)\b|\b(zen|tvc|bga|eg|via|zyd|sdz)\d/i.test(n));
+  assert.deepEqual(colles, []);
+});
+
+test('25/11 : stock chez nous sur plus de 3 sites → le nombre de sites, pas la liste', () => {
+  const sites = ['CPR', 'HP', 'MSP', 'OPS', 'POS', 'SEP', 'SOP'];
+  const r = calculer(base({
+    ventes: [{ cip: '3400900000001', mois: '2026-08', qte: 12 }],
+    ansm: ansm([rupture(['3400900000001'])]),
+    stockSites: () => sites.map((site) => ({ site, q: 10 })),
+  }));
+  assert.match(r.points[0].detail, /Chez nous : 70 boîtes sur 7 de nos sites\./);
+});
