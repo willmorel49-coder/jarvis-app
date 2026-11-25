@@ -349,7 +349,8 @@
         brut: ch.d || nomBrut(ch.c),
         // 25/11/2026 (Will) — « · 27 boîtes achetées. » au lieu de « . Elle en a acheté 27 boîtes. » : la phrase tient sur une ligne
         // (les « Ezetimib/ator. Zentiva 10/20 mg, boîte de 30 » de l'officine 2003659 restaient à 5 lignes avec « Baisse le … »).
-        detail: 'Prix public ' + prix + ' · ' + pluriel(a.qte, 'boîte') + (a.qte > 1 ? ' achetées.' : ' achetée.'),
+        // puis (Will, même jour) sans « Prix public » : mesuré en ligne, « achetées » passait encore à la 2e ligne ; « TTC » dit le prix public.
+        detail: prix + ' · ' + pluriel(a.qte, 'boîte') + (a.qte > 1 ? ' achetées.' : ' achetée.'),
         // 24/11/2026 (Will) — une baisse de moins de 5 % : repliée d'office, et pas de conseil d'écouler le stock pour quelques centimes.
         action: petite ? '' : ch.sens === 'baisse' ? 'Lui conseiller d\'écouler son stock avant le ' + dateFr(ch.date_effet) + '.' : 'Lui signaler la hausse avant sa prochaine commande.',
         replie: petite,

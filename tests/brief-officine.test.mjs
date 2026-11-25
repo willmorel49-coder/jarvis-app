@@ -876,10 +876,10 @@ test('25/11 (sources) : répertoire des génériques à jour jusqu\'à 35 jours 
   assert.equal(s('2026-10-20').aJour, false, '36 jours : en retard');
 });
 
-test('25/11 (prix) : « Prix public … · 27 boîtes achetées. », sur une ligne', () => {
+test('25/11 (prix) : « 10,43 € → 9,64 € TTC (−7,6 %) · 27 boîtes achetées. », sur une ligne', () => {
   const r = calculer(base({ ventes: [{ cip: '3400900000001', mois: '2026-08', qte: 27 }, { cip: '3400900000002', mois: '2026-08', qte: 1 }],
     prixFuturs: { generated: '2026-09-17', changes: ['3400900000001', '3400900000002'].map((c) => ({ c, d: 'DOLIPRANE 1000MG CPR BT8', sens: 'baisse', date_effet: '2026-10-01', date_publi: '2026-09-15', ppttc: 9.64, ancien_ttc: 10.43 })) } }));
-  assert.deepEqual(Array.from(r.points, (p) => p.detail).sort(), ['Prix public 10,43 € → 9,64 € TTC (−7,6 %) · 1 boîte achetée.', 'Prix public 10,43 € → 9,64 € TTC (−7,6 %) · 27 boîtes achetées.']);
+  assert.deepEqual(Array.from(r.points, (p) => p.detail).sort(), ['10,43 € → 9,64 € TTC (−7,6 %) · 1 boîte achetée.', '10,43 € → 9,64 € TTC (−7,6 %) · 27 boîtes achetées.']);
 });
 
 test('25/11 (stock) : chemin réel — un relevé de plus de 30 jours, ou sans date, ne compte plus dans « Chez nous »', async () => {
