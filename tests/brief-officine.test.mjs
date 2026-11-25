@@ -661,12 +661,12 @@ test('25/11 : tous les vrais libellés (ANSM, rappels, JO, catalogue) donnent un
   assert.deepEqual(colles, []);
 });
 
-test('25/11 : stock chez nous sur plus de 3 sites → le nombre de sites, pas la liste', () => {
+test('25/11 : stock chez nous sur plus de 3 sites → le total seul, pas la liste', () => {
   const sites = ['CPR', 'HP', 'MSP', 'OPS', 'POS', 'SEP', 'SOP'];
   const r = calculer(base({
     ventes: [{ cip: '3400900000001', mois: '2026-08', qte: 12 }],
     ansm: ansm([rupture(['3400900000001'])]),
     stockSites: () => sites.map((site) => ({ site, q: 10 })),
   }));
-  assert.match(r.points[0].detail, /Chez nous : 70 boîtes sur 7 de nos sites\./);
+  assert.match(r.points[0].detail, /Chez nous : 70 boîtes\.$/);   // « sur 7 de nos sites » faisait encore 5 lignes (Izalgi, production 25/11)
 });

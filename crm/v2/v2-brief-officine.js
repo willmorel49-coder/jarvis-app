@@ -238,8 +238,9 @@
         if (sites.length) {
           var tot = sites.reduce(function (t, x) { return t + x.q; }, 0);
           var noms = sites.map(function (x) { return x.site; }).filter(function (v, i, arr) { return arr.indexOf(v) === i; });
-          // 25/11/2026 — au-delà de 3 sites, le compte : « sur CPR, HP, MSP, OPS, POS, SEP, SOP » faisait passer le point à 5 lignes.
-          detail.push('Chez nous : ' + pluriel(tot, 'boîte') + ' sur ' + (noms.length > 3 ? noms.length + ' de nos sites' : noms.join(', ')) + '.');
+          // 25/11/2026 — au-delà de 3 sites, le total seul : « sur CPR, HP, MSP, OPS, POS, SEP, SOP » puis « sur 7 de nos sites »
+          // faisaient encore passer le point à 5 lignes (Izalgi, officine 2003659).
+          detail.push('Chez nous : ' + pluriel(tot, 'boîte') + (noms.length > 3 ? '' : ' sur ' + noms.join(', ')) + '.');
         }
       }
       pts.push({
