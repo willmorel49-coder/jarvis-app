@@ -73,3 +73,16 @@ test('client pas encore prêt : rien n’est envoyé, et l’envoi n’est pas d
   await laisserFinir();
   assert.equal(envois.length, 3, 'jamais plus de 3 envois, et les essais sans client ne comptent pas');
 });
+
+/* 25/11/2026 : chaque rapport commence par [__BUILD], « pour savoir QUELLE version a produit un rapport ».
+   Écrit en dur le 14/08 ('20260814a'), il n'a jamais suivi le jeton : la page en était à 20261125p, et le seul
+   rapport reçu ce jour-là disait encore [20260814a]. L'étiquette doit être le jeton que la page sert. */
+test('l’étiquette des rapports est le jeton servi par la page, pas une date figée', () => {
+  const ligne = PAGE.match(/var __BUILD = [^\n]*;/);
+  assert.ok(ligne, 'ligne de __BUILD introuvable');
+  const sb = {};
+  vm.runInNewContext(ligne[0] + '\nthis.lu = __BUILD;', sb);
+  const SW = readFileSync(new URL('../crm/v2/sw.js', import.meta.url), 'utf8');
+  const ver = SW.match(/var VER\s*=\s*'([^']*)'/)[1];
+  assert.equal(sb.lu, ver, 'étiquette ' + sb.lu + ' ≠ jeton de la page ' + ver);
+});

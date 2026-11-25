@@ -83,7 +83,10 @@
     // clé publique, donc EN VISITEUR, même connecté : plus rien n'arrivait depuis
     // le 13/08. Il envoie désormais avec le jeton de la session, et n'envoie rien
     // sans session (la base refuserait).
-    var __BUILD = '20260814a';   // pour savoir QUELLE version a produit un rapport
+    // Pour savoir QUELLE version a produit un rapport. Écrit sous la forme « ?v=… » pour que
+    // scripts/jeton.py le remplace avec les autres et que --verifier le contrôle : écrit en dur
+    // le 14/08 ('20260814a'), il n'avait jamais suivi le jeton (constaté le 25/11, page en 20261125p).
+    var __BUILD = '?v=20261125p'.slice(3);
 
     // Le bandeau de diagnostic. Il était collé EN HAUT, plein écran : sur
     // iPhone il recouvrait la barre de navigation et son menu profil — Will
