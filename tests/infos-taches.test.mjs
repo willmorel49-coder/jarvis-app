@@ -135,6 +135,20 @@ test('rappel de lot : seulement si le produit passe chez nous ou si l\'Agence no
   assert.ok(!T.france(B, { auj: '2026-11-25' }).some((t) => t.etiquette === 'Lot rappelé'), 'la tâche du 25/11 « vérifier le lot Z011 » ne monte plus');
 });
 
+/* Choix cliqué de Will, 25/11/2026 : « d' » devant une voyelle (« Un lot de Albumine humaine iodée » vu sur le Z011 du 24/11). */
+test('rappel de lot : « d\' » devant une voyelle, « de » devant une consonne', () => {
+  const un = T.rappel({ d: '2026-11-24', t: 'Albumine humaine iodée [125I], Cis bio international, solution injectable. [Réf : SERALB-125] - Laboratoire Cis Bio Inte', lots: [{ n: 'Z011' }] }, { auj: '2026-11-25' });
+  assert.equal(un.titre, 'Un lot d’Albumine humaine iodée est rappelé');
+  assert.equal(un.aDire, 'Le lot Z011 d’Albumine humaine iodée est rappelé : à retirer du stock.');
+  const des = T.rappel({ d: '2026-11-24', t: 'Érythromycine 500 mg, comprimé', lots: [{ n: 'A1' }, { n: 'A2' }] }, { auj: '2026-11-25' });
+  assert.equal(des.titre, 'Des lots d’Érythromycine 500 mg sont rappelés');
+  assert.equal(des.aDire, 'Des lots d’Érythromycine 500 mg sont rappelés : à retirer du stock.');
+  const omni = T.rappel({ d: '2026-11-24', t: 'Omnipaque 300 mg I/ml, solution injectable', lots: [{ n: 'X9' }] }, { auj: '2026-11-25' });
+  assert.equal(omni.titre, 'Un lot d’Omnipaque 300 mg I/ml est rappelé');
+  const cons = T.rappel({ d: '2026-11-24', t: 'Mapakna LP 20 mg, gélule', lots: [{ n: '008825' }] }, { auj: '2026-11-25' });
+  assert.equal(cons.titre, 'Un lot de Mapakna LP 20 mg est rappelé', 'devant une consonne : inchangé');
+});
+
 test('sans article repris par plusieurs sources : une alerte ANSM d\'un produit de ville, jamais d\'hôpital', () => {
   const B = copie(BRIEF); B.cinq = B.cinq.filter((a) => !/furos/i.test(a.t));
   assert.ok(!T.france(B, { auj: AUJ }).some((t) => t.etiquette === 'Médicament qui manque'), 'Kanokad (poudre et solvant), Rapibloc (à diluer) : écartés ; Jext revient : pas une rupture');

@@ -155,6 +155,7 @@
   var RE_MOL = /\b(?:tensions?|ruptures?|p[ée]nuries?|manques?)(?: d[’']approvisionnement)? (?:en|de|d[’']|du|des) ?([a-zà-ÿ]+(?:-[a-zà-ÿ]+)?(?: \d+(?:[,.]\d+)?(?: et \d+(?:[,.]\d+)?)? ?(?:mg|µg|g|ml|ui)\b)?)/i;
   function molecule(t) { var m = RE_MOL.exec(txt(t)); return m && m[1].length > 3 ? m[1].toLowerCase() : ''; }
   function article(n) { return voyelle(n) ? 'L’' : 'Le '; }
+  function de(n) { return voyelle(n) ? 'd’' : 'de '; }   // « un lot d’Albumine », « un lot de Mapakna »
   function texte(a) { return [a.t, a.r].concat(a.points || []).join(' '); }
 
   function manque(arts, o) {   // arts : les articles « rupture » de l'édition qui parlent de la même molécule, le plus repris d'abord
@@ -253,14 +254,14 @@
   function pourOfficines(r) { return !!((r.cat && r.cat.length) || (r.stk && r.stk.length)) || /officine|pharmacie/i.test(txt(r.niv)); }
   function rappel(r, o) {
     o = o || {};
-    var nom = nomCourt(r.t), lots = r.lots || [], un = lots.length === 1 && lots[0].n;
+    var nom = nomCourt(r.t), lots = r.lots || [], un = lots.length === 1 && lots[0].n, De = de(nom);
     return {
       id: 'l-' + norm(nom + '-' + (un || r.d)), groupe: 'france', etiquette: 'Lot rappelé', ton: 'rouge',
-      titre: un ? 'Un lot de ' + nom + ' est rappelé' : 'Des lots de ' + nom + ' sont rappelés',
+      titre: un ? 'Un lot ' + De + nom + ' est rappelé' : 'Des lots ' + De + nom + ' sont rappelés',
       lieu: 'Toutes les officines', quand: quandPasse(r.d, o.auj),
       pourVous: 'Ces boîtes doivent sortir des rayons : vos officines doivent vérifier leur stock.',
       action: 'Prévenir vos officines de vérifier ' + (un ? 'le lot ' + un : 'les lots rappelés'),
-      aDire: un ? 'Le lot ' + un + ' de ' + nom + ' est rappelé : à retirer du stock.' : 'Des lots de ' + nom + ' sont rappelés : à retirer du stock.',
+      aDire: un ? 'Le lot ' + un + ' ' + De + nom + ' est rappelé : à retirer du stock.' : 'Des lots ' + De + nom + ' sont rappelés : à retirer du stock.',
       source: 'Agence du médicament', url: r.url || '', vue: 'rappels', pid: ''
     };
   }
