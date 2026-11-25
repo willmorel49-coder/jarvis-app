@@ -1862,7 +1862,8 @@
     try { map.attributionControl.setPrefix(false); } catch (e) {}
     // tolerance : la souris « attrape » un point jusqu'à 7 px autour (Will, 27/08 : « quand on passe
     // sur un point que ça affiche l'officine, comme sur Google Maps » — un point fait 4 à 5 px, il fallait viser au pixel).
-    canvas = window.L.canvas({ padding: 0.5, tolerance: 7 });
+    // CARTE-2 (26/11/2026) : au doigt (pointer:coarse), 16 px autour du point, soit une zone d'environ 43 px ; la souris garde ses 7 px.
+    canvas = window.L.canvas({ padding: 0.5, tolerance: (window.matchMedia && window.matchMedia('(pointer:coarse)').matches) ? 16 : 7 });
     addBaseLayer();
     // Filet : quel que soit l'état du plugin de paquets, un clic à ≤ 10 px d'un point ouvre sa fiche.
     // (Le clic « officiel » du marqueur passe par openPop ; s'il a déjà ouvert la même fiche, ceci ne fait que la re-rendre.)
@@ -2005,9 +2006,9 @@
     // et sur téléphone la ligne des filtres ne passe pas à la ligne.
     var acts = document.getElementById('cn-fbacts');
     if (acts) acts.innerHTML =
-      '<button class="cn-fb-btn cn-fb-act" onclick="V2.carteListOpen()">' + ICO('list', 14) + '<span>Liste</span></button>' +
+      '<button class="cn-fb-btn cn-fb-act" aria-label="Liste" onclick="V2.carteListOpen()">' + ICO('list', 14) + '<span>Liste</span></button>' +
       '<button class="cn-fb-btn cn-fb-act" title="Extraire les officines du filtre dans un fichier Excel" aria-label="Extraire en Excel" onclick="V2.carteExportXlsx()">' + ICO('download', 14) + '<span>Excel</span></button>' +
-      '<button class="cn-fb-btn cn-fb-act cn-fb-tour" onclick="V2.carteTourOpen()">' + ICO('pharma', 14) + '<span>Ma tournée</span><b id="cn-fb-tourn"' + (tour.length ? '' : ' style="display:none"') + '>' + tour.length + '</b></button>';
+      '<button class="cn-fb-btn cn-fb-act cn-fb-tour" aria-label="Ma tournée" onclick="V2.carteTourOpen()">' + ICO('pharma', 14) + '<span>Ma tournée</span><b id="cn-fb-tourn"' + (tour.length ? '' : ' style="display:none"') + '>' + tour.length + '</b></button>';
     var el2 = document.getElementById('cn-fbrow2'); if (!el2) return;
     el2.style.display = more ? '' : 'none';
     el2.innerHTML = !more ? '' :

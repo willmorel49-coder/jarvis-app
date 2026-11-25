@@ -158,7 +158,7 @@
   function top() { return (V2.topbar ? V2.topbar({ back: true, nom: 'Sécurité' }) : ''); }
   function message(root, titre, texte, bouton) {
     css();
-    root.innerHTML = top() + '<div class="v2-wrap mp-wrap"><div class="mp-etat" data-etat="1"><div class="mp-lock">' + ICO('check', 26, 1.8) + '</div><h1 class="mp-et">' + esc(titre) + '</h1>' + (texte ? '<p>' + esc(texte) + '</p>' : '') + (bouton || '') + '</div></div>';
+    root.innerHTML = top() + '<div class="v2-wrap mp-wrap"><div class="mp-etat" data-etat="1"><div class="mp-lock">' + ICO('lock', 26, 1.8) + '</div><h1 class="mp-et">' + esc(titre) + '</h1>' + (texte ? '<p>' + esc(texte) + '</p>' : '') + (bouton || '') + '</div></div>';
   }
   function chargement(root) { css(); root.innerHTML = top() + '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement…</div></div>'; }
 
@@ -327,7 +327,7 @@
         });
         return;
       }
-      if (acces === false) { message(root, 'Écran réservé.', ''); return; }
+      if (acces === false) { message(root, 'Écran réservé.', 'Cet écran n’est pas ouvert pour votre compte.'); return; }
       if (!etat) {
         if (etatErreur && !enCours) {
           message(root, 'Lecture impossible pour l’instant', 'La base n’a pas répondu. Réessaie dans un instant.',

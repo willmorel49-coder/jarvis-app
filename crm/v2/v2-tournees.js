@@ -668,6 +668,9 @@
         '.trn-row .trn-c2,.trn-row .trn-c3,.trn-row .trn-c4,.trn-row .trn-c5,.trn-row .trn-go{display:none}',
         '.trn-m{display:flex;grid-column:2/4;gap:14px;font-size:12px;color:var(--ip-ink-2);flex-wrap:wrap}',
       '}',
+      /* TRN-1 (26/11/2026), téléphone seulement : les 4 infos d'une tournée en 2 × 2, toujours à la même place d'une ligne à l'autre.
+         1re colonne un peu plus large : « 115,80 € par commande » (130 px) doit tenir à 360 px à côté de « +1 540 € potentiel » (101 px). */
+      '@media (max-width:640px){.trn-m{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:2px 12px}}',
       '@media (max-width:700px){.trn-note{font-size:13px}}',
       '@media (pointer:coarse){',
         '.trn-lst>tbody>tr>td{height:44px}',
@@ -762,7 +765,7 @@
         '<span class="trn-barre trn-c1"><span>' + eur(t.rentabilite_mois) + '</span><i style="width:' + Math.max(3, Math.round(Math.max(0, t.rentabilite_mois) / (max > 0 ? max : 1) * 90)) + 'px"></i></span>' +
         '<span class="trn-c trn-c2">' + eur(t.marge_jour, 2) + '</span><span class="trn-c trn-c3 ' + (t.nb_perte ? 'trn-neg' : '') + '">' + t.nb_perte + '</span><span class="trn-c trn-c4">' + t.nb_prospects_2km + '</span><span class="trn-pot trn-c5">' + eurSigne(t.potentiel) + '</span>' +
         '<span class="trn-go" aria-hidden="true">›</span>' +
-        '<span class="trn-m"><span>' + eur(t.marge_jour, 2) + ' par commande</span><span>' + t.nb_perte + ' en perte</span><span>' + t.nb_prospects_2km + ' prospects</span><span class="trn-pot">' + eurSigne(t.potentiel) + '</span></span></button></div>';
+        '<span class="trn-m"><span>' + eur(t.marge_jour, 2) + ' par commande</span><span>' + t.nb_perte + ' en perte</span><span>' + t.nb_prospects_2km + ' prospects</span><span class="trn-pot">' + eurSigne(t.potentiel) + ' potentiel</span></span></button></div>';
     }).join('');
   }
 

@@ -665,7 +665,8 @@
       }).join('') + '</div>' +
 
       (ODI.note ? '<div class="mfr-note"><b>Comment lire ces taux.</b><br>' +
-        esc(ODI.note) + '</div>' : '') +
+        // MARCHEFR-1 (26/11/2026) : la phrase technique sur le champ « pct » ne s'affiche plus (retirée aussi de generate_odisse.py ; les fichiers déjà écrits la portent encore).
+        esc(String(ODI.note).replace(/\s*Le champ `pct` donne directement ce pourcentage\./, '')) + '</div>' : '') +
       ((ODI.manquantes && ODI.manquantes.length)
         ? '<div class="mfr-note"><b>Départements sans relevé cette semaine.</b><br>' +
           esc(ODI.manquantes.join(', ')) + '</div>' : '') +

@@ -180,7 +180,7 @@ def main():
         "week": semaine,
         "unite": UNITE,
         "note": ("Les taux sont %s, PAS pour 100 000 habitants : un taux de 16 667 = 16,7 %% "
-                 "des passages. Le champ `pct` donne directement ce pourcentage." % UNITE),
+                 "des passages." % UNITE),
         "manquantes": rates,
         "pathologies": out,
     }, ensure_ascii=False, separators=(",", ":")))

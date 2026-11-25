@@ -162,11 +162,23 @@
   function mime(n) { return /\.xlsx$/i.test(n) ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : /\.xls$/i.test(n) ? 'application/vnd.ms-excel' : 'application/pdf'; }
   function sanit(n) { return String(n || 'document').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9._-]+/g, '-').replace(/-+/g, '-').slice(0, 80) || 'document'; }
   function nomPropre(t) { return String(t || 'document').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim(); }
+  // MAL-2 (26/11/2026) : le titre lisible d'un fichier déposé par l'équipe. « PRESENTATION-FOCUS-AIGUILLES.pptx_20251016_221700_0000.pdf »
+  // devient « PRESENTATION FOCUS AIGUILLES » : le reste d'extension et son horodatage d'export sont retirés, et les tirets posés
+  // à la place des espaces au dépôt (sanit) redeviennent des espaces. Ce qui est gardé : un nom qui contient déjà des espaces
+  // (écrit à la main : ses tirets sont voulus) et le tiret entre deux nombres (« 2025-2026 »). Le fichier joint garde son nom (nomFichier).
+  function titreLisible(n) {
+    var brut = pretty(n).replace(/\.[^.]+$/, ''), t = brut, avant, i, p, out = '';
+    do { avant = t; t = t.replace(/\.(pdf|pptx?|docx?|xlsx?)(_\d+)*$/i, ''); } while (t !== avant);
+    if (/\s/.test(t)) return t.replace(/\s+/g, ' ').trim() || brut;
+    p = t.split(/([-_]+)/);
+    for (i = 0; i < p.length; i++) out += i % 2 ? (p[i] === '-' && /^\d+$/.test(p[i - 1]) && /^\d+$/.test(p[i + 1]) ? '-' : ' ') : p[i];
+    return out.replace(/\s+/g, ' ').trim() || brut;
+  }
   function eqDoc(f) {
     var id = 'eq:' + f.name;
     if (!S.eqDocs[id] || S.eqDocs[id].ko !== Math.round((f.size || 0) / 1024)) {
       var x = isXls(f.name);
-      S.eqDocs[id] = { id: id, kind: 'equipe', famille: 'equipe', titre: pretty(f.name).replace(/\.[^.]+$/, ''), sous: x ? 'Excel déposé par l’équipe' : 'PDF déposé par l’équipe', type: x ? 'xlsx' : 'pdf',
+      S.eqDocs[id] = { id: id, kind: 'equipe', famille: 'equipe', titre: titreLisible(f.name), sous: x ? 'Excel déposé par l’équipe' : 'PDF déposé par l’équipe', type: x ? 'xlsx' : 'pdf',
         pages: null, ko: Math.round((f.size || 0) / 1024), bucket: f.name, nomFichier: pretty(f.name), phrase: 'un document complémentaire' };
     }
     return S.eqDocs[id];

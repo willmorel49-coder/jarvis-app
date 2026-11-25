@@ -3532,13 +3532,20 @@
   var CHEV = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
 
   // ───────────── rubriques repliées ─────────────
+  // APPRO-1 (26/11/2026) : la seconde ligne ne redit pas le titre (« mer. 25 · 130 commandes à passer » puis « 130 commandes à passer »).
+  // Vrai si le chiffre clé, lu sans ses balises, est déjà écrit tel quel dans le titre — et pas la fin d'un autre nombre (« 3 commandes » dans « 13 commandes »).
+  function dejaDansTitre(titre, fig) {
+    var plat = String(fig || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(), t = esc(titre).replace(/\s+/g, ' ');
+    for (var k = plat ? t.indexOf(plat) : -1; k >= 0; k = t.indexOf(plat, k + 1)) if (!/\d\s?$/.test(t.slice(0, k))) return true;
+    return false;
+  }
   function replier(us, w) {
     var tab = onglet(w);
     us.forEach(function (u) {
       var id = tab + '|' + u.k, b = document.createElement('button'), ouv = !!ouvertes[id];
       b.type = 'button'; b.className = 'apv-row' + (ouv ? ' apv-ouverte' : ''); b.setAttribute('data-apv', 'rep'); b.setAttribute('data-id', id);
       b.setAttribute('aria-expanded', ouv ? 'true' : 'false');
-      b.innerHTML = '<span class="apv-t"><span class="apv-tt">' + esc(u.titre) + '</span>' + (u.fig ? '<span class="apv-fg">' + u.fig + '</span>' : '') + '</span>' + CHEV;
+      b.innerHTML = '<span class="apv-t"><span class="apv-tt">' + esc(u.titre) + '</span>' + (u.fig && !dejaDansTitre(u.titre, u.fig) ? '<span class="apv-fg">' + u.fig + '</span>' : '') + '</span>' + CHEV;
       u.els[0].parentNode.insertBefore(b, u.els[0]);
       u.row = b; u.els.forEach(function (e) { if (!ouv) e.classList.add('apv-off'); e.setAttribute('data-apv-u', id); });
     });

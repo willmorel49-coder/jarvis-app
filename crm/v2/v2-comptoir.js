@@ -3163,6 +3163,8 @@
         '.cq1-tx{grid-area:tx}.cq1-px{grid-area:px}.cq1-st{grid-area:st;text-align:left}.cq1-mg{grid-area:mg}',
         '.cq1-st,.cq1-mg{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}.cq1-st b,.cq1-mg b{display:inline;font-size:14px}.cq1-st i,.cq1-mg i{display:inline;margin:0}}',
       '@media (max-width:640px){.cq1-tab{font-size:13.5px;padding:0 9px;gap:5px}.cq1-tabs{gap:5px}.cq1-hero{margin-top:16px}.cq1-champ{height:60px;padding-left:16px}.cq1-champ input,.cq1-champ input:focus,.cq1-champ input:focus-visible{font-size:17px}',
+        /* PRD-1 (26/11/2026) : les 3 onglets de « Ce qui change » sur une seule rangée qui glisse, au lieu de 2 + 1 */
+        '.cq1-tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}.cq1-tabs::-webkit-scrollbar{display:none}.cq1-tab{flex:none}',
         '.cpd-stat b{font-size:18px}.cpd-stat span{font-size:13px}.cpd-stats{gap:16px}.cq1-card .cpd-liste .cpd-l:nth-child(n+5){display:none}.cq1-h{font-size:20px}}',
       '@media (prefers-reduced-motion:reduce){.cq1-card,.cq1-l{animation:none}.cq1-champ{transition:none}}',
       // 24/11/2026 — favoris : l'étoile (cible de 44 px), la 5e colonne des lignes de recherche, la carte et le volet.

@@ -117,6 +117,8 @@
       '.dcm-vmsg{margin:18vh auto 0;max-width:420px;text-align:center;font-size:15px;line-height:1.5;color:rgba(255,255,255,.86)}',
       '@media (max-width:480px){.dcm-grille{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.dcm-cc{padding:9px 10px 11px}.dcm-t{font-size:14px}',
       '.dcm-fams{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%;padding:2px 0 4px;scrollbar-width:none}.dcm-fams::-webkit-scrollbar{display:none}',
+      /* DOC-1, DOC-2, DOC-3 (26/11/2026) : filtres à 44 px, titres sur 3 lignes, « Nouveau » à 12 px */
+      '.dcm-fam{min-height:44px}.dcm-t{-webkit-line-clamp:3}.dcm-neuf{font-size:12px}',
       '.dcm-dlg{padding:20px 18px 16px}.dcm-dp .v2-btn{flex:1}.dcm-vh{padding-left:12px}.dcm-vb .dcm-lib{display:none}.dcm-vb{padding:0;width:44px}.dcm-vc{padding:10px 6px 30px}}'
     ].join('\n');
     document.head.appendChild(st);

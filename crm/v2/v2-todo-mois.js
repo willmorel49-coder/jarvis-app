@@ -764,6 +764,11 @@
       '  .tm-dots{display:flex;gap:3px;min-height:9px}',
       '  .tm-dots i{width:8px;height:8px}',
       '  .tm-carte{padding:14px 14px 16px}',
+      /* TOD-2 (26/11/2026) : le nom de l'officine sur 2 lignes au lieu d'être coupé à côté du bouton */
+      '  .tm-cn2 b{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow-wrap:anywhere}',
+      /* TOD-5 (26/11/2026) : les 4 boutons d'ajout en 2 × 2 au lieu de 3 + 1 */
+      '  .tm-ajouts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}',
+      '  .tm-aj{justify-content:center}',
       '}'
     ].join('\n');
     document.head.appendChild(s);

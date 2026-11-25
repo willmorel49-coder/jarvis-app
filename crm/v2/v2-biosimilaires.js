@@ -62,7 +62,7 @@
       '.bs-count{font-size:12.5px;color:#646B80;margin:10px 2px 4px;font-weight:600}',
       '.bs-card{background:#fff;border:1px solid #E6EAF0;border-radius:16px;margin-bottom:11px;overflow:hidden;transition:.15s}',
       '.bs-card.ip{background:#F5F8FF}',
-      '.bs-card.hors{opacity:.82}',
+      '.bs-card.hors{opacity:1;background:#F8F9FB}',
       '.bs-head{display:flex;align-items:center;gap:12px;padding:15px 17px;cursor:pointer}',
       '.bs-head:hover{background:#FAFBFD}',
       '.bs-mol{flex:1;min-width:0}',

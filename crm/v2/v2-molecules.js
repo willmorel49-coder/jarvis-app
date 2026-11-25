@@ -193,7 +193,7 @@
       '</button>';
     }
     return '<div class="mol-sagband">' +
-      '<div class="mol-sagband-l">Face à ' + t.nom + ' <span>· ' + t.src + majLabel(t.maj()) + ' · ' + num(tot) + ' références comparées · ' + num(eg) + ' au même prix · hors génériques et biosimilaires (leurs remises passent par les labos, pas par la facture grossiste)</span></div>' +
+      '<div class="mol-sagband-l">Face à ' + t.nom + ' <span>· ' + t.src + majLabel(t.maj()) + ' · ' + num(tot) + ' références comparées · ' + num(eg) + ' au même prix · hors génériques et biosimilaires (leurs conditions passent directement par les laboratoires, pas par la facture du grossiste)</span></div>' +
       '<div class="mol-sagband-row">' +
         tuile('gagne', g, 'référence' + (g > 1 ? 's' : '') + ' où votre net Intégral est moins cher') +
         tuile('perd', pd, 'où ' + t.nom + ' est moins cher') +
