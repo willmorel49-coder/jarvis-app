@@ -19,7 +19,7 @@
     padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));min-height:var(--bnav-h,64px);
     background:radial-gradient(360px 120px at 50% -30%,#FFFFFF 0,#F4F7FD 100%) #F4F7FD;border-top:1px solid #D5E0F6;box-shadow:0 -10px 28px rgba(16,19,28,.10)}
   .bnav .bnav-c{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;min-width:0;min-height:52px;margin:0;padding:2px 0 0;border:0;border-radius:12px;
-    background:none;color:#4A5672;font:700 11.5px/1.15 Inter,system-ui,sans-serif;letter-spacing:0;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent;-webkit-appearance:none;appearance:none}
+    background:none;color:#4A5672;font:700 12px/1.15 Inter,system-ui,sans-serif;letter-spacing:0;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent;-webkit-appearance:none;appearance:none}
   .bnav .bnav-i{display:grid;place-items:center;width:56px;height:30px;border-radius:15px;background-color:transparent}
   .bnav .bnav-i .u2-ic{width:24px;height:24px;color:inherit}
   .bnav .bnav-n{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
@@ -47,6 +47,29 @@
   body.bnav-on.mk-dans:not(.mk-editeur) .mkc-pdf-loge{bottom:var(--bnav-h)}
   body.bnav-on.mk-dans:not(.mk-editeur) #lis-root{bottom:var(--bnav-h)}
   body.bnav-on:not(.mk-editeur) .mks-action{bottom:var(--bnav-h)}
+  /* 26/11/2026 (audit téléphone du 25/11) — trois barres collantes passaient sous la barre du bas : le panier du Catalogue (53 px cachés, mesuré),
+     la barre « N produits retenus » d'un document de produits, et la barre d'envoi de « Qui inviter » */
+  body.bnav-on #cp-bar-hote{bottom:calc(var(--bnav-h) + 12px)}
+  body.bnav-on .pr-panier{bottom:calc(var(--bnav-h) + 8px)}
+  body.bnav-on .rad-bar{bottom:var(--bnav-h)}
+  /* la carte s'arrête AU-DESSUS de la barre du bas : elle dépassait de 64 px (page de 908 px pour un écran de 844), la légende, « Ma tournée » et le pied de la fiche passaient dessous */
+  body.bnav-on .cn-shell{height:calc(100vh - var(--topbar-h,60px) - var(--bnav-h));height:calc(100dvh - var(--topbar-h,60px) - var(--bnav-h))}
+  /* carte : zone à toucher de 44 px autour des ronds de regroupement ; le rond dessiné reste à 34 px, centré (Leaflet pose la taille en style direct, d'où !important) */
+  body.bnav-on .leaflet-marker-icon.cn-clw{width:44px!important;height:44px!important;margin:-22px 0 0 -22px!important;display:flex;align-items:center;justify-content:center}
+  /* Missions : le résultat du simulateur reste visible au-dessus de la barre pendant qu'on remplit les champs (.v2-card coupe ce qui dépasse : sans la 1re ligne, rien ne colle) */
+  body.bnav-on .mis-simcard{overflow:visible}
+  body.bnav-on .mis-tot{position:sticky;bottom:calc(var(--bnav-h) + 8px);z-index:5;box-shadow:0 12px 22px -12px rgba(11,46,30,.6)}
+
+  /* ── Audit téléphone du 25/11/2026 : ce qui ne dépend pas de la barre ── */
+  /* bouton principal grisé : fond gris, plus le dégradé bleu (v2.css, « bouton principal : bleu à lumière », l'emportait sur la règle « désactivé » :
+     texte gris sur bleu, 1,2:1 ; sur le gris prévu, 5,8:1). L'ordinateur n'est pas corrigé ici. */
+  html:not([data-hab]) .v2-btn-primary:is(:disabled,[disabled],[aria-disabled="true"]){background-color:var(--btn-off-bg);background-image:none;border-color:var(--btn-off-line);box-shadow:none}
+  /* étiquettes de l'agenda, de « Qui inviter » et de « Qui appeler » : 12 px (« html » : ces écrans posent leur style après cette feuille) */
+  html .agv-tag,html .rad-tag,html .app-tag{font-size:12px}
+  /* « Suivi & contrôle » : avec trois cartes de chiffres, la dernière prend la rangée entière (grille de deux jusqu'à 559 px, de quatre au-delà) */
+  @media (max-width:559px){
+    .sv-ch > div:last-child:nth-child(odd){grid-column:1 / -1}
+  }
 
   /* ── « Menu » : la feuille du bas (celle de la fiche) avec la liste des outils ── */
   .bnav-menu{display:flex;flex-direction:column;gap:8px;padding-bottom:6px}

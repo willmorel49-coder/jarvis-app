@@ -557,7 +557,7 @@ html.v2-nav .v2-top::before{content:"";position:absolute;left:0;bottom:-1px;heig
   /* Audit téléphone du 19/10/2026 (WebKit 390 px) — « html » en tête : ces écrans posent leur style APRÈS
      cette feuille (balise <style> injectée), à égalité de poids ils l'emporteraient. */
   /* listes déroulantes : WebKit ignore min-height sur un select natif → apparence propre + flèche dessinée */
-  html .v2-profil-f select,html .mol-select,html .mol-msort select,html .cp-sel,html #v2-pharma-comm{-webkit-appearance:none;appearance:none;height:44px;min-height:44px;padding-right:34px;
+  html .v2-profil-f select,html .mol-select,html .mol-msort select,html .cp-sel,html #v2-pharma-comm,html .dsc-fenfil .dsc-cv select,html .bs-sel,html .cg-sel{-webkit-appearance:none;appearance:none;height:44px;min-height:44px;padding-right:34px;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%235B6478' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     background-repeat:no-repeat;background-position:right 12px center;background-size:12px 8px}
   /* zones à toucher : 44 px */
@@ -575,7 +575,7 @@ html.v2-nav .v2-top::before{content:"";position:absolute;left:0;bottom:-1px;heig
   html .off-card-name{-webkit-line-clamp:5;min-height:0}
   html .ml-sh-t{-webkit-line-clamp:6;overflow-wrap:anywhere}
   html .ml-doc .ml-so{-webkit-line-clamp:4;min-height:0}
-  html .mfr-b span:first-child,html .mfr-res .c{white-space:normal;overflow:visible;text-overflow:clip}
+  html .mfr-b span:first-child,html .mfr-res .c,html .mfr-res .d{white-space:normal;overflow:visible;text-overflow:clip}
   /* fiche officine : le nom à corriger sur toute la largeur */
   html .phf-nmedit-row{flex-direction:column;align-items:stretch}
   /* textes sous 12 px */
@@ -610,6 +610,38 @@ html.v2-nav .v2-top::before{content:"";position:absolute;left:0;bottom:-1px;heig
   html .cm-cles{bottom:28px}
   /* lien de réservation : l'adresse entière sur deux lignes (zone de texte, voir v2-rdv-lien.js) */
   html textarea.v2-lien-url{height:72px}
+  /* ── Audit téléphone du 25/11/2026 (WebKit 390 et 360 px) : écrans du quotidien et outils. Rien ne sort de ce bloc : l'ordinateur ne bouge pas. ── */
+  /* zones à toucher : 44 px (onglets des listings, puces 3 · 5 · 10 · 15, « Options du document », tri « CA », sites sans coordonnées, + et − de toutes les cartes) */
+  html .ls-tab,html .mol-adv>summary{min-height:44px}
+  html .mol-chip{min-width:44px}
+  html .cg-rk-sb{min-width:44px;justify-content:center}
+  html .cm-sans button{min-height:44px;display:inline-flex;align-items:center}
+  html .leaflet-touch .leaflet-bar a{width:44px;height:44px;line-height:44px}
+  /* textes entiers au lieu de « … » : le nom d'une officine sur deux lignes, les résultats de la recherche de l'accueil, « Intégral ne l'aura plus », les groupes d'achat */
+  html .ofl-nom{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal}
+  html .aube-tx b{white-space:normal;overflow-wrap:anywhere}
+  html .mp-row .mp-n>span,html .cg-rk-nm,html .cg-rk-meta{white-space:normal}
+  /* Biosimilaires : les logos des partenaires passent à la ligne au lieu de recouvrir le nombre de boîtes ; la liste des aires tient dans l'écran */
+  html .bs-pill.part{flex-wrap:wrap}
+  html .bs-sel{width:100%}
+  /* textes sous 12 px : badges et vote du QG, étiquette PDF de la Mallette, pastille de titre du Marché */
+  html .dsc-st,html .dsc-vote span,html .ml-sh-tag,html .v2-eyebrow{font-size:12px}
+  /* Rapport d'étonnement : un seul bouton pour créer un entretien quand la liste est vide (celui du haut reste) */
+  html .eto-vide .v2-btn{display:none}
+  /* Missions : texte blanc lisible sur tout le bloc vert (fin du dégradé assombrie : 5,8:1 au lieu de 3,4:1 ; plus d'opacité sur le texte) */
+  html .mis-tot{background:linear-gradient(135deg,#0B2E1E,#14744D)}
+  html .mis-tot span,html .mis-tot small,html .mis-tot-note{opacity:1}
+  /* Listings : le libellé des cartes de famille n'est plus en capitales espacées (« NOTRE MARGE PAR / BOÎTE » se cassait en deux) */
+  html .mp-fv::before{text-transform:none;letter-spacing:0}
+  /* Barre du haut à 380 px et moins : 8 px entre les quatre boutons de droite. v2-pieces.css les serre à 2 px pour que la maison d'un écran interne ne soit pas rognée ;
+     la place est reprise au bouton Retour (resserré de 15 px) et au nom de la marque, qui s'efface à l'accueil comme à l'ordinateur (le logo reste).
+     JARVIS connecté seulement : ni Phirst (data-teinte) ni OPSO (pas de barre du bas). */
+  @media (max-width:380px){
+    html:not([data-teinte]) body.bnav-on .tp-d{gap:8px}
+    html:not([data-teinte]) body.bnav-on .tp-g{gap:4px}
+    html:not([data-teinte]) body.bnav-on .v2-top .v2-back{gap:4px;padding:0 8px 0 5px}
+    html:not([data-teinte]) body.bnav-on .v2-top .v2-brand:not(.v2-brand-compact)>span:not(.v2-logo){display:none}
+  }
 }
 .v2-cmdk-x{display:none;align-items:center;justify-content:center;flex-shrink:0;min-height:44px;padding:0 8px;border:0;background:none;
   color:var(--ip-blue);font:600 16px var(--font);cursor:pointer;-webkit-tap-highlight-color:transparent}

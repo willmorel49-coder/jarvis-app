@@ -18,7 +18,8 @@
   .pha-wrap.fdr-on .fdr .fdo-a .fdr-sub{font-size:15px;margin:0}
   .pha-wrap.fdr-on .fdo-a{padding:8px 14px 14px}
   .pha-wrap.fdr-on .fdo-a .fdr-id{margin-top:2px;gap:4px}
-  .pha-wrap.fdr-on .fdo-a::before{top:58px}                   /* l'horizon passe sous la bascule */
+  .pha-wrap.fdr-on .fdo-a::before{top:62px}                   /* l'horizon passe sous la bascule (2 px sous elle ; 62 et non 58 depuis que ses boutons font 44 px, 26/11/2026) */
+  html:root:root body .pha-wrap.fdr-on .fdr-sw .vv-b{min-height:44px}   /* « Vue pharmacien / Vue Intégral » : 44 px au doigt (40 dans v2.css, même sélecteur + .pha-wrap pour l'emporter) */
 
   /* ── Les deux bandeaux ──────────────────────────────────────────────── */
   .pha-wrap.fdr-on .rv2-bandes{display:flex;flex-direction:column;gap:8px;margin-top:8px}
@@ -72,6 +73,19 @@
   /* un seul bouton plein : Noter chez le pharmacien, Appeler en vue Intégral */
   .pha-wrap.fdr-on[data-vue="pharmacien"] .rv2-note,.pha-wrap.fdr-on[data-vue="integral"] .rv2-tel{background:linear-gradient(180deg,#1A63F0,#0050E6);border-color:#0050E6;color:#fff}
   .pha-wrap.fdr-on[data-vue="pharmacien"] .rv2-note svg,.pha-wrap.fdr-on[data-vue="integral"] .rv2-tel svg{color:#fff}
+
+  /* ── Audit téléphone du 25/11/2026 : défauts à l'intérieur de la fiche, sans toucher à son dessin ── */
+  /* « Comparaison à nos clients » : Moyenne et Écart étaient hors de l'écran (il fallait faire glisser le tableau, sans rien pour le dire). Les titres de colonnes
+     passent à la ligne, les marges se resserrent : les trois colonnes de chiffres prennent leur largeur minimale, l'intitulé garde tout le reste. Tailles de texte inchangées. */
+  .pha-wrap.fdr-on .fdr-comp .fdr-tbl thead th{white-space:normal;line-height:1.2;vertical-align:bottom}
+  .pha-wrap.fdr-on .fdr-comp .fdr-tbl th,.pha-wrap.fdr-on .fdr-comp .fdr-tbl td{padding:7px 3px}
+  .pha-wrap.fdr-on .fdr-comp .fdr-ec{min-width:60px;padding:3px 5px}
+  /* Coordonnées : le numéro et l'e-mail sont des zones de 44 px (16 px mesurés) ; la ligne de l'adresse, sans lien, ne bouge pas */
+  .pha-wrap.fdr-on .fdo-co:has(a){align-items:center;padding:0}
+  .pha-wrap.fdr-on .fdo-co:has(a) .fdo-co-t{padding-top:0}
+  .pha-wrap.fdr-on .fdo-co-t a{display:inline-flex;align-items:center;min-height:44px}
+  /* tranches de prix : le libellé passe sur deux lignes au lieu d'être coupé (« Princeps · Intermédiaires ») */
+  .pha-wrap.fdr-on .pha-part-t{white-space:normal}
 }
 
 /* ── Feuilles « Prix » et « Envoyer » (hors de la fiche : posées sur la page) ── */
