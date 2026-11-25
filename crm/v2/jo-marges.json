@@ -1,8 +1,21 @@
 {
- "generated_at": "2026-11-24T17:54:51.687026+00:00",
+ "generated_at": "2026-11-25T17:23:04.422889+00:00",
  "source": "Journal officiel · open data DILA",
- "count": 6,
+ "count": 7,
  "items": [
+  {
+   "id": "JORFTEXT000055138140",
+   "titre": "Avis modifiant l'avis du 6 novembre 2026 relatif aux prix de spécialités pharmaceutiques publiés en application de l'article L. 162-16-6 du code de la sécurité sociale",
+   "url": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055138140",
+   "jo": "2026-11-25",
+   "signe_le": "2999-01-01",
+   "motifs": [
+    "prix des spécialités (L.162-16-6)"
+   ],
+   "resume": null,
+   "date_effet": null,
+   "a_venir": false
+  },
   {
    "id": "JORFTEXT000055102139",
    "titre": "Décret n° 2026-1059 du 17 novembre 2026 relatif aux seuils de prix applicables à certaines spécialités pharmaceutiques pour le calcul de la contribution due au titre de la clause de sauvegarde et de la contribution supplémentaire",
