@@ -73,7 +73,16 @@
       ici = L.marker([P.lat, P.lon], { interactive: false, keyboard: false, icon: L.divIcon({ className: 'pe-ici', html: '<span class="pe-ici-point"></span><span class="pe-ici-nom">' + E.esc(P.nom || 'Pharmacie') + '</span>', iconSize: [18, 18], iconAnchor: [9, 9] }) }).addTo(m);
       if (!cadre) m.setView([P.lat, P.lon], 13);
     }
-    function cadrer() { m.invalidateSize(false); if (cadre) m.fitBounds(cadre.getBounds(), { padding: [18, 18], animate: false }); }
+    // L'étiquette du nom reste dans la carte : à droite du point si elle tient, sinon à gauche, sinon sur plusieurs lignes (E.placeNom).
+    function placerNom() {
+      var el = ici && ici.getElement(), nom = el && el.querySelector('.pe-ici-nom'); if (!nom) return;
+      nom.classList.remove('pe-ici-g', 'pe-ici-2l'); nom.style.width = '';
+      var r = E.placeNom(m.latLngToContainerPoint(ici.getLatLng()).x, m.getSize().x, nom.offsetWidth);
+      if (r.cote === 'g') nom.classList.add('pe-ici-g');
+      if (r.max) { nom.classList.add('pe-ici-2l'); nom.style.width = r.max + 'px'; }
+    }
+    function cadrer() { m.invalidateSize(false); if (cadre) m.fitBounds(cadre.getBounds(), { padding: [18, 18], animate: false }); placerNom(); }
+    m.on('moveend resize', placerNom);
     cadrer();
     S.carte = { map: m, cadrer: cadrer, ici: ici };
   }

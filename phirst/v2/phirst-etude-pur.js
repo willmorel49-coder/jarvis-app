@@ -277,6 +277,18 @@
       repereA(D, sommes, yann) + reperesB(D, sommes, yann) + precautionsC(D) + '</section>';
   }
 
+  /* Où poser l'étiquette du nom à côté du point de la pharmacie, pour qu'elle reste dans la carte (au téléphone, « Pharmacie du Long Cours »
+     partait à droite et le bord la coupait, vu le 25/11/2026). x = position du point dans la carte, en px ; largeurCarte et largeurNom en px.
+     Rend { cote: 'd' | 'g', max: null | px } : à droite si elle tient, sinon à gauche, sinon du côté le plus large, sur plusieurs lignes (max). */
+  var NOM_ECART = 17, NOM_MARGE = 8, NOM_MIN = 72;
+  function placeNom(x, largeurCarte, largeurNom) {
+    if (![x, largeurCarte, largeurNom].every(function (n) { return typeof n === 'number' && isFinite(n); }) || largeurCarte <= 0) return { cote: 'd', max: null };
+    var droite = largeurCarte - x - NOM_ECART - NOM_MARGE, gauche = x - NOM_ECART - NOM_MARGE;
+    if (largeurNom <= droite) return { cote: 'd', max: null };
+    if (largeurNom <= gauche) return { cote: 'g', max: null };
+    return gauche > droite ? { cote: 'g', max: Math.max(NOM_MIN, Math.floor(gauche)) } : { cote: 'd', max: Math.max(NOM_MIN, Math.floor(droite)) };
+  }
+
   /* L'étude entière : 3 feuilles + la feuille interne. opts.yann = vrai seulement pour un membre (jamais la téléprospectrice). */
   function feuilles(D, sommes, opts) {
     D = D || {}; var yann = !!(opts && opts.yann);
@@ -285,5 +297,5 @@
 
   return { feuilles: feuilles, feuille1: feuille1, feuille2: feuille2, feuille3: feuille3, feuilleInterne: feuilleInterne,
     quorum: quorum, seuilPremiere: seuilPremiere, phraseQuorum: phraseQuorum, aSurveiller: aSurveiller, concurrents: concurrents,
-    nombre: nombre, pct: pct, signe: signe, euros: euros, joli: joli, esc: esc, plur: plur, RAYON_LISTE: RAYON_LISTE };
+    nombre: nombre, pct: pct, signe: signe, euros: euros, joli: joli, esc: esc, plur: plur, RAYON_LISTE: RAYON_LISTE, placeNom: placeNom };
 });

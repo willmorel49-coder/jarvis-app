@@ -235,6 +235,30 @@ describe('branchement dans l’app', () => {
   })
 })
 
+// Défaut vu le 25/11/2026 : au téléphone (carte de 350 px), « Pharmacie du Long Cours » partait à droite du point et le bord de la carte la coupait.
+describe('étiquette du nom sur la carte : toujours dans la carte', () => {
+  const dedans = (x, W, w) => { const r = E.placeNom(x, W, w), larg = r.max || w; return r.cote === 'd' ? x + 17 + larg <= W : x - 17 - larg >= 0 }
+  test('à droite quand elle tient (cas de l’ordinateur)', () => { assert.deepEqual(E.placeNom(400, 1000, 180), { cote: 'd', max: null }) })
+  test('à gauche quand la droite manque (le cas du Long Cours au téléphone : point à 210 px sur 350)', () => {
+    assert.deepEqual(E.placeNom(210, 350, 180), { cote: 'g', max: null }); assert.ok(dedans(210, 350, 180))
+  })
+  test('sur plusieurs lignes, du côté le plus large, quand aucun côté ne suffit', () => {
+    const r = E.placeNom(175, 350, 260); assert.ok(r.max && r.max < 260, JSON.stringify(r)); assert.ok(dedans(175, 350, 260))
+  })
+  test('reste dans la carte partout : point déplacé de 10 en 10 px, noms de 60 à 300 px, cartes de 320 à 700 px', () => {
+    const rates = []
+    for (const W of [320, 350, 390, 700]) for (let x = 100; x <= W - 100; x += 10) for (let w = 60; w <= 300; w += 20) if (!dedans(x, W, w)) rates.push([x, W, w])
+    assert.equal(rates.length, 0, JSON.stringify(rates.slice(0, 5)))
+  })
+  test('valeurs absentes : à droite, sans largeur imposée (comme avant)', () => {
+    assert.deepEqual(E.placeNom(undefined, 350, 180), { cote: 'd', max: null }); assert.deepEqual(E.placeNom(10, 0, 180), { cote: 'd', max: null })
+  })
+  test('l’écran s’en sert après chaque cadrage, chaque déplacement et chaque changement de taille', () => {
+    assert.match(src, /E\.placeNom\(/); assert.match(src, /m\.on\('moveend resize', placerNom\)/); assert.match(src, /fitBounds\([^;]+;\s*placerNom\(\)/)
+    assert.match(srcCss, /\.pe-ici-nom\.pe-ici-g\{left:auto;right:26px\}/); assert.match(srcCss, /\.pe-ici-nom\.pe-ici-2l\{white-space:normal/)
+  })
+})
+
 const reel = os.homedir() + '/PHIRST/finalisation-2026-11-22/ZC-etude-zone-code/donnees/etudes/140010489.json'
 describe('étude réelle du Long Cours (seulement si le fichier existe sur ce Mac)', { skip: !fs.existsSync(reel) }, () => {
   test('rendu propre, 0 « € » côté téléprospectrice', () => {
