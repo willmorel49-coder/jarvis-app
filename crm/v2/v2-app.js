@@ -2582,6 +2582,10 @@
         if (V2.groupementReco && V2.pages[V2.groupementReco.route]) {
           P.push({ k: V2.groupementReco.route, cls: 'p3', accent: 'var(--pil-cat)', ico: 'cat', tag: '', t: V2.groupementReco.titre, d: V2.groupementReco.tuile, go: 'Voir la reco' });
         }
+        // 26/11/2026 — carte « Nos tournées et les adhérentes » (étape 8b) : réglage du groupement ; ABSENTE pour le rôle opso (visible()).
+        if (V2.groupementTournees && V2.pages[V2.groupementTournees.route] && V2.groupementTournees.visible()) {
+          P.push({ k: V2.groupementTournees.route, cls: 'p1', accent: 'var(--pil-opp)', ico: 'opp', tag: '', t: V2.groupementTournees.titre, d: V2.groupementTournees.tuile, go: 'Voir la carte' });
+        }
       }
       // 11/09/2026 — espace ESCALE PHARMA. 24/09/2026 — Will : « features communes,
       // pas de distinctions » : même accueil, mêmes portes que le CRM ; seules les
@@ -2691,6 +2695,7 @@
     if (V2.enGroupement() && V2.groupementProduits && V2.pages[V2.groupementProduits.route]) PAGES.push([V2.groupementProduits.route, V2.groupementProduits.palette, 'cat']);
     if (V2.enGroupement() && V2.groupementFiche && V2.pages[V2.groupementFiche.route]) PAGES.push([V2.groupementFiche.route, V2.groupementFiche.palette, 'fiche']);
     if (V2.enGroupement() && V2.groupementReco && V2.pages[V2.groupementReco.route]) PAGES.push([V2.groupementReco.route, V2.groupementReco.palette, 'cat']);
+    if (V2.enGroupement() && V2.groupementTournees && V2.pages[V2.groupementTournees.route] && V2.groupementTournees.visible()) PAGES.push([V2.groupementTournees.route, V2.groupementTournees.palette, 'opp']);
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsoprix) PAGES.push(['opsoprix', 'Offre Privilège OPSO Santé · PFHT, prix habituel, prix négocié', 'cat']);
     // 19/11/2026 — Prévision du contrat : absente de la palette pour tout compte hors V2.PLAN_OPSO_ACCES
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsoprevision && V2.opsoPrevisionOk && V2.opsoPrevisionOk()) PAGES.push(['opsoprevision', 'Prévision du contrat · curseurs, simulations et suivi réel', 'grid']);

@@ -543,6 +543,7 @@
   if (V2.groupementProduits && V2.groupementProduits.tuileCourte) ESPACES[V2.groupementProduits.route] = V2.groupementProduits.tuileCourte;
   if (V2.groupementFiche && V2.groupementFiche.tuileCourte) ESPACES[V2.groupementFiche.route] = V2.groupementFiche.tuileCourte;
   if (V2.groupementReco && V2.groupementReco.tuileCourte) ESPACES[V2.groupementReco.route] = V2.groupementReco.tuileCourte;
+  if (V2.groupementTournees && V2.groupementTournees.tuileCourte) ESPACES[V2.groupementTournees.route] = V2.groupementTournees.tuileCourte;
   // Mini-aperçu de chaque espace : un chiffre réel ou une forme, jamais une phrase.
   function apercu(k, DATA) {
     if (k === 'opsobord') return '<b class="og-num">' + fmtEUR.format(Math.round(DATA.total / 1000)) + '</b><small>k€</small>';

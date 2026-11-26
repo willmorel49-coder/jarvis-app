@@ -16,5 +16,15 @@ window.V2_GROUPEMENT = {
   // Dossier du jeu de ventes d'un commercial restreint dans cet espace (ventes/<empreinte>/).
   jeuVentes: 'OPSO',
   // OPSO = mode « consultation » : aucun fichier de conditions (marges, abandons, clients actifs…).
-  conditionsVisibles: false
+  conditionsVisibles: false,
+  // Carte « Nos tournées et les adhérentes » (étape 8b, 26/11/2026 ; écran commun groupements/v2/groupement-tournees.js).
+  // Les tournées, les positions et les détours se LISENT dans les fichiers (tournées protégées, base nationale) : rien de chiffré ici.
+  // Absente pour le rôle opso (ni tuile, ni ⌘K, ni écran). `lettre` = devant le numéro de chaque adhérente sur la carte.
+  tournees: {
+    titre: 'Nos tournées et les adhérentes',
+    lettre: 'O',
+    tuile: 'Nos tournées de livraison sur la carte, les adhérentes déjà livrées et, pour les autres, la tournée qui les livrerait avec le détour estimé.',
+    tuileCourte: 'La tournée qui les livrerait, le détour',
+    palette: 'Nos tournées · adhérentes, tournée qui les livrerait, détour'
+  }
 };

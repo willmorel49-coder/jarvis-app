@@ -75,6 +75,16 @@ window.V2_GROUPEMENT = {
     ],
     departements: { '27': 'Eure', '44': 'Loire-Atlantique', '49': 'Maine-et-Loire', '53': 'Mayenne', '72': 'Sarthe', '75': 'Paris', '79': 'Deux-Sèvres', '92': 'Hauts-de-Seine' }
   },
+  // Carte « Nos tournées et les adhérentes » (étape 8b, 26/11/2026 ; écran commun groupements/v2/groupement-tournees.js).
+  // Les tournées, les positions et les détours se LISENT dans les fichiers (tournées protégées, base nationale) : rien de chiffré ici.
+  // Absente pour le rôle opso (ni tuile, ni ⌘K, ni écran). `lettre` = devant le numéro de chaque adhérente sur la carte.
+  tournees: {
+    titre: 'Nos tournées et les adhérentes',
+    lettre: 'E',
+    tuile: 'Nos tournées de livraison sur la carte, les adhérentes déjà livrées et, pour les autres, la tournée qui les livrerait avec le détour estimé.',
+    tuileCourte: 'La tournée qui les livrerait, le détour',
+    palette: 'Nos tournées · adhérentes, tournée qui les livrerait, détour'
+  },
   // Page « Reco produits » (étape 8 ; écran commun groupements/v2/groupement-reco.js). Les listes, les prix et les dates se LISENT dans le
   // fichier privé `fichier` (même dossier du seau que les documents, même accès serveur) : rien de chiffré ici.
   reco: {
