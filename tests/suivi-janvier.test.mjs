@@ -33,9 +33,11 @@ const attendre = async (n = 8) => { for (let i = 0; i < n; i++) await new Promis
 function ecran() {
   const from = () => {
     const o = { select() { return o; }, order() { return o; }, limit() { return o; }, maybeSingle() { return o; }, eq() { return o; }, gte() { return o; }, lte() { return o; }, lt() { return o; },
+      // oxlint-disable-next-line unicorn/no-thenable -- faux client Supabase : le vrai se lit avec await, il doit donc avoir then
       then(ok, ko) { return Promise.resolve({ data: [], error: null }).then(ok, ko); } };
     return o;
   };
+  // oxlint-disable-next-line unicorn/no-thenable -- faux client Supabase : le vrai se lit avec await, il doit donc avoir then
   const rpc = () => ({ then(ok, ko) { return Promise.resolve({ data: [], error: null }).then(ok, ko); } });
   const doc = { getElementById: () => null, querySelector: () => null, querySelectorAll: () => [], createElement: () => ({ appendChild() {} }), head: { appendChild() {} }, addEventListener() {} };
   const ctx = { console, Date, Math, JSON, String, Number, Array, Object, Promise, setTimeout, clearTimeout, RegExp, document: doc,

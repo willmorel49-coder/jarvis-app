@@ -576,7 +576,7 @@
       var p = x.p, k = String(p.id);
       return '<div class="tm-cli"><button type="button" class="tm-cn2" onclick="V2.go(\'pharma\',\'' + esc(k) + '\')" aria-label="' + esc(joli(p.name) + ', ' + x.n + ' rendez-vous depuis janvier, le dernier le ' + leJour(x.der)) + '"><b>' + esc(court(p.name)) + '</b><small>' +
         esc([sousOff(k, '', p.ville, p.cp), x.n + ' rendez-vous', x.conf ? 'à confirmer' : '', x.pro ? 'prochain le ' + leJour(x.pro.date) : ''].filter(Boolean).join(' · ')) +
-        '</small></button><span class="tm-cq">' + esc(leJour(x.der)) + '</span></div>';
+        '</small></button><span class="tm-cq">vue le ' + esc(leJour(x.der)) + '</span></div>';
     }
     var nAp = sansS.filter(function (x) { return x.ap; }).length;
     var suiviHtml = '<section class="tm-carte tm-clients tm-suivi" aria-label="Suivi depuis le 1er janvier"><h2 class="tm-cht">Suivi depuis le 1<sup>er</sup> janvier ' + debA.slice(0, 4) + '</h2>' +
