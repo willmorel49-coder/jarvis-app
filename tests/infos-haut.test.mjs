@@ -217,7 +217,7 @@ test('direction avec un secteur : « Ventes et rachats en France », hors secteu
   assert.deepEqual(annLignes(vus).map((l) => l.nom), ['SPFPL Grand Ouest', 'Pharmacie de Lille', 'Pharmacie Un', 'Pharmacie Deux', 'Pharmacie Trois'], 'les plus récentes d\'abord');
   assert.match(annLignes(vus)[0].sous, /^Rachat en préparation · Nantes \(44\)/);
   assert.deepEqual(annLignes(caches).map((l) => l.nom), ['Pharmacie Quatre', 'Pharmacie Cinq']);
-  assert.match(F.corps, /<button class="inf-t-rep" id="inf-t-annfr-b" type="button" aria-expanded="false" aria-controls="inf-t-annfr-l">[\s\S]*?<span>Voir les 2 autres<\/span><\/button>/);
+  assert.match(F.corps, /<button class="inf-t-rep" id="inf-t-annfr-b" type="button" aria-expanded="false" aria-controls="inf-t-annfr-l">[\s\S]*?<span>Afficher les 2 autres ici<\/span><\/button>/);
   assert.doesNotMatch(texte(F.corps), /Fermee|Nouvelle|Trop Vieille|Angers/, 'ni fermeture, ni création ordinaire, ni plus de 3 mois, ni le secteur');
   const tous = [...html.matchAll(/data-it-ann="(\d+)"/g)].map((m) => +m[1]);
   assert.deepEqual(tous, tous.map((_, k) => k), 'les rangs se suivent sur toute la page : chaque clic ouvre SA fiche');

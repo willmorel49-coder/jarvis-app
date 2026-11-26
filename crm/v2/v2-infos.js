@@ -773,7 +773,8 @@
         PP_ORDRE_F.map(function (f) { return '<button type="button" class="pp-puce" data-pp-f="' + f + '" aria-pressed="' + (etat.f === f) + '"><i style="background:' + PP_FC[f] + '"></i>' + PP_COURT[f] + ' <span class="pp-n">' + (cpt[f] || 0) + '</span></button>'; }).join('') +
         (S.deps && AG && AG.length ? '<button type="button" class="pp-puce" data-pp-ag aria-pressed="' + etat.ag + '"><i style="background:#6D4FC4;border-radius:2px"></i>Agences concurrentes <span class="pp-n">' + AG.length + '</span></button>' : '') + '</div>';
       var nonLus = V.filter(function (e) { return !SCT_LU[e.id]; }).length;
-      h += '<h3>Les annonces <b>· ' + V.length + '</b>' + (V.length ? ' <span class="pp-h3-s">' + nonLus + ' non lue' + (nonLus > 1 ? 's' : '') + '</span>' : '') + '</h3>';
+      // 26/11/2026 (Will, planche ordinateur B10) : le même nombre n'est plus dit deux fois. Des non lues : « N non lue(s) » seul ; toutes lues : le total seul, sans « non lues »
+      h += '<h3>Les annonces ' + (V.length && nonLus ? '<b>· ' + nonLus + ' non lue' + (nonLus > 1 ? 's' : '') + '</b>' : '<b>· ' + V.length + '</b>') + '</h3>';
       var rang = { client: 0, prospect: 1, hors: 2, reste: 2 };
       var L = V.map(function (e) { return { e: e, t: sctTag(e).t }; });
       if (S.deps) L.sort(function (x, y) { return (rang[x.t] - rang[y.t]) || (x.e.d < y.e.d ? 1 : x.e.d > y.e.d ? -1 : 0); });
@@ -1072,8 +1073,9 @@
         var vu = F.slice(0, 5), plus = F.slice(5);
         cF = '<section class="inf-t-groupe inf-t-ann" data-banc="infos-ventes-rachats" aria-labelledby="inf-t-h-annfr"><h2 id="inf-t-h-annfr">Ventes et rachats en France <span class="inf-t-ann-p">· 3 derniers mois</span></h2>' +
           '<ul class="inf-t-rls">' + vu.map(itAnnLi).join('') + '</ul>' +
+          // 26/11/2026 (Will, planche ordinateur B8) : le lien qui déplie sur place le dit (« Afficher les N autres ici ») ; « Voir les N annonces et la carte » (panneau) ne change pas
           (plus.length ? '<ul class="inf-t-rls" id="inf-t-annfr-l" hidden>' + plus.map(itAnnLi).join('') + '</ul>' +
-            '<button class="inf-t-rep" id="inf-t-annfr-b" type="button" aria-expanded="false" aria-controls="inf-t-annfr-l">' + IT_CHEV + '<span>Voir les ' + plus.length + ' autres</span></button>' : '') + '</section>';
+            '<button class="inf-t-rep" id="inf-t-annfr-b" type="button" aria-expanded="false" aria-controls="inf-t-annfr-l">' + IT_CHEV + '<span>Afficher les ' + plus.length + ' autres ici</span></button>' : '') + '</section>';
       }
     }
     return { sec: cS, fr: cF };

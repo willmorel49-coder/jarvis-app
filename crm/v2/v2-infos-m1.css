@@ -52,10 +52,11 @@ html:root:root body .aube-tete.inf-t-tete .inf-t-sous{margin:10px 0 0;max-width:
 .inf-t-tache.fait .inf-t-rond{background-color:var(--it-blue);border-color:var(--it-blue)}
 .inf-t-tache.fait .inf-t-rond svg{opacity:1;transform:none;animation:inf-t-coche .26s var(--it-ease) both}
 @keyframes inf-t-coche{from{opacity:0;transform:scale(.3)}60%{transform:scale(1.18)}to{opacity:1;transform:scale(1)}}
-.inf-t-corps{flex:1;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"action action" "meta tag";column-gap:12px;text-align:left;border:0;background:none;padding:12px 0 13px;min-height:44px;align-items:start}
+.inf-t-corps{flex:1;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"action tag" "meta meta";column-gap:12px;text-align:left;border:0;background:none;padding:12px 0 13px;min-height:44px;align-items:start}
 .inf-t-action{grid-area:action;font-size:17px;font-weight:600;line-height:1.35;color:var(--it-ink);letter-spacing:-.005em;text-wrap:pretty}
 .inf-t-meta{grid-area:meta;margin-top:3px;font-size:15px;line-height:1.4;color:var(--it-ink-3);text-wrap:pretty}
 .inf-t-q,.inf-t-nw{white-space:nowrap}
+/* 26/11/2026 (Will, planche ordinateur B9) : l'étiquette passe sur la ligne du titre, la phrase (meta) prend toute la largeur ; le téléphone garde « action / meta / tag » (règle ≤ 600 px plus bas) */
 .inf-t-tag{grid-area:tag;align-self:start;margin-top:4px;display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 8px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;background-color:#EAF1FF;color:var(--it-blue-d)}
 .inf-t-tag::before{content:"";flex:none;width:7px;height:7px;border-radius:50%;background-color:var(--it-blue)}
 /* un seul ton de texte pour les étiquettes ; le sens (vert, turquoise, rouge) tient dans le point de couleur */
