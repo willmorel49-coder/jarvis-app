@@ -1391,7 +1391,7 @@ mark.aube-m{background-color:var(--au-pastille);color:inherit;border-radius:3px}
 /* 26/11/2026 — planche « 22 changements », sujet 2, version 1 (choix de Will) : au téléphone, quand il n'y a rien à reprendre (« Reprendre : … » vide),
    la carte prend la hauteur de son contenu au lieu de 400 px et plus ; la citation remonte juste dessous. L'ordinateur garde son lever du jour. */
 @media (max-width:600px){html:root:root body .aube-acc.u2-salut:has(> .m1-hd-a:empty){min-height:0}html:root:root body .aube-acc.u2-salut:has(> .m1-hd-a:empty) .aube-acc-bloc{padding-bottom:30px}html:root:root body .aube-acc.u2-salut:has(> .m1-hd-a:empty) > .m1-hd-a{display:none}}
-/* 26/11/2026 (Will, planche ordinateur B1, version 1) : même règle à l'ordinateur — rien à reprendre (« Reprendre : … » vide) : la carte prend la hauteur de son contenu (540 → environ 392 px) ; si le bouton est là, elle reste pleine. Classe aube-serre posée par v2-accueil-cinq.js (pas chez Phirst). */
+/* 26/11/2026 (Will, planche ordinateur B1, version 1) : même règle à l'ordinateur — rien à reprendre (« Reprendre : … » vide) : la carte prend la hauteur de son contenu (540 → 291 px mesurés sous WebKit à 1280) ; si le bouton est là, elle reste pleine. Classe aube-serre posée par v2-accueil-cinq.js (pas chez Phirst). */
 @media (min-width:601px){html:root:root body .aube-acc.u2-salut.aube-serre:has(> .m1-hd-a:empty){min-height:0}html:root:root body .aube-acc.u2-salut.aube-serre:has(> .m1-hd-a:empty) .aube-acc-bloc{padding-bottom:30px}html:root:root body .aube-acc.u2-salut.aube-serre:has(> .m1-hd-a:empty) > .m1-hd-a{display:none}}
 
 /* ── 9. Mouvement réduit : tout figé et COMPLET (astre levé, horizon entier, lettres visibles) ── */
