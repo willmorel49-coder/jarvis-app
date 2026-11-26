@@ -25,5 +25,14 @@ window.V2_GROUPEMENT = {
   conditionsVisibles: true,
   // Périmètre = les officines que la table de départ de groupement-alias.js (GRP_DEPART, publique)
   // range sous ce nom de groupement ; nom/ville des non clientes lus dans la base nationale publique.
-  perimetre: { source: 'alias', valeur: 'Essentiels Pharma' }
+  perimetre: { source: 'alias', valeur: 'Essentiels Pharma' },
+  // Pas de ligne « Suivi des groupements » dans le menu du compte : elle cite OPSO (Will, 26/11 : zéro « OPSO » dans l'app Essentiels). Absent = ligne posée (OPSO, JARVIS).
+  menuGroupements: false,
+  // Textes de la tuile « Tableau de bord » (accueil et ⌘K) : OPSO y promet « la rémunération », qui n'existe que chez lui.
+  // Ici, seulement ce que l'écran montre (relevé étape 4 : le chiffre, le mois, mois par mois, ce que les adhérentes achètent, la trajectoire).
+  textes: {
+    bordTuile: 'Le chiffre, le mois, ce qu\'elles achètent, la trajectoire',
+    bordTuileLong: 'Le chiffre du groupement, le mois, ce que les adhérentes achètent et la trajectoire de l\'année.',
+    bordPalette: 'Tableau de bord · chiffre, mois, trajectoire'
+  }
 };

@@ -1,139 +1,353 @@
 /* ═════════════════════════════════════════════════════════════════
-   Essentiels Pharma · feuille de thème PROVISOIRE (26/11/2026, option B, étape 4)
-   Valeurs provisoires, l'étape 5 pose la charte Essentiels.
-   Ne contient que le bloc de variables --grp-* lu par groupements/v2/groupement-ux.css et par
-   les modules groupement-*.js : copie du bloc :root de opso/v2/opso-theme.css, donc valeurs OPSO.
+   Essentiels Pharma · thème (26/11/2026, option B, étape 5) — charte validée : accent #2F7D1A, texte vert #256614, fond #F2F6F2, encre #121A14.
+   Chargé APRÈS groupements/v2/groupement-theme.css (les règles communes) : ce fichier ne contient que des VALEURS (variables)
+   et les surcharges du bleu du socle JARVIS (crm/v2/v2.css, v2-pieces.css) — OPSO garde son reste de bleu, ce fichier ne sert qu'ici.
+   Toutes les valeurs sont CALCULÉES (outils/vert-essentiels.py, enveloppe etape5/outils/calcul.py), sauf les 4 ancres de la charte, écrites telles quelles.
+   Polices : Comfortaa (titres, chiffres de titre) + Satoshi (texte, chiffres tabulaires) — choix de Will.
    ═════════════════════════════════════════════════════════════════ */
-/* ── Palette du groupement (lue par groupements/v2/groupement-ux.css et les modules groupement-*.js) ──
-   Valeurs OPSO = exactement les couleurs qui étaient écrites en dur dans ces fichiers (26/11/2026).
-   Un autre groupement redéfinit ces variables dans sa propre feuille de thème. */
 :root {
-  /* Rôles principaux */
-  --grp-accent: #4e9f70;
-  --grp-accent-rgb: 78,159,112;
-  --grp-accent-d: #3e7f59;
-  --grp-accent-l: #5eab7e;
-  --grp-pale: #eff4f1;
-  --grp-pale-rgb: 239,244,241;
-  --grp-ink: #18221d;
-  --grp-ink-2: #34403a;
-  --grp-deep: #265038;
-  --grp-deep-rgb: 38,80,56;
-  --grp-ombre-rgb: 33,57,43;
-  --grp-cat-accent: #11a63c;
-  --grp-cat-accent-rgb: 17,166,60;
-  --grp-cat-accent-d: #0d8530;
-  /* Autres teintes vertes (nom = valeur OPSO) */
-  --grp-cat-vert-0b7a2b: #0b7a2b;
-  --grp-cat-vert-16b848: #16b848;
-  --grp-cat-vert-18bd4c: #18bd4c;
-  --grp-cat-vert-d9efd9: #d9efd9;
-  --grp-cat-vert-e2f1e4: #e2f1e4;
-  --grp-cat-vert-f1f9f0: #f1f9f0;
-  --grp-vert-224732: #224732;
-  --grp-vert-224933: #224933;
-  --grp-vert-26523a: #26523a;
-  --grp-vert-2b5b3f: #2b5b3f;
-  --grp-vert-306345: #306345;
-  --grp-vert-336a4a: #336a4a;
-  --grp-vert-377250: #377250;
-  --grp-vert-397553: #397553;
-  --grp-vert-397753: #397753;
-  --grp-vert-40845d: #40845d;
-  --grp-vert-42855e: #42855e;
-  --grp-vert-458a63: #458a63;
-  --grp-vert-4c5a52: #4c5a52;
-  --grp-vert-4e996f: #4e996f;
-  --grp-vert-4f9e70: #4f9e70;
-  --grp-vert-598870: #598870;
-  --grp-vert-7eb394: #7eb394;
-  --grp-vert-7eb494: #7eb494;
-  --grp-vert-92b9a2: #92b9a2;
-  --grp-vert-95c0a6: #95c0a6;
-  --grp-vert-95c0a7: #95c0a7;
-  --grp-vert-96c1a7: #96c1a7;
-  --grp-vert-99bfa9: #99bfa9;
-  --grp-vert-9fb7aa: #9fb7aa;
-  --grp-vert-a0c4af: #a0c4af;
-  --grp-vert-a8cdb7: #a8cdb7;
-  --grp-vert-abc8b8: #abc8b8;
-  --grp-vert-abd0bb: #abd0bb;
-  --grp-vert-acc8b8: #acc8b8;
-  --grp-vert-b4d0c0: #b4d0c0;
-  --grp-vert-b4d6c2: #b4d6c2;
-  --grp-vert-c3d7cc: #c3d7cc;
-  --grp-vert-c3d9cc: #c3d9cc;
-  --grp-vert-c8ddd1: #c8ddd1;
-  --grp-vert-c9dcd1: #c9dcd1;
-  --grp-vert-cbe4d6: #cbe4d6;
-  --grp-vert-ccd7d1: #ccd7d1;
-  --grp-vert-cce4d6: #cce4d6;
-  --grp-vert-d2e0d8: #d2e0d8;
-  --grp-vert-d6e5dc: #d6e5dc;
-  --grp-vert-deeae3: #deeae3;
-  --grp-vert-dfe4e1: #dfe4e1;
-  --grp-vert-dfe9e2: #dfe9e2;
-  --grp-vert-dfebe4: #dfebe4;
-  --grp-vert-e1f0e8: #e1f0e8;
-  --grp-vert-e3ede7: #e3ede7;
-  --grp-vert-e3efe7: #e3efe7;
-  --grp-vert-e4ede8: #e4ede8;
-  --grp-vert-e5ede8: #e5ede8;
-  --grp-vert-e6f1ea: #e6f1ea;
-  --grp-vert-e7f5ec: #e7f5ec;
-  --grp-vert-e8f2ec: #e8f2ec;
-  --grp-vert-e9efeb: #e9efeb;
-  --grp-vert-e9f1ec: #e9f1ec;
-  --grp-vert-eaf0ec: #eaf0ec;
-  --grp-vert-ebf1ee: #ebf1ee;
-  --grp-vert-ecf2ee: #ecf2ee;
-  --grp-vert-edf2ee: #edf2ee;
-  --grp-vert-edf3ef: #edf3ef;
-  --grp-vert-eef2ef: #eef2ef;
-  --grp-vert-eef3ef: #eef3ef;
-  --grp-vert-eef3f0: #eef3f0;
-  --grp-vert-eff5f1: #eff5f1;
-  --grp-vert-eff5f2: #eff5f2;
-  --grp-vert-eff9f3: #eff9f3;
-  --grp-vert-f0f4f2: #f0f4f2;
-  --grp-vert-f0f6f3: #f0f6f3;
-  --grp-vert-f1f7f3: #f1f7f3;
-  --grp-vert-f2f5f4: #f2f5f4;
-  --grp-vert-f2f6f3: #f2f6f3;
-  --grp-vert-f3f7f4: #f3f7f4;
-  --grp-vert-f3f7f5: #f3f7f5;
-  --grp-vert-f3f8f5: #f3f8f5;
-  --grp-vert-f4f7f5: #f4f7f5;
-  --grp-vert-f5f8f6: #f5f8f6;
-  --grp-vert-f6f9f7: #f6f9f7;
-  --grp-vert-f6f9f8: #f6f9f8;
-  --grp-vert-f7faf8: #f7faf8;
-  --grp-vert-f9fdfa: #f9fdfa;
-  --grp-vert-fbfefc: #fbfefc;
-  /* Triplets r,g,b (pour rgba(var(--…-rgb), .x)) */
-  --grp-vert-001908-rgb: 0,25,8;
-  --grp-vert-001e0a-rgb: 0,30,10;
-  --grp-vert-00280c-rgb: 0,40,12;
-  --grp-vert-142b1e-rgb: 20,43,30;
-  --grp-vert-162f21-rgb: 22,47,33;
-  --grp-vert-173a26-rgb: 23,58,38;
-  --grp-vert-19261f-rgb: 25,38,31;
-  --grp-vert-1a3a28-rgb: 26,58,40;
-  --grp-vert-1b432c-rgb: 27,67,44;
-  --grp-vert-244c35-rgb: 36,76,53;
-  --grp-vert-26523a-rgb: 38,82,58;
-  --grp-vert-2a4d39-rgb: 42,77,57;
-  --grp-vert-2b5b3f-rgb: 43,91,63;
-  --grp-vert-aac9b8-rgb: 170,201,184;
-  --grp-vert-b4d3c2-rgb: 180,211,194;
-  --grp-vert-c9e3d4-rgb: 201,227,212;
-  --grp-vert-def1e6-rgb: 222,241,230;
-  --grp-vert-def2e7-rgb: 222,242,231;
-  --grp-vert-e4f4ea-rgb: 228,244,234;
-  --grp-vert-e7f5ec-rgb: 231,245,236;
-  --grp-vert-e8f3ed-rgb: 232,243,237;
-  --grp-vert-e8f6ed-rgb: 232,246,237;
-  --grp-vert-e8f6ee-rgb: 232,246,238;
-  --grp-vert-eff9f3-rgb: 239,249,243;
-  --grp-vert-f9fcfa-rgb: 249,252,250;
+  --ip-blue: #2F7D1A;
+  --ip-blue-d: #256614;
+  --c-fiche: #2F7D1A;
+  --halo: #F2F6F2;
+  --sh-opso-glow: 0 4px 12px rgba(47,125,26,.26), 0 1px 0 rgba(255,255,255,.2) inset;
+  --sh-opso-hover: 0 6px 18px rgba(47,125,26,.36);
 }
+
+/* ── Variables du socle JARVIS repeintes : couleurs de piliers, fonds, ombres (calcul « socle ») ── */
+:root {
+  --card-2: #f7f9f7;
+  --c-cat: #497f3d;
+  --c-pilo: #609d53;
+  --c-froid: #8bb382;
+  --sh-pop: 0 8px 20px rgba(10,14,9,.12), 0 20px 44px rgba(10,14,9,.14), 0 44px 88px rgba(10,14,9,.16);
+  --btn-off-bg: #e8eee7;
+  --btn-off-tx: #586156;
+  --btn-off-line: #d8ded6;
+  --muted-d: #535d51;
+  --c-rose: #B42323; /* contraste mesuré : #E0556E sur fond clair = 3,4:1 ; #B42323 = 6,0:1 */
+  --c-rose-txt: #B42323; /* rouge d'alerte de la charte (le #C7283D de JARVIS est celui d'OPSO) */
+}
+
+/* ── Palette du groupement (lue par groupement-theme.css, groupement-ux.css et groupement-*.js) ── */
+:root {
+  --grp-accent: #2F7D1A;
+  --grp-accent-rgb: 47,125,26;
+  --grp-accent-d: #256614;
+  --grp-accent-l: #3d852c;
+  --grp-pale: #F2F6F2;
+  --grp-pale-rgb: 242,246,242;
+  --grp-ink: #121A14;
+  --grp-ink-2: #273225;
+  --grp-deep: #18400f;
+  --grp-deep-rgb: 24,64,15;
+  --grp-ombre-rgb: 23,45,18;
+  --grp-cat-accent: #237d00;
+  --grp-cat-accent-rgb: 35,125,0;
+  --grp-cat-accent-d: #1b6600;
+  --grp-cat-vert-0b7a2b: #185e00;
+  --grp-cat-vert-16b848: #2b9400;
+  --grp-cat-vert-18bd4c: #2e9b00;
+  --grp-cat-vert-d9efd9: #d4efce;
+  --grp-cat-vert-e2f1e4: #e1f2dd;
+  --grp-cat-vert-f1f9f0: #f3faf1;
+  --grp-vert-224732: #16390e;
+  --grp-vert-224933: #163a0d;
+  --grp-vert-26523a: #19420f;
+  --grp-vert-2b5b3f: #1b490f;
+  --grp-vert-306345: #1e4f12;
+  --grp-vert-336a4a: #205513;
+  --grp-vert-377250: #235b15;
+  --grp-vert-397553: #255e17;
+  --grp-vert-397753: #245f14;
+  --grp-vert-40845d: #286918;
+  --grp-vert-42855e: #2a6a1a;
+  --grp-vert-458a63: #2d6d1c;
+  --grp-vert-4c5a52: #3a4637;
+  --grp-vert-4e996f: #327821;
+  --grp-vert-4f9e70: #307c1c;
+  --grp-vert-598870: #426b38;
+  --grp-vert-7eb394: #699a5e;
+  --grp-vert-7eb494: #699b5e;
+  --grp-vert-92b9a2: #7fa377;
+  --grp-vert-95c0a6: #84ac7b;
+  --grp-vert-95c0a7: #84ac7b;
+  --grp-vert-96c1a7: #85ae7c;
+  --grp-vert-99bfa9: #88ab80;
+  --grp-vert-9fb7aa: #8ca187;
+  --grp-vert-a0c4af: #90b289;
+  --grp-vert-a8cdb7: #9bbe94;
+  --grp-vert-abc8b8: #9db898;
+  --grp-vert-abd0bb: #a0c298;
+  --grp-vert-acc8b8: #9eb898;
+  --grp-vert-b4d0c0: #a9c3a3;
+  --grp-vert-b4d6c2: #abcba4;
+  --grp-vert-c3d7cc: #bbcdb7;
+  --grp-vert-c3d9cc: #bbd0b6;
+  --grp-vert-c8ddd1: #c2d5bd;
+  --grp-vert-c9dcd1: #c2d4be;
+  --grp-vert-cbe4d6: #c7dfc2;
+  --grp-vert-ccd7d1: #c6cdc4;
+  --grp-vert-cce4d6: #c8dfc3;
+  --grp-vert-d2e0d8: #cddaca;
+  --grp-vert-d6e5dc: #d3e1cf;
+  --grp-vert-deeae3: #dde8da;
+  --grp-vert-dfe4e1: #dce0dc;
+  --grp-vert-dfe9e2: #dfe6dd;
+  --grp-vert-dfebe4: #dee9db;
+  --grp-vert-e1f0e8: #e2f0df;
+  --grp-vert-e3ede7: #e5ebe3;
+  --grp-vert-e3efe7: #e3efe0;
+  --grp-vert-e4ede8: #e6ece4;
+  --grp-vert-e5ede8: #e6ece5;
+  --grp-vert-e6f1ea: #e9f1e7;
+  --grp-vert-e7f5ec: #e9f7e6;
+  --grp-vert-e8f2ec: #ebf2ea;
+  --grp-vert-e9efeb: #ebefea;
+  --grp-vert-e9f1ec: #ecf1ea;
+  --grp-vert-eaf0ec: #ecf0eb;
+  --grp-vert-ebf1ee: #eef2ed;
+  --grp-vert-ecf2ee: #eff3ee;
+  --grp-vert-edf2ee: #eff3ee;
+  --grp-vert-edf3ef: #f0f4ef;
+  --grp-vert-eef2ef: #f0f3f0;
+  --grp-vert-eef3ef: #f1f5f0;
+  --grp-vert-eef3f0: #f1f4f0;
+  --grp-vert-eff5f1: #f2f7f1;
+  --grp-vert-eff5f2: #f3f7f2;
+  --grp-vert-eff9f3: #f3faf2;
+  --grp-vert-f0f4f2: #f3f6f3;
+  --grp-vert-f0f6f3: #f4f7f3;
+  --grp-vert-f1f7f3: #f4f8f3;
+  --grp-vert-f2f5f4: #f5f7f4;
+  --grp-vert-f2f6f3: #f5f8f4;
+  --grp-vert-f3f7f4: #f5f8f5;
+  --grp-vert-f3f7f5: #f6f8f5;
+  --grp-vert-f3f8f5: #f6f9f5;
+  --grp-vert-f4f7f5: #f6f8f6;
+  --grp-vert-f5f8f6: #f7f9f7;
+  --grp-vert-f6f9f7: #f8faf7;
+  --grp-vert-f6f9f8: #f8faf8;
+  --grp-vert-f7faf8: #f9fbf8;
+  --grp-vert-f9fdfa: #fafdfa;
+  --grp-vert-fbfefc: #fcfefc;
+  --grp-vert-001908-rgb: 2,18,0;
+  --grp-vert-001e0a-rgb: 2,23,0;
+  --grp-vert-00280c-rgb: 4,31,0;
+  --grp-vert-142b1e-rgb: 13,34,8;
+  --grp-vert-162f21-rgb: 14,37,9;
+  --grp-vert-173a26-rgb: 13,47,5;
+  --grp-vert-19261f-rgb: 18,30,16;
+  --grp-vert-1a3a28-rgb: 16,46,9;
+  --grp-vert-1b432c-rgb: 15,54,5;
+  --grp-vert-244c35-rgb: 23,61,14;
+  --grp-vert-26523a-rgb: 25,66,15;
+  --grp-vert-2a4d39-rgb: 29,61,22;
+  --grp-vert-2b5b3f-rgb: 27,73,15;
+  --grp-vert-aac9b8-rgb: 157,185,151;
+  --grp-vert-b4d3c2-rgb: 170,199,164;
+  --grp-vert-c9e3d4-rgb: 197,221,191;
+  --grp-vert-def1e6-rgb: 223,241,219;
+  --grp-vert-def2e7-rgb: 224,242,220;
+  --grp-vert-e4f4ea-rgb: 230,246,226;
+  --grp-vert-e7f5ec-rgb: 233,247,230;
+  --grp-vert-e8f3ed-rgb: 236,243,235;
+  --grp-vert-e8f6ed-rgb: 235,249,232;
+  --grp-vert-e8f6ee-rgb: 235,248,232;
+  --grp-vert-eff9f3-rgb: 243,250,242;
+  --grp-vert-f9fcfa-rgb: 250,253,250;
+  --grp-bleu-0e283c-rgb: 22,34,19;
+  --grp-bleu-4165a1-rgb: 86,117,80;
+  --grp-chaud-6b5520: #6b5520;
+  --grp-chaud-7a4a00: #7a4a00;
+  --grp-chaud-9a6e14-rgb: 154,110,20;
+  --grp-chaud-c7791a-rgb: 199,121,26;
+  --grp-chaud-fbf1dc: #fbf1dc;
+  --grp-chaud-fdecef: #fdecef;
+  --grp-chaud-ffaf0f-rgb: 255,175,15;
+  --grp-chaud-fffaf0: #fffaf0;
+  --grp-rose-rgb: 180,35,35;
+  --grp-vert-2a332e: #20281e;
+  --grp-vert-32674c: #235218;
+  --grp-vert-5d6577: #455242;
+  --grp-vert-626a7c: #495646;
+  --grp-vert-626a7c-rgb: 73,86,70;
+  --grp-vert-6b7286: #4e5c4b;
+  --grp-vert-8a91a3: #687566;
+  --grp-vert-8a938d: #6b726a;
+  --grp-vert-9aa3b2: #808b7e;
+  --grp-vert-a2c7b1: #93b68c;
+  --grp-vert-b9c1cd: #aab3a8;
+  --grp-vert-c9d2cc: #c0c6bf;
+  --grp-vert-dfe5e1: #dde1dc;
+  --grp-vert-dfe7e2: #dee3dd;
+  --grp-vert-e1e7e3: #dfe4df;
+  --grp-vert-e3e7ee: #e1e6e0;
+  --grp-vert-e8f0eb: #eaf0e9;
+  --grp-vert-f0f3f1: #f3f5f2;
+  --grp-vert-f1f4f2: #f4f6f3;
+  --grp-vert-f1f5f3: #f4f7f4;
+  --grp-vert-f2f4f7: #f4f7f4;
+  --grp-vert-f2f6f4: #f5f8f4;
+  --grp-vert-f3f5f4: #f5f7f5;
+  --grp-vert-f3f5f9: #f5f8f4;
+  --grp-vert-f3f6f4: #f5f8f5;
+  --grp-vert-f7f9f8: #f9faf8;
+  --grp-vert-f8faf9: #fafbf9;
+  --grp-vert-f9faf9: #fafbfa;
+  --grp-vert-f9fafa: #fafbfa;
+  --grp-vert-f9fbfa: #fafcfa;
+  --grp-vert-fbfbfb: #fcfcfc;
+  --grp-vert-fbfcfd: #fcfdfc;
+  --grp-vert-fbfdfc: #fcfdfc;
+  --grp-vert-fcfdfe: #fdfefc;
+  --og-green: #2F7D1A;
+  --og-green-d: #256614;
+  --og-rose: #b42323;
+  --og-lift: 0 1px 0 rgba(255,255,255,.95) inset, 0 1px 2px rgba(18,30,16,.05), 0 10px 28px -14px rgba(23,45,18,.18);
+  --og-lift-h: 0 1px 0 rgba(255,255,255,.95) inset, 0 2px 4px rgba(18,30,16,.06), 0 18px 38px -16px rgba(29,61,22,.28);
+  --og-card-line: rgba(23,45,18, .09);
+  /* bleus du socle JARVIS écrits dans crm/v2/v2-offilog.js et v2-pilotage.js (repli = valeur d'avant chez JARVIS et OPSO) */
+  --grp-bleu-0050e6: #2f7d1a;
+  --grp-bleu-0050e6-rgb: 47,125,26;
+  --grp-bleu-345da0: #4b6e44;
+  --grp-bleu-4165a1: #567550;
+  --grp-bleu-3d62a0: #53734c;
+  --grp-bleu-79a8ff: #8fba85;
+  --grp-bleu-6d4fc4: #497f3d;
+  --grp-bleu-00b5d8: #8bb382;
+  /* polices (repli des feuilles communes = Varela Round / Geist Mono chez OPSO) */
+  --grp-police-titre: 'Comfortaa';
+  --grp-police-chiffres: 'Satoshi';
+}
+
+/* ── Socle JARVIS repeint (même sélecteur, même spécificité que v2.css l. 858-875, chargé après → gagne) ── */
+html:not([data-hab]) {
+  --font: 'Satoshi', 'Inter', system-ui, -apple-system, sans-serif;
+  --ip-ink: #121A14;
+  --paper: #F2F6F2;
+  --ip-ink-2: #3b4539;
+  --ip-ink-3: #4e574c;
+  --muted: #5f685d;
+  --muted-2: #5f685d;
+  --surf-sunken: #f1f5f0;
+  --line: rgba(19,26,17,.11);
+  --line-2: rgba(19,26,17,.06);
+  --line-strong: rgba(19,26,17,.17);
+  --sh-1: 0 1px 0 rgba(255,255,255,.95) inset,0 1px 2px rgba(19,26,17,.06),0 10px 28px -14px rgba(19,26,17,.14);
+  --sh-2: 0 1px 0 rgba(255,255,255,.95) inset,0 2px 4px rgba(19,26,17,.06),0 18px 38px -14px rgba(20,40,25,.22);
+  --sh-3: 0 1px 0 rgba(255,255,255,.95) inset,0 4px 10px rgba(19,26,17,.07),0 28px 56px -18px rgba(20,40,25,.26);
+  --sh-blue: 0 8px 18px -8px rgba(47,125,26,.7),0 1px 0 rgba(255,255,255,.3) inset;
+  --sh-blue-h: 0 12px 24px -8px rgba(47,125,26,.75),0 1px 0 rgba(255,255,255,.32) inset;
+  /* palette « aube » du socle (v2.css l. 1175 : fiches, en-têtes) */
+  --au-ink: #131a11;
+  --au-ink2: #3b4539;
+  --au-ink3: #4e574c;
+  --au-accent: #2f7d1a;
+  --au-accent-d: #154e04;
+  --au-fond: #f3f6f2;
+  --au-ciel: #f3f6f2;
+  --au-astre-b: #f0f7ee;
+  --au-astre-c: #d9e7d6;
+  --au-lisere: #c5d8c0;
+  --au-lueur: rgba(47,125,26,.30);
+  --au-an1: #ccddc9;
+  --au-an2: #d8e3d5;
+  --au-an3: #e1e9df;
+  --au-horizon: #bed1ba;
+  --au-sol-a: #e7eee5;
+  --au-sol-b: #edf4ec;
+  --au-sol-c: #f3f6f2;
+  --au-halo-b: #f4f9f3;
+  --au-halo-c: #eaf1e8;
+  --au-halo-d: #f3f6f2;
+  --au-reflet-b: #f1f8f0;
+  --au-carte-b: #f7faf6;
+  --au-fil: #e1e9df;
+  --au-surv-a: #ecf3eb;
+  --au-pastille: #eaf1e8;
+  --au-onde: #9dc395;
+  --au-ombre: rgba(19,26,17,.07);
+  --au-ombre-l: rgba(20,40,25,.22);
+}
+
+/* ── Titres en Comfortaa (choix de Will) : chez OPSO ces titres sont en Archivo, seuls les grands chiffres et titres de section sont en Varela Round. Graisses de l'ancienne app Essentiels (essentiels-pharma/style.css : titres 400, titre de carte 600). ── */
+#v2-root .v2-page-title, #v2-root .v2-hero h1 { font-family: var(--grp-police-titre), var(--font); font-weight: 400; }
+#v2-root .v2-pil-t { font-family: var(--grp-police-titre), var(--font); font-weight: 600; }
+
+/* ── Contraste (mesuré, WebKit) : le texte sur les barres vertes de l'anneau de répartition était à 3,9:1 ── */
+html #v2-root .opx-lit .opx-seg em { color: rgb(var(--grp-vert-26523a-rgb)); }
+#v2-root .pilo-cbar-d.dn { color: var(--c-rose-txt); }  /* le #E0556E écrit dans v2-pilotage.js mesurait 3,6:1 */
+html #v2-root .oa-kick { background: rgba(var(--grp-vert-162f21-rgb), .62); }  /* pastille blanche sur le halo du bandeau : 3,9:1 mesuré */
+html #v2-root .opx-lit .opx-pill { background: rgba(var(--grp-vert-162f21-rgb), .5); }  /* idem : 3,05:1 mesuré */
+/* Marche n° 1 du podium (Meilleurs achats) : « 1 » blanc à 2,5:1 sur le haut clair du dégradé → dégradé du vert Essentiels
+   au vert foncé (blanc dessus ≥ 5,4:1 selon la charte), le reflet et l'ombre de groupement-ux.css restent */
+/* (la scène éclairée, groupement-ux.css ~l. 1010, a sa propre règle plus forte : visée aussi, spécificité 1,4,1 > 1,4,0) */
+html #v2-root .opx-pod.p1 .opx-step,
+html #v2-root .opx-stage .opx-pod.p1 .opx-step { background: linear-gradient(180deg, var(--grp-accent) 0%, var(--grp-accent-d) 100%); }
+
+/* ── Bleu JARVIS écrit en dur dans v2.css / v2-pieces.css : surcharges (liste : etape5/RAPPORT.md) ── */
+.v2-logo{box-shadow:0 4px 12px rgba(47,125,26,.28),0 1px 0 rgba(255,255,255,.25) inset}
+.v2-top-search kbd{background:#f0f4f0}
+.v2-av{background:linear-gradient(150deg,#3d4c3a,#131a11);box-shadow:0 3px 9px rgba(19,26,17,.28),0 1px 0 rgba(255,255,255,.3) inset}
+.v2-search:hover,.v2-search:focus-within{border-color:rgba(47,125,26,.4)}
+.v2-search kbd{background:#f0f4f0;box-shadow:0 1px 0 rgba(10,14,9,.06),0 1px 2px rgba(10,14,9,.04) inset}
+.v2-subtab.on{box-shadow:0 2px 8px rgba(47,125,26,.28)}
+.v2-chip{box-shadow:0 0 0 1px rgba(10,14,9,.03) inset}
+.v2-btn-primary{box-shadow:0 1px 2px rgba(20,40,25,.28)}
+.v2-btn-primary:hover{box-shadow:0 3px 10px rgba(20,40,25,.30)}
+.v2-tab.on{box-shadow:0 2px 8px rgba(47,125,26,.28)}
+.v2-cmdk-bd{background:rgba(10,14,9,0.55)}
+.v2-login-logo{box-shadow:0 6px 18px rgba(47,125,26,.32)}
+.v2-pil:hover{box-shadow:0 8px 16px color-mix(in srgb,var(--accent) 14%,rgba(10,14,9,.06)),
+             0 28px 56px color-mix(in srgb,var(--accent) 10%,rgba(10,14,9,.08)),
+             0 1px 0 rgba(255,255,255,.8) inset}
+.v2-kpi:hover{box-shadow:0 0 0 1px color-mix(in srgb,var(--accent,var(--ip-blue)) 14%,transparent),
+             0 6px 16px color-mix(in srgb,var(--accent,var(--ip-blue)) 10%,rgba(10,14,9,.06)),
+             var(--sh-2)}
+.v2-compte{background:var(--halo,#ebf3ea)}
+html:not([data-hab]) body{background-image:radial-gradient(900px 520px at 88% -6%,#deeadb 0%,rgba(222,234,219,0) 70%),radial-gradient(1100px 560px at 6% -10%,#FFFFFF 0%,rgba(255,255,255,0) 70%)}
+html:not([data-hab]) .v2-top{border-bottom:1px solid #e3e8e2;box-shadow:0 1px 0 #fff inset,0 8px 24px -16px rgba(19,26,17,.18)}
+html:not([data-hab]) .v2-logo{background-color:#2f7d1a;background-image:radial-gradient(90px 60px at 20% 0%,#6ea861 0%,rgba(110,168,97,0) 70%),linear-gradient(160deg,#398626,#1a5a05);box-shadow:0 6px 14px -4px rgba(47,125,26,.5),0 1px 0 rgba(255,255,255,.35) inset}
+html:not([data-hab]) .tp-plus{background-color:#1a5a05;background-image:linear-gradient(160deg,#398626,#1a5a05);box-shadow:0 8px 18px -6px rgba(47,125,26,.6),0 1px 0 rgba(255,255,255,.3) inset}
+html:not([data-hab]) .tp-avb .v2-av{background-color:#131a11;background-image:linear-gradient(150deg,#3d4c3a,#131a11);box-shadow:0 6px 14px -6px rgba(19,26,17,.55),0 1px 0 rgba(255,255,255,.3) inset}
+@media (min-width:1001px){
+html:not([data-hab]) .tp-menu{background-color:#f1f5f0;border:1px solid #e3e8e2}
+html:not([data-hab]) .tp-m{color:#3b4539}
+html:not([data-hab]) .tp-m:hover{color:#131a11}
+html:not([data-hab]) .tp-m.on,html:not([data-hab]) .tp-m.on:hover{background-color:#2f7d1a;box-shadow:0 6px 14px -6px rgba(47,125,26,.6),0 1px 0 rgba(255,255,255,.25) inset}
+html:not([data-hab]) .tp-m:focus-visible{outline:2px solid #2f7d1a}
+html:not([data-hab]) .u2-page.u2-barre .tp-menu-acc .tp-autres{color:#3b4539}
+html:not([data-hab]) .u2-page.u2-barre .tp-menu-acc .tp-autres:hover,html:not([data-hab]) .u2-page.u2-barre .tp-menu-acc .tp-autres[aria-expanded="true"]{color:#131a11}
+html:not([data-hab]) .u2-page.u2-barre .tp-menu-acc .tp-autres:focus-visible{outline:2px solid #2f7d1a}
+html:not([data-hab]) .u2-page.u2-barre .u2-cit::before{background-color:#2f7d1a}
+html:not([data-hab]) .u2-page.u2-barre .u2-cit p{color:#131a11}
+html:not([data-hab]) .u2-page.u2-barre .u2-cit figcaption{color:#3b4539}
+}
+.tp-ao .tp-ao-dev .n{color:var(--muted-d,#4e574c)}
+.tp-ao .tp-ao-s{color:#4e574c}
+.tp-ao :focus-visible{outline:2px solid #2f7d1a}
+html:not([data-hab]) .pa-read{background-color:#f3f7f2;border:1px solid #e3e8e2;color:#3b4539}
+html:not([data-hab]) .pa-read b{color:#131a11}
+html:not([data-hab]) .pa-hit:hover{fill:rgba(47,125,26,.07)}
+html:not([data-hab]) .pa-leg{color:#3b4539}
+html:not([data-hab]) .pa-svg line{stroke:#e3e8e2}
+html:not([data-hab]) .pilo-bar{background-color:#e8eee7}
+html:not([data-hab]) .v2-kpi-l{color:#3b4539}
+html:not([data-hab]) .v2-card{border-color:#e3e8e2;background-image:radial-gradient(520px 260px at 100% 0%,rgba(47,125,26,.055),rgba(47,125,26,0) 70%),linear-gradient(180deg,#fff,#fafcfa)}
+html:not([data-hab]) .v2-card-head{border-bottom-color:#e3e8e2}
+html:not([data-hab]) .v2-tabs{background-color:#edf3ec;border:1px solid #e3e8e2}
+html:not([data-hab]) .v2-tab{color:#3b4539}
+html:not([data-hab]) .v2-tab:hover{color:#131a11}
+html:not([data-hab]) .v2-tab.on,html:not([data-hab]) .v2-tab.on:hover{background-color:#2f7d1a;box-shadow:0 8px 16px -8px rgba(47,125,26,.7),0 1px 0 rgba(255,255,255,.25) inset}
+html:not([data-hab]) .v2-seg{border-color:#d5e2d2;color:#154e04}
+html:not([data-hab]) .v2-seg:not(.on):hover{background-color:#f1f8f0}
+html:not([data-hab]) .v2-row{border-bottom-color:#e3e8e2}
+html:not([data-hab]) .v2-row:hover{background-color:#f1f8f0}
+html:not([data-hab]) .v2-top-search:focus-visible{border-color:#2f7d1a;box-shadow:0 0 0 3px rgba(47,125,26,.14)}
+html:not([data-hab]) .v2-top-search kbd{color:#646d61;background-color:#f1f5f0}
+html:not([data-hab]) .v2-btn-primary{background-color:#23680e;background-image:linear-gradient(170deg,#398626,#23680e);border-color:#175304;box-shadow:0 8px 18px -8px rgba(47,125,26,.7),0 1px 0 rgba(255,255,255,.3) inset}
+html:not([data-hab]) .v2-btn-primary:hover{box-shadow:0 12px 24px -8px rgba(47,125,26,.75),0 1px 0 rgba(255,255,255,.32) inset}
+html:not([data-hab]) body .v2-card.dr{border-color:#e3e8e2}
+html:not([data-hab]):root:root body{background-color:#F2F6F2;background-image:radial-gradient(1200px 640px at 26% -10%,#FFFFFF 0%,#f8fbf8 38%,#F2F6F2 100%)}
+.v2-top{box-shadow:0 1px 0 rgba(255,255,255,.8) inset,0 8px 20px -14px rgba(10,14,9,.14)}

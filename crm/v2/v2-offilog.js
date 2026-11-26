@@ -9,6 +9,10 @@
 (function () {
   'use strict';
   var V2 = window.V2 = window.V2 || {};
+  // 26/11/2026 — thème d'un groupement : un bleu du socle JARVIS écrit dans ce module se lit dans une variable CSS posée par le thème
+  // (essentiels-theme.css) ; sans elle (JARVIS, OPSO), repli = la valeur d'avant, à l'octet.
+  function cvg(nom, repli) { try { var v = getComputedStyle(document.documentElement).getPropertyValue(nom).trim(); return v || repli; } catch (e) { return repli; } }
+
   // 19/10/2026 — micro posé DANS le champ (V2.notes.champ, v2-notes.js) ; le champ reste tel quel si ce module n'est pas encore chargé ou si l'appareil n'a pas de dictée.
   function micChamp(h, t) { return (V2.notes && V2.notes.champ) ? V2.notes.champ(h, t) : h; }
   V2.pages = V2.pages || {};
@@ -57,7 +61,7 @@
   var mktTitle = '';
 
   var CHIPS = [
-    { k: 'all',         label: 'Tout',           sc: '#0050E6' },
+    { k: 'all',         label: 'Tout',           sc: 'var(--grp-bleu-0050e6,#0050E6)' },
     { k: 'alerte',      label: 'Concurrent moins cher', sc: '#6D4FC4' },
     { k: 'avecpcat',    label: 'Avec prix catalogue', sc: 'var(--ip-blue-d)' },
     { k: 'leclercpub',  label: 'Vendu chez E.Leclerc', sc: '#0066B3' },
@@ -106,7 +110,7 @@
   // les trois barres vont du bleu (52,93,160) à l'ambre (255,175,15).
   // C'est la seule signature colorée de l'écran — tout le reste reste sobre,
   // pour que la photo produit porte la page. Registre parapharmacie.
-  var OFF_BLEU = '#345DA0', OFF_AMBRE = '#F8A808';
+  var OFF_BLEU = cvg('--grp-bleu-345da0', '#345DA0'), OFF_AMBRE = '#F8A808';
 
   // Les rayons, dans l'ordre d'un linéaire de parapharmacie : le visage et le
   // corps d'abord, le bébé et le solaire ensuite, le vétérinaire en bout.
@@ -1369,7 +1373,7 @@
       '</div>';
     }).join('');
     return '<div style="font-family:Satoshi,Inter,Arial,sans-serif;width:794px;box-sizing:border-box;padding:36px 38px;background:#fff;color:#10131C">' +
-        '<div style="background:linear-gradient(120deg,#6D4FC4 0%,#0050E6 45%,#00B5D8 100%);border-radius:18px;padding:26px 30px;color:#fff;margin-bottom:22px;position:relative;overflow:hidden">' +
+        '<div style="background:linear-gradient(120deg,var(--grp-bleu-6d4fc4,#6D4FC4) 0%,var(--grp-bleu-0050e6,#0050E6) 45%,var(--grp-bleu-00b5d8,#00B5D8) 100%);border-radius:18px;padding:26px 30px;color:#fff;margin-bottom:22px;position:relative;overflow:hidden">' +
           '<div style="position:absolute;right:-30px;top:-30px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.12)"></div>' +
           '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.12em;font-weight:800;opacity:.9">Intégral Pharma · Parapharmacie</div>' +
           '<div style="font-size:30px;font-weight:800;letter-spacing:-.02em;margin-top:8px;line-height:1.05">' + esc(title) + '</div>' +
@@ -1679,7 +1683,7 @@
       // barre flottante fiche marketing
       '.off-mktbar{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:70;display:flex;align-items:center;gap:13px;background:var(--ip-ink);color:#fff;border-radius:16px;padding:10px 12px 10px 18px;box-shadow:0 16px 42px rgba(16,19,28,.36);max-width:94vw}',
       '.off-mktbar.hidden{display:none}',
-      '.off-mktbar .ic{color:#79A8FF;display:flex;flex-shrink:0}',
+      '.off-mktbar .ic{color:var(--grp-bleu-79a8ff,#79A8FF);display:flex;flex-shrink:0}',
       '.off-mktbar .n{font-weight:700;font-size:14px;white-space:nowrap}',
       '.off-mktbar .ttl{border:none;outline:none;background:rgba(255,255,255,.12);color:#fff;border-radius:10px;padding:9px 13px;font-family:var(--font);font-size:13px;width:230px}',
       '.off-mktbar .ttl::placeholder{color:rgba(255,255,255,.5)}',
@@ -1846,7 +1850,7 @@
       // relevé sur logos/offilog.png colonne par colonne (x=10→110) : le bleu
       // TIENT jusqu'à 26 %, la bascule est brève, l'ambre occupe la moitié droite.
       // Un dégradé linéaire bleu→ambre traverserait un gris terne — pas le logo.
-      '.offb-bar{height:5px;background:linear-gradient(90deg,#3D62A0 0%,#4165A1 24%,#AF8F4D 35%,#D29D33 43%,#F0A81C 52%,#FFAF0F 60%,#FFAF0F 100%)}',
+      '.offb-bar{height:5px;background:linear-gradient(90deg,var(--grp-bleu-3d62a0,#3D62A0) 0%,var(--grp-bleu-4165a1,#4165A1) 24%,#AF8F4D 35%,#D29D33 43%,#F0A81C 52%,#FFAF0F 60%,#FFAF0F 100%)}',
       '.offb-in{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--sp-6);flex-wrap:wrap;padding:26px 28px 24px}',
       '.offb-id{min-width:0}',
       // hauteur imposée, largeur libre : le logo garde son ratio 444/70 quel
@@ -1869,7 +1873,7 @@
       '.offa-l span{font-size:13px;font-weight:700;color:var(--ip-ink-2)}',
       '.offa-l b{font-size:14px;color:var(--ip-ink);overflow-wrap:anywhere}',
       '.offa-cp{min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:12px;background:var(--card-2);font:inherit;font-size:13px;font-weight:700;color:var(--ip-ink-2);cursor:pointer}',
-      '.offa-go{margin-left:auto;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 18px;border-radius:12px;background:#345DA0;color:#fff;font-size:14px;font-weight:800;text-decoration:none}',
+      '.offa-go{margin-left:auto;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 18px;border-radius:12px;background:var(--grp-bleu-345da0,#345DA0);color:#fff;font-size:14px;font-weight:800;text-decoration:none}',
       '@media(max-width:720px){.offa{padding:14px 16px}.offa-go{margin-left:0;width:100%;justify-content:center}}',
 
       // ══════════ LES RAYONS ══════════
@@ -1877,8 +1881,8 @@
       // dans Offilog par le linéaire. Cible tactile 44px garantie par le padding.
       '.offr-w{display:flex;gap:12px;overflow-x:auto;padding:2px 2px 14px;margin-bottom:var(--sp-4);scrollbar-width:thin;-webkit-overflow-scrolling:touch}',
       '.offr{flex:0 0 auto;min-width:150px;min-height:64px;text-align:left;cursor:pointer;padding:12px 16px;border-radius:14px;border:1.5px solid var(--line-strong);background:var(--card);box-shadow:var(--sh-1);transition:.18s var(--ease);position:relative;overflow:hidden}',
-      '.offr::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,#4165A1,#FFAF0F);opacity:0;transition:opacity .18s var(--ease)}',
-      '.offr:hover{transform:translateY(-2px);box-shadow:var(--sh-2);border-color:color-mix(in srgb,#345DA0 38%,transparent)}',
+      '.offr::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--grp-bleu-4165a1,#4165A1),#FFAF0F);opacity:0;transition:opacity .18s var(--ease)}',
+      '.offr:hover{transform:translateY(-2px);box-shadow:var(--sh-2);border-color:color-mix(in srgb,var(--grp-bleu-345da0,#345DA0) 38%,transparent)}',
       '.offr:hover::before,.offr.on::before{opacity:1}',
       '.offr.on{border-color:var(--ip-ink);background:var(--ip-ink)}',
       '.offr.on .offr-l{color:#fff}.offr.on .offr-s{color:rgba(255,255,255,.62)}.offr.on .offr-n{color:#FFAF0F}',
@@ -1896,7 +1900,7 @@
       '.offsr-w{display:flex;gap:8px;overflow-x:auto;padding:0 2px 12px;margin:-4px 0 var(--sp-3);scrollbar-width:thin;-webkit-overflow-scrolling:touch}',
       '.offsr{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;min-height:var(--tap-min);padding:0 14px;border-radius:var(--r-pill);border:1.5px solid var(--line-strong);background:var(--card);font-size:12.5px;font-weight:650;color:var(--ip-ink-2);cursor:pointer;transition:all .18s var(--ease)}',
       '.offsr i{font-style:normal;font-size:12px;font-weight:700;color:var(--muted-2);font-variant-numeric:tabular-nums}',
-      '.offsr:hover{border-color:color-mix(in srgb,#345DA0 40%,transparent)}',
+      '.offsr:hover{border-color:color-mix(in srgb,var(--grp-bleu-345da0,#345DA0) 40%,transparent)}',
       '.offsr.on{background:var(--ip-ink);border-color:var(--ip-ink);color:#fff}',
       '.offsr.on i{color:#FFAF0F}',
 
@@ -1909,7 +1913,7 @@
       // La photo prend la moitié de la carte et vit sur du blanc franc : un
       // flacon de dermo ne se lit pas sur un fond gris.
       '.off-card-media{background:#fff}',
-      '.off-card:hover{border-color:color-mix(in srgb,#345DA0 34%,transparent)}',
+      '.off-card:hover{border-color:color-mix(in srgb,var(--grp-bleu-345da0,#345DA0) 34%,transparent)}',
     ].join('');
     document.head.appendChild(s);
   }

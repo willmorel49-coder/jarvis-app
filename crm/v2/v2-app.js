@@ -520,6 +520,8 @@
   ];
   function groupementsMenu(m) {
     var mail = String((V2.user && V2.user.email) || '').toLowerCase();
+    // 26/11/2026 — chez Essentiels, aucun « OPSO » à l'écran (demande de Will) : le suivi des apps se fait depuis JARVIS, pas depuis une app de groupement.
+    if (V2.groupement && V2.groupement.menuGroupements === false) return;
     if (!m || !mail || (V2.CONTACTS_GROUPEMENT || []).indexOf(mail) < 0 || m.querySelector('.grp-um')) return;
     var b = document.createElement('button');
     b.type = 'button'; b.className = 'v2-um-item grp-um'; b.setAttribute('role', 'menuitem'); b.setAttribute('aria-expanded', 'false');
@@ -2515,7 +2517,7 @@
         // 01/10/2026 — le tableau de bord OPSO (V2.opsoGroupement) n'est plus
         // posé sur l'accueil : il devient une porte, la première.
         if (V2.pages.opsobord) {
-          P.unshift({ k: 'opsobord', cls: 'p1', accent: 'var(--pil-pilo)', ico: 'grid', tag: '', t: 'Tableau de bord', d: 'Le chiffre du groupement, le mois, la rémunération, ce que les adhérentes achètent et la trajectoire de l\'année.', go: 'Voir le tableau de bord' });
+          P.unshift({ k: 'opsobord', cls: 'p1', accent: 'var(--pil-pilo)', ico: 'grid', tag: '', t: 'Tableau de bord', d: ((V2.groupement && V2.groupement.textes && V2.groupement.textes.bordTuileLong) || 'Le chiffre du groupement, le mois, la rémunération, ce que les adhérentes achètent et la trajectoire de l\'année.'), go: 'Voir le tableau de bord' });
         }
         // 29/09/2026 — deux nouveaux écrans OPSO (opso-pharmacies.js) : l'évolution
         // par pharmacie, et la liste produits classée par nombre de pharmacies.
@@ -2631,7 +2633,7 @@
     if (V2.enGroupement() && V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Fiches marketing OPSO', 'fiche']);
     else if (V2.pages.marketing) PAGES.splice(2, 0, ['marketing', 'Marketing', 'spark']);
     // 29/09/2026 — écrans OPSO Pharmacies / Meilleurs achats, atteignables au clavier.
-    if (V2.enGroupement() && V2.pages.opsobord) PAGES.push(['opsobord', 'Tableau de bord · chiffre, rémunération, trajectoire', 'grid']);
+    if (V2.enGroupement() && V2.pages.opsobord) PAGES.push(['opsobord', ((V2.groupement && V2.groupement.textes && V2.groupement.textes.bordPalette) || 'Tableau de bord · chiffre, rémunération, trajectoire'), 'grid']);
     if (V2.enGroupement() && V2.pages.opsopharmacies) PAGES.push(['opsopharmacies', 'Pharmacies · évolution par officine', 'pharma']);
     if (V2.enGroupement() && V2.pages.opsoachats) PAGES.push(['opsoachats', 'Meilleurs achats · classement par nombre de pharmacies', 'cat']);
     if (window.V2_BRAND && window.V2_BRAND.opso && V2.pages.opsoprix) PAGES.push(['opsoprix', 'Offre Privilège OPSO Santé · PFHT, prix habituel, prix négocié', 'cat']);

@@ -7,6 +7,10 @@
 (function () {
   'use strict';
   var V2 = window.V2; if (!V2) return;
+  // 26/11/2026 — thème d'un groupement : un bleu du socle JARVIS écrit dans ce module se lit dans une variable CSS posée par le thème
+  // (essentiels-theme.css) ; sans elle (JARVIS, OPSO), repli = la valeur d'avant, à l'octet.
+  function cvg(nom, repli) { try { var v = getComputedStyle(document.documentElement).getPropertyValue(nom).trim(); return v || repli; } catch (e) { return repli; } }
+
   // 26/11/2026 — lecteur du réglage de groupement, posé par v2-boot.js ; même définition si ce fichier est chargé
   // sans lui (bancs d'essai tests/*.test.mjs).
   V2.enGroupement = V2.enGroupement || function () { return !!(window.V2_GROUPEMENT || (window.V2_BRAND && window.V2_BRAND.opso)); };
@@ -1612,7 +1616,7 @@
     var L = [];
     var push = function (o) { PA_REG[o.id] = o; L.push(o); return o; };
     var A = ci('ca', ser.ca, c.caCur);
-    push({ id: 'ca', grp: 'ventes', nom: 'Chiffre d’affaires', kind: 'eur', col: '#0050E6', txt: '#0050E6', val: c.caCur, ser: ser.ca, delta: A.d, sub: 'hors taxes',
+    push({ id: 'ca', grp: 'ventes', nom: 'Chiffre d’affaires', kind: 'eur', col: cvg('--grp-bleu-0050e6', '#0050E6'), txt: cvg('--grp-bleu-0050e6', '#0050E6'), val: c.caCur, ser: ser.ca, delta: A.d, sub: 'hors taxes',
       def: 'Ce que les officines ont acheté sur la période, hors taxes.' });
     if (c.totalCarte != null) {
       A = ci('mg', ser.mg, c.totalCarte);
@@ -1638,7 +1642,7 @@
       });
     };
     var CL = [
-      { id: 'caCl', cle: 'caCl', nom: 'Chiffre d’affaires par client', kind: 'eur', col: '#2F6BFF', txt: '#0050E6', sub: 'par client et par mois', def: 'Ce qu’un client achète en moyenne chaque mois.' },
+      { id: 'caCl', cle: 'caCl', nom: 'Chiffre d’affaires par client', kind: 'eur', col: '#2F6BFF', txt: cvg('--grp-bleu-0050e6', '#0050E6'), sub: 'par client et par mois', def: 'Ce qu’un client achète en moyenne chaque mois.' },
       { id: 'mgCl', cle: 'mgCl', nom: 'Notre marge par client', kind: 'eur', col: '#16A06B', txt: '#0B6E4A', sub: 'par client et par mois', def: 'Ce qu’un client rapporte en moyenne à Intégral chaque mois.' },
       { id: 'jm', cle: 'jm', nom: 'Livraisons par client', kind: 'dec', unit: 'par mois', col: '#4F6AA8', txt: '#3C5590', sub: 'en moyenne', def: 'Nombre de livraisons reçues par un client chaque mois.' },
       { id: 'parJour', cle: 'parJour', nom: 'Marge par livraison', kind: 'eur', col: '#9B4FB0', txt: '#82399A', sub: 'par livraison', def: 'Notre marge divisée par le nombre de livraisons.' },
@@ -1705,7 +1709,7 @@
       if (b && b.ecart) F.push({ m: b, t: 'Il rapporte <b>' + paTxt(b, b.val) + '</b> de marge à Intégral par mois, ' + ec(b.ecart) + ' la Moyenne Intégral.', bars: paDuel(b, qui, b.val, 'Moyenne Intégral', b.moy) });
       if (j && j.ecart) F.push({ m: j, t: 'Il est livré <b>' + paNb(j.val, 1) + ' fois</b> par mois, ' + ec(j.ecart) + ' la Moyenne Intégral.', bars: paDuel(j, qui, j.val, 'Moyenne Intégral', j.moy) });
       if (c.fm && c.fm.S && c.fm.M && c.fm.M.nSect != null) {
-        var cm = { kind: 'dec', unit: '', col: '#0050E6' }, e = paEcart(c.fm.S.n, c.fm.M.nSect);
+        var cm = { kind: 'dec', unit: '', col: cvg('--grp-bleu-0050e6', '#0050E6') }, e = paEcart(c.fm.S.n, c.fm.M.nSect);
         F.push({ m: PA_REG.act, t: '<b>' + PA_NF.format(c.fm.S.n) + ' clients</b> ont été livrés, ' + (e ? ec(e) : 'contre') + ' le secteur moyen Intégral (' + paNb(c.fm.M.nSect, 1) + ').', bars: paDuel(cm, qui, c.fm.S.n, 'Secteur moyen Intégral', c.fm.M.nSect) });
       }
     } else {
@@ -3474,7 +3478,7 @@
       '.pilo-seg{display:inline-flex;flex-wrap:wrap;gap:3px;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:4px;box-shadow:var(--sh-1)}' +'@media(max-width:560px){.pilo-head>div:last-child{width:100%}.pilo-seg{width:100%;justify-content:flex-start}}' +
       '.pilo-segbtn{border:none;background:transparent;border-radius:9px;padding:8px 15px;font-family:var(--font);font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:.18s var(--ease);white-space:nowrap}' +
       '.pilo-segbtn:hover{color:var(--ip-ink)}' +
-      '.pilo-segbtn.on{background:var(--ip-blue);color:#fff;box-shadow:0 2px 8px rgba(0,80,230,.28)}' +
+      '.pilo-segbtn.on{background:var(--ip-blue);color:#fff;box-shadow:0 2px 8px rgba(var(--grp-bleu-0050e6-rgb,0,80,230),.28)}' +
       '.pilo-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}' +
       '@media(max-width:820px){.pilo-grid2{grid-template-columns:1fr}}' +
       // ── HERO KPI (CA net = héros) ─────────────────

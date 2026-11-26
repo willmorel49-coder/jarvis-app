@@ -305,7 +305,7 @@
   var CSS = ""
     + ".og-wrap{margin:0 0 var(--sp-7,32px) 0}"
     + ".og-block{margin-bottom:var(--sp-4,16px)}"
-    + ".og-block-title{font-family:'Varela Round',var(--font,system-ui),sans-serif;font-weight:400;font-size:1.0625rem;color:var(--ip-ink,#10131C);margin:0 0 4px}"
+    + ".og-block-title{font-family:var(--grp-police-titre,'Varela Round'),var(--font,system-ui),sans-serif;font-weight:var(--grp-poids-titre,400);font-size:1.0625rem;color:var(--ip-ink,#10131C);margin:0 0 4px}"
     + ".og-block-sub{font-size:.8125rem;color:var(--muted,#646B80);margin:0 0 12px}"
     + ".og-num{font-variant-numeric:tabular-nums}"
     // Le cap
@@ -314,7 +314,7 @@
     + ".og-ring-box{position:relative;width:168px;height:168px;flex:none}"
     + ".og-ring-box svg{width:100%;height:100%;display:block}"
     + ".og-ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}"
-    + ".og-ring-center .og-frac{font-size:1.85rem;color:var(--ip-ink,#10131C);font-family:'Varela Round',sans-serif}"
+    + ".og-ring-center .og-frac{font-size:1.85rem;color:var(--ip-ink,#10131C);font-family:var(--grp-police-titre,'Varela Round'),sans-serif}"
     + ".og-ring-center .og-frac small{font-size:1rem;color:var(--muted,#646B80);font-family:var(--font,system-ui),sans-serif}"
     + ".og-ring-center .og-lbl{font-size:.8125rem;color:var(--muted,#646B80);max-width:150px;margin-top:2px}"
     + ".og-hero-stats{display:flex;flex-direction:column;gap:10px;width:100%}"
@@ -322,7 +322,7 @@
     + "@media(min-width:720px){.og-pill{align-self:flex-start}}"
     + ".og-pill .og-dot{width:7px;height:7px;border-radius:50%;background:var(--ip-blue,#4e9f70)}"
     + ".og-cumul{background:var(--surf-sunken,#F4F6FB);border-radius:var(--r-md,14px);padding:16px 18px;display:flex;flex-direction:column;gap:2px}"
-    + ".og-cumul .og-amount{font-size:1.8rem;color:var(--ip-blue-d,#3e7f59);font-family:'Varela Round',sans-serif}"
+    + ".og-cumul .og-amount{font-size:1.8rem;color:var(--ip-blue-d,#3e7f59);font-family:var(--grp-police-titre,'Varela Round'),sans-serif}"
     + ".og-cumul .og-period{font-size:.8125rem;color:var(--muted,#646B80)}"
     // Le mois
     + ".og-months{display:flex;gap:8px;overflow-x:auto;padding:2px 0 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}"
@@ -339,7 +339,7 @@
     + "@media(min-width:640px){.og-facts{grid-template-columns:repeat(4,1fr)}}"
     + ".og-fact{background:var(--card,#fff);padding:12px}"
     + ".og-fact .og-flabel{display:block;font-size:.8125rem;color:var(--muted,#646B80);margin-bottom:6px;line-height:1.3}"
-    + ".og-fact .og-fnum{display:block;font-family:'Varela Round';font-size:1.1rem;color:var(--ip-ink,#10131C)}"
+    + ".og-fact .og-fnum{display:block;font-family:var(--grp-police-titre,'Varela Round');font-size:1.1rem;color:var(--ip-ink,#10131C)}"
     + ".og-fact .og-fdelta{display:block;margin-top:4px;font-size:.8125rem;color:var(--muted,#646B80)}"
     + ".og-fact .og-fdelta.up{color:var(--ip-blue-d,#3B755B)}"
     + ".og-provenance{font-size:.8125rem;color:var(--muted,#646B80);margin-top:10px}"
@@ -352,13 +352,13 @@
     + ".og-bornes{font-size:.8125rem;color:var(--muted,#646B80);margin:6px 0 10px}"
     + ".og-recap{font-size:.8125rem;color:var(--muted,#646B80);margin:2px 0 0}"
     + ".og-phead{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:baseline;background:var(--surf-sunken,#F4F6FB);border-radius:var(--r-md,14px);padding:12px 14px;margin-bottom:10px}"
-    + ".og-phead .og-pamount{font-family:'Varela Round';font-size:1.15rem;color:var(--ip-blue-d,#3e7f59)}"
+    + ".og-phead .og-pamount{font-family:var(--grp-police-titre,'Varela Round');font-size:1.15rem;color:var(--ip-blue-d,#3e7f59)}"
     + ".og-phead .og-pmeta{font-size:.8125rem;color:var(--muted,#646B80)}"
     + ".og-list{list-style:none;margin:0;padding:0;transition:opacity .22s ease,transform .22s ease}"
     + ".og-list.is-changing{opacity:.35;transform:translateY(6px)}"
     + ".og-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-top:1px solid var(--surf-sunken,#F4F6FB)}"
     + ".og-row:first-child{border-top:none}"
-    + ".og-rank{flex:0 0 20px;font-family:'Varela Round';font-size:.8125rem;color:var(--muted,#646B80);padding-top:2px}"
+    + ".og-rank{flex:0 0 20px;font-family:var(--grp-police-titre,'Varela Round');font-size:.8125rem;color:var(--muted,#646B80);padding-top:2px}"
     + ".og-main{flex:1 1 auto;min-width:0}"
     + ".og-pname{font-size:.8125rem;color:var(--ip-ink-2,#2A2F3C);line-height:1.3}"
     + ".og-gauge-row{display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap}"
@@ -367,7 +367,7 @@
     + ".og-pnb{font-size:.8125rem;color:var(--muted,#646B80);white-space:nowrap}"
     + ".og-right{flex:0 0 auto;text-align:right;padding-top:1px}"
     + ".og-boites{display:block;font-size:.8125rem;color:var(--muted,#646B80);white-space:nowrap}"
-    + ".og-pamount2{display:block;font-size:.875rem;color:var(--ip-ink,#10131C);font-family:'Varela Round';margin-top:2px;white-space:nowrap}"
+    + ".og-pamount2{display:block;font-size:.875rem;color:var(--ip-ink,#10131C);font-family:var(--grp-police-titre,'Varela Round');margin-top:2px;white-space:nowrap}"
     // Trajectoire
     + ".og-traj-wrap{width:100%;overflow:hidden}"
     + ".og-chart{width:100%;height:200px;display:block}"
@@ -383,7 +383,7 @@
     + ".og-sim{margin-top:14px;background:var(--surf-sunken,#F4F6FB);border-radius:var(--r-md,14px);padding:14px 16px}"
     + ".og-sim-label{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}"
     + ".og-sim-label span:first-child{font-size:.9375rem;color:var(--ip-ink-2,#2A2F3C)}"
-    + ".og-sim-value{font-size:1.05rem;color:var(--ip-blue-d,#3e7f59);font-family:'Varela Round',sans-serif}"
+    + ".og-sim-value{font-size:1.05rem;color:var(--ip-blue-d,#3e7f59);font-family:var(--grp-police-titre,'Varela Round'),sans-serif}"
     + ".og-sim input[type=range]{width:100%;margin:14px 0 6px;accent-color:var(--ip-blue,#4e9f70);height:28px}"
     + ".og-sim-hint{font-size:.8125rem;color:var(--muted,#646B80);margin:0}"
     + ".og-sim-detail{margin-top:10px}"
@@ -528,7 +528,7 @@
 
   // Tuiles « Vos espaces » (rendues par le socle) : une ligne chacune au lieu d'un paragraphe.
   var ESPACES = {
-    opsobord: 'Le chiffre, la rémunération, la trajectoire',
+    opsobord: ((V2.groupement && V2.groupement.textes && V2.groupement.textes.bordTuile) || 'Le chiffre, la rémunération, la trajectoire'),
     pilotage: 'Activation, CA et détail par officine',
     marketing: 'Les produits classés par nombre de pharmacies',
     offilog: 'La parapharmacie, rayon par rayon',
