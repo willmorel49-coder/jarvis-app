@@ -31,6 +31,18 @@
   var FAM_SHORT = { pr_low: 'Princeps petits prix', pr_mid: 'Princeps intermédiaire', pr_high: 'Princeps cher', nr: 'NR', gen: 'Génériques', biosim: 'Biosimilaires' };
   var FAM_ORDER = ['pr_low', 'pr_mid', 'pr_high', 'nr', 'gen', 'biosim'];
   var LIMIT = 200;
+  // 26/11/2026 — téléphone seulement (choix de Will, planche « 11 choix », sujet 5, version 2 « Une ligne par produit ») :
+  // une ligne par produit, la page s'arrête à 30 produits, « Voir 30 de plus » ajoute la suite. L'ordinateur garde ses 200 lignes.
+  var PAS_TEL = 30, telN = PAS_TEL, telSig = '', telData = null;
+  function tel() { try { return !!(window.matchMedia && window.matchMedia('(max-width:640px)').matches); } catch (e) { return false; } }
+  // Combien de produits la liste montre : 200 à l'ordinateur ; au téléphone 30, puis 30 de plus à chaque toucher.
+  // Un tri, une recherche ou un filtre repart des 30 premiers.
+  function limite() {
+    if (!tel()) return LIMIT;
+    var sig = [S.sort, S.q, S.chip, S.etab, S.stockOnly, S.sagV].join('|');
+    if (sig !== telSig) { telSig = sig; telN = PAS_TEL; }
+    return telN;
+  }
 
   var S = { sort: 'n', q: '', chip: 'all', etab: '', stockOnly: false, perCat: 5, sagV: '' };
   var sagTried = false;   // tarifs Sagitta + OCP (fichiers protégés) demandés une seule fois
@@ -113,16 +125,56 @@
   }
   function counts() { var c = {}; FAMS.forEach(function (f) { c[f.k] = 0; }); (window.PROD_STATS || []).forEach(function (r) { c.all++; if (c[r.f] != null) c[r.f]++; }); return c; }
 
+  // ── Téléphone : une ligne par produit (26/11/2026, planche « 11 choix », sujet 5, version 2) ──
+  // La ligne dit le rang, le nom, la famille, le prix net et l'abandon de marge ; un toucher ouvre le reste de la fiche.
+  // Mêmes valeurs et mêmes libellés que la ligne du tableau (rowsHtml, plus bas) : aucun calcul nouveau.
+  function ligneTel(r, i) {
+    var p = pricing(r);
+    var showAb = r.f !== 'gen' && p.rpct > 0;   // génériques : pas d'abandon de marge Intégral, juste le prix
+    var mkt = (window.V2 && V2.market) ? V2.market(r.c) : null;
+    var showStock = !!(window.ETAB_PRICES && S.etab);
+    function dl(l, v, t) { return '<p' + (t ? ' title="' + t + '"' : '') + '><span>' + l + '</span>' + v + '</p>'; }
+    return '<details class="mol-lg"><summary>' +
+        '<span class="mol-lg-rg">' + (i + 1) + '</span>' +
+        '<span class="mol-lg-n"><b>' + esc(cap(r.d)) + '</b>' + famBadge(r.f) + '</span>' +
+        '<span class="mol-lg-p"><b>' + (p.net > 0 ? eur(p.net) : '—') + '</b><small>abandon ' + (showAb ? '−' + String(p.rpct).replace('.', ',') + '%' : '—') + '</small></span>' +
+        ICO('chev', 16, 2.2) +
+      '</summary><div class="mol-lg-d">' +
+        dl('CIP', '<span>' + esc(r.c) + '</span>') +
+        dl('Pharmacies', '<b>' + num(r.n) + '</b>') +
+        dl('PPHT', '<span' + (showAb ? ' class="mol-ppht"' : '') + '>' + (p.ppht > 0 ? eur(p.ppht) : '—') + '</span>') +
+        TIERS.map(function (t) {
+          var sg = tiersVerdict(r, p, t);
+          return sg ? dl(t.nom, '<span class="mol-sag' + (sg.v === 'gagne' ? ' win' : sg.v === 'perd' ? ' lose' : '') + '">' + eur(sg.s) + '</span>', 'Tarif d\'achat net ' + t.nom) : '';
+        }).join('') +
+        dl('Moy. France/an', '<span>' + (mkt ? '~' + num(mkt.avgYear) : '—') + '</span>') +
+        COLS.map(function (c) { return dl(esc(c.l), (c.accent ? '<b>' : '<span>') + c.fmt(r[c.k] || 0) + (c.accent ? '</b>' : '</span>')); }).join('') +
+        (showStock ? dl('Stock', '<b style="color:' + (p.stk > 0 ? 'var(--c-opp)' : 'var(--c-rose)') + '">' + (p.stk != null ? num(p.stk) : '—') + '</b>') : '') +
+      '</div></details>';
+  }
+  // Fin de liste (téléphone) : le bouton « Voir 30 de plus » et le compte, comme sur la planche. Rien quand tout est affiché.
+  function finTel(total) {
+    var n = Math.min(telN, total), reste = total - n;
+    return reste > 0 ? '<button type="button" class="v2-btn mol-plus30-b" onclick="V2.molPlus30()">Voir ' + Math.min(PAS_TEL, reste) + ' de plus</button>' +
+      '<small>' + num(n) + ' produits affichés sur ' + num(total) + '</small>' : '';
+  }
+
   function rowsHtml() {
     var data = baseData().slice();
     data.sort(function (a, b) { return (b[S.sort] || 0) - (a[S.sort] || 0); });
     var total = data.length;
-    var shown = data.slice(0, LIMIT);
+    var shown = data.slice(0, limite());
     var showStock = !!(window.ETAB_PRICES && S.etab);
     var ncol = 11 + (showStock ? 1 : 0);
     if (!shown.length) {
       var why = S.q ? 'Aucun résultat pour « ' + esc(S.q) + ' ».' : (S.etab && S.stockOnly) ? 'Rien en stock dans ' + esc(S.etab) + '.' : 'Aucun produit dans cette catégorie.';
       return '<tr><td colspan="' + ncol + '" style="padding:26px;text-align:center;color:var(--muted)">' + why + '<br><button class="v2-btn v2-btn-ghost" style="margin-top:12px" onclick="V2.molReset()">Réinitialiser les filtres</button></td></tr>';
+    }
+    if (tel()) {   // téléphone : une carte de lignes, puis « Voir 30 de plus »
+      telData = data;
+      var fin = finTel(total);
+      return '<tr class="mol-lgw"><td colspan="' + ncol + '"><div class="mol-lgs" id="mol-lgs">' + shown.map(ligneTel).join('') + '</div></td></tr>' +
+        (fin ? '<tr class="mol-more mol-plus30" id="mol-plus30"><td colspan="' + ncol + '">' + fin + '</td></tr>' : '');
     }
     var rows = shown.map(function (r, i) {
       var p = pricing(r);
@@ -217,9 +269,28 @@
         b.innerHTML = rowsHtml();
       }
     }
-    var cnt = document.getElementById('mol-count'); var tot = baseData().length;
-    if (cnt) cnt.innerHTML = (tot > LIMIT ? '<b>' + LIMIT + '</b> affichés sur <b>' + num(tot) + '</b>' : '<b>' + num(tot) + '</b> produit' + (tot > 1 ? 's' : ''));
+    compte();
   }
+  // Le compte au-dessus de la liste : « 200 affichés sur 6 594 » (au téléphone : 30, puis 60…), ou « 12 produits » quand tout est affiché.
+  function compte() {
+    var cnt = document.getElementById('mol-count'); var tot = baseData().length, lim = limite();
+    if (cnt) cnt.innerHTML = (tot > lim ? '<b>' + num(lim) + '</b> affichés sur <b>' + num(tot) + '</b>' : '<b>' + num(tot) + '</b> produit' + (tot > 1 ? 's' : ''));
+  }
+  // « Voir 30 de plus » (téléphone) : la suite s'ajoute sous les lignes déjà là, sans les redessiner (une fiche ouverte le reste, la page ne saute pas).
+  V2.molPlus30 = function () {
+    var box = document.getElementById('mol-lgs'), fin = document.getElementById('mol-plus30');
+    if (!box || !telData) { fill(); return; }
+    var de = telN; telN = Math.min(telData.length, telN + PAS_TEL);
+    box.insertAdjacentHTML('beforeend', telData.slice(de, telN).map(function (r, k) { return ligneTel(r, de + k); }).join(''));
+    if (fin) { var suite = finTel(telData.length); if (suite) fin.firstChild.innerHTML = suite; else if (fin.parentNode) fin.parentNode.removeChild(fin); }
+    compte();
+  };
+  // Téléphone tourné, ou fenêtre qui passe le seuil des 640 px : la liste se redessine dans la forme de sa largeur.
+  try {
+    var mq640 = window.matchMedia && window.matchMedia('(max-width:640px)');
+    var auSeuil = function () { if (V2.route && V2.route.name === 'molecules') fill(); };
+    if (mq640 && mq640.addEventListener) mq640.addEventListener('change', auSeuil); else if (mq640 && mq640.addListener) mq640.addListener(auSeuil);
+  } catch (e) {}
   function syncHead() { Array.prototype.forEach.call(document.querySelectorAll('.mol-th'), function (th) { th.classList.toggle('on', th.getAttribute('data-k') === S.sort); }); }
 
   // ── Créer une sélection marketing : top N PAR catégorie ──
@@ -322,6 +393,7 @@
   V2.pages.molecules = {
     render: function (root, param) {
       if (param != null && param !== '') { S.q = String(param); S.chip = 'all'; }
+      if (!document.getElementById('mol-tbody')) telN = PAS_TEL;   // 26/11/2026 : chaque arrivée sur l'écran repart des 30 premiers (téléphone) ; un redessin sur place garde la suite déjà demandée
       if (!window.PROD_STATS) {
         root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) + '<div class="v2-wrap"><div class="v2-empty"><div class="v2-empty-ico">' + ICO('cat', 64, 1.4) + '</div><div class="v2-empty-t">Données produits indisponibles</div><div class="v2-empty-d">Les données ne sont pas encore chargées sur votre poste.</div></div></div>';
         return;
@@ -570,6 +642,34 @@
         '.mol-table td.mol-net{font-size:17px;font-weight:800;margin-top:2px;padding-top:7px;border-top:1px solid var(--line-2,var(--line))}.mol-table td.mol-net::before{color:var(--ip-blue);font-weight:800}' +
         '.mol-table td.mol-rk{position:absolute;top:12px;right:13px;padding:2px 9px;min-height:0;color:var(--muted-2);font-size:12px;font-weight:700;background:color-mix(in srgb,var(--ip-ink) 5%,transparent);border-radius:var(--r-pill,999px)}.mol-table td.mol-rk::before{display:none}' +
         '.mol-table tr.mol-more{border:none;background:none;box-shadow:none;text-align:center;padding:0}.mol-table tr.mol-more td{display:block;text-align:center}.mol-table tr.mol-more td::before{display:none}' +
+      '}' +
+      // 26/11/2026 — téléphone seulement (choix de Will, planche « 11 choix », sujet 5, version 2) : une ligne par produit.
+      // Une seule carte blanche pour toute la liste, sans le liseré de couleur à gauche (la famille est déjà dite par la pastille).
+      '@media(max-width:640px){' +
+        '.mol-table tbody tr.mol-lgw{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card,20px);padding:0;margin:0 0 14px;box-shadow:var(--sh-1,0 1px 2px rgba(16,19,28,.05));overflow:hidden}' +
+        '.mol-table tbody tr.mol-lgw>td{display:block;padding:0;min-height:0;text-align:left;font-size:14px}' +
+        '.mol-table tbody tr.mol-lgw>td::before{display:none}' +
+        '.mol-lg+.mol-lg{border-top:1px solid var(--line)}' +
+        '.mol-lg>summary{display:flex;align-items:center;gap:7px;min-height:66px;padding:9px 8px;list-style:none;cursor:pointer;-webkit-tap-highlight-color:transparent}' +
+        '.mol-lg>summary::-webkit-details-marker{display:none}' +
+        '.mol-lg>summary:focus-visible{outline:2px solid var(--ip-blue);outline-offset:-2px}' +
+        '.mol-lg-rg{flex:none;display:grid;place-items:center;min-width:30px;height:30px;padding:0 6px;border-radius:18px;background:var(--surf-sunken,#F4F6FB);font-size:13px;font-weight:700;line-height:1;color:var(--ip-ink-2,var(--ip-ink));font-variant-numeric:tabular-nums}' +
+        '.mol-lg-n{flex:1;min-width:0}' +
+        '.mol-lg-n b{display:block;font-size:14.5px;font-weight:700;line-height:1.25;color:var(--ip-ink)}' +
+        '.mol-lg-n .mol-fam{margin-top:4px;max-width:100%;white-space:normal}' +   // à 360 px, « Princeps intermédiaire » passe à la ligne plutôt que de déborder sur le prix
+        '.mol-lg-p{flex:none;text-align:right;white-space:nowrap}' +
+        '.mol-lg-p b{display:block;font-size:16px;font-weight:800;line-height:1;color:var(--ip-blue);font-variant-numeric:tabular-nums}' +
+        '.mol-lg-p small{display:block;margin-top:3px;font-size:12px;font-weight:500;line-height:1.2;color:var(--ip-ink-3,var(--muted))}' +
+        '.mol-lg>summary svg{flex:none;color:var(--ip-blue)}' +
+        '.mol-lg[open]>summary svg{transform:rotate(90deg)}' +
+        '.mol-lg-d{padding:0 14px 8px 48px}' +
+        '.mol-lg-d p{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:34px;margin:0;border-top:1px solid var(--line-2,var(--line));font-size:14px;font-weight:500;line-height:1.2;color:var(--ip-ink-2,var(--ip-ink));font-variant-numeric:tabular-nums}' +
+        '.mol-lg-d p b{color:var(--ip-ink);font-weight:700}' +
+        '.mol-lg-d .mol-sag{display:inline;margin:0;font-size:14px}' +
+        // fin de liste : « Voir 30 de plus » et le compte, posés sur le fond de la page (2e rangée de la liste : sans « background:none », la règle des rangées paires la peindrait en blanc)
+        '.mol-table tbody tr.mol-plus30{margin:6px 0 14px;background:none}' +
+        'html .mol-plus30 .mol-plus30-b{min-height:48px;padding:0 22px;font-size:14px;font-weight:700}' +
+        '.mol-plus30 small{display:block;margin-top:10px;font-size:13px;font-weight:500;line-height:1.4;color:var(--ip-ink-3,var(--muted))}' +
       '}' +
       // accessibilité : mouvement réduit
       '@media(prefers-reduced-motion:reduce){' +

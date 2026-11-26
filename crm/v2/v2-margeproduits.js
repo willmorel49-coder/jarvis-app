@@ -293,6 +293,7 @@
   var PTS = [];   // points dessinés (pour la détection du survol / du toucher)
   function dessinerNuage() {
     var host = document.getElementById('mp-chart'); if (!host || !D) return;
+    if (host.closest && host.closest('.mp-rub:not([open])')) return;   // téléphone, rubrique repliée : sa largeur est nulle, le nuage se dessine à l'ouverture
     var C = calc(S.K), K = S.K, seuil = D.meta.seuils_a_pousser || {};
     var W = Math.max(280, host.clientWidth || 600), mobile = W < 560;
     // sur téléphone, le nuage est plus serré : on ne dessine que les produits d'au moins la moitié du seuil de rotation
@@ -524,6 +525,32 @@
     return '<footer class="mp-pied"><h3>Hypothèses de ces chiffres</h3><ul>' + hyp + plus + '</ul>' +
       '<p>' + esc(D.meta.source || '') + '. Le taux de marge est notre marge divisée par le prix net vendu.</p>' +
       '<p class="conf">Confidentiel : réservé au groupe restreint.</p></footer>';
+  }
+
+  // ── Téléphone : les rubriques repliées ────────────────────────────
+  // 26/11/2026 — téléphone seulement (choix de Will, planche « 11 choix », sujet 6, version 1 « Les rubriques repliées ») :
+  // sous les chiffres clés, chaque rubrique tient sur une ligne avec son chiffre ; un toucher l'ouvre, contenu inchangé.
+  // Le titre de la ligne est LU dans la rubrique (son h2 ou h3), les chiffres viennent de calc() : rien n'est recalculé ici.
+  function etroit() { try { return !!(window.matchMedia && window.matchMedia('(max-width:640px)').matches); } catch (e) { return false; } }
+  function rubrique(id, contenu, ouverte, sous, chiffre, unite) {
+    var t = /<h[23]>([^<]*)<\/h[23]>/.exec(contenu || '');
+    if (!t) return '';   // rubrique absente de l'écran (aucun produit « sans rapporter ») : pas de ligne
+    return '<details class="mp-rub" data-rub="' + id + '"' + (ouverte ? ' open' : '') + '><summary>' +
+      '<span class="mp-rub-t"><b>' + t[1] + '</b>' + (sous ? '<small>' + sous + '</small>' : '') + '</span>' +
+      (chiffre ? '<span class="mp-rub-c">' + chiffre + (unite ? '<small>' + unite + '</small>' : '') + '</span>' : '') +
+      ICO('chev', 20, 2) + '</summary>' + contenu + '</details>';
+  }
+  function rubriques(C, ouv) {
+    var K = C.K, iF = trouverFam(/^froid$/i), fF = iF >= 0 ? C.fams[iF] : null;   // le froid, comme le 2e chiffre clé
+    var nb = function (n) { return n > 1 ? 'produits' : 'produit'; };
+    return '<div class="mp-card mp-rubs">' +
+      rubrique('fam', sectionFamilles(C), ouv.fam, fF ? esc(fF.nom) + ' : ' + pct(fF.pB) + ' des boîtes' : '', fF ? pct(fF.pM) : '', 'de notre marge') +
+      rubrique('nuage', sectionNuage(C), ouv.nuage) +
+      rubrique('prio', sectionPrio(C), ouv.prio, C.prio.length + ' ' + nb(C.prio.length) + ', ' + (K === D.k1 ? 'janvier ' + D.an1 : 'par mois en ' + anDe(K)), eur0(C.sommePrio)) +
+      rubrique('tous', sectionTous(), ouv.tous, '', entier(D.rows.length), nb(D.rows.length)) +
+      rubrique('sans', sectionSans(C), ouv.sans, '', entier(C.sans.length), nb(C.sans.length)) +
+      rubrique('hyp', pied(), ouv.hyp) +
+      '</div>';
   }
 
   // ── Vue « Par officine » ──────────────────────────────────────────
@@ -1046,7 +1073,10 @@
       racine = root;
       majOfficines();
     } else {
-      root.innerHTML = top() + '<div class="v2-wrap mp-wrap">' + enTete(C) + kpis(C) + sectionFamilles(C) + sectionNuage(C) + sectionPrio(C) + sectionTous() + sectionSans(C) + pied() + '</div>';
+      // téléphone : les rubriques repliées ; celles qui sont ouvertes le restent quand l'écran se redessine sur place (barème, « Voir les N produits »)
+      var tel = etroit(), ouv = {};
+      if (tel && root.querySelectorAll) Array.prototype.forEach.call(root.querySelectorAll('.mp-rub[open]'), function (d) { ouv[d.getAttribute('data-rub')] = true; });
+      root.innerHTML = top() + '<div class="v2-wrap mp-wrap">' + enTete(C) + kpis(C) + (tel ? rubriques(C, ouv) : sectionFamilles(C) + sectionNuage(C) + sectionPrio(C) + sectionTous() + sectionSans(C) + pied()) + '</div>';
       racine = root;
       dessinerNuage();
       majTableau();
@@ -1120,6 +1150,19 @@
       else if (e.target.id === 'mp-fam') { S.fam = e.target.value; S.n = N_PAGE; majTableau(); }
       else if (e.target.id === 'mp-tri') { S.tri = e.target.value; S.n = N_PAGE; majTableau(); }
     });
+    // Téléphone : le nuage se dessine quand sa rubrique s'ouvre (« toggle » ne remonte pas : on l'écoute à la descente).
+    document.addEventListener('toggle', function (e) {
+      var d = e.target, h;
+      if (!D || !d || !d.open || !d.getAttribute || d.getAttribute('data-rub') !== 'nuage') return;
+      h = document.getElementById('mp-chart');
+      if (h && (!h.__geo || Math.abs(h.__geo.W - h.clientWidth) > 2)) dessinerNuage();
+    }, true);
+    // Téléphone tourné, ou fenêtre qui passe le seuil des 640 px : l'onglet « Marge par produit » se redessine dans la forme de sa largeur.
+    try {
+      var mq640 = window.matchMedia && window.matchMedia('(max-width:640px)');
+      var auSeuil = function () { if (D && racine && S.vue !== 'officine' && V2.route && V2.route.name === 'margeproduits' && document.querySelector('.mp-kpis')) dessiner(racine); };
+      if (mq640 && mq640.addEventListener) mq640.addEventListener('change', auSeuil); else if (mq640 && mq640.addListener) mq640.addListener(auSeuil);
+    } catch (e) {}
     var tmr = null;
     window.addEventListener('resize', function () {
       clearTimeout(tmr);
@@ -1531,6 +1574,27 @@
       '.pil-erow{grid-template-columns:minmax(0,1.3fr) minmax(50px,1fr) 56px;}.pil-erow small{display:none}',
       '.pil-pl3{grid-template-columns:repeat(2,minmax(0,1fr))}.pil-pl3 .mp-n{grid-column:1/-1}',
       '.pil-bloc{padding:12px}',
+      '}',
+      /* 26/11/2026 — téléphone seulement (choix de Will, planche « 11 choix », sujet 6, version 1) : les rubriques repliées, une ligne + un chiffre */
+      '@media(max-width:640px){',
+      '.mp-rubs{margin-top:6px}',
+      '.mp-rub+.mp-rub{border-top:1px solid var(--line)}',
+      '.mp-rub>summary{display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 14px 8px 16px;list-style:none;cursor:pointer;-webkit-tap-highlight-color:transparent}',
+      '.mp-rub>summary::-webkit-details-marker{display:none}',
+      '.mp-rub>summary:focus-visible{outline:2px solid #0A6C86;outline-offset:-2px}',
+      '.mp-rub-t{flex:1;min-width:0}',
+      '.mp-rub-t b{display:block;font-size:15.5px;font-weight:700;line-height:1.25;color:var(--ip-ink)}',
+      '.mp-rub-t small{display:block;margin-top:2px;font-size:13px;font-weight:500;line-height:1.3;color:var(--ip-ink-3,var(--muted))}',
+      '.mp-rub-c{flex:none;text-align:right;font-size:16px;font-weight:800;line-height:1;color:var(--ip-blue-d,var(--ip-blue));font-variant-numeric:tabular-nums;white-space:nowrap}',
+      '.mp-rub-c small{display:block;margin-top:3px;font-size:12px;font-weight:500;line-height:1.2;color:var(--ip-ink-3,var(--muted))}',
+      '.mp-rub>summary svg{flex:none;color:var(--ip-blue)}',
+      '.mp-rub[open]>summary svg{transform:rotate(90deg)}',
+      /* rubrique ouverte : son contenu d'avant, sans son titre (il est dans la ligne) ni son cadre (la carte des rubriques l'entoure déjà) */
+      '.mp-rub .mp-sec{margin-top:0;animation:none}',
+      '.mp-rub .mp-sh{margin:0;padding:0 16px 12px}',
+      '.mp-rub .mp-sh h2,.mp-rub .mp-pied h3{display:none}',
+      '.mp-rub .mp-card{border-width:1px 0 0;border-radius:0;box-shadow:none}',
+      '.mp-rub .mp-pied{margin-top:0;padding:0 16px 14px;border:0;border-radius:0;background:none}',
       '}'
     ].join('\n');
   }
