@@ -2504,7 +2504,7 @@
         if (piIdx >= 0) {
           var pil = P.splice(piIdx, 1)[0];
           pil.t = 'Suivi groupement';
-          pil.d = 'Le tableau de bord OPSO Santé : taux d\'activation des adhérents, CA du groupement, répartition par périmètre et détail par officine.';
+          pil.d = 'Le tableau de bord ' + ((V2.groupement && V2.groupement.nom) || 'OPSO Santé') + ' : taux d\'activation des adhérents, CA du groupement, répartition par périmètre et détail par officine.';
           pil.go = 'Voir le suivi';
           // 29/09/2026 — le bloc « le cap » (V2.opsoGroupement) affiche déjà ce
           // même cumul HT en gros au-dessus des tuiles : le tag CA de cette
@@ -2520,10 +2520,10 @@
         // 29/09/2026 — deux nouveaux écrans OPSO (opso-pharmacies.js) : l'évolution
         // par pharmacie, et la liste produits classée par nombre de pharmacies.
         if (V2.pages.opsopharmacies) {
-          P.push({ k: 'opsopharmacies', cls: 'p1', accent: 'var(--pil-opp)', ico: 'pharma', tag: 'Par officine', t: 'Pharmacies', d: 'Chaque officine du réseau OPSO Santé : son évolution d\'achats mois par mois chez Intégral Pharma, ses produits phares, et les adhérentes sans achat à relancer.', go: 'Voir les pharmacies' });
+          P.push({ k: 'opsopharmacies', cls: 'p1', accent: 'var(--pil-opp)', ico: 'pharma', tag: 'Par officine', t: 'Pharmacies', d: 'Chaque officine du réseau ' + ((V2.groupement && V2.groupement.nom) || 'OPSO Santé') + ' : son évolution d\'achats mois par mois chez Intégral Pharma, ses produits phares, et les adhérentes sans achat à relancer.', go: 'Voir les pharmacies' });
         }
         if (V2.pages.opsoachats) {
-          P.push({ k: 'opsoachats', cls: 'p3', accent: 'var(--pil-cat)', ico: 'cat', tag: 'Classement', t: 'Meilleurs achats', d: 'Les produits que les pharmacies OPSO commandent chez nous, classés par nombre de pharmacies clientes — la liste de référence à montrer aux adhérents.', go: 'Voir les meilleurs achats' });
+          P.push({ k: 'opsoachats', cls: 'p3', accent: 'var(--pil-cat)', ico: 'cat', tag: 'Classement', t: 'Meilleurs achats', d: 'Les produits que les pharmacies ' + ((V2.groupement && V2.groupement.court) || 'OPSO') + ' commandent chez nous, classés par nombre de pharmacies clientes — la liste de référence à montrer aux adhérents.', go: 'Voir les meilleurs achats' });
         }
         // 15/10/2026 — listing à part : PFHT, prix Intégral habituel et prix négocié OPSO Santé (opso-prix.js, OPSO uniquement).
         if (V2.pages.opsoprix) {

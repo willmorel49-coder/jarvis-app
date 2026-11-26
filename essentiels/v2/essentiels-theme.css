@@ -1,0 +1,139 @@
+/* ═════════════════════════════════════════════════════════════════
+   Essentiels Pharma · feuille de thème PROVISOIRE (26/11/2026, option B, étape 4)
+   Valeurs provisoires, l'étape 5 pose la charte Essentiels.
+   Ne contient que le bloc de variables --grp-* lu par groupements/v2/groupement-ux.css et par
+   les modules groupement-*.js : copie du bloc :root de opso/v2/opso-theme.css, donc valeurs OPSO.
+   ═════════════════════════════════════════════════════════════════ */
+/* ── Palette du groupement (lue par groupements/v2/groupement-ux.css et les modules groupement-*.js) ──
+   Valeurs OPSO = exactement les couleurs qui étaient écrites en dur dans ces fichiers (26/11/2026).
+   Un autre groupement redéfinit ces variables dans sa propre feuille de thème. */
+:root {
+  /* Rôles principaux */
+  --grp-accent: #4e9f70;
+  --grp-accent-rgb: 78,159,112;
+  --grp-accent-d: #3e7f59;
+  --grp-accent-l: #5eab7e;
+  --grp-pale: #eff4f1;
+  --grp-pale-rgb: 239,244,241;
+  --grp-ink: #18221d;
+  --grp-ink-2: #34403a;
+  --grp-deep: #265038;
+  --grp-deep-rgb: 38,80,56;
+  --grp-ombre-rgb: 33,57,43;
+  --grp-cat-accent: #11a63c;
+  --grp-cat-accent-rgb: 17,166,60;
+  --grp-cat-accent-d: #0d8530;
+  /* Autres teintes vertes (nom = valeur OPSO) */
+  --grp-cat-vert-0b7a2b: #0b7a2b;
+  --grp-cat-vert-16b848: #16b848;
+  --grp-cat-vert-18bd4c: #18bd4c;
+  --grp-cat-vert-d9efd9: #d9efd9;
+  --grp-cat-vert-e2f1e4: #e2f1e4;
+  --grp-cat-vert-f1f9f0: #f1f9f0;
+  --grp-vert-224732: #224732;
+  --grp-vert-224933: #224933;
+  --grp-vert-26523a: #26523a;
+  --grp-vert-2b5b3f: #2b5b3f;
+  --grp-vert-306345: #306345;
+  --grp-vert-336a4a: #336a4a;
+  --grp-vert-377250: #377250;
+  --grp-vert-397553: #397553;
+  --grp-vert-397753: #397753;
+  --grp-vert-40845d: #40845d;
+  --grp-vert-42855e: #42855e;
+  --grp-vert-458a63: #458a63;
+  --grp-vert-4c5a52: #4c5a52;
+  --grp-vert-4e996f: #4e996f;
+  --grp-vert-4f9e70: #4f9e70;
+  --grp-vert-598870: #598870;
+  --grp-vert-7eb394: #7eb394;
+  --grp-vert-7eb494: #7eb494;
+  --grp-vert-92b9a2: #92b9a2;
+  --grp-vert-95c0a6: #95c0a6;
+  --grp-vert-95c0a7: #95c0a7;
+  --grp-vert-96c1a7: #96c1a7;
+  --grp-vert-99bfa9: #99bfa9;
+  --grp-vert-9fb7aa: #9fb7aa;
+  --grp-vert-a0c4af: #a0c4af;
+  --grp-vert-a8cdb7: #a8cdb7;
+  --grp-vert-abc8b8: #abc8b8;
+  --grp-vert-abd0bb: #abd0bb;
+  --grp-vert-acc8b8: #acc8b8;
+  --grp-vert-b4d0c0: #b4d0c0;
+  --grp-vert-b4d6c2: #b4d6c2;
+  --grp-vert-c3d7cc: #c3d7cc;
+  --grp-vert-c3d9cc: #c3d9cc;
+  --grp-vert-c8ddd1: #c8ddd1;
+  --grp-vert-c9dcd1: #c9dcd1;
+  --grp-vert-cbe4d6: #cbe4d6;
+  --grp-vert-ccd7d1: #ccd7d1;
+  --grp-vert-cce4d6: #cce4d6;
+  --grp-vert-d2e0d8: #d2e0d8;
+  --grp-vert-d6e5dc: #d6e5dc;
+  --grp-vert-deeae3: #deeae3;
+  --grp-vert-dfe4e1: #dfe4e1;
+  --grp-vert-dfe9e2: #dfe9e2;
+  --grp-vert-dfebe4: #dfebe4;
+  --grp-vert-e1f0e8: #e1f0e8;
+  --grp-vert-e3ede7: #e3ede7;
+  --grp-vert-e3efe7: #e3efe7;
+  --grp-vert-e4ede8: #e4ede8;
+  --grp-vert-e5ede8: #e5ede8;
+  --grp-vert-e6f1ea: #e6f1ea;
+  --grp-vert-e7f5ec: #e7f5ec;
+  --grp-vert-e8f2ec: #e8f2ec;
+  --grp-vert-e9efeb: #e9efeb;
+  --grp-vert-e9f1ec: #e9f1ec;
+  --grp-vert-eaf0ec: #eaf0ec;
+  --grp-vert-ebf1ee: #ebf1ee;
+  --grp-vert-ecf2ee: #ecf2ee;
+  --grp-vert-edf2ee: #edf2ee;
+  --grp-vert-edf3ef: #edf3ef;
+  --grp-vert-eef2ef: #eef2ef;
+  --grp-vert-eef3ef: #eef3ef;
+  --grp-vert-eef3f0: #eef3f0;
+  --grp-vert-eff5f1: #eff5f1;
+  --grp-vert-eff5f2: #eff5f2;
+  --grp-vert-eff9f3: #eff9f3;
+  --grp-vert-f0f4f2: #f0f4f2;
+  --grp-vert-f0f6f3: #f0f6f3;
+  --grp-vert-f1f7f3: #f1f7f3;
+  --grp-vert-f2f5f4: #f2f5f4;
+  --grp-vert-f2f6f3: #f2f6f3;
+  --grp-vert-f3f7f4: #f3f7f4;
+  --grp-vert-f3f7f5: #f3f7f5;
+  --grp-vert-f3f8f5: #f3f8f5;
+  --grp-vert-f4f7f5: #f4f7f5;
+  --grp-vert-f5f8f6: #f5f8f6;
+  --grp-vert-f6f9f7: #f6f9f7;
+  --grp-vert-f6f9f8: #f6f9f8;
+  --grp-vert-f7faf8: #f7faf8;
+  --grp-vert-f9fdfa: #f9fdfa;
+  --grp-vert-fbfefc: #fbfefc;
+  /* Triplets r,g,b (pour rgba(var(--…-rgb), .x)) */
+  --grp-vert-001908-rgb: 0,25,8;
+  --grp-vert-001e0a-rgb: 0,30,10;
+  --grp-vert-00280c-rgb: 0,40,12;
+  --grp-vert-142b1e-rgb: 20,43,30;
+  --grp-vert-162f21-rgb: 22,47,33;
+  --grp-vert-173a26-rgb: 23,58,38;
+  --grp-vert-19261f-rgb: 25,38,31;
+  --grp-vert-1a3a28-rgb: 26,58,40;
+  --grp-vert-1b432c-rgb: 27,67,44;
+  --grp-vert-244c35-rgb: 36,76,53;
+  --grp-vert-26523a-rgb: 38,82,58;
+  --grp-vert-2a4d39-rgb: 42,77,57;
+  --grp-vert-2b5b3f-rgb: 43,91,63;
+  --grp-vert-aac9b8-rgb: 170,201,184;
+  --grp-vert-b4d3c2-rgb: 180,211,194;
+  --grp-vert-c9e3d4-rgb: 201,227,212;
+  --grp-vert-def1e6-rgb: 222,241,230;
+  --grp-vert-def2e7-rgb: 222,242,231;
+  --grp-vert-e4f4ea-rgb: 228,244,234;
+  --grp-vert-e7f5ec-rgb: 231,245,236;
+  --grp-vert-e8f3ed-rgb: 232,243,237;
+  --grp-vert-e8f6ed-rgb: 232,246,237;
+  --grp-vert-e8f6ee-rgb: 232,246,238;
+  --grp-vert-eff9f3-rgb: 239,249,243;
+  --grp-vert-f9fcfa-rgb: 249,252,250;
+}

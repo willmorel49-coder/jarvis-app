@@ -44,6 +44,8 @@ FICHIERS = {
     'crm/v2/index.html': '<link href="v2.css?v=20261103b"><script src="v2-boot.js?v=20261103b"></script>',
     'opso/v2/index.html': '<script src="a.js?v=20261103b"></script><script src="b.js?v=20261016pla"></script>'
                           '<script src="c.js?v=20261008d"></script>',
+    # app Essentiels Pharma (26/11/2026) : même socle que OPSO, resté en arrière ici pour prouver qu'elle est rattrapée
+    'essentiels/v2/index.html': '<link href="../../crm/v2/v2.css?v=20261016pla"><script src="../../groupements/config/essentiels.js?v=20261016pla"></script>',
     'phirst/v2/index.html': '<link href="../../crm/v2/v2.css?v=20261103b"><script src="phirst-ligne.js?v=20261103b"></script>',
     # page publique du pharmacien (24/11/2026) : suit le jeton de l'app (elle charge ../phirst-lettre-contenu.js)
     'phirst/v2/lettre/index.html': '<link href="lettre.css?v=20261103b"><script src="../phirst-lettre-contenu.js?v=20261103b"></script>',
@@ -63,10 +65,11 @@ def dossier(fichiers):
 
 
 d = dossier(FICHIERS)
-assert J.ecarts(d, '20261103b') == ['crm/v2/v2-carte.js', 'opso/v2/index.html'], J.ecarts(d, '20261103b')
-assert J.poser(d, '20261103c') == 2 + 3 + 2 + 2 + 1 + 2 + 1
+assert J.ecarts(d, '20261103b') == ['crm/v2/v2-carte.js', 'essentiels/v2/index.html', 'opso/v2/index.html'], J.ecarts(d, '20261103b')
+assert J.poser(d, '20261103c') == 2 + 3 + 2 + 2 + 2 + 1 + 2 + 1
 assert J.ecarts(d, '20261103c') == []
 assert '20261016pla' not in J.lire(d, 'opso/v2/index.html')
+assert J.lire(d, 'essentiels/v2/index.html').count('?v=20261103c') == 2
 assert J.lire(d, 'phirst/v2/index.html').count('?v=20261103c') == 2
 assert J.lire(d, 'phirst/v2/lettre/index.html').count('?v=20261103c') == 2
 boot = J.lire(d, 'crm/v2/v2-boot.js')

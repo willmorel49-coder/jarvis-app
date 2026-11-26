@@ -30,7 +30,12 @@ window.V2_COMPTES = {
   // 26/11/2026 — Will : « pour pascale et moi on doit pouvoir avoir ça pour les suivis groupement genre essentiel, opso etc. et y'a pascale et moi en contact groupement ».
   // Entrée « Groupements » du menu du compte (liens vers Essentiels Pharma et OPSO). Comme planOpso : cette liste ne fait qu'AFFICHER l'entrée ; le vrai verrou
   // est celui de chaque app côté serveur (jarvis_acces_essentiels, jarvis_acces_opso).
+  // 26/11/2026 — Will : Alexandre Morel consulte seulement (hors société) : dans la liste d'accès de l'app, pas dans les contacts groupement.
   contactsGroupement: ['william.morel@me.com', 'pascale.prieto@integralpharma.fr'],
+  // 26/11/2026 — choix 5 de Will : seuls comptes admis dans l'espace Essentiels Pharma (essentiels/v2) :
+  // Will, Pascale, Alexandre (consultation de l'app), claude-test (preuves). Ni Emmanuel (OPSO, le client) ni les commerciaux.
+  // Même liste côté serveur : jarvis_acces_essentiels() (étape 3, 26/11/2026). Cette liste décide de l'écran et du renvoi.
+  essentiels: ['william.morel@me.com', 'pascale.prieto@integralpharma.fr', 'alexandre.morel@me.com', 'claude-test@integralpharma.fr'],
   // 10/11/2026 (Will) — équipe OPS : Will, Alexandre Morel (même accès que Will), Arthur Lehouerou, Valérie Morlaix, Karine (KV).
   // Lu par v2-app.js (V2.tourneesEquipe).
   tournees: ['william.morel@me.com', 'alexandre.morel@me.com', 'arthur.lehouerou@integralpharma.fr', 'valerie.morlaix@integralpharma.fr', 'karine.vezzaro@integralpharma.fr']

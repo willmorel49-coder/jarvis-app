@@ -660,7 +660,13 @@
   // Si window.OPSO_LISTING_2026 est chargé (app opso/v2/), on restreint le
   // périmètre aux officines du listing officiel (par CODE CIP) et on
   // marque celles présentes dans les données (inDb = "commande déjà").
-  V2.applyOpsoPerimeter = function () {
+  // 26/11/2026 — couche « groupement » commune : la fonction porte désormais un nom général
+  // (V2.appliquerPerimetreGroupement) ; V2.applyOpsoPerimeter reste un ALIAS de la même fonction.
+  // Réglage `perimetre.source === 'alias'` (Essentiels Pharma) → V2.perimetreParAlias ; sinon le code
+  // OPSO ci-dessous, INCHANGÉ (même ordre, mêmes champs).
+  V2.appliquerPerimetreGroupement = function () {
+    var gr = window.V2_GROUPEMENT;
+    if (gr && gr.perimetre && gr.perimetre.source === 'alias') { V2.perimetreParAlias(gr); return; }
     var listing = (typeof OPSO_LISTING_2026 !== 'undefined' && OPSO_LISTING_2026) ? OPSO_LISTING_2026
       : (typeof window !== 'undefined' && window.OPSO_LISTING_2026) ? window.OPSO_LISTING_2026 : null;
     if (!listing || !listing.length) return;
@@ -743,6 +749,70 @@
     });
   };
 
+  V2.applyOpsoPerimeter = V2.appliquerPerimetreGroupement;
+
+  // ── Périmètre « alias » (Essentiels Pharma, 26/11/2026) ────
+  // Pas de listing du groupement : le périmètre = les CIP que la table de départ GRP_DEPART
+  // (crm/v2/groupement-alias.js, publique) range sous perimetre.valeur. On ne lit PAS GRP_OVR
+  // (décision de Will du 24/11 : 28 officines). Clientes = présentes dans V2.pharmacies (WML) ;
+  // non clientes = nom/ville/CP/tél lus dans la base nationale publique PHARMA_FR (chargée à la demande).
+  // Mise en forme du nom : copie locale de joli() de v2-tournees-essentiels.js (pas d'import croisé).
+  function nomJoli(s) {
+    return String(s || '').toLowerCase().replace(/(^|\s)l (?=[a-zà-ÿ])/g, '$1l’').replace(/(^|[\s\-'’(])([a-zà-ÿ])/g, function (m, a, b) { return a + b.toUpperCase(); })
+      .replace(/\b(De|Du|Des|La|Le|Les|Et|Sur|En|Aux|Au|Sous|L)\b/g, function (m, w) { return w.toLowerCase(); }).replace(/^./, function (c) { return c.toUpperCase(); })
+      .replace(/\bSt\b/g, 'Saint').replace(/\bSte\b/g, 'Sainte').replace(/\bPhie\b/g, 'Pharmacie').replace(/l’([a-zà-ÿ])/g, function (m, c) { return 'l’' + c.toUpperCase(); });
+  }
+  // Complète nom/ville/CP/tél des lignes non clientes encore provisoires (« CIP … ») depuis PHARMA_FR. Renvoie le nombre complété.
+  V2.perimetreCompleterNoms = function () {
+    var D = window.PHARMA_FR; if (!D || !D.p) return 0;
+    var norm = function (c) { return String(c == null ? '' : c).replace(/\D/g, '').replace(/^0+/, ''); };
+    var pf = {};
+    D.p.forEach(function (p) { var a = norm(p[13]); if (a) pf[a] = p; var b = norm(p._ann); if (b && !pf[b]) pf[b] = p; });
+    var n = 0;
+    (V2.pharmacies || []).forEach(function (l) {
+      if (!l.nomProvisoire) return;
+      var p = pf[norm(l.code)]; if (!p) return;   // introuvable : on garde « CIP … », jamais de nom inventé
+      l.name = nomJoli(p[6]) || l.name; l.ville = nomJoli(p[7]); l.cp = p[8] || ''; l.tel = p[9] || '';
+      l.nomProvisoire = false; n++;
+    });
+    return n;
+  };
+  V2.perimetreParAlias = function (gr) {
+    var norm = function (c) { return String(c == null ? '' : c).replace(/\D/g, '').replace(/^0+/, ''); };
+    var dep = window.GRP_DEPART || {}, vu = {}, cips = [];
+    Object.keys(dep).forEach(function (k) { if (dep[k] === gr.perimetre.valeur) { var c = norm(k); if (c && !vu[c]) { vu[c] = 1; cips.push(c); } } });
+    if (!cips.length) console.warn('[V2] périmètre « alias » : aucune officine pour « ' + gr.perimetre.valeur + ' » (GRP_DEPART absent ?) — périmètre vide');
+    var byCip = {};
+    (V2.pharmacies || []).forEach(function (p) { var c = norm(p.code || p.id); if (c && !byCip[c]) byCip[c] = p; });
+    V2.pharmacies = cips.map(function (cip) {
+      var db = byCip[cip];
+      return {
+        id: db ? db.id : ('LST-' + cip),
+        name: db ? db.name : ('CIP ' + cip),
+        code: cip,
+        color: (db && db.color) || '#11a63c',
+        ville: (db && db.ville) || '', cp: (db && db.cp) || '',
+        tel: (db && db.tel) || '', perimetre: '',
+        groupement: gr.libelle, potentiel: (db && db.potentiel) || 0,
+        inDb: !!db, hasStats: false,
+        debut: '',
+        nomProvisoire: !db   // drapeau : le nom vient de PHARMA_FR dès qu'elle est chargée
+      };
+    });
+    var ids = {}; V2.pharmacies.forEach(function (p) { ids[String(p.id)] = 1; });
+    V2.sales = (V2.sales || []).filter(function (s) { return !!ids[String(s.pharmacyId)]; });
+    if (V2.pharmacies.some(function (l) { return l.nomProvisoire; })) {
+      if (window.PHARMA_FR) V2.perimetreCompleterNoms();
+      else if (V2.ensurePharmaFr && !V2._perimPfrAttente) {
+        V2._perimPfrAttente = true;
+        V2.ensurePharmaFr(function () {
+          V2._perimPfrAttente = false;
+          if (V2.perimetreCompleterNoms() && V2.render) V2.render();
+        });
+      }
+    }
+  };
+
   // 11/09/2026 (phase 5) — le mappage des officines est à part : l'accueil se
   // dessine dès l'en-tête (WML_OFFICINES), pendant que les 28 tranches de ventes
   // arrivent encore (voir V2.onOfficinesPretes dans v2-app.js). loadData()
@@ -758,6 +828,14 @@
     // Espace Escale : borné ici aussi, pour que l'accueil dessiné AVANT les ventes
     // ne compte jamais une officine Intégral.
     if (window.V2_BRAND && window.V2_BRAND.escale) phs = phs.filter(V2.estOfficineEscale);
+    // 26/11/2026 — Essentiels (périmètre « alias ») : jamais les 691 clientes du CRM, même avant les ventes.
+    // On ne garde que les clientes dont le CIP est dans le périmètre. JARVIS, Escale et OPSO : rien ne change.
+    var gr = window.V2_GROUPEMENT;
+    if (gr && gr.perimetre && gr.perimetre.source === 'alias') {
+      var nz = function (c) { return String(c == null ? '' : c).replace(/\D/g, '').replace(/^0+/, ''); }, dp = window.GRP_DEPART || {}, ok = {};
+      Object.keys(dp).forEach(function (k) { if (dp[k] === gr.perimetre.valeur) ok[nz(k)] = 1; });
+      phs = phs.filter(function (p) { return !!ok[nz(p.code || p.id)]; });
+    }
     return phs;
   };
 

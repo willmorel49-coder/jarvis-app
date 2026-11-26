@@ -10,6 +10,8 @@
   // 26/11/2026 — lecteur du réglage de groupement, posé par v2-boot.js ; même définition si ce fichier est chargé
   // sans lui (bancs d'essai tests/*.test.mjs).
   V2.enGroupement = V2.enGroupement || function () { return !!(window.V2_GROUPEMENT || (window.V2_BRAND && window.V2_BRAND.opso)); };
+  // 26/11/2026 — nom du groupement lu dans le réglage ; repli = texte OPSO d'avant, à l'octet (bancs sans v2-boot.js).
+  function grpNom() { return (V2.groupement && V2.groupement.nom) || 'OPSO Santé'; }
   V2.pages = V2.pages || {};
 
   // ── State période (local module) ──────────────
@@ -1323,7 +1325,7 @@
 
     return {
       html: '<div class="opso-section">' +
-              '<div class="opso-section-head">' + ICO('pharma', 16) + 'Groupement OPSO Santé</div>' +
+              '<div class="opso-section-head">' + ICO('pharma', 16) + 'Groupement ' + esc(grpNom()) + '</div>' +
               kpiActivation +
               kpiGrp +
               moisCard +
@@ -2116,7 +2118,7 @@
         root.innerHTML = top +
           '<div class="v2-wrap pa-wrap">' +   // 21/11/2026 soir : même colonne (1 180 px à 1 280) et même haut que la vraie page
             '<div class="v2-page-title">Pilotage</div>' +
-            '<div class="v2-page-sub">' + (opso ? 'Tableau de bord groupement OPSO Santé.' : 'Votre chiffre d\'affaires, votre marge pharmacien et vos familles produits.') + '</div>' +
+            '<div class="v2-page-sub">' + (opso ? 'Tableau de bord groupement ' + esc(grpNom()) + '.' : 'Votre chiffre d\'affaires, votre marge pharmacien et vos familles produits.') + '</div>' +
             '<div class="v2-card"><div class="v2-empty">' +
               '<div class="v2-empty-ico">' + ICO('pilo', 64, 1.4) + '</div>' +
               '<div class="v2-empty-t">Vos ventes ne sont pas encore disponibles</div>' +
@@ -2997,7 +2999,7 @@
         '<div class="pilo-head">' +
           '<div>' +
             '<div class="v2-page-title">Pilotage</div>' +
-            '<div class="v2-page-sub" style="margin-bottom:0">' + (pf ? esc(pf.label) : '') + (V2.commFilter ? ' · ' + esc(V2.commFilter) : (opso ? ' · Groupement OPSO Santé' : equipe ? ' · équipe ' + esc(equipe) : ' · votre tableau de bord commercial')) + '</div>' +
+            '<div class="v2-page-sub" style="margin-bottom:0">' + (pf ? esc(pf.label) : '') + (V2.commFilter ? ' · ' + esc(V2.commFilter) : (opso ? ' · Groupement ' + esc(grpNom()) : equipe ? ' · équipe ' + esc(equipe) : ' · votre tableau de bord commercial')) + '</div>' +
             // Un mois écarté doit se DIRE : sinon l'écran a l'air de couvrir
             // une période qu'il ne couvre pas.
             (PERIOD === 'custom'

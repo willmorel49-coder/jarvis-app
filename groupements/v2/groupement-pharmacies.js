@@ -550,7 +550,7 @@
       lines.push([csvCell(it.d || 'Produit sans libellé'), it.code, csvCell(CAT_LABELS[it.cat] || ''), it.n, NB.pharmaClientes, it.boites, Math.round(it.ca)].join(';'));
     });
     var blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'opso_meilleurs_achats.csv';
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = ((V2.groupement && V2.groupement.id) || 'opso') + '_meilleurs_achats.csv';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
   };
