@@ -430,8 +430,10 @@ Deno.serve(async (req) => {
     const t = await telecharger(a.url)
     if ('erreur' in t) return reponse({ ok: false, raison: t.erreur })
     // 400 jours en arrière : de quoi dire « vue il y a 8 mois » sur une
-    // officine. 60 jours en avant : au-delà, le planning n'affiche rien.
-    const { lus, evenements } = evenementsAvecTitre(t.ics, 400, 60)
+    // officine. 180 jours (six mois) en avant : « Vos clients » doit voir
+    // les rendez-vous déjà posés loin devant, pas seulement sur deux mois
+    // (choix de Will, 26/11/2026). Les heures occupées restent sur JOURS.
+    const { lus, evenements } = evenementsAvecTitre(t.ics, 400, 180)
     return reponse({ ok: true, lus, evenements })
   }
 
