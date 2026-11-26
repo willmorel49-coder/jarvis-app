@@ -174,6 +174,17 @@
     return (2 * n) / (a.length - 1 + b.length - 1);
   }
 
+  // 26/11/2026 — « Pharmacie la grand prairie » : PHARMACIE LA GRANDE PRAIRIE, cliente de Will à Bourgueil, perdait
+  // contre une PHARMACIE DE LA PRAIRIE de l'Aisne. Un mot au masculin ou au singulier vaut le même mot du nom
+  // (GRAND/GRANDE, CHAMP/CHAMPS, FOUGERE/FOUGERES), la forme courte faisant 5 lettres au moins. Jamais un « E » retiré :
+  // LOIRE n'est pas LOIR (deux rivières) ; et HAUTES n'est pas HAUT (4 lettres).
+  function aLeMot(e, m) {
+    if (e.jetons[m]) return true;
+    if (m.length < 5) return false;
+    return !!(e.jetons[m + 'E'] || e.jetons[m + 'S'] || e.jetons[m + 'ES'] ||
+      (/S$/.test(m) && m.length >= 6 && e.jetons[m.slice(0, -1)]));
+  }
+
   // `porte` : l'index est celui du portefeuille du commercial (64 officines), pas l'annuaire (19 700).
   function chercher(seg, marqueur, index, lieu, porte) {
     var vide = { officine: null, score: 0, candidats: 0, dist: '' };
@@ -190,7 +201,7 @@
       // la sous-chaîne « HA » qui se cache dans « OMAHA ».
       var contenu = enveloppe.indexOf(' ' + e.dist + ' ') !== -1;
       var communs = 0, seul = null;
-      for (var k = 0; k < js.length; k++) if (e.jetons[js[k]]) { communs++; seul = js[k]; }
+      for (var k = 0; k < js.length; k++) if (aLeMot(e, js[k])) { communs++; seul = js[k]; }
       if (!contenu && !communs) continue;
       // Un nom distinctif très court ne vaut que s'il est tout le segment — sa ville à part (26/11/2026 :
       // « Pharmacie du lys coron » = PHARMACIE DU LYS à Coron, enseigne d'un client de Will).
@@ -248,7 +259,7 @@
       if (seg !== e.dist) {
         var villeJ = {}, reste = 0;
         e.ville.split(' ').forEach(function (v) { if (v) villeJ[v] = 1; });
-        for (k = 0; k < js.length; k++) if (!e.jetons[js[k]] && !villeJ[js[k]] && /^[A-Z]{2,}$/.test(js[k])) reste++;
+        for (k = 0; k < js.length; k++) if (!aLeMot(e, js[k]) && !villeJ[js[k]] && /^[A-Z]{2,}$/.test(js[k])) reste++;
         if (reste) score = Math.min(score, SEUIL_RECONNU - 0.01);
       }
       // 26/11/2026 — « Pharmacie Gouabau Pillet » (client de Will, PHARMACIE GOUABAU - PIHOUEE à Juigné-sur-Loire)

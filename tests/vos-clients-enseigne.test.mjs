@@ -29,6 +29,8 @@ const ANNUAIRE = { p: [
   ligne('PHARMACIE LA GRANDE PRAIRIE', 'VILLE G', '49007', 9300007),
   ligne('PHARMACIE CENTRALE', 'GRAND', '88999', 9399001),                      // « GRAND » est aussi une commune
   ligne('PHARMACIE DES LONGS CHAMPS', 'VILLEBIS', '35002', 9399002),
+  ligne('PHARMACIE DE LA PRAIRIE', 'VILLE LOINTAINE', '02999', 9399004),          // homonyme partiel, hors secteur
+  ligne('PHARMACIE DES RIVES DU LOIR', 'VILLE LOIR', '49998', 9399005),
 ] };
 
 function charger() {
@@ -162,4 +164,13 @@ test('le mois ne montre pas une simple ressemblance avec une officine hors du fi
   const h = V2.todoMois.html();
   assert.match(h, /Chasse/, 'marqueur : une officine reconnue hors du fichier (prospect) reste montrée');
   assert.doesNotMatch(h, /Chapitre/, 'une ressemblance hors du fichier n’est pas montrée');
+});
+
+test('« grand » vaut GRANDE : sa cliente passe devant une homonyme partielle de l’annuaire ; LOIRE n’est pas LOIR', () => {
+  const app = charger();
+  const m = app('Pharmacie la grand prairie');
+  assert.equal(String(m.officine.id), '9300007', 'PHARMACIE LA GRANDE PRAIRIE, pas PHARMACIE DE LA PRAIRIE');
+  assert.equal(m.etat, 'reconnu');
+  // LOIRE ne devient pas LOIR : « rives » seul ne fait qu'une ressemblance, jamais une certitude
+  assert.notEqual(app('Appeler phie des rives de Loire').etat, 'reconnu');
 });
