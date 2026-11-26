@@ -182,3 +182,34 @@
 .cl1-met .cl1-r b.of-vert{color:var(--c-mint-txt)}
 .cl1-leg{margin:-4px 2px 12px;font-size:13px;line-height:1.45;color:var(--txt-2)}
 .cl1-leg b{color:var(--ip-ink);font-weight:700;font-variant-numeric:tabular-nums}
+
+/* ═══ 26/11/2026 — TÉLÉPHONE, planche « JARVIS au téléphone : 11 choix », sujet 1, version 1 « Filtres repliés » (choix de Will) ═══
+   Au-dessus de la liste : la recherche, la bascule Clients / Prospects, puis UNE rangée « Filtres » + « Créer un prospect » (au lieu de quatre rangées).
+   Commercial, Tournée, À rappeler, Tri et Excel sont dans la feuille du bas « Filtres » (V2.oflFeuille, v2-pharma.js), posée sous <body> :
+   les règles de v2.css écrites sous « .ofl » ne l'atteignent pas, d'où celles-ci. Le bouton et la feuille ne sont produits qu'au téléphone
+   (telEcran, v2-pharma.js) et tout ce bloc vit sous 640 px : l'ordinateur ne reçoit rien.
+   Safari : fonds opaques, aucun flou, aucune opacité sur du texte. Cibles de 44 px au moins ; menus en 16 px (pas de zoom à l'ouverture). */
+@media (max-width:640px){
+  /* le bouton « Filtres » dit qu'un filtre de la feuille n'est pas à sa valeur de départ (« Filtres · 2 ») */
+  .ofl-btn.oflf-b.oflf-on{border-color:var(--ip-blue);background-color:#EEF3FF;color:var(--ip-blue-d);font-weight:800}
+  /* la feuille : une colonne ; Tournée partage sa ligne avec « À rappeler », Excel avec « Voir les N officines » */
+  .oflf{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding-bottom:calc(6px + env(safe-area-inset-bottom,0px))}
+  .oflf-l,.oflf-fin{display:flex;gap:8px;min-width:0}
+  .oflf-fin{margin-top:4px}
+  .oflf .v2-select,.oflf .ofl-sel{position:relative;display:flex;align-items:center;flex:1 1 0;width:auto;min-width:0;height:48px;margin:0;box-sizing:border-box;overflow:hidden;
+    border:1px solid #D5DBE8;border-radius:18px;background-color:#FFFFFF;box-shadow:none;color:#10131C}
+  .oflf .v2-select select,.oflf .ofl-sel select{flex:1 1 0;width:100%;max-width:100%;min-width:0;height:100%;min-height:0;padding:0 40px 0 14px;border:0;border-radius:18px;
+    background-color:transparent;color:inherit;font:700 16px/1.2 var(--font);text-overflow:ellipsis}
+  .oflf #v2-pharma-comm{height:100%;min-height:0;padding-right:40px;background-image:none}   /* v2.css lui dessine une seconde flèche (règle « html #v2-pharma-comm ») : une seule ici */
+  .oflf .v2-select svg,.oflf .ofl-sel svg{position:absolute;right:14px;top:50%;width:18px;height:18px;margin-top:-9px;color:#3A4256;pointer-events:none}
+  .oflf .v2-select:focus-within,.oflf .ofl-sel:focus-within{border-color:#0050E6;box-shadow:0 0 0 3px #C9DAFB}
+  .oflf .v2-select select:focus-visible,.oflf .ofl-sel select:focus-visible{outline:0;box-shadow:none}
+  .oflf .ofl-sel.ofl-on{border-color:var(--ip-blue);background-color:var(--ip-blue);color:#FFFFFF}
+  .oflf .ofl-sel.ofl-on svg{color:#FFFFFF}
+  .oflf .ofl-chip{flex:none;height:48px;padding:0 16px;border:1px solid #CFDDF8;border-radius:999px;background-color:#FFFFFF;color:var(--ip-blue-d);font:700 15px/1 var(--font)}
+  .oflf .ofl-chip.ofl-on{border-color:var(--ip-blue);background-color:var(--ip-blue);color:#FFFFFF}
+  .oflf .ofl-btn{flex:1 1 0;justify-content:center;min-width:0;height:48px;padding:0 12px;font-size:15px}
+  .oflf-voir{flex:1.6 1 0;min-width:0;min-height:48px;padding:6px 10px;border:1px solid #0040B8;border-radius:999px;background-color:#0046CC;background-image:linear-gradient(180deg,#1558E0,#0046CC);
+    color:#FFFFFF;font:700 15px/1.15 var(--font);text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .oflf-voir:active{transform:scale(.985)}
+}

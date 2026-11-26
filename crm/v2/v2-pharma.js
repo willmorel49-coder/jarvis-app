@@ -32,6 +32,9 @@
   // État du tableau : tournée choisie (code, « » = toutes), seulement les officines à rappeler, colonne de tri et son sens (1 croissant, -1 décroissant).
   var ofl = { tourn: '', rap: false, tri: 'ca', sens: -1, trnDemande: false, moi: true };   // moi : « Mon secteur » au menu (ofNoms)
   var OFL_TRIS = { ca: ['Chiffre d’affaires', -1], nom: ['Nom', 1], nm: ['Notre marge Intégral', -1], marge: ['Marge du pharmacien', -1], rap: ['À rappeler d’abord', -1], tourn: ['Tournée', 1] };
+  // 26/11/2026 — planche « JARVIS au téléphone : 11 choix » (choix de Will) : l'écran est-il dessiné pour le téléphone (640 px et moins) ?
+  // Même condition que viArrivee et rv2Glisse. Sans écran (tests) ou à l'ordinateur : false, et le HTML produit ne change pas d'un caractère.
+  function telEcran() { try { return !!(window.matchMedia && window.matchMedia('(max-width:640px)').matches); } catch (e) { return false; } }
   // Tournée de livraison de chaque officine : même règle que « ficheDe » de v2-tournees.js (son code, sinon la fiche reliée). Recalculée quand le fichier arrive.
   var _trnRef = null, _trnIdx = null;
   function trnIdx() {
@@ -1218,7 +1221,9 @@
     }
 
     var commBar = commSelect(true);
+    var oflTel = m1 && telEcran();   // 26/11/2026 — téléphone : la rangée de filtres se replie derrière un bouton « Filtres » (voir oflFiltres)
     var nAff = '';   // « 128 officines » : le compte de ce qui est affiché, écrit par listBody()
+    var oflNb = null, oflMot = 'officine';   // 26/11/2026 — le même compte en nombre (et son mot), pour « Voir les N officines » de la feuille « Filtres » du téléphone ; null = pas de compte
     var pl = function (n, mot) { return V2.fmtNum(n) + ' ' + mot + (n > 1 ? 's' : ''); };
 
     // Une seule ligne de compte, au-dessus du tableau : le nombre affiché, le tri en clair, et de quoi effacer les filtres.
@@ -1226,6 +1231,7 @@
     function oflCompte(n, mot) {
       var pros = secteurTab === 'prospects', k = ofl.tri;
       var tri = pros ? ((k === 'nom' || k === 'tourn') ? 'trié par ' + OFL_TXT[k] : '') : 'trié par ' + (OFL_TXT[k] || OFL_TXT.ca);
+      oflNb = n; oflMot = mot;
       return '<b>' + V2.fmtNum(n) + '</b> ' + mot + (n > 1 ? 's' : '') + (tri ? ' · ' + tri : '') +
         (ofl.tourn || ofl.rap || searchQuery.trim() ? ' · <button type="button" class="ofl-raz" onclick="V2.oflRaz()">Effacer les filtres</button>' : '');
     }
@@ -1241,7 +1247,7 @@
       return filtered.length
         ? filtered.map(ligneOuCarte).join('')
         : '<div class="v2-empty"><div class="v2-empty-t">Aucune officine</div><div class="v2-empty-d">' +
-          (rapSans ? (quiRap ? 'Les officines à rappeler sont en cours de calcul.' : 'Choisissez un commercial dans le menu ci-dessus pour voir ses officines à rappeler.') : searchQuery ?'Aucun résultat pour « ' + V2.esc(searchQuery) + ' ».' : (m1 && (ofl.tourn || ofl.rap) ? 'Aucune officine ne correspond à ces filtres.' : 'Aucune pharmacie chargée.')) +
+          (rapSans ? (quiRap ? 'Les officines à rappeler sont en cours de calcul.' : oflTel ? 'Choisissez un commercial dans « Filtres » pour voir ses officines à rappeler.' : 'Choisissez un commercial dans le menu ci-dessus pour voir ses officines à rappeler.') : searchQuery ?'Aucun résultat pour « ' + V2.esc(searchQuery) + ' ».' : (m1 && (ofl.tourn || ofl.rap) ? 'Aucune officine ne correspond à ces filtres.' : 'Aucune pharmacie chargée.')) +
           '</div></div>';
     }
 
@@ -1287,6 +1293,7 @@
 
     // Contenu de la liste selon la bascule (Clients par défaut, sinon Prospects par UGA du commercial).
     function listBody() {
+      oflNb = null;
       try {
         if (!isOpso() && secteurTab === 'prospects') {
           V2._ordreMesOff = null;   // 26/10/2026 — v2 : pas de « n sur N » pour les prospects
@@ -1305,7 +1312,7 @@
           if (crees.length) nAff = pl(crees.length, 'prospect');
           // 25/09/2026 — un commercial n'a pas de barre de choix (un seul nom dans ses ventes) : ses UGA d'office.
           var qui = V2.commFilter || (V2.mesComms ? V2.mesComms() : []);
-          if (!qui.length) return creesHtml + '<div class="v2-empty"><div class="v2-empty-t">Choisissez un commercial</div><div class="v2-empty-d">Sélectionnez un commercial dans le menu au-dessus pour voir les prospects de son secteur (UGA).</div></div>' + archLien;
+          if (!qui.length) return creesHtml + '<div class="v2-empty"><div class="v2-empty-t">Choisissez un commercial</div><div class="v2-empty-d">' + (oflTel ? 'Touchez « Filtres », puis choisissez un commercial pour voir les prospects de son secteur (UGA).' : 'Sélectionnez un commercial dans le menu au-dessus pour voir les prospects de son secteur (UGA).') + '</div></div>' + archLien;   // 26/11/2026 — au téléphone, le menu Commercial est dans la feuille « Filtres »
           if (!window.PHARMA_FR) return creesHtml + '<div class="v2-loading"><div class="v2-spinner"></div><div>Chargement des prospects…</div></div>' + archLien;
           // 20/11/2026 — tous les prospects du secteur sont lus (plus de plafond à 300 ni de lien vers la carte) : « Voir les suivants » les affiche 50 par 50.
           var pr = commercialProspects(qui, 1000000, q);
@@ -1362,19 +1369,40 @@
         ks.map(function (k) { return '<option value="' + k + '"' + (cur === k ? ' selected' : '') + '>Tri : ' + OFL_OPT[k] + '</option>'; }).join('') +
         '</select>' + chev + '</label>';
     }
-    function oflFiltres() {
+    // Les commandes de la rangée, une par une : l'ordinateur les aligne (oflFiltres) ; au téléphone, la feuille « Filtres » reprend les mêmes (oflfHtml).
+    function oflPieces() {
       var nbRap = null;
       if (secteurTab === 'clients' && V2.decrochageUI && V2.decrochageUI.compte() != null) {
         nbRap = phs.filter(function (x) { return _rap[String(x.p.id)] && !x.p._sansVente && ofDansSecteur(x, nomsOf); }).length;
       }
-      // La bascule Clients / Prospects garde ses libellés, sans les compteurs : le nombre s'écrit une seule fois, au-dessus du tableau.
-      var bascule = secteurBar.replace('<span class="v2-past-l">Afficher :</span>', '').replace(/<span class="of-cnt">[^<]*<\/span>/g, '').replace(/v2-segs/g, 'ofl-segs').replace(/v2-seg\b/g, 'ofl-seg');
-      return bascule + commBar + oflTournSelect() +
-        (secteurTab === 'clients' ? '<button type="button" class="ofl-chip' + (ofl.rap ? ' ofl-on' : '') + '" aria-pressed="' + ofl.rap + '" onclick="V2.oflRap()">À rappeler' + (nbRap != null ? ' (' + V2.fmtNum(nbRap) + ')' : '') + '</button>' : '') +
-        oflTriSelect() +
-        '<span class="ofl-act">' +
-          (secteurTab === 'clients' ? '<button type="button" class="ofl-btn ofl-btn-x" title="Exporter mes clients en Excel" aria-label="Exporter mes clients en Excel" onclick="V2.pharmaClientsXlsx()">' + ICO('download', 16) + '<span>Excel</span></button>' : '') +
-          '<button type="button" class="ofl-btn" id="of-creer" title="Créer un prospect" aria-label="Créer un prospect" onclick="V2.pharmaCreerProspect()">' + ICO('plus', 16) + '<span>Créer un prospect</span></button></span>';
+      return {
+        // La bascule Clients / Prospects garde ses libellés, sans les compteurs : le nombre s'écrit une seule fois, au-dessus du tableau.
+        bascule: secteurBar.replace('<span class="v2-past-l">Afficher :</span>', '').replace(/<span class="of-cnt">[^<]*<\/span>/g, '').replace(/v2-segs/g, 'ofl-segs').replace(/v2-seg\b/g, 'ofl-seg'),
+        rap: secteurTab === 'clients' ? '<button type="button" class="ofl-chip' + (ofl.rap ? ' ofl-on' : '') + '" aria-pressed="' + ofl.rap + '" onclick="V2.oflRap()">À rappeler' + (nbRap != null ? ' (' + V2.fmtNum(nbRap) + ')' : '') + '</button>' : '',
+        excel: secteurTab === 'clients' ? '<button type="button" class="ofl-btn ofl-btn-x" title="Exporter mes clients en Excel" aria-label="Exporter mes clients en Excel" onclick="V2.pharmaClientsXlsx()">' + ICO('download', 16) + '<span>Excel</span></button>' : '',
+        creer: '<button type="button" class="ofl-btn" id="of-creer" title="Créer un prospect" aria-label="Créer un prospect" onclick="V2.pharmaCreerProspect()">' + ICO('plus', 16) + '<span>Créer un prospect</span></button>'
+      };
+    }
+    function oflFiltres() {
+      var p = oflPieces();
+      // 26/11/2026 — TÉLÉPHONE, planche « 11 choix », sujet 1, version 1 « Filtres repliés » (choix de Will) : la rangée ne garde que la bascule,
+      // un bouton « Filtres » et « Créer un prospect » ; Commercial, Tournée, À rappeler, Tri et Excel passent dans la feuille du bas (V2.oflFeuille).
+      // Le bouton dit combien de filtres de la feuille ne sont pas à leur valeur de départ (« Filtres · 2 ») : Commercial, Tournée, À rappeler.
+      // Le tri n'est pas compté : il est déjà écrit en clair au-dessus de la liste (« trié par… »).
+      if (oflTel) {
+        var n = (commBar && !/<select[^>]*><option[^>]* selected>/.test(commBar) ? 1 : 0) + (ofl.tourn ? 1 : 0) + (ofl.rap && secteurTab === 'clients' ? 1 : 0);
+        return p.bascule + '<span class="ofl-act"><button type="button" class="ofl-btn oflf-b' + (n ? ' oflf-on' : '') + '" id="oflf-b" aria-haspopup="dialog" aria-label="Filtres' + (n ? ' : ' + n + ' en cours' : '') + '" onclick="V2.oflFeuille(this)">' +
+          fbIc('filtres', 16) + '<span>Filtres' + (n ? ' · ' + n : '') + '</span></button>' + p.creer + '</span>';
+      }
+      return p.bascule + commBar + oflTournSelect() + p.rap + oflTriSelect() + '<span class="ofl-act">' + p.excel + p.creer + '</span>';
+    }
+    // Le contenu de la feuille « Filtres » du téléphone : les mêmes commandes, avec les mêmes fonctions, puis Excel et « Voir les N officines » (N = le compte de la liste).
+    function oflfHtml() {
+      var p = oflPieces(), pr = oflMot === 'prospect';
+      var voir = oflNb == null ? 'Voir la liste' : !oflNb ? (pr ? 'Aucun prospect' : 'Aucune officine') : oflNb === 1 ? (pr ? 'Voir le prospect' : 'Voir l’officine') : 'Voir les ' + V2.fmtNum(oflNb) + ' ' + oflMot + 's';
+      return commBar + '<div class="oflf-l">' + oflTournSelect() + p.rap + '</div>' + oflTriSelect() +
+        '<div class="oflf-fin">' + p.excel.replace('onclick="V2.pharmaClientsXlsx()"', 'onclick="V2.fbFerme();V2.pharmaClientsXlsx()"') +   // la feuille se ferme avant l'export (comme V2.fbPdf), sinon son message reste dessous
+        '<button type="button" class="oflf-voir" onclick="V2.fbFerme()">' + voir + '</button></div>';
     }
     // En-tête du tableau : l'explication de chaque chiffre (période, estimation) est écrite ICI, une seule fois.
     function oflEntete() {
@@ -1445,7 +1473,11 @@
       if (f) f.innerHTML = oflFiltres();
       if (e) e.innerHTML = oflEntete();
       ofRedessine();
+      oflfMaj();
     };
+    // 26/11/2026 — téléphone : la feuille « Filtres » lit ses commandes ici ; si elle est ouverte pendant un nouveau dessin (changement de commercial), elle se met à jour.
+    oflfCorps = oflTel ? oflfHtml : null;
+    oflfMaj();
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -2548,7 +2580,9 @@
     prix: '<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".6" fill="currentColor"/>',
     lien: '<path d="m9 18 6-6-6-6"/>',
     grille: '<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>',
-    d2p: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>'
+    d2p: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
+    // 26/11/2026 — bouton et feuille « Filtres » de Mes officines au téléphone (curseurs de réglage, Feather, licence MIT)
+    filtres: '<path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M1 14h6"/><path d="M9 8h6"/><path d="M17 16h6"/>'
   };
   function fbIc(n, s) { return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + FB_IC[n] + '</svg>'; }
   function fbNb(n) { return V2.fmtNum(n) + ' produit' + (n > 1 ? 's' : ''); }
@@ -4107,8 +4141,20 @@
     '</div>';
   }
   // Une section à titre h2 + grand chiffre, et son corps
-  function fdrChapitre(n, corps, sous, cls, t) {
+  // 26/11/2026 — pli (TÉLÉPHONE, fiche cliente seulement : voir fdrPage) : le chapitre devient une LIGNE (numéro, titre, chiffre clé, chevron), repliée à l'arrivée ;
+  // un toucher l'ouvre sur son contenu, inchangé. pli = { s : précision sous le titre, v : chiffre clé, u : son unité }. Sans pli, le HTML est celui d'avant.
+  function fdrChapitre(n, corps, sous, cls, t, pli) {
     var titre = t || FDR_CH[n - 1][1];   // t : titre propre (fiches de prospect, fdrProspect)
+    if (pli) {
+      var o = !!fdrPliEtat.o[n], nom = 'fdr-h' + n + (pli.s ? ' fdr-ps' + n : '') + (pli.v ? ' fdr-pv' + n : '');
+      return '<section class="fdr-ch fdr-rv fdr-pli' + (o ? ' fdr-ouvert' : '') + (cls ? ' ' + cls : '') + '" id="fdr-c' + n + '" aria-labelledby="fdr-h' + n + '">' +
+        '<header class="fdr-ch-h"><span class="fdr-num" aria-hidden="true">' + n + '</span><div class="fdr-ch-t"><h2 id="fdr-h' + n + '">' + esc(titre) + '</h2>' +
+          (pli.s ? '<p class="fdr-pli-s" id="fdr-ps' + n + '">' + pli.s + '</p>' : '') + (sous ? '<p class="fdr-ch-s">' + sous + '</p>' : '') + '</div>' +
+          (pli.v ? '<span class="fdr-pli-v cl1-num" id="fdr-pv' + n + '">' + pli.v + (pli.u ? '<small> ' + pli.u + '</small>' : '') + '</span>' : '') +
+          '<span class="fdr-pli-fl" aria-hidden="true">' + fbIc('lien', 20) + '</span>' +
+          '<button type="button" class="fdr-pli-b" aria-expanded="' + o + '" aria-controls="fdr-cc' + n + '" aria-labelledby="' + nom + '" onclick="V2.fdrPli(' + n + ')"></button></header>' +
+        '<div class="fdr-ch-c" id="fdr-cc' + n + '">' + corps + '</div></section>';
+    }
     return '<section class="fdr-ch fdr-rv' + (cls ? ' ' + cls : '') + '" id="fdr-c' + n + '" aria-labelledby="fdr-h' + n + '">' +
       '<header class="fdr-ch-h"><span class="fdr-num" aria-hidden="true">' + n + '</span><div class="fdr-ch-t"><h2 id="fdr-h' + n + '">' + esc(titre) + '</h2>' + (sous ? '<p class="fdr-ch-s">' + sous + '</p>' : '') + '</div></header>' +
       '<div class="fdr-ch-c">' + corps + '</div></section>';
@@ -4464,17 +4510,58 @@
     var som = '<nav class="fdr-som" id="fdr-som" aria-label="Aller à un chapitre">' + FDR_SOM.map(function (t, i) {
       return '<button type="button" class="fdr-pil' + (i === FDR_SOM.length - 1 ? ' vi-int' : '') + '" data-ch="' + (i + 1) + '" onclick="V2.fdrAller(' + (i + 1) + ')"><b>' + (i + 1) + '</b><span>' + esc(t) + '</span></button>';
     }).join('') + '</nav>';
-    h += fdrChapitre(1, '<div class="fdr-c1">' + fdrMontants(A, c.nbRefs) + fdrOffilog(c.pid) + fdrCourbe(A) + '</div>', '');   // Offilog sous les montants, dans les deux vues (24/11/2026)
-    h += fdrChapitre(2, c.nePlus || '<p class="fdr-leg">Rien à signaler.</p>', '');
-    h += fdrChapitre(3, c.tranches + '<div class="fdr-bloc fdr-rep">' + m5Replie('fdr-top5', 'Top 10 par catégorie', c.top5) + m5Replie('fdr-parts', 'Par catégorie, mois par mois', analyseParts(A, true)) + '</div>', '');
-    h += fdrChapitre(4, c.generiqueurs || '<p class="fdr-leg">Aucun génériqueur ni biosimilaire enregistré.</p>', '');
+    // 26/11/2026 — TÉLÉPHONE, planche « 11 choix », sujet 3, version 1 « Cinq chapitres, cinq lignes » (choix de Will) : pli = le chiffre clé de chaque ligne
+    // (fdrPliCles) ; à l'ordinateur pli est nul et les chapitres sont ceux d'avant. Arriver sur une autre officine replie tout ; un nouveau dessin de la même garde l'état.
+    var pli = telEcran() ? fdrPliCles(c) : null;
+    if (pli && fdrPliEtat.pid !== String(c.pid)) fdrPliEtat = { pid: String(c.pid), o: {} };
+    h += fdrChapitre(1, '<div class="fdr-c1">' + fdrMontants(A, c.nbRefs) + fdrOffilog(c.pid) + fdrCourbe(A) + '</div>', '', '', '', pli && pli[1]);   // Offilog sous les montants, dans les deux vues (24/11/2026)
+    h += fdrChapitre(2, c.nePlus || '<p class="fdr-leg">Rien à signaler.</p>', '', '', '', pli && pli[2]);
+    h += fdrChapitre(3, c.tranches + '<div class="fdr-bloc fdr-rep">' + m5Replie('fdr-top5', 'Top 10 par catégorie', c.top5) + m5Replie('fdr-parts', 'Par catégorie, mois par mois', analyseParts(A, true)) + '</div>', '', '', '', pli && pli[3]);
+    h += fdrChapitre(4, c.generiqueurs || '<p class="fdr-leg">Aucun génériqueur ni biosimilaire enregistré.</p>', '', '', '', pli && pli[4]);
     // ── 5. Côté Intégral : tout l'interne, dans un seul chapitre (jamais d'élément interne au-dessus)
     var int = fdrInterne(c);
-    h += fdrChapitre(5, int, 'Ce que le pharmacien ne voit pas : notre marge par tranche de prix et la comparaison à nos clients.', 'vi-int fdr-int');
-    return '<div class="fdr fdr-d fdo-g"><aside class="fdo-side">' + tete + fdoCoord(c) + navig + '</aside><div class="fdo-main">' + fdrListings(c) + rv2Bandes(c) + '<div class="rv2-outils">' + fdrOutilsBoutons(c) + '</div>' + som + h + '</div>' + rv2Barre(c) + '</div>';
+    h += fdrChapitre(5, int, 'Ce que le pharmacien ne voit pas : notre marge par tranche de prix et la comparaison à nos clients.', 'vi-int fdr-int', '', pli && pli[5]);
+    return '<div class="fdr fdr-d fdo-g' + (pli ? ' fdr-plis' : '') + '"><aside class="fdo-side">' + tete + fdoCoord(c) + navig + '</aside><div class="fdo-main">' + fdrListings(c) + rv2Bandes(c) + '<div class="rv2-outils">' + fdrOutilsBoutons(c) + '</div>' + som + h + '</div>' + rv2Barre(c) + '</div>';
   }
+  // Le chiffre clé de chaque ligne de chapitre, au téléphone : des valeurs que la fiche calcule et écrit déjà, jamais un nouveau calcul.
+  //  1. Chiffres : le chiffre d'affaires du dernier mois reçu (le premier des trois montants du chapitre, fdrMontants).
+  //  2. Produits qui ne sont plus commandés : leur nombre et leur montant par mois (le total du bandeau « Ne commande plus », rv2NePlus).
+  //  3, 4 et 5 : pas de chiffre (la planche les laisse à choisir avec Will ; aucun total unique et sans équivoque n'est écrit dans ces chapitres).
+  function fdrPliCles(c) {
+    var A = c.A, k = { 1: {}, 2: {}, 3: {}, 4: {}, 5: {} };
+    if (A.last) k[1] = { s: 'en ' + esc(cl1MoisK(A.last.mk, true)), v: V2.fmtEur(A.last.ca) };
+    var N = rv2NePlus(c.pid);
+    if (N && N.n) k[2] = { s: V2.fmtNum(N.n) + ' produit' + (N.n > 1 ? 's' : ''), v: V2.fmtEur(N.total), u: 'par mois' };
+    return k;
+  }
+  // État des lignes (ouvertes ou non) de la dernière fiche affichée. Même règle que viArrivee : seule l'arrivée sur une AUTRE officine replie tout ;
+  // un nouveau dessin de la même fiche (note enregistrée, retour) garde les lignes comme on les a laissées.
+  var fdrPliEtat = { pid: null, o: {} };
+  // Ouvre ou referme la ligne n (ouvrir : true / false pour forcer). Rend false si le chapitre n'est pas une ligne repliable (ordinateur, fiche de prospect).
+  V2.fdrPli = function (n, ouvrir) {
+    var s = document.getElementById('fdr-c' + n); if (!s || !s.classList.contains('fdr-pli')) return false;
+    var o = ouvrir == null ? !s.classList.contains('fdr-ouvert') : !!ouvrir;
+    s.classList.toggle('fdr-ouvert', o);
+    var b = s.querySelector('.fdr-pli-b'); if (b) b.setAttribute('aria-expanded', o ? 'true' : 'false');
+    fdrPliEtat.o[n] = o;
+    return true;
+  };
+  // Le lien « Ce qu'elle ne commande plus » du bandeau « À rappeler » (V2.decrochageUI.nePlus, v2-decrochage.js) défile jusqu'à un bloc du chapitre 2 :
+  // replié, ce bloc n'a pas de place à l'écran et le lien ne ferait rien. Le chapitre qui le porte s'ouvre d'abord. Posé une fois, depuis fdrInit, au téléphone.
+  function fdrPliLiens() {
+    var D = V2.decrochageUI; if (!D || !D.nePlus || D.nePlus.fdrPli) return;
+    var avant = D.nePlus;
+    D.nePlus = function () {
+      var b = document.querySelector('.fdr-pli .pha-np'), ch = b && b.closest ? b.closest('.fdr-pli') : null;
+      if (ch) V2.fdrPli(+String(ch.id).replace('fdr-c', ''), true);
+      return avant.apply(this, arguments);
+    };
+    D.nePlus.fdrPli = true;
+  }
+  // 26/11/2026 — téléphone : le chapitre visé s'ouvre d'abord (V2.fdrPli ne fait rien quand le chapitre n'est pas une ligne repliable)
   V2.fdrAller = function (n) {
     var el = document.getElementById('fdr-c' + n); if (!el) return;
+    V2.fdrPli(n, true);
     var som = document.getElementById('fdr-som'), dec = (som ? som.offsetHeight : 0) + phaTelHaut() + 12;
     var calme = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - dec, behavior: calme ? 'auto' : 'smooth' });
@@ -4492,6 +4579,7 @@
   var fdrEcoute = false;
   function fdrInit(root) {
     var som = root.querySelector('#fdr-som'); if (!som) return;
+    if (root.querySelector('.fdr-pli')) fdrPliLiens();   // 26/11/2026 — téléphone, chapitres en lignes : voir fdrPliLiens
     var fiche = root.querySelector('.fdr'), haut = function () { (fiche || som).style.setProperty('--fdr-top', phaTelHaut() + 'px'); };
     haut();
     var suivre = function () {
@@ -5230,6 +5318,27 @@
   // 19/10/2026 — « Voir les 50 suivantes » (liste des officines au téléphone) : 50 lignes de plus, la liste est redessinée, la position à l'écran ne bouge pas.
   // 20/11/2026 — gestes du tableau Officines : chacun ne redessine que filtres + en-tête + liste (jamais la recherche).
   var oflMaj = null;
+  // 26/11/2026 — TÉLÉPHONE, planche « 11 choix », sujet 1, version 1 « Filtres repliés » (choix de Will). La feuille du bas (fbPose : celle de la fiche et du
+  // « Menu », validée le 22/11) porte Commercial, Tournée, À rappeler, Tri et Excel : les MÊMES commandes, avec leurs fonctions d'avant (V2.pharmaSetComm,
+  // V2.oflTourn, V2.oflRap, V2.oflTri, V2.pharmaClientsXlsx) et le même état (ofl, V2.commFilter). oflfCorps est posé par renderList, au téléphone seulement.
+  var oflfCorps = null;
+  V2.oflFeuille = function (el) {
+    if (!oflfCorps) return;
+    fbPose({ t: 'Filtres', s: secteurTab === 'prospects' ? 'Prospects de mon secteur' : 'Clients', ic: 'filtres', h: '<div class="oflf" id="oflf">' + oflfCorps() + '</div>' }, el);
+    // on quitte l'écran feuille ouverte (retour du navigateur) : elle ne reste pas posée sur l'écran suivant
+    var partir = function () { window.removeEventListener('hashchange', partir); if (document.getElementById('oflf')) fbFerme(true); };
+    window.addEventListener('hashchange', partir);
+  };
+  // Après chaque geste (ou un nouveau dessin de la liste) : la feuille ouverte reprend l'état des commandes et le compte « Voir les N officines ».
+  function oflfMaj() {
+    var z = document.getElementById('oflf'); if (!z) return;
+    if (!oflfCorps) { fbFerme(true); return; }
+    var a = document.activeElement, i = a && a.tagName === 'BUTTON' ? [].indexOf.call(z.querySelectorAll('button'), a) : -1;
+    z.innerHTML = oflfCorps();
+    var b = i >= 0 ? z.querySelectorAll('button')[i] : null;
+    if (b) { try { b.focus({ preventScroll: true }); } catch (e) {} }   // « À rappeler » garde le curseur ; les menus, eux, gardent leur comportement d'avant
+    fbOp = document.getElementById('oflf-b') || fbOp;   // le bouton « Filtres » vient d'être redessiné : c'est le nouveau qui reprend le curseur à la fermeture
+  }
   V2.oflTourn = function (code) { ofl.tourn = code || ''; if (oflMaj) oflMaj(); };
   V2.oflRap = function () { ofl.rap = !ofl.rap; if (oflMaj) oflMaj(); };
   V2.oflTri = function (k) { if (!k) { ofl.tri = 'ca'; ofl.sens = -1; } else { ofl.tri = k; ofl.sens = OFL_TRIS[k][1]; } if (oflMaj) oflMaj(); };

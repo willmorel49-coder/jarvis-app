@@ -142,3 +142,39 @@
      date et note facultatives, puis les quatre choix. « Une fois » reste coché (V2.todo.menuMaj lit l'état, il n'a rien à y changer) ; la page To do list ne change pas. */
   .v2-todo-ov.rv2-feuille .v2-todo-rp-seg,.v2-todo-ov.rv2-feuille #v2-todo-rp-p{display:none}
 }
+
+/* 26/11/2026 — planche « JARVIS au téléphone : 11 choix », sujet 3, version 1 « Cinq chapitres, cinq lignes » (choix de Will).
+   Sous l'en-tête, les bandeaux et les boutons d'outils (inchangés), chaque chapitre de la fiche CLIENTE devient une ligne : numéro, titre, chiffre clé, chevron.
+   Repliées à l'arrivée, les lignes se touchent et forment une seule carte ; un toucher ouvre un chapitre sur son contenu d'avant, à la même largeur qu'avant
+   (les tableaux réglés au pixel à 360 px ne bougent pas). Le HTML des lignes (.fdr-plis, .fdr-pli, v2-pharma.js) n'est produit qu'au téléphone :
+   tout ce bloc vit sous 640 px. Les fiches de prospect gardent leurs chapitres ouverts (elles n'ont pas ces classes).
+   Règles tenues : fonds opaques, aucun flou, aucune opacité sur du texte ; la ligne entière est le bouton (60 px de haut au moins) ; texte de 13 px au moins. */
+@media (max-width:640px){
+  /* les coordonnées, que v2.css place entre le chapitre 1 et le 2, passent après les cinq lignes : la carte reste d'un seul tenant */
+  .pha-wrap.fdr-on .fdr-plis .fdo-b{order:5}
+  /* une ligne ; --pli-h / --pli-b : arrondi du haut et du bas de la carte (première ligne, dernière ligne, de part et d'autre d'un chapitre ouvert) */
+  .pha-wrap.fdr-on .fdr-plis .fdr-pli{margin-top:-1px;transform:none;transition:none}
+  .pha-wrap.fdr-on .fdr-plis #fdr-c1.fdr-pli{margin-top:12px;--pli-h:20px}
+  .pha-wrap.fdr-on .fdr-plis .fdr-pli.fdr-ouvert{--pli-b:20px}
+  .pha-wrap.fdr-on .fdr-plis .fdr-pli.fdr-ouvert + .fdr-pli{margin-top:14px;--pli-h:20px}
+  .pha-wrap.fdr-on[data-vue="integral"] .fdr-plis #fdr-c5.fdr-pli,.pha-wrap.fdr-on[data-vue="pharmacien"] .fdr-plis #fdr-c4.fdr-pli{--pli-b:20px}
+  .pha-wrap.fdr-on .fdr .fdr-pli > .fdr-ch-h{position:relative;display:flex;align-items:center;gap:12px;min-height:60px;margin:0;padding:8px 12px 8px 14px;box-sizing:border-box;
+    border-radius:var(--pli-h,0) var(--pli-h,0) var(--pli-b,0) var(--pli-b,0);background-color:#FFFFFF;box-shadow:inset 0 0 0 1px #E3E6EC}
+  .pha-wrap.fdr-on .fdr .fdr-pli > .fdr-ch-h:has(.fdr-pli-b:active){background-color:#F3F7FF}
+  .pha-wrap.fdr-on .fdr .fdr-pli .fdr-num{width:36px;height:36px;border-radius:12px;font-size:16px;letter-spacing:0}
+  .pha-wrap.fdr-on .fdr .fdr-pli .fdr-ch-t{flex:1 1 auto;min-width:0}
+  .pha-wrap.fdr-on .fdr .fdr-pli .fdr-ch-t h2{margin:0;font-size:16px;line-height:1.25;font-weight:700;letter-spacing:-.01em}
+  .pha-wrap.fdr-on .fdr .fdr-pli .fdr-pli-s,.pha-wrap.fdr-on .fdr .fdr-pli .fdr-ch-s{margin:2px 0 0;font-size:13px;line-height:1.3;color:#4A5672}
+  .pha-wrap.fdr-on .fdr .fdr-pli:not(.fdr-ouvert) .fdr-ch-s{display:none}        /* la phrase d'explication du chapitre se lit une fois la ligne ouverte */
+  .pha-wrap.fdr-on .fdr .fdr-pli .fdr-pli-v{flex:none;text-align:right;font-size:16px;line-height:1.1;font-weight:800;color:#0034A0;white-space:nowrap}
+  .pha-wrap.fdr-on .fdr .fdr-pli .fdr-pli-v small{display:block;margin-top:3px;font-size:13px;line-height:1.2;font-weight:500;color:#4A5672}
+  .pha-wrap.fdr-on .fdr .fdr-pli .fdr-pli-fl{flex:none;display:grid;place-items:center;width:20px;height:20px;color:#0050E6;transition:transform .25s cubic-bezier(.32,.72,0,1)}
+  .pha-wrap.fdr-on .fdr .fdr-pli.fdr-ouvert .fdr-pli-fl{transform:rotate(90deg)}
+  /* le bouton couvre toute la ligne ; le texte reste dessous, lisible par les lecteurs d'écran dans l'ordre */
+  .pha-wrap.fdr-on .fdr .fdr-pli .fdr-pli-b{position:absolute;left:0;top:0;width:100%;height:100%;margin:0;padding:0;border:0;border-radius:inherit;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .pha-wrap.fdr-on .fdr .fdr-pli .fdr-pli-b:focus-visible{outline:3px solid #8FB2F5;outline-offset:-3px;box-shadow:none}
+  /* replié : le contenu n'est pas affiché ; ouvert : le contenu d'avant, sous la ligne */
+  .pha-wrap.fdr-on .fdr .fdr-pli:not(.fdr-ouvert) > .fdr-ch-c{display:none}
+  .pha-wrap.fdr-on .fdr .fdr-pli.fdr-ouvert > .fdr-ch-c{margin-top:10px}
+  @media (prefers-reduced-motion:reduce){.pha-wrap.fdr-on .fdr .fdr-pli .fdr-pli-fl{transition:none}}
+}
