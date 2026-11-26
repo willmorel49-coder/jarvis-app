@@ -1,12 +1,13 @@
 // 26/11/2026 — barre du haut des petits téléphones : choix de Will sur la planche « JARVIS au téléphone : 11 choix », sujet 10,
-// VERSION 3 « 8 px, le nom court » : à 380 px de large et moins, les quatre boutons de droite passent de 2 à 8 px d'écart.
+// VERSION 3 « 8 px, le nom court » : à 385 px de large et moins (380 jusqu'au 26/11 après-midi ; porté à 385 par choix de Will : de 381 à 385 px,
+// le nom entier était rogné), les quatre boutons de droite passent de 2 à 8 px d'écart.
 // La place est reprise au bouton Retour (100 → 85 px) et au nom de la marque, qui n'est PAS masqué (version 1, retirée le 25/11) :
 // seul son premier mot se voit, « JARVIS » au lieu de « JARVIS Pharma ».
 // Ce que ce test garde :
-//   · les cinq règles existent, sous 380 px, à l'intérieur du bloc 640 px de v2.css ;
+//   · les cinq règles existent, sous 385 px, à l'intérieur du bloc 640 px de v2.css ;
 //   · le nom n'est ni masqué ni réécrit en dur : il vient toujours de V2_BRAND.name, entier dans la page ;
 //   · le compte tombe juste à 360 et 375 px (positions attendues des boutons, rien de rogné) ;
-//   · au-dessus de 380 px et à l'ordinateur, rien ; Phirst et OPSO ne reçoivent rien.
+//   · au-dessus de 385 px et à l'ordinateur, rien ; Phirst et OPSO ne reçoivent rien.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -19,7 +20,8 @@ const S = {
   droite: P + '.tp-d', gauche: P + '.tp-g', retour: P + '.v2-top .v2-back',
   nom: P + '.v2-top .v2-brand-t', cadre: P + '.v2-top .v2-brand:not(.v2-brand-compact)>span:not(.v2-logo)'
 };
-const sous380 = r => r.medias.some(m => largeurMax(m) <= 380);
+const sous380 = r => r.medias.some(m => largeurMax(m) <= 380);   // règles de v2-pieces.css (inchangées)
+const sous385 = r => r.medias.some(m => largeurMax(m) <= 385);   // règles de ce sujet, dans v2.css
 const une = sel => { const r = trouve(base, sel); assert.equal(r.length, 1, 'une seule règle « ' + sel + ' » dans v2.css'); return r[0]; };
 const px = (decl, prop) => { const m = new RegExp('(?:^|;)' + prop + ':(\\d+(?:\\.\\d+)?)px').exec(decl); assert.ok(m, prop + ' en px dans « ' + decl + ' »'); return +m[1]; };
 
@@ -30,14 +32,14 @@ test('étalonnage : la lecture des feuilles rend des valeurs connues', () => {
   assert.ok(base.length > 1000 && pieces.length > 100, 'marqueur : feuilles bien lues (' + base.length + ' et ' + pieces.length + ' règles)');
 });
 
-test('sous 380 px : 8 px entre les boutons de droite, 4 px à gauche, bouton Retour resserré', () => {
+test('sous 385 px : 8 px entre les boutons de droite, 4 px à gauche, bouton Retour resserré', () => {
   assert.equal(une(S.droite).decl, 'gap:8px');
   assert.equal(une(S.gauche).decl, 'gap:4px');
   assert.equal(une(S.retour).decl, 'gap:4px;padding:0 8px 0 5px');
   for (const k of Object.keys(S)) {
     const r = une(S[k]);
-    assert.deepEqual(r.medias.map(largeurMax), [640, 380], S[k] + ' : sous 380 px, dans le bloc 640 px');
-    assert.ok(sousTelephone(r) && sous380(r));
+    assert.deepEqual(r.medias.map(largeurMax), [640, 385], S[k] + ' : sous 385 px, dans le bloc 640 px');
+    assert.ok(sousTelephone(r) && sous385(r));
   }
 });
 
@@ -48,9 +50,9 @@ test('le nom de la marque n\'est pas masqué : il se replie sur son espace et so
   assert.equal(px(d, 'height'), px(d, 'line-height'), 'cadre haut d\'une seule ligne');
   assert.match(d, /(^|;)overflow:hidden/, 'les lignes suivantes ne se voient pas');
   assert.doesNotMatch(d, /display:none|visibility|font-size:0|text-indent/, 'le nom n\'est pas retiré de la page');
-  // rien, sous 380 px, ne masque le bloc du nom (c'était la version 1, retirée le 25/11)
-  const masque = base.filter(r => sous380(r) && /v2-brand/.test(r.sel) && /display:none/.test(r.decl));
-  assert.equal(masque.length, 0, 'aucune règle « display:none » sur la marque sous 380 px');
+  // rien, sous 385 px, ne masque le bloc du nom (c'était la version 1, retirée le 25/11)
+  const masque = base.filter(r => sous385(r) && /v2-brand/.test(r.sel) && /display:none/.test(r.decl));
+  assert.equal(masque.length, 0, 'aucune règle « display:none » sur la marque sous 385 px');
 });
 
 test('le nom court n\'est pas écrit en dur : il vient du réglage de la page, dont le texte entier reste dans la barre', () => {
@@ -72,7 +74,7 @@ test('ces règles pèsent plus lourd que celles qu\'elles remplacent', () => {
   assert.ok(compare(poids(S.gauche), poids('.tp-g')) > 0);
   assert.ok(compare(poids(S.retour), poids('.v2-back')) > 0);
   const nowrap = trouve(base, 'html .v2-brand-t').find(r => /white-space:nowrap/.test(r.decl));
-  assert.ok(nowrap && sousTelephone(nowrap), 'sous 640 px le nom reste sur une ligne (au-dessus de 380 px, rien ne change)');
+  assert.ok(nowrap && sousTelephone(nowrap), 'sous 640 px le nom reste sur une ligne (au-dessus de 385 px, rien ne change)');
   assert.ok(compare(poids(S.nom), poids('html .v2-brand-t')) > 0);
 });
 
@@ -107,11 +109,13 @@ test('le compte tombe juste à 360 et à 375 px : boutons à 8 px d\'écart, rie
   }
 });
 
-test('au-dessus de 380 px et à l\'ordinateur, rien ; Phirst et OPSO ne reçoivent rien', () => {
-  // toute règle de v2.css qui commence par ce préfixe et touche la barre du haut vit sous 380 px
+test('au-dessus de 385 px et à l\'ordinateur, rien ; Phirst et OPSO ne reçoivent rien', () => {
+  // toute règle de v2.css qui commence par ce préfixe et touche la barre du haut vit sous 385 px
   const miennes = base.filter(r => r.sel.includes(P.trim()) && /\.tp-d|\.tp-g|\.v2-back|\.v2-brand/.test(r.sel));
   assert.equal(miennes.length, 5);
-  for (const r of miennes) assert.ok(sous380(r) && sousTelephone(r), r.sel);
+  for (const r of miennes) assert.ok(sous385(r) && sousTelephone(r), r.sel);
+  // et pas au-dessus : aucune ne vaut encore à 386 px
+  for (const r of miennes) assert.ok(!r.medias.some(m => largeurMax(m) > 385 && largeurMax(m) < 640), r.sel + ' : rien entre 386 et 639 px');
   // Phirst : sa page porte data-teinte, que le préfixe exclut
   assert.match(ailleurs('phirst/v2/index.html'), /<html lang="fr" data-teinte="phirst">/);
   assert.match(P, /^html:not\(\[data-teinte\]\) /);

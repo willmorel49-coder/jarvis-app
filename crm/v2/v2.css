@@ -635,12 +635,13 @@ html.v2-nav .v2-top::before{content:"";position:absolute;left:0;bottom:-1px;heig
   html .mis-tot span,html .mis-tot small,html .mis-tot-note{opacity:1}
   /* Listings : le libellé des cartes de famille n'est plus en capitales espacées (« NOTRE MARGE PAR / BOÎTE » se cassait en deux) */
   html .mp-fv::before{text-transform:none;letter-spacing:0}
-  /* Barre du haut à 380 px et moins : 8 px entre les quatre boutons de droite (planche du 26/11/2026, sujet 10, version 3 « 8 px, le nom court »).
+  /* Barre du haut à 385 px et moins : 8 px entre les quatre boutons de droite (planche du 26/11/2026, sujet 10, version 3 « 8 px, le nom court »).
+     385 et non 380 (choix de Will, 26/11/2026) : de 381 à 385 px, « JARVIS Pharma » entier sortait de sa place (le « a » final rogné, mesuré sous WebKit) ; il tient dès 386 px.
      v2-pieces.css les serre à 2 px pour que la maison d'un écran interne ne soit pas rognée ; la place est reprise au bouton Retour (resserré de 15 px)
      et au nom de la marque, dont seul le premier mot se voit : « JARVIS » au lieu de « JARVIS Pharma ». Le nom n'est pas réécrit ici (il vient de V2_BRAND.name) :
      il se replie sur son espace et son cadre ne montre que la première ligne ; le texte entier reste dans la page.
      JARVIS connecté seulement : ni Phirst (data-teinte) ni OPSO (pas de barre du bas). */
-  @media (max-width:380px){
+  @media (max-width:385px){
     html:not([data-teinte]) body.bnav-on .tp-d{gap:8px}
     html:not([data-teinte]) body.bnav-on .tp-g{gap:4px}
     html:not([data-teinte]) body.bnav-on .v2-top .v2-back{gap:4px;padding:0 8px 0 5px}
