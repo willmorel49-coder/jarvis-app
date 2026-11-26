@@ -893,7 +893,8 @@
     // 05/10/2026 — remontée de Karine (« ma phie Blin à Issé ») : l'équipe cherche aussi une officine
     // par le nom de son titulaire (base clients, colonne contact).
     var e = ((window.CLIENTS_ACTIFS || {}).d || {})[String(p.id)];
-    return !!(e && e[3] && villeCle(e[3]).indexOf(v) >= 0);
+    if (e && e[3] && villeCle(e[3]).indexOf(v) >= 0) return true;
+    return !!(p.tit && villeCle(p.tit).indexOf(v) >= 0);   // 26/11/2026 — prospects : le titulaire de l'annuaire, affiché sur la ligne
   }
   function listRowHtml(x) {
     var color = x.p.color || 'var(--ip-blue)';
@@ -938,13 +939,16 @@
   function ligneOfl(x) {
     var p = x.p, pid = String(p.id), voit = V2.voitVentesDe(p.id), ev = _rap[pid], pros = !!p._prospect;
     var nom = V2.esc(String(p.name || '').toLocaleUpperCase('fr-FR'));
-    var ville = V2.esc([String(p.ville || '').toLocaleUpperCase('fr-FR'), cpDe(p)].filter(Boolean).join(' · '));
+    // 26/11/2026 — sous le nom : le titulaire, puis la ville et le code postal (Will). Le titulaire se coupe avant la ville.
+    var tit = V2.titulaireDe(pid, p.tit);
+    var ville = (tit ? '<span class="ofl-tit">' + V2.esc(tit) + '</span><span class="ofl-pt" aria-hidden="true">·</span>' : '') +
+      '<span class="ofl-ville">' + V2.esc([String(p.ville || '').toLocaleUpperCase('fr-FR'), cpDe(p)].filter(Boolean).join(' ')) + '</span>';
     var trn = trnDe(p), t = trn.length ? '<span class="ofl-t">' + V2.esc(trn.join(', ')) + '</span>' : '';
     var onclick = 'onclick="V2.pharmaNav.va(\'' + V2.esc(pid) + '\',1)" onkeydown="if(event.key===\'Enter\')this.click()"';
     if (pros) {
       var st = p._cree ? (p._archive ? 'archivée' : 'créé à la main') : 'Prospect';
       return '<a class="ofl-r ofl-r-pros" role="row" tabindex="0" ' + onclick + '>' +
-        '<span class="ofl-c-nom"><b class="ofl-nom">' + nom + '</b><span class="ofl-sous"><span class="ofl-ville">' + ville + '</span>' + t + '</span></span>' +
+        '<span class="ofl-c-nom"><b class="ofl-nom">' + nom + '</b><span class="ofl-sous">' + ville + t + '</span></span>' +
         '<span class="ofl-c-t">' + t + '</span><span class="ofl-c-rap"><span class="ofl-pill ofl-pill-p">' + st + '</span></span></a>';
     }
     var sv = !!p._sansVente, nm = (V2.notreMarge && V2.notreMarge.dispo()) ? notreMargeDe(p.id) : undefined;
@@ -958,7 +962,7 @@
       : sv ? '<span class="ofl-pill ofl-pill-p">Aucune vente</span>' : '';
     var caTxt = voit ? V2.fmtEur(x.ca) : '—', nmTxt = nm ? V2.fmtEur(nm.tot) : '—', mgTxt = voit ? V2.fmtEur(x.marge) : '—';
     return '<a class="ofl-r" role="row" tabindex="0" ' + onclick + '>' +
-      '<span class="ofl-c-nom"><b class="ofl-nom">' + nom + '</b><span class="ofl-sous"><span class="ofl-ville">' + ville + '</span>' + t +
+      '<span class="ofl-c-nom"><b class="ofl-nom">' + nom + '</b><span class="ofl-sous">' + ville + t +
         (rap ? '<span class="ofl-m-rap">' + (ev && !sv ? '<span class="ofl-pill ofl-pill-w">À rappeler</span>' : '<span class="ofl-pill ofl-pill-p">Aucune vente</span>') + '</span>' : '') +
         (nm !== undefined ? '<span class="ofl-m-nm">marge ' + nmTxt + '</span>' : '') + '</span></span>' +
       '<span class="ofl-c-t">' + t + '</span>' +
@@ -999,7 +1003,7 @@
   }
   // pseudo-ligne de liste pour un point PHARMA_FR (prospect ou promu) — réutilise listRowHtml
   function prospectPseudoX(p) {
-    return { p: { id: p[13], name: nameOf(p[13], p[6] || p[10] || 'Pharmacie'), color: '#9AA1B2', inDb: false, comms: [], _prospect: true, cp: p[8], ville: p[7] }, ca: 0, marge: 0, opp: 0 };
+    return { p: { id: p[13], name: nameOf(p[13], p[6] || p[10] || 'Pharmacie'), color: '#9AA1B2', inDb: false, comms: [], _prospect: true, cp: p[8], ville: p[7], tit: p[10] || '' }, ca: 0, marge: 0, opp: 0 };
   }
   // Fiches prospect créées à la main (ids « px_… », table `profils`) : elles n'existaient que dans
   // la recherche générale. 05/10/2026 — elles entrent dans l'onglet Prospects. Rien n'est jamais
@@ -1016,7 +1020,7 @@
   }
   function creesRows(q, arch) {
     return _crees.filter(function (o) { return o.data && o.data.nom && !o.data.archive === !arch; }).map(function (o) {
-      return { p: { id: o.sid, name: o.data.nom, cp: o.data.cp, ville: o.data.ville, color: '#9AA1B2', inDb: false, comms: [], _prospect: true, _cree: true, _archive: !!arch }, ca: 0, marge: 0, opp: 0 };
+      return { p: { id: o.sid, name: o.data.nom, cp: o.data.cp, ville: o.data.ville, color: '#9AA1B2', inDb: false, comms: [], _prospect: true, _cree: true, _archive: !!arch, tit: o.data.titulaire || '' }, ca: 0, marge: 0, opp: 0 };
     }).filter(function (x) { return !q || correspond(x.p, q); });
   }
   // 13/10/2026 — « client Offilog » (remontée de Karine) : colonne OFFILOG des fichiers de géolocalisation,
@@ -1412,9 +1416,9 @@
         return '<span class="ofl-th ' + cls + '" role="columnheader"' + (cur ? ' aria-sort="' + (ofl.sens > 0 ? 'ascending' : 'descending') + '"' : '') + '>' +
           '<button type="button" onclick="V2.oflTrier(\'' + k + '\')"><span class="ofl-th-l">' + lib + fl + '</span>' + (sous ? '<small>' + sous + '</small>' : '') + '</button></span>';
       };
-      if (pros) return th('nom', 'Nom', 'ville · code postal', 'ofl-th-nom') + th('tourn', 'Tournée', '', 'ofl-th-t') + '<span class="ofl-th ofl-th-rap" role="columnheader"><span class="ofl-th-l">Statut</span></span>';
+      if (pros) return th('nom', 'Nom', 'titulaire · ville, code postal', 'ofl-th-nom') + th('tourn', 'Tournée', '', 'ofl-th-t') + '<span class="ofl-th ofl-th-rap" role="columnheader"><span class="ofl-th-l">Statut</span></span>';
       var nmOk = V2.notreMarge && V2.notreMarge.dispo();
-      return th('nom', 'Nom', 'ville · code postal', 'ofl-th-nom') + th('tourn', 'Tournée', '', 'ofl-th-t') +
+      return th('nom', 'Nom', 'titulaire · ville, code postal', 'ofl-th-nom') + th('tourn', 'Tournée', '', 'ofl-th-t') +
         th('ca', 'Chiffre d’affaires', perV, 'ofl-th-ca') +
         (nmOk ? th('nm', 'Notre marge Intégral', 'estimation · ' + perM, 'ofl-th-nm') : '') +
         th('marge', 'Marge du pharmacien', perV, 'ofl-th-mg') +
@@ -1675,7 +1679,7 @@
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
       '<div class="v2-wrap v2-prospect pha-wrap fdr-on">' + fdrProspect({
         eye: 'Prospect créé à la main', nom: nomA || 'Nouvelle fiche prospect', tel: sv('tel'), mail: sv('email'),
-        sous: [[cpA, sv('ville')].filter(function (x) { return x; }).join(' '), sv('groupement'), sv('titulaire')],
+        sous: [titLisible(sv('titulaire')), V2.officineSous('', sv('ville'), cpA), sv('groupement')],   // 26/11/2026 — titulaire, puis ville et code postal
         ch: [
           ['Coordonnées et informations', 'Coordonnées', fdrProInfos(kvC, fe.panneau + (V2.profil ? V2.profil.newProspectSection(pid, seed) + V2.profil.section('client', pid) : ''), !nomA),
             'Chaque champ est enregistré dès que vous le quittez et partagé avec l’équipe ; la fiche se retrouve dans Officines, onglet Prospects.'],
@@ -1763,6 +1767,41 @@
     if (!base && window.PHARMA_FR) { var pt = pharmaFrById(pid); if (pt && pt[10]) base = pt[10]; }
     return titulaireOf(pid, base);
   }
+  // 26/11/2026 — Will : « souvent on connaît une pharmacie par son nom sur Google Maps, pas tout le temps le nom du titulaire » :
+  // partout où une officine est nommée, son NOM, puis son TITULAIRE, puis sa VILLE et son CODE POSTAL.
+  // L'annuaire national écrit « DUPONT Marie (Madame) » : la civilité passe devant, abrégée, comme dans la base clients
+  // (« Mme Marie DUPONT ») ; une mention qui n'est pas une civilité (« Sans appellation ») est retirée.
+  var CIVILITE = { 'madame': 'Mme', 'monsieur': 'M.', 'mademoiselle': 'Mlle', 'mr et mme': 'M. et Mme', 'mesdames': 'Mmes', 'messieurs': 'MM.', 'mesdemoiselles': 'Mlles' };
+  function titLisible(t) {
+    return String(t || '').split('/').map(function (s) {
+      var civ = '';
+      s = s.replace(/\(([^)]*)\)/g, function (m, x) { if (!civ) civ = CIVILITE[x.trim().toLowerCase()] || ''; return ' '; }).replace(/\s+/g, ' ').trim();
+      return s ? (civ ? civ + ' ' : '') + s : '';
+    }).filter(Boolean).join(' / ');
+  }
+  // Ligne de l'annuaire national par code, sans parcourir les 19 700 lignes à chaque ligne de liste (index refait si l'annuaire change).
+  var _frIdx = null;
+  function frLigne(pid) {
+    var D = window.PHARMA_FR; if (!D || !D.p) return null;
+    if (!_frIdx || _frIdx.p !== D.p || _frIdx.n !== D.p.length) {
+      var m = {}; for (var i = 0; i < D.p.length; i++) { var k = D.p[i][13]; if (k != null && !m[k]) m[k] = D.p[i]; }
+      _frIdx = { p: D.p, n: D.p.length, m: m };
+    }
+    return _frIdx.m[String(pid)] || null;
+  }
+  // Titulaire affichable d'une officine : correction de l'équipe, sinon base clients, sinon `repli` (prospect), sinon annuaire.
+  V2.titulaireDe = function (pid, repli) {
+    var ca = ((window.CLIENTS_ACTIFS || {}).d || {})[String(pid)], t = (ca && ca[3]) || repli || '';
+    if (!t && !(V2.titOvr && V2.titOvr[String(pid)])) { var r = frLigne(pid); t = (r && r[10]) || ''; }
+    return titLisible(titulaireOf(pid, t));
+  };
+  V2.titulaireLisible = titLisible;
+  // Ce qui suit le nom : « Mme Marie DUPONT · ANGERS 49000 » (titulaire, puis ville et code postal). Texte brut, à échapper.
+  V2.officineSous = function (tit, ville, cp) {
+    var c = String(cp == null ? '' : cp).trim(); if (/^\d{4}$/.test(c)) c = '0' + c;
+    var lieu = [String(ville || '').trim(), c].filter(Boolean).join(' ');
+    return [String(tit || '').trim(), lieu].filter(Boolean).join(' · ');
+  };
   function titEditor(pid, currentTit) {
     var idp = 'tit-' + String(pid).replace(/[^a-zA-Z0-9]/g, '');
     return '<div class="phf-nmedit"><span class="phf-nmedit-l">Titulaire(s) de la pharmacie</span>' +
@@ -2069,7 +2108,7 @@
     root.innerHTML = V2.topbar({ back: true, backTo: 'pharma', backLabel: 'Officines' }) +
       '<div class="v2-wrap v2-prospect pha-wrap fdr-on">' + fdrProspect({
         eye: String(caSV ? 'Client' : seg).toUpperCase() + (uga ? ' · UGA ' + uga : ''), nom: nameOf(pid, p[6] || p[10]) || 'Pharmacie', tel: telA, mail: mailA,
-        sous: [[cpA, villeA].filter(function (x) { return x; }).join(' '), grpA, titA],
+        sous: [titLisible(titA), V2.officineSous('', villeA, cpA), grpA],   // 26/11/2026 — titulaire, puis ville et code postal
         ch: [
           ['Ce que l’on sait de cette officine', 'Ce qu’on sait', saitP],
           ['Notes et préparation du rendez-vous', 'Notes', notesP ? '<div class="fdr-bloc fdr-nt"><div class="pha-notes">' + notesP + '</div></div>' : ''],
@@ -4493,7 +4532,8 @@
   function fdrPage(c) {
     var vues ='<div class="fdr-sw vv-sel vv-ui" role="group" aria-label="Vue de la fiche">' + viBouton('pharmacien', 'Vue pharmacien') + viBouton('integral', 'Vue Intégral') + '</div>';
     var pt = '<span class="fdr-pt" aria-hidden="true"> · </span>';
-    var sous = [c.loc, c.grp].filter(function (x) { return x; }).map(esc).join(pt) + (c.titulaire ? '<span class="rv2-tit">' + ((c.loc || c.grp) ? pt : '') + esc(c.titulaire) + '</span>' : '');   // téléphone : « ville · groupement » seulement, le titulaire reste dans les coordonnées
+    // 26/11/2026 — Will : sous le nom, le titulaire, puis la ville et le code postal (aussi au téléphone), puis le groupement
+    var sous = [c.titLisible, c.lieu || c.loc, c.grp].filter(function (x) { return x; }).map(esc).join(pt);
     var tete = '<div class="fdr-head fdo-a" id="fdr-haut"><i class="fdr-astre" aria-hidden="true"></i>' +
       '<div class="fdr-bar">' + vues + '</div>' +
       '<div class="fdr-id"><div class="fdr-id-t">' +
@@ -4980,7 +5020,7 @@
     var vue = menu ? L1.vue : viArrivee(pid);   // 29/10/2026 : la vue retenue par l'appareil (par défaut : pharmacien) ; 22/11 : au téléphone, Intégral à l'arrivée (viArrivee)
     // 20/11/2026 — fiche « Le rendez-vous » : une colonne, chapitres 1-5 communs aux deux vues, chapitre 6 interne (vi-int). Rien n'est ajouté au rendu : la bascule ne fait que cacher / montrer.
     var apercu = fdrPage({
-      pid: pid, pidSafe: pidSafe, pharma: pharma, nom: nameOf(pid, pharma.name), badges: ficheBadge + repriseBadge, comms: comms, loc: loc,
+      pid: pid, pidSafe: pidSafe, pharma: pharma, nom: nameOf(pid, pharma.name), badges: ficheBadge + repriseBadge, comms: comms, loc: loc, lieu: V2.officineSous('', villeV, cpV), titLisible: titLisible(titulaire || dirigeantsDe(oi)),
       grp: (pharma.groupement && pharma.groupement !== '—') ? canonG(pharma.groupement) : '', titulaire: titulaire || dirigeantsDe(oi),
       tel: tel, mail: mail, adresse: adresse, voitVentes: voitVentes, A: A, S: S, marge: marge, nbRefs: nbRefs,
       proposer: proposerFdr, nePlus: analyseNePlus(pid), tranches: analyseTranches(A, true), top5: analyseTop5(A), generiqueurs: generiqueurSec,

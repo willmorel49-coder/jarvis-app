@@ -10,7 +10,6 @@
   .pha-wrap.fdr-on{padding:10px 12px calc(104px + env(safe-area-inset-bottom))}
   .pha-wrap.fdr-on .fdr-head .fdr-ronds,
   .pha-wrap.fdr-on .fdr-head .fdr-outils{display:none}      /* ronds → barre du bas ; boutons d'outils → sous les bandeaux */
-  .pha-wrap.fdr-on .rv2-tit{display:none}                    /* le titulaire reste dans les coordonnées */
   .pha-wrap.fdr-on[data-vue="pharmacien"] .fdr-head .fdr-eye{display:none}
   .pha-wrap.fdr-on .fdr .fdo-a .pha-name,
   .pha-wrap.fdr-on .fdr .fdo-a .pha-name *{font-size:35px;line-height:1.04}

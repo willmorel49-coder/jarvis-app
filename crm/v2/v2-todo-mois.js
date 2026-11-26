@@ -34,6 +34,11 @@
   function libJour(s) { return JOURS[dow(s)] + ' ' + num(s) + ' ' + MOIS[+s.slice(5, 7) - 1]; }
   function court(n) { return maj(String(n || '').replace(/^pharmacie\s+/i, '').replace(/^(du |de la |de l’|de l'|des |de )/i, '').toLowerCase().replace(/(^|[\s-])\S/g, function (m) { return m.toUpperCase(); })); }
   function joli(n) { return String(n || '').toLowerCase().replace(/(^|[\s-])\S/g, function (m) { return m.toUpperCase(); }); }
+  // 26/11/2026 — Will : une officine se présente par son nom, puis son titulaire, puis sa ville et son code postal (v2-pharma.js)
+  function sousOff(id, tit, ville, cp) {
+    if (V2.officineSous && V2.titulaireDe) return V2.officineSous(V2.titulaireDe(String(id), tit), joli(ville), cp);
+    return joli(ville);
+  }
   function hm(s) { return String(s || '').slice(0, 5); }
   function min(s) { var p = hm(s).split(':'); return (+p[0]) * 60 + (+p[1] || 0); }
   function ecart(s) {
@@ -260,27 +265,27 @@
     var L = V2.pharmacies || [];
     for (i = 0; i < L.length && out.length < 8; i++) {
       p = L[i]; id = String(p.id);
-      if (sa(p.name).indexOf(t) >= 0 || sa(p.ville).indexOf(t) >= 0) { out.push({ id: id, nom: p.name, ville: p.ville, annuaire: false }); vus[id] = 1; }
+      if (sa(p.name).indexOf(t) >= 0 || sa(p.ville).indexOf(t) >= 0) { out.push({ id: id, nom: p.name, ville: p.ville, cp: p.cp, annuaire: false }); vus[id] = 1; }
     }
     var D = window.PHARMA_FR && window.PHARMA_FR.p;
     if (D) for (i = 0; i < D.length && out.length < 8; i++) {
       r = D[i]; id = String(r[13] == null ? '' : r[13]);
       if (!id || vus[id]) continue;
-      if (sa(r[6]).indexOf(t) >= 0 || sa(r[7]).indexOf(t) >= 0) { out.push({ id: id, nom: r[6], ville: r[7], annuaire: true }); vus[id] = 1; }
+      if (sa(r[6]).indexOf(t) >= 0 || sa(r[7]).indexOf(t) >= 0) { out.push({ id: id, nom: r[6], ville: r[7], cp: r[8], tit: r[10], annuaire: true }); vus[id] = 1; }
     }
     return out;
   }
   function trouverVisite(id) {
     var i, L = V2.pharmacies || [], D = window.PHARMA_FR && window.PHARMA_FR.p;
-    for (i = 0; i < L.length; i++) if (String(L[i].id) === id) return { id: id, nom: L[i].name, ville: L[i].ville };
-    if (D) for (i = 0; i < D.length; i++) if (String(D[i][13]) === id) return { id: id, nom: D[i][6], ville: D[i][7] };
+    for (i = 0; i < L.length; i++) if (String(L[i].id) === id) return { id: id, nom: L[i].name, ville: L[i].ville, cp: L[i].cp };
+    if (D) for (i = 0; i < D.length; i++) if (String(D[i][13]) === id) return { id: id, nom: D[i][6], ville: D[i][7], cp: D[i][8], tit: D[i][10] };
     return null;
   }
   function resultatsVisite(q) {
     if (sa(q).trim().length < 2) return '<li class="tm-vi">Tapez au moins deux lettres du nom ou de la ville.</li>';
     var r = chercherVisite(q), a = !!window.PHARMA_FR;
     return (r.length ? r.map(function (o) {
-      return '<li><button type="button" class="tm-vr" onclick="V2.todoMois.visiteChoisir(\'' + esc(String(o.id).replace(/[^0-9A-Za-z]/g, '')) + '\')"><b>' + esc(joli(o.nom)) + '</b><small>' + esc(joli(o.ville)) + (o.annuaire ? ' · annuaire national' : '') + '</small></button></li>';
+      return '<li><button type="button" class="tm-vr" onclick="V2.todoMois.visiteChoisir(\'' + esc(String(o.id).replace(/[^0-9A-Za-z]/g, '')) + '\')"><b>' + esc(joli(o.nom)) + '</b><small>' + esc(sousOff(o.id, o.tit, o.ville, o.cp)) + (o.annuaire ? ' · annuaire national' : '') + '</small></button></li>';
     }).join('') : '<li class="tm-vi">Aucune officine trouvée' + (a ? '.' : ' dans votre fichier.') + '</li>') +
       (a ? '' : '<li><button type="button" class="tm-vr" onclick="V2.todoMois.visiteNational()"><b>Chercher aussi dans l’annuaire national</b><small>2,8 Mo à télécharger</small></button></li>');
   }
@@ -295,7 +300,7 @@
   function formVisite() {
     var f = S.form, suite = f.suite || '';
     var off = f.off
-      ? '<div class="tm-f tm-f-l"><span>Officine</span><div class="tm-vo"><span><b>' + esc(joli(f.off.nom)) + '</b><small>' + esc(joli(f.off.ville)) + '</small></span><button type="button" class="tm-btn" onclick="V2.todoMois.visiteChanger()">changer</button></div></div>'
+      ? '<div class="tm-f tm-f-l"><span>Officine</span><div class="tm-vo"><span><b>' + esc(joli(f.off.nom)) + '</b><small>' + esc(sousOff(f.off.id, f.off.tit, f.off.ville, f.off.cp)) + '</small></span><button type="button" class="tm-btn" onclick="V2.todoMois.visiteChanger()">changer</button></div></div>'
       : '<label class="tm-f tm-f-l"><span>Officine</span><input id="tm-q" type="text" autocomplete="off" placeholder="Nom ou ville de l’officine" value="' + esc(f.q || '') + '" oninput="V2.todoMois.visiteChercher()"></label><ul class="tm-res" id="tm-res">' + resultatsVisite(f.q || '') + '</ul>';
     var choix = [['', 'Rien'], ['relance', 'Relancer'], ['revisite', 'Revisiter']].map(function (x) {
       return '<button type="button" class="tm-btn' + (suite === x[0] ? ' on' : '') + '" aria-pressed="' + (suite === x[0]) + '" onclick="V2.todoMois.visiteSuite(\'' + x[0] + '\')">' + x[1] + '</button>';
@@ -497,12 +502,12 @@
       var act = mail && V2.rdv ? '<button type="button" class="tm-btn tm-prim tm-ca" onclick="V2.rdv.proposer(\'' + esc(k) + '\')">Proposer un RDV</button>'
         : tel ? '<a class="tm-btn tm-ca" href="tel:' + esc(tel) + '">Appeler</a>' : '<span class="tm-cs">ni mail ni téléphone</span>';
       return '<div class="tm-cli"><button type="button" class="tm-cn2" onclick="V2.go(\'pharma\',\'' + esc(k) + '\')"><b>' + esc(court(p.name)) + '</b><small>' +
-        esc([joli(p.ville || ''), x.vu ? ilYa(x.vu) : 'aucune visite notée'].filter(Boolean).join(' · ')) + '</small></button>' + act + '</div>';
+        esc([sousOff(k, '', p.ville, p.cp), x.vu ? ilYa(x.vu) : 'aucune visite notée'].filter(Boolean).join(' · ')) + '</small></button>' + act + '</div>';
     }
     function ligneP(x) {
       var p = x.p, n = x.n, quand = maj(J3[dow(n.date)]) + '. ' + num(n.date) + ' ' + MOIS[+n.date.slice(5, 7) - 1] + (n.h ? ' · ' + n.h.replace(':', 'h') : '');
       return '<div class="tm-cli"><button type="button" class="tm-cn2" onclick="V2.todoMois.allerA(\'' + n.date + '\')" aria-label="' + esc(joli(p.name) + ', ' + quand + ' : voir ce jour dans le mois') + '"><b>' + esc(court(p.name)) + '</b><small>' +
-        esc([joli(p.ville || ''), ecart(n.date), n.src === 'agenda' ? 'agenda personnel' : '', n.conf ? 'à confirmer' : ''].filter(Boolean).join(' · ')) + '</small></button><span class="tm-cq">' + esc(quand) + '</span></div>';
+        esc([sousOff(p.id, '', p.ville, p.cp), ecart(n.date), n.src === 'agenda' ? 'agenda personnel' : '', n.conf ? 'à confirmer' : ''].filter(Boolean).join(' · ')) + '</small></button><span class="tm-cq">' + esc(quand) + '</span></div>';
     }
     function col(k, titre, arr, f, vide) {
       var M = 8, tout = S.tout[k], vis = tout ? arr : arr.slice(0, M);

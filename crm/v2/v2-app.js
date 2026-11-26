@@ -2690,7 +2690,7 @@
     // Tournée prospect : intégrée au Copilote (Organisateur de tournée) — recherchable via l'entrée « Copilote ».
     // Pharmacies
     (V2.pharmacies || []).forEach(function (p) {
-      idx.push({ grp: 'Pharmacies', label: p.name, ico: 'pharma', meta: '', pid: String(p.id), lieu: (p.ville || '') + (p.cp ? ' · ' + p.cp : ''), action: function () { V2.go('pharma', p.id); } });
+      idx.push({ grp: 'Pharmacies', label: p.name, ico: 'pharma', meta: '', pid: String(p.id), lieu: (p.ville || '') + (p.cp ? ' · ' + p.cp : ''), vil: p.ville || '', cp: p.cp || '', action: function () { V2.go('pharma', p.id); } });
     });
     // Produits — 21/10/2026 : TOUT le catalogue (et non plus le top 300 par rotation), sur désignation, CIP,
     // molécule et laboratoire. Textes normalisés UNE fois ici (pas à chaque touche). Le catalogue complet
@@ -2748,6 +2748,12 @@
     s = String(s == null ? '' : s).toLowerCase();
     return s.normalize ? s.normalize('NFD').replace(/[̀-ͯ]/g, '') : s;
   }
+  // 26/11/2026 — Will : une officine se présente par son nom, puis son titulaire, puis sa ville et son code postal
+  // (v2-pharma.js) ; sans cet écran (autres applis), la ville et le code postal comme avant.
+  function sousOfficine(pid, tit, ville, cp) {
+    if (V2.officineSous && V2.titulaireDe) return V2.officineSous(V2.titulaireDe(pid, tit), ville, cp);
+    return (ville || '') + (cp ? ' · ' + cp : '');
+  }
   function cmdkSearch(q) {
     if (!cmdkIdx) cmdkIdx = buildCmdkIndex();
     q = (q || '').trim().toLowerCase();
@@ -2801,7 +2807,7 @@
             np[2].indexOf(q) >= 0 || np[3].indexOf(nq) >= 0) {
           shown[id] = 1;
           extra.push({ grp: 'Officines (France entière)', label: (p[6] || p[10] || 'Pharmacie'), ico: 'pharma',
-            meta: (p[7] || '') + (p[8] ? ' · ' + p[8] : ''), pid: id,
+            meta: sousOfficine(id, p[10], p[7], p[8]), pid: id,
             action: (function (pid) { return function () { V2.go('pharma', pid); }; })(id) });
         }
       }
@@ -2815,7 +2821,7 @@
         var d = o.data || {}, id = String(o.sid); if (seen2[id]) return;
         var hay = deaccLower((d.nom || '') + ' ' + (d.ville || '') + ' ' + (d.cp || '') + ' ' + (d.titulaire || ''));
         if (hay.indexOf(nq2) >= 0) out.push({ grp: 'Fiches créées', label: (d.nom || 'Prospect'), ico: 'pharma',
-          meta: (d.ville || '') + (d.cp ? ' · ' + d.cp : ''), pid: id,
+          meta: sousOfficine(id, d.titulaire, d.ville, d.cp), pid: id,
           action: (function (pid) { return function () { V2.go('pharma', pid); }; })(id) });
       });
     }
@@ -2827,7 +2833,7 @@
     // seul ; la ville et le code postal s'affichent comme pour les officines de France entière.
     out = out.map(function (x) {
       if (x.pid == null || x.meta || !x.lieu) return x;
-      var y = {}; for (var c in x) y[c] = x[c]; y.meta = x.lieu; return y;
+      var y = {}; for (var c in x) y[c] = x[c]; y.meta = x.vil != null ? sousOfficine(x.pid, '', x.vil, x.cp) : x.lieu; return y;
     });
     // Toujours proposer de CRÉER une fiche prospect si on ne trouve pas (ou pour ajouter)
     if (q.length >= 2) {
