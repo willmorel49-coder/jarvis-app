@@ -342,7 +342,7 @@
     // Toujours rendue ; seul le CSS décide (> 1000 px, tous les habillages). Aucune pastille `.on` : on est à l'accueil. Jamais côté OPSO.
     if (!back && !V2.enGroupement() && V2.route && V2.route.name === 'home' && V2.accueilCinq && V2.accueilCinq.barre) {
       try {
-        var la = V2.accueilCinq.barre().slice(0, 7).map(function (t) {
+        var la = V2.accueilCinq.barre(); la = la.slice(0, nAcc(la)).map(function (t) {
           return '<a class="tp-m" href="' + esc(t.href) + '" data-tp-act="' + esc(t.act) + '" onclick="return V2.topAller(event,this)">' + esc(t.nom) + '</a>';
         });
         if (la.length) menu = '<nav class="tp-menu tp-menu-acc" aria-label="Outils">' + la.join('') +
@@ -353,7 +353,7 @@
       '<div class="v2-top' + (menu ? ' tp-avec-menu' : '') + '">' +
         '<div class="tp-g">' + back + brand + nom + '</div>' + menu +
         '<div class="tp-d">' +
-          ((V2.route && V2.route.name === 'home' && V2.enGroupement()) ? '' : '<button type="button" class="v2-top-search' + ((V2.route && V2.route.name === 'home') ? ' tp-srch-acc' : '') + '" aria-label="Rechercher" aria-haspopup="dialog" onclick="V2.onTopSearch()">' + ICO('search', 18, 2) + '<span class="txt">Rechercher</span><kbd>' + MOD + 'K</kbd></button>') +
+          ((V2.route && V2.route.name === 'home' && V2.enGroupement()) ? '' : '<button type="button" class="v2-top-search' + ((V2.route && V2.route.name === 'home') ? ' tp-srch-acc' + ((window.V2_BRAND && window.V2_BRAND.portes) ? '' : ' tp-srch-sans') : '') + '" aria-label="Rechercher" aria-haspopup="dialog" onclick="V2.onTopSearch()">' + ICO('search', 18, 2) + '<span class="txt">Rechercher</span><kbd>' + MOD + 'K</kbd></button>') +
           idee + plus +
           '<button type="button" class="tp-avb" aria-label="Mon compte" aria-haspopup="menu" aria-expanded="false" title="' + esc(V2.user ? V2.user.name : '') + '" onclick="V2.userMenu(this)"><span class="v2-av">' + esc(initials) + '</span></button>' +
         '</div>' +
@@ -2131,6 +2131,9 @@
     var b = document.querySelector('.tp-autres'); if (b) b.setAttribute('aria-expanded', 'false');
     return a.hasAttribute('data-tp-act') ? V2.topAller(e, a) : true;
   };
+  // 26/11/2026 (Will, planche ordinateur B2) : la barre de l'accueil montre les sept premières rubriques, et « Pilotage » en huitième quand il vient juste après
+  // (JARVIS : 154 ouvertures en 30 jours, l'outil le plus ouvert de « Autres outils »). Ailleurs (Escale, Phirst, Pilotage masqué) : sept, comme avant.
+  function nAcc(l) { return l[7] && l[7].k === 'pilotage' ? 8 : 7; }
   // 22/11/2026 — la liste de « Autres outils » est fabriquée ICI, une seule fois, à partir d'un indice de départ : 7 à l'ordinateur (les sept premières rubriques sont dans la barre
   // du haut), 3 au téléphone (la barre du bas porte Accueil + les trois premières rubriques ; « Menu » montre la suite). `lien` fabrique chaque ligne (aoLien par défaut).
   // `tete` (22/11/2026, Will) : la rubrique à remonter en premier (au téléphone, « Documents commerciaux » ouvre le Menu).
@@ -2163,7 +2166,7 @@
     });
   }
   V2.autresOutils = function (btn) {
-    var h = autresListe(7);
+    var h = autresListe(nAcc(V2.accueilCinq && V2.accueilCinq.barre ? V2.accueilCinq.barre() : []));
     if (!h) return;
     var m = menuBarre('v2-autresmenu', btn, h);
     if (!m) return;

@@ -883,13 +883,16 @@
   function coche(id, fait) { if (fait) _fait[id] = true; else delete _fait[id]; setTimeout(maj, 150); setTimeout(maj, 1200); }
   // 18/11/2026 — coup de neuf, temps 2 : la barre du haut (topbar, v2-app.js) reprend les liens de cet accueil, dans le même ordre
   // (les cinq cases, puis la 2e rangée), avec les mêmes filtres : un outil masqué ou dont l'écran n'est pas chargé n'y figure pas.
+  // 26/11/2026 (Will, planche ordinateur B13) : dans les barres et le menu « Autres outils », le nom court qu'on lit déjà sur la barre du bas du téléphone
+  // (« To do », « Infos ») ; le titre de chaque page garde le nom long. Une marque qui pose ses propres portes (Phirst) garde ses noms.
+  var COURT = (window.V2_BRAND && window.V2_BRAND.portes) ? {} : { todo: 'To do', infos: 'Infos' };
   function barre() {
     var p = P(); if (!p) return [];
     var etat = p.etat(), vis = etat.vis || [], cles = etat.cles || [], l = [];
     ['pharma', 'todo', 'infos', 'groupements', 'offilog', 'doccom'].forEach(function (k) {   // doccom (22/11/2026, Will) : juste après Offilog
       if (k === 'groupements') { if (cles.indexOf('pharma') >= 0) l.push({ k: k, nom: GRP.nom, act: GRP.act, href: GRP.href }); return; }
       if (vis.indexOf(k) < 0) return;
-      var t = p.outil(k); l.push({ k: k, nom: t.nom, act: t.act, href: t.href });
+      var t = p.outil(k); l.push({ k: k, nom: COURT[k] || t.nom, act: t.act, href: t.href });
     });
     NEUF.forEach(function (k) {
       if (vis.indexOf(k) < 0 || (k === 'tournees' && !(V2.tourneesEquipe && V2.tourneesEquipe()))) return;

@@ -907,6 +907,9 @@ html:not([data-hab]) .v2-top{background-color:#fff;background-image:none;border-
 html:not([data-hab]) .v2-logo{width:44px;height:44px;border-radius:14px;background-color:#0050E6;background-image:radial-gradient(90px 60px at 20% 0%,#4F8DFF 0%,rgba(79,141,255,0) 70%),linear-gradient(160deg,#0A5BF0,#003AB4);box-shadow:0 6px 14px -4px rgba(0,80,230,.5),0 1px 0 rgba(255,255,255,.35) inset}
 html:not([data-hab]) .tp-plus{background-color:#003AB4;background-image:linear-gradient(160deg,#0A5BF0,#003AB4);box-shadow:0 8px 18px -6px rgba(0,80,230,.6),0 1px 0 rgba(255,255,255,.3) inset}
 html:not([data-hab]) .tp-avb .v2-av{width:44px;height:44px;background-color:#1A2030;background-image:linear-gradient(150deg,#3A4766,#1A2030);color:#fff;box-shadow:0 6px 14px -6px rgba(26,32,48,.55),0 1px 0 rgba(255,255,255,.3) inset} /* 22/11/2026 lot 1 V3 : encre de l'aube, plus d'orange (A-2) */
+/* 26/11/2026 (Will, planche ordinateur C1 ; au téléphone depuis le matin, v2-tel.css) : sur l'accueil de JARVIS, plus de loupe en haut à aucune largeur —
+   le grand champ de recherche de la page est juste dessous et ⌘K ouvre toujours la recherche. Ailleurs elle reste ; une marque à ses propres portes (Phirst) la garde. */
+.v2-top .v2-top-search.tp-srch-sans{display:none}
 /* le menu : caché partout par défaut (habillages, téléphone, tablette), en pilule sur ordinateur */
 .tp-menu{display:none}
 @media (min-width:1001px){
@@ -965,13 +968,20 @@ html:not([data-hab]) .tp-avb .v2-av{width:44px;height:44px;background-color:#1A2
   html:not([data-hab]) .u2-page.u2-barre .u2-cit p{margin:0;font:500 22px/1.45 var(--font);color:#1A2030;text-wrap:balance}
   html:not([data-hab]) .u2-page.u2-barre .u2-cit figcaption{margin-top:12px;font:600 14.5px/1.3 var(--font);letter-spacing:.02em;color:#3B4357}
 }
-/* 1001 à 1180 px : la barre de l'accueil se resserre pour tenir sur une ligne avec ses huit boutons (mesuré sous WebKit à 1001, 1100, 1180) */
-@media (min-width:1001px) and (max-width:1180px){
+/* 1001 à 1239 px : la barre de l'accueil se resserre pour tenir sur une ligne avec ses neuf boutons (mesuré sous WebKit à 1001, 1100, 1180).
+   26/11/2026 (planche ordinateur B2 et C1 : « Pilotage » en huitième, loupe retirée) : jusqu'à 1239 px, et encore un peu plus sous 1061 px —
+   sans cela l'avatar sortait de l'écran de 1001 à 1024 px et de 1181 à 1193 px (remesuré sous WebKit de 1001 à 1280 px). */
+@media (min-width:1001px) and (max-width:1239px){
   html:not([data-hab]) .u2-page.u2-barre .v2-top{padding-left:16px;padding-right:16px;column-gap:8px}
   html:not([data-hab]) .u2-page.u2-barre .tp-menu-acc{gap:0;padding:3px}
   html:not([data-hab]) .u2-page.u2-barre .tp-menu-acc .tp-m{padding:0 8px;font-size:13px}
   html:not([data-hab]) .u2-page.u2-barre .tp-menu-acc .tp-autres{padding:0 6px 0 10px;font-size:13px;gap:3px}
   html:not([data-hab]) .u2-page.u2-barre .tp-d{gap:6px}
+}
+@media (min-width:1001px) and (max-width:1060px){
+  html:not([data-hab]) .u2-page.u2-barre .tp-menu-acc .tp-m{padding:0 6px}
+  html:not([data-hab]) .u2-page.u2-barre .tp-menu-acc .tp-autres{padding:0 4px 0 8px}
+  html:not([data-hab]) .u2-page.u2-barre .tp-d{gap:4px}
 }
 /* « Autres outils » ouvert : un menu ancré sous le bouton (menuBarre, v2-app.js) */
 .v2-usermenu.tp-ao{min-width:290px;max-width:340px;max-height:calc(100vh - 96px);overflow-y:auto;transform-origin:top left}
@@ -1022,12 +1032,17 @@ html[data-hab]:not(:where([data-hab=indigo],[data-hab=emeraude],[data-hab=canard
   html[data-hab] .u2-page.u2-barre .u2-cit p{margin:0;font:500 22px/1.45 var(--h-titre,var(--font));color:var(--ip-ink);text-wrap:balance}
   html[data-hab] .u2-page.u2-barre .u2-cit figcaption{margin-top:12px;font:600 14.5px/1.3 var(--font);letter-spacing:.02em;color:var(--ip-ink-2,var(--ip-ink))}
 }
-@media (min-width:1001px) and (max-width:1180px){
+@media (min-width:1001px) and (max-width:1239px){
   html[data-hab] .u2-page.u2-barre .v2-top{padding-left:16px;padding-right:16px;column-gap:8px}
   html[data-hab] .u2-page.u2-barre .tp-menu-acc{gap:0;padding:3px}
   html[data-hab] .u2-page.u2-barre .tp-menu-acc .tp-m{padding:0 8px;font-size:13px}
   html[data-hab] .u2-page.u2-barre .tp-menu-acc .tp-autres{padding:0 6px 0 10px;font-size:13px;gap:3px}
   html[data-hab] .u2-page.u2-barre .tp-d{gap:6px}
+}
+@media (min-width:1001px) and (max-width:1060px){
+  html[data-hab] .u2-page.u2-barre .tp-menu-acc .tp-m{padding:0 6px}
+  html[data-hab] .u2-page.u2-barre .tp-menu-acc .tp-autres{padding:0 4px 0 8px}
+  html[data-hab] .u2-page.u2-barre .tp-d{gap:4px}
 }
 @media (min-width:1120px){ html[data-hab] .tp-m:nth-child(6){display:inline-flex} }
 @media (min-width:1200px){ html[data-hab] .tp-m:nth-child(7){display:inline-flex} }
