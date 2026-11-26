@@ -193,10 +193,13 @@ test('mapOfficines : bornée au périmètre chez Essentiels, intacte chez JARVIS
 });
 
 // 26/11/2026 — revue de sécurité : Supabase vient de la copie figée du dépôt (comme crm/v2 et phirst/v2), jamais d'un site externe sans version fixe.
-test('Essentiels charge Supabase depuis la copie figée du dépôt, et elle existe', () => {
-  const html = lire('essentiels/v2/index.html');
-  assert.ok(!/cdn\.jsdelivr\.net\/npm\/@supabase/.test(html), 'Supabase chargé depuis un site externe');
-  const m = /<script src="(\.\.\/\.\.\/crm\/v2\/vendor\/supabase\/supabase-[\d.]+\.min\.js)\?v=/.exec(html);
-  assert.ok(m, 'copie figée de Supabase absente');
-  readFileSync(new URL('../essentiels/v2/' + m[1], import.meta.url));
-});
+// Même règle pour OPSO depuis le 26/11/2026 (choix cliqué de Will, à la mise en ligne de l'étape 6).
+for (const app of ['essentiels', 'opso']) {
+  test(app + ' charge Supabase depuis la copie figée du dépôt, et elle existe', () => {
+    const html = lire(app + '/v2/index.html');
+    assert.ok(!/cdn\.jsdelivr\.net\/npm\/@supabase/.test(html), 'Supabase chargé depuis un site externe');
+    const m = /<script src="(\.\.\/\.\.\/crm\/v2\/vendor\/supabase\/supabase-[\d.]+\.min\.js)\?v=/.exec(html);
+    assert.ok(m, 'copie figée de Supabase absente');
+    readFileSync(new URL('../' + app + '/v2/' + m[1], import.meta.url));
+  });
+}
