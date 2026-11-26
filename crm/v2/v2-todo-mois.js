@@ -596,10 +596,11 @@
     }
     function col(k, titre, arr, f, vide) {
       var M = 8, tout = S.tout[k], vis = tout ? arr : arr.slice(0, M);
-      return '<section class="tm-ccol"><h3 class="tm-sh">' + titre + ' <b>' + arr.length + '</b></h3>' + (arr.length ? vis.map(f).join('') : '<p class="tm-rien">' + vide + '</p>') +
+      return '<section class="tm-ccol' + (!arr.length && k === 'p' ? ' tm-ccol-0' : '') + '"><h3 class="tm-sh">' + titre + ' <b>' + arr.length + '</b></h3>' + (arr.length ? vis.map(f).join('') : '<p class="tm-rien">' + vide + '</p>') +
         (arr.length > M ? '<button type="button" class="tm-btn tm-cplus" onclick="V2.todoMois.voirTout(\'' + k + '\')">' + (tout ? 'Réduire la liste' : 'Voir les ' + (arr.length - M) + ' autres') + '</button>' : '') + '</section>';
     }
-    return h + '<div class="tm-ccols">' +
+    // 26/11/2026 (Will, planche ordinateur B12) : « Rendez-vous posé » à 0 se replie (titre + 0 sous la liste, liste sur toute la largeur) à l'ordinateur ; dès qu'il y a un rendez-vous posé, les deux colonnes reviennent
+    return h + '<div class="tm-ccols' + (poses.length ? '' : ' tm-ccols-p0') + '">' +
       col('l', 'Sans rendez-vous à venir', libres, ligneL, 'Toutes ont un rendez-vous à venir.') +
       col('p', 'Rendez-vous posé', poses, ligneP, 'Aucun rendez-vous à venir pour l’instant.') + '</div>' +
       (hors ? '<p class="tm-cnote">Vous avez aussi ' + hors + ' rendez-vous à venir chez ' + (horsO > 1 ? horsO + ' officines qui ne sont pas' : 'une officine qui n’est pas') + ' dans vos clients (prospect ou client d’un collègue) : ' + (hors > 1 ? 'ils ne sont pas' : 'il n’est pas') + ' dans ces listes.</p>' : '') +
@@ -627,7 +628,9 @@
     var t = taches().filter(function (x) { return !x.fait && x.pour && x.pour.slice(0, 7) === m; }).length, p = [];
     function b(x) { return '<b class="td-num">' + x + '</b>'; }
     if (r) p.push(b(r) + ' rendez-vous'); if (t) p.push(b(t) + (t > 1 ? ' tâches' : ' tâche')); if (n) p.push(b(n) + (n > 1 ? ' notes' : ' note'));
-    if (!p.length) return mois + ' est encore vide.';
+    // 26/11/2026 (Will, planche ordinateur B11) : « est encore vide » se lisait « rien à faire » à côté de tâches en retard. Cas : aucun rendez-vous, aucune tâche datée et aucune note dans le mois
+    // (les tâches sans date ou d'un autre mois ne comptent pas ici) ; « Aucun rendez-vous en novembre » est vrai dans ce cas, et c'est la forme la plus courte
+    if (!p.length) return 'Aucun rendez-vous en ' + MOIS[+m.slice(5, 7) - 1];
     return mois + ' : ' + (p.length > 1 ? p.slice(0, -1).join(', ') + ' et ' + p[p.length - 1] : p[0]) + '.';
   }
   function init() { if (!S.ref) { S.ref = auj(); S.sel = auj(); } lireAgenda(); }
@@ -860,6 +863,7 @@
       '.tm-cenv{margin:14px 0 6px}',
       '.tm-cenvb{max-width:100%;padding:10px 18px;line-height:1.3;text-align:center;white-space:normal}',
       '@media (max-width:760px){.tm-ccols{grid-template-columns:minmax(0,1fr)}}',
+      '@media (min-width:761px){.tm-ccols-p0{grid-template-columns:minmax(0,1fr)}.tm-ccol-0 .tm-rien{display:none}}',
       /* le mois à gauche, le jour à droite */
       '.tm-cote{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(320px,1fr);gap:16px;align-items:start}',
       '.tm-jour{position:sticky;top:76px}',
