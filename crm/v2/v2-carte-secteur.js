@@ -61,6 +61,8 @@
   }
   function infoDe(p) { return (window.OFFICINES_INFOS && p[13]) ? (window.OFFICINES_INFOS[String(p[13])] || null) : null; }
   function moisDernier() { var W = window.WML_MOIS || []; return W.length ? P.moisNom(W[W.length - 1]) : ''; }
+  // 26/11/2026 — « pas encore terminé » seulement quand le dernier mois des ventes EST le mois du calendrier (octobre lu le 26/11 est fini).
+  function moisEnCours() { var W = window.WML_MOIS || [], d = new Date(), ym = d.getFullYear() + '-' + (d.getMonth() < 9 ? '0' : '') + (d.getMonth() + 1); return !!W.length && W[W.length - 1] >= ym; }
   function moisAvant() { var W = window.WML_MOIS || []; return W.length > 1 ? P.moisNom(W[W.length - 2]).split(' ')[0] : ''; }
   function peutChoisir() { return !V2.ventesRestreintes || !V2.ventesRestreintes(); }   // qui voit tout (et la direction) regarde aussi le secteur d'un collègue
   function pluriel(n, un, pl) { return n > 1 ? pl : un; }
@@ -408,7 +410,7 @@
       '<button type="button" class="sx-repl" aria-expanded="' + !S.replie + '" aria-label="' + (S.replie ? 'Déplier' : 'Replier') + ' le panneau" onclick="V2.carteSecteur.replier()">' + (S.replie ? '▾' : '▴') + '</button></div>' +
       '<div class="sx-corps">' +
         '<div>' + chiffresHtml(R, qui, false) +
-          '<span class="sx-src">Chiffre d’affaires lu dans les ventes' + (m ? ' : ' + esc(m) + ' est le dernier mois, il peut ne pas être terminé' : '') + '. Officines : base nationale.</span></div>' +
+          '<span class="sx-src">Chiffre d’affaires lu dans les ventes' + (m ? ' : ' + esc(m) + (moisEnCours() ? ', mois en cours, pas encore terminé' : ', dernier mois connu') : '') + '. Officines : base nationale.</span></div>' +
         '<div><h3 class="sx-h">Part d’officines clientes par UGA</h3>' + legendeHtml() +
           '<span class="sx-src">Cliquez une UGA sur la carte pour son portrait.' + (S.nbApprox ? ' Pointillé : contour approché (' + S.nbApprox + ' UGA sans contour officiel).' : '') + '</span>' + tournoiHtml() + '</div>' +
         '<div><h3 class="sx-h">Groupements présents</h3>' + groupementsHtml(R.groupements) + '</div>' +
