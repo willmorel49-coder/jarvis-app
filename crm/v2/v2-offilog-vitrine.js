@@ -6,7 +6,7 @@
    de marques n'est écrit en dur : tout se calcule à l'ouverture.
    Rendu : une iframe (srcdoc) qui reçoit la feuille v2-offilog-vitrine.css (celle de la maquette) sans toucher au CRM.
    API : V2.offVitrine(n) · V2.offVitrineDonnees(n) et V2.offVitrineHtml(n) (sans écran, lues par les tests) ·
-         V2.offVitrineImprimer(n) · V2.offVitrineMail(n) · V2.offVitrinePanneau() (la porte de l'écran Offilog).
+         V2.offVitrineImprimer(n) · V2.offVitrinePdf(n) (télécharger) · V2.offVitrineMail(n) · V2.offVitrinePanneau() (la porte de l'écran Offilog).
    Chargé par le CRM seulement (absent de l'app OPSO). Rien au chargement ne touche à la fenêtre : tout est paresseux.
    ═══════════════════════════════════════════════════════ */
 (function () {
@@ -527,6 +527,11 @@
       '.ovt-stage{position:relative;flex:1;min-height:0;overflow:hidden;display:flex}',
       '.ovt-frame{position:absolute;left:0;top:0;width:100%;height:100%;border:0;background:#cfccc8;transform-origin:0 0}',
       '.ovt-msg{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;font-size:16px;color:#1A2030}',
+      '#ovt-pret{position:fixed;left:50%;bottom:max(24px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:250;display:flex;align-items:center;flex-wrap:wrap;gap:12px 16px;width:max-content;max-width:calc(100vw - 24px);box-sizing:border-box;padding:14px 16px 14px 20px;border-radius:16px;background:#fff;border:1px solid #BFCDE8;box-shadow:0 18px 44px -12px rgba(0,26,104,.38),0 2px 6px rgba(0,26,104,.1);color:#1A2030;font-family:var(--font,"Archivo",system-ui,sans-serif)}',
+      '.ovt-pret-tx{display:flex;flex-direction:column;gap:2px;min-width:0}.ovt-pret-tx b{font-size:16px;font-weight:800}.ovt-pret-tx span{font-size:14px;color:#3D4960}',
+      '.ovt-pret-a{display:flex;gap:8px}.ovt-pret-a .v2-btn{min-height:44px;padding:0 16px;font-size:15px;font-weight:700;white-space:nowrap}',
+      '.ovt-pret-a .v2-btn-primary{background:#0050E6;border-color:#0050E6;color:#fff}.ovt-pret-a .v2-btn-ghost{background:#fff;border:1px solid #BFCDE8;color:#1A2030}.ovt-pret-a .ovt-pret-x{padding:0;width:44px;justify-content:center}',
+      '@media(max-width:700px){#ovt-pret{left:12px;right:12px;width:auto;max-width:none;transform:none}.ovt-pret-a{flex:1 1 100%}.ovt-pret-a .v2-btn:not(.ovt-pret-x){flex:1;justify-content:center;padding:0 8px}}',
       '@media(max-width:700px){.ovt-bar{gap:8px;padding:8px 12px 10px}.ovt-th{order:1;flex:1 1 0}.ovt-x{order:2;margin-left:0}.ovt-segs{order:3;flex:1 1 100%}.ovt-segs .v2-seg{flex:1;padding:0 6px}.ovt-seg-l{display:none}.ovt-b{order:4;flex:1 1 0}.ovt-bar .v2-btn{padding:0 8px}}'
     ].join('');
     document.head.appendChild(st);
@@ -538,7 +543,8 @@
     return '<div class="ovt-bar"><div class="ovt-th"><span class="ovt-t">Le catalogue Offilog</span><span class="ovt-info" id="ovt-info" aria-live="polite"></span></div>' +
       '<div class="ovt-segs" role="group" aria-label="Nombre de produits">' + segs + '</div>' +
       '<button type="button" class="v2-btn v2-btn-primary ovt-b" onclick="V2.offVitrineImprimer()">' + ICO('fiche', 15, 2) + ' Imprimer</button>' +
-      '<button type="button" class="v2-btn v2-btn-primary ovt-b" onclick="V2.offVitrineMail()">' + ICO('spark', 15, 2) + ' Envoyer par mail</button>' +
+      '<button type="button" class="v2-btn v2-btn-primary ovt-b" onclick="V2.offVitrinePdf()">' + ICO('download', 15, 2) + ' <span class="ovt-seg-l">Télécharger le </span>PDF</button>' +
+      '<button type="button" class="v2-btn v2-btn-primary ovt-b" onclick="V2.offVitrineMail()">' + ICO('spark', 15, 2) + ' Envoyer<span class="ovt-seg-l"> par mail</span></button>' +
       '<button type="button" class="v2-btn v2-btn-ghost ovt-x" onclick="V2.offVitrineFermer()">' + ICO('close', 15, 2) + ' Fermer</button></div>' +
       '<div class="ovt-stage"></div>';
   }
@@ -801,11 +807,59 @@
       return p;
     }).then(function () { return pdf.output('blob'); });
   }
-  V2.offVitrineMail = function (n) {
+  // 26/11/2026 — Will : « il manque un bouton pdf pour avoir directement le pdf qui s'enregistre ou envoyer ne fonctionne pas ».
+  // Cause mesurée sous WebKit : Safari REFUSE la feuille de partage (NotAllowedError) quand elle s'ouvre plusieurs secondes après
+  // le clic — le temps de fabriquer le PDF — et le refus était avalé sans rien dire. Le téléchargement, lui, passe après l'attente.
+  // Donc : « Télécharger le PDF » enregistre dès que le PDF est prêt ; « Envoyer » montre « Le PDF est prêt » et le partage part
+  // au clic suivant, DANS le geste. Le dernier PDF fabriqué est gardé : redemandé pour le même nombre, il part tout de suite.
+  var pret = null;   // { n, file, pages }
+  function enregistrer(file) {
+    var u = URL.createObjectURL(file), a = document.createElement('a');
+    a.href = u; a.download = file.name; document.body.appendChild(a); a.click(); a.parentNode.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(u); }, 60000);
+    V2.toast('PDF enregistré dans vos téléchargements : ' + esc(file.name));
+  }
+  function partager(file) {
+    var peut = false;
+    try { peut = !!(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })); } catch (e) {}
+    if (!peut) { enregistrer(file); return Promise.resolve(); }
+    return navigator.share({ files: [file], title: 'Le catalogue Offilog' }).then(fermerPret, function (e) {
+      if (e && e.name === 'AbortError') return;   // feuille fermée par l'utilisateur : rien à faire
+      console.error('catalogue Offilog, partage', e);
+      enregistrer(file);
+    });
+  }
+  function fermerPret() { var b = document.getElementById('ovt-pret'); if (b && b.parentNode) b.parentNode.removeChild(b); }
+  // l'encadré « Le PDF est prêt » : posé sur <body> (une fenêtre de l'app ne le piège pas), au-dessus du catalogue ouvert
+  function proposer(p) {
+    poserCss(); fermerPret();
+    var b = document.createElement('div');
+    b.id = 'ovt-pret'; b.setAttribute('role', 'dialog'); b.setAttribute('aria-labelledby', 'ovt-pret-t');
+    b.innerHTML = '<div class="ovt-pret-tx"><b id="ovt-pret-t">Le PDF est prêt</b><span>' + ent(p.n) + ' produits · ' + ent(p.pages) + ' pages</span></div>' +
+      '<div class="ovt-pret-a"><button type="button" class="v2-btn v2-btn-primary" data-pret="envoyer">' + ICO('spark', 15, 2) + ' Envoyer</button>' +
+      '<button type="button" class="v2-btn v2-btn-ghost" data-pret="pdf">' + ICO('download', 15, 2) + ' Télécharger</button>' +
+      '<button type="button" class="v2-btn v2-btn-ghost ovt-pret-x" data-pret="x" aria-label="Fermer">' + ICO('close', 15, 2) + '</button></div>';
+    b.addEventListener('click', function (e) {
+      var t = e.target && e.target.closest ? e.target.closest('[data-pret]') : null; if (!t) return;
+      var q = t.getAttribute('data-pret');
+      if (q === 'x') fermerPret();
+      else if (q === 'pdf') { enregistrer(p.file); fermerPret(); }
+      else partager(p.file);
+    });
+    document.body.appendChild(b);
+    try { b.querySelector('[data-pret="envoyer"]').focus(); } catch (e) {}
+  }
+  V2.offVitrineMail = function (n) { return produire(n, 'mail'); };
+  V2.offVitrinePdf = function (n) { return produire(n, 'pdf'); };
+  function produire(n, mode) {
     if (enCours) { V2.toast('Le PDF est déjà en préparation…'); return Promise.resolve(); }
     if (n && CHOIX.indexOf(+n) >= 0) choix = +n;
     var n0 = choix, ouverte = modal && modal.classList.contains('open') && frame && etat.n === n0, horsEcran = null;
-    enCours = true;
+    if (pret && pret.n === n0) {   // déjà fabriqué : part dans le geste, sans attente
+      if (mode === 'pdf') enregistrer(pret.file); else partager(pret.file);
+      return Promise.resolve();
+    }
+    enCours = true; fermerPret();
     V2.toast('Préparation du PDF…');
     var f0 = ouverte ? Promise.resolve({ f: frame, D: etat.D }) : preparer(n0).then(function (D) {
       if (D.exclus_absent) throw new Error('liste des marques à retirer absente : PDF refusé');
@@ -813,9 +867,11 @@
       return monterFrame(D, false).then(function (f) { horsEcran = f; return { f: f, D: D }; });
     });
     return f0.then(function (x) {
-      return fabriquerPdf(x.f, function (i, t) { info('PDF : page ' + i + ' / ' + t); }).then(function (blob) {
+      var nbPages = 0;
+      return fabriquerPdf(x.f, function (i, t) { nbPages = t; info('PDF : page ' + i + ' / ' + t); }).then(function (blob) {
         var nom = 'Catalogue-Offilog-' + x.D.produits.length + '-references.pdf';
-        return V2.shareOrSaveBlob(new File([blob], nom, { type: 'application/pdf' }), nom, 'Le catalogue Offilog');
+        pret = { n: n0, file: new File([blob], nom, { type: 'application/pdf' }), pages: nbPages };
+        if (mode === 'pdf') enregistrer(pret.file); else proposer({ n: x.D.produits.length, file: pret.file, pages: nbPages });
       });
     }).catch(function (e) {
       console.error('catalogue Offilog, PDF', e);
@@ -829,7 +885,7 @@
       if (modal && modal.classList.contains('open') && etat.D) info(ent(etat.D.produits.length) + ' produits · ' + ent(etat.pages) + ' pages');
       else if (frame && !(modal && modal.classList.contains('open'))) { if (frame.parentNode) frame.parentNode.removeChild(frame); frame = null; }
     });
-  };
+  }
 
   // ── L'onglet « Le catalogue » de l'écran Offilog (V3) : la couverture en vignette, le choix 100 / 200 / 300, Voir, Imprimer, Envoyer ──
   // La vignette est la VRAIE couverture, dans une petite iframe réduite : la même page que dans le catalogue, sans toucher à sa mise en page.
@@ -848,7 +904,8 @@
         '<div class="olm-pan-l">Combien de produits dans le catalogue ?</div><div class="v2-segs off-adv-segs">' + segs + '</div>' +
         '<div class="olv-act">' +
           '<button type="button" class="v2-btn v2-btn-primary" onclick="V2.offVitrine()">' + ICO('fiche', 15, 2) + ' Voir le catalogue</button>' +
-          '<button type="button" class="v2-btn v2-btn-ghost" onclick="V2.offVitrineImprimer()">' + ICO('download', 15, 2) + ' Imprimer</button>' +
+          '<button type="button" class="v2-btn v2-btn-ghost" onclick="V2.offVitrineImprimer()">' + ICO('fiche', 15, 2) + ' Imprimer</button>' +
+          '<button type="button" class="v2-btn v2-btn-ghost" onclick="V2.offVitrinePdf()">' + ICO('download', 15, 2) + ' Télécharger le PDF</button>' +
           '<button type="button" class="v2-btn v2-btn-ghost" onclick="V2.offVitrineMail()">' + ICO('spark', 15, 2) + ' Envoyer par mail</button></div></div></div>';
   };
   // Remplit la vignette : seule la première page (la couverture) du catalogue est montée.

@@ -130,6 +130,7 @@
     search: 'M11 4.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM16 16l4 4',
     x: 'M6 6l12 12M18 6L6 18',
     envoi: 'M12 15V4M8 8l4-4 4 4M5 12v7h14v-7',
+    telech: 'M12 4v11M7.5 10.5L12 15l4.5-4.5M5 20h14',
     chev: 'M9 5l7 7-7 7',
     retirer: 'M12 3.5a8.5 8.5 0 100 17 8.5 8.5 0 000-17zM8 12h8'
   };
@@ -318,6 +319,7 @@
     ov.className = 'dcm-vis'; ov.id = 'dcm-vis'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-labelledby', 'dcm-vt');
     ov.innerHTML = '<div class="dcm-vh"><div class="dcm-vt"><b id="dcm-vt">' + esc(d.titre) + '</b><small>' + pages(d.pages) + ' · ' + esc((famDe(d.famille) || {}).nom || '') + '</small></div>' +
       (D.peut ? '<button type="button" class="dcm-vb" data-vretirer="1" aria-label="Retirer ce document">' + ic('retirer') + '<span class="dcm-lib" aria-hidden="true">Retirer</span></button>' : '') +
+      '<button type="button" class="dcm-vb" data-telecharger="1" aria-label="Télécharger ce document" disabled>' + ic('telech') + '<span class="dcm-lib" aria-hidden="true">Télécharger</span></button>' +
       '<button type="button" class="dcm-vb" data-envoyer="1" aria-label="Envoyer ce document" disabled>' + ic('envoi') + '<span class="dcm-lib" aria-hidden="true">Envoyer</span></button>' +
       '<button type="button" class="dcm-vb dcm-x" data-fermer="1" aria-label="Fermer">' + ic('x') + '</button></div>' +
       '<div class="dcm-vc" id="dcm-vc"><p class="dcm-vmsg">Ouverture du document…</p></div>';
@@ -327,6 +329,7 @@
       var t = e.target.closest ? e.target : null; if (!t) return;
       if (t.closest('[data-fermer]')) { fermerVis(); return; }
       if (t.closest('[data-vretirer]')) { fermerVis(); if (D.peut) confirmerRetrait(d); return; }
+      if (t.closest('[data-telecharger]')) telecharger(t.closest('[data-telecharger]'));
       if (t.closest('[data-envoyer]')) envoyer(d, t.closest('[data-envoyer]'));
     });
     document.addEventListener('keydown', toucheVis, true);
@@ -336,7 +339,7 @@
     blob(sha).then(function (b) {
       if (!vis || vis.jeton !== jeton) return;
       vis.fichier = new File([b], nomFichier(d), { type: 'application/pdf' });
-      var be = ov.querySelector('[data-envoyer]'); if (be) be.disabled = false;
+      [].forEach.call(ov.querySelectorAll('[data-envoyer],[data-telecharger]'), function (be) { be.disabled = false; });
       return ouvrirPdf(b).then(function (pdf) {
         if (!vis || vis.jeton !== jeton) return;
         zone.innerHTML = '';
@@ -384,16 +387,31 @@
     if (v.retour && v.retour.focus && document.contains(v.retour)) { try { v.retour.focus(); } catch (e) {} }
   }
   // « Envoyer » : le fichier est déjà en mémoire, la feuille de partage s'ouvre DANS le geste (Safari la refuse après une attente) ; sinon, téléchargement
+  // 26/11/2026 — Will : « il manque un bouton pdf pour avoir directement le pdf qui s'enregistre ou envoyer ne fonctionne pas ».
+  // Sur Mac, la feuille de partage ne propose jamais Outlook (aucune extension de partage) : « Télécharger » enregistre le PDF,
+  // à joindre ensuite au mail. Un partage refusé par le navigateur (autre chose qu'une feuille fermée) se replie sur le téléchargement.
+  function enregistrer(f, btn, lib) {
+    var u = URL.createObjectURL(f), a = document.createElement('a');
+    a.href = u; a.download = f.name; document.body.appendChild(a); a.click(); a.parentNode.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(u); }, 60000);
+    if (btn) { var l = btn.querySelector('.dcm-lib'); if (l) { l.textContent = 'Téléchargé'; setTimeout(function () { l.textContent = lib; }, 2500); } }
+    if (V2.toast) V2.toast('PDF enregistré dans vos téléchargements : ' + esc(f.name));
+  }
+  function telecharger(btn) {
+    var f = vis && vis.fichier; if (!f) return;
+    enregistrer(f, btn, 'Télécharger');
+  }
   function envoyer(d, btn) {
     var f = vis && vis.fichier; if (!f) return;
     if (navigator.canShare && navigator.share && navigator.canShare({ files: [f] })) {
-      navigator.share({ files: [f], title: d.titre }).catch(function () {});
+      navigator.share({ files: [f], title: d.titre }).catch(function (e) {
+        if (e && e.name === 'AbortError') return;   // feuille fermée par l'utilisateur
+        console.error('documents commerciaux, partage', e);
+        enregistrer(f, btn, 'Envoyer');
+      });
       return;
     }
-    var u = URL.createObjectURL(f), a = document.createElement('a');
-    a.href = u; a.download = f.name; document.body.appendChild(a); a.click(); a.parentNode.removeChild(a);
-    setTimeout(function () { URL.revokeObjectURL(u); }, 30000);
-    if (btn) { var l = btn.querySelector('.dcm-lib'); if (l) { l.textContent = 'Téléchargé'; setTimeout(function () { l.textContent = 'Envoyer'; }, 2500); } }
+    enregistrer(f, btn, 'Envoyer');
   }
 
   // ——— Fenêtres (ajout, retrait) ———
