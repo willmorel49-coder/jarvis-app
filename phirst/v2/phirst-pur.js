@@ -939,6 +939,128 @@
   var SELECT_INTEGRAL = ',phirst_integral!inner(cle)';
   function filtresIntegral(perim) { return requeteOfficines({ angle: 'toutes', france: perim === 'france' }); }
 
+  /* ════ AGENDA DANS LES DEUX SENS (26/11/2026) ════
+     Phirst vers l'iPhone : un calendrier auquel Yann s'abonne (fluxIcs, servi par la fonction Vercel du relais avec CE fichier copié à
+     l'octet). L'iPhone vers Phirst : le lien de son agenda perso ; seules les HEURES où il est pris sont gardées (agenda_occupe), jamais
+     un titre ni un lieu. Les heures restent des textes « AAAA-MM-JJTHH:MM » à l'heure de Paris, comme tout l'agenda. */
+  var MSG_LIEN_AGENDA = 'Collez le lien complet : il commence par webcal:// ou https://.';
+  var MSG_PRIS_PERSO = 'Yann est pris dans son agenda perso à cette heure-là : choisissez un autre créneau.';
+  /* Le lien collé par Yann : webcal:// devient https:// ; rien d'autre que https, ni adresse locale, ni adresse IP. */
+  function lienAgendaPropre(texte) {
+    var t = String(texte == null ? '' : texte).trim(), u;
+    if (/^webcal:\/\//i.test(t)) t = 'https://' + t.slice(9);
+    if (!/^https:\/\//i.test(t) || t.length > 1000 || /\s/.test(t)) return { erreur: MSG_LIEN_AGENDA };
+    try { u = new URL(t); } catch (e) { return { erreur: MSG_LIEN_AGENDA }; }
+    var h = String(u.hostname || '').toLowerCase();
+    if (!h || u.username || u.password || h === 'localhost' || /\.localhost$/.test(h) || /^\d{1,3}(\.\d{1,3}){3}$/.test(h) || h.charAt(0) === '[' || h.indexOf(':') >= 0 || h.indexOf('.') < 0) return { erreur: MSG_LIEN_AGENDA };
+    return { lien: t };
+  }
+  function fournisseurAgenda(lien) {
+    var h = ''; try { h = new URL(String(lien)).hostname.toLowerCase(); } catch (e) { return ''; }
+    function sous(d) { return h === d || h.slice(-(d.length + 1)) === '.' + d; }
+    if (sous('icloud.com')) return 'iCloud';
+    if (sous('google.com')) return 'Google';
+    if (sous('outlook.office365.com') || sous('outlook.live.com') || sous('office.com')) return 'Outlook';
+    return '';
+  }
+  /* Des plages { debut, fin, journee } en morceaux d'UN jour : un événement de 3 jours = 3 morceaux ; un morceau qui va jusqu'à minuit
+     finit à « J+1T00:00 ». journee = le morceau couvre tout le jour. Vides retirés, triés, doublons exacts retirés.
+     (creneauxLibres ne regarde que les occupations qui COMMENCENT le jour même.) */
+  function decouperParJour(plages) {
+    var out = [], vus = {};
+    (plages || []).forEach(function (p) {
+      if (!p) return;
+      var d = minutes(p.debut), f = minutes(p.fin);
+      if (!isFinite(d) || !isFinite(f) || f <= d) return;
+      for (var s = d, garde = 0; s < f && garde < 400; garde++) {
+        var minuit = minutes(ajouterJoursIso(versLocal(s), 1) + 'T00:00'), e = Math.min(f, minuit);
+        var m = { debut: versLocal(s), fin: versLocal(e), journee: versLocal(s).slice(11) === '00:00' && e === minuit };
+        var k = m.debut + '|' + m.fin + '|' + m.journee;
+        if (e > s && !vus[k]) { vus[k] = true; out.push(m); }
+        s = e;
+      }
+    });
+    return out.sort(function (a, b) { return minutes(a.debut) - minutes(b.debut) || minutes(a.fin) - minutes(b.fin); });
+  }
+  /* Les heures prises dans l'agenda perso, au format des occupations de l'agenda (sans lieu : la marge de route inconnue s'applique). */
+  function occupationsPerso(lignes) {
+    return decouperParJour(lignes).map(function (p) { return { debut: p.debut, fin: p.fin, commune: null, lat: null, lon: null, perso: true }; });
+  }
+  /* Les plages perso d'un jour, réunies quand elles se chevauchent ou se touchent, pour l'affichage. */
+  function persoDuJour(lignes, jour) {
+    var out = [];
+    decouperParJour(lignes).filter(function (p) { return p.debut.slice(0, 10) === jour; }).forEach(function (p) {
+      var dern = out[out.length - 1];
+      if (dern && minutes(p.debut) <= minutes(dern.fin)) { if (minutes(p.fin) > minutes(dern.fin)) dern.fin = p.fin; }
+      else out.push({ debut: p.debut, fin: p.fin });
+    });
+    return out.map(function (p) { return { debut: p.debut, fin: p.fin, journee: p.debut.slice(11) === '00:00' && p.fin === ajouterJoursIso(jour, 1) + 'T00:00' }; });
+  }
+  function dejaPrisPerso(lignes, debut, dureeMin) {
+    var d = minutes(debut), f = d + Number(dureeMin);
+    if (!isFinite(d) || !isFinite(f)) return false;
+    return decouperParJour(lignes).some(function (p) { return minutes(p.debut) < f && minutes(p.fin) > d; });
+  }
+  /* « à l'instant », « il y a 5 min », « il y a 2 h », « hier », « il y a 3 jours » */
+  function ageFr(iso, maintenant) {
+    var t = Date.parse(iso), n = maintenant instanceof Date ? maintenant.getTime() : Number(maintenant == null ? Date.now() : maintenant);
+    if (!isFinite(t) || !isFinite(n)) return '';
+    var min = Math.floor((n - t) / 60000);
+    if (min < 1) return 'à l’instant';
+    if (min < 60) return 'il y a ' + min + ' min';
+    if (min < 1440) return 'il y a ' + Math.floor(min / 60) + ' h';
+    var j = Math.floor(min / 1440);
+    return j === 1 ? 'hier' : 'il y a ' + j + ' jours';
+  }
+
+  /* ── Le calendrier de l'iPhone (RFC 5545) : CRLF, lignes pliées à 75 octets sans couper un caractère ── */
+  var VTIMEZONE_PARIS = ['BEGIN:VTIMEZONE', 'TZID:Europe/Paris', 'X-LIC-LOCATION:Europe/Paris',
+    'BEGIN:DAYLIGHT', 'TZOFFSETFROM:+0100', 'TZOFFSETTO:+0200', 'TZNAME:CEST', 'DTSTART:19700329T020000', 'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU', 'END:DAYLIGHT',
+    'BEGIN:STANDARD', 'TZOFFSETFROM:+0200', 'TZOFFSETTO:+0100', 'TZNAME:CET', 'DTSTART:19701025T030000', 'RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU', 'END:STANDARD',
+    'END:VTIMEZONE'];
+  function octets(c) { var p = c.codePointAt(0); return p < 0x80 ? 1 : p < 0x800 ? 2 : p < 0x10000 ? 3 : 4; }
+  function plierIcs(ligne) {
+    var out = [], cour = '', n = 0, max = 75;
+    Array.from(String(ligne)).forEach(function (c) {
+      var o = octets(c);
+      if (n + o > max) { out.push(cour); cour = ' '; n = 1; max = 75; }
+      cour += c; n += o;
+    });
+    out.push(cour);
+    return out.join('\r\n');
+  }
+  function echapperIcs(t) { return String(t == null ? '' : t).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r\n|\r|\n/g, '\\n'); }
+  function icsLocal(local) { return String(local).replace(/[-:]/g, '') + '00'; }
+  function icsUtc(d) { return new Date(d).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z'); }
+  function sansMontant(t) { t = String(t == null ? '' : t).trim(); return t && !contientMontant(t) ? t : ''; }
+  function fluxIcs(o) {
+    o = o || {};
+    var now = o.maintenant instanceof Date ? o.maintenant : new Date(o.maintenant == null ? Date.now() : o.maintenant);
+    var limite = minutes(maintenantParis(now)) - 90 * 1440, par = {};
+    (o.fiches || []).forEach(function (f) { if (f && f.id) par[f.id] = f; });
+    var l = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Phirst//Agenda//FR', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:Phirst',
+      'X-WR-TIMEZONE:Europe/Paris', 'X-PUBLISHED-TTL:PT15M', 'REFRESH-INTERVAL;VALUE=DURATION:PT15M'].concat(VTIMEZONE_PARIS);
+    (o.rdvs || []).forEach(function (r) {
+      if (!r || r.statut === 'annule' || !estHeureLocale(r.debut) || !estHeureLocale(r.fin)) return;   // annulé : il sort du téléphone au rafraîchissement
+      if (minutes(r.fin) < limite) return;
+      var f = par[r.prospect_id] || {}, nom = sansMontant(f.nom) || 'Pharmacie', ville = sansMontant(f.ville), conf = aConfirmer(r);
+      var desc = [sansMontant(r.objet)];
+      if (r.statut === 'propose') desc.push('Pris par la téléprospectrice : à confirmer dans Phirst.');
+      else if (r.statut === 'reporte') desc.push('Déplacé par la téléprospectrice : à confirmer dans Phirst.');
+      l.push('BEGIN:VEVENT', 'UID:' + echapperIcs(r.id) + '@phirst', 'DTSTAMP:' + icsUtc(now));
+      var modif = r.dernier && Date.parse(r.dernier.le); if (isFinite(modif)) l.push('LAST-MODIFIED:' + icsUtc(modif));
+      l.push('DTSTART;TZID=Europe/Paris:' + icsLocal(r.debut), 'DTEND;TZID=Europe/Paris:' + icsLocal(r.fin),
+        'SUMMARY:' + echapperIcs((conf ? 'À confirmer · ' : '') + nom + (ville ? ' · ' + ville : '')));
+      var lieu = sansMontant(r.lieu) || ville; if (lieu) l.push('LOCATION:' + echapperIcs(lieu));
+      desc = desc.filter(Boolean); if (desc.length) l.push('DESCRIPTION:' + echapperIcs(desc.join('\n')));
+      l.push('STATUS:' + (conf ? 'TENTATIVE' : 'CONFIRMED'));
+      if (o.adresseApp) l.push('URL:' + String(o.adresseApp));
+      l.push('END:VEVENT');
+    });
+    l.push('END:VCALENDAR');
+    return l.map(plierIcs).join('\r\n') + '\r\n';
+  }
+
   return {
     jourAvecAnnee: jourAvecAnnee, datesLisibles: datesLisibles, miseAJourFr: miseAJourFr,
     SECTEUR: SECTEUR, rang: rang, dansSecteur: dansSecteur, primeSecteur: primeSecteur, norm: norm, cle: cle,
@@ -965,6 +1087,9 @@
     SEUIL_COUCHES: SEUIL_COUCHES, couchesMasquees: couchesMasquees, phraseCachee: phraseCachee, phraseToutAffiche: phraseToutAffiche, phraseVue: phraseVue, libelleBouton: libelleBouton, releveAffiche: releveAffiche,
     ordreTournee: ordreTournee, tourneeDuJour: tourneeDuJour, lienTournee: lienTournee, kmRoute: kmRoute,
     tel9: tel9, memePharmacie: memePharmacie, ficheDeLignes: ficheDeLignes, blocIntegral: blocIntegral, ordreCouches: ordreCouches,
-    SELECT_INTEGRAL: SELECT_INTEGRAL, filtresIntegral: filtresIntegral
+    SELECT_INTEGRAL: SELECT_INTEGRAL, filtresIntegral: filtresIntegral,
+    MSG_LIEN_AGENDA: MSG_LIEN_AGENDA, MSG_PRIS_PERSO: MSG_PRIS_PERSO, lienAgendaPropre: lienAgendaPropre, fournisseurAgenda: fournisseurAgenda,
+    decouperParJour: decouperParJour, occupationsPerso: occupationsPerso, persoDuJour: persoDuJour, dejaPrisPerso: dejaPrisPerso, ageFr: ageFr,
+    plierIcs: plierIcs, echapperIcs: echapperIcs, fluxIcs: fluxIcs
   };
 });

@@ -456,3 +456,18 @@
 /* L4 (24/11/2026) : une étiquette écrite par le robot peut être longue (« De la part de Pharmacie du Bocage Clair ») : elle passe à la ligne dans sa colonne
    au lieu de déborder sur la raison. Les étiquettes courtes ne changent pas (elles tiennent sur une ligne). */
 .pa-liste .pa-l .pa-ligne .lg-et{white-space:normal;max-width:100%;border-radius:14px;line-height:1.25;overflow-wrap:anywhere}
+
+/* Agenda dans les deux sens (26/11/2026) : les heures prises dans l'agenda perso, en gris, sans bouton ; le bloc « Sur votre iPhone » */
+.ag-perso{padding:12px 16px;border-color:#E1E6E3;background-color:#EEF1EF;box-shadow:none;color:#46524C}
+.ag-perso b{font-size:15.5px;font-weight:700}
+.ag-perso-l{margin-top:12px}
+.ag-ipho{margin:28px 0 0;padding:20px;border:1px solid var(--au-fil,#D8E7DD);border-radius:18px;background-color:#fff;background-image:linear-gradient(180deg,#fff 0%,#F7FAF8 100%);box-shadow:0 14px 30px -26px var(--au-ombre-l,rgba(18,60,40,.22))}
+.ag-ipho .ag-jt{margin-bottom:8px}
+.ag-ipho-p{margin:0 0 14px;font-size:16px;line-height:1.5;color:var(--au-ink2,#3B4F43)}
+.ag-ipho .pa-dit{margin:10px 0 0}
+.ag-ipho .pa-dit:empty{display:none}
+.ag-ipho-l{display:grid;gap:6px;margin-top:12px;font-size:14px;font-weight:700;color:var(--au-ink3,#4A5D51)}
+.ag-ipho-champ{box-sizing:border-box;width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--au-fil,#D8E7DD);border-radius:12px;background-color:#F7FAF8;font-size:16px;color:var(--au-ink,#16281E)}
+.ag-ipho-aide>summary.ag-sh{min-height:44px;box-sizing:border-box;padding:12px 0;margin:10px 0 0;cursor:pointer}
+.ag-ipho-aide ol{margin:0 0 10px;padding-left:22px;font-size:16px;line-height:1.5;color:var(--au-ink2,#3B4F43)}
+.ag-ipho-aide p{margin:0;font-size:15px;line-height:1.5;color:var(--au-ink3,#4A5D51)}

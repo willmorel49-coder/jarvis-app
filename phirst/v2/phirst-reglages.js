@@ -15,7 +15,8 @@
   function sb() { return typeof V2.sb === 'function' ? V2.sb() : null; }
 
   var S = { racine: null, jeton: 0, telepro: false, roleConnu: false, lu: false, base: null, liste: null, etat: null, depense: null,
-    techOuvert: false, flash: '', flashErr: false, tFlash: 0, occupe: false, depuis: null };
+    techOuvert: false, flash: '', flashErr: false, tFlash: 0, occupe: false, depuis: null,
+    ag: undefined, agForm: false, agDit: '', agErr: false, agOccupe: false };   // ag : undefined = pas lu, 'indispo' = table absente (section cachée), null = aucun lien, { … }
 
   function ico(n, t) {
     t = t || 20;
@@ -71,6 +72,115 @@
       S.base = x[0] === true; S.liste = x[1]; S.etat = x[2]; S.depense = typeof x[3] === 'number' ? x[3] : null; S.lu = true;
       dessiner();
     });
+    lireAgenda(b, tok);
+  }
+
+  /* ── Votre agenda perso (26/11/2026) : le lien secret de son calendrier ; Phirst n'en garde que les heures (agenda_occupe). ── */
+  function lireAgenda(b, tok) {
+    Promise.resolve(b.from('agenda_perso').select('lien,etat,nb,message,lu_le,essai_le').limit(1).maybeSingle()).then(function (r) {
+      if (tok !== S.jeton) return;
+      S.ag = r && !r.error ? (r.data || null) : 'indispo'; dessiner();
+    }, function () { if (tok === S.jeton) { S.ag = 'indispo'; dessiner(); } });
+  }
+  function espace(b) {
+    return Promise.resolve(b.from('crm_members').select('workspace_id').eq('user_id', V2.user.id).limit(1).maybeSingle()).then(function (r) {
+      if (!r || r.error || !r.data || !r.data.workspace_id) throw new Error('espace');
+      return r.data.workspace_id;
+    });
+  }
+  /* L'abonnement porte le jeton par lequel le relais relit l'agenda perso : on en crée un s'il n'y en a pas. */
+  function jetonActif(b, ws) {
+    return Promise.resolve(b.from('agenda_abonnements').select('jeton').is('revoque_le', null).limit(1).maybeSingle()).then(function (r) {
+      if (r && !r.error && r.data && r.data.jeton) return r.data.jeton;
+      return Promise.resolve(b.from('agenda_abonnements').insert({ workspace_id: ws }).select('jeton').single()).then(function (n) {
+        if (!n || n.error || !n.data) throw new Error('abonnement');
+        return n.data.jeton;
+      });
+    });
+  }
+  function direAgenda(t, err) { S.agDit = t; S.agErr = !!err; S.agOccupe = false; dessiner(); }
+  function resultatLecture(r) {
+    if (!r) return 'Lien enregistré. La lecture n’a pas répondu tout de suite : elle se refera toute seule dans un quart d’heure.';
+    if (r.etat === 'ok') return 'Agenda relié : ' + r.nb + ' plage' + (r.nb > 1 ? 's' : '') + ' occupée' + (r.nb > 1 ? 's' : '') + ' lue' + (r.nb > 1 ? 's' : '') + ' dans les 3 prochains mois.';
+    if (r.etat === 'vide') return 'Agenda relié, mais aucune heure occupée n’y figure dans les 3 prochains mois.';
+    return r.message || 'Cet agenda n’a pas pu être lu : vérifiez le lien.';
+  }
+  function relireAgenda(b, ws) {
+    return jetonActif(b, ws).then(function (j) { return window.PHIRST_RDV && window.PHIRST_RDV.relirePerso ? window.PHIRST_RDV.relirePerso(j) : null; }).then(function (r) {
+      lireAgenda(b, S.jeton);
+      direAgenda(resultatLecture(r), !!r && r.etat === 'erreur');
+    });
+  }
+  function enregistrerAgenda(form) {
+    if (S.agOccupe) return;
+    var champ = form.querySelector('input'), v = P.lienAgendaPropre(champ.value), b = sb();
+    if (v.erreur) { direAgenda(v.erreur, true); var c = S.racine && S.racine.querySelector('[data-f="ag-lien"]'); if (c) c.focus(); return; }
+    if (!b || !V2.user) { direAgenda('Pas enregistré : réessayez dans un instant.', true); return; }
+    S.agOccupe = true; S.agDit = 'Lecture de votre agenda…'; S.agErr = false; dessiner();
+    espace(b).then(function (ws) {
+      return Promise.resolve(b.from('agenda_perso').upsert({ user_id: V2.user.id, workspace_id: ws, lien: v.lien, etat: null, nb: null, message: null, essai_le: null, maj_le: new Date().toISOString() }, { onConflict: 'user_id' }))
+        .then(function (r) { if (!r || r.error) throw new Error('lien'); S.agForm = false; var c = S.racine && S.racine.querySelector('[data-f="ag-lien"]'); if (c) c.value = ''; return relireAgenda(b, ws); });
+    }).then(null, function () { direAgenda('Pas enregistré : réessayez dans un instant.', true); });
+  }
+  function relireMaintenant() {
+    var b = sb(); if (!b || S.agOccupe) return;
+    S.agOccupe = true; S.agDit = 'Lecture de votre agenda…'; S.agErr = false; dessiner();
+    espace(b).then(function (ws) { return relireAgenda(b, ws); }).then(null, function () { direAgenda('La lecture n’a pas pu partir : réessayez dans un instant.', true); });
+  }
+  function retirerAgenda() {
+    var b = sb(); if (!b || S.agOccupe) return;
+    S.agOccupe = true; dessiner();
+    Promise.resolve(b.rpc('phirst_agenda_perso_retirer')).then(function (r) {
+      if (!r || r.error) throw new Error('retirer');
+      S.ag = null; S.agForm = false; direAgenda('Lien retiré : Phirst ne lit plus votre agenda perso, et ses heures ont été effacées.');
+    }).then(null, function () { direAgenda('Pas retiré : réessayez dans un instant.', true); });
+  }
+  var AIDE_AGENDA = [
+    { t: 'Agenda iCloud (Calendrier de l’iPhone)', ouvert: true, l: [
+      'Sur l’iPhone, ouvrez Calendrier et touchez « Calendriers ».',
+      'Touchez le bouton d’informations à côté de votre agenda perso, activez « Calendrier public », puis touchez « Envoyer le lien » et copiez-le.',
+      'Collez ce lien ci-dessus (il commence par webcal://).'
+    ], n: 'Un calendrier public iCloud se lit par toute personne qui a le lien. Phirst le garde caché et n’en lit que les heures : ne donnez ce lien à personne d’autre.' },
+    { t: 'Agenda Google', l: [
+      'Depuis un ordinateur (l’adresse ne se voit pas sur le téléphone), ouvrez Google Agenda.',
+      'Paramètres › le nom de votre agenda › « Intégrer l’agenda ».',
+      'Copiez « Adresse secrète au format iCal » et collez-la ci-dessus.'
+    ], n: 'Cette adresse est secrète : ne la donnez à personne d’autre. Si elle a circulé, « Réinitialiser » dans Google en crée une nouvelle.' },
+    { t: 'Agenda Outlook', l: [
+      'Sur outlook.com ou Outlook sur le web : Paramètres › Calendrier › Calendriers partagés › « Publier un calendrier ».',
+      'Choisissez votre calendrier et, si c’est proposé, « Peut voir quand je suis occupé » : même le détail ne sort pas.',
+      'Touchez « Publier », copiez le lien ICS et collez-le ci-dessus.'
+    ], n: 'Toute personne qui a ce lien voit le calendrier publié : ne le donnez à personne d’autre.' }
+  ];
+  function sectionAgenda() {
+    if (S.ag === undefined || S.ag === 'indispo') return '';
+    var a = S.ag, h = '<section class="dz-carte rg-bloc rg-agenda" id="rg-agenda" aria-labelledby="rg-agenda-t"><h2 class="rg-h2" id="rg-agenda-t">Votre agenda perso</h2>' +
+      '<p class="rg-sous">Collez ici le lien de votre agenda perso. Phirst y lit seulement les heures où vous êtes pris, jamais le titre ni le détail : elles apparaissent en gris dans l’Agenda, et les créneaux proposés les évitent. La téléprospectrice voit seulement « Yann est occupé ».</p>';
+    if (a) {
+      var four = P.fournisseurAgenda(a.lien), nom = four ? 'Agenda ' + four + ' relié' : 'Agenda relié', ok = a.etat === 'ok' || a.etat === 'vide';
+      if (ok || !a.etat) {
+        var lu = a.lu_le ? 'lu ' + P.ageFr(a.lu_le, Date.now()) : 'pas encore lu';
+        var nb = a.etat === 'ok' ? a.nb + ' plage' + (a.nb > 1 ? 's' : '') + ' occupée' + (a.nb > 1 ? 's' : '') + ' dans les 3 prochains mois' : a.etat === 'vide' ? 'aucune heure occupée dans les 3 prochains mois' : '';
+        h += '<p class="rg-ag-etat" data-ok>' + esc([nom, lu, nb].filter(Boolean).join(' · ')) + '</p>';
+      } else {
+        h += '<p class="rg-ag-etat" data-err><b>' + esc(nom) + '</b> ' + esc(a.message || 'Cet agenda n’a pas pu être lu.') + ' ' +
+          esc(a.lu_le ? 'Dernière lecture réussie ' + P.ageFr(a.lu_le, Date.now()) + ' : ces heures-là restent prises en compte.' : 'Aucune lecture réussie pour l’instant.') + '</p>';
+      }
+      h += '<div class="rg-ag-bs"><button type="button" class="dz-btn plein" data-rg="ag-relire" data-f="ag-relire"' + (S.agOccupe ? ' disabled' : '') + '>Relire maintenant</button>' +
+        '<button type="button" class="dz-btn" data-rg="ag-changer" data-f="ag-changer">Changer le lien</button>' +
+        '<button type="button" class="dz-btn" data-rg="ag-retirer" data-f="ag-retirer"' + (S.agOccupe ? ' disabled' : '') + '>Retirer le lien</button></div>';
+    }
+    if (!a || S.agForm) {
+      h += '<form class="rg-form" data-agperso novalidate><div class="dz-champ"><label for="rg-ag-lien">Lien de votre agenda perso</label>' +
+        '<input id="rg-ag-lien" type="url" inputmode="url" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="webcal://… ou https://…" data-f="ag-lien"></div>' +
+        '<button type="submit" class="dz-btn plein" data-f="ag-ok"' + (S.agOccupe ? ' disabled' : '') + '>Enregistrer</button></form>';
+    }
+    if (S.agDit) h += '<p class="' + (S.agErr ? 'rg-err' : 'rg-ag-dit') + '" role="status">' + esc(S.agDit) + '</p>';
+    h += '<div class="rg-ag-aide">' + AIDE_AGENDA.map(function (x) {
+      return '<details class="dz-repli rg-ag-d"' + (x.ouvert ? ' open' : '') + '><summary>' + esc(x.t) + '<i class="dz-chev" aria-hidden="true"></i></summary><div class="dz-repli-c"><ol>' +
+        x.l.map(function (e) { return '<li>' + esc(e) + '</li>'; }).join('') + '</ol><p>' + esc(x.n) + '</p></div></details>';
+    }).join('') + '</div>';
+    return h + '</section>';
   }
 
   /* ── les briques de la maquette ── */
@@ -137,7 +247,7 @@
       '<p class="rg-phrase">' + esc(b.phrase) + '</p></section>' +
       '<div class="rg-grille"><div class="rg-bilan"><p class="rg-sur">Outils et compte</p><b>' + esc(b.chiffre) + '</b><p><span>' + esc(lib[0] + ' ' + lib[1]) + '</span>' + esc(b.phrase) + '</p></div>' +
       '<ul class="rg-outils" aria-label="Les outils de Phirst">' + outils.map(outil).join('') + '</ul>' + noteOutil(outils) +
-      '<div id="ri-zone">' + (window.PHIRST_RG_TEXTES ? window.PHIRST_RG_TEXTES.html() : '') + '</div>' +
+      '<div id="ri-zone">' + (window.PHIRST_RG_TEXTES ? window.PHIRST_RG_TEXTES.html() : '') + '</div>' + sectionAgenda() +
       '<div class="rg-cote">' + plafond() +
       '<section class="dz-carte rg-bloc" id="rg-compte"><h2 class="rg-h2">Mon compte</h2><p class="rg-sous">' + esc(email()) + '</p>' + htmlFlash() +
       '<button type="button" class="dz-btn plein" data-rg="mdp" data-f="mdp">' + ico('cadenas', 20) + 'Changer mon mot de passe</button>' + deconnexion() + '</section>' +
@@ -229,11 +339,15 @@
     else if (a === 'outil') choisirOutil(t.getAttribute('data-id'));
     else if (a === 'fermer') fermer();
     else if (a === 'sortir' && typeof V2.signOut === 'function') V2.signOut();
+    else if (a === 'ag-relire') relireMaintenant();
+    else if (a === 'ag-retirer') retirerAgenda();
+    else if (a === 'ag-changer') { S.agForm = !S.agForm; S.agDit = ''; dessiner(); var c = S.racine && S.racine.querySelector('[data-f="ag-lien"]'); if (c) c.focus(); }
   }
 
   /* ── entrée ── */
   V2.pages.reglages = { needs: [], render: function (root) {
     S.racine = root; S.flash = ''; S.flashErr = false; S.occupe = false; S.depuis = null; S.techOuvert = false; S.noteOutil = undefined;
+    S.ag = undefined; S.agForm = false; S.agDit = ''; S.agErr = false; S.agOccupe = false;
     root.innerHTML = '';
     if (window.PHIRST_RG_TEXTES) { window.PHIRST_RG_TEXTES.remise(); window.PHIRST_RG_TEXTES.brancher(root); }
     if (!root.__rg) {
@@ -241,6 +355,7 @@
       root.addEventListener('click', function (ev) { if (V2.route && V2.route.name === 'reglages') clic(ev); });
       root.addEventListener('submit', function (ev) {
         if (!V2.route || V2.route.name !== 'reglages') return;
+        var g = ev.target.closest && ev.target.closest('[data-agperso]'); if (g) { ev.preventDefault(); enregistrerAgenda(g); return; }
         var f = ev.target.closest && ev.target.closest('[data-mdp]'); if (!f) return;
         ev.preventDefault(); changerMdp(f);
       });

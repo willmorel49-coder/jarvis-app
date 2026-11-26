@@ -219,3 +219,21 @@
 .rg #ri-zone:empty{display:none}
 .rg .ri-groupe .rg-sur{color:var(--dz-ink3)}
 .rg .dz-sr{font-size:13px}
+
+/* Votre agenda perso (26/11/2026) */
+.rg .rg-agenda{grid-column:1/-1}
+.rg .rg-ag-etat{margin:0;padding:12px 14px;border-radius:12px;font-size:16px;line-height:1.45;font-weight:700}
+.rg .rg-ag-etat[data-ok]{background-color:var(--dz-vert-f);color:var(--dz-vert-t)}
+.rg .rg-ag-etat[data-err]{background-color:var(--dz-orange-f);color:var(--dz-orange-t);font-weight:500}
+.rg .rg-ag-etat b{font-weight:800}
+.rg .rg-ag-bs{display:flex;flex-wrap:wrap;gap:10px}
+.rg .rg-ag-bs .dz-btn{width:auto;min-height:44px}
+.rg .rg-ag-dit{margin:0;font-size:16px;line-height:1.45;font-weight:700;color:var(--dz-ink2)}
+.rg .dz-champ input[type=url]{width:100%;min-height:48px;padding:10px 14px;border:1px solid var(--dz-fil);border-radius:12px;background-color:#fff;font-size:16px;font-weight:500;color:var(--dz-ink)}
+.rg .rg-ag-aide{display:grid;gap:10px}
+.rg .rg-ag-d{margin:0}
+.rg .rg-ag-d>summary{font-size:16px}
+.rg .rg-ag-d ol{margin:0 0 10px;padding:0 20px 0 40px;font-size:16px;line-height:1.5;color:var(--dz-ink2)}
+.rg .rg-ag-d ol li+li{margin-top:6px}
+.rg .rg-ag-d p{margin:0;padding:0 20px 16px;font-size:15px;line-height:1.5;color:var(--dz-ink3)}
+@media (max-width:700px){.rg .rg-agenda{order:5}.rg .rg-ag-bs .dz-btn{flex:1 1 100%}.rg .rg-ag-d ol{padding:0 14px 0 34px}.rg .rg-ag-d p{padding:0 14px 14px}}

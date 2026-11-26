@@ -13,7 +13,8 @@
   function sb() { return typeof V2.sb === 'function' ? V2.sb() : null; }
   function jour() { return P.aujourdhui(); }
 
-  var S = { racine: null, jeton: 0, telepro: false, ws: null, fiches: [], rdvs: [], jour: null, flash: '', charge: false, erreur: false, ouvert: null, mode: null, props: null, demain: false };
+  var S = { racine: null, jeton: 0, telepro: false, ws: null, fiches: [], rdvs: [], perso: [], jour: null, flash: '', charge: false, erreur: false, ouvert: null, mode: null, props: null, demain: false,
+    abo: undefined, iphoMode: null, iphoCopie: false, iphoDit: '', relu: false };   // abo : undefined = pas lu, 'indispo' = table absente (bloc caché), null = aucun, { jeton }
 
   function charger(garder) {
     var u = V2.user, tok = ++S.jeton, base = sb();
@@ -29,9 +30,92 @@
       if (!ws && !S.telepro) throw new Error('espace');
       return RDV.lire(base, ws).then(function (x) {
         if (tok !== S.jeton) return;
-        S.ws = ws; S.fiches = x.fiches; S.rdvs = x.rdvs; S.charge = true; S.erreur = false; dessiner();
+        S.ws = ws; S.fiches = x.fiches; S.rdvs = x.rdvs; S.perso = x.perso || []; S.charge = true; S.erreur = false; dessiner();
+        if (!S.telepro) iphone(base, tok);
       });
     }).then(null, function () { if (tok === S.jeton) { S.erreur = true; dessiner(); } });
+  }
+
+  /* ── Sur votre iPhone (26/11/2026) : l'abonnement au calendrier, et la relecture de l'agenda perso en tâche de fond. Yann seulement. ── */
+  function iphone(base, tok) {
+    var abo = Promise.resolve(base.from('agenda_abonnements').select('jeton').is('revoque_le', null).limit(1).maybeSingle())
+      .then(function (r) { return r && !r.error ? (r.data && r.data.jeton ? { jeton: r.data.jeton } : null) : 'indispo'; }, function () { return 'indispo'; });
+    var perso = Promise.resolve(base.from('agenda_perso').select('essai_le').limit(1).maybeSingle())
+      .then(function (r) { return r && !r.error ? r.data : null; }, function () { return null; });
+    Promise.all([abo, perso]).then(function (y) {
+      if (tok !== S.jeton) return;
+      var avant = S.abo; S.abo = y[0]; if (avant !== S.abo && JSON.stringify(avant) !== JSON.stringify(S.abo)) dessiner();
+      var g = y[1];
+      if (S.relu || !g || !S.abo || !S.abo.jeton || (g.essai_le && Date.now() - Date.parse(g.essai_le) < 15 * 60000)) return;
+      S.relu = true;   // une fois par ouverture de l'écran ; on ne bloque jamais l'écran
+      RDV.relirePerso(S.abo.jeton).then(function (r) {
+        if (!r) return;
+        return RDV.lirePerso(base, S.ws).then(function (p) {
+          if (JSON.stringify(p) === JSON.stringify(S.perso)) return;
+          S.perso = p; dessiner();
+        });
+      });
+    });
+  }
+  function nouvelAbonnement(base) {
+    return Promise.resolve(base.from('agenda_abonnements').insert({ workspace_id: S.ws }).select('jeton').single()).then(function (r) {
+      if (!r || r.error || !r.data || !r.data.jeton) throw new Error('abonnement');
+      return { jeton: r.data.jeton };
+    });
+  }
+  function abonner() {
+    var base = sb(); if (!base || !S.ws) return;
+    S.iphoDit = '';
+    nouvelAbonnement(base).then(function (a) {
+      S.abo = a; S.iphoDit = 'Le calendrier de l’iPhone vous demande de vous abonner : acceptez. Rien ne s’ouvre ? Voyez l’aide ci-dessous.'; dessiner();
+      window.location.href = RDV.adresseIphone(a.jeton, true);
+    }, function () { S.iphoDit = PAS; dessiner(); });
+  }
+  function changerAdresse() {
+    var base = sb(), vieux = S.abo && S.abo.jeton; if (!base || !vieux) return;
+    Promise.resolve(base.from('agenda_abonnements').update({ revoque_le: new Date().toISOString() }).eq('jeton', vieux).is('revoque_le', null)).then(function (r) {
+      if (!r || r.error) throw new Error('revoquer');
+      return nouvelAbonnement(base);
+    }).then(function (a) {
+      S.abo = a; S.iphoMode = null; S.iphoCopie = false;
+      S.iphoDit = 'Nouvelle adresse prête : l’ancienne ne marche plus. Sur l’iPhone, touchez « Ouvrir à nouveau » pour vous abonner.'; dessiner();
+    }, function () { S.iphoDit = PAS; dessiner(); });
+  }
+  function copierAdresse() {
+    var u = RDV.adresseIphone(S.abo.jeton, false);
+    var p = navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(u) : Promise.reject(new Error('presse-papiers'));
+    p.then(function () { S.iphoCopie = false; S.iphoDit = 'Adresse copiée.'; dessiner(); }, function () {
+      S.iphoCopie = true; S.iphoDit = 'La copie n’a pas marché : sélectionnez l’adresse ci-dessous et copiez-la.'; dessiner();
+      var c = S.racine && S.racine.querySelector('.ag-ipho-champ'); if (c) { c.focus(); c.select(); }
+    });
+  }
+  function blocIphone() {
+    if (S.telepro || S.abo === undefined || S.abo === 'indispo') return '';
+    var h = '<section class="ag-ipho" aria-labelledby="ag-ipho-t"><h2 id="ag-ipho-t" class="ag-jt">Sur votre iPhone</h2>';
+    if (!S.abo) {
+      h += '<p class="ag-ipho-p">Vos rendez-vous Phirst, ceux pris par la téléprospectrice compris, dans le calendrier de votre iPhone, et donc dans WeekCal. Ils se mettent à jour tout seuls.</p>' +
+        '<div class="pa-bs"><button type="button" class="pa-b pa-ok" data-ag="ipho-abonner">Mettre mes rendez-vous dans le calendrier de l’iPhone</button></div>';
+    } else if (S.iphoMode === 'changer') {
+      h += '<div class="ag-zone"><p class="pa-q">Changer l’adresse ?</p><p class="pa-avis">L’ancienne adresse cessera de marcher : il faudra vous abonner de nouveau sur l’iPhone.</p>' +
+        '<div class="pa-bs"><button type="button" class="pa-b pa-ok" data-ag="ipho-changer-ok">Oui, changer l’adresse</button><button type="button" class="pa-b" data-ag="ipho-fermer">Non, la garder</button></div></div>';
+    } else {
+      h += '<p class="ag-ipho-p">Vos rendez-vous partent dans le calendrier de votre iPhone.</p>' +
+        '<div class="pa-bs"><button type="button" class="pa-b pa-ok" data-ag="ipho-ouvrir">Ouvrir à nouveau</button><button type="button" class="pa-b" data-ag="ipho-copier">Copier l’adresse</button><button type="button" class="pa-b" data-ag="ipho-changer">Changer l’adresse</button></div>';
+      if (S.iphoCopie) h += '<label class="ag-ipho-l">L’adresse de votre calendrier<input class="ag-ipho-champ" type="text" readonly value="' + esc(RDV.adresseIphone(S.abo.jeton, false)) + '"></label>';
+    }
+    h += '<p class="pa-dit" role="status">' + esc(S.iphoDit) + '</p>';
+    h += '<details class="ag-ipho-aide"><summary class="ag-sh">Rien ne s’est ouvert ?</summary><ol>' +
+      (S.abo ? '<li>Touchez « Copier l’adresse » ci-dessus.</li>' : '<li>Touchez d’abord le bouton ci-dessus, puis « Copier l’adresse ».</li>') +
+      '<li>Ouvrez l’app Calendrier de l’iPhone, touchez « Calendriers », puis « Ajouter un calendrier » et « Ajouter un calendrier avec abonnement ».</li>' +
+      '<li>Collez l’adresse, validez, puis enregistrez.</li></ol>' +
+      '<p>Avant iOS 26 : Réglages › Apps › Calendrier › Comptes › Ajouter un compte › Autre › « Ajouter un calendrier avec abonnement ».</p></details>';
+    return h + '</section>';
+  }
+  /* Une plage prise dans l'agenda perso : en gris, sans bouton, jamais le titre. */
+  function lignePerso(p) {
+    var fin = p.fin.slice(11) === '00:00' && p.fin.slice(0, 10) !== p.debut.slice(0, 10) ? 'minuit' : hh(p.fin);
+    var quand = p.journee ? 'Toute la journée' : hh(p.debut) + ' – ' + fin;
+    return '<li class="pa-l ag-perso"><b>' + esc(quand + ' · ' + (S.telepro ? 'Yann est occupé' : 'Pris dans votre agenda')) + '</b></li>';
   }
 
   /* ── Affichage ── */
@@ -109,7 +193,8 @@
   function vue() {
     var auj = jour(), maint = P.maintenantParis(), J = S.jour || auj, els = elements(), h = '';
     var fen = P.fenetreJours(J, auj), dec = P.decalages(fen, auj), comptes = P.comptesParJour(els, fen);
-    var libresJ = P.creneauxLibres({ jour: J, occupations: RDV.occupations(S.rdvs, S.fiches), cible: null, maintenant: maint });
+    var libresJ = P.creneauxLibres({ jour: J, occupations: RDV.occupations(S.rdvs, S.fiches, S.perso), cible: null, maintenant: maint });
+    var persoJ = P.persoDuJour(S.perso, J);
     // Demain : les pages prêtes (idée 6), réservé à Yann
     var bd = !S.telepro && PR && window.PHIRST_PREPARER ? PR.bandeau(els, auj) : null;
     if (bd) h += '<section class="pv-veille' + (S.demain ? ' ag-ouvert' : '') + '" aria-label="' + esc(bd.titre) + '"><span class="pv-veille-i">' + ICO_PRET + '</span><p><b>' + esc(bd.titre) + '</b><span>' + esc(bd.sous) + '</span></p><div class="pv-veille-l">' +
@@ -126,6 +211,7 @@
     }
     // Ensuite
     var c = P.carteEnsuite({ elements: els, jour: J, aujourdhui: auj, maintenant: maint, libres: libresJ.length });
+    if (c.vide && persoJ.length) c.titre = 'Aucun rendez-vous Phirst';
     h += '<div class="ag-ens' + (c.vide ? ' ag-ens-vide' : '') + '"><p class="ag-ens-m">' + esc(c.maint) + '</p><p class="ag-ens-t">' + esc(c.titre) + '</p><p class="ag-ens-d">' + esc(c.detail) + '</p>' + (c.vide ? videAction(S.telepro, 'Un rendez-vous obtenu au téléphone s’inscrit ici tout seul. Pour en prendre un, partez de l’appel.', true) : '') + '</div>';
     // puces de jour
     h += '<div class="ag-jours" role="group" aria-label="Jour affiché">' + fen.map(function (j) {
@@ -137,20 +223,23 @@
     var duJ = P.duJour(els, J), actifs = duJ.filter(function (e) { return e.rdv.statut !== 'annule'; }), annules = duJ.filter(function (e) { return e.rdv.statut === 'annule'; });
     h += '<h2 class="ag-jt">' + esc(P.maj(P.dateLongue(J))) + '</h2>';
     if (!actifs.length) {
-      h += '<div class="pa-vide ag-vide"><p>Rien de prévu ce jour-là.</p><p>' + (!P.estJourOuvre(J) ? 'C’est le week-end : aucun rendez-vous n’est proposé.' :
+      h += '<div class="pa-vide ag-vide"><p>' + (persoJ.length ? 'Aucun rendez-vous Phirst ce jour-là.' : 'Rien de prévu ce jour-là.') + '</p><p>' + (!P.estJourOuvre(J) ? 'C’est le week-end : aucun rendez-vous n’est proposé.' :
         libresJ.length ? (S.telepro ? 'Yann est libre ' : 'Vous êtes libre ') + esc(P.plagesLibres(libresJ).join(' et ')) + ' (' + esc(P.phraseLibres(libresJ.length)) + ').' : 'Il ne reste plus de créneau d’une heure libre ce jour-là. Choisissez un autre jour ci-dessus.') + '</p>' +
-        '<button type="button" class="pa-b" data-vers="appels">Ouvrir les Appels</button></div>';
+        '<button type="button" class="pa-b" data-vers="appels">Ouvrir les Appels</button></div>' +
+        (persoJ.length ? '<ul class="pa-liste ag-perso-l">' + persoJ.map(lignePerso).join('') + '</ul>' : '');
     } else {
       var ens = null, chev = [], prem = null;
       if (!c.vide) for (var i = 0; i < actifs.length; i++) { var x = actifs[i]; if (x.rdv.statut !== 'fait' && (J !== auj || P.minutes(x.rdv.fin) > P.minutes(maint))) { ens = { id: x.rdv.id, mot: c.maint }; break; } }   // même choix que carteEnsuite (phirst-pur.js)
       actifs.forEach(function (x) { if (x.chevauche) { chev.push(x); if (!prem) prem = x.rdv.id; } });
-      h += '<p class="pa-avis">' + esc(P.phraseEtat(duJ, libresJ.length, S.telepro)) + '</p><ul class="pa-liste">' + actifs.map(function (e) {
-        return (e.rdv.id === prem ? alerteUnique(chev) : '') + carteRdv(e, maint, ens);
-      }).join('') + '</ul>';
+      // les plages perso rangées à leur heure parmi les rendez-vous (à heure égale, le rendez-vous d'abord)
+      var lignes = actifs.map(function (e) { return { t: P.minutes(e.rdv.debut), r: 0, h: (e.rdv.id === prem ? alerteUnique(chev) : '') + carteRdv(e, maint, ens) }; })
+        .concat(persoJ.map(function (p) { return { t: P.minutes(p.debut), r: 1, h: lignePerso(p) }; }))
+        .sort(function (a, b) { return a.t - b.t || a.r - b.r; });
+      h += '<p class="pa-avis">' + esc(P.phraseEtat(duJ, libresJ.length, S.telepro)) + '</p><ul class="pa-liste">' + lignes.map(function (x) { return x.h; }).join('') + '</ul>';
     }
     // Repliés : quelques annulations ne doivent pas repousser la journée hors de vue.
     if (annules.length) h += '<details class="ag-annules"><summary class="ag-sh">Annulés ce jour (' + annules.length + ')</summary><ul class="pa-liste">' + annules.map(function (e) { return carteRdv(e, maint); }).join('') + '</ul></details>';
-    return h;
+    return h + blocIphone();
   }
 
   /* ── Gestes : chacun AJOUTE une ligne rdv, puis on relit et on redessine, sans recharger la page ── */
@@ -170,6 +259,7 @@
         if (faux) return dire(faux);
         if (debut === r.debut) return dire('C’est déjà l’heure de ce rendez-vous.');
         if (P.dejaPris(x.rdvs, debut, r.duree_min, r.id)) return dire(P.MSG_PRIS);
+        if (S.telepro && P.dejaPrisPerso(x.perso, debut, r.duree_min)) return dire(P.MSG_PRIS_PERSO);   // Yann, lui, n'est jamais bloqué par son propre agenda
         extra = { debut: debut, duree_min: r.duree_min };
       }
       return RDV.ecrire(base, r.prospect_id, quoi, r.id, extra).then(function (w) {
@@ -188,9 +278,9 @@
       var r = x.rdvs.filter(function (t) { return t.id === id; })[0]; if (!r || S.ouvert !== id) return;
       var f = x.fiches.filter(function (y) { return y.id === r.prospect_id; })[0] || {};
       var cible = f.lat != null && f.lon != null ? { lat: f.lat, lon: f.lon } : null;
-      S.rdvs = x.rdvs; S.fiches = x.fiches;
+      S.rdvs = x.rdvs; S.fiches = x.fiches; S.perso = x.perso || [];
       // se déplacer à son heure actuelle n'est pas un choix
-      S.props = RDV.propositions(x.rdvs, x.fiches, cible, id).filter(function (c) { return c.debut !== r.debut; });
+      S.props = RDV.propositions(x.rdvs, x.fiches, cible, id, x.perso).filter(function (c) { return c.debut !== r.debut; });
       dessiner();
     }, function () { S.props = []; dessiner(); });
   }
@@ -200,6 +290,12 @@
     var b = ev.target.closest('[data-ag]'); if (!b) return;
     var a = b.getAttribute('data-ag'), id = b.getAttribute('data-rdv'), li = b.closest('li');
     if (a === 'reessayer') { charger(); return; }
+    if (a === 'ipho-abonner') { abonner(); return; }
+    if (a === 'ipho-ouvrir') { if (S.abo && S.abo.jeton) { S.iphoDit = ''; window.location.href = RDV.adresseIphone(S.abo.jeton, true); } return; }
+    if (a === 'ipho-copier') { if (S.abo && S.abo.jeton) copierAdresse(); return; }
+    if (a === 'ipho-changer') { S.iphoMode = 'changer'; S.iphoDit = ''; dessiner(); return; }
+    if (a === 'ipho-changer-ok') { changerAdresse(); return; }
+    if (a === 'ipho-fermer') { S.iphoMode = null; dessiner(); return; }
     if (a === 'preparer') { if (window.PHIRST_PREPARER) window.PHIRST_PREPARER.ouvrir(id, { rdvs: S.rdvs, fiches: S.fiches, ws: S.ws }); return; }
     if (a === 'demain') { S.demain = !S.demain; dessiner(); return; }
     if (a === 'jour') { S.jour = b.getAttribute('data-jour'); S.flash = ''; S.ouvert = null; S.mode = null; dessiner(); return; }
@@ -219,6 +315,7 @@
 
   V2.pages.agenda = { needs: [], render: function (root) {
     S.racine = root; S.demain = false; S.jour = jour(); S.flash = ''; S.ouvert = null; S.mode = null; S.props = null;
+    S.iphoMode = null; S.iphoCopie = false; S.iphoDit = ''; S.relu = false;
     if (!root.__ag) { root.__ag = true; root.addEventListener('click', clic); }
     charger();
   } };

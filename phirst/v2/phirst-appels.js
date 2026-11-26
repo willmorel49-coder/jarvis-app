@@ -93,9 +93,32 @@
   }
   var RDV = window.PHIRST_RDV = {
     estTelepro: function (id) { return EQUIPE.estTelepro(id); },
-    /* Relit tout (l'équipe d'abord, pour savoir qui est téléprospectrice) : les fiches de l'espace puis leurs lignes rdv. Rend { fiches, rdvs }. */
+    /* Relit tout (l'équipe d'abord, pour savoir qui est téléprospectrice) : les fiches de l'espace puis leurs lignes rdv, et les heures prises
+       dans l'agenda perso de Yann (agenda_occupe, 26/11/2026). Rend { fiches, rdvs, perso }. */
     lire: function (base, ws) {
-      return Promise.all([ROLE.estTelepro(), EQUIPE.lire()]).then(function (x) { return x[0] ? lireTelepro(base) : RDV.lireMembre(base, ws); });
+      return Promise.all([ROLE.estTelepro(), EQUIPE.lire()]).then(function (x) {
+        return Promise.all([x[0] ? lireTelepro(base) : RDV.lireMembre(base, ws), RDV.lirePerso(base, x[0] ? null : ws)]).then(function (y) { y[0].perso = y[1]; return y[0]; });
+      });
+    },
+    /* Les heures prises dans l'agenda perso (rien que des heures). Pour elle, la règle de la base suffit ; une lecture qui échoue (table
+       absente, panne) rend [] et l'agenda marche comme avant. */
+    lirePerso: function (base, ws) {
+      try {
+        var q = base.from('agenda_occupe').select('debut,fin,journee').gte('fin', P.aujourdhui() + 'T00:00');
+        if (ws) q = q.eq('workspace_id', ws);
+        return Promise.resolve(q.order('debut').limit(3000)).then(function (r) { return r && !r.error && Array.isArray(r.data) ? r.data : []; }, function () { return []; });
+      } catch (e) { return Promise.resolve([]); }
+    },
+    /* Le relais Vercel de l'agenda (calendrier de l'iPhone, relecture de l'agenda perso) : une seule adresse, lue ici. */
+    RELAIS: 'https://phirst-agencement.vercel.app',
+    adresseIphone: function (jeton, webcal) { return (webcal ? 'webcal://' : 'https://') + RDV.RELAIS.replace(/^https:\/\//, '') + '/agenda/' + jeton + '.ics'; },
+    /* Relit l'agenda perso tout de suite (route 2 du relais) : { etat, nb, message } ou null si le relais ne répond pas. */
+    relirePerso: function (jeton) {
+      if (typeof fetch !== 'function' || !/^[0-9a-f]{64}$/.test(String(jeton || ''))) return Promise.resolve(null);
+      var ac = typeof AbortController === 'function' ? new AbortController() : null, t = ac ? setTimeout(function () { ac.abort(); }, 15000) : 0;
+      return fetch(RDV.RELAIS + '/api/agenda/?jeton=' + jeton + '&perso=1', { cache: 'no-store', credentials: 'omit', signal: ac ? ac.signal : undefined })
+        .then(function (r) { clearTimeout(t); return r.ok ? r.json() : null; })
+        .then(function (j) { return j && typeof j === 'object' && 'etat' in j ? j : null; }, function () { clearTimeout(t); return null; });
     },
     lireMembre: function (base, ws) {
       return base.from('crm_prospects').select('id,nom,ville,cp,lat,lon,stage').eq('workspace_id', ws).then(function (f) {
@@ -112,12 +135,12 @@
       });
     },
     /* Ce qui occupe Yann, pour calculer les créneaux : un rendez-vous non annulé, avec le lieu de sa pharmacie. */
-    occupations: function (rdvs, fiches) {
+    occupations: function (rdvs, fiches, perso) {
       var par = {}; fiches.forEach(function (f) { par[f.id] = f; });
       return rdvs.filter(P.occupe).map(function (r) {
         var f = par[r.prospect_id] || {};
         return { debut: r.debut, fin: r.fin, commune: f.ville || null, lat: f.lat == null ? null : f.lat, lon: f.lon == null ? null : f.lon };
-      });
+      }).concat(P.occupationsPerso(perso || []));   // + les heures prises dans son agenda perso
     },
     /* Ajoute UNE ligne rdv. extra : debut, duree_min, lieu, objet. */
     ecrire: function (base, prospectId, quoi, rdvId, extra) {
@@ -127,8 +150,8 @@
       });
     },
     /* Les trois meilleurs créneaux de Yann sur les 10 prochains jours ouvrés. */
-    propositions: function (rdvs, fiches, cible, sauf) {
-      var occ = RDV.occupations(rdvs.filter(function (r) { return r.id !== sauf; }), fiches);
+    propositions: function (rdvs, fiches, cible, sauf, perso) {
+      var occ = RDV.occupations(rdvs.filter(function (r) { return r.id !== sauf; }), fiches, perso);
       return P.meilleursCreneaux({ jours: P.joursProposes(P.aujourdhui()), occupations: occ, cible: cible, maintenant: P.maintenantParis(), combien: 3 });
     },
     /* La route dite en clair sous un créneau proposé (pour la téléprospectrice, c'est Yann qui est dans le secteur). */
@@ -585,7 +608,8 @@
     function avoirFiche() { return fiche ? Promise.resolve(fiche) : creerFiche(r, base); }
     /* « RDV obtenu » avec une heure : on RELIT les rendez-vous juste avant d'écrire (heure passée ou créneau pris = refus, rien n'est écrit). */
     var verif = debutRdv ? RDV.lire(base, S.ws).then(function (x) {
-      var m = P.heureValide(debutRdv, P.maintenantParis()) || (P.dejaPris(x.rdvs, debutRdv, P.REGLAGES_AGENDA.dureeMin) ? P.MSG_PRIS : null);
+      var m = P.heureValide(debutRdv, P.maintenantParis()) || (P.dejaPris(x.rdvs, debutRdv, P.REGLAGES_AGENDA.dureeMin) ? P.MSG_PRIS : null) ||
+        (S.telepro && P.dejaPrisPerso(x.perso, debutRdv, P.REGLAGES_AGENDA.dureeMin) ? P.MSG_PRIS_PERSO : null);   // elle : refusée sur une heure prise dans l'agenda perso de Yann
       if (m) { var e = new Error('refus'); e.refus = m; throw e; }
     }) : Promise.resolve();
     var rdvPose = false;
@@ -635,7 +659,7 @@
         S.fiches.filter(function (y) { return P.cle(y.nom, y.ville) === P.cle(r.nom, r.ville); })[0] || null;   // elle : ses pistes sans rendez-vous ne sont pas dans l'agenda
       var lat = f && f.lat != null ? f.lat : r.lat, lon = f && f.lon != null ? f.lon : r.lon;
       var cible = lat != null && lon != null ? { lat: lat, lon: lon } : null;
-      var cren = RDV.propositions(x.rdvs, x.fiches, cible);
+      var cren = RDV.propositions(x.rdvs, x.fiches, cible, null, x.perso);
       var h = '<p class="pa-q">Quand ?</p>' + (A ? '<p class="pa-quand-titre">Titre du rendez-vous : <b>' + esc(A.extraRdv(S.quandCtx[P.cle(r.nom, r.ville)], jour()).objet) + '</b></p>' : '');
       h += cren.length ? '<div class="pa-cren">' + cren.map(function (c) {
         return '<button type="button" class="pa-b pa-cr" data-res="quand" data-debut="' + esc(c.debut) + '"><b>' + esc(P.maj(P.quandFr(c.debut))) + '</b><small>' + esc(RDV.detail(c, S.telepro)) + '</small></button>';
