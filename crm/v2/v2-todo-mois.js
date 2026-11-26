@@ -630,7 +630,7 @@
     if (r) p.push(b(r) + ' rendez-vous'); if (t) p.push(b(t) + (t > 1 ? ' tâches' : ' tâche')); if (n) p.push(b(n) + (n > 1 ? ' notes' : ' note'));
     // 26/11/2026 (Will, planche ordinateur B11) : « est encore vide » se lisait « rien à faire » à côté de tâches en retard. Cas : aucun rendez-vous, aucune tâche datée et aucune note dans le mois
     // (les tâches sans date ou d'un autre mois ne comptent pas ici) ; « Aucun rendez-vous en novembre » est vrai dans ce cas, et c'est la forme la plus courte
-    if (!p.length) return 'Aucun rendez-vous en ' + MOIS[+m.slice(5, 7) - 1];
+    if (!p.length) return 'Aucun rendez-vous en ' + MOIS[+m.slice(5, 7) - 1] + '.';
     return mois + ' : ' + (p.length > 1 ? p.slice(0, -1).join(', ') + ' et ' + p[p.length - 1] : p[0]) + '.';
   }
   function init() { if (!S.ref) { S.ref = auj(); S.sel = auj(); } lireAgenda(); }
