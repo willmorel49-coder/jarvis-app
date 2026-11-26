@@ -520,7 +520,7 @@
     if (!m || !mail || (V2.CONTACTS_GROUPEMENT || []).indexOf(mail) < 0 || m.querySelector('.grp-um')) return;
     var b = document.createElement('button');
     b.type = 'button'; b.className = 'v2-um-item grp-um'; b.setAttribute('role', 'menuitem'); b.setAttribute('aria-expanded', 'false');
-    b.innerHTML = ICO('list', 16, 2) + 'Groupements';
+    b.innerHTML = ICO('list', 16, 2) + 'Suivi des groupements';
     var l = document.createElement('div'); l.className = 'grp-um-liste'; l.hidden = true;
     l.innerHTML = GROUPEMENTS_APPS.map(function (g) {
       return '<a class="v2-um-item" role="menuitem" style="text-decoration:none;padding-left:42px" href="' + g.url + '" target="_blank" rel="noopener">' + esc(g.nom) +
