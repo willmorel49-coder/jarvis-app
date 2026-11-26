@@ -30,16 +30,16 @@
   <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="dns-prefetch" href="https://images.weserv.nl">
   <!-- Socle visuel V2 (partagé) → règles communes des groupements → thème Essentiels (valeurs) → feuille d'écrans commune -->
-  <link rel="stylesheet" href="../../crm/v2/v2.css?v=20261126m" />
-  <link rel="stylesheet" href="../../crm/v2/v2-pieces.css?v=20261126m" />
+  <link rel="stylesheet" href="../../crm/v2/v2.css?v=20261126n" />
+  <link rel="stylesheet" href="../../crm/v2/v2-pieces.css?v=20261126n" />
   <!-- Écran Offilog de JARVIS (trois onglets, classes .olm) : sans cette feuille il s'affiche sans mise en forme. Ses bleus sont repeints dans essentiels-theme.css. -->
-  <link rel="stylesheet" href="../../crm/v2/v2-offilog-m1.css?v=20261126m" />
-  <link rel="stylesheet" href="../../groupements/v2/groupement-theme.css?v=20261126m" />
-  <link rel="stylesheet" href="essentiels-theme.css?v=20261126m" />
-  <link rel="stylesheet" href="../../groupements/v2/groupement-ux.css?v=20261126m" />
+  <link rel="stylesheet" href="../../crm/v2/v2-offilog-m1.css?v=20261126n" />
+  <link rel="stylesheet" href="../../groupements/v2/groupement-theme.css?v=20261126n" />
+  <link rel="stylesheet" href="essentiels-theme.css?v=20261126n" />
+  <link rel="stylesheet" href="../../groupements/v2/groupement-ux.css?v=20261126n" />
 
   <!-- Copie figée du dépôt (comme crm/v2 et phirst/v2), jamais la « dernière 2.x » d'un site externe (revue de sécurité, 26/11/2026). -->
-  <script src="../../crm/v2/vendor/supabase/supabase-2.112.2.min.js?v=20261126m"></script>
+  <script src="../../crm/v2/vendor/supabase/supabase-2.112.2.min.js?v=20261126n"></script>
   <script>
     window.SUPABASE_URL = 'https://iyvavhnlhxksokkerkos.supabase.co';
     window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5dmF2aG5saHhrc29ra2Vya29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1NjU2NTYsImV4cCI6MjA5MzE0MTY1Nn0.eMdW6vUdoyVpZbqKXp6FNYTajwKEf4x-Xyj5zj1igO4';
@@ -63,32 +63,32 @@
   <div class="v2" id="v2-root"></div>
 
   <!-- Socle (modules partagés crm/v2) -->
-  <script src="../../crm/v2/v2-icons.js?v=20261126m"></script>
+  <script src="../../crm/v2/v2-icons.js?v=20261126n"></script>
   <!-- Données officines + ventes WML : `wml-officines-data.js` n'est pas chargé ici (691 officines clientes et leurs
        ventes, protégées) : v2-app.js le demande au chargeur après connexion, comme pour JARVIS et OPSO. -->
   <!-- 26/11/2026 — réglage du groupement (couche commune OPSO / Essentiels Pharma) : AVANT v2-boot.js, qui le lit. -->
-  <script src="../../groupements/config/essentiels.js?v=20261126m"></script>
+  <script src="../../groupements/config/essentiels.js?v=20261126n"></script>
   <!-- Table de départ des groupements (GRP_DEPART = les 28 officines Essentiels) : le périmètre « alias » la lit. -->
-  <script src="../../crm/v2/groupement-alias.js?v=20261126m"></script>
+  <script src="../../crm/v2/groupement-alias.js?v=20261126n"></script>
   <!-- Comptes nommés (clé `essentiels` = garde d'écran) : AVANT v2-boot.js, qui les lit. -->
-  <script src="../../crm/v2/v2-comptes.js?v=20261126m"></script>
-  <script src="../../crm/v2/v2-boot.js?v=20261126m"></script>
+  <script src="../../crm/v2/v2-comptes.js?v=20261126n"></script>
+  <script src="../../crm/v2/v2-boot.js?v=20261126n"></script>
   <!-- Piliers : comme OPSO (suivi groupement + Offilog). PAS v2-marketing, PAS groupement-catalogue (ni leurs
        *-data OPSO), PAS opso-prix / opso-remuneration / opso-prevision* : propres à OPSO. La page des 254 produits
        Essentiels = étape 7. -->
-  <script src="../../crm/v2/v2-offilog.js?v=20261126m"></script>
+  <script src="../../crm/v2/v2-offilog.js?v=20261126n"></script>
   <!-- Onglet « Le catalogue » d'Offilog : le module injecte lui-même sa feuille (v2-offilog-vitrine.css) DANS son iframe ; elle ne se charge jamais dans la page (règles sur *, html, body). -->
-  <script src="../../crm/v2/v2-offilog-vitrine.js?v=20261126m"></script>
+  <script src="../../crm/v2/v2-offilog-vitrine.js?v=20261126n"></script>
   <!-- Produits froids : sans eux, la famille « Froid » du Pilotage est sous-estimée -->
-  <script src="../../crm/v2/froid-data.js?v=20261126m"></script>
-  <script src="../../crm/v2/v2-pilotage.js?v=20261126m"></script>
+  <script src="../../crm/v2/froid-data.js?v=20261126n"></script>
+  <script src="../../crm/v2/v2-pilotage.js?v=20261126n"></script>
   <!-- Écran Documents (liste dans le réglage) : AVANT groupement-bord.js, qui lit sa ligne de tuile au chargement -->
-  <script src="../../groupements/v2/groupement-documents.js?v=20261126m"></script>
+  <script src="../../groupements/v2/groupement-documents.js?v=20261126n"></script>
   <!-- Espace groupement (tableau de bord, le cap + le mois) -->
-  <script src="../../groupements/v2/groupement-bord.js?v=20261126m"></script>
+  <script src="../../groupements/v2/groupement-bord.js?v=20261126n"></script>
   <!-- Écrans Pharmacies + Meilleurs achats -->
-  <script src="../../groupements/v2/groupement-pharmacies.js?v=20261126m"></script>
+  <script src="../../groupements/v2/groupement-pharmacies.js?v=20261126n"></script>
   <!-- App (boot en dernier) -->
-  <script src="../../crm/v2/v2-app.js?v=20261126m"></script>
+  <script src="../../crm/v2/v2-app.js?v=20261126n"></script>
 </body>
 </html>
