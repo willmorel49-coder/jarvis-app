@@ -1,1 +1,1 @@
-{"generated":"2026-11-25","source":"BDPM — prix public officiel (base-donnees-publique.medicaments.gouv.fr)","nTracked":5308,"baseline":false,"nDown":0,"nUp":0,"drops":[]}
+{"generated":"2026-11-26","source":"BDPM — prix public officiel (base-donnees-publique.medicaments.gouv.fr)","nTracked":5308,"baseline":false,"nDown":1,"nUp":0,"drops":[{"c":"3400927732034","d":"KINERET 100MG/0,67ML INJ SRG 7","old":188.47,"new":183.81,"pct":2.5,"remb":"65%","n":26}]}
