@@ -412,7 +412,7 @@
         '<div><h3 class="sx-h">Part d’officines clientes par UGA</h3>' + legendeHtml() +
           '<span class="sx-src">Cliquez une UGA sur la carte pour son portrait.' + (S.nbApprox ? ' Pointillé : contour approché (' + S.nbApprox + ' UGA sans contour officiel).' : '') + '</span>' + tournoiHtml() + '</div>' +
         '<div><h3 class="sx-h">Groupements présents</h3>' + groupementsHtml(R.groupements) + '</div>' +
-        '<div><h3 class="sx-h">Mes meilleures pistes</h3>' + pistesHtml(S.ind) + '</div>' +
+        '<div><h3 class="sx-h">' + (perso ? 'Mes meilleures pistes' : 'Meilleures pistes du secteur') + '</h3>' + pistesHtml(S.ind) + '</div>' +
       '</div>';
   }
   function panneauPortrait(code) {
