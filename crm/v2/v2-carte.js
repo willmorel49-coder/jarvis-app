@@ -15,7 +15,7 @@
   V2.pages = V2.pages || {};
   var esc = function (s) { return V2.esc ? V2.esc(s) : String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
 
-  var CB = '?v=20261126za';
+  var CB = '?v=20261126zb';
   var map = null, cluster = null, markers = null, D = null, canvas = null;
   var displayMode = 'points';    // points | bulles (taille = CA)
   var tourLayer = null;          // tracé de la tournée (polyline + n° d'arrêts)
@@ -1731,11 +1731,13 @@
       '.cn-fiche{position:absolute;z-index:650;top:12px;right:12px;bottom:12px;width:min(400px,calc(100% - 24px));display:flex}',
       '.cn-fiche .cn-pdialog{max-width:none;max-height:none;height:100%;border-radius:16px;box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 18px 44px -18px rgba(11,31,77,.45),0 0 0 1px var(--line)}',
       '.cn-fiche .cn-phead{padding:14px 16px}',
-      '.cn-fiche .cn-pacts{flex-direction:column;gap:8px}',
+      // 26/11/2026 : sur une seule colonne, SANS retour à la ligne. Avec « wrap », WebKit (Safari) recalculait la largeur des boutons
+      // pendant l'effet d'appui (mo-press + ripple) : 368 px → 127 px, le relâché tombait à côté et le clic n'arrivait jamais au bouton.
+      '.cn-fiche .cn-pacts{flex-direction:column;flex-wrap:nowrap;gap:8px}',
       '.cn-fiche .cn-pact-full{gap:8px;justify-content:center}',
       // Téléphone : tiroir bas, hauteur fixée par le cran → le contenu défile dedans, les boutons restent visibles.
       // 27/10/2026 (Will) : 3 crans — s'ouvre à mi-hauteur, se tire vers le haut (88 %) ou vers le bas (bandeau = en-tête seul)
-      '@media(max-width:760px){.cn-fiche{top:auto;left:0;right:0;bottom:0;width:100%;height:50%;transition:height .26s cubic-bezier(.2,.8,.2,1)}.cn-fiche.cn-cran-haut{height:88%}.cn-fiche.cn-cran-bas{height:var(--cn-bandeau,76px)}.cn-fiche.cn-tire{transition:none}.cn-fiche .cn-phead{position:relative;padding-top:20px;touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}.cn-fiche .cn-phead::before{content:"";position:absolute;top:7px;left:50%;width:38px;height:5px;margin-left:-19px;border-radius:3px;background:rgba(11,31,77,.22)}.cn-maparea .leaflet-bottom{z-index:640}.cn-fiche .cn-pdialog{border-radius:18px 18px 0 0}.cn-fiche .cn-pacts{padding:10px 12px;flex-direction:row}.cn-fiche .cn-pacts .v2-btn{min-height:44px}.cn-fiche .cn-pact-full{flex-basis:100%}}',   // .leaflet-bottom (z 1000 par défaut) passe sous la fiche (z 650) : « Fond : Esri… » chevauchait « Itinéraire »
+      '@media(max-width:760px){.cn-fiche{top:auto;left:0;right:0;bottom:0;width:100%;height:50%;transition:height .26s cubic-bezier(.2,.8,.2,1)}.cn-fiche.cn-cran-haut{height:88%}.cn-fiche.cn-cran-bas{height:var(--cn-bandeau,76px)}.cn-fiche.cn-tire{transition:none}.cn-fiche .cn-phead{position:relative;padding-top:20px;touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}.cn-fiche .cn-phead::before{content:"";position:absolute;top:7px;left:50%;width:38px;height:5px;margin-left:-19px;border-radius:3px;background:rgba(11,31,77,.22)}.cn-maparea .leaflet-bottom{z-index:640}.cn-fiche .cn-pdialog{border-radius:18px 18px 0 0}.cn-fiche .cn-pacts{padding:10px 12px;flex-direction:row;flex-wrap:wrap}.cn-fiche .cn-pacts .v2-btn{min-height:44px}.cn-fiche .cn-pact-full{flex-basis:100%}}',   // .leaflet-bottom (z 1000 par défaut) passe sous la fiche (z 650) : « Fond : Esri… » chevauchait « Itinéraire »
       '@media(min-width:640px){.cn-pdialog{border-radius:18px}}',
       '.cn-phead{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line)}',
       '.cn-phead b{font-size:16px;font-weight:800;color:var(--ip-ink)}.cn-phead small{display:block;font-size:12px;color:var(--muted);margin-top:2px}',
