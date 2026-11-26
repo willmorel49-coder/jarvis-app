@@ -55,6 +55,10 @@
   /* boutons d'outils (Informations, Notes, Brief…) : sous les bandeaux, rangée qui défile */
   .pha-wrap.fdr-on .rv2-outils{display:block;margin-top:10px}
   .pha-wrap.fdr-on .rv2-outils .fdr-outils{margin-top:0;padding-bottom:2px}
+  /* 26/11/2026 — audit « chaque clic » : la bande ne garde que Informations, Infos du jour et le catalogue pour son logiciel (le reste est dans la barre du pouce).
+     Elle passe à la ligne au lieu de glisser de côté sans rien pour le dire (le bouton bleu était coupé à droite) ; chaque bouton prend la largeur de son nom. */
+  .pha-wrap.fdr-on .rv2-outils .fdr-outils{flex-wrap:wrap;overflow:visible}
+  .pha-wrap.fdr-on .rv2-outils .fdr-outils .fdr-gb{width:auto;max-width:100%}
 
   /* Sommaire numéroté collant (1 · 2 · 3…) retiré au téléphone : « elle sert à rien » (Will, 22/11/2026, sur son iPhone).
      Les liens « Détail » des bandeaux mènent toujours aux chapitres ; à l'ordinateur le sommaire reste. */

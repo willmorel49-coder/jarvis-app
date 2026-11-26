@@ -4132,14 +4132,15 @@
     return r.length ? '<div class="fdr-ronds vi-int">' + r.join('') + '</div>' : '';
   }
   // les trois grands boutons d'action (la feuille s'ouvre par V2.fbOuvre, état posé par fbBloc)
-  function fdrGrandsBoutons(pid, voitVentes) {
+  function fdrGrandsBoutons(pid, voitVentes, seulLogiciel) {
     if (!voitVentes || !fbC) return '';
     var lgo = (!isEscale() && !isOpso()) ? txLgoDetect(pid, null) : null;
+    var lgoB = lgo !== null ? '<button type="button" class="fdr-gb fi-gb" data-k="logiciel" aria-haspopup="dialog" onclick="V2.fbOuvre(\'logiciel\',this)" title="Les produits les plus commandés du réseau, hors génériques, au format de son logiciel">' + fbIc('logiciel', 20) + '<span class="fi-gb-t">' + esc(fiLgoTitre(lgo)) + '</span></button>' : '';
+    if (seulLogiciel) return lgoB ? '<div class="fdr-gbs">' + lgoB + '</div>' : '';   // bande du téléphone : Transmettre et la tâche sont dans la barre du pouce
     return '<div class="fdr-gbs">' +
       '<button type="button" class="fdr-gb pri" onclick="V2.fbOuvre(\'tx\',this)" title="catalogues, documents de l\'équipe — en pièces jointes">' + fbIc('tx', 20) + '<span>Choisir quoi lui transmettre</span></button>' +
       (V2.todo && V2.todo.menu ? '<button type="button" class="fdr-gb" onclick="V2.fbOuvre(\'todo\',this)" title="demande de rendez-vous, suite de rendez-vous, ouverture de compte…">' + fbIc('todo', 20) + '<span>Ouvrir la liste de tâches</span></button>' : '') +
-      (lgo !== null ? '<button type="button" class="fdr-gb fi-gb" data-k="logiciel" aria-haspopup="dialog" onclick="V2.fbOuvre(\'logiciel\',this)" title="Les produits les plus commandés du réseau, hors génériques, au format de son logiciel">' + fbIc('logiciel', 20) + '<span class="fi-gb-t">' + esc(fiLgoTitre(lgo)) + '</span></button>' : '') +
-    '</div>';
+      lgoB + '</div>';
   }
   function fdrEcart(v, moy, o) {
     var k = cl1Ecart(v, moy); if (k == null) return '<span class="fdr-ec fdr-ec-0">—</span>';
@@ -4342,17 +4343,22 @@
     return '<dialog class="fdr-dlg" id="fdr-d-' + id + '" aria-labelledby="fdr-d-' + id + '-t"><div class="fdr-dlg-h"><h2 id="fdr-d-' + id + '-t">' + esc(titre) + '</h2>' +
       '<button type="button" class="fdr-dlg-x" onclick="this.closest(\'dialog\').close()" aria-label="Fermer">×</button></div><div class="fdr-dlg-c">' + corps + '</div></dialog>';
   }
-  function fdrOutilsBoutons(c) {
-    var b = function (id, nom) { return '<button type="button" class="fdr-outil" aria-haspopup="dialog" onclick="V2.fdrOuvrir(\'' + id + '\')">' + esc(nom) + '</button>'; };
-    return '<div class="fdr-outils" role="group" aria-label="Outils du rendez-vous">' + b('infos', 'Informations') + (c.notes ? b('notes', 'Notes et rendez-vous') : '') +
-      (c.briefOff ? b('brief', 'Infos du jour') : '') + fdrGrandsBoutons(c.pid, c.voitVentes) + '</div>';
+  // 26/11/2026 — audit « chaque clic » : « Infos du jour » (annonces légales) est interne : caché en vue pharmacien (vi-int).
+  // tel = la bande du téléphone (rv2-outils), posée au-dessus de la barre du pouce : Will a accordé le retrait de « Notes et rendez-vous »,
+  // « Choisir quoi lui transmettre » et « Ouvrir la liste de tâches », que la barre a déjà (Noter, Envoyer, À faire). Sans barre, rien n'est retiré.
+  function fdrOutilsBoutons(c, tel) {
+    var barre = !!(tel && c.voitVentes && fbC);
+    var b = function (id, nom, cls) { return '<button type="button" class="fdr-outil' + (cls ? ' ' + cls : '') + '" aria-haspopup="dialog" onclick="V2.fdrOuvrir(\'' + id + '\')">' + esc(nom) + '</button>'; };
+    return '<div class="fdr-outils" role="group" aria-label="Outils du rendez-vous">' + b('infos', 'Informations') + (c.notes && !(barre && V2.notes) ? b('notes', 'Notes et rendez-vous') : '') +
+      (c.briefOff ? b('brief', 'Infos du jour', 'vi-int') : '') + fdrGrandsBoutons(c.pid, c.voitVentes, barre) + '</div>';
   }
   function fdrOutils(c) {
-    var b = function (id, nom) { return '<button type="button" class="fdr-outil" aria-haspopup="dialog" onclick="V2.fdrOuvrir(\'' + id + '\')">' + esc(nom) + '</button>'; };
+    // 26/11/2026 — vue pharmacien : la fenêtre « Informations » montre ses coordonnées (kvPh : ville, adresse, titulaire, groupement), jamais la version
+    // interne (retraite, procédure collective, annonce légale, offres Sanofi / UPSA) ni le formulaire « Modifier » (grossistes, relance, clé PharmaML).
     var infos = '<div class="fdr-bloc fdr-infos"><div class="fdr-bl-h"><h3>Coordonnées et informations</h3>' +
-        '<button type="button" class="fdr-btn" id="fdr-modif" aria-expanded="false" aria-controls="fdr-edit" onclick="V2.fdrModifier()">Modifier les informations</button></div>' +
-        '<div class="pha-kv fdr-kv">' + c.kvHtml + '</div>' +
-        '<div class="fdr-edit" id="fdr-edit" hidden>' + c.fe.panneau + c.infos + '</div></div>';
+        '<button type="button" class="fdr-btn vi-int" id="fdr-modif" aria-expanded="false" aria-controls="fdr-edit" onclick="V2.fdrModifier()">Modifier les informations</button></div>' +
+        '<div class="pha-kv fdr-kv vi-int">' + c.kvHtml + '</div>' + (c.kvPh ? '<div class="pha-kv fdr-kv vi-ph">' + c.kvPh + '</div>' : '') +
+        '<div class="fdr-edit vi-int" id="fdr-edit" hidden>' + c.fe.panneau + c.infos + '</div></div>';
     var h = fdrOutilsBoutons(c);
     return h + fdrDialogue('infos', 'Informations', infos) + (c.notes ? fdrDialogue('notes', 'Notes et préparation du rendez-vous', '<div class="fdr-nt">' + c.notes + '</div>') : '') +
       (c.briefOff ? '<div class="fdr-bj" hidden>' + c.briefOff + '</div>' : '');   // 24/11/2026 : #brief-off reste dans la page (hydrate le lit), caché ; le bouton ouvre le panneau
@@ -4561,7 +4567,7 @@
     // ── 5. Côté Intégral : tout l'interne, dans un seul chapitre (jamais d'élément interne au-dessus)
     var int = fdrInterne(c);
     h += fdrChapitre(5, int, 'Ce que le pharmacien ne voit pas : notre marge par tranche de prix et la comparaison à nos clients.', 'vi-int fdr-int', '', pli && pli[5]);
-    return '<div class="fdr fdr-d fdo-g' + (pli ? ' fdr-plis' : '') + '"><aside class="fdo-side">' + tete + fdoCoord(c) + navig + '</aside><div class="fdo-main">' + fdrListings(c) + rv2Bandes(c) + '<div class="rv2-outils">' + fdrOutilsBoutons(c) + '</div>' + som + h + '</div>' + rv2Barre(c) + '</div>';
+    return '<div class="fdr fdr-d fdo-g' + (pli ? ' fdr-plis' : '') + '"><aside class="fdo-side">' + tete + fdoCoord(c) + navig + '</aside><div class="fdo-main">' + fdrListings(c) + rv2Bandes(c) + '<div class="rv2-outils">' + fdrOutilsBoutons(c, true) + '</div>' + som + h + '</div>' + rv2Barre(c) + '</div>';
   }
   // Le chiffre clé de chaque ligne de chapitre, au téléphone : des valeurs que la fiche calcule et écrit déjà, jamais un nouveau calcul.
   //  1. Chiffres : le chiffre d'affaires du dernier mois reçu (le premier des trois montants du chapitre, fdrMontants).
@@ -5025,7 +5031,7 @@
       tel: tel, mail: mail, adresse: adresse, voitVentes: voitVentes, A: A, S: S, marge: marge, nbRefs: nbRefs,
       proposer: proposerFdr, nePlus: analyseNePlus(pid), tranches: analyseTranches(A, true), top5: analyseTop5(A), generiqueurs: generiqueurSec,
       decrochage: (voitVentes && !isOpso() && V2.decrochageUI) ? V2.decrochageUI.bandeau(pid) : '',
-      kvHtml: kvHtml, fe: fe, infos: infos, notes: notes, briefOff: briefOff, listing: listing,
+      kvHtml: kvHtml, kvPh: kvPh, fe: fe, infos: infos, notes: notes, briefOff: briefOff, listing: listing,
       reserve: '<div class="v2-card pha-card"><div class="pha-sub" style="padding:16px 18px">Les chiffres de vente de cette officine sont réservés à son commercial' + (pharma.comms && pharma.comms.length ? ' (' + esc(pharma.comms.join(', ')) + ')' : '') + '.</div></div>'
     });
     if (!voitVentes) { listing = ''; generiqueurSec = ''; }
@@ -8833,6 +8839,8 @@
       '.vi-ct{display:contents}',
       '.pha-wrap[data-vue="pharmacien"] .vi-int{display:none!important}',
       '.pha-wrap[data-vue="integral"] .vi-ph{display:none!important}',
+      /* 26/11/2026 — « Noter » en vue pharmacien : le champ, la date et les 4 phrases restent ; ni les notes déjà écrites ni le « Prochain rendez-vous » (points à aborder, compte rendu) */
+      '.pha-wrap[data-vue="pharmacien"] #fdr-d-notes .v2-notes-list,.pha-wrap[data-vue="pharmacien"] #fdr-d-notes .v2-rp-box{display:none!important}',
       '@media(max-width:900px){.pha-main .vi-ct>*,.pha-rail .vi-ct>*{min-width:0;align-self:stretch}}',
       '@media(min-width:901px){.pha-kpis-3{grid-template-columns:repeat(3,1fr)}}',
       '@media(max-width:900px){.pha-kpis-3 .pha-kpi:last-child{grid-column:1/-1}}',
