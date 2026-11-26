@@ -545,6 +545,8 @@
       '.co-foot{padding:11px 16px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);background:var(--card-2);line-height:1.5}',
       '.co-empty{padding:24px;text-align:center;color:var(--muted);font-size:14px}',
       '.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}',
+      // 26/11/2026 — téléphone seulement (choix de Will, planche « 11 choix », sujet 8, version 2 « La garder, sans les voyants ») : les quatre pastilles sous le titre (des voyants de données, qui ressemblent à des boutons) ne s'affichent plus, le premier contenu remonte. L'ordinateur les garde.
+      '@media(max-width:640px){.co-feeds{display:none}}',
       '@media(max-width:560px){.co-tour{grid-template-columns:1fr}.co-args{grid-template-columns:1fr;padding:12px}.co-facts{width:100%}.co-select{flex:1 1 auto;width:auto}.co-facts .v2-btn{width:100%;justify-content:center}.co-mkt .v2-btn{margin-left:0;width:100%;justify-content:center}}'
     ].join('');
     document.head.appendChild(st);

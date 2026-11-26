@@ -354,11 +354,13 @@
       (f.type === 'note' ? '<textarea id="tm-txt" rows="3" placeholder="Ce qui s’est dit, ce qu’il faut retenir…"></textarea>' : '<input id="tm-txt" type="text" autocomplete="off">') + '</label>' +
       '</div><div class="tm-fb"><button type="button" class="tm-btn tm-prim" id="tm-go" onclick="V2.todoMois.enregistrer()"' + (S.envoi ? ' disabled' : '') + '>' + (S.envoi ? 'Enregistrement…' : 'Enregistrer') + '</button><button type="button" class="tm-btn" onclick="V2.todoMois.ouvrir(null)">Annuler</button></div></div>';
   }
-  function libres() {
-    var r = enRetard(), s = sansDate();
+  // `part` (téléphone, To do seulement, 26/11/2026) : 'haut' = les tâches en retard seules, remontées sous les onglets ;
+  // 'bas' = ce qui reste à sa place (Sans date). Sans `part`, les deux blocs ensemble, comme avant.
+  function libres(part) {
+    var r = part === 'bas' ? [] : enRetard(), s = part === 'haut' ? [] : sansDate();
     if (!r.length && !s.length) return '';
     function l(t) { return '<label class="tm-l tm-l-t"><input type="checkbox" onchange="V2.todoMois.cocher(\'' + esc(t.id) + '\',this.checked)" aria-label="Marquer comme fait : ' + esc(nomT(t)) + '"><span class="tm-box"></span><span class="tm-lt"><b>' + esc(nomT(t)) + '</b>' + (t.pour ? '<small>prévue ' + esc(J3[dow(t.pour)] + ' ' + num(t.pour) + ' ' + MOIS[+t.pour.slice(5, 7) - 1]) + '</small>' : '') + '</span></label>'; }
-    return '<div class="tm-libres">' + (r.length ? '<section class="tm-lb"><h3 class="tm-sh">En retard <b>' + r.length + '</b></h3>' + r.map(l).join('') + '</section>' : '') +
+    return '<div class="tm-libres' + (part === 'haut' ? ' tm-haut' : '') + '">' + (r.length ? '<section class="tm-lb"><h3 class="tm-sh">En retard <b>' + r.length + '</b></h3>' + r.map(l).join('') + '</section>' : '') +
       (s.length ? '<section class="tm-lb"><h3 class="tm-sh">Sans date <b>' + s.length + '</b></h3>' + s.map(l).join('') + '</section>' : '') + '</div>';
   }
   function barre() {
@@ -369,12 +371,12 @@
       '<button type="button" class="tm-btn tm-ic" onclick="V2.todoMois.pas(1)" aria-label="Mois suivant">' + IC.suiv + '</button></div></div>';
   }
   // Ce que l'écran sait de sa lecture : il le dit, plutôt qu'une grille vide qui ferait croire à un mois vide.
-  function etatLu(e) {
+  function etatLu(e, tel) {
     if (e === 'cours') return '<p class="tm-etat" role="status">Lecture de vos rendez-vous et de vos notes…</p>';
     if (e === 'ko') return '<p class="tm-etat" role="alert">Vos rendez-vous et vos notes de ce mois n’ont pas pu être lus : seules les tâches s’affichent. <button type="button" class="tm-btn" onclick="V2.todoMois.reessayer()">Réessayer</button></p>';
     if (RECO && RECO.etat === 'cours') return '<p class="tm-etat" role="status">Lecture de votre agenda personnel…</p>';
     if (RECO && RECO.etat === 'ko') return '<p class="tm-etat" role="alert">Votre agenda personnel n’a pas pu être lu : ses rendez-vous manquent dans ce mois. <button type="button" class="tm-btn" onclick="V2.todoMois.reessayer()">Réessayer</button></p>';
-    if (AGENDA && AGENDA.etat === 'ok') return agendaLigne();
+    if (AGENDA && AGENDA.etat === 'ok') return agendaLigne(tel);
     return '';
   }
   // 24/11/2026 — Will : les commerciaux se connectent « avec leur agenda qu'il souhaite ». Le choix se fait ici, d'un
@@ -384,7 +386,11 @@
     var m = Math.floor((Date.now() - new Date(s).getTime()) / 6e4);
     return m < 2 ? 'à l’instant' : m < 60 ? 'il y a ' + m + ' min' : m < 1440 ? 'il y a ' + Math.floor(m / 60) + ' h' : 'il y a ' + Math.floor(m / 1440) + ' j';
   }
-  function agendaLigne() {
+  function agendaLigne(tel) {
+    // 26/11/2026 — téléphone, To do seulement (choix de Will, planche « 11 choix », sujet 2, version 3) : la carte tient en une
+    // ligne. Un toucher ouvre le même branchement (Mes disponibilités), où se choisit Google Agenda, Outlook ou iPhone.
+    if (!AGENDA.branche && tel) return '<button type="button" class="tm-etat tm-ag1" onclick="V2.rdvAgenda.choisir(\'\')">' + (window.ICO ? window.ICO('cal', 22, 2) : '') +
+      '<span class="tm-ag1t"><b>Brancher mon agenda</b><small>Google Agenda, Outlook ou iPhone</small></span>' + (window.ICO ? window.ICO('chev', 20, 2) : '') + '</button>';
     if (!AGENDA.branche) return '<div class="tm-etat tm-ag" role="group" aria-label="Brancher mon agenda"><span class="tm-agt"><b>Branchez votre agenda</b> : vos rendez-vous s’afficheront ici et vos heures prises ne seront plus proposées aux pharmaciens. Mon agenda est sur :</span><span class="tm-agb">' +
       OUTILS.map(function (o) { return '<button type="button" class="tm-btn" onclick="V2.rdvAgenda.choisir(\'' + o[0] + '\')">' + o[1] + '</button>'; }).join('') + '</span></div>';
     var h = String(AGENDA.hote || ''), nom = /google/.test(h) ? 'Google Agenda' : /outlook|office/.test(h) ? 'Outlook' : /icloud/.test(h) ? 'Agenda iPhone / iCloud' : 'Votre agenda';
@@ -509,9 +515,13 @@
       (hors ? '<p class="tm-cnote">Vous avez aussi ' + hors + ' rendez-vous à venir chez ' + (horsO > 1 ? horsO + ' officines qui ne sont pas' : 'une officine qui n’est pas') + ' dans vos clients (prospect ou client d’un collègue) : ' + (hors > 1 ? 'ils ne sont pas' : 'il n’est pas') + ' dans ces listes.</p>' : '') +
       '</section>';
   }
-  function page() {
+  // 26/11/2026 — téléphone, To do seulement (choix de Will, planche « 11 choix », sujet 2, version 3) : les tâches en retard
+  // remontent juste sous les onglets et l'agenda à brancher tient en une ligne ; tout le reste garde son ordre.
+  // L'ordinateur et l'écran Rendez-vous (qui montre ce même mois dans #tm-hote) ne reçoivent pas `tel`.
+  function etroit() { try { return !!(window.matchMedia && window.matchMedia('(max-width:640px)').matches); } catch (e) { return false; } }
+  function page(tel) {
     var e = etatMois();
-    return barre() + etatLu(e) + '<div class="tm-cote"><div class="tm-gauche"><div class="tm-mois-g">' + entetes() + '<div class="tm-g">' + cases(S.ref).map(cellule).join('') + '</div></div>' + legende() + libres() + '</div>' +
+    return (tel ? libres('haut') : '') + barre() + etatLu(e, tel) + '<div class="tm-cote"><div class="tm-gauche"><div class="tm-mois-g">' + entetes() + '<div class="tm-g">' + cases(S.ref).map(cellule).join('') + '</div></div>' + legende() + libres(tel ? 'bas' : '') + '</div>' +
       '<section class="tm-carte tm-jour" aria-live="polite">' + detail(S.sel) + '</section></div>' + clientsHtml();
   }
 
@@ -533,7 +543,8 @@
 
   V2.todoMois = {
     phrase: phrase,
-    html: function () { init(); ensureCss(); return '<div class="tm tm-v2">' + page() + '</div>'; },
+    // `o.todo` : appelé par la To do (v2-todo.js) ; au téléphone elle seule reçoit l'ordre « En retard d'abord » (26/11/2026)
+    html: function (o) { init(); ensureCss(); return '<div class="tm tm-v2">' + page(!!(o && o.todo) && etroit()) + '</div>'; },
     // l'onglet s'ouvre : tout est relu (un rendez-vous pris ailleurs depuis doit apparaître)
     rafraichir: function () { CACHE = {}; RECO = null; PAR_JOUR = null; VENIR = null; OPPOSES = null; },
     // « Vos clients » › Rendez-vous posé : le jour s'ouvre dans le mois
@@ -769,6 +780,16 @@
       /* TOD-5 (26/11/2026) : les 4 boutons d'ajout en 2 × 2 au lieu de 3 + 1 */
       '  .tm-ajouts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}',
       '  .tm-aj{justify-content:center}',
+      /* Sujet 2, version 3 de la planche du 26/11/2026 (To do) : le bloc « En retard » remonté sous les onglets, en carte blanche */
+      '  .tm-libres.tm-haut{margin:0 0 16px}',
+      '  .tm-haut .tm-lb{background:#fff;box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(15,20,32,.06)}',
+      /* … et « Branchez votre agenda » en une ligne à toucher (60 px de haut, texte 15,5 et 13 px) */
+      '  .tm-ag1{-webkit-appearance:none;appearance:none;flex-wrap:nowrap;gap:12px;width:100%;min-height:60px;margin:0 0 12px;padding:8px 14px 8px 16px;border-radius:20px;background:#fff;color:var(--tm-b);text-align:left;cursor:pointer;box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(15,20,32,.06)}',
+      '  .tm-ag1 svg{flex:none}',
+      '  .tm-ag1t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}',
+      '  .tm-ag1t b{font:700 15.5px/1.25 var(--font);color:var(--tm-i)}',
+      '  .tm-ag1t small{font:500 13px/1.3 var(--font);color:var(--tm-g)}',
+      '  .tm-ag1:focus-visible{outline:2px solid var(--tm-b);outline-offset:2px}',
       '}'
     ].join('\n');
     document.head.appendChild(s);

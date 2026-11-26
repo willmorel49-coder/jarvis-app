@@ -88,9 +88,49 @@
       '.cmpg-tag{flex:0 0 auto;font-size:11px;font-weight:700;text-transform:uppercase;',
       '  letter-spacing:.04em;padding:3px 8px;border-radius:20px;border:1px solid var(--line)}',
       '.cmpg-tag.cl{color:#00A870;border-color:#00A87055}',
-      '.cmpg-tag.pr{color:var(--muted)}'
+      '.cmpg-tag.pr{color:var(--muted)}',
+      // 26/11/2026 — téléphone seulement (choix de Will, planche « 11 choix », sujet 4, version 2) : la ligne qui replie l'aperçu du mail.
+      '@media (max-width:640px){',
+      '.cmpg-pli>summary{display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 14px 8px 16px;',
+      '  background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);color:var(--ip-blue);',
+      '  cursor:pointer;list-style:none;-webkit-tap-highlight-color:transparent}',
+      '.cmpg-pli>summary::-webkit-details-marker{display:none}',
+      '.cmpg-pli>summary svg{flex:none}',
+      '.cmpg-pli-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}',
+      '.cmpg-pli-t b{font-size:15.5px;line-height:1.25;font-weight:700;color:var(--ip-ink)}',
+      '.cmpg-pli-t small{font-size:13px;line-height:1.3;color:var(--muted);overflow-wrap:anywhere}',
+      '.cmpg-pli-t small:empty{display:none}',
+      '.cmpg-pli-chev{flex:none;display:flex}',
+      '.cmpg-pli[open]>summary .cmpg-pli-chev{transform:rotate(90deg)}',
+      '.cmpg-pli[open]>summary{margin-bottom:10px}',
+      '.cmpg-pli>summary:focus-visible{outline:2px solid var(--ip-blue);outline-offset:2px}',
+      '}'
     ].join('');
     document.head.appendChild(s);
+  }
+
+  // 26/11/2026 — téléphone seulement (choix de Will, planche « 11 choix », sujet 4, version 2) : l'aperçu du mail, qui fait
+  // plus d'un écran, est replié derrière une ligne « Voir le mail tel qu'il partira ». Le repli n'est qu'une enveloppe :
+  // #cmpg-apercu existe toujours et V2.rdvApercu y écrit comme avant, replié ou ouvert — ouvrir ne recharge rien.
+  var PLI = null;   // l'observateur de l'aperçu, un seul à la fois
+  function etroit() { try { return !!(window.matchMedia && window.matchMedia('(max-width:640px)').matches); } catch (e) { return false; } }
+  // La 2e ligne redit ce que l'aperçu affiche à cet instant (son objet, ou son état) : rien n'est calculé ici.
+  function pliEtat() {
+    var z = document.getElementById('cmpg-apercu'), d = document.getElementById('cmpg-pli'), l = document.getElementById('cmpg-pli-etat');
+    if (!z || !d || !l) return;
+    var o = z.querySelector('.v2-ap-obj'), c = z.querySelector('.v2-ap-corps');
+    var objet = o && o.lastChild && o.lastChild.nodeType === 3 ? String(o.lastChild.textContent || '').trim() : '';
+    var txt = c ? String(c.textContent || '').trim() : '';
+    if (objet) l.textContent = 'Objet : ' + objet;
+    else if (txt.length <= 60) l.textContent = txt;   // « Préparation de l’aperçu… », « Aperçu indisponible. »
+    else { l.textContent = ''; d.open = true; }       // un message à lire à la place du mail (modèle refusé en envoi groupé) : montré ouvert, comme avant
+  }
+  function pliSuivre() {
+    if (PLI) { PLI.disconnect(); PLI = null; }
+    var z = document.getElementById('cmpg-apercu');
+    if (!z || !window.MutationObserver) return;
+    PLI = new window.MutationObserver(pliEtat);
+    PLI.observe(z, { childList: true });
   }
 
   // Recensement : V2CIBLE réunit les clients (ventes réseau) et les prospects
@@ -478,6 +518,7 @@
       var mods = window.V2MOD.liste().map(function (m) {
         return '<option value="' + esc(m.cle) + '">' + esc(m.nom) + '</option>';
       }).join('');
+      var tel = etroit();   // 26/11/2026 : au téléphone, l'aperçu est replié (voir pliEtat)
       r.innerHTML = top + '<div class="v2-wrap narrow">' +
         '<div class="v2-rdv-cap"><h1>Campagne de rendez-vous</h1>' +
           '<p>Le mail part de votre boîte, signé de votre nom. Vous relisez, vous envoyez. ' +
@@ -510,7 +551,12 @@
         '</div>' +
 
         '<div class="v2-camp-sec">Aperçu du mail</div>' +
-        '<div id="cmpg-apercu"></div>' +
+        (tel
+          ? '<details class="cmpg-pli" id="cmpg-pli"><summary>' + ICO('fiche', 22, 2) +
+              '<span class="cmpg-pli-t"><b>Voir le mail tel qu’il partira</b><small id="cmpg-pli-etat"></small></span>' +
+              '<span class="cmpg-pli-chev">' + ICO('chev', 20, 2) + '</span></summary>' +
+              '<div id="cmpg-apercu"></div></details>'
+          : '<div id="cmpg-apercu"></div>') +
 
         '<div class="v2-camp-sec">Qui vous visez</div>' +
         '<div class="v2-camp-box">' +
@@ -558,6 +604,8 @@
 
       // L'aperçu s'affiche dès l'ouverture : on doit voir le mail AVANT de
       // préparer une liste, pas après avoir tout choisi.
+      // (26/11/2026, téléphone : il se prépare de la même façon derrière sa ligne repliée, qui suit son état.)
+      if (tel) pliSuivre();
       V2.campagne.apercu();
 
       // Arrivée depuis le planning, la liste déjà choisie : on la charge tout

@@ -302,7 +302,9 @@
       // Cibles tactiles ≥44px au doigt (mobile seulement — la souris n'a pas ce besoin) :
       // boutons de tri, bouton Export, sélecteur de groupement.
       // Safari ignore min-height sur un <select> natif non stylé : height explicite requis.
-      '@media(max-width:640px){.cg-rk-sb{min-height:44px;display:inline-flex;align-items:center}.cg-rk-exp{min-height:44px;display:inline-flex;align-items:center;justify-content:center}.cg-sel{height:44px}}';
+      '@media(max-width:640px){.cg-rk-sb{min-height:44px;display:inline-flex;align-items:center}.cg-rk-exp{min-height:44px;display:inline-flex;align-items:center;justify-content:center}.cg-sel{height:44px}}' +
+      // 26/11/2026 — téléphone seulement (choix de Will, planche « 11 choix », sujet 7, version 1) : le bouton « Voir les N autres groupements » sous le 20e.
+      '@media(max-width:640px){.cg-rk-fin{padding:14px 16px 18px;text-align:center;background:var(--paper)}html .cg-rk-fin .cg-rk-plus{min-height:48px;padding:0 22px;font-size:14px;font-weight:700}}';
     document.head.appendChild(st);
   }
 
@@ -411,6 +413,10 @@
   // Recherche du classement (Karine, 17/09/2026, aee2d602 — ce classement n'avait aucun
   // moyen de filtrer par nom). Variable de module : persiste tant que la carte reste ouverte.
   var rankSearch = '';
+  // 26/11/2026 — téléphone seulement (choix de Will, planche « 11 choix », sujet 7, version 1 « Vingt, puis Voir plus ») :
+  // le classement s'arrête au 20e groupement, un bouton ajoute la suite. Un tri ou une recherche repart des 20 premiers.
+  var RK_TEL = 20, rankTout = false;
+  function rkTel() { try { return !!(window.matchMedia && window.matchMedia('(max-width:640px)').matches); } catch (e) { return false; } }
   function rkNorm(s) { s = String(s == null ? '' : s).toLowerCase(); return s.normalize ? s.normalize('NFD').replace(/[̀-ͯ]/g, '') : s; }
   function rankRows() {
     var out = [];
@@ -428,13 +434,15 @@
     return out;
   }
   function rankRowsHtml(rows) {
-    return rows.map(function (r, i) {
+    var reste = !rankTout && rkTel() ? Math.max(0, rows.length - RK_TEL) : 0;   // au téléphone : combien de groupements attendent sous le bouton
+    return (reste ? rows.slice(0, RK_TEL) : rows).map(function (r, i) {
       return '<div class="cg-rk-row" data-g="' + esc(r.name) + '" onclick="V2.cgSelect(this.dataset.g)">' +
         '<span class="cg-rk-n">' + (i + 1) + '</span>' +
         '<div class="cg-rk-main"><div class="cg-rk-nm">' + esc(r.name) + '</div>' +
           '<div class="cg-rk-meta"><b>' + r.c + '</b> clients · ' + r.pr + ' prospects' + (r.ca > 0 ? ' · ' + eur(r.ca) : '') + (r.topComm ? ' · ' + esc(r.topComm) : '') + '</div></div>' +
         '<span class="cg-rk-pen" title="Pénétration = clients / pharmacies">' + r.pen + '%</span></div>';
-    }).join('') || ('<div class="cg-empty">' + (rankSearch ? 'Aucun groupement ne correspond à « ' + esc(rankSearch) + ' ».' : 'Aucun groupement.') + '</div>');
+    }).join('') + (reste ? '<div class="cg-rk-fin"><button type="button" class="v2-btn cg-rk-plus" onclick="V2.cgRankTout()">' +
+      (reste > 1 ? 'Voir les ' + reste + ' autres groupements' : 'Voir l’autre groupement') + '</button></div>' : '') || ('<div class="cg-empty">' + (rankSearch ? 'Aucun groupement ne correspond à « ' + esc(rankSearch) + ' ».' : 'Aucun groupement.') + '</div>');
   }
   function rankingHtml() {
     var rows = rankRows(), totC = 0, totCa = 0, totPr = 0;
@@ -451,16 +459,21 @@
       '<div class="cg-rk-sorts"><span>Trier</span>' + sb('c', 'Clients') + sb('ca', 'CA') + sb('pr', 'Prospects') + sb('pen', 'Pénétr.') + '</div></div>';
     return '<div class="cg-rk">' + head + '<div class="cg-rk-list" id="cg-rk-rows">' + rankRowsHtml(rows) + '</div></div>';
   }
-  V2.cgRankSort = function (k) { rankSort = k; var ls = document.getElementById('cg-list'); if (ls) ls.innerHTML = listHtml(); };
+  V2.cgRankSort = function (k) { rankSort = k; rankTout = false; var ls = document.getElementById('cg-list'); if (ls) ls.innerHTML = listHtml(); };
   // Recherche live : on ne re-render QUE les lignes + le compteur, jamais le champ
   // lui-même (même modèle que la recherche officines/groupements du pilier pharma) —
   // sinon le focus et le curseur sautent à chaque lettre tapée.
   V2.cgRankSearch = function (q) {
-    rankSearch = q || '';
+    rankSearch = q || ''; rankTout = false;
     var rows = rankRows();
     var box = document.getElementById('cg-rk-rows'); if (box) box.innerHTML = rankRowsHtml(rows);
     var ct = document.getElementById('cg-rk-count'); if (ct) ct.textContent = 'Tous les groupements · ' + rows.length;
     var x = document.getElementById('cg-rk-search-x'); if (x) x.style.display = rankSearch ? '' : 'none';
+  };
+  // « Voir les N autres groupements » (téléphone) : la suite s'ajoute sous les 20 premiers, sans toucher au champ ni aux tris.
+  V2.cgRankTout = function () {
+    rankTout = true;
+    var box = document.getElementById('cg-rk-rows'); if (box) box.innerHTML = rankRowsHtml(rankRows());
   };
   V2.cgRankSearchClear = function () {
     rankSearch = '';
@@ -584,6 +597,7 @@
           '<div class="cg-list" id="cg-list"><div class="cg-empty">Choisissez un groupement dans le menu.</div></div>' +
         '</div>';
       if (param) sel = String(param);
+      rankTout = false;   // 26/11/2026 : chaque arrivée sur l'écran repart des 20 premiers (téléphone)
       ensureData(function (e1) {
         if (e1) { var mp = document.getElementById('cg-map'); if (mp) mp.innerHTML = '<div class="cg-empty">Données indisponibles. Réessayez.</div>'; return; }
         D = window.PHARMA_FR; reconcile();

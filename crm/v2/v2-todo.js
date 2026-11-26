@@ -1094,7 +1094,7 @@
           '<p class="td-expl td-hb-bs"><button type="button" class="td-local td-hb-b" onclick="V2.todo.reessayer()">Réessayer</button>' +
           (sansRes ? '' : '<button type="button" class="td-local td-hb-b" onclick="V2.signOut()">Se reconnecter</button>') + '</p>';
       if (ong === 'agenda') {
-        root.innerHTML = top + '<div class="v2-wrap narrow">' + tdOuvre() + tdEntete(phrase, local, onglets, '') + V2.todoMois.html() + '</div></div>';
+        root.innerHTML = top + '<div class="v2-wrap narrow">' + tdOuvre() + tdEntete(phrase, local, onglets, '') + V2.todoMois.html({ todo: true }) + '</div></div>';   // { todo } : au téléphone, « En retard » remonte sous les onglets (26/11/2026, v2-todo-mois.js)
         tdApres(root);
         return;
       }
