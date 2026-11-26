@@ -10765,7 +10765,7 @@ function renderGrpDashboard(grp) {
     <div class="fade-up" style="margin-bottom:20px;display:grid;grid-template-columns:${cols};gap:16px">
       ${planifiees.length ? `
       <div class="card" style="padding:0;overflow:hidden">
-        <div class="card-header" style="padding:14px 18px;border-bottom:1px solid var(--border)">
+        <div class="card-header" style="margin:0;padding:14px 18px;border-bottom:1px solid var(--border)">
           <div>
             <div class="card-title" style="font-size:14px">📅 Visites cette semaine</div>
             <div class="card-subtitle">${planifiees.length} planifiée${planifiees.length>1?'s':''}${planifiees.filter(p=>p.diff<0).length ? ' · '+planifiees.filter(p=>p.diff<0).length+' en retard' : ''}</div>
@@ -10775,7 +10775,7 @@ function renderGrpDashboard(grp) {
       </div>` : ''}
       ${recentes.length ? `
       <div class="card" style="padding:0;overflow:hidden">
-        <div class="card-header" style="padding:14px 18px;border-bottom:1px solid var(--border)">
+        <div class="card-header" style="margin:0;padding:14px 18px;border-bottom:1px solid var(--border)">
           <div>
             <div class="card-title" style="font-size:14px">📋 Dernières visites enregistrées</div>
             <div class="card-subtitle">${recentes.length} récente${recentes.length>1?'s':''}</div>
@@ -10915,14 +10915,14 @@ function renderGrpDashboard(grp) {
     if (!insights.length) return '';
 
     const typeColors = {
-      success: { bg: 'rgba(87,174,49,.06)', border: 'var(--opso-green)', icon: 'var(--opso-green-dark)' },
-      warning: { bg: 'rgba(184,115,12,.06)', border: 'var(--opso-warning)', icon: 'var(--opso-warning)' },
-      info:    { bg: 'rgba(2,132,199,.06)', border: '#0284c7', icon: '#0284c7' },
+      success: { bg: 'rgba(87,174,49,.06)', icon: 'var(--opso-green-dark)' },
+      warning: { bg: 'rgba(184,115,12,.06)', icon: 'var(--opso-warning)' },
+      info:    { bg: 'rgba(2,132,199,.06)', icon: '#0284c7' },
     };
 
     return `
     <div class="card fade-up" style="margin-bottom:20px;padding:0;overflow:hidden">
-      <div class="card-header" style="padding:14px 18px;border-bottom:1px solid var(--border)">
+      <div class="card-header" style="margin:0;padding:14px 18px;border-bottom:1px solid var(--border)">
         <div class="section-header-title">
           <div class="section-header-icon">💡</div>
           <div class="section-header-text">
@@ -10931,10 +10931,10 @@ function renderGrpDashboard(grp) {
           </div>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1px;background:var(--border)">
+      <div style="display:flex;flex-wrap:wrap;gap:1px;background:var(--border)">
         ${insights.map(ins => {
           const c = typeColors[ins.type] || typeColors.info;
-          return `<div style="background:var(--bg2);padding:14px 18px;border-left:3px solid ${c.border}">
+          return `<div style="flex:1 1 280px;background:var(--bg2);padding:14px 18px">
             <div style="display:flex;align-items:flex-start;gap:10px">
               <div style="font-size:20px;color:${c.icon};line-height:1;flex-shrink:0">${ins.icon}</div>
               <div style="flex:1;min-width:0">
