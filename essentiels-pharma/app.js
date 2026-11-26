@@ -599,6 +599,7 @@ async function logout() {
     const ks = await caches.keys();
     await Promise.all(ks.filter(k => k.indexOf('protege-') === 0).map(k => caches.delete(k)));
   } catch (e) {}
+  _docsIPAcces = null;
   state.user = null;
   state.pharmacies = [];
   state.imports    = [];
@@ -1597,6 +1598,22 @@ function carteDocsIP() {
   </section>`;
 }
 
+// 26/11/2026 — la carte n'est posée que si le SERVEUR dit oui (jarvis_acces_essentiels : deux comptes nommés côté serveur, voir le verrou
+// SQL « essentiels_deux_comptes »). Aucune adresse d'équipe dans ce fichier public ; sans réponse ou sans la fonction : carte absente.
+let _docsIPAcces = null;
+function afficherCarteDocsIP() {
+  const poser = () => {
+    const c = document.getElementById('dash-content');
+    if (c && !document.getElementById('docs-ip')) c.insertAdjacentHTML('afterbegin', carteDocsIP());
+  };
+  if (_docsIPAcces === true) { poser(); return; }
+  if (_docsIPAcces === false) return;
+  Promise.resolve(sb.rpc('jarvis_acces_essentiels')).then(r => {
+    _docsIPAcces = !!(r && !r.error && r.data === true);
+    if (_docsIPAcces) poser();
+  }).catch(() => {});
+}
+
 function renderDashboard() {
   const container = document.getElementById('dash-content');
   const grp = GROUPEMENTS.find(g => g.id === grpActif) || GROUPEMENTS[0];
@@ -1614,7 +1631,8 @@ function renderDashboard() {
       <span style="font-size:11px;color:var(--text3)">Les données sont importées manuellement.</span>
     </div>` : '';
 
-  container.innerHTML = carteDocsIP() + renderGrpDashboard(grp);
+  container.innerHTML = renderGrpDashboard(grp);
+  afficherCarteDocsIP();
 
   // ── Chart.js : graphique évolution mensuelle ──
   setTimeout(() => {
