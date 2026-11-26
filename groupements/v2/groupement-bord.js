@@ -540,6 +540,7 @@
   };
   // 26/11/2026 — écran « Documents » (groupement-documents.js, chargé AVANT ce fichier) : sa ligne vient du réglage.
   if (V2.groupementDocs && V2.groupementDocs.tuileCourte) ESPACES[V2.groupementDocs.route] = V2.groupementDocs.tuileCourte;
+  if (V2.groupementProduits && V2.groupementProduits.tuileCourte) ESPACES[V2.groupementProduits.route] = V2.groupementProduits.tuileCourte;
   // Mini-aperçu de chaque espace : un chiffre réel ou une forme, jamais une phrase.
   function apercu(k, DATA) {
     if (k === 'opsobord') return '<b class="og-num">' + fmtEUR.format(Math.round(DATA.total / 1000)) + '</b><small>k€</small>';
@@ -1118,6 +1119,8 @@
     + '@media (max-width:700px){.ofa-r{flex-direction:column;align-items:flex-start}}';
   // Rend { html, periode } ; chaîne vide si la table Offilog n'est pas chargée.
   function offilogAdherentes() {
+    // 26/11/2026 — réglage `offilog: false` (Essentiels Pharma, qui a sa propre centrale d'achat) : pas de bloc Offilog.
+    if (V2.groupement && V2.groupement.offilog === false) return { html: '', periode: '' };
     var off = window.WML_OFF_CA && window.WML_OFF_CA.off;
     var R = offilogAdherentesCalc(off, V2.pharmacies || []);
     if (!R) return { html: '', periode: '' };

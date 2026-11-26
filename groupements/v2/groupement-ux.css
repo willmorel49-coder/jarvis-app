@@ -1166,3 +1166,71 @@
   #v2-root .gdoc-carte { padding: 18px 16px 16px; border-radius: 20px; }
 }
 @media (prefers-reduced-motion: reduce) { #v2-root .gdoc-btn { transition: none; } #v2-root .gdoc-btn:active { transform: none; } }
+
+/* ═══ Page « Vos produits et nos prix nets » (groupement-produits.js, option B étape 7, 26/11/2026) ═══
+   Préfixe gprod- (libre dans tout le dépôt le 26/11). Chez OPSO, aucun élément ne porte ces classes (pas de bloc `produits` dans son réglage).
+   Ordi : tableau à 6 colonnes ; téléphone : une carte par produit, chaque chiffre avec son libellé (attribut data-l). */
+#v2-root .gprod-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; }
+#v2-root .gprod-head-t { min-width: 0; flex: 1 1 320px; }
+#v2-root .gprod-page .opx-sub { min-height: 22px; }
+#v2-root .gprod-dates { color: var(--muted, var(--grp-vert-5d6577)); }
+#v2-root .gprod-dates .gprod-d { color: var(--grp-ink); font-weight: 700; }
+#v2-root .gprod-partage { flex: none; min-height: 46px; display: inline-flex; align-items: center; gap: 8px; padding: 0 18px; font-size: 15px; font-weight: 700; }
+#v2-root .gprod-partage[disabled] { opacity: .75; cursor: progress; }
+#v2-root .gprod-attente { margin: 24px 0; color: var(--muted, var(--grp-vert-5d6577)); font-size: 15px; }
+#v2-root .gprod-ks { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin: 18px 0 20px; }
+#v2-root .gprod-k {
+  display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 16px 16px 14px; border-radius: 20px;
+  border: 1px solid rgba(var(--grp-ombre-rgb),.07);
+  background: linear-gradient(200deg, var(--grp-vert-f0f6f3) 0%, #ffffff 46%, var(--grp-vert-fbfbfb) 100%);
+  box-shadow: 0 1px 0 #fff inset, 0 14px 30px -24px rgba(var(--grp-ombre-rgb),.35);
+}
+#v2-root .gprod-kv { font-family: var(--grp-police-titre, 'Varela Round'), system-ui, sans-serif; font-weight: var(--grp-poids-titre, 400); font-size: 22px; line-height: 1.15; color: var(--grp-ink); overflow-wrap: anywhere; }
+#v2-root .gprod-kl { font-size: 13px; line-height: 1.35; color: var(--muted, var(--grp-vert-5d6577)); }
+#v2-root .gprod-k.is-fort { border-color: rgba(var(--grp-accent-rgb),.28); background: linear-gradient(200deg, rgba(var(--grp-accent-rgb),.12) 0%, #ffffff 58%); }
+#v2-root .gprod-k.is-fort .gprod-kv { color: var(--grp-accent-d); }
+#v2-root .gprod-tabs { margin-top: 4px; }
+#v2-root .gprod-outils { display: flex; gap: 10px; flex-wrap: wrap; margin: 6px 0 16px; }
+#v2-root .gprod-cherche { position: relative; flex: 1 1 280px; min-width: 0; display: block; }
+#v2-root .gprod-cherche-ic { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); display: grid; color: var(--muted, var(--grp-vert-5d6577)); pointer-events: none; }
+#v2-root .gprod-cherche input { width: 100%; min-height: 46px; padding-left: 40px; font-size: 16px; box-sizing: border-box; }
+#v2-root .gprod-tri { flex: 0 1 260px; min-height: 46px; font-size: 16px; }
+#v2-root .gprod-sec { margin: 0 0 22px; }
+#v2-root .gprod-sec-h { display: flex; align-items: baseline; justify-content: space-between; gap: 6px 16px; flex-wrap: wrap; margin: 0 2px 8px; }
+#v2-root .gprod-sec-t { margin: 0; font-family: var(--grp-police-titre, 'Varela Round'), system-ui, sans-serif; font-weight: var(--grp-poids-titre, 400); font-size: 18px; line-height: 1.25; color: var(--grp-ink); }
+#v2-root .gprod-sec-r { font-size: 14px; color: var(--muted, var(--grp-vert-5d6577)); font-variant-numeric: tabular-nums; }
+#v2-root .gprod-table { border-radius: 20px; border: 1px solid rgba(var(--grp-ombre-rgb),.08); background: #fff; box-shadow: 0 14px 30px -26px rgba(var(--grp-ombre-rgb),.35); overflow: hidden; }
+#v2-root .gprod-li { display: grid; grid-template-columns: minmax(0, 2.6fr) repeat(5, minmax(0, 1fr)); gap: 12px; align-items: center; padding: 12px 18px; border-top: 1px solid rgba(var(--grp-ombre-rgb),.07); }
+#v2-root .gprod-li:first-child { border-top: 0; }
+#v2-root .gprod-li:not(.gprod-th):hover { background: rgba(var(--grp-accent-rgb),.04); }
+#v2-root .gprod-th { padding-top: 10px; padding-bottom: 10px; background: var(--grp-pale); font-size: 13px; font-weight: 700; color: var(--grp-ink-2); }
+#v2-root .gprod-c { min-width: 0; }
+#v2-root .gprod-nom { display: flex; flex-direction: column; gap: 2px; }
+#v2-root .gprod-n { font-size: 15px; font-weight: 700; color: var(--grp-ink); overflow-wrap: anywhere; }
+#v2-root .gprod-m { font-size: 13px; color: var(--muted, var(--grp-vert-5d6577)); overflow-wrap: anywhere; }
+#v2-root .gprod-rq { align-self: flex-start; margin-top: 3px; padding: 2px 8px; border-radius: 8px; font-size: 12px; font-weight: 600; color: var(--grp-ink-2); background: var(--grp-pale); }
+#v2-root .gprod-rq.is-ajout { color: var(--grp-accent-d); background: rgba(var(--grp-accent-rgb),.10); }
+#v2-root .gprod-num { text-align: right; font-variant-numeric: tabular-nums; font-size: 14px; color: var(--grp-ink); display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+#v2-root .gprod-num b { font-weight: 600; }
+#v2-root .gprod-num small { font-size: 12px; color: var(--muted, var(--grp-vert-5d6577)); }
+#v2-root .gprod-net b { font-weight: 800; color: var(--grp-accent-d); }
+#v2-root .gprod-th .gprod-num { display: block; }
+#v2-root .gprod-vide { color: var(--muted, var(--grp-vert-5d6577)); }
+#v2-root .gprod-rien { margin: 18px 2px; color: var(--muted, var(--grp-vert-5d6577)); font-size: 15px; }
+#v2-root .gprod-note { margin: 4px 2px 24px; font-size: 13px; line-height: 1.5; color: var(--muted, var(--grp-vert-5d6577)); }
+@media (max-width: 999px) { #v2-root .gprod-ks { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 760px) {
+  #v2-root .gprod-head { align-items: stretch; }
+  #v2-root .gprod-partage { width: 100%; justify-content: center; }
+  #v2-root .gprod-ks { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 14px 0 16px; }
+  #v2-root .gprod-k { padding: 14px 14px 12px; border-radius: 18px; }
+  #v2-root .gprod-k.is-fort { grid-column: 1 / -1; }
+  #v2-root .gprod-kv { font-size: 19px; }
+  #v2-root .gprod-tri { flex: 1 1 100%; }
+  #v2-root .gprod-th { display: none; }
+  #v2-root .gprod-li { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 10px; padding: 14px 16px; align-items: start; }
+  #v2-root .gprod-li:nth-child(2) { border-top: 0; }
+  #v2-root .gprod-nom { grid-column: 1 / -1; }
+  #v2-root .gprod-num { align-items: flex-start; text-align: left; }
+  #v2-root .gprod-num::before { content: attr(data-l); font-size: 12px; font-weight: 600; color: var(--muted, var(--grp-vert-5d6577)); }
+}

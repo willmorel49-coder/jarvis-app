@@ -106,21 +106,32 @@ test('les ancres de la charte Essentiels sont écrites exactement', () => {
 
 // ── 4. ordre des feuilles
 const ORDRE = ['crm/v2/v2.css', 'crm/v2/v2-pieces.css', 'groupements/v2/groupement-theme.css', null, 'groupements/v2/groupement-ux.css'];
-// Essentiels a l'écran Offilog de JARVIS (classes .olm) : sa feuille v2-offilog-m1.css vient AVANT le thème, qui repeint ses bleus (étape 5b).
-for (const [page, theme, offilog] of [['opso/v2/index.html', 'opso-theme.css', false], ['essentiels/v2/index.html', 'essentiels-theme.css', true]]) {
-  test(page + ' : feuilles dans l\'ordre v2, v2-pieces, (Offilog de JARVIS), groupement-theme, thème du groupement, groupement-ux', () => {
+// 26/11/2026 soir — Will : « pour essentiel pharma pas de Offilog » (ils ont leur propre centrale d'achat) : la feuille Offilog
+// de JARVIS (v2-offilog-m1.css, ajoutée à l'étape 5b) n'est plus chargée chez Essentiels ; OPSO ne l'a jamais chargée.
+for (const page of ['opso/v2/index.html', 'essentiels/v2/index.html']) {
+  const theme = page.startsWith('opso') ? 'opso-theme.css' : 'essentiels-theme.css';
+  test(page + ' : feuilles dans l\'ordre v2, v2-pieces, groupement-theme, thème du groupement, groupement-ux', () => {
     const html = lire(page);
     const hrefs = [...html.matchAll(/<link rel="stylesheet" href="([^"?]+)/g)].map(m => m[1].replace(/^(\.\.\/)+/, ''));
-    const attendu = ['crm/v2/v2.css', 'crm/v2/v2-pieces.css'].concat(offilog ? ['crm/v2/v2-offilog-m1.css'] : [], ['groupements/v2/groupement-theme.css', theme, 'groupements/v2/groupement-ux.css']);
-    assert.deepEqual(hrefs, attendu);
+    assert.deepEqual(hrefs, ['crm/v2/v2.css', 'crm/v2/v2-pieces.css', 'groupements/v2/groupement-theme.css', theme, 'groupements/v2/groupement-ux.css']);
   });
 }
 
 // La feuille du catalogue Offilog restyle *, html et body : elle ne vit que DANS l'iframe du module, jamais dans une page de groupement.
-test('Offilog : v2-offilog-vitrine.css jamais chargée par une page de groupement ; Essentiels charge le module du catalogue', () => {
+test('Offilog : v2-offilog-vitrine.css jamais chargée par une page de groupement', () => {
   for (const page of ['opso/v2/index.html', 'essentiels/v2/index.html']) assert.ok(!/<link[^>]+v2-offilog-vitrine\.css/.test(lire(page)), page);
-  assert.match(lire('essentiels/v2/index.html'), /<script src="\.\.\/\.\.\/crm\/v2\/v2-offilog-vitrine\.js/);
   assert.match(lire('crm/v2/v2-offilog-vitrine.css'), /(^|\n)html\s*\{/, 'la feuille du catalogue a bien des règles globales (sinon ce test ne protège rien)');
+});
+
+// Essentiels a sa propre centrale d'achat : aucun module, aucune feuille, aucune règle de thème Offilog ; OPSO garde son écran Offilog.
+test('Essentiels : pas d\'Offilog (ni module, ni feuille, ni règle de thème) ; réglage offilog:false ; OPSO garde le sien', () => {
+  const ess = lire('essentiels/v2/index.html');
+  for (const f of ['v2-offilog.js', 'v2-offilog-vitrine.js', 'v2-offilog-m1.css']) assert.ok(!new RegExp('(src|href)="[^"]*' + f.replace(/\./g, '\\.')).test(ess), f);
+  assert.ok(!/\.olm\b|\.off-insp\b/.test(ESS), 'règles Offilog restées dans essentiels-theme.css');
+  assert.match(lire('groupements/config/essentiels.js'), /\n\s*offilog:\s*false,/);
+  assert.ok(!/offilog:\s*false/.test(lire('groupements/config/opso.js')));
+  assert.match(lire('opso/v2/index.html'), /<script src="\.\.\/\.\.\/crm\/v2\/v2-offilog\.js/);
+  assert.match(lire('groupements/v2/groupement-bord.js'), /function offilogAdherentes\(\) \{\s*\n[^\n]*\n\s*if \(V2\.groupement && V2\.groupement\.offilog === false\) return \{ html: '', periode: '' \};/);
 });
 
 // ── tuile « Tableau de bord »

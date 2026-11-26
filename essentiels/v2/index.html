@@ -32,8 +32,6 @@
   <!-- Socle visuel V2 (partagé) → règles communes des groupements → thème Essentiels (valeurs) → feuille d'écrans commune -->
   <link rel="stylesheet" href="../../crm/v2/v2.css?v=20261126r" />
   <link rel="stylesheet" href="../../crm/v2/v2-pieces.css?v=20261126r" />
-  <!-- Écran Offilog de JARVIS (trois onglets, classes .olm) : sans cette feuille il s'affiche sans mise en forme. Ses bleus sont repeints dans essentiels-theme.css. -->
-  <link rel="stylesheet" href="../../crm/v2/v2-offilog-m1.css?v=20261126r" />
   <link rel="stylesheet" href="../../groupements/v2/groupement-theme.css?v=20261126r" />
   <link rel="stylesheet" href="essentiels-theme.css?v=20261126r" />
   <link rel="stylesheet" href="../../groupements/v2/groupement-ux.css?v=20261126r" />
@@ -73,17 +71,16 @@
   <!-- Comptes nommés (clé `essentiels` = garde d'écran) : AVANT v2-boot.js, qui les lit. -->
   <script src="../../crm/v2/v2-comptes.js?v=20261126r"></script>
   <script src="../../crm/v2/v2-boot.js?v=20261126r"></script>
-  <!-- Piliers : comme OPSO (suivi groupement + Offilog). PAS v2-marketing, PAS groupement-catalogue (ni leurs
-       *-data OPSO), PAS opso-prix / opso-remuneration / opso-prevision* : propres à OPSO. La page des 254 produits
-       Essentiels = étape 7. -->
-  <script src="../../crm/v2/v2-offilog.js?v=20261126r"></script>
-  <!-- Onglet « Le catalogue » d'Offilog : le module injecte lui-même sa feuille (v2-offilog-vitrine.css) DANS son iframe ; elle ne se charge jamais dans la page (règles sur *, html, body). -->
-  <script src="../../crm/v2/v2-offilog-vitrine.js?v=20261126r"></script>
+  <!-- Piliers : suivi groupement, SANS Offilog (Will, 26/11/2026 : Essentiels a sa propre centrale d'achat ; réglage offilog:false).
+       PAS v2-marketing, PAS groupement-catalogue (ni leurs *-data OPSO), PAS opso-prix / opso-remuneration / opso-prevision* :
+       propres à OPSO. -->
   <!-- Produits froids : sans eux, la famille « Froid » du Pilotage est sous-estimée -->
   <script src="../../crm/v2/froid-data.js?v=20261126r"></script>
   <script src="../../crm/v2/v2-pilotage.js?v=20261126r"></script>
   <!-- Écran Documents (liste dans le réglage) : AVANT groupement-bord.js, qui lit sa ligne de tuile au chargement -->
   <script src="../../groupements/v2/groupement-documents.js?v=20261126r"></script>
+  <!-- Page « Vos produits et nos prix nets » (étape 7) : lit le fichier protégé par l'écran Documents ; AVANT groupement-bord.js (ligne de tuile) -->
+  <script src="../../groupements/v2/groupement-produits.js?v=20261126r"></script>
   <!-- Espace groupement (tableau de bord, le cap + le mois) -->
   <script src="../../groupements/v2/groupement-bord.js?v=20261126r"></script>
   <!-- Écrans Pharmacies + Meilleurs achats -->
