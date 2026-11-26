@@ -967,10 +967,12 @@
     var rap = ev && !sv ? '<span class="ofl-pill ofl-pill-w" title="Achats en baisse sur trois mois">À rappeler</span>' + (pct ? '<small>−' + pct + ' % en 3 mois</small>' : '')
       : sv ? '<span class="ofl-pill ofl-pill-p">Aucune vente</span>' : '';
     var vuePh = oflVuePh();
+    // 26/11/2026 (Will, planche ordinateur B5) : la fiche cache en vue pharmacien le bandeau « achats en baisse » (decrochageUI, vi-int) : la liste cache donc aussi « À rappeler ».
+    if (vuePh) rap = '<b class="ofl-masque">masquée</b>';
     var caTxt = voit ? V2.fmtEur(x.ca) : '—', nmTxt = nm ? V2.fmtEur(nm.tot) : '—', mgTxt = voit ? V2.fmtEur(x.marge) : '—';
     return '<a class="ofl-r" role="row" tabindex="0" ' + onclick + '>' +
       '<span class="ofl-c-nom"><b class="ofl-nom">' + nom + '</b><span class="ofl-sous">' + ville + t +
-        (rap ? '<span class="ofl-m-rap">' + (ev && !sv ? '<span class="ofl-pill ofl-pill-w">À rappeler</span>' : '<span class="ofl-pill ofl-pill-p">Aucune vente</span>') + '</span>' : '') +
+        (rap && !vuePh ? '<span class="ofl-m-rap">' + (ev && !sv ? '<span class="ofl-pill ofl-pill-w">À rappeler</span>' : '<span class="ofl-pill ofl-pill-p">Aucune vente</span>') + '</span>' : '') +
         (nm !== undefined && !vuePh ? '<span class="ofl-m-nm">marge ' + nmTxt + '</span>' : '') + '</span></span>' +
       '<span class="ofl-c-t">' + t + '</span>' +
       cell(caTxt, pOff, perV, 'ofl-c-ca') +
@@ -1249,6 +1251,8 @@
         var vp = viLire() === 'pharmacien', bv = function (v, t, on) { return '<button type="button" class="ofl-seg' + (on ? ' on' : '') + '" aria-pressed="' + on + '" onclick="V2.oflVue(\'' + v + '\')">' + t + '</button>'; };
         vue = '<span class="ofl-segs ofl-vue" role="group" aria-label="Vue de la liste">' + bv('pharmacien', 'Vue pharmacien', vp) + bv('integral', 'Vue Intégral', !vp) + '</span>';
       }
+      // 26/11/2026 (planche ordinateur B14) : sans le menu « Tri » à l'ordinateur, l'ordre du secteur des prospects n'a pas de titre de colonne : on y revient d'ici.
+      if (pros && tri && !oflTel) tri += ' · <button type="button" class="ofl-raz" onclick="V2.oflTri(\'\')">Revenir à l’ordre du secteur</button>';
       return vue + '<b>' + V2.fmtNum(n) + '</b> ' + mot + (n > 1 ? 's' : '') + (tri ? ' · ' + tri : '') +
         (ofl.tourn || ofl.rap || searchQuery.trim() ? ' · <button type="button" class="ofl-raz" onclick="V2.oflRaz()">Effacer les filtres</button>' : '');
     }
@@ -1442,7 +1446,7 @@
         th('ca', 'Chiffre d’affaires', perV, 'ofl-th-ca') +
         (nmOk ? th('nm', 'Notre marge Intégral', 'estimation · ' + perM, 'ofl-th-nm', oflVuePh()) : '') +
         th('marge', 'Marge du pharmacien', perV, 'ofl-th-mg') +
-        th('rap', 'À rappeler', 'achats en baisse sur 3 mois', 'ofl-th-rap');
+        th('rap', 'À rappeler', 'achats en baisse sur 3 mois', 'ofl-th-rap', oflVuePh());
     }
     // Rappel unique pour le téléphone, où il n'y a pas d'en-tête de colonnes.
     function oflLegende() {
@@ -5416,7 +5420,7 @@
   V2.oflVue = function (v) {
     viCourante = (v === 'integral') ? 'integral' : 'pharmacien';
     try { window.localStorage.setItem(VI_CLE, viCourante); } catch (e) {}
-    if (viCourante === 'pharmacien' && ofl.tri === 'nm') { ofl.tri = 'ca'; ofl.sens = -1; }
+    if (viCourante === 'pharmacien' && (ofl.tri === 'nm' || ofl.tri === 'rap')) { ofl.tri = 'ca'; ofl.sens = -1; }
     if (oflMaj) oflMaj();
   };
   V2.oflTrier = function (k) { if (ofl.tri === k) ofl.sens = -ofl.sens; else { ofl.tri = k; ofl.sens = OFL_TRIS[k][1]; } if (oflMaj) oflMaj(); };
