@@ -300,10 +300,11 @@
 
     // ── POINTS (marqueurs, cluster) ou BULLES CA (taille = CA, sans cluster, seulement le CA>0) ──
     var bulles = (displayMode === 'bulles');
-    var useCluster = !bulles && !!window.L.markerClusterGroup;
+    // 26/11/2026 — « Mon secteur » : quelques centaines d'officines, chacune visible (maquette choisie par Will) ; les paquets restent pour Toute la France.
+    var useCluster = !bulles && !secteurPass && !!window.L.markerClusterGroup;
     // Will, 27/08/2026 : « quand on clique sur un point il faut qu'on voie l'officine et toutes
     // les données » → plus de petite bulle : le clic ouvre directement la fiche, à côté de la carte.
-    function openPop(e) { var i = e.layer._pi; if (D.p[i]) { V2.carteFiche(i); garderVisible(i); } }
+    function openPop(e) { var l = e.layer || e.target, i = l && l._pi; if (i != null && D.p[i]) { V2.carteFiche(i); garderVisible(i); } }   // e.layer : clic reçu par le paquet ; e.target : clic reçu par le point lui-même (sans paquets)
     if (useCluster) {
       // Paquets : un seul style (blanc, filet bleu Intégral) au lieu des ronds vert/jaune/orange du plugin.
       // ⚠️ 27/08/2026 (Will : « quand je clique sur un point ça ne fait rien ») : au zoom

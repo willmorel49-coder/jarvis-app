@@ -86,6 +86,7 @@ test('ordinateur (volet à droite) : le geste ne fait rien', () => {
   assert.equal(b.fit.length, 0);
 });
 test('clic sur un point de la carte (téléphone) : garderVisible appelé après l\'ouverture de la fiche', () => {
-  assert.match(carte, /function openPop\(e\) \{ var i = e\.layer\._pi; if \(D\.p\[i\]\) \{ V2\.carteFiche\(i\); garderVisible\(i\); \} \}/);
+  // 26/11/2026 — « Mon secteur » sans paquets : le clic arrive aussi sur le point lui-même (e.target), plus seulement sur le paquet (e.layer).
+  assert.match(carte, /function openPop\(e\) \{ var l = e\.layer \|\| e\.target, i = l && l\._pi; if \(i != null && D\.p\[i\]\) \{ V2\.carteFiche\(i\); garderVisible\(i\); \} \}/);
   assert.match(carte, /V2\.carteFiche\(best\._pi\); garderVisible\(best\._pi\);/);
 });
