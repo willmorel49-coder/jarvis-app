@@ -178,11 +178,26 @@
   // contre une PHARMACIE DE LA PRAIRIE de l'Aisne. Un mot au masculin ou au singulier vaut le même mot du nom
   // (GRAND/GRANDE, CHAMP/CHAMPS, FOUGERE/FOUGERES), la forme courte faisant 5 lettres au moins. Jamais un « E » retiré :
   // LOIRE n'est pas LOIR (deux rivières) ; et HAUTES n'est pas HAUT (4 lettres).
-  function aLeMot(e, m) {
-    if (e.jetons[m]) return true;
-    if (m.length < 5) return false;
-    return !!(e.jetons[m + 'E'] || e.jetons[m + 'S'] || e.jetons[m + 'ES'] ||
-      (/S$/.test(m) && m.length >= 6 && e.jetons[m.slice(0, -1)]));
+  function aLeMot(e, m) { return !!motDuNom(e, m, false); }
+  // Rend le mot du NOM que vaut le mot `m` du titre, ou ''. 26/11/2026 (vérification du suivi depuis janvier) :
+  // « de lorme » = L ORME, le « l' » collé au mot (idem « d' ») ; et — dans SON portefeuille seulement
+  // (`faute`), jamais dans l'annuaire — une faute d'une lettre sur un mot de 5 lettres au moins (un Y pour un I, une
+  // lettre oubliée, y compris au singulier d'un nom en S). Une faute n'est jamais une certitude : voir `exact`.
+  function motDuNom(e, m, faute) {
+    if (e.jetons[m]) return m;
+    if (m.length >= 5) {
+      if (e.jetons[m + 'E']) return m + 'E';
+      if (e.jetons[m + 'S']) return m + 'S';
+      if (e.jetons[m + 'ES']) return m + 'ES';
+      if (/S$/.test(m) && m.length >= 6 && e.jetons[m.slice(0, -1)]) return m.slice(0, -1);
+    }
+    if (/^[LD][A-Z]{3,}$/.test(m) && e.jetons[m.slice(1)]) return m.slice(1);
+    if (faute && m.length >= 5 && /^[A-Z]+$/.test(m)) {
+      for (var t in e.jetons) {
+        if (t.length >= 5 && (unePres(m, t) || (/S$/.test(t) && t.length >= 6 && unePres(m, t.slice(0, -1))))) return t;
+      }
+    }
+    return '';
   }
 
   // `porte` : l'index est celui du portefeuille du commercial (64 officines), pas l'annuaire (19 700).
@@ -200,12 +215,23 @@
       // ⚠️ FRONTIÈRE DE MOT : on cherche « HA » entouré d'espaces, jamais
       // la sous-chaîne « HA » qui se cache dans « OMAHA ».
       var contenu = enveloppe.indexOf(' ' + e.dist + ' ') !== -1;
-      var communs = 0, seul = null;
-      for (var k = 0; k < js.length; k++) if (aLeMot(e, js[k])) { communs++; seul = js[k]; }
+      var communs = 0, seul = null, couverts = {}, nbCouv = 0, w;
+      for (var k = 0; k < js.length; k++) {
+        w = motDuNom(e, js[k], porte);
+        if (w) { communs++; seul = js[k]; if (!couverts[w]) { couverts[w] = 1; nbCouv++; } }
+      }
       if (!contenu && !communs) continue;
+      // Tous les mots du nom sont dans le titre (26/11/2026) : c'est ce qui fait passer l'enseigne d'un client avant
+      // une homonyme lointaine (M.apparier).
+      var complet = contenu || nbCouv >= e.nbJetons;
+      var exact = js.join(' ') === e.dist;
       // Un nom distinctif très court ne vaut que s'il est tout le segment — sa ville à part (26/11/2026 :
-      // « Pharmacie du lys coron » = PHARMACIE DU LYS à Coron, enseigne d'un client de Will).
-      if (e.dist.length <= 3 && seg !== e.dist && js.filter(function (m) { return !dedans(m, e.ville); }).join(' ') !== e.dist) continue;
+      // « Pharmacie du lys coron » = PHARMACIE DU LYS à Coron, enseigne d'un client de Will). ⚠️ Même jour : quand
+      // la VILLE contient ce nom (une PHARMACIE DU LAC à Bourg-sur-Lac), retirer la ville du titre retirait aussi le
+      // nom, et « Phie du lac » ne trouvait plus jamais sa cliente (deux de ses clientes dans ce cas). Dans SON
+      // portefeuille, le nom court en tête d'un titre plus long vaut aussi (« Phie du lac + commentaire »), à confirmer.
+      if (e.dist.length <= 3 && seg !== e.dist && !exact && js.filter(function (m) { return !dedans(m, e.ville); }).join(' ') !== e.dist &&
+          !(porte && js[0] === e.dist)) continue;
       // Un seul mot commun, et il est banal : pas assez pour désigner.
       if (!contenu && communs === 1 && seul && seul.length <= 4) continue;
 
@@ -221,9 +247,12 @@
         var couverture = communs / js.length;
         score = Math.max(score, 0.78 + 0.14 * couverture);
       }
-      if (seg === e.dist) score = 1;
-      // La ville écrite dans le titre départage deux homonymes.
-      if (e.ville && enveloppe.indexOf(' ' + e.ville + ' ') !== -1) score = Math.min(1, score + 0.12);
+      // Le nom exact, aux mots vides près (« Phie des orties » = PHARMACIE DES ORTIES, 26/11/2026 : sans cela une
+      // PHARMACIE DES GRANDES ORTIES à l'autre bout de la France passait devant la cliente de Will).
+      if (seg === e.dist || exact) score = 1;
+      // La ville écrite dans le titre départage deux homonymes — sauf quand elle n'y est que parce qu'elle est le
+      // nom (« Phie du lac » quand une commune s'appelle LAC, 26/11/2026).
+      if (e.ville && enveloppe.indexOf(' ' + e.ville + ' ') !== -1 && !dedans(e.ville, e.dist)) score = Math.min(1, score + 0.12);
       // ⚠️ 24/11/2026 — le lieu écrit dans le titre tranche. Un code postal qui n'est pas celui de
       // l'officine : ce n'est pas elle (« Pharmacie Martin (49250) » n'est pas Combronde, 63460).
       // Une ville entre parenthèses qui n'est pas la sienne : jamais une certitude.
@@ -256,7 +285,8 @@
       // sous le seuil, le commercial tranche (« à confirmer »). L'inverse (un mot du NOM absent
       // du titre) n'est pas retenu : mesuré sur l'agenda réel, il rétrogradait des officines du
       // portefeuille à deux noms dont le commercial n'écrit qu'un (« Phie deroche »).
-      if (seg !== e.dist) {
+      // Un mot qui ne vaut le nom que par une faute de frappe n'explique pas le titre : « à confirmer » au mieux.
+      if (seg !== e.dist && !exact) {
         var villeJ = {}, reste = 0;
         e.ville.split(' ').forEach(function (v) { if (v) villeJ[v] = 1; });
         for (k = 0; k < js.length; k++) if (!aLeMot(e, js[k]) && !villeJ[js[k]] && /^[A-Z]{2,}$/.test(js[k])) reste++;
@@ -271,7 +301,7 @@
         for (k = 0; k < js.length; k++) if (e.jetons[js[k]] && index.rares[js[k]]) { score = Math.max(score, SEUIL_CONFIRMER); break; }
       }
       if (!marqueur) score -= 0.10;
-      trouves.push({ s: score, o: e.o, dist: e.dist });
+      trouves.push({ s: score, o: e.o, dist: e.dist, complet: complet, nbCouv: contenu ? Math.max(nbCouv, e.nbJetons) : nbCouv, nbJetons: e.nbJetons });
     }
     if (!trouves.length) return vide;
     trouves.sort(function (a, b) { return b.s - a.s; });
@@ -282,12 +312,93 @@
       var idp = String(trouves[p].o.id);
       if (trouves[p].s >= haut - 0.04 && !vus[idp]) { vus[idp] = 1; proches++; }
     }
-    return { officine: trouves[0].o, score: haut, candidats: proches, dist: trouves[0].dist };
+    var t0 = trouves[0];
+    return { officine: t0.o, score: haut, candidats: proches, dist: t0.dist, complet: t0.complet, nbCouv: t0.nbCouv, nbJetons: t0.nbJetons };
   }
 
   function parId(index, id) {
     for (var i = 0; i < index.length; i++) if (String(index[i].o.id) === String(id)) return index[i].o;
     return null;
+  }
+
+  // Ce que l'index du portefeuille sait de lui-même, calculé une fois : ses codes, ses départements.
+  function infosPorte(porte) {
+    if (porte._infos) return porte._infos;
+    var ids = {}, deps = {};
+    for (var i = 0; i < porte.length; i++) { ids[String(porte[i].o.id)] = 1; if (porte[i].cp) deps[porte[i].cp.slice(0, 2)] = 1; }
+    try { Object.defineProperty(porte, '_infos', { value: { ids: ids, deps: deps } }); } catch (x) { return { ids: ids, deps: deps }; }
+    return porte._infos;
+  }
+  function parVille(index) {
+    if (index._parVille) return index._parVille;
+    var m = {};
+    for (var i = 0; i < index.length; i++) if (index[i].ville) (m[index[i].ville] = m[index[i].ville] || []).push(index[i]);
+    try { Object.defineProperty(index, '_parVille', { value: m }); } catch (x) {}
+    return m;
+  }
+
+  // ⚠️ 26/11/2026 — vérification du « Suivi depuis le 1er janvier » (Will, agenda relu du 01/01 au 26/11) : il écrit
+  // souvent la VILLE seule de sa cliente (« Pharmacie <ville> ») ; ces visites ne comptaient pas, ou tombaient sur une
+  // PHARMACIE SAINT <ville> à l'autre bout de la France. Choix cliqué de Will : une ville où il n'a qu'une cliente
+  // suffit. Il faut le mot de tête de la ville (VIRGULE pour ST VIRGULE LE GRAND, jamais SAINT ni LOIRE
+  // seul), une seule de SES clientes dans cette ville, et aucun autre mot du titre qui soit le nom d'une autre officine
+  // de cette ville. Certaine si le titre n'est que la ville et que l'annuaire n'y a qu'elle ; sinon « à confirmer ».
+  // Mesuré sur son agenda, trois garde-fous de plus : « Pharmacie <nom> (<code postal>) » n'est pas sa cliente de
+  // Saint-<nom> (SAINT absent, et le code postal est celui d'un prospect) ; « Phie de <ville> » ne dit pas laquelle
+  // quand plusieurs villes de ses départements commencent par ce mot ; « Phie <mot> à <grande ville> » n'est pas sa
+  // seule cliente de cette ville (57 officines : le mot y désigne une autre officine). Un
+  // mot de plus que la ville n'est donc admis que dans une petite ville (4 officines au plus dans l'annuaire).
+  var MAX_OFFICINES_VILLE = 4;
+  function motsVille(v) { return String(v || '').split(' ').filter(Boolean).map(function (m) { return m === 'ST' ? 'SAINT' : m === 'STE' ? 'SAINTE' : m; }); }
+  function teteVille(cv) { return cv.filter(function (m) { return !MOTS_VIDES[m] && m !== 'SAINT' && m !== 'SAINTE'; })[0] || ''; }
+  // Les villes de l'annuaire situées dans ses départements, rangées par mot de tête.
+  function villesParTete(nat, deps) {
+    var cle = Object.keys(deps).sort().join(',');
+    if (nat._tetes && nat._tetes.cle === cle) return nat._tetes.m;
+    var m = {};
+    for (var i = 0; i < nat.length; i++) {
+      var e = nat[i];
+      if (!e.ville || !deps[String(e.cp || '').slice(0, 2)]) continue;
+      var t = teteVille(motsVille(e.ville));
+      if (t) (m[t] = m[t] || {})[e.ville] = 1;
+    }
+    try { Object.defineProperty(nat, '_tetes', { value: { cle: cle, m: m }, writable: true }); } catch (x) {}
+    return m;
+  }
+  function villeSeule(seg, porte, nat, lieu) {
+    var js = motsVille(seg).filter(function (m) { return !MOTS_VIDES[m]; });
+    if (!js.length) return null;
+    var trouvee = null, i, k, a;
+    for (i = 0; i < porte.length; i++) {
+      var e = porte[i], cv = motsVille(e.ville), tete = teteVille(cv);
+      if (!tete || js.indexOf(tete) === -1) continue;
+      if ((cv[0] === 'SAINT' || cv[0] === 'SAINTE') && js.indexOf(cv[0]) === -1) continue;   // « Romuald » n'est pas Saint-Romuald
+      if (trouvee && String(trouvee.e.o.id) !== String(e.o.id)) return null;   // deux de ses clientes dans cette ville
+      trouvee = { e: e, cv: cv, tete: tete };
+    }
+    if (!trouvee) return null;
+    var c = trouvee.e;
+    if (lieu && lieu.cps.length && c.cp && lieu.cps.indexOf(c.cp) === -1) return null;   // un autre code postal est écrit
+    var id = String(c.o.id), cvJ = {};
+    trouvee.cv.forEach(function (m) { cvJ[m] = 1; });
+    // la ville écrite en partie (« Saint virgule ») : aucune autre ville de ses départements ne commence pareil
+    var entiere = trouvee.cv.every(function (m) { return MOTS_VIDES[m] || js.indexOf(m) !== -1; });
+    if (!entiere && Object.keys(villesParTete(nat, infosPorte(porte).deps)[trouvee.tete] || {}).some(function (v) { return v !== c.ville; })) return null;
+    var autres = js.filter(function (m) { return !cvJ[m]; });
+    for (k = 0; k < porte.length; k++) {
+      if (String(porte[k].o.id) === id) continue;
+      for (a = 0; a < autres.length; a++) if (aLeMot(porte[k], autres[a])) return null;   // le nom d'une autre de ses clientes
+    }
+    var ici = parVille(nat)[c.ville] || [], vues = {};
+    for (k = 0; k < ici.length; k++) {
+      vues[String(ici[k].o.id)] = 1;
+      if (String(ici[k].o.id) === id) continue;
+      for (a = 0; a < autres.length; a++) if (aLeMot(ici[k], autres[a])) return null;     // une autre officine de la ville, nommée
+    }
+    delete vues[id];
+    var nb = Object.keys(vues).length;
+    if (autres.length && nb + 1 > MAX_OFFICINES_VILLE) return null;
+    return { officine: c.o, ville: c.ville, etat: (!autres.length && !nb) ? 'reconnu' : 'confirmer' };
   }
 
   // `villes` (facultatif) : les villes connues, normalisées ({ 'SEGRE EN ANJOU BLEU': 1 }), pour lire
@@ -312,7 +423,13 @@
     if (!seg.marqueur) {
       // ⚠️ Sans le mot « pharmacie », l'annuaire national reste fermé et le
       // portefeuille n'est accepté que sur une correspondance exacte.
-      if (!(p.officine && (seg.texte === p.dist || p.score >= 0.95))) return rien;
+      if (!(p.officine && (seg.texte === p.dist || p.score >= 0.95))) {
+        // 26/11/2026 — ou sur le nom ENTIER d'une de ses officines, de deux mots au moins (« Val de Loirette colis »
+        // = PHARMACIE DU VAL DE LOIRETTE, enseigne d'une cliente) : jamais une certitude.
+        if (p.officine && p.complet && p.nbJetons >= 2 && p.candidats === 1)
+          return { officine: p.officine, score: Math.max(p.score, SEUIL_CONFIRMER), candidats: 1, source: 'portefeuille', etat: 'confirmer' };
+        return rien;
+      }
     } else if (!p.officine || p.score < 0.95) {
       // ⚠️ Le seuil était à 0,80, et c'était trop bas : « Voir Clement phie
       // des plantes » trouvait « PHARMACIE DU JARDIN DES PLANTES » à Grenoble
@@ -321,13 +438,26 @@
       // deux pas du secteur. On ne s'arrête au portefeuille que si la
       // correspondance y est quasi parfaite ; sinon on compare les deux.
       var n = chercher(seg.texte, seg.marqueur, indexNational || [], lieu);
-      if (n.officine && n.score > p.score) meilleur = { r: n, source: 'annuaire' };
+      // ⚠️ 26/11/2026 — le nom ENTIER d'une de ses clientes passe avant une homonyme ailleurs en France (choix cliqué de
+      // Will) : un nom court suivi d'un commentaire tombait sur une officine lointaine dont le nom reprenait un mot du
+      // commentaire, un nom tapé avec une faute sur son homonyme exacte d'un autre département. L'annuaire ne reprend
+      // la main que s'il explique PLUS de mots du titre ET que l'officine est dans un de ses départements (un prospect du secteur au nom plus complet). Le cas « des plantes » du 14/08
+      // ne revient pas : JARDIN DES PLANTES n'est pas un nom entier dans « Voir Clement phie des plantes ».
+      var garde = p.officine && p.complet && p.score >= SEUIL_CONFIRMER &&
+        !(n.officine && n.nbCouv > p.nbCouv && infosPorte(indexPortefeuille || []).deps[String(n.officine.cp || '').slice(0, 2)]);
+      if (n.officine && n.score > p.score && !garde) meilleur = { r: n, source: 'annuaire' };
     }
 
     var r = meilleur.r;
-    if (!r.officine) return rien;
-    var etat = (r.score >= SEUIL_RECONNU && r.candidats === 1) ? 'reconnu'
+    var etat = !r.officine ? 'ignore' : (r.score >= SEUIL_RECONNU && r.candidats === 1) ? 'reconnu'
              : (r.score >= SEUIL_CONFIRMER ? 'confirmer' : 'ignore');
+    // La ville seule de sa cliente (villeSeule), quand le nom n'a rien donné chez lui. Une officine de l'annuaire
+    // trouvée dans un de SES départements garde la main (un prospect du secteur, son code postal écrit).
+    var IP = infosPorte(indexPortefeuille || []);
+    if (seg.marqueur && (etat === 'ignore' || (!IP.ids[String(r.officine.id)] && !IP.deps[String(r.officine.cp || '').slice(0, 2)]))) {
+      var vs = villeSeule(seg.texte, indexPortefeuille || [], indexNational || [], lieu);
+      if (vs) return { officine: vs.officine, score: vs.etat === 'reconnu' ? 1 : SEUIL_CONFIRMER, candidats: 1, source: 'ville', etat: vs.etat };
+    }
     if (etat === 'ignore') return rien;
     return { officine: r.officine, score: r.score, candidats: r.candidats,
              source: meilleur.source, etat: etat };
@@ -341,11 +471,15 @@
   var MOTS_APPEL = /\b(APPELER|RAPPELER|APPEL|APPELE|APPELEE|CALL|TEL|TELEPHONER)\b/;
   var PREMIER_TACHE = { MAIL: 1, EMAIL: 1, ENVOYER: 1, ENVOYEZ: 1, FAIRE: 1, VERIFIER: 1, VERIFIE: 1, VERIF: 1,
                         PAS: 1, COMMANDER: 1, COMMANDE: 1, RELANCER: 1 };
+  // 26/11/2026 — vérification du suivi (choix cliqué de Will) : « Phie … 2 repatha », « Phie … <produit> » (un
+  // produit à préparer) et « Phie … prise rdv » (même avec une faute de frappe) ne sont pas des visites.
+  var PRODUITS = /\b(REPATHA|ERLEADA|MOUNJARO|MUNJARO|WEGOVY|OZEMPIC)\b/;
+  var PRISE_RDV = /\bPRIS[A-Z]? (DE )?RDV\b/;
   M.rappel = function (titre) {
     var n = M.normaliser(titre);
     if (!n) return '';
     if (MOTS_APPEL.test(n)) return 'appel';
-    if (PREMIER_TACHE[n.split(' ')[0]] || /\b\d+ ?MG\b/.test(n)) return 'tache';
+    if (PREMIER_TACHE[n.split(' ')[0]] || /\b\d+ ?MG\b/.test(n) || PRODUITS.test(n) || PRISE_RDV.test(n)) return 'tache';
     return '';
   };
 
