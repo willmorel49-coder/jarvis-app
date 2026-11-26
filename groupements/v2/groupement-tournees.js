@@ -186,6 +186,20 @@
     });
   };
 
+  // Le bandeau ne cache jamais l'officine choisie (calculs purs, en pixels de la carte). 26/11/2026, Safari de Will à 390 px : le bandeau
+  // mesure 213 à 268 px au téléphone, la marge basse fixe de 110 px laissait O107 caché à 100 % dessous chez OPSO.
+  // margeBas : marge basse du recadrage = bandeau + son retrait (10 px) + un demi-badge et de l'air (26 px), jamais moins de 110 ; bornée pour
+  // laisser au moins 40 px de carte sous la marge haute (au-delà, Leaflet calcule un zoom impossible : taille négative).
+  C.margeBas = function (hBandeau, hCarte, haut) {
+    return Math.max(0, Math.min(Math.max(110, (hBandeau || 0) + 36), hCarte - haut - 40));
+  };
+  // decalage : officine touchée SUR la carte (aucun recadrage) : de combien remonter la carte pour qu'elle reste au-dessus du bandeau.
+  C.decalage = function (y, hCarte, hBandeau) {
+    if (!hBandeau) return 0;
+    var lim = Math.max(70, hCarte - hBandeau - 36);
+    return y > lim ? Math.round(y - lim) : 0;
+  };
+
   if (typeof module !== 'undefined' && module.exports) module.exports = C;
 
   // ───────────────────────── Affichage (navigateur seulement) ─────────────────────────
@@ -280,6 +294,7 @@
       b.classList.add('on');
       b.querySelector('.gtrn-x').onclick = function () { choisir(null); };
     }
+    function hBandeau() { var b = document.getElementById('gtrn-band'); return b && b.classList.contains('on') ? b.offsetHeight : 0; }
     function marqueur(e) {
       var bw = tactile() ? 44 : 36, bh = tactile() ? 44 : 28;
       return L.marker([e.lat, e.lng], { icon: L.divIcon({ className: 'gtrn-ic', iconSize: [bw, bh], iconAnchor: [bw / 2, bh / 2],
@@ -360,10 +375,13 @@
           var b = L.latLngBounds([[e.lat, e.lng]]);
           if (voisins) voisins.eachLayer(function (x) { b.extend(x.getLatLng()); });
           if (e.statut !== 'loin' && lignes[e.code]) b = b.extend(lignes[e.code].getBounds());
-          carte.fitBounds(b, { paddingTopLeft: [30, 70], paddingBottomRight: [30, 110], maxZoom: 13, animate: false });
+          carte.fitBounds(b, { paddingTopLeft: [30, 70], paddingBottomRight: [30, C.margeBas(hBandeau(), carte.getSize().y, 70)], maxZoom: 13, animate: false });
         } catch (x) {}
         placer();
         if (tactile() && depuisListe) document.getElementById('gtrn-map').scrollIntoView({ block: 'nearest' });
+      } else if (carte && e.lat != null) {
+        // touchée sur la carte : si le bandeau la couvre (téléphone), la carte remonte d'autant (moveend replace les numéros)
+        try { var dy = C.decalage(carte.latLngToContainerPoint([e.lat, e.lng]).y, carte.getSize().y, hBandeau()); if (dy) carte.panBy([0, dy], { animate: false }); } catch (x) {}
       }
     }
     function couches() {

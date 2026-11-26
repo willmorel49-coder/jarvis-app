@@ -219,3 +219,21 @@ test('chevauchement OPSO du 26/11 : un badge posé sur son voisin passe en petit
   assert.match(MODULE, /it\.hb = Math\.max\(HB, bb \? bb\.offsetWidth \/ 2 : 0\)/);
   assert.match(MODULE, /var rec = C\.recouverts\(items\.map\(function \(it\) \{ return it\.b; \}\), ovl, sz\);/);
 });
+
+test('390 px, 26/11 : le bandeau ne cache jamais l’officine choisie (marge basse = bandeau réel, carte remontée si touchée dessous)', () => {
+  // Mesuré dans le Safari de Will à 390 px : carte 420 px, bandeau 268 px ; l'ancienne marge basse fixe (110) laissait l'officine dessous.
+  assert.equal(C.margeBas(268, 420, 70), 304, 'bandeau + 36 px');
+  assert.equal(C.margeBas(0, 420, 70), 110, 'sans bandeau : la marge d’avant');
+  assert.equal(C.margeBas(60, 800, 70), 110, 'petit bandeau (ordinateur) : jamais moins de 110');
+  assert.equal(C.margeBas(340, 420, 70), 310, 'bandeau très haut : bornée, 40 px de carte gardés sous la marge haute');
+  assert.ok(420 - 70 - C.margeBas(1000, 420, 70) >= 40, 'jamais de place négative (zoom impossible chez Leaflet)');
+  // Touchée sur la carte : la carte remonte juste assez pour que le badge reste au-dessus du bandeau.
+  assert.equal(C.decalage(300, 420, 213), 129, 'sous le bandeau : remonte de y − (420 − 213 − 36)');
+  assert.equal(C.decalage(120, 420, 213), 0, 'déjà au-dessus : rien ne bouge');
+  assert.equal(C.decalage(300, 420, 0), 0, 'bandeau fermé : rien ne bouge');
+  assert.equal(C.decalage(300, 420, 400), 230, 'bandeau énorme : l’officine reste sous les boutons du haut (70 px)');
+  // Le recadrage et la touche sur la carte passent par ces règles, avec la hauteur RÉELLE du bandeau.
+  assert.match(MODULE, /paddingBottomRight: \[30, C\.margeBas\(hBandeau\(\), carte\.getSize\(\)\.y, 70\)\]/);
+  assert.match(MODULE, /C\.decalage\(carte\.latLngToContainerPoint\(\[e\.lat, e\.lng\]\)\.y, carte\.getSize\(\)\.y, hBandeau\(\)\)/);
+  assert.match(MODULE, /function hBandeau\(\) \{ var b = document\.getElementById\('gtrn-band'\); return b && b\.classList\.contains\('on'\) \? b\.offsetHeight : 0; \}/);
+});
