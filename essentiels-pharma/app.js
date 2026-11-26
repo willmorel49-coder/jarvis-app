@@ -1522,6 +1522,81 @@ function getPrevPeriod(year, month) {
   return month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 };
 }
 
+// ── DOCUMENTS INTÉGRAL PHARMA (fichiers privés du bucket fermé) ──────────────
+// 26/11/2026 — prix, validité : UNE seule constante, lue par la carte.
+const DOCS_IP_PRIX = { dossier: 'essentiels/2026-11-26/', date: '26/11/2026', jusqua: '19/01/2027' };
+const DOCS_IP = {
+  excel:     { fichier: 'prix-nets-integral.xlsx',     type: 'fichier', titre: 'Vos produits et nos prix nets (Excel)' },
+  resPdf:    { fichier: 'catalogue-reseau.pdf',        type: 'pdf',     titre: 'Catalogue réseau, pour François Tesson (PDF)' },
+  resHtml:   { fichier: 'catalogue-reseau.html',       type: 'html',    titre: 'Catalogue réseau, version interactive avec filtres' },
+  adhPdf:    { fichier: 'catalogue-adherents.pdf',     type: 'pdf',     titre: 'Catalogue adhérents (PDF)' },
+  adhHtml:   { fichier: 'catalogue-adherents.html',    type: 'html',    titre: 'Catalogue adhérents, version interactive avec filtres' }
+};
+function ouvrirDocIP(cle) {
+  const d = DOCS_IP[cle];
+  if (!d) return;
+  const chemin = DOCS_IP_PRIX.dossier + d.fichier;
+  const indispo = () => {
+    if (typeof showToast === 'function') showToast('Document indisponible pour le moment', 'error');
+    else alert('Document indisponible pour le moment');
+  };
+  // Onglet ouvert AVANT l'appel réseau, sinon Safari bloque la fenêtre.
+  const onglet = d.type === 'fichier' ? null : window.open('', '_blank');
+  if (onglet && onglet.document && onglet.document.body) {
+    onglet.document.title = d.titre;
+    const att = onglet.document.createElement('p');
+    att.textContent = 'Ouverture du document…';
+    att.setAttribute('style', 'margin:0;font:15px system-ui;color:#414E63;text-align:center;padding-top:40vh');
+    onglet.document.body.appendChild(att);
+  }
+  sb.storage.from('donnees-protegees').createSignedUrl(chemin, 3600)
+    .then(r => {
+      const url = r && r.data && r.data.signedUrl;
+      if (!url) throw new Error('adresse refusée');
+      if (d.type === 'fichier') {
+        const cadre = document.createElement('iframe');
+        cadre.setAttribute('style', 'display:none');
+        cadre.src = url;
+        document.body.appendChild(cadre);
+        setTimeout(() => { if (cadre.parentNode) cadre.parentNode.removeChild(cadre); }, 120000);
+        return null;
+      }
+      if (d.type === 'pdf') {
+        if (onglet) onglet.location.replace(url); else window.location.href = url;
+        return null;
+      }
+      // Supabase sert un .html en text/plain : on le rend nous-mêmes via un blob.
+      return fetch(url);
+    })
+    .then(rep => {
+      if (rep === null) return null;
+      if (!rep.ok) throw new Error('HTTP ' + rep.status);
+      return rep.text();
+    })
+    .then(texte => {
+      if (texte === null) return;
+      const burl = URL.createObjectURL(new Blob([texte], { type: 'text/html;charset=utf-8' }));
+      if (onglet) onglet.location.replace(burl); else window.location.href = burl;
+      setTimeout(() => URL.revokeObjectURL(burl), 60000);
+    })
+    .catch(() => {
+      if (onglet) onglet.close();
+      indispo();
+    });
+}
+function carteDocsIP() {
+  const bt = (cle, fmt) => `<button type="button" class="docs-ip-btn" onclick="ouvrirDocIP('${cle}')"><span class="docs-ip-fmt">${fmt}</span><span>${DOCS_IP[cle].titre}</span></button>`;
+  return `<section class="docs-ip" id="docs-ip" aria-labelledby="docs-ip-titre">
+    <h2 id="docs-ip-titre" class="docs-ip-titre">Documents Intégral Pharma</h2>
+    <p class="docs-ip-sub">Prix au ${DOCS_IP_PRIX.date}, valables jusqu'au ${DOCS_IP_PRIX.jusqua}.</p>
+    <div class="docs-ip-grille">
+      <div class="docs-ip-groupe">${bt('excel', 'Excel')}</div>
+      <div class="docs-ip-groupe">${bt('resPdf', 'PDF')}${bt('resHtml', 'Web')}</div>
+      <div class="docs-ip-groupe">${bt('adhPdf', 'PDF')}${bt('adhHtml', 'Web')}</div>
+    </div>
+  </section>`;
+}
+
 function renderDashboard() {
   const container = document.getElementById('dash-content');
   const grp = GROUPEMENTS.find(g => g.id === grpActif) || GROUPEMENTS[0];
@@ -1539,7 +1614,7 @@ function renderDashboard() {
       <span style="font-size:11px;color:var(--text3)">Les données sont importées manuellement.</span>
     </div>` : '';
 
-  container.innerHTML = renderGrpDashboard(grp);
+  container.innerHTML = carteDocsIP() + renderGrpDashboard(grp);
 
   // ── Chart.js : graphique évolution mensuelle ──
   setTimeout(() => {

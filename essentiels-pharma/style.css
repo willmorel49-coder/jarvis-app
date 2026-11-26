@@ -3462,3 +3462,13 @@ html { scroll-behavior: smooth; }
   .pin-card { animation: none; }
   .pin-card:hover { transform: none; }
 }
+
+/* Carte « Documents Intégral Pharma » (26/11/2026) */
+.docs-ip { background: var(--bg2); border: 1px solid var(--opso-border); border-radius: var(--radius-md); padding: 18px 20px; margin-bottom: 20px; }
+.docs-ip-titre { font-family: 'Comfortaa', sans-serif; font-size: 16px; font-weight: 700; margin: 0; color: var(--text); }
+.docs-ip-sub { font-size: 12px; margin: 4px 0 14px; color: var(--opso-gray); }
+.docs-ip-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.docs-ip-groupe { display: flex; flex-direction: column; gap: 8px; }
+.docs-ip-btn { display: flex; align-items: center; gap: 10px; text-align: left; min-height: 44px; padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--opso-border); background: var(--bg3); color: var(--text); font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; }
+.docs-ip-btn:hover, .docs-ip-btn:focus-visible { border-color: var(--opso-green); color: var(--opso-green-text); outline: none; }
+.docs-ip-fmt { flex: none; min-width: 44px; text-align: center; padding: 3px 6px; border-radius: 6px; background: var(--opso-green-pale); color: var(--opso-green-text); font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
