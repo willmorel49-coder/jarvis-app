@@ -62,8 +62,8 @@ test('sous le nom : « titulaire · ville code postal », le zéro de tête remi
 function ligne(win, p) {
   const V2 = aides(win, { esc: (s) => String(s).replace(/</g, '&lt;'), voitVentesDe: () => false, fmtEur: (n) => n + ' €' });
   const code = fn('cpDe') + fn('ligneOfl') + '; return ligneOfl;';
-  const f = new Function('V2', '_rap', 'trnDe', 'notreMargeDe', 'cl1PerV', 'oflPerMarge', 'cl1PerOff', code)(
-    V2, {}, () => [], () => null, () => '', () => '', () => '');
+  const f = new Function('V2', '_rap', 'trnDe', 'notreMargeDe', 'cl1PerV', 'oflPerMarge', 'cl1PerOff', 'oflVuePh', code)(
+    V2, {}, () => [], () => null, () => '', () => '', () => '', () => false);   // 26/11/2026 : la vue pharmacien (B5) n'est pas ce que ce test regarde
   return f({ p, ca: 0, marge: 0 });
 }
 const texte = (h) => h.replace(/<[^>]+>/g, '|').split('|').map((x) => x.trim()).filter(Boolean);

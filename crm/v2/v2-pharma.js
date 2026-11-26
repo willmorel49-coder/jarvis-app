@@ -936,6 +936,10 @@
   }
   // 20/11/2026 — une ligne du tableau. Les explications (période, estimation) sont dites une fois, dans l'en-tête de colonne ;
   // seule une période DIFFÉRENTE de celle de l'en-tête s'écrit sous le chiffre (un secteur dont les fichiers s'arrêtent plus tôt).
+  // 26/11/2026 (Will, planche ordinateur B5) : la liste partage la bascule « Vue pharmacien / Vue Intégral » de la fiche (même préférence, viLire) ;
+  // en vue pharmacien, « Notre marge Intégral » n'est PAS écrite dans la page (comme la fiche : rien d'interne à l'écran). À l'ordinateur seulement :
+  // au téléphone la fiche s'ouvre toujours en vue Intégral (22/11/2026), la liste du téléphone ne change pas.
+  function oflVuePh() { return !isOpso() && !telEcran() && viLire() === 'pharmacien'; }
   function ligneOfl(x) {
     var p = x.p, pid = String(p.id), voit = V2.voitVentesDe(p.id), ev = _rap[pid], pros = !!p._prospect;
     var nom = V2.esc(String(p.name || '').toLocaleUpperCase('fr-FR'));
@@ -962,14 +966,15 @@
     var pct = ev && ev.pct != null && !sv ? Math.round(ev.pct * 100) : null;
     var rap = ev && !sv ? '<span class="ofl-pill ofl-pill-w" title="Achats en baisse sur trois mois">À rappeler</span>' + (pct ? '<small>−' + pct + ' % en 3 mois</small>' : '')
       : sv ? '<span class="ofl-pill ofl-pill-p">Aucune vente</span>' : '';
+    var vuePh = oflVuePh();
     var caTxt = voit ? V2.fmtEur(x.ca) : '—', nmTxt = nm ? V2.fmtEur(nm.tot) : '—', mgTxt = voit ? V2.fmtEur(x.marge) : '—';
     return '<a class="ofl-r" role="row" tabindex="0" ' + onclick + '>' +
       '<span class="ofl-c-nom"><b class="ofl-nom">' + nom + '</b><span class="ofl-sous">' + ville + t +
         (rap ? '<span class="ofl-m-rap">' + (ev && !sv ? '<span class="ofl-pill ofl-pill-w">À rappeler</span>' : '<span class="ofl-pill ofl-pill-p">Aucune vente</span>') + '</span>' : '') +
-        (nm !== undefined ? '<span class="ofl-m-nm">marge ' + nmTxt + '</span>' : '') + '</span></span>' +
+        (nm !== undefined && !vuePh ? '<span class="ofl-m-nm">marge ' + nmTxt + '</span>' : '') + '</span></span>' +
       '<span class="ofl-c-t">' + t + '</span>' +
       cell(caTxt, pOff, perV, 'ofl-c-ca') +
-      (nm !== undefined ? cell(nmTxt, pOffM, perM, 'ofl-c-nm') : '') +
+      (nm !== undefined ? (vuePh ? '<span class="ofl-c-n ofl-c-nm"><b class="ofl-masque">masquée</b></span>' : cell(nmTxt, pOffM, perM, 'ofl-c-nm')) : '') +
       cell(mgTxt, pOff, perV, 'ofl-c-mg') +
       '<span class="ofl-c-rap">' + rap + '</span></a>';
   }
@@ -1238,7 +1243,13 @@
       var pros = secteurTab === 'prospects', k = ofl.tri;
       var tri = pros ? ((k === 'nom' || k === 'tourn') ? 'trié par ' + OFL_TXT[k] : '') : 'trié par ' + (OFL_TXT[k] || OFL_TXT.ca);
       oflNb = n; oflMot = mot;
-      return '<b>' + V2.fmtNum(n) + '</b> ' + mot + (n > 1 ? 's' : '') + (tri ? ' · ' + tri : '') +
+      // 26/11/2026 (Will, planche ordinateur B5) : la bascule « Vue pharmacien » est posée dans cette ligne (la rangée de menus est pleine), onglet Mes clients, ordinateur seulement.
+      var vue = '';
+      if (!pros && !oflTel) {
+        var vp = viLire() === 'pharmacien', bv = function (v, t, on) { return '<button type="button" class="ofl-seg' + (on ? ' on' : '') + '" aria-pressed="' + on + '" onclick="V2.oflVue(\'' + v + '\')">' + t + '</button>'; };
+        vue = '<span class="ofl-segs ofl-vue" role="group" aria-label="Vue de la liste">' + bv('pharmacien', 'Vue pharmacien', vp) + bv('integral', 'Vue Intégral', !vp) + '</span>';
+      }
+      return vue + '<b>' + V2.fmtNum(n) + '</b> ' + mot + (n > 1 ? 's' : '') + (tri ? ' · ' + tri : '') +
         (ofl.tourn || ofl.rap || searchQuery.trim() ? ' · <button type="button" class="ofl-raz" onclick="V2.oflRaz()">Effacer les filtres</button>' : '');
     }
     function cardHtml(filtered) {
@@ -1294,7 +1305,8 @@
       var sTab = function (val, label, n) {
         return '<button type="button" class="v2-seg' + (secteurTab === val ? ' on' : '') + '" aria-pressed="' + (secteurTab === val) + '" style="--sc:var(--ip-blue)" onclick="V2.pharmaSecteurTab(\'' + val + '\')">' + label + (n != null ? '<span class="of-cnt">' + V2.fmtNum(n) + '</span>' : '') + '</button>';
       };
-      secteurBar = '<div class="v2-segs"><span class="v2-past-l">Afficher :</span>' + sTab('clients', 'Clients', nbCli) + sTab('prospects', 'Prospects de mon secteur', nbProsp) + '</div>';
+      // 26/11/2026 (Will, planche ordinateur B4) : « Clients » / « Prospects de mon secteur » deviennent « Mes clients » / « Mes prospects » (le mot « secteur » était dit deux fois ; même nom au téléphone, c'est la même bascule).
+      secteurBar = '<div class="v2-segs"><span class="v2-past-l">Afficher :</span>' + sTab('clients', 'Mes clients', nbCli) + sTab('prospects', 'Mes prospects', nbProsp) + '</div>';
     }
 
     // Contenu de la liste selon la bascule (Clients par défaut, sinon Prospects par UGA du commercial).
@@ -1403,7 +1415,9 @@
         return p.bascule + '<span class="ofl-act"><button type="button" class="ofl-btn oflf-b' + (n ? ' oflf-on' : '') + '" id="oflf-b" aria-haspopup="dialog" aria-label="Filtres' + (n ? ' : ' + n + ' en cours' : '') + '" onclick="V2.oflFeuille(this)">' +
           fbIc('filtres', 16) + '<span>Filtres' + (n ? ' · ' + n : '') + '</span></button>' + p.creer + '</span>';
       }
-      return p.bascule + commBar + oflTournSelect() + p.rap + oflTriSelect() + '<span class="ofl-act">' + p.excel + p.creer + '</span>';
+      // 26/11/2026 (Will, planche ordinateur B14, version 2) : le menu « Tri » est retiré à l'ordinateur (les titres de colonnes trient déjà, au-dessus de 640 px,
+      // là où .ofl-ent s'affiche) ; il reste dans le code pour le téléphone (feuille « Filtres ») et pour les écrans de 640 px et moins, où il n'y a pas de titres.
+      return p.bascule + commBar + oflTournSelect() + p.rap + oflTriSelect().replace('class="ofl-sel"', 'class="ofl-sel ofl-tri-bureau"') + '<span class="ofl-act">' + p.excel + p.creer + '</span>';
     }
     // Le contenu de la feuille « Filtres » du téléphone : les mêmes commandes, avec les mêmes fonctions, puis Excel et « Voir les N officines » (N = le compte de la liste).
     function oflfHtml() {
@@ -1416,16 +1430,17 @@
     // En-tête du tableau : l'explication de chaque chiffre (période, estimation) est écrite ICI, une seule fois.
     function oflEntete() {
       var pros = secteurTab === 'prospects', perV = cl1PerV(), perM = oflPerMarge();
-      var th = function (k, lib, sous, cls) {
+      var th = function (k, lib, sous, cls, off) {
         var cur = ofl.tri === k, fl = cur ? '<svg class="ofl-fl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + (ofl.sens > 0 ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6') + '"/></svg>' : '';
         return '<span class="ofl-th ' + cls + '" role="columnheader"' + (cur ? ' aria-sort="' + (ofl.sens > 0 ? 'ascending' : 'descending') + '"' : '') + '>' +
-          '<button type="button" onclick="V2.oflTrier(\'' + k + '\')"><span class="ofl-th-l">' + lib + fl + '</span>' + (sous ? '<small>' + sous + '</small>' : '') + '</button></span>';
+          '<button type="button"' + (off ? ' disabled' : ' onclick="V2.oflTrier(\'' + k + '\')"') + '><span class="ofl-th-l">' + lib + fl + '</span>' + (sous ? '<small>' + sous + '</small>' : '') + '</button></span>';
       };
       if (pros) return th('nom', 'Nom', 'titulaire · ville, code postal', 'ofl-th-nom') + th('tourn', 'Tournée', '', 'ofl-th-t') + '<span class="ofl-th ofl-th-rap" role="columnheader"><span class="ofl-th-l">Statut</span></span>';
       var nmOk = V2.notreMarge && V2.notreMarge.dispo();
+      // 26/11/2026 (Will, planche ordinateur B5) : en vue pharmacien, la colonne « Notre marge Intégral » n'est plus un bouton (on ne trie pas sur une colonne masquée).
       return th('nom', 'Nom', 'titulaire · ville, code postal', 'ofl-th-nom') + th('tourn', 'Tournée', '', 'ofl-th-t') +
         th('ca', 'Chiffre d’affaires', perV, 'ofl-th-ca') +
-        (nmOk ? th('nm', 'Notre marge Intégral', 'estimation · ' + perM, 'ofl-th-nm') : '') +
+        (nmOk ? th('nm', 'Notre marge Intégral', 'estimation · ' + perM, 'ofl-th-nm', oflVuePh()) : '') +
         th('marge', 'Marge du pharmacien', perV, 'ofl-th-mg') +
         th('rap', 'À rappeler', 'achats en baisse sur 3 mois', 'ofl-th-rap');
     }
@@ -5377,7 +5392,7 @@
   var oflfCorps = null;
   V2.oflFeuille = function (el) {
     if (!oflfCorps) return;
-    fbPose({ t: 'Filtres', s: secteurTab === 'prospects' ? 'Prospects de mon secteur' : 'Clients', ic: 'filtres', h: '<div class="oflf" id="oflf">' + oflfCorps() + '</div>' }, el);
+    fbPose({ t: 'Filtres', s: secteurTab === 'prospects' ? 'Mes prospects' : 'Mes clients', ic: 'filtres', h: '<div class="oflf" id="oflf">' + oflfCorps() + '</div>' }, el);
     // on quitte l'écran feuille ouverte (retour du navigateur) : elle ne reste pas posée sur l'écran suivant
     var partir = function () { window.removeEventListener('hashchange', partir); if (document.getElementById('oflf')) fbFerme(true); };
     window.addEventListener('hashchange', partir);
@@ -5397,6 +5412,13 @@
   // 26/11/2026 — la phrase de l'accueil (« N officines à rappeler », v2-accueil-cinq.js) ouvre Mes officines, onglet Clients, filtre « À rappeler » allumé.
   V2.oflOuvrirRap = function () { secteurTab = 'clients'; ofl.rap = true; ofl.tourn = ''; searchQuery = ''; V2.go('pharma', 'officines'); };
   V2.oflTri = function (k) { if (!k) { ofl.tri = 'ca'; ofl.sens = -1; } else { ofl.tri = k; ofl.sens = OFL_TRIS[k][1]; } if (oflMaj) oflMaj(); };
+  // 26/11/2026 (Will, planche ordinateur B5) : une seule bascule pour la liste et la fiche (même préférence). En vue pharmacien, un tri sur « notre marge » est abandonné (l'ordre la dirait).
+  V2.oflVue = function (v) {
+    viCourante = (v === 'integral') ? 'integral' : 'pharmacien';
+    try { window.localStorage.setItem(VI_CLE, viCourante); } catch (e) {}
+    if (viCourante === 'pharmacien' && ofl.tri === 'nm') { ofl.tri = 'ca'; ofl.sens = -1; }
+    if (oflMaj) oflMaj();
+  };
   V2.oflTrier = function (k) { if (ofl.tri === k) ofl.sens = -ofl.sens; else { ofl.tri = k; ofl.sens = OFL_TRIS[k][1]; } if (oflMaj) oflMaj(); };
   V2.oflRaz = function () { ofl.tourn = ''; ofl.rap = false; searchQuery = ''; var i = document.getElementById('v2-pharma-search'); if (i) i.value = ''; if (oflMaj) oflMaj(); };
   V2.pharmaOfPlus = function () { ofVues += OF_PAR; if (ofRedessine) ofRedessine(); };

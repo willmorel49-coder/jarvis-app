@@ -60,22 +60,24 @@ test('étalonnage : la condition « téléphone » est fausse sans écran, et su
   assert.deepEqual(demandes, ['(max-width:640px)']);
 });
 
+// 26/11/2026 (planche ordinateur B14 v2) : à l'ordinateur le menu « Tri » porte en plus la classe qui le cache au-dessus de 640 px (les titres de colonnes trient déjà).
+const TRI_BUREAU = (h) => h.replace('class="ofl-sel"', 'class="ofl-sel ofl-tri-bureau"');
 test('ordinateur : la rangée de filtres est celle d\'avant, au caractère près (onglet Clients)', () => {
   const m = ecran({ tel: false });
   const attendu = BASC + m.commBar + m.oflTournSelect() +
     '<button type="button" class="ofl-chip" aria-pressed="false" onclick="V2.oflRap()">À rappeler (2)</button>' +
-    m.oflTriSelect() + '<span class="ofl-act">' + EXCEL + CREER + '</span>';
+    TRI_BUREAU(m.oflTriSelect()) + '<span class="ofl-act">' + EXCEL + CREER + '</span>';
   assert.equal(m.oflFiltres(), attendu);
   assert.ok(!/oflf|Filtres/.test(m.oflFiltres()), 'ni bouton « Filtres » ni feuille à l\'ordinateur');
 });
 
 test('ordinateur : onglet Prospects (ni « À rappeler » ni Excel), filtre en cours, relevé absent : inchangés', () => {
   const p = ecran({ tel: false, onglet: 'prospects' });
-  assert.equal(p.oflFiltres(), BASC + p.commBar + p.oflTournSelect() + p.oflTriSelect() + '<span class="ofl-act">' + CREER + '</span>');
+  assert.equal(p.oflFiltres(), BASC + p.commBar + p.oflTournSelect() + TRI_BUREAU(p.oflTriSelect()) + '<span class="ofl-act">' + CREER + '</span>');
   const r = ecran({ tel: false, ofl: { rap: true, tourn: 'T10' }, sansReleve: true });
   assert.equal(r.oflFiltres(), BASC + r.commBar + r.oflTournSelect() +
     '<button type="button" class="ofl-chip ofl-on" aria-pressed="true" onclick="V2.oflRap()">À rappeler</button>' +
-    r.oflTriSelect() + '<span class="ofl-act">' + EXCEL + CREER + '</span>');
+    TRI_BUREAU(r.oflTriSelect()) + '<span class="ofl-act">' + EXCEL + CREER + '</span>');
   assert.ok(!/oflf/.test(p.oflFiltres() + r.oflFiltres()));
 });
 
@@ -159,7 +161,7 @@ test('V2.oflFeuille : rien à l\'ordinateur ; au téléphone, la feuille du bas 
   m.pose(() => 'COMMANDES');
   m.V2.oflFeuille('BOUTON');
   assert.equal(m.posees.length, 1);
-  assert.deepEqual(m.posees[0].x, { t: 'Filtres', s: 'Clients', ic: 'filtres', h: '<div class="oflf" id="oflf">COMMANDES</div>' });
+  assert.deepEqual(m.posees[0].x, { t: 'Filtres', s: 'Mes clients', ic: 'filtres', h: '<div class="oflf" id="oflf">COMMANDES</div>' });
   assert.equal(m.posees[0].el, 'BOUTON', 'le bouton d\'origine reprend le curseur à la fermeture');
   // retour du navigateur, feuille ouverte : elle se ferme avec l'écran
   assert.equal(typeof m.ecoutes.hashchange, 'function');
