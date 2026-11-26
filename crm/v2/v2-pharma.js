@@ -940,8 +940,8 @@
     var p = x.p, pid = String(p.id), voit = V2.voitVentesDe(p.id), ev = _rap[pid], pros = !!p._prospect;
     var nom = V2.esc(String(p.name || '').toLocaleUpperCase('fr-FR'));
     // 26/11/2026 — sous le nom : le titulaire, puis la ville et le code postal (Will). Le titulaire se coupe avant la ville.
-    // 26/11/2026 (soir) — planche « 22 changements », sujet 6, version 3 (choix de Will) : au téléphone, le code postal part (il est dans la fiche),
-    // pour que le titulaire et la ville se lisent ; il reste à l'ordinateur. Le code postal a donc sa propre balise (ofl-cp, cachée en CSS à 640 px et moins).
+    // 26/11/2026 (soir) — planche « 22 changements », sujet 6 : au téléphone, le titulaire sur une ligne, la ville et le code postal sur la suivante
+    // (choix de Will à 21 h 10, « Deux lignes », après mesure de la version 3 sans code postal). Le code postal garde sa propre balise (ofl-cp).
     var tit = V2.titulaireDe(pid, p.tit), vNom = String(p.ville || '').toLocaleUpperCase('fr-FR'), vCp = cpDe(p);
     var ville = (tit ? '<span class="ofl-tit">' + V2.esc(tit) + '</span><span class="ofl-pt" aria-hidden="true">·</span>' : '') +
       '<span class="ofl-ville">' + V2.esc(vNom) + (vCp ? '<span class="ofl-cp">' + (vNom ? ' ' : '') + V2.esc(vCp) + '</span>' : '') + '</span>';

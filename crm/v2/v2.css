@@ -1610,7 +1610,11 @@ html:root:root body .ofl .ofl-n { margin: 0; padding: 9px 20px 8px; color: var(-
   .ofl-c-n small, .ofl-c-nm, .ofl-c-mg, .ofl-c-t, .ofl-c-rap { display: none; }
   .ofl-c-ca b { font-size: 14px; }
   .ofl-sous .ofl-t { display: inline-block; flex: none; }
-  .ofl-sous .ofl-cp { display: none; }   /* 26/11/2026 — sujet 6, version 3 : titulaire · ville, sans code postal, au téléphone */
+  /* 26/11/2026 (21 h 10) — sujet 6 : Will choisit « Deux lignes » après la mesure de la version 3 (titulaire encore coupé sur 38 lignes sur 50).
+     Le titulaire prend toute la 1re ligne ; ville, code postal, tournée, « À rappeler » et marge passent sur la 2e. Sans titulaire : une seule ligne, comme avant. */
+  .ofl-sous { flex-wrap: wrap; row-gap: 2px; }
+  .ofl-sous .ofl-tit { flex: 1 0 100%; min-width: 0; }
+  .ofl-sous .ofl-pt { display: none; }
   .ofl-m-rap { display: inline-flex; flex: none; }
   .ofl-m-rap .ofl-pill { padding: 1px 8px; font-size: 11px; }
   .ofl-m-nm { display: inline; flex: none; color: var(--ip-ink-2); font: 600 12.5px/1.3 var(--font); font-variant-numeric: tabular-nums; white-space: nowrap; }
