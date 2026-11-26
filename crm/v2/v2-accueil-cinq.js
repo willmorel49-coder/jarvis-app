@@ -537,7 +537,9 @@
     // Le comportement (scène, lettres, recherche) vit dans v2-aube.js ; ici seulement la structure, avec les vraies données.
     var loupe = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>';
     var croix = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
-    return '<div class="u2-salut m1-hd ac-in aube-acc" id="aube-acc" style="--i:0"><div class="m1-hd-t aube-acc-bloc"><p class="v2-sous m1-eye">' + esc(dateLongue()) + '</p>' +
+    // 26/11/2026 (Will, planche ordinateur B1) : à l'ordinateur la carte se resserre comme au téléphone (classe aube-serre, v2.css) ; Phirst (V2_BRAND.portes) garde sa carte.
+    var serre = (window.V2_BRAND && window.V2_BRAND.portes) ? '' : ' aube-serre';
+    return '<div class="u2-salut m1-hd ac-in aube-acc' + serre + '" id="aube-acc" style="--i:0"><div class="m1-hd-t aube-acc-bloc"><p class="v2-sous m1-eye">' + esc(dateLongue()) + '</p>' +
       '<h1 class="v2-titre" id="u2-salut">' + esc(P().salut()) + '</h1>' +
       '<div class="aube-champ" id="aube-champ" role="search"><span class="aube-champ-fond" aria-hidden="true"></span><span class="aube-loupe">' + loupe + '</span>' +
       '<input class="aube-q" id="aube-q" type="text" inputmode="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="' + (window.matchMedia && window.matchMedia('(max-width:600px)').matches ? 'Officine, produit ou page' : 'Rechercher une officine, un produit, une page') + '" aria-label="Rechercher une officine, un produit ou une page" role="combobox" aria-expanded="false" aria-controls="aube-res" aria-autocomplete="list">' +

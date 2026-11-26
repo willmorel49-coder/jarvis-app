@@ -408,6 +408,14 @@
     // Téléphone : le formulaire d'ajout se déplie sous le bouton « Ajouter une tâche » (l'état vit dans st, il survit à un nouveau rendu).
     ouvrirForm: function () { st.formOuvert = true; rendre(); var e = document.getElementById('v2-todo-nom'); if (e) { try { e.focus(); } catch (x) {} } },
     fermerForm: function () { st.formOuvert = false; rendre(); },
+    // 26/11/2026 (Will, planche ordinateur B3) : le « + » de la barre commune (v2-app.js, plusItems) ouvre LE MÊME formulaire que le bouton « Ajouter une tâche » de To do
+    // (onglet Tâches, formulaire ouvert). Depuis un autre écran : on va sur To do, et on empêche l'arrivée de rouvrir l'Agenda du mois (st.routeVue) avant d'ouvrir le formulaire.
+    ajouterDepuisBarre: function () {
+      st.onglet = 'taches'; st.filtre = 'afaire'; st.formOuvert = true;
+      if (V2.route && V2.route.name === 'todo') { rendre(); }
+      else { V2.go('todo'); st.routeVue = V2.route; }
+      setTimeout(function () { var e = document.getElementById('v2-todo-nom'); if (e) { try { e.focus(); } catch (x) {} } }, 400);
+    },
     ajouter: function () {
       var nomEl = document.getElementById('v2-todo-nom'), noteEl = document.getElementById('v2-todo-note'), pourEl = document.getElementById('v2-todo-pour'), repEl = document.getElementById('v2-todo-rep');
       var nom = (nomEl && nomEl.value || '').trim(), note = (noteEl && noteEl.value || '').trim(), pour = (pourEl && pourEl.value || '').trim(), rep = (repEl && REP[repEl.value] && repEl.value) || '';

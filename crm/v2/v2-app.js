@@ -397,8 +397,15 @@
   function plusItems() {
     // Dans le Marketing, les créations de l'espace passent en tête (v2-mkt-socle.js).
     var it = (V2.mktSocle && V2.mktSocle.plusItems) ? V2.mktSocle.plusItems() : [];
+    // 26/11/2026 (Will, planche ordinateur B3) : le « + » ne propose que des créations, avec les noms de To do : « Ajouter une tâche » (le même formulaire que To do) puis « Noter un rendez-vous ».
+    // « Voir les idées de l'équipe » quitte le « + » (elle ne créait rien : on la retrouve dans Le QG, menu « Autres outils »). Phirst (V2_BRAND.portes) garde ses entrées.
+    if (window.V2_BRAND && window.V2_BRAND.portes) {
+      if (V2.rdvGeste && V2.rdvGeste.ouvrir) it.push({ ic: 'cal', t: 'Noter un rendez-vous', f: function () { V2.rdvGeste.ouvrir(); } });
+      if (V2.pages && V2.pages.remontees) it.push({ ic: 'plus', t: 'Voir les idées de l’équipe', f: function () { V2.go('remontees'); } });
+      return it;
+    }
+    if (V2.todo && V2.todo.ajouterDepuisBarre) it.push({ ic: 'check', t: 'Ajouter une tâche', f: function () { V2.todo.ajouterDepuisBarre(); } });
     if (V2.rdvGeste && V2.rdvGeste.ouvrir) it.push({ ic: 'cal', t: 'Noter un rendez-vous', f: function () { V2.rdvGeste.ouvrir(); } });
-    if (V2.pages && V2.pages.remontees) it.push({ ic: 'plus', t: 'Voir les idées de l’équipe', f: function () { V2.go('remontees'); } });
     return it;
   }
 
