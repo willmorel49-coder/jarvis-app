@@ -559,7 +559,7 @@ html.v2-nav .v2-top::before{content:"";position:absolute;left:0;bottom:-1px;heig
   /* Audit téléphone du 19/10/2026 (WebKit 390 px) — « html » en tête : ces écrans posent leur style APRÈS
      cette feuille (balise <style> injectée), à égalité de poids ils l'emporteraient. */
   /* listes déroulantes : WebKit ignore min-height sur un select natif → apparence propre + flèche dessinée */
-  html .v2-profil-f select,html .mol-select,html .mol-msort select,html .cp-sel,html #v2-pharma-comm,html .dsc-fenfil .dsc-cv select,html .bs-sel,html .cg-sel{-webkit-appearance:none;appearance:none;height:44px;min-height:44px;padding-right:34px;
+  html .v2-profil-f select,html .mol-select,html .mol-msort select,html .cp-sel,html #v2-pharma-comm,html .dsc-fenfil .dsc-cv select,html .bs-sel,html .cg-sel,html .tx-lgo-s{-webkit-appearance:none;appearance:none;height:44px;min-height:44px;padding-right:34px;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%235B6478' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     background-repeat:no-repeat;background-position:right 12px center;background-size:12px 8px}
   /* zones à toucher : 44 px */

@@ -100,7 +100,7 @@ test('Vos clients : celles qui ont un rendez-vous à venir, quand, et les autres
   const [sans, poses] = h.split('Rendez-vous posé <b>');
   assert.ok(poses, 'marqueur : la colonne des rendez-vous posés existe');
   assert.ok(sans.indexOf('<b>Temoin</b>') > 0 && sans.indexOf('<b>Temoin</b>') < sans.indexOf('<b>Sonde</b>'), 'jamais vue d’abord, puis la plus ancienne visite');
-  assert.match(sans, /V2\.rdv\.proposer\('9000003'\)">Proposer un RDV/, 'avec un mail : « Proposer un RDV »');
+  assert.match(sans, /V2\.rdv\.proposer\('9000003',this\)">Proposer un rendez-vous/, 'avec un mail : « Proposer un rendez-vous », le bouton passé pour l’attente');
   assert.match(sans, /href="tel:0000000000">Appeler/, 'sans mail : « Appeler »');
   assert.match(sans, /aucune visite notée/, 'jamais vue, dit en clair');
   assert.match(sans, /vue il y a (\d+ mois|plus d’un an)/, 'la dernière visite connue');

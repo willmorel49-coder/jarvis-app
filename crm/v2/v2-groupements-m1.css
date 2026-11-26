@@ -322,7 +322,7 @@ html:root:root body .grr-m .grr-pa .grp-logo-x { padding: 0; background: #fff no
 .grr-sg .gr-num { font-weight: 800; font-variant-numeric: tabular-nums; }
 html:root:root body .grr-m .grr-sg .grp-logo-x { color: var(--ip-ink-3); font-size: 18px; }
 
-/* replis : « Afficher les N autres », « N groupements … sans aucune cliente » */
+/* replis : « Voir les N autres », « N groupements … sans aucune cliente » */
 .grr-plus { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 52px; padding: 0 20px; border: 0; border-bottom: 1px solid var(--line); background: var(--card); color: var(--ip-blue); font: 700 15px/1.2 var(--font); cursor: pointer; text-align: center; }
 @media (hover: hover) { .grr-plus:hover { background: #F2F7FF; } }
 .grr-plus svg { flex: none; transition: transform .2s; transform: rotate(90deg); }

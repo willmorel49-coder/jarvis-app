@@ -11,6 +11,8 @@
    Safari : fonds opaques, ni flou ni backdrop-filter, aucune opacité sur du texte. ═══ */
 .bnav{display:none}
 @media (max-width:640px){
+  /* 26/11/2026 (retrait accordé par Will) : sur l'accueil, pas de loupe en haut, le grand champ de recherche est juste dessous ; ailleurs elle reste */
+  .v2-top .v2-top-search.tp-srch-acc{display:none}
   body.bnav-on{--bnav-h:calc(64px + env(safe-area-inset-bottom,0px))}
   body.bnav-on.mk-editeur,body.bnav-on:has(.pha-wrap.fdr-on){--bnav-h:0px}
   body.bnav-on.mk-editeur .bnav,body.bnav-on:has(.pha-wrap.fdr-on) .bnav{display:none}

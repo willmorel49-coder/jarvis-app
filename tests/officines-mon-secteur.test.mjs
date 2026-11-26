@@ -46,7 +46,7 @@ test('commercial limité avec un collègue ouvert : lui et ce collègue', () => 
 test('accès complet avec un prénom : « Mon secteur » d’office, « Tous » sur demande, un collègue sur demande', () => {
   const m = monde({ commercial: 'Alice', voitTous: true });
   assert.deepEqual(vus(m), ['a', 'ab', 'sv', 'pa'], 'atterrit sur son secteur');
-  assert.match(m.commSelect(true), /value="__moi__" selected>Mon secteur/);
+  assert.match(m.commSelect(true), /value="__moi__" selected>Commercial : mon secteur/);
   m.V2.pharmaSetComm('');
   assert.equal(m.ofl.moi, false); assert.equal(m.V2.commFilter, '');
   assert.deepEqual(vus(m), L.map((x) => x.p.id), '« Tous » = tout le réseau');

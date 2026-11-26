@@ -86,10 +86,6 @@ html:root:root body .aube-tete.inf-t-tete .inf-t-sous{margin:10px 0 0;max-width:
 .inf-t-todo[aria-pressed="true"]{color:var(--it-blue-d);background-color:var(--it-blue-pale);background-image:none;box-shadow:none;border:1px solid #BFD2F7}
 .inf-t-todo[aria-pressed="true"] svg{display:inline-block}
 .inf-t-todo:disabled{cursor:progress}
-.inf-t-fait-l{min-height:44px;padding:0 16px;display:inline-flex;align-items:center;gap:8px;border-radius:var(--it-r-btn);border:1px solid #BFD2F7;background-color:#fff;font-weight:700;font-size:15px;color:var(--it-blue-d);transition-property:background-color,transform;transition-duration:.15s;transition-timing-function:var(--it-ease)}
-.inf-t-fait-l:hover{background-color:var(--it-blue-pale)}
-.inf-t-fait-l:active{transform:scale(.97)}
-.inf-t-fait-l svg{color:var(--it-blue)}
 .inf-t-voir{min-height:44px;padding:0 6px;margin-left:-6px;display:inline-flex;align-items:center;gap:6px;border:0;background:none;border-radius:12px;font-weight:700;font-size:15px;color:var(--it-blue-d)}
 .inf-t-voir:hover{background-color:var(--it-blue-pale)}
 /* repli : Fait */

@@ -143,7 +143,7 @@ test('le bouton envoie les disponibilités aux clients sans rendez-vous qui ont 
   const { V2, vu, ctx } = ecran();
   V2.todoMois.html(); await attendre(); vu.annuaire(); await attendre();
   const h = V2.todoMois.html();
-  assert.match(h, /onclick="V2\.todoMois\.envoyerDispos\(\)">Envoyer mes disponibilités aux 2 clients sans rendez-vous<\/button>/);
+  assert.match(h, /onclick="V2\.todoMois\.envoyerDispos\(\)">Préparer l’envoi de mes disponibilités aux 2 clients sans rendez-vous<\/button>/);
   assert.match(h, /Un client sans adresse mail est à appeler/);
   V2.todoMois.envoyerDispos();
   assert.deepEqual(Array.from(ctx.V2.campagnePreselection).sort(), ['9400002', '9400003'], 'ni celle qui a un rendez-vous, ni celle sans mail');

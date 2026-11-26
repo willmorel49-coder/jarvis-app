@@ -533,7 +533,7 @@
     // un bouton qui ouvre l'envoi groupé existant (copie cachée, lots de 25, lien de disponibilités), ces clients cochés.
     A_INVITER = libres.filter(function (x) { var o = V2.rdvInfo ? V2.rdvInfo(String(x.p.id)) : {}; return String((o && o.email) || '').trim(); }).map(function (x) { return String(x.p.id); });
     var sansMail = libres.length - A_INVITER.length;
-    if (A_INVITER.length && V2.go) h += '<div class="tm-cenv"><button type="button" class="tm-btn tm-prim tm-cenvb" onclick="V2.todoMois.envoyerDispos()">Envoyer mes disponibilités ' +
+    if (A_INVITER.length && V2.go) h += '<div class="tm-cenv"><button type="button" class="tm-btn tm-prim tm-cenvb" onclick="V2.todoMois.envoyerDispos()">Préparer l’envoi de mes disponibilités ' +
       (A_INVITER.length > 1 ? 'aux ' + A_INVITER.length + ' clients' : 'au client') + ' sans rendez-vous</button>' +
       '<p class="tm-cnote">Un seul mail en copie cachée, par lots de 25, avec votre lien de disponibilités : vous le relisez avant de l’envoyer depuis votre messagerie.' +
       (sansMail ? ' ' + (sansMail > 1 ? sansMail + ' clients sans adresse mail sont' : 'Un client sans adresse mail est') + ' à appeler (liste ci-dessous).' : '') + '</p></div>';
@@ -542,7 +542,7 @@
     else if (/outlook|office/.test(ho)) h += '<p class="tm-cnote">Outlook ne partage que vos heures occupées, sans les noms : seuls les rendez-vous notés dans JARVIS comptent.</p>';
     function agir(k) {
       var o = V2.rdvInfo ? V2.rdvInfo(k) : {}, mail = String(o.email || '').trim(), tel = String(o.tel || '').replace(/[^0-9+]/g, '');
-      return mail && V2.rdv ? '<button type="button" class="tm-btn tm-prim tm-ca" onclick="V2.rdv.proposer(\'' + esc(k) + '\')">Proposer un RDV</button>'
+      return mail && V2.rdv ? '<button type="button" class="tm-btn tm-prim tm-ca" onclick="V2.rdv.proposer(\'' + esc(k) + '\',this)">Proposer un rendez-vous</button>'
         : tel ? '<a class="tm-btn tm-ca" href="tel:' + esc(tel) + '">Appeler</a>' : '<span class="tm-cs">ni mail ni téléphone</span>';
     }
     function ligneL(x) {
@@ -593,7 +593,7 @@
     function col(k, titre, arr, f, vide) {
       var M = 8, tout = S.tout[k], vis = tout ? arr : arr.slice(0, M);
       return '<section class="tm-ccol"><h3 class="tm-sh">' + titre + ' <b>' + arr.length + '</b></h3>' + (arr.length ? vis.map(f).join('') : '<p class="tm-rien">' + vide + '</p>') +
-        (arr.length > M ? '<button type="button" class="tm-btn tm-cplus" onclick="V2.todoMois.voirTout(\'' + k + '\')">' + (tout ? 'Réduire la liste' : 'Voir les ' + arr.length) + '</button>' : '') + '</section>';
+        (arr.length > M ? '<button type="button" class="tm-btn tm-cplus" onclick="V2.todoMois.voirTout(\'' + k + '\')">' + (tout ? 'Réduire la liste' : 'Voir les ' + (arr.length - M) + ' autres') + '</button>' : '') + '</section>';
     }
     return h + '<div class="tm-ccols">' +
       col('l', 'Sans rendez-vous à venir', libres, ligneL, 'Toutes ont un rendez-vous à venir.') +

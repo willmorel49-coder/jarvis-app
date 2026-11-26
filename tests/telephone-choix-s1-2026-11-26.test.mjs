@@ -114,7 +114,7 @@ test('téléphone : la feuille porte les cinq commandes, avec leurs fonctions d\
   for (const geste of ['V2.pharmaSetComm(this.value)', 'V2.oflTourn(this.value)', 'V2.oflRap()', 'V2.oflTri(this.value)', 'V2.pharmaClientsXlsx()'])
     assert.ok(h.includes(geste), 'la feuille appelle ' + geste);
   assert.match(h, /<option value="T12" selected>/, 'la tournée choisie est celle de l\'état mémorisé');
-  assert.match(h, /<option value="__moi__" selected>Mon secteur/);
+  assert.match(h, /<option value="__moi__" selected>Commercial : mon secteur/);
 });
 
 test('téléphone : « Voir les N officines » dit le compte réel de la liste, dans le mot de l\'onglet', () => {

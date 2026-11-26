@@ -742,6 +742,7 @@
     '.bo-win-h h3{margin:0;font-size:16px;font-weight:800;letter-spacing:-.01em}' +
     '.bo-win-h .pha-sub{flex:1 1 100%}' +
     '.bo-x{position:absolute;right:14px;top:12px;width:34px;height:34px;border-radius:50%;border:1px solid var(--line-strong,#cbd2dd);background:var(--card-2,#f6f7fa);display:inline-flex;align-items:center;justify-content:center;font-size:18px;line-height:1;cursor:pointer;color:inherit}' +
+    '@media (max-width:640px){.bo-x{width:44px;height:44px}}' +   // 26/11/2026 : croix d'« Infos du jour » à 44 px au doigt
     '.bo-win-b{flex:1;overflow:auto;padding:12px 20px 16px;-webkit-overflow-scrolling:touch}' +
     '.bo-win-f{display:flex;gap:8px;padding:12px 20px;border-top:1px solid var(--line,#e2e8f0);background:var(--card-2,#f6f7fa);align-items:center;justify-content:flex-end;flex-wrap:wrap}' +
     '@media (max-width:640px){.bo-ov{align-items:flex-end}.bo-win{width:100%;height:88vh;border-radius:var(--r-card,16px) var(--r-card,16px) 0 0;box-shadow:0 -12px 40px -12px rgba(16,19,28,.35)}@keyframes bo-glisse{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}.bo-voir{margin-left:0;flex-basis:100%}}' +

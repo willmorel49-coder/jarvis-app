@@ -345,7 +345,7 @@
       '<div class="v2-top' + (menu ? ' tp-avec-menu' : '') + '">' +
         '<div class="tp-g">' + back + brand + nom + '</div>' + menu +
         '<div class="tp-d">' +
-          ((V2.route && V2.route.name === 'home' && V2.enGroupement()) ? '' : '<button type="button" class="v2-top-search" aria-label="Rechercher" aria-haspopup="dialog" onclick="V2.onTopSearch()">' + ICO('search', 18, 2) + '<span class="txt">Rechercher</span><kbd>' + MOD + 'K</kbd></button>') +
+          ((V2.route && V2.route.name === 'home' && V2.enGroupement()) ? '' : '<button type="button" class="v2-top-search' + ((V2.route && V2.route.name === 'home') ? ' tp-srch-acc' : '') + '" aria-label="Rechercher" aria-haspopup="dialog" onclick="V2.onTopSearch()">' + ICO('search', 18, 2) + '<span class="txt">Rechercher</span><kbd>' + MOD + 'K</kbd></button>') +
           idee + plus +
           '<button type="button" class="tp-avb" aria-label="Mon compte" aria-haspopup="menu" aria-expanded="false" title="' + esc(V2.user ? V2.user.name : '') + '" onclick="V2.userMenu(this)"><span class="v2-av">' + esc(initials) + '</span></button>' +
         '</div>' +
@@ -390,7 +390,7 @@
     // Dans le Marketing, les créations de l'espace passent en tête (v2-mkt-socle.js).
     var it = (V2.mktSocle && V2.mktSocle.plusItems) ? V2.mktSocle.plusItems() : [];
     if (V2.rdvGeste && V2.rdvGeste.ouvrir) it.push({ ic: 'cal', t: 'Noter un rendez-vous', f: function () { V2.rdvGeste.ouvrir(); } });
-    if (V2.pages && V2.pages.remontees) it.push({ ic: 'plus', t: 'Proposer un outil', f: function () { V2.go('remontees'); } });
+    if (V2.pages && V2.pages.remontees) it.push({ ic: 'plus', t: 'Voir les idées de l’équipe', f: function () { V2.go('remontees'); } });
     return it;
   }
 

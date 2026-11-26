@@ -139,20 +139,19 @@ test('« Ventes et rachats en France » : la direction AVEC secteur seulement (S
   assert.match(dir2, /<h2 id="inf-t-h-secteur">Les officines, toute la France<\/h2>/);
 });
 
-test('chaque tâche a un vrai bouton libellé « Marquer comme fait » (« Remettre à faire » une fois cochée)', async () => {
+test('chaque tâche se coche par sa seule case ronde (« Marquer comme fait » en double retiré le 26/11/2026, accord de Will)', async () => {
   const html = await rendreSb(monter(fixtures()));
   const L = html.split('<li class="inf-t-tache').slice(1);
   assert.ok(L.length >= 3, 'des tâches sont dessinées (marqueur positif)');
   L.forEach((l) => {
-    assert.match(l, /<button class="inf-t-fait-l" type="button"><svg[\s\S]*?<\/svg><span>Marquer comme fait<\/span><\/button>/, 'bouton libellé, pas seulement une case');
+    assert.doesNotMatch(l, /class="inf-t-fait-l"|<span>Marquer comme fait<\/span>/, 'plus de bouton en double de la case');
     assert.match(l, /<button class="inf-t-case" type="button" role="checkbox" aria-checked="false" aria-label="Marquer comme fait : /, 'la case garde son nom accessible');
   });
   const fait = { v: 1, g: {}, m: {}, f: { 'b-b2': { le: 100, off: 0 } } };
   const sb = monter(fixtures(), { stock: { 'jarvis_infos_choix_v1:local': JSON.stringify(fait) } });
   const h2 = await rendreSb(sb);
   const rangee = /<ul class="inf-t-liste" id="inf-t-fait-l" hidden>([\s\S]*?)<\/ul><\/section>/.exec(h2)[1];
-  assert.match(rangee, /<span>Remettre à faire<\/span>/, 'cochée : le bouton propose de la remettre à faire');
-  assert.doesNotMatch(rangee, /<span>Marquer comme fait<\/span>/);
+  assert.match(rangee, /<button class="inf-t-case" type="button" role="checkbox" aria-checked="true"/, 'cochée : la case est cochée, rangée dans Fait');
 });
 
 test('la phrase sous le titre dit l\'heure de l\'ÉDITION ; sans annonce récente, rien n\'est inventé', async () => {

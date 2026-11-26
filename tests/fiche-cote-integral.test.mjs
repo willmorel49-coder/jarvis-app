@@ -11,7 +11,7 @@ const lire = (f) => readFileSync(new URL('../' + f, import.meta.url), 'utf8');
 const js = lire('crm/v2/v2-pharma.js'), css = lire('crm/v2/v2.css');
 const tranche = (a, b) => { const i = js.indexOf(a); assert.ok(i > 0, a + ' introuvable'); const j = js.indexOf(b, i); assert.ok(j > i, b + ' introuvable'); return js.slice(i, j + b.length); };
 const BLOC = tranche('  var FDR_TR = [', "if (ta) { try { ta.focus({ preventScroll: true }); } catch (e) { ta.focus(); } }\n    }\n  };\n");
-const BOUTONS = tranche('  function fdrGrandsBoutons(pid, voitVentes) {', "\n  }\n");
+const BOUTONS = tranche('  function fdrGrandsBoutons(pid, voitVentes, seulLogiciel) {', "\n  }\n");
 const corps = (nom) => { const i = js.indexOf('function ' + nom + '('); assert.ok(i > 0, nom); return js.slice(i, js.indexOf('\n  }\n', i)); };
 
 const MOIS = ['2026-01', '2026-02', '2026-03'];
@@ -98,8 +98,17 @@ test('6 boutons visibles dans les deux vues ; Informations et Notes dans des <di
   const h = ctx.fdrOutils({ pid: 'F1', voitVentes: true, kvHtml: '<div>CIP</div>', fe: { panneau: '' }, infos: '', notes: '<div class="v2-notes-box"></div>', briefOff: '<p>brief</p>' });
   const groupe = h.slice(0, h.indexOf('<dialog'));
   const noms = [...groupe.matchAll(/<button[^>]*>(?:<span[^>]*>)?([^<]+)/g)].map((m) => m[1]);
-  assert.deepEqual(noms, ['Informations', 'Notes et rendez-vous', 'Infos du jour', 'Choisir quoi lui transmettre', 'Ouvrir la liste de tâches', 'Catalogue pour son logiciel']);
-  assert.ok(!/vi-int|vi-ph/.test(groupe), 'la rangée de boutons doit rester visible dans les deux vues');
+  assert.deepEqual(noms, ['Informations', 'Notes et rendez-vous', 'Infos du jour', 'Choisir quoi lui transmettre', 'Ajouter une tâche', 'Catalogue pour son logiciel']);
+  // 26/11/2026 (audit « chaque clic ») : « Infos du jour » (annonces légales) est interne, caché en vue pharmacien ; les autres restent dans les deux vues
+  assert.deepEqual([...groupe.matchAll(/class="[^"]*\bvi-(int|ph)\b[^"]*"[^>]*>(?:<span[^>]*>)?([^<]+)/g)].map((m) => m[2]), ['Infos du jour']);
+  // vue pharmacien : la fenêtre Informations montre kvPh, jamais kvHtml (interne) ni le formulaire « Modifier »
+  const hp = ctx.fdrOutils({ pid: 'F1', voitVentes: true, kvHtml: '<i>INTERNE</i>', kvPh: '<i>COORD</i>', fe: { panneau: '' }, infos: '', notes: '', briefOff: '' });
+  assert.match(hp, /<div class="pha-kv fdr-kv vi-int"><i>INTERNE<\/i><\/div><div class="pha-kv fdr-kv vi-ph"><i>COORD<\/i><\/div>/);
+  assert.match(hp, /class="fdr-btn vi-int" id="fdr-modif"/); assert.match(hp, /class="fdr-edit vi-int" id="fdr-edit" hidden/);
+  // la bande du téléphone (au-dessus de la barre du pouce) ne double plus Noter, Envoyer, À faire
+  ctx.V2.notes = {};   // la barre a « Noter » dès que le module des notes est chargé
+  const tel = ctx.fdrOutilsBoutons({ pid: 'F1', voitVentes: true, notes: '<div></div>', briefOff: '<p>b</p>' }, true);
+  assert.deepEqual([...tel.matchAll(/<button[^>]*>(?:<span[^>]*>)?([^<]+)/g)].map((m) => m[1]), ['Informations', 'Infos du jour', 'Catalogue pour son logiciel']);
   assert.deepEqual([...h.matchAll(/<dialog class="fdr-dlg" id="(fdr-d-[a-z]+)" aria-labelledby="\1-t">/g)].map((m) => m[1]), ['fdr-d-infos', 'fdr-d-notes']);
   // 24/11/2026 (Will) : « un seul [clic] qui emmène direct aux infos » — le contenu du brief reste dans la page, caché, pour hydrate()
   assert.match(h, /<div class="fdr-bj" hidden><p>brief<\/p><\/div>/);

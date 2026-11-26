@@ -487,7 +487,13 @@
       }).catch(function () { V2.toast('Création du lien impossible.'); fini(false); });
     },
 
-    proposer: function (pid) { V2.rdv.preparerMail(pid, 'routine', '', function () {}); },
+    // 26/11/2026 — audit « chaque clic » : le bouton appelant (btn) dit qu'on prépare le mail et ne crée pas un second lien si on le retouche
+    proposer: function (pid, btn) {
+      if (btn) { if (btn.disabled) return; btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.dataset.txt = btn.textContent; btn.textContent = 'Préparation du mail…'; }
+      var rendu = false, rendre = function () { if (rendu || !btn) return; rendu = true; btn.disabled = false; btn.removeAttribute('aria-busy'); btn.textContent = btn.dataset.txt; };
+      if (btn) setTimeout(rendre, 20000);   // réseau muet : le bouton revient quand même
+      V2.rdv.preparerMail(pid, 'routine', '', rendre);
+    },
 
     // Relance : trois lignes, avec le MÊME lien. Le jeton vit 21 jours, il est
     // donc encore valide — inutile d'en créer un second qui doublonnerait.

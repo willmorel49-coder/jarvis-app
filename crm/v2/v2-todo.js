@@ -571,7 +571,7 @@
     var acts = it.fait ? '<button type="button" class="tb-b" onclick="V2.todo.retirer(\'' + id + '\')"><span>Retirer de la liste</span></button>'
       : mail +
         '<button type="button" class="tb-b" aria-expanded="false" aria-controls="tb-dep-' + id + '" aria-label="Déplacer cette tâche" onclick="V2.todo.menuDep(this)">' + ICO('move', 15, 2) + '<span>Déplacer</span></button>' +
-        '<button type="button" class="tb-b td-plus" data-banc="todo-ligne-ouvrir" aria-expanded="' + ouv + '" aria-controls="tb-pl-' + id + '" onclick="V2.todo.plus(this,\'' + id + '\')">' + ICO('chev', 14, 2) + '<span>' + (ouv ? 'Replier' : 'Plus') + '</span></button>';
+        '<button type="button" class="tb-b td-plus" data-banc="todo-ligne-ouvrir" aria-expanded="' + ouv + '" aria-controls="tb-pl-' + id + '" onclick="V2.todo.plus(this,\'' + id + '\')">' + ICO('chev', 14, 2) + '<span>' + (ouv ? 'Replier' : 'Compléter') + '</span></button>';
     var dep = it.fait ? '' : '<div class="tb-dep" id="tb-dep-' + id + '" hidden role="group" aria-label="Déplacer vers">' + COLS.map(function (c) {
       return '<button type="button" class="tb-dep-b"' + (colDe(it) === c[0] ? ' aria-current="true" disabled' : '') + ' onclick="V2.todo.deplacer(\'' + id + '\',\'' + c[0] + '\')">' + c[1] + '</button>';
     }).join('') + '<button type="button" class="tb-dep-b" onclick="V2.todo.rappel(\'' + id + '\')">Choisir une date</button></div>';
@@ -1053,7 +1053,7 @@
     var l = b.closest('.v2-todo-it'), o = !(l && l.classList.contains('td-ouv'));
     TD.plus[id] = o; if (!l) return;
     l.classList.toggle('td-ouv', o); b.setAttribute('aria-expanded', o);
-    var s = b.querySelector('span'); if (s) s.textContent = o ? 'Replier' : 'Plus';
+    var s = b.querySelector('span'); if (s) s.textContent = o ? 'Replier' : 'Compléter';   // 26/11/2026 : « Plus » ne disait pas ce qui s'ouvre (précision, pièces jointes, rappel)
   };
   V2.todo.copierModele = function (k) {
     var x = modele(k), t = 'Objet : ' + x.objet + '\n\n' + x.corps;

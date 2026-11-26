@@ -4139,7 +4139,7 @@
     if (seulLogiciel) return lgoB ? '<div class="fdr-gbs">' + lgoB + '</div>' : '';   // bande du téléphone : Transmettre et la tâche sont dans la barre du pouce
     return '<div class="fdr-gbs">' +
       '<button type="button" class="fdr-gb pri" onclick="V2.fbOuvre(\'tx\',this)" title="catalogues, documents de l\'équipe — en pièces jointes">' + fbIc('tx', 20) + '<span>Choisir quoi lui transmettre</span></button>' +
-      (V2.todo && V2.todo.menu ? '<button type="button" class="fdr-gb" onclick="V2.fbOuvre(\'todo\',this)" title="demande de rendez-vous, suite de rendez-vous, ouverture de compte…">' + fbIc('todo', 20) + '<span>Ouvrir la liste de tâches</span></button>' : '') +
+      (V2.todo && V2.todo.menu ? '<button type="button" class="fdr-gb" onclick="V2.fbOuvre(\'todo\',this)" title="demande de rendez-vous, suite de rendez-vous, ouverture de compte…">' + fbIc('todo', 20) + '<span>Ajouter une tâche</span></button>' : '') +
       lgoB + '</div>';
   }
   function fdrEcart(v, moy, o) {
@@ -5673,7 +5673,7 @@
     var mien = !!(moi && V2.mesComms && V2.mesComms().length && !(V2.ventesRestreintes && V2.ventesRestreintes()));
     var surMoi = mien && !V2.commFilter && ofl.moi;
     return '<label class="v2-select"><select id="v2-pharma-comm" aria-label="Commercial" onchange="V2.pharmaSetComm(this.value)">' +
-      (mien ? '<option value="__moi__"' + (surMoi ? ' selected' : '') + '>Mon secteur</option>' : '') +
+      (mien ? '<option value="__moi__"' + (surMoi ? ' selected' : '') + '>Commercial : mon secteur</option>' : '') +
       '<option value=""' + (!V2.commFilter && !surMoi ? ' selected' : '') + '>Commercial : Tous</option>' +
       comms.map(function (c) { return '<option value="' + esc(c) + '"' + (V2.commFilter === c ? ' selected' : '') + '>Commercial : ' + esc(c) + '</option>'; }).join('') +
       '</select><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></label>';
@@ -5760,7 +5760,7 @@
   // ── 22/11/2026 (lot 2 V3, v1 « Le répertoire ») — une ligne par groupement, comme l'écran Officines : recherche, tri, liste dense.
   // Indicateur = part du groupement chez nous (grpPart, plus bas) ; des comptes seulement, jamais un montant.
   var grrEtat = { reste: false, sans: false };   // replis ouverts par la personne : ils survivent à la frappe et au tri
-  var GRR_N = 30;                                // lignes montrées d'abord, le reste derrière « Afficher les N autres »
+  var GRR_N = 30;                                // lignes montrées d'abord, le reste derrière « Voir les N autres »
   var GRR_TRIS = [['clientes', 'Clientes'], ['part', 'Part chez nous'], ['name', 'Nom (A→Z)']];
   // Un logo entièrement blanc (Giropharm, Katalys) disparaît sur la tuile blanche : on le passe à l'encre.
   var grrLogoFix = {};
@@ -5846,10 +5846,10 @@
     var reste = tous.slice(nPre).join('');
     var h = tete + (gs.length ? '<div class="grr-th" aria-hidden="true"><span></span><span>Groupement</span><span class="grr-th-r">Clientes</span><span>Part chez nous</span><span class="grr-th-r">Non clientes</span><span></span></div>' : '') +
       '<div class="grr-body">' + tous.slice(0, nPre).join('') + '</div>' +
-      (reste ? grrRepli('grr-reste', 'reste', 'Afficher les ' + V2.fmtNum(tous.length - nPre) + ' autres', 'Réduire la liste', reste) : '');
+      (reste ? grrRepli('grr-reste', 'reste', 'Voir les ' + V2.fmtNum(tous.length - nPre) + ' autres', 'Réduire la liste', reste) : '');
     if (sans) h += grrSans(sans);
     var sc = grrSansCliente();
-    if (sc && sc.length) h += '<div class="grr-sc">' + grrRepli('grr-sc-l', 'sans', V2.fmtNum(sc.length) + ' groupement' + (sc.length > 1 ? 's' : '') + ' connu' + (sc.length > 1 ? 's' : '') + ' en France sans aucune cliente', '', sc.map(grrSansLigne).join(''), ' grr-plus-sc') + '</div>';
+    if (sc && sc.length) h += '<div class="grr-sc">' + grrRepli('grr-sc-l', 'sans', (sc.length > 1 ? 'Voir les ' : 'Voir le ') + V2.fmtNum(sc.length) + ' groupement' + (sc.length > 1 ? 's' : '') + ' connu' + (sc.length > 1 ? 's' : '') + ' en France sans aucune cliente', sc.length > 1 ? 'Masquer ces groupements' : 'Masquer ce groupement', sc.map(grrSansLigne).join(''), ' grr-plus-sc') + '</div>';
     return h;
   }
   // La lumière du bandeau s'arrête quand il sort de l'écran et quand l'onglet est caché.
@@ -8304,6 +8304,7 @@
       '.prepa-tt{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;letter-spacing:-.01em;flex:1}',
       '.prepa-tt svg{color:var(--ip-blue)}',
       '.prepa-x{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.16s var(--ease)}',
+      '@media(max-width:640px){.prepa-x{width:44px;height:44px}}',   // 26/11/2026 : croix de « Transmettre à… » à 44 px au doigt
       '.prepa-x:hover{color:var(--ip-ink);transform:rotate(90deg)}',
       '.prepa-scroll{overflow-y:auto;overflow-x:hidden;padding:24px;background:#EBEEF4;flex:1}',
       '.prepa-holder{margin:0 auto;overflow:hidden;border-radius:8px;box-shadow:0 14px 44px rgba(16,19,28,.2)}',

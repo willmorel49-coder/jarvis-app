@@ -1064,7 +1064,7 @@
     return '<div class="off-card' + sel + alertCls + '" data-id="' + esc(it.id) + '" onclick="V2.offSelect(\'' + esc(it.id) + '\')">' +
       '<div class="off-card-media">' +
         (rankHtml || mvtFlag ? '<span class="off-rankrow">' + rankHtml + mvtFlag + '</span>' : '') +
-        '<button class="off-mkt-add' + (onMkt ? ' on' : '') + '" onclick="event.stopPropagation();V2.offMktToggle(\'' + esc(it.id) + '\',this)" title="Ajouter à la fiche marketing">' + ICO(onMkt ? 'check' : 'plus', 15) + '</button>' +
+        '<button class="off-mkt-add' + (onMkt ? ' on' : '') + '" aria-pressed="' + (onMkt ? 'true' : 'false') + '" onclick="event.stopPropagation();V2.offMktToggle(\'' + esc(it.id) + '\',this)" title="' + (onMkt ? 'Retirer de la fiche marketing' : 'Ajouter à la fiche marketing') + '">' + ICO(onMkt ? 'check' : 'plus', 15) + '</button>' +
         img +
         alertFlag +
       '</div>' +
@@ -1327,12 +1327,19 @@
   }
   V2.offMktToggle = function (id, btn) {
     id = String(id);
-    if (mktSel.has(id)) { mktSel.delete(id); if (btn) { btn.classList.remove('on'); btn.innerHTML = ICO('plus', 15); } }
-    else { mktSel.add(id); if (btn) { btn.classList.add('on'); btn.innerHTML = ICO('check', 15); } }
+    // 26/11/2026 : le nom du bouton suit son état (un second toucher RETIRE le produit)
+    var nom = function (on) { if (!btn) return; btn.setAttribute('aria-pressed', on ? 'true' : 'false'); btn.title = on ? 'Retirer de la fiche marketing' : 'Ajouter à la fiche marketing'; if (btn.hasAttribute('aria-label')) btn.setAttribute('aria-label', btn.title); };
+    if (mktSel.has(id)) { mktSel.delete(id); if (btn) { btn.classList.remove('on'); btn.innerHTML = ICO('plus', 15); nom(false); } }
+    else { mktSel.add(id); if (btn) { btn.classList.add('on'); btn.innerHTML = ICO('check', 15); nom(true); } }
     updateMktBar();
   };
   V2.offMktTitle = function (v) { mktTitle = v; };
-  V2.offMktClear = function () { mktSel.clear(); V2.render(); };
+  // 26/11/2026 : la croix vidait toute la sélection sans rien dire ; à partir de 3 produits elle demande, et elle dit toujours ce qu'elle a fait
+  V2.offMktClear = function () {
+    var n = mktSel.size; if (n > 2 && !window.confirm('Retirer les ' + n + ' produits de la fiche marketing ?')) return;
+    mktSel.clear(); V2.render();
+    if (n && V2.toast) V2.toast(n > 1 ? n + ' produits retirés de la fiche marketing' : '1 produit retiré de la fiche marketing');
+  };
 
   // proxy CORS (weserv) pour que les photos s'affichent dans le PDF/canvas
   function proxImg(u) {
@@ -2042,7 +2049,7 @@
     return '<div class="off-card olm-c' + sel + '" data-id="' + id + '" role="button" tabindex="0" onclick="V2.offSelect(\'' + id + '\')" onkeydown="if(event.target===this&&(event.key===\'Enter\'||event.key===\' \')){event.preventDefault();V2.offSelect(\'' + id + '\')}">' +
       '<div class="olm-c-media">' +
         (it.hasRank ? '<span class="olm-c-rang mono" title="Rang au classement des ventes">#' + it.rank + '</span>' : '') +
-        '<button type="button" class="off-mkt-add' + (onMkt ? ' on' : '') + '" onclick="event.stopPropagation();V2.offMktToggle(\'' + id + '\',this)" title="Ajouter à la fiche marketing" aria-label="Ajouter à la fiche marketing">' + ICO(onMkt ? 'check' : 'plus', 15) + '</button>' +
+        '<button type="button" class="off-mkt-add' + (onMkt ? ' on' : '') + '" aria-pressed="' + (onMkt ? 'true' : 'false') + '" onclick="event.stopPropagation();V2.offMktToggle(\'' + id + '\',this)" title="' + (onMkt ? 'Retirer de la fiche marketing' : 'Ajouter à la fiche marketing') + '" aria-label="' + (onMkt ? 'Retirer de la fiche marketing' : 'Ajouter à la fiche marketing') + '">' + ICO(onMkt ? 'check' : 'plus', 15) + '</button>' +
         media +
       '</div>' +
       '<div class="olm-c-body">' +
@@ -2094,7 +2101,7 @@
     var reste = total - liste.length;
     return '<div class="off-grid olm-grid">' + liste.map(carteV3).join('') + '</div>' +
       '<div class="olm-pl"><span class="olm-pl-i mono">' + V2.fmtNum(liste.length) + ' affichés sur ' + V2.fmtNum(total) + '</span>' +
-      (reste > 0 ? '<button type="button" class="olm-pl-b" onclick="V2.offPlus()">Voir ' + V2.fmtNum(Math.min(lot(), reste)) + ' produits de plus</button>' : '') + '</div>';
+      (reste > 0 ? '<button type="button" class="olm-pl-b" onclick="V2.offPlus()">' + (reste <= lot() ? 'Voir les ' + V2.fmtNum(reste) + ' autres' : 'Voir les ' + V2.fmtNum(lot()) + ' suivants') + '</button>' : '') + '</div>';
   }
   V2.offPlus = function () {
     var y = window.pageYOffset || 0;

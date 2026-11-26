@@ -138,7 +138,7 @@ test('« Dans votre secteur » : 3 tâches au plus, moins de 14 jours, textes de
   L.forEach((l) => {
     assert.match(l, /<h3>À dire en rendez-vous<\/h3>/);
     assert.match(l, /<button class="inf-t-todo" type="button" aria-pressed="false">/);
-    assert.match(l, /data-it-vue="secteur"/, '« Voir tout » ouvre le panneau du secteur');
+    assert.doesNotMatch(l, /data-it-vue="secteur"/, '26/11/2026 (retrait accordé par Will) : plus de « Voir toutes les annonces et la carte » dans la fiche');
   });
 });
 

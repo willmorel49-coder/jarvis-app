@@ -334,6 +334,7 @@
       '.v2-rem-h{display:flex;align-items:center;justify-content:space-between;gap:10px}',
       '.v2-rem-h-t{font-size:18px;font-weight:800;letter-spacing:-.02em;color:var(--ip-ink)}',
       '.v2-rem-x{border:none;background:none;font-size:26px;line-height:1;color:var(--muted);cursor:pointer;width:32px;height:32px;border-radius:8px}',
+      '@media(max-width:640px){.v2-rem-x{width:44px;height:44px}}',   // 26/11/2026 : la seule sortie de la fenêtre, 44 px au doigt
       '.v2-rem-x:hover{background:var(--card-2);color:var(--ip-ink)}',
       '.v2-rem-h-s{font-size:13px;color:var(--muted);margin:2px 0 14px}',
       '.v2-rem-ta{width:100%;box-sizing:border-box;border:1px solid var(--line-strong);border-radius:12px;padding:12px 14px;font:inherit;font-size:14px;color:var(--ip-ink);background:var(--card-2);resize:vertical;min-height:96px}',

@@ -798,7 +798,7 @@
         var best = null, bd = 1e9;
         PP_PTS.forEach(function (q) { var dx = (q[0] - p.x) * sc, dy = (q[1] - p.y) * sc, d2 = dx * dx + dy * dy; if (d2 < bd) { bd = d2; best = q[2]; } });
         if (best && bd <= 26 * 26) { ppLire(ppArtBod(best)); return; }
-        var dp = e.target.closest('[data-dep]'); if (!dp) return;
+        var dp = e.target.closest('[data-dep]'); if (!dp) { if (V2.toast) V2.toast('Touchez un point ou un département pour voir ses annonces.'); return; }   // 26/11/2026 : un toucher à côté ne reste plus sans réponse
         var code = dp.getAttribute('data-dep'), S = ppScope();
         var L = ppAnnonces(S.deps).filter(function (x) { return x.dep === code && ppJ(x.d) <= SCT_S.per && (etat.f === 'tout' || x.f === etat.f); });
         ppOuvrirPan({ sur: 'Votre secteur · ' + (SCT_DEPNOMS[code] || code), html: '<h2>' + esc(SCT_DEPNOMS[code] || code) + ' (' + esc(code) + ')</h2><div class="pp-chapo">' + ppPl(L.length, 'annonce') + ' sur la période choisie.</div><h3>Choisir une annonce</h3>' +
@@ -988,7 +988,8 @@
   var IT_COCHE = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
   var IT_COCHE_TODO = '<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5l4 4 8-9"/></svg>';
   var IT_CHEV = '<svg class="inf-t-chev" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>';
-  var IT_VOIR = { secteur: 'Voir toutes les annonces et la carte', ruptures: 'Voir tous les médicaments qui manquent', echeances: 'Voir toutes les échéances', rappels: 'Voir tous les rappels' };
+  // 26/11/2026 (retrait accordé par Will) : plus de « Voir toutes les annonces et la carte » dans la fiche, « Voir les N annonces et la carte » est juste au-dessus
+  var IT_VOIR = { ruptures: 'Voir tous les médicaments qui manquent', echeances: 'Voir toutes les échéances', rappels: 'Voir tous les rappels' };
   var IT_RE_NB = new RegExp('(\\d) (jours?|semaines?|mois|mg|' + PP_MOIS.join('|') + ')', 'g');
   /* typographie de la maquette : espace insécable avant « : ; ? ! % € », après « « », entre un nombre et son unité ; mots à trait d'union insécables */
   function itNb(s) { return String(s == null ? '' : s).replace(/ ([:;?!»%€])/g, ' $1').replace(/« /g, '« ').replace(IT_RE_NB, '$1 $2'); }
@@ -1033,7 +1034,6 @@
         '<div class="inf-t-infos"><span><b>Lieu</b> ' + itH(t.lieu) + '</span><span><b>Source</b> ' +
           (u !== '#' ? '<a href="' + esc(u) + '" target="_blank" rel="noopener">' + itH(t.source) + '</a>' : itH(t.source)) + '</span></div>' +
         '<div class="inf-t-gestes"><button class="inf-t-todo" type="button" aria-pressed="' + todo + '">' + IT_COCHE_TODO + '<span>' + (todo ? 'Dans votre To do' : 'Mettre dans ma To do') + '</span></button>' +
-          '<button class="inf-t-fait-l" type="button">' + IT_COCHE_TODO + '<span>' + (fait ? 'Remettre à faire' : 'Marquer comme fait') + '</span></button>' +
           (IT_VOIR[t.vue] && PP_VUES[t.vue] ? '<button class="inf-t-voir" type="button" data-it-vue="' + esc(t.vue) + '"><span>' + esc(IT_VOIR[t.vue]) + '</span>' + IT_CHEV + '</button>' : '') + '</div>' +
       '</div></li>';
   }
@@ -1175,7 +1175,7 @@
     if ((b = e.target.closest('#inf-t-fait-b,#inf-t-annfr-b'))) { var o = b.getAttribute('aria-expanded') !== 'true', ul = document.getElementById(b.getAttribute('aria-controls')); b.setAttribute('aria-expanded', o ? 'true' : 'false'); if (ul) ul.hidden = !o; return; }
     var li = e.target.closest('.inf-t-tache'); if (!li) return;
     var tid = li.getAttribute('data-it');
-    if (e.target.closest('.inf-t-case,.inf-t-fait-l')) { var fl = e.target.closest('.inf-t-fait-l'); itBascule(tid); if (fl) { var sp = fl.querySelector('span'); if (sp) sp.textContent = itFait(tid) ? 'Remettre à faire' : 'Marquer comme fait'; } return; }
+    if (e.target.closest('.inf-t-case')) { itBascule(tid); return; }   // 26/11/2026 : la case ronde est le seul geste (« Marquer comme fait » en double retiré, accord de Will)
     if ((b = e.target.closest('.inf-t-todo'))) { itTodo(tid, b); return; }
     if (e.target.closest('.inf-t-corps')) itOuvrir(tid, IT.ouvert !== tid);
   }
@@ -1410,7 +1410,7 @@
       '#pp-pan .pp-bascule{display:flex;gap:4px;padding:4px;border-radius:16px;background:#E6EBF3;box-shadow:0 1px 2px rgba(15,20,32,.06) inset;margin-top:14px}',
       '#pp-pan .pp-bascule button{flex:1;min-height:44px;border:0;border-radius:12px;background:none;font-weight:600;font-size:14px;color:var(--pp-encre2)}',
       '#pp-pan .pp-bascule button[aria-pressed="true"]{background:#fff;color:var(--pp-encre);box-shadow:0 1px 3px rgba(15,20,32,.14)}',
-      '#pp-pan .pp-select{display:block;width:100%;min-height:46px;margin-top:10px;padding:0 12px;border-radius:14px;border:1px solid #D6DDE8;background:#fff;font:500 16px var(--pp-sans);color:var(--pp-encre)}',
+      '#pp-pan .pp-select{-webkit-appearance:none;appearance:none;display:block;width:100%;height:46px;min-height:46px;margin-top:10px;padding:0 36px 0 12px;border-radius:14px;border:1px solid #D6DDE8;background:#fff url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'8\' viewBox=\'0 0 12 8\'%3E%3Cpath d=\'M1 1.5l5 5 5-5\' fill=\'none\' stroke=\'%235B6478\' stroke-width=\'1.8\' stroke-linecap=\'round\' stroke-linejoin=\'round\'/%3E%3C/svg%3E") no-repeat right 14px center/12px 8px;font:500 16px var(--pp-sans);color:var(--pp-encre)}',
       '#pp-pan .pp-carte-p{position:relative;margin-top:14px;border-radius:22px;background:radial-gradient(120% 90% at 25% 0%,#FAFCFF,#EAF0F9 70%);box-shadow:0 1px 0 #fff inset,0 0 0 1px #DCE4F0 inset;overflow:hidden}',
       '#pp-pan .pp-carte-p svg{display:block;width:100%;height:340px;touch-action:manipulation;cursor:pointer}',
       '#pp-pan .pp-carte-aide{position:absolute;right:12px;top:10px;pointer-events:none;font-size:13px;color:var(--pp-encre2);background:rgba(255,255,255,.88);padding:4px 9px;border-radius:9px}',
