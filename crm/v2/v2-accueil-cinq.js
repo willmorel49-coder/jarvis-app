@@ -505,17 +505,24 @@
   var _fait = {}, _aff = [];   // To do : les lignes cochées pendant cette visite restent à l'écran, rayées
 
   // La phrase de l'en-tête : une seule, calculée. Chaque morceau n'apparaît que si sa donnée est prête.
+  // 26/11/2026 — planche « 22 changements d'usage », sujet 1, version 1 (choix de Will) : chaque chiffre de la phrase est un lien
+  // (tâches → To do, officines à rappeler → Mes officines filtré sur « À rappeler », infos → Infos). « aucune … » reste du texte : rien à ouvrir.
+  // Le lien n'est posé que si l'écran existe pour ce compte (V2.pages) ; sinon le chiffre reste en gras, comme avant.
+  function phLien(page, act, txt, href) {
+    if (!(V2.pages && V2.pages[page])) return '<b>' + txt + '</b>';
+    return '<a class="m1-ph-l" href="' + (href || '#' + page) + '" data-u2-act="' + act + '"><b>' + txt + '</b></a>';
+  }
   function phrase() {
     var p = P(), parts = [], open = null, n = null, i;
     try { if (V2.todo && V2.todo.ouverts && p.todoItems() !== null) open = V2.todo.ouverts(); } catch (e) {}
     if (open) {
       var j = jourIso(), nj = open.filter(function (x) { return x.pour && x.pour <= j; }).length;
-      parts.push(nj ? '<b>' + plur(nj, 'tâche', 'tâches') + '</b> aujourd’hui' : open.length ? '<b>' + plur(open.length, 'tâche', 'tâches') + '</b> à faire' : 'aucune tâche en attente');
+      parts.push(nj ? phLien('todo', 'go:todo', plur(nj, 'tâche', 'tâches')) + ' aujourd’hui' : open.length ? phLien('todo', 'go:todo', plur(open.length, 'tâche', 'tâches')) + ' à faire' : 'aucune tâche en attente');
     }
     try { n = V2.decrochageUI ? V2.decrochageUI.compte() : null; } catch (e) {}
-    if (typeof n === 'number') parts.push(n ? '<b>' + plur(n, 'officine', 'officines') + '</b> à rappeler' : 'aucune officine à rappeler');
+    if (typeof n === 'number') parts.push(n ? phLien('pharma', 'rap:officines', plur(n, 'officine', 'officines'), '#pharma/officines') + ' à rappeler' : 'aucune officine à rappeler');
     i = p.infos();
-    if (i.etat === 'ok' && i.nb != null && i.quand !== 'ancien') parts.push((i.nb ? '<b>' + plur(i.nb, 'info', 'infos') + '</b> ' : 'aucune info ') + (i.quand === 'hier' ? 'd’hier' : 'du jour'));
+    if (i.etat === 'ok' && i.nb != null && i.quand !== 'ancien') parts.push((i.nb ? phLien('infos', 'go:infos', plur(i.nb, 'info', 'infos')) + ' ' : 'aucune info ') + (i.quand === 'hier' ? 'd’hier' : 'du jour'));
     if (!parts.length) return '';
     var s = parts.join(', ') + '.';
     return s.charAt(0) === '<' ? s : s.charAt(0).toUpperCase() + s.slice(1);

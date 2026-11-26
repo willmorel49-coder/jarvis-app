@@ -234,3 +234,5 @@ body.tb-glisse{cursor:grabbing;-webkit-user-select:none;user-select:none}
 }
 
 .td-m1 :is(.tb-b,.tb-chip,.tb-lien,.tb-dep-b,.td-cap,.v2-todo-kind){touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+/* 26/11/2026 — planche « 22 changements », sujet 14 : dans l'Agenda, une tâche est la carte de l'onglet Tâches (v2-todo-mois.js, libres) */
+.td-m1 .tm-l-carte{margin-top:8px}

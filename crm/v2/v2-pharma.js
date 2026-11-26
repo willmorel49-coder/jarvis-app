@@ -940,9 +940,11 @@
     var p = x.p, pid = String(p.id), voit = V2.voitVentesDe(p.id), ev = _rap[pid], pros = !!p._prospect;
     var nom = V2.esc(String(p.name || '').toLocaleUpperCase('fr-FR'));
     // 26/11/2026 — sous le nom : le titulaire, puis la ville et le code postal (Will). Le titulaire se coupe avant la ville.
-    var tit = V2.titulaireDe(pid, p.tit);
+    // 26/11/2026 (soir) — planche « 22 changements », sujet 6, version 3 (choix de Will) : au téléphone, le code postal part (il est dans la fiche),
+    // pour que le titulaire et la ville se lisent ; il reste à l'ordinateur. Le code postal a donc sa propre balise (ofl-cp, cachée en CSS à 640 px et moins).
+    var tit = V2.titulaireDe(pid, p.tit), vNom = String(p.ville || '').toLocaleUpperCase('fr-FR'), vCp = cpDe(p);
     var ville = (tit ? '<span class="ofl-tit">' + V2.esc(tit) + '</span><span class="ofl-pt" aria-hidden="true">·</span>' : '') +
-      '<span class="ofl-ville">' + V2.esc([String(p.ville || '').toLocaleUpperCase('fr-FR'), cpDe(p)].filter(Boolean).join(' ')) + '</span>';
+      '<span class="ofl-ville">' + V2.esc(vNom) + (vCp ? '<span class="ofl-cp">' + (vNom ? ' ' : '') + V2.esc(vCp) + '</span>' : '') + '</span>';
     var trn = trnDe(p), t = trn.length ? '<span class="ofl-t">' + V2.esc(trn.join(', ')) + '</span>' : '';
     var onclick = 'onclick="V2.pharmaNav.va(\'' + V2.esc(pid) + '\',1)" onkeydown="if(event.key===\'Enter\')this.click()"';
     if (pros) {
@@ -1382,7 +1384,10 @@
       return {
         // La bascule Clients / Prospects garde ses libellés, sans les compteurs : le nombre s'écrit une seule fois, au-dessus du tableau.
         bascule: secteurBar.replace('<span class="v2-past-l">Afficher :</span>', '').replace(/<span class="of-cnt">[^<]*<\/span>/g, '').replace(/v2-segs/g, 'ofl-segs').replace(/v2-seg\b/g, 'ofl-seg'),
-        rap: secteurTab === 'clients' ? '<button type="button" class="ofl-chip' + (ofl.rap ? ' ofl-on' : '') + '" aria-pressed="' + ofl.rap + '" onclick="V2.oflRap()">À rappeler' + (nbRap != null ? ' (' + V2.fmtNum(nbRap) + ')' : '') + '</button>' : '',
+        // 26/11/2026 — planche « 22 changements », sujet 7 (mesuré sur le banc : « (0) » pour 4 choix de commercial sur 9) : à 0, le bouton est grisé
+        // et la raison s'écrit dessous dans la feuille, au lieu d'inviter à un filtre qui vide la liste. S'il est déjà allumé, il reste touchable (pour l'éteindre).
+        rap: secteurTab === 'clients' ? '<button type="button" class="ofl-chip' + (ofl.rap ? ' ofl-on' : '') + (nbRap === 0 && !ofl.rap ? ' ofl-chip-0" disabled title="Aucune officine à rappeler en ce moment' : '') + '" aria-pressed="' + ofl.rap + '" onclick="V2.oflRap()">À rappeler' + (nbRap != null ? ' (' + V2.fmtNum(nbRap) + ')' : '') + '</button>' : '',
+        rap0: secteurTab === 'clients' && nbRap === 0 && !ofl.rap ? '<p class="ofl-rap0">Aucune officine à rappeler en ce moment.</p>' : '',
         excel: secteurTab === 'clients' ? '<button type="button" class="ofl-btn ofl-btn-x" title="Exporter mes clients en Excel" aria-label="Exporter mes clients en Excel" onclick="V2.pharmaClientsXlsx()">' + ICO('download', 16) + '<span>Excel</span></button>' : '',
         creer: '<button type="button" class="ofl-btn" id="of-creer" title="Créer un prospect" aria-label="Créer un prospect" onclick="V2.pharmaCreerProspect()">' + ICO('plus', 16) + '<span>Créer un prospect</span></button>'
       };
@@ -1404,7 +1409,7 @@
     function oflfHtml() {
       var p = oflPieces(), pr = oflMot === 'prospect';
       var voir = oflNb == null ? 'Voir la liste' : !oflNb ? (pr ? 'Aucun prospect' : 'Aucune officine') : oflNb === 1 ? (pr ? 'Voir le prospect' : 'Voir l’officine') : 'Voir les ' + V2.fmtNum(oflNb) + ' ' + oflMot + 's';
-      return commBar + '<div class="oflf-l">' + oflTournSelect() + p.rap + '</div>' + oflTriSelect() +
+      return commBar + '<div class="oflf-l">' + oflTournSelect() + p.rap + '</div>' + p.rap0 + oflTriSelect() +
         '<div class="oflf-fin">' + p.excel.replace('onclick="V2.pharmaClientsXlsx()"', 'onclick="V2.fbFerme();V2.pharmaClientsXlsx()"') +   // la feuille se ferme avant l'export (comme V2.fbPdf), sinon son message reste dessous
         '<button type="button" class="oflf-voir" onclick="V2.fbFerme()">' + voir + '</button></div>';
     }
@@ -1726,7 +1731,7 @@
     return '<button class="v2-btn v2-btn-ghost" onclick="V2.pharmaTransmettre(\'' + esc(String(pid)) + '\')" title="catalogues, documents de l\'équipe — en pièces jointes">' +
       (V2.ICO ? V2.ICO('fiche', 15, 2) : '') + 'Choisir quoi lui transmettre</button>' +
       (V2.todo ? '<button class="v2-btn v2-btn-ghost" onclick="V2.todo.menu(\'' + esc(String(pid).replace(/[^0-9A-Za-z_-]/g, '')) + '\')" title="demande de rendez-vous, suite de rendez-vous, ouverture de compte…">' +
-        (window.ICO ? window.ICO('check', 15, 2) : '') + 'Ajouter à la to do list</button>' : '');
+        (window.ICO ? window.ICO('check', 15, 2) : '') + 'Ajouter une tâche</button>' : '');   // 26/11/2026 — sujet 16 : le même nom partout
   }
 
   // Officine trouvée dans la base nationale (prospect / non-cliente) par son id.
@@ -4543,7 +4548,9 @@
     var tete = '<div class="fdr-head fdo-a" id="fdr-haut"><i class="fdr-astre" aria-hidden="true"></i>' +
       '<div class="fdr-bar">' + vues + '</div>' +
       '<div class="fdr-id"><div class="fdr-id-t">' +
-        '<div class="fdr-eye mono"><span class="vi-ph">Fiche officine</span><span class="vi-int">' + (c.pharma.code ? 'CIP ' + esc(String(c.pharma.code)) + ' · ' : '') + (isEscale() ? 'CLIENTE ESCALE' : 'CLIENTE INTÉGRAL') + (c.comms ? ' · ' + esc(c.comms.toUpperCase()) : '') + '</span></div>' +
+        '<div class="fdr-eye mono"><span class="vi-ph">Fiche officine</span><span class="vi-int">' + (c.pharma.code ? 'CIP ' + esc(String(c.pharma.code)) + ' · ' : '') + (isEscale() ? 'CLIENTE ESCALE' : 'CLIENTE INTÉGRAL') +
+          // 26/11/2026 — planche « 22 changements », sujet 10, version 1 (choix de Will) : au téléphone, le nom du commercial passe sur une 2e ligne (le « … » le cachait)
+          (c.comms ? '<span class="fdr-eye-c"><span class="fdr-eye-pt"> · </span>' + esc(c.comms.toUpperCase()) + '</span>' : '') + '</span></div>' +
         '<h1 class="pha-name">' + esc(c.nom) + '<span class="vi-int">' + c.badges + '</span></h1>' +
         (sous ? '<p class="fdr-sub">' + sous + '</p>' : '') +
       '</div>' + fdrActions(c.pid, c.pidSafe, c.tel, c.mail, c.voitVentes) + fdrOutils(c) + '</div></div>';
@@ -4904,7 +4911,7 @@
     }
     // 23/09/2026 — Ma liste : demande de rendez-vous, suite de rendez-vous, ouverture de compte…
     var btnTodo = V2.todo ? '<button class="pha-btn pha-btn-w" onclick="V2.todo.menu(\'' + pidSafe + '\')" title="demande de rendez-vous, suite de rendez-vous, ouverture de compte…">' +
-      ICO('check', 15, 2) + 'Ajouter à la to do list</button>' : '';
+      ICO('check', 15, 2) + 'Ajouter une tâche</button>' : '';   // 26/11/2026 — sujet 16 : le même nom partout (Tâches, Agenda, fiche)
     // 08/10/2026 — fiche « lecture » (1b) : les deux listes (voir à l'écran, PDF, envoyer) passent dans
     // le bloc « À proposer » de la colonne des chiffres ; ici restent les autres actions, une seule fois.
     // Officine d'un collègue : la carte reste telle qu'avant (rien de 1b n'y est affiché).
@@ -5387,6 +5394,8 @@
   }
   V2.oflTourn = function (code) { ofl.tourn = code || ''; if (oflMaj) oflMaj(); };
   V2.oflRap = function () { ofl.rap = !ofl.rap; if (oflMaj) oflMaj(); };
+  // 26/11/2026 — la phrase de l'accueil (« N officines à rappeler », v2-accueil-cinq.js) ouvre Mes officines, onglet Clients, filtre « À rappeler » allumé.
+  V2.oflOuvrirRap = function () { secteurTab = 'clients'; ofl.rap = true; ofl.tourn = ''; searchQuery = ''; V2.go('pharma', 'officines'); };
   V2.oflTri = function (k) { if (!k) { ofl.tri = 'ca'; ofl.sens = -1; } else { ofl.tri = k; ofl.sens = OFL_TRIS[k][1]; } if (oflMaj) oflMaj(); };
   V2.oflTrier = function (k) { if (ofl.tri === k) ofl.sens = -ofl.sens; else { ofl.tri = k; ofl.sens = OFL_TRIS[k][1]; } if (oflMaj) oflMaj(); };
   V2.oflRaz = function () { ofl.tourn = ''; ofl.rap = false; searchQuery = ''; var i = document.getElementById('v2-pharma-search'); if (i) i.value = ''; if (oflMaj) oflMaj(); };
@@ -5844,10 +5853,11 @@
     if (!gs.length && !sans) return tete + '<div class="v2-empty"><div class="v2-empty-d">' + (grpListSearch ? 'Aucun groupement ne correspond à « ' + esc(grpListSearch) + ' ».' : 'Aucun groupement.') + '</div></div>';
     var nPre = grpListSearch ? gs.length : GRR_N, tous = gs.map(grrLigne);
     var reste = tous.slice(nPre).join('');
-    var h = tete + (gs.length ? '<div class="grr-th" aria-hidden="true"><span></span><span>Groupement</span><span class="grr-th-r">Clientes</span><span>Part chez nous</span><span class="grr-th-r">Non clientes</span><span></span></div>' : '') +
+    // 26/11/2026 — planche « 22 changements », sujet 19, version 1 (choix de Will) : « N clientes sans groupement » remonte en tête de la liste,
+    // juste sous la recherche et les tris (elle n'était visible qu'après « Voir les N autres », tout en bas). Son sens ne change pas.
+    var h = (sans ? '<div class="grr-sg-haut">' + grrSans(sans) + '</div>' : '') + tete + (gs.length ? '<div class="grr-th" aria-hidden="true"><span></span><span>Groupement</span><span class="grr-th-r">Clientes</span><span>Part chez nous</span><span class="grr-th-r">Non clientes</span><span></span></div>' : '') +
       '<div class="grr-body">' + tous.slice(0, nPre).join('') + '</div>' +
       (reste ? grrRepli('grr-reste', 'reste', 'Voir les ' + V2.fmtNum(tous.length - nPre) + ' autres', 'Réduire la liste', reste) : '');
-    if (sans) h += grrSans(sans);
     var sc = grrSansCliente();
     if (sc && sc.length) h += '<div class="grr-sc">' + grrRepli('grr-sc-l', 'sans', (sc.length > 1 ? 'Voir les ' : 'Voir le ') + V2.fmtNum(sc.length) + ' groupement' + (sc.length > 1 ? 's' : '') + ' connu' + (sc.length > 1 ? 's' : '') + ' en France sans aucune cliente', sc.length > 1 ? 'Masquer ces groupements' : 'Masquer ce groupement', sc.map(grrSansLigne).join(''), ' grr-plus-sc') + '</div>';
     return h;
@@ -6077,7 +6087,9 @@
     root.innerHTML = V2.topbar({ back: true, backTo: 'home', backLabel: 'Accueil' }) +
       '<div class="v2-wrap v2-u gr-m1 grr-m' + (arr ? ' gr-ent' : '') + '" id="gr-m1">' +
         '<header class="gr-hd"><span class="gr-lu" aria-hidden="true"></span>' +
-          '<div class="gr-hd-t"><p class="gr-eye">Mes officines · vue d\'équipe</p><h1 class="gr-h1">Groupements</h1>' +
+          // 26/11/2026 — planche « 22 changements », sujet 18, version 2 (choix de Will) : on arrive ici par l'accueil, le Menu ou la recherche, jamais
+          // par l'onglet Officines : la barre du bas allume « Menu » et dit vrai (correction du 20/11) ; c'est le surtitre qui promettait autre chose.
+          '<div class="gr-hd-t"><p class="gr-eye">Vue d\'équipe</p><h1 class="gr-h1">Groupements</h1>' +
             '<p class="gr-phrase" id="gr-phrase" aria-live="polite">' + grPhrase(list) + '</p></div>' +
         '</header>' +
         '<label class="grr-rech">' + ICO('search', 20, 2) +

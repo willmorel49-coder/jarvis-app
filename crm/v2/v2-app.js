@@ -17,16 +17,24 @@
   var MOD = (/Mac|iPhone|iPad|iPod/.test((navigator.platform || '') + ' ' + (navigator.userAgent || ''))) ? '⌘' : 'Ctrl';
 
   // ── TOAST ─────────────────────────────────────
-  V2.toast = function (msg, variant) {
+  // 26/11/2026 — planche « 22 changements », sujet 12 : 3e argument facultatif { action: 'Annuler', faire: fn, duree: ms } = un bouton de 44 px dans le message ;
+  // le message reste alors 6 secondes (le temps de viser), et un toucher sur le bouton le ferme aussitôt. Sans ce 3e argument : comme avant (2,8 s, sans bouton).
+  V2.toast = function (msg, variant, opt) {
     var host = document.getElementById('v2-toast-host');
     if (!host) { host = document.createElement('div'); host.id = 'v2-toast-host'; host.className = 'v2-toast-host'; document.body.appendChild(host); }
     var t = document.createElement('div');
-    t.className = 'v2-toast';
+    t.className = 'v2-toast' + (opt && opt.action ? ' v2-toast-a' : '');
     var col = variant === 'error' ? 'var(--c-rose)' : variant === 'warn' ? 'var(--c-amber)' : 'var(--c-mint)';
     t.innerHTML = '<span class="dot" style="background:' + col + '"></span><span>' + msg + '</span>';
+    var fini = false, fermer = function () { if (fini) return; fini = true; t.classList.remove('show'); setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 350); };
+    if (opt && opt.action) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'v2-toast-b'; b.textContent = opt.action;
+      b.addEventListener('click', function () { fermer(); try { if (opt.faire) opt.faire(); } catch (e) {} });
+      t.appendChild(b);
+    }
     host.appendChild(t);
     requestAnimationFrame(function () { requestAnimationFrame(function () { t.classList.add('show'); }); });
-    setTimeout(function () { t.classList.remove('show'); setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 350); }, 2800);
+    setTimeout(fermer, (opt && opt.duree) || (opt && opt.action ? 6000 : 2800));
   };
 
   // ── Fond de carte commun ──────────────────────
@@ -548,7 +556,8 @@
       (window.V2HAB && !V2HAB.seulBleu && !(window.V2_BRAND && window.V2_BRAND.escale) ? '<button class="v2-um-item" role="menuitem" onclick="V2HAB.menu()">' + u2Ic('palette', 16) + 'Mon habillage</button>' : '') +
       // 19/11/2026 — le rail (qui portait « Espace ») disparaît de l'accueil à l'ordinateur : la bascule Intégral ↔ Escale passe par ce menu (au-delà de 600 px ; en dessous, le panneau « Mon espace » la porte)
       ((V2.basculeEspace && V2.basculeEspace() && window.innerWidth > 600) ? '<button class="v2-um-item" role="menuitem" onclick="V2.goSpace(\'' + V2.basculeEspace().to + '\')">' + u2Ic('espace', 16) + 'Passer à l\'espace ' + esc(V2.basculeEspace().label) + '</button>' : '') +
-      '<button class="v2-um-item" role="menuitem" onclick="V2.signOut()">' + ICO('logout', 16, 2) + 'Se déconnecter</button>' +
+      // 26/11/2026 — sujet 3 : à l'ordinateur (pas de « Mon espace » au-delà de 1100 px), le menu du compte pose la même question avant de déconnecter
+      '<button class="v2-um-item" role="menuitem" onclick="V2.deconnexionDemander ? V2.deconnexionDemander() : V2.signOut()">' + ICO('logout', 16, 2) + 'Se déconnecter</button>' +
       // 24/08/2026 — information de l'équipe sur la mesure d'usage (obligation
       // CNIL dès lors qu'elle est nominative). Volontairement factuelle et
       // sans jargon : on dit ce qui est enregistré et à quoi ça sert, rien de plus.
@@ -1962,7 +1971,8 @@
   // Téléphone : le panneau « Mon espace » mène au même geste que le rail — un seul bouton, qui ouvre le mode réglage sur l'accueil
   function u2BlocPerso() {
     return '<section class="u2-mon-b"><h3>Mon accueil</h3><p class="u2-note u2-note-h">Couleur, widgets et outils se règlent directement sur l\'accueil. C\'est gardé pour vous.</p>' +
-      '<button type="button" class="v2-btn v2-btn-primary pb-ouv" data-pb="ouvrir">' + u2Ic('palette') + 'Personnaliser mon accueil</button>' +
+      // 26/11/2026 — planche « 22 changements », sujet 4, version 1 (choix de Will) : en contour, comme « Mon habillage » (réglage rare, plus de bleu plein ici)
+      '<button type="button" class="v2-btn pb-ouv" data-pb="ouvrir">' + u2Ic('palette') + 'Personnaliser mon accueil</button>' +
       (window.V2HAB && !V2HAB.seulBleu && !u2Escale() ? '<button type="button" class="v2-btn pb-ouv" style="margin-top:8px" onclick="V2.accueilPont.fermer();V2HAB.ouvrir()">' + u2Ic('palette') + 'Mon habillage</button>' : '') + '</section>';
   }
   // Les mêmes gestes que le menu du compte de la barre (V2.userMenu), et seulement ceux qui existent sur cet appareil.
@@ -2061,10 +2071,34 @@
     return true;
   }
 
+  // 26/11/2026 — planche « 22 changements », sujet 3, version 1 (choix de Will) : « Se déconnecter » de « Mon espace » demande d'abord.
+  // La déconnexion efface la session et le rangement local des fichiers protégés de l'appareil (V2.signOut, v2-boot.js) : seul geste
+  // de « Mon espace » qu'un toucher ne rattrape pas. La demande des saisies hors ligne (v2-hors-ligne.js) reste, après celle-ci.
+  // Fenêtre posée sur <body> (un écran garde une transform : un élément fixe y serait piégé). Échap et « Annuler » ferment sans rien faire.
+  function u2DecoDemander() {
+    var d = document.getElementById('u2-deco');
+    if (!d) {
+      d = document.createElement('dialog'); d.id = 'u2-deco'; d.className = 'u2-deco'; d.setAttribute('aria-labelledby', 'u2-deco-t');
+      d.innerHTML = '<h2 id="u2-deco-t">Se déconnecter ?</h2>' +
+        '<p>La session s’arrête sur cet appareil et les fichiers protégés qui y sont rangés sont effacés. Ils se retéléchargent à la prochaine connexion.</p>' +
+        '<div class="u2-deco-b"><button type="button" class="v2-btn" data-deco="non">Annuler</button>' +
+        '<button type="button" class="v2-btn u2-deco-oui" data-deco="oui">Se déconnecter</button></div>';
+      d.addEventListener('click', function (e) {
+        var b = e.target.closest && e.target.closest('[data-deco]');
+        if (!b) { if (e.target === d) d.close(); return; }   // un toucher sur le fond ferme, comme Annuler
+        d.close();
+        if (b.getAttribute('data-deco') === 'oui') { u2Fermer(false); V2.signOut(); }
+      });
+      document.body.appendChild(d);
+    }
+    if (!d.open) { try { d.showModal(); } catch (e) { d.setAttribute('open', ''); } }
+    var non = d.querySelector('[data-deco="non"]'); if (non) { try { non.focus(); } catch (e) {} }
+  }
+  V2.deconnexionDemander = u2DecoDemander;
   // ── Les gestes des réglages : agir, garder, redessiner, rendre le focus ──
   function u2Agir(a, v, el) {
     if (a === 'install') { u2Fermer(false); V2.installApp(); return; }
-    if (a === 'logout') { u2Fermer(false); V2.signOut(); return; }
+    if (a === 'logout') { u2DecoDemander(); return; }
     if (a === 'esp') { if ((v === 'escale') !== u2Escale()) V2.goSpace(v === 'escale' ? 'escale' : 'crm'); return; }
     if (a === 'todo') {
       var fait = el.getAttribute('aria-checked') !== 'true';
@@ -2209,6 +2243,7 @@
     if (t === 'go') { var p = v.split('/'); if (p[1]) V2.go(p[0], p[1]); else V2.go(p[0]); }
     else if (t === 'rel') V2.go('pharma', decodeURIComponent(v));
     else if (t === 'space') V2.goSpace(v);
+    else if (t === 'rap') { if (V2.oflOuvrirRap) V2.oflOuvrirRap(); else V2.go('pharma', v); }   // 26/11/2026 — phrase de l'accueil : « N officines à rappeler » ouvre Mes officines filtré
   }
 
   // ── Les écouteurs : posés une fois sur la racine, ils ignorent tout ce qui n'est pas dans l'accueil ──

@@ -118,6 +118,14 @@
 .u2-mon-act:hover,.u2-eto .v2-um-item:hover{background:var(--card-2);color:var(--ip-ink)}
 .u2-mon-act.u2-danger:hover{color:var(--c-rose-txt)}
 .u2-mon-act.u2-danger:hover .u2-ic{color:var(--c-rose-txt)}
+/* 26/11/2026 — sujet 3 : la fenêtre « Se déconnecter ? » (v2-app.js, u2DecoDemander), posée sur <body> */
+.u2-deco{margin:auto;border:0;padding:22px 22px 18px;border-radius:20px;width:min(380px,calc(100vw - 32px));background:#FFFFFF;color:var(--ip-ink,#1A2030);box-shadow:0 24px 64px rgba(11,27,63,.24)}
+.u2-deco::backdrop{background:rgba(11,27,63,.38)}
+.u2-deco h2{margin:0 0 8px;font-family:var(--font);font-size:19px;line-height:1.25;font-weight:800;color:var(--ip-ink,#1A2030)}
+.u2-deco p{margin:0 0 18px;font-family:var(--font);font-size:15px;line-height:1.45;color:var(--ip-ink-2,#3B4357)}
+.u2-deco-b{display:flex;gap:10px;justify-content:flex-end}
+.u2-deco-b .v2-btn{min-height:44px;flex:1 1 0;justify-content:center}
+.u2-deco-b .u2-deco-oui{background:var(--c-rose-txt,#B4233C);border-color:var(--c-rose-txt,#B4233C);color:#fff}
 
 /* ─── Teintes de l'accueil : pastille et motif Léopard ─── */
 .u2-note-h{margin:0 0 6px}

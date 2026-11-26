@@ -378,3 +378,5 @@ html:root:root body .grr-m .grr-sg .grp-logo-x { color: var(--ip-ink-3); font-si
 @media (prefers-reduced-motion: reduce) {
   .grr-r, .grr-ch, .grr-barre, .grr-plus svg, .grr-seg { transition: none; }
 }
+/* 26/11/2026 — planche « 22 changements », sujet 19 : la ligne « N clientes sans groupement » en tête de la liste (filet en bas au lieu d'en haut) */
+.grr-sg-haut .grr-sg { border-top: 0; border-bottom: 1px solid var(--line-strong); }

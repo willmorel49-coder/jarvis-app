@@ -676,7 +676,7 @@
     if (it.url && urlSure(it.url) !== '#') h += '<a class="pp-btn pp-btn-bleu" href="' + esc(urlSure(it.url)) + '" target="_blank" rel="noopener">' + esc(it.lien || 'Lire la source') + ' ' + ppIco('lien', 18) + '</a>';
     if (it.boutons) h += it.boutons;
     if (PP_PILE.length && !feuille) h += '<button type="button" class="pp-btn pp-btn-blanc" data-pp-retour-bas>Revenir</button>';
-    return h + '</div>';
+    return h + '</div>' + (it.basLien || '');
   }
   function ppArt(a, sur) {
     var srcs = (a.srcs && a.srcs.length) ? a.srcs : [a.s];
@@ -702,8 +702,9 @@
       badges: SCT_TAG_L[tag.t] ? '<span class="pp-badge' + (tag.t === 'client' ? ' vert' : tag.t === 'prospect' ? '' : ' gris') + '">' + SCT_TAG_L[tag.t] + '</span>' : '',
       paras: ['Publié le ' + sctDateLongue(e.d) + '.'],
       geste: sctGeste(e, tag.t), gesteT: 'Le geste', url: e.url, lien: 'Lire l’annonce officielle',
-      boutons: (tag.ficheId ? '<button type="button" class="pp-btn pp-btn-blanc" onclick="V2.ppFiche(\'' + esc(tag.ficheId) + '\')">' + ppIco('fiche', 18) + 'Ouvrir la fiche officine</button>' : '') +
-        '<button type="button" class="pp-btn pp-btn-blanc" onclick="V2.ppNonLu(\'' + esc(e.id) + '\',this)">Marquer comme non lue</button>' };
+      boutons: (tag.ficheId ? '<button type="button" class="pp-btn pp-btn-blanc" onclick="V2.ppFiche(\'' + esc(tag.ficheId) + '\')">' + ppIco('fiche', 18) + 'Ouvrir la fiche officine</button>' : ''),
+      // 26/11/2026 — planche « 22 changements », sujet 13 (choix de Will) : un lien discret SOUS les boutons (rangement, pas une suite de la lecture)
+      basLien: '<button type="button" class="pp-lien-d" onclick="V2.ppNonLu(\'' + esc(e.id) + '\',this)">Marquer comme non lue</button>' };
   }
   V2.ppFiche = function (id) { if (!id) return; ppFermer(); V2.go('pharma', id); };
   V2.ppNonLu = function (id, b) { delete SCT_LU[id]; sctSaveLu(); if (b) { b.textContent = 'Marquée comme non lue'; b.disabled = true; } };
@@ -1139,7 +1140,8 @@
     clearTimeout(IT.min[id]);
     if (on) {
       li.classList.add('fait'); c.setAttribute('aria-checked', 'true'); itOuvrir(id, false);
-      if (V2.toast) V2.toast('Rangée dans « Fait », en bas de la page.');
+      // 26/11/2026 — planche « 22 changements », sujet 12 (choix de Will) : « Annuler » dans le message remet l'info à sa place, d'un toucher
+      if (V2.toast) V2.toast('Rangée dans « Fait », en bas de la page.', null, { action: 'Annuler', faire: function () { if (itFait(id)) itBascule(id); } });
       IT.min[id] = setTimeout(function () { var l = itEl(id); if (l && itFait(id)) { itPlace(l, document.getElementById('inf-t-fait-l')); itMaj(); } }, 1000);
     } else {
       li.classList.remove('fait'); c.setAttribute('aria-checked', 'false');
@@ -1337,6 +1339,8 @@
       '.pp-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 18px;border-radius:14px;border:1px solid transparent;font:600 15px/1.2 var(--pp-sans);text-decoration:none;white-space:nowrap}',
       '.pp-btn-bleu{background:linear-gradient(180deg,#1E66F0,#0050E6 55%,#0047CC);color:#fff!important;box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 8px 18px -8px rgba(0,80,230,.7)}',
       '.pp-btn-blanc{background:linear-gradient(180deg,#fff,#F5F7FB);border-color:#E3E8F1;color:var(--pp-encre);box-shadow:0 1px 0 #fff inset,0 2px 6px -2px rgba(15,20,32,.12)}',
+      '.pp-lien-d{display:block;margin:6px auto 0;min-height:44px;padding:0 12px;border:0;background:none;font:500 14px/1.2 var(--pp-sans);color:var(--pp-encre2);text-decoration:underline;text-underline-offset:3px;cursor:pointer}',
+      '.pp-lien-d:disabled{text-decoration:none;cursor:default}',
       '.pp-btn:active{transform:translateY(1px)}',
       '.pp-btn svg{flex:none}',
 

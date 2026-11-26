@@ -1295,6 +1295,8 @@
   var _offSearchTimer = null;   // 11/09/2026 — perf : re-rendu 120 ms après la dernière touche
   V2.offSearch = function (val) {
     S.q = val || ''; S.page = 0; S.nShow = 0;
+    // 26/11/2026 — sujet 20 : au téléphone le champ est aussi au-dessus de « Comparer » et du « catalogue » ; y taper ouvre « Trouver un produit »
+    if (S.q && S.porte !== 'trouver') { S.porte = 'trouver'; S.cmp = ''; if (!S.sensChoisi) S.sens = 'tous'; }
     clearTimeout(_offSearchTimer);
     _offSearchTimer = setTimeout(rerenderKeepFocus, 120);
   };
@@ -2072,6 +2074,14 @@
       '<p class="olm-phrase" id="olm-phrase">' + v3Phrase() + '</p></div>' +
       '<img class="olm-logo" src="' + MOD_BASE + 'logos/offilog.png" width="444" height="70" alt="" aria-hidden="true" decoding="async"></header>';
   }
+  // 26/11/2026 — planche « 22 changements », sujet 20, version 1 (choix de Will) : AU TÉLÉPHONE, la recherche passe juste sous le titre et les trois portes
+  // deviennent des onglets d'une ligne de 44 px (CSS). La recherche y reste à la même place dans les trois onglets (rien ne saute d'un onglet à l'autre) ;
+  // c'est une recherche de produits : taper depuis « Comparer » ou « Le catalogue » ouvre « Trouver un produit » (V2.offSearch). L'ordinateur ne change pas.
+  function olmTel() { try { return !!(window.matchMedia && window.matchMedia('(max-width:640px)').matches); } catch (e) { return false; } }
+  function v3Recherche() {
+    return '<div class="off-search">' + ICO('search', 19, 2) + '<input id="off-search-input" type="search" autocomplete="off" aria-label="Rechercher un produit, une marque ou un code EAN" placeholder="Produit, marque ou code EAN…" value="' + S.q.replace(/"/g, '&quot;') + '" oninput="V2.offSearch(this.value)">' +
+      (S.q ? '<button type="button" class="clr" onclick="V2.offSearch(\'\')" aria-label="Effacer la recherche">' + ICO('close', 16, 2) + '</button>' : '') + '</div>';
+  }
   var ONGLETS = [['trouver', 'search', 'Trouver un produit'], ['comparer', 'pilo', 'Comparer nos prix'], ['catalogue', 'fiche', 'Le catalogue']];
   // Les trois onglets (data-porte : même attribut que les anciennes portes, lu par les contrôles du banc).
   function v3Onglets(tab) {
@@ -2213,6 +2223,7 @@
   function renderV3(root) {
     var tab = (S.porte === 'comparer' || S.porte === 'catalogue') ? S.porte : 'trouver';
     S.porte = tab;
+    var olTel = olmTel();
     var arr = olmArrivee(), corps = '', insHtml = '';
     if (S.sel != null) {
       var sp = byEan.get(String(S.sel)) || items.filter(function (x) { return String(x.id) === String(S.sel); })[0];
@@ -2231,8 +2242,7 @@
       var total = filtered.length, k = Math.min(S.nShow || lot(), total);
       var ray = S.chip === 'all' ? '' : ((RAYONS.filter(function (r) { return r.k === S.chip; })[0] || CHIP_BY_KEY[S.chip] || {}).label || '');
       var ctx = (S.q ? 'pour « ' + (S.q.length > 24 ? S.q.slice(0, 23) + '…' : S.q) + ' »' : '') + (ray ? (S.q ? ' · ' : '') + ray + (S.sous ? ' · ' + S.sous : '') : '');
-      corps = '<div class="off-search">' + ICO('search', 19, 2) + '<input id="off-search-input" type="search" autocomplete="off" aria-label="Rechercher un produit, une marque ou un code EAN" placeholder="Produit, marque ou code EAN…" value="' + S.q.replace(/"/g, '&quot;') + '" oninput="V2.offSearch(this.value)">' +
-          (S.q ? '<button type="button" class="clr" onclick="V2.offSearch(\'\')" aria-label="Effacer la recherche">' + ICO('close', 16, 2) + '</button>' : '') + '</div>' +
+      corps = (olTel ? '' : v3Recherche()) +
         rayonsV3(c) + (RAYON_K[S.chip] && Object.keys(sousDispo).length > 1 ? '<div class="olm-rail">' + sousRayons(sousDispo) + '</div>' : '') +
         barreV3(total, ctx, c) + grilleV3(filtered.slice(0, k), total);
     } else if (tab === 'comparer') {
@@ -2242,7 +2252,7 @@
       corps = V2.offVitrinePanneau ? V2.offVitrinePanneau() : '';
     }
     root.innerHTML = V2.topbar({ back: true }) + '<div class="v2-wrap olm' + (arr ? ' olm-ent' : '') + (S.sel != null ? ' v2-detail-shift" style="--detw:392px"' : '"') + '>' +
-        (V2.priceTabs ? V2.priceTabs('offilog') : '') + v3Entete() + v3Onglets(tab) + bandeauCond() +
+        (V2.priceTabs ? V2.priceTabs('offilog') : '') + v3Entete() + (olTel ? '<div class="olm-rech-h">' + v3Recherche() + '</div>' : '') + v3Onglets(tab) + bandeauCond() +
         '<section class="olm-corps" id="olm-corps" role="tabpanel" aria-labelledby="olm-t-' + tab + '">' + corps + '</section>' +
       '</div>' + insHtml + mktBarHtml();
     // La barre de sélection et le volet vivent sous <body> : #v2-root garde la transformation de son animation d'entrée, qui décalerait un élément fixe.

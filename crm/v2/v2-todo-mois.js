@@ -238,7 +238,8 @@
     var j = jour(s), a = auj(), passe = s < a, html = '';
     html += '<div class="tm-dh"><div><p class="tm-dk">' + esc(maj(ecart(s))) + '</p><h2 class="tm-dt">' + esc(maj(libJour(s))) + '</h2></div></div>';
     html += '<div class="tm-ajouts" role="group" aria-label="Ajouter à cette date">' +
-      [['tache', 'Tâche'], ['rdv', 'Rendez-vous'], ['note', 'Note'], ['visite', 'Visite']].map(function (x) {
+      // 26/11/2026 — planche « 22 changements », sujet 16 : « Ajouter une tâche », le même nom que dans Tâches et dans la fiche
+      [['tache', 'Ajouter une tâche'], ['rdv', 'Rendez-vous'], ['note', 'Note'], ['visite', 'Visite']].map(function (x) {
         var on = S.form && S.form.type === x[0];
         return '<button type="button" class="tm-aj' + (on ? ' on' : '') + '" aria-pressed="' + !!on + '" onclick="V2.todoMois.ouvrir(\'' + x[0] + '\',\'' + s + '\')">' + IC.plus + '<span>' + x[1] + '</span></button>';
       }).join('') + '</div>';
@@ -370,7 +371,9 @@
   function libres(part) {
     var r = part === 'bas' ? [] : enRetard(), s = part === 'haut' ? [] : sansDate();
     if (!r.length && !s.length) return '';
-    function l(t) { return '<label class="tm-l tm-l-t"><input type="checkbox" onchange="V2.todoMois.cocher(\'' + esc(t.id) + '\',this.checked)" aria-label="Marquer comme fait : ' + esc(nomT(t)) + '"><span class="tm-box"></span><span class="tm-lt"><b>' + esc(nomT(t)) + '</b>' + (t.pour ? '<small>prévue ' + esc(J3[dow(t.pour)] + ' ' + num(t.pour) + ' ' + MOIS[+t.pour.slice(5, 7) - 1]) + '</small>' : '') + '</span></label>'; }
+    // 26/11/2026 — sujet 14 : dans la To do (S.todo), chaque tâche est la carte de l'onglet Tâches (mêmes gestes) ; ailleurs (écran Rendez-vous), la case seule, comme avant
+    function l(t) { var c = S.todo && V2.todo && V2.todo.carteHtml ? V2.todo.carteHtml(t.id) : ''; if (c) return '<div class="tm-l-carte">' + c + '</div>';
+      return '<label class="tm-l tm-l-t"><input type="checkbox" onchange="V2.todoMois.cocher(\'' + esc(t.id) + '\',this.checked)" aria-label="Marquer comme fait : ' + esc(nomT(t)) + '"><span class="tm-box"></span><span class="tm-lt"><b>' + esc(nomT(t)) + '</b>' + (t.pour ? '<small>prévue ' + esc(J3[dow(t.pour)] + ' ' + num(t.pour) + ' ' + MOIS[+t.pour.slice(5, 7) - 1]) + '</small>' : '') + '</span></label>'; }
     return '<div class="tm-libres' + (part === 'haut' ? ' tm-haut' : '') + '">' + (r.length ? '<section class="tm-lb"><h3 class="tm-sh">En retard <b>' + r.length + '</b></h3>' + r.map(l).join('') + '</section>' : '') +
       (s.length ? '<section class="tm-lb"><h3 class="tm-sh">Sans date <b>' + s.length + '</b></h3>' + s.map(l).join('') + '</section>' : '') + '</div>';
   }
@@ -542,7 +545,8 @@
     else if (/outlook|office/.test(ho)) h += '<p class="tm-cnote">Outlook ne partage que vos heures occupées, sans les noms : seuls les rendez-vous notés dans JARVIS comptent.</p>';
     function agir(k) {
       var o = V2.rdvInfo ? V2.rdvInfo(k) : {}, mail = String(o.email || '').trim(), tel = String(o.tel || '').replace(/[^0-9+]/g, '');
-      return mail && V2.rdv ? '<button type="button" class="tm-btn tm-prim tm-ca" onclick="V2.rdv.proposer(\'' + esc(k) + '\',this)">Proposer un rendez-vous</button>'
+      // 26/11/2026 — planche « 22 changements », sujet 17, version 1 (choix de Will) : bouton de ligne en contour ; seule l'action de masse reste en bleu plein
+      return mail && V2.rdv ? '<button type="button" class="tm-btn tm-ca tm-ca-o" onclick="V2.rdv.proposer(\'' + esc(k) + '\',this)">Proposer un rendez-vous</button>'
         : tel ? '<a class="tm-btn tm-ca" href="tel:' + esc(tel) + '">Appeler</a>' : '<span class="tm-cs">ni mail ni téléphone</span>';
     }
     function ligneL(x) {
@@ -632,7 +636,7 @@
   V2.todoMois = {
     phrase: phrase,
     // `o.todo` : appelé par la To do (v2-todo.js) ; au téléphone elle seule reçoit l'ordre « En retard d'abord » (26/11/2026)
-    html: function (o) { init(); ensureCss(); return '<div class="tm tm-v2">' + page(!!(o && o.todo) && etroit()) + '</div>'; },
+    html: function (o) { init(); ensureCss(); S.todo = !!(o && o.todo); return '<div class="tm tm-v2">' + page(S.todo && etroit()) + '</div>'; },
     // l'onglet s'ouvre : tout est relu (un rendez-vous pris ailleurs depuis doit apparaître)
     rafraichir: function () { CACHE = {}; RECO = null; PAR_JOUR = null; VENIR = null; OPPOSES = null; },
     // « Vos clients » › Rendez-vous posé : le jour s'ouvre dans le mois
@@ -734,6 +738,7 @@
       '.tm-btn:focus-visible,.tm-cb:focus-visible,.tm-aj:focus-visible{outline:2px solid var(--tm-b);outline-offset:2px}',
       '.tm-ic{width:44px;padding:0}',
       '.tm-prim{background:var(--tm-b);border-color:var(--tm-b);color:#fff}',
+      '.tm-btn.tm-ca-o{border-color:var(--tm-b);color:var(--tm-b)}',
       '.tm-prim:hover{background:var(--tm-n);border-color:var(--tm-n)}',
       '.tm-etat{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 0 14px;padding:10px 14px;border-radius:14px;border:1px solid var(--tm-f);background:#F4F7FD;font:500 14px/1.4 var(--font);color:var(--tm-g)}',
       '.tm-leg i,.tm-dots i{display:inline-block;width:10px;height:10px;border-radius:50%}',

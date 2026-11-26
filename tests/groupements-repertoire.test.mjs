@@ -104,7 +104,8 @@ test('recherche : sans accents ni ponctuation, casse indifférente', () => {
   assert.equal(norm(null), '');
 });
 
-test('liste : « Sans groupement » sort du classement, une ligne à part après les groupements', () => {
+// 26/11/2026 — planche « 22 changements », sujet 19 (choix de Will) : la ligne à part remonte AVANT la liste (elle n'était visible qu'en bas)
+test('liste : « Sans groupement » sort du classement, une ligne à part en tête de la liste', () => {
   const code = tranche('function grpListBody', '// La lumière du bandeau');
   const mk = (n, sans) => ({ name: (sans ? '— ' : '') + n, nb: 1 });
   const ctx = {
@@ -117,7 +118,8 @@ test('liste : « Sans groupement » sort du classement, une ligne à part après
   const html = corps(ctx.list);
   const dansLeClassement = html.slice(html.indexOf('<div class="grr-body">'), html.indexOf('</div>', html.indexOf('<div class="grr-body">')));
   assert.ok(!/Sans groupement/.test(dansLeClassement), 'Sans groupement ne figure pas parmi les lignes classées');
-  assert.ok(html.indexOf('<SANS>') > html.indexOf('<L C>'), 'la ligne à part vient après le dernier groupement');
+  assert.ok(html.indexOf('<SANS>') >= 0 && html.indexOf('<SANS>') < html.indexOf('<L A>'), 'la ligne à part vient avant le premier groupement');
+  assert.ok(html.indexOf('<SANS>') < html.indexOf('<div class="grr-body">'), 'elle est hors du bloc des lignes classées');
   assert.equal((html.match(/<SANS>/g) || []).length, 1);
 });
 

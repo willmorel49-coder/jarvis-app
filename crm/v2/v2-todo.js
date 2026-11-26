@@ -334,8 +334,9 @@
       o.id = 'v2-todo-pop'; o.className = 'v2-todo-ov';
       // 16/10/2026 — le rythme se choisit ici aussi (même date, mêmes 3 rythmes que la fenêtre « Rappel ») ;
       // laissé sur « Une fois » sans date, l'ajout reste celui d'avant, en un geste.
-      o.innerHTML = '<div class="v2-todo-pop v2-todo-mn-pop" role="dialog" aria-label="Ajouter à la to do list" onclick="event.stopPropagation()">' +
-        '<div class="v2-todo-pop-h"><b>Ajouter à la to do list</b><span>' + esc(nom || 'cette officine') + '</span>' +
+      o.innerHTML = '<div class="v2-todo-pop v2-todo-mn-pop" role="dialog" aria-label="Ajouter une tâche" onclick="event.stopPropagation()">' +
+        // 26/11/2026 — planche « 22 changements », sujet 16, version 1 (choix de Will) : le même nom partout pour ce geste (Tâches, Agenda, fiche)
+        '<div class="v2-todo-pop-h"><b>Ajouter une tâche</b><span>' + esc(nom || 'cette officine') + '</span>' +
           '<button class="v2-todo-x" aria-label="Fermer" onclick="V2.todo.fermer()">&times;</button></div>' +
         '<div class="v2-todo-rp-b v2-todo-mn">' +
           '<div class="v2-todo-rp-seg" role="radiogroup" aria-label="Répéter">' + Object.keys(REP).map(function (k) {
@@ -1042,6 +1043,12 @@
   // 23/11/2026 — 4e onglet « Agenda du mois » (v2-todo-mois.js) : relu à chaque ouverture, sans les relances.
   V2.todo.onglet = function (o) { st.onglet = o; if (o === 'agenda' && V2.todoMois) V2.todoMois.rafraichir(); if (o !== 'taches' && o !== 'agenda' && V2.relances && V2.relances.rafraichir) V2.relances.rafraichir(); rendre(); };
   // La case se coche et la ligne se barre sous les yeux, puis V2.todo.cocher (inchangée) range la ligne ; un second clic dans l'intervalle annule.
+  // 26/11/2026 — planche « 22 changements », sujet 14, version 1 (choix de Will) : une tâche a les MÊMES gestes dans Agenda et dans Tâches.
+  // L'Agenda de la To do (v2-todo-mois.js, libres) pose donc la carte de l'onglet Tâches elle-même (case, Écrire, Déplacer, Compléter) : un seul dessin.
+  V2.todo.carteHtml = function (id) {
+    var it = (st.items || []).filter(function (x) { return x.id === id; })[0];
+    return it && KINDS[it.k] ? carte(it) : '';
+  };
   V2.todo.cocherVu = function (el, id) {
     var f = el.checked;
     if (TD.coche[id]) { clearTimeout(TD.coche[id]); delete TD.coche[id]; if (f === el.defaultChecked) return; }

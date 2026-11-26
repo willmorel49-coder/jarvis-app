@@ -68,16 +68,26 @@ function ligne(win, p) {
 }
 const texte = (h) => h.replace(/<[^>]+>/g, '|').split('|').map((x) => x.trim()).filter(Boolean);
 
+// 26/11/2026 (soir) — planche « 22 changements », sujet 6, version 3 : le code postal a sa propre balise (ofl-cp), cachée au téléphone par le CSS ;
+// le texte lu à l'ordinateur reste « VILLE 01000 ». Ici on recolle la ville et son code postal pour garder la même vérification.
+const ville = (h) => texte(h.replace(/<span class="ofl-cp">([^<]*)<\/span>/g, '$1'));
 test('répertoire : nom, puis titulaire, puis ville et code postal — cliente et prospect', () => {
   const win = { CLIENTS_ACTIFS: { d: { '9000001': ['', '', '', 'Mme Alice TESTEUR'] } }, PHARMA_FR: ANNUAIRE };
-  const t1 = texte(ligne(win, { id: '9000001', name: 'Pharmacie fictive A', ville: 'Ville A', cp: '1000' }));
-  assert.deepEqual(t1.slice(0, 4), ['PHARMACIE FICTIVE A', 'Mme Alice TESTEUR', '·', 'VILLE A 01000']);
-  const t2 = texte(ligne(win, { id: '9000002', name: 'Pharmacie fictive B', ville: 'Ville B', cp: '02000', _prospect: true, tit: ANNUAIRE.p[1][10] }));
+  const h1 = ligne(win, { id: '9000001', name: 'Pharmacie fictive A', ville: 'Ville A', cp: '1000' });
+  assert.deepEqual(ville(h1).slice(0, 4), ['PHARMACIE FICTIVE A', 'Mme Alice TESTEUR', '·', 'VILLE A 01000']);
+  assert.ok(h1.includes('<span class="ofl-cp"> 01000</span>'), 'le code postal est dans sa balise (cachée au téléphone)');
+  const t2 = ville(ligne(win, { id: '9000002', name: 'Pharmacie fictive B', ville: 'Ville B', cp: '02000', _prospect: true, tit: ANNUAIRE.p[1][10] }));
   assert.deepEqual(t2.slice(0, 4), ['PHARMACIE FICTIVE B', 'M. ESSAI Bruno / Mme ESSAI Chloé', '·', 'VILLE B 02000']);
 });
 
 test('répertoire : sans titulaire connu, la ville seule, sans point en trop', () => {
-  const t = texte(ligne({}, { id: '9999999', name: 'Pharmacie fictive Z', ville: 'Ville Z', cp: '09000' }));
+  const t = ville(ligne({}, { id: '9999999', name: 'Pharmacie fictive Z', ville: 'Ville Z', cp: '09000' }));
   assert.deepEqual(t.slice(0, 2), ['PHARMACIE FICTIVE Z', 'VILLE Z 09000']);
   assert.ok(!t.includes('·'));
+});
+
+test('répertoire : au téléphone, le code postal est caché (sujet 6, version 3)', () => {
+  const css = readFileSync(new URL('../crm/v2/v2.css', import.meta.url), 'utf8');
+  const tel = css.slice(css.indexOf('@media (max-width: 640px) {', css.indexOf('.ofl-sous {')));
+  assert.match(tel.slice(0, tel.indexOf('/* ═══ fin écran Officines')), /\.ofl-sous \.ofl-cp \{ display: none; \}/);
 });

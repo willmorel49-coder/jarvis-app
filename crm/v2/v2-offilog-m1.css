@@ -49,6 +49,14 @@
   .olm-onglet{flex-direction:column;gap:6px;min-height:76px;padding:10px 6px;font-size:14px;text-align:center}
   .olm-o-ic{width:34px;height:34px;border-radius:12px}
 }
+/* 26/11/2026 — planche « 22 changements », sujet 20, version 1 : au téléphone, la recherche sous le titre, les trois portes en onglets d'une ligne de 44 px */
+@media (max-width:640px){
+  .olm-rech-h{margin:0 0 10px}
+  .olm-rech-h .off-search{margin:0}
+  .olm-portes{gap:6px;margin-bottom:12px}
+  .olm-onglet{flex-direction:row;gap:0;min-height:44px;padding:4px 6px;border-radius:12px;font-size:13.5px;line-height:1.15}
+  .olm-onglet .olm-o-ic{display:none}
+}
 
 /* ═══ Recherche, rayons, barre d'outils ═══ */
 .olm .off-search{display:flex;align-items:center;gap:12px;height:60px;margin:0 0 14px;padding:0 8px 0 18px;border:1px solid var(--au-fil,var(--o-filet));border-radius:18px;background:var(--o-carte);box-shadow:var(--o-ombre-l)}
