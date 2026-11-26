@@ -117,21 +117,41 @@
     // Sans officine à son nom (direction), on garde tout le fichier.
     var miennes = moi ? tous.filter(function (p) { return (p.comms || []).indexOf(moi) !== -1; }) : [];
     if (!miennes.length) miennes = tous;
-    var porte = miennes.map(function (p) {
-      return { id: p.id, name: p.name, ville: p.ville || '', cp: p.cp || '' };
-    });
-    var nat = [], D = window.PHARMA_FR;
+    var nat = [], D = window.PHARMA_FR, enseigne = {};
     if (D && D.p) {
       // [lat, lng, uga, grp, seg, comm, nom, ville, cp, tel, titulaire, email, ca, id]
       for (var i = 0; i < D.p.length; i++) {
         var l = D.p[i];
         if (l[6] && l[13] != null) {
           nat.push({ id: String(l[13]), name: l[6], ville: l[7] || '', cp: l[8] || '' });
+          enseigne[String(l[13])] = l[6];
           if (l[7]) villes[R.normaliser(l[7])] = 1;
         }
       }
     }
-    return { porte: R.indexer(porte), nat: R.indexer(nat), idsPorte: idsPorte, villes: villes };
+    // ⚠️ 26/11/2026 — le commercial écrit le nom de l'ENSEIGNE (celui de Google Maps), le fichier de l'équipe porte
+    // souvent celui du titulaire : « Phie cœur de bourg » = « Pharmacie MORVILLEZ », « Pharmacie du lys coron » =
+    // « Pharmacie ONILLON ». Mesuré sur l'agenda de Will : « Vos clients » disait 1 rendez-vous à venir sur 64,
+    // il y en avait 6. Chaque officine du portefeuille est donc aussi cherchée sous son enseigne (même code).
+    var porte = [];
+    miennes.forEach(function (p) {
+      porte.push({ id: p.id, name: p.name, ville: p.ville || '', cp: p.cp || '' });
+      var en = enseigne[String(p.id)];
+      if (en && R.distinctif(en) !== R.distinctif(p.name)) porte.push({ id: p.id, name: en, ville: p.ville || '', cp: p.cp || '' });
+    });
+    // Les noms propres (au plus 2 officines du fichier et de l'annuaire, 5 lettres au moins), pour V2RECO.
+    var vus = {}, rares = {};
+    tous.concat(nat).forEach(function (o) {
+      var id = String(o.id);
+      R.distinctif(o.name || '').split(' ').forEach(function (t) {
+        if (t.length < 5) return;
+        var x = vus[t] || (vus[t] = {});
+        x[id] = 1;
+      });
+    });
+    Object.keys(vus).forEach(function (t) { if (Object.keys(vus[t]).length <= 2) rares[t] = 1; });
+    var ip = R.indexer(porte); ip.rares = rares;
+    return { porte: ip, nat: R.indexer(nat), idsPorte: idsPorte, villes: villes };
   }
   // 23/11/2026 — l'onglet « Agenda du mois » de la To do (v2-todo-mois.js) reconnaît les officines de la même façon.
   V2.planningIndex = indexOfficines;

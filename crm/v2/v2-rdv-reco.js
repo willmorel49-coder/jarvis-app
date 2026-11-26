@@ -71,6 +71,7 @@
       if (apres === t) break;
       t = apres;
     }
+    t = presquePharmacie(t);
     var m = MARQUEUR.exec(t);
     if (!m) return { texte: t, marqueur: false };
     var reste = t.slice(m.index + m[0].length).trim();
@@ -78,6 +79,25 @@
     if (c) reste = reste.slice(0, c.index).trim();
     return { texte: reste, marqueur: true };
   };
+
+  // ⚠️ 26/11/2026 — « Pharmcie des fougères » (agenda de Will, client à Saint-Georges-sur-Loire) : sans le
+  // mot « pharmacie » bien écrit, le titre perdait son marqueur et ne valait plus qu'une correspondance
+  // exacte. Une lettre de trop, de moins, changée ou deux lettres inversées : c'est encore « pharmacie ».
+  // PHARMACIEN(S) et PHARMACIES restent ce qu'ils sont (une réunion, un salon).
+  var PAS_MARQUEUR = { PHARMACIEN: 1, PHARMACIES: 1 };
+  function unePres(a, b) {
+    var la = a.length, lb = b.length, i = 0;
+    if (Math.abs(la - lb) > 1) return false;
+    while (i < la && i < lb && a.charAt(i) === b.charAt(i)) i++;
+    if (la === lb) return a.slice(i + 1) === b.slice(i + 1) ||
+      (a.charAt(i) === b.charAt(i + 1) && a.charAt(i + 1) === b.charAt(i) && a.slice(i + 2) === b.slice(i + 2));
+    return la > lb ? a.slice(i + 1) === b.slice(i) : a.slice(i) === b.slice(i + 1);
+  }
+  function presquePharmacie(t) {
+    return t.split(' ').map(function (w) {
+      return (w !== 'PHARMACIE' && !PAS_MARQUEUR[w] && w.length >= 8 && w.length <= 10 && w.charAt(0) === 'P' && unePres(w, 'PHARMACIE')) ? 'PHARMACIE' : w;
+    }).join(' ');
+  }
 
   // La clé d'alias doit être la même pour « Appeler phie du lys » et
   // « Phie du lys » : c'est le segment, pas le titre brut.
@@ -111,8 +131,33 @@
   function lieux(titre, villes) {
     var brut = String(titre == null ? '' : titre), cps = [], vs = [];
     M.normaliser(brut).split(' ').forEach(function (m) { if (/^(0[1-9]|[1-8]\d|9[0-5]|97)\d{3}$/.test(m)) cps.push(m); });
-    if (villes) brut.replace(/\(([^)]*)\)/g, function (_, x) { var v = M.normaliser(x); if (v && villes[v]) vs.push(v); return ''; });
-    return { cps: cps, villes: vs };
+    // 26/11/2026 — morceaux de 1 à 4 mots qui sont une ville connue, 4 lettres au moins (« Y », « EST » ne disent rien).
+    function morceaux(t) {
+      var mots = t.split(' ').filter(Boolean), out = [];
+      for (var a = 0; a < mots.length; a++) for (var n = 1; n <= 4 && a + n <= mots.length; n++) {
+        var g = mots.slice(a, a + n).join(' ');
+        if (g.length >= 4 && villes[g] && out.indexOf(g) === -1) out.push(g);
+      }
+      return out;
+    }
+    // Une parenthèse : la ville entière, sinon une ville dans la parenthèse (« (segre en Anjou bleu) » : SEGRE, 26/11/2026).
+    if (villes) brut.replace(/\(([^)]*)\)/g, function (_, x) {
+      var v = M.normaliser(x);
+      if (v && villes[v]) vs.push(v); else morceaux(v).forEach(function (g) { if (vs.indexOf(g) === -1) vs.push(g); });
+      return '';
+    });
+    // 26/11/2026 — et une ville connue écrite EN CLAIR, hors parenthèses (« Pharmacie long champs Rennes »).
+    var nues = villes ? morceaux(M.normaliser(brut.replace(/\([^)]*\)/g, ' '))) : [];
+    return { cps: cps, villes: vs, nues: nues };
+  }
+  function dedans(mot, phrase) { return (' ' + phrase + ' ').indexOf(' ' + mot + ' ') !== -1; }
+  // La ville trouvée fait-elle partie du NOM de l'officine ? « Pharmacie la grand prairie » : GRAND est une commune
+  // des Vosges, mais c'est ici le début de GRANDE (PHARMACIE LA GRANDE PRAIRIE) — un mot du nom qui commence pareil.
+  function dansLeNom(v, e) {
+    var nom = M.normaliser(e.o.name);
+    if (dedans(v, nom)) return true;
+    if (v.indexOf(' ') !== -1) return false;
+    return nom.split(' ').some(function (w) { return w.length >= 4 && (w.indexOf(v) === 0 || v.indexOf(w) === 0); });
   }
 
   // Similarité de deux chaînes : part des bigrammes communs. Suffisant ici,
@@ -129,7 +174,8 @@
     return (2 * n) / (a.length - 1 + b.length - 1);
   }
 
-  function chercher(seg, marqueur, index, lieu) {
+  // `porte` : l'index est celui du portefeuille du commercial (64 officines), pas l'annuaire (19 700).
+  function chercher(seg, marqueur, index, lieu, porte) {
     var vide = { officine: null, score: 0, candidats: 0, dist: '' };
     if (!seg) return vide;
     var js = seg.split(' ').filter(function (m) { return m && !MOTS_VIDES[m]; });
@@ -146,8 +192,9 @@
       var communs = 0, seul = null;
       for (var k = 0; k < js.length; k++) if (e.jetons[js[k]]) { communs++; seul = js[k]; }
       if (!contenu && !communs) continue;
-      // Un nom distinctif très court ne vaut que s'il est tout le segment.
-      if (e.dist.length <= 3 && seg !== e.dist) continue;
+      // Un nom distinctif très court ne vaut que s'il est tout le segment — sa ville à part (26/11/2026 :
+      // « Pharmacie du lys coron » = PHARMACIE DU LYS à Coron, enseigne d'un client de Will).
+      if (e.dist.length <= 3 && seg !== e.dist && js.filter(function (m) { return !dedans(m, e.ville); }).join(' ') !== e.dist) continue;
       // Un seul mot commun, et il est banal : pas assez pour désigner.
       if (!contenu && communs === 1 && seul && seul.length <= 4) continue;
 
@@ -174,8 +221,21 @@
         score = Math.min(1, score + 0.12);
       }
       if (lieu && lieu.villes.length && e.ville) {
-        if (lieu.villes.indexOf(e.ville) === -1) score = Math.min(score, SEUIL_RECONNU - 0.01);
-        else score = Math.min(1, score + 0.12);
+        var chez = lieu.villes.some(function (v) { return dedans(v, e.ville) || dedans(e.ville, v); });
+        var autreV = lieu.villes.some(function (v) { return !dedans(v, e.ville) && !dedans(e.ville, v) && !dansLeNom(v, e); });
+        if (chez) score = Math.min(1, score + 0.12);
+        else if (autreV) score = Math.min(score, SEUIL_RECONNU - 0.01);
+      }
+      // ⚠️ 26/11/2026 — une ville écrite en clair qui n'est ni la sienne ni un mot de son nom : ce n'est pas elle.
+      // « Pharmacie long champs Rennes » sortait en PHARMACIE DES CHAMPS à Bécon-les-Granits (« pas un de mes
+      // clients », Will) et comptait comme un rendez-vous posé chez lui.
+      if (lieu && lieu.nues && lieu.nues.length && e.ville) {
+        var ailleurs = false;
+        for (k = 0; k < lieu.nues.length && !ailleurs; k++) {
+          var v = lieu.nues[k];
+          if (!dedans(v, e.ville) && !dedans(e.ville, v) && !dansLeNom(v, e)) ailleurs = true;
+        }
+        if (ailleurs) continue;
       }
       // ⚠️ Un nom qui n'explique pas TOUT le titre n'est jamais une certitude (24/11/2026) :
       // « Pharmacie boulevard de l'Est » sortait « reconnu » en PHARMACIE DU BOULEVARD à Brive,
@@ -191,13 +251,26 @@
         for (k = 0; k < js.length; k++) if (!e.jetons[js[k]] && !villeJ[js[k]] && /^[A-Z]{2,}$/.test(js[k])) reste++;
         if (reste) score = Math.min(score, SEUIL_RECONNU - 0.01);
       }
+      // 26/11/2026 — « Pharmacie Gouabau Pillet » (client de Will, PHARMACIE GOUABAU - PIHOUEE à Juigné-sur-Loire)
+      // tombait à 0,58, sous le seuil : un NOM PROPRE partagé avec une officine de SON portefeuille, derrière le mot
+      // « pharmacie », vaut au moins « à confirmer ». Nom propre = mot que portent au plus 2 officines du fichier et de
+      // l'annuaire (`index.rares`, posé par V2.planningIndex) : GOUABAU 1, HUMEAU 2 ; SAINT 668, COEUR 24 n'en sont pas
+      // (« Phie Saint vigor » tombait sur SAINT MARTIN DE LA PLACE). Jamais dans l'annuaire national.
+      if (porte && marqueur && !contenu && communs && index.rares) {
+        for (k = 0; k < js.length; k++) if (e.jetons[js[k]] && index.rares[js[k]]) { score = Math.max(score, SEUIL_CONFIRMER); break; }
+      }
       if (!marqueur) score -= 0.10;
       trouves.push({ s: score, o: e.o, dist: e.dist });
     }
     if (!trouves.length) return vide;
     trouves.sort(function (a, b) { return b.s - a.s; });
-    var haut = trouves[0].s, proches = 0;
-    for (var p = 0; p < trouves.length; p++) if (trouves[p].s >= haut - 0.04) proches++;
+    // Une officine peut avoir deux noms dans l'index (celui du fichier et son enseigne, 26/11/2026) : on compte
+    // des OFFICINES proches, pas des noms, sinon « Pharmacie Morvillez cœur de bourg » ne serait jamais certaine.
+    var haut = trouves[0].s, proches = 0, vus = {};
+    for (var p = 0; p < trouves.length; p++) {
+      var idp = String(trouves[p].o.id);
+      if (trouves[p].s >= haut - 0.04 && !vus[idp]) { vus[idp] = 1; proches++; }
+    }
     return { officine: trouves[0].o, score: haut, candidats: proches, dist: trouves[0].dist };
   }
 
@@ -222,7 +295,7 @@
     }
 
     // 2. Le portefeuille d'abord : ce sont ses clients.
-    var p = chercher(seg.texte, seg.marqueur, indexPortefeuille || [], lieu);
+    var p = chercher(seg.texte, seg.marqueur, indexPortefeuille || [], lieu, true);
     var meilleur = { r: p, source: 'portefeuille' };
 
     if (!seg.marqueur) {

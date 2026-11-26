@@ -421,6 +421,10 @@
   var VENIR = null;   // { etat, rdv } : ses rendez-vous confirmés à partir d'aujourd'hui, tous mois confondus
   var OPPOSES = null; // cip -> 1 : celles qui ont demandé à ne plus être sollicitées (liste commune à l'équipe)
   var VU_LU = false;
+  // 26/11/2026 — l'annuaire national porte le nom d'ENSEIGNE de ses clients, celui qu'il écrit dans son agenda
+  // (« Phie cœur de bourg » = Pharmacie MORVILLEZ). Sans lui : « 1 sur 64 », il y en avait 6. Lu une fois, puis on compte.
+  var FR_ATTENTE = false, FR_DEMANDE = false;
+  var A_INVITER = [];  // les CIP de « Sans rendez-vous à venir » qui ont une adresse mail : le bouton d'envoi groupé
   function lireVenir() {
     if (VENIR) return;
     var e = VENIR = { etat: 'cours', rdv: [] }, c = sb(), u = uid();
@@ -450,6 +454,11 @@
     var liste = portefeuille();
     if (!liste.length) return '';
     lireVenir();
+    if (!window.PHARMA_FR && V2.ensurePharmaFr && !FR_DEMANDE) {
+      FR_DEMANDE = true; FR_ATTENTE = true;
+      // appelé aussi en cas d'échec du chargement : on compte alors sans l'annuaire, comme avant
+      V2.ensurePharmaFr(function () { FR_ATTENTE = false; redessiner(); });
+    }
     var a = auj(), prochain = {}, vu = {}, lu = VENIR.etat;
     var poses = [], libres = [], stop = 0, a_lui = {}, horsRdv = {}, horsOff = {};
     liste.forEach(function (p) { a_lui[String(p.id)] = 1; });
@@ -489,11 +498,19 @@
     if (lu === 'ko') return h + '<p class="tm-etat" role="alert">Vos rendez-vous à venir n’ont pas pu être lus. <button type="button" class="tm-btn" onclick="V2.todoMois.reessayer()">Réessayer</button></p></section>';
     // 24/11/2026 — idem pour l'agenda personnel : pendant sa lecture ou s'il n'a pas pu être lu, ses rendez-vous manquent
     // (vu dans le Safari de Will : « 0 sur 64 » juste après un rechargement). Pas de compte faux.
-    if (RECO && RECO.etat === 'cours') return h + '<p class="tm-chp" role="status">Lecture de votre agenda personnel…</p></section>';
+    if ((RECO && RECO.etat === 'cours') || FR_ATTENTE) return h + '<p class="tm-chp" role="status">Lecture de votre agenda personnel…</p></section>';
     if (RECO && RECO.etat === 'ko') return h + '<p class="tm-etat" role="alert">Votre agenda personnel n’a pas pu être lu : impossible de dire qui a un rendez-vous à venir. <button type="button" class="tm-btn" onclick="V2.todoMois.reessayer()">Réessayer</button></p></section>';
     h += '<p class="tm-chp"><b>' + np + '</b> sur ' + tot + ' ont un rendez-vous à venir · <b>' + libres.length + '</b> sans rendez-vous' +
       (stop ? ' · <b>' + stop + '</b> ne ' + (stop > 1 ? 'veulent' : 'veut') + ' plus être sollicitée' + (stop > 1 ? 's' : '') : '') + '</p>' +
       '<div class="tm-jauge" aria-hidden="true"><i style="width:' + Math.round(np * 100 / tot) + '%"></i></div>';
+    // 26/11/2026 — Will : « envoyer des dispos à ceux de mes clients avec qui je n'ai pas pris de rdv ». Choix cliqué :
+    // un bouton qui ouvre l'envoi groupé existant (copie cachée, lots de 25, lien de disponibilités), ces clients cochés.
+    A_INVITER = libres.filter(function (x) { var o = V2.rdvInfo ? V2.rdvInfo(String(x.p.id)) : {}; return String((o && o.email) || '').trim(); }).map(function (x) { return String(x.p.id); });
+    var sansMail = libres.length - A_INVITER.length;
+    if (A_INVITER.length && V2.go) h += '<div class="tm-cenv"><button type="button" class="tm-btn tm-prim tm-cenvb" onclick="V2.todoMois.envoyerDispos()">Envoyer mes disponibilités ' +
+      (A_INVITER.length > 1 ? 'aux ' + A_INVITER.length + ' clients' : 'au client') + ' sans rendez-vous</button>' +
+      '<p class="tm-cnote">Un seul mail en copie cachée, par lots de 25, avec votre lien de disponibilités : vous le relisez avant de l’envoyer depuis votre messagerie.' +
+      (sansMail ? ' ' + (sansMail > 1 ? sansMail + ' clients sans adresse mail sont' : 'Un client sans adresse mail est') + ' à appeler (liste ci-dessous).' : '') + '</p></div>';
     var ho = String((AGENDA && AGENDA.hote) || '');
     if (AGENDA && AGENDA.etat === 'ok' && !AGENDA.branche) h += '<p class="tm-cnote">Tant que votre agenda n’est pas branché, seuls les rendez-vous notés dans JARVIS comptent.</p>';
     else if (/outlook|office/.test(ho)) h += '<p class="tm-cnote">Outlook ne partage que vos heures occupées, sans les noms : seuls les rendez-vous notés dans JARVIS comptent.</p>';
@@ -558,6 +575,13 @@
       var b = document.querySelector('.tm .tm-barre'); if (b && b.scrollIntoView) b.scrollIntoView({ block: 'start', behavior: 'smooth' });
     },
     voirTout: function (k) { S.tout[k] = !S.tout[k]; redessiner(); },
+    // vers l'écran Campagne, mode groupé, ses clients sans rendez-vous déjà cochés (même chemin que « Relancer » du suivi)
+    envoyerDispos: function () {
+      if (!A_INVITER.length) { if (V2.toast) V2.toast('Aucun client à inviter.'); return; }
+      V2.campagnePreselection = A_INVITER.slice();
+      V2.campagneModeVoulu = 'groupe';
+      V2.go('campagne');
+    },
     reessayer: function () { CACHE = {}; PAR_JOUR = null; VENIR = null; if (RECO && RECO.etat === 'ko') RECO = null; redessiner(); },
     visiteChercher: function () {
       var f = S.form; if (!f || f.type !== 'visite') return;
@@ -762,6 +786,8 @@
       '.tm-cq{flex:none;padding:4px 9px;border-radius:8px;background:var(--tm-halo);color:var(--tm-n);font:800 13px/1.3 var(--font);font-variant-numeric:tabular-nums;white-space:nowrap}',
       '.tm-cs{flex:none;font:500 13px/1.3 var(--font);color:var(--tm-g)}',
       '.tm-cplus{margin:8px 0 4px}',
+      '.tm-cenv{margin:14px 0 6px}',
+      '.tm-cenvb{max-width:100%;padding:10px 18px;line-height:1.3;text-align:center;white-space:normal}',
       '@media (max-width:760px){.tm-ccols{grid-template-columns:minmax(0,1fr)}}',
       /* le mois à gauche, le jour à droite */
       '.tm-cote{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(320px,1fr);gap:16px;align-items:start}',
